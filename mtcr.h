@@ -39,7 +39,7 @@
 //use memory mapped /dev/mem for access
 #define CONFIG_ENABLE_MMAP 1
 //mmap /dev/mem for memory access (does not work on sparc)
-#define CONFIG_USE_DEV_MEM 1
+#define CONFIG_USE_DEV_MEM 0
 
 //use pci configuration cycles for access
 #define CONFIG_ENABLE_PCICONF 1
