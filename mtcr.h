@@ -38,9 +38,9 @@
 
 //use memory mapped /dev/mem for access
 #define CONFIG_ENABLE_MMAP 1
-//use pread/pwrite on /dev/mem for access
-//typically does not work for PIO access
-#define CONFIG_ENABLE_READWRITE 0
+//mmap /dev/mem for memory access (does not work on sparc)
+#define CONFIG_USE_DEV_MEM 1
+
 //use pci configuration cycles for access
 #define CONFIG_ENABLE_PCICONF 1
 
@@ -48,11 +48,11 @@
 #define CONFIG_HAVE_LONG_LONG_ADDRESS 1
 
 
-#if (CONFIG_ENABLE_PCICONF || CONFIG_ENABLE_READWRITE)
+#if CONFIG_ENABLE_PCICONF
 #define _XOPEN_SOURCE 500
 #endif
 
-#if (CONFIG_ENABLE_MMAP || CONFIG_ENABLE_READWRITE)
+#if CONFIG_ENABLE_MMAP
 #define _FILE_OFFSET_BITS 64
 #endif
 
@@ -71,7 +71,11 @@
 
 #if CONFIG_ENABLE_MMAP
 #include <sys/mman.h>
+#if !CONFIG_USE_DEV_MEM
+#include <sys/pci.h>
 #endif
+#endif
+
 
 #ifndef __be32_to_cpu
 #define __be32_to_cpu(x) ntohl(x)
@@ -113,11 +117,10 @@ extern "C" {
 typedef struct mfile_t {
     int           fd;
     void          *ptr;
-    off_t	  offset;
 } mfile;
 
 
-#if (CONFIG_ENABLE_MMAP || CONFIG_ENABLE_READWRITE)
+#if CONFIG_ENABLE_MMAP
 /*
  * The PCI interface treats multi-function devices as independent
  * devices.  The slot/function address of each device is encoded
@@ -131,8 +134,8 @@ typedef struct mfile_t {
 #define PCI_FUNC(devfn)		((devfn) & 0x07)
 
 /* Find the specific device by scanning /proc/bus/pci/devices */
-int
-mfind(const char* name, off_t* offset_p )
+int mfind(const char* name, off_t* offset_p,
+		unsigned *bus_p, unsigned *dev_p, unsigned *func_p)
 {
   FILE* f;
 	unsigned     irq;
@@ -259,6 +262,9 @@ name_parsed:
     ((unsigned long long)(base_addr[0])&~(unsigned long long)(0xfffff));
 
   *offset_p=offset;
+  *bus_p=bus;
+  *dev_p=dev;
+  *func_p=func;
 
   fclose(f);
   return 0;
@@ -292,26 +298,35 @@ mfile *mopen(const char *name)
     if (mf->fd<0) goto open_failed;
 
     mf->ptr=NULL;
-    mf->offset=-1;
 #else
     goto open_failed;
 #endif
   }
   else
   {
-#if (CONFIG_ENABLE_MMAP || CONFIG_ENABLE_READWRITE)
+#if CONFIG_ENABLE_MMAP
+    unsigned bus, dev, func;
+    if (mfind(name,&offset,&bus,&dev,&func)) goto find_failed;
+
+#if CONFIG_USE_DEV_MEM
     mf->fd = open("/dev/mem", O_RDWR | O_SYNC);
     if (mf->fd<0) goto open_failed;
+#else
+    {
+	    char file_name="/proc/bus/pci/00/00.0";
+	    sprintf(file_name,"/proc/bus/pci/%2.2x/%2.2x.%1.1x",
+			    bus,dev,func);
+	    mf->fd = open(file_name, O_RDWR | O_SYNC);
+	    if (mf->fd<0) goto open_failed;
 
-    if (mfind(name,&offset)) goto find_failed;
-    mf->offset = offset;
+	    if (ioctl(mf->fd, PCIIOC_MMAP_IS_MEM) < 0) goto ioctl_failed;
+    }
+#endif
 
-#if (CONFIG_ENABLE_MMAP)
     mf->ptr = mmap(NULL, 0x100000, PROT_READ | PROT_WRITE,
         MAP_SHARED, mf->fd, offset);
 
     if ( (! mf->ptr) || (mf->ptr == MAP_FAILED) ) goto map_failed;
-#endif
 
 #else
     goto open_failed;
@@ -319,20 +334,24 @@ mfile *mopen(const char *name)
   }
   return mf;
 
-#if (CONFIG_ENABLE_MMAP || CONFIG_ENABLE_READWRITE)
-find_failed:
-#endif
 
-#if (CONFIG_ENABLE_MMAP)
+#if CONFIG_ENABLE_MMAP
 map_failed:
         err = errno;
         close(mf->fd);
         errno = err;
+#if !CONFIG_USE_DEV_MEM
+ioctl_failed:
+#endif
 #endif
 open_failed:
         err = errno;
         free(mf);
         errno = err;
+
+#if CONFIG_ENABLE_MMAP
+find_failed:
+#endif
         return 0;
 }
 
@@ -361,16 +380,6 @@ int mread4(mfile *mf, unsigned int offset, u_int32_t *value)
   {
             *value = __be32_to_cpu(*((u_int32_t *)((char *)mf->ptr + offset)));
             return 4;
-  }
-#endif
-#if CONFIG_ENABLE_READWRITE
-  if (mf->offset != -1)
-  {
-	  u_int32_t v;
-	  size_t cnt;
-	  cnt = pread(mf->fd, &v, 4, mf->offset + offset);
-	  *value = __be32_to_cpu(v);
-          return cnt;
   }
 #endif
 #if CONFIG_ENABLE_PCICONF
@@ -408,16 +417,6 @@ int mwrite4(mfile *mf, unsigned int offset, u_int32_t value)
   {
             *((u_int32_t *)((char *)mf->ptr + offset)) = __cpu_to_be32(value);
             return 4;
-  }
-#endif
-#if CONFIG_ENABLE_READWRITE
-  if (mf->offset != -1)
-  {
-	  u_int32_t v;
-	  size_t cnt;
-	  v = __be32_to_cpu(value);
-	  cnt = pwrite(mf->fd, &v, 4, mf->offset + offset); 
-          return cnt;
   }
 #endif
 #if CONFIG_ENABLE_PCICONF
