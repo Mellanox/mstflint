@@ -75,6 +75,8 @@
 #include <sys/pci.h>
 #include <sys/ioctl.h>
 #endif
+#include <sys/types.h>
+#include <sys/stat.h>
 #endif
 
 
@@ -314,8 +316,12 @@ mfile *mopen(const char *name)
     if (mf->fd<0) goto open_failed;
 #else
     {
-	    char file_name[]="/proc/bus/pci/00/00.0";
+	    struct stat dummybuf;
+	    char file_name[]="/proc/bus/pci/0000:00/00.0";
 	    sprintf(file_name,"/proc/bus/pci/%2.2x/%2.2x.%1.1x",
+			    bus,dev,func);
+	    if (stat(file_name,&dummybuf))
+		    sprintf(file_name,"/proc/bus/pci/0000:%2.2x/%2.2x.%1.1x",
 			    bus,dev,func);
 	    mf->fd = open(file_name, O_RDWR | O_SYNC);
 	    if (mf->fd<0) goto open_failed;
