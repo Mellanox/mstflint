@@ -32,7 +32,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- *  Version: $Id: flint.cpp,v 1.90 2005/03/07 15:32:05 mtsirkin Exp $
+ *  Version: $Id: flint.cpp,v 1.93 2005/03/15 12:15:40 mtsirkin Exp $
  *
  */
 
@@ -89,7 +89,7 @@ namespace std {}; using namespace std;
 
 char* _versionID = "VERSION_ID_HERE";
 
-char* _cvsID     = "$Revision: 1.90 $";
+char* _cvsID     = "$Revision: 1.93 $";
 
 #ifndef __be32_to_cpu
     #define __be32_to_cpu(x) ntohl(x)
@@ -323,6 +323,25 @@ void report(const char *format, ...)
     }
 } // report
 
+void report_erase(const char *format, ...)
+{
+    va_list  args;
+    char buf[256];
+    int i;
+    int len;
+
+    if (_silent)
+	return;
+
+    va_start(args, format);
+    vsnprintf(buf, sizeof buf, format, args);
+    va_end(args);
+    
+    len = strlen(buf);
+    for(i=0; i < len; ++i)
+	printf("\b");
+} // report_erase
+
 static u_int32_t log2up (u_int32_t in) {
     u_int32_t i;
     for (i = 0; i < 32; i++) {
@@ -469,6 +488,7 @@ public:
                       bool verbose=false)                  = 0;
 
     virtual u_int32_t get_sector_size()                    = 0;
+    virtual u_int32_t get_size()                           = 0;
 
     char *_err;
 
@@ -493,6 +513,7 @@ public:
     virtual bool read(u_int32_t addr, void *data, int len, bool verbose=false);
 
     virtual u_int32_t get_sector_size();
+    virtual u_int32_t get_size()     { return  getBufLength();}
 
 private:
     u_int32_t *_buf;
@@ -585,7 +606,11 @@ public:
     //
 
     virtual u_int32_t 
-    get_sector_size        ()                           {return _cfi_data.erase_block[0].sector_size;}
+	get_sector_size        ()                           {return _cfi_data.erase_block[0].sector_size;}
+    
+    virtual u_int32_t 
+	get_size               ()                           {return _cfi_data.device_size ? _cfi_data.device_size : (u_int32_t)MAX_FLASH;}
+
 
     virtual bool wait_ready    (const char* msg = NULL)     = NULL;
 
@@ -598,7 +623,7 @@ public:
                                 void*     data, 
                                 int       cnt,
                                 bool      noerase = false, 
-                                bool      noverify = false) {return _cmd_set->write(addr, data, cnt, noerase, noverify);}
+                                bool      noverify = false);
 
     virtual bool write         (u_int32_t addr, 
                                 u_int32_t data);
@@ -688,6 +713,9 @@ protected:
     //
 
     struct cfi_query {
+	cfi_query() {
+	    memset(this, 0, sizeof(*this));
+	}
         u_int8_t  manuf_id;
         u_int8_t  device_id;
 
@@ -1309,6 +1337,29 @@ bool Flash::read(u_int32_t addr, void *data, int len, bool verbose)
 
     return true;
 } // Flash::read
+
+
+////////////////////////////////////////////////////////////////////////
+bool Flash::write         (u_int32_t addr, 
+		    void*     data, 
+		    int       cnt,
+		    bool      noerase,
+		    bool      noverify)
+{
+    if (addr + cnt > get_size()) {
+	sprintf(_msg, 
+		"Trying to write %d bytes to address 0x%x, which exceeds flash size (0x%x).",
+		cnt, 
+		addr,
+		get_size());
+
+	_err = _msg;
+
+	return false;
+    }
+    
+    return _cmd_set->write(addr, data, cnt, noerase, noverify);
+}
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -2464,9 +2515,11 @@ bool ParallelFlash::get_cfi(struct cfi_query *query)
 
     // DEBUG: 
     //printf("Raw Cfi query:\n");
+    //printf("  0123456789abcdef_123456789abcdef_123456789abcdef\n  ");
     //for (u_int32_t i = 0x10 * query_base ; i <= (0x30 * query_base); i+= query_base) {
-    //printf("0x%02x: %02x\n", i/query_base, fwp[i]);
+    //    printf("%02x",  fwp[i]);
     //}
+    //printf("\n");
 
     u_int32_t dw_aligned_offs = (((offset * query_base) >> 2 ) << 2);
 
@@ -2571,6 +2624,9 @@ bool SpiFlash::get_cmd_set   () {
     _cfi_data.num_erase_blocks           = 1;
     _cfi_data.erase_block[0].sector_size = 64 * 1024;
     _cfi_data.erase_block[0].sector_mask = ~(_cfi_data.erase_block[0].sector_size - 1);
+
+    // TODO: Check device size and num of devices. Set total device size accordingly
+    // _cfi_data.device_size = ???;
 
     return true;
 }
@@ -3052,7 +3108,7 @@ bool repair(Flash& f, const int from, const int to, bool need_report)
 
     u_int32_t sect_size = f.get_sector_size();
 
-    report("Repairing: Copy %s image to %s     - ", from ? "secondary" : "primary" ,
+    report("Repairing: Copy %s image to %s     -", from ? "secondary" : "primary" ,
            to ? "secondary" : "primary");
 
     // Valid image pointer
@@ -3078,7 +3134,7 @@ bool repair(Flash& f, const int from, const int to, bool need_report)
     u_int32_t write_to = (!to) ? sect_size * 3 : sect_size * (3 + im_size_s);
 
     // f.read valid image
-    report("READ FW ");
+    report(" READ FW ");
     fflush(stdout);
     char *buf = new char[im_size_b];
     if (!f.read(im_ptr, buf, im_size_b, need_report)) {
@@ -3086,9 +3142,10 @@ bool repair(Flash& f, const int from, const int to, bool need_report)
         delete [] buf;
         return false;
     }
+    report_erase(" READ FW 100%");
 
     // Copy it to right place
-    report(" WRITE FW ");
+    report("\b WRITE FW ");
     fflush(stdout);
     if (!write_image(f, write_to, buf, im_size_b, need_report)) {
         report("FAILED\n\n");
@@ -3096,14 +3153,16 @@ bool repair(Flash& f, const int from, const int to, bool need_report)
         return false;
     }
     delete [] buf;
+    report_erase(" WRITE FW 100%");
 
     // Read valid sector
     u_int32_t sect[sizeof(PS)/4];
-    report(" READ %s ", from ? "SPS" : "PPS");
+    report("\b READ %s ", from ? "SPS" : "PPS");
     if (!f.read(from ? sect_size*2 : sect_size, sect, sizeof(sect) , need_report)) {
         report("FAILED\n\n");
         return false;
     }
+    report_erase(" READ %s 100%", from ? "SPS" : "PPS");
 
     // Set new image address
     // ++++++
@@ -3125,20 +3184,22 @@ bool repair(Flash& f, const int from, const int to, bool need_report)
     sect[2] = 0xffffffff;
 
     // Write it to invalid sector
-    report(" WRITE %s ", to ? "SPS" : "PPS");
-    if (!write_image(f, to ? sect_size*2 : sect_size, sect, sect_size, need_report)) {
+    report("\b WRITE %s ", to ? "SPS" : "PPS");
+    if (!write_image(f, to ? sect_size*2 : sect_size, sect, sizeof(sect), need_report)) {
         report("FAILED\n\n");
         return false;
     }
+    report_erase(" WRITE %s 100%", to ? "SPS" : "PPS");
 
     // Validate signature
-    report(" SIGNATURE ");
+    report("\b SIGNATURE     ");
     if (!WriteSignature(f, to, valid_signature)) {
         report("FAILED\n\n");
         return false;
     }
 
-    report("OK\n");
+    report_erase(" SIGNATURE     ");
+    report(" OK       \n");
     return true;
 } // Flash::repair
 
@@ -3344,7 +3405,6 @@ bool FailSafe_burn(Flash& f, void *data, int size, bool single_image_burn, bool 
     bool image_ok[2] = {false, false};
 
     // Check signatures on flash
-    bool bad_first = false, bad_second = false;
     report("Read and verify PPS/SPS in flash               - ");
     for (i = 0 ; i < 2 ; i++) {
         if (!f.read(sect_size * (i+1) + 8, &signature_for_compare)) {
@@ -3356,7 +3416,7 @@ bool FailSafe_burn(Flash& f, void *data, int size, bool single_image_burn, bool 
             image_ok[i] = true;
     }
 
-    if (bad_first && bad_second) {
+    if (!image_ok[0] && !image_ok[1]) {
         //
         // Both images are invalid in flash
         // --------------------------------
@@ -3404,12 +3464,12 @@ bool FailSafe_burn(Flash& f, void *data, int size, bool single_image_burn, bool 
     if (single_image_burn == false) {
 
         if (image_ok[0] == false || image_ok[1] == false) {
-            report("Error Detected\n");
-
             int image_from;
             int image_to;
 
-            if (!image_ok[0]) {
+	    assert (image_ok[1] || image_ok[0]);
+
+            if (image_ok[1]) {
                 image_from = 1;
                 image_to   = 0;
             } else {
@@ -3417,9 +3477,9 @@ bool FailSafe_burn(Flash& f, void *data, int size, bool single_image_burn, bool 
                 image_to   = 1;
             }
 
-            if (!repair(f, image_from, image_to, need_report))
-                return false;
-
+	    report("Reparable Error Detected.\n");
+	    if (!repair(f, image_from, image_to, need_report))
+		    return false;
         }
 
         //
@@ -3496,7 +3556,7 @@ bool FailSafe_burn(Flash& f, void *data, int size, bool single_image_burn, bool 
 
             return true;
         } else {
-            report("UNKNOWN FLASH STATE: Valid imagees = (%d,%d).\n", image_ok[0], image_ok[1] );
+            report("Bad flash state: Valid images = (%d,%d).\n", image_ok[0], image_ok[1] );
             return false;
         }
 
@@ -4185,10 +4245,6 @@ bool RevisionInfo(FBase& f, guid_t guids_out[GUIDS], char *vsd_out,
     fw_id >>= 24;
 
     // Read GUIDs
-    FImage   *fim;
-
-	fim = dynamic_cast<FImage*>(&f);
-
     u_int32_t guid_ptr, nguids;
     guid_t guids[GUIDS];
 
@@ -4196,7 +4252,7 @@ bool RevisionInfo(FBase& f, guid_t guids_out[GUIDS], char *vsd_out,
         READ4(f, im_start + 0x24, &guid_ptr, "GUID PTR");
         TOCPU1(guid_ptr);
         guid_ptr += im_start;
-        if (guid_ptr >= (fim ? fim->getBufLength() : (u_int32_t)f.MAX_FLASH)) {
+        if (guid_ptr >= f.get_size()) {
             report("Insane GUID pointer (%08x)\n", guid_ptr);
             return false;
         }
@@ -4799,7 +4855,7 @@ int main(int ac, char *av[])
                 }
                 FImage         fim;
                 if (!fim.open(image_fname)) {
-                    printf("*** ERROR *** %s\n", fim._err);
+                    printf("*** ERROR *** Image file open failed: %s\n", fim._err);
                     rc =  1; goto done; 
                 }
                 bool old_silent = _silent;
@@ -4831,6 +4887,22 @@ int main(int ac, char *av[])
 
                 if (read_guids || read_ps) {
                     if (!RevisionInfo(*f, guids, vsds, &fs_image, false, read_guids, read_ps )) {
+			printf("*** ERROR *** Can't extract ");
+			if (read_guids) {
+			    printf("GUIDS ");
+			}
+			if (read_ps) {
+			    if (read_guids) 
+				printf("and ");
+			    
+			    printf("VSD/PSID ");
+			}
+			printf("info from flash. ");
+			printf("Please specify the missing info (using command line flags -guid(s) , -use_image_ps). ");
+
+			if (burn_failsafe) {
+			    printf("Can't burn in a failsafe mode. Please use \"-nofs\" flag to burn in a none failsafe mode..\n");
+			}
                         rc =  1; goto done;
 		    }
                 }
@@ -4874,7 +4946,7 @@ int main(int ac, char *av[])
                                        fim.getBufLength(),
                                        single_image_burn,
                                        !silent)) {
-                        printf("*** ERROR *** %s\n", f->_err);
+                        printf("*** ERROR *** Failsafe burn failed: %s\n", f->_err);
                         printf("It is impossible to burn this image in a failsafe mode.\n");
                         printf("If you want to burn in non failsafe mode, use the \"-nofs\" switch.\n");
                         rc =  1; goto done; 
@@ -4897,7 +4969,7 @@ int main(int ac, char *av[])
                     if (!write_image(*f, 0, fim.getBuf(), fim.getBufLength(),
                                      !silent)) {
                         report("\n");
-                        printf("*** ERROR *** %s\n", f->_err);
+                        printf("*** ERROR *** Non failsafe burn failed: %s\n", f->_err);
                         rc =  1; goto done; 
                     }
                     report("\n");
@@ -4926,20 +4998,26 @@ int main(int ac, char *av[])
 
                 // Erase
                 if (!f->erase_sector(addr)) {
-                    printf("*** ERROR *** %s\n", f->_err);
+                    printf("*** ERROR *** Erase sector failed: %s\n", f->_err);
                     rc =  1; goto done; 
                 }
             } else if (*av[i] == 'q') {
                 // QUERY
-                if (device)
-                    RevisionInfo(*f, guids, 0, &fs_image);
-                else if (image_fname) {
+                if (device) {
+		    if (!RevisionInfo(*f, guids, 0, &fs_image)) {
+			printf("*** ERROR *** Flash query (through device %s) failed.\n", device);
+                        rc =  1; goto done;
+		    }
+		} else if (image_fname) {
                     FImage         fim;
                     if (!fim.open(image_fname)) {
-                        printf("*** ERROR *** %s\n", fim._err);
+                        printf("*** ERROR *** Image file open failed. %s\n", fim._err);
                         rc =  1; goto done; 
                     }
-                    RevisionInfo(fim, guids, 0, &fs_image);
+		    if (!RevisionInfo(fim, guids, 0, &fs_image)) {
+			printf("*** ERROR *** Query image file %s failed.\n", image_fname);
+                        rc =  1; goto done;
+		    }
                 } else {
                     printf("For query command \"-device\" or \"-image\" switch must be specified.\n");
                     rc =  1; goto done; 
@@ -4998,7 +5076,7 @@ int main(int ac, char *av[])
 
                 // Read flash
                 if (!f->read(addr, data, length)) {
-                    printf("*** ERROR *** %s\n", f->_err);
+                    printf("*** ERROR *** Flash read failed: %s\n", f->_err);
                     rc =  1; goto done; 
                 }
 
@@ -5041,7 +5119,7 @@ int main(int ac, char *av[])
 
                 // Read
                 if (!f->read(addr, &data)) {
-                    printf("*** ERROR *** %s\n", f->_err);
+                    printf("*** ERROR *** Flash read failed: %s\n", f->_err);
                     rc =  1; goto done; 
                 }
                 printf("0x%08x\n", (unsigned int)__cpu_to_be32(data));
@@ -5052,7 +5130,7 @@ int main(int ac, char *av[])
                 else if (image_fname) {
                     FImage         fim;
                     if (!fim.open(image_fname)) {
-                        printf("*** ERROR *** %s\n", fim._err);
+                        printf("*** ERROR *** Image file open failed: %s\n", fim._err);
                         rc =  1; goto done; 
                     }
                     Verify(fim);
@@ -5106,7 +5184,7 @@ int main(int ac, char *av[])
 
                 // Write flash
                 if (!write_image(*f, addr, data, length, !silent)) {
-                    printf("*** ERROR *** %s\n", f->_err);
+                    printf("*** ERROR *** Flash write failed: %s\n", f->_err);
                     rc =  1; goto done; 
                 }
 
@@ -5140,7 +5218,7 @@ int main(int ac, char *av[])
 
                 //f->curr_sector = 0xffffffff;  // First time erase sector
                 if (!f->write(addr, data)) {
-                    printf("*** ERROR *** %s\n", f->_err);
+                    printf("*** ERROR *** Flash write failed: %s\n", f->_err);
                     rc =  1; goto done; 
                 }
             } else if (!strcmp(av[i], "wbne")) {
@@ -5170,7 +5248,7 @@ int main(int ac, char *av[])
                 }
                 vector<u_int32_t> data_vec(size/4);
                 for (u_int32_t w = 0; w < size/4 ; w++) {
-                    NEXTC("<DATA>", "wwne");
+                    NEXTC("<DATA>", "wbne");
                     data_vec[w] = __cpu_to_be32(strtoul(av[i], &endp, 0));
                     if (*endp) {
                         printf("Invalid data \"%s\"\n", av[i]);
@@ -5181,7 +5259,7 @@ int main(int ac, char *av[])
                 }
 
                 if (!f->write(addr, &data_vec[0], size, true, false)) {
-                    printf("*** ERROR *** %s\n", f->_err);
+                    printf("*** ERROR *** Flash write failed: %s\n", f->_err);
                     rc =  1; goto done; 
                 }
             } else if (!strcmp(av[i], "wwne")) {
@@ -5211,7 +5289,7 @@ int main(int ac, char *av[])
                 }
 
                 if (!f->write(addr, &data, 4, true, false)) {
-                    printf("*** ERROR *** %s\n", f->_err);
+                    printf("*** ERROR *** Flash write failed: %s\n", f->_err);
                     rc =  1; goto done; 
                 }
             } else if (!strcmp(av[i], "cfi")) {
@@ -5225,7 +5303,7 @@ int main(int ac, char *av[])
                 }
 
                 if (!f->print_cfi_info()) {
-                    printf("*** ERROR *** %s\n", f->_err);
+                    printf("*** ERROR *** Cfi query failed: %s\n", f->_err);
                     rc =  1; goto done; 
                 }
             } else {
