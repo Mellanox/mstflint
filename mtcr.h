@@ -36,8 +36,6 @@
 #ifndef _MST_H
 #define _MST_H
 
-//Optimise byte swap operations
-#define CONFIG_OPTIMIZE 1
 //use memory mapped /dev/mem for access
 #define CONFIG_ENABLE_MMAP 1
 //use pci configuration cycles for access
@@ -47,16 +45,18 @@
 
 #include <stdio.h>
 
-#if CONFIG_OPTIMIZE
-#define __OPTIMIZE__ 1
+#if CONFIG_ENABLE_PCICONF && !defined (__USE_UNIX98)
+#define __USE_UNIX98
 #endif
+#include <unistd.h>
 
 #include <netinet/in.h>
 #include <endian.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <string.h>
-#include <unistd.h>
+#include <stdlib.h>
+
 
 #if CONFIG_ENABLE_MMAP
 #include <sys/mman.h>
@@ -73,7 +73,7 @@
 extern "C" {
 #endif
 
-/*  All fields in follow structure are not supposed to be used */
+/*  All fields in the following structure are not supposed to be used */
 /*  or modified by user programs. */
 typedef struct mfile_t {
     int           fd;

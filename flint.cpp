@@ -36,6 +36,8 @@
  *
  */
 
+#include "mtcr.h"
+
 #include <ctype.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -55,8 +57,6 @@
 #include <unistd.h>
 #define  O_BINARY 0
 #endif
-
-#include "mtcr.h"
 
 #ifndef DEV_MST_EXAMPLE1
 #define DEV_MST_EXAMPLE1 "/dev/mst/mt23108_pci_cr0"
