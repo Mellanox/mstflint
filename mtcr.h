@@ -141,6 +141,7 @@ mfind(const char* name, off_t* offset_p )
 
   unsigned long long offset;
 
+  unsigned my_domain = 0;
   unsigned my_bus;
   unsigned my_dev;
   unsigned my_func;
@@ -150,13 +151,25 @@ mfind(const char* name, off_t* offset_p )
 
   scnt=sscanf(name,"%x:%x.%x", & my_bus, & my_dev, & my_func);
 
-  if (scnt != 3)
-  {
-    fprintf(stderr,"Can not parse device %s\n", name);
+  if (scnt == 3) goto name_parsed;
+
+  scnt=sscanf(name,"%x:%x:%x.%x", & my_domain, & my_bus, & my_dev, & my_func);
+
+  if (scnt == 4) goto name_parsed;
+
+  fprintf(stderr,"Unable to parse device %s\n", name);
+  errno=EINVAL;
+  return 1;
+
+name_parsed:
+
+  if (domain) {
+    fprintf(stderr,"Device %s: domain number %#x detected.\n"
+		   "Only domain 0x0 supported for now, sorry.\n",
+		   name, my_domain);
     errno=EINVAL;
     return 1;
   }
-
   
   f = fopen("/proc/bus/pci/devices", "r");
   if (!f) return 1;
