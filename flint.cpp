@@ -32,7 +32,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- *  Version: $Id: flint.cpp,v 1.93 2005/03/15 12:15:40 mtsirkin Exp $
+ *  Version: $Id: flint.cpp,v 1.95 2005/03/17 14:15:14 mtsirkin Exp $
  *
  */
 
@@ -89,7 +89,7 @@ namespace std {}; using namespace std;
 
 char* _versionID = "VERSION_ID_HERE";
 
-char* _cvsID     = "$Revision: 1.93 $";
+char* _cvsID     = "$Revision: 1.95 $";
 
 #ifndef __be32_to_cpu
     #define __be32_to_cpu(x) ntohl(x)
@@ -606,7 +606,7 @@ public:
     //
 
     virtual u_int32_t 
-	get_sector_size        ()                           {return _cfi_data.erase_block[0].sector_size;}
+     get_sector_size        () { return _get_sector_size(); }
     
     virtual u_int32_t 
 	get_size               ()                           {return _cfi_data.device_size ? _cfi_data.device_size : (u_int32_t)MAX_FLASH;}
@@ -773,6 +773,33 @@ protected:
 
     u_int32_t    _curr_bank;
     u_int32_t    _log2_bank_size;
+
+    /* Work around for MX flashes reporting weird erase sector size. */
+    /* It reports two sector sizes, actually works as 1. */
+    bool _mx_flash_workaround() {
+	    return (_cfi_data.num_erase_blocks == 2 &&
+		_cfi_data.manuf_id == 0xff && _cfi_data.device_id == 0xff &&
+		_cfi_data.erase_block[0].sector_size == 0x2000 &&
+		_cfi_data.erase_block[0].sector_mask == 0xffffe000 &&
+		_cfi_data.erase_block[0].num_sectors == 8 &&
+		_cfi_data.erase_block[1].sector_size == 0x10000 &&
+		_cfi_data.erase_block[1].sector_mask == 0xffff0000 &&
+		_cfi_data.erase_block[1].num_sectors == 63);
+    }
+    u_int32_t
+    _get_sector_mask        ()
+    {
+	    return _mx_flash_workaround()?
+		    _cfi_data.erase_block[1].sector_mask :
+		    _cfi_data.erase_block[0].sector_mask;
+    }
+    u_int32_t
+    _get_sector_size        ()
+    {
+	    return _mx_flash_workaround()?
+		    _cfi_data.erase_block[1].sector_size :
+		    _cfi_data.erase_block[0].sector_size;
+    }
 };
 
 
@@ -1374,22 +1401,25 @@ bool Flash::write(u_int32_t addr, u_int32_t data)
         return false;
     }
 
-    u_int32_t word;
-
+    // Here, we use non-virtual variants for efficiency
     // TODO: Rewrite using get_sector_size() only
-    u_int32_t sector = addr & _cfi_data.erase_block[0].sector_mask;
-    u_int32_t word_in_sector = (addr & ~_cfi_data.erase_block[0].sector_mask)/sizeof(u_int32_t);
+    u_int32_t word;
+    u_int32_t sector_mask = _get_sector_mask();
+    u_int32_t sector_size = _get_sector_size();
+
+    u_int32_t sector = addr & sector_mask;
+    u_int32_t word_in_sector = (addr & ~sector_mask)/sizeof(u_int32_t);
 
     if (!read(addr, &word))
         return false;
     if (word == data)
         return true;   // already there
 
-	vector<u_int32_t> buff(get_sector_size()/sizeof(u_int32_t));
-    if (!read(sector, &buff[0] , get_sector_size()))
+    vector<u_int32_t> buff(sector_size/sizeof(u_int32_t));
+    if (!read(sector, &buff[0] , sector_size))
         return false;
     buff[word_in_sector] = data;
-    return write(sector, &buff[0], get_sector_size());
+    return write(sector, &buff[0], sector_size);
 } // Flash::write
 
 ////////////////////////////////////////////////////////////////////////
@@ -1643,7 +1673,7 @@ bool ParallelFlash::get_cmd_set() {
         return false;
     }
 
-    if (_cfi_data.num_erase_blocks > 1) {
+    if (!_mx_flash_workaround() && _cfi_data.num_erase_blocks > 1) {
         _err = "Device has more than one sector size - not supported by this tool";
         return false;
     }
@@ -4461,9 +4491,11 @@ void usage(const char *sname, bool full = false)
     "\n"
     "    -nofs              - Burn image not in failsafe manner.\n"
     "\n"
+#if 0
     "    -unlock            - Use unlock bypass feature of the flash for quicker burn.\n"
     "                         Commands affected: burn\n"
     "\n"
+#endif
     "    -s[ilent]          - Do not print burn progress flyer.\n"
     "                         Commands affected: burn\n"
     "\n"
