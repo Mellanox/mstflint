@@ -3032,11 +3032,11 @@ bool patchVSD(FImage& f, char *vsd1, char *psid)
     if (psid)
         strncpy(&vsd[VSD_OFFS], psid, VSD_LAST);
 
+    //VSD is kept in flash byte-swapped
     u_int32_t *qp = (u_int32_t *)&vsd[0];
     for (int i=0; i<VSD_LEN/4; i++)
     {
-        TOCPU1(*qp);
-        qp++;
+        qp[i] = bswap_32(qp[i]);
     }
 
     _patchVSD(f, f.get_sector_size(), vsd);      // Primary PS
@@ -3224,7 +3224,8 @@ bool RevisionInfo(FBase& f, guid_t guids_out[GUIDS], char *vsd_out,
            "Chip rev.:  %X\n",
            im_type, fw_id);
     report("GUIDs:      ");
-    for (u_int32_t i=0; i<nguids/2; i++)
+    u_int32_t i;
+    for (i=0; i<nguids/2; i++)
             report(GUID_FORMAT " ", guids[i].h,guids[i].l);
     if (*fs_image)
     {
@@ -3232,7 +3233,11 @@ bool RevisionInfo(FBase& f, guid_t guids_out[GUIDS], char *vsd_out,
 
         memset(vsd, 0, VSD_LEN+1);
         READBUF(f, ps_start + 0x20, vsd, VSD_LEN, "Vendor Specific Data (Board ID)");
-        TOCPUBY(vsd);
+	//vsd is kept byte-swapped
+	u_int32_t *p = (u_int32_t *)(vsd);
+	for (i=0; i<sizeof(vsd)/sizeof(u_int32_t); i++) {
+		p[i] = bswap_32(p[i]);
+	}
 
 	#if (0)
 	// Show '\0' in VSD and PSID strings:
