@@ -564,12 +564,12 @@ private:
 				    void*     data, 
 				    int       cnt,
 				    bool      noerase  = false, 
-				    bool      noverify = false)  = NULL;
+				    bool      noverify = false)  = 0;
 
-	//virtual bool unlock_bypass (bool      unlock)            = NULL;
-	virtual bool erase_sector  (u_int32_t addr)              = NULL;
+	//virtual bool unlock_bypass (bool      unlock)            = 0;
+	virtual bool erase_sector  (u_int32_t addr)              = 0;
 
-	virtual bool reset          ()                           = NULL;
+	virtual bool reset          ()                           = 0;
 
     protected:
 
@@ -859,7 +859,7 @@ u_int32_t FImage::get_sector_size()
 
 
 ////////////////////////////////////////////////////////////////////////
-Flash::Flash() : curr_sector(0xffffffff), _mf(0), _curr_bank(0xffffffff), _cmd_set(NULL)
+Flash::Flash() : curr_sector(0xffffffff), _mf(0), _curr_bank(0xffffffff), _cmd_set(0)
 {
     char *use_scr_p = getenv("FLINT_USE_SCRATCHPAD");
 

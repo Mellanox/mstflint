@@ -31,7 +31,7 @@ mstflint: A BURNING FIRMWARE APPLICATION
     b) Compilation should end with no error messages.
         For example:
 	>make
-	g++ -g -I. -O2 -fno-exceptions flint.cpp -o mstflint
+	g++ -g -I. -Wall -O2 -fno-exceptions flint.cpp -o mstflint
 
     c) An executable mstflint will be generated in the current directory
        This is the mstflint utility that can be used to burn and examine

@@ -142,10 +142,12 @@ mfind(const char* name, off_t* offset_p )
       unsigned dfn, vend;
 
       cnt = sscanf(buf,
-#ifdef HAVE_LONG_ADDRESS
+#ifdef HAVE_LONG_LONG_ADDRESS
 	     "%x %x %x %llx %llx %llx %llx %llx %llx %llx %llx %llx %llx %llx %llx %llx %llx",
-#else
+#elsif HAVA_LONG_ADDRESS
 	     "%x %x %x %lx %lx %lx %lx %lx %lx %lx %lx %lx %lx %lx %lx %lx %lx",
+#else
+	     "%x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x",
 #endif
 	     &dfn,
 	     &vend,
@@ -166,7 +168,9 @@ mfind(const char* name, off_t* offset_p )
 	     &rom_size);
       if (cnt != 9 && cnt != 10 && cnt != 17)
       {
-        fprintf(stderr,"proc: parse error (read only %d items)", cnt);
+        fprintf(stderr,"proc: parse error (read only %d items)\n", cnt);
+        fprintf(stderr,"the offending line in " "/proc/bus/pci/devices" " is "
+			"\"%.*s\"\n", sizeof(buf), buf);
         goto error;
       }
       bus = dfn >> 8U;
@@ -185,7 +189,9 @@ mfind(const char* name, off_t* offset_p )
 
   if (cnt != 17 || size[1] != 0 || size[0] != 0x100000)
   {
-        fprintf(stderr,"proc: unexpected size values\n");
+        fprintf(stderr,"proc: unexpected region size values.\n");
+        fprintf(stderr,"the offending line in " "/proc/bus/pci/devices" " is "
+			"\"%.*s\"\n", sizeof(buf), buf);
         goto error;
   }
 
