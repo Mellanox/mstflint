@@ -45,11 +45,16 @@
 #define CONFIG_HAVE_LONG_LONG_ADDRESS 1
 
 
+#if CONFIG_ENABLE_PCICONF
+#define _XOPEN_SOURCE 500
+#endif
+
+#if CONFIG_ENABLE_MMAP
+#define _FILE_OFFSET_BITS 64
+#endif
+
 #include <stdio.h>
 
-#if CONFIG_ENABLE_PCICONF && !defined (__USE_UNIX98)
-#define __USE_UNIX98
-#endif
 #include <unistd.h>
 
 #include <netinet/in.h>

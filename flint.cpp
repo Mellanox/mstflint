@@ -49,6 +49,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <assert.h>
+#include <alloca.h>
 
 #ifdef __WIN__
 #include <io.h>
