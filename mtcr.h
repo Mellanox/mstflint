@@ -52,6 +52,7 @@
 
 #include <netinet/in.h>
 #include <endian.h>
+#include <byteswap.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <string.h>
@@ -68,6 +69,30 @@
 #ifndef __cpu_to_be32
 #define __cpu_to_be32(x) htonl(x)
 #endif
+
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+#ifndef __cpu_to_le32
+#define  __cpu_to_le32(x) (x)
+#endif
+#ifndef __le32_to_cpu
+#define  __le32_to_cpu(x) (x)
+#endif
+#elif __BYTE_ORDER == __BIG_ENDIAN
+#ifndef __cpu_to_le32
+#define  __cpu_to_le32(x) bswap_32(x)
+#endif
+#ifndef __le32_to_cpu
+#define  __le32_to_cpu(x) bswap_32(x)
+#endif
+#else
+#ifndef __cpu_to_le32
+#define  __cpu_to_le32(x) bswap_32(__cpu_to_be32(x))
+#endif
+#ifndef __le32_to_cpu
+#define  __le32_to_cpu(x) __be32_to_cpu(bswap_32(x))
+#endif
+#endif
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -170,7 +195,7 @@ mfind(const char* name, off_t* offset_p )
       {
         fprintf(stderr,"proc: parse error (read only %d items)\n", cnt);
         fprintf(stderr,"the offending line in " "/proc/bus/pci/devices" " is "
-			"\"%.*s\"\n", sizeof(buf), buf);
+			"\"%.*s\"\n", (int)sizeof(buf), buf);
         goto error;
       }
       bus = dfn >> 8U;
@@ -193,7 +218,7 @@ mfind(const char* name, off_t* offset_p )
 			"cnt=%d, size[0]=%#x, size[1]=%#x\n",
 			cnt,size[0],size[1]);
         fprintf(stderr,"the offending line in " "/proc/bus/pci/devices" " is "
-			"\"%.*s\"\n", sizeof(buf), buf);
+			"\"%.*s\"\n", (int)sizeof(buf), buf);
         goto error;
   }
 
@@ -250,7 +275,7 @@ mfile *mopen(const char *name)
     mf->ptr = mmap(NULL, 0x100000, PROT_READ | PROT_WRITE,
         MAP_SHARED, mf->fd, offset);
 
-    if (mf->ptr == MAP_FAILED) goto map_failed;
+    if ( (! mf->ptr) || (mf->ptr == MAP_FAILED) ) goto map_failed;
 #else
     goto open_failed;
 #endif
@@ -300,6 +325,7 @@ int mread4(mfile *mf, unsigned int offset, u_int32_t *value)
 #if CONFIG_ENABLE_PCICONF
   {
     int rc;
+    offset=__cpu_to_le32(offset);
     rc=pwrite(mf->fd, &offset, 4, 22*4);
     if (rc < 0)
     {
@@ -313,6 +339,7 @@ int mread4(mfile *mf, unsigned int offset, u_int32_t *value)
       perror("read value");
       return rc;
     }
+    *value=__le32_to_cpu(*value);
     return rc;
   }
 #else
@@ -335,6 +362,7 @@ int mwrite4(mfile *mf, unsigned int offset, u_int32_t value)
 #if CONFIG_ENABLE_PCICONF
   {
     int rc;
+    offset=__cpu_to_le32(offset);
     rc=pwrite(mf->fd, &offset, 4, 22*4);
     if (rc < 0)
     {
@@ -342,6 +370,7 @@ int mwrite4(mfile *mf, unsigned int offset, u_int32_t value)
       return rc;
     }
     if (rc!=4) return 0;
+    value=__cpu_to_le32(value);
     rc=pwrite(mf->fd, &value, 4, 23*4);
     if (rc < 0)
     {
