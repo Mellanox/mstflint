@@ -39,6 +39,7 @@
 //use memory mapped /dev/mem for access
 #define CONFIG_ENABLE_MMAP 1
 //use pread/pwrite on /dev/mem for access
+//typically does not work for PIO access
 #define CONFIG_ENABLE_READWRITE 0
 //use pci configuration cycles for access
 #define CONFIG_ENABLE_PCICONF 1
@@ -363,7 +364,7 @@ int mread4(mfile *mf, unsigned int offset, u_int32_t *value)
   }
 #endif
 #if CONFIG_ENABLE_READWRITE
-  if (mf->ptr)
+  if (mf->offset != -1)
   {
 	  u_int32_t v;
 	  size_t cnt;
@@ -410,7 +411,7 @@ int mwrite4(mfile *mf, unsigned int offset, u_int32_t value)
   }
 #endif
 #if CONFIG_ENABLE_READWRITE
-  if (mf->ptr)
+  if (mf->offset != -1)
   {
 	  u_int32_t v;
 	  size_t cnt;
