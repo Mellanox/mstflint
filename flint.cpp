@@ -82,32 +82,6 @@ namespace std {}; using namespace std;
 char* _versionID = "VERSION_ID_HERE";
 char* _cvsID     = "$Revision: 1.60 $";
 
-
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-#ifndef __cpu_to_le16
-#define  __cpu_to_le16(x) (x)
-#endif
-#ifndef __le16_to_cpu
-#define  __le16_to_cpu(x) (x)
-#endif
-#elif __BYTE_ORDER == __BIG_ENDIAN
-#ifndef __cpu_to_le16
-#define  __cpu_to_le16(x) bswap_16(x)
-#endif
-#ifndef __le16_to_cpu
-#define  __le16_to_cpu(x) bswap_16(x)
-#endif
-#else
-#ifndef __cpu_to_le16
-#define  __cpu_to_le16(x) bswap_16(__cpu_to_be16(x))
-#endif
-#ifndef __le16_to_cpu
-#define  __le16_to_cpu(x) __be16_to_cpu(bswap_16(x))
-#endif
-#endif
-
-
-
 ////////////////////////////////////////////////////////////////////////
 //                                                                    //
 // ****************************************************************** //
