@@ -51,11 +51,12 @@
 #include <assert.h>
 #include <alloca.h>
 
-#ifdef __WIN__
-#include <io.h>
-#include <windows.h>
-#else
+#include <netinet/in.h>
+#include <endian.h>
+#include <byteswap.h>
+
 #include <unistd.h>
+#ifndef O_BINARY
 #define  O_BINARY 0
 #endif
 
@@ -82,129 +83,29 @@ char* _versionID = "VERSION_ID_HERE";
 char* _cvsID     = "$Revision: 1.60 $";
 
 
-//
-// Only for architectures which can't do swab by themselves
-//
-#define ___my_swab16(x) \
-((u_int16_t)( \
-        (((u_int16_t)(x) & (u_int16_t)0x00ffU) << 8) | \
-        (((u_int16_t)(x) & (u_int16_t)0xff00U) >> 8) ))
-#define ___my_swab32(x) \
-((u_int32_t)( \
-        (((u_int32_t)(x) & (u_int32_t)0x000000ffUL) << 24) | \
-        (((u_int32_t)(x) & (u_int32_t)0x0000ff00UL) <<  8) | \
-        (((u_int32_t)(x) & (u_int32_t)0x00ff0000UL) >>  8) | \
-        (((u_int32_t)(x) & (u_int32_t)0xff000000UL) >> 24) ))
-#define ___my_swab64(x) \
-((u_int64_t)( \
-        (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x00000000000000ffULL) << 56) | \
-        (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x000000000000ff00ULL) << 40) | \
-        (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x0000000000ff0000ULL) << 24) | \
-        (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x00000000ff000000ULL) <<  8) | \
-        (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x000000ff00000000ULL) >>  8) | \
-        (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x0000ff0000000000ULL) >> 24) | \
-        (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x00ff000000000000ULL) >> 40) | \
-        (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0xff00000000000000ULL) >> 56) ))
-
-
-//
-// MAC compatibility stuff
-//
-#if defined(__APPLE_CC__)
-
-#include <architecture/byte_order.h>
-
-#define __swab64(x)      NXSwapLongLong(x)
-#define __swab32(x)      NXSwapLong(x)
-#define __swab16(x)      NXSwapShort(x)
-#define __be64_to_cpu(x) NXSwapBigLongLongToHost(x)
-#define __be32_to_cpu(x) NXSwapBigLongToHost(x)
-#define __be16_to_cpu(x) NXSwapBigShortToHost(x)
-#define __le64_to_cpu(x) NXSwapLittleLongLongToHost(x)
-#define __le32_to_cpu(x) NXSwapLittleLongToHost(x)
-#define __le16_to_cpu(x) NXSwapLittleShortToHost(x)
-#define __cpu_to_be64(x) NXSwapHostLongLongToBig(x)
-#define __cpu_to_be32(x) NXSwapHostLongToBig(x)
-#define __cpu_to_be16(x) NXSwapHostShortToBig(x)
-#define __cpu_to_le64(x) NXSwapHostLongLongToLittle(x)
-#define __cpu_to_le32(x) NXSwapHostLongToLittle(x)
-#define __cpu_to_le16(x) NXSwapHostShortToLittle(x)
-
-#define __LITTLE_ENDIAN 1234
-#define __BIG_ENDIAN    4321
-#define __PDP_ENDIAN    3412
-#define __BYTE_ORDER    __BIG_ENDIAN
-
-//
-// Windows
-//
-#elif defined(__WIN__)
-
-#define __swab64(x)  ((u_int64_t)( \
-    (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x00000000000000ffUL) << 56) | \
-    (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x000000000000ff00UL) << 40) | \
-    (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x0000000000ff0000UL) << 24) | \
-    (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x00000000ff000000UL) <<  8) | \
-    (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x000000ff00000000UL) >>  8) | \
-    (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x0000ff0000000000UL) >> 24) | \
-    (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x00ff000000000000UL) >> 40) | \
-    (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0xff00000000000000UL) >> 56) ))
-#define __swab32(x)  ((u_int32_t)( \
-    (((u_int32_t)(x) & (u_int32_t)0x000000ffUL) << 24) | \
-    (((u_int32_t)(x) & (u_int32_t)0x0000ff00UL) <<  8) | \
-    (((u_int32_t)(x) & (u_int32_t)0x00ff0000UL) >>  8) | \
-    (((u_int32_t)(x) & (u_int32_t)0xff000000UL) >> 24) ))
-#define __swab16(x) ((u_int16_t)( \
-    (((u_int16_t)(x) & (u_int16_t)0x00ffU) << 8) | \
-    (((u_int16_t)(x) & (u_int16_t)0xff00U) >> 8) ))
-
-
-#define __be64_to_cpu(x) __swab64(x)
-#define __be32_to_cpu(x) __swab32(x)
-#define __be16_to_cpu(x) __swab16(x)
-#define __le64_to_cpu(x) (x)
-#define __le32_to_cpu(x) (x)
-#define __le16_to_cpu(x) (x)
-#define __cpu_to_be64(x) __swab64(x)
-#define __cpu_to_be32(x) __swab32(x)
-#define __cpu_to_be16(x) __swab16(x)
-#define __cpu_to_le64(x) (x)
-#define __cpu_to_le32(x) (x)
-#define __cpu_to_le16(x) (x)
-
-#define __LITTLE_ENDIAN 1234
-#define __BIG_ENDIAN    4321
-#define __PDP_ENDIAN    3412
-#define __BYTE_ORDER    __LITTLE_ENDIAN
-
-_inline void usleep( unsigned long x) { Sleep((x + 999) / 1000); }
-
-//
-// Unix
-//
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+#ifndef __cpu_to_le16
+#define  __cpu_to_le16(x) (x)
+#endif
+#ifndef __le16_to_cpu
+#define  __le16_to_cpu(x) (x)
+#endif
+#elif __BYTE_ORDER == __BIG_ENDIAN
+#ifndef __cpu_to_le16
+#define  __cpu_to_le16(x) bswap_16(x)
+#endif
+#ifndef __le16_to_cpu
+#define  __le16_to_cpu(x) bswap_16(x)
+#endif
 #else
-
-#include <endian.h>
-
-#define __be64_to_cpu(x) ___my_swab64(x)
-
-#ifndef __be32_to_cpu
-#define __be32_to_cpu(x) ___my_swab32(x)
+#ifndef __cpu_to_le16
+#define  __cpu_to_le16(x) bswap_16(__cpu_to_be16(x))
 #endif
-#define __be16_to_cpu(x) ___my_swab16(x)
-#define __cpu_to_be64(x) ___my_swab64(x)
-#ifndef __cpu_to_be32
-#define __cpu_to_be32(x) ___my_swab32(x)
+#ifndef __le16_to_cpu
+#define  __le16_to_cpu(x) __be16_to_cpu(bswap_16(x))
 #endif
-#define __cpu_to_be16(x) ___my_swab16(x)
-#define __le64_to_cpu(x) (x)
-#define __le32_to_cpu(x) (x)
-#define __le16_to_cpu(x) (x)
-#define __cpu_to_le64(x) (x)
-#define __cpu_to_le32(x) (x)
-#define __cpu_to_le16(x) (x)
+#endif
 
-#endif
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -214,11 +115,22 @@ _inline void usleep( unsigned long x) { Sleep((x + 999) / 1000); }
 // ****************************************************************** //
 //                                                                    //
 ////////////////////////////////////////////////////////////////////////
-#if defined(__ia64__) || defined(__x86_64)
-#define GUID_FORMAT "%016lx"
-#else
-#define GUID_FORMAT "%016llx"
-#endif
+typedef struct guid {
+	u_int32_t h;
+	u_int32_t l;
+} guid_t;
+
+static inline void be_guid_to_cpu(guid_t* to, guid_t* from) {
+	to->h=__be32_to_cpu(from->h);
+	to->l=__be32_to_cpu(from->l);
+}
+
+static inline void cpu_to_be_guid(guid_t* to, guid_t* from) {
+	to->h=__cpu_to_be32(from->h);
+	to->l=__cpu_to_be32(from->l);
+}
+
+#define GUID_FORMAT "%8.8x%8.8x"
 #define TOCPU1(s) s = __be32_to_cpu(s)
 #define TOCPU(s) do {                                              \
     u_int32_t *p = (u_int32_t *)(s);                               \
@@ -236,24 +148,9 @@ _inline void usleep( unsigned long x) { Sleep((x + 999) / 1000); }
         *p = __be32_to_cpu(*p);                                    \
     } while(0)
 #define TOCPUBY64(s) do {                                          \
-    u_int64_t *p = (u_int64_t *)(&s);                              \
-    for (u_int64_t ii=0; ii<sizeof(s)/sizeof(u_int64_t); ii++,p++) \
-        *p = __be64_to_cpu(*p);                                    \
-    } while(0)
-#define SWAP32(s) do {                                             \
-    u_int32_t *p = (u_int32_t *)(s);                               \
-    for (u_int32_t ii=0; ii<sizeof(s)/sizeof(u_int32_t); ii++,p++) \
-        *p = __swab32(*p);                                         \
-    } while(0)
-#define SWAPBY32(s) do {                                           \
-    u_int32_t *p = (u_int32_t *)(&s);                              \
-    for (u_int32_t ii=0; ii<sizeof(s)/sizeof(u_int32_t); ii++,p++) \
-        *p = __swab32(*p);                                         \
-    } while(0)
-#define SWAPBY64(s) do {                                           \
-    u_int64_t *p = (u_int64_t *)(&s);                              \
-    for (u_int64_t ii=0; ii<sizeof(s)/sizeof(u_int64_t); ii++,p++) \
-        *p = __swab64(*p);                                         \
+    guid_t *p = s;                              \
+    for (unsigned ii=0; ii<sizeof(s)/sizeof(guid_t); ii++,p++) \
+        be_guid_to_cpu(p,p);                                   \
     } while(0)
 #define CRC(c, s) do {                                             \
     u_int32_t *p = (u_int32_t *)(s);                               \
@@ -2888,7 +2785,7 @@ u_int32_t BSN_subfield(const char *s, int beg, int len)
     buf[len] = '\0';
     return strtoul(&buf[0], 0, 10);
 }
-bool getBSN(char *s, u_int64_t *guid)
+bool getBSN(char *s, guid_t *guid)
 {
     const u_int64_t COMPANY_ID = 0x0002c9;
     const u_int64_t  TYPE      = 1;
@@ -2983,11 +2880,13 @@ bool getBSN(char *s, u_int64_t *guid)
     }
     u_int64_t id = ((((yy*12+mm-1)*31+ dd-1) * 1000) + num-1) * 112;
     id += (cc-1)*8;
-    *guid = (COMPANY_ID << 40) | (TYPE << 32) | id;
+    u_int64_t g = (COMPANY_ID << 40) | (TYPE << 32) | id;
+    guid->h = (u_int32_t)(g>>32);
+    guid->l = (u_int32_t)g;
     return true;
 }
 
-bool getGUID(const char *s, u_int64_t *guid)
+bool getGUID(const char *s, guid_t *guid)
 {
     char          str[17], *endp;
     int           i,j, str_beg;
@@ -3015,7 +2914,8 @@ bool getGUID(const char *s, u_int64_t *guid)
         printf("Invalid GUID syntax (high) (%s)\n", str);
         return false;
     }
-    *guid = ((u_int64_t)h << 32) | l;
+    guid->h = h;
+    guid->l = l;
     return true;
 } // getGUID
 
@@ -3064,7 +2964,7 @@ bool extractGUIDptr(u_int32_t sign, u_int32_t *buf, int buf_len,
 
 ////////////////////////////////////////////////////////////////////////
 void pathGUIDsSection(u_int32_t *buf, u_int32_t ind,
-                      u_int64_t guids[GUIDS], int nguids)
+                      guid_t guids[GUIDS], int nguids)
 {
     u_int32_t       i, word;
     u_int32_t       new_buf[GUIDS*2];
@@ -3073,8 +2973,8 @@ void pathGUIDsSection(u_int32_t *buf, u_int32_t ind,
     // Form new GUID section
     for (i=0; i<(u_int32_t)nguids; i++)
     {
-        new_buf[i*2] = (u_int32_t) (guids[i] >> 32);
-        new_buf[i*2+1] = (u_int32_t) (guids[i] & 0xffffffff);
+        new_buf[i*2] = guids[i].h;
+        new_buf[i*2+1] = guids[i].l;
     }
 
     // Calculate new CRC16
@@ -3148,10 +3048,10 @@ bool patchVSD(FImage& f, char *vsd1, char *psid)
 
 
 ////////////////////////////////////////////////////////////////////////
-bool pathGUIDs(FImage& f, u_int64_t guids[GUIDS],
+bool pathGUIDs(FImage& f, guid_t guids[GUIDS],
                bool interactive)
 {
-    u_int64_t       old_guids[GUIDS];
+    guid_t       old_guids[GUIDS];
     u_int32_t       *buf = f.getBuf();
     int             buf_len = f.getBufLength();
     u_int32_t       signature = buf[0x24/4];
@@ -3189,23 +3089,24 @@ bool pathGUIDs(FImage& f, u_int64_t guids[GUIDS],
             TOCPU1(h);
             u_int32_t l = buf[ind1/4 + i*2 + 1];
             TOCPU1(l);
-            old_guids[i] = ((u_int64_t)h << 32) | l;
+            old_guids[i].h = h;
+            old_guids[i].l = l;
         }
         if (old_guids_fmt)
             printf("    Old image!!!! Only %d GUIDs may be set.\n", nguid1);
 
         printf("    Old GUIDs (inside image) are:\n");
-        printf("        Node:      " GUID_FORMAT "\n", old_guids[0]);
-        printf("        Port1:     " GUID_FORMAT "\n", old_guids[1]);
-        printf("        Port2:     " GUID_FORMAT "\n", old_guids[2]);
+        printf("        Node:      " GUID_FORMAT "\n", old_guids[0].h,old_guids[0].l);
+        printf("        Port1:     " GUID_FORMAT "\n", old_guids[1].h,old_guids[1].l);
+        printf("        Port2:     " GUID_FORMAT "\n", old_guids[2].h,old_guids[2].l);
         if (!old_guids_fmt)
-            printf("        Sys.Image: " GUID_FORMAT "\n", old_guids[3]);
+            printf("        Sys.Image: " GUID_FORMAT "\n", old_guids[3].h,old_guids[3].l);
         printf("\n    You are about to change them to follow GUIDs:\n");
-        printf("        Node:      " GUID_FORMAT "\n", guids[0]);
-        printf("        Port1:     " GUID_FORMAT "\n", guids[1]);
-        printf("        Port2:     " GUID_FORMAT "\n", guids[2]);
+        printf("        Node:      " GUID_FORMAT "\n", guids[0].h,guids[0].l);
+        printf("        Port1:     " GUID_FORMAT "\n", guids[1].h,guids[1].l);
+        printf("        Port2:     " GUID_FORMAT "\n", guids[2].h,guids[2].l);
         if (!old_guids_fmt)
-            printf("        Sys.Image: " GUID_FORMAT "\n", guids[3]);
+            printf("        Sys.Image: " GUID_FORMAT "\n", guids[3].h,guids[3].l);
 
         printf("\n    Is it OK ? (y/n) [n] : ");
         if (_assume_yes)
@@ -3230,11 +3131,11 @@ bool pathGUIDs(FImage& f, u_int64_t guids[GUIDS],
     {
         bool old_guids_fmt = nguid1 < GUIDS;
         printf("\n    Burn image with follow GUIDs:\n");
-        printf("        Node:      " GUID_FORMAT "\n", guids[0]);
-        printf("        Port1:     " GUID_FORMAT "\n", guids[1]);
-        printf("        Port2:     " GUID_FORMAT "\n", guids[2]);
+        printf("        Node:      " GUID_FORMAT "\n", guids[0].h,guids[0].l);
+        printf("        Port1:     " GUID_FORMAT "\n", guids[1].h,guids[1].l);
+        printf("        Port2:     " GUID_FORMAT "\n", guids[2].h,guids[2].l);
         if (!old_guids_fmt)
-            printf("        Sys.Image: " GUID_FORMAT "\n", guids[3]);
+            printf("        Sys.Image: " GUID_FORMAT "\n", guids[3].h,guids[3].l);
     }
     return true;
 } // pathGUIDs
@@ -3247,7 +3148,7 @@ bool pathGUIDs(FImage& f, u_int64_t guids[GUIDS],
 // ****************************************************************** //
 //                                                                    //
 ////////////////////////////////////////////////////////////////////////
-bool RevisionInfo(FBase& f, u_int64_t guids_out[GUIDS], char *vsd_out,
+bool RevisionInfo(FBase& f, guid_t guids_out[GUIDS], char *vsd_out,
                   bool *fs_image, bool internal_call = false)
 {
     char      *im_type;
@@ -3300,7 +3201,7 @@ bool RevisionInfo(FBase& f, u_int64_t guids_out[GUIDS], char *vsd_out,
     // Read GUIDs
     FImage    *fim = dynamic_cast<FImage*>(&f);
     u_int32_t guid_ptr, nguids;
-    u_int64_t guids[GUIDS];
+    guid_t guids[GUIDS];
 
     READ4(f, im_start + 0x24, &guid_ptr, "GUID PTR");
     TOCPU1(guid_ptr);
@@ -3317,7 +3218,7 @@ bool RevisionInfo(FBase& f, u_int64_t guids_out[GUIDS], char *vsd_out,
         report("Insane Number of GUIDs (%d)\n", nguids);
         return false;
     }
-    READBUF(f, guid_ptr, guids, nguids / 2 * sizeof(u_int64_t), "GUIDS");
+    READBUF(f, guid_ptr, guids, nguids / 2 * sizeof(guid_t), "GUIDS");
     TOCPUBY64(guids);
     memcpy(&guids_out[0], &guids[0], sizeof(guids));
 
@@ -3326,7 +3227,7 @@ bool RevisionInfo(FBase& f, u_int64_t guids_out[GUIDS], char *vsd_out,
            im_type, fw_id);
     report("GUIDs:      ");
     for (u_int32_t i=0; i<nguids/2; i++)
-            report(GUID_FORMAT " ", guids[i]);
+            report(GUID_FORMAT " ", guids[i].h,guids[i].l);
     if (*fs_image)
     {
         char       vsd[VSD_LEN+1];   // +1  => Leave a space for \0 when psid size == 16 .
@@ -3564,7 +3465,7 @@ int main(int ac, char *av[])
     bool         use_image_ps     = false;
     char         *vsd1=0;
     char         *psid=0;
-    u_int64_t    guids[GUIDS];
+    guid_t    guids[GUIDS];
     char         vsds[VSD_LEN];
     Flash        f;
 
@@ -3649,8 +3550,13 @@ int main(int ac, char *av[])
             {
                 NEXTS("-bsn");
                 GETBSN(av[i], &guids[0]);
-                for (int i=1; i<GUIDS; i++)
-                    guids[i] = guids[0] + i;
+                for (int i=1; i<GUIDS; i++) {
+                    u_int64_t g=guids[0].h;
+                    g=(g<<32) | guids[0].l;
+                    ++g;
+                    guids[i].h = (u_int32_t)(g>>32);
+                    guids[i].l = (u_int32_t)g;
+		}
                 guids_specified = true;
             }
             else if (!strncmp(av[i], "-i", 2))
@@ -3662,8 +3568,13 @@ int main(int ac, char *av[])
             {
                 NEXTS("-guid");
                 GETGUID(av[i], &guids[0]);
-                for (int i=1; i<GUIDS; i++)
-                    guids[i] = guids[0] + i;
+                for (int i=1; i<GUIDS; i++) {
+                    u_int64_t g=guids[0].h;
+                    g=(g<<32) | guids[0].l;
+                    ++g;
+                    guids[i].h = (u_int32_t)(g>>32);
+                    guids[i].l = (u_int32_t)g;
+		}
                 guids_specified = true;
             }
             else if (!strcmp(av[i], "-guids"))
