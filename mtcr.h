@@ -38,6 +38,8 @@
 
 //use memory mapped /dev/mem for access
 #define CONFIG_ENABLE_MMAP 1
+//use pread/pwrite on /dev/mem for access
+#define CONFIG_ENABLE_READWRITE 0
 //use pci configuration cycles for access
 #define CONFIG_ENABLE_PCICONF 1
 
@@ -45,11 +47,11 @@
 #define CONFIG_HAVE_LONG_LONG_ADDRESS 1
 
 
-#if CONFIG_ENABLE_PCICONF
+#if (CONFIG_ENABLE_PCICONF || CONFIG_ENABLE_READWRITE)
 #define _XOPEN_SOURCE 500
 #endif
 
-#if CONFIG_ENABLE_MMAP
+#if (CONFIG_ENABLE_MMAP || CONFIG_ENABLE_READWRITE)
 #define _FILE_OFFSET_BITS 64
 #endif
 
@@ -109,13 +111,12 @@ extern "C" {
 /*  or modified by user programs. */
 typedef struct mfile_t {
     int           fd;
-#if CONFIG_ENABLE_MMAP
     void          *ptr;
-#endif
+    off_t	  offset;
 } mfile;
 
 
-#if CONFIG_ENABLE_MMAP
+#if (CONFIG_ENABLE_MMAP || CONFIG_ENABLE_READWRITE)
 /*
  * The PCI interface treats multi-function devices as independent
  * devices.  The slot/function address of each device is encoded
@@ -290,27 +291,36 @@ mfile *mopen(const char *name)
     if (mf->fd<0) goto open_failed;
 
     mf->ptr=NULL;
+    mf->offset=-1;
 #else
     goto open_failed;
 #endif
   }
   else
   {
-#if (CONFIG_ENABLE_MMAP)
+#if (CONFIG_ENABLE_MMAP || CONFIG_ENABLE_READWRITE)
     mf->fd = open("/dev/mem", O_RDWR | O_SYNC);
     if (mf->fd<0) goto open_failed;
 
-    if (mfind(name,&offset)) goto map_failed;
+    if (mfind(name,&offset)) goto find_failed;
+    mf->offset = offset;
 
+#if (CONFIG_ENABLE_MMAP)
     mf->ptr = mmap(NULL, 0x100000, PROT_READ | PROT_WRITE,
         MAP_SHARED, mf->fd, offset);
 
     if ( (! mf->ptr) || (mf->ptr == MAP_FAILED) ) goto map_failed;
+#endif
+
 #else
     goto open_failed;
 #endif
   }
   return mf;
+
+#if (CONFIG_ENABLE_MMAP || CONFIG_ENABLE_READWRITE)
+find_failed:
+#endif
 
 #if (CONFIG_ENABLE_MMAP)
 map_failed:
@@ -352,6 +362,16 @@ int mread4(mfile *mf, unsigned int offset, u_int32_t *value)
             return 4;
   }
 #endif
+#if CONFIG_ENABLE_READWRITE
+  if (mf->ptr)
+  {
+	  u_int32_t v;
+	  size_t cnt;
+	  cnt = pread(mf->fd, &v, 4, mf->offset + offset);
+	  *value = __be32_to_cpu(v);
+          return cnt;
+  }
+#endif
 #if CONFIG_ENABLE_PCICONF
   {
     int rc;
@@ -387,6 +407,16 @@ int mwrite4(mfile *mf, unsigned int offset, u_int32_t value)
   {
             *((u_int32_t *)((char *)mf->ptr + offset)) = __cpu_to_be32(value);
             return 4;
+  }
+#endif
+#if CONFIG_ENABLE_READWRITE
+  if (mf->ptr)
+  {
+	  u_int32_t v;
+	  size_t cnt;
+	  v = __be32_to_cpu(value);
+	  cnt = pwrite(mf->fd, &v, 4, mf->offset + offset); 
+          return cnt;
   }
 #endif
 #if CONFIG_ENABLE_PCICONF
