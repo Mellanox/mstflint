@@ -163,7 +163,7 @@ mfind(const char* name, off_t* offset_p )
 
 name_parsed:
 
-  if (domain) {
+  if (my_domain) {
     fprintf(stderr,"Device %s: domain number %#x detected.\n"
 		   "Only domain 0x0 supported for now, sorry.\n",
 		   name, my_domain);
