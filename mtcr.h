@@ -189,7 +189,9 @@ mfind(const char* name, off_t* offset_p )
 
   if (cnt != 17 || size[1] != 0 || size[0] != 0x100000)
   {
-        fprintf(stderr,"proc: unexpected region size values.\n");
+        fprintf(stderr,"proc: unexpected region size values: "
+			"cnt=%d, size[0]=%#x, size[1]=%#x\n",
+			cnt,size[0],size[1]);
         fprintf(stderr,"the offending line in " "/proc/bus/pci/devices" " is "
 			"\"%.*s\"\n", sizeof(buf), buf);
         goto error;
