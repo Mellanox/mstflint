@@ -41,6 +41,8 @@
 //use pci configuration cycles for access
 #define CONFIG_ENABLE_PCICONF 1
 
+//#define CONFIG_HAVE_LONG_ADDRESS 1
+#define CONFIG_HAVE_LONG_LONG_ADDRESS 1
 
 
 #include <stdio.h>
@@ -127,10 +129,14 @@ mfind(const char* name, off_t* offset_p )
 {
   FILE* f;
 	unsigned     irq;
-	unsigned     base_addr[6];
-	unsigned     rom_base_addr;
-	unsigned     size[6];
-	unsigned     rom_size;
+#if CONFIG_HAVE_LONG_LONG_ADDRESS
+	unsigned long long 
+#elif CONFIG_HAVE_LONG_ADDRESS
+	unsigned long
+#else
+	unsigned
+#endif
+	base_addr[6], rom_base_addr, size[6], rom_size;
 
   unsigned    bus ;
   unsigned   dev ;
@@ -180,9 +186,9 @@ name_parsed:
       unsigned dfn, vend;
 
       cnt = sscanf(buf,
-#ifdef HAVE_LONG_LONG_ADDRESS
+#if CONFIG_HAVE_LONG_LONG_ADDRESS
 	     "%x %x %x %llx %llx %llx %llx %llx %llx %llx %llx %llx %llx %llx %llx %llx %llx",
-#elsif HAVA_LONG_ADDRESS
+#elif CONFIG_HAVE_LONG_ADDRESS
 	     "%x %x %x %lx %lx %lx %lx %lx %lx %lx %lx %lx %lx %lx %lx %lx %lx",
 #else
 	     "%x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x",
@@ -228,7 +234,13 @@ name_parsed:
   if (cnt != 17 || size[1] != 0 || size[0] != 0x100000)
   {
         fprintf(stderr,"proc: unexpected region size values: "
+#if CONFIG_HAVE_LONG_LONG_ADDRESS
+			"cnt=%d, size[0]=%#llx, size[1]=%#llx\n",
+#elif CONFIG_HAVE_LONG_ADDRESS
+			"cnt=%d, size[0]=%#lx, size[1]=%#lx\n",
+#else
 			"cnt=%d, size[0]=%#x, size[1]=%#x\n",
+#endif
 			cnt,size[0],size[1]);
         fprintf(stderr,"the offending line in " "/proc/bus/pci/devices" " is "
 			"\"%.*s\"\n", (int)sizeof(buf), buf);
@@ -237,7 +249,7 @@ name_parsed:
 
 
   offset=((unsigned long long)(base_addr[1])<<32)+
-    (unsigned long long)(base_addr[0]&~0xfffff);
+    ((unsigned long long)(base_addr[0])&~(unsigned long long)(0xfffff));
 
   *offset_p=offset;
 
