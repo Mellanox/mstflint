@@ -1,8 +1,8 @@
 #default options
 OPTIMIZE=1
 DEBUG=1
-BITS64=1
-STRIP=1
+BITS64=0
+STRIP=0
 
 ifeq (${STATIC},1)
 MSTCFLAGS += -static
