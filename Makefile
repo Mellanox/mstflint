@@ -1,30 +1,9 @@
 #default options
-OPTIMIZE=1
-DEBUG=1
-BITS64=0
-STRIP=0
-
-ifeq (${STATIC},1)
-MSTCFLAGS += -static
-endif
-
-ifeq (${OPTIMIZE},1)
-MSTCFLAGS += -O2
-endif
-
-ifeq (${DEBUG},1)
-MSTCFLAGS += -g
-endif
-
-ifeq (${BITS64},1)
-MSTCFLAGS += -m64
-endif
+CFLAGS += -O2
+CFLAGS += -g
 
 mstflint: flint.cpp mtcr.h
-	$(CXX) ${MSTCFLAGS} -I. -fno-exceptions -Wall flint.cpp -o mstflint
-ifeq (${STRIP},1)
-	strip mstflint
-endif
+	$(CXX) ${CFLAGS} -I. -fno-exceptions -Wall flint.cpp -o mstflint
 
 clean:
 	rm -f mstflint
