@@ -32,7 +32,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- *  Version: $Id: flint.cpp,v 1.89 2005/03/06 15:55:53 mtsirkin Exp $
+ *  Version: $Id: flint.cpp,v 1.90 2005/03/07 15:32:05 mtsirkin Exp $
  *
  */
 
@@ -89,7 +89,7 @@ namespace std {}; using namespace std;
 
 char* _versionID = "VERSION_ID_HERE";
 
-char* _cvsID     = "$Revision: 1.89 $";
+char* _cvsID     = "$Revision: 1.90 $";
 
 #ifndef __be32_to_cpu
     #define __be32_to_cpu(x) ntohl(x)
@@ -4670,7 +4670,7 @@ int main(int ac, char *av[])
 				
                 if (f.get() == NULL) {
                     printf("*** ERROR *** Can't get flash type using device %s\n", device);
-                    rc =  1;            goto done; 
+                    rc =  1; goto done; 
                 }
 
                 g_flash = f.get();
@@ -4830,18 +4830,21 @@ int main(int ac, char *av[])
                     read_ps = false;
 
                 if (read_guids || read_ps) {
-                    if (!RevisionInfo(*f, guids, vsds, &fs_image, false, read_guids, read_ps ))
-                        rc =  1; goto done; 
+                    if (!RevisionInfo(*f, guids, vsds, &fs_image, false, read_guids, read_ps )) {
+                        rc =  1; goto done;
+		    }
                 }
 
 
                 // Patch GUIDS
                 if (guids_specified) {
-                    if (!patchGUIDs(fim, guids, isatty(0) != 0))
-                        rc =  1; goto done; 
+                    if (!patchGUIDs(fim, guids, isatty(0) != 0)) {
+                        rc =  1; goto done;
+		    }
                 } else {
-                    if (!patchGUIDs(fim, guids, false))
-                        rc =  1; goto done; 
+                    if (!patchGUIDs(fim, guids, false)) {
+                        rc =  1; goto done;
+		    }
                 }
 
                 // Patch VSD
@@ -4850,8 +4853,9 @@ int main(int ac, char *av[])
                 //if (psid)
                 //    strncpy(&vsds[VSD_OFFS], psid, VSD_LAST);
                 if (_image_is_full && !use_image_ps)
-                    if (!patchVSD(fim, &vsds[0], &vsds[VSD_OFFS], psid))
-                        rc =  1; goto done; 
+                    if (!patchVSD(fim, &vsds[0], &vsds[VSD_OFFS], psid)) {
+                        rc =  1; goto done;
+		    }
 
                     // Burn it
                 _silent = old_silent;
@@ -4885,8 +4889,9 @@ int main(int ac, char *av[])
                     printf("and ALL flash, including Invariant Sector will be overwritten.\n");
                     printf("If this process fails computer may remain in unoperatable state.\n");
 
-                    if (!ask_user("\nAre you sure ? (y/n) [n] : "))
-                        rc =  1; goto done; 
+                    if (!ask_user("\nAre you sure ? (y/n) [n] : ")) {
+                        rc =  1; goto done;
+		    }
 
                     // Non FS burn
                     if (!write_image(*f, 0, fim.getBuf(), fim.getBufLength(),
