@@ -73,6 +73,7 @@
 #include <sys/mman.h>
 #if !CONFIG_USE_DEV_MEM
 #include <sys/pci.h>
+#include <sys/ioctl.h>
 #endif
 #endif
 
@@ -313,7 +314,7 @@ mfile *mopen(const char *name)
     if (mf->fd<0) goto open_failed;
 #else
     {
-	    char file_name="/proc/bus/pci/00/00.0";
+	    char file_name[]="/proc/bus/pci/00/00.0";
 	    sprintf(file_name,"/proc/bus/pci/%2.2x/%2.2x.%1.1x",
 			    bus,dev,func);
 	    mf->fd = open(file_name, O_RDWR | O_SYNC);
