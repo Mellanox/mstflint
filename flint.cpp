@@ -610,8 +610,6 @@ private:
     u_int16_t extract_word   ( const u_int8_t* pb, int data_width)  {
 	assert (data_width == 1 || data_width == 2);
 	u_int16_t ret = *pb | ((*(pb + data_width)) << 8);
-	// !!! CHECK ENDIANES !!!
-        ret = __le16_to_cpu(ret);
 	return ret;
     }
 
