@@ -40,6 +40,8 @@
 #define CONFIG_ENABLE_MMAP 1
 //mmap /dev/mem for memory access (does not work on sparc)
 #define CONFIG_USE_DEV_MEM 0
+//mmap sysfs resource for memory access (needs kernel 2.6.11 or up)
+#define CONFIG_ENABLE_SYSFS 1
 
 //use pci configuration cycles for access
 #define CONFIG_ENABLE_PCICONF 1
@@ -289,6 +291,7 @@ mfile *mopen(const char *name)
   mfile *mf;
   off_t offset;
   int err;
+  char buf[]="0000:00:00.0";
 
   mf=(mfile*)malloc(sizeof(mfile));
   if (!mf) return 0;
@@ -301,6 +304,21 @@ mfile *mopen(const char *name)
     if (mf->fd<0) goto open_failed;
 
     mf->ptr=NULL;
+#else
+    goto open_failed;
+#endif
+  }
+  else if (sscanf(name, "/sys/bus/pci/devices/%12[0-9a-f:.]/resource0", buf) == 1)
+  {
+#if (CONFIG_ENABLE_SYSFS)
+
+    mf->fd = open(name,O_RDWR | O_SYNC);
+    if (mf->fd<0) goto open_failed;
+
+    mf->ptr = mmap(NULL, 0x100000, PROT_READ | PROT_WRITE,
+        MAP_SHARED, mf->fd, 0);
+
+    if ( (! mf->ptr) || (mf->ptr == MAP_FAILED) ) goto map_failed;
 #else
     goto open_failed;
 #endif
