@@ -580,7 +580,7 @@ class Flash : public FBase {
 public:
     Flash(u_int32_t log2_bank_size) :  
     _mf(0), 
-    _cmd_set(NULL), 
+    _cmd_set(0), 
     _curr_bank(0xffffffff),
     _log2_bank_size(log2_bank_size) 
     {}
@@ -595,7 +595,7 @@ public:
     virtual void close         ();
 
     virtual bool read          (u_int32_t addr, 
-                                u_int32_t *data)            = NULL;
+                                u_int32_t *data)            = 0;
 
     virtual bool read          (u_int32_t addr, 
                                 void*     data, 
@@ -612,7 +612,7 @@ public:
 	get_size               ()                           {return _cfi_data.device_size ? _cfi_data.device_size : (u_int32_t)MAX_FLASH;}
 
 
-    virtual bool wait_ready    (const char* msg = NULL)     = NULL;
+    virtual bool wait_ready    (const char* msg = 0)     = 0;
 
 
     // Write and Erase functions are performed by the Command Set
@@ -670,14 +670,14 @@ protected:
     virtual bool lock           (bool retry=true);
     virtual bool unlock         ();
 
-    virtual bool init_gpios    ()                           = NULL;
+    virtual bool init_gpios    ()                           = 0;
 
-    virtual bool get_cmd_set   ()                           = NULL;
+    virtual bool get_cmd_set   ()                           = 0;
 
     bool set_bank      (u_int32_t addr);
 
     virtual bool write_internal(u_int32_t addr, 
-                                u_int8_t  data)             = NULL;
+                                u_int8_t  data)             = 0;
 
     bool         write_internal(u_int32_t addr, 
                                 u_int8_t* data, 
@@ -692,12 +692,12 @@ protected:
                                     void*     data, 
                                     int       cnt,
                                     bool      noerase  = false, 
-                                    bool      noverify = false)  = NULL;
+                                    bool      noverify = false)  = 0;
 
-        //virtual bool unlock_bypass (bool      unlock)            = NULL;
-        virtual bool erase_sector  (u_int32_t addr)              = NULL;
+        //virtual bool unlock_bypass (bool      unlock)            = 0;
+        virtual bool erase_sector  (u_int32_t addr)              = 0;
 
-        virtual bool reset         ()                            = NULL;
+        virtual bool reset         ()                            = 0;
 
     protected:
 
@@ -763,7 +763,7 @@ protected:
     bool print_cfi_info ( const cfi_query *q );
 
 
-    virtual bool set_bank_int  (u_int32_t bank)              = NULL;
+    virtual bool set_bank_int  (u_int32_t bank)              = 0;
     u_int32_t    bank_mask     ()                 {return((1 << _log2_bank_size) -1 );}
 
     mfile        *_mf;
@@ -829,7 +829,7 @@ public:
                                 int       len, 
                                 bool      verbose=false) {return Flash::read(addr, data, len, verbose);}
 
-    virtual bool wait_ready    (const char* msg = NULL);
+    virtual bool wait_ready    (const char* msg = 0);
 
     bool                        unlock_bypass (bool unlock);
 
@@ -4100,7 +4100,7 @@ bool patchVSD(FImage& f, char *vsd1, char *curr_psid, const char* new_psid)
         strncpy(&vsd[0], vsd1, VSD_OFFS);
 
 
-    if (new_psid == NULL) {
+    if (new_psid == 0) {
         // New psid is not explicitly given - take it from image
         memcpy(image_psid, (char*)ps->psid, sizeof(ps->psid));
 
@@ -4383,13 +4383,13 @@ Flash* get_serial_flash(mfile* mf) {
                flash_type_str[flash_type]);
     }
 
-    return NULL;
+    return 0;
 
 }
 
 
 Flash* get_flash(const char* device) {
-    Flash* f = NULL;
+    Flash* f = 0;
 
     //
     // Check device ID. Allocate flash accordingly
@@ -4400,7 +4400,7 @@ Flash* get_flash(const char* device) {
     mfile* mf = mopen(device);
     if (!mf) {
         printf("*** ERROR *** Can't open %s: %s\n", device,  strerror(errno));
-        return NULL;
+        return 0;
     }
 
     if (mread4(mf, 0xf0014, &dev_id) != 4) return false;
@@ -4658,7 +4658,7 @@ void usage(const char *sname, bool full = false)
 // Signal handlers 
 //
 
-Flash* g_flash = NULL;
+Flash* g_flash = 0;
 
 int g_signals_for_termination[] = {
     SIGINT,
@@ -4679,7 +4679,7 @@ void TerminationHandler (int signum)
 
     signal (signum, SIG_DFL);
 
-    if (g_flash != NULL) {
+    if (g_flash != 0) {
         report("\n Received signal %d. Cleaning up ...", signum);
         fflush(stdout);
         sleep(1); // let erase sector end
@@ -4756,7 +4756,7 @@ int main(int ac, char *av[])
                 auto_ptr<Flash>       tmp( get_flash(device));
 				f = tmp;
 				
-                if (f.get() == NULL) {
+                if (f.get() == 0) {
                     printf("*** ERROR *** Can't get flash type using device %s\n", device);
                     rc =  1; goto done; 
                 }
