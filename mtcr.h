@@ -308,8 +308,13 @@ mfile *mopen(const char *name)
     goto open_failed;
 #endif
   }
-  else if (sscanf(name, "/sys/bus/pci/devices/%12[0-9a-f:.]/resource0", buf) == 1)
-  {
+  else if (sscanf(name,
+		  "/sys/bus/pci/devices/%12[0-9a-f:.]/resource0",
+		  buf) == 1 ||
+	   sscanf(name,
+		  "/sys/class/infiniband/mthca%12[0-9a-f:.]/device/resource0",
+		  buf) == 1
+	   ) {
 #if (CONFIG_ENABLE_SYSFS)
 
     mf->fd = open(name,O_RDWR | O_SYNC);
