@@ -1,17 +1,38 @@
 #default options
 CFLAGS += -O2
 CFLAGS += -g
+CFLAGS += -Wall
+CXXFLAGS += -fno-exceptions
+CFLAGS += -I.
+LD=$(CXX)
+#work around gnu make error: Recursive variable `LOADLIBES' references itself
+LOADLIBES+=
 
-all: mstflint mread mwrite
+all: default
+bin: mstflint mread mwrite
 
-mstflint: flint.cpp mtcr.h
-	$(CXX) ${CFLAGS} -I. -fno-exceptions -Wall flint.cpp -o mstflint
+default: bin
+static: bin
+shared: bin
+
+.PHONY: all bin clean static shared default
+.DELETE_ON_ERROR:
+
+default: LOADLIBES+="$(shell $(CXX) -print-file-name=libstdc++.a)"
+default: LD=$(CC)
+static: CFLAGS+=-static
+
+mstflint: mstflint.o
+	$(LD) ${LDFLAGS} ${CFLAGS} ${CXXFLAGS} mstflint.o -o mstflint ${LOADLIBES}
+
+mstflint.o: flint.cpp mtcr.h
+	$(CXX) ${CFLAGS} -c  flint.cpp -o mstflint.o
 
 mwrite: mwrite.c mtcr.h
-	$(CC) ${CFLAGS} -I. -Wall mwrite.c -o mwrite
+	$(CC) ${CFLAGS} mwrite.c -o mwrite
 
 mread: mread.c mtcr.h
-	$(CC) ${CFLAGS} -I. -Wall mread.c -o mread
+	$(CC) ${CFLAGS} mread.c -o mread
 
 clean:
 	rm -f mstflint mread mwrite
