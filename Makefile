@@ -5,8 +5,8 @@ CFLAGS += -Wall
 CXXFLAGS += -fno-exceptions
 CFLAGS += -I.
 LD=$(CXX)
-#work around gnu make error: Recursive variable `LOADLIBES' references itself
-LOADLIBES+=
+EXTRA_LOADLIBES=-lz
+LOADLIBES+=${EXTRA_LOADLIBES}
 
 all: default
 bin: mstflint mread mwrite
@@ -18,7 +18,7 @@ shared: bin
 .PHONY: all bin clean static shared default
 .DELETE_ON_ERROR:
 
-default: LOADLIBES+="$(shell $(CXX) -print-file-name=libstdc++.a)"
+default: EXTRA_LOADLIBES="$(shell $(CXX) -print-file-name=libz.a)" "$(shell $(CXX) -print-file-name=libstdc++.a)" 
 default: LD=$(CC)
 static: CFLAGS+=-static
 

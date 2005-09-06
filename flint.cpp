@@ -32,7 +32,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- *  Version: $Id: flint.cpp,v 1.95 2005/03/17 14:15:14 mtsirkin Exp $
+ *  Version: $Id: flint.cpp,v 1.103 2005/06/22 11:31:28 orenk Exp $
  *
  */
 
@@ -53,6 +53,9 @@
 #include <fcntl.h>
 #include <assert.h>
 
+#ifndef NO_ZLIB
+#include <zlib.h>
+#endif
 
 #include <alloca.h>
 #include <netinet/in.h>
@@ -89,7 +92,7 @@ namespace std {}; using namespace std;
 
 char* _versionID = "VERSION_ID_HERE";
 
-char* _cvsID     = "$Revision: 1.95 $";
+char* _cvsID     = "$Revision: 1.103 $";
 
 #ifndef __be32_to_cpu
     #define __be32_to_cpu(x) ntohl(x)
@@ -223,10 +226,10 @@ static inline void cpu_to_be_guid(guid_t* to, guid_t* from) {
 #define CHECKGN(f,b,o,n,p) do { if (!checkGen(f,b,o,n,p)) return false; } while (0)
 #define CHECKLS(f,o,p) do { if (!checkList(f,o,p)) return false; } while(0)
 #define READ4(f,o,d,p) do { if (!f.read(o,d)) {  \
-    printf("%s - read error (%s)\n", p, f._err); \
+    printf("%s - read error (%s)\n", p, f.err()); \
     return false; }} while (0)
 #define READBUF(f,o,d,l,p) do { if (!f.read(o,d,l)) { \
-    printf("%s - read error (%s)\n", p, f._err);      \
+    printf("%s - read error (%s)\n", p, f.err());      \
     return false; }} while (0)
 
 #if  1
@@ -247,6 +250,59 @@ static inline void cpu_to_be_guid(guid_t* to, guid_t* from) {
     } while (0)
 
 #endif
+
+class ErrMsg
+{
+public:
+    ErrMsg() : _err(0)       {                           }
+    ~ErrMsg()                { err_clear();              }
+    const char *err() const  { return _err;              }
+    void       err_clear()   { delete [] _err; _err = 0; }
+
+protected:
+    
+    char *vprint(const char *format, va_list args)
+    {
+	const int INIT_VAL = 1024;
+	int       max_str, max_buf = INIT_VAL;
+	char      *out_buf;
+	
+	while (1)
+	{
+	    out_buf = new char[max_buf];
+	    max_str = max_buf - 1;
+	    
+	    if (vsnprintf(out_buf, max_str, format, args) < max_str)
+		return out_buf;
+	    delete [] out_buf;
+	    max_buf *= 2;
+	}
+    } 
+
+
+    bool errmsg(const char *format, ...)
+#ifdef __GNUC__
+        __attribute__ ((format (printf, 2, 3)))
+#endif
+    ;    
+
+private:
+
+    char       *_err;
+};
+
+
+bool ErrMsg::errmsg(const char *format, ...) {
+    va_list   args;
+
+    delete [] _err;
+
+    va_start(args, format);
+    _err = vprint(format, args);
+    va_end(args);
+    return false;
+}   
+
 
 enum {
     SIGNATURE=0x5a445a44
@@ -270,7 +326,9 @@ enum {
     H_ROM   = 5,
     H_GUID  = 6,
     H_BOARD_ID=7, 
-    H_LAST  =7 
+    H_USER_DATA=8,
+    H_FW_CONF=9,
+    H_LAST  =9 
 };
 
 struct GPH {
@@ -477,11 +535,12 @@ private:
 //#define FUJITSU_BYTE_MODE
 
 // Common base class for Flash and for FImage
-class FBase {
+class FBase : public ErrMsg{
 public:
-    FBase() :_err(0)         {}
+    FBase()           {}
+    virtual ~FBase()  {}
 
-    virtual bool open(const char *, bool)                  = 0;
+    virtual bool open(const char *, bool)                  {return false;}
     virtual void close()                                   = 0;
     virtual bool read(u_int32_t addr, u_int32_t *data)     = 0;
     virtual bool read(u_int32_t addr, void *data, int len,
@@ -490,13 +549,9 @@ public:
     virtual u_int32_t get_sector_size()                    = 0;
     virtual u_int32_t get_size()                           = 0;
 
-    char *_err;
-
     enum {
         MAX_FLASH = 4*1048576
     };
-
-    char _msg[1024];
 };
 
 // Flash image (RO)
@@ -580,7 +635,7 @@ class Flash : public FBase {
 public:
     Flash(u_int32_t log2_bank_size) :  
     _mf(0), 
-    _cmd_set(0), 
+    _cmd_set(NULL), 
     _curr_bank(0xffffffff),
     _log2_bank_size(log2_bank_size) 
     {}
@@ -590,7 +645,8 @@ public:
     // FBase Interface
 
     virtual bool open          (const char *device,
-                                bool read_only = false);
+				bool force_lock = false,
+                                bool read_only  = false);
 
     virtual void close         ();
 
@@ -612,7 +668,7 @@ public:
 	get_size               ()                           {return _cfi_data.device_size ? _cfi_data.device_size : (u_int32_t)MAX_FLASH;}
 
 
-    virtual bool wait_ready    (const char* msg = 0)     = 0;
+    virtual bool wait_ready    (const char* msg = NULL)     = 0;
 
 
     // Write and Erase functions are performed by the Command Set
@@ -694,14 +750,13 @@ protected:
                                     bool      noerase  = false, 
                                     bool      noverify = false)  = 0;
 
-        //virtual bool unlock_bypass (bool      unlock)            = 0;
         virtual bool erase_sector  (u_int32_t addr)              = 0;
 
         virtual bool reset         ()                            = 0;
 
     protected:
 
-        u_int32_t    _curr_sector; 
+        u_int32_t    _curr_sector;
     };
 
 
@@ -773,6 +828,9 @@ protected:
 
     u_int32_t    _curr_bank;
     u_int32_t    _log2_bank_size;
+    
+    bool         _locked;
+
 
     /* Work around for MX flashes reporting weird erase sector size. */
     /* It reports two sector sizes, actually works as 1. */
@@ -829,9 +887,8 @@ public:
                                 int       len, 
                                 bool      verbose=false) {return Flash::read(addr, data, len, verbose);}
 
-    virtual bool wait_ready    (const char* msg = 0);
+    virtual bool wait_ready    (const char* msg = NULL);
 
-    bool                        unlock_bypass (bool unlock);
 
 #ifndef _MSC_VER
 protected:
@@ -898,7 +955,7 @@ protected:
         ParallelFlash& _f;
 
 
-        //bool         unlock_bypass (bool      unlock);
+        bool         unlock_bypass (bool      unlock);
     };
 
 
@@ -1126,33 +1183,24 @@ bool FImage::open(const char *fname, bool read_only)
 
     int fd = ::open(fname, O_RDONLY | O_BINARY, 0);
     if (fd < 0) {
-        sprintf(_msg, "Can't open file \"%s\" - %s\n", fname,
-                strerror(errno));
-        _err = &_msg[0];
-        return false;
+        return errmsg("Can't open file \"%s\" - %s\n", fname, strerror(errno));
     }
     if (fstat(fd, &stat_buf) < 0) {
-        sprintf(_msg, "Can't stat file \"%s\" - %s\n", fname,
-                strerror(errno));
-        _err = &_msg[0];
-        return false;
+        return errmsg("Can't stat file \"%s\" - %s\n", fname, strerror(errno));
     }
     //printf("%ld / 0x%lx\n", stat_buf.st_size, stat_buf.st_size);
     if (stat_buf.st_size & 0x3) {
-        _err = "Image size should be 4-bytes aligned.";
-        return false;
+        return errmsg("Image size should be 4-bytes aligned. Make sure file %s is in the right format (binary image)",
+		      fname);
     }
 
     _buf = new u_int32_t[stat_buf.st_size/4];
     if ((r_cnt = ::read(fd, _buf, stat_buf.st_size)) != stat_buf.st_size) {
         if (r_cnt < 0)
-            sprintf(_msg, "Read error on file \"%s\" - %s\n",
-                    fname, strerror(errno));
+            return errmsg("Read error on file \"%s\" - %s\n",fname, strerror(errno));
         else
-            sprintf(_msg, "Read error on file \"%s\" - read only %d bytes (from %ld)\n",
-                    fname, r_cnt, (unsigned long)stat_buf.st_size);
-        _err = &_msg[0];
-        return false;
+            return errmsg("Read error on file \"%s\" - read only %d bytes (from %ld)\n",
+			  fname, r_cnt, (unsigned long)stat_buf.st_size);
     }
 
     _len = stat_buf.st_size;
@@ -1170,43 +1218,30 @@ void FImage::close()
 ////////////////////////////////////////////////////////////////////////
 bool FImage::read(u_int32_t addr, u_int32_t *data)
 {
-    if (addr & 0x3) {
-        _err = "Address should be 4-bytes aligned.";
-        return false;
-    }
-    if (!_buf) {
-        _err = "Not opened";
-        return false;
-    }
-    if (addr > _len-4) {
-        sprintf(_msg, "Address (0x%x) is out of image limits\n", addr);
-        _err = &_msg[0];
-        return false;
-    }
-    *data = _buf[addr/4];
-    return true;
+    return read(addr, data, 4);
 } // FImage::read
 
 ////////////////////////////////////////////////////////////////////////
 bool FImage::read(u_int32_t addr, void *data, int len, bool)
 {
     if (addr & 0x3) {
-        _err = "Address should be 4-bytes aligned.";
-        return false;
+        return errmsg("Address should be 4-bytes aligned.");
     }
     if (len & 0x3) {
-        _err = "Length should be 4-bytes aligned.";
-        return false;
+        return errmsg("Length should be 4-bytes aligned.");
     }
     if (!_buf) {
-        _err = "Not opened";
-        return false;
+	return errmsg("read() when not opened");
+    }
+
+    if (addr + len > _len) {
+        return errmsg("Reading 0x%x bytes from address 0x%x is out of image limits (0x%x bytes)", 
+		      len, addr, _len);
     }
 
     u_int32_t *p = (u_int32_t *)data;
     for (int i=0; i<len/4; i++) {
-        if (!read(addr, p++))
-            return false;
+	p[i] = _buf[addr/4];
         addr += 4;
     }
     return true;
@@ -1248,18 +1283,25 @@ u_int32_t FImage::get_sector_size()
 
 
 ////////////////////////////////////////////////////////////////////////
-bool Flash::open(const char *device, bool read_only)
+bool Flash::open(const char *device, bool force_lock, bool read_only)
 {
 
     // Open device
     _mf = mopen(device);
     if (!_mf) {
-        _err = strerror(errno);
-        return false;
+        return errmsg("Can't open device %s: %s", device, strerror(errno));
     }
 
-    if (!lock())
-        return false;
+    _locked = lock();
+
+    if (!_locked) {
+	if (force_lock) {
+	    report("Warning: Taking flash lock even though semaphore is set.\n");
+	    _locked = true;
+	} else { 
+	    return false;
+	}
+    }
 
     if (!init_gpios())
         return false;
@@ -1284,7 +1326,9 @@ void Flash::close()
     delete _cmd_set;
 
     // ??? Check if unlock should be before delete _cmd_set
-    unlock();
+    if (_locked) {
+	unlock();
+    }
 
     mclose(_mf); 
     _mf = 0;
@@ -1301,8 +1345,7 @@ bool Flash::lock(bool retry) {
     u_int32_t word;
     do {
         if (++cnt > GPIO_SEM_TRIES) {
-            _err = "cannot obtain Flash semaphore (63)";
-            return false;
+            return errmsg("Can not obtain Flash semaphore (63). You can use -clear_semaphore to force semaphore unlock. See help for details.");
         }
         MREAD4(SEMAP63, &word);
     } while (word);
@@ -1325,12 +1368,10 @@ bool Flash::read(u_int32_t addr, void *data, int len, bool verbose)
     u_int32_t  perc = 0xffffffff;
 
     if (addr & 0x3) {
-        _err = "Address should be 4-bytes aligned.";
-        return false;
+        return errmsg("Address should be 4-bytes aligned.");
     }
     if (len & 0x3) {
-        _err = "Length should be 4-bytes aligned.";
-        return false;
+        return errmsg("Length should be 4-bytes aligned.");
     }
 
     // Report
@@ -1374,15 +1415,11 @@ bool Flash::write         (u_int32_t addr,
 		    bool      noverify)
 {
     if (addr + cnt > get_size()) {
-	sprintf(_msg, 
-		"Trying to write %d bytes to address 0x%x, which exceeds flash size (0x%x).",
-		cnt, 
-		addr,
-		get_size());
-
-	_err = _msg;
-
-	return false;
+	return errmsg( 
+	    "Trying to write %d bytes to address 0x%x, which exceeds flash size (0x%x).",
+	    cnt, 
+	    addr,
+	    get_size());  
     }
     
     return _cmd_set->write(addr, data, cnt, noerase, noverify);
@@ -1393,12 +1430,10 @@ bool Flash::write         (u_int32_t addr,
 bool Flash::write(u_int32_t addr, u_int32_t data)
 {
     if (!_mf) {
-        _err = "Not opened";
-        return false;
+	return errmsg("Not opened");
     }
     if (addr & 0x3) {
-        _err = "Address should be 4-bytes aligned.";
-        return false;
+        return errmsg("Address should be 4-bytes aligned.");
     }
 
     // Here, we use non-virtual variants for efficiency
@@ -1640,9 +1675,6 @@ bool ParallelFlash::init_gpios() {
 }
 
 void ParallelFlash::close() {
-    if (_unlock_bypass) {
-        unlock_bypass(false);
-    }
 
     // Restore origin values
     mwrite4(_mf, GPIO_DIR_L, _dir);
@@ -1669,13 +1701,12 @@ bool ParallelFlash::get_cmd_set() {
     //
 
     if (_cfi_data.max_multi_byte_write > MAX_WRITE_BUFFER_SIZE) {
-        _err = "Device write buffer is larger than the supported size.";
-        return false;
+        return errmsg("Device write buffer(%d) is larger than the supported size(%d).", 
+		      _cfi_data.max_multi_byte_write, MAX_WRITE_BUFFER_SIZE);
     }
 
     if (!_mx_flash_workaround() && _cfi_data.num_erase_blocks > 1) {
-        _err = "Device has more than one sector size - not supported by this tool";
-        return false;
+	return errmsg("Device has more than one sector size - not supported by this tool");
     }
 
     //
@@ -1694,8 +1725,7 @@ bool ParallelFlash::get_cmd_set() {
         break;
 
     default:
-        _err = "Unknown CFI command set";
-        return false;
+        return errmsg("Unknown CFI command set (%d)",_cfi_data.oem_command_set) ;
     }
 
     return true;
@@ -1707,8 +1737,7 @@ bool ParallelFlash::get_cmd_set() {
 bool ParallelFlash::set_bank_int(u_int32_t bank)
 {
     if (!_mf) {
-        _err = "Not opened";
-        return false;
+        return errmsg("Not opened");
     }
 
     //printf("\n*** Flash::set_bank(0x%lx) : 0x%lx\n", bank, (bank >> 19) & 0x07);
@@ -1726,9 +1755,7 @@ bool ParallelFlash::wait_ready(const char* msg) {
     do {
         // Timeout checks
         if (++cnt > FLASH_CMD_CNT) {
-            sprintf(_msg, "Flash gateway timeout: %s", msg);
-            _err = _msg;
-            return false;
+            return errmsg("Flash gateway timeout: %s", msg);
         }
 
         MREAD4(FLASH, &cmd);
@@ -1742,14 +1769,12 @@ bool ParallelFlash::wait_ready(const char* msg) {
 bool ParallelFlash::read(u_int32_t addr, u_int32_t *data)
 {
     if (!_mf) {
-        _err = "Not opened";
-        return false;
+        return errmsg("Not opened");
     }
 
     u_int32_t cmd;
     if (addr & 0x3) {
-        _err = "Address should be 4-bytes aligned.";
-        return false;
+        return errmsg("Address should be 4-bytes aligned.");
     }
 
     if (!set_bank(addr))
@@ -1782,22 +1807,22 @@ bool ParallelFlash::write_internal(u_int32_t addr, u_int8_t data)
 
 
 ////////////////////////////////////////////////////////////////////////
-bool ParallelFlash::unlock_bypass(bool unlock) {
+bool ParallelFlash::CmdSetAmd::unlock_bypass(bool unlock) {
 
     if (unlock) {
         // unlock bypass
 
-        if (!write_internal(0x555, 0xaa))
+        if (!_f.write_internal(0x555, 0xaa))
             return false;
-        if (!write_internal(0x2aa, 0x55))
+        if (!_f.write_internal(0x2aa, 0x55))
             return false;
-        if (!write_internal(0x555, 0x20))
+        if (!_f.write_internal(0x555, 0x20))
             return false;
     } else {
         // unlock reset
-        if (!write_internal(0x555, 0x90))
+        if (!_f.write_internal(0x555, 0x90))
             return false;
-        if (!write_internal(0x2aa, 0x00))
+        if (!_f.write_internal(0x2aa, 0x00))
             return false;
     }
     return true;
@@ -1809,15 +1834,19 @@ bool ParallelFlash::CmdSetAmd::write(u_int32_t addr, void *data, int cnt,
                                      bool noerase, bool noverify)
 {
     if (!_f._mf) {
-        _f._err = "Not opened";
-        return false;
+        return _f.errmsg("Not opened");
     }
     if (addr & 0x3) {
-        _f._err = "Address should be 4-bytes aligned.";
-        return false;
+        return _f.errmsg("Address should be 4-bytes aligned.");
     }
 
     char         *p = (char *)data;
+
+    if (_unlock_bypass) {
+	if (!unlock_bypass(true)) {
+	    return _f.errmsg("Failed unlock bypass"); 
+	}
+    }
 
     for (int i=0; i<cnt; i++,addr++) {
         u_int32_t  word;
@@ -1831,8 +1860,24 @@ bool ParallelFlash::CmdSetAmd::write(u_int32_t addr, void *data, int cnt,
             u_int32_t sector = (addr / _f.get_sector_size()) * _f.get_sector_size();
             if (sector != _curr_sector) {
                 _curr_sector = sector;
+
+		// If we're in unlock mode, we must re-lock before erase sector
+		if (_unlock_bypass) {
+		    if (!unlock_bypass(false)) {
+			return _f.errmsg("Failed re-lock bypass");
+		    }
+		}
+
+
                 if (!erase_sector(_curr_sector))
                     return false;
+
+
+		if (_unlock_bypass) {
+		    if (!unlock_bypass(true)) {
+			return _f.errmsg("Failed unlock bypass");
+		    }
+		}
             }
         }
 
@@ -1856,8 +1901,7 @@ bool ParallelFlash::CmdSetAmd::write(u_int32_t addr, void *data, int cnt,
                 int  loop_cnt = 0;
                 // Timeout checks
                 if (++loop_cnt > FLASH_CMD_CNT) {
-                    _f._err = "Use scratchpad: CMD doesn't become zero";
-                    return false;
+                    return _f.errmsg("Use scratchpad: CMD doesn't become zero");
                 }
                 if (mread4(_f._mf, _f.USE_SCR , &cmd) != 4) return false;
 
@@ -1893,7 +1937,7 @@ bool ParallelFlash::CmdSetAmd::write(u_int32_t addr, void *data, int cnt,
                 if (++cnt1 > READ_CNT_FAST)
                     usleep(READ_DELAY);
                 if (cnt1 > READ_CNT_FAST + READ_CNT_SLOW) {
-                    _f._err = "Flash write error - read value didn't stabilized.";
+                    return _f.errmsg("Flash write error - read value didn't stabilize.");
                     return false;
                 }
 
@@ -1912,6 +1956,13 @@ bool ParallelFlash::CmdSetAmd::write(u_int32_t addr, void *data, int cnt,
             p++;
         }
     } 
+
+    if (_unlock_bypass) {
+	 if (!unlock_bypass(false)) {
+	     return _f.errmsg("Failed re-lock bypass");
+	 }
+    }
+
     return true;
 } // flash_write
 
@@ -1921,12 +1972,10 @@ bool ParallelFlash::CmdSetIntelWriteByte::write(u_int32_t addr, void *data, int 
                                                 bool noerase, bool noverify)
 {
     if (!_f._mf) {
-        _f._err = "Not opened";
-        return false;
+        return _f.errmsg("Not opened");
     }
     if (addr & 0x3) {
-        _f._err = "Address should be 4-bytes aligned.";
-        return false;
+        return _f.errmsg("Address should be 4-bytes aligned.");
     }
 
     char         *p = (char *)data;
@@ -1964,8 +2013,7 @@ bool ParallelFlash::CmdSetIntelWriteByte::write(u_int32_t addr, void *data, int 
                 if (++cnt1 > READ_CNT_FAST)
                     usleep(READ_DELAY);
                 if (cnt1 > READ_CNT_FAST + READ_CNT_SLOW) {
-                    _f._err = "Flash write error - timeout waiting for ready after write.";
-                    return false;
+                    return _f.errmsg("Flash write error - timeout waiting for ready after write.");
                 }
 
                 // TODO - Move to read single for Arbel
@@ -1978,8 +2026,7 @@ bool ParallelFlash::CmdSetIntelWriteByte::write(u_int32_t addr, void *data, int 
             } while ((status & FS_Ready) == 0);
 
             if (status & FS_Error) {
-                _f._err = "Flash write error - error staus detected.";
-                return false;
+                return _f.errmsg("Flash write error - error staus detected.");
             }
 
             if (!noverify) {
@@ -1998,8 +2045,7 @@ bool ParallelFlash::CmdSetIntelWriteByte::write(u_int32_t addr, void *data, int 
                     printf("write: %08x - exp:%02x act:%02x /%08x/\n",
                            addr, exp & 0xff, act & 0xff, word);
 
-                    _f._err = "Write verification failed";
-                    return false;
+                    return _f.errmsg("Write verification failed");
                 }
             }
 
@@ -2023,12 +2069,10 @@ bool ParallelFlash::CmdSetIntel::write(u_int32_t addr, void *data, int cnt,
                                        bool noerase, bool noverify)
 {
     if (!_f._mf) {
-        _f._err = "Not opened";
-        return false;
+        return _f.errmsg("Not opened");
     }
     if (addr & 0x3) {
-        _f._err = "Address should be 4-bytes aligned.";
-        return false;
+        return _f.errmsg("Address should be 4-bytes aligned.");
     }
 
     u_int8_t         *p = (u_int8_t *)data;
@@ -2117,8 +2161,7 @@ bool ParallelFlash::CmdSetIntel::write(u_int32_t addr, void *data, int cnt,
                 if (cnt1 > ((READ_CNT_FAST + READ_CNT_SLOW) * 4)) {
                     //printf("-D- status = %08x\n", status);
                     reset();
-                    _f._err = "Flash write error - Write buffer not ready.";  
-                    return false;
+                    return _f.errmsg("Flash write error - Write buffer not ready.");  
                 }
 
                 cnt1++;
@@ -2129,8 +2172,7 @@ bool ParallelFlash::CmdSetIntel::write(u_int32_t addr, void *data, int cnt,
             } while (!(status & FS_Ready));
 
             if (status & FS_Error) {
-                _f._err = "Flash write error - Error getting write buffer";
-                return false;
+                return _f.errmsg("Flash write error - Error getting write buffer");
             }
 
             // word count (allways full buffer, coded as cull buffer size -1)
@@ -2154,8 +2196,7 @@ bool ParallelFlash::CmdSetIntel::write(u_int32_t addr, void *data, int cnt,
                     usleep(READ_DELAY);
                 if (cnt1 > READ_CNT_FAST + READ_CNT_SLOW) {
                     reset();
-                    _f._err = "Flash write error - Write buffer status timeout";
-                    return false;
+                    return _f.errmsg("Flash write error - Write buffer status timeout");
                 }
 
                 // TODO - Move to read single for Arbel
@@ -2181,13 +2222,11 @@ bool ParallelFlash::CmdSetIntel::write(u_int32_t addr, void *data, int cnt,
 
                 for (u_int32_t i = 0 ; i < data_size ; i++) {
                     if (verify_buffer[i] != write_data[i + prefix_pad_size]) {
-                        printf("write: %08x - exp:%02x act:%02x\n",
-                               addr + i, 
-                               write_data[i + prefix_pad_size] , 
-                               verify_buffer[i]);
-
-                        _f._err = "Write verification failed";
-                        return false;
+			return _f.errmsg(
+			    "Write verification failed. Addr: %08x - exp:%02x act:%02x",
+			    addr + i, 
+			    write_data[i + prefix_pad_size] , 
+			    verify_buffer[i]);   
                     }
                 }  
             }
@@ -2212,8 +2251,7 @@ bool ParallelFlash::CmdSetIntel::write(u_int32_t addr, void *data, int cnt,
 ////////////////////////////////////////////////////////////////////////
 bool ParallelFlash::CmdSetAmd::reset() {
     if (!_f.write_internal(0x555, 0xf0)) {
-        _f._err = "Device reset failed";
-        return false;
+	return _f.errmsg("Device reset failed: %s", _f.err());
     }
     return true;
 }
@@ -2246,10 +2284,6 @@ bool ParallelFlash::CmdSetAmd::erase_sector(u_int32_t addr)
     if (!_f.write_internal(addr, 0x30))
         return false;
 #else // FUJITSU_WORD_MODE 
-    if (_unlock_bypass) {
-        // release unlock bypass before erase sector
-        if (!_f.unlock_bypass(false)) return false;
-    }
 
     if (!_f.write_internal(0x555, 0xaa))
         return false;
@@ -2270,8 +2304,7 @@ bool ParallelFlash::CmdSetAmd::erase_sector(u_int32_t addr)
     do {
         // Timeout checks
         if (++cnt > ERASE_CNT) {
-            _f._err = "Flash erase sector timeout";
-            return false;
+            return _f.errmsg("Flash erase sector timeout");
         }
         if (!_f.read(addr, &word))
             return false;
@@ -2281,19 +2314,6 @@ bool ParallelFlash::CmdSetAmd::erase_sector(u_int32_t addr)
     } while (word != 0xffffffff);
 
 
-
-#ifdef FUJITSU_BYTE_MODE
-    // TODO: Need to check unlock bypass option for FUJITSU flash
-#else // FUJITSU_WORD_MODE 
-
-    if (_unlock_bypass) {
-        // release unlock bypass before erase sector
-//	if (!_f.unlock_bypass(true)) return false; 
-    }
-
-#endif
-
-
     return true;
 } // Flash::erase_sector
 
@@ -2301,8 +2321,7 @@ bool ParallelFlash::CmdSetAmd::erase_sector(u_int32_t addr)
 
 bool ParallelFlash::CmdSetIntel::reset() {
     if (!_f.write_internal(0x555, FC_Read)) {
-        _f._err = "Device reset failed";
-        return false;
+        return _f.errmsg("Device reset failed");
     }
     return true;
 }
@@ -2334,8 +2353,7 @@ bool ParallelFlash::CmdSetIntel::erase_sector(u_int32_t addr)
     do {
         // Timeout checks
         if (++cnt > ERASE_CNT) {
-            _f._err = "Flash erase sector timeout";
-            return false;
+            return _f.errmsg("Flash erase sector timeout");
         }
         if (!_f.read(addr, &status))
             return false;
@@ -2345,8 +2363,7 @@ bool ParallelFlash::CmdSetIntel::erase_sector(u_int32_t addr)
     } while ((status & FS_Ready) == 0);
 
     if (status & FS_Error) {
-        _f._err = "Status register detected erase error";
-        return false;
+        return _f.errmsg("Status register detected erase error");
     }
 
     // Reset
@@ -2420,8 +2437,7 @@ bool ParallelFlash::get_cfi(struct cfi_query *query)
         printf(" Received CFI query from addr 0x10: [%s]\n", query_str_x8 );
         printf(" Received CFI query from addr 0x20: [%s]\n", query_str_x16asx8);
 
-        _err = "Failed CFI query";
-        return false;
+        return errmsg("Failed CFI query");
     } 
 
     if (!read(0x0, fwp, 0x4)) // Dev ID
@@ -2538,8 +2554,7 @@ bool ParallelFlash::get_cfi(struct cfi_query *query)
     offset = query->primary_table_address;
 
     if ((offset + EXTENDED_QUERY_SIZE) * query_base > TOTAL_QUERY_SIZE) {
-        _err = "Primary extended query larger than TOTAL_QUERY_SIZE";
-        return false;
+        return errmsg("Primary extended query larger than TOTAL_QUERY_SIZE (%d)",TOTAL_QUERY_SIZE) ;
     }
 
 
@@ -2564,8 +2579,7 @@ bool ParallelFlash::get_cfi(struct cfi_query *query)
     if ( query->primary_extended_query[0] != 'P' &&
          query->primary_extended_query[1] != 'R' &&
          query->primary_extended_query[2] != 'I') {
-        _err = "Bad primary table address";
-        return false;
+        return errmsg("Bad primary table address in CFI query");
     }
 
     query->major_version = fwp[query_base * (offset + 3)];
@@ -2665,14 +2679,12 @@ bool SpiFlash::get_cmd_set   () {
 bool SpiFlash::set_bank_int(u_int32_t bank)
 {
     if (!_mf) {
-        _err = "Not opened";
-        return false;
+        return errmsg("Not opened");
     }
 
     // TODO: Check number of banks in open!
     if (bank > 3) {
-        _err = "Tried to set bank > 3";
-        return false;
+        return errmsg("Tried to set bank to %d but %d is the is the largest bank number", bank, 3);
     }
 
     //printf("\n*** Flash::set_bank(0x%lx) : 0x%lx\n", bank, (bank >> 19) & 0x07);
@@ -2692,9 +2704,7 @@ bool SpiFlash::wait_ready(const char* msg)
     do {
         // Timeout checks
         if (++cnt > FLASH_CMD_CNT) {
-            sprintf(_msg, "Flash gateway timeout: %s.", msg);
-            _err = _msg;
-            return false;
+            return errmsg("Flash gateway timeout: %s.", msg);
         }
 
         MREAD4(FLASH_GW, &gw_cmd);
@@ -2709,13 +2719,11 @@ bool SpiFlash::wait_ready(const char* msg)
 bool SpiFlash::read(u_int32_t addr, u_int32_t *data)
 {
     if (!_mf) {
-        _err = "Not opened";
-        return false;
+        return errmsg("Not opened");
     }
 
     if (addr & 0x3) {
-        _err = "Address should be 4-bytes aligned.";
-        return false;
+        return errmsg("Address should be 4-bytes aligned.");
     }
 
     if (!set_bank(addr))
@@ -2762,12 +2770,10 @@ bool SpiFlash::CmdSetStSpi::write (u_int32_t addr,
                                    bool      noverify) {
 
     if (!_f._mf) {
-        _f._err = "Not opened";
-        return false;
+        return _f.errmsg("Not opened");
     }
     if (addr & 0x3) {
-        _f._err = "Address should be 4-bytes aligned.";
-        return false;
+        return _f.errmsg("Address should be 4-bytes aligned.");
     }
 
     u_int8_t         *p = (u_int8_t *)data;
@@ -2856,13 +2862,10 @@ bool SpiFlash::CmdSetStSpi::write (u_int32_t addr,
 
                 for (u_int32_t i = 0 ; i < data_size ; i++) {
                     if (verify_buffer[i] != block_data[i + prefix_pad_size]) {
-                        printf("write: %08x - exp:%02x act:%02x\n",
+                        return _f.errmsg("Write verification failed. Addr %08x - exp:%02x act:%02x\n",
                                addr + i, 
                                block_data[i + prefix_pad_size] , 
                                verify_buffer[i]);
-
-                        _f._err = "Write verification failed";
-                        return false;
                     }
                 }  
             }
@@ -2935,8 +2938,8 @@ bool SpiFlash::CmdSetStSpi::write_block(u_int32_t block_addr,
 
     // sanity check ??? remove ???
     if (block_size != (u_int32_t)_f._cfi_data.max_multi_byte_write) {
-        _f._err = "Block write of wrong block size";
-        return false;
+        return _f.errmsg("Block write of wrong block size. %d instead of %d", 
+			 block_size, (u_int32_t)_f._cfi_data.max_multi_byte_write);
     }
 
     if (!write_enable())
@@ -3034,8 +3037,7 @@ bool SpiFlash::CmdSetStSpi::wait_wip(u_int32_t delay, u_int32_t retrys, u_int32_
             usleep(delay);
         if (cnt > retrys) {
             reset();
-            _f._err = "Flash write error - Write In Progress bit didn't clear.";
-            return false;
+            return _f.errmsg("Flash write error - Write In Progress bit didn't clear.");
         }
 
         MWRITE4(FLASH_ADDR, gw_addr);
@@ -3058,6 +3060,84 @@ bool SpiFlash::CmdSetStSpi::wait_wip(u_int32_t delay, u_int32_t retrys, u_int32_
 //
 ////////////////////////////////////////////////////////////////////////
 
+class Operations : public ErrMsg {
+public:
+
+    Operations() : _last_image_addr(0), _num_ports(2) {}
+
+    enum {
+	GUIDS = 4
+    };
+
+    bool write_image     (Flash& f, u_int32_t addr, void *data, int cnt, bool need_report);
+    bool WriteSignature  (Flash& f, u_int32_t image_idx, u_int32_t sig);
+    bool repair          (Flash& f, const int from, const int to, bool need_report);
+    bool FailSafe_burn   (Flash& f, void *data, int size, bool single_image_burn, bool need_report);
+
+    bool Verify          (FBase& f);
+    bool DumpConf        (const char* conf_file = NULL);
+
+    bool RevisionInfo    (FBase& f, 
+                          guid_t guids_out[GUIDS], 
+                          char *vsd_out,
+			  bool *fs_image, 
+                          bool internal_call = false,
+			  bool read_guids    = true, 
+                          bool read_ps       = true);
+
+    bool getBSN          (char *s, guid_t *guid);
+    bool getGUID         (const char *s, guid_t *guid);
+
+    bool patchVSD        (FImage& f, char *vsd1, char *curr_psid, const char* new_psid);
+    
+    bool patchGUIDs      (FImage& f, guid_t guids[GUIDS], bool interactive);
+
+    void SetNumPorts     (u_int32_t num_ports) {_num_ports = num_ports;}
+
+    u_int32_t              _last_image_addr;
+
+private:
+
+    bool FailSafe_burn_image   (Flash&       f, 
+				void         *data, 
+				int          ps_addr, 
+				const char*  image_name, 
+				int          image_addr,
+				int          image_size,
+				bool         need_report);
+
+    bool FailSafe_burn_internal (Flash& f, void *data, int cnt, bool need_report);
+
+    bool checkBoot2             (FBase& f, u_int32_t beg, u_int32_t offs,
+		                 u_int32_t& next, const char *pref);
+
+    bool checkGen               (FBase& f, u_int32_t beg,
+                                 u_int32_t offs, u_int32_t& next, const char *pref);
+
+    bool checkPS                (FBase& f, u_int32_t offs, u_int32_t& next, const char *pref);
+
+    bool checkList              (FBase& f, u_int32_t offs, const char *pref);
+
+    bool extractGUIDptr         (u_int32_t sign, u_int32_t *buf, int buf_len,
+				 char *pref, u_int32_t *ind, int *nguids);
+
+    void patchGUIDsSection      (u_int32_t *buf, u_int32_t ind,
+				 guid_t guids[GUIDS], int nguids);
+    
+    u_int32_t BSN_subfield      (const char *s, int beg, int len);
+
+    void _patchVSD              (FImage& f, int ind, char *vsd);
+
+    u_int32_t _num_ports;
+
+    std::vector<u_int8_t>  _fw_conf_sect;
+
+
+
+};
+
+
+
 
 //
 // Asks user a yes/no question. 
@@ -3079,7 +3159,7 @@ bool ask_user(const char* msg) {
     return true;
 }
 
-bool write_image(Flash& f, u_int32_t addr, void *data, int cnt, bool need_report)
+bool Operations::write_image(Flash& f, u_int32_t addr, void *data, int cnt, bool need_report)
 {
     u_int8_t   *p = (u_int8_t *)data;
     u_int32_t  curr_addr = addr;
@@ -3096,7 +3176,7 @@ bool write_image(Flash& f, u_int32_t addr, void *data, int cnt, bool need_report
         // Write
         int trans = (towrite > (int)Flash::TRANS) ? (int)Flash::TRANS : towrite;
         if (!f.write(curr_addr, p, trans))
-            return false;
+            return errmsg("Flash write failed: %s", f.err());
         p += trans;
         curr_addr += trans;
         towrite -= trans;
@@ -3122,7 +3202,7 @@ bool write_image(Flash& f, u_int32_t addr, void *data, int cnt, bool need_report
 
 
 ////////////////////////////////////////////////////////////////////////
-bool WriteSignature(Flash& f, u_int32_t image_idx, u_int32_t sig) {
+bool Operations::WriteSignature(Flash& f, u_int32_t image_idx, u_int32_t sig) {
     u_int32_t sect_size = f.get_sector_size();
 
     if (!f.write( sect_size * (image_idx + 1)  + 8, &sig, 4, true, false))
@@ -3133,7 +3213,7 @@ bool WriteSignature(Flash& f, u_int32_t image_idx, u_int32_t sig) {
 
 
 ////////////////////////////////////////////////////////////////////////
-bool repair(Flash& f, const int from, const int to, bool need_report)
+bool Operations::repair(Flash& f, const int from, const int to, bool need_report)
 {
 
     u_int32_t sect_size = f.get_sector_size();
@@ -3141,13 +3221,28 @@ bool repair(Flash& f, const int from, const int to, bool need_report)
     report("Repairing: Copy %s image to %s     -", from ? "secondary" : "primary" ,
            to ? "secondary" : "primary");
 
-    // Valid image pointer
-    u_int32_t im_ptr;
-    if (!f.read(sect_size * (from+1), &im_ptr)) {
+
+    // Read valid pointer sector
+    u_int32_t sect[sizeof(PS)/4];
+    report("\b READ %s ", from ? "SPS" : "PPS");
+    if (!f.read(from ? sect_size*2 : sect_size, sect, sizeof(sect) , need_report)) {
         report("FAILED\n\n");
         return false;
     }
+    report_erase(" READ %s 100%", from ? "SPS" : "PPS");
+
+
+    
+    u_int32_t im_ptr = sect[0];
+    u_int32_t sig    = sect[2];
+
     TOCPU1(im_ptr);
+    TOCPU1(sig);
+
+    // Make sure ps ik ok:
+    if (sig != SIGNATURE) {
+        return errmsg("Can't copy image. Pointer sector %d signature is bad (%08x).", from, sig);
+    }
 
     // Valid image size in bytes
     u_int32_t im_size_b;
@@ -3184,15 +3279,6 @@ bool repair(Flash& f, const int from, const int to, bool need_report)
     }
     delete [] buf;
     report_erase(" WRITE FW 100%");
-
-    // Read valid sector
-    u_int32_t sect[sizeof(PS)/4];
-    report("\b READ %s ", from ? "SPS" : "PPS");
-    if (!f.read(from ? sect_size*2 : sect_size, sect, sizeof(sect) , need_report)) {
-        report("FAILED\n\n");
-        return false;
-    }
-    report_erase(" READ %s 100%", from ? "SPS" : "PPS");
 
     // Set new image address
     // ++++++
@@ -3238,7 +3324,7 @@ bool repair(Flash& f, const int from, const int to, bool need_report)
 
 
 ////////////////////////////////////////////////////////////////////////
-bool FailSafe_burn_image(Flash&       f, 
+bool Operations::FailSafe_burn_image(Flash&       f, 
                          void         *data, 
                          int          ps_addr, 
                          const char*  image_name, 
@@ -3292,7 +3378,7 @@ bool FailSafe_burn_image(Flash&       f,
 
 
 ////////////////////////////////////////////////////////////////////////
-bool FailSafe_burn_internal(Flash& f, void *data, int cnt, bool need_report)
+bool Operations::FailSafe_burn_internal(Flash& f, void *data, int cnt, bool need_report)
 {
     u_int32_t *data32 = (u_int32_t *)data;
 
@@ -3308,12 +3394,10 @@ bool FailSafe_burn_internal(Flash& f, void *data, int cnt, bool need_report)
     TOCPU1(scnd_ptr);
     TOCPU1(scnd_len);
     if ((cnt < (int)(prim_ptr + prim_len)) || (cnt < (int)(scnd_ptr + scnd_len))) {
-        f._err = "Invalid image: too small.";
-        return false;
+        return errmsg("Invalid image: too small.");
     }
     if (prim_len != scnd_len) {
-        f._err = "Invalid image: two FW images should be in a same size.";
-        return false;
+        return errmsg("Invalid image: two FW images should be in a same size.");
     }
 
     // Image size from flash
@@ -3361,7 +3445,7 @@ bool FailSafe_burn_internal(Flash& f, void *data, int cnt, bool need_report)
 
 
 ////////////////////////////////////////////////////////////////////////
-bool FailSafe_burn(Flash& f, void *data, int size, bool single_image_burn, bool need_report)
+bool Operations::FailSafe_burn(Flash& f, void *data, int size, bool single_image_burn, bool need_report)
 {
     u_int32_t *data32 = (u_int32_t *)data;
     u_int8_t  *data8 =  (u_int8_t *)data;
@@ -3381,17 +3465,15 @@ bool FailSafe_burn(Flash& f, void *data, int size, bool single_image_burn, bool 
     }
     TOCPU1(signature);
     if (signature != SIGNATURE) {
-        f._err = "Flash has wrong signature in Invariant Sector.";
         report("FAILED\n\n");
-        return false;
+	return errmsg("Flash has wrong signature in Invariant Sector (Expected %08x, got %08x).", SIGNATURE, signature);
     }
 
     // Now check Invariant sector contents
     vector<u_int32_t> buf1(sect_size/4);
     if (size < (int)sect_size * 3) {
-        f._err = "Image is too small.";
         report("FAILED\n\n");
-        return false;
+        return errmsg("Image is too small.");
     }
     if (!f.read(0, &buf1[0] , sect_size)) {
         report("FAILED\n\n");
@@ -3399,33 +3481,29 @@ bool FailSafe_burn(Flash& f, void *data, int size, bool single_image_burn, bool 
     }
     for (i=0; i < sect_size/4; i++) {
         if (buf1[i] != data32[i]  &&  (data32[i] != 0 || buf1[i] != 0xffffffff)) {
-            sprintf(f._msg, "Invariant sector doesn't match. Word #%d (0x%x)\n"
-                    "in image: 0x%08x, while in flash: 0x%08x",
-                    i, i, data32[i], buf1[i]);
-            f._err = &f._msg[0];
             report("FAILED\n\n");
-            return false;
+	    return errmsg("Invariant sector doesn't match. Word #%d (0x%x) "
+			  "in image: 0x%08x, while in flash: 0x%08x",
+			  i, i, data32[i], buf1[i]);
         }
     }
     report("OK\n");
 
     // Check signatures in image
     u_int32_t actual_signature = data32[sect_size/4 + 2];
+
     u_int32_t signature_for_compare = actual_signature;
+
     TOCPU1(signature_for_compare);
     if (signature_for_compare != SIGNATURE) {
-        sprintf(f._msg, "Wrong image: signature in PPS is 0x%08x (should be 0x%08x)",
-                signature_for_compare, SIGNATURE);
-        f._err = &f._msg[0];
-        return false;
+        return errmsg("Bad image file given: signature in PPS is 0x%08x (should be 0x%08x)",
+		      signature_for_compare, SIGNATURE);
     }
     signature_for_compare = data32[(sect_size * 2)/4 + 2];
     TOCPU1(signature_for_compare);
     if (signature_for_compare != SIGNATURE) {
-        sprintf(f._msg, "Wrong image: signature in SPS is 0x%08x (should be 0x%08x)",
-                signature_for_compare, SIGNATURE);
-        f._err = &f._msg[0];
-        return false;
+        return errmsg("Bad image file given: signature in SPS is 0x%08x (should be 0x%08x)",
+		      signature_for_compare, SIGNATURE);
     }
 
     // Corrupt signatures in image
@@ -3603,7 +3681,7 @@ bool FailSafe_burn(Flash& f, void *data, int size, bool single_image_burn, bool 
 // ****************************************************************** //
 //                                                                    //
 ////////////////////////////////////////////////////////////////////////
-bool checkBoot2(FBase& f, u_int32_t beg, u_int32_t offs,
+bool Operations::checkBoot2(FBase& f, u_int32_t beg, u_int32_t offs,
                 u_int32_t& next, const char *pref)
 {
     u_int32_t    size;
@@ -3648,7 +3726,7 @@ bool checkBoot2(FBase& f, u_int32_t beg, u_int32_t offs,
 static int part_cnt;
 
 ////////////////////////////////////////////////////////////////////////
-bool checkGen(FBase& f, u_int32_t beg,
+bool Operations::checkGen(FBase& f, u_int32_t beg,
               u_int32_t offs, u_int32_t& next, const char *pref)
 {
     char         *pr = (char *)alloca(strlen(pref) + 100);
@@ -3703,9 +3781,21 @@ bool checkGen(FBase& f, u_int32_t beg,
                 pref, offs, offs+size+(u_int32_t)sizeof(gph)+3,
                 size+(u_int32_t)sizeof(gph)+4);
         break;
+    case H_FW_CONF:
+        size = gph.size * sizeof(u_int32_t);
+        sprintf(pr, "%s /0x%08x-0x%08x (0x%06x)/ (FW Configuration)",
+                pref, offs, offs+size+(u_int32_t)sizeof(gph)+3,
+                size+(u_int32_t)sizeof(gph)+4);
+        break;
     case H_ROM:
         size = gph.size * sizeof(u_int32_t);
         sprintf(pr, "%s /0x%08x-0x%08x (0x%06x)/ (ROM)",
+                pref, offs, offs+size+(u_int32_t)sizeof(gph)+3,
+                size+(u_int32_t)sizeof(gph)+4);
+        break;
+    case H_USER_DATA:
+        size = gph.size * sizeof(u_int32_t);
+        sprintf(pr, "%s /0x%08x-0x%08x (0x%06x)/ (User Data)",
                 pref, offs, offs+size+(u_int32_t)sizeof(gph)+3,
                 size+(u_int32_t)sizeof(gph)+4);
         break;
@@ -3722,8 +3812,14 @@ bool checkGen(FBase& f, u_int32_t beg,
                 size+(u_int32_t)sizeof(gph)+4);
         break;
     default:
-        report("%s /0x%08x/ - Invalid partition type (%d)\n", pref,offs,gph.type);
-        return false;
+        // For forward compatibility, try analyzing even if section type is uncknown
+        // Assuming the size is in DW, like all other sections (except emt service).
+        // If this assumption is wrong, CRC calc would fail - no harm done.
+        size = gph.size * sizeof(u_int32_t);
+        sprintf(pr, "%s /0x%08x-0x%08x (0x%06x)/ (UNKNOWN SECTION TYPE (%d))",
+                pref, offs, offs+size+(u_int32_t)sizeof(gph)+3,
+                size+(u_int32_t)sizeof(gph)+4, gph.type);
+
     }
 
     // CRC
@@ -3750,11 +3846,23 @@ bool checkGen(FBase& f, u_int32_t beg,
     else
         report("%s - OK\n", pr);
     next = gph.next;
+
+    if (gph.type == H_FW_CONF) {
+        _fw_conf_sect.clear();
+        _fw_conf_sect.insert(_fw_conf_sect.end(), 
+                         vector<u_int8_t>::iterator((u_int8_t*)buff), 
+                         vector<u_int8_t>::iterator((u_int8_t*)buff + size));
+
+    }
+
+    // mark last read addr
+    _last_image_addr = offs + size +sizeof(gph) + 4;  // the 4 is for the trailing crc
+    
     return true;
 } // checkGen
 
 ////////////////////////////////////////////////////////////////////////
-bool checkPS(FBase& f, u_int32_t offs, u_int32_t& next, const char *pref)
+bool Operations::checkPS(FBase& f, u_int32_t offs, u_int32_t& next, const char *pref)
 {
     Crc16 crc;
     PS    ps;
@@ -3788,7 +3896,7 @@ bool checkPS(FBase& f, u_int32_t offs, u_int32_t& next, const char *pref)
 } // checkPS
 
 ////////////////////////////////////////////////////////////////////////
-bool checkList(FBase& f, u_int32_t offs, const char *pref)
+bool Operations::checkList(FBase& f, u_int32_t offs, const char *pref)
 {
     u_int32_t next_ptr;
 
@@ -3796,11 +3904,12 @@ bool checkList(FBase& f, u_int32_t offs, const char *pref)
     part_cnt = 1;
     while (next_ptr && next_ptr != 0xff000000)
         CHECKGN(f, offs, next_ptr, next_ptr, pref);
+
     return true;
 } // checkList
 
 ////////////////////////////////////////////////////////////////////////
-bool Verify(FBase& f)
+bool Operations::Verify(FBase& f)
 {
     u_int32_t prim_ptr, scnd_ptr;
     u_int32_t signature;
@@ -3829,6 +3938,57 @@ bool Verify(FBase& f)
 } // Verify
 
 
+bool Operations::DumpConf        (const char* conf_file) {
+#ifndef NO_ZLIB
+
+    FILE* out;
+    if (conf_file == NULL) {
+        out = stdout;
+    } else {
+        out = fopen(conf_file, "w");
+
+        if (out == NULL) {
+            return errmsg("Can't open file %s for write: %s.", conf_file, strerror(errno));
+        }
+    }
+
+    if (_fw_conf_sect.empty()) {
+        return errmsg("Fw configuration section not found in the given image.");
+    }
+
+    // restore endianess.
+    TOCPUn(&(_fw_conf_sect[0]), _fw_conf_sect.size()/4);
+
+    // uncompress:
+    uLongf destLen = _fw_conf_sect.size();
+    destLen *= 10;
+    vector<u_int8_t> dest(destLen);
+
+    int rc = uncompress((Bytef *)&(dest[0]), &destLen,
+                        (const Bytef *)&(_fw_conf_sect[0]), _fw_conf_sect.size());
+
+    if (rc != Z_OK)
+    {
+        return errmsg("Failed uncompressing FW Info section. uncompress returnes %d", rc);
+    }
+
+    dest.resize(destLen);
+    dest[destLen] = 0;  // Terminating NULL
+    fprintf(out, "%s", (char*)&(dest[0]));
+
+    if (conf_file != NULL) {
+        fclose(out);
+    }
+
+    return true;
+#else 
+    return errmsg("Executable was compiled with \"dump configuration\" option disabled.");
+#endif
+
+} // DumpConf
+
+
+
 ////////////////////////////////////////////////////////////////////////
 //                                                                    //
 // ****************************************************************** //
@@ -3836,9 +3996,8 @@ bool Verify(FBase& f)
 // ****************************************************************** //
 //                                                                    //
 ////////////////////////////////////////////////////////////////////////
-#define GETGUID(s, g) do { if (!getGUID(s,g)) return 1; } while (0)
-#define GETBSN(s, g)  do { if (!getBSN(s,g)) return 1; } while (0)
-#define GUIDS 4
+#define GETGUID(s, g) do { if (!ops.getGUID(s,g)) return 1; } while (0)
+#define GETBSN(s, g)  do { if (!ops.getBSN(s,g)) return 1; } while (0)
 
 #define BSN_RET do {                                            \
     printf("Invalid BSN. Should be MTxxxxx[-]R[xx]ddmmyy-nnn[-cc]\n"); \
@@ -3848,14 +4007,14 @@ bool Verify(FBase& f)
     printf("Valid BSN format is: MTxxxxx[-]R[xx]ddmmyy-nnn[-cc]\n%s.\n",s); \
     return false;                                                    \
 } while(0)
-u_int32_t BSN_subfield(const char *s, int beg, int len)
+u_int32_t Operations::BSN_subfield(const char *s, int beg, int len)
 {
     char buf[64];
     strncpy(buf, &s[beg], len);
     buf[len] = '\0';
     return strtoul(&buf[0], 0, 10);
 }
-bool getBSN(char *s, guid_t *guid)
+bool Operations::getBSN(char *s, guid_t *guid)
 {
     const u_int64_t COMPANY_ID = 0x0002c9;
     const u_int64_t  TYPE      = 1;
@@ -3953,7 +4112,7 @@ bool getBSN(char *s, guid_t *guid)
     return true;
 }
 
-bool getGUID(const char *s, guid_t *guid)
+bool Operations::getGUID(const char *s, guid_t *guid)
 {
     char          str[17], *endp;
     int           i,j, str_beg;
@@ -3985,7 +4144,7 @@ bool getGUID(const char *s, guid_t *guid)
 } // getGUID
 
 ////////////////////////////////////////////////////////////////////////
-bool extractGUIDptr(u_int32_t sign, u_int32_t *buf, int buf_len,
+bool Operations::extractGUIDptr(u_int32_t sign, u_int32_t *buf, int buf_len,
                     char *pref, u_int32_t *ind, int *nguids)
 {
     u_int32_t offs = 0;
@@ -4024,7 +4183,7 @@ bool extractGUIDptr(u_int32_t sign, u_int32_t *buf, int buf_len,
 } // extractGUIDptr
 
 ////////////////////////////////////////////////////////////////////////
-void patchGUIDsSection(u_int32_t *buf, u_int32_t ind,
+void Operations::patchGUIDsSection(u_int32_t *buf, u_int32_t ind,
                        guid_t guids[GUIDS], int nguids)
 {
     u_int32_t       i, word;
@@ -4059,7 +4218,7 @@ void patchGUIDsSection(u_int32_t *buf, u_int32_t ind,
 
 
 ////////////////////////////////////////////////////////////////////////
-void _patchVSD(FImage& f, int ind, char *vsd)
+void Operations::_patchVSD(FImage& f, int ind, char *vsd)
 {
     u_int32_t  *buf = f.getBuf();
     Crc16      crc;
@@ -4081,7 +4240,7 @@ void _patchVSD(FImage& f, int ind, char *vsd)
 
 ////////////////////////////////////////////////////////////////////////
 //Note that vsd1 is a string of bytes.
-bool patchVSD(FImage& f, char *vsd1, char *curr_psid, const char* new_psid)
+bool Operations::patchVSD(FImage& f, char *vsd1, char *curr_psid, const char* new_psid)
 {
     char       vsd[VSD_LEN];
 
@@ -4100,7 +4259,7 @@ bool patchVSD(FImage& f, char *vsd1, char *curr_psid, const char* new_psid)
         strncpy(&vsd[0], vsd1, VSD_OFFS);
 
 
-    if (new_psid == 0) {
+    if (new_psid == NULL) {
         // New psid is not explicitly given - take it from image
         memcpy(image_psid, (char*)ps->psid, sizeof(ps->psid));
 
@@ -4147,8 +4306,7 @@ bool patchVSD(FImage& f, char *vsd1, char *curr_psid, const char* new_psid)
 
 
 ////////////////////////////////////////////////////////////////////////
-bool patchGUIDs(FImage& f, guid_t guids[GUIDS],
-                bool interactive)
+bool Operations::patchGUIDs(FImage& f, guid_t guids[GUIDS], bool interactive)
 {
     guid_t       old_guids[GUIDS];
     u_int32_t       *buf = f.getBuf();
@@ -4162,9 +4320,8 @@ bool patchGUIDs(FImage& f, guid_t guids[GUIDS],
         // Full image
         if (interactive)
             printf("\nFull image:\n\n");
-        if (!extractGUIDptr(f.get_sector_size()   , buf, buf_len, "Primary"  , &ind1, &nguid1))
-            return false;
-        if (!extractGUIDptr(f.get_sector_size() *2, buf, buf_len, "Secondary", &ind2, &nguid2))
+        if (!extractGUIDptr(f.get_sector_size()   , buf, buf_len, "Primary"  , &ind1, &nguid1) &&
+            !extractGUIDptr(f.get_sector_size() *2, buf, buf_len, "Secondary", &ind2, &nguid2))
             return false;
 
     } else {
@@ -4192,13 +4349,15 @@ bool patchGUIDs(FImage& f, guid_t guids[GUIDS],
         printf("    Old GUIDs (inside image) are:\n");
         printf("        Node:      " GUID_FORMAT "\n", old_guids[0].h,old_guids[0].l);
         printf("        Port1:     " GUID_FORMAT "\n", old_guids[1].h,old_guids[1].l);
-        printf("        Port2:     " GUID_FORMAT "\n", old_guids[2].h,old_guids[2].l);
+	if (_num_ports > 1) 
+	    printf("        Port2:     " GUID_FORMAT "\n", old_guids[2].h,old_guids[2].l);
         if (!old_guids_fmt)
             printf("        Sys.Image: " GUID_FORMAT "\n", old_guids[3].h,old_guids[3].l);
         printf("\n    You are about to change them to following GUIDs:\n");
         printf("        Node:      " GUID_FORMAT "\n", guids[0].h,guids[0].l);
         printf("        Port1:     " GUID_FORMAT "\n", guids[1].h,guids[1].l);
-        printf("        Port2:     " GUID_FORMAT "\n", guids[2].h,guids[2].l);
+	if (_num_ports > 1) 
+	    printf("        Port2:     " GUID_FORMAT "\n", guids[2].h,guids[2].l);
         if (!old_guids_fmt)
             printf("        Sys.Image: " GUID_FORMAT "\n", guids[3].h,guids[3].l);
 
@@ -4207,7 +4366,8 @@ bool patchGUIDs(FImage& f, guid_t guids[GUIDS],
     }
 
     // Path GUIDs section
-    patchGUIDsSection(buf, ind1, guids, nguid1);
+    if (ind1) 
+        patchGUIDsSection(buf, ind1, guids, nguid1);
     if (ind2)
         patchGUIDsSection(buf, ind2, guids, nguid2);
 
@@ -4216,7 +4376,8 @@ bool patchGUIDs(FImage& f, guid_t guids[GUIDS],
         printf("\n    Burn image with the following GUIDs:\n");
         printf("        Node:      " GUID_FORMAT "\n", guids[0].h,guids[0].l);
         printf("        Port1:     " GUID_FORMAT "\n", guids[1].h,guids[1].l);
-        printf("        Port2:     " GUID_FORMAT "\n", guids[2].h,guids[2].l);
+	if (_num_ports > 1) 
+	    printf("        Port2:     " GUID_FORMAT "\n", guids[2].h,guids[2].l);
         if (!old_guids_fmt)
             printf("        Sys.Image: " GUID_FORMAT "\n", guids[3].h,guids[3].l);
     }
@@ -4231,9 +4392,13 @@ bool patchGUIDs(FImage& f, guid_t guids[GUIDS],
 // ****************************************************************** //
 //                                                                    //
 ////////////////////////////////////////////////////////////////////////
-bool RevisionInfo(FBase& f, guid_t guids_out[GUIDS], char *vsd_out,
-                  bool *fs_image, bool internal_call = false,
-                  bool read_guids = true, bool read_ps = true)
+bool Operations::RevisionInfo(FBase& f, 
+                              guid_t guids_out[GUIDS], 
+                              char *vsd_out,
+                              bool *fs_image, 
+                              bool internal_call,
+                              bool read_guids, 
+                              bool read_ps)
 {
     char      *im_type;
     u_int32_t prim_ptr, scnd_ptr, ps_start=0;
@@ -4303,9 +4468,15 @@ bool RevisionInfo(FBase& f, guid_t guids_out[GUIDS], char *vsd_out,
            im_type, fw_id);
 
     if (read_guids) {
+	report("GUID Des:   Node             Port1            ");
+	if (_num_ports > 1)
+	    report("Port2            ");
+	report( "Sys image\n");
+
         report("GUIDs:      ");
         for (u_int32_t i=0; i<nguids/2; i++)
-            report(GUID_FORMAT " ", guids[i].h,guids[i].l);
+	    if (i != 2 || _num_ports > 1 ) 
+		report(GUID_FORMAT " ", guids[i].h,guids[i].l);
     }
 
     if (*fs_image && read_ps) {
@@ -4383,13 +4554,13 @@ Flash* get_serial_flash(mfile* mf) {
                flash_type_str[flash_type]);
     }
 
-    return 0;
+    return NULL;
 
 }
 
 
-Flash* get_flash(const char* device) {
-    Flash* f = 0;
+Flash* get_flash(const char* device, u_int32_t& num_ports) {
+    Flash* f = NULL;
 
     //
     // Check device ID. Allocate flash accordingly
@@ -4400,7 +4571,7 @@ Flash* get_flash(const char* device) {
     mfile* mf = mopen(device);
     if (!mf) {
         printf("*** ERROR *** Can't open %s: %s\n", device,  strerror(errno));
-        return 0;
+        return NULL;
     }
 
     if (mread4(mf, 0xf0014, &dev_id) != 4) return false;
@@ -4412,11 +4583,13 @@ Flash* get_flash(const char* device) {
     switch (dev_id) {
     case 23108:
     case 25208:
+        num_ports = 2;
         f = new ParallelFlash;
         break;
 
     case 24204:
     case 25204:
+        num_ports = 1;
         f = get_serial_flash(mf);
         break;
 
@@ -4483,6 +4656,13 @@ void usage(const char *sname, bool full = false)
     "\n"
     "                         Commands affected: burn\n"
     "\n"
+    "    -clear_semaphore   - Force clear of the flash semaphore on the device.\n"
+    "                         This flag should come BEFORE the -d[evice] flag in the command line.\n"
+    "                         No command is allowed when this flag is used.\n"
+    "                         NOTE: Using this flag may result in an unstable behavior and flash image\n"
+    "                               corruption if the device or another flash application is currently\n"
+    "                               using the flash. Handle with care.\n"
+    "\n"
     "    -h[elp]            - Prints this message and exits\n"
     "    -hh                - Prints extended command help\n"
     "\n"
@@ -4507,7 +4687,7 @@ void usage(const char *sname, bool full = false)
     "\n"
     "    -psid <PSID>       - Write the Parameter Set ID (PSID) string to PS-ID field (last 16 bytes of VSD) when burn.\n"
     "\n"
-    "    -use_image_ps      - Burn vsd/psid as appears in the given image - don't keep existing vsd/psid on flash.\n"
+    "    -use_image_ps      - Burn vsd as appears in the given image - don't keep existing vsd on flash.\n"
     "                         Commands affected: burn\n"
     "\n"
     "    -dual_image        - Make the burn process burn two images on flash (previously default algorithm). Current\n" 
@@ -4524,9 +4704,12 @@ void usage(const char *sname, bool full = false)
     "    rw       - Read one dword from flash\n"
     "    v[erify] - Verify entire flash\n"
     "    ww       - Write one dword to flash\n"
+    "    bb       - Burn Block - Burns the given image as is. No checks are done.\n"
     "    wwne     - Write one dword to flash without sector erase\n"
     "    wbne     - Write a data block to flash without sector erase\n"
     "    rb       - Read  a data block from flash\n"
+    "    ri       - Read the fw image on the flash.\n"
+    "    dc       - Dump Configuration: print fw configuration file for the given image.\n"
     "\n";
 
     const char* full_descr =
@@ -4544,6 +4727,18 @@ void usage(const char *sname, bool full = false)
     "    Examples:\n"
     "        " FLINT_NAME " -d " DEV_MST_EXAMPLE1 " -i image1.bin burn\n"
     "        " FLINT_NAME " -d " DEV_MST_EXAMPLE2 " -guid 0x2c9000100d050 -i image1.bin b\n"
+    "\n"
+    "\n"
+    "* Burn Block\n"
+    "  Burns entire flash from raw binary image as is. No checks are done on the flash or\n"
+    "  on the given image file. No fields (such as VSD or Guids) are read from flash. \n"
+    "\n"
+    "    Command:\n"
+    "        bb\n"
+    "    Parameters:\n"
+    "        None\n"
+    "    Examples:\n"
+    "        " FLINT_NAME " -d " DEV_MST_EXAMPLE1 " -i image1.bin bb\n"
     "\n"
     "\n"
     "* Erase sector.\n"
@@ -4626,15 +4821,26 @@ void usage(const char *sname, bool full = false)
     "    Example:\n"
     "        " FLINT_NAME " -d " DEV_MST_EXAMPLE1 " wwne 0x10008 0x5a445a44\n"
     "\n"
+    "* Read a data block from the flash and write it to a file or to screen.\n"
+    "\n"
     "    Command:\n"
     "        rb\n"
     "    Parameters:\n"
     "        addr - address of block\n"
     "        size - size of data to read in bytes\n"
-    "        file - filename to write the block (raw binary). If no given the data\n"
+    "        file - filename to write the block (raw binary). If not given, the data\n"
     "               is printed to screen\n"
     "    Example:\n"
     "        " FLINT_NAME " -d " DEV_MST_EXAMPLE1 " rb 0x10000 100 file.bin\n"
+    "\n"
+    "* Read the FW image from flash and write it to a file.\n"
+    "\n"
+    "    Command:\n"
+    "        ri\n"
+    "    Parameters:\n"
+    "        file - filename to write the image to (raw binary).\n"
+    "    Example:\n"
+    "        " FLINT_NAME " -d " DEV_MST_EXAMPLE1 " ri file.bin\n"
     "\n"
     "    Command:\n"
     "        wbne\n"
@@ -4644,12 +4850,23 @@ void usage(const char *sname, bool full = false)
     "        data - data to write - space seperated dwords\n"
     "    Example:\n"
     "        " FLINT_NAME " -d " DEV_MST_EXAMPLE1 " wbne 0x10000 12 0x30000 0x76800 0x5a445a44\n"
+    "\n"
+    "* Print (to screen or to a file) the firmware configuration text file used by the image generation process.\n"
+    "  This command would fail if the image does not contain a FW configuration section. Existence of this\n"
+    "  section depends on the version of the image generation tool.\n"
+    "    Command:\n"
+    "        dc\n"
+    "    Parameters:\n"
+    "        file - (optional) filename to write the dumped configuration to. If not given, the data\n"
+    "               is printed to screen\n"
+    "    Example:\n"
+    "        " FLINT_NAME " -d " DEV_MST_EXAMPLE1 " dc\n"
     "\n";
 
     printf(descr, sname);
 
     if (full) {
-        printf(full_descr);
+        printf(full_descr, sname);
     }
 }
 
@@ -4658,7 +4875,7 @@ void usage(const char *sname, bool full = false)
 // Signal handlers 
 //
 
-Flash* g_flash = 0;
+Flash* g_flash = NULL;
 
 int g_signals_for_termination[] = {
     SIGINT,
@@ -4679,7 +4896,7 @@ void TerminationHandler (int signum)
 
     signal (signum, SIG_DFL);
 
-    if (g_flash != 0) {
+    if (g_flash != NULL) {
         report("\n Received signal %d. Cleaning up ...", signum);
         fflush(stdout);
         sleep(1); // let erase sector end
@@ -4710,6 +4927,7 @@ int main(int ac, char *av[])
 {
     bool         fs_image;
     char         *image_fname=0, *device=0;
+    bool         clear_semaphore  = false;
     bool         silent           = false; 
     bool         guids_specified  = false; 
     bool         burn_failsafe    = true;
@@ -4718,11 +4936,13 @@ int main(int ac, char *av[])
 
     char         *vsd1=0;
     char         *psid=0;
-    guid_t       guids[GUIDS];
+    guid_t       guids[Operations::GUIDS];
     char         vsds[VSD_LEN];
     int		 rc = 0;
 
     auto_ptr<Flash>       f;
+
+    Operations            ops;
 
     //
     // Map termination signal handlers
@@ -4748,22 +4968,29 @@ int main(int ac, char *av[])
             if (!strncmp(av[i], "-dual_image", 10))
                 single_image_burn = false;
 
+	    else if (!strcmp(av[i], "-clear_semaphore")) {
+                clear_semaphore = true;
+	    }
+
             else if (!strncmp(av[i], "-d", 2)) {
                 NEXTS("-device");
                 device = av[i];
 
                 //f.reset( get_flash(device) );
-                auto_ptr<Flash>       tmp( get_flash(device));
-				f = tmp;
+                u_int32_t num_ports;
+                auto_ptr<Flash>       tmp( get_flash(device, num_ports));
+		f = tmp;
 				
-                if (f.get() == 0) {
+                if (f.get() == NULL) {
                     printf("*** ERROR *** Can't get flash type using device %s\n", device);
                     rc =  1; goto done; 
                 }
 
+                ops.SetNumPorts(num_ports);
+
                 g_flash = f.get();
-                if (!f->open(device)) {
-                    printf("*** ERROR *** Can't open %s: %s\n", device, f->_err);
+                if (!f->open(device, clear_semaphore)) {
+                    printf("*** ERROR *** Can't open %s: %s\n", device, f->err());
                     rc =  1; goto done; 
                 }
             } else if (!strcmp(av[i], "-v") || !strcmp(av[i], "-vv")) {
@@ -4779,8 +5006,7 @@ int main(int ac, char *av[])
                 rc =  0; goto done; 
 
             } else if (!strcmp(av[i], "-unlock")) {
-                _unlock_bypass = true;
-//		f->unlock_bypass(true);
+                _unlock_bypass = true;  
             } else if (!strcmp(av[i], "-noerase"))
                 _no_erase = true;
             else if (!strcmp(av[i], "-noburn"))
@@ -4812,7 +5038,7 @@ int main(int ac, char *av[])
             } else if (!strcmp(av[i], "-bsn")) {
                 NEXTS("-bsn");
                 GETBSN(av[i], &guids[0]);
-                for (int i=1; i<GUIDS; i++) {
+                for (int i=1; i<Operations::GUIDS; i++) {
                     u_int64_t g=guids[0].h;
                     g=(g<<32) | guids[0].l;
                     g += i;
@@ -4826,7 +5052,7 @@ int main(int ac, char *av[])
             } else if (!strcmp(av[i], "-guid")) {
                 NEXTS("-guid");
                 GETGUID(av[i], &guids[0]);
-                for (int i=1; i<GUIDS; i++) {
+                for (int i=1; i<Operations::GUIDS; i++) {
                     u_int64_t g=guids[0].h;
                     g=(g<<32) | guids[0].l;
                     g += i;
@@ -4836,7 +5062,7 @@ int main(int ac, char *av[])
                 guids_specified = true;
             } else if (!strcmp(av[i], "-guids")) {
                 NEXTS("-guids");
-                for (int j=0; j<GUIDS; j++) {
+                for (int j=0; j<Operations::GUIDS; j++) {
                     GETGUID(av[i], &guids[j]);
                     if (++i >= ac) {
                         printf("Exactly four GUIDs must be specified.\n");
@@ -4869,118 +5095,144 @@ int main(int ac, char *av[])
             // Commands
             // --------
             //
+
+	    if (clear_semaphore) {
+		printf("No command is allowed when -clear_semaphore flag is given.\n");  
+                rc =  1; goto done; 
+	    }
+
             if (*av[i] == 'b') {
                 //
                 // BURN
                 //
 
+                bool burn_block = false;
+                if (!strcmp(av[i], "bb")) {
+                    burn_block = true;
+                }
+
                 // Device
                 if (!device) {
-                    printf("For burn command \"-device\" switch must be specified.\n");
+                    printf("For %s command \"-device\" switch must be specified.\n", av[i]);
                     rc =  1; goto done; 
                 }
 
                 // Image - check, open and verify
                 if (!image_fname) {
-                    printf("For burn command \"-image\" switch must be specified.\n");
+                    printf("For %s command \"-image\" switch must be specified.\n", av[i]);
                     rc =  1; goto done; 
                 }
                 FImage         fim;
                 if (!fim.open(image_fname)) {
-                    printf("*** ERROR *** Image file open failed: %s\n", fim._err);
-                    rc =  1; goto done; 
-                }
-                bool old_silent = _silent;
-                _silent = true;
-                if (!Verify(fim)) {
-                    printf("Not a valid image\n");
+                    printf("*** ERROR *** Image file open failed: %s\n", fim.err());
                     rc =  1; goto done; 
                 }
 
-                // Check that the flash sector size is well defined in the image
-                if (fim.get_sector_size() && (fim.get_sector_size() != f->get_sector_size())) {
-                    printf("Flash sector size(0x%x) differs from sector size defined in image (0x%x)\n",
-                           f->get_sector_size(),
-                           fim.get_sector_size());
-                    rc =  1; goto done; 
-                }
+                if (!burn_block) {
+                    // Make checks and replace vsd/guids.
+                   
+                    bool old_silent = _silent;
+                    _silent = true;
+                    if (!ops.Verify(fim)) {
+                        printf("Not a valid image\n");
+                        rc =  1; goto done; 
+                    }
+                    
+                    // Check that the flash sector size is well defined in the image
+                    if (fim.get_sector_size() && (fim.get_sector_size() != f->get_sector_size())) {
+                        printf("Flash sector size(0x%x) differs from sector size defined in image (0x%x)\n",
+                               f->get_sector_size(),
+                               fim.get_sector_size());
+                        rc =  1; goto done; 
+                    }
+                    
+                    // Get GUID and VSD info from flash
+                    memset(vsds, 0, VSD_LEN);
+                    
+                    bool read_guids = true;
+                    bool read_ps    = true;
+                    
+                    if (guids_specified)
+                        read_guids = false;
+                    
+                    if ((vsd1 && psid) || use_image_ps)
+                        read_ps = false;
+                    
+                    if (read_guids || read_ps) {
+                        if (!ops.RevisionInfo(*f, guids, vsds, &fs_image, false, read_guids, read_ps )) {
+                            printf("*** ERROR *** Can't extract ");
+                            if (read_guids) {
+                                printf("GUIDS ");
+                            }
+                            if (read_ps) {
+                                if (read_guids) 
+                                    printf("and ");
+                                
+                                printf("VSD/PSID ");
+                            }
+                            printf("info from flash. ");
+                            printf("Please specify the missing info (using command line flags -guid(s) , -use_image_ps). ");
+                            
+                            if (burn_failsafe) {
+                                printf("Can't burn in a failsafe mode. Please use \"-nofs\" flag to burn in a none failsafe mode..\n");
+                            }
+                            rc =  1; goto done;
+                        }
+                    }
+                    
 
-                // Get GUID and VSD info from flash
-                memset(vsds, 0, VSD_LEN);
+                    // Patch GUIDS
+                    if (guids_specified) {
+                        if (!ops.patchGUIDs(fim, guids, isatty(0) != 0)) {
+                            rc =  1; goto done;
+                        }
+                    } else {
+                        if (!ops.patchGUIDs(fim, guids, false)) {
+                            rc =  1; goto done;
+                        }
+                    }
 
-                bool read_guids = true;
-                bool read_ps    = true;
+                    // Patch VSD
+                    if (vsd1)
+                        strncpy(&vsds[0], vsd1, VSD_OFFS);
+                    //if (psid)
+                    //    strncpy(&vsds[VSD_OFFS], psid, VSD_LAST);
+                    if (_image_is_full && !use_image_ps)
+                        if (!ops.patchVSD(fim, &vsds[0], &vsds[VSD_OFFS], psid)) {
+                            rc =  1; goto done;
+                        }
 
-                if (guids_specified)
-                    read_guids = false;
-
-                if ((vsd1 && psid) || use_image_ps)
-                    read_ps = false;
-
-                if (read_guids || read_ps) {
-                    if (!RevisionInfo(*f, guids, vsds, &fs_image, false, read_guids, read_ps )) {
-			printf("*** ERROR *** Can't extract ");
-			if (read_guids) {
-			    printf("GUIDS ");
-			}
-			if (read_ps) {
-			    if (read_guids) 
-				printf("and ");
-			    
-			    printf("VSD/PSID ");
-			}
-			printf("info from flash. ");
-			printf("Please specify the missing info (using command line flags -guid(s) , -use_image_ps). ");
-
-			if (burn_failsafe) {
-			    printf("Can't burn in a failsafe mode. Please use \"-nofs\" flag to burn in a none failsafe mode..\n");
-			}
-                        rc =  1; goto done;
-		    }
-                }
-
-
-                // Patch GUIDS
-                if (guids_specified) {
-                    if (!patchGUIDs(fim, guids, isatty(0) != 0)) {
-                        rc =  1; goto done;
-		    }
+                        _silent = old_silent;
                 } else {
-                    if (!patchGUIDs(fim, guids, false)) {
-                        rc =  1; goto done;
-		    }
+                    // BURN BLOCK:
+                    burn_failsafe = false;
                 }
 
-                // Patch VSD
-                if (vsd1)
-                    strncpy(&vsds[0], vsd1, VSD_OFFS);
-                //if (psid)
-                //    strncpy(&vsds[VSD_OFFS], psid, VSD_LAST);
-                if (_image_is_full && !use_image_ps)
-                    if (!patchVSD(fim, &vsds[0], &vsds[VSD_OFFS], psid)) {
-                        rc =  1; goto done;
-		    }
-
-                    // Burn it
-                _silent = old_silent;
+                // Burn it
                 if (burn_failsafe) {
                     // Failsafe burn
                     if (!_image_is_full) {
-                        printf("\nIt is impossible to burn a short image in a failsafe mode.\n");
+                        printf("*** ERROR *** Failsafe burn failed: FW Image on flash is short.\n");
+                        printf("It is impossible to burn a short image in a failsafe mode.\n");
                         printf("If you want to burn in non failsafe mode, use the \"-nofs\" switch.\n");
-                        printf("Otherwise, to burn in the failsafe mode, you need to specify the full image\n");
                         rc =  1; goto done; 
                     }
 
                     // FS burn
-                    if (!FailSafe_burn(*f, 
+                    if (!ops.FailSafe_burn(*f, 
                                        fim.getBuf(), 
                                        fim.getBufLength(),
                                        single_image_burn,
                                        !silent)) {
-                        printf("*** ERROR *** Failsafe burn failed: %s\n", f->_err);
-                        printf("It is impossible to burn this image in a failsafe mode.\n");
-                        printf("If you want to burn in non failsafe mode, use the \"-nofs\" switch.\n");
+			if (f->err()) {
+			    // The error is in flash access:
+			    printf("*** ERROR *** Flash access failed during burn: %s\n", f->err());
+			} else {
+			    // operation/ algorithm error:
+			    printf("*** ERROR *** Failsafe burn failed: %s\n", ops.err());
+			    printf("It is impossible to burn this image in a failsafe mode.\n");
+			    printf("If you want to burn in non failsafe mode, use the \"-nofs\" switch.\n");
+			}
                         rc =  1; goto done; 
                     }
                 } else {
@@ -4989,8 +5241,13 @@ int main(int ac, char *av[])
                     //
 
                     // Ask is it OK
-                    printf("\nBurn process will not be failsafe. No checks are performed\n");
-                    printf("and ALL flash, including Invariant Sector will be overwritten.\n");
+                    printf("\n");
+                    if (burn_block) {
+                        printf("Block burn: The given image will be burnt as is. No fields (such\n");
+                        printf("as GUIDS,VSD) are taken from current image on flash.\n");
+                    }
+                    printf("Burn process will not be failsafe. No checks are performed.\n");
+                    printf("ALL flash, including Invariant Sector will be overwritten.\n");
                     printf("If this process fails computer may remain in unoperatable state.\n");
 
                     if (!ask_user("\nAre you sure ? (y/n) [n] : ")) {
@@ -4998,10 +5255,10 @@ int main(int ac, char *av[])
 		    }
 
                     // Non FS burn
-                    if (!write_image(*f, 0, fim.getBuf(), fim.getBufLength(),
+                    if (!ops.write_image(*f, 0, fim.getBuf(), fim.getBufLength(),
                                      !silent)) {
                         report("\n");
-                        printf("*** ERROR *** Non failsafe burn failed: %s\n", f->_err);
+                        printf("*** ERROR *** Non failsafe burn failed: %s\n", ops.err());
                         rc =  1; goto done; 
                     }
                     report("\n");
@@ -5030,23 +5287,23 @@ int main(int ac, char *av[])
 
                 // Erase
                 if (!f->erase_sector(addr)) {
-                    printf("*** ERROR *** Erase sector failed: %s\n", f->_err);
+                    printf("*** ERROR *** Erase sector failed: %s\n", f->err());
                     rc =  1; goto done; 
                 }
             } else if (*av[i] == 'q') {
                 // QUERY
                 if (device) {
-		    if (!RevisionInfo(*f, guids, 0, &fs_image)) {
+		    if (!ops.RevisionInfo(*f, guids, 0, &fs_image)) {
 			printf("*** ERROR *** Flash query (through device %s) failed.\n", device);
                         rc =  1; goto done;
 		    }
 		} else if (image_fname) {
                     FImage         fim;
                     if (!fim.open(image_fname)) {
-                        printf("*** ERROR *** Image file open failed. %s\n", fim._err);
+                        printf("*** ERROR *** Image file open failed. %s\n", fim.err());
                         rc =  1; goto done; 
                     }
-		    if (!RevisionInfo(fim, guids, 0, &fs_image)) {
+		    if (!ops.RevisionInfo(fim, guids, 0, &fs_image)) {
 			printf("*** ERROR *** Query image file %s failed.\n", image_fname);
                         rc =  1; goto done;
 		    }
@@ -5065,10 +5322,22 @@ int main(int ac, char *av[])
 
                 bool         to_file = false;
 
+
+                FImage       fim;
+                FBase*       target;
+
                 // Device
-                if (!device) {
-                    printf("For rb command \"-device\" switch must be specified.\n");
-                    rc =  1; goto done; 
+                if (device) {
+                    target = f.get();
+                } else if (image_fname) {
+                    if (!fim.open(image_fname)) {
+                        printf("*** ERROR *** Image file open failed. %s\n", fim.err());
+                        rc =  1; goto done; 
+                    }
+                    target = &fim;
+                } else {
+                    printf("For rb command \"-device\" or \"-image\" switch must be specified.\n");
+                    rc =  1; goto done;
                 }
 
                 // Address and length
@@ -5107,8 +5376,8 @@ int main(int ac, char *av[])
                 }
 
                 // Read flash
-                if (!f->read(addr, data, length)) {
-                    printf("*** ERROR *** Flash read failed: %s\n", f->_err);
+                if (!target->read(addr, data, length)) {
+                    printf("*** ERROR *** Flash read failed: %s\n", target->err());
                     rc =  1; goto done; 
                 }
 
@@ -5151,25 +5420,104 @@ int main(int ac, char *av[])
 
                 // Read
                 if (!f->read(addr, &data)) {
-                    printf("*** ERROR *** Flash read failed: %s\n", f->_err);
+                    printf("*** ERROR *** Flash read failed: %s\n", f->err());
                     rc =  1; goto done; 
                 }
                 printf("0x%08x\n", (unsigned int)__cpu_to_be32(data));
             } else if (*av[i] == 'v') {
                 // VERIFY
                 if (device)
-                    Verify(*f);
+                    ops.Verify(*f);
                 else if (image_fname) {
                     FImage         fim;
                     if (!fim.open(image_fname)) {
-                        printf("*** ERROR *** Image file open failed: %s\n", fim._err);
+                        printf("*** ERROR *** Image file open failed: %s\n", fim.err());
                         rc =  1; goto done; 
                     }
-                    Verify(fim);
+                    ops.Verify(fim);
                 } else {
                     printf("For verify command \"-device\" or \"-image\" switch must be specified.\n");
                     rc =  1; goto done; 
                 }
+           
+            } else if (!strcmp(av[i], "dc")) {
+                // Dump conf
+                _silent = true;
+
+                char* conf_file = NULL;
+                if (i + 2 <= ac) {
+                    NEXTC("<OUT_FILENAME>", "dc");
+                    conf_file = av[i];
+                }
+
+                if (device)
+                    ops.Verify(*f);
+                else if (image_fname) {
+                    FImage         fim;
+                    if (!fim.open(image_fname)) {
+                        printf("*** ERROR *** Image file open failed: %s\n", fim.err());
+                        rc =  1; goto done; 
+                    }
+                    ops.Verify(fim);
+                } else {
+                    printf("For verify command \"-device\" or \"-image\" switch must be specified.\n");
+                    rc =  1; goto done; 
+                }
+
+                if(!ops.DumpConf(conf_file)) {
+                    printf("*** ERROR *** Failed dumping FW configuration: %s\n", ops.err());
+                    rc =  1; goto done; 
+                }
+
+            } else if (!strcmp(av[i], "ri")) {
+                // Dump conf
+                _silent = true;
+
+                char* img_file = NULL;
+                NEXTC("<OUT_FILENAME>", "ri");
+                img_file = av[i];
+
+                if (device) {
+                    ops.Verify(*f);
+                } else {
+                    printf("For ri command \"-device\" switch must be specified.\n");
+                    rc =  1; goto done; 
+                }
+
+                //printf("Last addr: 0x%08x\n", ops._last_image_addr);
+
+                u_int32_t length = ops._last_image_addr;
+                u_int8_t* data = new u_int8_t[length];
+
+
+                int fd = -1;
+
+                if ((fd = open(av[i], O_WRONLY | O_CREAT | O_BINARY, 0666)) < 0) {
+                    fprintf(stderr, "Can't open ");
+                    perror(av[i]);
+                    rc =  1; goto done; 
+                }
+                if (ftruncate(fd, 0) < 0) {
+                    fprintf(stderr, "Can't truncate ");
+                    perror(av[i]);
+                    rc =  1; goto done; 
+                }
+
+                // Read flash
+                if (!f->read(0, data, length)) {
+                    printf("*** ERROR *** Flash read failed: %s\n", f->err());
+                    rc =  1; goto done; 
+                }
+
+                // Write output
+                if (write(fd, data, length) != (int)length) {
+                    perror("Write error");
+                    rc =  1; goto done; 
+                }
+                close(fd);
+
+                delete [] data;
+
             } else if (!strcmp(av[i], "wb")) {
                 // WRITE BLOCK
                 //     Parameters:  <IN_FILENAME> <ADDR>
@@ -5215,8 +5563,8 @@ int main(int ac, char *av[])
                 }
 
                 // Write flash
-                if (!write_image(*f, addr, data, length, !silent)) {
-                    printf("*** ERROR *** Flash write failed: %s\n", f->_err);
+                if (!ops.write_image(*f, addr, data, length, !silent)) {
+                    printf("*** ERROR *** Flash write failed: %s\n", ops.err());
                     rc =  1; goto done; 
                 }
 
@@ -5250,7 +5598,7 @@ int main(int ac, char *av[])
 
                 //f->curr_sector = 0xffffffff;  // First time erase sector
                 if (!f->write(addr, data)) {
-                    printf("*** ERROR *** Flash write failed: %s\n", f->_err);
+                    printf("*** ERROR *** Flash write failed: %s\n", f->err());
                     rc =  1; goto done; 
                 }
             } else if (!strcmp(av[i], "wbne")) {
@@ -5291,7 +5639,7 @@ int main(int ac, char *av[])
                 }
 
                 if (!f->write(addr, &data_vec[0], size, true, false)) {
-                    printf("*** ERROR *** Flash write failed: %s\n", f->_err);
+                    printf("*** ERROR *** Flash write failed: %s\n", f->err());
                     rc =  1; goto done; 
                 }
             } else if (!strcmp(av[i], "wwne")) {
@@ -5321,7 +5669,7 @@ int main(int ac, char *av[])
                 }
 
                 if (!f->write(addr, &data, 4, true, false)) {
-                    printf("*** ERROR *** Flash write failed: %s\n", f->_err);
+                    printf("*** ERROR *** Flash write failed: %s\n", f->err());
                     rc =  1; goto done; 
                 }
             } else if (!strcmp(av[i], "cfi")) {
@@ -5335,14 +5683,13 @@ int main(int ac, char *av[])
                 }
 
                 if (!f->print_cfi_info()) {
-                    printf("*** ERROR *** Cfi query failed: %s\n", f->_err);
+                    printf("*** ERROR *** Cfi query failed: %s\n", f->err());
                     rc =  1; goto done; 
                 }
             } else {
                 printf("Invalid command \"%s\".\n", av[i]);
                 rc =  1; goto done; 
             }
-
         }
     }
 
