@@ -3481,7 +3481,8 @@ bool Operations::FailSafe_burn(Flash& f, void *data, int size, bool single_image
     }
     for (i=0; i < sect_size/4; i++) {
         if (buf1[i] != data32[i]  &&  (data32[i] != 0 || buf1[i] != 0xffffffff)) {
-	    report("Invariant sector doesn't match. Word #%d (0x%x) "
+            report("FAILED\n\n");
+	    return errmsg("Invariant sector doesn't match. Word #%d (0x%x) "
 			  "in image: 0x%08x, while in flash: 0x%08x",
 			  i, i, data32[i], buf1[i]);
         }
