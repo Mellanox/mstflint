@@ -3744,12 +3744,7 @@ bool Operations::checkGen(FBase& f, u_int32_t beg,
     part_cnt++;
 
     // May be BOOT3?
-    if (gph.type < H_FIRST  ||  gph.type > H_LAST) {
-        if (part_cnt > 2) {
-            report("%s /0x%x/ - Invalid partition type (%d)\n",
-                   pref, offs+beg, gph.type);
-            return false;
-        } else
+    if (part_cnt <= 2) {
             return checkBoot2(f, beg, offs, next, pref);
     }
 
