@@ -5650,6 +5650,13 @@ int main(int ac, char *av[])
 
     Operations            ops;
 
+    FBase*      fbase = 0 /* Suppress gcc warning */;
+    char*       cmdTarget = 0 /* Suppress gcc warning */;
+    char*       cmdAccess = 0 /* Suppress gcc warning */;
+
+    // Output file
+    FILE*  fh = 0 /* Suppress gcc warning */;
+
     //
     // Map termination signal handlers
     //
@@ -5834,11 +5841,6 @@ int main(int ac, char *av[])
     if (!CheckMaxCmdArguments(cmd, ac - i - 1 )) {
         rc = 1; goto done;
     }
-
-
-    FBase*      fbase;
-    char*       cmdTarget;
-    char*       cmdAccess;
 
     if (device) {
         // Open the device
@@ -6131,9 +6133,6 @@ int main(int ac, char *av[])
             rc =  1; goto done; 
         }
         data = new u_int8_t[length];
-
-        // Output file
-        FILE*  fh;
 
         if (i + 2 == ac)
             to_file = true;
