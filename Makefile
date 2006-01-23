@@ -35,4 +35,4 @@ mread: mread.c mtcr.h
 	$(CC) ${CFLAGS} mread.c -o mread
 
 clean:
-	rm -f mstflint mread mwrite
+	rm -f mstflint mread mwrite mstflint.o
