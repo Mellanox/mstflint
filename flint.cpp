@@ -5836,9 +5836,9 @@ int main(int ac, char *av[])
     }
 
 
-    FBase*      fbase;
-    char*       cmdTarget;
-    char*       cmdAccess;
+    FBase*      fbase = 0;
+    char*       cmdTarget =0;
+    char*       cmdAccess = 0;
 
     if (device) {
         // Open the device
