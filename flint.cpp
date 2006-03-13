@@ -32,7 +32,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- *  Version: $Id: flint.cpp 2747 2006-01-17 16:46:17Z orenk $
+ *  Version: $Id: flint.cpp 2768 2006-03-09 12:57:05Z orenk $
  *
  */
 
@@ -133,7 +133,7 @@ char* _versionID = _VFSTR( VERSION_ID ) ;
 char* _versionID = "VERSION_ID_HERE";
 #endif
 
-char* _svnID     = "$Revision: 2747 $";
+char* _svnID     = "$Revision: 2768 $";
 
 #ifndef __be32_to_cpu
     #define __be32_to_cpu(x) ntohl(x)
@@ -5650,13 +5650,6 @@ int main(int ac, char *av[])
 
     Operations            ops;
 
-    FBase*      fbase = 0 /* Suppress gcc warning */;
-    char*       cmdTarget = 0 /* Suppress gcc warning */;
-    char*       cmdAccess = 0 /* Suppress gcc warning */;
-
-    // Output file
-    FILE*  fh = 0 /* Suppress gcc warning */;
-
     //
     // Map termination signal handlers
     //
@@ -5842,6 +5835,11 @@ int main(int ac, char *av[])
         rc = 1; goto done;
     }
 
+
+    FBase*      fbase;
+    char*       cmdTarget;
+    char*       cmdAccess;
+
     if (device) {
         // Open the device
 
@@ -5986,7 +5984,7 @@ int main(int ac, char *av[])
                 if (!ops.patchGUIDs(fim, 
                                     user_guids, 
                                     flashInfo.imageOk ? flashInfo.guids : NULL, 
-                                    isatty(0) != 0)) {
+                                    true)) {
                     rc =  1; goto done;
                 }
             } else {
@@ -6133,6 +6131,9 @@ int main(int ac, char *av[])
             rc =  1; goto done; 
         }
         data = new u_int8_t[length];
+
+        // Output file
+        FILE*  fh;
 
         if (i + 2 == ac)
             to_file = true;
