@@ -656,7 +656,7 @@ private:
 //    A: Read operation is done in the same way for all flash devices of
 //       the same type (serial or parallel). This is a basic requirement 
 //       from the flash, since the HCA HW reads from flash at boot, and 
-//       the way it reads can not be changed. 
+//       the way it reads can't be changed. 
 //       However, Write and Erase operations protocol varies between flash 
 //       vendors.
 //       The term 'command set' is taken from the Common Flash Interface (CFI)
@@ -1412,7 +1412,7 @@ bool Flash::lock(bool retry) {
     u_int32_t word;
     do {
         if (++cnt > GPIO_SEM_TRIES) {
-            return errmsg("Can not obtain Flash semaphore (63). You can run \"flint -clear_semaphore -d <device>\" to force semaphore unlock. See help for details.");
+            return errmsg("Can't obtain Flash semaphore (63). You can run \"flint -clear_semaphore -d <device>\" to force semaphore unlock. See help for detail.");
         }
         MREAD4(SEMAP63, &word);
     } while (word);
@@ -3593,7 +3593,7 @@ bool Operations::FailSafe_burn_image(Flash&       f,
 
     // Burn image (from new offset)
 
-    // Both burnt images are taken from the first image in the file - both images in file are identical.
+    // Both burned images are taken from the first image in the file - both images in file are identical.
     // (future binary releases may contain a single image).
     if (!write_image(f, image_addr, data8 + sect_size * 3, image_size, need_report)) {
         report("FAILED\n\n");
@@ -3643,7 +3643,7 @@ bool Operations::FailSafe_burn_internal(Flash& f, void *data, int cnt, bool need
         return errmsg("Invalid image: too small.");
     }
     if (prim_len != scnd_len) {
-        return errmsg("Invalid image: two FW images should be in a same size.");
+        return errmsg("Invalid image: two FW images should have the same size.");
     }
 
     // Image size from flash
@@ -3730,12 +3730,12 @@ bool Operations::CheckInvariantSector(Flash& f, u_int32_t *data32, int sect_size
                    " in image: 0x%08x, while in flash: 0x%08x\n\n",
                    first_diff*4 , data32[first_diff], buf1[first_diff]);
 
-            printf(" The invariant sector can not be burnt in a failsafe manner.\n"
-                   " To force burn of the invariant sector, rerun with -nofs flag.\n");
+            printf(" The invariant sector can't be burned in a failsafe manner.\n"
+                   " To force burn the invariant sector, rerun with -nofs flag.\n");
 
         if (_allow_skip_is) {
             printf(" You can also continue to update the FW without updating the invariant sector.\n"
-                   " See the firmware release notes for more details.\n\n");
+                   " See the firmware release notes for more detail.\n\n");
 
             return ask_user(" Do you want to continue  ? ");
 
@@ -3743,7 +3743,7 @@ bool Operations::CheckInvariantSector(Flash& f, u_int32_t *data32, int sect_size
             // Continue with burn
             printf(" You can also update the FW without updating the invariant sector by\n"
                    " specifying the -skip_is flag.\n" 
-                   " See the firmware release notes for more details.\n\n");
+                   " See the firmware release notes for more detail.\n\n");
 
             return errmsg("Invariant sector mismatch");
         }
@@ -3897,7 +3897,7 @@ bool Operations::FailSafe_burn(Flash& f, void *data, int size, bool single_image
         if (!cur_image_ok[0] && cur_image_ok[1]) {
             // Second image is valid on flash.
             // If the new image can fit in the first image gap, it would be
-            //   burnt as first image.
+            //   burned as first image.
             // Otherwise (new image too big), image on flash is copied from second to 
             //   first image, and new image would be written as second.
 
@@ -4273,7 +4273,7 @@ bool Operations::DumpConf        (const char* conf_file) {
     }
 
     if (_fw_conf_sect.empty()) {
-        return errmsg("Fw configuration section not found in the given image.");
+        return errmsg("FW configuration section not found in the given image.");
     }
 
     // restore endianess.
@@ -4289,7 +4289,7 @@ bool Operations::DumpConf        (const char* conf_file) {
 
     if (rc != Z_OK)
     {
-        return errmsg("Failed uncompressing FW Info section. uncompress returnes %d", rc);
+        return errmsg("Failed uncompressing FW configuration section. uncompress returnes %d", rc);
     }
 
     dest.resize(destLen);
@@ -4472,7 +4472,7 @@ bool Operations::extractGUIDptr(u_int32_t sign, u_int32_t *buf, int buf_len,
     TOCPU1(*ind);
     *ind += offs;
     if (*ind >= (u_int32_t)buf_len) {
-        printf("%s image - insane GUID pointer (%08x)\n", pref, *ind);
+        printf("%s image - illegal GUID pointer (%08x)\n", pref, *ind);
         return false;
     }
     *nguids = buf[*ind/4 - 3];
@@ -4481,7 +4481,7 @@ bool Operations::extractGUIDptr(u_int32_t sign, u_int32_t *buf, int buf_len,
 
     // More sanity check
     if (*nguids > GUIDS) {
-        printf("%s image - insane number of GUIDs (%d)\n", pref, *nguids);
+        printf("%s image - illegal number of GUIDs (%d)\n", pref, *nguids);
         return false;
     }
 
@@ -4835,12 +4835,12 @@ bool Operations::QueryImage (FBase& f,
     TOCPU1(guid_ptr);
     guid_ptr += im_start;
     if (guid_ptr >= f.get_size()) {
-        return errmsg("Failed to read GUIDs - Insane GUID pointer (%08x). Probably image is corrupted", guid_ptr);
+        return errmsg("Failed to read GUIDs - Illegal GUID pointer (%08x). Probably image is corrupted", guid_ptr);
     }
     READ4(f, guid_ptr - 3*sizeof(u_int32_t), &nguids, "Number of GUIDs");
     TOCPU1(nguids);
     if (nguids > GUIDS*2) {
-        report("Failed to read GUIDs - Insane Number of GUIDs (%d)\n", nguids);
+        report("Failed to read GUIDs - Illegal Number of GUIDs (%d)\n", nguids);
         return false;
     }
     READBUF(f, guid_ptr, guids, nguids / 2 * sizeof(u_int64_t), "GUIDS");
@@ -4864,7 +4864,7 @@ bool Operations::QueryImage (FBase& f,
     }
 
     if (info_ptr_cs) {
-        return errmsg("Failed to read Info Section - Bad checksum for Info section pointer (%08x). Probably image is corrupted", info_ptr);        
+        return errmsg("Failed to read Info Section - Bad checksum for Info section pointer (%08x). Probably the image is corrupted.", info_ptr);        
     }
 
     info_ptr = info_ptr_ba.range(23,0);
@@ -4872,7 +4872,7 @@ bool Operations::QueryImage (FBase& f,
         
         info_ptr += im_start;
         if (info_ptr >= f.get_size()) {
-            return errmsg("Failed to read Info Section - Info section pointer (%08x) too large. Probably image is corrupted", info_ptr);
+            return errmsg("Failed to read Info Section - Info section pointer (%08x) too large. Probably the image is corrupted.", info_ptr);
         }
         READ4(f, info_ptr - 3*sizeof(u_int32_t), &info_size, "Info section size");
         TOCPU1(info_size);
@@ -5134,12 +5134,13 @@ void usage(const char *sname, bool full = false)
     "                                 MTxxxxx[-]R[xx]ddmmyy-nnn[-cc]\n"
     "                         Commands affected: burn\n"
     "\n"
-    "    -crc               - Print CRC after each section when verify.\n"
+    "    -crc               - Print out each section CRC.\n"
+    "                         Commands affected: verify\n"
     "\n"
     "    -d[evice] <device> - Device flash is connected to.\n"
     "                         Commands affected: all\n"
     "\n"
-    "    -guid <GUID>       - Base value for up to 4 GUIDs, which\n"
+    "    -guid <GUID>       - GUID base value. Up to 4 GUIDs\n"
     "                         are automatically assigned the\n"
     "                         following values:\n"
     "\n"
@@ -5148,8 +5149,8 @@ void usage(const char *sname, bool full = false)
     "                         guid+2 -> port2\n"
     "                         guid+3 -> system image GUID.\n"
     "\n"
-    "                         Note: For a single port HCA, port2 guid is assigned\n"
-    "                               with the 'guid + 2' value, although it is ignored.\n"
+    "                         Note: port2 guid will be assigned even for a"
+    "                         single port HCA. The HCA ignores this value.\n"
     "\n"
     "                         Commands affected: burn\n"
     "\n"
@@ -5158,17 +5159,20 @@ void usage(const char *sname, bool full = false)
     "                         the following values, repectively:\n"
     "                         node, port1, port2 and system image GUID.\n"
     "\n"
-    "                         Note: For a single port HCA, port2 guid must be\n"
-    "                               specified (can be set to 0x0), although it is ignored.\n"
+    "                         Note: port2 guid must be specified even for a\n"
+    "                         single port HCA. The HCA ignores this value.\n"
+    "                         It is OK to set this value to 0x0.\n"
     "\n"
     "                         Commands affected: burn\n"
     "\n"
-    "    -clear_semaphore   - Force clear of the flash semaphore on the device.\n"
-    "                         This flag should come BEFORE the -d[evice] flag in the command line.\n"
+    "    -clear_semaphore   - Force clear the flash semaphore on the device.\n"
+    "                         This flag should come BEFORE the -d[evice] flag\n"
+    "                         on the command line.\n"
     "                         No command is allowed when this flag is used.\n"
-    "                         NOTE: Using this flag may result in an unstable behavior and flash image\n"
-    "                               corruption if the device or another flash application is currently\n"
-    "                               using the flash. Handle with care.\n"
+    "                         NOTE: May result in system instability or flash\n"
+    "                               corruption if the device or another\n"
+    "                               application is currently using the flash.\n"
+    "                               Exercise caution.\n"
     "\n"
     "    -h[elp]            - Prints this message and exits\n"
     "    -hh                - Prints extended command help\n"
@@ -5179,8 +5183,8 @@ void usage(const char *sname, bool full = false)
     "    -nofs              - Burn image not in failsafe manner.\n"
     "\n"
     "    -skip_is           - Allow burning the FW image without updating the invariant sector,\n"
-    "                         to insures failsafe burning even when invariant sector difference is detected.\n"
-    "                         See the specific FW release notes for more details.\n"
+    "                         to ensure failsafe burning even when invariant sector difference is detected.\n"
+    "                         See the specific FW release notes for more detail.\n"
     "\n"
     "    -byte_mode         - Shift address when accessing flash internal registers. May\n"
     "                         be required for burn/write commands when accessing certain\n"
@@ -5423,7 +5427,7 @@ void TerminationHandler (int signum)
         return;
     }
 
-    report ("\nWarning: This program can not be interrupted.Please wait for its termination.\n");
+    report ("\nWarning: This program can't be interrupted.Please wait for its termination.\n");
     signal(signum, TerminationHandler);
     return;
 #endif
@@ -5650,6 +5654,10 @@ int main(int ac, char *av[])
 
     Operations            ops;
 
+    FBase*      fbase = 0;
+    char*       cmdTarget =0;
+    char*       cmdAccess = 0;
+
     //
     // Map termination signal handlers
     //
@@ -5809,7 +5817,7 @@ int main(int ac, char *av[])
     }
 
     if (!cmdStr) {
-        printf("*** ERROR *** No command given. See help for details.\n");  
+        printf("*** ERROR *** No command given. See help for detail.\n");  
         rc =  1; goto done; 
     }
 
@@ -5835,10 +5843,6 @@ int main(int ac, char *av[])
         rc = 1; goto done;
     }
 
-
-    FBase*      fbase = 0;
-    char*       cmdTarget =0;
-    char*       cmdAccess = 0;
 
     if (device) {
         // Open the device
@@ -5907,7 +5911,7 @@ int main(int ac, char *av[])
             // Check that the flash sector size is well defined in the image
             if (fim.get_sector_size() && (fim.get_sector_size() != f->get_sector_size())) {
                 printf("*** ERROR *** Flash sector size(0x%x) differs from sector size defined in the image (0x%x).\n"
-                       "              This means that the given FW file is not configured to work with the burnt HCA board type.\n",
+                       "              This means that the given FW file is not configured to work with the burned HCA board type.\n",
                        f->get_sector_size(),
                        fim.get_sector_size());
                 rc =  1; goto done;
@@ -6043,12 +6047,12 @@ int main(int ac, char *av[])
             // Ask is it OK
             printf("\n");
             if (burn_block) {
-                printf("Block burn: The given image will be burnt as is. No fields (such\n");
+                printf("Block burn: The given image will be burned as is. No fields (such\n");
                 printf("as GUIDS,VSD) are taken from current image on flash.\n");
             }
             printf("Burn process will not be failsafe. No checks are performed.\n");
             printf("ALL flash, including Invariant Sector will be overwritten.\n");
-            printf("If this process fails computer may remain in unoperatable state.\n");
+            printf("If this process fails computer may remain in inoperable state.\n");
 
             if (!ops.ask_user("\nAre you sure ? (y/n) [n] : ")) {
                 rc =  1; goto done;
@@ -6133,7 +6137,7 @@ int main(int ac, char *av[])
         data = new u_int8_t[length];
 
         // Output file
-        FILE*  fh;
+        FILE*  fh = 0;
 
         if (i + 2 == ac)
             to_file = true;
@@ -6202,7 +6206,7 @@ int main(int ac, char *av[])
     {
         // VERIFY
         if (!ops.Verify(*fbase)) {
-            printf("\n*** ERROR *** FW Image verification failed. AN HCA DEVICE CAN NOT BOOT FROM THIS IMAGE.\n");
+            printf("\n*** ERROR *** FW Image verification failed. AN HCA DEVICE CAN'T BOOT FROM THIS IMAGE.\n");
             rc =  1; goto done; 
         } else {
             printf("\nFW Image verification succeeded. Image is OK.\n\n");
