@@ -32,7 +32,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- *  Version: $Id: flint.cpp 2768 2006-03-09 12:57:05Z orenk $
+ *  Version: $Id: flint.cpp 2777 2006-03-23 14:55:51Z orenk $
  *
  */
 
@@ -133,7 +133,7 @@ char* _versionID = _VFSTR( VERSION_ID ) ;
 char* _versionID = "VERSION_ID_HERE";
 #endif
 
-char* _svnID     = "$Revision: 2768 $";
+char* _svnID     = "$Revision: 2777 $";
 
 #ifndef __be32_to_cpu
     #define __be32_to_cpu(x) ntohl(x)
@@ -656,7 +656,7 @@ private:
 //    A: Read operation is done in the same way for all flash devices of
 //       the same type (serial or parallel). This is a basic requirement 
 //       from the flash, since the HCA HW reads from flash at boot, and 
-//       the way it reads can't be changed. 
+//       the way it reads can not be changed. 
 //       However, Write and Erase operations protocol varies between flash 
 //       vendors.
 //       The term 'command set' is taken from the Common Flash Interface (CFI)
@@ -1240,17 +1240,17 @@ bool FImage::open(const char *fname, bool read_only)
     fh = fopen(fname, "rb");
 
     if (!fh) {
-        return errmsg("Can't open file \"%s\" - %s\n", fname, strerror(errno));
+        return errmsg("Can not open file \"%s\" - %s\n", fname, strerror(errno));
     }
 
     // Get the file size:
     if (fseek(fh, 0, SEEK_END) < 0) {
-        return errmsg("Can't get file size for \"%s\" - %s\n", fname, strerror(errno));
+        return errmsg("Can not get file size for \"%s\" - %s\n", fname, strerror(errno));
     }
 
     fsize = ftell(fh);
     if (fsize < 0) {
-        return errmsg("Can't get file size for \"%s\" - %s\n", fname, strerror(errno));
+        return errmsg("Can not get file size for \"%s\" - %s\n", fname, strerror(errno));
     }
     rewind(fh);
 
@@ -1356,7 +1356,7 @@ bool Flash::open(const char *device, bool force_lock, bool read_only)
     // Open device
     _mf = mopen(device);
     if (!_mf) {
-        return errmsg("Can't open device %s: %s", device, strerror(errno));
+        return errmsg("Can not open device %s: %s", device, strerror(errno));
     }
 
     _locked = lock();
@@ -1412,7 +1412,7 @@ bool Flash::lock(bool retry) {
     u_int32_t word;
     do {
         if (++cnt > GPIO_SEM_TRIES) {
-            return errmsg("Can't obtain Flash semaphore (63). You can run \"flint -clear_semaphore -d <device>\" to force semaphore unlock. See help for detail.");
+            return errmsg("Can not obtain Flash semaphore (63). You can run \"flint -clear_semaphore -d <device>\" to force semaphore unlock. See help for details.");
         }
         MREAD4(SEMAP63, &word);
     } while (word);
@@ -1971,7 +1971,7 @@ bool ParallelFlash::CmdSetAmd::write(u_int32_t addr, void *data, int cnt,
                 int  loop_cnt = 0;
                 // Timeout checks
                 if (++loop_cnt > FLASH_CMD_CNT) {
-                    return _f.errmsg("Use scratchpad: CMD doesn't become zero");
+                    return _f.errmsg("Use scratchpad: CMD does not become zero");
                 }
                 if (mread4(_f._mf, _f.USE_SCR , &cmd) != 4) return false;
 
@@ -2008,7 +2008,7 @@ bool ParallelFlash::CmdSetAmd::write(u_int32_t addr, void *data, int cnt,
                 if (++cnt1 > READ_CNT_FAST)
                     usleep(READ_DELAY);
                 if (cnt1 > READ_CNT_FAST + READ_CNT_SLOW) {
-                    return _f.errmsg("Flash write error - read value didn't stabilize.");
+                    return _f.errmsg("Flash write error - read value did not stabilize.");
                     return false;
                 }
 
@@ -3005,7 +3005,8 @@ bool SpiFlash::CmdSetStSpi::write (u_int32_t addr,
 
         if (!all_ffs) {
 
-            write_block(block_addr, block_data, block_size);
+            if (!write_block(block_addr, block_data, block_size))
+                return false;
 
             if (!noverify) {
                 u_int8_t verify_buffer[MAX_WRITE_BUFFER_SIZE];
@@ -3192,7 +3193,7 @@ bool SpiFlash::CmdSetStSpi::wait_wip(u_int32_t delay, u_int32_t retrys, u_int32_
             usleep(delay);
         if (cnt > retrys) {
             reset();
-            return _f.errmsg("Flash write error - Write In Progress bit didn't clear.");
+            return _f.errmsg("Flash write error - Write In Progress bit did not clear.");
         }
 
         MWRITE4(FLASH_ADDR, gw_addr);
@@ -3268,7 +3269,7 @@ public:
     void SetNumPorts     (u_int32_t num_ports) {_num_ports = num_ports;}
     void SetAllowSkipIs  (bool asis)           {_allow_skip_is = asis;}
     
-    bool ask_user        (const char* msg);
+    bool ask_user        ();
 
     u_int32_t              _last_image_addr;
 
@@ -3381,8 +3382,8 @@ private:
 // Returns true if user chose Y, false if user chose N.
 //
 
-bool Operations::ask_user(const char* msg) {
-    printf(msg);
+bool Operations::ask_user() {
+    printf("\n Do you want to continue ? (y/n) [n] : ");
     if (_assume_yes)
         printf("y\n");
     else {
@@ -3390,7 +3391,7 @@ bool Operations::ask_user(const char* msg) {
         ansbuff[0] = '\0';
 
         if (!isatty(0)) {
-            return errmsg("Not on tty - Can't interact. assuming \"no\" for question \"%s\"", msg);
+            return errmsg("Not on tty - Can not interact. assuming \"no\"");
         }
         fflush(stdout);
         fgets(ansbuff, 30, stdin);
@@ -3487,7 +3488,7 @@ bool Operations::repair(Flash& f, const int from, const int to, bool need_report
 
     // Make sure ps ik ok:
     if (sig != SIGNATURE) {
-        return errmsg("Can't copy image. Pointer sector %d signature is bad (%08x).", from, sig);
+        return errmsg("Can not copy image. Pointer sector %d signature is bad (%08x).", from, sig);
     }
 
     // Valid image size in bytes
@@ -3593,7 +3594,7 @@ bool Operations::FailSafe_burn_image(Flash&       f,
 
     // Burn image (from new offset)
 
-    // Both burned images are taken from the first image in the file - both images in file are identical.
+    // Both burnt images are taken from the first image in the file - both images in file are identical.
     // (future binary releases may contain a single image).
     if (!write_image(f, image_addr, data8 + sect_size * 3, image_size, need_report)) {
         report("FAILED\n\n");
@@ -3727,23 +3728,23 @@ bool Operations::CheckInvariantSector(Flash& f, u_int32_t *data32, int sect_size
     if (first_diff != -1) {
             report("DIFF DETECTED\n\n");
             printf(" Invariant sector mismatch. Address 0x%x "
-                   " in image: 0x%08x, while in flash: 0x%08x\n\n",
+                   " in image: 0x%08x, while on flash: 0x%08x\n\n",
                    first_diff*4 , data32[first_diff], buf1[first_diff]);
 
-            printf(" The invariant sector can't be burned in a failsafe manner.\n"
-                   " To force burn the invariant sector, rerun with -nofs flag.\n");
+            printf(" The invariant sector can not be burnt in a failsafe manner.\n"
+                   " To force-burn the invariant sector, rerun with -nofs flag.\n");
 
         if (_allow_skip_is) {
             printf(" You can also continue to update the FW without updating the invariant sector.\n"
-                   " See the firmware release notes for more detail.\n\n");
+                   " See the FW release notes for more details.\n\n");
 
-            return ask_user(" Do you want to continue  ? ");
+            return ask_user();
 
         } else {
             // Continue with burn
             printf(" You can also update the FW without updating the invariant sector by\n"
                    " specifying the -skip_is flag.\n" 
-                   " See the firmware release notes for more detail.\n\n");
+                   " See the FW release notes for more details.\n\n");
 
             return errmsg("Invariant sector mismatch");
         }
@@ -3799,7 +3800,7 @@ bool Operations::FailSafe_burn(Flash& f, void *data, int size, bool single_image
     u_int32_t  cur_image_size[2];
 
     // Check signatures on flash
-    report("Read and verify PPS/SPS in flash               - ");
+    report("Read and verify PPS/SPS on flash               - ");
     for (i = 0 ; i < 2 ; i++) {
         if (!f.read(sect_size * (i+1) + 8, &signature_for_compare)) {
 
@@ -3821,12 +3822,12 @@ bool Operations::FailSafe_burn(Flash& f, void *data, int size, bool single_image
 
     if (!cur_image_ok[0] && !cur_image_ok[1]) {
         //
-        // Both images are invalid in flash
+        // Both images are invalid on flash
         // --------------------------------
         //
-        printf("\nBoth images (primary and secondary) are invalid in flash.\n");
-        printf("The burning can't be failsafe, but it is harmless for host.\n");
-        if(!ask_user("\n    Do you want to continue ? (y/n) [n] : ")) {
+        printf("\nBoth images (primary and secondary) are invalid on flash.\n");
+        printf("The burning can not be failsafe, but it is harmless for host.\n");
+        if(!ask_user()) {
             return false;
         }
 
@@ -3878,7 +3879,7 @@ bool Operations::FailSafe_burn(Flash& f, void *data, int size, bool single_image
         }
 
         //
-        // Both images are valid in flash
+        // Both images are valid on flash
         //
         return FailSafe_burn_internal(f, data, size, need_report);
 
@@ -3897,12 +3898,12 @@ bool Operations::FailSafe_burn(Flash& f, void *data, int size, bool single_image
         if (!cur_image_ok[0] && cur_image_ok[1]) {
             // Second image is valid on flash.
             // If the new image can fit in the first image gap, it would be
-            //   burned as first image.
+            //   burnt as first image.
             // Otherwise (new image too big), image on flash is copied from second to 
             //   first image, and new image would be written as second.
 
             if (frst_new_image_addr + frst_new_image_size > cur_image_addr[1]) {
-                // New image is too large - can't get in between first image start 
+                // New image is too large - can not get in between first image start 
                 // and current (second) image - move current image to be first.
                 if (!repair(f, 1, 0, need_report))
                     return false;
@@ -4239,14 +4240,25 @@ bool Operations::Verify(FBase& f)
     if (signature == SIGNATURE) {
         // Full image
         _image_is_full = true;
+
+        bool psStat[2];
+
         report("\nFailsafe image:\n\n");
         CHECKB2(f, 0, 0x28, prim_ptr, "Invariant      ");
         report("\n");
-        if (checkPS(f, f.get_sector_size(), prim_ptr, "Primary  "))
+        psStat[0] = checkPS(f, f.get_sector_size(), prim_ptr, "Primary  ");
+        if (psStat[0]) {
             ret &= checkList(f, prim_ptr, "               ");
+        }
         report("\n");
-        if (checkPS(f, f.get_sector_size() * 2, scnd_ptr, "Secondary"))
+        psStat[1] = checkPS(f, f.get_sector_size() * 2, scnd_ptr, "Secondary");
+        if (psStat[1]) {
             CHECKLS(f, scnd_ptr, "               ");
+        }
+
+        if (psStat[0] == false && psStat[1] == false) {
+            ret = false;
+        }
     } else {
         // Short image
         _image_is_full = false;
@@ -4268,7 +4280,7 @@ bool Operations::DumpConf        (const char* conf_file) {
         out = fopen(conf_file, "w");
 
         if (out == NULL) {
-            return errmsg("Can't open file %s for write: %s.", conf_file, strerror(errno));
+            return errmsg("Can not open file %s for write: %s.", conf_file, strerror(errno));
         }
     }
 
@@ -4399,29 +4411,29 @@ bool Operations::getBSN(char *s, guid_t *guid)
     if (dd > 31)
         BSN_RET1("Day (dd) should not exceed 31");
     if (!dd)
-        BSN_RET1("Day (dd) can't be zero");
+        BSN_RET1("Day (dd) can not be zero");
     u_int32_t mm = BSN_subfield(s, 10+date_offs, 2);
     if (mm > 12)
         BSN_RET1("Months (mm) should not exceed 12");
     if (!mm)
-        BSN_RET1("Months (mm) can't be zero");
+        BSN_RET1("Months (mm) can not be zero");
     u_int32_t yy = BSN_subfield(s, 12+date_offs, 2);
     if (yy > 99)
         BSN_RET1("Year (yy) should not exceed 99");
     if (!yy)
-        BSN_RET1("Year (yy) can't be zero");
+        BSN_RET1("Year (yy) can not be zero");
     u_int32_t num = BSN_subfield(s, 15+date_offs, 3);
     if (num > 999)
         BSN_RET1("Number (num) should not exceed 999");
     if (!num)
-        BSN_RET1("Number (num) can't be zero");
+        BSN_RET1("Number (num) can not be zero");
     int cc = 1;
     if (cc_present) {
         cc = BSN_subfield(s, 19+date_offs, 2);
         if (cc > 14)
             BSN_RET1("Chip number (cc) should not exceed 14");
         if (!cc)
-            BSN_RET1("Chip number (cc) can't be zero");
+            BSN_RET1("Chip number (cc) can not be zero");
     }
     u_int64_t id = ((((yy*12+mm-1)*31+ dd-1) * 1000) + num-1) * 112;
     id += (cc-1)*8;
@@ -4580,7 +4592,7 @@ void Operations::PatchPs(u_int8_t*      rawPs,
         fix_end += PSID_LEN;
     }
 
-    //vsd is kept in flash byte-swapped.
+    //VSD is kept on flash byte-swapped.
     //recode it back before patching
     u_int32_t *qp;
 
@@ -4624,9 +4636,9 @@ bool Operations::patchVSD(FImage& f,
     if (user_psid) {
         // New psid is explicitly given - take it from user
         printf("\n    You are about to replace current PSID in the image file - \"%s\" with a different PSID - \"%s\".\n"
-               "    Note: It is highly recommended NOT to change the image PSID.\n", user_psid, image_psid);
+               "    Note: It is highly recommended not to change the image PSID.\n", user_psid, image_psid);
 
-        if (! ask_user("\n    Is it OK ? (y/n) [n] : "))
+        if (! ask_user())
             return false;
 
         psid_to_use = user_psid;
@@ -4638,9 +4650,12 @@ bool Operations::patchVSD(FImage& f,
 
 
     if (curr_psid && strncmp( psid_to_use, (char*) curr_psid, PSID_LEN)) {
-        printf("\n    You are about to replace current PSID in flash - \"%s\" with a different PSID - \"%s\".\n", curr_psid, psid_to_use);
+        printf("\n    You are about to replace current PSID on flash - \"%s\" with a different PSID - \"%s\".\n"
 
-        if (! ask_user("\n    Is it OK ? (y/n) [n] : "))
+               "    Note: It is highly recommended not to change the PSID.\n",
+	       curr_psid, psid_to_use);
+
+        if (! ask_user())
             return false;
     }
 
@@ -4710,7 +4725,7 @@ bool Operations::patchGUIDs(FImage& f, guid_t new_guids[GUIDS], guid_t old_guids
         if (!image_file_old_guids_fmt)
             printf("        Sys.Image: " GUID_FORMAT "\n", new_guids[3].h,new_guids[3].l);
 
-        if (!ask_user("\n    Is it OK ? (y/n) [n] : "))
+        if (!ask_user())
             return false;
 
         used_guids = new_guids;
@@ -5070,7 +5085,7 @@ Flash* get_flash(const char* device, u_int32_t& num_ports) {
 
     mfile* mf = mopen(device);
     if (!mf) {
-        printf("*** ERROR *** Can't open %s: %s\n", device,  strerror(errno));
+        printf("*** ERROR *** Can not open %s: %s\n", device,  strerror(errno));
         return NULL;
     }
 
@@ -5119,7 +5134,8 @@ void usage(const char *sname, bool full = false)
     "\n"
     "               FLINT - FLash INTerface\n"
     "\n"
-    "InfiniHost flash memory operations.\n"
+    "FW (firmware) burning and flash memory operations tool for\n"
+    "Mellanox InfiniHost HCAs family.\n"
     "\n"
     "Usage:\n"
     "------\n"
@@ -5140,8 +5156,8 @@ void usage(const char *sname, bool full = false)
     "    -d[evice] <device> - Device flash is connected to.\n"
     "                         Commands affected: all\n"
     "\n"
-    "    -guid <GUID>       - GUID base value. Up to 4 GUIDs\n"
-    "                         are automatically assigned the\n"
+    "    -guid <GUID>       - GUID base value. 4 GUIDs\n"
+    "                         are automatically assigned to the\n"
     "                         following values:\n"
     "\n"
     "                         guid   -> node GUID\n"
@@ -5150,7 +5166,7 @@ void usage(const char *sname, bool full = false)
     "                         guid+3 -> system image GUID.\n"
     "\n"
     "                         Note: port2 guid will be assigned even for a"
-    "                         single port HCA. The HCA ignores this value.\n"
+    "                         single port HCA - The HCA ignores this value.\n"
     "\n"
     "                         Commands affected: burn\n"
     "\n"
@@ -5160,8 +5176,8 @@ void usage(const char *sname, bool full = false)
     "                         node, port1, port2 and system image GUID.\n"
     "\n"
     "                         Note: port2 guid must be specified even for a\n"
-    "                         single port HCA. The HCA ignores this value.\n"
-    "                         It is OK to set this value to 0x0.\n"
+    "                         single port HCA - The HCA ignores this value.\n"
+    "                         It can be set to 0x0.\n"
     "\n"
     "                         Commands affected: burn\n"
     "\n"
@@ -5183,8 +5199,8 @@ void usage(const char *sname, bool full = false)
     "    -nofs              - Burn image not in failsafe manner.\n"
     "\n"
     "    -skip_is           - Allow burning the FW image without updating the invariant sector,\n"
-    "                         to ensure failsafe burning even when invariant sector difference is detected.\n"
-    "                         See the specific FW release notes for more detail.\n"
+    "                         to ensure failsafe burning even when an invariant sector difference is detected.\n"
+    "                         See the specific FW release notes for more details.\n"
     "\n"
     "    -byte_mode         - Shift address when accessing flash internal registers. May\n"
     "                         be required for burn/write commands when accessing certain\n"
@@ -5206,7 +5222,7 @@ void usage(const char *sname, bool full = false)
     "\n"
     "    -psid <PSID>       - Write the Parameter Set ID (PSID) string to PS-ID field (last 16 bytes of VSD) when burn.\n"
     "\n"
-    "    -use_image_ps      - Burn vsd as appears in the given image - don't keep existing vsd on flash.\n"
+    "    -use_image_ps      - Burn vsd as appears in the given image - do not keep existing VSD on flash.\n"
     "                         Commands affected: burn\n"
     "\n"
     "    -dual_image        - Make the burn process burn two images on flash (previously default algorithm). Current\n" 
@@ -5219,7 +5235,7 @@ void usage(const char *sname, bool full = false)
     "-----------------\n"
     "    b[urn]   - Burn flash\n"
     "    e[rase]  - Erase sector\n"
-    "    q[uery]  - Query misc. flash/FW characteristics\n"
+    "    q[uery]  - Query misc. flash/firmware characteristics\n"
     "    rw       - Read one dword from flash\n"
     "    v[erify] - Verify entire flash\n"
     "    ww       - Write one dword to flash\n"
@@ -5372,7 +5388,7 @@ void usage(const char *sname, bool full = false)
     "    Example:\n"
     "        " FLINT_NAME " -d " DEV_MST_EXAMPLE1 " wbne 0x10000 12 0x30000 0x76800 0x5a445a44\n"
     "\n"
-    "* Print (to screen or to a file) the firmware configuration text file used by the image generation process.\n"
+    "* Print (to screen or to a file) the FW configuration text file used by the image generation process.\n"
     "  This command would fail if the image does not contain a FW configuration section. Existence of this\n"
     "  section depends on the version of the image generation tool.\n"
     "\n"
@@ -5427,7 +5443,7 @@ void TerminationHandler (int signum)
         return;
     }
 
-    report ("\nWarning: This program can't be interrupted.Please wait for its termination.\n");
+    report ("\nWarning: This program can not be interrupted.Please wait for its termination.\n");
     signal(signum, TerminationHandler);
     return;
 #endif
@@ -5654,9 +5670,9 @@ int main(int ac, char *av[])
 
     Operations            ops;
 
-    FBase*      fbase = 0;
-    char*       cmdTarget =0;
-    char*       cmdAccess = 0;
+    FBase*      fbase     = NULL;
+    char*       cmdTarget = NULL;
+    char*       cmdAccess = NULL;
 
     //
     // Map termination signal handlers
@@ -5801,7 +5817,6 @@ int main(int ac, char *av[])
         }
     }
 
-
     //
     // Commands
     // --------
@@ -5817,7 +5832,7 @@ int main(int ac, char *av[])
     }
 
     if (!cmdStr) {
-        printf("*** ERROR *** No command given. See help for detail.\n");  
+        printf("*** ERROR *** No command given. See help for details.\n");  
         rc =  1; goto done; 
     }
 
@@ -5852,7 +5867,7 @@ int main(int ac, char *av[])
         f = tmp;
         
         if (f.get() == NULL) {
-            printf("*** ERROR *** Can't get flash type using device %s\n", device);
+            printf("*** ERROR *** Can not get flash type using device %s\n", device);
             rc =  1; goto done; 
         }
         
@@ -5860,7 +5875,7 @@ int main(int ac, char *av[])
         
         g_flash = f.get();
         if (!f->open(device, clear_semaphore)) {
-            printf("*** ERROR *** Can't open %s: %s\n", device, f->err());
+            printf("*** ERROR *** Can not open %s: %s\n", device, f->err());
             rc =  1; goto done; 
         }
 
@@ -5911,7 +5926,7 @@ int main(int ac, char *av[])
             // Check that the flash sector size is well defined in the image
             if (fim.get_sector_size() && (fim.get_sector_size() != f->get_sector_size())) {
                 printf("*** ERROR *** Flash sector size(0x%x) differs from sector size defined in the image (0x%x).\n"
-                       "              This means that the given FW file is not configured to work with the burned HCA board type.\n",
+                       "              This means that the given FW file is not configured to work with the burnt HCA board type.\n",
                        f->get_sector_size(),
                        fim.get_sector_size());
                 rc =  1; goto done;
@@ -5938,12 +5953,12 @@ int main(int ac, char *av[])
                 if (read_guids && !flashInfo.imageOk) {
 
                     printf("\n");
-                    printf("*** ERROR *** Can't extract GUIDS info from flash. "
+                    printf("*** ERROR *** Can not extract GUIDS info from flash. "
                            "Please specify GUIDs (using command line flags -guid(s) ). \n");
                 }
                 
                 if (burn_failsafe) {
-                    printf("              Can't burn in a failsafe mode. Please use \"-nofs\" flag to burn in a none failsafe mode.\n");
+                    printf("              Can not burn in a failsafe mode. Please use \"-nofs\" flag to burn in a none failsafe mode.\n");
                 }
                 rc =  1; goto done;
             }
@@ -5952,16 +5967,16 @@ int main(int ac, char *av[])
                 printf("\n");
                 if (burn_failsafe) {
 
-                    printf("*** ERROR *** Can't extract VSD/PSID info from flash.\n"
-                           "              Can't burn in a failsafe mode. Please use \"-nofs\" flag to burn in a none failsafe mode.\n");
+                    printf("*** ERROR *** Can not extract VSD/PSID info from flash.\n"
+                           "              Can not burn in a failsafe mode. Please use \"-nofs\" flag to burn in a none failsafe mode.\n");
                     rc =  1; goto done;
                 }  else {
-                    printf("*** WARNING *** Can't extract VSD/PSID info from flash.\n\n"
+                    printf("*** WARNING *** Can not extract VSD/PSID info from flash.\n\n"
                            "    To use a specific VSD, abort and re-burn specifying the\n"
                            "    needed info (using command line flags -vsd / -use_image_ps).\n"
                            "    You can also continue burn using blank VSD.\n");
                 
-                    if (!ops.ask_user("\n    Continue burn using a blank VSD ? (y/n) ")) {
+                    if (!ops.ask_user()) {
                         rc =  1; goto done;
                     }
                 }
@@ -6017,7 +6032,7 @@ int main(int ac, char *av[])
         if (burn_failsafe) {
             // Failsafe burn
             if (!_image_is_full) {
-                printf("*** ERROR *** Failsafe burn failed: FW Image on flash is short.\n");
+                printf("*** ERROR *** Failsafe burn failed: FW image on flash is short.\n");
                 printf("It is impossible to burn a short image in a failsafe mode.\n");
                 printf("If you want to burn in non failsafe mode, use the \"-nofs\" switch.\n");
                 rc =  1; goto done; 
@@ -6047,14 +6062,14 @@ int main(int ac, char *av[])
             // Ask is it OK
             printf("\n");
             if (burn_block) {
-                printf("Block burn: The given image will be burned as is. No fields (such\n");
+                printf("Block burn: The given image will be burnt as is. No fields (such\n");
                 printf("as GUIDS,VSD) are taken from current image on flash.\n");
             }
             printf("Burn process will not be failsafe. No checks are performed.\n");
             printf("ALL flash, including Invariant Sector will be overwritten.\n");
             printf("If this process fails computer may remain in inoperable state.\n");
 
-            if (!ops.ask_user("\nAre you sure ? (y/n) [n] : ")) {
+            if (!ops.ask_user()) {
                 rc =  1; goto done;
 	    }
 
@@ -6137,7 +6152,7 @@ int main(int ac, char *av[])
         data = new u_int8_t[length];
 
         // Output file
-        FILE*  fh = 0;
+        FILE*  fh = NULL;
 
         if (i + 2 == ac)
             to_file = true;
@@ -6145,7 +6160,7 @@ int main(int ac, char *av[])
         if (to_file) {
             NEXTC("<OUT_FILENAME>", "rb");
             if ((fh = fopen(av[i], "wb")) == NULL) {
-                fprintf(stderr, "Can't open ");
+                fprintf(stderr, "Can not open ");
                 perror(av[i]);
                 rc =  1; goto done; 
             }
@@ -6206,10 +6221,10 @@ int main(int ac, char *av[])
     {
         // VERIFY
         if (!ops.Verify(*fbase)) {
-            printf("\n*** ERROR *** FW Image verification failed. AN HCA DEVICE CAN'T BOOT FROM THIS IMAGE.\n");
+            printf("\n*** ERROR *** FW image verification failed. AN HCA DEVICE CAN NOT BOOT FROM THIS IMAGE.\n");
             rc =  1; goto done; 
         } else {
-            printf("\nFW Image verification succeeded. Image is OK.\n\n");
+            printf("\nFW image verification succeeded. Image is OK.\n\n");
         }
     }
     break;
@@ -6253,7 +6268,7 @@ int main(int ac, char *av[])
         FILE* fh;
 
         if ((fh = fopen(av[i], "wb")) == NULL) {
-            fprintf(stderr, "Can't open ");
+            fprintf(stderr, "Can not open ");
             perror(av[i]);
             rc =  1; goto done; 
         }
