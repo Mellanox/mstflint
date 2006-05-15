@@ -18,7 +18,7 @@ shared: bin
 .PHONY: all bin clean static shared default
 .DELETE_ON_ERROR:
 
-default: EXTRA_LOADLIBES="$(shell $(CXX) -print-file-name=libz.a)" "$(shell $(CXX) -print-file-name=libstdc++.a)" 
+default: EXTRA_LOADLIBES="$(shell $(CXX) ${LDFLAGS} ${CFLAGS} ${CXXFLAGS} -print-file-name=libz.a)" "$(shell $(CXX)  ${LDFLAGS} ${CFLAGS} ${CXXFLAGS} -print-file-name=libstdc++.a)"
 default: LD=$(CC)
 static: CFLAGS+=-static
 
