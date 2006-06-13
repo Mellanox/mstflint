@@ -186,7 +186,8 @@ name_parsed:
 
   if (my_domain) {
     fprintf(stderr,"Device %s: domain number %#x detected.\n"
-		   "Only domain 0x0 supported for now, sorry.\n",
+		   "This method only supports pci domain 0x0.\n"
+		   "Try using device /proc/bus/pci/... instead.\n",
 		   name, my_domain);
     errno=EINVAL;
     return 1;
@@ -292,6 +293,7 @@ mfile *mopen(const char *name)
   off_t offset;
   int err;
   char buf[]="0000:00:00.0";
+  char path[]="/sys/bus/pci/devices/0000:00:00.0/resource0";
 
   mf=(mfile*)malloc(sizeof(mfile));
   if (!mf) return 0;
@@ -328,6 +330,17 @@ mfile *mopen(const char *name)
     goto open_failed;
 #endif
   }
+#if CONFIG_ENABLE_MMAP
+  else if (snprintf(path, sizeof path, "/sys/bus/pci/devices/%s/resource0",
+		    name) < (int)sizeof path &&
+	   (mf->fd = open(path, O_RDWR | O_SYNC)) >= 0)
+  {
+    mf->ptr = mmap(NULL, 0x100000, PROT_READ | PROT_WRITE,
+        MAP_SHARED, mf->fd, 0);
+
+    if ( (! mf->ptr) || (mf->ptr == MAP_FAILED) ) goto map_failed;
+  }
+#endif
   else
   {
 #if CONFIG_ENABLE_MMAP
@@ -367,12 +380,12 @@ mfile *mopen(const char *name)
 
 #if CONFIG_ENABLE_MMAP
 map_failed:
-        err = errno;
-        close(mf->fd);
-        errno = err;
 #if !CONFIG_USE_DEV_MEM
 ioctl_failed:
 #endif
+        err = errno;
+        close(mf->fd);
+        errno = err;
 #endif
 open_failed:
         err = errno;
