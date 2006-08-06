@@ -3731,20 +3731,17 @@ bool Operations::CheckInvariantSector(Flash& f, u_int32_t *data32, int sect_size
                    " in image: 0x%08x, while on flash: 0x%08x\n\n",
                    first_diff*4 , data32[first_diff], buf1[first_diff]);
 
-            printf(" The invariant sector can not be burnt in a failsafe manner.\n"
-                   " To force-burn the invariant sector, rerun with -nofs flag.\n");
+            printf(" The invariant sector can not be burnt in a failsafe manner.\n");
 
         if (_allow_skip_is) {
-            printf(" You can also continue to update the FW without updating the invariant sector.\n"
-                   " See the FW release notes for more details.\n\n");
+            printf(" You can continue the firmware update without burning the invariant sector.\n\n");
 
             return ask_user();
 
         } else {
             // Continue with burn
-            printf(" You can also update the FW without updating the invariant sector by\n"
-                   " specifying the -skip_is flag.\n" 
-                   " See the FW release notes for more details.\n\n");
+            printf(" You can perform the firmware update without burning the invariant sector\n"
+                   " by specifying the -skip_is flag.\n\n");
 
             return errmsg("Invariant sector mismatch");
         }
@@ -5196,7 +5193,7 @@ void usage(const char *sname, bool full = false)
     "    -i[mage] <image>   - Binary image file.\n"
     "                         Commands affected: burn, verify\n"
     "\n"
-    "    -nofs              - Burn image not in failsafe manner.\n"
+    "    -nofs              - Burn image in non failsafe manner.\n"
     "\n"
     "    -skip_is           - Allow burning the FW image without updating the invariant sector,\n"
     "                         to ensure failsafe burning even when an invariant sector difference is detected.\n"
@@ -5958,7 +5955,8 @@ int main(int ac, char *av[])
                 }
                 
                 if (burn_failsafe) {
-                    printf("              Can not burn in a failsafe mode. Please use \"-nofs\" flag to burn in a none failsafe mode.\n");
+                    printf("              Can not burn in a failsafe mode.\n");
+		    printf("              If you want to burn in non failsafe mode, use the \"-nofs\" switch.\n");
                 }
                 rc =  1; goto done;
             }
@@ -5968,7 +5966,7 @@ int main(int ac, char *av[])
                 if (burn_failsafe) {
 
                     printf("*** ERROR *** Can not extract VSD/PSID info from flash.\n"
-                           "              Can not burn in a failsafe mode. Please use \"-nofs\" flag to burn in a none failsafe mode.\n");
+                           "              Can not burn in a failsafe mode. Please use \"-nofs\" flag to burn in a non failsafe mode.\n");
                     rc =  1; goto done;
                 }  else {
                     printf("*** WARNING *** Can not extract VSD/PSID info from flash.\n\n"
