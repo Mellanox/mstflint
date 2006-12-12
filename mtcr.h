@@ -294,6 +294,9 @@ mfile *mopen(const char *name)
   int err;
   char buf[]="0000:00:00.0";
   char path[]="/sys/bus/pci/devices/0000:00:00.0/resource0";
+  unsigned domain, bus, dev, func;
+  struct stat dummybuf;
+  char file_name[]="/proc/bus/pci/0000:00/00.0";
 
   mf=(mfile*)malloc(sizeof(mfile));
   if (!mf) return 0;
@@ -338,13 +341,14 @@ mfile *mopen(const char *name)
     mf->ptr = mmap(NULL, 0x100000, PROT_READ | PROT_WRITE,
         MAP_SHARED, mf->fd, 0);
 
-    if ( (! mf->ptr) || (mf->ptr == MAP_FAILED) ) goto map_failed;
+    if ( (! mf->ptr) || (mf->ptr == MAP_FAILED) || 
+        (__be32_to_cpu(*((u_int32_t *) ((char *) mf->ptr + 0xF0014))) == 0xFFFFFFFF) )
+        goto map_failed_try_pciconf;
   }
 #endif
   else
   {
 #if CONFIG_ENABLE_MMAP
-    unsigned bus, dev, func;
     if (mfind(name,&offset,&bus,&dev,&func)) goto find_failed;
 
 #if CONFIG_USE_DEV_MEM
@@ -352,8 +356,6 @@ mfile *mopen(const char *name)
     if (mf->fd<0) goto open_failed;
 #else
     {
-	    struct stat dummybuf;
-	    char file_name[]="/proc/bus/pci/0000:00/00.0";
 	    sprintf(file_name,"/proc/bus/pci/%2.2x/%2.2x.%1.1x",
 			    bus,dev,func);
 	    if (stat(file_name,&dummybuf))
@@ -369,7 +371,9 @@ mfile *mopen(const char *name)
     mf->ptr = mmap(NULL, 0x100000, PROT_READ | PROT_WRITE,
         MAP_SHARED, mf->fd, offset);
 
-    if ( (! mf->ptr) || (mf->ptr == MAP_FAILED) ) goto map_failed;
+    if ( (! mf->ptr) || (mf->ptr == MAP_FAILED) || 
+        (__be32_to_cpu(*((u_int32_t *) ((char *) mf->ptr + 0xF0014))) == 0xFFFFFFFF) )
+        goto map_failed_try_pciconf;
 
 #else
     goto open_failed;
@@ -379,6 +383,20 @@ mfile *mopen(const char *name)
 
 
 #if CONFIG_ENABLE_MMAP
+map_failed_try_pciconf:
+#if CONFIG_ENABLE_PCICONF
+	mf->ptr = NULL;
+	close(mf->fd);
+	if (sscanf(name, "%x:%x:%x.%x", &domain, &bus, &dev, &func) != 4) {
+		domain = 0;
+		if (sscanf(name, "%x:%x.%x", &bus, &dev, &func) != 3) goto map_failed;
+	}
+	snprintf(file_name, sizeof file_name, "/proc/bus/pci/%2.2x/%2.2x.%1.1x", bus, dev, func);
+	if (stat(file_name,&dummybuf))
+		snprintf(file_name, sizeof file_name, "/proc/bus/pci/%4.4x:%2.2x/%2.2x.%1.1x", domain, bus,dev,func);
+	if ((mf->fd = open(file_name, O_RDWR | O_SYNC)) >= 0) return mf;
+#endif
+
 map_failed:
 #if !CONFIG_USE_DEV_MEM
 ioctl_failed:
