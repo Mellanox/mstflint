@@ -140,7 +140,7 @@ typedef struct mfile_t {
 
 /* Find the specific device by scanning /proc/bus/pci/devices */
 int mfind(const char* name, off_t* offset_p,
-		unsigned *bus_p, unsigned *dev_p, unsigned *func_p)
+	  unsigned *bus_p, unsigned *dev_p, unsigned *func_p)
 {
   FILE* f;
 	unsigned     irq;
@@ -169,6 +169,30 @@ int mfind(const char* name, off_t* offset_p,
   char buf[4048];
 
   int scnt;
+  int tmp;
+
+  scnt=sscanf(name,"mthca%x", & tmp);
+  if (scnt == 1) {
+	  char mbuf[4048];
+	  char pbuf[4048];
+
+	  tmp = snprintf(mbuf, sizeof mbuf, "/sys/class/infiniband/%s/device", name);
+	  if (tmp <= 0 || tmp >= (int)sizeof mbuf) {
+		  fprintf(stderr,"Unable to print device name %s\n", name);
+		  goto parse_error;
+	  }
+
+	  if (readlink(mbuf, pbuf, sizeof pbuf) < 0) {
+		  perror("read link");
+		  fprintf(stderr,"Unable to read link %s\n", mbuf);
+		  return 1;
+	  }
+
+	  scnt = sscanf(pbuf, "../../../devices/pci%x:%x/%x:%x:%x.%x/%x:%x:%x.%x",
+			&tmp, &tmp, &tmp, &tmp, &tmp, &tmp,
+			& my_domain, & my_bus, & my_dev, & my_func);	
+	  if (scnt == 10) goto name_parsed;
+  }
 
   scnt=sscanf(name,"%x:%x.%x", & my_bus, & my_dev, & my_func);
 
@@ -178,6 +202,7 @@ int mfind(const char* name, off_t* offset_p,
 
   if (scnt == 4) goto name_parsed;
 
+parse_error:
   fprintf(stderr,"Unable to parse device %s\n", name);
   errno=EINVAL;
   return 1;
