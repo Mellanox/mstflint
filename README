@@ -54,7 +54,8 @@ mstflint: A BURNING FIRMWARE APPLICATION
 	specific board file from your HCA card vendor and generate the binary
 	image.
 
-    c) You must know the device location on the PCI bus.
+    c) If the mthca driver for the device is not loaded.
+       You must know the device location on the PCI bus.
        For example, to find an InfiniHost HCA car manufactured by Mellanox use:
 
        /sbin/lspci -d 15b3:5a44
@@ -63,28 +64,33 @@ mstflint: A BURNING FIRMWARE APPLICATION
 	In this example, 02:00.0 identifies the device in the form bus:dev.fn
 	
 5) Usage:
-	Read mstflint usage. Enter: "./mstflint -h" for detailed help,
+	Read mstflint usage. Enter: "./mstflint -h" for short help, or
+	"./mstflint -hh" for detailed help message.
 
 	Use mstflint to burn a device according to the burning instructions. 
-	You will need to specify the device in the form bus:dev.fn as explained
-	in section 4c) above, or in the alternative form
-        /proc/bus/pci/bus/dev.fn .
+	You will need to specify the device in the form mthcaX if the driver
+	has loaded successfully, or bus:dev.fn as explained in section 4c) above,
+       	or in the alternative form /proc/bus/pci/bus/dev.fn .
 
        Examples:
-       1) mstflint -d 02:00.0 v
+       1) mstflint -d mthca0 v
+       		This is the recommended method, but it only works
+		if the mthca driver for the device is loaded.
 
-	
-       In the above example, mstflint reads the /proc/bus/pci/devices
-	to find the physical address of device Region0 (AKA BAR0)
-	and checks that the region size is exactly 0.
-	It then accesses this region by means of the /dev/mem device.
+		Note: it is always safe to try this access method first -
+		if the driver is not loaded, mstflint will fail with an error
+		message and you'll be able to retry with another method.
 
-       2) mstflint -d /proc/bus/pci/02/00.0 v
+		To verify that the driver for the device mthca0 is loaded, you can
+		check whether /sys/class/infiniband/mthca0/device exists.
 
-	This example accesses the device PCI configuration registers
-	by means of the specified file under the /proc/bus/pci
-	directory, and performs flash access by writing these
-	registers.
+       2) mstflint -d 02:00.0 v
+		This is functionally equivalent to access method 1, but less convenient.
+		This access method works with or without the driver loaded.
+
+       3) mstflint -d /proc/bus/pci/02/00.0 v
+		This method is less safe: verify that driver is not running,
+		and that no other software accesses the device before using it.
 
 
 7) Problem Reporting:
