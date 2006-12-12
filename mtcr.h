@@ -534,8 +534,8 @@ int mwrite4(mfile *mf, unsigned int offset, u_int32_t value)
 }
 #endif
 
-#define DEV_MST_EXAMPLE1 "03:00.0"
-#define DEV_MST_EXAMPLE2 "/proc/bus/pci/03/00.0"
+#define DEV_MST_EXAMPLE1 "mthca0"
+#define DEV_MST_EXAMPLE2 "03:00.0"
 
 
 #endif
