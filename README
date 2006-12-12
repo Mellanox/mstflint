@@ -72,6 +72,9 @@ mstflint: A BURNING FIRMWARE APPLICATION
 	has loaded successfully, or bus:dev.fn as explained in section 4c) above,
        	or in the alternative form /proc/bus/pci/bus/dev.fn .
 
+	If the driver is loaded, unload and re-load it, or reset the device in
+        some other way, so that the new firmware is re-read from flash.
+
        Examples:
        1) mstflint -d mthca0 v
        		This is the recommended method, but it only works
