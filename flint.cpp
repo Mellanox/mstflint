@@ -6047,8 +6047,7 @@ int main(int ac, char *av[])
 		    printf("*** ERROR *** Flash access failed during burn: %s\n", f->err());
 		} else {
 		    // operation/ algorithm error:
-		    printf("*** ERROR *** Failsafe burn failed: %s\n", ops.err());  
-		    printf("If you want to burn in non failsafe mode, use the \"-nofs\" switch.\n");
+		    printf("*** ERROR *** Failsafe operation/ algorithm error: %s\n", ops.err());  
 		}
                 rc =  1; goto done; 
             }
