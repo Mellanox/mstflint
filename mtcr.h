@@ -69,6 +69,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <stdlib.h>
+#include <libgen.h>
 
 
 #if CONFIG_ENABLE_MMAP
@@ -175,6 +176,7 @@ int mfind(const char* name, off_t* offset_p,
   if (scnt == 1) {
 	  char mbuf[4048];
 	  char pbuf[4048];
+	  char *base;
 
 	  tmp = snprintf(mbuf, sizeof mbuf, "/sys/class/infiniband/%s/device", name);
 	  if (tmp <= 0 || tmp >= (int)sizeof mbuf) {
@@ -188,10 +190,11 @@ int mfind(const char* name, off_t* offset_p,
 		  return 1;
 	  }
 
-	  scnt = sscanf(pbuf, "../../../devices/pci%x:%x/%x:%x:%x.%x/%x:%x:%x.%x",
-			&tmp, &tmp, &tmp, &tmp, &tmp, &tmp,
+	  base = basename(pbuf);
+	  if (!base) goto name_parsed;
+	  scnt = sscanf(base, "%x:%x:%x.%x",
 			& my_domain, & my_bus, & my_dev, & my_func);	
-	  if (scnt == 10) goto name_parsed;
+	  if (scnt == 4) goto name_parsed;
   }
 
   scnt=sscanf(name,"%x:%x.%x", & my_bus, & my_dev, & my_func);
