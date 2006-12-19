@@ -142,6 +142,9 @@ typedef struct mfile_t {
 /* Find the specific device by scanning /proc/bus/pci/devices */
 int mfind(const char* name, off_t* offset_p,
 	  unsigned *bus_p, unsigned *dev_p, unsigned *func_p)
+#ifdef MTCR_EXPORT
+;
+#else
 {
   FILE* f;
 	unsigned     irq;
@@ -308,7 +311,7 @@ error:
   fclose(f);
   return 1;
 }
-
+#endif
 #endif
 
 /*
@@ -316,6 +319,9 @@ error:
  * Return valid mfile ptr or 0 on failure
  */
 mfile *mopen(const char *name)
+#ifdef MTCR_EXPORT
+;
+#else
 {
   mfile *mf;
   off_t offset;
@@ -443,12 +449,16 @@ find_failed:
 #endif
         return 0;
 }
+#endif
 
 /*
  * Close Mellanox driver
  * req. descriptor
  */
 int mclose(mfile *mf)
+#ifdef MTCR_EXPORT
+;
+#else
 {
 #if CONFIG_ENABLE_MMAP
   if (mf->ptr)
@@ -458,11 +468,15 @@ int mclose(mfile *mf)
   free(mf);
   return 0;
 }
+#endif
 
 /*
  * Read 4 bytes, return number of succ. read bytes or -1 on failure
  */
 int mread4(mfile *mf, unsigned int offset, u_int32_t *value)
+#ifdef MTCR_EXPORT
+;
+#else
 {
 #if CONFIG_ENABLE_MMAP
   if (mf->ptr)
@@ -495,11 +509,15 @@ int mread4(mfile *mf, unsigned int offset, u_int32_t *value)
   return 0;
 #endif
 }
+#endif
 
 /*
  * Write 4 bytes, return number of succ. written bytes or -1 on failure
  */
 int mwrite4(mfile *mf, unsigned int offset, u_int32_t value)
+#ifdef MTCR_EXPORT
+;
+#else
 {
 #if CONFIG_ENABLE_MMAP
   if (mf->ptr)
@@ -532,6 +550,7 @@ int mwrite4(mfile *mf, unsigned int offset, u_int32_t value)
   return 0;
 #endif
 }
+#endif
 
 #ifdef __cplusplus
 }
