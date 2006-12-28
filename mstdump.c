@@ -37,9 +37,9 @@
  */
 
 
+#include <mtcr.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <mtcr.h>
 
 static unsigned tavor_address_list[]=
 {
@@ -60760,11 +60760,19 @@ int main(int argc, char** argv)
   int list_size;
   unsigned* list;
 
+  if (argc != 2)
+  {
+    fprintf(stderr,"Usage: %s <device>.\n", argv[0]);
+    return 2;
+  }
+
+#if 0
   if (argc != 2 && argc != 3)
   {
     fprintf(stderr,"Usage: %s <device> [i2c-slave].\n", argv[0]);
     return 2;
   }
+#endif
 
   f=mopen(argv[1]);
 
@@ -60774,9 +60782,10 @@ int main(int argc, char** argv)
     return 1;
   }
 
+#if 0
   if (argc == 3)
       mset_i2c_slave(f, strtoul(argv[2],0,0));
-
+#endif
 
   myread4(f,0xF0014,&hca_id);
   myread4(f,0x60014,&is3_id);

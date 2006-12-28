@@ -9,7 +9,7 @@ EXTRA_LOADLIBES=-lz
 LOADLIBES+=${EXTRA_LOADLIBES}
 
 all: default
-bin: mstflint mread mwrite
+bin: mstflint mread mwrite mstdump
 
 default: bin
 static: bin
@@ -33,6 +33,9 @@ mwrite: mwrite.c mtcr.h
 
 mread: mread.c mtcr.h
 	$(CC) ${CFLAGS} mread.c -o mread
+
+mstdump: mstdump.c mtcr.h
+	$(CC) ${CFLAGS} mstdump.c -o mstdump
 
 clean:
 	rm -f mstflint mread mwrite mstflint.o
