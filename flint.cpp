@@ -32,7 +32,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- *  Version: $Id: flint.cpp 2777 2006-03-23 14:55:51Z orenk $
+ *  Version: $Id: flint.cpp 3200 2006-12-21 13:13:38Z orenk $
  *
  */
 
@@ -133,7 +133,7 @@ char* _versionID = _VFSTR( VERSION_ID ) ;
 char* _versionID = "VERSION_ID_HERE";
 #endif
 
-char* _svnID     = "$Revision: 2777 $";
+char* _svnID     = "$Revision: 3200 $";
 
 #ifndef __be32_to_cpu
     #define __be32_to_cpu(x) ntohl(x)
@@ -395,6 +395,7 @@ struct BOARD_ID {
 
 int  const VSD_LEN  = 208;
 int  const PSID_LEN = 16;
+int  const PRODUCT_VER_LEN = 16;
 
 //
 // TODO: Remove the below globals to class members.
@@ -816,6 +817,9 @@ protected:
 	cfi_query() {
 	    memset(this, 0, sizeof(*this));
 	}
+
+        enum {MAX_ERASE_BLOCKS = 8};
+
         u_int8_t  manuf_id;
         u_int8_t  device_id;
 
@@ -842,9 +846,9 @@ protected:
         int       num_erase_blocks;     // Number of sector defs. 
         struct {
             unsigned long sector_size;          // Byte size of sector 
-            int           num_sectors;      // Num sectors of this size 
+            int           num_sectors;          // Num sectors of this size 
             u_int32_t     sector_mask;          // Sector mask 
-        } erase_block[8];               // Max of 256, but 8 is good 
+        } erase_block[MAX_ERASE_BLOCKS];        // Max of 256, but 8 is good 
 
         // AMD SPECIFIC
         char primary_extended_query[4];         // Vendor specific info here 
@@ -2473,10 +2477,11 @@ bool ParallelFlash::get_cfi(struct cfi_query *query)
     // Initial house-cleaning 
     memset(fwp, 0xff, TOTAL_QUERY_SIZE);
 
-    for (i=0; i < 8; i++) {
+    for (i=0; i < cfi_query::MAX_ERASE_BLOCKS; i++) {
         query->erase_block[i].sector_size = 0;
         query->erase_block[i].num_sectors = 0;
-    }   query->erase_block[i].sector_mask = 0;
+        query->erase_block[i].sector_mask = 0;
+    }
 
     // reset
     if (!write_internal(0x55, 0xff))
@@ -2609,6 +2614,13 @@ bool ParallelFlash::get_cfi(struct cfi_query *query)
         query->max_multi_byte_write = 0;
 
     query->num_erase_blocks = fwp[query_base * 0x2C];
+
+    if (query->num_erase_blocks > cfi_query::MAX_ERASE_BLOCKS) {
+        return errmsg("CFI query reported %d erase blocks in the flash %s. Only up to %d erase blocks are allowed.",
+                      query->num_erase_blocks,
+                      query->num_erase_blocks == 255 ? "(probably a corruptes flash)" : "",
+                      cfi_query::MAX_ERASE_BLOCKS);
+    }
 
     if (!read(query_base * 0x2C, fwp + query_base * 0x2C ,query_base * 4 * (query->num_erase_blocks + 1)))
         return false;
@@ -2781,7 +2793,7 @@ bool SpiFlash::get_cmd_set   () {
                           spi_sel);
         }
 
-        // printf("-D- %3d %08x\n", spi_sel, cur_spi_size);
+        printf("-D- %3d %08x\n", spi_sel, cur_spi_size);
     }
 
     _cfi_data.device_size = spi_size * num_spis;
@@ -3233,7 +3245,8 @@ public:
         II_PSID               = 4,
         II_VSD                = 5,
         II_SuppurtedPsids     = 6,
-        II_Last               = 7,  // Mark the end of used tag ids
+        II_ProductVer         = 7,
+        II_Last               = 8,  // Mark the end of used tag ids
         II_End                = 0xff
     };
     
@@ -3246,7 +3259,7 @@ public:
 
     bool Verify          (FBase& f);
     bool DumpConf        (const char* conf_file = NULL);
-
+    bool GetExpRomVersion(u_int32_t& rom_version);
     
     bool DisplayImageInfo(ImageInfo* info);
 
@@ -3283,7 +3296,7 @@ public:
         ImageInfo() :
             invSectOk(false),
             psOk(false),
-            imageOk(false) 
+            imageOk(false)
         {
             psid[0] = '\0';
             vsd[0]  = '\0';
@@ -3309,15 +3322,19 @@ public:
         guid_t       guids[4];
         char         vsd[209];
         char         psid[17];
+        char         productVer[17];
 
         u_int8_t     isVer;
-        u_int16_t    fwVer[3];   // = {major_ver, minor_ver , sum_minor_ver}
+        u_int16_t    fwVer[3];        // = {major_ver, minor_ver , sum_minor_ver}
         u_int16_t    fwTime[6];  // = {year, month, day, hour, minute, second}
 
         u_int16_t    devType;
         u_int8_t     devRev;
 
         bool         infoFound[II_Last];
+
+        bool         expRomFound;
+        u_int32_t    expRomVer;
 
     };
     
@@ -3374,6 +3391,7 @@ private:
     bool      _allow_skip_is;
 
     std::vector<u_int8_t>  _fw_conf_sect;
+    std::vector<u_int8_t>  _rom_sect;
 };
 
 
@@ -3734,14 +3752,16 @@ bool Operations::CheckInvariantSector(Flash& f, u_int32_t *data32, int sect_size
             printf(" The invariant sector can not be burnt in a failsafe manner.\n");
 
         if (_allow_skip_is) {
-            printf(" You can continue the firmware update without burning the invariant sector.\n\n");
+            printf(" You can continue the FW update without burning the invariant sector.\n"
+                   " See FW release notes for details on invariant sector updates.\n\n");
 
             return ask_user();
 
         } else {
             // Continue with burn
-            printf(" You can perform the firmware update without burning the invariant sector\n"
-                   " by specifying the -skip_is flag.\n\n");
+            printf(" You can perform the FW update without burning the invariant sector by\n"
+                   " by specifying the -skip_is flag.\n" 
+                   " See FW release notes for details on invariant sector updates.\n\n");
 
             return errmsg("Invariant sector mismatch");
         }
@@ -4171,6 +4191,13 @@ bool Operations::checkGen(FBase& f, u_int32_t beg,
 
     }
 
+    if (gph.type == H_ROM && _rom_sect.empty()) {
+        _rom_sect.clear();
+        _rom_sect.insert(_rom_sect.end(), 
+                         vector<u_int8_t>::iterator((u_int8_t*)buff), 
+                         vector<u_int8_t>::iterator((u_int8_t*)buff + size));
+    }
+
     // mark last read addr
     _last_image_addr = offs + size +sizeof(gph) + 4;  // the 4 is for the trailing crc
     
@@ -4266,6 +4293,71 @@ bool Operations::Verify(FBase& f)
     return ret;
 } // Verify
 
+bool Operations::GetExpRomVersion(u_int32_t& rom_version) {
+    const char* magic_string = "mlxsign:";
+    u_int32_t   magic_len    = strlen(magic_string);
+    u_int32_t   i;
+    bool        magic_found  = false;
+    u_int32_t   ver_offset;
+    u_int8_t    rom_checksum = 0;
+    u_int32_t   rom_checksum_range;
+
+    if (_rom_sect.empty()) {
+        return errmsg("Expansion Rom section not found.");
+    }
+
+    // When checking the version of the expansion rom, only the first image has
+    // to be checked. This is because the second image  the uefi image does not 
+    // have to comply with checksumming to 0. To do this you have to read  byte 
+    // 2 (third) of the image  and multiply by 512 to get the size of the x86 
+    // image.
+
+    // Checksum:
+    if (_rom_sect.size() < 4) {
+        return errmsg("ROM size (0x%x) is too small", (u_int32_t)_rom_sect.size());
+    }
+
+    rom_checksum_range = _rom_sect[1] * 512; // I take byte 1 instead of byte 2 since the bytes are swapped
+    if (rom_checksum_range > _rom_sect.size()) {
+       return errmsg("ROM size field (0x%2x) is larger than actual ROM size (0x%x)", 
+                     rom_checksum_range , 
+                     (u_int32_t)_rom_sect.size());
+    }
+
+    for (i = 0; i < rom_checksum_range; i++) {
+        rom_checksum += _rom_sect[i];
+    }
+
+    if (rom_checksum != 0) {
+        return errmsg("Bad ROM Checksum (0x%2x)", rom_checksum);
+    }
+
+    // restore endianess.
+    TOCPUn(&(_rom_sect[0]), _rom_sect.size()/4);
+
+    for (i = 0 ; i < _rom_sect.size(); i++) {
+        for (u_int32_t j = 0; j < magic_len; j++) {
+            if (_rom_sect[i+j] != magic_string[j]) {
+                break;
+            }
+            magic_found = true;
+        }
+
+        if (magic_found) {
+            break;
+        }
+    }
+
+    if (magic_found) {
+        ver_offset = i + magic_len;
+    } else {
+        return errmsg("Mellanox version string (%s) nof found in ROM section.", magic_string);
+    }
+
+    rom_version = //*( (*u_int32_t) &_rom_sect[ver_offset] );
+        __le32_to_cpu(*((u_int32_t*) &_rom_sect[ver_offset])) ;
+    return true;
+}
 
 bool Operations::DumpConf        (const char* conf_file) {
 #ifndef NO_ZLIB
@@ -4811,7 +4903,12 @@ bool Operations::QueryPs (FBase& f,
 
     memset(vsd, 0, sizeof(vsd));
     READBUF(f, info->psStart + 0x20, vsd, VSD_LEN+PSID_LEN , "Vendor Specific Data (Board ID)");
-    TOCPUBY(vsd);
+    u_int32_t* vsd_dwp = (u_int32_t*)vsd;
+
+    for (u_int32_t i=0; i < sizeof(vsd)/sizeof(u_int32_t); i++)
+         vsd_dwp[i] = bswap_32(vsd_dwp[i]);
+    
+    //TOCPUBY(vsd);
 
     memcpy(info->vsd,  vsd,           VSD_LEN);
     memcpy(info->psid, vsd + VSD_LEN, PSID_LEN);
@@ -4859,6 +4956,17 @@ bool Operations::QueryImage (FBase& f,
     TOCPUBY64(guids);
     for (u_int32_t i = 0 ; i < nguids/2 ; i++) {
         info->guids[i] = guids[i];
+    }
+
+    // Expansion Rom version:
+    info->expRomVer = 0;
+    if (_rom_sect.empty()) {
+        info->expRomFound = false;
+    } else {
+        info->expRomFound = true;
+        if (!GetExpRomVersion(info->expRomVer)) {
+            report("Failed to get ROM Version: %s\n", err()); 
+        }
     }
 
     // Read Info:
@@ -4917,6 +5025,7 @@ bool Operations::ParseInfoSect(u_int8_t* buff, u_int32_t byteSize, Operations::I
         u_int32_t tagId   = __be32_to_cpu(*p) >> 24;
 
         u_int32_t   tmp;
+        const char* str;
 
         switch (tagId) {
         case II_FwVersion:
@@ -4933,11 +5042,12 @@ bool Operations::ParseInfoSect(u_int8_t* buff, u_int32_t byteSize, Operations::I
             info->devType = tmp & 0xffff;
             //info->devRev  = (tmp >> 16) & 0xff;
             info->infoFound[tagId] = true;
+            break;
 
         case II_PSID: 
             // set psid only if not previosly found in PS
             if (!info->psOk) {
-                const char* str = (const char*)p;
+                str = (const char*)p;
                 str += 4;
 
                 for (int i = 0 ; i < PSID_LEN ; i++) {
@@ -4948,6 +5058,20 @@ bool Operations::ParseInfoSect(u_int8_t* buff, u_int32_t byteSize, Operations::I
                 info->infoFound[tagId] = true;
 
             }
+            break;
+
+        case II_ProductVer: 
+        
+            str = (const char*)p;
+            str += 4;
+
+            for (int i = 0 ; i < PRODUCT_VER_LEN ; i++) {
+                info->productVer[i] = str[i];
+            }
+            info->productVer[PRODUCT_VER_LEN] = '\0';
+            
+            info->infoFound[tagId] = true;
+
             break;
 
         case II_End:
@@ -4983,6 +5107,19 @@ bool Operations::DisplayImageInfo(Operations::ImageInfo* info) {
 
     if (info->infoFound[II_FwVersion]) {
         report("FW Version:      %d.%d.%d\n", info->fwVer[0], info->fwVer[1], info->fwVer[2]);
+    }
+
+    if (info->infoFound[II_ProductVer] && strlen(info->productVer)) {
+        report("Product Version: %s\n", info->productVer);
+    }
+
+    if (info->expRomFound) {
+        report("Rom Version:     ");
+        if (info->expRomVer) {
+            report("%x\n", info->expRomVer);
+        } else {
+            report("N/A\n");
+        }
     }
 
     if (info->isFailsafe) {
@@ -5193,7 +5330,7 @@ void usage(const char *sname, bool full = false)
     "    -i[mage] <image>   - Binary image file.\n"
     "                         Commands affected: burn, verify\n"
     "\n"
-    "    -nofs              - Burn image in non failsafe manner.\n"
+    "    -nofs              - Burn image in a non failsafe manner.\n"
     "\n"
     "    -skip_is           - Allow burning the FW image without updating the invariant sector,\n"
     "                         to ensure failsafe burning even when an invariant sector difference is detected.\n"
@@ -6062,9 +6199,11 @@ int main(int ac, char *av[])
                 printf("Block burn: The given image will be burnt as is. No fields (such\n");
                 printf("as GUIDS,VSD) are taken from current image on flash.\n");
             }
-            printf("Burn process will not be failsafe. No checks are performed.\n");
-            printf("ALL flash, including Invariant Sector will be overwritten.\n");
-            printf("If this process fails computer may remain in inoperable state.\n");
+            printf("Burn process will not be failsafe. No checks will be performed.\n");
+	    //TODO: MST proposes:
+            //printf("Burn process will not be failsafe. No checks are performed.\n");
+            printf("ALL flash, including the Invariant Sector will be overwritten.\n");
+            printf("If this process fails, computer may remain in an inoperable state.\n");
 
             if (!ops.ask_user()) {
                 rc =  1; goto done;
@@ -6111,6 +6250,10 @@ int main(int ac, char *av[])
     {
         // QUERY
         Operations::ImageInfo info;
+
+        _silent       = true;
+        ops.Verify(*fbase);
+        _silent = false;
 
         if (!ops.QueryAll(*fbase, &info)) {
                 printf("*** ERROR *** %s query (%s) failed: %s\n", cmdTarget , cmdAccess, ops.err());
@@ -6294,20 +6437,12 @@ int main(int ac, char *av[])
         u_int32_t    addr;
         char         *endp;
 
-        char*        fname;
-        
-        // Device
-        if (!device) {
-            printf("For wb command \"-device\" switch must be specified.\n");
-            rc =  1; goto done; 
-        }
-
         // Input file
         FImage fim;
 
         NEXTC("<IN_FILENAME>", "wb");
 
-        fname = av[i];
+        image_fname = av[i];
 
         // Address
         NEXTC("<ADDR>", "wb");
