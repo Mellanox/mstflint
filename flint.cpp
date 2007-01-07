@@ -2793,7 +2793,7 @@ bool SpiFlash::get_cmd_set   () {
                           spi_sel);
         }
 
-        printf("-D- %3d %08x\n", spi_sel, cur_spi_size);
+        //printf("-D- %3d %08x\n", spi_sel, cur_spi_size);
     }
 
     _cfi_data.device_size = spi_size * num_spis;
