@@ -37,5 +37,8 @@ mstmread: mread.c mtcr.h
 mstregdump: mstdump.c mtcr.h
 	$(CC) ${CFLAGS} mstdump.c -o mstregdump
 
+mstvpd: vpd.c
+	$(CC) ${CFLAGS} vpd.c -o mstvpd
+
 clean:
 	rm -f mstregdump mstflint mstmread mstmwrite mstflint.o
