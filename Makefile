@@ -41,4 +41,4 @@ mstvpd: vpd.c
 	$(CC) ${CFLAGS} vpd.c -o mstvpd
 
 clean:
-	rm -f mstregdump mstflint mstmread mstmwrite mstflint.o
+	rm -f mstvpd mstregdump mstflint mstmread mstmwrite mstflint.o
