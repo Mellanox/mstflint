@@ -203,10 +203,8 @@ int vpd_read(int device, vpd_t vpd)
 /* Verify that keywords in R and W sections fit in length. */
 int vpd_check_one(union vpd_data_type *d, unsigned offset)
 {
-	unsigned char b;
 	unsigned i;
 	struct vpd_field *field;
-	int checksum_len = 0;
 
 	if (VPD_TAG_NAME(d) == VPD_TAG_R ||
 	    VPD_TAG_NAME(d) == VPD_TAG_W)
@@ -353,7 +351,7 @@ void vpd_show(FILE *f, vpd_t vpd, const char *keyword)
 
 int pci_parse_name(const char *name, char buf[4096])
 {
-	int domain, bus, dev, func, scnt, tmp;
+	int domain, bus, dev, func, tmp;
 	struct stat dummybuf;
 
 	if (*name == '/') {

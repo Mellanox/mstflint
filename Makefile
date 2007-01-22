@@ -9,7 +9,7 @@ EXTRA_LOADLIBES=-lz
 LOADLIBES+=${EXTRA_LOADLIBES}
 
 all: default
-bin: mstflint mstmread mstmwrite mstregdump
+bin: mstflint mstmread mstmwrite mstregdump mstvpd
 
 default: bin
 static: bin
