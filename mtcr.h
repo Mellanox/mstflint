@@ -335,7 +335,7 @@ mfile *mopen(const char *name)
   char file_name[]="/proc/bus/pci/0000:00/00.0";
 
   mf=(mfile*)malloc(sizeof(mfile));
-  if (!mf) return 0;
+  if (!mf) return NULL;
 
   //If device name starts with /proc/bus/pci we'll use configuration cycles
   if (!strncmp(name,"/proc/bus/pci/",strlen("/proc/bus/pci/")))
@@ -449,7 +449,7 @@ open_failed:
 #if CONFIG_ENABLE_MMAP
 find_failed:
 #endif
-        return 0;
+        return NULL;
 }
 #endif
 
