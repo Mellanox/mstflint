@@ -409,7 +409,11 @@ mfile *mopen(const char *name)
 
     if ( (! mf->ptr) || (mf->ptr == MAP_FAILED) || 
         (__be32_to_cpu(*((u_int32_t *) ((char *) mf->ptr + 0xF0014))) == 0xFFFFFFFF) )
+#if CONFIG_USE_DEV_MEM
         goto map_failed_try_pciconf;
+#else
+    	mf->ptr = NULL; /* mmap is broken on ppc - fallback on pciconf */
+#endif
 
 #else
     goto open_failed;
