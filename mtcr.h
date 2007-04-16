@@ -41,18 +41,14 @@
 //use memory mapped /dev/mem for access
 #define CONFIG_ENABLE_MMAP 1
 //mmap /dev/mem for memory access (does not work on sparc)
-#define CONFIG_USE_DEV_MEM 0
-//mmap sysfs resource for memory access (needs kernel 2.6.11 or up)
-#define CONFIG_ENABLE_SYSFS 1
-
+#define CONFIG_USE_DEV_MEM 1
 //use pci configuration cycles for access
 #define CONFIG_ENABLE_PCICONF 1
 
-//#define CONFIG_HAVE_LONG_ADDRESS 1
-#define CONFIG_HAVE_LONG_LONG_ADDRESS 1
-
-
-#if CONFIG_ENABLE_PCICONF
+#if CONFIG_ENABLE_PCICONF && CONFIG_ENABLE_MMAP
+/* For strerror_r */
+#define _XOPEN_SOURCE 600
+#elif CONFIG_ENABLE_PCICONF
 #define _XOPEN_SOURCE 500
 #endif
 
@@ -61,6 +57,7 @@
 #endif
 
 #include <stdio.h>
+#include <string.h>
 
 #include <unistd.h>
 
@@ -76,13 +73,11 @@
 
 #if CONFIG_ENABLE_MMAP
 #include <sys/mman.h>
-#if !CONFIG_USE_DEV_MEM
 #include <sys/pci.h>
 #include <sys/ioctl.h>
-#endif
 #include <sys/types.h>
-#include <sys/stat.h>
 #endif
+#include <sys/stat.h>
 
 
 #ifndef __be32_to_cpu
@@ -120,6 +115,7 @@
 extern "C" {
 #endif
 
+
 /*  All fields in the following structure are not supposed to be used */
 /*  or modified by user programs. */
 typedef struct mfile_t {
@@ -127,6 +123,116 @@ typedef struct mfile_t {
     void          *ptr;
 } mfile;
 
+/*
+ * Read 4 bytes, return number of succ. read bytes or -1 on failure
+ */
+int mread4(mfile *mf, unsigned int offset, u_int32_t *value)
+#ifdef MTCR_EXPORT
+;
+#else
+{
+#if CONFIG_ENABLE_MMAP
+	if (mf->ptr) {
+		*value = __be32_to_cpu(*((u_int32_t *)((char *)mf->ptr + offset)));
+		return 4;
+	}
+#endif
+#if CONFIG_ENABLE_PCICONF
+	{
+		int rc;
+		offset = __cpu_to_le32(offset);
+		rc=pwrite(mf->fd, &offset, 4, 22*4);
+		if (rc < 0) {
+			perror("write offset");
+			return rc;
+		}
+		if (rc != 4)
+			return 0;
+		rc=pread(mf->fd, value, 4, 23*4);
+		if (rc < 0) {
+			perror("read value");
+			return rc;
+		}
+		*value = __le32_to_cpu(*value);
+		return rc;
+	}
+#else
+	return 0;
+#endif
+}
+#endif
+
+/*
+ * Write 4 bytes, return number of succ. written bytes or -1 on failure
+ */
+int mwrite4(mfile *mf, unsigned int offset, u_int32_t value)
+#ifdef MTCR_EXPORT
+;
+#else
+{
+#if CONFIG_ENABLE_MMAP
+  if (mf->ptr) {
+            *((u_int32_t *)((char *)mf->ptr + offset)) = __cpu_to_be32(value);
+            return 4;
+  }
+#endif
+#if CONFIG_ENABLE_PCICONF
+  {
+    int rc;
+    offset = __cpu_to_le32(offset);
+    rc = pwrite(mf->fd, &offset, 4, 22*4);
+    if (rc < 0) {
+      perror("write offset");
+      return rc;
+    }
+    if (rc != 4)
+	    return 0;
+    value = __cpu_to_le32(value);
+    rc = pwrite(mf->fd, &value, 4, 23*4);
+    if (rc < 0) {
+      perror("write value");
+      return rc;
+    }
+    return rc;
+  }
+#else
+  return 0;
+#endif
+}
+#endif
+
+#ifndef MTCR_EXPORT
+
+enum mtcr_access_method {
+	MTCR_ACCESS_ERROR  = 0x0,
+	MTCR_ACCESS_MEMORY = 0x1,
+	MTCR_ACCESS_CONFIG = 0x2,
+};
+
+static
+int mtcr_check_signature(mfile *mf)
+{
+	unsigned signature;
+	int rc;
+	rc = mread4(mf, 0xF0014, &signature);
+	if (rc != 4) {
+		if (!errno)
+			errno = EIO;
+		return -1;
+	}
+
+	switch (signature & 0xffff) {
+	case 0x5a44: /* 23108 */
+	case 0x6279: /* 25209 */
+	case 0x5e8c: /* 24204 */
+	case 0x6274: /* 25204 */
+	case 0x190 : /* 400 */
+		return 0;
+	default:
+		errno = EIO;
+		return -1;
+	}
+}
 
 #if CONFIG_ENABLE_MMAP
 /*
@@ -141,179 +247,314 @@ typedef struct mfile_t {
 #define PCI_SLOT(devfn)		(((devfn) >> 3) & 0x1f)
 #define PCI_FUNC(devfn)		((devfn) & 0x07)
 
-/* Find the specific device by scanning /proc/bus/pci/devices */
-int mfind(const char* name, off_t* offset_p,
-	  unsigned *bus_p, unsigned *dev_p, unsigned *func_p)
-#ifdef MTCR_EXPORT
-;
-#else
+static
+unsigned long long mtcr_procfs_get_offset(unsigned my_bus, unsigned my_dev,
+					  unsigned my_func)
 {
-  FILE* f;
-	unsigned     irq;
-#if CONFIG_HAVE_LONG_LONG_ADDRESS
-	unsigned long long 
-#elif CONFIG_HAVE_LONG_ADDRESS
-	unsigned long
-#else
-	unsigned
-#endif
-	base_addr[6], rom_base_addr, size[6], rom_size;
+	FILE* f;
+	unsigned irq;
+	unsigned long long base_addr[6], rom_base_addr, size[6], rom_size;
 
-  unsigned    bus ;
-  unsigned   dev ;
-  unsigned   func ;
-  unsigned   vendor_id ;
-  unsigned   device_id ;
-  unsigned int cnt;
+	unsigned bus, dev, func;
+	unsigned vendor_id;
+	unsigned device_id;
+	unsigned int cnt;
 
-  unsigned long long offset;
+	unsigned long long offset = (unsigned long long)-1;
 
-  unsigned my_domain = 0;
-  unsigned my_bus;
-  unsigned my_dev;
-  unsigned my_func;
-  char buf[4048];
+	char buf[4048];
 
-  int scnt;
-  int tmp;
+	f = fopen("/proc/bus/pci/devices", "r");
+	if (!f) return offset;
 
-  scnt=sscanf(name,"mthca%x", & tmp);
-  if (scnt == 1) {
-	  char mbuf[4048];
-	  char pbuf[4048];
-	  char *base;
+	for(;;) if (fgets(buf, sizeof(buf) - 1, f)) {
+		unsigned dfn, vend;
 
-	  tmp = snprintf(mbuf, sizeof mbuf, "/sys/class/infiniband/%s/device", name);
-	  if (tmp <= 0 || tmp >= (int)sizeof mbuf) {
-		  fprintf(stderr,"Unable to print device name %s\n", name);
-		  goto parse_error;
-	  }
+		cnt = sscanf(buf,
+			     "%x %x %x %llx %llx %llx %llx %llx %llx "
+			     "%llx %llx %llx %llx %llx %llx %llx %llx",
+			     &dfn,
+			     &vend,
+			     &irq,
+			     &base_addr[0],
+			     &base_addr[1],
+			     &base_addr[2],
+			     &base_addr[3],
+			     &base_addr[4],
+			     &base_addr[5],
+			     &rom_base_addr,
+			     &size[0],
+			     &size[1],
+			     &size[2],
+			     &size[3],
+			     &size[4],
+			     &size[5],
+			     &rom_size);
+		if (cnt != 9 && cnt != 10 && cnt != 17)
+		{
+			fprintf(stderr,"proc: parse error (read only %d items)\n", cnt);
+			fprintf(stderr,"the offending line in " "/proc/bus/pci/devices" " is "
+				"\"%.*s\"\n", (int)sizeof(buf), buf);
+			goto error;
+		}
+		bus = dfn >> 8U;
+		dev = PCI_SLOT(dfn & 0xff);
+		func = PCI_FUNC(dfn & 0xff);
+		vendor_id = vend >> 16U;
+		device_id = vend & 0xffff;
 
-	  if (readlink(mbuf, pbuf, sizeof pbuf) < 0) {
-		  perror("read link");
-		  fprintf(stderr,"Unable to read link %s\n", mbuf);
-		  return 1;
-	  }
+		if (bus == my_bus && dev == my_dev && func == my_func)
+			break;
+	}
+	else
+		goto error;
 
-	  base = basename(pbuf);
-	  if (!base) goto name_parsed;
-	  scnt = sscanf(base, "%x:%x:%x.%x",
-			& my_domain, & my_bus, & my_dev, & my_func);	
-	  if (scnt == 4) goto name_parsed;
-  }
-
-  scnt=sscanf(name,"%x:%x.%x", & my_bus, & my_dev, & my_func);
-
-  if (scnt == 3) goto name_parsed;
-
-  scnt=sscanf(name,"%x:%x:%x.%x", & my_domain, & my_bus, & my_dev, & my_func);
-
-  if (scnt == 4) goto name_parsed;
-
-parse_error:
-  fprintf(stderr,"Unable to parse device %s\n", name);
-  errno=EINVAL;
-  return 1;
-
-name_parsed:
-
-  if (my_domain) {
-    fprintf(stderr,"Device %s: domain number %#x detected.\n"
-		   "This method only supports pci domain 0x0.\n"
-		   "Try using device /proc/bus/pci/... instead.\n",
-		   name, my_domain);
-    errno=EINVAL;
-    return 1;
-  }
-  
-  f = fopen("/proc/bus/pci/devices", "r");
-  if (!f) return 1;
-
-  for(;;)
-  if (fgets(buf, sizeof(buf)-1, f))
-    {
-      unsigned dfn, vend;
-
-      cnt = sscanf(buf,
-#if CONFIG_HAVE_LONG_LONG_ADDRESS
-	     "%x %x %x %llx %llx %llx %llx %llx %llx %llx %llx %llx %llx %llx %llx %llx %llx",
-#elif CONFIG_HAVE_LONG_ADDRESS
-	     "%x %x %x %lx %lx %lx %lx %lx %lx %lx %lx %lx %lx %lx %lx %lx %lx",
-#else
-	     "%x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x %x",
-#endif
-	     &dfn,
-	     &vend,
-	     &irq,
-	     &base_addr[0],
-	     &base_addr[1],
-	     &base_addr[2],
-	     &base_addr[3],
-	     &base_addr[4],
-	     &base_addr[5],
-	     &rom_base_addr,
-	     &size[0],
-	     &size[1],
-	     &size[2],
-	     &size[3],
-	     &size[4],
-	     &size[5],
-	     &rom_size);
-      if (cnt != 9 && cnt != 10 && cnt != 17)
-      {
-        fprintf(stderr,"proc: parse error (read only %d items)\n", cnt);
-        fprintf(stderr,"the offending line in " "/proc/bus/pci/devices" " is "
-			"\"%.*s\"\n", (int)sizeof(buf), buf);
-        goto error;
-      }
-      bus = dfn >> 8U;
-      dev = PCI_SLOT(dfn & 0xff);
-      func = PCI_FUNC(dfn & 0xff);
-      vendor_id = vend >> 16U;
-      device_id = vend & 0xffff;
-
-      if (bus == my_bus && dev == my_dev && func == my_func)
-      {
-        break;
-      }
-    }
-  else
-    goto error;
-
-  if (cnt != 17 || size[1] != 0 || size[0] != 0x100000)
-  {
-        fprintf(stderr,"proc: unexpected region size values: "
-#if CONFIG_HAVE_LONG_LONG_ADDRESS
+	if (cnt != 17 || size[1] != 0 || size[0] != 0x100000) {
+		if (0) fprintf(stderr,"proc: unexpected region size values: "
 			"cnt=%d, size[0]=%#llx, size[1]=%#llx\n",
-#elif CONFIG_HAVE_LONG_ADDRESS
-			"cnt=%d, size[0]=%#lx, size[1]=%#lx\n",
-#else
-			"cnt=%d, size[0]=%#x, size[1]=%#x\n",
-#endif
 			cnt,size[0],size[1]);
-        fprintf(stderr,"the offending line in " "/proc/bus/pci/devices" " is "
-			"\"%.*s\"\n", (int)sizeof(buf), buf);
-        goto error;
-  }
+		if (0) fprintf(stderr,"the offending line in " "/proc/bus/pci/devices"
+			       " is \"%.*s\"\n", (int)sizeof(buf), buf);
+		goto error;
+	}
 
 
-  offset=((unsigned long long)(base_addr[1])<<32)+
-    ((unsigned long long)(base_addr[0])&~(unsigned long long)(0xfffff));
+	offset = ((unsigned long long)(base_addr[1]) << 32) +
+		((unsigned long long)(base_addr[0]) & ~(unsigned long long)(0xfffff));
 
-  *offset_p=offset;
-  *bus_p=bus;
-  *dev_p=dev;
-  *func_p=func;
-
-  fclose(f);
-  return 0;
+	fclose(f);
+	return offset;
 
 error:
-  errno=ENOENT;
-  fclose(f);
-  return 1;
+	errno = ENOENT;
+	fclose(f);
+	return offset;
+}
+
+static
+unsigned long long mtcr_sysfs_get_offset(unsigned domain, unsigned bus,
+					 unsigned dev, unsigned func)
+{
+	unsigned long long start, end, type;
+	unsigned long long offset = (unsigned long long)-1;
+	FILE *f;
+	int cnt;
+	char mbuf[] = "/sys/bus/pci/devices/XXXX:XX:XX.X/resource";
+	sprintf(mbuf, "/sys/bus/pci/devices/%4.4x:%2.2x:%2.2x.%1.1x/resource",
+		       domain, bus, dev, func);
+
+	f = fopen(mbuf, "r");
+	if (!f)
+		return offset;
+
+	cnt = fscanf(f, "0x%llx0x%llx0x%llx", &start, &end, &type);
+	if (end != start + 0x100000 - 1) {
+		if (0) fprintf(stderr,"proc: unexpected region size values: "
+			"cnt=%d, start=%#llx, end=%#llx\n",
+			cnt, start, end);
+		goto error;
+	}
+
+	fclose(f);
+	return start;
+
+error:
+	errno = ENOENT;
+	fclose(f);
+	return offset;
+}
+
+static
+int mtcr_mmap(mfile *mf, const char *name, off_t off, int ioctl_needed)
+{
+	int err;
+
+	mf->fd = open(name, O_RDWR | O_SYNC);
+	if (mf->fd < 0)
+		return -1;
+
+	if (ioctl_needed && ioctl(mf->fd, PCIIOC_MMAP_IS_MEM) < 0) {
+		err = errno;
+		close(mf->fd);
+		errno = err;
+		return -1;
+	}
+
+	mf->ptr = mmap(NULL, 0x100000, PROT_READ | PROT_WRITE,
+		       MAP_SHARED, mf->fd, off);
+
+	if (!mf->ptr || mf->ptr == MAP_FAILED) {
+		err = errno;
+		close(mf->fd);
+		errno = err;
+		return -1;
+	}
+
+	if (mtcr_check_signature(mf))
+		return -1;
+
+	return 0;
+}
+#else
+static
+unsigned long long mtcr_procfs_get_offset(unsigned my_bus, unsigned my_dev,
+					  unsigned my_func)
+{
+	return -1;
+}
+
+static
+unsigned long long mtcr_sysfs_get_offset(unsigned domain, unsigned bus,
+					 unsigned dev, unsigned func)
+{
+	return -1;
+}
+
+static
+int mtcr_mmap(mfile *mf, const char *name, off_t off, int ioctl_needed)
+{
+	return -1;
 }
 #endif
+
+#if CONFIG_ENABLE_PCICONF
+static
+int mtcr_open_config(mfile *mf, const char *name)
+{
+	unsigned signature;
+	int rc, err;
+
+	mf->fd = open(name, O_RDWR | O_SYNC);
+	if (mf->fd < 0)
+		return -1;
+
+	/* Kernels before 2.6.12 carry the high bit in each byte
+	 * on <device>/config writes, overriding higher bits.
+	 * Make sure the high bit is set in some signature bytes,
+	 * to catch this. */
+	/* Do this test before mtcr_check_signature,
+	   to avoid system failure on access to an illegal address. */
+	signature = 0xfafbfcfd;
+	rc = pwrite(mf->fd, &signature, 4, 22*4);
+	if (rc != 4) {
+		err = errno;
+		close(mf->fd);
+		errno = err;
+		return -1;
+	}
+
+	rc = pread(mf->fd, &signature, 4, 22*4);
+	if (rc != 4) {
+		err = errno;
+		close(mf->fd);
+		errno = err;
+		return -1;
+	}
+
+	if (signature != 0xfafbfcfd) {
+		close(mf->fd);
+		errno = EFAULT;
+		return -1;
+	}
+
+	if (mtcr_check_signature(mf))
+		return -1;
+
+	return 0;
+}
+#else
+static
+int mtcr_open_config(mfile *mf, const char *name)
+{
+	return -1;
+}
+#endif
+
+static
+enum mtcr_access_method mtcr_parse_name(const char* name, int *force,
+				       	unsigned *domain_p, unsigned *bus_p,
+				       	unsigned *dev_p, unsigned *func_p)
+{
+	unsigned my_domain = 0;
+	unsigned my_bus;
+	unsigned my_dev;
+	unsigned my_func;
+	int scnt;
+	char config[] = "/config";
+	char resource0[] = "/resource0";
+	char procbuspci[] = "/proc/bus/pci/";
+	unsigned len = strlen(name);
+	struct stat dummybuf;
+	unsigned tmp;
+
+	if (len >= sizeof config && !strcmp(config, name + len + 1 - sizeof config) &&
+	    !stat(name, &dummybuf)) {
+		*force = 1;
+		return MTCR_ACCESS_CONFIG;
+	}
+
+	if (len >= sizeof resource0 &&
+	    !strcmp(resource0, name + len + 1 - sizeof resource0) &&
+	    !stat(name, &dummybuf)) {
+		*force = 1;
+		return MTCR_ACCESS_MEMORY;
+	}
+
+	if (!strncmp(name,"/proc/bus/pci/", sizeof procbuspci - 1) &&
+	    !stat(name, &dummybuf)) {
+		*force = 1;
+		return MTCR_ACCESS_MEMORY;
+	}
+
+	scnt = sscanf(name,"mthca%x", &tmp);
+	if (scnt == 1) {
+		char mbuf[4048];
+		char pbuf[4048];
+		char *base;
+
+		tmp = snprintf(mbuf, sizeof mbuf, "/sys/class/infiniband/%s/device", name);
+		if (tmp <= 0 || tmp >= (int)sizeof mbuf) {
+			fprintf(stderr,"Unable to print device name %s\n", name);
+			goto parse_error;
+		}
+
+		if (readlink(mbuf, pbuf, sizeof pbuf) < 0) {
+			perror("read link");
+			fprintf(stderr,"Unable to read link %s\n", mbuf);
+			return MTCR_ACCESS_ERROR;
+		}
+
+		base = basename(pbuf);
+		if (!base)
+			goto parse_error;
+		scnt = sscanf(base, "%x:%x:%x.%x",
+			      &my_domain, &my_bus, &my_dev, &my_func);	
+		if (scnt != 4)
+			goto parse_error;
+		goto name_parsed;
+	}
+
+	scnt = sscanf(name,"%x:%x.%x", &my_bus, &my_dev, &my_func);
+	if (scnt == 3)
+		goto name_parsed;
+
+	scnt = sscanf(name,"%x:%x:%x.%x", &my_domain, &my_bus, &my_dev, &my_func);
+	if (scnt == 4)
+		goto name_parsed;
+
+parse_error:
+	fprintf(stderr,"Unable to parse device name %s\n", name);
+	errno = EINVAL;
+	return MTCR_ACCESS_ERROR;
+
+name_parsed:
+	*domain_p = my_domain;
+	*bus_p = my_bus;
+	*dev_p = my_dev;
+	*func_p = my_func;
+	*force = 0;
+	return MTCR_ACCESS_MEMORY;
+}
 #endif
 
 /*
@@ -322,137 +563,111 @@ error:
  */
 mfile *mopen(const char *name)
 #ifdef MTCR_EXPORT
-;
+	;
 #else
 {
-  mfile *mf;
-  off_t offset;
-  int err;
-  char buf[]="0000:00:00.0";
-  char path[]="/sys/bus/pci/devices/0000:00:00.0/resource0";
-  unsigned domain, bus, dev, func;
-  struct stat dummybuf;
-  char file_name[]="/proc/bus/pci/0000:00/00.0";
+	mfile *mf;
+	off_t offset;
+	unsigned domain, bus, dev, func;
+	enum mtcr_access_method access;
+	int force;
+	char rbuf[] = "/sys/bus/pci/devices/XXXX:XX:XX.X/resource0";
+	char cbuf[] = "/sys/bus/pci/devices/XXXX:XX:XX.X/config";
+	char pdbuf[] = "/proc/bus/pci/devices/XXXX:XX/XX.X";
+	char pbuf[] = "/proc/bus/pci/devices/XX/XX.X";
+	char errbuf[4048]="";
+	int err;
 
-  mf=(mfile*)malloc(sizeof(mfile));
-  if (!mf) return NULL;
-
-  //If device name starts with /proc/bus/pci we'll use configuration cycles
-  if (!strncmp(name,"/proc/bus/pci/",strlen("/proc/bus/pci/")))
-  {
-#if (CONFIG_ENABLE_PCICONF)
-    mf->fd = open(name,O_RDWR | O_SYNC);
-    if (mf->fd<0) goto open_failed;
-
-    mf->ptr=NULL;
-#else
-    goto open_failed;
-#endif
-  }
-  else if (sscanf(name,
-		  "/sys/bus/pci/devices/%12[0-9a-f:.]/resource0",
-		  buf) == 1 ||
-	   sscanf(name,
-		  "/sys/class/infiniband/mthca%12[0-9a-f:.]/device/resource0",
-		  buf) == 1
-	   ) {
-#if (CONFIG_ENABLE_SYSFS)
-
-    mf->fd = open(name,O_RDWR | O_SYNC);
-    if (mf->fd<0) goto open_failed;
-
-    mf->ptr = mmap(NULL, 0x100000, PROT_READ | PROT_WRITE,
-        MAP_SHARED, mf->fd, 0);
-
-    if ( (! mf->ptr) || (mf->ptr == MAP_FAILED) ) goto map_failed;
-#else
-    goto open_failed;
-#endif
-  }
-#if CONFIG_ENABLE_MMAP
-  else if (snprintf(path, sizeof path, "/sys/bus/pci/devices/%s/resource0",
-		    name) < (int)sizeof path &&
-	   (mf->fd = open(path, O_RDWR | O_SYNC)) >= 0)
-  {
-    mf->ptr = mmap(NULL, 0x100000, PROT_READ | PROT_WRITE,
-        MAP_SHARED, mf->fd, 0);
-
-    if ( (! mf->ptr) || (mf->ptr == MAP_FAILED) || 
-        (__be32_to_cpu(*((u_int32_t *) ((char *) mf->ptr + 0xF0014))) == 0xFFFFFFFF) )
-        goto map_failed_try_pciconf;
-  }
-#endif
-  else
-  {
-#if CONFIG_ENABLE_MMAP
-    if (mfind(name,&offset,&bus,&dev,&func)) goto find_failed;
-
-#if CONFIG_USE_DEV_MEM
-    mf->fd = open("/dev/mem", O_RDWR | O_SYNC);
-    if (mf->fd<0) goto open_failed;
-#else
-    {
-	    sprintf(file_name,"/proc/bus/pci/%2.2x/%2.2x.%1.1x",
-			    bus,dev,func);
-	    if (stat(file_name,&dummybuf))
-		    sprintf(file_name,"/proc/bus/pci/0000:%2.2x/%2.2x.%1.1x",
-			    bus,dev,func);
-	    mf->fd = open(file_name, O_RDWR | O_SYNC);
-	    if (mf->fd<0) goto open_failed;
-
-	    if (ioctl(mf->fd, PCIIOC_MMAP_IS_MEM) < 0) goto ioctl_failed;
-    }
-#endif
-
-    mf->ptr = mmap(NULL, 0x100000, PROT_READ | PROT_WRITE,
-        MAP_SHARED, mf->fd, offset);
-
-    if ( (! mf->ptr) || (mf->ptr == MAP_FAILED) || 
-        (__be32_to_cpu(*((u_int32_t *) ((char *) mf->ptr + 0xF0014))) == 0xFFFFFFFF) )
-#if CONFIG_USE_DEV_MEM
-        goto map_failed_try_pciconf;
-#else
-    	mf->ptr = NULL; /* mmap is broken on ppc - fallback on pciconf */
-#endif
-
-#else
-    goto open_failed;
-#endif
-  }
-  return mf;
-
-
-#if CONFIG_ENABLE_MMAP
-map_failed_try_pciconf:
-#if CONFIG_ENABLE_PCICONF
+	mf = (mfile *)malloc(sizeof(mfile));
+	if (!mf)
+		return NULL;
 	mf->ptr = NULL;
-	close(mf->fd);
-	if (sscanf(name, "%x:%x:%x.%x", &domain, &bus, &dev, &func) != 4) {
-		domain = 0;
-		if (sscanf(name, "%x:%x.%x", &bus, &dev, &func) != 3) goto map_failed;
+	mf->fd = -1;
+
+	access = mtcr_parse_name(name, &force, &domain, &bus, &dev, &func);
+	if (access == MTCR_ACCESS_ERROR)
+		goto open_failed;
+
+	if (force) {
+
+		if (access == MTCR_ACCESS_CONFIG) {
+			if (!mtcr_open_config(mf, name))
+				return mf;
+		} else {
+			if (!mtcr_mmap(mf, name, 0, 0))
+				return mf;
+		}
+
+		goto open_failed;
 	}
-	snprintf(file_name, sizeof file_name, "/proc/bus/pci/%2.2x/%2.2x.%1.1x", bus, dev, func);
-	if (stat(file_name,&dummybuf))
-		snprintf(file_name, sizeof file_name, "/proc/bus/pci/%4.4x:%2.2x/%2.2x.%1.1x", domain, bus,dev,func);
-	if ((mf->fd = open(file_name, O_RDWR | O_SYNC)) >= 0) return mf;
+
+	if (access == MTCR_ACCESS_CONFIG)
+		goto access_config_forced;
+
+	sprintf(rbuf, "/sys/bus/pci/devices/%4.4x:%2.2x:%2.2x.%1.1x/resource0",
+		domain, bus, dev, func);
+
+	if (!mtcr_mmap(mf, rbuf, 0, 0))
+		return mf;
+
+	/* Following access methods need the resource BAR */
+	offset = mtcr_sysfs_get_offset(domain, bus, dev, func);
+	if (offset == -1 && !domain)
+		offset = mtcr_procfs_get_offset(bus, dev, func);
+	if (offset == -1)
+		goto access_config;
+
+	sprintf(pdbuf, "/proc/bus/pci/devices/%4.4x:%2.2x/%2.2x.%1.1x",
+		domain, bus, dev, func);
+
+	if (!mtcr_mmap(mf, pdbuf, offset, 1))
+		return mf;
+
+	if (!domain) {
+		sprintf(pbuf, "/proc/bus/pci/devices/%2.2x/%2.2x.%1.1x",
+			bus, dev, func);
+		if (!mtcr_mmap(mf, pdbuf, offset, 1))
+			return mf;
+	}
+
+#if CONFIG_USE_DEV_MEM
+	/* Non-portable, but helps some systems */
+	if (!mtcr_mmap(mf, "/dev/mem", offset, 0))
+		return mf;
 #endif
 
-map_failed:
-#if !CONFIG_USE_DEV_MEM
-ioctl_failed:
+access_config:
+#if CONFIG_ENABLE_PCICONF && CONFIG_ENABLE_PCICONF
+	strerror_r(errno, errbuf, sizeof errbuf);
+	fprintf(stderr,
+		"Warning: memory access to device %s failed: %s.\n"
+		"Warning: Fallback on IO: much slower, and unsafe if device in use.\n",
+		errbuf, name);
 #endif
-        err = errno;
-        close(mf->fd);
-        errno = err;
-#endif
+
+access_config_forced:
+	sprintf(cbuf, "/sys/bus/pci/devices/%4.4x:%2.2x:%2.2x.%1.1x/config",
+		domain, bus, dev, func);
+	if (!mtcr_open_config(mf, cbuf))
+		return mf;
+
+	sprintf(pdbuf, "/proc/bus/pci/devices/%4.4x:%2.2x/%2.2x.%1.1x",
+		domain, bus, dev, func);
+
+	if (!mtcr_open_config(mf, pdbuf))
+		return mf;
+
+	if (!domain) {
+		sprintf(pbuf, "/proc/bus/pci/devices/%2.2x/%2.2x.%1.1x",
+			bus, dev, func);
+		if (!mtcr_open_config(mf, pdbuf))
+			return mf;
+	}
+
 open_failed:
         err = errno;
         free(mf);
         errno = err;
-
-#if CONFIG_ENABLE_MMAP
-find_failed:
-#endif
         return NULL;
 }
 #endif
@@ -473,88 +688,6 @@ int mclose(mfile *mf)
   close(mf->fd);
   free(mf);
   return 0;
-}
-#endif
-
-/*
- * Read 4 bytes, return number of succ. read bytes or -1 on failure
- */
-int mread4(mfile *mf, unsigned int offset, u_int32_t *value)
-#ifdef MTCR_EXPORT
-;
-#else
-{
-#if CONFIG_ENABLE_MMAP
-  if (mf->ptr)
-  {
-            *value = __be32_to_cpu(*((u_int32_t *)((char *)mf->ptr + offset)));
-            return 4;
-  }
-#endif
-#if CONFIG_ENABLE_PCICONF
-  {
-    int rc;
-    offset=__cpu_to_le32(offset);
-    rc=pwrite(mf->fd, &offset, 4, 22*4);
-    if (rc < 0)
-    {
-      perror("write offset");
-      return rc;
-    }
-    if (rc!=4) return 0;
-    rc=pread(mf->fd, value, 4, 23*4);
-    if (rc < 0)
-    {
-      perror("read value");
-      return rc;
-    }
-    *value=__le32_to_cpu(*value);
-    return rc;
-  }
-#else
-  return 0;
-#endif
-}
-#endif
-
-/*
- * Write 4 bytes, return number of succ. written bytes or -1 on failure
- */
-int mwrite4(mfile *mf, unsigned int offset, u_int32_t value)
-#ifdef MTCR_EXPORT
-;
-#else
-{
-#if CONFIG_ENABLE_MMAP
-  if (mf->ptr)
-  {
-            *((u_int32_t *)((char *)mf->ptr + offset)) = __cpu_to_be32(value);
-            return 4;
-  }
-#endif
-#if CONFIG_ENABLE_PCICONF
-  {
-    int rc;
-    offset=__cpu_to_le32(offset);
-    rc=pwrite(mf->fd, &offset, 4, 22*4);
-    if (rc < 0)
-    {
-      perror("write offset");
-      return rc;
-    }
-    if (rc!=4) return 0;
-    value=__cpu_to_le32(value);
-    rc=pwrite(mf->fd, &value, 4, 23*4);
-    if (rc < 0)
-    {
-      perror("write value");
-      return rc;
-    }
-    return rc;
-  }
-#else
-  return 0;
-#endif
 }
 #endif
 
