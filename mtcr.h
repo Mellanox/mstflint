@@ -529,17 +529,17 @@ enum mtcr_access_method mtcr_parse_name(const char* name, int *force,
 		if (!base)
 			goto parse_error;
 		scnt = sscanf(base, "%x:%x:%x.%x",
-			      &my_domain, &my_bus, &my_dev, &my_func);	
+			      &my_domain, &my_bus, &my_dev, &my_func);
 		if (scnt != 4)
 			goto parse_error;
 		goto name_parsed;
 	}
 
-	scnt = sscanf(name,"%x:%x.%x", &my_bus, &my_dev, &my_func);
+	scnt = sscanf(name, "%x:%x.%x", &my_bus, &my_dev, &my_func);
 	if (scnt == 3)
 		goto name_parsed;
 
-	scnt = sscanf(name,"%x:%x:%x.%x", &my_domain, &my_bus, &my_dev, &my_func);
+	scnt = sscanf(name, "%x:%x:%x.%x", &my_domain, &my_bus, &my_dev, &my_func);
 	if (scnt == 4)
 		goto name_parsed;
 
