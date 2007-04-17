@@ -223,7 +223,7 @@ int mtcr_check_signature(mfile *mf)
 
 	switch (signature & 0xffff) {
 	case 0x5a44: /* 23108 */
-	case 0x6279: /* 25209 */
+	case 0x6278: /* 25208 */
 	case 0x5e8c: /* 24204 */
 	case 0x6274: /* 25204 */
 	case 0x190 : /* 400 */
