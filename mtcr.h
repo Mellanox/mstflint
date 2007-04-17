@@ -229,7 +229,7 @@ int mtcr_check_signature(mfile *mf)
 	case 0x190 : /* 400 */
 		return 0;
 	default:
-		errno = EIO;
+		errno = ENOTTY;
 		return -1;
 	}
 }
@@ -390,8 +390,12 @@ int mtcr_mmap(mfile *mf, const char *name, off_t off, int ioctl_needed)
 		return -1;
 	}
 
-	if (mtcr_check_signature(mf))
+	if (mtcr_check_signature(mf)) {
+		munmap(mf->ptr, 0x10000);
+		close(mf->fd);
+		errno = EIO;
 		return -1;
+	}
 
 	return 0;
 }
@@ -453,12 +457,15 @@ int mtcr_open_config(mfile *mf, const char *name)
 
 	if (signature != 0xfafbfcfd) {
 		close(mf->fd);
-		errno = EFAULT;
+		errno = EIO;
 		return -1;
 	}
 
-	if (mtcr_check_signature(mf))
+	if (mtcr_check_signature(mf)) {
+		close(mf->fd);
+		errno = EIO;
 		return -1;
+	}
 
 	return 0;
 }
@@ -503,7 +510,7 @@ enum mtcr_access_method mtcr_parse_name(const char* name, int *force,
 	if (!strncmp(name,"/proc/bus/pci/", sizeof procbuspci - 1) &&
 	    !stat(name, &dummybuf)) {
 		*force = 1;
-		return MTCR_ACCESS_MEMORY;
+		return MTCR_ACCESS_CONFIG;
 	}
 
 	scnt = sscanf(name,"mthca%x", &tmp);
