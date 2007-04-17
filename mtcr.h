@@ -574,8 +574,8 @@ mfile *mopen(const char *name)
 	int force;
 	char rbuf[] = "/sys/bus/pci/devices/XXXX:XX:XX.X/resource0";
 	char cbuf[] = "/sys/bus/pci/devices/XXXX:XX:XX.X/config";
-	char pdbuf[] = "/proc/bus/pci/devices/XXXX:XX/XX.X";
-	char pbuf[] = "/proc/bus/pci/devices/XX/XX.X";
+	char pdbuf[] = "/proc/bus/pci/XXXX:XX/XX.X";
+	char pbuf[] = "/proc/bus/pci/XX/XX.X";
 	char errbuf[4048]="";
 	int err;
 
@@ -618,16 +618,16 @@ mfile *mopen(const char *name)
 	if (offset == -1)
 		goto access_config;
 
-	sprintf(pdbuf, "/proc/bus/pci/devices/%4.4x:%2.2x/%2.2x.%1.1x",
+	sprintf(pdbuf, "/proc/bus/pci/%4.4x:%2.2x/%2.2x.%1.1x",
 		domain, bus, dev, func);
 
 	if (!mtcr_mmap(mf, pdbuf, offset, 1))
 		return mf;
 
 	if (!domain) {
-		sprintf(pbuf, "/proc/bus/pci/devices/%2.2x/%2.2x.%1.1x",
+		sprintf(pbuf, "/proc/bus/pci/%2.2x/%2.2x.%1.1x",
 			bus, dev, func);
-		if (!mtcr_mmap(mf, pdbuf, offset, 1))
+		if (!mtcr_mmap(mf, pbuf, offset, 1))
 			return mf;
 	}
 
