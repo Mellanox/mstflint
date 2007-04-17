@@ -345,8 +345,8 @@ unsigned long long mtcr_sysfs_get_offset(unsigned domain, unsigned bus,
 	if (!f)
 		return offset;
 
-	cnt = fscanf(f, "0x%llx0x%llx0x%llx", &start, &end, &type);
-	if (end != start + 0x100000 - 1) {
+	cnt = fscanf(f, "0x%llx 0x%llx 0x%llx", &start, &end, &type);
+	if (cnt != 3 || end != start + 0x100000 - 1) {
 		if (0) fprintf(stderr,"proc: unexpected region size values: "
 			"cnt=%d, start=%#llx, end=%#llx\n",
 			cnt, start, end);
