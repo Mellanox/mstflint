@@ -1746,7 +1746,8 @@ bool ParallelFlash::init_gpios() {
 }
 
 void ParallelFlash::close() {
-
+    if (!_mf)
+	    return;
     // Restore origin values
     mwrite4(_mf, GPIO_DIR_L, _dir);
     mwrite4(_mf, GPIO_POL_L, _pol);
@@ -2728,6 +2729,8 @@ bool SpiFlash::init_gpios() {
 }
 
 void SpiFlash::close() {
+    if (!_mf)
+	    return;
     // Chip reset does not reset the chip sellect - Make sure after reset
     // boot loads FW from SPI 0.
     set_bank(0);
