@@ -77,8 +77,6 @@
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #endif
-#include <sys/stat.h>
-
 
 #ifndef __be32_to_cpu
 #define __be32_to_cpu(x) ntohl(x)
@@ -491,24 +489,20 @@ enum mtcr_access_method mtcr_parse_name(const char* name, int *force,
 	char resource0[] = "/resource0";
 	char procbuspci[] = "/proc/bus/pci/";
 	unsigned len = strlen(name);
-	struct stat dummybuf;
 	unsigned tmp;
 
-	if (len >= sizeof config && !strcmp(config, name + len + 1 - sizeof config) &&
-	    !stat(name, &dummybuf)) {
+	if (len >= sizeof config && !strcmp(config, name + len + 1 - sizeof config)) {
 		*force = 1;
 		return MTCR_ACCESS_CONFIG;
 	}
 
 	if (len >= sizeof resource0 &&
-	    !strcmp(resource0, name + len + 1 - sizeof resource0) &&
-	    !stat(name, &dummybuf)) {
+	    !strcmp(resource0, name + len + 1 - sizeof resource0)) {
 		*force = 1;
 		return MTCR_ACCESS_MEMORY;
 	}
 
-	if (!strncmp(name,"/proc/bus/pci/", sizeof procbuspci - 1) &&
-	    !stat(name, &dummybuf)) {
+	if (!strncmp(name,"/proc/bus/pci/", sizeof procbuspci - 1)) {
 		*force = 1;
 		return MTCR_ACCESS_CONFIG;
 	}
