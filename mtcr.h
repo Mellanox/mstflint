@@ -326,8 +326,8 @@ unsigned long long mtcr_procfs_get_offset(unsigned my_bus, unsigned my_dev,
 	return offset;
 
 error:
-	errno = ENOENT;
 	fclose(f);
+	errno = ENXIO;
 	return offset;
 }
 
@@ -359,8 +359,8 @@ unsigned long long mtcr_sysfs_get_offset(unsigned domain, unsigned bus,
 	return start;
 
 error:
-	errno = ENOENT;
 	fclose(f);
+	errno = ENOENT;
 	return offset;
 }
 
@@ -649,7 +649,7 @@ access_config:
 	fprintf(stderr,
 		"Warning: memory access to device %s failed: %s.\n"
 		"Warning: Fallback on IO: much slower, and unsafe if device in use.\n",
-		errbuf, name);
+		name, errbuf);
 #endif
 
 access_config_forced:
