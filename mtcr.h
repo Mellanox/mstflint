@@ -519,11 +519,13 @@ enum mtcr_access_method mtcr_parse_name(const char* name, int *force,
 			goto parse_error;
 		}
 
-		if (readlink(mbuf, pbuf, sizeof pbuf) < 0) {
+		tmp = readlink(mbuf, pbuf, sizeof pbuf - 1);
+		if (tmp < 0) {
 			perror("read link");
 			fprintf(stderr,"Unable to read link %s\n", mbuf);
 			return MTCR_ACCESS_ERROR;
 		}
+		pbuf[tmp] = '0';
 
 		base = basename(pbuf);
 		if (!base)
