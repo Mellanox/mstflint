@@ -507,7 +507,7 @@ enum mtcr_access_method mtcr_parse_name(const char* name, int *force,
 		return MTCR_ACCESS_CONFIG;
 	}
 
-	scnt = sscanf(name,"mthca%x", &tmp);
+	scnt = sscanf(name, "mthca%x", &tmp);
 	if (scnt == 1) {
 		char mbuf[4048];
 		char pbuf[4048];
