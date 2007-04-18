@@ -525,7 +525,7 @@ enum mtcr_access_method mtcr_parse_name(const char* name, int *force,
 			fprintf(stderr,"Unable to read link %s\n", mbuf);
 			return MTCR_ACCESS_ERROR;
 		}
-		pbuf[tmp] = '0';
+		pbuf[tmp] = '\0';
 
 		base = basename(pbuf);
 		if (!base)
