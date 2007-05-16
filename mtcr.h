@@ -119,7 +119,19 @@ extern "C" {
 typedef struct mfile_t {
     int           fd;
     void          *ptr;
+    int           connectx_flush; /* For ConnectX A0 */
+    int           need_flush; /* For ConnectX A0 */
 } mfile;
+
+static void mtcr_connectx_flush(void *ptr)
+{
+	u_int32_t value;
+	*((u_int32_t *)((char *)ptr + 0xf0380)) = 0x0;
+	do {
+		asm volatile ("":::"memory");
+		value = __be32_to_cpu(*((u_int32_t *)((char *)ptr + 0xf0380)));
+	} while(value);
+}
 
 /*
  * Read 4 bytes, return number of succ. read bytes or -1 on failure
@@ -131,6 +143,10 @@ int mread4(mfile *mf, unsigned int offset, u_int32_t *value)
 {
 #if CONFIG_ENABLE_MMAP
 	if (mf->ptr) {
+		if (mf->need_flush) {
+			mtcr_connectx_flush(mf->ptr);
+			mf->need_flush = 0;
+		}
 		*value = __be32_to_cpu(*((u_int32_t *)((char *)mf->ptr + offset)));
 		return 4;
 	}
@@ -171,6 +187,7 @@ int mwrite4(mfile *mf, unsigned int offset, u_int32_t value)
 #if CONFIG_ENABLE_MMAP
   if (mf->ptr) {
             *((u_int32_t *)((char *)mf->ptr + offset)) = __cpu_to_be32(value);
+            mf->need_flush = mf->connectx_flush;
             return 4;
   }
 #endif
@@ -220,11 +237,15 @@ int mtcr_check_signature(mfile *mf)
 	}
 
 	switch (signature & 0xffff) {
+	case 0x190 : /* 400 */
+		if (signature == 0xa00190 && mf->ptr) {
+			mf->connectx_flush = 1;
+			connectx_flush(mf->ptr);
+		}
 	case 0x5a44: /* 23108 */
 	case 0x6278: /* 25208 */
 	case 0x5e8c: /* 24204 */
 	case 0x6274: /* 25204 */
-	case 0x190 : /* 400 */
 		return 0;
 	default:
 		errno = ENOTTY;
@@ -586,6 +607,7 @@ mfile *mopen(const char *name)
 		return NULL;
 	mf->ptr = NULL;
 	mf->fd = -1;
+	mf->connectx_flush = mf->need_flush = 0;
 
 	access = mtcr_parse_name(name, &force, &domain, &bus, &dev, &func);
 	if (access == MTCR_ACCESS_ERROR)
