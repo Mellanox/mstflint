@@ -18,8 +18,10 @@ mstflint: A BURNING FIRMWARE APPLICATION
     
 2) Package Contents
     a) mstflint source code.
-    b) mtcr linux utility.
-       This utility enables the mstflint burning utility to access the HCA
+    b) mflash lib.
+       This lib provides flash access through Mellanox HCAs.
+    c) mtcr linux utility.
+       This utility enables the mflash lib to access the HCA
        hardware registers.
 
 

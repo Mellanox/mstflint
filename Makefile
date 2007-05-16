@@ -22,11 +22,14 @@ default: EXTRA_LOADLIBES="$(shell $(CXX) ${LDFLAGS} ${CFLAGS} ${CXXFLAGS} -print
 default: LD=$(CC)
 static: CFLAGS+=-static
 
-mstflint: mstflint.o
-	$(LD) ${LDFLAGS} ${CFLAGS} ${CXXFLAGS} mstflint.o -o mstflint ${LOADLIBES}
+mstflint: mstflint.o mflash.o
+	$(LD) ${LDFLAGS} ${CFLAGS} ${CXXFLAGS} mstflint.o mflash.o -o mstflint ${LOADLIBES}
 
-mstflint.o: flint.cpp mtcr.h
-	$(CXX) ${CFLAGS} -c  flint.cpp -o mstflint.o
+mstflint.o: flint.cpp mflash.h
+	$(CXX) ${CFLAGS} -c flint.cpp -o mstflint.o
+
+mflash.o: mtcr.h mflash.c mflash.h
+	$(CC) ${CFLAGS} -c mflash.c -o mflash.o
 
 mstmwrite: mwrite.c mtcr.h
 	$(CC) ${CFLAGS} mwrite.c -o mstmwrite
@@ -41,4 +44,4 @@ mstvpd: vpd.c
 	$(CC) ${CFLAGS} vpd.c -o mstvpd
 
 clean:
-	rm -f mstvpd mstregdump mstflint mstmread mstmwrite mstflint.o
+	rm -f mstvpd mstregdump mstflint mstmread mstmwrite mstflint.o mflash.o
