@@ -240,7 +240,7 @@ int mtcr_check_signature(mfile *mf)
 	case 0x190 : /* 400 */
 		if (signature == 0xa00190 && mf->ptr) {
 			mf->connectx_flush = 1;
-			connectx_flush(mf->ptr);
+			mtcr_connectx_flush(mf->ptr);
 		}
 	case 0x5a44: /* 23108 */
 	case 0x6278: /* 25208 */
