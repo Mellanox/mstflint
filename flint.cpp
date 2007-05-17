@@ -32,7 +32,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- *  Version: $Id: flint.cpp 3389 2007-05-14 14:24:13Z orenk $
+ *  Version: $Id: flint.cpp 3392 2007-05-17 08:41:54Z orenk $
  *
  */
 
@@ -130,7 +130,7 @@ char* _versionID = _VFSTR( VERSION_ID ) ;
 char* _versionID = "VERSION_ID_HERE";
 #endif
 
-char* _svnID     = "$Revision: 3389 $";
+char* _svnID     = "$Revision: 3392 $";
 
 #ifndef __be32_to_cpu
     #define __be32_to_cpu(x) ntohl(x)
