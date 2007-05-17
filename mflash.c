@@ -1413,7 +1413,7 @@ int ih3lx_st_spi_block_read    (mflash* mfl, u_int32_t blk_addr, u_int32_t blk_s
     for (offs = 0 ; offs < blk_size ; offs += 4) {
         u_int32_t word;
         MREAD4(CR_FLASH_DATA + offs, &word);
-        *((u_int32_t*)(data + offs))=  __be32_to_cpu(word);
+        *((u_int32_t*)(data + offs))= __cpu_to_be32(word);
     }
 
     return MFE_OK;
@@ -1788,7 +1788,7 @@ int cntx_st_spi_block_read_ex  (mflash* mfl, u_int32_t blk_addr, u_int32_t blk_s
     for (offs = 0 ; offs < blk_size ; offs += 4) {
         u_int32_t word;
         MREAD4(HCR_FLASH_DATA + offs, &word);
-        *((u_int32_t*)(data + offs))=  __be32_to_cpu(word);
+        *((u_int32_t*)(data + offs))=  __cpu_to_be32(word);
     }
 
     return MFE_OK;
@@ -1831,7 +1831,7 @@ int cntx_st_spi_block_read_old  (mflash* mfl, u_int32_t blk_addr, u_int32_t blk_
     for (offs = 0 ; offs < blk_size ; offs += 4) {
         u_int32_t word;
         MREAD4(HCR_FLASH_DATA + offs, &word);
-        *((u_int32_t*)(data + offs))=  __be32_to_cpu(word);
+        *((u_int32_t*)(data + offs))= __cpu_to_be32(word);
     }
 
     return MFE_OK;
