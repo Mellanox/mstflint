@@ -26,7 +26,7 @@ mstflint: mstflint.o
 	$(LD) ${LDFLAGS} ${CFLAGS} ${CXXFLAGS} mstflint.o -o mstflint ${LOADLIBES}
 
 mstflint.o: flint.cpp mtcr.h
-	$(CXX) ${CFLAGS} -c  flint.cpp -o mstflint.o
+	$(CXX) ${CFLAGS} ${CXXFLAGS} -c  flint.cpp -o mstflint.o
 
 mstmwrite: mwrite.c mtcr.h
 	$(CC) ${CFLAGS} mwrite.c -o mstmwrite
