@@ -5,15 +5,16 @@ mstflint: A BURNING FIRMWARE APPLICATION
 ----------------------------------------
 
 1) Overview
-    This package contains a burning tool for Mellanox manufactured HCA cards.
-    It also provides access to the relevant source code. Please see the file
-    LICENSE for licensing details.
+    This package contains a burning tool, and diagnostic tools, for Mellanox
+    manufactured HCA cards.  It also provides access to the relevant source
+    code. Please see the file LICENSE for licensing details.
 
     ----------------------------------------------------------------------------
     NOTE:
     This burning tool should be used only with Mellanox-manufactured
     HCA cards. Using it with cards manufactured by other vendors may be harmful
     to the cards (due to different configurations).
+    Using diagnostic tools is usually safe for all HCAs.
     ----------------------------------------------------------------------------
     
 2) Package Contents
@@ -21,7 +22,11 @@ mstflint: A BURNING FIRMWARE APPLICATION
     b) mtcr linux utility.
        This utility enables the mstflint burning utility to access the HCA
        hardware registers.
-
+    c) mstregdump utility
+       This utility dumps hardware registers from Mellanox hardware,
+       for later analysis by Mellanox
+    d) mstvpd
+       This utility dumps on-card VPD
 
 3) Installation
     a) Build the the mstflint utility.
@@ -31,18 +36,24 @@ mstflint: A BURNING FIRMWARE APPLICATION
     b) Compilation should end with no error messages.
         For example:
 	>make
-	g++ -g -I. -Wall -O2 -fno-exceptions flint.cpp -o mstflint
+	g++ -O2 -g -Wall -I. -fno-exceptions -c flint.cpp -o mstflint.o
+	cc  -O2 -g -Wall -I. -fno-exceptions mstflint.o -o mstflint "/usr/lib/gcc/i486-linux-gnu/4.0.3/../../../../lib/libz.a" "/usr/lib/gcc/i486-linux-gnu/4.0.3/libstdc++.a"
+	cc -O2 -g -Wall -I. mread.c -o mstmread
+	cc -O2 -g -Wall -I. mwrite.c -o mstmwrite
+	cc -O2 -g -Wall -I. mstdump.c -o mstregdump
+	cc -O2 -g -Wall -I. vpd.c -o mstvpd
 
-    c) An executable mstflint will be generated in the current directory
+    c) Executables named mstflint, mstregdump, mstvpd will be generated in the current
+       directory
        This is the mstflint utility that can be used to burn and examine
-       the HCA on-board flash. You may copy this executable to an arbitrary
-       location.
+       the HCA on-board flash, mstregdump and mstvpd diagnostic utilities.
+       You may copy these executables to an arbitrary location.
 
 4) Requirements:
-    a) Typically, you will need root privileges for flash access
+    a) Typically, you will need root privileges for hardware access
 
-    b) You will need the binary firmware-image file supplied by your HCA card
-       vendor.
+    b) For flash update, you will need the binary firmware-image file
+       supplied by your HCA card vendor.
 
 	If you purchased your card from Mellanox, please use the Mellanox
 	secured site with your customer login account to download the firmware
@@ -63,7 +74,7 @@ mstflint: A BURNING FIRMWARE APPLICATION
 
 	In this example, 02:00.0 identifies the device in the form bus:dev.fn
 	
-5) Usage:
+5) Usage (mstflint):
 	Read mstflint usage. Enter: "./mstflint -h" for short help, or
 	"./mstflint -hh" for detailed help message.
 
@@ -95,8 +106,34 @@ mstflint: A BURNING FIRMWARE APPLICATION
 		This method is less safe: verify that driver is not running,
 		and that no other software accesses the device before using it.
 
+6) Usage (mstregdump):
+        Internal register dump is produced on standard output.
+        Store it in file for analysis in Mellanox.
 
-7) Problem Reporting:
+	Example:
+	*) mstregdump mthca0 > dumpfile
+
+7) Usage (mstvpd):
+        VPD dump is produced on standard output.
+	A list of keywords to dump can be supplied after the -- flag
+	to apply an output filter:
+
+	Examples:
+	1) mstvpd mthca0
+	ID: Lion cub DDR
+	PN: MHGA28-1T
+	EC: A3
+	SN: MT0551X00740
+	V0: PCIe x8
+	V1: N/A
+	YA: R               R
+	RW:
+
+	2) mstvpd mthca0 -- PN ID
+	PN: MHGA28-1T
+	ID: Lion cub DDR
+
+8) Problem Reporting:
 	Please collect the following information when reporting issues:
 
 	uname -a
@@ -105,5 +142,6 @@ mstflint: A BURNING FIRMWARE APPLICATION
 	lspci
         mstflint -d 02:00.0 v
         mstflint -d 02:00.0 q
+        mstvpd 02:00.0
 
 
