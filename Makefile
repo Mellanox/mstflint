@@ -26,7 +26,7 @@ mstflint: mstflint.o mflash.o
 	$(LD) ${LDFLAGS} ${CFLAGS} ${CXXFLAGS} mstflint.o mflash.o -o mstflint ${LOADLIBES}
 
 mstflint.o: flint.cpp mflash.h
-	$(CXX) ${CFLAGS} -c flint.cpp -o mstflint.o
+	$(CXX) ${CFLAGS} ${CXXFLAGS} -c flint.cpp -o mstflint.o
 
 mflash.o: mtcr.h mflash.c mflash.h
 	$(CC) ${CFLAGS} -c mflash.c -o mflash.o
