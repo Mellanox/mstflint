@@ -24,10 +24,10 @@ mstflint: A BURNING FIRMWARE APPLICATION
     c) mtcr linux utility.
        This utility enables the mflash lib to access the HCA
        hardware registers.
-    c) mstregdump utility
+    d) mstregdump utility
        This utility dumps hardware registers from Mellanox hardware,
        for later analysis by Mellanox
-    d) mstvpd
+    e) mstvpd
        This utility dumps on-card VPD
 
 3) Installation
