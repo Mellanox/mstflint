@@ -505,7 +505,7 @@ enum mtcr_access_method mtcr_parse_name(const char* name, int *force,
 	unsigned my_bus;
 	unsigned my_dev;
 	unsigned my_func;
-	int scnt;
+	int scnt, r;
 	char config[] = "/config";
 	char resource0[] = "/resource0";
 	char procbuspci[] = "/proc/bus/pci/";
@@ -534,19 +534,19 @@ enum mtcr_access_method mtcr_parse_name(const char* name, int *force,
 		char pbuf[4048];
 		char *base;
 
-		tmp = snprintf(mbuf, sizeof mbuf, "/sys/class/infiniband/%s/device", name);
-		if (tmp <= 0 || tmp >= (int)sizeof mbuf) {
+		r = snprintf(mbuf, sizeof mbuf, "/sys/class/infiniband/%s/device", name);
+		if (r <= 0 || r >= (int)sizeof mbuf) {
 			fprintf(stderr,"Unable to print device name %s\n", name);
 			goto parse_error;
 		}
 
-		tmp = readlink(mbuf, pbuf, sizeof pbuf - 1);
-		if (tmp < 0) {
+		r = readlink(mbuf, pbuf, sizeof pbuf - 1);
+		if (r < 0) {
 			perror("read link");
 			fprintf(stderr,"Unable to read link %s\n", mbuf);
 			return MTCR_ACCESS_ERROR;
 		}
-		pbuf[tmp] = '\0';
+		pbuf[r] = '\0';
 
 		base = basename(pbuf);
 		if (!base)
