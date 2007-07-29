@@ -361,7 +361,8 @@ int pci_parse_name(const char *name, char buf[4096])
 		return 0;
 	}
 
-	if (sscanf(name,"mthca%x", & tmp) == 1) {
+	if (sscanf(name,"mthca%x", & tmp) == 1 ||
+	    sscanf(name,"mlx4_%x", & tmp) == 1) {
 		char mbuf[4096];
 		char pbuf[4096];
 		char *base;
