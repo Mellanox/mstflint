@@ -307,7 +307,7 @@ int vpd_check(vpd_t vpd, int checksum)
 	union vpd_data_type *d = NULL;
 	unsigned checksum_len = 0;
 
-	for (offset = 0; !d || VPD_TAG_NAME(d) != VPD_TAG_F;
+	for (offset = 0; offset < VPD_MAX_SIZE && (!d || VPD_TAG_NAME(d) != VPD_TAG_F);
 	     offset += VPD_TAG_HEAD(d) + VPD_TAG_LENGTH(d)) {
 		d = (union vpd_data_type *)(vpd + offset);
 		rc = vpd_check_one(d, offset);
@@ -315,6 +315,11 @@ int vpd_check(vpd_t vpd, int checksum)
 			return rc;
 
 		vpd_checksum_length(d, offset, &checksum_len);
+	}
+
+	if (VPD_TAG_NAME(d) != VPD_TAG_F) {
+		fprintf(stderr, "Mandatory End(0xF) tag not found.\n");
+		return 1;
 	}
 
 	if (!checksum)
