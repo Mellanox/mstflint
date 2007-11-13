@@ -141,6 +141,7 @@ mstflint: A BURNING FIRMWARE APPLICATION
 	uname -a
 	cat /etc/issue
 	cat /proc/bus/pci/devices
+	mstflint -vv
 	lspci
         mstflint -d 02:00.0 v
         mstflint -d 02:00.0 q

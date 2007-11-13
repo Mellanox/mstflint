@@ -32,7 +32,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- *  Version: $Id: flint.cpp 3392 2007-05-17 08:41:54Z orenk $
+ *  Version: $Id: flint.cpp 3466 2007-07-22 12:08:22Z orenk $
  *
  */
 
@@ -49,7 +49,6 @@
 #include <fcntl.h>
 #include <assert.h>
 
-#include <mflash.h>
 #ifndef NO_ZLIB
 #include <zlib.h>
 #endif
@@ -59,14 +58,34 @@
 #ifndef __WIN__ 
 
 //
-// Linux
+// GCC Compiler
 //
+
+
+#if defined __DJGPP__
+//
+// DJGPP - GCC PORT TO MS DOS 
+//
+
+#include <mtcr.h> // This contains the u_* types definitions
+
+#include <netinet/in.h>
+#include <unistd.h>
+
+#define bswap_32(x) ntohl(x)
+
+// djgpp stdio does not define vsnprintf. I simply call vsprintf (and pray ...)
+#define vsnprintf(buf, len, format, args) (vsprintf(buf, format, args))
+
+#else // Linux GCC 
 
 #include <byteswap.h>
 #include <endian.h>
 #include <alloca.h>
 #include <netinet/in.h>
 #include <unistd.h>
+
+#endif // __DJGPP__
 
 #else // __WIN__
 
@@ -103,6 +122,9 @@
 #include <memory>
 #include <vector>
 
+#include <mflash.h>
+
+
 #ifndef DEV_MST_EXAMPLE1
     #define DEV_MST_EXAMPLE1 "/dev/mst/mt23108_pci_cr0"
 #endif
@@ -127,10 +149,10 @@ namespace std {}; using namespace std;
 #define _VFSTR(x) 			__VFSTR(x)
 char* _versionID = _VFSTR( VERSION_ID ) ;
 #else
-char* _versionID = "VERSION_ID_HERE";
+char* _versionID = "ofed_1_3";
 #endif
 
-char* _svnID     = "$Revision: 3392 $";
+char* _svnID     = "$Revision: 3466 $";
 
 #ifndef __be32_to_cpu
     #define __be32_to_cpu(x) ntohl(x)
@@ -162,29 +184,6 @@ char* _svnID     = "$Revision: 3392 $";
     #endif
     #ifndef __le32_to_cpu
         #define  __le32_to_cpu(x) __be32_to_cpu(bswap_32(x))
-    #endif
-#endif
-
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-    #ifndef __cpu_to_le16
-        #define  __cpu_to_le16(x) (x)
-    #endif
-    #ifndef __le16_to_cpu
-        #define  __le16_to_cpu(x) (x)
-    #endif
-#elif __BYTE_ORDER == __BIG_ENDIAN
-    #ifndef __cpu_to_le16
-        #define  __cpu_to_le16(x) bswap_16(x)
-    #endif
-    #ifndef __le16_to_cpu
-        #define  __le16_to_cpu(x) bswap_16(x)
-    #endif
-#else
-    #ifndef __cpu_to_le16
-        #define  __cpu_to_le16(x) bswap_16(__cpu_to_be16(x))
-    #endif
-    #ifndef __le16_to_cpu
-        #define  __le16_to_cpu(x) __be16_to_cpu(bswap_16(x))
     #endif
 #endif
 
@@ -1163,8 +1162,6 @@ bool Flash::write(u_int32_t addr, u_int32_t data)
         return errmsg("Address should be 4-bytes aligned.");
     }
 
-    // Here, we use non-virtual variants for efficiency
-    // TODO: Rewrite using get_sector_size() only
     u_int32_t word;
 
     u_int32_t sector_size = _attr.sector_size;
@@ -1336,12 +1333,17 @@ public:
     bool CntxIsIb        (u_int32_t devid)     {return (devid == 25408) || // IB SDR
                                                        (devid == 25418) || // IB DDR
                                                        (devid == 25428) || // IB QDR
+                                                       (devid == 26418) || // IB DDR
+                                                       (devid == 26428) || // IB QDR
                                                        (devid == 25468) || // MP
+                                                       (devid == 26478) || // MP
                                                        (devid == 25488);   // MP
     }
 
     bool CntxIsEth       (u_int32_t devid)     {return (devid == 25448) || // ETH
+                                                       (devid == 26448) || // ETH
                                                        (devid == 25468) || // MP
+                                                       (devid == 26478) || // MP
                                                        (devid == 25488);   // MP
     }
 
@@ -2061,8 +2063,7 @@ bool Operations::FailSafeBurn(Flash& f, FImage& fim, bool need_report, bool sing
         }
 
         if (cur_image_ok[0] && cur_image_ok[1]) {
-
-            // Invalidate second image 
+            // Invalidate second image
             if (!WriteSignature(f, 1, 0)) {
                 report("FAILED\n");
                 return false;
@@ -2099,7 +2100,6 @@ bool Operations::FailSafeBurn(Flash& f, FImage& fim, bool need_report, bool sing
                     return false;
 
                 return true;
-
 
             } else {
                 if (!FailSafe_burn_image(f, data, sect_size * 2, "second", 
@@ -2175,9 +2175,6 @@ bool Operations::CntxFailSafeBurn(Flash&    f,
     // Go ahead and burn!
     const char* image_name = new_image_start == 0 ? "first" : "second";
     report("\nBurning %-6s FW image without signatures  - ", image_name);
-//    report("Burning FW image at address 0x%06x in 0x%06x bytes chunks - ", 
-//           new_image_start, 
-//           (1 << flash_info->cntxLog2ChunkSize) );
 
     fflush(stdout);
 
@@ -2188,7 +2185,7 @@ bool Operations::CntxFailSafeBurn(Flash&    f,
     report("\b\b\b\bOK  \n");
 
     report("Restoring %-6s signature                  -     ", image_name); 
-    //report("Restoring pagic pattern                                        -     "); 
+
     fflush(stdout);
 
     // Write new signature
@@ -2222,7 +2219,6 @@ bool Operations::CntxFailSafeBurn(Flash&    f,
             }
         } else {
             // invalidate previous signature
- 
             f.set_address_convertor(image_info->cntxLog2ChunkSize, is_curr_image_in_odd_chunks);
             if (!f.write(0, &zeroes, sizeof(zeroes), true)) {
                 report("FAILED\n\n");
@@ -2579,7 +2575,7 @@ bool Operations::VerifyCntx(FBase& f, Operations::ImageInfo* info, bool both_ima
     if (cntx_image_num == 0) {
         return errmsg("No valid image found");
     } else if (cntx_image_num > 2) {
-                // TODO: This check may be redundant - Maybe ignore if more than 2 images found
+                // This check may be redundant - Maybe ignore if more than 2 images found
                 return errmsg("More than 2 image start locations found at addresses %x, %x and %x. Image may be corrupted.",
                               cntx_image_start[0],
                               cntx_image_start[1],
@@ -2594,8 +2590,6 @@ bool Operations::VerifyCntx(FBase& f, Operations::ImageInfo* info, bool both_ima
     bool info_set = false;
 
     // Verify the images:
-    // TODO: No need to return false if the second image is problematic, since HCA would boot
-    // from first image.
     for (i = 0; i < cntx_image_num; i++ ) {
         bool      fs_en;
         u_int32_t log2chunk_size;
@@ -2755,11 +2749,17 @@ bool Operations::GetExpRomVersion(u_int32_t& rom_version) {
         return errmsg("ROM size (0x%x) is too small", (u_int32_t)_rom_sect.size());
     }
 
-    rom_checksum_range = _rom_sect[1] * 512; // I take byte 1 instead of byte 2 since the bytes are swapped
+    // restore endianess.
+    TOCPUn(&(_rom_sect[0]), _rom_sect.size()/4);
+
+
+    rom_checksum_range = _rom_sect[2] * 512 ;
     if (rom_checksum_range > _rom_sect.size()) {
        return errmsg("ROM size field (0x%2x) is larger than actual ROM size (0x%x)", 
                      rom_checksum_range , 
                      (u_int32_t)_rom_sect.size());
+    } else if (rom_checksum_range == 0) {
+       return errmsg("ROM size field is 0. Unknown ROM format or corrupted ROM.");
     }
 
     for (i = 0; i < rom_checksum_range; i++) {
@@ -2770,15 +2770,13 @@ bool Operations::GetExpRomVersion(u_int32_t& rom_version) {
         return errmsg("Bad ROM Checksum (0x%2x)", rom_checksum);
     }
 
-    // restore endianess.
-    TOCPUn(&(_rom_sect[0]), _rom_sect.size()/4);
-
-    for (i = 0 ; i < _rom_sect.size(); i++) {
+    for (i = 0 ; i < rom_checksum_range; i++) {
         for (u_int32_t j = 0; j < magic_len; j++) {
             if (_rom_sect[i+j] != magic_string[j]) {
                 break;
+            } else if (j == magic_len - 1) {
+                magic_found = true;
             }
-            magic_found = true;
         }
 
         if (magic_found) {
@@ -2789,7 +2787,7 @@ bool Operations::GetExpRomVersion(u_int32_t& rom_version) {
     if (magic_found) {
         ver_offset = i + magic_len;
     } else {
-        return errmsg("Mellanox version string (%s) nof found in ROM section.", magic_string);
+        return errmsg("Mellanox version string (%s) not found in ROM section.", magic_string);
     }
 
     rom_version = //*( (*u_int32_t) &_rom_sect[ver_offset] );
@@ -3124,7 +3122,6 @@ void Operations::PatchPs(u_int8_t*      rawPs,
                          const char*    psid,
                          u_int32_t      imageAddr) {
 
-    Crc16      crc;
     PS         *ps = (PS*)rawPs;
 
     u_int32_t fix_start = 0;
@@ -3179,7 +3176,7 @@ bool Operations::patchVSD(FImage& f,
     const char* vsd_to_use  = curr_vsd ? curr_vsd : "";
     const char* psid_to_use = image_psid;
 
-    // TODO: Should not give this param
+    // TODO: Should not give the user_psid param. Do not allow for on-the-fly PSID changes.
 
     curr_psid = NULL;
     // Form new VSD
@@ -3220,7 +3217,7 @@ bool Operations::printGUIDs(const char* msg, guid_t guids[MAX_GUIDS], bool print
     } else if (!print_guids &&  print_macs) {
         g_m = "MACs";
     } else if ( print_guids && !print_macs) {
-        g_m = "GUID";
+        g_m = "GUIDs";
     } else {
         return errmsg("Internal error: Operations::PrintGuids() with both guid and mac turned off");
     }
@@ -3502,7 +3499,7 @@ bool Operations::QueryImage (FBase& f,
     } else {
         info->expRomFound = true;
         if (!GetExpRomVersion(info->expRomVer)) {
-            report("Failed to get ROM Version: %s\n", err()); 
+            report("\nWarning: Failed to get ROM Version: %s\n\n", err()); 
         }
     }
 
@@ -3793,10 +3790,10 @@ void usage(const char *sname, bool full = false)
     "\n"
     "Switches summary:\n"
     "-----------------\n"
-    "    -bsn <BSN>         - Mellanox Board Serial Number (BSN).\n"
-    "                         Valid BSN format is:\n"
-    "                                 MTxxxxx[-]R[xx]ddmmyy-nnn[-cc]\n"
-    "                         Commands affected: burn\n"
+//    "    -bsn <BSN>         - Mellanox Board Serial Number (BSN).\n"
+//    "                         Valid BSN format is:\n"
+//    "                                 MTxxxxx[-]R[xx]ddmmyy-nnn[-cc]\n"
+ //   "                         Commands affected: burn\n"
     "\n"
     "    -crc               - Print out each section CRC.\n"
     "                         Commands affected: verify\n"
@@ -4490,7 +4487,7 @@ int main(int ac, char *av[])
                 ops.SetCntxStripedImage(true);
             else if (!strncmp(av[i], "-yes", switchLen))
                 _assume_yes = true;
-            else if (!strcmp(av[i], "-byte_mode")) //TODO - Check in mflash
+            else if (!strcmp(av[i], "-byte_mode"))
                 Flash::_byte_mode = true;
 
             else if (!strncmp(av[i], "-hh", 3) ||  !strncmp(av[i], "--hh", 4)) {
@@ -4646,19 +4643,31 @@ int main(int ac, char *av[])
                 }
             }
 
-            if (guids_specified && ib_dev || macs_specified && eth_dev)
-                read_guids = false;
-            
             if ((user_vsd && user_psid) || use_image_ps)
                 read_ps = false;
 
-            if (read_guids && !flash_query_res) {
- 
-                if (read_guids && !flashInfo.imageOk) {
+            if (guids_specified && ib_dev || macs_specified && eth_dev)
+                read_guids = false;
 
+            if (read_guids && !flash_query_res) {
+                char* missing_info;
+                char* missing_flags;
+
+                if (ib_dev && eth_dev) {
+                    missing_info  = "GUIDs / MACs";
+                    missing_flags = "-guid(s) / -mac(s)";
+                } else if (ib_dev) {
+                    missing_info  = "GUIDs";
+                    missing_flags = "-guid(s)";
+                } else {
+                    missing_info  = "MACs";
+                    missing_flags = "-mac(s)";
+                }
+
+                if (read_guids && !flashInfo.imageOk) {
                     printf("\n");
-                    printf("*** ERROR *** Can not extract GUIDS info from flash. "
-                           "Please specify GUIDs (using command line flags -guid(s) ). \n");
+                    printf("*** ERROR *** Can not extract %s info from flash. "
+                           "Please specify %s (using command line flags %s ). \n", missing_info, missing_info, missing_flags);
                 }
                 
                 if (burn_failsafe) {
@@ -4668,51 +4677,7 @@ int main(int ac, char *av[])
                 rc =  1; goto done;
             }
 
-            if (burn_failsafe && (!fileInfo.isFailsafe || !flashInfo.isFailsafe)) {
-                printf("*** ERROR *** Failsafe burn failed: FW image in the %s is non failsafe.\n",         fileInfo.isFailsafe ? "flash" : "given file");
-                printf("              It is impossible to burn %sa non failsafe image in a failsafe mode.\n", fileInfo.isFailsafe ? "over " : "");
-                printf("              If you want to burn in non failsafe mode, use the \"-nofs\" switch.\n");
-                rc =  1; goto done; 
-            }
-
-            if (!user_vsd && !(flashInfo.psOk || (flashInfo.infoOffs[Operations::II_PSID] && 
-                                                flashInfo.infoOffs[Operations::II_VSD]  ))) {
-                printf("\n");
-                if (burn_failsafe) {
-
-                    printf("*** ERROR *** Can not extract VSD/PSID info from flash.\n"
-                           "              Can not burn in a failsafe mode. Please use \"-nofs\" flag to burn in a non failsafe mode.\n");
-                    rc =  1; goto done;
-                }  else {
-                    printf("*** WARNING *** Can not extract VSD/PSID info from flash.\n\n"
-                           "    To use a specific VSD, abort and re-burn specifying the\n"
-                           "    needed info (using command line flags -vsd / -use_image_ps).\n"
-                           "    You can also continue burn using blank VSD.\n");
-                
-                    if (!ops.ask_user()) {
-                        rc =  1; goto done;
-                    }
-                }
-            }
-
-            // Print FW versions:
-            printf("    Current FW version on flash:  ");
-            if (flashInfo.infoOffs[Operations::II_FwVersion]) {
-                printf("%d.%d.%d\n", flashInfo.fwVer[0], flashInfo.fwVer[1], flashInfo.fwVer[2]);  
-            } else {
-                printf("N/A\n");
-            }
-            
-            printf("    New FW version:               ");
-            if (fileInfo.infoOffs[Operations::II_FwVersion]) {
-                printf("%d.%d.%d\n", fileInfo.fwVer[0], fileInfo.fwVer[1], fileInfo.fwVer[2]);  
-            } else {
-                printf("N/A\n");
-            }
-            printf("\n");
-
             // Patch GUIDS
-
             if  (guids_specified || macs_specified) {
                 if (!ops.IsCntx() && macs_specified) {
                     printf("*** ERROR *** -mac flag is not applicable for IB MT%d device.\n",
@@ -4758,6 +4723,49 @@ int main(int ac, char *av[])
                                     false)) {
                     rc =  1; goto done;
                 }
+            }
+
+            if (burn_failsafe && (!fileInfo.isFailsafe || !flashInfo.isFailsafe)) {
+                printf("*** ERROR *** Failsafe burn failed: FW image in the %s is non failsafe.\n",         fileInfo.isFailsafe ? "flash" : "given file");
+                printf("              It is impossible to burn %sa non failsafe image in a failsafe mode.\n", fileInfo.isFailsafe ? "over " : "");
+                printf("              If you want to burn in non failsafe mode, use the \"-nofs\" switch.\n");
+                rc =  1; goto done; 
+            }
+
+            if (!user_vsd && !(flashInfo.psOk || (flashInfo.infoOffs[Operations::II_PSID] && 
+                                                flashInfo.infoOffs[Operations::II_VSD]  ))) {
+                printf("\n");
+                if (burn_failsafe) {
+
+                    printf("*** ERROR *** Can not extract VSD/PSID info from flash.\n"
+                           "              Can not burn in a failsafe mode. Please use \"-nofs\" flag to burn in a non failsafe mode.\n");
+                    rc =  1; goto done;
+                }  else {
+                    printf("*** WARNING *** Can not extract VSD/PSID info from flash.\n\n"
+                           "    To use a specific VSD, abort and re-burn specifying the\n"
+                           "    needed info (using command line flags -vsd / -use_image_ps).\n"
+                           "    You can also continue burn using blank VSD.\n");
+                
+                    if (!ops.ask_user()) {
+                        rc =  1; goto done;
+                    }
+                }
+            }
+
+            // Print FW versions:
+            printf("\n");
+            printf("    Current FW version on flash:  ");
+            if (flashInfo.infoOffs[Operations::II_FwVersion]) {
+                printf("%d.%d.%d\n", flashInfo.fwVer[0], flashInfo.fwVer[1], flashInfo.fwVer[2]);  
+            } else {
+                printf("N/A\n");
+            }
+            
+            printf("    New FW version:               ");
+            if (fileInfo.infoOffs[Operations::II_FwVersion]) {
+                printf("%d.%d.%d\n", fileInfo.fwVer[0], fileInfo.fwVer[1], fileInfo.fwVer[2]);  
+            } else {
+                printf("N/A\n");
             }
 
             if (!use_image_ps) {
@@ -4836,8 +4844,7 @@ int main(int ac, char *av[])
                 printf("as GUIDS,VSD) are taken from current image on flash.\n");
             }
             printf("Burn process will not be failsafe. No checks will be performed.\n");
-	    //TODO: MST proposes:
-            //printf("Burn process will not be failsafe. No checks are performed.\n");
+
             printf("ALL flash, including the Invariant Sector will be overwritten.\n");
             printf("If this process fails, computer may remain in an inoperable state.\n");
 

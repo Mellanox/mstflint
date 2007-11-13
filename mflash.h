@@ -79,6 +79,7 @@ typedef enum MfError {
     MFE_SEM_LOCKED,
     MFE_VERIFY_ERROR,
     MFE_NOMEM,
+    MFE_OUT_OF_RANGE,
     MFE_LAST
 } MfError;
 
@@ -158,7 +159,7 @@ typedef struct flash_attr {
 //
 /////////////////////////////////////////////
 
-struct mfile;
+struct mfile_t;
 typedef struct mflash mflash;
 
 //
@@ -182,7 +183,7 @@ typedef struct mflash mflash;
 //   Note: User should call mf_close() even if mf_open failed (and the returning mfl is not NULL)
 //
 int     mf_open        (mflash** pmfl, const char* dev);
-int     mf_opend       (mflash** pmfl, struct mfile* mf);
+int     mf_opend       (mflash** pmfl, struct mfile_t* mf);
 int     mf_open_ignore_lock(mflash* mfl);
 int     mf_close       (mflash* mfl);
 

@@ -26,8 +26,24 @@
 
 #ifndef __WIN__
 
-#include <endian.h>
+#if defined __DJGPP__
+//
+// DJGPP - GCC PORT TO MS DOS
+//
+
+#include <netinet/in.h>
+#include <unistd.h>
+
+#define bswap_32(x) ntohl(x)
+
+
+#else // Linux GCC
+
 #include <byteswap.h>
+#include <endian.h>
+
+#endif // __DJGPP__
+
 #define SWAPL(l) bswap_32(l)
 
 #ifndef __cpu_to_be32
@@ -324,7 +340,7 @@ int my_memcpy(void* dst, void* src, u_int32_t len) {
     return 0;
 }
 
-
+#if 0 // TODO: Currently the polling is in max throttle - no sleep is done
 int usleep(u_int32_t usecs) {
     u_int32_t i;
     u_int32_t stub = 0;
@@ -336,7 +352,7 @@ int usleep(u_int32_t usecs) {
 
     return stub;
 }
-
+#endif
 
 int write_chunks   (mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data) {
     int       rc;
@@ -706,7 +722,6 @@ int ihst_flash_read(mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data) 
         return MFE_BAD_ALIGN;
     }
 
-    // TODO: Maybe improve perf by looping on addressa and save the +
     for (i = 0; i < len; i += 4) {
         rc = ihst_flash_read4(mfl, addr + i, (u_int32_t*) (data + i)); CHECK_RC(rc);
     }
@@ -1086,7 +1101,7 @@ int st_spi_fill_attr(mflash* mfl) {
 
 
         } else if (es == 0xff 
-                   || es == 0  // TODO: - Added for simulation - check if need to remove on real devices.
+                   || es == 0
                    ) {
             // No spi device on this chip_select
             break;
@@ -1293,7 +1308,7 @@ int ih3lx_exec_cmd(mflash* mfl, u_int32_t gw_cmd, u_int32_t gw_addr, char* msg) 
 
 int ih3lx_set_bank(mflash* mfl, u_int32_t bank) {
     u_int32_t flash_cs = 0;
-    // TODO: Check number of banks in open!
+    // TODO: Check number of banks in open
     if (bank > 3) {
         //return errmsg("Tried to set bank to %d but %d is the is the largest bank number", bank, 3);
         return MFE_BAD_PARAMS;
@@ -2043,9 +2058,6 @@ int cntx_flash_init(mflash* mfl) {
     mfl->f_lock           = ihst_flash_lock; // Flash lock has same address and functionality as in InfiniHost.
     mfl->f_set_bank       = cntx_set_bank;
 
-
-    // TODO: Add clear dl_down_reset in livefish mode.
-
     rc = mfl->f_lock(mfl);
     if (!mfl->opts[MFO_IGNORE_SEM_LOCK]) {
         CHECK_RC(rc);
@@ -2079,15 +2091,23 @@ int cntx_flash_init(mflash* mfl) {
 //
 
 int     mf_read        (mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data) {
+    if (addr + len > mfl->attr.size) {
+        return MFE_OUT_OF_RANGE;
+    }
     return mfl->f_read(mfl, addr, len, data);
 }
 
-// TODO: Move set bank to here ?
 int     mf_write       (mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data) {
+    if (addr + len > mfl->attr.size) {
+        return MFE_OUT_OF_RANGE;
+    }
     return mfl->f_write(mfl, addr, len, data);
 }
 
 int     mf_erase_sector(mflash* mfl, u_int32_t addr) {
+    if (addr >= mfl->attr.size) {
+        return MFE_OUT_OF_RANGE;
+    }
     return mfl->f_erase_sect(mfl, addr);
 }
 
@@ -2135,7 +2155,7 @@ int mf_open_fw(mflash* mfl)
     return MFE_OK;
 }
 
-int    mf_opend       (mflash** pmfl, struct mfile* mf) {
+int    mf_opend       (mflash** pmfl, struct mfile_t* mf) {
     int rc;
     *pmfl = (mflash*)malloc(sizeof(mflash));
     if (!*pmfl) {
@@ -2165,7 +2185,7 @@ int     mf_open        (mflash** pmfl, const char* dev) {
         return MFE_CR_ERROR;
     }
 
-    rc = mf_opend(pmfl, (struct mfile*) mf);
+    rc = mf_opend(pmfl, (struct mfile_t*) mf);
 
     if ((*pmfl)) {
         (*pmfl)->opts[MFO_CLOSE_MF_ON_EXIT] = 1;
@@ -2224,7 +2244,8 @@ const char*   mf_err2str (int err_code) {
     "MFE_BAD_ALIGN",
     "MFE_SEM_LOCKED",
     "MFE_VERIFY_ERROR",
-    "MFE_NOMEM"
+    "MFE_NOMEM",
+    "MFE_OUT_OF_RANGE"
     };
 
     return err_code < (int)ARRSIZE(mf_err_str) ? mf_err_str[err_code] : NULL;

@@ -9,7 +9,7 @@ EXTRA_LOADLIBES=-lz
 LOADLIBES+=${EXTRA_LOADLIBES}
 
 all: default
-bin: mstflint mstmread mstmwrite mstregdump mstvpd
+bin: mstflint mstmread mstmwrite mstmcra mstregdump mstvpd
 
 default: bin
 static: bin
@@ -37,6 +37,9 @@ mstmwrite: mwrite.c mtcr.h
 mstmread: mread.c mtcr.h
 	$(CC) ${CFLAGS} mread.c -o mstmread
 
+mstmcra: mcra.c mtcr.h
+	$(CC) ${CFLAGS} mcra.c -o mstmcra
+	
 mstregdump: mstdump.c mtcr.h
 	$(CC) ${CFLAGS} mstdump.c -o mstregdump
 
@@ -44,4 +47,4 @@ mstvpd: vpd.c
 	$(CC) ${CFLAGS} vpd.c -o mstvpd
 
 clean:
-	rm -f mstvpd mstregdump mstflint mstmread mstmwrite mstflint.o mflash.o
+	rm -f mstvpd mstregdump mstflint mstmread mstmwrite mstmcra mstflint.o mflash.o
