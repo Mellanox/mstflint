@@ -38,6 +38,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/mstflint
 %{_bindir}/mstregdump
 %{_bindir}/mstvpd
+%{_bindir}/mstmcra
 
 %changelog
 * Fri Dec 07 2007 Ira Weiny <weiny2@llnl.gov> 1.0.0
