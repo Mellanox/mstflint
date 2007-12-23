@@ -18,6 +18,9 @@ mstvpd_SOURCES = vpd.c
 
 mstmcra_SOURCES  = mcra.c mtcr.h
 
+mstflintinclude_HEADERS = mtcr.h
+mstflintincludedir = @includedir@
+
 EXTRA_DIST = \
 	mstflint.spec
 

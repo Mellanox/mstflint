@@ -16,7 +16,7 @@ dnl Checks for programs
 AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_LIBTOOL
-AC_CONFIG_HEADERS
+AC_CONFIG_HEADERS( config.h )
 
 AC_CONFIG_FILES([Makefile mstflint.spec])
 AC_OUTPUT
