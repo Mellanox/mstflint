@@ -32,7 +32,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- *  Version: $Id: flint.cpp 3466 2007-07-22 12:08:22Z orenk $
+ *  Version: $Id: flint.cpp 4279 2008-03-19 09:47:09Z orenk $
  *
  */
 
@@ -149,10 +149,10 @@ namespace std {}; using namespace std;
 #define _VFSTR(x) 			__VFSTR(x)
 char* _versionID = _VFSTR( VERSION_ID ) ;
 #else
-char* _versionID = "ofed_1_3";
+char* _versionID = "MFT 2.0.1 , BUILD 20080320-1354";
 #endif
 
-char* _svnID     = "$Revision: 3466 $";
+char* _svnID     = "$Revision: 4279 $";
 
 #ifndef __be32_to_cpu
     #define __be32_to_cpu(x) ntohl(x)
@@ -403,6 +403,7 @@ int  const PRODUCT_VER_LEN = 16;
 bool _print_crc = false;
 bool _silent = false;
 bool _assume_yes = false;
+bool _assume_no = false;
 bool _no_erase = false;
 bool _no_burn = false;
 
@@ -1283,10 +1284,13 @@ public:
     bool Verify          (FBase& f, ImageInfo* info = NULL, bool both_images = false);
     bool VerifyCntx      (FBase& f, ImageInfo* info = NULL, bool both_images = false);
 
+    bool LoadAsExpRom    (FBase& f);
+
     bool DumpConf        (const char* conf_file = NULL);
-    bool GetExpRomVersion(u_int32_t& rom_version);
-    
-    bool DisplayImageInfo(ImageInfo* info);
+    bool GetExpRomVersion(ImageInfo* info);
+
+    bool DisplayExpRomInfo(ImageInfo* info);
+    bool DisplayImageInfo (ImageInfo* info);
 
     bool QueryAll        (FBase& f, ImageInfo* info) {return (IsCntx() ||
                                                               (QueryIs(f, info) && 
@@ -1417,11 +1421,20 @@ public:
         u_int32_t    infoOffs[II_Last];  // Offset of the tag data inside the info section data. 
                                          // Can not be 0 (because of tag header) - 0 means not found.
         bool         expRomFound;
-        u_int32_t    expRomVer;
+        bool         expRomValidVersion;
+        u_int16_t    expRomProductId;    // 0 - invalid.
+        u_int16_t    expRomVer[3];
+        u_int16_t    expRomDevId;
+        u_int8_t     expRomPort;
 
         bool         magicPatternFound;
-
     };
+
+    bool FwVerLessThan(u_int16_t r1[3], u_int16_t r2[3]) {
+        return (r1[0] < r2[0] ||
+                r1[1] < r2[1] ||
+                r1[2] < r2[2]);
+    }
 
     enum {CNTX_START_POS_SIZE = 6};
 
@@ -1521,6 +1534,10 @@ bool Operations::ask_user() {
     else {
         char ansbuff[32];
         ansbuff[0] = '\0';
+        if (_assume_no) {
+            printf("n\n");
+            return errmsg("-no flag is set");
+        }
 
         if (!isatty(0)) {
             return errmsg("Not on tty - Can not interact. assuming \"no\"");
@@ -2725,7 +2742,7 @@ bool Operations::Verify(FBase& f, Operations::ImageInfo* info, bool both_images)
     return ret;
 } // Verify
 
-bool Operations::GetExpRomVersion(u_int32_t& rom_version) {
+bool Operations::GetExpRomVersion(ImageInfo* info) {
     const char* magic_string = "mlxsign:";
     u_int32_t   magic_len    = strlen(magic_string);
     u_int32_t   i;
@@ -2734,6 +2751,7 @@ bool Operations::GetExpRomVersion(u_int32_t& rom_version) {
     u_int8_t    rom_checksum = 0;
     u_int32_t   rom_checksum_range;
 
+    info->expRomValidVersion = false;
     if (_rom_sect.empty()) {
         return errmsg("Expansion Rom section not found.");
     }
@@ -2751,7 +2769,6 @@ bool Operations::GetExpRomVersion(u_int32_t& rom_version) {
 
     // restore endianess.
     TOCPUn(&(_rom_sect[0]), _rom_sect.size()/4);
-
 
     rom_checksum_range = _rom_sect[2] * 512 ;
     if (rom_checksum_range > _rom_sect.size()) {
@@ -2790,8 +2807,52 @@ bool Operations::GetExpRomVersion(u_int32_t& rom_version) {
         return errmsg("Mellanox version string (%s) not found in ROM section.", magic_string);
     }
 
-    rom_version = //*( (*u_int32_t) &_rom_sect[ver_offset] );
-        __le32_to_cpu(*((u_int32_t*) &_rom_sect[ver_offset])) ;
+    // Following mlxsign:
+    // 31:24	0	 Compatible with UEFI
+    // 23:16	ProductID	Product ID:
+    //                          1 - CLP implementation for Sinai (MT25408)
+    //                          2 - CLP implementation for Hermon DDR (MT25418)
+    //                          0X10 - PXE
+    // 15:0	Major version	If ProductID < 0x10 this field is subversion 
+    //                          number, otherwise It's product major version. 
+    // 
+    // 31:16	Minor version	Product minor version*. Not valid if 
+    //                          roductID < 0x10.
+    // 15:0	SubMinor version	Product sub minor version*. Not valid if 
+    //                                  ProductID < 0x10.
+    // 
+    // 31:16	Device ID	The PCI Device ID (ex. 0x634A for Hermon 
+    //                          DDR). Not valid if ProductID < 0x10.
+    // 15:12	Port Number	Port number: 0 - Port independent, 1 - Port 1, 2 - Port 2
+    // 11:0	Reserved	
+
+    u_int32_t tmp;
+
+    tmp = __le32_to_cpu(*((u_int32_t*) &_rom_sect[ver_offset]));
+    info->expRomProductId = tmp >> 16;
+    info->expRomVer[0]    = tmp & 0xffff;
+
+    if (info->expRomProductId >= 0x10) {
+        tmp = __le32_to_cpu(*((u_int32_t*) &_rom_sect[ver_offset + 4]));
+        info->expRomVer[1] = tmp >> 16;
+        info->expRomVer[2] = tmp  & 0xffff;
+
+        tmp = __le32_to_cpu(*((u_int32_t*) &_rom_sect[ver_offset + 8]));
+        info->expRomDevId  = tmp >> 16;
+        info->expRomPort   = (tmp >> 12) & 0xf;
+    }
+    info->expRomValidVersion = true;
+    return true;
+}
+
+bool Operations::LoadAsExpRom (FBase& f) {
+    _rom_sect.clear();
+    _rom_sect.resize(f.get_size());
+    if (!f.read(0, &_rom_sect[0], f.get_size()))
+        return errmsg(f.err());
+
+    TOCPUn(&_rom_sect[0], _rom_sect.size()/4);
+
     return true;
 }
 
@@ -3323,13 +3384,13 @@ bool Operations::patchGUIDs (FImage&   f,
         printf("\n");
     }
 
-    printGUIDs("    You are about to burn the image with the following",
-               used_guids,
-               patch_guids,
-               patch_macs,
-               old_guids_fmt);
-
     if (interactive) {
+        printGUIDs("    You are about to burn the image with the following",
+                   used_guids,
+                   patch_guids,
+                   patch_macs,
+                   old_guids_fmt);
+
         if (!ask_user())
             return false;
     }
@@ -3493,13 +3554,13 @@ bool Operations::QueryImage (FBase& f,
     }
 
     // Expansion Rom version:
-    info->expRomVer = 0;
     if (_rom_sect.empty()) {
         info->expRomFound = false;
     } else {
         info->expRomFound = true;
-        if (!GetExpRomVersion(info->expRomVer)) {
+        if (!GetExpRomVersion(info)) {
             report("\nWarning: Failed to get ROM Version: %s\n\n", err()); 
+            info->expRomValidVersion = false;
         }
     }
 
@@ -3653,6 +3714,37 @@ bool Operations::ParseInfoSect(u_int8_t* buff, u_int32_t byteSize, Operations::I
     return true;
 }
 
+bool Operations::DisplayExpRomInfo(Operations::ImageInfo* info) {
+    report("Rom Info:        ");
+    if (info->expRomValidVersion) {
+        report("type=");
+        switch (info->expRomProductId) {
+        case 1   : report("CLP1 "); break;
+        case 2   : report("CLP2 "); break;
+        case 0x10: report("GPXE "); break;
+        default:   report("0x%x ", info->expRomProductId);
+        }
+
+        report("version=%d", info->expRomVer[0]);
+
+        if (info->expRomProductId >= 0x10) {
+            report(".%d.%d devid=%d", 
+                   info->expRomVer[1],
+                   info->expRomVer[2],
+                   info->expRomDevId);
+
+            if (info->expRomPort) {
+                // Do not display if 0 - port independant
+                report(" port=%d", info->expRomPort);
+            }
+        }
+        report("\n");
+    } else {
+        report("N/A\n");
+    }
+    return true;
+}
+
 bool Operations::DisplayImageInfo(Operations::ImageInfo* info) {
     report("Image type:      %s\n", info->magicPatternFound ? "ConnectX"   : 
                                     info->isFailsafe        ? "Failsafe" : 
@@ -3667,12 +3759,7 @@ bool Operations::DisplayImageInfo(Operations::ImageInfo* info) {
     }
 
     if (info->expRomFound) {
-        report("Rom Version:     ");
-        if (info->expRomVer) {
-            report("%x\n", info->expRomVer);
-        } else {
-            report("N/A\n");
-        }
+        DisplayExpRomInfo(info);
     }
 
     if (info->isFailsafe && !IsCntx()) {
@@ -3892,18 +3979,23 @@ void usage(const char *sname, bool full = false)
     "\n"
     "Commands summary (use -hh flag for full commands description):\n"
     "-----------------\n"
-    "    b[urn]   - Burn flash\n"
-    "    e[rase]  - Erase sector\n"
-    "    q[uery]  - Query misc. flash/firmware characteristics\n"
-    "    rw       - Read one dword from flash\n"
-    "    v[erify] - Verify entire flash\n"
-    "    ww       - Write one dword to flash\n"
-    "    bb       - Burn Block - Burns the given image as is. No checks are done.\n"
-    "    wwne     - Write one dword to flash without sector erase\n"
-    "    wbne     - Write a data block to flash without sector erase\n"
-    "    rb       - Read  a data block from flash\n"
-    "    ri       - Read the fw image on the flash.\n"
-    "    dc       - Dump Configuration: print fw configuration file for the given image.\n"
+    "  b[urn]              - Burn flash\n"
+    "  q[uery]             - Query misc. flash/firmware characteristics\n"
+    "  v[erify]            - Verify entire flash\n"
+    "  bb                  - Burn Block - Burns the given image as is. \n"
+    "                        No checks are done.\n"
+    "  ri       <out-file> - Read the fw image on the flash.\n"
+    "  dc       [out-file] - Dump Configuration: print fw configuration file\n"
+    "                        for the given image.\n"
+    "  e[rase]  <addr>     - Erase sector\n"
+    "  rw       <addr>     - Read one dword from flash\n"
+    "  ww       <addr> < data> \n"
+    "                      - Write one dword to flash\n"
+    "  wwne     <addr>     - Write one dword to flash without sector erase\n"
+    "  wbne     <addr> <size> <data ...> \n"
+    "                      - Write a data block to flash without sector erase\n"
+    "  rb       <addr> <size> [out-file]\n"
+    "                      - Read  a data block from flash\n"
     "\n";
 
     const char* full_descr =
@@ -4142,6 +4234,7 @@ enum CommandType {
     CMD_BURN,
     CMD_BURN_BLOCK,
     CMD_QUERY,
+    CMD_QUERY_ROM,
     CMD_QUERY_FORCE,
     CMD_VERIFY,
     CMD_READ_WORD,
@@ -4172,6 +4265,7 @@ CommandInfo const g_commands[] = {
     { CMD_BURN_BLOCK     , "bb"    ,true  , 0 , CI_IMG_AND_DEV , ""},
     { CMD_QUERY_FORCE    , "qf"    ,true  , 0 , CI_IMG_OR_DEV  , ""},
     { CMD_QUERY          , "query" ,false , 0 , CI_IMG_OR_DEV  , ""},
+    { CMD_QUERY_ROM      , "qrom"  ,true  , 0 , CI_IMG_ONLY    , ""},
     { CMD_VERIFY         , "verify",false , 0 , CI_IMG_OR_DEV  , ""},            
     { CMD_READ_WORD      , "rw"    ,true  , 1 , CI_DEV_ONLY    , ""},      
     { CMD_READ_BLOCK     , "rb"    ,true  , 3 , CI_IMG_OR_DEV  , ""},
@@ -4487,6 +4581,8 @@ int main(int ac, char *av[])
                 ops.SetCntxStripedImage(true);
             else if (!strncmp(av[i], "-yes", switchLen))
                 _assume_yes = true;
+            else if (!strcmp(av[i], "-no"))
+                _assume_no = true;
             else if (!strcmp(av[i], "-byte_mode"))
                 Flash::_byte_mode = true;
 
@@ -4505,6 +4601,11 @@ int main(int ac, char *av[])
             cmdStr = av[i];
             break;
         }
+    }
+
+    if (_assume_yes && _assume_no) {
+        printf("*** ERROR *** -yes and -no options can not be specified together.\n");
+        rc =  1; goto done; 
     }
 
     //
@@ -4768,6 +4869,22 @@ int main(int ac, char *av[])
                 printf("N/A\n");
             }
 
+            bool updateRequired = true;
+
+            if (fileInfo.infoOffs[Operations::II_FwVersion]  && 
+                flashInfo.infoOffs[Operations::II_FwVersion]) {
+
+                updateRequired = ops.FwVerLessThan(flashInfo.fwVer,fileInfo.fwVer);
+            }
+
+            if (!updateRequired) {
+                printf("\n    Note: The new FW version is not newer than the current FW version on flash.\n");
+                if (! ops.ask_user()) {
+                    // NOTE: on aborting because of lower fw version, a GOOD status is returned.
+                    rc =  0; goto done;
+                }
+            }
+
             if (!use_image_ps) {
                 if (fileInfo.psOk || (ops.IsCntx() && fileInfo.infoOffs[Operations::II_VSD])) {
                     if (!ops.patchVSD(fim, 
@@ -4795,6 +4912,17 @@ int main(int ac, char *av[])
                     rc =  1; goto done;
                 }
             }           
+
+            // Check exp rom:
+            if (!fileInfo.expRomFound && flashInfo.expRomFound) {
+                printf("\n    Expansion-ROM mismatch: \n"
+                       "    Current FW on flash contains an expansion-ROM.\n"
+                       "    The new FW image does not contain an expansion-ROM\n");
+
+                if (! ops.ask_user()){
+                    rc =  1; goto done;
+                }
+            }
 
             _silent = old_silent;
 
@@ -4930,6 +5058,17 @@ int main(int ac, char *av[])
     }
     break;
 
+    case CMD_QUERY_ROM:
+    {
+        Operations::ImageInfo info;
+        if (!ops.LoadAsExpRom(*fbase)    || 
+            !ops.GetExpRomVersion(&info) || 
+            !ops.DisplayExpRomInfo(&info)) {
+            printf("*** ERROR *** %s rom query (%s) failed: %s\n", cmdTarget , cmdAccess, ops.err());
+            rc =  1; goto done;
+        }
+    }
+    break;
     case CMD_READ_BLOCK:
     {
         // READ BLOCK

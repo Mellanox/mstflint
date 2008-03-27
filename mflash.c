@@ -480,7 +480,7 @@ static int apply_mx_flash_workaround(flash_attr* attr) {
 
         attr->sector_size = attr->erase_block[1].sector_size;
     } else {
-        return MFE_UNSUPPURTED_FLASH_TOPOLOGY;
+        return MFE_UNSUPPORTED_FLASH_TOPOLOGY;
     }
 
     return MFE_OK;
@@ -557,7 +557,7 @@ int ihst_flash_init(mflash* mfl) {
         mfl->f_write      = write_chunks;
         mfl->f_erase_sect = intel_flash_erase_sect;
     } else {
-        return MFE_UNSUPPURTED_FLASH_TYPE;
+        return MFE_UNSUPPORTED_FLASH_TYPE;
     }
 
     rc = mfl->f_reset(mfl); CHECK_RC(rc);
@@ -1096,10 +1096,8 @@ int st_spi_fill_attr(mflash* mfl) {
                               cur_spi_size,
                               spi_sel - 1,
                               spi_size);
-                return MFE_UNSUPPURTED_FLASH_TOPOLOGY;
+                return MFE_UNSUPPORTED_FLASH_TOPOLOGY;
             }
-
-
         } else if (es == 0xff 
                    || es == 0
                    ) {
@@ -1110,14 +1108,14 @@ int st_spi_fill_attr(mflash* mfl) {
                           "Flash #%d my be defected.",
                           es,
                           spi_sel);
-            return MFE_UNSUPPURTED_FLASH_TOPOLOGY;
+            return MFE_UNSUPPORTED_FLASH_TOPOLOGY;
         }
 
         // printf("-D- %3d %08x\n", spi_sel, cur_spi_size);
     }
 
     if (num_spis == 0) {
-        return MFE_UNSUPPURTED_FLASH_TYPE;
+        return MFE_UNSUPPORTED_FLASH_TYPE;
     }
 
     mfl->attr.bank_size      = spi_size;
@@ -1545,7 +1543,7 @@ int ih3lx_flash_init(mflash* mfl) {
         flash_type == FT_XBUS  ||
         flash_type == FT_EEPROM) {
         printf("-E- flash of type %s not supported.\n", flash_type_str[flash_type]);
-        return MFE_UNSUPPURTED_FLASH_TYPE;
+        return MFE_UNSUPPORTED_FLASH_TYPE;
     }
 
     //mfl->f_read           = ih3lx_flash_read;
@@ -1573,7 +1571,7 @@ int ih3lx_flash_init(mflash* mfl) {
         mfl->f_write      = write_chunks;
         mfl->f_erase_sect = ih3lx_st_spi_erase_sect;
     } else {
-        return MFE_UNSUPPURTED_FLASH_TYPE;
+        return MFE_UNSUPPORTED_FLASH_TYPE;
     }
 
     rc = mfl->f_reset(mfl);
@@ -2078,7 +2076,7 @@ int cntx_flash_init(mflash* mfl) {
         mfl->f_write      = write_chunks;
         mfl->f_erase_sect = cntx_st_spi_erase_sect;
     } else {
-        return MFE_UNSUPPURTED_FLASH_TYPE;
+        return MFE_UNSUPPORTED_FLASH_TYPE;
     }
 
     rc = mfl->f_reset(mfl);
@@ -2233,8 +2231,8 @@ const char*   mf_err2str (int err_code) {
     "MFE_CR_ERROR",
     "MFE_INVAL",
     "MFE_NOT_IMPLEMENTED",
-    "MFE_UNSUPPURTED_FLASH_TOPOLOGY",
-    "MFE_UNSUPPURTED_FLASH_TYPE",
+    "MFE_UNSUPPORTED_FLASH_TOPOLOGY",
+    "MFE_UNSUPPORTED_FLASH_TYPE",
     "MFE_CFI_FAILED",
     "MFE_TIMEOUT",
     "MFE_ERASE_TIMEOUT",
