@@ -32,14 +32,16 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- *  Version: $Id: mstdump.c,v 1.8 2007/04/11 09:04:57 orenk Exp $
+ *  Version: $Id: mstdump.c,v 1.9 2007-06-25 12:45:33 yoniy Exp $
  *
  */
 
 
-#include <mtcr.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <mtcr.h>
 
 static unsigned tavor_address_list[]=
 {
@@ -16009,7 +16011,6 @@ static unsigned hermon_address_list[]=
 0x010ea4,
 0x010ea8,
 0x010eac,
-0x010eb4,
 0x010eb8,
 0x010ee0,
 0x010ee4,
@@ -22402,7 +22403,7 @@ static unsigned hermon_address_list[]=
 0x0400a4,
 0x0400a8,
 0x0400ac,
-0x0400b0,
+//0x0400b0,
 0x0400b4,
 0x0400b8,
 0x0400bc,
@@ -32222,7 +32223,7 @@ static unsigned hermon_address_list[]=
 0x0700c8,
 0x0700cc,
 0x0700d0,
-0x0700d4,
+//0x0700d4,
 0x0700d8,
 0x0700dc,
 0x0700e0,
@@ -84688,16 +84689,12 @@ static unsigned anafa2_address_list[]=
 };
 
 //Same as mread4 but prints out an error message if there's an error
-static inline int
-myread4(mfile* f, unsigned addr, unsigned* data)
-{
-  int rc;
-  rc=mread4(f,addr,data);
-  if (rc!=4) {
-    fprintf(stderr,"Unable to read address 0x%8.8x.Error code: %d.\n", addr,rc);
-  }
-  return rc;
-}
+#define MREAD4(mf,offs, val)  do { if (mread4 (mf, offs, val) != 4) { \
+                                  fprintf(stderr, "-E- Cr read (0x%08x) failed: %s(%d)\n", (u_int32_t)(offs), strerror(errno), (u_int32_t)errno); \
+                                  exit(2); } \
+                                  if (0) printf("R %06x:%08x\n", (u_int32_t)offs, (u_int32_t)*(val)); \
+                                  } while (0)
+	
 
 int main(int argc, char** argv)
 {
@@ -84726,9 +84723,8 @@ int main(int argc, char** argv)
   //if (argc == 3)
   //    mset_i2c_slave(f, strtoul(argv[2],0,0));
 
-
-  myread4(f,0xF0014,&hca_id);
-  myread4(f,0x60014,&is3_id);
+  MREAD4(f,0xF0014,&hca_id);
+  MREAD4(f,0x60014,&is3_id);
 
   hca_id &= 0xFFFF;
   is3_id &= 0xFFFF;
@@ -84761,7 +84757,7 @@ int main(int argc, char** argv)
   for(i=0;i<list_size;++i)
   {
     unsigned data;
-    myread4(f,list[i],&data);
+    MREAD4(f,list[i],&data);
     printf("0x%8.8x 0x%8.8x\n", list[i], data);
   }
 
