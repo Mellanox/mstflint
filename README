@@ -1,127 +1,118 @@
-Mellanox Technologies, Inc. - www.mellanox.com
-***********************************************
+Mellanox Technologies - www.mellanox.com
+****************************************
 
-mstflint: A BURNING FIRMWARE APPLICATION
-----------------------------------------
+MSTFLINT Package - Firmware Burning and Diagnostics Tools
 
 1) Overview
-    This package contains a burning tool, and diagnostic tools, for Mellanox
-    manufactured HCA cards.  It also provides access to the relevant source
+    This package contains a burning tool and diagnostic tools for Mellanox
+    manufactured HCA/NIC cards. It also provides access to the relevant source
     code. Please see the file LICENSE for licensing details.
 
     ----------------------------------------------------------------------------
     NOTE:
     This burning tool should be used only with Mellanox-manufactured
-    HCA cards. Using it with cards manufactured by other vendors may be harmful
-    to the cards (due to different configurations).
-    Using diagnostic tools is usually safe for all HCAs.
+    HCA/NIC cards. Using it with cards manufactured by other vendors 
+    may be harmful  to  the cards (due to different configurations).
+    Using the diagnostic tools is normally safe for all HCAs/NICs.
     ----------------------------------------------------------------------------
     
 2) Package Contents
-    a) mstflint source code.
-    b) mflash lib.
-       This lib provides flash access through Mellanox HCAs.
-    c) mtcr linux utility.
-       This utility enables the mflash lib to access the HCA
-       hardware registers.
+    a) mstflint source code
+    b) mflash lib
+       This lib provides Flash access through Mellanox HCAs.
+    c) mtcr lib (implemented in mtcr.h file)
+       This lib enables access to HCA hardware registers.
     d) mstregdump utility
-       This utility dumps hardware registers from Mellanox hardware,
-       for later analysis by Mellanox
+       This utility dumps hardware registers from Mellanox hardware
+       for later analysis by Mellanox.
     e) mstvpd
-       This utility dumps on-card VPD
+       This utility dumps the on-card VPD.
 
 3) Installation
-    a) Build the the mstflint utility.
-        Example: 
-        make
+    a) Build the mstflint utility. This package is built using a standard
+       autotools method.
+	   
+       Example: 
+       > ./configure
+       > make
+       > make install
 
-    b) Compilation should end with no error messages.
-        For example:
-	>make
-	g++ -O2 -g -Wall -I. -fno-exceptions -c flint.cpp -o mstflint.o
-	cc  -O2 -g -Wall -I. -fno-exceptions mstflint.o -o mstflint "/usr/lib/gcc/i486-linux-gnu/4.0.3/../../../../lib/libz.a" "/usr/lib/gcc/i486-linux-gnu/4.0.3/libstdc++.a"
-	cc -O2 -g -Wall -I. mread.c -o mstmread
-	cc -O2 -g -Wall -I. mwrite.c -o mstmwrite
-	cc -O2 -g -Wall -I. mstdump.c -o mstregdump
-	cc -O2 -g -Wall -I. vpd.c -o mstvpd
+       - Run "configure --help" for custom configuration options.
+       - Typically, root privileges are required to run "make install"
 
-    c) Executables named mstflint, mstregdump, mstvpd will be generated in the current
-       directory
-       This is the mstflint utility that can be used to burn and examine
-       the HCA on-board flash, mstregdump and mstvpd diagnostic utilities.
-       You may copy these executables to an arbitrary location.
+4) Hardware Access Device Names
+   The tools in this package require a device name in the command
+   line. The device name is the identifier of the target CA.
+   This section describes the device name formats and the HW access flow.
 
-4) Requirements:
-    a) Typically, you will need root privileges for hardware access
+   a) The devices can be accessed by their PCI ID as displayed by lspci
+      (bus:dev.fn).
+      Example:
+      # List all Mellanox devices
+      > /sbin/lspci -d 15b3:
+        02:00.0 Ethernet controller: Mellanox Technologies Unknown device 6368 (rev a0)
+ 	   
+      # Use mstflint tool to query the firmware on this device
+      > mstflint -d 02:00.0 q
 
-    b) For flash update, you will need the binary firmware-image file
-       supplied by your HCA card vendor.
+    b) When the IB driver (mlx4 or mthca) is loaded, the devices can be accessed
+       by their IB device name.
+       Example:
+       # List the IB devices 
+       > ibv_devinfo | grep hca_id
+         hca_id: mlx4_0
 
-	If you purchased your card from Mellanox, please use the Mellanox
-	secured site with your customer login account to download the firmware
-	binaries, or contact your local field application engineer.
+       # Use mstvpd tool to dump the VPD of this device
+       > mstvpd mlx4_0
 
-       Or
+    c) PCI configuration access
+       In examples a and b above, the device is accessed via PCI Memory Mapping.
+       The device can also be accessed by PCI configuration cycles.
+       PCI configuration access is slower and less safe than memory access --
+       use it only if methods a and b above do not work.
 
-	If you purchased your card from a vendor other than Mellanox, get a
-	specific board file from your HCA card vendor and generate the binary
-	image.
+       To force configuration access, use device names in the following format:
+       /proc/bus/pci/<bus>/<dev.fn>
 
-    c) If the mthca driver for the device is not loaded.
-       You must know the device location on the PCI bus.
-       For example, to find an InfiniHost HCA car manufactured by Mellanox use:
+       Example:
+       # List all Mellanox devices
+       > /sbin/lspci -d 15b3:
+         02:00.0 Ethernet controller: Mellanox Technologies Unknown device 6368 (rev a0)
+	   
+       # Use mstregdump to dump HW registers, using PCI config cycles
+       > mstregdump /proc/bus/pci/02/00.0 > crdump.log
 
-       /sbin/lspci -d 15b3:5a44
-       02:00.0 InfiniBand: Mellanox Technology: Unknown device 5a44 (rev a1)
-
-	In this example, 02:00.0 identifies the device in the form bus:dev.fn
-	
+       Note: Typically, you will need root privileges for hardware access
+	   
 5) Usage (mstflint):
-	Read mstflint usage. Enter: "./mstflint -h" for short help, or
-	"./mstflint -hh" for detailed help message.
+       Read mstflint usage. Enter "./mstflint -h" for a short help message, or
+       "./mstflint -hh" for a detailed help message.
 
-	Use mstflint to burn a device according to the burning instructions. 
-	You will need to specify the device in the form mthcaX if the driver
-	has loaded successfully, or bus:dev.fn as explained in section 4c) above,
-       	or in the alternative form /proc/bus/pci/bus/dev.fn .
-
-	If the driver is loaded, unload and re-load it, or reset the device in
-        some other way, so that the new firmware is re-read from flash.
-
-       Examples:
-       1) mstflint -d mthca0 v
-       		This is the recommended method, but it only works
-		if the mthca driver for the device is loaded.
-
-		Note: it is always safe to try this access method first -
-		if the driver is not loaded, mstflint will fail with an error
-		message and you'll be able to retry with another method.
-
-		To verify that the driver for the device mthca0 is loaded, you can
-		check whether /sys/class/infiniband/mthca0/device exists.
-
-       2) mstflint -d 02:00.0 v
-		This is functionally equivalent to access method 1, but less convenient.
-		This access method works with or without the driver loaded.
-
-       3) mstflint -d /proc/bus/pci/02/00.0 v
-		This method is less safe: verify that driver is not running,
-		and that no other software accesses the device before using it.
+       Obtaining firmware files:
+       If you purchased your card from Mellanox Technologies, please use the
+       Mellanox website (www.mellanox.com, under 'Firmware' downloads) to
+       download the firmware for your card.
+       If you purchased your card from a vendor other than Mellanox, get a
+       specific firmware configuration (INI) file from your HCA card vendor and
+       generate the binary image.
+	
+       Use mstflint to burn a device according to the burning instructions in 
+       "mstflint -hh" and in Mellanox web site firmware page.
 
 6) Usage (mstregdump):
-        Internal register dump is produced on standard output.
-        Store it in file for analysis in Mellanox.
+       An internal register dump is displayed to the standard output.
+       Please store it in a file for analysis by Mellanox.
 
-	Example:
-	*) mstregdump mthca0 > dumpfile
+       Example:
+       > mstregdump mthca0 > dumpfile
 
 7) Usage (mstvpd):
-        VPD dump is produced on standard output.
+    A VPD dump is displayed to the standard output.
 	A list of keywords to dump can be supplied after the -- flag
-	to apply an output filter:
+	to apply an output filter.
 
 	Examples:
-	1) mstvpd mthca0
+	> mstvpd mthca0
 	ID: Lion cub DDR
 	PN: MHGA28-1T
 	EC: A3
@@ -131,7 +122,7 @@ mstflint: A BURNING FIRMWARE APPLICATION
 	YA: R               R
 	RW:
 
-	2) mstvpd mthca0 -- PN ID
+	> mstvpd mthca0 -- PN ID
 	PN: MHGA28-1T
 	ID: Lion cub DDR
 
