@@ -80,6 +80,7 @@ typedef enum MfError {
     MFE_VERIFY_ERROR,
     MFE_NOMEM,
     MFE_OUT_OF_RANGE,
+    MFE_CMD_SUPPORTED_INBAND_ONLY,
     MFE_LAST
 } MfError;
 
@@ -123,7 +124,7 @@ typedef struct flash_attr {
     } erase_block[8];
 
     //
-    // bank_size:   Different bank means a different chip sellect or gpio settings is needed when crossing 
+    // bank_size:   Different bank means a different chip sellect or gpio settings is needed when crossing
     //              this alignment.
     //              This may indicate a different flash device (for SPI flash in InfiniHostIIILx / ConnectX).
     //              Or GPIO change for parallel flash (in InfiniHostIII / InfiniHost)
@@ -153,8 +154,8 @@ typedef struct flash_attr {
 /////////////////////////////////////////////
 //
 // MFLASH INTERFACE FUNCTIONS
-// 
-// Return value: 
+//
+// Return value:
 // All functions returns MfError enum values.
 //
 /////////////////////////////////////////////
@@ -169,14 +170,14 @@ typedef struct mflash mflash;
 // mf_open(): Allocates and init the mflash object to be used with the other lib funcs.
 //   OUT: pmfl - The opened mflash struct is returned here.
 //   IN : dev  - The string name of the crspace device to use.
-// 
+//
 // mf_opend(): Same as mf_open, but uses an already opened crspace device.
 //
-// mf_open_ignore_lock() : 
+// mf_open_ignore_lock() :
 //   THIS FUNCTION IS NOT SAFE -
 //   It ignores the flash semaphore during flash init sequence.
 //   Use only after one of the above open() failed because of MFE_SEM_LOCKED
-//   and you are absolutely sure that the lock can be overridden (E.G. semaphore 
+//   and you are absolutely sure that the lock can be overridden (E.G. semaphore
 //   remained in locked state due to previous kill of the burning app).
 //
 // mf_close() : Deallocates mflash resources.
@@ -196,11 +197,13 @@ int     mf_write       (mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* da
 int     mf_erase_sector(mflash* mfl, u_int32_t addr);
 
 //
-// Crspace access through mflash: 
+// Crspace access through mflash:
 //
 int     mf_cr_read     (mflash* mfl, u_int32_t cr_addr, u_int32_t* data);
 int     mf_cr_write    (mflash* mfl, u_int32_t cr_addr, u_int32_t  data);
 
+// Software reset the target device. Currently supported for InfiniScale4 switch via IB interface only.
+int     mf_sw_reset     (mflash* mfl);
 //
 // mf_get_attr(): Returns the flash_attr struct
 //

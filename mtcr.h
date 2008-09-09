@@ -217,6 +217,40 @@ int mwrite4(mfile *mf, unsigned int offset, u_int32_t value)
 #endif
 
 #ifndef MTCR_EXPORT
+static int
+mread_chunk_as_multi_mread4(mfile *mf, unsigned int offset, void *data, int length)
+{
+    int i;
+    if (length % 4) {
+        return EINVAL;
+    }
+    for (i = 0; i < length ; i += 4) {
+        u_int32_t value;
+        if (mread4(mf, offset + i, &value) != 4) {
+            return -1;
+        }
+        memcpy((char*)data + i , &value,4);
+    }
+    return length;
+}
+
+static int
+mwrite_chunk_as_multi_mwrite4(mfile *mf, unsigned int offset, void *data, int length)
+{
+    int i;
+    if (length % 4) {
+        return EINVAL;
+    }
+    for (i = 0; i < length ; i += 4) {
+        u_int32_t value;
+        memcpy(&value, (char*)data + i ,4);
+        if (mwrite4(mf, offset + i, value) != 4) {
+            return -1;
+        }
+    }
+    return length;
+}
+
 
 enum mtcr_access_method {
 	MTCR_ACCESS_ERROR  = 0x0,
@@ -578,6 +612,34 @@ name_parsed:
 	*func_p = my_func;
 	*force = 0;
 	return MTCR_ACCESS_MEMORY;
+}
+#endif
+
+
+int mread4_block (mfile *mf, unsigned int offset, u_int32_t* data, int byte_len)
+#ifdef MTCR_EXPORT
+	;
+#else
+{
+	return mread_chunk_as_multi_mread4(mf, offset, data, byte_len);	
+}
+#endif
+
+int mwrite4_block (mfile *mf, unsigned int offset, u_int32_t* data, int byte_len)
+#ifdef MTCR_EXPORT
+	;
+#else
+{
+	return mwrite_chunk_as_multi_mwrite4(mf, offset, data, byte_len);	
+}
+#endif
+
+int msw_reset(mfile *mf) 
+#ifdef MTCR_EXPORT
+	;
+#else
+{
+    return -1;
 }
 #endif
 
