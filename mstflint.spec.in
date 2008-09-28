@@ -38,7 +38,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/mstregdump
 %{_bindir}/mstvpd
 %{_bindir}/mstmcra
-%{_includedir}/mtcr.h
+%{_includedir}/mtcr_ul/mtcr.h
 
 %changelog
 * Fri Dec 23 2007 Oren Kladnitsky <orenk@dev.mellanox.co.il>
