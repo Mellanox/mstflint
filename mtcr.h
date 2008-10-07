@@ -639,6 +639,7 @@ int msw_reset(mfile *mf)
 	;
 #else
 {
+	mf = NULL; /* Warning */
     return -1;
 }
 #endif
