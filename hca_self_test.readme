@@ -1,0 +1,31 @@
+
+NAME
+
+    hca_self_test.ofed    - checker for InfiniBand Adapter (HCA) health
+    
+DESCRIPTION
+    hca_self_test.ofed is a script that checks the health of the HCAs found on
+    the local host. The output of the script consists of information on the
+    discovered HCAs and various health attributes of the local host.
+
+    Output system information includes the following items:
+     - Number of HCAs
+     - Host driver version
+     - Host architecture type
+     - Node GUIDs of HCAs
+     - Number of active HCA ports
+     - State of HCA ports
+
+    Output of system checks includes the results of following items:
+     - Number of HCAs
+	 - Driver initialization status
+	 - HCA Firmware version
+	 - RPMs installation
+	 - Driver error messages in kernel logs
+	 - IB Port error counters 
+	 
+NOTES:
+     - hca_self_test.ofed must be run as root
+     - The version numbers of the most current HCA firmware releases should be
+       stated inside the file.
+            

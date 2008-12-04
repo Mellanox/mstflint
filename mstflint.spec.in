@@ -38,9 +38,13 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/mstregdump
 %{_bindir}/mstvpd
 %{_bindir}/mstmcra
+%{_bindir}/hca_self_test.ofed
 %{_includedir}/mtcr_ul/mtcr.h
 
 %changelog
+* Thu Dec  4 2008 Oren Kladnitsky <orenk@dev.mellanox.co.il>
+   Added hca_self_test.ofed installation
+   
 * Fri Dec 23 2007 Oren Kladnitsky <orenk@dev.mellanox.co.il>
    Added mtcr.h installation
    
