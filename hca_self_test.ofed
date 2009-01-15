@@ -451,7 +451,7 @@ if [ $HOST_DRIVER_INIT -eq 1 ]; then
                 let "NUM_PORT_ACTIVE+=`grep ACTIVE $INFINI_CLASS_PATH/$driver_need$device_num/ports/2/state | wc -l`"
              fi
         else
-            "Number of HCA Ports Active ............. $NA"
+            echo "Number of HCA Ports Active ............. $NA"
         fi    
                 
         let "LOOP_COUNT=$LOOP_COUNT + 1"
@@ -511,7 +511,7 @@ if [ $HOST_DRIVER_INIT -eq 1 ]; then
              fi
        
         else
-            "Number of HCA Ports Active ............. $NA"
+            echo "Number of HCA Ports Active ............. $NA"
         fi    
 
 
@@ -617,7 +617,7 @@ if [ $HOST_DRIVER_INIT -eq 1 ]; then
     
 
         else
-            "Error Counter Check on HCA #$LOOP_COUNT .......... NA"
+            echo "Error Counter Check on HCA #$LOOP_COUNT .......... NA"
         fi    
                 
 
