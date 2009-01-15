@@ -280,6 +280,7 @@ int mtcr_check_signature(mfile *mf)
 	case 0x6278: /* 25208 */
 	case 0x5e8c: /* 24204 */
 	case 0x6274: /* 25204 */
+	case 0x1b3:  /*   435 */
 		return 0;
 	default:
 		errno = ENOTTY;
