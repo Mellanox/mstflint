@@ -132,7 +132,7 @@ if [ $OS_TYPE = "DEBIAN" ]; then
 else
     # RPM check
     RPM_CHECK_FAIL=0
-    RPM_USR_VER=`rpm -qa 2> /dev/null | grep kernel-ib | wc -l `
+    RPM_USR_VER=`rpm -qa 2> /dev/null | grep kernel-ib | wc -l`
     RPM_KER_VER=`rpm -qa 2> /dev/null | grep kernel-ib | wc -l`
     RPM_KER_NAME=`rpm -qa 2> /dev/null | grep kernel-ib | grep -v devel | sed s/kernel-ib-//g | tr \\\n " "`
 
@@ -196,8 +196,8 @@ fi
 function get_device_id {
     loop_cnt=$1
 
-    PCI_DEV=$(lspci 2> /dev/null | grep Mellanox | head -$(expr $loop_cnt + 1) | tail -1 | awk '{print $1}')
-    HexDevice_ID=$(lspci -n -d "15b3:"  2> /dev/null | head -$(expr $loop_cnt + 1) |  tail -1 | cut -d ":" -f4 | cut -d " " -f1)
+    PCI_DEV=$(lspci 2> /dev/null | grep -E "(InfiniBand|Memory controller): Mellanox Technolog" | head -$(expr $loop_cnt + 1) | tail -1 | awk '{print $1}')
+    HexDevice_ID=$(lspci -n -d "15b3:"  2> /dev/null | grep $PCI_DEV |  tail -1 | cut -d ":" -f4 | cut -d " " -f1)
 
     if [ "$HexDevice_ID" != "" ]; then
         HexDevice_ID=0x$HexDevice_ID
