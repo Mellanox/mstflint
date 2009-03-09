@@ -58,7 +58,7 @@ HERMON_FW_NEEDED=
 for cmd in  lspci cat id rpm uname grep ls awk egrep modprobe; do
     cmd_exist=`which $cmd 2> /dev/null`
     if [ "$cmd_exist" == "" ]; then
-            echo "Error: $cmd tool was not found the PATH"
+            echo "Error: $cmd tool was not found in the PATH"
             exit 1
     fi
 done
