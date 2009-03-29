@@ -12,7 +12,9 @@ mstmread_SOURCES = mread.c mtcr.h
 mstmwrite_SOURCES = mwrite.c mtcr.h
 
 mstflint_SOURCES = flint.cpp mtcr.h mflash.h mflash.c
-mstflint_LDFLAGS = -lz
+
+mstflint_LIBS = @mstflint_LIBS@
+mstflint_CXXFLAGS = @mstflint_CXXFLAGS@
 
 mstregdump_SOURCES = mstdump.c mtcr.h
 
