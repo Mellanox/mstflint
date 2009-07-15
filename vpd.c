@@ -50,7 +50,7 @@
  * we can loop forever if the HCA is crashed or if the wrong device is
  * specified as an argument. So, we set time outs.
  */
-static clock_t ticks_per_sec, start_t, curr_t, timeout_t = 30;
+static clock_t ticks_per_sec, start_t, curr_t, timeout_t = 5;
 
 struct vpd_cap {
 	unsigned char id;
@@ -179,6 +179,7 @@ int pci_read_vpd_dword(int device, int vpd_cap_offset, unsigned offset, unsigned
 	while((addr_flag[1] & VPD_FLAG) != VPD_FLAG_READ_READY) {
 		curr_t = times(NULL);
 		if ((curr_t - start_t) / ticks_per_sec > timeout_t) {
+			fprintf(stderr, "-E- VPD read timeout\n");
 			return -EIO;
 		}
 
@@ -224,7 +225,7 @@ int vpd_check_one(union vpd_data_type *d, unsigned offset)
 		for (i = 0; i < VPD_TAG_LENGTH(d); i += 0x3 + field->length) {
 			field = (struct vpd_field *)(VPD_TAG_DATA(d)->bytes + i);
 			if (i + 0x3 + field->length > VPD_TAG_LENGTH(d)) {
-				fprintf(stderr, "Offset 0x%x+0x%x: "
+				fprintf(stderr, "-E- Offset 0x%x+0x%x: "
 					"field length 0x%x exceeds total 0x%x\n",
 					offset, i, field->length, VPD_TAG_LENGTH(d));
 				return -1;
@@ -331,7 +332,7 @@ int vpd_check(vpd_t vpd, int checksum)
 	}
 
 	if (VPD_TAG_NAME(d) != VPD_TAG_F) {
-		fprintf(stderr, "Mandatory End(0xF) tag not found.\n");
+		fprintf(stderr, "-E- Mandatory End(0xF) tag not found.\n");
 		return 1;
 	}
 
@@ -339,7 +340,7 @@ int vpd_check(vpd_t vpd, int checksum)
 		return 0;
 
 	if (!checksum_len) {
-		fprintf(stderr, "Mandatory checksum(RV) field not found.\n");
+		fprintf(stderr, "-E- Mandatory checksum(RV) field not found.\n");
 		return 1;
 	}
 
@@ -348,7 +349,7 @@ int vpd_check(vpd_t vpd, int checksum)
 		b+= vpd[i];
 
 	if (b) {
-		fprintf(stderr, "Len 0x%x: checksum mismatch: 0x%x\n",
+		fprintf(stderr, "-E- Len 0x%x: checksum mismatch: 0x%x\n",
 			checksum_len, b);
 		return 1;
 	}
@@ -387,13 +388,13 @@ int pci_parse_name(const char *name, char buf[4096])
 
 		tmp = snprintf(mbuf, sizeof mbuf, "/sys/class/infiniband/%s/device", name);
 		if (tmp <= 0 || tmp >= (int)sizeof mbuf) {
-			fprintf(stderr,"Unable to print device name %s\n", name);
+			fprintf(stderr,"-E- Unable to print device name %s\n", name);
 			return 1;
 		}
 
 		if (readlink(mbuf, pbuf, sizeof pbuf) < 0) {
-			perror("read link");
-			fprintf(stderr,"Unable to read link %s\n", mbuf);
+			perror("-E- read link");
+			fprintf(stderr,"-E- Unable to read link %s\n", mbuf);
 			return 1;
 		}
 
@@ -425,13 +426,13 @@ int vpd_open(const char *name)
 	char buf[4096];
 
 	if (pci_parse_name(name, buf)) {
-		fprintf(stderr, "Unable to parse device name %s\n", name);
+		fprintf(stderr, "-E- Unable to parse device name %s\n", name);
 		return -1;
 	}
 
 	fd = open(buf, O_RDWR);
 	if (fd < 0) {
-		fprintf(stderr, "Unable to open file %s: %s\n", buf, strerror(errno));
+		fprintf(stderr, "-E- Unable to open file %s: %s\n", buf, strerror(errno));
 	}
 	return fd;
 }
