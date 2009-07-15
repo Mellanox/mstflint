@@ -44,6 +44,13 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <libgen.h>
+#include <sys/times.h>
+
+/* pread is non-blocking, so we loop until we find data.  Unfortunately, 
+ * we can loop forever if the HCA is crashed or if the wrong device is
+ * specified as an argument. So, we set time outs.
+ */
+static clock_t ticks_per_sec, start_t, curr_t, timeout_t = 30;
 
 struct vpd_cap {
 	unsigned char id;
@@ -168,7 +175,13 @@ int pci_read_vpd_dword(int device, int vpd_cap_offset, unsigned offset, unsigned
 	if (ret != sizeof addr_flag)
 		return ret;
 
+	start_t = times(NULL);
 	while((addr_flag[1] & VPD_FLAG) != VPD_FLAG_READ_READY) {
+		curr_t = times(NULL);
+		if ((curr_t - start_t) / ticks_per_sec > timeout_t) {
+			return -EIO;
+		}
+
 		ret = pread(device, addr_flag, sizeof addr_flag,
 			     vpd_cap_offset + VPD_ADDR_OFFSET);
 		if (ret != sizeof addr_flag)
@@ -437,24 +450,34 @@ int main(int argc, char **argv)
 		rc = 1;
 		goto usage;
 	}
-	if (argc == 3) {
-		if (!strcmp("-m", argv[1])) {
-			argv++;
-			argc--;
-			m = 1;
-		} else if (!strcmp("-n", argv[1])) {
-			argv++;
-			argc--;
-			n = 1;
-		} else {
-			rc = 2;
-			goto usage;
-		}
-	}
 
-	name = argv[1];
-	argv++;
-	argc--;
+	ticks_per_sec = sysconf(_SC_CLK_TCK);
+
+	do
+	{
+		i=getopt(argc, argv, "mnt:");
+		if (i<0) {
+			break;
+		}
+
+		switch (i) {
+			case 'm':
+				m=1;
+				break;
+			case 'n':
+				n=1;
+				break;
+			case 't':
+				timeout_t = strtol(optarg, NULL, 0);
+				break;
+			default:
+				goto usage;
+		}
+	} while (1 == 1);
+				
+	name = argv[optind];
+	argc -= optind;
+	argv += optind;
 
 	if (!strcmp("-", name)) {
 		if (fread(d, VPD_MAX_SIZE, 1, stdin) != 1)
@@ -486,6 +509,14 @@ int main(int argc, char **argv)
 	return 0;
 
 usage:
-	fprintf(stderr, "Usage: %s [-m|-n] <file|-> [-- keyword ...]\n", argv[0]);
+	fprintf(stderr, "Usage: %s [-m|-n] [-t ##] <file> [-- keyword ...]\n", argv[0]);
+	fprintf(stderr, "-m\tDump raw VPD data to stdout.\n");
+	fprintf(stderr, "-n\tDo not validate check sum.\n");
+	fprintf(stderr, "-t ##\tTime out after ## seconds. (Default is 30.)\n\n");
+	fprintf(stderr, "file\tThe PCI id number of the HCA (for example, \"2:00.0\"),\n");
+	fprintf(stderr, "\tthe device name (such as \"mlx4_0\")\n");
+	fprintf(stderr, "\tthe absolute path to the device (\"/sys/class/infiniband/mlx4_0/device\")\n");
+	fprintf(stderr, "\tor '-' to read VPD data from the standard input.\n\n");
+	fprintf(stderr, "keyword(s): Only display the requested information. (ID, PN, EC, SN, etc...)\n");
 	return rc;
 }
