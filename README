@@ -50,8 +50,8 @@ MSTFLINT Package - Firmware Burning and Diagnostics Tools
       Example:
       # List all Mellanox devices
       > /sbin/lspci -d 15b3:
-        02:00.0 Ethernet controller: Mellanox Technologies Unknown device 6368 (rev a0)
- 	   
+        02:00.0 Ethernet controller: Mellanox Technologies MT25448 [ConnectX EN 10GigE, PCIe 2.0 2.5GT/s] (rev a0) 
+
       # Use mstflint tool to query the firmware on this device
       > mstflint -d 02:00.0 q
 
@@ -77,7 +77,7 @@ MSTFLINT Package - Firmware Burning and Diagnostics Tools
        Example:
        # List all Mellanox devices
        > /sbin/lspci -d 15b3:
-         02:00.0 Ethernet controller: Mellanox Technologies Unknown device 6368 (rev a0)
+         02:00.0 Ethernet controller: Mellanox Technologies MT25448 [ConnectX EN 10GigE, PCIe 2.0 2.5GT/s] (rev a0) 
 	   
        # Use mstregdump to dump HW registers, using PCI config cycles
        > mstregdump /proc/bus/pci/02/00.0 > crdump.log
