@@ -32,7 +32,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- *  Version: $Id: flint.cpp 4624 2008-08-26 08:32:49Z orenk $
+ *  Version: $Id: flint.cpp 5186 2009-08-16 12:21:25Z mohammad $
  *
  */
 
@@ -48,9 +48,10 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <assert.h>
+#include <time.h>
 
 #ifndef NO_ZLIB
-#include <zlib.h>
+    #include <zlib.h>
 #endif
 
 #include <signal.h>
@@ -62,30 +63,30 @@
 //
 
 
-#if defined __DJGPP__
+    #if defined __DJGPP__
 //
 // DJGPP - GCC PORT TO MS DOS
 //
 
-#include <mtcr.h> // This contains the u_* types definitions
+        #include <mtcr.h> // This contains the u_* types definitions
 
-#include <netinet/in.h>
-#include <unistd.h>
+        #include <netinet/in.h>
+        #include <unistd.h>
 
-#define bswap_32(x) ntohl(x)
+        #define bswap_32(x) ntohl(x)
 
 // djgpp stdio does not define vsnprintf. I simply call vsprintf (and pray ...)
-#define vsnprintf(buf, len, format, args) (vsprintf(buf, format, args))
+        #define vsnprintf(buf, len, format, args) (vsprintf(buf, format, args))
 
-#else // Linux GCC
+    #else // Linux GCC
 
-#include <byteswap.h>
-#include <endian.h>
-#include <alloca.h>
-#include <netinet/in.h>
-#include <unistd.h>
+        #include <byteswap.h>
+        #include <endian.h>
+        #include <alloca.h>
+        #include <netinet/in.h>
+        #include <unistd.h>
 
-#endif // __DJGPP__
+    #endif // __DJGPP__
 
 #else // __WIN__
 
@@ -93,29 +94,29 @@
 // Windows (Under DDK)
 //
 
-#include <io.h>
-#include <Winsock2.h>
-#include <mtcr.h>
+    #include <io.h>
+    #include <Winsock2.h>
+    #include <mtcr.h>
 // Sleep adaptor
-#define	usleep(x) Sleep((x)/1000)
-#define sleep(x)  Sleep((x)*1000)
+    #define usleep(x) Sleep((x)/1000)
+    #define sleep(x)  Sleep((x)*1000)
 
-#define vsnprintf      _vsnprintf
-#define strtoull       _strtoui64
-#define isatty         _isatty
+    #define vsnprintf      _vsnprintf
+    #define strtoull       _strtoui64
+    #define isatty         _isatty
 
-#define COMP_CDECL     __cdecl
+    #define COMP_CDECL     __cdecl
 
-#define __LITTLE_ENDIAN 1234
-#define __BIG_ENDIAN 4321
-#define __BYTE_ORDER __LITTLE_ENDIAN
+    #define __LITTLE_ENDIAN 1234
+    #define __BIG_ENDIAN 4321
+    #define __BYTE_ORDER __LITTLE_ENDIAN
 
 
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-#define bswap_32(x) ntohl(x)
-#else
-#error windows is assumed to run a on little endian architecture
-#endif
+    #if __BYTE_ORDER == __LITTLE_ENDIAN
+        #define bswap_32(x) ntohl(x)
+    #else
+        #error windows is assumed to run a on little endian architecture
+    #endif
 
 #endif // __WIN__
 
@@ -143,21 +144,30 @@
 
 namespace std {}; using namespace std;
 
-#ifdef VERSION_ID
-//char* _versionID = VERSION_ID ;
-#define __VFSTR(x) 			#x
-#define _VFSTR(x) 			__VFSTR(x)
-const char* _versionID = _VFSTR( VERSION_ID ) ;
+// TODO: Use common functions to windows & linux.
+#ifndef __WIN__
+    #if defined (VERSION_ID) && defined (BLD_VER_STR)
+        #define __VFSTR(x, y)          "MFT "#x" , BUILD "#y
+        #define _VFSTR(x, y)           __VFSTR(x, y)
+    const char* _versionID = _VFSTR( BLD_VER_STR, VERSION_ID ) ;
+    #else
+    const char* _versionID = "MFT 2.6.0 Devel";
+    #endif
 #else
-const char* _versionID = "ofed_1.4";
+    #if defined (VERSION_ID)
+        #define __VFSTR1(x)          #x
+        #define _VFSTR1(x)           __VFSTR1(x)
+    const char* _versionID = _VFSTR1( VERSION_ID ) ;
+    #else
+    #endif
 #endif
 
-const char* _svnID     = "$Revision: 4624 $";
+const char* _svnID     = "$Revision: 5186 $";
 
 #ifndef __be32_to_cpu
     #define __be32_to_cpu(x) ntohl(x)
     #ifndef bswap_32
-	#define bswap_32(x) (htonl(x))
+        #define bswap_32(x) (htonl(x))
     #endif
 #endif
 #ifndef __cpu_to_be32
@@ -209,7 +219,9 @@ static inline void cpu_to_be_guid(guid_t* to, guid_t* from) {
     to->h=__cpu_to_be32(from->h);
     to->l=__cpu_to_be32(from->l);
 }
-
+#define MAX_NUM_SUPP_HW_IDS 200
+#define MAC_SPACES  "            "
+#define GUID_SPACES "        "
 #define GUID_FORMAT "%8.8x%8.8x"
 #define MAC_FORMAT  "%4.4x%8.8x"
 #define TOCPU1(s) s = __be32_to_cpu(s)
@@ -271,39 +283,38 @@ static inline void cpu_to_be_guid(guid_t* to, guid_t* from) {
 #define READBUF(f,o,d,l,p) do { if (!f.read(o,d,l)) { \
     return errmsg("%s - read error (%s)\n", p, f.err()); }} while (0)
 
+#define MAX_ERR_STR_LEN 1024
 
-class ErrMsg
-{
+class ErrMsg {
 public:
-    ErrMsg() : _err(0)       {                           }
-    ~ErrMsg()                { err_clear();              }
-    const char *err() const  { return _err;              }
-    void       err_clear()   { delete [] _err; _err = 0; }
+    ErrMsg() : _err(0)       {}
+    ~ErrMsg()                { err_clear();}
+    const char *err() const  { return _err;}
+    void       err_clear()   { delete [] _err; _err = 0;}
 
 protected:
 
     char *vprint(const char *format, va_list args)
     {
-	const int INIT_VAL = 1024;
-	int       max_str, max_buf = INIT_VAL;
-	char      *out_buf;
+        const int INIT_VAL = 1024;
+        int       max_str, max_buf = INIT_VAL;
+        char      *out_buf;
 
-	while (1)
-	{
-	    out_buf = new char[max_buf];
-	    max_str = max_buf - 1;
+        while (1) {
+            out_buf = new char[max_buf];
+            max_str = max_buf - 1;
 
-	    if (vsnprintf(out_buf, max_str, format, args) < max_str)
-		return out_buf;
-	    delete [] out_buf;
-	    max_buf *= 2;
-	}
+            if (vsnprintf(out_buf, max_str, format, args) < max_str)
+                return out_buf;
+            delete [] out_buf;
+            max_buf *= 2;
+        }
     }
 
 
     bool errmsg(const char *format, ...)
 #ifdef __GNUC__
-        __attribute__ ((format (printf, 2, 3)))
+    __attribute__ ((format (printf, 2, 3)))
 #endif
     ;
 
@@ -343,7 +354,7 @@ struct PS {
     u_int32_t crc016;
 };
 
-enum {
+enum SectionType {
     H_FIRST     =  1,
     H_DDR       =  1,
     H_CNF       =  2,
@@ -356,6 +367,7 @@ enum {
     H_FW_CONF   =  9,
     H_IMG_INFO  = 10,
     H_DDRZ      = 11,
+    H_HASH_FILE = 12,
     H_LAST
 };
 
@@ -371,7 +383,8 @@ const char* g_sectNames[] = {
     "User Data"       ,
     "FW Configuration",
     "Image Info"      ,
-    "DDRZ"
+    "DDRZ"            ,
+    "Hash File"
 };
 
 
@@ -436,17 +449,48 @@ void report_erase(const char *format, ...)
     int len;
 
     if (_silent)
-	return;
+        return;
 
     va_start(args, format);
     vsnprintf(buf, sizeof buf, format, args);
     va_end(args);
 
     len = strlen(buf);
-    for(i=0; i < len; ++i)
-	printf("\b");
+    for (i=0; i < len; ++i)
+        printf("\b");
 } // report_erase
 
+void report_repair_msg(const char* common_msg)
+{
+    printf("\r%s OK         ", common_msg);
+}
+
+#define MAX_ERR_STR_LEN 1024
+#define PRE_ERR_MSG "-E-"
+void report_err(char err_buff[MAX_ERR_STR_LEN], const char *format, ...)
+{
+    va_list  args;
+
+    va_start(args, format);
+
+    if (vsnprintf(err_buff, MAX_ERR_STR_LEN, format, args) >= MAX_ERR_STR_LEN) {
+        strcpy(&err_buff[MAX_ERR_STR_LEN - 5], "...\n");
+    }
+    fprintf(stderr, PRE_ERR_MSG" %s", err_buff);
+
+    va_end(args);
+
+    return;
+}
+
+void report_warn(const char *format, ...)
+{
+    va_list  args;
+    va_start(args, format);
+    fprintf(stderr, "-W- ");
+    vfprintf(stderr, format, args);
+    va_end(args);
+}
 
 ////////////////////////////////////////////////////////////////////////
 //                                                                    //
@@ -574,9 +618,9 @@ private:
 class Aligner {
 public:
     Aligner(u_int32_t log2_alignment_size) :
-        _log2_alignment_size(log2_alignment_size),
-        _alignment_size(1 << log2_alignment_size),
-        _alignment_mask(_alignment_size - 1)
+    _log2_alignment_size(log2_alignment_size),
+    _alignment_size(1 << log2_alignment_size),
+    _alignment_mask(_alignment_size - 1)
     {
         if (_log2_alignment_size == 0) {
             _log2_alignment_size = 31;
@@ -598,7 +642,7 @@ public:
         chunk_addr = _curr_addr;
 
         if ( (_curr_addr               >> _log2_alignment_size) !=
-            ((_curr_addr + _curr_size) >> _log2_alignment_size)) {
+             ((_curr_addr + _curr_size) >> _log2_alignment_size)) {
             // Next chunk crosses alignment boundary
             chunk_size = _alignment_size - (_curr_addr & _alignment_mask);
         } else {
@@ -633,23 +677,25 @@ private:
 // Common base class for Flash and for FImage
 
 
-class FBase : public ErrMsg{
+class FBase : public ErrMsg {
 public:
     FBase(bool is_flash) :
-        _log2_chunk_size(0),
-        _is_flash(is_flash) {}
+    _log2_chunk_size(0),
+    _is_flash(is_flash) {}
     virtual ~FBase()  {}
 
     virtual bool open(const char *, bool)                  {return false;}
     virtual void close()                                   = 0;
     virtual bool read(u_int32_t addr, u_int32_t *data)     = 0;
     virtual bool read(u_int32_t addr, void *data, int len,
-                      bool verbose=false)                  = 0;
+                      bool verbose=false,
+                      const char* message = "")            = 0;
 
     virtual u_int32_t get_sector_size()                    = 0;
     virtual u_int32_t get_size()                           = 0;
 
     virtual u_int32_t get_dev_id()                         = 0;
+    virtual u_int32_t get_rev_id()                         = 0;
 
     bool              is_flash() {return _is_flash;};
 
@@ -679,7 +725,7 @@ protected:
         if (_log2_chunk_size) {
             result  = (cont_addr       & (0xffffffff >> (32 - _log2_chunk_size))) |
                       (_is_image_in_odd_chunks       << _log2_chunk_size)         |
-                     ((cont_addr << 1) & (0xffffffff << (_log2_chunk_size + 1)));
+                      ((cont_addr << 1) & (0xffffffff << (_log2_chunk_size + 1)));
         } else {
             result = cont_addr;
         }
@@ -690,7 +736,7 @@ protected:
         u_int32_t result;
         if (_log2_chunk_size) {
             result =  (phys_addr       & (0xffffffff >> (32 - _log2_chunk_size)))  |
-                     ((phys_addr >> 1) & (0xffffffff << (     _log2_chunk_size)));
+                      ((phys_addr >> 1) & (0xffffffff << (     _log2_chunk_size)));
         } else {
             result = phys_addr;
         }
@@ -715,11 +761,12 @@ public:
     virtual bool open(const char *fname, bool read_only = false);
     virtual void close();
     virtual bool read(u_int32_t addr, u_int32_t *data);
-    virtual bool read(u_int32_t addr, void *data, int len, bool verbose=false);
+    virtual bool read(u_int32_t addr, void *data, int len, bool verbose=false, const char* message= "");
 
     virtual u_int32_t get_sector_size();
     virtual u_int32_t get_size()     { return  getBufLength();}
     virtual u_int32_t get_dev_id()   { return  0;}
+    virtual u_int32_t get_rev_id()   { return  0;}
 
 private:
     u_int32_t *_buf;
@@ -732,19 +779,20 @@ private:
 class Flash : public FBase {
 public:
     Flash() :
-        FBase(true),
-        _mfl(0),
-        _curr_sector(0xffffffff),
-        _port_num(0)
-     {}
+    FBase(true),
+    _mfl(0),
+    _curr_sector(0xffffffff),
+    _port_num(0)
+    {}
 
     virtual ~Flash()  { close();};
 
     // FBase Interface
 
     virtual bool open          (const char *device,
-				bool force_lock = false,
-                                bool read_only  = false);
+                                bool force_lock  = false,
+                                bool read_only   = false,
+                                int num_of_banks = 4);
 
     virtual void close         ();
 
@@ -754,7 +802,8 @@ public:
     virtual bool read          (u_int32_t addr,
                                 void*     data,
                                 int       len,
-                                bool      verbose = false);
+                                bool      verbose = false,
+                                const char* message = "");
 
     bool         cr_write      (u_int32_t addr,
                                 u_int32_t data) {return mf_cr_write(_mfl, addr, data) == MFE_OK;}
@@ -763,11 +812,11 @@ public:
     // Flash Interface
     //
 
-    u_int32_t get_sector_size        ()  {return _attr.sector_size; }
+    u_int32_t get_sector_size        ()  {return _attr.sector_size;}
     u_int32_t get_size               ()  {return _attr.size;}
 
-    u_int32_t get_dev_id             ()  {return _attr.hw_dev_id;}
-
+    u_int32_t get_dev_id             ()  {return _attr.hw_dev_id; }
+    u_int32_t get_rev_id             ()  {return _attr.rev_id; }
     u_int32_t get_port_num           ()  {return _port_num;}
 
     bool sw_reset();
@@ -839,7 +888,7 @@ bool FImage::open(const char *fname, bool read_only)
     //printf("-D- %s size is %d\n", fname, fsize);
     if (fsize & 0x3) {
         return errmsg("Image size should be 4-bytes aligned. Make sure file %s is in the right format (binary image)",
-		      fname);
+                      fname);
     }
 
     _buf = new u_int32_t[fsize/4];
@@ -848,7 +897,7 @@ bool FImage::open(const char *fname, bool read_only)
             return errmsg("Read error on file \"%s\" - %s\n",fname, strerror(errno));
         else
             return errmsg("Read error on file \"%s\" - read only %d bytes (from %ld)\n",
-			  fname, r_cnt, (unsigned long)fsize);
+                          fname, r_cnt, (unsigned long)fsize);
     }
 
     _len = fsize;
@@ -871,7 +920,7 @@ bool FImage::read(u_int32_t addr, u_int32_t *data)
 } // FImage::read
 
 ////////////////////////////////////////////////////////////////////////
-bool FImage::read(u_int32_t addr, void *data, int len, bool)
+bool FImage::read(u_int32_t addr, void *data, int len, bool, const char*)
 {
 
     if (addr & 0x3) {
@@ -881,12 +930,12 @@ bool FImage::read(u_int32_t addr, void *data, int len, bool)
         return errmsg("Length should be 4-bytes aligned.");
     }
     if (!_buf) {
-	return errmsg("read() when not opened");
+        return errmsg("read() when not opened");
     }
 
     if (cont2phys(addr + len) > _len) {
         return errmsg("Reading 0x%x bytes from %saddress 0x%x is out of image limits (0x%x bytes)",
-		      len,
+                      len,
                       _log2_chunk_size ? "physical " : "",
                       addr,
                       _len);
@@ -901,7 +950,7 @@ bool FImage::read(u_int32_t addr, void *data, int len, bool)
 
         memcpy((u_int8_t*)data + (chunk_addr - addr),
                (u_int8_t*)_buf +  phys_addr,
-                chunk_size);
+               chunk_size);
     }
 
     return true;
@@ -945,13 +994,13 @@ u_int32_t FImage::get_sector_size()
 bool Flash::_byte_mode = false;
 
 ////////////////////////////////////////////////////////////////////////
-bool Flash::open(const char *device, bool force_lock, bool read_only)
+bool Flash::open(const char *device, bool force_lock, bool read_only, int num_of_banks)
 {
     // Open device
     int rc;
     read_only = false;
 
-    rc = mf_open(&_mfl, device);
+    rc = mf_open(&_mfl, device, num_of_banks);
 
     if ((rc == MFE_SEM_LOCKED) && force_lock) {
         report("Warning: Taking flash lock even though semaphore is set.\n");
@@ -972,8 +1021,7 @@ bool Flash::open(const char *device, bool force_lock, bool read_only)
 
     if (_attr.hw_dev_id == 435) {
         _port_num = 0;
-    }
-    else if (_attr.hw_dev_id == 25204 || _attr.hw_dev_id == 24204) {
+    } else if (_attr.hw_dev_id == 25204 || _attr.hw_dev_id == 24204) {
         _port_num = 1;
     } else {
         _port_num = 2;
@@ -982,7 +1030,7 @@ bool Flash::open(const char *device, bool force_lock, bool read_only)
     if (_byte_mode) {
         rc = mf_set_opt(_mfl, MFO_AMD_BYTE_MODE, 1);
         if (rc != MFE_OK) {
-            return errmsg("Failed setting byte mode fore device %s: %s", device,  mf_err2str(rc));
+            return errmsg("Failed setting byte mode for device %s: %s", device,  mf_err2str(rc));
         }
     }
 
@@ -1017,7 +1065,7 @@ bool Flash::read(u_int32_t addr,
 }
 
 ////////////////////////////////////////////////////////////////////////
-bool Flash::read(u_int32_t addr, void *data, int len, bool verbose)
+bool Flash::read(u_int32_t addr, void *data, int len, bool verbose, const char* message)
 {
     int rc;
     u_int32_t  perc = 0xffffffff;
@@ -1027,12 +1075,6 @@ bool Flash::read(u_int32_t addr, void *data, int len, bool verbose)
     }
     if (len & 0x3) {
         return errmsg("Length should be 4-bytes aligned.");
-    }
-
-    // Report
-    if (verbose) {
-        printf("000%%");
-        fflush(stdout);
     }
 
     // Much better perf for read in a single chunk. need to work on progress report though.
@@ -1068,8 +1110,9 @@ bool Flash::read(u_int32_t addr, void *data, int len, bool verbose)
             if (verbose) {
                 u_int32_t new_perc = (i * 100) / len;
                 if (new_perc != perc) {
-                    printf("\b\b\b\b%03d%%", new_perc);
+                    printf("\r%s%%%03d", message, new_perc);
                     fflush(stdout);
+
                     perc = new_perc;
                 }
             }
@@ -1077,7 +1120,7 @@ bool Flash::read(u_int32_t addr, void *data, int len, bool verbose)
     }
     // Report
     if (verbose) {
-        printf("\b\b\b\b100%%");
+        printf("\r%s%%100", message);
         fflush(stdout);
     }
 
@@ -1087,9 +1130,9 @@ bool Flash::read(u_int32_t addr, void *data, int len, bool verbose)
 
 ////////////////////////////////////////////////////////////////////////
 bool Flash::write  (u_int32_t addr,
-		    void*     data,
-		    int       cnt,
-		    bool      noerase)
+                    void*     data,
+                    int       cnt,
+                    bool      noerase)
 {
 
     // FIX:
@@ -1104,11 +1147,11 @@ bool Flash::write  (u_int32_t addr,
 
 
     if (cont2phys(addr + cnt) > get_size()) {
-	return errmsg(
-	    "Trying to write %d bytes to address 0x%x, which exceeds max image size (0x%x - half of total flash size).",
-	    cnt,
-	    addr,
-	    get_size() / 2);
+        return errmsg(
+                     "Trying to write %d bytes to address 0x%x, which exceeds max image size (0x%x - half of total flash size).",
+                     cnt,
+                     addr,
+                     get_size() / 2);
     }
 
     u_int8_t         *p = (u_int8_t *)data;
@@ -1162,7 +1205,7 @@ bool Flash::write  (u_int32_t addr,
 bool Flash::write(u_int32_t addr, u_int32_t data)
 {
     if (!_mfl) {
-	return errmsg("Not opened");
+        return errmsg("Not opened");
     }
     if (addr & 0x3) {
         return errmsg("Address should be 4-bytes aligned.");
@@ -1253,6 +1296,105 @@ bool Flash::print_attr_old_format() {
 
 ////////////////////////////////////////////////////////////////////////
 
+ //
+// Commands database and parsing methods
+//
+enum CommandInput {
+    CI_NONE         = 0x01,
+    CI_IMG_ONLY     = 0x02,
+    CI_DEV_ONLY     = 0x04,
+    CI_IMG_OR_DEV   = 0x06,
+    CI_IMG_AND_DEV  = 0x08
+};
+
+enum CommandType {
+    CMD_UNKNOWN,
+    CMD_BURN,
+    CMD_SET_GUIDS,
+    CMD_BURN_BLOCK,
+    CMD_QUERY,
+    CMD_QUERY_ROM,
+    CMD_QUERY_FORCE,
+    CMD_VERIFY,
+    CMD_READ_WORD,
+    CMD_READ_BLOCK,
+    CMD_WRITE_WORD,
+    CMD_WRITE_WORD_NE,
+    CMD_WRITE_BLOCK,
+    CMD_WRITE_BLOCK_NE,
+    CMD_ERASE_SECT,
+    CMD_DUMP_CONF,
+    CMD_DUMP_HASH,
+    CMD_READ_IMAGE,
+    CMD_CFI,
+    CMD_CLEAR_SEM,
+    CMD_SWRESET
+};
+
+struct CommandInfo {
+    CommandType  cmd;
+    const char*  cmdName;
+    bool         requireExactMatch;
+    int          maxArgs;
+    CommandInput requiredInput;
+    const char*  cmdDescription;
+
+};
+
+CommandInfo const g_commands[] = {
+    { CMD_BURN           , "burn"  ,false , 0 , CI_IMG_AND_DEV , ""},
+    { CMD_BURN_BLOCK     , "bb"    ,true  , 0 , CI_IMG_AND_DEV , ""},
+    { CMD_SET_GUIDS      , "sg"    ,true  , 0 , CI_DEV_ONLY    , ""},
+    { CMD_QUERY_FORCE    , "qf"    ,true  , 0 , CI_IMG_OR_DEV  , ""},
+    { CMD_QUERY          , "query" ,false , 0 , CI_IMG_OR_DEV  , ""},
+    { CMD_QUERY_ROM      , "qrom"  ,true  , 0 , CI_IMG_ONLY    , ""},
+    { CMD_VERIFY         , "verify",false , 0 , CI_IMG_OR_DEV  , ""},
+    { CMD_READ_WORD      , "rw"    ,true  , 1 , CI_DEV_ONLY    , ""},
+    { CMD_READ_BLOCK     , "rb"    ,true  , 3 , CI_IMG_OR_DEV  , ""},
+    { CMD_WRITE_WORD     , "ww"    ,true  , 2 , CI_DEV_ONLY    , ""},
+    { CMD_WRITE_WORD_NE  , "wwne"  ,true  , 2 , CI_DEV_ONLY    , ""},
+    { CMD_WRITE_BLOCK    , "wb"    ,true  , 2 , CI_DEV_ONLY    , ""},
+    { CMD_WRITE_BLOCK_NE , "wbne"  ,true  ,-1 , CI_DEV_ONLY    , ""},
+    { CMD_ERASE_SECT     , "erase" ,false , 1 , CI_DEV_ONLY    , ""},
+    { CMD_DUMP_CONF      , "dc"    ,true  , 1 , CI_IMG_OR_DEV  , ""},
+    { CMD_DUMP_HASH      , "dh"    ,true  , 1 , CI_IMG_OR_DEV  , ""},
+    { CMD_READ_IMAGE     , "ri"    ,true  , 1 , CI_DEV_ONLY    , ""},
+    { CMD_CLEAR_SEM      , "clear_semaphore"    ,true  , 0 , CI_DEV_ONLY    , ""},
+    { CMD_SWRESET        , "swreset",true , 0 , CI_DEV_ONLY    , ""},
+    { CMD_CFI            , "cfi"   ,true  , 0 , CI_DEV_ONLY    , ""}
+};
+
+#define numbel(x) (sizeof(x)/sizeof((x)[0]))
+
+
+const CommandInfo* GetCommandInfo(CommandType cmd) {
+    for (u_int32_t i = 0 ; i < numbel(g_commands); i++ ) {
+        if (cmd == g_commands[i].cmd) {
+            return &g_commands[i];
+        }
+    }
+
+    return NULL;
+}
+
+CommandType ParseCommand(const char* cmd) {
+    u_int32_t cmdLenGiven = strlen(cmd);
+
+    for (u_int32_t i = 0 ; i < numbel(g_commands); i++ ) {
+        if (g_commands[i].requireExactMatch ) {
+            if (!strcmp(cmd, g_commands[i].cmdName)) {
+                return g_commands[i].cmd;
+            }
+        } else {
+            // Match if given cmd maches the beginning of the checked cmd
+            if (!strncmp(cmd, g_commands[i].cmdName, cmdLenGiven )) {
+                return g_commands[i].cmd;
+            }
+        }
+    }
+    return CMD_UNKNOWN;
+}
+
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -1260,22 +1402,50 @@ bool Flash::print_attr_old_format() {
 // Burn Operations functions
 //
 ////////////////////////////////////////////////////////////////////////
+#define FULL_VERIFY 0xff
 
 class Operations : public ErrMsg {
 public:
     Operations() :
-        _last_image_addr(0),
-        _num_ports(2),
-        _allow_skip_is(false),
-        _is_cntx(false),
-        _cntx_striped_image(false),
-        _burn_blank_guids(false),
-        _quick_query(false){}
+    _last_image_addr(0),
+    _num_ports(2),
+    _allow_skip_is(false),
+    _is_fs2(false),
+    _cntx_striped_image(false),
+    _burn_blank_guids(false),
+    _quick_query(false)
+    {
+        initSectToRead(FULL_VERIFY);
+    }
 
     enum {
-	GUIDS = 4,
-        MACS  = 2,
-        MAX_GUIDS = 6
+        GUIDS         = 4,
+        MACS          = 2,
+        MAX_GUIDS     = 32
+    };
+
+    enum {
+        BX_NP_GUIDS   = 2,
+        BX_SYS_GUIDS  = 1,
+        BX_GUIDS      = BX_NP_GUIDS + BX_SYS_GUIDS,
+        BX_IMACS      = 3,
+        BX_EMACS      = 4,
+        BX_MACS       = BX_EMACS + BX_IMACS,
+        BX_WWPNS      = 4,
+        BX_WWNNS      = 1,
+        BX_SLICE_GUIDS = BX_WWNNS + BX_WWPNS + BX_MACS + BX_NP_GUIDS,
+
+        BX_ALL_GUIDS  = (2 * BX_SLICE_GUIDS) + BX_SYS_GUIDS,
+        BX_SLICES_NUM = 2,
+    };
+
+    enum {
+        BI_IMACS    = 0,
+        BI_EMACS    = BI_IMACS + BX_IMACS,
+        BI_WWPNS    = BI_EMACS + BX_EMACS,
+        BI_GUIDS    = BI_WWPNS + BX_WWPNS,
+        BI_WWNNS    = BI_GUIDS  + BX_NP_GUIDS,
+        BI_SYS_GUID = BX_ALL_GUIDS - 1,
     };
 
     enum ImageInfoTags {
@@ -1289,14 +1459,22 @@ public:
         II_ProductVer         = 7,
         II_VsdVendorId        = 8,
         II_IsGa               = 9,
-        II_Last               = 10,  // Mark the end of used tag ids
+        II_HwDevsId           = 10,
+        II_Last               = 11,  // Mark the end of used tag ids
         II_End                = 0xff
+    };
+
+    enum ExpRomProto {
+        ER_IB  = 0,
+        ER_ETH = 1,
+        ER_VPI = 2
     };
 
     struct ImageInfo;
 
     // Burn operations:
-    bool write_image     (Flash& f, u_int32_t addr, void *data, int cnt, bool need_report);
+    bool write_image     (Flash& f, u_int32_t addr, void *data, int cnt, bool need_report, const char* message,
+                          bool new_line = true);
     bool WriteSignature  (Flash& f, u_int32_t image_idx, u_int32_t sig);
     bool repair          (Flash& f, const int from, const int to, bool need_report);
     bool FailSafeBurn    (Flash& f, FImage& fim, bool need_report, bool single_image_burn);
@@ -1307,24 +1485,27 @@ public:
                           ImageInfo* image_info,
                           bool       allow_nofs = false);
 
+    bool CheckMatchingHwDevId(u_int32_t hwDevId, u_int32_t rev_id, u_int32_t supported_hw_id[MAX_NUM_SUPP_HW_IDS],
+                                    int num_of_supp_hw_id);
     bool CheckMatchingDevId(u_int32_t hwDevId, u_int32_t imageDevId);
+    bool CheckMatchingExpRomDevId(Operations::ImageInfo* info);
 
     // Image operations:
     bool Verify          (FBase& f, ImageInfo* info = NULL, bool both_images = false);
-    bool VerifyCntx      (FBase& f, ImageInfo* info = NULL, bool both_images = false, bool only_get_start = false);
+    bool VerifyFs2      (FBase& f, ImageInfo* info = NULL, bool both_images = false, bool only_get_start = false);
 
     bool LoadAsExpRom    (FBase& f);
 
-    bool DumpConf        (const char* conf_file = NULL);
+    bool DumpConf        (const char* conf_file = NULL, SectionType sect_type = H_FW_CONF);
     bool GetExpRomVersion(ImageInfo* info);
 
     bool DisplayExpRomInfo(ImageInfo* info);
     bool DisplayImageInfo (ImageInfo* info);
 
-    bool QueryAll        (FBase& f, ImageInfo* info) {return (IsCntx() ||
-                                                              (QueryIs(f, info) &&
+    bool QueryAll        (FBase& f, ImageInfo* info) {return(IsFs2() ||
+                                                             (QueryIs(f, info) &&
                                                               (!info->isFailsafe || QueryPs(f, info)))) &&
-                                                             QueryImage(f, info);}
+        QueryImage(f, info);}
 
     bool getBSN          (char *s, guid_t *guid);
     bool getGUID         (const char *s, guid_t *guid);
@@ -1340,23 +1521,31 @@ public:
     // Misc operations
     void SetDevFlags(u_int16_t devType, bool& ib_dev, bool& eth_dev);
     bool CheckGuidsFlags(u_int16_t devType,
-                         bool ib_dev,
                          bool guids_specified,
-                         bool eth_dev,
-                         bool macs_specified);
+                         bool macs_specified,
+                         bool uids_specified);
 
     bool patchGUIDs      (FImage&    f,
                           ImageInfo* info,
                           bool       patch_guids,
                           bool       patch_macs,
+                          bool       patch_uids,
                           bool       user_guids,
                           bool       user_macs,
+                          bool       user_uids,
                           guid_t     new_guids[MAX_GUIDS],
                           guid_t     old_guids[MAX_GUIDS],
                           u_int32_t num_of_old_guids,
                           bool       interactive);
 
-    bool printGUIDs(const char* msg, guid_t guids[MAX_GUIDS], bool print_guids, bool print_macs, bool old_guid_fmt);
+    bool PrintMacLine  (guid_t* new_guids,  guid_t* old_guids, int mac_index);
+    bool PrintBxMacs   (guid_t* new_guids,  guid_t* old_guids, int index, int num_of_guids, const char* pre_str);
+    bool PrintGuidLine (guid_t* new_guids,  guid_t* old_guids, int guid_index);
+    bool PrintBxGuids  (guid_t* new_guids,  guid_t* old_guids, int index, int num_of_guids, const char* pre_str);
+    bool PrintUids     (guid_t* used_guids, guid_t* old_guids);
+    bool PrintGUIDs    (guid_t guids[MAX_GUIDS], guid_t old_guids[MAX_GUIDS], bool print_guids, bool print_macs, bool old_guid_fmt);
+
+    void initSectToRead(int imp_index);
 
     void SetNumPorts     (u_int32_t num_ports) {_num_ports = num_ports;}
     void SetAllowSkipIs  (bool asis)           {_allow_skip_is = asis;}
@@ -1367,32 +1556,49 @@ public:
     bool GetQuickQuery()           {return _quick_query;}
 
     // ConnectX methods
-    void SetCntxMode     (bool cntx_mode)      {_is_cntx = cntx_mode;}
-    void SetCntxStripedImage(bool si)          {_cntx_striped_image = si;}
-    bool IsCntx          ()                    {return _is_cntx;}
+    void SetFs2Mode     (bool fs2_mode)       {_is_fs2 = fs2_mode;}
+    void SetFs2StripedImage(bool si)          {_cntx_striped_image = si;}
+    bool IsFs2           ()                    {return _is_fs2;}
     bool CheckMac        (u_int64_t mac);
 
-    bool CheckIsCntx     (FBase& f);
+    bool ReportBxMacsQuery   (guid_t* guids, int base1, int guids_num, int index, const char* pre_str);
+    bool ReportBxGuidsQuery  (guid_t* guids, int base1, int guids_num, int index, const char* pre_str);
+    bool ReportBxMacsWarnings(guid_t* guids, int index, int warning,   int user_uids);
 
-    bool CntxIsIb        (u_int32_t devid)     {return (devid == 25408) || // IB SDR
-                                                       (devid == 25418) || // IB DDR
-                                                       (devid == 25428) || // IB QDR
-                                                       (devid == 26418) || // IB DDR
-                                                       (devid == 26428);   // IB QDR
+    bool CheckCommandInputs(const char* dev, const char* img, CommandType cmd);
+    bool CheckMaxCmdArguments(CommandType cmd, int numArgs);
+    bool PrintMissGuidErr(bool ib_dev, bool eth_dev, bool bx_dev, const char* pre_err_msg);
+
+    bool CheckIsFs2      (FBase& f);
+
+    bool CntxIsIb        (u_int32_t devid)     {return(devid == 25408) || // IB SDR
+        (devid == 25418) || // IB DDR
+        (devid == 25428) || // IB QDR
+        (devid == 26418) || // IB DDR
+        (devid == 26428);   // IB QDR
     }
 
-    bool CntxIsEth       (u_int32_t devid)     {return (devid == 25448) || // ETH
-                                                       (devid == 26448) || // ETH
-                                                       (devid == 25458) || //
-                                                       (devid == 26458) || //
-                                                        CntxIsIb(devid);   // From FW 2.5.0, CntX ib devices also support ETH
+    bool CntxIsEth       (u_int32_t devid)     {return(devid == 25448) || // ETH
+        (devid == 26448) || // ETH
+        (devid == 25458) || //
+        (devid == 26458) || //
+        (devid == 26468) ||
+        CntxIsIb(devid);   // From FW 2.5.0, CntX ib devices also support ETH
     }
 
     bool IsIs4           (u_int32_t devid)     {
-                                                return (devid == 435) ||
-                                                       (devid == 48436) ||
-                                                       (devid == 48437) ||
-                                                       (devid == 48438);
+        return(devid == 435) ||
+        (devid == 48436) ||
+        (devid == 48437) ||
+        (devid == 48438) ||
+        (devid == 6100); // HACK
+    }
+
+    bool IsBridgeX(u_int32_t devid) {
+        return (devid ==  6100) ||
+               (devid == 64102) ||
+               (devid == 64112) ||
+               (devid == 64122);
     }
 
     bool CntxIsMp        (u_int32_t devid)     {return CntxIsIb(devid) && CntxIsEth(devid);}
@@ -1409,9 +1615,9 @@ public:
     //
     struct ImageInfo {
         ImageInfo() :
-            invSectOk(false),
-            psOk(false),
-            imageOk(false)
+        invSectOk(false),
+        psOk(false),
+        imageOk(false)
         {
             memset(allImgStart,    0, sizeof(allImgStart));
             memset(guids      , 0xff, sizeof(guids));
@@ -1467,6 +1673,9 @@ public:
         u_int16_t    devType;
         u_int8_t     devRev;
 
+        u_int32_t    supportedHwId[MAX_NUM_SUPP_HW_IDS];
+        int          supportedHwIdNum;
+
         u_int32_t    infoOffs[II_Last];  // Offset of the tag data inside the info section data.
                                          // Can not be 0 (because of tag header) - 0 means not found.
         bool         expRomFound;
@@ -1475,11 +1684,14 @@ public:
         u_int16_t    expRomVer[3];
         u_int16_t    expRomDevId;
         u_int8_t     expRomPort;
+        u_int8_t     expRomProto;
 
         bool         magicPatternFound;
     };
 
-    enum {MAX_SW_DEVICES_PER_HW=16};
+    enum {
+        MAX_SW_DEVICES_PER_HW=16
+    };
 
     struct HwDevData {
         const char*      name;
@@ -1492,7 +1704,7 @@ public:
     bool FwVerLessThan(u_int16_t r1[3], u_int16_t r2[3]) {
         int i;
         for (i = 0; i < 3 ; i++)
-            if      (r1[i] < r2[i])
+            if (r1[i] < r2[i])
                 return true;
             else if (r1[i] > r2[i])
                 return false;
@@ -1500,30 +1712,33 @@ public:
         return false; // equal versions
     }
 
-    enum {CNTX_START_POS_SIZE = 6};
+    enum {
+        CNTX_START_POS_SIZE = 6
+    };
 
     static const u_int32_t _cntx_image_start_pos[CNTX_START_POS_SIZE];
 
     static const u_int32_t _cntx_magic_pattern[4];
+    char _err_msg[MAX_ERR_STR_LEN];
 
     void patchGUIDsSection      (u_int32_t *buf, u_int32_t ind,
-				 guid_t guids[GUIDS], int nguids);
+                                 guid_t guids[GUIDS], int nguids);
 private:
 
     bool FailSafe_burn_image   (Flash&       f,
-				void         *data,
-				int          ps_addr,
-				const char*  image_name,
-				int          image_addr,
-				int          image_size,
-				bool         need_report);
+                                void         *data,
+                                int          ps_addr,
+                                const char*  image_name,
+                                int          image_addr,
+                                int          image_size,
+                                bool         need_report);
 
     bool CheckInvariantSector   (Flash& f, u_int32_t *data32, int sect_size);
 
     bool FailSafe_burn_internal (Flash& f, void *data, int cnt, bool need_report);
 
     bool checkBoot2             (FBase& f, u_int32_t beg, u_int32_t offs,
-		                 u_int32_t& next, const char *pref);
+                                 u_int32_t& next, const char *pref);
 
     bool checkGen               (FBase& f, u_int32_t beg,
                                  u_int32_t offs, u_int32_t& next, const char *pref);
@@ -1533,7 +1748,7 @@ private:
     bool checkList              (FBase& f, u_int32_t offs, u_int32_t fw_start, const char *pref);
 
     bool extractGUIDptr         (u_int32_t sign, u_int32_t *buf, int buf_len,
-				 char *pref, u_int32_t *ind, int *nguids);
+                                 char *pref, u_int32_t *ind, int *nguids);
 
 
     void recalcSectionCrc       (u_int8_t *buf, u_int32_t data_size);
@@ -1558,18 +1773,20 @@ private:
     bool CntxGetFsData          (FBase& f,  u_int32_t img_addr, bool& fs_en, u_int32_t& log2chunk_size);
 
     bool ParseInfoSect          (u_int8_t* buff, u_int32_t byteSize, ImageInfo *info);
-
+    bool GetSectData            (std::vector<u_int8_t>& file_sect, const u_int32_t *buff, const u_int32_t size);
     u_int32_t _num_ports;
     bool      _allow_skip_is;
-    bool      _is_cntx;
+    bool      _is_fs2;
     bool      _cntx_striped_image;
 
     bool      _burn_blank_guids;
     bool      _quick_query;
-
+    bool      _sections_to_read[H_LAST];
+    bool      _is_full_verify;
     static const HwDevData hwDevData[];
 
     std::vector<u_int8_t>  _fw_conf_sect;
+    std::vector<u_int8_t>  _hash_file_sect;
     std::vector<u_int8_t>  _rom_sect;
 };
 
@@ -1582,23 +1799,24 @@ const u_int32_t Operations::_cntx_magic_pattern[4] = {
 };
 
 const u_int32_t Operations::_cntx_image_start_pos[Operations::CNTX_START_POS_SIZE] = {
-           0,
-     0x10000,
-     0x20000,
-     0x40000,
-     0x80000,
+    0,
+    0x10000,
+    0x20000,
+    0x40000,
+    0x80000,
     0x100000
 };
 
 const Operations::HwDevData Operations::hwDevData[] = {
-    { "InfiniHost"       , 23108 , 2, {23108, 0}},
-    { "InfiniHost III Ex", 25208 , 2, {25208, 25218, 0}},
-    { "InfiniHost III Lx", 25204 , 1, {25204, 0}},
-    { "ConnectX"         ,   400 , 2, {25408, 25418, 26418,
-                                       26428, 25448, 26448,
-                                       25458, 26458, 0}},
-    { "InfiniScale IV"   ,   435 , 0, {48436, 48437, 48438, 0}},
-    { NULL               ,     0 , 0, {0}},// zero devid terminator
+    { "InfiniHost",        23108, 2, {23108, 0}},
+    { "InfiniHost III Ex", 25208, 2, {25208, 25218, 0}},
+    { "InfiniHost III Lx", 25204, 1, {25204, 0}},
+    { "ConnectX",            400, 2, {25408, 25418, 26418,
+                                      26428, 25448, 26448, 26468,
+                                      25458, 26458, 0}},
+    { "InfiniScale IV",   435,  0, {48436, 48437, 48438, 0}},
+    { "BridgeX",          6100, 0, {64102, 64112, 64122, 0}},
+    { NULL ,              0, 0, {0}},// zero devid terminator
 };
 
 //
@@ -1615,11 +1833,13 @@ bool Operations::ask_user() {
         ansbuff[0] = '\0';
         if (_assume_no) {
             printf("n\n");
-            return errmsg("-no flag is set");
+            sprintf(_err_msg, "-no flag is set\n");
+            return false;
         }
 
         if (!isatty(0)) {
-            return errmsg("Not on tty - Can not interact. assuming \"no\"");
+            sprintf(_err_msg, "Not on tty - Can not interact. assuming \"no\"\n");
+            return false;
         }
         fflush(stdout);
         fgets(ansbuff, 30, stdin);
@@ -1628,24 +1848,23 @@ bool Operations::ask_user() {
               strcmp(ansbuff, "Y\n") &&
               strcmp(ansbuff, "yes\n") &&
               strcmp(ansbuff, "Yes\n") &&
-              strcmp(ansbuff, "YES\n"))
-            return errmsg("Aborted by user");
+              strcmp(ansbuff, "YES\n"))  {
+
+            sprintf(_err_msg, "Aborted by user\n");
+            return false;
+        }
+
     }
     return true;
 }
 
-bool Operations::write_image(Flash& f, u_int32_t addr, void *data, int cnt, bool need_report)
+bool Operations::write_image(Flash& f, u_int32_t addr, void *data, int cnt, bool need_report, const char* message,
+                             bool new_line)
 {
     u_int8_t   *p = (u_int8_t *)data;
     u_int32_t  curr_addr = addr;
     u_int32_t  towrite = cnt;
     u_int32_t  perc = 0xffffffff;
-
-    //f.curr_sector = 0xffffffff;  // Erase sector first time
-    if (need_report) {
-        printf("000%%");
-        fflush(stdout);
-    }
 
 
     while (towrite) {
@@ -1660,8 +1879,9 @@ bool Operations::write_image(Flash& f, u_int32_t addr, void *data, int cnt, bool
         // Report
         if (need_report) {
             u_int32_t new_perc = ((cnt - towrite) * 100) / cnt;
+
             if (new_perc != perc) {
-                printf("\b\b\b\b%03d%%", new_perc);
+                printf("\r%s%%%03d", message, new_perc);
                 fflush(stdout);
                 perc = new_perc;
             }
@@ -1669,7 +1889,11 @@ bool Operations::write_image(Flash& f, u_int32_t addr, void *data, int cnt, bool
     }
 
     if (need_report) {
-        printf("\b\b\b\b100%%");
+
+        printf("\r%sOK  ", message);
+        if (new_line) {
+            printf("\n");
+        }
         fflush(stdout);
     }
 
@@ -1693,19 +1917,22 @@ bool Operations::repair(Flash& f, const int from, const int to, bool need_report
 {
 
     u_int32_t sect_size = f.get_sector_size();
-
+    char message[128];
+    char common_msg[128];
     report("Repairing: Copy %s image to %s     -", from ? "secondary" : "primary" ,
            to ? "secondary" : "primary");
 
+    sprintf(common_msg, "Repairing: Copy %s image to %s  -", from ? "secondary" : "primary" ,
+           to ? "secondary" : "primary");
 
     // Read valid pointer sector
     u_int32_t sect[sizeof(PS)/4];
-    report("\b READ %s ", from ? "SPS" : "PPS");
-    if (!f.read(from ? sect_size*2 : sect_size, sect, sizeof(sect) , need_report)) {
+    sprintf(message, "%s READ %s ", common_msg, from ? "SPS" : "PPS");
+    if (!f.read(from ? sect_size*2 : sect_size, sect, sizeof(sect) , need_report, message)) {
         report("FAILED\n\n");
         return false;
     }
-    report_erase(" READ %s 100%", from ? "SPS" : "PPS");
+    report_repair_msg(common_msg);
 
     u_int32_t im_ptr = sect[0];
     u_int32_t sig    = sect[2];
@@ -1733,27 +1960,24 @@ bool Operations::repair(Flash& f, const int from, const int to, bool need_report
     u_int32_t write_to = (!to) ? sect_size * 3 : sect_size * (3 + im_size_s);
 
     // f.read valid image
-    report(" READ FW ");
-    fflush(stdout);
     char *buf = new char[im_size_b];
-    if (!f.read(im_ptr, buf, im_size_b, need_report)) {
+    sprintf(message, "%s READ FW ", common_msg);
+    if (!f.read(im_ptr, buf, im_size_b, need_report, message)) {
         report("FAILED\n\n");
         delete [] buf;
         return false;
     }
-    report_erase(" READ FW 100%");
+    report_repair_msg(common_msg);
 
     // Copy it to right place
-    report("\b WRITE FW ");
-    fflush(stdout);
-    if (!write_image(f, write_to, buf, im_size_b, need_report)) {
+    sprintf(message, "%s WRITE FW ", common_msg);
+    if (!write_image(f, write_to, buf, im_size_b, need_report, message, false)) {
         report("FAILED\n\n");
         delete [] buf;
         return false;
     }
     delete [] buf;
-    report_erase(" WRITE FW 100%");
-
+    report_repair_msg(common_msg);
     // Set new image address
     // ++++++
     sect[0] = __be32_to_cpu(write_to);
@@ -1774,22 +1998,21 @@ bool Operations::repair(Flash& f, const int from, const int to, bool need_report
     sect[2] = 0xffffffff;
 
     // Write it to invalid sector
-    report("\b WRITE %s ", to ? "SPS" : "PPS");
-    if (!write_image(f, to ? sect_size*2 : sect_size, sect, sizeof(sect), need_report)) {
+    sprintf(message, "%s WRITE %s ", common_msg, to ? "SPS" : "PPS");
+    if (!write_image(f, to ? sect_size*2 : sect_size, sect, sizeof(sect), need_report, message, false)) {
         report("FAILED\n\n");
         return false;
     }
-    report_erase(" WRITE %s 100%", to ? "SPS" : "PPS");
-
+    report_repair_msg(common_msg);
     // Validate signature
-    report("\b SIGNATURE     ");
+    report("\r%s SIGNATURE     ", common_msg);
     if (!WriteSignature(f, to, valid_signature)) {
         report("FAILED\n\n");
         return false;
     }
 
-    report_erase(" SIGNATURE     ");
-    report(" OK       \n");
+    report_repair_msg(common_msg);
+    printf("\n");
     return true;
 } // Flash::repair
 
@@ -1799,19 +2022,18 @@ bool Operations::repair(Flash& f, const int from, const int to, bool need_report
 
 ////////////////////////////////////////////////////////////////////////
 bool Operations::FailSafe_burn_image(Flash&       f,
-                         void         *data,
-                         int          ps_addr,
-                         const char*  image_name,
-                         int          image_addr,
-                         int          image_size,
-                         bool         need_report) {
+                                     void         *data,
+                                     int          ps_addr,
+                                     const char*  image_name,
+                                     int          image_addr,
+                                     int          image_size,
+                                     bool         need_report) {
 
     u_int8_t* data8 = (u_int8_t*) data;
     u_int32_t sect_size = f.get_sector_size();
+    char message[128];
 
-    report("Burning %-6s FW image without signatures  - ", image_name);
-    fflush(stdout);
-
+    sprintf(message, "Burning %-6s FW image without signatures  - ", image_name);
     // Invalidate signature
     u_int32_t zeros = 0;
     if (!f.write(ps_addr + 8, &zeros, 4, true)) {
@@ -1820,19 +2042,17 @@ bool Operations::FailSafe_burn_image(Flash&       f,
     }
 
     // Burn image (from new offset)
-
     // Both burnt images are taken from the first image in the file - both images in file are identical.
     // (future binary releases may contain a single image).
-    if (!write_image(f, image_addr, data8 + sect_size * 3, image_size, need_report)) {
+    if (!write_image(f, image_addr, data8 + sect_size * 3, image_size, need_report, message)) {
         report("FAILED\n\n");
         return false;
     }
-    report("\b\b\b\bOK  \n");
     report("Restoring %-6s signature                  - ", image_name);
     fflush(stdout);
 
     // Burn PS
-    if (!write_image(f, ps_addr, data8 + ps_addr, sect_size, false)) {
+    if (!write_image(f, ps_addr, data8 + ps_addr, sect_size, false, NULL)) {
         report("FAILED\n\n");
         return false;
     }
@@ -1931,7 +2151,7 @@ bool Operations::CheckInvariantSector(Flash& f, u_int32_t *data32, int sect_size
     TOCPU1(signature);
     if (signature != SIGNATURE) {
         report("FAILED\n\n");
-	return errmsg("Flash has wrong signature in Invariant Sector (Expected %08x, got %08x).", SIGNATURE, signature);
+        return errmsg("Flash has wrong signature in Invariant Sector (Expected %08x, got %08x).", SIGNATURE, signature);
     }
 
     // Now check Invariant sector contents
@@ -1953,12 +2173,12 @@ bool Operations::CheckInvariantSector(Flash& f, u_int32_t *data32, int sect_size
 
     // Check if a diff was found:
     if (first_diff != -1) {
-            report("DIFF DETECTED\n\n");
-            printf(" Invariant sector mismatch. Address 0x%x "
-                   " in image: 0x%08x, while on flash: 0x%08x\n\n",
-                   first_diff*4 , data32[first_diff], buf1[first_diff]);
+        report("DIFF DETECTED\n\n");
+        printf(" Invariant sector mismatch. Address 0x%x "
+               " in image: 0x%08x, while on flash: 0x%08x\n\n",
+               first_diff*4 , data32[first_diff], buf1[first_diff]);
 
-            printf(" The invariant sector can not be burnt in a failsafe manner.\n");
+        printf(" The invariant sector can not be burnt in a failsafe manner.\n");
 
         if (_allow_skip_is) {
             printf(" You can continue the FW update without burning the invariant sector.\n"
@@ -2019,13 +2239,13 @@ bool Operations::FailSafeBurn(Flash& f, FImage& fim, bool need_report, bool sing
     TOCPU1(signature_for_compare);
     if (signature_for_compare != SIGNATURE) {
         return errmsg("Bad image file given: signature in PPS is 0x%08x (should be 0x%08x)",
-		      signature_for_compare, SIGNATURE);
+                      signature_for_compare, SIGNATURE);
     }
     signature_for_compare = data32[(sect_size * 2)/4 + 2];
     TOCPU1(signature_for_compare);
     if (signature_for_compare != SIGNATURE) {
         return errmsg("Bad image file given: signature in SPS is 0x%08x (should be 0x%08x)",
-		      signature_for_compare, SIGNATURE);
+                      signature_for_compare, SIGNATURE);
     }
 
     // Corrupt signatures in image
@@ -2048,8 +2268,8 @@ bool Operations::FailSafeBurn(Flash& f, FImage& fim, bool need_report, bool sing
 
             if (!f.read(sect_size * (i+1)    , &cur_image_addr[i]) ||
                 !f.read(sect_size * (i+1) + 4, &cur_image_size[i])) {
-                 report("FAILED\n\n");
-                 return false;
+                report("FAILED\n\n");
+                return false;
             }
 
             TOCPU1(cur_image_addr[i]);
@@ -2064,21 +2284,20 @@ bool Operations::FailSafeBurn(Flash& f, FImage& fim, bool need_report, bool sing
         //
         printf("\nBoth images (primary and secondary) are invalid on flash.\n");
         printf("The burning can not be failsafe, but it is harmless for host.\n");
-        if(!ask_user()) {
+        if (!ask_user()) {
             return false;
         }
 
         // Burn all image
         report("Burn FW image without signatures - ");
         fflush(stdout);
-        if (!write_image(f, sect_size, data8 + sect_size, size - sect_size, need_report)) {
+        if (!write_image(f, sect_size, data8 + sect_size, size - sect_size, need_report, "Burn FW image without signatures")) {
             report("FAILED\n\n");
             return false;
         }
-        report("\b\b\b\bOK  \n");
 
         // Restore signatures
-        report("Restore right signatures         - ");
+        report("Restore right signatures      - ");
         fflush(stdout);
         if (!WriteSignature(f, 0, actual_signature)) {
             report("FAILED (PPS Signature)\n\n");
@@ -2100,7 +2319,7 @@ bool Operations::FailSafeBurn(Flash& f, FImage& fim, bool need_report, bool sing
             int image_from;
             int image_to;
 
-	    assert (cur_image_ok[1] || cur_image_ok[0]);
+            assert (cur_image_ok[1] || cur_image_ok[0]);
 
             if (cur_image_ok[1]) {
                 image_from = 1;
@@ -2110,9 +2329,9 @@ bool Operations::FailSafeBurn(Flash& f, FImage& fim, bool need_report, bool sing
                 image_to   = 1;
             }
 
-	    report("Reparable Error Detected.\n");
-	    if (!repair(f, image_from, image_to, need_report))
-		    return false;
+            report("Reparable Error Detected.\n");
+            if (!repair(f, image_from, image_to, need_report))
+                return false;
         }
 
         //
@@ -2147,6 +2366,8 @@ bool Operations::FailSafeBurn(Flash& f, FImage& fim, bool need_report, bool sing
 
                 // Now 2 images are valid
                 cur_image_ok[0] = true;
+                cur_image_size[0] = cur_image_size[1];
+                cur_image_addr[0] = sect_size * 3;
             } else {
                 if (!FailSafe_burn_image(f, data, sect_size, "first", sect_size * 3, frst_new_image_size, need_report))
                     return false;
@@ -2199,7 +2420,7 @@ bool Operations::FailSafeBurn(Flash& f, FImage& fim, bool need_report, bool sing
 
             } else {
                 if (!FailSafe_burn_image(f, data, sect_size * 2, "second",
-                                     sect_size * (3 + new_image_size_sect) , frst_new_image_size, need_report))
+                                         sect_size * (3 + new_image_size_sect) , frst_new_image_size, need_report))
                     return false;
 
                 // Invalidate first image
@@ -2230,7 +2451,7 @@ bool Operations::CntxFailSafeBurn(Flash&    f,
     u_int8_t  *data8      = (u_int8_t *) fim.getBuf();
     int        image_size = fim.getBufLength();
     u_int32_t  zeroes     = 0;
-
+    char message[128];
     bool is_curr_image_in_odd_chunks;
 
     if (!allow_nofs) {
@@ -2270,17 +2491,14 @@ bool Operations::CntxFailSafeBurn(Flash&    f,
 
     // Go ahead and burn!
     const char* image_name = new_image_start == 0 ? "first" : "second";
-    report("\nBurning %-6s FW image without signatures  - ", image_name);
-
-    fflush(stdout);
-
-    if (!write_image(f, 16 , data8 + 16, image_size - 16, need_report)) {
+    printf("\n");
+    sprintf(message, "Burning %-6s FW image without signatures  - ", image_name);
+    if (!write_image(f, 16 , data8 + 16, image_size - 16, need_report, message)) {
         report("FAILED\n\n");
         return false;
     }
-    report("\b\b\b\bOK  \n");
 
-    report("Restoring %-6s signature                  -     ", image_name);
+    report("Restoring %-6s signature                  - ", image_name);
 
     fflush(stdout);
 
@@ -2322,11 +2540,7 @@ bool Operations::CntxFailSafeBurn(Flash&    f,
             }
         }
     }
-    report("\b\b\b\bOK  \n");
-
-    if (allow_nofs && image_info->isFailsafe) {
-
-    }
+    report("OK  \n");
 
     return true;
 }
@@ -2404,9 +2618,10 @@ bool Operations::CntxFindAllImageStart       (FBase& f,  u_int32_t start_locatio
 
     return true;
 }
+#define BAD_CRC_MSG "Bad CRC."
 
 bool Operations::checkBoot2(FBase& f, u_int32_t beg, u_int32_t offs,
-                u_int32_t& next, const char *pref)
+                            u_int32_t& next, const char *pref)
 {
     u_int32_t    size;
 
@@ -2425,33 +2640,47 @@ bool Operations::checkBoot2(FBase& f, u_int32_t beg, u_int32_t offs,
     sprintf(pr, "%s /0x%08x-0x%08x (0x%06x)/ (BOOT2)", pref, offs+beg,
             offs+beg+(size+4)*4-1, (size+4)*4);
 
-    Crc16        crc;
-    u_int32_t    *buff = (u_int32_t*)alloca((size + 4)*sizeof(u_int32_t));
+    if (_is_full_verify == true) {
+        Crc16        crc;
+        u_int32_t    *buff = (u_int32_t*)alloca((size + 4)*sizeof(u_int32_t));
 
-    READBUF(f, offs+beg, buff, size*4 + 16, pr);
-    TOCPUn(buff, size+4);
-    CRC1n(crc, buff, size+4);
-    crc.finish();
-    u_int32_t crc_act = buff[size+3];
-    if (crc.get() != crc_act) {
-        report("%s /0x%08x/ - wrong CRC (exp:0x%x, act:0x%x)\n",
-               pr, offs+beg, crc.get(), crc_act);
-        return errmsg("Bad CRC");
+        READBUF(f, offs+beg, buff, size*4 + 16, pr);
+        TOCPUn(buff, size+4);
+        CRC1n(crc, buff, size+4);
+        crc.finish();
+        u_int32_t crc_act = buff[size+3];
+        if (crc.get() != crc_act) {
+            report("%s /0x%08x/ - wrong CRC (exp:0x%x, act:0x%x)\n",
+                   pr, offs+beg, crc.get(), crc_act);
+            return errmsg(BAD_CRC_MSG);
+        }
+
+        if (_print_crc)
+            report("%s - OK (CRC:0x%04x)\n", pr, crc_act&0xffff);
+        else
+            report("%s - OK\n", pr);
     }
-
-    if (_print_crc)
-        report("%s - OK (CRC:0x%04x)\n", pr, crc_act&0xffff);
-    else
-        report("%s - OK\n", pr);
     next = offs + size*4 + 16;
     return true;
 } // checkBoot2
 
 static int part_cnt;
 
+bool Operations::GetSectData(std::vector<u_int8_t>& file_sect, const u_int32_t *buff, const u_int32_t size) {
+
+    file_sect.clear();
+    file_sect.insert(file_sect.end(),
+                     vector<u_int8_t>::iterator((u_int8_t*)buff),
+                     vector<u_int8_t>::iterator((u_int8_t*)buff + size));
+
+
+    return true;
+}
+
+
 ////////////////////////////////////////////////////////////////////////
 bool Operations::checkGen(FBase& f, u_int32_t beg,
-              u_int32_t offs, u_int32_t& next, const char *pref)
+                          u_int32_t offs, u_int32_t& next, const char *pref)
 {
     char         *pr = (char *)alloca(strlen(pref) + 100);
 
@@ -2460,7 +2689,7 @@ bool Operations::checkGen(FBase& f, u_int32_t beg,
 
     u_int32_t    size=0;
     GPH          gph;
-
+    bool is_sect_to_read;
     // GPH
     sprintf(pr, "%s /0x%08x/ (GeneralHeader)", pref, offs+beg);
     READBUF(f, offs+beg, &gph, sizeof(GPH), pr);
@@ -2475,8 +2704,9 @@ bool Operations::checkGen(FBase& f, u_int32_t beg,
             //report("%s /0x%x/ - Invalid partition type (%d)\n",
             //       pref, offs+beg, gph.type);
             //return false;
-        } else
+        } else {
             return checkBoot2(f, beg, offs, next, pref);
+        }
     }
 
     // All partitions here
@@ -2489,6 +2719,8 @@ bool Operations::checkGen(FBase& f, u_int32_t beg,
         sprintf(unknown_sect_name, "UNKNOWN (%d)" , gph.type);
         sect_name = unknown_sect_name;
         size = gph.size * 4;
+        is_sect_to_read = true;
+
     } else {
         if (gph.type == H_EMT) {
             size = (gph.size + 3) / 4 * 4;
@@ -2496,11 +2728,12 @@ bool Operations::checkGen(FBase& f, u_int32_t beg,
             size = gph.size * 4;
         }
         sect_name = g_sectNames[gph.type];
+        is_sect_to_read =  _sections_to_read[gph.type];;
     }
 
     sprintf(pr, "%s /0x%08x-0x%08x (0x%06x)/ (%s)",
-                pref, offs, offs+size+(u_int32_t)sizeof(gph)+3,
-                size+(u_int32_t)sizeof(gph)+4, sect_name);
+            pref, offs, offs+size+(u_int32_t)sizeof(gph)+3,
+            size+(u_int32_t)sizeof(gph)+4, sect_name);
 
     if (size > MAX_SECTION_SIZE) {
         report("%s - size too big (0x%x)\n",
@@ -2508,56 +2741,57 @@ bool Operations::checkGen(FBase& f, u_int32_t beg,
         return false;
     }
 
-    // CRC
-    Crc16        crc;
-    std::vector<u_int8_t> buffv(size);
-    u_int32_t *buff = (u_int32_t*)(&(buffv[0]));
+    //printf("-D- gph.type = %d\n", gph.type);
+    if (is_sect_to_read) {
+        // CRC
+        Crc16        crc;
+        std::vector<u_int8_t> buffv(size);
+        u_int32_t *buff = (u_int32_t*)(&(buffv[0]));
 
-    READBUF(f, offs+sizeof(gph), buff, size, pr);
+        READBUF(f, offs+sizeof(gph), buff, size, pr);
 
-    TOCPUn(buff,size/4);
-    CRCBY(crc, gph);
-    CRCn(crc, buff, size/4);
-    crc.finish();
-    u_int32_t crc_act;
-    READ4(f, offs+sizeof(gph)+size, &crc_act, pr);
-    TOCPU1(crc_act);
-    bool blank_crc = false;
-    if (gph.type == H_GUID && crc_act == 0xffff) {
-        blank_crc = true;
-    } else if (crc.get() != crc_act) {
-        report("%s /0x%08x/ - wrong CRC (exp:0x%x, act:0x%x)\n",
-               pr, offs, crc.get(), crc_act);
-        return errmsg("Bad CRC");
-    }
-
-    if (_print_crc)
-        report("%s - OK (CRC:0x%04x)\n", pr, crc_act&0xffff);
-    else
-        if (blank_crc) {
-            report("%s - BLANK CRC (0xffff)\n", pr);
-        } else {
-            report("%s - OK\n", pr);
+        TOCPUn(buff,size/4);
+        CRCBY(crc, gph);
+        CRCn(crc, buff, size/4);
+        crc.finish();
+        u_int32_t crc_act;
+        READ4(f, offs+sizeof(gph)+size, &crc_act, pr);
+        TOCPU1(crc_act);
+        bool blank_crc = false;
+        if (gph.type == H_GUID && crc_act == 0xffff) {
+            blank_crc = true;
+        } else if (crc.get() != crc_act) {
+            report("%s /0x%08x/ - wrong CRC (exp:0x%x, act:0x%x)\n",
+                   pr, offs, crc.get(), crc_act);
+            return errmsg(BAD_CRC_MSG);
         }
-    next = gph.next;
 
-    if (gph.type == H_FW_CONF) {
-        _fw_conf_sect.clear();
-        _fw_conf_sect.insert(_fw_conf_sect.end(),
-                         vector<u_int8_t>::iterator((u_int8_t*)buff),
-                         vector<u_int8_t>::iterator((u_int8_t*)buff + size));
+        if (_print_crc) {
+            report("%s - OK (CRC:0x%04x)\n", pr, crc_act&0xffff);
+        } else {
+            if (blank_crc) {
+                report("%s - BLANK CRC (0xffff)\n", pr);
+            } else {
+                report("%s - OK\n", pr);
+            }
+        }
+
+        if (gph.type == H_FW_CONF) {
+            GetSectData(_fw_conf_sect, buff, size);
+        }
+        if (gph.type == H_HASH_FILE) {
+            GetSectData(_hash_file_sect, buff, size);
+        }
+        if (gph.type == H_ROM && _rom_sect.empty()) {
+            GetSectData(_rom_sect, buff, size);
+        }
 
     }
 
-    if (gph.type == H_ROM && _rom_sect.empty()) {
-        _rom_sect.clear();
-        _rom_sect.insert(_rom_sect.end(),
-                         vector<u_int8_t>::iterator((u_int8_t*)buff),
-                         vector<u_int8_t>::iterator((u_int8_t*)buff + size));
-    }
 
     // mark last read addr
     _last_image_addr = offs + size +sizeof(gph) + 4;  // the 4 is for the trailing crc
+    next = gph.next;
 
     return true;
 } // checkGen
@@ -2583,7 +2817,7 @@ bool Operations::checkPS(FBase& f, u_int32_t offs, u_int32_t& next, const char *
     if (crc.get() != ps.crc016) {
         report("%s Pointer Sector /0x%08x/ - wrong CRC (exp:0x%x, act:0x%x)\n",
                pref, offs, ps.crc016, crc.get());
-        return errmsg("Bad CRC");
+        return errmsg(BAD_CRC_MSG);
     }
 
     next = ps.fi_addr;
@@ -2611,11 +2845,12 @@ bool Operations::checkList(FBase& f, u_int32_t offs, u_int32_t fw_start, const c
 
 ////////////////////////////////////////////////////////////////////////
 
-bool Operations::CheckIsCntx(FBase& f) {
+bool Operations::CheckIsFs2(FBase& f) {
     if (f.is_flash()) {
-        return ( ((Flash*)&f)->get_dev_id() == 400) ||
-               ( ((Flash*)&f)->get_dev_id() == 435);
-
+        return  ( ((Flash*)&f)->get_dev_id() == 400) ||
+                ( ((Flash*)&f)->get_dev_id() == 435) ||
+                ( ((Flash*)&f)->get_dev_id() == 6100)
+                ;
     } else {
         u_int32_t found_images;
         u_int32_t image_start[CNTX_START_POS_SIZE];
@@ -2675,6 +2910,21 @@ bool Operations::CntxGetFsData(FBase& f, u_int32_t img_addr, bool& fs_en, u_int3
 // dev id, and a single hw dev id may match multiple SW dev IDs.
 //
 
+bool Operations::CheckMatchingHwDevId(u_int32_t hwDevId, u_int32_t rev_id, u_int32_t supported_hw_id[MAX_NUM_SUPP_HW_IDS],
+                                    int num_of_supp_hw_id) {
+
+    int i;
+
+    u_int32_t hw_dev_rev = (hwDevId & 0xffff) | ((rev_id & 0xff) << 16);
+    for (i = 0; i < num_of_supp_hw_id; i++) {
+        //printf("-D- hw_dev_rev: %#x,  supported_hw_id[%d]: %#x\n", hw_dev_rev, i, supported_hw_id[i]);
+        if (supported_hw_id[i] == hw_dev_rev) {
+            return true;
+        }
+    }
+    return errmsg("Unsupported hw device ID: %#x on the image\n", hw_dev_rev);
+}
+
 bool Operations::CheckMatchingDevId(u_int32_t hwDevId, u_int32_t imageDevId) {
     int i, j;
     const HwDevData* devData = NULL;
@@ -2687,7 +2937,7 @@ bool Operations::CheckMatchingDevId(u_int32_t hwDevId, u_int32_t imageDevId) {
     // First, find the HW device that the SW id matches
     for (i = 0; hwDevData[i].hwDevId != 0 ; i++) {
         if (hwDevData[i].hwDevId == hwDevId) {
-            hwDevName = hwDevData[i].name;
+            hwDevName = hwDevData[i].name; // TODO: Check bug if device not found
         }
 
         if (devData == NULL) {
@@ -2701,7 +2951,7 @@ bool Operations::CheckMatchingDevId(u_int32_t hwDevId, u_int32_t imageDevId) {
     }
 
     if (devData == NULL) {
-        printf("-W- Unknown device id (%d) in the given FW image. Skipping HW match check.\n",
+        report_warn("Unknown device id (%d) in the given FW image. Skipping HW match check.\n",
                imageDevId);
         return true;
     } else if (devData->hwDevId != hwDevId) {
@@ -2713,7 +2963,21 @@ bool Operations::CheckMatchingDevId(u_int32_t hwDevId, u_int32_t imageDevId) {
     return true;
 }
 
-bool Operations::VerifyCntx(FBase& f, Operations::ImageInfo* info, bool both_images, bool only_get_start) {
+bool Operations::CheckMatchingExpRomDevId(Operations::ImageInfo* info) {
+    if (info->expRomFound              &&
+        info->expRomValidVersion       &&
+        info->expRomProductId  >= 0x10 &&
+        info->infoOffs[II_DeviceType]  &&
+        info->devType != info->expRomDevId) {
+        return errmsg("FW is for device %d, but Exp-ROM is for device %d",
+                      info->devType,
+                      info->expRomDevId);
+    }
+    return true;
+}
+
+
+bool Operations::VerifyFs2(FBase& f, Operations::ImageInfo* info, bool both_images, bool only_get_start) {
     u_int32_t cntx_image_start[CNTX_START_POS_SIZE];
     u_int32_t cntx_image_num;
     u_int32_t i;
@@ -2725,11 +2989,11 @@ bool Operations::VerifyCntx(FBase& f, Operations::ImageInfo* info, bool both_ima
     if (cntx_image_num == 0) {
         return errmsg("No valid image found");
     } else if (cntx_image_num > 2) {
-                // This check may be redundant - Maybe ignore if more than 2 images found
-                return errmsg("More than 2 image start locations found at addresses %x, %x and %x. Image may be corrupted.",
-                              cntx_image_start[0],
-                              cntx_image_start[1],
-                              cntx_image_start[2]);
+        // This check may be redundant - Maybe ignore if more than 2 images found
+        return errmsg("More than 2 image start locations found at addresses %x, %x and %x. Image may be corrupted.",
+                      cntx_image_start[0],
+                      cntx_image_start[1],
+                      cntx_image_start[2]);
     }
 
     if (!both_images) {
@@ -2744,11 +3008,11 @@ bool Operations::VerifyCntx(FBase& f, Operations::ImageInfo* info, bool both_ima
         bool      fs_en;
         u_int32_t log2chunk_size;
 
-        f.set_address_convertor(0,0);
+        f.set_address_convertor(0, 0);
         if (!CntxGetFsData(f, cntx_image_start[i], fs_en, log2chunk_size)) {
             report("\n    Can't read failsafe info word: %s\n", err());
 
-            return (i > 0);
+            return(i > 0);
         }
 
         // If fw not enabled, image must start at addr 0
@@ -2832,8 +3096,8 @@ bool Operations::Verify(FBase& f, Operations::ImageInfo* info, bool both_images)
 
     bool      ret = true;
 
-    if (IsCntx()) {
-        return VerifyCntx(f, info, both_images);
+    if (IsFs2()) {
+        return VerifyFs2(f, info, both_images);
     }
 
     READ4(f, 0x24, &signature, "Signature");
@@ -2909,11 +3173,11 @@ bool Operations::GetExpRomVersion(ImageInfo* info) {
 
     rom_checksum_range = _rom_sect[2] * 512 ;
     if (rom_checksum_range > _rom_sect.size()) {
-       return errmsg("ROM size field (0x%2x) is larger than actual ROM size (0x%x)",
-                     rom_checksum_range ,
-                     (u_int32_t)_rom_sect.size());
+        return errmsg("ROM size field (0x%2x) is larger than actual ROM size (0x%x)",
+                      rom_checksum_range ,
+                      (u_int32_t)_rom_sect.size());
     } else if (rom_checksum_range == 0) {
-       return errmsg("ROM size field is 0. Unknown ROM format or corrupted ROM.");
+        return errmsg("ROM size field is 0. Unknown ROM format or corrupted ROM.");
     }
 
     for (i = 0; i < rom_checksum_range; i++) {
@@ -2945,23 +3209,24 @@ bool Operations::GetExpRomVersion(ImageInfo* info) {
     }
 
     // Following mlxsign:
-    // 31:24	0	 Compatible with UEFI
-    // 23:16	ProductID	Product ID:
+    // 31:24    0    Compatible with UEFI
+    // 23:16    ProductID   Product ID:
     //                          1 - CLP implementation for Sinai (MT25408)
     //                          2 - CLP implementation for Hermon DDR (MT25418)
     //                          0X10 - PXE
-    // 15:0	Major version	If ProductID < 0x10 this field is subversion
+    // 15:0 Major version   If ProductID < 0x10 this field is subversion
     //                          number, otherwise It's product major version.
     //
-    // 31:16	Minor version	Product minor version*. Not valid if
+    // 31:16    Minor version   Product minor version*. Not valid if
     //                          roductID < 0x10.
-    // 15:0	SubMinor version	Product sub minor version*. Not valid if
+    // 15:0 SubMinor version    Product sub minor version*. Not valid if
     //                                  ProductID < 0x10.
     //
-    // 31:16	Device ID	The PCI Device ID (ex. 0x634A for Hermon
+    // 31:16    Device ID   The PCI Device ID (ex. 0x634A for Hermon
     //                          DDR). Not valid if ProductID < 0x10.
-    // 15:12	Port Number	Port number: 0 - Port independent, 1 - Port 1, 2 - Port 2
-    // 11:0	Reserved
+    // 15:12    Port Number Port number: 0 - Port independent, 1 - Port 1, 2 - Port 2
+    //  8:11    Reserved
+    //  0:7     Protocol type: 0=IB 1=ETH 2=VPI
 
     u_int32_t tmp;
 
@@ -2977,6 +3242,7 @@ bool Operations::GetExpRomVersion(ImageInfo* info) {
         tmp = __le32_to_cpu(*((u_int32_t*) &_rom_sect[ver_offset + 8]));
         info->expRomDevId  = tmp >> 16;
         info->expRomPort   = (tmp >> 12) & 0xf;
+        info->expRomProto  = tmp & 0xff;
     }
     info->expRomValidVersion = true;
     return true;
@@ -2993,9 +3259,9 @@ bool Operations::LoadAsExpRom (FBase& f) {
     return true;
 }
 
-bool Operations::DumpConf        (const char* conf_file) {
+bool Operations::DumpConf        (const char* conf_file, SectionType sect_type) {
 #ifndef NO_ZLIB
-
+    std::vector<u_int8_t> file_sect;
     FILE* out;
     if (conf_file == NULL) {
         out = stdout;
@@ -3006,24 +3272,28 @@ bool Operations::DumpConf        (const char* conf_file) {
             return errmsg("Can not open file %s for write: %s.", conf_file, strerror(errno));
         }
     }
+    if (sect_type == H_HASH_FILE) {
+        file_sect = _hash_file_sect;
+    } else {
+        file_sect =  _fw_conf_sect;
+    }
 
-    if (_fw_conf_sect.empty()) {
-        return errmsg("FW configuration section not found in the given image.");
+    if (file_sect.empty()) {
+        return errmsg("%s section not found in the given image.", g_sectNames[sect_type]);
     }
 
     // restore endianess.
-    TOCPUn(&(_fw_conf_sect[0]), _fw_conf_sect.size()/4);
+    TOCPUn(&(file_sect[0]), file_sect.size()/4);
 
     // uncompress:
-    uLongf destLen = _fw_conf_sect.size();
-    destLen *= 10;
+    uLongf destLen = file_sect.size();
+    destLen *= 40; // Assuming this is the best compression ratio
     vector<u_int8_t> dest(destLen);
 
     int rc = uncompress((Bytef *)&(dest[0]), &destLen,
-                        (const Bytef *)&(_fw_conf_sect[0]), _fw_conf_sect.size());
+                        (const Bytef *)&(file_sect[0]), file_sect.size());
 
-    if (rc != Z_OK)
-    {
+    if (rc != Z_OK) {
         return errmsg("Failed uncompressing FW configuration section. uncompress returnes %d", rc);
     }
 
@@ -3174,7 +3444,7 @@ bool Operations::getGUID(const char *s, guid_t *guid)
 
     g = strtoull(s, &endp, 16);
     if (*endp || (g == 0xffffffffffffffffULL && errno == ERANGE)) {
-        printf("Invalid GUID syntax (%s) %s \n",
+        report_err(_err_msg, "Invalid GUID syntax (%s) %s \n",
                s,
                errno ? strerror(errno) : "" );
         return false;
@@ -3186,11 +3456,11 @@ bool Operations::getGUID(const char *s, guid_t *guid)
 
 ////////////////////////////////////////////////////////////////////////
 bool Operations::extractGUIDptr(u_int32_t sign, u_int32_t *buf, int buf_len,
-                    char *pref, u_int32_t *ind, int *nguids)
+                                char *pref, u_int32_t *ind, int *nguids)
 {
     u_int32_t offs = 0;
 
-    if (IsCntx()) {
+    if (IsFs2()) {
         offs = 16;
     }
 
@@ -3209,7 +3479,7 @@ bool Operations::extractGUIDptr(u_int32_t sign, u_int32_t *buf, int buf_len,
     // Get GUID ptr
     *ind = buf[(offs+0x24)/4];
     TOCPU1(*ind);
-    if (!IsCntx()) {
+    if (!IsFs2()) {
         *ind += offs;
     }
     if (*ind >= (u_int32_t)buf_len) {
@@ -3221,7 +3491,7 @@ bool Operations::extractGUIDptr(u_int32_t sign, u_int32_t *buf, int buf_len,
     *nguids /= 2;
 
     // More sanity check
-    if (IsCntx() ? (*nguids > MAX_GUIDS) : (*nguids > GUIDS)) {
+    if (IsFs2() ? (*nguids > MAX_GUIDS) : (*nguids > GUIDS)) {
         printf("%s image - illegal number of GUIDs (0x%x)\n", pref, *nguids);
         return false;
     }
@@ -3250,7 +3520,7 @@ void Operations::recalcSectionCrc(u_int8_t *buf, u_int32_t data_size) {
 
 ////////////////////////////////////////////////////////////////////////
 void Operations::patchGUIDsSection(u_int32_t *buf, u_int32_t ind,
-                       guid_t guids[MAX_GUIDS], int nguids)
+                                   guid_t guids[MAX_GUIDS], int nguids)
 {
     u_int32_t       i;
     u_int32_t       new_buf[MAX_GUIDS*2];
@@ -3398,7 +3668,7 @@ bool Operations::patchVSD(FImage& f,
         vsd_to_use = user_vsd;
     }
 
-    if (IsCntx() && info->infoOffs[II_VSD]) {
+    if (IsFs2() && info->infoOffs[II_VSD]) {
         PatchInfoSect((u_int8_t*)f.getBuf() + info->infoSectPtr - sizeof(GPH),
                       info->infoOffs[II_VSD],
                       vsd_to_use);
@@ -3411,35 +3681,48 @@ bool Operations::patchVSD(FImage& f,
 } // pathVSD
 
 
-bool Operations::printGUIDs(const char* msg, guid_t guids[MAX_GUIDS], bool print_guids, bool print_macs, bool old_guid_fmt) {
-    const char* g_m;
+bool Operations::PrintGUIDs(guid_t guids[MAX_GUIDS], guid_t old_guids[MAX_GUIDS], bool print_guids, bool print_macs, bool old_guid_fmt) {
 
-    if        ( print_guids &&  print_macs) {
-        g_m = "GUIDs/MACs";
-    } else if (!print_guids &&  print_macs) {
-        g_m = "MACs";
-    } else if ( print_guids && !print_macs) {
-        g_m = "GUIDs";
-    } else {
-        return errmsg("Internal error: Operations::PrintGuids() with both guid and mac turned off");
-    }
-
-    printf("%s %s:\n", msg, g_m);
     if (print_guids) {
-        printf("        Node  GUID:     " GUID_FORMAT "\n", guids[0].h, guids[0].l);
-        if (_num_ports > 0)
-            printf("        Port1 GUID:     " GUID_FORMAT "\n", guids[1].h, guids[1].l);
-        if (_num_ports > 1)
-            printf("        Port2 GUID:     " GUID_FORMAT "\n", guids[2].h, guids[2].l);
-        if (!old_guid_fmt)
-            printf("        Sys.Image GUID: " GUID_FORMAT "\n", guids[3].h, guids[3].l);
+        printf("        Node  GUID:     ");
+        PrintGuidLine(guids,old_guids, 0);
+        if (_num_ports > 0) {
+            printf("        Port1 GUID:     ");
+            PrintGuidLine(guids,old_guids, 1);
+        }
+        if (_num_ports > 1) {
+            printf("        Port2 GUID:     ");
+            PrintGuidLine(guids,old_guids, 2);
+        }
+        if (!old_guid_fmt) {
+            printf("        Sys.Image GUID: ");
+            PrintGuidLine(guids,old_guids, 3);
+        }
     }
 
     if (print_macs) {
-        printf("        Port1 MAC:      " MAC_FORMAT "\n", guids[4].h, guids[4].l);
-        printf("        Port2 MAC:      " MAC_FORMAT "\n", guids[5].h, guids[5].l);
+        printf("        Port1 MAC:      ");
+        PrintMacLine(guids, old_guids, 4);
+        printf("        Port2 MAC:      ");
+        PrintMacLine(guids, old_guids, 5);
     }
     return true;
+}
+
+void Operations::initSectToRead(int imp_index) {
+    for (int i = 0; i < H_LAST; i++) {
+        if (imp_index == FULL_VERIFY || i == imp_index) {
+            _sections_to_read[i] = 1;
+        } else {
+            _sections_to_read[i] = 0;
+        }
+    }
+    if (imp_index == FULL_VERIFY) {
+        _is_full_verify = true;
+    } else {
+        _is_full_verify = false;
+    }
+    return;
 }
 
 void Operations::SetDevFlags(u_int16_t devType, bool& ib_dev, bool& eth_dev) {
@@ -3448,15 +3731,16 @@ void Operations::SetDevFlags(u_int16_t devType, bool& ib_dev, bool& eth_dev) {
         ib_dev = true;
         eth_dev = false;
     } else {
-        ib_dev  = !IsCntx() || CntxIsIb(devType);
-        eth_dev = IsCntx()  && CntxIsEth(devType);
+        ib_dev  = !IsFs2() || CntxIsIb(devType);
+        eth_dev = IsFs2()  && CntxIsEth(devType);
     }
 
     if (!ib_dev && !eth_dev) {
         // Unknown device id - for forward compat - assume that ConnectX is MP and
         // prev HCAs are IB only (these flags are for printing only - no real harm can be done).
+        // TODO: FS2 does not mean ConnectX now.
         ib_dev = true;
-        if (IsCntx()) {
+        if (IsFs2()) {
             eth_dev = true;
         } else {
             eth_dev = false;
@@ -3465,23 +3749,104 @@ void Operations::SetDevFlags(u_int16_t devType, bool& ib_dev, bool& eth_dev) {
 }
 
 bool Operations::CheckGuidsFlags (u_int16_t devType,
-                                  bool ib_dev,
                                   bool guids_specified,
-                                  bool eth_dev,
-                                  bool macs_specified) {
+                                  bool macs_specified,
+                                  bool uids_specified) {
     // Patch GUIDS
-    if  (guids_specified || macs_specified) {
-        if (!IsCntx() && macs_specified) {
-            return errmsg("-mac flag is not applicable for IB MT%d device.\n",
-                          devType);
-        } else if (ib_dev  && !guids_specified) {
-            return errmsg("Use -guid(s) flag for IB MT%d device.\n",
-                          devType);
-        } else if (eth_dev && !macs_specified) {
-            return errmsg("*** ERROR *** Use -mac(s) flag for ETH MT%d device.\n",
-                   devType);
+    if (guids_specified || macs_specified || uids_specified) {
+        if (IsBridgeX(devType)) {
+            if (macs_specified || guids_specified) {
+                return errmsg("-mac(s)/-guid(s) flags is not applicable for MT%d.\n", devType);
+            }
+        } else {
+            if (uids_specified) {
+                return errmsg("-uid(s) flag is applicable only for BridgeX.\n");
+            } else if (!IsFs2() && macs_specified ) {
+                return errmsg("-mac(s) flag is not applicable for IB MT%d device.\n",
+                              devType);
+            }// else if (!ib_dev && guids_specified) {
+            //     return errmsg("-guid(s) flag is not applicable for IB MT%d device.\n",
+            //                  devType);
+            //}
         }
     }
+    return true;
+}
+bool Operations::PrintGuidLine(guid_t* new_guids, guid_t* old_guids, int guid_index)
+{
+    printf(GUID_FORMAT GUID_SPACES, new_guids[guid_index].h, new_guids[guid_index].l);
+    if (old_guids != NULL) {
+        printf(GUID_FORMAT,  old_guids[guid_index].h, old_guids[guid_index].l);
+    }else {
+        printf("      N/A");
+    }
+    printf("\n");
+    return true;
+}
+
+bool Operations::PrintBxGuids(guid_t* new_guids, guid_t* old_guids, int index, int num_of_guids, const char* pre_str)
+{
+    int guid_index = index;
+    int _is_wwpn = ((guid_index - Operations::BI_WWPNS) % Operations::BX_SLICE_GUIDS);
+
+    for (int i = 0; i < num_of_guids; i++) {
+        printf("    G%d", (index >= Operations::BX_SLICE_GUIDS));
+        if (i == 0 && _is_wwpn) {
+           printf(" Node  %s:      ", pre_str);
+        } else {
+            int j = _is_wwpn ? i : i + 1;
+            printf(" Port%d %s:      ", j, pre_str);
+        }
+        PrintGuidLine(new_guids, old_guids,  guid_index);
+        guid_index++;
+    }
+    return true;
+}
+
+bool Operations::PrintMacLine(guid_t* new_guids, guid_t* old_guids, int mac_index)
+{
+    printf("    "MAC_FORMAT MAC_SPACES, new_guids[mac_index].h, new_guids[mac_index].l);
+    if (old_guids != NULL) {
+        printf(MAC_FORMAT, old_guids[mac_index].h, old_guids[mac_index].l);
+    } else {
+        printf("  N/A");
+    }
+    printf("\n");
+    return true;
+}
+
+bool Operations::PrintBxMacs(guid_t* new_guids, guid_t* old_guids, int index, int num_of_guids, const char* pre_str)
+{
+    int guid_index = index;
+
+    for (int i = 0; i < num_of_guids; i++) {
+        printf("    G%d", (index >= Operations::BX_SLICE_GUIDS));
+        printf(" Port%d %s:      ", i + 1, pre_str);
+        PrintMacLine(new_guids, old_guids, guid_index);
+        guid_index++;
+    }
+    return true;
+}
+
+bool Operations::PrintUids(guid_t* new_guids, guid_t* old_guids)
+{
+    int base_index = 0, guid_index;
+
+    for (int i = 0; i < BX_SLICES_NUM; i++) {
+        base_index = i * BX_SLICE_GUIDS;
+        // Init Guids
+        PrintBxGuids(new_guids, old_guids, base_index + BI_GUIDS, BX_NP_GUIDS, "Guid");
+        PrintBxMacs (new_guids, old_guids, base_index + BI_IMACS, BX_IMACS,    "IMAC");
+        PrintBxMacs (new_guids, old_guids, base_index + BI_EMACS, BX_EMACS,    "EMAC");
+        PrintBxGuids(new_guids, old_guids, base_index + BI_WWNNS, BX_WWNNS,    "WWNN");
+        PrintBxGuids(new_guids, old_guids, base_index + BI_WWPNS, BX_WWPNS,    "WWPN");
+     }
+
+    // Init SysGuid
+    //INCR_GUID(base_guid1, user_guids[Operations::BI_SYS_GUID], 7);
+    guid_index =  Operations::BI_SYS_GUID;
+    printf("    System   GUID:      ");
+    PrintGuidLine(new_guids, old_guids,  guid_index);
     return true;
 }
 
@@ -3490,8 +3855,10 @@ bool Operations::patchGUIDs (FImage&   f,
                              ImageInfo* info,
                              bool      patch_guids,
                              bool      patch_macs,
+                             bool      patch_uids,
                              bool      user_guids,
                              bool      user_macs,
+                             bool      user_uids,
                              guid_t    new_guids[MAX_GUIDS],
                              guid_t    old_guids[MAX_GUIDS],
                              u_int32_t num_of_old_guids,
@@ -3500,88 +3867,98 @@ bool Operations::patchGUIDs (FImage&   f,
     guid_t*         used_guids = old_guids ? old_guids : new_guids;
     u_int32_t       *buf = f.getBuf();
     int i;
-
     bool old_guids_fmt = info->guidNum < GUIDS;
 
     // Print old GUIDs and get confirmation
     if (new_guids) {
         if (old_guids_fmt)
             printf("    Old image!!!! Only %d GUIDs may be set.\n", info->guidNum);
-            // if only guids or only macs are specified by user, keep the other
-            // as currently set of flash. This is in order to simplify transitions between
-            // burning IB and ETH FW.
+        // if only guids or only macs are specified by user, keep the other
+        // as currently set of flash. This is in order to simplify transitions between
+        // burning IB and ETH FW.
+        if (!patch_uids) {
+            if (old_guids && !user_guids) {
+                for (i = 0; i < GUIDS; i++) {
+                    new_guids[i] = old_guids[i];
+                }
+            }
 
-        if (old_guids && !user_guids) {
-            for (i = 0; i < GUIDS; i++) {
-                new_guids[i] = old_guids[i];
+            if (old_guids && !user_macs) {
+                for (i = GUIDS; i < MAX_GUIDS; i++) {
+                    new_guids[i] = old_guids[i];
+                }
             }
         }
-
-        if (old_guids && !user_macs) {
-            for (i = GUIDS; i < MAX_GUIDS; i++) {
-                new_guids[i] = old_guids[i];
-            }
-        }
-
         used_guids = new_guids;
     }
 
-    if (patch_macs) {
 
-        // To ease upgrade from 4 GUIDS format to 4+2 format, or to move from IB to ETH,
-        // if macs are not
-        // explicitly set in flash, they are derived from the GUIDs according to
-        // Mellanox methodology - 48 bit MAC == 64 bit GUID without the middle 16 bits.
+    if (!patch_uids) {
+        if (patch_macs) {
 
-        if (old_guids && ((num_of_old_guids == 4) ||
-                          (num_of_old_guids == 6 &&
-                            (old_guids[GUIDS  ].h & 0xffff)     == 0xffff     &&
-                            (old_guids[GUIDS  ].l & 0xffffffff) == 0xffffffff &&
-                            (old_guids[GUIDS+1].h & 0xffff)     == 0xffff     &&
-                            (old_guids[GUIDS+1].l & 0xffffffff) == 0xffffffff))) {
-            for (i = 0 ; i < MACS; i++) {
-                u_int64_t mac  =  old_guids[i+1].h >> 8;
-                mac <<= 24;
-                mac |= (old_guids[i+1].l & 0xffffff);
+            // To ease upgrade from 4 GUIDS format to 4+2 format, or to move from IB to ETH,
+            // if macs are not
+            // explicitly set in flash, they are derived from the GUIDs according to
+            // Mellanox methodology - 48 bit MAC == 64 bit GUID without the middle 16 bits.
 
-                old_guids[GUIDS+i].h = u_int32_t(mac >> 32);
-                old_guids[GUIDS+i].l = u_int32_t(mac  & 0xffffffff);
+            if (old_guids && ((num_of_old_guids == 4) ||
+                              (num_of_old_guids == 6 &&
+                               (old_guids[GUIDS  ].h & 0xffff)     == 0xffff     &&
+                               (old_guids[GUIDS  ].l & 0xffffffff) == 0xffffffff &&
+                               (old_guids[GUIDS+1].h & 0xffff)     == 0xffff     &&
+                               (old_guids[GUIDS+1].l & 0xffffffff) == 0xffffffff))) {
+                for (i = 0 ; i < MACS; i++) {
+                    u_int64_t mac  =  old_guids[i+1].h >> 8;
+                    mac <<= 24;
+                    mac |= (old_guids[i+1].l & 0xffffff);
 
-                // printf("-D- Guid " GUID_FORMAT " to MAC "MAC_FORMAT"\n", old_guids[i+1].h, old_guids[i+1].l, old_guids[i+GUIDS].h,old_guids[i+GUIDS].l  );
+                    old_guids[GUIDS+i].h = u_int32_t(mac >> 32);
+                    old_guids[GUIDS+i].l = u_int32_t(mac  & 0xffffffff);
+
+                    // printf("-D- Guid " GUID_FORMAT " to MAC "MAC_FORMAT"\n", old_guids[i+1].h, old_guids[i+1].l, old_guids[i+GUIDS].h,old_guids[i+GUIDS].l  );
+                }
+            }
+
+            guid_t* macs = &used_guids[4];
+            int i;
+
+            for (i = 0 ; i < Operations::MACS ; i++) {
+                u_int64_t mac = (((u_int64_t)macs[i].h) << 32) | macs[i].l;
+                if (!_burn_blank_guids && !CheckMac(mac)) {
+                    report_err(_err_msg, "Bad mac (" MAC_FORMAT ") %s: %s. Please re-burn with a valid -mac flag value.\n",
+                           macs[i].h,
+                           macs[i].l,
+                           user_macs ? "given" : "found on flash",
+                           err());
+                    return false;
+                }
+
             }
         }
-
-        guid_t* macs = &used_guids[4];
-        int i;
-
-        for (i = 0 ; i < Operations::MACS ; i++) {
-            u_int64_t mac = (((u_int64_t)macs[i].h) << 32) | macs[i].l;
-            if (!_burn_blank_guids && !CheckMac(mac)) {
-                printf("*** ERROR *** Bad mac (" MAC_FORMAT ") %s: %s. Please re-burn with a valid -mac flag value.\n",
-                       macs[i].h,
-                       macs[i].l,
-                       user_macs ? "given" : "found on flash",
-                       err());
-                return false;
+    } else {
+        if (!_burn_blank_guids) {
+            for (i = 0; i < BX_SLICES_NUM; i++ ) {
+                if (ReportBxMacsWarnings(used_guids, i, 0, user_uids) == false) {
+                    return false;
+                }
             }
+
         }
     }
 
-    if (new_guids && old_guids) {
-        printGUIDs("    Current settings of",
-                   old_guids,
-                   patch_guids,
-                   patch_macs,
-                   old_guids_fmt);
-        printf("\n");
-    }
 
     if (interactive) {
-        printGUIDs("    You are about to burn the image with the following",
-                   used_guids,
-                   patch_guids,
-                   patch_macs,
-                   old_guids_fmt);
+        printf("    You are about to change the Guids/Macs/Uids on the device:\n");
+        printf("                        New Values      " GUID_SPACES "Current Values\n");
+        if (patch_uids) {
+            PrintUids(used_guids,  old_guids);
+        } else {
+           PrintGUIDs(used_guids,
+                      old_guids,
+                      patch_guids,
+                      patch_macs,
+                      old_guids_fmt);
+        }
 
         if (!ask_user())
             return false;
@@ -3664,7 +4041,7 @@ bool Operations::QueryPs (FBase& f,
         }
     }
 
-    if (info->allImgStart[0] == 0 && info->allImgStart[1] == 0)  {
+    if (info->allImgStart[0] == 0 && info->allImgStart[1] == 0) {
         return errmsg("No valid image found.");
     }
 
@@ -3675,7 +4052,7 @@ bool Operations::QueryPs (FBase& f,
     u_int32_t* vsd_dwp = (u_int32_t*)vsd;
 
     for (u_int32_t i=0; i < sizeof(vsd)/sizeof(u_int32_t); i++)
-         vsd_dwp[i] = bswap_32(vsd_dwp[i]);
+        vsd_dwp[i] = bswap_32(vsd_dwp[i]);
 
     memcpy(info->vsd,  vsd,           VSD_LEN);
     memcpy(info->psid, vsd + VSD_LEN, PSID_LEN);
@@ -3702,7 +4079,7 @@ bool Operations::QueryImage (FBase& f,
     u_int32_t fw_id_offs;
     u_int32_t im_start = info->imgStart;
 
-    if (IsCntx()) {
+    if (IsFs2()) {
         if (info->isFailsafe && info->actuallyFailsafe) {
             f.set_address_convertor(info->cntxLog2ChunkSize, im_start != 0);
         } else {
@@ -3747,7 +4124,7 @@ bool Operations::QueryImage (FBase& f,
     info->blankGuids = true;
 
     if ((guids_crc & 0xffff) != 0xffff ) {
-       info->blankGuids = false;
+        info->blankGuids = false;
     }
 
     info->guidNum = nguids;
@@ -3893,12 +4270,19 @@ bool Operations::ParseInfoSect(u_int8_t* buff, u_int32_t byteSize, Operations::I
             }
             info->productVer[PRODUCT_VER_LEN] = '\0';
             break;
+       case II_HwDevsId:
+           u_int32_t i;
+           for (i = 1; i <= (tagSize / 4); i++) {
+               info->supportedHwId[i - 1] = __be32_to_cpu(*(p + i));
+           }
+           info->supportedHwIdNum = tagSize / 4;
+           break;
 
         case II_End:
             endFound = true;
             break;
 
-        //default:
+            //default:
             //printf("-D- Found tag ID %d of size %d - ignoring.\n", tagId, tagSize);
         }
 
@@ -3947,6 +4331,14 @@ bool Operations::DisplayExpRomInfo(Operations::ImageInfo* info) {
                 // Do not display if 0 - port independant
                 report(" port=%d", info->expRomPort);
             }
+
+            report(" proto=");
+            switch (info->expRomProto) {
+            case ER_IB:    report("IB");    break;
+            case ER_ETH:   report("ETH");   break;
+            case ER_VPI:   report("VPI");   break;
+            default:  report("0x%x", info->expRomProto);
+            }
         }
         report("\n");
     } else {
@@ -3955,10 +4347,74 @@ bool Operations::DisplayExpRomInfo(Operations::ImageInfo* info) {
     return true;
 }
 
+
+
+bool Operations::ReportBxGuidsQuery(guid_t* guids, int base1, int guids_num, int index, const char* pre_str)
+{
+    int i, first_index, base, wwnns_index;
+
+    report("G%d %-14s", index, pre_str);
+    first_index = index * BX_SLICE_GUIDS;
+    if (base1 == BI_WWPNS) {
+        wwnns_index = first_index + (BX_SLICE_GUIDS - 1);
+        report(GUID_FORMAT " ", guids[wwnns_index].h, guids[wwnns_index].l);
+    }
+    base = first_index + base1;
+    for (i = base; i < base + guids_num; i++) {
+        report(GUID_FORMAT " ", guids[i].h, guids[i].l);
+    }
+    printf("\n");
+    return true;
+}
+
+
+#define PRINT_WARNING "PRINT_WARNING"
+
+bool Operations::ReportBxMacsQuery(guid_t* guids, int base1, int guids_num, int index, const char* pre_str)
+{
+    int i, base;
+
+    base = index * Operations::BX_SLICE_GUIDS + base1;
+    report("G%d %-30s", index, pre_str);
+    for (i = base; i < base + guids_num; i++) {
+            report("     " MAC_FORMAT , guids[i].h, guids[i].l);
+    }
+    printf("\n");
+    return true;
+}
+
+bool Operations::ReportBxMacsWarnings(guid_t* guids, int index, int warning, int user_uids)
+{
+    int i, base;
+    int is_first = 1;
+    base = index * BX_SLICE_GUIDS + BI_IMACS;
+    for (i = base; i < base + BX_MACS; i++) {
+         u_int64_t mac = (((u_int64_t)guids[i].h) << 32) | guids[i].l;
+         if (!CheckMac(mac)) {
+             if (warning) {
+                 if (is_first) {
+                     printf("\n\n");
+                     is_first = 0;
+                 }
+                 printf("Warning: Bad mac address (" MAC_FORMAT "): %s\n", guids[i].h, guids[i].l, err());
+             } else {
+                 report_err(_err_msg, "Bad mac (" MAC_FORMAT ") %s: %s. Please re-burn with a valid MACs value.\n",
+                        guids[i].h,
+                        guids[i].l,
+                        user_uids ? "given" : "found on flash",
+                        err());
+                 return false;
+             }
+         }
+     }
+     return true;
+}
+
+
 bool Operations::DisplayImageInfo(Operations::ImageInfo* info) {
     report("Image type:      %s\n", info->magicPatternFound ? (CntxIsEth(info->devType) ? "ConnectX" : "FS2") :
-                                    info->isFailsafe        ? "Failsafe" :
-                                                              "Short");
+           info->isFailsafe        ? "Failsafe" :
+           "Short");
 
     if (info->infoOffs[II_FwVersion]) {
         report("FW Version:      %d.%d.%d\n", info->fwVer[0], info->fwVer[1], info->fwVer[2]);
@@ -3972,7 +4428,7 @@ bool Operations::DisplayImageInfo(Operations::ImageInfo* info) {
         DisplayExpRomInfo(info);
     }
 
-    if (info->isFailsafe && !IsCntx()) {
+    if (info->isFailsafe && !IsFs2()) {
         report("I.S. Version:    %d\n", info->isVer );
     }
 
@@ -3994,52 +4450,78 @@ bool Operations::DisplayImageInfo(Operations::ImageInfo* info) {
     SetDevFlags(info->devType, ib_dev, eth_dev);
 
     const char* mac_indent = "";
-    if (ib_dev) {
-        //report("GUID Des:        Node             Port1            ");
-        report("Description:     Node             ");
-        if (_num_ports > 0)
-            report("Port1            ");
-        if (_num_ports > 1)
-            report("Port2            ");
-        report( "Sys image\n");
-
-        report("GUIDs:           ");
-        for (u_int32_t i=0; i < GUIDS; i++) {
-            if ((i == 1 && _num_ports < 1) ||
-                (i == 2 && _num_ports < 2)) {
-                continue;
-            }
-            report(GUID_FORMAT " ", info->guids[i].h, info->guids[i].l);
+    //if (info->devType == ) {
+    //}
+    if (IsBridgeX(info->devType)) {
+        int i, base;
+        if (info->guidNum != BX_ALL_GUIDS) {
+            report_err(_err_msg, "Number of UIDs on BridgeX should be %d\n", BX_ALL_GUIDS);
+            return false;
         }
-        mac_indent = "                 ";
-    }
-
-    // MACS:
-    if (eth_dev) {
-        if (info->guidNum == MAX_GUIDS) {
-            if (!ib_dev)
-                report("Description:%s     Port1            Port2\n", mac_indent);
-            else
-                printf("\n");
-
-            report("MACs:    %s        ", mac_indent);
-            for (u_int32_t i=GUIDS; i < MAX_GUIDS; i++) {
-                report(MAC_FORMAT "     ", info->guids[i].h, info->guids[i].l);
+        report("Description:     Node             Port1            Port2            Port3            Port4\n");
+        for (i = 0; i < BX_SLICES_NUM; i++) {
+            base = i * BX_SLICE_GUIDS;
+            ReportBxGuidsQuery(info->guids, BI_GUIDS,  BX_NP_GUIDS, i, "GUIDs:");
+            ReportBxMacsQuery(info->guids,  BI_IMACS, BX_IMACS,    i, "IMACs:");
+            ReportBxMacsQuery(info->guids,  BI_EMACS, BX_EMACS,    i, "EMACs:");
+            ReportBxGuidsQuery(info->guids, BI_WWPNS, BX_WWPNS,    i, "WWNs: ");
+        }
+        report("SYS GUID:        " GUID_FORMAT " ", info->guids[info->guidNum - 1].h, info->guids[info->guidNum - 1].l);
+        if (!info->blankGuids) {
+            for (i = 0; i < BX_SLICES_NUM; i++) {
+                ReportBxMacsWarnings(info->guids, i, 1, 0);
             }
+        }
+    } else {
+        if (ib_dev) {
+            //report("GUID Des:        Node             Port1            ");
+            report("Description:     Node             ");
+            if (_num_ports > 0)
+                report("Port1            ");
+            if (_num_ports > 1)
+                report("Port2            ");
+            report( "Sys image\n");
 
-            for (u_int32_t i=GUIDS; i < MAX_GUIDS; i++) {
-                u_int64_t mac = (((u_int64_t)info->guids[i].h) << 32) | info->guids[GUIDS + i].l;
-                if (!info->blankGuids && !CheckMac(mac)) {
-                    if (i==GUIDS) printf("\n\n");
-                    printf("Warning: Bad mac address (" MAC_FORMAT "): %s\n", info->guids[i].h, info->guids[i].l, err());
+            report("GUIDs:           ");
+            for (u_int32_t i=0; i < GUIDS; i++) {
+                if ((i == 1 && _num_ports < 1) ||
+                    (i == 2 && _num_ports < 2)) {
+                    continue;
                 }
+                report(GUID_FORMAT " ", info->guids[i].h, info->guids[i].l);
             }
-        } else {
-            printf("\nWarning: Can not get MAC addrerss: Expecting %d entries in guid section, got %d. Probably an old FW image. Please update.\n",
-                   MAX_GUIDS,
-                   info->guidNum);
+            mac_indent = "                 ";
         }
+
+        // MACS:
+        if (eth_dev) {
+            if (info->guidNum == 6) {
+                if (!ib_dev)
+                    report("Description:%s     Port1            Port2\n", mac_indent);
+                else
+                    printf("\n");
+
+                report("MACs:    %s       ", mac_indent);
+                for (u_int32_t i=GUIDS; i < 6; i++) {
+                    report("     " MAC_FORMAT , info->guids[i].h, info->guids[i].l);
+                }
+
+                for (u_int32_t i=GUIDS; i < 6; i++) {
+                    u_int64_t mac = (((u_int64_t)info->guids[i].h) << 32) | info->guids[i].l;
+                    if (!info->blankGuids && !CheckMac(mac)) {
+                        if (i==GUIDS) printf("\n\n");
+                        printf("Warning: Bad mac address (" MAC_FORMAT "): %s\n", info->guids[i].h, info->guids[i].l, err());
+                    }
+                }
+            } else {
+                printf("\nWarning: Can not get MAC addrerss: Expecting %d entries in guid section, got %d. Probably an old FW image. Please update.\n",
+                       6,
+                       info->guidNum);
+            }
+        }
+
     }
+
 
     // VSD, PSID
     if (!info->infoOffs[II_VsdVendorId] || info->vsdVendorId == MELLANOX_VENDOR_ID) {
@@ -4063,7 +4545,7 @@ bool Operations::DisplayImageInfo(Operations::ImageInfo* info) {
 
     if (info->blankGuids) {
         report("\nWarning: GUIDs%s values and their CRC are not set.\n",
-               IsCntx() ? "/MACs" : "");
+               IsFs2() ? "/MACs" : ""); // TODO: IsConnectX?
     }
     return true;
 }
@@ -4113,14 +4595,14 @@ void usage(const char *sname, bool full = false)
     "                         guid+2 -> port2\n"
     "                         guid+3 -> system image GUID.\n"
     "\n"
-    "                         Note: port2 guid will be assigned even for a"
+    "                         Note: port2 guid will be assigned even for a\n"
     "                         single port HCA - The HCA ignores this value.\n"
     "\n"
     "                         Commands affected: burn, sg\n"
     "\n"
     "    -guids <GUIDs...>  - 4 GUIDs must be specified here.\n"
     "                         The specified GUIDs are assigned\n"
-    "                         the following values, repectively:\n"
+    "                         to the following fields, repectively:\n"
     "                         node, port1, port2 and system image GUID.\n"
     "\n"
     "                         Note: port2 guid must be specified even for a\n"
@@ -4129,6 +4611,7 @@ void usage(const char *sname, bool full = false)
     "\n"
     "                         Commands affected: burn, sg\n"
     "\n"
+
     "    -mac <MAC>         - MAC address base value. 2 MACs\n"
     "                         are automatically assigned to the\n"
     "                         following values:\n"
@@ -4141,10 +4624,26 @@ void usage(const char *sname, bool full = false)
     "    -macs <MACs...>    - 2 MACs must be specified here.\n"
     "                         The specified MACs are assigned\n"
     "                         to port1, port2, repectively.\n"
-    "\n"
     "                         Commands affected: burn, sg\n"
     "                         Note: -mac/-macs flags are applicable only for Mellanox\n"
     "                               Technologies ethernet products.\n"
+    "\n"
+    "    -uid <UID>         - BridgeX only. Derive and set the device UIDs (GUIDs, MACs, WWNs).\n"
+    "                         UIDs are derived from the given base UID according to Mellanox Methodology\n"
+    "                         Commands affected: burn, sg\n"
+    "\n"
+    "    -uids <UIDs...>    - BridgeX only. 29 space separated UIDs must be specified here.\n"
+    "                         The specified UIDs are assigned to the following fields, repectively:\n"
+    "                         G0-MAC-PI0      G0-MAC-PI1      G0-MAC-PI2\n"
+    "                         G0-MAC-PE0      G0-MAC-PE1      G0-MAC-PE2    G0-MAC-PE3\n"
+    "                         G0-FC-WWPN-P0   G0-FC-WWPN-P1   G0-FC-WWPN-P2 G0-FC-WWPN-P3\n"
+    "                         G0-IB-NODE-GUID G0-IB-PORT-GUID G0-FC-WWNN\n"
+    "                         G1-MAC-PI0      G1-MAC-PI1      G1-MAC-PI2\n"
+    "                         G1-MAC-PE0      G1-MAC-PE1      G1-MAC-PE2    G1-MAC-PE3\n"
+    "                         G1-FC-WWPN-P0   G1-FC-WWPN-P1   G1-FC-WWPN-P2 G1-FC-WWPN-P3\n"
+    "                         G1-IB-NODE-GUID G1-IB-PORT-GUID G1-FC-WWNN\n"
+    "                         IB-SYSTEM-GUID\n"
+    "                         Commands affected: burn, sg\n"
     "\n"
     "    -blank_guids       - Burn the image with blank GUIDs and MACs (where\n"
     "                         applicable). These values can be set later using\n"
@@ -4171,6 +4670,10 @@ void usage(const char *sname, bool full = false)
     "                         Commands affected: burn, query\n"
     "\n"
     "    -nofs              - Burn image in a non failsafe manner.\n"
+    "\n"
+    "    -allow_psid_change - Allow burning a FW image with a different PSID (Parameter Set ID)than the\n"
+    "                         one currently on flash. Note that changing a PSID may cause the device to\n"
+    "                         malfunction. Use only if you know what you are doing\n"
     "\n"
     "    -skip_is           - Allow burning the FW image without updating the invariant sector,\n"
     "                         to ensure failsafe burning even when an invariant sector difference is detected.\n"
@@ -4205,6 +4708,10 @@ void usage(const char *sname, bool full = false)
     "                         default failsafe burn process burns a single image (in alternating locations).\n"
     "                         Commands affected: burn\n"
     "\n"
+    "    -banks <banks>\n"
+    "                       - Set the number of attached flash devices (banks)\n"
+    "\n"
+
     "    -v                 - Version info.\n"
     "\n"
     "Commands summary (use -hh flag for full commands description):\n"
@@ -4217,6 +4724,8 @@ void usage(const char *sname, bool full = false)
     "  sg                  - Set Guids\n"
     "  ri       <out-file> - Read the fw image on the flash.\n"
     "  dc       [out-file] - Dump Configuration: print fw configuration file\n"
+    "                        for the given image.\n"
+    "  dh       [out-file] - Dump Hash: print hash file\n"
     "                        for the given image.\n"
     "  e[rase]  <addr>     - Erase sector\n"
     "  rw       <addr>     - Read one dword from flash\n"
@@ -4407,6 +4916,14 @@ void usage(const char *sname, bool full = false)
     "               is printed to screen\n"
     "    Example:\n"
     "        " FLINT_NAME " -d " DEV_MST_EXAMPLE1 " dc\n"
+    "\n"
+    "    Command:\n"
+    "        dh\n"
+    "    Parameters:\n"
+    "        file - (optional) filename to write the dumped hash to. If not given, the data\n"
+    "               is printed to screen\n"
+    "    Example:\n"
+    "        " FLINT_NAME " -d " DEV_MST_EXAMPLE1 " dh\n"
     "\n";
 
     printf(descr, sname);
@@ -4415,6 +4932,118 @@ void usage(const char *sname, bool full = false)
         printf(full_descr, sname);
     }
 }
+
+// The Log file writing implementation
+
+FILE* f_log_fh = NULL;
+#define BURN_INTERRUPTED 0x1234
+
+
+void close_log()
+{
+    if (f_log_fh != NULL) {
+        fclose(f_log_fh);
+    }
+    return;
+}
+
+#define ARR_SIZE(arr) sizeof(arr)/sizeof(arr[0])
+
+const char*   month_2monstr (int month) {
+    static const char* month_2monstr_arr[] = {
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+    };
+    int arr_size = (int)ARR_SIZE(month_2monstr_arr);
+    return month < arr_size ? month_2monstr_arr[month] : "???";
+}
+
+
+void print_time_to_log()
+{
+    time_t rawtime;
+    struct tm * timeinfo;
+
+    if (f_log_fh == NULL) {
+        return;
+    }
+
+    time ( &rawtime );
+    timeinfo = localtime ( &rawtime );
+
+    fprintf(f_log_fh, "%-3s %2d %02d:%02d:%02d ", month_2monstr(timeinfo->tm_mon), timeinfo->tm_mday,
+            timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+    return;
+}
+
+int print_line_to_log(const char* format, ...)
+{
+    va_list  args;
+
+    if (f_log_fh == NULL) {
+        return 0;
+    }
+    print_time_to_log();
+    va_start(args, format);
+    vfprintf(f_log_fh, format, args);
+    va_end(args);
+
+    return 0;
+}
+
+int write_cmd_to_log(char* av[], int ac)
+{
+    int i;
+    if (f_log_fh == NULL) {
+        return 0;
+    }
+    print_time_to_log();
+    fputs("Start burning: ", f_log_fh);
+    for (i = 0; i < ac; i++) {
+        fputs(av[i], f_log_fh);
+        fputs(" ", f_log_fh);
+    }
+    fputs("\n", f_log_fh);
+
+    return 0;
+}
+
+int write_result_to_log(int is_failed, const char* err_msg)
+{
+    char msg[MAX_ERR_STR_LEN];
+
+    strcpy(msg, err_msg);
+    if (is_failed == 0) {
+        print_line_to_log("Burn completed successfully\n");
+    } else if (is_failed == BURN_INTERRUPTED) {
+        print_line_to_log("Burn interrupted by user\n");
+    } else {
+        int msg_len = strlen(msg);
+        // cleanup the msg
+        for (int i = 0; i < msg_len; i++) {
+            if (msg[i] == '\n') {
+                if (i == msg_len - 1) {
+                    msg[i] = '\0';
+                } else {
+                    msg[i] = ' ';
+                }
+            }
+        }
+        print_line_to_log("Burn failed: %s\n", msg);
+    }
+    return 0;
+}
+
 
 
 //
@@ -4463,6 +5092,8 @@ void TerminationHandler (int signum)
 
     signal (signum, SIG_DFL);
 
+    write_result_to_log(BURN_INTERRUPTED, "");
+    close_log();
     if (g_flash != NULL) {
         report("\n Received signal %d. Cleaning up ...", signum);
         fflush(stdout);
@@ -4475,112 +5106,26 @@ void TerminationHandler (int signum)
     raise(signum);
 }
 
-//
-// Commands database and parsing methods
-//
-enum CommandInput {
-    CI_NONE         = 0x01,
-    CI_IMG_ONLY     = 0x02,
-    CI_DEV_ONLY     = 0x04,
-    CI_IMG_OR_DEV   = 0x06,
-    CI_IMG_AND_DEV  = 0x08
-};
+int get_num_of_banks(char* env, int* num_of_banks)
+{
+    char* endp;
 
-enum CommandType {
-    CMD_UNKNOWN,
-    CMD_BURN,
-    CMD_SET_GUIDS,
-    CMD_BURN_BLOCK,
-    CMD_QUERY,
-    CMD_QUERY_ROM,
-    CMD_QUERY_FORCE,
-    CMD_VERIFY,
-    CMD_READ_WORD,
-    CMD_READ_BLOCK,
-    CMD_WRITE_WORD,
-    CMD_WRITE_WORD_NE,
-    CMD_WRITE_BLOCK,
-    CMD_WRITE_BLOCK_NE,
-    CMD_ERASE_SECT,
-    CMD_DUMP_CONF,
-    CMD_READ_IMAGE,
-    CMD_CFI,
-    CMD_CLEAR_SEM,
-    CMD_SWRESET
-};
-
-struct CommandInfo {
-    CommandType  cmd;
-    const char*  cmdName;
-    bool         requireExactMatch;
-    int          maxArgs;
-    CommandInput requiredInput;
-    const char*  cmdDescription;
-
-};
-
-CommandInfo const g_commands[] = {
-    { CMD_BURN           , "burn"  ,false , 0 , CI_IMG_AND_DEV , ""},
-    { CMD_BURN_BLOCK     , "bb"    ,true  , 0 , CI_IMG_AND_DEV , ""},
-    { CMD_SET_GUIDS      , "sg"    ,true  , 0 , CI_DEV_ONLY    , ""},
-    { CMD_QUERY_FORCE    , "qf"    ,true  , 0 , CI_IMG_OR_DEV  , ""},
-    { CMD_QUERY          , "query" ,false , 0 , CI_IMG_OR_DEV  , ""},
-    { CMD_QUERY_ROM      , "qrom"  ,true  , 0 , CI_IMG_ONLY    , ""},
-    { CMD_VERIFY         , "verify",false , 0 , CI_IMG_OR_DEV  , ""},
-    { CMD_READ_WORD      , "rw"    ,true  , 1 , CI_DEV_ONLY    , ""},
-    { CMD_READ_BLOCK     , "rb"    ,true  , 3 , CI_IMG_OR_DEV  , ""},
-    { CMD_WRITE_WORD     , "ww"    ,true  , 2 , CI_DEV_ONLY    , ""},
-    { CMD_WRITE_WORD_NE  , "wwne"  ,true  , 2 , CI_DEV_ONLY    , ""},
-    { CMD_WRITE_BLOCK    , "wb"    ,true  , 2 , CI_DEV_ONLY    , ""},
-    { CMD_WRITE_BLOCK_NE , "wbne"  ,true  ,-1 , CI_DEV_ONLY    , ""},
-    { CMD_ERASE_SECT     , "erase" ,false , 1 , CI_DEV_ONLY    , ""},
-    { CMD_DUMP_CONF      , "dc"    ,true  , 1 , CI_IMG_OR_DEV  , ""},
-    { CMD_READ_IMAGE     , "ri"    ,true  , 1 , CI_DEV_ONLY    , ""},
-    { CMD_CLEAR_SEM      , "clear_semaphore"    ,true  , 0 , CI_DEV_ONLY    , ""},
-    { CMD_SWRESET        , "swreset",true , 0 , CI_DEV_ONLY    , ""},
-    { CMD_CFI            , "cfi"   ,true  , 0 , CI_DEV_ONLY    , ""}
-};
-
-#define numbel(x) (sizeof(x)/sizeof((x)[0]))
-
-
-const CommandInfo* GetCommandInfo(CommandType cmd) {
-    for (u_int32_t i = 0 ; i < numbel(g_commands); i++ ) {
-        if (cmd == g_commands[i].cmd) {
-            return &g_commands[i];
-        }
+    *num_of_banks = strtoul(env, &endp, 0);
+    if (*endp != '\0' || (*num_of_banks < 1 || *num_of_banks > 4)) {
+        return 1;
     }
-
-    return NULL;
-}
-
-CommandType ParseCommand(const char* cmd) {
-    u_int32_t cmdLenGiven = strlen(cmd);
-
-    for (u_int32_t i = 0 ; i < numbel(g_commands); i++ ) {
-        if (g_commands[i].requireExactMatch ) {
-            if (!strcmp(cmd, g_commands[i].cmdName)) {
-                return g_commands[i].cmd;
-            }
-        } else {
-            // Match if given cmd maches the beginning of the checked cmd
-            if (!strncmp(cmd, g_commands[i].cmdName, cmdLenGiven )) {
-                return g_commands[i].cmd;
-            }
-        }
-    }
-    return CMD_UNKNOWN;
+    return 0;
 }
 
 
-bool CheckCommandInputs(const char* dev,
+bool Operations::CheckCommandInputs(const char* dev,
                         const char* img,
                         CommandType cmd) {
 
     const CommandInfo* cmdInfo = GetCommandInfo(cmd);
 
     if (!cmdInfo) {
-        printf("*** INTERNAL ERROR *** Unknown command given to CheckCommandInputs() (%d)\n", cmd);
+        report_err(_err_msg, "Internal error: Unknown command given to CheckCommandInputs() (%d)\n", cmd);
         return false;
     }
 
@@ -4598,7 +5143,7 @@ bool CheckCommandInputs(const char* dev,
 
     CommandInput given;
 
-    if        ( dev && img) {
+    if ( dev && img) {
         given = CI_IMG_AND_DEV;
     } else if (!dev && img) {
         given = CI_IMG_ONLY;
@@ -4609,7 +5154,7 @@ bool CheckCommandInputs(const char* dev,
     }
 
     if ((given & cmdInfo->requiredInput) == 0) {
-        printf("*** ERROR *** Command \"%s\" requires %s to be specified",
+        report_err(_err_msg, "Command \"%s\" requires %s to be specified",
                cmdInfo->cmdName,
                inputDesStr[cmdInfo->requiredInput]);
 
@@ -4627,15 +5172,15 @@ bool CheckCommandInputs(const char* dev,
     return true;
 }
 
-bool CheckMaxCmdArguments(CommandType cmd, int numArgs) {
+bool Operations::CheckMaxCmdArguments(CommandType cmd, int numArgs) {
     const CommandInfo* cmdInfo = GetCommandInfo(cmd);
     if (!cmdInfo) {
-        printf("*** INTERNAL ERROR *** Unknown command given to CheckMaxCmdArguments (%d)\n", cmd);
+        report_err(_err_msg, "Internal error: Unknown command given to CheckMaxCmdArguments (%d)\n", cmd);
         return false;
     }
 
     if (cmdInfo->maxArgs >= 0 && numArgs > cmdInfo->maxArgs) {
-        printf("*** ERROR *** Command \"%s\" requires %d arguments, but %d arguments were given\n",
+        report_err(_err_msg, "Command \"%s\" requires %d arguments, but %d arguments were given\n",
                cmdInfo->cmdName,
                cmdInfo->maxArgs,
                numArgs);
@@ -4643,6 +5188,93 @@ bool CheckMaxCmdArguments(CommandType cmd, int numArgs) {
     }
     return true;
 }
+
+#define INCR_GUID(base_guid, user_guid, incr_val) { \
+            u_int64_t g = base_guid.h;              \
+            g = (g << 32) | base_guid.l;            \
+            g += incr_val;                          \
+            user_guid.h = (u_int32_t)(g >> 32);     \
+            user_guid.l = (u_int32_t)g;             \
+}
+
+guid_t GetBaseMac(guid_t base_guid)
+{
+    guid_t base_mac;
+    base_mac.l = (base_guid.l & 0x00ffffff) | ((base_guid.h & 0xff00) << 16);
+    base_mac.h = base_guid.h >> 16;
+    return base_mac;
+}
+
+bool InitBxGuids(guid_t* user_guids, guid_t base_guid1) {
+
+    int base_index = 0;
+    guid_t base_mac, base_guid;
+
+    for (int i = 0; i < Operations::BX_SLICES_NUM; i++) {
+        base_index = i * Operations::BX_SLICE_GUIDS;
+        INCR_GUID(base_guid1, base_guid, i * 8);
+        // Init Guids
+        int base_guids_index = base_index + Operations::BI_GUIDS;
+
+        for (int j = 0; j < Operations::BX_NP_GUIDS; j++) {
+            INCR_GUID(base_guid, user_guids[base_guids_index + j], j);
+        }
+        // Init Macs
+        base_mac = GetBaseMac(base_guid);
+        int base_macs_index = base_index + Operations::BI_IMACS;
+        for (int j = 0; j < Operations::BX_MACS; j++) {
+            INCR_GUID(base_mac, user_guids[base_macs_index + j], j);
+        }
+        // Init WWPNSs
+        int base_wwpn_index = base_index + Operations::BI_WWPNS;
+        int base_emac_index = base_index + Operations::BI_EMACS;
+
+        for (int j = 0; j < Operations::BX_WWPNS; j++) {
+            user_guids[base_wwpn_index + j].l =  user_guids[base_emac_index + j].l;
+            user_guids[base_wwpn_index + j].h = (user_guids[base_emac_index + j].h | (0x2000 << 16));
+        }
+
+        // Init WWNNS
+        int base_wwnn_index = base_index + Operations::BI_WWNNS;
+        base_emac_index = base_index + Operations::BI_EMACS;
+
+        user_guids[base_wwnn_index].l =  user_guids[base_emac_index].l;
+        user_guids[base_wwnn_index].h = (user_guids[base_emac_index].h | (0x2001 << 16));
+    }
+
+    // Init SysGuid
+    INCR_GUID(base_guid1, user_guids[Operations::BI_SYS_GUID], 7);
+    return true;
+}
+bool Operations::PrintMissGuidErr(bool ib_dev, bool eth_dev, bool bx_dev, const char* pre_err_msg)
+{
+    const char* missing_info;
+    const char* missing_flags;
+
+    if (bx_dev) {
+        missing_info  = "UIDs (GUIDs / MACs / WWNs)";
+        missing_flags = "-uid(s)";
+    } else {
+        if (ib_dev && eth_dev) {
+            missing_info  = "GUIDs / MACs";
+            missing_flags = "-guid(s) / -mac(s)";
+        } else if (ib_dev) {
+            missing_info  = "GUIDs";
+            missing_flags = "-guid(s)";
+        } else {
+            missing_info  = "MACs";
+            missing_flags = "-mac(s)";
+        }
+
+    }
+    printf("\n");
+    report_err(_err_msg, "%s, "
+           "Please specify %s (using command line flags %s ). \n", pre_err_msg, missing_info, missing_flags);
+    return true;
+}
+
+
+
 
 ////////////////////////////////////////////////////////////////////////
 //
@@ -4653,42 +5285,48 @@ bool CheckMaxCmdArguments(CommandType cmd, int numArgs) {
 #define NEXTS(s) do {                                        \
     if (++i >= ac)                                           \
     {                                                        \
-        printf("Missed parameter after \"%s\" switch\n", s); \
+        report_err(ops._err_msg, "Missed parameter after \"%s\" switch\n", s); \
         return 1;                                            \
     }} while(0)
 #define NEXTC(p, s) do {                                           \
     if (++i >= ac)                                                 \
     {                                                              \
-        printf("Missed %s parameter after \"%s\" command\n", p,s); \
+        report_err(ops._err_msg, "Missed %s parameter after \"%s\" command\n", p,s); \
         return 1;                                                  \
     }} while(0)
 
 #define SETERR(args) do { printf("*** ERROR *** "); printf args; printf("\n"); return 1; } while(0)
 
 
+
 int main(int ac, char *av[])
 {
 
-    char         *image_fname=0, *device=0;
-    bool         clear_semaphore  = false;
-    bool         silent           = false;
-    bool         guids_specified  = false;
-    bool         macs_specified   = false;
-    bool         burn_failsafe    = true;
-    bool         use_image_ps     = false;
-    bool         use_image_guids  = false;
-    bool         single_image_burn = true;
+    char         *image_fname=0, *device=0, *log_file;
+    bool         clear_semaphore    = false;
+    bool         silent             = false;
+    bool         guids_specified    = false;
+    bool         macs_specified     = false;
+    bool         uids_specified     = false;
+    bool         burn_failsafe      = true;
+    bool         use_image_ps       = false;
+    bool         use_image_guids    = false;
+    bool         single_image_burn  = true;
     bool         checkMatchingDevId = true;
+    bool         allowPsidChange    = false;
+    bool         writeToLog         = false;
 
     const char*  cmdStr           = NULL;
 
     char         *user_vsd=0;
     char         *user_psid=0;
     guid_t       user_guids[Operations::MAX_GUIDS];
-    int		 rc = 0;
+    guid_t       base_guid;
+    int          rc = 0;
+    int          num_of_banks = 0;
 
     CommandType cmd = CMD_UNKNOWN;
-
+    SectionType dump_sect_type = H_FW_CONF;
     auto_ptr<Flash>       f;
     FImage                fim;
 
@@ -4698,8 +5336,10 @@ int main(int ac, char *av[])
     const char* cmdTarget = NULL;
     const char* cmdAccess = NULL;
 
-    bool        cntx_image  = false;
-    bool        cntx_device = false;
+    bool        fs2_image  = false;
+    bool        fs2_device = false;
+
+
     //
     // Map termination signal handlers
     //
@@ -4728,9 +5368,9 @@ int main(int ac, char *av[])
             if (!strcmp(av[i], "-dual_image"))
                 single_image_burn = false;
 
-	    else if (!strcmp(av[i], "-clear_semaphore")) {
+            else if (!strcmp(av[i], "-clear_semaphore")) {
                 clear_semaphore = true;
-	    }
+            }
 
             else if (!strncmp(av[i], "-device", switchLen)) {
                 NEXTS("-device");
@@ -4758,40 +5398,35 @@ int main(int ac, char *av[])
                 _print_crc = true;
             else if (!strcmp(av[i], "-bytewrite")) {
                 if (device) {
-                    printf("\"-bytewrite\" should be specifies before \"-device\" switch in the command line.\n");
+                    report_err(ops._err_msg, "\"-bytewrite\" should be specified before \"-device\" switch in the command line.\n");
                     rc =  1; goto done;
                 }
                 _byte_write = true;
             } else if (!strcmp(av[i], "-vsd")) {
                 NEXTS("-vsd");
                 user_vsd = av[i];
-            }
-            // -vsd1 is an alias to -vsd, for backward compatibility. Can be removed in the future.
-            else if (!strcmp(av[i], "-vsd1")) {
-                printf("-W- Flag \"%s\" is deprecated. It will be removed in the next version. Use \"-vsd\" flag for the same result.\n", av[i]);
+            } else if (!strcmp(av[i], "-vsd1")) {
+                // -vsd1 is an alias to -vsd, for backward compatibility. Can be removed in the future.
+                report_warn("Flag \"%s\" is deprecated. It will be removed in the next version. Use \"-vsd\" flag for the same result.\n", av[i]);
                 NEXTS("-vsd1");
                 user_vsd = av[i];
             } else if (!strcmp(av[i], "-psid")) {
-                printf("-W- Flag \"%s\" is deprecated. It will be removed in the next version.\n", av[i]);
+                report_warn("Flag \"%s\" is deprecated. It will be removed in the next version.\n", av[i]);
                 NEXTS("-psid");
                 user_psid = av[i];
             }
             // -vsd2 is an alias to psid, for backward compatibility. Can be removed in the future.
             else if (!strcmp(av[i], "-vsd2")) {
-                printf("-W- Flag \"%s\" is deprecated. It will be removed in the next version.\n", av[i]);
+                report_warn("Flag \"%s\" is deprecated. It will be removed in the next version.\n", av[i]);
                 NEXTS("-vsd2");
                 user_psid = av[i];
             } else if (!strcmp(av[i], "-bsn")) {
-                printf("-W- Flag \"%s\" is deprecated. It will be removed in the next version.\n", av[i]);
+                report_warn("Flag \"%s\" is deprecated. It will be removed in the next version.\n", av[i]);
 
                 NEXTS("-bsn");
                 GETBSN(av[i], &user_guids[0]);
                 for (int i=1; i<Operations::GUIDS; i++) {
-                    u_int64_t g=user_guids[0].h;
-                    g=(g<<32) | user_guids[0].l;
-                    g += i;
-                    user_guids[i].h = (u_int32_t)(g>>32);
-                    user_guids[i].l = (u_int32_t)g;
+                    INCR_GUID(user_guids[0], user_guids[i], i);
                 }
                 guids_specified = true;
             } else if (!strncmp(av[i], "-image", switchLen)) {
@@ -4801,16 +5436,12 @@ int main(int ac, char *av[])
                 NEXTS("-guid");
                 GETGUID(av[i], &user_guids[0]);
                 for (int i=1; i<Operations::GUIDS; i++) {
-                    u_int64_t g=user_guids[0].h;
-                    g=(g<<32) | user_guids[0].l;
-                    g += i;
-                    user_guids[i].h = (u_int32_t)(g>>32);
-                    user_guids[i].l = (u_int32_t)g;
+                    INCR_GUID(user_guids[0], user_guids[i], i);
                 }
                 guids_specified = true;
             } else if (!strcmp(av[i], "-guids")) {
                 if (i + 4 >= ac) {
-                    printf("Exactly four GUIDs must be specified.\n");
+                    report_err(ops._err_msg, "Exactly four GUIDs must be specified.\n");
                     rc =  1; goto done;
                 }
                 i++;
@@ -4824,16 +5455,12 @@ int main(int ac, char *av[])
                 NEXTS("-mac");
                 GETGUID(av[i], &user_guids[Operations::GUIDS]);
                 for (int i=1; i < Operations::MACS ; i++) {
-                    u_int64_t g=user_guids[Operations::GUIDS].h;
-                    g=(g<<32) | user_guids[Operations::GUIDS].l;
-                    g += i;
-                    user_guids[Operations::GUIDS + i].h = (u_int32_t)(g>>32);
-                    user_guids[Operations::GUIDS + i].l = (u_int32_t)g;
+                    INCR_GUID(user_guids[Operations::GUIDS], user_guids[Operations::GUIDS + i], i);
                 }
                 macs_specified = true;
             } else if (!strcmp(av[i], "-macs")) {
                 if (i + 2 >= ac) {
-                    printf("Exactly two MACs must be specified.\n");
+                    report_err(ops._err_msg, "Exactly two MACs must be specified.\n");
                     rc =  1; goto done;
                 }
                 i++;
@@ -4842,6 +5469,33 @@ int main(int ac, char *av[])
                 }
                 i += 1;
                 macs_specified = true;
+            } else if (!strcmp(av[i], "-uid")) {
+                NEXTS("-uid");
+                GETGUID(av[i], &base_guid);
+                InitBxGuids(user_guids, base_guid);
+                uids_specified = true;
+            } else if (!strcmp(av[i], "-uids")) {
+                if (i + Operations::BX_ALL_GUIDS >= ac) {
+                    report_err(ops._err_msg, "Exactly %d UIDs must be specified.\n", Operations::BX_ALL_GUIDS);
+                    rc =  1; goto done;
+                }
+                i++;
+                for (int j = 0; j < Operations::BX_ALL_GUIDS; j++) {
+                    GETGUID(av[i+j], &user_guids[j]);
+                }
+                i += (Operations::BX_ALL_GUIDS - 1);
+                uids_specified = true;
+            } else if (!strcmp(av[i], "-banks")) {
+                NEXTS("-banks");
+                rc = get_num_of_banks(av[i], &num_of_banks);
+                if (rc) {
+                    report_err(ops._err_msg, "Bad number of banks(%s), it should be between 1 and 4\n", av[i]);
+                    rc = 1; goto done;
+                }
+            } else if (!strcmp(av[i], "-log")) {
+                NEXTS("-log");
+                log_file   = av[i];
+                writeToLog = true;
             } else if (!strncmp(av[i], "-silent", switchLen))
                 silent = true;
             else if (!strcmp(av[i], "-use_image_ps"))
@@ -4855,7 +5509,7 @@ int main(int ac, char *av[])
             else if (!strcmp(av[i], "-skip_is"))
                 ops.SetAllowSkipIs(true);
             else if (!strcmp(av[i], "-striped_image"))
-                ops.SetCntxStripedImage(true);
+                ops.SetFs2StripedImage(true);
             else if (!strcmp(av[i], "-blank_guids"))
                 ops.SetBurnBlankGuids(true);
             else if (!strcmp(av[i], "-qq"))
@@ -4866,6 +5520,8 @@ int main(int ac, char *av[])
                 _assume_no = true;
             else if (!strcmp(av[i], "-byte_mode"))
                 Flash::_byte_mode = true;
+            else if (!strcmp(av[i], "-allow_psid_change"))
+                 allowPsidChange = true;
 
 
             else if (!strncmp(av[i], "-hh", 3) ||  !strncmp(av[i], "--hh", 4)) {
@@ -4875,31 +5531,25 @@ int main(int ac, char *av[])
                 usage(av[0]);
                 rc =  0; goto done;
             } else {
-                printf("*** ERROR *** Invalid switch \"%s\" is specified.\n", av[i]);
+                report_err(ops._err_msg, "Invalid switch \"%s\" is specified.\n", av[i]);
                 rc =  1; goto done;
             }
-        }  else {
+        } else {
             // command
             cmdStr = av[i];
             break;
         }
     }
-
     if (_assume_yes && _assume_no) {
-        printf("*** ERROR *** -yes and -no options can not be specified together.\n");
+        report_err(ops._err_msg, "-yes and -no options can not be specified together.\n");
         rc =  1; goto done;
     }
 
-    if (ops.GetBurnBlankGuids() && (guids_specified || macs_specified)) {
-        const char* flag = "-guid(s)";
-
-        if (macs_specified && !guids_specified) {
-            flag = "-mac(s)";
-        }
-
-        printf("*** ERROR *** -blank_guids and %s options can not be specified together.\n", flag);
+    if (ops.GetBurnBlankGuids() && (guids_specified || macs_specified || uids_specified)) {
+        report_err(ops._err_msg, "-blank_guids and (-uid(s) -guid(s) -mac(s)) options can not be specified together.\n");
         rc =  1; goto done;
     }
+
 
     //
     // Commands
@@ -4908,7 +5558,7 @@ int main(int ac, char *av[])
 
     if (clear_semaphore) {
         if (cmdStr) {
-            printf("*** ERROR *** No command is allowed when -clear_semaphore flag is given.\n");
+            report_err(ops._err_msg, "No command is allowed when -clear_semaphore flag is given.\n");
             rc =  1; goto done;
         } else {
             cmdStr = "clear_semaphore";
@@ -4916,7 +5566,7 @@ int main(int ac, char *av[])
     }
 
     if (!cmdStr) {
-        printf("*** ERROR *** No command given. See help for details.\n");
+        report_err(ops._err_msg, "No command given. See help for details.\n");
         rc =  1; goto done;
     }
 
@@ -4926,7 +5576,7 @@ int main(int ac, char *av[])
     cmd = ParseCommand(cmdStr);
 
     if (cmd == CMD_UNKNOWN) {
-        printf("*** ERROR *** Invalid command \"%s\".\n", av[i]);
+        report_err(ops._err_msg, "Invalid command \"%s\".\n", av[i]);
         rc =  1; goto done;
     }
 
@@ -4934,11 +5584,11 @@ int main(int ac, char *av[])
         clear_semaphore = true;
     }
 
-    if (!CheckCommandInputs(device, image_fname, cmd)) {
+    if (!ops.CheckCommandInputs(device, image_fname, cmd)) {
         rc = 1; goto done;
     }
 
-    if (!CheckMaxCmdArguments(cmd, ac - i - 1 )) {
+    if (!ops.CheckMaxCmdArguments(cmd, ac - i - 1)) {
         rc = 1; goto done;
     }
 
@@ -4948,13 +5598,13 @@ int main(int ac, char *av[])
         f = tmp;
 
         if (f.get() == NULL) {
-            printf("*** ERROR *** Memory allocation failed\n");
+            report_err(ops._err_msg, "Memory allocation failed\n");
             rc =  1; goto done;
         }
 
         g_flash = f.get();
-        if (!f->open(device, clear_semaphore)) {
-            printf("*** ERROR *** Can not open %s: %s\n", device, f->err());
+        if (!f->open(device, clear_semaphore, false, num_of_banks)) {
+            report_err(ops._err_msg, "Can not open %s: %s\n", device, f->err());
             rc =  1; goto done;
         }
 
@@ -4965,12 +5615,12 @@ int main(int ac, char *av[])
         fbase     = f.get();
 
         // Connectx Mode:
-        cntx_device = ops.CheckIsCntx(*fbase);
+        fs2_device = ops.CheckIsFs2(*fbase);
     }
 
     if (image_fname) {
         if (!fim.open(image_fname)) {
-            printf("*** ERROR *** Image file open failed: %s\n", fim.err());
+            report_err(ops._err_msg, "Image file open failed: %s\n", fim.err());
             rc =  1; goto done;
         }
 
@@ -4979,806 +5629,825 @@ int main(int ac, char *av[])
         fbase     = &fim;
 
         // Connectx Mode:
-        cntx_image = ops.CheckIsCntx(fim);
+        fs2_image = ops.CheckIsFs2(fim);
     }
 
-    ops.SetCntxMode(cntx_image || cntx_device);
+    ops.SetFs2Mode(fs2_image || fs2_device);
 
     switch (cmd) {
     case CMD_BURN:
     case CMD_BURN_BLOCK:
-    {
-
-        //
-        // BURN
-        //
-        Operations::ImageInfo fileInfo;
-        Operations::ImageInfo flashInfo;
-        bool burn_block = (cmd == CMD_BURN_BLOCK);
-
-        if (!burn_block) {
-            if (cntx_image != cntx_device) {
-                printf("*** ERROR *** The given device %s a FS2 image type, but the given image file %s a FS2 FW image\n",
-                       cntx_device ? "requires" : "does not require",
-                       cntx_image  ? "contains" : "does not contain");
-                rc =  1; goto done;
-            }
-
-            // Make checks and replace vsd/guids.
-            bool old_silent = _silent;
-            _silent = true;
-            if (!ops.Verify(fim, &fileInfo) || !ops.QueryAll(fim, &fileInfo)) {
-                printf("*** ERROR *** %s: Not a valid image file (%s)\n", image_fname, ops.err());
-                rc =  1; goto done;
-            }
-
-            if (checkMatchingDevId && fileInfo.infoOffs[Operations::II_DeviceType]) {
-                if (!ops.CheckMatchingDevId(f->get_dev_id(),
-                                            fileInfo.devType)) {
-                    printf("*** ERROR *** Device/Image mismatch: %s\n",
-                           ops.err());
-                    rc =  1; goto done;
+        {
+            //
+            // BURN
+            //
+            Operations::ImageInfo fileInfo;
+            Operations::ImageInfo flashInfo;
+            bool burn_block = (cmd == CMD_BURN_BLOCK);
+            if (writeToLog == true) {
+                f_log_fh = fopen(log_file, "a+");
+                if (f_log_fh == NULL) {
+                    report_warn("Failed to open log file \"%s\": %s. No logs will be saved\n", log_file,
+                                strerror(errno));
                 }
             }
+            write_cmd_to_log(av, ac);
 
+            if (!burn_block) {
 
-            // Get GUID and VSD info from flash
-
-            bool read_guids = true;
-            bool read_ps    = true;
-
-            // Flash query (unlike image file query) does not have to
-            // pass. E.G. blank flash and the user supplies the needed data (guids, vsd).
-
-            bool flash_query_res= true;
-            if (ops.GetQuickQuery()) {
-                printf("\n*** WARNING *** Running quick query - Skipping full image integrity checks.\n");
-                if (ops.IsCntx()) {
-                    flash_query_res = ops.VerifyCntx(*f, &flashInfo, false, true);
-                }
-
-                if (flash_query_res) {
-                    flash_query_res = ops.QueryAll(*f, &flashInfo);
-                }
-            } else {
-                flash_query_res = ops.Verify(*f, &flashInfo) && ops.QueryAll(*f, &flashInfo);
-            }
-
-            bool ib_dev;
-            bool eth_dev;
-
-            ops.SetDevFlags(fileInfo.devType, ib_dev,eth_dev);
-
-            if ((user_vsd && user_psid) || use_image_ps)
-                read_ps = false;
-
-            if (ops.GetBurnBlankGuids() ||
-                (guids_specified && ib_dev) ||
-                (macs_specified && eth_dev))
-                read_guids = false;
-
-            if (read_guids && !flash_query_res) {
-                const char* missing_info;
-                const char* missing_flags;
-
-                if (ib_dev && eth_dev) {
-                    missing_info  = "GUIDs / MACs";
-                    missing_flags = "-guid(s) / -mac(s)";
-                } else if (ib_dev) {
-                    missing_info  = "GUIDs";
-                    missing_flags = "-guid(s)";
-                } else {
-                    missing_info  = "MACs";
-                    missing_flags = "-mac(s)";
-                }
-
-                if (read_guids && !flashInfo.imageOk) {
-                    printf("\n");
-                    printf("*** ERROR *** Can not extract %s info from flash. "
-                           "Please specify %s (using command line flags %s ). \n", missing_info, missing_info, missing_flags);
-                }
-
-                if (burn_failsafe) {
-                    printf("              Can not burn in a failsafe mode.\n");
-		    printf("              If you want to burn in non failsafe mode, use the \"-nofs\" switch.\n");
-                }
-                rc =  1; goto done;
-            }
-
-            // Patch GUIDS
-            if  (guids_specified || macs_specified) {
-                if (!ops.CheckGuidsFlags(fileInfo.devType, ib_dev, guids_specified, eth_dev, macs_specified)) {
-                    printf("*** ERROR *** %s\n", ops.err());
+                if (fs2_image != fs2_device) {
+                    report_err(ops._err_msg, "The given device %s a FS2 image type, but the given image file %s a FS2 FW image\n",
+                           fs2_device ? "requires" : "does not require",
+                           fs2_image  ? "contains" : "does not contain");
                     rc =  1; goto done;
                 }
 
-                if (!ops.patchGUIDs(fim,
-                                    &fileInfo,
-                                    ib_dev,
-                                    eth_dev,
-                                    guids_specified,
-                                    macs_specified,
-                                    user_guids,
-                                    flashInfo.imageOk ? flashInfo.guids : NULL,
-                                    flashInfo.guidNum,
-                                    true)) {
+                // Make checks and replace vsd/guids.
+                bool old_silent = _silent;
+                _silent = true;
+                if (!ops.Verify(fim, &fileInfo) || !ops.QueryAll(fim, &fileInfo)) {
+                    report_err(ops._err_msg, "%s: Not a valid image file (%s)\n", image_fname, ops.err());
                     rc =  1; goto done;
                 }
-            } else if (!use_image_guids) {
-                if (!ops.patchGUIDs(fim,
-                                    &fileInfo,
-                                    ib_dev,
-                                    eth_dev,
-                                    false,
-                                    false,
-                                    NULL,
-                                    flashInfo.guids,
-                                    flashInfo.guidNum,
-                                    false)) {
-                    rc =  1; goto done;
+
+                if (checkMatchingDevId) {
+                    if (fileInfo.infoOffs[Operations::II_HwDevsId]) {
+                        if (!ops.CheckMatchingHwDevId(f->get_dev_id(),
+                                                    f->get_rev_id(),
+                                                    fileInfo.supportedHwId,
+                                                    fileInfo.supportedHwIdNum)) {
+                            report_err(ops._err_msg, "Device/Image mismatch: %s\n",
+                                   ops.err());
+                            rc =  1; goto done;
+                        }
+                    } else if (fileInfo.infoOffs[Operations::II_DeviceType]) {
+
+                        if (!ops.CheckMatchingDevId(f->get_dev_id(), fileInfo.devType)) {
+                            report_err(ops._err_msg, "Device/Image mismatch: %s\n",
+                                   ops.err());
+                            rc =  1; goto done;
+                        }
+                    }
                 }
-            }
 
-            if (burn_failsafe && (!fileInfo.isFailsafe || !flashInfo.isFailsafe)) {
-                printf("*** ERROR *** Failsafe burn failed: FW image in the %s is non failsafe.\n",         fileInfo.isFailsafe ? "flash" : "given file");
-                printf("              It is impossible to burn %sa non failsafe image in a failsafe mode.\n", fileInfo.isFailsafe ? "over " : "");
-                printf("              If you want to burn in non failsafe mode, use the \"-nofs\" switch.\n");
-                rc =  1; goto done;
-            }
-
-            if (!user_vsd && !(flashInfo.psOk || (flashInfo.infoOffs[Operations::II_PSID] &&
-                                                flashInfo.infoOffs[Operations::II_VSD]  ))) {
-                printf("\n");
-                if (burn_failsafe) {
-
-                    printf("*** ERROR *** Can not extract VSD/PSID info from flash.\n"
-                           "              Can not burn in a failsafe mode. Please use \"-nofs\" flag to burn in a non failsafe mode.\n");
-                    rc =  1; goto done;
-                }  else {
-                    printf("*** WARNING *** Can not extract VSD/PSID info from flash.\n\n"
-                           "    To use a specific VSD, abort and re-burn specifying the\n"
-                           "    needed info (using command line flags -vsd / -use_image_ps).\n"
-                           "    You can also continue burn using blank VSD.\n");
-
+                if (!ops.CheckMatchingExpRomDevId(&fileInfo)) {
+                    printf("*** WARNING *** Image file ROM: %s\n", ops.err());
                     if (!ops.ask_user()) {
                         rc =  1; goto done;
                     }
                 }
-            }
 
-            // Print FW versions:
-            printf("\n");
-            printf("    Current FW version on flash:  ");
-            if (flashInfo.infoOffs[Operations::II_FwVersion]) {
-                printf("%d.%d.%d\n", flashInfo.fwVer[0], flashInfo.fwVer[1], flashInfo.fwVer[2]);
-            } else {
-                printf("N/A\n");
-            }
+                // Get GUID and VSD info from flash
 
-            printf("    New FW version:               ");
-            if (fileInfo.infoOffs[Operations::II_FwVersion]) {
-                printf("%d.%d.%d\n", fileInfo.fwVer[0], fileInfo.fwVer[1], fileInfo.fwVer[2]);
-            } else {
-                printf("N/A\n");
-            }
+                bool read_guids = true;
+                bool read_ps    = true;
 
-            bool updateRequired = true;
+                // Flash query (unlike image file query) does not have to
+                // pass. E.G. blank flash and the user supplies the needed data (guids, vsd).
 
-            if (fileInfo.infoOffs[Operations::II_FwVersion]  &&
-                flashInfo.infoOffs[Operations::II_FwVersion]) {
+                bool flash_query_res= true;
+                if (ops.GetQuickQuery()) {
+                    printf("\n*** WARNING *** Running quick query - Skipping full image integrity checks.\n");
+                    if (ops.IsFs2()) {
+                        flash_query_res = ops.VerifyFs2(*f, &flashInfo, false, true);
+                    }
 
-                updateRequired = ops.FwVerLessThan(flashInfo.fwVer,fileInfo.fwVer);
-            }
-
-            if (!updateRequired) {
-                printf("\n    Note: The new FW version is not newer than the current FW version on flash.\n");
-                if (! ops.ask_user()) {
-                    rc =  RC_FW_ALREADY_UPDATED; goto done;
+                    if (flash_query_res) {
+                        flash_query_res = ops.QueryAll(*f, &flashInfo);
+                    }
+                } else {
+                    flash_query_res = ops.Verify(*f, &flashInfo) && ops.QueryAll(*f, &flashInfo);
                 }
-            }
 
-            if (fileInfo.infoOffs[Operations::II_IsGa] && !fileInfo.isGa) {
-                printf("\n    Note: You are attempting to burn a pre-production FW image.\n");
-                if (! ops.ask_user()){
+                bool ib_dev;
+                bool eth_dev;
+                bool bx_dev;
+
+                bx_dev = ops.IsBridgeX(fileInfo.devType);
+                ops.SetDevFlags(fileInfo.devType, ib_dev, eth_dev);
+
+                if ((user_vsd && user_psid) || use_image_ps)
+                    read_ps = false;
+
+                if (ops.GetBurnBlankGuids() || (guids_specified && ib_dev) || (macs_specified && eth_dev)
+                    || (uids_specified && bx_dev)) {
+                    read_guids = false;
+                }
+
+                if (read_guids && !flash_query_res) {
+                    ops.PrintMissGuidErr(ib_dev, eth_dev, bx_dev, "Can not extract GUIDs info from flash");
+                    if (burn_failsafe) {
+                        printf("              Can not burn in a failsafe mode.\n");
+                        printf("              If you want to burn in non failsafe mode, use the \"-nofs\" switch.\n");
+                    }
                     rc =  1; goto done;
                 }
+
+                // Patch GUIDS
+                if (guids_specified || macs_specified || uids_specified) {
+                    if (!ops.CheckGuidsFlags(fileInfo.devType, guids_specified, macs_specified,  uids_specified)) {
+                        report_err(ops._err_msg, "%s\n", ops.err());
+                        rc =  1; goto done;
+                    }
+                    if (!ops.patchGUIDs(fim,
+                                        &fileInfo,
+                                        ib_dev,
+                                        eth_dev,
+                                        bx_dev,
+                                        guids_specified,
+                                        macs_specified,
+                                        uids_specified,
+                                        user_guids,
+                                        flashInfo.imageOk ? flashInfo.guids : NULL,
+                                        flashInfo.guidNum,
+                                        true)) {
+                        rc =  1; goto done;
+                    }
+                } else if (!use_image_guids) {
+                    if (!ops.patchGUIDs(fim,
+                                        &fileInfo,
+                                        ib_dev,
+                                        eth_dev,
+                                        bx_dev,
+                                        false,
+                                        false,
+                                        false,
+                                        NULL,
+                                        flashInfo.guids,
+                                        flashInfo.guidNum,
+                                        false)) {
+                        rc =  1; goto done;
+                    }
+                }
+
+                if (burn_failsafe && (!fileInfo.isFailsafe || !flashInfo.isFailsafe)) {
+                    report_err(ops._err_msg, "Failsafe burn failed: FW image in the %s is non failsafe.\n"
+                    "    It is impossible to burn %sa non failsafe image in a failsafe mode.\n"
+                    "    If you want to burn in non failsafe mode, use the \"-nofs\" switch.\n",
+                    fileInfo.isFailsafe ? "flash" : "given file", fileInfo.isFailsafe ? "over " : "");
+
+                    rc =  1; goto done;
+                }
+
+                if (!user_vsd && !(flashInfo.psOk || (flashInfo.infoOffs[Operations::II_PSID] &&
+                                                      flashInfo.infoOffs[Operations::II_VSD]  ))) {
+                    printf("\n");
+                    if (burn_failsafe) {
+
+                        report_err(ops._err_msg, "Can not extract VSD/PSID info from flash.\n"
+                                  "    Can not burn in a failsafe mode. Please use \"-nofs\" flag to burn in a non failsafe mode.\n");
+                        rc =  1; goto done;
+                    } else {
+                        printf("*** WARNING *** Can not extract VSD/PSID info from flash.\n\n"
+                               "    To use a specific VSD, abort and re-burn specifying the\n"
+                               "    needed info (using command line flags -vsd / -use_image_ps).\n"
+                               "    You can also continue burn using blank VSD.\n");
+
+                        if (!ops.ask_user()) {
+                            rc =  1; goto done;
+                        }
+                    }
+                }
+
+                // Print FW versions:
+                printf("\n");
+                char curr_ver[124], new_ver[124];
+                printf("    Current FW version on flash:  ");
+                if (flashInfo.infoOffs[Operations::II_FwVersion]) {
+                    sprintf(curr_ver, "%d.%d.%d", flashInfo.fwVer[0], flashInfo.fwVer[1], flashInfo.fwVer[2]);
+                } else {
+                    sprintf(curr_ver, "N/A");
+                }
+                printf(curr_ver); printf("\n");
+
+                printf("    New FW version:               ");
+                if (fileInfo.infoOffs[Operations::II_FwVersion]) {
+                    sprintf(new_ver, "%d.%d.%d", fileInfo.fwVer[0], fileInfo.fwVer[1], fileInfo.fwVer[2]);
+                } else {
+                    sprintf(new_ver, "N/A");
+                }
+                printf(new_ver); printf("\n");
+
+                print_line_to_log("Current FW version on flash: %s,  New FW version: %s\n", curr_ver, new_ver);
+
+                bool updateRequired = true;
+
+                if (fileInfo.infoOffs[Operations::II_FwVersion]  &&
+                    flashInfo.infoOffs[Operations::II_FwVersion]) {
+
+                    updateRequired = ops.FwVerLessThan(flashInfo.fwVer,fileInfo.fwVer);
+                }
+
+                if (!updateRequired) {
+                    printf("\n    Note: The new FW version is not newer than the current FW version on flash.\n");
+                    if (! ops.ask_user()) {
+                        rc =  RC_FW_ALREADY_UPDATED; goto done;
+                    }
+                }
+
+                if (fileInfo.infoOffs[Operations::II_IsGa] && !fileInfo.isGa) {
+                    printf("\n    Note: You are attempting to burn a pre-production FW image.\n");
+                    if (! ops.ask_user()) {
+                        rc =  1; goto done;
+                    }
+                }
+
+                if (!use_image_ps) {
+                    if (fileInfo.psOk || (ops.IsFs2() && fileInfo.infoOffs[Operations::II_VSD])) {
+                        if (!ops.patchVSD(fim,
+                                          &fileInfo,
+                                          user_vsd,
+                                          user_psid,
+                                          flashInfo.vsd,
+                                          NULL,
+                                          fileInfo.psid )) {
+                            rc =  1; goto done;
+                        }
+                    }
+                }
+
+                // Check PSID and ib -> eth change.
+
+                if (fileInfo.infoOffs[Operations::II_PSID]  &&
+                    flashInfo.infoOffs[Operations::II_PSID] &&
+                    strncmp( fileInfo.psid, flashInfo.psid, PSID_LEN)) {
+                    if (ops.IsFs2() &&
+                        (!ib_dev && eth_dev) &&
+                        flashInfo.infoOffs[Operations::II_DeviceType] &&
+                        ops.CntxIsIb(flashInfo.devType) &&
+                        !ops.CntxIsEth(flashInfo.devType)) {
+
+                        printf("\n    You are about to replace FW image type from IB to ETH image.\n");
+                        if (! ops.ask_user()) {
+                            rc =  1; goto done;
+                        }
+                    } else {
+                        if (allowPsidChange) {
+                            printf("\n    You are about to replace current PSID on flash - \"%s\" with a different PSID - \"%s\".\n"
+                                   "    Note: It is highly recommended not to change the PSID.\n",
+                                   flashInfo.psid,
+                                   fileInfo.psid);
+                            if (! ops.ask_user()) {
+                                rc =  1; goto done;
+                            }
+
+                        } else {
+                            printf("\n");
+                            report_err(ops._err_msg, "PSID mismatch. The PSID on flash (%s) differs from the PSID in the given image (%s).\n",
+                                   flashInfo.psid,
+                                   fileInfo.psid);
+                            //printf("    It is highly recommended not to change the PSID. To force a PSID change, use the -allow_psid_change flag\n");
+                            rc =  1; goto done;
+                        }
+                    }
+
+                }
+
+                // Check exp rom:
+                if (!fileInfo.expRomFound && flashInfo.expRomFound) {
+                    printf("\n    Expansion-ROM mismatch: \n"
+                           "    Current FW on flash contains an expansion-ROM.\n"
+                           "    The new FW image does not contain an expansion-ROM\n");
+
+                    if (! ops.ask_user()) {
+                        rc =  1; goto done;
+                    }
+                }
+
+                _silent = old_silent;
+
+            } else {
+                // BURN BLOCK:
+                burn_failsafe = false;
             }
 
-            if (!use_image_ps) {
-                if (fileInfo.psOk || (ops.IsCntx() && fileInfo.infoOffs[Operations::II_VSD])) {
-                    if (!ops.patchVSD(fim,
-                                      &fileInfo,
-                                      user_vsd,
-                                      user_psid,
-                                      flashInfo.vsd,
-                                      NULL,
-                                      fileInfo.psid )) {
-                        rc =  1; goto done;
+            // Burn it
+            if (burn_failsafe) {
+                // FS burn
+                bool ret;
+                if (ops.IsFs2()) {
+                    ret = ops.CntxFailSafeBurn(*f,
+                                               fim,
+                                               !silent,
+                                               &flashInfo,
+                                               &fileInfo,
+                                               false);
+
+                } else {
+                    ret = ops.FailSafeBurn(*f,
+                                           fim,
+                                           !silent,
+                                           single_image_burn);
+                }
+
+                if (!ret) {
+                    if (f->err()) {
+                        // The error is in flash access:
+                        report_err(ops._err_msg, "Flash access failed during burn: %s\n", f->err());
+                    } else {
+                        // operation/ algorithm error:
+                        report_err(ops._err_msg, "Failsafe burn error: %s\n", ops.err());
+                    }
+                    rc =  1; goto done;
+                }
+            } else {
+                //
+                // Not failsafe (sequential) burn
+                //
+
+                // Ask is it OK
+                printf("\n");
+                if (burn_block) {
+                    printf("Block burn: The given image will be burnt as is. No fields (such\n");
+                    printf("as GUIDS,VSD) are taken from current image on flash.\n");
+                }
+                printf("Burn process will not be failsafe. No checks will be performed.\n");
+
+                printf("ALL flash, including the Invariant Sector will be overwritten.\n");
+                printf("If this process fails, computer may remain in an inoperable state.\n");
+
+                if (!ops.ask_user()) {
+                    rc =  1; goto done;
+                }
+
+                // Non FS burn
+                bool ret;
+                if (ops.IsFs2() && !burn_block) {
+                    ret = ops.CntxFailSafeBurn(*f,
+                                               fim,
+                                               !silent,
+                                               &flashInfo,
+                                               &fileInfo,
+                                               true); // Allow nofs
+                } else {
+                    ret = ops.write_image(*f, 0, fim.getBuf(), fim.getBufLength(),!silent, "");
+                }
+
+
+                if (!ret) {
+                    report("\n");
+                    report_err(ops._err_msg, "Non failsafe burn failed: %s\n", ops.err());
+                    rc =  1; goto done;
+                }
+                report("\n");
+            }
+        }
+        break;
+    case CMD_SET_GUIDS:
+        {
+            Operations::ImageInfo info;
+            u_int32_t guid_sect_addr[2] = {0};
+            u_int32_t i;
+
+            if (ops.IsFs2()) {
+                _silent       = true;
+                if (!ops.VerifyFs2(*fbase, &info, false, true)) {
+                    report_err(ops._err_msg, "Can not set GUIDs: %s. \n", ops.err());
+                    rc =  1; goto done;
+                }
+                _silent = false;
+            }
+
+            if (!ops.QueryAll(*fbase, &info)) {
+                report_err(ops._err_msg, "Can not set GUIDs: %s query (%s) failed: %s\n", cmdTarget , cmdAccess, ops.err());
+                rc =  1; goto done;
+            }
+
+            if (!info.blankGuids) {
+                report_err(ops._err_msg, "Can not set GUIDs: Guids are already set.\n");
+                rc =  1; goto done;
+            }
+
+            bool ib_dev;
+            bool eth_dev;
+            bool bx_dev;
+
+            bx_dev = ops.IsBridgeX(info.devType);
+            ops.SetDevFlags(info.devType, ib_dev,eth_dev);
+
+            if (macs_specified || guids_specified || uids_specified) {
+                if (!ops.CheckGuidsFlags(info.devType, guids_specified, macs_specified, uids_specified)) {
+                    report_err(ops._err_msg, "%s\n", ops.err());
+                    rc =  1; goto done;
+                }
+            } else {
+                ops.PrintMissGuidErr(ib_dev, eth_dev, bx_dev, "For set_guids command");
+                rc = 1; goto done;
+            }
+
+            if (ops.IsFs2() || !info.isFailsafe) {
+                guid_sect_addr[0] = info.guidPtr;
+            } else {
+                int addr_idx = 0;
+                for (i = 0; i < 2; i++) {
+                    if (info.allImgStart[i]) {
+                        guid_sect_addr[addr_idx] = info.allImgStart[i] + info.guidPtr;
+                        addr_idx++;
                     }
                 }
             }
 
-            // Check PSID and ib -> eth change.
+            for (i = 0; i < 2 && guid_sect_addr[i]; i++ ) {
+                u_int32_t guid_sect[Operations::MAX_GUIDS*2 + 5]; // Save room for header + crc
 
-            if (fileInfo.infoOffs[Operations::II_PSID]  &&
-                flashInfo.infoOffs[Operations::II_PSID] &&
-                strncmp( fileInfo.psid, flashInfo.psid, PSID_LEN)) {
-                if (ops.IsCntx() &&
-                    (!ib_dev && eth_dev) &&
-                    flashInfo.infoOffs[Operations::II_DeviceType] &&
-                     ops.CntxIsIb(flashInfo.devType) &&
-                    !ops.CntxIsEth(flashInfo.devType)) {
-
-                    printf("\n    You are about to replace FW image type from IB to ETH image.\n");
-                } else {
-                    printf("\n    You are about to replace current PSID on flash - \"%s\" with a different PSID - \"%s\".\n"
-                           "    Note: It is highly recommended not to change the PSID.\n",
-                           flashInfo.psid,
-                           fileInfo.psid);
+                if (!f->read(guid_sect_addr[i] - 16 , guid_sect, 16)) {
+                    report_err(ops._err_msg, "Failed to read guids section - flash read error (%s)\n", fbase->err());
                 }
 
-                if (! ops.ask_user()){
-                    rc =  1; goto done;
-                }
-            }
+                ops.patchGUIDsSection (guid_sect, 16, user_guids, info.guidNum);
 
-            // Check exp rom:
-            if (!fileInfo.expRomFound && flashInfo.expRomFound) {
-                printf("\n    Expansion-ROM mismatch: \n"
-                       "    Current FW on flash contains an expansion-ROM.\n"
-                       "    The new FW image does not contain an expansion-ROM\n");
-
-                if (! ops.ask_user()){
-                    rc =  1; goto done;
-                }
-            }
-
-            _silent = old_silent;
-
-        } else {
-            // BURN BLOCK:
-            burn_failsafe = false;
-        }
-
-        // Burn it
-        if (burn_failsafe) {
-            // FS burn
-            bool ret;
-            if (ops.IsCntx()) {
-                ret = ops.CntxFailSafeBurn(*f,
-                                           fim,
-                                           !silent,
-                                           &flashInfo,
-                                           &fileInfo,
-                                           false);
-
-            } else {
-                ret = ops.FailSafeBurn(*f,
-                                       fim,
-                                       !silent,
-                                       single_image_burn);
-            }
-
-            if (!ret) {
-		if (f->err()) {
-		    // The error is in flash access:
-		    printf("*** ERROR *** Flash access failed during burn: %s\n", f->err());
-		} else {
-		    // operation/ algorithm error:
-		    printf("*** ERROR *** Failsafe burn error: %s\n", ops.err());
-		}
-                rc =  1; goto done;
-            }
-        } else {
-            //
-            // Not failsafe (sequential) burn
-            //
-
-            // Ask is it OK
-            printf("\n");
-            if (burn_block) {
-                printf("Block burn: The given image will be burnt as is. No fields (such\n");
-                printf("as GUIDS,VSD) are taken from current image on flash.\n");
-            }
-            printf("Burn process will not be failsafe. No checks will be performed.\n");
-
-            printf("ALL flash, including the Invariant Sector will be overwritten.\n");
-            printf("If this process fails, computer may remain in an inoperable state.\n");
-
-            if (!ops.ask_user()) {
-                rc =  1; goto done;
-	    }
-
-            // Non FS burn
-            bool ret;
-            if (ops.IsCntx() && !burn_block) {
-                ret = ops.CntxFailSafeBurn(*f,
-                                           fim,
-                                           !silent,
-                                           &flashInfo,
-                                           &fileInfo,
-                                           true); // Allow nofs
-            } else {
-                ret = ops.write_image(*f, 0, fim.getBuf(), fim.getBufLength(),!silent);
-            }
-
-
-            if (!ret) {
-                report("\n");
-                printf("*** ERROR *** Non failsafe burn failed: %s\n", ops.err());
-                rc =  1; goto done;
-            }
-            report("\n");
-        }
-    }
-    break;
-    case CMD_SET_GUIDS:
-    {
-        Operations::ImageInfo info;
-        u_int32_t guid_sect_addr[2] = {0};
-        u_int32_t i;
-
-        if (ops.IsCntx()) {
-            _silent       = true;
-            if (!ops.VerifyCntx(*fbase, &info, false, true)) {
-                printf("\n*** ERROR *** Can not set GUIDs: %s. \n", ops.err());
-                rc =  1; goto done;
-            }
-            _silent = false;
-        }
-
-        if (!ops.QueryAll(*fbase, &info)) {
-            printf("*** ERROR *** Can not set GUIDs: %s query (%s) failed: %s\n", cmdTarget , cmdAccess, ops.err());
-            rc =  1; goto done;
-        }
-
-        if (!info.blankGuids) {
-            printf("\n*** ERROR *** Can not set GUIDs: Guids are already set.\n");
-            rc =  1; goto done;
-        }
-
-        bool ib_dev;
-        bool eth_dev;
-
-        ops.SetDevFlags(info.devType, ib_dev, eth_dev);
-
-        if (macs_specified || guids_specified) {
-            if (!ops.CheckGuidsFlags(info.devType, ib_dev, guids_specified, eth_dev, macs_specified)) {
-                printf("*** ERROR *** %s\n", ops.err());
-                rc =  1; goto done;
-            }
-        } else {
-            const char* missing_info;
-            const char* missing_flags;
-
-            if (ib_dev && eth_dev) {
-                missing_info  = "GUIDs / MACs";
-                missing_flags = "-guid(s) / -mac(s)";
-            } else if (ib_dev) {
-                missing_info  = "GUIDs";
-                missing_flags = "-guid(s)";
-            } else {
-                missing_info  = "MACs";
-                missing_flags = "-mac(s)";
-            }
-
-            printf("\n");
-            printf("*** ERROR *** For set_guids command, "
-                   "Please specify %s (using command line flags %s ). \n", missing_info, missing_flags);
-
-            rc = 1; goto done;
-        }
-
-        if (ops.IsCntx() || !info.isFailsafe) {
-            guid_sect_addr[0] = info.guidPtr;
-        } else {
-            int addr_idx = 0;
-            for (i = 0; i < 2; i++) {
-                if (info.allImgStart[i]) {
-                    guid_sect_addr[addr_idx] = info.allImgStart[i] + info.guidPtr;
-                    addr_idx++;
+                if (!f->write(guid_sect_addr[i], guid_sect + 4 , info.guidNum * 8 + 4, true)) {
+                    report_err(ops._err_msg, "Guids set failed - flash write error (%s)\n", fbase->err());
                 }
             }
         }
-
-        for (i = 0; i < 2 && guid_sect_addr[i]; i++ ) {
-            u_int32_t guid_sect[Operations::MAX_GUIDS*2 + 5]; // Save room for header + crc
-
-            if (!f->read(guid_sect_addr[i] - 16 , guid_sect, 16)) {
-                printf("*** ERROR *** Failed to read guids section - flash read error (%s)\n", fbase->err());
-            }
-
-            ops.patchGUIDsSection (guid_sect, 16, user_guids, info.guidNum);
-
-            if (!f->write(guid_sect_addr[i], guid_sect + 4 , info.guidNum * 8 + 4, true)) {
-                printf("*** ERROR *** Guids set failed - flash write error (%s)\n", fbase->err());
-            }
-        }
-    }
-    break;
+        break;
 
     case CMD_ERASE_SECT:
-    {
-        //
-        // ERASE SECTOR <ADDR>
-        //     Parameters: <ADDR>
-        //
-        u_int32_t    addr;
-        char         *endp;
+        {
+            //
+            // ERASE SECTOR <ADDR>
+            //     Parameters: <ADDR>
+            //
+            u_int32_t    addr;
+            char         *endp;
 
-        // Address of sector to erase
-        NEXTC("<ADDR>", "erase");
-        addr = strtoul(av[i], &endp, 0);
-        if (*endp) {
-            printf("Invalid address \"%s\"\n", av[i]);
-            rc =  1; goto done;
-        }
+            // Address of sector to erase
+            NEXTC("<ADDR>", "erase");
+            addr = strtoul(av[i], &endp, 0);
+            if (*endp) {
+                report_err(ops._err_msg, "Invalid address \"%s\"\n", av[i]);
+                rc =  1; goto done;
+            }
 
-        // Erase
-        if (!f->erase_sector(addr)) {
-            printf("*** ERROR *** Erase sector failed: %s\n", f->err());
-            rc =  1; goto done;
+            // Erase
+            if (!f->erase_sector(addr)) {
+                report_err(ops._err_msg, "Erase sector failed: %s\n", f->err());
+                rc =  1; goto done;
+            }
         }
-    }
-    break;
+        break;
 
     case CMD_QUERY_FORCE:
     case CMD_QUERY:
-    {
-        // QUERY
-        Operations::ImageInfo info;
-        bool imageOk;
-        bool checkValidImage = false;
+        {
+            // QUERY
+            Operations::ImageInfo info;
+            bool imageOk;
 
-        _silent       = true;
-        if (ops.GetQuickQuery()) {
-            printf("\n*** WARNING *** Running quick query - Skipping full image integrity checks.\n");
-            if (ops.IsCntx()) {
-                imageOk = ops.VerifyCntx(*fbase, &info, false, true);
-                checkValidImage = true;
+            _silent       = true;
+            if (ops.GetQuickQuery()) {
+                printf("\n*** WARNING *** Running quick query - Skipping full image integrity checks.\n");
+                ops.initSectToRead(H_ROM);
             }
-        } else {
+
             imageOk = ops.Verify(*fbase, &info);
-            checkValidImage = true;
-        }
-        _silent = false;
 
-        if (checkValidImage && !imageOk) {
-            printf("\n*** ERROR *** %s query (%s) failed. Not a valid image.\n", cmdTarget , cmdAccess);
-            rc =  1; goto done;
-        }
+            _silent = false;
 
-        if (!ops.QueryAll(*fbase, &info)) {
-                printf("*** ERROR *** %s query (%s) failed: %s\n", cmdTarget , cmdAccess, ops.err());
+            if (!imageOk) {
+                printf("\n");
+                report_err(ops._err_msg, "%s query (%s) failed. Not a valid image.\n", cmdTarget , cmdAccess);
                 rc =  1; goto done;
-        }
+            }
 
-        ops.DisplayImageInfo(&info);
-    }
-    break;
+            if (!ops.QueryAll(*fbase, &info)) {
+                report_err(ops._err_msg, "%s query (%s) failed: %s\n", cmdTarget , cmdAccess, ops.err());
+                rc =  1; goto done;
+            }
+
+            ops.DisplayImageInfo(&info);
+        }
+        break;
 
     case CMD_QUERY_ROM:
-    {
-        Operations::ImageInfo info;
-        if (!ops.LoadAsExpRom(*fbase)    ||
-            !ops.GetExpRomVersion(&info) ||
-            !ops.DisplayExpRomInfo(&info)) {
-            printf("*** ERROR *** %s rom query (%s) failed: %s\n", cmdTarget , cmdAccess, ops.err());
-            rc =  1; goto done;
-        }
-    }
-    break;
-    case CMD_READ_BLOCK:
-    {
-        // READ BLOCK
-        //     Parameters:  <ADDR> <LENGTH> [OUT_FILENAME]
-        //     if OUT_FILENAME is given, binari read block is stored
-        //     in the given file. Otherwise, data is printed to screen.
-        u_int32_t    addr, length;
-        u_int8_t     *data;
-        char         *endp;
-
-        bool         to_file = false;
-
-        // Address and length
-        NEXTC("<ADDR>", "rb");
-        addr = strtoul(av[i], &endp, 0);
-        if (*endp) {
-            printf("Invalid address \"%s\"\n", av[i]);
-            rc =  1; goto done;
-        }
-        NEXTC("<LENGTH>", "rb");
-        length = strtoul(av[i], &endp, 0);
-        if (*endp) {
-            printf("Invalid length \"%s\"\n", av[i]);
-            rc =  1; goto done;
-        }
-        data = new u_int8_t[length];
-
-        // Output file
-        FILE*  fh = NULL;
-
-        if (i + 2 == ac)
-            to_file = true;
-
-        if (to_file) {
-            NEXTC("<OUT_FILENAME>", "rb");
-            if ((fh = fopen(av[i], "wb")) == NULL) {
-                fprintf(stderr, "Can not open ");
-                perror(av[i]);
+        {
+            Operations::ImageInfo info;
+            if (!ops.LoadAsExpRom(*fbase)    ||
+                !ops.GetExpRomVersion(&info) ||
+                !ops.DisplayExpRomInfo(&info)) {
+                report_err(ops._err_msg, "%s rom query (%s) failed: %s\n", cmdTarget , cmdAccess, ops.err());
                 rc =  1; goto done;
             }
         }
+        break;
+    case CMD_READ_BLOCK:
+        {
+            // READ BLOCK
+            //     Parameters:  <ADDR> <LENGTH> [OUT_FILENAME]
+            //     if OUT_FILENAME is given, binari read block is stored
+            //     in the given file. Otherwise, data is printed to screen.
+            u_int32_t    addr, length;
+            u_int8_t     *data;
+            char         *endp;
 
-        // Read flash
-        if (!fbase->read(addr, data, length)) {
-            printf("*** ERROR *** Flash read failed: %s\n", fbase->err());
-            rc =  1; goto done;
+            bool         to_file = false;
+
+            // Address and length
+            NEXTC("<ADDR>", "rb");
+            addr = strtoul(av[i], &endp, 0);
+            if (*endp) {
+                report_err(ops._err_msg, "Invalid address \"%s\"\n", av[i]);
+                rc =  1; goto done;
+            }
+            NEXTC("<LENGTH>", "rb");
+            length = strtoul(av[i], &endp, 0);
+            if (*endp) {
+                report_err(ops._err_msg, "Invalid length \"%s\"\n", av[i]);
+                rc =  1; goto done;
+            }
+            data = new u_int8_t[length];
+
+            // Output file
+            FILE*  fh = NULL;
+
+            if (i + 2 == ac)
+                to_file = true;
+
+            if (to_file) {
+                NEXTC("<OUT_FILENAME>", "rb");
+                if ((fh = fopen(av[i], "wb")) == NULL) {
+                    report_err(ops._err_msg, "Can not open %s: %s\n", av[i], strerror(errno));
+                    rc =  1; goto done;
+                }
+            }
+
+            // Read flash
+            if (!fbase->read(addr, data, length)) {
+                report_err(ops._err_msg, "Flash read failed: %s\n", fbase->err());
+                rc =  1; goto done;
+            }
+
+            if (to_file) {
+                // Write output
+                if (fwrite(data, 1, length, fh) != length) {
+                    report_err(ops._err_msg, "File write error\n");
+                    rc =  1; goto done;
+                }
+                fclose(fh);
+            } else {
+                for (u_int32_t i = 0; i < length ; i+=4) {
+                    u_int32_t word = *((u_int32_t*)(data + i));
+
+                    word  = __be32_to_cpu(word);
+                    printf("0x%08x ", word);
+                }
+                printf("\n");
+            }
+            delete [] data;
         }
+        break;
 
-        if (to_file) {
+    case CMD_READ_WORD:
+        {
+            // READ DWORD <ADDR>
+            //     Parameters: <ADDR>
+            u_int32_t    data, addr;
+            char         *endp;
+
+            // Address
+            NEXTC("<ADDR>", "rw");
+            addr = strtoul(av[i], &endp, 0);
+            if (*endp) {
+                report_err(ops._err_msg, "Invalid address \"%s\"\n", av[i]);
+                rc =  1; goto done;
+            }
+
+            // Read
+            if (!f->read(addr, &data)) {
+                report_err(ops._err_msg, "Flash read failed: %s\n", f->err());
+                rc =  1; goto done;
+            }
+            printf("0x%08x\n", (unsigned int)__cpu_to_be32(data));
+
+        }
+        break;
+
+    case CMD_VERIFY:
+        {
+            // VERIFY
+            if (!ops.Verify(*fbase, NULL, true)) {
+                char err_tmp[MAX_ERR_STR_LEN];
+                printf("\n");
+
+                if (ops.err()) {
+                    sprintf(err_tmp, ": %s", ops.err());
+                } else {
+                    sprintf(err_tmp, "%s", ". ");
+                }
+                report_err(ops._err_msg, "FW image verification failed%s AN HCA DEVICE CAN NOT BOOT FROM THIS IMAGE.\n",
+                           err_tmp);
+                rc =  1; goto done;
+            } else {
+                printf("\nFW image verification succeeded. Image is bootable.\n\n");
+            }
+        }
+        break;
+
+    case CMD_DUMP_HASH:
+        // the defalut dump_sect_type is  H_FW_CONF
+        dump_sect_type = H_HASH_FILE;
+    case CMD_DUMP_CONF:
+        {
+            // Dump conf
+            _silent = true;
+            ops.initSectToRead(dump_sect_type);
+            char* dump_file = NULL;
+            if (i + 2 <= ac) {
+                NEXTC("<OUT_FILENAME>", "dh");
+                dump_file = av[i];
+            }
+
+            ops.Verify(*fbase);
+
+            if (!ops.DumpConf(dump_file, dump_sect_type)) {
+                report_err(ops._err_msg, "Failed dumping %s: %s\n", g_sectNames[dump_sect_type], ops.err());
+                rc =  1; goto done;
+            }
+        }
+        break;
+    case CMD_READ_IMAGE:
+        {
+            // Dump conf
+            _silent = true;
+
+            char* img_file = NULL;
+            NEXTC("<OUT_FILENAME>", "ri");
+            img_file = av[i];
+
+            // For FS2 image, read only a single image. For other HCAs, try to read both images, since
+            // the distributed image binary file also contains both images.
+            ops.Verify(*f, NULL, !ops.IsFs2());
+
+            //printf("Last addr: 0x%08x\n", ops._last_image_addr);
+
+            u_int32_t length = ops._last_image_addr;
+            u_int8_t* data = new u_int8_t[length];
+
+            FILE* fh;
+
+            if ((fh = fopen(av[i], "wb")) == NULL) {
+                report_err(ops._err_msg, "Can not open %s: %s\n", av[i], strerror(errno));
+                rc =  1; goto done;
+            }
+
+            // Read flash
+            if (!f->read(0, data, length)) {
+                report_err(ops._err_msg, "Flash read failed: %s\n", f->err());
+                rc =  1; goto done;
+            }
+
             // Write output
             if (fwrite(data, 1, length, fh) != length) {
-                perror("Write error");
+
+                report_err(ops._err_msg, "File write error\n");
                 rc =  1; goto done;
             }
             fclose(fh);
-        } else {
-            for (u_int32_t i = 0; i < length ; i+=4) {
-                u_int32_t word = *((u_int32_t*)(data + i));
 
-                word  = __be32_to_cpu(word);
-                printf("0x%08x ", word);
-            }
-            printf("\n");
+            delete [] data;
         }
-        delete [] data;
-    }
-    break;
-
-    case CMD_READ_WORD:
-    {
-        // READ DWORD <ADDR>
-        //     Parameters: <ADDR>
-        u_int32_t    data, addr;
-        char         *endp;
-
-        // Address
-        NEXTC("<ADDR>", "rw");
-        addr = strtoul(av[i], &endp, 0);
-        if (*endp) {
-            printf("Invalid address \"%s\"\n", av[i]);
-            rc =  1; goto done;
-        }
-
-        // Read
-        if (!f->read(addr, &data)) {
-            printf("*** ERROR *** Flash read failed: %s\n", f->err());
-            rc =  1; goto done;
-        }
-        printf("0x%08x\n", (unsigned int)__cpu_to_be32(data));
-
-    }
-    break;
-
-    case CMD_VERIFY:
-    {
-        // VERIFY
-        if (!ops.Verify(*fbase, NULL, true)) {
-            printf("\n*** ERROR *** FW image verification failed");
-            if (ops.err()) {
-                printf(": %s", ops.err());
-            }
-            printf(". AN HCA DEVICE CAN NOT BOOT FROM THIS IMAGE.\n");
-            rc =  1; goto done;
-        } else {
-            printf("\nFW image verification succeeded. Image is bootable.\n\n");
-        }
-    }
-    break;
-
-    case CMD_DUMP_CONF:
-    {
-        // Dump conf
-        _silent = true;
-
-        char* conf_file = NULL;
-        if (i + 2 <= ac) {
-            NEXTC("<OUT_FILENAME>", "dc");
-            conf_file = av[i];
-        }
-
-        ops.Verify(*fbase);
-
-        if(!ops.DumpConf(conf_file)) {
-            printf("*** ERROR *** Failed dumping FW configuration: %s\n", ops.err());
-            rc =  1; goto done;
-        }
-    }
-    break;
-
-    case CMD_READ_IMAGE:
-    {
-        // Dump conf
-        _silent = true;
-
-        char* img_file = NULL;
-        NEXTC("<OUT_FILENAME>", "ri");
-        img_file = av[i];
-
-        // For ConnectX, read only a single image. For other HCAs, try to read both images, since
-        // the distributed image binary file also contains both images.
-        ops.Verify(*f, NULL, !ops.IsCntx());
-
-        //printf("Last addr: 0x%08x\n", ops._last_image_addr);
-
-        u_int32_t length = ops._last_image_addr;
-        u_int8_t* data = new u_int8_t[length];
-
-        FILE* fh;
-
-        if ((fh = fopen(av[i], "wb")) == NULL) {
-            fprintf(stderr, "Can not open ");
-            perror(av[i]);
-            rc =  1; goto done;
-        }
-
-        // Read flash
-        if (!f->read(0, data, length)) {
-            printf("*** ERROR *** Flash read failed: %s\n", f->err());
-            rc =  1; goto done;
-        }
-
-        // Write output
-        if (fwrite(data, 1, length, fh) != length) {
-            perror("Write error");
-            rc =  1; goto done;
-        }
-        fclose(fh);
-
-        delete [] data;
-    }
-    break;
+        break;
 
     case CMD_WRITE_BLOCK:
-    {
-        // WRITE BLOCK
-        //     Parameters:  <IN_FILENAME> <ADDR>
-        u_int32_t    addr;
-        char         *endp;
+        {
+            // WRITE BLOCK
+            //     Parameters:  <IN_FILENAME> <ADDR>
+            u_int32_t    addr;
+            char         *endp;
 
-        // Input file
-        FImage fim;
+            // Input file
+            FImage fim;
 
-        NEXTC("<IN_FILENAME>", "wb");
+            NEXTC("<IN_FILENAME>", "wb");
 
-        image_fname = av[i];
+            image_fname = av[i];
 
-        // Address
-        NEXTC("<ADDR>", "wb");
-        addr = strtoul(av[i], &endp, 0);
-        if (*endp) {
-            printf("Invalid address \"%s\"\n", av[i]);
-            rc =  1; goto done;
-        }
-
-        if (!fim.open(image_fname)) {
-            printf("*** ERROR *** Image file open failed: %s\n", fim.err());
-            rc =  1; goto done;
-        }
-
-        // Write flash
-        if (!ops.write_image(*f, addr, fim.getBuf(), fim.getBufLength(), !silent)) {
-            printf("*** ERROR *** Flash write failed: %s\n", ops.err());
-            rc =  1; goto done;
-        }
-    }
-    break;
-
-    case CMD_WRITE_WORD:
-    {
-        // WRITE DWORD
-        //     Parameters: <ADDR> <DATA>
-        u_int32_t    data, addr;
-        char         *endp;
-
-        // Address and data
-        NEXTC("<ADDR>", "ww");
-        addr = strtoul(av[i], &endp, 0);
-        if (*endp) {
-            printf("Invalid address \"%s\"\n", av[i]);
-            rc =  1; goto done;
-        }
-        NEXTC("<DATA>", "ww");
-        data = __cpu_to_be32(strtoul(av[i], &endp, 0));
-        if (*endp) {
-            printf("Invalid data \"%s\"\n", av[i]);
-            rc =  1; goto done;
-        }
-
-        //f->curr_sector = 0xffffffff;  // First time erase sector
-        if (!f->write(addr, data)) {
-            printf("*** ERROR *** Flash write failed: %s\n", f->err());
-            rc =  1; goto done;
-        }
-    }
-    break;
-
-    case CMD_WRITE_BLOCK_NE:
-    {
-        // WRITE DWORD WITHOUT ERASE
-        //     Parameters: <ADDR> <SIZE> <DATA>
-        u_int32_t    size, addr;
-        char         *endp;
-
-        // Address and data
-        NEXTC("<ADDR>", "wbne");
-        addr = strtoul(av[i], &endp, 0);
-        if (*endp) {
-            printf("Invalid address \"%s\"\n", av[i]);
-            rc =  1; goto done;
-        }
-        NEXTC("<SIZE>", "wbne");
-        size = strtoul(av[i], &endp, 0);
-        if (*endp || size % 4) {
-            printf("Invalid size \"%s\"\n", av[i]);
-            rc =  1; goto done;
-        }
-        vector<u_int32_t> data_vec(size/4);
-        for (u_int32_t w = 0; w < size/4 ; w++) {
-            NEXTC("<DATA>", "wbne");
-            data_vec[w] = __cpu_to_be32(strtoul(av[i], &endp, 0));
+            // Address
+            NEXTC("<ADDR>", "wb");
+            addr = strtoul(av[i], &endp, 0);
             if (*endp) {
-                printf("Invalid data \"%s\"\n", av[i]);
+                report_err(ops._err_msg, "Invalid address \"%s\"\n", av[i]);
                 rc =  1; goto done;
             }
 
-            //printf("-D- writing: %08x : %08x\n", addr + w*4 , data_vec[w]);
-        }
+            if (!fim.open(image_fname)) {
+                report_err(ops._err_msg, "Image file open failed: %s\n", fim.err());
+                rc =  1; goto done;
+            }
 
-        if (!f->write(addr, &data_vec[0], size, true)) {
-            printf("*** ERROR *** Flash write failed: %s\n", f->err());
-            rc =  1; goto done;
+            // Write flash
+            if (!ops.write_image(*f, addr, fim.getBuf(), fim.getBufLength(), !silent, "")) {
+                report_err(ops._err_msg, "Flash write failed: %s\n", ops.err());
+                rc =  1; goto done;
+            }
         }
-    }
-    break;
+        break;
+
+    case CMD_WRITE_WORD:
+        {
+            // WRITE DWORD
+            //     Parameters: <ADDR> <DATA>
+            u_int32_t    data, addr;
+            char         *endp;
+
+            // Address and data
+            NEXTC("<ADDR>", "ww");
+            addr = strtoul(av[i], &endp, 0);
+            if (*endp) {
+                report_err(ops._err_msg, "Invalid address \"%s\"\n", av[i]);
+                rc =  1; goto done;
+            }
+            NEXTC("<DATA>", "ww");
+            data = __cpu_to_be32(strtoul(av[i], &endp, 0));
+            if (*endp) {
+                report_err(ops._err_msg, "Invalid data \"%s\"\n", av[i]);
+                rc =  1; goto done;
+            }
+
+            //f->curr_sector = 0xffffffff;  // First time erase sector
+            if (!f->write(addr, data)) {
+                report_err(ops._err_msg, "Flash write failed: %s\n", f->err());
+                rc =  1; goto done;
+            }
+        }
+        break;
+
+    case CMD_WRITE_BLOCK_NE:
+        {
+            // WRITE DWORD WITHOUT ERASE
+            //     Parameters: <ADDR> <SIZE> <DATA>
+            u_int32_t    size, addr;
+            char         *endp;
+
+            // Address and data
+            NEXTC("<ADDR>", "wbne");
+            addr = strtoul(av[i], &endp, 0);
+            if (*endp) {
+                report_err(ops._err_msg, "Invalid address \"%s\"\n", av[i]);
+                rc =  1; goto done;
+            }
+            NEXTC("<SIZE>", "wbne");
+            size = strtoul(av[i], &endp, 0);
+            if (*endp || size % 4) {
+                report_err(ops._err_msg, "Invalid size \"%s\"\n", av[i]);
+                rc =  1; goto done;
+            }
+            vector<u_int32_t> data_vec(size/4);
+            for (u_int32_t w = 0; w < size/4 ; w++) {
+                NEXTC("<DATA>", "wbne");
+                data_vec[w] = __cpu_to_be32(strtoul(av[i], &endp, 0));
+                if (*endp) {
+                    report_err(ops._err_msg, "Invalid data \"%s\"\n", av[i]);
+                    rc =  1; goto done;
+                }
+
+                //printf("-D- writing: %08x : %08x\n", addr + w*4 , data_vec[w]);
+            }
+
+            if (!f->write(addr, &data_vec[0], size, true)) {
+                report_err(ops._err_msg, "Flash write failed: %s\n", f->err());
+                rc =  1; goto done;
+            }
+        }
+        break;
 
     case CMD_WRITE_WORD_NE:
-    {
-        // WRITE DWORD WITHOUT ERASE
-        //     Parameters: <ADDR> <DATA>
-        u_int32_t    data, addr;
-        char         *endp;
+        {
+            // WRITE DWORD WITHOUT ERASE
+            //     Parameters: <ADDR> <DATA>
+            u_int32_t    data, addr;
+            char         *endp;
 
-        // Address and data
-        NEXTC("<ADDR>", "wwne");
-        addr = strtoul(av[i], &endp, 0);
-        if (*endp) {
-            printf("Invalid address \"%s\"\n", av[i]);
-            rc =  1; goto done;
-        }
-        NEXTC("<DATA>", "wwne");
-        data = __cpu_to_be32(strtoul(av[i], &endp, 0));
-        if (*endp) {
-            printf("Invalid data \"%s\"\n", av[i]);
-            rc =  1; goto done;
-        }
+            // Address and data
+            NEXTC("<ADDR>", "wwne");
+            addr = strtoul(av[i], &endp, 0);
+            if (*endp) {
+                report_err(ops._err_msg, "Invalid address \"%s\"\n", av[i]);
+                rc =  1; goto done;
+            }
+            NEXTC("<DATA>", "wwne");
+            data = __cpu_to_be32(strtoul(av[i], &endp, 0));
+            if (*endp) {
+                report_err(ops._err_msg, "Invalid data \"%s\"\n", av[i]);
+                rc =  1; goto done;
+            }
 
-        if (!f->write(addr, &data, 4, true)) {
-            printf("*** ERROR *** Flash write failed: %s\n", f->err());
-            rc =  1; goto done;
+            if (!f->write(addr, &data, 4, true)) {
+                report_err(ops._err_msg, "Flash write failed: %s\n", f->err());
+                rc =  1; goto done;
+            }
         }
-    }
-    break;
+        break;
 
     case CMD_CFI:
-    {
-        if (!f->print_attr() || !f->print_attr_old_format()) {
-            printf("*** ERROR *** Cfi query failed: %s\n", f->err());
-            rc =  1; goto done;
+        {
+            if (!f->print_attr() || !f->print_attr_old_format()) {
+                report_err(ops._err_msg, "Cfi query failed: %s\n", f->err());
+                rc =  1; goto done;
+            }
         }
-    }
-    break;
+        break;
 
     case CMD_CLEAR_SEM:
         // Do nothing - opening the device already cleared the semaphore.
@@ -5787,19 +6456,20 @@ int main(int ac, char *av[])
     case CMD_SWRESET:
         printf("Resetting device %s ...\n", device);
         if (!f->sw_reset()) {
-            printf("*** ERROR *** Software reset failed: %s\n", f->err());
+            report_err(ops._err_msg, "Software reset failed: %s\n", f->err());
             rc =  1; goto done;
         }
 
         break;
 
     default:
-        printf("*** INTERNAL ERROR *** Invalid command %d.\n", cmd);
+        report_err(ops._err_msg, "Internal error: Invalid command %d.\n", cmd);
         rc =  1; goto done;
     }
 
 done:
-
+    write_result_to_log(rc, ops._err_msg);
+    close_log();
     //mask signals
     for (i = 0 ; i < (int)(sizeof(g_signals_for_termination)/sizeof(g_signals_for_termination[0])) ; i++ ) {
         signal (g_signals_for_termination[i], SIG_IGN);

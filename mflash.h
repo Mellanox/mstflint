@@ -54,10 +54,11 @@
 EXTERN_C_START
 
 typedef enum MfCommandSet {
-    CS_INTEL  = 1,
-    CS_AMD    = 2,
+    CS_INTEL   = 1,
+    CS_AMD     = 2,
 
-    MCS_STSPI = 0x80  // This is not a "real" CFI command set - it's used as a "Meta" command set number.
+    MCS_STSPI  = 0x80,  // This is not a "real" CFI command set - it's used as a "Meta" command set number.
+    MCS_SSTSPI = 0x81
 } MfCommandSet;
 
 typedef enum MfError {
@@ -90,6 +91,7 @@ typedef enum MfOpt {
     MFO_AMD_BYTE_MODE,
     MFO_IGNORE_SEM_LOCK,
     MFO_CLOSE_MF_ON_EXIT,
+    MFO_NUM_OF_BANKS,
     MFO_LAST
 } MfOpt;
 
@@ -103,6 +105,7 @@ typedef struct flash_attr {
     // hw_dev_id    hw dev id of the HCA.
     //
     u_int32_t hw_dev_id;
+    u_int32_t  rev_id;
 
     //
     // size:        Total size (in bytes) of all flash devices connected to
@@ -183,8 +186,8 @@ typedef struct mflash mflash;
 // mf_close() : Deallocates mflash resources.
 //   Note: User should call mf_close() even if mf_open failed (and the returning mfl is not NULL)
 //
-int     mf_open        (mflash** pmfl, const char* dev);
-int     mf_opend       (mflash** pmfl, struct mfile_t* mf);
+int     mf_open        (mflash** pmfl, const char* dev, int num_of_banks);
+int     mf_opend       (mflash** pmfl, struct mfile_t* mf, int num_of_banks);
 int     mf_open_ignore_lock(mflash* mfl);
 int     mf_close       (mflash* mfl);
 

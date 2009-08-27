@@ -162,12 +162,12 @@ struct mflash {
 #else
 #define MREAD4(offs, val)  do { if (mread4 (mfl->mf, offs, val) != 4) { \
                                   fprintf(stderr, "-E- Cr read (0x%08x) failed: %s(%d)\n", (u_int32_t)(offs), strerror(errno), (u_int32_t)errno); \
-				  exit(2); } \
+                  exit(2); } \
                                   } while (0)
 
 #define MWRITE4(offs, val) do { if (mwrite4(mfl->mf, offs, val) != 4) { \
                                   fprintf(stderr, "-E- Cr write (0x%08x, 0x%08x) failed: %s(%d)\n", (u_int32_t)(offs), (u_int32_t)(val), strerror(errno), (u_int32_t)errno); \
-				  mclose(mfl->mf); exit(2); } \
+                  mclose(mfl->mf); exit(2); } \
                                   } while (0)
 #endif
 
@@ -191,6 +191,7 @@ struct mflash {
 #define CR_FLASH       0xf01a4
 #define ADDR_MSK       0x7ffffUL
 #define CMD_MASK       0xe0000000UL
+#define STATUS_REG_VAL 0x80000000
 
 #define CPUMODE_MSK    0xc0000000UL
 #define CPUMODE_SHIFT  30
@@ -247,6 +248,7 @@ int ihst_fill_attr       (mflash* mfl);
 
 int ihst_flash_read      (mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data);
 int ihst_flash_lock      (mflash* mfl, int lock_state);
+
 
 //static inline
 //int ihst_set_bank        (mflash* mfl, u_int32_t addr);
@@ -312,12 +314,24 @@ int cntx_st_spi_block_write_ex (mflash*   mfl,
                                 u_int8_t  is_first,
                                 u_int8_t  is_last);
 
+int cntx_sst_spi_block_write_ex (mflash* mfl,
+                                 u_int32_t blk_addr,
+                                 u_int32_t blk_size,
+                                 u_int8_t* data);
+
+
 int cntx_st_spi_block_read_ex  (mflash*   mfl,
                                 u_int32_t blk_addr,
                                 u_int32_t blk_size,
                                 u_int8_t* data,
                                 u_int8_t  is_first,
                                 u_int8_t  is_last);
+
+int cntx_sst_spi_get_type(mflash* mfl, u_int8_t op_type, u_int8_t* type, u_int8_t*  capacity);
+
+int cntx_sst_spi_write_status_reg(mflash* mfl);
+
+int spi_get_num_of_flashes(int prev_num_of_flashes);
 
 
 int my_memset(void* dst, u_int8_t data, u_int32_t len) {
@@ -1055,9 +1069,31 @@ enum StFlashCommand {
     SFC_RDSR  = 0x05,
     SFC_WREN  = 0x06,
     SFC_READ  = 0x03,
-    SFC_RDID  = 0xF9,
-    SFC_RES   = 0xAB
+    SFC_RES   = 0xAB,
+    SFC_JEDEC = 0x9F,
+    SFC_WRSR  = 0x01
 };
+
+int cntx_sst_get_log2size(u_int8_t capacity, u_int32_t* log2spi_size)
+{
+    switch (capacity) {
+        case 0x41:
+            *log2spi_size = 0x15;
+            break;
+        case 0x4A:
+            *log2spi_size = 0x16;
+            break;
+        case 0x8D:
+            *log2spi_size = 0x13;
+            break;
+        case 0x8E:
+            *log2spi_size = 0x14;
+            break;
+        default:
+            return -1;
+    }
+    return 0;
+}
 
 int st_spi_fill_attr(mflash* mfl) {
     int rc;
@@ -1066,6 +1102,7 @@ int st_spi_fill_attr(mflash* mfl) {
     u_int32_t log2spi_size = 0;
     u_int32_t num_spis = 0;
     u_int32_t spi_sel;
+    u_int32_t num_of_flashes;
 
     mfl->attr.block_write                = 16; // In SPI context, this is the transaction size. Max is 16.
 
@@ -1075,8 +1112,9 @@ int st_spi_fill_attr(mflash* mfl) {
     mfl->attr.erase_block[0].sector_mask = ~(mfl->attr.erase_block[0].sector_size - 1);
 
     mfl->attr.sector_size = mfl->attr.erase_block[0].sector_size;
-
-    for (spi_sel = 0 ; spi_sel < 4 ; spi_sel++) {
+    num_of_flashes = mfl->opts[MFO_NUM_OF_BANKS];
+    //printf("-D- st_spi_fill_attr: num_of_flashes %d\n", num_of_flashes);
+    for (spi_sel = 0 ; spi_sel < num_of_flashes ; spi_sel++) {
         unsigned char es; // electronic signature
         u_int32_t cur_spi_size = 0;
 
@@ -1084,25 +1122,73 @@ int st_spi_fill_attr(mflash* mfl) {
 
         rc = mfl->f_spi_status(mfl, SFC_RES, &es);      CHECK_RC(rc);
         //printf("-D- es = %02x\n", es);
-        if (es >= 0x10 && es < 0x17) {
+
+        if ((es >= 0x10 && es < 0x17)) {
             // Range OK:
 
             // NOTE: This mapping between electronic signature and device size is device specific!
             //       This mapping works for ST M25Pxx and Saifun SA25Fxxx families.
             log2spi_size = (es + 1);
             cur_spi_size = 1 << log2spi_size;
-
             num_spis++;
 
             if (spi_sel == 0) {
+                mfl->attr.command_set    = MCS_STSPI;
                 spi_size = cur_spi_size;
-            } else if (cur_spi_size != spi_size){
-                printf ("-E- SPI flash #%d of size 0x%x bytes differs in size from SPI flash #%d of size 0x%x bytes. "
-                              "All flash devices must be of the same size.",
-                              spi_sel,
-                              cur_spi_size,
-                              spi_sel - 1,
-                              spi_size);
+            } else {
+                if (mfl->attr.command_set != MCS_STSPI) {
+                    printf("-E- SPI flash #%d differs in type from SPI flash #%d\n"
+                           "All flash devices must be of the same type",
+                           spi_sel,
+                           spi_sel - 1);
+                    return MFE_UNSUPPORTED_FLASH_TOPOLOGY;
+                }
+                if (cur_spi_size != spi_size){
+                    printf ("-E- SPI flash #%d of size 0x%x bytes differs in size from SPI flash #%d of size 0x%x bytes. "
+                                  "All flash devices must be of the same size.",
+                                  spi_sel,
+                                  cur_spi_size,
+                                  spi_sel - 1,
+                                  spi_size);
+                    return MFE_UNSUPPORTED_FLASH_TOPOLOGY;
+                }
+            }
+        }   else if (es == 0xbf) {
+            u_int8_t capacity, type;
+            rc = cntx_sst_spi_get_type(mfl, SFC_JEDEC, &type, &capacity);      CHECK_RC(rc);
+            if (type == 0x25) {
+                num_spis++;
+                if (cntx_sst_get_log2size(capacity, &log2spi_size)) {
+                     printf("-E- SPI flash #%d (memory capacity field %#x) is not supported\n", spi_sel, capacity);
+                     return MFE_UNSUPPORTED_FLASH_TOPOLOGY;
+                }
+                cur_spi_size = 1 << log2spi_size;
+                if (spi_sel == 0) {
+                    mfl->attr.command_set   = MCS_SSTSPI;
+                    spi_size = cur_spi_size;
+                } else {
+                    if (mfl->attr.command_set != MCS_SSTSPI) {
+                        printf("-E- SPI flash #%d differs in type from SPI flash #%d\n"
+                               "All flash devices must be of the same type",
+                               spi_sel,
+                               spi_sel - 1);
+                        return MFE_UNSUPPORTED_FLASH_TOPOLOGY;
+                    }
+                    if (cur_spi_size != spi_size){
+                    printf ("-E- SPI flash #%d of size 0x%x bytes differs in size from SPI flash #%d of size 0x%x bytes. "
+                                  "All flash devices must be of the same size.",
+                                  spi_sel,
+                                  cur_spi_size,
+                                  spi_sel - 1,
+                                  spi_size);
+                    return MFE_UNSUPPORTED_FLASH_TOPOLOGY;
+
+                    }
+                }
+                // TODO: check if we have a bug with the second flash.
+                rc = cntx_sst_spi_write_status_reg(mfl); CHECK_RC(rc);
+            } else {
+                printf("-E- SPI flash #%d (memory type field %#x) is not supported\n", spi_sel, type);
                 return MFE_UNSUPPORTED_FLASH_TOPOLOGY;
             }
         } else if (es == 0xff
@@ -1112,7 +1198,7 @@ int st_spi_fill_attr(mflash* mfl) {
             break;
         } else {
             printf("-E- Unexpected SPI electronic signature value (0x%2x) when detecting flash size. "
-                          "Flash #%d my be defected.",
+                          "Flash #%d may be defected.",
                           es,
                           spi_sel);
             return MFE_UNSUPPORTED_FLASH_TOPOLOGY;
@@ -1128,8 +1214,6 @@ int st_spi_fill_attr(mflash* mfl) {
     mfl->attr.bank_size      = spi_size;
     mfl->attr.size           = spi_size * num_spis;
     mfl->attr.log2_bank_size = log2spi_size;
-
-    mfl->attr.command_set    = MCS_STSPI;
 
     return MFE_OK;
 }
@@ -1415,7 +1499,7 @@ int ih3lx_st_spi_block_read    (mflash* mfl, u_int32_t blk_addr, u_int32_t blk_s
 
     if (blk_size > (u_int32_t)mfl->attr.block_write  || blk_size < 4) {
         //return _f.errmsg("Block write of wrong block size. %d instead of %d",
-	//		 block_size, (u_int32_t)_f._cfi_data.max_multi_byte_write);
+    //       block_size, (u_int32_t)_f._cfi_data.max_multi_byte_write);
         return MFE_BAD_PARAMS;
     }
 
@@ -1459,7 +1543,7 @@ int ih3lx_st_spi_block_write    (mflash* mfl, u_int32_t blk_addr, u_int32_t blk_
     // sanity check ??? remove ???
     if (blk_size != (u_int32_t)mfl->attr.block_write ) {
         //return _f.errmsg("Block write of wrong block size. %d instead of %d",
-	//		 block_size, (u_int32_t)_f._cfi_data.max_multi_byte_write);
+    //       block_size, (u_int32_t)_f._cfi_data.max_multi_byte_write);
         return MFE_BAD_PARAMS;
     }
 
@@ -1655,7 +1739,8 @@ int cntx_exec_cmd(mflash* mfl, u_int32_t gw_cmd, char* msg) {
     return ih3lx_wait_ready(mfl, msg);
 }
 
-int cntx_st_spi_get_status(mflash* mfl, u_int8_t op_type, u_int8_t* status) {
+int cntx_int_spi_get_status_data(mflash* mfl, u_int8_t op_type, u_int32_t* status, u_int8_t data_num)
+{
     int rc;
 
     u_int32_t gw_cmd  = 0;
@@ -1663,7 +1748,7 @@ int cntx_st_spi_get_status(mflash* mfl, u_int8_t op_type, u_int8_t* status) {
 
     gw_cmd = MERGE(gw_cmd,       1, HBO_READ_OP,    1);
     gw_cmd = MERGE(gw_cmd,       1, HBO_CMD_PHASE,  1);
-    gw_cmd = MERGE(gw_cmd,       1, HBO_DATA_PHASE, 1);
+    gw_cmd = MERGE(gw_cmd,       1, HBO_DATA_PHASE, data_num);
     gw_cmd = MERGE(gw_cmd,       2, HBO_MSIZE,      HBS_MSIZE);
 
     gw_cmd = MERGE(gw_cmd, op_type, HBO_CMD,        HBS_CMD);
@@ -1672,11 +1757,66 @@ int cntx_st_spi_get_status(mflash* mfl, u_int8_t op_type, u_int8_t* status) {
 
     MREAD4(HCR_FLASH_DATA, &flash_data);
 
+    //printf("-D- cntx_st_spi_get_status: op=%02x status=%08x\n", op_type, flash_data);
     // Return status reg byte is at offset 3 in word
-    *status = (u_int8_t)(flash_data & 0xff);
+    *status = flash_data;
 
     return MFE_OK;
 }
+
+int cntx_st_spi_write_enable(mflash* mfl) {
+    u_int32_t gw_cmd  = 0;
+    int rc;
+    // Write enable:
+    gw_cmd = MERGE(gw_cmd,        1, HBO_CMD_PHASE,       1);
+    gw_cmd = MERGE(gw_cmd, SFC_WREN, HBO_CMD,       HBS_CMD);
+
+
+    rc = cntx_exec_cmd(mfl, gw_cmd, "WREN command"); CHECK_RC(rc);
+
+    gw_cmd =  MERGE(gw_cmd, 1               , HBO_CS_HOLD,    1);
+
+    MWRITE4(CR_FLASH_GW,   gw_cmd);
+
+    return MFE_OK;
+}
+
+
+int cntx_st_spi_get_status(mflash* mfl, u_int8_t op_type, u_int8_t* status) {
+    u_int32_t flash_data;
+    int rc;
+
+    rc = cntx_int_spi_get_status_data(mfl, op_type, &flash_data, 1); CHECK_RC(rc);
+    *status = EXTRACT(flash_data, 0, 8);
+    return MFE_OK;
+}
+
+int cntx_sst_spi_get_type(mflash* mfl, u_int8_t op_type, u_int8_t* type, u_int8_t*  capacity) {
+    u_int32_t flash_data;
+    int rc;
+
+    rc = cntx_int_spi_get_status_data(mfl, op_type, &flash_data, 3); CHECK_RC(rc);
+    *capacity = EXTRACT(flash_data, 8, 8);
+    *type     = EXTRACT(flash_data, 16, 8);
+    return MFE_OK;
+}
+int cntx_sst_spi_write_status_reg(mflash* mfl)
+{
+    int rc;
+    u_int32_t gw_cmd = 0;
+
+    rc = cntx_st_spi_write_enable(mfl); CHECK_RC(rc);
+
+    gw_cmd = MERGE(gw_cmd,        1, HBO_CMD_PHASE,  1);
+    gw_cmd = MERGE(gw_cmd,        1, HBO_DATA_PHASE, 1);
+
+    gw_cmd = MERGE(gw_cmd, SFC_WRSR, HBO_CMD,        HBS_CMD);
+
+    MWRITE4(HCR_FLASH_DATA, STATUS_REG_VAL);
+    return cntx_exec_cmd(mfl, gw_cmd, "Write-Status-Register");
+}
+
+
 
 int cntx_init_gpios(mflash* mfl) {
     //
@@ -1718,15 +1858,24 @@ int cntx_init_gpios(mflash* mfl) {
     return MFE_OK;
 }
 
-int cntx_st_spi_write_enable(mflash* mfl) {
-    u_int32_t gw_cmd  = 0;
+#define MFLASH_ENV "MFLASH_BANKS"
 
-    // Write enable:
-    gw_cmd = MERGE(gw_cmd,        1, HBO_CMD_PHASE,       1);
-    gw_cmd = MERGE(gw_cmd, SFC_WREN, HBO_CMD,       HBS_CMD);
+int spi_get_num_of_flashes(int prev_num_of_flashes)
+{
+    char* mflash_env;
 
-    return cntx_exec_cmd(mfl, gw_cmd, "WREN command");
+    if (prev_num_of_flashes != 0) {
+        return prev_num_of_flashes;
+    }
+
+    mflash_env = getenv(MFLASH_ENV);
+    if (mflash_env) {
+        return atol(mflash_env);
+    }
+
+    return 4;
 }
+
 
 int cntx_st_spi_reset          (mflash* mfl) {
     mfl = NULL;
@@ -1796,7 +1945,7 @@ int cntx_st_spi_block_read_ex  (mflash* mfl, u_int32_t blk_addr, u_int32_t blk_s
         gw_addr = blk_addr & ONES32(mfl->attr.log2_bank_size);
         MWRITE4(HCR_FLASH_ADDR, gw_addr);
     }
-
+    //printf("-D- gw_addr = %#x, gw_cmd = %#x, blk_addr = %#x, mfl->attr.log2_bank_size = %#x\n", gw_addr, gw_cmd, blk_addr, mfl->attr.log2_bank_size);
     if (!is_last) {
         gw_cmd = MERGE(gw_cmd, 1               , HBO_CS_HOLD,    1);
     }
@@ -1863,6 +2012,15 @@ int cntx_st_spi_block_read_old  (mflash* mfl, u_int32_t blk_addr, u_int32_t blk_
     return MFE_OK;
 }
 
+#define CHECK_ALLIGN(addr, block_write, size) {\
+    if (addr & ((u_int32_t)block_write - 1)) {\
+        return MFE_BAD_ALIGN;\
+    }\
+    if (size & ((u_int32_t)block_write - 1)) {\
+         return MFE_BAD_ALIGN;\
+    }\
+}
+
 int cntx_st_spi_page_write    (mflash* mfl, u_int32_t addr, u_int32_t size, u_int8_t* data) {
     int rc;
 
@@ -1872,15 +2030,7 @@ int cntx_st_spi_page_write    (mflash* mfl, u_int32_t addr, u_int32_t size, u_in
     u_int8_t  is_last  = 0;
     u_int8_t* p        = data;
 
-    if (addr & ((u_int32_t)mfl->attr.block_write - 1)) {
-        return MFE_BAD_ALIGN;
-    }
-
-    if (size & ((u_int32_t)mfl->attr.block_write - 1)) {
-         return MFE_BAD_ALIGN;
-    }
-
-    //printf("-D- cntx_st_spi_page_write(addr=%05x, u_int32_t size=%03x)\n", addr, size);
+    CHECK_ALLIGN(addr, mfl->attr.block_write, size);
 
     last_addr     = addr + size;
     last_blk_addr = last_addr - mfl->attr.block_write;
@@ -1889,12 +2039,31 @@ int cntx_st_spi_page_write    (mflash* mfl, u_int32_t addr, u_int32_t size, u_in
         if (addr == last_blk_addr) {
             is_last = 1;
         }
-
         rc = cntx_st_spi_block_write_ex(mfl, addr, mfl->attr.block_write, p, is_first, is_last); CHECK_RC(rc);
 
         is_first = 0;
         addr += mfl->attr.block_write;
         p    += mfl->attr.block_write;
+
+    }
+
+    return MFE_OK;
+}
+
+int cntx_sst_spi_byte_write    (mflash* mfl, u_int32_t addr, u_int32_t size, u_int8_t* data) {
+    int rc;
+
+    u_int32_t last_addr;
+    u_int8_t* p        = data;
+
+    CHECK_ALLIGN(addr, mfl->attr.block_write, size);
+
+    last_addr     = addr + size;
+
+    while (addr < last_addr) {
+        rc = cntx_sst_spi_block_write_ex(mfl, addr, mfl->attr.block_write, p); CHECK_RC(rc);
+        addr++;
+        p++;
     }
 
     return MFE_OK;
@@ -1916,8 +2085,6 @@ int cntx_st_spi_block_write_ex (mflash* mfl, u_int32_t blk_addr, u_int32_t blk_s
         return MFE_BAD_PARAMS;
     }
 
-    //printf("-D- cntx_st_spi_block_write_ex(addr=%05x, u_int32_t size=%03x, first=%d, last=%d)\n", blk_addr, blk_size, (u_int32_t) is_first, (u_int32_t) is_last);
-
     rc = set_bank(mfl, blk_addr);        CHECK_RC(rc);
 
     gw_cmd = MERGE(gw_cmd, 1               , HBO_DATA_PHASE, 1);
@@ -1930,8 +2097,8 @@ int cntx_st_spi_block_write_ex (mflash* mfl, u_int32_t blk_addr, u_int32_t blk_s
         gw_cmd = MERGE(gw_cmd, 1               , HBO_CMD_PHASE,  1);
         gw_cmd = MERGE(gw_cmd, 1               , HBO_ADDR_PHASE, 1);
         gw_cmd = MERGE(gw_cmd, SFC_PP          , HBO_CMD,        HBS_CMD);
-
         gw_addr = blk_addr & ONES32(mfl->attr.log2_bank_size);
+        //printf("-D- gw_addr = %#x, blk_addr = %#x\n", gw_addr, blk_addr);
 
         MWRITE4(HCR_FLASH_ADDR, gw_addr);
     }
@@ -1943,15 +2110,16 @@ int cntx_st_spi_block_write_ex (mflash* mfl, u_int32_t blk_addr, u_int32_t blk_s
     // Data:
     for (offs = 0 ; offs < blk_size ; offs += 4) {
         u_int32_t word = zero;
+
         word = MERGE(word, data[offs + 0] , 24 , 8);
         word = MERGE(word, data[offs + 1] , 16 , 8);
         word = MERGE(word, data[offs + 2] ,  8 , 8);
         word = MERGE(word, data[offs + 3] ,  0 , 8);
         //MWRITE4(HCR_FLASH_DATA + offs, word );
         buff[offs/4] = word;
+        //printf("-D- word = %#x, %d\n", word, HBS_CMD);
     }
 
-    //if (mwrite_by_chunks(mfl->mf, HCR_FLASH_DATA, buff, blk_size) != (int)blk_size) {
     if (mwrite4_block(mfl->mf, HCR_FLASH_DATA, buff, blk_size) != (int)blk_size) {
         fprintf(stderr, "-E- Cr chunk write (0x%08x) failed: %s(%d)\n", HCR_FLASH_DATA, strerror(errno), (u_int32_t)errno);
         exit(2);
@@ -1969,6 +2137,47 @@ int cntx_st_spi_block_write_ex (mflash* mfl, u_int32_t blk_addr, u_int32_t blk_s
 
     return MFE_OK;
 }
+
+int cntx_sst_spi_block_write_ex (mflash* mfl, u_int32_t blk_addr, u_int32_t blk_size, u_int8_t* data) {
+    int rc;
+    u_int32_t gw_cmd   = 0;
+    u_int32_t gw_addr  = 0;
+    u_int32_t word = zero;
+
+    // sanity check ??? remove ???
+    if (blk_size != (u_int32_t)mfl->attr.block_write ) {
+        return MFE_BAD_PARAMS;
+    }
+
+    rc = set_bank(mfl, blk_addr);        CHECK_RC(rc);
+
+    gw_cmd = MERGE(gw_cmd, 1               , HBO_DATA_PHASE, 1);
+    gw_cmd = MERGE(gw_cmd, 0, HBO_MSIZE,      HBS_MSIZE);
+
+    rc = cntx_st_spi_write_enable(mfl); CHECK_RC(rc);
+
+    // Write the data block
+    gw_cmd = MERGE(gw_cmd, 1               , HBO_CMD_PHASE,  1);
+    gw_cmd = MERGE(gw_cmd, 1               , HBO_ADDR_PHASE, 1);
+    gw_cmd = MERGE(gw_cmd, 0x02            , HBO_CMD,        HBS_CMD);
+
+    gw_addr = blk_addr & ONES32(mfl->attr.log2_bank_size);
+    MWRITE4(HCR_FLASH_ADDR, gw_addr);
+
+    //gw_cmd = MERGE(gw_cmd, 1               , HBO_CS_HOLD,    1);
+
+    word = MERGE(word, data[0] , 24 , 8);
+
+    //printf("-D- data[0] = %#x, gw_addr = %#x, word = %#x, gw_cmd = %#x\n", data[0], gw_addr, word, gw_cmd);
+    MWRITE4(HCR_FLASH_DATA, word);
+
+    rc = cntx_exec_cmd(mfl, gw_cmd, "PB command"); CHECK_RC(rc);
+
+    rc = st_spi_wait_wip(mfl, READ_DELAY, READ_CNT_SLOW + READ_CNT_FAST, READ_CNT_FAST); CHECK_RC(rc);
+
+    return MFE_OK;
+}
+
 
 int cntx_st_spi_block_write     (mflash* mfl, u_int32_t blk_addr, u_int32_t blk_size, u_int8_t* data) {
    return cntx_st_spi_block_write_ex(mfl, blk_addr, blk_size, data, 1, 1);
@@ -2032,7 +2241,6 @@ int cntx_st_spi_erase_sect(mflash* mfl, u_int32_t addr) {
 
     u_int32_t gw_cmd  = 0;
     u_int32_t gw_addr = 0;
-
     rc = set_bank(mfl, addr); CHECK_RC(rc);
 
     rc = cntx_st_spi_write_enable(mfl); CHECK_RC(rc);
@@ -2054,9 +2262,19 @@ int cntx_st_spi_erase_sect(mflash* mfl, u_int32_t addr) {
     return MFE_OK;
 }
 
+
+f_mf_write get_write_blk_func(int command_set)
+{
+    if (command_set == MCS_STSPI) {
+        return cntx_st_spi_page_write;
+    }
+    return cntx_sst_spi_byte_write;
+}
+
 int cntx_flash_init(mflash* mfl) {
     int rc;
     u_int32_t tmp;
+    int is_life_fish = 0;
 
     // Without too much details:
     // When the ConnectX boots up without a valid FW , the PCIE link may be unstable.
@@ -2064,9 +2282,11 @@ int cntx_flash_init(mflash* mfl) {
     MREAD4(0x41270, &tmp);
     if (tmp > 0xfff00000) {
         u_int32_t tmp1;
+        is_life_fish = 1;
         MREAD4(0xf3834, &tmp1);
         tmp1 = MERGE(tmp1, 2, 27, 2);
         MWRITE4(0xf3834, tmp1);
+
     }
 
 
@@ -2083,17 +2303,20 @@ int cntx_flash_init(mflash* mfl) {
     } else {
         mfl->is_locked = 1;
     }
+    //if (is_life_fish) {
+    //    rc = cntx_init_gpios(mfl);  CHECK_RC(rc);
+    //}
 
-    rc = cntx_init_gpios(mfl);  CHECK_RC(rc);
 
     mfl->f_spi_status = cntx_st_spi_get_status;
 
     rc = st_spi_fill_attr(mfl);   CHECK_RC(rc);
 
-    if        (mfl->attr.command_set == MCS_STSPI) {
+    if        (mfl->attr.command_set == MCS_STSPI || mfl->attr.command_set == MCS_SSTSPI) {
         mfl->f_reset      = ih3lx_st_spi_reset; // Null func - same as in ih3lx
-        //mfl->f_write_blk  = cntx_st_spi_block_write;
-        mfl->f_write_blk  = cntx_st_spi_page_write; mfl->attr.page_write = 256;
+        mfl->f_write_blk  = get_write_blk_func(mfl->attr.command_set);
+
+        mfl->attr.page_write = 256;
         mfl->f_write      = write_chunks;
         mfl->f_erase_sect = cntx_st_spi_erase_sect;
     } else {
@@ -2161,10 +2384,11 @@ int is4_flash_init(mflash* mfl) {
 
     rc = st_spi_fill_attr(mfl);   CHECK_RC(rc);
 
-    if        (mfl->attr.command_set == MCS_STSPI) {
+    if        (mfl->attr.command_set == MCS_STSPI || mfl->attr.command_set == MCS_SSTSPI) {
         mfl->f_reset      = ih3lx_st_spi_reset; // Null func - same as in ih3lx
         //mfl->f_write_blk  = cntx_st_spi_block_write;
-        mfl->f_write_blk  = cntx_st_spi_page_write; mfl->attr.page_write = 256;
+        mfl->f_write_blk  = get_write_blk_func(mfl->attr.command_set);
+        mfl->attr.page_write = 256;
         mfl->f_write      = write_chunks;
         mfl->f_erase_sect = cntx_st_spi_erase_sect;
     } else {
@@ -2188,6 +2412,7 @@ int     mf_read        (mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* da
     if (addr + len > mfl->attr.size) {
         return MFE_OUT_OF_RANGE;
     }
+    //printf("-D- mf_read:  addr: %#x, len: %d\n", addr, len);
     return mfl->f_read(mfl, addr, len, data);
 }
 
@@ -2195,6 +2420,7 @@ int     mf_write       (mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* da
     if (addr + len > mfl->attr.size) {
         return MFE_OUT_OF_RANGE;
     }
+
     return mfl->f_write(mfl, addr, len, data);
 }
 
@@ -2222,10 +2448,13 @@ int mf_open_fw(mflash* mfl)
 
     MREAD4(0xf0014, &dev_id);
 
-    dev_id &= 0xffff;
 
+    mfl->attr.rev_id    = (dev_id & 0xff0000) >> 16;
+
+    dev_id &= 0xffff;
     mfl->attr.hw_dev_id = dev_id;
-    //printf("-D- read dev id: %d\n", dev_id);
+
+    //printf("-D- read dev id: %d, rev_id: %#x\n",  mfl->attr.hw_dev_id, mfl->attr.rev_id);
 
     if (dev_id == 23108 || dev_id == 25208) {
         rc = ihst_flash_init(mfl);
@@ -2233,7 +2462,9 @@ int mf_open_fw(mflash* mfl)
         rc = ih3lx_flash_init(mfl);
     } else if (dev_id == 400) {
         rc = cntx_flash_init(mfl);
-    } else if (dev_id == 435) {
+    } else if (dev_id == 435 || // InfiniScaleIV
+               dev_id == 6100)  // BridgeX
+    {
         rc = is4_flash_init(mfl);
     } else if (dev_id == 0xffff) {
         printf("-E- Read a corrupted device id (0x%x). Probably HW/PCI access problem\n", dev_id);
@@ -2251,7 +2482,7 @@ int mf_open_fw(mflash* mfl)
     return MFE_OK;
 }
 
-int    mf_opend       (mflash** pmfl, struct mfile_t* mf) {
+int    mf_opend       (mflash** pmfl, struct mfile_t* mf, int num_of_banks) {
     int rc;
     *pmfl = (mflash*)malloc(sizeof(mflash));
     if (!*pmfl) {
@@ -2260,13 +2491,14 @@ int    mf_opend       (mflash** pmfl, struct mfile_t* mf) {
 
     memset(*pmfl, 0, sizeof(mflash));
     (*pmfl)->mf = (mfile*)mf;
+    (*pmfl)->opts[MFO_NUM_OF_BANKS] = spi_get_num_of_flashes(num_of_banks);
 
     rc = mf_open_fw(*pmfl);
 
     return rc;
 }
 
-int     mf_open        (mflash** pmfl, const char* dev) {
+int     mf_open        (mflash** pmfl, const char* dev, int num_of_banks) {
     mfile*  mf;
 
     int rc;
@@ -2281,7 +2513,7 @@ int     mf_open        (mflash** pmfl, const char* dev) {
         return MFE_CR_ERROR;
     }
 
-    rc = mf_opend(pmfl, (struct mfile_t*) mf);
+    rc = mf_opend(pmfl, (struct mfile_t*) mf, num_of_banks);
 
     if ((*pmfl)) {
         (*pmfl)->opts[MFO_CLOSE_MF_ON_EXIT] = 1;
