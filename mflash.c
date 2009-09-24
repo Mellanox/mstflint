@@ -198,18 +198,18 @@ struct mflash {
 #define CPUMODE        0xf0150
 
 enum FlashConstant {
-    FLASH_CMD_CNT  = 5000,    // Number of reads till flash cmd is zeroed
-    ERASE_DELAY    = 200000,  // Delay between reads when wating for sector erase
-    ERASE_CNT      = 1000000,      // Maximal number of reads when wating for sector erase
-    READ_CNT_FAST  = 50000,        // Number of fast reads after write byte
-    READ_CNT_SLOW  = 50,      // Number of slow reads after write byte
-    READ_DELAY     = 100000,  // Delay between slow reads after write byte
-    WR_REPORT_FAST = 256,     // Report frequency when write (fast interfaces)
-    WR_REPORT_SLOW = 4,       // Report frequency when write (slow interfaces)
-    RD_REPORT_FAST = 4096,    // Report frequency when read (fast interfaces)
-    RD_REPORT_SLOW = 64,      // Report frequency when read (slow interfaces)
-    GPIO_SEM_TRIES = 1024 ,   // Number of tries to obtain a GPIO sem.
-    MAX_WRITE_BUFFER_SIZE = 32// Max buffer size for buffer write devices
+    FLASH_CMD_CNT  = 5000,      // Number of reads till flash cmd is zeroed
+    ERASE_DELAY    = 200000,    // Delay between reads when wating for sector erase
+    ERASE_CNT      = 1000000,   // Maximal number of reads when wating for sector erase
+    READ_CNT_FAST  = 50000,     // Number of fast reads after write byte
+    READ_CNT_SLOW  = 50,        // Number of slow reads after write byte
+    READ_DELAY     = 100000,    // Delay between slow reads after write byte
+    WR_REPORT_FAST = 256,       // Report frequency when write (fast interfaces)
+    WR_REPORT_SLOW = 4,         // Report frequency when write (slow interfaces)
+    RD_REPORT_FAST = 4096,      // Report frequency when read (fast interfaces)
+    RD_REPORT_SLOW = 64,        // Report frequency when read (slow interfaces)
+    GPIO_SEM_TRIES = 1024 ,     // Number of tries to obtain a GPIO sem.
+    MAX_WRITE_BUFFER_SIZE = 256 // Max buffer size for buffer write devices
 };
 
 
@@ -452,7 +452,7 @@ int write_chunks   (mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data) 
         if (!all_ffs) {
             rc = mfl->f_write_blk(mfl, block_addr, block_size, block_data); CHECK_RC(rc);
 
-            if (mfl->opts[MFO_NO_VERIFY]) {
+            if (mfl->opts[MFO_NO_VERIFY] == 0) {
                 u_int8_t verify_buffer[MAX_WRITE_BUFFER_SIZE];
                 rc = mfl->f_reset(mfl);                                CHECK_RC(rc);
                 rc = mfl->f_read(mfl, addr, data_size, verify_buffer); CHECK_RC(rc);
@@ -1198,7 +1198,7 @@ int st_spi_fill_attr(mflash* mfl) {
             break;
         } else {
             printf("-E- Unexpected SPI electronic signature value (0x%2x) when detecting flash size. "
-                          "Flash #%d may be defected.",
+                          "Flash #%d may be defective.",
                           es,
                           spi_sel);
             return MFE_UNSUPPORTED_FLASH_TOPOLOGY;
@@ -1725,9 +1725,18 @@ int cntx_set_bank(mflash* mfl, u_int32_t bank) {
     return MFE_OK;
 }
 
+int is_is4_family(u_int32_t dev_id) {
+    if (dev_id == 435 ||  // InfiniScaleIV
+        dev_id == 6100) { // BridgeX
+        return 1;
+    }
+    return 0;
+}
+
+
 int cntx_exec_cmd(mflash* mfl, u_int32_t gw_cmd, char* msg) {
-    if (mfl->attr.hw_dev_id == 435) {
-        // For Infiniscale4 : keep the GW locked during flash ops
+    if (is_is4_family(mfl->attr.hw_dev_id)) {
+        // For Infiniscale4 and BridgeX: keep the GW locked during flash ops
         gw_cmd = MERGE(gw_cmd,              1,       31,                       1);
     }
     gw_cmd = MERGE(gw_cmd,              1, HBO_BUSY,                       1);
@@ -1774,9 +1783,9 @@ int cntx_st_spi_write_enable(mflash* mfl) {
 
     rc = cntx_exec_cmd(mfl, gw_cmd, "WREN command"); CHECK_RC(rc);
 
-    gw_cmd =  MERGE(gw_cmd, 1               , HBO_CS_HOLD,    1);
+    //gw_cmd =  MERGE(gw_cmd, 1               , HBO_CS_HOLD,    1);
 
-    MWRITE4(CR_FLASH_GW,   gw_cmd);
+    //MWRITE4(CR_FLASH_GW,   gw_cmd);
 
     return MFE_OK;
 }
@@ -2462,9 +2471,7 @@ int mf_open_fw(mflash* mfl)
         rc = ih3lx_flash_init(mfl);
     } else if (dev_id == 400) {
         rc = cntx_flash_init(mfl);
-    } else if (dev_id == 435 || // InfiniScaleIV
-               dev_id == 6100)  // BridgeX
-    {
+    } else if (is_is4_family(dev_id)) {
         rc = is4_flash_init(mfl);
     } else if (dev_id == 0xffff) {
         printf("-E- Read a corrupted device id (0x%x). Probably HW/PCI access problem\n", dev_id);
