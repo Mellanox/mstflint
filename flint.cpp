@@ -217,8 +217,8 @@ static inline void cpu_to_be_guid(guid_t* to, guid_t* from) {
 #define GUID_SPACES "        "
 #define GUID_FORMAT "%8.8x%8.8x"
 #define MAC_FORMAT  "%4.4x%8.8x"
-#define TOCPU1(s) s = __be32_to_cpu(s);
-#define CPUTO1(s) s = __cpu_to_be32(s);
+#define TOCPU1(s) s = __be32_to_cpu((u_int32_t)(s));
+#define CPUTO1(s) s = __cpu_to_be32((u_int32_t)(s));
 #define TOCPU(s) do {                                              \
     u_int32_t *p = (u_int32_t *)(s);                               \
     for (u_int32_t ii=0; ii<sizeof(s)/sizeof(u_int32_t); ii++,p++) \
@@ -3067,7 +3067,7 @@ bool Operations::CheckMatchingHwDevId(u_int32_t hwDevId, u_int32_t rev_id, Opera
 bool Operations::CheckMatchingDevId(u_int32_t hwDevId, u_int32_t imageDevId) {
     int i, j;
     const HwDevData* devData = NULL;
-    const char* hwDevName;
+    const char* hwDevName = NULL;
     // HACK: InfiniHost III LX may have 2 HW device ids. - Map the second devid to the first.
     if (hwDevId == 24204) {
         hwDevId = 25204;
@@ -5886,7 +5886,7 @@ void PrintFSBurnErr(Flash& f, Operations& ops, const char* err_msg)
 int main(int ac, char *av[])
 {
 
-    char         *image_fname=0, *device=0, *log_file;
+    char         *image_fname=0, *device=0, *log_file=0;
     bool         clear_semaphore    = false;
     bool         silent             = false;
     bool         guids_specified    = false;
