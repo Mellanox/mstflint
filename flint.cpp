@@ -32,7 +32,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- *  Version: $Id: flint.cpp 5301 2009-09-23 13:22:19Z mohammad $
+ *  Version: $Id: flint.cpp 5353 2009-10-06 11:28:17Z slavak $
  *
  */
 
@@ -151,11 +151,11 @@ namespace std {}; using namespace std;
         #define _VFSTR(x, y)           __VFSTR(x, y)
     const char* _versionID = _VFSTR( BLD_VER_STR, VERSION_ID ) ;
     #else
-    const char* _versionID = "MFT 2.6.0-20";
+    const char* _versionID = "MFT 2.6.0";
     #endif
 #endif
 
-const char* _svnID     = "$Revision: 5301 $";
+const char* _svnID     = "$Revision: 5353 $";
 
 #ifndef __be32_to_cpu
     #define __be32_to_cpu(x) ntohl(x)
@@ -426,16 +426,14 @@ int  const PRODUCT_VER_LEN = 16;
 //
 // TODO: Remove the below globals to class members.
 //
-bool _print_crc = false;
-bool _silent = false;
-bool _assume_yes = false;
-bool _assume_no = false;
-bool _no_erase = false;
-bool _no_burn = false;
-
+bool _print_crc     = false;
+bool _silent        = false;
+bool _assume_yes    = false;
+bool _assume_no     = false;
+bool _no_erase      = false;
+bool _no_burn       = false;
 bool _unlock_bypass = false;
-
-bool _byte_write = false;
+bool _byte_write    = false;
 
 
 void report(const char *format, ...)
@@ -1495,7 +1493,8 @@ public:
         II_VsdVendorId        = 8,
         II_IsGa               = 9,
         II_HwDevsId           = 10,
-        II_Last               = 11,  // Mark the end of used tag ids
+        II_MicVersion         = 11,
+        II_Last               = 12,  // Mark the end of used tag ids
         II_End                = 0xff
     };
 
@@ -1527,7 +1526,8 @@ public:
     bool HwDevIdToSw(u_int32_t hw_dev_id, u_int32_t& sw_dev_id);
     // Image operations:
     bool Verify          (FBase& f, ImageInfo* info, bool both_images = false);
-    bool VerifyFs2      (FBase& f, ImageInfo* info, bool both_images = false, bool only_get_start = false);
+    bool VerifyFs2      (FBase& f, ImageInfo* info, bool both_images = false, bool only_get_start = false,
+                         bool ignore_full_image_crc = false);
 
     bool LoadAsExpRom    (FBase& f, ImageInfo* info);
 
@@ -1540,8 +1540,8 @@ public:
 
     bool QueryAll        (FBase& f, ImageInfo* info) {return(IsFs2() ||
                                                              (QueryIs(f, info) &&
-                                                              (!info->isFailsafe || QueryPs(f, info)))) &&
-        QueryImage(f, info);}
+                                                             (!info->isFailsafe || QueryPs(f, info)))) &&
+                                                             QueryImage(f, info);}
 
     bool getBSN          (char *s, guid_t *guid);
     bool getGUID         (const char *s, guid_t *guid);
@@ -2908,6 +2908,14 @@ bool Operations::checkGen(FBase& f, u_int32_t beg,u_int32_t offs,
         if (gph.type == H_HASH_FILE) {
             GetSectData(_hash_file_sect, buff, size);
         }
+
+        if (gph.type == H_IMG_INFO) {
+            CPUTOn(buff, size/4);
+            if (!ParseInfoSect((u_int8_t*)buff, size,  info)) {
+                return errmsg("Failed to read the info sector: %s\n", err());
+            }
+        }
+
         if (info != NULL) {
             if (gph.type == H_ROM && info->_rom_sect.empty()) {
                 GetSectData(info->_rom_sect, buff, size);
@@ -3116,13 +3124,14 @@ bool Operations::CheckMatchingExpRomDevId(Operations::ImageInfo* info) {
 }
 
 
-bool Operations::VerifyFs2(FBase& f, Operations::ImageInfo* info, bool both_images, bool only_get_start) {
+bool Operations::VerifyFs2(FBase& f, Operations::ImageInfo* info, bool both_images, bool only_get_start,
+                           bool ignore_full_image_crc) {
     u_int32_t cntx_image_start[CNTX_START_POS_SIZE];
     u_int32_t cntx_image_num;
     u_int32_t i;
     bool      ret = true;
     u_int32_t act_crc;
-    u_int8_t  check_full_crc;
+    bool  check_full_crc = false;
 
     // Look for image in "physical addresses
     CntxFindAllImageStart(f, cntx_image_start, &cntx_image_num);
@@ -3160,7 +3169,6 @@ bool Operations::VerifyFs2(FBase& f, Operations::ImageInfo* info, bool both_imag
 
         u_int32_ba crc_dw = buff[IMG_CRC_OFF / 4];
         act_crc           = u_int32_t(crc_dw.range(15, 0));
-        check_full_crc    = u_int32_t(crc_dw.range(23, 16));
         crc_dw.range(15, 0) = 0xffff;
         buff[IMG_CRC_OFF / 4] |= crc_dw;
 
@@ -3243,7 +3251,11 @@ bool Operations::VerifyFs2(FBase& f, Operations::ImageInfo* info, bool both_imag
 
         u_int32_t full_crc = f.get_image_crc().get();
 
-        if (imgStat && _is_full_verify && check_full_crc == 1 && !only_get_start) {
+        if (!ignore_full_image_crc && info->infoOffs[II_MicVersion]) { // For now we check only that the Mic version existing .
+            check_full_crc = true;
+        }
+
+        if (imgStat && _is_full_verify && check_full_crc && !only_get_start) {
             char pr[256];
             sprintf(pr, CRC_CHECK_OUTPUT, PRE_CRC_OUTPUT, 0, _last_image_addr - 1, _last_image_addr,
                     "Full Image");
@@ -4407,6 +4419,8 @@ bool Operations::ParseInfoSect(u_int8_t* buff, u_int32_t byteSize, Operations::I
     u_int32_t tagNum = 0;
     bool endFound = false;
 
+    // TODO: Add new flag on the info which indicates that the ParseInfoSect was already called.
+
     while (!endFound && offs < byteSize) {
         u_int32_t tagSize = __be32_to_cpu(*p) & 0xffffff;
         u_int32_t tagId   = __be32_to_cpu(*p) >> 24;
@@ -4479,13 +4493,14 @@ bool Operations::ParseInfoSect(u_int8_t* buff, u_int32_t byteSize, Operations::I
             }
             info->productVer[PRODUCT_VER_LEN] = '\0';
             break;
-       case II_HwDevsId:
+        case II_HwDevsId:
            u_int32_t i;
            for (i = 1; i <= (tagSize / 4); i++) {
                info->supportedHwId[i - 1] = __be32_to_cpu(*(p + i));
            }
            info->supportedHwIdNum = tagSize / 4;
            break;
+
 
         case II_End:
             endFound = true;
@@ -4645,6 +4660,12 @@ bool Operations::DisplayImageInfo(Operations::ImageInfo* info) {
     if (info->infoOffs[II_FwVersion]) {
         report("FW Version:      %d.%d.%d\n", info->fwVer[0], info->fwVer[1], info->fwVer[2]);
     }
+    // TODO: Print the mic version and hw devi Ids
+    //if (info->infoOffs[II_MicVersion]) {
+    //    report("MIC Version:     Existent\n");
+    //}
+
+
 
     if (info->infoOffs[II_ProductVer] && strlen(info->productVer)) {
         report("Product Version: %s\n", info->productVer);
@@ -4740,7 +4761,7 @@ bool Operations::DisplayImageInfo(Operations::ImageInfo* info) {
                     }
                 }
             } else {
-                report_warn("Can not get MAC addrerss: Expecting %d entries in guid section, got %d. Probably an old FW image. Please update.\n",
+                report_warn("Can not get MAC address: Expecting %d entries in guid section, got %d. Probably an old FW image. Please update.\n",
                        6,
                        info->guidNum);
             }
@@ -5603,8 +5624,8 @@ bool Operations::AddNewSect(u_int8_t* &new_image_p, u_int8_t* data, GPH gph, u_i
     memcpy(dest, &dword, 4);\
 }
 #define MAJOR_MOD_ROM_FW    2
-#define MINOR_MOD_ROM_FW    7
-#define SUBMINOR_MOD_ROM_FW 0
+#define MINOR_MOD_ROM_FW    6
+#define SUBMINOR_MOD_ROM_FW 1410
 
 bool Operations::IsFwSupportingRomModify(u_int16_t fw_ver[3])
 {
@@ -5627,7 +5648,7 @@ bool Operations::UpdateFullImageCRC(u_int32_t* buff, u_int32_t size, bool blank_
     // Writing 0xffff on the CRC field.
     u_int32_ba crc_dw = TOCPU1(buff[IMG_CRC_OFF / 4]);
     crc_dw.range(15, 0)  = 0xffff;
-    crc_dw.range(23, 16) = 1;
+
 
     buff[IMG_CRC_OFF / 4] = CPUTO1(crc_dw);
 
@@ -5640,8 +5661,8 @@ bool Operations::UpdateFullImageCRC(u_int32_t* buff, u_int32_t size, bool blank_
 
     // Update the CRC.
     TOCPU1(crc_dw);
-    crc_dw.range(15, 0)  = new_crc;
-    buff[IMG_CRC_OFF / 4]    = CPUTO1(crc_dw);
+    crc_dw.range(15, 0)   = new_crc;
+    buff[IMG_CRC_OFF / 4] = CPUTO1(crc_dw);
 
     return true;
 }
@@ -5823,7 +5844,7 @@ bool Operations::IntegrateDevRomInImage(FImage& fim, ImageInfo& flashInfo, Image
     fim.close();
     fim.open((u_int32_t*)(&new_data[0]), actual_image_size);
 
-    if (!Verify(fim, &fileInfo) || !QueryAll(fim, &fileInfo)) {
+    if (!VerifyFs2(fim, &fileInfo, false, false, true) || !QueryAll(fim, &fileInfo)) {
         return errmsg(err());
     }
 
@@ -6647,6 +6668,7 @@ int main(int ac, char *av[])
             NEXTC("<ROM_FILE>", "brom");
             rom_file = av[i];
             _silent = true;
+
             // Open Rom file, get its size and read it
             fh_rom = fopen(rom_file, "rb");
             if (!fh_rom) {
@@ -6705,7 +6727,7 @@ int main(int ac, char *av[])
             // open the image
             fim.open((u_int32_t*)(&new_data[0]), new_image_size);
 
-            if (!ops.Verify(fim, &file_info) || !ops.QueryAll(fim, &file_info)) {
+            if (!ops.VerifyFs2(fim, &file_info, false, false, true) || !ops.QueryAll(fim, &file_info)) {
                 report_err(ops._err_msg, "Internal error: The prepared image is corrupted: %s\n", ops.err());
                 rc = 1; goto done;
             }
@@ -6778,8 +6800,8 @@ int main(int ac, char *av[])
             // Burn the Image after removing the ROM.
             fim.open((u_int32_t*)(&new_data[0]), new_image_size);
 
-            // To verify the new image and exit if it isn't VALID.
-            if (!ops.Verify(fim, &file_info) || !ops.QueryAll(fim, &file_info)) {
+            // To verify the new image and exit if it's not VALID.
+            if (!ops.VerifyFs2(fim, &file_info, false, false, true) || !ops.QueryAll(fim, &file_info)) {
                 report_err(ops._err_msg, "Internal error: The prepared image After removing the ROM is corrupted: %s\n", ops.err());
                 rc = 1; goto done;
             }
