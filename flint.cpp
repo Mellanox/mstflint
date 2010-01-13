@@ -32,7 +32,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- *  Version: $Id: flint.cpp 5353 2009-10-06 11:28:17Z slavak $
+ *  Version: $Id: flint.cpp 5641 2010-01-03 14:26:54Z mohammad $
  *
  */
 
@@ -151,11 +151,19 @@ namespace std {}; using namespace std;
         #define _VFSTR(x, y)           __VFSTR(x, y)
     const char* _versionID = _VFSTR( BLD_VER_STR, VERSION_ID ) ;
     #else
-    const char* _versionID = "MFT 2.6.0";
+    const char* _versionID = "MFT 2.6.1 , BUILD 20100104-1702";
+    #endif
+#else
+    #if defined (VERSION_ID)
+        #define __VFSTR1(x)          #x
+        #define _VFSTR1(x)           __VFSTR1(x)
+    const char* _versionID = _VFSTR1( VERSION_ID ) ;
+    #else
+    const char* _versionID = "MFT 2.6.1 , BUILD 20100104-1702";
     #endif
 #endif
 
-const char* _svnID     = "$Revision: 5353 $";
+const char* _svnID     = "$Revision: 5641 $";
 
 #ifndef __be32_to_cpu
     #define __be32_to_cpu(x) ntohl(x)
@@ -1632,7 +1640,13 @@ public:
         (devid == 25418) || // IB DDR
         (devid == 25428) || // IB QDR
         (devid == 26418) || // IB DDR
-        (devid == 26428);   // IB QDR
+        (devid == 26428) || // IB QDR
+        (devid == 26488) || // IB DDR
+        (devid == 4097)  || // IB DDR
+        (devid == 4098)  || // IB QDR
+        (devid == 4099)  || // IB DDR
+        (devid == 4100)  || // IB DDR
+        (devid == 26438);   // IB QDR
     }
 
     bool CntxIsEth       (u_int32_t devid)     {return(devid == 25448) || // ETH
@@ -1752,7 +1766,7 @@ public:
     };
 
     enum {
-        MAX_SW_DEVICES_PER_HW=16
+        MAX_SW_DEVICES_PER_HW=32
     };
 
     struct HwDevData {
@@ -1788,13 +1802,13 @@ public:
 
 private:
 
-    bool FailSafe_burn_image   (Flash&       f,
-                                void         *data,
-                                int          ps_addr,
-                                const char*  image_name,
-                                int          image_addr,
-                                int          image_size,
-                                bool         need_report);
+    bool FailSafe_burn_image    (Flash&       f,
+                                 void         *data,
+                                 int          ps_addr,
+                                 const char*  image_name,
+                                 int          image_addr,
+                                 int          image_size,
+                                 bool         need_report);
 
     bool CheckInvariantSector   (Flash& f, u_int32_t *data32, int sect_size);
 
@@ -1876,9 +1890,10 @@ const Operations::HwDevData Operations::hwDevData[] = {
     { "InfiniHost",        23108, 2, {23108, 0}},
     { "InfiniHost III Ex", 25208, 2, {25208, 25218, 0}},
     { "InfiniHost III Lx", 25204, 1, {25204, 0}},
-    { "ConnectX",            400, 2, {25408, 25418, 26418,
+    { "ConnectX",            400, 2, {25408, 25418, 26418, 26438,
                                       26428, 25448, 26448, 26468,
-                                      25458, 26458, 26478, 0}},
+                                      25458, 26458, 26478, 26488,
+                                      4097, 4098, 4099, 4100, 0}},
     { "InfiniScale IV",   435,  0, {48436, 48437, 48438, 0}},
     { "BridgeX",          6100, 0, {64102, 64112, 64122, 0}},
     { NULL ,              0, 0, {0}},// zero devid terminator
@@ -3259,9 +3274,7 @@ bool Operations::VerifyFs2(FBase& f, Operations::ImageInfo* info, bool both_imag
             char pr[256];
             sprintf(pr, CRC_CHECK_OUTPUT, PRE_CRC_OUTPUT, 0, _last_image_addr - 1, _last_image_addr,
                     "Full Image");
-            if (!CheckAndPrintCrcRes(pr, info->blankGuids, 0, act_crc, full_crc)) {
-                return false;
-            }
+            CheckAndPrintCrcRes(pr, info->blankGuids, 0, act_crc, full_crc);
         }
 
         if (i == 0) {
@@ -4602,7 +4615,13 @@ bool Operations::ReportBxGuidsQuery(guid_t* guids, int base1, int guids_num, int
     }
     base = first_index + base1;
     for (i = base; i < base + guids_num; i++) {
-        report(GUID_FORMAT " ", guids[i].h, guids[i].l);
+        int j = i;
+        // HACK
+        if (i == BI_GUIDS + BX_SLICE_GUIDS) {
+            // We display the same node guid on the two slices.
+            j = BI_GUIDS;
+        }
+        report(GUID_FORMAT " ", guids[j].h, guids[j].l);
     }
     printf("\n");
     return true;
@@ -4997,7 +5016,7 @@ void usage(const char *sname, bool full = false)
     "  swreset             - SW reset the target InfniScale IV device. This command\n"
     "                        is supported only in the In-Band access method.\n"
     "  brom     <ROM-file> - Burn the specified ROM file on the flash.\n"
-    "  rrrom    <out-file> - Read the ROM section from the flash.\n"
+    "  rrom     <out-file> - Read the ROM section from the flash.\n"
     "  drom                - Remove the ROM section from the flash.\n"
     "\n"
     "  Return values:\n"
@@ -5349,8 +5368,37 @@ int write_result_to_log(int is_failed, const char* err_msg)
 Flash* g_flash = NULL;
 
 #ifdef _WIN32
-HANDLE g_hMainTread = GetCurrentThread();
+
+HANDLE main_thread;
+
+#define GET_MAIN_THREAD() {\
+     int rc = DuplicateHandle(GetCurrentProcess(), GetCurrentThread(), GetCurrentProcess(),\
+                              &main_thread, 0, FALSE, DUPLICATE_SAME_ACCESS);\
+     if (rc == 0) {\
+         main_thread = NULL;\
+     }\
+}
+
+#define CHECK_WIN_SIGNAL() {\
+     if (main_thread == NULL) {\
+         report_warn("An internal error occurred. This program can not be interrupted.\n");\
+         signal(signum, TerminationHandler);\
+         return;\
+     }\
+}
+
+#define SUSPEND_MAIN_THREAD() {\
+     SuspendThread(main_thread);\
+}
+
+#else
+
+#define GET_MAIN_THREAD()
+#define WIN_TERM_THREAD()
+#define CHECK_WIN_SIGNAL()
+#define SUSPEND_MAIN_THREAD()
 #endif
+
 
 
 
@@ -5368,19 +5416,7 @@ void TerminationHandler (int signum)
 {
     static volatile sig_atomic_t fatal_error_in_progress = 0;
 
-#ifdef _WIN32
-    if (signum == 0) {
-        report_warn("Got SIGINT. Raising SIGTERM\n");
-        raise(SIGTERM);
-        return;
-    }
-    // printf("\n");
-    report_warn("This program can not be interrupted.Please wait for its termination.\n");
-    signal(signum, TerminationHandler);
-    return;
-#endif
-
-
+    CHECK_WIN_SIGNAL();
     if (fatal_error_in_progress)
         raise (signum);
     fatal_error_in_progress = 1;
@@ -5392,6 +5428,7 @@ void TerminationHandler (int signum)
     if (g_flash != NULL) {
         report("\n Received signal %d. Cleaning up ...", signum);
         fflush(stdout);
+        SUSPEND_MAIN_THREAD();
         sleep(1); // let erase sector end
         //g_flash->wait_ready("Process termination");
 
@@ -5512,7 +5549,13 @@ bool InitBxGuids(guid_t* user_guids, guid_t base_guid1) {
         int base_guids_index = base_index + Operations::BI_GUIDS;
 
         for (int j = 0; j < Operations::BX_NP_GUIDS; j++) {
-            INCR_GUID(base_guid, user_guids[base_guids_index + j], j);
+            if (j == 0) {
+                // The node guid should be the same one on the two slices.
+                INCR_GUID(base_guid1, user_guids[base_guids_index + j], j);
+            } else {
+                INCR_GUID(base_guid, user_guids[base_guids_index + j], j);
+            }
+
         }
         // Init Macs
         base_mac = GetBaseMac(base_guid);
@@ -5953,6 +5996,7 @@ int main(int ac, char *av[])
     for (i = 0 ; i < (int)(sizeof(g_signals_for_termination)/sizeof(g_signals_for_termination[0])) ; i++ ) {
         signal (g_signals_for_termination[i], TerminationHandler);
     }
+    GET_MAIN_THREAD();
 
     if (ac < 2) {
         usage(av[0]);
