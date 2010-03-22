@@ -16,7 +16,16 @@ mstflint_SOURCES = flint.cpp mtcr.h mflash.h mflash.c
 mstflint_LIBS = @mstflint_LIBS@
 mstflint_CXXFLAGS = @mstflint_CXXFLAGS@
 
-mstregdump_SOURCES = mstdump.c mtcr.h
+mstregdump_SOURCES = mstdump.c mtcr.h \
+MT23108.crb \
+MT25204.crb \
+MT25208.crb \
+MT25408B0.crb \
+MT25408.crb \
+MT47396.crb \
+MT48436.crb \
+MT64102.crb \
+MT64102safe.crb
 
 mstvpd_SOURCES = vpd.c
 
