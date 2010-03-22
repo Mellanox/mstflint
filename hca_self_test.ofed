@@ -168,7 +168,7 @@ else
     fi
 
     if [ $RPM_KER_VER -ne 0 ]; then
-        RPM_CUR_BOOTED_KER=`rpm -qa 2> null| grep kernel-ib | grep $(echo $BOOTED_KER | sed s/-/_/) | wc -l`
+        RPM_CUR_BOOTED_KER=`rpm -qa 2> /dev/null | grep kernel-ib | grep $(echo $BOOTED_KER | sed s/-/_/) | wc -l`
         if [ $RPM_CUR_BOOTED_KER -eq 0 ]; then
             echo -e "Host Driver RPM Check .................. ${red}FAIL"
             tput sgr0
@@ -484,13 +484,13 @@ if [ $HOST_DRIVER_INIT -eq 1 ]; then
                 PORT_1_STATE=`awk -F: '{print $2}' $INFINI_CLASS_PATH/$driver_need$device_num/ports/1/state 2> /dev/null`
                 if [ $PORT_1_STATE = "ACTIVE" ]; then
                     PORT_SPEED=`awk -F\( '{print $2}' $INFINI_CLASS_PATH/$driver_need$device_num/ports/1/rate 2> /dev/null | sed 's/)//'`
-                    echo -e "Port State of Port #0 on HCA #$LOOP_COUNT ........ ${green}UP $PORT_SPEED"
+                    echo -e "Port State of Port #1 on HCA #$LOOP_COUNT ........ ${green}UP $PORT_SPEED"
                     tput sgr0
                 else
                    if [ $PORT_1_STATE = "INIT" ]; then
-                      echo -e "Port State of Port #0 on HCA #$LOOP_COUNT ........ ${cyan}INIT"
+                      echo -e "Port State of Port #1 on HCA #$LOOP_COUNT ........ ${cyan}INIT"
                    else
-                      echo -e "Port State of Port #0 on HCA #$LOOP_COUNT ........ ${red}DOWN"
+                      echo -e "Port State of Port #1 on HCA #$LOOP_COUNT ........ ${red}DOWN"
                    fi
                    tput sgr0
                 fi
@@ -500,14 +500,14 @@ if [ $HOST_DRIVER_INIT -eq 1 ]; then
                 PORT_2_STATE=`awk -F: '{print $2}' $INFINI_CLASS_PATH/$driver_need$device_num/ports/2/state 2> /dev/null`
                 if [ $PORT_2_STATE = "ACTIVE" ]; then
                     PORT_SPEED=`awk -F\( '{print $2}' $INFINI_CLASS_PATH/$driver_need$device_num/ports/2/rate 2> /dev/null | sed 's/)//'`
-                    echo -e "Port State of Port #1 on HCA #$LOOP_COUNT ........ ${green}UP $PORT_SPEED"
+                    echo -e "Port State of Port #2 on HCA #$LOOP_COUNT ........ ${green}UP $PORT_SPEED"
                     tput sgr0
                 else
 
                     if [ $PORT_2_STATE = "INIT" ]; then
-                       echo -e "Port State of Port #1 on HCA #$LOOP_COUNT ........ ${cyan}INIT"
+                       echo -e "Port State of Port #2 on HCA #$LOOP_COUNT ........ ${cyan}INIT"
                     else
-                       echo -e "Port State of Port #1 on HCA #$LOOP_COUNT ........ ${red}DOWN"
+                       echo -e "Port State of Port #2 on HCA #$LOOP_COUNT ........ ${red}DOWN"
                     fi
                     tput sgr0
                 fi
@@ -532,6 +532,9 @@ if [ $HOST_DRIVER_INIT -eq 1 ]; then
 
         driver_need=$(get_driver $LOOP_COUNT)
         if [ "$driver_need" != "" ]; then
+            check_port1=1
+            check_port2=1
+
             if [ "$driver_need" == "$HERMON_DRIVER_NEEDED" ]; then
                  device_num=$mlx_dev_num
                  let "mlx_dev_num=$mlx_dev_num + 1"
@@ -539,9 +542,21 @@ if [ $HOST_DRIVER_INIT -eq 1 ]; then
                  device_num=$mthca_dev_num
                  let "mthca_dev_num=$mthca_dev_num + 1"
             fi
-                    # Error counters check
+
+            for port in `seq 1 2`; do
+                link_layer_file="$INFINI_CLASS_PATH/$driver_need$device_num/ports/$port/link_layer"
+                if [ -f $link_layer_file ]; then
+                    proto=`cat $link_layer_file 2> /dev/null`
+                    if [ "$proto" == "Ethernet" ]; then
+                        let "check_port$port=0"
+                    fi
+                fi
+            done
+
+
+            # Error counters check
             ERROR_COUNTER_PRINT=0
-            if [ -f $INFINI_CLASS_PATH/$driver_need$device_num/ports/1/state ]; then
+            if [ -f $INFINI_CLASS_PATH/$driver_need$device_num/ports/1/state ] && [ $check_port1 -eq 1 ]; then
                 ERROR_COUNTER_PORT_1=0
 
                 for i in $INFINI_CLASS_PATH/$driver_need$device_num/ports/1/counters/*error*; do
@@ -556,7 +571,7 @@ if [ $HOST_DRIVER_INIT -eq 1 ]; then
                     fi
                 done
             fi
-            if [ -f $INFINI_CLASS_PATH/$driver_need$device_num/ports/2/state ]; then
+            if [ -f $INFINI_CLASS_PATH/$driver_need$device_num/ports/2/state ] && [ $check_port2 -eq 1 ]; then
 
                 ERROR_COUNTER_PORT_2=0
                 for i in $INFINI_CLASS_PATH/$driver_need$device_num/ports/2/counters/*error*; do
@@ -624,7 +639,11 @@ if [ $HOST_DRIVER_INIT -eq 1 ]; then
             fi
 
             if [ $ERROR_COUNTER -eq 0 ]; then
-                echo -e "Error Counter Check on HCA #$LOOP_COUNT .......... ${green}PASS"
+                result="${green}PASS"
+                if [ $check_port1 -ne 1 ] && [ $check_port2 -ne 1 ]; then
+                    result="NA (Eth ports)"
+                fi
+                echo -e "Error Counter Check on HCA #$LOOP_COUNT .......... $result"
                 tput sgr0
             fi
 
