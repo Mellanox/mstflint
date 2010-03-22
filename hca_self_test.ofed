@@ -136,7 +136,7 @@ else
     RPM_KER_VER=`rpm -qa 2> /dev/null | grep kernel-ib | wc -l`
     RPM_KER_NAME=`rpm -qa 2> /dev/null | grep kernel-ib | grep -v devel | sed s/kernel-ib-//g | tr \\\n " "`
 
-    OFED_VERSION=$(ofed_info | grep OFED)
+    OFED_VERSION=$(ofed_info | head -1)
 
     RPM_KER_ARCH=`uname -m`
 
