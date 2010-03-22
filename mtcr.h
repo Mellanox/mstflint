@@ -108,6 +108,8 @@
 #endif
 #endif
 
+#define MTCR_MAP_SIZE 0x100000
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -364,7 +366,7 @@ unsigned long long mtcr_procfs_get_offset(unsigned my_bus, unsigned my_dev,
 	else
 		goto error;
 
-	if (cnt != 17 || size[1] != 0 || size[0] != 0x100000) {
+	if (cnt != 17 || size[1] != 0 || size[0] != MTCR_MAP_SIZE) {
 		if (0) fprintf(stderr,"proc: unexpected region size values: "
 			"cnt=%d, size[0]=%#llx, size[1]=%#llx\n",
 			cnt,size[0],size[1]);
@@ -403,7 +405,7 @@ unsigned long long mtcr_sysfs_get_offset(unsigned domain, unsigned bus,
 		return offset;
 
 	cnt = fscanf(f, "0x%llx 0x%llx 0x%llx", &start, &end, &type);
-	if (cnt != 3 || end != start + 0x100000 - 1) {
+	if (cnt != 3 || end != start + MTCR_MAP_SIZE - 1) {
 		if (0) fprintf(stderr,"proc: unexpected region size values: "
 			"cnt=%d, start=%#llx, end=%#llx\n",
 			cnt, start, end);
@@ -435,7 +437,7 @@ int mtcr_mmap(mfile *mf, const char *name, off_t off, int ioctl_needed)
 		return -1;
 	}
 
-	mf->ptr = mmap(NULL, 0x100000, PROT_READ | PROT_WRITE,
+	mf->ptr = mmap(NULL, MTCR_MAP_SIZE, PROT_READ | PROT_WRITE,
 		       MAP_SHARED, mf->fd, off);
 
 	if (!mf->ptr || mf->ptr == MAP_FAILED) {
@@ -446,7 +448,7 @@ int mtcr_mmap(mfile *mf, const char *name, off_t off, int ioctl_needed)
 	}
 
 	if (mtcr_check_signature(mf)) {
-		munmap(mf->ptr, 0x10000);
+		munmap(mf->ptr, MTCR_MAP_SIZE);
 		close(mf->fd);
 		errno = EIO;
 		return -1;
@@ -773,7 +775,7 @@ int mclose(mfile *mf)
 {
 #if CONFIG_ENABLE_MMAP
   if (mf->ptr)
-    munmap(mf->ptr,0x10000);
+    munmap(mf->ptr,MTCR_MAP_SIZE);
 #endif
   close(mf->fd);
   free(mf);
