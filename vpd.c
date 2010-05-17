@@ -71,7 +71,7 @@ enum {
 	VPD_FLAG_READ_READY  = 0x80,
 	VPD_ADDR_OFFSET      = 0x02,
 	VPD_DATA_OFFSET      = 0x04,
-	VPD_MAX_SIZE         = 1<<16
+	VPD_MAX_SIZE         = 1<<8 //15
 };
 
 struct vpd_field {
