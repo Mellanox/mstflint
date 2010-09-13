@@ -738,19 +738,22 @@ access_config:
 #endif
 
 access_config_forced:
-	sprintf(cbuf, "/sys/bus/pci/devices/%4.4x:%2.2x:%2.2x.%1.1x/config",
+
+    // Cleanup the mfile struct from any previous garbage.
+    memset(mf, 0, sizeof(mfile));
+
+    sprintf(cbuf, "/sys/bus/pci/devices/%4.4x:%2.2x:%2.2x.%1.1x/config",
 		domain, bus, dev, func);
 	if (!mtcr_open_config(mf, cbuf))
 		return mf;
 
-	sprintf(pdbuf, "/proc/bus/pci/devices/%4.4x:%2.2x/%2.2x.%1.1x",
+	sprintf(pdbuf, "/proc/bus/pci/%4.4x:%2.2x/%2.2x.%1.1x",
 		domain, bus, dev, func);
-
 	if (!mtcr_open_config(mf, pdbuf))
 		return mf;
 
 	if (!domain) {
-		sprintf(pbuf, "/proc/bus/pci/devices/%2.2x/%2.2x.%1.1x",
+		sprintf(pbuf, "/proc/bus/pci/%2.2x/%2.2x.%1.1x",
 			bus, dev, func);
 		if (!mtcr_open_config(mf, pdbuf))
 			return mf;
