@@ -1642,11 +1642,23 @@ public:
         (devid == 26418) || // IB DDR
         (devid == 26428) || // IB QDR
         (devid == 26488) || // IB DDR
+        (devid == 26438) ||
         (devid == 4097)  || // IB DDR
         (devid == 4098)  || // IB QDR
         (devid == 4099)  || // IB DDR
         (devid == 4100)  || // IB DDR
-        (devid == 26438);   // IB QDR
+        (devid == 4101)  || // IB DDR
+        (devid == 4102)  || // IB QDR
+        (devid == 4103)  || // IB DDR
+        (devid == 4104)  || // IB DDR
+        (devid == 4105)  || // IB DDR
+        (devid == 4106)  || // IB QDR
+        (devid == 4107)  || // IB DDR
+        (devid == 4108)  || // IB DDR
+        (devid == 4109)  || // IB DDR
+        (devid == 4110)  || // IB QDR
+        (devid == 4111)  || // IB DDR
+        (devid == 4112);   // IB QDR
     }
 
     bool CntxIsEth       (u_int32_t devid)     {return(devid == 25448) || // ETH
@@ -1893,7 +1905,11 @@ const Operations::HwDevData Operations::hwDevData[] = {
     { "ConnectX",            400, 2, {25408, 25418, 26418, 26438,
                                       26428, 25448, 26448, 26468,
                                       25458, 26458, 26478, 26488,
-                                      4097, 4098, 4099, 4100, 0}},
+                                      4097, 4098, 4099, 4100,
+                                      4101, 4102, 4103, 4104,
+                                      4105, 4106, 4107, 4108,
+                                      4109, 4110, 4111, 4112, 0}},
+
     { "InfiniScale IV",   435,  0, {48436, 48437, 48438, 0}},
     { "BridgeX",          6100, 0, {64102, 64112, 64122, 0}},
     { NULL ,              0, 0, {0}},// zero devid terminator
