@@ -210,18 +210,25 @@ function get_device_id {
 }
 #get the HCA NAME
 
+g_connectx="ConnectX"
+g_InfiniHost_III_Ex="InfiniHost_III_Ex"
+g_InfiniHost_III_Ex_memfree="InfiniHost_III_Ex_m"
+g_InfiniHost_III_Lx="InfiniHost_III_Lx"
+g_InfiniHost="InfiniHost"
+
+
 function  get_hca_name {
     dev_id=$1
     if [ $dev_id -eq 25208 ]; then
-        ret_val="Arbel"
+        ret_val=$g_InfiniHost_III_Ex
     elif [ $dev_id -eq 25218  ]; then
-        ret_val="Memfree"
+        ret_val=$g_InfiniHost_III_Ex_memfree
     elif [ $dev_id -eq 24204 -o $dev_id -eq 25204 ]; then
-        ret_val="Sinai"
-    elif [ $dev_id -eq 25408 -o $dev_id -eq 25418 -o $dev_id -eq 25428 -o $dev_id -eq 25438 -o $dev_id -eq 25458 -o $dev_id -eq 25468 -o $dev_id -eq 25488 -o $dev_id -eq 25498 -o $dev_id -eq 26418 -o $dev_id -eq 26428 -o $dev_id -eq 26448 -o $dev_id -eq 26478 ]; then
-        ret_val="Hermon"
+        ret_val=$g_InfiniHost_III_Lx
     elif [ $dev_id -eq 23108 ]; then
-        ret_val="Tavor"
+        ret_val=$g_InfiniHost
+    else 
+    	ret_val=$g_connectx
     fi
     echo $ret_val
 
@@ -235,7 +242,7 @@ function get_driver {
     if [ "$Device_ID" != "" ]; then
         hca_name=$(get_hca_name $Device_ID)
         if [ "$hca_name" != "" ]; then
-            if [ "$hca_name" == "Hermon" ]; then
+            if [ "$hca_name" == "$g_connectx" ]; then
                  driver_need=$HERMON_DRIVER_NEEDED
              else
                  driver_need=$MTHCA_DRIVER_NEEDED
@@ -299,23 +306,23 @@ if [ $NUM_HCAS -ne 0 ]; then
                 if [ "$hca_name" != "" ]; then
 
                    # get the FW and the Expected FW
-                    if [ "$hca_name" == "Arbel" ]; then
+                    if [ "$hca_name" == "$g_InfiniHost_III_Ex" ]; then
                         FW_NEEDED=$ARBEL_FW_NEEDED
-                    elif [ "$hca_name" == "Memfree" ]; then
+                    elif [ "$hca_name" == $g_InfiniHost_III_Ex_memfree ]; then
                         FW_NEEDED=$ARBEL_MF_FW_NEEDED
-                    elif [ "$hca_name" == "Sinai" ]; then
+                    elif [ "$hca_name" == "$g_InfiniHost_III_Lx" ]; then
                         FW_NEEDED=$SINAI_FW_NEEDED
-                    elif [ "$hca_name" == "Hermon" ]; then
+                    elif [ "$hca_name" == "$g_connectx" ]; then
                         FW_NEEDED=$HERMON_FW_NEEDED
                         DRIVER_NEEDED=$HERMON_DRIVER_NEEDED
                         device_num=$mlx_dev_num
-                    elif [ "$hca_name" == "Tavor" ]; then
+                    elif [ "$hca_name" == "$g_InfiniHost" ]; then
                         FW_NEEDED=$TAVOR_FW_NEEDED
                     fi
                     legal=$(echo $FW_NEEDED | grep v\[0-9\]\[0-9\]*.\[0-9\]\[0-9\]*.\[0-9\]\[0-9\]*)
 
                     # increase the mlx and mthca counter
-                    if [ "$hca_name" == "Hermon" ]; then
+                    if [ "$hca_name" == "$g_connectx" ]; then
                         let "mlx_dev_num=$mlx_dev_num + 1"
                     else
                         let "mthca_dev_num=$mthca_dev_num + 1"
