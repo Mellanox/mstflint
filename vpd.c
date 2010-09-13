@@ -4,7 +4,7 @@
  *
  * Author: Michael S. Tsirkin <mst@mellanox.co.il>
  *
- * Copyright (c) 2007 Mellanox Technologies Ltd.  All rights reserved.
+ * Copyright (c) 2010 Mellanox Technologies Ltd.  All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -225,9 +225,13 @@ int vpd_check_one(union vpd_data_type *d, unsigned offset)
 		for (i = 0; i < VPD_TAG_LENGTH(d); i += 0x3 + field->length) {
 			field = (struct vpd_field *)(VPD_TAG_DATA(d)->bytes + i);
 			if (i + 0x3 + field->length > VPD_TAG_LENGTH(d)) {
-				fprintf(stderr, "-E- Offset 0x%x+0x%x: "
-					"field length 0x%x exceeds total 0x%x\n",
+				fprintf(stderr, "-E- Tag %s, Offset 0x%x+0x%x: "
+					"field length 0x%x exceeds total 0x%x",
+					VPD_TAG_NAME(d) == VPD_TAG_R ? "VPD_R" : "VPD_W",
 					offset, i, field->length, VPD_TAG_LENGTH(d));
+				if (VPD_TAG_NAME(d) == VPD_TAG_W)
+					fprintf(stderr, ". Use -r flag to skip VPD_W tag checks");
+				fprintf(stderr, "\n");
 				return -1;
 			}
 		}
@@ -312,7 +316,7 @@ void vpd_show_one(FILE *f, union vpd_data_type* d, const char *keyword)
 	}
 }
 
-int vpd_check(vpd_t vpd, int checksum)
+int vpd_check(vpd_t vpd, int checksum, int ignore_w)
 {
 	unsigned char b;
 	int i;
@@ -322,11 +326,14 @@ int vpd_check(vpd_t vpd, int checksum)
 	unsigned checksum_len = 0;
 
 	for (offset = 0; offset < VPD_MAX_SIZE && (!d || VPD_TAG_NAME(d) != VPD_TAG_F);
-	     offset += VPD_TAG_HEAD(d) + VPD_TAG_LENGTH(d)) {
+			offset += VPD_TAG_HEAD(d) + VPD_TAG_LENGTH(d)) {
 		d = (union vpd_data_type *)(vpd + offset);
-		rc = vpd_check_one(d, offset);
-		if (rc)
-			return rc;
+
+		if (!(VPD_TAG_NAME(d) == VPD_TAG_W && ignore_w)) {
+			rc = vpd_check_one(d, offset);
+			if (rc)
+				return rc;
+		}
 
 		vpd_checksum_length(d, offset, &checksum_len);
 	}
@@ -357,14 +364,15 @@ int vpd_check(vpd_t vpd, int checksum)
 	return 0;
 }
 
-void vpd_show(FILE *f, vpd_t vpd, const char *keyword)
+void vpd_show(FILE *f, vpd_t vpd, const char *keyword, int ignore_w)
 {
 	unsigned offset;
 	union vpd_data_type *d = NULL;
 	for (offset = 0; !d || VPD_TAG_NAME(d) != VPD_TAG_F;
 	     offset += VPD_TAG_HEAD(d) + VPD_TAG_LENGTH(d)) {
 		d = (union vpd_data_type *)(vpd + offset);
-		vpd_show_one(f, d, keyword);
+		if (!(VPD_TAG_NAME(d) == VPD_TAG_W && ignore_w))
+			vpd_show_one(f, d, keyword);
 	}
 }
 
@@ -446,6 +454,7 @@ int main(int argc, char **argv)
 	vpd_t d;
 	int m = 0;
 	int n = 0;
+	int ignore_w = 0;
 
 	if (argc < 2) {
 		rc = 1;
@@ -456,7 +465,7 @@ int main(int argc, char **argv)
 
 	do
 	{
-		i=getopt(argc, argv, "mnt:");
+		i=getopt(argc, argv, "mnrt:");
 		if (i<0) {
 			break;
 		}
@@ -467,6 +476,9 @@ int main(int argc, char **argv)
 				break;
 			case 'n':
 				n=1;
+				break;
+			case 'r':
+				ignore_w=1;
 				break;
 			case 't':
 				timeout_t = strtol(optarg, NULL, 0);
@@ -495,16 +507,16 @@ int main(int argc, char **argv)
 	if (m)
 		return fwrite(d, VPD_MAX_SIZE, 1, stdout) != 1;
 
-	if (vpd_check(d, !n))
+	if (vpd_check(d, !n, ignore_w))
 		return 6;
 
 	if (argc == 1)
-		vpd_show(stdout, d, NULL);
+		vpd_show(stdout, d, NULL, ignore_w);
 	else
 		for (i = 0; i < argc - 1; ++i) {
 			if (!strcmp(argv[i + 1], "--"))
 			    continue;
-			vpd_show(stdout, d, argv[i + 1]);
+			vpd_show(stdout, d, argv[i + 1], ignore_w);
 		}
 
 	return 0;
@@ -513,6 +525,7 @@ usage:
 	fprintf(stderr, "Usage: %s [-m|-n] [-t ##] <file> [-- keyword ...]\n", argv[0]);
 	fprintf(stderr, "-m\tDump raw VPD data to stdout.\n");
 	fprintf(stderr, "-n\tDo not validate check sum.\n");
+	fprintf(stderr, "-r\tDo not check and display the VPD_W tag in the vpd data.\n");
 	fprintf(stderr, "-t ##\tTime out after ## seconds. (Default is 30.)\n\n");
 	fprintf(stderr, "file\tThe PCI id number of the HCA (for example, \"2:00.0\"),\n");
 	fprintf(stderr, "\tthe device name (such as \"mlx4_0\")\n");
