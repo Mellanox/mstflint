@@ -7,6 +7,9 @@ MSTFLINT Package - Firmware Burning and Diagnostics Tools
     This package contains a burning tool and diagnostic tools for Mellanox
     manufactured HCA/NIC cards. It also provides access to the relevant source
     code. Please see the file LICENSE for licensing details.
+	This package is based on a subset of the Mellanox Firmware Tools (MFT) package.
+	For a full documentation of the MFT package, please refer to the downloads page
+	in Mellanox web site.
 
     ----------------------------------------------------------------------------
     NOTE:
@@ -19,7 +22,7 @@ MSTFLINT Package - Firmware Burning and Diagnostics Tools
 2) Package Contents
     a) mstflint source code
     b) mflash lib
-       This lib provides Flash access through Mellanox HCAs.
+       This lib provides low level Flash access through Mellanox HCAs.
     c) mtcr lib (implemented in mtcr.h file)
        This lib enables access to HCA hardware registers.
     d) mstregdump utility
@@ -27,6 +30,8 @@ MSTFLINT Package - Firmware Burning and Diagnostics Tools
        for later analysis by Mellanox.
     e) mstvpd
        This utility dumps the on-card VPD.
+	f) mstmcra
+	   This debug utility reads a single word from the device configuration space.
 
 3) Installation
     a) Build the mstflint utility. This package is built using a standard
@@ -83,7 +88,32 @@ MSTFLINT Package - Firmware Burning and Diagnostics Tools
        > mstregdump /proc/bus/pci/02/00.0 > crdump.log
 
        Note: Typically, you will need root privileges for hardware access
-	   
+
+	d) Accessing a multi-function device:
+
+	   In some configuration, the CA device identifies as a multi-function device on PCI. E.G.:
+	   > /sbin/lspci -d 15b3:
+	   07:00.0 Ethernet controller: Mellanox Technologies MT26468 [ConnectX EN 10GigE, PCIe 2.0 5GT/s] (rev b0)
+	   07:00.1 Ethernet controller: Mellanox Technologies MT26468 [ConnectX EN 10GigE, PCIe 2.0 5GT/s] (rev b0)
+	   07:00.2 Ethernet controller: Mellanox Technologies MT26468 [ConnectX EN 10GigE, PCIe 2.0 5GT/s] (rev b0)
+	   07:00.3 Ethernet controller: Mellanox Technologies MT26468 [ConnectX EN 10GigE, PCIe 2.0 5GT/s] (rev b0)
+	   07:00.4 Ethernet controller: Mellanox Technologies MT26468 [ConnectX EN 10GigE, PCIe 2.0 5GT/s] (rev b0)
+	   07:00.5 Ethernet controller: Mellanox Technologies MT26468 [ConnectX EN 10GigE, PCIe 2.0 5GT/s] (rev b0)
+	   07:00.6 Ethernet controller: Mellanox Technologies MT26468 [ConnectX EN 10GigE, PCIe 2.0 5GT/s] (rev b0)
+	   07:00.7 Ethernet controller: Mellanox Technologies MT26468 [ConnectX EN 10GigE, PCIe 2.0 5GT/s] (rev b0)
+
+	   These multiple "logical" devices are actually a single physical device, so firmware update or "physical"
+	   diagnostics should be run only on one of the functions.
+
+	   When the device driver is loaded, only the primary physical function of the device can be accessed.
+	   In Linux that would typically be function 0. This function can be accessed using memory mapping, aas
+	   described in sub section a) above. E.G.:
+	   > mstflint -d 07:00.0 q
+
+	   When the device driver is not loaded, all the functions can be accessed using configuration cycles, as
+	   described in sub section c) above. It is recommended to use function 0 for FW update or diagnostics, E.G.:
+	   > mstflint -d /proc/bus/pci/07/00.0 q
+
 5) Usage (mstflint):
        Read mstflint usage. Enter "./mstflint -h" for a short help message, or
        "./mstflint -hh" for a detailed help message.
@@ -112,19 +142,19 @@ MSTFLINT Package - Firmware Burning and Diagnostics Tools
 	to apply an output filter.
 
 	Examples:
-	> mstvpd mthca0
-	ID: Lion cub DDR
-	PN: MHGA28-1T
-	EC: A3
-	SN: MT0551X00740
-	V0: PCIe x8
+	> mstvpd mlx4_0
+	ID: Hawk Dual Port
+	PN: MNPH29C-XTR
+	EC: X2
+	SN: MT1001X00749
+	V0: PCIe Gen2 x8
 	V1: N/A
-	YA: R               R
+	YA: N/A
 	RW:
 
-	> mstvpd mthca0 -- PN ID
-	PN: MHGA28-1T
-	ID: Lion cub DDR
+    > mstvpd mlx4_0 -- PN ID
+	PN: MNPH29C-XTR
+	ID: Hawk Dual Port
 
 8) Problem Reporting:
 	Please collect the following information when reporting issues:
