@@ -106,7 +106,7 @@ MSTFLINT Package - Firmware Burning and Diagnostics Tools
 	   diagnostics should be run only on one of the functions.
 
 	   When the device driver is loaded, only the primary physical function of the device can be accessed.
-	   In Linux that would typically be function 0. This function can be accessed using memory mapping, aas
+	   In Linux that would typically be function 0. This function can be accessed using memory mapping, as
 	   described in sub section a) above. E.G.:
 	   > mstflint -d 07:00.0 q
 
