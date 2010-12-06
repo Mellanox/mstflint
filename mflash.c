@@ -13,6 +13,7 @@
 #include <errno.h>
 #include <string.h>
 
+#define ARR_SIZE(arr) sizeof(arr)/sizeof(arr[0])
 
 // Bit Slicing macros
 #define ONES32(size)                    ((size)?(0xffffffff>>(32-(size))):0)
@@ -108,9 +109,10 @@ typedef int (*f_mf_erase_sect)(mflash* mfl, u_int32_t addr);
 typedef int (*f_mf_reset)     (mflash* mfl);
 
 typedef int (*f_st_spi_status)(mflash* mfl, u_int8_t op_type, u_int8_t* status);
+typedef int (*f_mf_get_info)  (mflash* mfl, int bank_num, unsigned *type_index, int *log2size, u_int8_t *no_flash);
 
 // This is an interface function when running in IRISC
-int mf_open_fw(mflash* mfl);
+int mf_open_fw(mflash* mfl, flash_params_t* flash_params);
 
 //
 // mflash struct
@@ -130,6 +132,7 @@ struct mflash {
     f_mf_lock       f_lock;
     f_mf_unlock     f_unlock;
     f_mf_set_bank   f_set_bank;
+    f_mf_get_info   f_get_info;
 
     f_mf_read       f_read;
     f_mf_write      f_write;
@@ -298,7 +301,7 @@ int ih3lx_st_spi_erase_sect     (mflash* mfl, u_int32_t addr);
 
 
 // ConnectX SPI interface:
-int cntx_flash_init      (mflash* mfl);
+int cntx_flash_init      (mflash* mfl, flash_params_t* flash_params);
 
 int cntx_fill_attr       (mflash* mfl);
 
@@ -327,7 +330,7 @@ int cntx_st_spi_block_read_ex  (mflash*   mfl,
                                 u_int8_t  is_first,
                                 u_int8_t  is_last);
 
-int cntx_sst_spi_get_type(mflash* mfl, u_int8_t op_type, u_int8_t* type, u_int8_t*  capacity);
+int cntx_spi_get_type(mflash* mfl, u_int8_t op_type, u_int8_t *vendor, u_int8_t *type, u_int8_t *capacity);
 
 int cntx_sst_spi_write_status_reg(mflash* mfl);
 
@@ -1062,9 +1065,9 @@ int intel_flash_erase_sect(mflash* mfl, u_int32_t addr) {
 // ST SPI functions - common for InfiniHostIIILx and ConnectX
 //
 ////////////////////////////////////////
-
 enum StFlashCommand {
     SFC_SE    = 0xD8,
+    SFC_SSE   = 0x20,
     SFC_PP    = 0x02,
     SFC_RDSR  = 0x05,
     SFC_WREN  = 0x06,
@@ -1074,7 +1077,38 @@ enum StFlashCommand {
     SFC_WRSR  = 0x01
 };
 
-int cntx_sst_get_log2size(u_int8_t capacity, u_int32_t* log2spi_size)
+typedef struct flash_info {
+    char *name;
+    u_int8_t vendor;
+    u_int8_t type;
+    int command_set;
+    int erase_command;
+    int sector_size;
+} flash_info_t;
+
+#define SST_FLASH_NAME   "SST25VFxx"
+#define FMT_ST_M25P_NAME
+
+typedef enum flash_vendor {
+    FV_ST = 0x20,
+    FV_SST = 0xbf,
+} flash_vendor_t;
+
+typedef enum flash_memory_type {
+    FMT_ST_M25P  = 0x20,
+    FMT_ST_M25PX = 0x71,
+    FMT_SST_25   = 0x25,
+
+} flash_memory_type;
+
+flash_info_t g_flash_info_arr[] =
+{
+        {"M25PXxx",      FV_ST,  FMT_ST_M25PX, MCS_STSPI,  SFC_SSE, 0x1000},
+        {"M25Pxx",       FV_ST,  FMT_ST_M25P,  MCS_STSPI,  SFC_SE, 0x10000},
+        {SST_FLASH_NAME, FV_SST, FMT_SST_25,   MCS_SSTSPI, SFC_SE, 0x10000},
+};
+
+int cntx_sst_get_log2size(u_int8_t capacity, int* log2spi_size)
 {
     switch (capacity) {
         case 0x41:
@@ -1090,131 +1124,260 @@ int cntx_sst_get_log2size(u_int8_t capacity, u_int32_t* log2spi_size)
             *log2spi_size = 0x14;
             break;
         default:
-            return -1;
+            return MFE_UNSUPPORTED_FLASH_TOPOLOGY;
     }
     return 0;
 }
 
-int st_spi_fill_attr(mflash* mfl) {
+int get_log2size_by_capcity(unsigned type_index, u_int8_t capacity, int *log2size) {
+
+    flash_info_t *flash_info = &g_flash_info_arr[type_index];
+
+    if (flash_info->type == FMT_SST_25 && flash_info->vendor == FV_SST) {
+        return cntx_sst_get_log2size(capacity, log2size);
+    } else {
+        *log2size = capacity;
+    }
+    return MFE_OK;
+}
+
+int get_type_index_by_vendor_and_type(u_int8_t vendor, u_int8_t type, unsigned *type_index)
+{
+    unsigned i, arr_size;
+    arr_size = ARR_SIZE(g_flash_info_arr);
+
+    for (i = 0; i < arr_size; i++) {
+        flash_info_t *flash_info = &g_flash_info_arr[i];
+        if (flash_info->vendor == vendor && flash_info->type == type) {
+            *type_index = i;
+            return MFE_OK;
+        }
+    }
+    return MFE_UNSUPPORTED_FLASH_TYPE;
+}
+
+
+int get_type_index_by_name(char *type_name, unsigned *type_index)
+{
+    unsigned i, arr_size;
+    arr_size = ARR_SIZE(g_flash_info_arr);
+    for (i = 0; i < arr_size; i++) {
+        flash_info_t *flash_info = &g_flash_info_arr[i];
+        if (!strcmp(type_name, flash_info->name)) {
+            *type_index = i;
+            return MFE_OK;
+        }
+    }
+    printf("-E- The flash name \"%s\" is unknown\n.", type_name);
+    return MFE_UNSUPPORTED_FLASH_TYPE;
+}
+
+int is_no_flash_detected(u_int8_t type, u_int8_t vendor, u_int8_t capacity) {
+    if ((type == 0xff && vendor == 0xff && capacity == 0xff) ||
+        (type == 0x0 && vendor == 0x0 && capacity == 0x0)) {
+        return 1;
+    }
+    return 0;
+}
+
+int get_flash_info_by_res(mflash* mfl, unsigned *type_index, int *log2size, u_int8_t *no_flash, unsigned char *es_p)
+{
     int rc;
 
-    u_int32_t spi_size = 0;
-    u_int32_t log2spi_size = 0;
-    u_int32_t num_spis = 0;
-    u_int32_t spi_sel;
-    u_int32_t num_of_flashes;
 
-    mfl->attr.block_write                = 16; // In SPI context, this is the transaction size. Max is 16.
+    *no_flash = 0;
 
-    mfl->attr.num_erase_blocks           = 1;
-
-    mfl->attr.erase_block[0].sector_size = 64 * 1024;
-    mfl->attr.erase_block[0].sector_mask = ~(mfl->attr.erase_block[0].sector_size - 1);
-
-    mfl->attr.sector_size = mfl->attr.erase_block[0].sector_size;
-    num_of_flashes = mfl->opts[MFO_NUM_OF_BANKS];
-    //printf("-D- st_spi_fill_attr: num_of_flashes %d\n", num_of_flashes);
-    for (spi_sel = 0 ; spi_sel < num_of_flashes ; spi_sel++) {
-        unsigned char es; // electronic signature
-        u_int32_t cur_spi_size = 0;
-
-        rc = set_bank(mfl, spi_sel);                    CHECK_RC(rc);
-
-        rc = mfl->f_spi_status(mfl, SFC_RES, &es);      CHECK_RC(rc);
-        //printf("-D- es = %02x\n", es);
-
-        if ((es >= 0x10 && es < 0x17)) {
-            // Range OK:
-
-            // NOTE: This mapping between electronic signature and device size is device specific!
-            //       This mapping works for ST M25Pxx and Saifun SA25Fxxx families.
-            log2spi_size = (es + 1);
-            cur_spi_size = 1 << log2spi_size;
-            num_spis++;
-
-            if (spi_sel == 0) {
-                mfl->attr.command_set    = MCS_STSPI;
-                spi_size = cur_spi_size;
-            } else {
-                if (mfl->attr.command_set != MCS_STSPI) {
-                    printf("-E- SPI flash #%d differs in type from SPI flash #%d\n"
-                           "All flash devices must be of the same type",
-                           spi_sel,
-                           spi_sel - 1);
-                    return MFE_UNSUPPORTED_FLASH_TOPOLOGY;
-                }
-                if (cur_spi_size != spi_size){
-                    printf ("-E- SPI flash #%d of size 0x%x bytes differs in size from SPI flash #%d of size 0x%x bytes. "
-                                  "All flash devices must be of the same size.",
-                                  spi_sel,
-                                  cur_spi_size,
-                                  spi_sel - 1,
-                                  spi_size);
-                    return MFE_UNSUPPORTED_FLASH_TOPOLOGY;
-                }
-            }
-        }   else if (es == 0xbf) {
-            u_int8_t capacity, type;
-            rc = cntx_sst_spi_get_type(mfl, SFC_JEDEC, &type, &capacity);      CHECK_RC(rc);
-            if (type == 0x25) {
-                num_spis++;
-                if (cntx_sst_get_log2size(capacity, &log2spi_size)) {
-                     printf("-E- SPI flash #%d (memory capacity field %#x) is not supported\n", spi_sel, capacity);
-                     return MFE_UNSUPPORTED_FLASH_TOPOLOGY;
-                }
-                cur_spi_size = 1 << log2spi_size;
-                if (spi_sel == 0) {
-                    mfl->attr.command_set   = MCS_SSTSPI;
-                    spi_size = cur_spi_size;
-                } else {
-                    if (mfl->attr.command_set != MCS_SSTSPI) {
-                        printf("-E- SPI flash #%d differs in type from SPI flash #%d\n"
-                               "All flash devices must be of the same type",
-                               spi_sel,
-                               spi_sel - 1);
-                        return MFE_UNSUPPORTED_FLASH_TOPOLOGY;
-                    }
-                    if (cur_spi_size != spi_size){
-                    printf ("-E- SPI flash #%d of size 0x%x bytes differs in size from SPI flash #%d of size 0x%x bytes. "
-                                  "All flash devices must be of the same size.",
-                                  spi_sel,
-                                  cur_spi_size,
-                                  spi_sel - 1,
-                                  spi_size);
-                    return MFE_UNSUPPORTED_FLASH_TOPOLOGY;
-
-                    }
-                }
-                // TODO: check if we have a bug with the second flash.
-                rc = cntx_sst_spi_write_status_reg(mfl); CHECK_RC(rc);
-            } else {
-                printf("-E- SPI flash #%d (memory type field %#x) is not supported\n", spi_sel, type);
-                return MFE_UNSUPPORTED_FLASH_TOPOLOGY;
-            }
-        } else if (es == 0xff
-                   || es == 0
-                   ) {
-            // No spi device on this chip_select
-            break;
-        } else {
-            printf("-E- Unexpected SPI electronic signature value (0x%2x) when detecting flash size. "
-                          "Flash #%d may be defective.",
-                          es,
-                          spi_sel);
-            return MFE_UNSUPPORTED_FLASH_TOPOLOGY;
-        }
-
-        //printf("-D- %3d %08x\n", spi_sel, cur_spi_size);
-    }
-
-    if (num_spis == 0) {
+    rc = mfl->f_spi_status(mfl, SFC_RES, es_p); CHECK_RC(rc);
+    // printf("-D- get_flash_info_by_res: es = %#x\n", *es_p);
+    if ((*es_p >= 0x10 && *es_p < 0x17)) {
+        *log2size = *es_p + 1;
+        return get_type_index_by_vendor_and_type(FV_ST, FMT_ST_M25P, type_index);
+    } else if (*es_p == 0xff || *es_p == 0x0) {
+        *no_flash = 1;
+    } else {
         return MFE_UNSUPPORTED_FLASH_TYPE;
     }
+    return MFE_OK;
+}
 
-    mfl->attr.bank_size      = spi_size;
-    mfl->attr.size           = spi_size * num_spis;
-    mfl->attr.log2_bank_size = log2spi_size;
+int cntx_get_flash_info(mflash* mfl, int bank_num, unsigned *type_index, int *log2size, u_int8_t *no_flash)
+{
+    int rc, res_rc;
+    u_int8_t type = 0, capacity = 0, vendor = 0, no_flash_res = 0, no_flash_rdid = 0;
+    unsigned char es;
+    // Assume there is a flash.
+    *no_flash = 0;
 
+    rc = cntx_spi_get_type(mfl, SFC_JEDEC, &vendor, &type, &capacity); CHECK_RC(rc);
+    // printf("-D- vendor = %#x, type = %#x, capacity = %#x, rc1 = %d.\n", vendor, type, capacity, rc);
+    no_flash_rdid = is_no_flash_detected(type, vendor, capacity);
+
+    if (get_type_index_by_vendor_and_type(vendor, type, type_index) == MFE_OK) {
+        // RDID Succeded.
+        // Get the capacity
+        if (get_log2size_by_capcity(*type_index, capacity, log2size) != MFE_OK) {
+            printf("-E- SST SPI flash #%d (vendor: %#x, type: %#x, capacity:%#x) is not supported.\n", bank_num, vendor,
+                    type, capacity);
+            return MFE_UNSUPPORTED_FLASH_TOPOLOGY;
+        }
+         return MFE_OK;
+    }
+
+    // RDID Failed due to:
+    // 1- RDID is not supported but RES is - Old flashes.
+    // 2- There is no Flash
+    // 3- Flash is not supported
+
+    // Trying RES
+    res_rc = get_flash_info_by_res(mfl, type_index, log2size, &no_flash_res, &es);
+
+    if (res_rc == 0) {
+        // RES Succeeded due to: no flash, unsupported flash or old flash.
+        rc = MFE_OK;
+        if (no_flash_rdid == 1) {
+            if (no_flash_rdid == 1) {
+                // 2- There is no Flash
+                *no_flash = 1;
+            } else {
+                // 3- Flash is not supported
+                printf("-E- SPI flash #%d (vendor: %#x, memory type: %#x) is not supported.\n", bank_num, vendor, type);
+                rc = MFE_UNSUPPORTED_FLASH_TYPE;
+            }
+        }
+        // when no_flash_rdid == 0 then "1- RDID is not supported but RES is - Old flashes."
+    } else {
+        // RES failed due to: cr-space error or unsupported flash
+        rc = res_rc;
+        if (rc == MFE_UNSUPPORTED_FLASH_TYPE) {
+            // 3- Flash is not supported
+            printf("-E- SPI flash #%d (vendor: %#x, memory type: %#x, es: %#x) is not supported.\n", bank_num, vendor, type, es);
+        }
+        // when rc != MFE_UNSUPPORTED_FLASH_TYPE, "RES failed due to cr-space error."
+    }
+
+    // printf("-D- rc = %d, no_flash_res = %d, type_index = %d.\n", rc, no_flash_res, *type_index);
+    return rc;
+}
+
+int ih3lx_get_flash_info(mflash* mfl, int bank_num, unsigned *type_index, int *log2size, u_int8_t *no_flash)
+{
+    int rc;
+    unsigned char es;
+    rc = get_flash_info_by_res(mfl, type_index, log2size, no_flash, &es);
+    if (rc == MFE_UNSUPPORTED_FLASH_TYPE) {
+        printf("-E- SPI flash #%d (electric signature: %#x) is not supported.\n", bank_num, es);
+    }
+    return rc;
+}
+
+int compare_flash_params(flash_params_t *flash_params, int bank_num, char *type_name, int log2size)
+{
+    if (strcmp(flash_params->type_name, type_name) != 0) {
+        printf("-E- SPI flash #%d (type: %s)differs in type from SPI flash #%d(type: %s). "
+               "All flash devices must be of the same type.\n",
+               bank_num, type_name, bank_num - 1, flash_params->type_name);
+        return MFE_UNSUPPORTED_FLASH_TOPOLOGY;
+    }
+    if (flash_params->log2size != log2size){
+        printf ("-E- SPI flash #%d (log2size: %#x) differs in size from SPI flash #%d (log2size: %#x). "
+                  "All flash devices must be of the same size.\n",
+                  bank_num, log2size, bank_num - 1, flash_params->log2size);
+        return MFE_UNSUPPORTED_FLASH_TOPOLOGY;
+
+    }
+    return MFE_OK;
+}
+
+
+int get_flash_params(mflash* mfl, flash_params_t *flash_params, unsigned *type_index)
+{
+    int num_of_flashes = mfl->opts[MFO_NUM_OF_BANKS];
+    int spi_sel, rc;
+    int params_were_set = 0;
+    flash_info_t *flash_info;
+
+    memset(flash_params, 0, sizeof(flash_params_t));
+
+    for (spi_sel = 0 ; spi_sel < num_of_flashes ; spi_sel++) {
+            int log2size;
+            u_int8_t no_flash = 0;
+            char *type_name;
+
+            rc = set_bank(mfl, spi_sel);                      CHECK_RC(rc);
+            rc = mfl->f_get_info(mfl, spi_sel, type_index, &log2size, &no_flash); CHECK_RC(rc);
+            if (no_flash == 1) {
+                // This bank is empty and also the following banks will be empty.
+                if (flash_params->num_of_flashes == 0) {
+                    // if we haven't detected any 'supported' flash, return an error.
+                    return MFE_NO_FLASH_DETECTED;
+                }
+                break;
+            }
+            flash_info = &(g_flash_info_arr[*type_index]);
+
+            type_name = flash_info->name;
+            if (params_were_set == 0) {
+                flash_params->type_name = type_name;
+                flash_params->log2size  = log2size;
+                params_were_set = 1;
+            } else {
+                rc = compare_flash_params(flash_params, spi_sel, type_name, log2size); CHECK_RC(rc);
+            }
+
+            // Init SST flash.
+            if (flash_info->vendor ==  FV_SST && flash_info->type == FMT_SST_25) {
+                rc = cntx_sst_spi_write_status_reg(mfl); CHECK_RC(rc);
+            }
+
+            flash_params->num_of_flashes++;
+    }
+    return MFE_OK;
+}
+
+int spi_fill_attr_from_params(mflash* mfl, flash_params_t* flash_params, unsigned type_index)
+{
+    flash_info_t *flash_info = &(g_flash_info_arr[type_index]);
+
+    mfl->attr.log2_bank_size = flash_params->log2size;
+    mfl->attr.bank_size      = 1 << flash_params->log2size;
+    mfl->attr.size           = mfl->attr.bank_size * flash_params->num_of_flashes;
+    mfl->attr.block_write                = 16; // In SPI context, this is the transaction size. Max is 16.
+    mfl->attr.num_erase_blocks           = 1;
+    mfl->attr.erase_block[0].sector_size = flash_info->sector_size;
+    mfl->attr.erase_block[0].sector_mask = ~(mfl->attr.erase_block[0].sector_size - 1);
+    mfl->attr.sector_size = mfl->attr.erase_block[0].sector_size;
+
+    mfl->attr.command_set   = flash_info->command_set;
+    mfl->attr.erase_command = flash_info->erase_command;
+
+    return MFE_OK;
+}
+
+int st_spi_fill_attr(mflash* mfl, flash_params_t* flash_params) {
+
+    int rc;
+    flash_params_t *cur_flash_params, tmp_flash_params;
+    unsigned type_index;
+    flash_info_t *flash_info;
+
+
+
+    // printf("-D- st_spi_fill_attr: ignore_detect = %d, log2size = %#x.\n", mfl->ignore_flash_detect, mfl->user_attr.log2size);
+    if (flash_params == NULL) {
+        // Get flash params from the flash itself
+        cur_flash_params = &tmp_flash_params;
+        rc = get_flash_params(mfl, cur_flash_params, &type_index); CHECK_RC(rc);
+    } else {
+        // Get the flash params from the user.
+        rc = get_type_index_by_name(flash_params->type_name, &type_index); CHECK_RC(rc);
+        cur_flash_params = flash_params;
+    }
+    flash_info = &(g_flash_info_arr[type_index]);
+
+    // Init the flash attr according to the flash parameters (which was wither given by the user or read from the flash)
+    rc = spi_fill_attr_from_params(mfl, cur_flash_params, type_index); CHECK_RC(rc);
+    // printf("-D- spi_size = %#x,  log2spi_size = %#x, bank_size = %#x, flashes_num = %d\n", mfl->attr.size, mfl->attr.log2_bank_size,
+    //       mfl->attr.bank_size, cur_flash_params->num_of_flashes);
     return MFE_OK;
 }
 
@@ -1403,7 +1566,7 @@ int ih3lx_set_bank(mflash* mfl, u_int32_t bank) {
         return MFE_BAD_PARAMS;
     }
 
-    //printf("\n*** Flash::set_bank(0x%lx) : 0x%lx\n", bank, (bank >> 19) & 0x07);
+    // printf("\n*** Flash::set_bank(0x%lx) : 0x%lx\n", bank, (bank >> 19) & 0x07);
 
     flash_cs = MERGE(flash_cs, bank,30, 2);
     MWRITE4(CR_FLASH_CS, flash_cs);
@@ -1642,6 +1805,7 @@ int ih3lx_flash_init(mflash* mfl) {
     mfl->f_read_blk       = ih3lx_st_spi_block_read;
     mfl->f_lock           = ihst_flash_lock; // Flash lock has same address and functionality as in InfiniHost.
     mfl->f_set_bank       = ih3lx_set_bank;
+    mfl->f_get_info       = ih3lx_get_flash_info;
 
     rc = mfl->f_lock(mfl, 1);
     if (!mfl->opts[MFO_IGNORE_SEM_LOCK]) {
@@ -1654,7 +1818,7 @@ int ih3lx_flash_init(mflash* mfl) {
 
     mfl->f_spi_status = ih3lx_st_spi_get_status;
 
-    rc = st_spi_fill_attr(mfl);   CHECK_RC(rc);
+    rc = st_spi_fill_attr(mfl, NULL);   CHECK_RC(rc);
 
     if        (mfl->attr.command_set == MCS_STSPI) {
         mfl->f_reset      = ih3lx_st_spi_reset;
@@ -1753,7 +1917,7 @@ int cntx_int_spi_get_status_data(mflash* mfl, u_int8_t op_type, u_int32_t* statu
     int rc;
 
     u_int32_t gw_cmd  = 0;
-    u_int32_t flash_data;
+    u_int32_t flash_data = 0;
 
     gw_cmd = MERGE(gw_cmd,       1, HBO_READ_OP,    1);
     gw_cmd = MERGE(gw_cmd,       1, HBO_CMD_PHASE,  1);
@@ -1766,7 +1930,7 @@ int cntx_int_spi_get_status_data(mflash* mfl, u_int8_t op_type, u_int32_t* statu
 
     MREAD4(HCR_FLASH_DATA, &flash_data);
 
-    //printf("-D- cntx_st_spi_get_status: op=%02x status=%08x\n", op_type, flash_data);
+    // printf("-D- cntx_int_spi_get_status_data: op=%02x status=%08x\n", op_type, flash_data);
     // Return status reg byte is at offset 3 in word
     *status = flash_data;
 
@@ -1800,13 +1964,18 @@ int cntx_st_spi_get_status(mflash* mfl, u_int8_t op_type, u_int8_t* status) {
     return MFE_OK;
 }
 
-int cntx_sst_spi_get_type(mflash* mfl, u_int8_t op_type, u_int8_t* type, u_int8_t*  capacity) {
-    u_int32_t flash_data;
+int cntx_spi_get_type(mflash* mfl, u_int8_t op_type, u_int8_t *vendor, u_int8_t* type, u_int8_t* capacity) {
+    u_int32_t flash_data = 0;
     int rc;
 
     rc = cntx_int_spi_get_status_data(mfl, op_type, &flash_data, 3); CHECK_RC(rc);
-    *capacity = EXTRACT(flash_data, 8, 8);
-    *type     = EXTRACT(flash_data, 16, 8);
+    flash_data = __be32_to_cpu(flash_data);
+    // printf("-D- cntx_spi_get_type: flash_data = %#x\n", flash_data);
+
+    *vendor   = EXTRACT(flash_data, 0, 8);
+    *type     = EXTRACT(flash_data, 8, 8);
+    *capacity = EXTRACT(flash_data, 16, 8);
+
     return MFE_OK;
 }
 int cntx_sst_spi_write_status_reg(mflash* mfl)
@@ -2257,11 +2426,13 @@ int cntx_st_spi_erase_sect(mflash* mfl, u_int32_t addr) {
     // Erase sector command:
     gw_cmd = MERGE(gw_cmd,      1, HBO_CMD_PHASE,  1);
     gw_cmd = MERGE(gw_cmd,      1, HBO_ADDR_PHASE, 1);
-    gw_cmd = MERGE(gw_cmd, SFC_SE, HBO_CMD,        HBS_CMD);
+    gw_cmd = MERGE(gw_cmd, mfl->attr.erase_command, HBO_CMD,        HBS_CMD);
 
     gw_addr = addr & ONES32(mfl->attr.log2_bank_size);
 
     MWRITE4(HCR_FLASH_ADDR, gw_addr);
+
+    // printf("-D- cntx_st_spi_erase_sect: addr = %#x, gw_cmd = %#x.\n", addr, gw_cmd);
 
     rc = cntx_exec_cmd(mfl, gw_cmd, "ES"); CHECK_RC(rc);
 
@@ -2280,7 +2451,7 @@ f_mf_write get_write_blk_func(int command_set)
     return cntx_sst_spi_byte_write;
 }
 
-int cntx_flash_init(mflash* mfl) {
+int cntx_flash_init(mflash* mfl, flash_params_t* flash_params) {
     int rc;
     u_int32_t tmp;
     int is_life_fish = 0;
@@ -2305,6 +2476,8 @@ int cntx_flash_init(mflash* mfl) {
     mfl->f_read_blk       = cntx_st_spi_block_read;
     mfl->f_lock           = ihst_flash_lock; // Flash lock has same address and functionality as in InfiniHost.
     mfl->f_set_bank       = cntx_set_bank;
+    mfl->f_get_info       = cntx_get_flash_info;
+
 
     rc = mfl->f_lock(mfl, 1);
     if (!mfl->opts[MFO_IGNORE_SEM_LOCK]) {
@@ -2319,7 +2492,7 @@ int cntx_flash_init(mflash* mfl) {
 
     mfl->f_spi_status = cntx_st_spi_get_status;
 
-    rc = st_spi_fill_attr(mfl);   CHECK_RC(rc);
+    rc = st_spi_fill_attr(mfl, flash_params);   CHECK_RC(rc);
 
     if        (mfl->attr.command_set == MCS_STSPI || mfl->attr.command_set == MCS_SSTSPI) {
         mfl->f_reset      = ih3lx_st_spi_reset; // Null func - same as in ih3lx
@@ -2369,7 +2542,7 @@ int is4_flash_lock(mflash* mfl, int lock_state) {
 // Use same functions
 //
 // TODO: Unify fith ConnectX inif function
-int is4_flash_init(mflash* mfl) {
+int is4_flash_init(mflash* mfl, flash_params_t* flash_params) {
     int rc;
 
     //TODO: Enable page_read (slightly better perf)
@@ -2378,6 +2551,8 @@ int is4_flash_init(mflash* mfl) {
     mfl->f_read_blk       = cntx_st_spi_block_read;
     mfl->f_lock           = is4_flash_lock;
     mfl->f_set_bank       = cntx_set_bank;
+    mfl->f_get_info       = cntx_get_flash_info;
+
 
     rc = mfl->f_lock(mfl, 1);
     if (!mfl->opts[MFO_IGNORE_SEM_LOCK]) {
@@ -2391,7 +2566,7 @@ int is4_flash_init(mflash* mfl) {
 
     mfl->f_spi_status = cntx_st_spi_get_status;
 
-    rc = st_spi_fill_attr(mfl);   CHECK_RC(rc);
+    rc = st_spi_fill_attr(mfl, flash_params);   CHECK_RC(rc);
 
     if        (mfl->attr.command_set == MCS_STSPI || mfl->attr.command_set == MCS_SSTSPI) {
         mfl->f_reset      = ih3lx_st_spi_reset; // Null func - same as in ih3lx
@@ -2442,11 +2617,11 @@ int     mf_erase_sector(mflash* mfl, u_int32_t addr) {
 
 int mf_open_ignore_lock(mflash* mfl) {
     mfl->opts[MFO_IGNORE_SEM_LOCK] = 1;
-    return mf_open_fw(mfl);
+    return mf_open_fw(mfl, NULL);
 }
 
 //Caller must zero the mflash struct before calling this func.
-int mf_open_fw(mflash* mfl)
+int mf_open_fw(mflash* mfl, flash_params_t* flash_params)
 {
     int rc;
     u_int32_t dev_id;
@@ -2463,6 +2638,7 @@ int mf_open_fw(mflash* mfl)
     dev_id &= 0xffff;
     mfl->attr.hw_dev_id = dev_id;
 
+    mfl->curr_bank = -1;
     //printf("-D- read dev id: %d, rev_id: %#x\n",  mfl->attr.hw_dev_id, mfl->attr.rev_id);
 
     if (dev_id == 23108 || dev_id == 25208) {
@@ -2470,9 +2646,9 @@ int mf_open_fw(mflash* mfl)
     } else if (dev_id == 24204 || dev_id == 25204) {
         rc = ih3lx_flash_init(mfl);
     } else if (dev_id == 400) {
-        rc = cntx_flash_init(mfl);
+        rc = cntx_flash_init(mfl, flash_params);
     } else if (is_is4_family(dev_id)) {
-        rc = is4_flash_init(mfl);
+        rc = is4_flash_init(mfl, flash_params);
     } else if (dev_id == 0xffff) {
         printf("-E- Read a corrupted device id (0x%x). Probably HW/PCI access problem\n", dev_id);
         rc = MFE_CR_ERROR;
@@ -2480,16 +2656,14 @@ int mf_open_fw(mflash* mfl)
         printf("-E- Device type %d not supported.\n", dev_id);
         rc = MFE_INVAL;
     }
-
     CHECK_RC(rc);
 
-    mfl->curr_bank = -1;
     mfl->f_set_bank(mfl,0);
 
     return MFE_OK;
 }
 
-int    mf_opend       (mflash** pmfl, struct mfile_t* mf, int num_of_banks) {
+int     mf_opend       (mflash** pmfl, struct mfile_t* mf, int num_of_banks, flash_params_t* flash_params) {
     int rc;
     *pmfl = (mflash*)malloc(sizeof(mflash));
     if (!*pmfl) {
@@ -2500,12 +2674,14 @@ int    mf_opend       (mflash** pmfl, struct mfile_t* mf, int num_of_banks) {
     (*pmfl)->mf = (mfile*)mf;
     (*pmfl)->opts[MFO_NUM_OF_BANKS] = spi_get_num_of_flashes(num_of_banks);
 
-    rc = mf_open_fw(*pmfl);
+    rc = mf_open_fw(*pmfl, flash_params);
 
     return rc;
 }
 
-int     mf_open        (mflash** pmfl, const char* dev, int num_of_banks) {
+
+
+int     mf_open        (mflash** pmfl, const char* dev, int num_of_banks, flash_params_t* flash_params) {
     mfile*  mf;
 
     int rc;
@@ -2520,7 +2696,7 @@ int     mf_open        (mflash** pmfl, const char* dev, int num_of_banks) {
         return MFE_CR_ERROR;
     }
 
-    rc = mf_opend(pmfl, (struct mfile_t*) mf, num_of_banks);
+    rc = mf_opend(pmfl, (struct mfile_t*) mf, num_of_banks, flash_params);
 
     if ((*pmfl)) {
         (*pmfl)->opts[MFO_CLOSE_MF_ON_EXIT] = 1;
@@ -2595,7 +2771,8 @@ const char*   mf_err2str (int err_code) {
     "MFE_VERIFY_ERROR",
     "MFE_NOMEM",
     "MFE_OUT_OF_RANGE",
-    "MFE_CMD_SUPPORTED_INBAND_ONLY"
+    "MFE_CMD_SUPPORTED_INBAND_ONLY",
+    "MFE_NO_FLASH_DETECTED"
     };
 
     return err_code < (int)ARRSIZE(mf_err_str) ? mf_err_str[err_code] : NULL;

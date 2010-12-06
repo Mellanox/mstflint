@@ -32,7 +32,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- *  Version: $Id: flint.cpp 5641 2010-01-03 14:26:54Z mohammad $
+ *  Version: $Id: flint.cpp 6378 2010-12-05 15:25:26Z mohammad $
  *
  */
 
@@ -49,6 +49,8 @@
 #include <fcntl.h>
 #include <assert.h>
 #include <time.h>
+
+#include "tools_version.h"
 
 #ifndef NO_ZLIB
     #include <zlib.h>
@@ -144,27 +146,6 @@
 
 namespace std {}; using namespace std;
 
-// TODO: Use common functions to windows & linux.
-#ifndef __WIN__
-    #if defined (VERSION_ID) && defined (BLD_VER_STR)
-        #define __VFSTR(x, y)          "MFT "#x" , BUILD "#y
-        #define _VFSTR(x, y)           __VFSTR(x, y)
-    const char* _versionID = _VFSTR( BLD_VER_STR, VERSION_ID ) ;
-    #else
-    const char* _versionID = "MFT 2.6.1 , BUILD 20100104-1702";
-    #endif
-#else
-    #if defined (VERSION_ID)
-        #define __VFSTR1(x)          #x
-        #define _VFSTR1(x)           __VFSTR1(x)
-    const char* _versionID = _VFSTR1( VERSION_ID ) ;
-    #else
-    const char* _versionID = "MFT 2.6.1 , BUILD 20100104-1702";
-    #endif
-#endif
-
-const char* _svnID     = "$Revision: 5641 $";
-
 #ifndef __be32_to_cpu
     #define __be32_to_cpu(x) ntohl(x)
     #ifndef bswap_32
@@ -220,6 +201,7 @@ static inline void cpu_to_be_guid(guid_t* to, guid_t* from) {
     to->h=__cpu_to_be32(from->h);
     to->l=__cpu_to_be32(from->l);
 }
+#define FLASH_PARAMS_OPTS "<type,log2size,num_of_flashes>"
 #define MAX_NUM_SUPP_HW_IDS 200
 #define MAC_SPACES  "            "
 #define GUID_SPACES "        "
@@ -238,7 +220,7 @@ static inline void cpu_to_be_guid(guid_t* to, guid_t* from) {
         *p = __be32_to_cpu(*p);                                    \
     } while(0)
 
-#define CPUTOn(s, n) do {                                         \
+#define CPUTOn(s, n) do {                                          \
     u_int32_t *p = (u_int32_t *)(s);                               \
     for (u_int32_t ii=0; ii<(n); ii++,p++)                         \
         *p = __cpu_to_be32(*p);                                    \
@@ -813,7 +795,8 @@ public:
     virtual bool open          (const char *device,
                                 bool force_lock  = false,
                                 bool read_only   = false,
-                                int num_of_banks = 4);
+                                int num_of_banks = 4,
+                                flash_params_t *flash_params = NULL);
 
     virtual void close         ();
 
@@ -963,7 +946,7 @@ bool FImage::read(u_int32_t addr, void *data, int len, bool, const char*)
     }
 
     if (cont2phys(addr + len) > _len) {
-        return errmsg("Reading 0x%x bytes from %saddress 0x%x is out of image limits (0x%x bytes)",
+        return errmsg("Reading 0x%x bytes from %s address 0x%x is out of image limits (0x%x bytes)",
                       len,
                       _log2_chunk_size ? "physical " : "",
                       addr,
@@ -1024,13 +1007,13 @@ bool Flash::_byte_mode = false;
 bool Flash::_no_flash_verify = false;
 
 ////////////////////////////////////////////////////////////////////////
-bool Flash::open(const char *device, bool force_lock, bool read_only, int num_of_banks)
+bool Flash::open(const char *device, bool force_lock, bool read_only, int num_of_banks, flash_params_t *flash_params)
 {
     // Open device
     int rc;
     read_only = false;
 
-    rc = mf_open(&_mfl, device, num_of_banks);
+    rc = mf_open(&_mfl, device, num_of_banks, flash_params);
 
     if ((rc == MFE_SEM_LOCKED) && force_lock) {
         report("Warning: Taking flash lock even though semaphore is set.\n");
@@ -1344,6 +1327,7 @@ enum CommandType {
     CMD_UNKNOWN,
     CMD_BURN,
     CMD_SET_GUIDS,
+    CMD_SET_VSD,
     CMD_BURN_BLOCK,
     CMD_QUERY,
     CMD_QUERY_ROM,
@@ -1380,9 +1364,10 @@ struct CommandInfo {
 CommandInfo const g_commands[] = {
     { CMD_BURN           , "burn"  ,false , 0, CI_IMG_AND_DEV , ""},
     { CMD_BURN_BLOCK     , "bb"    ,true  , 0, CI_IMG_AND_DEV , ""},
-    { CMD_SET_GUIDS      , "sg"    ,true  , 1, CI_DEV_ONLY    , ""},
+    { CMD_SET_GUIDS      , "sg"    ,true  , 1, CI_IMG_OR_DEV  , ""},
+    { CMD_SET_VSD        , "sv"    ,true  , 0, CI_IMG_OR_DEV  , ""},
     { CMD_QUERY_FORCE    , "qf"    ,true  , 0, CI_IMG_OR_DEV  , ""},
-    { CMD_QUERY          , "query" ,false , 0, CI_IMG_OR_DEV  , ""},
+    { CMD_QUERY          , "query" ,false , 1, CI_IMG_OR_DEV  , ""},
     { CMD_QUERY_ROM      , "qrom"  ,true  , 0, CI_IMG_ONLY    , ""},
     { CMD_VERIFY         , "verify",false , 0, CI_IMG_OR_DEV  , ""},
     { CMD_READ_WORD      , "rw"    ,true  , 1, CI_DEV_ONLY    , ""},
@@ -1400,7 +1385,7 @@ CommandInfo const g_commands[] = {
     { CMD_CFI            , "cfi"   ,true  , 0, CI_DEV_ONLY    , ""},
     { CMD_BURN_ROM       , "brom"    ,true  , 1, CI_DEV_ONLY    , ""},
     { CMD_REMOVE_ROM     , "drom"    ,true  , 0, CI_DEV_ONLY    , ""},
-    { CMD_READ_ROM       , "rrom"    ,true  , 1, CI_DEV_ONLY    , ""},
+    { CMD_READ_ROM       , "rrom"    ,true  , 1, CI_DEV_ONLY   , ""},
 
 };
 
@@ -1502,7 +1487,8 @@ public:
         II_IsGa               = 9,
         II_HwDevsId           = 10,
         II_MicVersion         = 11,
-        II_Last               = 12,  // Mark the end of used tag ids
+        II_MinFitVersion      = 12,
+        II_Last               = 13,  // Mark the end of used tag ids
         II_End                = 0xff
     };
 
@@ -1535,15 +1521,22 @@ public:
     // Image operations:
     bool Verify          (FBase& f, ImageInfo* info, bool both_images = false);
     bool VerifyFs2      (FBase& f, ImageInfo* info, bool both_images = false, bool only_get_start = false,
-                         bool ignore_full_image_crc = false);
+                         bool ignore_full_image_crc = false, bool force_no_striped_image = false);
 
+    bool packStripedImageData(u_int8_t *striped_data, u_int8_t *normal_data, u_int32_t length, u_int32_t &striped_length,
+            bool needs_repack, u_int32_t cntxLog2ChunkSize);
+    bool WriteImageToFile(char *file_name, u_int8_t *data, u_int32_t length);
+    bool ReburnNewImage(u_int8_t *data, FBase *fbase, Operations::ImageInfo *info, char *image_fname, bool silent, char *feature_name);
+    bool ModifyGuidSection(FBase *fbase, Operations::ImageInfo *info, guid_t *user_guids, char *image_fname, bool silent);
+    bool ModifyVSDSection(FBase *fbase, Operations::ImageInfo *info, char *vsd, char *image_fname, bool silent);
+    bool PrepareBurnErr(Flash& f);
     bool LoadAsExpRom    (FBase& f, ImageInfo* info);
 
     bool DumpConf        (const char* conf_file = NULL, SectionType sect_type = H_FW_CONF);
     bool GetExpRomVersion(ImageInfo* info);
 
     bool DisplayExpRomInfo(ImageInfo* info, bool print_pre = true);
-    bool DisplayImageInfo (ImageInfo* info);
+    bool DisplayImageInfo (ImageInfo* info, bool full_query = false);
     bool GetExpRomStrVer(Operations::ImageInfo* info, char* version);
 
     bool QueryAll        (FBase& f, ImageInfo* info) {return(IsFs2() ||
@@ -1553,6 +1546,7 @@ public:
 
     bool getBSN          (char *s, guid_t *guid);
     bool getGUID         (const char *s, guid_t *guid);
+    bool getFlashParams(char *flash_arg, flash_params_t *flash_params);
 
     bool patchVSD        (FImage& f,
                           Operations::ImageInfo* info,
@@ -1593,6 +1587,8 @@ public:
     bool PrintBxGuids  (guid_t* new_guids,  guid_t* old_guids, int index, int num_of_guids, const char* pre_str);
     bool PrintUids     (guid_t* used_guids, guid_t* old_guids);
     bool PrintGUIDs    (guid_t guids[MAX_GUIDS], guid_t old_guids[MAX_GUIDS], bool print_guids, bool print_macs, bool old_guid_fmt);
+    bool CheckSetGuidsFlags(ImageInfo* info, bool macs_specified, bool guids_specified, bool uids_specified);
+
 
     void initSectToRead(int imp_index);
 
@@ -1626,7 +1622,7 @@ public:
     bool CopyData(u_int8_t* &new_image, u_int8_t* &old_image, int copy_size);
     bool GetFileSize(FILE* fh, char* file_name, int& rom_size);
     bool IsRomEmpty(ImageInfo* info);
-    bool CheckDevImage(FBase& f, ImageInfo& info);
+    bool CheckDevImage(FBase& f, ImageInfo& info, u_int8_t read_rom = 0);
     bool CheckDevImageAndRom(FBase& f, ImageInfo& flash_info);
     bool IntegrateDevRomInImage(FImage& fim, ImageInfo& flashInfo, ImageInfo& fileInfo);
 
@@ -1755,6 +1751,8 @@ public:
         u_int16_t    fwVer[3];        // = {major_ver, minor_ver , sum_minor_ver}
         u_int16_t    fwTime[6];  // = {year, month, day, hour, minute, second}
 
+        u_int16_t    minFitVer[4];
+
         u_int16_t    devType;
         u_int8_t     devRev;
 
@@ -1812,6 +1810,9 @@ public:
     void patchGUIDsSection      (u_int32_t *buf, u_int32_t ind,
                                  guid_t guids[GUIDS], int nguids);
 
+    void PatchInfoSect          (u_int8_t*      rawSect,
+                                 u_int32_t      vsdOffs,
+                                 const char*    vsd);
 private:
 
     bool FailSafe_burn_image    (Flash&       f,
@@ -1849,10 +1850,6 @@ private:
                                  const char     vsd[VSD_LEN],
                                  const char     psid[PSID_LEN]   = NULL,
                                  u_int32_t      imageAddr        = 0);
-
-    void PatchInfoSect          (u_int8_t*      rawSect,
-                                 u_int32_t      vsdOffs,
-                                 const char*    vsd);
 
     bool QueryIs                (FBase& f,  ImageInfo* info);
     bool QueryPs                (FBase& f,  ImageInfo* info);
@@ -2885,7 +2882,13 @@ bool Operations::checkGen(FBase& f, u_int32_t beg,u_int32_t offs,
             size = gph.size * 4;
         }
         sect_name = g_sectNames[gph.type];
-        is_sect_to_read =  _sections_to_read[gph.type];;
+        // We verify part of the image only when we verify an image burnt on a device
+        if (f.is_flash()) {
+            is_sect_to_read =  _sections_to_read[gph.type];
+        } else {
+            is_sect_to_read = true;
+        }
+
     }
 
     sprintf(pr, CRC_CHECK_OUTPUT,
@@ -3156,7 +3159,7 @@ bool Operations::CheckMatchingExpRomDevId(Operations::ImageInfo* info) {
 
 
 bool Operations::VerifyFs2(FBase& f, Operations::ImageInfo* info, bool both_images, bool only_get_start,
-                           bool ignore_full_image_crc) {
+                           bool ignore_full_image_crc, bool force_no_striped_image) {
     u_int32_t cntx_image_start[CNTX_START_POS_SIZE];
     u_int32_t cntx_image_num;
     u_int32_t i;
@@ -3185,7 +3188,7 @@ bool Operations::VerifyFs2(FBase& f, Operations::ImageInfo* info, bool both_imag
     bool info_set = false;
 
     // Verify the images:
-    for (i = 0; i < cntx_image_num; i++ ) {
+    for (i = 0; i < cntx_image_num; i++) {
         bool      fs_en;
         u_int32_t log2chunk_size;
         u_int32_t buff[FS2_BOOT_START / 4];
@@ -3261,7 +3264,7 @@ bool Operations::VerifyFs2(FBase& f, Operations::ImageInfo* info, bool both_imag
             //
             // For now, get the "striped" indication from user.
 
-            if (_cntx_striped_image) {
+            if (!force_no_striped_image && _cntx_striped_image) {
                 f.set_address_convertor(log2chunk_size, cntx_image_start[i] != 0);
             } else {
                 f.set_address_convertor(0, 0); //disable conversion
@@ -3299,6 +3302,151 @@ bool Operations::VerifyFs2(FBase& f, Operations::ImageInfo* info, bool both_imag
     }
     return ret;
 }
+
+bool Operations::WriteImageToFile(char *file_name, u_int8_t *data, u_int32_t length)
+{
+    FILE* fh;
+    if ((fh = fopen(file_name, "wb")) == NULL) {
+        return errmsg("Can not open %s: %s\n", file_name, strerror(errno));
+    }
+
+    // Write output
+    if (fwrite(data, 1, length, fh) != length) {
+        fclose(fh);
+        return errmsg("Failed to write to %s: %s\n", file_name, strerror(errno));
+    }
+    fclose(fh);
+    return true;
+}
+
+bool Operations::packStripedImageData(u_int8_t *striped_data, u_int8_t *normal_data, u_int32_t length, u_int32_t &striped_length,
+        bool needs_repack, u_int32_t cntxLog2ChunkSize)
+{
+    if (needs_repack) {
+        u_int32_t chunk_size = 1 << cntxLog2ChunkSize;
+        u_int32_t chunk_num = (length / chunk_size) + 1;
+        u_int32_t i;
+        striped_length = 0;
+
+        // Loop which runs over the chunks
+        for (i = 0; i < chunk_num; i++) {
+            u_int32_t normal_index  = i * chunk_size;
+            u_int32_t striped_index = normal_index * 2;
+
+            u_int32_t size = (length - normal_index);
+            u_int8_t *striped_ptr = striped_data + striped_index;
+
+            size = (size <= chunk_size) ? size : chunk_size;
+            memcpy(striped_ptr, normal_data + normal_index, size);
+            striped_length += size;
+
+            if (i != (chunk_num - 1)) {
+                // Add blank chunk after all the chunks instead the last one.
+                memset(striped_ptr + chunk_size, 0xff, chunk_size);
+                striped_length += chunk_size;
+            }
+        }
+    } else {
+        striped_length = length;
+        memcpy(striped_data, normal_data, length);
+    }
+    return true;
+
+}
+
+bool Operations::ReburnNewImage(u_int8_t *data, FBase *fbase, Operations::ImageInfo* info, char *image_fname, bool silent,
+        char *feature_name)
+{
+    u_int32_t length        = info->imageSize;
+    FImage                fim1;
+    Operations::ImageInfo new_info;
+    char burn_str[100];
+    bool is_image = (image_fname != NULL);
+    bool needs_repack = (is_image && info->actuallyFailsafe);
+
+    // Burn the Image after modifying the VSD.
+    fim1.open((u_int32_t*)data, length);
+    _silent = true;
+
+    // Verify the new image and exit if it's not VALID.
+    if (!VerifyFs2(fim1, &new_info, false, false, true, needs_repack) || !QueryAll(fim1, &new_info)) {
+        return errmsg("Internal error: The prepared image After modifying the %s is corrupted: %s\n", feature_name, err());
+    }
+    _silent = false;
+    if (!is_image) {
+        // Modify the flash
+        sprintf(burn_str, "Setting the %s", feature_name);
+        if (!CntxFailSafeBurn((*(Flash*)fbase), fim1, !silent, info, &new_info, true,
+                burn_str)) {
+            return PrepareBurnErr((*(Flash*)fbase));
+        }
+    } else {
+        u_int8_t *striped_data = new u_int8_t[length * 2];
+        u_int32_t striped_length;
+
+        // Modify the image.
+        // Update the Full image CRC.
+        UpdateFullImageCRC((u_int32_t*)data, length / 4, false);
+
+        // Re-pack the image as it was given.
+        // When it was striped this function would return it to that case.
+        packStripedImageData(striped_data, data, length, striped_length, needs_repack, info->cntxLog2ChunkSize);
+
+        // Re-write the image to the file.
+        if (!WriteImageToFile(image_fname, striped_data, striped_length)) {
+            return false;
+       }
+    }
+    return true;
+}
+
+
+bool Operations::PrepareBurnErr(Flash& f)
+{
+    if (f.err()) {
+        // The error is in flash access:
+        return errmsg("Flash access failed: %s", f.err());
+    } else {
+        // operation/algorithm error:
+        return errmsg("Failsafe operation failed: %s", err());
+    }
+    return false;
+}
+
+bool Operations::ModifyGuidSection(FBase *fbase, Operations::ImageInfo *info, guid_t *user_guids, char *image_fname, bool silent)
+{
+    u_int32_t length        =  info->imageSize;
+    vector<u_int8_t> data(length);
+
+    // Read the image.
+    if (!fbase->read(0, (u_int8_t*)(&data[0]), length)) {
+        return errmsg("Flash/Image read failed: %s\n", fbase->err());
+    }
+    // Change the GUIDs section according to the user given GUIDs
+    patchGUIDsSection ((u_int32_t*)(&data[0]), info->guidPtr, user_guids, info->guidNum);
+    // Re-burn the new Image after modifying the GUIDs
+    return ReburnNewImage((u_int8_t*)(&data[0]), fbase, info, image_fname, silent, (char*)"GUIDs");
+}
+
+bool Operations::ModifyVSDSection(FBase *fbase, Operations::ImageInfo *info, char *vsd, char *image_fname, bool silent)
+{
+
+    u_int32_t length        =  info->imageSize;
+    vector<u_int8_t> data(length);
+
+    // Read the image.
+    if (!fbase->read(0, (u_int8_t*)(&data[0]), length)) {
+        return errmsg("Flash/Image read failed: %s\n", fbase->err());
+    }
+    // Change the VSD
+    PatchInfoSect((u_int8_t*)(&data[0]) + info->infoSectPtr - sizeof(GPH),
+                  info->infoOffs[Operations::II_VSD],
+                   vsd);
+    // Re-burn the new Image after modifying the VSD
+    return ReburnNewImage((u_int8_t*)(&data[0]), fbase, info, image_fname, silent, (char*)"VSD");
+}
+
+
 
 bool Operations::Verify(FBase& f, Operations::ImageInfo* info, bool both_images)
 {
@@ -3567,6 +3715,7 @@ bool Operations::DumpConf        (const char* conf_file, SectionType sect_type) 
 ////////////////////////////////////////////////////////////////////////
 #define GETGUID(s, g) do { if (!ops.getGUID(s,g)) return 1; } while (0)
 #define GETBSN(s, g)  do { if (!ops.getBSN(s,g)) return 1; } while (0)
+#define GET_FLASH_PARAMS(a, fp) do { if (!ops.getFlashParams(a, fp)) return 1; } while (0)
 
 #define BSN_RET do {                                            \
     printf("Invalid BSN. Should be MTxxxxx[-]R[xx]ddmmyy-nnn[-cc]\n"); \
@@ -3583,6 +3732,44 @@ u_int32_t Operations::BSN_subfield(const char *s, int beg, int len)
     buf[len] = '\0';
     return strtoul(&buf[0], 0, 10);
 }
+
+#define ARR_SIZE(arr) sizeof(arr)/sizeof(arr[0])
+
+bool Operations::getFlashParams(char *flash_arg, flash_params_t *flash_params)
+{
+    char *type_str, *size_str, *flash_num_str, *last_arg, flash_tmp[50], *endp;
+
+    strncpy(flash_tmp, flash_arg, (sizeof(flash_tmp)/sizeof(flash_tmp[0])));
+
+    // Get the parameters
+    type_str = strtok(flash_arg, ",");
+    size_str = strtok(NULL, ",");
+    flash_num_str = strtok(NULL, ",");
+
+    // For checking that we don't have more arguments than needed.
+    last_arg = strtok(NULL, ",");
+
+    if (type_str == NULL || size_str == NULL || flash_num_str == NULL || last_arg != NULL) {
+        report_err(_err_msg, "Bad flash params argument (%s ...), it should be as follow: %s.\n", flash_tmp, FLASH_PARAMS_OPTS);
+        return false;
+    }
+
+    flash_params->type_name = type_str;
+
+    flash_params->log2size = strtoul(size_str, &endp, 0);
+    if (*endp != '\0') {
+        report_err(_err_msg, "Bad flash parameter log2size (%s).\n", size_str);
+        return false;
+    }
+
+    flash_params->num_of_flashes = strtoul(flash_num_str, &endp, 0);
+    if (*endp != '\0') {
+        report_err(_err_msg, "Bad flash parameter num_of_flashes (%s).\n", flash_num_str);
+        return false;
+    }
+    return true;
+}
+
 bool Operations::getBSN(char *s, guid_t *guid)
 {
     const u_int64_t COMPANY_ID = 0x0002c9;
@@ -4015,6 +4202,27 @@ bool Operations::CheckGuidsFlags (u_int16_t devType,
             //}
         }
     }
+    return true;
+}
+
+bool Operations::CheckSetGuidsFlags(ImageInfo* info, bool macs_specified, bool guids_specified, bool uids_specified)
+{
+    bool ib_dev;
+    bool eth_dev;
+    bool bx_dev;
+
+    bx_dev = IsBridgeX(info->devType);
+    SetDevFlags(info->devType, ib_dev,eth_dev);
+
+    if (macs_specified || guids_specified || uids_specified) {
+        if (!CheckGuidsFlags(info->devType, guids_specified, macs_specified, uids_specified)) {
+            return errmsg("%s", err());
+        }
+    } else {
+        PrintMissGuidErr(ib_dev, eth_dev, bx_dev);
+        return errmsg("For set_guids command, %s", err());
+    }
+
     return true;
 }
 bool Operations::PrintGuidLine(guid_t* new_guids, guid_t* old_guids, int guid_index)
@@ -4470,6 +4678,15 @@ bool Operations::ParseInfoSect(u_int8_t* buff, u_int32_t byteSize, Operations::I
             info->fwVer[2] = tmp & 0xffff;
             break;
 
+        case II_MinFitVersion:
+            tmp = __be32_to_cpu(*(p+1));
+            info->minFitVer[0] = tmp >> 16;
+            info->minFitVer[1] = tmp & 0xffff;
+            tmp = __be32_to_cpu(*(p+2));
+            info->minFitVer[2] = tmp >> 16;
+            info->minFitVer[3] = tmp & 0xffff;
+            break;
+
         case II_DeviceType:
             tmp = __be32_to_cpu(*(p+1));
             info->devType = tmp & 0xffff;
@@ -4478,7 +4695,7 @@ bool Operations::ParseInfoSect(u_int8_t* buff, u_int32_t byteSize, Operations::I
 
         case II_VsdVendorId:
             tmp = __be32_to_cpu(*(p+1));
-            info->vsdVendorId = tmp & 0xffff;
+            info->vsdVendorId    = tmp & 0xffff;
             break;
 
         case II_IsGa:
@@ -4585,7 +4802,7 @@ bool Operations::DisplayExpRomInfo(Operations::ImageInfo* info, bool print_pre) 
             case 2   : report("CLP2 "); break;
             case 3   : report("CLP3 "); break;
             case 4   : report("CLP4 "); break;
-            case 0x10: report("GPXE "); break;
+            case 0x10: report("PXE  "); break;
             default:   report("0x%x ", info->expRomProductId);
             }
 
@@ -4687,7 +4904,7 @@ bool Operations::ReportBxMacsWarnings(guid_t* guids, int index, int warning, int
 }
 
 
-bool Operations::DisplayImageInfo(Operations::ImageInfo* info) {
+bool Operations::DisplayImageInfo(Operations::ImageInfo* info, bool full_query) {
     report("Image type:      %s\n", info->magicPatternFound ? (CntxIsEth(info->devType) ? "ConnectX" : "FS2") :
            info->isFailsafe        ? "Failsafe" :
            "Short");
@@ -4695,10 +4912,17 @@ bool Operations::DisplayImageInfo(Operations::ImageInfo* info) {
     if (info->infoOffs[II_FwVersion]) {
         report("FW Version:      %d.%d.%d\n", info->fwVer[0], info->fwVer[1], info->fwVer[2]);
     }
-    // TODO: Print the mic version and hw devi Ids
-    //if (info->infoOffs[II_MicVersion]) {
-    //    report("MIC Version:     Existent\n");
-    //}
+
+
+    if (full_query) {
+        if (info->infoOffs[II_MinFitVersion]) {
+            report("Min FIT Version: %d.%d.%d.%d\n", info->minFitVer[0], info->minFitVer[1], info->minFitVer[2], info->minFitVer[3]);
+        }
+        // TODO: Print the mic version and hw devi Ids
+        // if (info->infoOffs[II_MicVersion]) {
+        //     report("MIC Version:     Existent\n");
+        // }
+    }
 
 
 
@@ -5005,16 +5229,25 @@ void usage(const char *sname, bool full = false)
     "    -log <log_file>\n"
     "                       - Print the burning status to the specified log file\n"
     "\n"
+    "    -flash_params "FLASH_PARAMS_OPTS"\n"
+    "                       - Use the given parameters to access the flash instead of reading them from the flash.\n"
+    "                         Supported parameters:\n"
+    // TODO: Get the supported type list from the mflash library.
+    "                           Type: The type of the flash, such as: M25PXxx, M25Pxx, SST25VFxx.\n"
+    "                           log2size: The log2 of the flash size.\n"
+    "                           num_of_flashes: the number of the flashes connected to the device.\n"
+    "\n"
     "    -v                 - Version info.\n"
     "\n"
     "Commands summary (use -hh flag for full commands description):\n"
     "-----------------\n"
     "  b[urn]              - Burn flash\n"
-    "  q[uery]             - Query misc. flash/firmware characteristics\n"
+    "  q[uery]  [full]     - Query misc. flash/firmware characteristics, use \"full\" to get more information.\n"
     "  v[erify]            - Verify entire flash\n"
     "  bb                  - Burn Block - Burns the given image as is. \n"
     "                        No checks are done.\n"
-    "  sg       [nocrc]    - Set Guids\n"
+    "  sg       [nocrc]    - Set GUIDs.\n"
+    "  sv                  - Set the VSD.\n"
     "  ri       <out-file> - Read the fw image on the flash.\n"
     "  dc       [out-file] - Dump Configuration: print fw configuration file\n"
     "                        for the given image.\n"
@@ -5070,15 +5303,15 @@ void usage(const char *sname, bool full = false)
     "        " FLINT_NAME " -d " DEV_MST_EXAMPLE1 " -i image1.bin bb\n"
     "\n"
     "\n"
-    "* sg\n"
-    "  Set GUIDs/MACs in the given device.\n"
-    "  Use -guid(s) and -mac(s) flags to set the desired values.\n"
-    "  This command is applicable only for images with blank (0xff)\n"
-    "  GUIDs/MACs values and crc, I.E., that were burnt or generated\n"
-    "  using -blank_guids flag.\n"
-    "  The sg command  is used in production to apply GUIDs/MACs values\n"
-    "  to cards that were pre-burnt with blank guids. It is not meant for\n"
-    "  use in field\n"
+    "* Set GUIDs\n"
+    "  Set GUIDs/MACs/UIDs in the given device/image.\n"
+    "  Use -guid(s), -mac(s) and -uid(s) flags to set the desired values.\n"
+    "  - On pre-ConnectX devices, the sg command  is used in production to apply GUIDs/MACs values\n"
+    "    to cards that were pre-burnt with blank GUIDs. It is not meant for\n"
+    "    use in field\n"
+    "  - On 4th generation devices, this command can operate on both image file and image on flash.\n"
+    "    If the GUIDs/MACs/UIDs in the image on flash are non-blank,\n"
+    "    flint will re-burn the current image using the given GUIDs/MACs/UIDs."
     "\n"
     "    Command:\n"
     "        sg\n"
@@ -5090,6 +5323,22 @@ void usage(const char *sname, bool full = false)
     "        " FLINT_NAME " -d " DEV_MST_EXAMPLE1 " -guid 0x0002c9000100d050 sg\n"
     "\n"
     "\n"
+
+    "\n"
+    "\n"
+    "* Set VSD\n"
+    "  Set VSD in the given device/image.\n"
+    "  Use -vsd flag to set the desired VSD string.\n"
+    "\n"
+    "    Command:\n"
+    "        sv\n"
+    "    Parameters:\n"
+    "       None.\n"
+    "    Examples:\n"
+    "        " FLINT_NAME " -d " DEV_MST_EXAMPLE1 " -vsd VSD_STRING sv\n"
+    "\n"
+    "\n"
+
     "* Erase sector.\n"
     "  Erases a sector that contains specified address.\n"
     "\n"
@@ -5853,13 +6102,19 @@ bool Operations::IsRomEmpty(ImageInfo* info)
 {
     return info->_rom_sect.empty();
 }
-bool Operations::CheckDevImage(FBase& f, ImageInfo& flash_info)
+bool Operations::CheckDevImage(FBase& f, ImageInfo& flash_info, u_int8_t read_flash)
 {
     bool curr_silent = _silent;
     _silent = true;
+    SectionType seciotn = H_LAST;
+
     if (GetQuickQuery()) {
-        initSectToRead(H_ROM);
+        if (read_flash ) {
+            seciotn = H_ROM;
+        }
+        initSectToRead(seciotn);
     }
+
     bool flash_query_res = Verify(f, &flash_info) && QueryAll(f, &flash_info);
     if (!flash_query_res) {
         return errmsg("Bad FW Image on the flash");
@@ -5874,7 +6129,7 @@ bool Operations::CheckDevImage(FBase& f, ImageInfo& flash_info)
 bool Operations::CheckDevImageAndRom(FBase& f, ImageInfo& flash_info)
 {
     // Common check for the ROM.
-    if (!CheckDevImage(f, flash_info)) {
+    if (!CheckDevImage(f, flash_info, 1)) {
         return errmsg(err());
     }
     if (IsRomEmpty(&flash_info)) {
@@ -5923,15 +6178,10 @@ bool IsCmdSupportLog(CommandType cmd) {
     return false;
 }
 
-void PrintFSBurnErr(Flash& f, Operations& ops, const char* err_msg)
+void PrintFSBurnErr(Flash& f, Operations& ops, const char* operation)
 {
-    if (f.err()) {
-        // The error is in flash access:
-        report_err(ops._err_msg, "Flash access failed during burn %s: %s\n", err_msg, f.err());
-    } else {
-        // operation/algorithm error:
-        report_err(ops._err_msg, "Failsafe %s burn error: %s\n", err_msg, ops.err());
-    }
+    ops.PrepareBurnErr(f);
+    report_err(ops._err_msg, "%s Failed: %s\n", operation, ops.err());
     return;
 }
 
@@ -5990,6 +6240,10 @@ int main(int ac, char *av[])
     int          rc = 0;
     int          num_of_banks = 0;
 
+    flash_params_t flash_params;
+    flash_params_t *flash_params_p = NULL;
+
+
     CommandType cmd = CMD_UNKNOWN;
     SectionType dump_sect_type = H_FW_CONF;
     auto_ptr<Flash>       f;
@@ -6043,17 +6297,8 @@ int main(int ac, char *av[])
                 device = av[i];
 
             } else if (!strcmp(av[i], "-v") || !strcmp(av[i], "-vv")) {
-                printf("%s: %s .",
-                       av[0],
-                       _versionID);
-
-                if (!strcmp(av[i], "-vv")) {
-                    printf(" SVN %s", _svnID + 1);
-                }
-
-                printf("\n");
+                 print_version_string("mstflint", "");
                 rc =  0; goto done;
-
             } else if (!strcmp(av[i], "-unlock")) {
                 _unlock_bypass = true;
             } else if (!strcmp(av[i], "-noerase")) {
@@ -6161,6 +6406,10 @@ int main(int ac, char *av[])
                 NEXTS("-log");
                 log_file   = av[i];
                 writeToLog = true;
+            } else if (!strcmp(av[i], "-flash_params")) {
+                NEXTS("-flash_params");
+                GET_FLASH_PARAMS(av[i], &flash_params);
+                flash_params_p = &flash_params;
             } else if (!strncmp(av[i], "-silent", switchLen))
                 silent = true;
             else if (!strcmp(av[i], "-use_image_ps"))
@@ -6272,7 +6521,7 @@ int main(int ac, char *av[])
         }
 
         g_flash = f.get();
-        if (!f->open(device, clear_semaphore, false, num_of_banks)) {
+        if (!f->open(device, clear_semaphore, false, num_of_banks, flash_params_p)) {
             report_err(ops._err_msg, "Can not open %s: %s\n", device, f->err());
             rc =  1; goto done;
         }
@@ -6672,7 +6921,7 @@ int main(int ac, char *av[])
                                            single_image_burn);
                 }
                 if (!ret) {
-                    PrintFSBurnErr(*f, ops, "");
+                    PrintFSBurnErr(*f, ops, "Image burn");
                     rc = 1; goto done;
                 }
             } else {
@@ -6753,7 +7002,7 @@ int main(int ac, char *av[])
             Operations::ImageInfo file_info;
             Operations::ImageInfo flash_info;
 
-            if (!ops.CheckDevImage(*f, flash_info)) {
+            if (!ops.CheckDevImage(*f, flash_info, 1)) {
                 report_err(ops._err_msg, "Burn ROM failed: %s\n", ops.err());
                 rc = 1; goto done;
             }
@@ -6818,7 +7067,7 @@ int main(int ac, char *av[])
             // Print the ROM versin of the curerrent and the new ROM.
             bool ret = ops.CntxFailSafeBurn(*f, fim, !silent, &flash_info, &flash_info, true, "Burning ROM image");
             if (!ret) {
-                PrintFSBurnErr(*f, ops, "ROM");
+                PrintFSBurnErr(*f, ops, "ROM burn");
                 rc = 1; goto done;
             }
 
@@ -6862,7 +7111,7 @@ int main(int ac, char *av[])
 
             // To verify the new image and exit if it's not VALID.
             if (!ops.VerifyFs2(fim, &file_info, false, false, true) || !ops.QueryAll(fim, &file_info)) {
-                report_err(ops._err_msg, "Internal error: The prepared image After removing the ROM is corrupted: %s\n", ops.err());
+                report_err(ops._err_msg, "Internal error: The prepared image after removing the ROM is corrupted: %s\n", ops.err());
                 rc = 1; goto done;
             }
 
@@ -6870,7 +7119,7 @@ int main(int ac, char *av[])
             bool ret = ops.CntxFailSafeBurn(*f, fim, !silent, &flash_info, &file_info, true,
                                             "Removing ROM image" );
             if (!ret) {
-                PrintFSBurnErr(*f, ops, "ROM");
+                PrintFSBurnErr(*f, ops, "ROM remove");
                 rc = 1; goto done;
             }
 
@@ -6896,7 +7145,7 @@ int main(int ac, char *av[])
 
             Operations::ImageInfo flash_info;
 
-            if (!ops.CheckDevImageAndRom(*f, flash_info)) {
+            if (!ops.CheckDevImageAndRom(*fbase, flash_info)) {
                 report_err(ops._err_msg, "Read ROM failed: %s\n", ops.err());
                 rc = 1; goto done;
             }
@@ -6917,6 +7166,39 @@ int main(int ac, char *av[])
             fclose(fh);
         }
         break;
+    case CMD_SET_VSD:
+    {
+
+        FImage                fim1;
+        Operations::ImageInfo info;
+        Operations::ImageInfo new_info;
+
+        if (user_vsd == NULL) {
+            report_err(ops._err_msg, "For set_vsd command, please specify the VSD (using command flag -vsd).\n");
+            rc =  1; goto done;
+        }
+        _silent = true;
+
+        if (!ops.CheckDevImage(*fbase, info)) {
+            report_err(ops._err_msg, "Failed to set the VSD:: %s\n", ops.err());
+            rc = 1; goto done;
+        }
+        _silent = false;
+
+        // Check if we have info section in the image.
+        if (!info.infoOffs[Operations::II_VSD]) {
+            report_err(ops._err_msg, "Failed to set the VSD: No info section on the image.\n");
+            rc = 1; goto done;
+        }
+
+        if (!ops.ModifyVSDSection(fbase, &info, user_vsd, image_fname, silent)) {
+            report_err(ops._err_msg, "Failed to set the VSD: %s.\n", ops.err());
+            rc = 1; goto done;
+
+        }
+    }
+    break;
+
     case CMD_SET_GUIDS:
         {
             Operations::ImageInfo info;
@@ -6924,6 +7206,7 @@ int main(int ac, char *av[])
             u_int32_t length;
             bool update_crc = true;
 
+            // Get the arguments
             if (i + 2 <= ac) {
                 NEXTC("<NOCRC>", "sg");
                 char *nocrc = av[i];
@@ -6933,7 +7216,7 @@ int main(int ac, char *av[])
                 }
                 update_crc = false;
             }
-
+            // Get some info regarding the image.
             if (ops.IsFs2()) {
                 _silent       = true;
                 if (!ops.VerifyFs2(*fbase, &info, false, true)) {
@@ -6946,74 +7229,87 @@ int main(int ac, char *av[])
                 report_err(ops._err_msg, "Can not set GUIDs: %s query (%s) failed: %s\n", cmdTarget , cmdAccess, ops.err());
                 rc =  1; goto done;
             }
-            length  = info.imageSize;
-            if (!info.blankGuids) {
-                report_err(ops._err_msg, "Can not set GUIDs: Guids are already set.\n");
-                rc =  1; goto done;
-            }
 
-            bool ib_dev;
-            bool eth_dev;
-            bool bx_dev;
-            u_int32_t i;
+            // Check if we have blank guids
+            if (info.blankGuids && image_fname == NULL) {
+                // There is blank GUIDs on the device (not image)
+                length  = info.imageSize;
 
-            bx_dev = ops.IsBridgeX(info.devType);
-            ops.SetDevFlags(info.devType, ib_dev,eth_dev);
-
-            if (macs_specified || guids_specified || uids_specified) {
-                if (!ops.CheckGuidsFlags(info.devType, guids_specified, macs_specified, uids_specified)) {
+                if (!ops.CheckSetGuidsFlags(&info, macs_specified, guids_specified, uids_specified)) {
                     report_err(ops._err_msg, "%s\n", ops.err());
-                    rc =  1; goto done;
+                    rc = 1; goto done;
                 }
-            } else {
-                ops.PrintMissGuidErr(ib_dev, eth_dev, bx_dev);
-                report_err(ops._err_msg, "For set_guids command, %s", ops.err());
-                rc = 1; goto done;
-            }
 
-            if (ops.IsFs2() || !info.isFailsafe) {
-                guid_sect_addr[0] = info.guidPtr;
-            } else {
-                int addr_idx = 0;
-                for (i = 0; i < 2; i++) {
-                    if (info.allImgStart[i]) {
-                        guid_sect_addr[addr_idx] = info.allImgStart[i] + info.guidPtr;
-                        addr_idx++;
+                if (ops.IsFs2() || !info.isFailsafe) {
+                    guid_sect_addr[0] = info.guidPtr;
+                } else {
+                    int addr_idx = 0;
+                    for (i = 0; i < 2; i++) {
+                        if (info.allImgStart[i]) {
+                            guid_sect_addr[addr_idx] = info.allImgStart[i] + info.guidPtr;
+                            addr_idx++;
+                        }
                     }
                 }
-            }
 
-            for (i = 0; i < 2 && guid_sect_addr[i]; i++ ) {
-                u_int32_t guid_sect[Operations::MAX_GUIDS*2 + 5]; // Save room for header + crc
+                for (i = 0; i < 2 && guid_sect_addr[i]; i++ ) {
+                    u_int32_t guid_sect[Operations::MAX_GUIDS*2 + 5]; // Save room for header + crc
 
-                if (!f->read(guid_sect_addr[i] - 16 , guid_sect, 16)) {
-                    report_err(ops._err_msg, "Failed to read guids section - flash read error (%s)\n", fbase->err());
+                    if (!f->read(guid_sect_addr[i] - 16 , guid_sect, 16)) {
+                        report_err(ops._err_msg, "Failed to read guids section - flash read error (%s)\n", fbase->err());
+                    }
+
+                    ops.patchGUIDsSection (guid_sect, 16, user_guids, info.guidNum);
+
+                    if (!f->write(guid_sect_addr[i], guid_sect + 4 , info.guidNum * 8 + 4, true)) {
+                        report_err(ops._err_msg, "Guids set failed - flash write error (%s)\n", fbase->err());
+                    }
                 }
+                if (update_crc && ops.IsFs2()) {
+                   // Read the image.
+                    vector<u_int8_t> data(length);
 
-                ops.patchGUIDsSection (guid_sect, 16, user_guids, info.guidNum);
+                    if (!f->read(0, (u_int32_t*)(&data[0]), length)) {
+                        report_err(ops._err_msg, "Flash read failed: %s\n", f->err());
+                        rc =  1; goto done;
+                    }
+                    // TODO: Do we need to update the CRC existing ORENK
+                    // Calc & Update CRC.
+                    u_int32_t *new_data =  (u_int32_t*)(&data[0]);
+                    u_int32_t crc = ops.CalcImageCRC(new_data, length / 4);
+                    u_int32_ba old_dw = __be32_to_cpu(new_data[IMG_CRC_OFF / 4]);
+                    old_dw.range(15, 0) =  crc;
+                    u_int32_t new_crc_dw = CPUTO1(old_dw);
 
-                if (!f->write(guid_sect_addr[i], guid_sect + 4 , info.guidNum * 8 + 4, true)) {
-                    report_err(ops._err_msg, "Guids set failed - flash write error (%s)\n", fbase->err());
+                    if (!f->write(IMG_CRC_OFF, &new_crc_dw, 4, true)) {
+                        report_err(ops._err_msg, "Guids set failed - flash write error (%s)\n", fbase->err());
+                    }
                 }
-            }
-            if (update_crc && ops.IsFs2()) {
-               // Read the image.
-                vector<u_int8_t> data(length);
-
-                if (!f->read(0, (u_int32_t*)(&data[0]), length)) {
-                    report_err(ops._err_msg, "Flash read failed: %s\n", f->err());
-                    rc =  1; goto done;
+            } else if (!ops.IsFs2()) {
+                // 1- Old image
+                // 2- Old device with no blank
+                if (image_fname != NULL) {
+                    report_err(ops._err_msg, "Can not set GUIDs for pre-ConnectX image.\n");
+                } else {
+                    report_err(ops._err_msg, "Can not set GUIDs: GUIDs are already set (Modifying GUIDs is not supported pre-ConnectX devices).\n");
                 }
-                // TODO: Do we need to update the CRC existing ORENK
-                // Calc & Update CRC.
-                u_int32_t *new_data =  (u_int32_t*)(&data[0]);
-                u_int32_t crc = ops.CalcImageCRC(new_data, length / 4);
-                u_int32_ba old_dw = __be32_to_cpu(new_data[IMG_CRC_OFF / 4]);
-                old_dw.range(15, 0) =  crc;
-                u_int32_t new_crc_dw = CPUTO1(old_dw);
+                rc =  1; goto done;
+            } else {
+                // 1- FS2 image
+                // 2- FS2 device with no blank guids
 
-                if (!f->write(IMG_CRC_OFF, &new_crc_dw, 4, true)) {
-                    report_err(ops._err_msg, "Guids set failed - flash write error (%s)\n", fbase->err());
+                // Check the guid given by the user
+                if (!ops.CheckSetGuidsFlags(&info, macs_specified, guids_specified, uids_specified)) {
+                    report_err(ops._err_msg, "%s\n", ops.err());
+                    rc = 1; goto done;
+                }
+                if (image_fname == NULL) {
+                    // 2- FS2 device with no blank Guids
+                    report_warn("GUIDs are already set, re-burining image with the new GUIDs ...");
+                }
+                if (!ops.ModifyGuidSection(fbase, &info, user_guids, image_fname, silent)) {
+                    report_err(ops._err_msg, "GUIDs set failed: %s\n", ops.err());
+                    rc = 1; goto done;
                 }
             }
         }
@@ -7049,7 +7345,18 @@ int main(int ac, char *av[])
         {
             // QUERY
             Operations::ImageInfo info;
-            bool imageOk;
+            bool imageOk, full_query = false;
+
+            // Check if we have full argument.
+            if (ac > i + 1) {
+                i++;
+                if (!strcmp(av[i], "full")) {
+                    full_query = true;
+                } else {
+                    report_err(ops._err_msg, "Unknown option \"%s\" for the query command.\n", av[i]); \
+                    return 1;                                                  \
+                }
+            }
 
             _silent       = true;
             if (ops.GetQuickQuery()) {
@@ -7072,7 +7379,7 @@ int main(int ac, char *av[])
                 rc =  1; goto done;
             }
 
-            ops.DisplayImageInfo(&info);
+            ops.DisplayImageInfo(&info, full_query);
         }
         break;
 
@@ -7254,20 +7561,13 @@ int main(int ac, char *av[])
                 report_err(ops._err_msg, "Flash read failed: %s\n", f->err());
                 rc =  1; goto done;
             }
-            FILE* fh;
-            if ((fh = fopen(av[i], "wb")) == NULL) {
-                report_err(ops._err_msg, "Can not open %s: %s\n", av[i], strerror(errno));
+            if (!ops.WriteImageToFile(img_file, (u_int8_t*)(&data[0]), length)) {
+                report_err(ops._err_msg, "Read Image failed: %s.\n", ops.err());
                 rc =  1; goto done;
-            }
 
-            // Write output
-            if (fwrite((u_int8_t*)(&data[0]), 1, length, fh) != length) {
-                fclose(fh);
-                report_err(ops._err_msg, "File write error\n");
-                rc =  1; goto done;
             }
-            fclose(fh);
         }
+
         break;
 
     case CMD_WRITE_BLOCK:

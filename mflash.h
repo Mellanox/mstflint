@@ -61,6 +61,13 @@ typedef enum MfCommandSet {
     MCS_SSTSPI = 0x81
 } MfCommandSet;
 
+typedef struct flash_params {
+    char *type_name;
+    int log2size;
+    int num_of_flashes;
+} flash_params_t;
+
+
 typedef enum MfError {
     MFE_OK = 0,
     MFE_ERROR,
@@ -82,6 +89,7 @@ typedef enum MfError {
     MFE_NOMEM,
     MFE_OUT_OF_RANGE,
     MFE_CMD_SUPPORTED_INBAND_ONLY,
+    MFE_NO_FLASH_DETECTED,
     MFE_LAST
 } MfError;
 
@@ -105,7 +113,7 @@ typedef struct flash_attr {
     // hw_dev_id    hw dev id of the HCA.
     //
     u_int32_t hw_dev_id;
-    u_int32_t  rev_id;
+    u_int32_t rev_id;
 
     //
     // size:        Total size (in bytes) of all flash devices connected to
@@ -139,6 +147,8 @@ typedef struct flash_attr {
     // Command set (taken from CFI terminology)
     //
     int command_set;
+
+    u_int8_t erase_command;
 
     //
     // block_write - if block write is supported, holds the block size in bytes. 0 otherwise.
@@ -186,8 +196,8 @@ typedef struct mflash mflash;
 // mf_close() : Deallocates mflash resources.
 //   Note: User should call mf_close() even if mf_open failed (and the returning mfl is not NULL)
 //
-int     mf_open        (mflash** pmfl, const char* dev, int num_of_banks);
-int     mf_opend       (mflash** pmfl, struct mfile_t* mf, int num_of_banks);
+int     mf_open        (mflash** pmfl, const char* dev, int num_of_banks, flash_params_t* flash_params);
+int     mf_opend       (mflash** pmfl, struct mfile_t* mf, int num_of_banks,  flash_params_t* flash_params);
 int     mf_open_ignore_lock(mflash* mfl);
 int     mf_close       (mflash* mfl);
 
