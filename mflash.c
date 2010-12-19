@@ -2716,10 +2716,12 @@ int     mf_close       (mflash* mfl) {
         mfl->f_reset(mfl);
     }
 
-    set_bank(mfl, 0);
+    if (mfl->f_set_bank) {
+        set_bank(mfl, 0);
+    }
 
-    if (mfl->is_locked) {
-        mfl->f_lock(mfl, 0);
+    if (mfl->is_locked && mfl->f_lock) {
+            mfl->f_lock(mfl, 0);
     }
 
     if (mfl->mf && (mfl)->opts[MFO_CLOSE_MF_ON_EXIT]) {
