@@ -99,9 +99,9 @@ else
     EXIT_CODE=1
     exit $EXIT_CODE
 fi
-
+MEL_LSPCI_NAME_EXP="InfiniBand|Network controller"
 # HCA/PCI check
-NUM_IB_DEV=`lspci 2> /dev/null | grep "InfiniBand: Mellanox Technolog" | wc -l`
+NUM_IB_DEV=`lspci 2> /dev/null | grep -E "(${MEL_LSPCI_NAME_EXP}): Mellanox Technolog" | wc -l`
 NUM_MEM_CON=`lspci 2> /dev/null | grep "Memory controller: Mellanox Technolog" | wc -l`
 
 let "NUM_HCAS=$NUM_IB_DEV + $NUM_MEM_CON"
@@ -196,7 +196,7 @@ fi
 function get_device_id {
     loop_cnt=$1
 
-    PCI_DEV=$(lspci 2> /dev/null | grep -E "(InfiniBand|Memory controller): Mellanox Technolog" | head -$(expr $loop_cnt + 1) | tail -1 | awk '{print $1}')
+    PCI_DEV=$(lspci 2> /dev/null | grep -E "(${MEL_LSPCI_NAME_EXP}|Memory controller): Mellanox Technolog" | head -$(expr $loop_cnt + 1) | tail -1 | awk '{print $1}')
     HexDevice_ID=$(lspci -n -d "15b3:"  2> /dev/null | grep $PCI_DEV |  tail -1 | cut -d ":" -f4 | cut -d " " -f1)
 
     if [ "$HexDevice_ID" != "" ]; then
