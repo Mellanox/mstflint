@@ -45,6 +45,7 @@ MTHCA_DRIVER_NEEDED=mthca
 HERMON_DRIVER_NEEDED=mlx4_
 DRIVER_NEEDED=$MTHCA_DRIVER_NEEDED
 INFINI_CLASS_PATH=/sys/class/infiniband
+G_LSPCI_OUTPUT_FILE=/tmp/hca_self_test_lspci.output
 
 ########################################################################################
 # Required FW version definitions. These lines below are optionally set by the installer
@@ -84,7 +85,7 @@ if [ `id -g` -ne 0 ]; then
 fi
 
 echo
-echo "---- Performing InfiniBand HCA Self Test ----"
+echo "---- Performing Adapter Device Self Test ----"
 
 # Get OS type
 if [ -f /etc/redhat-release -o -f /etc/fedora-release ]; then
@@ -99,19 +100,26 @@ else
     EXIT_CODE=1
     exit $EXIT_CODE
 fi
-MEL_LSPCI_NAME_EXP="InfiniBand|Network controller"
+
+HCA_LSPCI_NAME="InfiniBand"
+VPI_LSPCI_NAME="Network controller"
+NIC_LSPCI_NAME="Ethernet controller"
+MEM_CON_LSPCI_NAME="Memory controller"
+
+MEL_LSPCI_NAME_EXP="${HCA_LSPCI_NAME}|${VPI_LSPCI_NAME}|${NIC_LSPCI_NAME}"
+
 # HCA/PCI check
 NUM_IB_DEV=`lspci 2> /dev/null | grep -E "(${MEL_LSPCI_NAME_EXP}): Mellanox Technolog" | wc -l`
-NUM_MEM_CON=`lspci 2> /dev/null | grep "Memory controller: Mellanox Technolog" | wc -l`
+NUM_MEM_CON=`lspci 2> /dev/null | grep "${MEM_CON_LSPCI_NAME}: Mellanox Technolog" | wc -l`
 
 let "NUM_HCAS=$NUM_IB_DEV + $NUM_MEM_CON"
-echo "Number of HCAs Detected ................ "$NUM_HCAS;
+echo "Number of CAs Detected ................. $NUM_HCAS";
 
 if [ $NUM_HCAS -ne 0 ]; then
     if [ $NUM_MEM_CON -ne 0 ]; then
         echo -e "PCI Device Check ....................... ${red}FAIL"
         tput sgr0
-        echo "    REASON: jumper set on HCA or HCA hardware failure"
+        echo "    REASON: jumper set on CA or CA hardware failure"
         EXIT_CODE=1
     else
         echo -e "PCI Device Check ....................... ${green}PASS"
@@ -120,7 +128,7 @@ if [ $NUM_HCAS -ne 0 ]; then
 else
     echo -e "PCI Device Check ....................... ${red}FAIL"
     tput sgr0
-    echo "    REASON: no HCAs in the system"
+    echo "    REASON: no CAs in the system"
     EXIT_CODE=1
     exit $EXIT_CODE
 fi
@@ -191,14 +199,41 @@ else
     fi
 fi
 
+function get_curr_ca_pci_info () {
+    loop_cnt=$1
 
+    if [ "${g_lspci_was_ran}" == "" ]; then
+        lspci 2> /dev/null | grep -E "(${MEL_LSPCI_NAME_EXP}|${MEM_CON_LSPCI_NAME}): Mellanox Technolog" > ${G_LSPCI_OUTPUT_FILE}
+        g_lspci_was_ran=1
+    fi
+    current_pci_info=$(cat ${G_LSPCI_OUTPUT_FILE} | head -$(expr $loop_cnt + 1) | tail -1)
+    echo ${current_pci_info}
+}
+
+function get_ca_type() {
+    loop_cnt=$1
+
+    current_pci_info=`get_curr_ca_pci_info $loop_cnt`
+
+    if [[ ${current_pci_info} =~ ${HCA_LSPCI_NAME} ]] || [[ ${current_pci_info} =~ ${MEM_CON_LSPCI_NAME} ]]; then
+        ca_type=HCA
+    elif [[ ${current_pci_info}  =~ ${VPI_LSPCI_NAME} ]]; then
+        ca_type=VPI
+    elif [[ ${current_pci_info}  =~ ${NIC_LSPCI_NAME} ]]; then
+        ca_type=NIC
+    else
+        ca_type="N/A"
+    fi
+    echo "${ca_type}"
+}
 #get the device ID
 function get_device_id {
     loop_cnt=$1
 
-    PCI_DEV=$(lspci 2> /dev/null | grep -E "(${MEL_LSPCI_NAME_EXP}|Memory controller): Mellanox Technolog" | head -$(expr $loop_cnt + 1) | tail -1 | awk '{print $1}')
-    HexDevice_ID=$(lspci -n -d "15b3:"  2> /dev/null | grep $PCI_DEV |  tail -1 | cut -d ":" -f4 | cut -d " " -f1)
+    current_pci_info=`get_curr_ca_pci_info $loop_cnt`
+    PCI_DEV=$(echo $current_pci_info | awk '{print $1}')
 
+    HexDevice_ID=$(lspci -n -d "15b3:"  2> /dev/null | grep $PCI_DEV |  tail -1 | cut -d ":" -f4 | cut -d " " -f1)
     if [ "$HexDevice_ID" != "" ]; then
         HexDevice_ID=0x$HexDevice_ID
         let "tmp=$HexDevice_ID"
@@ -227,7 +262,7 @@ function  get_hca_name {
         ret_val=$g_InfiniHost_III_Lx
     elif [ $dev_id -eq 23108 ]; then
         ret_val=$g_InfiniHost
-    else 
+    else
     	ret_val=$g_connectx
     fi
     echo $ret_val
@@ -283,7 +318,13 @@ function compare_fw  {
 
 
 # HCA firmware check
-
+echo_fw_check () {
+    LOOP_COUNT=$1
+    ca_type=$2
+    result=$3
+    echo -e "Firmware Check on CA #$LOOP_COUNT (${ca_type}) .......... ${result}"
+    tput sgr0
+}
 if [ $NUM_HCAS -ne 0 ]; then
     mlx_dev_num=0
     mthca_dev_num=0
@@ -292,6 +333,7 @@ if [ $NUM_HCAS -ne 0 ]; then
     # To take care of more than one HCA
     while [ $LOOP_COUNT -lt $NUM_HCAS ]
     do
+        ca_type=$(get_ca_type $LOOP_COUNT)
         if [ $RPM_USR_VER -ne 0 ] && [ $RPM_CUR_BOOTED_KER -ne 0 ]; then
 
             #default mthca0
@@ -300,7 +342,6 @@ if [ $NUM_HCAS -ne 0 ]; then
             ## get the Device Id
             PCI_DEVICE=$(lspci 2> /dev/null | grep Mellanox | head -$(expr $LOOP_COUNT + 1) | tail -1 | awk '{print $1}')
             Device_ID=$(get_device_id $LOOP_COUNT)
-
             if [ "$Device_ID" != "" ]; then
                 hca_name=$(get_hca_name $Device_ID)
                 if [ "$hca_name" != "" ]; then
@@ -334,36 +375,31 @@ if [ $NUM_HCAS -ne 0 ]; then
                         if [ -f "$INFINI_CLASS_PATH/$DRIVER_NEEDED$device_num/fw_ver" ]; then
                             FW_FOUND=v`cat $INFINI_CLASS_PATH/$DRIVER_NEEDED$device_num/fw_ver 2> /dev/null`
                         else
-                            echo -e "HCA Firmware Check ..................... ${red}FAIL"
-                            tput sgr0
-                            echo "    REASON:  HCA #$LOOP_COUNT: failed to get firmware version"
+                            echo_fw_check ${LOOP_COUNT} ${ca_type} "${red}FAIL"
+                            echo "    REASON: CA #$LOOP_COUNT: failed to get firmware version"
                             EXIT_CODE=1
                             no_firmware=1
                         fi
                     fi
 
                     if [ "$no_firmware" != "1" ]; then
-                        echo -e "HCA Firmware on HCA #$LOOP_COUNT ................. $FW_FOUND"
+                        echo -e "Firmware on CA #$LOOP_COUNT ${ca_type} .................. $FW_FOUND"
                         if [ "$FW_NEEDED" == "$legal" -a "$FW_NEEDED" != "" ]; then
                             if [ "$FW_FOUND" = "$FW_NEEDED" ]; then
-                                echo -e "HCA Firmware Check on HCA #$LOOP_COUNT ........... ${green}PASS"
-                                tput sgr0
+                                echo_fw_check ${LOOP_COUNT} ${ca_type} "${green}PASS"
                             else
                                 newest=$(compare_fw $FW_FOUND $FW_NEEDED)
                                 if [ "$newest" = "found" ]; then
-                                    echo -e "HCA Firmware Check on HCA #$LOOP_COUNT ........... ${green}PASS"
-                                    tput sgr0
+                                    echo_fw_check ${LOOP_COUNT} ${ca_type} "${green}PASS"
                                     echo "    NOTE: The found fw version is higher than the fw included in this package ($FW_NEEDED)"
                                 else
-                                    echo -e "HCA Firmware Check ..................... ${red}FAIL"
-                                    tput sgr0
-                                    echo "    REASON: mismatch HCA #$LOOP_COUNT firmware detected (found $FW_FOUND, required $FW_NEEDED)"
+                                    echo_fw_check ${LOOP_COUNT} ${ca_type} "${red}FAIL"
+                                    echo "    REASON: mismatch CA #$LOOP_COUNT firmware detected (found $FW_FOUND, required $FW_NEEDED)"
                                     EXIT_CODE=1
                                 fi
                             fi
                         else
-                            echo -e "HCA Firmware Check for HCA #$LOOP_COUNT .......... NA"
-
+                            echo_fw_check ${LOOP_COUNT} ${ca_type} "NA"
                             if [ "$FW_NEEDED" == "" ]; then
                                 echo "    REASON: NO required fw version"
                             else
@@ -372,23 +408,20 @@ if [ $NUM_HCAS -ne 0 ]; then
                         fi
                     fi
                 else
-                    echo -e "HCA Firmware Check for HCA #$LOOP_COUNT .......... NA"  #couldnt find hca
+                    echo_fw_check ${LOOP_COUNT} ${ca_type} "NA"
                 fi
             else
-                echo -e "HCA Firmware Check for HCA #$LOOP_COUNT .......... NA"   # couldn't find ID
+                echo_fw_check ${LOOP_COUNT} ${ca_type} "NA"
             fi
         else
-            echo -e "HCA Firmware Check for HCA #$LOOP_COUNT .......... NA"   #prm ??
+            echo_fw_check ${LOOP_COUNT} ${ca_type} "NA"
         fi
         let "LOOP_COUNT=$LOOP_COUNT + 1"
     done
 else
-    echo -e "HCA Firmware Check ..................... ${red}FAIL"
-    tput sgr0
-    echo "    REASON: no HCAs in the system"
-
+    echo_fw_check ${LOOP_COUNT} ${ca_type} "${red}FAIL"
+    echo "    REASON: no CAs in the system"
     EXIT_CODE=1
-
 fi
 
 # Check host driver initialization
@@ -432,7 +465,47 @@ else
     EXIT_CODE=1
 fi
 
+function get_link_layer() {
+    device_name=$1
+    port_num=$2
+    link_layer_file=$INFINI_CLASS_PATH/${device_name}/ports/${port_num}/link_layer
+    # Default value
+    link_layer=IB
+    if [ -f ${link_layer_file} ]; then
+        link_layer=`cat $link_layer_file 2> /dev/null`
+    fi
+    echo ${link_layer}
+}
 
+function report_port_state() {
+    port_num=$1;
+    LOOP_COUNT=$2
+    device_name=$3
+    ca_type=$4
+
+    port_dir=$INFINI_CLASS_PATH/${device_name}/ports/${port_num}
+    port_state_file=${port_dir}/state
+    port_rate_file=${port_dir}/rate
+
+if [ -f ${port_state_file} ]; then
+    PORT_STATE=`awk -F: '{print $2}' ${port_state_file} 2> /dev/null`
+    link_layer=`get_link_layer ${device_name} ${port_num}`
+
+    if [ $PORT_STATE = "ACTIVE" ]; then
+        PORT_SPEED=`awk -F\( '{print $2}' ${port_rate_file} 2> /dev/null | sed 's/)//'`
+        state="${green}UP $PORT_SPEED"
+    else
+        if [ $PORT_STATE = "INIT" ]; then
+            state="${cyan}DOWN"
+        else
+            state="${red}DOWN"
+        fi
+    fi
+    echo -e "Port State of Port #${port} on CA #$LOOP_COUNT (${ca_type})..... ${state} (${link_layer})"
+    tput sgr0
+fi
+
+}
 
 # Port info
 if [ $HOST_DRIVER_INIT -eq 1 ]; then
@@ -448,7 +521,7 @@ if [ $HOST_DRIVER_INIT -eq 1 ]; then
     while [ $LOOP_COUNT -lt $NUM_HCAS_PROC ]
     do
         driver_need=$(get_driver $LOOP_COUNT)
-        if [ "$driver_need" != "" ]; then
+         if [ "$driver_need" != "" ]; then
              if [ "$driver_need" == "$HERMON_DRIVER_NEEDED" ]; then
                   device_num=$mlx_dev_num
                   let "mlx_dev_num=$mlx_dev_num + 1"
@@ -456,6 +529,7 @@ if [ $HOST_DRIVER_INIT -eq 1 ]; then
                   device_num=$mthca_dev_num
                   let "mthca_dev_num=$mthca_dev_num + 1"
              fi
+
              if [ -f $INFINI_CLASS_PATH/$driver_need$device_num/ports/1/state ]; then
                 let "NUM_PORT_ACTIVE+=`grep ACTIVE $INFINI_CLASS_PATH/$driver_need$device_num/ports/1/state 2> /dev/null | wc -l`"
              fi
@@ -466,7 +540,7 @@ if [ $HOST_DRIVER_INIT -eq 1 ]; then
 
         let "LOOP_COUNT=$LOOP_COUNT + 1"
     done
-    echo "Number of HCA Ports Active ............. $NUM_PORT_ACTIVE"
+    echo "Number of CA Ports Active .............. $NUM_PORT_ACTIVE"
 
 
     # Get each port state
@@ -478,58 +552,36 @@ if [ $HOST_DRIVER_INIT -eq 1 ]; then
     do
 
         driver_need=$(get_driver $LOOP_COUNT)
+        ca_type=$(get_ca_type $LOOP_COUNT)
         if [ "$driver_need" != "" ]; then
-             if [ "$driver_need" == "$HERMON_DRIVER_NEEDED" ]; then
-                  device_num=$mlx_dev_num
-                  let "mlx_dev_num=$mlx_dev_num + 1"
-              else
-                  device_num=$mthca_dev_num
-                  let "mthca_dev_num=$mthca_dev_num + 1"
-             fi
-
-             if [ -f $INFINI_CLASS_PATH/$driver_need$device_num/ports/1/state ]; then
-                PORT_1_STATE=`awk -F: '{print $2}' $INFINI_CLASS_PATH/$driver_need$device_num/ports/1/state 2> /dev/null`
-                if [ $PORT_1_STATE = "ACTIVE" ]; then
-                    PORT_SPEED=`awk -F\( '{print $2}' $INFINI_CLASS_PATH/$driver_need$device_num/ports/1/rate 2> /dev/null | sed 's/)//'`
-                    echo -e "Port State of Port #1 on HCA #$LOOP_COUNT ........ ${green}UP $PORT_SPEED"
-                    tput sgr0
-                else
-                   if [ $PORT_1_STATE = "INIT" ]; then
-                      echo -e "Port State of Port #1 on HCA #$LOOP_COUNT ........ ${cyan}INIT"
-                   else
-                      echo -e "Port State of Port #1 on HCA #$LOOP_COUNT ........ ${red}DOWN"
-                   fi
-                   tput sgr0
-                fi
-             fi
-
-             if [ -f $INFINI_CLASS_PATH/$driver_need$device_num/ports/2/state ]; then
-                PORT_2_STATE=`awk -F: '{print $2}' $INFINI_CLASS_PATH/$driver_need$device_num/ports/2/state 2> /dev/null`
-                if [ $PORT_2_STATE = "ACTIVE" ]; then
-                    PORT_SPEED=`awk -F\( '{print $2}' $INFINI_CLASS_PATH/$driver_need$device_num/ports/2/rate 2> /dev/null | sed 's/)//'`
-                    echo -e "Port State of Port #2 on HCA #$LOOP_COUNT ........ ${green}UP $PORT_SPEED"
-                    tput sgr0
-                else
-
-                    if [ $PORT_2_STATE = "INIT" ]; then
-                       echo -e "Port State of Port #2 on HCA #$LOOP_COUNT ........ ${cyan}INIT"
-                    else
-                       echo -e "Port State of Port #2 on HCA #$LOOP_COUNT ........ ${red}DOWN"
-                    fi
-                    tput sgr0
-                fi
-             fi
+            if [ "$driver_need" == "$HERMON_DRIVER_NEEDED" ]; then
+                device_num=$mlx_dev_num
+                let "mlx_dev_num=$mlx_dev_num + 1"
+            else
+                device_num=$mthca_dev_num
+                let "mthca_dev_num=$mthca_dev_num + 1"
+            fi
+            device_name=${driver_need}${device_num}
+            report_port_state 1 ${LOOP_COUNT} ${device_name} ${ca_type}
+            report_port_state 2 ${LOOP_COUNT} ${device_name} ${ca_type}
         fi
         let "LOOP_COUNT=$LOOP_COUNT + 1"
     done
 else
-    echo "Number of HCA Ports Active ............. NA"
+    echo "Number of CA Ports Active .............. NA"
 fi
 
 # -D-
 
 # Error counters check
 
+echo_error_cnt () {
+    LOOP_COUNT=$1
+    ca_type=$2
+    result=$3
+    echo -e "Error Counter Check on CA #$LOOP_COUNT (${ca_type})...... ${result}"
+    tput sgr0
+}
 if [ $HOST_DRIVER_INIT -eq 1 ]; then
 
     mlx_dev_num=0
@@ -538,6 +590,7 @@ if [ $HOST_DRIVER_INIT -eq 1 ]; then
     while [ $LOOP_COUNT -lt $NUM_HCAS_PROC ]; do
 
         driver_need=$(get_driver $LOOP_COUNT)
+        ca_type=$(get_ca_type $LOOP_COUNT)
         if [ "$driver_need" != "" ]; then
             check_port1=1
             check_port2=1
@@ -601,8 +654,7 @@ if [ $HOST_DRIVER_INIT -eq 1 ]; then
             let "ERROR_COUNTER=$ERROR_COUNTER_PORT_1 + $ERROR_COUNTER_PORT_2"
             # Print FAIL only once
             if [ $ERROR_COUNTER -ne 0 ] && [ $ERROR_COUNTER_PRINT -ne 1 ]; then
-                echo -e "Error Counter Check on HCA #$LOOP_COUNT .......... ${red}FAIL"
-                tput sgr0
+                echo_error_cnt ${LOOP_COUNT} ${ca_type} "${red}FAIL"
                 echo "    REASON: found errors in the following counters"
                 ERROR_COUNTER_PRINT=1
                 EXIT_CODE=1
@@ -650,8 +702,7 @@ if [ $HOST_DRIVER_INIT -eq 1 ]; then
                 if [ $check_port1 -ne 1 ] && [ $check_port2 -ne 1 ]; then
                     result="NA (Eth ports)"
                 fi
-                echo -e "Error Counter Check on HCA #$LOOP_COUNT .......... $result"
-                tput sgr0
+                echo_error_cnt "${LOOP_COUNT}" "${ca_type}" "${result}"
             fi
 
             # Reset these variables for other HCAs
@@ -660,10 +711,8 @@ if [ $HOST_DRIVER_INIT -eq 1 ]; then
 
 
         else
-            echo "Error Counter Check on HCA #$LOOP_COUNT .......... NA"
+            echo_error_cnt ${LOOP_COUNT} ${ca_type} "NA"
         fi
-
-
         let "LOOP_COUNT=$LOOP_COUNT + 1"
     done
 
@@ -716,33 +765,30 @@ if [ $NUM_HCAS -ne 0 ]; then
     while [ $LOOP_COUNT -lt $NUM_HCAS ]
     do
         driver_need=$(get_driver $LOOP_COUNT)
+        ca_type=$(get_ca_type $LOOP_COUNT)
+
+        NODE_GUID="NA"
         if [ "$driver_need" != "" ]; then
-             if [ "$driver_need" == "$HERMON_DRIVER_NEEDED" ]; then
-                  device_num=$mlx_dev_num
-                  let "mlx_dev_num=$mlx_dev_num + 1"
-              else
-                  device_num=$mthca_dev_num
-                  let "mthca_dev_num=$mthca_dev_num + 1"
-             fi
+            if [ "$driver_need" == "$HERMON_DRIVER_NEEDED" ]; then
+                device_num=${mlx_dev_num}
+                let "mlx_dev_num=$mlx_dev_num + 1"
+            else
+                device_num=${mthca_dev_num}
+                let "mthca_dev_num=$mthca_dev_num + 1"
+            fi
 
-             if [ -f "$INFINI_CLASS_PATH/$driver_need$device_num/node_guid" ]; then
-                 NODE_GUID=$(sed 's/\([0-9a-f]\)\([0-9a-f]\)\([0-9a-f]\)\([0-9a-f]\)/\1\2:\3\4/g' < $INFINI_CLASS_PATH/$driver_need$device_num/node_guid)
-                 echo -e "Node GUID on HCA #$LOOP_COUNT .................... $NODE_GUID"
-             else
-                 PCI_DEVICE=$(lspci 2> /dev/null | grep Mellanox | head -$(expr $LOOP_COUNT + 1) | tail -1 | awk '{print $1}')
-                 NODE_GUID=$(mstflint -d $PCI_DEVICE q 2> /dev/null | grep "GUIDs:" | awk '{print $2}' | sed 's/\([0-9a-f]\)\([0-9a-f]\)\([0-9a-f]\)\([0-9a-f]\)/\1\2:\3\4:/g' | cut -b -23)
+            if [ -f "$INFINI_CLASS_PATH/$driver_need$device_num/node_guid" ]; then
+                NODE_GUID=$(sed 's/\([0-9a-f]\)\([0-9a-f]\)\([0-9a-f]\)\([0-9a-f]\)/\1\2:\3\4/g' < $INFINI_CLASS_PATH/$driver_need$device_num/node_guid)
+            else
+                PCI_DEVICE=$(lspci 2> /dev/null | grep Mellanox | head -$(expr $LOOP_COUNT + 1) | tail -1 | awk '{print $1}')
+                NODE_GUID1=$(mstflint -d $PCI_DEVICE q 2> /dev/null | grep "GUIDs:" | awk '{print $2}' | sed 's/\([0-9a-f]\)\([0-9a-f]\)\([0-9a-f]\)\([0-9a-f]\)/\1\2:\3\4:/g' | cut -b -23)
 
-                 if [ "$NODE_GUID" != "" ]; then
-                     echo -e "Node GUID on HCA #$LOOP_COUNT .................... $NODE_GUID"
-                 else
-                     echo -e "Node GUID on HCA #$LOOP_COUNT .................... NA"
-                 fi
-             fi
-
-        else
-            echo "Node GUID on HCA #$LOOP_COUNT .................... NA"
+                if [ "$NODE_GUID1" != "" ]; then
+                    NODE_GUID=${NODE_GUID}
+                fi
+            fi
         fi
-
+        echo "Node GUID on CA #$LOOP_COUNT (${ca_type}) ............... ${NODE_GUID}"
         let "LOOP_COUNT=$LOOP_COUNT + 1"
      done
 
@@ -751,4 +797,5 @@ echo "------------------ DONE ---------------------"
 echo
 #rm -f /tmp/hca_self_test_modprobe.output
 rm -f /tmp/hca_self_test_dmesg.output
+rm -f ${G_LSPCI_OUTPUT_FILE}
 exit $EXIT_CODE
