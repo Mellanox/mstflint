@@ -32,7 +32,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- *  Version: $Id: flint.cpp 6378 2010-12-05 15:25:26Z mohammad $
+ *  Version: $Id: flint.cpp 6984 2011-05-02 12:21:00Z mohammad $
  *
  */
 
@@ -287,6 +287,7 @@ static inline void cpu_to_be_guid(guid_t* to, guid_t* from) {
 #define FLINT_LOG_ENV    "FLINT_LOG_FILE"
 #define FLINT_IGNORE_TTY "FLINT_IGNORE_TTY"
 #define FS_DATA_OFF      0x28
+#define SWITCHX_HW_ID    581
 
 class ErrMsg {
 public:
@@ -796,7 +797,8 @@ public:
                                 bool force_lock  = false,
                                 bool read_only   = false,
                                 int num_of_banks = 4,
-                                flash_params_t *flash_params = NULL);
+                                flash_params_t *flash_params = NULL,
+                                int ignoe_cache_replacement = 0);
 
     virtual void close         ();
 
@@ -1007,13 +1009,14 @@ bool Flash::_byte_mode = false;
 bool Flash::_no_flash_verify = false;
 
 ////////////////////////////////////////////////////////////////////////
-bool Flash::open(const char *device, bool force_lock, bool read_only, int num_of_banks, flash_params_t *flash_params)
+bool Flash::open(const char *device, bool force_lock, bool read_only, int num_of_banks, flash_params_t *flash_params,
+        int ignore_cashe_replacement)
 {
     // Open device
     int rc;
     read_only = false;
 
-    rc = mf_open(&_mfl, device, num_of_banks, flash_params);
+    rc = mf_open(&_mfl, device, num_of_banks, flash_params, ignore_cashe_replacement);
 
     if ((rc == MFE_SEM_LOCKED) && force_lock) {
         report("Warning: Taking flash lock even though semaphore is set.\n");
@@ -1032,7 +1035,7 @@ bool Flash::open(const char *device, bool force_lock, bool read_only, int num_of
         return errmsg("Failed getting flash attributes for device %s: %s", device,  mf_err2str(rc));
     }
 
-    if (_attr.hw_dev_id == 435) {
+    if (_attr.hw_dev_id == 435 || _attr.hw_dev_id == SWITCHX_HW_ID) {
         _port_num = 0;
     } else if (_attr.hw_dev_id == 25204 || _attr.hw_dev_id == 24204) {
         _port_num = 1;
@@ -1263,7 +1266,7 @@ bool Flash::erase_sector  (u_int32_t addr) {
 }
 
 bool Flash::sw_reset() {
-    if (_attr.hw_dev_id != 435) {
+    if (_attr.hw_dev_id != 435 || _attr.hw_dev_id == SWITCHX_HW_ID) {
         return errmsg("operation supported only for InfiniScale4 switch over IB interface");
     }
     int rc = mf_sw_reset(_mfl);
@@ -1429,6 +1432,7 @@ CommandType ParseCommand(const char* cmd) {
 ////////////////////////////////////////////////////////////////////////
 #define FULL_VERIFY      0xff
 #define FREE_STR_MAX_LEN 256
+#define MAX_ROM_ERR_MSG_LEN 256
 class Operations : public ErrMsg {
 public:
     Operations() :
@@ -1534,6 +1538,7 @@ public:
 
     bool DumpConf        (const char* conf_file = NULL, SectionType sect_type = H_FW_CONF);
     bool GetExpRomVersion(ImageInfo* info);
+    bool GetExpRomVersionWrapper(ImageInfo* info);
 
     bool DisplayExpRomInfo(ImageInfo* info, bool print_pre = true);
     bool DisplayImageInfo (ImageInfo* info, bool full_query = false);
@@ -1674,6 +1679,11 @@ public:
         (devid == 6100); // HACK
     }
 
+    bool IsSX           (u_int32_t devid)     {
+        return(devid == SWITCHX_HW_ID) ||
+        (devid == 51000);
+    }
+
     bool IsBridgeX(u_int32_t devid) {
         return (devid ==  6100) ||
                (devid == 64102) ||
@@ -1770,6 +1780,10 @@ public:
         u_int8_t     expRomPort;
         u_int8_t     expRomProto;
         char         expRomFreestr[FREE_STR_MAX_LEN];
+        bool         expRomWarning;
+        char         expRomWarningMsg[MAX_ROM_ERR_MSG_LEN];
+        bool         expRomErrMsgValid;
+        char         expRomErrMsg[MAX_ROM_ERR_MSG_LEN];
 
         bool         magicPatternFound;
         std::vector<u_int8_t>  _rom_sect;
@@ -1799,7 +1813,8 @@ public:
     }
 
     enum {
-        CNTX_START_POS_SIZE = 6
+        OLD_CNTX_START_POS_SIZE = 6,
+        CNTX_START_POS_SIZE = 7
     };
 
     static const u_int32_t _cntx_image_start_pos[CNTX_START_POS_SIZE];
@@ -1892,9 +1907,10 @@ const u_int32_t Operations::_cntx_image_start_pos[Operations::CNTX_START_POS_SIZ
     0x20000,
     0x40000,
     0x80000,
-    0x100000
+    0x100000,
+    0x200000
 };
-
+#define CX3_HW_ID 501
 const Operations::HwDevData Operations::hwDevData[] = {
     { "InfiniHost",        23108, 2, {23108, 0}},
     { "InfiniHost III Ex", 25208, 2, {25208, 25218, 0}},
@@ -1902,13 +1918,14 @@ const Operations::HwDevData Operations::hwDevData[] = {
     { "ConnectX",            400, 2, {25408, 25418, 26418, 26438,
                                       26428, 25448, 26448, 26468,
                                       25458, 26458, 26478, 26488,
-                                      4097, 4098, 4099, 4100,
+                                      4097, 4098, 4100,
                                       4101, 4102, 4103, 4104,
                                       4105, 4106, 4107, 4108,
                                       4109, 4110, 4111, 4112, 0}},
-
+    { "ConnectX3",        CX3_HW_ID, 2, {4099}},
     { "InfiniScale IV",   435,  0, {48436, 48437, 48438, 0}},
     { "BridgeX",          6100, 0, {64102, 64112, 64122, 0}},
+    { "SwitchX",          SWITCHX_HW_ID,  0, {51000, 0}},
     { NULL ,              0, 0, {0}},// zero devid terminator
 };
 
@@ -2734,10 +2751,21 @@ bool Operations::CntxFindMagicPattern       (FBase& f,  u_int32_t addr) {
 // OUT: found_images:    Number of found images (and number of valid entries in the start_locations array).
 bool Operations::CntxFindAllImageStart       (FBase& f,  u_int32_t start_locations[CNTX_START_POS_SIZE], u_int32_t* found_images) {
     int i;
-    f.set_address_convertor(0,0);
+    int needed_pos_num;
 
+    needed_pos_num = CNTX_START_POS_SIZE;
+
+    if (f.is_flash()) {
+        if ( (((Flash*)&f)->get_dev_id() == 400) ||
+             (((Flash*)&f)->get_dev_id() == 435) ||
+             (((Flash*)&f)->get_dev_id() == 6100)) {
+            needed_pos_num = OLD_CNTX_START_POS_SIZE;
+        }
+    }
+
+    f.set_address_convertor(0,0);
     *found_images = 0;
-    for (i = 0; i < CNTX_START_POS_SIZE; i++) {
+    for (i = 0; i < needed_pos_num; i++) {
         if (CntxFindMagicPattern(f, _cntx_image_start_pos[i])) {
             start_locations[*found_images] = _cntx_image_start_pos[i];
             (*found_images)++;
@@ -3018,8 +3046,10 @@ bool Operations::checkList(FBase& f, u_int32_t offs, u_int32_t fw_start, const c
 
 bool Operations::CheckIsFs2(FBase& f) {
     if (f.is_flash()) {
-        return  ( ((Flash*)&f)->get_dev_id() == 400) ||
-                ( ((Flash*)&f)->get_dev_id() == 435) ||
+        return  ( ((Flash*)&f)->get_dev_id() == 400)           ||
+                ( ((Flash*)&f)->get_dev_id() == 435)           ||
+                ( ((Flash*)&f)->get_dev_id() == CX3_HW_ID)     ||
+                ( ((Flash*)&f)->get_dev_id() == SWITCHX_HW_ID) ||
                 ( ((Flash*)&f)->get_dev_id() == 6100)
                 ;
     } else {
@@ -3149,6 +3179,7 @@ bool Operations::CheckMatchingExpRomDevId(Operations::ImageInfo* info) {
         info->expRomValidVersion       &&
         info->expRomProductId  >= 0x10 &&
         info->infoOffs[II_DeviceType]  &&
+        info->expRomDevId != 0         &&
         info->devType != info->expRomDevId) {
             return errmsg("FW is for device %d, but Exp-ROM is for device %d",
                           info->devType,
@@ -3500,6 +3531,13 @@ bool Operations::Verify(FBase& f, Operations::ImageInfo* info, bool both_images)
 
     return ret;
 } // Verify
+bool Operations::GetExpRomVersionWrapper(ImageInfo* info) {
+    if (!GetExpRomVersion(info)) {
+        snprintf(info->expRomErrMsg, MAX_ROM_ERR_MSG_LEN, err());
+        info->expRomErrMsgValid = true;
+    }
+    return true;
+}
 
 bool Operations::GetExpRomVersion(ImageInfo* info) {
     const char* magic_string = "mlxsign:";
@@ -3507,10 +3545,13 @@ bool Operations::GetExpRomVersion(ImageInfo* info) {
     u_int32_t   i;
     bool        magic_found  = false;
     u_int32_t   ver_offset;
-    u_int8_t    rom_checksum = 0;
     u_int32_t   rom_checksum_range;
 
+    // Init some
     info->expRomValidVersion = false;
+    info->expRomWarning      = false;
+    info->expRomErrMsgValid  = false;
+
     if (info->_rom_sect.empty()) {
         return errmsg("Expansion Rom section not found.");
     }
@@ -3527,23 +3568,10 @@ bool Operations::GetExpRomVersion(ImageInfo* info) {
 
     // restore endianess.
     TOCPUn(&(info->_rom_sect[0]), info->_rom_sect.size()/4);
-
-    rom_checksum_range = info->_rom_sect[2] * 512 ;
-    if (rom_checksum_range > info->_rom_sect.size()) {
-        return errmsg("ROM size field (0x%2x) is larger than actual ROM size (0x%x)",
-                      rom_checksum_range ,
-                      (u_int32_t)info->_rom_sect.size());
-    } else if (rom_checksum_range == 0) {
-        return errmsg("ROM size field is 0. Unknown ROM format or corrupted ROM.");
-    }
-
-    for (i = 0; i < rom_checksum_range; i++) {
-        rom_checksum += info->_rom_sect[i];
-    }
-
-    if (rom_checksum != 0) {
-        return errmsg("Bad ROM Checksum (0x%02x)", rom_checksum);
-    }
+/*  // FOR WE DON'T CHECKSUM UNTIL WE DECIDED REGARDING THE NEW FORMAT.
+*/
+    // We will look for the magic string in whole ROM instead of the first part of it.
+    rom_checksum_range = info->_rom_sect.size();
 
     for (i = 0 ; i < rom_checksum_range; i++) {
         for (u_int32_t j = 0; j < magic_len; j++) {
@@ -3562,7 +3590,7 @@ bool Operations::GetExpRomVersion(ImageInfo* info) {
     if (magic_found) {
         ver_offset = i + magic_len;
     } else {
-        return errmsg("Mellanox version string (%s) not found in ROM section.", magic_string);
+        return errmsg("Cannot get ROM version. Signature not found.");
     }
 
     // Following mlxsign:
@@ -3586,10 +3614,34 @@ bool Operations::GetExpRomVersion(ImageInfo* info) {
     //  0:7     Protocol type: 0=IB 1=ETH 2=VPI
 
     u_int32_t tmp;
-
+    // Get expansion rom product ID
     tmp = __le32_to_cpu(*((u_int32_t*) &info->_rom_sect[ver_offset]));
     info->expRomProductId = tmp >> 16;
     info->expRomVer[0]    = tmp & 0xffff;
+
+    // Check sum for expansion ROM
+    if (info->expRomProductId != 0x11) { // No need for checksum on UEFI
+        u_int8_t    rom_checksum = 0;
+        rom_checksum_range = info->_rom_sect[2] * 512 ;
+        if (rom_checksum_range > info->_rom_sect.size()) {
+            return errmsg("ROM size field (0x%2x) is larger than actual ROM size (0x%x)",
+                          rom_checksum_range ,
+                          (u_int32_t)info->_rom_sect.size());
+        } else if (rom_checksum_range == 0) {
+            return errmsg("ROM size field is 0. Unknown ROM format or corrupted ROM.");
+        }
+
+        for (i = 0; i < rom_checksum_range; i++) {
+            rom_checksum += info->_rom_sect[i];
+        }
+
+        if (rom_checksum != 0) {
+            info->expRomWarning = true;
+            snprintf(info->expRomWarningMsg, MAX_ROM_ERR_MSG_LEN,
+                    "Bad ROM Checksum (0x%02x), ROM info may not be displayed correctly.", rom_checksum);
+        }
+    }
+
     if (info->expRomProductId >= 0x10) {
         tmp = __le32_to_cpu(*((u_int32_t*) &info->_rom_sect[ver_offset + 4]));
         info->expRomVer[1] = tmp >> 16;
@@ -3630,8 +3682,10 @@ bool Operations::GetExpRomVersion(ImageInfo* info) {
         u_int32_t vendor_id = u_int32_t(tmp_ba.range(15, 0));
 
         if ( vendor_id != MELLANOX_VENDOR_ID) {
-            report_warn("The Exp-ROM PCI vendor ID: %#x does not match the expected value: %#x.\n", vendor_id,
-                           MELLANOX_VENDOR_ID);
+            info->expRomWarning = true;
+            snprintf(info->expRomWarningMsg, MAX_ROM_ERR_MSG_LEN,
+                    "The Exp-ROM PCI vendor ID: %#x does not match the expected value: %#x.", vendor_id,
+                                               MELLANOX_VENDOR_ID);
         }
 
 
@@ -4162,6 +4216,9 @@ void Operations::SetDevFlags(u_int16_t devType, bool& ib_dev, bool& eth_dev) {
     if (IsIs4(devType)) {
         ib_dev = true;
         eth_dev = false;
+    } else if (IsSX(devType)) {
+        ib_dev = true;
+        eth_dev = true;
     } else {
         ib_dev  = !IsFs2() || CntxIsIb(devType);
         eth_dev = IsFs2()  && CntxIsEth(devType);
@@ -4598,10 +4655,9 @@ bool Operations::QueryImage (FBase& f,
         info->expRomFound = false;
     } else {
         info->expRomFound = true;
-        if (!GetExpRomVersion(info)) {
-            report_warn("Failed to get ROM Version: %s\n\n", err());
-            info->expRomValidVersion = false;
-        }
+        // There is no check for the return value of this function because it's a wrapper that always succeeds,
+        // but fills the error string when there is an error
+        GetExpRomVersionWrapper(info);
     }
 
     // Read Info:
@@ -4803,18 +4859,22 @@ bool Operations::DisplayExpRomInfo(Operations::ImageInfo* info, bool print_pre) 
             case 3   : report("CLP3 "); break;
             case 4   : report("CLP4 "); break;
             case 0x10: report("PXE  "); break;
-            default:   report("0x%x ", info->expRomProductId);
+            case 0x11: report("UEFI "); break;
+            default:   report("0x%x - Unknown ROM product ID\n", info->expRomProductId); return true;
             }
 
             report("version=%d", info->expRomVer[0]);
             if (info->expRomProductId >= 0x10) {
-                report(".%d.%d devid=%d",
+                report(".%d.%d",
                        info->expRomVer[1],
-                       info->expRomVer[2],
-                       info->expRomDevId);
+                       info->expRomVer[2]);
 
+                if (info->expRomDevId) {
+                    // Do not display if 0 - ROM is the same for all device IDs
+                    report(" devid=%d", info->expRomDevId);
+                }
                 if (info->expRomPort) {
-                    // Do not display if 0 - port independant
+                    // Do not display if 0 - port independent
                     report(" port=%d", info->expRomPort);
                 }
 
@@ -4827,9 +4887,16 @@ bool Operations::DisplayExpRomInfo(Operations::ImageInfo* info, bool print_pre) 
                 }
             }
         }
+        if (info->expRomWarning) {
+            report(" (-W- %s)", info->expRomWarningMsg);
+        }
         report("\n");
     } else {
-        report("N/A\n");
+        report("N/A");
+        if (info->expRomErrMsgValid) {
+            report(" (-E- %s)", info->expRomErrMsg);
+        }
+        report("\n");
     }
     return true;
 }
@@ -4942,7 +5009,7 @@ bool Operations::DisplayImageInfo(Operations::ImageInfo* info, bool full_query) 
         report("Device ID:       %d\n", info->devType);
         if (info->devType == 25204 || info->devType == 24204) {
             _num_ports = 1;
-        } else if (IsIs4(info->devType)) {
+        } else if (IsIs4(info->devType) || IsSX(info->devType)) {
             _num_ports = 0;
         }
     }
@@ -4996,16 +5063,22 @@ bool Operations::DisplayImageInfo(Operations::ImageInfo* info, bool full_query) 
                 }
                 report(GUID_FORMAT " ", info->guids[i].h, info->guids[i].l);
             }
-            mac_indent = "                 ";
+            if (_num_ports > 0) {
+                mac_indent = "                 ";
+            }
         }
 
         // MACS:
         if (eth_dev) {
             if (info->guidNum == 6) {
-                if (!ib_dev)
+                if (!ib_dev) {
                     report("Description:%s     Port1            Port2\n", mac_indent);
-                else
+                } else if (IsSX(info->devType)) {
+                    report("\nDescription:     Base            Switch\n");
+                } else {
                     printf("\n");
+                }
+
 
                 report("MACs:    %s       ", mac_indent);
                 for (u_int32_t i=GUIDS; i < 6; i++) {
@@ -5180,6 +5253,11 @@ void usage(const char *sname, bool full = false)
     "    -allow_psid_change - Allow burning a FW image with a different PSID (Parameter Set ID)than the\n"
     "                         one currently on flash. Note that changing a PSID may cause the device to\n"
     "                         malfunction. Use only if you know what you are doing\n"
+    "\n"
+    "    -override_cache_replacement\n"
+    "                       - Allow Accessing the flash even if the cache replacement mode is enabled.\n"
+    "                         NOTE: This flag is intended for advanced users usage.\n"
+    "                               Running in this mode may cause the firmware to hang.\n"
     "\n"
     "    -skip_is           - Allow burning the FW image without updating the invariant sector,\n"
     "                         to ensure failsafe burning even when an invariant sector difference is detected.\n"
@@ -6239,6 +6317,7 @@ int main(int ac, char *av[])
     guid_t       base_guid;
     int          rc = 0;
     int          num_of_banks = 0;
+    int          ignoreCasheRepGuard = 0;
 
     flash_params_t flash_params;
     flash_params_t *flash_params_p = NULL;
@@ -6297,7 +6376,7 @@ int main(int ac, char *av[])
                 device = av[i];
 
             } else if (!strcmp(av[i], "-v") || !strcmp(av[i], "-vv")) {
-                 print_version_string("mstflint", "");
+                 print_version_string("flint", "");
                 rc =  0; goto done;
             } else if (!strcmp(av[i], "-unlock")) {
                 _unlock_bypass = true;
@@ -6440,9 +6519,9 @@ int main(int ac, char *av[])
                 Flash::_no_flash_verify = true;
             else if (!strcmp(av[i], "-allow_psid_change"))
                  allowPsidChange = true;
-
-
-            else if (!strncmp(av[i], "-hh", 3) ||  !strncmp(av[i], "--hh", 4)) {
+            else if (!strcmp(av[i], "-override_cache_replacement")) {
+                ignoreCasheRepGuard = 1;
+            } else if (!strncmp(av[i], "-hh", 3) ||  !strncmp(av[i], "--hh", 4)) {
                 usage(av[0], true);
                 rc =  0; goto done;
             } else if (!strncmp(av[i], "-help", switchLen) ||  !strncmp(av[i], "--h", 3)) {
@@ -6519,9 +6598,17 @@ int main(int ac, char *av[])
             report_err(ops._err_msg, "Memory allocation failed\n");
             rc =  1; goto done;
         }
+        if (ignoreCasheRepGuard) {
+            report_warn("Firmware flash cache access is enabled. Running in this mode may cause the firmware to hang.");
+            /*
+            if (!ops.ask_user()) {
+                rc = 1; goto done;
+            }
+            */
+        }
 
         g_flash = f.get();
-        if (!f->open(device, clear_semaphore, false, num_of_banks, flash_params_p)) {
+        if (!f->open(device, clear_semaphore, false, num_of_banks, flash_params_p, ignoreCasheRepGuard)) {
             report_err(ops._err_msg, "Can not open %s: %s\n", device, f->err());
             rc =  1; goto done;
         }
@@ -7305,7 +7392,7 @@ int main(int ac, char *av[])
                 }
                 if (image_fname == NULL) {
                     // 2- FS2 device with no blank Guids
-                    report_warn("GUIDs are already set, re-burining image with the new GUIDs ...");
+                    report_warn("GUIDs are already set, re-burning image with the new GUIDs ...");
                 }
                 if (!ops.ModifyGuidSection(fbase, &info, user_guids, image_fname, silent)) {
                     report_err(ops._err_msg, "GUIDs set failed: %s\n", ops.err());

@@ -200,6 +200,10 @@ struct mflash {
 #define CPUMODE_SHIFT  30
 #define CPUMODE        0xf0150
 
+#define SWITCHX_HW_ID 0x245
+#define HERMON_HW_ID  0x190
+#define CX3_HW_ID     0x1F5
+
 enum FlashConstant {
     FLASH_CMD_CNT  = 5000,      // Number of reads till flash cmd is zeroed
     ERASE_DELAY    = 200000,    // Delay between reads when wating for sector erase
@@ -1209,7 +1213,7 @@ int cntx_get_flash_info(mflash* mfl, int bank_num, unsigned *type_index, int *lo
     *no_flash = 0;
 
     rc = cntx_spi_get_type(mfl, SFC_JEDEC, &vendor, &type, &capacity); CHECK_RC(rc);
-    // printf("-D- vendor = %#x, type = %#x, capacity = %#x, rc1 = %d.\n", vendor, type, capacity, rc);
+    //printf("-D- vendor = %#x, type = %#x, capacity = %#x, rc1 = %d.\n", vendor, type, capacity, rc);
     no_flash_rdid = is_no_flash_detected(type, vendor, capacity);
 
     if (get_type_index_by_vendor_and_type(vendor, type, type_index) == MFE_OK) {
@@ -1889,9 +1893,19 @@ int cntx_set_bank(mflash* mfl, u_int32_t bank) {
     return MFE_OK;
 }
 
+int is_connectx_family(u_int32_t dev_id) {
+    if (dev_id == HERMON_HW_ID ||  // Hermon
+        dev_id == CX3_HW_ID) {    // CX3
+        return 1;
+    }
+    return 0;
+
+}
+
 int is_is4_family(u_int32_t dev_id) {
-    if (dev_id == 435 ||  // InfiniScaleIV
-        dev_id == 6100) { // BridgeX
+    if (dev_id == 435  ||  // InfiniScaleIV
+        dev_id == 6100 || // BridgeX
+        dev_id == SWITCHX_HW_ID) { // SwitchX
         return 1;
     }
     return 0;
@@ -2620,6 +2634,33 @@ int mf_open_ignore_lock(mflash* mfl) {
     return mf_open_fw(mfl, NULL);
 }
 
+#define HW_DEV_ID     0xf0014
+#define CACHE_REP_OFF 0xf0408
+#define CASHE_REP_CMD 0xf040c
+
+
+int check_cache_replacement_gaurd(mflash* mfl)
+{
+
+    if (mfl->attr.hw_dev_id == SWITCHX_HW_ID &&  mfl->opts[MFO_IGNORE_CASHE_REP_GUARD] == 0) {
+        u_int32_t off, cmd, data;
+
+        // Read the Cache replacement offset
+        MREAD4(CACHE_REP_OFF, &data);
+        off = EXTRACT(data, 0, 26);
+        // Read the Cache replacement cmd
+        MREAD4(CASHE_REP_CMD, &data);
+        cmd = EXTRACT(data, 16, 8);
+        // Check if the offset and cmd are zero in order to continue burning.
+        if (cmd != 0 || off != 0) {
+            printf("-E- Can not access flash - SwitchX cache replacement is active."
+                    " The current version of this tool does not support this mode\n");
+            return MFE_ERROR;
+        }
+    }
+    return MFE_OK;
+}
+
 //Caller must zero the mflash struct before calling this func.
 int mf_open_fw(mflash* mfl, flash_params_t* flash_params)
 {
@@ -2630,7 +2671,7 @@ int mf_open_fw(mflash* mfl, flash_params_t* flash_params)
         return MFE_BAD_PARAMS;
     }
 
-    MREAD4(0xf0014, &dev_id);
+    MREAD4(HW_DEV_ID, &dev_id);
 
 
     mfl->attr.rev_id    = (dev_id & 0xff0000) >> 16;
@@ -2640,12 +2681,14 @@ int mf_open_fw(mflash* mfl, flash_params_t* flash_params)
 
     mfl->curr_bank = -1;
     //printf("-D- read dev id: %d, rev_id: %#x\n",  mfl->attr.hw_dev_id, mfl->attr.rev_id);
+    rc = check_cache_replacement_gaurd(mfl); CHECK_RC(rc);
+
 
     if (dev_id == 23108 || dev_id == 25208) {
         rc = ihst_flash_init(mfl);
     } else if (dev_id == 24204 || dev_id == 25204) {
         rc = ih3lx_flash_init(mfl);
-    } else if (dev_id == 400) {
+    } else if (is_connectx_family(dev_id)) {
         rc = cntx_flash_init(mfl, flash_params);
     } else if (is_is4_family(dev_id)) {
         rc = is4_flash_init(mfl, flash_params);
@@ -2663,7 +2706,7 @@ int mf_open_fw(mflash* mfl, flash_params_t* flash_params)
     return MFE_OK;
 }
 
-int     mf_opend       (mflash** pmfl, struct mfile_t* mf, int num_of_banks, flash_params_t* flash_params) {
+int     mf_opend       (mflash** pmfl, struct mfile_t* mf, int num_of_banks, flash_params_t* flash_params, int ignore_cache_rep_guard) {
     int rc;
     *pmfl = (mflash*)malloc(sizeof(mflash));
     if (!*pmfl) {
@@ -2673,6 +2716,7 @@ int     mf_opend       (mflash** pmfl, struct mfile_t* mf, int num_of_banks, fla
     memset(*pmfl, 0, sizeof(mflash));
     (*pmfl)->mf = (mfile*)mf;
     (*pmfl)->opts[MFO_NUM_OF_BANKS] = spi_get_num_of_flashes(num_of_banks);
+    (*pmfl)->opts[MFO_IGNORE_CASHE_REP_GUARD] = ignore_cache_rep_guard;
 
     rc = mf_open_fw(*pmfl, flash_params);
 
@@ -2681,7 +2725,9 @@ int     mf_opend       (mflash** pmfl, struct mfile_t* mf, int num_of_banks, fla
 
 
 
-int     mf_open        (mflash** pmfl, const char* dev, int num_of_banks, flash_params_t* flash_params) {
+int     mf_open        (mflash** pmfl, const char* dev, int num_of_banks, flash_params_t* flash_params,
+        int ignore_cache_rep_guard)
+{
     mfile*  mf;
 
     int rc;
@@ -2696,7 +2742,7 @@ int     mf_open        (mflash** pmfl, const char* dev, int num_of_banks, flash_
         return MFE_CR_ERROR;
     }
 
-    rc = mf_opend(pmfl, (struct mfile_t*) mf, num_of_banks, flash_params);
+    rc = mf_opend(pmfl, (struct mfile_t*) mf, num_of_banks, flash_params, ignore_cache_rep_guard);
 
     if ((*pmfl)) {
         (*pmfl)->opts[MFO_CLOSE_MF_ON_EXIT] = 1;

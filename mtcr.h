@@ -274,7 +274,8 @@ int mtcr_check_signature(mfile *mf)
 
 	switch (signature & 0xffff) {
 	case 0x190 : /* 400 */
-		if (signature == 0xa00190 && mf->ptr) {
+	case 0x1f5 :
+		if ((signature == 0xa00190 || signature == 0x1f5) && mf->ptr) {
 			mf->connectx_flush = 1;
 			mtcr_connectx_flush(mf->ptr);
 		}
@@ -284,8 +285,10 @@ int mtcr_check_signature(mfile *mf)
 	case 0x6274: /* 25204 */
 	case 0x1b3:  /*   435 */
 	case 6100:   /*  6100 */
+	case 0x245:
 		return 0;
 	default:
+		fprintf(stderr, "-W- Unknown dev id: 0x%x\n", signature);
 		errno = ENOTTY;
 		return -1;
 	}

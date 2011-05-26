@@ -100,6 +100,7 @@ typedef enum MfOpt {
     MFO_IGNORE_SEM_LOCK,
     MFO_CLOSE_MF_ON_EXIT,
     MFO_NUM_OF_BANKS,
+    MFO_IGNORE_CASHE_REP_GUARD,
     MFO_LAST
 } MfOpt;
 
@@ -196,8 +197,11 @@ typedef struct mflash mflash;
 // mf_close() : Deallocates mflash resources.
 //   Note: User should call mf_close() even if mf_open failed (and the returning mfl is not NULL)
 //
-int     mf_open        (mflash** pmfl, const char* dev, int num_of_banks, flash_params_t* flash_params);
-int     mf_opend       (mflash** pmfl, struct mfile_t* mf, int num_of_banks,  flash_params_t* flash_params);
+int     mf_open        (mflash** pmfl, const char* dev, int num_of_banks, flash_params_t* flash_params,
+        int ignore_cache_rep_guard);
+int     mf_opend       (mflash** pmfl, struct mfile_t* mf, int num_of_banks,  flash_params_t* flash_params,
+        int ignore_cache_rep_guard);
+
 int     mf_open_ignore_lock(mflash* mfl);
 int     mf_close       (mflash* mfl);
 
