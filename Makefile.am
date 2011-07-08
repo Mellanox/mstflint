@@ -14,6 +14,7 @@ mstmwrite_SOURCES = mwrite.c mtcr.h
 mstflint_SOURCES = flint.cpp mtcr.h mflash.h mflash.c tools_version.h
 
 mstflint_LIBS = @mstflint_LIBS@
+mstflint_CFLAGS   = -DNO_INBAND_ACCESS
 mstflint_CXXFLAGS = -DDEV_MST_EXAMPLE1=\"03:00.0\" -DDEV_MST_EXAMPLE2=\"mlx4_0\"
 mstflint_CXXFLAGS += @mstflint_CXXFLAGS@
 

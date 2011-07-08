@@ -90,6 +90,18 @@ typedef enum MfError {
     MFE_OUT_OF_RANGE,
     MFE_CMD_SUPPORTED_INBAND_ONLY,
     MFE_NO_FLASH_DETECTED,
+    MFE_LOCKED_CRSPACE,
+    MFE_CMDIF_BAD_STATUS_ERR,
+    MFE_CMDIF_TIMEOUT_ERR,
+    MFE_CMDIF_GO_BIT_BUSY,
+    MFE_MISMATCH_KEY,
+    MFE_UNKNOWN_REG,
+    MFE_REG_ACCESS_FAILED,
+    MFE_REG_ACCESS_MAD_BAD_STATUS,
+    MFE_REG_ACCESS_MAD_NOT_SUPPORTED,
+    MFE_DIRECT_FW_ACCESS_DISABLED,
+    MFE_MANAGED_SWITCH_NOT_SUPPORTED,
+    MFE_NOT_SUPPORTED_OPERATION,
     MFE_LAST
 } MfError;
 
@@ -101,6 +113,7 @@ typedef enum MfOpt {
     MFO_CLOSE_MF_ON_EXIT,
     MFO_NUM_OF_BANKS,
     MFO_IGNORE_CASHE_REP_GUARD,
+    MFO_USER_BANKS_NUM,
     MFO_LAST
 } MfOpt;
 
@@ -231,6 +244,10 @@ int     mf_get_attr    (mflash* mfl, flash_attr* attr);
 //
 int     mf_set_opt     (mflash* mfl, MfOpt opt, int  val);
 int     mf_get_opt     (mflash* mfl, MfOpt opt, int *val);
+
+int     mf_enable_hw_access(mflash* mfl, u_int64_t key);
+int     mf_disable_hw_access(mflash* mfl);
+int     mf_release_semaphore();
 
 //
 // err code to string translation for printing.

@@ -32,7 +32,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- *  Version: $Id: flint.cpp 6984 2011-05-02 12:21:00Z mohammad $
+ *  Version: $Id: flint.cpp 7187 2011-07-05 11:53:16Z orenk $
  *
  */
 
@@ -49,6 +49,8 @@
 #include <fcntl.h>
 #include <assert.h>
 #include <time.h>
+#include <termios.h>
+
 
 #include "tools_version.h"
 
@@ -138,9 +140,9 @@
 
 #ifndef FLINT_NAME
     #ifdef __GNUC__
-        #define FLINT_NAME "%1$s"
+        #define FLINT_NAME "flint"
     #else
-        #define FLINT_NAME "./flint"
+        #define FLINT_NAME "flint"
     #endif
 #endif
 
@@ -191,6 +193,7 @@ typedef struct guid {
     u_int32_t h;
     u_int32_t l;
 } guid_t;
+typedef guid_t hw_key_t;
 
 static inline void be_guid_to_cpu(guid_t* to, guid_t* from) {
     to->h=__be32_to_cpu(from->h);
@@ -786,7 +789,8 @@ public:
     FBase(true),
     _mfl(0),
     _curr_sector(0xffffffff),
-    _port_num(0)
+    _port_num(0),
+    _cr_space_locked(0)
     {}
 
     virtual ~Flash()  { close();};
@@ -824,6 +828,7 @@ public:
     u_int32_t get_dev_id             ()  {return _attr.hw_dev_id; }
     u_int32_t get_rev_id             ()  {return _attr.rev_id; }
     u_int32_t get_port_num           ()  {return _port_num;}
+    u_int8_t  get_cr_space_locked    ()  {return _cr_space_locked;}
 
     bool sw_reset();
 
@@ -839,8 +844,11 @@ public:
     virtual bool write         (u_int32_t addr,
                                 u_int32_t data);
 
+    virtual bool enable_hw_access(u_int64_t key);
+
+    virtual bool disable_hw_access();
+
     bool         print_attr();
-    bool         print_attr_old_format();
 
     enum {
         TRANS = 4096
@@ -858,6 +866,7 @@ protected:
 
     u_int32_t  _curr_sector;
     u_int32_t  _port_num;
+    u_int8_t   _cr_space_locked;
 };
 
 
@@ -1023,10 +1032,21 @@ bool Flash::open(const char *device, bool force_lock, bool read_only, int num_of
         rc = mf_open_ignore_lock(_mfl);
     }
 
-    if (rc == MFE_SEM_LOCKED) {
-        return errmsg("Can not obtain Flash semaphore (63). You can run \"flint -clear_semaphore -d <device>\" to force semaphore unlock. See help for details.");
-    } else
-        if (rc != MFE_OK) {
+    if (rc != MFE_OK) {
+        if (rc == MFE_SEM_LOCKED) {
+            return errmsg("Can not obtain Flash semaphore (63). You can run \"flint -clear_semaphore -d <device>\" to force semaphore unlock. See help for details.");
+        }
+        if (rc == MFE_LOCKED_CRSPACE) {
+            _cr_space_locked = 1;
+            return errmsg("HW access is disabled on the device.\n-E- Run \"flint -d %s hw_access enable\" in order to enable HW access.", device);
+        }
+        if (rc == MFE_REG_ACCESS_MAD_NOT_SUPPORTED) {
+            return errmsg("The target device FW does not support flash access commands.\n-E- Please use the -override_cache_replacement option in order to access the flash directly.");
+        }
+        if (rc == MFE_DIRECT_FW_ACCESS_DISABLED) {
+            return errmsg(" Flash cache replacement is active.\n-E- Please use the -override_cache_replacement option in order to access the flash directly.");
+        }
+
         return errmsg("%s %s", errno == 0 ? "" : strerror(errno), mf_err2str(rc));
     }
 
@@ -1265,13 +1285,36 @@ bool Flash::erase_sector  (u_int32_t addr) {
     return true;
 }
 
+bool Flash::enable_hw_access(u_int64_t key)
+{
+    int rc;
+    rc = mf_enable_hw_access(_mfl, key);
+
+    if (rc != MFE_OK) {
+        return errmsg("Enable HW access failed: %s", mf_err2str(rc));
+    }
+    return true;
+}
+
+bool Flash::disable_hw_access(void)
+{
+    int rc;
+    rc = mf_disable_hw_access(_mfl);
+
+    if (rc != MFE_OK) {
+        return errmsg("Disable HW access failed: %s", mf_err2str(rc));
+    }
+    return true;
+
+}
+
 bool Flash::sw_reset() {
-    if (_attr.hw_dev_id != 435 || _attr.hw_dev_id == SWITCHX_HW_ID) {
-        return errmsg("operation supported only for InfiniScale4 switch over IB interface");
+    if (_attr.hw_dev_id != 435 && _attr.hw_dev_id != SWITCHX_HW_ID) {
+        return errmsg("operation supported only for InfiniScale4 switch and SwitchX over IB interface");
     }
     int rc = mf_sw_reset(_mfl);
     if (rc != MFE_OK) {
-        return errmsg("%s %s", errno == 0 ? "" : strerror(errno), mf_err2str(rc));
+        return errmsg("%s (%s)", errno == 0 ? "" : strerror(errno), mf_err2str(rc));
     }
     return true;
 }
@@ -1281,6 +1324,7 @@ bool Flash::sw_reset() {
 bool Flash::print_attr() {
     printf("Flash attributes:\n");
     printf("  HwDevId          %d\n",     _attr.hw_dev_id);
+    printf("  HwRevId          0x%x\n",     _attr.rev_id);
     printf("  TotalSize        0x%x\n",   _attr.size);
     printf("  Banks            0x%x\n",   _attr.size/_attr.bank_size );
     printf("  SectorSize       0x%x\n",   _attr.sector_size );
@@ -1290,28 +1334,6 @@ bool Flash::print_attr() {
     return true;
 }
 
-bool Flash::print_attr_old_format() {
-    // Needed for some old tools which parce the size section of the CFI query in oder flint versions:
-
-    int i;
-    printf("\n----Sector Organization Parameters-------------------\n\n");
-
-    printf("%-50s ", "Device size:");
-    printf("[%8li] bytes, or [%2i] Mbit\n",
-           (long int)_attr.size,
-           (int) (_attr.size/((long)0x20000)));
-
-    printf("%-50s ", "Number of erase block regions:");
-    printf("%d\n", _attr.num_erase_blocks);
-
-    for (i = 0; i < _attr.num_erase_blocks; i++) {
-        printf("  Size:[%8lx] bytes, Mask [%08x], [Number:[%4i]\n",
-               _attr.erase_block[i].sector_size,
-               _attr.erase_block[i].sector_mask,
-               _attr.erase_block[i].num_sectors);
-    }
-    return true;
-}
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -1352,6 +1374,8 @@ enum CommandType {
     CMD_BURN_ROM,
     CMD_REMOVE_ROM,
     CMD_READ_ROM,
+    CMD_SET_KEY,
+    CMD_HW_ACCESS,
 };
 
 struct CommandInfo {
@@ -1369,6 +1393,7 @@ CommandInfo const g_commands[] = {
     { CMD_BURN_BLOCK     , "bb"    ,true  , 0, CI_IMG_AND_DEV , ""},
     { CMD_SET_GUIDS      , "sg"    ,true  , 1, CI_IMG_OR_DEV  , ""},
     { CMD_SET_VSD        , "sv"    ,true  , 0, CI_IMG_OR_DEV  , ""},
+    { CMD_SET_KEY        , "set_key" ,true , 1, CI_DEV_ONLY  , ""},
     { CMD_QUERY_FORCE    , "qf"    ,true  , 0, CI_IMG_OR_DEV  , ""},
     { CMD_QUERY          , "query" ,false , 1, CI_IMG_OR_DEV  , ""},
     { CMD_QUERY_ROM      , "qrom"  ,true  , 0, CI_IMG_ONLY    , ""},
@@ -1389,6 +1414,8 @@ CommandInfo const g_commands[] = {
     { CMD_BURN_ROM       , "brom"    ,true  , 1, CI_DEV_ONLY    , ""},
     { CMD_REMOVE_ROM     , "drom"    ,true  , 0, CI_DEV_ONLY    , ""},
     { CMD_READ_ROM       , "rrom"    ,true  , 1, CI_DEV_ONLY   , ""},
+    { CMD_HW_ACCESS      , "hw_access" , true , 2, CI_DEV_ONLY   , ""},
+
 
 };
 
@@ -1430,9 +1457,12 @@ CommandType ParseCommand(const char* cmd) {
 // Burn Operations functions
 //
 ////////////////////////////////////////////////////////////////////////
-#define FULL_VERIFY      0xff
-#define FREE_STR_MAX_LEN 256
+#define FULL_VERIFY         0xff
+#define FREE_STR_MAX_LEN    256
 #define MAX_ROM_ERR_MSG_LEN 256
+#define MAX_ROMS_NUM        5
+#define ROM_INFO_SIZE       12
+
 class Operations : public ErrMsg {
 public:
     Operations() :
@@ -1492,7 +1522,8 @@ public:
         II_HwDevsId           = 10,
         II_MicVersion         = 11,
         II_MinFitVersion      = 12,
-        II_Last               = 13,  // Mark the end of used tag ids
+        II_HwAccessKey        = 13,
+        II_Last               = 14,  // Mark the end of used tag ids
         II_End                = 0xff
     };
 
@@ -1503,6 +1534,7 @@ public:
     };
 
     struct ImageInfo;
+    struct RomInfo;
 
     // Burn operations:
     bool write_image     (Flash& f, u_int32_t addr, void *data, int cnt, bool need_report, const char* message,
@@ -1533,14 +1565,20 @@ public:
     bool ReburnNewImage(u_int8_t *data, FBase *fbase, Operations::ImageInfo *info, char *image_fname, bool silent, char *feature_name);
     bool ModifyGuidSection(FBase *fbase, Operations::ImageInfo *info, guid_t *user_guids, char *image_fname, bool silent);
     bool ModifyVSDSection(FBase *fbase, Operations::ImageInfo *info, char *vsd, char *image_fname, bool silent);
+    bool ModifyKeySection(FBase *fbase, Operations::ImageInfo *info, guid_t key_str, char *image_fname, bool silent);
+
     bool PrepareBurnErr(Flash& f);
     bool LoadAsExpRom    (FBase& f, ImageInfo* info);
 
     bool DumpConf        (const char* conf_file = NULL, SectionType sect_type = H_FW_CONF);
+    bool GetExpRomVerForOneRom(ImageInfo* info, u_int32_t ver_offset);
+
+
     bool GetExpRomVersion(ImageInfo* info);
     bool GetExpRomVersionWrapper(ImageInfo* info);
 
-    bool DisplayExpRomInfo(ImageInfo* info, bool print_pre = true);
+    bool DisplayOneExpRomInfo(RomInfo* info);
+    bool DisplayExpRomInfo(ImageInfo* info, char *pre_str = "");
     bool DisplayImageInfo (ImageInfo* info, bool full_query = false);
     bool GetExpRomStrVer(Operations::ImageInfo* info, char* version);
 
@@ -1550,7 +1588,7 @@ public:
                                                              QueryImage(f, info);}
 
     bool getBSN          (char *s, guid_t *guid);
-    bool getGUID         (const char *s, guid_t *guid);
+    bool getGUID         (const char *s, guid_t *guid, char *filed_type = "");
     bool getFlashParams(char *flash_arg, flash_params_t *flash_params);
 
     bool patchVSD        (FImage& f,
@@ -1560,6 +1598,8 @@ public:
                           const char *curr_vsd,
                           const char *curr_psid,
                           const char *image_psid);
+
+    bool patchHwAccessKey(FImage& f, ImageInfo& flash_info, ImageInfo& imageinfo);
 
     // Misc operations
     void SetDevFlags(u_int16_t devType, bool& ib_dev, bool& eth_dev);
@@ -1586,6 +1626,16 @@ public:
                           guid_t     old_guids[MAX_GUIDS],
                           u_int32_t num_of_old_guids);
 
+    bool preFS2PatchGUIDs(bool      patch_macs,
+            bool      patch_uids,
+            bool      user_guids,
+            bool      user_macs,
+            bool      user_uids,
+            guid_t    new_guids[MAX_GUIDS],
+            guid_t    old_guids[MAX_GUIDS],
+            guid_t    **used_guid_p,
+            u_int32_t num_of_old_guids);
+
     bool PrintMacLine  (guid_t* new_guids,  guid_t* old_guids, int mac_index);
     bool PrintBxMacs   (guid_t* new_guids,  guid_t* old_guids, int index, int num_of_guids, const char* pre_str);
     bool PrintGuidLine (guid_t* new_guids,  guid_t* old_guids, int guid_index);
@@ -1609,6 +1659,7 @@ public:
     void SetFs2Mode     (bool fs2_mode)       {_is_fs2 = fs2_mode;}
     void SetIgnoreTty   (bool ignore_tty)    {_ignore_tty = ignore_tty;}
     void SetFs2StripedImage(bool si)          {_cntx_striped_image = si;}
+    bool GetFs2StripedImage()                 {return _cntx_striped_image;}
     bool IsFs2           ()                    {return _is_fs2;}
     bool CheckMac        (u_int64_t mac);
 
@@ -1698,6 +1749,16 @@ public:
     // _last_image_addr is set by the Verify() op
     u_int32_t            _last_image_addr;
 
+    struct RomInfo {
+        bool      expRomValidVersion;
+        u_int16_t expRomProductId; // 0 - invalid.
+        u_int16_t expRomVer[3];
+        u_int16_t expRomDevId;
+        u_int8_t  expRomPort;
+        u_int8_t  expRomProto;
+        char      expRomFreestr[FREE_STR_MAX_LEN];
+    };
+
     //
     // ImageInfo struct: Everything you wanted to know about the FW image (and was afraid to ask).
     // This struct includes both user's info (psid, dev rev , fwver ...) and tools internal
@@ -1769,24 +1830,26 @@ public:
         u_int32_t    supportedHwId[MAX_NUM_SUPP_HW_IDS];
         int          supportedHwIdNum;
 
+        u_int8_t     accessKeyExists;
+        guid_t       accessKeyValue;
+
         u_int32_t    imageSize;
         u_int32_t    infoOffs[II_Last];  // Offset of the tag data inside the info section data.
                                          // Can not be 0 (because of tag header) - 0 means not found.
-        bool         expRomFound;
-        bool         expRomValidVersion;
-        u_int16_t    expRomProductId;    // 0 - invalid.
-        u_int16_t    expRomVer[3];
-        u_int16_t    expRomDevId;
-        u_int8_t     expRomPort;
-        u_int8_t     expRomProto;
-        char         expRomFreestr[FREE_STR_MAX_LEN];
-        bool         expRomWarning;
-        char         expRomWarningMsg[MAX_ROM_ERR_MSG_LEN];
-        bool         expRomErrMsgValid;
-        char         expRomErrMsg[MAX_ROM_ERR_MSG_LEN];
+        // Can not be 0 (because of tag header) - 0 means not found.
+        bool      expRomFound;
+        u_int8_t  numOfExpRom;
+        bool      noRomChecksum;
+        bool      expRomValidVersion;
+        u_int16_t expRomComDevid;
+        bool      expRomWarning;
+        char      expRomWarningMsg[MAX_ROM_ERR_MSG_LEN];
+        bool      expRomErrMsgValid;
+        char      expRomErrMsg[MAX_ROM_ERR_MSG_LEN];
+        struct RomInfo romInfo[MAX_ROMS_NUM];
+        std::vector<u_int8_t> _rom_sect;
 
-        bool         magicPatternFound;
-        std::vector<u_int8_t>  _rom_sect;
+        bool magicPatternFound;
     };
 
     enum {
@@ -1828,6 +1891,8 @@ public:
     void PatchInfoSect          (u_int8_t*      rawSect,
                                  u_int32_t      vsdOffs,
                                  const char*    vsd);
+    void PatchKeySect(u_int32_t* buff, u_int32_t keyOff, guid_t hw_key);
+
 private:
 
     bool FailSafe_burn_image    (Flash&       f,
@@ -3174,16 +3239,15 @@ bool Operations::CheckMatchingDevId(u_int32_t hwDevId, u_int32_t imageDevId) {
     return true;
 }
 
+#define MISS_MATCH_DEV_ID 0xffff
+#define EXP_ROM_GEN_DEVID 0
+
 bool Operations::CheckMatchingExpRomDevId(Operations::ImageInfo* info) {
-    if (info->expRomFound              &&
-        info->expRomValidVersion       &&
-        info->expRomProductId  >= 0x10 &&
-        info->infoOffs[II_DeviceType]  &&
-        info->expRomDevId != 0         &&
-        info->devType != info->expRomDevId) {
-            return errmsg("FW is for device %d, but Exp-ROM is for device %d",
-                          info->devType,
-                          info->expRomDevId);
+    if (info->expRomFound && info->numOfExpRom && info->infoOffs[II_DeviceType]
+            && info->expRomComDevid != EXP_ROM_GEN_DEVID && info->expRomComDevid != MISS_MATCH_DEV_ID
+            && info->devType != info->expRomComDevid) {
+        return errmsg("FW is for device %d, but Exp-ROM is for device %d",
+                info->devType, info->expRomComDevid);
     }
     return true;
 }
@@ -3479,6 +3543,26 @@ bool Operations::ModifyVSDSection(FBase *fbase, Operations::ImageInfo *info, cha
 
 
 
+bool Operations::ModifyKeySection(FBase *fbase, Operations::ImageInfo *info, guid_t access_key, char *image_fname, bool silent)
+{
+
+    u_int32_t length        =  info->imageSize;
+    vector<u_int8_t> data(length);
+
+    // Read the image.
+    if (!fbase->read(0, (u_int8_t*)(&data[0]), length)) {
+        return errmsg("Flash/Image read failed: %s\n", fbase->err());
+    }
+
+    // Change the VSD
+    PatchKeySect((u_int32_t*)(&data[0] + info->infoSectPtr - sizeof(GPH)),
+                  info->infoOffs[Operations::II_HwAccessKey],
+                  access_key);
+    // Re-burn the new Image after modifying the VSD
+    return ReburnNewImage((u_int8_t*)(&data[0]), fbase, info, image_fname, silent, (char*)"HW Key");
+}
+
+
 bool Operations::Verify(FBase& f, Operations::ImageInfo* info, bool both_images)
 {
     u_int32_t prim_ptr, scnd_ptr;
@@ -3539,59 +3623,21 @@ bool Operations::GetExpRomVersionWrapper(ImageInfo* info) {
     return true;
 }
 
-bool Operations::GetExpRomVersion(ImageInfo* info) {
-    const char* magic_string = "mlxsign:";
-    u_int32_t   magic_len    = strlen(magic_string);
-    u_int32_t   i;
-    bool        magic_found  = false;
-    u_int32_t   ver_offset;
-    u_int32_t   rom_checksum_range;
+bool Operations::GetExpRomVerForOneRom(ImageInfo* imageInfo, u_int32_t ver_offset) {
 
-    // Init some
-    info->expRomValidVersion = false;
-    info->expRomWarning      = false;
-    info->expRomErrMsgValid  = false;
+    u_int32_t tmp;
+    RomInfo *romInfo;
 
-    if (info->_rom_sect.empty()) {
-        return errmsg("Expansion Rom section not found.");
+    if (imageInfo->numOfExpRom == MAX_ROMS_NUM) {
+        imageInfo->expRomWarning = true;
+        snprintf(imageInfo->expRomWarningMsg,
+                MAX_ROM_ERR_MSG_LEN,
+                "Number of exp ROMs exceeds the maximum allowed number: %d",
+                MAX_ROMS_NUM);
+        return true;
     }
-    // When checking the version of the expansion rom, only the first image has
-    // to be checked. This is because the second image  the uefi image does not
-    // have to comply with checksumming to 0. To do this you have to read  byte
-    // 2 (third) of the image  and multiply by 512 to get the size of the x86
-    // image.
+    romInfo = &(imageInfo->romInfo[imageInfo->numOfExpRom]);
 
-    // Checksum:
-    if (info->_rom_sect.size() < 4) {
-        return errmsg("ROM size (0x%x) is too small", (u_int32_t)info->_rom_sect.size());
-    }
-
-    // restore endianess.
-    TOCPUn(&(info->_rom_sect[0]), info->_rom_sect.size()/4);
-/*  // FOR WE DON'T CHECKSUM UNTIL WE DECIDED REGARDING THE NEW FORMAT.
-*/
-    // We will look for the magic string in whole ROM instead of the first part of it.
-    rom_checksum_range = info->_rom_sect.size();
-
-    for (i = 0 ; i < rom_checksum_range; i++) {
-        for (u_int32_t j = 0; j < magic_len; j++) {
-            if (info->_rom_sect[i+j] != magic_string[j]) {
-                break;
-            } else if (j == magic_len - 1) {
-                magic_found = true;
-            }
-        }
-
-        if (magic_found) {
-            break;
-        }
-    }
-
-    if (magic_found) {
-        ver_offset = i + magic_len;
-    } else {
-        return errmsg("Cannot get ROM version. Signature not found.");
-    }
 
     // Following mlxsign:
     // 31:24    0    Compatible with UEFI
@@ -3613,84 +3659,194 @@ bool Operations::GetExpRomVersion(ImageInfo* info) {
     //  8:11    Reserved
     //  0:7     Protocol type: 0=IB 1=ETH 2=VPI
 
-    u_int32_t tmp;
     // Get expansion rom product ID
-    tmp = __le32_to_cpu(*((u_int32_t*) &info->_rom_sect[ver_offset]));
-    info->expRomProductId = tmp >> 16;
-    info->expRomVer[0]    = tmp & 0xffff;
+    tmp = __le32_to_cpu(*((u_int32_t*) &imageInfo->_rom_sect[ver_offset]));
+    romInfo->expRomProductId = tmp >> 16;
+    romInfo->expRomVer[0] = tmp & 0xffff;
 
-    // Check sum for expansion ROM
-    if (info->expRomProductId != 0x11) { // No need for checksum on UEFI
-        u_int8_t    rom_checksum = 0;
-        rom_checksum_range = info->_rom_sect[2] * 512 ;
-        if (rom_checksum_range > info->_rom_sect.size()) {
-            return errmsg("ROM size field (0x%2x) is larger than actual ROM size (0x%x)",
-                          rom_checksum_range ,
-                          (u_int32_t)info->_rom_sect.size());
-        } else if (rom_checksum_range == 0) {
-            return errmsg("ROM size field is 0. Unknown ROM format or corrupted ROM.");
-        }
-
-        for (i = 0; i < rom_checksum_range; i++) {
-            rom_checksum += info->_rom_sect[i];
-        }
-
-        if (rom_checksum != 0) {
-            info->expRomWarning = true;
-            snprintf(info->expRomWarningMsg, MAX_ROM_ERR_MSG_LEN,
-                    "Bad ROM Checksum (0x%02x), ROM info may not be displayed correctly.", rom_checksum);
-        }
+    if (romInfo->expRomProductId == 0x11) {
+        imageInfo->noRomChecksum = true;
     }
 
-    if (info->expRomProductId >= 0x10) {
-        tmp = __le32_to_cpu(*((u_int32_t*) &info->_rom_sect[ver_offset + 4]));
-        info->expRomVer[1] = tmp >> 16;
-        info->expRomVer[2] = tmp  & 0xffff;
 
-        tmp = __le32_to_cpu(*((u_int32_t*) &info->_rom_sect[ver_offset + 8]));
-        info->expRomDevId  = tmp >> 16;
-        info->expRomPort   = (tmp >> 12) & 0xf;
-        info->expRomProto  = tmp & 0xff;
-    } else if (info->expRomProductId == 0xf) {
+    if (romInfo->expRomProductId >= 0x10) {
+        tmp = __le32_to_cpu(*((u_int32_t*) &imageInfo->_rom_sect[ver_offset + 4]));
+        romInfo->expRomVer[1] = tmp >> 16;
+        romInfo->expRomVer[2] = tmp & 0xffff;
+
+        tmp = __le32_to_cpu(*((u_int32_t*) &imageInfo->_rom_sect[ver_offset + 8]));
+        romInfo->expRomDevId = tmp >> 16;
+        romInfo->expRomPort = (tmp >> 12) & 0xf;
+        romInfo->expRomProto = tmp & 0xff;
+    } else if (romInfo->expRomProductId == 0xf) {
         // get string length
-        u_int32_ba tmp_ba=  *((u_int32_t*) &info->_rom_sect[ver_offset + 0xc]);
+        u_int32_ba tmp_ba = *((u_int32_t*) &imageInfo->_rom_sect[ver_offset + 0xc]);
         u_int32_t str_len = u_int32_t(tmp_ba.range(15, 8));
-        u_int32_t sign_length  = u_int32_t(tmp_ba.range(7, 0));
-        u_int32_t dws_num = ((str_len + 3 ) / 4) + 4;
+        u_int32_t sign_length = u_int32_t(tmp_ba.range(7, 0));
+        u_int32_t dws_num = ((str_len + 3) / 4) + 4;
 
         if (sign_length < dws_num) {
-            return errmsg("The Signature length (%d) and the ROM version string length (%d) are not coordinated",
-                          sign_length, str_len);
+            return errmsg(
+                    "The Signature length (%d) and the ROM version string length (%d) are not coordinated",
+                    sign_length, str_len);
         }
         // copy str
-        strncpy(info->expRomFreestr, (char*)&info->_rom_sect[ver_offset + 0x10], str_len);
-        info->expRomFreestr[str_len] = '\0';
+        strncpy(romInfo->expRomFreestr,
+                (char*) &imageInfo->_rom_sect[ver_offset + 0x10], str_len);
+        romInfo->expRomFreestr[str_len] = '\0';
 
-
-        tmp_ba  = __le32_to_cpu(*((u_int32_t*) &info->_rom_sect[0x18]));
+        tmp_ba = __le32_to_cpu(*((u_int32_t*) &imageInfo->_rom_sect[0x18]));
         u_int32_t dev_id_off = u_int32_t(tmp_ba.range(15, 0)) + 4;
 
-
-        if (dev_id_off >= info->_rom_sect.size()) {
-            return errmsg("The device ID offset %#x is out of range. ROM size: %#x", dev_id_off,
-                          (u_int32_t)info->_rom_sect.size());
+        if (dev_id_off >= imageInfo->_rom_sect.size()) {
+            return errmsg(
+                    "The device ID offset %#x is out of range. ROM size: %#x",
+                    dev_id_off, (u_int32_t) imageInfo->_rom_sect.size());
         }
 
         // get devid
-        tmp_ba = __le32_to_cpu(*((u_int32_t*) &info->_rom_sect[dev_id_off]));
-        info->expRomDevId = u_int32_t(tmp_ba.range(31, 16));
+        tmp_ba = __le32_to_cpu(*((u_int32_t*) &imageInfo->_rom_sect[dev_id_off]));
+        romInfo->expRomDevId = u_int32_t(tmp_ba.range(31, 16));
         u_int32_t vendor_id = u_int32_t(tmp_ba.range(15, 0));
 
-        if ( vendor_id != MELLANOX_VENDOR_ID) {
-            info->expRomWarning = true;
-            snprintf(info->expRomWarningMsg, MAX_ROM_ERR_MSG_LEN,
-                    "The Exp-ROM PCI vendor ID: %#x does not match the expected value: %#x.", vendor_id,
-                                               MELLANOX_VENDOR_ID);
+
+        if (vendor_id != MELLANOX_VENDOR_ID) {
+            imageInfo->expRomWarning = true;
+            snprintf(imageInfo->expRomWarningMsg,
+                    MAX_ROM_ERR_MSG_LEN,
+                    "The Exp-ROM PCI vendor ID: %#x does not match the expected value: %#x.",
+                    vendor_id, MELLANOX_VENDOR_ID);
         }
 
+    }
+    return true;
+}
+
+
+bool Operations::GetExpRomVersion(ImageInfo* info) {
+    const char* magic_string = "mlxsign:";
+    u_int32_t magic_len = strlen(magic_string);
+    u_int32_t i;
+    bool magic_found = false;
+    u_int32_t ver_offset;
+    u_int32_t rom_checksum_range;
+
+    // Init some
+    info->expRomValidVersion = false;
+    info->numOfExpRom = 0;
+    info->expRomComDevid = 0;
+
+    info->expRomWarning = false;
+    info->expRomErrMsgValid = false;
+
+    if (info->_rom_sect.empty()) {
+        return errmsg("Expansion Rom section not found.");
+    }
+    // When checking the version of the expansion rom, only the first image has
+    // to be checked. This is because the second image  the uefi image does not
+    // have to comply with checksumming to 0. To do this you have to read  byte
+    // 2 (third) of the image  and multiply by 512 to get the size of the x86
+    // image.
+
+    // Checksum:
+    if (info->_rom_sect.size() < 4) {
+        return errmsg("ROM size (0x%x) is too small",
+                (u_int32_t) info->_rom_sect.size());
+    }
+
+    // restore endianess.
+    TOCPUn(&(info->_rom_sect[0]), info->_rom_sect.size()/4);
+    /*  // FOR WE DON'T CHECKSUM UNTIL WE DECIDED REGARDING THE NEW FORMAT.
+     */
+    // We will look for the magic string in whole ROM instead of the first part of it.
+    rom_checksum_range = info->_rom_sect.size();
+
+    for (i = 0; i < rom_checksum_range; i++) {
+        for (u_int32_t j = 0; j < magic_len; j++) {
+            if (info->_rom_sect[i + j] != magic_string[j]) {
+                break;
+            } else if (j == magic_len - 1) {
+                magic_found = true;
+            }
+        }
+
+        if (magic_found) {
+            // Get the ROM info after the mlxsign
+            bool rc;
+            RomInfo *currRom;
+
+            if (info->numOfExpRom == MAX_ROMS_NUM) {
+                info->expRomWarning = true;
+                snprintf(info->expRomWarningMsg,
+                        MAX_ROM_ERR_MSG_LEN,
+                        "Number of exp ROMs exceeds the maximum allowed number (%d)",
+                        MAX_ROMS_NUM);
+                // Here we want to warn regarding this issue without checksum.
+                return true;
+            }
+
+            currRom = &(info->romInfo[info->numOfExpRom]);
+            ver_offset = i + magic_len;
+            rc = GetExpRomVerForOneRom(info, ver_offset);
+            if (rc != true) {
+                return rc;
+            }
+
+            // Get the device ID and check if it mismatches with other ROMs
+            if (info->expRomComDevid != MISS_MATCH_DEV_ID) { // When the DevId is already mismatched, no end to any check
+                 if (currRom->expRomDevId != EXP_ROM_GEN_DEVID) { // When we have a device ID on the ROM
+                    if (info->expRomComDevid == EXP_ROM_GEN_DEVID) { // Update the common DevId at the first time we find ID
+                        info->expRomComDevid = currRom->expRomDevId;
+                    } else { // Check if we have the same IDs, if yes, continue
+                        if (currRom->expRomDevId != info->expRomComDevid) { // There is a mismatch between ROMs
+                            info->expRomComDevid = MISS_MATCH_DEV_ID;
+                            info->expRomWarning = true;
+                            snprintf(info->expRomWarningMsg,
+                                     MAX_ROM_ERR_MSG_LEN,
+                                     "The device IDs of the ROMs mismatched.");
+                        }
+                    }
+                }
+            }
+
+            magic_found = false;      // Clean the magic_found to start search for another magic string
+            i += (ROM_INFO_SIZE - 1); // Increase the index to point to the end of the ROM info.
+            info->numOfExpRom++;
+        }
+    }
+
+    // TODO: ADD CHECKSUM CHECK
+    if (!info->numOfExpRom) {
+        return errmsg("Cannot get ROM version. Signature not found.");
 
     }
-    info->expRomValidVersion = true;
+
+    if (info->noRomChecksum == 0) { // No need for checksum on some ROMs like uEFI
+         u_int8_t rom_checksum = 0;
+         rom_checksum_range = info->_rom_sect[2] * 512;
+         if (rom_checksum_range > info->_rom_sect.size()) {
+             return errmsg(
+                     "ROM size field (0x%2x) is larger than actual ROM size (0x%x)",
+                     rom_checksum_range, (u_int32_t) info->_rom_sect.size());
+         } else if (rom_checksum_range == 0) {
+             return errmsg(
+                     "ROM size field is 0. Unknown ROM format or corrupted ROM.");
+         }
+
+         for (i = 0; i < rom_checksum_range; i++) {
+             rom_checksum += info->_rom_sect[i];
+         }
+
+         if (rom_checksum != 0) {
+             info->expRomWarning = true;
+             snprintf(
+                     info->expRomWarningMsg,
+                     MAX_ROM_ERR_MSG_LEN,
+                     "Bad ROM Checksum (0x%02x), ROM info may not be displayed correctly.",
+                     rom_checksum);
+         }
+     }
+
     return true;
 }
 
@@ -3769,6 +3925,7 @@ bool Operations::DumpConf        (const char* conf_file, SectionType sect_type) 
 ////////////////////////////////////////////////////////////////////////
 #define GETGUID(s, g) do { if (!ops.getGUID(s,g)) return 1; } while (0)
 #define GETBSN(s, g)  do { if (!ops.getBSN(s,g)) return 1; } while (0)
+#define GETKEY(s, g) do { if (!ops.getGUID(s,g, "Invalid Key syntax, it should contain only hexa numbers.")) return 1; } while (0)
 #define GET_FLASH_PARAMS(a, fp) do { if (!ops.getFlashParams(a, fp)) return 1; } while (0)
 
 #define BSN_RET do {                                            \
@@ -3922,16 +4079,18 @@ bool Operations::getBSN(char *s, guid_t *guid)
     return true;
 }
 
-bool Operations::getGUID(const char *s, guid_t *guid)
+bool Operations::getGUID(const char *s, guid_t *guid, char *err_msg)
 {
     char* endp;
     u_int64_t g;
 
     g = strtoull(s, &endp, 16);
     if (*endp || (g == 0xffffffffffffffffULL && errno == ERANGE)) {
-        report_err(_err_msg, "Invalid GUID syntax (%s) %s \n",
-               s,
-               errno ? strerror(errno) : "" );
+        if (!strcmp(err_msg, "")) {
+            report_err(_err_msg, "Invalid GUID syntax (%s) %s \n", s, errno ? strerror(errno) : "" );
+        } else {
+            report_err(_err_msg, "%s\n", err_msg);
+        }
         return false;
     }
     guid->h = (u_int32_t)(g >> 32);
@@ -4033,12 +4192,26 @@ void Operations::patchGUIDsSection(u_int32_t *buf, u_int32_t ind,
 
 
 
+void Operations::PatchKeySect(u_int32_t* buff, u_int32_t keyOff, guid_t hw_key)
+{
+    u_int32_t  infoSize = __be32_to_cpu(*(buff + 1));
+    u_int32_t sectSize = sizeof(GPH) + infoSize * 4;
+
+    u_int32_t realKeyoff = (keyOff  +  sizeof(GPH)) / 4;
+
+    // Update the key in the buffer which is supposed to be burnt into the flash
+    buff[realKeyoff]     = __cpu_to_be32(hw_key.h);
+    buff[realKeyoff + 1] = __cpu_to_be32(hw_key.l);
+
+    recalcSectionCrc((u_int8_t*)buff, sectSize);
+    return;
+}
 
 //
 // PatchInfoSect() :
 // This func assumes it gets a pointer (rawSect) to a valid info sect.
 // It patches the it with the given data, recalculated CRC ,
-// and copies it back to the geven data
+// and copies it back to the given data
 //
 
 void Operations::PatchInfoSect(u_int8_t*      rawSect,
@@ -4051,12 +4224,11 @@ void Operations::PatchInfoSect(u_int8_t*      rawSect,
     // byte size;
     infoSize *= 4;
 
-    //printf("-D- vsdOffs=%x, vsdSize=%x, infoSize=%x\n", vsdOffs,vsdSize, infoSize );
     if (vsd) {
         u_int32_t len = strlen(vsd);
 
         if (len > vsdSize) {
-            report("Warning: The given VSD length is too large (%d chars). Truncating to %d chars.\n", len, vsdSize);
+            report_warn("The given VSD length is too large (%d chars). Truncating to %d chars.\n", len, vsdSize);
             len = vsdSize;
         }
 
@@ -4120,6 +4292,49 @@ void Operations::PatchPs(u_int8_t*      rawPs,
     recalcSectionCrc((u_int8_t *)ps, sizeof(PS) - 4);
 }
 
+bool Operations::patchHwAccessKey(FImage& f, ImageInfo& flash_info, ImageInfo& image_info)
+{
+    u_int32_t key_supported_flash = flash_info.infoOffs[Operations::II_HwAccessKey];
+    u_int32_t key_supported_image = image_info.infoOffs[Operations::II_HwAccessKey];
+
+    if (key_supported_image) {
+        hw_key_t key_to_burn;
+        u_int32_t *buff = f.getBuf();
+        u_int32_t *infoSectBuff = (u_int32_t*)((u_int8_t*)buff + image_info.infoSectPtr - sizeof(GPH));
+        u_int32_t keyOff = image_info.infoOffs[II_HwAccessKey];
+
+        if (key_supported_flash) {
+            // Image file : HW access Key exists
+            // Flash :      HW access Key exists
+            // Behavior: Save the burnt key in the flash.
+            key_to_burn = flash_info.accessKeyValue;
+        } else {
+            // Image file : HW access Key exists
+            // Flash :      No HW access Key
+            // Behavior: Just create a zero Key even if the image contains an activated key
+            key_to_burn.l = 0;
+            key_to_burn.h = 0;
+       }
+       PatchKeySect(infoSectBuff, keyOff, key_to_burn);
+    } else {
+        if (key_supported_flash) {
+            // Image file : No HW access Key
+            // Flash :      HW access Key exists
+            // Behavior: In this case we will warn the user that he's going to remove the HW access Key
+            printf("\n    NOTE: You are about to burn a FW that does not support HW access enable/disable.\n");
+            printf("          If you already have an activated key it will be removed.\n");
+            if (! ask_user()) {
+                return false;
+            }
+        } else {
+            // Image file : No HW access Key
+            // Flash :      No HW access Key
+            // Behavior: Do nothing
+            return true;
+        }
+    }
+    return true;
+}
 
 ////////////////////////////////////////////////////////////////////////
 //Note that vsd1 is a string of bytes.
@@ -4364,7 +4579,7 @@ bool Operations::reportGuidChaneges(ImageInfo* info, guid_t new_guids[MAX_GUIDS]
                       bool print_guids, bool print_macs, bool print_uids)
 {
 
-    printf("    You are about to change the Guids/Macs/Uids on the device:\n");
+    printf("    You are about to change the Guids/Macs/Uids on the device:\n\n");
     printf("                        New Values      " GUID_SPACES "Current Values\n");
     if (print_uids) {
         PrintUids(new_guids, old_guids );
@@ -4381,29 +4596,21 @@ bool Operations::reportGuidChaneges(ImageInfo* info, guid_t new_guids[MAX_GUIDS]
     return true;
 }
 
-
-
-////////////////////////////////////////////////////////////////////////
-bool Operations::patchGUIDs (FImage&   f,
-                             ImageInfo* info,
-                             bool      patch_macs,
-                             bool      patch_uids,
-                             bool      user_guids,
-                             bool      user_macs,
-                             bool      user_uids,
-                             guid_t    new_guids[MAX_GUIDS],
-                             guid_t    old_guids[MAX_GUIDS],
-                             u_int32_t num_of_old_guids)
+bool Operations::preFS2PatchGUIDs(bool      patch_macs,
+        bool      patch_uids,
+        bool      user_guids,
+        bool      user_macs,
+        bool      user_uids,
+        guid_t    new_guids[MAX_GUIDS],
+        guid_t    old_guids[MAX_GUIDS],
+        guid_t    **used_guids_p,
+        u_int32_t num_of_old_guids)
 {
-    guid_t*         used_guids = old_guids ? old_guids : new_guids;
-    u_int32_t       *buf = f.getBuf();
     int i;
-    bool old_guids_fmt = info->guidNum < GUIDS;
+    guid_t*         used_guids;
+    *used_guids_p = old_guids ? old_guids : new_guids;
 
-    // Print old GUIDs and get confirmation
     if (new_guids) {
-        if (old_guids_fmt)
-            printf("    Old image!!!! Only %d GUIDs may be set.\n", info->guidNum);
         // if only guids or only macs are specified by user, keep the other
         // as currently set of flash. This is in order to simplify transitions between
         // burning IB and ETH FW.
@@ -4420,9 +4627,9 @@ bool Operations::patchGUIDs (FImage&   f,
                 }
             }
         }
-        used_guids = new_guids;
+        *used_guids_p = new_guids;
     }
-
+    used_guids = *used_guids_p;
 
     if (!patch_uids) {
         if (patch_macs) {
@@ -4476,6 +4683,37 @@ bool Operations::patchGUIDs (FImage&   f,
 
         }
     }
+
+    return true;
+}
+
+
+////////////////////////////////////////////////////////////////////////
+bool Operations::patchGUIDs (FImage&   f,
+                             ImageInfo* info,
+                             bool      patch_macs,
+                             bool      patch_uids,
+                             bool      user_guids,
+                             bool      user_macs,
+                             bool      user_uids,
+                             guid_t    new_guids[MAX_GUIDS],
+                             guid_t    old_guids[MAX_GUIDS],
+                             u_int32_t num_of_old_guids)
+{
+    guid_t*         used_guids;
+    u_int32_t       *buf = f.getBuf();
+    bool old_guids_fmt = info->guidNum < GUIDS;
+
+    // Print old GUIDs and get confirmation
+    if (new_guids) {
+        if (old_guids_fmt) {
+            printf("    Old image!!!! Only %d GUIDs may be set.\n", info->guidNum);
+        }
+    }
+    // Call common function
+    if (!preFS2PatchGUIDs(patch_macs, patch_uids, user_guids, user_macs, user_uids, new_guids, old_guids, &used_guids, num_of_old_guids)) {
+        return false;
+    }
     // Path GUIDs section
     if (info->guidPtr) {
         patchGUIDsSection(buf, info->imgStart + info->guidPtr, used_guids, info->guidNum);
@@ -4486,7 +4724,6 @@ bool Operations::patchGUIDs (FImage&   f,
             patchGUIDsSection(buf, info->allImgStart[1] + info->guidPtr, used_guids, info->guidNum);
         }
     }
-
     return true;
 } // patchGUIDs
 
@@ -4802,7 +5039,12 @@ bool Operations::ParseInfoSect(u_int8_t* buff, u_int32_t byteSize, Operations::I
            }
            info->supportedHwIdNum = tagSize / 4;
            break;
-
+        case II_HwAccessKey: {
+            info->accessKeyValue.h = __be32_to_cpu(*(p + 1));;
+            info->accessKeyValue.l = __be32_to_cpu(*(p + 2));;
+            info->accessKeyExists= 1;
+        }
+            break;
 
         case II_End:
             endFound = true;
@@ -4834,57 +5076,99 @@ bool Operations::ParseInfoSect(u_int8_t* buff, u_int32_t byteSize, Operations::I
     return true;
 }
 
-bool Operations::GetExpRomStrVer(Operations::ImageInfo* info, char* version)
-{
-    if (info->expRomProductId >= 0x10) {
-        sprintf(version, "%d.%d.%d", info->expRomVer[0], info->expRomVer[1], info->expRomVer[2]);
+bool Operations::GetExpRomStrVer(Operations::ImageInfo* info, char* version) {
+    if (info->romInfo[0].expRomProductId >= 0x10) {
+        sprintf(version, "%d.%d.%d", info->romInfo[0].expRomVer[0], info->romInfo[0].expRomVer[1],
+                info->romInfo[0].expRomVer[2]);
     } else {
-        sprintf(version, "%d", info->expRomVer[0]);
+        sprintf(version, "%d", info->romInfo[0].expRomVer[0]);
     }
     return true;
 }
 
-bool Operations::DisplayExpRomInfo(Operations::ImageInfo* info, bool print_pre) {
-    if (print_pre) {
-        report("Rom Info:        ");
-    }
-    if (info->expRomValidVersion) {
-        if (info->expRomProductId == 0xf) {
-            report("devid=%d version_id=%s", info->expRomDevId, info->expRomFreestr);
-        } else {
-            report("type=");
-            switch (info->expRomProductId) {
-            case 1   : report("CLP1 "); break;
-            case 2   : report("CLP2 "); break;
-            case 3   : report("CLP3 "); break;
-            case 4   : report("CLP4 "); break;
-            case 0x10: report("PXE  "); break;
-            case 0x11: report("UEFI "); break;
-            default:   report("0x%x - Unknown ROM product ID\n", info->expRomProductId); return true;
+bool Operations::DisplayOneExpRomInfo(RomInfo* info) {
+
+    if (info->expRomProductId == 0xf) {
+        report("devid=%d version_id=%s", info->expRomDevId,
+                info->expRomFreestr);
+    } else {
+        report("type=");
+        switch (info->expRomProductId) {
+        case 1:
+            report("CLP1 ");
+            break;
+        case 2:
+            report("CLP2 ");
+            break;
+        case 3:
+            report("CLP3 ");
+            break;
+        case 4:
+            report("CLP4 ");
+            break;
+        case 0x10:
+            report("PXE  ");
+            break;
+        case 0x11:
+            report("UEFI ");
+            break;
+        default:
+            report("0x%x - Unknown ROM product ID\n", info->expRomProductId);
+            return true;
+        }
+
+        report("version=%d", info->expRomVer[0]);
+        if (info->expRomProductId >= 0x10) {
+            report(".%d.%d", info->expRomVer[1], info->expRomVer[2]);
+
+            if (info->expRomDevId != EXP_ROM_GEN_DEVID) {
+                // Do not display if 0 - ROM is the same for all device IDs
+                report(" devid=%d", info->expRomDevId);
+            }
+            if (info->expRomPort) {
+                // Do not display if 0 - port independent
+                report(" port=%d", info->expRomPort);
             }
 
-            report("version=%d", info->expRomVer[0]);
-            if (info->expRomProductId >= 0x10) {
-                report(".%d.%d",
-                       info->expRomVer[1],
-                       info->expRomVer[2]);
+            report(" proto=");
+            switch (info->expRomProto) {
+            case ER_IB:
+                report("IB");
+                break;
+            case ER_ETH:
+                report("ETH");
+                break;
+            case ER_VPI:
+                report("VPI");
+                break;
+            default:
+                report("0x%x", info->expRomProto);
+            }
+        }
+    }
+    return true;
 
-                if (info->expRomDevId) {
-                    // Do not display if 0 - ROM is the same for all device IDs
-                    report(" devid=%d", info->expRomDevId);
-                }
-                if (info->expRomPort) {
-                    // Do not display if 0 - port independent
-                    report(" port=%d", info->expRomPort);
-                }
+}
+bool Operations::DisplayExpRomInfo(Operations::ImageInfo* info, char *pre_str) {
+    int i;
+    int str_len = strlen(pre_str);
 
-                report(" proto=");
-                switch (info->expRomProto) {
-                case ER_IB:    report("IB");    break;
-                case ER_ETH:   report("ETH");   break;
-                case ER_VPI:   report("VPI");   break;
-                default:  report("0x%x", info->expRomProto);
+    if (info->numOfExpRom > 0) {
+        for (i = 0; i < info->numOfExpRom; i++) {
+
+            // Print the pre string or spaces
+            if (i == 0) {
+                report("%s", pre_str);
+            } else {
+                int j;
+                for ( j = 0; j < str_len; j++) {
+                    printf("%s", " ");
                 }
+            }
+            // Display a ROM info
+            DisplayOneExpRomInfo(&(info->romInfo[i]));
+            if (i != info->numOfExpRom - 1) { // Don't print new line after the info of the last ROM
+                report("\n");
             }
         }
         if (info->expRomWarning) {
@@ -4892,6 +5176,7 @@ bool Operations::DisplayExpRomInfo(Operations::ImageInfo* info, bool print_pre) 
         }
         report("\n");
     } else {
+        report("%s", pre_str);
         report("N/A");
         if (info->expRomErrMsgValid) {
             report(" (-E- %s)", info->expRomErrMsg);
@@ -4900,8 +5185,6 @@ bool Operations::DisplayExpRomInfo(Operations::ImageInfo* info, bool print_pre) 
     }
     return true;
 }
-
-
 
 bool Operations::ReportBxGuidsQuery(guid_t* guids, int base1, int guids_num, int index, const char* pre_str)
 {
@@ -4998,7 +5281,7 @@ bool Operations::DisplayImageInfo(Operations::ImageInfo* info, bool full_query) 
     }
 
     if (info->expRomFound) {
-        DisplayExpRomInfo(info);
+        DisplayExpRomInfo(info, "Rom Info:        ");
     }
 
     if (info->isFailsafe && !IsFs2()) {
@@ -5014,7 +5297,15 @@ bool Operations::DisplayImageInfo(Operations::ImageInfo* info, bool full_query) 
         }
     }
 
-    report("Chip Revision:   %X\n", info->devRev);
+    if (info->accessKeyExists) {
+        report("HW Access Key:   ");
+        if (info->accessKeyValue.l || info->accessKeyValue.h) {
+            report("Enabled\n");
+        } else {
+            report("Disabled\n");
+        }
+
+    }
 
     // GUIDS:
     // TODO: Handle case where devtype not found.
@@ -5074,7 +5365,7 @@ bool Operations::DisplayImageInfo(Operations::ImageInfo* info, bool full_query) 
                 if (!ib_dev) {
                     report("Description:%s     Port1            Port2\n", mac_indent);
                 } else if (IsSX(info->devType)) {
-                    report("\nDescription:     Base            Switch\n");
+                    report("\nDescription:     Base             Switch\n");
                 } else {
                     printf("\n");
                 }
@@ -5139,28 +5430,40 @@ bool Operations::DisplayImageInfo(Operations::ImageInfo* info, bool full_query) 
 // sed -e 's/"/\\"/g' < flint.txt | perl -pe 's/^(.*)$/"$1\\n"/'
 void usage(const char *sname, bool full = false)
 {
+#ifdef FOR_MAN
+    #define MAN_BR ".br\n"
+
+    #define QUOTE(s)      #s
+    #define MAN_SH(name)  ".SH " #name "\n"
+    #define MAN_SS(name)  ".SS " #name "\n"
+    #define MAN_FS
+#else
+    #define MAN_BR
+    #define MAN_SH(name)  name "\n"
+    #define MAN_SS(name)  name "\n"
+    #define MAN_FS(name)  "   " name "\n"
+#endif
+
+
     const char *descr =
+#ifdef FOR_MAN
+    ".TH \"flint\" \"\" \"Jul 2011\" \"MFT 2.7.0\" \"Administration\"\n"
+    MAN_SH("NAME")
+#endif
     "\n"
     "               FLINT - FLash INTerface\n"
+
     "\n"
-    "FW (firmware) burning and flash memory operations tool for\n"
-    "Mellanox Infiniband HCAs and Ethernet NIC cards.\n"
-    "\n"
-    "Usage:\n"
-    "------\n"
-    "\n"
+    MAN_SH("SYNOPSIS")
     "    " FLINT_NAME " [switches...] <command> [parameters...]\n"
+//    "Switches summary:\n"
+//    "-----------------\n"
     "\n"
+    MAN_SH("DESCRIPTION")
+    "    "FLINT_NAME " is a FW (firmware) burning and flash memory operations tool for\n"
+    "    Mellanox Infiniband HCAs, Ethernet NIC cards, and switch devices.\n"
     "\n"
-    "Switches summary:\n"
-    "-----------------\n"
-//    "    -bsn <BSN>         - Mellanox Board Serial Number (BSN).\n"
-//    "                         Valid BSN format is:\n"
-//    "                                 MTxxxxx[-]R[xx]ddmmyy-nnn[-cc]\n"
-//    "                         Commands affected: burn\n"
-//    "\n"
-//    "    -crc               - Print out each section CRC.\n"
-//    "                         Commands affected: verify\n"
+    MAN_SS("OPTIONS")
     "\n"
     "    -d[evice] <device> - Device flash is connected to.\n"
     "                         Commands affected: all\n"
@@ -5255,8 +5558,10 @@ void usage(const char *sname, bool full = false)
     "                         malfunction. Use only if you know what you are doing\n"
     "\n"
     "    -override_cache_replacement\n"
-    "                       - Allow Accessing the flash even if the cache replacement mode is enabled.\n"
-    "                         NOTE: This flag is intended for advanced users usage.\n"
+    "                       - On SwitchX devices:\n"
+MAN_BR
+    "                         Allow accessing the flash even if the cache replacement mode is enabled.\n"
+    "                         NOTE: This flag is intended for advanced users only.\n"
     "                               Running in this mode may cause the firmware to hang.\n"
     "\n"
     "    -skip_is           - Allow burning the FW image without updating the invariant sector,\n"
@@ -5293,13 +5598,15 @@ void usage(const char *sname, bool full = false)
     "    -use_image_guids   - Burn (guids/uids/macs) as appears in the given image.\n"
     "                         Commands affected: burn\n"
     "\n"
-    "\n"
     "    -use_image_rom     - Do not save the ROM which exists in the device.\n"
     "                         Commands affected: burn\n"
     "\n"
     "    -dual_image        - Make the burn process burn two images on flash (previously default algorithm). Current\n"
     "                         default failsafe burn process burns a single image (in alternating locations).\n"
     "                         Commands affected: burn\n"
+    "\n"
+    "    -striped_image     - Use this flag to indicate that the given image file is in a \"striped image\" format.\n"
+    "                         Commands affected: query verify\n"
     "\n"
     "    -banks <banks>\n"
     "                       - Set the number of attached flash devices (banks)\n"
@@ -5311,26 +5618,56 @@ void usage(const char *sname, bool full = false)
     "                       - Use the given parameters to access the flash instead of reading them from the flash.\n"
     "                         Supported parameters:\n"
     // TODO: Get the supported type list from the mflash library.
-    "                           Type: The type of the flash, such as: M25PXxx, M25Pxx, SST25VFxx.\n"
+    "                           Type: The type of the flash, such as: M25PXxx, M25Pxx, SST25VFxx, W25QxxBV.\n"
     "                           log2size: The log2 of the flash size.\n"
     "                           num_of_flashes: the number of the flashes connected to the device.\n"
     "\n"
     "    -v                 - Version info.\n"
     "\n"
-    "Commands summary (use -hh flag for full commands description):\n"
-    "-----------------\n"
+    MAN_SS("COMMANDS SUMMARY")
+#ifndef FOR_MAN
+    "\n(use -hh flag for full commands description):\n"
+#else
+    "\n"
+#endif
+    "\n"
+    "Common FW Update and Query:\n"
     "  b[urn]              - Burn flash\n"
     "  q[uery]  [full]     - Query misc. flash/firmware characteristics, use \"full\" to get more information.\n"
     "  v[erify]            - Verify entire flash\n"
+    "  swreset             - SW reset the target un-managed switch device. This command\n"
+    "                        is supported only in the In-Band access method.\n"
+    "\n"
+    "Expansion ROM Update:\n"
+    "  brom     <ROM-file> - Burn the specified ROM file on the flash.\n"
+    "  drom                - Remove the ROM section from the flash.\n"
+    "  rrom     <out-file> - Read the ROM section from the flash.\n"
+    "\n"
+    "Initial Burn, Production:\n"
     "  bb                  - Burn Block - Burns the given image as is. \n"
     "                        No checks are done.\n"
     "  sg       [nocrc]    - Set GUIDs.\n"
     "  sv                  - Set the VSD.\n"
+    "\n"
+    "Misc FW Image operations:\n"
     "  ri       <out-file> - Read the fw image on the flash.\n"
     "  dc       [out-file] - Dump Configuration: print fw configuration file\n"
     "                        for the given image.\n"
     "  dh       [out-file] - Dump Hash: print hash file\n"
     "                        for the given image.\n"
+    "\n"
+    "HW Access Key:\n"
+    "  set_key  [key]      - Set/Update the HW access key which is used to enable/disable access to HW.\n"
+    "                        The key can be provided in the command line or interactively typed after\n"
+    "                        the command is given\n"
+    "                        NOTE: The new key is activated only after the device is reset.\n"
+    "  hw_access <enable|disable> [key]\n"
+    "                      - Enable/disable the access to the HW.\n"
+    "                        The key can be provided in the command line or interactively typed after\n"
+    "                        the command is given\n"
+    "\n"
+    "Low Level Flash Operations:\n"
+    "  cfi                 - Query flash device parameters\n"
     "  e[rase]  <addr>     - Erase sector\n"
     "  rw       <addr>     - Read one dword from flash\n"
     "  ww       <addr> < data> \n"
@@ -5340,11 +5677,6 @@ void usage(const char *sname, bool full = false)
     "                      - Write a data block to flash without sector erase\n"
     "  rb       <addr> <size> [out-file]\n"
     "                      - Read  a data block from flash\n"
-    "  swreset             - SW reset the target InfniScale IV device. This command\n"
-    "                        is supported only in the In-Band access method.\n"
-    "  brom     <ROM-file> - Burn the specified ROM file on the flash.\n"
-    "  rrom     <out-file> - Read the ROM section from the flash.\n"
-    "  drom                - Remove the ROM section from the flash.\n"
     "\n"
     "  Return values:\n"
     "  0 - Successful completion\n"
@@ -5354,11 +5686,10 @@ void usage(const char *sname, bool full = false)
 
     const char* full_descr =
     "\n"
-    "Command descriptions:\n"
-    "----------------------------\n"
+    MAN_SS("COMMAND DESCRIPTION")
     "\n"
     "* Burn flash\n"
-    "  Burns entire flash from raw binary image.\n"
+    "  Performs failsafe FW update from a raw binary image.\n"
     "\n"
     "    Command:\n"
     "        b[urn]\n"
@@ -5369,8 +5700,54 @@ void usage(const char *sname, bool full = false)
     "        " FLINT_NAME " -d " DEV_MST_EXAMPLE2 " -guid 0x2c9000100d050 -i image1.bin b\n"
     "\n"
     "\n"
+    "* Query miscellaneous FW and flash parameters\n"
+    "  Display FW Version, GUIDs, PSID, and other info\n"
+    "\n"
+    "    Command:\n"
+    "        q[uery]\n"
+    "    Parameters:\n"
+    "        None\n"
+    "    Example:\n"
+    "        " FLINT_NAME " -d " DEV_MST_EXAMPLE1 " query\n"
+    "\n"
+    "\n"
+    "* Verify entire flash.\n"
+    "\n"
+    "    Command:\n"
+    "        v[erify]\n"
+    "    Parameters:\n"
+    "        None\n"
+    "    Example:\n"
+    "        " FLINT_NAME " -d " DEV_MST_EXAMPLE1 " v\n"
+    "\n"
+    "\n"
+    "* Burn the specified exp-ROM on the flash.\n"
+    "\n"
+    "    Command:\n"
+    "        brom\n"
+    "    Parameters:\n"
+    "        file - The exp-ROM file.\n"
+    "    Example:\n"
+    "        " FLINT_NAME " -d " DEV_MST_EXAMPLE1 " brom exp-rom.rom\n"
+    "\n"
+    "* Remove the exp-ROM from the flash if it is existing.\n"
+    "\n"
+    "    Command:\n"
+    "        drom\n"
+    "    Example:\n"
+    "        " FLINT_NAME " -d " DEV_MST_EXAMPLE1 " drom\n"
+    "\n"
+    "* Read the exp-ROM from the flash if it is existing.\n"
+    "\n"
+    "    Command:\n"
+    "        rrom\n"
+    "        file - filename to write the exp-ROM to.\n"
+
+    "    Example:\n"
+    "        " FLINT_NAME " -d " DEV_MST_EXAMPLE1 " rrom exp-rom.rom\n"
+    "\n"
     "* Burn Block\n"
-    "  Burns entire flash from raw binary image as is. No checks are done on the flash or\n"
+    "  Burns entire flash verbatim from raw binary image. No checks are done on the flash or\n"
     "  on the given image file. No fields (such as VSD or Guids) are read from flash. \n"
     "\n"
     "    Command:\n"
@@ -5401,9 +5778,6 @@ void usage(const char *sname, bool full = false)
     "        " FLINT_NAME " -d " DEV_MST_EXAMPLE1 " -guid 0x0002c9000100d050 sg\n"
     "\n"
     "\n"
-
-    "\n"
-    "\n"
     "* Set VSD\n"
     "  Set VSD in the given device/image.\n"
     "  Use -vsd flag to set the desired VSD string.\n"
@@ -5417,6 +5791,64 @@ void usage(const char *sname, bool full = false)
     "\n"
     "\n"
 
+    "* Print (to screen or to a file) the FW configuration text file used by the image generation process.\n"
+    "  This command would fail if the image does not contain a FW configuration section. Existence of this\n"
+    "  section depends on the version of the image generation tool.\n"
+    "\n"
+    "    Command:\n"
+    "        dc\n"
+    "    Parameters:\n"
+    "        file - (optional) filename to write the dumped configuration to. If not given, the data\n"
+    "               is printed to screen\n"
+    "    Example:\n"
+    "        " FLINT_NAME " -d " DEV_MST_EXAMPLE1 " dc\n"
+    "\n"
+    "* Print (to screen or to a file) the HASH text file used by the FW.\n"
+    "  This command would fail if the image does not contain a Hash file.\n"
+    "\n"
+    "    Command:\n"
+    "        dh\n"
+    "    Parameters:\n"
+    "        file - (optional) filename to write the dumped hash to. If not given, the data\n"
+    "               is printed to screen\n"
+    "    Example:\n"
+    "        " FLINT_NAME " -d " DEV_MST_EXAMPLE1 " dh\n"
+    "\n"
+
+    "\n"
+    "* Set/Update the HW access key which is used to enable/disable access to HW.\n"
+    "\n"
+    "    Command:\n"
+    "        set_key\n"
+    "    Parameters:\n"
+    "        key - (optional) The new key you intend to set (in hex).\n"
+    "    Example:\n"
+    "        " FLINT_NAME " -d " DEV_MST_EXAMPLE1 " set_key 1234deaf5678\n"
+    "\n"
+
+    "* Enable/disable the access to the HW.\n"
+    "\n"
+    "    Command:\n"
+    "        hw_access\n"
+    "    Parameters:\n"
+    "        <enable/disable> - Specify if you intend to disable or enable the HW access.\n"
+    "                           You will be asked to type a key when you try to enable HW access.\n"
+    "        key              - (optional) The key you intend to use for enabling the HW access.\n"
+
+    "    Example:\n"
+    "        " FLINT_NAME " -d " DEV_MST_EXAMPLE1 " hw_access enable\n"
+    "\n"
+
+    "* Query flash device parameters (Common Flash Interface)\n"
+    "\n"
+    "    Command:\n"
+    "        cfi\n"
+    "    Parameters:\n"
+    "        None\n"
+    "    Example:\n"
+    "        " FLINT_NAME " -d " DEV_MST_EXAMPLE1 " cfi\n"
+    "\n"
+    "\n"
     "* Erase sector.\n"
     "  Erases a sector that contains specified address.\n"
     "\n"
@@ -5429,26 +5861,7 @@ void usage(const char *sname, bool full = false)
     "        " FLINT_NAME " -d " DEV_MST_EXAMPLE1 " erase 0x10000\n"
     "\n"
     "\n"
-    "* Query miscellaneous FW and flash parameters\n"
-    "\n"
-    "    Command:\n"
-    "        q[uery]\n"
-    "    Parameters:\n"
-    "        None\n"
-    "    Example:\n"
-    "        " FLINT_NAME " -d " DEV_MST_EXAMPLE1 " query\n"
-    "\n"
-    "\n"
-    "* Query flash device parameters (Common Flash Interface)\n"
-    "\n"
-    "    Command:\n"
-    "        cfi\n"
-    "    Parameters:\n"
-    "        None\n"
-    "    Example:\n"
-    "        " FLINT_NAME " -d " DEV_MST_EXAMPLE1 " cfi\n"
-    "\n"
-    "\n"
+
     "* Read one dword from flash.\n"
     "\n"
     "    Command:\n"
@@ -5457,16 +5870,6 @@ void usage(const char *sname, bool full = false)
     "        addr - address of word to read\n"
     "    Example:\n"
     "        " FLINT_NAME " -d " DEV_MST_EXAMPLE1 " rw 0x20\n"
-    "\n"
-    "\n"
-    "* Verify entire flash.\n"
-    "\n"
-    "    Command:\n"
-    "        v[erify]\n"
-    "    Parameters:\n"
-    "        None\n"
-    "    Example:\n"
-    "        " FLINT_NAME " -d " DEV_MST_EXAMPLE1 " v\n"
     "\n"
     "\n"
     "* Write one dword to flash.\n"
@@ -5529,56 +5932,19 @@ void usage(const char *sname, bool full = false)
     "    Example:\n"
     "        " FLINT_NAME " -d " DEV_MST_EXAMPLE1 " wbne 0x10000 12 0x30000 0x76800 0x5a445a44\n"
     "\n"
-    "* Print (to screen or to a file) the FW configuration text file used by the image generation process.\n"
-    "  This command would fail if the image does not contain a FW configuration section. Existence of this\n"
-    "  section depends on the version of the image generation tool.\n"
+    MAN_SH("RETURN VALUES")
     "\n"
-    "    Command:\n"
-    "        dc\n"
-    "    Parameters:\n"
-    "        file - (optional) filename to write the dumped configuration to. If not given, the data\n"
-    "               is printed to screen\n"
-    "    Example:\n"
-    "        " FLINT_NAME " -d " DEV_MST_EXAMPLE1 " dc\n"
-    "\n"
-    "* Print (to screen or to a file) the HASH text file used by the FW.\n"
-    "  This command would fail if the image does not contain a Hash file.\n"
-    "\n"
-    "    Command:\n"
-    "        dh\n"
-    "    Parameters:\n"
-    "        file - (optional) filename to write the dumped hash to. If not given, the data\n"
-    "               is printed to screen\n"
-    "    Example:\n"
-    "        " FLINT_NAME " -d " DEV_MST_EXAMPLE1 " dh\n"
-    "\n"
-    "* Burn the specified exp-ROM on the flash.\n"
-    "\n"
-    "    Command:\n"
-    "        brom\n"
-    "    Parameters:\n"
-    "        file - The exp-ROM file.\n"
-    "    Example:\n"
-    "        " FLINT_NAME " -d " DEV_MST_EXAMPLE1 " brom exp-rom.rom\n"
-    "\n"
-    "* Remove the exp-ROM from the flash if it is existing.\n"
-    "\n"
-
-    "    Command:\n"
-    "        drom\n"
-    "    Example:\n"
-    "        " FLINT_NAME " -d " DEV_MST_EXAMPLE1 " drom\n"
-    "\n"
-    "* Read the exp-ROM from the flash if it is existing.\n"
-    "\n"
-    "    Command:\n"
-    "        rrom\n"
-    "        file - filename to write the exp-ROM to.\n"
-
-    "    Example:\n"
-    "        " FLINT_NAME " -d " DEV_MST_EXAMPLE1 " rrom exp-rom.rom\n"
-    "\n";
-
+    "   0 - Successful completion\n"
+    "   1 - An error has occurred\n"
+    "   7 - For burn command - FW already updated - burn was aborted.\n"
+#ifdef FOR_MAN
+    MAN_SH("KNOWN ISSUES")
+    "If flint is forcefully killed without giving it a chance to clean up,\n"
+    "the HCA internal flash semaphore may not be released, and prevent further\n"
+    "activation of flint. Use the -clear_semaphore flag to force clearing of\n"
+    "this semaphore."
+#endif
+;
     printf(descr, sname);
 
     if (full) {
@@ -5749,6 +6115,7 @@ int g_signals_for_termination[] = {
     SIGINT,
 #ifndef _WIN32
     SIGHUP,
+    SIGPIPE,
 #endif
     SIGTERM
 };
@@ -6289,7 +6656,60 @@ void PrintFSBurnErr(Flash& f, Operations& ops, const char* operation)
 
 #define SETERR(args) do { printf("*** ERROR *** "); printf args; printf("\n"); return 1; } while(0)
 
+#define GET_PASSWORD_FROM_USER(pre_str, key_struct_p) {\
+	    char key_arr[MAX_PASSWORD_LEN];\
+	    GetPasswordFromUser(pre_str, key_arr);\
+	    GETKEY(key_arr, key_struct_p);\
+}
 
+#define GET_KEY_FROM_USER(command, key_struct_p, from_password_p) {\
+        if (i + 2 == ac) {\
+            NEXTC("<HW_ACCESS_KEY>", command);\
+            GETKEY(av[i], key_struct_p);\
+            *from_password_p = 0;\
+        } else {\
+            GET_PASSWORD_FROM_USER("Enter key ", key_struct_p);\
+            *from_password_p = 1;\
+        }\
+}
+
+int mygetch(void)
+{
+    struct termios oldt,
+    newt;
+    int ch;
+    tcgetattr( STDIN_FILENO, &oldt );
+    newt = oldt;
+    newt.c_lflag &= ~( ICANON | ECHO );
+    tcsetattr( STDIN_FILENO, TCSANOW, &newt );
+    ch = getchar();
+    tcsetattr( STDIN_FILENO, TCSANOW, &oldt );
+    return ch;
+}
+#define MAX_PASSWORD_LEN 256
+// TODO: Move this function to the tools common file.
+int GetPasswordFromUser(char *pre_str, char buffer[MAX_PASSWORD_LEN])
+{
+    char c;
+    int pos = 0;
+
+    printf("%s: ", pre_str);
+    do {
+        c = mygetch();
+
+        if( ((pos < MAX_PASSWORD_LEN - 1)) && isprint(c) ) {
+            buffer[ pos++ ] = c;
+            printf("%c", '*');
+        } else if( (c == 8 || c == 127) && pos ) {
+            buffer[ pos-- ] = '\0';
+            printf("%s", "\b \b");
+        }
+
+    } while( c != '\n' );
+    printf("\n");
+    buffer[pos] = '\0';
+    return true;
+}
 
 int main(int ac, char *av[])
 {
@@ -6336,8 +6756,7 @@ int main(int ac, char *av[])
 
     bool        fs2_image  = false;
     bool        fs2_device = false;
-
-
+    u_int8_t    is_cr_space_locked = 0;
     //
     // Map termination signal handlers
     //
@@ -6609,8 +7028,14 @@ int main(int ac, char *av[])
 
         g_flash = f.get();
         if (!f->open(device, clear_semaphore, false, num_of_banks, flash_params_p, ignoreCasheRepGuard)) {
-            report_err(ops._err_msg, "Can not open %s: %s\n", device, f->err());
-            rc =  1; goto done;
+            is_cr_space_locked = f->get_cr_space_locked();
+
+            // We will ignore this failure when we want to disable/enable the HW access
+            if (!(is_cr_space_locked && cmd == CMD_HW_ACCESS)) {
+                report_err(ops._err_msg, "Can not open %s: %s\n", device, f->err());
+                rc =  1; goto done;
+            }
+
         }
 
         ops.SetNumPorts(f->get_port_num());
@@ -6677,6 +7102,11 @@ int main(int ac, char *av[])
 
             if (!burn_block) {
 
+                if (ops.GetFs2StripedImage()) {
+                    report_err(ops._err_msg, "The -striped_image cannot be used with the burn command\n");
+                    rc = 1; goto done;
+                }
+
                 if (fs2_image != fs2_device) {
                     report_err(ops._err_msg, "The given device %s a FS2 image type, but the given image file %s a FS2 FW image\n",
                            fs2_device ? "requires" : "does not require",
@@ -6715,7 +7145,6 @@ int main(int ac, char *av[])
                 // Get GUID and VSD info from flash
 
                 bool read_guids = true;
-                bool read_ps    = true;
 
                 // Flash query (unlike image file query) does not have to
                 // pass. E.G. blank flash and the user supplies the needed data (guids, vsd).
@@ -6749,10 +7178,8 @@ int main(int ac, char *av[])
                                "          Select \"yes\" to use the ROM from the given image file.\n"
                                "          Select \"no\" to keep the existing ROM in the flash\n");
                         _silent = false;
-                        printf("\n    Current ROM info on flash: ");
-                        ops.DisplayExpRomInfo(&flashInfo, false);
-                        printf("    ROM info from image file : ");
-                        ops.DisplayExpRomInfo(&tmpFileInfo, false);
+                        ops.DisplayExpRomInfo(&flashInfo, "    Current ROM info on flash: ");
+                        ops.DisplayExpRomInfo(&tmpFileInfo, "    ROM info from image file : ");
                         _silent = true;
 
                         if (!ops.ask_user("Use the ROM from the image file")) {
@@ -6787,18 +7214,16 @@ int main(int ac, char *av[])
                 bool ib_dev;
                 bool eth_dev;
                 bool bx_dev;
-
+                // Get the FW types
                 bx_dev = ops.IsBridgeX(fileInfo.devType);
                 ops.SetDevFlags(fileInfo.devType, ib_dev, eth_dev);
 
-                if ((user_vsd && user_psid) || use_image_ps)
-                    read_ps = false;
-
+                // Check if there is a need to read guids
                 if (use_image_guids || ops.GetBurnBlankGuids() || (guids_specified && ib_dev) ||
                     (macs_specified && eth_dev) || (uids_specified && bx_dev)) {
                     read_guids = false;
                 }
-
+                // Check if the burnt FW is ok and readable in order to get the GUIDs later
                 if (read_guids && !flash_query_res) {
                     ops.PrintMissGuidErr(ib_dev, eth_dev, bx_dev);
                     if (burn_failsafe) {
@@ -6814,7 +7239,7 @@ int main(int ac, char *av[])
                 bool  is_guids_specified  =  guids_specified || macs_specified || uids_specified;
                 // Patch GUIDS
                 if (is_guids_specified) {
-                    if (!ops.CheckGuidsFlags(fileInfo.devType, guids_specified, macs_specified,  uids_specified)) {
+                    if (!ops.CheckGuidsFlags(fileInfo.devType, guids_specified, macs_specified, uids_specified)) {
                         report_err(ops._err_msg, "%s\n", ops.err());
                         rc =  1; goto done;
                     }
@@ -6943,9 +7368,11 @@ int main(int ac, char *av[])
                         }
                     }
                 }
+                if (!ops.patchHwAccessKey(fim, flashInfo, fileInfo)) {
+                    rc =  1; goto done;
+                }
 
                 // Check PSID and ib -> eth change.
-
                 if (fileInfo.infoOffs[Operations::II_PSID]  &&
                     flashInfo.infoOffs[Operations::II_PSID] &&
                     strncmp( fileInfo.psid, flashInfo.psid, PSID_LEN)) {
@@ -7058,33 +7485,29 @@ int main(int ac, char *av[])
     case CMD_BURN_ROM:
         {
             char *rom_file = NULL;
-            int rom_size;
-            FILE *fh_rom;
-
             NEXTC("<ROM_FILE>", "brom");
             rom_file = av[i];
             _silent = true;
 
             // Open Rom file, get its size and read it
-            fh_rom = fopen(rom_file, "rb");
-            if (!fh_rom) {
-                report_err(ops._err_msg, "Can not open file \"%s\" - %s\n", rom_file, strerror(errno));
-                rc = 1; goto done;
+            FImage rom_image;
+            if (!rom_image.open(rom_file, true)) {
+                report_err(ops._err_msg, "ROM file open failed: %s\n", rom_image.err());
+                rc =  1; goto done;
             }
-            if (!ops.GetFileSize(fh_rom, rom_file, rom_size)) {
-                report_err(ops._err_msg, "Failed to get ROM file size: %s.\n", ops.err());
-                fclose(fh_rom);
-                rc = 1; goto done;
-            }
-            vector<u_int8_t> rom_data(rom_size);
 
-            // Read rom data.
-            if (fread((u_int8_t*)(&rom_data[0]), 1, rom_size, fh_rom) != (unsigned)rom_size) {
-                report_err(ops._err_msg, "Failed to read ROM file \"%s\": %s\n", rom_file, strerror(errno));
-                fclose(fh_rom);
+            if (rom_image.getBufLength() == 0) {
+                report_err(ops._err_msg, "Bad ROM file: Empty file.\n");
                 rc = 1; goto done;
             }
-            fclose(fh_rom);
+
+            Operations::ImageInfo dummy_info;
+            if (ops.VerifyFs2(rom_image, &dummy_info)) {
+                // Note that if this check passes it means that a FW image was
+                // erroneously provided as an expansion ROM
+                report_err(ops._err_msg, "File \"%s\" is a Mellanox FW image. Expecting an expansion ROM image.\n", rom_file);
+                rc = 1; goto done;
+            }
 
             Operations::ImageInfo file_info;
             Operations::ImageInfo flash_info;
@@ -7101,7 +7524,7 @@ int main(int ac, char *av[])
 
 
             u_int32_t length        = ops._last_image_addr;
-            u_int32_t new_data_size = length + TOTAL_SEC_SIZE(rom_size);
+            u_int32_t new_data_size = length + TOTAL_SEC_SIZE(rom_image.getBufLength());
             vector<u_int8_t> data(length);
             vector<u_int8_t> new_data(new_data_size);
 
@@ -7115,7 +7538,8 @@ int main(int ac, char *av[])
 
             // Insert the rom to the image.
             if(!ops.UpdateRomInImage((u_int8_t*)(&new_data[0]), (u_int8_t*)(&data[0]),
-                                     (u_int8_t*)(&rom_data[0]), rom_size, &new_image_size)) {
+                                     (u_int8_t*)rom_image.getBuf(), rom_image.getBufLength(),
+                                     &new_image_size)) {
                 report_err(ops._err_msg, "Burning ROM Failed: %s\n", f->err());
                 rc = 1; goto done;
             }
@@ -7135,21 +7559,22 @@ int main(int ac, char *av[])
             }
             _silent = false;
             char rom_ver1[50], rom_ver2[50];
-            printf("\n    Current ROM info on flash: ");
+            printf("\n");
+            char *info_str = "    Current ROM info on flash: ";
+            char *info_str2 = "    New ROM info:              ";
             if (!ops.IsRomEmpty(&flash_info)) {
-                ops.DisplayExpRomInfo(&flash_info, false);
+                ops.DisplayExpRomInfo(&flash_info, info_str);
                 ops.GetExpRomStrVer(&flash_info, rom_ver1);
-
             } else {
+                printf("%s", info_str);
                 sprintf(rom_ver1, "N/A");
                 printf("%s\n", rom_ver1);
             }
-            printf("    New ROM info:              ");
-            ops.DisplayExpRomInfo(&file_info, false);
+            ops.DisplayExpRomInfo(&file_info, info_str2);
             ops.GetExpRomStrVer(&file_info, rom_ver2);
-
-            print_line_to_log("Current ROM version on flash: %s, New ROM version: %s\n", rom_ver1, rom_ver2);
-
+            print_line_to_log(
+                    "Current ROM version on flash (1st ROM of %d): %s, New ROM version (1st ROM of %d): %s\n",
+                    flash_info.numOfExpRom, rom_ver1, file_info.numOfExpRom, rom_ver2);
 
             // Print the ROM versin of the curerrent and the new ROM.
             bool ret = ops.CntxFailSafeBurn(*f, fim, !silent, &flash_info, &flash_info, true, "Burning ROM image");
@@ -7258,7 +7683,6 @@ int main(int ac, char *av[])
 
         FImage                fim1;
         Operations::ImageInfo info;
-        Operations::ImageInfo new_info;
 
         if (user_vsd == NULL) {
             report_err(ops._err_msg, "For set_vsd command, please specify the VSD (using command flag -vsd).\n");
@@ -7281,11 +7705,89 @@ int main(int ac, char *av[])
         if (!ops.ModifyVSDSection(fbase, &info, user_vsd, image_fname, silent)) {
             report_err(ops._err_msg, "Failed to set the VSD: %s.\n", ops.err());
             rc = 1; goto done;
-
         }
     }
     break;
 
+    case CMD_SET_KEY:
+    {
+
+        FImage                fim1;
+        Operations::ImageInfo info;
+        hw_key_t              key;
+        u_int8_t got_pass;
+        GET_KEY_FROM_USER("set_key", &key, &got_pass);
+
+        // As the user to confirm the key
+        if (got_pass) {
+            hw_key_t second_key;
+            GET_PASSWORD_FROM_USER("Verify key", &second_key);
+            if (key.l != second_key.l || key.h != second_key.h) {
+                report_err(ops._err_msg, "Failed to set the HW access key: The keys you entered did not match.\n");
+                rc = 1; goto done;
+            }
+        }
+        _silent = true;
+
+        if (!ops.CheckDevImage(*fbase, info)) {
+            report_err(ops._err_msg, "Failed to set the HW access key: %s\n", ops.err());
+            rc = 1; goto done;
+        }
+        _silent = false;
+
+        // Check if we have info section in the image.
+        if (!info.infoOffs[Operations::II_HwAccessKey]) {
+            report_err(ops._err_msg, "Failed to set the HW access key: The image does not support this operation.\n");
+            rc = 1; goto done;
+        }
+
+        if (!ops.ModifyKeySection(fbase, &info, key, image_fname, silent)) {
+            report_err(ops._err_msg, "Failed to set the HW access key: %s.\n", ops.err());
+            rc = 1; goto done;
+        }
+    }
+    break;
+
+
+    case CMD_HW_ACCESS:
+    {
+        char *operation;
+
+        NEXTC("<disable/enable>", "hw_access");
+        operation = av[i];
+
+        if (!strcmp(operation, "disable")) {
+            if (is_cr_space_locked) {
+                printf("-I- HW access already disabled\n");
+            } else {
+                if (!f->disable_hw_access()) {
+                    report_err(ops._err_msg, "%s\n", f->err());
+                    rc =  1; goto done;
+                }
+            }
+        } else if (!strcmp(operation, "enable")) {
+            u_int64_t key;
+
+            if (is_cr_space_locked == 0) {
+                printf("-I- HW access already enabled\n");
+            } else {
+                hw_key_t key_struct;
+                u_int8_t got_pass;
+                GET_KEY_FROM_USER("hw_access", &key_struct, &got_pass);
+                key = ((u_int64_t)key_struct.h << 32) | key_struct.l;
+                if (!f->enable_hw_access(key)) {
+                    report_err(ops._err_msg, "%s\n", f->err());
+                    rc =  1; goto done;
+                }
+            }
+        } else {
+            report_err(ops._err_msg, "Bad option (%s). You can use enable or disable as options for hw_access.\n", operation);
+            rc = 1; goto done;
+        }
+
+
+    }
+    break;
     case CMD_SET_GUIDS:
         {
             Operations::ImageInfo info;
@@ -7384,6 +7886,7 @@ int main(int ac, char *av[])
             } else {
                 // 1- FS2 image
                 // 2- FS2 device with no blank guids
+                guid_t *used_guids;
 
                 // Check the guid given by the user
                 if (!ops.CheckSetGuidsFlags(&info, macs_specified, guids_specified, uids_specified)) {
@@ -7392,9 +7895,27 @@ int main(int ac, char *av[])
                 }
                 if (image_fname == NULL) {
                     // 2- FS2 device with no blank Guids
-                    report_warn("GUIDs are already set, re-burning image with the new GUIDs ...");
+                    report_warn("GUIDs are already set, re-burning image with the new GUIDs ...\n");
                 }
-                if (!ops.ModifyGuidSection(fbase, &info, user_guids, image_fname, silent)) {
+
+                bool ib_dev, eth_dev, bx_dev;
+
+                // Get the FW types
+                bx_dev = ops.IsBridgeX(info.devType);
+                ops.SetDevFlags(info.devType, ib_dev, eth_dev);
+                guid_t* old_guids = info.imageOk ? info.guids : NULL;
+
+                // Patch the GUIDs and prints any needed warnings
+                if (!ops.preFS2PatchGUIDs(eth_dev, bx_dev, guids_specified, macs_specified, uids_specified, user_guids,
+                        old_guids, &used_guids, info.guidNum)) {
+                    rc = 1; goto done;
+                }
+                // Report the changes in the GUIDs
+                if (!ops.reportGuidChaneges(&info, used_guids, old_guids, ib_dev, eth_dev, bx_dev)) {
+                    rc =  1; goto done;
+                }
+                // Modify the guids in the burnt image and re-burn it
+                if (!ops.ModifyGuidSection(fbase, &info, used_guids, image_fname, silent)) {
                     report_err(ops._err_msg, "GUIDs set failed: %s\n", ops.err());
                     rc = 1; goto done;
                 }
@@ -7470,16 +7991,18 @@ int main(int ac, char *av[])
         }
         break;
 
-    case CMD_QUERY_ROM:
-        {
-            Operations::ImageInfo info;
-            if (!ops.LoadAsExpRom(*fbase, &info)    ||
-                !ops.GetExpRomVersion(&info) ||
-                !ops.DisplayExpRomInfo(&info)) {
-                report_err(ops._err_msg, "%s rom query (%s) failed: %s\n", cmdTarget , cmdAccess, ops.err());
-                rc =  1; goto done;
-            }
+    case CMD_QUERY_ROM: {
+        Operations::ImageInfo info;
+        if (!ops.LoadAsExpRom(*fbase, &info) ||
+            !ops.GetExpRomVersion(&info) ||
+            !ops.DisplayExpRomInfo(&info, "Rom Info: ")) {
+
+                report_err(ops._err_msg, "%s rom query (%s) failed: %s\n",
+                    cmdTarget, cmdAccess, ops.err());
+                rc = 1;
+                goto done;
         }
+    }
         break;
     case CMD_READ_BLOCK:
         {
@@ -7788,7 +8311,7 @@ int main(int ac, char *av[])
 
     case CMD_CFI:
         {
-            if (!f->print_attr() || !f->print_attr_old_format()) {
+            if (!f->print_attr()) {
                 report_err(ops._err_msg, "Cfi query failed: %s\n", f->err());
                 rc =  1; goto done;
             }

@@ -47,7 +47,7 @@
 #endif
 
 #ifndef MFT_VERSION_STR
-    #define MFT_VERSION_STR "mft 2.6.2"
+    #define MFT_VERSION_STR "mft 2.7.0-20"
 #endif
 
 static inline
