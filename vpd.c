@@ -126,6 +126,7 @@ enum {
 };
 
 #define VPD_FIELD_CHECKSUM "RV"
+#define VPD_FIELD_RW       "RW"
 
 int pci_find_capability(int device, int cap_id)
 {
@@ -260,7 +261,8 @@ void vpd_show_field(FILE *f, struct vpd_field *field)
 {
 	int i;
 
-	if (!memcmp(VPD_FIELD_CHECKSUM, field->keyword, sizeof field->keyword))
+	if (!memcmp(VPD_FIELD_CHECKSUM, field->keyword, sizeof field->keyword) ||
+		!memcmp(VPD_FIELD_RW      , field->keyword, sizeof field->keyword))
 		return;
 	fputc(field->keyword[0], f);
 	fputc(field->keyword[1], f);
@@ -280,8 +282,9 @@ void vpd_show_fields(FILE *f, union vpd_data_type *d, const char *keyword)
 
 	for (i = 0; i < VPD_TAG_LENGTH(d); i += 0x3 + field->length) {
 		field = (struct vpd_field *)(VPD_TAG_DATA(d)->bytes + i);
-		if (!keyword || !memcmp(keyword, field->keyword, sizeof field->keyword))
-			vpd_show_field(f, field);
+		if (!keyword ||
+			!memcmp(keyword, field->keyword, sizeof field->keyword))
+				vpd_show_field(f, field);
 	}
 }
 
