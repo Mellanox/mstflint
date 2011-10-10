@@ -2,7 +2,7 @@
  *
  * mstdump.c - crspace dump for Mellanox Technologies Devices.
  *
- * Copyright (c) 2005 Mellanox Technologies Ltd.  All rights reserved.
+ * Copyright (c) 2011 Mellanox Technologies Ltd.  All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -43,6 +43,8 @@
 #include <errno.h>
 #include <mtcr.h>
 
+#include <tools_dev_types.h>
+
 
 typedef struct address_range {
     int address;
@@ -74,7 +76,13 @@ address_range MT64102_address_list[] = {
     #include "MT64102.crb"      // Dolev
 };
 address_range MT64102safe_address_list[] = {
-    #include "MT64102safe.crb"      // Dolev safe address list (should not cause cr-timeouts)
+    #include "MT64102safe.crb"  // Dolev safe address list (should not cause cr-timeouts)
+};
+address_range MT58100_address_list[] = {
+    #include "MT58100.crb"      // Baz
+};
+address_range MT2750_address_list[] = {
+    #include "MT2750.crb"       // Kfir
 };
 
 
@@ -110,16 +118,16 @@ char correct_cmdline[] = "[-full] <device> [i2c-slave]";
 int main(int argc, char** argv)
 {
     int i, j;
-    mfile * f;
-    unsigned dev_id=0x0, prev_id=0x0;
-    unsigned rev_id;
+    mfile *mf;
+    dm_dev_id_t dev_type;
+    u_int32_t dev_id, chip_rev;
 
     int list_size;
     address_range* list;
     int full = 0;
 
     if (argc < 2 || argc > 4) {
-        fprintf(stderr,"Usage: %s %s.\n", argv[0], correct_cmdline);
+        fprintf(stderr, "Usage: %s %s.\n", argv[0], correct_cmdline);
         return 2;
     }
 
@@ -130,80 +138,75 @@ int main(int argc, char** argv)
         ++i;
     }
 
-    if (i >= argc || !( f=mopen(argv[i]) )) {
-        fprintf(stderr,"Unable to open device %s. Exiting.\n",
+    if (i >= argc || !( mf=mopen(argv[i]) )) {
+        fprintf(stderr, "Unable to open device %s. Exiting.\n",
                 (i < argc) ? argv[i] : "(not specified in command line)");
         return 1;
     }
 
     ++i;    // move past the device parameter
 
-    //if (i < argc)
-    //    mset_i2c_slave(f, (u_int8_t)strtoul(argv[i],0,0));
+    if (i < argc)
+        mset_i2c_slave(mf, (u_int8_t)strtoul(argv[i],0,0));
 
-    MREAD4(f,0xF0014,&dev_id);
-    rev_id = (dev_id & 0xFF0000) >> 16;     // mask out revision id
-    dev_id &= 0xFFFF;                       // mask out device id
+    if (dm_get_device_id(mf, &dev_type, &dev_id, &chip_rev)) {
+        fprintf(stderr, "Failed to identify device. Exiting.\n");
+        mclose(mf);
+        return 1;
+    }
 
     //Figure out which device to use. Select the address list accordingly.
-    switch (dev_id) {
-        case 0x5e8c:
-        case 0x6274:
+    switch (dev_type) {
+        case DeviceSinai:
             select_device(MT25204);
             break;
-        case 0x6278:
+        case DeviceArbel:
+        case DeviceArbelMF:
             select_device(MT25208);
             break;
-        case 0x5a44:
+        case DeviceTavor:
             select_device(MT23108);
             break;
-        case 0x0190:
-            switch (rev_id) {
-                case 0xA0:
-                    select_device(MT25408);
-                    break;
-                case 0xB0:
-                    select_device(MT25408B0);
-                    break;
-                default:
-                    fprintf(stderr,"Unexpected revision number. Device id: 0x%8.8x. Rev: 0x%2.2x. Exiting.\n",
-                            dev_id, rev_id);
-                    mclose(f);
-                    return 1;
-            }
+        case DeviceHermon:
+            select_device(MT25408);
             break;
-        case 435:
+        case DeviceHermonB0:
+            select_device(MT25408B0);
+            break;
+        case DeviceShaldag:
             select_device(MT48436);
             break;
-        case 0x17d4:
+        case DeviceDolev:
             if (full)
                 select_device(MT64102);     // user wants full dump
             else
                 select_device(MT64102safe); // make cautious dump
             break;
+        case DeviceAnafa2:
+            select_device(MT47396);
+            break;
+        case DeviceBaz:
+            select_device(MT58100);
+            break;
+        case DeviceHermonC0:
+            select_device(MT2750);
+            break;
         default:
-            // could still be InfiniScaleIII...
-            prev_id = dev_id;
-            MREAD4(f,0x60014,&dev_id);
-            dev_id &= 0xFFFF;
-            if (dev_id == 47396) {
-                select_device(MT47396);
-            } else {
-                fprintf(stderr, "Unexpected device id: 0x%8.8x/0x%8.8x. Exiting.\n", prev_id, dev_id);
-                mclose(f);
-                return 1;
-            }
+            fprintf(stderr, "Unexpected device id or chip revision: 0x%8.8x/0x%8.8x. Exiting.\n",
+                    dev_id, chip_rev);
+            mclose(mf);
+            return 1;
     }
 
     for (i=0;i<list_size;++i) {
         unsigned data, address;
         for (j=list[i].length, address=list[i].address; j > 0; --j, address += 4) {
-            MREAD4(f,address,&data);
+            MREAD4(mf,address,&data);
             printf("0x%8.8x 0x%8.8x\n", address, data);
         }
     }
 
-    mclose(f);
+    mclose(mf);
     return 0;
 }
 

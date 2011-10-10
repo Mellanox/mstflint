@@ -789,6 +789,18 @@ int mclose(mfile *mf)
 }
 #endif
 
+unsigned char mset_i2c_slave(mfile *mf, unsigned char new_i2c_slave)
+#ifdef MTCR_EXPORT
+;
+#else
+{
+	mf = NULL;
+	new_i2c_slave = 0; /* compiler warning */
+	fprintf(stderr, "Warning: libmtcr: mset_i2c_slave() is not implemented and has no effect.\n");
+    return 0;
+}
+#endif
+
 #ifdef __cplusplus
 }
 #endif

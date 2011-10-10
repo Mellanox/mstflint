@@ -19,6 +19,8 @@ mstflint_CXXFLAGS = -DDEV_MST_EXAMPLE1=\"03:00.0\" -DDEV_MST_EXAMPLE2=\"mlx4_0\"
 mstflint_CXXFLAGS += @mstflint_CXXFLAGS@
 
 mstregdump_SOURCES = mstdump.c mtcr.h \
+					 tools_dev_types.h \
+					 tools_dev_types.c \
 MT23108.crb \
 MT25204.crb \
 MT25208.crb \
