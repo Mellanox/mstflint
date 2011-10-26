@@ -63,6 +63,7 @@
 #define __cpu_to_be32(val) (val)
 #endif
 #endif
+#define OP_NOT_SUPPORTED EOPNOTSUPP
 
 #else // __WIN__
 
@@ -76,6 +77,8 @@
 #define __cpu_to_be32(val) SWAPL(val) // Win is only run on LE CPUS
 #define inline __inline
 #define __cpu_to_be32(val) SWAPL(val) // Win is only run on LE CPUS
+
+#define OP_NOT_SUPPORTED EINVAL
 
 #endif // __WIN__
 #endif
@@ -172,12 +175,12 @@ struct mflash {
 #else
 #define MREAD4(offs, val)  do { if (mread4 (mfl->mf, offs, val) != 4) { \
                                   fprintf(stderr, "-E- Cr read (0x%08x) failed: %s(%d)\n", (u_int32_t)(offs), strerror(errno), (u_int32_t)errno); \
-                  exit(2); } /*printf("-D- mread4: offs = %#x, val = %#x\n", offs, val);*/  \
+                  exit(2); } /*printf("-D- %s:%d mread4: offs = %#x, val = %#x\n", __FUNCTION__, __LINE__, offs, val);*/  \
                                   } while (0)
 
 #define MWRITE4(offs, val) do { if (mwrite4(mfl->mf, offs, val) != 4) { \
                                   fprintf(stderr, "-E- Cr write (0x%08x, 0x%08x) failed: %s(%d)\n", (u_int32_t)(offs), (u_int32_t)(val), strerror(errno), (u_int32_t)errno); \
-                  mclose(mfl->mf); exit(2); } /*printf("-D- %s mwrite4: offs = %#x, val = %#x\n",  __FUNCTION__, offs, val);*/ \
+                  mclose(mfl->mf); exit(2); } /*printf("-D- %s:%d mwrite4: offs = %#x, val = %#x\n",   __FUNCTION__, __LINE__, offs, val);*/ \
                                   } while (0)
 #endif
 
@@ -201,7 +204,9 @@ struct mflash {
 #define CR_FLASH       0xf01a4
 #define ADDR_MSK       0x7ffffUL
 #define CMD_MASK       0xe0000000UL
-#define STATUS_REG_VAL 0x80000000
+
+#define SST_STATUS_REG_VAL   0x80000000
+#define ATMEL_STATUS_REG_VAL 0x0
 
 #define CPUMODE_MSK    0xc0000000UL
 #define CPUMODE_SHIFT  30
@@ -343,7 +348,7 @@ int cntx_st_spi_block_read_ex  (mflash*   mfl,
 
 int cntx_spi_get_type(mflash* mfl, u_int8_t op_type, u_int8_t *vendor, u_int8_t *type, u_int8_t *capacity);
 
-int cntx_sst_spi_write_status_reg(mflash* mfl);
+int cntx_spi_write_status_reg(mflash* mfl, u_int32_t status_reg);
 
 int spi_get_num_of_flashes(int prev_num_of_flashes);
 
@@ -1099,12 +1104,14 @@ typedef struct flash_info {
 
 #define SST_FLASH_NAME   "SST25VFxx"
 #define WINBOND_NAME     "W25QxxBV"
+#define ATMEL_NAME       "AT25DFxxx"
 #define FMT_ST_M25P_NAME
 
 typedef enum flash_vendor {
     FV_ST      = 0x20,
     FV_SST     = 0xbf,
     FV_WINBOND = 0xef,
+    FV_ATMEL   = 0x1f,
 } flash_vendor_t;
 
 typedef enum flash_memory_type {
@@ -1112,6 +1119,7 @@ typedef enum flash_memory_type {
     FMT_ST_M25PX = 0x71,
     FMT_SST_25   = 0x25,
     FMT_WINBOND  = 0x40,
+    FMT_ATMEL    = 0x2,
 
 } flash_memory_type;
 
@@ -1121,7 +1129,7 @@ flash_info_t g_flash_info_arr[] =
         {"M25Pxx",       FV_ST,      FMT_ST_M25P,  MCS_STSPI,  SFC_SE, 0x10000},
         {SST_FLASH_NAME, FV_SST,     FMT_SST_25,   MCS_SSTSPI, SFC_SE, 0x10000},
         {WINBOND_NAME,   FV_WINBOND, FMT_WINBOND,  MCS_STSPI,  SFC_SSE, 0x1000},
-
+        {ATMEL_NAME,     FV_ATMEL,   FMT_ATMEL,    MCS_STSPI,  SFC_SSE, 0x1000},
 };
 
 int cntx_sst_get_log2size(u_int8_t capacity, int* log2spi_size)
@@ -1339,10 +1347,11 @@ int get_flash_params(mflash* mfl, flash_params_t *flash_params, unsigned *type_i
             } else {
                 rc = compare_flash_params(flash_params, spi_sel, type_name, log2size); CHECK_RC(rc);
             }
-
             // Init SST flash.
             if (flash_info->vendor ==  FV_SST && flash_info->type == FMT_SST_25) {
-                rc = cntx_sst_spi_write_status_reg(mfl); CHECK_RC(rc);
+                rc = cntx_spi_write_status_reg(mfl, SST_STATUS_REG_VAL); CHECK_RC(rc);
+            } else if (flash_info->vendor ==  FV_ATMEL && flash_info->type == FMT_ATMEL) {
+                rc = cntx_spi_write_status_reg(mfl, ATMEL_STATUS_REG_VAL); CHECK_RC(rc);
             }
 
             flash_params->num_of_flashes++;
@@ -1945,6 +1954,7 @@ int cntx_exec_cmd(mflash* mfl, u_int32_t gw_cmd, char* msg) {
     gw_cmd = MERGE(gw_cmd,              1, HBO_FLASH_ENABLE,               1);
     gw_cmd = MERGE(gw_cmd, (u_int32_t)mfl->curr_bank,
                                            HBO_CHIP_SELECT,  HBS_CHIP_SELECT);
+    // printf("-D- cntx_exec_cmd: %s\n", msg);
     MWRITE4(CR_FLASH_GW,   gw_cmd);
     return ih3lx_wait_ready(mfl, msg);
 }
@@ -2001,11 +2011,44 @@ int cntx_st_spi_get_status(mflash* mfl, u_int8_t op_type, u_int8_t* status) {
     return MFE_OK;
 }
 
+int get_flash_info_for_atmel(u_int32_t jededc_id, u_int8_t* type, u_int8_t* capacity)
+{
+    u_int8_t tmp_cap;
+
+    tmp_cap = EXTRACT(jededc_id, 8, 5);
+    *type   = EXTRACT(jededc_id, 13, 3);
+    switch (tmp_cap) {
+        case 0x4:
+            *capacity = 0x13;
+            break;
+        case 0x5:
+            *capacity = 0x14;
+            break;
+        case 0x6:
+            *capacity = 0x15;
+            break;
+        case 0x7:
+            *capacity = 0x16;
+            break;
+        default:
+            return MFE_UNSUPPORTED_FLASH_TOPOLOGY;
+    }
+
+    return MFE_OK;
+
+}
 int get_info_from_jededc_id(u_int32_t jededc_id, u_int8_t *vendor, u_int8_t* type, u_int8_t* capacity)
 {
+    int rc;
+
     *vendor   = EXTRACT(jededc_id, 0, 8);
-    *type     = EXTRACT(jededc_id, 8, 8);
-    *capacity = EXTRACT(jededc_id, 16, 8);
+    if (*vendor == FV_ATMEL) {
+        rc = get_flash_info_for_atmel(jededc_id, type, capacity); CHECK_RC(rc);
+    } else {
+        *type     = EXTRACT(jededc_id, 8, 8);
+        *capacity = EXTRACT(jededc_id, 16, 8);
+    }
+
     return MFE_OK;
 }
 
@@ -2015,12 +2058,13 @@ int cntx_spi_get_type(mflash* mfl, u_int8_t op_type, u_int8_t *vendor, u_int8_t*
 
     rc = cntx_int_spi_get_status_data(mfl, op_type, &flash_data, 3); CHECK_RC(rc);
     flash_data = __be32_to_cpu(flash_data);
-
+    // printf("-D- flash_data = %#x\n", flash_data);
     // Get type and some other info from jededc_id
     get_info_from_jededc_id(flash_data, vendor, type, capacity);
+    // printf("-D- cntx_spi_get_type: vendor = %#x, type = %#x, capacity = %#x\n", *vendor, *type, *capacity);
     return MFE_OK;
 }
-int cntx_sst_spi_write_status_reg(mflash* mfl)
+int cntx_spi_write_status_reg(mflash* mfl, u_int32_t status_reg)
 {
     int rc;
     u_int32_t gw_cmd = 0;
@@ -2032,7 +2076,7 @@ int cntx_sst_spi_write_status_reg(mflash* mfl)
 
     gw_cmd = MERGE(gw_cmd, SFC_WRSR, HBO_CMD,        HBS_CMD);
 
-    MWRITE4(HCR_FLASH_DATA, STATUS_REG_VAL);
+    MWRITE4(HCR_FLASH_DATA, status_reg);
     return cntx_exec_cmd(mfl, gw_cmd, "Write-Status-Register");
 }
 
@@ -3079,7 +3123,7 @@ int     mf_sw_reset     (mflash* mfl) {
     if (msw_reset(mfl->mf)) {
         if (errno == EPERM) {
             return MFE_CMD_SUPPORTED_INBAND_ONLY;
-        } else if (errno == EOPNOTSUPP) {
+        } else if (errno == OP_NOT_SUPPORTED) {
             return MFE_MANAGED_SWITCH_NOT_SUPPORTED;
         } else {
 

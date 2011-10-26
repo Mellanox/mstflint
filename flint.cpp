@@ -32,7 +32,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- *  Version: $Id: flint.cpp 7187 2011-07-05 11:53:16Z orenk $
+ *  Version: $Id: flint.cpp 7425 2011-10-03 15:26:25Z mohammad $
  *
  */
 
@@ -49,14 +49,10 @@
 #include <fcntl.h>
 #include <assert.h>
 #include <time.h>
-#include <termios.h>
 
 
 #include "tools_version.h"
 
-#ifndef NO_ZLIB
-    #include <zlib.h>
-#endif
 
 #include <signal.h>
 
@@ -83,7 +79,7 @@
         #define vsnprintf(buf, len, format, args) (vsprintf(buf, format, args))
 
     #else // Linux GCC
-
+        #include <termios.h>
         #include <byteswap.h>
         #include <endian.h>
         #include <alloca.h>
@@ -106,7 +102,6 @@
     #define sleep(x)  Sleep((x)*1000)
 
     #define vsnprintf      _vsnprintf
-    #define strtoull       _strtoui64
     #define isatty         _isatty
 
     #define COMP_CDECL     __cdecl
@@ -116,13 +111,27 @@
     #define __BYTE_ORDER __LITTLE_ENDIAN
 
 
+
     #if __BYTE_ORDER == __LITTLE_ENDIAN
         #define bswap_32(x) ntohl(x)
     #else
         #error windows is assumed to run a on little endian architecture
     #endif
 
+    // MINGW
+    #if defined(__MINGW32__) || (__MINGW64__)
+        #define strtoull       strtoull
+        #define _UNISTD_H // Zlib includes unistd.h which causes some compilation errors.
+
+    #else
+        #define strtoull       _strtoui64
+    #endif
 #endif // __WIN__
+
+#ifndef NO_ZLIB
+    #include <zlib.h>
+#endif
+
 
 #include <memory>
 #include <vector>
@@ -206,6 +215,7 @@ static inline void cpu_to_be_guid(guid_t* to, guid_t* from) {
 }
 #define FLASH_PARAMS_OPTS "<type,log2size,num_of_flashes>"
 #define MAX_NUM_SUPP_HW_IDS 200
+#define MAX_NUM_SUPP_HW_LIST_STR (MAX_NUM_SUPP_HW_IDS * 40)
 #define MAC_SPACES  "            "
 #define GUID_SPACES "        "
 #define GUID_FORMAT "%8.8x%8.8x"
@@ -1554,6 +1564,8 @@ public:
     bool CheckMatchingDevId(u_int32_t hwDevId, u_int32_t imageDevId);
     bool CheckMatchingExpRomDevId(Operations::ImageInfo* info);
     bool HwDevIdToSw(u_int32_t hw_dev_id, u_int32_t& sw_dev_id);
+    bool HWIdRevToName(u_int32_t hw_id, u_int8_t rev_id, char *hw_name);
+
     // Image operations:
     bool Verify          (FBase& f, ImageInfo* info, bool both_images = false);
     bool VerifyFs2      (FBase& f, ImageInfo* info, bool both_images = false, bool only_get_start = false,
@@ -1864,6 +1876,12 @@ public:
         const u_int32_t  swDevIds[MAX_SW_DEVICES_PER_HW];
     };
 
+    struct HwDev2Str {
+        const char*      name;
+        u_int32_t        hwDevId;
+        u_int8_t         revId;
+    };
+
     bool FwVerLessThan(u_int16_t r1[3], u_int16_t r2[3]) {
         int i;
         for (i = 0; i < 3 ; i++)
@@ -1952,6 +1970,7 @@ private:
     bool      _is_full_verify;
     bool      _ignore_tty;
     static const HwDevData hwDevData[];
+    static const HwDev2Str hwDev2Str[];
 
     std::vector<u_int8_t>  _fw_conf_sect;
     std::vector<u_int8_t>  _hash_file_sect;
@@ -1975,23 +1994,48 @@ const u_int32_t Operations::_cntx_image_start_pos[Operations::CNTX_START_POS_SIZ
     0x100000,
     0x200000
 };
-#define CX3_HW_ID 501
+#define CX3_HW_ID        501
+#define CX_HW_ID         400
+#define IS_HW_ID         435
+#define BRIDGEX_HW_ID    6100
+#define IS4_HW_ID        435
+#define TAVOR_HW_ID      23108
+#define ARBEL_HW_ID      25208
+#define SINAI_HW_ID      25204
+
 const Operations::HwDevData Operations::hwDevData[] = {
-    { "InfiniHost",        23108, 2, {23108, 0}},
-    { "InfiniHost III Ex", 25208, 2, {25208, 25218, 0}},
-    { "InfiniHost III Lx", 25204, 1, {25204, 0}},
-    { "ConnectX",            400, 2, {25408, 25418, 26418, 26438,
-                                      26428, 25448, 26448, 26468,
-                                      25458, 26458, 26478, 26488,
-                                      4097, 4098, 4100,
-                                      4101, 4102, 4103, 4104,
-                                      4105, 4106, 4107, 4108,
-                                      4109, 4110, 4111, 4112, 0}},
-    { "ConnectX3",        CX3_HW_ID, 2, {4099}},
-    { "InfiniScale IV",   435,  0, {48436, 48437, 48438, 0}},
-    { "BridgeX",          6100, 0, {64102, 64112, 64122, 0}},
+    { "InfiniHost",        TAVOR_HW_ID, 2, {23108, 0}},
+    { "InfiniHost III Ex", ARBEL_HW_ID, 2, {25208, 25218, 0}},
+    { "InfiniHost III Lx", SINAI_HW_ID, 1, {25204, 0}},
+    { "ConnectX",          CX_HW_ID, 2, {25408, 25418, 26418, 26438,
+                                         26428, 25448, 26448, 26468,
+                                         25458, 26458, 26478, 26488,
+                                         4097, 4098, 0}},
+    { "ConnectX3",        CX3_HW_ID, 2, {4099, 4100, 4101, 4102,
+                                         4103, 4104, 4105, 4106,
+                                         4107, 4108, 4109, 4110,
+                                         4111, 4112, 0}},
+    { "InfiniScale IV",   IS4_HW_ID,  0, {48436, 48437, 48438, 0}},
+    { "BridgeX",          BRIDGEX_HW_ID, 0, {64102, 64112, 64122, 0}},
     { "SwitchX",          SWITCHX_HW_ID,  0, {51000, 0}},
     { NULL ,              0, 0, {0}},// zero devid terminator
+};
+
+const Operations::HwDev2Str Operations::hwDev2Str[] = {
+        {"ConnectX",          CX_HW_ID,      0xA0},
+        {"ConnectX-2",        CX_HW_ID,      0xB0},
+        {"ConnectX-3 A0",     CX3_HW_ID,     0x00},
+        {"ConnectX-3 A1",     CX3_HW_ID,     0x01},
+        {"SwitchX A0",        SWITCHX_HW_ID, 0x00},
+        {"SwitchX A1",        SWITCHX_HW_ID, 0x01},
+        {"BridgeX",           BRIDGEX_HW_ID, 0xA0},
+        {"InfiniScale IV A0", IS4_HW_ID,     0xA0},
+        {"InfiniScale IV A1", IS4_HW_ID,     0xA1},
+        {"InfiniHost A0",     TAVOR_HW_ID,   0xA0},
+        {"InfiniHost A1",     TAVOR_HW_ID,   0xA1},
+        {"InfiniHost III Lx", SINAI_HW_ID,   0xA0},
+        {"InfiniHost III Ex", ARBEL_HW_ID,   0xA0},
+        { NULL ,              0,             0x00}, // zero devid terminator
 };
 
 //
@@ -3176,6 +3220,28 @@ bool Operations::HwDevIdToSw(u_int32_t hw_dev_id, u_int32_t& sw_dev_id)
     }
     return errmsg("Unknown Hw ID: %#x\n", hw_dev_id);
 }
+#define ARR_SIZE(arr) sizeof(arr)/sizeof(arr[0])
+#define MAX_HW_NAME_LEN 100
+bool Operations::HWIdRevToName(u_int32_t hw_id, u_int8_t rev_id, char *hw_name)
+{
+    int i;
+
+    for (i = 0;  hwDev2Str[i].hwDevId != 0; i++) {
+        const HwDev2Str *hwDev2StrMem = &(hwDev2Str[i]);
+
+        if (hwDev2StrMem->hwDevId == hw_id && hwDev2StrMem->revId == rev_id) {
+            int len = strlen(hwDev2StrMem->name);
+            if (len >= MAX_HW_NAME_LEN) {
+                return errmsg("Internal error: Length of device name: %d exceeds the maximum allowed size: %d", len, MAX_HW_NAME_LEN - 1);
+            }
+            strcpy(hw_name, hwDev2StrMem->name);
+            return true;
+        }
+    }
+    // When the device or rev is unknown we use the hw ID and rev to display it.
+    sprintf(hw_name, "MT%d-%02X", hw_id, rev_id);
+    return true;
+}
 
 // This function gets the HW ID of the target device and the dev ID from
 // the image. It then matches the 2 IDs and returns an error in case of
@@ -3185,22 +3251,51 @@ bool Operations::HwDevIdToSw(u_int32_t hw_dev_id, u_int32_t& sw_dev_id)
 bool Operations::CheckMatchingHwDevId(u_int32_t hwDevId, u_int32_t rev_id, Operations::ImageInfo& info) {
 
     int i;
-    u_int32_t sw_dev_id;
+    char supp_hw_id_list[MAX_NUM_SUPP_HW_LIST_STR] = {'\0'};
+    char curr_hw_id_name[MAX_HW_NAME_LEN];
 
-    if (!HwDevIdToSw(hwDevId, sw_dev_id)) {
-        return false;
-    }
-    u_int32_t hw_dev_rev = (hwDevId & 0xffff) | ((rev_id & 0xff) << 16);
     for (i = 0; i < info.supportedHwIdNum; i++) {
-        //printf("-D- hw_dev_rev: %#x,  supported_hw_id[%d]: %#x\n", hw_dev_rev, i, supported_hw_id[i]);
-        if (info.supportedHwId[i] == hw_dev_rev) {
+        u_int32_t currSupportedHwId = info.supportedHwId[i];
+        u_int32_t supp_hw_id  = currSupportedHwId & 0xffff;
+        u_int32_t supp_rev_id = (currSupportedHwId >> 16) & 0xff;
+        u_int32_t tmp_size_of_list;
+        char hw_name[MAX_HW_NAME_LEN];
+
+        if (currSupportedHwId == 0) {
+            break;
+        }
+        // Check if device is supported!
+        if ( supp_hw_id == hwDevId && supp_rev_id == rev_id) {
             return true;
         }
-    }
-    return errmsg("FW image file for device MT%d%X can not be programmed to device MT%d%X",
-                  info.devType, info.devRev, sw_dev_id, rev_id);
-}
+        // Append checked to list of supported device in order to print it in the error if we this device is not supported
 
+        // Get the HW name of current supported HW ID
+        if (!HWIdRevToName(supp_hw_id, supp_rev_id, hw_name)) {
+            return false;
+        }
+        // Check if we don't exceed the array size we have
+        tmp_size_of_list = strlen(supp_hw_id_list) + strlen(hw_name) + 2;
+        if (tmp_size_of_list >= MAX_NUM_SUPP_HW_LIST_STR) {
+            return errmsg("Internal error: Size of supported devs list: %d exceeds the maximum allowed size: %d",
+                    tmp_size_of_list, MAX_NUM_SUPP_HW_LIST_STR - 1);
+        }
+
+        if (supp_hw_id_list[0] == '\0') {
+            sprintf(supp_hw_id_list, "%s", hw_name);
+        } else {
+            sprintf(supp_hw_id_list, "%s, %s", supp_hw_id_list, hw_name);
+        }
+    }
+    // If we get here, this FW cannot be burnt in the current device.
+    // Get the Device name
+    if (!HWIdRevToName(hwDevId, rev_id, curr_hw_id_name)) {
+        return false;
+    }
+
+    return errmsg("FW image file cannot be programmed to device %s, it is intended for: %s only",
+            curr_hw_id_name, supp_hw_id_list);
+}
 bool Operations::CheckMatchingDevId(u_int32_t hwDevId, u_int32_t imageDevId) {
     int i, j;
     const HwDevData* devData = NULL;
@@ -3896,7 +3991,7 @@ bool Operations::DumpConf        (const char* conf_file, SectionType sect_type) 
                         (const Bytef *)&(file_sect[0]), file_sect.size());
 
     if (rc != Z_OK) {
-        return errmsg("Failed uncompressing FW configuration section. uncompress returnes %d", rc);
+        return errmsg("Failed uncompressing FW configuration section. uncompress returns %d", rc);
     }
 
     dest.resize(destLen);
@@ -3944,7 +4039,6 @@ u_int32_t Operations::BSN_subfield(const char *s, int beg, int len)
     return strtoul(&buf[0], 0, 10);
 }
 
-#define ARR_SIZE(arr) sizeof(arr)/sizeof(arr[0])
 
 bool Operations::getFlashParams(char *flash_arg, flash_params_t *flash_params)
 {
@@ -5568,10 +5662,6 @@ MAN_BR
     "                         to ensure failsafe burning even when an invariant sector difference is detected.\n"
     "                         See the specific FW release notes for more details.\n"
     "\n"
-    "    -byte_mode         - Shift address when accessing flash internal registers. May\n"
-    "                         be required for burn/write commands when accessing certain\n"
-    "                         flash types.\n"
-    "\n"
     "    -no_flash_verify   - Do not verify each write on the flash.\n"
     "\n"
 #if 0
@@ -6673,6 +6763,8 @@ void PrintFSBurnErr(Flash& f, Operations& ops, const char* operation)
         }\
 }
 
+#define MAX_PASSWORD_LEN 256
+#ifndef __WIN__
 int mygetch(void)
 {
     struct termios oldt,
@@ -6686,7 +6778,6 @@ int mygetch(void)
     tcsetattr( STDIN_FILENO, TCSANOW, &oldt );
     return ch;
 }
-#define MAX_PASSWORD_LEN 256
 // TODO: Move this function to the tools common file.
 int GetPasswordFromUser(char *pre_str, char buffer[MAX_PASSWORD_LEN])
 {
@@ -6710,6 +6801,16 @@ int GetPasswordFromUser(char *pre_str, char buffer[MAX_PASSWORD_LEN])
     buffer[pos] = '\0';
     return true;
 }
+
+#else
+int GetPasswordFromUser(char *pre_str, char buffer[MAX_PASSWORD_LEN])
+{
+    printf("%s: ", pre_str);
+    scanf("%s", buffer);
+    return true;
+}
+
+#endif
 
 int main(int ac, char *av[])
 {
