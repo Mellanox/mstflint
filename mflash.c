@@ -3227,7 +3227,7 @@ typedef struct mf_cmd_if {
 } mf_cmd_if_t;
 
 static void cmd_if_pack(mf_cmd_if_t* cmd, u_int32_t* buf) {
-    memset((char*)buf, 0, sizeof(mf_cmd_if_t));
+    memset((char*)buf, 0, CMD_IF_SIZE);
     buf[0] = EXTRACT64(cmd->in_param, 32, 32);
     buf[1] = EXTRACT64(cmd->in_param,  0, 32);
     buf[2] = cmd->input_modifier;
