@@ -2,7 +2,7 @@
 
 #
 # Copyright (c) 2006-2007 Cisco Systems. All rights reserved.
-# Copyright (c) 2008      Mellanox Technologies LTD. All rights reserved.
+# Copyright (c) 2011      Mellanox Technologies LTD. All rights reserved.
 #
 # This Software is licensed under one of the following licenses:
 #
@@ -54,6 +54,7 @@ ARBEL_MF_FW_NEEDED=
 TAVOR_FW_NEEDED=
 SINAI_FW_NEEDED=
 HERMON_FW_NEEDED=
+CX3_FW_NEEDED=
 ########################################################################################
 
 for cmd in  lspci cat id rpm uname grep ls awk egrep modprobe; do
@@ -140,11 +141,19 @@ if [ $OS_TYPE = "DEBIAN" ]; then
 else
     # RPM check
     RPM_CHECK_FAIL=0
-    RPM_USR_VER=`rpm -qa 2> /dev/null | grep kernel-ib | wc -l`
-    RPM_KER_VER=`rpm -qa 2> /dev/null | grep kernel-ib | wc -l`
-    RPM_KER_NAME=`rpm -qa 2> /dev/null | grep kernel-ib | grep -v devel | sed s/kernel-ib-//g | tr \\\n " "`
+    RPM_USR_VER=`rpm -q libibverbs 2> /dev/null | wc -l`
+    RPM_KER_VER=`rpm -qa 2> /dev/null | grep -E "kernel-ib|ofa_kernel" | wc -l`
+    mlx4_core_ko=`modinfo mlx4_core | grep filename | awk '{print $NF}'`
+    KER_RPM=`rpm -qf $mlx4_core_ko 2> /dev/null | grep -E "kernel-ib|ofa_kernel"`
 
-    OFED_VERSION=$(ofed_info | head -1)
+    if [ ! -z $KER_RPM ]; then
+        RPM_KER_NAME=`echo $mlx4_core_ko | awk -F '/' '{print$4}'`
+        RPM_CUR_BOOTED_KER=1
+    else
+        RPM_CUR_BOOTED_KER=0
+    fi
+
+    OFED_VERSION=$(ofed_info 2> /dev/null | head -1)
 
     RPM_KER_ARCH=`uname -m`
 
@@ -176,7 +185,6 @@ else
     fi
 
     if [ $RPM_KER_VER -ne 0 ]; then
-        RPM_CUR_BOOTED_KER=`rpm -qa 2> /dev/null | grep kernel-ib | grep $(echo $BOOTED_KER | sed s/-/_/) | wc -l`
         if [ $RPM_CUR_BOOTED_KER -eq 0 ]; then
             echo -e "Host Driver RPM Check .................. ${red}FAIL"
             tput sgr0
@@ -246,6 +254,7 @@ function get_device_id {
 #get the HCA NAME
 
 g_connectx="ConnectX"
+g_connectx3="ConnectX-3"
 g_InfiniHost_III_Ex="InfiniHost_III_Ex"
 g_InfiniHost_III_Ex_memfree="InfiniHost_III_Ex_m"
 g_InfiniHost_III_Lx="InfiniHost_III_Lx"
@@ -262,6 +271,8 @@ function  get_hca_name {
         ret_val=$g_InfiniHost_III_Lx
     elif [ $dev_id -eq 23108 ]; then
         ret_val=$g_InfiniHost
+    elif [ $dev_id -eq 4099 ]; then
+        ret_val=$g_connectx3
     else
     	ret_val=$g_connectx
     fi
@@ -277,7 +288,7 @@ function get_driver {
     if [ "$Device_ID" != "" ]; then
         hca_name=$(get_hca_name $Device_ID)
         if [ "$hca_name" != "" ]; then
-            if [ "$hca_name" == "$g_connectx" ]; then
+            if [ "$hca_name" == "$g_connectx" ] || [ "$hca_name" == "$g_connectx3" ]; then
                  driver_need=$HERMON_DRIVER_NEEDED
              else
                  driver_need=$MTHCA_DRIVER_NEEDED
@@ -357,18 +368,24 @@ if [ $NUM_HCAS -ne 0 ]; then
                         FW_NEEDED=$HERMON_FW_NEEDED
                         DRIVER_NEEDED=$HERMON_DRIVER_NEEDED
                         device_num=$mlx_dev_num
+                    elif [ "$hca_name" == "$g_connectx3" ]; then
+                        FW_NEEDED=$CX3_FW_NEEDED
+                        DRIVER_NEEDED=$HERMON_DRIVER_NEEDED
+                        device_num=$mlx_dev_num
                     elif [ "$hca_name" == "$g_InfiniHost" ]; then
                         FW_NEEDED=$TAVOR_FW_NEEDED
                     fi
                     legal=$(echo $FW_NEEDED | grep v\[0-9\]\[0-9\]*.\[0-9\]\[0-9\]*.\[0-9\]\[0-9\]*)
 
                     # increase the mlx and mthca counter
-                    if [ "$hca_name" == "$g_connectx" ]; then
+                    case "$hca_name" in
+                    "$g_connectx"|"$g_connectx3")
                         let "mlx_dev_num=$mlx_dev_num + 1"
-                    else
+                    ;;
+                    *)
                         let "mthca_dev_num=$mthca_dev_num + 1"
-                    fi
-
+                    ;;
+                    esac
 
                     FW_FOUND=v$(mstflint -d $PCI_DEVICE q 2> /dev/null | grep "FW Version" | awk '{print $3}')
                     if [ "$FW_FOUND" = "v" ]; then
