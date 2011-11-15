@@ -508,17 +508,17 @@ if [ -f ${port_state_file} ]; then
     PORT_STATE=`awk -F: '{print $2}' ${port_state_file} 2> /dev/null`
     link_layer=`get_link_layer ${device_name} ${port_num}`
 
-    if [ $PORT_STATE = "ACTIVE" ]; then
+    if [ "x$PORT_STATE" == "xACTIVE" ]; then
         PORT_SPEED=`awk -F\( '{print $2}' ${port_rate_file} 2> /dev/null | sed 's/)//'`
         state="${green}UP $PORT_SPEED"
     else
-        if [ $PORT_STATE = "INIT" ]; then
+        if [ "x$PORT_STATE" == "xINIT" ]; then
             state="${cyan}DOWN"
         else
             state="${red}DOWN"
         fi
     fi
-    echo -e "Port State of Port #${port} on CA #$LOOP_COUNT (${ca_type})..... ${state} (${link_layer})"
+    echo -e "Port State of Port #${port_num} on CA #$LOOP_COUNT (${ca_type})..... ${state} (${link_layer})"
     tput sgr0
 fi
 
