@@ -505,7 +505,7 @@ function report_port_state() {
     port_rate_file=${port_dir}/rate
 
 if [ -f ${port_state_file} ]; then
-    PORT_STATE=`awk -F: '{print $2}' ${port_state_file} 2> /dev/null`
+    PORT_STATE=`awk -F": " '{print $2}' ${port_state_file} 2> /dev/null`
     link_layer=`get_link_layer ${device_name} ${port_num}`
 
     if [ "x$PORT_STATE" == "xACTIVE" ]; then
