@@ -125,6 +125,7 @@ typedef struct mfile_t {
     int           need_flush; /* For ConnectX A0 */
 } mfile;
 
+#ifndef MTCR_EXPORT
 static void mtcr_connectx_flush(void *ptr)
 {
 	u_int32_t value;
@@ -134,6 +135,7 @@ static void mtcr_connectx_flush(void *ptr)
 		value = __be32_to_cpu(*((u_int32_t *)((char *)ptr + 0xf0380)));
 	} while(value);
 }
+#endif
 
 /*
  * Read 4 bytes, return number of succ. read bytes or -1 on failure
