@@ -110,8 +110,8 @@ MEM_CON_LSPCI_NAME="Memory controller"
 MEL_LSPCI_NAME_EXP="${HCA_LSPCI_NAME}|${VPI_LSPCI_NAME}|${NIC_LSPCI_NAME}"
 
 # HCA/PCI check
-NUM_IB_DEV=`lspci 2> /dev/null | grep -E "(${MEL_LSPCI_NAME_EXP}): Mellanox Technolog" | wc -l`
-NUM_MEM_CON=`lspci 2> /dev/null | grep "${MEM_CON_LSPCI_NAME}: Mellanox Technolog" | wc -l`
+NUM_IB_DEV=`lspci 2> /dev/null | grep -E "(${MEL_LSPCI_NAME_EXP})(\s\[[0-9]+\])?: Mellanox Technolog" | wc -l`
+NUM_MEM_CON=`lspci 2> /dev/null | grep "${MEM_CON_LSPCI_NAME}(\s\[[0-9]+\])?: Mellanox Technolog" | wc -l`
 
 let "NUM_HCAS=$NUM_IB_DEV + $NUM_MEM_CON"
 echo "Number of CAs Detected ................. $NUM_HCAS";
@@ -211,7 +211,7 @@ function get_curr_ca_pci_info () {
     loop_cnt=$1
 
     if [ "${g_lspci_was_ran}" == "" ]; then
-        lspci 2> /dev/null | grep -E "(${MEL_LSPCI_NAME_EXP}|${MEM_CON_LSPCI_NAME}): Mellanox Technolog" > ${G_LSPCI_OUTPUT_FILE}
+        lspci 2> /dev/null | grep -E "(${MEL_LSPCI_NAME_EXP}|${MEM_CON_LSPCI_NAME})(\s\[[0-9]+\])?: Mellanox Technolog" > ${G_LSPCI_OUTPUT_FILE}
         g_lspci_was_ran=1
     fi
     current_pci_info=$(cat ${G_LSPCI_OUTPUT_FILE} | head -$(expr $loop_cnt + 1) | tail -1)
