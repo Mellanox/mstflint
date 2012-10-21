@@ -52,37 +52,37 @@ typedef struct address_range {
 } address_range;
 
 address_range MT25204_address_list[] = {
-    #include "MT25204.crb"      // Sinai
+    #include "MT25204.dat"      // Sinai
 };
 address_range MT25208_address_list[] = {
-    #include "MT25208.crb"      // Arbel
+    #include "MT25208.dat"      // Arbel
 };
 address_range MT23108_address_list[] = {
-    #include "MT23108.crb"      // Tavor
+    #include "MT23108.dat"      // Tavor
 };
 address_range MT48436_address_list[] = {
-    #include "MT48436.crb"      // Shaldag
+    #include "MT48436.dat"      // Shaldag
 };
 address_range MT47396_address_list[] = {
-    #include "MT47396.crb"      // Anafa2
+    #include "MT47396.dat"      // Anafa2
 };
 address_range MT25408_address_list[] = {
-    #include "MT25408.crb"      // Hermon A0
+    #include "MT25408.dat"      // Hermon A0
 };
 address_range MT25408B0_address_list[] = {
-    #include "MT25408B0.crb"    // Hermon B0
+    #include "MT25408B0.dat"    // Hermon B0
 };
 address_range MT64102_address_list[] = {
-    #include "MT64102.crb"      // Dolev
+    #include "MT64102.dat"      // Dolev
 };
 address_range MT64102safe_address_list[] = {
-    #include "MT64102safe.crb"  // Dolev safe address list (should not cause cr-timeouts)
+    #include "MT64102safe.dat"  // Dolev safe address list (should not cause cr-timeouts)
 };
 address_range MT58100_address_list[] = {
-    #include "MT58100.crb"      // Baz
+    #include "MT58100.dat"      // Baz
 };
 address_range MT2750_address_list[] = {
-    #include "MT2750.crb"       // Kfir
+    #include "MT2750.dat"       // Kfir
 };
 
 
