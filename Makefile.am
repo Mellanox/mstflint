@@ -21,17 +21,17 @@ mstflint_CXXFLAGS += @mstflint_CXXFLAGS@
 mstregdump_SOURCES = mstdump.c mtcr.h \
 					 tools_dev_types.h \
 					 tools_dev_types.c \
-                     MT23108.crb \
-                     MT25204.crb \
-                     MT25208.crb \
-                     MT25408B0.crb \
-                     MT25408.crb \
-                     MT47396.crb \
-                     MT48436.crb \
-                     MT64102.crb \
-                     MT64102safe.crb \
-                     MT58100.crb \
-                     MT2750.crb \
+                     MT23108.dat \
+                     MT25204.dat \
+                     MT25208.dat \
+                     MT25408B0.dat \
+                     MT25408.dat \
+                     MT47396.dat \
+                     MT48436.dat \
+                     MT64102.dat \
+                     MT64102safe.dat \
+                     MT58100.dat \
+                     MT2750.dat \
                      bit_slice.h
 
 mstvpd_SOURCES = vpd.c
