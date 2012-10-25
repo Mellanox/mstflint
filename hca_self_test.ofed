@@ -150,7 +150,13 @@ else
         RPM_KER_NAME=`echo $mlx4_core_ko | awk -F '/' '{print$4}'`
         RPM_CUR_BOOTED_KER=1
     else
-        RPM_CUR_BOOTED_KER=0
+        if (rpm -q ofa_kernel_dkms > /dev/null 2>&1); then
+            IS_DKMS=1
+            RPM_KER_NAME=`rpm -q --queryformat "[%{NAME}-%{VERSION}]\n" ofa_kernel_dkms`
+            RPM_CUR_BOOTED_KER=1
+        else
+            RPM_CUR_BOOTED_KER=0
+        fi
     fi
 
     OFED_VERSION=$(ofed_info 2> /dev/null | head -1)
