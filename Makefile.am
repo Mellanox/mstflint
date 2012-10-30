@@ -43,4 +43,5 @@ mstflintincludedir = @includedir@/mtcr_ul
 
 EXTRA_DIST = \
 	mstflint.spec \
-    hca_self_test.ofed
+	hca_self_test.ofed \
+	gitversion.h

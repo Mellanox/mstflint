@@ -40,7 +40,8 @@
 #include <string.h>
 #include <stdlib.h>
 
-// To be replaced by an external script:
+#include "gitversion.h"
+
 #ifndef TOOLS_SVN_VER
     #define TOOLS_SVN_VER "N/A"
 #endif
