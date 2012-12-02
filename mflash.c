@@ -2057,7 +2057,7 @@ int cntx_spi_get_type(mflash* mfl, u_int8_t op_type, u_int8_t *vendor, u_int8_t*
     int rc;
 
     rc = cntx_int_spi_get_status_data(mfl, op_type, &flash_data, 3); CHECK_RC(rc);
-    flash_data = __be32_to_cpu(flash_data);
+    flash_data = SWAPL(flash_data);
     // printf("-D- flash_data = %#x\n", flash_data);
     // Get type and some other info from jededc_id
     get_info_from_jededc_id(flash_data, vendor, type, capacity);
