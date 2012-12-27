@@ -45,11 +45,13 @@
 //use pci configuration cycles for access
 #define CONFIG_ENABLE_PCICONF 1
 
+#ifndef _XOPEN_SOURCE
 #if CONFIG_ENABLE_PCICONF && CONFIG_ENABLE_MMAP
 /* For strerror_r */
 #define _XOPEN_SOURCE 600
 #elif CONFIG_ENABLE_PCICONF
 #define _XOPEN_SOURCE 500
+#endif
 #endif
 
 #if CONFIG_ENABLE_MMAP
@@ -57,6 +59,7 @@
 #endif
 
 #include <stdio.h>
+#include <dirent.h>
 #include <string.h>
 
 #include <unistd.h>
@@ -650,6 +653,78 @@ int msw_reset(mfile *mf)
 {
 	mf = NULL; /* Warning */
     return -1;
+}
+#endif
+
+/*
+ * Get list of MST (Mellanox Software Tools) devices.
+ * Put all device names as null-terminated strings to buf.
+ *
+ * Return number of devices found or -1 if buf overflow
+ */
+int mdevices(char *buf, int len, int mask)
+#ifdef MTCR_EXPORT
+	;
+#else
+{
+
+#define MDEVS_TAVOR_CR  0x20 
+#define MLNX_PCI_VENDOR_ID  "0x15b3"
+
+	FILE* f;
+    DIR* d;
+    struct dirent *dir;
+	int pos = 0;
+    int sz;
+    int rsz;
+	int ndevs = 0;
+
+	if (!(mask & MDEVS_TAVOR_CR)) {
+		return 0;
+	}
+    
+	char inbuf[64];
+    char fname[64];
+
+    d = opendir("/sys/bus/pci/devices");
+    if (d == NULL) {
+        return -2;
+    }
+
+    while ((dir = readdir(d)) != NULL) {
+        if (dir->d_name[0] == '.') {
+            continue;
+        }
+        sprintf(fname, "/sys/bus/pci/devices/%s/vendor", dir->d_name);
+        sz = strlen(dir->d_name);
+	    f = fopen(fname, "r");
+        if (f == NULL) {
+            ndevs = -2;
+            goto cleanup_dir_opened;
+        }
+        if (fgets(inbuf, sizeof(inbuf), f)) {
+            if(!strncmp(inbuf, MLNX_PCI_VENDOR_ID, strlen(MLNX_PCI_VENDOR_ID))) {
+                rsz = sz + 1; //dev name size + place for Null char
+    			if ((pos + rsz) > len) {
+	    			ndevs = -1;
+		    		goto cleanup_file_opened;
+			    }
+    			memcpy(&buf[pos], dir->d_name, rsz);
+	    		pos += rsz;
+		    	ndevs++;
+            }
+        }
+        fclose(f);
+    }
+    closedir(d);
+
+    return ndevs;
+
+cleanup_file_opened:
+    fclose(f);
+cleanup_dir_opened:
+    closedir(d);
+	return ndevs;
 }
 #endif
 
