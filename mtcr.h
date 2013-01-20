@@ -118,6 +118,22 @@
 extern "C" {
 #endif
 
+typedef enum Mdevs_t {
+    MDEVS_GAMLA     = 0x01, /*  Each device that actually is a Gamla */
+    MDEVS_I2CM      = 0x02, /*  Each device that can work as I2C master */
+    MDEVS_MEM       = 0x04, /*  Each device that is a memory driver (vtop) */
+    MDEVS_TAVOR_DDR = 0x08, /*  Each device that maps to Tavor DDR */
+    MDEVS_TAVOR_UAR = 0x10, /*  Each device that maps to Tavor UAR */
+    MDEVS_TAVOR_CR  = 0x20, /*  Each device that maps to Tavor CR */
+    MDEVS_IF        = 0x40, /*  Standard device  interface */
+    MDEVS_REM       = 0x80, /*  Remote devices */
+    MDEVS_PPC       = 0x100, /*  PPC devices */
+    MDEVS_DEV_I2C   = 0x200, /* Generic linux kernel i2c device */
+    MDEVS_IB        = 0x400, /* Cr access over IB Mads */
+    MDEVS_MLNX_OS   = 0x800, /* access by CmdIf in MlnxOS */
+    MDEVS_TAVOR     = (MDEVS_TAVOR_DDR|MDEVS_TAVOR_UAR|MDEVS_TAVOR_CR),
+    MDEVS_ALL       = 0xffffffff
+} Mdevs;
 
 /*  All fields in the following structure are not supposed to be used */
 /*  or modified by user programs. */
@@ -127,6 +143,44 @@ typedef struct mfile_t {
     int           connectx_flush; /* For ConnectX A0 */
     int           need_flush; /* For ConnectX A0 */
 } mfile;
+
+typedef struct dev_info_t
+{
+    Mdevs         type;
+    char          dev_name[512];
+
+    union {
+        struct {
+            u_int16_t domain;
+            u_int8_t  bus;
+            u_int8_t  dev;
+            u_int8_t  func;
+
+            u_int16_t dev_id;
+            u_int16_t vend_id;
+            u_int32_t class_id;
+            u_int16_t subsys_id;
+            u_int16_t subsys_vend_id;
+
+            char      cr_dev[512];
+            char      conf_dev[512];
+            char**    net_devs;      // Null terminated array
+            char**    ib_devs;       // Null terminated array
+        } pci;
+
+        struct {
+            u_int32_t TBD;
+        } usb;
+
+        struct {
+            u_int32_t TBD;
+        } ib;
+
+        struct {
+            u_int32_t TBD;
+        } remote;
+    };
+} dev_info;
 
 #ifndef MTCR_EXPORT
 static void mtcr_connectx_flush(void *ptr)
@@ -727,6 +781,113 @@ cleanup_dir_opened:
 	return ndevs;
 }
 #endif
+
+
+int read_pci_config_header(u_int16_t domain, u_int8_t bus, u_int8_t dev, u_int8_t func, u_int8_t data[0x40])
+#ifdef MTCR_EXPORT
+	;
+#else
+{
+    char proc_dev[64];
+    sprintf(proc_dev, "/sys/bus/pci/devices/%04x:%02x:%02x.%d/config", domain, bus, dev, func);
+    FILE* f = fopen(proc_dev, "r");
+    if (!f) {
+        fprintf(stderr, "Failed to open (%s) for reading: %s\n", proc_dev, strerror(errno));
+        return 1;
+    }
+    setvbuf(f, NULL, _IONBF, 0);
+    if (fread(data, 0x40, 1, f) != 1) {
+        fprintf(stderr, "Failed to read from (%s): %s\n", proc_dev, strerror(errno));
+        fclose(f);
+        return 1;
+    }
+
+    fclose(f);
+    return 0;
+}
+#endif
+
+/*
+ * Get list of MST (Mellanox Software Tools) devices info records.
+ * Return a dynamic allocated array of dev_info records.
+ * len will be updated to hold the array length
+ *
+ */
+dev_info* mdevices_info(int mask, int* len)
+#ifdef MTCR_EXPORT
+	;
+#else
+{
+    char* devs = 0;
+    char* dev_name;
+    int size = 2048;
+    int rc;
+    int i;
+
+    // Get list of devices
+    do {
+        if (devs)
+            free(devs);
+        size *= 2;
+        devs = (char*)malloc(size);
+        rc = mdevices(devs, size, mask);
+    } while (rc == -1);
+
+    // For each device read
+    dev_info* dev_info_arr = (dev_info*) malloc(sizeof(dev_info)*rc);
+    memset(dev_info_arr, 0, sizeof(dev_info)*rc);
+    dev_name = devs;
+    for (i = 0; i < rc; i++) {
+        int domain = 0;
+        int bus = 0;
+        int dev = 0;
+        int func = 0;
+
+        dev_info_arr[i].type = (Mdevs)MDEVS_TAVOR_CR;
+        u_int8_t conf_header[0x40];
+
+        // update default device name
+        strcpy(dev_info_arr[i].dev_name, dev_name);
+        strcpy(dev_info_arr[i].pci.cr_dev, dev_name);
+
+        // update dbdf
+        sscanf(dev_name, "%x:%x:%x.%x", &domain, &bus, &dev, &func);
+        dev_info_arr[i].pci.domain = domain;
+        dev_info_arr[i].pci.bus = bus;
+        dev_info_arr[i].pci.dev = dev;
+        dev_info_arr[i].pci.func = func;
+
+        // read configuration space header
+        if (read_pci_config_header(domain, bus, dev, func, conf_header)) {
+            goto next;
+        }
+
+        dev_info_arr[i].pci.dev_id = __le32_to_cpu(((u_int32_t*)conf_header)[0]) >> 16;
+        dev_info_arr[i].pci.vend_id = __le32_to_cpu(((u_int32_t*)conf_header)[0]) & 0xffff;
+        dev_info_arr[i].pci.class_id = __le32_to_cpu(((u_int32_t*)conf_header)[2]) >> 8;
+        dev_info_arr[i].pci.subsys_id = __le32_to_cpu(((u_int32_t*)conf_header)[11]) >> 16;
+        dev_info_arr[i].pci.subsys_vend_id = __le32_to_cpu(((u_int32_t*)conf_header)[11]) & 0xffff;
+
+next:
+        dev_name += strlen(dev_name) + 1;
+    }
+
+    free(devs);
+    *len = rc;
+    return dev_info_arr;
+}
+#endif
+
+void mdevice_info_destroy(dev_info* dev_info, int len)
+#ifdef MTCR_EXPORT
+	;
+#else
+{
+    if (dev_info)
+        free(dev_info);
+}
+#endif
+
 
 /*
  * Open Mellanox Software tools (mst) driver. Device type==TAVOR
