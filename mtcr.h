@@ -868,6 +868,10 @@ dev_info* mdevices_info(int mask, int* len)
         dev_info_arr[i].pci.subsys_id = __le32_to_cpu(((u_int32_t*)conf_header)[11]) >> 16;
         dev_info_arr[i].pci.subsys_vend_id = __le32_to_cpu(((u_int32_t*)conf_header)[11]) & 0xffff;
 
+        // set conf device
+        snprintf(dev_info_arr[i].pci.conf_dev, sizeof(dev_info_arr[i].pci.conf_dev), "/sys/bus/pci/devices/%04x:%02x:%02x.%x/config", domain, bus,dev, func);
+
+
 next:
         dev_name += strlen(dev_name) + 1;
     }
@@ -1036,6 +1040,44 @@ unsigned char mset_i2c_slave(mfile *mf, unsigned char new_i2c_slave)
 	new_i2c_slave = 0; /* compiler warning */
 	fprintf(stderr, "Warning: libmtcr: mset_i2c_slave() is not implemented and has no effect.\n");
     return 0;
+}
+#endif
+
+
+int mget_mdevs_flags(mfile *mf, u_int32_t *devs_flags)
+#ifdef MTCR_EXPORT
+;
+#else
+{
+	mf = NULL;
+	*devs_flags = MDEVS_TAVOR_CR;
+        return 0;
+}
+#endif
+
+int maccess_reg_mad(mfile *mf, u_int8_t *data)
+#ifdef MTCR_EXPORT
+;
+#else
+{
+	mf = NULL;
+	data = 0; /* compiler warning */
+	fprintf(stderr, "Warning: libmtcr: maccess_reg_mad() is not implemented and has no effect.\n");
+    return -1;
+}
+#endif
+
+int mos_reg_access(mfile *mf, int reg_access, void *reg_data, u_int32_t cmd_type)
+#ifdef MTCR_EXPORT
+;
+#else
+{
+	mf = NULL;
+	reg_data = 0; /* compiler warning */
+	cmd_type = 0; /* compiler warning */
+	reg_access = 0; /* compiler warning */
+	fprintf(stderr, "Warning: libmtcr: maccess_reg_mad() is not implemented and has no effect.\n");
+    return -1;
 }
 #endif
 
