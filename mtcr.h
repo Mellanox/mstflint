@@ -1012,6 +1012,18 @@ open_failed:
 }
 #endif
 
+mfile *mopend(const char *name, int type)
+#ifdef MTCR_EXPORT
+        ;
+#else
+{
+	if (type != 1) {
+		return NULL;
+	}
+	return mopen(name);
+}
+#endif
+
 /*
  * Close Mellanox driver
  * req. descriptor
