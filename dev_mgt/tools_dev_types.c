@@ -1,35 +1,17 @@
-/*
- * Copyright (c) 2011 Mellanox Technologies Ltd.  All rights reserved.
+/*                  - Mellanox Confidential and Proprietary -
  *
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
- * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
- * OpenIB.org BSD license below:
+ * Copyright (C) May 2002, Mellanox Technologies Ltd. ALL RIGHTS RESERVED.
  *
- *     Redistribution and use in source and binary forms, with or
- *     without modification, are permitted provided that the following
- *     conditions are met:
+ * Except as specifically permitted herein, no portion of the information,
+ * including but not limited to object code and source code, may be reproduced,
+ * modified, distributed, republished or otherwise exploited in any form or by
+ * any means for any purpose without the prior written permission of Mellanox
+ * Technologies Ltd. Use of software subject to the terms and conditions
+ * detailed in the file "LICENSE.txt".
  *
- *      - Redistributions of source code must retain the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer.
+ * End of legal section ......................................................
  *
- *      - Redistributions in binary form must reproduce the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- *
- *  tools_dev_types.c - Defines static info records for all mellanox chips in order to
+ *  toos_dev_types.c - Defines static info records for all mellanox chips in order to
  *                     have a uniform IDs and info for all tools.
  *
  *  Version: $Id$
@@ -39,7 +21,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#define MTCR_EXPORT /* for mstflint */
 #include "tools_dev_types.h"
 
 enum dm_dev_type {
@@ -64,15 +45,105 @@ struct dev_info {
 #define DM_ARBEL_DEV_VER_ADDR   0x82600
 
 static struct dev_info g_devs_info[] = {
-     {
-        .dm_id     = DeviceHermonC0,
-        .hw_dev_id = 0x1f5,
+    {
+        .dm_id     = DeviceAnafa,
+        .hw_dev_id = 43132,
         .hw_rev_id = -1,
         .sw_dev_id = -1,
-        .name      = "Kfir",
-        .ext_name  = "ConnectX3",
+        .name      = "Anafa",
+        .ext_name  = "InfiniScale",
+        .port_num  = 8,
+        .dev_type  = DM_SWITCH
+    },
+    {
+        .dm_id     = DeviceTavor,
+        .hw_dev_id = 0x5a44,
+        .hw_rev_id = -1,
+        .sw_dev_id = -1,
+        .name      = "Tavor",
+        .ext_name  = "InfiniHost",
         .port_num  = 2,
         .dev_type  = DM_HCA
+    },
+    {
+        .dm_id     = DeviceArbel,
+        .hw_dev_id = 0x6278,
+        .hw_rev_id = -1,
+        .sw_dev_id = 0x6278,
+        .name      = "Arbel",
+        .ext_name  = "InfiniHostIIIEx",
+        .port_num  = 2,
+        .dev_type  = DM_HCA
+    },
+    {
+        .dm_id     = DeviceArbelMF,
+        .hw_dev_id = 0x6278,
+        .hw_rev_id = -1,
+        .sw_dev_id = 0x6282,
+        .name      = "ArbelMF",
+        .ext_name  = "InfiniHostIIIEx_MF",
+        .port_num  = 2,
+        .dev_type  = DM_HCA
+    },
+    {
+        .dm_id     = DeviceAnafa2,
+        .hw_dev_id = 0xb924,
+        .hw_rev_id = -1,
+        .sw_dev_id = -1,
+        .name      = "Anafa2",
+        .ext_name  = "InfiniScaleIII",
+        .port_num  = 24,
+        .dev_type  = DM_SWITCH
+    },
+    {
+        .dm_id     = DeviceSinai,
+        .hw_dev_id = 0x6274,
+        .hw_rev_id = -1,
+        .sw_dev_id = -1,
+        .name      = "Sinai",
+        .ext_name  = "InfiniHostIIILx",
+        .port_num  = 1,
+        .dev_type  = DM_HCA
+    },
+    {
+        .dm_id     = DeviceHermon,
+        .hw_dev_id = 0x190,
+        .hw_rev_id = 0xa0,
+        .sw_dev_id = -1,
+        .name      = "Hermon",
+        .ext_name  = "ConnectX",
+        .port_num  = 2,
+        .dev_type  = DM_HCA
+    },
+    {
+        .dm_id     = DeviceHermonB0,
+        .hw_dev_id = 0x190,
+        .hw_rev_id = 0xb0,
+        .sw_dev_id = -1,
+        .name      = "HermonB0",
+        .ext_name  = "ConnectX2",
+        .port_num  = 2,
+        .dev_type  = DM_HCA
+    },
+    {
+        .dm_id     = DeviceShaldag,
+        .hw_dev_id = 0x01b3,
+        .hw_rev_id = -1,
+        .sw_dev_id = -1,
+        .name      = "Shaldag",
+        .ext_name  = "InfiniScaleIV",
+        .port_num  = 36,
+        .dev_type  = DM_SWITCH
+    },
+    {
+        .dm_id     = DeviceDolev,
+        .hw_dev_id = 0x17d4,
+        .hw_rev_id = -1,
+        .sw_dev_id = -1,
+        .name      = "Dolev",
+        .ext_name  = "BridgeX",
+        .port_num  = 0, /* TODO */
+        .dev_type  = DM_BRIDGE
     },
     {
         .dm_id     = DeviceBaz,
@@ -83,97 +154,38 @@ static struct dev_info g_devs_info[] = {
         .ext_name  = "SwitchX",
         .port_num  = 64,
         .dev_type  = DM_SWITCH
-    },{
-        .dm_id     = DeviceDolev,
-        .hw_dev_id = 0x17d4,
+    },
+    {
+        .dm_id     = DeviceKfir,
+        .hw_dev_id = 0x1f5,
         .hw_rev_id = -1,
         .sw_dev_id = -1,
-        .name      = "Dolev",
-        .ext_name  = "BridgeX",
-        .port_num  = 0, /* TODO */
-        .dev_type  = DM_BRIDGE
-    },{
-        .dm_id     = DeviceShaldag,
-        .hw_dev_id = 0x01b3,
-        .hw_rev_id = -1,
-        .sw_dev_id = -1,
-        .name      = "Shaldag",
-        .ext_name  = "InfiniScaleIV",
-        .port_num  = 36,
-        .dev_type  = DM_SWITCH
-    },{
-        .dm_id     = DeviceHermonB0,
-        .hw_dev_id = 0x190,
-        .hw_rev_id = 0xb0,
-        .sw_dev_id = -1,
-        .name      = "HermonB0",
-        .ext_name  = "ConnectX2",
+        .name      = "Kfir",
+        .ext_name  = "ConnectX3",
         .port_num  = 2,
         .dev_type  = DM_HCA
-    },{
-        .dm_id     = DeviceHermon,
-        .hw_dev_id = 0x190,
-        .hw_rev_id = 0xa0,
+    },
+    {
+        .dm_id     = DeviceGolan,
+        .hw_dev_id = 0x1ff,
+        .hw_rev_id = -1,
         .sw_dev_id = -1,
-        .name      = "Hermon",
-        .ext_name  = "ConnectX",
+        .name      = "Golan",
+        .ext_name  = "ConnectIB",
         .port_num  = 2,
         .dev_type  = DM_HCA
-    },{
-        .dm_id     = DeviceSinai,
-        .hw_dev_id = 0x6274,
+    },
+    {
+        .dm_id     = DeviceBental,
+        .hw_dev_id = 0x1f7,
         .hw_rev_id = -1,
         .sw_dev_id = -1,
-        .name      = "Sinai",
-        .ext_name  = "InfiniHostIIILx",
-        .port_num  = 1,
-        .dev_type  = DM_HCA
-    },{
-        .dm_id     = DeviceAnafa2,
-        .hw_dev_id = 0xb924,
-        .hw_rev_id = -1,
-        .sw_dev_id = -1,
-        .name      = "Anafa2",
-        .ext_name  = "InfiniScaleIII",
-        .port_num  = 24,
-        .dev_type  = DM_SWITCH
-    },{
-        .dm_id     = DeviceArbelMF,
-        .hw_dev_id = 0x6278,
-        .hw_rev_id = -1,
-        .sw_dev_id = 0x6282,
-        .name      = "ArbelMF",
-        .ext_name  = "InfiniHostIIIEx_MF",
+        .name      = "Bental",
+        .ext_name  = "ConnectX3Pro",
         .port_num  = 2,
         .dev_type  = DM_HCA
-    },{
-        .dm_id     = DeviceArbel,
-        .hw_dev_id = 0x6278,
-        .hw_rev_id = -1,
-        .sw_dev_id = 0x6278,
-        .name      = "Arbel",
-        .ext_name  = "InfiniHostIIIEx",
-        .port_num  = 2,
-        .dev_type  = DM_HCA
-    },{
-        .dm_id     = DeviceTavor,
-        .hw_dev_id = 0x5a44,
-        .hw_rev_id = -1,
-        .sw_dev_id = -1,
-        .name      = "Tavor",
-        .ext_name  = "InfiniHost",
-        .port_num  = 2,
-        .dev_type  = DM_HCA
-    },{
-        .dm_id     = DeviceAnafa,
-        .hw_dev_id = 0x43132,
-        .hw_rev_id = -1,
-        .sw_dev_id = -1,
-        .name      = "Anafa",
-        .ext_name  = "InfiniScale",
-        .port_num  = 8,
-        .dev_type  = DM_SWITCH
-    },{
+    },
+    {
         .dm_id     = DeviceEndMarker,
     }
 };

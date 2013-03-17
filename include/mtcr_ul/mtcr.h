@@ -887,6 +887,7 @@ void mdevice_info_destroy(dev_info* dev_info, int len)
 	;
 #else
 {
+	(void)len; 
     if (dev_info)
         free(dev_info);
 }

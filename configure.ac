@@ -1,16 +1,16 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(mstflint, 1.4, orenk@mellanox.co.il)
+AC_INIT(mstflint, 3.0, orenk@mellanox.co.il)
 
 AC_DEFINE_UNQUOTED([PROJECT], ["mstflint"], [Define the project name.])
 AC_SUBST([PROJECT])
 
-AC_DEFINE_UNQUOTED([VERSION], ["1.4"], [Define the project version.])
+AC_DEFINE_UNQUOTED([VERSION], ["3.0"], [Define the project version.])
 AC_SUBST([VERSION])
 
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_SRCDIR([README])
-AM_INIT_AUTOMAKE(mstflint, 1.4)
+AM_INIT_AUTOMAKE(mstflint, 3.0)
 
 dnl Checks for programs
 AC_PROG_CC
@@ -34,5 +34,6 @@ fi
 AC_SUBST(mstflint_LIBS)
 AC_SUBST(mstflint_CXXFLAGS)
 
-AC_CONFIG_FILES([Makefile mstflint.spec])
-AC_OUTPUT
+AC_CONFIG_FILES( mstflint.spec )
+
+AC_OUTPUT( Makefile dev_mgt/Makefile mflash/Makefile flint/Makefile small_utils/Makefile ) 

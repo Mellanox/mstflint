@@ -67,6 +67,11 @@ typedef struct flash_params {
     int num_of_flashes;
 } flash_params_t;
 
+typedef struct write_protect_info {
+    u_int8_t is_subsector;
+    u_int8_t is_bottom;
+    u_int8_t sectors_num;
+} write_protect_info_t;
 
 typedef enum MfError {
     MFE_OK = 0,
@@ -102,6 +107,16 @@ typedef enum MfError {
     MFE_DIRECT_FW_ACCESS_DISABLED,
     MFE_MANAGED_SWITCH_NOT_SUPPORTED,
     MFE_NOT_SUPPORTED_OPERATION,
+    MFE_REG_ACCESS_FW_BAD_STATUS,
+    MFE_FLASH_NOT_EXIST,
+    MFE_MISMATCH_QUAD_EN,
+    MFE_EXCEED_SUBSECTORS_MAX_NUM,
+    MFE_EXCEED_SECTORS_MAX_NUM,
+    MFE_SECTORS_NUM_NOT_POWER_OF_TWO,
+    MFE_REG_ACCESS_RESOURCE_NOT_AVAILABLE,
+    MFE_UNKOWN_ACCESS_TYPE,
+    MFE_UNSUPPORTED_DEVICE,
+    MFE_OLD_DEVICE_TYPE,
     MFE_LAST
 } MfError;
 
@@ -114,8 +129,18 @@ typedef enum MfOpt {
     MFO_NUM_OF_BANKS,
     MFO_IGNORE_CASHE_REP_GUARD,
     MFO_USER_BANKS_NUM,
+    //MFO_FW_ACCESS_TYPE_BY_MFILE,
+    MFO_SX_TYPE,
+    MFO_NEW_CACHE_REPLACEMENT_EN,
     MFO_LAST
 } MfOpt;
+
+enum MfAccessType {
+    MFAT_MFILE = 0,
+    MFAT_UEFI,
+};
+
+#define MAX_NUM_OF_FLASH_BANKS 4
 
 /////////////////////////////////////////////
 //
@@ -123,6 +148,7 @@ typedef enum MfOpt {
 //
 /////////////////////////////////////////////
 typedef struct flash_attr {
+    char *type_str;
     //
     // hw_dev_id    hw dev id of the HCA.
     //
@@ -175,6 +201,11 @@ typedef struct flash_attr {
     //
     int page_write;
 
+    u_int8_t banks_num;
+    u_int8_t quad_en_support;
+    u_int8_t write_protect_support;
+
+
 } flash_attr;
 
 
@@ -215,6 +246,10 @@ int     mf_open        (mflash** pmfl, const char* dev, int num_of_banks, flash_
 int     mf_opend       (mflash** pmfl, struct mfile_t* mf, int num_of_banks,  flash_params_t* flash_params,
         int ignore_cache_rep_guard);
 
+typedef struct _MLX4_DEV uefi_Dev_t;
+typedef int (*f_fw_cmd) (uefi_Dev_t* dev, void* buffer, int* size);
+int     mf_open_uefi(mflash** pmfl, uefi_Dev_t *uefi_dev, f_fw_cmd fw_cmd_func);
+
 int     mf_open_ignore_lock(mflash* mfl);
 int     mf_close       (mflash* mfl);
 
@@ -232,12 +267,19 @@ int     mf_erase_sector(mflash* mfl, u_int32_t addr);
 int     mf_cr_read     (mflash* mfl, u_int32_t cr_addr, u_int32_t* data);
 int     mf_cr_write    (mflash* mfl, u_int32_t cr_addr, u_int32_t  data);
 
+int     mf_update_boot_addr(mflash* mfl, u_int32_t boot_addr);
 // Software reset the target device. Currently supported for InfiniScale4 switch via IB interface only.
 int     mf_sw_reset     (mflash* mfl);
 //
 // mf_get_attr(): Returns the flash_attr struct
 //
 int     mf_get_attr    (mflash* mfl, flash_attr* attr);
+
+int     mf_set_quad_en (mflash *mfl, u_int8_t quad_en);
+int     mf_get_quad_en (mflash *mfl, u_int8_t *quad_en);
+
+int     mf_set_write_protect(mflash *mfl, u_int8_t bank_num, write_protect_info_t *protect_info);
+int     mf_get_write_protect(mflash *mfl, u_int8_t bank_num, write_protect_info_t *protect_info);
 
 //
 // Set/Get for some options.
