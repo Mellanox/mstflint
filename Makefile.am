@@ -1,5 +1,5 @@
 
-SUBDIRS = dev_mgt mflash flint small_utils # mstdump 
+SUBDIRS = dev_mgt mflash flint small_utils mstdump 
 
 EXTRA_DIST = \
 	mstflint.spec \

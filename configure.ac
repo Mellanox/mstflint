@@ -36,4 +36,5 @@ AC_SUBST(mstflint_CXXFLAGS)
 
 AC_CONFIG_FILES( mstflint.spec )
 
-AC_OUTPUT( Makefile dev_mgt/Makefile mflash/Makefile flint/Makefile small_utils/Makefile ) 
+AC_OUTPUT( Makefile dev_mgt/Makefile mflash/Makefile flint/Makefile small_utils/Makefile \
+		   mstdump/Makefile mstdump/crd_lib/Makefile mstdump/crd_main/Makefile  mstdump/mstdump_dbs/Makefile ) 
