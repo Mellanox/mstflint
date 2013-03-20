@@ -845,6 +845,7 @@ dev_info* mdevices_info(int mask, int* len)
 
         dev_info_arr[i].type = (Mdevs)MDEVS_TAVOR_CR;
         u_int8_t conf_header[0x40];
+		u_int32_t *conf_header_32p = (u_int32_t*)conf_header;
 
         // update default device name
         strcpy(dev_info_arr[i].dev_name, dev_name);
@@ -862,11 +863,11 @@ dev_info* mdevices_info(int mask, int* len)
             goto next;
         }
 
-        dev_info_arr[i].pci.dev_id = __le32_to_cpu(((u_int32_t*)conf_header)[0]) >> 16;
-        dev_info_arr[i].pci.vend_id = __le32_to_cpu(((u_int32_t*)conf_header)[0]) & 0xffff;
-        dev_info_arr[i].pci.class_id = __le32_to_cpu(((u_int32_t*)conf_header)[2]) >> 8;
-        dev_info_arr[i].pci.subsys_id = __le32_to_cpu(((u_int32_t*)conf_header)[11]) >> 16;
-        dev_info_arr[i].pci.subsys_vend_id = __le32_to_cpu(((u_int32_t*)conf_header)[11]) & 0xffff;
+        dev_info_arr[i].pci.dev_id = __le32_to_cpu(conf_header_32p[0]) >> 16;
+        dev_info_arr[i].pci.vend_id = __le32_to_cpu(conf_header_32p[0]) & 0xffff;
+        dev_info_arr[i].pci.class_id = __le32_to_cpu(conf_header_32p[2]) >> 8;
+        dev_info_arr[i].pci.subsys_id = __le32_to_cpu(conf_header_32p[11]) >> 16;
+        dev_info_arr[i].pci.subsys_vend_id = __le32_to_cpu(conf_header_32p[11]) & 0xffff;
 
         // set conf device
         snprintf(dev_info_arr[i].pci.conf_dev, sizeof(dev_info_arr[i].pci.conf_dev), "/sys/bus/pci/devices/%04x:%02x:%02x.%x/config", domain, bus,dev, func);
