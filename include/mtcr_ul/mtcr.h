@@ -334,7 +334,9 @@ int mtcr_check_signature(mfile *mf)
 	switch (signature & 0xffff) {
 	case 0x190 : /* 400 */
 	case 0x1f5 :
-		if ((signature == 0xa00190 || (signature & 0xffff) == 0x1f5) && mf->ptr) {
+		if ((signature == 0xa00190         || 
+                    (signature & 0xffff) == 0x1f5  ||
+                    (signature & 0xffff) == 0x1f7)    && mf->ptr) {
 			mf->connectx_flush = 1;
 			mtcr_connectx_flush(mf->ptr);
 		}
@@ -345,6 +347,7 @@ int mtcr_check_signature(mfile *mf)
 	case 0x1b3:  /*   435 */
 	case 6100:   /*  6100 */
 	case 0x245:
+	case 0x1ff:
 		return 0;
 	default:
 		fprintf(stderr, "-W- Unknown dev id: 0x%x\n", signature);
@@ -889,8 +892,8 @@ void mdevice_info_destroy(dev_info* dev_info, int len)
 #else
 {
 	(void)len; 
-    if (dev_info)
-        free(dev_info);
+	if (dev_info)
+		free(dev_info);
 }
 #endif
 
