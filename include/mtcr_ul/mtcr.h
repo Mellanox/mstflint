@@ -378,8 +378,8 @@ unsigned long long mtcr_procfs_get_offset(unsigned my_bus, unsigned my_dev,
 	unsigned long long base_addr[6], rom_base_addr, size[6], rom_size;
 
 	unsigned bus, dev, func;
-	unsigned vendor_id;
-	unsigned device_id;
+	//unsigned vendor_id;
+	//unsigned device_id;
 	unsigned int cnt;
 
 	unsigned long long offset = (unsigned long long)-1;
@@ -422,8 +422,8 @@ unsigned long long mtcr_procfs_get_offset(unsigned my_bus, unsigned my_dev,
 		bus = dfn >> 8U;
 		dev = PCI_SLOT(dfn & 0xff);
 		func = PCI_FUNC(dfn & 0xff);
-		vendor_id = vend >> 16U;
-		device_id = vend & 0xffff;
+		//vendor_id = vend >> 16U;
+		//device_id = vend & 0xffff;
 
 		if (bus == my_bus && dev == my_dev && func == my_func)
 			break;
@@ -708,7 +708,7 @@ int msw_reset(mfile *mf)
 	;
 #else
 {
-	mf = NULL; /* Warning */
+	(void)mf; /* Warning */
     return -1;
 }
 #endif
@@ -1053,8 +1053,8 @@ unsigned char mset_i2c_slave(mfile *mf, unsigned char new_i2c_slave)
 ;
 #else
 {
-	mf = NULL;
-	new_i2c_slave = 0; /* compiler warning */
+	(void)mf;
+	(void)new_i2c_slave; /* compiler warning */
 	fprintf(stderr, "Warning: libmtcr: mset_i2c_slave() is not implemented and has no effect.\n");
     return 0;
 }
@@ -1066,7 +1066,7 @@ int mget_mdevs_flags(mfile *mf, u_int32_t *devs_flags)
 ;
 #else
 {
-	mf = NULL;
+	(void)mf;
 	*devs_flags = MDEVS_TAVOR_CR;
         return 0;
 }
@@ -1077,8 +1077,8 @@ int maccess_reg_mad(mfile *mf, u_int8_t *data)
 ;
 #else
 {
-	mf = NULL;
-	data = 0; /* compiler warning */
+	(void)mf;
+	(void)data; /* compiler warning */
 	fprintf(stderr, "Warning: libmtcr: maccess_reg_mad() is not implemented and has no effect.\n");
     return -1;
 }
@@ -1089,10 +1089,10 @@ int mos_reg_access(mfile *mf, int reg_access, void *reg_data, u_int32_t cmd_type
 ;
 #else
 {
-	mf = NULL;
-	reg_data = 0; /* compiler warning */
-	cmd_type = 0; /* compiler warning */
-	reg_access = 0; /* compiler warning */
+	(void)mf;
+	(void)reg_data; /* compiler warning */
+	(void)cmd_type; /* compiler warning */
+	(void)reg_access; /* compiler warning */
 	fprintf(stderr, "Warning: libmtcr: maccess_reg_mad() is not implemented and has no effect.\n");
     return -1;
 }

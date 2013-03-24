@@ -55,7 +55,7 @@ int get_version_string(char* buf, int buf_size, const char* exe_name, const char
     int len = 0;
     // "svn ci" updates the below line
 
-    buf_size = 0; /* Not checked for now */
+    (void)buf_size; /* TODO: Not checked for now */
 
 
     if (tool_version == NULL || !strcmp(tool_version, "")) {
