@@ -1,0 +1,5 @@
+mstflint (3.0.0) unstable; urgency=low
+
+  * Initial Debian release
+
+ -- Omer Dagan <omerd@unknown>  Sun, 24 Jan 2013 16:49:33 +0200
