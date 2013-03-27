@@ -34,7 +34,7 @@
 
 INCLUDES = -I. -I../common  -I../include/mtcr_ul
 
-AM_CFLAGS = -W -Wall -Werror -g -MP -MD -Wswitch-enum $(COMPILER_FPIC) -DMTCR_EXPORT
+AM_CFLAGS = -W -Wall -g -MP -MD -Wswitch-enum $(COMPILER_FPIC) -DMTCR_EXPORT
 noinst_LTLIBRARIES = libdev_mgt.la
 
 libdev_mgt_la_SOURCES = \
