@@ -334,6 +334,7 @@ int mtcr_check_signature(mfile *mf)
 	switch (signature & 0xffff) {
 	case 0x190 : /* 400 */
 	case 0x1f5 :
+	case 0x1f7 :
 		if ((signature == 0xa00190         || 
                     (signature & 0xffff) == 0x1f5  ||
                     (signature & 0xffff) == 0x1f7)    && mf->ptr) {
