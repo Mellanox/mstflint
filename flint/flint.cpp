@@ -32,7 +32,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- *  Version: $Id: flint.cpp 10466 2013-03-12 15:26:03Z mohammad $
+ *  Version: $Id: flint.cpp 10696 2013-04-03 08:25:51Z mohammad $
  *
  */
 
@@ -119,7 +119,7 @@ void usage(bool full = false)
 
     const char *descr =
 #ifdef FOR_MAN
-    ".TH \"flint\" \"\" \"Jul 2011\" \"MFT 2.7.0\" \"Administration\"\n"
+    ".TH \"flint\" \"\" \"Mar 2013\" \"MFT 3.0.0\" \"Administration\"\n"
     MAN_SH("NAME")
 #endif
     "\n"
@@ -229,12 +229,12 @@ void usage(bool full = false)
     "                         one currently on flash. Note that changing a PSID may cause the device to\n"
     "                         malfunction. Use only if you know what you are doing\n"
     "\n"
-    "    -allow_prodver_change\n"
-    "                       - Allow burning a FW image with a different product version than the\n"
-    "                         one currently on flash. Use only if you know what you are doing\n"
+    "    -allow_rom_change\n"
+    "                       - Allow burning/removing a ROM to/from FW image when product version is present.\n"
+    "                         Use only if you know what you are doing\n"
     "\n"
     "    -override_cache_replacement\n"
-    "                       - On SwitchX devices:\n"
+    "                       - On SwitchX/ConnectIB devices:\n"
 MAN_BR
     "                         Allow accessing the flash even if the cache replacement mode is enabled.\n"
     "                         NOTE: This flag is intended for advanced users only.\n"
@@ -674,7 +674,7 @@ MAN_BR
     "If flint is forcefully killed without giving it a chance to clean up,\n"
     "the HCA internal flash semaphore may not be released, and prevent further\n"
     "activation of flint. Use the -clear_semaphore flag to force clearing of\n"
-    "this semaphore."
+    "this semaphore.\n"
 #endif
 ;
     printf(descr);
@@ -1092,7 +1092,7 @@ int main(int ac, char *av[])
     bool         single_image_burn  = true;
     bool         checkMatchingDevId = true;
     bool         allowPsidChange    = false;
-    bool         allowdProdVerChange = false;
+    bool         allowdRomChange    = false;
     bool         writeToLog         = false;
     bool         ignoreCompatCheck  = false;
     bool         is_hw_cmd_set      = false; // The default of the hw command is query in order to run query when we have CFI (backward compatible)
@@ -1304,8 +1304,8 @@ int main(int ac, char *av[])
                 Flash::_no_flash_verify = true;
             else if (!strcmp(av[i], "-allow_psid_change"))
                  allowPsidChange = true;
-            else if (!strcmp(av[i], "-allow_prodver_change"))
-                allowdProdVerChange = true;
+            else if (!strcmp(av[i], "-allow_rom_change"))
+                allowdRomChange = true;
             else if (!strcmp(av[i], "-override_cache_replacement") || !strcmp(av[i], "-ocr")) {
                 ignoreCasheRepGuard = 1;
             } else if (!strcmp(av[i], "-no_compat_check")) {
@@ -1581,12 +1581,15 @@ int main(int ac, char *av[])
 
                 // Check exp rom:
                 if (flash_query_res && (ops.CntxIsEth(flashInfo.devType) || ops.CntxIsIb(flashInfo.devType)) &&
-                    (ops.IsFwSupportingRomModify(tmpFileInfo.fwVer) || tmpFileInfo.expRomFound) && !use_image_rom) {
+                    (ops.IsFwSupportingRomModify(tmpFileInfo.fwVer) || tmpFileInfo.expRomFound) && !use_image_rom &&
+                    !flashInfo.infoOffs[Operations::II_ProductVer]) {
                     // Enter here when:
                     //                  The fw on the flash is ok &&
                     //                  The device is hermon      &&
                     //                  The image fw supports modifying ROM OR it contains ROM &&.
                     //                  The user didn't ask to burn the image rom.
+                    //                  The  fw on the flash doesn't contain product version
+
                     bool getRomFromDev = false;
 
                     if (tmpFileInfo.expRomFound && flashInfo.expRomFound) {
@@ -1830,15 +1833,6 @@ int main(int ac, char *av[])
                     }
 
                 }
-                if (!allowdProdVerChange && flashInfo.infoOffs[Operations::II_ProductVer]) {
-                    if (strncmp( fileInfo.productVer, flashInfo.productVer, PRODUCT_VER_LEN) != 0) {
-                        report_err(ops._err_msg, "Product version mismatch. The product version on flash (%s) differs from the product_ver in the given image (%s).\n",
-                               flashInfo.productVer,
-                               fileInfo.productVer);
-                        //printf("    It is highly recommended not to change the PSID. To force a PSID change, use the -allow_psid_change flag\n");
-                        rc =  1; goto done;
-                    }
-                }
 
 
 
@@ -1975,7 +1969,10 @@ int main(int ac, char *av[])
                 rc = 1; goto done;
             }
 
-
+            if (!allowdRomChange && flash_info.infoOffs[Operations::II_ProductVer]) {
+                report_err(ops._err_msg, "Burn ROM failed: The device FW contains common FW/ROM Product Version - The ROM cannot be updated separately.\n");
+                rc =  1; goto done;
+            }
             u_int32_t length        = ops._last_image_addr;
             u_int32_t new_data_size = length + TOTAL_SEC_SIZE(rom_image.getBufLength());
             vector<u_int8_t> data(length);
@@ -2054,6 +2051,11 @@ int main(int ac, char *av[])
                            flash_info.fwVer[1], flash_info.fwVer[2]);
                 rc = 1; goto done;
             }
+            if (!allowdRomChange && flash_info.infoOffs[Operations::II_ProductVer]) {
+                report_err(ops._err_msg, "Remove ROM failed: The device FW contains common FW/ROM Product Version - The ROM cannot be removed separately.\n");
+                rc =  1; goto done;
+            }
+
 
             u_int32_t length        = ops._last_image_addr;
             vector<u_int8_t> data(length);
