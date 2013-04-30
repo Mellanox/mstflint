@@ -875,9 +875,10 @@ dev_info* mdevices_info(int mask, int* len)
         dev_info_arr[i].pci.subsys_id = __le32_to_cpu(conf_header_32p[11]) >> 16;
         dev_info_arr[i].pci.subsys_vend_id = __le32_to_cpu(conf_header_32p[11]) & 0xffff;
 
-        // set conf device
+        // set pci conf device
         snprintf(dev_info_arr[i].pci.conf_dev, sizeof(dev_info_arr[i].pci.conf_dev), "/sys/bus/pci/devices/%04x:%02x:%02x.%x/config", domain, bus,dev, func);
-
+        //Copy to dev_name as default device
+        snprintf(dev_info_arr[i].dev_name, sizeof(dev_info_arr[i].dev_name), "/sys/bus/pci/devices/%04x:%02x:%02x.%x/config", domain, bus,dev, func);
 
 next:
         dev_name += strlen(dev_name) + 1;
