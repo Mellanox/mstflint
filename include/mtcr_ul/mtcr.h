@@ -1102,6 +1102,38 @@ int mos_reg_access(mfile *mf, int reg_access, void *reg_data, u_int32_t cmd_type
 }
 #endif
 
+static void mtcr_fix_endianness(u_int32_t *buf, int len) {
+    int i;
+
+    for (i = 0; i < (len/4); ++i) {
+        buf[i] = __be32_to_cpu(buf[i]);
+    }
+}
+
+
+int mread_buffer(mfile *mf, unsigned int offset, u_int8_t* data, int byte_len)
+#ifdef MTCR_EXPORT
+;
+#else
+{
+    int rc;
+    rc = mread4_block(mf, offset, (u_int32_t*)data, byte_len);
+    mtcr_fix_endianness((u_int32_t*)data, byte_len);
+    return rc;
+
+}
+#endif
+
+int mwrite_buffer(mfile *mf, unsigned int offset, u_int8_t* data, int byte_len)
+#ifdef MTCR_EXPORT
+;
+#else
+{
+    mtcr_fix_endianness((u_int32_t*)data, byte_len);
+    return mwrite4_block(mf, offset, (u_int32_t*)data, byte_len);
+}
+#endif
+
 #ifdef __cplusplus
 }
 #endif
