@@ -349,6 +349,7 @@ int mtcr_check_signature(mfile *mf)
 	case 6100:   /*  6100 */
 	case 0x245:
 	case 0x1ff:
+	case 0xbad0cafe:
 		return 0;
 	default:
 		fprintf(stderr, "-W- Unknown dev id: 0x%x\n", signature);
