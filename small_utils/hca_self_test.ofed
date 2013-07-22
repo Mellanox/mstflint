@@ -56,17 +56,10 @@ TAVOR_FW_NEEDED=
 SINAI_FW_NEEDED=
 HERMON_FW_NEEDED=
 CX3_FW_NEEDED=
-CX3_PRO_FW_NEEDED=v2.5.3
-CONNECTIB_FW_NEEDED=v2.5.6
+CX3_PRO_FW_NEEDED=
+CONNECTIB_FW_NEEDED=
 ########################################################################################
 
-for cmd in  lspci cat id rpm uname grep ls awk egrep modprobe; do
-    cmd_exist=`which $cmd 2> /dev/null`
-    if [ "$cmd_exist" == "" ]; then
-            echo "Error: $cmd tool was not found in the PATH"
-            exit 1
-    fi
-done
 
 # Color echo
 cecho () {
@@ -89,7 +82,7 @@ if [ `id -g` -ne 0 ]; then
 fi
 
 echo
-echo "---- Performing Adapter Device Self Test ----"
+g_pkg_cmd="rpm"
 
 # Get OS type
 if [ -f /etc/redhat-release -o -f /etc/fedora-release ]; then
@@ -99,11 +92,21 @@ elif [ -f /etc/SuSE-release ]; then
 elif [ -f /etc/debian_version ]; then
     OS_TYPE="DEBIAN"
     INSTALL_PREFIX=/opt/topspin
+    g_pkg_cmd="dpkg"
 else
     echo "Error: hca_self_test does not support this OS."
     EXIT_CODE=1
     exit $EXIT_CODE
 fi
+
+for cmd in  lspci cat id $g_pkg_cmd uname grep ls awk egrep modprobe; do
+    cmd_exist=`which $cmd 2> /dev/null`
+    if [ "$cmd_exist" == "" ]; then
+            echo "Error: $cmd tool was not found in the PATH"
+            exit 1
+    fi
+done
+
 
 HCA_LSPCI_NAME="InfiniBand"
 VPI_LSPCI_NAME="Network controller"
@@ -111,6 +114,8 @@ NIC_LSPCI_NAME="Ethernet controller"
 MEM_CON_LSPCI_NAME="Memory controller"
 
 MEL_LSPCI_NAME_EXP="${HCA_LSPCI_NAME}|${VPI_LSPCI_NAME}|${NIC_LSPCI_NAME}"
+
+echo "---- Performing Adapter Device Self Test ----"
 
 # HCA/PCI check
 NUM_IB_DEV=`lspci 2> /dev/null | grep -E "(${MEL_LSPCI_NAME_EXP})(\s\[[0-9]+\])?: Mellanox Technolog" | wc -l`
@@ -137,16 +142,24 @@ else
     exit $EXIT_CODE
 fi
 
+
+mlx4_core_ko=`modinfo mlx4_core | grep filename | awk '{print $NF}'`
 if [ $OS_TYPE = "DEBIAN" ]; then
     RPM_CHECK_FAIL=0
-    RPM_USR_VER=1
     RPM_CUR_BOOTED_KER=1
+    
+    RPM_USR_VER=`dpkg -s libibverbs1 2> /dev/null | wc -l`
+    RPM_KER_VER=`dpkg -l 2> /dev/null | grep -E "ofed-kernel" | wc -l`
+    RPM_KER_NAME=`echo $mlx4_core_ko | awk -F '/' '{print$4}'`
+    BOOTED_KER=`uname -r`
+    if [ "$BOOTED_KER" != "$RPM_KER_NAME" ]; then
+        RPM_CUR_BOOTED_KER=0
+    fi
 else
     # RPM check
     RPM_CHECK_FAIL=0
     RPM_USR_VER=`rpm -q libibverbs 2> /dev/null | wc -l`
     RPM_KER_VER=`rpm -qa 2> /dev/null | grep -E "kernel-ib|ofa_kernel" | wc -l`
-    mlx4_core_ko=`modinfo mlx4_core | grep filename | awk '{print $NF}'`
     KER_RPM=`rpm -qf $mlx4_core_ko 2> /dev/null | grep -E "kernel-ib|ofa_kernel"`
 
     if [ ! -z $KER_RPM ]; then
@@ -161,60 +174,58 @@ else
             RPM_CUR_BOOTED_KER=0
         fi
     fi
-
-    OFED_VERSION=$(ofed_info 2> /dev/null | head -1)
-
-    RPM_KER_ARCH=`uname -m`
-
-    if [ $OS_TYPE = "RED_HAT" ]; then
-        BOOTED_KER=`uname -r`
-    elif [ $OS_TYPE = "SUSE" ]; then
-        # Have to munge uname output a bit.
-        BOOTED_KER=`uname -r | sed s@-@_@g`
-    fi
-
-    if [ $RPM_USR_VER -eq 0 ] && [ $RPM_KER_VER -eq 0 ]; then
-        echo -e "Host Driver RPM Check .................. ${red}FAIL"
-        tput sgr0
-        echo "    REASON: no RPMs found"
-        RPM_CHECK_FAIL=1
-        EXIT_CODE=1
-    elif [ $RPM_USR_VER -eq 0 ]; then
-        echo -e "Host Driver RPM Check .................. ${red}FAIL"
-        tput sgr0
-        echo "    REASON: no user level RPMs found"
-        RPM_CHECK_FAIL=1
-        EXIT_CODE=1
-    elif [ $RPM_KER_VER -eq 0 ]; then
-        echo -e "Host Driver RPM Check .................. ${red}FAIL"
-        tput sgr0
-        echo "    REASON: no kernel level RPMs found"
-        RPM_CHECK_FAIL=1
-        EXIT_CODE=1
-    fi
-
-    if [ $RPM_KER_VER -ne 0 ]; then
-        if [ $RPM_CUR_BOOTED_KER -eq 0 ]; then
-            echo -e "Host Driver RPM Check .................. ${red}FAIL"
-            tput sgr0
-            echo "    REASON: no RPMs found for currently booted kernel $BOOTED_KER"
-            RPM_CHECK_FAIL=1
-            EXIT_CODE=1
-        fi
-    fi
-
-    echo "Kernel Arch ............................ $RPM_KER_ARCH"
-    if [ "$RPM_KER_NAME" != "" ]; then
-        echo "Host Driver Version .................... $OFED_VERSION $RPM_KER_NAME"
-    else
-        echo "Host Driver Version .................... NA"
-    fi
-
-    if [ $RPM_CHECK_FAIL -eq 0 ]; then
-        echo -e "Host Driver RPM Check .................. ${green}PASS"
-        tput sgr0
-    fi
 fi
+OFED_VERSION=$(ofed_info 2> /dev/null | head -1)    
+RPM_KER_ARCH=`uname -m`    
+if [ $OS_TYPE = "RED_HAT" ]; then    
+    BOOTED_KER=`uname -r`    
+elif [ $OS_TYPE = "SUSE" ]; then    
+    # Have to munge uname output a bit.    
+    BOOTED_KER=`uname -r | sed s@-@_@g`    
+fi    
+
+if [ $RPM_USR_VER -eq 0 ] && [ $RPM_KER_VER -eq 0 ]; then    
+    echo -e "Host Driver RPM Check .................. ${red}FAIL"    
+    tput sgr0    
+    echo "    REASON: no RPMs found"    
+    RPM_CHECK_FAIL=1    
+    EXIT_CODE=1    
+elif [ $RPM_USR_VER -eq 0 ]; then    
+    echo -e "Host Driver RPM Check .................. ${red}FAIL"    
+    tput sgr0    
+    echo "    REASON: no user level RPMs found"    
+    RPM_CHECK_FAIL=1    
+    EXIT_CODE=1    
+elif [ $RPM_KER_VER -eq 0 ]; then    
+    echo -e "Host Driver RPM Check .................. ${red}FAIL"    
+    tput sgr0    
+    echo "    REASON: no kernel level RPMs found"    
+    RPM_CHECK_FAIL=1    
+    EXIT_CODE=1    
+fi    
+
+if [ $RPM_KER_VER -ne 0 ]; then    
+    if [ $RPM_CUR_BOOTED_KER -eq 0 ]; then    
+        echo -e "Host Driver RPM Check .................. ${red}FAIL"    
+        tput sgr0    
+        echo "    REASON: no RPMs found for currently booted kernel $BOOTED_KER"    
+        RPM_CHECK_FAIL=1    
+        EXIT_CODE=1    
+    fi    
+fi    
+
+echo "Kernel Arch ............................ $RPM_KER_ARCH"    
+if [ "$RPM_KER_NAME" != "" ]; then    
+    echo "Host Driver Version .................... $OFED_VERSION $RPM_KER_NAME"    
+else    
+    echo "Host Driver Version .................... NA"    
+fi    
+
+if [ $RPM_CHECK_FAIL -eq 0 ]; then    
+    echo -e "Host Driver RPM Check .................. ${green}PASS"    
+    tput sgr0    
+fi    
+
 
 function get_curr_ca_pci_info () {
     loop_cnt=$1
