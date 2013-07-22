@@ -43,6 +43,7 @@ INSTALL_PREFIX=/usr
 
 MTHCA_DRIVER_NEEDED=mthca
 HERMON_DRIVER_NEEDED=mlx4_
+CONNECTIB_DRIVER_NEEDED=mlx5_
 DRIVER_NEEDED=$MTHCA_DRIVER_NEEDED
 INFINI_CLASS_PATH=/sys/class/infiniband
 G_LSPCI_OUTPUT_FILE=/tmp/hca_self_test_lspci.output
@@ -55,6 +56,8 @@ TAVOR_FW_NEEDED=
 SINAI_FW_NEEDED=
 HERMON_FW_NEEDED=
 CX3_FW_NEEDED=
+CX3_PRO_FW_NEEDED=v2.5.3
+CONNECTIB_FW_NEEDED=v2.5.6
 ########################################################################################
 
 for cmd in  lspci cat id rpm uname grep ls awk egrep modprobe; do
@@ -261,6 +264,8 @@ function get_device_id {
 
 g_connectx="ConnectX"
 g_connectx3="ConnectX-3"
+g_connectx3_pro="ConnectX-3_Pro"
+g_connectib="Connect-IB"
 g_InfiniHost_III_Ex="InfiniHost_III_Ex"
 g_InfiniHost_III_Ex_memfree="InfiniHost_III_Ex_m"
 g_InfiniHost_III_Lx="InfiniHost_III_Lx"
@@ -279,8 +284,12 @@ function  get_hca_name {
         ret_val=$g_InfiniHost
     elif [ $dev_id -eq 4099 ]; then
         ret_val=$g_connectx3
+    elif [ $dev_id -eq 4103 ]; then
+        ret_val=$g_connectx3_pro
+    elif [ $dev_id -eq 4113 ]; then
+        ret_val=$g_connectib
     else
-    	ret_val=$g_connectx
+        ret_val=$g_connectx
     fi
     echo $ret_val
 
@@ -294,10 +303,12 @@ function get_driver {
     if [ "$Device_ID" != "" ]; then
         hca_name=$(get_hca_name $Device_ID)
         if [ "$hca_name" != "" ]; then
-            if [ "$hca_name" == "$g_connectx" ] || [ "$hca_name" == "$g_connectx3" ]; then
-                 driver_need=$HERMON_DRIVER_NEEDED
-             else
-                 driver_need=$MTHCA_DRIVER_NEEDED
+            if [ "$hca_name" == "$g_connectx" ] || [ "$hca_name" == "$g_connectx3" ] || [ "$hca_name" == "$g_connectx3_pro" ]; then
+                driver_need=$HERMON_DRIVER_NEEDED
+            elif [ "$hca_name" == "$g_connectib" ]; then 
+                driver_need=$CONNECTIB_DRIVER_NEEDED
+            else
+                driver_need=$MTHCA_DRIVER_NEEDED
             fi
         fi
     fi
@@ -344,6 +355,7 @@ echo_fw_check () {
 }
 if [ $NUM_HCAS -ne 0 ]; then
     mlx_dev_num=0
+    mlx5_dev_num=0
     mthca_dev_num=0
     LOOP_COUNT=0
 
@@ -378,6 +390,14 @@ if [ $NUM_HCAS -ne 0 ]; then
                         FW_NEEDED=$CX3_FW_NEEDED
                         DRIVER_NEEDED=$HERMON_DRIVER_NEEDED
                         device_num=$mlx_dev_num
+                    elif [ "$hca_name" == "$g_connectx3_pro" ]; then
+                        FW_NEEDED=$CX3_PRO_FW_NEEDED
+                        DRIVER_NEEDED=$HERMON_DRIVER_NEEDED
+                        device_num=$mlx_dev_num
+                    elif [ "$hca_name" == "$g_connectib" ]; then
+                        FW_NEEDED=$CONNECTIB_FW_NEEDED
+                        DRIVER_NEEDED=$CONNECTIB_DRIVER_NEEDED
+                        device_num=$mlx5_dev_num
                     elif [ "$hca_name" == "$g_InfiniHost" ]; then
                         FW_NEEDED=$TAVOR_FW_NEEDED
                     fi
@@ -385,10 +405,12 @@ if [ $NUM_HCAS -ne 0 ]; then
 
                     # increase the mlx and mthca counter
                     case "$hca_name" in
-                    "$g_connectx"|"$g_connectx3")
+                    "$g_connectx"|"$g_connectx3"|"$g_connectx3_pro")
                         let "mlx_dev_num=$mlx_dev_num + 1"
                     ;;
-                    *)
+                    "$g_connectib")
+                        let "mlx5_dev_num=$mlx5_dev_num + 1"
+                    ;;                    *)
                         let "mthca_dev_num=$mthca_dev_num + 1"
                     ;;
                     esac
@@ -519,7 +541,7 @@ if [ -f ${port_state_file} ]; then
         state="${green}UP $PORT_SPEED"
     else
         if [ "x$PORT_STATE" == "xINIT" ]; then
-            state="${cyan}DOWN"
+            state="${cyan}INIT"
         else
             state="${red}DOWN"
         fi
@@ -537,6 +559,7 @@ if [ $HOST_DRIVER_INIT -eq 1 ]; then
     NUM_PORT_ACTIVE=0
 
     mlx_dev_num=0
+    mlx5_dev_num=0
     mthca_dev_num=0
     LOOP_COUNT=0
 
@@ -548,6 +571,9 @@ if [ $HOST_DRIVER_INIT -eq 1 ]; then
              if [ "$driver_need" == "$HERMON_DRIVER_NEEDED" ]; then
                   device_num=$mlx_dev_num
                   let "mlx_dev_num=$mlx_dev_num + 1"
+             elif [ "$driver_need" == "$CONNECTIB_DRIVER_NEEDED" ]; then
+                  device_num=$mlx5_dev_num
+                  let "mlx5_dev_num=$mlx5_dev_num + 1"
               else
                   device_num=$mthca_dev_num
                   let "mthca_dev_num=$mthca_dev_num + 1"
@@ -571,6 +597,7 @@ if [ $HOST_DRIVER_INIT -eq 1 ]; then
     mlx_dev_num=0
     mthca_dev_num=0
     LOOP_COUNT=0
+    mlx5_dev_num=0
     while [ $LOOP_COUNT -lt $NUM_HCAS_PROC ]
     do
 
@@ -580,6 +607,9 @@ if [ $HOST_DRIVER_INIT -eq 1 ]; then
             if [ "$driver_need" == "$HERMON_DRIVER_NEEDED" ]; then
                 device_num=$mlx_dev_num
                 let "mlx_dev_num=$mlx_dev_num + 1"
+            elif [ "$driver_need" == "$CONNECTIB_DRIVER_NEEDED" ]; then
+                  device_num=$mlx5_dev_num
+                  let "mlx5_dev_num=$mlx5_dev_num + 1"
             else
                 device_num=$mthca_dev_num
                 let "mthca_dev_num=$mthca_dev_num + 1"
@@ -610,6 +640,7 @@ if [ $HOST_DRIVER_INIT -eq 1 ]; then
     mlx_dev_num=0
     mthca_dev_num=0
     LOOP_COUNT=0
+    mlx5_dev_num=0
     while [ $LOOP_COUNT -lt $NUM_HCAS_PROC ]; do
 
         driver_need=$(get_driver $LOOP_COUNT)
@@ -621,7 +652,10 @@ if [ $HOST_DRIVER_INIT -eq 1 ]; then
             if [ "$driver_need" == "$HERMON_DRIVER_NEEDED" ]; then
                  device_num=$mlx_dev_num
                  let "mlx_dev_num=$mlx_dev_num + 1"
-             else
+            elif [ "$driver_need" == "$CONNECTIB_DRIVER_NEEDED" ]; then
+                  device_num=$mlx5_dev_num
+                  let "mlx5_dev_num=$mlx5_dev_num + 1"
+            else
                  device_num=$mthca_dev_num
                  let "mthca_dev_num=$mthca_dev_num + 1"
             fi
@@ -781,6 +815,7 @@ fi
 
 if [ $NUM_HCAS -ne 0 ]; then
     mlx_dev_num=0
+    mlx5_dev_num=0
     mthca_dev_num=0
     LOOP_COUNT=0
 
@@ -795,6 +830,9 @@ if [ $NUM_HCAS -ne 0 ]; then
             if [ "$driver_need" == "$HERMON_DRIVER_NEEDED" ]; then
                 device_num=${mlx_dev_num}
                 let "mlx_dev_num=$mlx_dev_num + 1"
+            elif [ "$driver_need" == "$CONNECTIB_DRIVER_NEEDED" ]; then
+                  device_num=$mlx5_dev_num
+                  let "mlx5_dev_num=$mlx5_dev_num + 1"
             else
                 device_num=${mthca_dev_num}
                 let "mthca_dev_num=$mthca_dev_num + 1"
