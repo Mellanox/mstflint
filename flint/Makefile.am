@@ -48,7 +48,7 @@ mstflint_SOURCES = flint.cpp  \
 mstflint_LDADD =  ../mflash/libmflash.a
 
 mstflint_LIBS = @mstflint_LIBS@
-mstflint_CXXFLAGS = -DDEV_MST_EXAMPLE1=\"03:00.0\" -DDEV_MST_EXAMPLE2=\"mlx4_0\" -DEXTERNAL
+mstflint_CXXFLAGS = -DFLINT_NAME=\"mstflint\" -DDEV_MST_EXAMPLE1=\"03:00.0\" -DDEV_MST_EXAMPLE2=\"mlx4_0\" -DEXTERNAL
 mstflint_CXXFLAGS += @mstflint_CXXFLAGS@
 
 mstflintinclude_HEADERS = $(top_srcdir)/include/mtcr_ul/mtcr.h
