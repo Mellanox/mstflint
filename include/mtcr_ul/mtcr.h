@@ -339,13 +339,13 @@ int mtcr_check_signature(mfile *mf)
 		return -1;
 	}
 
-        switch (signature) {
-        case 0xbad0cafe:
-            return 0;
-        case 0xbadacce5:
-            return 1;
-        }
-
+	switch (signature) {
+	case 0xbad0cafe:  /* secure host mode device id */
+		return 0;
+	case 0xbadacce5:  /* returned upon mapping the UAR bar */
+	case 0xffffffff:  /* returned when pci mem access is disabled (driver down) */
+		return 1;
+	}
 
 	switch (signature & 0xffff) {
 	case 0x190 : /* 400 */
@@ -365,6 +365,7 @@ int mtcr_check_signature(mfile *mf)
 	case 6100:   /*  6100 */
 	case 0x245:
 	case 0x1ff:
+		return 0;
 	default:
 		fprintf(stderr, "-W- Unknown dev id: 0x%x\n", signature);
 		errno = ENOTTY;
@@ -506,6 +507,7 @@ static
 int mtcr_mmap(mfile *mf, const char *name, off_t off, int ioctl_needed)
 {
 	int err;
+	int rc;
 
 	mf->fd = open(name, O_RDWR | O_SYNC);
 	if (mf->fd < 0)
@@ -528,11 +530,12 @@ int mtcr_mmap(mfile *mf, const char *name, off_t off, int ioctl_needed)
 		return -1;
 	}
 
-	if (mtcr_check_signature(mf)) {
+	rc = mtcr_check_signature(mf);
+	if (rc) {
 		munmap(mf->ptr, MTCR_MAP_SIZE);
 		close(mf->fd);
 		errno = EIO;
-		return -1;
+		return rc;
 	}
 
 	return 0;
@@ -936,6 +939,7 @@ mfile *mopen(const char *name)
 	char pbuf[] = "/proc/bus/pci/XX/XX.X";
 	char errbuf[4048]="";
 	int err;
+	int rc;
 
 	mf = (mfile *)malloc(sizeof(mfile));
 	if (!mf)
@@ -957,7 +961,6 @@ mfile *mopen(const char *name)
 			if (!mtcr_mmap(mf, name, 0, 0))
 				return mf;
 		}
-
 		goto open_failed;
 	}
 
@@ -967,8 +970,12 @@ mfile *mopen(const char *name)
 	sprintf(rbuf, "/sys/bus/pci/devices/%4.4x:%2.2x:%2.2x.%1.1x/resource0",
 		domain, bus, dev, func);
 
-	if (!mtcr_mmap(mf, rbuf, 0, 0))
+	rc = mtcr_mmap(mf, rbuf, 0, 0);
+	if (rc == 0) {
 		return mf;
+	} else if (rc == 1) {
+		goto access_config;
+	}
 
 	/* Following access methods need the resource BAR */
 	offset = mtcr_sysfs_get_offset(domain, bus, dev, func);
@@ -979,15 +986,29 @@ mfile *mopen(const char *name)
 
 	sprintf(pdbuf, "/proc/bus/pci/%4.4x:%2.2x/%2.2x.%1.1x",
 		domain, bus, dev, func);
-
-	if (!mtcr_mmap(mf, pdbuf, offset, 1))
+	rc = mtcr_mmap(mf, pdbuf, offset, 1);
+	if (rc == 0) {
 		return mf;
+	} else if (rc == 1) {
+		goto access_config;
+	}
+
+	rc = mtcr_mmap(mf, pdbuf, offset, 1);
+	if (rc == 0) {
+		return mf;
+	} else if (rc == 1) {
+		goto access_config;
+	}
 
 	if (!domain) {
 		sprintf(pbuf, "/proc/bus/pci/%2.2x/%2.2x.%1.1x",
 			bus, dev, func);
-		if (!mtcr_mmap(mf, pbuf, offset, 1))
+		rc = mtcr_mmap(mf, pbuf, offset, 1);
+		if (rc == 0) {
 			return mf;
+		} else if (rc == 1) {
+			goto access_config;
+		}
 	}
 
 #if CONFIG_USE_DEV_MEM
@@ -1000,9 +1021,8 @@ access_config:
 #if CONFIG_ENABLE_PCICONF && CONFIG_ENABLE_PCICONF
 	strerror_r(errno, errbuf, sizeof errbuf);
 	fprintf(stderr,
-		"Warning: memory access to device %s failed: %s.\n"
-		"Warning: Fallback on IO: much slower, and unsafe if device in use.\n",
-		name, errbuf);
+		    "Warning: memory access to device %s failed: %s. Switching to PCI config access.\n", 
+			name, errbuf);
 #endif
 
 access_config_forced:
@@ -1116,6 +1136,7 @@ int mos_reg_access(mfile *mf, int reg_access, void *reg_data, u_int32_t cmd_type
 }
 #endif
 
+#ifndef MTCR_EXPORT
 static void mtcr_fix_endianness(u_int32_t *buf, int len) {
     int i;
 
@@ -1123,7 +1144,7 @@ static void mtcr_fix_endianness(u_int32_t *buf, int len) {
         buf[i] = __be32_to_cpu(buf[i]);
     }
 }
-
+#endif
 
 int mread_buffer(mfile *mf, unsigned int offset, u_int8_t* data, int byte_len)
 #ifdef MTCR_EXPORT
