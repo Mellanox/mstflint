@@ -319,6 +319,14 @@ enum mtcr_access_method {
 	MTCR_ACCESS_CONFIG = 0x2,
 };
 
+
+/*
+* Return values: 
+* 0:  OK
+* <0: Error
+* 1 : Device does not support memory access
+*
+*/
 static
 int mtcr_check_signature(mfile *mf)
 {
@@ -330,6 +338,14 @@ int mtcr_check_signature(mfile *mf)
 			errno = EIO;
 		return -1;
 	}
+
+        switch (signature) {
+        case 0xbad0cafe:
+            return 0;
+        case 0xbadacce5:
+            return 1;
+        }
+
 
 	switch (signature & 0xffff) {
 	case 0x190 : /* 400 */
@@ -349,8 +365,6 @@ int mtcr_check_signature(mfile *mf)
 	case 6100:   /*  6100 */
 	case 0x245:
 	case 0x1ff:
-	case 0xbad0cafe:
-		return 0;
 	default:
 		fprintf(stderr, "-W- Unknown dev id: 0x%x\n", signature);
 		errno = ENOTTY;
