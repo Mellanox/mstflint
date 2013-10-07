@@ -1076,10 +1076,13 @@ int mclose(mfile *mf)
 ;
 #else
 {
+  unsigned int word;
 #if CONFIG_ENABLE_MMAP
   if (mf->ptr)
     munmap(mf->ptr,MTCR_MAP_SIZE);
+  else
 #endif
+    mread4(mf, 0xf0014, &word);
   close(mf->fd);
   free(mf);
   return 0;
