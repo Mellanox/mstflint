@@ -31,6 +31,8 @@
 #--
 INCLUDES= -I$(top_srcdir)/include/mtcr_ul
 
+LDADD=../mtcr_ul/libmtcr_ul.a
+
 bin_PROGRAMS = mstmread \
 					mstmwrite \
 					mstmcra \

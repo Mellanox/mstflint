@@ -39,5 +39,5 @@ bin_PROGRAMS = mstregdump
 
 mstregdump_SOURCES = mstdump.c
 
-mstregdump_LDADD = ../crd_lib/libcrdump.la ../../dev_mgt/libdev_mgt.la  -lm
+mstregdump_LDADD = ../crd_lib/libcrdump.la ../../dev_mgt/libdev_mgt.la ../../mtcr_ul/libmtcr_ul.a  -lm
 
