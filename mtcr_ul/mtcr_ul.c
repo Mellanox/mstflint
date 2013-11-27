@@ -1,6 +1,6 @@
 /*
  *
- * Copyright (c) 2006 Mellanox Technologies Ltd.  All rights reserved.
+ * Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -29,7 +29,7 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- * 
+ *
  *  mtcr_ul.c - Mellanox Hardware Access implementation
  *
  */
@@ -81,6 +81,7 @@
 #endif
 
 #include <mtcr.h>
+#include "mtcr_int_defs.h"
 
 #ifndef __be32_to_cpu
 #define __be32_to_cpu(x) ntohl(x)
@@ -112,6 +113,17 @@
 #endif
 #endif
 
+struct pcicr_context {
+    int              fd;
+    void            *ptr;
+    int              connectx_flush; /* For ConnectX/ConnectX3 */
+    int              need_flush; /* For ConnectX/ConnectX3 */
+};
+
+struct pciconf_context {
+    int              fd;
+};
+
 static void mtcr_connectx_flush(void *ptr)
 {
     u_int32_t value;
@@ -124,77 +136,18 @@ static void mtcr_connectx_flush(void *ptr)
 
 int mread4(mfile *mf, unsigned int offset, u_int32_t *value)
 {
-#if CONFIG_ENABLE_MMAP
-    if (mf->ptr) {
-        if (mf->need_flush) {
-            mtcr_connectx_flush(mf->ptr);
-            mf->need_flush = 0;
-        }
-        *value = __be32_to_cpu(*((u_int32_t *)((char *)mf->ptr + offset)));
-        return 4;
-    }
-#endif
-#if CONFIG_ENABLE_PCICONF
-    {
-        int rc;
-        offset = __cpu_to_le32(offset);
-        rc=pwrite(mf->fd, &offset, 4, 22*4);
-        if (rc < 0) {
-            perror("write offset");
-            return rc;
-        }
-        if (rc != 4)
-            return 0;
-        rc=pread(mf->fd, value, 4, 23*4);
-        if (rc < 0) {
-            perror("read value");
-            return rc;
-        }
-        *value = __le32_to_cpu(*value);
-        return rc;
-    }
-#else
-    return 0;
-#endif
+    return mf->mread4(mf,offset,value);
 }
-
 
 int mwrite4(mfile *mf, unsigned int offset, u_int32_t value)
 {
-#if CONFIG_ENABLE_MMAP
-  if (mf->ptr) {
-            *((u_int32_t *)((char *)mf->ptr + offset)) = __cpu_to_be32(value);
-            mf->need_flush = mf->connectx_flush;
-            return 4;
-  }
-#endif
-#if CONFIG_ENABLE_PCICONF
-  {
-    int rc;
-    offset = __cpu_to_le32(offset);
-    rc = pwrite(mf->fd, &offset, 4, 22*4);
-    if (rc < 0) {
-      perror("write offset");
-      return rc;
-    }
-    if (rc != 4)
-        return 0;
-    value = __cpu_to_le32(value);
-    rc = pwrite(mf->fd, &value, 4, 23*4);
-    if (rc < 0) {
-      perror("write value");
-      return rc;
-    }
-    return rc;
-  }
-#else
-  return 0;
-#endif
+    return mf->mwrite4(mf,offset,value);
 }
 
 
+// TODO: Verify change 'data' type from void* to u_in32_t* does not mess up things
 static int
-mread_chunk_as_multi_mread4(mfile *mf, unsigned int offset, void *data, int length)
+mread_chunk_as_multi_mread4(mfile *mf, unsigned int offset, u_int32_t* data, int length)
 {
     int i;
     if (length % 4) {
@@ -211,7 +164,7 @@ mread_chunk_as_multi_mread4(mfile *mf, unsigned int offset, void *data, int leng
 }
 
 static int
-mwrite_chunk_as_multi_mwrite4(mfile *mf, unsigned int offset, void *data, int length)
+mwrite_chunk_as_multi_mwrite4(mfile *mf, unsigned int offset, u_int32_t* data, int length)
 {
     int i;
     if (length % 4) {
@@ -231,12 +184,12 @@ mwrite_chunk_as_multi_mwrite4(mfile *mf, unsigned int offset, void *data, int le
 enum mtcr_access_method {
     MTCR_ACCESS_ERROR  = 0x0,
     MTCR_ACCESS_MEMORY = 0x1,
-    MTCR_ACCESS_CONFIG = 0x2,
+    MTCR_ACCESS_CONFIG = 0x2
 };
 
 
 /*
-* Return values: 
+* Return values:
 * 0:  OK
 * <0: Error
 * 1 : Device does not support memory access
@@ -266,11 +219,12 @@ int mtcr_check_signature(mfile *mf)
     case 0x190 : /* 400 */
     case 0x1f5 :
     case 0x1f7 :
-        if ((signature == 0xa00190         || 
+        if ((signature == 0xa00190         ||
                     (signature & 0xffff) == 0x1f5  ||
-                    (signature & 0xffff) == 0x1f7)    && mf->ptr) {
-            mf->connectx_flush = 1;
-            mtcr_connectx_flush(mf->ptr);
+                    (signature & 0xffff) == 0x1f7)    && mf->access_type == MTCR_ACCESS_MEMORY) {
+            struct pcicr_context* ctx = mf->ctx;
+            ctx->connectx_flush = 1;
+            mtcr_connectx_flush(ctx->ptr);
         }
     case 0x5a44: /* 23108 */
     case 0x6278: /* 25208 */
@@ -418,8 +372,31 @@ error:
     return offset;
 }
 
+//
+// PCI MEMORY ACCESS FUNCTIONS
+//
+
 static
-int mtcr_mmap(mfile *mf, const char *name, off_t off, int ioctl_needed)
+int mtcr_pcicr_mclose(mfile *mf)
+{
+    struct pcicr_context* ctx = mf->ctx;
+    if (ctx) {
+        if (ctx->ptr) {
+            munmap(ctx->ptr,MTCR_MAP_SIZE);
+        }
+
+        if (ctx->fd != -1) {
+            close(ctx->fd);
+        }
+        free(ctx);
+        mf->ctx = NULL;
+    }
+
+    return 0;
+}
+
+static
+int mtcr_mmap(struct pcicr_context *mf, const char *name, off_t off, int ioctl_needed)
 {
     int err;
     int rc;
@@ -445,26 +422,163 @@ int mtcr_mmap(mfile *mf, const char *name, off_t off, int ioctl_needed)
         return -1;
     }
 
-    rc = mtcr_check_signature(mf);
+    return 0;
+}
+
+int mtcr_pcicr_mread4(mfile *mf, unsigned int offset, u_int32_t *value)
+{
+    struct pcicr_context *ctx = mf->ctx;
+    if (ctx->need_flush) {
+        mtcr_connectx_flush(ctx->ptr);
+        ctx->need_flush = 0;
+    }
+    *value = __be32_to_cpu(*((u_int32_t *)((char *)ctx->ptr + offset)));
+    return 4;
+}
+
+int mtcr_pcicr_mwrite4(mfile *mf, unsigned int offset, u_int32_t value)
+{
+    struct pcicr_context *ctx = mf->ctx;
+
+    *((u_int32_t *)((char *)ctx->ptr + offset)) = __cpu_to_be32(value);
+    ctx->need_flush = ctx->connectx_flush;
+    return 4;
+}
+
+static
+int mtcr_pcicr_open(mfile *mf, const char *name, off_t off, int ioctl_needed)
+{
+    int rc;
+    struct pcicr_context *ctx;
+
+    mf->access_type   = MTCR_ACCESS_MEMORY;
+
+    mf->mread4        = mtcr_pcicr_mread4;
+    mf->mwrite4       = mtcr_pcicr_mwrite4;
+    mf->mread4_block  = mread_chunk_as_multi_mread4;
+    mf->mwrite4_block = mwrite_chunk_as_multi_mwrite4;
+    mf->mclose        = mtcr_pcicr_mclose;
+
+    ctx = (struct pcicr_context*)malloc(sizeof(struct pcicr_context));
+    if (!ctx)
+        return 1;
+
+    ctx->ptr = NULL;
+    ctx->fd = -1;
+    ctx->connectx_flush = 0;
+    ctx->need_flush = 0;
+
+    mf->ctx = ctx;
+
+    rc = mtcr_mmap(ctx, name, off, ioctl_needed);
     if (rc) {
-        munmap(mf->ptr, MTCR_MAP_SIZE);
-        close(mf->fd);
-        errno = EIO;
+        goto end;
+    }
+
+    rc = mtcr_check_signature(mf);
+
+end:
+    if (rc) {
+        mtcr_pcicr_mclose(mf);
+    }
+
+    return rc;
+}
+
+
+//
+// PCI CONF ACCESS FUNCTIONS
+//
+
+
+#if CONFIG_ENABLE_PCICONF
+
+int mtcr_pciconf_mread4(mfile *mf, unsigned int offset, u_int32_t *value)
+{
+    struct pciconf_context *ctx = mf->ctx;
+    int rc;
+    offset = __cpu_to_le32(offset);
+    rc=pwrite(ctx->fd, &offset, 4, 22*4);
+    if (rc < 0) {
+        perror("write offset");
         return rc;
+    }
+    if (rc != 4)
+        return 0;
+
+    rc=pread(ctx->fd, value, 4, 23*4);
+    if (rc < 0) {
+        perror("read value");
+        return rc;
+    }
+    *value = __le32_to_cpu(*value);
+    return rc;
+}
+
+int mtcr_pciconf_mwrite4(mfile *mf, unsigned int offset, u_int32_t value)
+{
+    struct pciconf_context *ctx = mf->ctx;
+    int rc;
+    offset = __cpu_to_le32(offset);
+    rc = pwrite(ctx->fd, &offset, 4, 22*4);
+    if (rc < 0) {
+        perror("write offset");
+        return rc;
+    }
+    if (rc != 4)
+        return 0;
+    value = __cpu_to_le32(value);
+    rc = pwrite(ctx->fd, &value, 4, 23*4);
+    if (rc < 0) {
+        perror("write value");
+        return rc;
+    }
+    return rc;
+}
+
+static
+int mtcr_pciconf_mclose(mfile *mf)
+{
+    struct pciconf_context *ctx = mf->ctx;
+    unsigned int word;
+
+    if (ctx) {
+        mread4(mf, 0xf0014, &word);
+        if (ctx->fd != -1) {
+            close(ctx->fd);
+        }
+        free(ctx);
     }
 
     return 0;
 }
 
-#if CONFIG_ENABLE_PCICONF
 static
-int mtcr_open_config(mfile *mf, const char *name)
+int mtcr_pciconf_open(mfile *mf, const char *name)
 {
     unsigned signature;
-    int rc, err;
+    int err;
+    int rc;
+    struct pciconf_context *ctx;
 
-    mf->fd = open(name, O_RDWR | O_SYNC);
-    if (mf->fd < 0)
+    mf->access_type   = MTCR_ACCESS_CONFIG;
+
+    mf->mread4        = mtcr_pciconf_mread4;
+    mf->mwrite4       = mtcr_pciconf_mwrite4;
+    mf->mread4_block  = mread_chunk_as_multi_mread4;
+    mf->mwrite4_block = mwrite_chunk_as_multi_mwrite4;
+    mf->mclose        = mtcr_pciconf_mclose;
+
+    ctx = (struct pciconf_context*)malloc(sizeof(struct pciconf_context));
+    if (!ctx)
+        return 1;
+
+    mf->ctx = ctx;
+
+    ctx->fd = -1;
+
+    ctx->fd = open(name, O_RDWR | O_SYNC);
+    if (ctx->fd < 0)
         return -1;
 
     /* Kernels before 2.6.12 carry the high bit in each byte
@@ -474,39 +588,40 @@ int mtcr_open_config(mfile *mf, const char *name)
     /* Do this test before mtcr_check_signature,
        to avoid system failure on access to an illegal address. */
     signature = 0xfafbfcfd;
-    rc = pwrite(mf->fd, &signature, 4, 22*4);
+    rc = pwrite(ctx->fd, &signature, 4, 22*4);
     if (rc != 4) {
-        err = errno;
-        close(mf->fd);
-        errno = err;
-        return -1;
+        rc = -1;
+        goto end;
     }
 
-    rc = pread(mf->fd, &signature, 4, 22*4);
+    rc = pread(ctx->fd, &signature, 4, 22*4);
     if (rc != 4) {
-        err = errno;
-        close(mf->fd);
-        errno = err;
-        return -1;
+        rc = -1;
+        goto end;
     }
 
     if (signature != 0xfafbfcfd) {
-        close(mf->fd);
+        rc = -1;
         errno = EIO;
-        return -1;
+        goto end;
     }
 
-    if (mtcr_check_signature(mf)) {
-        close(mf->fd);
-        errno = EIO;
-        return -1;
+    rc = mtcr_check_signature(mf);
+    if (rc) {
+        rc = -1;
+        goto end;
     }
-
-    return 0;
+end:
+    if (rc) {
+        err = errno;
+        mtcr_pciconf_mclose(mf);
+        errno = err;
+    }
+    return rc;
 }
 #else
 static
-int mtcr_open_config(mfile *mf, const char *name)
+int mtcr_pciconf_open(mfile *mf, const char *name)
 {
     return -1;
 }
@@ -526,6 +641,7 @@ enum mtcr_access_method mtcr_parse_name(const char* name, int *force,
     char config[] = "/config";
     char resource0[] = "/resource0";
     char procbuspci[] = "/proc/bus/pci/";
+
     unsigned len = strlen(name);
     unsigned tmp;
 
@@ -601,15 +717,15 @@ name_parsed:
 
 int mread4_block (mfile *mf, unsigned int offset, u_int32_t* data, int byte_len)
 {
-    return mread_chunk_as_multi_mread4(mf, offset, data, byte_len); 
+    return mread_chunk_as_multi_mread4(mf, offset, data, byte_len);
 }
 
 int mwrite4_block (mfile *mf, unsigned int offset, u_int32_t* data, int byte_len)
 {
-    return mwrite_chunk_as_multi_mwrite4(mf, offset, data, byte_len);   
+    return mwrite_chunk_as_multi_mwrite4(mf, offset, data, byte_len);
 }
 
-int msw_reset(mfile *mf) 
+int msw_reset(mfile *mf)
 {
     (void)mf; /* Warning */
     return -1;
@@ -618,7 +734,7 @@ int msw_reset(mfile *mf)
 int mdevices(char *buf, int len, int mask)
 {
 
-#define MDEVS_TAVOR_CR  0x20 
+#define MDEVS_TAVOR_CR  0x20
 #define MLNX_PCI_VENDOR_ID  "0x15b3"
 
     FILE* f;
@@ -632,7 +748,7 @@ int mdevices(char *buf, int len, int mask)
     if (!(mask & MDEVS_TAVOR_CR)) {
         return 0;
     }
-    
+
     char inbuf[64];
     char fname[64];
 
@@ -769,7 +885,7 @@ dev_info* mdevices_info(int mask, int* len);
 
 void mdevice_info_destroy(dev_info* dev_info, int len)
 {
-    (void)len; 
+    (void)len;
     if (dev_info)
         free(dev_info);
 }
@@ -779,7 +895,7 @@ mfile *mopen(const char *name)
 {
     mfile *mf;
     off_t offset;
-    unsigned domain, bus, dev, func;
+    unsigned domain = 0, bus = 0, dev = 0, func = 0;
     enum mtcr_access_method access;
     int force;
     char rbuf[] = "/sys/bus/pci/devices/XXXX:XX:XX.X/resource0";
@@ -793,24 +909,21 @@ mfile *mopen(const char *name)
     mf = (mfile *)malloc(sizeof(mfile));
     if (!mf)
         return NULL;
-    mf->ptr = NULL;
-    mf->fd = -1;
-    mf->connectx_flush = mf->need_flush = 0;
 
     access = mtcr_parse_name(name, &force, &domain, &bus, &dev, &func);
     if (access == MTCR_ACCESS_ERROR)
         goto open_failed;
 
     if (force) {
-
         if (access == MTCR_ACCESS_CONFIG) {
-            if (!mtcr_open_config(mf, name))
+            if (!mtcr_pciconf_open(mf, name))
+                return mf;
+        } else if (access == MTCR_ACCESS_MEMORY) {
+            if (!mtcr_pcicr_open(mf, name, 0, 0))
                 return mf;
         } else {
-            if (!mtcr_mmap(mf, name, 0, 0))
-                return mf;
+            goto open_failed;
         }
-        goto open_failed;
     }
 
     if (access == MTCR_ACCESS_CONFIG)
@@ -819,7 +932,7 @@ mfile *mopen(const char *name)
     sprintf(rbuf, "/sys/bus/pci/devices/%4.4x:%2.2x:%2.2x.%1.1x/resource0",
         domain, bus, dev, func);
 
-    rc = mtcr_mmap(mf, rbuf, 0, 0);
+    rc = mtcr_pcicr_open(mf, rbuf, 0, 0);
     if (rc == 0) {
         return mf;
     } else if (rc == 1) {
@@ -835,14 +948,14 @@ mfile *mopen(const char *name)
 
     sprintf(pdbuf, "/proc/bus/pci/%4.4x:%2.2x/%2.2x.%1.1x",
         domain, bus, dev, func);
-    rc = mtcr_mmap(mf, pdbuf, offset, 1);
+    rc = mtcr_pcicr_open(mf, pdbuf, offset, 1);
     if (rc == 0) {
         return mf;
     } else if (rc == 1) {
         goto access_config;
     }
 
-    rc = mtcr_mmap(mf, pdbuf, offset, 1);
+    rc = mtcr_pcicr_open(mf, pdbuf, offset, 1);
     if (rc == 0) {
         return mf;
     } else if (rc == 1) {
@@ -852,7 +965,7 @@ mfile *mopen(const char *name)
     if (!domain) {
         sprintf(pbuf, "/proc/bus/pci/%2.2x/%2.2x.%1.1x",
             bus, dev, func);
-        rc = mtcr_mmap(mf, pbuf, offset, 1);
+        rc = mtcr_pcicr_open(mf, pbuf, offset, 1);
         if (rc == 0) {
             return mf;
         } else if (rc == 1) {
@@ -862,7 +975,7 @@ mfile *mopen(const char *name)
 
 #if CONFIG_USE_DEV_MEM
     /* Non-portable, but helps some systems */
-    if (!mtcr_mmap(mf, "/dev/mem", offset, 0))
+    if (!mtcr_pcicr_open(mf, "/dev/mem", offset, 0))
         return mf;
 #endif
 
@@ -870,29 +983,28 @@ access_config:
 #if CONFIG_ENABLE_PCICONF && CONFIG_ENABLE_PCICONF
     strerror_r(errno, errbuf, sizeof errbuf);
     fprintf(stderr,
-            "Warning: memory access to device %s failed: %s. Switching to PCI config access.\n", 
+            "Warning: memory access to device %s failed: %s. Switching to PCI config access.\n",
             name, errbuf);
 #endif
 
 access_config_forced:
-
     // Cleanup the mfile struct from any previous garbage.
     memset(mf, 0, sizeof(mfile));
 
     sprintf(cbuf, "/sys/bus/pci/devices/%4.4x:%2.2x:%2.2x.%1.1x/config",
         domain, bus, dev, func);
-    if (!mtcr_open_config(mf, cbuf))
+    if (!mtcr_pciconf_open(mf, cbuf))
         return mf;
 
     sprintf(pdbuf, "/proc/bus/pci/%4.4x:%2.2x/%2.2x.%1.1x",
         domain, bus, dev, func);
-    if (!mtcr_open_config(mf, pdbuf))
+    if (!mtcr_pciconf_open(mf, pdbuf))
         return mf;
 
     if (!domain) {
         sprintf(pbuf, "/proc/bus/pci/%2.2x/%2.2x.%1.1x",
             bus, dev, func);
-        if (!mtcr_open_config(mf, pdbuf))
+        if (!mtcr_pciconf_open(mf, pdbuf))
             return mf;
     }
 
@@ -914,19 +1026,10 @@ mfile *mopend(const char *name, int type)
 
 int mclose(mfile *mf)
 {
-  unsigned int word;
-#if CONFIG_ENABLE_MMAP
-  if (mf->ptr)
-    munmap(mf->ptr,MTCR_MAP_SIZE);
-  else
-#endif
-    mread4(mf, 0xf0014, &word);
-  close(mf->fd);
-  free(mf);
-  return 0;
+    mf->mclose(mf);
+    free(mf);
+    return 0;
 }
-
-int mclose(mfile *mf);
 
 unsigned char mset_i2c_slave(mfile *mf, unsigned char new_i2c_slave)
 {

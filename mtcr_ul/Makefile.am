@@ -32,11 +32,12 @@
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 INCLUDES = -I$(top_srcdir)/include/mtcr_ul 
-AM_CFLAGS = -W  -g -MP -MD -fPIC
 
 lib_LIBRARIES = libmtcr_ul.a
 
 libmtcr_ul_a_SOURCES = mtcr_ul.c
+
+libmtcr_ul_a_CFLAGS = -W  -g -MP -MD -fPIC -DMTCR_API=""
 
 libraryincludedir=$(includedir)/mtcr_ul
 libraryinclude_HEADERS = $(top_srcdir)/include/mtcr_ul/mtcr.h 

@@ -62,14 +62,7 @@ typedef enum Mdevs_t {
     MDEVS_ALL       = 0xffffffff
 } Mdevs;
 
-/*  All fields in the following structure are not supposed to be used */
-/*  or modified by user programs. */
-typedef struct mfile_t {
-    int           fd;
-    void          *ptr;
-    int           connectx_flush; /* For ConnectX A0 */
-    int           need_flush; /* For ConnectX A0 */
-} mfile;
+typedef struct mfile_t mfile;
 
 typedef struct dev_info_t
 {
