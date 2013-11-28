@@ -936,7 +936,7 @@ mfile *mopen(const char *name)
     if (rc == 0) {
         return mf;
     } else if (rc == 1) {
-        goto access_config;
+        goto access_config_forced;
     }
 
     /* Following access methods need the resource BAR */
