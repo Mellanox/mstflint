@@ -31,14 +31,14 @@
 #--
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
-INCLUDES = -I$(top_srcdir)/include/mtcr_ul 
+INCLUDES = -I$(top_srcdir)/include/mtcr_ul
 
 lib_LIBRARIES = libmtcr_ul.a
 
-libmtcr_ul_a_SOURCES = mtcr_ul.c
+libmtcr_ul_a_SOURCES = mtcr_ul.c mtcr_ib_ofed.c
 
-libmtcr_ul_a_CFLAGS = -W  -g -MP -MD -fPIC -DMTCR_API=""
+libmtcr_ul_a_CFLAGS = -W  -g -MP -MD -fPIC -DMTCR_API="" -DMST_UL
 
 libraryincludedir=$(includedir)/mtcr_ul
-libraryinclude_HEADERS = $(top_srcdir)/include/mtcr_ul/mtcr.h 
+libraryinclude_HEADERS = $(top_srcdir)/include/mtcr_ul/mtcr.h
 

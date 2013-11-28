@@ -82,6 +82,7 @@
 
 #include <mtcr.h>
 #include "mtcr_int_defs.h"
+#include "mtcr_ib.h"
 
 #ifndef __be32_to_cpu
 #define __be32_to_cpu(x) ntohl(x)
@@ -184,7 +185,8 @@ mwrite_chunk_as_multi_mwrite4(mfile *mf, unsigned int offset, u_int32_t* data, i
 enum mtcr_access_method {
     MTCR_ACCESS_ERROR  = 0x0,
     MTCR_ACCESS_MEMORY = 0x1,
-    MTCR_ACCESS_CONFIG = 0x2
+    MTCR_ACCESS_CONFIG = 0x2,
+    MTCR_ACCESS_INBAND = 0x3
 };
 
 
@@ -399,7 +401,6 @@ static
 int mtcr_mmap(struct pcicr_context *mf, const char *name, off_t off, int ioctl_needed)
 {
     int err;
-    int rc;
 
     mf->fd = open(name, O_RDWR | O_SYNC);
     if (mf->fd < 0)
@@ -627,6 +628,27 @@ int mtcr_pciconf_open(mfile *mf, const char *name)
 }
 #endif
 
+//
+// IN-BAND ACCESS FUNCTIONS
+//
+
+
+static
+int mtcr_inband_open(mfile* mf, const char* name)
+{
+    mf->access_type   = MTCR_ACCESS_INBAND;
+
+    mf->mread4        = mib_read4;
+    mf->mwrite4       = mib_write4;
+    mf->mread4_block  = mib_readblock;
+    mf->mwrite4_block = mib_writeblock;
+    mf->maccess_reg   = mib_acces_reg_mad;
+    mf->mclose        = mib_close;
+
+    return mib_open(name,mf,0);
+}
+
+
 
 static
 enum mtcr_access_method mtcr_parse_name(const char* name, int *force,
@@ -660,6 +682,13 @@ enum mtcr_access_method mtcr_parse_name(const char* name, int *force,
         *force = 1;
         return MTCR_ACCESS_CONFIG;
     }
+
+    if (sscanf(name, "lid-%x", &tmp) == 1 ||
+        sscanf(name, "ibdr-%x", &tmp) == 1) {
+        *force = 1;
+        return MTCR_ACCESS_INBAND;
+    }
+
 
     if (sscanf(name, "mthca%x", &tmp) == 1 ||
         sscanf(name, "mlx4_%x", &tmp) == 1 ||
@@ -910,17 +939,32 @@ mfile *mopen(const char *name)
     if (!mf)
         return NULL;
 
+    memset(mf, 0, sizeof(mfile));
+    mf->dev_name = strdup(name);
+    if (!mf->dev_name)
+        goto open_failed;
+
     access = mtcr_parse_name(name, &force, &domain, &bus, &dev, &func);
     if (access == MTCR_ACCESS_ERROR)
         goto open_failed;
 
     if (force) {
-        if (access == MTCR_ACCESS_CONFIG) {
-            if (!mtcr_pciconf_open(mf, name))
-                return mf;
-        } else if (access == MTCR_ACCESS_MEMORY) {
-            if (!mtcr_pcicr_open(mf, name, 0, 0))
-                return mf;
+        switch (access) {
+        case MTCR_ACCESS_CONFIG:
+            rc = mtcr_pciconf_open(mf, name);
+            break;
+        case MTCR_ACCESS_MEMORY:
+            rc = mtcr_pcicr_open(mf, name, 0, 0);
+            break;
+        case MTCR_ACCESS_INBAND:
+            rc = mtcr_inband_open(mf, name);
+            break;
+        default:
+            goto open_failed;
+        }
+
+        if (0 == rc) {
+            return mf;
         } else {
             goto open_failed;
         }
@@ -1010,7 +1054,7 @@ access_config_forced:
 
 open_failed:
         err = errno;
-        free(mf);
+        mclose(mf);
         errno = err;
         return NULL;
 }
@@ -1026,7 +1070,12 @@ mfile *mopend(const char *name, int type)
 
 int mclose(mfile *mf)
 {
-    mf->mclose(mf);
+    if (mf->mclose != NULL && mf->ctx != NULL) {
+        mf->mclose(mf);
+    }
+    if (mf->dev_name) {
+        free(mf->dev_name);
+    }
     free(mf);
     return 0;
 }

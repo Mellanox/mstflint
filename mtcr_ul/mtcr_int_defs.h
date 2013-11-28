@@ -29,7 +29,7 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- * 
+ *
  *  mtcr_int_defs.c - Mellanox Hardware Access lib internal definitions
  *
  */
@@ -43,18 +43,21 @@ typedef int (*f_mread4)        (mfile *mf, unsigned int offset, u_int32_t *value
 typedef int (*f_mwrite4)       (mfile *mf, unsigned int offset, u_int32_t  value);
 typedef int (*f_mread4_block)  (mfile *mf, unsigned int offset, u_int32_t* data, int byte_len);
 typedef int (*f_mwrite4_block) (mfile *mf, unsigned int offset, u_int32_t* data, int byte_len);
+typedef int (*f_maccess_reg)   (mfile *mf, u_int8_t *data);
 typedef int (*f_mclose)        (mfile* mf);
 
 
 struct mfile_t {
+    char*            dev_name;
     void            *ctx; // Access method context
     int              access_type;
 
-    f_mread4         mread4;          
-    f_mwrite4        mwrite4;         
-    f_mread4_block   mread4_block;    
-    f_mwrite4_block  mwrite4_block;   
-    f_mclose         mclose;  
+    f_mread4         mread4;
+    f_mwrite4        mwrite4;
+    f_mread4_block   mread4_block;
+    f_mwrite4_block  mwrite4_block;
+    f_maccess_reg    maccess_reg;
+    f_mclose         mclose;
 };
 #endif
 

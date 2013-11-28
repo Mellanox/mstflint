@@ -45,7 +45,7 @@ mstflint_SOURCES = flint.cpp  \
 				   adb_to_c_utils.c \
 				   adb_to_c_utils.h
 
-mstflint_LDADD =  ../mflash/libmflash.a ../mtcr_ul/libmtcr_ul.a
+mstflint_LDADD =  ../mflash/libmflash.a ../mtcr_ul/libmtcr_ul.a -ldl
 
 mstflint_LIBS = @mstflint_LIBS@
 mstflint_CXXFLAGS = -DFLINT_NAME=\"mstflint\" -DDEV_MST_EXAMPLE1=\"03:00.0\" -DDEV_MST_EXAMPLE2=\"mlx4_0\" -DEXTERNAL
