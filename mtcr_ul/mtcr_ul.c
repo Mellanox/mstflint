@@ -1098,10 +1098,12 @@ int mget_mdevs_flags(mfile *mf, u_int32_t *devs_flags)
 
 int maccess_reg_mad(mfile *mf, u_int8_t *data)
 {
-    (void)mf;
-    (void)data; /* compiler warning */
-    fprintf(stderr, "Warning: libmtcr: maccess_reg_mad() is not implemented and has no effect.\n");
-    return -1;
+    if (mf->access_type != MTCR_ACCESS_INBAND) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    return mf->maccess_reg(mf, data);
 }
 
 int mos_reg_access(mfile *mf, int reg_access, void *reg_data, u_int32_t cmd_type)
