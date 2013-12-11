@@ -35,7 +35,7 @@ INCLUDES = -I$(top_srcdir)/include/mtcr_ul
 
 lib_LIBRARIES = libmtcr_ul.a
 
-libmtcr_ul_a_SOURCES = mtcr_ul.c mtcr_ib_ofed.c
+libmtcr_ul_a_SOURCES = mtcr_ul.c mtcr_ib_ofed.c mtcr_ib.h  mtcr_int_defs.h 
 
 libmtcr_ul_a_CFLAGS = -W  -g -MP -MD -fPIC -DMTCR_API="" -DMST_UL
 
