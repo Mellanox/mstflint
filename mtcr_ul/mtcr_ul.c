@@ -1091,9 +1091,14 @@ unsigned char mset_i2c_slave(mfile *mf, unsigned char new_i2c_slave)
 
 int mget_mdevs_flags(mfile *mf, u_int32_t *devs_flags)
 {
-    (void)mf;
-    *devs_flags = MDEVS_TAVOR_CR;
-        return 0;
+    switch (mf->access_type) {
+    case MTCR_ACCESS_INBAND: *devs_flags = MDEVS_IB; break;
+    case MTCR_ACCESS_MEMORY:
+    case MTCR_ACCESS_CONFIG: *devs_flags = MDEVS_TAVOR_CR; break;
+    default:
+        return -1;
+    }
+    return 0;
 }
 
 int maccess_reg_mad(mfile *mf, u_int8_t *data)
