@@ -30,7 +30,7 @@
 # SOFTWARE.
 #--
 
-SUBDIRS = mtcr_ul dev_mgt mflash flint small_utils mstdump 
+SUBDIRS = mtcr_ul dev_mgt mflash tools_layouts mlxfwops cmdparser flint small_utils mstdump 
 
 EXTRA_DIST = \
 	mstflint.spec \

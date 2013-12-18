@@ -215,7 +215,7 @@ int dm_get_device_id(mfile* mf,
     #if 1
     for (i = 0; i < DeviceEndMarker; i++) {
         if (g_devs_info[i].dm_id != i) {
-            printf("-F- in get_device_type: Wron index of the g_devs_info array. idx %d dev %s\n",
+            printf("-F- in get_device_type: Wrong index of the g_devs_info array. idx %d dev %s\n",
                    i, g_devs_info[i].name);
             exit(1);
         }

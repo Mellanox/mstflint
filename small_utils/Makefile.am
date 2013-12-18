@@ -29,9 +29,13 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #--
-INCLUDES= -I$(top_srcdir)/include/mtcr_ul
 
-LDADD=../mtcr_ul/libmtcr_ul.a -ldl
+USER_DIR = ..
+COMMON_DIR = $(USER_DIR)/common
+
+INCLUDES= -I$(top_srcdir)/include/mtcr_ul -I $(COMMON_DIR)
+
+LDADD= ../mtcr_ul/libmtcr_ul.a -ldl
 
 bin_PROGRAMS = mstmread \
 					mstmwrite \
@@ -50,4 +54,4 @@ mstvpd_SOURCES = vpd.c
 mstmcra_SOURCES  = mcra.c
 
 mstmtserver_SOURCES = mtserver.c tcp.c tcp.h
-mstmtserver_CFLAGS = -DMST_UL
+mstmtserver_CFLAGS = -DMST_UL 

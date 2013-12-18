@@ -29,6 +29,8 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #--
-mstregdumpdir = $(datadir)/@PACKAGE@
-dist_mstregdump_DATA = *.csv 
+
+
+docdir = $(pkgdatadir)/mstdump_dbs
+dist_doc_DATA = *.csv
 

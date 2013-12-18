@@ -117,6 +117,10 @@ typedef enum MfError {
     MFE_UNKOWN_ACCESS_TYPE,
     MFE_UNSUPPORTED_DEVICE,
     MFE_OLD_DEVICE_TYPE,
+    MFE_ICMD_INIT_FAILED,
+    MFE_REG_ACCESS_ICMD_NOT_SUPPPRTOED,
+    MFE_HW_ACCESS_NOT_SUPP,
+    MFE_ICMD_BAD_PARAM,
     MFE_LAST
 } MfError;
 
@@ -129,7 +133,7 @@ typedef enum MfOpt {
     MFO_NUM_OF_BANKS,
     MFO_IGNORE_CASHE_REP_GUARD,
     MFO_USER_BANKS_NUM,
-    //MFO_FW_ACCESS_TYPE_BY_MFILE,
+    MFO_FW_ACCESS_TYPE_BY_MFILE,
     MFO_SX_TYPE,
     MFO_NEW_CACHE_REPLACEMENT_EN,
     MFO_LAST
@@ -139,8 +143,6 @@ enum MfAccessType {
     MFAT_MFILE = 0,
     MFAT_UEFI,
 };
-
-#define MAX_NUM_OF_FLASH_BANKS 4
 
 /////////////////////////////////////////////
 //
@@ -295,6 +297,8 @@ int     mf_release_semaphore();
 // err code to string translation for printing.
 //
 const char* mf_err2str (int err_code);
+
+void mf_flash_list(char *flash_list);
 
 EXTERN_C_END
 

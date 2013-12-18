@@ -35,6 +35,8 @@
 // Generic version for all tools
 //
 
+#ifndef __TOOLS_VERSION_H__
+#define __TOOLS_VERSION_H__
 
 #include <stdio.h>
 #include <string.h>
@@ -78,3 +80,6 @@ void print_version_string(const char* exe_name, const char* tool_version) {
     get_version_string(buf, sizeof(buf), exe_name, tool_version);
     printf("%s\n", buf);
 }
+
+#endif
+
