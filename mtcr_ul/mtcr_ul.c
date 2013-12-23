@@ -1032,8 +1032,6 @@ access_config:
 #endif
 
 access_config_forced:
-    // Cleanup the mfile struct from any previous garbage.
-    memset(mf, 0, sizeof(mfile));
 
     sprintf(cbuf, "/sys/bus/pci/devices/%4.4x:%2.2x:%2.2x.%1.1x/config",
         domain, bus, dev, func);
@@ -1100,15 +1098,82 @@ int mget_mdevs_flags(mfile *mf, u_int32_t *devs_flags)
     }
     return 0;
 }
+#define IBDR_MAX_NAME_SIZE 128
 
-int maccess_reg_mad(mfile *mf, u_int8_t *data)
+
+static
+int get_inband_dev_from_pci(char* inband_dev, char* pci_dev)
 {
-    if (mf->access_type != MTCR_ACCESS_INBAND) {
-        errno = EINVAL;
+    unsigned domain = 0, bus = 0, dev = 0, func = 0, force = 0;
+    enum mtcr_access_method access;
+    DIR* d;
+    struct dirent *dir;
+    char dirname[128];
+    int found = 0;
+
+    access = mtcr_parse_name(pci_dev, &force, &domain, &bus, &dev, &func);
+
+    // E.G.: /sys/bus/pci/devices/0000:1a:00.0/infiniband/mlx5_1
+    sprintf(dirname, "/sys/bus/pci/devices/%04x:%02x:%02x.%x/infiniband", domain, bus, dev, func);
+    d = opendir(dirname);
+    if (d == NULL) {
+        errno = ENODEV;
+        return -2;
+    }
+
+    while ((dir = readdir(d)) != NULL) {
+        if (dir->d_name[0] == '.') {
+            continue;
+        }
+        if (!strncmp(dir->d_name, "mlx5_", strlen("mlx5_"))) {
+            sprintf(inband_dev, "ibdr-0,%s,1", dir->d_name);
+            found = 1;
+            break;
+        }
+    }
+
+    closedir(d);
+
+    if (found) {
+        return 0;
+    } else {
+        errno = ENODEV;
+        return -1;
+    }
+}
+
+static
+int reopen_pci_as_inband(mfile* mf)
+{
+    int rc;
+    char inband_dev[IBDR_MAX_NAME_SIZE];
+    rc = get_inband_dev_from_pci(inband_dev, mf->dev_name);
+    if (rc) {
+        errno = ENODEV;
         return -1;
     }
 
-    return mf->maccess_reg(mf, data);
+    mf->mclose(mf);
+    free(mf->dev_name);
+    mf->dev_name = strdup(inband_dev);
+
+    rc = mtcr_inband_open(mf, inband_dev);
+    return rc;
+}
+
+int maccess_reg_mad(mfile *mf, u_int8_t *data)
+{
+    int rc;
+    if (mf->access_type != MTCR_ACCESS_INBAND) {
+        // Close current device and re-open as inband
+        rc = reopen_pci_as_inband(mf);
+        if (rc) {
+            errno = ENODEV;
+            return -1;
+        }
+    }
+
+    mf->maccess_reg(mf, data);
 }
 
 int mos_reg_access(mfile *mf, int reg_access, void *reg_data, u_int32_t cmd_type)
@@ -1121,7 +1186,8 @@ int mos_reg_access(mfile *mf, int reg_access, void *reg_data, u_int32_t cmd_type
     return -1;
 }
 
-static void mtcr_fix_endianness(u_int32_t *buf, int len) {
+static void mtcr_fix_endianness(u_int32_t *buf, int len)
+{
     int i;
 
     for (i = 0; i < (len/4); ++i) {
