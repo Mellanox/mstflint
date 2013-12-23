@@ -649,7 +649,7 @@ bool Fs3Operations::Fs3Burn(Fs3Operations &imageOps, ExtBurnParams& burnParams)
 
     // ROM patchs
     if (((burnParams.burnRomOptions == ExtBurnParams::BRO_FROM_DEV_IF_EXIST) && (_fwImgInfo.ext_info.roms_info.exp_rom_found)) || // There is ROM in device and user choses to keep it
-            ((burnParams.burnRomOptions == ExtBurnParams::BRO_DEFAULT) && (!imageOps._fwImgInfo.ext_info.roms_info.exp_rom_found))) { // No ROM in image
+            ((burnParams.burnRomOptions == ExtBurnParams::BRO_DEFAULT) && (!imageOps._fwImgInfo.ext_info.roms_info.exp_rom_found && _fwImgInfo.ext_info.roms_info.exp_rom_found))) { // No ROM in image and ROM in device
         // here we should take rom from device and insert into the image
         // i.e if we have rom in image remove it and put the rom from the device else just put rom from device.
 
