@@ -107,10 +107,10 @@ protected:
 
     bool getRomsInfo(FBase* io, roms_info_t& romsInfo);
     void displayOneExpRomInfo(const rom_info_t& info);
-    void displayExpRomInfo(const roms_info_t& romsInfo, char *preStr);
+    void displayExpRomInfo(const roms_info_t& romsInfo, const char *preStr);
 
-    static int verifyCbFunc(char* str);
-    static int CbCommon(int completion, char*preStr, char* endStr=NULL);
+    static int verifyCbFunc(const char* str);
+    static int CbCommon(int completion, const char*preStr, const char* endStr=NULL);
     static int burnCbFs2Func(int completion);
     static int burnCbFs3Func(int completion);
     static int burnBCbFunc(int completion);
@@ -136,7 +136,7 @@ protected:
     void printMissingGuidErr(bool ibDev, bool ethDev, bool bxDev);
 
     bool getGUIDFromStr(string str, guid_t& guid, string prefixErr="");
-    bool  getPasswordFromUser(char *preStr, char buffer[MAX_PASSWORD_LEN]);
+    bool  getPasswordFromUser(const char *preStr, char buffer[MAX_PASSWORD_LEN]);
     bool askUser(const char* question=NULL, bool printAbrtMsg=true);
 
     bool isCmdSupportLog();

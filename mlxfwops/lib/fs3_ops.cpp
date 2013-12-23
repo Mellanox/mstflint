@@ -1310,30 +1310,30 @@ bool  Fs3Operations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, b
 
     if (sect_type == FS3_MFG_INFO) {
         guid_t base_uid = *(guid_t*)new_info;
-        type_msg = "GUID";
+        type_msg = (char*)"GUID";
         if (!Fs3UpdateMfgUidsSection(curr_toc, curr_toc->section_data, base_uid, newUidSection)) {
             return false;
         }
     } else if (sect_type == FS3_DEV_INFO) {
         if (cmd_type == CMD_SET_GUIDS) {
             guid_t base_uid = *(guid_t*)new_info;
-            type_msg = "GUID";
+            type_msg = (char*)"GUID";
             if (!Fs3UpdateUidsSection(curr_toc, curr_toc->section_data, base_uid, newUidSection)) {
                 return false;
             }
         } else if(cmd_type == CMD_SET_VSD) {
             char* user_vsd = (char*)new_info;
-            type_msg = "VSD";
+            type_msg = (char*)"VSD";
             if (!Fs3UpdateVsdSection(curr_toc, curr_toc->section_data, user_vsd, newUidSection)) {
                 return false;
             }
             } else {
                 // We shouldnt reach here EVER
-                type_msg = "Unknown";
+                type_msg = (char*)"Unknown";
         }
     } else if (sect_type == FS3_VPD_R0) {
         char *vpd_file = (char*)new_info;
-        type_msg = "VPD";
+        type_msg = (char*)"VPD";
         if (!Fs3UpdateVpdSection(curr_toc, vpd_file, newUidSection)) {
             return false;
         }

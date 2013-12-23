@@ -37,7 +37,7 @@
 #endif
 
 typedef int EFIAPI (*f_prog_func) (int completion);
-typedef int (*f_prog_func_str) (char* str);
+typedef int (*f_prog_func_str) (const char* str);
 
 #define VSD_LEN  128  // orenk: BUG - correct val is 208. Fro where did this come from ?
 #define PSID_LEN 16

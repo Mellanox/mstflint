@@ -230,13 +230,13 @@ void SubCommand::openLog()
     }
 }
 
-int SubCommand::verifyCbFunc(char* str)
+int SubCommand::verifyCbFunc(const char* str)
 {
     printf("%s", str);
     return 0;
 }
 
-int SubCommand::CbCommon(int completion, char*preStr, char* endStr)
+int SubCommand::CbCommon(int completion, const char*preStr, const char* endStr)
 {
     if (completion < 100) {
             printf("\r%s%%%03d", preStr, completion);
@@ -256,54 +256,54 @@ int SubCommand::CbCommon(int completion, char*preStr, char* endStr)
 
 int SubCommand::burnCbFs3Func(int completion)
 {
-    char* message = "Burning FS3 FW image without signatures - ";
-    char* endStr =  "Restoring signature                     - OK";
+    const char* message = "Burning FS3 FW image without signatures - ";
+    const char* endStr = "Restoring signature                     - OK";
     return CbCommon(completion, message, endStr);
 }
 
 int SubCommand::burnCbFs2Func(int completion)
 {
-    char* message = "Burning FS2 FW image without signatures - ";
-    char* endStr =  "Restoring signature                     - OK";
+    const char* message = "Burning FS2 FW image without signatures - ";
+    const char* endStr =  "Restoring signature                     - OK";
     return CbCommon(completion, message, endStr);
 }
 
 int SubCommand::bromCbFunc(int completion)
 {
-    char* message = "Burning ROM image    - ";
-    char* endStr =  "Restoring signature  - OK";
+    const char* message = "Burning ROM image    - ";
+    const char* endStr =  "Restoring signature  - OK";
     return CbCommon(completion, message, endStr);
 }
 
 int SubCommand::dromCbFunc(int completion)
 {
-    char* message = "Removing ROM image    - ";
-    char* endStr =  "Restoring signature  - OK";
+    const char* message = "Removing ROM image    - ";
+    const char* endStr = "Restoring signature  - OK";
     return CbCommon(completion, message, endStr);
 }
 
 int SubCommand::burnBCbFunc(int completion)
 {
-    return CbCommon(completion,"");
+    return CbCommon(completion, "");
 }
 
 int SubCommand::vsdCbFunc(int completion)
 {
-    char* message = "Setting the VSD      - ";
-    char* endStr =  "Restoring signature  - OK";
+    const char* message = "Setting the VSD      - ";
+    const char* endStr =  "Restoring signature  - OK";
     return CbCommon(completion, message, endStr);
 }
 
 int SubCommand::setKeyCbFunc(int completion)
 {
-    char* message = "Setting the HW Key   - ";
-    char* endStr =  "Restoring signature  - OK";
+    const char* message = "Setting the HW Key   - ";
+    const char* endStr = "Restoring signature  - OK";
     return CbCommon(completion, message, endStr);
 }
 
 int SubCommand::wbCbFunc(int completion)
 {
-    char* message = "Writing Block:   - ";
+    const char* message = "Writing Block:   - ";
     return CbCommon(completion, message, NULL);
 }
 
@@ -539,7 +539,7 @@ static int mygetch(void)
     return ch;
 }
 
-bool SubCommand::getPasswordFromUser(char *preStr, char buffer[MAX_PASSWORD_LEN])
+bool SubCommand::getPasswordFromUser(const char *preStr, char buffer[MAX_PASSWORD_LEN])
 {
     char c;
     int pos = 0;
@@ -692,7 +692,7 @@ void SubCommand::displayOneExpRomInfo(const rom_info_t& info) {
 }
 
 
-void SubCommand::displayExpRomInfo(const roms_info_t& romsInfo, char *preStr)
+void SubCommand::displayExpRomInfo(const roms_info_t& romsInfo, const char *preStr)
 {
     int i;
     int strLen = strlen(preStr);
@@ -2047,8 +2047,8 @@ FlintStatus BromSubCommand::executeCommand()
     }
     char romVer1[50], romVer2[50];
     printf("\n");
-    char *infoStr = "    Current ROM info on flash: ";
-    char *infoStr2 = "    New ROM info:              ";
+    const char *infoStr = "    Current ROM info on flash: ";
+    const char *infoStr2 = "    New ROM info:              ";
     if (_info.fw_info.roms_info.num_of_exp_rom > 0) {
         displayExpRomInfo(_info.fw_info.roms_info, infoStr);
         getExpRomStrVer(_info.fw_info.roms_info, romVer1);
