@@ -32,12 +32,12 @@
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-INCLUDES = -I. -I../common  -I../include/mtcr_ul
+INCLUDES = -I$(srcdir) -I$(top_srcdir)/common  -I$(top_srcdir)/include/mtcr_ul
 
 AM_CFLAGS = -W -Wall -g -MP -MD -Wswitch-enum $(COMPILER_FPIC) -DMTCR_EXPORT
-noinst_LTLIBRARIES = libdev_mgt.la
+noinst_LIBRARIES = libdev_mgt.a
 
-libdev_mgt_la_SOURCES = \
+libdev_mgt_a_SOURCES = \
 						tools_dev_types.c \
 						tools_dev_types.h \
 						../common/bit_slice.h       \

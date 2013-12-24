@@ -46,6 +46,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
+#include <unistd.h>
 
 #define ARR_SIZE(arr) sizeof(arr)/sizeof(arr[0])
 
@@ -83,14 +84,14 @@
 #define bswap_32(x) ntohl(x)
 
 
-#else 
+#else
 #ifdef __FreeBSD__
 #define SWAPL(l) ntohl(l)
 #include <sys/endian.h>
 #else // Linux
 #include <byteswap.h>
 #include <endian.h>
-#endif 
+#endif
 
 #endif // __DJGPP__
 
@@ -218,7 +219,7 @@ int cntx_int_spi_get_status_data(mflash* mfl, u_int8_t op_type, u_int32_t* statu
 
 // Write/Erase delays
 // ------------------
-// The below delays improve CPU utilization when doing long operations by 
+// The below delays improve CPU utilization when doing long operations by
 // sleeping instead of full throtle polling.
 // Their values are set so they will not lenghen burn time (at least not by a meaningfull duration)
 // and will save cpu. The delays are divided to an initial_delay, and then retry num_of_retries times waiting retry_delay.
@@ -868,7 +869,7 @@ int st_spi_wait_wip(mflash* mfl, u_int32_t init_delay_us, u_int32_t retry_delay_
     for (i = 0; i < num_of_retries; ++i) {
         rc = mfl->f_spi_status(mfl, SFC_RDSR, &status); CHECK_RC(rc);
         if ((status & 1) == 0) {
-            return MFE_OK;    
+            return MFE_OK;
         }
         usleep(retry_delay_us);
     }
@@ -2104,7 +2105,7 @@ int sx_flash_init(mflash* mfl, flash_params_t* flash_params)
     return MFE_OK;
 }
 
-#ifndef _MTCR_UL_
+#ifndef MST_UL
 int icmd_init(mflash *mfl)
 {
     mfl->cif_dev = gcif_open(mfl->mf);
@@ -2348,7 +2349,7 @@ int     mf_close       (mflash* mfl) {
     }
 
 
-#ifndef _MTCR_UL_
+#ifndef MST_UL
     if (mfl->cif_dev) {
         gcif_close(mfl->cif_dev);
     }

@@ -41,9 +41,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/mstmcra
 %{_bindir}/hca_self_test.ofed
 %{_includedir}/mtcr_ul/mtcr.h
+%{_libdir}/libmtcr_ul.a
 %{_datadir}/mstflint
 
 %changelog
+* Tue Dec 24 2013 Oren Kladnitsky <orenk@dev.mellanox.co.il>
+   MFT 3.5.0 Updates
 
 * Wed Mar 20 2013 Oren Kladnitsky <orenk@dev.mellanox.co.il>
    MFT 3.0.0

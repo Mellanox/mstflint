@@ -31,24 +31,24 @@
 #--
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
-USER_DIR = ..
-MTCR_DIR = $(USER_DIR)/mtcr_ul
-COMMON_DIR = $(USER_DIR)/common
-LAYOUTS_DIR = $(USER_DIR)/tools_layouts
-LAYOUTS_LIB = $(LAYOUTS_DIR)/libtools_layouts.la
+MTCR_DIR    = $(top_srcdir)/mtcr_ul
+MFLASH_DIR  = $(top_srcdir)/mflash
+COMMON_DIR  = $(top_srcdir)/common
+LAYOUTS_DIR = $(top_srcdir)/tools_layouts
 
-
-
-INCLUDES = -I. -I.. -I$(MTCR_DIR) -I../mflash -I$(COMMON_DIR) \
+INCLUDES = -I$(srcdir) -I$(MTCR_DIR) -I$(MFLASH_DIR) -I$(COMMON_DIR) \
            -I $(LAYOUTS_DIR) $(ZLIB_INC) -I$(MFT_EXT_LIBS_INC_DIR)/zlib
 
-AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe 
+AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe
 bin_PROGRAMS = mstflint
 
 mstflint_SOURCES = flint.cpp flint.h subcommands.cpp subcommands.h\
 					flint_params.cpp flint_params.h cmd_line_parser.cpp err_msgs.h
 
-mstflint_LDADD =  ../mlxfwops/lib/libmlxfwops.la  ../cmdparser/libcmdparser.la ../mflash/libmflash.la $(MTCR_DIR)/libmtcr_ul.a $(ZLIB_LIB) $(LAYOUTS_LIB) $(LIBSTD_CPP) -ldl
+mstflint_LDADD =  ../mlxfwops/lib/libmlxfwops.a  \
+                  ../cmdparser/libcmdparser.a    \
+		  ../mflash/libmflash.a          \
+		  ../mtcr_ul/libmtcr_ul.a        \
+                  ../tools_layouts/libtools_layouts.a \
+		  $(ZLIB_LIB) $(LAYOUTS_LIB) $(LIBSTD_CPP) -ldl
 
-mstflintinclude_HEADERS = $(top_srcdir)/include/mtcr_ul/mtcr.h
-mstflintincludedir = @includedir@/mtcr_ul

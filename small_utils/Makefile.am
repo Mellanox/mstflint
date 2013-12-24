@@ -1,25 +1,25 @@
 #--
 # Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
-# 
+#
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
 # General Public License (GPL) Version 2, available from the file
 # COPYING in the main directory of this source tree, or the
 # OpenIB.org BSD license below:
-# 
+#
 #     Redistribution and use in source and binary forms, with or
 #     without modification, are permitted provided that the following
 #     conditions are met:
-# 
+#
 #      - Redistributions of source code must retain the above
 #        copyright notice, this list of conditions and the following
 #        disclaimer.
-# 
+#
 #      - Redistributions in binary form must reproduce the above
 #        copyright notice, this list of conditions and the following
 #        disclaimer in the documentation and/or other materials
 #        provided with the distribution.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 # EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 # MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -30,10 +30,7 @@
 # SOFTWARE.
 #--
 
-USER_DIR = ..
-COMMON_DIR = $(USER_DIR)/common
-
-INCLUDES= -I$(top_srcdir)/include/mtcr_ul -I $(COMMON_DIR)
+INCLUDES= -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common
 
 LDADD= ../mtcr_ul/libmtcr_ul.a -ldl
 
@@ -44,8 +41,8 @@ bin_PROGRAMS = mstmread \
 					mstvpd
 
 bin_SCRIPTS = hca_self_test.ofed
-					
-mstmread_SOURCES = mread.c 
+
+mstmread_SOURCES = mread.c
 
 mstmwrite_SOURCES = mwrite.c
 
@@ -54,4 +51,4 @@ mstvpd_SOURCES = vpd.c
 mstmcra_SOURCES  = mcra.c
 
 mstmtserver_SOURCES = mtserver.c tcp.c tcp.h
-mstmtserver_CFLAGS = -DMST_UL 
+mstmtserver_CFLAGS = -DMST_UL

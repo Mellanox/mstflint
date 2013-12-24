@@ -35,8 +35,8 @@
  * SOFTWARE.
  */
 
-#ifndef _MTCR_UL_
-#define _MTCR_UL_
+#ifndef MTCR_H
+#define MTCR_H
 
 
 #ifdef __cplusplus

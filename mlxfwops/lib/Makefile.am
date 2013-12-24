@@ -31,32 +31,27 @@
 #--
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
-USER_DIR = ../..
-MTCR_DIR = $(USER_DIR)/mtcr_ul
-MFLASH_DIR = $(USER_DIR)/mflash
-MINIXZ_DIR = $(USER_DIR)/ext_libs/minixz
-LIBMFA_DIR = $(USER_DIR)/libmfa
-COMMON_DIR = $(USER_DIR)/common
-LAYOUTS_DIR = $(USER_DIR)/tools_layouts
+MTCR_DIR = $(top_srcdir)/mtcr_ul
+MFLASH_DIR = $(top_srcdir)/mflash
+MINIXZ_DIR = $(top_srcdir)/ext_libs/minixz
+LIBMFA_DIR = $(top_srcdir)/libmfa
+COMMON_DIR = $(top_srcdir)/common
+LAYOUTS_DIR = $(top_srcdir)/tools_layouts
 
-
-INCLUDES = -I. -I.. -I$(MTCR_DIR) -I$(MFLASH_DIR) -I$(LIBMFA_DIR) -I$(USER_DIR)/ext_libs/json -I$(MINIXZ_DIR)\
+INCLUDES = -I$(srcdir) -I$(MTCR_DIR) -I$(MFLASH_DIR) -I$(LIBMFA_DIR) -I$(USER_DIR)/ext_libs/json -I$(MINIXZ_DIR)\
            -I$(COMMON_DIR) -I$(MFT_EXT_LIBS_INC_DIR)/zlib -I $(LAYOUTS_DIR) -I$(top_srcdir)/common
 
- 
 MLXFWOPS_VERSION = 1
 
 AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe -DNO_MFA_SUPPORT
 
-lib_LTLIBRARIES = libmlxfwops.la
+noinst_LIBRARIES = libmlxfwops.a
 
-libmlxfwops_la_SOURCES = flint_base.cpp \
+libmlxfwops_a_SOURCES = flint_base.cpp \
                flint_io.cpp \
                fw_ops.cpp \
-               fs2_ops.cpp fs2_ops.h\
-               fs3_ops.cpp fs3_ops.h\
-               mlxfwops.cpp mlxfwops.h
-
-mlxfwopsincludedir=$(includedir)/mft/mlxfwops
-mlxfwopsinclude_HEADERS = mlxfwops_com.h mlxfwops.h fw_ops.h flint_base.h flint_io.h
+               fs2_ops.cpp fs2_ops.h \
+               fs3_ops.cpp fs3_ops.h \
+               mlxfwops.cpp mlxfwops.h \
+               mlxfwops_com.h mlxfwops.h fw_ops.h flint_base.h flint_io.h
 

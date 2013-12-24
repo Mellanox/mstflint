@@ -31,17 +31,9 @@
 #--
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
-USER_DIR = ..
-MTCR_DIR = $(USER_DIR)/mtcr_ul
-INCLUDES = -I$(USER_DIR) -I$(MTCR_DIR) -I$(USER_DIR)/common #-I$(MFT_EXT_LIBS_INC_DIR)
-AM_CFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC) 
-lib_LTLIBRARIES = libtools_layouts.la
+INCLUDES = -I$(top_srcdir)/mtcr_ul -I$(top_srcdir)/common
+AM_CFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC)
+noinst_LIBRARIES = libtools_layouts.a
 
-libraryincludedir=$(includedir)/mstmft/tools_layouts/
-
-libraryinclude_HEADERS = adb_to_c_utils.h cibfw_layouts.h
-
-libtools_layouts_la_SOURCES = cibfw_layouts.c adb_to_c_utils.c
-#libtools_layouts_la_DEPENDENCIES = $(USER_DIR)/xz_utils/libxz_utils.la $(USER_DIR)/tools_crypto/libtools_crypto.la
-#libtools_layouts_la_LIBADD = $(USER_DIR)/xz_utils/libxz_utils.la $(USER_DIR)/tools_crypto/libtools_crypto.la $(WS2_LIB)
+libtools_layouts_a_SOURCES = cibfw_layouts.c adb_to_c_utils.c adb_to_c_utils.h cibfw_layouts.h
 

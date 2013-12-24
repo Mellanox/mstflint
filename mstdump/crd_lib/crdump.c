@@ -104,7 +104,7 @@ Store the csv file path at csv_file_path.
  */
 static int crd_get_csv_path(IN dm_dev_id_t dev_type, OUT char *csv_file_path);
 
-/* 
+/*
 count number of dwords, and store all needed data from csv file at parsed_csv
  */
 static int crd_count_double_word(IN  char *csv_file_path, OUT u_int32_t *number_of_dwords, OUT crd_parsed_csv_t blocks[], IN int is_full);
@@ -271,7 +271,7 @@ int crd_dump_data(IN crd_ctxt_t *context, OUT crd_dword_t* dword_arr, IN crd_cal
                 return CRD_EXCEED_VALUE;
             }
             addr =  context->blocks[i].addr + (j * sizeof(u_int32_t));
-            
+
             if (context->cause_addr >= 0) {  /* if we want to check cause bit - read it and verify it hasn't been raised */
                 if (mread4(context->mf, context->cause_addr, &cause_reg) != sizeof(u_int32_t)) {
                     CRD_DEBUG("Cr read (0x%08x) failed: %s(%d)\n", context->cause_addr, strerror(errno), (u_int32_t)errno);
@@ -545,6 +545,9 @@ static int crd_update_csv_path(IN OUT char *csv_file_path) {
     crd_get_exec_name_from_path(csv_file_path, exec_name);
     crd_replace(csv_file_path, exec_name, "mstdump_dbs\\");
     found = 1;
+#elif defined MST_UL
+    strcat(csv_file_path, DATA_PATH "/");
+    found = 1;
 #else
     char      conf_path[256] = "/etc/mft/mft.conf";
     char      *data_path;
@@ -571,7 +574,6 @@ static int crd_update_csv_path(IN OUT char *csv_file_path) {
             }
         }
     }
-    //strcat(csv_file_path, DATA_PATH "/mstdump_dbs/");
 #endif
     if (!found) {
         return CRD_CONF_BAD_FORMAT;

@@ -32,11 +32,11 @@
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-INCLUDES = 
-                                
+INCLUDES =
+
 AM_CPPFLAGS = -W  -g -MP -MD -fPIC
 
-lib_LTLIBRARIES = libcmdparser.la
+noinst_LIBRARIES = libcmdparser.a
 
-libcmdparser_la_SOURCES = cmdparser.cpp my_getopt.c cmdparser.h my_getopt.h
-                     
+libcmdparser_a_SOURCES = cmdparser.cpp my_getopt.c cmdparser.h my_getopt.h
+
