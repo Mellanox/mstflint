@@ -1,7 +1,7 @@
 Summary: Mellanox firmware burning application
 Name: mstflint
 Version: @VERSION@
-Release: 0
+Release: 1
 License: GPL/BSD
 Url: http://openfabrics.org
 Group: System Environment/Base
