@@ -259,7 +259,6 @@ int main(int argc, char *argv[])
         char* fpath;
         char line[1024];
         char *offset, *size;
-        unsigned tmp;
         int path_found = 0;
 
         if (!adb_dump) {

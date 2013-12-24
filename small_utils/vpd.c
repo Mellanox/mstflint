@@ -108,9 +108,9 @@ typedef unsigned char vpd_t[VPD_MAX_SIZE];
 
 #define VPD_TAG_LARGE(d) ((d)->type & 0x80)
 
-#define VPD_TAG_LENGTH(d) (VPD_TAG_LARGE(d) ? ((((d)->large.length_msb) << 8) | \
+#define VPD_TAG_LENGTH(d) ((unsigned)(VPD_TAG_LARGE(d) ? ((((d)->large.length_msb) << 8) | \
 					       ((d)->large.length_lsb)) :       \
-			   ((d)->type & 0x7))
+			   ((d)->type & 0x7)))
 
 #define VPD_TAG_HEAD(d) (VPD_TAG_LARGE(d) ? sizeof (d)->large : sizeof (d)->small)
 
@@ -278,7 +278,7 @@ void vpd_show_field(FILE *f, struct vpd_field *field)
 void vpd_show_fields(FILE *f, union vpd_data_type *d, const char *keyword)
 {
 	struct vpd_field *field;
-	int i;
+	unsigned i;
 
 	for (i = 0; i < VPD_TAG_LENGTH(d); i += 0x3 + field->length) {
 		field = (struct vpd_field *)(VPD_TAG_DATA(d)->bytes + i);
@@ -290,7 +290,7 @@ void vpd_show_fields(FILE *f, union vpd_data_type *d, const char *keyword)
 
 void vpd_show_id(FILE *f, union vpd_data_type *d)
 {
-	int i;
+	unsigned i;
 
 	fputs("ID: ", f);
 	for (i = 0; i < VPD_TAG_LENGTH(d); ++i)
@@ -322,7 +322,7 @@ void vpd_show_one(FILE *f, union vpd_data_type* d, const char *keyword)
 int vpd_check(vpd_t vpd, int checksum, int ignore_w)
 {
 	unsigned char b;
-	int i;
+	unsigned i;
 	unsigned offset;
 	int rc;
 	union vpd_data_type *d = NULL;

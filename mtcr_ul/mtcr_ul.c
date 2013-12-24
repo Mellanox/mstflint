@@ -1104,7 +1104,8 @@ int mget_mdevs_flags(mfile *mf, u_int32_t *devs_flags)
 static
 int get_inband_dev_from_pci(char* inband_dev, char* pci_dev)
 {
-    unsigned domain = 0, bus = 0, dev = 0, func = 0, force = 0;
+    unsigned domain = 0, bus = 0, dev = 0, func = 0;
+    int force = 0;
     enum mtcr_access_method access;
     DIR* d;
     struct dirent *dir;
@@ -1173,7 +1174,7 @@ int maccess_reg_mad(mfile *mf, u_int8_t *data)
         }
     }
 
-    mf->maccess_reg(mf, data);
+    return mf->maccess_reg(mf, data);
 }
 
 int mos_reg_access(mfile *mf, int reg_access, void *reg_data, u_int32_t cmd_type)

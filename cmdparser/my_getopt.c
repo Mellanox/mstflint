@@ -394,7 +394,9 @@
    /* Start processing options with ARGV-element 1 (since ARGV-element 0
       is the program name); the sequence of previously skipped
       non-option ARGV-elements is empty.  */
- 
+   (void)argc;
+   (void)argv;
+
    first_nonopt = last_nonopt = tools_optind;
  
    nextchar = NULL;
@@ -695,7 +697,7 @@
                  }
                else
                  {
-                   if (tools_opterr)
+                   if (tools_opterr) {
                     if (argv[tools_optind - 1][1] == '-')
                      /* --option */
                      fprintf (stderr,
@@ -706,7 +708,7 @@
                      fprintf (stderr,
                       _("%s: option `%c%s' doesn't allow an argument\n"),
                       argv[0], argv[tools_optind - 1][0], pfound->name);
- 
+                   }
                    nextchar += strlen (nextchar);
  
                    tools_optopt = pfound->val;
