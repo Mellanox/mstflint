@@ -39,7 +39,7 @@ LAYOUTS_DIR = $(top_srcdir)/tools_layouts
 INCLUDES = -I$(srcdir) -I$(MTCR_DIR) -I$(MFLASH_DIR) -I$(COMMON_DIR) \
            -I $(LAYOUTS_DIR) $(ZLIB_INC) -I$(MFT_EXT_LIBS_INC_DIR)/zlib
 
-AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe
+mstflint_CXXFLAGS = -Wall -W -g -MP -MD -pipe -DEXTERNAL
 bin_PROGRAMS = mstflint
 
 mstflint_SOURCES = flint.cpp flint.h subcommands.cpp subcommands.h\
