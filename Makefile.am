@@ -32,7 +32,11 @@
 
 SUBDIRS = mtcr_ul dev_mgt mflash tools_layouts mlxfwops cmdparser flint small_utils mstdump 
 
+man_MANS = man/mstflint.1
+
 EXTRA_DIST = \
 	mstflint.spec \
 	small_utils/hca_self_test.ofed \
-	common/gitversion.h
+	common/gitversion.h \
+	$(man_MANS)
+
