@@ -38,5 +38,6 @@ EXTRA_DIST = \
 	mstflint.spec \
 	small_utils/hca_self_test.ofed \
 	common/gitversion.h \
+	debian \
 	$(man_MANS)
 
