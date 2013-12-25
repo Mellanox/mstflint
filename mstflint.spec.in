@@ -43,7 +43,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/mtcr_ul/mtcr.h
 %{_libdir}/libmtcr_ul.a
 %{_datadir}/mstflint
-%{_mandir}/man1/mstflint.1.gz
+%{_mandir}/man1/*
 
 %changelog
 * Tue Dec 24 2013 Oren Kladnitsky <orenk@dev.mellanox.co.il>
