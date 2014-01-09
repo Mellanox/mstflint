@@ -636,8 +636,9 @@ int mtcr_pciconf_open(mfile *mf, const char *name)
 static
 int mtcr_inband_open(mfile* mf, const char* name)
 {
-    mf->access_type   = MTCR_ACCESS_INBAND;
 
+#ifndef NO_INBAND
+    mf->access_type   = MTCR_ACCESS_INBAND;
     mf->mread4        = mib_read4;
     mf->mwrite4       = mib_write4;
     mf->mread4_block  = mib_readblock;
@@ -646,6 +647,13 @@ int mtcr_inband_open(mfile* mf, const char* name)
     mf->mclose        = mib_close;
 
     return mib_open(name,mf,0);
+
+#else
+    (void) name;
+    (void) mf;
+    errno = ENOSYS;
+    return -1;
+#endif
 }
 
 

@@ -20,21 +20,34 @@ AC_CONFIG_HEADERS( config.h )
 
 AC_MSG_CHECKING(--enable-dc argument)
 AC_ARG_ENABLE(dc,
-		    [  --disable-dc            Disable mstflint "dc" command. Eliminate zlib dependency],
+		    [  --disable-dc            Disable mstflint "dc" command. Eliminates zlib dependency],
 		    [enable_dc=$enableval],
 		    [enable_dc="yes"])
-AC_MSG_RESULT($enableval)
+AC_MSG_RESULT($enable_dc)
 if test "$enable_dc" = "yes"; then
   AC_CHECK_HEADER(zlib.h,,AC_MSG_ERROR([cannot find zlib.h . Use --disable-dc to remove this dependaency]))
   AC_CHECK_LIB(z, uncompress,, AC_MSG_ERROR([cannot find zlib uncompress() function. Use --disable-dc to remove this dependaency]))
   mstflint_LIBS="-lz"
 else
-  mstflint_CXXFLAGS="-DNO_ZLIB"  
+  mstflint_CXXFLAGS="-DNO_ZLIB"
 fi
+
 AC_SUBST(mstflint_LIBS)
 AC_SUBST(mstflint_CXXFLAGS)
+
+AC_MSG_CHECKING(--enable-inband argument)
+AC_ARG_ENABLE(inband,
+		    [  --disable-inband        Disable inabnd access. Prevents FW updtes for Mellanox SwitchX and ConnectIB devices. Eliminates infiniband/mad.h dependency],
+		    [enable_inband=$enableval],
+		    [enable_inband="yes"])
+AC_MSG_RESULT($enable_inband)
+if test "x$enable_inband" = "xyes"; then
+  AC_CHECK_HEADER(infiniband/mad.h,,AC_MSG_ERROR([cannot find infiniband/mad.h . Use --disable-inband to remove this dependaency]))
+fi
+
+AM_CONDITIONAL(ENABLE_INBAND, [test  "x$enable_inband" = "xyes"])
 
 AC_CONFIG_FILES( mstflint.spec )
 
 AC_OUTPUT( Makefile mtcr_ul/Makefile dev_mgt/Makefile mflash/Makefile tools_layouts/Makefile mlxfwops/Makefile mlxfwops/lib/Makefile cmdparser/Makefile flint/Makefile \
- 		small_utils/Makefile mstdump/Makefile mstdump/crd_lib/Makefile mstdump/crd_main/Makefile  mstdump/mstdump_dbs/Makefile ) 
+ 		small_utils/Makefile mstdump/Makefile mstdump/crd_lib/Makefile mstdump/crd_main/Makefile  mstdump/mstdump_dbs/Makefile )

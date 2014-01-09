@@ -35,9 +35,15 @@ INCLUDES = -I$(top_srcdir)/include/mtcr_ul
 
 lib_LIBRARIES = libmtcr_ul.a
 
-libmtcr_ul_a_SOURCES = mtcr_ul.c mtcr_ib_ofed.c mtcr_ib.h  mtcr_int_defs.h
-
+libmtcr_ul_a_SOURCES = mtcr_ul.c mtcr_ib.h  mtcr_int_defs.h
 libmtcr_ul_a_CFLAGS = -W -Wall -g -MP -MD -fPIC -DMTCR_API="" -DMST_UL
+
+if ENABLE_INBAND
+libmtcr_ul_a_SOURCES += mtcr_ib_ofed.c
+else
+libmtcr_ul_a_CFLAGS += -DNO_INBAND
+endif
+
 libraryincludedir=$(includedir)/mtcr_ul
 libraryinclude_HEADERS = $(top_srcdir)/include/mtcr_ul/mtcr.h
 
