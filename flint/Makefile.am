@@ -50,5 +50,12 @@ mstflint_LDADD =  ../mlxfwops/lib/libmlxfwops.a  \
 		  ../mflash/libmflash.a          \
 		  ../mtcr_ul/libmtcr_ul.a        \
                   ../tools_layouts/libtools_layouts.a \
-		  $(ZLIB_LIB) $(LAYOUTS_LIB) $(LIBSTD_CPP) -ldl
+		  $(LAYOUTS_LIB) $(LIBSTD_CPP) -ldl
+
+
+if ENABLE_DC
+mstflint_LDADD += -lz
+else
+mstflint_CXXFLAGS += -DNO_ZLIB
+endif
 

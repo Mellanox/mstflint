@@ -40,6 +40,10 @@
 #include <iostream>
 #include <stdio.h>
 
+#ifndef NO_ZLIB
+#include <zlib.h>
+#endif
+
 using namespace std;
 
 #define INDENT "\t\t\t\t\t   "
@@ -941,7 +945,10 @@ bool SubCommand::unzipDataFile (std::vector<u_int8_t> data, std::vector<u_int8_t
     newData.resize(destLen + 1);
     return true;
 #else
-    reportErr(true, "Executable was compiled with \"dump files\" option disabled.");
+    (void) data;
+    (void) newData;
+    (void) sectionName;
+    reportErr(true, "Executable was compiled with \"dump files\" option disabled.\n");
     return false;
 #endif
 }

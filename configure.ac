@@ -27,13 +27,9 @@ AC_MSG_RESULT($enable_dc)
 if test "$enable_dc" = "yes"; then
   AC_CHECK_HEADER(zlib.h,,AC_MSG_ERROR([cannot find zlib.h . Use --disable-dc to remove this dependaency]))
   AC_CHECK_LIB(z, uncompress,, AC_MSG_ERROR([cannot find zlib uncompress() function. Use --disable-dc to remove this dependaency]))
-  mstflint_LIBS="-lz"
-else
-  mstflint_CXXFLAGS="-DNO_ZLIB"
 fi
 
-AC_SUBST(mstflint_LIBS)
-AC_SUBST(mstflint_CXXFLAGS)
+AM_CONDITIONAL(ENABLE_DC, [test  "x$enable_dc" = "xyes"])
 
 AC_MSG_CHECKING(--enable-inband argument)
 AC_ARG_ENABLE(inband,

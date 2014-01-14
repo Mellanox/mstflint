@@ -146,11 +146,6 @@
     #endif
 #endif // __WIN__
 
-#ifndef NO_ZLIB
-    #include <zlib.h>
-#endif
-
-
 #include <memory>
 #include <vector>
 #include "compatibility.h"
