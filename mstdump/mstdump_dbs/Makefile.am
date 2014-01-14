@@ -30,5 +30,5 @@
 # SOFTWARE.
 #--
 mstregdumpdir = $(datadir)/@PACKAGE@
-dist_mstregdump_DATA = *.csv 
+dist_mstregdump_DATA = $(srcdir)/*.csv
 

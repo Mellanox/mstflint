@@ -36,8 +36,8 @@ MFLASH_DIR  = $(top_srcdir)/mflash
 COMMON_DIR  = $(top_srcdir)/common
 LAYOUTS_DIR = $(top_srcdir)/tools_layouts
 
-INCLUDES = -I$(srcdir) -I$(MTCR_DIR) -I$(MFLASH_DIR) -I$(COMMON_DIR) \
-           -I $(LAYOUTS_DIR) $(ZLIB_INC) -I$(MFT_EXT_LIBS_INC_DIR)/zlib
+INCLUDES = -I$(top_srcdir) -I$(srcdir) -I$(MTCR_DIR) -I$(MFLASH_DIR) -I$(COMMON_DIR) \
+           -I$(LAYOUTS_DIR)
 
 mstflint_CXXFLAGS = -Wall -W -g -MP -MD -pipe -DEXTERNAL
 bin_PROGRAMS = mstflint

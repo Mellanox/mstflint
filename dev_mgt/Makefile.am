@@ -32,7 +32,7 @@
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-INCLUDES = -I$(srcdir) -I$(top_srcdir)/common  -I$(top_srcdir)/include/mtcr_ul
+INCLUDES = -I$(srcdir) -I$(top_srcdir) -I$(top_srcdir)/common  -I$(top_srcdir)/include/mtcr_ul
 
 AM_CFLAGS = -W -Wall -g -MP -MD -Wswitch-enum $(COMPILER_FPIC) -DMTCR_EXPORT
 noinst_LIBRARIES = libdev_mgt.a
@@ -40,7 +40,7 @@ noinst_LIBRARIES = libdev_mgt.a
 libdev_mgt_a_SOURCES = \
 						tools_dev_types.c \
 						tools_dev_types.h \
-						../common/bit_slice.h       \
-						../common/compatibility.h   \
-						../common/tools_version.h
+						$(top_srcdir)/common/bit_slice.h       \
+						$(top_srcdir)/common/compatibility.h   \
+						$(top_srcdir)/common/tools_version.h
 

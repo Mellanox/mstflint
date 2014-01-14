@@ -31,7 +31,7 @@
 #--
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
-INCLUDES = -I. -I$(srcdir)/../crd_lib -I$(top_srcdir)/include/mtcr_ul
+INCLUDES = -I$(top_srcdir) -I$(srcdir)/../crd_lib -I$(top_srcdir)/include/mtcr_ul
 AM_CFLAGS = -MD -pipe -g -Wall -W
 
 bin_PROGRAMS = mstregdump
