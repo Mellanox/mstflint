@@ -1,25 +1,25 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
- * 
+ *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
  * General Public License (GPL) Version 2, available from the file
  * COPYING in the main directory of this source tree, or the
  * OpenIB.org BSD license below:
- * 
+ *
  *     Redistribution and use in source and binary forms, with or
  *     without modification, are permitted provided that the following
  *     conditions are met:
- * 
+ *
  *      - Redistributions of source code must retain the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer.
- * 
+ *
  *      - Redistributions in binary form must reproduce the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer in the documentation and/or other materials
  *        provided with the distribution.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -30,10 +30,8 @@
  * SOFTWARE.
  */
 
- 
-
 /***
- *** This file was generated at "2013-12-03 16:31:41"
+ *** This file was generated at "2014-03-23 17:16:21"
  *** by:
  ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/cibfw/cibfw.adb --file-prefix cibfw --prefix cibfw_
  ***/
@@ -333,8 +331,14 @@ All other values Reserved
 	 u_int8_t type;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - if partition type is code or ini then the load address is in here */
-	/* 4.0 - 8.31 */
+	/* 4.0 - 4.29 */
 	 u_int32_t param0;
+	/* Description - When this bit is set, Data within the section is protected by per-line crc. See yu.flash.replacement.crc_en */
+	/* 4.30 - 4.30 */
+	 u_int8_t cache_line_crc;
+	/* Description - When this bit is set, image is zipped */
+	/* 4.31 - 8.31 */
+	 u_int8_t zipped_image;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - if partition type is code then the jump address is in here */
 	/* 8.0 - 12.31 */
@@ -358,9 +362,6 @@ A device_data section should not be updated in a regular FW update.
 Example for device_data section: VPD_R, GUIDs. */
 	/* 24.17 - 24.17 */
 	 u_int8_t device_data;
-	/* Description - When this bit is set, Data within the section is protected by per-line crc. See yu.flash.replacement.crc_en */
-	/* 24.18 - 24.18 */
-	 u_int8_t cache_line_crc;
 /*---------------- DWORD[7] (Offset 0x1c) ----------------*/
 	/* Description -  */
 	/* 28.0 - 28.15 */

@@ -1,25 +1,25 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
- * 
+ *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
  * General Public License (GPL) Version 2, available from the file
  * COPYING in the main directory of this source tree, or the
  * OpenIB.org BSD license below:
- * 
+ *
  *     Redistribution and use in source and binary forms, with or
  *     without modification, are permitted provided that the following
  *     conditions are met:
- * 
+ *
  *      - Redistributions of source code must retain the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer.
- * 
+ *
  *      - Redistributions in binary form must reproduce the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer in the documentation and/or other materials
  *        provided with the distribution.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -29,6 +29,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
 
 #ifndef TOOLS_DEV_TYPE_H
 #define TOOLS_DEV_TYPE_H
@@ -46,20 +47,22 @@ enum dm_dev_id
     DeviceStartMarker = 0,    // Dummy Device - Marker for first device
                               // to let user iterate from DeviceStartMarker to DeviceEndMarker
 
-    DeviceAnafa = 0,
-    DeviceTavor,
-    DeviceArbel,
-    DeviceArbelMF,
-    DeviceAnafa2,
-    DeviceSinai,
-    DeviceHermon,
-    DeviceHermonB0,
-    DeviceShaldag,
-    DeviceDolev,
-    DeviceBaz,
-    DeviceKfir,
-    DeviceGolan,
-    DeviceBental,
+    DeviceInfiniScale = 0,
+    DeviceInfiniHost,
+    DeviceInfiniHostIIIEx,
+    DeviceInfiniHostIIIEx_MF,
+    DeviceInfiniScaleIII,
+    DeviceInfiniHostIIILx,
+    DeviceConnectX,
+    DeviceConnectX2,
+    DeviceInfiniScaleIV,
+    DeviceBridgeX,
+    DeviceSwitchX,
+    DeviceConnectX3,
+    DeviceConnectIB,
+    DeviceConnectX3Pro,
+    DeviceSwitchIB,
+    DeviceConnectX4,
 
     DeviceEndMarker           // Dummy Device - Marker for indicating error and end of devices
 };
@@ -82,7 +85,7 @@ int dm_get_device_id_offline(u_int32_t devid,
                              dm_dev_id_t* ptr_dev_type);
 
 /**
- * Returns the device name as a "const char*" (internal name)
+ * Returns the device name as a "const char*"
  */
 const char* dm_dev_type2str(dm_dev_id_t type);
 
@@ -100,12 +103,6 @@ int dm_dev_is_switch(dm_dev_id_t type);
  * A predicate returning if the device is a bridge
  */
 int dm_dev_is_bridge(dm_dev_id_t type);
-
-
-/**
- * Returns the device name as a "const char*" (external name)
- */
-const char* dm_dev_type2str_ext(dm_dev_id_t type);
 
 /**
  * Returns the max num of ports or -1 on error

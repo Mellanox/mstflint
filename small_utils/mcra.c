@@ -1,25 +1,25 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
- * 
+ *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
  * General Public License (GPL) Version 2, available from the file
  * COPYING in the main directory of this source tree, or the
  * OpenIB.org BSD license below:
- * 
+ *
  *     Redistribution and use in source and binary forms, with or
  *     without modification, are permitted provided that the following
  *     conditions are met:
- * 
+ *
  *      - Redistributions of source code must retain the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer.
- * 
+ *
  *      - Redistributions in binary form must reproduce the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer in the documentation and/or other materials
  *        provided with the distribution.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -59,11 +59,16 @@
 void usage(const char *n, int with_exit)
 {
     printf("  Mellanox Configuration Registers Access tool\n");
-    printf("  Usage: %s [-s <i2c-slave>] [-a <adb dump>] [-v] [-h] <device> <addr[.<bit offset>:<bit size>]> [data]\n", n);
+    printf("  Usage: %s [-s <i2c-slave>] [-a <adb dump>] [-v] [-h] <device>\n", n);
+    printf("         <addr[.<bit offset>:<bit size>]|[,<bytes number>]> [data]\n");
     printf("         If data is given, operation is write. Otherwise it is read.\n");
-    printf("         If a bit range is given in the address (E.G.: 0xf0014.16:8):.\n");
+    printf("         If a bit range is given in the address (E.G.: 0xf0014.16:8):\n");
     printf("              For read  - Only the requested bits are printed.\n");
-    printf("              For write - Read-Modify-Write. Only the requested bits are changed.\n\n");
+    printf("              For write - Read-Modify-Write. Only the requested bits are changed.\n");
+    printf("         If 'bytes number' is given in the address (E.G.: 0xf0014,16):\n");
+    printf("              For read  - Will read a block (its size is the given bytes number).\n");
+    printf("              For write - User need to give list of dwrods to write, \n"
+           "                          number of dwords should be (bytes number/4).\n\n");
     printf("  -s <i2c-slave> : I2C slave address.\n");
     printf("  -a <dump file> : adb dump file, used for access by path.\n");
     printf("  -h             : Print this help message.\n");
@@ -94,7 +99,7 @@ int main(int argc, char *argv[])
     int           bit_size = 32;
     int           byte_size = 0;
     int           read_block = 0;       /* if 0 then read field according to "addr.bit:size", else read block of size "byte_size" */
-    char*         op_name = "cr write";
+    const char*   op_name = "cr write";
 
 #if 0
     int  i, rc1;
@@ -106,7 +111,7 @@ int main(int argc, char *argv[])
     }
     exit(0);
 #endif
-
+    (void)rc; // avoid warnings (we dont use it just assign)
     // Parse cmd line:
     if (argc < 2) {
         usage(argv[0], 1);

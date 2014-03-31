@@ -1,8 +1,7 @@
 /*
- *
  * cmd_line_parser.cpp - FLash INTerface
  *
- * Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -41,7 +40,7 @@
 // Flint includes
 #include "flint.h"
 #include <common/tools_version.h>
-#include <stdio.h>
+#include "mlxfwops/lib/flint_io.h"
 
 #ifndef FLINT_NAME
     #ifdef __GNUC__
@@ -80,6 +79,7 @@ SubCmdMetaData::SubCmdMetaData() {
     _sCmds.push_back(new SubCmd("q", "query", SC_Query));
     _sCmds.push_back(new SubCmd("v", "verify", SC_Verify));
     _sCmds.push_back(new SubCmd("", "swreset", SC_Swreset));
+    _sCmds.push_back(new SubCmd("r", "reset_cfg", SC_ResetCfg));
     _sCmds.push_back(new SubCmd("", "brom", SC_Brom));
     _sCmds.push_back(new SubCmd("", "drom", SC_Drom));
     _sCmds.push_back(new SubCmd("", "rrom", SC_Rrom));
@@ -105,6 +105,7 @@ SubCmdMetaData::SubCmdMetaData() {
     _sCmds.push_back(new SubCmd("", "wb", SC_Wb));
     _sCmds.push_back(new SubCmd("", "rb", SC_Rb));
     _sCmds.push_back(new SubCmd("", "clear_semaphore", SC_Clear_Sem));
+    _sCmds.push_back(new SubCmd("", "fi", SC_Fix_Img));
 }
 
 SubCmdMetaData::~SubCmdMetaData() {
@@ -408,7 +409,7 @@ bool parseFlashParams(string params, flash_params_t& fp)
  *Parsing part of the Flint class
  ************************************/
 
-
+#define FLASH_LIST_SZ 256
 
 void Flint::initCmdParser() {
     AddDescription("flint is a FW (firmware) burning and flash memory operations tool for\n"
@@ -418,6 +419,36 @@ void Flint::initCmdParser() {
                 'd',
                 "<device>",
                 "Device flash is connected to.\n"
+                "Commands affected: all");
+
+    AddOptions("image",
+               'i',
+                "<image>",
+                "Binary image file.\n"
+                "Commands affected: burn, verify");
+
+    AddOptions("help",
+               'h',
+                "",
+                "Prints this message and exits");
+
+    AddOptions("hh",
+               ' ',
+                "",
+                "Prints extended command help");
+
+    AddOptions("yes",
+               'y',
+                "",
+                "Non interactive mode - assume answer\n"
+                "\"yes\" to all questions.\n"
+                "Commands affected: all");
+
+    AddOptions("no",
+               ' ',
+                "",
+                "Non interactive mode - assume answer\n"
+                "\"no\" to all questions.\n"
                 "Commands affected: all");
 
     AddOptions("guid",
@@ -468,7 +499,7 @@ void Flint::initCmdParser() {
     AddOptions("uid",
                ' ',
                 "<UID>",
-                "BridgeX only. Derive and set the device UIDs (GUIDs, MACs, WWNs).\n"
+                "BridgeX/ConnectIB only. Derive and set the device UIDs (GUIDs, MACs, WWNs).\n"
                 "UIDs are derived from the given base UID according to Mellanox Methodology\n"
                 "Commands affected: burn, sg");
 
@@ -505,22 +536,6 @@ void Flint::initCmdParser() {
                 "\tcorruption if the device or another\n"
                 "\tapplication is currently using the flash.\n"
                 "\tExercise caution.\n");
-
-    AddOptions("help",
-               'h',
-                "",
-                "Prints this message and exits");
-
-    AddOptions("hh",
-               ' ',
-                "",
-                "Prints extended command help");
-
-    AddOptions("image",
-               'i',
-                "<image>",
-                "Binary image file.\n"
-                "Commands affected: burn, verify");
 
     AddOptions("qq",
                ' ',
@@ -566,20 +581,6 @@ void Flint::initCmdParser() {
                 "",
                 "Do not print burn progress flyer.\n"
                 "Commands affected: burn");
-
-    AddOptions("yes",
-               'y',
-                "",
-                "Non interactive mode - assume answer\n"
-                "\"yes\" to all questions.\n"
-                "Commands affected: all");
-
-    AddOptions("no",
-               ' ',
-                "",
-                "Non interactive mode - assume answer\n"
-                "\"no\" to all questions.\n"
-                "Commands affected: all");
 
     AddOptions("vsd",
                ' ',
@@ -627,14 +628,19 @@ void Flint::initCmdParser() {
                 "<log_file>",
                 "Print the burning status to the specified log file");
 
+    char flashList[FLASH_LIST_SZ];
+    char flashParDesc[FLASH_LIST_SZ*2];
+    Flash::get_flash_list(flashList);
+    snprintf(flashParDesc, FLASH_LIST_SZ*2,"Use the given parameters to access the flash instead of reading them from the flash.\n"\
+            							   "Supported parameters:\n"\
+            							   "Type: The type of the flash, such as:%s.\n"\
+            							   "log2size: The log2 of the flash size."\
+            							   "num_of_flashes: the number of the flashes connected to the device.", flashList);
+
+
     AddOptions("flash_params",
                ' ',
-                "<type, log2size, num_of_flashes>",
-                "Use the given parameters to access the flash instead of reading them from the flash.\n"
-                "Supported parameters:\n"
-                "Type: The type of the flash, such as: M25PXxx, M25Pxx, N25Q0XX, SST25VFxx, W25QxxBV, W25Xxx, AT25DFxxx, S25FLXXXP.\n"
-                "log2size: The log2 of the flash size."
-                "num_of_flashes: the number of the flashes connected to the device.");
+                "<type, log2size, num_of_flashes>", flashParDesc);
 
     AddOptions("version",
                'v',
@@ -673,6 +679,10 @@ ParseStatus Flint::HandleOption(string name, string value)
         cout<<"COMMANDS SUMMARY:"<<endl;
         for (map_sub_cmd_t_to_subcommand::iterator it=_subcommands.begin(); it != _subcommands.end(); it++)
         {
+			if (it->first == SC_ResetCfg) {
+				// hidden command so "forget" mentioning it
+				continue;
+			}
             string str1 = "  "+it->second->getFlagL()+((it->second->getFlagS() == "") ? ("  ") : ("|"))+it->second->getFlagS()\
                     +" "+it->second->getParam();
             string str2 = ": " + it->second->getDesc()+"\n";
@@ -705,6 +715,10 @@ ParseStatus Flint::HandleOption(string name, string value)
         cout<<endl<<endl<<"COMMANDS DESCRIPTION:"<<endl;
         for (map_sub_cmd_t_to_subcommand::iterator it=_subcommands.begin(); it != _subcommands.end(); it++)
                 {
+        			if (it->first == SC_ResetCfg) {
+        				// hidden command so "forget" mentioning it
+        				continue;
+        			}
                     cout<<"  Name:"<<endl<<"\t"<<it->second->getName()<<endl\
                             <<"  Description:"<<endl<<"\t"<<it->second->getExtDesc()<<endl\
                             <<"  Command:"<<endl<<"\t"<<it->second->getFlagL()<<\

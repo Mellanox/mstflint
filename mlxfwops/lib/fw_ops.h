@@ -59,7 +59,11 @@ public:
 
     FwOperations(FBase *ioAccess) :
         _ioAccess(ioAccess), _isCached(false), _wasVerified(false),
-        _quickQuery(false), _printFunc((PrintCallBack)NULL), _fname(NULL) {};
+        _quickQuery(false), _printFunc((PrintCallBack)NULL), _fname(NULL), _advErrors(true)
+    {
+        memset(_sectionsToRead, 0, sizeof(_sectionsToRead));
+        memset(&_fwImgInfo, 0, sizeof(_fwImgInfo));
+    };
 
 
     virtual ~FwOperations()  {};
@@ -71,11 +75,11 @@ public:
     static void SetDevFlags(chip_type_t chipType, u_int32_t devType, fw_img_type_t fwType, bool &ibDev, bool &ethDev);
     static bool checkMatchingExpRomDevId(const fw_info_t& info);
     static bool checkMatchingExpRomDevId(u_int16_t dev_type, roms_info_t roms_info);
+    static const char* expRomType2Str(u_int16_t type);
 
 
     virtual bool FwQuery(fw_info_t *fwInfo, bool readRom = true, bool isStripedImage = false) = 0;
     virtual bool FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedImage = false, bool showItoc = false) = 0; // Add callback print
-    virtual bool FwTest(u_int32_t *data) {data = (u_int32_t*)NULL; return false;}; // Add callback print
     //on call of FwReadData with Null image we get image_size
     virtual bool FwReadData(void* image, u_int32_t* image_size) = 0;
 
@@ -96,6 +100,8 @@ public:
     virtual bool FwSetVPD(char* vpdFileStr, PrintCallBack callBackFunc=(PrintCallBack)NULL) = 0;
     virtual bool FwSetAccessKey(hw_key_t userKey, ProgressCallBack progressFunc=(ProgressCallBack)NULL) = 0;
     virtual bool FwGetSection (u_int32_t sectType, std::vector<u_int8_t>& sectInfo)= 0;
+    virtual bool FwResetNvData(ProgressCallBack progressFunc=(ProgressCallBack)NULL) = 0;
+    virtual bool FwShiftDevData(PrintCallBack progressFunc=(PrintCallBack)NULL) = 0;
 
     void FwCleanUp();
     virtual bool FwInit() = 0;
@@ -103,7 +109,6 @@ public:
 
     //needed for flint low level operations
     bool FwSwReset();
-
 
 
     //virtual bool FwBurnBlock(FwOperations &FwImageAccess); // Add call back
@@ -180,7 +185,7 @@ public:
         //data
         char* userVsd;
         std::vector<guid_t> userUids; //contains eiter guids or uids
-        
+
 
         ExtBurnParams():userGuidsSpecified(false), userMacsSpecified(false), userUidsSpecified(false),
                         vsdSpecified(false),blankGuids(false), burnFailsafe(true), allowPsidChange(false),
@@ -211,6 +216,7 @@ public:
             flash_params_t* flashParams; // can be NULL
             int ignoreCacheRep;
             bool noFlashVerify;
+            bool shortErrors; // show short/long error msgs (default shuold be false)
         };
 
         struct sgParams {
@@ -311,9 +317,9 @@ protected:
     chip_type_t getChipType();
     chip_type_t getChipTypeFromHwDevid(u_int32_t hwDevId);
 
-    bool ReadImageFile(char *fimage, u_int8_t *&file_data, int &file_size, int min_size=-1); // min_size=-1 like int flint_ops needed for fs3updateSection
-    bool ModifyImageFile(char *fimage, u_int32_t addr, void *data, int cnt);
-    bool WriteImageToFile(char *file_name, u_int8_t *data, u_int32_t length);
+    bool ReadImageFile(const char *fimage, u_int8_t *&file_data, int &file_size, int min_size=-1); // min_size=-1 like int flint_ops needed for fs3updateSection
+    bool ModifyImageFile(const char *fimage, u_int32_t addr, void *data, int cnt);
+    bool WriteImageToFile(const char *file_name, u_int8_t *data, u_int32_t length);
     bool FwBurnData(u_int32_t *data, u_int32_t dataSize, ProgressCallBack progressFunc);
 
 
@@ -331,7 +337,9 @@ protected:
     bool      _quickQuery;
 
     PrintCallBack _printFunc;
-    char* _fname;
+    const char* _fname;
+    // show advanced error msgs
+    bool _advErrors;
 
 
 
@@ -359,7 +367,7 @@ private:
     // Members
     static const HwDevData hwDevData[];
     static const HwDev2Str hwDev2Str[];
-    fw_hndl_type_t _hndlType;
+    //fw_hndl_type_t _hndlType;  //not used atm
 
 };
 

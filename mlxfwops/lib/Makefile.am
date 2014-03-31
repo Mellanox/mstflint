@@ -34,12 +34,12 @@
 MTCR_DIR = $(top_srcdir)/mtcr_ul
 MFLASH_DIR = $(top_srcdir)/mflash
 MINIXZ_DIR = $(top_srcdir)/ext_libs/minixz
-LIBMFA_DIR = $(top_srcdir)/libmfa
 COMMON_DIR = $(top_srcdir)/common
 LAYOUTS_DIR = $(top_srcdir)/tools_layouts
+UTILS_LIB = $(top_srcdir)/mft_utils
 
-INCLUDES = -I$(srcdir) -I$(MTCR_DIR) -I$(MFLASH_DIR) -I$(LIBMFA_DIR) -I$(USER_DIR)/ext_libs/json -I$(MINIXZ_DIR)\
-           -I$(COMMON_DIR) -I$(MFT_EXT_LIBS_INC_DIR)/zlib -I $(LAYOUTS_DIR) -I$(top_srcdir)/common
+INCLUDES = -I$(srcdir) -I$(MTCR_DIR) -I$(MFLASH_DIR) -I$(top_srcdir)/ext_libs/json -I$(MINIXZ_DIR)\
+           -I$(COMMON_DIR) -I$(MFT_EXT_LIBS_INC_DIR)/zlib -I $(LAYOUTS_DIR) -I$(top_srcdir)/common -I$(UTILS_LIB)
 
 MLXFWOPS_VERSION = 1
 

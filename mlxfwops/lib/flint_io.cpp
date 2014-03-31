@@ -2,7 +2,7 @@
  *
  * flint_io.cpp - FLash INTerface
  *
- * Copyright (c) 2011 Mellanox Technologies Ltd.  All rights reserved.
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -36,7 +36,6 @@
  *
  */
 
-
 #include "flint_io.h"
 
 
@@ -51,7 +50,7 @@ extern const char* g_sectNames[];
 //
 ////////////////////////////////////////////////////////////////////////
 
-bool FImage::open(const char *fname, bool read_only)
+bool FImage::open(const char *fname, bool read_only, bool advErr)
 {
 
 #ifndef UEFI_BUILD
@@ -60,7 +59,9 @@ bool FImage::open(const char *fname, bool read_only)
     int                r_cnt;
     FILE              *fh;
 
-    read_only = true;  // FImage can be opened only for read
+    (void)read_only;  // FImage can be opened only for read so we ignore compiler warnings
+    _advErrors = advErr;
+
     fh = fopen(fname, "rb");
 
     if (!fh) {
@@ -106,11 +107,12 @@ bool FImage::open(const char *fname, bool read_only)
 #endif
 } // FImage::open
 
-bool FImage::open(u_int32_t *buf, u_int32_t len)
+bool FImage::open(u_int32_t *buf, u_int32_t len, bool advErr)
 {
     _buf = new u_int32_t[len / 4];
     memcpy(_buf, buf, len);
     _len = len;
+    _advErrors = advErr;
     return true;
 }
 ////////////////////////////////////////////////////////////////////////
@@ -197,10 +199,6 @@ u_int32_t FImage::get_sector_size()
 //
 ////////////////////////////////////////////////////////////////////////
 
-
-bool Flash::_byte_mode = false;
-bool Flash::_no_flash_verify = false;
-
 ////////////////////////////////////////////////////////////////////////
 bool Flash::open_com_checks(const char *device, int rc, bool force_lock)
 {
@@ -211,17 +209,17 @@ bool Flash::open_com_checks(const char *device, int rc, bool force_lock)
 
     if (rc != MFE_OK) {
         if (rc == MFE_SEM_LOCKED) {
-            return errmsg("Can not obtain Flash semaphore (63). You can run \"flint -clear_semaphore -d <device>\" to force semaphore unlock. See help for details.");
+            return errmsgAdv(_advErrors, "Can not obtain Flash semaphore (62).", "You can run \"flint -clear_semaphore -d <device>\" to force semaphore unlock. See help for details.");
         }
         if (rc == MFE_LOCKED_CRSPACE) {
             _cr_space_locked = 1;
-            return errmsg("HW access is disabled on the device.\n-E- Run \"flint -d %s hw_access enable\" in order to enable HW access.", device);
+            return errmsgAdv(_advErrors, "HW access is disabled on the device.", "\n-E- Run \"flint -d %s hw_access enable\" in order to enable HW access.", device);
         }
-        if (rc == MFE_REG_ACCESS_MAD_NOT_SUPPORTED) {
-            return errmsg("The target device FW does not support flash access commands.\n-E- Please use the -override_cache_replacement option in order to access the flash directly.");
+        if (rc == MFE_REG_ACCESS_NOT_SUPPORTED) {
+            return errmsgAdv(_advErrors, "The target device FW does not support flash access commands.", "\n-E- Please use the -override_cache_replacement option in order to access the flash directly.");
         }
         if (rc == MFE_DIRECT_FW_ACCESS_DISABLED) {
-            return errmsg(" Flash cache replacement is active.\n-E- Please use the -override_cache_replacement option in order to access the flash directly.");
+            return errmsgAdv(_advErrors, "Flash cache replacement is active.", "\n-E- Please use the -override_cache_replacement option in order to access the flash directly.");
         }
 
         return errmsg("%s %s", errno == 0 ? "" : strerror(errno), mf_err2str(rc));
@@ -232,6 +230,12 @@ bool Flash::open_com_checks(const char *device, int rc, bool force_lock)
         return errmsg("Failed getting flash attributes for device %s: %s", device,  mf_err2str(rc));
     }
 
+    rc = mf_set_opt(_mfl, MFO_NO_VERIFY, _no_flash_verify? 1: 0);
+    if (rc != MFE_OK) {
+        return errmsg("Failed setting no flash verify on device: %s", mf_err2str(rc));
+    }
+
+
     if (_attr.hw_dev_id == 435 || _attr.hw_dev_id == SWITCHX_HW_ID) {
         _port_num = 0;
     } else if (_attr.hw_dev_id == 25204 || _attr.hw_dev_id == 24204) {
@@ -239,28 +243,33 @@ bool Flash::open_com_checks(const char *device, int rc, bool force_lock)
     } else {
         _port_num = 2;
     }
-
-    if (_byte_mode) {
-        rc = mf_set_opt(_mfl, MFO_AMD_BYTE_MODE, 1);
-        if (rc != MFE_OK) {
-            return errmsg("Failed setting byte mode for device %s: %s", device,  mf_err2str(rc));
-        }
-    }
-    if (_no_flash_verify) {
-        rc = mf_set_opt(_mfl, MFO_NO_VERIFY, 1);
-    }
-
     return true;
-} // Flash::open
+}
+
+bool Flash::set_no_flash_verify(bool val) {
+
+	_no_flash_verify = val;
+	int rc;
+	if (_mfl) {
+		rc = mf_set_opt(_mfl, MFO_NO_VERIFY, val? 1: 0);
+		if (rc != MFE_OK) {
+			return errmsg("Failed setting no flash verify on device: %s", mf_err2str(rc));
+			}
+	}
+    return true;
+}
+
+// Flash::open
 
 
 ////////////////////////////////////////////////////////////////////////
 bool Flash::open(const char *device, bool force_lock, bool read_only, int num_of_banks, flash_params_t *flash_params,
-        int ignore_cashe_replacement)
+        int ignore_cashe_replacement, bool advErr)
 {
     // Open device
     int rc;
-    read_only = false;
+    _advErrors = advErr;
+    (void)read_only; // not used , avoid compiler warnings TODO: remove this var from function def
     rc = mf_open(&_mfl, device, num_of_banks, flash_params, ignore_cashe_replacement);
     //printf("device: %s , forceLock: %s , read only: %s, num of banks: %d, flash params is null: %s, ocr: %d, rc: %d\n",
     //		device, force_lock? "true":"false", read_only?"true":"false", num_of_banks, flash_params? "no":"yes", ignore_cashe_replacement, rc);
@@ -268,9 +277,10 @@ bool Flash::open(const char *device, bool force_lock, bool read_only, int num_of
 }
 
 ////////////////////////////////////////////////////////////////////////
-bool Flash::open(uefi_Dev_t *uefi_dev, f_fw_cmd fw_cmd_func, bool force_lock)
+bool Flash::open(uefi_Dev_t *uefi_dev, f_fw_cmd fw_cmd_func, bool force_lock, bool advErr)
 {
     int rc;
+    _advErrors = advErr;
     rc = mf_open_uefi(&_mfl, uefi_dev, fw_cmd_func);
     return open_com_checks("uefi", rc, force_lock);
 }
@@ -293,7 +303,7 @@ bool Flash::read(u_int32_t addr,
     u_int32_t phys_addr = cont2phys(addr);
     // printf("-D- read1: addr = %#x, phys_addr = %#x\n", addr, phys_addr);
     // here we set a "silent" signal handler and deal with the recieved signal after the read
-    //mft_signal_set_handling(1);
+    mft_signal_set_handling(1);
     rc = mf_read(_mfl, phys_addr, 4, (u_int8_t*)data);
     deal_with_signal();
     if (rc != MFE_OK) {
@@ -331,7 +341,7 @@ bool Flash::read(u_int32_t addr, void *data, int len, bool verbose, const char* 
         while (align.GetNextChunk(chunk_addr, chunk_size)) {
             u_int32_t phys_addr = cont2phys(chunk_addr);
             // printf("-D- write: addr = %#x, phys_addr = %#x\n", chunk_addr, phys_addr);
-            //mft_signal_set_handling(1);
+            mft_signal_set_handling(1);
             rc = mf_read(_mfl, phys_addr, chunk_size, ((u_int8_t*)data) + chunk_addr - addr);
             deal_with_signal();
             if (rc != MFE_OK) {
@@ -402,7 +412,7 @@ bool Flash::write_phy(u_int32_t phy_addr, u_int32_t data)
 bool Flash::write_phy(u_int32_t phy_addr, void* data, int cnt, bool noerase)
 {
     // Avoid warning
-    noerase = false;
+    (void)noerase;
     NATIVE_PHY_ADDR_FUNC(write_with_erase, (phy_addr, data, cnt));
 }
 
@@ -410,7 +420,6 @@ bool Flash::erase_sector_phy  (u_int32_t phy_addr)
 {
     NATIVE_PHY_ADDR_FUNC(erase_sector, (phy_addr));
 }
-
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -472,16 +481,27 @@ bool Flash::write  (u_int32_t addr,
         // Actual write:
         u_int32_t phys_addr = cont2phys(chunk_addr);
         // printf("-D- write: addr = %#x, phys_addr = %#x\n", chunk_addr, phys_addr);
-        //mft_signal_set_handling(1);
+        mft_signal_set_handling(1);
         rc = mf_write(_mfl, phys_addr, chunk_size, p);
         deal_with_signal();
 
         if (rc != MFE_OK) {
-            return errmsg("Flash write of %d bytes to address %s0x%x failed: %s",
+            if (rc == MFE_ICMD_BAD_PARAM) {
+                return errmsg("Flash write of %d bytes to address %s0x%x failed: %s\n"
+                          "    This may indicate that a FW image was already updated on flash, but not loaded by the device.\n"
+                          "    Please load FW on the device (reset device or reboot machine) before burning a new FW.",
                           chunk_size,
                           _log2_chunk_size ? "physical " : "",
                           chunk_addr,
                           mf_err2str(rc));
+
+            } else {
+                return errmsg("Flash write of %d bytes to address %s0x%x failed: %s",
+                          chunk_size,
+                          _log2_chunk_size ? "physical " : "",
+                          chunk_addr,
+                          mf_err2str(rc));
+            }
         }
 
         // Loop advance
@@ -553,11 +573,11 @@ bool Flash::erase_sector  (u_int32_t addr) {
     int rc;
 
     u_int32_t phys_addr = cont2phys(addr);
-    //mft_signal_set_handling(1);
+    mft_signal_set_handling(1);
     rc = mf_erase_sector(_mfl, phys_addr);
     deal_with_signal();
     if (rc != MFE_OK) {
-        if (rc == MFE_REG_ACCESS_RESOURCE_NOT_AVAILABLE ) {
+        if (rc == MFE_REG_ACCESS_RES_NOT_AVLBL) {
             return errmsg("Flash erase of address 0x%x failed: %s\n"
                           "    This may indicate that a FW image was already updated on flash, but not loaded by the device.\n"
                           "    Please load FW on the device (reset device or restart driver) before burning a new FW.",
@@ -621,9 +641,14 @@ bool Flash::get_attr(ext_flash_attr_t& attr) {
     attr.block_write = _attr.block_write;
     attr.command_set = _attr.command_set;
     attr.quad_en_support = _attr.quad_en_support;
+    attr.dummy_cycles_support = _attr.dummy_cycles_support;
     // Quad EN query
     if (_attr.quad_en_support) {
         attr.mf_get_quad_en_rc = (MfError)mf_get_quad_en(_mfl, &attr.quad_en);
+    }
+    // Dummy Cycles query
+    if (_attr.dummy_cycles_support) {
+    	attr.mf_get_dummy_cycles_rc = (MfError)mf_get_dummy_cycles(_mfl, &attr.dummy_cycles);
     }
 
     // Flash write protected info query
@@ -637,71 +662,11 @@ bool Flash::get_attr(ext_flash_attr_t& attr) {
     return true;
 }
 
-
-bool Flash::print_attr() {
-    u_int8_t banks_num = _attr.banks_num;
-    int rc;
-    printf("HW Info:\n");
-    printf("  HwDevId               %d\n",     _attr.hw_dev_id);
-    printf("  HwRevId               0x%x\n",   _attr.rev_id);
-
-    printf("Flash Info:\n");
+const char* Flash::getFlashType() {
     if (_attr.type_str != NULL) {
-        // we don't print the flash type in old devices
-        printf("  Type                  %s\n",     _attr.type_str);
+    	return _attr.type_str;
     }
-    printf("  TotalSize             0x%x\n",   _attr.size);
-    printf("  Banks                 0x%x\n",   banks_num);
-    printf("  SectorSize            0x%x\n",   _attr.sector_size );
-    printf("  WriteBlockSize        0x%x\n",   _attr.block_write);
-    printf("  CmdSet                0x%x\n",   _attr.command_set);
-
-    // Quad EN query
-    if (_attr.quad_en_support) {
-        u_int8_t quad_en;
-        rc = mf_get_quad_en(_mfl, &quad_en);
-        switch (rc) {
-            case MFE_OK:
-                printf("  "QUAD_EN_PARAM"                %d\n", quad_en);
-                break;
-            case MFE_MISMATCH_QUAD_EN:
-                printf("-E- There is a mismatch in the "QUAD_EN_PARAM" attribute between the flashes attached to the device\n");
-                break;
-            case MFE_NOT_SUPPORTED_OPERATION:
-                break;
-            default:
-                return errmsg("Failed to get "QUAD_EN_PARAM" attribute: %s (%s)", errno == 0 ? "" : strerror(errno), mf_err2str(rc));
-        }
-    }
-
-    // Flash write protected info query
-    if (_attr.write_protect_support) {
-        int bank;
-        for (bank = 0; bank < banks_num; bank++) {
-            write_protect_info_t protect_info;
-            rc = mf_get_write_protect(_mfl, bank, &protect_info);
-            if (rc == MFE_OK) {
-                printf("  "FLASH_NAME"%d."WRITE_PROTECT"   ", bank);
-                if (protect_info.sectors_num != 0) {
-                    printf("%s,", (protect_info.is_bottom ? WP_BOTTOM_STR : WP_TOP_STR));
-                    printf("%d-", protect_info.sectors_num);
-                    printf("%s\n", (protect_info.is_subsector ? WP_SUBSEC_STR : WP_SEC_STR));
-                } else {
-                    printf(WP_DISABLED_STR"\n");
-
-                }
-            } else {
-                if (rc != MFE_NOT_SUPPORTED_OPERATION) { // We ignore the read when operation is not supported!
-                    return errmsg("Failed to get write_protected info: %s (%s)", errno == 0 ? "" : strerror(errno), mf_err2str(rc));
-                }
-            }
-
-       }
-    }
-
-    // TODO: Print new
-
-    return true;
+    return (const char*)NULL;
 }
 
 #define GET_IN_PARAM(param_in, out, first_op, second_op) {\
@@ -716,7 +681,7 @@ bool Flash::print_attr() {
 bool  Flash::set_attr(char *param_name, char *param_val_str)
 {
     int rc;
-
+    //TODO: make generic function that sets params
     if (!strcmp(param_name, QUAD_EN_PARAM)) {
         char* endp;
         u_int8_t quad_en_val;
@@ -727,6 +692,18 @@ bool  Flash::set_attr(char *param_name, char *param_val_str)
         rc = mf_set_quad_en(_mfl, quad_en_val);
         if (rc != MFE_OK) {
             return errmsg("Setting "QUAD_EN_PARAM" failed: (%s)", mf_err2str(rc));
+        }
+    } else if (!strcmp(param_name, DUMMY_CYCLES_PARAM)) {
+        char* endp;
+        u_int8_t dummy_cycles_val;
+        dummy_cycles_val = strtoul(param_val_str, &endp, 0);
+        if (*endp != '\0' || dummy_cycles_val < 1 || dummy_cycles_val > 15) {
+        	// value is actually [0.15] but val=0 and val=15 indicate default state (thus they are the same so no need for both values to be accepted)
+            return errmsg("Bad "DUMMY_CYCLES_PARAM" value (%s), it can be [1..15]\n", param_val_str);
+        }
+        rc = mf_set_dummy_cycles(_mfl, dummy_cycles_val);
+        if (rc != MFE_OK) {
+            return errmsg("Setting "DUMMY_CYCLES_PARAM" failed: (%s)", mf_err2str(rc));
         }
     } else if (strstr(param_name, FLASH_NAME) == param_name) {
         char *flash_param, *param_str, *endp, *bank_num_str;
@@ -777,7 +754,6 @@ bool  Flash::set_attr(char *param_name, char *param_val_str)
 
 void Flash::deal_with_signal()
 {
-    /*
     int sig;
     sig = mft_signal_is_fired();
     if (sig) {
@@ -789,7 +765,6 @@ void Flash::deal_with_signal()
         raise(sig);
     }
     mft_signal_set_handling(0);
-    */
     return;
 }
 

@@ -35,7 +35,6 @@
 #define MLXFWOP_COM_H
 
 #include <compatibility.h>
-#include <sys/types.h>
 
 #ifdef __WIN__
 
@@ -56,9 +55,9 @@
 #endif
 
 typedef int EFIAPI (*f_prog_func) (int completion);
-typedef int (*f_prog_func_str) (const char* str);
+typedef int (*f_prog_func_str) (char* str);
 
-#define VSD_LEN  128  // orenk: BUG - correct val is 208. Fro where did this come from ?
+#define VSD_LEN  208
 #define PSID_LEN 16
 #define PRODUCT_VER_LEN 16
 
@@ -72,6 +71,14 @@ typedef int (*f_prog_func_str) (const char* str);
 #define MAJOR_MOD_ROM_FW    2
 #define MINOR_MOD_ROM_FW    6
 #define SUBMINOR_MOD_ROM_FW 1410
+
+//Macros
+#define PRINT_PROGRESS(printFunc, arg) \
+	do {\
+	    if (printFunc) {\
+	        printFunc((arg));\
+	    }\
+	} while(0)\
 
 enum {
     GUIDS         = 4,
@@ -110,7 +117,8 @@ typedef enum chip_type {
     CT_SWITCHX,
     CT_BRIDGEX,
     CT_IS4,
-    CT_CONNECT_IB
+    CT_CONNECT_IB,
+    CT_SWITCH_IB
 }chip_type_t;
 
 typedef struct guid {
@@ -180,6 +188,7 @@ typedef struct fw_info_com {
     char         vsd[VSD_LEN + 1];
     char         product_ver[PRODUCT_VER_LEN + 1];
     u_int16_t    fw_ver[3];
+    u_int16_t	 fw_rel_date[3];
     u_int16_t    min_fit_ver[4];
     u_int16_t    mic_ver[3];
     u_int32_t    image_size;
@@ -187,8 +196,8 @@ typedef struct fw_info_com {
     u_int8_t     dev_rev;
     u_int16_t    vsd_vendor_id;
     u_int8_t     is_failsafe;
-    chip_type_t     chip_type;
-    roms_info_t  roms_info; 
+    chip_type_t  chip_type;
+    roms_info_t  roms_info;
 } fw_info_com_t;
 
 

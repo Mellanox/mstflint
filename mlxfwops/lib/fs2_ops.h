@@ -63,6 +63,8 @@ public:
     virtual bool FwSetVSD(char* vsdStr, ProgressCallBack progressFunc=(ProgressCallBack)NULL, PrintCallBack printFunc=(PrintCallBack)NULL);
     virtual bool FwSetVPD(char* vpdFileStr, PrintCallBack callBackFunc=(PrintCallBack)NULL);
     virtual bool FwSetAccessKey(hw_key_t userKey, ProgressCallBack progressFunc=(ProgressCallBack)NULL);
+    virtual bool FwShiftDevData(PrintCallBack progressFunc=(PrintCallBack)NULL);
+    virtual bool FwResetNvData(ProgressCallBack progressFunc=(ProgressCallBack)NULL);
 
     virtual bool FwGetSection (u_int32_t sectType, std::vector<u_int8_t>& sectInfo);
 
@@ -72,7 +74,6 @@ public:
     virtual bool FwInit();
     virtual bool FwReadData(void* image, u_int32_t* image_size);
     virtual bool FwReadRom(std::vector<u_int8_t>& romSect);
-    virtual bool FwTest(u_int32_t *data); // Add callback print
 
 
 private:
@@ -142,7 +143,7 @@ private:
     bool patchGUIDs (Fs2Operations& imageOps, bool patch_macs, bool patch_uids, bool user_guids, bool user_macs, bool user_uids,
                                  guid_t new_guids[MAX_GUIDS], guid_t old_guids[MAX_GUIDS], u_int32_t num_of_old_guids);
     void patchGUIDsSection(u_int32_t *buf, u_int32_t ind, guid_t guids[MAX_GUIDS], int nguids);
-    bool patchImageVsd(Fs2Operations &imgFwOps, char* userVsd=(char*)NULL);
+    bool patchImageVsd(Fs2Operations &imgFwOps, const char* userVsd=(char*)NULL);
     void PatchInfoSect(u_int8_t* rawSect, u_int32_t vsdOffs, const char* vsd);
     void initSectToRead(int imp_index);
     //needed for fs2burn
@@ -158,8 +159,8 @@ private:
     bool Fs2IsMacAvailable();
     bool CheckBxMacsFormat(guid_t* guids, int index, int user_uids);
 
-    bool ModifyVSDSection(char *vsd, ProgressCallBack callBackFunc=(ProgressCallBack)NULL);
-    bool ReburnNewImage(u_int8_t *data, char *feature_name, ProgressCallBack callBackFunc=(ProgressCallBack)NULL);
+    bool ModifyVSDSection(const char *vsd, ProgressCallBack callBackFunc=(ProgressCallBack)NULL);
+    bool ReburnNewImage(u_int8_t *data, const char *feature_name, ProgressCallBack callBackFunc=(ProgressCallBack)NULL);
     bool packStripedImageData(u_int8_t *striped_data, u_int8_t *normal_data, u_int32_t length, u_int32_t &striped_length,
                               bool needs_repack, u_int32_t cntxLog2ChunkSize);
     bool Fs2SetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc=(PrintCallBack)NULL, ProgressCallBack progressFunc=(ProgressCallBack)NULL);

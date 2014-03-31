@@ -2,7 +2,7 @@
  *
  * flint.cpp - FLash INTerface
  *
- * Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -36,9 +36,10 @@
  *
  */
 
+#include <iostream>
+#include <signal.h>
 
 #include "flint.h"
-#include <iostream>
 
 //Globals:
 Flint* gFlint = NULL;
@@ -47,36 +48,31 @@ extern FILE* flint_log_fh;
 
 #define BURN_INTERRUPTED 0x1234
 
-#ifdef _WIN32
+void TerminationHandler(int signum);
+
+#ifdef __WIN__
 #include <windows.h>
-HANDLE mainThread;
 
-#define GET_MAIN_THREAD() {\
-     int rc = DuplicateHandle(GetCurrentProcess(), GetCurrentThread(), GetCurrentProcess(),\
-                              &mainThread, 0, FALSE, DUPLICATE_SAME_ACCESS);\
-     if (rc == 0) {\
-         mainThread = NULL;\
-     }\
-}
+static BOOL CtrlHandler( DWORD fdwCtrlType )
+{
+    switch( fdwCtrlType )
+    {
+      // Handle the CTRL-C signal.
+      case CTRL_C_EVENT:
+      // CTRL-CLOSE: confirm that the user wants to exit.
+      case CTRL_CLOSE_EVENT:
+      // Pass other signals to the next handler.
+      case CTRL_BREAK_EVENT:
+      case CTRL_LOGOFF_EVENT:
+      case CTRL_SHUTDOWN_EVENT:
+    	  TerminationHandler(SIGINT);
+          return TRUE;
 
-#define CHECK_WIN_SIGNAL() {\
-     if (mainThread == NULL) {\
-         printf(FLINT_INTERRUPT_WARRNING);\
-         signal(signum, TerminationHandler);\
-         return;\
-     }\
-}
+      default:
+        return FALSE;
+    }
+ }
 
-#define SUSPEND_MAIN_THREAD() {\
-     SuspendThread(mainThread);\
-}
-
-#else
-
-#define GET_MAIN_THREAD()
-#define WIN_TERM_THREAD()
-#define CHECK_WIN_SIGNAL()
-#define SUSPEND_MAIN_THREAD()
 #endif
 
 
@@ -84,7 +80,6 @@ void TerminationHandler(int signum)
 {
     static volatile sig_atomic_t fatal_error_in_progress = 0;
 
-    CHECK_WIN_SIGNAL();
     if (fatal_error_in_progress) {
         raise (signum);
     }
@@ -94,10 +89,9 @@ void TerminationHandler(int signum)
     write_result_to_log(BURN_INTERRUPTED, "");
     close_log();
     if (gFlint != NULL) {
-        printf("\n Received signal %d. Cleaning up ...", signum);
+        printf("\n Received signal %d. Cleaning up ...\n", signum);
         fflush(stdout);
-        SUSPEND_MAIN_THREAD();
-        sleep(1); // Legacy from the Old Flint
+        //sleep(1); // Legacy from the Old Flint
         delete gFlint;
         gFlint = NULL;
         printf(" Done.\n");
@@ -111,10 +105,12 @@ void initHandler()
 #ifdef __WIN__
 #define SIGNAL_NUM 3
     int signalList[SIGNAL_NUM] = {SIGINT, SIGTERM, SIGABRT};
+    SetConsoleCtrlHandler( (PHANDLER_ROUTINE) CtrlHandler, true );
 #else
 #define SIGNAL_NUM 4
     int signalList[SIGNAL_NUM] = {SIGINT, SIGTERM, SIGPIPE, SIGHUP};
 #endif
+
     //set the signal handler
     for (int i=0; i < SIGNAL_NUM ; i++) {
         void (*prevFunc)(int);
@@ -124,7 +120,6 @@ void initHandler()
             exit(FLINT_FAILED);
         }
     }
-    GET_MAIN_THREAD();
 }
 
 //End of signal handler section.
@@ -137,14 +132,18 @@ map_sub_cmd_t_to_subcommand Flint::initSubcommandMap()
     cmdMap[SC_Query] = new QuerySubCommand();
     cmdMap[SC_Verify] = new VerifySubCommand();
     cmdMap[SC_Swreset] = new SwResetSubCommand();
+    cmdMap[SC_ResetCfg] = new ResetCfgSubCommand();
     cmdMap[SC_Brom] = new BromSubCommand();
     cmdMap[SC_Drom] = new DromSubCommand();
     cmdMap[SC_Rrom] = new RromSubCommand();
     cmdMap[SC_Qrom] = new RomQuerySubCommand();
     cmdMap[SC_Bb] = new BbSubCommand();
     cmdMap[SC_Sg] = new SgSubCommand();
+#ifndef EXTERNAL
     cmdMap[SC_Smg] = new SmgSubCommand();
     cmdMap[SC_Set_Vpd] = new SetVpdSubCommand();
+    cmdMap[SC_Fix_Img] = new FiSubCommand();
+#endif
     cmdMap[SC_Sv] = new SvSubCommand();
     cmdMap[SC_Ri] = new RiSubCommand();
     cmdMap[SC_Dc] = new DcSubCommand();

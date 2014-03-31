@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004-2010 Mellanox Technologies LTD. All rights reserved.
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -14,12 +14,12 @@
  *      - Redistributions of source code must retain the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer.
- *
+ * 
  *      - Redistributions in binary form must reproduce the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer in the documentation and/or other materials
  *        provided with the distribution.
- *
+ * 
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -28,8 +28,8 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
  */
+
 
 #ifndef packet_common_H
 #define packet_common_H
@@ -38,10 +38,13 @@
 #include <stdlib.h>
 #include <sys/types.h>
 
+#include "compatibility.h"
+
 #ifndef __WIN__
     #include <netinet/in.h>
 /************************************/
 /* Endianess Defines */
+/*
 #if __BYTE_ORDER == __LITTLE_ENDIAN
     #ifndef PLATFORM_MEM
          // #define PLATFORM_MEM "Little Endianess"
@@ -68,6 +71,7 @@
     typedef __int32          int32_t;
     typedef unsigned __int64 u_int64_t;
     typedef __int64          int64_t;
+    */
 #endif
 
 
@@ -142,6 +146,8 @@
 #       define ARCH_ppc64
 #   elif defined(__PPC__)
 #       define ARCH_ppc
+#   elif defined(__aarch64__)
+#       define ARCH_arm64
 #   else
 #       error Unknown CPU architecture using the linux OS
 #   endif
@@ -156,7 +162,7 @@
 /**********************************/
 /* define macros for print fields */
 //#if defined (ARCH_ia64) || defined(ARCH_x86_64) || defined(ARCH_ppc64) || defined(__MINGW64__)
-
+/*
 #if !defined(UEFI_BUILD) && (defined (ARCH_ia64) || defined(ARCH_x86_64) || defined(ARCH_ppc64) || defined(__MINGW64__))
 #   define U64H_FMT "0x%016lx"
 #   define U64D_FMT "%lu"
@@ -173,10 +179,10 @@
 #   define U8H_FMT  "0x%02x"
 #   define U32D_FMT "%u"
 #   define STR_FMT "%s"
-#else  /* ARCH */
+#else  // ARCH
 #   error Unknown architecture
-#endif /* ARCH */
-
+#endif // ARCH
+*/
 
 /**********************************/
 void push_to_buff_64(u_int8_t *buff, u_int32_t bit_offset, u_int64_t field_value);
@@ -185,7 +191,6 @@ void push_to_buff(u_int8_t *buff, u_int32_t bit_offset, u_int32_t field_size, u_
 u_int64_t pop_from_buff_64(u_int8_t *buff, u_int32_t bit_offset);
 u_int32_t pop_from_buff_32(u_int8_t *buff, u_int32_t bit_offset);
 u_int32_t pop_from_buff(u_int8_t *buff, u_int32_t bit_offset, u_int32_t field_size);
-
 
 #endif          /* def packet_common_H */
 

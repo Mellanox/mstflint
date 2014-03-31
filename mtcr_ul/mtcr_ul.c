@@ -81,8 +81,15 @@
 #endif
 
 #include <mtcr.h>
+#include "tools_utils.h"
 #include "mtcr_int_defs.h"
 #include "mtcr_ib.h"
+#include "packets_layout.h"
+#include "mtcr_tools_cif.h"
+
+#ifdef MST_UL_ICMD
+#include "mtcr_icmd_cif.h"
+#endif
 
 #ifndef __be32_to_cpu
 #define __be32_to_cpu(x) ntohl(x)
@@ -180,15 +187,6 @@ mwrite_chunk_as_multi_mwrite4(mfile *mf, unsigned int offset, u_int32_t* data, i
     }
     return length;
 }
-
-
-enum mtcr_access_method {
-    MTCR_ACCESS_ERROR  = 0x0,
-    MTCR_ACCESS_MEMORY = 0x1,
-    MTCR_ACCESS_CONFIG = 0x2,
-    MTCR_ACCESS_INBAND = 0x3
-};
-
 
 /*
 * Return values:
@@ -691,8 +689,9 @@ enum mtcr_access_method mtcr_parse_name(const char* name, int *force,
         return MTCR_ACCESS_CONFIG;
     }
 
-    if (sscanf(name, "lid-%x", &tmp) == 1 ||
-        sscanf(name, "ibdr-%x", &tmp) == 1) {
+    if (sscanf(name, "lid-%x", &tmp) == 1  ||
+        sscanf(name, "ibdr-%x", &tmp) == 1 ||
+        strstr(name, "lid-") != 0 || strstr(name, "ibdr-") != 0) {
         *force = 1;
         return MTCR_ACCESS_INBAND;
     }
@@ -918,8 +917,6 @@ next:
     return dev_info_arr;
 }
 
-dev_info* mdevices_info(int mask, int* len);
-
 void mdevice_info_destroy(dev_info* dev_info, int len)
 {
     (void)len;
@@ -927,6 +924,12 @@ void mdevice_info_destroy(dev_info* dev_info, int len)
         free(dev_info);
 }
 
+void mdevices_info_destroy(dev_info* dev_info, int len)
+{
+    (void)len;
+    if (dev_info)
+        free(dev_info);
+}
 
 mfile *mopen(const char *name)
 {
@@ -943,6 +946,10 @@ mfile *mopen(const char *name)
     int err;
     int rc;
 
+    if (geteuid() != 0) {
+    	errno = EACCES;
+    	return NULL;
+    }
     mf = (mfile *)malloc(sizeof(mfile));
     if (!mf)
         return NULL;
@@ -1077,6 +1084,12 @@ mfile *mopend(const char *name, int type)
 int mclose(mfile *mf)
 {
     if (mf->mclose != NULL && mf->ctx != NULL) {
+		#ifdef MST_UL_ICMD
+        // close icmd if if needed
+        if (mf->icmd.icmd_opened) {
+        	icmd_close(mf);
+        }
+		#endif
         mf->mclose(mf);
     }
     if (mf->dev_name) {
@@ -1084,6 +1097,14 @@ int mclose(mfile *mf)
     }
     free(mf);
     return 0;
+}
+
+mfile *mopen_fw_ctx(void* fw_cmd_context, void* fw_cmd_func)
+{
+	// not implemented
+    TOOLS_UNUSED(fw_cmd_context);
+    TOOLS_UNUSED(fw_cmd_func);
+	return NULL;
 }
 
 unsigned char mset_i2c_slave(mfile *mf, unsigned char new_i2c_slave)
@@ -1106,6 +1127,19 @@ int mget_mdevs_flags(mfile *mf, u_int32_t *devs_flags)
     }
     return 0;
 }
+
+int mget_mdevs_type(mfile *mf, u_int32_t *mtype)
+{
+    if (mf == NULL || mtype == NULL) {
+        errno = EINVAL;
+        return 1;
+    }
+
+    *mtype = mf->access_type;
+    return 0;
+}
+
+
 #define IBDR_MAX_NAME_SIZE 128
 
 
@@ -1173,12 +1207,17 @@ int reopen_pci_as_inband(mfile* mf)
 int maccess_reg_mad(mfile *mf, u_int8_t *data)
 {
     int rc;
+
+    if (mf == NULL || data == NULL) {
+        return ME_BAD_PARAMS;
+    }
+
     if (mf->access_type != MTCR_ACCESS_INBAND) {
         // Close current device and re-open as inband
         rc = reopen_pci_as_inband(mf);
         if (rc) {
-            errno = ENODEV;
-            return -1;
+            errno = ENODEV; // for compatibility untill we change mtcr to use error code
+            return ME_REG_ACCESS_UNKNOWN_ERR;
         }
     }
 
@@ -1191,8 +1230,18 @@ int mos_reg_access(mfile *mf, int reg_access, void *reg_data, u_int32_t cmd_type
     (void)reg_data; /* compiler warning */
     (void)cmd_type; /* compiler warning */
     (void)reg_access; /* compiler warning */
-    fprintf(stderr, "Warning: libmtcr: maccess_reg_mad() is not implemented and has no effect.\n");
-    return -1;
+    fprintf(stderr, "Warning: libmtcr: mos_reg_access() is not implemented and has no effect.\n");
+    return ME_NOT_IMPLEMENTED;
+}
+
+int maccess_reg_cmdif(mfile *mf, reg_access_t reg_access, void *reg_data, u_int32_t cmd_type)
+{
+    (void)mf;
+    (void)reg_data; /* compiler warning */
+    (void)cmd_type; /* compiler warning */
+    (void)reg_access; /* compiler warning */
+    fprintf(stderr, "Warning: libmtcr: maccess_reg_cmdif() is not implemented and has no effect.\n");
+    return ME_NOT_IMPLEMENTED;
 }
 
 static void mtcr_fix_endianness(u_int32_t *buf, int len)
@@ -1218,3 +1267,406 @@ int mwrite_buffer(mfile *mf, unsigned int offset, u_int8_t* data, int byte_len)
     mtcr_fix_endianness((u_int32_t*)data, byte_len);
     return mwrite4_block(mf, offset, (u_int32_t*)data, byte_len);
 }
+
+/*
+ * Reg Access Section
+ */
+
+#ifndef MST_UL_ICMD
+int icmd_send_command(mfile *mf, int opcode, void* data, int data_size, int skip_write) {
+    (void)mf;
+    (void)opcode; /* compiler warning */
+    (void)data; /* compiler warning */
+    (void)data_size; /* compiler warning */
+    (void)skip_write; /* compiler warning */
+    fprintf(stderr, "Warning: libmtcr: icmd_send_command() is not implemented and has no effect.\n");
+    return ME_NOT_IMPLEMENTED;
+}
+
+static int icmd_send_command_int(mfile *mf, int opcode, void* data, int w_data_size, int r_data_size, int skip_write) {
+    (void)mf;
+    (void)opcode; /* compiler warning */
+    (void)data; /* compiler warning */
+    (void)w_data_size; /* compiler warning */
+    (void)r_data_size; /* compiler warning */
+    (void)skip_write; /* compiler warning */
+    fprintf(stderr, "Warning: libmtcr: icmd_send_command_int() is not implemented and has no effect.\n");
+    return ME_NOT_IMPLEMENTED;
+}
+
+int icmd_clear_semaphore(mfile *mf) {
+    (void)mf; /* compiler warning */
+    fprintf(stderr, "Warning: libmtcr: icmd_clear_semaphore() is not implemented and has no effect.\n");
+    return ME_NOT_IMPLEMENTED;
+}
+#endif
+
+#define TLV_OPERATION_SIZE 4
+#define OP_TLV_SIZE        16
+#define REG_TLV_HEADER_LEN 4
+
+enum {
+    MAD_CLASS_REG_ACCESS = 1,
+};
+enum {
+    TLV_END       = 0,
+    TLV_OPERATION = 1,
+    TLV_DR        = 2,
+    TLV_REG       = 3,
+    TLV_USER_DATA = 4,
+};
+
+#define INBAND_MAX_REG_SIZE 44
+#define ICMD_MAX_REG_SIZE 236
+
+static int supports_icmd(mfile* mf);
+static int supports_tools_cmdif_reg(mfile* mf);
+static int init_operation_tlv(struct OperationTlv *operation_tlv, u_int16_t reg_id, u_int8_t method);
+static int mreg_send_wrapper(mfile* mf, u_int8_t *data, int r_icmd_size, int w_icmd_size);
+static int mreg_send_raw(mfile *mf, u_int16_t reg_id, maccess_reg_method_t method, void *reg_data, u_int32_t  reg_size, u_int32_t r_size_reg, u_int32_t	w_size_reg, int *reg_status);
+int mget_max_reg_size(mfile *mf);
+
+// maccess_reg: Do a reg_access for the mf device.
+// - reg_data is both in and out
+// TODO: When the reg operation succeeds but the reg status is != 0,
+//       a specific
+
+int maccess_reg(mfile     *mf,
+                u_int16_t  reg_id,
+                maccess_reg_method_t reg_method,
+                void*      reg_data,
+                u_int32_t  reg_size,
+                u_int32_t	r_size_reg,
+                u_int32_t	w_size_reg,
+                int       *reg_status)
+{
+    int rc;
+    if (mf == NULL || reg_data == NULL || reg_status == NULL || reg_size <= 0) {
+        return ME_BAD_PARAMS;
+    }
+    // check register size
+    int max_size = mget_max_reg_size(mf);
+    if ( max_size != -1 && reg_size > (unsigned int)max_size) {
+    	//reg too big
+    	return ME_REG_ACCESS_SIZE_EXCCEEDS_LIMIT;
+    }
+#ifndef MST_UL
+    // TODO: add specific checks for each FW access method where needed
+    if (mf->flags & MDEVS_MLNX_OS){
+    	rc = mos_reg_access_raw(mf, reg_id, reg_method, reg_data, reg_size, reg_status);
+    } else if ((mf->flags & (MDEVS_IB | MDEVS_FWCTX)) || (mf->flags != MDEVS_IB && (supports_icmd(mf) || supports_tools_cmdif_reg(mf)))) {
+    	rc = mreg_send_raw(mf, reg_id, reg_method, reg_data, reg_size, r_size_reg, w_size_reg, reg_status);
+    }else {
+        return ME_REG_ACCESS_NOT_SUPPORTED;
+    }
+#else
+    if (mf->access_type == MTCR_ACCESS_INBAND || (supports_icmd(mf) || supports_tools_cmdif_reg(mf)) ) {
+        	rc = mreg_send_raw(mf, reg_id, reg_method, reg_data, reg_size, r_size_reg, w_size_reg, reg_status);
+        }else {
+            return ME_REG_ACCESS_NOT_SUPPORTED;
+        }
+#endif
+
+    if (rc ) {
+         return rc;
+    } else if (*reg_status) {
+        switch (*reg_status) {
+        case 1:
+            return ME_REG_ACCESS_DEV_BUSY;
+        case 2:
+            return ME_REG_ACCESS_VER_NOT_SUPP;
+        case 3:
+            return ME_REG_ACCESS_UNKNOWN_TLV;
+        case 4:
+            return ME_REG_ACCESS_REG_NOT_SUPP;
+        case 5:
+            return ME_REG_ACCESS_CLASS_NOT_SUPP;
+        case 6:
+            return ME_REG_ACCESS_METHOD_NOT_SUPP;
+        case 7:
+            return ME_REG_ACCESS_BAD_PARAM;
+        case 8:
+            return ME_REG_ACCESS_RES_NOT_AVLBL;
+        case 9:
+            return ME_REG_ACCESS_MSG_RECPT_ACK;
+        case 0x22:
+        	return ME_REG_ACCESS_CONF_CORRUPT;
+        case 0x24:
+        	return ME_REG_ACCESS_LEN_TOO_SMALL;
+        case 0x20:
+        	return ME_REG_ACCESS_BAD_CONFIG;
+        case 0x21:
+        	return ME_REG_ACCESS_ERASE_EXEEDED;
+        default:
+            return ME_REG_ACCESS_UNKNOWN_ERR;
+        }
+    }
+
+    return ME_OK;
+}
+
+
+static int init_operation_tlv(struct OperationTlv *operation_tlv, u_int16_t reg_id, u_int8_t method)
+{
+    memset(operation_tlv, 0, sizeof(*operation_tlv));
+
+    operation_tlv->Type        = TLV_OPERATION;
+    operation_tlv->class       = MAD_CLASS_REG_ACCESS;
+    operation_tlv->len         = TLV_OPERATION_SIZE;
+    operation_tlv->method      = method;
+    operation_tlv->register_id = reg_id;
+    return 0;
+}
+
+///////////////////  Function that sends the register via the correct interface ///////////////////////////
+
+static int mreg_send_wrapper(mfile* mf, u_int8_t *data, int r_icmd_size, int w_icmd_size)
+{
+    int rc;
+    if (mf->access_type == MTCR_ACCESS_INBAND) {//inband access
+            rc = maccess_reg_mad(mf, data);
+            if (rc) {
+                //printf("-E- 2. Access reg mad failed with rc = %#x\n", rc);
+                return ME_MAD_SEND_FAILED;
+            }
+    } else if (supports_icmd(mf)) {
+    	//printf("-D- w size: %d , r size: %d\n",w_icmd_size,r_icmd_size);
+        rc = icmd_send_command_int(mf, FLASH_REG_ACCESS, data, w_icmd_size, r_icmd_size, 0);
+        if (rc) {
+        	return rc;
+        }
+    } else if (supports_tools_cmdif_reg(mf)) {
+    	rc = tools_cmdif_reg_access(mf, data, w_icmd_size, r_icmd_size);
+    	if (rc) {
+    		return rc;
+    	}
+    }else{
+        return ME_NOT_IMPLEMENTED;
+    }
+    return ME_OK;
+}
+
+
+static int mreg_send_raw(mfile *mf, u_int16_t reg_id, maccess_reg_method_t method, void *reg_data, u_int32_t  reg_size,\
+							u_int32_t r_size_reg, u_int32_t	w_size_reg, int *reg_status)
+{
+	//printf("-D- reg_id = %d, reg_size = %d, r_size_reg = %d , w_size_reg = %d \n",reg_id,reg_size,r_size_reg,w_size_reg);
+    int mad_rc, cmdif_size = 0;
+    struct OperationTlv tlv;
+    struct reg_tlv tlv_info;
+    u_int8_t buffer[1024];
+
+    init_operation_tlv(&(tlv), reg_id, method);
+    // Fill Reg TLV
+    memset(&tlv_info, 0, sizeof(tlv_info));
+    tlv_info.Type = TLV_REG;
+    tlv_info.len  = (reg_size + REG_TLV_HEADER_LEN) >> 2; // length is in dwords
+
+    // Pack the mad
+
+    cmdif_size += OperationTlv_pack(&tlv, buffer);
+    cmdif_size += reg_tlv_pack(&tlv_info, buffer + OP_TLV_SIZE);
+    //put the reg itself into the buffer
+    memcpy(buffer + OP_TLV_SIZE + REG_TLV_HEADER_LEN, reg_data, reg_size);
+    cmdif_size += reg_size;
+
+#ifdef _ENABLE_DEBUG_
+    	fprintf(stdout, "-I-Tlv's of Data Sent:\n");
+        fprintf(stdout, "\tOperation Tlv\n");
+        OperationTlv_dump(&tlv, stdout);
+    	fprintf(stdout, "\tReg Tlv\n");
+        reg_tlv_dump(&tlv_info, stdout);
+#endif
+    // printf("-D- reg_info.len = |%d, OP_TLV: %d, REG_TLV= %d, cmdif_size = %d\n", reg_info.len, OP_TLV_SIZE, REG_RLV_HEADER_LEN, cmdif_size);
+    // update r/w_size_reg with the size of op tlv and reg tlv as we need to read/write them as well
+    r_size_reg += OP_TLV_SIZE + REG_TLV_HEADER_LEN;
+    w_size_reg += OP_TLV_SIZE + REG_TLV_HEADER_LEN;
+	//printf("-D- reg_size = %d, r_size_reg = %d , w_size_reg = %d \n",reg_size,r_size_reg,w_size_reg);
+
+    mad_rc = mreg_send_wrapper(mf, buffer, r_size_reg, w_size_reg);
+    // Unpack the mad
+    OperationTlv_unpack(&tlv, buffer);
+    reg_tlv_unpack(&tlv_info, buffer + OP_TLV_SIZE);
+    // copy register back from the buffer
+    memcpy(reg_data, buffer + OP_TLV_SIZE + REG_TLV_HEADER_LEN, reg_size);
+
+#ifdef _ENABLE_DEBUG_
+    	fprintf(stdout, "-I-Tlv's of Data Recieved:\n");
+    	fprintf(stdout, "\tOperation Tlv\n");
+        OperationTlv_dump(&tlv, stdout);
+    	fprintf(stdout, "\tReg Tlv\n");
+        reg_tlv_dump(&tlv_info, stdout);
+#endif
+    // Check the return value
+    *reg_status = tlv.status;
+    if (mad_rc) {
+    	return mad_rc;
+    }
+    return ME_OK;
+}
+
+
+#define GOLAN_HW_ID 511
+#define SHOMRON_HW_ID 521
+#define PELICAN_HW_ID 583
+#define CX3_PRO_HW_ID 0x1F7
+#define CX3_HW_ID_REV 0x1f5
+
+#define HW_ID_ADDR 0xf0014
+
+static int supports_icmd(mfile* mf) {
+#ifndef MST_UL_ICMD
+	(void)mf; // avoid warnings
+	return 0;
+#endif
+	u_int32_t dev_id;
+	mread4(mf,HW_ID_ADDR, &dev_id); // cr might be locked and retured 0xbad0cafe but we dont care we search for device that supports icmd
+	switch (dev_id & 0xffff) { // that the hw device id
+		case GOLAN_HW_ID : //golan
+		case SHOMRON_HW_ID : // shomron
+		case PELICAN_HW_ID : // pelican
+			return 1;
+		default:
+			break;
+	}
+   return 0;
+}
+
+static int supports_tools_cmdif_reg(mfile* mf) {
+	u_int32_t dev_id;
+	mread4(mf,HW_ID_ADDR, &dev_id); // cr might be locked and retured 0xbad0cafe but we dont care we search for device that supports tools cmdif
+	switch (dev_id & 0xffff) { // that the hw device id
+		case CX3_HW_ID_REV : //Cx3
+		case CX3_PRO_HW_ID : // Cx3-pro
+			if (tools_cmdif_query_dev_cap(mf, 0, NULL) == ME_OK) {
+				return 1;
+			}
+			break;
+		default:
+			break;
+		 }
+   return 0;
+}
+
+
+int mget_max_reg_size(mfile *mf) {
+	if (mf->access_type == MTCR_ACCESS_INBAND) {
+		return INBAND_MAX_REG_SIZE;
+	}
+	if (supports_icmd(mf)){ // we support icmd and we dont use IB interface -> we use icmd for reg access
+		return ICMD_MAX_REG_SIZE;
+	}
+	if (supports_tools_cmdif_reg(mf)) {
+		return TOOLS_HCR_MAX_MBOX;
+	}
+	return 0;
+}
+
+/************************************
+ * Function: m_err2str
+ ************************************/
+const char* m_err2str(MError status)
+{
+   switch(status) {
+   case ME_OK:
+       return "ME_OK";
+   case ME_ERROR:
+       return "General error";
+   case ME_BAD_PARAMS:
+       return "ME_BAD_PARAMS";
+   case ME_CR_ERROR:
+       return "ME_CR_ERROR";
+   case ME_NOT_IMPLEMENTED:
+       return "ME_NOT_IMPLEMENTED";
+   case ME_SEM_LOCKED:
+       return "Semaphore locked";
+   case ME_MEM_ERROR:
+       return "ME_MEM_ERROR";
+
+   case ME_MAD_SEND_FAILED:
+       return "ME_MAD_SEND_FAILED";
+   case ME_UNKOWN_ACCESS_TYPE:
+       return "ME_UNKOWN_ACCESS_TYPE";
+   case ME_UNSUPPORTED_DEVICE:
+       return "ME_UNSUPPORTED_DEVICE";
+
+   // Reg access errors
+   case ME_REG_ACCESS_BAD_STATUS_ERR:
+       return "ME_REG_ACCESS_BAD_STATUS_ERR";
+   case ME_REG_ACCESS_BAD_METHOD:
+       return "Bad method";
+   case ME_REG_ACCESS_NOT_SUPPORTED:
+       return "Register access isn't supported by device";
+   case ME_REG_ACCESS_DEV_BUSY:
+       return "Device is busy";
+   case ME_REG_ACCESS_VER_NOT_SUPP:
+       return "Version not supported";
+   case ME_REG_ACCESS_UNKNOWN_TLV:
+       return "Unknown TLV";
+   case ME_REG_ACCESS_REG_NOT_SUPP:
+       return "Register not supported";
+   case ME_REG_ACCESS_CLASS_NOT_SUPP:
+       return "Class not supported";
+   case ME_REG_ACCESS_METHOD_NOT_SUPP:
+       return "Method not supported";
+   case ME_REG_ACCESS_BAD_PARAM:
+       return "Bad parameter";
+   case ME_REG_ACCESS_RES_NOT_AVLBL:
+       return "Resource not available";
+   case ME_REG_ACCESS_MSG_RECPT_ACK:
+       return "Message receipt ack";
+   case ME_REG_ACCESS_UNKNOWN_ERR:
+       return "Unknown register error";
+   case ME_REG_ACCESS_SIZE_EXCCEEDS_LIMIT:
+       return "Register is too large";
+   case ME_REG_ACCESS_CONF_CORRUPT:
+	   return "Config Section Corrupted";
+   case ME_REG_ACCESS_LEN_TOO_SMALL:
+	   return "given register length too small for Tlv";
+   case ME_REG_ACCESS_BAD_CONFIG:
+	   return "configuration refused";
+   case ME_REG_ACCESS_ERASE_EXEEDED:
+	   return	"erase count exceeds limit";
+
+   // ICMD access errors
+   case ME_ICMD_STATUS_CR_FAIL:
+       return "ME_ICMD_STATUS_CR_FAIL";
+   case ME_ICMD_STATUS_SEMAPHORE_TO:
+       return "ME_ICMD_STATUS_SEMAPHORE_TO";
+   case ME_ICMD_STATUS_EXECUTE_TO:
+       return "ME_ICMD_STATUS_EXECUTE_TO";
+   case ME_ICMD_STATUS_IFC_BUSY:
+       return "ME_ICMD_STATUS_IFC_BUSY";
+   case ME_ICMD_STATUS_ICMD_NOT_READY:
+       return "ME_ICMD_STATUS_ICMD_NOT_READY";
+   case ME_ICMD_UNSUPPORTED_ICMD_VERSION:
+       return "ME_ICMD_UNSUPPORTED_ICMD_VERSION";
+   case ME_ICMD_NOT_SUPPORTED:
+       return "ME_REG_ACCESS_ICMD_NOT_SUPPORTED";
+   case ME_ICMD_INVALID_OPCODE:
+       return "ME_ICMD_INVALID_OPCODE";
+   case ME_ICMD_INVALID_CMD:
+       return "ME_ICMD_INVALID_CMD";
+   case ME_ICMD_OPERATIONAL_ERROR:
+       return "ME_ICMD_OPERATIONAL_ERROR";
+   case ME_ICMD_BAD_PARAM:
+       return "ME_ICMD_BAD_PARAM";
+   case ME_ICMD_BUSY:
+       return "ME_ICMD_BUSY";
+
+       // TOOLS HCR access errors
+   case ME_CMDIF_BUSY:
+	   return "Tools HCR busy.";
+   case ME_CMDIF_TOUT:
+	   return "Tools HCR time out.";
+   case ME_CMDIF_BAD_OP:
+	   return "Operation not supported";
+   case ME_CMDIF_NOT_SUPP:
+	   return "Tools HCR not supported.";
+   case ME_CMDIF_BAD_SYS:
+	   return "bad system status (driver may be down or Fw does not support this operation).";
+   default:
+       return "Unknown error code";
+   }
+}
+

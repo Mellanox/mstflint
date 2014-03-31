@@ -2,7 +2,7 @@
  *
  * flint_io.h - FLash INTerface
  *
- * Copyright (c) 2011 Mellanox Technologies Ltd.  All rights reserved.
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -35,6 +35,8 @@
  *  Version: $Id: flint_io.h 7522 2011-11-16 15:37:21Z mohammad $
  *
  */
+
+
 #ifndef FLINT_IO_H
 #define FLINT_IO_H
 
@@ -52,7 +54,7 @@
 
 #include "flint_base.h"
 #include <mflash.h>
-//#include <mft_sig_handler.h>
+#include <mft_sig_handler.h>
 
 // external flash attr struct
 
@@ -68,9 +70,13 @@ typedef struct ext_flash_attr {
     int block_write;
     int command_set;
     u_int8_t quad_en_support;
+    u_int8_t dummy_cycles_support;
 
-    u_int8_t quad_en; 
+    u_int8_t quad_en;
     MfError mf_get_quad_en_rc;
+
+    u_int8_t dummy_cycles;
+    MfError mf_get_dummy_cycles_rc;
 
     u_int8_t write_protect_support;
 
@@ -83,11 +89,13 @@ typedef struct ext_flash_attr {
 class MLXFWOP_API FBase : public ErrMsg {
 public:
     FBase(bool is_flash) :
+    _is_image_in_odd_chunks(false),
     _log2_chunk_size(0),
-    _is_flash(is_flash) {}
+    _is_flash(is_flash),
+    _advErrors(true) {}
     virtual ~FBase()  {}
 
-    virtual bool open(const char *, bool)                  {return false;}
+    virtual bool open(const char *, bool, bool)                  {return false;}
     virtual void close()                                   = 0;
     virtual bool read(u_int32_t addr, u_int32_t *data)     = 0;
     virtual bool read(u_int32_t addr, void *data, int len,
@@ -123,7 +131,6 @@ public:
     enum {
         MAX_FLASH = 4*1048576
     };
-
 
 protected:
 
@@ -164,6 +171,8 @@ protected:
     u_int32_t  _log2_chunk_size;
     Crc16      _image_crc;
     const bool _is_flash;
+    // show advanced error msgs
+    bool _advErrors;
 
 };
 
@@ -173,13 +182,17 @@ protected:
 // Flash image (R/W)
 class MLXFWOP_API FImage : public FBase {
 public:
-    FImage() :  FBase(false), _buf(0) {}
+    FImage() :
+    FBase(false),
+    _buf(0),
+    _len(0) {}
     virtual ~FImage() { close();}
 
     u_int32_t    *getBuf()      { return _buf;}
     u_int32_t    getBufLength() { return _len;}
-    virtual bool open(const char *fname, bool read_only = false);
-    bool open(u_int32_t *buf, u_int32_t len);
+    virtual bool open(const char *fname, bool read_only = false, bool advErr = true);
+    using FBase::open;
+    bool open(u_int32_t *buf, u_int32_t len, bool advErr = true);
     virtual void close();
     virtual bool read(u_int32_t addr, u_int32_t *data);
     virtual bool read(u_int32_t addr, void *data, int len, bool verbose=false, const char* message= "");
@@ -207,11 +220,14 @@ class MLXFWOP_API Flash : public FBase {
 public:
     Flash() :
     FBase(true),
-    _mfl(0),
+    _mfl(NULL),
+    _no_flash_verify(false),
     _curr_sector(0xffffffff),
     _port_num(0),
     _cr_space_locked(0)
-    {}
+    {
+        memset(&_attr, 0, sizeof(_attr));
+    }
 
     virtual ~Flash()  { close();};
 
@@ -222,12 +238,14 @@ public:
                                 bool read_only   = false,
                                 int num_of_banks = 4,
                                 flash_params_t *flash_params = (flash_params_t *)NULL,
-                                int ignoe_cache_replacement = 0);
-
+                                int ignoe_cache_replacement = 0,
+                                bool advErr = true);
+    using FBase::open;
 
     bool open          (uefi_Dev_t *uefi_dev,
                         f_fw_cmd fw_cmd_func,
-                        bool force_lock = false);
+                        bool force_lock = false,
+                        bool advErr = true);
 
     virtual void close         ();
 
@@ -259,8 +277,8 @@ public:
 
     bool sw_reset();
 
-    void set_no_flash_verify(bool val) {_no_flash_verify = val; return;}
-    void set_byte_mode(bool val) {_byte_mode = val; return;}
+    bool set_no_flash_verify(bool val);
+    static void get_flash_list(char *flash_list) {return mf_flash_list(flash_list);}
 
     // Write and Erase functions are performed by the Command Set
 
@@ -278,7 +296,7 @@ public:
 
     virtual bool disable_hw_access();
 
-    bool         print_attr();
+    const char* getFlashType();
 
     bool         get_attr(ext_flash_attr_t& attr);
 
@@ -294,9 +312,9 @@ public:
                          int rc,
                          bool force_lock);
 
-
 //needed for printing flash status in flint hw query cmd
 #define QUAD_EN_PARAM "QuadEn"
+#define DUMMY_CYCLES_PARAM "DummyCycles"
 #define FLASH_NAME "Flash"
 #define WRITE_PROTECT "WriteProtected"
 #define WP_TOP_STR "Top"
@@ -311,11 +329,9 @@ protected:
     bool write_sector_with_erase(u_int32_t addr, void *data, int cnt);
     bool write_with_erase(u_int32_t addr, void *data, int cnt);
 
-    static bool _byte_mode;
-    static bool _no_flash_verify;
-
     mflash*    _mfl;
     flash_attr _attr;
+    bool _no_flash_verify;
 
     u_int32_t  _curr_sector;
     u_int32_t  _port_num;

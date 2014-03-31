@@ -1,9 +1,5 @@
 /*
- *
- * mflash.h - Mellanox Technilogies LTD. Flash access lib heared file
- * ==================================================================
- *
- * Copyright (c) 2005 Mellanox Technologies Ltd.  All rights reserved.
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -32,16 +28,15 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
- *  Version: $Id: $
- *
  */
+
+
 #ifndef MFLASH_H
 #define MFLASH_H
 
-#ifndef __WIN__
-#include <sys/types.h>
-#endif
+#include <compatibility.h>
+#include "mflash_types.h"
+#include "mflash_common_structs.h"
 
 #ifdef __cplusplus
 #define EXTERN_C_START extern "C" {
@@ -62,7 +57,7 @@ typedef enum MfCommandSet {
 } MfCommandSet;
 
 typedef struct flash_params {
-    char *type_name;
+    const char *type_name;
     int log2size;
     int num_of_flashes;
 } flash_params_t;
@@ -73,143 +68,9 @@ typedef struct write_protect_info {
     u_int8_t sectors_num;
 } write_protect_info_t;
 
-typedef enum MfError {
-    MFE_OK = 0,
-    MFE_ERROR,
-    MFE_BAD_PARAMS,
-    MFE_CR_ERROR,
-    MFE_INVAL,
-    MFE_NOT_IMPLEMENTED,
-    MFE_UNSUPPORTED_FLASH_TOPOLOGY,
-    MFE_UNSUPPORTED_FLASH_TYPE,
-    MFE_CFI_FAILED,
-    MFE_TIMEOUT,
-    MFE_ERASE_TIMEOUT,
-    MFE_WRITE_TIMEOUT,
-    MFE_ERASE_ERROR,
-    MFE_WRITE_ERROR,
-    MFE_BAD_ALIGN,
-    MFE_SEM_LOCKED,
-    MFE_VERIFY_ERROR,
-    MFE_NOMEM,
-    MFE_OUT_OF_RANGE,
-    MFE_CMD_SUPPORTED_INBAND_ONLY,
-    MFE_NO_FLASH_DETECTED,
-    MFE_LOCKED_CRSPACE,
-    MFE_CMDIF_BAD_STATUS_ERR,
-    MFE_CMDIF_TIMEOUT_ERR,
-    MFE_CMDIF_GO_BIT_BUSY,
-    MFE_MISMATCH_KEY,
-    MFE_UNKNOWN_REG,
-    MFE_REG_ACCESS_FAILED,
-    MFE_REG_ACCESS_MAD_BAD_STATUS,
-    MFE_REG_ACCESS_MAD_NOT_SUPPORTED,
-    MFE_DIRECT_FW_ACCESS_DISABLED,
-    MFE_MANAGED_SWITCH_NOT_SUPPORTED,
-    MFE_NOT_SUPPORTED_OPERATION,
-    MFE_REG_ACCESS_FW_BAD_STATUS,
-    MFE_FLASH_NOT_EXIST,
-    MFE_MISMATCH_QUAD_EN,
-    MFE_EXCEED_SUBSECTORS_MAX_NUM,
-    MFE_EXCEED_SECTORS_MAX_NUM,
-    MFE_SECTORS_NUM_NOT_POWER_OF_TWO,
-    MFE_REG_ACCESS_RESOURCE_NOT_AVAILABLE,
-    MFE_UNKOWN_ACCESS_TYPE,
-    MFE_UNSUPPORTED_DEVICE,
-    MFE_OLD_DEVICE_TYPE,
-    MFE_ICMD_INIT_FAILED,
-    MFE_REG_ACCESS_ICMD_NOT_SUPPPRTOED,
-    MFE_HW_ACCESS_NOT_SUPP,
-    MFE_ICMD_BAD_PARAM,
-    MFE_LAST
-} MfError;
-
-typedef enum MfOpt {
-    MFO_NO_VERIFY = 0,
-    MFO_AMD_UNLOCK_BYPASS,
-    MFO_AMD_BYTE_MODE,
-    MFO_IGNORE_SEM_LOCK,
-    MFO_CLOSE_MF_ON_EXIT,
-    MFO_NUM_OF_BANKS,
-    MFO_IGNORE_CASHE_REP_GUARD,
-    MFO_USER_BANKS_NUM,
-    MFO_FW_ACCESS_TYPE_BY_MFILE,
-    MFO_SX_TYPE,
-    MFO_NEW_CACHE_REPLACEMENT_EN,
-    MFO_LAST
-} MfOpt;
-
-enum MfAccessType {
-    MFAT_MFILE = 0,
-    MFAT_UEFI,
-};
-
-/////////////////////////////////////////////
-//
-// Flash attributes struct
-//
-/////////////////////////////////////////////
-typedef struct flash_attr {
-    char *type_str;
-    //
-    // hw_dev_id    hw dev id of the HCA.
-    //
-    u_int32_t hw_dev_id;
-    u_int32_t rev_id;
-
-    //
-    // size:        Total size (in bytes) of all flash devices connected to
-    //              the device (forming a contigous address space)
-    //
-    u_int32_t size;
-
-    //
-    // sector_size: Flash sector size (in bytes).
-    //              Assuming a single sector size for the flash.
-    //
-    u_int32_t sector_size;
-
-    int       num_erase_blocks;         // Number of sector defs.
-    struct {
-        unsigned long sector_size;      // Byte size of sector
-        int           num_sectors;      // Num sectors of this size
-        u_int32_t     sector_mask;      // Sector mask
-    } erase_block[8];
-
-    //
-    // bank_size:   Different bank means a different chip sellect or gpio settings is needed when crossing
-    //              this alignment.
-    //              This may indicate a different flash device (for SPI flash in InfiniHostIIILx / ConnectX).
-    //              Or GPIO change for parallel flash (in InfiniHostIII / InfiniHost)
-    //
-    int bank_size;
-    int log2_bank_size;
-
-    //
-    // Command set (taken from CFI terminology)
-    //
-    int command_set;
-
-    u_int8_t erase_command;
-
-    //
-    // block_write - if block write is supported, holds the block size in bytes. 0 otherwise.
-    //               The meaning of "block write" is not the same in parallel and serial flash.
-    //
-    int block_write;
-
-    //
-    // page_write -  if page write is supported, holds the page size in bytes. 0 otherwise.
-    //
-    int page_write;
-
-    u_int8_t banks_num;
-    u_int8_t quad_en_support;
-    u_int8_t write_protect_support;
-
-
-} flash_attr;
-
+// TODO: remove UEFI REMNANTS
+typedef struct _MLX4_DEV uefi_Dev_t;
+typedef int (*f_fw_cmd) (uefi_Dev_t* dev, void* buffer, int* size);
 
 /////////////////////////////////////////////
 //
@@ -221,7 +82,7 @@ typedef struct flash_attr {
 /////////////////////////////////////////////
 
 struct mfile_t;
-typedef struct mflash mflash;
+
 
 //
 // open/close functions:
@@ -248,8 +109,6 @@ int     mf_open        (mflash** pmfl, const char* dev, int num_of_banks, flash_
 int     mf_opend       (mflash** pmfl, struct mfile_t* mf, int num_of_banks,  flash_params_t* flash_params,
         int ignore_cache_rep_guard);
 
-typedef struct _MLX4_DEV uefi_Dev_t;
-typedef int (*f_fw_cmd) (uefi_Dev_t* dev, void* buffer, int* size);
 int     mf_open_uefi(mflash** pmfl, uefi_Dev_t *uefi_dev, f_fw_cmd fw_cmd_func);
 
 int     mf_open_ignore_lock(mflash* mfl);
@@ -282,6 +141,9 @@ int     mf_get_quad_en (mflash *mfl, u_int8_t *quad_en);
 
 int     mf_set_write_protect(mflash *mfl, u_int8_t bank_num, write_protect_info_t *protect_info);
 int     mf_get_write_protect(mflash *mfl, u_int8_t bank_num, write_protect_info_t *protect_info);
+
+int     mf_set_dummy_cycles (mflash *mfl, u_int8_t num_of_cycles);
+int     mf_get_dummy_cycles (mflash *mfl, u_int8_t *num_of_cycles);
 
 //
 // Set/Get for some options.

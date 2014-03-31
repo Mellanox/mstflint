@@ -2,7 +2,7 @@
  *
  * flint_params.h - FLash INTerface
  *
- * Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -52,6 +52,7 @@ typedef enum {
     SC_Query,
     SC_Verify,
     SC_Swreset,
+    SC_ResetCfg,
     SC_Brom,
     SC_Drom,
     SC_Rrom,
@@ -74,6 +75,7 @@ typedef enum {
     SC_Wb,
     SC_Rb,
     SC_Clear_Sem,
+    SC_Fix_Img,
     SC_Qrom
 } sub_cmd_t;
 

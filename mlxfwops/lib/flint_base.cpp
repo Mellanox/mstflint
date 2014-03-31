@@ -2,7 +2,7 @@
  *
  * flint_base.cpp - FLash INTerface
  *
- * Copyright (c) 2011 Mellanox Technologies Ltd.  All rights reserved.
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -31,13 +31,11 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
- *  Version: $Id: flint_base.cpp 7522 2011-11-16 15:37:21Z mohammad $
- *
  */
 
 
 #include "flint_base.h"
+
 
 
 void ErrMsg::err_clear(){
@@ -179,6 +177,30 @@ bool ErrMsg::errmsg(const char *format, ...) {
 
     va_start(args, format);
     _err = vprint(format, args);
+    va_end(args);
+
+    delete[] prev_err;
+
+    return false;
+}
+
+bool ErrMsg::errmsgAdv(bool showAdv, const char *normalFmt, const char *AdvFmt, ...) {
+	// args should only apply to advanced format (i.e normalFmt does not contain %<char>)
+    va_list   args;
+    char errFmt[1024];
+
+    char* prev_err = _err;
+
+    va_start(args, AdvFmt);
+
+    if (showAdv) {
+    	snprintf(errFmt, 1024, "%s %s", normalFmt, AdvFmt);
+    	_err = vprint(errFmt, args);
+    } else {
+    	//For functions where the arguments are not available to be checked (such as vprintf),
+    	//specify the third parameter as zero. In this case the compiler only checks the format string for consistency
+    	errmsg(normalFmt,0);
+    }
     va_end(args);
 
     delete[] prev_err;

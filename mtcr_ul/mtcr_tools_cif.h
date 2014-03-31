@@ -1,25 +1,25 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
- * 
+ *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
  * General Public License (GPL) Version 2, available from the file
  * COPYING in the main directory of this source tree, or the
  * OpenIB.org BSD license below:
- * 
+ *
  *     Redistribution and use in source and binary forms, with or
  *     without modification, are permitted provided that the following
  *     conditions are met:
- * 
+ *
  *      - Redistributions of source code must retain the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer.
- * 
+ *
  *      - Redistributions in binary form must reproduce the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer in the documentation and/or other materials
  *        provided with the distribution.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -31,31 +31,56 @@
  */
 
 
+#ifndef _MTCR_TOOLS_CIF     /* guard */
+#define _MTCR_TOOLS_CIF
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
+#include <compatibility.h>
+#ifdef MST_UL_ICMD
+#include <mtcr_int_defs.h>
+#endif
+#include <mtcr.h>
+
+#define FLASH_REG_ACCESS	0x9001
+
+#define TOOLS_HCR_MAX_MBOX 256
+
+// tools flash semaphore (62) will be taken at the begining of each command specified here
+// and released at the end of the command.
+
+
 /*
- * mflash_inband.h
+ * send a command to the tools HCR
+ * limitations:
+ * command should not use mailbox (not supported atm)
+ */
+int tools_cmdif_send_cmd(mfile* mf,
+					 u_int64_t in_param,
+					 u_int64_t* out_param,
+					 u_int32_t input_modifier,
+					 u_int16_t opcode,
+					 u_int8_t  opcode_modifier,
+					 u_int8_t*  status);
+
+
+/*
+ * register access tools HCR
  *
- *  Created on: Jul 6, 2011
- *      Author: mohammad
+ * data: 			the raw register data
+ * write_data_size:	amount of data to write to the mailbox (rest assumed to be zero)
+ * read_data_size:	amount of data to be read from the mailbox
+ *
+ * data will contain the updated register.
  */
 
-#ifndef MFLASH_INBAND_H_
-#define MFLASH_INBAND_H_
+int tools_cmdif_reg_access(mfile *mf, void* data,int write_data_size, int read_data_size);
 
-#include <mtcr.h>
-#include "mflash_common.h"
+#ifdef __cplusplus
+}
+#endif
 
-int mfi_reg_access_mad(flash_access_t *faccess, u_int16_t reg_id, u_int8_t method, void *reg, u_int8_t debug);
-
-int mfi_erase_sector(mfile *mf, u_int32_t addr, u_int8_t flash_bank);
-
-int mfi_get_jedec(mfile *mf, u_int8_t flash_bank, u_int32_t *jedec_p);
-
-int mfi_read_block(mfile *mf, u_int32_t addr, u_int8_t flash_bank, u_int32_t size, u_int8_t* data);
-
-int mfi_write_block(mfile *mf, u_int32_t blk_addr, u_int8_t flash_bank, u_int32_t size, u_int8_t* data);
-
-int mfi_flash_lock(mfile *mf, int lock_state);
-
-int mfi_update_boot_addr(mfile *mf, u_int8_t flash_bank, u_int32_t boot_addr);
-
-#endif /* MFLASH_INBAND_H_ */
+#endif  /* _MTCR_TOOLS_CIF guard */

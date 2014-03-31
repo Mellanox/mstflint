@@ -1,8 +1,5 @@
 /*
- *
- * mstdump.c - crspace dump for Mellanox Technologies Devices.
- *
- * Copyright (c) 2005 Mellanox Technologies Ltd.  All rights reserved.
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -17,12 +14,12 @@
  *      - Redistributions of source code must retain the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer.
- *
+ * 
  *      - Redistributions in binary form must reproduce the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer in the documentation and/or other materials
  *        provided with the distribution.
- *
+ * 
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -31,10 +28,8 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *  updated by Alaa Al-barari abarari@asaltech.com
- *  Version: $Id: mstdump.c,v 1.9 2007-06-25 12:45:33 yoniy Exp $
- *
  */
+
 
 #include <crdump.h>
 #include <dev_mgt/tools_dev_types.h>
@@ -45,7 +40,15 @@
 #define CAUSE_FLAG "--cause"
 
 // string explaining the cmd-line structure
-char correct_cmdline[] = "[-full] <device> [i2c-slave] [-v[ersion] [-h[elp]]]";
+char correct_cmdline[] = "   Mellanox mstdump utility, dumps device internal configuration data\n\
+   Usage: mstdump [-full] <device> [i2c-slave] [-v[ersion] [-h[elp]]]\n\n\
+   -full              :  Dump more expanded list of addresses\n\
+                         Note : be careful when using this flag, None safe addresses might be read.\n\
+   -v                 :  Display version info\n\
+   -h                 :  Print this help message\n\
+   Example :\n\
+            mstdump /dev/mst/mt4099_pci_cr0\n";
+
 
 void print_dword(crd_dword_t *dword) {
     printf("0x%8.8x 0x%8.8x\n", dword->addr, dword->data);
@@ -59,14 +62,14 @@ int main(int argc, char** argv) {
     int cause_addr = -1, cause_off = -1;
 
     if (argc < 2 || argc > 4) {
-        fprintf(stderr, "Usage: %s %s.\n", argv[0], correct_cmdline);
+        fprintf(stderr, "%s", correct_cmdline);
         return 2;
     }
 
     for (i = 1; i < argc; ++i) {
         /* check position-independent flags */
         if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "-help")) {
-            fprintf(stderr, "Usage: %s %s.\n", argv[0], correct_cmdline);
+            fprintf(stderr, "%s", correct_cmdline);
             exit (0);
         }
         else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "-version")) {

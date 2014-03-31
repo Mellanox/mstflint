@@ -35,9 +35,10 @@ MTCR_DIR    = $(top_srcdir)/mtcr_ul
 MFLASH_DIR  = $(top_srcdir)/mflash
 COMMON_DIR  = $(top_srcdir)/common
 LAYOUTS_DIR = $(top_srcdir)/tools_layouts
+MFT_UTILS_DIR = $(top_srcdir)/mft_utils
 
 INCLUDES = -I$(top_srcdir) -I$(srcdir) -I$(MTCR_DIR) -I$(MFLASH_DIR) -I$(COMMON_DIR) \
-           -I$(LAYOUTS_DIR)
+           -I$(LAYOUTS_DIR) -I$(MFT_UTILS_DIR)
 
 mstflint_CXXFLAGS = -Wall -W -g -MP -MD -pipe -DEXTERNAL
 bin_PROGRAMS = mstflint
@@ -48,9 +49,11 @@ mstflint_SOURCES = flint.cpp flint.h subcommands.cpp subcommands.h\
 mstflint_LDADD =  ../mlxfwops/lib/libmlxfwops.a  \
                   ../cmdparser/libcmdparser.a    \
 		  ../mflash/libmflash.a          \
+		  ../reg_access/libreg_access.a  \
 		  ../mtcr_ul/libmtcr_ul.a        \
                   ../tools_layouts/libtools_layouts.a \
-		  $(LAYOUTS_LIB) $(LIBSTD_CPP) -ldl
+		  ../mft_utils/libmftutils.a\
+		  $(LIBSTD_CPP) -ldl
 
 
 if ENABLE_DC
@@ -58,4 +61,8 @@ mstflint_LDADD += -lz
 else
 mstflint_CXXFLAGS += -DNO_ZLIB
 endif
+
+#get mst device examples and tool name from makefile
+mstflint_CXXFLAGS+= -DFLINT_NAME=\"mstflint\" -DFLINT_DISPLAY_NAME=\"MstFlint\"
+mstflint_CXXFLAGS += -DMST_DEV_EXAMPLE1=\"/dev/mst/mt4099_pci_cr0\" -DMST_DEV_EXAMPLE2=\"/dev/mst/mt4099_pciconf0\" -DMST_DEV_EXAMPLE3=\"/dev/mst/mt4113_pciconf0\"
 

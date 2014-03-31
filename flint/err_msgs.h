@@ -2,7 +2,7 @@
  *
  * err_msgs.h - FLash INTerface
  *
- * Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -37,8 +37,8 @@
  */
 
 
-#ifndef __ERR_MSGS__
-#define __ERR_MSGS__
+#ifndef __ERR_MSGS_H__
+#define __ERR_MSGS_H__
 
 /**********************
  * Flint Status Code
@@ -77,7 +77,7 @@ typedef enum {
 #define FLINT_BX_BAD_MAC_FORMAT_ERROR         "Bad mac ( %4.4x%8.8x ) %s. Please re-burn with a valid MACs value.\n"
 #define FLINT_INVALID_FLAG_WITH_FLAG_ERROR    "Cannot specify \"%s\" flag with \"%s\" flag.\n"
 #define FLINT_INVALID_FLAG_WITH_CMD_ERROR     "Cannot specify flag: %s with Command: %s\n"
-#define FLINT_CMD_VERIFY_ERROR                "FW image verification failed: %s. AN HCA DEVICE CAN NOT BOOT FROM THIS IMAG.\n"
+#define FLINT_CMD_VERIFY_ERROR                "FW image verification failed: %s. AN HCA DEVICE CAN NOT BOOT FROM THIS IMAGE.\n"
 #define FLINT_FAILED_QUERY_ERROR              "Failed to query %s: %s.%s\n"
 #define FLINT_COMMAND_DEVICE_IMAGE_ERROR      "Command \"%s\" requires both image and device to be specified.\n"
 #define FLINT_COMMAND_DEVICE_ERROR            "Command \"%s\" requires device, but an image file was given.\n"
@@ -114,12 +114,15 @@ typedef enum {
 #define FLINT_VSD_ERROR                       "Failed to set the VSD: %s\n"
 #define FLINT_VPD_ERROR                       "Failed to set VPD: %s\n"
 #define FLINT_SET_KEY_ERROR                   "Failed to set the HW access key: %s\n"
+#define FLINT_RESET_CFG_ERROR                 "Failed to reset Configuration: %s\n"
+#define FLINT_FIX_IMG_ERROR                   "Failed to fix device image: %s\n"
 #define FLINT_DROM_ERROR                      "Remove ROM failed: %s\n"
 #define FLINT_BROM_ERROR                      "Burn ROM failed: %s\n"
 #define FLINT_DUMP_ERROR                      "Failed dumping %s : %s\n"
 #define FLINT_ROM_QUERY_ERROR                 "Image file rom (%s) query failed. %s\n"
 #define FLINT_WB_FILE_ERROR                   "failed to open file: %s. %s\n"
 #define FLINT_WB_ERROR                        "write Block Failed. %s\n"
+#define FLINT_NO_ZLIB_ERROR					  "Executable was compiled with \"dump files\" option disabled.\n"
 
 /**************************
  * Flint Warning Messages

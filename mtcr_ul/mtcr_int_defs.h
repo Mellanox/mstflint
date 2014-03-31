@@ -1,6 +1,5 @@
 /*
- *
- * Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -15,12 +14,12 @@
  *      - Redistributions of source code must retain the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer.
- *
+ * 
  *      - Redistributions in binary form must reproduce the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer in the documentation and/or other materials
  *        provided with the distribution.
- *
+ * 
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -29,9 +28,6 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
- *  mtcr_int_defs.c - Mellanox Hardware Access lib internal definitions
- *
  */
 
 #ifndef MTCR_INT_DEFS
@@ -47,6 +43,13 @@ typedef int (*f_maccess_reg)   (mfile *mf, u_int8_t *data);
 typedef int (*f_mclose)        (mfile* mf);
 
 
+typedef struct icmd_params_t {
+	int icmd_opened;
+	int took_semaphore;
+	int ctrl_addr;
+	int cmd_addr;
+}icmd_params;
+
 struct mfile_t {
     char*            dev_name;
     void            *ctx; // Access method context
@@ -58,6 +61,9 @@ struct mfile_t {
     f_mwrite4_block  mwrite4_block;
     f_maccess_reg    maccess_reg;
     f_mclose         mclose;
+
+    //for ICMD access
+    icmd_params icmd;
 };
 #endif
 

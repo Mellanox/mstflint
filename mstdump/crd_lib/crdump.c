@@ -1,8 +1,5 @@
 /*
- *
- * mstdump.c - crspace dump for Mellanox Technologies Devices.
- *
- * Copyright (c) 2005 Mellanox Technologies Ltd.  All rights reserved.
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -22,7 +19,7 @@
  *        copyright notice, this list of conditions and the following
  *        disclaimer in the documentation and/or other materials
  *        provided with the distribution.
- *
+ * 
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -31,15 +28,17 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
- *  Alaa Al-barari Abarari@asaltech.com
- *  Version: $Id: crdump.c 20-Feb-2013 $
- *
  */
+
+
+#define _GNU_SOURCE
 #include <crdump.h>
 #include <dev_mgt/tools_dev_types.h>
 #include <common/bit_slice.h>
 #include <ctype.h>
+#include <compatibility.h>
+#include <stdio.h>
+
 #define CRD_SELECT_CSV_PATH(dev_name) \
     do {                              \
             strcat(csv_file_path, dev_name);\
@@ -56,26 +55,26 @@
 
 
 #if defined(__WIN__)
-#define strcasecmp    _stricmp
+#    define strcasecmp    _stricmp
+#    define CRD_MTCR_DLL_NAME "libmtcr-1.dll"
 #endif
 
 
 //#define CRD_DEBUG_BUILD
 #ifdef CRD_DEBUG_BUILD
-#define CRD_DEBUG(fmt, ...)printf("%s:%s:%d: "fmt, __FILE__, __FUNCTION__, __LINE__,##__VA_ARGS__);
+#    define CRD_DEBUG(fmt, ...)printf("%s:%s:%d: "fmt, __FILE__, __FUNCTION__, __LINE__,##__VA_ARGS__);
 #else
-#define CRD_DEBUG(fmt, args...)
+#    define CRD_DEBUG(fmt, args...)
 #endif
 
 #define CRD_EMPTY  "EMPTY"
 #define CRD_UNKOWN "UNKNOWN"
 
-#define CRD_MAXLINESIZE 1000
+#define CRD_MAXLINESIZE 1024
 #define CRD_MAXFLDS 3 /* maximum possible number of fields */
 #define CRD_MAXFLDSIZE 32 /* longest possible field + 1 = 31 byte field */
-#define CRD_CSV_PATH_SIZE 300
+#define CRD_CSV_PATH_SIZE 1024
 
-#define CRD_MTCR_DLL_NAME "libmtcr-1.dll"
 typedef struct crd_parsed_csv {
 
     u_int32_t addr;
@@ -92,7 +91,7 @@ struct crd_ctxt {
     int       is_full;
     int       cause_addr;
     int       cause_off;
-    char      csv_path[300];
+    char      csv_path[CRD_CSV_PATH_SIZE];
     u_int32_t block_count;
     crd_parsed_csv_t * blocks;
 };
@@ -107,7 +106,9 @@ static int crd_get_csv_path(IN dm_dev_id_t dev_type, OUT char *csv_file_path);
 /*
 count number of dwords, and store all needed data from csv file at parsed_csv
  */
-static int crd_count_double_word(IN  char *csv_file_path, OUT u_int32_t *number_of_dwords, OUT crd_parsed_csv_t blocks[], IN int is_full);
+static int crd_count_double_word(IN  char *csv_file_path, OUT u_int32_t *number_of_dwords,
+                                 OUT crd_parsed_csv_t blocks[], IN int is_full,
+                                 IN u_int8_t read_single_dword);
 
 /*
 Fill addresses at dword_arr
@@ -127,17 +128,22 @@ static void crd_parse(IN  char *record, IN  char *delim, OUT char arr[][CRD_MAXF
 
 static int crd_update_csv_path(IN OUT char *csv_file_path);
 
-static int crd_count_blocks(IN char *csv_file_path, OUT u_int32_t *block_count);
+static int crd_count_blocks(IN char *csv_file_path, OUT u_int32_t *block_count, u_int8_t read_single_dword);
 
-static int crd_replace(INOUT char *st, IN char *orig, IN char *repl);
-
-static int crd_get_exec_name_from_path(IN char *str, OUT char *exec_name);
-
+#if !defined(__WIN__)
 static char *crd_trim(char *s);
 
 static char *crd_rtrim(char *s);
 
 static char *crd_ltrim(char *s);
+#endif 
+
+
+#if defined(__WIN__)
+    static int crd_replace(INOUT char *st, IN char *orig, IN char *repl);
+
+    static int crd_get_exec_name_from_path(IN char *str, OUT char *exec_name);
+#endif
 
 int crd_init(OUT crd_ctxt_t **context, IN mfile *mf, IN int is_full, IN int cause_addr, IN int cause_off) {
 
@@ -146,6 +152,7 @@ int crd_init(OUT crd_ctxt_t **context, IN mfile *mf, IN int is_full, IN int caus
     u_int32_t   chip_rev;
     u_int32_t   number_of_dwords = 0;
     u_int32_t   block_count;
+    u_int8_t    read_single_dword = 0;
     char        csv_file_path [CRD_CSV_PATH_SIZE] = {0x0};
 
 
@@ -157,6 +164,10 @@ int crd_init(OUT crd_ctxt_t **context, IN mfile *mf, IN int is_full, IN int caus
     if (cause_addr >= 0 && cause_off < 0) {
         CRD_DEBUG("cause_off is negative : %d ", cause_off);
         return CRD_INVALID_PARM;
+    }
+
+    if (cause_addr >= 0 && cause_off >= 0) {
+        read_single_dword = 1;
     }
     CRD_DEBUG("getting device id\n");
     if (dm_get_device_id(mf, &dev_type, &dev_id, &chip_rev)) {
@@ -177,13 +188,13 @@ int crd_init(OUT crd_ctxt_t **context, IN mfile *mf, IN int is_full, IN int caus
         return CRD_MEM_ALLOCATION_ERR;
     }
 
-    rc = crd_count_blocks(csv_file_path, &block_count);
+    rc = crd_count_blocks(csv_file_path, &block_count, read_single_dword);
     if (rc) {
-    	free(*context);
-    	return rc;
+        free(*context);
+        return rc;
     }
-    CRD_DEBUG("Block count : %d\n", block_count);
 
+    CRD_DEBUG("Block count : %d\n", block_count);
     (*context)->blocks = (crd_parsed_csv_t *) malloc(sizeof(crd_parsed_csv_t) * block_count);
     if ((*context)->blocks == NULL) {
         CRD_DEBUG("Failed to allocate memmory for csv blocks\n");
@@ -192,7 +203,7 @@ int crd_init(OUT crd_ctxt_t **context, IN mfile *mf, IN int is_full, IN int caus
     }
 
 
-    rc = crd_count_double_word(csv_file_path, &number_of_dwords, (*context)->blocks, is_full);
+    rc = crd_count_double_word(csv_file_path, &number_of_dwords, (*context)->blocks, is_full, read_single_dword);
     if (rc) {
         goto Cleanup;
     }
@@ -317,14 +328,14 @@ static int crd_get_csv_path(IN dm_dev_id_t dev_type, OUT char *csv_file_path) {
     char dev_name[100];
     int  rc;
     switch (dev_type) {
-    case DeviceArbel:
-    case DeviceArbelMF:
-    case DeviceTavor:
-    case DeviceAnafa:
-    case DeviceSinai:
+    case DeviceInfiniHostIIIEx:
+    case DeviceInfiniHostIIIEx_MF:
+    case DeviceInfiniHost:
+    case DeviceInfiniScale:
+    case DeviceInfiniHostIIILx:
         return CRD_NOT_SUPPORTED;
     default:
-        strcpy(dev_name, dm_dev_type2str_ext(dev_type));
+        strcpy(dev_name, dm_dev_type2str(dev_type));
     }
     if (!strcmp(dev_name, "Unknown Device")) {
         return CRD_UNKOWN_DEVICE;
@@ -354,9 +365,12 @@ static void crd_parse(IN  char *record, IN  char *delim, OUT char arr[][CRD_MAXF
     *field_count = field;
 }
 
-static int crd_count_blocks(IN char *csv_file_path, OUT u_int32_t *block_count) {
+static int crd_count_blocks(IN char *csv_file_path,
+                            OUT u_int32_t *block_count, u_int8_t read_single_dword) {
 
     char tmp[1024] = {0x0};
+    char arr[CRD_MAXFLDS][CRD_MAXFLDSIZE] ;
+    int field_count = 0;
     *block_count = 0;
 
     CRD_DEBUG("CSV file path : %s\n", csv_file_path);
@@ -370,17 +384,34 @@ static int crd_count_blocks(IN char *csv_file_path, OUT u_int32_t *block_count) 
         if (crd_read_line(fd, tmp) == CRD_SKIP) {
             continue;
         }
-        *block_count += 1;
+        crd_parse(tmp, ",", arr, &field_count); /* whack record into fields */
+        if (field_count < 2 ) {
+            CRD_DEBUG("CSV File has bad format, line : %s\n", tmp);
+            sprintf(crd_error, "CSV File has bad format, line : %s", tmp);
+            fclose(fd);
+            return CRD_CSV_BAD_FORMAT;
+        }
+        if (read_single_dword) {
+            *block_count += atoi(arr[1]);
+        } else {
+            *block_count += 1;
+        }
     }
+    fclose(fd);
     return CRD_OK;
 }
 
 static int crd_count_double_word(IN char *csv_file_path, OUT u_int32_t *number_of_dwords,
-                                 OUT crd_parsed_csv_t blocks[], IN int is_full) {
+                                 OUT crd_parsed_csv_t blocks[], IN int is_full,
+                                 IN u_int8_t read_single_dword) {
 
-    int field_count = 0;
-    int block_count = 0;
-    char tmp[1024] = {0x0};
+    int field_count       = 0;
+    int block_count       = 0;
+    u_int32_t addr        = 0;
+    u_int32_t len         = 0;
+    u_int32_t i           = 0;
+    char enable_addr[100] = {0};
+    char tmp[1024]  = {0x0};
     char arr[CRD_MAXFLDS][CRD_MAXFLDSIZE] ;
 
     *number_of_dwords = 0;
@@ -404,20 +435,39 @@ static int crd_count_double_word(IN char *csv_file_path, OUT u_int32_t *number_o
             fclose(fd);
             return CRD_CSV_BAD_FORMAT;
         }
-
-        blocks[block_count].addr = (u_int32_t)strtol(arr[0], NULL, 0);
-        blocks[block_count].len  = atoi(arr[1]);
-        if (field_count > 2) {
-            strcpy(blocks[block_count].enable_addr, arr[2]);
-            if(is_full || (!is_full && !strcmp(blocks[block_count].enable_addr, CRD_EMPTY))) {
-                *number_of_dwords += atoi(arr[1]);
+        addr = (u_int32_t)strtol(arr[0], NULL, 0);
+        len  = atoi(arr[1]);
+        if (!read_single_dword) {
+            blocks[block_count].addr = addr;
+            blocks[block_count].len  = len;
+            if (field_count > 2) {
+                strcpy(blocks[block_count].enable_addr, arr[2]);
+                if(is_full || (!is_full && !strcmp(blocks[block_count].enable_addr, CRD_EMPTY))) {
+                    *number_of_dwords += len;
+                }
+            }
+            else {
+                strcpy(blocks[block_count].enable_addr, CRD_EMPTY);
+                *number_of_dwords += len;
+            }
+            block_count += 1;
+        } else {
+            if (field_count > 2) {
+                strcpy(enable_addr, arr[2]);
+            } else {
+                strcpy(enable_addr, CRD_EMPTY);
+            }
+            if(is_full || (!is_full && !strcmp(enable_addr, CRD_EMPTY))) {
+                *number_of_dwords += len;
+            }
+            for (i = 0; i < len; i++) {
+                blocks[block_count].addr = addr;
+                blocks[block_count].len  = 1;
+                strcpy(blocks[block_count].enable_addr, enable_addr);
+                block_count += 1;
+                addr += 4;
             }
         }
-        else {
-            strcpy(blocks[block_count].enable_addr, CRD_EMPTY);
-            *number_of_dwords += atoi(arr[1]);
-        }
-        block_count += 1;
     }
     fclose(fd);
     return CRD_OK;
@@ -484,6 +534,8 @@ static int crd_read_line(IN FILE *fd, OUT char *tmp) {
     return CRD_OK;
 }
 
+#if defined(__WIN__)
+
 static int crd_replace(INOUT char *st, IN char *orig, IN char *repl) {
     char buffer[CRD_CSV_PATH_SIZE];
     char *ch;
@@ -510,7 +562,10 @@ static int crd_get_exec_name_from_path(IN char *str, OUT char *exec_name) {
     }
     return CRD_OK;
 }
+#endif 
 
+
+#if !defined(__WIN__)
 static char *crd_ltrim(char *s) {
     while(isspace(*s)){
         s++;
@@ -529,12 +584,12 @@ static char *crd_rtrim(char *s) {
     while(isspace(*--back));
     *(back+1) = '\0';
     return s;
-}
+	}
 
 static char *crd_trim(char *s){
     return crd_rtrim(crd_ltrim(s));
 }
-
+#endif 
 
 static int crd_update_csv_path(IN OUT char *csv_file_path) {
 
@@ -545,35 +600,51 @@ static int crd_update_csv_path(IN OUT char *csv_file_path) {
     crd_get_exec_name_from_path(csv_file_path, exec_name);
     crd_replace(csv_file_path, exec_name, "mstdump_dbs\\");
     found = 1;
+
 #elif defined MST_UL
     strcat(csv_file_path, DATA_PATH "/");
     found = 1;
+
 #else
-    char      conf_path[256] = "/etc/mft/mft.conf";
-    char      *data_path;
-    char      * line = NULL;
-    size_t    len    = 0;
-    FILE      *fd   = fopen(conf_path, "r");
+    char      conf_path[256] = ROOT_PATH;
+    char      data_path[CRD_CSV_PATH_SIZE] = {0x0};
+    char      prefix[CRD_CSV_PATH_SIZE] = {0x0};
+    char      * tmp_value = NULL;
+    char      line[CRD_MAXLINESIZE] = {0};
+    FILE      *fd;
+    strcat(conf_path, "etc/mft/mft.conf");
+    fd = fopen(conf_path, "r");
     if (fd == NULL) {
         CRD_DEBUG("Failed to open conf file : %s\n", conf_path);
         sprintf(crd_error, "Failed to open conf file : %s", conf_path);
         return CRD_OPEN_FILE_ERROR;
     }
 
-    while ((getline(&line, &len, fd)) != -1) {
+    while ((fgets(line, CRD_MAXLINESIZE, fd))) {
         if(strstr(line, "mstdump_dbs") != NULL) {
-            data_path = strtok(line, "=");
-            if (data_path != NULL) {
-                data_path = strtok(NULL, "=");
-                if (data_path != NULL) {
-                    strcpy(csv_file_path, crd_trim(data_path));
-                    strcat(csv_file_path, "/");
-                    found = 1;
-                    break;
-                }
+            tmp_value = strtok(line, "=");
+            if (tmp_value != NULL) {
+                tmp_value = strtok(NULL, "=");
+                crd_trim(tmp_value);
+                strcpy(data_path, tmp_value);
+            }
+        } else if(strstr(line, "mft_prefix_location") != NULL) {
+            tmp_value = strtok(line, "=");
+            if (tmp_value != NULL) {
+                tmp_value = strtok(NULL, "=");
+                crd_trim(tmp_value);
+                strcpy(prefix, tmp_value);
             }
         }
     }
+    if (strlen(prefix) && strlen(data_path)) {
+        strcpy(csv_file_path, prefix);
+        strcat(csv_file_path, data_path);
+        strcat(csv_file_path, "/");
+        found = 1;
+    }
+
+    fclose(fd);
 #endif
     if (!found) {
         return CRD_CONF_BAD_FORMAT;

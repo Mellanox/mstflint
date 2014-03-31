@@ -31,11 +31,14 @@
 #--
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
-INCLUDES = -I$(top_srcdir)/include/mtcr_ul
+INCLUDES = -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common
 
 lib_LIBRARIES = libmtcr_ul.a
 
-libmtcr_ul_a_SOURCES = mtcr_ul.c mtcr_ib.h  mtcr_int_defs.h
+libmtcr_ul_a_SOURCES = mtcr_ul.c mtcr_ib.h  mtcr_int_defs.h\
+			mtcr_tools_cif.c mtcr_tools_cif.h\
+			packets_common.c packets_common.h\
+			packets_layout.c packets_layout.h
 libmtcr_ul_a_CFLAGS = -W -Wall -g -MP -MD -fPIC -DMTCR_API="" -DMST_UL
 
 if ENABLE_INBAND

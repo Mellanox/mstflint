@@ -36,13 +36,17 @@
  *
  */
 
-#include "subcommands.h"
-#include <iostream>
+
 #include <stdio.h>
+#include <iostream>
+
+#include <common/compatibility.h>
 
 #ifndef NO_ZLIB
-#include <zlib.h>
+    #include <zlib.h>
 #endif
+
+#include "subcommands.h"
 
 using namespace std;
 
@@ -125,9 +129,9 @@ int write_cmd_to_log(string fullCmd , sub_cmd_t cmd, bool write)
         return 0;
     }
     if (cmd == SC_Brom) {
-        sprintf(pre_str, "ROM");
+        snprintf(pre_str, 50, "ROM");
     } else {
-        sprintf(pre_str, "FW");
+        snprintf(pre_str, 50, "FW");
     }
     print_time_to_log();
     fprintf(flint_log_fh, "Start %s burning: ", pre_str);
@@ -234,13 +238,13 @@ void SubCommand::openLog()
     }
 }
 
-int SubCommand::verifyCbFunc(const char* str)
+int SubCommand::verifyCbFunc(char* str)
 {
     printf("%s", str);
     return 0;
 }
 
-int SubCommand::CbCommon(int completion, const char*preStr, const char* endStr)
+int SubCommand::CbCommon(int completion, char*preStr, char* endStr)
 {
     if (completion < 100) {
             printf("\r%s%%%03d", preStr, completion);
@@ -260,54 +264,62 @@ int SubCommand::CbCommon(int completion, const char*preStr, const char* endStr)
 
 int SubCommand::burnCbFs3Func(int completion)
 {
-    const char* message = "Burning FS3 FW image without signatures - ";
-    const char* endStr = "Restoring signature                     - OK";
+    char* message = (char*)"Burning FS3 FW image without signatures - ";
+    char* endStr =  (char*)"Restoring signature                     - OK";
     return CbCommon(completion, message, endStr);
 }
 
 int SubCommand::burnCbFs2Func(int completion)
 {
-    const char* message = "Burning FS2 FW image without signatures - ";
-    const char* endStr =  "Restoring signature                     - OK";
+    char* message = (char*)"Burning FS2 FW image without signatures - ";
+    char* endStr =  (char*)"Restoring signature                     - OK";
     return CbCommon(completion, message, endStr);
 }
 
 int SubCommand::bromCbFunc(int completion)
 {
-    const char* message = "Burning ROM image    - ";
-    const char* endStr =  "Restoring signature  - OK";
+    char* message = (char*)"Burning ROM image    - ";
+    char* endStr =  (char*)"Restoring signature  - OK";
     return CbCommon(completion, message, endStr);
 }
 
 int SubCommand::dromCbFunc(int completion)
 {
-    const char* message = "Removing ROM image    - ";
-    const char* endStr = "Restoring signature  - OK";
+    char* message = (char*)"Removing ROM image    - ";
+    char* endStr =  (char*)"Restoring signature  - OK";
     return CbCommon(completion, message, endStr);
 }
 
+int SubCommand::resetCfgCbFunc(int completion)
+{
+    char* message = (char*)"Resetting NV configuration - ";
+    char* endStr =  (char*)"Restoring signature        - OK";
+    return CbCommon(completion, message, endStr);
+}
+
+
 int SubCommand::burnBCbFunc(int completion)
 {
-    return CbCommon(completion, "");
+    return CbCommon(completion,(char*)"");
 }
 
 int SubCommand::vsdCbFunc(int completion)
 {
-    const char* message = "Setting the VSD      - ";
-    const char* endStr =  "Restoring signature  - OK";
+    char* message = (char*)"Setting the VSD      - ";
+    char* endStr =  (char*)"Restoring signature  - OK";
     return CbCommon(completion, message, endStr);
 }
 
 int SubCommand::setKeyCbFunc(int completion)
 {
-    const char* message = "Setting the HW Key   - ";
-    const char* endStr = "Restoring signature  - OK";
+    char* message = (char*)"Setting the HW Key   - ";
+    char* endStr =  (char*)"Restoring signature  - OK";
     return CbCommon(completion, message, endStr);
 }
 
 int SubCommand::wbCbFunc(int completion)
 {
-    const char* message = "Writing Block:   - ";
+    char* message = (char*)"Writing Block:   - ";
     return CbCommon(completion, message, NULL);
 }
 
@@ -319,6 +331,7 @@ FlintStatus SubCommand:: openOps()
     if (_flintParams.device_specified) {
         // fillup the fw_ops_params_t struct
         FwOperations::fw_ops_params_t fwParams;
+        memset(&fwParams, 0 , sizeof(FwOperations::fw_ops_params_t));
         fwParams.errBuff = errBuff;
         fwParams.errBuffSize = ERR_BUFF_SIZE;
         fwParams.flashParams =_flintParams.flash_params_specified ? &_flintParams.flash_params : NULL;
@@ -373,7 +386,7 @@ FlintStatus SubCommand:: openIo()
             return FLINT_FAILED;
         }
         // we have successfully opened a Flash Obj
-        // set no_flash_verify if needed
+        //set no flash verify if needed (default =false)
         ((Flash*)_io)->set_no_flash_verify(_flintParams.no_flash_verify);
     } else if (_flintParams.image_specified) {
         _io = new FImage;
@@ -543,7 +556,7 @@ static int mygetch(void)
     return ch;
 }
 
-bool SubCommand::getPasswordFromUser(const char *preStr, char buffer[MAX_PASSWORD_LEN])
+bool SubCommand::getPasswordFromUser(const char *preStr, char buffer[MAX_PASSWORD_LEN+1])
 {
     char c;
     int pos = 0;
@@ -552,7 +565,7 @@ bool SubCommand::getPasswordFromUser(const char *preStr, char buffer[MAX_PASSWOR
     do {
         c = mygetch();
 
-        if( ((pos < MAX_PASSWORD_LEN - 1)) && isprint(c) ) {
+        if( ((pos < MAX_PASSWORD_LEN)) && isprint(c) ) {
             buffer[ pos++ ] = c;
             printf("%c", '*');
         } else if( (c == 8 || c == 127) && pos ) {
@@ -568,11 +581,11 @@ bool SubCommand::getPasswordFromUser(const char *preStr, char buffer[MAX_PASSWOR
 }
 
 #else
-bool SubCommand::getPasswordFromUser(char *preStr, char buffer[MAX_PASSWORD_LEN])
+bool SubCommand::getPasswordFromUser(const char *preStr, char buffer[MAX_PASSWORD_LEN+1])
 {
     //TODO: Buffer Overflow danger use loop with gets() or istream
     printf("%s: ", preStr);
-    scanf("%s", buffer);
+    scanf("%256s", buffer);
     return true;
 }
 
@@ -611,13 +624,13 @@ bool SubCommand::askUser(const char *question, bool printAbrtMsg) {
         }
         */
         fflush(stdout);
-        fgets(ansbuff, 30, stdin);
+        //fgets(ansbuff, 30, stdin);
+        if (!fscanf(stdin, "%30s", ansbuff)) {
+        	return false;
+        }
 
-        if (  strcmp(ansbuff, "y\n") &&
-              strcmp(ansbuff, "Y\n") &&
-              strcmp(ansbuff, "yes\n") &&
-              strcmp(ansbuff, "Yes\n") &&
-              strcmp(ansbuff, "YES\n"))  {
+        if (  strcasecmp(ansbuff, "y") &&
+              strcasecmp(ansbuff, "yes"))  {
 
             if (printAbrtMsg) {
             reportErr(true, "Aborted by user\n");
@@ -631,37 +644,16 @@ bool SubCommand::askUser(const char *question, bool printAbrtMsg) {
 
 void SubCommand::displayOneExpRomInfo(const rom_info_t& info) {
 
+	const char* typeStr = FwOperations::expRomType2Str(info.exp_rom_product_id);
     if (info.exp_rom_product_id == 0xf) {// version id in this case is the freeStr that was moved to exp_rom_ver[0] in mlxfwops
-        printf("devid=%d version_id=%d", info.exp_rom_dev_id,info.exp_rom_ver[0]);
+        printf("devid=%d version_id=%d type=%s", info.exp_rom_dev_id,info.exp_rom_ver[0], typeStr);
     } else {
-        printf("type=");
-        switch (info.exp_rom_product_id) {
-        case 1:
-            printf("CLP1 ");
-            break;
-        case 2:
-            printf("CLP2 ");
-            break;
-        case 3:
-            printf("CLP3 ");
-            break;
-        case 4:
-            printf("CLP4 ");
-            break;
-        case 0x10:
-            printf("PXE  ");
-            break;
-        case 0x11:
-            printf("UEFI ");
-            break;
-        case 0x21:
-            printf("FCODE ");
-            break;
-
-        default:
-            printf("0x%x - Unknown ROM product ID\n", info.exp_rom_product_id);
-            return;
-        }
+    	if (typeStr) {
+    		printf("type=%s", typeStr);
+    	} else {
+    		 printf("0x%x - Unknown ROM product ID\n", info.exp_rom_product_id);
+    		 return;
+    	}
 
         printf("version=%d", info.exp_rom_ver[0]);
         if (info.exp_rom_product_id >= 0x10) {
@@ -675,20 +667,21 @@ void SubCommand::displayOneExpRomInfo(const rom_info_t& info) {
                 // Do not display if 0 - port independent
                 printf(" port=%d", info.exp_rom_port);
             }
-
-            printf(" proto=");
-            switch (info.exp_rom_proto) {
-            case ER_IB:
-                printf("IB");
-                break;
-            case ER_ETH:
-                printf("ETH");
-                break;
-            case ER_VPI:
-                printf("VPI");
-                break;
-            default:
-                printf("0x%x", info.exp_rom_proto);
+            if (info.exp_rom_product_id != 0x12) { // on CLP(0x12) there is no meaning to protocol
+            	printf(" proto=");
+            	switch (info.exp_rom_proto) {
+            	case ER_IB:
+            		printf("IB");
+            		break;
+            	case ER_ETH:
+            		printf("ETH");
+            		break;
+            	case ER_VPI:
+            		printf("VPI");
+            		break;
+            	default:
+            		printf("0x%x", info.exp_rom_proto);
+            	}
             }
         }
     }
@@ -732,35 +725,6 @@ void SubCommand::displayExpRomInfo(const roms_info_t& romsInfo, const char *preS
     }
     return;
 }
-
-/*TODO: this function was ported to mlxfwops needs to be removed.
- *
-void SubCommand::setDevFlags(const fw_info_t& info, bool& ib_dev, bool& eth_dev) {
-
-    if (info.fw_info.chip_type == CT_IS4) {
-        ib_dev = true;
-        eth_dev = false;
-    } else if (info.fw_info.chip_type == CT_SWITCHX) {
-        ib_dev = true;
-        eth_dev = true;
-    } else {
-        ib_dev  = (info.fw_type == FIT_FS3) || !_fwOps->CntxEthOnly(info.fw_info.dev_type);
-        eth_dev = (info.fw_type == FIT_FS2)  && info.fw_info.chip_type == CT_CONNECTX;
-    }
-
-    if ((!ib_dev && !eth_dev) || info.fw_info.chip_type == CT_UNKNOWN) {
-        // Unknown device id - for forward compat - assume that ConnectX is MP and
-        // prev HCAs are IB only (these flags are for printing only - no real harm can be done).
-        // TODO: FS2 does not mean ConnectX now.
-        ib_dev = true;
-        if (info.fw_type == FIT_FS2) {
-            eth_dev = true;
-        } else {
-            eth_dev = false;
-        }
-    }
-}
-*/
 
 bool SubCommand::printGuidLine(guid_t* new_guids, guid_t* old_guids, int guid_index)
 {
@@ -945,10 +909,11 @@ bool SubCommand::unzipDataFile (std::vector<u_int8_t> data, std::vector<u_int8_t
     newData.resize(destLen + 1);
     return true;
 #else
+    // avoid warnings
     (void) data;
     (void) newData;
     (void) sectionName;
-    reportErr(true, "Executable was compiled with \"dump files\" option disabled.\n");
+    reportErr(true, FLINT_NO_ZLIB_ERROR);
     return false;
 #endif
 }
@@ -1046,6 +1011,10 @@ BurnSubCommand:: BurnSubCommand()
               INDENTEX FLINT_NAME" -d "MST_DEV_EXAMPLE2" -guid 0x2c9000100d050 -i image1.bin b";
     _v = Wtv_Dev_And_Img;
     _cmdType = SC_Burn;
+    _fwType = 0;
+    _devQueryRes = 0;
+    memset(&_devInfo, 0, sizeof(_devInfo));
+    memset(&_imgInfo, 0, sizeof(_imgInfo));
 }
 
 BurnSubCommand:: ~BurnSubCommand()
@@ -1100,7 +1069,7 @@ bool BurnSubCommand::verifyParams()
 void BurnSubCommand::updateBurnParams()
 {
     _burnParams.progressFunc = _flintParams.silent == true ? (ProgressCallBack)NULL :\
-            _devInfo.fw_type == FIT_FS2? &burnCbFs2Func : &burnCbFs3Func;
+    		_fwType == FIT_FS2? &burnCbFs2Func : &burnCbFs3Func;
     _burnParams.userGuidsSpecified = _flintParams.guids_specified || _flintParams.guid_specified;
     _burnParams.userMacsSpecified = _flintParams.macs_specified || _flintParams.mac_specified;
     _burnParams.userUidsSpecified = _flintParams.uids_specified || _flintParams.uid_specified;
@@ -1141,19 +1110,19 @@ bool BurnSubCommand::checkFwVersion()
     printf("\n");
     printf("    Current FW version on flash:  ");
     if (_devInfo.fw_info.fw_ver[0] != 0) { // i.e if we have a fw_version we assume this is != 0
-        sprintf(curr_ver, "%d.%d.%d", _devInfo.fw_info.fw_ver[0], _devInfo.fw_info.fw_ver[1], _devInfo.fw_info.fw_ver[2]);
+        snprintf(curr_ver, 124, "%d.%d.%d", _devInfo.fw_info.fw_ver[0], _devInfo.fw_info.fw_ver[1], _devInfo.fw_info.fw_ver[2]);
     } else {
-        sprintf(curr_ver, "N/A");
+        snprintf(curr_ver, 124, "N/A");
     }
-    printf(curr_ver); printf("\n");
+    printf("%s", curr_ver); printf("\n");
 
     printf("    New FW version:               ");
     if (_imgInfo.fw_info.fw_ver[0] != 0) {
-        sprintf(new_ver, "%d.%d.%d", _imgInfo.fw_info.fw_ver[0], _imgInfo.fw_info.fw_ver[1], _imgInfo.fw_info.fw_ver[2]);
+        snprintf(new_ver, 124, "%d.%d.%d", _imgInfo.fw_info.fw_ver[0], _imgInfo.fw_info.fw_ver[1], _imgInfo.fw_info.fw_ver[2]);
     } else {
-        sprintf(new_ver, "N/A");
+        snprintf(new_ver, 124, "N/A");
     }
-    printf(new_ver); printf("\n");
+    printf("%s", new_ver); printf("\n");
 
     if (_flintParams.log_specified) {
         print_line_to_log("Current FW version on flash: %s,  New FW version: %s\n", curr_ver, new_ver);
@@ -1239,7 +1208,8 @@ FlintStatus BurnSubCommand::burnFs3()
         reportErr(true, FLINT_FS3_BURN_ERROR, _fwOps->err());
         return FLINT_FAILED;
     }
-    _burnParams.progressFunc(101);
+    PRINT_PROGRESS(_burnParams.progressFunc, 101);
+
     write_result_to_log(FLINT_SUCCESS, "", _flintParams.log_specified);
     return FLINT_SUCCESS;
 }
@@ -1343,7 +1313,7 @@ FlintStatus BurnSubCommand::burnFs2()
         reportErr(true, FLINT_FS2_BURN_ERROR, _fwOps->err());
         return FLINT_FAILED;
     }
-    _burnParams.progressFunc(101);
+    PRINT_PROGRESS(_burnParams.progressFunc, 101);
     write_result_to_log(FLINT_SUCCESS, "", _flintParams.log_specified);
     return FLINT_SUCCESS;
 }
@@ -1407,7 +1377,7 @@ bool BurnSubCommand::dealWithGuids()
             || _burnParams.userMacsSpecified
             || _burnParams.userUidsSpecified;
     if (is_guids_specified) {
-        if (!checkGuidsFlags((chip_type_t)_imgInfo.fw_info.chip_type, _imgInfo.fw_info.dev_type, _devInfo.fw_type,\
+        if (!checkGuidsFlags((chip_type_t)_imgInfo.fw_info.chip_type, _imgInfo.fw_info.dev_type, _fwType,\
                 _burnParams.userGuidsSpecified, _burnParams.userMacsSpecified, _burnParams.userUidsSpecified)) {
             return false;
         }
@@ -1437,15 +1407,15 @@ void BurnSubCommand::dealWithExpRom()
 {
     bool getRomFromDev = false;
     // Check exp rom:
-    bool fs2Cond = _devInfo.fw_type == FIT_FS2? (_devQueryRes && _devInfo.fw_info.chip_type == CT_CONNECTX && \
+    bool fs2Cond = _fwType == FIT_FS2? (_devQueryRes && _devInfo.fw_info.chip_type == CT_CONNECTX && \
             (FwOperations::IsFwSupportingRomModify(_devInfo.fw_info.fw_ver) || (_imgInfo.fw_info.roms_info.num_of_exp_rom > 0))\
             && !_flintParams.use_image_rom && !strcmp(_devInfo.fw_info.product_ver,"") && !strcmp(_imgInfo.fw_info.product_ver, "")) : false;
 
-    bool fs3Cond = _devInfo.fw_type == FIT_FS3 ? (_devQueryRes && _devInfo.fw_info.chip_type == CT_CONNECT_IB && \
+    bool fs3Cond = _fwType == FIT_FS3 ? (_devQueryRes && (_devInfo.fw_info.chip_type == CT_CONNECT_IB || _devInfo.fw_info.chip_type == CT_CONNECTX) && \
             (FwOperations::IsFwSupportingRomModify(_devInfo.fw_info.fw_ver) || (_imgInfo.fw_info.roms_info.num_of_exp_rom > 0))\
-            && !_flintParams.use_image_rom) : false; //&& !strcmp(_devInfo.fw_info.product_ver,"") && !strcmp(_imgInfo.fw_info.product_ver, "") : false;
+            && !_flintParams.use_image_rom) && !strcmp(_devInfo.fw_info.product_ver,"") && !strcmp(_imgInfo.fw_info.product_ver, "") : false;
 
-    bool cond = _devInfo.fw_type == FIT_FS2 ? fs2Cond : fs3Cond;
+    bool cond = _fwType == FIT_FS2 ? fs2Cond : fs3Cond;
 
     if (cond) {
         // Enter here when:
@@ -1453,7 +1423,7 @@ void BurnSubCommand::dealWithExpRom()
         //                  ( The device is hermon ||  golan    )&&
         //                  The image fw supports modifying ROM OR it contains ROM &&.
         //                  The user didn't ask to burn the image rom. &&
-        //                  The  fw on the flash doesn't contain product version (on golan we dont check this last cond)
+        //                  The  fw on the flash doesn't contain product version
 
         if (_imgInfo.fw_info.roms_info.num_of_exp_rom > 0 && _devInfo.fw_info.roms_info.num_of_exp_rom > 0) {
             printf("\n    Note: Both the image file and the flash contain a ROM image.\n"
@@ -1493,6 +1463,8 @@ FlintStatus BurnSubCommand::executeCommand()
     if (preFwOps() == FLINT_FAILED) {
         return FLINT_FAILED;
     }
+    //set fw type
+    _fwType = _fwOps->FwType();
     // query both image and device (deviceQuery can fail but we save rc)
     _devQueryRes = _fwOps->FwQuery(&_devInfo);
     if (!_imgOps->FwQuery(&_imgInfo))
@@ -1502,9 +1474,9 @@ FlintStatus BurnSubCommand::executeCommand()
         }
     //updateBurnParams with input given by user
     updateBurnParams();
-    if (_devInfo.fw_type == FIT_FS3) {
+    if (_fwType == FIT_FS3) {
         return burnFs3();
-    } else if (_devInfo.fw_type == FIT_FS2) {
+    } else if (_fwType == FIT_FS2) {
     return burnFs2();
     }
     // unknown fw type
@@ -1628,14 +1600,13 @@ bool QuerySubCommand::displayFs2Uids(const fw_info_t& fwInfo)
     // GUIDS:
 
     if (fwInfo.fw_info.chip_type == CT_BRIDGEX) {
-        int i, base;
+        int i;
         if (fwInfo.fs2_info.guid_num != BX_ALL_GUIDS) {
             reportErr(true, FLINT_INVALID_UID_NUM_BX_ERROR, BX_ALL_GUIDS);
             return false;
         }
         printf("Description:     Node             Port1            Port2            Port3            Port4\n");
         for (i = 0; i < BX_SLICES_NUM; i++) {
-            base = i * BX_SLICE_GUIDS;
             reportBxGuidsQuery(fwInfo.fs2_info.guids, BI_GUIDS,  BX_NP_GUIDS, i, "GUIDs:");
             reportBxMacsQuery(fwInfo.fs2_info.guids,  BI_IMACS, BX_IMACS,    i, "IMACs:");
             reportBxMacsQuery(fwInfo.fs2_info.guids,  BI_EMACS, BX_EMACS,    i, "EMACs:");
@@ -1704,9 +1675,9 @@ bool QuerySubCommand::displayFs2Uids(const fw_info_t& fwInfo)
 }
 
 #define BASE_STR "Base"
-#define PRINT_FS3_UID(uid1, str) printf("%-16s %016lx        %d        %d\n", str, uid1.uid, uid1.num_allocated, uid1.step);
+#define PRINT_FS3_UID(uid1, str) printf("%-16s %016"U64H_FMT_GEN"        %d        %d\n", str, uid1.uid, uid1.num_allocated, uid1.step);
 #define PRINT_FS3_UIDS(uid1, uid2, str) {\
-    PRINT_FS3_UID(uid1, BASE_STR" "str":");\
+    	PRINT_FS3_UID(uid1, BASE_STR" "str":");\
     if (uid1.uid !=  uid2.uid || uid1.num_allocated != uid2.num_allocated  || uid1.step != uid2.step) {\
         PRINT_FS3_UID(uid2, "Orig " BASE_STR " "str":");\
     } \
@@ -1734,8 +1705,12 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
                 fwInfo.fw_info.fw_ver[2]);
     }
 
+    if (fwInfo.fw_info.fw_rel_date[0] || fwInfo.fw_info.fw_rel_date[1] || fwInfo.fw_info.fw_rel_date[2]) {
+        printf("FW Release Date: %x.%x.%x\n", fwInfo.fw_info.fw_rel_date[0], fwInfo.fw_info.fw_rel_date[1],\
+                fwInfo.fw_info.fw_rel_date[2]);
+    }
 
-    if (fullQuery) {
+    if (fullQuery) { // there is no full query atm just quick query
         if (fwInfo.fw_info.min_fit_ver[0] || fwInfo.fw_info.min_fit_ver[1]\
                 || fwInfo.fw_info.min_fit_ver[2]||fwInfo.fw_info.min_fit_ver[3]) {
             printf("Min FIT Version: %d.%d.%d.%d\n", fwInfo.fw_info.min_fit_ver[0],\
@@ -1848,9 +1823,8 @@ FlintStatus QuerySubCommand::executeCommand()
         return FLINT_FAILED;
     }
     //print fw_info nicely to the user
-    if (_flintParams.quick_query) {// we actually dont use "regular" query , just quick
-        printf("\n"FLINT_QQ_WARRNING"\n");
-    }
+    // we actually dont use "regular" query , just quick
+    //ORENK - no use to display quick query message to the user if we dont do it in any other way
     if (_flintParams.cmd_params.size() == 1) {
         fullQuery=true;
     }
@@ -1992,6 +1966,8 @@ BromSubCommand:: BromSubCommand()
     _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" brom exp-rom.rom";
     _v = Wtv_Dev_Or_Img;
     _cmdType = SC_Brom;
+    memset(&_info, 0, sizeof(_info));
+    memset(&_romsInfo, 0, sizeof(_romsInfo));
 }
 
 BromSubCommand:: ~BromSubCommand()
@@ -2061,7 +2037,7 @@ FlintStatus BromSubCommand::executeCommand()
         getExpRomStrVer(_info.fw_info.roms_info, romVer1);
     } else {
         printf("%s", infoStr);
-        sprintf(romVer1, "N/A");
+        snprintf(romVer1, 50, "N/A");
         printf("%s\n", romVer1);
     }
     displayExpRomInfo(_romsInfo, infoStr2);
@@ -2281,6 +2257,8 @@ SgSubCommand:: SgSubCommand()
     _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" -guid 0x0002c9000100d050 sg";
     _v = Wtv_Dev_Or_Img;
     _cmdType = SC_Sg;
+    _ops     = NULL;
+    memset(&_info, 0, sizeof(_info));
 }
 
 SgSubCommand:: ~SgSubCommand()
@@ -2463,14 +2441,20 @@ SmgSubCommand:: SmgSubCommand()
     _name = "smg";
     _desc = "Set manufacture GUIDs (For FS3 image only).";
     _extendedDesc = "Set manufacture GUID, Set manufacture GUIDs in the given FS3 image.\n"
-                INDENTEX"Use -uid flag to set the desired GUIDs.";
+                INDENTEX"Use -uid flag to set the desired GUIDs, intended for production use only.";
     _flagLong = "smg";
     _flagShort = "";
     _param = "";
     _paramExp = "None";
-    _example = FLINT_NAME" -i fw_image.bin -uid 0x0002c9000100d050 smg";
+    _example = FLINT_NAME" -i fw_image.bin -uid 0x0002c9000100d050 smg"
+#ifndef __WIN__
+    		"\n"INDENTEX FLINT_NAME" -d "MST_DEV_EXAMPLE3" -uid 0x0002c9000100d050 smg (should be used when device is idle)"
+#endif
+    		;
     _v = Wtv_Dev_Or_Img;
     _cmdType = SC_Smg;
+    _baseGuid.h = 0;
+    _baseGuid.l = 0;
 }
 
 SmgSubCommand:: ~SmgSubCommand()
@@ -2509,18 +2493,22 @@ FlintStatus SmgSubCommand::executeCommand()
 
 
 /***********************
- *Class:
+ *Class: Set Vpd Subcommand
  **********************/
 SetVpdSubCommand:: SetVpdSubCommand()
 {
     _name = "set vpd";
     _desc = "Set read-only VPD (For FS3 image only).";
-    _extendedDesc = "Set Read-only VPD, Set VPD in the given FS3 image.";
+    _extendedDesc = "Set Read-only VPD, Set VPD in the given FS3 image, intended for production use only.";
     _flagLong = "set_vpd";
     _flagShort = "";
     _param = "[vpd file]";
     _paramExp = "vpd file: bin file containing the vpd data";
-    _example = FLINT_NAME" -i fw_image.bin set_vpd vpd.bin";
+    _example = FLINT_NAME" -i fw_image.bin set_vpd vpd.bin"
+#ifndef __WIN__
+    			"\n"INDENTEX FLINT_NAME" -d "MST_DEV_EXAMPLE3" -override_cache_replacement set_vpd vpd.bin (should be used when device is idle)"
+#endif
+    			;
     _v = Wtv_Dev_Or_Img;
     _cmdType = SC_Set_Vpd;
 }
@@ -2565,7 +2553,11 @@ SvSubCommand:: SvSubCommand()
     _flagShort = "";
     _param = "";
     _paramExp = "None";
-    _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" -vsd VSD_STRING sv";
+    _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" -vsd VSD_STRING sv"
+#ifndef __WIN__
+    		"\n"INDENTEX FLINT_NAME" -d "MST_DEV_EXAMPLE3" -vsd VSD_STRING -override_cache_replacement sv (should be used when device is idle)\n"
+#endif
+    		;
     _v = Wtv_Dev_Or_Img;
     _cmdType = SC_Sv;
 }
@@ -2797,6 +2789,8 @@ SetKeySubCommand:: SetKeySubCommand()
     _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" set_key 1234deaf5678";
     _v = Wtv_Dev;
     _cmdType = SC_Set_Key;
+    _getKeyInter = false;
+    memset(&_userKey, 0, sizeof(_userKey));
 }
 
 SetKeySubCommand:: ~SetKeySubCommand()
@@ -2816,17 +2810,17 @@ bool SetKeySubCommand::verifyParams()
 
 bool SetKeySubCommand::getKeyInteractively()
 {
-    char keyArr[MAX_PASSWORD_LEN];
+    char keyArr[MAX_PASSWORD_LEN+1];
     getPasswordFromUser("Enter Key ", keyArr );
     if (!getGUIDFromStr(keyArr, _userKey,\
-                       "-E- Invalid Key syntax, it should contain only hexa numbers.")) {
+                       "Invalid Key syntax, it should contain only hexa numbers and of appropriate length.")) {
     return false;
     }
     // verify key
     hw_key_t verKey;
     getPasswordFromUser("Verify Key ", keyArr );
     if (!getGUIDFromStr(keyArr, verKey,\
-                       "-E- Invalid Key syntax, it should contain only hexa numbers.")) {
+                       "Invalid Key syntax, it should contain only hexa numbers and of appropriate length.")) {
     return false;
     }
     if (_userKey.h != verKey.h || _userKey.l != verKey.l) {
@@ -2853,7 +2847,7 @@ FlintStatus SetKeySubCommand::executeCommand ()
         }
     } else {
         if (!getGUIDFromStr(_flintParams.cmd_params[0], _userKey, \
-                "Invalid Key syntax, it should contain only hexa numbers.")) {
+                "Invalid Key syntax, it should contain only hexa numbers and of appropriate length.")) {
             return FLINT_FAILED;
         }
     }
@@ -2862,7 +2856,7 @@ FlintStatus SetKeySubCommand::executeCommand ()
         return FLINT_FAILED;
     }
     setKeyCbFunc(101);
-    printf("\n-I- New key was updated successfully in the flash."\
+    printf("\n-I- New key was updated successfully in the flash. "\
             "In order to activate the new key you should reboot or restart the driver.\n");
 
     return FLINT_SUCCESS;
@@ -2883,7 +2877,8 @@ HwAccessSubCommand:: HwAccessSubCommand()
     _param = "<enable|disable> [key]";
     _paramExp = "<enable/disable>: Specify if you intend to disable or enable the HW access.\n"
                 INDENTEX"                   You will be asked to type a key when you try to enable HW access.\n"
-                INDENTEX"key:               (optional) The key you intend to use for enabling the HW access.";
+                INDENTEX"key:               (optional) The key you intend to use for enabling the HW access.\n"
+    			INDENTEX"                   Key format consists of at most 16 Hexadecimal digits.";
     _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" hw_access enable";
     _v = Wtv_Dev;
     _cmdType = SC_Hw_Access;
@@ -2933,14 +2928,14 @@ FlintStatus HwAccessSubCommand:: enableHwAccess()
         //now we need to get the key from the user (either given in the parameters or we get it during runtime)
         if (_flintParams.cmd_params.size() == 2) {
              if (!getGUIDFromStr(_flintParams.cmd_params[1], keyStruct,\
-                     "-E- Invalid Key syntax, it should contain only hexa numbers.")) {
+                     "Invalid Key syntax, it should contain only hexa numbers and of appropriate length.")) {
                  return FLINT_FAILED;
              }
         } else {//we need to get the key from user during runtime
-            char keyArr[MAX_PASSWORD_LEN];
+            char keyArr[MAX_PASSWORD_LEN+1];
             getPasswordFromUser("Enter Key ", keyArr );
             if (!getGUIDFromStr(keyArr, keyStruct,\
-                    "-E- Invalid Key syntax, it should contain only hexa numbers.")) {
+                    "Invalid Key syntax, it should contain only hexa numbers and of appropriate length.")) {
                 return FLINT_FAILED;
             }
         }
@@ -2985,6 +2980,7 @@ HwSubCommand:: HwSubCommand()
        INDENTEX"set [ATTR=VAL]: set flash attribure\n"
        INDENTEX"Supported attributes:\n"
        INDENTEX"    QuadEn: can be 0 or 1\n"
+       INDENTEX"    DummyCycles: can be [1..15]\n"
        INDENTEX"    Flash[0|1|2|3].WriteProtected can be:\n"
        INDENTEX"        <Top|Bottom>,<1|2|4|8|16|32|64>-<Sectors|SubSectors>";
     _example = "flint -d /dev/mst/mt4099_pci_cr0 hw query\n"
@@ -3060,7 +3056,7 @@ FlintStatus HwSubCommand::printAttr(const ext_flash_attr_t& attr) {
             case MFE_OK:
                 printf("  "QUAD_EN_PARAM"                %d\n", attr.quad_en);
                 break;
-            case MFE_MISMATCH_QUAD_EN:
+            case MFE_MISMATCH_PARAM:
                 printf("-E- There is a mismatch in the "QUAD_EN_PARAM" attribute between the flashes attached to the device\n");
                 break;
             case MFE_NOT_SUPPORTED_OPERATION:
@@ -3068,6 +3064,23 @@ FlintStatus HwSubCommand::printAttr(const ext_flash_attr_t& attr) {
             default:
                 printf("Failed to get "QUAD_EN_PARAM" attribute: %s (%s)",\
                         errno == 0 ? "" : strerror(errno), mf_err2str(attr.mf_get_quad_en_rc));
+                return FLINT_FAILED;
+        }
+    }
+    // Dummy Cycles query
+    if (attr.dummy_cycles_support) {
+        switch (attr.mf_get_dummy_cycles_rc) {
+            case MFE_OK:
+                printf("  "DUMMY_CYCLES_PARAM"           %d\n", attr.dummy_cycles);
+                break;
+            case MFE_MISMATCH_PARAM:
+                printf("-E- There is a mismatch in the "DUMMY_CYCLES_PARAM" attribute between the flashes attached to the device\n");
+                break;
+            case MFE_NOT_SUPPORTED_OPERATION:
+                break;
+            default:
+                printf("Failed to get "DUMMY_CYCLES_PARAM" attribute: %s (%s)",\
+                        errno == 0 ? "" : strerror(errno), mf_err2str(attr.mf_get_dummy_cycles_rc));
                 return FLINT_FAILED;
         }
     }
@@ -3490,10 +3503,6 @@ bool WbneSubCommand::writeBlock(u_int32_t addr, std::vector<u_int32_t> dataVec) 
                             (unsigned int)(dataVec.size()*4), (unsigned int)addr, (unsigned int)_io->get_size());
        return false;
     }
-    // convert to be32.
-    for(std::vector<u_int32_t>::iterator it = dataVec.begin(); it != dataVec.end(); ++it) {
-        *it = __cpu_to_be32(*it);
-    }
     if (!((Flash*)_io)->write(addr, &dataVec[0], (dataVec.size()*4), true)) {
         reportErr(true, FLINT_FLASH_WRITE_ERROR,_io->err());
         return false;
@@ -3690,15 +3699,16 @@ FlintStatus ClearSemSubCommand::executeCommand()
 RomQuerySubCommand:: RomQuerySubCommand()
 {
     _name = "qrom";
-    _desc = "query rom in a given image.";
-    _extendedDesc = "query rom in a given image.";
+    _desc = "query ROM image.";
+    _extendedDesc = "query ROM image.";
     _flagLong = "qrom";
     _flagShort = "";
     _param = "";
     _paramExp = "";
-    _example = FLINT_NAME" -i fw_image.bin qrom ";
+    _example = FLINT_NAME" -i ROM_image.bin qrom ";
     _v = Wtv_Img;
     _cmdType = SC_Qrom;
+    memset(&_romsInfo, 0, sizeof(_romsInfo));
 }
 
 RomQuerySubCommand:: ~RomQuerySubCommand()
@@ -3719,6 +3729,94 @@ FlintStatus RomQuerySubCommand::executeCommand()
         return FLINT_FAILED;
     }
     displayExpRomInfo(_romsInfo , "Rom Info: ");
+    return FLINT_SUCCESS;
+
+}
+
+/***********************
+ *Class: ResetCfg
+ **********************/
+ResetCfgSubCommand:: ResetCfgSubCommand()
+{
+    _name = "reset_cfg";
+    _desc = "reset non-volatile configuration.";
+    _extendedDesc = "reset non-volatile configuration to their default value.";
+    _flagLong = "reset_cfg";
+    _flagShort = "r";
+    _param = "";
+    _paramExp = "";
+    _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" reset_cfg";
+    _v = Wtv_Dev;
+    _cmdType = SC_ResetCfg;
+}
+
+ResetCfgSubCommand:: ~ResetCfgSubCommand()
+{
+
+}
+
+
+FlintStatus ResetCfgSubCommand::executeCommand()
+{
+    if (preFwOps() == FLINT_FAILED) {
+        return FLINT_FAILED;
+    }
+
+    if (!askUser("reset non-volatile configuration?")) {
+    	return FLINT_FAILED;
+    }
+
+    printf("Resetting...");
+    if (!_fwOps->FwResetNvData(resetCfgCbFunc)){
+    	printf(" Failed!\n");
+        reportErr(true, FLINT_RESET_CFG_ERROR, _fwOps->err());
+        return FLINT_FAILED;
+    }
+    printf(" SUCCESS!\n");
+    printf("\n-I- Configuration were successfully reset. reboot or restart the driver is required.\n");
+
+    return FLINT_SUCCESS;
+
+}
+
+/***********************
+ *Class: FixImage
+ **********************/
+FiSubCommand:: FiSubCommand()
+{
+    _name = "fix image";
+    _desc = "fix image on N25Q0XX flash.";
+    _extendedDesc = "fix image on N25Q0XX flash.(shifting all device data sectors)";
+    _flagLong = "fi";
+    _flagShort = "";
+    _param = "";
+    _paramExp = "";
+    _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" fi";
+    _v = Wtv_Dev;
+    _cmdType = SC_Fix_Img;
+}
+
+FiSubCommand:: ~FiSubCommand()
+{
+
+}
+
+
+FlintStatus FiSubCommand::executeCommand()
+{
+    if (preFwOps() == FLINT_FAILED) {
+        return FLINT_FAILED;
+    }
+
+    if (!askUser("Fix device fw?")) {
+    	return FLINT_FAILED;
+    }
+
+    if (!_fwOps->FwShiftDevData(&verifyCbFunc)){
+        reportErr(true, FLINT_FIX_IMG_ERROR, _fwOps->err());
+        return FLINT_FAILED;
+    }
+    printf("\n-I- Fw was successfully fixed. reboot or restart the driver is required.\n");
     return FLINT_SUCCESS;
 
 }

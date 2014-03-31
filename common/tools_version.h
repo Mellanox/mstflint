@@ -1,6 +1,5 @@
 /*
- *
- * Copyright (c) 2011 Mellanox Technologies Ltd.  All rights reserved.
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -29,27 +28,34 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
  */
+
 //
 // Generic version for all tools
 //
+#ifndef TOOLS_VERSION_H
+#define TOOLS_VERSION_H
 
-#ifndef __TOOLS_VERSION_H__
-#define __TOOLS_VERSION_H__
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
+// To be replaced by an external script:
 #include "gitversion.h"
+#ifndef TOOLS_GIT_SHA
+    #define TOOLS_GIT_SHA "6469M"
+#endif
 
-#ifndef TOOLS_SVN_VER
-    #define TOOLS_SVN_VER "N/A"
+#ifdef HAVE_CONFIG_H
+    #include <config.h>
+    #ifndef MFT_VERSION_STR
+        #define MFT_VERSION_STR PACKAGE_STRING
+    #endif
 #endif
 
 #ifndef MFT_VERSION_STR
-    #define MFT_VERSION_STR "mft 3.5.0"
+    #define MFT_VERSION_STR "mft V.V.V-R"
 #endif
 
 static inline
@@ -57,20 +63,18 @@ int get_version_string(char* buf, int buf_size, const char* exe_name, const char
     int len = 0;
     // "svn ci" updates the below line
 
-    (void)buf_size; /* TODO: Not checked for now */
-
 
     if (tool_version == NULL || !strcmp(tool_version, "")) {
-        len = sprintf(buf, "%s, ", exe_name);
+        len = snprintf(buf, buf_size, "%s, ", exe_name);
     } else {
-        len = sprintf(buf, "%s %s, ", exe_name, tool_version);
+        len = snprintf(buf, buf_size, "%s %s, ", exe_name, tool_version);
     }
     // cut out first and last "$" from the SVN version string:
-    len += sprintf(buf + len, "%s, built on %s, %s. GIT Version: %s",
+    len += snprintf(buf + len, buf_size - len, "%s, built on %s, %s. Git SHA Hash: %s",
                   MFT_VERSION_STR,
                   __DATE__,
                   __TIME__,
-                  TOOLS_SVN_VER);
+                  TOOLS_GIT_SHA);
     return len;
 }
 
@@ -81,5 +85,4 @@ void print_version_string(const char* exe_name, const char* tool_version) {
     printf("%s\n", buf);
 }
 
-#endif
-
+#endif // TOOLS_VERSION_H

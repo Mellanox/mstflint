@@ -1,6 +1,6 @@
 /*
  *
- * flint2.h - FLash INTerface
+ * flint.h - FLash INTerface
  *
  * Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
  *
@@ -38,8 +38,6 @@
 
 #ifndef __FLINT_H__
 #define __FLINT_H__
-
-#define FLINT_DISPLAY_NAME "mstflint"
 
 #include <string.h>
 #include "flint_params.h"

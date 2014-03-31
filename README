@@ -30,8 +30,10 @@ MSTFLINT Package - Firmware Burning and Diagnostics Tools
        for later analysis by Mellanox.
     e) mstvpd
        This utility dumps the on-card VPD.
-	f) mstmcra
-	   This debug utility reads a single word from the device configuration space.
+    f) mstmcra
+       This debug utility reads/writes a to/from the device configuration register space.
+    g) mstconfig
+       This tool sets or queries non-volatile configurable options for Mellanox HCAs.
 
 3) Installation
     a) Build the mstflint utility. This package is built using a standard
@@ -156,7 +158,10 @@ MSTFLINT Package - Firmware Burning and Diagnostics Tools
 	PN: MNPH29C-XTR
 	ID: Hawk Dual Port
 
-8) Problem Reporting:
+8) Usage (mstconfig):
+    Read mstconfig usage. Enter "mstconfig -h" for a help message.
+
+9) Problem Reporting:
 	Please collect the following information when reporting issues:
 
 	uname -a

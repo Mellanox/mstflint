@@ -1,0 +1,165 @@
+/*
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ *
+ * This software is available to you under a choice of one of two
+ * licenses.  You may choose to be licensed under the terms of the GNU
+ * General Public License (GPL) Version 2, available from the file
+ * COPYING in the main directory of this source tree, or the
+ * OpenIB.org BSD license below:
+ *
+ *     Redistribution and use in source and binary forms, with or
+ *     without modification, are permitted provided that the following
+ *     conditions are met:
+ *
+ *      - Redistributions of source code must retain the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer.
+ *
+ *      - Redistributions in binary form must reproduce the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer in the documentation and/or other materials
+ *        provided with the distribution.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+/***
+ *** This file was generated at "2014-03-11 10:09:59"
+ *** by:
+ ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/register_access/register_access.adb --file-prefix register_access --prefix register_access_
+ ***    and modified to fit the needs of mstflint.
+ ***/
+#ifndef REGISTER_ACCESS_LAYOUTS_H
+#define REGISTER_ACCESS_LAYOUTS_H
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include "adb_to_c_utils.h"/* Description -   */
+/* Size in bytes - 1 */
+struct register_access_Byte {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0.0 - 0.7 */
+	 u_int8_t val;
+};
+
+/* Description -   */
+/* Size in bytes - 36 */
+struct register_access_mfpa {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Flash Select */
+	/* 0.4 - 0.5 */
+	 u_int8_t fs;
+	/* Description - Parallel */
+	/* 0.8 - 0.8 */
+	 u_int8_t p;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - address in bytes */
+	/* 4.0 - 4.23 */
+	 u_int32_t boot_address;
+/*---------------- DWORD[4] (Offset 0x10) ----------------*/
+	/* Description - number of flash devices connected */
+	/* 16.0 - 16.3 */
+	 u_int8_t flash_num;
+/*---------------- DWORD[5] (Offset 0x14) ----------------*/
+	/* Description - Flash JEDEC ID */
+	/* 20.0 - 20.23 */
+	 u_int32_t jedec_id;
+/*---------------- DWORD[6] (Offset 0x18) ----------------*/
+	/* Description - Flash sectore size */
+	/* 24.0 - 24.9 */
+	 u_int16_t sector_size;
+	/* Description -  */
+	/* 24.16 - 24.23 */
+	 u_int8_t block_allignment;
+/*---------------- DWORD[7] (Offset 0x1c) ----------------*/
+	/* Description - capability mask ;bit 0:Parallel flash Support;else:Reserved  */
+	/* 28.0 - 32.31 */
+	 u_int32_t capability_mask;
+};
+
+/* Description -   */
+/* Size in bytes - 268 */
+struct register_access_mfba {/* Nodes */
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Flash Select */
+	/* 0.4 - 0.5 */
+	 u_int8_t fs;
+	/* Description - Parallel */
+	/* 0.8 - 0.8 */
+	 u_int8_t p;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - Transaction size */
+	/* 4.0 - 4.8 */
+	 u_int16_t size;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - address in bytes */
+	/* 8.0 - 8.23 */
+	 u_int32_t address;
+/*---------------- DWORD[3] (Offset 0xc) ----------------*/
+	/* Description - data */
+	/* 12.0 - 268.31 */
+	 u_int32_t data[64];
+};
+
+/* Description -   */
+/* Size in bytes - 12 */
+struct register_access_mfbe {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Flash Select */
+	/* 0.4 - 0.5 */
+	 u_int8_t fs;
+	/* Description - Parallel */
+	/* 0.8 - 0.8 */
+	 u_int8_t p;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - address in bytes */
+	/* 8.0 - 8.23 */
+	 u_int32_t address;
+};
+
+/*================= PACK/UNPACK/PRINT FUNCTIONS ======================*/
+/* Byte */
+void register_access_Byte_pack(const struct register_access_Byte *ptr_struct, u_int8_t* ptr_buff);
+void register_access_Byte_unpack(struct register_access_Byte *ptr_struct, const u_int8_t* ptr_buff);
+void register_access_Byte_print(const struct register_access_Byte *ptr_struct, FILE* file, int indent_level);
+int register_access_Byte_size();
+#define REGISTER_ACCESS_BYTE_SIZE    (0x1)
+void register_access_Byte_dump(const struct register_access_Byte *ptr_struct, FILE* file);
+/* mfpa */
+void register_access_mfpa_pack(const struct register_access_mfpa *ptr_struct, u_int8_t* ptr_buff);
+void register_access_mfpa_unpack(struct register_access_mfpa *ptr_struct, const u_int8_t* ptr_buff);
+void register_access_mfpa_print(const struct register_access_mfpa *ptr_struct, FILE* file, int indent_level);
+int register_access_mfpa_size();
+#define REGISTER_ACCESS_MFPA_SIZE    (0x24)
+void register_access_mfpa_dump(const struct register_access_mfpa *ptr_struct, FILE* file);
+/* mfba */
+void register_access_mfba_pack(const struct register_access_mfba *ptr_struct, u_int8_t* ptr_buff);
+void register_access_mfba_unpack(struct register_access_mfba *ptr_struct, const u_int8_t* ptr_buff);
+void register_access_mfba_print(const struct register_access_mfba *ptr_struct, FILE* file, int indent_level);
+int register_access_mfba_size();
+#define REGISTER_ACCESS_MFBA_SIZE    (0x10c)
+void register_access_mfba_dump(const struct register_access_mfba *ptr_struct, FILE* file);
+/* mfbe */
+void register_access_mfbe_pack(const struct register_access_mfbe *ptr_struct, u_int8_t* ptr_buff);
+void register_access_mfbe_unpack(struct register_access_mfbe *ptr_struct, const u_int8_t* ptr_buff);
+void register_access_mfbe_print(const struct register_access_mfbe *ptr_struct, FILE* file, int indent_level);
+int register_access_mfbe_size();
+#define REGISTER_ACCESS_MFBE_SIZE    (0xc)
+void register_access_mfbe_dump(const struct register_access_mfbe *ptr_struct, FILE* file);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif // REGISTER_ACCESS_LAYOUTS_H

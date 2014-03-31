@@ -100,7 +100,12 @@ bool Fs2Operations::ParseInfoSect(u_int8_t* buff, u_int32_t byteSize) {
             _fwImgInfo.ext_info.fw_ver[1] = tmp >> 16;
             _fwImgInfo.ext_info.fw_ver[2] = tmp & 0xffff;
             break;
-
+        case II_FwBuildTime:
+            tmp = __be32_to_cpu(*(p+2));
+            _fwImgInfo.ext_info.fw_rel_date[0] = (u_int16_t)(tmp & 0xff);
+            _fwImgInfo.ext_info.fw_rel_date[1] = (u_int16_t)((tmp >> 8) & 0xff);
+            _fwImgInfo.ext_info.fw_rel_date[2] = (u_int16_t)((tmp >> 16) & 0xffff);
+            break;
         case II_MinFitVersion:
             tmp = __be32_to_cpu(*(p+1));
             _fwImgInfo.ext_info.min_fit_ver[0] = tmp >> 16;
@@ -165,8 +170,7 @@ bool Fs2Operations::ParseInfoSect(u_int8_t* buff, u_int32_t byteSize) {
             _fwImgInfo.ext_info.product_ver[PRODUCT_VER_LEN] = '\0';
             break;
         case II_HwDevsId:
-           u_int32_t i;
-           for (i = 1; i <= (tagSize / 4); i++) {
+           for (u_int32_t i = 1; i <= (tagSize / 4); i++) {
                _fwImgInfo.supportedHwId[i - 1] = __be32_to_cpu(*(p + i));
            }
            _fwImgInfo.supportedHwIdNum = tagSize / 4;
@@ -343,7 +347,6 @@ bool Fs2Operations::checkGen(u_int32_t beg,u_int32_t offs, u_int32_t& next, cons
 
         CRCn(crc, buff, size/4);
         CRCn(_ioAccess->get_image_crc(), buff, size/4);
-        //printf("-D- GEN: CRC is %#x\n", _ioAccess->get_image_crc().get());
         crc.finish();
 
         u_int32_t crc_act;
@@ -351,10 +354,15 @@ bool Fs2Operations::checkGen(u_int32_t beg,u_int32_t offs, u_int32_t& next, cons
         TOCPU1(crc_act);
         bool blank_crc = false;
 
-
         if (gph.type == H_GUID && crc_act == 0xffff) {
-            blank_crc = true;
-            _fs2ImgInfo.ext_info.blank_guids = true;
+        	// in case we get 0xffff as crc BUT the section is not empty (i.e not ffffs)
+        	//check the 64 bits of the NGUID (node guid) located at offs + sizeof(gph)
+        	u_int64_t nguid;
+        	READBUF((*_ioAccess), offs+sizeof(gph), (u_int8_t*)&nguid, 8, pr);
+        	if (nguid == 0xffffffffffffffffULL) {
+        		blank_crc = true;
+        		_fs2ImgInfo.ext_info.blank_guids = true;
+        	}
         }
 
         if (!CheckAndPrintCrcRes(pr, blank_crc, offs, crc_act, crc.get(), false, verifyCallBackFunc)) {
@@ -416,7 +424,6 @@ bool Fs2Operations::Fs2Verify(VerifyCallBack verifyCallBackFunc, bool is_striped
     u_int32_t cntx_image_start[CNTX_START_POS_SIZE];
     u_int32_t cntx_image_num;
 
-    u_int32_t i;
     bool      ret = true;
     u_int32_t act_crc;
     bool  check_full_crc = false;
@@ -441,7 +448,7 @@ bool Fs2Operations::Fs2Verify(VerifyCallBack verifyCallBackFunc, bool is_striped
 
 
      // Verify the images:
-     for (i = 0; i < cntx_image_num; i++) {
+     for (u_int32_t i = 0; i < cntx_image_num; i++) {
          bool      fs_en;
          u_int32_t log2chunk_size;
          u_int32_t buff[FS2_BOOT_START / 4];
@@ -549,9 +556,9 @@ bool Fs2Operations::Fs2Verify(VerifyCallBack verifyCallBackFunc, bool is_striped
 }
 bool Fs2Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedImage, bool showItoc)
 {
-    //dummy assignment to avoid compiler warrning (showItoc is not used in fs2)
-    showItoc = true;
-    // if (!_wasVerified) {
+    // avoid compiler warrning (showItoc is not used in fs2)
+    (void)showItoc;
+
     initSectToRead(FULL_VERIFY);
     if (!Fs2Verify(verifyCallBackFunc, isStripedImage)) {
         // empty the initSectToRead
@@ -581,49 +588,6 @@ bool Fs2Operations::FwReadData(void* image, u_int32_t* image_size)
         }
     }
     return true;
-}
-
-
-bool Fs2Operations::FwTest(u_int32_t *data)
-{
-    _ioAccess->set_address_convertor(0,0);
-
-    if (!_ioAccess->read(0, data)) {
-        return false;
-    }
-
-    if (!_ioAccess->read(0x80000, data)) {
-        return false;
-    }
-
-    if (!_ioAccess->read(0x4, data)) {
-        return false;
-    }
-    if (!_ioAccess->read(0x80004, data)) {
-        return false;
-    }
-    u_int32_t addr = 0x1fffd8;
-    u_int32_t content = 0x32;
-
-
-    if (!_ioAccess->read(addr, data)) {
-        return false;
-    }
-
-    if (!((Flash*)_ioAccess)->write(addr, content)) {
-
-        return false;
-    }
-
-    if (!_ioAccess->read(addr, data)) {
-        return false;
-    }
-    if (*data != content) {
-        return false;
-    }
-
-    return true;
-
 }
 
 bool Fs2Operations::Fs2Query () {
@@ -844,9 +808,9 @@ bool Fs2Operations::Fs2FailSafeBurn(Fs2Operations &imageOps,
                                   bool      allow_nofs,
                                   const char* pre_message,
                                   ProgressCallBack progressFunc) {
-    //we do not use pre_message
-    //setting default val to avoid warrning
-    pre_message = "";
+    //we do not use pre_message, avoid warrning
+	//TODO: remove pre_message from function definition
+    (void)pre_message;
 
     Flash  *f = (Flash*)(this->_ioAccess);
     FImage *fim = (FImage*)(imageOps._ioAccess);
@@ -866,7 +830,7 @@ bool Fs2Operations::Fs2FailSafeBurn(Fs2Operations &imageOps,
     // TODO: Do we need the verify ORENK
     if (!allow_nofs) {
         if (!imageOps._fwImgInfo.ext_info.is_failsafe) {
-            return errmsg("The given image is not a failsae image");
+            return errmsg("The given image is not a failsafe image");
         }
 
         if (_fwImgInfo.cntxLog2ChunkSize != imageOps._fwImgInfo.cntxLog2ChunkSize) {
@@ -934,11 +898,10 @@ bool Fs2Operations::Fs2FailSafeBurn(Fs2Operations &imageOps,
 
             u_int32_t cntx_image_start[CNTX_START_POS_SIZE];
             u_int32_t cntx_image_num;
-            u_int32_t i;
 
             CntxFindAllImageStart(_ioAccess, cntx_image_start, &cntx_image_num);
             // Address convertor is disabled now - use phys addresses
-            for (i = 0; i < cntx_image_num; i++) {
+            for (u_int32_t i = 0; i < cntx_image_num; i++) {
                 if (cntx_image_start[i] != new_image_start) {
                     if (!f->write(cntx_image_start[i], &zeroes, sizeof(zeroes), true)) {
                         //return false;
@@ -973,7 +936,6 @@ bool Fs2Operations::preFS2PatchGUIDs(bool      patch_macs,
         guid_t    **used_guids_p,
         u_int32_t num_of_old_guids)
 {
-    int i;
     guid_t*         used_guids;
     *used_guids_p = old_guids ? old_guids : new_guids;
 
@@ -983,13 +945,13 @@ bool Fs2Operations::preFS2PatchGUIDs(bool      patch_macs,
         // burning IB and ETH FW.
         if (!patch_uids) {
             if (old_guids && !user_guids) {
-                for (i = 0; i < GUIDS; i++) {
+                for (int i = 0; i < GUIDS; i++) {
                     new_guids[i] = old_guids[i];
                 }
             }
 
             if (old_guids && !user_macs) {
-                for (i = GUIDS; i < MAX_GUIDS; i++) {
+                for (int i = GUIDS; i < MAX_GUIDS; i++) {
                     new_guids[i] = old_guids[i];
                 }
             }
@@ -1012,7 +974,7 @@ bool Fs2Operations::preFS2PatchGUIDs(bool      patch_macs,
                                (old_guids[GUIDS  ].l & 0xffffffff) == 0xffffffff &&
                                (old_guids[GUIDS+1].h & 0xffff)     == 0xffff     &&
                                (old_guids[GUIDS+1].l & 0xffffffff) == 0xffffffff))) {
-                for (i = 0 ; i < MACS; i++) {
+                for (int i = 0 ; i < MACS; i++) {
                     u_int64_t mac  =  old_guids[i+1].h >> 8;
                     mac <<= 24;
                     mac |= (old_guids[i+1].l & 0xffffff);
@@ -1025,9 +987,8 @@ bool Fs2Operations::preFS2PatchGUIDs(bool      patch_macs,
             }
 
             guid_t* macs = &used_guids[4];
-            int i;
 
-            for (i = 0 ; i < MACS ; i++) {
+            for (int i = 0 ; i < MACS ; i++) {
                 u_int64_t mac = (((u_int64_t)macs[i].h) << 32) | macs[i].l;
                 if (!_burnBlankGuids && !CheckMac(mac)) {
                     return errmsg("Bad mac (" MAC_FORMAT ") %s: %s. Please re-burn with a valid -mac flag value.", macs[i].h,
@@ -1039,7 +1000,7 @@ bool Fs2Operations::preFS2PatchGUIDs(bool      patch_macs,
         }
     } else {
         if (!_burnBlankGuids) {
-            for (i = 0; i < BX_SLICES_NUM; i++ ) {
+            for (int i = 0; i < BX_SLICES_NUM; i++ ) {
                 if (CheckBxMacsFormat(used_guids, i, user_uids) == false) {
                     return false;
                 }
@@ -1056,9 +1017,9 @@ bool Fs2Operations::preFS2PatchGUIDs(bool      patch_macs,
 
 bool Fs2Operations::CheckBxMacsFormat(guid_t* guids, int index, int user_uids)
 {
-    int i, base;
+    int base;
     base = index * BX_SLICE_GUIDS + BI_IMACS;
-    for (i = base; i < base + BX_MACS; i++) {
+    for (int i = base; i < base + BX_MACS; i++) {
          u_int64_t mac = (((u_int64_t)guids[i].h) << 32) | guids[i].l;
          if (!CheckMac(mac)) {
              return errmsg("Bad mac (" MAC_FORMAT ") %s: %s. Please re-burn with a valid MACs flag value.", guids[i].h,
@@ -1073,17 +1034,16 @@ bool Fs2Operations::CheckBxMacsFormat(guid_t* guids, int index, int user_uids)
 ////////////////////////////////////////////////////////////////////////
 void Fs2Operations::patchGUIDsSection(u_int32_t *buf, u_int32_t ind, guid_t guids[MAX_GUIDS], int nguids)
 {
-    u_int32_t       i;
     u_int32_t       new_buf[MAX_GUIDS*2];
 
     // Form new GUID section
-    for (i=0; i<(u_int32_t)nguids; i++) {
+    for (u_int32_t i=0; i<(u_int32_t)nguids; i++) {
         new_buf[i*2] = guids[i].h;
         new_buf[i*2+1] = guids[i].l;
     }
 
     // Patch GUIDs
-    for (i=0; i<sizeof(new_buf)/sizeof(u_int32_t); ++i) {
+    for (u_int32_t i=0; i<sizeof(new_buf)/sizeof(u_int32_t); ++i) {
         new_buf[i] = _burnBlankGuids ? 0xffffffff : __cpu_to_be32(new_buf[i]);
     }
     memcpy(&buf[ind/4], &new_buf[0], nguids * 2 * sizeof(u_int32_t));
@@ -1152,7 +1112,7 @@ void Fs2Operations::PatchInfoSect(u_int8_t* rawSect, u_int32_t vsdOffs, const ch
 }
 
 
-bool Fs2Operations::patchImageVsd(Fs2Operations &imgFwOps, char* userVsd)
+bool Fs2Operations::patchImageVsd(Fs2Operations &imgFwOps, const char* userVsd)
 {
     u_int32_t *imgBuf = ((FImage*)(imgFwOps._ioAccess))->getBuf();
     u_int8_t *imgInfoSect = (u_int8_t*)imgBuf + imgFwOps._fs2ImgInfo.infoSectPtr - sizeof(GPH);
@@ -1298,8 +1258,7 @@ bool Fs2Operations::UpdateRomInImage(u_int8_t* new_image, u_int8_t* old_image, u
         } else if (gph.type == H_IMG_INFO) {
             u_int32_ba a = last_next;
             u_int32_t check_sum = 0;
-            int i;
-            for (i = 0; i < 3; i++) {
+            for (int i = 0; i < 3; i++) {
                 check_sum += a.range(i * 8 + 7, i * 8);
             }
             check_sum = 0x100 - (check_sum % 0x100);
@@ -1345,7 +1304,7 @@ bool Fs2Operations::IntegrateDevRomInImage(Fs2Operations &imageOps)
     // Compine the image and the rom into new daa
     if(!UpdateRomInImage((u_int8_t*)(&new_data[0]), (u_int8_t*)(fim->getBuf()),
                          (u_int8_t*)(&_romSect[0]), rom_size, &actual_image_size)) {
-        return errmsg(err());
+        return errmsg("%s", err());
     }
 
     // close old image and open new image with the rom.
@@ -1370,7 +1329,7 @@ bool Fs2Operations::Fs2Burn(Fs2Operations &imageOps, ExtBurnParams& burnParams)
     if (!imageOps.Fs2IntQuery()) {
         return false;
     }
-    
+
    bool devIntQueryRes = Fs2IntQuery();
 
    if (!devIntQueryRes && burnParams.burnFailsafe) {
@@ -1506,9 +1465,9 @@ bool Fs2Operations::FwReadRom(std::vector<u_int8_t>& romSect)
 bool Fs2Operations::FwSetMFG(guid_t baseGuid, PrintCallBack callBackFunc)
 {
     // avoid compiler warrnings
-    baseGuid = (guid_t){0,0};
-    callBackFunc = (PrintCallBack)NULL;
-    return errmsg("This command doesn not works Only over FS2 FW image.");
+    (void)baseGuid;
+    (void)callBackFunc;
+    return errmsg("This command is not supported for FS2 FW image.");
 }
 
 bool Fs2Operations::FwGetSection (u_int32_t sectType, std::vector<u_int8_t>& sectInfo)
@@ -1531,8 +1490,9 @@ bool Fs2Operations::FwGetSection (u_int32_t sectType, std::vector<u_int8_t>& sec
     return true;
 }
 
-bool Fs2Operations::ModifyVSDSection(char *vsd, ProgressCallBack callBackFunc)
+bool Fs2Operations::ModifyVSDSection(const char *vsd, ProgressCallBack callBackFunc)
 {
+	(void)callBackFunc; /* avoid compiler warning*/
     u_int32_t length = _fwImgInfo.lastImageAddr;
     vector<u_int8_t> data(length);
 
@@ -1545,10 +1505,10 @@ bool Fs2Operations::ModifyVSDSection(char *vsd, ProgressCallBack callBackFunc)
                   _fs2ImgInfo.infoOffs[II_VSD],
                    vsd);
     // Re-burn the new Image after modifying the VSD
-    return ReburnNewImage((u_int8_t*)(&data[0]), (char*)"VSD", callBackFunc);
+    return ReburnNewImage((u_int8_t*)(&data[0]), "VSD", callBackFunc);
 }
 
-bool Fs2Operations::ReburnNewImage(u_int8_t *data, char *feature_name, ProgressCallBack callBackFunc)
+bool Fs2Operations::ReburnNewImage(u_int8_t *data, const char *feature_name, ProgressCallBack callBackFunc)
 {
     u_int32_t length        = _fwImgInfo.lastImageAddr;
     //char burn_str[100];
@@ -1558,7 +1518,7 @@ bool Fs2Operations::ReburnNewImage(u_int8_t *data, char *feature_name, ProgressC
     // Burn the Image after modifying the VSD.
 
     // Create a fwOperations object of the modified image
-    FwOperations* newOps = FwOperationsCreate((void*)data, (void*)&length, (char*)NULL, FHT_FW_BUFF, (char*)NULL, (int)NULL);
+    FwOperations* newOps = FwOperationsCreate((void*)data, (void*)&length, (char*)NULL, FHT_FW_BUFF);
 
     // Verify the new image and exit if it's not VALID.
     if (!((Fs2Operations*)newOps)->Fs2IntQuery()) {
@@ -1595,11 +1555,10 @@ bool Fs2Operations::packStripedImageData(u_int8_t *striped_data, u_int8_t *norma
     if (needs_repack) {
         u_int32_t chunk_size = 1 << cntxLog2ChunkSize;
         u_int32_t chunk_num = (length / chunk_size) + 1;
-        u_int32_t i;
         striped_length = 0;
 
         // Loop which runs over the chunks
-        for (i = 0; i < chunk_num; i++) {
+        for (u_int32_t i = 0; i < chunk_num; i++) {
             u_int32_t normal_index  = i * chunk_size;
             u_int32_t striped_index = normal_index * 2;
 
@@ -1640,7 +1599,7 @@ bool Fs2Operations::ModifyKeySection(guid_t access_key, ProgressCallBack callBac
                   _fs2ImgInfo.infoOffs[II_HwAccessKey],
                   access_key);
     // Re-burn the new Image after modifying the VSD
-    return ReburnNewImage((u_int8_t*)(&data[0]), (char*)"HW Key", callBackFunc);
+    return ReburnNewImage((u_int8_t*)(&data[0]), "HW Key", callBackFunc);
 }
 
 void Fs2Operations::PatchKeySect(u_int32_t* buff, u_int32_t keyOff, guid_t hw_key)
@@ -1670,7 +1629,7 @@ bool Fs2Operations::ModifyGuidSection(guid_t *user_guids, ProgressCallBack progr
     // Change the GUIDs section according to the user given GUIDs
     patchGUIDsSection ((u_int32_t*)(&data[0]), _fs2ImgInfo.guidPtr, user_guids, _fs2ImgInfo.ext_info.guid_num);
     // Re-burn the new Image after modifying the GUIDs
-    return ReburnNewImage((u_int8_t*)(&data[0]), (char*)"GUIDs", progressFunc);
+    return ReburnNewImage((u_int8_t*)(&data[0]), "GUIDs", progressFunc);
 }
 
 bool Fs2Operations::Fs2SetGuidsForBlank(sg_params_t& sgParam)
@@ -1730,7 +1689,7 @@ bool Fs2Operations::Fs2SetGuidsForBlank(sg_params_t& sgParam)
 bool Fs2Operations::Fs2SetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc, ProgressCallBack progressFunc)
 {
     // avoid compiler warrnings
-    callBackFunc = (PrintCallBack)NULL;
+    (void)callBackFunc;
     //
     bool ib_dev, eth_dev, bx_dev;
     // Get the FW types
@@ -1740,7 +1699,7 @@ bool Fs2Operations::Fs2SetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc
     guid_t* used_guids;
 
     // Patch the GUIDs and prints any needed warnings
-    
+
         //resize our user guids vector to MAX_GUIDS
     sgParam.userGuids.resize(MAX_GUIDS);
 
@@ -1759,6 +1718,10 @@ bool Fs2Operations::Fs2SetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc
 bool Fs2Operations::FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc,
         ProgressCallBack progressFunc)
 {
+	/* avoid annoying mingw warnings*/
+	(void)callBackFunc;
+	(void)progressFunc;
+
     if (!Fs2IntQuery(true, sgParam.stripedImage)) {
         return false;
     }
@@ -1823,7 +1786,7 @@ bool Fs2Operations::FwBurnRom(FImage* romImg, bool ignoreProdIdCheck, bool ignor
         return false;
     }
     // open the image
-    FwOperations* newOps = FwOperationsCreate((void*)&new_data[0], (void*)&new_image_size, (char*)NULL, FHT_FW_BUFF, (char*)NULL, (int)NULL);
+    FwOperations* newOps = FwOperationsCreate((void*)&new_data[0], (void*)&new_image_size, (char*)NULL, FHT_FW_BUFF);
     if (!newOps) {
         return errmsg("Internal error: The prepared image is corrupted.");
     }
@@ -1893,11 +1856,11 @@ bool Fs2Operations::FwDeleteRom(bool ignoreProdIdCheck, ProgressCallBack progres
     int new_image_size;
     if(!UpdateRomInImage((u_int8_t*)(&new_data[0]), (u_int8_t*)(&data[0]),
                              NULL, 0, &new_image_size)) {
-        return errmsg(_ioAccess->err());
+        return errmsg("%s", _ioAccess->err());
     }
 
     // Burn the Image after the ROM was removed.
-    FwOperations* newOps = FwOperationsCreate((void*)&new_data[0], (void*)&new_image_size, (char*)NULL, FHT_FW_BUFF, (char*)NULL, (int)NULL);
+    FwOperations* newOps = FwOperationsCreate((void*)&new_data[0], (void*)&new_image_size, (char*)NULL, FHT_FW_BUFF);
     if (!newOps) {
         return errmsg("Internal error: The prepared image after removing the ROM is corrupted.");
     }
@@ -1918,7 +1881,7 @@ bool Fs2Operations::FwDeleteRom(bool ignoreProdIdCheck, ProgressCallBack progres
 bool Fs2Operations::FwSetVSD(char* vsdStr, ProgressCallBack progressFunc, PrintCallBack printFunc)
 {
     // avoid compiler warrnings
-    printFunc = (PrintCallBack)NULL;
+    (void)printFunc;
     //
     if (!Fs2IntQuery()) {
         return false;
@@ -1932,6 +1895,10 @@ bool Fs2Operations::FwSetVSD(char* vsdStr, ProgressCallBack progressFunc, PrintC
         return errmsg("No info section on the image.");
     }
 
+    if (strlen(vsdStr) > VSD_LEN) {
+    	return errmsg("VSD string is too long(%d), max allowed length: %d", (int)strlen(vsdStr), VSD_LEN);
+    }
+
     if (!ModifyVSDSection(vsdStr, progressFunc)) {
         return false;
     }
@@ -1941,13 +1908,15 @@ bool Fs2Operations::FwSetVSD(char* vsdStr, ProgressCallBack progressFunc, PrintC
 bool Fs2Operations::FwSetVPD(char* vpdFileStr, PrintCallBack callBackFunc)
 {
     // avoid compiler warrnings
-    vpdFileStr = (char*)NULL;
-    callBackFunc = (PrintCallBack)NULL;
+    (void)vpdFileStr;
+    (void)callBackFunc;
     return errmsg("Setting VPD is not supported in FS2 image format.");
 }
 
 bool Fs2Operations::FwSetAccessKey(hw_key_t userKey, ProgressCallBack progressFunc)
 {
+	/*avoid compiler warning*/
+	(void)progressFunc;
     if (!Fs2IntQuery()) {
         return false;
     }
@@ -1967,4 +1936,60 @@ bool Fs2Operations::FwSetAccessKey(hw_key_t userKey, ProgressCallBack progressFu
 
 }
 
+bool Fs2Operations::FwResetNvData(ProgressCallBack progressFunc)
+{
+	(void)progressFunc;
 
+    if (!_ioAccess->is_flash()) {
+    	return errmsg("Cannot perform operation on Image");
+    }
+
+    if (!Fs2IntQuery()) {
+        return false;
+    }
+    u_int32_t devId = _ioAccess->get_dev_id();
+    if ( devId != CX3_HW_ID && devId != CX3_PRO_HW_ID ) {
+        // TODO: Indicate the device name.
+        return errmsg("Unsupported device type %d", _fwImgInfo.ext_info.dev_type);
+    }
+
+    // find configuration section base addr = (flash size - (config_sectors + config_pad)*sector_size)
+
+    u_int32_t sectorSize = _ioAccess->get_sector_size();
+    u_int32_t AvailFlashSize = _fwImgInfo.actuallyFailsafe ? (_ioAccess->get_size()/2) : _ioAccess->get_size();
+    u_int32_t configBaseAddr;
+	if (_fwImgInfo.actuallyFailsafe) {
+		configBaseAddr = AvailFlashSize  - ((_fs2ImgInfo.ext_info.config_sectors + _fs2ImgInfo.ext_info.config_pad) * sectorSize);
+	} else {
+		// For non FS image, there's an optional offset + 2 consecutive config areas
+        configBaseAddr = AvailFlashSize - (_fs2ImgInfo.ext_info.config_sectors * 2 + _fs2ImgInfo.ext_info.config_pad) * sectorSize;
+	}
+
+    //printf("-D- config_sectors:0x%x config_pads: 0x%x , sector_size:0x%x, configBaseAddr:0x%x, flashSize:0x%x\n",
+	//		_fs2ImgInfo.ext_info.config_sectors, _fs2ImgInfo.ext_info.config_pad, _ioAccess->get_sector_size(),configBaseAddr, AvailFlashSize);
+
+	//erase addresses : configBaseAddr-AvailFlashSize
+	for (u_int32_t eraseAddr=configBaseAddr; eraseAddr<AvailFlashSize; eraseAddr+=sectorSize ) {
+		if (!((Flash*)_ioAccess)->erase_sector(eraseAddr)) {
+			return errmsg("failed to erase configuration address: 0x%x. %s", eraseAddr, _ioAccess->err());
+		}
+		if (_fwImgInfo.actuallyFailsafe) { // erase config sectors on the other half aswell
+			((Flash*)_ioAccess)->set_address_convertor(_fwImgInfo.cntxLog2ChunkSize, !(_fwImgInfo.imgStart != 0));
+			if (!((Flash*)_ioAccess)->erase_sector(eraseAddr)) {
+				((Flash*)_ioAccess)->set_address_convertor(_fwImgInfo.cntxLog2ChunkSize, (_fwImgInfo.imgStart != 0));;
+				return errmsg("failed to erase configuration address: 0x%x. %s", eraseAddr, _ioAccess->err());
+			}
+			// restore address converter
+			((Flash*)_ioAccess)->set_address_convertor(_fwImgInfo.cntxLog2ChunkSize, (_fwImgInfo.imgStart != 0));
+		}
+	}
+    return true;
+
+}
+
+bool Fs2Operations::FwShiftDevData(PrintCallBack progressFunc)
+{
+    // avoid compiler warrnings
+    (void)progressFunc;
+    return errmsg("Shifting device data sections is not supported in FS2 image format.");
+}

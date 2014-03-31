@@ -2,7 +2,7 @@
  *
  * flint_params.cpp - FLash INTerface
  *
- * Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -75,6 +75,10 @@ FlintParams::FlintParams()
     flash_params.type_name = (char*)NULL;
     no_devid_check = false;
     cmd = SC_No_Cmd;
+    baseUid.h = 0;
+    baseUid.l = 0;
+    flash_params.num_of_flashes = 0;
+    flash_params.log2size = 0;
 }
 
 FlintParams::~FlintParams()

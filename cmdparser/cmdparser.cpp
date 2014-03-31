@@ -321,10 +321,14 @@ ParseStatus CommandLineParser::ParseOptions(int argc, char **argv,
         bool to_ignore_unknown_options, list_p_command_line_req *p_ignored_requesters_list)
 {
     char **internal_argv;
-    struct option *options_arr;
+    struct option *options_arr = NULL;
     string options_str = "";
     vec_bool returned_option_types_vec;
     ParseStatus rc = PARSE_ERROR;
+    unsigned num_options = 0;
+    int option_type;
+    int option_index = 0;
+    unsigned i = 0;
 
     //allocate internal_argv
     internal_argv = new char *[argc];
@@ -332,21 +336,26 @@ ParseStatus CommandLineParser::ParseOptions(int argc, char **argv,
         this->SetLastError("Fail to allocate internal argv for parsing");
         return PARSE_ERROR;
     }
-    for (int i = 0; i < argc; ++i) {
-        internal_argv[i] = new char[strlen(argv[i]) + 1];
-        if (!internal_argv[i]) {
-            this->SetLastError("Fail to allocate internal argv[%u] for parsing", i);
-            return PARSE_ERROR;
+    for (int j = 0; j < argc; ++j) {
+    	 internal_argv[j] = NULL;
+    }
+    for (int j = 0; j < argc; ++j) {
+        internal_argv[j] = new char[strlen(argv[j]) + 1];
+        if (!internal_argv[j]) {
+            this->SetLastError("Fail to allocate internal argv[%u] for parsing", j);
+            rc = PARSE_ERROR;
+			goto argv_err_exit;
         }
-        strcpy(internal_argv[i], argv[i]);
+        strcpy(internal_argv[j], argv[j]);
     }
 
     //allocate long_options_arr
-    unsigned num_options = this->long_opt_to_req_map.size();
+    num_options = this->long_opt_to_req_map.size();
     options_arr = new struct option[num_options + 1];
     if (!options_arr) {
         this->SetLastError("Fail to allocate long_options_arr");
-        return PARSE_ERROR;
+        rc = PARSE_ERROR;
+        goto parse_exit;
     }
     memset(options_arr, 0, sizeof(struct option)*(num_options + 1));
 
@@ -356,7 +365,7 @@ ParseStatus CommandLineParser::ParseOptions(int argc, char **argv,
      * also create vector of possible options type
      * that can be return by getopt_long_only()
      */
-    unsigned i = 0;
+    i = 0;
     for (list_p_command_line_req::iterator it = this->p_requesters_list.begin();
             it != this->p_requesters_list.end(); ++it) {
         for (vec_option_t::iterator it2 = (*it)->GetOptions().begin();
@@ -385,28 +394,7 @@ ParseStatus CommandLineParser::ParseOptions(int argc, char **argv,
         }
     }
 
-
-/*
-    for (unsigned int i = 0; i < num_options + 1; ++i) {
-        printf("name: %s, has_arg:%d, val:%c\n",
-                options_arr[i].name, options_arr[i].has_arg, options_arr[i].val);
-    }
-    printf("%s\n", options_str.c_str());
-    for (unsigned i = 0; i < returned_option_types_vec.size(); ++i) {
-        if (returned_option_types_vec[i] == true) {
-            if (!i)
-                printf("%d ", 0);
-            else
-                printf("%c ", i);
-        }
-    }
-    printf("\n");
-*/
-
-
     //finally parse all options
-    int option_type;
-    int option_index = 0;
     if (to_ignore_unknown_options == true)
         tools_opterr = 0;
     else
@@ -480,6 +468,11 @@ parse_exit:
         delete [] internal_argv[i];
     delete [] internal_argv;
     delete [] options_arr;
+    return rc;
+argv_err_exit:
+	for (int i = 0; i < argc; ++i)
+        delete [] internal_argv[i];
+    delete [] internal_argv;
     return rc;
 }
 

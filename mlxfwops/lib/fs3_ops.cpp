@@ -32,11 +32,13 @@
 
 
 #include <stdlib.h>
+#include <algorithm>
 
 #include "fs3_ops.h"
 
 #include <vector>
 
+#define FS3_FLASH_SIZE 0x400000
 
 const u_int32_t Fs3Operations::_itocSignature[4] = {
         ITOC_ASCII,   // Ascii of "MTFW"
@@ -55,12 +57,14 @@ const Fs3Operations::SectionInfo Fs3Operations::_fs3SectionsInfoArr[] = {
     {FS3_PCIE_LINK_CODE, "PCIE_LINK_CODE"},
     {FS3_IRON_PREP_CODE, "IRON_PREP_CODE"},
     {FS3_POST_IRON_BOOT_CODE, "POST_IRON_BOOT_CODE"},
+    {FS3_UPGRADE_CODE, "FS3_UPGRADE_CODE"},
     {FS3_HW_BOOT_CFG,   "HW_BOOT_CFG"},
     {FS3_HW_MAIN_CFG,   "HW_MAIN_CFG"},
     {FS3_IMAGE_INFO,    "IMAGE_INFO"},
     {FS3_FW_BOOT_CFG,   "FW_BOOT_CFG"},
     {FS3_FW_MAIN_CFG,   "FW_MAIN_CFG"},
     {FS3_ROM_CODE,      "ROM_CODE"},
+    {FS3_RESET_INFO,    "FS3_RESET_INFO"},
     {FS3_DBG_LOG_MAP,   "DBG_LOG_MAP"},
     {FS3_DBG_FW_INI,    "DBG_FW_INI"},
     {FS3_DBG_FW_PARAMS, "DBG_FW_PARAMS"},
@@ -76,12 +80,11 @@ bool Fs3Operations::Fs3UpdateImgCache(u_int8_t *buff, u_int32_t addr, u_int32_t 
 {
     // vector<u_int8_t>::iterator it;
     u_int32_t min_required_size = addr + size;
-    u_int32_t i;
 
     if (_fs3ImgInfo.imageCache.size() < min_required_size) {
         _fs3ImgInfo.imageCache.resize(min_required_size);
     }
-    for (i = 0; i < size; i++) {
+    for (u_int32_t i = 0; i < size; i++) {
         _fs3ImgInfo.imageCache.at(addr + i) = buff[i];
     }
     return true;
@@ -165,6 +168,9 @@ bool Fs3Operations::GetImageInfo(u_int8_t *buff)
     _fwImgInfo.ext_info.mic_ver[1] = image_info.mic_version.MINOR;
     _fwImgInfo.ext_info.mic_ver[2] = image_info.mic_version.SUBMINOR;
 
+    _fwImgInfo.ext_info.fw_rel_date[0] = (u_int16_t)image_info.FW_VERSION.Day;
+    _fwImgInfo.ext_info.fw_rel_date[1] = (u_int16_t)image_info.FW_VERSION.Month;
+    _fwImgInfo.ext_info.fw_rel_date[2] = (u_int16_t)image_info.FW_VERSION.Year;
 
     strcpy(_fs3ImgInfo.ext_info.image_vsd, image_info.vsd);
     strcpy(_fwImgInfo.ext_info.psid, image_info.psid);
@@ -371,7 +377,7 @@ bool Fs3Operations::VerifyTOC(u_int32_t dtoc_addr, bool& bad_signature, VerifyCa
 
 bool Fs3Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedImage, bool showItoc) {
     //dummy assignment to avoid compiler warrning (isStripedImage is not used in fs3)
-    isStripedImage = true;
+    (void)isStripedImage;
 
     struct QueryOptions queryOptions;
     queryOptions.readRom = true;
@@ -466,7 +472,7 @@ bool Fs3Operations::FwQuery(fw_info_t *fwInfo, bool readRom, bool isStripedImage
 {
     //isStripedImage flag is not needed in FS3 image format
     // Avoid warning - no striped image in FS3
-    isStripedImage = false;
+    (void)isStripedImage;
     if (!Fs3IntQuery(readRom)) {
         return false;
     }
@@ -507,8 +513,7 @@ bool Fs3Operations::UpdateDevDataITOC(u_int8_t *image_data, struct toc_info *ima
     return true;
 }
 
-#define FS3_FLASH_SIZE 0x400000
-bool Fs3Operations::CheckFs3ImgSize(Fs3Operations imageOps)
+bool Fs3Operations::CheckFs3ImgSize(Fs3Operations& imageOps)
 {
     u_int32_t flashSize = (_ioAccess->is_flash()) ? _ioAccess->get_size() : FS3_FLASH_SIZE;
     u_int32_t maxFsImgSize = flashSize / 2;
@@ -521,6 +526,23 @@ bool Fs3Operations::CheckFs3ImgSize(Fs3Operations imageOps)
     return true;
 }
 
+bool Fs3Operations::GetMaxImageSize(u_int32_t flash_size, bool image_is_fs, u_int32_t &max_image_size)
+{
+	// max image size is calculated as the following :
+	// for failsafe image :   flash_size/2 - 6*sector_size
+	// for nonfailsafe image: flash_size - 6*sector_size
+	// the 6*sector_size is for the last two sections on the flash (DEV_INFO and MFG_INFO) which are not part of the image burnt.
+
+    u_int32_t sector_size = _ioAccess->get_sector_size();
+    if (image_is_fs) {
+        max_image_size = (flash_size / 2) - (6 * sector_size);
+    } else {
+        // For non FS image,
+        max_image_size = flash_size - (6 * sector_size);
+    }
+
+return true;
+}
 bool Fs3Operations::BurnFs3Image(Fs3Operations &imageOps,
                                   ExtBurnParams& burnParams)
 {
@@ -566,28 +588,10 @@ bool Fs3Operations::BurnFs3Image(Fs3Operations &imageOps,
 
     }
 
-
     // TODO: Check that the dev data is not been overridden
     {
-
-         // TODO : remove these remnants of the old printing system , we use callback func now 
-         char * pre_message = (char*)"Burning FS3 FW image without signatures";
          u_int32_t  zeroes     = 0;
-         char message[128], message1[128], buff[128];
          int allow_nofs = 0;
-
-         if (pre_message == NULL) {
-             sprintf(message, "Burning FW image without signatures");
-         } else {
-             sprintf(message, pre_message);
-         }
-         int str_len = strlen(message), restore_len = strlen(RESTORING_MSG);
-         str_len = (restore_len > str_len) ? restore_len : str_len;
-
-         sprintf(buff, "%%-%ds  - ", str_len);
-
-         sprintf(message1, buff,  message);
-
 
          if (!writeImage(burnParams.progressFunc, 16 , data8 + 16, image_size - 16)) {
              return false;
@@ -613,11 +617,10 @@ bool Fs3Operations::BurnFs3Image(Fs3Operations &imageOps,
 
                  u_int32_t cntx_image_start[CNTX_START_POS_SIZE];
                  u_int32_t cntx_image_num;
-                 u_int32_t i;
 
                  CntxFindAllImageStart(f, cntx_image_start, &cntx_image_num);
                  // Address convertor is disabled now - use phys addresses
-                 for (i = 0; i < cntx_image_num; i++) {
+                 for (u_int32_t i = 0; i < cntx_image_num; i++) {
                      if (cntx_image_start[i] != new_image_start) {
                          if (!f->write(cntx_image_start[i], &zeroes, sizeof(zeroes), true)) {
                              return false;
@@ -647,7 +650,9 @@ bool Fs3Operations::Fs3Burn(Fs3Operations &imageOps, ExtBurnParams& burnParams)
     if (imageOps.FwType() != FIT_FS3) {
         return errmsg("FW image type is not FS3\n");
     }
-    if (!Fs3IntQuery()) {
+    bool devIntQueryRes = Fs3IntQuery();
+
+    if (!devIntQueryRes) {
         return false;
     }
     // for image we execute full verify to bring all the information needed for ROM Patch
@@ -664,37 +669,62 @@ bool Fs3Operations::Fs3Burn(Fs3Operations &imageOps, ExtBurnParams& burnParams)
         return false;
     }
 
+    std::vector<u_int8_t> newImageData(imageOps._fwImgInfo.lastImageAddr);
     Fs3Operations *imgToBurn = &imageOps;
+    bool createNewImg = false;
 
     // ROM patchs
     if (((burnParams.burnRomOptions == ExtBurnParams::BRO_FROM_DEV_IF_EXIST) && (_fwImgInfo.ext_info.roms_info.exp_rom_found)) || // There is ROM in device and user choses to keep it
             ((burnParams.burnRomOptions == ExtBurnParams::BRO_DEFAULT) && (!imageOps._fwImgInfo.ext_info.roms_info.exp_rom_found && _fwImgInfo.ext_info.roms_info.exp_rom_found))) { // No ROM in image and ROM in device
         // here we should take rom from device and insert into the image
         // i.e if we have rom in image remove it and put the rom from the device else just put rom from device.
-
         // 1. use Fs3ModifySection to integrate _romSect buff with the image , newImageData contains the modified image buffer
-        std::vector<u_int8_t> newImageData(imageOps._fwImgInfo.lastImageAddr);
         std::vector<u_int8_t> romSect = _romSect;
         TOCPUn((u_int32_t*)&romSect[0], romSect.size()/4);
         if (!imageOps.Fs3ReplaceSectionInDevImg(FS3_ROM_CODE, FS3_PCI_CODE, true, (u_int8_t*)&newImageData[0], imageOps._fwImgInfo.lastImageAddr,
-            (u_int32_t*)&romSect[0], (u_int32_t)romSect.size())) {
+            (u_int32_t*)&romSect[0], (u_int32_t)romSect.size(), true)) {
             return errmsg("failed to update ROM in image. %s", imageOps.err());
         }
-        // 2. create fs3Operation Obj (handl type BUFF)
-        // open the image buffer
-        FwOperations* imageWithRomOps = FwOperationsCreate((void*)&newImageData[0], (void*)&imageOps._fwImgInfo.lastImageAddr, (char*)NULL, FHT_FW_BUFF, (char*)NULL, (int)NULL);
-        if (!imageWithRomOps) {
-            return errmsg("Internal error: The prepared image is corrupted.");
+        createNewImg = true;
+    }
+
+    // image vsd patch
+    if (!burnParams.useImagePs && burnParams.vsdSpecified ) {
+    	// get image info section :
+    	struct toc_info *imageInfoToc;
+    	if (!imageOps.Fs3GetItocInfo(imageOps._fs3ImgInfo.tocArr, imageOps._fs3ImgInfo.numOfItocs, FS3_IMAGE_INFO, imageInfoToc)){
+    		return errmsg("failed to get Image Info section.");
+    	}
+    	// modify it:
+    	std::vector<u_int8_t> imageInfoSect = imageInfoToc->section_data;
+    	struct cibfw_image_info image_info;
+    	cibfw_image_info_unpack(&image_info, &imageInfoSect[0]);
+    	strncpy(image_info.vsd, burnParams.userVsd, VSD_LEN);
+    	cibfw_image_info_pack(&image_info, &imageInfoSect[0]);
+    	// re-insert it into the image:
+        if (!imageOps.Fs3ReplaceSectionInDevImg(FS3_IMAGE_INFO, FS3_FW_ADB, true, (u_int8_t*)&newImageData[0], imageOps._fwImgInfo.lastImageAddr,
+            (u_int32_t*)&imageInfoSect[0], (u_int32_t)imageInfoSect.size(), true)) {
+            return errmsg("failed to update image VSD in image. %s", imageOps.err());
         }
-        // 3. verify it
-        if (!((Fs3Operations*)imageWithRomOps)->Fs3IntQuery(true,false)) {
-            errmsg("Internal error: The prepared image is corrupted: %s", imageWithRomOps->err());
-            imageWithRomOps->FwCleanUp();
-            delete imageWithRomOps;
-            return false;
-        }
-        // 4. pass it to BurnFs3Image instead of imageOps
-        imgToBurn = (Fs3Operations*)imageWithRomOps;
+        createNewImg = true;
+    }
+
+    // create fs3Operation Obj (handl type BUFF) if NEEDED
+    // open the image buffer
+    if (createNewImg) {
+    	FwOperations* newImageOps = FwOperationsCreate((void*)&newImageData[0], (void*)&imageOps._fwImgInfo.lastImageAddr, (char*)NULL, FHT_FW_BUFF);
+    	if (!newImageOps) {
+    		return errmsg("Internal error: The prepared image is corrupted.");
+    	}
+    	// 3. verify it
+    	if (!((Fs3Operations*)newImageOps)->Fs3IntQuery(true,false)) {
+    		errmsg("Internal error: The prepared image is corrupted: %s", newImageOps->err());
+    		newImageOps->FwCleanUp();
+    		delete newImageOps;
+    		return false;
+    	}
+	// 4. pass it to BurnFs3Image instead of imageOps
+	imgToBurn = (Fs3Operations*)newImageOps;
     }
 
     bool rc = BurnFs3Image(*imgToBurn, burnParams);
@@ -729,8 +759,8 @@ bool Fs3Operations::FwBurnAdvanced(FwOperations *imageOps, ExtBurnParams& burnPa
 bool Fs3Operations::FwBurnBlock(FwOperations *imageOps, ProgressCallBack progressFunc)
 {
     // Avoid Warning!
-    imageOps = (FwOperations*)NULL;
-    progressFunc = (ProgressCallBack)NULL;
+    (void)imageOps;
+    (void)progressFunc;
     return errmsg("FwBurnBlock is not supported anymore in FS3 image.");
 }
 
@@ -757,26 +787,6 @@ bool Fs3Operations::FwReadData(void* image, u_int32_t* imageSize)
         memcpy(image,  &_fs3ImgInfo.imageCache[0], _fwImgInfo.lastImageAddr);
     }
     *imageSize = _fwImgInfo.lastImageAddr;
-    return true;
-}
-
-
-bool Fs3Operations::FwTest(u_int32_t *data)
-{
-    _ioAccess->set_address_convertor(0,0);
-    if (!_ioAccess->read(0, data)) {
-        return false;
-    }
-    /*
-
-    if (!((Flash*)_ioAccess)->write(0, 0x12345678)) {
-        return false;
-    }
-
-    if (!_ioAccess->read(0x0, data)) {
-        return false;
-    }
-    */
     return true;
 }
 
@@ -828,10 +838,19 @@ bool Fs3Operations::FwSetMFG(guid_t baseGuid, PrintCallBack callBackFunc)
 bool Fs3Operations::FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc, ProgressCallBack progressFunc)
 {
     // Avoid Warning because there is no need for progressFunc
-    progressFunc = (ProgressCallBack)NULL;
+    (void)progressFunc;
     if (sgParam.userGuids.empty()) {
         return errmsg("Base GUID not found.");
     }
+    //query device to get mfg info (for guids override en bit)
+    if (!Fs3IntQuery(false)) {
+        return false;
+    }
+
+    if (!_fs3ImgInfo.ext_info.guids_override_en) {
+    	return errmsg("guids override is not set, cannot set device guids");
+    }
+
     if (!Fs3UpdateSection(&sgParam.userGuids[0], FS3_DEV_INFO, true, CMD_SET_GUIDS, callBackFunc)) {
         return false;
     }
@@ -988,7 +1007,7 @@ bool Fs3Operations::UpdateImageAfterInsert(struct toc_info *tocArr, u_int32_t nu
 }
 
 bool Fs3Operations::Fs3ReplaceSectionInDevImg(fs3_section_t sectionType, fs3_section_t nextSectionType, bool toAdd, u_int8_t* newImgData, u_int32_t newImageSize,
-        u_int32_t* newSectData, u_int32_t NewSectSize)
+        u_int32_t* newSectData, u_int32_t NewSectSize, bool UpdateExsistingTocArr)
 {
     u_int32_t newSectAddr;
     u_int32_t numOfItocs;
@@ -1007,6 +1026,13 @@ bool Fs3Operations::Fs3ReplaceSectionInDevImg(fs3_section_t sectionType, fs3_sec
     if (!UpdateImageAfterInsert(tocArr, numOfItocs, newImgData, newImageSize)) {
         return false;
     }
+
+    if (UpdateExsistingTocArr) {
+    	_fs3ImgInfo.numOfItocs = numOfItocs;
+    	for (u_int32_t i=0;i < numOfItocs;i++) {
+    		_fs3ImgInfo.tocArr[i] = tocArr[i];
+    	}
+    }
     return true;
 }
 
@@ -1024,7 +1050,6 @@ bool Fs3Operations::Fs3ModifySection(fs3_section_t sectionType, fs3_section_t ne
 
     if (!Fs3ReplaceSectionInDevImg(sectionType, neighbourSection, toAdd, (u_int8_t*)&newImageData[0], _fwImgInfo.lastImageAddr,
             newSectData, newSectSize)) {
-        ///delete[] newImageData;
         return false;
     }
     // Burn the new image into the device.
@@ -1107,7 +1132,7 @@ bool Fs3Operations::Fs3GetItocInfo(struct toc_info *tocArr, int num_of_itocs, fs
     return errmsg("ITOC entry type: %s (%d) not found", GetSectionNameByType(sect_type), sect_type);
 }
 
-bool Fs3Operations::Fs3UpdateMfgUidsSection(struct toc_info *curr_toc, std::vector<u_int8_t>  section_data, guid_t base_uid, 
+bool Fs3Operations::Fs3UpdateMfgUidsSection(struct toc_info *curr_toc, std::vector<u_int8_t>  section_data, guid_t base_uid,
                                             std::vector<u_int8_t>  &newSectionData)
 {
     struct cibfw_mfg_info mfg_info;
@@ -1151,8 +1176,10 @@ bool Fs3Operations::Fs3UpdateVsdSection(struct toc_info *curr_toc, std::vector<u
     struct cibfw_device_info dev_info;
     cibfw_device_info_unpack(&dev_info, (u_int8_t*)&section_data[0]);
     size_t len = strlen(user_vsd);
-    if (len > VSD_LEN-1) {
-        return errmsg("VSD too long: %d", (int)len);
+    // check VSD size before modifying , this check is redundant as it is already check in FwSetVSD
+    // TODO: remove this check
+    if (len > VSD_LEN) {
+        return errmsg("VSD string is too long(%d), max allowed length: %d", (int)len, VSD_LEN);
     }
     strcpy(dev_info.vsd, user_vsd);
     newSectionData = section_data;
@@ -1165,12 +1192,13 @@ bool Fs3Operations::Fs3UpdateVpdSection(struct toc_info *curr_toc, char *vpd,
                                std::vector<u_int8_t>  &newSectionData)
 {
     int vpd_size;
-    u_int8_t *vpd_data;
+    u_int8_t *vpd_data = NULL;
 
     if (!ReadImageFile(vpd, vpd_data, vpd_size)) {
         return false;
     }
     if (vpd_size % 4) {
+        delete[] vpd_data;
         return errmsg("Size of VPD file: %d is not 4-byte alligned!", vpd_size);
     }
     GetSectData(newSectionData, (u_int32_t*)vpd_data, vpd_size);
@@ -1179,21 +1207,31 @@ bool Fs3Operations::Fs3UpdateVpdSection(struct toc_info *curr_toc, char *vpd,
     return true;
 }
 
-bool Fs3Operations::Fs3GetNewSectionAddr(struct toc_info *tocArr, struct toc_info *curr_toc, u_int32_t &NewSectionAddr, bool failsafe_section)
+// DEV_INFO section is failsafe
+#define DEV_INFO_ADDR_1 0x3fd000
+#define DEV_INFO_ADDR_2 0x3fe000
+// all device data section might be shifted by SHIFT_SIZE due to
+// flash with write protect sector 0f 64kb instead of 4kb
+#define SHIFT_SIZE 0xf000 // 60kb
+
+
+bool Fs3Operations::Fs3GetNewSectionAddr(struct toc_info *curr_toc, u_int32_t &NewSectionAddr, bool failsafe_section)
 {
     // printf("-D- addr  = %#x\n", curr_toc->toc_entry.flash_addr);
-    u_int32_t sector_size = (_ioAccess->is_flash()) ? _ioAccess->get_sector_size() : FS3_DEFAULT_SECTOR_SIZE;
+    //u_int32_t sector_size = (_ioAccess->is_flash()) ? _ioAccess->get_sector_size() : FS3_DEFAULT_SECTOR_SIZE;
+
     u_int32_t flash_addr = curr_toc->toc_entry.flash_addr << 2;
     // HACK: THIS IS AN UGLY HACK, SHOULD BE REMOVED ASAP
+    // Possible solution : if a section is failsafe  make its size 2kb thus both section will fit in a 4kb chunk (addr & 0x800 == 0x800 then its in second place, if == 0 its in first place )
     if (failsafe_section) {
-        NewSectionAddr = (flash_addr == 0x3fd000) ? 0x3fe000 : 0x3fd000;
+    	if ((flash_addr == DEV_INFO_ADDR_1) || (flash_addr == DEV_INFO_ADDR_2)){
+    		NewSectionAddr = (flash_addr == DEV_INFO_ADDR_1) ? DEV_INFO_ADDR_2 : DEV_INFO_ADDR_1;
+    	} else {// dev sections are shifted by 60 kb
+    		NewSectionAddr = (flash_addr == DEV_INFO_ADDR_1 - SHIFT_SIZE) ? DEV_INFO_ADDR_2 - SHIFT_SIZE: DEV_INFO_ADDR_1 - SHIFT_SIZE;
+    	}
     } else {
         NewSectionAddr = flash_addr;
     }
-    // HACK: Avoid warning
-    tocArr = NULL;
-    // fbase = 0;
-    sector_size = 0;
     return true;
 }
 
@@ -1237,68 +1275,25 @@ bool Fs3Operations::Fs3UpdateItocInfo(struct toc_info *curr_toc, u_int32_t newSe
  }
 
 bool Fs3Operations::Fs3ReburnItocSection(u_int32_t newSectionAddr,
-        u_int32_t newSectionSize, std::vector<u_int8_t>  newSectionData, char *msg, PrintCallBack callBackFunc)
+        u_int32_t newSectionSize, std::vector<u_int8_t>  newSectionData, const char *msg, PrintCallBack callBackFunc)
 {
-
-    // HACK SHOULD BE REMOVED ASAP
-    u_int32_t sector_size = (_ioAccess->is_flash()) ? _ioAccess->get_sector_size() : FS3_DEFAULT_SECTOR_SIZE;
-    u_int32_t oldItocAddr = _fs3ImgInfo.itocAddr;
-    u_int32_t newItocAddr = (_fs3ImgInfo.firstItocIsEmpty) ? (_fs3ImgInfo.itocAddr - sector_size) :  (_fs3ImgInfo.itocAddr + sector_size);
     char message[127];
 
     sprintf(message, "Updating %-4s section - ", msg);
     // Burn new Section
     // we pass a null callback and print the progress here as the writes are small (guids/mfg/vpd_str)
     // in the future if we want to pass the cb prints to writeImage , need to change the signature of progressCallBack to recieve and optional string to print
-    if (callBackFunc) {
-        callBackFunc(message);
-    }
+
+    PRINT_PROGRESS(callBackFunc, message);
+
     if (!writeImage((ProgressCallBack)NULL, newSectionAddr , (u_int8_t*)&newSectionData[0], newSectionSize, true)) {
-        if (callBackFunc) {
-            callBackFunc("FAILED\n");
-        }
+    	PRINT_PROGRESS(callBackFunc, (char*)"FAILED\n");
         return false;
     }
-    if (callBackFunc) {
-        callBackFunc("OK\n");
-    }
-    // Update new ITOC
-    std::vector<u_int8_t>  itocEntriesData;
-    u_int32_t itocSize = (_fs3ImgInfo.numOfItocs + 1 ) * CIBFW_ITOC_ENTRY_SIZE + CIBFW_ITOC_HEADER_SIZE;
-    u_int8_t *p = itocEntriesData.get_allocator().allocate(itocSize);
-    memcpy(p, _fs3ImgInfo.itocHeader, CIBFW_ITOC_HEADER_SIZE);
-    for (int i = 0; i < _fs3ImgInfo.numOfItocs; i++) {
-        struct toc_info *curr_itoc = &_fs3ImgInfo.tocArr[i];
-        memcpy(p + CIBFW_ITOC_HEADER_SIZE + i * CIBFW_ITOC_ENTRY_SIZE, curr_itoc->data, CIBFW_ITOC_ENTRY_SIZE);
-    }
-    memset(&p[itocSize] - CIBFW_ITOC_ENTRY_SIZE, FS3_END, CIBFW_ITOC_ENTRY_SIZE);
-
-
-    if (callBackFunc) {
-        callBackFunc("Updating ITOC section - ");
-    }
-    if (!writeImage((ProgressCallBack)NULL, newItocAddr , p, itocSize, false)) {
-        if (callBackFunc) {
-            callBackFunc("FAILED\n");
-        }
-        return false;
-    }
-    if (callBackFunc) {
-        callBackFunc("OK\n");
-    }
-    u_int32_t zeros = 0;
-
-    if (callBackFunc) {
-        callBackFunc("Restoring signature   - ");
-    }
-    if (!writeImage((ProgressCallBack)NULL, oldItocAddr, (u_int8_t*)&zeros, 4, false)) {
-        if (callBackFunc) {
-            callBackFunc("FAILED\n");
-        }
-        return false;
-    }
-    if (callBackFunc) {
-        callBackFunc("OK\n");
+    PRINT_PROGRESS(callBackFunc, (char*)"OK\n");
+    // Update new ITOC section
+    if (!reburnItocSection(callBackFunc)) {
+    	return false;
     }
     return true;
 }
@@ -1306,11 +1301,10 @@ bool Fs3Operations::Fs3ReburnItocSection(u_int32_t newSectionAddr,
 //add callback if we want info during section update
 bool  Fs3Operations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, bool is_sect_failsafe, CommandType cmd_type, PrintCallBack callBackFunc)
 {
-    struct toc_info *newTocArr;
     struct toc_info *curr_toc;
     std::vector<u_int8_t> newUidSection;
     u_int32_t newSectionAddr;
-    char *type_msg;
+    const char *type_msg;
     // init sector to read
     _readSectList.push_back(sect_type);
     if (!Fs3IntQuery()) {
@@ -1320,29 +1314,26 @@ bool  Fs3Operations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, b
     _readSectList.pop_back();
     // _silent = curr_silent;
 
-    // get newTocArr
-    newTocArr = _fs3ImgInfo.tocArr;
-
     if (!Fs3GetItocInfo(_fs3ImgInfo.tocArr, _fs3ImgInfo.numOfItocs, sect_type, curr_toc)) {
          return false;
      }
 
     if (sect_type == FS3_MFG_INFO) {
         guid_t base_uid = *(guid_t*)new_info;
-        type_msg = (char*)"GUID";
+        type_msg = "GUID";
         if (!Fs3UpdateMfgUidsSection(curr_toc, curr_toc->section_data, base_uid, newUidSection)) {
             return false;
         }
     } else if (sect_type == FS3_DEV_INFO) {
         if (cmd_type == CMD_SET_GUIDS) {
             guid_t base_uid = *(guid_t*)new_info;
-            type_msg = (char*)"GUID";
+            type_msg = "GUID";
             if (!Fs3UpdateUidsSection(curr_toc, curr_toc->section_data, base_uid, newUidSection)) {
                 return false;
             }
         } else if(cmd_type == CMD_SET_VSD) {
             char* user_vsd = (char*)new_info;
-            type_msg = (char*)"VSD";
+            type_msg = "VSD";
             if (!Fs3UpdateVsdSection(curr_toc, curr_toc->section_data, user_vsd, newUidSection)) {
                 return false;
             }
@@ -1352,7 +1343,7 @@ bool  Fs3Operations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, b
         }
     } else if (sect_type == FS3_VPD_R0) {
         char *vpd_file = (char*)new_info;
-        type_msg = (char*)"VPD";
+        type_msg = "VPD";
         if (!Fs3UpdateVpdSection(curr_toc, vpd_file, newUidSection)) {
             return false;
         }
@@ -1361,7 +1352,7 @@ bool  Fs3Operations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, b
     }
 
 
-    if (!Fs3GetNewSectionAddr(_fs3ImgInfo.tocArr, curr_toc, newSectionAddr, is_sect_failsafe)) {
+    if (!Fs3GetNewSectionAddr(curr_toc, newSectionAddr, is_sect_failsafe)) {
         return false;
     }
     if (!Fs3UpdateItocInfo(curr_toc, newSectionAddr, curr_toc->toc_entry.size, newUidSection)) {
@@ -1377,10 +1368,15 @@ bool  Fs3Operations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, b
 bool Fs3Operations::FwSetVSD(char* vsdStr, ProgressCallBack progressFunc, PrintCallBack printFunc)
 {
     // Avoid warning
-    progressFunc = (ProgressCallBack)NULL;
+    (void)progressFunc;
     if (!vsdStr) {
         return errmsg("Please specify a valid VSD string.");
     }
+
+    if (strlen(vsdStr) > VSD_LEN) {
+    	return errmsg("VSD string is too long(%d), max allowed length: %d", (int)strlen(vsdStr), (int)VSD_LEN);
+    }
+
     if (!Fs3UpdateSection(vsdStr, FS3_DEV_INFO, true, CMD_SET_VSD, printFunc)) {
         return false;
     }
@@ -1389,7 +1385,225 @@ bool Fs3Operations::FwSetVSD(char* vsdStr, ProgressCallBack progressFunc, PrintC
 
 bool Fs3Operations::FwSetAccessKey(hw_key_t userKey, ProgressCallBack progressFunc)
 {
-    userKey = (hw_key_t){0,0};
-    progressFunc = (ProgressCallBack)NULL;
+    (void)userKey;
+    (void)progressFunc;
     return errmsg("Set access key not supported.");
 }
+
+bool Fs3Operations::FwResetNvData(ProgressCallBack progressFunc)
+{
+	(void)progressFunc;
+	return errmsg("Unsupported Device, can only reset configuration on a CX3/3-PRO device.");
+	/*
+	// future support for cx4
+
+	if (!Fs3IntQuery(false)) {
+		return false;
+	}
+	if (_fwImgInfo.ext_info.chip_type != CT_CONNECTX) {
+		// TODO: Indicate the device name.
+		   return errmsg("Unsupported device type %d", _fwImgInfo.ext_info.dev_type);
+	}
+
+	struct toc_info *currToc;
+
+	if (!Fs3GetItocInfo(_fs3ImgInfo.tocArr, _fs3ImgInfo.numOfItocs, FS3_NV_DATA, currToc)) {
+		return false;
+	}
+	// allocate new NvData which will contain only zeroes
+	std::vector<u_int8_t> newNvData(currToc->section_data.size());
+	memset(&newNvData[0], 0, currToc->section_data.size());
+
+	return Fs3AddSection(FS3_NV_DATA, FS3_DEV_INFO, (u_int32_t*)&newNvData[0], newNvData.size()/4, progressFunc);
+	*/
+}
+
+u_int32_t Fs3Operations::getAbsAddr(toc_info* toc) {
+	if (toc->toc_entry.relative_addr) {
+		return ((toc ->toc_entry.flash_addr << 2) + _fwImgInfo.imgStart);
+	}
+	return toc ->toc_entry.flash_addr << 2;
+}
+
+//get the last fw section address (i.e the maximal address + size of the fw section)
+bool Fs3Operations::getLastFwSAddr(u_int32_t& lastAddr) {
+	struct toc_info *maxToc= NULL;
+	int i;
+	// find first itoc that isnt device data (assumption: there is at least one)
+	for(i=0 ; i < _fs3ImgInfo.numOfItocs ; i++) {
+		maxToc = &(_fs3ImgInfo.tocArr[i]);
+		if (!maxToc->toc_entry.device_data) {
+			break;
+		}
+	}
+	// find the last non device data itoc
+	for(; i < _fs3ImgInfo.numOfItocs ; i++) {
+		if ((!_fs3ImgInfo.tocArr[i].toc_entry.device_data) && getAbsAddr(&(_fs3ImgInfo.tocArr[i])) > getAbsAddr(maxToc)) {
+			maxToc = &_fs3ImgInfo.tocArr[i];
+		}
+	}
+	lastAddr = getAbsAddr(maxToc) + (maxToc->toc_entry.size << 2 );
+	return true;
+}
+
+bool Fs3Operations::getFirstDevDataAddr(u_int32_t& firstAddr) {
+	struct toc_info *minToc = NULL;
+	//find first dev data itoc entry
+	int i;
+	for(i=0 ; i < _fs3ImgInfo.numOfItocs ; i++) {
+		if (_fs3ImgInfo.tocArr[i].toc_entry.device_data) {
+			minToc = &(_fs3ImgInfo.tocArr[i]);
+			break;
+		}
+	}
+	if (!minToc) {
+		return errmsg("failed to get device data ITOC.");
+	}
+	i++;
+	// find the minimal one
+	for(; i < _fs3ImgInfo.numOfItocs ; i++) {
+		if (_fs3ImgInfo.tocArr[i].toc_entry.device_data && (getAbsAddr(&(_fs3ImgInfo.tocArr[i])) < getAbsAddr(minToc)) ) {
+			minToc = &(_fs3ImgInfo.tocArr[i]);
+		}
+	}
+	firstAddr = getAbsAddr(minToc);
+	return true;
+}
+
+bool Fs3Operations::reburnItocSection(PrintCallBack callBackFunc) {
+
+    // HACK SHOULD BE REMOVED ASAP
+    u_int32_t sector_size = (_ioAccess->is_flash()) ? _ioAccess->get_sector_size() : FS3_DEFAULT_SECTOR_SIZE;
+    // Itoc section is failsafe (two sectors after boot section are reserved for itoc entries)
+    u_int32_t oldItocAddr = _fs3ImgInfo.itocAddr;
+    u_int32_t newItocAddr = (_fs3ImgInfo.firstItocIsEmpty) ? (_fs3ImgInfo.itocAddr - sector_size) :  (_fs3ImgInfo.itocAddr + sector_size);
+
+    // Update new ITOC
+    u_int32_t itocSize = (_fs3ImgInfo.numOfItocs + 1 ) * CIBFW_ITOC_ENTRY_SIZE + CIBFW_ITOC_HEADER_SIZE;
+    u_int8_t *p = new u_int8_t[itocSize];
+    memcpy(p, _fs3ImgInfo.itocHeader, CIBFW_ITOC_HEADER_SIZE);
+    for (int i = 0; i < _fs3ImgInfo.numOfItocs; i++) {
+        struct toc_info *curr_itoc = &_fs3ImgInfo.tocArr[i];
+        memcpy(p + CIBFW_ITOC_HEADER_SIZE + i * CIBFW_ITOC_ENTRY_SIZE, curr_itoc->data, CIBFW_ITOC_ENTRY_SIZE);
+    }
+    memset(&p[itocSize] - CIBFW_ITOC_ENTRY_SIZE, FS3_END, CIBFW_ITOC_ENTRY_SIZE);
+
+    PRINT_PROGRESS(callBackFunc, (char*)"Updating ITOC section - ");
+    bool rc = writeImage((ProgressCallBack)NULL, newItocAddr , p, itocSize, false);
+    delete[] p;
+    if (!rc) {
+    	PRINT_PROGRESS(callBackFunc,(char*)"FAILED\n");
+        return false;
+    }
+    PRINT_PROGRESS(callBackFunc,(char*)"OK\n");
+    u_int32_t zeros = 0;
+
+    PRINT_PROGRESS(callBackFunc,(char*)"Restoring signature   - ");
+    if (!writeImage((ProgressCallBack)NULL, oldItocAddr, (u_int8_t*)&zeros, 4, false)) {
+        PRINT_PROGRESS(callBackFunc,(char*)"FAILED\n");
+        return false;
+    }
+    PRINT_PROGRESS(callBackFunc,(char*)"OK\n");
+    return true;
+}
+
+#define PUSH_DEV_DATA(vec)\
+        vec.push_back(FS3_MFG_INFO);\
+        vec.push_back(FS3_DEV_INFO);\
+        vec.push_back(FS3_NV_DATA);\
+        vec.push_back(FS3_VPD_R0)
+#define POP_DEV_DATA(vec)\
+        vec.pop_back();\
+        vec.pop_back();\
+        vec.pop_back();\
+        vec.pop_back()
+
+bool Fs3Operations::TocComp::operator() (toc_info* elem1, toc_info* elem2)
+{
+	u_int32_t absAddr1 = elem1->toc_entry.relative_addr ? elem1->toc_entry.flash_addr + _startAdd : elem1->toc_entry.flash_addr;
+	u_int32_t absAddr2 = elem2->toc_entry.relative_addr ? elem2->toc_entry.flash_addr + _startAdd : elem2->toc_entry.flash_addr;
+	if (absAddr1 < absAddr2) {
+		return true;
+	}
+	return false;
+}
+
+bool Fs3Operations::FwShiftDevData(PrintCallBack progressFunc)
+{
+	if (!_ioAccess->is_flash()) {
+		return errmsg("cannot shift device data sections on Image.");
+	}
+	const char* flashType = ((Flash*)_ioAccess)->getFlashType();
+	if (flashType == NULL) {
+		return errmsg("Cannot shift device data on old flash types.");
+	}
+	if (strcasecmp(flashType,"N25Q0XX")!= 0) {
+		return errmsg("Cannot shift device data on flash type %s.", flashType);
+	}
+
+	//query device and get device data sectors.
+	PUSH_DEV_DATA(_readSectList);
+    if (!Fs3IntQuery()) {
+    	POP_DEV_DATA(_readSectList);
+        return false;
+    }
+    POP_DEV_DATA(_readSectList);
+
+	u_int32_t lastFwDataAddr;
+	u_int32_t firstDevDataAddr;
+	if (!getLastFwSAddr(lastFwDataAddr) || !getFirstDevDataAddr(firstDevDataAddr)) {
+		return errmsg("Failed to get ITOC information.");
+	}
+
+	// check if we already shifted
+	struct toc_info* mfgToc;
+	if (!Fs3GetItocInfo(_fs3ImgInfo.tocArr, _fs3ImgInfo.numOfItocs, FS3_MFG_INFO, mfgToc)) {
+		return errmsg("Failed to get MFG_INFO ITOC information.");
+	}
+
+	if (getAbsAddr(mfgToc) < _ioAccess->get_size() - _ioAccess->get_sector_size()) {
+		return errmsg("Device data sections already shifted.");
+	}
+
+	//check if we can shift all dev data sections by 60KB
+	if (lastFwDataAddr > (firstDevDataAddr - SHIFT_SIZE)) {
+		return errmsg("Cannot shift device data sections, fw image is too big.");
+	}
+	// for each device data section move it by an offset of 60kb (0xf000)
+
+    PRINT_PROGRESS(progressFunc,(char*)"Shifting dev data section - ");
+
+    // possible problem : if itoc array isnt ordered by ascending flash address and dev data sections are larger that 60kb
+    // there is a chance we runover exsisting device data sections
+    // Fix : preform the section shift by order from the lowest addresss to the highest.
+    std::vector<struct toc_info*> sortedTocs(_fs3ImgInfo.numOfItocs);
+    for (int i=0 ; i< _fs3ImgInfo.numOfItocs ; i++) {
+    	sortedTocs[i]= &(_fs3ImgInfo.tocArr[i]);
+    }
+    std::sort(sortedTocs.begin(), sortedTocs.end(), TocComp(_fwImgInfo.imgStart));
+
+    // shift the location of device data sections by SHIFT_SIZE (60kb)
+	for (std::vector<struct toc_info*>::iterator it = sortedTocs.begin() ; it != sortedTocs.end(); it++) {
+		if ((*it)->toc_entry.device_data) {
+			// update the itoc (basically update the flash_addr and itoc entry crc)
+			struct toc_info *currToc = *it;
+			if (!Fs3UpdateItocInfo(currToc, ((currToc->toc_entry.flash_addr << 2) - SHIFT_SIZE))) {
+			    PRINT_PROGRESS(progressFunc,(char*)"FAILED\n");
+				return false;
+			}
+			// write the section to its new place in the flash
+			if (!writeImage((ProgressCallBack)NULL, getAbsAddr(currToc) , (u_int8_t*)&currToc->section_data[0], (currToc->toc_entry.size << 2), true)) {
+			    PRINT_PROGRESS(progressFunc,(char*)"FAILED\n");
+			    return false;
+			}
+		}
+	}
+    PRINT_PROGRESS(progressFunc,(char*)"OK\n");
+	// update itoc section
+    if (!reburnItocSection(progressFunc)) {
+    	return false;
+    }
+    return true;
+}
+
+

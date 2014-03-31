@@ -1,25 +1,25 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
- * 
+ *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
  * General Public License (GPL) Version 2, available from the file
  * COPYING in the main directory of this source tree, or the
  * OpenIB.org BSD license below:
- * 
+ *
  *     Redistribution and use in source and binary forms, with or
  *     without modification, are permitted provided that the following
  *     conditions are met:
- * 
+ *
  *      - Redistributions of source code must retain the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer.
- * 
+ *
  *      - Redistributions in binary form must reproduce the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer in the documentation and/or other materials
  *        provided with the distribution.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -30,10 +30,8 @@
  * SOFTWARE.
  */
 
- 
-
 /***
- *** This file was generated at "2013-12-03 16:31:51"
+ *** This file was generated at "2014-03-23 17:16:25"
  *** by:
  ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/golan/golan.adb --file-prefix golan --prefix golan_
  ***/
@@ -133,6 +131,8 @@ extern "C" {
 #       define ARCH_ppc64
 #   elif defined(__PPC__)
 #       define ARCH_ppc
+#   elif defined(__aarch64__)
+#       define ARCH_arm64
 #   else
 #       error Unknown CPU architecture using the linux OS
 #   endif
@@ -176,7 +176,7 @@ extern "C" {
 #       define U64H_FMT    "0x%016llx"
 #       define U48H_FMT    "0x%012llx"
 #   endif
-#elif defined (ARCH_ia64) || defined(ARCH_x86_64) || defined(ARCH_ppc64)
+#elif defined (ARCH_ia64) || defined(ARCH_x86_64) || defined(ARCH_ppc64) || defined(ARCH_arm64)
 #    define U64D_FMT    "%lu"
 #    define U64H_FMT    "0x%016lx"
 #	 define U48H_FMT	"0x%012lx" 

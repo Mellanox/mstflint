@@ -39,15 +39,7 @@
 #ifndef __SUBCOMMANDS_H__
 #define __SUBCOMMANDS_H__
 
-#define FLINT_NAME "mstflint"
 #define MAX_PASSWORD_LEN 256
-#ifdef __WIN__
-#define MST_DEV_EXAMPLE1 "mt4099_pci_cr0"
-#define MST_DEV_EXAMPLE2 "mt4099_pciconf0"
-#else
-#define MST_DEV_EXAMPLE1 "03:00.0"
-#define MST_DEV_EXAMPLE2 "mlx4_0"
-#endif
 
 #include <string>
 #include "flint_params.h"
@@ -61,7 +53,6 @@ void print_time_to_log();
 int print_line_to_log(const char* format, ...);
 int write_cmd_to_log(char* av[], int ac, CommandType cmd, bool write=true);
 int write_result_to_log(int is_failed, const char* err_msg, bool write=true);
-
 
 typedef enum what_to_ver {
     Wtv_Img,
@@ -109,8 +100,8 @@ protected:
     void displayOneExpRomInfo(const rom_info_t& info);
     void displayExpRomInfo(const roms_info_t& romsInfo, const char *preStr);
 
-    static int verifyCbFunc(const char* str);
-    static int CbCommon(int completion, const char*preStr, const char* endStr=NULL);
+    static int verifyCbFunc(char* str);
+    static int CbCommon(int completion, char*preStr, char* endStr=NULL);
     static int burnCbFs2Func(int completion);
     static int burnCbFs3Func(int completion);
     static int burnBCbFunc(int completion);
@@ -119,6 +110,7 @@ protected:
     static int bromCbFunc(int completion);
     static int dromCbFunc(int completion);
     static int wbCbFunc(int completion);
+    static int resetCfgCbFunc(int completion);
 
     bool printGuidLine(guid_t* new_guids, guid_t* old_guids, int guid_index);
     bool printBxGuids(guid_t* new_guids, guid_t* old_guids, int index,\
@@ -136,7 +128,7 @@ protected:
     void printMissingGuidErr(bool ibDev, bool ethDev, bool bxDev);
 
     bool getGUIDFromStr(string str, guid_t& guid, string prefixErr="");
-    bool  getPasswordFromUser(const char *preStr, char buffer[MAX_PASSWORD_LEN]);
+    bool  getPasswordFromUser(const char *preStr, char buffer[MAX_PASSWORD_LEN+1]);
     bool askUser(const char* question=NULL, bool printAbrtMsg=true);
 
     bool isCmdSupportLog();
@@ -156,7 +148,11 @@ protected:
 
 
 public:
-    SubCommand(): _fwOps(NULL), _imgOps(NULL), _io(NULL), _v(Wtv_Uninitilized){}
+    SubCommand(): _fwOps(NULL), _imgOps(NULL), _io(NULL), _v(Wtv_Uninitilized)
+    {
+        _cmdType = SC_No_Cmd;
+        memset(_errBuff, 0, sizeof(_errBuff));
+    }
     virtual ~SubCommand();
     virtual FlintStatus executeCommand() = 0;
     inline void setParams(const FlintParams& flintParams) {_flintParams = flintParams;}
@@ -173,6 +169,7 @@ public:
 class BurnSubCommand : public SubCommand
 {
 private:
+	u_int8_t _fwType;
     fw_info_t _devInfo;
     fw_info_t _imgInfo;
     FwOperations::ExtBurnParams _burnParams;
@@ -249,8 +246,6 @@ public:
 
 class DromSubCommand : public SubCommand
 {
-private:
-    fw_info_t _info;
 public:
     DromSubCommand();
     ~DromSubCommand();
@@ -491,6 +486,22 @@ private:
 public:
     RomQuerySubCommand();
     ~RomQuerySubCommand();
+    FlintStatus executeCommand();
+};
+
+class ResetCfgSubCommand : public SubCommand
+{
+public:
+    ResetCfgSubCommand();
+    ~ResetCfgSubCommand();
+    FlintStatus executeCommand();
+};
+
+class FiSubCommand : public SubCommand
+{
+public:
+    FiSubCommand();
+    ~FiSubCommand();
     FlintStatus executeCommand();
 };
 

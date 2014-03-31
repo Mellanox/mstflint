@@ -100,43 +100,12 @@ MLXFWOP_API int MLXFWOPCALL mlxfw_query(mlxfwops_t* mlxfwops, fw_info_t* fw_info
 
 MLXFWOP_API const char* MLXFWOPCALL mlxfw_exp_rom_type_to_str(u_int16_t type)
 {
-    if (type == 0xf) {
-        return "CLP";
-    } else {
-        switch (type) {
-        case 1:
-        case 2:
-        case 3:
-        case 4:
-            return "CLP";
-            break;
-        case 0x10:
-            return "PXE";
-            break;
-        case 0x11:
-            return "UEFI";
-            break;
-        case 0x21:
-            return "FCODE";
-            break;
-
-        default:
-            return (const char*)NULL;
-        }
-    }
-    return (const char*)NULL;
+	return FwOperations::expRomType2Str(type);
 }
 
 MLXFWOP_API int MLXFWOPCALL mlxfw_verify(mlxfwops_t* mlxfwops)
 {
     return !static_cast<FwOperations*>((void*)mlxfwops)->FwVerify((f_prog_func_str)NULL);
-}
-
-
-MLXFWOP_API int MLXFWOPCALL mlxfw_test(mlxfwops_t* mlxfwops, u_int32_t *read_data)
-{
-    return !(static_cast<FwOperations*>((void*)mlxfwops)->FwTest(read_data));
-
 }
 
 MLXFWOP_API int MLXFWOPCALL mlxfw_read_image(mlxfwops_t* mlxfwops, void* image, u_int32_t* image_size)

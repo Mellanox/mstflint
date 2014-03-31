@@ -2,7 +2,7 @@
  *
  * flint_base.h - FLash INTerface
  *
- * Copyright (c) 2011 Mellanox Technologies Ltd.  All rights reserved.
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -31,10 +31,9 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
- *  Version: $Id: flint_base.h 7522 2011-11-16 15:37:21Z mohammad $
- *
  */
+
+
 #ifndef FLINT_BASE_H
 #define FLINT_BASE_H
 
@@ -151,6 +150,12 @@
 #include "compatibility.h"
 #include "mlxfwops_com.h"
 
+static inline void be_guid_to_cpu(guid_t* to, guid_t* from) {
+        to->h=__be32_to_cpu(from->h);
+        to->l=__be32_to_cpu(from->l);
+}
+namespace std {}; using namespace std;
+/*
 #ifndef __be32_to_cpu
     #define __be32_to_cpu(x) ntohl(x)
     #ifndef bswap_32
@@ -183,13 +188,7 @@
         #define  __le32_to_cpu(x) __be32_to_cpu(bswap_32(x))
     #endif
 #endif
-
-
-static inline void be_guid_to_cpu(guid_t* to, guid_t* from) {
-        to->h=__be32_to_cpu(from->h);
-        to->l=__be32_to_cpu(from->l);
-}
-namespace std {}; using namespace std;
+*/
 
 
 #define TOCPU1(s) s = __be32_to_cpu((u_int32_t)(s));
@@ -273,7 +272,9 @@ namespace std {}; using namespace std;
 #define FS2_BOOT_START   0x38
 #define FS_DATA_OFF      0x28
 #define SWITCHX_HW_ID    581
+#define SWITCH_IB_HW_ID  583
 
+#define CX4_HW_ID		  521
 #define CX3_HW_ID         501
 #define CX3_PRO_HW_ID     503
 #define CX_HW_ID          400
@@ -358,12 +359,14 @@ typedef enum fs3_section {
     FS3_PCIE_LINK_CODE = 0x4,
     FS3_IRON_PREP_CODE = 0x5,
     FS3_POST_IRON_BOOT_CODE = 0x6,
+    FS3_UPGRADE_CODE  = 0x7,
     FS3_HW_BOOT_CFG   = 0x8,
     FS3_HW_MAIN_CFG   = 0x9,
     FS3_IMAGE_INFO    = 0x10,
     FS3_FW_BOOT_CFG   = 0x11,
     FS3_FW_MAIN_CFG   = 0x12,
     FS3_ROM_CODE      = 0x18,
+    FS3_RESET_INFO    = 0x20,
     FS3_DBG_LOG_MAP   = 0x30,
     FS3_DBG_FW_INI    = 0x31,
     FS3_DBG_FW_PARAMS = 0x32,
@@ -551,6 +554,13 @@ protected:
 #endif
     ;
 
+    // this is abit ugly as there are no checks on the normalFmt string
+    bool errmsgAdv(bool showAdv, const char *normalFmt, const char *AdvFmt, ...)
+#ifdef __GNUC__
+    __attribute__ ((format (printf, 4, 5)))
+#endif
+    ;
+
 private:
 
     char       *_err;
@@ -631,6 +641,8 @@ private:
 class Aligner {
 public:
     Aligner(u_int32_t log2_alignment_size) :
+    _curr_addr(0),
+    _curr_size(0),
     _log2_alignment_size(log2_alignment_size),
     _alignment_size(1 << log2_alignment_size),
     _alignment_mask(_alignment_size - 1)

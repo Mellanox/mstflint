@@ -30,7 +30,6 @@
  * SOFTWARE.
  */
 
-
 /********************************************************
 **
 *   ibvsmad.c
@@ -172,6 +171,17 @@
 #define SWITCHX_DEV_ID    0xc738
 #define CONNECTIB_DEV_ID  0x1011
 
+// Convert BYTES - DWORDS with MEMCPY BE
+#define BYTES_TO_DWORD_BE(dw_dest, byte_src) do {   u_int32_t tmp;\
+                                                    memcpy(&tmp, byte_src, 4);\
+                                                    *(dw_dest) = __be32_to_cpu(tmp);\
+                                                } while (0)
+
+#define DWORD_TO_BYTES_BE(bytes_dest, dw_src) do { u_int32_t tmp;\
+                                                   tmp = __cpu_to_be32(*(dw_src));\
+                                                   memcpy(bytes_dest, &tmp, 4);\
+                                                 } while (0)
+
 
 typedef struct ibmad_port* IBMAD_CALL_CONV (*f_mad_rpc_open_port)(char *dev_name, int dev_port,
                                                 int *mgmt_classes,
@@ -246,6 +256,7 @@ ibvsmad_craccess_rw_smp(ibvs_mad *h, u_int32_t memory_address, int method, u_int
     int i;
     u_int32_t att_mod = 0;
     u_int8_t* p;
+    u_int64_t vkey;
 
     if (num_of_dwords > MAX_IB_SMP_DATA_DW_NUM) {
         IBERROR(("size is too big, maximum number of dwords is %d", MAX_IB_SMP_DATA_DW_NUM));
@@ -259,7 +270,8 @@ ibvsmad_craccess_rw_smp(ibvs_mad *h, u_int32_t memory_address, int method, u_int
     att_mod = MERGE(att_mod, EXTRACT(memory_address, 16, 8), 24, 8);
 
     // Set the vkey
-    *((u_int64_t*)&(mad_data[0])) = __cpu_to_be64(h->vkey);
+    vkey = __cpu_to_be64(h->vkey);
+    memcpy(&mad_data[0], &vkey, 8);
 
     // DW Size:
     att_mod = MERGE(att_mod, num_of_dwords, 16, 6);
@@ -270,13 +282,13 @@ ibvsmad_craccess_rw_smp(ibvs_mad *h, u_int32_t memory_address, int method, u_int
         if (!p) {
             return BAD_RET_VAL;
         }
-        for (i = 0; i < num_of_dwords; i++) {
-            data[i] = __be32_to_cpu(*((u_int32_t*)&(mad_data[IB_DATA_INDEX + i * 4])));
 
+        for (i = 0; i < num_of_dwords; i++) {
+            BYTES_TO_DWORD_BE(data + i, mad_data + IB_DATA_INDEX + i * 4);
         }
     } else {
         for (i = 0; i < num_of_dwords; i++) {
-            *((u_int32_t*)&(mad_data[IB_DATA_INDEX + i * 4])) = __cpu_to_be32(data[i]);
+            DWORD_TO_BYTES_BE(mad_data + IB_DATA_INDEX + i * 4, data + i);
         }
         p = h->smp_set_via(mad_data, &h->portid, IB_SMP_ATTR_CR_ACCESS, att_mod, 0, h->srcport);
         if (!p) {
@@ -298,6 +310,7 @@ ibvsmad_craccess_rw_vs(ibvs_mad *h, u_int32_t memory_address, int method, u_int8
     ib_vendor_call_t call;
     int i;
     u_int8_t* p;
+    u_int64_t vkey;
 
     call.method     = method;
     call.mgmt_class = IB_VENDOR_SPECIFIC_CLASS_0x9;
@@ -331,11 +344,12 @@ ibvsmad_craccess_rw_vs(ibvs_mad *h, u_int32_t memory_address, int method, u_int8
     // building one record:
 
     // Set the Vkey.
-    *((u_int64_t*)&(vsmad_data[0])) = __cpu_to_be64(h->vkey);
+    vkey = __cpu_to_be64(h->vkey);
+    memcpy(vsmad_data, &vkey, 8);
 
     if (method == IB_MAD_METHOD_SET)  {
         for (i = 0; i < num_of_dwords; i++) {
-            *((u_int32_t*)&(vsmad_data[IB_DATA_INDEX + i * 4])) = __cpu_to_be32(data[i]);
+            DWORD_TO_BYTES_BE(vsmad_data + IB_DATA_INDEX + i * 4, data + i);
         }
     }
 
@@ -345,7 +359,7 @@ ibvsmad_craccess_rw_vs(ibvs_mad *h, u_int32_t memory_address, int method, u_int8
     }
 
     for (i = 0; i < num_of_dwords; i++) {
-        data[i] = __be32_to_cpu(*((u_int32_t*)&(vsmad_data[IB_DATA_INDEX + i * 4])));
+        BYTES_TO_DWORD_BE(data + i, vsmad_data + IB_DATA_INDEX + i * 4);
     }
 
     return 0;
@@ -367,8 +381,6 @@ ibvsmad_craccess_rw(ibvs_mad *h, u_int32_t memory_address, int method, u_int8_t 
 
 int process_dynamic_linking(ibvs_mad *ivm, int mad_init)
 {
-    int i;
-
 
     ivm->dl_handle = LoadLibrary(TEXT(LIB_IBMAD));
 
@@ -388,7 +400,7 @@ int process_dynamic_linking(ibvs_mad *ivm, int mad_init)
 
     } else {
 
-        IBERROR(("Failed to load "LIB_IBMAD".dll library %#x", GetLastError()));
+        IBERROR(("Failed to load "LIB_IBMAD".dll library %#x", (unsigned int)GetLastError()));
         errno = ENOENT;
         return -1;
     }
@@ -403,10 +415,11 @@ int free_dll_handle(mfile *mf) {
 
 int process_dynamic_linking(ibvs_mad *ivm, int mad_init)
 {
-    (void)mad_init;
+
     char* libs[] = {"libibmad.so.5"};
 
     u_int32_t i;
+    (void)mad_init;
     for (i = 0; i < sizeof(libs)/sizeof(libs[0]) ; i++) {
         ivm->dl_handle = dlopen (libs[i], RTLD_LAZY);
         if (ivm->dl_handle) {
@@ -538,7 +551,7 @@ int mib_open(const char *name, mfile *mf, int mad_init)
     int          dest_type       = IB_DEST_LID;
     ibvs_mad    *ivm;
     char        *nbuf            = NULL;
-    char        *path_str;
+    char        *path_str, *p;
     int          rc              = -1;
     char        *sl_str;
 
@@ -567,14 +580,15 @@ int mib_open(const char *name, mfile *mf, int mad_init)
         ivm->use_smp = 1;
         dest_type = IB_DEST_LID;
         path_str  = nbuf + 6;
-    } else if (strncmp("lid-", nbuf, 4) == 0) {
+    } else if ((p = strstr(nbuf, "lid-")) != 0) {
         dest_type = IB_DEST_LID;
-        if (strncmp("lid_noinit-", nbuf, 11) == 0) {
-            path_str  = nbuf + 11;
-            mad_init = 0;
-        } else {
-            path_str  = nbuf + 4;
-        }
+		path_str  = p + 4;
+
+    } else if ((p = strstr(nbuf, "lid_noinit-")) != 0) {
+    	dest_type = IB_DEST_LID;
+        path_str  = p + 11;
+        mad_init = 0;
+
     } else {
         IBERROR(("Bad device argument for inband access"));
         errno = EINVAL;

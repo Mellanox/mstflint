@@ -1,16 +1,16 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
- * 
+ *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
  * General Public License (GPL) Version 2, available from the file
  * COPYING in the main directory of this source tree, or the
  * OpenIB.org BSD license below:
- * 
+ *
  *     Redistribution and use in source and binary forms, with or
  *     without modification, are permitted provided that the following
  *     conditions are met:
- * 
+ *
  *      - Redistributions of source code must retain the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer.
@@ -29,6 +29,8 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
+
 #ifndef _CRDUMP_H_
 #define _CRDUMP_H_
 
@@ -43,7 +45,7 @@
 extern "C" {
 #endif
 
-enum crd_return_code { 
+enum crd_return_code {
     CRD_OK = 0,
     CRD_MEM_ALLOCATION_ERR,
     CRD_CR_READ_ERR,
@@ -67,20 +69,20 @@ typedef struct crd_dword {
 } crd_dword_t;
 
 
-typedef void (*crd_callback_t) (crd_dword_t *); // call back 
+typedef void (*crd_callback_t) (crd_dword_t *); // call back
 
 
 #ifndef IN
 #define IN
-#endif 
+#endif
 
 #ifndef OUT
 #define OUT
-#endif 
+#endif
 
 #ifndef INOUT
 #define INOUT
-#endif 
+#endif
 
 /*
 
@@ -103,7 +105,7 @@ int crd_get_addr_list(IN crd_ctxt_t *context, OUT crd_dword_t* dword_arr); // ca
 /*
 Store all addresses and data in dword_arr, if func is not null, it will be called on each dword
  */
-int crd_dump_data(IN crd_ctxt_t *context, OUT crd_dword_t* dword_arr, IN crd_callback_t func);// values will be filled. 
+int crd_dump_data(IN crd_ctxt_t *context, OUT crd_dword_t* dword_arr, IN crd_callback_t func);// values will be filled.
 
 /*
 Return string representation of the error code
