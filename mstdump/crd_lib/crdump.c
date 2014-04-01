@@ -504,7 +504,8 @@ static int crd_read_line(IN FILE *fd, OUT char *tmp) {
         if (!feof(fd)) {
             int c = fgetc(fd);
             if (c == '#') {
-                fgets (tmp, 300, fd);
+                char* _ptr=fgets (tmp, 300, fd);
+                (void)_ptr;// avoid warnings
                 tmp[0] = 0;
                 continue;
             }

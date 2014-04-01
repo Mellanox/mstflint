@@ -171,7 +171,8 @@ if (question == NULL) {
      ansbuff[0] = '\0';
      fflush(stdout);
      //fgets(ansbuff, 30, stdin);
-     fscanf(stdin, "%30s", ansbuff);
+     int cnt = fscanf(stdin, "%30s", ansbuff);
+     (void)cnt; // avoid errors
 
      if (  strcasecmp(ansbuff, "y") &&
            strcasecmp(ansbuff, "yes"))  {

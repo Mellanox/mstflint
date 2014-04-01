@@ -2,11 +2,13 @@
 %{!?name: %define name mstflint}
 %{!?version: %define version @VERSION@}
 %{!?release: %define release 1}
+%{!?ppcbuild: %define ppcbuild 0}
+%{!?ppc64build: %define ppc64build 0}
 
 Summary: Mellanox firmware burning application
 Name: %{name}
 Version: %{version}
-Release: %{release}
+Release: 1
 License: GPL/BSD
 Url: http://openfabrics.org
 Group: System Environment/Base
