@@ -1150,7 +1150,7 @@ int get_inband_dev_from_pci(char* inband_dev, char* pci_dev)
     int force = 0;
     enum mtcr_access_method access;
     DIR* d;
-    struct dirent *dir, *subdir;
+    struct dirent *dir;
     char dirname[DEV_DIR_MAX_SIZE], subdirname[DEV_DIR_MAX_SIZE], linkname[DEV_DIR_MAX_SIZE];
     int found = 0;
 
