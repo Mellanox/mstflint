@@ -2983,7 +2983,7 @@ HwSubCommand:: HwSubCommand()
        INDENTEX"    DummyCycles: can be [1..15]\n"
        INDENTEX"    Flash[0|1|2|3].WriteProtected can be:\n"
        INDENTEX"        <Top|Bottom>,<1|2|4|8|16|32|64>-<Sectors|SubSectors>";
-    _example = "flint -d /dev/mst/mt4099_pci_cr0 hw query\n"
+    _example = "flint -d "MST_DEV_EXAMPLE1" hw query\n"
             INDENTEX FLINT_NAME" -d "MST_DEV_EXAMPLE1" hw set QuadEn=1\n"
             INDENTEX FLINT_NAME" -d "MST_DEV_EXAMPLE1" hw set Flash1.WriteProtected=Top,1-SubSectors";
 #else
@@ -3224,7 +3224,7 @@ RwSubCommand:: RwSubCommand() {
     _flagShort = "";
     _param = "<addr>";
     _paramExp = "addr - address of word to read";
-    _example = "flint -d /dev/mst/mt4099_pci_cr0 rw 0x20";
+    _example = "flint -d "MST_DEV_EXAMPLE1" rw 0x20";
     _v = Wtv_Dev_Or_Img;
     _cmdType = SC_Rw;
 }
@@ -3349,7 +3349,7 @@ WwneSubCommand:: WwneSubCommand()
     _param = "<addr> <data>";
     _paramExp = "addr - address of word\n"
                 INDENTEX"data - value of word";
-    _example = "flint -d /dev/mst/mt4099_pci_cr0 wwne 0x10008 0x5a445a44";
+    _example = "flint -d "MST_DEV_EXAMPLE1" wwne 0x10008 0x5a445a44";
     _v = Wtv_Dev;
     _cmdType = SC_Wwne;
 }

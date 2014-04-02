@@ -64,5 +64,5 @@ endif
 
 #get mst device examples and tool name from makefile
 mstflint_CXXFLAGS+= -DFLINT_NAME=\"mstflint\" -DFLINT_DISPLAY_NAME=\"MstFlint\"
-mstflint_CXXFLAGS += -DMST_DEV_EXAMPLE1=\"/dev/mst/mt4099_pci_cr0\" -DMST_DEV_EXAMPLE2=\"/dev/mst/mt4099_pciconf0\" -DMST_DEV_EXAMPLE3=\"/dev/mst/mt4113_pciconf0\"
+mstflint_CXXFLAGS += -DMST_DEV_EXAMPLE1=\"03:00.0\" -DMST_DEV_EXAMPLE2=\"mlx4_0\" -DMST_DEV_EXAMPLE3=\"03:00.0\"
 
