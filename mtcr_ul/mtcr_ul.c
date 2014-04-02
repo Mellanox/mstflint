@@ -1141,8 +1141,8 @@ int mget_mdevs_type(mfile *mf, u_int32_t *mtype)
 
 
 #define IBDR_MAX_NAME_SIZE 128
-
-
+#define BDF_NAME_SIZE 12
+#define DEV_DIR_MAX_SIZE 128
 static
 int get_inband_dev_from_pci(char* inband_dev, char* pci_dev)
 {
@@ -1150,25 +1150,30 @@ int get_inband_dev_from_pci(char* inband_dev, char* pci_dev)
     int force = 0;
     enum mtcr_access_method access;
     DIR* d;
-    struct dirent *dir;
-    char dirname[128];
+    struct dirent *dir, *subdir;
+    char dirname[DEV_DIR_MAX_SIZE], subdirname[DEV_DIR_MAX_SIZE], linkname[DEV_DIR_MAX_SIZE];
     int found = 0;
 
     access = mtcr_parse_name(pci_dev, &force, &domain, &bus, &dev, &func);
 
-    // E.G.: /sys/bus/pci/devices/0000:1a:00.0/infiniband/mlx5_1
-    sprintf(dirname, "/sys/bus/pci/devices/%04x:%02x:%02x.%x/infiniband", domain, bus, dev, func);
+    strcpy(dirname, "/sys/class/infiniband");
     d = opendir(dirname);
     if (d == NULL) {
         errno = ENODEV;
         return -2;
     }
-
+  
     while ((dir = readdir(d)) != NULL) {
+        unsigned curr_domain = 0, curr_bus = 0, curr_dev = 0, curr_func = 0;
+        int curr_force = 0, link_size;
         if (dir->d_name[0] == '.') {
             continue;
         }
-        if (!strncmp(dir->d_name, "mlx5_", strlen("mlx5_"))) {
+        sprintf(subdirname, "%s/%s/device", dirname, dir->d_name);
+        link_size = readlink(subdirname, linkname, DEV_DIR_MAX_SIZE);
+        access = mtcr_parse_name(&linkname[link_size - BDF_NAME_SIZE], &curr_force, &curr_domain, &curr_bus, &curr_dev, &curr_func);
+                 
+        if (domain == curr_domain && bus == curr_bus && dev == curr_dev && func == curr_func) {
             sprintf(inband_dev, "ibdr-0,%s,1", dir->d_name);
             found = 1;
             break;
