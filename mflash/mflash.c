@@ -2168,7 +2168,11 @@ int get_dev_info(mflash* mfl)
          } else {
              if (has_icmd_if(mfl->attr.hw_dev_id)) {
                  if (mfl->opts[MFO_IGNORE_CASHE_REP_GUARD] == 0) {
-                     mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] = ATBM_ICMD;
+                    #ifdef MST_UL
+                         mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] = ATBM_INBAND;
+                    #else
+                         mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] = ATBM_ICMD;
+                    #endif
                  }
              }
          }

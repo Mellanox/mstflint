@@ -1435,8 +1435,16 @@ static int mreg_send_wrapper(mfile* mf, u_int8_t *data, int r_icmd_size, int w_i
                 return ME_MAD_SEND_FAILED;
             }
     } else if (supports_icmd(mf)) {
-    	//printf("-D- w size: %d , r size: %d\n",w_icmd_size,r_icmd_size);
-        rc = icmd_send_command_int(mf, FLASH_REG_ACCESS, data, w_icmd_size, r_icmd_size, 0);
+        #ifdef MST_UL
+        //ugly hack to avoid warnings
+            if (0) {
+                rc = icmd_send_command_int(mf, FLASH_REG_ACCESS, data, w_icmd_size, r_icmd_size, 0);
+            }
+            // in mstflint we access through inband
+            rc = maccess_reg_mad(mf, data);
+        #else
+            rc = icmd_send_command_int(mf, FLASH_REG_ACCESS, data, w_icmd_size, r_icmd_size, 0);
+        #endif
         if (rc) {
         	return rc;
         }
@@ -1511,9 +1519,9 @@ static int mreg_send_raw(mfile *mf, u_int16_t reg_id, maccess_reg_method_t metho
 }
 
 
-#define GOLAN_HW_ID 511
-#define SHOMRON_HW_ID 521
-#define PELICAN_HW_ID 583
+#define CIB_HW_ID 511
+#define CX4_HW_ID 521
+#define SW_IB_HW_ID 583
 #define CX3_PRO_HW_ID 0x1F7
 #define CX3_HW_ID_REV 0x1f5
 
@@ -1521,15 +1529,17 @@ static int mreg_send_raw(mfile *mf, u_int16_t reg_id, maccess_reg_method_t metho
 
 static int supports_icmd(mfile* mf) {
 #ifndef MST_UL_ICMD
-	(void)mf; // avoid warnings
-	return 0;
+#ifndef MST_UL
+    (void)mf; // avoid warnings
+    return 0;
+#endif
 #endif
 	u_int32_t dev_id;
 	mread4(mf,HW_ID_ADDR, &dev_id); // cr might be locked and retured 0xbad0cafe but we dont care we search for device that supports icmd
 	switch (dev_id & 0xffff) { // that the hw device id
-		case GOLAN_HW_ID : //golan
-		case SHOMRON_HW_ID : // shomron
-		case PELICAN_HW_ID : // pelican
+		case CIB_HW_ID : //golan
+		case CX4_HW_ID : // shomron
+		case SW_IB_HW_ID : // pelican
 			return 1;
 		default:
 			break;
@@ -1558,8 +1568,13 @@ int mget_max_reg_size(mfile *mf) {
 	if (mf->access_type == MTCR_ACCESS_INBAND) {
 		return INBAND_MAX_REG_SIZE;
 	}
-	if (supports_icmd(mf)){ // we support icmd and we dont use IB interface -> we use icmd for reg access
-		return ICMD_MAX_REG_SIZE;
+	if (supports_icmd(mf)){
+	    // we support icmd and we dont use IB interface -> we use icmd for reg access
+        #ifdef MST_UL
+	        return INBAND_MAX_REG_SIZE;
+        #else
+	        return ICMD_MAX_REG_SIZE;
+        #endif
 	}
 	if (supports_tools_cmdif_reg(mf)) {
 		return TOOLS_HCR_MAX_MBOX;
