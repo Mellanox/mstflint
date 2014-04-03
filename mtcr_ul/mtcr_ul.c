@@ -1181,7 +1181,7 @@ int get_inband_dev_from_pci(char* inband_dev, char* pci_dev)
     }
 
     closedir(d);
-
+    (void)access;//avoid compiler warrnings
     if (found) {
         return 0;
     } else {
