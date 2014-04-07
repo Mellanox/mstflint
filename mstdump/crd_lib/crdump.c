@@ -130,7 +130,7 @@ static int crd_update_csv_path(IN OUT char *csv_file_path);
 
 static int crd_count_blocks(IN char *csv_file_path, OUT u_int32_t *block_count, u_int8_t read_single_dword);
 
-#if !defined(__WIN__)
+#if !defined(__WIN__) && !defined(MST_UL)
 static char *crd_trim(char *s);
 
 static char *crd_rtrim(char *s);
@@ -566,7 +566,7 @@ static int crd_get_exec_name_from_path(IN char *str, OUT char *exec_name) {
 #endif 
 
 
-#if !defined(__WIN__)
+#if !defined(__WIN__) && !defined(MST_UL)
 static char *crd_ltrim(char *s) {
     while(isspace(*s)){
         s++;

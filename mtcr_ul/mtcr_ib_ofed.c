@@ -427,7 +427,8 @@ int process_dynamic_linking(ibvs_mad *ivm, int mad_init)
         }
     }
     if (!ivm->dl_handle) {
-        IBERROR((dlerror()));
+        const char* errstr = dlerror();
+        IBERROR(("%s", errstr));
         //free(ivm);
         return -1;
 
