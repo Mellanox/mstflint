@@ -797,8 +797,12 @@ int mdevices(char *buf, int len, int mask)
         if (dir->d_name[0] == '.') {
             continue;
         }
-        sprintf(fname, "/sys/bus/pci/devices/%s/vendor", dir->d_name);
         sz = strlen(dir->d_name);
+        if (sz > 4 && strcmp(dir->d_name + sz - 4, "00.0")) {
+        // Skip virtual functions
+            continue;
+        }
+        sprintf(fname, "/sys/bus/pci/devices/%s/vendor", dir->d_name);
         f = fopen(fname, "r");
         if (f == NULL) {
             ndevs = -2;

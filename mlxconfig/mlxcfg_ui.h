@@ -30,7 +30,6 @@
  * SOFTWARE.
  */
 
-
 #ifndef MLXCFG_UI_H_
 #define MLXCFG_UI_H_
 

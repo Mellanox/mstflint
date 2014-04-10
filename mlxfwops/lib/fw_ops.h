@@ -100,7 +100,7 @@ public:
     virtual bool FwSetVPD(char* vpdFileStr, PrintCallBack callBackFunc=(PrintCallBack)NULL) = 0;
     virtual bool FwSetAccessKey(hw_key_t userKey, ProgressCallBack progressFunc=(ProgressCallBack)NULL) = 0;
     virtual bool FwGetSection (u_int32_t sectType, std::vector<u_int8_t>& sectInfo)= 0;
-    virtual bool FwResetNvData(ProgressCallBack progressFunc=(ProgressCallBack)NULL) = 0;
+    virtual bool FwResetNvData() = 0;
     virtual bool FwShiftDevData(PrintCallBack progressFunc=(PrintCallBack)NULL) = 0;
 
     void FwCleanUp();

@@ -64,7 +64,7 @@ public:
     virtual bool FwSetVPD(char* vpdFileStr, PrintCallBack callBackFunc=(PrintCallBack)NULL);
     virtual bool FwSetAccessKey(hw_key_t userKey, ProgressCallBack progressFunc=(ProgressCallBack)NULL);
     virtual bool FwShiftDevData(PrintCallBack progressFunc=(PrintCallBack)NULL);
-    virtual bool FwResetNvData(ProgressCallBack progressFunc=(ProgressCallBack)NULL);
+    virtual bool FwResetNvData();
 
     virtual bool FwGetSection (u_int32_t sectType, std::vector<u_int8_t>& sectInfo);
 
@@ -118,6 +118,7 @@ private:
         bool      isConfigurable;
         u_int32_t    infoSectPtr;
         u_int32_t    guidPtr;
+        u_int32_t   fw_sector_size;
 
     };
 
@@ -133,7 +134,8 @@ private:
     bool checkGen(u_int32_t beg,u_int32_t offs, u_int32_t& next, const char *pref, VerifyCallBack verifyCallBackFunc = (VerifyCallBack)NULL);
     bool ParseInfoSect(u_int8_t* buff, u_int32_t byteSize);
     bool Fs2IntQuery(bool readRom = true, bool isStripedImage=false);
-    bool GetMaxImageSize(u_int32_t flash_size, bool image_is_fs, u_int32_t imgConfigSectors, u_int32_t &max_image_size);
+    u_int32_t getDefaultSectorSz();
+    bool GetMaxImageSize(u_int32_t flash_size, bool image_is_fs, u_int32_t imgConfigSectors, u_int32_t imgFwSectorSz, u_int32_t &max_image_size);
     bool UpdateFullImageCRC(u_int32_t* buff, u_int32_t size, bool blank_guids);
     bool Fs2FailSafeBurn(Fs2Operations &imageOps, bool allow_nofs, const char* pre_message,
             ProgressCallBack progressFunc);

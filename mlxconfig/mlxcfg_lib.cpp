@@ -48,11 +48,9 @@
 #define WOL_P2_MASK 0x4
 #define VPI_P1_MASK 0x8
 #define VPI_P2_MASK 0x10
-#define BAR_SZ_MASK 0x20
 
 #define TOOL_CAP_BITS_ADDR 0xc0
 #define MAX_VFS_ADDR 0x38
-#define MAX_BAR_SZ_ADDR 0xc8
 #define DEFAULT_BAR_SZ_ADDR 0x48
 
 // for debug:
@@ -283,110 +281,8 @@ bool MlxCfgOps::WolParams::isLegal(mfile* mf)
 }
 
 /*
- *  BarSzParams Implementation
- */
-
-void MlxCfgOps::BarSzParams::setParam(mlxCfgParam paramType, u_int32_t val)
-{
-    if ((paramType == Mcp_Log_Bar_Size) ) {
-        _logBarSz = val;
-    }
-}
-
-u_int32_t MlxCfgOps::BarSzParams::getParam(mlxCfgParam paramType)
-{
-    if (paramType == Mcp_Log_Bar_Size) {
-        return _logBarSz;
-    }
-    return MLXCFG_UNKNOWN;
-}
-
-McStatus MlxCfgOps::BarSzParams::getFromDev(mfile* mf)
-{
-    if (_updated) {
-        return MCE_SUCCESS;
-    }
-    McStatus rc;
-    // prep tlv
-    u_int8_t buff[tools_bar_size_size()];
-    struct tools_bar_size barSzTlv;
-    memset(buff, 0, tools_bar_size_size());
-    memset(&barSzTlv, 0, sizeof(struct tools_bar_size));
-    // pack it
-    tools_bar_size_pack(&barSzTlv, buff);
-    // send it
-    rc = mnvaCom(mf, buff, tools_bar_size_size(), tlvType, REG_ACCESS_METHOD_GET, 0);
-    // check rc
-    if (rc) {
-        return rc;
-    }
-    // unpack and update
-    tools_bar_size_unpack(&barSzTlv, buff);
-    _logBarSz = _logBarSz == MLXCFG_UNKNOWN ? barSzTlv.log_uar_bar_size : _logBarSz ;
-    _updated = true;
-
-    return MCE_SUCCESS;
-}
-
-McStatus MlxCfgOps::BarSzParams::setOnDev(mfile* mf)
-{
-    McStatus rc;
-    if (_logBarSz == MLXCFG_UNKNOWN) {
-        rc = getFromDev(mf);
-        if (rc) {
-            if (rc == MCE_RES_NOT_AVAIL) {
-                return MCE_INCOMPLETE_PARAMS;
-            }
-            return rc;
-        }
-    }
-    if (!isLegal()) {
-        return MCE_BAD_PARAM_VAL;
-    }
-
-    // prep tlv
-    u_int8_t buff[tools_bar_size_size()];
-    struct tools_bar_size barSzTlv;
-
-    memset(buff, 0, tools_bar_size_size());
-    memset(&barSzTlv, 0, sizeof(struct tools_bar_size));
-
-    barSzTlv.log_uar_bar_size= _logBarSz;
-    // pack it
-    tools_bar_size_pack(&barSzTlv, buff);
-    // send it
-    rc = mnvaCom(mf, buff, tools_bar_size_size(), tlvType, REG_ACCESS_METHOD_SET, 0);
-    // check rc
-    if (rc) {
-        return rc;
-    }
-    _updated = false;
-    return MCE_SUCCESS;
-}
-
-McStatus MlxCfgOps::BarSzParams::updateBarSzInfo(mfile* mf)
-{
-    u_int64_t data = 0;
-    int rc = tools_cmdif_query_dev_cap(mf, MAX_BAR_SZ_ADDR, &data);
-    if (rc) {
-        return translateRc((MError)rc);
-    }
-    _maxLogBarSz = (u_int32_t)(data & 0xffffffff);
-    _currLogBarSz = (u_int32_t)(data >> 32);
-    //printf("-D- vec 0x%lx  max %d  curr %d\n", data, maxBarSz, currBarSz);
-    return MCE_SUCCESS;
-}
-
-bool MlxCfgOps::BarSzParams::isLegal(mfile* mf)
-{
-    (void)mf;
-    return (_logBarSz < _maxLogBarSz );
-}
-
-/*
  *  VpiParams Implementation
  */
-
 
 void MlxCfgOps::VpiParams::setParam(mlxCfgParam paramType, u_int32_t val)
 {
@@ -486,7 +382,6 @@ MlxCfgOps::MlxCfgOps()
     _cfgList[Mct_Wol_P2] = new WolParams(2);
     _cfgList[Mct_Vpi_P1] = new VpiParams(1);
     _cfgList[Mct_Vpi_P2] = new VpiParams(2);
-    _cfgList[Mct_Bar_Size] = new BarSzParams();
     return;
 }
 
@@ -564,14 +459,6 @@ McStatus MlxCfgOps::openComChk()
             return rc;
         }
     }
-
-    // get max/current bar size
-    if (supportsCfg(Mct_Bar_Size)) {
-        McStatus rc = static_cast<BarSzParams*>(_cfgList[Mct_Bar_Size])->updateBarSzInfo(_mf);
-        if (rc) {
-            return rc;
-        }
-    }
     return MCE_SUCCESS;
 }
 
@@ -598,9 +485,6 @@ McStatus MlxCfgOps::opend(mfile* mf)
 bool MlxCfgOps::supportsCfg(mlxCfgType cfg)
 {
     if (!isLegal(cfg)) {
-        return false;
-    }
-    if (cfg == Mct_Bar_Size || cfg == Mct_Vpi_P1  || cfg == Mct_Vpi_P2) { // dont enable these just yet, no FW support
         return false;
     }
     return _suppVec & cfgSuppMask[cfg];
@@ -703,7 +587,7 @@ bool MlxCfgOps::isLegal(mlxCfgParam cfg)
     return (cfg >= Mcp_Sriov_En && cfg < Mcp_Last) ;
 }
 
-u_int64_t MlxCfgOps::cfgSuppMask[Mct_Last] = {SRIOV_MASK, WOL_P1_MASK, WOL_P2_MASK , VPI_P1_MASK, VPI_P2_MASK, BAR_SZ_MASK};
+u_int64_t MlxCfgOps::cfgSuppMask[Mct_Last] = {SRIOV_MASK, WOL_P1_MASK, WOL_P2_MASK , VPI_P1_MASK, VPI_P2_MASK};
 
 mlxCfgType MlxCfgOps::cfgParam2Type(mlxCfgParam param)
 {
@@ -720,8 +604,6 @@ mlxCfgType MlxCfgOps::cfgParam2Type(mlxCfgParam param)
         return Mct_Vpi_P1;
     case Mcp_Link_Type_P2 :
         return Mct_Vpi_P2;
-    case Mcp_Log_Bar_Size :
-        return Mct_Bar_Size;
     default :
             return Mct_Last;
     }

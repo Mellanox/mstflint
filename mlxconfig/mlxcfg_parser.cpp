@@ -30,7 +30,6 @@
  * SOFTWARE.
  */
 
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <algorithm>
@@ -92,7 +91,6 @@ void MlxCfg::printHelp()
     printf(IDENT2"WOL_PORT2\t\t: WOL_MAGIC_EN_P2=<1|0>\n");
     printf(IDENT2"VPI_SETTINGS_PORT1\t: LINK_TYPE_P1=<1|2|3> , 1=Infiniband 2=Ethernet 3=VPI(auto-sense).\n");
     printf(IDENT2"VPI_SETTINGS_PORT2\t: LINK_TYPE_P2=<1|2|3>\n");
-    printf(IDENT2"BAR_SIZE\t\t: LOG_BAR_SIZE=<Base_2_log_in_mb> , example: for 8Mb bar size set LOG_BAR_SIZE=3\n");
     printf("\n");
     printf(IDENT"Examples:\n");
     printf(IDENT2"%-35s: %s\n", "To query current Configuration", MLXCFG_NAME" -d "MST_DEV_EXAMPLE" query");

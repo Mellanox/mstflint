@@ -30,7 +30,6 @@
  * SOFTWARE.
  */
 
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -79,8 +78,9 @@ void TerminationHandler(int signum)
     fatal_error_in_progress = 1;
 
     signal (signum, SIG_DFL);
-    printf("\n Received signal %d.\n", signum);
+    printf("\n Received signal %d. \n", signum);
     fflush(stdout);
+
     raise(signum);
 }
 
@@ -121,7 +121,7 @@ void initHandler()
 #endif
 
 std::string MlxCfgParams::param2str[Mcp_Last]= {"SRIOV_EN", "NUM_OF_VFS", "WOL_MAGIC_EN_P1", "WOL_MAGIC_EN_P2",\
-                                                "LINK_TYPE_P1", "LINK_TYPE_P2", "LOG_BAR_SIZE"};
+                                                "LINK_TYPE_P1", "LINK_TYPE_P2"};
 
 u_int32_t MlxCfgParams::getParamVal(mlxCfgParam p)
 {
@@ -171,9 +171,8 @@ if (question == NULL) {
      ansbuff[0] = '\0';
      fflush(stdout);
      //fgets(ansbuff, 30, stdin);
-     int cnt = fscanf(stdin, "%30s", ansbuff);
-     (void)cnt; // avoid errors
-
+     int rc=fscanf(stdin, "%30s", ansbuff);
+     (void)rc; // avoid warnings
      if (  strcasecmp(ansbuff, "y") &&
            strcasecmp(ansbuff, "yes"))  {
 

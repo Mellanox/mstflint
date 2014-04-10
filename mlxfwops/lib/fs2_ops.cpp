@@ -211,8 +211,11 @@ bool Fs2Operations::ParseInfoSect(u_int8_t* buff, u_int32_t byteSize) {
 
         case II_ConfigArea: {
             // configuration area should always exsist
-            _fs2ImgInfo.ext_info.config_sectors = __be32_to_cpu(*(p + 1));;
-            _fs2ImgInfo.ext_info.config_pad = __be32_to_cpu(*(p + 2));;
+            _fs2ImgInfo.ext_info.config_sectors = __be32_to_cpu(*(p + 1));
+            _fs2ImgInfo.ext_info.config_pad = __be32_to_cpu(*(p + 2));
+            if (tagSize > 0x8){//fw_log_sector_size is also found
+                _fs2ImgInfo.fw_sector_size = (1 << __be32_to_cpu(*(p + 3))) * 1024;// the base value is 1kb i.e 1024
+            }
         }
             break;
 
@@ -743,30 +746,34 @@ bool Fs2Operations::FwQuery(fw_info_t *fwInfo, bool readRom, bool isStripedImage
 }
 
 #define MY_MAX(a, b) ((a) > (b) ? (a) : (b))
+#define CX_DFLT_SECTOR_SIZE 0x10000
+#define SX_DFLT_SECTOR_SIZE 0x1000
+#define MAX_CONFIG_AREA_SIZE 0x10000
 
-bool Fs2Operations::GetMaxImageSize(u_int32_t flash_size, bool image_is_fs, u_int32_t imgConfigSectors,\
+u_int32_t Fs2Operations::getDefaultSectorSz()
+{
+    // for ConnectX family  default sector size is 64kb else 4kb
+    // all of this mess is because the sector_size written in the INI doesnt always correspond to the actual flash sector_size
+    // and as for the calculation of the maximal image size we want to be synced with the FW or take worst case scenario.
+    // we need this method as we only started collecting the fw_sector_size from MFT-3.6.0 so if the image was generated with
+    // an older mlxburn the fw_sector_size wount be available
+    u_int32_t devid = _ioAccess->get_dev_id();
+    switch (devid) {
+    case CX_HW_ID:
+    case CX3_HW_ID:
+    case CX3_PRO_HW_ID:
+        return CX_DFLT_SECTOR_SIZE;
+    default:
+        return SX_DFLT_SECTOR_SIZE;
+    }
+    // we shouldnt reach here
+    return 0;
+}
+
+bool Fs2Operations::GetMaxImageSize(u_int32_t flash_size, bool image_is_fs, u_int32_t imgConfigSectors, u_int32_t imgFwSectorSz,\
         u_int32_t &max_image_size)
 {
-    //printf("-D- flash_info->configAddr1 = %#x, image_info->configAddr1 = %#x\n", flash_info->configAddr1, image_info->configAddr1);
-    //printf("-D- flash_info->configSize = %#x, _ignore_config_section = %#x, image_info->configExists = %#x\n", flash_info->configSize, _ignore_config_section,
-    //        image_info->configExists);
-    // max_image_size = (image_is_fs) ? flash_size / 2 : flash_size;
-/*
-    if (!ignore_config_section && flash_info->imageOk && (image_info->isConfigurable || flash_info->isConfigurable)) {
-        // Configurable image and there is a configuration burnt in the flash
-        if (image_info->isFailsafe) { // failsafe image
-            max_image_size = (flash_size / 2) - flash_info->configSize;
-        } else { // non-faislafe image
-            // Get the minimum config addr
-            max_image_size = flash_info->configAddr2;
-        }
-    } else {
-        // Non-configurable image or the user asked to ignore the configuration section
-    }
-*/
-
-
-    // Non-configurable image or the user asked to ignore the configuration section
+    /*
         u_int32_t sector_size = _ioAccess->get_sector_size();
         u_int32_t config_sectors = MY_MAX(imgConfigSectors, _fs2ImgInfo.ext_info.config_sectors);
         if (image_is_fs) {
@@ -775,7 +782,31 @@ bool Fs2Operations::GetMaxImageSize(u_int32_t flash_size, bool image_is_fs, u_in
             // For non FS image, there's an optional offset + 2 consecutive config areas
             max_image_size = flash_size - (config_sectors * 2 + _fs2ImgInfo.ext_info.config_pad) * sector_size;
         }
-
+        */
+    /* new methodology:
+     * a.  for CX2/CX3/PRO: in case fw_sector_size is present  reserve : num_of_config_sectors * fw_sector_size
+     * b.  for CX2/CX3/PRO: in case sector_size isnt present assume sector size is 64kb and reserve: num_of_config_sectors * 64k
+     * c.  for SwitchX: in case fw_sector_size is present reserve : ( num_of_config_sectors + config_padd) * fw_sector_size
+     * d.  for SwitchX: in case sector_size isnt present assume sector size is 4kb and reserve: ( num_of_config_sectors + config_padd) *4k
+     *   ** on ALL cases we will impose the limitation of reserving at most 64kb to the NV configuration.
+     *   ** config_pad might be != 0 on SwitchX only.
+     *   ** To Orenks knowledge there arent any SwitchX with flashes that dont support 4kb.
+     */
+    u_int32_t sector_size = (imgFwSectorSz != 0 || _fs2ImgInfo.fw_sector_size != 0) ?\
+            MY_MAX(imgFwSectorSz, _fs2ImgInfo.fw_sector_size) : getDefaultSectorSz();
+    u_int32_t config_sectors = MY_MAX(imgConfigSectors, _fs2ImgInfo.ext_info.config_sectors);
+    u_int32_t areaToReserve = config_sectors * sector_size;
+    // we dont want to exceed 64kb of reserved space
+    areaToReserve = areaToReserve > MAX_CONFIG_AREA_SIZE ? MAX_CONFIG_AREA_SIZE : areaToReserve;
+    //printf("-D- sector_size: 0x%x, config_sectors: %d, areaToReserve: 0x%x, config_pad: %d\n"
+            //, sector_size, config_sectors, areaToReserve, _fs2ImgInfo.ext_info.config_pad);
+    if (image_is_fs) {
+        // why do we take config padding of the image info of the device and not the image to be burnt or the maximum between them??
+        max_image_size = (flash_size / 2) - (areaToReserve + (_fs2ImgInfo.ext_info.config_pad * sector_size));
+    } else {
+        // For non FS image, there's an optional offset + 2 consecutive config areas
+        max_image_size = flash_size - (areaToReserve * 2 + _fs2ImgInfo.ext_info.config_pad*sector_size);
+    }
     return true;
 }
 
@@ -842,7 +873,7 @@ bool Fs2Operations::Fs2FailSafeBurn(Fs2Operations &imageOps,
 
     u_int32_t max_image_size;
     if (!GetMaxImageSize(f->get_size(), imageOps._fwImgInfo.ext_info.is_failsafe,\
-            imageOps._fs2ImgInfo.ext_info.config_sectors, max_image_size)) {
+            imageOps._fs2ImgInfo.ext_info.config_sectors, imageOps._fs2ImgInfo.fw_sector_size, max_image_size)) {
         return false;
     }
     //printf("-D- max image size : %d, image_size : %d\n",max_image_size, imageOps._fwImgInfo.ext_info.image_size);
@@ -1936,9 +1967,8 @@ bool Fs2Operations::FwSetAccessKey(hw_key_t userKey, ProgressCallBack progressFu
 
 }
 
-bool Fs2Operations::FwResetNvData(ProgressCallBack progressFunc)
+bool Fs2Operations::FwResetNvData()
 {
-	(void)progressFunc;
 
     if (!_ioAccess->is_flash()) {
     	return errmsg("Cannot perform operation on Image");
@@ -1950,26 +1980,34 @@ bool Fs2Operations::FwResetNvData(ProgressCallBack progressFunc)
     u_int32_t devId = _ioAccess->get_dev_id();
     if ( devId != CX3_HW_ID && devId != CX3_PRO_HW_ID ) {
         // TODO: Indicate the device name.
-        return errmsg("Unsupported device type %d", _fwImgInfo.ext_info.dev_type);
+        return errmsg("Unsupported device type(%d). Can only perform operation on CX3/CX3-PRO ", _fwImgInfo.ext_info.dev_type);
     }
 
-    // find configuration section base addr = (flash size - (config_sectors + config_pad)*sector_size)
+    if (_fs2ImgInfo.fw_sector_size == 0) {// if fw was generated with old mft i.e without the fw_sector_size than we dont allow this operation
+        return errmsg("Firmware was generated with old MFT, please use MFT-3.6.0 or above");
+    }
 
-    u_int32_t sectorSize = _ioAccess->get_sector_size();
-    u_int32_t AvailFlashSize = _fwImgInfo.actuallyFailsafe ? (_ioAccess->get_size()/2) : _ioAccess->get_size();
+    // find configuration section base addr = (flash size - (config_sectors + config_pad)*64k)
+
+    u_int32_t availFlashSize = _fwImgInfo.actuallyFailsafe ? (_ioAccess->get_size()/2) : _ioAccess->get_size();
+    u_int32_t fwSectorSz = _fs2ImgInfo.fw_sector_size != 0 ? _fs2ImgInfo.fw_sector_size : getDefaultSectorSz();
+    u_int32_t reservedArea = _fs2ImgInfo.ext_info.config_sectors * fwSectorSz;
+    reservedArea = reservedArea > MAX_CONFIG_AREA_SIZE ? MAX_CONFIG_AREA_SIZE : reservedArea;
     u_int32_t configBaseAddr;
 	if (_fwImgInfo.actuallyFailsafe) {
-		configBaseAddr = AvailFlashSize  - ((_fs2ImgInfo.ext_info.config_sectors + _fs2ImgInfo.ext_info.config_pad) * sectorSize);
+		configBaseAddr = availFlashSize  - (reservedArea + _fs2ImgInfo.ext_info.config_pad * fwSectorSz) ;
 	} else {
 		// For non FS image, there's an optional offset + 2 consecutive config areas
-        configBaseAddr = AvailFlashSize - (_fs2ImgInfo.ext_info.config_sectors * 2 + _fs2ImgInfo.ext_info.config_pad) * sectorSize;
+        configBaseAddr = availFlashSize - (reservedArea* 2 + (_fs2ImgInfo.ext_info.config_pad * fwSectorSz));
 	}
 
     //printf("-D- config_sectors:0x%x config_pads: 0x%x , sector_size:0x%x, configBaseAddr:0x%x, flashSize:0x%x\n",
-	//		_fs2ImgInfo.ext_info.config_sectors, _fs2ImgInfo.ext_info.config_pad, _ioAccess->get_sector_size(),configBaseAddr, AvailFlashSize);
+			//_fs2ImgInfo.ext_info.config_sectors, _fs2ImgInfo.ext_info.config_pad, fwSectorSz,configBaseAddr, availFlashSize);
 
-	//erase addresses : configBaseAddr-AvailFlashSize
-	for (u_int32_t eraseAddr=configBaseAddr; eraseAddr<AvailFlashSize; eraseAddr+=sectorSize ) {
+	//erase addresses : [configBaseAddr..AvailFlashSize]
+    u_int32_t sectorSize = _ioAccess->get_sector_size();
+    u_int32_t configEndAddr = availFlashSize - (_fs2ImgInfo.ext_info.config_pad * fwSectorSz);
+	for (u_int32_t eraseAddr=configBaseAddr; eraseAddr < configEndAddr; eraseAddr+=sectorSize ) {
 		if (!((Flash*)_ioAccess)->erase_sector(eraseAddr)) {
 			return errmsg("failed to erase configuration address: 0x%x. %s", eraseAddr, _ioAccess->err());
 		}

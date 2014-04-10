@@ -3761,13 +3761,15 @@ FlintStatus ResetCfgSubCommand::executeCommand()
     if (preFwOps() == FLINT_FAILED) {
         return FLINT_FAILED;
     }
-
-    if (!askUser("reset non-volatile configuration?")) {
+    printf("-W- Resetting device configuration using Flint should be done as a last resort.\n");
+    printf("-W- Please attempt to reset configuration via mlxconfig tool if possible.\n");
+    printf("-W- Only proceed if you know what you are doing.\n");
+    if (!askUser("reset non-volatile configuration")) {
     	return FLINT_FAILED;
     }
 
     printf("Resetting...");
-    if (!_fwOps->FwResetNvData(resetCfgCbFunc)){
+    if (!_fwOps->FwResetNvData()){
     	printf(" Failed!\n");
         reportErr(true, FLINT_RESET_CFG_ERROR, _fwOps->err());
         return FLINT_FAILED;

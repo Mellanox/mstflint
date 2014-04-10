@@ -1390,9 +1390,8 @@ bool Fs3Operations::FwSetAccessKey(hw_key_t userKey, ProgressCallBack progressFu
     return errmsg("Set access key not supported.");
 }
 
-bool Fs3Operations::FwResetNvData(ProgressCallBack progressFunc)
+bool Fs3Operations::FwResetNvData()
 {
-	(void)progressFunc;
 	return errmsg("Unsupported Device, can only reset configuration on a CX3/3-PRO device.");
 	/*
 	// future support for cx4

@@ -45,7 +45,6 @@
 #define WOL_TYPE 0x10
 #define SRIOV_TYPE 0x11
 #define VPI_TYPE 0x12
-#define BAR_SIZE_TYPE 0x13
 
 
 
@@ -89,7 +88,6 @@ typedef enum {
     Mct_Wol_P2,
     Mct_Vpi_P1,
     Mct_Vpi_P2,
-    Mct_Bar_Size,
     Mct_Last
 } mlxCfgType;
 
@@ -100,7 +98,6 @@ typedef enum {
     Mcp_Wol_Magic_En_P2,
     Mcp_Link_Type_P1,
     Mcp_Link_Type_P2,
-    Mcp_Log_Bar_Size,
     Mcp_Last
 } mlxCfgParam;
 
@@ -209,29 +206,6 @@ private:
         int _port;
         u_int32_t _linkType;
     };
-
-    class BarSzParams : public CfgParams
-    {
-    public:
-        BarSzParams() : CfgParams(Mct_Bar_Size, BAR_SIZE_TYPE) ,_maxLogBarSz(1), _currLogBarSz(1), _logBarSz(MLXCFG_UNKNOWN) {}
-        ~BarSzParams() {};
-
-        virtual void setParam(mlxCfgParam paramType, u_int32_t val);
-        virtual u_int32_t getParam(mlxCfgParam paramType);
-
-        virtual McStatus getFromDev(mfile* mf);
-        virtual McStatus setOnDev(mfile* mf);
-
-        McStatus updateBarSzInfo(mfile* mf);
-
-    private:
-        virtual bool isLegal(mfile* mf=NULL);
-        u_int32_t _maxLogBarSz;
-        u_int32_t _currLogBarSz;
-        u_int32_t _logBarSz;
-
-    };
-
 
     McStatus openComChk();
     McStatus supportsToolsHCR();
