@@ -40,6 +40,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <errno.h>
+#include <time.h>
 #include <iostream>
 
 #include <common/compatibility.h>
