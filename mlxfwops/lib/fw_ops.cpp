@@ -31,8 +31,10 @@
  */
 
 
-#include "stdlib.h"
-#include "string.h"
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+
 #include "flint_base.h"
 #include "flint_io.h"
 #include "fw_ops.h"
@@ -475,6 +477,7 @@ FwOperations* FwOperations::FwOperationsCreate(void* fwHndl, void *info, char* p
     fwParams.hndlType = hndlType;
     fwParams.errBuff = errBuff;
     fwParams.errBuffSize = buffSize;
+    fwParams.shortErrors = true;
 
     if (hndlType == FHT_FW_FILE) {
         fwParams.fileHndl = (char*)fwHndl;

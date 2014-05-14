@@ -398,7 +398,36 @@ int mtcr_pcicr_mclose(mfile *mf)
 static
 int mtcr_mmap(struct pcicr_context *mf, const char *name, off_t off, int ioctl_needed)
 {
+    static const char sysbuspcidevices[] = "/sys/bus/pci/devices/";
     int err;
+
+    // Enable PCI device before mmapping it
+    // this allows to flash a device even if mlx4_core fails to load with some kernels.
+    if (!strncmp(name, sysbuspcidevices, sizeof(sysbuspcidevices)-1)) {
+        /* Accessing through sysfs: need to enable PCI device.
+        We need to write 1 to 'enable' file located in
+        parent dir for 'name' */
+        int fd;
+        char fname[4096];
+        int i = strrchr(name, '/') - name;  /*always ok*/
+        if (i + sizeof("enable") >= sizeof(fname)) {
+            return -1;
+            }
+        strncpy(fname, name, i+1);
+        strcpy(fname + i + 1, "enable");
+
+        fd = open(fname, O_WRONLY | O_SYNC);
+        if (fd < 0) {
+            return -1;
+            }
+        i = write(fd, "1", 1);
+        err = errno;
+        close(fd);
+        errno = err;
+        if (1 != i) {
+            return -1;
+            }
+        }
 
     mf->fd = open(name, O_RDWR | O_SYNC);
     if (mf->fd < 0)
@@ -1185,7 +1214,7 @@ int get_inband_dev_from_pci(char* inband_dev, char* pci_dev)
     }
 
     closedir(d);
-    (void)access;//avoid compiler warrnings
+    (void)access; // avoid compiler warrnings
     if (found) {
         return 0;
     } else {
@@ -1439,16 +1468,15 @@ static int mreg_send_wrapper(mfile* mf, u_int8_t *data, int r_icmd_size, int w_i
                 return ME_MAD_SEND_FAILED;
             }
     } else if (supports_icmd(mf)) {
-        #ifdef MST_UL
-        //ugly hack to avoid warnings
-            if (0) {
-                rc = icmd_send_command_int(mf, FLASH_REG_ACCESS, data, w_icmd_size, r_icmd_size, 0);
-            }
-            // in mstflint we access through inband
-            rc = maccess_reg_mad(mf, data);
-        #else
+    #ifdef MST_UL //ugly hack to avoid compiler warrnings
+        if (0) {
             rc = icmd_send_command_int(mf, FLASH_REG_ACCESS, data, w_icmd_size, r_icmd_size, 0);
-        #endif
+        }
+        // in mstflint we send reg_access via MADS
+        rc = maccess_reg_mad(mf, data);
+    #else
+        rc = icmd_send_command_int(mf, FLASH_REG_ACCESS, data, w_icmd_size, r_icmd_size, 0);
+    #endif
         if (rc) {
         	return rc;
         }
@@ -1532,11 +1560,9 @@ static int mreg_send_raw(mfile *mf, u_int16_t reg_id, maccess_reg_method_t metho
 #define HW_ID_ADDR 0xf0014
 
 static int supports_icmd(mfile* mf) {
-#ifndef MST_UL_ICMD
-#ifndef MST_UL
-    (void)mf; // avoid warnings
-    return 0;
-#endif
+#if !defined(MST_UL_ICMD) && !defined(MST_UL)
+	(void)mf; // avoid warnings
+	return 0;
 #endif
 	u_int32_t dev_id;
 	mread4(mf,HW_ID_ADDR, &dev_id); // cr might be locked and retured 0xbad0cafe but we dont care we search for device that supports icmd
@@ -1569,21 +1595,20 @@ static int supports_tools_cmdif_reg(mfile* mf) {
 
 
 int mget_max_reg_size(mfile *mf) {
-	if (mf->access_type == MTCR_ACCESS_INBAND) {
-		return INBAND_MAX_REG_SIZE;
-	}
-	if (supports_icmd(mf)){
-	    // we support icmd and we dont use IB interface -> we use icmd for reg access
-        #ifdef MST_UL
-	        return INBAND_MAX_REG_SIZE;
-        #else
-	        return ICMD_MAX_REG_SIZE;
-        #endif
-	}
-	if (supports_tools_cmdif_reg(mf)) {
-		return TOOLS_HCR_MAX_MBOX;
-	}
-	return 0;
+    if (mf->access_type == MTCR_ACCESS_INBAND) {
+        return INBAND_MAX_REG_SIZE;
+    }
+    if (supports_icmd(mf)){ // we support icmd and we dont use IB interface -> we use icmd for reg access
+    #ifdef MST_UL
+        return INBAND_MAX_REG_SIZE;
+    #else
+        return ICMD_MAX_REG_SIZE;
+    #endif
+    }
+    if (supports_tools_cmdif_reg(mf)) {
+        return TOOLS_HCR_MAX_MBOX;
+    }
+    return 0;
 }
 
 /************************************
@@ -1677,6 +1702,12 @@ const char* m_err2str(MError status)
        return "ME_ICMD_BAD_PARAM";
    case ME_ICMD_BUSY:
        return "ME_ICMD_BUSY";
+   case ME_ICMD_ICM_NOT_AVAIL:
+       return "ME_ICMD_ICM_NOT_AVAIL";
+   case ME_ICMD_WRITE_PROTECT:
+       return "ME_ICMD_WRITE_PROTECT";
+   case ME_ICMD_UNKNOWN_STATUS:
+       return "ME_ICMD_UNKNOWN_STATUS";
 
        // TOOLS HCR access errors
    case ME_CMDIF_BUSY:

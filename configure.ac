@@ -18,6 +18,9 @@ AC_PROG_CXX
 AC_PROG_LIBTOOL
 AC_CONFIG_HEADERS( config.h )
 
+dnl Checks for headers
+AC_CHECK_HEADER(termios.h,[CXXFLAGS="${CXXFLAGS} -DHAVE_TERMIOS_H"])
+
 AC_MSG_CHECKING(--enable-dc argument)
 AC_ARG_ENABLE(dc,
 		    [  --disable-dc            Disable mstflint "dc" command. Eliminates zlib dependency],

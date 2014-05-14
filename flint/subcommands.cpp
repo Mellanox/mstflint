@@ -38,12 +38,19 @@
 
 
 #include <stdio.h>
+#include <stdarg.h>
+#include <errno.h>
 #include <iostream>
 
 #include <common/compatibility.h>
 
 #ifndef NO_ZLIB
     #include <zlib.h>
+#endif
+
+#if !defined(__WIN__) && !defined(__DJGPP__) && !defined(UEFI_BUILD) && defined(HAVE_TERMIOS_H)
+    // used in mygetchar
+    #include <termios.h>
 #endif
 
 #include "subcommands.h"
@@ -541,7 +548,7 @@ bool SubCommand::getGUIDFromStr(string str, guid_t& guid, string prefixErr)
 }
 
 
-#if !defined(__WIN__) && !defined(__DJGPP__)
+#if !defined(__WIN__) && !defined(__DJGPP__) && !defined(UEFI_BUILD) && defined(HAVE_TERMIOS_H)
 static int mygetch(void)
 {
     struct termios oldt,

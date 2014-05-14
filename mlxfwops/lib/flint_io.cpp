@@ -2,7 +2,7 @@
  *
  * flint_io.cpp - FLash INTerface
  *
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -31,11 +31,9 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
- *  Version: $Id: flint_io.cpp 7522 2011-11-16 15:37:21Z mohammad $
- *
  */
 
+#include <errno.h>
 #include "flint_io.h"
 
 
@@ -486,7 +484,7 @@ bool Flash::write  (u_int32_t addr,
         deal_with_signal();
 
         if (rc != MFE_OK) {
-            if (rc == MFE_ICMD_BAD_PARAM) {
+            if (rc == MFE_ICMD_BAD_PARAM || rc == MFE_REG_ACCESS_BAD_PARAM) {
                 return errmsg("Flash write of %d bytes to address %s0x%x failed: %s\n"
                           "    This may indicate that a FW image was already updated on flash, but not loaded by the device.\n"
                           "    Please load FW on the device (reset device or reboot machine) before burning a new FW.",

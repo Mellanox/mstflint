@@ -1,7 +1,8 @@
 /*
+ *
  * cmd_line_parser.cpp - FLash INTerface
  *
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -37,6 +38,7 @@
 
 #include <iostream>
 #include <stdio.h>
+#include <errno.h>
 // Flint includes
 #include "flint.h"
 #include <common/tools_version.h>
@@ -79,7 +81,7 @@ SubCmdMetaData::SubCmdMetaData() {
     _sCmds.push_back(new SubCmd("q", "query", SC_Query));
     _sCmds.push_back(new SubCmd("v", "verify", SC_Verify));
     _sCmds.push_back(new SubCmd("", "swreset", SC_Swreset));
-    _sCmds.push_back(new SubCmd("r", "reset_cfg", SC_ResetCfg));
+    _sCmds.push_back(new SubCmd("", "reset_cfg", SC_ResetCfg));
     _sCmds.push_back(new SubCmd("", "brom", SC_Brom));
     _sCmds.push_back(new SubCmd("", "drom", SC_Drom));
     _sCmds.push_back(new SubCmd("", "rrom", SC_Rrom));

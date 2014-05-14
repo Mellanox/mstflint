@@ -2,7 +2,7 @@
  *
  * flint_base.h - FLash INTerface
  *
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -32,8 +32,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
-
 #ifndef FLINT_BASE_H
 #define FLINT_BASE_H
 
@@ -43,28 +41,10 @@
     #endif
 #else
     #include "uefi_c.h"
-    // #include "uefi_c.cpp"
 #endif
 
-
-#include <ctype.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <assert.h>
-#include <time.h>
-#include <map>
-
-
-
-#include "tools_version.h"
-
 #include <signal.h>
+#include "tools_version.h"
 
 #ifndef __WIN__
 
@@ -89,9 +69,6 @@
         #define vsnprintf(buf, len, format, args) (vsprintf(buf, format, args))
         #define snprintf(buf, len, format, args...) (sprintf(buf, format, args))
     #else // Linux GCC
-#ifndef UEFI_BUILD
-        #include <termios.h>
-#endif
         #ifdef __FreeBSD__
             #define SWAPL(l) ntohl(l)
             #include <sys/endian.h>
@@ -145,7 +122,7 @@
     #endif
 #endif // __WIN__
 
-#include <memory>
+
 #include <vector>
 #include "compatibility.h"
 #include "mlxfwops_com.h"
@@ -155,41 +132,6 @@ static inline void be_guid_to_cpu(guid_t* to, guid_t* from) {
         to->l=__be32_to_cpu(from->l);
 }
 namespace std {}; using namespace std;
-/*
-#ifndef __be32_to_cpu
-    #define __be32_to_cpu(x) ntohl(x)
-    #ifndef bswap_32
-        #define bswap_32(x) (htonl(x))
-    #endif
-#endif
-#ifndef __cpu_to_be32
-    #define __cpu_to_be32(x) htonl(x)
-#endif
-
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-    #ifndef __cpu_to_le32
-        #define  __cpu_to_le32(x) (x)
-    #endif
-    #ifndef __le32_to_cpu
-        #define  __le32_to_cpu(x) (x)
-    #endif
-#elif __BYTE_ORDER == __BIG_ENDIAN
-    #ifndef __cpu_to_le32
-        #define  __cpu_to_le32(x) bswap_32(x)
-    #endif
-    #ifndef __le32_to_cpu
-        #define  __le32_to_cpu(x) bswap_32(x)
-    #endif
-#else
-    #ifndef __cpu_to_le32
-        #define  __cpu_to_le32(x) bswap_32(__cpu_to_be32(x))
-    #endif
-    #ifndef __le32_to_cpu
-        #define  __le32_to_cpu(x) __be32_to_cpu(bswap_32(x))
-    #endif
-#endif
-*/
-
 
 #define TOCPU1(s) s = __be32_to_cpu((u_int32_t)(s));
 #define CPUTO1(s) s = __cpu_to_be32((u_int32_t)(s));
