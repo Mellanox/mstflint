@@ -398,18 +398,18 @@ int mtcr_pcicr_mclose(mfile *mf)
 static
 int mtcr_mmap(struct pcicr_context *mf, const char *name, off_t off, int ioctl_needed)
 {
-    static const char sysbuspcidevices[] = "/sys/bus/pci/devices/";
     int err;
-
+    /*
+    static const char sysbuspcidevices[] = "/sys/bus/pci/devices/";
     // Enable PCI device before mmapping it
     // this allows to flash a device even if mlx4_core fails to load with some kernels.
     if (!strncmp(name, sysbuspcidevices, sizeof(sysbuspcidevices)-1)) {
-        /* Accessing through sysfs: need to enable PCI device.
-        We need to write 1 to 'enable' file located in
-        parent dir for 'name' */
+        // Accessing through sysfs: need to enable PCI device.
+        // We need to write 1 to 'enable' file located in
+        // parent dir for 'name'
         int fd;
         char fname[4096];
-        int i = strrchr(name, '/') - name;  /*always ok*/
+        int i = strrchr(name, '/') - name;  //always ok
         if (i + sizeof("enable") >= sizeof(fname)) {
             return -1;
             }
@@ -428,7 +428,7 @@ int mtcr_mmap(struct pcicr_context *mf, const char *name, off_t off, int ioctl_n
             return -1;
             }
         }
-
+    */
     mf->fd = open(name, O_RDWR | O_SYNC);
     if (mf->fd < 0)
         return -1;
