@@ -456,6 +456,10 @@ int mtcr_mmap(struct pcicr_context *mf, const char *name, off_t off, int ioctl_n
 int mtcr_pcicr_mread4(mfile *mf, unsigned int offset, u_int32_t *value)
 {
     struct pcicr_context *ctx = mf->ctx;
+    if (offset >= MTCR_MAP_SIZE) {
+        errno = EINVAL;
+        return 0;
+    }
     if (ctx->need_flush) {
         mtcr_connectx_flush(ctx->ptr);
         ctx->need_flush = 0;
@@ -468,6 +472,10 @@ int mtcr_pcicr_mwrite4(mfile *mf, unsigned int offset, u_int32_t value)
 {
     struct pcicr_context *ctx = mf->ctx;
 
+    if (offset >= MTCR_MAP_SIZE) {
+        errno = EINVAL;
+        return 0;
+    }
     *((u_int32_t *)((char *)ctx->ptr + offset)) = __cpu_to_be32(value);
     ctx->need_flush = ctx->connectx_flush;
     return 4;

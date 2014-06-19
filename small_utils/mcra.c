@@ -369,7 +369,9 @@ int main(int argc, char *argv[])
 
             val = MERGE(tmp_val, val, bit_offs, bit_size);
         }
-        rc = mwrite4(mf, addr, val);
+        if(mwrite4(mf, addr, val) != 4) {
+            goto access_error;
+        }
     }
     goto success;
 
