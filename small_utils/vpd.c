@@ -531,6 +531,7 @@ int vpd_open(const char *name, int* vpd_path_exists)
 int main(int argc, char **argv)
 {
 	const char *name;
+	char* endptr;
 	int fd;
 	int i;
 	int rc = 0;
@@ -568,7 +569,11 @@ int main(int argc, char **argv)
 				ignore_w=1;
 				break;
 			case 't':
-				timeout_t = strtol(optarg, NULL, 0);
+				timeout_t = strtol(optarg, &endptr, 0);
+				if (*endptr != '\0') {
+				    fprintf(stderr, "-E- Invalid timeout argument: %s.\n",  optarg);
+				    return 1;
+				}
 				if ( timeout_t <= 0 ) {
 				    fprintf(stderr, "-E- Wrong timeout, it should be > 0 !\n");
 				    return 1;
