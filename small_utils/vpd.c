@@ -460,7 +460,8 @@ int pci_parse_name(const char *name, char buf[4096], int* vpd_path_exists)
 	}
 
 	if (sscanf(name,"mthca%x", & tmp) == 1 ||
-	    sscanf(name,"mlx4_%x", & tmp) == 1) {
+	    sscanf(name,"mlx4_%x", & tmp) == 1 ||
+	    sscanf(name,"mlx5_%x", & tmp) == 1   ) {
 		char mbuf[4096];
 		char pbuf[4096];
 		char *base;
@@ -486,8 +487,9 @@ int pci_parse_name(const char *name, char buf[4096], int* vpd_path_exists)
 		}
 	} else if (sscanf(name, "%x:%x:%x.%x", &domain, &bus, &dev, &func) != 4) {
 		domain = 0;
-		if (sscanf(name, "%x:%x.%x", &bus, &dev, &func) != 3)
+		if (sscanf(name, "%x:%x.%x", &bus, &dev, &func) != 3) {
 			return -2;
+		}
 	}
 	
 	snprintf(buf, 4096, "/sys/bus/pci/devices/%04x:%02x:%02x.%d/vpd", domain, bus, dev, func);
@@ -547,7 +549,7 @@ int main(int argc, char **argv)
 
 	do
 	{
-		i=getopt(argc, argv, "mnrt:");
+		i=getopt(argc, argv, "mhnrt:");
 		if (i<0) {
 			break;
 		}
@@ -559,13 +561,21 @@ int main(int argc, char **argv)
 			case 'n':
 				n=1;
 				break;
+			case 'h':
+			    rc = 0;
+			    goto usage;
 			case 'r':
 				ignore_w=1;
 				break;
 			case 't':
 				timeout_t = strtol(optarg, NULL, 0);
+				if ( timeout_t <= 0 ) {
+				    fprintf(stderr, "-E- Wrong timeout, it should be > 0 !\n");
+				    return 1;
+				}
 				break;
 			default:
+			    rc = 1;
 				goto usage;
 		}
 	} while (1 == 1);
@@ -573,8 +583,11 @@ int main(int argc, char **argv)
 	name = argv[optind];
 	argc -= optind;
 	argv += optind;
-
-	if (!strcmp("-", name)) {
+	if (name == NULL) {
+	    fprintf(stderr, "-E- Missing <file> argument !\n");
+	    return 33;
+	}
+	if (! strcmp("-", name)) {
 		if (fread(d, VPD_MAX_SIZE, 1, stdin) != 1)
 			return 3;
 	} else {
@@ -582,8 +595,11 @@ int main(int argc, char **argv)
 		if (fd < 0)
 			return 4;
 
-		if (vpd_read(fd, d, vpd_path_exists))
-			return 5;
+		if (vpd_read(fd, d, vpd_path_exists)) {
+		    fprintf(stderr, "-E- Failed to read VPD from %s!\n", name);
+		    return 5;
+		}
+
 	}
 
 	if (m)
