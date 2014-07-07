@@ -401,7 +401,7 @@ int vpd_check(vpd_t vpd, int checksum, int ignore_w)
 	}
 
 	if (!checksum_len) {
-		fprintf(stderr, "-E- Mandatory checksum(RV) field not found.\n");
+		fprintf(stderr, "-E- No VPD was found.\n");
 		return 1;
 	}
 
