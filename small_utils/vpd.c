@@ -45,6 +45,7 @@
 #include <errno.h>
 #include <libgen.h>
 #include <sys/times.h>
+#include "tools_version.h"
 
 /* pread is non-blocking, so we loop until we find data.  Unfortunately, 
  * we can loop forever if the HCA is crashed or if the wrong device is
@@ -127,6 +128,8 @@ enum {
 
 #define VPD_FIELD_CHECKSUM "RV"
 #define VPD_FIELD_RW       "RW"
+
+#define VPD_TOOL_VERSON "2.0.0"
 
 int pci_find_capability(int fd, int cap_id)
 {
@@ -550,7 +553,7 @@ int main(int argc, char **argv)
 
 	do
 	{
-		i=getopt(argc, argv, "mhnrt:");
+		i=getopt(argc, argv, "mvhnrt:");
 		if (i<0) {
 			break;
 		}
@@ -565,6 +568,9 @@ int main(int argc, char **argv)
 			case 'h':
 			    rc = 0;
 			    goto usage;
+			case 'v':
+                print_version_string("mstvpd", VPD_TOOL_VERSON);
+                exit(0);
 			case 'r':
 				ignore_w=1;
 				break;
@@ -626,6 +632,8 @@ int main(int argc, char **argv)
 
 usage:
 	fprintf(stderr, "Usage: %s [-m|-n] [-t ##] <file> [-- keyword ...]\n", argv[0]);
+	fprintf(stderr, "-h\tPrint this help.\n");
+	fprintf(stderr, "-v\tPrint tool version.\n");
 	fprintf(stderr, "-m\tDump raw VPD data to stdout.\n");
 	fprintf(stderr, "-n\tDo not validate check sum.\n");
 	fprintf(stderr, "-r\tDo not check and display the VPD_W tag in the vpd data.\n");
