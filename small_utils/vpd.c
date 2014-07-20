@@ -399,13 +399,13 @@ int vpd_check(vpd_t vpd, int checksum, int ignore_w)
 		return 1;
 	}
 
+    if (!checksum_len) {
+        fprintf(stderr, "-E- No VPD was found.\n");
+        return 1;
+    }
+
 	if (!checksum) {
 		return 0;
-	}
-
-	if (!checksum_len) {
-		fprintf(stderr, "-E- No VPD was found.\n");
-		return 1;
 	}
 
 	b = 0;
