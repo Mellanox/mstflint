@@ -45,6 +45,7 @@
 #include <errno.h>
 #include <libgen.h>
 #include <sys/times.h>
+#include "tools_version.h"
 
 /* pread is non-blocking, so we loop until we find data.  Unfortunately, 
  * we can loop forever if the HCA is crashed or if the wrong device is
@@ -127,6 +128,8 @@ enum {
 
 #define VPD_FIELD_CHECKSUM "RV"
 #define VPD_FIELD_RW       "RW"
+
+#define VPD_TOOL_VERSON "2.0.0"
 
 int pci_find_capability(int fd, int cap_id)
 {
@@ -396,13 +399,13 @@ int vpd_check(vpd_t vpd, int checksum, int ignore_w)
 		return 1;
 	}
 
+    if (!checksum_len) {
+        fprintf(stderr, "-E- No VPD was found.\n");
+        return 1;
+    }
+
 	if (!checksum) {
 		return 0;
-	}
-
-	if (!checksum_len) {
-		fprintf(stderr, "-E- Mandatory checksum(RV) field not found.\n");
-		return 1;
 	}
 
 	b = 0;
@@ -460,7 +463,8 @@ int pci_parse_name(const char *name, char buf[4096], int* vpd_path_exists)
 	}
 
 	if (sscanf(name,"mthca%x", & tmp) == 1 ||
-	    sscanf(name,"mlx4_%x", & tmp) == 1) {
+	    sscanf(name,"mlx4_%x", & tmp) == 1 ||
+	    sscanf(name,"mlx5_%x", & tmp) == 1   ) {
 		char mbuf[4096];
 		char pbuf[4096];
 		char *base;
@@ -486,8 +490,9 @@ int pci_parse_name(const char *name, char buf[4096], int* vpd_path_exists)
 		}
 	} else if (sscanf(name, "%x:%x:%x.%x", &domain, &bus, &dev, &func) != 4) {
 		domain = 0;
-		if (sscanf(name, "%x:%x.%x", &bus, &dev, &func) != 3)
+		if (sscanf(name, "%x:%x.%x", &bus, &dev, &func) != 3) {
 			return -2;
+		}
 	}
 	
 	snprintf(buf, 4096, "/sys/bus/pci/devices/%04x:%02x:%02x.%d/vpd", domain, bus, dev, func);
@@ -529,6 +534,7 @@ int vpd_open(const char *name, int* vpd_path_exists)
 int main(int argc, char **argv)
 {
 	const char *name;
+	char* endptr;
 	int fd;
 	int i;
 	int rc = 0;
@@ -547,7 +553,7 @@ int main(int argc, char **argv)
 
 	do
 	{
-		i=getopt(argc, argv, "mnrt:");
+		i=getopt(argc, argv, "mvhnrt:");
 		if (i<0) {
 			break;
 		}
@@ -559,13 +565,28 @@ int main(int argc, char **argv)
 			case 'n':
 				n=1;
 				break;
+			case 'h':
+			    rc = 0;
+			    goto usage;
+			case 'v':
+                print_version_string("mstvpd", VPD_TOOL_VERSON);
+                exit(0);
 			case 'r':
 				ignore_w=1;
 				break;
 			case 't':
-				timeout_t = strtol(optarg, NULL, 0);
+				timeout_t = strtol(optarg, &endptr, 0);
+				if (*endptr != '\0') {
+				    fprintf(stderr, "-E- Invalid timeout argument: %s.\n",  optarg);
+				    return 1;
+				}
+				if ( timeout_t <= 0 ) {
+				    fprintf(stderr, "-E- Wrong timeout, it should be > 0 !\n");
+				    return 1;
+				}
 				break;
 			default:
+			    rc = 1;
 				goto usage;
 		}
 	} while (1 == 1);
@@ -573,8 +594,11 @@ int main(int argc, char **argv)
 	name = argv[optind];
 	argc -= optind;
 	argv += optind;
-
-	if (!strcmp("-", name)) {
+	if (name == NULL) {
+	    fprintf(stderr, "-E- Missing <file> argument !\n");
+	    return 33;
+	}
+	if (! strcmp("-", name)) {
 		if (fread(d, VPD_MAX_SIZE, 1, stdin) != 1)
 			return 3;
 	} else {
@@ -582,8 +606,11 @@ int main(int argc, char **argv)
 		if (fd < 0)
 			return 4;
 
-		if (vpd_read(fd, d, vpd_path_exists))
-			return 5;
+		if (vpd_read(fd, d, vpd_path_exists)) {
+		    fprintf(stderr, "-E- Failed to read VPD from %s!\n", name);
+		    return 5;
+		}
+
 	}
 
 	if (m)
@@ -605,6 +632,8 @@ int main(int argc, char **argv)
 
 usage:
 	fprintf(stderr, "Usage: %s [-m|-n] [-t ##] <file> [-- keyword ...]\n", argv[0]);
+	fprintf(stderr, "-h\tPrint this help.\n");
+	fprintf(stderr, "-v\tPrint tool version.\n");
 	fprintf(stderr, "-m\tDump raw VPD data to stdout.\n");
 	fprintf(stderr, "-n\tDo not validate check sum.\n");
 	fprintf(stderr, "-r\tDo not check and display the VPD_W tag in the vpd data.\n");
