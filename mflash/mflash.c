@@ -2168,7 +2168,7 @@ int icmd_init(mflash *mfl)
 #else
 
 int icmd_init(mflash *mfl) {
-	mfl = NULL;
+	(void)mfl;
 	return MFE_NOT_IMPLEMENTED;
 }
 #endif
