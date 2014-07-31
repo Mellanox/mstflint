@@ -36,6 +36,5 @@ AM_CFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC)
 noinst_LIBRARIES = libtools_layouts.a
 
 libtools_layouts_a_SOURCES = cibfw_layouts.c adb_to_c_utils.c adb_to_c_utils.h cibfw_layouts.h \
-								register_access_layouts.c register_access_layouts.c \
-								tools_layouts.c tools_layouts.h
-
+								register_access_open_layouts.h register_access_open_layouts.c \
+								tools_open_layouts.c tools_open_layouts.h

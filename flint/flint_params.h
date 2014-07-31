@@ -2,7 +2,7 @@
  *
  * flint_params.h - FLash INTerface
  *
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -119,6 +119,7 @@ public:
     bool use_image_rom;
     bool dual_image;
     bool striped_image;
+    bool ignore_dev_data;
     bool banks_specified;
     int banks;
     bool log_specified;

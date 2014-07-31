@@ -428,7 +428,7 @@ int mtcr_mmap(struct pcicr_context *mf, const char *name, off_t off, int ioctl_n
             return -1;
             }
         }
-    */
+     */
     mf->fd = open(name, O_RDWR | O_SYNC);
     if (mf->fd < 0)
         return -1;
@@ -456,6 +456,7 @@ int mtcr_mmap(struct pcicr_context *mf, const char *name, off_t off, int ioctl_n
 int mtcr_pcicr_mread4(mfile *mf, unsigned int offset, u_int32_t *value)
 {
     struct pcicr_context *ctx = mf->ctx;
+
     if (offset >= MTCR_MAP_SIZE) {
         errno = EINVAL;
         return 0;
@@ -908,6 +909,10 @@ dev_info* mdevices_info(int mask, int* len)
         rc = mdevices(devs, size, mask);
     } while (rc == -1);
 
+    if ( rc <= 0 ) {
+        len = 0;
+        return NULL;
+    }
     // For each device read
     dev_info* dev_info_arr = (dev_info*) malloc(sizeof(dev_info)*rc);
     memset(dev_info_arr, 0, sizeof(dev_info)*rc);
@@ -1476,7 +1481,7 @@ static int mreg_send_wrapper(mfile* mf, u_int8_t *data, int r_icmd_size, int w_i
                 return ME_MAD_SEND_FAILED;
             }
     } else if (supports_icmd(mf)) {
-    #ifdef MST_UL //ugly hack to avoid compiler warrnings
+    #if defined(MST_UL) && !defined(MST_UL_ICMD) //ugly hack to avoid compiler warrnings
         if (0) {
             rc = icmd_send_command_int(mf, FLASH_REG_ACCESS, data, w_icmd_size, r_icmd_size, 0);
         }
@@ -1719,15 +1724,34 @@ const char* m_err2str(MError status)
 
        // TOOLS HCR access errors
    case ME_CMDIF_BUSY:
-	   return "Tools HCR busy.";
+	   return "Tools HCR busy";
    case ME_CMDIF_TOUT:
-	   return "Tools HCR time out.";
+	   return "Tools HCR time out";
    case ME_CMDIF_BAD_OP:
 	   return "Operation not supported";
    case ME_CMDIF_NOT_SUPP:
-	   return "Tools HCR not supported.";
+	   return "Tools HCR not supported";
    case ME_CMDIF_BAD_SYS:
-	   return "bad system status (driver may be down or Fw does not support this operation).";
+	   return "bad system status (driver may be down or Fw does not support this operation)";
+   case ME_CMDIF_UNKN_TLV:
+       return "Unknown TLV";
+
+    // MAD IFC errors
+   case ME_MAD_BUSY:
+       return "Temporarily busy. MAD discarded. This is not an error";
+   case ME_MAD_REDIRECT:
+       return "Redirection. This is not an error";
+   case ME_MAD_BAD_VER:
+       return "Bad version";
+   case ME_MAD_METHOD_NOT_SUPP:
+       return "Method not supported";
+   case ME_MAD_METHOD_ATTR_COMB_NOT_SUPP:
+       return "Method and attribute combination isn't supported";
+   case ME_MAD_BAD_DATA:
+       return "Bad attribute modifer or field";
+   case ME_MAD_GENERAL_ERR:
+       return "Unknown MAD error";
+
    default:
        return "Unknown error code";
    }

@@ -2,7 +2,7 @@
  *
  * flint_base.h - FLash INTerface
  *
- * Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
+ * Copyright (c) 2011 Mellanox Technologies Ltd.  All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -31,6 +31,9 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
+ *  Version: $Id: flint_base.h 7522 2011-11-16 15:37:21Z mohammad $
+ *
  */
 #ifndef FLINT_BASE_H
 #define FLINT_BASE_H
@@ -224,9 +227,9 @@ namespace std {}; using namespace std;
 #define CONNECT_IB_HW_ID  511
 #define BRIDGEX_HW_ID     6100
 #define IS4_HW_ID         435
-#define TAVOR_HW_ID       23108
-#define ARBEL_HW_ID       25208
-#define SINAI_HW_ID       25204
+#define INFINIHOST_HW_ID            23108
+#define INFINIHOST_III_EX_HW_ID     25208
+#define INFINIHOST_III_LX_HW_ID     25204
 #define CONNECT_IB_SW_ID  4113
 
 // FS3 defines

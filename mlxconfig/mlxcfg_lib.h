@@ -14,12 +14,12 @@
  *      - Redistributions of source code must retain the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer.
- * 
+ *
  *      - Redistributions in binary form must reproduce the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer in the documentation and/or other materials
  *        provided with the distribution.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -29,7 +29,12 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
+/*
+ * mlxcfg_lib.h
+ *
+ *  Created on: Feb 17, 2014
+ *      Author: adrianc
+ */
 
 #ifndef MLXCFG_LIB_H_
 #define MLXCFG_LIB_H_
@@ -39,48 +44,16 @@
 
 #include <mtcr.h>
 
+#include "errmsg.h"
+
 
 #define MLXCFG_UNKNOWN 0xffffffff
 
 #define WOL_TYPE 0x10
 #define SRIOV_TYPE 0x11
 #define VPI_TYPE 0x12
+#define BAR_SIZE_TYPE 0x13
 
-
-
-
-typedef enum {
-    MCE_SUCCESS = 0,
-    MCE_TLV_NOT_FOUND,
-    MCE_TLV_NOT_SUPP,
-    MCE_NVCFG_NOT_SUPP,
-    MCE_TOOLS_HCR_NOT_SUPP,
-    MCE_DRIVER_DOWN,
-    MCE_UNSUPPORTED_DEVICE,
-    MCE_UNSUPPORTED_CFG,
-    MCE_BAD_PARAMS,
-    MCE_BAD_PARAM_VAL,
-    MCE_DEV_BUSY,
-    MCE_UNKNOWN_TLV,
-    MCE_REG_NOT_SUPP,
-    MCE_METHOD_NOT_SUPP,
-    MCE_RES_NOT_AVAIL,
-    MCE_CONF_CORRUPT,
-    MCE_TLV_LEN_TOO_SMALL,
-    MCE_BAD_CONFIG,
-    MCE_ERASE_EXEEDED,
-    MCE_BAD_OP,
-    MCE_BAD_STATUS,
-    MCE_CR_ERROR,
-    MCE_NOT_IMPLEMENTED,
-    MCE_INCOMPLETE_PARAMS,
-    MCE_OPEN_DEVICE,
-    MCE_PCICONF,
-    MCE_UNKNOWN_ERR,
-    MCE_FAILED,
-    MCE_LAST
-
-}McStatus;
 
 typedef enum {
     Mct_Sriov = 0,
@@ -88,6 +61,7 @@ typedef enum {
     Mct_Wol_P2,
     Mct_Vpi_P1,
     Mct_Vpi_P2,
+    Mct_Bar_Size,
     Mct_Last
 } mlxCfgType;
 
@@ -98,46 +72,45 @@ typedef enum {
     Mcp_Wol_Magic_En_P2,
     Mcp_Link_Type_P1,
     Mcp_Link_Type_P2,
+    Mcp_Log_Bar_Size,
     Mcp_Last
 } mlxCfgParam;
 
 typedef std::pair<mlxCfgParam, u_int32_t> cfgInfo;
 
-class MlxCfgOps {
+class MlxCfgOps : public ErrMsg {
 public:
     MlxCfgOps();
     ~MlxCfgOps();
-    McStatus open(const char* devStr);
-    McStatus opend(mfile* mf);
+    int open(const char* devStr);
+    int opend(mfile* mf);
 
     // no need to close , this is done  in destructor
 
     bool supportsCfg(mlxCfgType cfg);
     bool supportsParam(mlxCfgParam param);
 
-    McStatus getCfg(mlxCfgParam cfgParam, u_int32_t& val);
-    McStatus getCfg(std::vector<cfgInfo>& infoVec);
+    int getCfg(mlxCfgParam cfgParam, u_int32_t& val);
+    int getCfg(std::vector<cfgInfo>& infoVec);
 
-    McStatus setCfg(mlxCfgParam cfgParam, u_int32_t val);
-    McStatus setCfg(const std::vector<cfgInfo>& infoVec);
+    int setCfg(mlxCfgParam cfgParam, u_int32_t val, bool ignoreCheck=false);
+    int setCfg(const std::vector<cfgInfo>& infoVec, bool ignoreCheck=false);
 
-    McStatus invalidateCfgs();
-
-    static const char* err2str(McStatus rc);
+    int invalidateCfgs();
 
 private:
 
-    class CfgParams
+    class CfgParams : public ErrMsg
     {
     public:
-        CfgParams(mlxCfgType t=Mct_Last, u_int32_t tlvT=0) : type(t), tlvType(tlvT), _updated(false) {}
+        CfgParams(mlxCfgType t=Mct_Last, u_int32_t tlvT=0);
         virtual ~CfgParams() {}
 
         virtual void setParam(mlxCfgParam paramType, u_int32_t val) = 0;
         virtual u_int32_t getParam(mlxCfgParam paramType) = 0;
 
-        virtual McStatus getFromDev(mfile* mf) = 0;
-        virtual McStatus setOnDev(mfile* mf) = 0;
+        virtual int getFromDev(mfile* mf) = 0;
+        virtual int setOnDev(mfile* mf, bool ignoreCheck=false) = 0;
 
         mlxCfgType type;
         u_int32_t tlvType;
@@ -155,10 +128,10 @@ private:
         virtual void setParam(mlxCfgParam paramType, u_int32_t val);
         virtual u_int32_t getParam(mlxCfgParam paramType);
 
-        virtual McStatus getFromDev(mfile* mf);
-        virtual McStatus setOnDev(mfile* mf);
+        virtual int getFromDev(mfile* mf);
+        virtual int setOnDev(mfile* mf, bool ignoreCheck=false);
 
-        McStatus updateMaxVfs(mfile* mf);
+        int updateMaxVfs(mfile* mf);
 
     private:
         virtual bool isLegal(mfile* mf);
@@ -177,9 +150,8 @@ private:
         virtual void setParam(mlxCfgParam paramType, u_int32_t val);
         virtual u_int32_t getParam(mlxCfgParam paramType);
 
-        virtual McStatus getFromDev(mfile* mf);
-        virtual McStatus setOnDev(mfile* mf);
-
+        virtual int getFromDev(mfile* mf);
+        virtual int setOnDev(mfile* mf, bool ignoreCheck=false);
 
     private:
         virtual bool isLegal(mfile* mf=NULL);
@@ -197,9 +169,8 @@ private:
         virtual void setParam(mlxCfgParam paramType, u_int32_t val);
         virtual u_int32_t getParam(mlxCfgParam paramType);
 
-        virtual McStatus getFromDev(mfile* mf);
-        virtual McStatus setOnDev(mfile* mf);
-
+        virtual int getFromDev(mfile* mf);
+        virtual int setOnDev(mfile* mf, bool ignoreCheck=false);
 
     private:
         virtual bool isLegal(mfile* mf=NULL);
@@ -207,8 +178,31 @@ private:
         u_int32_t _linkType;
     };
 
-    McStatus openComChk();
-    McStatus supportsToolsHCR();
+    class BarSzParams : public CfgParams
+    {
+    public:
+        BarSzParams() : CfgParams(Mct_Bar_Size, BAR_SIZE_TYPE) ,_maxLogBarSz(1), _currLogBarSz(1), _logBarSz(MLXCFG_UNKNOWN) {}
+        ~BarSzParams() {};
+
+        virtual void setParam(mlxCfgParam paramType, u_int32_t val);
+        virtual u_int32_t getParam(mlxCfgParam paramType);
+
+        virtual int getFromDev(mfile* mf);
+        virtual int setOnDev(mfile* mf, bool ignoreCheck=false);
+
+        int updateBarSzInfo(mfile* mf);
+
+    private:
+        virtual bool isLegal(mfile* mf=NULL);
+        u_int32_t _maxLogBarSz;
+        u_int32_t _currLogBarSz;
+        u_int32_t _logBarSz;
+
+    };
+
+
+    int openComChk();
+    int supportsToolsHCR();
     bool isLegal(mlxCfgType cfg);
     bool isLegal(mlxCfgParam cfg);
 

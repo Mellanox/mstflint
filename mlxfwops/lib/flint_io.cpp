@@ -2,7 +2,7 @@
  *
  * flint_io.cpp - FLash INTerface
  *
- * Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
+ * Copyright (c) 2011 Mellanox Technologies Ltd.  All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -31,6 +31,9 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
+ *  Version: $Id: flint_io.cpp 7522 2011-11-16 15:37:21Z mohammad $
+ *
  */
 
 #include <errno.h>
@@ -207,7 +210,7 @@ bool Flash::open_com_checks(const char *device, int rc, bool force_lock)
 
     if (rc != MFE_OK) {
         if (rc == MFE_SEM_LOCKED) {
-            return errmsgAdv(_advErrors, "Can not obtain Flash semaphore (62).", "You can run \"flint -clear_semaphore -d <device>\" to force semaphore unlock. See help for details.");
+            return errmsgAdv(_advErrors, "Can not obtain Flash semaphore (63).", "You can run \"flint -clear_semaphore -d <device>\" to force semaphore unlock. See help for details.");
         }
         if (rc == MFE_LOCKED_CRSPACE) {
             _cr_space_locked = 1;
@@ -267,6 +270,7 @@ bool Flash::open(const char *device, bool force_lock, bool read_only, int num_of
     // Open device
     int rc;
     _advErrors = advErr;
+    _ignore_cache_replacement = ignore_cashe_replacement ? true : false;
     (void)read_only; // not used , avoid compiler warnings TODO: remove this var from function def
     rc = mf_open(&_mfl, device, num_of_banks, flash_params, ignore_cashe_replacement);
     //printf("device: %s , forceLock: %s , read only: %s, num of banks: %d, flash params is null: %s, ocr: %d, rc: %d\n",
@@ -748,6 +752,27 @@ bool  Flash::set_attr(char *param_name, char *param_val_str)
     }
 
     return true;
+}
+
+bool Flash::is_flash_write_protected()
+{
+    int bank;
+    int rc;
+    write_protect_info_t protect_info;
+
+    if (_attr.write_protect_support) {
+        for (bank = 0; bank < _attr.banks_num; bank++) {
+            rc = mf_get_write_protect(_mfl, bank, &protect_info);
+            if (rc == MFE_OK && protect_info.sectors_num != 0) {
+                return true;
+            } else {
+                if (rc && rc != MFE_NOT_SUPPORTED_OPERATION) { // We ignore when operation is not supported
+                    return true;
+                }
+            }
+       }
+    }
+    return false;
 }
 
 void Flash::deal_with_signal()

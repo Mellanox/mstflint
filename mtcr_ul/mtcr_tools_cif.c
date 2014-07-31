@@ -30,7 +30,6 @@
  * SOFTWARE.
  */
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -234,12 +233,17 @@ static int translate_status(int status) {
 	switch (status) {
 	case 0x0:
 		return ME_OK;
+	case 0x1:
+	    return ME_CMDIF_BUSY;
 	case 0x2:
 		return ME_CMDIF_BAD_OP;
+	case 0x3:
+	    return ME_CMDIF_UNKN_TLV;
 	case 0x4:
 		return ME_CMDIF_BAD_SYS;
 	default:
-		return ME_CR_ERROR;
+	    //fprintf(stderr, "-D- Unknown status: 0x%x\n", status);
+		return ME_CMDIF_BAD_STATUS;
 	}
 }
 
@@ -258,7 +262,7 @@ static int tools_cmdif_mbox_read(mfile* mf, u_int32_t offset, u_int64_t* output)
 	*output = cmdif.out_param;
 	//printf("-D- outparam: 0x%lx\n", cmdif.out_param);
 	if (rc || cmdif.status) {
-		return ME_CR_ERROR;
+		return rc ? rc : translate_status(cmdif.status);
 	}
 	//printf("-D- mbox read OK\n");
 	return ME_OK;
@@ -278,7 +282,7 @@ static int tools_cmdif_mbox_write(mfile* mf, u_int32_t offset, u_int64_t input)
 	int rc = tools_cmdif_send_cmd_int(mf, &cmdif);
 
 	if (rc || cmdif.status) {
-		return ME_CR_ERROR;
+		return rc ? rc : translate_status(cmdif.status);
 	}
 	return ME_OK;
 }

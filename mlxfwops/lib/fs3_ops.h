@@ -44,11 +44,7 @@ class Fs3Operations : public FwOperations {
 public:
 
 
-    Fs3Operations(FBase *ioAccess) :
-        FwOperations(ioAccess)
-        {
-            _isFullVerify = false;
-        };
+    Fs3Operations(FBase *ioAccess) : FwOperations(ioAccess), _isfuSupported(false), _badDevDataSections(false){};
 
     virtual ~Fs3Operations()  {};
     //virtual void print_type() {printf("-D- FS3 type!\n");};
@@ -68,13 +64,14 @@ public:
 
     virtual bool FwSetGuids(sg_params_t& sgParam, PrintCallBack callBack, ProgressCallBack progressFunc);
     virtual bool FwSetMFG(guid_t baseGuid, PrintCallBack callBackFunc=(PrintCallBack)NULL);
-    virtual bool FwGetSection (u_int32_t sectType, std::vector<u_int8_t>& sectInfo);
+    virtual bool FwSetMFG(fs3_guid_t baseGuid, PrintCallBack callBackFunc=(PrintCallBack)NULL);
+    virtual bool FwGetSection (u_int32_t sectType, std::vector<u_int8_t>& sectInfo, bool stripedImage=false);
     virtual bool FwSetVSD(char* vsdStr, ProgressCallBack progressFunc=(ProgressCallBack)NULL, PrintCallBack printFunc=(PrintCallBack)NULL);
     virtual bool FwSetVPD(char* vpdFileStr, PrintCallBack callBackFunc=(PrintCallBack)NULL);
     virtual bool FwSetAccessKey(hw_key_t userKey, ProgressCallBack progressFunc=(ProgressCallBack)NULL);
     virtual bool FwResetNvData();
     virtual bool FwShiftDevData(PrintCallBack progressFunc=(PrintCallBack)NULL);
-
+    virtual const char*  FwGetResetRecommandationStr();
 
 private:
     #define CRC_CHECK_OUTPUT  CRC_CHECK_OLD")"
@@ -136,22 +133,23 @@ private:
     bool CheckTocSignature(struct cibfw_itoc_header *itoc_header, u_int32_t first_signature);
     bool DumpFs3CRCCheck(u_int8_t sect_type, u_int32_t sect_addr, u_int32_t sect_size, u_int32_t crc_act, u_int32_t crc_exp,
                 bool ignore_crc = false, VerifyCallBack verifyCallBackFunc = (VerifyCallBack)NULL);
-    bool GetImageInfoFromSection(u_int8_t *buff, u_int8_t sect_type, u_int8_t check_support_only = 0);
+    bool GetImageInfoFromSection(u_int8_t *buff, u_int8_t sect_type, u_int32_t sect_size, u_int8_t check_support_only = 0);
     bool IsGetInfoSupported(u_int8_t sect_type);
     bool IsFs3SectionReadable(u_int8_t type, QueryOptions queryOptions);
     bool GetMfgInfo(u_int8_t *buff);
     bool GetDevInfo(u_int8_t *buff);
     bool GetImageInfo(u_int8_t *buff);
+    bool GetRomInfo(u_int8_t *buff, u_int32_t size);
     bool Fs3IntQuery(bool readRom = true, bool quickQuery=true);
     bool Fs3Burn(Fs3Operations &imageOps, ExtBurnParams& burnParams);
     bool BurnFs3Image(Fs3Operations &imageOps, ExtBurnParams& burnParams);
     bool UpdateDevDataITOC(u_int8_t *image_data, struct toc_info *image_toc_entry, struct toc_info *flash_toc_arr, int flash_toc_size);
     bool Fs3UpdateSection(void *new_info, fs3_section_t sect_type=FS3_DEV_INFO, bool is_sect_failsafe=true, CommandType cmd_type=CMD_UNKNOWN, PrintCallBack callBackFunc=(PrintCallBack)NULL );
     bool Fs3GetItocInfo(struct toc_info *tocArr, int num_of_itocs, fs3_section_t sect_type, struct toc_info *&curr_toc);
-    bool Fs3UpdateMfgUidsSection(struct toc_info *curr_toc, std::vector<u_int8_t>  section_data, guid_t base_uid,
+    bool Fs3UpdateMfgUidsSection(struct toc_info *curr_toc, std::vector<u_int8_t>  section_data, fs3_guid_t base_uid,
                                             std::vector<u_int8_t>  &newSectionData);
-    bool Fs3ChangeUidsFromBase(guid_t base_uid, struct cibfw_guids *guids);
-    bool Fs3UpdateUidsSection(struct toc_info *curr_toc, std::vector<u_int8_t>  section_data, guid_t base_uid,
+    bool Fs3ChangeUidsFromBase(fs3_guid_t base_uid, struct cibfw_guids *guids);
+    bool Fs3UpdateUidsSection(struct toc_info *curr_toc, std::vector<u_int8_t>  section_data, fs3_guid_t base_uid,
                                              std::vector<u_int8_t>  &newSectionData);
     bool Fs3UpdateVsdSection(struct toc_info *curr_toc, std::vector<u_int8_t>  section_data, char* user_vsd,
                                      std::vector<u_int8_t>  &newSectionData);
@@ -186,6 +184,7 @@ private:
     bool getLastFwSAddr(u_int32_t& lastAddr);
     bool getFirstDevDataAddr(u_int32_t& firstAddr);
     bool reburnItocSection(PrintCallBack callBackFunc);
+    bool Fs3IsfuActivateImage(u_int32_t newImageStart);
 
     // this class is for sorting the itoc array by ascending absolute flash_addr used in FwShiftDevData
     class TocComp {
@@ -204,7 +203,8 @@ private:
     static const SectionInfo _fs3SectionsInfoArr[];
     static const u_int32_t _itocSignature[4];
     Fs3ImgInfo _fs3ImgInfo;
-    bool      _isFullVerify;
+    bool _isfuSupported;
+    bool _badDevDataSections; // set true if during verify one of the device data section is corrupt or mfg section missing
 
 };
 

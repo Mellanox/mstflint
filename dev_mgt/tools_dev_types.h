@@ -30,7 +30,6 @@
  * SOFTWARE.
  */
 
-
 #ifndef TOOLS_DEV_TYPE_H
 #define TOOLS_DEV_TYPE_H
 
@@ -116,7 +115,7 @@ u_int32_t dm_get_hw_dev_id(dm_dev_id_t type);
 
 /**
  * Returns the HW chip revision of the given device type or zero on failures,
- * This is useful to distinguish between hermon and hermon_b0.
+ * This is useful to distinguish between ConnectX2 and ConnectX.
  */
 u_int32_t dm_get_hw_rev_id(dm_dev_id_t type);
 

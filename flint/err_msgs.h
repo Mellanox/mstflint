@@ -2,7 +2,7 @@
  *
  * err_msgs.h - FLash INTerface
  *
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -71,11 +71,13 @@ typedef enum {
 #define FLINT_CMD_ARGS_ERROR                  "Command \"%s\" requires %d arguments, but %d arguments were given\n"
 #define FLINT_CMD_ARGS_ERROR2                 "Command \"%s\" requires at most %d arguments, but %d arguments were given\n"
 #define FLINT_CMD_ARGS_ERROR3                 "Command \"%s\" requires at least %d arguments, but %d arguments were given\n"
+#define FLINT_CMD_ARGS_ERROR4                 "Command \"%s\" requires %d or %d arguments, but %d arguments were given\n"
 #define FLINT_INVALID_OPTION_ERROR            "Unknown option \"%s\" for the \"%s\" command. you can use %s.\n"
 #define FLINT_INVALID_FLAG_ERROR              "Invalid switch \"%s\" is specified.\n"
 #define FLINT_INVALID_UID_NUM_BX_ERROR        "Number of UIDs on BridgeX should be %d\n"
 #define FLINT_BX_BAD_MAC_FORMAT_ERROR         "Bad mac ( %4.4x%8.8x ) %s. Please re-burn with a valid MACs value.\n"
 #define FLINT_INVALID_FLAG_WITH_FLAG_ERROR    "Cannot specify \"%s\" flag with \"%s\" flag.\n"
+#define FLINT_INVALID_FLAG_WITHOUT_FLAG_ERROR "\"%s\" flag must be specified with \"%s\" flag.\n"
 #define FLINT_INVALID_FLAG_WITH_CMD_ERROR     "Cannot specify flag: %s with Command: %s\n"
 #define FLINT_CMD_VERIFY_ERROR                "FW image verification failed: %s. AN HCA DEVICE CAN NOT BOOT FROM THIS IMAGE.\n"
 #define FLINT_FAILED_QUERY_ERROR              "Failed to query %s: %s.%s\n"
@@ -93,6 +95,7 @@ typedef enum {
 #define FLINT_FLASH_WRITE_ERROR               "Flash write failed. %s\n"
 #define FLINT_INVALID_DATA_ERROR              "Invalid data \"%s\"\n"
 #define FLINT_INVALID_SIZE_ERROR              "Invalid size \"%s\", Length should be 4-bytes aligned.\n"
+#define FLINT_INVALID_ARG_ERROR               "Invalid argument \"%s\"\n"
 #define FLINT_OPEN_FILE_ERROR                 "Cannot open %s: %s\n"
 #define FLINT_WRITE_FILE_ERROR                "Failed to write to %s: %s\n"
 #define FLINT_IO_OPEN_ERROR                   "Failed to open %s: %s\n"

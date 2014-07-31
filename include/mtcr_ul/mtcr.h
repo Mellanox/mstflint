@@ -1,6 +1,4 @@
 /*
- *  mtcr.h - Mellanox Software tools (mst) driver definitions
- *
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
  *
  * This software is available to you under a choice of one of two
@@ -12,7 +10,7 @@
  *     Redistribution and use in source and binary forms, with or
  *     without modification, are permitted provided that the following
  *     conditions are met:
- * 
+ *
  *      - Redistributions of source code must retain the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer.
@@ -21,7 +19,7 @@
  *        copyright notice, this list of conditions and the following
  *        disclaimer in the documentation and/or other materials
  *        provided with the distribution.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -102,6 +100,16 @@ typedef enum MError {
     ME_CMDIF_BAD_OP,
     ME_CMDIF_NOT_SUPP,
     ME_CMDIF_BAD_SYS,
+    ME_CMDIF_UNKN_TLV,
+
+    //errors regarding MAD IF
+    ME_MAD_BUSY = 0x400,
+    ME_MAD_REDIRECT,
+    ME_MAD_BAD_VER,
+    ME_MAD_METHOD_NOT_SUPP,
+    ME_MAD_METHOD_ATTR_COMB_NOT_SUPP,
+    ME_MAD_BAD_DATA,
+    ME_MAD_GENERAL_ERR,
 
     ME_LAST
 } MError;

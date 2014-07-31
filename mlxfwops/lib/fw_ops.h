@@ -59,7 +59,7 @@ public:
 
     FwOperations(FBase *ioAccess) :
         _ioAccess(ioAccess), _isCached(false), _wasVerified(false),
-        _quickQuery(false), _printFunc((PrintCallBack)NULL), _fname(NULL), _advErrors(true)
+        _quickQuery(false), _printFunc((PrintCallBack)NULL), _fname(NULL), _devName(NULL), _advErrors(true)
     {
         memset(_sectionsToRead, 0, sizeof(_sectionsToRead));
         memset(&_fwImgInfo, 0, sizeof(_fwImgInfo));
@@ -94,14 +94,16 @@ public:
 
     virtual bool FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc=(PrintCallBack)NULL, ProgressCallBack progressFunc=(ProgressCallBack)NULL) = 0;
 
+    virtual bool FwSetMFG(fs3_guid_t baseGuid, PrintCallBack callBackFunc=(PrintCallBack)NULL) = 0;
     virtual bool FwSetMFG(guid_t baseGuid, PrintCallBack callBackFunc=(PrintCallBack)NULL) = 0;
     // use progressFunc when dealing with FS2 image and printFunc when dealing with FS3 image.
     virtual bool FwSetVSD(char* vsdStr, ProgressCallBack progressFunc=(ProgressCallBack)NULL, PrintCallBack printFunc=(PrintCallBack)NULL) = 0;
     virtual bool FwSetVPD(char* vpdFileStr, PrintCallBack callBackFunc=(PrintCallBack)NULL) = 0;
     virtual bool FwSetAccessKey(hw_key_t userKey, ProgressCallBack progressFunc=(ProgressCallBack)NULL) = 0;
-    virtual bool FwGetSection (u_int32_t sectType, std::vector<u_int8_t>& sectInfo)= 0;
+    virtual bool FwGetSection (u_int32_t sectType, std::vector<u_int8_t>& sectInfo, bool stripedImage=false)= 0;
     virtual bool FwResetNvData() = 0;
     virtual bool FwShiftDevData(PrintCallBack progressFunc=(PrintCallBack)NULL) = 0;
+    virtual const char*  FwGetResetRecommandationStr() = 0;
 
     void FwCleanUp();
     virtual bool FwInit() = 0;
@@ -110,13 +112,13 @@ public:
     //needed for flint low level operations
     bool FwSwReset();
 
-
+    
     //virtual bool FwBurnBlock(FwOperations &FwImageAccess); // Add call back
     static FwOperations* FwOperationsCreate(void* fwHndl, void *info, char* psid, fw_hndl_type_t hndlType, char* errBuff=(char*)NULL, int buffSize=0);
     static FwOperations* FwOperationsCreate(fw_ops_params_t& fwParams);
 
     //bool GetExpRomVersionWrapper();
-
+    void getSupporteHwId(u_int32_t **supportedHwId, u_int32_t &supportedHwIdNum);
 
     class MLXFWOP_API RomInfo : ErrMsg {
     public:
@@ -178,6 +180,7 @@ public:
         bool singleImageBurn;
         bool noDevidCheck;
         bool ignoreVersionCheck;
+        bool useImgDevData; // FS3 image only - take device data sections from image (valid only if burnFailsafe== false)
         BurnRomOption burnRomOptions;
 
         //callback fun
@@ -190,7 +193,7 @@ public:
         ExtBurnParams():userGuidsSpecified(false), userMacsSpecified(false), userUidsSpecified(false),
                         vsdSpecified(false),blankGuids(false), burnFailsafe(true), allowPsidChange(false),
                         useImagePs(false), useImageGuids(false), singleImageBurn(true), noDevidCheck(false),
-                        ignoreVersionCheck(false), burnRomOptions(BRO_DEFAULT), progressFunc(NULL),
+                        ignoreVersionCheck(false), useImgDevData(false), burnRomOptions(BRO_DEFAULT), progressFunc(NULL),
                         userVsd(NULL){}
         };
 
@@ -226,6 +229,8 @@ public:
             bool guidsSpecified;
             bool uidsSpecified;
             std::vector<guid_t> userGuids;
+            u_int8_t numOfGUIDs; // number of GUIDs to allocate for each port. (FS3 image Only)
+            u_int8_t stepSize; // step size between GUIDs. (FS3 Image Only).
         };
 
 protected:
@@ -338,6 +343,7 @@ protected:
 
     PrintCallBack _printFunc;
     const char* _fname;
+    const char* _devName;
     // show advanced error msgs
     bool _advErrors;
 
@@ -357,7 +363,7 @@ private:
     static u_int8_t CheckFwFormat(FBase& f, bool getFwFormatFromImg = false);
     static bool     CntxFindMagicPattern  (FBase* ioAccess, u_int32_t addr);
     static void     WriteToErrBuff(char* errBuff, const char* errStr, int size);
-
+    static const char * err2str(int errNum);
     // Methods
 
     // Static Members

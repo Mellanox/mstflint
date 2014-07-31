@@ -2,7 +2,7 @@
  *
  * flint_io.h - FLash INTerface
  *
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2011 Mellanox Technologies Ltd.  All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -35,8 +35,6 @@
  *  Version: $Id: flint_io.h 7522 2011-11-16 15:37:21Z mohammad $
  *
  */
-
-
 #ifndef FLINT_IO_H
 #define FLINT_IO_H
 
@@ -222,6 +220,7 @@ public:
     FBase(true),
     _mfl(NULL),
     _no_flash_verify(false),
+    _ignore_cache_replacement(false),
     _curr_sector(0xffffffff),
     _port_num(0),
     _cr_space_locked(0)
@@ -274,6 +273,7 @@ public:
     u_int32_t get_rev_id             ()  {return _attr.rev_id; }
     u_int32_t get_port_num           ()  {return _port_num;}
     u_int8_t  get_cr_space_locked    ()  {return _cr_space_locked;}
+    bool  get_ignore_cache_replacment()  {return _cr_space_locked;}
 
     bool sw_reset();
 
@@ -302,6 +302,8 @@ public:
 
     bool         set_attr(char *param_name,
                           char *param_val_str);
+
+    bool is_flash_write_protected();
     static void  deal_with_signal();
 
     enum {
@@ -329,9 +331,11 @@ protected:
     bool write_sector_with_erase(u_int32_t addr, void *data, int cnt);
     bool write_with_erase(u_int32_t addr, void *data, int cnt);
 
+
     mflash*    _mfl;
     flash_attr _attr;
     bool _no_flash_verify;
+    bool _ignore_cache_replacement; // for FS3 devices flash access.
 
     u_int32_t  _curr_sector;
     u_int32_t  _port_num;

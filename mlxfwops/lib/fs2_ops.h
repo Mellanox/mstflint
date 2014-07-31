@@ -59,14 +59,16 @@ public:
     // virtual bool FwSetGuids(std::vector<guid_t>& userGuids, std::vector<guid_t>& userMacs, bool updateCrc=true, PrintCallBack callBackFunc=(PrintCallBack)NULL);
     virtual bool FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc, ProgressCallBack progressFunc);
 
+    virtual bool FwSetMFG(fs3_guid_t baseGuid, PrintCallBack callBackFunc=(PrintCallBack)NULL);
     virtual bool FwSetMFG(guid_t baseGuid, PrintCallBack callBackFunc=(PrintCallBack)NULL);
     virtual bool FwSetVSD(char* vsdStr, ProgressCallBack progressFunc=(ProgressCallBack)NULL, PrintCallBack printFunc=(PrintCallBack)NULL);
     virtual bool FwSetVPD(char* vpdFileStr, PrintCallBack callBackFunc=(PrintCallBack)NULL);
     virtual bool FwSetAccessKey(hw_key_t userKey, ProgressCallBack progressFunc=(ProgressCallBack)NULL);
     virtual bool FwShiftDevData(PrintCallBack progressFunc=(PrintCallBack)NULL);
     virtual bool FwResetNvData();
+    virtual const char*  FwGetResetRecommandationStr();
 
-    virtual bool FwGetSection (u_int32_t sectType, std::vector<u_int8_t>& sectInfo);
+    virtual bool FwGetSection (u_int32_t sectType, std::vector<u_int8_t>& sectInfo, bool stripedImage=false);
 
 
 

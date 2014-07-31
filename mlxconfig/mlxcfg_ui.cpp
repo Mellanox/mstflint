@@ -14,12 +14,12 @@
  *      - Redistributions of source code must retain the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer.
- * 
+ *
  *      - Redistributions in binary form must reproduce the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer in the documentation and/or other materials
  *        provided with the distribution.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -29,7 +29,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -78,9 +77,8 @@ void TerminationHandler(int signum)
     fatal_error_in_progress = 1;
 
     signal (signum, SIG_DFL);
-    printf("\n Received signal %d. \n", signum);
+    printf("\n Received signal %d.\n", signum);
     fflush(stdout);
-
     raise(signum);
 }
 
@@ -121,7 +119,7 @@ void initHandler()
 #endif
 
 std::string MlxCfgParams::param2str[Mcp_Last]= {"SRIOV_EN", "NUM_OF_VFS", "WOL_MAGIC_EN_P1", "WOL_MAGIC_EN_P2",\
-                                                "LINK_TYPE_P1", "LINK_TYPE_P2"};
+                                                "LINK_TYPE_P1", "LINK_TYPE_P2", "LOG_BAR_SIZE"};
 
 u_int32_t MlxCfgParams::getParamVal(mlxCfgParam p)
 {
@@ -170,9 +168,9 @@ if (question == NULL) {
      char ansbuff[32];
      ansbuff[0] = '\0';
      fflush(stdout);
-     //fgets(ansbuff, 30, stdin);
-     int rc=fscanf(stdin, "%30s", ansbuff);
-     (void)rc; // avoid warnings
+     int cnt=fscanf(stdin, "%30s", ansbuff);
+     (void)cnt; // avoid warnings
+
      if (  strcasecmp(ansbuff, "y") &&
            strcasecmp(ansbuff, "yes"))  {
 
@@ -195,10 +193,11 @@ mlxCfgStatus MlxCfg::queryDevsCfg()
         int  numOfDev;
         dev_info* dev = mdevices_info(MDEVS_TAVOR_CR, &numOfDev);
 
-        if (numOfDev == -1) {
+        if (dev == NULL) {
             return err(true, "Failed to get devices.");
         }
         if (numOfDev == 0) {
+            mdevices_info_destroy(dev, numOfDev);
             return err(true, NO_DEV_ERR);
         }
         //printf("-D- num of dev: %d , 1st dev : %s\n", numOfDev, buf);
@@ -219,30 +218,25 @@ mlxCfgStatus MlxCfg::queryDevsCfg()
     return shouldFail? MLX_CFG_ERROR : MLX_CFG_OK;
 }
 
-#define IDENT "\t"
-#define IDENT2 "\t\t"
-
-
 static void printParam(u_int32_t param)
 {
     if (param == MLXCFG_UNKNOWN) {
-            printf("N/A");
+            printf("%-8s", "N/A");
         } else {
-            printf("%d", param);
+            printf("%-8d", param);
         }
     return;
 }
 
 static void printOneParam(const char* name, u_int32_t currVal, bool printNewCfg=false, u_int32_t newVal= MLXCFG_UNKNOWN)
 {
-    printf(IDENT"%s"IDENT, name);
+    printf("         %-16s", name);
     printParam(currVal);
-    printf(IDENT);
     if (printNewCfg) {
         if (newVal == MLXCFG_UNKNOWN) {
             printParam(currVal);
         } else {
-            printf("%d", newVal);
+            printf("%-8d", newVal);
         }
     }
     printf("\n");
@@ -271,34 +265,37 @@ const char* MlxCfg::getDeviceName(const char* dev)
 mlxCfgStatus MlxCfg::queryDevCfg(const char* dev,const char* pci, int devIndex, bool printNewCfg)
 {
     MlxCfgOps ops;
-    McStatus rc;
+    bool rc;
     bool failedToGetCfg = false;
     bool nothingSupported = true;
     (void) pci;
     // print opening
     printf("\nDevice #%d:\n", devIndex);
     printf("----------\n\n");
-    printf("Device type:"IDENT"%s\n", getDeviceName(dev));
-    printf("PCI device:"IDENT"%s\n", dev);
+    printf("%-16s%-16s\n", "Device type:", getDeviceName(dev));
+    printf("%-16s%-16s\n", "PCI device:", dev);
     // TODO : get this info
-    //printf("Part Number:"IDENT"%s\n", "123456");
-    //printf("Psid:"IDENT2"%s\n", "78901111");
+    //printf("%-16s%-16s\n", "Part Number:", "123456");
+    //printf("%-16s%-16s\n", "Psid:", "78901111");
     printf("\n");
 
     rc = ops.open(dev);
     if (rc) {
-        err(false, "Failed to query device: %s. %s", dev, MlxCfgOps::err2str(rc));
+        err(false, "Failed to query device: %s. %s", dev, ops.err());
         return MLX_CFG_ERROR_EXIT;
     }
 
     //print configuration Header
-    printf("Configurations:"IDENT2"Current");
+    printf("%-16s%16s","Configurations:","Current");
     if (printNewCfg) {
-        printf(IDENT"New");
+        printf(" %s", "New");
     }
     printf("\n");
 
     for (int p = (int)Mcp_Sriov_En ; p < (int)Mcp_Last; ++p) {
+        if (p == Mcp_Log_Bar_Size) { // we dont support bar size atm
+            continue;
+        }
         if (!ops.supportsParam((mlxCfgParam)p)) {
             continue;
         }
@@ -306,10 +303,11 @@ mlxCfgStatus MlxCfg::queryDevCfg(const char* dev,const char* pci, int devIndex, 
         u_int32_t currentParam = MLXCFG_UNKNOWN ;
         u_int32_t newParam = _mlxParams.getParamVal((mlxCfgParam)p);
         rc = ops.getCfg((mlxCfgParam)p, currentParam);
-        if (rc && rc != MCE_RES_NOT_AVAIL) {
+        if (rc) {
             failedToGetCfg = true;
-            printf(IDENT"%s"IDENT"failed to get current configuration. %s\n", MlxCfgParams::param2str[p].c_str(),\
-                    MlxCfgOps::err2str(rc));
+            printf("         %-16s%-16s %s\n", MlxCfgParams::param2str[p].c_str(), "failed to get current configuration.",\
+                    ops.err());
+            err(false, "Failed to query device configuration");
         } else {
             printOneParam(MlxCfgParams::param2str[p].c_str(), currentParam, printNewCfg, newParam);
         }
@@ -330,6 +328,10 @@ mlxCfgStatus MlxCfg::setDevCfg()
     // even if there is problem fetching the current cfg we will attempt to write the new info
     // if the user agrees
 
+    if (_mlxParams.force) {
+        printf("\n-W- Force flag specified, the validity of the Parameters will not be checked !\n");
+        printf("-W- Incorrect configuration might yield unexpected results. running in this mode is not recommended.");
+    }
     // ask user
     if(!askUser("Apply new Configuration?")) {
         printErr();
@@ -338,19 +340,19 @@ mlxCfgStatus MlxCfg::setDevCfg()
 
     // write cfgs
     MlxCfgOps ops;
-    McStatus rc;
+    bool rc;
 
     rc = ops.open(_mlxParams.device.c_str());
     if (rc) {
         return err(false, "Failed to set configuration on device: %s. %s", _mlxParams.device.c_str(), \
-                MlxCfgOps::err2str(rc));
+               ops.err());
     }
     printf("Applying... ");
     // set Configuration
-    rc = ops.setCfg(_mlxParams.params);
+    rc = ops.setCfg(_mlxParams.params, _mlxParams.force);
     if (rc) {
         printf("Failed!\n");
-        err(true, "Failed to set configuration: %s", MlxCfgOps::err2str(rc));
+        err(true, "Failed to set configuration: %s", ops.err());
         return MLX_CFG_ERROR;
     }
 
@@ -382,10 +384,11 @@ mlxCfgStatus MlxCfg::resetDevsCfg()
         int  numOfDev;
         dev_info* dev = mdevices_info(MDEVS_TAVOR_CR, &numOfDev);
 
-        if (numOfDev == -1) {
+        if (dev == NULL) {
             return err(true, "Failed to get devices.");
         }
         if (numOfDev == 0) {
+            mdevices_info_destroy(dev, numOfDev);
             return err(true, NO_DEV_ERR);
         }
         if (!askUser("Reset configuration for all devices? ")){
@@ -421,17 +424,17 @@ mlxCfgStatus MlxCfg::resetDevsCfg()
 mlxCfgStatus MlxCfg::resetDevCfg(const char* dev)
 {
     MlxCfgOps ops;
-    McStatus rc;
+    bool rc;
 
     rc = ops.open(dev);
     if (rc) {
-        return err(false, "Failed to open device: %s. %s", dev, MlxCfgOps::err2str(rc));
+        return err(false, "Failed to open device: %s. %s", dev, ops.err());
     }
 
     // reset cfg
     rc = ops.invalidateCfgs();
     if (rc) {
-        return err(false, "failed to reset configurations. %s", ops.err2str(rc));
+        return err(false, "failed to reset configurations. %s", ops.err());
     }
 
     return MLX_CFG_OK;
@@ -444,6 +447,8 @@ mlxCfgStatus MlxCfg::execute(int argc, char* argv[])
     if (rc) {
         if (rc == MLX_CFG_OK_EXIT) {
             rc = MLX_CFG_OK;
+        } else {
+            printUsage();
         }
         return rc;
     }
@@ -469,11 +474,11 @@ mlxCfgStatus MlxCfg::execute(int argc, char* argv[])
 
 mlxCfgStatus MlxCfg::test(const char* dev)
 {
-    McStatus rc;
+    bool rc;
     MlxCfgOps ops;
     rc = ops.open(dev);
     if (rc) {
-        return err(true, "Failed to open device: %s. %s", dev, MlxCfgOps::err2str(rc));
+        return err(true, "Failed to open device: %s. %s", dev, ops.err());
     }
     u_int32_t val;
     rc =ops.invalidateCfgs();
@@ -485,7 +490,7 @@ mlxCfgStatus MlxCfg::test(const char* dev)
     rc =ops.getCfg(Mcp_Wol_Magic_En_P1, val);
     printf("get sriov_en get after set : rc = %d , val = %d\n", rc,val);
     if (rc) {
-        printf("-D- %s\n",MlxCfgOps::err2str(rc));
+        printf("-D- %s\n",ops.err());
     }
     return MLX_CFG_OK;
 }

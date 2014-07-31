@@ -19,7 +19,7 @@
  *        copyright notice, this list of conditions and the following
  *        disclaimer in the documentation and/or other materials
  *        provided with the distribution.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -29,7 +29,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
 
 #define _GNU_SOURCE
 #include <crdump.h>
@@ -505,7 +504,7 @@ static int crd_read_line(IN FILE *fd, OUT char *tmp) {
             int c = fgetc(fd);
             if (c == '#') {
                 char* _ptr=fgets (tmp, 300, fd);
-                (void)_ptr;// avoid warnings
+                (void)_ptr;//avoid warning
                 tmp[0] = 0;
                 continue;
             }

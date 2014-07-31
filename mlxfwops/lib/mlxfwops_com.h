@@ -127,6 +127,11 @@ typedef struct guid {
 } guid_t;
 typedef guid_t hw_key_t;
 
+typedef struct fs3_guid {
+    guid_t uid;
+    u_int8_t num_of_guids;
+    u_int8_t step_size;
+} fs3_guid_t;
 
 typedef struct rom_info {
     u_int16_t exp_rom_product_id; // 0 - invalid.

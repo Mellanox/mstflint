@@ -2,7 +2,7 @@
  *
  * flint_params.cpp - FLash INTerface
  *
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -68,6 +68,7 @@ FlintParams::FlintParams()
     use_image_rom = false;
     dual_image = false;
     striped_image = false;
+    ignore_dev_data = false;
     banks_specified = false;
     banks = 4;
     log_specified = false;

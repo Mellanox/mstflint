@@ -14,12 +14,12 @@
  *      - Redistributions of source code must retain the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer.
- * 
+ *
  *      - Redistributions in binary form must reproduce the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer in the documentation and/or other materials
  *        provided with the distribution.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -59,7 +59,7 @@ typedef enum {
 class MlxCfgParams
 {
 public:
-    MlxCfgParams() : device(),cmd(Mc_UnknownCmd), yes(false) {}
+    MlxCfgParams() : device(),cmd(Mc_UnknownCmd), yes(false), force(false) {}
     ~MlxCfgParams() {}
 
     std::string device;
@@ -67,6 +67,7 @@ public:
     bool yes;
     std::vector<cfgInfo> params;
     static std::string param2str[Mcp_Last];
+    bool force;// ignore parameter checks
 
     u_int32_t getParamVal(mlxCfgParam p);
 };
@@ -83,6 +84,7 @@ private:
     // User interface and parsing methods
     void printHelp();
     void printVersion();
+    void printUsage();
     mlxCfgStatus parseArgs(int argc, char* argv[]);
     //Helper functions for parse args
     mlxCfgStatus processArg(std::string tag, u_int32_t val);

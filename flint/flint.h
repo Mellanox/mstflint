@@ -1,6 +1,6 @@
 /*
  *
- * flint.h - FLash INTerface
+ * flint2.h - FLash INTerface
  *
  * Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
  *

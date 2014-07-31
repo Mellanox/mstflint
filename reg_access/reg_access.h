@@ -30,7 +30,6 @@
  * SOFTWARE.
  */
 
-
 #ifndef REG_ACCESS_H
 #define REG_ACCESS_H
 #ifdef __cplusplus
@@ -38,10 +37,10 @@ extern "C" {
 #endif
 
 #include <mtcr.h>
-#include <tools_layouts/register_access_layouts.h>
+#include <tools_layouts/register_access_open_layouts.h>
 
 // Hack, we include this for the MNV registers as they are not officialy a part of register_access so we defined them in tools.adb
-#include <tools_layouts/tools_layouts.h>
+#include <tools_layouts/tools_open_layouts.h>
 
 enum { // header lengths in bytes
     REG_ACCESS_MFBA_HEADER_LEN = 12,
@@ -55,13 +54,14 @@ typedef enum {
 // we use the same error messages as mtcr
 typedef MError reg_access_status_t;
 
+
 const char* reg_access_err2str(reg_access_status_t status);
 reg_access_status_t reg_access_mfba (mfile* mf, reg_access_method_t method, struct register_access_mfba* mfba);
 reg_access_status_t reg_access_mfbe (mfile* mf, reg_access_method_t method, struct register_access_mfbe* mfbe);
 reg_access_status_t reg_access_mfpa (mfile* mf, reg_access_method_t method, struct register_access_mfpa* mfpa);
-reg_access_status_t reg_access_mnva (mfile* mf, reg_access_method_t method, struct tools_mnva* mnva);
-reg_access_status_t reg_access_mnvi (mfile* mf, reg_access_method_t method, struct tools_mnvi* mnvi);
-reg_access_status_t reg_access_mnvia (mfile* mf, reg_access_method_t method, struct tools_mnvia* mnvia);
+reg_access_status_t reg_access_mnva (mfile* mf, reg_access_method_t method, struct tools_open_mnva* mnva);
+reg_access_status_t reg_access_mnvi (mfile* mf, reg_access_method_t method, struct tools_open_mnvi* mnvi);
+reg_access_status_t reg_access_mnvia (mfile* mf, reg_access_method_t method, struct tools_open_mnvia* mnvia);
 
 #ifdef __cplusplus
 }

@@ -28,8 +28,8 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
-
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -109,12 +109,17 @@ int run_mfpa_command(mfile *mf, u_int8_t access_cmd, u_int8_t flash_bank, u_int3
     if (access_cmd == REG_ACCESS_METHOD_SET) {
         mfpa.boot_address = boot_address;
     }
-    rc = reg_access_mfpa (mf, access_cmd, &mfpa); CHECK_RC(MError2MfError(rc));
+    rc = reg_access_mfpa (mf, access_cmd, &mfpa);
+    rc = MError2MfError(rc);
+    if (rc && rc != MFE_REG_ACCESS_BAD_PARAM) {
+        // if rc is REG_ACCESS_BAD_PARAM it means we dont have that flash bank connected (no need to fail)
+        return rc;
+    }
 
     if (access_cmd == REG_ACCESS_METHOD_GET && jedec_p != NULL) {
         *jedec_p = mfpa.jedec_id;
         // HACK: FW had a bug and returned the same jedec-ID even there was no flash, so when flash doesn't exist jedec will be modified to 0xffffffff
-        if (flash_bank >= mfpa.flash_num) {
+        if (flash_bank >= mfpa.flash_num || rc == MFE_REG_ACCESS_BAD_PARAM) {
             *jedec_p = 0xffffffff;
         }
     }

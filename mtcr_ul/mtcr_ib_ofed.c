@@ -57,7 +57,6 @@
 #include <string.h>
 #include <signal.h>
 
-
 #ifdef MST_UL
 #include <errno.h>
 #include "mtcr.h"
@@ -65,6 +64,7 @@
 #endif
 
 #include "mtcr_ib.h"
+#include <mtcr.h>
 
 #include <infiniband/mad.h>
 
@@ -83,7 +83,10 @@
                       return -1;\
                   }\
     } while(0)
+
     #define MY_GetProcAddress(ivm, func_name)  MY_GetPointerAddress(ivm, func_name, f_##func_name)
+    #define MY_GetProcAddressIgnoreFail(ivm, func_name) \
+            ivm->func_name = (f_##func_name)GetProcAddress(ivm->dl_handle, #func_name)
     #define MY_GetVarAddress(ivm, var_name)    MY_GetPointerAddress(ivm, var_name, void*)
 
     #define DLL_HANDLE HINSTANCE
@@ -107,6 +110,10 @@
                           return -1;\
                       } \
     } while(0)
+
+    #define MY_DLSYM_IGNORE_FAIL(mf, func_name) \
+                          mf->func_name = dlsym(mf->dl_handle, #func_name)
+
     #define OP_NOT_SUPPORTED EOPNOTSUPP
     #define IBMAD_CALL_CONV
 
@@ -193,8 +200,12 @@ typedef uint8_t* IBMAD_CALL_CONV (*f_ib_vendor_call_via)(void *data, ib_portid_t
                                          const struct ibmad_port *srcport);
 typedef uint8_t* IBMAD_CALL_CONV (*f_smp_query_via)(void *buf, ib_portid_t *id, unsigned attrid, unsigned mod,
                                     unsigned timeout, const struct ibmad_port *srcport);
+typedef uint8_t* IBMAD_CALL_CONV (*f_smp_query_status_via)(void *buf, ib_portid_t *id, unsigned attrid, unsigned mod,
+                                    unsigned timeout, int *rstatus, const struct ibmad_port *srcport);
 typedef uint8_t* IBMAD_CALL_CONV (*f_smp_set_via)(void *buf, ib_portid_t *id, unsigned attrid, unsigned mod,
                                   unsigned timeout, const struct ibmad_port *srcport );
+typedef uint8_t* IBMAD_CALL_CONV (*f_smp_set_status_via)(void *buf, ib_portid_t *id, unsigned attrid, unsigned mod,
+                                  unsigned timeout, int *rstatus, const struct ibmad_port *srcport );
 
 typedef void IBMAD_CALL_CONV (*f_mad_rpc_set_retries)(struct ibmad_port *port, int retries);
 typedef void IBMAD_CALL_CONV (*f_mad_rpc_set_timeout)(struct ibmad_port *port, int timeout);
@@ -224,7 +235,9 @@ struct __ibvsmad_hndl_t
     f_ib_vendor_call_via        ib_vendor_call_via;
     f_ib_resolve_portid_str_via ib_resolve_portid_str_via;
     f_smp_query_via             smp_query_via;
+    f_smp_query_status_via      smp_query_status_via;
     f_smp_set_via               smp_set_via;
+    f_smp_set_status_via        smp_set_status_via;
     f_mad_rpc_set_retries       mad_rpc_set_retries;
     f_mad_rpc_set_timeout       mad_rpc_set_timeout;
     f_mad_get_field             mad_get_field;
@@ -391,7 +404,9 @@ int process_dynamic_linking(ibvs_mad *ivm, int mad_init)
         MY_GetProcAddress(ivm, ib_vendor_call_via       );
         MY_GetProcAddress(ivm, ib_resolve_portid_str_via);
         MY_GetProcAddress(ivm, smp_query_via            );
+        MY_GetProcAddressIgnoreFail(ivm, smp_query_status_via );
         MY_GetProcAddress(ivm, smp_set_via              );
+        MY_GetProcAddressIgnoreFail(ivm, smp_set_status_via );
         MY_GetProcAddress(ivm, mad_rpc_set_retries      );
         MY_GetProcAddress(ivm, mad_rpc_set_timeout      );
         MY_GetProcAddress(ivm, portid2str               );
@@ -427,7 +442,7 @@ int process_dynamic_linking(ibvs_mad *ivm, int mad_init)
         }
     }
     if (!ivm->dl_handle) {
-        const char* errstr = dlerror();
+        const char* errstr=dlerror();
         IBERROR(("%s", errstr));
         //free(ivm);
         return -1;
@@ -441,12 +456,14 @@ int process_dynamic_linking(ibvs_mad *ivm, int mad_init)
     MY_DLSYM(ivm, ib_vendor_call_via       );
     MY_DLSYM(ivm, ib_resolve_portid_str_via);
     MY_DLSYM(ivm, smp_query_via            );
+    MY_DLSYM_IGNORE_FAIL(ivm, smp_query_status_via );
     MY_DLSYM(ivm, smp_set_via              );
+    MY_DLSYM_IGNORE_FAIL(ivm, smp_set_status_via   );
     MY_DLSYM(ivm, mad_rpc_set_retries      );
     MY_DLSYM(ivm, mad_rpc_set_timeout      );
     MY_DLSYM(ivm, mad_get_field            );
-    MY_DLSYM(ivm, portid2str              );
-    MY_DLSYM(ivm, ibdebug               );
+    MY_DLSYM(ivm, portid2str               );
+    MY_DLSYM(ivm, ibdebug                  );
     return 0;
 }
 
@@ -883,14 +900,92 @@ mib_swreset(mfile *mf)
 
 #define IB_SMP_ATTR_REG_ACCESS 0xff52
 
+static int mib_status_translate(int status)
+{
+    switch ((status >> 2) & 0x7) {
+    case 1:
+        return ME_MAD_BAD_VER;
+    case 2:
+        return ME_MAD_METHOD_NOT_SUPP;
+    case 3:
+        return ME_MAD_METHOD_ATTR_COMB_NOT_SUPP;
+    case 7:
+        return ME_MAD_BAD_DATA;
+    }
+
+    if (status & 0x1)
+        return ME_MAD_BUSY;
+    else if ((status >> 1) & 0x1)
+        return ME_MAD_REDIRECT;
+
+    return ME_MAD_GENERAL_ERR;
+}
+
 int mib_acces_reg_mad(mfile *mf, u_int8_t *data)
 {
     u_int8_t* p;
     ibvs_mad* h = (ibvs_mad*)(mf->ctx);
+    int status = -1;
+
     // Call smp set function
-    p = h->smp_set_via(data, &(h->portid), IB_SMP_ATTR_REG_ACCESS, 0, 0, h->srcport);
-    if (!p) {
-        return -1;
+    if (h->smp_set_status_via) {
+        p = h->smp_set_status_via(data, &(h->portid), IB_SMP_ATTR_REG_ACCESS, 0, 0, &status, h->srcport);
+    } else {
+        p = h->smp_set_via(data, &(h->portid), IB_SMP_ATTR_REG_ACCESS, 0, 0, h->srcport);
     }
-    return 0;
+    if (!p || status > 0) {
+        if (status != -1) {
+            return mib_status_translate(status);
+        } else {
+            return -1;
+        }
+    }
+
+    return ME_OK;
+}
+
+int mib_smp_set(mfile* mf, u_int8_t* data, u_int16_t attr_id, u_int32_t attr_mod)
+{
+    u_int8_t* p;
+    int status = -1;
+    ibvs_mad* h = (ibvs_mad*)(mf->ctx);
+    // Call smp set function
+    if (h->smp_set_status_via) {
+        p = h->smp_set_status_via(data, &(h->portid), attr_id, attr_mod, 0, &status, h->srcport);
+    } else {
+        p = h->smp_set_via(data, &(h->portid), attr_id, attr_mod, 0, h->srcport);
+    }
+    if (!p || status > 0) {
+        if (status != -1) {
+            return mib_status_translate(status);
+        } else {
+            return -1;
+        }
+    }
+
+    return ME_OK;
+}
+
+int mib_smp_get(mfile* mf, u_int8_t* data, u_int16_t attr_id, u_int32_t attr_mod)
+{
+    u_int8_t* p;
+    int status = -1;
+    ibvs_mad* h = (ibvs_mad*)(mf->ctx);
+
+    // Call smp set function
+    if (h->smp_query_status_via) {
+        p = h->smp_query_status_via(data, &(h->portid), attr_id, attr_mod, 0, &status, h->srcport);
+    } else {
+        p = h->smp_query_via(data, &(h->portid), attr_id, attr_mod, 0, h->srcport);
+    }
+
+    if (!p || status > 0) {
+        if (status != -1) {
+            return mib_status_translate(status);
+        } else {
+            return -1;
+        }
+    }
+
+    return ME_OK;
 }

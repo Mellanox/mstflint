@@ -17,9 +17,9 @@ INCLUDES = -I. -I$(USER_DIR)/common
 
 AM_CFLAGS = -MD -pipe -Wall -W -Werror
 
-noinst_HEADERS = mft_sig_handler.h
+noinst_HEADERS = mft_sig_handler.h errmsg.h
 
 noinst_LIBRARIES = libmftutils.a
 
-libmftutils_a_SOURCES =  mft_sig_handler.c
+libmftutils_a_SOURCES =  mft_sig_handler.c errmsg.cpp
 

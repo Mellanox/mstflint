@@ -144,6 +144,7 @@ fi
 
 
 mlx4_core_ko=`modinfo mlx4_core | grep filename | awk '{print $NF}'`
+mlx4_core_ko=`readlink -f $mlx4_core_ko`
 if [ $OS_TYPE = "DEBIAN" ]; then
     RPM_CHECK_FAIL=0
     RPM_CUR_BOOTED_KER=1

@@ -14,12 +14,12 @@
  *      - Redistributions of source code must retain the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer.
- * 
+ *
  *      - Redistributions in binary form must reproduce the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer in the documentation and/or other materials
  *        provided with the distribution.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -49,7 +49,7 @@ using namespace std;
 
 
 
-static void printFlagLine(string flag_s, string flag_l,string param, string desc)
+static void printFlagLine(string flag_s, string flag_l, string param, string desc)
 {
     printf(IDENT2"-%s|--%s", flag_s.c_str(), flag_l.c_str());
     if (param.length()) {
@@ -66,7 +66,7 @@ void MlxCfg::printHelp()
     printf(IDENT"NAME:\n"
            IDENT2   MLXCFG_NAME"\n"
            IDENT"SYNOPSIS:\n"
-           IDENT2    MLXCFG_NAME " [-d <device> ] [-y] <s[et]|q[uery]|r[eset]> [parameters to set]\n");
+           IDENT2    MLXCFG_NAME " [-d <device> ] [-y] <s[et] <parameters to set>|q[uery]|r[eset]>\n");
 
     // print options
     printf("\n");
@@ -79,18 +79,21 @@ void MlxCfg::printHelp()
     //print commands
     printf("\n");
     printf(IDENT"COMMANDS:\n");
-    printf(IDENT2"q[uery]\t: query current supported configurations.\n");
-    printf(IDENT2"s[et]\t: set configurations to a specific device.\n");
-    printf(IDENT2"r[eset]\t: reset configurations to their default value.\n");
+    printf(IDENT2"%-24s : %s\n","q[uery]", "query current supported configurations.");
+    printf(IDENT2"%-24s : %s\n","s[et]", "set configurations to a specific device.");
+    printf(IDENT2"%-24s : %s\n","r[eset]", "reset configurations to their default value.");
 
     // print supported commands
     printf("\n");
     printf(IDENT"Supported Configurations:\n");
-    printf(IDENT2"SRIOV\t\t\t: SRIOV_EN=<1|0> NUM_OF_VFS=<NUM>\n");
-    printf(IDENT2"WOL_PORT1\t\t: WOL_MAGIC_EN_P1=<1|0>\n");
-    printf(IDENT2"WOL_PORT2\t\t: WOL_MAGIC_EN_P2=<1|0>\n");
-    printf(IDENT2"VPI_SETTINGS_PORT1\t: LINK_TYPE_P1=<1|2|3> , 1=Infiniband 2=Ethernet 3=VPI(auto-sense).\n");
-    printf(IDENT2"VPI_SETTINGS_PORT2\t: LINK_TYPE_P2=<1|2|3>\n");
+    printf(IDENT2"%-24s : %s\n","SRIOV", "SRIOV_EN=<1|0> NUM_OF_VFS=<NUM>");
+    printf(IDENT2"%-24s : %s\n","WOL_PORT1", "WOL_MAGIC_EN_P1");
+    printf(IDENT2"%-24s : %s\n","WOL_PORT2", "WOL_MAGIC_EN_P2=<1|0>");
+    printf(IDENT2"%-24s : %s\n","VPI_SETTINGS_PORT1", "LINK_TYPE_P1=<1|2|3> , 1=Infiniband 2=Ethernet 3=VPI(auto-sense).");
+    printf(IDENT2"%-24s : %s\n","VPI_SETTINGS_PORT2", "LINK_TYPE_P2=<1|2|3>");
+    //printf(IDENT2"%-24s : %s\n","BAR_SIZE", "LOG_BAR_SIZE=<Base_2_log_in_mb> , example: for 8Mb bar size set LOG_BAR_SIZE=3");
+
+    // print usage examples
     printf("\n");
     printf(IDENT"Examples:\n");
     printf(IDENT2"%-35s: %s\n", "To query current Configuration", MLXCFG_NAME" -d "MST_DEV_EXAMPLE" query");
@@ -105,6 +108,11 @@ void MlxCfg::printHelp()
 void MlxCfg::printVersion()
 {
     print_version_string(MLXCFG_NAME, "");
+}
+
+void MlxCfg::printUsage() {
+    printf("\n"IDENT"Usage:\n"
+           IDENT2    MLXCFG_NAME " [-d <device> ] [-y] <s[et] <parameters to set>|q[uery]|r[eset]>\n\n");
 }
 
 bool MlxCfg::tagExsists(mlxCfgParam tag) {
@@ -129,7 +137,8 @@ mlxCfgStatus MlxCfg::processArg(string tag, u_int32_t val)
             break;
         }
     }
-    if (i == Mcp_Last) {
+    // we dont support BAR_SZ atm
+    if (i == Mcp_Last || i == Mcp_Log_Bar_Size) {
         return err(true, "Unknown Parameter: %s", tag.c_str());
     }
     return MLX_CFG_OK;
@@ -177,7 +186,7 @@ mlxCfgStatus MlxCfg::extractCfgArgs(int argc, char* argv[])
             return err(true, "Invalid Configuration argument %s", argv[i]);
         }
         //printf("-D- %s %s\n", tag.c_str(), valstr.c_str());
-        if (!strToNum(valstr, val)) {
+        if (!strToNum(valstr, val, 10)) {
             return err(true, "Failed to parse %s=%s", tag.c_str(), valstr.c_str());
         }
         // store val in the correct place in  mlxconfig Params
@@ -219,6 +228,9 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
         } else if (arg == "reset" || arg == "r") {
             _mlxParams.cmd = Mc_Reset;
             break;
+        // hidden flag --force used to ignore parameter checks
+        } else if (arg == "--force"){
+            _mlxParams.force = true;
         } else {
             return err(true, "invalid argument: %s", arg.c_str());
         }

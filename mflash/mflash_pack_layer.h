@@ -29,7 +29,12 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
+/*
+ * mflash_inband.h
+ *
+ *  Created on: Jul 6, 2011
+ *      Author: mohammad
+ */
 
 #ifndef MFLASH_COMMON_H_
 #define MFLASH_COMMON_H_
@@ -85,11 +90,15 @@ struct mflash {
 	f_mf_erase_sect f_erase_sect;
 	f_mf_reset      f_reset;
 
-	// Relevant for SPI flash (InfiniHostIIILx, ConnectX) only.
+	// Relevant for SPI flash (InfiniHostIIILx, ConnectX) only
 	f_st_spi_status f_spi_status;
+	// when set(1) we support modification of the flash status register
+	u_int8_t supp_sr_mod;
 
 	int             curr_bank;
 	int             is_locked;
+	// if writer_lock is set, semaphore should be freed only in mf_close()/disable_hw_access()
+	int             writer_lock;
 
 	flash_attr      attr;
 

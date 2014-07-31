@@ -1065,7 +1065,7 @@ bool Fs2Operations::CheckBxMacsFormat(guid_t* guids, int index, int user_uids)
 ////////////////////////////////////////////////////////////////////////
 void Fs2Operations::patchGUIDsSection(u_int32_t *buf, u_int32_t ind, guid_t guids[MAX_GUIDS], int nguids)
 {
-    u_int32_t       new_buf[MAX_GUIDS*2];
+    u_int32_t       new_buf[MAX_GUIDS*2] = {0};
 
     // Form new GUID section
     for (u_int32_t i=0; i<(u_int32_t)nguids; i++) {
@@ -1406,9 +1406,6 @@ bool Fs2Operations::Fs2Burn(Fs2Operations &imageOps, ExtBurnParams& burnParams)
         }
     }
 
-
-
-
     // Guids patch
     _burnBlankGuids = burnParams.blankGuids;
     bool  isGuidsSpecified  =  burnParams.userMacsSpecified || burnParams.userGuidsSpecified ||
@@ -1434,8 +1431,6 @@ bool Fs2Operations::Fs2Burn(Fs2Operations &imageOps, ExtBurnParams& burnParams)
             return false;
         }
     }
-
-    // TODO: EXp Rom checks - Take from flash ..??
     return Fs2FailSafeBurn(imageOps, !burnParams.burnFailsafe, "", burnParams.progressFunc);
 }
 
@@ -1493,6 +1488,14 @@ bool Fs2Operations::FwReadRom(std::vector<u_int8_t>& romSect)
     return true;
 }
 
+bool Fs2Operations::FwSetMFG(fs3_guid_t baseGuid, PrintCallBack callBackFunc)
+{
+    // avoid compiler warrnings
+    (void)baseGuid;
+    (void)callBackFunc;
+    return errmsg("This command is not supported for FS2 FW image.");
+}
+
 bool Fs2Operations::FwSetMFG(guid_t baseGuid, PrintCallBack callBackFunc)
 {
     // avoid compiler warrnings
@@ -1501,13 +1504,13 @@ bool Fs2Operations::FwSetMFG(guid_t baseGuid, PrintCallBack callBackFunc)
     return errmsg("This command is not supported for FS2 FW image.");
 }
 
-bool Fs2Operations::FwGetSection (u_int32_t sectType, std::vector<u_int8_t>& sectInfo)
+bool Fs2Operations::FwGetSection (u_int32_t sectType, std::vector<u_int8_t>& sectInfo, bool stripedImage)
 {
     if (sectType != H_FW_CONF && sectType != H_HASH_FILE) {
         return errmsg("Hash File section not found in the given image.");
     }
     initSectToRead(sectType);
-    if (!Fs2Verify()) {
+    if (!Fs2Verify((VerifyCallBack)NULL, stripedImage)) {
         return false;
     }
     if (sectType == H_FW_CONF) {
@@ -1574,8 +1577,10 @@ bool Fs2Operations::ReburnNewImage(u_int8_t *data, const char *feature_name, Pro
 
         // Re-write the image to the file.
         if (!WriteImageToFile(_fname, striped_data, striped_length)) {
+            delete[] striped_data;
             return false;
        }
+        delete[] striped_data;
     }
     return true;
 }
@@ -2030,4 +2035,12 @@ bool Fs2Operations::FwShiftDevData(PrintCallBack progressFunc)
     // avoid compiler warrnings
     (void)progressFunc;
     return errmsg("Shifting device data sections is not supported in FS2 image format.");
+}
+
+const char* Fs2Operations::FwGetResetRecommandationStr()
+{
+    if (!_devName) {// not an mst device
+        return NULL;
+    }
+    return NULL;
 }

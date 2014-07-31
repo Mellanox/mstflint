@@ -30,7 +30,6 @@
  * SOFTWARE.
  */
 
-
 #ifndef _MTCR_TOOLS_CIF     /* guard */
 #define _MTCR_TOOLS_CIF
 
