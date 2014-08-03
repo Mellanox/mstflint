@@ -170,8 +170,6 @@ int pci_find_capability(int fd, int cap_id)
 
 int pci_read_vpd_dword_file(int fd, unsigned offset, unsigned char data[4])
 {
-    unsigned char addr_flag[2];
-    int ret;
     if (offset >= VPD_MAX_SIZE || (offset & 0x3)) {
         return -1;
     }
