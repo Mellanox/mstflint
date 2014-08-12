@@ -785,7 +785,13 @@ name_parsed:
     *dev_p = my_dev;
     *func_p = my_func;
     *force = 0;
+#ifdef __aarch64__
+    // on ARM processors MMAP not supported
+    return MTCR_ACCESS_CONFIG;
+#else
+
     return MTCR_ACCESS_MEMORY;
+#endif
 }
 #endif
 
