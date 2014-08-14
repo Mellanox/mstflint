@@ -638,37 +638,28 @@ bool SubCommand::askUser(const char *question, bool printAbrtMsg) {
     if (_flintParams.yes)
         printf("y\n");
     else {
-        char ansbuff[32];
-        ansbuff[0] = '\0';
         if (_flintParams.no) {
             printf("n\n");
             reportErr(false, "-no flag is set\n");
             return false;
         }
-        /*for future tracer dev
-         *
-        if (_ignore_tty == false) {
-            if (!isatty(0)) {
-                sprintf(_err_msg, "Not on tty - Can not interact. assuming \"no\"\n");
-                return false;
-            }
-        }
-        */
-        fflush(stdout);
-        //fgets(ansbuff, 30, stdin);
-        if (!fscanf(stdin, "%30s", ansbuff)) {
-        	return false;
-        }
 
-        if (  strcasecmp(ansbuff, "y") &&
-              strcasecmp(ansbuff, "yes"))  {
+        fflush(stdout);
+        std::string answer;
+        std::getline(std::cin, answer);
+        //fgets(ansbuff, 30, stdin);
+        //if (!fscanf(stdin, "%[^\n]30s", ansbuff)) {
+        //  return false;
+        //}
+
+        if (  strcasecmp(answer.c_str(), "y") &&
+              strcasecmp(answer.c_str(), "yes"))  {
 
             if (printAbrtMsg) {
             reportErr(true, "Aborted by user\n");
             }
             return false;
         }
-
     }
     return true;
 }
