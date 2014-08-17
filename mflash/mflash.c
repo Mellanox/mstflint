@@ -212,11 +212,9 @@ enum FlashConstant {
     ERASE_SUBSECTOR_RETRIES      = 10000,
 
     FLASH_CMD_CNT  = 5000,      // Number of reads till flash cmd is zeroed
-#ifdef __WIN__
-    GPIO_SEM_TRIES = 1024 ,
-#else
-    GPIO_SEM_TRIES = 4096 ,     // Number of tries to obtain a GPIO sem.
-#endif
+
+    GPIO_SEM_TRIES = 1024 ,     // Number of tries to obtain a GPIO sem.
+
     MAX_WRITE_BUFFER_SIZE = 256 // Max buffer size for buffer write devices
 };
 
@@ -1734,14 +1732,14 @@ int old_flash_lock(mflash* mfl, int lock_state) {
             }
             MREAD4(SEMAP63, &word);
             if (word) {
-                usleep(1);
+                msleep(1);
             }
         } while (word);
     } else {
         MWRITE4(SEMAP63, 0);
         if (cnt > 1) {
             // we are not alone...
-            usleep(1);
+            msleep(1);
         }
         cnt = 0;
     }
@@ -1824,14 +1822,14 @@ int is4_flash_lock(mflash* mfl, int lock_state) {
             MREAD4(HCR_FLASH_CMD , &word);
             lock_status = EXTRACT(word, HBO_LOCK, 1);
             if (lock_status) {
-                usleep(1);
+                msleep(1);
             }
         } while (lock_status);
     } else {
         MWRITE4(HCR_FLASH_CMD, 0);
         if (cnt > 1) {
             // we are not alone
-            usleep(1);
+            msleep(1);
         }
         cnt = 0;
     }
@@ -2305,8 +2303,7 @@ int mf_open_fw(mflash* mfl, flash_params_t* flash_params, int num_of_banks)
         } else if (has_icmd_if(mfl->attr.hw_dev_id)) {
             rc = connectib_flash_init(mfl, flash_params);
         } else if (mfl->attr.hw_dev_id == 0xffff) {
-            printf("-E- Read a corrupted device id (0x%x). Probably HW/PCI access problem\n", mfl->attr.hw_dev_id);
-            rc = MFE_CR_ERROR;
+            rc = MFE_HW_DEVID_ERROR;
         } else {
             rc = MFE_UNSUPPORTED_DEVICE;
         }
@@ -2436,69 +2433,131 @@ int     mf_sw_reset     (mflash* mfl) {
 
 
 const char*   mf_err2str (int err_code) {
-    static const char* mf_err_str[] = {
-    "MFE_OK",
-    "MFE_GENERAL_ERROR",
-    "MFE_BAD_PARAMS",
-    "MFE_CR_ERROR",
-    "MFE_INVAL",
-    "MFE_NOT_IMPLEMENTED",
-    "MFE_UNSUPPORTED_FLASH_TOPOLOGY",
-    "MFE_UNSUPPORTED_FLASH_TYPE",
-    "MFE_CFI_FAILED",
-    "MFE_TIMEOUT",
-    "MFE_ERASE_TIMEOUT",
-    "MFE_WRITE_TIMEOUT",
-    "MFE_ERASE_ERROR",
-    "MFE_WRITE_ERROR",
-    "MFE_BAD_ALIGN",
-    "MFE_SEM_LOCKED",
-    "MFE_VERIFY_ERROR",
-    "MFE_NOMEM",
-    "MFE_OUT_OF_RANGE",
-    "MFE_CMD_SUPPORTED_INBAND_ONLY",
-    "MFE_NO_FLASH_DETECTED",
-    "MFE_HW_ACCESS_DISABLED",
-    "MFE_CMDIF_BAD_STATUS_ERR",
-    "MFE_CMDIF_TIMEOUT_ERR",
-    "MFE_CMDIF_GO_BIT_BUSY",
-    "The given key is incorrect",
-    "MFE_UNKNOWN_REG",
-    "MFE_DIRECT_FW_ACCESS_DISABLED",
-    "MFE_MANAGED_SWITCH_NOT_SUPPORTED",
-    "MFE_NOT_SUPPORTED_OPERATION",
-    "MFE_FLASH_NOT_EXIST",
-    "MFE_MISMATCH_PARAM",
-    "MFE_EXCEED_SUBSECTORS_MAX_NUM",
-    "MFE_EXCEED_SECTORS_MAX_NUM",
-    "MFE_SECTORS_NUM_NOT_POWER_OF_TWO",
-    "MFE_UNKOWN_ACCESS_TYPE",
-    "MFE_UNSUPPORTED_DEVICE",
-    "MFE_OLD_DEVICE_TYPE",
-    "MFE_ICMD_INIT_FAILED",
-    "MFE_ICMD_NOT_SUPPORTED",
-    "Secure host mode is not enabled in this FW.",
-    "MFE_MAD_SEND_ERR",
-    "MFE_ICMD_BAD_PARAM",
-    "MFE_ICMD_INVALID_OPCODE",
-    "MFE_ICMD_INVALID_CMD",
-    "MFE_ICMD_OPERATIONAL_ERROR",
-    "MFE_REG_ACCESS_BAD_METHOD",
-    "MFE_REG_ACCESS_NOT_SUPPORTED",
-    "MFE_REG_ACCESS_DEV_BUSY",
-    "MFE_REG_ACCESS_VER_NOT_SUPP",
-    "MFE_REG_ACCESS_UNKNOWN_TLV",
-    "MFE_REG_ACCESS_REG_NOT_SUPP",
-    "MFE_REG_ACCESS_CLASS_NOT_SUPP",
-    "MFE_REG_ACCESS_METHOD_NOT_SUPP",
-    "MFE_REG_ACCESS_BAD_PARAM",
-    "MFE_REG_ACCESS_RESOURCE_NOT_AVAILABLE",
-    "MFE_REG_ACCESS_MSG_RECPT_ACK",
-    "MFE_REG_ACCESS_UNKNOWN_ERR",
-    "MFE_REG_ACCESS_SIZE_EXCCEEDS_LIMIT",
-    };
 
-    return err_code < (int)ARRSIZE(mf_err_str) ? mf_err_str[err_code] : NULL;
+    switch (err_code) {
+    case MFE_OK:
+        return "MFE_OK";
+    case MFE_ERROR :
+        return "MFE_GENERAL_ERROR";
+    case MFE_BAD_PARAMS:
+        return "MFE_BAD_PARAMS";
+    case MFE_CR_ERROR :
+        return "MFE_CR_ERROR";
+    case MFE_HW_DEVID_ERROR:
+        return "Read a corrupted device id (0xffff). Probably HW/PCI access problem.";
+    case MFE_INVAL:
+        return "MFE_INVAL";
+    case MFE_NOT_IMPLEMENTED:
+        return "MFE_NOT_IMPLEMENTED";
+    case MFE_UNSUPPORTED_FLASH_TOPOLOGY:
+        return "MFE_UNSUPPORTED_FLASH_TOPOLOGY";
+    case MFE_UNSUPPORTED_FLASH_TYPE:
+        return "MFE_UNSUPPORTED_FLASH_TYPE";
+    case MFE_CFI_FAILED:
+        return "MFE_CFI_FAILED";
+    case MFE_TIMEOUT:
+        return "MFE_TIMEOUT";
+    case MFE_ERASE_TIMEOUT:
+        return "MFE_ERASE_TIMEOUT";
+    case MFE_WRITE_TIMEOUT:
+        return "MFE_WRITE_TIMEOUT";
+    case MFE_ERASE_ERROR:
+        return "MFE_ERASE_ERROR";
+    case MFE_WRITE_ERROR:
+        return "MFE_WRITE_ERROR";
+    case MFE_BAD_ALIGN:
+        return "MFE_BAD_ALIGN";
+    case MFE_SEM_LOCKED:
+        return "MFE_SEM_LOCKED";
+    case MFE_VERIFY_ERROR:
+        return "MFE_VERIFY_ERROR";
+    case MFE_NOMEM:
+        return "MFE_NOMEM";
+    case MFE_OUT_OF_RANGE:
+        return "MFE_OUT_OF_RANGE";
+    case MFE_CMD_SUPPORTED_INBAND_ONLY:
+        return "MFE_CMD_SUPPORTED_INBAND_ONLY";
+    case MFE_NO_FLASH_DETECTED:
+        return "MFE_NO_FLASH_DETECTED";
+    case MFE_LOCKED_CRSPACE:
+        return "MFE_HW_ACCESS_DISABLED";
+    case MFE_CMDIF_BAD_STATUS_ERR:
+        return "MFE_CMDIF_BAD_STATUS_ERR";
+    case MFE_CMDIF_TIMEOUT_ERR:
+        return "MFE_CMDIF_TIMEOUT_ERR";
+    case MFE_CMDIF_GO_BIT_BUSY:
+        return "MFE_CMDIF_GO_BIT_BUSY";
+    case MFE_MISMATCH_KEY:
+        return "The given key is incorrect";
+    case MFE_UNKNOWN_REG:
+        return "MFE_UNKNOWN_REG";
+    case MFE_DIRECT_FW_ACCESS_DISABLED:
+        return "MFE_DIRECT_FW_ACCESS_DISABLED";
+    case MFE_MANAGED_SWITCH_NOT_SUPPORTED:
+        return "MFE_MANAGED_SWITCH_NOT_SUPPORTED";
+    case MFE_NOT_SUPPORTED_OPERATION:
+        return "MFE_NOT_SUPPORTED_OPERATION";
+    case MFE_FLASH_NOT_EXIST:
+        return "MFE_FLASH_NOT_EXIST";
+    case MFE_MISMATCH_PARAM:
+        return "MFE_MISMATCH_PARAM";
+    case MFE_EXCEED_SUBSECTORS_MAX_NUM:
+        return "MFE_EXCEED_SUBSECTORS_MAX_NUM";
+    case MFE_EXCEED_SECTORS_MAX_NUM:
+        return "MFE_EXCEED_SECTORS_MAX_NUM";
+    case MFE_SECTORS_NUM_NOT_POWER_OF_TWO:
+        return "MFE_SECTORS_NUM_NOT_POWER_OF_TWO";
+    case MFE_UNKOWN_ACCESS_TYPE:
+        return "MFE_UNKOWN_ACCESS_TYPE";
+    case MFE_UNSUPPORTED_DEVICE:
+        return "MFE_UNSUPPORTED_DEVICE";
+    case MFE_OLD_DEVICE_TYPE:
+        return "MFE_OLD_DEVICE_TYPE";
+    case MFE_ICMD_INIT_FAILED:
+        return "MFE_ICMD_INIT_FAILED";
+    case MFE_ICMD_NOT_SUPPORTED:
+        return "MFE_ICMD_NOT_SUPPORTED";
+    case MFE_HW_ACCESS_NOT_SUPP:
+        return "Secure host mode is not enabled in this FW.";
+    case MFE_MAD_SEND_ERR:
+        return "MFE_MAD_SEND_ERR";
+    case MFE_ICMD_BAD_PARAM:
+        return "MFE_ICMD_BAD_PARAM";
+    case MFE_ICMD_INVALID_OPCODE:
+        return "MFE_ICMD_INVALID_OPCODE";
+    case MFE_ICMD_INVALID_CMD:
+        return "MFE_ICMD_INVALID_CMD";
+    case MFE_ICMD_OPERATIONAL_ERROR:
+        return "MFE_ICMD_OPERATIONAL_ERROR";
+    case MFE_REG_ACCESS_BAD_METHOD:
+        return "MFE_REG_ACCESS_BAD_METHOD";
+    case MFE_REG_ACCESS_NOT_SUPPORTED:
+        return "MFE_REG_ACCESS_NOT_SUPPORTED";
+    case MFE_REG_ACCESS_DEV_BUSY:
+        return "MFE_REG_ACCESS_DEV_BUSY";
+    case MFE_REG_ACCESS_VER_NOT_SUPP:
+        return "MFE_REG_ACCESS_VER_NOT_SUPP";
+    case MFE_REG_ACCESS_UNKNOWN_TLV:
+        return "MFE_REG_ACCESS_UNKNOWN_TLV";
+    case MFE_REG_ACCESS_REG_NOT_SUPP:
+        return "MFE_REG_ACCESS_REG_NOT_SUPP";
+    case MFE_REG_ACCESS_CLASS_NOT_SUPP:
+        return "MFE_REG_ACCESS_CLASS_NOT_SUPP";
+    case MFE_REG_ACCESS_METHOD_NOT_SUPP:
+        return "MFE_REG_ACCESS_METHOD_NOT_SUPP";
+    case MFE_REG_ACCESS_BAD_PARAM:
+        return "MFE_REG_ACCESS_BAD_PARAM";
+    case MFE_REG_ACCESS_RES_NOT_AVLBL:
+        return "MFE_REG_ACCESS_RESOURCE_NOT_AVAILABLE";
+    case MFE_REG_ACCESS_MSG_RECPT_ACK:
+        return "MFE_REG_ACCESS_MSG_RECPT_ACK";
+    case MFE_REG_ACCESS_UNKNOWN_ERR:
+        return "MFE_REG_ACCESS_UNKNOWN_ERR";
+    case MFE_REG_ACCESS_SIZE_EXCCEEDS_LIMIT:
+        return "MFE_REG_ACCESS_SIZE_EXCCEEDS_LIMIT";
+    default:
+        return "Unknown error";
+    }
 }
 
 int     mf_set_opt     (mflash* mfl, MfOpt opt, int  val) {

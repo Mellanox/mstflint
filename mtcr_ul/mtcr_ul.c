@@ -1586,9 +1586,9 @@ static int supports_icmd(mfile* mf) {
 	u_int32_t dev_id;
 	mread4(mf,HW_ID_ADDR, &dev_id); // cr might be locked and retured 0xbad0cafe but we dont care we search for device that supports icmd
 	switch (dev_id & 0xffff) { // that the hw device id
-		case CIB_HW_ID : //golan
-		case CX4_HW_ID : // shomron
-		case SW_IB_HW_ID : // pelican
+		case CIB_HW_ID :
+		case CX4_HW_ID :
+		case SW_IB_HW_ID :
 			return 1;
 		default:
 			break;

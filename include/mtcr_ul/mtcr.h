@@ -28,6 +28,7 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
 
 #ifndef MTCR_H
@@ -118,9 +119,9 @@ typedef enum Mdevs_t {
     MDEVS_GAMLA     = 0x01, /*  Each device that actually is a Gamla */
     MDEVS_I2CM      = 0x02, /*  Each device that can work as I2C master */
     MDEVS_MEM       = 0x04, /*  Each device that is a memory driver (vtop) */
-    MDEVS_TAVOR_DDR = 0x08, /*  Each device that maps to Tavor DDR */
-    MDEVS_TAVOR_UAR = 0x10, /*  Each device that maps to Tavor UAR */
-    MDEVS_TAVOR_CR  = 0x20, /*  Each device that maps to Tavor CR */
+    MDEVS_TAVOR_DDR = 0x08, /*  Each device that maps to DDR */
+    MDEVS_TAVOR_UAR = 0x10, /*  Each device that maps to UAR */
+    MDEVS_TAVOR_CR  = 0x20, /*  Each device that maps to CR */
     MDEVS_IF        = 0x40, /*  Standard device  interface */
     MDEVS_REM       = 0x80, /*  Remote devices */
     MDEVS_PPC       = 0x100, /*  PPC devices */
@@ -227,7 +228,7 @@ void mdevices_info_destroy(dev_info* dev_info, int len);
 int mget_mdevs_type(mfile *mf, u_int32_t *mtype);
 
 /*
- * Open Mellanox Software tools (mst) driver. Device type==TAVOR
+ * Open Mellanox Software tools (mst) driver. Device type==INFINIHOST
  * Return valid mfile ptr or 0 on failure
  */
 mfile *mopen(const char *name);

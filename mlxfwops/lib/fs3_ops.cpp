@@ -178,6 +178,10 @@ bool Fs3Operations::GetImageInfo(u_int8_t *buff)
     _fwImgInfo.ext_info.fw_rel_date[1] = (u_int16_t)image_info.FW_VERSION.Month;
     _fwImgInfo.ext_info.fw_rel_date[2] = (u_int16_t)image_info.FW_VERSION.Year;
 
+    // assuming number of supported_hw_id < MAX_NUM_SUPP_HW_IDS
+    memcpy(_fwImgInfo.supportedHwId, image_info.supported_hw_id, sizeof(image_info.supported_hw_id));
+    _fwImgInfo.supportedHwIdNum = (sizeof(image_info.supported_hw_id))/sizeof(image_info.supported_hw_id[0]);
+
     strcpy(_fs3ImgInfo.ext_info.image_vsd, image_info.vsd);
     strcpy(_fwImgInfo.ext_info.psid, image_info.psid);
     strcpy(_fwImgInfo.ext_info.product_ver, image_info.prod_ver);

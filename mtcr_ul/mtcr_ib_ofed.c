@@ -28,23 +28,8 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
-
-/********************************************************
-**
-*   ibvsmad.c
-*
-*   the ibvsmad library.
-*   this library provides vendor specific mad capabilities.
-*
-*   mread64, mwrite64 - IS3 I2C bus access MAD - ExtPortAccess -> I2C compliant port #1
-*   mread4 , mwrite4  - IS3 CR-Space access MAD - ConfigSpaceAccess
-*
-*
-*   author: yoniy@mellanox.co.il , Apr. 16th 2007
-*/
-
-
 
 #if HAVE_CONFIG_H
 #  include <config.h>
@@ -733,14 +718,15 @@ end:
 int
 mib_close(mfile *mf)
 {
+    if (mf->ctx) {
     // TODO: free the ddl handlers
-	ibvs_mad* h = (ibvs_mad*)(mf->ctx);
-	h->mad_rpc_close_port(h->srcport);
-
+        ibvs_mad* h = (ibvs_mad*)(mf->ctx);
+        h->mad_rpc_close_port(h->srcport);
 #ifndef IBVSMAD_DLOPEN
-    free_dll_handle(mf);
+        free_dll_handle(mf);
 #endif
-    free(mf->ctx);
+        free(mf->ctx);
+    }
     return 0;
 }
 

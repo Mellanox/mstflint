@@ -734,7 +734,7 @@ const FwOperations::HwDev2Str FwOperations::hwDev2Str[] = {
         {"ConnectX-2",        CX_HW_ID,         0xB0},
         {"ConnectX-3 A0",     CX3_HW_ID,        0x00},
         {"ConnectX-3 A1",     CX3_HW_ID,        0x01},
-        {"ConnectX-3Pro",     CX3_PRO_HW_ID,    0x0},
+        {"ConnectX-3Pro",     CX3_PRO_HW_ID,    0x00},
         {"ConnectX-4",        CX4_HW_ID,  	0x00},
         {"SwitchX A0",        SWITCHX_HW_ID,    0x00},
         {"SwitchX A1",        SWITCHX_HW_ID,    0x01},
