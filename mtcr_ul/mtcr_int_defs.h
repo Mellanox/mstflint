@@ -54,6 +54,7 @@ struct mfile_t {
     char*            dev_name;
     void            *ctx; // Access method context
     int              access_type;
+    int              fdlock;
 
     f_mread4         mread4;
     f_mwrite4        mwrite4;

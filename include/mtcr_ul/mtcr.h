@@ -183,12 +183,12 @@ typedef enum {
     RA_MFBE=0x9012,
 } reg_access_t;
 
-enum mtcr_access_method {
+typedef enum mtcr_access_method {
     MTCR_ACCESS_ERROR  = 0x0,
     MTCR_ACCESS_MEMORY = 0x1,
     MTCR_ACCESS_CONFIG = 0x2,
     MTCR_ACCESS_INBAND = 0x3
-};
+} mtcr_access_method_t;
 /*
  * Read 4 bytes, return number of succ. read bytes or -1 on failure
  */

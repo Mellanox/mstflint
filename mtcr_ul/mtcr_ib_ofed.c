@@ -726,6 +726,7 @@ mib_close(mfile *mf)
         free_dll_handle(mf);
 #endif
         free(mf->ctx);
+        mf->ctx = NULL;
     }
     return 0;
 }

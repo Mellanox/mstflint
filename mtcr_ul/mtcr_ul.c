@@ -67,17 +67,19 @@
 #include <endian.h>
 #include <byteswap.h>
 #include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <fcntl.h>
 #include <string.h>
 #include <stdlib.h>
 #include <libgen.h>
+#include <sys/file.h>
 
 
 #if CONFIG_ENABLE_MMAP
 #include <sys/mman.h>
 #include <sys/pci.h>
 #include <sys/ioctl.h>
-#include <sys/types.h>
 #endif
 
 #include <mtcr.h>
@@ -132,14 +134,106 @@ struct pciconf_context {
     int              fd;
 };
 
-static void mtcr_connectx_flush(void *ptr)
+/*
+ * Lock file section:
+ *
+ * in order to support concurrency on both MEMORY/CONFIG_CYCLES access methods
+ * there is need for a sync mechanism between mtcr_ul using processes
+ *
+ * solution: each mfile obj shall contain a file descriptor linked to a unique, device determined file
+ *           which will be used as a lock for the critical sections in read/write operations.
+ *           these lock files will be created per device (dbdf format) AND per interface (memory/configuration cycles).
+ */
+
+#define LOCK_FILE_DIR "/tmp/mstflint_lockfiles"
+#define LOCK_FILE_FORMAT "/tmp/mstflint_lockfiles/%04x:%02x:%02x.%x_%s"
+// lockfile example : /tmp/mstflint_lockfiles/0000:0b:00.0_config
+//                    /tmp/mstflint_lockfiles/0000:0b:00.0_mem
+// general format : /tmp/mstflint_lockfiles/<domain:bus:device.function>_<config|mem>
+#define CHECK_LOCK(rc) \
+    if(rc) {\
+        return rc;\
+    }
+
+#define MAX_RETRY_CNT 4096
+static int _flock_int(int fdlock, int operation) {
+    int cnt = 0;
+    if (fdlock == 0) { // in case we failed to create the lock file we ignore the locking mechanism
+        return 0;
+    }
+    do {
+        if (flock(fdlock, operation | LOCK_NB) == 0) {
+            return 0;
+        } else if(errno != EWOULDBLOCK){
+            break; // BAD! lock/free failed
+        }
+        if ((cnt & 0xf) == 0) {// sleep every 16 retries
+            usleep(1);
+        }
+        cnt++;
+    } while (cnt < MAX_RETRY_CNT);
+    perror("failed to perform lock operation.");
+    return -1;
+
+}
+
+static int _create_lock(mfile* mf, unsigned domain, unsigned bus, unsigned dev, unsigned func, mtcr_access_method_t access)
+{
+    char fname[64] = {0};
+    int rc;
+    snprintf(fname, 64,LOCK_FILE_FORMAT, domain, bus, dev, func, access == MTCR_ACCESS_CONFIG ? "config" : "mem");
+    rc = mkdir ("/tmp", 0777);
+    if (rc && errno != EEXIST) {
+        goto cl_clean_up;
+    }
+
+    rc = mkdir(LOCK_FILE_DIR, 0777);
+    if (rc && errno != EEXIST) {
+        goto cl_clean_up;
+    }
+
+    int fd = open(fname, O_RDONLY | O_CREAT, 0777);
+    if (fd < 0) {
+        goto cl_clean_up;
+    }
+    mf->fdlock = fd;
+    return 0;
+
+cl_clean_up:
+    fprintf(stderr, "Warrning: Failed to create lockfile: %s (parallel access not supported)\n" ,fname);
+    return 0;
+}
+/*End of Lock file section */
+
+static int _extract_dbdf_from_full_name(const char *name, unsigned* domain, unsigned* bus, unsigned* dev, unsigned* func)
+{
+    if (sscanf(name, "/sys/bus/pci/devices/%4x:%2x:%2x.%d/resource0", domain, bus, dev, func) == 4) {
+        return 0;
+    } else if (sscanf(name, "/sys/bus/pci/devices/%4x:%2x:%2x.%d/config", domain, bus, dev, func) == 4) {
+        return 0;
+    } else if (sscanf(name, "/proc/bus/pci/%4x:%2x/%2x.%d", domain, bus, dev, func) == 4) {
+        return 0;
+    } else if (sscanf(name, "/proc/bus/pci/%2x/%2x.%d", bus, dev, func) == 3) {
+        *domain = 0;
+        return 0;
+    }
+    // failed to extract dbdf format from name
+    errno = EINVAL;
+    return -1;
+}
+
+static int mtcr_connectx_flush(void *ptr, int fdlock)
 {
     u_int32_t value;
+    int rc;
+    rc = _flock_int(fdlock, LOCK_EX); CHECK_LOCK(rc);
     *((u_int32_t *)((char *)ptr + 0xf0380)) = 0x0;
     do {
         asm volatile ("":::"memory");
         value = __be32_to_cpu(*((u_int32_t *)((char *)ptr + 0xf0380)));
     } while(value);
+    rc = _flock_int(fdlock, LOCK_UN); CHECK_LOCK(rc)
+    return 0;
 }
 
 int mread4(mfile *mf, unsigned int offset, u_int32_t *value)
@@ -151,7 +245,6 @@ int mwrite4(mfile *mf, unsigned int offset, u_int32_t value)
 {
     return mf->mwrite4(mf,offset,value);
 }
-
 
 // TODO: Verify change 'data' type from void* to u_in32_t* does not mess up things
 static int
@@ -200,6 +293,7 @@ int mtcr_check_signature(mfile *mf)
 {
     unsigned signature;
     int rc;
+    char* connectx_flush = getenv("CONNECTX_FLUSH");
     rc = mread4(mf, 0xF0014, &signature);
     if (rc != 4) {
         if (!errno)
@@ -219,12 +313,16 @@ int mtcr_check_signature(mfile *mf)
     case 0x190 : /* 400 */
     case 0x1f5 :
     case 0x1f7 :
-        if ((signature == 0xa00190         ||
-                    (signature & 0xffff) == 0x1f5  ||
-                    (signature & 0xffff) == 0x1f7)    && mf->access_type == MTCR_ACCESS_MEMORY) {
-            struct pcicr_context* ctx = mf->ctx;
-            ctx->connectx_flush = 1;
-            mtcr_connectx_flush(ctx->ptr);
+        if (connectx_flush == NULL || strcmp(connectx_flush, "0")) {
+            if ((signature == 0xa00190         ||
+                        (signature & 0xffff) == 0x1f5  ||
+                        (signature & 0xffff) == 0x1f7)    && mf->access_type == MTCR_ACCESS_MEMORY) {
+                struct pcicr_context* ctx = mf->ctx;
+                ctx->connectx_flush = 1;
+                if (mtcr_connectx_flush(ctx->ptr, mf->fdlock)) {
+                    return -1;
+                }
+            }
         }
     case 0x5a44: /* 23108 */
     case 0x6278: /* 25208 */
@@ -462,7 +560,9 @@ int mtcr_pcicr_mread4(mfile *mf, unsigned int offset, u_int32_t *value)
         return 0;
     }
     if (ctx->need_flush) {
-        mtcr_connectx_flush(ctx->ptr);
+        if (mtcr_connectx_flush(ctx->ptr, mf->fdlock)) {
+            return 0;
+        }
         ctx->need_flush = 0;
     }
     *value = __be32_to_cpu(*((u_int32_t *)((char *)ctx->ptr + offset)));
@@ -487,7 +587,6 @@ int mtcr_pcicr_open(mfile *mf, const char *name, off_t off, int ioctl_needed)
 {
     int rc;
     struct pcicr_context *ctx;
-
     mf->access_type   = MTCR_ACCESS_MEMORY;
 
     mf->mread4        = mtcr_pcicr_mread4;
@@ -535,20 +634,28 @@ int mtcr_pciconf_mread4(mfile *mf, unsigned int offset, u_int32_t *value)
     struct pciconf_context *ctx = mf->ctx;
     int rc;
     offset = __cpu_to_le32(offset);
+    rc = _flock_int(mf->fdlock, LOCK_EX);
+    if (rc) {
+        goto pciconf_read_cleanup;
+    }
     rc=pwrite(ctx->fd, &offset, 4, 22*4);
     if (rc < 0) {
         perror("write offset");
-        return rc;
+        goto pciconf_read_cleanup;
     }
-    if (rc != 4)
-        return 0;
+    if (rc != 4) {
+        rc = 0;
+        goto pciconf_read_cleanup;
+    }
 
-    rc=pread(ctx->fd, value, 4, 23*4);
+    rc = pread(ctx->fd, value, 4, 23*4);
     if (rc < 0) {
         perror("read value");
-        return rc;
+        goto pciconf_read_cleanup;
     }
     *value = __le32_to_cpu(*value);
+pciconf_read_cleanup:
+    _flock_int(mf->fdlock, LOCK_UN);
     return rc;
 }
 
@@ -557,19 +664,27 @@ int mtcr_pciconf_mwrite4(mfile *mf, unsigned int offset, u_int32_t value)
     struct pciconf_context *ctx = mf->ctx;
     int rc;
     offset = __cpu_to_le32(offset);
+    rc = _flock_int(mf->fdlock, LOCK_EX);
+    if (rc) {
+        goto pciconf_write_cleanup;
+    }
     rc = pwrite(ctx->fd, &offset, 4, 22*4);
     if (rc < 0) {
         perror("write offset");
-        return rc;
+        goto pciconf_write_cleanup;
     }
-    if (rc != 4)
-        return 0;
+    if (rc != 4) {
+        rc = 0;
+        goto pciconf_write_cleanup;
+    }
     value = __cpu_to_le32(value);
     rc = pwrite(ctx->fd, &value, 4, 23*4);
     if (rc < 0) {
         perror("write value");
-        return rc;
+        goto pciconf_write_cleanup;
     }
+pciconf_write_cleanup:
+    _flock_int(mf->fdlock, LOCK_UN);
     return rc;
 }
 
@@ -585,6 +700,7 @@ int mtcr_pciconf_mclose(mfile *mf)
             close(ctx->fd);
         }
         free(ctx);
+        mf->ctx = NULL;
     }
 
     return 0;
@@ -613,7 +729,6 @@ int mtcr_pciconf_open(mfile *mf, const char *name)
     mf->ctx = ctx;
 
     ctx->fd = -1;
-
     ctx->fd = open(name, O_RDWR | O_SYNC);
     if (ctx->fd < 0)
         return -1;
@@ -625,13 +740,21 @@ int mtcr_pciconf_open(mfile *mf, const char *name)
     /* Do this test before mtcr_check_signature,
        to avoid system failure on access to an illegal address. */
     signature = 0xfafbfcfd;
+
+    rc = _flock_int(mf->fdlock, LOCK_EX);
+    if (rc) {
+        goto end;
+    }
+
     rc = pwrite(ctx->fd, &signature, 4, 22*4);
     if (rc != 4) {
+        _flock_int(mf->fdlock, LOCK_UN);
         rc = -1;
         goto end;
     }
 
     rc = pread(ctx->fd, &signature, 4, 22*4);
+    _flock_int(mf->fdlock, LOCK_UN);
     if (rc != 4) {
         rc = -1;
         goto end;
@@ -789,7 +912,6 @@ name_parsed:
     // on ARM processors MMAP not supported
     return MTCR_ACCESS_CONFIG;
 #else
-
     return MTCR_ACCESS_MEMORY;
 #endif
 }
@@ -969,12 +1091,6 @@ next:
     return dev_info_arr;
 }
 
-void mdevice_info_destroy(dev_info* dev_info, int len)
-{
-    (void)len;
-    if (dev_info)
-        free(dev_info);
-}
 
 void mdevices_info_destroy(dev_info* dev_info, int len)
 {
@@ -988,7 +1104,7 @@ mfile *mopen(const char *name)
     mfile *mf;
     off_t offset;
     unsigned domain = 0, bus = 0, dev = 0, func = 0;
-    enum mtcr_access_method access;
+    mtcr_access_method_t access;
     int force;
     char rbuf[] = "/sys/bus/pci/devices/XXXX:XX:XX.X/resource0";
     char cbuf[] = "/sys/bus/pci/devices/XXXX:XX:XX.X/config";
@@ -1015,6 +1131,18 @@ mfile *mopen(const char *name)
     if (access == MTCR_ACCESS_ERROR)
         goto open_failed;
 
+    if (access == MTCR_ACCESS_CONFIG || access == MTCR_ACCESS_MEMORY) {
+        // allocate lock to sync between parallel cr space requests (CONF/MEMORY only)
+        if (force) {
+            // need to extract the dbdf format from the full name
+            if (_extract_dbdf_from_full_name(name, &domain, &bus, &dev, &func)){
+                goto open_failed;
+            }
+        }
+        if (_create_lock(mf, domain, bus, dev, func , access)) {
+            goto open_failed;
+        }
+    }
     if (force) {
         switch (access) {
         case MTCR_ACCESS_CONFIG:
@@ -1135,19 +1263,24 @@ mfile *mopend(const char *name, int type)
 
 int mclose(mfile *mf)
 {
-    if (mf->mclose != NULL && mf->ctx != NULL) {
-		#ifdef MST_UL_ICMD
-        // close icmd if if needed
-        if (mf->icmd.icmd_opened) {
-        	icmd_close(mf);
+    if (mf != NULL){
+        if (mf->mclose != NULL && mf->ctx != NULL) {
+            #ifdef MST_UL_ICMD
+            // close icmd if if needed
+            if (mf->icmd.icmd_opened) {
+                icmd_close(mf);
+            }
+            #endif
+            mf->mclose(mf);
         }
-		#endif
-        mf->mclose(mf);
+        if (mf->dev_name) {
+            free(mf->dev_name);
+        }
+        if (mf->fdlock) {
+            close(mf->fdlock);
+        }
+        free(mf);
     }
-    if (mf->dev_name) {
-        free(mf->dev_name);
-    }
-    free(mf);
     return 0;
 }
 
