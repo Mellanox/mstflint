@@ -741,7 +741,7 @@ ParseStatus Flint::HandleOption(string name, string value)
         return PARSE_OK_WITH_EXIT;
     }
     else if (name == "no_devid_check") {
-            _flintParams.no_devid_check = false;
+            _flintParams.no_devid_check = true;
     }
     else if (name == "guid") {
         _flintParams.guid_specified = true;

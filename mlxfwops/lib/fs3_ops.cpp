@@ -702,6 +702,22 @@ bool Fs3Operations::Fs3Burn(Fs3Operations &imageOps, ExtBurnParams& burnParams)
         return false;
     }
 
+    // Check Matching device ID
+#ifndef UEFI_BUILD // NO Device ID here..
+    if (!burnParams.noDevidCheck && _ioAccess->is_flash()) {
+        if (imageOps._fwImgInfo.supportedHwIdNum) {
+             if (!CheckMatchingHwDevId(_ioAccess->get_dev_id(),
+                                         _ioAccess->get_rev_id(),
+                                         imageOps._fwImgInfo.supportedHwId,
+                                         imageOps._fwImgInfo.supportedHwIdNum)) {
+                 return errmsg("Device/Image mismatch: %s\n",this->err( ));
+             }
+         } else { // no suppored hw ids (problem with the image ?)
+             return errmsg("No supported devices were found in the FW image.");
+         }
+    }
+#endif
+
     if (!burnParams.burnFailsafe) {
         // some checks in case we burn in a non-failsafe manner and attempt to integrate existing device
         // data sections from device.
