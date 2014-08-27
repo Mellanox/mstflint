@@ -1,35 +1,17 @@
-/*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
- *
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
- * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
- * OpenIB.org BSD license below:
- *
- *     Redistribution and use in source and binary forms, with or
- *     without modification, are permitted provided that the following
- *     conditions are met:
- *
- *      - Redistributions of source code must retain the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer.
- *
- *      - Redistributions in binary form must reproduce the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
 
+/*
+               - Mellanox Confidential and Proprietary -
+ *
+ *  Copyright (C) Jan 2013, Mellanox Technologies Ltd.  ALL RIGHTS RESERVED.
+ *
+ *  Except as specifically permitted herein, no portion of the information,
+ *  including but not limited to object code and source code, may be reproduced,
+ *  modified, distributed, republished or otherwise exploited in any form or by
+ *  any means for any purpose without the prior written permission of Mellanox
+ *  Technologies Ltd. Use of software subject to the terms and conditions
+ *  detailed in the file "LICENSE.txt".
+ *
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -72,6 +54,22 @@
         *p = __be32_to_cpu(*p);                                    \
     } while(0)
 
+#if __BYTE_ORDER == __BIG_ENDIAN
+
+u_int64_t swap_dwords_be(u_int8_t* buff) {
+    u_int32_t first = *(u_int32_t*)(&buff[0]);\
+    u_int32_t second = *(u_int32_t*)(&buff[4]);\
+    u_int64_t dest = 0;
+    dest = MERGE64(dest, first, 0, 32);
+    dest = MERGE64(dest, second, 32, 32);
+    return dest;
+}
+#else
+u_int64_t swap_dwords_be(u_int8_t* buff) {
+    return *((u_int64_t*)buff);
+}
+#endif
+
 typedef struct tools_cmdif_t {
     u_int64_t in_param;
     u_int64_t out_param;
@@ -103,6 +101,7 @@ static void tools_cmdif_unpack(tools_cmdif* cmd, u_int32_t* buf) {
 
     cmd->in_param       = MERGE64(cmd->in_param, buf[0], 32, 32);
     cmd->in_param       = MERGE64(cmd->in_param, buf[1],  0, 32);
+
     cmd->input_modifier = buf[2];
     cmd->out_param      = MERGE64(cmd->out_param, buf[3], 32, 32);
     cmd->out_param      = MERGE64(cmd->out_param, buf[4],  0, 32);
@@ -162,7 +161,6 @@ static int tools_cmdif_send_cmd_int(mfile* mf, tools_cmdif* cmd)
     u_int32_t raw_cmd[CMD_IF_SIZE/4];
     int act_retries;
     int rc;
-
 
     // Check if the go BIT is ready
     rc = tools_cmdif_wait_go(mf, NULL);
@@ -378,8 +376,9 @@ int tools_cmdif_reg_access(mfile *mf, void* data, int write_data_size, int read_
 	int i;
 	//print_buffer(buffer, "before sending sending");
 	for (i=0 ; i< TOOLS_HCR_MAX_MBOX; i+=8) { // it is required to write in quad word chunks (64bits each time)
-		u_int64_t* ptr = (u_int64_t*)(&buffer[i]);
-		rc = tools_cmdif_mbox_write(mf, i/4, *ptr);
+	    // on big endian cpu need to swap between the dwords in the quad word
+	    u_int64_t val = swap_dwords_be((&buffer[i]));
+		rc = tools_cmdif_mbox_write(mf, i/4, val);
 		if (rc) {
 			goto cleanup;
 		}
@@ -399,6 +398,9 @@ int tools_cmdif_reg_access(mfile *mf, void* data, int write_data_size, int read_
 	// read read_data_size bytes from mbox and update our data
 	for (i=0 ; i< read_data_size; i+=8) { // it is required to write in quad word chunks (64bits each time)
 		rc = tools_cmdif_mbox_read(mf, i/4, (u_int64_t*)&(buffer[i]));
+		// on big endian cpu need to swap back between the dwords in the quad word
+		u_int64_t val = swap_dwords_be((&buffer[i]));
+		memcpy(&(buffer[i]), (u_int8_t*)&val, 8*sizeof(u_int8_t));
 		if (rc) {
 			goto cleanup;
 		}
@@ -455,3 +457,4 @@ int test_mbox(mfile* mf)
 
 }
 */
+
