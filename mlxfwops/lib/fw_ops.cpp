@@ -517,7 +517,7 @@ FwOperations* FwOperations::FwOperationsCreate(void* fwHndl, void *info, char* p
         fwParams.mstHndl = (char*)fwHndl;
         fwParams.forceLock = false;
         fwParams.readOnly = false;
-        fwParams.numOfBanks = 4;
+        fwParams.numOfBanks = -1;
         fwParams.flashParams = (flash_params_t*)NULL;
         fwParams.ignoreCacheRep = 0;
         fwParams.noFlashVerify = false;

@@ -70,7 +70,7 @@ FlintParams::FlintParams()
     striped_image = false;
     ignore_dev_data = false;
     banks_specified = false;
-    banks = 4;
+    banks = -1;
     log_specified = false;
     flash_params_specified = false;
     flash_params.type_name = (char*)NULL;
