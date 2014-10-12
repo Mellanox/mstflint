@@ -64,6 +64,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 
 %changelog
+* Mon Oct 12 2014 Oren Kladnitsky <orenk@dev.mellanox.co.il>
+   MFT 3.7.1
+
 * Mon Jul 31 2014 Oren Kladnitsky <orenk@dev.mellanox.co.il>
    MFT 3.7.0 Updates
 
