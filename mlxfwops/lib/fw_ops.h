@@ -74,7 +74,7 @@ public:
     static bool CntxEthOnly(u_int32_t devid);
     static void SetDevFlags(chip_type_t chipType, u_int32_t devType, fw_img_type_t fwType, bool &ibDev, bool &ethDev);
     static bool checkMatchingExpRomDevId(const fw_info_t& info);
-    static bool checkMatchingExpRomDevId(u_int16_t dev_type, roms_info_t roms_info);
+    static bool checkMatchingExpRomDevId(u_int16_t dev_type, const roms_info_t& roms_info);
     static const char* expRomType2Str(u_int16_t type);
 
 
@@ -320,7 +320,7 @@ protected:
     bool CheckFwVersion(FwOperations &imgFwOps, u_int8_t forceVersion);
     bool CheckPSID(FwOperations &imageOps, u_int8_t allow_psid_change = false);
     chip_type_t getChipType();
-    chip_type_t getChipTypeFromHwDevid(u_int32_t hwDevId);
+    bool getInfoFromHwDevid(u_int32_t hwDevId, chip_type_t& chipT, const u_int32_t** swIds);
 
     bool ReadImageFile(const char *fimage, u_int8_t *&file_data, int &file_size, int min_size=-1); // min_size=-1 like int flint_ops needed for fs3updateSection
     bool ModifyImageFile(const char *fimage, u_int32_t addr, void *data, int cnt);

@@ -1,20 +1,38 @@
-
-/*                  - Mellanox Confidential and Proprietary -
+/*
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
  *
- *  Copyright (C) 2010-2011, Mellanox Technologies Ltd.  ALL RIGHTS RESERVED.
+ * This software is available to you under a choice of one of two
+ * licenses.  You may choose to be licensed under the terms of the GNU
+ * General Public License (GPL) Version 2, available from the file
+ * COPYING in the main directory of this source tree, or the
+ * OpenIB.org BSD license below:
  *
- *  Except as specifically permitted herein, no portion of the information,
- *  including but not limited to object code and source code, may be reproduced,
- *  modified, distributed, republished or otherwise exploited in any form or by
- *  any means for any purpose without the prior written permission of Mellanox
- *  Technologies Ltd. Use of software subject to the terms and conditions
- *  detailed in the file "LICENSE.txt".
+ *     Redistribution and use in source and binary forms, with or
+ *     without modification, are permitted provided that the following
+ *     conditions are met:
+ *
+ *      - Redistributions of source code must retain the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer.
+ *
+ *      - Redistributions in binary form must reproduce the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer in the documentation and/or other materials
+ *        provided with the distribution.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  *
  */
- 
 
 /***
- *** This file was generated at "2014-07-08 14:00:09"
+ *** This file was generated at "2014-11-12 13:19:54"
  *** by:
  ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/tools_open/tools_open.adb --file-prefix tools_open --prefix tools_open_
  ***/
@@ -185,15 +203,134 @@ struct tools_open_mnva {
 };
 
 /* Description -   */
-/* Size in bytes - 4 */
-struct tools_open_sriov {
+/* Size in bytes - 28 */
+struct tools_open_query_def_params_per_port {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - The total number of VFs that can be supported. */
-	/* 0.0 - 0.15 */
-	 u_int16_t total_vfs;
-	/* Description - 1 when SRIOV is enabled: SRIOV capability will appear on the PCI configuration header. */
-	/* 0.31 - 4.31 */
+	/* Description -  */
+	/* 0.24 - 4.31 */
+	 u_int8_t fw_default_config_payload_version;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description -  */
+	/* 4.0 - 4.11 */
+	 u_int16_t boot_vlan;
+	/* Description -  */
+	/* 4.16 - 4.19 */
+	 u_int8_t boot_protocol;
+	/* Description -  */
+	/* 4.20 - 4.23 */
+	 u_int8_t boot_retry_cnt;
+	/* Description -  */
+	/* 4.25 - 4.26 */
+	 u_int8_t network_link_type;
+	/* Description -  */
+	/* 4.27 - 4.27 */
+	 u_int8_t en_wol_magic;
+	/* Description -  */
+	/* 4.28 - 4.28 */
+	 u_int8_t boot_vlan_en;
+	/* Description -  */
+	/* 4.29 - 4.29 */
+	 u_int8_t boot_option_rom_en;
+	/* Description -  */
+	/* 4.30 - 4.30 */
+	 u_int8_t pprx;
+	/* Description -  */
+	/* 4.31 - 8.31 */
+	 u_int8_t pptx;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description -  */
+	/* 8.0 - 8.15 */
+	 u_int16_t boot_pkey;
+/*---------------- DWORD[3] (Offset 0xc) ----------------*/
+	/* Description -  */
+	/* 12.22 - 12.23 */
+	 u_int8_t iscsi_boot_to_target;
+	/* Description -  */
+	/* 12.26 - 12.26 */
+	 u_int8_t iscsi_vlan_en;
+	/* Description -  */
+	/* 12.27 - 12.27 */
+	 u_int8_t iscsi_tcp_timestamps_en;
+	/* Description -  */
+	/* 12.28 - 12.28 */
+	 u_int8_t iscsi_chap_mutual_auth_en;
+	/* Description -  */
+	/* 12.29 - 12.29 */
+	 u_int8_t iscsi_chap_auth_en;
+	/* Description -  */
+	/* 12.30 - 12.30 */
+	 u_int8_t iscsi_dhcp_params_en;
+	/* Description -  */
+	/* 12.31 - 16.31 */
+	 u_int8_t iscsi_ipv4_dhcp_en;
+/*---------------- DWORD[4] (Offset 0x10) ----------------*/
+	/* Description -  */
+	/* 16.0 - 16.7 */
+	 u_int8_t iscsi_lun_busy_retry_cnt;
+	/* Description -  */
+	/* 16.8 - 16.15 */
+	 u_int8_t iscsi_link_up_delay_time;
+};
+
+/* Description -   */
+/* Size in bytes - 20 */
+struct tools_open_query_def_params_global {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0.24 - 4.31 */
+	 u_int8_t fw_default_config_payload_version;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - default number of virtual functions */
+	/* 4.0 - 4.7 */
+	 u_int8_t num_vfs1;
+	/* Description - default uar bar size (log2 format) */
+	/* 4.8 - 4.11 */
+	 u_int8_t uar_bar_size1;
+	/* Description - maximum value allowed for the uar bar size (log2 base) */
+	/* 4.12 - 4.15 */
+	 u_int8_t max_uar_bar_size1;
+	/* Description - default value of sriov (enabled or disabled) */
+	/* 4.31 - 8.31 */
 	 u_int8_t sriov_en;
+};
+
+/* Description -   */
+/* Size in bytes - 264 */
+union tools_open_phy_reg {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0.0 - 12.31 */
+	 struct tools_open_pmdic pmdic;
+	/* Description -  */
+	/* 0.0 - 264.31 */
+	 struct tools_open_pmdio pmdio;
+};
+
+/* Description -   */
+/* Size in bytes - 256 */
+union tools_open_mnv_cfg {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0.0 - 256.31 */
+	 struct tools_open_mnva mnva;
+	/* Description -  */
+	/* 0.0 - 8.31 */
+	 struct tools_open_mnvi mnvi;
+	/* Description -  */
+	/* 0.0 - 8.31 */
+	 struct tools_open_mnvia mnvia;
+};
+
+/* Description -   */
+/* Size in bytes - 4 */
+struct tools_open_vpi_settings {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Default link type:
+0  InfiniBand
+1  Ethernet
+ */
+	/* 0.0 - 0.1 */
+	 u_int8_t network_link_type;
 };
 
 /* Description -   */
@@ -207,14 +344,14 @@ struct tools_open_bar_size {
 
 /* Description -   */
 /* Size in bytes - 4 */
-struct tools_open_vpi_settings {
+struct tools_open_sriov {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Default link type:
-0  InfiniBand
-1  Ethernet
- */
-	/* 0.0 - 0.1 */
-	 u_int8_t network_link_type;
+	/* Description - The total number of VFs that can be supported. */
+	/* 0.0 - 0.15 */
+	 u_int16_t total_vfs;
+	/* Description - 1 when SRIOV is enabled: SRIOV capability will appear on the PCI configuration header. */
+	/* 0.31 - 4.31 */
+	 u_int8_t sriov_en;
 };
 
 /* Description -   */
@@ -246,29 +383,26 @@ struct tools_open_wol {
 
 /* Description -   */
 /* Size in bytes - 264 */
-union tools_open_phy_reg {
+union tools_open_hcr_cmds {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
-	/* 0.0 - 12.31 */
-	 struct tools_open_pmdic pmdic;
+	/* 0.0 - 20.31 */
+	 struct tools_open_query_def_params_global query_def_params_global;
 	/* Description -  */
-	/* 0.0 - 264.31 */
-	 struct tools_open_pmdio pmdio;
+	/* 0.0 - 28.31 */
+	 struct tools_open_query_def_params_per_port query_def_params_per_port;
 };
 
 /* Description -   */
-/* Size in bytes - 256 */
-union tools_open_mnv_cfg {
+/* Size in bytes - 512 */
+union tools_open_access_registers {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description -  */
+	/* Description - Misc NV Registers, this is temporary untill we integrate with fw db */
 	/* 0.0 - 256.31 */
-	 struct tools_open_mnva mnva;
-	/* Description -  */
-	/* 0.0 - 8.31 */
-	 struct tools_open_mnvi mnvi;
-	/* Description -  */
-	/* 0.0 - 8.31 */
-	 struct tools_open_mnvia mnvia;
+	 union tools_open_mnv_cfg MNVReg;
+	/* Description - Register for accessing FW managed external PHY */
+	/* 0.0 - 264.31 */
+	 union tools_open_phy_reg PhyReg;
 };
 
 /* Description -   */
@@ -280,13 +414,13 @@ union tools_open_nv_cfg {
 	 struct tools_open_wol wol;
 	/* Description -  */
 	/* 0.0 - 4.31 */
-	 struct tools_open_vpi_settings vpi_settings;
+	 struct tools_open_sriov sriov;
 	/* Description -  */
 	/* 0.0 - 4.31 */
 	 struct tools_open_bar_size bar_size;
 	/* Description -  */
 	/* 0.0 - 4.31 */
-	 struct tools_open_sriov sriov;
+	 struct tools_open_vpi_settings vpi_settings;
 };
 
 /* Description -   */
@@ -296,12 +430,12 @@ union tools_open_tools_open {
 	/* Description - Non-Volatile Cfg Tlvs */
 	/* 0.0 - 256.31 */
 	 union tools_open_nv_cfg NVConfig;
-	/* Description - Misc NV Registers, this is temporary untill we integrate with fw db */
-	/* 0.0 - 256.31 */
-	 union tools_open_mnv_cfg MNV_Reg;
-	/* Description - Register for accessing FW managed external PHY */
+	/* Description - various registers in specific use by the tools */
+	/* 0.0 - 512.31 */
+	 union tools_open_access_registers AceessRegisters;
+	/* Description - Tools HCR commands structs */
 	/* 0.0 - 264.31 */
-	 union tools_open_phy_reg Phy_Reg;
+	 union tools_open_hcr_cmds HcrCmds;
 };
 
 /* Description -   */
@@ -368,34 +502,20 @@ void tools_open_mnva_print(const struct tools_open_mnva *ptr_struct, FILE* file,
 int tools_open_mnva_size();
 #define TOOLS_OPEN_MNVA_SIZE    (0x100)
 void tools_open_mnva_dump(const struct tools_open_mnva *ptr_struct, FILE* file);
-/* sriov */
-void tools_open_sriov_pack(const struct tools_open_sriov *ptr_struct, u_int8_t* ptr_buff);
-void tools_open_sriov_unpack(struct tools_open_sriov *ptr_struct, const u_int8_t* ptr_buff);
-void tools_open_sriov_print(const struct tools_open_sriov *ptr_struct, FILE* file, int indent_level);
-int tools_open_sriov_size();
-#define TOOLS_OPEN_SRIOV_SIZE    (0x4)
-void tools_open_sriov_dump(const struct tools_open_sriov *ptr_struct, FILE* file);
-/* bar_size */
-void tools_open_bar_size_pack(const struct tools_open_bar_size *ptr_struct, u_int8_t* ptr_buff);
-void tools_open_bar_size_unpack(struct tools_open_bar_size *ptr_struct, const u_int8_t* ptr_buff);
-void tools_open_bar_size_print(const struct tools_open_bar_size *ptr_struct, FILE* file, int indent_level);
-int tools_open_bar_size_size();
-#define TOOLS_OPEN_BAR_SIZE_SIZE    (0x4)
-void tools_open_bar_size_dump(const struct tools_open_bar_size *ptr_struct, FILE* file);
-/* vpi_settings */
-void tools_open_vpi_settings_pack(const struct tools_open_vpi_settings *ptr_struct, u_int8_t* ptr_buff);
-void tools_open_vpi_settings_unpack(struct tools_open_vpi_settings *ptr_struct, const u_int8_t* ptr_buff);
-void tools_open_vpi_settings_print(const struct tools_open_vpi_settings *ptr_struct, FILE* file, int indent_level);
-int tools_open_vpi_settings_size();
-#define TOOLS_OPEN_VPI_SETTINGS_SIZE    (0x4)
-void tools_open_vpi_settings_dump(const struct tools_open_vpi_settings *ptr_struct, FILE* file);
-/* wol */
-void tools_open_wol_pack(const struct tools_open_wol *ptr_struct, u_int8_t* ptr_buff);
-void tools_open_wol_unpack(struct tools_open_wol *ptr_struct, const u_int8_t* ptr_buff);
-void tools_open_wol_print(const struct tools_open_wol *ptr_struct, FILE* file, int indent_level);
-int tools_open_wol_size();
-#define TOOLS_OPEN_WOL_SIZE    (0x8)
-void tools_open_wol_dump(const struct tools_open_wol *ptr_struct, FILE* file);
+/* query_def_params_per_port */
+void tools_open_query_def_params_per_port_pack(const struct tools_open_query_def_params_per_port *ptr_struct, u_int8_t* ptr_buff);
+void tools_open_query_def_params_per_port_unpack(struct tools_open_query_def_params_per_port *ptr_struct, const u_int8_t* ptr_buff);
+void tools_open_query_def_params_per_port_print(const struct tools_open_query_def_params_per_port *ptr_struct, FILE* file, int indent_level);
+int tools_open_query_def_params_per_port_size();
+#define TOOLS_OPEN_QUERY_DEF_PARAMS_PER_PORT_SIZE    (0x1c)
+void tools_open_query_def_params_per_port_dump(const struct tools_open_query_def_params_per_port *ptr_struct, FILE* file);
+/* query_def_params_global */
+void tools_open_query_def_params_global_pack(const struct tools_open_query_def_params_global *ptr_struct, u_int8_t* ptr_buff);
+void tools_open_query_def_params_global_unpack(struct tools_open_query_def_params_global *ptr_struct, const u_int8_t* ptr_buff);
+void tools_open_query_def_params_global_print(const struct tools_open_query_def_params_global *ptr_struct, FILE* file, int indent_level);
+int tools_open_query_def_params_global_size();
+#define TOOLS_OPEN_QUERY_DEF_PARAMS_GLOBAL_SIZE    (0x14)
+void tools_open_query_def_params_global_dump(const struct tools_open_query_def_params_global *ptr_struct, FILE* file);
 /* phy_reg */
 void tools_open_phy_reg_pack(const union tools_open_phy_reg *ptr_struct, u_int8_t* ptr_buff);
 void tools_open_phy_reg_unpack(union tools_open_phy_reg *ptr_struct, const u_int8_t* ptr_buff);
@@ -410,6 +530,48 @@ void tools_open_mnv_cfg_print(const union tools_open_mnv_cfg *ptr_struct, FILE* 
 int tools_open_mnv_cfg_size();
 #define TOOLS_OPEN_MNV_CFG_SIZE    (0x100)
 void tools_open_mnv_cfg_dump(const union tools_open_mnv_cfg *ptr_struct, FILE* file);
+/* vpi_settings */
+void tools_open_vpi_settings_pack(const struct tools_open_vpi_settings *ptr_struct, u_int8_t* ptr_buff);
+void tools_open_vpi_settings_unpack(struct tools_open_vpi_settings *ptr_struct, const u_int8_t* ptr_buff);
+void tools_open_vpi_settings_print(const struct tools_open_vpi_settings *ptr_struct, FILE* file, int indent_level);
+int tools_open_vpi_settings_size();
+#define TOOLS_OPEN_VPI_SETTINGS_SIZE    (0x4)
+void tools_open_vpi_settings_dump(const struct tools_open_vpi_settings *ptr_struct, FILE* file);
+/* bar_size */
+void tools_open_bar_size_pack(const struct tools_open_bar_size *ptr_struct, u_int8_t* ptr_buff);
+void tools_open_bar_size_unpack(struct tools_open_bar_size *ptr_struct, const u_int8_t* ptr_buff);
+void tools_open_bar_size_print(const struct tools_open_bar_size *ptr_struct, FILE* file, int indent_level);
+int tools_open_bar_size_size();
+#define TOOLS_OPEN_BAR_SIZE_SIZE    (0x4)
+void tools_open_bar_size_dump(const struct tools_open_bar_size *ptr_struct, FILE* file);
+/* sriov */
+void tools_open_sriov_pack(const struct tools_open_sriov *ptr_struct, u_int8_t* ptr_buff);
+void tools_open_sriov_unpack(struct tools_open_sriov *ptr_struct, const u_int8_t* ptr_buff);
+void tools_open_sriov_print(const struct tools_open_sriov *ptr_struct, FILE* file, int indent_level);
+int tools_open_sriov_size();
+#define TOOLS_OPEN_SRIOV_SIZE    (0x4)
+void tools_open_sriov_dump(const struct tools_open_sriov *ptr_struct, FILE* file);
+/* wol */
+void tools_open_wol_pack(const struct tools_open_wol *ptr_struct, u_int8_t* ptr_buff);
+void tools_open_wol_unpack(struct tools_open_wol *ptr_struct, const u_int8_t* ptr_buff);
+void tools_open_wol_print(const struct tools_open_wol *ptr_struct, FILE* file, int indent_level);
+int tools_open_wol_size();
+#define TOOLS_OPEN_WOL_SIZE    (0x8)
+void tools_open_wol_dump(const struct tools_open_wol *ptr_struct, FILE* file);
+/* hcr_cmds */
+void tools_open_hcr_cmds_pack(const union tools_open_hcr_cmds *ptr_struct, u_int8_t* ptr_buff);
+void tools_open_hcr_cmds_unpack(union tools_open_hcr_cmds *ptr_struct, const u_int8_t* ptr_buff);
+void tools_open_hcr_cmds_print(const union tools_open_hcr_cmds *ptr_struct, FILE* file, int indent_level);
+int tools_open_hcr_cmds_size();
+#define TOOLS_OPEN_HCR_CMDS_SIZE    (0x108)
+void tools_open_hcr_cmds_dump(const union tools_open_hcr_cmds *ptr_struct, FILE* file);
+/* access_registers */
+void tools_open_access_registers_pack(const union tools_open_access_registers *ptr_struct, u_int8_t* ptr_buff);
+void tools_open_access_registers_unpack(union tools_open_access_registers *ptr_struct, const u_int8_t* ptr_buff);
+void tools_open_access_registers_print(const union tools_open_access_registers *ptr_struct, FILE* file, int indent_level);
+int tools_open_access_registers_size();
+#define TOOLS_OPEN_ACCESS_REGISTERS_SIZE    (0x200)
+void tools_open_access_registers_dump(const union tools_open_access_registers *ptr_struct, FILE* file);
 /* nv_cfg */
 void tools_open_nv_cfg_pack(const union tools_open_nv_cfg *ptr_struct, u_int8_t* ptr_buff);
 void tools_open_nv_cfg_unpack(union tools_open_nv_cfg *ptr_struct, const u_int8_t* ptr_buff);

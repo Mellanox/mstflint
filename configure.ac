@@ -1,16 +1,16 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(mstflint, 3.7.1, orenk@mellanox.co.il)
+AC_INIT(mstflint, 3.8.0, orenk@mellanox.co.il)
 
 AC_DEFINE_UNQUOTED([PROJECT], ["mstflint"], [Define the project name.])
 AC_SUBST([PROJECT])
 
-AC_DEFINE_UNQUOTED([VERSION], ["3.7.1"], [Define the project version.])
+AC_DEFINE_UNQUOTED([VERSION], ["3.8.0"], [Define the project version.])
 AC_SUBST([VERSION])
 
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_SRCDIR([README])
-AM_INIT_AUTOMAKE(mstflint, 3.7.1)
+AM_INIT_AUTOMAKE(mstflint, 3.8.0)
 
 dnl Checks for programs
 AC_PROG_CC
@@ -52,7 +52,7 @@ CXXFLAGS="$CXXFLAGS -Werror -DMST_UL"
 
 AC_CONFIG_FILES( mstflint.spec )
 
-AC_OUTPUT( Makefile mft_utils/Makefile mtcr_ul/Makefile dev_mgt/Makefile tools_layouts/Makefile reg_access/Makefile mlxconfig/Makefile \
+AC_OUTPUT( Makefile mft_utils/Makefile mtcr_ul/Makefile dev_mgt/Makefile tools_layouts/Makefile reg_access/Makefile cmdif/Makefile mlxconfig/Makefile \
 		mflash/Makefile mlxfwops/Makefile mlxfwops/lib/Makefile cmdparser/Makefile flint/Makefile \
  		small_utils/Makefile mstdump/Makefile mstdump/crd_lib/Makefile mstdump/crd_main/Makefile  mstdump/mstdump_dbs/Makefile )
 

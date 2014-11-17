@@ -1,0 +1,83 @@
+/*
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ *
+ * This software is available to you under a choice of one of two
+ * licenses.  You may choose to be licensed under the terms of the GNU
+ * General Public License (GPL) Version 2, available from the file
+ * COPYING in the main directory of this source tree, or the
+ * OpenIB.org BSD license below:
+ *
+ *     Redistribution and use in source and binary forms, with or
+ *     without modification, are permitted provided that the following
+ *     conditions are met:
+ *
+ *      - Redistributions of source code must retain the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer.
+ *
+ *      - Redistributions in binary form must reproduce the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer in the documentation and/or other materials
+ *        provided with the distribution.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *
+ */
+
+#include <common/compatibility.h>
+#include "tools_cif.h"
+
+#define TOOLS_HCR_MAX_MBOX 256
+#define QUERY_DEV_CAP_OP 0x3
+#define QUERY_DEF_PARAMS_OP 0x73
+
+#define CHECK_RC(rc) \
+    if (rc) return rc;
+
+#define BE32_TO_CPU(s, n) do {                                          \
+	u_int32_t i;                                                   \
+    u_int32_t *p = (u_int32_t *)(s);                               \
+    for (i=0; i<(n); i++,p++)                                      \
+        *p = __be32_to_cpu(*p);                                    \
+    } while(0)
+
+//TODO: adrianc: if we find ourselves adding more and more commands consider using a macro to save code.
+//TODO: adrianc: when library expands consider returning its own error code
+
+MError tcif_query_dev_cap(mfile *dev, u_int32_t offset, u_int64_t* data)
+{
+    int rc = tools_cmdif_send_mbox_command(dev, QUERY_DEV_CAP_OP, 0, offset, data, 8, 1); CHECK_RC(rc);
+    BE32_TO_CPU(data, 2);
+    return ME_OK;
+}
+
+
+MError tcif_query_global_def_params(mfile* dev, struct tools_open_query_def_params_global* global_params)
+{
+    u_int8_t data[TOOLS_OPEN_QUERY_DEF_PARAMS_GLOBAL_SIZE] = {0};
+    int rc = tools_cmdif_send_mbox_command(dev, QUERY_DEF_PARAMS_OP, 0, 0, data, sizeof(data), 0);CHECK_RC(rc);
+    tools_open_query_def_params_global_unpack(global_params, data);
+    return ME_OK;
+}
+
+
+MError tcif_query_per_port_def_params(mfile* dev, u_int8_t port, struct tools_open_query_def_params_per_port* port_params)
+{
+    u_int8_t data[TOOLS_OPEN_QUERY_DEF_PARAMS_PER_PORT_SIZE] = {0};
+    int rc = tools_cmdif_send_mbox_command(dev, QUERY_DEF_PARAMS_OP, port, 0, data, sizeof(data), 0);CHECK_RC(rc);
+    tools_open_query_def_params_per_port_unpack(port_params, data);
+    return ME_OK;
+}
+
+
+const char* tcif_err2str(MError rc) {
+    return m_err2str(rc);
+}
+

@@ -77,7 +77,7 @@ private:
     #define CRC_CHECK_OUTPUT  CRC_CHECK_OLD")"
     #define FS3_CRC_CHECK_OUT CRC_CHECK_OLD":0x%x)"
     #define PRE_CRC_OUTPUT   "    "
-    #define MAX_TOCS_NUM         128
+    #define MAX_TOCS_NUM         64
     #define FS3_DEFAULT_SECTOR_SIZE 0x1000
     #define ITOC_ASCII 0x49544f43
     #define DTOC_ASCII 0x64544f43

@@ -28,6 +28,7 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
 
 #ifndef _MTCR_TOOLS_CIF     /* guard */
@@ -39,7 +40,7 @@ extern "C" {
 
 
 #include <compatibility.h>
-#ifdef MST_UL_ICMD
+#ifdef MST_UL
 #include <mtcr_int_defs.h>
 #endif
 #include <mtcr.h>
@@ -53,20 +54,6 @@ extern "C" {
 
 
 /*
- * send a command to the tools HCR
- * limitations:
- * command should not use mailbox (not supported atm)
- */
-int tools_cmdif_send_cmd(mfile* mf,
-					 u_int64_t in_param,
-					 u_int64_t* out_param,
-					 u_int32_t input_modifier,
-					 u_int16_t opcode,
-					 u_int8_t  opcode_modifier,
-					 u_int8_t*  status);
-
-
-/*
  * register access tools HCR
  *
  * data: 			the raw register data
@@ -77,6 +64,14 @@ int tools_cmdif_send_cmd(mfile* mf,
  */
 
 int tools_cmdif_reg_access(mfile *mf, void* data,int write_data_size, int read_data_size);
+
+/*
+ * tools_cmdif_is_supported tools HCR
+ *
+ * check if sending registers via tools HCR is supported
+ *
+ */
+int tools_cmdif_is_supported(mfile *mf);
 
 #ifdef __cplusplus
 }

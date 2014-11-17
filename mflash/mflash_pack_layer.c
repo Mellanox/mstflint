@@ -98,7 +98,7 @@ int common_erase_sector(mfile *mf, u_int32_t addr, u_int8_t flash_bank)
     return MError2MfError(reg_access_mfbe (mf, REG_ACCESS_METHOD_SET, &mfbe));
 }
 
-int run_mfpa_command(mfile *mf, u_int8_t access_cmd, u_int8_t flash_bank, u_int32_t boot_address, u_int32_t *jedec_p)
+int run_mfpa_command(mfile *mf, u_int8_t access_cmd, u_int8_t flash_bank, u_int32_t boot_address, u_int32_t *jedec_p, int *num_of_banks)
 {
 	struct register_access_mfpa    mfpa;
     int rc;
@@ -109,8 +109,8 @@ int run_mfpa_command(mfile *mf, u_int8_t access_cmd, u_int8_t flash_bank, u_int3
     if (access_cmd == REG_ACCESS_METHOD_SET) {
         mfpa.boot_address = boot_address;
     }
-    rc = reg_access_mfpa (mf, access_cmd, &mfpa);
-    rc = MError2MfError(rc);
+    rc = MError2MfError(reg_access_mfpa (mf, access_cmd, &mfpa));
+
     if (rc && rc != MFE_REG_ACCESS_BAD_PARAM) {
         // if rc is REG_ACCESS_BAD_PARAM it means we dont have that flash bank connected (no need to fail)
         return rc;
@@ -123,12 +123,25 @@ int run_mfpa_command(mfile *mf, u_int8_t access_cmd, u_int8_t flash_bank, u_int3
             *jedec_p = 0xffffffff;
         }
     }
+    if (num_of_banks != NULL) {
+        *num_of_banks = mfpa.flash_num;
+    }
     return MFE_OK;
+}
+
+int get_num_of_banks(mfile *mf)
+{
+    int num_of_banks;
+    int rc = run_mfpa_command(mf, REG_ACCESS_METHOD_GET, 0, 0, NULL, &num_of_banks);
+    if (rc) {
+        return -1;
+    }
+    return num_of_banks;
 }
 
 int com_get_jedec(mfile *mf, u_int8_t flash_bank, u_int32_t *jedec_p)
 {
-    return run_mfpa_command(mf, REG_ACCESS_METHOD_GET, flash_bank, 0, jedec_p);
+    return run_mfpa_command(mf, REG_ACCESS_METHOD_GET, flash_bank, 0, jedec_p, NULL);
 }
 
 int set_bank(mflash* mfl, u_int32_t addr) {

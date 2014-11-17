@@ -28,6 +28,7 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
 /*
  * mlxcfg_lib.cpp
@@ -44,6 +45,9 @@
 #include <tools_layouts/tools_open_layouts.h>
 #include <reg_access/reg_access.h>
 #include <bit_slice.h>
+#include <cmdif/tools_cif.h>
+#include <mtcr.h>
+
 
 #include "mlxcfg_lib.h"
 
@@ -80,6 +84,8 @@ using namespace std;
 # define DEBUG_PRINT_RECIEVE(data_struct, struct_name)
 #endif
 
+#define CHECK_RC(rc)\
+	if (rc) return rc;
 /*
  * Enum for handling error messages
  */
@@ -112,6 +118,7 @@ typedef enum {
     MCE_INCOMPLETE_PARAMS,
     MCE_OPEN_DEVICE,
     MCE_PCICONF,
+    MCE_GET_DEFAULT_PARAMS,
     MCE_UNKNOWN_ERR
 }McStatus;
 
@@ -133,6 +140,7 @@ MlxCfgOps::CfgParams::CfgParams(mlxCfgType t, u_int32_t tlvT) {
     errmap[MCE_BAD_PARAMS] = "Bad parameters";
     errmap[MCE_BAD_PARAM_VAL] = "Bad parameter value";
     errmap[MCE_BAD_STATUS] = "General Failure";
+    errmap[MCE_GET_DEFAULT_PARAMS] = "Failed to get default params";
 
     updateErrCodes(errmap);
     type = t;
@@ -140,9 +148,49 @@ MlxCfgOps::CfgParams::CfgParams(mlxCfgType t, u_int32_t tlvT) {
     _updated = false;
 }
 
+int MlxCfgOps::CfgParams::getDefaultParams4thGen(mfile* mf, struct tools_open_query_def_params_global* global_params)
+{
+    MError rc  = tcif_query_global_def_params(mf, global_params);
+    if (rc) {
+        return errmsg(MCE_BAD_STATUS, "Failed to get default parameters: %s", tcif_err2str(rc));
+    }
+    return MCE_SUCCESS;
+}
+
+int MlxCfgOps::CfgParams::getDefaultParams4thGen(mfile* mf, int port, struct tools_open_query_def_params_per_port* port_params)
+{
+    MError rc  = tcif_query_per_port_def_params(mf, port, port_params);
+    if (rc) {
+        return errmsg(MCE_BAD_STATUS, "Failed to get default parameters: %s", tcif_err2str(rc));
+    }
+    return MCE_SUCCESS;
+}
+
+int MlxCfgOps::CfgParams::getDefaultAndFromDev(mfile* mf)
+{
+    int rc;
+    rc = getDefaultParams(mf); CHECK_RC(rc);
+    rc = getFromDev(mf); CHECK_RC(rc);
+    return MCE_SUCCESS;
+}
 /*
  * MlxCfgOps::SriovParams implementation
  */
+
+int MlxCfgOps::SriovParams::getDefaultParams(mfile* mf)
+{
+    struct tools_open_query_def_params_global global_params;
+    int rc;
+    rc = updateMaxVfs(mf); CHECK_RC(rc);
+    rc = getDefaultParams4thGen(mf, &global_params);
+    if (rc == MCE_SUCCESS) {
+        _sriovEn = global_params.sriov_en;
+        _numOfVfs = global_params.num_vfs1;
+    } else {
+        rc = MCE_GET_DEFAULT_PARAMS;
+    }
+    return rc;
+}
 
 void MlxCfgOps::SriovParams::setParam(mlxCfgParam paramType, u_int32_t val)
 {
@@ -191,8 +239,8 @@ int MlxCfgOps::SriovParams::getFromDev(mfile* mf)
     }
     // unpack and update
     tools_open_sriov_unpack(&sriovTlv, buff);
-    _sriovEn = _sriovEn == MLXCFG_UNKNOWN ? sriovTlv.sriov_en : _sriovEn ;
-    _numOfVfs = _numOfVfs == MLXCFG_UNKNOWN ? sriovTlv.total_vfs : _numOfVfs ;
+    _sriovEn = sriovTlv.sriov_en;
+    _numOfVfs = sriovTlv.total_vfs;
     _updated = true;
 
     return MCE_SUCCESS;
@@ -200,16 +248,13 @@ int MlxCfgOps::SriovParams::getFromDev(mfile* mf)
 
 int MlxCfgOps::SriovParams::setOnDev(mfile* mf, bool ignoreCheck)
 {
-    int rc;
     if (_sriovEn == MLXCFG_UNKNOWN || _numOfVfs == MLXCFG_UNKNOWN) {
-        rc = getFromDev(mf);
-        if (rc || _sriovEn == MLXCFG_UNKNOWN || _numOfVfs == MLXCFG_UNKNOWN) { // go here if we fail to get the tlv or it doesnt exsist (one of the params == MLXCFG_UNKNOWN)
-            return errmsg("%s please specify all the parameters for SRIOV.", err() ? err(): "");
-        }
+        return errmsg("%s please specify all parameters for SRIOV.", err() ? err() : "");
     }
     if (!ignoreCheck && !isLegal(mf)) {
         return MCE_BAD_PARAMS;
     }
+
     // prep tlv
     MError ret;
     u_int8_t buff[tools_open_sriov_size()];
@@ -235,7 +280,7 @@ int MlxCfgOps::SriovParams::setOnDev(mfile* mf, bool ignoreCheck)
 int MlxCfgOps::SriovParams::updateMaxVfs(mfile* mf)
 {
     u_int64_t data = 0;
-    int rc = tools_cmdif_query_dev_cap(mf, MAX_VFS_ADDR, &data);
+    int rc = tcif_query_dev_cap(mf, MAX_VFS_ADDR, &data);
     if (rc) {
         return errmsg("failed to query device capabilities: %s", m_err2str((MError)rc));
     }
@@ -243,31 +288,46 @@ int MlxCfgOps::SriovParams::updateMaxVfs(mfile* mf)
     if (_maxVfs == 0) { // defined in CX PRM , if max_func_idx=0 then all functions(128) are operational
         _maxVfs = 128;
     }
+    _maxVfs--; // remove 1 physical function
     return MCE_SUCCESS;
 }
 
 bool MlxCfgOps::SriovParams::isLegal(mfile* mf)
 {
+    u_int32_t barSz = 0;
+    BarSzParams barParams;
+
     if (!mf) {
         return false;
     }
-    u_int64_t data = 0;
-    int rc = tools_cmdif_query_dev_cap(mf, DEFAULT_BAR_SZ_ADDR, &data);
-    if (rc) {
-        errmsg("failed to query device capabilities: %s",m_err2str((MError)rc));
+
+    if (barParams.getDefaultAndFromDev(mf)) {
+    	return false;
+    }
+
+    if ((_numOfVfs > _maxVfs)) {
+        errmsg("Number of VFs exceeds limit (%d).", _maxVfs);
         return false;
     }
-    data = EXTRACT64(data,16,6) + 1; // this is the default log2 bar size , we require numOfVfs*(2^log_uar_bar) <= 512 or else the node might not boot
-    double VfsMem = _numOfVfs*(std::pow((double)2, (int)data));
-    //TODO: when bar_size tlv will be supported, we need to change this to the current bar_size (and also check with the current tlv bar size)
-    //printf("-D- num_of_vfs*2^(bar_sz+1) = %d*2^%ld = %d\n", _numOfVfs, data, (int)(_numOfVfs*(std::pow((double)2, (int)data))));
-    //printf("-D- maxVfs(default set by fw) : %d\n", _maxVfs);
+
     if (_sriovEn != 0 && _sriovEn != 1) {
         errmsg("illegal SRIOV_EN parameters value. (should be 0 or 1)");
         return false;
     }
-    if ((_numOfVfs > _maxVfs) || (VfsMem > 512)){
-        unsigned int maxAlowedVfs =static_cast<unsigned int>(512/(std::pow((double)2, (int)data)));
+    if (_sriovEn == 0) {
+    	return true;
+    }
+
+    barSz = barParams.getParam(Mcp_Log_Bar_Size);
+
+    if (barSz == MLXCFG_UNKNOWN) {
+    	return errmsg("Failed to get the bar size from device");
+    }
+    // this is the default log2 bar size , we require (numOfVfs+1)*(2^log_uar_bar) <= 512 or else the node might not boot
+    double TotalMem = (_numOfVfs + 1)*(1 << barSz); // 1 for physical func
+
+    if ((TotalMem > 512)){
+        unsigned int maxAlowedVfs =static_cast<unsigned int>(512/(1 << barSz)) - 1;
         errmsg("illegal SRIOV parameter value. Maximal number of VFs: %d", maxAlowedVfs < _maxVfs ? maxAlowedVfs : _maxVfs);
         return false;
     }
@@ -277,6 +337,18 @@ bool MlxCfgOps::SriovParams::isLegal(mfile* mf)
 /*
  * MlxCfgOps::WolParams implementation
  */
+
+int MlxCfgOps::WolParams::getDefaultParams(mfile* mf)
+{
+    struct tools_open_query_def_params_per_port port_params;
+    int rc = getDefaultParams4thGen(mf, _port , &port_params);
+    if (rc == MCE_SUCCESS) {
+        _wolMagicEn = port_params.en_wol_magic;
+    } else {
+        rc = MCE_GET_DEFAULT_PARAMS;
+    }
+    return rc;
+}
 
 void MlxCfgOps::WolParams::setParam(mlxCfgParam paramType, u_int32_t val)
 {
@@ -317,7 +389,7 @@ int MlxCfgOps::WolParams::getFromDev(mfile* mf)
     }
     // unpack and update
     tools_open_wol_unpack(&wolTlv, buff);
-    _wolMagicEn = _wolMagicEn == MLXCFG_UNKNOWN ? wolTlv.en_wol_magic : _wolMagicEn ;
+    _wolMagicEn = wolTlv.en_wol_magic;
     _updated = true;
 
     return MCE_SUCCESS;
@@ -325,12 +397,8 @@ int MlxCfgOps::WolParams::getFromDev(mfile* mf)
 
 int MlxCfgOps::WolParams::setOnDev(mfile* mf, bool ignoreCheck)
 {
-    int rc;
     if (_wolMagicEn == MLXCFG_UNKNOWN) {
-        rc = getFromDev(mf);
-        if (rc || _wolMagicEn == MLXCFG_UNKNOWN) {
-            return errmsg("%s please specify all the parameters for WOL.", err()? err() : "");
-        }
+        return errmsg("%s please specify all the parameters for WOL.", err()? err() : "");
     }
     if (!ignoreCheck && !isLegal()) {
         return MCE_BAD_PARAMS;
@@ -369,6 +437,39 @@ bool MlxCfgOps::WolParams::isLegal(mfile* mf)
 /*
  *  BarSzParams Implementation
  */
+
+int MlxCfgOps::BarSzParams::getDefaultParams(mfile* mf)
+{
+    struct tools_open_query_def_params_global global_params;
+    int rc = getDefaultParams4thGen(mf, &global_params);
+    if ((rc == MCE_SUCCESS) & 0) { //TODO: adrianc: remove the & 0 when FW displays thesee parameters correctly in QUERY_DEF_PARAMS command
+        _logBarSz = global_params.uar_bar_size1;
+        _maxLogBarSz = global_params.max_uar_bar_size1;
+    } else {
+        // attempt to take from query_dev_cap
+        rc = getDefaultBarSz(mf);
+    }
+    return rc;
+}
+
+int MlxCfgOps::BarSzParams::getDefaultBarSz(mfile* mf)
+{
+    u_int64_t data = 0;
+    MError rc = tcif_query_dev_cap(mf, MAX_BAR_SZ_ADDR, &data);
+    if (rc) {
+        return errmsg(MCE_BAD_STATUS,"Failed to query device capabilities. %s", tcif_err2str(rc));
+    }
+
+    _maxLogBarSz = EXTRACT64(data, 3, 6);
+
+    rc = tcif_query_dev_cap(mf, DEFAULT_BAR_SZ_ADDR, &data);
+    if (rc) {
+        return errmsg(MCE_BAD_STATUS,"Failed to query device capabilities. %s", tcif_err2str(rc));
+    }
+
+    _logBarSz = EXTRACT64(data, 16, 6) + 1; //adrianc: this field reports only half of the bar size (i.e without the blue flame)
+    return MCE_SUCCESS;
+}
 
 void MlxCfgOps::BarSzParams::setParam(mlxCfgParam paramType, u_int32_t val)
 {
@@ -409,7 +510,7 @@ int MlxCfgOps::BarSzParams::getFromDev(mfile* mf)
     }
     // unpack and update
     tools_open_bar_size_unpack(&barSzTlv, buff);
-    _logBarSz = _logBarSz == MLXCFG_UNKNOWN ? barSzTlv.log_uar_bar_size : _logBarSz ;
+    _logBarSz = barSzTlv.log_uar_bar_size;
     _updated = true;
 
     return MCE_SUCCESS;
@@ -417,14 +518,11 @@ int MlxCfgOps::BarSzParams::getFromDev(mfile* mf)
 
 int MlxCfgOps::BarSzParams::setOnDev(mfile* mf, bool ignoreCheck)
 {
-    int rc;
     if (_logBarSz == MLXCFG_UNKNOWN) {
-        rc = getFromDev(mf);
-        if (rc || _logBarSz == MLXCFG_UNKNOWN) {
-            return errmsg("%s please specify all the parameters for BAR size.", err() ? err() : "");
-        }
+        return errmsg("%s please specify all the parameters for BAR size.", err() ? err() : "");
     }
-    if (!ignoreCheck && !isLegal()) {
+
+    if (!ignoreCheck && !isLegal(mf)) {
         return MCE_BAD_PARAMS;
     }
 
@@ -449,33 +547,64 @@ int MlxCfgOps::BarSzParams::setOnDev(mfile* mf, bool ignoreCheck)
     return MCE_SUCCESS;
 }
 
-int MlxCfgOps::BarSzParams::updateBarSzInfo(mfile* mf)
-{
-    u_int64_t data = 0;
-    int rc = tools_cmdif_query_dev_cap(mf, MAX_BAR_SZ_ADDR, &data);
-    if (rc) {
-        return errmsg("Failed to query device capabilities: %s", m_err2str((MError)rc));
-    }
-    _maxLogBarSz = (u_int32_t)(data & 0xffffffff);
-    _currLogBarSz = (u_int32_t)(data >> 32);
-    //printf("-D- vec 0x%lx  max %d  curr %d\n", data, maxBarSz, currBarSz);
-    return MCE_SUCCESS;
-}
-
 bool MlxCfgOps::BarSzParams::isLegal(mfile* mf)
 {
-    (void)mf;
-    if (_logBarSz < _maxLogBarSz ) {
-        return true;
+    u_int32_t numOfVfs = 0;
+    int sriovEn;
+    SriovParams sriovParams;
+
+    if (!mf) {
+        return false;
     }
-    errmsg("given bar size is too large, max allowed log2 bar size: 0x%x", _maxLogBarSz);
-    return false;
+
+    if (_logBarSz >= _maxLogBarSz ) {
+        errmsg("given bar size is too large, max allowed log2 bar size: 0x%x", _maxLogBarSz);
+        return false;
+    }
+
+    if (sriovParams.getDefaultAndFromDev(mf)) {
+        errmsg("Failed to get SRIOV parameters from device: %s", sriovParams.err());
+        return false;
+    }
+
+    numOfVfs = sriovParams.getParam(Mcp_Num_Of_Vfs);
+    sriovEn = sriovParams.getParam(Mcp_Sriov_En);
+
+    if (numOfVfs== MLXCFG_UNKNOWN || numOfVfs == MLXCFG_UNKNOWN) {
+        errmsg("Illegal SRIOV parameters values");
+    	return false;
+    }
+
+    if (sriovEn == 0) {
+    	return true;
+    }
+    // this is the default log2 bar size , we require numOfVfs*(2^log_uar_bar) <= 512 or else the node might not boot
+    double TotalMem = (numOfVfs+1)*(1 << _logBarSz);
+    //printf("-D- num_of_vfs*2^(bar_sz+1) = %d*2^%ld = %d\n", _numOfVfs, data, (int)(_numOfVfs*(std::pow((double)2, (int)data))));
+    //printf("-D- maxVfs(default set by fw) : %d\n", _maxVfs);
+
+    if (TotalMem > 512){
+        unsigned int maxAlowedLogBarSz =static_cast<unsigned int>(log2((512/(numOfVfs + 1 ))));
+        errmsg("illegal Bar Size parameter value. Maximal allowed bar size: %d", maxAlowedLogBarSz < _maxLogBarSz ? maxAlowedLogBarSz : _maxLogBarSz);
+        return false;
+    }
+    return true;
 }
 
 /*
  *  VpiParams Implementation
  */
 
+int MlxCfgOps::VpiParams::getDefaultParams(mfile* mf)
+{
+    struct tools_open_query_def_params_per_port port_params;
+    int rc = getDefaultParams4thGen(mf, _port , &port_params);
+    if (rc) {
+        return MCE_GET_DEFAULT_PARAMS;
+    }
+    _linkType = port_params.network_link_type;
+    return MCE_SUCCESS;
+}
 
 void MlxCfgOps::VpiParams::setParam(mlxCfgParam paramType, u_int32_t val)
 {
@@ -516,7 +645,7 @@ int MlxCfgOps::VpiParams::getFromDev(mfile* mf)
     }
     // unpack and update
     tools_open_vpi_settings_unpack(&vpiTlv, buff);
-    _linkType = _linkType == MLXCFG_UNKNOWN ? vpiTlv.network_link_type : _linkType ;
+    _linkType = vpiTlv.network_link_type;
     _updated = true;
 
     return MCE_SUCCESS;
@@ -524,12 +653,8 @@ int MlxCfgOps::VpiParams::getFromDev(mfile* mf)
 
 int MlxCfgOps::VpiParams::setOnDev(mfile* mf, bool ignoreCheck)
 {
-    int rc;
     if (_linkType == MLXCFG_UNKNOWN) {
-        rc = getFromDev(mf);
-        if (rc || _linkType == MLXCFG_UNKNOWN) {
-            return errmsg("%s please specify all the parameters for VPI settings.", err() ? err() : "");
-        }
+        return errmsg("%s please specify all the parameters for VPI settings.", err() ? err() : "");
     }
     if (!ignoreCheck && !isLegal()) {
         return MCE_BAD_PARAMS;
@@ -601,6 +726,7 @@ MlxCfgOps::MlxCfgOps()
     errmap[MCE_INCOMPLETE_PARAMS] = "Failed to get missing configuration from device, please specify all the needed parameters";
     errmap[MCE_OPEN_DEVICE] = "Failed to open device";
     errmap[MCE_PCICONF] = "Access to device should be through configuration cycles only.";
+    errmap[MCE_GET_DEFAULT_PARAMS] = "Failed to get default params";
     errmap[MCE_UNKNOWN_ERR] = "General Error";
 
     updateErrCodes(errmap);
@@ -637,7 +763,10 @@ int MlxCfgOps::supportsToolsHCR()
     u_int32_t devId;
     u_int32_t type = 0;
     int rc;
-    mread4(_mf, HW_ID_ADDR, &devId);
+
+    if (mread4(_mf, HW_ID_ADDR, &devId) != 4) {
+        return MCE_CR_ERROR;
+    }
     switch (devId & 0xffff) { // check hw device id
          case CX3_HW_ID : //Cx3
          case CX3_PRO_HW_ID : // Cx3-pro
@@ -653,7 +782,7 @@ int MlxCfgOps::supportsToolsHCR()
             }
         #endif
             // check if we support tools_hcr
-             rc = tools_cmdif_query_dev_cap(_mf, TOOL_CAP_BITS_ADDR, &_suppVec);
+             rc = tcif_query_dev_cap(_mf, TOOL_CAP_BITS_ADDR, &_suppVec);
              switch (rc) {
              case ME_OK:
                  return MCE_SUCCESS;
@@ -676,47 +805,43 @@ int MlxCfgOps::supportsToolsHCR()
 int MlxCfgOps::openComChk()
 {
     bool rc;
-    // check if we support Tools HCR
-    rc = supportsToolsHCR();
-    if (rc) {
-        return rc;
-    }
-    // update cfg specific info.
-    // TODO: change all configuration specific to updateInfo() as a virtual function in the base class and call that on all Cfg classes
-    // update max Vfs
-    if (supportsCfg(Mct_Sriov)) {
-        int rc = static_cast<SriovParams*>(_cfgList[Mct_Sriov])->updateMaxVfs(_mf);
-        if (rc) {
-            return rc;
-        }
-    }
+    int ret;
+    // check if we support Tools HCR and update _suppVec
+    rc = supportsToolsHCR(); CHECK_RC(rc);
 
-    // get max/current bar size
-    if (supportsCfg(Mct_Bar_Size)) {
-        int rc = static_cast<BarSzParams*>(_cfgList[Mct_Bar_Size])->updateBarSzInfo(_mf);
-        if (rc) {
-            return rc;
+    // update cfg specific info.
+    for (int i = Mct_Sriov; i < Mct_Last; i++) {
+        ret = _cfgList[i]->getDefaultParams(_mf);
+        if (ret && ret!= MCE_GET_DEFAULT_PARAMS) {
+            return ret;
         }
     }
     return MCE_SUCCESS;
 }
 
-int MlxCfgOps::open(const char* devStr)
+int MlxCfgOps::open(const char* devStr, bool forceClearSem)
 {
     _mf = mopen(devStr);
     if (_mf == NULL) {
         return errmsg(MCE_OPEN_DEVICE);
     }
 
-    return openComChk();
+    return opend(_mf , forceClearSem);
 }
 
-int MlxCfgOps::opend(mfile* mf)
+int MlxCfgOps::opend(mfile* mf, bool forceClearSem)
 {
     if (!mf) {
         return errmsg(MCE_BAD_PARAMS);
     }
     _mf = mf;
+
+    if (forceClearSem) {
+        int rc = tools_cmdif_unlock_semaphore(_mf);
+        if (rc) {
+            return errmsg("failed to unlock semaphore, %s.", m_err2str((MError)rc));
+        }
+    }
     return openComChk();
 }
 
@@ -725,9 +850,7 @@ bool MlxCfgOps::supportsCfg(mlxCfgType cfg)
     if (!isLegal(cfg)) {
         return false;
     }
-    if (cfg == Mct_Bar_Size) { // dont enable these just yet, no FW support
-        return false;
-    }
+
     return _suppVec & cfgSuppMask[cfg];
 }
 
@@ -768,8 +891,13 @@ int MlxCfgOps::setCfg(mlxCfgParam cfgParam, u_int32_t val, bool ignoreCheck)
     if (!isLegal(cfgParam)) {
         return MCE_BAD_PARAMS;
     }
+    // get parameters from device if present
+    int rc = _cfgList[cfgParam2Type(cfgParam)]->getFromDev(_mf);
+    if (rc) {
+        return errmsgConcatMsg(rc, *_cfgList[cfgParam2Type(cfgParam)]);
+    }
     _cfgList[cfgParam2Type(cfgParam)]->setParam(cfgParam, val);
-    int rc = _cfgList[cfgParam2Type(cfgParam)]->setOnDev(_mf, ignoreCheck);
+    rc = _cfgList[cfgParam2Type(cfgParam)]->setOnDev(_mf, ignoreCheck);
     if (rc) {
         return errmsgConcatMsg(rc, *_cfgList[cfgParam2Type(cfgParam)]);
     }
@@ -780,6 +908,7 @@ int MlxCfgOps::setCfg(const std::vector<cfgInfo>& infoVec, bool ignoreCheck)
 {
     // set params
     std::set<CfgParams*> CfgToSet;
+    int rc;
 
     for (std::vector<cfgInfo>::const_iterator it = infoVec.begin() ; it != infoVec.end(); it++) {
         if (!isLegal(it->first)) {
@@ -788,12 +917,17 @@ int MlxCfgOps::setCfg(const std::vector<cfgInfo>& infoVec, bool ignoreCheck)
         if (!supportsParam(it->first)) {
             return errmsg(MCE_UNSUPPORTED_CFG);
         }
+        // get configuration from device first (if preset) in case of multiple params per type
+        rc = _cfgList[cfgParam2Type(it->first)]->getFromDev(_mf);
+        if (rc) {
+            return errmsgConcatMsg(rc, *_cfgList[cfgParam2Type(it->first)]);
+        }
         _cfgList[cfgParam2Type(it->first)]->setParam(it->first, it->second);
         CfgToSet.insert(_cfgList[cfgParam2Type(it->first)]);
     }
     //set on device exit on first failure
     for (std::set<CfgParams*>::iterator it = CfgToSet.begin() ; it != CfgToSet.end(); it++) {
-        int rc = (*it)->setOnDev(_mf, ignoreCheck);
+        rc = (*it)->setOnDev(_mf, ignoreCheck);
         if (rc) {
             return errmsgConcatMsg(rc, (**it));
         }

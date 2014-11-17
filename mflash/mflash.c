@@ -50,6 +50,7 @@
 #include "mflash_pack_layer.h"
 #include "mflash_access_layer.h"
 #include "mflash.h"
+#include "reg_access.h"
 
 #define ICMD_MAX_BLOCK_WRITE   128
 #define INBAND_MAX_BLOCK_WRITE 32
@@ -188,6 +189,37 @@ int release_semaphore(mflash* mfl, int ignore_writer_lock);
 
 #define CONNECT_IB_HW_ID 0x1FF
 #define SWITCH_IB_HW_ID 0x247
+#define SWITCH_EN_HW_ID 0x249
+
+/*
+ * Device IDs Macros:
+ */
+
+#define IS_CONNECTX_4TH_GEN_FAMILY(dev_id) \
+        (((dev_id) == CONNECTX_HW_ID) || ((dev_id) == CX3_HW_ID) || ((dev_id) == CX3_PRO_HW_ID))
+#define HAS_TOOLS_CMDIF(dev_id) \
+	((((dev_id) == CX3_HW_ID) || ((dev_id) == CX3_PRO_HW_ID)) && (0)) //adrianc: we dont enable this feature due to performance issues.
+#define IS_SX(dev_id) \
+        ((dev_id) == SWITCHX_HW_ID)
+#define IS_SIB(dev_id) \
+        ((dev_id) == SWITCH_IB_HW_ID)
+#define IS_SEN(dev_id) \
+        ((dev_id) == SWITCH_EN_HW_ID)
+#define IS_IS4_FAMILY(dev_id) \
+    (((dev_id) == 435) || ((dev_id) == 6100)) // 435 == InfiniScaleIV, 6100 == BridgeX
+#define IS_CONNECT_IB(dev_id) \
+        ((dev_id) ==CONNECT_IB_HW_ID)
+#define IS_CONNECTX4(dev_id) \
+        ((dev_id) ==CX4_HW_ID)
+#define HAS_ICMD_IF(dev_id) \
+    ((IS_CONNECT_IB(dev_id)) || (IS_SIB(dev_id)) || (IS_CONNECTX4(dev_id)) || (IS_SEN(dev_id)))
+#define IS_SWITCH(dev_id) \
+       ((IS_IS4_FAMILY(dev_id)) || (IS_SX(dev_id)) || (IS_SIB(dev_id)) || (IS_SEN(dev_id)))
+#define IS_REALLY_OLD_DEVICE(dev_id) \
+        (((dev_id) == 23108) || ((dev_id) == 25208) || ((dev_id) == 24204) || ((dev_id) == 25204))
+#define IS_OLD_DEVICE(dev_id) \
+    ((IS_REALLY_OLD_DEVICE(dev_id)) || (IS_CONNECTX_4TH_GEN_FAMILY(dev_id)))
+
 
 // Write/Erase delays
 // ------------------
@@ -257,7 +289,7 @@ static u_int32_t log2up (u_int32_t in) {
 }
 
 // ConnectX SPI interface:
-int cntx_flash_init      (mflash* mfl, flash_params_t* flash_params);
+int cntx_init_direct_access      (mflash* mfl, flash_params_t* flash_params);
 
 int cntx_fill_attr       (mflash* mfl);
 
@@ -705,13 +737,21 @@ int cntx_st_spi_get_status(mflash* mfl, u_int8_t op_type, u_int8_t* status) {
     *status = EXTRACT(flash_data, 0, 8);
     return MFE_OK;
 }
+
+int get_num_of_banks_int(mflash *mfl) {
+    int num;
+    if ( (mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] != ATBM_NO) && ((num = get_num_of_banks(mfl->mf)) != -1) ){
+        return num; // if mfpa register is supported get the exact number of flash banks
+    }
+    return mfl->opts[MFO_NUM_OF_BANKS];
+}
+
 int get_flash_params(mflash* mfl, flash_params_t *flash_params, unsigned *type_index)
 {
-    int num_of_flashes = mfl->opts[MFO_NUM_OF_BANKS];
+    int num_of_flashes = get_num_of_banks_int(mfl);
     int spi_sel, rc;
     int params_were_set = 0;
     flash_info_t *flash_info;
-
     memset(flash_params, 0, sizeof(flash_params_t));
 
     for (spi_sel = 0 ; spi_sel < num_of_flashes ; spi_sel++) {
@@ -840,6 +880,10 @@ int read_chunks   (mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data) {
     int       rc;
     u_int8_t  *p         = (u_int8_t *)data;
 
+    if (!mfl) {
+        return MFE_BAD_PARAMS;
+    }
+
     // Note:
     // Assuming read block is the same as write block size.
     // This is true for current Mellanox devices SPI flash access implementation.
@@ -847,13 +891,8 @@ int read_chunks   (mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data) {
     u_int32_t block_size = mfl->attr.block_write;
     u_int32_t block_mask;
 
-
     // TODO - Check MAX_WRITE_BUFFER_SIZE against block_size in open (or here)
     u_int8_t  tmp_buff[MAX_WRITE_BUFFER_SIZE];
-
-    if (!mfl) {
-        return MFE_BAD_PARAMS;
-    }
 
     if (len < block_size) {
         // If we're reading a small chunk, use the smallest block_size to avoid the extra reads and padding overhead
@@ -913,9 +952,6 @@ int read_chunks   (mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data) {
 
     return MFE_OK;
 }
-
-
-
 
 ////////////////////////////////////////
 //
@@ -1041,67 +1077,10 @@ int empty_set_bank(mflash* mfl, u_int32_t bank) {
     return MFE_OK;
 }
 
-int is_connectx_family(u_int32_t dev_id) {
-    if (dev_id == CONNECTX_HW_ID ||
-        dev_id == CX3_HW_ID ||
-        dev_id == CX3_PRO_HW_ID) {
-        return 1;
-    }
-    return 0;
-
-}
-
-int is_sx(u_int32_t dev_id) {
-    if (dev_id == SWITCHX_HW_ID) {
-        return 1;
-    }
-    return 0;
-}
-int is_sx_ib(u_int32_t dev_id) {
-    if (dev_id == SWITCH_IB_HW_ID) {
-        return 1;
-    }
-    return 0;
-}
-int is_is4_family(u_int32_t dev_id) {
-    if (dev_id == 435  ||  // InfiniScaleIV
-        dev_id == 6100) { // BridgeX
-        return 1;
-    }
-    return 0;
-}
-
-int is_connectib(u_int32_t dev_id) {
-    if (dev_id == CONNECT_IB_HW_ID) {
-        return 1;
-    }
-    return 0;
-}
-
-int is_connectx4(u_int32_t dev_id) {
-	return (dev_id == CX4_HW_ID) ? 1 : 0;
-}
-
-int has_icmd_if(u_int32_t dev_id) {
-	return	(is_connectib(dev_id) ||
-			 is_sx_ib(dev_id) ||
-			 is_connectx4(dev_id));
-
-}
-
-int is_4th_gen_switch_family(u_int32_t dev_id) {
-    if (is_is4_family(dev_id) ||
-        is_sx(dev_id)         ||
-        is_connectib(dev_id)  ||
-        is_sx_ib(dev_id)) {
-        return 1;
-    }
-    return 0;
-}
-
 int cntx_exec_cmd(mflash* mfl, u_int32_t gw_cmd, char* msg) {
-    if (is_4th_gen_switch_family(mfl->attr.hw_dev_id)) {
-        // For Infiniscale4 and BridgeX: keep the GW locked during flash ops
+    if (!IS_OLD_DEVICE(mfl->attr.hw_dev_id)) {
+        // for old devices lock bit is separate from the flash HW ifc
+        //for new devices need to make sure this bit remains locked when writing the dword
         gw_cmd = MERGE(gw_cmd,              1,       31,                       1);
     }
     gw_cmd = MERGE(gw_cmd,              1, HBO_BUSY,                       1);
@@ -1358,6 +1337,7 @@ int cntx_init_gpios(mflash* mfl) {
 int spi_get_num_of_flashes(int prev_num_of_flashes)
 {
     char* mflash_env;
+    int num;
 
     if (prev_num_of_flashes != 0) {
         return prev_num_of_flashes;
@@ -1365,7 +1345,10 @@ int spi_get_num_of_flashes(int prev_num_of_flashes)
 
     mflash_env = getenv(MFLASH_ENV);
     if (mflash_env) {
-        return atol(mflash_env);
+        num =  atoi(mflash_env);
+        // make sure the value makes sense
+        num = (num > 16 || num < 0) ? -1 : num;
+        return num;
     }
 
     return -1;
@@ -1377,7 +1360,7 @@ int spi_update_num_of_banks(mflash* mfl, int prev_num_of_flashes)
 
     num_of_banks = spi_get_num_of_flashes(prev_num_of_flashes);
     if (num_of_banks == -1) {
-        if (is_sx(mfl->attr.hw_dev_id)) {
+        if (IS_SX(mfl->attr.hw_dev_id) || IS_SIB(mfl->attr.hw_dev_id) || IS_SEN(mfl->attr.hw_dev_id)) {
             mfl->opts[MFO_NUM_OF_BANKS] = 2;
         } else {
             mfl->opts[MFO_NUM_OF_BANKS] = 1;
@@ -1749,7 +1732,7 @@ int old_flash_lock(mflash* mfl, int lock_state) {
 }
 
 
-int cntx_flash_init(mflash* mfl, flash_params_t* flash_params) {
+int cntx_flash_init_direct_access(mflash* mfl, flash_params_t* flash_params) {
     int rc;
     u_int32_t tmp;
 
@@ -1875,7 +1858,7 @@ int connectib_flash_lock(mflash* mfl, int lock_state)
 #define SX_CS_SUPPORT_ADDR 0xF0420
 
 int sx_init_cs_support(mflash* mfl) {
-    if (is_sx(mfl->attr.hw_dev_id)) {
+    if (IS_SX(mfl->attr.hw_dev_id)) {
         u_int8_t cs_support_mask = 0;
         u_int32_t data;
         if (mfl->opts[MFO_USER_BANKS_NUM] == 0) {
@@ -2010,7 +1993,7 @@ int sx_flash_init_direct_access(mflash* mfl, flash_params_t* flash_params)
     return gen4_flash_init_com(mfl, flash_params, 1);
 }
 
-int connectib_init_direct_access(mflash* mfl, flash_params_t* flash_params)
+int fifth_gen_init_direct_access(mflash* mfl, flash_params_t* flash_params)
 {
 
     mfl->f_lock           = connectib_flash_lock;
@@ -2073,6 +2056,7 @@ static int update_max_write_size(mflash* mfl)
     return ME_OK;
 }
 
+// access flash via FW using Flash Access Registers (either by INBAND/ICMD/TOOLS_HCR)
 int flash_init_inband_access(mflash* mfl, flash_params_t* flash_params)
 {
     int rc;
@@ -2152,7 +2136,7 @@ int sx_flash_init(mflash* mfl, flash_params_t* flash_params)
     return MFE_OK;
 }
 
-#ifndef MST_UL
+
 int icmd_init(mflash *mfl)
 {
     // Clear  semaphore when asked to by flint or any tool using mflash
@@ -2163,15 +2147,35 @@ int icmd_init(mflash *mfl)
     }
     return MFE_OK;
 }
+
+
+int tools_cmdif_init(mflash *mfl)
+{
+    u_int32_t type;
+    int rc;
+    // Clear  semaphore when asked to by flint or any tool using mflash
+    if (mfl->opts[MFO_IGNORE_SEM_LOCK]) {
+        if (tools_cmdif_unlock_semaphore(mfl->mf) != ME_OK) {
+            return MFE_CR_ERROR;
+        }
+    }
+    // Check if we access device through pciconf
+    rc = mget_mdevs_type(mfl->mf, &type);
+    (void) rc; // method cant really fail;
+
+#ifdef MST_UL
+    if (!(type & MTCR_ACCESS_CONFIG)) {
+        return MFE_PCICONF;
+    }
 #else
-
-int icmd_init(mflash *mfl) {
-	(void)mfl;
-	return MFE_NOT_IMPLEMENTED;
-}
+    if (!(type & MST_PCICONF)) {
+        return MFE_PCICONF;
+    }
 #endif
+    return MFE_OK;
+}
 
-int connectib_flash_init(mflash* mfl, flash_params_t* flash_params)
+int fifth_gen_flash_init(mflash* mfl, flash_params_t* flash_params)
 {
     int rc;
     u_int8_t needs_cache_replacement;
@@ -2184,7 +2188,21 @@ int connectib_flash_init(mflash* mfl, flash_params_t* flash_params)
         }
         rc = flash_init_fw_access(mfl, flash_params); CHECK_RC(rc);
     } else {
-        rc = connectib_init_direct_access(mfl, flash_params); CHECK_RC(rc);
+        rc = fifth_gen_init_direct_access(mfl, flash_params); CHECK_RC(rc);
+    }
+    return MFE_OK;
+}
+
+int cntx_flash_init(mflash* mfl, flash_params_t* flash_params)
+{
+    int rc;
+
+    if ( mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_TOOLS_CMDIF &&\
+         mfl->opts[MFO_IGNORE_CASHE_REP_GUARD] == 0) {
+        rc = tools_cmdif_init(mfl); CHECK_RC(rc);
+        rc = flash_init_fw_access(mfl, flash_params); CHECK_RC(rc);
+    } else {
+        rc = cntx_flash_init_direct_access(mfl, flash_params); CHECK_RC(rc);
     }
     return MFE_OK;
 }
@@ -2230,50 +2248,60 @@ int mf_open_ignore_lock(mflash* mfl) {
     return mf_open_fw(mfl, NULL, 0);
 }
 
-
-
-
 #define CR_LOCK_HW_ID 0xbad0cafe
-
 
 int get_dev_info(mflash* mfl)
 {
     u_int32_t dev_flags;
     int rc;
     u_int32_t dev_id;
-    // The opt MFO_FW_ACCESS_TYPE_BY_MFILE will be used only when work on SX device
     mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] = ATBM_NO;
     rc = mget_mdevs_flags(mfl->mf, &dev_flags); CHECK_RC(rc);
 
+    // get hw id
+    // Special case for MLNX OS getting dev_id using REG MGIR
     if (dev_flags & MDEVS_MLNX_OS) {
-         // HACK: When we have a mlnxsw device we don't have any access to cr-space so we will assume we work on SX
-         dev_id = SWITCHX_HW_ID;
-         mfl->attr.rev_id    = 0;
-         mfl->attr.hw_dev_id = SWITCHX_HW_ID;
+        reg_access_status_t rc;
+        struct register_access_sib_mgir mgir;
+        memset(&mgir, 0, sizeof(mgir));
+        rc = reg_access_mgir(mfl->mf, REG_ACCESS_METHOD_GET, &mgir);
+        //printf("-D- RC[%s] -- REVID: %d -- DEVID: %d hw_dev_id: %d\n", m_err2str(rc), mgir.HWInfo.REVID, mgir.HWInfo.DEVID, mgir.HWInfo.hw_dev_id);
+        if (rc) {
+            dev_id = SWITCHX_HW_ID;
+            mfl->attr.rev_id    = 0;
+            mfl->attr.hw_dev_id = SWITCHX_HW_ID;
+        } else {
+            dev_id = mgir.HWInfo.hw_dev_id;
+            if (dev_id == 0) {
+                dev_id = SWITCHX_HW_ID;
+                mfl->attr.hw_dev_id = SWITCHX_HW_ID;
+                mfl->attr.rev_id = mgir.HWInfo.REVID & 0xf;
+            } else {
+                mfl->attr.hw_dev_id = dev_id;
+                mfl->attr.rev_id = 0; //WA: MGIR should have also hw_rev_id and then we can use it.
+            }
+        }
+    } else {
+        MREAD4(HW_DEV_ID, &dev_id);
+        if (dev_id == CR_LOCK_HW_ID) {
+            return MFE_LOCKED_CRSPACE;
+        }
+        mfl->attr.rev_id    = (dev_id & 0xff0000) >> 16;
+        mfl->attr.hw_dev_id = dev_id & 0xffff;
+    }
+    if (dev_flags & MDEVS_MLNX_OS) {
          mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] = ATBM_MLNXOS_CMDIF;
-     } else {
-         MREAD4(HW_DEV_ID, &dev_id);
-         if (dev_id == CR_LOCK_HW_ID) {
-             return MFE_LOCKED_CRSPACE;
-         }
-         mfl->attr.rev_id    = (dev_id & 0xff0000) >> 16;
-         mfl->attr.hw_dev_id = dev_id & 0xffff;
-
-         if (dev_flags & MDEVS_IB) {
+     } else if (dev_flags & MDEVS_IB){
              mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] = ATBM_INBAND;
-         } else {
-             if (has_icmd_if(mfl->attr.hw_dev_id)) {
-                 if (mfl->opts[MFO_IGNORE_CASHE_REP_GUARD] == 0) {
-                    #ifdef MST_UL
-                         mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] = ATBM_INBAND;
-                    #else
-                         mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] = ATBM_ICMD;
-                    #endif
-                 }
+     } else if (HAS_ICMD_IF(mfl->attr.hw_dev_id)){
+             if (mfl->opts[MFO_IGNORE_CASHE_REP_GUARD] == 0) {
+                     mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] = ATBM_ICMD;
              }
-         }
+     } else if (HAS_TOOLS_CMDIF(mfl->attr.hw_dev_id)) {
+         if (mfl->opts[MFO_IGNORE_CASHE_REP_GUARD] == 0) {
+            mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] = ATBM_TOOLS_CMDIF;
+        }
      }
-
     return MFE_OK;
 
 }
@@ -2294,14 +2322,14 @@ int mf_open_fw(mflash* mfl, flash_params_t* flash_params, int num_of_banks)
 
         if (mfl->attr.hw_dev_id == 23108 || mfl->attr.hw_dev_id == 25208 || mfl->attr.hw_dev_id == 24204 || mfl->attr.hw_dev_id == 25204) {
             rc = MFE_OLD_DEVICE_TYPE;
-        } else if (is_connectx_family(mfl->attr.hw_dev_id)) {
+        } else if (IS_CONNECTX_4TH_GEN_FAMILY(mfl->attr.hw_dev_id)) {
             rc = cntx_flash_init(mfl, flash_params);
-        } else if (is_is4_family(mfl->attr.hw_dev_id)) {
+        } else if (IS_IS4_FAMILY(mfl->attr.hw_dev_id)) {
             rc = is4_flash_init(mfl, flash_params);
-        } else if (is_sx(mfl->attr.hw_dev_id)) {
+        } else if (IS_SX(mfl->attr.hw_dev_id)) {
             rc = sx_flash_init(mfl, flash_params);
-        } else if (has_icmd_if(mfl->attr.hw_dev_id)) {
-            rc = connectib_flash_init(mfl, flash_params);
+        } else if (HAS_ICMD_IF(mfl->attr.hw_dev_id)) {
+            rc = fifth_gen_flash_init(mfl, flash_params);
         } else if (mfl->attr.hw_dev_id == 0xffff) {
             rc = MFE_HW_DEVID_ERROR;
         } else {
@@ -2352,7 +2380,6 @@ int     mf_opend       (mflash** pmfl, struct mfile_t* mf, int num_of_banks, fla
 }
 
 
-
 int     mf_open_uefi(mflash** pmfl, uefi_Dev_t *uefi_dev, f_fw_cmd fw_cmd_func)
 {
 
@@ -2386,9 +2413,9 @@ int     mf_open        (mflash** pmfl, const char* dev, int num_of_banks, flash_
     return MFE_OK;
 }
 
-int     mf_close       (mflash* mfl) {
+void     mf_close       (mflash* mfl) {
     if (!mfl) {
-        return MFE_BAD_PARAMS;
+        return;
     }
 
     if (mfl->f_reset) {
@@ -2396,7 +2423,7 @@ int     mf_close       (mflash* mfl) {
     }
 
     if (mfl->f_set_bank) {
-        set_bank(mfl, 0);
+        (void)set_bank(mfl, 0);
     }
     // we release if we have writer_lock or not doesnt matter on close ...
     release_semaphore(mfl, 1);
@@ -2406,7 +2433,7 @@ int     mf_close       (mflash* mfl) {
     }
 
     free(mfl);
-    return MFE_OK;
+    return;
 }
 
 
@@ -2555,6 +2582,8 @@ const char*   mf_err2str (int err_code) {
         return "MFE_REG_ACCESS_UNKNOWN_ERR";
     case MFE_REG_ACCESS_SIZE_EXCCEEDS_LIMIT:
         return "MFE_REG_ACCESS_SIZE_EXCCEEDS_LIMIT";
+    case MFE_PCICONF:
+        return "Access to device should be through configuration cycles.";
     default:
         return "Unknown error";
     }
@@ -2592,11 +2621,11 @@ int     mf_cr_write    (mflash* mfl, u_int32_t cr_addr, u_int32_t  data) {
 
 int	mf_update_boot_addr(mflash* mfl, u_int32_t boot_addr)
 {
-	if (mfl->access_type != MFAT_UEFI && mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] != ATBM_MLNXOS_CMDIF) {
-		// the boot addr will be updated directly via cr-space
-		return mf_cr_write(mfl, BOOT_CR_SPACE_ADDR, ((boot_addr << 8) | 0x06));
-	}
-	// the boot addr will be updated via reg
+    if (mfl->access_type != MFAT_UEFI && mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] != ATBM_MLNXOS_CMDIF) {
+        // the boot addr will be updated directly via cr-space
+        return mf_cr_write(mfl, BOOT_CR_SPACE_ADDR, ((boot_addr << 8) | 0x06));
+    }
+    // the boot addr will be updated via reg
     return mf_update_boot_addr_by_type(mfl, boot_addr);
 }
 

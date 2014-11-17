@@ -273,7 +273,7 @@ public:
     u_int32_t get_rev_id             ()  {return _attr.rev_id; }
     u_int32_t get_port_num           ()  {return _port_num;}
     u_int8_t  get_cr_space_locked    ()  {return _cr_space_locked;}
-    bool  get_ignore_cache_replacment()  {return _cr_space_locked;}
+    bool  get_ignore_cache_replacment()  {return _ignore_cache_replacement;}
 
     bool sw_reset();
 

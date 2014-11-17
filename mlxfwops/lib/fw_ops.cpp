@@ -469,8 +469,9 @@ u_int8_t FwOperations::CheckFwFormat(FBase& f, bool getFwFormatFromImg) {
                 ( ((Flash*)&f)->get_dev_id() == CX3_PRO_HW_ID)) {
             return FS_FS2_GEN;
         } else if ( (((Flash*)&f)->get_dev_id() == CONNECT_IB_HW_ID) ||
-                    (((Flash*)&f)->get_dev_id() == SWITCH_IB_HW_ID) ||
-		    (((Flash*)&f)->get_dev_id() == CX4_HW_ID)) {
+                    (((Flash*)&f)->get_dev_id() == SWITCH_IB_HW_ID)  ||
+                    (((Flash*)&f)->get_dev_id() == CX4_HW_ID)        ||
+                    (((Flash*)&f)->get_dev_id() == SWITCH_EN_HW_ID)) {
             return FS_FS3_GEN;
         }
     } else {
@@ -670,11 +671,13 @@ bool FwOperations::CheckMac(u_int64_t mac) {
 void FwOperations::recalcSectionCrc(u_int8_t *buf, u_int32_t data_size) {
 
     Crc16              crc;
+    u_int32_t crcRes;
     for (u_int32_t i = 0; i < data_size; i += 4) {
         crc << __be32_to_cpu(*(u_int32_t*)(buf + i));
     }
     crc.finish();
-    *((u_int32_t*)(buf + data_size)) = __cpu_to_be32(crc.get());
+    crcRes = crc.get();
+    *((u_int32_t*)(buf + data_size)) = __cpu_to_be32(crcRes);
 }
 
 chip_type_t FwOperations::getChipType() {
@@ -692,15 +695,17 @@ chip_type_t FwOperations::getChipType() {
     return CT_UNKNOWN;
 }
 
-chip_type_t FwOperations::getChipTypeFromHwDevid(u_int32_t hwDevId) {
+bool FwOperations::getInfoFromHwDevid(u_int32_t hwDevId, chip_type_t& chipT, const u_int32_t ** swIds) {
     int i = 0;
     while (hwDevData[i].name != NULL) {
         if (hwDevData[i].hwDevId == hwDevId) {
-            return hwDevData[i].chipType;
+            chipT = hwDevData[i].chipType;
+            *swIds = hwDevData[i].swDevIds;
+            return true;
         }
             i++;
-        }
-    return CT_UNKNOWN;
+    }
+    return errmsg("Failed to identify device ID(MT%d).", hwDevId);
 }
 
 // TODO:combine both databases(hwDevData and hwDev2Str) and remove old unsupporded devices i.e infinihost infinihost_iii_ex infinihost_iii_lx
@@ -725,6 +730,7 @@ const FwOperations::HwDevData FwOperations::hwDevData[] = {
     { "SwitchX",          SWITCHX_HW_ID, CT_SWITCHX, 0, {51000, 0}},
     { "Switch_IB",        SWITCH_IB_HW_ID, CT_SWITCH_IB,0, {52000, 0}},
     { "ConnectX-4",		  CX4_HW_ID,	 CT_CONNECTX,	0, {4115, 0}},
+    { "Switch_EN",        SWITCH_EN_HW_ID,CT_SWITCH_EN,   0, {52100, 0}},
     { (char*)NULL ,              0, CT_UNKNOWN, 0, {0}},// zero devid terminator
 };
 
@@ -746,6 +752,7 @@ const FwOperations::HwDev2Str FwOperations::hwDev2Str[] = {
         {"InfiniHost III Lx", INFINIHOST_III_LX_HW_ID,      0xA0},
         {"InfiniHost III Ex", INFINIHOST_III_EX_HW_ID,      0xA0},
         {"SwitchIB A0",       SWITCH_IB_HW_ID,  0x00},
+        {"SwitchEN A0",       SWITCH_EN_HW_ID,  0x00},
         { (char*)NULL ,       (u_int32_t)0, (u_int8_t)0x00}, // zero device ID terminator
 };
 
@@ -1277,10 +1284,13 @@ bool FwOperations::ReadImageFile(const char *fimage, u_int8_t *&file_data, int &
     }
     rewind(fh);
 
-    if (min_size > read_file_size) {
-        file_size = min_size;
-    } else {
-        file_size = read_file_size;
+    file_size = read_file_size;
+    if (min_size != -1) {// take min of min_size and read_file_size
+        if (min_size < 0) {
+            fclose(fh);
+            return errmsg("Internal error, minimal image read size cannot be negative.");
+        }
+        file_size = ( min_size > read_file_size ) ? min_size : read_file_size;
     }
 
     file_data = new u_int8_t[file_size];
@@ -1339,7 +1349,7 @@ bool FwOperations::checkMatchingExpRomDevId(const fw_info_t& info)
 }
 
 
-bool FwOperations::checkMatchingExpRomDevId(u_int16_t dev_type, roms_info_t roms_info)
+bool FwOperations::checkMatchingExpRomDevId(u_int16_t dev_type, const roms_info_t& roms_info)
 {
     if ((roms_info.num_of_exp_rom > 0) && (dev_type)
             && (roms_info.exp_rom_com_devid != EXP_ROM_GEN_DEVID) \

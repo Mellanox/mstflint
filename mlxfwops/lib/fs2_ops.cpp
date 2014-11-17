@@ -1467,12 +1467,11 @@ bool Fs2Operations::FwBurnAdvanced(FwOperations *imageOps, ExtBurnParams& burnPa
 
 bool Fs2Operations::FwBurnBlock(FwOperations *imageOps, ProgressCallBack progressFunc)
 {
-    FImage *fim = (FImage*)((Fs2Operations*)imageOps)->_ioAccess;
-
     if (imageOps == NULL) {
         return errmsg("bad parameter is given to FwBurnBlock\n");
     }
 
+    FImage *fim = (FImage*)((Fs2Operations*)imageOps)->_ioAccess;
     return writeImage(progressFunc, 0, fim->getBuf(), fim->getBufLength());
 }
 

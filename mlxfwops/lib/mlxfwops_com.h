@@ -118,7 +118,8 @@ typedef enum chip_type {
     CT_BRIDGEX,
     CT_IS4,
     CT_CONNECT_IB,
-    CT_SWITCH_IB
+    CT_SWITCH_IB,
+    CT_SWITCH_EN
 }chip_type_t;
 
 typedef struct guid {

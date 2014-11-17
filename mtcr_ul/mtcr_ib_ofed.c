@@ -31,6 +31,22 @@
  *
  */
 
+/********************************************************
+**
+*   ibvsmad.c
+*
+*   the ibvsmad library.
+*   this library provides vendor specific mad capabilities.
+*
+*   mread64, mwrite64 - IS3 I2C bus access MAD - ExtPortAccess -> I2C compliant port #1
+*   mread4 , mwrite4  - IS3 CR-Space access MAD - ConfigSpaceAccess
+*
+*
+*   author: yoniy@mellanox.co.il , Apr. 16th 2007
+*/
+
+
+
 #if HAVE_CONFIG_H
 #  include <config.h>
 #endif
@@ -244,7 +260,7 @@ static int verbose = 0;
 
 #define IB_SMP_ATTR_CR_ACCESS 0xff50
 #define IB_DATA_INDEX     8
-#define MAX_IB_SMP_DATA_SIZE    IB_SMP_DATA_SIZE - IB_DATA_INDEX
+#define MAX_IB_SMP_DATA_SIZE    (IB_SMP_DATA_SIZE - IB_DATA_INDEX)
 #define MAX_IB_SMP_DATA_DW_NUM  MAX_IB_SMP_DATA_SIZE / 4
 
 static uint64_t
@@ -298,13 +314,13 @@ ibvsmad_craccess_rw_smp(ibvs_mad *h, u_int32_t memory_address, int method, u_int
 }
 
 // TODO: Correct this value.
-#define  MAX_VS_DATA_SIZE IB_VENDOR_RANGE2_DATA_SIZE -  IB_DATA_INDEX
+#define  MAX_VS_DATA_SIZE (IB_VENDOR_RANGE1_DATA_SIZE -  IB_DATA_INDEX)
 #define  MAX_IB_VS_DATA_DW_NUM  MAX_VS_DATA_SIZE / 4
 
 static uint64_t
 ibvsmad_craccess_rw_vs(ibvs_mad *h, u_int32_t memory_address, int method, u_int8_t num_of_dwords, u_int32_t *data)
 {
-    u_int8_t vsmad_data[IB_VENDOR_RANGE2_DATA_SIZE] = {0};
+    u_int8_t vsmad_data[IB_VENDOR_RANGE1_DATA_SIZE] = {0};
     ib_vendor_call_t call;
     int i;
     u_int8_t* p;
@@ -745,7 +761,7 @@ int mib_get_chunk_size(mfile *mf)
     if (h->use_smp) {
         return MAX_IB_SMP_DATA_SIZE;
     }
-    return IB_VENDOR_RANGE2_DATA_SIZE;
+    return MAX_VS_DATA_SIZE;
 }
 
 /********************************************************
@@ -847,7 +863,7 @@ mib_swreset(mfile *mf)
     char* swreset_env;
     ibvs_mad* h = (ibvs_mad*)(mf->ctx);
     u_int8_t* p;
-    u_int8_t vsmad_data[IB_VENDOR_RANGE2_DATA_SIZE] = {0};
+    u_int8_t vsmad_data[IB_VENDOR_RANGE1_DATA_SIZE] = {0};
     ib_vendor_call_t call;
 
     swreset_env = getenv(MTCR_SWRESET_ENV);

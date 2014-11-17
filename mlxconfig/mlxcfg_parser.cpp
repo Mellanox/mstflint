@@ -28,6 +28,7 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
 
 #include <stdlib.h>
@@ -82,6 +83,7 @@ void MlxCfg::printHelp()
     printf(IDENT2"%-24s : %s\n","q[uery]", "query current supported configurations.");
     printf(IDENT2"%-24s : %s\n","s[et]", "set configurations to a specific device.");
     printf(IDENT2"%-24s : %s\n","r[eset]", "reset configurations to their default value.");
+    printf(IDENT2"%-24s : %s\n","clear_semaphore", "clear the tool semaphore.");
 
     // print supported commands
     printf("\n");
@@ -91,7 +93,7 @@ void MlxCfg::printHelp()
     printf(IDENT2"%-24s : %s\n","WOL_PORT2", "WOL_MAGIC_EN_P2=<1|0>");
     printf(IDENT2"%-24s : %s\n","VPI_SETTINGS_PORT1", "LINK_TYPE_P1=<1|2|3> , 1=Infiniband 2=Ethernet 3=VPI(auto-sense).");
     printf(IDENT2"%-24s : %s\n","VPI_SETTINGS_PORT2", "LINK_TYPE_P2=<1|2|3>");
-    //printf(IDENT2"%-24s : %s\n","BAR_SIZE", "LOG_BAR_SIZE=<Base_2_log_in_mb> , example: for 8Mb bar size set LOG_BAR_SIZE=3");
+    printf(IDENT2"%-24s : %s\n","BAR_SIZE", "LOG_BAR_SIZE=<Base_2_log_in_mb> , example: for 8Mb bar size set LOG_BAR_SIZE=3");
 
     // print usage examples
     printf("\n");
@@ -138,7 +140,7 @@ mlxCfgStatus MlxCfg::processArg(string tag, u_int32_t val)
         }
     }
     // we dont support BAR_SZ atm
-    if (i == Mcp_Last || i == Mcp_Log_Bar_Size) {
+    if (i == Mcp_Last) {
         return err(true, "Unknown Parameter: %s", tag.c_str());
     }
     return MLX_CFG_OK;
@@ -228,6 +230,10 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
         } else if (arg == "reset" || arg == "r") {
             _mlxParams.cmd = Mc_Reset;
             break;
+
+        } else if (arg == "clear_semaphore") {
+            _mlxParams.cmd = Mc_Clr_Sem;
+            break;
         // hidden flag --force used to ignore parameter checks
         } else if (arg == "--force"){
             _mlxParams.force = true;
@@ -246,8 +252,8 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
     if (i != argc && (_mlxParams.cmd == Mc_Reset || _mlxParams.cmd == Mc_Query)) {
         return err(true, "%s command expects no argument but %d argument recieved", (_mlxParams.cmd == Mc_Reset) ? "reset" : "query", argc -i);
     }
-    if (_mlxParams.cmd == Mc_Set && _mlxParams.device.length() == 0) {
-        return err(true, "set command expects device to be specified.");
+    if ((_mlxParams.cmd == Mc_Set || _mlxParams.cmd == Mc_Clr_Sem) && _mlxParams.device.length() == 0) {
+        return err(true, "%s command expects device to be specified.", _mlxParams.cmd == Mc_Set ? "set" : "clear_semaphore");
     }
 
     return extractCfgArgs(argc-i, &(argv[i]));

@@ -223,7 +223,7 @@ bool Flash::open_com_checks(const char *device, int rc, bool force_lock)
             return errmsgAdv(_advErrors, "Flash cache replacement is active.", "\n-E- Please use the -override_cache_replacement option in order to access the flash directly.");
         }
 
-        return errmsg("%s %s", errno == 0 ? "" : strerror(errno), mf_err2str(rc));
+        return errmsg("%s%s%s", errno == 0 ? "" : strerror(errno),  errno == 0 ? "" : ". ", mf_err2str(rc));
     }
 
     rc = mf_get_attr(_mfl, &_attr);
@@ -322,8 +322,6 @@ bool Flash::read(u_int32_t addr,
 bool Flash::read(u_int32_t addr, void *data, int len, bool verbose, const char* message)
 {
     int rc;
-    u_int32_t  perc = 0xffffffff;
-
     if (addr & 0x3) {
         return errmsg("Address should be 4-bytes aligned.");
     }
@@ -354,7 +352,9 @@ bool Flash::read(u_int32_t addr, void *data, int len, bool verbose, const char* 
             }
         }
 
-    } else {
+    }
+    else {
+        u_int32_t  perc = 0xffffffff;
         u_int32_t *p = (u_int32_t *)data;
         for (int i=0; i<len/4; i++) {
             if (!read(addr, p++))
@@ -374,6 +374,7 @@ bool Flash::read(u_int32_t addr, void *data, int len, bool verbose, const char* 
             }
         }
     }
+
     // Report
     if (verbose) {
         printf("\r%s%%100", message);

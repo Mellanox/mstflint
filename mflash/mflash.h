@@ -3,7 +3,7 @@
  * mflash.h - Mellanox Technilogies LTD. Flash access lib heared file
  * ==================================================================
  *
- * Copyright (c) 2005 Mellanox Technologies Ltd.  All rights reserved.
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -33,9 +33,8 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- *  Version: $Id: $
- *
  */
+
 #ifndef MFLASH_H
 #define MFLASH_H
 
@@ -117,7 +116,7 @@ int     mf_opend       (mflash** pmfl, struct mfile_t* mf, int num_of_banks,  fl
 int     mf_open_uefi(mflash** pmfl, uefi_Dev_t *uefi_dev, f_fw_cmd fw_cmd_func);
 
 int     mf_open_ignore_lock(mflash* mfl);
-int     mf_close       (mflash* mfl);
+void     mf_close       (mflash* mfl);
 
 //
 // Flash access functions:

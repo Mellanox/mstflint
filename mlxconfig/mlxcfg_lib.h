@@ -28,6 +28,7 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
 /*
  * mlxcfg_lib.h
@@ -82,8 +83,8 @@ class MlxCfgOps : public ErrMsg {
 public:
     MlxCfgOps();
     ~MlxCfgOps();
-    int open(const char* devStr);
-    int opend(mfile* mf);
+    int open(const char* devStr, bool forceClearSem=false);
+    int opend(mfile* mf, bool forceClearSem=false);
 
     // no need to close , this is done  in destructor
 
@@ -109,13 +110,19 @@ private:
         virtual void setParam(mlxCfgParam paramType, u_int32_t val) = 0;
         virtual u_int32_t getParam(mlxCfgParam paramType) = 0;
 
+        virtual int getDefaultAndFromDev(mfile* mf);
         virtual int getFromDev(mfile* mf) = 0;
         virtual int setOnDev(mfile* mf, bool ignoreCheck=false) = 0;
+        virtual int getDefaultParams(mfile* mf) = 0;
+
 
         mlxCfgType type;
         u_int32_t tlvType;
     protected:
         virtual bool isLegal(mfile* mf=NULL) = 0;
+        int getDefaultParams4thGen(mfile* mf, struct tools_open_query_def_params_global* global_params);
+        int getDefaultParams4thGen(mfile* mf, int port, struct tools_open_query_def_params_per_port* port_params);
+
         bool _updated; // set true on get and false on set
     };
 
@@ -130,11 +137,11 @@ private:
 
         virtual int getFromDev(mfile* mf);
         virtual int setOnDev(mfile* mf, bool ignoreCheck=false);
-
-        int updateMaxVfs(mfile* mf);
+        virtual int getDefaultParams(mfile* mf);
 
     private:
         virtual bool isLegal(mfile* mf);
+        int updateMaxVfs(mfile* mf);
 
         u_int32_t _sriovEn;
         u_int32_t _numOfVfs;
@@ -152,6 +159,7 @@ private:
 
         virtual int getFromDev(mfile* mf);
         virtual int setOnDev(mfile* mf, bool ignoreCheck=false);
+        virtual int getDefaultParams(mfile* mf);
 
     private:
         virtual bool isLegal(mfile* mf=NULL);
@@ -171,9 +179,11 @@ private:
 
         virtual int getFromDev(mfile* mf);
         virtual int setOnDev(mfile* mf, bool ignoreCheck=false);
+        virtual int getDefaultParams(mfile* mf);
 
     private:
         virtual bool isLegal(mfile* mf=NULL);
+
         int _port;
         u_int32_t _linkType;
     };
@@ -181,7 +191,7 @@ private:
     class BarSzParams : public CfgParams
     {
     public:
-        BarSzParams() : CfgParams(Mct_Bar_Size, BAR_SIZE_TYPE) ,_maxLogBarSz(1), _currLogBarSz(1), _logBarSz(MLXCFG_UNKNOWN) {}
+        BarSzParams() : CfgParams(Mct_Bar_Size, BAR_SIZE_TYPE) ,_maxLogBarSz(1), _logBarSz(MLXCFG_UNKNOWN) {}
         ~BarSzParams() {};
 
         virtual void setParam(mlxCfgParam paramType, u_int32_t val);
@@ -189,13 +199,12 @@ private:
 
         virtual int getFromDev(mfile* mf);
         virtual int setOnDev(mfile* mf, bool ignoreCheck=false);
-
-        int updateBarSzInfo(mfile* mf);
+        virtual int getDefaultParams(mfile* mf);
 
     private:
         virtual bool isLegal(mfile* mf=NULL);
+        int getDefaultBarSz(mfile* mf);
         u_int32_t _maxLogBarSz;
-        u_int32_t _currLogBarSz;
         u_int32_t _logBarSz;
 
     };

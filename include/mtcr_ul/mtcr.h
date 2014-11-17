@@ -1,5 +1,6 @@
 /*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ *
+ * Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -102,6 +103,8 @@ typedef enum MError {
     ME_CMDIF_NOT_SUPP,
     ME_CMDIF_BAD_SYS,
     ME_CMDIF_UNKN_TLV,
+    ME_CMDIF_RES_STATE,
+    ME_CMDIF_UNKN_STATUS,
 
     //errors regarding MAD IF
     ME_MAD_BUSY = 0x400,
@@ -267,6 +270,16 @@ int icmd_send_command(mfile *mf, int opcode, void* data, int data_size, int skip
 
 int icmd_clear_semaphore(mfile *mf);
 
+
+int tools_cmdif_send_inline_cmd(mfile* mf, u_int64_t in_param, u_int64_t* out_param,
+                                u_int32_t input_modifier, u_int16_t opcode, u_int8_t  opcode_modifier);
+
+int tools_cmdif_send_mbox_command(mfile* mf, u_int16_t opcode, u_int8_t  opcode_modifier,
+                                  int data_offs_in_mbox, void* data, int data_size, int skip_write);
+
+int tools_cmdif_unlock_semaphore(mfile *mf);
+
+
 int mget_max_reg_size(mfile *mf);
 
 const char* m_err2str(MError status);
@@ -274,7 +287,6 @@ const char* m_err2str(MError status);
 int mread_buffer(mfile *mf, unsigned int offset, u_int8_t* data, int byte_len);
 int mwrite_buffer(mfile *mf, unsigned int offset, u_int8_t* data, int byte_len);
 
-int tools_cmdif_query_dev_cap(mfile *mf, u_int32_t offset, u_int64_t* data);
 
 #ifdef __cplusplus
 }

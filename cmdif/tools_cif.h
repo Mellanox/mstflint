@@ -28,45 +28,59 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
 
-#ifndef REG_ACCESS_H
-#define REG_ACCESS_H
+#ifndef TOOLS_CIF_H
+#define TOOLS_CIF_H
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #include <mtcr.h>
-#include <tools_layouts/register_access_open_layouts.h>
-#include <tools_layouts/register_access_sib_layouts.h>
-
-// Hack, we include this for the MNV registers as they are not officialy a part of register_access so we defined them in tools.adb
 #include <tools_layouts/tools_open_layouts.h>
 
-enum { // header lengths in bytes
-    REG_ACCESS_MFBA_HEADER_LEN = 12,
-};
 
-typedef enum {
-    REG_ACCESS_METHOD_GET = MACCESS_REG_METHOD_GET,
-    REG_ACCESS_METHOD_SET = MACCESS_REG_METHOD_SET
-} reg_access_method_t;
+/**
+ * tcif_query_dev_cap:
+ * @param[in]  dev           A pointer to a device context.
+ * @param[in]  offs          offset in even dword to read from the DEV_CAP vector
+ * @param[out] data          Quad-word read from the device capabilities vector from offset: offs
 
-// we use the same error messages as mtcr
-typedef MError reg_access_status_t;
+ * @return     One of the MError* values, or a raw
+ **/
+MError tcif_query_dev_cap(mfile* dev, u_int32_t offs, u_int64_t* data);
 
+/**
+ * tcif_query_global_def_params:
+ * @param[in]     dev           A pointer to a device context.
+ * @param[in/out] global_params pointer to global params struct
 
-const char* reg_access_err2str(reg_access_status_t status);
-reg_access_status_t reg_access_mfba (mfile* mf, reg_access_method_t method, struct register_access_mfba* mfba);
-reg_access_status_t reg_access_mfbe (mfile* mf, reg_access_method_t method, struct register_access_mfbe* mfbe);
-reg_access_status_t reg_access_mfpa (mfile* mf, reg_access_method_t method, struct register_access_mfpa* mfpa);
-reg_access_status_t reg_access_mnva (mfile* mf, reg_access_method_t method, struct tools_open_mnva* mnva);
-reg_access_status_t reg_access_mnvi (mfile* mf, reg_access_method_t method, struct tools_open_mnvi* mnvi);
-reg_access_status_t reg_access_mnvia (mfile* mf, reg_access_method_t method, struct tools_open_mnvia* mnvia);
-reg_access_status_t reg_access_mgir (mfile* mf, reg_access_method_t method, struct register_access_sib_mgir* mgir);
+ * @return     One of the MError* values, or a raw
+ **/
+MError tcif_query_global_def_params(mfile* dev, struct tools_open_query_def_params_global* global_params);
+
+/**
+ * tcif_query_per_port_def_params:
+ * @param[in]     dev           A pointer to a device context.
+ * @param[in]     port          Port that the query will be performed on (1 or 2)
+ * @param[in/out] port_params   Pointer to port params struct
+
+ * @return     One of the MError* values, or a raw
+ **/
+MError tcif_query_per_port_def_params(mfile* dev, u_int8_t port, struct tools_open_query_def_params_per_port* port_params);
+
+/**
+ * tcif_err2str:
+ * @param[in]  rc            return code from one of the above functions
+
+ * @return     string describing the error occured.
+ **/
+const char* tcif_err2str(MError rc);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // REG_ACCESS_H
+#endif /* TOOLS_CIF_H */

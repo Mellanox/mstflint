@@ -28,12 +28,14 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
 #include <signal.h>
+#include <iostream>
 
 #include <tools_dev_types.h>
 
@@ -165,14 +167,12 @@ if (question == NULL) {
  if (_mlxParams.yes)
      printf("y\n");
  else {
-     char ansbuff[32];
-     ansbuff[0] = '\0';
      fflush(stdout);
-     int cnt=fscanf(stdin, "%30s", ansbuff);
-     (void)cnt; // avoid warnings
+     std::string answer;
+     std::getline(std::cin, answer);
 
-     if (  strcasecmp(ansbuff, "y") &&
-           strcasecmp(ansbuff, "yes"))  {
+     if (  strcasecmp(answer.c_str(), "y") &&
+           strcasecmp(answer.c_str(), "yes"))  {
 
          err(false, "Aborted by user.");
          return false;
@@ -293,9 +293,6 @@ mlxCfgStatus MlxCfg::queryDevCfg(const char* dev,const char* pci, int devIndex, 
     printf("\n");
 
     for (int p = (int)Mcp_Sriov_En ; p < (int)Mcp_Last; ++p) {
-        if (p == Mcp_Log_Bar_Size) { // we dont support bar size atm
-            continue;
-        }
         if (!ops.supportsParam((mlxCfgParam)p)) {
             continue;
         }
@@ -421,6 +418,22 @@ mlxCfgStatus MlxCfg::resetDevsCfg()
     return MLX_CFG_OK;
 }
 
+mlxCfgStatus MlxCfg::clrDevSem()
+{
+    MlxCfgOps ops;
+    bool rc;
+
+    printf("-W- Forcefully clearing device Semaphore(47)...");
+
+    rc = ops.open(_mlxParams.device.c_str(), true);
+    if (rc) {
+        printf(" Failed!\n");
+        return err(true, "Failed to open device: %s. %s", _mlxParams.device.c_str(), ops.err());
+    }
+    printf(" Done!\n");
+    return MLX_CFG_OK;
+}
+
 mlxCfgStatus MlxCfg::resetDevCfg(const char* dev)
 {
     MlxCfgOps ops;
@@ -464,6 +477,9 @@ mlxCfgStatus MlxCfg::execute(int argc, char* argv[])
         break;
     case Mc_Reset:
         ret = resetDevsCfg();
+        break;
+    case Mc_Clr_Sem:
+        ret = clrDevSem();
         break;
     default:
         // should not reach here.

@@ -36,6 +36,7 @@
 #define REG_ID_MFBA  0x9011
 #define REG_ID_MFBE  0x9012
 #define REG_ID_PMDIO 0x9017
+#define REG_ID_MGIR  0x9020
 #define REG_ID_PMDIC 0x9021
 #define REG_ID_MNVA  0x9024
 #define REG_ID_MNVI  0x9025
@@ -44,6 +45,11 @@
 // TODO: get correct register ID for mfrl mfai
 #define REG_ID_MFRL 0x9028
 #define REG_ID_MFAI 0x9029
+
+// WA for MGIR: the reg size is too big so we limit it to INBAND_MAX_REG_SIZE
+#define INBAND_MAX_REG_SIZE 44
+#define MGIR_REG_SIZE INBAND_MAX_REG_SIZE
+// End of WA
 
 // for debug:
 //#define _ENABLE_DEBUG_
@@ -159,6 +165,16 @@ reg_access_status_t reg_access_mnvia (mfile* mf, reg_access_method_t method, str
 		return ME_REG_ACCESS_BAD_METHOD;
 	}
 	REG_ACCCESS(mf, method, REG_ID_MNVIA, mnvia, mnvia, tools_open);
+}
+
+/************************************
+ *  * Function: reg_access_mgir
+ *************************************/
+reg_access_status_t reg_access_mgir(mfile* mf, reg_access_method_t method, struct register_access_sib_mgir* mgir)
+{
+    REG_ACCCESS_VAR(mf, method, REG_ID_MGIR, mgir, mgir, MGIR_REG_SIZE, MGIR_REG_SIZE, MGIR_REG_SIZE, register_access_sib);
+    //REG_ACCCESS(mf, method, REG_ID_MGIR, mgir, mgir, register_access_sib);
+    //}
 }
 
 /************************************

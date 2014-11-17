@@ -65,6 +65,7 @@
 
 #define TOOLS_MAX(a,b) ((a) > (b) ? (a) : (b))
 #define TOOLS_MIN(a,b) ((a) < (b) ? (a) : (b))
+#define TOOLS_ARR_SZ(arr) (sizeof((arr))/sizeof((arr)[0]))
 
 /**
  * Suppress compiler warning about unused variable.

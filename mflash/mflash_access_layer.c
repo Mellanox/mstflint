@@ -28,6 +28,7 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
 
 #include <stdio.h>
@@ -54,6 +55,7 @@ int check_access_type(mflash* mfl)
         } else if ( mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_MLNXOS_CMDIF) {
 #endif
         } else if ( mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_ICMD) {
+        } else if ( mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_TOOLS_CMDIF) {
         } else {
             return MFE_UNKOWN_ACCESS_TYPE;
         }
@@ -138,19 +140,12 @@ int sx_erase_sect_by_type(mflash* mfl, u_int32_t addr)
     return MFE_OK;
 }
 
-int     mf_update_boot_addr_by_type(mflash* mfl, u_int32_t boot_addr)
+int mf_update_boot_addr_by_type(mflash* mfl, u_int32_t boot_addr)
 {
     int rc;
     if (mfl->access_type == MFAT_UEFI || mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_MLNXOS_CMDIF) {
-    	// for inband or cib fwaccess return MFE_NOT_IMPLEMENTED
-    	// for cmdIF fwaccess i.e mlnxOS update boot addr via reg access
-    	if (mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_INBAND || mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_ICMD) {
-    		return MFE_NOT_IMPLEMENTED;
-    	}
-    	else {
-    	// uefi is supported and MLNXOS
-    	rc = run_mfpa_command(mfl->mf, REG_ACCESS_METHOD_SET, mfl->curr_bank, boot_addr, NULL); CHECK_RC(rc);
-    	}
+        // No CR-Space access - use mfpa register
+        rc = run_mfpa_command(mfl->mf, REG_ACCESS_METHOD_SET, mfl->curr_bank, boot_addr, NULL, NULL); CHECK_RC(rc);
     }
     return MFE_OK;
 }

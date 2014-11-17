@@ -28,6 +28,7 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
 
 #ifndef MLXCFG_UI_H_
@@ -44,6 +45,7 @@ typedef enum {
     Mc_Set,
     Mc_Query,
     Mc_Reset,
+    Mc_Clr_Sem,
     Mc_UnknownCmd
 } mlxCfgCmd;
 
@@ -101,6 +103,8 @@ private:
     // reset Cmd
     mlxCfgStatus resetDevsCfg();
     mlxCfgStatus resetDevCfg(const char* dev);
+
+    mlxCfgStatus clrDevSem();
     //
     mlxCfgStatus test(const char* dev);
 

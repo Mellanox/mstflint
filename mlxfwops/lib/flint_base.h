@@ -218,6 +218,7 @@ namespace std {}; using namespace std;
 #define FS_DATA_OFF      0x28
 #define SWITCHX_HW_ID    581
 #define SWITCH_IB_HW_ID  583
+#define SWITCH_EN_HW_ID  585
 
 #define CX4_HW_ID		  521
 #define CX3_HW_ID         501
@@ -307,13 +308,15 @@ typedef enum fs3_section {
     FS3_UPGRADE_CODE  = 0x7,
     FS3_HW_BOOT_CFG   = 0x8,
     FS3_HW_MAIN_CFG   = 0x9,
+    FS3_PHY_UC_CODE   = 0xa,
+    FS3_PHY_UC_CONSTS = 0xb,
     FS3_IMAGE_INFO    = 0x10,
     FS3_FW_BOOT_CFG   = 0x11,
     FS3_FW_MAIN_CFG   = 0x12,
     FS3_ROM_CODE      = 0x18,
     FS3_RESET_INFO    = 0x20,
-    FS3_DBG_LOG_MAP   = 0x30,
-    FS3_DBG_FW_INI    = 0x31,
+    FS3_DBG_FW_INI    = 0x30,
+    // FS3_DBG_LOG_MAP = 0x30 - in practice its unused and DBG_FW_INI is found in that section instead
     FS3_DBG_FW_PARAMS = 0x32,
     FS3_FW_ADB        = 0x33,
     FS3_MFG_INFO      = 0xe0,

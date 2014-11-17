@@ -28,12 +28,13 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
 
 /***
- *** This file was generated at "2014-03-23 17:16:25"
+ *** This file was generated at "2014-11-12 13:19:54"
  *** by:
- ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/golan/golan.adb --file-prefix golan --prefix golan_
+ ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/tools_open/tools_open.adb --file-prefix tools_open --prefix tools_open_
  ***/
 
 #ifndef ADABE_TO_C_UTILS
@@ -42,7 +43,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <assert.h>
 
 //for htonl etc...
 #if defined(_WIN32) || defined(_WIN64)

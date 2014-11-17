@@ -35,6 +35,7 @@
 #include <algorithm>
 #include <vector>
 
+#include <tools_utils.h>
 #include <mtcr.h>
 #include <reg_access/reg_access.h>
 
@@ -63,15 +64,16 @@ const Fs3Operations::SectionInfo Fs3Operations::_fs3SectionsInfoArr[] = {
     {FS3_PCIE_LINK_CODE, "PCIE_LINK_CODE"},
     {FS3_IRON_PREP_CODE, "IRON_PREP_CODE"},
     {FS3_POST_IRON_BOOT_CODE, "POST_IRON_BOOT_CODE"},
-    {FS3_UPGRADE_CODE, "FS3_UPGRADE_CODE"},
+    {FS3_UPGRADE_CODE,  "UPGRADE_CODE"},
     {FS3_HW_BOOT_CFG,   "HW_BOOT_CFG"},
     {FS3_HW_MAIN_CFG,   "HW_MAIN_CFG"},
+    {FS3_PHY_UC_CODE,   "PHY_UC_CODE"},
+    {FS3_PHY_UC_CONSTS, "PHY_UC_CONSTS"},
     {FS3_IMAGE_INFO,    "IMAGE_INFO"},
     {FS3_FW_BOOT_CFG,   "FW_BOOT_CFG"},
     {FS3_FW_MAIN_CFG,   "FW_MAIN_CFG"},
     {FS3_ROM_CODE,      "ROM_CODE"},
     {FS3_RESET_INFO,    "FS3_RESET_INFO"},
-    {FS3_DBG_LOG_MAP,   "DBG_LOG_MAP"},
     {FS3_DBG_FW_INI,    "DBG_FW_INI"},
     {FS3_DBG_FW_PARAMS, "DBG_FW_PARAMS"},
     {FS3_FW_ADB,        "FW_ADB"},
@@ -270,7 +272,6 @@ bool Fs3Operations::VerifyTOC(u_int32_t dtoc_addr, bool& bad_signature, VerifyCa
     u_int8_t buffer[TOC_HEADER_SIZE], entry_buffer[TOC_ENTRY_SIZE];
     struct cibfw_itoc_header itoc_header;
     bool ret_val = true, mfg_exists = false;
-    u_int8_t toc_type = FS3_ITOC;
     u_int32_t phys_addr;
     bad_signature = false;
 
@@ -281,14 +282,14 @@ bool Fs3Operations::VerifyTOC(u_int32_t dtoc_addr, bool& bad_signature, VerifyCa
     cibfw_itoc_header_unpack(&itoc_header, buffer);
     memcpy(_fs3ImgInfo.itocHeader, buffer, CIBFW_ITOC_HEADER_SIZE);
     // cibfw_itoc_header_dump(&itoc_header, stdout);
-    u_int32_t first_signature = (toc_type == FS3_ITOC) ? ITOC_ASCII : DTOC_ASCII;
+    u_int32_t first_signature =  ITOC_ASCII;
     if (!CheckTocSignature(&itoc_header, first_signature)) {
         bad_signature = true;
         return false;
     }
     u_int32_t toc_crc = CalcImageCRC((u_int32_t*)buffer, (TOC_HEADER_SIZE / 4) - 1);
     phys_addr = _ioAccess->get_phys_from_cont(dtoc_addr, _fwImgInfo.cntxLog2ChunkSize, _fwImgInfo.imgStart != 0);
-    if (!DumpFs3CRCCheck(toc_type, phys_addr, TOC_HEADER_SIZE, toc_crc, itoc_header.itoc_entry_crc,false,verifyCallBackFunc)) {
+    if (!DumpFs3CRCCheck(FS3_ITOC, phys_addr, TOC_HEADER_SIZE, toc_crc, itoc_header.itoc_entry_crc,false,verifyCallBackFunc)) {
         ret_val = false;
     }
     _fs3ImgInfo.itocAddr = dtoc_addr;
@@ -363,7 +364,7 @@ bool Fs3Operations::VerifyTOC(u_int32_t dtoc_addr, bool& bad_signature, VerifyCa
                                      ret_val = false;
                                      errmsg("Failed to get info from section %d", toc_entry.type);
                                  }
-                            } else if (toc_entry.type == FS3_DBG_LOG_MAP) {
+                            } else if (toc_entry.type == FS3_DBG_FW_INI) {
                                  TOCPUn(buff, toc_entry.size);
                                  GetSectData(_fwConfSect, (u_int32_t*)buff, toc_entry.size * 4);
                             }
@@ -417,7 +418,7 @@ bool Fs3Operations::Fs3Verify(VerifyCallBack verifyCallBackFunc, bool show_itoc,
         return errmsg("No valid FS3 image found");
     }
     if (cntx_image_num > 1) { // ATM we support only one valid image
-        return errmsg("More than one FS3 image found");
+        return errmsg("More than one FS3 image found on %s", this->_ioAccess->is_flash() ? "Device" : "image");
     }
     u_int32_t image_start = cntx_image_start[0];
     offset = 0;
@@ -476,12 +477,14 @@ bool Fs3Operations::Fs3IntQuery(bool readRom, bool quickQuery)
     if (!Fs3Verify((VerifyCallBack)NULL, 0, queryOptions)) {
         return false;
     }
-    // works only on device
-    _fwImgInfo.ext_info.chip_type = getChipTypeFromHwDevid(_ioAccess->get_dev_id());
-    if (_fwImgInfo.ext_info.chip_type == CT_CONNECT_IB) {
-        _fwImgInfo.ext_info.dev_type = CONNECT_IB_SW_ID;
+    // get chip type and device sw id, works only on device
+    if (_ioAccess->is_flash()) {
+        const u_int32_t* swId;
+        if (!getInfoFromHwDevid(_ioAccess->get_dev_id(), _fwImgInfo.ext_info.chip_type, &swId)) {
+            return false;
+        }
+        _fwImgInfo.ext_info.dev_type = swId[0];
     }
-
     return true;
 }
 
@@ -629,8 +632,11 @@ bool Fs3Operations::BurnFs3Image(Fs3Operations &imageOps,
         return errmsg("Failed to burn FW. Device data sections will be overridden by the operation.");
     }
 
+    if ( last_img_data_addr <= 16) {
+        return errmsg("Failed to burn FW. Internal error.");
+    }
+
     u_int32_t  zeroes     = 0;
-    int allow_nofs = 0;
     // write the image without the device data sections
     if (!writeImage(burnParams.progressFunc, 16 , data8 + 16, last_img_data_addr - 16)) {
         return false;
@@ -652,7 +658,8 @@ bool Fs3Operations::BurnFs3Image(Fs3Operations &imageOps,
 
     // if we access without cache replacement or the burn was non failsafe, update YU bootloaders.
     // if we access with cache replacement notify currently running fw of new image start address to crspace (for SW reset)
-    if (!burnParams.burnFailsafe || f->get_ignore_cache_replacment()) {
+    //TODO: add SwitchIB, SwitchEN and ConnectX4 when we have support for ISFU
+    if (_fwImgInfo.ext_info.chip_type != CT_CONNECT_IB || !burnParams.burnFailsafe || f->get_ignore_cache_replacment()) {
         boot_address_was_updated = f->update_boot_addr(new_image_start);
     } else {
         _isfuSupported = Fs3IsfuActivateImage(new_image_start);
@@ -660,7 +667,7 @@ bool Fs3Operations::BurnFs3Image(Fs3Operations &imageOps,
     }
 
     if (imageOps._fwImgInfo.ext_info.is_failsafe) {
-        if (allow_nofs) {
+        if (!burnParams.burnFailsafe) {
             // When burning in nofs, remnant of older image with different chunk size
             // may reside on the flash -
             // Invalidate all images marking on flash except the one we've just burnt
@@ -673,7 +680,7 @@ bool Fs3Operations::BurnFs3Image(Fs3Operations &imageOps,
             for (u_int32_t i = 0; i < cntx_image_num; i++) {
                 if (cntx_image_start[i] != new_image_start) {
                     if (!f->write(cntx_image_start[i], &zeroes, sizeof(zeroes), true)) {
-                        return false;
+                        return errmsg("Failed to invalidate old fw signature: %s", f->err());
                     }
                 }
             }
@@ -681,7 +688,7 @@ bool Fs3Operations::BurnFs3Image(Fs3Operations &imageOps,
             // invalidate previous signature
             f->set_address_convertor(imageOps._fwImgInfo.cntxLog2ChunkSize, is_curr_image_in_odd_chunks);
             if (!f->write(0, &zeroes, sizeof(zeroes), true)) {
-                return false;
+                return errmsg("Failed to invalidate old fw signature: %s", f->err());
             }
         }
     }
@@ -702,6 +709,9 @@ bool Fs3Operations::Fs3Burn(Fs3Operations &imageOps, ExtBurnParams& burnParams)
         return false;
     }
 
+    if (!burnParams.burnFailsafe && _ioAccess->is_flash() && !((Flash*)_ioAccess)->get_ignore_cache_replacment()) {
+        return errmsg("cache replacement is active, cannot burn in a non fail-safe manner.");
+    }
     // Check Matching device ID
 #ifndef UEFI_BUILD // NO Device ID here..
     if (!burnParams.noDevidCheck && _ioAccess->is_flash()) {
@@ -889,13 +899,12 @@ bool Fs3Operations::FwReadRom(std::vector<u_int8_t>& romSect)
 bool Fs3Operations::FwGetSection (u_int32_t sectType, std::vector<u_int8_t>& sectInfo, bool stripedImage)
 {
     (void) stripedImage; // unused for FS3
-    //we treat H_FW_CONF as FS3_DBG_LOG_MAP
-    //FwGetSection only supports retrieving FS3_DBG_LOG_MAP section atm.
-    if (sectType != H_FW_CONF && sectType != FS3_DBG_LOG_MAP) {
-        return errmsg("Hash File section not found in the given image.");
+    //FwGetSection only supports retrieving FS3_DBG_FW_INI section atm.
+    if (sectType != FS3_DBG_FW_INI) {
+        return errmsg("Unsupported section type.");
     }
     //set the sector to read (need to remove it after read)
-    _readSectList.push_back(FS3_DBG_LOG_MAP);
+    _readSectList.push_back(sectType);
     if (!Fs3IntQuery()) {
         _readSectList.pop_back();
         return false;
@@ -1026,7 +1035,9 @@ bool Fs3Operations::UpdateItocAfterInsert(fs3_section_t sectionType, u_int32_t n
         if (isReplacement) {
             struct toc_info *curr_itoc;
             u_int32_t sectSize;
-            Fs3GetItocInfo(_fs3ImgInfo.tocArr, _fs3ImgInfo.numOfItocs, sectionType, curr_itoc);
+            if (!Fs3GetItocInfo(_fs3ImgInfo.tocArr, _fs3ImgInfo.numOfItocs, sectionType, curr_itoc)) {
+                return false;
+            }
             sectSize = curr_itoc->toc_entry.size * 4;
             shiftSize = (removedOrNewSectSize > sectSize) ? removedOrNewSectSize - sectSize : 0;
         } else {
@@ -1284,7 +1295,8 @@ bool Fs3Operations::Fs3UpdateVsdSection(struct toc_info *curr_toc, std::vector<u
 {
     struct cibfw_device_info dev_info;
     cibfw_device_info_unpack(&dev_info, (u_int8_t*)&section_data[0]);
-    strcpy(dev_info.vsd, user_vsd);
+    memset(dev_info.vsd, 0, sizeof(dev_info.vsd));
+    strncpy(dev_info.vsd, user_vsd, TOOLS_ARR_SZ(dev_info.vsd) - 1);
     newSectionData = section_data;
     memset((u_int8_t*)&newSectionData[0], 0, curr_toc->toc_entry.size * 4);
     cibfw_device_info_pack(&dev_info, (u_int8_t*)&newSectionData[0]);
@@ -1294,7 +1306,7 @@ bool Fs3Operations::Fs3UpdateVsdSection(struct toc_info *curr_toc, std::vector<u
 bool Fs3Operations::Fs3UpdateVpdSection(struct toc_info *curr_toc, char *vpd,
                                std::vector<u_int8_t>  &newSectionData)
 {
-    int vpd_size;
+    int vpd_size = 0;
     u_int8_t *vpd_data = NULL;
 
     if (!ReadImageFile(vpd, vpd_data, vpd_size)) {
@@ -1310,9 +1322,6 @@ bool Fs3Operations::Fs3UpdateVpdSection(struct toc_info *curr_toc, char *vpd,
     return true;
 }
 
-// DEV_INFO section is failsafe
-#define DEV_INFO_ADDR_1 0x3fd000
-#define DEV_INFO_ADDR_2 0x3fe000
 // all device data section might be shifted by SHIFT_SIZE due to
 // flash with write protect sector 0f 64kb instead of 4kb
 #define SHIFT_SIZE 0xf000 // 60kb
@@ -1320,18 +1329,32 @@ bool Fs3Operations::Fs3UpdateVpdSection(struct toc_info *curr_toc, char *vpd,
 
 bool Fs3Operations::Fs3GetNewSectionAddr(struct toc_info *curr_toc, u_int32_t &NewSectionAddr, bool failsafe_section)
 {
-    // printf("-D- addr  = %#x\n", curr_toc->toc_entry.flash_addr);
-    //u_int32_t sector_size = (_ioAccess->is_flash()) ? _ioAccess->get_sector_size() : FS3_DEFAULT_SECTOR_SIZE;
-
     u_int32_t flash_addr = curr_toc->toc_entry.flash_addr << 2;
+
     // HACK: THIS IS AN UGLY HACK, SHOULD BE REMOVED ASAP
     // Possible solution : if a section is failsafe  make its size 2kb thus both section will fit in a 4kb chunk (addr & 0x800 == 0x800 then its in second place, if == 0 its in first place )
-    if (failsafe_section) {
-    	if ((flash_addr == DEV_INFO_ADDR_1) || (flash_addr == DEV_INFO_ADDR_2)){
-    		NewSectionAddr = (flash_addr == DEV_INFO_ADDR_1) ? DEV_INFO_ADDR_2 : DEV_INFO_ADDR_1;
-    	} else {// dev sections are shifted by 60 kb
-    		NewSectionAddr = (flash_addr == DEV_INFO_ADDR_1 - SHIFT_SIZE) ? DEV_INFO_ADDR_2 - SHIFT_SIZE: DEV_INFO_ADDR_1 - SHIFT_SIZE;
-    	}
+
+    if (failsafe_section) {// we assume dev_info is the only FS section.
+        // get the two dev_info addresses (section is failsafe) according to the location of the mfg section
+        toc_info* toc;
+        u_int32_t devInfoAddr1 = 0;
+        u_int32_t devInfoAddr2 = 0;
+
+        if (!Fs3GetItocInfo(_fs3ImgInfo.tocArr, _fs3ImgInfo.numOfItocs, FS3_MFG_INFO, toc)) {
+                 return errmsg("failed to locate MFG_INFO address within the FW image");
+             }
+        // calculate device info sections (fs section) address according to the MFG section
+        // (i.e we assume they are located in: mfg_addr - 4k and mfg_addr - 8k)
+        devInfoAddr1 = (toc->toc_entry.flash_addr << 2) - 0x1000;
+        devInfoAddr2 = (toc->toc_entry.flash_addr << 2) - 0x2000;
+        //printf("-D-mfg_section: 0x%x devInfoAddr1: 0x%x devInfoAddr2: 0x%x\n", toc->toc_entry.flash_addr, devInfoAddr1, devInfoAddr2);
+
+        if ((flash_addr == devInfoAddr1) || (flash_addr == devInfoAddr2)){
+            NewSectionAddr = (flash_addr == devInfoAddr1) ? devInfoAddr2 : devInfoAddr1;
+        } else {
+            // FW image is a mess
+            return errmsg("DEV_INFO section is located in an unexpected address(0x%x)", flash_addr);
+        }
     } else {
         NewSectionAddr = flash_addr;
     }
@@ -1650,6 +1673,10 @@ bool Fs3Operations::FwShiftDevData(PrintCallBack progressFunc)
         return false;
     }
     POP_DEV_DATA(_readSectList);
+
+    if (_fwImgInfo.ext_info.chip_type != CT_CONNECT_IB) {
+        return errmsg("Cannot shift device data. Unsupported device.");
+    }
 
 	u_int32_t lastFwDataAddr;
 	u_int32_t firstDevDataAddr;
