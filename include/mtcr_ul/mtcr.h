@@ -1,6 +1,5 @@
 /*
- *
- * Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -94,6 +93,7 @@ typedef enum MError {
     ME_ICMD_UNKNOWN_STATUS,
     ME_ICMD_ICM_NOT_AVAIL,
     ME_ICMD_WRITE_PROTECT,
+    ME_ICMD_BAD_SIGNATURE,
 
     //errors regarding Tools CMDIF
     ME_CMDIF_BUSY = 0x300,

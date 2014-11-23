@@ -34,6 +34,7 @@
  *
  */
 
+
 //use memory mapped /dev/mem for access
 #define CONFIG_ENABLE_MMAP 1
 //mmap /dev/mem for memory access (does not work on sparc)
@@ -1828,6 +1829,8 @@ const char* m_err2str(MError status)
        return "ME_ICMD_WRITE_PROTECT";
    case ME_ICMD_UNKNOWN_STATUS:
        return "ME_ICMD_UNKNOWN_STATUS";
+   case ME_ICMD_BAD_SIGNATURE:
+       return "ME_ICMD_BAD_SIGNATURE";
 
        // TOOLS HCR access errors
    case ME_CMDIF_BUSY:

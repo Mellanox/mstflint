@@ -45,10 +45,13 @@ typedef int (*f_mclose)        (mfile* mf);
 
 
 typedef struct icmd_params_t {
-	int icmd_opened;
-	int took_semaphore;
-	int ctrl_addr;
-	int cmd_addr;
+    int icmd_opened;
+    int took_semaphore;
+    int ctrl_addr;
+    int cmd_addr;
+    int semaphore_addr;
+    int static_cfg_not_done_addr;
+    int static_cfg_not_done_offs;
 }icmd_params;
 
 struct mfile_t {
