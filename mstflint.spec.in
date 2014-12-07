@@ -1,9 +1,13 @@
 %{!?ibmadlib: %define ibmadlib libibmad-devel}
 %{!?name: %define name mstflint}
-%{!?version: %define version @VERSION@}
+%{!?version: %define version 3.8.0}
 %{!?release: %define release 1}
-%{!?ppcbuild: %define ppcbuild 0}
-%{!?ppc64build: %define ppc64build 0}
+%{!?buildtype: %define buildtype "native"}
+%{!?noinband: %define noinband 0}
+%{!?nodc: %define nodc 0}
+
+%define debug_package %{nil}
+%define optflags -g -O2
 
 Summary: Mellanox firmware burning application
 Name: %{name}
@@ -14,7 +18,7 @@ Url: http://openfabrics.org
 Group: System Environment/Base
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}
 Source: %{name}-%{version}.tar.gz
-ExclusiveArch: i386 i486 i586 i686 x86_64 ia64 ppc ppc64
+ExclusiveArch: i386 i486 i586 i686 x86_64 ia64 ppc ppc64 ppc64le arm64
 BuildRequires: zlib-devel %{ibmadlib}
 
 %description
@@ -26,12 +30,28 @@ for network adapters based on Mellanox Technologies chips.
 
 %build
 
-%if %{ppcbuild}
-    config_flags="$config_flags -host=ppc-linux MST_CPU=ppc MST_EMBEDDED=1 --without-pythontools"
+%if %{nodc}
+    config_flags="$config_flags --disable-dc"
 %endif
 
-%if %{ppc64build}
-    config_flags="$config_flags -host=ppc64-linux MST_CPU=ppc64 --without-pythontools"
+%if %{noinband}
+    config_flags="$config_flags --disable-inband"
+%endif
+
+%if %{buildtype} == "ppc"
+    config_flags="$config_flags --host=ppc-linux"
+%endif
+
+%if %{buildtype} == "ppc64"
+    config_flags="$config_flags --host=ppc64-linux"
+%endif
+
+%if %{buildtype} == "ppc64le"
+    config_flags="$config_flags --host=powerpc64le-linux-gnu"
+%endif
+
+%if %{buildtype} == "arm64"
+    config_flags="$config_flags --host arm"
 %endif
 
 %configure ${config_flags}
@@ -64,6 +84,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 
 %changelog
+* Sun Dec 07 2014 Tomer Cohen <tomerc@mellanox.com>
+   Added support for multiple architectures
+
 * Mon Oct 12 2014 Oren Kladnitsky <orenk@dev.mellanox.co.il>
    MFT 3.7.1
 
