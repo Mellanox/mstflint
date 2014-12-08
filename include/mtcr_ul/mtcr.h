@@ -49,6 +49,10 @@ typedef enum MError {
     ME_NOT_IMPLEMENTED,
     ME_SEM_LOCKED,
     ME_MEM_ERROR,
+    ME_PCI_READ_ERROR,
+    ME_PCI_WRITE_ERROR,
+    ME_PCI_SPACE_NOT_SUPPORTED,
+    ME_PCI_IFC_TOUT,
 
     ME_MAD_SEND_FAILED,
     ME_UNKOWN_ACCESS_TYPE,
@@ -93,7 +97,7 @@ typedef enum MError {
     ME_ICMD_UNKNOWN_STATUS,
     ME_ICMD_ICM_NOT_AVAIL,
     ME_ICMD_WRITE_PROTECT,
-    ME_ICMD_BAD_SIGNATURE,
+    ME_ICMD_SIZE_EXCEEDS_LIMIT,
 
     //errors regarding Tools CMDIF
     ME_CMDIF_BUSY = 0x300,
@@ -190,7 +194,8 @@ typedef enum mtcr_access_method {
     MTCR_ACCESS_ERROR  = 0x0,
     MTCR_ACCESS_MEMORY = 0x1,
     MTCR_ACCESS_CONFIG = 0x2,
-    MTCR_ACCESS_INBAND = 0x3
+    MTCR_ACCESS_INBAND = 0x3,
+    MTCR_ACCESS_AUTO   = 0x4,
 } mtcr_access_method_t;
 /*
  * Read 4 bytes, return number of succ. read bytes or -1 on failure
@@ -235,6 +240,8 @@ int mget_mdevs_type(mfile *mf, u_int32_t *mtype);
  * Return valid mfile ptr or 0 on failure
  */
 mfile *mopen(const char *name);
+
+mfile *mopen_adv(const char *name, mtcr_access_method_t access_method);
 
 mfile *mopend(const char *name, int type);
 
@@ -287,6 +294,7 @@ const char* m_err2str(MError status);
 int mread_buffer(mfile *mf, unsigned int offset, u_int8_t* data, int byte_len);
 int mwrite_buffer(mfile *mf, unsigned int offset, u_int8_t* data, int byte_len);
 
+int msupp_fw_ifc_cap(mfile* mf);
 
 #ifdef __cplusplus
 }

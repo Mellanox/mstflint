@@ -2294,9 +2294,13 @@ int get_dev_info(mflash* mfl)
      } else if (dev_flags & MDEVS_IB){
              mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] = ATBM_INBAND;
      } else if (HAS_ICMD_IF(mfl->attr.hw_dev_id)){
-             if (mfl->opts[MFO_IGNORE_CASHE_REP_GUARD] == 0) {
-                     mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] = ATBM_ICMD;
-             }
+        if (mfl->opts[MFO_IGNORE_CASHE_REP_GUARD] == 0) {
+            if (msupp_fw_ifc_cap(mfl->mf)) {
+                mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] = ATBM_ICMD;
+            } else {
+                    mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] = ATBM_INBAND;
+            }
+        }
      } else if (HAS_TOOLS_CMDIF(mfl->attr.hw_dev_id)) {
          if (mfl->opts[MFO_IGNORE_CASHE_REP_GUARD] == 0) {
             mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] = ATBM_TOOLS_CMDIF;

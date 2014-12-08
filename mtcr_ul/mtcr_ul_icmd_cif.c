@@ -43,28 +43,19 @@
  * Virtual CR-Space ICMD addresses
  */
 
-#define VCR_CTRL_ADDR   0x6404010
-#define VCR_SEMAPHORE62 0x6406000
-#define VCR_CAP_ADDR    0x6405000
-#define VCR_MODE_ADDR   0x6405008
-#define VCR_MAGIC_PAT   "virtiCMD"
-#define VCR_CMD_ADDR   0x6400000
-#define VCR_CMD_SIZE   0x4000
+#define VCR_CTRL_ADDR       0x0
+#define VCR_SEMAPHORE62     0x0 // semaphore Domain
+#define VCR_CMD_ADDR        0x1000000 // mailbox addr
+#define VCR_CMD_SIZE_ADDR   0x1000 // mailbox size
 
-
-
+/*
+ * Macros for accessing cr-space
+ */
 #define MWRITE_BUF(mf, offset, data, byte_len)                                             \
     (((unsigned)(mwrite_buffer((mf), (offset), (data), (byte_len))) != (unsigned)(byte_len))  \
         ? ME_ICMD_STATUS_CR_FAIL : ME_OK)
 #define MREAD_BUF(mf, offset, data, byte_len)                                              \
     (((unsigned)(mread_buffer((mf), (offset), (data), (byte_len))) != (unsigned)(byte_len))   \
-        ? ME_ICMD_STATUS_CR_FAIL : ME_OK)
-
-#define MWRITE4_BLOCK(mf, offset, data, byte_len)                                             \
-    (((unsigned)(mwrite4_block((mf), (offset), (data), (byte_len))) != (unsigned)(byte_len))  \
-        ? ME_ICMD_STATUS_CR_FAIL : ME_OK)
-#define MREAD4_BLOCK(mf, offset, data, byte_len)                                              \
-    (((unsigned)(mread4_block((mf), (offset), (data), (byte_len))) != (unsigned)(byte_len))   \
         ? ME_ICMD_STATUS_CR_FAIL : ME_OK)
 
 #define MWRITE4(mf, offset, value)                             \
@@ -73,6 +64,81 @@
 #define MREAD4(mf, offset, ptr)                                \
     (((unsigned)(mread4((mf), (offset), (ptr))) != 4U)         \
         ? ME_ICMD_STATUS_CR_FAIL : ME_OK)
+
+//TODO: adrianc: the macros below can be derrived from one common macro SPACE_ACCESS(mf, address_space, access_func, args, exp_rc, action_on_fail)
+/*
+ * Macros for accessing Icmd space
+ */
+#define SET_SPACE_FOR_ICMD_ACCESS(mf)   \
+    if (mf->sup_fw_ifc) {               \
+        mf->address_domain = AD_ICMD;   \
+    }
+#define RESTORE_SPACE(mf) mf->address_domain = AD_CR_SPACE
+
+#define MWRITE4_ICMD(mf, offset, value, action_on_fail)\
+    do {\
+        mf->address_domain = AD_ICMD;\
+        if (mwrite4(mf, offset, value) != 4) {\
+            mf->address_domain = AD_CR_SPACE;\
+            action_on_fail;\
+        }\
+        mf->address_domain = AD_CR_SPACE;\
+    }while(0)
+
+#define MREAD4_ICMD(mf, offset, ptr, action_on_fail)\
+    do {\
+        mf->address_domain = AD_ICMD;\
+        if (mread4(mf, offset, ptr) != 4) {\
+            mf->address_domain = AD_CR_SPACE;\
+            action_on_fail;\
+        }\
+        mf->address_domain = AD_CR_SPACE;\
+    }while(0)
+
+#define MWRITE_BUF_ICMD(mf, offset, data, byte_len, action_on_fail)\
+    do {\
+        mf->address_domain = AD_ICMD;\
+        if ((unsigned)mwrite_buffer(mf, offset, data, byte_len) != (unsigned)byte_len) {\
+            mf->address_domain = AD_CR_SPACE;\
+            action_on_fail;\
+        }\
+        mf->address_domain = AD_CR_SPACE;\
+    }while(0)
+
+#define MREAD_BUF_ICMD(mf, offset, data, byte_len, action_on_fail)\
+    do {\
+        mf->address_domain = AD_ICMD;\
+        if ((unsigned)mread_buffer(mf, offset, data, byte_len) != (unsigned)byte_len) {\
+            mf->address_domain = AD_CR_SPACE;\
+            action_on_fail;\
+        }\
+        mf->address_domain = AD_CR_SPACE;\
+    }while(0)
+
+/*
+ * Macros for accessing semaphore space
+ */
+#define MWRITE4_SEMAPHORE(mf, offset, value, action_on_fail)\
+        do {\
+        mf->address_domain = AD_SEMAPHORE;\
+        if (mwrite4(mf, offset, value) != 4) {\
+            mf->address_domain = AD_CR_SPACE;\
+            action_on_fail;\
+        }\
+        mf->address_domain = AD_CR_SPACE;\
+    }while(0)
+
+
+#define MREAD4_SEMAPHORE(mf, offset, ptr, action_on_fail)\
+    do {\
+        mf->address_domain = AD_SEMAPHORE;\
+        if (mread4(mf, offset, ptr) != 4) {\
+            mf->address_domain = AD_CR_SPACE;\
+            action_on_fail;\
+        }\
+        mf->address_domain = AD_CR_SPACE;\
+    }while(0)
+
 
 #ifdef _DEBUG_MODE
 #define DBG_PRINTF(...) fprintf(stderr, __VA_ARGS__)
@@ -127,13 +193,13 @@ static int go(mfile *mf) {
 
     DBG_PRINTF("Go()\n");
 
-    if (MREAD4(mf, mf->icmd.ctrl_addr, &reg)) return ME_ICMD_STATUS_CR_FAIL;
+    MREAD4_ICMD(mf, mf->icmd.ctrl_addr, &reg, return ME_ICMD_STATUS_CR_FAIL);
     busy = EXTRACT(reg, BUSY_BITOFF, BUSY_BITLEN);
     if (busy)
         return ME_ICMD_STATUS_IFC_BUSY;
 
     reg = MERGE(reg, 1, BUSY_BITOFF, BUSY_BITLEN);
-    if (MWRITE4(mf, mf->icmd.ctrl_addr, reg)) return ME_ICMD_STATUS_CR_FAIL;
+    MWRITE4_ICMD(mf, mf->icmd.ctrl_addr, reg, return ME_ICMD_STATUS_CR_FAIL);
 
     DBG_PRINTF("Busy-bit raised. Waiting for command to exec...\n");
 
@@ -151,7 +217,7 @@ static int go(mfile *mf) {
             msleep(wait);  // don't hog the cpu with busy-wait
             if (wait < 8) wait *= 2;    // exponential backoff - up-to 8ms between polls
         }
-        if (MREAD4(mf, mf->icmd.ctrl_addr, &reg)) return ME_ICMD_STATUS_CR_FAIL;
+        MREAD4_ICMD(mf, mf->icmd.ctrl_addr, &reg, return ME_ICMD_STATUS_CR_FAIL);
         busy = EXTRACT(reg, BUSY_BITOFF, BUSY_BITLEN);
 
     } while (busy);
@@ -167,9 +233,9 @@ static int go(mfile *mf) {
 static int set_opcode(mfile *mf, u_int16_t opcode) {
     u_int32_t reg;
 
-    if (MREAD4(mf, mf->icmd.ctrl_addr, &reg)) return ME_ICMD_STATUS_CR_FAIL;
+    MREAD4_ICMD(mf, mf->icmd.ctrl_addr, &reg, return ME_ICMD_STATUS_CR_FAIL);
     reg = MERGE(reg, opcode, OPCODE_BITOFF, OPCODE_BITLEN);
-    if (MWRITE4(mf, mf->icmd.ctrl_addr, reg)) return ME_ICMD_STATUS_CR_FAIL;
+    MWRITE4_ICMD(mf, mf->icmd.ctrl_addr, reg, return ME_ICMD_STATUS_CR_FAIL);
 
     return ME_OK;
 }
@@ -203,7 +269,7 @@ static int translate_status(int status) {
 static int get_status(mfile *mf) {
     u_int32_t reg;
 
-    if (MREAD4(mf, mf->icmd.ctrl_addr, &reg)) return ME_ICMD_STATUS_CR_FAIL;
+    MREAD4_ICMD(mf, mf->icmd.ctrl_addr, &reg, return ME_ICMD_STATUS_CR_FAIL);
     return translate_status(EXTRACT(reg, STATUS_BITOFF, STATUS_BITLEN));
 }
 
@@ -240,7 +306,7 @@ int icmd_clear_semaphore(mfile *mf) {
 		return ret;
 	}
 
-    if (MWRITE4(mf, mf->icmd.semaphore_addr, 0)) return ME_ICMD_STATUS_CR_FAIL;
+    MWRITE4_SEMAPHORE(mf, mf->icmd.semaphore_addr, 0, return ME_ICMD_STATUS_CR_FAIL);
     mf->icmd.took_semaphore = 0;
     return ME_OK;
 }
@@ -263,7 +329,7 @@ int icmd_take_semaphore(mfile *mf) {
         if (++retries > 256) {
             return ME_ICMD_STATUS_SEMAPHORE_TO;
         }
-        if (MREAD4(mf, mf->icmd.semaphore_addr, &r)) return ME_ICMD_STATUS_CR_FAIL;
+        MREAD4_SEMAPHORE(mf, mf->icmd.semaphore_addr, &r, return ME_ICMD_STATUS_CR_FAIL);
         if (! r)
             break;
         msleep(rand() % 20);
@@ -295,16 +361,21 @@ int icmd_send_command_int(mfile    *mf,
                       IN    int     skip_write)
 {
 
-	int ret;
-	// open icmd interface by demand
-	if ((ret = icmd_open(mf))) {
-		return ret;
-	}
+    int ret;
+    // open icmd interface by demand
+    if ((ret = icmd_open(mf))) {
+        return ret;
+    }
+    // check data size does not exceed mailbox size
+    if (write_data_size > (int)mf->icmd.max_cmd_size || \
+         read_data_size > (int)mf->icmd.max_cmd_size ) {
+        return ME_ICMD_SIZE_EXCEEDS_LIMIT;
+    }
 
-	if ((ret = icmd_is_cmd_ifc_ready(mf)))
-	{
-	    return ret;
-	}
+    if ((ret = icmd_is_cmd_ifc_ready(mf)))
+    {
+        return ret;
+    }
 
     if ((ret = icmd_take_semaphore(mf))) {
         return ret;
@@ -316,9 +387,7 @@ int icmd_send_command_int(mfile    *mf,
 
     if (!skip_write)
     {
-        if ((ret = MWRITE_BUF(mf, mf->icmd.cmd_addr, data, write_data_size))) {
-            goto cleanup;
-        }
+        MWRITE_BUF_ICMD(mf, mf->icmd.cmd_addr, data, write_data_size, ret=ME_ICMD_STATUS_CR_FAIL; goto cleanup;);
     }
 
     if ((ret = go(mf))) {
@@ -329,9 +398,7 @@ int icmd_send_command_int(mfile    *mf,
         goto cleanup;
     }
 
-    if ((ret = MREAD_BUF(mf, mf->icmd.cmd_addr, data, read_data_size))) {
-        goto cleanup;
-    }
+    MREAD_BUF_ICMD(mf, mf->icmd.cmd_addr, data, read_data_size, ret=ME_ICMD_STATUS_CR_FAIL; goto cleanup;);
 
     ret = ME_OK;
 cleanup:
@@ -341,19 +408,13 @@ cleanup:
 
 static int icmd_init_vcr(mfile* mf)
 {
-    // check signature
-     char sig[sizeof(VCR_MAGIC_PAT) + 1] = {0};
-     if (mread_buffer(mf, VCR_CAP_ADDR, (u_int8_t*)sig, 4) != 4) {
-         return ME_CR_ERROR;
-     }
-
-     if (strncmp(VCR_MAGIC_PAT, sig, sizeof(VCR_MAGIC_PAT))) {
-         return ME_ICMD_BAD_SIGNATURE;
-     }
-     // we support iCMD via virtual cr-space , update addressess accordingly
      mf->icmd.cmd_addr = VCR_CMD_ADDR;
      mf->icmd.ctrl_addr = VCR_CTRL_ADDR;
      mf->icmd.semaphore_addr = VCR_SEMAPHORE62;
+
+     // get max command size
+     MREAD4_ICMD(mf,VCR_CMD_SIZE_ADDR, &(mf->icmd.max_cmd_size), return ME_ICMD_STATUS_CR_FAIL;);
+
      // adrianc: they should provide this bit as well in virtual cr-space atm get from cr-space
      GET_ADDR(mf,STAT_CFG_NOT_DONE_ADDR_CIB, STAT_CFG_NOT_DONE_ADDR_CX4, STAT_CFG_NOT_DONE_ADDR_SW_IB, mf->icmd.static_cfg_not_done_addr);
      GET_ADDR(mf, STAT_CFG_NOT_DONE_BITOFF_CIB, STAT_CFG_NOT_DONE_BITOFF_CIB, STAT_CFG_NOT_DONE_BITOFF_SW_IB, mf->icmd.static_cfg_not_done_offs);
@@ -363,24 +424,14 @@ static int icmd_init_vcr(mfile* mf)
 
 int icmd_open(mfile *mf)
 {
-    u_int32_t access_type;
-    int ret;
-
     if (mf->icmd.icmd_opened) {
         return ME_OK;
     }
+
     mf->icmd.took_semaphore = 0;
     // check if we support icmd in virtual CR-Space
-    if (mget_mdevs_type(mf, &access_type)) {
-        return ME_ICMD_BAD_PARAM;
-    }
-
-    if (access_type == MTCR_ACCESS_CONFIG) {
-        // check signature
-        ret = icmd_init_vcr(mf);
-        if (ret != ME_ICMD_BAD_SIGNATURE) {
-            return ret;
-        }
+    if (mf->supp_fw_ifc) {
+        return icmd_init_vcr(mf);
     }
     return ME_ICMD_NOT_SUPPORTED;
 }

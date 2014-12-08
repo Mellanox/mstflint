@@ -43,12 +43,19 @@ typedef int (*f_mwrite4_block) (mfile *mf, unsigned int offset, u_int32_t* data,
 typedef int (*f_maccess_reg)   (mfile *mf, u_int8_t *data);
 typedef int (*f_mclose)        (mfile* mf);
 
+typedef enum {
+    AD_ICMD = 1,
+    AD_CR_SPACE = 2,
+    AD_SEMAPHORE = 0xa
+} address_domain_t;
+
 
 typedef struct icmd_params_t {
     int icmd_opened;
     int took_semaphore;
     int ctrl_addr;
     int cmd_addr;
+    u_int32_t max_cmd_size;
     int semaphore_addr;
     int static_cfg_not_done_addr;
     int static_cfg_not_done_offs;
@@ -59,6 +66,10 @@ struct mfile_t {
     void            *ctx; // Access method context
     int              access_type;
     int              fdlock;
+
+    // relevant for devices with pci capability: 0x9
+    int              supp_fw_ifc; // pciconf - supports 0x9 capability
+    address_domain_t address_domain; // determines on which address domain reads/writes will be performed
 
     f_mread4         mread4;
     f_mwrite4        mwrite4;
