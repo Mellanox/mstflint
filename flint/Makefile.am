@@ -38,7 +38,7 @@ LAYOUTS_DIR = $(top_srcdir)/tools_layouts
 MFT_UTILS_DIR = $(top_srcdir)/mft_utils
 
 INCLUDES = -I$(top_srcdir) -I$(srcdir) -I$(MTCR_DIR) -I$(MFLASH_DIR) -I$(COMMON_DIR) \
-           -I$(LAYOUTS_DIR) -I$(MFT_UTILS_DIR) -I$(ZLIB_INC_PATH)
+           -I$(LAYOUTS_DIR) -I$(MFT_UTILS_DIR)
 
 mstflint_CXXFLAGS = -Wall -W -g -MP -MD -pipe -DEXTERNAL
 bin_PROGRAMS = mstflint
@@ -57,7 +57,7 @@ mstflint_LDADD =  ../mlxfwops/lib/libmlxfwops.a  \
 
 
 if ENABLE_DC
-mstflint_LDADD += -L$(ZLIB_LIB_PATH) -lz
+mstflint_LDADD += -lz
 else
 mstflint_CXXFLAGS += -DNO_ZLIB
 endif
