@@ -195,7 +195,6 @@ typedef enum mtcr_access_method {
     MTCR_ACCESS_MEMORY = 0x1,
     MTCR_ACCESS_CONFIG = 0x2,
     MTCR_ACCESS_INBAND = 0x3,
-    MTCR_ACCESS_AUTO   = 0x4,
 } mtcr_access_method_t;
 /*
  * Read 4 bytes, return number of succ. read bytes or -1 on failure
@@ -240,8 +239,6 @@ int mget_mdevs_type(mfile *mf, u_int32_t *mtype);
  * Return valid mfile ptr or 0 on failure
  */
 mfile *mopen(const char *name);
-
-mfile *mopen_adv(const char *name, mtcr_access_method_t access_method);
 
 mfile *mopend(const char *name, int type);
 

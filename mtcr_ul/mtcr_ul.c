@@ -740,7 +740,6 @@ int mtcr_pciconf_cap9_sem(mfile* mf, int state)
     u_int32_t lock_val;
     u_int32_t counter = 0;
     int retries = 0;
-
     if (!state) {// unlock
         WRITE4_PCI(mf, 0, CAP9_ADDR + PCI_SEMAPHORE_OFFSET, "unlock semaphore", return ME_PCI_WRITE_ERROR);
     } else { // lock
@@ -752,7 +751,7 @@ int mtcr_pciconf_cap9_sem(mfile* mf, int state)
             READ4_PCI(mf, &lock_val, CAP9_ADDR + PCI_SEMAPHORE_OFFSET, "read counter", return ME_PCI_READ_ERROR);
             if (lock_val) { //semaphore is taken
                 retries++;
-                msleep(3); // wait for current op to end
+                msleep(1); // wait for current op to end
                 continue;
             }
             //read ticket
@@ -778,6 +777,9 @@ int mtcr_pciconf_wait_on_flag(mfile* mf, u_int8_t expected_val)
          READ4_PCI(mf, &flag, CAP9_ADDR + PCI_ADDR_OFFSET, "read flag", return ME_PCI_READ_ERROR);
          flag = EXTRACT(flag, PCI_FLAG_BIT_OFFS, 1);
          retries++;
+         if ((retries & 0xf) == 0) {// dont sleep always
+             msleep(1);
+         }
      } while (flag != expected_val);
     return ME_OK;
 }
@@ -797,15 +799,39 @@ int mtcr_pciconf_set_addr_space(mfile* mf, u_int16_t space)
     return ME_OK;
 }
 
-// adrianc: no support for auto-increment feature atm
-int mtcr_pciconf_send_pci_cmd_int(mfile *mf, int space, unsigned int offset, u_int32_t* data, int rw)
+int mtcr_pciconf_rw(mfile *mf, unsigned int offset, u_int32_t* data, int rw)
 {
     int rc = ME_OK;
     u_int32_t address = offset;
 
-    if ((offset >> 24) & 0xc) {
+    //last 2 bits must be zero as we only allow 30 bits addresses
+    if (EXTRACT(address, 30, 2)) {
         return ME_BAD_PARAMS;
     }
+
+    address = MERGE(address,(rw ? 1 : 0), PCI_FLAG_BIT_OFFS, 1);
+    if (rw == WRITE_OP) {
+        // write data
+        WRITE4_PCI(mf, *data, CAP9_ADDR + PCI_DATA_OFFSET, "write value", return ME_PCI_WRITE_ERROR);
+        // write address
+        WRITE4_PCI(mf, address, CAP9_ADDR + PCI_ADDR_OFFSET, "write offset", return ME_PCI_WRITE_ERROR);
+        // wait on flag
+        rc = mtcr_pciconf_wait_on_flag(mf, 0);
+    } else {
+        // write address
+        WRITE4_PCI(mf, address, CAP9_ADDR + PCI_ADDR_OFFSET, "write offset", return ME_PCI_WRITE_ERROR);
+        // wait on flag
+        rc = mtcr_pciconf_wait_on_flag(mf, 1);
+        // read data
+        READ4_PCI(mf, data, CAP9_ADDR + PCI_DATA_OFFSET, "read value", return ME_PCI_READ_ERROR);
+    }
+    return rc;
+}
+
+int mtcr_pciconf_send_pci_cmd_int(mfile *mf, int space, unsigned int offset, u_int32_t* data, int rw)
+{
+    int rc = ME_OK;
+
     // take semaphore
     rc = mtcr_pciconf_cap9_sem(mf, 1);
     if (rc) {
@@ -817,24 +843,11 @@ int mtcr_pciconf_send_pci_cmd_int(mfile *mf, int space, unsigned int offset, u_i
     if (rc) {
         goto cleanup;
     }
-    address = MERGE(address,(rw ? 1 : 0), PCI_FLAG_BIT_OFFS, 1);
 
-    if (rw) {
-        // write data
-        WRITE4_PCI(mf, *data, CAP9_ADDR + PCI_DATA_OFFSET, "write value", rc = ME_PCI_WRITE_ERROR; goto cleanup);
-        // write address
-        WRITE4_PCI(mf, address, CAP9_ADDR + PCI_ADDR_OFFSET, "write offset", rc = ME_PCI_WRITE_ERROR; goto cleanup);
-        // wait on flag
-        mtcr_pciconf_wait_on_flag(mf, 0);
-    } else {
-        // write address
-        WRITE4_PCI(mf, address, CAP9_ADDR + PCI_ADDR_OFFSET, "write offset", rc = ME_PCI_WRITE_ERROR; goto cleanup);
-        // wait on flag
-        mtcr_pciconf_wait_on_flag(mf, 1);
-        // read data
-        READ4_PCI(mf, data, CAP9_ADDR + PCI_DATA_OFFSET, "read value", rc = ME_PCI_READ_ERROR; goto cleanup);
-    }
+    // read/write the data
+    rc = mtcr_pciconf_rw(mf, offset, data, rw);
 cleanup:
+    // clear semaphore
     mtcr_pciconf_cap9_sem(mf, 0);
     return rc;
 }
@@ -859,6 +872,48 @@ int mtcr_pciconf_mwrite4(mfile *mf, unsigned int offset, u_int32_t value)
     return 4;
 }
 
+static int block_op_pciconf(mfile *mf, unsigned int offset, u_int32_t* data, int length, int rw)
+{
+    int i;
+    int rc = ME_OK;
+    int wrote_or_read = length;
+    if (length % 4) {
+        return -1;
+    }
+    // lock semaphore and set address space
+    rc = mtcr_pciconf_cap9_sem(mf, 1);
+    if (rc) {
+         return -1;
+    }
+    // set address space
+    rc = mtcr_pciconf_set_addr_space(mf, mf->address_domain);
+    if (rc) {
+        wrote_or_read = -1;
+        goto cleanup;
+    }
+
+    for (i = 0; i < length ; i += 4) {
+        if (mtcr_pciconf_rw(mf, offset + i, &(data[(i >> 2)]), rw)) {
+            wrote_or_read = i;
+            goto cleanup;
+        }
+    }
+cleanup:
+    mtcr_pciconf_cap9_sem(mf, 0);
+    return wrote_or_read;
+}
+
+static int
+mread4_block_pciconf(mfile *mf, unsigned int offset, u_int32_t* data, int length)
+{
+    return block_op_pciconf(mf, offset, data, length, READ_OP);
+}
+
+static int
+mwrite4_block_pciconf(mfile *mf, unsigned int offset, u_int32_t* data, int length)
+{
+    return block_op_pciconf(mf, offset, data, length, WRITE_OP);
+}
 
 int mtcr_pciconf_mread4_old(mfile *mf, unsigned int offset, u_int32_t *value)
 {
@@ -968,12 +1023,14 @@ int mtcr_pciconf_open(mfile *mf, const char *name)
         mf->address_domain = CR_SPACE_DOMAIN;
         mf->mread4        = mtcr_pciconf_mread4;
         mf->mwrite4       = mtcr_pciconf_mwrite4;
+        mf->mread4_block  = mread4_block_pciconf;
+        mf->mwrite4_block = mwrite4_block_pciconf;
     } else {
         mf->mread4        = mtcr_pciconf_mread4_old;
         mf->mwrite4       = mtcr_pciconf_mwrite4_old;
+        mf->mread4_block  = mread_chunk_as_multi_mread4;
+        mf->mwrite4_block = mwrite_chunk_as_multi_mwrite4;
     }
-    mf->mread4_block  = mread_chunk_as_multi_mread4;
-    mf->mwrite4_block = mwrite_chunk_as_multi_mwrite4;
     mf->mclose        = mtcr_pciconf_mclose;
 
     /* Kernels before 2.6.12 carry the high bit in each byte
@@ -1162,12 +1219,12 @@ name_parsed:
 
 int mread4_block (mfile *mf, unsigned int offset, u_int32_t* data, int byte_len)
 {
-    return mread_chunk_as_multi_mread4(mf, offset, data, byte_len);
+    return mf->mread4_block(mf, offset, data, byte_len);
 }
 
 int mwrite4_block (mfile *mf, unsigned int offset, u_int32_t* data, int byte_len)
 {
-    return mwrite_chunk_as_multi_mwrite4(mf, offset, data, byte_len);
+    return mf->mwrite4_block(mf, offset, data, byte_len);
 }
 
 int msw_reset(mfile *mf)
@@ -1352,12 +1409,8 @@ void mdevices_info_destroy(dev_info* dev_info, int len)
         free(dev_info);
 }
 
-mfile *mopen(const char *name)
-{
-    return mopen_adv(name, MTCR_ACCESS_AUTO);
-}
 
-mfile *mopen_adv(const char *name, mtcr_access_method_t access_method)
+mfile *mopen(const char *name)
 {
     mfile *mf;
     off_t offset;
@@ -1400,25 +1453,6 @@ mfile *mopen_adv(const char *name, mtcr_access_method_t access_method)
         if (_create_lock(mf, domain, bus, dev, func , access)) {
             goto open_failed;
         }
-    }
-    // update access according to access method
-    // if access_method != MTCR_ACCESS_AUTO then we only allow to open conf as memory and via versa
-    if (access_method == MTCR_ACCESS_AUTO || access_method == access) {
-        ;
-    } else if (access_method == MTCR_ACCESS_INBAND) {
-        char inband_dev[16] = {0};
-        if (get_inband_dev_from_pci(inband_dev, mf->dev_name)) {
-            goto open_failed;
-        }
-        free(mf->dev_name);
-        mf->dev_name = strdup(name);
-        if (!mf->dev_name) {
-            goto open_failed;
-        }
-        force = 1;
-        access = access_method;
-    } else {
-        access = access_method;
     }
 
     if (force) {
@@ -1779,6 +1813,7 @@ int maccess_reg(mfile     *mf,
                 u_int32_t	w_size_reg,
                 int       *reg_status)
 {
+
     int rc;
     if (mf == NULL || reg_data == NULL || reg_status == NULL || reg_size <= 0) {
         return ME_BAD_PARAMS;
@@ -1806,7 +1841,7 @@ int maccess_reg(mfile     *mf,
         return ME_REG_ACCESS_NOT_SUPPORTED;
     }
 #endif
-
+    //printf("-D- reg_id:0x%x, reg_size 0x%x, reg_status=0x%x, rc=0x%x\n", reg_id, reg_size, (unsigned int)*reg_status, (unsigned int)rc);
     if (rc ) {
          return rc;
     } else if (*reg_status) {
@@ -1916,7 +1951,6 @@ static int mreg_send_raw(mfile *mf, u_int16_t reg_id, maccess_reg_method_t metho
     //put the reg itself into the buffer
     memcpy(buffer + OP_TLV_SIZE + REG_TLV_HEADER_LEN, reg_data, reg_size);
     cmdif_size += reg_size;
-
 #ifdef _ENABLE_DEBUG_
     	fprintf(stdout, "-I-Tlv's of Data Sent:\n");
         fprintf(stdout, "\tOperation Tlv\n");

@@ -45,7 +45,7 @@
 
 #define VCR_CTRL_ADDR       0x0
 #define VCR_SEMAPHORE62     0x0 // semaphore Domain
-#define VCR_CMD_ADDR        0x1000000 // mailbox addr
+#define VCR_CMD_ADDR        0x100000 // mailbox addr
 #define VCR_CMD_SIZE_ADDR   0x1000 // mailbox size
 
 /*
@@ -139,7 +139,7 @@
         mf->address_domain = AD_CR_SPACE;\
     }while(0)
 
-
+//#define _DEBUG_MODE
 #ifdef _DEBUG_MODE
 #define DBG_PRINTF(...) fprintf(stderr, __VA_ARGS__)
 #else
@@ -232,7 +232,7 @@ static int go(mfile *mf) {
  */
 static int set_opcode(mfile *mf, u_int16_t opcode) {
     u_int32_t reg;
-
+    DBG_PRINTF("-D- in set_opcode\n");
     MREAD4_ICMD(mf, mf->icmd.ctrl_addr, &reg, return ME_ICMD_STATUS_CR_FAIL);
     reg = MERGE(reg, opcode, OPCODE_BITOFF, OPCODE_BITLEN);
     MWRITE4_ICMD(mf, mf->icmd.ctrl_addr, reg, return ME_ICMD_STATUS_CR_FAIL);
@@ -268,7 +268,7 @@ static int translate_status(int status) {
 }
 static int get_status(mfile *mf) {
     u_int32_t reg;
-
+    DBG_PRINTF("-D- int get_status()");
     MREAD4_ICMD(mf, mf->icmd.ctrl_addr, &reg, return ME_ICMD_STATUS_CR_FAIL);
     return translate_status(EXTRACT(reg, STATUS_BITOFF, STATUS_BITLEN));
 }
@@ -278,6 +278,7 @@ static int get_status(mfile *mf) {
  */
 static int icmd_is_cmd_ifc_ready(mfile *mf) {
     u_int32_t reg;
+    DBG_PRINTF("-D- in icmd_is_cmd_ifc_ready()\n");
     if (MREAD4(mf, mf->icmd.static_cfg_not_done_addr, &reg)) return ME_ICMD_STATUS_CR_FAIL;
     u_int32_t bit_val = EXTRACT(reg, mf->icmd.static_cfg_not_done_offs, 1);
     /* adrianc: for SWITCHIB the polarity of this bit is opposite than CONNECTIB/CONNECTX4
@@ -387,6 +388,7 @@ int icmd_send_command_int(mfile    *mf,
 
     if (!skip_write)
     {
+        DBG_PRINTF("-D- Writing command to mailbox");
         MWRITE_BUF_ICMD(mf, mf->icmd.cmd_addr, data, write_data_size, ret=ME_ICMD_STATUS_CR_FAIL; goto cleanup;);
     }
 
@@ -397,7 +399,7 @@ int icmd_send_command_int(mfile    *mf,
     if ((ret = get_status(mf))) {
         goto cleanup;
     }
-
+    DBG_PRINTF("-D- Reading command from mailbox");
     MREAD_BUF_ICMD(mf, mf->icmd.cmd_addr, data, read_data_size, ret=ME_ICMD_STATUS_CR_FAIL; goto cleanup;);
 
     ret = ME_OK;
@@ -419,6 +421,11 @@ static int icmd_init_vcr(mfile* mf)
      GET_ADDR(mf,STAT_CFG_NOT_DONE_ADDR_CIB, STAT_CFG_NOT_DONE_ADDR_CX4, STAT_CFG_NOT_DONE_ADDR_SW_IB, mf->icmd.static_cfg_not_done_addr);
      GET_ADDR(mf, STAT_CFG_NOT_DONE_BITOFF_CIB, STAT_CFG_NOT_DONE_BITOFF_CIB, STAT_CFG_NOT_DONE_BITOFF_SW_IB, mf->icmd.static_cfg_not_done_offs);
      mf->icmd.icmd_opened = 1;
+     DBG_PRINTF("-D- iCMD command addr: 0x%x\n", mf->icmd.cmd_addr);
+     DBG_PRINTF("-D- iCMD ctrl addr: 0x%x\n", mf->icmd.ctrl_addr);
+     DBG_PRINTF("-D- iCMD semaphore addr(semaphore space): 0x%x\n", mf->icmd.semaphore_addr);
+     DBG_PRINTF("-D- iCMD max mailbox size: 0x%x\n", mf->icmd.max_cmd_size);
+     DBG_PRINTF("-D- iCMD stat_cfg_not_done addr: 0x%x:%d\n", mf->icmd.static_cfg_not_done_addr, mf->icmd.static_cfg_not_done_offs);
      return ME_OK;
 }
 
