@@ -55,7 +55,6 @@ int check_access_type(mflash* mfl)
         } else if ( mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_MLNXOS_CMDIF) {
 #endif
         } else if ( mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_ICMD) {
-        } else if ( mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_TOOLS_CMDIF) {
         } else {
             return MFE_UNKOWN_ACCESS_TYPE;
         }

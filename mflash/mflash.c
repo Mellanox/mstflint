@@ -197,8 +197,6 @@ int release_semaphore(mflash* mfl, int ignore_writer_lock);
 
 #define IS_CONNECTX_4TH_GEN_FAMILY(dev_id) \
         (((dev_id) == CONNECTX_HW_ID) || ((dev_id) == CX3_HW_ID) || ((dev_id) == CX3_PRO_HW_ID))
-#define HAS_TOOLS_CMDIF(dev_id) \
-	((((dev_id) == CX3_HW_ID) || ((dev_id) == CX3_PRO_HW_ID)) && (0)) //adrianc: we dont enable this feature due to performance issues.
 #define IS_SX(dev_id) \
         ((dev_id) == SWITCHX_HW_ID)
 #define IS_SIB(dev_id) \
@@ -289,11 +287,6 @@ static u_int32_t log2up (u_int32_t in) {
 }
 
 // ConnectX SPI interface:
-int cntx_init_direct_access      (mflash* mfl, flash_params_t* flash_params);
-
-int cntx_fill_attr       (mflash* mfl);
-
-int cntx_flash_read      (mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data);
 
 int cntx_st_spi_reset          (mflash* mfl);
 int cntx_st_spi_erase_sect     (mflash* mfl, u_int32_t addr);
@@ -893,11 +886,6 @@ int read_chunks   (mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data) {
 
     // TODO - Check MAX_WRITE_BUFFER_SIZE against block_size in open (or here)
     u_int8_t  tmp_buff[MAX_WRITE_BUFFER_SIZE];
-
-    if (len < block_size) {
-        // If we're reading a small chunk, use the smallest block_size to avoid the extra reads and padding overhead
-        block_size = 4;
-    }
 
     block_mask = ~(block_size - 1);
 
@@ -1732,7 +1720,7 @@ int old_flash_lock(mflash* mfl, int lock_state) {
 }
 
 
-int cntx_flash_init_direct_access(mflash* mfl, flash_params_t* flash_params) {
+int cntx_flash_init(mflash* mfl, flash_params_t* flash_params) {
     int rc;
     u_int32_t tmp;
 
@@ -2148,33 +2136,6 @@ int icmd_init(mflash *mfl)
     return MFE_OK;
 }
 
-
-int tools_cmdif_init(mflash *mfl)
-{
-    u_int32_t type;
-    int rc;
-    // Clear  semaphore when asked to by flint or any tool using mflash
-    if (mfl->opts[MFO_IGNORE_SEM_LOCK]) {
-        if (tools_cmdif_unlock_semaphore(mfl->mf) != ME_OK) {
-            return MFE_CR_ERROR;
-        }
-    }
-    // Check if we access device through pciconf
-    rc = mget_mdevs_type(mfl->mf, &type);
-    (void) rc; // method cant really fail;
-
-#ifdef MST_UL
-    if (!(type & MTCR_ACCESS_CONFIG)) {
-        return MFE_PCICONF;
-    }
-#else
-    if (!(type & MST_PCICONF)) {
-        return MFE_PCICONF;
-    }
-#endif
-    return MFE_OK;
-}
-
 int fifth_gen_flash_init(mflash* mfl, flash_params_t* flash_params)
 {
     int rc;
@@ -2189,20 +2150,6 @@ int fifth_gen_flash_init(mflash* mfl, flash_params_t* flash_params)
         rc = flash_init_fw_access(mfl, flash_params); CHECK_RC(rc);
     } else {
         rc = fifth_gen_init_direct_access(mfl, flash_params); CHECK_RC(rc);
-    }
-    return MFE_OK;
-}
-
-int cntx_flash_init(mflash* mfl, flash_params_t* flash_params)
-{
-    int rc;
-
-    if ( mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_TOOLS_CMDIF &&\
-         mfl->opts[MFO_IGNORE_CASHE_REP_GUARD] == 0) {
-        rc = tools_cmdif_init(mfl); CHECK_RC(rc);
-        rc = flash_init_fw_access(mfl, flash_params); CHECK_RC(rc);
-    } else {
-        rc = cntx_flash_init_direct_access(mfl, flash_params); CHECK_RC(rc);
     }
     return MFE_OK;
 }
@@ -2301,13 +2248,8 @@ int get_dev_info(mflash* mfl)
                     mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] = ATBM_INBAND;
             }
         }
-     } else if (HAS_TOOLS_CMDIF(mfl->attr.hw_dev_id)) {
-         if (mfl->opts[MFO_IGNORE_CASHE_REP_GUARD] == 0) {
-            mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] = ATBM_TOOLS_CMDIF;
-        }
      }
     return MFE_OK;
-
 }
 //Caller must zero the mflash struct before calling this func.
 int mf_open_fw(mflash* mfl, flash_params_t* flash_params, int num_of_banks)

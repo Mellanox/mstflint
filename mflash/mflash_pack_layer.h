@@ -116,7 +116,6 @@ enum AccessTypeByMfile{
     ATBM_INBAND,
     ATBM_MLNXOS_CMDIF,
     ATBM_ICMD,
-    ATBM_TOOLS_CMDIF,
 };
 
 /*
