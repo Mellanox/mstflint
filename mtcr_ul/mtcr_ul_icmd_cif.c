@@ -20,6 +20,14 @@
 #include <common/tools_utils.h>
 #include "mtcr_icmd_cif.h"
 
+#ifdef __WIN__
+#include <process.h>
+#define getpid() _getpid()
+#else
+#include <sys/types.h>
+#include <unistd.h>
+#endif
+
 //#define _DEBUG_MODE   // un-comment this to enable debug prints
 
 #define IN
@@ -306,7 +314,6 @@ int icmd_clear_semaphore(mfile *mf) {
 	if ((ret = icmd_open(mf))) {
 		return ret;
 	}
-
     MWRITE4_SEMAPHORE(mf, mf->icmd.semaphore_addr, 0, return ME_ICMD_STATUS_CR_FAIL);
     mf->icmd.took_semaphore = 0;
     return ME_OK;
@@ -315,31 +322,49 @@ int icmd_clear_semaphore(mfile *mf) {
 /*
  * icmd_take_semaphore
  */
-int icmd_take_semaphore(mfile *mf) {
-	// open icmd interface by demand
-	int ret;
-	if ((ret = icmd_open(mf))) {
-		return ret;
-	}
-    u_int32_t r;
+static int icmd_take_semaphore_com(mfile *mf, u_int32_t expected_read_val)
+{
+    u_int32_t read_val;
     unsigned retries = 0;
 
     DBG_PRINTF("Taking semaphore...\n");
 
-    do {    // loop while the semaphore is taken by someone else
-        if (++retries > 256) {
-            return ME_ICMD_STATUS_SEMAPHORE_TO;
-        }
-        MREAD4_SEMAPHORE(mf, mf->icmd.semaphore_addr, &r, return ME_ICMD_STATUS_CR_FAIL);
-        if (! r)
-            break;
-        msleep(rand() % 20);
-    } while (r);
+     do {    // loop while the semaphore is taken by someone else
+         if (++retries > 256) {
+             return ME_ICMD_STATUS_SEMAPHORE_TO;
+         }
+         if (mf->supp_fw_ifc) {
+             //write expected val before reading it
+             MWRITE4_SEMAPHORE(mf, mf->icmd.semaphore_addr, expected_read_val, return ME_ICMD_STATUS_CR_FAIL);
+         }
+         MREAD4_SEMAPHORE(mf, mf->icmd.semaphore_addr, &read_val, return ME_ICMD_STATUS_CR_FAIL);
+         if (read_val == expected_read_val)
+             break;
+         msleep(rand() % 20);
+     } while (read_val != expected_read_val);
 
-    mf->icmd.took_semaphore = 1;
-    DBG_PRINTF("Semaphore taken successfully...\n");
+     mf->icmd.took_semaphore = 1;
+     DBG_PRINTF("Semaphore taken successfully...\n");
 
-    return ME_OK;
+     return ME_OK;
+}
+
+int icmd_take_semaphore(mfile *mf)
+{
+    // open icmd interface by demand
+    int ret;
+    if ((ret = icmd_open(mf))) {
+        return ret;
+    }
+    if (!mf->supp_fw_ifc) {
+        return icmd_take_semaphore_com(mf, 0);
+    }
+
+    static u_int32_t pid = 0;
+    if (!pid) {
+        pid = getpid();
+    }
+    return icmd_take_semaphore_com(mf, pid);
 }
 
 int icmd_send_command(mfile    *mf,
@@ -434,7 +459,6 @@ int icmd_open(mfile *mf)
     if (mf->icmd.icmd_opened) {
         return ME_OK;
     }
-
     mf->icmd.took_semaphore = 0;
     // check if we support icmd in virtual CR-Space
     if (mf->supp_fw_ifc) {

@@ -197,7 +197,7 @@ static MfError MError2MfError(MError rc) {
    case ME_ICMD_STATUS_CR_FAIL:
 	   return MFE_CR_ERROR;
    case ME_ICMD_STATUS_SEMAPHORE_TO:
-	   return MFE_CMDIF_TIMEOUT_ERR;
+	   return MFE_ICMD_SEMAPHORE_TO;
    case ME_ICMD_STATUS_EXECUTE_TO:
 	   return MFE_CMDIF_TIMEOUT_ERR;
    case ME_ICMD_STATUS_IFC_BUSY:

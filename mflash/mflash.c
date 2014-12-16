@@ -2502,6 +2502,8 @@ const char*   mf_err2str (int err_code) {
         return "MFE_ICMD_INVALID_CMD";
     case MFE_ICMD_OPERATIONAL_ERROR:
         return "MFE_ICMD_OPERATIONAL_ERROR";
+    case MFE_ICMD_SEMAPHORE_TO:
+        return "MFE_ICMD_SEMAPHORE_TO";
     case MFE_REG_ACCESS_BAD_METHOD:
         return "MFE_REG_ACCESS_BAD_METHOD";
     case MFE_REG_ACCESS_NOT_SUPPORTED:

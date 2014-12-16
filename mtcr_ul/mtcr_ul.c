@@ -672,12 +672,23 @@ enum {
 #define READ4_PCI(mf, val_ptr, pci_offs, err_prefix, action_on_fail)    \
     do {                                                                \
         int rc;                                                         \
+        int lock_rc;                                                    \
         struct pciconf_context *pci_ctx = mf->ctx;                      \
+        lock_rc = _flock_int(mf->fdlock, LOCK_EX);                      \
+        if (lock_rc) {                                                  \
+            perror(err_prefix);                                         \
+            action_on_fail;                                             \
+        }                                                               \
         rc = pread(pci_ctx->fd, val_ptr, 4, pci_offs);                  \
+        lock_rc = _flock_int(mf->fdlock, LOCK_UN);                      \
+        if (lock_rc) {                                                  \
+            perror(err_prefix);                                         \
+            action_on_fail;                                             \
+        }                                                               \
         if (rc != 4 ) {                                                 \
             if (rc < 0)                                                 \
                 perror(err_prefix);                                     \
-                action_on_fail;                                         \
+            action_on_fail;                                             \
         }                                                               \
         *val_ptr = __le32_to_cpu(*val_ptr);\
     } while (0)
@@ -685,14 +696,25 @@ enum {
 #define WRITE4_PCI(mf, val, pci_offs, err_prefix, action_on_fail)           \
         do {                                                                \
             int rc;                                                         \
+            int lock_rc;                                                    \
             u_int32_t val_le;                                               \
             struct pciconf_context *pci_ctx = mf->ctx;                      \
-            val_le = __cpu_to_le32(val);                             \
+            val_le = __cpu_to_le32(val);                                    \
+            lock_rc = _flock_int(mf->fdlock, LOCK_EX);                      \
+            if (lock_rc) {                                                  \
+                perror(err_prefix);                                         \
+                action_on_fail;                                             \
+            }                                                               \
             rc = pwrite(pci_ctx->fd, &val_le, 4, pci_offs);                 \
+            lock_rc = _flock_int(mf->fdlock, LOCK_UN);                      \
+            if (lock_rc) {                                                  \
+                perror(err_prefix);                                         \
+                action_on_fail;                                             \
+            }                                                               \
             if (rc != 4 ) {                                                 \
                 if (rc < 0)                                                 \
                     perror(err_prefix);                                     \
-                    action_on_fail;                                         \
+                action_on_fail;                                         \
             }                                                               \
         } while (0)
 
@@ -703,20 +725,44 @@ int pci_find_capability(mfile* mf, int cap_id)
     unsigned char visited[256] = {}; /* Prevent infinite loops */
     unsigned char data[2];
     int ret;
+    int lock_ret;
     struct pciconf_context *pci_ctx = mf->ctx;
 
+    // protect against parallel access
+    lock_ret = _flock_int(mf->fdlock, LOCK_EX);
+    if (lock_ret) {
+        return 0;
+    }
+
     ret = pread(pci_ctx->fd, data, 1, PCI_CAP_PTR);
+
+    lock_ret = _flock_int(mf->fdlock, LOCK_UN);
+    if (lock_ret) {
+        return 0;
+    }
+
     if (ret != 1) {
         return 0;
     }
-    offset = data[0];
 
+    offset = data[0];
     while(1) {
         if (offset < PCI_HDR_SIZE || offset > PCI_EXT_SPACE_ADDR) {
             return 0;
         }
 
+        lock_ret = _flock_int(mf->fdlock, LOCK_EX);
+        if (lock_ret) {
+            return 0;
+        }
+
         ret = pread(pci_ctx->fd, data, sizeof data, offset);
+
+        lock_ret = _flock_int(mf->fdlock, LOCK_UN);
+        if (lock_ret) {
+            return 0;
+        }
+
         if (ret != sizeof data) {
             return 0;
         }
@@ -1010,8 +1056,9 @@ int mtcr_pciconf_open(mfile *mf, const char *name)
 
     ctx->fd = -1;
     ctx->fd = open(name, O_RDWR | O_SYNC);
-    if (ctx->fd < 0)
+    if (ctx->fd < 0) {
         return -1;
+    }
 
     mf->access_type   = MTCR_ACCESS_CONFIG;
 
@@ -1824,7 +1871,6 @@ int maccess_reg(mfile     *mf,
     	//reg too big
     	return ME_REG_ACCESS_SIZE_EXCCEEDS_LIMIT;
     }
-
     // TODO: add specific checks for each FW access method where needed
 #ifndef MST_UL
     if (mf->flags & MDEVS_MLNX_OS){
