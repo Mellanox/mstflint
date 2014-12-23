@@ -278,7 +278,7 @@ int icmd_clear_semaphore(mfile *mf);
 int tools_cmdif_send_inline_cmd(mfile* mf, u_int64_t in_param, u_int64_t* out_param,
                                 u_int32_t input_modifier, u_int16_t opcode, u_int8_t  opcode_modifier);
 
-int tools_cmdif_send_mbox_command(mfile* mf, u_int16_t opcode, u_int8_t  opcode_modifier,
+int tools_cmdif_send_mbox_command(mfile* mf, u_int32_t input_modifier, u_int16_t opcode, u_int8_t  opcode_modifier,
                                   int data_offs_in_mbox, void* data, int data_size, int skip_write);
 
 int tools_cmdif_unlock_semaphore(mfile *mf);

@@ -480,6 +480,7 @@ static
 int mtcr_pcicr_mclose(mfile *mf)
 {
     struct pcicr_context* ctx = mf->ctx;
+    struct pciconf_context* conf_ctx = mf->res_ctx;
     if (ctx) {
         if (ctx->ptr) {
             munmap(ctx->ptr,MTCR_MAP_SIZE);
@@ -491,7 +492,13 @@ int mtcr_pcicr_mclose(mfile *mf)
         free(ctx);
         mf->ctx = NULL;
     }
-
+    if (conf_ctx) {
+        if (conf_ctx->fd != -1) {
+            close(conf_ctx->fd);
+        }
+        free(conf_ctx);
+        mf->res_ctx = NULL;
+    }
     return 0;
 }
 
@@ -585,7 +592,7 @@ int mtcr_pcicr_mwrite4(mfile *mf, unsigned int offset, u_int32_t value)
 }
 
 static
-int mtcr_pcicr_open(mfile *mf, const char *name, off_t off, int ioctl_needed)
+int mtcr_pcicr_open(mfile *mf, const char *name, char* conf_name, off_t off, int ioctl_needed)
 {
     int rc;
     struct pcicr_context *ctx;
@@ -618,8 +625,23 @@ int mtcr_pcicr_open(mfile *mf, const char *name, off_t off, int ioctl_needed)
 end:
     if (rc) {
         mtcr_pcicr_mclose(mf);
+        return rc;
     }
-
+    if (conf_name != NULL) {
+        mfile* conf_mf = mopen(conf_name);
+        if (conf_mf != NULL) {
+            mf->res_ctx = conf_mf->ctx;
+            mf->res_access_type = conf_mf->access_type;
+            mf->res_fdlock = conf_mf->fdlock;
+            mf->supp_fw_ifc = conf_mf->supp_fw_ifc;
+            mf->address_domain = conf_mf->address_domain;
+            mf->res_mread4 = conf_mf->mread4;
+            mf->res_mwrite4 = conf_mf->mwrite4;
+            mf->res_mread4_block = conf_mf->mread4_block;
+            mf->res_mwrite4_block = conf_mf->mwrite4_block;
+            free(conf_mf);
+        }
+    }
     return rc;
 }
 
@@ -1501,14 +1523,15 @@ mfile *mopen(const char *name)
             goto open_failed;
         }
     }
-
+    sprintf(cbuf, "/sys/bus/pci/devices/%4.4x:%2.2x:%2.2x.%1.1x/config",
+        domain, bus, dev, func);
     if (force) {
         switch (access) {
         case MTCR_ACCESS_CONFIG:
             rc = mtcr_pciconf_open(mf, name);
             break;
         case MTCR_ACCESS_MEMORY:
-            rc = mtcr_pcicr_open(mf, name, 0, 0);
+            rc = mtcr_pcicr_open(mf, name, cbuf, 0, 0);
             break;
         case MTCR_ACCESS_INBAND:
             rc = mtcr_inband_open(mf, name);
@@ -1530,7 +1553,7 @@ mfile *mopen(const char *name)
     sprintf(rbuf, "/sys/bus/pci/devices/%4.4x:%2.2x:%2.2x.%1.1x/resource0",
         domain, bus, dev, func);
 
-    rc = mtcr_pcicr_open(mf, rbuf, 0, 0);
+    rc = mtcr_pcicr_open(mf, rbuf, cbuf, 0, 0);
     if (rc == 0) {
         return mf;
     } else if (rc == 1) {
@@ -1546,14 +1569,7 @@ mfile *mopen(const char *name)
 
     sprintf(pdbuf, "/proc/bus/pci/%4.4x:%2.2x/%2.2x.%1.1x",
         domain, bus, dev, func);
-    rc = mtcr_pcicr_open(mf, pdbuf, offset, 1);
-    if (rc == 0) {
-        return mf;
-    } else if (rc == 1) {
-        goto access_config;
-    }
-
-    rc = mtcr_pcicr_open(mf, pdbuf, offset, 1);
+    rc = mtcr_pcicr_open(mf, pdbuf, cbuf, offset, 1);
     if (rc == 0) {
         return mf;
     } else if (rc == 1) {
@@ -1563,7 +1579,7 @@ mfile *mopen(const char *name)
     if (!domain) {
         sprintf(pbuf, "/proc/bus/pci/%2.2x/%2.2x.%1.1x",
             bus, dev, func);
-        rc = mtcr_pcicr_open(mf, pbuf, offset, 1);
+        rc = mtcr_pcicr_open(mf, pbuf, cbuf, offset, 1);
         if (rc == 0) {
             return mf;
         } else if (rc == 1) {
@@ -1573,7 +1589,7 @@ mfile *mopen(const char *name)
 
 #if CONFIG_USE_DEV_MEM
     /* Non-portable, but helps some systems */
-    if (!mtcr_pcicr_open(mf, "/dev/mem", offset, 0))
+    if (!mtcr_pcicr_open(mf, "/dev/mem", cbuf, offset, 0))
         return mf;
 #endif
 
@@ -1636,9 +1652,55 @@ int mclose(mfile *mf)
         if (mf->fdlock) {
             close(mf->fdlock);
         }
+        if (mf->res_fdlock) {
+            close(mf->res_fdlock);
+        }
         free(mf);
     }
     return 0;
+}
+
+extern void mpci_change(mfile* mf)
+{
+    if (!mf->res_ctx) {
+        return;
+    }
+    if (mf->res_access_type == MTCR_ACCESS_CONFIG) {
+        mf->res_access_type = MTCR_ACCESS_MEMORY;
+        mf->access_type     = MTCR_ACCESS_CONFIG;
+    } else if (mf->res_access_type == MTCR_ACCESS_MEMORY) {
+        mf->res_access_type = MTCR_ACCESS_CONFIG;
+        mf->access_type     = MTCR_ACCESS_MEMORY;
+    } else {
+        return;
+    }
+
+    /***** Switching READ WRITE FUNCS ******/
+    f_mread4 tmp_mread4 = mf->mread4;
+    mf->mread4 = mf->res_mread4;
+    mf->res_mread4 = tmp_mread4;
+
+    f_mwrite4 tmp_mwrite4 = mf->mwrite4;
+    mf->mwrite4 = mf->res_mwrite4;
+    mf->res_mwrite4 = tmp_mwrite4;
+
+    f_mread4_block tmp_mread4_block = mf->mread4_block;
+    mf->mread4_block = mf->res_mread4_block;
+    mf->res_mread4_block = tmp_mread4_block;
+
+    f_mwrite4_block  tmp_mwrite4_block = mf->mwrite4_block;
+    mf->mwrite4_block = mf->res_mwrite4_block;
+    mf->res_mwrite4_block = tmp_mwrite4_block;
+
+    /***** Switching FD LOCKs ******/
+    int tmp_lock = mf->res_fdlock;
+    mf->res_fdlock = mf->fdlock;
+    mf->fdlock = tmp_lock;
+
+    /***** Switching CNTX ******/
+    void* tmp_ctx = mf->res_ctx;
+    mf->res_ctx = mf->ctx;
+    mf->ctx = tmp_ctx;
 }
 
 mfile *mopen_fw_ctx(void* fw_cmd_context, void* fw_cmd_func)

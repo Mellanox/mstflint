@@ -78,9 +78,20 @@ struct mfile_t {
     f_maccess_reg    maccess_reg;
     f_mclose         mclose;
 
+    /******** RESERVED FIELDS FOR SWITCHING METHOD IF NEEDED ******/
+    void            *res_ctx; // Reserved access method context
+    int              res_access_type;
+    int              res_fdlock;
+    f_mread4         res_mread4;
+    f_mwrite4        res_mwrite4;
+    f_mread4_block   res_mread4_block;
+    f_mwrite4_block  res_mwrite4_block;
+    /*************************************************************/
+
     //for ICMD access
     icmd_params icmd;
 };
+
 #endif
 
 

@@ -34,6 +34,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 #include <bit_slice.h>
 #include <common/tools_utils.h>
@@ -55,12 +56,12 @@
 #define MWRITE4(offs, val) do {WRITE_WORD(offs, val);} while (0)
 #else
 #define MREAD4(offs, val)  do { if (mread4 (mf, offs, val) != 4) { \
-                                  /*fprintf(stderr, "-E- Cr read (0x%08x) failed: %s(%d)\n", (u_int32_t)(offs), strerror(errno), (u_int32_t)errno);*/ \
-                  return 2; } /*printf("-D- %s:%d mread4: offs = %#x, val = %#x\n", __FUNCTION__, __LINE__, offs, val);*/\
+                                  /*fprintf(stderr, "-E- Cr read (0x%08x) failed: %s(%d)\n", (unsigned int)(offs), strerror(errno), errno); */\
+                  return 2; } /*printf("-D- %s:%d mread4: offs = %#x, val = %#x\n", __FUNCTION__, __LINE__, (unsigned int)offs, (unsigned int)(*val));*/\
                                   } while (0)
 
 #define MWRITE4(offs, val) do { if (mwrite4(mf, offs, val) != 4) { \
-                                  /*fprintf(stderr, "-E- Cr write (0x%08x, 0x%08x) failed: %s(%d)\n", (u_int32_t)(offs), (u_int32_t)(val), strerror(errno), (u_int32_t)errno);*/ \
+                                  /*fprintf(stderr, "-E- Cr write (0x%08x, 0x%08x) failed: %s(%d)\n", (u_int32_t)(offs), (u_int32_t)(*val), strerror(errno), (u_int32_t)errno);*/ \
                   return 2; } /*printf("-D- %s:%d mwrite4: offs = %#x, val = %#x\n",   __FUNCTION__, __LINE__, offs, val);*/ \
                                   } while (0)
 #endif
@@ -122,6 +123,7 @@ static int translate_status(int status) {
     }
 }
 
+extern void mpci_change(mfile* mf);
 
 static void tools_cmdif_pack(tools_cmdif* cmd, u_int32_t* buf) {
     memset((char*)buf, 0, CMD_IF_SIZE);
@@ -158,7 +160,6 @@ static int tools_cmdif_flash_lock(mfile* mf, int lock_state) {
     if (lock_state) {
         do {
             if (++cnt > TOOLS_SEM_TRIES) {
-                //printf("-E- Can not obtain Flash semaphore");
                 return ME_SEM_LOCKED;
             }
             MREAD4(TOOLS_HCR_SEM, &word);
@@ -166,7 +167,6 @@ static int tools_cmdif_flash_lock(mfile* mf, int lock_state) {
     } else {
         MWRITE4(TOOLS_HCR_SEM, 0);
     }
-
     return ME_OK;
 }
 
@@ -259,13 +259,15 @@ int tools_cmdif_send_inline_cmd(mfile* mf,
 	cmdif.opcode_modifier = opcode_modifier;
 
 	//take semaphore
+	mpci_change(mf);
 	if (tools_cmdif_flash_lock(mf, 1)) {
-		return ME_SEM_LOCKED;
+	    mpci_change(mf);
+	    return ME_SEM_LOCKED;
 	}
 	int rc = tools_cmdif_send_cmd_int(mf, &cmdif);
 	// release it
 	tools_cmdif_flash_lock(mf, 0);
-
+	mpci_change(mf);
 	*out_param = cmdif.out_param;
     if (rc || cmdif.status) {
         return (rc != ME_CMDIF_BAD_STATUS) ? rc : translate_status(cmdif.status);
@@ -315,21 +317,26 @@ static int tools_cmdif_mbox_write(mfile* mf, u_int32_t offset, u_int64_t input)
 
 int tools_cmdif_is_supported(mfile *mf)
 {
+    int rc = ME_OK;
     if (!mf) {
         return ME_BAD_PARAMS;
     }
+    mpci_change(mf);
     // take semaphore
     if (tools_cmdif_flash_lock(mf, 1)) {
-        return ME_SEM_LOCKED;
+        rc = ME_SEM_LOCKED;
+        goto cleanup;
     }
     // run mailbox write cmd (read command fails after driver restart or internal reset)
-    int rc = tools_cmdif_mbox_write(mf, 0x0, 0);
+    rc = tools_cmdif_mbox_write(mf, 0x0, 0);
     if (rc) {
         tools_cmdif_flash_lock(mf, 0);
-        return rc;
+        goto cleanup;
     }
     tools_cmdif_flash_lock(mf, 0);
-    return ME_OK;
+cleanup:
+    mpci_change(mf);
+    return rc;
 }
 
 /*
@@ -368,6 +375,7 @@ static void print_buffer(u_int8_t buffer[TOOLS_HCR_MAX_MBOX], const char* pre)
         ((byte_sz) + ((8 - ((byte_sz) & 7) == 8) ? 0 : (8 - ((byte_sz) & 7))))
 
 int tools_cmdif_send_mbox_command_int(mfile* mf,
+                                           u_int32_t input_modifier,
                                            u_int16_t opcode,
                                            u_int8_t  opcode_modifier,
                                            int data_offs_in_mbox,
@@ -388,9 +396,11 @@ int tools_cmdif_send_mbox_command_int(mfile* mf,
             data_offs_in_mbox + write_data_size_quad_alligned > TOOLS_HCR_MAX_MBOX) {
         return ME_BAD_PARAMS;
     }
+    mpci_change(mf);
     //take semaphore
     if (tools_cmdif_flash_lock(mf, 1)) {
-        return ME_SEM_LOCKED;
+        rc = ME_SEM_LOCKED;
+        goto exitrc;
     }
 
     // write to mailbox if needed
@@ -419,6 +429,7 @@ int tools_cmdif_send_mbox_command_int(mfile* mf,
     memset(&cmdif, 0, sizeof(tools_cmdif));
     cmdif.opcode = opcode;
     cmdif.opcode_modifier = opcode_modifier;
+    cmdif.input_modifier = input_modifier;
     rc = tools_cmdif_send_cmd_int(mf, &cmdif);
     //printf("-D- tools_cmdif_send_cmd_int: rc = 0x%x, cmdif.status: 0x%x\n", rc, cmdif.status);
     //read_entire_mbox(mf);
@@ -451,18 +462,21 @@ int tools_cmdif_send_mbox_command_int(mfile* mf,
 cleanup:
     tools_cmdif_flash_lock(mf, 0);
     //printf("-D- rc in cmdif: 0x%x\n", rc);
+exitrc:
+    mpci_change(mf);
     return rc;
 }
 
 
 int tools_cmdif_reg_access(mfile *mf, void* data, int write_data_size, int read_data_size)
 {
-    return tools_cmdif_send_mbox_command_int(mf, REG_ACCESS_OP, 0, \
+    return tools_cmdif_send_mbox_command_int(mf, 0, REG_ACCESS_OP, 0, \
             0, data, write_data_size, read_data_size, 0);
 }
 
 
 int tools_cmdif_send_mbox_command(mfile* mf,
+                                           u_int32_t input_modifier,
                                            u_int16_t opcode,
                                            u_int8_t  opcode_modifier,
                                            int data_offs_in_mbox,
@@ -470,7 +484,8 @@ int tools_cmdif_send_mbox_command(mfile* mf,
                                            int data_size,
                                            int skip_write)
 {
-    return tools_cmdif_send_mbox_command_int(mf, opcode, opcode_modifier, \
+
+    return tools_cmdif_send_mbox_command_int(mf, input_modifier, opcode, opcode_modifier, \
                                              data_offs_in_mbox, data, data_size,\
                                              data_size, skip_write);
 }
@@ -483,7 +498,7 @@ int test_mbox(mfile* mf)
 	u_int32_t data_r[8] = {0};
 	//take semaphore
 	if (tools_cmdif_flash_lock(mf, 1)) {
-		return ME_SEM_LOCKED;
+            return ME_SEM_LOCKED;
 	}
 	// write data to mbox
 	printf("-D- writing data to Mbox.\n");
