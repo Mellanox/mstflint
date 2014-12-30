@@ -72,6 +72,7 @@ protected:
     FwOperations *_imgOps;
     FBase* _io;
     what_to_ver_t _v;
+    int _maxCmdParamNum;
     FlintParams _flintParams;
     //info about the Subcommand
     string _name;
@@ -149,7 +150,7 @@ protected:
 
 
 public:
-    SubCommand(): _fwOps(NULL), _imgOps(NULL), _io(NULL), _v(Wtv_Uninitilized)
+    SubCommand(): _fwOps(NULL), _imgOps(NULL), _io(NULL), _v(Wtv_Uninitilized), _maxCmdParamNum(-1)
     {
         _cmdType = SC_No_Cmd;
         memset(_errBuff, 0, sizeof(_errBuff));

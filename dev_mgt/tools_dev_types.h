@@ -61,6 +61,7 @@ enum dm_dev_id
     DeviceConnectIB,
     DeviceConnectX3Pro,
     DeviceSwitchIB,
+    DeviceSwitchEN,
     DeviceConnectX4,
 
     DeviceEndMarker           // Dummy Device - Marker for indicating error and end of devices

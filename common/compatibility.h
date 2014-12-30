@@ -417,7 +417,7 @@ typedef uint8_t  u_int8_t;
     #include <inttypes.h>
 #endif
 
-#ifdef __VMKERNEL_USER_WORLD__
+#if defined(__VMKERNEL_UW_VMKLINUX__) || defined(__VMKERNEL_UW_NATIVE__)
     #define ROOT_PATH "/opt/mellanox/"
 #else
     #define ROOT_PATH "/"

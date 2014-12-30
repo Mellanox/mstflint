@@ -44,13 +44,14 @@
 #include <errno.h>
 #include <string.h>
 
-#include "bit_slice.h"
-#include "mtcr.h"
+#include <common/bit_slice.h>
+#include <mtcr.h>
+#include <reg_access.h>
+#include <tools_cif.h>
 
 #include "mflash_pack_layer.h"
 #include "mflash_access_layer.h"
 #include "mflash.h"
-#include "reg_access.h"
 
 #define ICMD_MAX_BLOCK_WRITE   128
 #define INBAND_MAX_BLOCK_WRITE 32
@@ -108,6 +109,49 @@
 
 #ifndef zero
 #define zero 0
+#endif
+
+// Timer definitions (needed when polling flash semaphore in windows)
+#ifndef __WIN__
+#define TIMER_INIT(...)
+#define TIMER_STOP(...)
+#define TIMER_PRINT(...)
+#define TIMER_GET_DIFF(...)
+#define TIMER_INIT_AND_START(...)
+#define TIMER_STOP_GET_DIFF(...)
+#define TIMER_CHECK(...)
+#else
+#include <windows.h>
+#define TIMER_INIT()\
+    SYSTEMTIME _start, _end;\
+    int _diff_in_sec, _diff_in_ms;\
+    (void)_diff_in_sec;\
+    (void)_diff_in_ms
+#define TIMER_START()\
+    GetSystemTime(&_start)
+#define TIMER_STOP()\
+    GetSystemTime(&_end)
+#define TIMER_PRINT(...)\
+    _diff_in_sec = _end.wSecond - _start.wSecond;\
+    _diff_in_ms = (_end.wMilliseconds - _start.wMilliseconds;\
+    printf(__VA_ARGS__);\
+    printf("it took %d sec %d and ms to run.\n", _diff_in_sec, _diff_in_ms)
+#define TIMER_GET_DIFF(diff_in_sec, diff_in_ms)\
+    diff_in_sec = _end.wSecond - _start.wSecond;\
+    diff_in_ms = _end.wMilliseconds - _start.wMilliseconds
+#define TIMER_INIT_AND_START()\
+    TIMER_INIT();\
+    TIMER_START()
+#define TIMER_STOP_GET_DIFF(diff_in_sec, diff_in_ms)\
+    TIMER_STOP();\
+    TIMER_GET_DIFF(diff_in_sec, diff_in_ms)
+#define TIMER_CHECK(max_sec, max_ms, action_on_tout)\
+    TIMER_STOP();\
+    _diff_in_sec = _end.wSecond - _start.wSecond;\
+    _diff_in_ms = _end.wMilliseconds - _start.wMilliseconds;\
+    if (_diff_in_sec >= max_sec && _diff_in_ms > max_ms) {\
+        action_on_tout;\
+    }
 #endif
 
 //
@@ -217,6 +261,8 @@ int release_semaphore(mflash* mfl, int ignore_writer_lock);
         (((dev_id) == 23108) || ((dev_id) == 25208) || ((dev_id) == 24204) || ((dev_id) == 25204))
 #define IS_OLD_DEVICE(dev_id) \
     ((IS_REALLY_OLD_DEVICE(dev_id)) || (IS_CONNECTX_4TH_GEN_FAMILY(dev_id)))
+#define SUPPORTS_SW_RESET(devid)\
+        (((devid) == 435) || ((devid) == SWITCHX_HW_ID) || ((devid) == SWITCH_IB_HW_ID))
 
 
 // Write/Erase delays
@@ -287,6 +333,7 @@ static u_int32_t log2up (u_int32_t in) {
 }
 
 // ConnectX SPI interface:
+int cntx_flash_init            (mflash* mfl, flash_params_t* flash_params);
 
 int cntx_st_spi_reset          (mflash* mfl);
 int cntx_st_spi_erase_sect     (mflash* mfl, u_int32_t addr);
@@ -674,7 +721,7 @@ int cntx_get_flash_info(mflash* mfl, unsigned *type_index, int *log2size, u_int8
         // RDID Succeded.
         // Get the capacity
         if (get_log2size_by_capcity(*type_index, capacity, log2size) != MFE_OK) {
-            printf("-E- SST SPI flash #%d (vendor: %#x, type: %#x, capacity:%#x) is not supported.\n", mfl->curr_bank, vendor,
+            printf("-E- SST SPI flash #%d (vendor: %#x, type: %#x, capacity:%#x) is not supported.\n", get_bank_int(mfl), vendor,
                     type, capacity);
             return MFE_UNSUPPORTED_FLASH_TOPOLOGY;
         }
@@ -698,7 +745,7 @@ int cntx_get_flash_info(mflash* mfl, unsigned *type_index, int *log2size, u_int8
     }
 
     if (rc == MFE_UNSUPPORTED_FLASH_TYPE) {
-        printf("-E- SPI flash #%d (vendor: %#x, memory type: %#x, es: %#x) is not supported.\n", mfl->curr_bank, vendor, type, es);
+        printf("-E- SPI flash #%d (vendor: %#x, memory type: %#x, es: %#x) is not supported.\n", get_bank_int(mfl), vendor, type, es);
     }
     // printf("-D- rc = %d, no_flash_res = %d, type_index = %d.\n", rc, no_flash_res, *type_index);
     return rc;
@@ -890,7 +937,6 @@ int read_chunks   (mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data) {
     block_mask = ~(block_size - 1);
 
     while (len) {
-
         u_int32_t i;
         u_int32_t prefix_pad_size = 0;
         u_int32_t suffix_pad_size = 0;
@@ -920,7 +966,6 @@ int read_chunks   (mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data) {
             data_size -= prefix_pad_size;
             block_data = tmp_buff;
         }
-
         rc = mfl->f_read_blk(mfl, block_addr, block_size, block_data); CHECK_RC(rc);
 
         if (suffix_pad_size || prefix_pad_size) {
@@ -1205,14 +1250,33 @@ int cntx_st_spi_write_enable(mflash* mfl) {
     return MFE_OK;
 }
 
+/*
+ * Consts needed to extract the needed data for the jedec ID
+ *  from various flash types.
+ */
+enum {
+    JEDEC_ATMEL_CAPACITY_BITOFF = 16,
+    JEDEC_ATMEL_CAPACITY_BITLEN = 5,
+    JEDEC_ATMEL_TYPE_BITOFF = 21,
+    JEDEC_ATMEL_TYPE_BITLEN = 3,
+
+    JEDEC_VENDOR_ID_BITOFF = 24,
+    JEDEC_VENDOR_ID_BITLEN = 8,
+
+    JEDEC_CAPACITY_BITOFF = 8,
+    JEDEC_CAPACITY_BITLEN = 8,
+
+    JEDEC_TYPE_BITOFF = 16,
+    JEDEC_TYPE_BITLEN = 8
+};
 
 
-int get_flash_info_for_atmel(u_int32_t jededc_id, u_int8_t* type, u_int8_t* capacity)
+int get_flash_info_for_atmel(u_int32_t jedec_id, u_int8_t* type, u_int8_t* capacity)
 {
     u_int8_t tmp_cap;
 
-    tmp_cap = EXTRACT(jededc_id, 8, 5);
-    *type   = EXTRACT(jededc_id, 13, 3);
+    tmp_cap = EXTRACT(jedec_id, JEDEC_ATMEL_CAPACITY_BITOFF, JEDEC_ATMEL_CAPACITY_BITLEN);
+    *type   = EXTRACT(jedec_id, JEDEC_ATMEL_TYPE_BITOFF, JEDEC_ATMEL_TYPE_BITLEN);
     switch (tmp_cap) {
         case 0x4:
             *capacity = 0x13;
@@ -1233,16 +1297,15 @@ int get_flash_info_for_atmel(u_int32_t jededc_id, u_int8_t* type, u_int8_t* capa
     return MFE_OK;
 
 }
-int get_info_from_jededc_id(u_int32_t jededc_id, u_int8_t *vendor, u_int8_t* type, u_int8_t* capacity)
+int get_info_from_jededc_id(u_int32_t jedec_id, u_int8_t *vendor, u_int8_t* type, u_int8_t* capacity)
 {
     int rc;
-
-    *vendor   = EXTRACT(jededc_id, 0, 8);
+    *vendor   = EXTRACT(jedec_id, JEDEC_VENDOR_ID_BITOFF, JEDEC_VENDOR_ID_BITLEN);
     if (*vendor == FV_ATMEL) {
-        rc = get_flash_info_for_atmel(jededc_id, type, capacity); CHECK_RC(rc);
+        rc = get_flash_info_for_atmel(jedec_id, type, capacity); CHECK_RC(rc);
     } else {
-        *type     = EXTRACT(jededc_id, 8, 8);
-        *capacity = EXTRACT(jededc_id, 16, 8);
+        *type     = EXTRACT(jedec_id, JEDEC_TYPE_BITOFF, JEDEC_TYPE_BITLEN);
+        *capacity = EXTRACT(jedec_id, JEDEC_CAPACITY_BITOFF, JEDEC_CAPACITY_BITLEN);
     }
 
     return MFE_OK;
@@ -1253,9 +1316,7 @@ int cntx_spi_get_type(mflash* mfl, u_int8_t op_type, u_int8_t *vendor, u_int8_t*
     int rc;
 
     rc = cntx_int_spi_get_status_data(mfl, op_type, &flash_data, 3); CHECK_RC(rc);
-    // We should swap the word we get from the gateway because it's inverted
-    flash_data = SWAPL(flash_data);
-    // printf("-D- jedec_id = %#x\n", flash_data);
+    //printf("-D- jedec_info = %#x\n", flash_data);
     // Get type and some other info from jededc_id
     get_info_from_jededc_id(flash_data, vendor, type, capacity);
     // printf("-D- cntx_spi_get_type: vendor = %#x, type = %#x, capacity = %#x\n", *vendor, *type, *capacity);
@@ -1499,8 +1560,6 @@ int cntx_st_spi_block_read_old  (mflash* mfl, u_int32_t blk_addr, u_int32_t blk_
 }
 
 
-
-
 int cntx_st_spi_page_write    (mflash* mfl, u_int32_t addr, u_int32_t size, u_int8_t* data) {
     int rc;
 
@@ -1692,8 +1751,12 @@ f_mf_write get_write_blk_func(int command_set)
 int old_flash_lock(mflash* mfl, int lock_state) {
 
     // Obtain GPIO Semaphore
-    static u_int32_t cnt=0;
+    static u_int32_t cnt = 0;
     u_int32_t word;
+
+    // timeout at 5 seconds
+    TIMER_INIT_AND_START();
+
     if (lock_state) {
         do {
             if (++cnt > GPIO_SEM_TRIES) {
@@ -1705,6 +1768,7 @@ int old_flash_lock(mflash* mfl, int lock_state) {
             if (word) {
                 msleep(1);
             }
+            TIMER_CHECK(5, 0, cnt = 0; return MFE_SEM_LOCKED);
         } while (word);
     } else {
         MWRITE4(SEMAP63, 0);
@@ -1714,7 +1778,6 @@ int old_flash_lock(mflash* mfl, int lock_state) {
         }
         cnt = 0;
     }
-
     mfl->is_locked = (lock_state != 0);
     return MFE_OK;
 }
@@ -1780,9 +1843,13 @@ int is4_init_gpios(mflash* mfl) {
 
 int is4_flash_lock(mflash* mfl, int lock_state) {
     // Obtain GPIO Semaphore
-    static u_int32_t cnt=0;
+    static u_int32_t cnt = 0;
     u_int32_t word;
-    u_int32_t lock_status= 0;
+    u_int32_t lock_status = 0;
+
+    // timeout at 5 seconds
+    TIMER_INIT_AND_START();
+
     if (lock_state) {
         do {
             if (++cnt > GPIO_SEM_TRIES) {
@@ -1790,11 +1857,12 @@ int is4_flash_lock(mflash* mfl, int lock_state) {
                 //printf("-E- Can not obtain Flash semaphore");
                 return MFE_SEM_LOCKED;
             }
-            MREAD4(HCR_FLASH_CMD , &word);
+            MREAD4(HCR_FLASH_CMD, &word);
             lock_status = EXTRACT(word, HBO_LOCK, 1);
             if (lock_status) {
                 msleep(1);
             }
+            TIMER_CHECK(5, 0, cnt = 0; return MFE_SEM_LOCKED);
         } while (lock_status);
     } else {
         MWRITE4(HCR_FLASH_CMD, 0);
@@ -2039,6 +2107,8 @@ static int update_max_write_size(mflash* mfl)
     	return MFE_BAD_PARAMS;
     }
     max_reg_size = NEAREST_POW2(max_reg_size);
+    // limit maximal write to MAX_WRITE_BUFFER_SIZE
+    max_reg_size = max_reg_size > MAX_WRITE_BUFFER_SIZE ? MAX_WRITE_BUFFER_SIZE : max_reg_size;
     mfl->attr.block_write = max_reg_size;
     mfl->attr.page_write  = max_reg_size;
     return ME_OK;
@@ -2135,6 +2205,7 @@ int icmd_init(mflash *mfl)
     }
     return MFE_OK;
 }
+
 
 int fifth_gen_flash_init(mflash* mfl, flash_params_t* flash_params)
 {
@@ -2251,6 +2322,7 @@ int get_dev_info(mflash* mfl)
      }
     return MFE_OK;
 }
+
 //Caller must zero the mflash struct before calling this func.
 int mf_open_fw(mflash* mfl, flash_params_t* flash_params, int num_of_banks)
 {
@@ -2259,7 +2331,7 @@ int mf_open_fw(mflash* mfl, flash_params_t* flash_params, int num_of_banks)
     if (!mfl) {
         return MFE_BAD_PARAMS;
     }
-    mfl->curr_bank = -1;
+    rc = set_bank_int(mfl, -1); CHECK_RC(rc);
     if (mfl->access_type == MFAT_MFILE ) {
         rc = get_dev_info(mfl); CHECK_RC(rc);
 
@@ -2389,6 +2461,9 @@ int     mf_get_attr    (mflash* mfl, flash_attr* attr) {
 }
 
 int     mf_sw_reset     (mflash* mfl) {
+    if (!SUPPORTS_SW_RESET(mfl->attr.hw_dev_id)) {
+        return MFE_UNSUPPORTED_DEVICE;
+    }
     if (msw_reset(mfl->mf)) {
         if (errno == EPERM) {
             return MFE_CMD_SUPPORTED_INBAND_ONLY;
@@ -2402,7 +2477,6 @@ int     mf_sw_reset     (mflash* mfl) {
 
     return MFE_OK;
 }
-
 
 
 const char*   mf_err2str (int err_code) {
@@ -2449,7 +2523,7 @@ const char*   mf_err2str (int err_code) {
     case MFE_OUT_OF_RANGE:
         return "MFE_OUT_OF_RANGE";
     case MFE_CMD_SUPPORTED_INBAND_ONLY:
-        return "MFE_CMD_SUPPORTED_INBAND_ONLY";
+        return "Command supported over IB interface only.";
     case MFE_NO_FLASH_DETECTED:
         return "MFE_NO_FLASH_DETECTED";
     case MFE_LOCKED_CRSPACE:
@@ -2502,8 +2576,6 @@ const char*   mf_err2str (int err_code) {
         return "MFE_ICMD_INVALID_CMD";
     case MFE_ICMD_OPERATIONAL_ERROR:
         return "MFE_ICMD_OPERATIONAL_ERROR";
-    case MFE_ICMD_SEMAPHORE_TO:
-        return "MFE_ICMD_SEMAPHORE_TO";
     case MFE_REG_ACCESS_BAD_METHOD:
         return "MFE_REG_ACCESS_BAD_METHOD";
     case MFE_REG_ACCESS_NOT_SUPPORTED:
@@ -2532,6 +2604,8 @@ const char*   mf_err2str (int err_code) {
         return "MFE_REG_ACCESS_SIZE_EXCCEEDS_LIMIT";
     case MFE_PCICONF:
         return "Access to device should be through configuration cycles.";
+    case MFE_ILLEGAL_BANK_NUM:
+        return "MFE_ILLEGAL_BANK_NUM";
     default:
         return "Unknown error";
     }
@@ -2583,8 +2657,7 @@ int     mf_read_modify_status_winbond (mflash *mfl, u_int8_t bank_num, u_int8_t 
     u_int32_t status = 0;
     int rc;
 
-
-    mfl->curr_bank = bank_num;
+    rc = set_bank_int(mfl, bank_num); CHECK_RC(rc);
     if ( mfl->attr.vendor == FV_WINBOND &&  mfl->attr.type == FMT_WINBOND) {
         use_rdsr2 = 1;
     }
@@ -2614,7 +2687,7 @@ int mf_read_modify_status_new(mflash *mfl, u_int8_t bank_num, u_int8_t read_cmd,
     int rc;
     u_int32_t status = 0;
 
-    mfl->curr_bank = bank_num;
+    rc = set_bank_int(mfl, bank_num); CHECK_RC(rc);
     rc = cntx_int_spi_get_status_data(mfl, read_cmd, &status, is_double); CHECK_RC(rc);
     // status comes in be32 format (byte0 = MSB) so we switch
     status = __be32_to_cpu(status);
@@ -2633,7 +2706,7 @@ int mf_get_param_int(mflash* mfl, u_int8_t *param_p, u_int8_t cmd, u_int8_t offs
 
     for (bank = 0; bank < mfl->attr.banks_num; bank++ ) {
         u_int8_t curr_val;
-        mfl->curr_bank = bank;
+        rc = set_bank_int(mfl, bank); CHECK_RC(rc);
 
         rc = cntx_int_spi_get_status_data(mfl, cmd, &status, bytes_num); CHECK_RC(rc);
         //if (mfl->attr.vendor == FV_ST) {
@@ -2788,7 +2861,7 @@ int     mf_get_write_protect(mflash *mfl, u_int8_t bank_num, write_protect_info_
     u_int8_t status;
 
     WRITE_PROTECT_CHECKS(mfl, bank_num);
-    mfl->curr_bank = bank_num;
+    rc = set_bank_int(mfl, bank_num); CHECK_RC(rc);
     rc = mfl->f_spi_status(mfl, SFC_RDSR, &status); CHECK_RC(rc);
     protect_info->is_bottom = EXTRACT(status, REG1_TB_OFFSET, 1);
 
@@ -2803,154 +2876,11 @@ int     mf_get_write_protect(mflash *mfl, u_int8_t bank_num, write_protect_info_
     return MFE_OK;
 }
 
-/**********************************************************************************************/
-/// THIS PART SHOULD BE MOVED TO A COMMON PLACE - CMDIF LIB
-
-#define TOOLS_HCR_ADDR         0x80780
-#define IF_CMD_UNLOCK_CR_SPACE 0x60
-#define CMD_IF_SIZE            28
-#define CMD_IF_WAIT_GO         2000
-
-typedef struct mf_cmd_if {
-    u_int64_t in_param;
-    u_int64_t out_param;
-    u_int32_t input_modifier;
-    u_int16_t token;
-    u_int16_t opcode;
-    u_int8_t  opcode_modifier;
-    u_int8_t  t;
-    u_int8_t  e;
-    u_int8_t  go;
-    u_int8_t  status;
-} mf_cmd_if_t;
-
-static void cmd_if_pack(mf_cmd_if_t* cmd, u_int32_t* buf) {
-    memset((char*)buf, 0, CMD_IF_SIZE);
-    buf[0] = EXTRACT64(cmd->in_param, 32, 32);
-    buf[1] = EXTRACT64(cmd->in_param,  0, 32);
-    buf[2] = cmd->input_modifier;
-    // out h
-    // out l
-    buf[5] = MERGE(buf[5], cmd->token,               16, 16);
-    buf[6] = MERGE(buf[6], cmd->opcode,               0, 12);
-    buf[6] = MERGE(buf[6], cmd->opcode_modifier,     12,  4);
-    buf[6] = MERGE(buf[6], cmd->e,                   22,  1);
-}
-
-static void cmd_if_unpack(mf_cmd_if_t* cmd, u_int32_t* buf) {
-    memset(cmd, 0, sizeof(mf_cmd_if_t));
-
-    cmd->in_param       = MERGE64(cmd->in_param, buf[0], 32, 32);
-    cmd->in_param       = MERGE64(cmd->in_param, buf[1],  0, 32);
-    cmd->input_modifier = buf[2];
-    cmd->out_param      = MERGE64(cmd->out_param, buf[3], 32, 32);
-    cmd->out_param      = MERGE64(cmd->out_param, buf[4],  0, 32);
-    cmd->opcode         = EXTRACT(buf[6], 0, 12);
-    cmd->opcode_modifier= EXTRACT(buf[6], 12, 4);
-
-    cmd->status         = EXTRACT(buf[6], 24, 8);
-}
-
-static int cmd_if_wait_go(mflash* mfl, int* retries)
-{
-    int i;
-    u_int8_t go_bit;
-
-    for (i = 0; i < CMD_IF_WAIT_GO; i++) {
-        u_int32_t word;
-        MREAD4(TOOLS_HCR_ADDR + CMD_IF_SIZE - 4, &word);
-        /*
-        if (mread4( mf, TOOLS_HCR_ADDR + CMD_IF_SIZE - 4, &word) != 4) {
-            return 3;
-        }
-        */
-        go_bit = EXTRACT(word, 23, 1);
-        if (!go_bit) {
-            if (retries) {
-                *retries = i;
-            }
-            return 0;
-        }
-    }
-    return MFE_CMDIF_GO_BIT_BUSY;
-}
-
-static int cmd_if_send(mflash* mfl, mf_cmd_if_t* cmd)
-{
-
-    u_int32_t raw_cmd[CMD_IF_SIZE/4];
-    int act_retries;
-    int rc;
-    u_int32_t hcr_header;
-
-    // Check if the go BIT is ready
-    rc = cmd_if_wait_go(mfl, NULL);
-    if (rc) {
-        //printf("cmd_if_send: GO bit set before command issued (rc=%d)\n", rc);
-        return MFE_CMDIF_GO_BIT_BUSY;
-    }
-    // Prepare the date of the command we're gonna execute
-    cmd_if_pack(cmd, raw_cmd);
-
-    if (mwrite4_block(mfl->mf, TOOLS_HCR_ADDR, raw_cmd, CMD_IF_SIZE) != CMD_IF_SIZE) {
-        return MFE_CR_ERROR;
-    }
-
-    raw_cmd[6] = MERGE(raw_cmd[6],      1,                   23,  1); // go
-    MWRITE4(TOOLS_HCR_ADDR + 24, raw_cmd[6]);
-
-    // Check if the command is supported at all
-    MREAD4(TOOLS_HCR_ADDR + 24, &hcr_header);
-    if (!hcr_header) {
-        return MFE_HW_ACCESS_NOT_SUPP;
-    }
-
-    rc = cmd_if_wait_go(mfl, &act_retries);
-    if (rc) {
-        return MFE_CMDIF_TIMEOUT_ERR;
-    }
-
-    if (mread4_block(mfl->mf, TOOLS_HCR_ADDR, raw_cmd, CMD_IF_SIZE) != CMD_IF_SIZE) {
-        return MFE_CR_ERROR;
-    }
-
-    cmd_if_unpack(cmd, raw_cmd);
-
-    if (cmd->status) {
-        //printf("-E- CMD IF Bad status. Op: 0x%x Status: 0x%x\n", cmd->opcode, cmd->status);
-        return MFE_CMDIF_BAD_STATUS_ERR; // TODO - Special return code here - needs a specific attention
-    }
-    return MFE_OK;
-}
-
-#define MISMATCH_KEY_RC 0x3
-int cmdif_hw_access_int(mflash* mfl, u_int64_t key, u_int8_t opcode_modifier)
-{
-    mf_cmd_if_t cmd;
-    int rc;
-
-    my_memset(&cmd, 0, sizeof(cmd));
-
-    // Prepare CMD IF
-    cmd.opcode          = IF_CMD_UNLOCK_CR_SPACE;
-    // Determine if we want to lock (1) or unlock (0)
-    cmd.opcode_modifier = opcode_modifier;
-    // Setting the given key
-    cmd.in_param        = key;
-
-    rc = cmd_if_send(mfl, &cmd);
-    // Special case
-    if (rc == MFE_CMDIF_BAD_STATUS_ERR && cmd.opcode_modifier == 0) {
-        if (cmd.status == MISMATCH_KEY_RC) {
-            return MFE_MISMATCH_KEY;
-        }
-    }
-    return rc;
-}
-
 int mf_enable_hw_access(mflash* mfl, u_int64_t key)
 {
-    return cmdif_hw_access_int(mfl, key, 0 /* Unlock */);
+    int rc;
+    rc = tcif_hw_access(mfl->mf, key, 0 /* Unlock */);
+    return (rc == ME_CMDIF_UNKN_TLV) ? MFE_MISMATCH_KEY : MError2MfError(rc);
 
 }
 
@@ -2959,8 +2889,7 @@ int mf_disable_hw_access(mflash* mfl)
     int rc;
     // We need to release the semaphore because we will not have any access to semaphore after disabling the HW access
     rc = release_semaphore(mfl, 1); CHECK_RC(rc);
-    return cmdif_hw_access_int(mfl, 0, 1 /* Lock */);
+    rc = tcif_hw_access(mfl->mf, 0, 1 /* Lock */);
+    return (rc == ME_CMDIF_UNKN_TLV) ? MFE_MISMATCH_KEY : MError2MfError(rc);
 }
-
-/**********************************************************************************************/
 

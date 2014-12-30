@@ -117,7 +117,7 @@ typedef enum {
     MCE_NOT_IMPLEMENTED,
     MCE_INCOMPLETE_PARAMS,
     MCE_OPEN_DEVICE,
-    MCE_PCICONF,
+    MCE_PCI,
     MCE_GET_DEFAULT_PARAMS,
     MCE_UNKNOWN_ERR
 }McStatus;
@@ -146,6 +146,8 @@ MlxCfgOps::CfgParams::CfgParams(mlxCfgType t, u_int32_t tlvT) {
     type = t;
     tlvType = tlvT;
     _updated = false;
+    _ignoreHardLimits = false;
+    _ignoreSoftLimits = false;
 }
 
 int MlxCfgOps::CfgParams::getDefaultParams4thGen(mfile* mf, struct tools_open_query_def_params_global* global_params)
@@ -173,6 +175,33 @@ int MlxCfgOps::CfgParams::getDefaultAndFromDev(mfile* mf)
     rc = getFromDev(mf); CHECK_RC(rc);
     return MCE_SUCCESS;
 }
+
+bool MlxCfgOps::CfgParams::checkCfg(mfile* mf)
+{
+    if (!_ignoreHardLimits && !hardLimitCheck()) {
+        return false;
+    }
+    if (!_ignoreSoftLimits && !softLimitCheck(mf)) {
+        return false;
+    }
+    return true;
+}
+
+bool MlxCfgOps::CfgParams::softLimitCheck(mfile* mf)
+{
+    // by default not implemented
+    (void)mf;
+    return true;
+}
+
+void MlxCfgOps::CfgParams::setIgnoreSoftLimits(bool val)
+{
+    _ignoreSoftLimits = val;
+}
+void MlxCfgOps::CfgParams::setIgnoreHardLimits(bool val)
+{
+    _ignoreHardLimits = val;
+}
 /*
  * MlxCfgOps::SriovParams implementation
  */
@@ -185,7 +214,7 @@ int MlxCfgOps::SriovParams::getDefaultParams(mfile* mf)
     rc = getDefaultParams4thGen(mf, &global_params);
     if (rc == MCE_SUCCESS) {
         _sriovEn = global_params.sriov_en;
-        _numOfVfs = global_params.num_vfs1;
+        _numOfVfs = global_params.num_vfs;
     } else {
         rc = MCE_GET_DEFAULT_PARAMS;
     }
@@ -233,6 +262,7 @@ int MlxCfgOps::SriovParams::getFromDev(mfile* mf)
     if (rc) {// when attempting to get a nv_cfg tlv from device ME_REG_ACCESS_RES_NOT_AVLBL means - no valid
              // tlv found. i.e default configuration are on.
         if (rc == ME_REG_ACCESS_RES_NOT_AVLBL) {
+
             return MCE_SUCCESS;
         }
         return errmsg(MCE_BAD_STATUS, "Failed to get SRIOV configuration: %s", m_err2str(rc));
@@ -251,7 +281,7 @@ int MlxCfgOps::SriovParams::setOnDev(mfile* mf, bool ignoreCheck)
     if (_sriovEn == MLXCFG_UNKNOWN || _numOfVfs == MLXCFG_UNKNOWN) {
         return errmsg("%s please specify all parameters for SRIOV.", err() ? err() : "");
     }
-    if (!ignoreCheck && !isLegal(mf)) {
+    if (!ignoreCheck && !checkCfg(mf)) {
         return MCE_BAD_PARAMS;
     }
 
@@ -292,7 +322,21 @@ int MlxCfgOps::SriovParams::updateMaxVfs(mfile* mf)
     return MCE_SUCCESS;
 }
 
-bool MlxCfgOps::SriovParams::isLegal(mfile* mf)
+bool MlxCfgOps::SriovParams::hardLimitCheck()
+{
+    if ((_numOfVfs > _maxVfs)) {
+        errmsg("Number of VFs exceeds limit (%d).", _maxVfs);
+        return false;
+    }
+
+    if (_sriovEn != 0 && _sriovEn != 1) {
+        errmsg("illegal SRIOV_EN parameters value. (should be 0 or 1)");
+        return false;
+    }
+    return true;
+}
+
+bool MlxCfgOps::SriovParams::softLimitCheck(mfile* mf)
 {
     u_int32_t barSz = 0;
     BarSzParams barParams;
@@ -305,15 +349,6 @@ bool MlxCfgOps::SriovParams::isLegal(mfile* mf)
     	return false;
     }
 
-    if ((_numOfVfs > _maxVfs)) {
-        errmsg("Number of VFs exceeds limit (%d).", _maxVfs);
-        return false;
-    }
-
-    if (_sriovEn != 0 && _sriovEn != 1) {
-        errmsg("illegal SRIOV_EN parameters value. (should be 0 or 1)");
-        return false;
-    }
     if (_sriovEn == 0) {
     	return true;
     }
@@ -400,7 +435,7 @@ int MlxCfgOps::WolParams::setOnDev(mfile* mf, bool ignoreCheck)
     if (_wolMagicEn == MLXCFG_UNKNOWN) {
         return errmsg("%s please specify all the parameters for WOL.", err()? err() : "");
     }
-    if (!ignoreCheck && !isLegal()) {
+    if (!ignoreCheck && !checkCfg()) {
         return MCE_BAD_PARAMS;
     }
     // prep tlv
@@ -424,9 +459,8 @@ int MlxCfgOps::WolParams::setOnDev(mfile* mf, bool ignoreCheck)
     return MCE_SUCCESS;
 }
 
-bool MlxCfgOps::WolParams::isLegal(mfile* mf)
+bool MlxCfgOps::WolParams::hardLimitCheck()
 {
-    (void)mf;
     if (_wolMagicEn == 0 || _wolMagicEn == 1 ) {
         return true;
     }
@@ -443,8 +477,8 @@ int MlxCfgOps::BarSzParams::getDefaultParams(mfile* mf)
     struct tools_open_query_def_params_global global_params;
     int rc = getDefaultParams4thGen(mf, &global_params);
     if ((rc == MCE_SUCCESS) & 0) { //TODO: adrianc: remove the & 0 when FW displays thesee parameters correctly in QUERY_DEF_PARAMS command
-        _logBarSz = global_params.uar_bar_size1;
-        _maxLogBarSz = global_params.max_uar_bar_size1;
+        _logBarSz = global_params.uar_bar_size;
+        _maxLogBarSz = global_params.max_uar_bar_size;
     } else {
         // attempt to take from query_dev_cap
         rc = getDefaultBarSz(mf);
@@ -522,7 +556,7 @@ int MlxCfgOps::BarSzParams::setOnDev(mfile* mf, bool ignoreCheck)
         return errmsg("%s please specify all the parameters for BAR size.", err() ? err() : "");
     }
 
-    if (!ignoreCheck && !isLegal(mf)) {
+    if (!ignoreCheck && !checkCfg(mf)) {
         return MCE_BAD_PARAMS;
     }
 
@@ -547,18 +581,23 @@ int MlxCfgOps::BarSzParams::setOnDev(mfile* mf, bool ignoreCheck)
     return MCE_SUCCESS;
 }
 
-bool MlxCfgOps::BarSzParams::isLegal(mfile* mf)
+bool MlxCfgOps::BarSzParams::hardLimitCheck()
+{
+    if (_logBarSz > _maxLogBarSz ) {
+        errmsg("given bar size is too large, max allowed log2 bar size: 0x%x", _maxLogBarSz);
+        return false;
+    }
+    return true;
+}
+
+
+bool MlxCfgOps::BarSzParams::softLimitCheck(mfile* mf)
 {
     u_int32_t numOfVfs = 0;
     int sriovEn;
     SriovParams sriovParams;
 
     if (!mf) {
-        return false;
-    }
-
-    if (_logBarSz >= _maxLogBarSz ) {
-        errmsg("given bar size is too large, max allowed log2 bar size: 0x%x", _maxLogBarSz);
         return false;
     }
 
@@ -656,7 +695,7 @@ int MlxCfgOps::VpiParams::setOnDev(mfile* mf, bool ignoreCheck)
     if (_linkType == MLXCFG_UNKNOWN) {
         return errmsg("%s please specify all the parameters for VPI settings.", err() ? err() : "");
     }
-    if (!ignoreCheck && !isLegal()) {
+    if (!ignoreCheck && !checkCfg()) {
         return MCE_BAD_PARAMS;
     }
 
@@ -681,9 +720,8 @@ int MlxCfgOps::VpiParams::setOnDev(mfile* mf, bool ignoreCheck)
     return MCE_SUCCESS;
 }
 
-bool MlxCfgOps::VpiParams::isLegal(mfile* mf)
+bool MlxCfgOps::VpiParams::hardLimitCheck()
 {
-    (void)mf;
     if (_linkType == 1 || _linkType == 2 || _linkType == 3 ) {
         return true;
     }
@@ -725,7 +763,7 @@ MlxCfgOps::MlxCfgOps()
     errmap[MCE_NOT_IMPLEMENTED] = "Not implemented";
     errmap[MCE_INCOMPLETE_PARAMS] = "Failed to get missing configuration from device, please specify all the needed parameters";
     errmap[MCE_OPEN_DEVICE] = "Failed to open device";
-    errmap[MCE_PCICONF] = "Access to device should be through configuration cycles only.";
+    errmap[MCE_PCI] = "Access to device should be through PCI interface only";
     errmap[MCE_GET_DEFAULT_PARAMS] = "Failed to get default params";
     errmap[MCE_UNKNOWN_ERR] = "General Error";
 
@@ -770,15 +808,15 @@ int MlxCfgOps::supportsToolsHCR()
     switch (devId & 0xffff) { // check hw device id
          case CX3_HW_ID : //Cx3
          case CX3_PRO_HW_ID : // Cx3-pro
-             // check if device access type is pciconf (thats the only supported method atm)
+             // check if device is accessed via pci (thats the only supported method atm)
             rc = mget_mdevs_type(_mf, &type);
         #ifndef MST_UL
-            if (type != MST_PCICONF) {
-                return errmsg(MCE_PCICONF);
+            if (type != MST_PCICONF && type != MST_PCI) {
+                return errmsg(MCE_PCI);
             }
         #else
-            if (type != MTCR_ACCESS_CONFIG) {
-                return errmsg(MCE_PCICONF);
+            if (type != MTCR_ACCESS_CONFIG && type != MTCR_ACCESS_MEMORY) {
+                return errmsg(MCE_PCI);
             }
         #endif
             // check if we support tools_hcr
@@ -886,7 +924,7 @@ int MlxCfgOps::getCfg(std::vector<cfgInfo>& infoVec)
     return MCE_SUCCESS;
 }
 
-int MlxCfgOps::setCfg(mlxCfgParam cfgParam, u_int32_t val, bool ignoreCheck)
+int MlxCfgOps::setCfg(mlxCfgParam cfgParam, u_int32_t val)
 {
     if (!isLegal(cfgParam)) {
         return MCE_BAD_PARAMS;
@@ -897,14 +935,14 @@ int MlxCfgOps::setCfg(mlxCfgParam cfgParam, u_int32_t val, bool ignoreCheck)
         return errmsgConcatMsg(rc, *_cfgList[cfgParam2Type(cfgParam)]);
     }
     _cfgList[cfgParam2Type(cfgParam)]->setParam(cfgParam, val);
-    rc = _cfgList[cfgParam2Type(cfgParam)]->setOnDev(_mf, ignoreCheck);
+    rc = _cfgList[cfgParam2Type(cfgParam)]->setOnDev(_mf);
     if (rc) {
         return errmsgConcatMsg(rc, *_cfgList[cfgParam2Type(cfgParam)]);
     }
     return MCE_SUCCESS;
 }
 
-int MlxCfgOps::setCfg(const std::vector<cfgInfo>& infoVec, bool ignoreCheck)
+int MlxCfgOps::setCfg(const std::vector<cfgInfo>& infoVec)
 {
     // set params
     std::set<CfgParams*> CfgToSet;
@@ -927,12 +965,28 @@ int MlxCfgOps::setCfg(const std::vector<cfgInfo>& infoVec, bool ignoreCheck)
     }
     //set on device exit on first failure
     for (std::set<CfgParams*>::iterator it = CfgToSet.begin() ; it != CfgToSet.end(); it++) {
-        rc = (*it)->setOnDev(_mf, ignoreCheck);
+        rc = (*it)->setOnDev(_mf);
         if (rc) {
             return errmsgConcatMsg(rc, (**it));
         }
     }
     return MCE_SUCCESS;
+}
+
+void MlxCfgOps::setIgnoreSoftLimits(bool val)
+{
+    for(std::vector<CfgParams*>::iterator it = _cfgList.begin(); it != _cfgList.end(); it++) {
+        (*it)->setIgnoreSoftLimits(val);
+    }
+    return;
+}
+
+void MlxCfgOps::setIgnoreHardLimits(bool val)
+{
+    for(std::vector<CfgParams*>::iterator it = _cfgList.begin(); it != _cfgList.end(); it++) {
+        (*it)->setIgnoreHardLimits(val);
+    }
+    return;
 }
 
 int MlxCfgOps::invalidateCfgs()

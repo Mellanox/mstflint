@@ -74,6 +74,7 @@
     int rc;\
     int max_data_size = prefix##_##struct_name##_size();\
     u_int8_t data[max_data_size];\
+    memset(data, 0, max_data_size);\
     prefix##_##struct_name##_pack(data_struct, data);\
     if (method != REG_ACCESS_METHOD_GET && method != REG_ACCESS_METHOD_SET) {\
         return ME_REG_ACCESS_BAD_METHOD;\

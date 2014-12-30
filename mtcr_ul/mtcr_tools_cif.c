@@ -31,10 +31,10 @@
  *
  */
 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 
 #include <bit_slice.h>
 #include <common/tools_utils.h>
@@ -56,12 +56,12 @@
 #define MWRITE4(offs, val) do {WRITE_WORD(offs, val);} while (0)
 #else
 #define MREAD4(offs, val)  do { if (mread4 (mf, offs, val) != 4) { \
-                                  /*fprintf(stderr, "-E- Cr read (0x%08x) failed: %s(%d)\n", (unsigned int)(offs), strerror(errno), errno); */\
-                  return 2; } /*printf("-D- %s:%d mread4: offs = %#x, val = %#x\n", __FUNCTION__, __LINE__, (unsigned int)offs, (unsigned int)(*val));*/\
+                                  /*fprintf(stderr, "-E- Cr read (0x%08x) failed: %s(%d)\n", (u_int32_t)(offs), strerror(errno), (u_int32_t)errno);*/ \
+                  return 2; } /*printf("-D- %s:%d mread4: offs = %#x, val = %#x\n", __FUNCTION__, __LINE__, offs, val);*/\
                                   } while (0)
 
 #define MWRITE4(offs, val) do { if (mwrite4(mf, offs, val) != 4) { \
-                                  /*fprintf(stderr, "-E- Cr write (0x%08x, 0x%08x) failed: %s(%d)\n", (u_int32_t)(offs), (u_int32_t)(*val), strerror(errno), (u_int32_t)errno);*/ \
+                                  /*fprintf(stderr, "-E- Cr write (0x%08x, 0x%08x) failed: %s(%d)\n", (u_int32_t)(offs), (u_int32_t)(val), strerror(errno), (u_int32_t)errno);*/ \
                   return 2; } /*printf("-D- %s:%d mwrite4: offs = %#x, val = %#x\n",   __FUNCTION__, __LINE__, offs, val);*/ \
                                   } while (0)
 #endif
@@ -123,7 +123,14 @@ static int translate_status(int status) {
     }
 }
 
+#ifdef __FreeBSD__
+void mpci_change(mfile* mf)
+{
+    (void)mf;
+}
+#else
 extern void mpci_change(mfile* mf);
+#endif
 
 static void tools_cmdif_pack(tools_cmdif* cmd, u_int32_t* buf) {
     memset((char*)buf, 0, CMD_IF_SIZE);
@@ -160,6 +167,7 @@ static int tools_cmdif_flash_lock(mfile* mf, int lock_state) {
     if (lock_state) {
         do {
             if (++cnt > TOOLS_SEM_TRIES) {
+                //printf("-E- Can not obtain Flash semaphore");
                 return ME_SEM_LOCKED;
             }
             MREAD4(TOOLS_HCR_SEM, &word);
@@ -167,6 +175,7 @@ static int tools_cmdif_flash_lock(mfile* mf, int lock_state) {
     } else {
         MWRITE4(TOOLS_HCR_SEM, 0);
     }
+
     return ME_OK;
 }
 
@@ -248,27 +257,29 @@ int tools_cmdif_send_inline_cmd(mfile* mf,
 					 u_int16_t opcode,
 					 u_int8_t  opcode_modifier)
 {
-	if (!mf || !out_param) {
-		return ME_BAD_PARAMS;
-	}
-	tools_cmdif cmdif;
-	memset(&cmdif, 0, sizeof(tools_cmdif));
-	cmdif.in_param = in_param;
-	cmdif.input_modifier = input_modifier;
-	cmdif.opcode = opcode;
-	cmdif.opcode_modifier = opcode_modifier;
+    if (!mf) {
+        return ME_BAD_PARAMS;
+    }
+    tools_cmdif cmdif;
+    memset(&cmdif, 0, sizeof(tools_cmdif));
+    cmdif.in_param = in_param;
+    cmdif.input_modifier = input_modifier;
+    cmdif.opcode = opcode;
+    cmdif.opcode_modifier = opcode_modifier;
 
-	//take semaphore
-	mpci_change(mf);
-	if (tools_cmdif_flash_lock(mf, 1)) {
-	    mpci_change(mf);
-	    return ME_SEM_LOCKED;
-	}
-	int rc = tools_cmdif_send_cmd_int(mf, &cmdif);
-	// release it
-	tools_cmdif_flash_lock(mf, 0);
-	mpci_change(mf);
-	*out_param = cmdif.out_param;
+    //take semaphore
+    mpci_change(mf);
+    if (tools_cmdif_flash_lock(mf, 1)) {
+        mpci_change(mf);
+        return ME_SEM_LOCKED;
+    }
+    int rc = tools_cmdif_send_cmd_int(mf, &cmdif);
+    // release it
+    tools_cmdif_flash_lock(mf, 0);
+    mpci_change(mf);
+    if (out_param) {
+        *out_param = cmdif.out_param;
+    }
     if (rc || cmdif.status) {
         return (rc != ME_CMDIF_BAD_STATUS) ? rc : translate_status(cmdif.status);
     }
@@ -498,7 +509,7 @@ int test_mbox(mfile* mf)
 	u_int32_t data_r[8] = {0};
 	//take semaphore
 	if (tools_cmdif_flash_lock(mf, 1)) {
-            return ME_SEM_LOCKED;
+		return ME_SEM_LOCKED;
 	}
 	// write data to mbox
 	printf("-D- writing data to Mbox.\n");

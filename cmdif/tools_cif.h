@@ -29,6 +29,9 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
+ *
+ *  Created on: Nov 5, 2014
+ *      Author: adrianc
  */
 
 #ifndef TOOLS_CIF_H
@@ -70,6 +73,39 @@ MError tcif_query_global_def_params(mfile* dev, struct tools_open_query_def_para
  * @return     One of the MError* values, or a raw
  **/
 MError tcif_query_per_port_def_params(mfile* dev, u_int8_t port, struct tools_open_query_def_params_per_port* port_params);
+
+/**
+ * tcif_qpc_context_read:
+ * @param[in]     dev           A pointer to a device context.
+ * @param[in]     qpn           QP Number
+ * @param[in]     source        QP Source
+ * @param[in]     data          Data that was read
+ *
+ * @return     One of the MError* values, or a raw
+ **/
+MError tcif_qpc_context_read(mfile* dev, u_int32_t qpn, u_int32_t source, u_int8_t* data, u_int32_t len);
+
+/**
+ * tcif_qpc_context_write:
+ * @param[in]     dev           A pointer to a device context.
+ * @param[in]     qpn           QP Number
+ * @param[in]     source        QP Source
+ * @param[in]     data          Data to be written
+ *
+ * @return     One of the MError* values, or a raw
+ **/
+MError tcif_qpc_context_write(mfile* dev, u_int32_t qpn, u_int32_t source, u_int8_t* data, u_int32_t len);
+
+
+/**
+ * tcif_hw_access:
+ * @param[in]  dev           A pointer to a device context.
+ * @param[in]  key           key with which we attempt to lock/unlock the cr-space (should be 0 for locking)
+ * @param[out] lock_unlock   1-lock , 0-unlock
+
+ * @return     One of the MError* values, or a raw
+ **/
+MError tcif_hw_access(mfile* dev, u_int64_t key, int lock_unlock);
 
 /**
  * tcif_err2str:

@@ -775,13 +775,13 @@ void tools_open_query_def_params_global_pack(const struct tools_open_query_def_p
 	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->fw_default_config_payload_version);
 
 	offset=56;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->num_vfs1);
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->num_vfs);
 
 	offset=52;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->uar_bar_size1);
+	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->uar_bar_size);
 
 	offset=48;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->max_uar_bar_size1);
+	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->max_uar_bar_size);
 
 	offset=32;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->sriov_en);
@@ -800,13 +800,13 @@ void tools_open_query_def_params_global_unpack(struct tools_open_query_def_param
 	ptr_struct->fw_default_config_payload_version = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 
 	offset=56;
-	ptr_struct->num_vfs1 = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	ptr_struct->num_vfs = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 
 	offset=52;
-	ptr_struct->uar_bar_size1 = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
+	ptr_struct->uar_bar_size = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
 
 	offset=48;
-	ptr_struct->max_uar_bar_size1 = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
+	ptr_struct->max_uar_bar_size = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
 
 	offset=32;
 	ptr_struct->sriov_en = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
@@ -825,13 +825,13 @@ void tools_open_query_def_params_global_print(const struct tools_open_query_def_
 	fprintf(file, "fw_default_config_payload_version : "UH_FMT"\n", ptr_struct->fw_default_config_payload_version);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "num_vfs1             : "UH_FMT"\n", ptr_struct->num_vfs1);
+	fprintf(file, "num_vfs             : "UH_FMT"\n", ptr_struct->num_vfs);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "uar_bar_size1        : "UH_FMT"\n", ptr_struct->uar_bar_size1);
+	fprintf(file, "uar_bar_size        : "UH_FMT"\n", ptr_struct->uar_bar_size);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "max_uar_bar_size1    : "UH_FMT"\n", ptr_struct->max_uar_bar_size1);
+	fprintf(file, "max_uar_bar_size    : "UH_FMT"\n", ptr_struct->max_uar_bar_size);
 
 	adb2c_add_indentation(file, indent_level);
 	fprintf(file, "sriov_en             : "UH_FMT"\n", ptr_struct->sriov_en);

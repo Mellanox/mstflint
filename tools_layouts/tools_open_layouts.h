@@ -282,13 +282,13 @@ struct tools_open_query_def_params_global {
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - default number of virtual functions */
 	/* 4.0 - 4.7 */
-	 u_int8_t num_vfs1;
+	 u_int8_t num_vfs;
 	/* Description - default uar bar size (log2 format) */
 	/* 4.8 - 4.11 */
-	 u_int8_t uar_bar_size1;
+	 u_int8_t uar_bar_size;
 	/* Description - maximum value allowed for the uar bar size (log2 base) */
 	/* 4.12 - 4.15 */
-	 u_int8_t max_uar_bar_size1;
+	 u_int8_t max_uar_bar_size;
 	/* Description - default value of sriov (enabled or disabled) */
 	/* 4.31 - 8.31 */
 	 u_int8_t sriov_en;

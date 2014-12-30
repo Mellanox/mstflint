@@ -30,6 +30,7 @@
  * SOFTWARE.
  */
 
+
 #define _GNU_SOURCE
 #include <crdump.h>
 #include <dev_mgt/tools_dev_types.h>
@@ -324,7 +325,8 @@ int crd_get_dword_num(IN crd_ctxt_t *context, OUT u_int32_t *arr_size) {
 
 static int crd_get_csv_path(IN dm_dev_id_t dev_type, OUT char *csv_file_path) {
 
-    char dev_name[100];
+    const int dev_name_len = 100;
+    char dev_name[100] = {0};
     int  rc;
     switch (dev_type) {
     case DeviceInfiniHostIIIEx:
@@ -334,7 +336,7 @@ static int crd_get_csv_path(IN dm_dev_id_t dev_type, OUT char *csv_file_path) {
     case DeviceInfiniHostIIILx:
         return CRD_NOT_SUPPORTED;
     default:
-        strcpy(dev_name, dm_dev_type2str(dev_type));
+        strncpy(dev_name, dm_dev_type2str(dev_type), dev_name_len - 1);
     }
     if (!strcmp(dev_name, "Unknown Device")) {
         return CRD_UNKOWN_DEVICE;
@@ -359,7 +361,7 @@ static void crd_parse(IN  char *record, IN  char *delim, OUT char arr[][CRD_MAXF
     while(p) {
         strcpy(arr[field], p);
         field++;
-        p = strtok('\0', delim);
+        p = strtok(NULL, delim);
     }
     *field_count = field;
 }
@@ -537,7 +539,7 @@ static int crd_read_line(IN FILE *fd, OUT char *tmp) {
 #if defined(__WIN__)
 
 static int crd_replace(INOUT char *st, IN char *orig, IN char *repl) {
-    char buffer[CRD_CSV_PATH_SIZE];
+  char buffer[CRD_CSV_PATH_SIZE] = {0x0};
     char *ch;
 
     if (!(ch = strstr(st, orig))) {
@@ -626,14 +628,14 @@ static int crd_update_csv_path(IN OUT char *csv_file_path) {
             if (tmp_value != NULL) {
                 tmp_value = strtok(NULL, "=");
                 crd_trim(tmp_value);
-                strcpy(data_path, tmp_value);
+                strncpy(data_path, tmp_value, CRD_CSV_PATH_SIZE - 1);
             }
         } else if(strstr(line, "mft_prefix_location") != NULL) {
             tmp_value = strtok(line, "=");
             if (tmp_value != NULL) {
                 tmp_value = strtok(NULL, "=");
                 crd_trim(tmp_value);
-                strcpy(prefix, tmp_value);
+                strncpy(prefix, tmp_value, CRD_CSV_PATH_SIZE - 1);
             }
         }
     }

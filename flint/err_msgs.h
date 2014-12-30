@@ -72,6 +72,7 @@ typedef enum {
 #define FLINT_CMD_ARGS_ERROR2                 "Command \"%s\" requires at most %d arguments, but %d arguments were given\n"
 #define FLINT_CMD_ARGS_ERROR3                 "Command \"%s\" requires at least %d arguments, but %d arguments were given\n"
 #define FLINT_CMD_ARGS_ERROR4                 "Command \"%s\" requires %d or %d arguments, but %d arguments were given\n"
+#define FLINT_CMD_ARGS_ERROR5                 "Command \"%s\" does not require arguments\n"
 #define FLINT_INVALID_OPTION_ERROR            "Unknown option \"%s\" for the \"%s\" command. you can use %s.\n"
 #define FLINT_INVALID_FLAG_ERROR              "Invalid switch \"%s\" is specified.\n"
 #define FLINT_INVALID_UID_NUM_BX_ERROR        "Number of UIDs on BridgeX should be %d\n"
@@ -125,7 +126,8 @@ typedef enum {
 #define FLINT_ROM_QUERY_ERROR                 "Image file rom (%s) query failed. %s\n"
 #define FLINT_WB_FILE_ERROR                   "failed to open file: %s. %s\n"
 #define FLINT_WB_ERROR                        "write Block Failed. %s\n"
-#define FLINT_NO_ZLIB_ERROR					  "Executable was compiled with \"dump files\" option disabled.\n"
+#define FLINT_NO_ZLIB_ERROR                   "Executable was compiled with \"dump files\" option disabled.\n"
+#define FLINT_FLAG_WITH_FLAG_ERROR            "\"%s\" flag must be specified with \"%s\" flag.\n"
 
 /**************************
  * Flint Warning Messages

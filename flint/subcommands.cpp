@@ -56,6 +56,10 @@
     #include <termios.h>
 #endif
 
+#ifdef __WIN__
+#include <windows.h>
+#endif
+
 #include "subcommands.h"
 
 using namespace std;
@@ -157,8 +161,8 @@ int write_result_to_log(int is_failed, const char* err_msg, bool write)
     if (!write) {
         return 0;
     }
-    char msg[MAX_ERR_STR_LEN];
-    strcpy(msg, err_msg);
+    char msg[MAX_ERR_STR_LEN + 1] = {0};
+    strncpy(msg, err_msg, MAX_ERR_STR_LEN);
     if (is_failed == 0) {
         print_line_to_log("Burn completed successfully\n");
     } else if (is_failed == BURN_INTERRUPTED) {
@@ -443,6 +447,16 @@ bool SubCommand::basicVerifyParams()
     }
     //open log if needed
     openLog();
+
+    if (_maxCmdParamNum != -1 && (int)_flintParams.cmd_params.size() > _maxCmdParamNum) {// _maxCmdParamNum == -1 means ignore this check
+        if (_maxCmdParamNum) {
+        reportErr(true, FLINT_CMD_ARGS_ERROR2, _name.c_str(), _maxCmdParamNum, _flintParams.cmd_params.size());
+        } else {
+            reportErr(true, FLINT_CMD_ARGS_ERROR5, _name.c_str());
+        }
+        return false;
+    }
+
     switch (_v) {
     case Wtv_Img:
         if ( _flintParams.device_specified == true) {
@@ -614,9 +628,51 @@ bool SubCommand::getPasswordFromUser(const char *preStr, char buffer[MAX_PASSWOR
 #else
 bool SubCommand::getPasswordFromUser(const char *preStr, char buffer[MAX_PASSWORD_LEN+1])
 {
-    //TODO: Buffer Overflow danger use loop with gets() or istream
-    printf("%s: ", preStr);
-    scanf("%256s", buffer);
+    static HANDLE stdinHndl = NULL;
+    DWORD numOfBytesRead = 0;
+    DWORD oldConsoleMode, consoleMode;
+    BOOL status = FALSE;
+    char ch;
+    int i;
+
+    if (!stdinHndl) {
+        // adrianc: this might be problematic if called and stdout was alreading overriden use CIN$ instead
+        stdinHndl = GetStdHandle(STD_INPUT_HANDLE);
+    }
+    printf("%s:", preStr);
+
+    // disable console echoing
+    if (!GetConsoleMode(stdinHndl, &oldConsoleMode)) {
+        reportErr(true, "Failed to get console mode.\n");
+        return false;
+    }
+
+    consoleMode = oldConsoleMode & ~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT);
+
+    if (! SetConsoleMode(stdinHndl, consoleMode))  {
+        reportErr(true, "Failed to set console mode.\n");
+        return 1;
+     }
+    // read chars from stdin and print * to stdout using putchar
+    for(i = 0; ; i++) {
+        status = ReadFile(stdinHndl, &ch, sizeof(char), &numOfBytesRead, NULL);
+        if (!status || numOfBytesRead != sizeof(char) || ch == '\n' || ch == '\r' || i == (MAX_PASSWORD_LEN -1) ) {
+            // user finished giving the pw
+            if (!SetConsoleMode(stdinHndl, oldConsoleMode)) {
+                reportErr(true, "Failed to restore console mode.\n");
+                return false;
+            }
+            if (!status || numOfBytesRead != sizeof(char)) {
+                reportErr(true, "Failed to get input from console.\n");
+                return false;
+            }
+            break;
+        }
+        putchar('*');
+        buffer[i] = ch;
+    }
+    buffer[i] = '\0';
+    putchar('\n');
     return true;
 }
 
@@ -649,7 +705,7 @@ bool SubCommand::askUser(const char *question, bool printAbrtMsg) {
         std::getline(std::cin, answer);
         //fgets(ansbuff, 30, stdin);
         //if (!fscanf(stdin, "%[^\n]30s", ansbuff)) {
-        //  return false;
+        //	return false;
         //}
 
         if (  strcasecmp(answer.c_str(), "y") &&
@@ -690,19 +746,18 @@ void SubCommand::displayOneExpRomInfo(const rom_info_t& info) {
                 printf(" port=%d", info.exp_rom_port);
             }
             if (info.exp_rom_product_id != 0x12) { // on CLP(0x12) there is no meaning to protocol
-            	printf(" proto=");
             	switch (info.exp_rom_proto) {
             	case ER_IB:
-            		printf("IB");
+            		printf(" proto=IB");
             		break;
             	case ER_ETH:
-            		printf("ETH");
+            		printf(" proto=ETH");
             		break;
             	case ER_VPI:
-            		printf("VPI");
+            		printf(" proto=VPI");
             		break;
             	default:
-            		printf("0x%x", info.exp_rom_proto);
+            		break;
             	}
             }
         }
@@ -1078,6 +1133,7 @@ BurnSubCommand:: BurnSubCommand()
     _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" -i image1.bin burn\n"
               INDENTEX FLINT_NAME" -d "MST_DEV_EXAMPLE2" -guid 0x2c9000100d050 -i image1.bin b";
     _v = Wtv_Dev_And_Img;
+    _maxCmdParamNum = 0;
     _cmdType = SC_Burn;
     _fwType = 0;
     _devQueryRes = 0;
@@ -1095,7 +1151,7 @@ BurnSubCommand:: ~BurnSubCommand()
 
 bool BurnSubCommand::verifyParams()
 {
-    if ((_flintParams.guid_specified || _flintParams.guid_specified) && (_flintParams.uid_specified || _flintParams.uids_specified)) {
+    if ((_flintParams.guid_specified || _flintParams.guids_specified) && (_flintParams.uid_specified || _flintParams.uids_specified)) {
             reportErr(true, FLINT_COMMAND_FLAGS_ERROR, _name.c_str(), "either GUIDs / UIDs (using command line flags -guid(s) / -uid(s) )");
             return false;
         }
@@ -1103,7 +1159,7 @@ bool BurnSubCommand::verifyParams()
             reportErr(true, FLINT_COMMAND_FLAGS_ERROR, _name.c_str(), "either MACs / UIDs (using command line flags -mac(s) / -uid(s) )");
             return false;
         }
-    bool GuidsFromUser = _flintParams.guid_specified || _flintParams.guid_specified ||\
+    bool GuidsFromUser = _flintParams.guid_specified || _flintParams.guids_specified ||\
             _flintParams.uid_specified || _flintParams.uids_specified|| \
             _flintParams.mac_specified || _flintParams.macs_specified;
     if (GuidsFromUser && _flintParams.use_image_guids) {
@@ -1251,6 +1307,11 @@ FlintStatus BurnSubCommand::burnFs3()
         reportErr(true, FLINT_IMG_DEV_COMPAT_ERROR, "FS3", "FS3");
         return FLINT_FAILED;
         }
+    // If we are burning nofs then -ocr flag needs to be specified
+    if (!_burnParams.burnFailsafe && !_flintParams.override_cache_replacement) {
+        reportErr(true, FLINT_FLAG_WITH_FLAG_ERROR, "override_cache_replacement", "nofs");
+        return FLINT_FAILED;
+    }
     // on FS3 burn we require query to pass
     if (!_devQueryRes && _burnParams.burnFailsafe) {
         reportErr(true, FLINT_FS3_BURN_ERROR, _fwOps->err());
@@ -1884,6 +1945,7 @@ QuerySubCommand:: QuerySubCommand()
     _paramExp = "None";
     _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" query";
     _v = Wtv_Dev_Or_Img;
+    _maxCmdParamNum = 1;
     _cmdType = SC_Query;
 }
 
@@ -1932,6 +1994,7 @@ VerifySubCommand:: VerifySubCommand()
     _paramExp = "None";
     _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" v";
     _v = Wtv_Dev_Or_Img;
+    _maxCmdParamNum = 1;
     _cmdType = SC_Verify;
 }
 
@@ -2008,6 +2071,7 @@ SwResetSubCommand:: SwResetSubCommand() {
     _paramExp = "None";
     _example = "None";
     _v = Wtv_Dev;
+    _maxCmdParamNum = 0;
     _cmdType = SC_Swreset;
 }
 
@@ -2052,6 +2116,7 @@ BromSubCommand:: BromSubCommand()
     _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" brom exp-rom.rom";
     _v = Wtv_Dev_Or_Img;
     _cmdType = SC_Brom;
+    _maxCmdParamNum = 1;
     memset(&_info, 0, sizeof(_info));
     memset(&_romsInfo, 0, sizeof(_romsInfo));
 }
@@ -2163,6 +2228,7 @@ DromSubCommand:: DromSubCommand()
     _paramExp = "None";
     _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" drom";
     _v = Wtv_Dev_Or_Img;
+    _maxCmdParamNum = 0;
     _cmdType = SC_Drom;
 }
 
@@ -2211,6 +2277,7 @@ RromSubCommand:: RromSubCommand()
     _paramExp = "file: filename to write the exp-ROM to.";
     _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" rrom exp-rom.rom";
     _v = Wtv_Dev_Or_Img;
+    _maxCmdParamNum = 1;
     _cmdType = SC_Rrom;
 }
 
@@ -2273,6 +2340,7 @@ BbSubCommand:: BbSubCommand()
     _paramExp = "None";
     _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" -i image1.bin bb";
     _v = Wtv_Dev_And_Img;
+    _maxCmdParamNum = 0;
     _cmdType = SC_Bb;
 }
 
@@ -2344,6 +2412,7 @@ SgSubCommand:: SgSubCommand()
                 INDENTEX"step_size: step size between GUIDs (FS3 Only)";
     _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" -guid 0x0002c9000100d050 sg";
     _v = Wtv_Dev_Or_Img;
+    _maxCmdParamNum = 2;
     _cmdType = SC_Sg;
     _ops     = NULL;
     memset(&_info, 0, sizeof(_info));
@@ -2374,7 +2443,7 @@ bool SgSubCommand::verifyParams()
         reportErr(true, FLINT_COMMAND_FLAGS_ERROR, _name.c_str(), "GUIDs / MACs (using command line flags -guid(s) / -mac(s) )");
         return false;
     }
-    if ((_flintParams.guid_specified || _flintParams.guid_specified) && (_flintParams.uid_specified || _flintParams.uids_specified)) {
+    if ((_flintParams.guid_specified || _flintParams.guids_specified) && (_flintParams.uid_specified || _flintParams.uids_specified)) {
         reportErr(true, FLINT_COMMAND_FLAGS_ERROR, _name.c_str(), "either GUIDs / UIDs (using command line flags -guid(s) / -uid(s) )");
         return false;
     }
@@ -2548,6 +2617,7 @@ SmgSubCommand:: SmgSubCommand()
 #endif
     		;
     _v = Wtv_Dev_Or_Img;
+    _maxCmdParamNum = 2;
     _cmdType = SC_Smg;
     memset(&_baseGuid, 0, sizeof(_baseGuid));
 }
@@ -2620,6 +2690,7 @@ SetVpdSubCommand:: SetVpdSubCommand()
 #endif
     			;
     _v = Wtv_Dev_Or_Img;
+    _maxCmdParamNum = 1;
     _cmdType = SC_Set_Vpd;
 }
 
@@ -2669,6 +2740,7 @@ SvSubCommand:: SvSubCommand()
 #endif
     		;
     _v = Wtv_Dev_Or_Img;
+    _maxCmdParamNum = 0;
     _cmdType = SC_Sv;
 }
 
@@ -2698,7 +2770,11 @@ FlintStatus SvSubCommand::executeCommand()
         reportErr(true, FLINT_VSD_ERROR, ops->err());
         return FLINT_FAILED;
     }
-    vsdCbFunc(101);
+
+    if (ops->FwType() == FIT_FS2) {
+        // print "restoring signature" on FS2 to be consistent with FS3 output
+        vsdCbFunc(101);
+    }
     return FLINT_SUCCESS;
 }
 
@@ -2718,6 +2794,7 @@ RiSubCommand:: RiSubCommand()
     _paramExp = "file: filename to write the image to (raw binary).";
     _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" ri file.bin";
     _v = Wtv_Dev;
+    _maxCmdParamNum = 1;
     _cmdType = SC_Ri;
 }
 
@@ -2796,6 +2873,7 @@ DcSubCommand:: DcSubCommand() {
                 INDENTEX"is printed to screen";
     _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" dc";
     _v = Wtv_Dev_Or_Img;
+    _maxCmdParamNum = 1;
     _cmdType = SC_Dc;
 }
 
@@ -2820,7 +2898,7 @@ FlintStatus DcSubCommand::executeCommand() {
     //check on what we are wroking
     ops = (_flintParams.device_specified) ? _fwOps : _imgOps;
     const char* file = _flintParams.cmd_params.size() == 1 ? _flintParams.cmd_params[0].c_str() : (const char*) NULL;
-    if (!ops->FwGetSection(H_FW_CONF, _sect, _flintParams.striped_image)) {
+    if (!ops->FwGetSection((ops->FwType() == FIT_FS2) ? (int)H_FW_CONF : (int)FS3_DBG_FW_INI, _sect, _flintParams.striped_image)) {
         reportErr(true, FLINT_DUMP_ERROR, "Fw Configuration", ops->err());
         return FLINT_FAILED;
     }
@@ -2846,6 +2924,7 @@ DhSubCommand:: DhSubCommand()
                 INDENTEX"is printed to screen";
     _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" dh hash.csv";
     _v = Wtv_Dev_Or_Img;
+    _maxCmdParamNum = 1;
     _cmdType = SC_Dh;
 }
 
@@ -2898,6 +2977,7 @@ SetKeySubCommand:: SetKeySubCommand()
     _paramExp = "key: (optional) The new key you intend to set (in hex).";
     _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" set_key 1234deaf5678";
     _v = Wtv_Dev;
+    _maxCmdParamNum = 1;
     _cmdType = SC_Set_Key;
     _getKeyInter = false;
     memset(&_userKey, 0, sizeof(_userKey));
@@ -2946,11 +3026,6 @@ FlintStatus SetKeySubCommand::executeCommand ()
         return FLINT_FAILED;
     }
 
-#ifdef __WN__
-    reportErr(true, FLINT_WIN_NOT_SUPP_ERROR, _name);
-    return FLINT_FAILED;
-#endif
-
     if (_getKeyInter) {
         if (!getKeyInteractively()) {
             return FLINT_FAILED;
@@ -2991,6 +3066,7 @@ HwAccessSubCommand:: HwAccessSubCommand()
     			INDENTEX"                   Key format consists of at most 16 Hexadecimal digits.";
     _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" hw_access enable";
     _v = Wtv_Dev;
+    _maxCmdParamNum = 2;
     _cmdType = SC_Hw_Access;
 }
 
@@ -3060,10 +3136,6 @@ FlintStatus HwAccessSubCommand:: enableHwAccess()
 
 FlintStatus HwAccessSubCommand:: executeCommand()
 {
-#ifdef __WIN__
-    reportErr(true, FLINT_WIN_NOT_SUPP_ERROR, _name.c_str());
-    return FLINT_FAILED;
-#endif
     if (preFwAccess() == FLINT_FAILED) {
         return FLINT_FAILED;
     }
@@ -3107,6 +3179,7 @@ HwSubCommand:: HwSubCommand()
     _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" hw query";
 #endif
     _v = Wtv_Dev;
+    _maxCmdParamNum = 2;
     _cmdType = SC_Hw;
 }
 
@@ -3283,6 +3356,7 @@ EraseSubCommand:: EraseSubCommand()
     _paramExp = "addr - address of word in sector that you want to erase.";
     _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" erase 0x10000";
     _v = Wtv_Dev;
+    _maxCmdParamNum = 1;
     _cmdType = SC_Erase;
 }
 
@@ -3336,6 +3410,7 @@ RwSubCommand:: RwSubCommand() {
     _paramExp = "addr - address of word to read";
     _example = "flint -d "MST_DEV_EXAMPLE1" rw 0x20";
     _v = Wtv_Dev_Or_Img;
+    _maxCmdParamNum = 1;
     _cmdType = SC_Rw;
 }
 
@@ -3393,6 +3468,7 @@ WwSubCommand:: WwSubCommand()
                 INDENTEX"data - value of word";
     _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" ww 0x10008 0x5a445a44";
     _v = Wtv_Dev;
+    _maxCmdParamNum = 2;
     _cmdType = SC_Ww;
 }
 
@@ -3461,6 +3537,7 @@ WwneSubCommand:: WwneSubCommand()
                 INDENTEX"data - value of word";
     _example = "flint -d "MST_DEV_EXAMPLE1" wwne 0x10008 0x5a445a44";
     _v = Wtv_Dev;
+    _maxCmdParamNum = 2;
     _cmdType = SC_Wwne;
 }
 
@@ -3526,6 +3603,7 @@ WbSubCommand:: WbSubCommand() {
 
     _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" wb myData.bin 0x0";
     _v = Wtv_Dev;
+    _maxCmdParamNum = 2;
     _cmdType = SC_Wb;
 }
 
@@ -3598,6 +3676,7 @@ WbneSubCommand:: WbneSubCommand() {
                 INDENTEX"data - data to write - space seperated dwords";
     _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" wbne 0x10000 12 0x30000 0x76800 0x5a445a44";
     _v = Wtv_Dev;
+    _maxCmdParamNum = -1;
     _cmdType = SC_Wbne;
 }
 
@@ -3692,6 +3771,7 @@ RbSubCommand:: RbSubCommand()
                 INDENTEX"is printed to screen";
     _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" rb 0x10000 100 file.bin";
     _v = Wtv_Dev_Or_Img;
+    _maxCmdParamNum = 3;
     _cmdType = SC_Rb;
 }
 
@@ -3789,6 +3869,7 @@ ClearSemSubCommand:: ClearSemSubCommand()
     _paramExp = "";
     _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" -clear_semaphore";
     _v = Wtv_Dev;
+    _maxCmdParamNum = 0;
     _cmdType = SC_Clear_Sem;
 }
 
@@ -3817,6 +3898,7 @@ RomQuerySubCommand:: RomQuerySubCommand()
     _paramExp = "";
     _example = FLINT_NAME" -i ROM_image.bin qrom ";
     _v = Wtv_Img;
+    _maxCmdParamNum = 0;
     _cmdType = SC_Qrom;
     memset(&_romsInfo, 0, sizeof(_romsInfo));
 }
@@ -3857,6 +3939,7 @@ ResetCfgSubCommand:: ResetCfgSubCommand()
     _paramExp = "";
     _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" reset_cfg";
     _v = Wtv_Dev;
+    _maxCmdParamNum = 0;
     _cmdType = SC_ResetCfg;
 }
 
@@ -3905,6 +3988,7 @@ FiSubCommand:: FiSubCommand()
     _paramExp = "";
     _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" fi";
     _v = Wtv_Dev;
+    _maxCmdParamNum = 0;
     _cmdType = SC_Fix_Img;
 }
 

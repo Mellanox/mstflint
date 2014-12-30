@@ -30,6 +30,8 @@
  * SOFTWARE.
  *
  */
+
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -344,9 +346,12 @@ mlxCfgStatus MlxCfg::setDevCfg()
         return err(false, "Failed to set configuration on device: %s. %s", _mlxParams.device.c_str(), \
                ops.err());
     }
+    // ignore some of the checks if needed
+    ops.setIgnoreSoftLimits(_mlxParams.force);
+
     printf("Applying... ");
     // set Configuration
-    rc = ops.setCfg(_mlxParams.params, _mlxParams.force);
+    rc = ops.setCfg(_mlxParams.params);
     if (rc) {
         printf("Failed!\n");
         err(true, "Failed to set configuration: %s", ops.err());

@@ -189,7 +189,16 @@ static struct dev_info g_devs_info[] = {
         .hw_rev_id = -1,
         .sw_dev_id = -1,
         .name      = "SwitchIB",
-        .port_num  = 2,
+        .port_num  = 36,
+        .dev_type  = DM_SWITCH
+    },
+    {
+        .dm_id     = DeviceSwitchEN,
+        .hw_dev_id = 0x249,
+        .hw_rev_id = -1,
+        .sw_dev_id = -1,
+        .name      = "SwitchEN",
+        .port_num  = 64,
         .dev_type  = DM_SWITCH
     },
     {
@@ -275,9 +284,9 @@ int dm_get_device_id(mfile* mf,
             return 1;
         }
 
-        if (EXTRACT(dword, 16, 16) == 0x25218 ||
-            EXTRACT(dword, 16, 16) == 0x25228 ||
-            EXTRACT(dword, 16, 16) == 0x25238) {
+        if (EXTRACT(dword, 16, 16) == 25218 ||
+            EXTRACT(dword, 16, 16) == 25228 ||
+            EXTRACT(dword, 16, 16) == 25238) {
             *ptr_dm_dev_id = DeviceInfiniHostIIIEx_MF;
         } else {
             *ptr_dm_dev_id = DeviceInfiniHostIIIEx;

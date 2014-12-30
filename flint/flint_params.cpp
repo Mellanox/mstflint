@@ -70,7 +70,7 @@ FlintParams::FlintParams()
     striped_image = false;
     ignore_dev_data = false;
     banks_specified = false;
-    banks = -1;
+    banks = -1; // must be -1 for mflash to get default num of flash
     log_specified = false;
     flash_params_specified = false;
     flash_params.type_name = (char*)NULL;

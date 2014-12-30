@@ -94,13 +94,19 @@ public:
     int getCfg(mlxCfgParam cfgParam, u_int32_t& val);
     int getCfg(std::vector<cfgInfo>& infoVec);
 
-    int setCfg(mlxCfgParam cfgParam, u_int32_t val, bool ignoreCheck=false);
-    int setCfg(const std::vector<cfgInfo>& infoVec, bool ignoreCheck=false);
+    int setCfg(mlxCfgParam cfgParam, u_int32_t val);
+    int setCfg(const std::vector<cfgInfo>& infoVec);
 
     int invalidateCfgs();
 
-private:
+    // Set/Un-Set ignore limits for all configurations
+    void setIgnoreSoftLimits(bool val);
+    void setIgnoreHardLimits(bool val);
 
+    // Set/Un-Set Ignore limits per configuration
+    // Adrianc: TBD
+
+private:
     class CfgParams : public ErrMsg
     {
     public:
@@ -115,15 +121,24 @@ private:
         virtual int setOnDev(mfile* mf, bool ignoreCheck=false) = 0;
         virtual int getDefaultParams(mfile* mf) = 0;
 
+        void setIgnoreSoftLimits(bool val);
+        void setIgnoreHardLimits(bool val);
 
         mlxCfgType type;
         u_int32_t tlvType;
     protected:
-        virtual bool isLegal(mfile* mf=NULL) = 0;
+        // param validadion methods, only checkCfg shuold be called
+        virtual bool checkCfg(mfile* mf=NULL);
+        virtual bool hardLimitCheck() = 0;
+        virtual bool softLimitCheck(mfile* mf=NULL);
+
+        // get default parameters for configuration
         int getDefaultParams4thGen(mfile* mf, struct tools_open_query_def_params_global* global_params);
         int getDefaultParams4thGen(mfile* mf, int port, struct tools_open_query_def_params_per_port* port_params);
 
         bool _updated; // set true on get and false on set
+        bool _ignoreSoftLimits; // soft limits checks will not be performed for configuration
+        bool _ignoreHardLimits; // hard limits checks will not be performed
     };
 
     class SriovParams : public CfgParams
@@ -140,7 +155,8 @@ private:
         virtual int getDefaultParams(mfile* mf);
 
     private:
-        virtual bool isLegal(mfile* mf);
+        virtual bool hardLimitCheck();
+        virtual bool softLimitCheck(mfile* mf=NULL);
         int updateMaxVfs(mfile* mf);
 
         u_int32_t _sriovEn;
@@ -162,7 +178,7 @@ private:
         virtual int getDefaultParams(mfile* mf);
 
     private:
-        virtual bool isLegal(mfile* mf=NULL);
+        virtual bool hardLimitCheck();
         // Wake on magic packet (atm this is the only mode which is supported)
         int _port;
         u_int32_t _wolMagicEn;
@@ -182,7 +198,7 @@ private:
         virtual int getDefaultParams(mfile* mf);
 
     private:
-        virtual bool isLegal(mfile* mf=NULL);
+        virtual bool hardLimitCheck();
 
         int _port;
         u_int32_t _linkType;
@@ -202,7 +218,8 @@ private:
         virtual int getDefaultParams(mfile* mf);
 
     private:
-        virtual bool isLegal(mfile* mf=NULL);
+        virtual bool hardLimitCheck();
+        virtual bool softLimitCheck(mfile* mf=NULL);
         int getDefaultBarSz(mfile* mf);
         u_int32_t _maxLogBarSz;
         u_int32_t _logBarSz;

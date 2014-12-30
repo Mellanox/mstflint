@@ -483,7 +483,7 @@ u_int8_t FwOperations::CheckFwFormat(FBase& f, bool getFwFormatFromImg) {
         if (found_images) {
             u_int32_t data;
             u_int8_t image_version;
-            READ4_NOERRMSG(f, FS3_IND_ADDR, &data);
+            READ4_NOERRMSG(f, image_start[0] + FS3_IND_ADDR, &data);
             TOCPU1(data);
             image_version = data >> 24;
             if (image_version == IMG_VER_FS3) {

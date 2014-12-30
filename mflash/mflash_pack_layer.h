@@ -41,10 +41,12 @@
 #ifndef MFLASH_COMMON_H_
 #define MFLASH_COMMON_H_
 
+#include "mflash_types.h"
 #include "mflash_common_structs.h"
 
+// TODO: use: (int)log2((float)num)  
 #define NEAREST_POW2(num)\
-	(num) < (256) ? ((num) < (128)? ((num) < (64) ? ((num) < (32) ? (16): (32)): (64)): (128)): (256);
+	(num) < (256) ? ((num) < (128) ? ((num) < (64) ? ((num) < (32) ? ((num) < (16) ? ((num) < (8) ? (4) : (8)): (16)): (32)): (64)): (128)): (256)
 
 #ifndef CHECK_RC
     #define CHECK_RC(rc) do {if (rc) return rc;} while(0)
@@ -199,7 +201,10 @@ int get_log2size_by_capcity(unsigned type_index, u_int8_t capacity, int *log2siz
 int get_max_reg_size(mfile *mf);
 
 int set_bank(mflash* mfl, u_int32_t addr);
+int set_bank_int(mflash* mfl, int bank_num);
+int get_bank_int(mflash* mfl);
 int get_flash_offset(u_int32_t addr, int log2_bank_size, u_int32_t *flash_addr_p);
 int mfl_get_bank_info(mflash *mfl, u_int32_t addr, u_int32_t *flash_off_p, int *bank_p);
+MfError MError2MfError(MError rc);
 
 #endif /* MFLASH_COMMON_H_ */

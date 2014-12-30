@@ -29,7 +29,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
 /*
  *
  *  mcra.c - Mellanox Configuratio Register Access tool
@@ -284,14 +283,14 @@ int main(int argc, char *argv[])
 
             fpath = strtok(line, " ");
 
-            if (strcmp(fpath, path)) {
-                continue;
-            }
-
             if (!fpath) {
                 fprintf(stderr, "-E- Bad register map file format (%s), Can't find path\n", line);
                 fclose(fp);
                 goto error;
+            }
+
+            if (strcmp(fpath, path)) {
+                continue;
             }
 
             offset = strtok(NULL, " ");
@@ -338,6 +337,7 @@ int main(int argc, char *argv[])
 
             if (!data) {
                 fprintf(stderr, "-E- Failed to allocate memmory for read block buffer\n");
+                goto error;
             }
 
             addr = (addr >> 2) << 2;
@@ -369,7 +369,7 @@ int main(int argc, char *argv[])
 
             val = MERGE(tmp_val, val, bit_offs, bit_size);
         }
-        if(mwrite4(mf, addr, val) != 4) {
+        if (mwrite4(mf, addr, val) != 4) {
             goto access_error;
         }
     }

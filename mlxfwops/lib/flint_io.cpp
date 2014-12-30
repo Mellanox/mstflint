@@ -620,11 +620,11 @@ bool Flash::disable_hw_access(void)
 }
 
 bool Flash::sw_reset() {
-    if (_attr.hw_dev_id != 435 && _attr.hw_dev_id != SWITCHX_HW_ID) {
-        return errmsg("operation supported only for InfiniScale4 switch and SwitchX over IB interface");
-    }
     int rc = mf_sw_reset(_mfl);
     if (rc != MFE_OK) {
+        if (rc == MFE_UNSUPPORTED_DEVICE) {
+            return errmsg("operation supported only for InfiniScale4 switch, SwitchX and SwitchIB over IB interface");
+        }
         return errmsg("%s (%s)", errno == 0 ? "" : strerror(errno), mf_err2str(rc));
     }
     return true;

@@ -31,6 +31,7 @@
  *
  */
 
+
 #ifndef _MTCR_TOOLS_CIF     /* guard */
 #define _MTCR_TOOLS_CIF
 
@@ -47,7 +48,7 @@ extern "C" {
 
 #define FLASH_REG_ACCESS	0x9001
 
-#define TOOLS_HCR_MAX_MBOX 256
+#define TOOLS_HCR_MAX_MBOX 288
 
 // tools flash semaphore (62) will be taken at the begining of each command specified here
 // and released at the end of the command.

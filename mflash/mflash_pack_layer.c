@@ -31,6 +31,7 @@
  *
  */
 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -42,8 +43,6 @@
 
 #include "mflash_types.h"
 #include "mflash_pack_layer.h"
-
-static MfError MError2MfError(MError rc);
 
 int sx_st_block_access(mfile *mf, u_int32_t flash_addr, u_int8_t bank, u_int32_t size, u_int8_t* data,
         u_int8_t method)
@@ -57,7 +56,6 @@ int sx_st_block_access(mfile *mf, u_int32_t flash_addr, u_int8_t bank, u_int32_t
     // when writing max size is limited to the nearest power of 2 of the max_size
     // while limiting it to 256 bytes
     max_size = NEAREST_POW2(max_size);
-
 
     if (size > (u_int32_t)max_size) {
         return MFE_BAD_PARAMS;
@@ -117,7 +115,8 @@ int run_mfpa_command(mfile *mf, u_int8_t access_cmd, u_int8_t flash_bank, u_int3
     }
 
     if (access_cmd == REG_ACCESS_METHOD_GET && jedec_p != NULL) {
-        *jedec_p = mfpa.jedec_id;
+        // swap bytes as they are inverted
+        *jedec_p = ___my_swab32(mfpa.jedec_id);
         // HACK: FW had a bug and returned the same jedec-ID even there was no flash, so when flash doesn't exist jedec will be modified to 0xffffffff
         if (flash_bank >= mfpa.flash_num || rc == MFE_REG_ACCESS_BAD_PARAM) {
             *jedec_p = 0xffffffff;
@@ -144,11 +143,44 @@ int com_get_jedec(mfile *mf, u_int8_t flash_bank, u_int32_t *jedec_p)
     return run_mfpa_command(mf, REG_ACCESS_METHOD_GET, flash_bank, 0, jedec_p, NULL);
 }
 
+/*
+ * getters and setters for mfl->curr_bank
+ * manily used to  monitor values mfl->curr_bank recieves
+ * used for a verification hack to make sure facebook reset bug doesnt reproduce.
+ * (bug where accessing gpio of flash bank 4 caused system reboot)
+ */
+#define MFLASH_BANK_DEBUG "MFLASH_BANK_DEBUG"
+int set_bank_int(mflash* mfl, int bank_num) {
+    const char* mflash_env;
+    int max_bank;
+
+    // dont update curr_bank if not needed
+    if (mfl->curr_bank == bank_num) {
+        return ME_OK;
+    }
+
+    mflash_env = getenv(MFLASH_BANK_DEBUG);
+        if (mflash_env) {
+            max_bank =  atoi(mflash_env);
+            if (bank_num > max_bank) {
+                printf("-E- there was an attempt to set the flash bank to: %d. max allowed value: %d\n", bank_num, max_bank);
+                return MFE_ILLEGAL_BANK_NUM;
+            }
+        }
+    mfl->curr_bank = bank_num;
+    return ME_OK;
+}
+
+int get_bank_int(mflash* mfl) {
+    return mfl->curr_bank;
+}
+
 int set_bank(mflash* mfl, u_int32_t addr) {
     int bank = addr >> mfl->attr.log2_bank_size;
+    int rc;
 
-    if (mfl->curr_bank != bank) {
-        mfl->curr_bank = bank;
+    if (get_bank_int(mfl) != bank) {
+        rc = set_bank_int(mfl, bank); CHECK_RC(rc);
         return mfl->f_set_bank(mfl, bank);
     }
 
@@ -166,13 +198,13 @@ int mfl_get_bank_info(mflash *mfl, u_int32_t addr, u_int32_t *flash_off_p, int *
     int rc;
     // Get the bank number
     rc = set_bank(mfl, addr);                                           CHECK_RC(rc);
-    *bank_p = mfl->curr_bank;
+    *bank_p = get_bank_int(mfl);
     // Get the offset in the flash
     rc = get_flash_offset(addr, mfl->attr.log2_bank_size, flash_off_p); CHECK_RC(rc);
     return MFE_OK;
 }
 
-static MfError MError2MfError(MError rc) {
+MfError MError2MfError(MError rc) {
    switch(rc) {
    case ME_OK:
 	   return MFE_OK;
@@ -197,7 +229,7 @@ static MfError MError2MfError(MError rc) {
    case ME_ICMD_STATUS_CR_FAIL:
 	   return MFE_CR_ERROR;
    case ME_ICMD_STATUS_SEMAPHORE_TO:
-	   return MFE_ICMD_SEMAPHORE_TO;
+	   return MFE_CMDIF_TIMEOUT_ERR;
    case ME_ICMD_STATUS_EXECUTE_TO:
 	   return MFE_CMDIF_TIMEOUT_ERR;
    case ME_ICMD_STATUS_IFC_BUSY:
@@ -245,6 +277,9 @@ static MfError MError2MfError(MError rc) {
        return MFE_REG_ACCESS_UNKNOWN_ERR;
    case ME_REG_ACCESS_SIZE_EXCCEEDS_LIMIT:
        return MFE_REG_ACCESS_SIZE_EXCCEEDS_LIMIT;
+
+   case ME_CMDIF_UNKN_TLV:
+       return MFE_CMDIF_UNKN_TLV;
    default:
 	   break;
    }

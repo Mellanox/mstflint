@@ -29,15 +29,21 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
+ *
+ * tools_cif.c
+ *
+ *  Created on: Nov 5, 2014
+ *      Author: adrianc
  */
 
 #include <common/compatibility.h>
 #include <common/bit_slice.h>
 #include "tools_cif.h"
 
-#define TOOLS_HCR_MAX_MBOX 256
+#define TOOLS_HCR_MAX_MBOX 288
 #define QUERY_DEV_CAP_OP 0x3
 #define QUERY_DEF_PARAMS_OP 0x73
+#define HW_ACCESS_OP 0x60
 
 #define QPC_READ_OP 0x67
 #define QPC_WRITE_OP 0x69
@@ -91,6 +97,7 @@ MError tcif_qpc_context_read(mfile* dev, u_int32_t qpn, u_int32_t source, u_int8
     return ME_OK;
 }
 
+
 MError tcif_qpc_context_write(mfile* dev, u_int32_t qpn, u_int32_t source, u_int8_t* data, u_int32_t len)
 {
     u_int32_t input_mod = 0;
@@ -101,6 +108,11 @@ MError tcif_qpc_context_write(mfile* dev, u_int32_t qpn, u_int32_t source, u_int
     return ME_OK;
 }
 
+
+MError tcif_hw_access(mfile* dev, u_int64_t key, int lock_unlock)
+{
+    return tools_cmdif_send_inline_cmd(dev, key, NULL, 0, HW_ACCESS_OP, lock_unlock);
+}
 const char* tcif_err2str(MError rc) {
     return m_err2str(rc);
 }

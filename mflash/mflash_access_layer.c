@@ -31,6 +31,7 @@
  *
  */
 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -73,7 +74,7 @@ int sx_get_flash_info_by_type(mflash* mfl, unsigned *type_index, int *log2size, 
     u_int32_t jedec_id;
 
     rc = check_access_type( mfl); CHECK_RC(rc);
-    rc = com_get_jedec(mfl->mf, mfl->curr_bank, &jedec_id); CHECK_RC(rc);
+    rc = com_get_jedec(mfl->mf, get_bank_int(mfl), &jedec_id); CHECK_RC(rc);
     //printf("-D- jedec_id = %#x\n", jedec_id);
     rc = get_info_from_jededc_id(jedec_id, &vendor, &type, &capacity); CHECK_RC(rc);
     // Return there is no flash when all the params are 0xff
@@ -144,7 +145,7 @@ int mf_update_boot_addr_by_type(mflash* mfl, u_int32_t boot_addr)
     int rc;
     if (mfl->access_type == MFAT_UEFI || mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_MLNXOS_CMDIF) {
         // No CR-Space access - use mfpa register
-        rc = run_mfpa_command(mfl->mf, REG_ACCESS_METHOD_SET, mfl->curr_bank, boot_addr, NULL, NULL); CHECK_RC(rc);
+        rc = run_mfpa_command(mfl->mf, REG_ACCESS_METHOD_SET, get_bank_int(mfl), boot_addr, NULL, NULL); CHECK_RC(rc);
     }
     return MFE_OK;
 }
