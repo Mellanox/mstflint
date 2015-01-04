@@ -58,6 +58,7 @@
 
 #ifdef __WIN__
 #include <windows.h>
+#include <ctype.h>
 #endif
 
 #include "subcommands.h"
@@ -654,7 +655,7 @@ bool SubCommand::getPasswordFromUser(const char *preStr, char buffer[MAX_PASSWOR
         return 1;
      }
     // read chars from stdin and print * to stdout using putchar
-    for(i = 0; ; i++) {
+    for(i = 0; ; ) {
         status = ReadFile(stdinHndl, &ch, sizeof(char), &numOfBytesRead, NULL);
         if (!status || numOfBytesRead != sizeof(char) || ch == '\n' || ch == '\r' || i == (MAX_PASSWORD_LEN -1) ) {
             // user finished giving the pw
@@ -668,8 +669,14 @@ bool SubCommand::getPasswordFromUser(const char *preStr, char buffer[MAX_PASSWOR
             }
             break;
         }
-        putchar('*');
-        buffer[i] = ch;
+        if (isalpha(ch) || isdigit(ch)) {
+            putchar('*');
+            buffer[i++] = ch;
+        } else if (ch == '\b' && i){
+            //delete last astrix and set correct position
+            printf("\b \b");
+            i--;
+        }
     }
     buffer[i] = '\0';
     putchar('\n');
@@ -3000,18 +3007,23 @@ bool SetKeySubCommand::verifyParams()
 
 bool SetKeySubCommand::getKeyInteractively()
 {
-    char keyArr[MAX_PASSWORD_LEN+1];
+    char keyArr[MAX_PASSWORD_LEN+1] = {0};
     getPasswordFromUser("Enter Key ", keyArr );
+    if (strlen(keyArr) == 0) {
+        reportErr(true, FLINT_INVALID_PASSWORD);
+        return false;
+    }
+
     if (!getGUIDFromStr(keyArr, _userKey,\
                        "Invalid Key syntax, it should contain only hexa numbers and of appropriate length.")) {
-    return false;
+        return false;
     }
     // verify key
     hw_key_t verKey;
     getPasswordFromUser("Verify Key ", keyArr );
     if (!getGUIDFromStr(keyArr, verKey,\
                        "Invalid Key syntax, it should contain only hexa numbers and of appropriate length.")) {
-    return false;
+        return false;
     }
     if (_userKey.h != verKey.h || _userKey.l != verKey.l) {
         reportErr(true, FLINT_SET_KEY_ERROR, "The keys you entered did not match.");

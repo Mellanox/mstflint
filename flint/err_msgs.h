@@ -128,6 +128,7 @@ typedef enum {
 #define FLINT_WB_ERROR                        "write Block Failed. %s\n"
 #define FLINT_NO_ZLIB_ERROR                   "Executable was compiled with \"dump files\" option disabled.\n"
 #define FLINT_FLAG_WITH_FLAG_ERROR            "\"%s\" flag must be specified with \"%s\" flag.\n"
+#define FLINT_INVALID_PASSWORD                "Invalid Password.\n"
 
 /**************************
  * Flint Warning Messages
