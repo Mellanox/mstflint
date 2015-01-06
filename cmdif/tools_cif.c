@@ -87,28 +87,6 @@ MError tcif_query_per_port_def_params(mfile* dev, u_int8_t port, struct tools_op
 }
 
 
-MError tcif_qpc_context_read(mfile* dev, u_int32_t qpn, u_int32_t source, u_int8_t* data, u_int32_t len)
-{
-    u_int32_t input_mod = 0;
-    input_mod = MERGE(input_mod, source, 24,  8);
-    input_mod = MERGE(input_mod, qpn   ,  0, 24);
-    int rc = tools_cmdif_send_mbox_command(dev, input_mod, QPC_READ_OP, 0, 0, data, len, 0);
-    CHECK_RC(rc);
-    return ME_OK;
-}
-
-
-MError tcif_qpc_context_write(mfile* dev, u_int32_t qpn, u_int32_t source, u_int8_t* data, u_int32_t len)
-{
-    u_int32_t input_mod = 0;
-    input_mod = MERGE(input_mod, source, 24,  8);
-    input_mod = MERGE(input_mod, qpn   ,  0, 24);
-    int rc = tools_cmdif_send_mbox_command(dev, input_mod, QPC_WRITE_OP, 0, 0, data, len, 0);
-    CHECK_RC(rc);
-    return ME_OK;
-}
-
-
 MError tcif_hw_access(mfile* dev, u_int64_t key, int lock_unlock)
 {
     return tools_cmdif_send_inline_cmd(dev, key, NULL, 0, HW_ACCESS_OP, lock_unlock);
