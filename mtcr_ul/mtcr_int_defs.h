@@ -69,6 +69,7 @@ struct mfile_t {
 
     // relevant for devices with pci capability: 0x9
     int              supp_fw_ifc; // pciconf - supports 0x9 capability
+    int              cap9_pci_offs; // capability offset withing the pci configuration spce
     address_domain_t address_domain; // determines on which address domain reads/writes will be performed
 
     f_mread4         mread4;

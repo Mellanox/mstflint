@@ -655,7 +655,6 @@ end:
 
 /* PCI address space related enum*/
 enum {
-    CAP9_ADDR = 0xc0,
     PCI_CAP_PTR = 0x34,
     PCI_HDR_SIZE = 0x40,
     PCI_EXT_SPACE_ADDR = 0xff,
@@ -809,25 +808,25 @@ int mtcr_pciconf_cap9_sem(mfile* mf, int state)
     u_int32_t counter = 0;
     int retries = 0;
     if (!state) {// unlock
-        WRITE4_PCI(mf, 0, CAP9_ADDR + PCI_SEMAPHORE_OFFSET, "unlock semaphore", return ME_PCI_WRITE_ERROR);
+        WRITE4_PCI(mf, 0, mf->cap9_pci_offs + PCI_SEMAPHORE_OFFSET, "unlock semaphore", return ME_PCI_WRITE_ERROR);
     } else { // lock
         do {
             if (retries > IFC_MAX_RETRIES) {
                 return ME_SEM_LOCKED;
             }
             // read semaphore untill 0x0
-            READ4_PCI(mf, &lock_val, CAP9_ADDR + PCI_SEMAPHORE_OFFSET, "read counter", return ME_PCI_READ_ERROR);
+            READ4_PCI(mf, &lock_val, mf->cap9_pci_offs + PCI_SEMAPHORE_OFFSET, "read counter", return ME_PCI_READ_ERROR);
             if (lock_val) { //semaphore is taken
                 retries++;
                 msleep(1); // wait for current op to end
                 continue;
             }
             //read ticket
-            READ4_PCI(mf, &counter, CAP9_ADDR + PCI_COUNTER_OFFSET, "read counter", return ME_PCI_READ_ERROR);
+            READ4_PCI(mf, &counter, mf->cap9_pci_offs + PCI_COUNTER_OFFSET, "read counter", return ME_PCI_READ_ERROR);
             //write ticket to semaphore dword
-            WRITE4_PCI(mf, counter, CAP9_ADDR + PCI_SEMAPHORE_OFFSET, "write counter to semaphore", return ME_PCI_WRITE_ERROR);
+            WRITE4_PCI(mf, counter, mf->cap9_pci_offs + PCI_SEMAPHORE_OFFSET, "write counter to semaphore", return ME_PCI_WRITE_ERROR);
             // read back semaphore make sure ticket == semaphore else repeat
-            READ4_PCI(mf, &lock_val, CAP9_ADDR + PCI_SEMAPHORE_OFFSET, "read counter", return ME_PCI_READ_ERROR);
+            READ4_PCI(mf, &lock_val, mf->cap9_pci_offs + PCI_SEMAPHORE_OFFSET, "read counter", return ME_PCI_READ_ERROR);
             retries++;
         } while (counter != lock_val);
     }
@@ -842,7 +841,7 @@ int mtcr_pciconf_wait_on_flag(mfile* mf, u_int8_t expected_val)
          if (retries > IFC_MAX_RETRIES) {
              return ME_PCI_IFC_TOUT;
          }
-         READ4_PCI(mf, &flag, CAP9_ADDR + PCI_ADDR_OFFSET, "read flag", return ME_PCI_READ_ERROR);
+         READ4_PCI(mf, &flag, mf->cap9_pci_offs + PCI_ADDR_OFFSET, "read flag", return ME_PCI_READ_ERROR);
          flag = EXTRACT(flag, PCI_FLAG_BIT_OFFS, 1);
          retries++;
          if ((retries & 0xf) == 0) {// dont sleep always
@@ -856,11 +855,11 @@ int mtcr_pciconf_set_addr_space(mfile* mf, u_int16_t space)
 {
     // read modify write
     u_int32_t val;
-    READ4_PCI(mf, &val, CAP9_ADDR + PCI_CTRL_OFFSET, "read domain", return ME_PCI_READ_ERROR);
+    READ4_PCI(mf, &val, mf->cap9_pci_offs + PCI_CTRL_OFFSET, "read domain", return ME_PCI_READ_ERROR);
     val = MERGE(val, space, PCI_SPACE_BIT_OFFS, PCI_SPACE_BIT_LEN);
-    WRITE4_PCI(mf, val, CAP9_ADDR + PCI_CTRL_OFFSET, "write domain", return ME_PCI_WRITE_ERROR);
+    WRITE4_PCI(mf, val, mf->cap9_pci_offs + PCI_CTRL_OFFSET, "write domain", return ME_PCI_WRITE_ERROR);
     // read status and make sure space is supported
-    READ4_PCI(mf, &val, CAP9_ADDR + PCI_CTRL_OFFSET, "read status", return ME_PCI_READ_ERROR);
+    READ4_PCI(mf, &val, mf->cap9_pci_offs + PCI_CTRL_OFFSET, "read status", return ME_PCI_READ_ERROR);
     if (EXTRACT(val, PCI_STATUS_BIT_OFFS, PCI_STATUS_BIT_LEN) == 0) {
         return ME_PCI_SPACE_NOT_SUPPORTED;
     }
@@ -880,18 +879,18 @@ int mtcr_pciconf_rw(mfile *mf, unsigned int offset, u_int32_t* data, int rw)
     address = MERGE(address,(rw ? 1 : 0), PCI_FLAG_BIT_OFFS, 1);
     if (rw == WRITE_OP) {
         // write data
-        WRITE4_PCI(mf, *data, CAP9_ADDR + PCI_DATA_OFFSET, "write value", return ME_PCI_WRITE_ERROR);
+        WRITE4_PCI(mf, *data, mf->cap9_pci_offs + PCI_DATA_OFFSET, "write value", return ME_PCI_WRITE_ERROR);
         // write address
-        WRITE4_PCI(mf, address, CAP9_ADDR + PCI_ADDR_OFFSET, "write offset", return ME_PCI_WRITE_ERROR);
+        WRITE4_PCI(mf, address, mf->cap9_pci_offs + PCI_ADDR_OFFSET, "write offset", return ME_PCI_WRITE_ERROR);
         // wait on flag
         rc = mtcr_pciconf_wait_on_flag(mf, 0);
     } else {
         // write address
-        WRITE4_PCI(mf, address, CAP9_ADDR + PCI_ADDR_OFFSET, "write offset", return ME_PCI_WRITE_ERROR);
+        WRITE4_PCI(mf, address, mf->cap9_pci_offs + PCI_ADDR_OFFSET, "write offset", return ME_PCI_WRITE_ERROR);
         // wait on flag
         rc = mtcr_pciconf_wait_on_flag(mf, 1);
         // read data
-        READ4_PCI(mf, data, CAP9_ADDR + PCI_DATA_OFFSET, "read value", return ME_PCI_READ_ERROR);
+        READ4_PCI(mf, data, mf->cap9_pci_offs + PCI_DATA_OFFSET, "read value", return ME_PCI_READ_ERROR);
     }
     return rc;
 }
@@ -1084,7 +1083,7 @@ int mtcr_pciconf_open(mfile *mf, const char *name)
 
     mf->access_type   = MTCR_ACCESS_CONFIG;
 
-    if (pci_find_capability(mf, CAP_ID)) {
+    if ((mf->cap9_pci_offs = pci_find_capability(mf, CAP_ID))) {
         mf->supp_fw_ifc = 1;
     }
 
