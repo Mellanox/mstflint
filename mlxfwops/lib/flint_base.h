@@ -321,8 +321,10 @@ typedef enum fs3_section {
     FS3_FW_ADB        = 0x33,
     FS3_MFG_INFO      = 0xe0,
     FS3_DEV_INFO      = 0xe1,
-    FS3_NV_DATA       = 0xe2,
+    FS3_NV_DATA1       = 0xe2,
     FS3_VPD_R0        = 0xe3,
+    FS3_NV_DATA2      = 0xe4,
+    FS3_FW_NV_LOG     = 0xe5,
     FS3_ITOC          = 0xfd,
     FS3_END           = 0xff,
 } fs3_section_t;

@@ -37,6 +37,7 @@
 // #include "flint_base.h"
 #include "fw_ops.h"
 #include <cibfw_layouts.h>
+#include <cx4fw_layouts.h>
 
 
 
@@ -64,7 +65,7 @@ public:
 
     virtual bool FwSetGuids(sg_params_t& sgParam, PrintCallBack callBack, ProgressCallBack progressFunc);
     virtual bool FwSetMFG(guid_t baseGuid, PrintCallBack callBackFunc=(PrintCallBack)NULL);
-    virtual bool FwSetMFG(fs3_guid_t baseGuid, PrintCallBack callBackFunc=(PrintCallBack)NULL);
+    virtual bool FwSetMFG(fs3_uid_t baseGuid, PrintCallBack callBackFunc=(PrintCallBack)NULL);
     virtual bool FwGetSection (u_int32_t sectType, std::vector<u_int8_t>& sectInfo, bool stripedImage=false);
     virtual bool FwSetVSD(char* vsdStr, ProgressCallBack progressFunc=(ProgressCallBack)NULL, PrintCallBack printFunc=(PrintCallBack)NULL);
     virtual bool FwSetVPD(char* vpdFileStr, PrintCallBack callBackFunc=(PrintCallBack)NULL);
@@ -106,7 +107,6 @@ private:
         int             numOfItocs;
         struct toc_info tocArr[MAX_TOCS_NUM];
         u_int8_t        itocHeader[CIBFW_ITOC_HEADER_SIZE];
-        u_int32_t       bootSize;
         u_int8_t        firstItocIsEmpty;
         u_int32_t       itocAddr;
         u_int32_t       smallestAbsAddr;
@@ -128,6 +128,7 @@ private:
     virtual bool UpdateImgCache(u_int8_t *buff, u_int32_t addr, u_int32_t size);
     bool VerifyTOC(u_int32_t dtoc_addr, bool& bad_signature, VerifyCallBack verifyCallBackFunc, bool show_itoc,
             struct QueryOptions queryOptions);
+    bool checkPreboot(u_int32_t* prebootBuff, u_int32_t size, VerifyCallBack verifyCallBackFunc);
     bool Fs3Verify(VerifyCallBack verifyCallBackFunc, bool show_itoc, struct QueryOptions queryOptions);
     const char* GetSectionNameByType(u_int8_t section_type);
     bool CheckTocSignature(struct cibfw_itoc_header *itoc_header, u_int32_t first_signature);
@@ -146,10 +147,11 @@ private:
     bool UpdateDevDataITOC(u_int8_t *image_data, struct toc_info *image_toc_entry, struct toc_info *flash_toc_arr, int flash_toc_size);
     bool Fs3UpdateSection(void *new_info, fs3_section_t sect_type=FS3_DEV_INFO, bool is_sect_failsafe=true, CommandType cmd_type=CMD_UNKNOWN, PrintCallBack callBackFunc=(PrintCallBack)NULL );
     bool Fs3GetItocInfo(struct toc_info *tocArr, int num_of_itocs, fs3_section_t sect_type, struct toc_info *&curr_toc);
-    bool Fs3UpdateMfgUidsSection(struct toc_info *curr_toc, std::vector<u_int8_t>  section_data, fs3_guid_t base_uid,
+    bool Fs3UpdateMfgUidsSection(struct toc_info *curr_toc, std::vector<u_int8_t>  section_data, fs3_uid_t base_uid,
                                             std::vector<u_int8_t>  &newSectionData);
-    bool Fs3ChangeUidsFromBase(fs3_guid_t base_uid, struct cibfw_guids *guids);
-    bool Fs3UpdateUidsSection(struct toc_info *curr_toc, std::vector<u_int8_t>  section_data, fs3_guid_t base_uid,
+    bool Fs3ChangeUidsFromBase(fs3_uid_t base_uid, struct cibfw_guids& guids);
+    bool Fs3ChangeUidsFromBase(fs3_uid_t base_uid, struct cx4fw_guids& guids);
+    bool Fs3UpdateUidsSection(struct toc_info *curr_toc, std::vector<u_int8_t>  section_data, fs3_uid_t base_uid,
                                              std::vector<u_int8_t>  &newSectionData);
     bool Fs3UpdateVsdSection(struct toc_info *curr_toc, std::vector<u_int8_t>  section_data, char* user_vsd,
                                      std::vector<u_int8_t>  &newSectionData);

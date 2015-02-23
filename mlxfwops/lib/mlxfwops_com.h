@@ -119,7 +119,7 @@ typedef enum chip_type {
     CT_IS4,
     CT_CONNECT_IB,
     CT_SWITCH_IB,
-    CT_SWITCH_EN
+    CT_SWITCH_EN,
 }chip_type_t;
 
 typedef struct guid {
@@ -128,11 +128,15 @@ typedef struct guid {
 } guid_t;
 typedef guid_t hw_key_t;
 
-typedef struct fs3_guid {
-    guid_t uid;
-    u_int8_t num_of_guids;
-    u_int8_t step_size;
-} fs3_guid_t;
+typedef struct fs3_uid {
+    guid_t base_guid;
+    int base_guid_specified;
+    guid_t base_mac;
+    int base_mac_specified;
+    u_int8_t num_of_guids; // set 0 for default
+    u_int8_t step_size; // set 0 for default, not relevant for devices >= CX4
+    int set_mac_from_guid;  // if set , base_mac will be derrived automatically from base guid
+} fs3_uid_t;
 
 typedef struct rom_info {
     u_int16_t exp_rom_product_id; // 0 - invalid.
@@ -145,16 +149,29 @@ typedef struct rom_info {
 } rom_info_t;
 
 
-struct cib_uid_entry {
+struct fs3_uid_entry {
      u_int8_t num_allocated;
-     u_int8_t step;
+     u_int8_t step; // not relevant for devices >= CX4
      u_int64_t uid;
 };
-typedef struct cibfw_uids {
-    struct cib_uid_entry guids[2];
-    struct cib_uid_entry macs[2];
-} uids_t;
 
+typedef struct cibfw_uids {
+    struct fs3_uid_entry guids[2];
+    struct fs3_uid_entry macs[2];
+} cib_uids_t;
+
+typedef struct cx4fw_uids {
+    struct fs3_uid_entry base_guid;
+    struct fs3_uid_entry base_mac;
+} cx4_uids_t;
+
+typedef struct uids {
+    int valid_field; // 0: cib_uids , 1: cx4_uids
+    union {
+    cib_uids_t cib_uids;
+    cx4_uids_t cx4_uids;
+    };
+} uids_t;
 
 typedef struct fs3_info_ext {
     u_int8_t        guids_override_en;
@@ -234,6 +251,12 @@ enum ExpRomProto {
     ER_VPI = 2
 };
 
+typedef enum fw_ver_info {
+    FVI_UNKNOWN = -1,
+    FVI_SMALLER = 0,
+    FVI_EQUAL = 1,
+    FVI_GREATER = 2,
+} fw_ver_info_t;
 
 typedef struct _MLX4_DEV uefi_Dev_t;
 typedef int (*f_fw_cmd) (uefi_Dev_t* dev, void* buffer, int* size);

@@ -1,38 +1,20 @@
-/*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+
+/*                  - Mellanox Confidential and Proprietary -
  *
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
- * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
- * OpenIB.org BSD license below:
+ *  Copyright (C) 2010-2011, Mellanox Technologies Ltd.  ALL RIGHTS RESERVED.
  *
- *     Redistribution and use in source and binary forms, with or
- *     without modification, are permitted provided that the following
- *     conditions are met:
- *
- *      - Redistributions of source code must retain the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer.
- *
- *      - Redistributions in binary form must reproduce the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ *  Except as specifically permitted herein, no portion of the information,
+ *  including but not limited to object code and source code, may be reproduced,
+ *  modified, distributed, republished or otherwise exploited in any form or by
+ *  any means for any purpose without the prior written permission of Mellanox
+ *  Technologies Ltd. Use of software subject to the terms and conditions
+ *  detailed in the file "LICENSE.txt".
  *
  */
+ 
 
 /***
- *** This file was generated at "2014-11-12 13:18:59"
+ *** This file was generated at "2015-01-22 18:18:34"
  *** by:
  ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/register_access/register_access_sib.adb --file-prefix register_access_sib --prefix register_access_sib_
  ***/
@@ -162,6 +144,68 @@ struct register_access_sib_mgir {
 	 struct register_access_sib_IB_SWInfo_ SWInfo;
 };
 
+/* Description -   */
+/* Size in bytes - 28 */
+struct register_access_sib_mtmp {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Sensors index to access */
+	/* 0.0 - 0.6 */
+	 u_int8_t sensor_index;
+	/* Description - query the internal diodes */
+	/* 0.31 - 4.31 */
+	 u_int8_t internal_diodes_query;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - Temperature reading from the sensor. Reading in 0.125 Celsius degrees. */
+	/* 4.0 - 4.15 */
+	 u_int16_t temperature;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - The highest measured temperature from the sensor. */
+	/* 8.0 - 8.15 */
+	 u_int16_t max_temperture;
+	/* Description - Max Temperature Reset - clears the value of the max temperature register */
+	/* 8.30 - 8.30 */
+	 u_int8_t mtr;
+	/* Description - Max Temperature Enable - enables measuring the max temperature on a sensor */
+	/* 8.31 - 12.31 */
+	 u_int8_t mte;
+/*---------------- DWORD[3] (Offset 0xc) ----------------*/
+	/* Description - If the sensor temperature measurement is above the threshold (and events are enabled), an event
+will be generated */
+	/* 12.0 - 12.15 */
+	 u_int16_t temperature_threshold_hi;
+	/* Description - Temperature Event Enable
+00 - Do not generate event
+01 - Generate Event
+10 - Generate single event */
+	/* 12.30 - 16.31 */
+	 u_int8_t tee;
+/*---------------- DWORD[4] (Offset 0x10) ----------------*/
+	/* Description -  */
+	/* 16.0 - 16.15 */
+	 u_int16_t temperature_threshold_lo;
+/*---------------- DWORD[5] (Offset 0x14) ----------------*/
+	/* Description -  */
+	/* 20.0 - 24.31 */
+	 u_int32_t name_lo;
+/*---------------- DWORD[6] (Offset 0x18) ----------------*/
+	/* Description -  */
+	/* 24.0 - 28.31 */
+	 u_int32_t name_hi;
+};
+
+/* Description -   */
+/* Size in bytes - 128 */
+union register_access_sib_register_access_sib_Nodes {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0.0 - 28.31 */
+	 struct register_access_sib_mtmp mtmp;
+	/* Description -  */
+	/* 0.0 - 128.31 */
+	 struct register_access_sib_mgir mgir;
+};
+
+
 /*================= PACK/UNPACK/PRINT FUNCTIONS ======================*/
 /* IB_PSID_ */
 void register_access_sib_IB_PSID__pack(const struct register_access_sib_IB_PSID_ *ptr_struct, u_int8_t* ptr_buff);
@@ -198,6 +242,21 @@ void register_access_sib_mgir_print(const struct register_access_sib_mgir *ptr_s
 int register_access_sib_mgir_size();
 #define REGISTER_ACCESS_SIB_MGIR_SIZE    (0x80)
 void register_access_sib_mgir_dump(const struct register_access_sib_mgir *ptr_struct, FILE* file);
+/* mtmp */
+void register_access_sib_mtmp_pack(const struct register_access_sib_mtmp *ptr_struct, u_int8_t* ptr_buff);
+void register_access_sib_mtmp_unpack(struct register_access_sib_mtmp *ptr_struct, const u_int8_t* ptr_buff);
+void register_access_sib_mtmp_print(const struct register_access_sib_mtmp *ptr_struct, FILE* file, int indent_level);
+int register_access_sib_mtmp_size();
+#define REGISTER_ACCESS_SIB_MTMP_SIZE    (0x1c)
+void register_access_sib_mtmp_dump(const struct register_access_sib_mtmp *ptr_struct, FILE* file);
+/* register_access_sib_Nodes */
+void register_access_sib_register_access_sib_Nodes_pack(const union register_access_sib_register_access_sib_Nodes *ptr_struct, u_int8_t* ptr_buff);
+void register_access_sib_register_access_sib_Nodes_unpack(union register_access_sib_register_access_sib_Nodes *ptr_struct, const u_int8_t* ptr_buff);
+void register_access_sib_register_access_sib_Nodes_print(const union register_access_sib_register_access_sib_Nodes *ptr_struct, FILE* file, int indent_level);
+int register_access_sib_register_access_sib_Nodes_size();
+#define REGISTER_ACCESS_SIB_REGISTER_ACCESS_SIB_NODES_SIZE    (0x80)
+void register_access_sib_register_access_sib_Nodes_dump(const union register_access_sib_register_access_sib_Nodes *ptr_struct, FILE* file);
+
 
 #ifdef __cplusplus
 }

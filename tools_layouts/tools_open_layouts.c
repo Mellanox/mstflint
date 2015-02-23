@@ -1,38 +1,20 @@
-/*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+
+/*                  - Mellanox Confidential and Proprietary -
  *
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
- * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
- * OpenIB.org BSD license below:
+ *  Copyright (C) 2010-2011, Mellanox Technologies Ltd.  ALL RIGHTS RESERVED.
  *
- *     Redistribution and use in source and binary forms, with or
- *     without modification, are permitted provided that the following
- *     conditions are met:
- *
- *      - Redistributions of source code must retain the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer.
- *
- *      - Redistributions in binary form must reproduce the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ *  Except as specifically permitted herein, no portion of the information,
+ *  including but not limited to object code and source code, may be reproduced,
+ *  modified, distributed, republished or otherwise exploited in any form or by
+ *  any means for any purpose without the prior written permission of Mellanox
+ *  Technologies Ltd. Use of software subject to the terms and conditions
+ *  detailed in the file "LICENSE.txt".
  *
  */
+ 
 
 /***
- *** This file was generated at "2014-11-12 13:19:54"
+ *** This file was generated at "2015-01-22 18:19:26"
  *** by:
  ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/tools_open/tools_open.adb --file-prefix tools_open --prefix tools_open_
  ***/
@@ -825,13 +807,13 @@ void tools_open_query_def_params_global_print(const struct tools_open_query_def_
 	fprintf(file, "fw_default_config_payload_version : "UH_FMT"\n", ptr_struct->fw_default_config_payload_version);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "num_vfs             : "UH_FMT"\n", ptr_struct->num_vfs);
+	fprintf(file, "num_vfs              : "UH_FMT"\n", ptr_struct->num_vfs);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "uar_bar_size        : "UH_FMT"\n", ptr_struct->uar_bar_size);
+	fprintf(file, "uar_bar_size         : "UH_FMT"\n", ptr_struct->uar_bar_size);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "max_uar_bar_size    : "UH_FMT"\n", ptr_struct->max_uar_bar_size);
+	fprintf(file, "max_uar_bar_size     : "UH_FMT"\n", ptr_struct->max_uar_bar_size);
 
 	adb2c_add_indentation(file, indent_level);
 	fprintf(file, "sriov_en             : "UH_FMT"\n", ptr_struct->sriov_en);
@@ -1072,6 +1054,365 @@ void tools_open_sriov_dump(const struct tools_open_sriov *ptr_struct, FILE* file
 	tools_open_sriov_print(ptr_struct, file, 0);
 }
 
+void tools_open_preboot_flow_ctrl_pack(const struct tools_open_preboot_flow_ctrl *ptr_struct, u_int8_t* ptr_buff){
+	u_int32_t offset;
+	int i=0;
+	(void)offset;
+	(void)i;
+	(void)ptr_struct;
+	(void)ptr_buff;
+
+	offset=24;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->pfcrx);
+
+	offset=16;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->pfctx);
+
+	offset=2;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->pfc_willing);
+
+	offset=1;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->pprx);
+
+	offset=0;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->pptx);
+
+}
+
+void tools_open_preboot_flow_ctrl_unpack(struct tools_open_preboot_flow_ctrl *ptr_struct, const u_int8_t* ptr_buff){
+	u_int32_t offset;
+	int i=0;
+	(void)offset;
+	(void)i;
+	(void)ptr_struct;
+	(void)ptr_buff;
+
+	offset=24;
+	ptr_struct->pfcrx = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+
+	offset=16;
+	ptr_struct->pfctx = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+
+	offset=2;
+	ptr_struct->pfc_willing = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset=1;
+	ptr_struct->pprx = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset=0;
+	ptr_struct->pptx = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+}
+
+void tools_open_preboot_flow_ctrl_print(const struct tools_open_preboot_flow_ctrl *ptr_struct, FILE* file, int indent_level){
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "======== preboot_flow_ctrl ========\n");
+	int i=0;
+	(void)i;(void)ptr_struct;
+	(void)file;
+	(void)indent_level;
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "pfcrx                : "UH_FMT"\n", ptr_struct->pfcrx);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "pfctx                : "UH_FMT"\n", ptr_struct->pfctx);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "pfc_willing          : "UH_FMT"\n", ptr_struct->pfc_willing);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "pprx                 : "UH_FMT"\n", ptr_struct->pprx);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "pptx                 : "UH_FMT"\n", ptr_struct->pptx);
+
+}
+
+int tools_open_preboot_flow_ctrl_size(){
+	 return 4;
+}
+
+void tools_open_preboot_flow_ctrl_dump(const struct tools_open_preboot_flow_ctrl *ptr_struct, FILE* file) {
+	tools_open_preboot_flow_ctrl_print(ptr_struct, file, 0);
+}
+
+void tools_open_boot_settings_pack(const struct tools_open_boot_settings *ptr_struct, u_int8_t* ptr_buff){
+	u_int32_t offset;
+	int i=0;
+	(void)offset;
+	(void)i;
+	(void)ptr_struct;
+	(void)ptr_buff;
+
+	offset=20;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 12, (u_int32_t)ptr_struct->boot_vlan);
+
+	offset=8;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->legacy_boot_protocol);
+
+	offset=5;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 3, (u_int32_t)ptr_struct->boot_retry_conut);
+
+	offset=1;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->boot_vlan_en);
+
+	offset=0;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->boot_option_rom_en);
+
+}
+
+void tools_open_boot_settings_unpack(struct tools_open_boot_settings *ptr_struct, const u_int8_t* ptr_buff){
+	u_int32_t offset;
+	int i=0;
+	(void)offset;
+	(void)i;
+	(void)ptr_struct;
+	(void)ptr_buff;
+
+	offset=20;
+	ptr_struct->boot_vlan = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 12);
+
+	offset=8;
+	ptr_struct->legacy_boot_protocol = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+
+	offset=5;
+	ptr_struct->boot_retry_conut = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 3);
+
+	offset=1;
+	ptr_struct->boot_vlan_en = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset=0;
+	ptr_struct->boot_option_rom_en = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+}
+
+void tools_open_boot_settings_print(const struct tools_open_boot_settings *ptr_struct, FILE* file, int indent_level){
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "======== boot_settings ========\n");
+	int i=0;
+	(void)i;(void)ptr_struct;
+	(void)file;
+	(void)indent_level;
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "boot_vlan            : "UH_FMT"\n", ptr_struct->boot_vlan);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "legacy_boot_protocol : "UH_FMT"\n", ptr_struct->legacy_boot_protocol);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "boot_retry_conut     : "UH_FMT"\n", ptr_struct->boot_retry_conut);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "boot_vlan_en         : "UH_FMT"\n", ptr_struct->boot_vlan_en);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "boot_option_rom_en   : "UH_FMT"\n", ptr_struct->boot_option_rom_en);
+
+}
+
+int tools_open_boot_settings_size(){
+	 return 4;
+}
+
+void tools_open_boot_settings_dump(const struct tools_open_boot_settings *ptr_struct, FILE* file) {
+	tools_open_boot_settings_print(ptr_struct, file, 0);
+}
+
+void tools_open_infiniband_boot_settings_pack(const struct tools_open_infiniband_boot_settings *ptr_struct, u_int8_t* ptr_buff){
+	u_int32_t offset;
+	int i=0;
+	(void)offset;
+	(void)i;
+	(void)ptr_struct;
+	(void)ptr_buff;
+
+	offset=16;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->boot_pkey);
+
+}
+
+void tools_open_infiniband_boot_settings_unpack(struct tools_open_infiniband_boot_settings *ptr_struct, const u_int8_t* ptr_buff){
+	u_int32_t offset;
+	int i=0;
+	(void)offset;
+	(void)i;
+	(void)ptr_struct;
+	(void)ptr_buff;
+
+	offset=16;
+	ptr_struct->boot_pkey = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+
+}
+
+void tools_open_infiniband_boot_settings_print(const struct tools_open_infiniband_boot_settings *ptr_struct, FILE* file, int indent_level){
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "======== infiniband_boot_settings ========\n");
+	int i=0;
+	(void)i;(void)ptr_struct;
+	(void)file;
+	(void)indent_level;
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "boot_pkey            : "UH_FMT"\n", ptr_struct->boot_pkey);
+
+}
+
+int tools_open_infiniband_boot_settings_size(){
+	 return 4;
+}
+
+void tools_open_infiniband_boot_settings_dump(const struct tools_open_infiniband_boot_settings *ptr_struct, FILE* file) {
+	tools_open_infiniband_boot_settings_print(ptr_struct, file, 0);
+}
+
+void tools_open_iscsi_settings_pack(const struct tools_open_iscsi_settings *ptr_struct, u_int8_t* ptr_buff){
+	u_int32_t offset;
+	int i=0;
+	(void)offset;
+	(void)i;
+	(void)ptr_struct;
+	(void)ptr_buff;
+
+	offset=10;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->target_as_first_hdd_en);
+
+	offset=8;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 2, (u_int32_t)ptr_struct->boot_to_target);
+
+	offset=7;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->ipv6_auto_config_en);
+
+	offset=5;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->vlan_en);
+
+	offset=4;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->tcp_timestamps_en);
+
+	offset=3;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->chap_mutual_auth_en);
+
+	offset=2;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->chap_auth_en);
+
+	offset=1;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->dhcp_iscsi_en);
+
+	offset=0;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->ipv4_dhcp_en);
+
+	offset=52;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 12, (u_int32_t)ptr_struct->vlan);
+
+	offset=88;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->lun_busy_retry_count);
+
+	offset=80;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->link_up_delay_time);
+
+}
+
+void tools_open_iscsi_settings_unpack(struct tools_open_iscsi_settings *ptr_struct, const u_int8_t* ptr_buff){
+	u_int32_t offset;
+	int i=0;
+	(void)offset;
+	(void)i;
+	(void)ptr_struct;
+	(void)ptr_buff;
+
+	offset=10;
+	ptr_struct->target_as_first_hdd_en = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset=8;
+	ptr_struct->boot_to_target = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 2);
+
+	offset=7;
+	ptr_struct->ipv6_auto_config_en = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset=5;
+	ptr_struct->vlan_en = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset=4;
+	ptr_struct->tcp_timestamps_en = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset=3;
+	ptr_struct->chap_mutual_auth_en = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset=2;
+	ptr_struct->chap_auth_en = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset=1;
+	ptr_struct->dhcp_iscsi_en = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset=0;
+	ptr_struct->ipv4_dhcp_en = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset=52;
+	ptr_struct->vlan = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 12);
+
+	offset=88;
+	ptr_struct->lun_busy_retry_count = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+
+	offset=80;
+	ptr_struct->link_up_delay_time = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+
+}
+
+void tools_open_iscsi_settings_print(const struct tools_open_iscsi_settings *ptr_struct, FILE* file, int indent_level){
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "======== iscsi_settings ========\n");
+	int i=0;
+	(void)i;(void)ptr_struct;
+	(void)file;
+	(void)indent_level;
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "target_as_first_hdd_en : "UH_FMT"\n", ptr_struct->target_as_first_hdd_en);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "boot_to_target       : "UH_FMT"\n", ptr_struct->boot_to_target);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "ipv6_auto_config_en  : "UH_FMT"\n", ptr_struct->ipv6_auto_config_en);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "vlan_en              : "UH_FMT"\n", ptr_struct->vlan_en);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "tcp_timestamps_en    : "UH_FMT"\n", ptr_struct->tcp_timestamps_en);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "chap_mutual_auth_en  : "UH_FMT"\n", ptr_struct->chap_mutual_auth_en);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "chap_auth_en         : "UH_FMT"\n", ptr_struct->chap_auth_en);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "dhcp_iscsi_en        : "UH_FMT"\n", ptr_struct->dhcp_iscsi_en);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "ipv4_dhcp_en         : "UH_FMT"\n", ptr_struct->ipv4_dhcp_en);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "vlan                 : "UH_FMT"\n", ptr_struct->vlan);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "lun_busy_retry_count : "UH_FMT"\n", ptr_struct->lun_busy_retry_count);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "link_up_delay_time   : "UH_FMT"\n", ptr_struct->link_up_delay_time);
+
+}
+
+int tools_open_iscsi_settings_size(){
+	 return 12;
+}
+
+void tools_open_iscsi_settings_dump(const struct tools_open_iscsi_settings *ptr_struct, FILE* file) {
+	tools_open_iscsi_settings_print(ptr_struct, file, 0);
+}
+
 void tools_open_wol_pack(const struct tools_open_wol *ptr_struct, u_int8_t* ptr_buff){
 	u_int32_t offset;
 	int i=0;
@@ -1266,6 +1607,22 @@ void tools_open_nv_cfg_print(const union tools_open_nv_cfg *ptr_struct, FILE* fi
 	adb2c_add_indentation(file, indent_level);
 	fprintf(file, "wol:\n");
 	tools_open_wol_print(&(ptr_struct->wol), file, indent_level + 1);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "iscsi_settings:\n");
+	tools_open_iscsi_settings_print(&(ptr_struct->iscsi_settings), file, indent_level + 1);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "infiniband_boot_settings:\n");
+	tools_open_infiniband_boot_settings_print(&(ptr_struct->infiniband_boot_settings), file, indent_level + 1);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "boot_settings:\n");
+	tools_open_boot_settings_print(&(ptr_struct->boot_settings), file, indent_level + 1);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "preboot_flow_ctrl:\n");
+	tools_open_preboot_flow_ctrl_print(&(ptr_struct->preboot_flow_ctrl), file, indent_level + 1);
 
 	adb2c_add_indentation(file, indent_level);
 	fprintf(file, "sriov:\n");

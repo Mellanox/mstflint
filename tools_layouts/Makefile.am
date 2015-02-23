@@ -35,7 +35,9 @@ INCLUDES = -I$(top_srcdir)/mtcr_ul -I$(top_srcdir)/common
 AM_CFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC)
 noinst_LIBRARIES = libtools_layouts.a
 
-libtools_layouts_a_SOURCES = cibfw_layouts.c adb_to_c_utils.c adb_to_c_utils.h cibfw_layouts.h \
-								register_access_open_layouts.h register_access_open_layouts.c \
-								tools_open_layouts.c tools_open_layouts.h\
-								register_access_sib_layouts.h register_access_sib_layouts.c
+libtools_layouts_a_SOURCES = adb_to_c_utils.c adb_to_c_utils.h \
+				cibfw_layouts.c cibfw_layouts.h \
+				register_access_open_layouts.h register_access_open_layouts.c \
+				tools_open_layouts.c tools_open_layouts.h\
+				register_access_sib_layouts.h register_access_sib_layouts.c \
+				cx4fw_layouts.c cx4fw_layouts.h

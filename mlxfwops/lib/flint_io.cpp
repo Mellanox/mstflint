@@ -580,7 +580,7 @@ bool Flash::erase_sector  (u_int32_t addr) {
     rc = mf_erase_sector(_mfl, phys_addr);
     deal_with_signal();
     if (rc != MFE_OK) {
-        if (rc == MFE_REG_ACCESS_RES_NOT_AVLBL) {
+        if (rc == MFE_REG_ACCESS_RES_NOT_AVLBL || rc == MFE_REG_ACCESS_BAD_PARAM) {
             return errmsg("Flash erase of address 0x%x failed: %s\n"
                           "    This may indicate that a FW image was already updated on flash, but not loaded by the device.\n"
                           "    Please load FW on the device (reset device or restart driver) before burning a new FW.",

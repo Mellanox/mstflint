@@ -39,39 +39,39 @@
     #include "uefi_c.h"
 #endif
 
-int mlxfw_open_int(mlxfwops_t** mlxfwops_p, void* fw_hndl, void* extra, char* psid, fw_hndl_type_t hndl_type)
+int mlxfw_open_int(mlxfwops_t** mlxfwops_p, void* fw_hndl, void* extra, char* psid, fw_hndl_type_t hndl_type, char* err_buf, int buf_size)
 {
-     *mlxfwops_p = (mlxfwops_t*) FwOperations::FwOperationsCreate((void*)fw_hndl, extra, psid, hndl_type);
+     *mlxfwops_p = (mlxfwops_t*) FwOperations::FwOperationsCreate((void*)fw_hndl, extra, psid, hndl_type, err_buf, buf_size);
      if (*mlxfwops_p == NULL) {
          return MLXFW_MEM_ERR;
      }
      return MLXFW_OK;
 }
 
-MLXFWOP_API int MLXFWOPCALL mlxfw_fw_ver_less_than(u_int16_t ver_a[3], u_int16_t ver_b[3])
+MLXFWOP_API int MLXFWOPCALL mlxfw_open_device_verbose(mlxfwops_t** mlxfwops_p, char *device_name, char* buf, int buf_size)
 {
-    return FwOperations::FwVerLessThan(ver_a, ver_b);
+    return mlxfw_open_int(mlxfwops_p, device_name, NULL, (char*)NULL, FHT_MST_DEV, buf, buf_size);
 }
 
 MLXFWOP_API int MLXFWOPCALL mlxfw_open_device(mlxfwops_t** mlxfwops_p, char *handle_name)
 {
-    return mlxfw_open_int(mlxfwops_p, handle_name, NULL, (char*)NULL, FHT_MST_DEV);
+    return mlxfw_open_int(mlxfwops_p, handle_name, NULL, (char*)NULL, FHT_MST_DEV, NULL, 0);
 }
 
 MLXFWOP_API int MLXFWOPCALL mlxfw_open_image(mlxfwops_t** mlxfwops_p, char *file_name, char *psid)
 {
-    return mlxfw_open_int(mlxfwops_p, file_name, NULL, psid, FHT_FW_FILE);
+    return mlxfw_open_int(mlxfwops_p, file_name, NULL, psid, FHT_FW_FILE, NULL, 0);
 }
 
 MLXFWOP_API int MLXFWOPCALL mlxfw_open_buffer(mlxfwops_t** mlxfwops_p, void* buffer, u_int32_t size, char *psid)
 {
-    return mlxfw_open_int(mlxfwops_p, buffer, &size, psid, FHT_FW_BUFF);
+    return mlxfw_open_int(mlxfwops_p, buffer, &size, psid, FHT_FW_BUFF, NULL, 0);
 }
 
 #ifdef UEFI_BUILD
 MLXFWOP_API int MLXFWOPCALL mlxfw_open_uefi(mlxfwops_t** mlxfwops_p, uefi_Dev_t* dev, f_fw_cmd fw_cmd_func)
 {
-    return mlxfw_open_int(mlxfwops_p, dev, (void*)fw_cmd_func, (char*)NULL, FHT_UEFI_DEV);
+    return mlxfw_open_int(mlxfwops_p, dev, (void*)fw_cmd_func, (char*)NULL, FHT_UEFI_DEV, NULL, 0);
 
 }
 

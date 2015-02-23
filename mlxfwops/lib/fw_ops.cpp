@@ -240,38 +240,59 @@ bool FwOperations::checkBoot2(u_int32_t beg, u_int32_t offs, u_int32_t& next, bo
 bool FwOperations::CheckAndPrintCrcRes(char* pr, bool blank_crc, u_int32_t off, u_int32_t crc_act, u_int32_t crc_exp, bool ignore_crc,
          VerifyCallBack verifyCallBackFunc)
 {
-
-    if (!blank_crc && crc_exp != crc_act) {
-        report_callback(verifyCallBackFunc, "%s /0x%08x/ - wrong CRC (exp:0x%x, act:0x%x)\n",
-               pr, off, crc_exp, crc_act);
-        return errmsg(BAD_CRC_MSG);
-    }
-    // if (_print_crc) {
-    // TODO: Print CRC here.
-    if (0) {
-        report_callback(verifyCallBackFunc, "%s - OK (CRC:0x%04x)\n", pr, crc_act & 0xffff);
+    if (ignore_crc) {
+        report_callback(verifyCallBackFunc, "%s - CRC IGNORED\n", pr);
     } else {
-        if (ignore_crc) {
-            report_callback(verifyCallBackFunc, "%s - CRC IGNORED\n", pr);
+        if(blank_crc) {
+            report_callback(verifyCallBackFunc, "%s - BLANK CRC (0xffff)\n", pr);
+        } else if (crc_exp == crc_act) {
+            report_callback(verifyCallBackFunc, "%s - OK\n", pr);
         } else {
-            if (blank_crc) {
-                report_callback(verifyCallBackFunc, "%s - BLANK CRC (0xffff)\n", pr);
-            } else {
-                report_callback(verifyCallBackFunc, "%s - OK\n", pr);
-            }
+            report_callback(verifyCallBackFunc, "%s /0x%08x/ - wrong CRC (exp:0x%x, act:0x%x)\n",
+                           pr, off, crc_exp, crc_act);
+            return errmsg(BAD_CRC_MSG);
         }
     }
     return true;
 }
 
-bool FwOperations::FwVerLessThan(u_int16_t r1[3], u_int16_t r2[3]) {
-    for (int i = 0; i < 3 ; i++)
-        if (r1[i] < r2[i])
-            return true;
-        else if (r1[i] > r2[i])
-            return false;
-
-    return false; // equal versions
+FwVerInfo FwOperations::FwVerLessThan(u_int16_t r1[3], u_int16_t r2[3], u_int8_t fwType) {
+    // copy version arrays to local variables
+    u_int16_t fwVer1[3];
+    u_int16_t fwVer2[3];
+    u_int16_t branch1 = 0, branch2 = 0;
+    memcpy(fwVer1, r1, sizeof(fwVer1));
+    memcpy(fwVer2, r2, sizeof(fwVer2));
+    // update minor according to format
+    if (fwType == FIT_FS3) {
+        // extract GA release version from minor (upper 2 digits)
+        fwVer1[1] = r1[1] / 100;
+        fwVer2[1] = r2[1] / 100;
+        // extract branch (assume branch is 0 in old format)
+        branch1 = r1[1] % 100;
+        branch2 = r2[1] % 100;
+    }
+    //compare
+    for (int i = 0; i < 3 ; i++) {
+        if (i == 2 && branch1 != branch2) {
+            // major and minor versions are the same
+            // check branches to see if its an upgrade/downgrade
+            if (branch1 != 0 && branch2 != 0) {
+                return FVI_UNKNOWN;
+            } else if (branch1 > branch2) {
+                return FVI_GREATER;
+            } else {
+                return FVI_SMALLER;
+            }
+        }
+        if (fwVer1[i] < fwVer2[i]) {
+            return FVI_SMALLER;
+        }
+        else if (fwVer1[i] > fwVer2[i]) {
+            return FVI_GREATER;
+        }
+    }
+    return FVI_EQUAL; // equal versions
 }
 const u_int32_t FwOperations::_cntx_magic_pattern[4] = {
     0x4D544657,   // Ascii of "MTFW"
@@ -741,7 +762,7 @@ const FwOperations::HwDev2Str FwOperations::hwDev2Str[] = {
         {"ConnectX-3 A0",     CX3_HW_ID,        0x00},
         {"ConnectX-3 A1",     CX3_HW_ID,        0x01},
         {"ConnectX-3Pro",     CX3_PRO_HW_ID,    0x00},
-        {"ConnectX-4",        CX4_HW_ID,  	0x00},
+        {"ConnectX-4",        CX4_HW_ID,        0x00},
         {"SwitchX A0",        SWITCHX_HW_ID,    0x00},
         {"SwitchX A1",        SWITCHX_HW_ID,    0x01},
         {"BridgeX",           BRIDGEX_HW_ID,    0xA0},
@@ -897,10 +918,12 @@ bool FwOperations::CheckPSID(FwOperations &imageOps, u_int8_t allow_psid_change)
 
 bool FwOperations::CheckFwVersion(FwOperations &imageOps, u_int8_t forceVersion)
 {
-    bool updateRequired = true;
+    FwVerInfo updateRequired = FVI_UNKNOWN;
     if (!forceVersion) {
-        updateRequired = FwVerLessThan(_fwImgInfo.ext_info.fw_ver, imageOps._fwImgInfo.ext_info.fw_ver);
-        if (!updateRequired) {
+        updateRequired = FwVerLessThan(_fwImgInfo.ext_info.fw_ver, imageOps._fwImgInfo.ext_info.fw_ver, _fwImgInfo.fwType);
+        if (updateRequired == FVI_UNKNOWN) {
+            return errmsg("Cannot compare between FW versions(different branches)");
+        } else if (updateRequired != FVI_SMALLER ) {
             return errmsg("FW is already updated.");
         }
     }
@@ -1312,8 +1335,8 @@ void FwOperations::SetDevFlags(chip_type_t chipType, u_int32_t devType, fw_img_t
         ibDev = true;
         ethDev = true;
     } else {
-        ibDev  = (fwType == FIT_FS3) || !CntxEthOnly(devType);
-        ethDev = chipType == CT_CONNECTX;
+        ibDev  = (fwType == FIT_FS3 && chipType != CT_SWITCH_EN) || !CntxEthOnly(devType);
+        ethDev = (chipType == CT_CONNECTX) || (chipType == CT_SWITCH_EN);
     }
 
     if ((!ibDev && !ethDev) || chipType == CT_UNKNOWN) {
@@ -1332,7 +1355,9 @@ void FwOperations::SetDevFlags(chip_type_t chipType, u_int32_t devType, fw_img_t
 bool FwOperations::IsFwSupportingRomModify(u_int16_t fw_ver[3])
 {
     u_int16_t supported_fw[3] = {MAJOR_MOD_ROM_FW,  MINOR_MOD_ROM_FW, SUBMINOR_MOD_ROM_FW};
-    return !FwVerLessThan(fw_ver, supported_fw);
+    // only used in connectx (FS2)
+    FwVerInfo verInfo = FwVerLessThan(fw_ver, supported_fw, FIT_FS2);
+    return ((verInfo == FVI_EQUAL) || (verInfo == FVI_GREATER));
 }
 
 bool FwOperations::checkMatchingExpRomDevId(const fw_info_t& info)

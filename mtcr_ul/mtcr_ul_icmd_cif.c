@@ -31,22 +31,15 @@
  *
  */
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include <bit_slice.h>
 #include <common/tools_utils.h>
 #include "mtcr_icmd_cif.h"
-
-#ifdef __WIN__
-#include <process.h>
-#define getpid() _getpid()
-#else
-#include <sys/types.h>
-#include <unistd.h>
-#endif
 
 //#define _DEBUG_MODE   // un-comment this to enable debug prints
 
@@ -66,10 +59,7 @@
 #define OPCODE_BITLEN       16
 #define STATUS_BITOFF       8
 #define STATUS_BITLEN       8
-
-/*
- * Virtual CR-Space ICMD addresses
- */
+#define ICMD_MAX_CMD_SIZE   256
 
 #define VCR_CTRL_ADDR       0x0
 #define VCR_SEMAPHORE62     0x0 // semaphore Domain
@@ -77,7 +67,7 @@
 #define VCR_CMD_SIZE_ADDR   0x1000 // mailbox size
 
 /*
- * Macros for accessing cr-space
+ * Macros for accessing CR-Space
  */
 #define MWRITE_BUF(mf, offset, data, byte_len)                                             \
     (((unsigned)(mwrite_buffer((mf), (offset), (data), (byte_len))) != (unsigned)(byte_len))  \
@@ -93,54 +83,57 @@
     (((unsigned)(mread4((mf), (offset), (ptr))) != 4U)         \
         ? ME_ICMD_STATUS_CR_FAIL : ME_OK)
 
-//TODO: adrianc: the macros below can be derrived from one common macro SPACE_ACCESS(mf, address_space, access_func, args, exp_rc, action_on_fail)
 /*
- * Macros for accessing Icmd space
+ * Macros for accessing Icmd Space
  */
 #define SET_SPACE_FOR_ICMD_ACCESS(mf)   \
-    if (mf->sup_fw_ifc) {               \
-        mf->address_domain = AD_ICMD;   \
+    if (mf->vsec_supp) {               \
+        mf->address_space = AS_ICMD;   \
     }
-#define RESTORE_SPACE(mf) mf->address_domain = AD_CR_SPACE
+#define SET_SPACE_FOR_SEMAPHORE_ACCESS(mf)   \
+    if (mf->vsec_supp) {               \
+        mf->address_space = AS_SEMAPHORE;   \
+    }
+#define RESTORE_SPACE(mf) mf->address_space = AS_CR_SPACE
 
 #define MWRITE4_ICMD(mf, offset, value, action_on_fail)\
     do {\
-        mf->address_domain = AD_ICMD;\
+        SET_SPACE_FOR_ICMD_ACCESS(mf);\
         if (mwrite4(mf, offset, value) != 4) {\
-            mf->address_domain = AD_CR_SPACE;\
+            mf->address_space = AS_CR_SPACE;\
             action_on_fail;\
         }\
-        mf->address_domain = AD_CR_SPACE;\
+        RESTORE_SPACE(mf);\
     }while(0)
 
 #define MREAD4_ICMD(mf, offset, ptr, action_on_fail)\
     do {\
-        mf->address_domain = AD_ICMD;\
+        SET_SPACE_FOR_ICMD_ACCESS(mf);\
         if (mread4(mf, offset, ptr) != 4) {\
-            mf->address_domain = AD_CR_SPACE;\
+            RESTORE_SPACE(mf);\
             action_on_fail;\
         }\
-        mf->address_domain = AD_CR_SPACE;\
+        RESTORE_SPACE(mf);\
     }while(0)
 
 #define MWRITE_BUF_ICMD(mf, offset, data, byte_len, action_on_fail)\
     do {\
-        mf->address_domain = AD_ICMD;\
+        SET_SPACE_FOR_ICMD_ACCESS(mf);\
         if ((unsigned)mwrite_buffer(mf, offset, data, byte_len) != (unsigned)byte_len) {\
-            mf->address_domain = AD_CR_SPACE;\
+            RESTORE_SPACE(mf);\
             action_on_fail;\
         }\
-        mf->address_domain = AD_CR_SPACE;\
+        RESTORE_SPACE(mf);\
     }while(0)
 
 #define MREAD_BUF_ICMD(mf, offset, data, byte_len, action_on_fail)\
     do {\
-        mf->address_domain = AD_ICMD;\
+        SET_SPACE_FOR_ICMD_ACCESS(mf);\
         if ((unsigned)mread_buffer(mf, offset, data, byte_len) != (unsigned)byte_len) {\
-            mf->address_domain = AD_CR_SPACE;\
+            RESTORE_SPACE(mf);\
             action_on_fail;\
         }\
-        mf->address_domain = AD_CR_SPACE;\
+        RESTORE_SPACE(mf);\
     }while(0)
 
 /*
@@ -148,26 +141,27 @@
  */
 #define MWRITE4_SEMAPHORE(mf, offset, value, action_on_fail)\
         do {\
-        mf->address_domain = AD_SEMAPHORE;\
+        SET_SPACE_FOR_SEMAPHORE_ACCESS(mf);\
         if (mwrite4(mf, offset, value) != 4) {\
-            mf->address_domain = AD_CR_SPACE;\
+           RESTORE_SPACE(mf);\
             action_on_fail;\
         }\
-        mf->address_domain = AD_CR_SPACE;\
+        RESTORE_SPACE(mf);\
     }while(0)
 
 
 #define MREAD4_SEMAPHORE(mf, offset, ptr, action_on_fail)\
     do {\
-        mf->address_domain = AD_SEMAPHORE;\
+        SET_SPACE_FOR_SEMAPHORE_ACCESS(mf);\
         if (mread4(mf, offset, ptr) != 4) {\
-            mf->address_domain = AD_CR_SPACE;\
+            RESTORE_SPACE(mf);\
             action_on_fail;\
         }\
-        mf->address_domain = AD_CR_SPACE;\
+        RESTORE_SPACE(mf);\
     }while(0)
 
-//#define _DEBUG_MODE
+
+
 #ifdef _DEBUG_MODE
 #define DBG_PRINTF(...) fprintf(stderr, __VA_ARGS__)
 #else
@@ -208,8 +202,6 @@ enum {
             break;\
         }\
 	} while(0)
-
-/*************************************************************************************/
 
 /*
  * go - Sets the busy bit to 1, wait untill it is 0 again.
@@ -260,7 +252,7 @@ static int go(mfile *mf) {
  */
 static int set_opcode(mfile *mf, u_int16_t opcode) {
     u_int32_t reg;
-    DBG_PRINTF("-D- in set_opcode\n");
+
     MREAD4_ICMD(mf, mf->icmd.ctrl_addr, &reg, return ME_ICMD_STATUS_CR_FAIL);
     reg = MERGE(reg, opcode, OPCODE_BITOFF, OPCODE_BITLEN);
     MWRITE4_ICMD(mf, mf->icmd.ctrl_addr, reg, return ME_ICMD_STATUS_CR_FAIL);
@@ -296,7 +288,7 @@ static int translate_status(int status) {
 }
 static int get_status(mfile *mf) {
     u_int32_t reg;
-    DBG_PRINTF("-D- int get_status()");
+
     MREAD4_ICMD(mf, mf->icmd.ctrl_addr, &reg, return ME_ICMD_STATUS_CR_FAIL);
     return translate_status(EXTRACT(reg, STATUS_BITOFF, STATUS_BITLEN));
 }
@@ -306,7 +298,6 @@ static int get_status(mfile *mf) {
  */
 static int icmd_is_cmd_ifc_ready(mfile *mf) {
     u_int32_t reg;
-    DBG_PRINTF("-D- in icmd_is_cmd_ifc_ready()\n");
     if (MREAD4(mf, mf->icmd.static_cfg_not_done_addr, &reg)) return ME_ICMD_STATUS_CR_FAIL;
     u_int32_t bit_val = EXTRACT(reg, mf->icmd.static_cfg_not_done_offs, 1);
     /* adrianc: for SWITCHIB the polarity of this bit is opposite than CONNECTIB/CONNECTX4
@@ -334,11 +325,15 @@ int icmd_clear_semaphore(mfile *mf) {
 	if ((ret = icmd_open(mf))) {
 		return ret;
 	}
+
     MWRITE4_SEMAPHORE(mf, mf->icmd.semaphore_addr, 0, return ME_ICMD_STATUS_CR_FAIL);
     mf->icmd.took_semaphore = 0;
     return ME_OK;
 }
 
+/*
+ * icmd_take_semaphore
+ */
 /*
  * icmd_take_semaphore
  */
@@ -353,7 +348,7 @@ static int icmd_take_semaphore_com(mfile *mf, u_int32_t expected_read_val)
          if (++retries > 256) {
              return ME_ICMD_STATUS_SEMAPHORE_TO;
          }
-         if (mf->supp_fw_ifc) {
+         if (mf->vsec_supp) {
              //write expected val before reading it
              MWRITE4_SEMAPHORE(mf, mf->icmd.semaphore_addr, expected_read_val, return ME_ICMD_STATUS_CR_FAIL);
          }
@@ -373,18 +368,19 @@ int icmd_take_semaphore(mfile *mf)
 {
     // open icmd interface by demand
     int ret;
+    static u_int32_t pid = 0;
     if ((ret = icmd_open(mf))) {
         return ret;
     }
-    if (!mf->supp_fw_ifc) {
+
+    if (mf->vsec_supp) {
+        if (!pid) {
+            pid = getpid();
+        }
+        return icmd_take_semaphore_com(mf, pid);
+    } else {
         return icmd_take_semaphore_com(mf, 0);
     }
-
-    static u_int32_t pid = 0;
-    if (!pid) {
-        pid = getpid();
-    }
-    return icmd_take_semaphore_com(mf, pid);
 }
 
 int icmd_send_command(mfile    *mf,
@@ -453,6 +449,13 @@ cleanup:
     return ret;
 }
 
+
+static int icmd_init_cr(mfile *mf)
+{
+    (void)mf;
+    return ME_NOT_IMPLEMENTED;
+}
+
 static int icmd_init_vcr(mfile* mf)
 {
      mf->icmd.cmd_addr = VCR_CMD_ADDR;
@@ -474,23 +477,34 @@ static int icmd_init_vcr(mfile* mf)
      return ME_OK;
 }
 
+
 int icmd_open(mfile *mf)
 {
     if (mf->icmd.icmd_opened) {
         return ME_OK;
     }
+
     mf->icmd.took_semaphore = 0;
-    // check if we support icmd in virtual CR-Space
-    if (mf->supp_fw_ifc) {
+    // attempt to open via CR-Space
+#if defined(MST_UL) && !defined(MST_UL_ICMD)
+    if (mf->vsec_supp) {
         return icmd_init_vcr(mf);
     }
+    // ugly hack avoid compiler warrnings
+    if (0) icmd_init_cr(mf);
     return ME_ICMD_NOT_SUPPORTED;
+#else
+    if (mf->vsec_supp) {
+        return icmd_init_vcr(mf);
+    } else {
+        return icmd_init_cr(mf);
+    }
+#endif
 }
 
 /*
  * icmd_close
  */
-
 void icmd_close(mfile *mf) {
     if (mf) {
         if (mf->icmd.took_semaphore)

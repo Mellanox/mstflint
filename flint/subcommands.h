@@ -125,7 +125,7 @@ protected:
                                         guid_t* old_guids, guid_t* old_macs, bool printGuids,\
                                         bool printMacs, bool printUids, int guidNum);
     bool checkGuidsFlags(chip_type_t ct, u_int16_t devType, u_int8_t fwType,
-            bool guidsSpecified, bool macsSpecified, bool uidsSpecified);
+            bool guidsSpecified, bool macsSpecified, bool uidsSpecified, bool ibDev, bool ethDev);
     void printMissingGuidErr(bool ibDev, bool ethDev, bool bxDev);
 
     bool extractUIDArgs(std::vector<string>& cmdArgs, u_int8_t& numOfGuids, u_int8_t& stepSize);
@@ -138,9 +138,6 @@ protected:
     inline void closeLog() {close_log();}
     //print errors to an err buff, log if needed and stdout
     void reportErr(bool shouldPrint, const char *format, ...);
-
-
-    bool fwVerLessThan(const u_int16_t r1[3], const u_int16_t r2[3]);
 
     bool writeToFile(string filePath, const std::vector<u_int8_t>& buff);
 
@@ -298,7 +295,9 @@ public:
 class SmgSubCommand : public SubCommand
 {
 private:
-    fs3_guid_t _baseGuid;
+    fs3_uid_t _baseGuid;
+    fw_info_t _info;
+    FwOperations* _ops;
 public:
     SmgSubCommand();
     ~SmgSubCommand();

@@ -45,6 +45,7 @@ bool Fs2Operations::FwInit()
 {
     FwInitCom();
     memset(&_fs2ImgInfo, 0, sizeof(_fs2ImgInfo));
+    _fwImgInfo.fwType = FIT_FS2;
     return true;
 }
 
@@ -1487,7 +1488,7 @@ bool Fs2Operations::FwReadRom(std::vector<u_int8_t>& romSect)
     return true;
 }
 
-bool Fs2Operations::FwSetMFG(fs3_guid_t baseGuid, PrintCallBack callBackFunc)
+bool Fs2Operations::FwSetMFG(fs3_uid_t baseGuid, PrintCallBack callBackFunc)
 {
     // avoid compiler warrnings
     (void)baseGuid;

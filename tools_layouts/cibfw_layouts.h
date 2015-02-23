@@ -1,38 +1,20 @@
-/*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+
+/*                  - Mellanox Confidential and Proprietary -
  *
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
- * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
- * OpenIB.org BSD license below:
+ *  Copyright (C) 2010-2011, Mellanox Technologies Ltd.  ALL RIGHTS RESERVED.
  *
- *     Redistribution and use in source and binary forms, with or
- *     without modification, are permitted provided that the following
- *     conditions are met:
- *
- *      - Redistributions of source code must retain the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer.
- *
- *      - Redistributions in binary form must reproduce the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ *  Except as specifically permitted herein, no portion of the information,
+ *  including but not limited to object code and source code, may be reproduced,
+ *  modified, distributed, republished or otherwise exploited in any form or by
+ *  any means for any purpose without the prior written permission of Mellanox
+ *  Technologies Ltd. Use of software subject to the terms and conditions
+ *  detailed in the file "LICENSE.txt".
  *
  */
+ 
 
 /***
- *** This file was generated at "2014-11-12 13:19:17"
+ *** This file was generated at "2015-01-22 18:18:54"
  *** by:
  ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/cibfw/cibfw.adb --file-prefix cibfw --prefix cibfw_
  ***/
@@ -263,10 +245,16 @@ struct cibfw_mfg_info {
 	/* 0.24 - 16.23 */
 	 char psid[17];
 /*---------------- DWORD[7] (Offset 0x1c) ----------------*/
-	/* Description - When this bit is set, the GUIDs should eb taken from the device_info node.
+	/* Description - When this bit is set, the GUIDs should be taken from the device_info node.
 When this bit is cleared, the GUIDs should be taken from the mfg_info node. */
 	/* 28.0 - 28.0 */
 	 u_int8_t guids_override_en;
+	/* Description - MFG_INFO section minor version */
+	/* 28.16 - 28.23 */
+	 u_int8_t minor_version;
+	/* Description - MFG_INFO section major version */
+	/* 28.24 - 32.31 */
+	 u_int8_t major_version;
 /*---------------- DWORD[8] (Offset 0x20) ----------------*/
 	/* Description -  */
 	/* 32.0 - 96.31 */

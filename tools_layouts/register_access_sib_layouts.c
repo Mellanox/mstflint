@@ -1,37 +1,20 @@
-/*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+
+/*                  - Mellanox Confidential and Proprietary -
  *
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
- * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
- * OpenIB.org BSD license below:
+ *  Copyright (C) 2010-2011, Mellanox Technologies Ltd.  ALL RIGHTS RESERVED.
  *
- *     Redistribution and use in source and binary forms, with or
- *     without modification, are permitted provided that the following
- *     conditions are met:
- *
- *      - Redistributions of source code must retain the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer.
- *
- *      - Redistributions in binary form must reproduce the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ *  Except as specifically permitted herein, no portion of the information,
+ *  including but not limited to object code and source code, may be reproduced,
+ *  modified, distributed, republished or otherwise exploited in any form or by
+ *  any means for any purpose without the prior written permission of Mellanox
+ *  Technologies Ltd. Use of software subject to the terms and conditions
+ *  detailed in the file "LICENSE.txt".
  *
  */
+ 
+
 /***
- *** This file was generated at "2014-11-12 13:18:59"
+ *** This file was generated at "2015-01-22 18:18:34"
  *** by:
  ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/register_access/register_access_sib.adb --file-prefix register_access_sib --prefix register_access_sib_
  ***/
@@ -460,5 +443,178 @@ int register_access_sib_mgir_size(){
 
 void register_access_sib_mgir_dump(const struct register_access_sib_mgir *ptr_struct, FILE* file) {
 	register_access_sib_mgir_print(ptr_struct, file, 0);
+}
+
+void register_access_sib_mtmp_pack(const struct register_access_sib_mtmp *ptr_struct, u_int8_t* ptr_buff){
+	u_int32_t offset;
+	int i=0;
+	(void)offset;
+	(void)i;
+	(void)ptr_struct;
+	(void)ptr_buff;
+
+	offset=25;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 7, (u_int32_t)ptr_struct->sensor_index);
+
+	offset=0;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->internal_diodes_query);
+
+	offset=48;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->temperature);
+
+	offset=80;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->max_temperture);
+
+	offset=65;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->mtr);
+
+	offset=64;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->mte);
+
+	offset=112;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->temperature_threshold_hi);
+
+	offset=96;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 2, (u_int32_t)ptr_struct->tee);
+
+	offset=144;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->temperature_threshold_lo);
+
+	offset=160;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int64_t)ptr_struct->name_lo);
+
+	offset=192;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int64_t)ptr_struct->name_hi);
+
+}
+
+void register_access_sib_mtmp_unpack(struct register_access_sib_mtmp *ptr_struct, const u_int8_t* ptr_buff){
+	u_int32_t offset;
+	int i=0;
+	(void)offset;
+	(void)i;
+	(void)ptr_struct;
+	(void)ptr_buff;
+
+	offset=25;
+	ptr_struct->sensor_index = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 7);
+
+	offset=0;
+	ptr_struct->internal_diodes_query = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset=48;
+	ptr_struct->temperature = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+
+	offset=80;
+	ptr_struct->max_temperture = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+
+	offset=65;
+	ptr_struct->mtr = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset=64;
+	ptr_struct->mte = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset=112;
+	ptr_struct->temperature_threshold_hi = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+
+	offset=96;
+	ptr_struct->tee = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 2);
+
+	offset=144;
+	ptr_struct->temperature_threshold_lo = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+
+	offset=160;
+	ptr_struct->name_lo = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+
+	offset=192;
+	ptr_struct->name_hi = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+
+}
+
+void register_access_sib_mtmp_print(const struct register_access_sib_mtmp *ptr_struct, FILE* file, int indent_level){
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "======== mtmp ========\n");
+	int i=0;
+	(void)i;(void)ptr_struct;
+	(void)file;
+	(void)indent_level;
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "sensor_index         : "UH_FMT"\n", ptr_struct->sensor_index);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "internal_diodes_query : "UH_FMT"\n", ptr_struct->internal_diodes_query);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "temperature          : "UH_FMT"\n", ptr_struct->temperature);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "max_temperture       : "UH_FMT"\n", ptr_struct->max_temperture);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "mtr                  : "UH_FMT"\n", ptr_struct->mtr);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "mte                  : "UH_FMT"\n", ptr_struct->mte);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "temperature_threshold_hi : "UH_FMT"\n", ptr_struct->temperature_threshold_hi);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "tee                  : "UH_FMT"\n", ptr_struct->tee);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "temperature_threshold_lo : "UH_FMT"\n", ptr_struct->temperature_threshold_lo);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "name_lo              : "U32H_FMT"\n", ptr_struct->name_lo);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "name_hi              : "U32H_FMT"\n", ptr_struct->name_hi);
+
+}
+
+int register_access_sib_mtmp_size(){
+	 return 28;
+}
+
+void register_access_sib_mtmp_dump(const struct register_access_sib_mtmp *ptr_struct, FILE* file) {
+	register_access_sib_mtmp_print(ptr_struct, file, 0);
+}
+
+void register_access_sib_register_access_sib_Nodes_pack(const union register_access_sib_register_access_sib_Nodes *ptr_struct, u_int8_t* ptr_buff)
+{
+	memcpy(ptr_buff, ptr_struct, 128);
+}
+
+void register_access_sib_register_access_sib_Nodes_unpack(union register_access_sib_register_access_sib_Nodes *ptr_struct, const u_int8_t* ptr_buff)
+{
+	memcpy(ptr_struct, ptr_buff, 128);
+}
+
+void register_access_sib_register_access_sib_Nodes_print(const union register_access_sib_register_access_sib_Nodes *ptr_struct, FILE* file, int indent_level){
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "======== register_access_sib_Nodes ========\n");
+	int i=0;
+	(void)i;(void)ptr_struct;
+	(void)file;
+	(void)indent_level;
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "mtmp:\n");
+	register_access_sib_mtmp_print(&(ptr_struct->mtmp), file, indent_level + 1);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "mgir:\n");
+	register_access_sib_mgir_print(&(ptr_struct->mgir), file, indent_level + 1);
+
+}
+
+int register_access_sib_register_access_sib_Nodes_size(){
+	 return 128;
+}
+
+void register_access_sib_register_access_sib_Nodes_dump(const union register_access_sib_register_access_sib_Nodes *ptr_struct, FILE* file) {
+	register_access_sib_register_access_sib_Nodes_print(ptr_struct, file, 0);
 }
 

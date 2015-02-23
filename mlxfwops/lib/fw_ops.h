@@ -41,6 +41,7 @@
 typedef f_prog_func_str VerifyCallBack;
 typedef f_prog_func     ProgressCallBack;
 typedef f_prog_func_str PrintCallBack;
+typedef fw_ver_info_t   FwVerInfo;
 
 typedef int (*PrintCallBackAdv) (int completion, char* str);
 
@@ -69,7 +70,7 @@ public:
     virtual ~FwOperations()  {};
     //virtual void print_type() {};
     virtual u_int8_t FwType() = 0;
-    static bool FwVerLessThan(u_int16_t r1[3], u_int16_t r2[3]);
+    static FwVerInfo FwVerLessThan(u_int16_t r1[3], u_int16_t r2[3], u_int8_t fwType);
     static bool IsFwSupportingRomModify(u_int16_t fw_ver[3]);
     static bool CntxEthOnly(u_int32_t devid);
     static void SetDevFlags(chip_type_t chipType, u_int32_t devType, fw_img_type_t fwType, bool &ibDev, bool &ethDev);
@@ -94,7 +95,7 @@ public:
 
     virtual bool FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc=(PrintCallBack)NULL, ProgressCallBack progressFunc=(ProgressCallBack)NULL) = 0;
 
-    virtual bool FwSetMFG(fs3_guid_t baseGuid, PrintCallBack callBackFunc=(PrintCallBack)NULL) = 0;
+    virtual bool FwSetMFG(fs3_uid_t baseGuid, PrintCallBack callBackFunc=(PrintCallBack)NULL) = 0;
     virtual bool FwSetMFG(guid_t baseGuid, PrintCallBack callBackFunc=(PrintCallBack)NULL) = 0;
     // use progressFunc when dealing with FS2 image and printFunc when dealing with FS3 image.
     virtual bool FwSetVSD(char* vsdStr, ProgressCallBack progressFunc=(ProgressCallBack)NULL, PrintCallBack printFunc=(PrintCallBack)NULL) = 0;
@@ -227,10 +228,10 @@ public:
             bool stripedImage; // default shuold be set to false unless working on striped image file
             bool macsSpecified;
             bool guidsSpecified;
-            bool uidsSpecified;
+            bool uidsSpecified; // valid for BridgeX and ConnectIB only
             std::vector<guid_t> userGuids;
-            u_int8_t numOfGUIDs; // number of GUIDs to allocate for each port. (FS3 image Only)
-            u_int8_t stepSize; // step size between GUIDs. (FS3 Image Only).
+            u_int8_t numOfGUIDs; // number of GUIDs to allocate for each port. keep zero for default. (FS3 image Only)
+            u_int8_t stepSize; // step size between GUIDs. keep zero for default. (FS3 Image Only)
         };
 
 protected:
@@ -250,7 +251,8 @@ protected:
         bool         magicPatternFound;
         bool         imageOk;
         bool         wasQueried;
-        u_int32_t     lastImageAddr;
+        u_int32_t    lastImageAddr;
+        fw_img_type_t fwType;
     };
     enum {
         OLD_CNTX_START_POS_SIZE = 6,

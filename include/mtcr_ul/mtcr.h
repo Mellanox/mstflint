@@ -1,33 +1,13 @@
-/*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+/*                  - Mellanox Confidential and Proprietary -
  *
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
- * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
- * OpenIB.org BSD license below:
+ *  Copyright (C) Jan 2013, Mellanox Technologies Ltd.  ALL RIGHTS RESERVED.
  *
- *     Redistribution and use in source and binary forms, with or
- *     without modification, are permitted provided that the following
- *     conditions are met:
- *
- *      - Redistributions of source code must retain the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer.
- *
- *      - Redistributions in binary form must reproduce the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ *  Except as specifically permitted herein, no portion of the information,
+ *  including but not limited to object code and source code, may be reproduced,
+ *  modified, distributed, republished or otherwise exploited in any form or by
+ *  any means for any purpose without the prior written permission of Mellanox
+ *  Technologies Ltd. Use of software subject to the terms and conditions
+ *  detailed in the file "LICENSE.txt".
  *
  */
 
@@ -49,15 +29,16 @@ typedef enum MError {
     ME_NOT_IMPLEMENTED,
     ME_SEM_LOCKED,
     ME_MEM_ERROR,
-    ME_PCI_READ_ERROR,
-    ME_PCI_WRITE_ERROR,
-    ME_PCI_SPACE_NOT_SUPPORTED,
-    ME_PCI_IFC_TOUT,
 
     ME_MAD_SEND_FAILED,
     ME_UNKOWN_ACCESS_TYPE,
     ME_UNSUPPORTED_DEVICE,
     ME_REG_NOT_SUPPORTED,
+
+    ME_PCI_READ_ERROR,
+    ME_PCI_WRITE_ERROR,
+    ME_PCI_SPACE_NOT_SUPPORTED,
+    ME_PCI_IFC_TOUT,
 
     // errors regarding REG_ACCESS
     ME_REG_ACCESS_OK = 0,
@@ -194,7 +175,7 @@ typedef enum mtcr_access_method {
     MTCR_ACCESS_ERROR  = 0x0,
     MTCR_ACCESS_MEMORY = 0x1,
     MTCR_ACCESS_CONFIG = 0x2,
-    MTCR_ACCESS_INBAND = 0x3,
+    MTCR_ACCESS_INBAND = 0x3
 } mtcr_access_method_t;
 /*
  * Read 4 bytes, return number of succ. read bytes or -1 on failure
@@ -290,8 +271,6 @@ const char* m_err2str(MError status);
 
 int mread_buffer(mfile *mf, unsigned int offset, u_int8_t* data, int byte_len);
 int mwrite_buffer(mfile *mf, unsigned int offset, u_int8_t* data, int byte_len);
-
-int msupp_fw_ifc_cap(mfile* mf);
 
 #ifdef __cplusplus
 }

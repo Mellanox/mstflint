@@ -43,6 +43,8 @@
 
 #define FS3_FLASH_SIZE 0x400000
 #define FS3_LOG_CHUNK_SIZE 21
+#define CX4_FLASH_SIZE 22
+#define CX4_LOG_CHUNK_SIZE 22
 
 #define FS3_DFLT_GUID_NUM_TO_ALLOCATE 8
 #define FS3_DFLT_GUID_STEP 1
@@ -80,8 +82,10 @@ const Fs3Operations::SectionInfo Fs3Operations::_fs3SectionsInfoArr[] = {
 
     {FS3_MFG_INFO,      MFG_INFO},
     {FS3_DEV_INFO,      "DEV_INFO"},
-    {FS3_NV_DATA,       "NV_DATA"},
+    {FS3_NV_DATA1,      "NV_DATA"},
     {FS3_VPD_R0,        "VPD_R0"},
+    {FS3_NV_DATA2,      "NV_DATA"},
+    {FS3_FW_NV_LOG,     "FW_NV_LOG"},
 };
 
 bool Fs3Operations::Fs3UpdateImgCache(u_int8_t *buff, u_int32_t addr, u_int32_t size)
@@ -146,17 +150,35 @@ bool Fs3Operations::CheckTocSignature(struct cibfw_itoc_header *itoc_header, u_i
 	                (int)sizeof(uids_context), (int)sizeof(cibfw_guids_context));\
 	    }\
 }
+
+#define CHECK_MFG_NEW_FORMAT(mfg_st)\
+        ((mfg_st.major_version == 1) && (mfg_st.minor_version == 0))
+#define CHECK_MFG_OLD_FORMAT(mfg_st)\
+        ((mfg_st.major_version == 0) && (mfg_st.minor_version == 0))
 bool Fs3Operations::GetMfgInfo(u_int8_t *buff)
 {
-    struct cibfw_mfg_info mfg_info;
-    cibfw_mfg_info_unpack(&mfg_info, buff);
+    // structs of the same size we can unpack either way
+    struct cibfw_mfg_info cib_mfg_info;
+    struct cx4fw_mfg_info cx4_mfg_info;
+
+    cibfw_mfg_info_unpack(&cib_mfg_info, buff);
     // cibfw_mfg_info_dump(&mfg_info, stdout);
-
-    CHECK_UID_STRUCTS_SIZE(_fs3ImgInfo.ext_info.orig_fs3_uids_info, mfg_info.guids);
-    memcpy(&_fs3ImgInfo.ext_info.orig_fs3_uids_info, &mfg_info.guids, sizeof(mfg_info.guids));
-    strcpy(_fs3ImgInfo.ext_info.orig_psid, mfg_info.psid);
-
-    _fs3ImgInfo.ext_info.guids_override_en = mfg_info.guids_override_en;
+    if (CHECK_MFG_NEW_FORMAT(cib_mfg_info)) {
+        cx4fw_mfg_info_unpack(&cx4_mfg_info, buff);
+        CHECK_UID_STRUCTS_SIZE(_fs3ImgInfo.ext_info.orig_fs3_uids_info.cx4_uids, cx4_mfg_info.guids);
+        memcpy(&_fs3ImgInfo.ext_info.orig_fs3_uids_info.cx4_uids, &cx4_mfg_info.guids, sizeof(cx4_mfg_info.guids));
+        strcpy(_fs3ImgInfo.ext_info.orig_psid, cx4_mfg_info.psid);
+        _fs3ImgInfo.ext_info.guids_override_en = cx4_mfg_info.guids_override_en;
+        _fs3ImgInfo.ext_info.orig_fs3_uids_info.valid_field = 1;
+    } else if (CHECK_MFG_OLD_FORMAT(cib_mfg_info)){
+        CHECK_UID_STRUCTS_SIZE(_fs3ImgInfo.ext_info.orig_fs3_uids_info.cib_uids, cib_mfg_info.guids);
+        memcpy(&_fs3ImgInfo.ext_info.orig_fs3_uids_info.cib_uids, &cib_mfg_info.guids, sizeof(cib_mfg_info.guids));
+        strcpy(_fs3ImgInfo.ext_info.orig_psid, cib_mfg_info.psid);
+        _fs3ImgInfo.ext_info.guids_override_en = cib_mfg_info.guids_override_en;
+        _fs3ImgInfo.ext_info.orig_fs3_uids_info.valid_field = 0;
+    } else {
+        return errmsg("Unknown MFG_INFO format version (%d.%d).", cib_mfg_info.major_version, cib_mfg_info.minor_version);
+    }
     return true;
 
 }
@@ -190,16 +212,34 @@ bool Fs3Operations::GetImageInfo(u_int8_t *buff)
     return true;
 }
 
+#define CHECK_DEV_INFO_NEW_FORMAT(info_st)\
+        ((info_st.major_version == 2) && (info_st.minor_version == 0))
+#define CHECK_DEV_INFO_OLD_FORMAT(info_st)\
+        ((info_st.major_version == 1) && (info_st.minor_version == 0))
 bool Fs3Operations::GetDevInfo(u_int8_t *buff)
 {
-    struct cibfw_device_info dev_info;
-    cibfw_device_info_unpack(&dev_info, buff);
+    struct cibfw_device_info cib_dev_info;
+    struct cx4fw_device_info cx4_dev_info;
+    // same size, we can unpack to check version
+    cibfw_device_info_unpack(&cib_dev_info, buff);
     // cibfw_device_info_dump(&dev_info, stdout);
 
-    CHECK_UID_STRUCTS_SIZE(_fs3ImgInfo.ext_info.fs3_uids_info, dev_info.guids);
-    memcpy(&_fs3ImgInfo.ext_info.fs3_uids_info, &dev_info.guids, sizeof(dev_info.guids));
-    strcpy(_fwImgInfo.ext_info.vsd, dev_info.vsd);
-    _fwImgInfo.ext_info.vsd_sect_found = true;
+    if (CHECK_DEV_INFO_NEW_FORMAT(cib_dev_info)) {
+        cx4fw_device_info_unpack(&cx4_dev_info, buff);
+        CHECK_UID_STRUCTS_SIZE(_fs3ImgInfo.ext_info.fs3_uids_info.cx4_uids, cx4_dev_info.guids);
+        memcpy(&_fs3ImgInfo.ext_info.fs3_uids_info.cx4_uids, &cx4_dev_info.guids, sizeof(cx4_dev_info.guids));
+        strcpy(_fwImgInfo.ext_info.vsd, cx4_dev_info.vsd);
+        _fs3ImgInfo.ext_info.fs3_uids_info.valid_field = 1;
+        _fwImgInfo.ext_info.vsd_sect_found = true;
+    } else if (CHECK_DEV_INFO_OLD_FORMAT(cib_dev_info)){
+        CHECK_UID_STRUCTS_SIZE(_fs3ImgInfo.ext_info.fs3_uids_info.cib_uids, cib_dev_info.guids);
+        memcpy(&_fs3ImgInfo.ext_info.fs3_uids_info.cib_uids, &cib_dev_info.guids, sizeof(cib_dev_info.guids));
+        strcpy(_fwImgInfo.ext_info.vsd, cib_dev_info.vsd);
+        _fs3ImgInfo.ext_info.fs3_uids_info.valid_field = 0;
+        _fwImgInfo.ext_info.vsd_sect_found = true;
+    } else {
+        return errmsg("Unknown DEV_INFO format version (%d.%d).", cib_dev_info.major_version, cib_dev_info.minor_version);
+    }
     return true;
 }
 
@@ -214,9 +254,6 @@ bool Fs3Operations::GetRomInfo(u_int8_t *buff, u_int32_t size)
     rInfo.initRomsInfo(&_fwImgInfo.ext_info.roms_info);
     return true;
 }
-
-
-
 
 bool Fs3Operations::GetImageInfoFromSection(u_int8_t *buff, u_int8_t sect_type, u_int32_t sect_size, u_int8_t check_support_only)
 {
@@ -349,9 +386,9 @@ bool Fs3Operations::VerifyTOC(u_int32_t dtoc_addr, bool& bad_signature, VerifyCa
                         Fs3UpdateImgCache(buff, flash_addr, entry_size_in_bytes);
                         u_int32_t sect_crc = CalcImageCRC((u_int32_t*)buff, toc_entry.size);
 
-                        //printf("-D- flash_addr: %#x, toc_entry_size = %#x, actual sect = %#x, from itoc: %#x\n", flash_addr, toc_entry.size, sect_crc,
-                        //        toc_entry.section_crc);
-                        if (!DumpFs3CRCCheck(toc_entry.type, phys_addr, entry_size_in_bytes, sect_crc, toc_entry.section_crc, false, verifyCallBackFunc)) {
+                       // printf("-D- flash_addr: %#x, toc_entry_size = %#x, actual sect = %#x, from itoc: %#x np_crc = %s\n", flash_addr, toc_entry.size, sect_crc,
+                       //         toc_entry.section_crc, toc_entry.no_crc ? "yes" : "no");
+                        if (!DumpFs3CRCCheck(toc_entry.type, phys_addr, entry_size_in_bytes, sect_crc, toc_entry.section_crc, toc_entry.no_crc, verifyCallBackFunc)) {
                             if (toc_entry.device_data) {
                                 _badDevDataSections = true;
                             }
@@ -405,6 +442,46 @@ bool Fs3Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
     return Fs3Verify(verifyCallBackFunc, showItoc, queryOptions);
 }
 
+#define BOOT_RECORD_SIZE 0x10
+bool Fs3Operations::checkPreboot(u_int32_t* prebootBuff, u_int32_t size, VerifyCallBack verifyCallBackFunc)
+{
+    u_int32_t expectedCRC;
+    char outputLine[512] = {0};
+    u_int32_t startAddr = (_ioAccess->is_flash()) ? \
+            _ioAccess->get_phys_from_cont(0x0, _fwImgInfo.cntxLog2ChunkSize, (_fwImgInfo.imgStart != 0)) : 0x0;
+
+    sprintf(outputLine,"%s /0x%08x-0x%08x (0x%06x)/ (PREBOOT)", PRE_CRC_OUTPUT, startAddr, 0x34, size << 2);
+    expectedCRC = prebootBuff[size-1];
+    // calc CRC
+    Crc16        crc1, crc2;
+    CRC1n(crc1, prebootBuff, size);
+    crc1.finish();
+    // HACK: due to a bug in imgen this crc might not be calculated correctly(calculate in the "wrong way" for backward compat)
+    // crc1 represents the proper way to calculate the crc , crc2 represents the "wrong" way
+
+    // signature
+    CRCn(crc2, prebootBuff, 4);
+    // boot record
+    u_int8_t bootRecordBE[BOOT_RECORD_SIZE];
+    memcpy(bootRecordBE, &prebootBuff[4], BOOT_RECORD_SIZE);
+    TOCPUn(bootRecordBE, (BOOT_RECORD_SIZE  >> 2));
+    for (int i = 0; i < BOOT_RECORD_SIZE; i++) {
+        crc2 << bootRecordBE[i];
+    }
+    // the rest of the section (leave last dword out of the crc calc as its the expected crc)
+    CRC1n(crc2, &prebootBuff[8], size - 8);
+    crc2.finish();
+
+    // print results
+    if (expectedCRC != crc1.get() && expectedCRC != crc2.get()) {
+        report_callback(verifyCallBackFunc, "%s /0x%08x/ - wrong CRC (exp:0x%x, act:0x%x)\n",
+                outputLine, startAddr, expectedCRC, crc1.get());
+        return errmsg("Bad CRC");
+    }
+    report_callback(verifyCallBackFunc, "%s - OK\n", outputLine);
+    return true;
+}
+
 bool Fs3Operations::Fs3Verify(VerifyCallBack verifyCallBackFunc, bool show_itoc, struct QueryOptions queryOptions)
 {
     u_int32_t cntx_image_start[CNTX_START_POS_SIZE];
@@ -436,21 +513,19 @@ bool Fs3Operations::Fs3Verify(VerifyCallBack verifyCallBackFunc, bool show_itoc,
     Fs3UpdateImgCache((u_int8_t*)buff, 0, FS3_BOOT_START);
     TOCPUn(buff, FS3_BOOT_START_IN_DW);
 
-
-
     report_callback(verifyCallBackFunc, "\nFS3 failsafe image\n\n");
-    // Get BOOT2 - Only if quickQuery == false
-    offset += FS2_BOOT_START;
-    if (queryOptions.quickQuery == false) {
-        FS3_CHECKB2(0, offset, true, PRE_CRC_OUTPUT, verifyCallBackFunc);
-    }
-    offset += _fs3ImgInfo.bootSize;
+    // adrianc: we dont check Preboot section (or boot start) because of a variance in the calculation of the CRC
+
+    // Get BOOT2 -Get Only bootSize if quickQuery == true else read and check CRC of boot2 section as well
+    offset += FS3_BOOT_START;
+    FS3_CHECKB2(0, offset, !queryOptions.quickQuery, PRE_CRC_OUTPUT, verifyCallBackFunc);
+
+    offset += _fwImgInfo.bootSize;;
     _fs3ImgInfo.firstItocIsEmpty = false;
     // printf("-D- image_start = %#x\n", image_start);
     // Go over the ITOC entries
     u_int32_t sector_size = (_ioAccess->is_flash()) ? _ioAccess->get_sector_size() : FS3_DEFAULT_SECTOR_SIZE;
     offset = (offset % sector_size == 0) ? offset : (offset + sector_size - offset % 0x1000);
-
     while (offset < _ioAccess->get_size())
     {
         if (VerifyTOC(offset, bad_signature, verifyCallBackFunc, show_itoc, queryOptions)) {
@@ -474,12 +549,13 @@ bool Fs3Operations::Fs3IntQuery(bool readRom, bool quickQuery)
     struct QueryOptions queryOptions;
     queryOptions.readRom = readRom;
     queryOptions.quickQuery = quickQuery;
+
     if (!Fs3Verify((VerifyCallBack)NULL, 0, queryOptions)) {
         return false;
     }
-    // get chip type and device sw id, works only on device
+    // get chip type and device sw id, from device/image
+    const u_int32_t* swId = NULL;
     if (_ioAccess->is_flash()) {
-        const u_int32_t* swId;
         if (!getInfoFromHwDevid(_ioAccess->get_dev_id(), _fwImgInfo.ext_info.chip_type, &swId)) {
             return false;
         }
@@ -496,6 +572,15 @@ bool Fs3Operations::FwQuery(fw_info_t *fwInfo, bool readRom, bool isStripedImage
     if (!Fs3IntQuery(readRom)) {
         return false;
     }
+    //adrianc:  best effort to get chip_type for image on image since it can "theoretically" be used on more than one device , take the first one.
+    if (!_ioAccess->is_flash()) {
+        const u_int32_t* swId = NULL;
+        if (!getInfoFromHwDevid(_fwImgInfo.supportedHwId[0], _fwImgInfo.ext_info.chip_type, &swId)) {
+            return false;
+        }
+        _fwImgInfo.ext_info.dev_type = swId[0];
+    }
+
     memcpy(&(fwInfo->fw_info),  &(_fwImgInfo.ext_info),  sizeof(fw_info_com_t));
     memcpy(&(fwInfo->fs3_info), &(_fs3ImgInfo.ext_info), sizeof(fs3_info_t));
     fwInfo->fw_type = FIT_FS3;
@@ -512,6 +597,7 @@ bool Fs3Operations::FwInit()
 {
     FwInitCom();
     memset(&_fs3ImgInfo, 0, sizeof(_fs3ImgInfo));
+    _fwImgInfo.fwType = FIT_FS3;
     return true;
 }
 
@@ -563,6 +649,10 @@ bool Fs3Operations::GetMaxImageSize(u_int32_t flash_size, bool image_is_fs, u_in
 
 return true;
 }
+
+#define SUPPORTS_ISFU(chip_type) \
+    (chip_type == CT_CONNECT_IB || chip_type == CT_CONNECTX)
+
 bool Fs3Operations::BurnFs3Image(Fs3Operations &imageOps,
                                   ExtBurnParams& burnParams)
 {
@@ -658,8 +748,8 @@ bool Fs3Operations::BurnFs3Image(Fs3Operations &imageOps,
 
     // if we access without cache replacement or the burn was non failsafe, update YU bootloaders.
     // if we access with cache replacement notify currently running fw of new image start address to crspace (for SW reset)
-    //TODO: add SwitchIB, SwitchEN and ConnectX4 when we have support for ISFU
-    if (_fwImgInfo.ext_info.chip_type != CT_CONNECT_IB || !burnParams.burnFailsafe || f->get_ignore_cache_replacment()) {
+    //TODO: add SwitchIB, SwitchEN when we have support for ISFU
+    if (!SUPPORTS_ISFU(_fwImgInfo.ext_info.chip_type) || !burnParams.burnFailsafe || f->get_ignore_cache_replacment()) {
         boot_address_was_updated = f->update_boot_addr(new_image_start);
     } else {
         _isfuSupported = Fs3IsfuActivateImage(new_image_start);
@@ -917,11 +1007,12 @@ bool Fs3Operations::FwGetSection (u_int32_t sectType, std::vector<u_int8_t>& sec
     return true;
 }
 
-bool Fs3Operations::FwSetMFG(fs3_guid_t baseGuid, PrintCallBack callBackFunc)
+bool Fs3Operations::FwSetMFG(fs3_uid_t baseGuid, PrintCallBack callBackFunc)
 {
-    if (!baseGuid.num_of_guids || !baseGuid.step_size) {
-        return errmsg("invalid values for number_of_Guids(%d)/step_size(%d) should be: [1..255]", baseGuid.num_of_guids, baseGuid.step_size);
+    if (!baseGuid.base_guid_specified && !baseGuid.base_mac_specified) {
+        return errmsg("base GUID/MAC were not specified.");
     }
+
     if (!Fs3UpdateSection(&baseGuid, FS3_MFG_INFO, false, CMD_SET_MFG_GUIDS, callBackFunc)) {
         return false;
     }
@@ -931,13 +1022,13 @@ bool Fs3Operations::FwSetMFG(fs3_guid_t baseGuid, PrintCallBack callBackFunc)
 bool Fs3Operations::FwSetMFG(guid_t baseGuid, PrintCallBack callBackFunc)
 {
     // in FS3 default behavior when setting GUIDs / MFG is to assign 8 guids per port with step size of 1 between them.
-    fs3_guid_t bGuid = {baseGuid, FS3_DFLT_GUID_NUM_TO_ALLOCATE, FS3_DFLT_GUID_STEP};
+    fs3_uid_t bGuid = {baseGuid, 1, {0, 0}, 0, 0, 0, 1};
     return FwSetMFG(bGuid, callBackFunc);
 }
 
 bool Fs3Operations::FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc, ProgressCallBack progressFunc)
 {
-    fs3_guid_t usrGuid;
+    fs3_uid_t usrGuid;
     // Avoid Warning because there is no need for progressFunc
     (void)progressFunc;
     if (sgParam.userGuids.empty()) {
@@ -952,17 +1043,26 @@ bool Fs3Operations::FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc,
     	return errmsg("guids override is not set, cannot set device guids");
     }
 
-    if (sgParam.numOfGUIDs && sgParam.stepSize) {
-        // user requested to specify the step and num of guids to be allocated per port
-        usrGuid.num_of_guids = sgParam.numOfGUIDs;
-        usrGuid.step_size = sgParam.stepSize;
-    } else {
-        // default behavior num_of_guids=8 step_size=1
-        usrGuid.num_of_guids = FS3_DFLT_GUID_NUM_TO_ALLOCATE;
-        usrGuid.step_size = FS3_DFLT_GUID_STEP;
-    }
-    usrGuid.uid = sgParam.userGuids[0];
+    usrGuid.num_of_guids = sgParam.numOfGUIDs ? sgParam.numOfGUIDs : 0;
+    usrGuid.step_size = usrGuid.step_size ? sgParam.stepSize : 0;
 
+    usrGuid.base_guid_specified = false;
+    usrGuid.base_mac_specified = false;
+    usrGuid.set_mac_from_guid = false;
+
+    if (sgParam.guidsSpecified || sgParam.uidsSpecified) {
+        usrGuid.base_guid_specified = true;
+        usrGuid.base_guid = sgParam.userGuids[0];
+        usrGuid.set_mac_from_guid = sgParam.uidsSpecified ? true : false;
+    }
+    if (sgParam.macsSpecified) {
+        usrGuid.base_mac_specified = true;
+        usrGuid.base_mac = sgParam.userGuids[1];
+    }
+
+    if (!usrGuid.base_guid_specified && !usrGuid.base_mac_specified) {
+        return errmsg("base GUID/MAC were not specified.");
+    }
     if (!Fs3UpdateSection(&usrGuid, FS3_DEV_INFO, true, CMD_SET_GUIDS, callBackFunc)) {
         return false;
     }
@@ -1244,49 +1344,118 @@ bool Fs3Operations::Fs3GetItocInfo(struct toc_info *tocArr, int num_of_itocs, fs
     return errmsg("ITOC entry type: %s (%d) not found", GetSectionNameByType(sect_type), sect_type);
 }
 
-bool Fs3Operations::Fs3UpdateMfgUidsSection(struct toc_info *curr_toc, std::vector<u_int8_t>  section_data, fs3_guid_t base_uid,
+bool Fs3Operations::Fs3UpdateMfgUidsSection(struct toc_info *curr_toc, std::vector<u_int8_t>  section_data, fs3_uid_t base_uid,
                                             std::vector<u_int8_t>  &newSectionData)
 {
-    struct cibfw_mfg_info mfg_info;
-    cibfw_mfg_info_unpack(&mfg_info, (u_int8_t*)&section_data[0]);
+    struct cibfw_mfg_info cib_mfg_info;
+    struct cx4fw_mfg_info cx4_mfg_info;
+    cibfw_mfg_info_unpack(&cib_mfg_info, (u_int8_t*)&section_data[0]);
 
-    Fs3ChangeUidsFromBase(base_uid, &mfg_info.guids);
+    if (CHECK_MFG_OLD_FORMAT(cib_mfg_info)) {
+        if (!Fs3ChangeUidsFromBase(base_uid, cib_mfg_info.guids)) {
+            return false;
+        }
+    } else if (CHECK_MFG_NEW_FORMAT(cib_mfg_info)) {
+        cx4fw_mfg_info_unpack(&cx4_mfg_info, (u_int8_t*)&section_data[0]);
+        if (!Fs3ChangeUidsFromBase(base_uid, cx4_mfg_info.guids)) {
+            return false;
+        }
+    } else {
+        return errmsg("Unknown MFG_INFO format version (%d.%d).", cib_mfg_info.major_version, cib_mfg_info.minor_version);
+    }
     newSectionData = section_data;
     memset((u_int8_t*)&newSectionData[0], 0, curr_toc->toc_entry.size * 4);
-    cibfw_mfg_info_pack(&mfg_info, (u_int8_t*)&newSectionData[0]);
+
+    if (CHECK_MFG_NEW_FORMAT(cib_mfg_info)) {
+        cx4fw_mfg_info_pack(&cx4_mfg_info, (u_int8_t*)&newSectionData[0]);
+    } else {
+        cibfw_mfg_info_pack(&cib_mfg_info, (u_int8_t*)&newSectionData[0]);
+    }
     return true;
 }
 
-bool Fs3Operations::Fs3ChangeUidsFromBase(fs3_guid_t base_uid, struct cibfw_guids *guids)
+#define GUID_TO_64(guid_st) \
+        (guid_st.l | (u_int64_t)guid_st.h << 32)
+
+bool Fs3Operations::Fs3ChangeUidsFromBase(fs3_uid_t base_uid, struct cibfw_guids& guids)
 {
-    u_int64_t base_uid_64 =  base_uid.uid.l | (u_int64_t)base_uid.uid.h << 32;
-    // Should be put somewhere in common place
-    u_int64_t base_mac_64 =  ((u_int64_t)base_uid.uid.l & 0xffffff) | (((u_int64_t)base_uid.uid.h & 0xffffff00) << 16);
+    /*
+     * On ConnectIB and SwitchIB we derrive macs and guids from a single base_guid
+     */
+    u_int64_t base_guid_64;
+    u_int64_t base_mac_64;
+    base_guid_64 = GUID_TO_64(base_uid.base_guid);
+    base_mac_64 = (((u_int64_t)base_uid.base_guid.l & 0xffffff) | (((u_int64_t)base_uid.base_guid.h & 0xffffff00) << 16));
+    guids.guids[0].uid = base_guid_64;
+    guids.guids[0].num_allocated = base_uid.num_of_guids ? base_uid.num_of_guids : guids.guids[0].num_allocated;
+    guids.guids[0].step = base_uid.step_size ? base_uid.step_size : guids.guids[0].step;
 
-    guids->guids[0].uid = base_uid_64;
-    guids->guids[0].num_allocated = base_uid.num_of_guids;
-    guids->guids[0].step = base_uid.step_size;
-    guids->guids[1].uid = base_uid_64 + (base_uid.num_of_guids * base_uid.step_size);
-    guids->guids[1].num_allocated = base_uid.num_of_guids;
-    guids->guids[1].step = base_uid.step_size;
-    guids->macs[0].uid = base_mac_64;
-    guids->macs[0].num_allocated = base_uid.num_of_guids;
-    guids->macs[0].step = base_uid.step_size;
-    guids->macs[1].uid = base_mac_64 + (base_uid.num_of_guids * base_uid.step_size);
-    guids->macs[1].num_allocated = base_uid.num_of_guids;
-    guids->macs[1].step = base_uid.step_size;
+    guids.guids[1].uid = base_guid_64 + (guids.guids[0].num_allocated * guids.guids[0].step);
+    guids.guids[1].num_allocated = base_uid.num_of_guids ? base_uid.num_of_guids : guids.guids[1].num_allocated;
+    guids.guids[1].step = base_uid.step_size ? base_uid.step_size : guids.guids[1].step;
+
+    guids.macs[0].uid = base_mac_64;
+    guids.macs[0].num_allocated = base_uid.num_of_guids ? base_uid.num_of_guids : guids.macs[0].num_allocated;
+    guids.macs[0].step = base_uid.step_size ? base_uid.step_size : guids.macs[0].step;
+
+    guids.macs[1].uid = base_mac_64 + (guids.macs[0].num_allocated * guids.macs[0].step);
+    guids.macs[1].num_allocated = base_uid.num_of_guids ? base_uid.num_of_guids : guids.macs[1].num_allocated;
+    guids.macs[1].step = base_uid.step_size ? base_uid.step_size : guids.macs[1].step;
     return true;
 }
 
-bool Fs3Operations::Fs3UpdateUidsSection(struct toc_info *curr_toc, std::vector<u_int8_t>  section_data, fs3_guid_t base_uid,
+bool Fs3Operations::Fs3ChangeUidsFromBase(fs3_uid_t base_uid, struct cx4fw_guids& guids)
+{
+    /*
+     * on ConnectX4 we derrive guids from base_guid and macs from base_mac
+     */
+    u_int64_t base_guid_64;
+    u_int64_t base_mac_64;
+
+    base_guid_64 = base_uid.base_guid_specified ? GUID_TO_64(base_uid.base_guid) : guids.guids.uid;
+    base_mac_64 = base_uid.base_mac_specified ? GUID_TO_64(base_uid.base_mac) : guids.macs.uid;
+    if (base_uid.set_mac_from_guid && base_uid.base_guid_specified) {
+        // in case we derrive mac from guid
+        base_mac_64 = (((u_int64_t)base_uid.base_guid.l & 0xffffff) | (((u_int64_t)base_uid.base_guid.h & 0xffffff00) << 16));
+    }
+
+    guids.guids.uid = base_guid_64;
+    guids.guids.num_allocated = base_uid.num_of_guids ? base_uid.num_of_guids : guids.guids.num_allocated;
+    guids.guids.step = base_uid.step_size ? base_uid.step_size : guids.guids.step;
+
+    guids.macs.uid = base_mac_64;
+    guids.macs.num_allocated = base_uid.num_of_guids ? base_uid.num_of_guids : guids.macs.num_allocated;
+    guids.macs.step = base_uid.step_size ? base_uid.step_size : guids.macs.step ;
+    return true;
+}
+
+bool Fs3Operations::Fs3UpdateUidsSection(struct toc_info *curr_toc, std::vector<u_int8_t>  section_data, fs3_uid_t base_uid,
         std::vector<u_int8_t>  &newSectionData)
 {
-    struct cibfw_device_info dev_info;
-    cibfw_device_info_unpack(&dev_info, (u_int8_t*)&section_data[0]);
-    Fs3ChangeUidsFromBase(base_uid, &dev_info.guids);
+    struct cibfw_device_info cib_dev_info;
+    struct cx4fw_device_info cx4_dev_info;
+    cibfw_device_info_unpack(&cib_dev_info, (u_int8_t*)&section_data[0]);
+
+    if (CHECK_DEV_INFO_OLD_FORMAT(cib_dev_info)) {
+        if (!Fs3ChangeUidsFromBase(base_uid, cib_dev_info.guids)) {
+            return false;
+        }
+    } else if (CHECK_DEV_INFO_NEW_FORMAT(cib_dev_info)) {
+        cx4fw_device_info_unpack(&cx4_dev_info, (u_int8_t*)&section_data[0]);
+        if (!Fs3ChangeUidsFromBase(base_uid, cx4_dev_info.guids)) {
+            return false;
+        }
+    } else {
+        return errmsg("Unknown DEV_INFO format version (%d.%d).", cib_dev_info.major_version, cib_dev_info.minor_version);
+    }
     newSectionData = section_data;
     memset((u_int8_t*)&newSectionData[0], 0, curr_toc->toc_entry.size * 4);
-    cibfw_device_info_pack(&dev_info, (u_int8_t*)&newSectionData[0]);
+
+    if (CHECK_DEV_INFO_NEW_FORMAT(cib_dev_info)) {
+        cx4fw_device_info_pack(&cx4_dev_info, (u_int8_t*)&newSectionData[0]);
+    } else {
+        cibfw_device_info_pack(&cib_dev_info, (u_int8_t*)&newSectionData[0]);
+    }
     return true;
 }
 
@@ -1445,14 +1614,14 @@ bool  Fs3Operations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, b
      }
 
     if (sect_type == FS3_MFG_INFO) {
-        fs3_guid_t base_uid = *(fs3_guid_t*)new_info;
+        fs3_uid_t base_uid = *(fs3_uid_t*)new_info;
         type_msg = "GUID";
         if (!Fs3UpdateMfgUidsSection(curr_toc, curr_toc->section_data, base_uid, newUidSection)) {
             return false;
         }
     } else if (sect_type == FS3_DEV_INFO) {
         if (cmd_type == CMD_SET_GUIDS) {
-            fs3_guid_t base_uid = *(fs3_guid_t*)new_info;
+            fs3_uid_t base_uid = *(fs3_uid_t*)new_info;
             type_msg = "GUID";
             if (!Fs3UpdateUidsSection(curr_toc, curr_toc->section_data, base_uid, newUidSection)) {
                 return false;
@@ -1602,7 +1771,6 @@ bool Fs3Operations::reburnItocSection(PrintCallBack callBackFunc) {
     // Itoc section is failsafe (two sectors after boot section are reserved for itoc entries)
     u_int32_t oldItocAddr = _fs3ImgInfo.itocAddr;
     u_int32_t newItocAddr = (_fs3ImgInfo.firstItocIsEmpty) ? (_fs3ImgInfo.itocAddr - sector_size) :  (_fs3ImgInfo.itocAddr + sector_size);
-
     // Update new ITOC
     u_int32_t itocSize = (_fs3ImgInfo.numOfItocs + 1 ) * CIBFW_ITOC_ENTRY_SIZE + CIBFW_ITOC_HEADER_SIZE;
     u_int8_t *p = new u_int8_t[itocSize];
@@ -1635,9 +1803,13 @@ bool Fs3Operations::reburnItocSection(PrintCallBack callBackFunc) {
 #define PUSH_DEV_DATA(vec)\
         vec.push_back(FS3_MFG_INFO);\
         vec.push_back(FS3_DEV_INFO);\
-        vec.push_back(FS3_NV_DATA);\
+        vec.push_back(FS3_NV_DATA1);\
+        vec.push_back(FS3_NV_DATA2);\
+        vec.push_back(FS3_FW_NV_LOG);\
         vec.push_back(FS3_VPD_R0)
 #define POP_DEV_DATA(vec)\
+        vec.pop_back();\
+        vec.pop_back();\
         vec.pop_back();\
         vec.pop_back();\
         vec.pop_back();\

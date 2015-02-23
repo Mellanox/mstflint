@@ -59,6 +59,8 @@ struct image_context {
 
 MLXFWOP_API int MLXFWOPCALL mlxfw_open_device(mlxfwops_t** mlxfwops_p, char *device_name);
 
+MLXFWOP_API int MLXFWOPCALL mlxfw_open_device_verbose(mlxfwops_t** mlxfwops_p, char *device_name, char* buf, int buf_size);
+
 MLXFWOP_API int MLXFWOPCALL mlxfw_open_image(mlxfwops_t** mlxfwops_p, char *file_name, char *psid);
 
 MLXFWOP_API int MLXFWOPCALL mlxfw_open_buffer(mlxfwops_t** mlxfwops_p, void* buffer, u_int32_t size, char *psid);
@@ -82,8 +84,6 @@ MLXFWOP_API int MLXFWOPCALL mlxfw_verify(mlxfwops_t* mlxfwops);
 MLXFWOP_API int MLXFWOPCALL mlxfw_query(mlxfwops_t* mlxfwops, fw_info_t* fw_query);
 
 MLXFWOP_API int MLXFWOPCALL mlxfw_type_match(mlxfwops_t* dev_mlxfwops, mlxfwops_t* img_mlxfwops);
-
-MLXFWOP_API int MLXFWOPCALL mlxfw_fw_ver_less_than(u_int16_t ver_a[3], u_int16_t ver_b[3]);
 
 MLXFWOP_API const char* MLXFWOPCALL mlxfw_exp_rom_type_to_str(u_int16_t type);
 

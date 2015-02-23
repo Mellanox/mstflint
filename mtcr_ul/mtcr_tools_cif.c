@@ -31,7 +31,6 @@
  *
  */
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -410,8 +409,8 @@ int tools_cmdif_send_mbox_command_int(mfile* mf,
     mpci_change(mf);
     //take semaphore
     if (tools_cmdif_flash_lock(mf, 1)) {
-        rc = ME_SEM_LOCKED;
-        goto exitrc;
+        mpci_change(mf);
+        return ME_SEM_LOCKED;
     }
 
     // write to mailbox if needed
@@ -473,7 +472,6 @@ int tools_cmdif_send_mbox_command_int(mfile* mf,
 cleanup:
     tools_cmdif_flash_lock(mf, 0);
     //printf("-D- rc in cmdif: 0x%x\n", rc);
-exitrc:
     mpci_change(mf);
     return rc;
 }

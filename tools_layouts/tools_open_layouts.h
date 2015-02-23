@@ -1,38 +1,20 @@
-/*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+
+/*                  - Mellanox Confidential and Proprietary -
  *
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
- * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
- * OpenIB.org BSD license below:
+ *  Copyright (C) 2010-2011, Mellanox Technologies Ltd.  ALL RIGHTS RESERVED.
  *
- *     Redistribution and use in source and binary forms, with or
- *     without modification, are permitted provided that the following
- *     conditions are met:
- *
- *      - Redistributions of source code must retain the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer.
- *
- *      - Redistributions in binary form must reproduce the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ *  Except as specifically permitted herein, no portion of the information,
+ *  including but not limited to object code and source code, may be reproduced,
+ *  modified, distributed, republished or otherwise exploited in any form or by
+ *  any means for any purpose without the prior written permission of Mellanox
+ *  Technologies Ltd. Use of software subject to the terms and conditions
+ *  detailed in the file "LICENSE.txt".
  *
  */
+ 
 
 /***
- *** This file was generated at "2014-11-12 13:19:54"
+ *** This file was generated at "2015-01-22 18:19:26"
  *** by:
  ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/tools_open/tools_open.adb --file-prefix tools_open --prefix tools_open_
  ***/
@@ -355,6 +337,128 @@ struct tools_open_sriov {
 };
 
 /* Description -   */
+/* Size in bytes - 4 */
+struct tools_open_preboot_flow_ctrl {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Per priority bit mask. For each priority:
+0  ignore incoming PFC frames regarding this priority.
+1  respect incoming PFC frames on this priority.
+ */
+	/* 0.0 - 0.7 */
+	 u_int8_t pfcrx;
+	/* Description - Per priority bit mask. For each priority:
+
+0  no PFC pause frames generation for this priority.
+1  generate PFC pause frames for this priority.
+PFC and global pauses are mutually exclusive.
+ */
+	/* 0.8 - 0.15 */
+	 u_int8_t pfctx;
+	/* Description - For future DCBX support. */
+	/* 0.29 - 0.29 */
+	 u_int8_t pfc_willing;
+	/* Description - 0  ignore received pause frames
+1  respect received pause frames
+ */
+	/* 0.30 - 0.30 */
+	 u_int8_t pprx;
+	/* Description - 0  no pause frame generation.
+1  generate pause frames.
+PFC and global pauses are mutually exclusive.
+ */
+	/* 0.31 - 4.31 */
+	 u_int8_t pptx;
+};
+
+/* Description -   */
+/* Size in bytes - 4 */
+struct tools_open_boot_settings {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - VLAN ID for network boot. */
+	/* 0.0 - 0.11 */
+	 u_int16_t boot_vlan;
+	/* Description - 0  None  disable legacy boot.
+1  PXE (DHCP/TFTP boot).
+2  iSCSI
+3  PXE + iSCSI
+4-255  Reserved
+ */
+	/* 0.16 - 0.23 */
+	 u_int8_t legacy_boot_protocol;
+	/* Description - Number of retries to attempt in case of boot failure.
+7 indicate indefinite retries.
+ */
+	/* 0.24 - 0.26 */
+	 u_int8_t boot_retry_conut;
+	/* Description - 1  Enable VLAN mode for network boot. */
+	/* 0.30 - 0.30 */
+	 u_int8_t boot_vlan_en;
+	/* Description - 0  disable boot option ROM: disables installation of the UNDI/16 driver. The option ROM is still required to expose CLP, UEFI and so on.
+1  enable boot option ROM
+ */
+	/* 0.31 - 4.31 */
+	 u_int8_t boot_option_rom_en;
+};
+
+/* Description -   */
+/* Size in bytes - 4 */
+struct tools_open_infiniband_boot_settings {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - P_Key to be used by PXE boot. */
+	/* 0.0 - 0.15 */
+	 u_int16_t boot_pkey;
+};
+
+/* Description -   */
+/* Size in bytes - 12 */
+struct tools_open_iscsi_settings {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Enable or disable whether the iSCSI target will appear as the first hard disk drive in the system. Currently not supported. */
+	/* 0.21 - 0.21 */
+	 u_int8_t target_as_first_hdd_en;
+	/* Description - Boot to iSCSI target after connection. 
+ 0  Enabled
+ 1  Disabled
+ 2 - One time disabled
+ 3 - Invalid setting
+ */
+	/* 0.22 - 0.23 */
+	 u_int8_t boot_to_target;
+	/* Description - Enable IPv6 auto-configuration through DHCP. Currently not supported. */
+	/* 0.24 - 0.24 */
+	 u_int8_t ipv6_auto_config_en;
+	/* Description - Enable VLAN mode for iSCSI. */
+	/* 0.26 - 0.26 */
+	 u_int8_t vlan_en;
+	/* Description - Enable the TCP timestamps option for iSCSI TCP connections. */
+	/* 0.27 - 0.27 */
+	 u_int8_t tcp_timestamps_en;
+	/* Description - Authenticate the target to the initiator using CHAP. */
+	/* 0.28 - 0.28 */
+	 u_int8_t chap_mutual_auth_en;
+	/* Description - Authenticate the initiator to the target using CHAP. */
+	/* 0.29 - 0.29 */
+	 u_int8_t chap_auth_en;
+	/* Description - Retrieve iSCSI parameters through DHCP. */
+	/* 0.30 - 0.30 */
+	 u_int8_t dhcp_iscsi_en;
+	/* Description - Retrieve IPv4 configuration for iSCSI through DHCP. */
+	/* 0.31 - 4.31 */
+	 u_int8_t ipv4_dhcp_en;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - VLAN number. Only valid when vlan_en is 1 */
+	/* 4.0 - 4.11 */
+	 u_int16_t vlan;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - Number of connection attempts to make if the iSCSI target is busy. Valid values are between 0 and 60. */
+	/* 8.0 - 8.7 */
+	 u_int8_t lun_busy_retry_count;
+	/* Description - Number of seconds to wait after the link comes up before sending packets over the network. */
+	/* 8.8 - 8.15 */
+	 u_int8_t link_up_delay_time;
+};
+
+/* Description -   */
 /* Size in bytes - 8 */
 struct tools_open_wol {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
@@ -412,6 +516,18 @@ union tools_open_nv_cfg {
 	/* Description -  */
 	/* 0.0 - 8.31 */
 	 struct tools_open_wol wol;
+	/* Description -  */
+	/* 0.0 - 12.31 */
+	 struct tools_open_iscsi_settings iscsi_settings;
+	/* Description -  */
+	/* 0.0 - 4.31 */
+	 struct tools_open_infiniband_boot_settings infiniband_boot_settings;
+	/* Description -  */
+	/* 0.0 - 4.31 */
+	 struct tools_open_boot_settings boot_settings;
+	/* Description -  */
+	/* 0.0 - 4.31 */
+	 struct tools_open_preboot_flow_ctrl preboot_flow_ctrl;
 	/* Description -  */
 	/* 0.0 - 4.31 */
 	 struct tools_open_sriov sriov;
@@ -551,6 +667,34 @@ void tools_open_sriov_print(const struct tools_open_sriov *ptr_struct, FILE* fil
 int tools_open_sriov_size();
 #define TOOLS_OPEN_SRIOV_SIZE    (0x4)
 void tools_open_sriov_dump(const struct tools_open_sriov *ptr_struct, FILE* file);
+/* preboot_flow_ctrl */
+void tools_open_preboot_flow_ctrl_pack(const struct tools_open_preboot_flow_ctrl *ptr_struct, u_int8_t* ptr_buff);
+void tools_open_preboot_flow_ctrl_unpack(struct tools_open_preboot_flow_ctrl *ptr_struct, const u_int8_t* ptr_buff);
+void tools_open_preboot_flow_ctrl_print(const struct tools_open_preboot_flow_ctrl *ptr_struct, FILE* file, int indent_level);
+int tools_open_preboot_flow_ctrl_size();
+#define TOOLS_OPEN_PREBOOT_FLOW_CTRL_SIZE    (0x4)
+void tools_open_preboot_flow_ctrl_dump(const struct tools_open_preboot_flow_ctrl *ptr_struct, FILE* file);
+/* boot_settings */
+void tools_open_boot_settings_pack(const struct tools_open_boot_settings *ptr_struct, u_int8_t* ptr_buff);
+void tools_open_boot_settings_unpack(struct tools_open_boot_settings *ptr_struct, const u_int8_t* ptr_buff);
+void tools_open_boot_settings_print(const struct tools_open_boot_settings *ptr_struct, FILE* file, int indent_level);
+int tools_open_boot_settings_size();
+#define TOOLS_OPEN_BOOT_SETTINGS_SIZE    (0x4)
+void tools_open_boot_settings_dump(const struct tools_open_boot_settings *ptr_struct, FILE* file);
+/* infiniband_boot_settings */
+void tools_open_infiniband_boot_settings_pack(const struct tools_open_infiniband_boot_settings *ptr_struct, u_int8_t* ptr_buff);
+void tools_open_infiniband_boot_settings_unpack(struct tools_open_infiniband_boot_settings *ptr_struct, const u_int8_t* ptr_buff);
+void tools_open_infiniband_boot_settings_print(const struct tools_open_infiniband_boot_settings *ptr_struct, FILE* file, int indent_level);
+int tools_open_infiniband_boot_settings_size();
+#define TOOLS_OPEN_INFINIBAND_BOOT_SETTINGS_SIZE    (0x4)
+void tools_open_infiniband_boot_settings_dump(const struct tools_open_infiniband_boot_settings *ptr_struct, FILE* file);
+/* iscsi_settings */
+void tools_open_iscsi_settings_pack(const struct tools_open_iscsi_settings *ptr_struct, u_int8_t* ptr_buff);
+void tools_open_iscsi_settings_unpack(struct tools_open_iscsi_settings *ptr_struct, const u_int8_t* ptr_buff);
+void tools_open_iscsi_settings_print(const struct tools_open_iscsi_settings *ptr_struct, FILE* file, int indent_level);
+int tools_open_iscsi_settings_size();
+#define TOOLS_OPEN_ISCSI_SETTINGS_SIZE    (0xc)
+void tools_open_iscsi_settings_dump(const struct tools_open_iscsi_settings *ptr_struct, FILE* file);
 /* wol */
 void tools_open_wol_pack(const struct tools_open_wol *ptr_struct, u_int8_t* ptr_buff);
 void tools_open_wol_unpack(struct tools_open_wol *ptr_struct, const u_int8_t* ptr_buff);
