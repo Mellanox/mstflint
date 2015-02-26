@@ -179,6 +179,25 @@ reg_access_status_t reg_access_mgir(mfile* mf, reg_access_method_t method, struc
 }
 
 /************************************
+ * Function: reg_access_mfrl
+ ************************************/
+reg_access_status_t reg_access_mfrl (mfile* mf, reg_access_method_t method, struct cibfw_register_mfrl* mfrl)
+{
+    REG_ACCCESS(mf, method, REG_ID_MFRL, mfrl, mfrl, cibfw_register);
+}
+
+/************************************
+ * Function: reg_access_mfai
+ ************************************/
+reg_access_status_t reg_access_mfai (mfile* mf, reg_access_method_t method, struct cibfw_register_mfai* mfai)
+{
+    if (method != REG_ACCESS_METHOD_SET) { // this register supports only set method
+        return ME_REG_ACCESS_BAD_METHOD;
+    }
+    REG_ACCCESS(mf, method, REG_ID_MFAI, mfai, mfai, cibfw_register);
+}
+
+/************************************
  * Function: reg_access_err2str
  ************************************/
 

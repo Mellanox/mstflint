@@ -39,6 +39,7 @@ extern "C" {
 #include <mtcr.h>
 #include <tools_layouts/register_access_open_layouts.h>
 #include <tools_layouts/register_access_sib_layouts.h>
+#include <tools_layouts/cibfw_layouts.h>
 
 // Hack, we include this for the MNV registers as they are not officialy a part of register_access so we defined them in tools.adb
 #include <tools_layouts/tools_open_layouts.h>
@@ -64,6 +65,8 @@ reg_access_status_t reg_access_mnva (mfile* mf, reg_access_method_t method, stru
 reg_access_status_t reg_access_mnvi (mfile* mf, reg_access_method_t method, struct tools_open_mnvi* mnvi);
 reg_access_status_t reg_access_mnvia (mfile* mf, reg_access_method_t method, struct tools_open_mnvia* mnvia);
 reg_access_status_t reg_access_mgir (mfile* mf, reg_access_method_t method, struct register_access_sib_mgir* mgir);
+reg_access_status_t reg_access_mfrl (mfile* mf, reg_access_method_t method, struct cibfw_register_mfrl* mfrl);
+reg_access_status_t reg_access_mfai (mfile* mf, reg_access_method_t method, struct cibfw_register_mfai* mfai);
 
 #ifdef __cplusplus
 }

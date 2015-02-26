@@ -1922,7 +1922,6 @@ const char* Fs3Operations::FwGetResetRecommandationStr()
 
 bool Fs3Operations::Fs3IsfuActivateImage(u_int32_t newImageStart)
 {
-#ifndef MST_UL // ISFU not supported for mstflint
     int rc;
     mfile *mf = NULL;
     struct cibfw_register_mfai mfai;
@@ -1951,8 +1950,5 @@ bool Fs3Operations::Fs3IsfuActivateImage(u_int32_t newImageStart)
     if (rc) {
         return false;
     }
-#else
-    return ((Flash*)(this->_ioAccess))->update_boot_addr(newImageStart);
-#endif
     return true;
 }
