@@ -1068,7 +1068,14 @@ int mtcr_pciconf_open(mfile *mf, const char *name)
     mf->access_type   = MTCR_ACCESS_CONFIG;
 
     if ((mf->vsec_addr = pci_find_capability(mf, CAP_ID))) {
-        mf->vsec_supp = 1;
+        // check if the needed spaces are supported
+        if (mtcr_pciconf_set_addr_space(mf, ICMD_DOMAIN) || \
+                mtcr_pciconf_set_addr_space(mf, SEMAPHORE_DOMAIN) || \
+                mtcr_pciconf_set_addr_space(mf, CR_SPACE_DOMAIN)) {
+            mf->vsec_supp = 0;
+        } else {
+            mf->vsec_supp = 1;
+        }
     }
 
     if (mf->vsec_supp) {
