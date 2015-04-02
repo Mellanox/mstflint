@@ -43,7 +43,7 @@ for network adapters based on Mellanox Technologies chips.
 %endif
 
 %if %{buildtype} == "ppc64"
-    config_flags="$config_flags --host=ppc64-linux"
+    config_flags="$config_flags --host=ppc64-linux --enable-static-libstdcpp=yes"
 %endif
 
 %if %{buildtype} == "ppc64le"

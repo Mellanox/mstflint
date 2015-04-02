@@ -47,6 +47,13 @@ fi
 
 AM_CONDITIONAL(ENABLE_INBAND, [test  "x$enable_inband" = "xyes"])
 
+AC_ARG_ENABLE([static_libstdcpp],
+    AS_HELP_STRING([--enable-static-libstdcpp], [Enable link static to libstdc++]))
+
+AS_IF([test "x$enable_static_libstdcpp" = "xyes"], [
+  CXXFLAGS="$CXXFLAGS -static-libstdc++"
+])
+
 CFLAGS="$CFLAGS -Werror -DMST_UL"
 CXXFLAGS="$CXXFLAGS -Werror -DMST_UL"
 
