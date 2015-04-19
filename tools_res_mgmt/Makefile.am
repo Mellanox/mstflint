@@ -1,4 +1,3 @@
-#--
 # Copyright (c) 2004-2010 Mellanox Technologies LTD. All rights reserved.
 #
 # This software is available to you under a choice of one of two
@@ -31,12 +30,13 @@
 #--
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
-INCLUDES = -I$(top_srcdir) -I$(srcdir)/../crd_lib -I$(top_srcdir)/include/mtcr_ul
-AM_CFLAGS = -MD -pipe -g -Wall -W
 
-bin_PROGRAMS = mstregdump
+USER_DIR = $(top_srcdir)
+MTCR_DIR = $(USER_DIR)/include/mtcr_ul
+INCLUDES = -I. -I../common -I$(MTCR_DIR) -I.. -I$(USER_DIR)/mtcr_ul
 
-mstregdump_SOURCES = mstdump.c
-mstregdump_LDADD = ../crd_lib/libcrdump.a ../../dev_mgt/libdev_mgt.a ../../reg_access/libreg_access.a ../../tools_layouts/libtools_layouts.a \
-			../../mtcr_ul/libmtcr_ul.a  -lm -ldl
+AM_CFLAGS = -W -Wall -Werror -g -MP -MD $(COMPILER_FPIC) 
+noinst_LIBRARIES = libtools_res_mgmt.a
+
+libtools_res_mgmt_a_SOURCES = tools_res_mgmt.c
 

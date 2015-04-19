@@ -28,9 +28,7 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
  */
-
 
 #ifndef _MTCR_TOOLS_CIF     /* guard */
 #define _MTCR_TOOLS_CIF
@@ -73,6 +71,7 @@ int tools_cmdif_reg_access(mfile *mf, void* data,int write_data_size, int read_d
  *
  */
 int tools_cmdif_is_supported(mfile *mf);
+int tools_cmdif_is_cr_mbox_supported(mfile *mf);
 
 #ifdef __cplusplus
 }

@@ -221,6 +221,7 @@ public:
             int ignoreCacheRep;
             bool noFlashVerify;
             bool shortErrors; // show short/long error msgs (default shuold be false)
+            int cx3FwAccess;
         };
 
         struct sgParams {
@@ -256,7 +257,7 @@ protected:
     };
     enum {
         OLD_CNTX_START_POS_SIZE = 6,
-        CNTX_START_POS_SIZE = 7
+        CNTX_START_POS_SIZE = 8
     };
     enum {
         MAX_SW_DEVICES_PER_HW=32
@@ -303,7 +304,7 @@ protected:
     bool checkBoot2(u_int32_t beg, u_int32_t offs, u_int32_t& next, bool fullRead, const char *pref,
             VerifyCallBack verifyCallBackFunc = (VerifyCallBack)NULL);
     u_int32_t CalcImageCRC(u_int32_t* buff, u_int32_t size);
-    bool writeImage(ProgressCallBack progressFunc, u_int32_t addr, void *data, int cnt, bool is_phys_addr = false);
+    bool writeImage(ProgressCallBack progressFunc, u_int32_t addr, void *data, int cnt, bool isPhysAddr = false, int totalSz = -1, int alreadyWrittenSz = 0);
     //////////////////////////////////////////////////////////////////
     bool GetSectData(std::vector<u_int8_t>& file_sect, const u_int32_t *buff, const u_int32_t size);
     ////////////////////////////////////////////////////////////////////
@@ -311,6 +312,7 @@ protected:
     bool CheckMatchingHwDevId(u_int32_t hwDevId, u_int32_t rev_id, u_int32_t* supportedHwId, u_int32_t supportedHwIdNum);
     bool HWIdRevToName(u_int32_t hw_id, u_int8_t rev_id, char *hw_name);
     bool CheckMac(u_int64_t mac);
+    bool CheckMac(guid_t mac);
     void recalcSectionCrc(u_int8_t *buf, u_int32_t data_size);
     void FwInitCom();
     void FwDebugPrint(char *str);

@@ -29,6 +29,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
 /*
  *
  *  mcra.c - Mellanox Configuratio Register Access tool
@@ -53,7 +54,7 @@
 #define MERGE(rsrc1,rsrc2,start,len)    (((len)==32)?(rsrc2):MERGE_C(rsrc1,rsrc2,start,len))
 
 #define ADB_DUMP_VAR   "ADB_DUMP"
-
+#define MAX_DEV_LEN 512
 
 void usage(const char *n, int with_exit)
 {
@@ -86,6 +87,7 @@ int main(int argc, char *argv[])
 {
     char*         endp;
     char*         dev = NULL;
+    char          device[MAX_DEV_LEN] = {0};
     char*         adb_dump = NULL;
     char*         path = NULL;
     int           rc=0;
@@ -247,14 +249,18 @@ int main(int argc, char *argv[])
     if (!adb_dump) {
         adb_dump = getenv(ADB_DUMP_VAR);
     }
-
+    strncpy(device, dev, MAX_DEV_LEN -1);
     // Do the job
-    mf = mopen(dev);
+    mf = mopen((const char *)device);
     if (!mf) {
         perror("mopen");
         return 1;
     }
-
+#ifndef MST_UL
+    if (mf->tp == MST_MLNXOS) {
+        mset_cr_access(mf, 1);
+    }
+#endif
     if (i2c_slave)
         mset_i2c_slave(mf, (u_int8_t)i2c_slave);
 

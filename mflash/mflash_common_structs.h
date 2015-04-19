@@ -14,12 +14,12 @@
  *      - Redistributions of source code must retain the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer.
- *
+ * 
  *      - Redistributions in binary form must reproduce the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer in the documentation and/or other materials
  *        provided with the distribution.
- *
+ * 
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -28,7 +28,6 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
  */
 
 #ifndef MFLASH_COMMON_STRUCTS_H
@@ -48,6 +47,7 @@ typedef enum MfOpt {
     MFO_FW_ACCESS_TYPE_BY_MFILE,
     MFO_SX_TYPE,
     MFO_NEW_CACHE_REPLACEMENT_EN,
+    MFO_CX3_FW_ACCESS_EN,
     MFO_LAST
 } MfOpt;
 
@@ -122,6 +122,8 @@ typedef struct flash_attr {
     u_int8_t protect_sub_and_sector;
     u_int8_t vendor;
     u_int8_t type;
+    // the flash sector size as seen by FW
+    u_int32_t fw_flash_sector_sz;
 
 
 } flash_attr;

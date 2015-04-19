@@ -1,5 +1,12 @@
 mstflint (4.0.0) unstable; urgency=low
 
+  * Updated from MFT-4.0.0
+
+ -- Adrian Chiris <adrianc@unknown>  Sun, 19 Apr 2015 16:17:33 +0200
+ 
+ 
+mstflint (4.0.0) unstable; urgency=low
+
   * Updated from MFT-4.0.0 initial release
 
  -- Adrian Chiris <adrianc@unknown>  Thu, 5 Feb 2015 10:20:33 +0200

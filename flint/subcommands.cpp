@@ -378,6 +378,7 @@ FlintStatus SubCommand:: openOps()
         fwParams.numOfBanks = _flintParams.banks;
         fwParams.readOnly = false;
         fwParams.noFlashVerify = _flintParams.no_flash_verify;
+        fwParams.cx3FwAccess = _flintParams.use_fw;
         _fwOps = FwOperations::FwOperationsCreate(fwParams);
         delete[] fwParams.mstHndl;
     }
@@ -411,7 +412,7 @@ FlintStatus SubCommand:: openIo()
     if (_flintParams.device_specified) {
         _io = new Flash;
         if (!((Flash*)_io)->open(_flintParams.device.c_str(), _flintParams.clear_semaphore, false, _flintParams.banks, \
-                NULL, _flintParams.override_cache_replacement)) {
+                _flintParams.flash_params_specified ? &_flintParams.flash_params : NULL, _flintParams.override_cache_replacement, _flintParams.use_fw)) {
             // if we have Hw_Access command we dont fail straght away
             if (_flintParams.cmd == SC_Hw_Access && ((Flash*)_io)->get_cr_space_locked()) {
                 return FLINT_SUCCESS;
@@ -1239,7 +1240,7 @@ bool BurnSubCommand::checkFwVersion()
 
     printf("    New FW version:               ");
     if (_imgInfo.fw_info.fw_ver[0] != 0) {
-        snprintf(new_ver, 124, VERSION_FORMAT(_devInfo.fw_type == FIT_FS2), _imgInfo.fw_info.fw_ver[0], _imgInfo.fw_info.fw_ver[1], _imgInfo.fw_info.fw_ver[2]);
+        snprintf(new_ver, 124, VERSION_FORMAT(_imgInfo.fw_type == FIT_FS2), _imgInfo.fw_info.fw_ver[0], _imgInfo.fw_info.fw_ver[1], _imgInfo.fw_info.fw_ver[2]);
     } else {
         snprintf(new_ver, 124, "N/A");
     }
@@ -1853,7 +1854,8 @@ bool QuerySubCommand::displayFs3Uids(const fw_info_t& fwInfo)
 
 FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
 {
-    bool isFs2  = (fwInfo.fw_type == FIT_FS2) ? true : false;
+    bool isFs2 = (fwInfo.fw_type == FIT_FS2) ? true : false;
+
     printf("Image type:      %s\n",(isFs2)? "FS2" : "FS3");
 
     if (fwInfo.fw_info.fw_ver[0] || fwInfo.fw_info.fw_ver[1] || fwInfo.fw_info.fw_ver[2]) {
@@ -2654,7 +2656,9 @@ SmgSubCommand:: SmgSubCommand()
     _v = Wtv_Dev_Or_Img;
     _maxCmdParamNum = 2;
     _cmdType = SC_Smg;
+    _ops = NULL;
     memset(&_baseGuid, 0, sizeof(_baseGuid));
+    memset(&_info, 0, sizeof(_info));
 }
 
 SmgSubCommand:: ~SmgSubCommand()
@@ -3957,6 +3961,7 @@ ClearSemSubCommand:: ~ClearSemSubCommand()
 
 FlintStatus ClearSemSubCommand::executeCommand()
 {
+    _flintParams.clear_semaphore = true;
     return preFwAccess();
 }
 

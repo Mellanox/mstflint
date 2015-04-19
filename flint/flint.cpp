@@ -158,6 +158,7 @@ map_sub_cmd_t_to_subcommand Flint::initSubcommandMap()
     cmdMap[SC_Wbne] = new WbneSubCommand();
     cmdMap[SC_Wb] = new WbSubCommand();
     cmdMap[SC_Rb] = new RbSubCommand();
+    cmdMap[SC_Clear_Sem] = new ClearSemSubCommand();
     return cmdMap;
 }
 
@@ -215,9 +216,15 @@ FlintStatus Flint::run(int argc, char* argv[])
             printf(FLINT_CLEAR_SEM_CMD_ERROR);
             return FLINT_FAILED;
         }
-        _subcommands[SC_Clear_Sem] = new ClearSemSubCommand();
         _flintParams.cmd = SC_Clear_Sem;
     }
+
+    //TODO: adrianc: remove use_fw flag and this condition before MFT-4.1.0
+    if (_flintParams.use_fw && _flintParams.override_cache_replacement) {
+        printf("-E- flags --use_fw and --override_cache_replacement/-ocr cannot be specified simultaneously");
+        return FLINT_FAILED;
+    }
+
     // Step 2 save argv as a single cmd string in flint params for the log functionallity
     for(int i=0; i<argc; i++) {
         _flintParams.fullCmd = _flintParams.fullCmd + argv[i] + " ";

@@ -14,12 +14,12 @@
  *      - Redistributions of source code must retain the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer.
- *
+ * 
  *      - Redistributions in binary form must reproduce the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer in the documentation and/or other materials
  *        provided with the distribution.
- *
+ * 
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -30,7 +30,6 @@
  * SOFTWARE.
  */
 
-
 #include <crdump.h>
 #include <dev_mgt/tools_dev_types.h>
 #include <common/tools_version.h>
@@ -38,7 +37,7 @@
 
 
 #define CAUSE_FLAG "--cause"
-
+#define MAX_DEV_LEN 512
 // string explaining the cmd-line structure
 char correct_cmdline[] = "   Mellanox mstdump utility, dumps device internal configuration data\n\
    Usage: mstdump [-full] <device> [i2c-slave] [-v[ersion] [-h[elp]]]\n\n\
@@ -62,6 +61,15 @@ int main(int argc, char* argv[]) {
     int cause_addr = -1, cause_off = -1;
     crd_ctxt_t *context;
     u_int32_t arr_size = 0;
+    char *endptr;
+    u_int8_t new_i2c_slave = 0;
+    char device[MAX_DEV_LEN] = {0};
+#if defined(linux)
+    if (geteuid() != 0) {
+        printf("Permission denied, you need to run this tool as root\n");
+        return 1;
+    }
+#endif
 
     if (argc < 2 || argc > 4) {
         fprintf(stderr, "%s", correct_cmdline);
@@ -96,25 +104,44 @@ int main(int argc, char* argv[]) {
         full = 1;
         ++i;
     }
-
-#if defined(linux)
-    if (geteuid() != 0) {
-        printf("Permission denied, you need to run this tool as root\n");
+    if (i >= argc) {
+        fprintf(stderr, "Device is not specified in command line. Exiting.\n");
         return 1;
     }
-#endif
-
-    if (i >= argc || !( mf = mopen((const char *)argv[i]) )) {
-        fprintf(stderr, "Unable to open device %s. Exiting.\n",
-                (i < argc) ? argv[i] : "(not specified in command line)");
+    strncpy(device, argv[i], MAX_DEV_LEN -1);
+    if (!( mf = mopen((const char *)device))) {
+        fprintf(stderr, "Unable to open device %s. Exiting.\n", argv[i]);
         return 1;
     }
     ++i;    // move past the device parameter
 
-    if (i < argc) {
-        mset_i2c_slave(mf, (u_int8_t)strtoul(argv[i], 0, 0));
+#ifndef MST_UL
+    if (mf->tp == MST_MLNXOS) {
+        mset_cr_access(mf, 1);
     }
+#endif
 
+    if (i < argc && !strncmp(argv[i], CAUSE_FLAG, strlen(CAUSE_FLAG))) {
+        i++;
+    }
+    if (i < argc) {
+        new_i2c_slave = (u_int8_t)strtoul(argv[i], &endptr, 0);
+        if (*endptr || !*argv[i]) {
+            fprintf(stderr, "Invalid i2c-slave %s\n", argv[i]);
+            mclose(mf);
+            return 1;
+        }
+        mset_i2c_slave(mf, new_i2c_slave);
+        i++;
+    }
+    if (i < argc) {
+        if (i < argc) {
+            fprintf(stderr, "Unknown argument: %s.\n", argv[i]);
+            fprintf(stderr, "%s", correct_cmdline);
+            mclose(mf);
+            return 1;
+        }
+    }
     rc = CRD_OK;
     rc = crd_init(&context, mf, full, cause_addr, cause_off);
     if (rc) {

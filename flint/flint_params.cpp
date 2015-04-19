@@ -58,6 +58,7 @@ FlintParams::FlintParams()
     allow_psid_change = false;
     allow_rom_change = false;
     override_cache_replacement = false;
+    use_fw = false; // access flash via FW on CX3/CX3Pro
     no_flash_verify = false;
     silent = false;
     yes = false;

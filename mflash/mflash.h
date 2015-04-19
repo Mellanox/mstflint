@@ -1,8 +1,4 @@
 /*
- *
- * mflash.h - Mellanox Technilogies LTD. Flash access lib heared file
- * ==================================================================
- *
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
  *
  * This software is available to you under a choice of one of two
@@ -34,6 +30,7 @@
  * SOFTWARE.
  *
  */
+
 
 #ifndef MFLASH_H
 #define MFLASH_H
@@ -112,6 +109,8 @@ int     mf_open        (mflash** pmfl, const char* dev, int num_of_banks, flash_
         int ignore_cache_rep_guard);
 int     mf_opend       (mflash** pmfl, struct mfile_t* mf, int num_of_banks,  flash_params_t* flash_params,
         int ignore_cache_rep_guard);
+int     mf_open_adv       (mflash** pmfl, const char* dev, int num_of_banks, flash_params_t* flash_params,
+        int ignore_cache_rep_guard, int cx3_fw_access);
 
 int     mf_open_uefi(mflash** pmfl, uefi_Dev_t *uefi_dev, f_fw_cmd fw_cmd_func);
 

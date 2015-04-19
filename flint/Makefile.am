@@ -50,8 +50,10 @@ mstflint_SOURCES = flint.cpp flint.h subcommands.cpp subcommands.h\
 mstflint_LDADD =  ../mlxfwops/lib/libmlxfwops.a  \
                   ../cmdparser/libcmdparser.a    \
 		  ../mflash/libmflash.a          \
+		  ../tools_res_mgmt/libtools_res_mgmt.a \
 		  $(CMDIF_DIR)/libcmdif.a        \
 		  ../reg_access/libreg_access.a  \
+		  ../dev_mgt/libdev_mgt.a        \
 		  ../mtcr_ul/libmtcr_ul.a        \
                   ../tools_layouts/libtools_layouts.a \
 		  ../mft_utils/libmftutils.a\

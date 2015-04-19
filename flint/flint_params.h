@@ -108,6 +108,7 @@ public:
     bool allow_psid_change;
     bool allow_rom_change;
     bool override_cache_replacement;
+    bool use_fw;
     bool no_flash_verify;
     bool silent;
     bool yes;

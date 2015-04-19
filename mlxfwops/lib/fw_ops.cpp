@@ -308,7 +308,8 @@ const u_int32_t FwOperations::_cntx_image_start_pos[FwOperations::CNTX_START_POS
     0x40000,
     0x80000,
     0x100000,
-    0x200000
+    0x200000,
+    0x400000
 };
 
 bool FwOperations::CntxFindMagicPattern (FBase* ioAccess, u_int32_t addr) {
@@ -344,6 +345,15 @@ bool FwOperations::CntxFindAllImageStart (FBase* ioAccess, u_int32_t start_locat
              (((Flash*)ioAccess)->get_dev_id() == 6100)) {
             needed_pos_num = OLD_CNTX_START_POS_SIZE;
         }
+    }
+
+    /* WA: due to bug on SwichIB first GA FW (FW doesnt look at chip select field in mfba)
+    *     when reading from flash address 0x400000 it wraps around to 0x0 causing more than one
+    *     valid image to be found. as a WA we dont check at 0x400000. basic flash operations
+    *     are affected when attempting to access addressess greater than 0x3fffff.
+    */
+    if (((Flash*)ioAccess)->get_dev_id() == SWITCH_IB_HW_ID) {
+        needed_pos_num -= 1;
     }
 
     ioAccess->set_address_convertor(0,0);
@@ -465,7 +475,7 @@ bool FwOperations::FwAccessCreate(fw_ops_params_t& fwParams, FBase **ioAccessP)
     } else if (fwParams.hndlType == FHT_MST_DEV) {
         *ioAccessP = new Flash;
         if ( !((Flash*)*ioAccessP)->open(fwParams.mstHndl, fwParams.forceLock, fwParams.readOnly, fwParams.numOfBanks,\
-                                          fwParams.flashParams, fwParams.ignoreCacheRep, !fwParams.shortErrors)) {
+                                          fwParams.flashParams, fwParams.ignoreCacheRep, !fwParams.shortErrors, fwParams.cx3FwAccess)) {
             // TODO: release memory here ?
             WriteToErrBuff(fwParams.errBuff,(*ioAccessP)->err(), fwParams.errBuffSize);
             delete *ioAccessP;
@@ -492,6 +502,7 @@ u_int8_t FwOperations::CheckFwFormat(FBase& f, bool getFwFormatFromImg) {
         } else if ( (((Flash*)&f)->get_dev_id() == CONNECT_IB_HW_ID) ||
                     (((Flash*)&f)->get_dev_id() == SWITCH_IB_HW_ID)  ||
                     (((Flash*)&f)->get_dev_id() == CX4_HW_ID)        ||
+                    (((Flash*)&f)->get_dev_id() == CX4LX_HW_ID)      ||
                     (((Flash*)&f)->get_dev_id() == SWITCH_EN_HW_ID)) {
             return FS_FS3_GEN;
         }
@@ -543,6 +554,7 @@ FwOperations* FwOperations::FwOperationsCreate(void* fwHndl, void *info, char* p
         fwParams.flashParams = (flash_params_t*)NULL;
         fwParams.ignoreCacheRep = 0;
         fwParams.noFlashVerify = false;
+        fwParams.cx3FwAccess = 0;
     }
     return FwOperationsCreate(fwParams);
 }
@@ -598,11 +610,12 @@ u_int32_t FwOperations::CalcImageCRC(u_int32_t* buff, u_int32_t size)
     return new_crc;
 }
 
-bool FwOperations::writeImage(ProgressCallBack progressFunc, u_int32_t addr, void *data, int cnt, bool is_phys_addr)
+bool FwOperations::writeImage(ProgressCallBack progressFunc, u_int32_t addr, void *data, int cnt, bool isPhysAddr, int totalSz, int alreadyWrittenSz)
 {
     u_int8_t   *p = (u_int8_t *)data;
     u_int32_t  curr_addr = addr;
     u_int32_t  towrite = cnt;
+    totalSz = totalSz == -1 ? cnt : totalSz;
     bool rc;
 //    if (!_ioAccess->is_flash()) {
  //       return errmsg("Internal error: writeImage is supported only on flash.");
@@ -612,7 +625,7 @@ bool FwOperations::writeImage(ProgressCallBack progressFunc, u_int32_t addr, voi
         int trans;
         if (_ioAccess->is_flash()) {
             trans = (towrite > (int)Flash::TRANS) ? (int)Flash::TRANS : towrite;
-            if (is_phys_addr) {
+            if (isPhysAddr) {
                 rc = ((Flash*)_ioAccess)->write_phy(curr_addr, p, trans);
             } else {
                 rc = ((Flash*)_ioAccess)->write(curr_addr, p, trans);
@@ -632,7 +645,7 @@ bool FwOperations::writeImage(ProgressCallBack progressFunc, u_int32_t addr, voi
 
         // Report
         if (progressFunc != NULL) {
-            u_int32_t new_perc = ((cnt - towrite) * 100) / cnt;
+            u_int32_t new_perc = ((cnt - towrite + alreadyWrittenSz) * 100) / totalSz;
 
                     if (progressFunc((int)new_perc)) {
                         return errmsg("Aborting... recieved interrupt signal");
@@ -645,8 +658,8 @@ bool FwOperations::writeImage(ProgressCallBack progressFunc, u_int32_t addr, voi
 
 bool FwOperations::ModifyImageFile(const char *fimage, u_int32_t addr, void *data, int cnt)
 {
-    int file_size;
-    u_int8_t * file_data;
+    int file_size = 0;
+    u_int8_t * file_data = NULL;
 
     if (!ReadImageFile(fimage, file_data, file_size, addr + cnt)) {
         return false;
@@ -687,6 +700,11 @@ bool FwOperations::CheckMac(u_int64_t mac) {
     }
 
     return true;
+}
+
+bool FwOperations::CheckMac(guid_t mac) {
+    u_int64_t bigMac = ((u_int64_t)mac.h << 32 & 0xffffffff00000000ULL) | ((u_int64_t)mac.l & 0x00000000ffffffffULL );
+    return CheckMac(bigMac);
 }
 
 void FwOperations::recalcSectionCrc(u_int8_t *buf, u_int32_t data_size) {
@@ -746,12 +764,13 @@ const FwOperations::HwDevData FwOperations::hwDevData[] = {
     { "Connect_IB",       CONNECT_IB_HW_ID, CT_CONNECT_IB, 2, {CONNECT_IB_SW_ID, 4114, 4115, 4116,
                                          4117, 4118, 4119, 4120,
                                          4121, 4122, 4123, 4124, 0}},
-    { "InfiniScale IV",   IS4_HW_ID, CT_IS4, 0, {48436, 48437, 48438, 0}},
-    { "BridgeX",          BRIDGEX_HW_ID, CT_BRIDGEX, 0, {64102, 64112, 64122, 0}},
-    { "SwitchX",          SWITCHX_HW_ID, CT_SWITCHX, 0, {51000, 0}},
-    { "Switch_IB",        SWITCH_IB_HW_ID, CT_SWITCH_IB,0, {52000, 0}},
-    { "ConnectX-4",		  CX4_HW_ID,	 CT_CONNECTX,	0, {4115, 0}},
-    { "Switch_EN",        SWITCH_EN_HW_ID,CT_SWITCH_EN,   0, {52100, 0}},
+    { "InfiniScale IV",   IS4_HW_ID,        CT_IS4,         0, {48436, 48437, 48438, 0}},
+    { "BridgeX",          BRIDGEX_HW_ID,    CT_BRIDGEX,     0, {64102, 64112, 64122, 0}},
+    { "SwitchX",          SWITCHX_HW_ID,    CT_SWITCHX,     0, {51000, 0}},
+    { "Switch_IB",        SWITCH_IB_HW_ID,  CT_SWITCH_IB,   0, {52000, 0}},
+    { "ConnectX-4",       CX4_HW_ID,        CT_CONNECTX,    0, {4115, 0}},
+    { "ConnectX-4LX",     CX4LX_HW_ID,      CT_CONNECTX,    0, {4117, 0}},
+    { "Switch_EN",        SWITCH_EN_HW_ID,  CT_SWITCH_EN,   0, {52100, 0}},
     { (char*)NULL ,              0, CT_UNKNOWN, 0, {0}},// zero devid terminator
 };
 
@@ -763,6 +782,7 @@ const FwOperations::HwDev2Str FwOperations::hwDev2Str[] = {
         {"ConnectX-3 A1",     CX3_HW_ID,        0x01},
         {"ConnectX-3Pro",     CX3_PRO_HW_ID,    0x00},
         {"ConnectX-4",        CX4_HW_ID,        0x00},
+        {"ConnectX-4LX",      CX4LX_HW_ID,      0x00},
         {"SwitchX A0",        SWITCHX_HW_ID,    0x00},
         {"SwitchX A1",        SWITCHX_HW_ID,    0x01},
         {"BridgeX",           BRIDGEX_HW_ID,    0xA0},

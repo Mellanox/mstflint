@@ -28,9 +28,7 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
  */
-
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -96,7 +94,7 @@ int common_erase_sector(mfile *mf, u_int32_t addr, u_int8_t flash_bank)
     return MError2MfError(reg_access_mfbe (mf, REG_ACCESS_METHOD_SET, &mfbe));
 }
 
-int run_mfpa_command(mfile *mf, u_int8_t access_cmd, u_int8_t flash_bank, u_int32_t boot_address, u_int32_t *jedec_p, int *num_of_banks)
+int run_mfpa_command(mfile *mf, u_int8_t access_cmd, u_int8_t flash_bank, u_int32_t boot_address, u_int32_t *jedec_p, int *num_of_banks, u_int32_t* fw_sector_size)
 {
 	struct register_access_mfpa    mfpa;
     int rc;
@@ -125,22 +123,27 @@ int run_mfpa_command(mfile *mf, u_int8_t access_cmd, u_int8_t flash_bank, u_int3
     if (num_of_banks != NULL) {
         *num_of_banks = mfpa.flash_num;
     }
+
+    if (fw_sector_size != NULL) {
+        *fw_sector_size = mfpa.sector_size ? ((1 << mfpa.sector_size) * 1024) : 0; // 2^log2_sector_size_in_kb * 1k
+    }
+
     return MFE_OK;
 }
 
 int get_num_of_banks(mfile *mf)
 {
     int num_of_banks;
-    int rc = run_mfpa_command(mf, REG_ACCESS_METHOD_GET, 0, 0, NULL, &num_of_banks);
+    int rc = run_mfpa_command(mf, REG_ACCESS_METHOD_GET, 0, 0, NULL, &num_of_banks, NULL);
     if (rc) {
         return -1;
     }
     return num_of_banks;
 }
 
-int com_get_jedec(mfile *mf, u_int8_t flash_bank, u_int32_t *jedec_p)
+int com_get_jedec(mfile *mf, u_int8_t flash_bank, u_int32_t *jedec_p, u_int32_t* fw_flash_sector_size)
 {
-    return run_mfpa_command(mf, REG_ACCESS_METHOD_GET, flash_bank, 0, jedec_p, NULL);
+    return run_mfpa_command(mf, REG_ACCESS_METHOD_GET, flash_bank, 0, jedec_p, NULL, fw_flash_sector_size);
 }
 
 /*
@@ -229,7 +232,7 @@ MfError MError2MfError(MError rc) {
    case ME_ICMD_STATUS_CR_FAIL:
 	   return MFE_CR_ERROR;
    case ME_ICMD_STATUS_SEMAPHORE_TO:
-	   return MFE_CMDIF_TIMEOUT_ERR;
+	   return MFE_SEM_LOCKED;
    case ME_ICMD_STATUS_EXECUTE_TO:
 	   return MFE_CMDIF_TIMEOUT_ERR;
    case ME_ICMD_STATUS_IFC_BUSY:

@@ -28,7 +28,6 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
  */
 
 #ifndef MTCR_INT_DEFS
@@ -55,11 +54,13 @@ typedef struct icmd_params_t {
     int static_cfg_not_done_offs;
 }icmd_params;
 
-typedef enum {
-    AS_ICMD = 1,
-    AS_CR_SPACE = 2,
-    AS_SEMAPHORE = 0xa
-} address_space_t;
+typedef struct tools_hcr_params_t {
+    int supp_cr_mbox; // 1: mbox supported , -1: mbox not supported
+}tools_hcr_params;
+
+typedef struct access_reg_params_t {
+    int max_reg_size;
+}access_reg_params;
 
 struct mfile_t {
     char*            dev_name;
@@ -86,9 +87,14 @@ struct mfile_t {
 
     //for ICMD access
     icmd_params icmd;
+    // for vendor specific pci capability
     int vsec_supp;
     u_int32_t vsec_addr;
     int address_space;
+    // for tools HCR access
+    tools_hcr_params hcr_params;
+    // for sending access registers
+    access_reg_params acc_reg_params;
 };
 #endif
 

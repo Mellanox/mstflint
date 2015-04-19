@@ -45,7 +45,7 @@ class Fs3Operations : public FwOperations {
 public:
 
 
-    Fs3Operations(FBase *ioAccess) : FwOperations(ioAccess), _isfuSupported(false), _badDevDataSections(false){};
+    Fs3Operations(FBase *ioAccess) : FwOperations(ioAccess), _isfuSupported(false), _badDevDataSections(false), _maxImgLog2Size(0){};
 
     virtual ~Fs3Operations()  {};
     //virtual void print_type() {printf("-D- FS3 type!\n");};
@@ -80,6 +80,7 @@ private:
     #define PRE_CRC_OUTPUT   "    "
     #define MAX_TOCS_NUM         64
     #define FS3_DEFAULT_SECTOR_SIZE 0x1000
+    #define FS3_LOG2_CHUNK_SIZE_BYTE_OFFSET 0x26
     #define ITOC_ASCII 0x49544f43
     #define DTOC_ASCII 0x64544f43
     #define TOC_RAND1  0x04081516
@@ -87,6 +88,7 @@ private:
     #define TOC_RAND3  0xbacafe00
     #define TOC_HEADER_SIZE 0x20
     #define TOC_ENTRY_SIZE  0x20
+    #define FS3_FW_SIGNATURE_SIZE 0x10
     #define MFG_INFO "MFG_INFO"
     #define UNKNOWN_SECTION "UNKNOWN"
 
@@ -145,6 +147,7 @@ private:
     bool Fs3Burn(Fs3Operations &imageOps, ExtBurnParams& burnParams);
     bool BurnFs3Image(Fs3Operations &imageOps, ExtBurnParams& burnParams);
     bool UpdateDevDataITOC(u_int8_t *image_data, struct toc_info *image_toc_entry, struct toc_info *flash_toc_arr, int flash_toc_size);
+    bool AddDevDataITOC(struct toc_info *flash_toc_entry, u_int8_t *image_data, struct toc_info *image_toc_arr, int& image_toc_size);
     bool Fs3UpdateSection(void *new_info, fs3_section_t sect_type=FS3_DEV_INFO, bool is_sect_failsafe=true, CommandType cmd_type=CMD_UNKNOWN, PrintCallBack callBackFunc=(PrintCallBack)NULL );
     bool Fs3GetItocInfo(struct toc_info *tocArr, int num_of_itocs, fs3_section_t sect_type, struct toc_info *&curr_toc);
     bool Fs3UpdateMfgUidsSection(struct toc_info *curr_toc, std::vector<u_int8_t>  section_data, fs3_uid_t base_uid,
@@ -179,7 +182,7 @@ private:
     bool Fs3RemoveSection(fs3_section_t sectionType, ProgressCallBack progressFunc);
     bool Fs3AddSection(fs3_section_t sectionType, fs3_section_t neighbourSection, u_int32_t* newSectData, u_int32_t newSectSize,
             ProgressCallBack progressFunc);
-    bool CheckFs3ImgSize(Fs3Operations& imageOps);
+    bool CheckFs3ImgSize(Fs3Operations& imageOps, bool useImageDevData=false);
     bool GetMaxImageSize(u_int32_t flash_size, bool image_is_fs, u_int32_t &max_image_size);
 
     u_int32_t getAbsAddr(toc_info* toc);
@@ -207,6 +210,7 @@ private:
     Fs3ImgInfo _fs3ImgInfo;
     bool _isfuSupported;
     bool _badDevDataSections; // set true if during verify one of the device data section is corrupt or mfg section missing
+    u_int32_t _maxImgLog2Size;
 
 };
 

@@ -181,6 +181,7 @@ FlagMetaData::FlagMetaData() {
     _flags.push_back(new Flag("", "flash_params", 1)); //its actually 3 but separated by comma so we refer to them as one
     _flags.push_back(new Flag("v", "version", 0));
     _flags.push_back(new Flag("", "no_devid_check", 0));
+    _flags.push_back(new Flag("", "use_fw", 0));
 }
 
 FlagMetaData::~FlagMetaData() {
@@ -579,6 +580,11 @@ void Flint::initCmdParser() {
                 "",
                 "Do not verify each write on the flash.");
 
+    AddOptions("use_fw",
+               ' ',
+                "",
+                "Flash access will be done using FW (ConnectX-3/ConnectX-3Pro only).");
+
     AddOptions("silent",
                's',
                 "",
@@ -835,6 +841,8 @@ ParseStatus Flint::HandleOption(string name, string value)
         _flintParams.allow_rom_change = true;
     } else if (name == "override_cache_replacement" || name == "ocr") {
         _flintParams.override_cache_replacement = true;
+    } else if (name == "use_fw") {
+        _flintParams.use_fw = true;
     } else if (name == "no_flash_verify") {
         _flintParams.no_flash_verify = true;
     } else if (name == "silent" || name == "s") {

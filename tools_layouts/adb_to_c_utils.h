@@ -28,13 +28,12 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
  */
 
 /***
- *** This file was generated at "2014-11-12 13:19:54"
+ *** This file was generated at "2015-04-20 13:45:50"
  *** by:
- ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/tools_open/tools_open.adb --file-prefix tools_open --prefix tools_open_
+ ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/connectx4/connectx4.adb --file-prefix connectx4 --prefix connectx4_
  ***/
 
 #ifndef ADABE_TO_C_UTILS
@@ -113,9 +112,14 @@ extern "C" {
     #define ADB2C_CPU_TO_BE64(x) (((u_int64_t)htonl((u_int32_t)((x) & 0xffffffff)) << 32) |                             ((u_int64_t)htonl((u_int32_t)((x >> 32) & 0xffffffff))))
 
     #define ADB2C_BE64_TO_CPU(x) (((u_int64_t)ntohl((u_int32_t)((x) & 0xffffffff)) << 32) |                             ((u_int64_t)ntohl((u_int32_t)((x >> 32) & 0xffffffff))))
+    #define ADB2C_LE64_TO_CPU(x) (x)
+    #define ADB2C_CPU_TO_LE64(x) (x)
 #else
     #define ADB2C_CPU_TO_BE64(x) (x)
     #define ADB2C_BE64_TO_CPU(x) (x)
+    #define ADB2C_LE64_TO_CPU(x) (((u_int64_t)ntohl((u_int32_t)((x) & 0xffffffff)) << 32) |                             ((u_int64_t)ntohl((u_int32_t)((x >> 32) & 0xffffffff))))
+    #define ADB2C_CPU_TO_LE64(x) (((u_int64_t)ntohl((u_int32_t)((x) & 0xffffffff)) << 32) |                             ((u_int64_t)ntohl((u_int32_t)((x >> 32) & 0xffffffff))))
+
 #endif
 
 
@@ -259,16 +263,26 @@ struct adb2c_node_db
 u_int32_t adb2c_calc_array_field_address(u_int32_t start_bit_offset, u_int32_t arr_elemnt_size,
                                    int arr_idx, u_int32_t parent_node_size,
                                    int is_big_endian_arr);
+/* Big Endian Functions */
 void adb2c_push_integer_to_buff(u_int8_t *buff, u_int32_t bit_offset,  u_int32_t byte_size, u_int64_t field_value);                                
 void adb2c_push_bits_to_buff(u_int8_t *buff, u_int32_t bit_offset, u_int32_t field_size, u_int32_t field_value);
 void adb2c_push_to_buf(u_int8_t *buff, u_int32_t bit_offset, u_int32_t field_size, u_int64_t field_value);
 u_int64_t adb2c_pop_integer_from_buff(const u_int8_t *buff, u_int32_t bit_offset, u_int32_t byte_size);
 u_int32_t adb2c_pop_bits_from_buff(const u_int8_t *buff, u_int32_t bit_offset, u_int32_t field_size);
 u_int64_t adb2c_pop_from_buf(const u_int8_t *buff, u_int32_t bit_offset, u_int32_t field_size);
+
+/* Little Endian Functions */
+void adb2c_push_integer_to_buff_le(u_int8_t *buff, u_int32_t bit_offset,  u_int32_t byte_size, u_int64_t field_value);
+void adb2c_push_bits_to_buff_le(u_int8_t *buff, u_int32_t bit_offset, u_int32_t field_size, u_int32_t field_value);
+void adb2c_push_to_buf_le(u_int8_t *buff, u_int32_t bit_offset, u_int32_t field_size, u_int64_t field_value);
+u_int64_t adb2c_pop_integer_from_buff_le(const u_int8_t *buff, u_int32_t bit_offset, u_int32_t byte_size);
+u_int32_t adb2c_pop_bits_from_buff_le(const u_int8_t *buff, u_int32_t bit_offset, u_int32_t field_size);
+u_int64_t adb2c_pop_from_buf_le(const u_int8_t *buff, u_int32_t bit_offset, u_int32_t field_size);
+
+
 void adb2c_add_indentation(FILE* file, int indent_level);
 
 void adb2c_print_raw(FILE* file, void* buff, int buff_len);
-void adb2c_push_to_buf(u_int8_t *buff, u_int32_t bit_offset, u_int32_t field_size, u_int64_t field_value);
 const char* adb2c_db_get_field_enum_name(struct adb2c_field_format* field, int val);
 int adb2c_db_get_field_enum_val(struct adb2c_field_format* field, const char* name);
 const char* adb2c_db_get_field_attr(struct adb2c_field_format* field, const char* attr_name);

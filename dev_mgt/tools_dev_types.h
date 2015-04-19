@@ -63,6 +63,8 @@ enum dm_dev_id
     DeviceSwitchIB,
     DeviceSwitchEN,
     DeviceConnectX4,
+    DeviceConnectX4LX,
+    DeviceFPGA,
 
     DeviceEndMarker           // Dummy Device - Marker for indicating error and end of devices
 };
@@ -119,6 +121,11 @@ u_int32_t dm_get_hw_dev_id(dm_dev_id_t type);
  * This is useful to distinguish between ConnectX2 and ConnectX.
  */
 u_int32_t dm_get_hw_rev_id(dm_dev_id_t type);
+
+/**
+ * A predicate returning if the device supports Function Per Port
+ */
+int dm_is_fpp_supported(dm_dev_id_t type);
 
 #ifdef __cplusplus
 }       /* end of 'extern "C"' */

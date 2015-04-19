@@ -34,6 +34,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <reg_access/reg_access.h>
 #include "tools_dev_types.h"
 
 enum dm_dev_type {
@@ -211,6 +212,24 @@ static struct dev_info g_devs_info[] = {
         .dev_type  = DM_HCA
     },
     {
+        .dm_id     = DeviceConnectX4LX,
+        .hw_dev_id = 0x20b,
+        .hw_rev_id = -1,
+        .sw_dev_id = -1,
+        .name      = "ConnectX4LX",
+        .port_num  = 2,
+        .dev_type  = DM_HCA
+    },
+    {
+        .dm_id     = DeviceFPGA,
+        .hw_dev_id = 0x600,
+        .hw_rev_id = -1,
+        .sw_dev_id = -1,
+        .name      = "FPGA",
+        .port_num  = 2,
+        .dev_type  = DM_HCA
+    },
+    {
         .dm_id     = DeviceEndMarker,
     }
 };
@@ -225,6 +244,8 @@ int dm_get_device_id(mfile* mf,
 {
     u_int32_t dword;
     u_int32_t i;
+    int rc;
+    u_int32_t dev_flags;
 
     #if 1
     for (i = 0; i < DeviceEndMarker; i++) {
@@ -236,14 +257,43 @@ int dm_get_device_id(mfile* mf,
     }
     #endif
 
-    if (mread4(mf, DEVID_ADDR, &dword) != 4)
-    {
-        //printf("FATAL - crspace read (0x%x) failed: %s\n", DEVID_ADDR, strerror(errno));
-        return 1;
+    rc = mget_mdevs_flags(mf, &dev_flags);
+    if (rc) {
+        dev_flags = 0;
     }
+    // get hw id
+    // Special case for MLNX OS getting dev_id using REG MGIR
+    if (dev_flags & MDEVS_MLNX_OS) {
+        reg_access_status_t rc;
+        struct register_access_sib_mgir mgir;
+        memset(&mgir, 0, sizeof(mgir));
+        rc = reg_access_mgir(mf, REG_ACCESS_METHOD_GET, &mgir);
+        //printf("-D- RC[%s] -- REVID: %d -- DEVID: %d hw_dev_id: %d\n", m_err2str(rc), mgir.HWInfo.REVID, mgir.HWInfo.DEVID, mgir.HWInfo.hw_dev_id);
+        if (rc) {
+            dword = g_devs_info[DeviceSwitchX].hw_dev_id;
+            *ptr_hw_rev    = 0;
+            *ptr_hw_dev_id = g_devs_info[DeviceSwitchX].hw_dev_id;
+        } else {
+            dword = mgir.HWInfo.hw_dev_id;
+            if (dword == 0) {
+                dword = g_devs_info[DeviceSwitchX].hw_dev_id;
+                *ptr_hw_dev_id = g_devs_info[DeviceSwitchX].hw_dev_id;
+                *ptr_hw_rev = mgir.HWInfo.REVID & 0xf;
+            } else {
+                *ptr_hw_dev_id = dword;
+                *ptr_hw_rev = 0; //WA: MGIR should have also hw_rev_id and then we can use it.
+            }
+        }
+    } else {
+        if (mread4(mf, DEVID_ADDR, &dword) != 4)
+        {
+            //printf("FATAL - crspace read (0x%x) failed: %s\n", DEVID_ADDR, strerror(errno));
+            return 1;
+        }
 
-    *ptr_hw_dev_id = EXTRACT(dword, 0, 16);
-    *ptr_hw_rev    = EXTRACT(dword, 16, 8);
+        *ptr_hw_dev_id = EXTRACT(dword, 0, 16);
+        *ptr_hw_rev    = EXTRACT(dword, 16, 8);
+    }
 
     for (i = 0; i < DeviceEndMarker; i++) {
         struct dev_info* di = &(g_devs_info[i]);
@@ -376,3 +426,13 @@ u_int32_t dm_get_hw_rev_id(dm_dev_id_t type)
         return 0;
     }
 }
+
+int dm_is_fpp_supported(dm_dev_id_t type)
+{
+    if (g_devs_info[type].dm_id == DeviceConnectX4 || g_devs_info[type].dm_id == DeviceConnectX4LX) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+

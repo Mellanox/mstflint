@@ -41,6 +41,7 @@
 #define REG_ID_MNVA  0x9024
 #define REG_ID_MNVI  0x9025
 #define REG_ID_MNVIA 0x9029
+#define REG_ID_NVQC  0x9030
 
 // TODO: get correct register ID for mfrl mfai
 #define REG_ID_MFRL 0x9028
@@ -98,18 +99,18 @@
  ************************************/
 reg_access_status_t reg_access_mfba(mfile* mf, reg_access_method_t method, struct register_access_mfba* mfba)
 {
-	u_int32_t reg_size = mfba->size + REG_ACCESS_MFBA_HEADER_LEN;
-	// the r/w_size_reg is for improved performance for when we send the register
-	// via icmd , since its relatively slow si no need to write the data array from mfba struct to the device when reading from the device
-	// and no need for reading the data array from the device when writing to the device (we just care about the status)
-	u_int32_t r_size_reg = reg_size;
-	u_int32_t w_size_reg= reg_size;
-	if (method == REG_ACCESS_METHOD_GET) {
-		w_size_reg -= mfba->size;
-	} else {
-		r_size_reg -= mfba->size;
-	}
-	//printf("-D- MFBA: data size: %d, reg_size: %d, r_size_reg: %d, w_size_reg: %d\n",mfba->size,reg_size,r_size_reg,w_size_reg);
+    u_int32_t reg_size = mfba->size + REG_ACCESS_MFBA_HEADER_LEN;
+    // the r/w_size_reg is for improved performance for when we send the register
+    // via icmd , since its relatively slow si no need to write the data array from mfba struct to the device when reading from the device
+    // and no need for reading the data array from the device when writing to the device (we just care about the status)
+    u_int32_t r_size_reg = reg_size;
+    u_int32_t w_size_reg= reg_size;
+    if (method == REG_ACCESS_METHOD_GET) {
+        w_size_reg -= mfba->size;
+    } else {
+        r_size_reg -= mfba->size;
+    }
+    //printf("-D- MFBA: data size: %d, reg_size: %d, r_size_reg: %d, w_size_reg: %d\n",mfba->size,reg_size,r_size_reg,w_size_reg);
     REG_ACCCESS_VAR(mf, method, REG_ID_MFBA, mfba, mfba, reg_size, r_size_reg, w_size_reg, register_access);
 }
 
@@ -134,16 +135,16 @@ reg_access_status_t reg_access_mfpa(mfile* mf, reg_access_method_t method, struc
  ************************************/
 reg_access_status_t reg_access_mnva (mfile* mf, reg_access_method_t method, struct tools_open_mnva* mnva)
 {
-	// reg_size is in bytes
-	u_int32_t reg_size = (mnva->mnv_hdr.length << 2) + tools_open_mnv_hdr_size();
-	u_int32_t r_size_reg = reg_size;
-	u_int32_t w_size_reg= reg_size;
-	if (method == REG_ACCESS_METHOD_GET) {
-		w_size_reg -= mnva->mnv_hdr.length << 2;
-	} else {
-		r_size_reg -= mnva->mnv_hdr.length << 2;
-	}
-	REG_ACCCESS_VAR(mf, method, REG_ID_MNVA, mnva, mnva, reg_size , r_size_reg, w_size_reg, tools_open);
+    // reg_size is in bytes
+    u_int32_t reg_size = (mnva->nv_hdr.length << 2) + tools_open_nv_hdr_size();
+    u_int32_t r_size_reg = reg_size;
+    u_int32_t w_size_reg= reg_size;
+    if (method == REG_ACCESS_METHOD_GET) {
+        w_size_reg -= mnva->nv_hdr.length << 2;
+    } else {
+        r_size_reg -= mnva->nv_hdr.length << 2;
+    }
+    REG_ACCCESS_VAR(mf, method, REG_ID_MNVA, mnva, mnva, reg_size , r_size_reg, w_size_reg, tools_open);
 }
 
 /************************************
@@ -151,22 +152,23 @@ reg_access_status_t reg_access_mnva (mfile* mf, reg_access_method_t method, stru
  ************************************/
 reg_access_status_t reg_access_mnvi (mfile* mf, reg_access_method_t method, struct tools_open_mnvi* mnvi)
 {
-	if (method != REG_ACCESS_METHOD_SET ) { // this register supports only set method
-		return ME_REG_ACCESS_BAD_METHOD;
-	}
-	REG_ACCCESS(mf, method, REG_ID_MNVI, mnvi, mnvi, tools_open);
+    if (method != REG_ACCESS_METHOD_SET ) { // this register supports only set method
+        return ME_REG_ACCESS_BAD_METHOD;
+    }
+    REG_ACCCESS(mf, method, REG_ID_MNVI, mnvi, mnvi, tools_open);
 }
 
 /************************************
- * Function: reg_access_mnvi
+ * Function: reg_access_mnvia
  ************************************/
 reg_access_status_t reg_access_mnvia (mfile* mf, reg_access_method_t method, struct tools_open_mnvia* mnvia)
 {
-	if (method != REG_ACCESS_METHOD_SET ) { // this register supports only set method
-		return ME_REG_ACCESS_BAD_METHOD;
-	}
-	REG_ACCCESS(mf, method, REG_ID_MNVIA, mnvia, mnvia, tools_open);
+    if (method != REG_ACCESS_METHOD_SET ) { // this register supports only set method
+        return ME_REG_ACCESS_BAD_METHOD;
+    }
+    REG_ACCCESS(mf, method, REG_ID_MNVIA, mnvia, mnvia, tools_open);
 }
+
 
 /************************************
  *  * Function: reg_access_mgir
@@ -197,6 +199,55 @@ reg_access_status_t reg_access_mfai (mfile* mf, reg_access_method_t method, stru
     REG_ACCCESS(mf, method, REG_ID_MFAI, mfai, mfai, cibfw_register);
 }
 
+/************************************
+ * Function: reg_access_nvda
+ ************************************/
+reg_access_status_t reg_access_nvda (mfile* mf, reg_access_method_t method, struct tools_open_nvda* nvda)
+{
+    // reg_size is in bytes
+    u_int32_t reg_size = nvda->nv_hdr.length + tools_open_nv_hdr_fifth_gen_size();
+    u_int32_t r_size_reg = reg_size;
+    u_int32_t w_size_reg= reg_size;
+    if (method == REG_ACCESS_METHOD_GET) {
+        w_size_reg -= nvda->nv_hdr.length;
+    } else {
+        r_size_reg -= nvda->nv_hdr.length;
+    }
+    REG_ACCCESS_VAR(mf, method, REG_ID_MNVA, nvda, nvda, reg_size , r_size_reg, w_size_reg, tools_open);
+}
+
+/************************************
+ * Function: reg_access_nvdi
+ ************************************/
+reg_access_status_t reg_access_nvdi (mfile* mf, reg_access_method_t method, struct tools_open_nvdi* nvdi)
+{
+    if (method != REG_ACCESS_METHOD_SET ) { // this register supports only set method
+        return ME_REG_ACCESS_BAD_METHOD;
+    }
+    REG_ACCCESS(mf, method, REG_ID_MNVI, nvdi, nvdi, tools_open);
+}
+
+/************************************
+ * Function: reg_access_nvdia
+ ************************************/
+reg_access_status_t reg_access_nvdia (mfile* mf, reg_access_method_t method, struct tools_open_nvdia* nvdia)
+{
+    if (method != REG_ACCESS_METHOD_SET ) { // this register supports only set method
+        return ME_REG_ACCESS_BAD_METHOD;
+    }
+    REG_ACCCESS(mf, method, REG_ID_MNVIA, nvdia, nvdia, tools_open);
+}
+
+/************************************
+ * Function: reg_access_nvqc
+ ************************************/
+reg_access_status_t reg_access_nvqc (mfile* mf, reg_access_method_t method, struct tools_open_nvqc* nvqc)
+{
+    if (method != REG_ACCESS_METHOD_GET ) { // this register supports only get method
+        return ME_REG_ACCESS_BAD_METHOD;
+    }
+    REG_ACCCESS(mf, method, REG_ID_NVQC, nvqc, nvqc, tools_open);
+}
 /************************************
  * Function: reg_access_err2str
  ************************************/

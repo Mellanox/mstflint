@@ -50,9 +50,10 @@ bin_PROGRAMS = mstconfig
 
 mstconfig_LDADD = $(CMDIF_DIR)/libcmdif.a ../reg_access/libreg_access.a $(LAYOUTS_LIB) $(MTCR_DIR)/libmtcr_ul.a $(MLNXOS_PPC_LIBS) $(LIBSTD_CPP) $(UTILS_LIB) $(DEV_MGT_DIR)/libdev_mgt.a -ldl
 
-mstconfig_SOURCES = mlxcfg_ui.h mlxcfg_ui.cpp\
-			 mlxcfg_parser.cpp\
-			 mlxcfg_lib.h mlxcfg_lib.cpp
+mstconfig_SOURCES = mlxcfg_status.h mlxcfg_ui.h mlxcfg_ui.cpp\
+			mlxcfg_parser.cpp\
+			mlxcfg_lib.h mlxcfg_lib.cpp\
+			mlxcfg_param_lib.h mlxcfg_param_lib.cpp
 
 #get mst device examples and tool name from makefile
 AM_CXXFLAGS += -DMLXCFG_NAME=\"mstconfig\"

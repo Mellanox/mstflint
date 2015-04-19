@@ -29,34 +29,51 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
 /*
+ * mlxcfg_status.h
  *
- *  mtcr_ib.h - Mellanox Software tools (mst) IB related driver definitions
- *
+ *  Created on: Mar 23, 2015
+ *      Author: adrianc
  */
 
-#ifndef _MTCR_IB_H
-#define _MTCR_IB_H
+#ifndef MLXCFG_STATUS_H_
+#define MLXCFG_STATUS_H_
 
-#ifdef __WIN__
-    #include <mtcr.h>
-#endif
+/*
+ * Enum for handling error messages
+ */
 
-int mib_open(const char *name, mfile *mf, int mad_init);
-int mib_close(mfile *mf);
-int mib_read4(mfile *mf, unsigned int offset, u_int32_t *value);
-int mib_write4(mfile *mf, unsigned int offset, u_int32_t value);
-int mib_read64(mfile *mf, unsigned int offset, void *data, int length);
-int mib_write64(mfile *mf, unsigned int offset, void *data, int length);
+typedef enum {
+    MCE_SUCCESS = 0,
+    MCE_FAILED,
+    MCE_TLV_NOT_FOUND,
+    MCE_TLV_NOT_SUPP,
+    MCE_NVCFG_NOT_SUPP,
+    MCE_TOOLS_HCR_NOT_SUPP,
+    MCE_DRIVER_DOWN,
+    MCE_UNSUPPORTED_DEVICE,
+    MCE_UNSUPPORTED_CFG,
+    MCE_BAD_PARAMS,
+    MCE_BAD_PARAM_VAL,
+    MCE_DEV_BUSY,
+    MCE_UNKNOWN_TLV,
+    MCE_REG_NOT_SUPP,
+    MCE_METHOD_NOT_SUPP,
+    MCE_RES_NOT_AVAIL,
+    MCE_CONF_CORRUPT,
+    MCE_TLV_LEN_TOO_SMALL,
+    MCE_BAD_CONFIG,
+    MCE_ERASE_EXEEDED,
+    MCE_BAD_OP,
+    MCE_BAD_STATUS,
+    MCE_CR_ERROR,
+    MCE_NOT_IMPLEMENTED,
+    MCE_INCOMPLETE_PARAMS,
+    MCE_OPEN_DEVICE,
+    MCE_PCI,
+    MCE_GET_DEFAULT_PARAMS,
+    MCE_UNKNOWN_ERR
+}McStatus;
 
-int mib_readblock(mfile *mf, unsigned int offset, u_int32_t *data, int length);
-int mib_writeblock(mfile *mf, unsigned int offset, u_int32_t *data, int length);
-int mib_swreset(mfile *mf);
-int mib_get_chunk_size(mfile *mf);
-int mib_acces_reg_mad(mfile *mf, u_int8_t *data);
 
-int mib_smp_set(mfile* mf, u_int8_t* data, u_int16_t attr_id, u_int32_t attr_mod);
-int mib_smp_get(mfile* mf, u_int8_t* data, u_int16_t attr_id, u_int32_t attr_mod);
-
-#endif
+#endif /* MLXCFG_STATUS_H_ */

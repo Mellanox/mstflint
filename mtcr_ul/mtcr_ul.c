@@ -1978,6 +1978,8 @@ int maccess_reg(mfile     *mf,
         	return ME_REG_ACCESS_BAD_CONFIG;
         case 0x21:
         	return ME_REG_ACCESS_ERASE_EXEEDED;
+        case 0x70:
+            return ME_REG_ACCESS_INTERNAL_ERROR;
         default:
             return ME_REG_ACCESS_UNKNOWN_ERR;
         }
@@ -2101,9 +2103,10 @@ static int mreg_send_raw(mfile *mf, u_int16_t reg_id, maccess_reg_method_t metho
 }
 
 
-#define CIB_HW_ID 511
-#define CX4_HW_ID 521
-#define SW_IB_HW_ID 583
+#define CIB_HW_ID     511
+#define CX4_HW_ID     521
+#define CX4LX_HW_ID   523
+#define SW_IB_HW_ID   583
 #define CX3_PRO_HW_ID 0x1F7
 #define CX3_HW_ID_REV 0x1f5
 
@@ -2117,6 +2120,7 @@ static int supports_icmd(mfile* mf) {
     switch (dev_id & 0xffff) { // that the hw device id
         case CIB_HW_ID :
         case CX4_HW_ID :
+        case CX4LX_HW_ID :
         case SW_IB_HW_ID :
             return 1;
         default:
@@ -2143,22 +2147,44 @@ static int supports_tools_cmdif_reg(mfile* mf) {
     return 0;
 }
 
-
 int mget_max_reg_size(mfile *mf) {
-    if (mf->access_type == MTCR_ACCESS_INBAND) {
-        return INBAND_MAX_REG_SIZE;
-    }
-    if (supports_icmd(mf)){ // we support icmd and we dont use IB interface -> we use icmd for reg access
+    if (mf->acc_reg_params.max_reg_size) {
+        return mf->acc_reg_params.max_reg_size;
+    } else if (mf->access_type == MTCR_ACCESS_INBAND) {
+        mf->acc_reg_params.max_reg_size = INBAND_MAX_REG_SIZE;
+    } else if (supports_icmd(mf)){ // we support icmd and we dont use IB interface -> we use icmd for reg access
         if (mf->vsec_supp) {
-            return ICMD_MAX_REG_SIZE;
+            mf->acc_reg_params.max_reg_size = ICMD_MAX_REG_SIZE;
         } else {
             // we send via inband
-            return INBAND_MAX_REG_SIZE;
+            mf->acc_reg_params.max_reg_size = INBAND_MAX_REG_SIZE;
         }
+    }else if (supports_tools_cmdif_reg(mf)) {
+        mf->acc_reg_params.max_reg_size = TOOLS_HCR_MAX_REG_SIZE;
     }
-    if (supports_tools_cmdif_reg(mf)) {
-        return TOOLS_HCR_MAX_REG_SIZE;
+    return mf->acc_reg_params.max_reg_size;
+}
+
+int mget_vsec_supp(mfile* mf)
+{
+    return mf->vsec_supp;
+}
+
+MTCR_API int mget_addr_space(mfile* mf)
+{
+    return mf->address_space;
+}
+MTCR_API int mset_addr_space(mfile* mf, int space)
+{
+    switch (space) {
+    case AS_CR_SPACE:
+    case AS_ICMD:
+    case AS_SEMAPHORE:
+        break;
+    default:
+        return -1;
     }
+    mf->address_space = space;
     return 0;
 }
 
@@ -2228,13 +2254,15 @@ const char* m_err2str(MError status)
    case ME_REG_ACCESS_SIZE_EXCCEEDS_LIMIT:
        return "Register is too large";
    case ME_REG_ACCESS_CONF_CORRUPT:
-	   return "Config Section Corrupted";
+      return "Config Section Corrupted";
    case ME_REG_ACCESS_LEN_TOO_SMALL:
-	   return "given register length too small for Tlv";
+      return "given register length too small for Tlv";
    case ME_REG_ACCESS_BAD_CONFIG:
-	   return "configuration refused";
+      return "configuration refused";
    case ME_REG_ACCESS_ERASE_EXEEDED:
-	   return	"erase count exceeds limit";
+      return	"erase count exceeds limit";
+   case ME_REG_ACCESS_INTERNAL_ERROR:
+      return "FW internal error";
 
    // ICMD access errors
    case ME_ICMD_STATUS_CR_FAIL:

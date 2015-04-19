@@ -28,11 +28,10 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
  */
 
 /***
- *** This file was generated at "2014-11-12 13:19:51"
+ *** This file was generated at "2015-02-05 17:01:35"
  *** by:
  ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/register_access_open/register_access_open.adb --file-prefix register_access_open --prefix register_access_
  ***/
@@ -68,6 +67,8 @@ void register_access_mfba_pack(const struct register_access_mfba *ptr_struct, u_
 void register_access_mfba_unpack(struct register_access_mfba *ptr_struct, const u_int8_t* ptr_buff){
 	u_int32_t offset;
 	int i=0;
+	u_int8_t val=0;
+	(void)val;
 	(void)offset;
 	(void)i;
 	(void)ptr_struct;
@@ -94,7 +95,7 @@ void register_access_mfba_unpack(struct register_access_mfba *ptr_struct, const 
 
 void register_access_mfba_print(const struct register_access_mfba *ptr_struct, FILE* file, int indent_level){
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "======== mfba ========\n");
+	fprintf(file, "======== register_access_mfba ========\n");
 	int i=0;
 	(void)i;(void)ptr_struct;
 	(void)file;
@@ -114,12 +115,12 @@ void register_access_mfba_print(const struct register_access_mfba *ptr_struct, F
 
 	for (i=0; i < 64; i++) {
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "data[%3d]            : "U32H_FMT"\n", i, ptr_struct->data[i]);
+	fprintf(file, "data_%03d            : "U32H_FMT"\n", i, ptr_struct->data[i]);
 	}
 
 }
 
-int register_access_mfba_size(){
+int register_access_mfba_size(void){
 	 return 268;
 }
 
@@ -164,6 +165,8 @@ void register_access_mfpa_pack(const struct register_access_mfpa *ptr_struct, u_
 void register_access_mfpa_unpack(struct register_access_mfpa *ptr_struct, const u_int8_t* ptr_buff){
 	u_int32_t offset;
 	int i=0;
+	u_int8_t val=0;
+	(void)val;
 	(void)offset;
 	(void)i;
 	(void)ptr_struct;
@@ -197,7 +200,7 @@ void register_access_mfpa_unpack(struct register_access_mfpa *ptr_struct, const 
 
 void register_access_mfpa_print(const struct register_access_mfpa *ptr_struct, FILE* file, int indent_level){
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "======== mfpa ========\n");
+	fprintf(file, "======== register_access_mfpa ========\n");
 	int i=0;
 	(void)i;(void)ptr_struct;
 	(void)file;
@@ -229,7 +232,7 @@ void register_access_mfpa_print(const struct register_access_mfpa *ptr_struct, F
 
 }
 
-int register_access_mfpa_size(){
+int register_access_mfpa_size(void){
 	 return 36;
 }
 
@@ -259,6 +262,8 @@ void register_access_mfbe_pack(const struct register_access_mfbe *ptr_struct, u_
 void register_access_mfbe_unpack(struct register_access_mfbe *ptr_struct, const u_int8_t* ptr_buff){
 	u_int32_t offset;
 	int i=0;
+	u_int8_t val=0;
+	(void)val;
 	(void)offset;
 	(void)i;
 	(void)ptr_struct;
@@ -277,7 +282,7 @@ void register_access_mfbe_unpack(struct register_access_mfbe *ptr_struct, const 
 
 void register_access_mfbe_print(const struct register_access_mfbe *ptr_struct, FILE* file, int indent_level){
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "======== mfbe ========\n");
+	fprintf(file, "======== register_access_mfbe ========\n");
 	int i=0;
 	(void)i;(void)ptr_struct;
 	(void)file;
@@ -294,7 +299,7 @@ void register_access_mfbe_print(const struct register_access_mfbe *ptr_struct, F
 
 }
 
-int register_access_mfbe_size(){
+int register_access_mfbe_size(void){
 	 return 12;
 }
 
@@ -304,17 +309,17 @@ void register_access_mfbe_dump(const struct register_access_mfbe *ptr_struct, FI
 
 void register_access_register_access_open_Nodes_pack(const union register_access_register_access_open_Nodes *ptr_struct, u_int8_t* ptr_buff)
 {
-	memcpy(ptr_buff, ptr_struct, 268);
+	register_access_mfba_pack(&(ptr_struct->mfba), ptr_buff);
 }
 
 void register_access_register_access_open_Nodes_unpack(union register_access_register_access_open_Nodes *ptr_struct, const u_int8_t* ptr_buff)
 {
-	memcpy(ptr_struct, ptr_buff, 268);
+	register_access_mfba_unpack(&(ptr_struct->mfba), ptr_buff);
 }
 
 void register_access_register_access_open_Nodes_print(const union register_access_register_access_open_Nodes *ptr_struct, FILE* file, int indent_level){
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "======== register_access_open_Nodes ========\n");
+	fprintf(file, "======== register_access_register_access_open_Nodes ========\n");
 	int i=0;
 	(void)i;(void)ptr_struct;
 	(void)file;
@@ -334,7 +339,7 @@ void register_access_register_access_open_Nodes_print(const union register_acces
 
 }
 
-int register_access_register_access_open_Nodes_size(){
+int register_access_register_access_open_Nodes_size(void){
 	 return 268;
 }
 

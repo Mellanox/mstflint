@@ -30,7 +30,6 @@
  * SOFTWARE.
  */
 
-
 #ifndef MFT_SIG_HANDLER
 #define MFT_SIG_HANDLER
 

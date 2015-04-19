@@ -34,7 +34,7 @@
 USER_DIR = $(top_srcdir)
 MTCR_DIR = $(USER_DIR)/include/mtcr_ul
 TOOLS_LAYOUTS_DIR = $(USER_DIR)/tools_layouts
-INCLUDES = -I. -I../common -I../tools_layouts  -I$(MTCR_DIR) -I..
+INCLUDES = -I. -I../common -I../tools_layouts  -I$(MTCR_DIR) -I.. -I$(USER_DIR)/mtcr_ul
 
 AM_CFLAGS = -W -Wall -Werror -g -MP -MD $(COMPILER_FPIC) -DCMDIF_EXPORTS
 CMDIF_VERSION = 1

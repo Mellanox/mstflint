@@ -59,7 +59,7 @@ CXXFLAGS="$CXXFLAGS -Werror -DMST_UL"
 
 AC_CONFIG_FILES( mstflint.spec )
 
-AC_OUTPUT( Makefile mft_utils/Makefile mtcr_ul/Makefile dev_mgt/Makefile tools_layouts/Makefile reg_access/Makefile cmdif/Makefile mlxconfig/Makefile \
-		mflash/Makefile mlxfwops/Makefile mlxfwops/lib/Makefile cmdparser/Makefile flint/Makefile \
+AC_OUTPUT( Makefile mft_utils/Makefile mtcr_ul/Makefile dev_mgt/Makefile tools_layouts/Makefile reg_access/Makefile cmdif/Makefile tools_res_mgmt/Makefile \
+		mlxconfig/Makefile mflash/Makefile mlxfwops/Makefile mlxfwops/lib/Makefile cmdparser/Makefile flint/Makefile \
  		small_utils/Makefile mstdump/Makefile mstdump/crd_lib/Makefile mstdump/crd_main/Makefile  mstdump/mstdump_dbs/Makefile )
 

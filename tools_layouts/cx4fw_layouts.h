@@ -1,20 +1,37 @@
-
-/*                  - Mellanox Confidential and Proprietary -
+/*
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
  *
- *  Copyright (C) 2010-2011, Mellanox Technologies Ltd.  ALL RIGHTS RESERVED.
+ * This software is available to you under a choice of one of two
+ * licenses.  You may choose to be licensed under the terms of the GNU
+ * General Public License (GPL) Version 2, available from the file
+ * COPYING in the main directory of this source tree, or the
+ * OpenIB.org BSD license below:
  *
- *  Except as specifically permitted herein, no portion of the information,
- *  including but not limited to object code and source code, may be reproduced,
- *  modified, distributed, republished or otherwise exploited in any form or by
- *  any means for any purpose without the prior written permission of Mellanox
- *  Technologies Ltd. Use of software subject to the terms and conditions
- *  detailed in the file "LICENSE.txt".
+ *     Redistribution and use in source and binary forms, with or
+ *     without modification, are permitted provided that the following
+ *     conditions are met:
  *
+ *      - Redistributions of source code must retain the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer.
+ *
+ *      - Redistributions in binary form must reproduce the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer in the documentation and/or other materials
+ *        provided with the distribution.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
- 
 
 /***
- *** This file was generated at "2015-02-05 17:00:26"
+ *** This file was generated at "2015-04-20 13:45:40"
  *** by:
  ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/connectx4/connectx4.adb --file-prefix cx4fw --prefix cx4fw_
  ***/
@@ -175,7 +192,6 @@ void cx4fw_uint64_print(const struct cx4fw_uint64 *ptr_struct, FILE* file, int i
 int cx4fw_uint64_size(void);
 #define CX4FW_UINT64_SIZE    (0x8)
 void cx4fw_uint64_dump(const struct cx4fw_uint64 *ptr_struct, FILE* file);
-;
 /* uid_entry */
 void cx4fw_uid_entry_pack(const struct cx4fw_uid_entry *ptr_struct, u_int8_t* ptr_buff);
 void cx4fw_uid_entry_unpack(struct cx4fw_uid_entry *ptr_struct, const u_int8_t* ptr_buff);
@@ -183,7 +199,6 @@ void cx4fw_uid_entry_print(const struct cx4fw_uid_entry *ptr_struct, FILE* file,
 int cx4fw_uid_entry_size(void);
 #define CX4FW_UID_ENTRY_SIZE    (0x10)
 void cx4fw_uid_entry_dump(const struct cx4fw_uid_entry *ptr_struct, FILE* file);
-;
 /* guids */
 void cx4fw_guids_pack(const struct cx4fw_guids *ptr_struct, u_int8_t* ptr_buff);
 void cx4fw_guids_unpack(struct cx4fw_guids *ptr_struct, const u_int8_t* ptr_buff);
@@ -191,7 +206,6 @@ void cx4fw_guids_print(const struct cx4fw_guids *ptr_struct, FILE* file, int ind
 int cx4fw_guids_size(void);
 #define CX4FW_GUIDS_SIZE    (0x40)
 void cx4fw_guids_dump(const struct cx4fw_guids *ptr_struct, FILE* file);
-;
 /* operation_key */
 void cx4fw_operation_key_pack(const struct cx4fw_operation_key *ptr_struct, u_int8_t* ptr_buff);
 void cx4fw_operation_key_unpack(struct cx4fw_operation_key *ptr_struct, const u_int8_t* ptr_buff);
@@ -199,7 +213,6 @@ void cx4fw_operation_key_print(const struct cx4fw_operation_key *ptr_struct, FIL
 int cx4fw_operation_key_size(void);
 #define CX4FW_OPERATION_KEY_SIZE    (0x10)
 void cx4fw_operation_key_dump(const struct cx4fw_operation_key *ptr_struct, FILE* file);
-;
 /* mfg_info */
 void cx4fw_mfg_info_pack(const struct cx4fw_mfg_info *ptr_struct, u_int8_t* ptr_buff);
 void cx4fw_mfg_info_unpack(struct cx4fw_mfg_info *ptr_struct, const u_int8_t* ptr_buff);
@@ -207,7 +220,6 @@ void cx4fw_mfg_info_print(const struct cx4fw_mfg_info *ptr_struct, FILE* file, i
 int cx4fw_mfg_info_size(void);
 #define CX4FW_MFG_INFO_SIZE    (0x140)
 void cx4fw_mfg_info_dump(const struct cx4fw_mfg_info *ptr_struct, FILE* file);
-;
 /* device_info */
 void cx4fw_device_info_pack(const struct cx4fw_device_info *ptr_struct, u_int8_t* ptr_buff);
 void cx4fw_device_info_unpack(struct cx4fw_device_info *ptr_struct, const u_int8_t* ptr_buff);
@@ -215,7 +227,6 @@ void cx4fw_device_info_print(const struct cx4fw_device_info *ptr_struct, FILE* f
 int cx4fw_device_info_size(void);
 #define CX4FW_DEVICE_INFO_SIZE    (0x200)
 void cx4fw_device_info_dump(const struct cx4fw_device_info *ptr_struct, FILE* file);
-;
 /* cx4fw_Nodes */
 void cx4fw_cx4fw_Nodes_pack(const union cx4fw_cx4fw_Nodes *ptr_struct, u_int8_t* ptr_buff);
 void cx4fw_cx4fw_Nodes_unpack(union cx4fw_cx4fw_Nodes *ptr_struct, const u_int8_t* ptr_buff);
@@ -223,7 +234,6 @@ void cx4fw_cx4fw_Nodes_print(const union cx4fw_cx4fw_Nodes *ptr_struct, FILE* fi
 int cx4fw_cx4fw_Nodes_size(void);
 #define CX4FW_CX4FW_NODES_SIZE    (0x200)
 void cx4fw_cx4fw_Nodes_dump(const union cx4fw_cx4fw_Nodes *ptr_struct, FILE* file);
-;
 
 
 #ifdef __cplusplus

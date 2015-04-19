@@ -28,7 +28,6 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
  */
 
 /********************************************************
@@ -174,10 +173,8 @@
 #define I2C_DEVICE_ID   0x56
 #define I2C_MEMORY_ADDR 0
 
-#define MELLANOX_OUI0     0x2c9
-#define MELLANOX_OUI1     0xf45214
-#define SWITCHX_DEV_ID    0xc738
-#define CONNECTIB_DEV_ID  0x1011
+#define UNSUPP_DEVS_NUM   15
+#define DEVID_ADDRESS     0xf0014
 
 // Convert BYTES - DWORDS with MEMCPY BE
 #define BYTES_TO_DWORD_BE(dw_dest, byte_src) do {   u_int32_t tmp;\
@@ -527,28 +524,47 @@ int get_env_vars(ibvs_mad *ivm)
 
 
 
-int is_smp_crspace_supported(ibvs_mad* h)
+int is_vs_crspace_supported(ibvs_mad* h)
 {
     u_int8_t* p;
     u_int8_t mad_data[IB_SMP_DATA_SIZE] = {0};
     u_int32_t dev_id;
-    u_int32_t vend_id;
+    u_int32_t data = 0;
+    int i = 0;
+    u_int32_t unsupported_devs[UNSUPP_DEVS_NUM] = {
+            0x6746, /* MT26438 [ConnectX-2 VPI w/ Virtualization+]"*/
+            0x6764, /* MT26468 [Mountain top]"                     */
+            0xbd34, /* IS4 IB SDR"                                 */
+            0xbd35, /* IS4 IB DDR"                                 */
+            0xbd36, /* IS4 IB QDR"                                 */
+            0xfa66, /* BridgeX VPI up, E/FC down"                  */
+            0xfa7a, /* BridgeX EN up, E/FC down"                   */
+            0x1001, /* ConnectX-2 VF"                              */
+            0x1003, /* MT27500 [ConnectX-3]"                       */
+            0x1005, /* MT27510 Family"                             */
+            0x1007, /* MT27520 ConnectX-3 Pro Family"              */
 
+    };
+    uint64_t ret = ibvsmad_craccess_rw_vs(h, DEVID_ADDRESS, IB_MAD_METHOD_GET, 1, &data);
+    if (!ret) {
+        return 1;
+    }
+    DEBUG(("Vendor Specific is not supported, checking SMP .. "));
     p = h->smp_query_via(mad_data, &h->portid, IB_ATTR_NODE_INFO, 0, 0, h->srcport);
 
     if (NULL == p) {
-        return 0;
+        return 1;
     }
 
     dev_id  = h->mad_get_field(mad_data, 0, IB_NODE_DEVID_F);
-    vend_id = h->mad_get_field(mad_data, 0, IB_NODE_VENDORID_F);
 
-    if ((MELLANOX_OUI0    == vend_id || MELLANOX_OUI1  == vend_id) &&
-        (CONNECTIB_DEV_ID == dev_id  || SWITCHX_DEV_ID == dev_id)) {
-        return 1;
-    } else {
-        return 0;
+    for (i = 0; i < UNSUPP_DEVS_NUM; i++) {
+        if (dev_id == unsupported_devs[i]) {
+            return 1;
+        }
     }
+
+    return 0;
 }
 
 
@@ -572,6 +588,7 @@ int mib_open(const char *name, mfile *mf, int mad_init)
     char        *nbuf            = NULL;
     char        *path_str, *p;
     int          rc              = -1;
+    int         lid_provided = 0;
     char        *sl_str;
 
     char* first_comma;
@@ -600,11 +617,13 @@ int mib_open(const char *name, mfile *mf, int mad_init)
         dest_type = IB_DEST_LID;
         path_str  = nbuf + 6;
     } else if ((p = strstr(nbuf, "lid-")) != 0) {
+        lid_provided = 1;
         dest_type = IB_DEST_LID;
-		path_str  = p + 4;
+        path_str  = p + 4;
 
     } else if ((p = strstr(nbuf, "lid_noinit-")) != 0) {
-    	dest_type = IB_DEST_LID;
+        lid_provided = 1;
+        dest_type = IB_DEST_LID;
         path_str  = p + 11;
         mad_init = 0;
 
@@ -689,8 +708,14 @@ int mib_open(const char *name, mfile *mf, int mad_init)
 
     // For ConnectIB:
     // If the target device is connectib or SX and we use LID rout, use the SMP LID route and not the GPM
-    if (is_smp_crspace_supported(ivm)) {
-        ivm->use_smp = 1;
+    if (lid_provided) {
+        if (is_vs_crspace_supported(ivm)) {
+            DEBUG(("For this LID using VS MAD"));
+            ivm->use_smp = 0;
+        } else {
+            DEBUG(("For this LID using SMP MAD"));
+            ivm->use_smp = 1;
+        }
     }
 
 #define MTCR_IBSL_ENV "MTCR_IB_SL"

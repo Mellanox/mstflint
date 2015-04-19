@@ -453,8 +453,8 @@ bool Fs2Operations::Fs2Verify(VerifyCallBack verifyCallBackFunc, bool is_striped
 
      // Verify the images:
      for (u_int32_t i = 0; i < cntx_image_num; i++) {
-         bool      fs_en;
-         u_int32_t log2chunk_size;
+         bool      fs_en = false;
+         u_int32_t log2chunk_size = 0;
          u_int32_t buff[FS2_BOOT_START / 4];
 
          _ioAccess->get_image_crc().clear();

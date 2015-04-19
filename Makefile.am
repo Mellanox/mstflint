@@ -30,7 +30,7 @@
 # SOFTWARE.
 #--
 
-SUBDIRS = mft_utils tools_layouts mtcr_ul reg_access cmdif dev_mgt mflash mlxconfig mlxfwops cmdparser flint small_utils mstdump 
+SUBDIRS = mft_utils tools_layouts mtcr_ul reg_access cmdif dev_mgt tools_res_mgmt mflash mlxconfig mlxfwops cmdparser flint small_utils mstdump 
 
 man_MANS = man/mstflint.1
 

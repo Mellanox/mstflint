@@ -28,7 +28,6 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
  */
 
 /*
@@ -118,6 +117,7 @@ enum AccessTypeByMfile{
     ATBM_INBAND,
     ATBM_MLNXOS_CMDIF,
     ATBM_ICMD,
+    ATBM_TOOLS_CMDIF,
 };
 
 /*
@@ -191,9 +191,9 @@ int sx_st_block_access(mfile *mf, u_int32_t flash_addr, u_int8_t bank, u_int32_t
 
 int common_erase_sector(mfile *mf, u_int32_t addr, u_int8_t flash_bank);
 
-int run_mfpa_command(mfile *mf, u_int8_t access_cmd, u_int8_t flash_bank, u_int32_t boot_address, u_int32_t *jedec_p, int *num_of_banks);
+int run_mfpa_command(mfile *mf, u_int8_t access_cmd, u_int8_t flash_bank, u_int32_t boot_address, u_int32_t *jedec_p, int *num_of_banks, u_int32_t* fw_flash_sector_sz);
 
-int com_get_jedec(mfile *mf, u_int8_t flash_bank, u_int32_t *jedec_p);
+int com_get_jedec(mfile *mf, u_int8_t flash_bank, u_int32_t *jedec_p, u_int32_t* fw_flash_sector_sz);
 int get_num_of_banks(mfile *mf);
 int get_info_from_jededc_id(u_int32_t jededc_id, u_int8_t *vendor, u_int8_t* type, u_int8_t* capacity);
 int get_type_index_by_vendor_and_type(u_int8_t vendor, u_int8_t type, unsigned *type_index);

@@ -238,7 +238,8 @@ public:
                                 int num_of_banks = 4,
                                 flash_params_t *flash_params = (flash_params_t *)NULL,
                                 int ignoe_cache_replacement = 0,
-                                bool advErr = true);
+                                bool advErr = true,
+                                int cx3_fw_access = 0);
     using FBase::open;
 
     bool open          (uefi_Dev_t *uefi_dev,
