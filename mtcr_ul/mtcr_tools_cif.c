@@ -78,18 +78,11 @@
 
 #if __BYTE_ORDER == __BIG_ENDIAN
 
-static u_int64_t swap_dwords_be(u_int8_t* buff) {
-    u_int32_t first = *(u_int32_t*)(&buff[0]);\
-    u_int32_t second = *(u_int32_t*)(&buff[4]);\
-    u_int64_t dest = 0;
-    dest = MERGE64(dest, first, 0, 32);
-    dest = MERGE64(dest, second, 32, 32);
-    return dest;
-}
+#define SWAP_DW_BE(uint64_num)\
+    (((uint64_num) & 0xffffffffULL) << 32) | (((uint64_num) >> 32) & 0xffffffffULL)
+
 #else
-static u_int64_t swap_dwords_be(u_int8_t* buff) {
-    return *((u_int64_t*)buff);
-}
+#define SWAP_DW_BE(uint64_num) (uint64_num)
 #endif
 
 typedef struct tools_cmdif_t {
@@ -302,10 +295,10 @@ int tools_cmdif_send_inline_cmd(mfile* mf,
                      u_int8_t  opcode_modifier)
 {
     int rc;
-    in_param = swap_dwords_be((u_int8_t*)&in_param);
+    in_param = SWAP_DW_BE(in_param);
     rc = tools_cmdif_send_inline_cmd_int(mf, (u_int32_t*)((u_int8_t*)&in_param), (u_int32_t*)out_param, input_modifier, opcode, opcode_modifier);
     if (out_param) {
-        *out_param = swap_dwords_be((u_int8_t*)out_param);
+        *out_param = SWAP_DW_BE(*out_param);
     }
     return rc;
 }

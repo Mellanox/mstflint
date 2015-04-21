@@ -61,18 +61,11 @@
 
 #if __BYTE_ORDER == __BIG_ENDIAN
 
-static u_int64_t swap_dwords_be(u_int8_t* buff) {
-    u_int32_t first = *(u_int32_t*)(&buff[0]);\
-    u_int32_t second = *(u_int32_t*)(&buff[4]);\
-    u_int64_t dest = 0;
-    dest = MERGE64(dest, first, 0, 32);
-    dest = MERGE64(dest, second, 32, 32);
-    return dest;
-}
+#define SWAP_DW_BE(uint64_num)\
+    (((uint64_num) & 0xffffffffULL) << 32) | (((uint64_num) >> 32) & 0xffffffffULL)
+
 #else
-static u_int64_t swap_dwords_be(u_int8_t* buff) {
-    return *((u_int64_t*)buff);
-}
+#define SWAP_DW_BE(uint64_num) (uint64_num)
 #endif
 
 //TODO: adrianc: if we find ourselves adding more and more commands consider using a macro to save code.
@@ -82,8 +75,7 @@ MError tcif_query_dev_cap(mfile *dev, u_int32_t offset, u_int64_t* data)
 {
     int rc = tools_cmdif_send_mbox_command(dev, 0, QUERY_DEV_CAP_OP, 0, offset, (u_int32_t*)data, 8, 1); CHECK_RC(rc);
     BE32_TO_CPU(data, 2);
-    *data = swap_dwords_be((u_int8_t*)data);
-
+    *data = SWAP_DW_BE(*data);
     return ME_OK;
 }
 
