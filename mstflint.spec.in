@@ -47,7 +47,7 @@ for network adapters based on Mellanox Technologies chips.
 %endif
 
 %if %{buildtype} == "ppc64le"
-    config_flags="$config_flags --host=powerpc64le-linux-gnu"
+    config_flags="$config_flags --host=powerpc64le-linux-gnu --enable-dynamic-ld=yes"
 %endif
 
 %if %{buildtype} == "arm64"

@@ -54,6 +54,13 @@ AS_IF([test "x$enable_static_libstdcpp" = "xyes"], [
   CXXFLAGS="$CXXFLAGS -static-libstdc++"
 ])
 
+AC_ARG_ENABLE([dynamic_ld],
+    AS_HELP_STRING([--enable-dynamic-ld], [Enable dynamic link to ld64.so]))
+
+AS_IF([test "x$enable_dynamic_ld" = "xyes"], [
+  LDFLAGS="$LDFLAGS -Wl,--dynamic-linker=/lib64/ld64.so.2"
+])
+
 CFLAGS="$CFLAGS -Werror -DMST_UL"
 CXXFLAGS="$CXXFLAGS -Werror -DMST_UL"
 
