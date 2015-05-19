@@ -76,6 +76,8 @@ public:
     // Set/Un-Set Ignore limits per configuration
     // Adrianc: TBD
 
+    const char* loadConfigurationGetStr();
+
 private:
     int openComChk();
     int supportsToolsHCR();
@@ -86,8 +88,8 @@ private:
     int invalidateCfgs4thGen();
     int invalidateCfgs5thGen();
 
-    static mlxCfgType cfgParam2Type(mlxCfgParam param);
-    std::vector<CfgParams*> _cfgList; // needs to be initialized in constructor and freed in destructor, will contain all the  tools supported cfgs
+    mlxCfgType cfgParam2Type(mlxCfgParam param);
+    std::map<mlxCfgType, CfgParams*> _cfgList; // needs to be initialized in constructor and freed in destructor, will contain all the  tools supported cfgs
     dm_dev_id_t _deviceId;
     mfile* _mf;
     u_int64_t _suppVec;

@@ -108,8 +108,8 @@ MlxCfgOps::~MlxCfgOps()
     if (_mf) {
         mclose(_mf);
     }
-    for(vector<CfgParams*>::iterator it = _cfgList.begin(); it != _cfgList.end(); it++) {
-        delete *it;
+    for(map<mlxCfgType, CfgParams*>::iterator it = _cfgList.begin(); it != _cfgList.end(); it++) {
+        delete it->second;
     }
     return;
 }
@@ -206,10 +206,10 @@ int MlxCfgOps::openComChk()
     }
 
     // update cfg specific info.
-    for (int i = Mct_Sriov; i < Mct_Last; i++) {
-        _cfgList[i]->setDevCapVec(_suppVec);
-        if (_cfgList[i]->cfgSupported(_mf)) {
-            ret = _cfgList[i]->getDefaultParams(_mf);
+    for (std::map<mlxCfgType, CfgParams*>::iterator paramIt = _cfgList.begin(); paramIt != _cfgList.end(); paramIt++) {
+        paramIt->second->setDevCapVec(_suppVec);
+        if (paramIt->second->cfgSupported(_mf)) {
+            ret = paramIt->second->getDefaultParams(_mf);
             if (ret && ret!= MCE_GET_DEFAULT_PARAMS && ret != MCE_NOT_IMPLEMENTED) {
                 return ret;
             }
@@ -254,20 +254,20 @@ int MlxCfgOps::opend(mfile* mf, bool forceClearSem)
     }
 
     // init _cfgList
-    _cfgList.resize(Mct_Last);
     if (_isFifthGen) {
-        _cfgList[Mct_Sriov] = new SriovParams5thGen();
-        _cfgList[Mct_Wol_P1] = new WolParams5thGen(1);
-        _cfgList[Mct_Wol_P2] = new WolParams5thGen(2);
-        _cfgList[Mct_Vpi_P1] = new VpiParams5thGen(1);
-        _cfgList[Mct_Vpi_P2] = new VpiParams5thGen(2);
+        _cfgList[Mct_Sriov]    = new SriovParams5thGen();
+        _cfgList[Mct_Wol_P1]   = new WolParams5thGen(1);
+        _cfgList[Mct_Wol_P2]   = new WolParams5thGen(2);
+        _cfgList[Mct_Vpi_P1]   = new VpiParams5thGen(1);
+        _cfgList[Mct_Vpi_P2]   = new VpiParams5thGen(2);
         _cfgList[Mct_Bar_Size] = new BarSzParams5thGen();
+        _cfgList[Mct_Pci]      = new PciParams5thGen();
     } else {
-        _cfgList[Mct_Sriov] = new SriovParams4thGen();
-        _cfgList[Mct_Wol_P1] = new WolParams4thGen(1);
-        _cfgList[Mct_Wol_P2] = new WolParams4thGen(2);
-        _cfgList[Mct_Vpi_P1] = new VpiParams4thGen(1);
-        _cfgList[Mct_Vpi_P2] = new VpiParams4thGen(2);
+        _cfgList[Mct_Sriov]    = new SriovParams4thGen();
+        _cfgList[Mct_Wol_P1]   = new WolParams4thGen(1);
+        _cfgList[Mct_Wol_P2]   = new WolParams4thGen(2);
+        _cfgList[Mct_Vpi_P1]   = new VpiParams4thGen(1);
+        _cfgList[Mct_Vpi_P2]   = new VpiParams4thGen(2);
         _cfgList[Mct_Bar_Size] = new BarSzParams4thGen();
     }
 
@@ -383,16 +383,16 @@ int MlxCfgOps::setCfg(const std::vector<cfgInfo>& infoVec)
 
 void MlxCfgOps::setIgnoreSoftLimits(bool val)
 {
-    for(std::vector<CfgParams*>::iterator it = _cfgList.begin(); it != _cfgList.end(); it++) {
-        (*it)->setIgnoreSoftLimits(val);
+    for(std::map<mlxCfgType, CfgParams*>::iterator it = _cfgList.begin(); it != _cfgList.end(); it++) {
+        it->second->setIgnoreSoftLimits(val);
     }
     return;
 }
 
 void MlxCfgOps::setIgnoreHardLimits(bool val)
 {
-    for(std::vector<CfgParams*>::iterator it = _cfgList.begin(); it != _cfgList.end(); it++) {
-        (*it)->setIgnoreHardLimits(val);
+    for(std::map<mlxCfgType, CfgParams*>::iterator it = _cfgList.begin(); it != _cfgList.end(); it++) {
+        it->second->setIgnoreHardLimits(val);
     }
     return;
 }
@@ -434,7 +434,7 @@ int MlxCfgOps::invalidateCfgs()
 
 bool MlxCfgOps::isLegal(mlxCfgType cfg)
 {
-    if (cfg >= Mct_Sriov && cfg < Mct_Last) {
+    if (_cfgList.find(cfg) != _cfgList.end()) {
         return true;
     }
     errmsg("illegal configuration");
@@ -451,14 +451,32 @@ bool MlxCfgOps::isLegal(mlxCfgParam cfg)
 }
 
 
+const char* MlxCfgOps::loadConfigurationGetStr()
+{
+    int rc;
+    struct cibfw_register_mfrl mfrl;
+    memset(&mfrl, 0, sizeof(mfrl));
+    if (_isFifthGen && _deviceId == DeviceConnectX4) {
+        // send warm boot (bit 6)
+        mfrl.reset_level = 1 << 6;
+        rc = reg_access_mfrl(_mf,REG_ACCESS_METHOD_SET, &mfrl);
+        if (rc) {
+            return "Please power cycle machine to load new configurations.";
+        }
+    }
+    return "Please reboot machine to load new configurations.";
+}
+
 
 mlxCfgType MlxCfgOps::cfgParam2Type(mlxCfgParam param)
 {
     switch (param) {
     case Mcp_Sriov_En :
-        return Mct_Sriov;
+        return _isFifthGen ? Mct_Pci :Mct_Sriov;
     case Mcp_Num_Of_Vfs :
-        return Mct_Sriov;
+        return _isFifthGen ? Mct_Pci : Mct_Sriov;
+    case Mcp_Fpp_En:
+        return _isFifthGen ? Mct_Pci : Mct_Last;
     case Mcp_Wol_Magic_En_P1 :
         return Mct_Wol_P1;
     case Mcp_Wol_Magic_En_P2 :

@@ -155,13 +155,30 @@ int FwOperations::getMfaImg(u_int8_t* mfa_buf, int size, char *psid, u_int8_t **
 
 void FwOperations::FwCleanUp()
 {
-    _ioAccess->close();
-    delete _ioAccess;
-    if (_fname != NULL) {
-        delete[] _fname;
+    if (_ioAccess) {
+        _ioAccess->close();
+        delete _ioAccess;
+        _ioAccess = NULL;
     }
-    if (_devName != NULL) {
+    if (_fname) {
+        delete[] _fname;
+        _fname = NULL;
+    }
+    if (_devName) {
         delete[] _devName;
+        _devName = NULL;
+    }
+    if (_fwParams.fileHndl) {
+        delete[] _fwParams.fileHndl;
+        _fwParams.fileHndl = NULL;
+    }
+    if (_fwParams.mstHndl) {
+        delete[] _fwParams.mstHndl;
+        _fwParams.mstHndl = NULL;
+    }
+    if (_fwParams.psid) {
+        delete[] _fwParams.psid;
+        _fwParams.psid = NULL;
     }
 }
 
@@ -532,6 +549,7 @@ u_int8_t FwOperations::CheckFwFormat(FBase& f, bool getFwFormatFromImg) {
 FwOperations* FwOperations::FwOperationsCreate(void* fwHndl, void *info, char* psid, fw_hndl_type_t hndlType, char* errBuff, int buffSize)
 {
     fw_ops_params_t fwParams;
+    memset(&fwParams, 0 , sizeof(fwParams));
     fwParams.psid = psid;
     fwParams.hndlType = hndlType;
     fwParams.errBuff = errBuff;
@@ -557,6 +575,31 @@ FwOperations* FwOperations::FwOperationsCreate(void* fwHndl, void *info, char* p
         fwParams.cx3FwAccess = 0;
     }
     return FwOperationsCreate(fwParams);
+}
+
+void FwOperations::BackUpFwParams(fw_ops_params_t& fwParams)
+{
+    _fwParams.hndlType = fwParams.hndlType;
+    _fwParams.buffHndl = fwParams.buffHndl;
+    _fwParams.buffSize = fwParams.buffSize;
+    _fwParams.cx3FwAccess = fwParams.cx3FwAccess;
+    _fwParams.errBuff = NULL;
+    _fwParams.errBuffSize = 0;
+    _fwParams.fileHndl = (fwParams.hndlType == FHT_FW_FILE && fwParams.fileHndl) ? \
+            strncpy((char*)(new char[(strlen(fwParams.fileHndl) + 1)]), fwParams.fileHndl, strlen(fwParams.fileHndl) + 1) : NULL;
+    // no support for flash params
+    _fwParams.flashParams = NULL;
+    _fwParams.forceLock = fwParams.forceLock;
+    _fwParams.ignoreCacheRep = fwParams.ignoreCacheRep;
+    _fwParams.mstHndl = (fwParams.hndlType == FHT_MST_DEV && fwParams.mstHndl) ? \
+            strncpy((char*)(new char[(strlen(fwParams.mstHndl) + 1)]), fwParams.mstHndl, strlen(fwParams.mstHndl) + 1) : NULL;
+    _fwParams.noFlashVerify = fwParams.noFlashVerify;
+    _fwParams.numOfBanks = fwParams.numOfBanks;
+    _fwParams.psid = fwParams.psid ? strncpy((char*)(new char[(strlen(fwParams.psid) + 1)]), fwParams.psid, strlen(fwParams.psid) + 1) : NULL;
+    _fwParams.readOnly = fwParams.readOnly;
+    _fwParams.shortErrors = fwParams.shortErrors;
+    _fwParams.uefiExtra = fwParams.uefiExtra;
+    _fwParams.uefiHndl = fwParams.uefiHndl;
 }
 
 FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
@@ -588,6 +631,9 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
             WriteToErrBuff(fwParams.errBuff,"invalid Firmware Format (found FS Gen 1)", fwParams.errBuffSize);
             return (FwOperations*)NULL;
     }
+    // save initialization parameters
+    fwops->BackUpFwParams(fwParams);
+
     fwops->_advErrors = !fwParams.shortErrors;
     fwops->FwInit();
     if (fwParams.hndlType == FHT_FW_FILE) {

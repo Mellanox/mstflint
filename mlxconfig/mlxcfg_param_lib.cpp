@@ -107,6 +107,11 @@ static void dealWithSignal()
     return;
 }
 
+/*
+ * Adrianc: TODO: create a SetTlv class and two child classess , for 4th/5th gen.
+ *          each param class will have an instance of SetTlv class
+ */
+
 MError mnvaCom4thGen(mfile* mf, u_int8_t* buff, u_int16_t len, u_int16_t tlvTypeIdx, reg_access_method_t method, u_int16_t typeMod)
 {
     struct tools_open_mnva mnvaTlv;
@@ -1042,4 +1047,221 @@ bool VpiParams5thGen::hardLimitCheck()
     }
     errmsg("illegal VPI link type (should be 1|2).");
     return false;
+}
+
+/*
+ * PciParams5thGen Class implementation:
+ */
+
+// Adrianc: atm we check only for SRIOV support.
+// need to add mechanism to check support for a specific parameter.
+bool PciParams5thGen::cfgSupported(mfile* mf)
+{
+    MError rc;
+    bool suppRead, suppWrite;
+    rc = nvqcCom5thGen(mf, getPciCapabilitiesTlvTypeBe(), suppRead, suppWrite);
+    if (rc) {
+        errmsg("Failed to get PCI capabilities parameter capabilities. %s", m_err2str(rc));
+        return false;
+    }
+    if (!suppRead) {
+        return false;
+    }
+
+    if (getDefaultsAndCapabilities(mf) != MCE_SUCCESS) {
+        return false;
+    }
+
+    if (!_sriovSupported && !_fppSupported) {
+        return false;
+    }
+
+    rc = nvqcCom5thGen(mf, getPciSettingsTlvTypeBe(), suppRead, suppWrite);
+    if (rc) {
+        errmsg("Failed to get PCI settings parameter capabilities. %s", m_err2str(rc));
+        return false;
+    }
+    return suppRead&suppWrite;
+}
+
+void PciParams5thGen::setParam(mlxCfgParam paramType, u_int32_t val)
+{
+    if (paramType == Mcp_Sriov_En) {
+        _sriovEn = val;
+    } else if (paramType == Mcp_Num_Of_Vfs) {
+        _numOfVfs = val;
+    } else if (paramType == Mcp_Fpp_En) {
+        _fppEn = val;
+    }
+}
+
+u_int32_t PciParams5thGen::getParam(mlxCfgParam paramType)
+{
+    if (paramType == Mcp_Sriov_En) {
+        return _sriovEn;
+    } else if (paramType == Mcp_Num_Of_Vfs) {
+        return _numOfVfs;
+    } else if (paramType == Mcp_Fpp_En) {
+        return _fppEn;
+    }
+
+    return MLXCFG_UNKNOWN;
+}
+
+int PciParams5thGen::getFromDev(mfile* mf)
+{
+    MError mRc;
+    u_int8_t tlvBuff[TOOLS_OPEN_PCI_CONFIGURATION_SIZE] = {0};
+    struct tools_open_pci_configuration pciSettingsTlv;
+    memset(&pciSettingsTlv, 0, sizeof(pciSettingsTlv));
+
+    if (_updated) {
+        return MCE_SUCCESS;
+    }
+
+    mRc = mnvaCom5thGen(mf, &tlvBuff[0], TOOLS_OPEN_PCI_CONFIGURATION_SIZE, getPciSettingsTlvTypeBe(), REG_ACCESS_METHOD_GET);
+
+    if (mRc) {
+        if (mRc == ME_REG_ACCESS_RES_NOT_AVLBL) {
+            return MCE_SUCCESS;
+        }
+        return errmsg("Failed to get PCI configuration: %s", m_err2str(mRc));
+    }
+    // unpack and update
+    tools_open_pci_configuration_unpack(&pciSettingsTlv, &tlvBuff[0]);
+    if (pciSettingsTlv.sriov_valid) {
+        _sriovEn = pciSettingsTlv.sriov_en;
+        _numOfVfs = pciSettingsTlv.total_vfs;
+        _updated = true;
+    }
+    if (pciSettingsTlv.fpp_valid) {
+        _fppEn = pciSettingsTlv.fpp_en;
+        _updated = true;
+    }
+   return MCE_SUCCESS;
+}
+
+int PciParams5thGen::setOnDev(mfile* mf, bool ignoreCheck)
+{
+    MError mRc;
+
+    if (_fppEn == MLXCFG_UNKNOWN && (_sriovEn == MLXCFG_UNKNOWN || _numOfVfs == MLXCFG_UNKNOWN)) {
+        return errmsg("%s please specify all the parameters for SRIOV settings.", err() ? err() : "");
+    }
+
+    if (!ignoreCheck && !checkCfg()) {
+        return MCE_BAD_PARAMS;
+    }
+    // get Tlv modify it and set it
+    u_int8_t tlvBuff[TOOLS_OPEN_PCI_CONFIGURATION_SIZE] = {0};
+    struct tools_open_pci_configuration pciSettingsTlv;
+    memset(&pciSettingsTlv, 0, sizeof(pciSettingsTlv));
+
+    mRc = mnvaCom5thGen(mf, tlvBuff, TOOLS_OPEN_PCI_CONFIGURATION_SIZE, getPciSettingsTlvTypeBe(), REG_ACCESS_METHOD_GET);
+    if (mRc && mRc != ME_REG_ACCESS_RES_NOT_AVLBL) {
+        return errmsg("failed to set PCI settings: %s", m_err2str(mRc));
+    }
+    tools_open_pci_configuration_unpack(&pciSettingsTlv, tlvBuff);
+
+    if (_sriovSupported) {
+        pciSettingsTlv.sriov_valid = 1;
+        pciSettingsTlv.sriov_en = _sriovEn;
+        pciSettingsTlv.total_vfs = _numOfVfs;
+    } else if (pciSettingsTlv.sriov_valid && pciSettingsTlv.sriov_en != _sriovEn) {
+        return errmsg("SRIOV_EN is not configurable!");
+    }
+    if (_fppSupported) {
+        pciSettingsTlv.fpp_en = _fppEn;
+        pciSettingsTlv.fpp_valid = 1;
+    } else if (pciSettingsTlv.fpp_valid && pciSettingsTlv.fpp_en != _fppEn) {
+        return errmsg("FPP_EN is not configurable!");
+    }
+
+    if (pciSettingsTlv.sriov_en && !pciSettingsTlv.fpp_en) {
+        return errmsg("FPP should be enabled while SRIOV is enabled");
+    }
+    /* Turning on FPP where num of PFs < 2 in devices with dual ports (max pfs > 1)
+     * should apply numOfPfs to 2 */
+    if (pciSettingsTlv.fpp_en && _numPfsSupported && (_maxNumPfs > 1)  && (pciSettingsTlv.num_pfs < 2)) {
+        pciSettingsTlv.num_pfs = 2;
+    }
+    // pack it
+    tools_open_pci_configuration_pack(&pciSettingsTlv, tlvBuff);
+
+    mRc = mnvaCom5thGen(mf, tlvBuff, TOOLS_OPEN_PCI_CONFIGURATION_SIZE, getPciSettingsTlvTypeBe(), REG_ACCESS_METHOD_SET);
+
+    if (mRc) {
+        return errmsg("failed to set PCI settings: %s", m_err2str(mRc));
+    }
+    _updated = false;
+
+    return MCE_SUCCESS;
+}
+
+int PciParams5thGen::getDefaultParams(mfile* mf)
+{
+    return getDefaultsAndCapabilities(mf);
+}
+
+int PciParams5thGen::getDefaultsAndCapabilities(mfile* mf)
+{
+    MError rc;
+    u_int8_t tlvBuff[TOOLS_OPEN_PCI_CAPABILITIES_SIZE] = {0};
+    struct tools_open_pci_capabilities pciCapabilitesTlv;
+    memset(&pciCapabilitesTlv, 0, sizeof(pciCapabilitesTlv));
+    rc = mnvaCom5thGen(mf, &tlvBuff[0], TOOLS_OPEN_PCI_CAPABILITIES_SIZE, getPciCapabilitiesTlvTypeBe(), REG_ACCESS_METHOD_GET);
+    if (rc) {
+        return errmsg("Failed to get PCI capabilities parameter. %s", m_err2str(rc));
+    }
+    tools_open_pci_capabilities_unpack(&pciCapabilitesTlv, tlvBuff);
+    _sriovSupported = pciCapabilitesTlv.sriov_support;
+    _maxVfsPerPf = pciCapabilitesTlv.max_vfs_per_pf_valid ? pciCapabilitesTlv.max_vfs_per_pf : 0;
+    _fppSupported = pciCapabilitesTlv.fpp_support;
+    _numPfsSupported = pciCapabilitesTlv.num_pfs_supported;
+    _maxNumPfs = pciCapabilitesTlv.max_num_pfs;
+
+    return MCE_SUCCESS;
+}
+
+u_int32_t PciParams5thGen::getPciSettingsTlvTypeBe()
+{
+    struct tools_open_global_type type;
+    u_int32_t tlvType = 0;
+
+    type.param_class = CLASS_GLOBAL;
+    type.param_idx = tlvTypeIdx;
+    tools_open_global_type_pack(&type, (u_int8_t*)&tlvType);
+    return tlvType;
+}
+
+u_int32_t PciParams5thGen::getPciCapabilitiesTlvTypeBe()
+{
+    struct tools_open_global_type type;
+    u_int32_t tlvType = 0;
+
+    type.param_class = CLASS_GLOBAL;
+    type.param_idx = PCI_CAPABILITES_TYPE;
+    tools_open_global_type_pack(&type, (u_int8_t*)&tlvType);
+    return tlvType;
+}
+
+bool PciParams5thGen::hardLimitCheck()
+{
+    if ((_numOfVfs > _maxVfsPerPf)) {
+        errmsg("Number of VFs exceeds limit (%d).", _maxVfsPerPf);
+        return false;
+    }
+
+    if (_sriovEn != 0 && _sriovEn != 1) {
+        errmsg("Illegal SRIOV_EN parameters value. (should be 0 or 1)");
+        return false;
+    }
+
+    if (_fppEn != 0 && _fppEn != 1) {
+        errmsg("Illegal FPP_EN parameters value. (should be 0 or 1)");
+        return false;
+    }
+
+
+    return true;
 }

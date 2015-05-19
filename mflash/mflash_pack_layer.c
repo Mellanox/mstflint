@@ -125,7 +125,15 @@ int run_mfpa_command(mfile *mf, u_int8_t access_cmd, u_int8_t flash_bank, u_int3
     }
 
     if (fw_sector_size != NULL) {
-        *fw_sector_size = mfpa.sector_size ? ((1 << mfpa.sector_size) * 1024) : 0; // 2^log2_sector_size_in_kb * 1k
+        if (mfpa.sector_size) {
+            *fw_sector_size = 1 << mfpa.sector_size; // 2^log2_sector_size_in_KB
+            // Hack: some CX3 FW has this number in KB, possible values : 4 or 64
+            if (*fw_sector_size == 4 || *fw_sector_size == 64 ) {
+                *fw_sector_size *= 1024;
+            }
+        } else {
+            *fw_sector_size = 0;
+        }
     }
 
     return MFE_OK;

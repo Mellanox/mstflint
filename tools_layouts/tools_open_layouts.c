@@ -29,6 +29,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+ 
 
 /***
  *** This file was generated at "2015-03-30 10:56:56"
@@ -1782,6 +1783,419 @@ void tools_open_mnv_cfg_dump(const union tools_open_mnv_cfg *ptr_struct, FILE* f
 	tools_open_mnv_cfg_print(ptr_struct, file, 0);
 }
 
+void tools_open_pci_capabilities_pack(const struct tools_open_pci_capabilities *ptr_struct, u_int8_t* ptr_buff){
+	u_int32_t offset;
+	int i=0;
+	(void)offset;
+	(void)i;
+	(void)ptr_struct;
+	(void)ptr_buff;
+
+	offset=7;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->pf_bar_size_supported);
+
+	offset=6;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->vf_bar_size_supported);
+
+	offset=5;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->num_pf_msix_supported);
+
+	offset=4;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->num_vf_msix_supported);
+
+	offset=3;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->num_pfs_supported);
+
+	offset=2;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->log_max_total_bar_valid);
+
+	offset=1;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->max_total_msix_valid);
+
+	offset=0;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->max_vfs_per_pf_valid);
+
+	offset=48;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->max_vfs_per_pf);
+
+	offset=44;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->max_num_pfs);
+
+	offset=34;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->fpp_support);
+
+	offset=33;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->vf_qos_control_support);
+
+	offset=32;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->sriov_support);
+
+	offset=90;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 6, (u_int32_t)ptr_struct->log_max_pf_uar_bar_size1);
+
+	offset=84;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 6, (u_int32_t)ptr_struct->log_max_vf_uar_bar_size);
+
+	offset=74;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 10, (u_int32_t)ptr_struct->max_num_pf_msix);
+
+	offset=64;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 10, (u_int32_t)ptr_struct->max_num_vf_msix);
+
+	offset=96;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int64_t)ptr_struct->max_total_msix);
+
+	offset=128;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int64_t)ptr_struct->log_max_total_bar_h);
+
+	offset=160;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int64_t)ptr_struct->log_max_total_bar_l);
+
+}
+
+void tools_open_pci_capabilities_unpack(struct tools_open_pci_capabilities *ptr_struct, const u_int8_t* ptr_buff){
+	u_int32_t offset;
+	int i=0;
+	u_int8_t val=0;
+	(void)val;
+	(void)offset;
+	(void)i;
+	(void)ptr_struct;
+	(void)ptr_buff;
+
+	offset=7;
+	ptr_struct->pf_bar_size_supported = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset=6;
+	ptr_struct->vf_bar_size_supported = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset=5;
+	ptr_struct->num_pf_msix_supported = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset=4;
+	ptr_struct->num_vf_msix_supported = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset=3;
+	ptr_struct->num_pfs_supported = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset=2;
+	ptr_struct->log_max_total_bar_valid = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset=1;
+	ptr_struct->max_total_msix_valid = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset=0;
+	ptr_struct->max_vfs_per_pf_valid = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset=48;
+	ptr_struct->max_vfs_per_pf = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+
+	offset=44;
+	ptr_struct->max_num_pfs = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
+
+	offset=34;
+	ptr_struct->fpp_support = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset=33;
+	ptr_struct->vf_qos_control_support = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset=32;
+	ptr_struct->sriov_support = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset=90;
+	ptr_struct->log_max_pf_uar_bar_size1 = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 6);
+
+	offset=84;
+	ptr_struct->log_max_vf_uar_bar_size = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 6);
+
+	offset=74;
+	ptr_struct->max_num_pf_msix = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 10);
+
+	offset=64;
+	ptr_struct->max_num_vf_msix = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 10);
+
+	offset=96;
+	ptr_struct->max_total_msix = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+
+	offset=128;
+	ptr_struct->log_max_total_bar_h = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+
+	offset=160;
+	ptr_struct->log_max_total_bar_l = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+
+}
+
+void tools_open_pci_capabilities_print(const struct tools_open_pci_capabilities *ptr_struct, FILE* file, int indent_level){
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "======== tools_open_pci_capabilities ========\n");
+	int i=0;
+	(void)i;(void)ptr_struct;
+	(void)file;
+	(void)indent_level;
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "pf_bar_size_supported : "UH_FMT"\n", ptr_struct->pf_bar_size_supported);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "vf_bar_size_supported : "UH_FMT"\n", ptr_struct->vf_bar_size_supported);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "num_pf_msix_supported : "UH_FMT"\n", ptr_struct->num_pf_msix_supported);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "num_vf_msix_supported : "UH_FMT"\n", ptr_struct->num_vf_msix_supported);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "num_pfs_supported    : "UH_FMT"\n", ptr_struct->num_pfs_supported);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "log_max_total_bar_valid : "UH_FMT"\n", ptr_struct->log_max_total_bar_valid);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "max_total_msix_valid : "UH_FMT"\n", ptr_struct->max_total_msix_valid);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "max_vfs_per_pf_valid : "UH_FMT"\n", ptr_struct->max_vfs_per_pf_valid);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "max_vfs_per_pf       : "UH_FMT"\n", ptr_struct->max_vfs_per_pf);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "max_num_pfs          : "UH_FMT"\n", ptr_struct->max_num_pfs);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "fpp_support          : "UH_FMT"\n", ptr_struct->fpp_support);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "vf_qos_control_support : "UH_FMT"\n", ptr_struct->vf_qos_control_support);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "sriov_support        : "UH_FMT"\n", ptr_struct->sriov_support);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "log_max_pf_uar_bar_size1 : "UH_FMT"\n", ptr_struct->log_max_pf_uar_bar_size1);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "log_max_vf_uar_bar_size : "UH_FMT"\n", ptr_struct->log_max_vf_uar_bar_size);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "max_num_pf_msix      : "UH_FMT"\n", ptr_struct->max_num_pf_msix);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "max_num_vf_msix      : "UH_FMT"\n", ptr_struct->max_num_vf_msix);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "max_total_msix       : "U32H_FMT"\n", ptr_struct->max_total_msix);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "log_max_total_bar_h  : "U32H_FMT"\n", ptr_struct->log_max_total_bar_h);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "log_max_total_bar_l  : "U32H_FMT"\n", ptr_struct->log_max_total_bar_l);
+
+}
+
+int tools_open_pci_capabilities_size(void){
+	 return 24;
+}
+
+void tools_open_pci_capabilities_dump(const struct tools_open_pci_capabilities *ptr_struct, FILE* file) {
+	tools_open_pci_capabilities_print(ptr_struct, file, 0);
+}
+
+void tools_open_pci_configuration_pack(const struct tools_open_pci_configuration *ptr_struct, u_int8_t* ptr_buff){
+	u_int32_t offset;
+	int i=0;
+	(void)offset;
+	(void)i;
+	(void)ptr_struct;
+	(void)ptr_buff;
+
+	offset=7;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->pf_bar_size_valid);
+
+	offset=6;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->vf_bar_size_valid);
+
+	offset=5;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->num_pfs_msix_valid);
+
+	offset=4;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->num_vfs_msix_valid);
+
+	offset=3;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->num_pfs_valid);
+
+	offset=2;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->fpp_valid);
+
+	offset=1;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->full_vf_qos_valid);
+
+	offset=0;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->sriov_valid);
+
+	offset=48;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->total_vfs);
+
+	offset=44;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->num_pfs);
+
+	offset=34;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->fpp_en);
+
+	offset=33;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->full_vf_qos);
+
+	offset=32;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->sriov_en);
+
+	offset=90;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 6, (u_int32_t)ptr_struct->log_vf_uar_bar_size);
+
+	offset=84;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 6, (u_int32_t)ptr_struct->log_pf_uar_bar_size);
+
+	offset=74;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 10, (u_int32_t)ptr_struct->num_pf_msix);
+
+	offset=64;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 10, (u_int32_t)ptr_struct->num_vf_msix);
+
+}
+
+void tools_open_pci_configuration_unpack(struct tools_open_pci_configuration *ptr_struct, const u_int8_t* ptr_buff){
+	u_int32_t offset;
+	int i=0;
+	u_int8_t val=0;
+	(void)val;
+	(void)offset;
+	(void)i;
+	(void)ptr_struct;
+	(void)ptr_buff;
+
+	offset=7;
+	ptr_struct->pf_bar_size_valid = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset=6;
+	ptr_struct->vf_bar_size_valid = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset=5;
+	ptr_struct->num_pfs_msix_valid = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset=4;
+	ptr_struct->num_vfs_msix_valid = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset=3;
+	ptr_struct->num_pfs_valid = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset=2;
+	ptr_struct->fpp_valid = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset=1;
+	ptr_struct->full_vf_qos_valid = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset=0;
+	ptr_struct->sriov_valid = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset=48;
+	ptr_struct->total_vfs = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+
+	offset=44;
+	ptr_struct->num_pfs = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
+
+	offset=34;
+	ptr_struct->fpp_en = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset=33;
+	ptr_struct->full_vf_qos = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset=32;
+	ptr_struct->sriov_en = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset=90;
+	ptr_struct->log_vf_uar_bar_size = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 6);
+
+	offset=84;
+	ptr_struct->log_pf_uar_bar_size = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 6);
+
+	offset=74;
+	ptr_struct->num_pf_msix = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 10);
+
+	offset=64;
+	ptr_struct->num_vf_msix = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 10);
+
+}
+
+void tools_open_pci_configuration_print(const struct tools_open_pci_configuration *ptr_struct, FILE* file, int indent_level){
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "======== tools_open_pci_configuration ========\n");
+	int i=0;
+	(void)i;(void)ptr_struct;
+	(void)file;
+	(void)indent_level;
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "pf_bar_size_valid    : "UH_FMT"\n", ptr_struct->pf_bar_size_valid);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "vf_bar_size_valid    : "UH_FMT"\n", ptr_struct->vf_bar_size_valid);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "num_pfs_msix_valid   : "UH_FMT"\n", ptr_struct->num_pfs_msix_valid);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "num_vfs_msix_valid   : "UH_FMT"\n", ptr_struct->num_vfs_msix_valid);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "num_pfs_valid        : "UH_FMT"\n", ptr_struct->num_pfs_valid);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "fpp_valid            : "UH_FMT"\n", ptr_struct->fpp_valid);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "full_vf_qos_valid    : "UH_FMT"\n", ptr_struct->full_vf_qos_valid);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "sriov_valid          : "UH_FMT"\n", ptr_struct->sriov_valid);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "total_vfs            : "UH_FMT"\n", ptr_struct->total_vfs);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "num_pfs              : "UH_FMT"\n", ptr_struct->num_pfs);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "fpp_en               : "UH_FMT"\n", ptr_struct->fpp_en);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "full_vf_qos          : "UH_FMT"\n", ptr_struct->full_vf_qos);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "sriov_en             : "UH_FMT"\n", ptr_struct->sriov_en);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "log_vf_uar_bar_size  : "UH_FMT"\n", ptr_struct->log_vf_uar_bar_size);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "log_pf_uar_bar_size  : "UH_FMT"\n", ptr_struct->log_pf_uar_bar_size);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "num_pf_msix          : "UH_FMT"\n", ptr_struct->num_pf_msix);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "num_vf_msix          : "UH_FMT"\n", ptr_struct->num_vf_msix);
+
+}
+
+int tools_open_pci_configuration_size(void){
+	 return 12;
+}
+
+void tools_open_pci_configuration_dump(const struct tools_open_pci_configuration *ptr_struct, FILE* file) {
+	tools_open_pci_configuration_print(ptr_struct, file, 0);
+}
+
 void tools_open_iscsi_settings_pack(const struct tools_open_iscsi_settings *ptr_struct, u_int8_t* ptr_buff){
 	u_int32_t offset;
 	int i=0;
@@ -2491,12 +2905,12 @@ void tools_open_access_registers_dump(const union tools_open_access_registers *p
 
 void tools_open_nv_cfg_pack(const union tools_open_nv_cfg *ptr_struct, u_int8_t* ptr_buff)
 {
-	tools_open_iscsi_settings_pack(&(ptr_struct->iscsi_settings), ptr_buff);
+	tools_open_pci_capabilities_pack(&(ptr_struct->pci_capabilities), ptr_buff);
 }
 
 void tools_open_nv_cfg_unpack(union tools_open_nv_cfg *ptr_struct, const u_int8_t* ptr_buff)
 {
-	tools_open_iscsi_settings_unpack(&(ptr_struct->iscsi_settings), ptr_buff);
+	tools_open_pci_capabilities_unpack(&(ptr_struct->pci_capabilities), ptr_buff);
 }
 
 void tools_open_nv_cfg_print(const union tools_open_nv_cfg *ptr_struct, FILE* file, int indent_level){
@@ -2538,6 +2952,14 @@ void tools_open_nv_cfg_print(const union tools_open_nv_cfg *ptr_struct, FILE* fi
 	adb2c_add_indentation(file, indent_level);
 	fprintf(file, "iscsi_settings:\n");
 	tools_open_iscsi_settings_print(&(ptr_struct->iscsi_settings), file, indent_level + 1);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "pci_configuration:\n");
+	tools_open_pci_configuration_print(&(ptr_struct->pci_configuration), file, indent_level + 1);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "pci_capabilities:\n");
+	tools_open_pci_capabilities_print(&(ptr_struct->pci_capabilities), file, indent_level + 1);
 
 }
 

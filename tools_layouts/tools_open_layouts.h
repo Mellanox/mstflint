@@ -29,6 +29,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+ 
 
 /***
  *** This file was generated at "2015-03-30 10:56:56"
@@ -542,6 +543,138 @@ union tools_open_mnv_cfg {
 };
 
 /* Description -   */
+/* Size in bytes - 24 */
+struct tools_open_pci_capabilities {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - 1 when max_pf_uar_bar_size field is configurable and the log_max_pf_uar_bar_size field is valid */
+	/* 0.24 - 0.24 */
+	 u_int8_t pf_bar_size_supported;
+	/* Description - 1 when max_vf_uar_bar_size field is configurable and the log_max_vf_uar_bar_size field is valid */
+	/* 0.25 - 0.25 */
+	 u_int8_t vf_bar_size_supported;
+	/* Description - 1 when num_pf_msix field is configurable and the max_num_pf_msix field is valid */
+	/* 0.26 - 0.26 */
+	 u_int8_t num_pf_msix_supported;
+	/* Description - 1 when the num_vf_msix field is configurable and max_num_pfs is valid */
+	/* 0.27 - 0.27 */
+	 u_int8_t num_vf_msix_supported;
+	/* Description - 1 when the num_pfs field is configurable and max_num_pfs is valid */
+	/* 0.28 - 0.28 */
+	 u_int8_t num_pfs_supported;
+	/* Description - 1 when the log_max_total_bar field is valid */
+	/* 0.29 - 0.29 */
+	 u_int8_t log_max_total_bar_valid;
+	/* Description - 1 when the total_msix field is valid */
+	/* 0.30 - 0.30 */
+	 u_int8_t max_total_msix_valid;
+	/* Description - 1 when max_vfs_per_pf fields is valid. */
+	/* 0.31 - 4.31 */
+	 u_int8_t max_vfs_per_pf_valid;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - The maximum number of VFs that can be set in the total_vfs settings (per PF) */
+	/* 4.0 - 4.15 */
+	 u_int16_t max_vfs_per_pf;
+	/* Description - Maximum number of PFs per port */
+	/* 4.16 - 4.19 */
+	 u_int8_t max_num_pfs;
+	/* Description - 1 - function per port settings is configurable */
+	/* 4.29 - 4.29 */
+	 u_int8_t fpp_support;
+	/* Description - 1 - the device supports controlling the VF QoS setting */
+	/* 4.30 - 4.30 */
+	 u_int8_t vf_qos_control_support;
+	/* Description - 1 when SRIOV is configurable */
+	/* 4.31 - 8.31 */
+	 u_int8_t sriov_support;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - Log 2 of the maximum size of a PF's UAR BAR */
+	/* 8.0 - 8.5 */
+	 u_int8_t log_max_pf_uar_bar_size1;
+	/* Description - Log 2 of the maximum size of a VF's UAR BAR */
+	/* 8.6 - 8.11 */
+	 u_int8_t log_max_vf_uar_bar_size;
+	/* Description - Maximum number of MSI-X vectors and EQs per PF */
+	/* 8.12 - 8.21 */
+	 u_int16_t max_num_pf_msix;
+	/* Description - Maximum number of MSI-X vectors and EQs per VF */
+	/* 8.22 - 12.31 */
+	 u_int16_t max_num_vf_msix;
+/*---------------- DWORD[3] (Offset 0xc) ----------------*/
+	/* Description - Maximum number of MSI-X for the aggregat of all PF and VFs */
+	/* 12.0 - 16.31 */
+	 u_int32_t max_total_msix;
+/*---------------- DWORD[4] (Offset 0x10) ----------------*/
+	/* Description - Log 2 of the maximum total of the MMIO space for all PFs and VFs combined */
+	/* 16.0 - 20.31 */
+	 u_int32_t log_max_total_bar_h;
+/*---------------- DWORD[5] (Offset 0x14) ----------------*/
+	/* Description - Log 2 of the maximum total of the MMIO space for all PFs and VFs combined */
+	/* 20.0 - 24.31 */
+	 u_int32_t log_max_total_bar_l;
+};
+
+/* Description -   */
+/* Size in bytes - 12 */
+struct tools_open_pci_configuration {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - 1 when log_pf_uar_bar_size field is valid */
+	/* 0.24 - 0.24 */
+	 u_int8_t pf_bar_size_valid;
+	/* Description - 1 when log_vf_uar_bar_size field is valid */
+	/* 0.25 - 0.25 */
+	 u_int8_t vf_bar_size_valid;
+	/* Description - 1 when num_pfs_msix field is valid */
+	/* 0.26 - 0.26 */
+	 u_int8_t num_pfs_msix_valid;
+	/* Description - 1 when num_vfs_msix field is valid */
+	/* 0.27 - 0.27 */
+	 u_int8_t num_vfs_msix_valid;
+	/* Description - 1 when num_pfs field is valid */
+	/* 0.28 - 0.28 */
+	 u_int8_t num_pfs_valid;
+	/* Description - 1 when fpp_en field is valid */
+	/* 0.29 - 0.29 */
+	 u_int8_t fpp_valid;
+	/* Description - 1 when the full_vf_qos field below is valid */
+	/* 0.30 - 0.30 */
+	 u_int8_t full_vf_qos_valid;
+	/* Description - 1 when the sriov_en and total_vfs field below are valid. */
+	/* 0.31 - 4.31 */
+	 u_int8_t sriov_valid;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - The total number of VFs that can be supported */
+	/* 4.0 - 4.15 */
+	 u_int16_t total_vfs;
+	/* Description - Number of PFs per port */
+	/* 4.16 - 4.19 */
+	 u_int8_t num_pfs;
+	/* Description - 0 - single PF for both ports
+1 - function per-port */
+	/* 4.29 - 4.29 */
+	 u_int8_t fpp_en;
+	/* Description - 0 - Use reduced QoS support level on VFs
+1 - Support full QoS on VFs */
+	/* 4.30 - 4.30 */
+	 u_int8_t full_vf_qos;
+	/* Description - 1 when SRIOV is enabled: SRIOV capability will appear in the PCI configuration header */
+	/* 4.31 - 8.31 */
+	 u_int8_t sriov_en;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - Log 2 of the size of a VF's UAR BAR */
+	/* 8.0 - 8.5 */
+	 u_int8_t log_vf_uar_bar_size;
+	/* Description - Log 2 of the size of a PF's UAR BAR */
+	/* 8.6 - 8.11 */
+	 u_int8_t log_pf_uar_bar_size;
+	/* Description - Number of MSI-X vectors and EQs per PF */
+	/* 8.12 - 8.21 */
+	 u_int16_t num_pf_msix;
+	/* Description - Number of MSI-X vectors and EQs per VF */
+	/* 8.22 - 12.31 */
+	 u_int16_t num_vf_msix;
+};
+
+/* Description -   */
 /* Size in bytes - 12 */
 struct tools_open_iscsi_settings {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
@@ -784,6 +917,12 @@ union tools_open_nv_cfg {
 	/* Description -  */
 	/* 0.0 - 12.31 */
 	 struct tools_open_iscsi_settings iscsi_settings;
+	/* Description -  */
+	/* 0.0 - 12.31 */
+	 struct tools_open_pci_configuration pci_configuration;
+	/* Description -  */
+	/* 0.0 - 24.31 */
+	 struct tools_open_pci_capabilities pci_capabilities;
 };
 
 /* Description -   */
@@ -977,6 +1116,20 @@ void tools_open_mnv_cfg_print(const union tools_open_mnv_cfg *ptr_struct, FILE* 
 int tools_open_mnv_cfg_size(void);
 #define TOOLS_OPEN_MNV_CFG_SIZE    (0x100)
 void tools_open_mnv_cfg_dump(const union tools_open_mnv_cfg *ptr_struct, FILE* file);
+/* pci_capabilities */
+void tools_open_pci_capabilities_pack(const struct tools_open_pci_capabilities *ptr_struct, u_int8_t* ptr_buff);
+void tools_open_pci_capabilities_unpack(struct tools_open_pci_capabilities *ptr_struct, const u_int8_t* ptr_buff);
+void tools_open_pci_capabilities_print(const struct tools_open_pci_capabilities *ptr_struct, FILE* file, int indent_level);
+int tools_open_pci_capabilities_size(void);
+#define TOOLS_OPEN_PCI_CAPABILITIES_SIZE    (0x18)
+void tools_open_pci_capabilities_dump(const struct tools_open_pci_capabilities *ptr_struct, FILE* file);
+/* pci_configuration */
+void tools_open_pci_configuration_pack(const struct tools_open_pci_configuration *ptr_struct, u_int8_t* ptr_buff);
+void tools_open_pci_configuration_unpack(struct tools_open_pci_configuration *ptr_struct, const u_int8_t* ptr_buff);
+void tools_open_pci_configuration_print(const struct tools_open_pci_configuration *ptr_struct, FILE* file, int indent_level);
+int tools_open_pci_configuration_size(void);
+#define TOOLS_OPEN_PCI_CONFIGURATION_SIZE    (0xc)
+void tools_open_pci_configuration_dump(const struct tools_open_pci_configuration *ptr_struct, FILE* file);
 /* iscsi_settings */
 void tools_open_iscsi_settings_pack(const struct tools_open_iscsi_settings *ptr_struct, u_int8_t* ptr_buff);
 void tools_open_iscsi_settings_unpack(struct tools_open_iscsi_settings *ptr_struct, const u_int8_t* ptr_buff);

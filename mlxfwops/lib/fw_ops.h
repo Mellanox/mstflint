@@ -64,6 +64,7 @@ public:
     {
         memset(_sectionsToRead, 0, sizeof(_sectionsToRead));
         memset(&_fwImgInfo, 0, sizeof(_fwImgInfo));
+        memset(&_fwParams, 0, sizeof(_fwParams));
     };
 
 
@@ -112,6 +113,7 @@ public:
 
     //needed for flint low level operations
     bool FwSwReset();
+    virtual bool CheckCX4Device() {return true;}
 
     
     //virtual bool FwBurnBlock(FwOperations &FwImageAccess); // Add call back
@@ -330,12 +332,13 @@ protected:
     bool ModifyImageFile(const char *fimage, u_int32_t addr, void *data, int cnt);
     bool WriteImageToFile(const char *file_name, u_int8_t *data, u_int32_t length);
     bool FwBurnData(u_int32_t *data, u_int32_t dataSize, ProgressCallBack progressFunc);
-
+    static bool FwAccessCreate(fw_ops_params_t& fwParams, FBase **ioAccessP);
 
     // Protected Members
     FBase*    _ioAccess;
     bool      _isCached;
     FwImgInfo _fwImgInfo;
+    fw_ops_params_t _fwParams;
     std::vector<u_int8_t> _romSect;
     std::vector<u_int8_t> _fwConfSect;
     std::vector<u_int8_t> _hashFileSect;
@@ -363,10 +366,10 @@ private:
 #endif
     static int      getFileSignature(const char* fname);
     static int      getBufferSignature(u_int8_t* buf, u_int32_t size);
-    static bool     FwAccessCreate(fw_ops_params_t& fwParams, FBase **ioAccessP);
     static u_int8_t CheckFwFormat(FBase& f, bool getFwFormatFromImg = false);
     static bool     CntxFindMagicPattern  (FBase* ioAccess, u_int32_t addr);
     static void     WriteToErrBuff(char* errBuff, const char* errStr, int size);
+    void BackUpFwParams(fw_ops_params_t& fwParams);
     static const char * err2str(int errNum);
     // Methods
 

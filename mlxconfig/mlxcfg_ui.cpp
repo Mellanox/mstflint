@@ -120,7 +120,7 @@ void initHandler()
     #define NO_DEV_ERR "No devices found, mst might be stopped. You may need to run 'mst start' to load MST modules. "
 #endif
 
-std::string MlxCfgParams::param2str[Mcp_Last]= {"SRIOV_EN", "NUM_OF_VFS", "WOL_MAGIC_EN_P1", "WOL_MAGIC_EN_P2",\
+std::string MlxCfgParams::param2str[Mcp_Last]= {"SRIOV_EN", "NUM_OF_VFS", "FPP_EN", "WOL_MAGIC_EN_P1", "WOL_MAGIC_EN_P2",\
                                                 "LINK_TYPE_P1", "LINK_TYPE_P2", "LOG_BAR_SIZE"};
 
 u_int32_t MlxCfgParams::getParamVal(mlxCfgParam p)
@@ -357,7 +357,8 @@ mlxCfgStatus MlxCfg::setDevCfg()
     }
 
     printf("Done!\n");
-    printf("-I- Please reboot machine to load new configurations.\n");
+    const char* resetStr = ops.loadConfigurationGetStr();
+    printf("-I- %s\n", resetStr);
     return MLX_CFG_OK;
 
 }
@@ -452,7 +453,7 @@ mlxCfgStatus MlxCfg::resetDevCfg(const char* dev)
     if (rc) {
         return err(false, "failed to reset configurations. %s", ops.err());
     }
-
+    ops.loadConfigurationGetStr();
     return MLX_CFG_OK;
 }
 

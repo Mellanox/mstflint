@@ -36,6 +36,7 @@
 #include <vector>
 
 #include <tools_utils.h>
+#include <bit_slice.h>
 #include <mtcr.h>
 #include <reg_access/reg_access.h>
 
@@ -46,6 +47,15 @@
 
 #define FS3_DFLT_GUID_NUM_TO_ALLOCATE 8
 #define FS3_DFLT_GUID_STEP 1
+
+// FW Binary version
+
+// max supported major version
+#define FS3_MAX_BIN_VER_MAJOR 1
+
+// min supported version
+#define FS3_MIN_BIN_VER_MAJOR 1
+#define FS3_MIN_BIN_VER_MINOR 1
 
 const u_int32_t Fs3Operations::_itocSignature[4] = {
         ITOC_ASCII,   // Ascii of "MTFW"
@@ -189,6 +199,12 @@ bool Fs3Operations::GetMfgInfo(u_int8_t *buff)
         major = ((_IIVerDw) >> 24) & 0xff;
 #define CHECK_IMAGE_INFO_VERSION(major)\
     ((major) == 0)
+
+#define FAIL_NO_OCR(str) do { \
+                        if (_fwParams.ignoreCacheRep == 0) {\
+                            return errmsg("-ocr flag must be specified for %s operation.", str);\
+                        }\
+                    } while (0)
 
 bool Fs3Operations::GetImageInfo(u_int8_t *buff)
 {
@@ -497,12 +513,31 @@ bool Fs3Operations::checkPreboot(u_int32_t* prebootBuff, u_int32_t size, VerifyC
     return true;
 }
 
+bool Fs3Operations::CheckBinVersion(u_int8_t binVerMajor, u_int8_t binVerMinor)
+{
+    if (binVerMajor == 0 && binVerMinor == 0) {
+        return true;
+    }
+
+    if (binVerMajor > FS3_MAX_BIN_VER_MAJOR) {
+        return errmsg("Unsupported binary version (%d.%d) please update to latest MFT package", binVerMajor, binVerMinor);
+    }
+
+    if (binVerMajor < FS3_MIN_BIN_VER_MAJOR || (binVerMajor == FS3_MIN_BIN_VER_MAJOR && binVerMinor < FS3_MIN_BIN_VER_MINOR)) {
+        return errmsg("Unsupported binary version (%d.%d) minimal supported version (%d.%d)", \
+                binVerMajor, binVerMinor, FS3_MIN_BIN_VER_MAJOR, FS3_MIN_BIN_VER_MINOR);
+    }
+
+    return true;
+}
+
 bool Fs3Operations::Fs3Verify(VerifyCallBack verifyCallBackFunc, bool show_itoc, struct QueryOptions queryOptions)
 {
     u_int32_t cntx_image_start[CNTX_START_POS_SIZE];
     u_int32_t cntx_image_num;
     u_int32_t buff[FS3_BOOT_START_IN_DW];
     u_int32_t offset;
+    u_int8_t binVerMajor = 0, binVerMinor = 0;
     bool bad_signature;
 
     CntxFindAllImageStart(_ioAccess, cntx_image_start, &cntx_image_num);
@@ -519,7 +554,13 @@ bool Fs3Operations::Fs3Verify(VerifyCallBack verifyCallBackFunc, bool show_itoc,
     READBUF((*_ioAccess), image_start, buff, FS3_BOOT_START, "Image header");
     Fs3UpdateImgCache((u_int8_t*)buff, 0, FS3_BOOT_START);
     TOCPUn(buff, FS3_BOOT_START_IN_DW);
-    _maxImgLog2Size = ((u_int8_t*)buff)[FS3_LOG2_CHUNK_SIZE_BYTE_OFFSET] ? ((u_int8_t*)buff)[FS3_LOG2_CHUNK_SIZE_BYTE_OFFSET] : FS3_LOG_CHUNK_SIZE;
+    _maxImgLog2Size = EXTRACT(buff[FS3_LOG2_CHUNK_SIZE_DW_OFFSET],16,8) ? EXTRACT(buff[FS3_LOG2_CHUNK_SIZE_DW_OFFSET],16,8) : FS3_LOG_CHUNK_SIZE;
+    binVerMajor = EXTRACT(buff[FS3_LOG2_CHUNK_SIZE_DW_OFFSET], 8, 8);
+    binVerMinor = EXTRACT(buff[FS3_LOG2_CHUNK_SIZE_DW_OFFSET], 0, 8);
+    // check if binary version is supported by the tool
+    if (!CheckBinVersion(binVerMajor, binVerMinor)) {
+        return false;
+    }
     // Put info
     _fwImgInfo.imgStart = image_start;
     // read the chunk size from the image header
@@ -617,19 +658,60 @@ bool Fs3Operations::FwInit()
     return true;
 }
 
+bool Fs3Operations::DevDataHackCheck(struct cibfw_itoc_entry *devTocEntry)
+{
+    if (_fwImgInfo.ext_info.chip_type != CT_CONNECT_IB) {
+        return false;
+    }
+    switch(devTocEntry->type) {
+    case FS3_NV_DATA2 :
+    case FS3_FW_NV_LOG :
+    case FS3_NV_DATA0 :
+        if (devTocEntry->device_data == 0 && devTocEntry->no_crc == 0 && devTocEntry->relative_addr == 1) {
+            return true;
+        }
+        break;
+    default :
+        break;
+    }
+    return false;
+}
 
-bool Fs3Operations::UpdateDevDataITOC(u_int8_t *image_data, struct toc_info *image_toc_entry, struct toc_info *flash_toc_arr, int flash_toc_size)
+#define GET_DIFFER_STR(flash_toc_entry, image_toc_entry) \
+        (flash_toc_entry->device_data != image_toc_entry->device_data) ? "device_data" : \
+                (flash_toc_entry->no_crc != image_toc_entry->no_crc)   ? "no_crc" : \
+                        (flash_toc_entry->relative_addr != image_toc_entry->relative_addr) ? "relative_addr" : ""
+
+bool Fs3Operations::UpdateDevDataITOC(u_int8_t *image_data, struct toc_info *image_toc_info_entry, struct toc_info *flash_toc_arr, int flash_toc_size)
 {
     u_int8_t itoc_data[CIBFW_ITOC_ENTRY_SIZE];
+    struct cibfw_itoc_entry *image_toc_entry = &image_toc_info_entry->toc_entry;
 
     for (int i = 0; i < flash_toc_size; i++) {
         struct toc_info *flash_toc_info = &flash_toc_arr[i];
         struct cibfw_itoc_entry *flash_toc_entry = &flash_toc_info->toc_entry;
-        if (flash_toc_entry->type == image_toc_entry->toc_entry.type) {
+        if (flash_toc_entry->type == image_toc_entry->type) {
+            // sanity checks on itoc entry
+            if ( (flash_toc_entry->device_data != image_toc_entry->device_data) || \
+                 (flash_toc_entry->no_crc != image_toc_entry->no_crc) || \
+                 (flash_toc_entry->relative_addr != image_toc_entry->relative_addr)) {
+                /* HACK: adrianc:remove at MFT-4.1.0
+                 * if we encounter NV_DATA0/NV_DATA1/FW_NV_LOG that are marked in the device as non dev data
+                 * it means a corrupt binary was burnt on device. take those entries from the image
+                 */
+                if (DevDataHackCheck(flash_toc_entry)) {
+                    // perform HACK : i.e keep itoc entry as is in the image
+                    continue;
+                } else {
+                    return errmsg("An inconsistency was found in %s section attributes. %s ITOC attribute differs",\
+                            GetSectionNameByType(image_toc_entry->type), GET_DIFFER_STR(flash_toc_entry, image_toc_entry));
+                }
+            }
+            // replace itoc entry in the image
             memset(itoc_data, 0, CIBFW_ITOC_ENTRY_SIZE);
             cibfw_itoc_entry_pack(flash_toc_entry, itoc_data);
-            memcpy(&image_data[image_toc_entry->entry_addr], itoc_data, CIBFW_ITOC_ENTRY_SIZE);
-            cibfw_itoc_entry_unpack(&image_toc_entry->toc_entry, &image_data[image_toc_entry->entry_addr]);
+            memcpy(&image_data[image_toc_info_entry->entry_addr], itoc_data, CIBFW_ITOC_ENTRY_SIZE);
+            cibfw_itoc_entry_unpack(&image_toc_info_entry->toc_entry, &image_data[image_toc_info_entry->entry_addr]);
         }
     }
     return true;
@@ -765,7 +847,10 @@ bool Fs3Operations::BurnFs3Image(Fs3Operations &imageOps,
             }
         }
     }
-
+    // sanity check on the image itoc array
+    if (!imageOps.CheckItocArray()) {
+        return errmsg("%s", imageOps.err());
+    }
     //find total image size that will be written
     for (int i = 0; i < imageOps._fs3ImgInfo.numOfItocs; i++) {
         struct toc_info *itoc_info_p = &imageOps._fs3ImgInfo.tocArr[i];
@@ -864,7 +949,6 @@ bool Fs3Operations::BurnFs3Image(Fs3Operations &imageOps,
     if (boot_address_was_updated == false) {
         report_warn("Failed to update FW boot address. Power cycle the device in order to load the new FW.\n");
     }
-
     return true;
 }
 bool Fs3Operations::Fs3Burn(Fs3Operations &imageOps, ExtBurnParams& burnParams)
@@ -925,6 +1009,16 @@ bool Fs3Operations::Fs3Burn(Fs3Operations &imageOps, ExtBurnParams& burnParams)
 
     if (devIntQueryRes && !CheckPSID(imageOps, burnParams.allowPsidChange)) {
         return false;
+    }
+
+    // TODO: adrianc: remove this in MFT-4.1.0
+    if(burnParams.burnFailsafe) {
+        if(!CheckAndFixCX4(false)) {
+            return false;
+        }
+        if(!FixCX4WriteProtection(false)) {
+            return false;
+        }
     }
 
     if (burnParams.burnFailsafe) {
@@ -1007,7 +1101,8 @@ bool Fs3Operations::Fs3Burn(Fs3Operations &imageOps, ExtBurnParams& burnParams)
         imgToBurn->FwCleanUp();
         delete imgToBurn;
     }
-    return rc;
+
+    return rc ;
 }
 
 bool Fs3Operations::FwBurn(FwOperations *imageOps, u_int8_t forceVersion, ProgressCallBack progressFunc)
@@ -1109,7 +1204,7 @@ bool Fs3Operations::FwSetMFG(fs3_uid_t baseGuid, PrintCallBack callBackFunc)
     if (baseGuid.base_mac_specified && !CheckMac(baseGuid.base_mac)) {
         return errmsg("Bad MAC (" MAC_FORMAT ") given: %s. Please specify a valid MAC value", baseGuid.base_mac.h, baseGuid.base_mac.l, err());
     }
-
+    FAIL_NO_OCR("set manufacture GUIDs/MACs");
     if (!Fs3UpdateSection(&baseGuid, FS3_MFG_INFO, false, CMD_SET_MFG_GUIDS, callBackFunc)) {
         return false;
     }
@@ -1122,7 +1217,7 @@ bool Fs3Operations::FwSetMFG(fs3_uid_t baseGuid, PrintCallBack callBackFunc)
 
 bool Fs3Operations::FwSetMFG(guid_t baseGuid, PrintCallBack callBackFunc)
 {
-    // in FS3 default behavior when setting GUIDs / MFG is to assign 8 guids per port with step size of 1 between them.
+    // in FS3 default behavior when setting GUIDs / MFG is to assign ini default step size and number.
     fs3_uid_t bGuid = {baseGuid, 1, {0, 0}, 0, 0, 0, 1};
     return FwSetMFG(bGuid, callBackFunc);
 }
@@ -1168,7 +1263,8 @@ bool Fs3Operations::FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc,
     if (!usrGuid.base_guid_specified && !usrGuid.base_mac_specified) {
         return errmsg("base GUID/MAC were not specified.");
     }
-    if (!Fs3UpdateSection(&usrGuid, FS3_DEV_INFO, true, CMD_SET_GUIDS, callBackFunc)) {
+    FAIL_NO_OCR("set GUIDs/MACs");
+    if (!Fs3UpdateSection(&usrGuid, FS3_DEV_INFO, false, CMD_SET_GUIDS, callBackFunc)) {
         return false;
     }
     // on image verify that image is OK after modification (we skip this on device for performance reasons)
@@ -1183,6 +1279,7 @@ bool Fs3Operations::FwSetVPD(char* vpdFileStr, PrintCallBack callBackFunc)
     if (!vpdFileStr) {
         return errmsg("Please specify a valid vpd file.");
     }
+    FAIL_NO_OCR("set VPD");
 
     if (!Fs3UpdateSection(vpdFileStr, FS3_VPD_R0, false, CMD_BURN_VPD, callBackFunc)) {
         return false;
@@ -1784,8 +1881,8 @@ bool Fs3Operations::FwSetVSD(char* vsdStr, ProgressCallBack progressFunc, PrintC
     if (strlen(vsdStr) > VSD_LEN) {
     	return errmsg("VSD string is too long(%d), max allowed length: %d", (int)strlen(vsdStr), (int)VSD_LEN);
     }
-
-    if (!Fs3UpdateSection(vsdStr, FS3_DEV_INFO, true, CMD_SET_VSD, printFunc)) {
+    FAIL_NO_OCR("set VSD");
+    if (!Fs3UpdateSection(vsdStr, FS3_DEV_INFO, false, CMD_SET_VSD, printFunc)) {
         return false;
     }
     // on image verify that image is OK after modification (we skip this on device for performance reasons)
@@ -1831,9 +1928,16 @@ bool Fs3Operations::FwResetNvData()
 
 u_int32_t Fs3Operations::getAbsAddr(toc_info* toc) {
 	if (toc->toc_entry.relative_addr) {
-		return ((toc ->toc_entry.flash_addr << 2) + _fwImgInfo.imgStart);
+		return ((toc->toc_entry.flash_addr << 2) + _fwImgInfo.imgStart);
 	}
-	return toc ->toc_entry.flash_addr << 2;
+	return toc->toc_entry.flash_addr << 2;
+}
+
+u_int32_t Fs3Operations::getAbsAddr(toc_info* toc, u_int32_t imgStart) {
+    if (toc->toc_entry.relative_addr) {
+        return ((toc->toc_entry.flash_addr << 2) + imgStart);
+    }
+    return toc->toc_entry.flash_addr << 2;
 }
 
 //get the last fw section address (i.e the maximal address + size of the fw section)
@@ -1936,8 +2040,8 @@ bool Fs3Operations::reburnItocSection(PrintCallBack callBackFunc) {
 
 bool Fs3Operations::TocComp::operator() (toc_info* elem1, toc_info* elem2)
 {
-	u_int32_t absAddr1 = elem1->toc_entry.relative_addr ? elem1->toc_entry.flash_addr + _startAdd : elem1->toc_entry.flash_addr;
-	u_int32_t absAddr2 = elem2->toc_entry.relative_addr ? elem2->toc_entry.flash_addr + _startAdd : elem2->toc_entry.flash_addr;
+	u_int32_t absAddr1 = (elem1->toc_entry.flash_addr << 2) + ( elem1->toc_entry.relative_addr ? _startAdd : 0);
+	u_int32_t absAddr2 = (elem2->toc_entry.flash_addr << 2) + ( elem2->toc_entry.relative_addr ? _startAdd : 0);
 	if (absAddr1 < absAddr2) {
 		return true;
 	}
@@ -2026,6 +2130,45 @@ bool Fs3Operations::FwShiftDevData(PrintCallBack progressFunc)
     return true;
 }
 
+
+bool Fs3Operations::CheckItocArrConsistency(std::vector<struct toc_info*>& sortedTocVec, u_int32_t imageStartAddr) {
+    u_int32_t sectEndAddr = 0, nextSectStrtAddr = 0;
+    std::vector<struct toc_info*>::iterator it = sortedTocVec.begin(), itNext = sortedTocVec.begin();
+    itNext++;
+    for ( ; itNext != sortedTocVec.end(); it++, itNext++) {
+        sectEndAddr = getAbsAddr(*it, imageStartAddr) + ((*it)->toc_entry.size << 2) - 1;
+        nextSectStrtAddr = getAbsAddr(*itNext, imageStartAddr);
+        if (sectEndAddr >= nextSectStrtAddr) {
+            return errmsg("inconsistency found in ITOC. %s(0x%x) section will potentially overwrite %s(0x%x) section.",\
+                    GetSectionNameByType((*it)->toc_entry.type), (*it)->toc_entry.type,\
+                    GetSectionNameByType((*itNext)->toc_entry.type), (*itNext)->toc_entry.type);
+        }
+    }
+    return true;
+}
+
+
+bool Fs3Operations::CheckItocArray()
+{
+    // sort the itocs
+    std::vector<struct toc_info*> sortedTocs(_fs3ImgInfo.numOfItocs);
+    for (int i=0 ; i< _fs3ImgInfo.numOfItocs ; i++) {
+        sortedTocs[i]= &(_fs3ImgInfo.tocArr[i]);
+    }
+    std::sort(sortedTocs.begin(), sortedTocs.end(), TocComp(0));
+    // check for inconsistency image burnt on 1st half
+    if(!CheckItocArrConsistency(sortedTocs, 0)) {
+        return false;
+    }
+
+    std::sort(sortedTocs.begin(), sortedTocs.end(), TocComp((1 << _fwImgInfo.cntxLog2ChunkSize)));
+    // check for inconsistency image burn on second half
+    if(!CheckItocArrConsistency(sortedTocs, (1 << _fwImgInfo.cntxLog2ChunkSize))) {
+        return false;
+    }
+    return true;
+}
+
 const char* Fs3Operations::FwGetResetRecommandationStr()
 {
 #if defined(_WIN_) || defined(MST_UL)
@@ -2071,6 +2214,252 @@ cleanup:
     mclose(mf);
     if (rc) {
         return errmsg("Failed to activate image. %s", m_err2str((MError)rc));
+    }
+    return true;
+}
+
+
+#define IS_EMPTY_CX4_MFG_UIDS(fs3_uids_info) \
+        (((fs3_uids_info).cx4_uids.base_guid.uid == 0x0ULL) &&  ((fs3_uids_info).cx4_uids.base_mac.uid == 0x0ULL))
+
+#define FLASH_RESTORE(origFlashObj) \
+        if (origFlashObj) {\
+            _ioAccess->close();\
+            delete _ioAccess;\
+            _ioAccess = origFlashObj;\
+            _fwParams.ignoreCacheRep = 0;\
+        }
+#define GET_UID_LOW(uid) \
+        ((uid) & 0xffffffffULL)
+
+#define GET_UID_HIGH(uid) \
+        ((uid) >> 32)
+
+bool Fs3Operations::CheckAndFixCX4(bool justCheck)
+{
+    // assuming query/verify was ran before and this is being called on an MST device during burn
+    FBase* origFlashObj = NULL;
+
+    if (!_ioAccess->is_flash()) {
+        return true;
+    }
+
+    if (((Flash*)_ioAccess)->get_dev_id() != CX4_HW_ID || _maxImgLog2Size != 0x16) {
+        // nothing to do return
+        return true;
+    }
+
+    // re-open flash with -ocr if needed
+    if (_fwParams.ignoreCacheRep == 0) {
+        origFlashObj = _ioAccess;
+        _fwParams.ignoreCacheRep = 1;
+        if (!FwOperations::FwAccessCreate(_fwParams, &_ioAccess)) {
+            _ioAccess = origFlashObj;
+            _fwParams.ignoreCacheRep = 0;
+            return errmsg("Failed to open device for direct flash access");
+        }
+    }
+    // check if Flash0 last sub-sector is write protected (indication if we need to continue)
+    ext_flash_attr_t attr;
+    memset(&attr, 0, sizeof(attr));
+
+    if (!((Flash*)_ioAccess)->get_attr(attr)) {
+        FLASH_RESTORE(origFlashObj);
+        return errmsg("Failed to perform Flash operation");
+    }
+
+    if (attr.type_str) {
+        delete [] attr.type_str;
+    }
+
+    if (!(attr.protect_info_array[0].is_subsector && attr.protect_info_array[0].sectors_num == 1 && attr.protect_info_array[0].is_bottom == 0)) {
+        // Flash0 protection is not as expected : Flash0.Top,1-SubSectors. nothing to do
+        FLASH_RESTORE(origFlashObj);
+        return true;
+    }
+    // mlxmodfw has corrupted dev_data sections and flash protection. attempt to fix
+
+    if (justCheck) {
+        // just perform checks and return
+        FLASH_RESTORE(origFlashObj);
+        return false;
+    }
+
+    char paramName[50] = {0};
+    char paramVal[50] = {0};
+    bool rc = FixCX4Uids();
+
+    // set write protection to last sector
+    strncpy(paramName, "Flash0.WriteProtected", 50);
+    strncpy(paramVal, "Top,1-Sectors", 50);
+    if (!((Flash*)_ioAccess)->set_attr(paramName, paramVal)) {
+        FLASH_RESTORE(origFlashObj);
+        return errmsg("Failed to perform Flash operation");
+    }
+    // wait for flash op to finish
+    msleep(500);
+    FLASH_RESTORE(origFlashObj);
+
+    if (!rc || !Fs3IntQuery()) {
+        return false;
+    }
+    return true;
+}
+
+bool Fs3Operations::FixCX4Uids()
+{
+    // fix mfg guids_num and step_size
+    fs3_uid_t baseUid;
+    memset(&baseUid, 0, sizeof(baseUid));
+    if(IS_EMPTY_CX4_MFG_UIDS(_fs3ImgInfo.ext_info.orig_fs3_uids_info)) {
+        // fix macs/guids
+        // adrianc: if MFGs are zero: set the same uids as in dev_info.
+        baseUid.base_guid.l = GET_UID_LOW(_fs3ImgInfo.ext_info.fs3_uids_info.cx4_uids.base_guid.uid);
+        baseUid.base_guid.h = GET_UID_HIGH(_fs3ImgInfo.ext_info.fs3_uids_info.cx4_uids.base_guid.uid);
+
+        baseUid.base_mac.l = GET_UID_LOW(_fs3ImgInfo.ext_info.fs3_uids_info.cx4_uids.base_mac.uid);
+        baseUid.base_mac.h = GET_UID_HIGH(_fs3ImgInfo.ext_info.fs3_uids_info.cx4_uids.base_mac.uid);
+
+        baseUid.base_guid_specified = 1;
+        baseUid.base_mac_specified = 1;
+        baseUid.set_mac_from_guid = 0;
+        baseUid.num_of_guids = 0;
+        baseUid.step_size = 0;
+
+        // set manufacture guids
+        if (!FwSetMFG(baseUid)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+#define OPEN_OCR(origFlashObj) do {\
+                        origFlashObj = _ioAccess;\
+                        _fwParams.ignoreCacheRep = 1;\
+                        if (!FwOperations::FwAccessCreate(_fwParams, &_ioAccess)) {\
+                            _ioAccess = origFlashObj;\
+                            _fwParams.ignoreCacheRep = 0;\
+                            return errmsg("Failed to open device for direct flash access");\
+                        }\
+                    } while (0)
+
+#define SET_WRITE_PROTECT(name, val) do { \
+                        char paramName[50] = {0};\
+                        char paramVal[50] = {0};\
+                        strncpy(paramName, name, 50);\
+                        strncpy(paramVal, val, 50);\
+                        if (!((Flash*)_ioAccess)->set_attr(paramName, paramVal)) {\
+                            FLASH_RESTORE(origFlashObj);\
+                            return errmsg("Failed to perform Flash operation");\
+                        }\
+                        msleep(500);\
+                    } while (0)
+
+bool Fs3Operations::FixCX4WriteProtection(bool justCheck)
+{
+    if (!_ioAccess->is_flash() || ((Flash*)_ioAccess)->get_dev_id() != CX4_HW_ID) {
+        return true;
+    }
+
+    struct toc_info* mfgToc = NULL;
+    struct toc_info* vpdToc = NULL;
+    u_int32_t mfgAddr = 0;
+    u_int32_t vpdAddr = 0;
+    u_int32_t flashSize = 0;
+    u_int32_t shiftSize = 0x8000;
+    FBase* origFlashObj = NULL;
+    std::vector<u_int8_t> newVpdSection;
+    int retries = 0;
+    if (!Fs3GetItocInfo(_fs3ImgInfo.tocArr, _fs3ImgInfo.numOfItocs, FS3_MFG_INFO, mfgToc)) {
+        return errmsg("failed to locate MFG_INFO address within the FW image");
+    }
+    ext_flash_attr_t attr;
+    memset(&attr, 0, sizeof(attr));
+    if (!((Flash*)_ioAccess)->get_attr(attr)) {
+        return errmsg("Failed to perform Flash operation");
+    }
+    flashSize = attr.size;
+    mfgAddr = getAbsAddr(mfgToc);
+    /* If the flash size is 16-MB and the MFG at the end 0xff0000
+     * Move it with the VPD the bottom 32-bit (shift 0x8000) and
+     * FlashProtected Top,8-SubSectors
+     */
+    if (flashSize != 0x1000000 || mfgAddr != 0xff0000) {
+        return true;
+    }
+
+    if (justCheck) {
+        // just perform checks and return
+        FLASH_RESTORE(origFlashObj);
+        return false;
+    }
+    // re-open flash with -ocr if needed
+    if (_fwParams.ignoreCacheRep == 0) {
+        OPEN_OCR(origFlashObj);
+    }
+    /*
+     * Check if write protected and disable it
+     */
+    if (((Flash*)_ioAccess)->is_flash_write_protected()) {
+        SET_WRITE_PROTECT("Flash0.WriteProtected", "Disabled");
+    }
+    while (((Flash*)_ioAccess)->is_flash_write_protected() && retries < 5) {
+        msleep(500);
+    }
+    if (retries == 5) {
+        FLASH_RESTORE(origFlashObj);
+        return errmsg("Failed to disable flash write protection");
+    }
+    /*
+     * MOVE MFG & VPD Sections to +0x8000
+     */
+    const char* flashParamName = "Flash0.WriteProtected";
+    const char* flashParamVal = "Top,8-SubSectors";
+
+    /*
+     * Moving VPD section
+     */
+    if (!Fs3GetItocInfo(_fs3ImgInfo.tocArr, _fs3ImgInfo.numOfItocs, FS3_VPD_R0, vpdToc)) {
+        SET_WRITE_PROTECT(flashParamName, flashParamVal);
+        FLASH_RESTORE(origFlashObj);
+        return errmsg("Failed to locate VPD_R0 address within the FW image");
+    }
+    /*
+     * VPD_R0 address is after the MFG_INFO section
+     */
+    vpdAddr = mfgAddr + mfgToc->toc_entry.size * 4;
+    GetSectData(newVpdSection, (u_int32_t*)vpdToc->data, vpdToc->toc_entry.size * 4);
+    if (!Fs3UpdateItocInfo(vpdToc, vpdAddr + shiftSize, vpdToc->toc_entry.size, newVpdSection)) {
+        SET_WRITE_PROTECT(flashParamName, flashParamVal);
+        FLASH_RESTORE(origFlashObj);
+        return errmsg("Failed to shift VPD_R0 section");
+    }
+    if (!Fs3ReburnItocSection(vpdAddr + shiftSize, vpdToc->toc_entry.size * 4, newVpdSection, "VPD")) {
+        SET_WRITE_PROTECT(flashParamName, flashParamVal);
+        FLASH_RESTORE(origFlashObj);
+        return errmsg("Failed to burn VPD_R0 section, the image maybe left in bad situation");;
+    }
+    if (!Fs3UpdateItocInfo(mfgToc, mfgAddr + shiftSize)) {
+        SET_WRITE_PROTECT(flashParamName, flashParamVal);
+        FLASH_RESTORE(origFlashObj);
+        return errmsg("Failed to shift MFG_INFO section");
+    }
+    if (!Fs3ReburnItocSection(mfgAddr + shiftSize, mfgToc->toc_entry.size * 4, mfgToc->section_data, "GUID")) {
+        SET_WRITE_PROTECT(flashParamName, flashParamVal);
+        FLASH_RESTORE(origFlashObj);
+        return errmsg("Failed to burn MFG_INFO section, the image maybe left in bad situation");
+    }
+    /*
+     * Enable Flash protected
+     */
+    SET_WRITE_PROTECT(flashParamName, flashParamVal);
+    FLASH_RESTORE(origFlashObj);
+    /*
+     * Query for check
+     */
+    if (!Fs3IntQuery()) {
+        return errmsg("Failed to query device after fixing write protected sections");
     }
     return true;
 }

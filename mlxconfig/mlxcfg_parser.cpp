@@ -87,7 +87,7 @@ void MlxCfg::printHelp()
     // print supported commands
     printf("\n");
     printf(IDENT"Supported Configurations:\n");
-    printf(IDENT2"%-24s : %s\n","SRIOV", "SRIOV_EN=<1|0> NUM_OF_VFS=<NUM>");
+    printf(IDENT2"%-24s : %s\n","SRIOV", "SRIOV_EN=<1|0> NUM_OF_VFS=<NUM> | FPP_EN=<1|0> for ConnectIB and newer devices.");
     printf(IDENT2"%-24s : %s\n","WOL_PORT1", "WOL_MAGIC_EN_P1");
     printf(IDENT2"%-24s : %s\n","WOL_PORT2", "WOL_MAGIC_EN_P2=<1|0>");
     printf(IDENT2"%-24s : %s\n","VPI_SETTINGS_PORT1", "LINK_TYPE_P1=<1|2|3> , 1=Infiniband 2=Ethernet 3=VPI(auto-sense).");
@@ -103,7 +103,7 @@ void MlxCfg::printHelp()
     printf("\n");
     printf(IDENT"Supported devices:\n");
     printf(IDENT2"ConnectX3, ConnectX3-Pro (FW 2.31.5000 and above).\n");
-    printf(IDENT2"ConnectX4.\n");
+    printf(IDENT2"ConnectIB, ConnectX4.\n");
     printf("\n");
 }
 

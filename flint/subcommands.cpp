@@ -1345,6 +1345,18 @@ FlintStatus BurnSubCommand::burnFs3()
             return FLINT_FAILED;
         }
     }
+
+    // perform some checks incase of a corrupt CX4
+    // TODO: remove this check in MFT-4.1.0
+    if(_burnParams.burnFailsafe) {
+        if (!_fwOps->CheckCX4Device()) {
+            printf(" An inconsistency was detected in the device parameters. A fix must be performed before burning FW.\n");
+            printf(" Please do not terminate the process. Operation is not failsafe.\n");
+            if (!askUser()) {
+                return FLINT_FAILED;
+            }
+        }
+    }
     if (!_fwOps->FwBurnAdvanced(_imgOps, _burnParams)) {
         reportErr(true, FLINT_FS3_BURN_ERROR, _fwOps->err());
         return FLINT_FAILED;

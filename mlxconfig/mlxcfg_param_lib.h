@@ -51,6 +51,8 @@
 #define SRIOV_TYPE 0x11
 #define VPI_TYPE 0x12
 #define BAR_SIZE_TYPE 0x13
+#define PCI_SETTINGS_TYPE 0x80
+#define PCI_CAPABILITES_TYPE 0x81
 
 
 typedef enum {
@@ -60,12 +62,14 @@ typedef enum {
     Mct_Vpi_P1,
     Mct_Vpi_P2,
     Mct_Bar_Size,
+    Mct_Pci,
     Mct_Last
 } mlxCfgType;
 
 typedef enum {
     Mcp_Sriov_En = 0,
     Mcp_Num_Of_Vfs,
+    Mcp_Fpp_En,
     Mcp_Wol_Magic_En_P1,
     Mcp_Wol_Magic_En_P2,
     Mcp_Link_Type_P1,
@@ -79,6 +83,10 @@ typedef std::pair<mlxCfgParam, u_int32_t> cfgInfo;
 /*
  *  Basic Param Class
  */
+
+/* Adrianc: add Initialize/Open pure method that will contain all needed initializations (configuration supported defaults capabilities etc...)
+ *          add cfgSupported(mfile* mf, mlxCfgParam param) = 0; to suppot "sub-configuraion" of a specific Parameter
+*/
 
 class CfgParams : public ErrMsg
 {
@@ -352,6 +360,46 @@ public:
 protected:
     virtual bool softLimitCheck(mfile* mf=NULL);
     virtual int getDefaultBarSz(mfile* mf);
+};
+
+/*
+ * PCI parameters Class (5thGen devices only)
+ */
+
+class PciParams5thGen : public CfgParams
+{
+public:
+    PciParams5thGen() : CfgParams(Mct_Pci, PCI_SETTINGS_TYPE) , _sriovEn(MLXCFG_UNKNOWN), _numOfVfs(MLXCFG_UNKNOWN),\
+                        _fppEn(MLXCFG_UNKNOWN), _sriovSupported(false), _maxVfsPerPf(0), _fppSupported(false),\
+                        _numPfsSupported(false), _maxNumPfs(0){}
+    ~PciParams5thGen() {};
+
+    virtual bool cfgSupported(mfile* mf);
+
+    virtual void setParam(mlxCfgParam paramType, u_int32_t val);
+    virtual u_int32_t getParam(mlxCfgParam paramType);
+
+    virtual int getFromDev(mfile* mf);
+    virtual int setOnDev(mfile* mf, bool ignoreCheck=false);
+    virtual int getDefaultParams(mfile* mf);
+
+protected:
+    virtual bool hardLimitCheck();
+    int getDefaultsAndCapabilities(mfile* mf);
+    u_int32_t getPciSettingsTlvTypeBe();
+    u_int32_t getPciCapabilitiesTlvTypeBe();
+
+    u_int32_t _sriovEn;
+    u_int32_t _numOfVfs;
+    u_int32_t _fppEn;
+
+    // defaults and capabilities
+    bool      _sriovSupported;
+    u_int32_t _maxVfsPerPf;
+    bool      _fppSupported;
+    bool      _numPfsSupported;
+    u_int32_t _maxNumPfs;
+
 };
 
 #endif /* MLXCFG_PARAM_LIB_H_ */

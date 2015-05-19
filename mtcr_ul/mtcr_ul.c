@@ -1048,7 +1048,6 @@ int mtcr_pciconf_mclose(mfile *mf)
 static
 int mtcr_pciconf_open(mfile *mf, const char *name)
 {
-    unsigned signature;
     int err;
     int rc;
     struct pciconf_context *ctx;
@@ -1092,44 +1091,12 @@ int mtcr_pciconf_open(mfile *mf, const char *name)
     }
     mf->mclose        = mtcr_pciconf_mclose;
 
-    /* Kernels before 2.6.12 carry the high bit in each byte
-     * on <device>/config writes, overriding higher bits.
-     * Make sure the high bit is set in some signature bytes,
-     * to catch this. */
-    /* Do this test before mtcr_check_signature,
-       to avoid system failure on access to an illegal address. */
-    signature = 0xfafbfcfd;
-
-    rc = _flock_int(mf->fdlock, LOCK_EX);
-    if (rc) {
-        goto end;
-    }
-
-    rc = pwrite(ctx->fd, &signature, 4, 22*4);
-    if (rc != 4) {
-        _flock_int(mf->fdlock, LOCK_UN);
-        rc = -1;
-        goto end;
-    }
-
-    rc = pread(ctx->fd, &signature, 4, 22*4);
-    _flock_int(mf->fdlock, LOCK_UN);
-    if (rc != 4) {
-        rc = -1;
-        goto end;
-    }
-
-    if (signature != 0xfafbfcfd) {
-        rc = -1;
-        errno = EIO;
-        goto end;
-    }
-
     rc = mtcr_check_signature(mf);
     if (rc) {
         rc = -1;
         goto end;
     }
+
 end:
     if (rc) {
         err = errno;

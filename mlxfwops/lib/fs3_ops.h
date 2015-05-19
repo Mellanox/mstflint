@@ -63,7 +63,7 @@ public:
     virtual bool FwBurnAdvanced(FwOperations *imageOps, ExtBurnParams& burnParams);
     virtual bool FwBurnBlock(FwOperations* imageOps, ProgressCallBack progressFunc);
 
-    virtual bool FwSetGuids(sg_params_t& sgParam, PrintCallBack callBack, ProgressCallBack progressFunc);
+    virtual bool FwSetGuids(sg_params_t& sgParam, PrintCallBack callBack=(PrintCallBack)NULL, ProgressCallBack progressFunc=(ProgressCallBack)NULL);
     virtual bool FwSetMFG(guid_t baseGuid, PrintCallBack callBackFunc=(PrintCallBack)NULL);
     virtual bool FwSetMFG(fs3_uid_t baseGuid, PrintCallBack callBackFunc=(PrintCallBack)NULL);
     virtual bool FwGetSection (u_int32_t sectType, std::vector<u_int8_t>& sectInfo, bool stripedImage=false);
@@ -73,6 +73,8 @@ public:
     virtual bool FwResetNvData();
     virtual bool FwShiftDevData(PrintCallBack progressFunc=(PrintCallBack)NULL);
     virtual const char*  FwGetResetRecommandationStr();
+    virtual bool CheckCX4Device() {return (CheckAndFixCX4() && FixCX4WriteProtection());}
+
 
 private:
     #define CRC_CHECK_OUTPUT  CRC_CHECK_OLD")"
@@ -80,7 +82,7 @@ private:
     #define PRE_CRC_OUTPUT   "    "
     #define MAX_TOCS_NUM         64
     #define FS3_DEFAULT_SECTOR_SIZE 0x1000
-    #define FS3_LOG2_CHUNK_SIZE_BYTE_OFFSET 0x26
+    #define FS3_LOG2_CHUNK_SIZE_DW_OFFSET 0x9
     #define ITOC_ASCII 0x49544f43
     #define DTOC_ASCII 0x64544f43
     #define TOC_RAND1  0x04081516
@@ -146,7 +148,7 @@ private:
     bool Fs3IntQuery(bool readRom = true, bool quickQuery=true);
     bool Fs3Burn(Fs3Operations &imageOps, ExtBurnParams& burnParams);
     bool BurnFs3Image(Fs3Operations &imageOps, ExtBurnParams& burnParams);
-    bool UpdateDevDataITOC(u_int8_t *image_data, struct toc_info *image_toc_entry, struct toc_info *flash_toc_arr, int flash_toc_size);
+    bool UpdateDevDataITOC(u_int8_t *image_data, struct toc_info *image_toc_info_entry, struct toc_info *flash_toc_arr, int flash_toc_size);
     bool AddDevDataITOC(struct toc_info *flash_toc_entry, u_int8_t *image_data, struct toc_info *image_toc_arr, int& image_toc_size);
     bool Fs3UpdateSection(void *new_info, fs3_section_t sect_type=FS3_DEV_INFO, bool is_sect_failsafe=true, CommandType cmd_type=CMD_UNKNOWN, PrintCallBack callBackFunc=(PrintCallBack)NULL );
     bool Fs3GetItocInfo(struct toc_info *tocArr, int num_of_itocs, fs3_section_t sect_type, struct toc_info *&curr_toc);
@@ -184,12 +186,21 @@ private:
             ProgressCallBack progressFunc);
     bool CheckFs3ImgSize(Fs3Operations& imageOps, bool useImageDevData=false);
     bool GetMaxImageSize(u_int32_t flash_size, bool image_is_fs, u_int32_t &max_image_size);
+    bool CheckItocArray();
+    bool CheckItocArrConsistency(std::vector<struct toc_info*>& sortedTocVec, u_int32_t imageStartAddr);
+    bool CheckBinVersion(u_int8_t binVerMajor, u_int8_t binVerMinor);
 
     u_int32_t getAbsAddr(toc_info* toc);
+    u_int32_t getAbsAddr(toc_info* toc, u_int32_t imgStart);
     bool getLastFwSAddr(u_int32_t& lastAddr);
     bool getFirstDevDataAddr(u_int32_t& firstAddr);
     bool reburnItocSection(PrintCallBack callBackFunc);
     bool Fs3IsfuActivateImage(u_int32_t newImageStart);
+
+    bool CheckAndFixCX4(bool justCheck=true);
+    bool FixCX4Uids();
+    bool FixCX4WriteProtection(bool justCheck=true);
+    bool DevDataHackCheck(struct cibfw_itoc_entry *devTocEntry);
 
     // this class is for sorting the itoc array by ascending absolute flash_addr used in FwShiftDevData
     class TocComp {
