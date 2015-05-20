@@ -201,7 +201,7 @@ bool Fs3Operations::GetMfgInfo(u_int8_t *buff)
     ((major) == 0)
 
 #define FAIL_NO_OCR(str) do { \
-                        if (_fwParams.ignoreCacheRep == 0) {\
+                        if (_ioAccess->is_flash() && _fwParams.ignoreCacheRep == 0) {\
                             return errmsg("-ocr flag must be specified for %s operation.", str);\
                         }\
                     } while (0)
