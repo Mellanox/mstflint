@@ -370,8 +370,7 @@ class PciParams5thGen : public CfgParams
 {
 public:
     PciParams5thGen() : CfgParams(Mct_Pci, PCI_SETTINGS_TYPE) , _sriovEn(MLXCFG_UNKNOWN), _numOfVfs(MLXCFG_UNKNOWN),\
-                        _fppEn(MLXCFG_UNKNOWN), _sriovSupported(false), _maxVfsPerPf(0), _fppSupported(false),\
-                        _numPfsSupported(false), _maxNumPfs(0){}
+                        _fppEn(MLXCFG_UNKNOWN), _sriovSupported(false), _maxVfsPerPf(0), _fppSupported(false){}
     ~PciParams5thGen() {};
 
     virtual bool cfgSupported(mfile* mf);
@@ -397,8 +396,6 @@ protected:
     bool      _sriovSupported;
     u_int32_t _maxVfsPerPf;
     bool      _fppSupported;
-    bool      _numPfsSupported;
-    u_int32_t _maxNumPfs;
 
 };
 

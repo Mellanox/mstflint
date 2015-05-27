@@ -1132,12 +1132,13 @@ int PciParams5thGen::getFromDev(mfile* mf)
     if (pciSettingsTlv.sriov_valid) {
         _sriovEn = pciSettingsTlv.sriov_en;
         _numOfVfs = pciSettingsTlv.total_vfs;
-        _updated = true;
     }
     if (pciSettingsTlv.fpp_valid) {
         _fppEn = pciSettingsTlv.fpp_en;
-        _updated = true;
     }
+
+    _updated = true;
+
    return MCE_SUCCESS;
 }
 
@@ -1145,7 +1146,7 @@ int PciParams5thGen::setOnDev(mfile* mf, bool ignoreCheck)
 {
     MError mRc;
 
-    if (_fppEn == MLXCFG_UNKNOWN && (_sriovEn == MLXCFG_UNKNOWN || _numOfVfs == MLXCFG_UNKNOWN)) {
+    if ((_fppEn == MLXCFG_UNKNOWN) && (_sriovEn == MLXCFG_UNKNOWN || _numOfVfs == MLXCFG_UNKNOWN)) {
         return errmsg("%s please specify all the parameters for SRIOV settings.", err() ? err() : "");
     }
 
@@ -1180,11 +1181,6 @@ int PciParams5thGen::setOnDev(mfile* mf, bool ignoreCheck)
     if (pciSettingsTlv.sriov_en && !pciSettingsTlv.fpp_en) {
         return errmsg("FPP should be enabled while SRIOV is enabled");
     }
-    /* Turning on FPP where num of PFs < 2 in devices with dual ports (max pfs > 1)
-     * should apply numOfPfs to 2 */
-    if (pciSettingsTlv.fpp_en && _numPfsSupported && (_maxNumPfs > 1)  && (pciSettingsTlv.num_pfs < 2)) {
-        pciSettingsTlv.num_pfs = 2;
-    }
     // pack it
     tools_open_pci_configuration_pack(&pciSettingsTlv, tlvBuff);
 
@@ -1217,8 +1213,6 @@ int PciParams5thGen::getDefaultsAndCapabilities(mfile* mf)
     _sriovSupported = pciCapabilitesTlv.sriov_support;
     _maxVfsPerPf = pciCapabilitesTlv.max_vfs_per_pf_valid ? pciCapabilitesTlv.max_vfs_per_pf : 0;
     _fppSupported = pciCapabilitesTlv.fpp_support;
-    _numPfsSupported = pciCapabilitesTlv.num_pfs_supported;
-    _maxNumPfs = pciCapabilitesTlv.max_num_pfs;
 
     return MCE_SUCCESS;
 }
