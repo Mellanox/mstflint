@@ -1057,31 +1057,9 @@ bool VpiParams5thGen::hardLimitCheck()
 // need to add mechanism to check support for a specific parameter.
 bool PciParams5thGen::cfgSupported(mfile* mf)
 {
-    MError rc;
-    bool suppRead, suppWrite;
-    rc = nvqcCom5thGen(mf, getPciCapabilitiesTlvTypeBe(), suppRead, suppWrite);
-    if (rc) {
-        errmsg("Failed to get PCI capabilities parameter capabilities. %s", m_err2str(rc));
-        return false;
-    }
-    if (!suppRead) {
-        return false;
-    }
-
-    if (getDefaultsAndCapabilities(mf) != MCE_SUCCESS) {
-        return false;
-    }
-
-    if (!_sriovSupported && !_fppSupported) {
-        return false;
-    }
-
-    rc = nvqcCom5thGen(mf, getPciSettingsTlvTypeBe(), suppRead, suppWrite);
-    if (rc) {
-        errmsg("Failed to get PCI settings parameter capabilities. %s", m_err2str(rc));
-        return false;
-    }
-    return suppRead&suppWrite;
+    // Adrianc: not supported for this release
+    (void)mf;
+    return false;
 }
 
 void PciParams5thGen::setParam(mlxCfgParam paramType, u_int32_t val)
