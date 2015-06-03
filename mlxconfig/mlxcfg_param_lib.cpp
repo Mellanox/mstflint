@@ -299,9 +299,10 @@ bool SriovParams::hardLimitCheck()
  * SriovParam4thGen Class implementation
  */
 
-bool SriovParams4thGen::cfgSupported(mfile* mf)
+bool SriovParams4thGen::cfgSupported(mfile* mf, mlxCfgParam param)
 {
     (void)mf;
+    (void)param;
     return _devCapVec & SRIOV_MASK;
 }
 
@@ -438,9 +439,10 @@ bool SriovParams4thGen::softLimitCheck(mfile* mf)
  * SriovParams5thGen Class implementation
  */
 
-bool SriovParams5thGen::cfgSupported(mfile* mf)
+bool SriovParams5thGen::cfgSupported(mfile* mf, mlxCfgParam param)
 {
     (void)mf;
+    (void)param;
     return false;
 }
 
@@ -509,9 +511,10 @@ bool WolParams::hardLimitCheck()
  * WolParams4thGen Class implementation :
  */
 
-bool WolParams4thGen::cfgSupported(mfile* mf)
+bool WolParams4thGen::cfgSupported(mfile* mf, mlxCfgParam param)
 {
     (void)mf;
+    (void)param;
     return ((_devCapVec & WOL_P1_MASK) && _port == 1) || ((_devCapVec & WOL_P2_MASK) && _port == 2 );
 }
 
@@ -590,9 +593,10 @@ int WolParams4thGen::setOnDev(mfile* mf, bool ignoreCheck)
  * WolParams5thGen Class implementation :
  */
 
-bool WolParams5thGen::cfgSupported(mfile* mf)
+bool WolParams5thGen::cfgSupported(mfile* mf, mlxCfgParam param)
 {
     (void)mf;
+    (void)param;
     return false;
 }
 
@@ -649,9 +653,10 @@ bool BarSzParams::hardLimitCheck()
  * BarSzParams4thGen Class implementation :
  */
 
-bool BarSzParams4thGen::cfgSupported(mfile* mf)
+bool BarSzParams4thGen::cfgSupported(mfile* mf, mlxCfgParam param)
 {
     (void)mf;
+    (void)param;
     return _devCapVec & BAR_SZ_MASK ;
 }
 
@@ -791,9 +796,10 @@ bool BarSzParams4thGen::softLimitCheck(mfile* mf)
 /*
  * BarSzParams5thGen Class implementation :
  */
-bool BarSzParams5thGen::cfgSupported(mfile* mf)
+bool BarSzParams5thGen::cfgSupported(mfile* mf, mlxCfgParam param)
 {
     (void)mf;
+    (void)param;
     return false;
 }
 
@@ -905,9 +911,10 @@ u_int32_t VpiParams4thGen::getParam(mlxCfgParam paramType)
     return MLXCFG_UNKNOWN;
 }
 
-bool VpiParams4thGen::cfgSupported(mfile* mf)
+bool VpiParams4thGen::cfgSupported(mfile* mf, mlxCfgParam param)
 {
     (void)mf;
+    (void)param;
     return ((_devCapVec & VPI_P1_MASK) && _port == 1) || ((_devCapVec & VPI_P2_MASK) && _port == 2);
 }
 
@@ -991,11 +998,12 @@ u_int32_t VpiParams5thGen::getTlvTypeBe()
     return tlvType;
 }
 
-bool VpiParams5thGen::cfgSupported(mfile* mf)
+bool VpiParams5thGen::cfgSupported(mfile* mf, mlxCfgParam param)
 {
     // get mtcr functions for this device (physical)
     // compare with port
     // send nvqc and check
+    (void)param;
     MError rc;
     bool suppRead, suppWrite;
     rc = nvqcCom5thGen(mf, getTlvTypeBe(), suppRead, suppWrite);
@@ -1053,23 +1061,57 @@ bool VpiParams5thGen::hardLimitCheck()
  * PciParams5thGen Class implementation:
  */
 
-// Adrianc: atm we check only for SRIOV support.
-// need to add mechanism to check support for a specific parameter.
-bool PciParams5thGen::cfgSupported(mfile* mf)
+bool PciParams5thGen::cfgSupported(mfile* mf, mlxCfgParam param)
 {
-    // Adrianc: not supported for this release
-    (void)mf;
-    return false;
+    MError rc;
+    bool suppRead, suppWrite;
+    rc = nvqcCom5thGen(mf, getPciCapabilitiesTlvTypeBe(), suppRead, suppWrite);
+    if (rc) {
+        errmsg("Failed to get PCI capabilities parameter capabilities. %s", m_err2str(rc));
+        return false;
+    }
+    if (!suppRead) {
+        return false;
+    }
+
+    if (getDefaultsAndCapabilities(mf) != MCE_SUCCESS) {
+        return false;
+    }
+
+    rc = nvqcCom5thGen(mf, getPciSettingsTlvTypeBe(), suppRead, suppWrite);
+    if (rc) {
+        errmsg("Failed to get PCI settings parameter capabilities. %s", m_err2str(rc));
+        return false;
+    }
+
+    if (!(suppRead && suppWrite)) {
+        return false;
+    }
+
+    switch(param) {
+    case Mcp_Sriov_En:
+    case Mcp_Num_Of_Vfs:
+        return _sriovSupported;
+    case Mcp_Fpp_En:
+        return _fppSupported;
+    case Mcp_Last:
+        return (_sriovSupported && _fppSupported);
+    default:
+        return false;
+    }
 }
 
 void PciParams5thGen::setParam(mlxCfgParam paramType, u_int32_t val)
 {
     if (paramType == Mcp_Sriov_En) {
         _sriovEn = val;
+        _userSpecifiedSRIOV = true;
     } else if (paramType == Mcp_Num_Of_Vfs) {
         _numOfVfs = val;
+        _userSpecifiedSRIOV = true;
     } else if (paramType == Mcp_Fpp_En) {
         _fppEn = val;
+        _userSpecifiedFPP = true;
     }
 }
 
@@ -1124,10 +1166,6 @@ int PciParams5thGen::setOnDev(mfile* mf, bool ignoreCheck)
 {
     MError mRc;
 
-    if ((_fppEn == MLXCFG_UNKNOWN) && (_sriovEn == MLXCFG_UNKNOWN || _numOfVfs == MLXCFG_UNKNOWN)) {
-        return errmsg("%s please specify all the parameters for SRIOV settings.", err() ? err() : "");
-    }
-
     if (!ignoreCheck && !checkCfg()) {
         return MCE_BAD_PARAMS;
     }
@@ -1142,18 +1180,18 @@ int PciParams5thGen::setOnDev(mfile* mf, bool ignoreCheck)
     }
     tools_open_pci_configuration_unpack(&pciSettingsTlv, tlvBuff);
 
-    if (_sriovSupported) {
+    if (_sriovSupported && _userSpecifiedSRIOV) {
+        if (_sriovEn == MLXCFG_UNKNOWN || _numOfVfs == MLXCFG_UNKNOWN) {
+            return errmsg("please specify all parameters for SRIOV.");
+        }
         pciSettingsTlv.sriov_valid = 1;
         pciSettingsTlv.sriov_en = _sriovEn;
         pciSettingsTlv.total_vfs = _numOfVfs;
-    } else if (pciSettingsTlv.sriov_valid && pciSettingsTlv.sriov_en != _sriovEn) {
-        return errmsg("SRIOV_EN is not configurable!");
     }
-    if (_fppSupported) {
+
+    if (_fppSupported && _userSpecifiedFPP) {
         pciSettingsTlv.fpp_en = _fppEn;
         pciSettingsTlv.fpp_valid = 1;
-    } else if (pciSettingsTlv.fpp_valid && pciSettingsTlv.fpp_en != _fppEn) {
-        return errmsg("FPP_EN is not configurable!");
     }
 
     if (pciSettingsTlv.sriov_en && !pciSettingsTlv.fpp_en) {
@@ -1219,19 +1257,23 @@ u_int32_t PciParams5thGen::getPciCapabilitiesTlvTypeBe()
 
 bool PciParams5thGen::hardLimitCheck()
 {
-    if ((_numOfVfs > _maxVfsPerPf)) {
-        errmsg("Number of VFs exceeds limit (%d).", _maxVfsPerPf);
-        return false;
+    if (_sriovSupported && _userSpecifiedSRIOV) {
+        if ((_numOfVfs > _maxVfsPerPf)) {
+            errmsg("Number of VFs exceeds limit (%d).", _maxVfsPerPf);
+            return false;
+        }
+
+        if (_sriovEn != 0 && _sriovEn != 1) {
+            errmsg("Illegal SRIOV_EN parameters value. (should be 0 or 1)");
+            return false;
+        }
     }
 
-    if (_sriovEn != 0 && _sriovEn != 1) {
-        errmsg("Illegal SRIOV_EN parameters value. (should be 0 or 1)");
-        return false;
-    }
-
-    if (_fppEn != 0 && _fppEn != 1) {
-        errmsg("Illegal FPP_EN parameters value. (should be 0 or 1)");
-        return false;
+    if (_fppSupported && _userSpecifiedFPP) {
+        if (_fppEn != 0 && _fppEn != 1) {
+            errmsg("Illegal FPP_EN parameters value. (should be 0 or 1)");
+            return false;
+        }
     }
 
 

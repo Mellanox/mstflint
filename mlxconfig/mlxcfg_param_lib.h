@@ -94,7 +94,7 @@ public:
     CfgParams(mlxCfgType t=Mct_Last, u_int32_t tlvT=0);
     virtual ~CfgParams() {}
 
-    virtual bool cfgSupported(mfile* mf) = 0;
+    virtual bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last) = 0;
     void setDevCapVec(u_int64_t v) {_devCapVec = v;}
 
     virtual void setParam(mlxCfgParam paramType, u_int32_t val) = 0;
@@ -136,7 +136,7 @@ public:
     SriovParams() : CfgParams(Mct_Sriov, SRIOV_TYPE) , _sriovEn(MLXCFG_UNKNOWN), _numOfVfs(MLXCFG_UNKNOWN), _maxVfs(1) {}
     ~SriovParams() {};
 
-    virtual bool cfgSupported(mfile* mf) = 0;
+    virtual bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last) = 0;
 
     virtual void setParam(mlxCfgParam paramType, u_int32_t val);
     virtual u_int32_t getParam(mlxCfgParam paramType);
@@ -156,7 +156,7 @@ public:
     SriovParams4thGen() : SriovParams() {}
     ~SriovParams4thGen() {};
 
-    virtual bool cfgSupported(mfile* mf);
+    virtual bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last);
 
     virtual int getFromDev(mfile* mf);
     virtual int setOnDev(mfile* mf, bool ignoreCheck=false);
@@ -173,7 +173,7 @@ public:
     SriovParams5thGen() : SriovParams() {}
     ~SriovParams5thGen() {};
 
-    virtual bool cfgSupported(mfile* mf);
+    virtual bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last);
 
     virtual int getFromDev(mfile* mf);
     virtual int setOnDev(mfile* mf, bool ignoreCheck=false);
@@ -194,7 +194,7 @@ public:
     WolParams(int port) : CfgParams(port == 1 ? Mct_Wol_P1 : Mct_Wol_P2, WOL_TYPE), _port(port), _wolMagicEn(MLXCFG_UNKNOWN) {}
     ~WolParams() {}
 
-    virtual bool cfgSupported(mfile* mf) = 0;
+    virtual bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last) = 0;
 
     virtual void setParam(mlxCfgParam paramType, u_int32_t val);
     virtual u_int32_t getParam(mlxCfgParam paramType);
@@ -216,7 +216,7 @@ public:
     WolParams4thGen(int port) : WolParams(port) {}
     ~WolParams4thGen() {}
 
-    virtual bool cfgSupported(mfile* mf);
+    virtual bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last);
 
     virtual int getFromDev(mfile* mf);
     virtual int setOnDev(mfile* mf, bool ignoreCheck=false);
@@ -229,7 +229,7 @@ public:
     WolParams5thGen(int port) : WolParams(port) {}
     ~WolParams5thGen() {}
 
-    virtual bool cfgSupported(mfile* mf);
+    virtual bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last);
 
     virtual int getFromDev(mfile* mf);
     virtual int setOnDev(mfile* mf, bool ignoreCheck=false);
@@ -246,7 +246,7 @@ public:
     VpiParams(int port) : CfgParams(port == 1 ? Mct_Vpi_P1 : Mct_Vpi_P2, VPI_TYPE), _port(port), _linkType(MLXCFG_UNKNOWN), _defaultLinkType(MLXCFG_UNKNOWN){}
     ~VpiParams() {}
 
-    virtual bool cfgSupported(mfile* mf) = 0;
+    virtual bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last) = 0;
 
     virtual int getFromDev(mfile* mf) = 0;
     virtual int setOnDev(mfile* mf, bool ignoreCheck=false) = 0;
@@ -274,7 +274,7 @@ public:
     VpiParams4thGen(int port) : VpiParams(port){}
     ~VpiParams4thGen() {}
 
-    virtual bool cfgSupported(mfile* mf);
+    virtual bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last);
     virtual void setParam(mlxCfgParam paramType, u_int32_t val);
     virtual u_int32_t getParam(mlxCfgParam paramType);
     virtual bool hardLimitCheck();
@@ -290,7 +290,7 @@ public:
     VpiParams5thGen(int port) : VpiParams(port){}
     ~VpiParams5thGen() {}
 
-    virtual bool cfgSupported(mfile* mf);
+    virtual bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last);
     virtual void setParam(mlxCfgParam paramType, u_int32_t val);
     virtual u_int32_t getParam(mlxCfgParam paramType);
     virtual bool hardLimitCheck();
@@ -312,7 +312,7 @@ public:
     BarSzParams() : CfgParams(Mct_Bar_Size, BAR_SIZE_TYPE) ,_maxLogBarSz(1), _logBarSz(MLXCFG_UNKNOWN) {}
     ~BarSzParams() {}
 
-    virtual bool cfgSupported(mfile* mf) = 0;
+    virtual bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last) = 0;
 
     virtual void setParam(mlxCfgParam paramType, u_int32_t val);
     virtual u_int32_t getParam(mlxCfgParam paramType);
@@ -336,7 +336,7 @@ public:
     BarSzParams4thGen() : BarSzParams() {}
     ~BarSzParams4thGen() {}
 
-    virtual bool cfgSupported(mfile* mf);
+    virtual bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last);
 
     virtual int getFromDev(mfile* mf);
     virtual int setOnDev(mfile* mf, bool ignoreCheck=false);
@@ -352,7 +352,7 @@ public:
     BarSzParams5thGen() : BarSzParams() {}
     ~BarSzParams5thGen() {}
 
-    virtual bool cfgSupported(mfile* mf);
+    virtual bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last);
 
     virtual int getFromDev(mfile* mf);
     virtual int setOnDev(mfile* mf, bool ignoreCheck=false);
@@ -370,10 +370,11 @@ class PciParams5thGen : public CfgParams
 {
 public:
     PciParams5thGen() : CfgParams(Mct_Pci, PCI_SETTINGS_TYPE) , _sriovEn(MLXCFG_UNKNOWN), _numOfVfs(MLXCFG_UNKNOWN),\
-                        _fppEn(MLXCFG_UNKNOWN), _sriovSupported(false), _maxVfsPerPf(0), _fppSupported(false){}
+                        _fppEn(MLXCFG_UNKNOWN), _sriovSupported(false), _maxVfsPerPf(0), _fppSupported(false),\
+                        _userSpecifiedSRIOV(false), _userSpecifiedFPP(false){}
     ~PciParams5thGen() {};
 
-    virtual bool cfgSupported(mfile* mf);
+    virtual bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last);
 
     virtual void setParam(mlxCfgParam paramType, u_int32_t val);
     virtual u_int32_t getParam(mlxCfgParam paramType);
@@ -396,6 +397,10 @@ protected:
     bool      _sriovSupported;
     u_int32_t _maxVfsPerPf;
     bool      _fppSupported;
+
+    // class members used for indication
+    bool _userSpecifiedSRIOV;
+    bool _userSpecifiedFPP;
 
 };
 

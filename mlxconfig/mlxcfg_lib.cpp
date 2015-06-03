@@ -14,12 +14,12 @@
  *      - Redistributions of source code must retain the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer.
- * 
+ *
  *      - Redistributions in binary form must reproduce the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer in the documentation and/or other materials
  *        provided with the distribution.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -29,6 +29,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
 /*
  * mlxcfg_lib.cpp
  *
@@ -295,7 +296,12 @@ bool MlxCfgOps::supportsParam(mlxCfgParam param)
     if (!isLegal(param)) {
         return false;
     }
-    return supportsCfg(cfgParam2Type(param));
+
+    if (!isLegal(cfgParam2Type(param))) {
+        return false;
+    }
+
+    return _cfgList[cfgParam2Type(param)]->cfgSupported(_mf, param);
 }
 
 int MlxCfgOps::getCfg(mlxCfgParam cfgParam, u_int32_t& val)

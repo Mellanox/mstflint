@@ -1,16 +1,16 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(mstflint, 4.0.0, orenk@mellanox.co.il)
+AC_INIT(mstflint, 4.0.1, adrianc@mellanox.co.il)
 
 AC_DEFINE_UNQUOTED([PROJECT], ["mstflint"], [Define the project name.])
 AC_SUBST([PROJECT])
 
-AC_DEFINE_UNQUOTED([VERSION], ["4.0.0"], [Define the project version.])
+AC_DEFINE_UNQUOTED([VERSION], ["4.0.1"], [Define the project version.])
 AC_SUBST([VERSION])
 
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_SRCDIR([README])
-AM_INIT_AUTOMAKE(mstflint, 4.0.0)
+AM_INIT_AUTOMAKE(mstflint, 4.0.1)
 
 dnl Checks for programs
 AC_PROG_CC

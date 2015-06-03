@@ -14,12 +14,12 @@
  *      - Redistributions of source code must retain the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer.
- * 
+ *
  *      - Redistributions in binary form must reproduce the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer in the documentation and/or other materials
  *        provided with the distribution.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -87,12 +87,13 @@ void MlxCfg::printHelp()
     // print supported commands
     printf("\n");
     printf(IDENT"Supported Configurations:\n");
-    printf(IDENT2"%-24s : %s\n","SRIOV", "SRIOV_EN=<1|0> NUM_OF_VFS=<NUM> | FPP_EN=<1|0> for ConnectIB and newer devices.");
+    printf(IDENT2"%-24s : %s\n","SRIOV", "SRIOV_EN=<1|0> NUM_OF_VFS=<NUM>");
     printf(IDENT2"%-24s : %s\n","WOL_PORT1", "WOL_MAGIC_EN_P1");
     printf(IDENT2"%-24s : %s\n","WOL_PORT2", "WOL_MAGIC_EN_P2=<1|0>");
     printf(IDENT2"%-24s : %s\n","VPI_SETTINGS_PORT1", "LINK_TYPE_P1=<1|2|3> , 1=Infiniband 2=Ethernet 3=VPI(auto-sense).");
     printf(IDENT2"%-24s : %s\n","VPI_SETTINGS_PORT2", "LINK_TYPE_P2=<1|2|3>");
     printf(IDENT2"%-24s : %s\n","BAR_SIZE", "LOG_BAR_SIZE=<Base_2_log_in_mb> , example: for 8Mb bar size set LOG_BAR_SIZE=3");
+    printf(IDENT2"%-24s : %s\n","FPP", "FPP_EN=<1|0>");
 
     // print usage examples
     printf("\n");
