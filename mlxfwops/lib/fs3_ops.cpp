@@ -412,7 +412,7 @@ bool Fs3Operations::VerifyTOC(u_int32_t dtoc_addr, bool& bad_signature, VerifyCa
                         cibfw_itoc_entry_dump(&toc_entry, stdout);
                         DumpFs3CRCCheck(toc_entry.type, phys_addr, entry_size_in_bytes, 0, 0, true, verifyCallBackFunc);
                     } else {
-                         READBUF((*_ioAccess), flash_addr, buff, entry_size_in_bytes, "Section");
+                        READBUF((*_ioAccess), flash_addr, buff, entry_size_in_bytes, "Section");
                         Fs3UpdateImgCache(buff, flash_addr, entry_size_in_bytes);
                         u_int32_t sect_crc = CalcImageCRC((u_int32_t*)buff, toc_entry.size);
 
@@ -2394,6 +2394,15 @@ bool Fs3Operations::FixCX4WriteProtection(bool justCheck)
         FLASH_RESTORE(origFlashObj);
         return false;
     }
+
+    // get VPD section
+    _readSectList.push_back(FS3_VPD_R0);
+    if (!Fs3IntQuery()) {
+        _readSectList.pop_back();
+        return false;
+    }
+    _readSectList.pop_back();
+
     // re-open flash with -ocr if needed
     if (_fwParams.ignoreCacheRep == 0) {
         OPEN_OCR(origFlashObj);
@@ -2429,13 +2438,13 @@ bool Fs3Operations::FixCX4WriteProtection(bool justCheck)
      * VPD_R0 address is after the MFG_INFO section
      */
     vpdAddr = mfgAddr + mfgToc->toc_entry.size * 4;
-    GetSectData(newVpdSection, (u_int32_t*)vpdToc->data, vpdToc->toc_entry.size * 4);
-    if (!Fs3UpdateItocInfo(vpdToc, vpdAddr + shiftSize, vpdToc->toc_entry.size, newVpdSection)) {
+
+    if (!Fs3UpdateItocInfo(vpdToc, vpdAddr + shiftSize)) {
         SET_WRITE_PROTECT(flashParamName, flashParamVal);
         FLASH_RESTORE(origFlashObj);
         return errmsg("Failed to shift VPD_R0 section");
     }
-    if (!Fs3ReburnItocSection(vpdAddr + shiftSize, vpdToc->toc_entry.size * 4, newVpdSection, "VPD")) {
+    if (!Fs3ReburnItocSection(vpdAddr + shiftSize, vpdToc->toc_entry.size * 4, vpdToc->section_data, "VPD")) {
         SET_WRITE_PROTECT(flashParamName, flashParamVal);
         FLASH_RESTORE(origFlashObj);
         return errmsg("Failed to burn VPD_R0 section, the image maybe left in bad situation");;
