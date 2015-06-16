@@ -53,6 +53,8 @@
 #define BAR_SIZE_TYPE 0x13
 #define PCI_SETTINGS_TYPE 0x80
 #define PCI_CAPABILITES_TYPE 0x81
+#define TPT_SETTINGS_TYPE 0x82
+#define TPT_CAPABILITES_TYPE 0x83
 
 
 typedef enum {
@@ -63,6 +65,7 @@ typedef enum {
     Mct_Vpi_P2,
     Mct_Bar_Size,
     Mct_Pci,
+    Mct_Tpt,
     Mct_Last
 } mlxCfgType;
 
@@ -75,6 +78,7 @@ typedef enum {
     Mcp_Link_Type_P1,
     Mcp_Link_Type_P2,
     Mcp_Log_Bar_Size,
+    Mcp_Log_Tpt_Size,
     Mcp_Last
 } mlxCfgParam;
 
@@ -403,5 +407,37 @@ protected:
     bool _userSpecifiedFPP;
 
 };
+
+/*
+ * TPT parameters Class (5thGen devices only)
+ */
+
+class TptParams5thGen : public CfgParams
+{
+public:
+    TptParams5thGen() : CfgParams(Mct_Tpt, TPT_SETTINGS_TYPE) , _logMaxPayloadSize(MLXCFG_UNKNOWN), _logMaxPayloadSizeSupported(false) {}
+    ~TptParams5thGen() {};
+
+    virtual bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last);
+
+    virtual void setParam(mlxCfgParam paramType, u_int32_t val);
+    virtual u_int32_t getParam(mlxCfgParam paramType);
+
+    virtual int getFromDev(mfile* mf);
+    virtual int setOnDev(mfile* mf, bool ignoreCheck=false);
+    virtual int getDefaultParams(mfile* mf);
+
+protected:
+    virtual bool hardLimitCheck();
+    int getDefaultsAndCapabilities(mfile* mf);
+    u_int32_t getTptSettingsTlvTypeBe();
+    u_int32_t getTptCapabilitiesTlvTypeBe();
+
+    u_int32_t _logMaxPayloadSize;
+
+    // defaults and capabilities
+    bool      _logMaxPayloadSizeSupported;
+};
+
 
 #endif /* MLXCFG_PARAM_LIB_H_ */

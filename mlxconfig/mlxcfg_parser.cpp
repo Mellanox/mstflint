@@ -94,6 +94,8 @@ void MlxCfg::printHelp()
     printf(IDENT2"%-24s : %s\n","VPI_SETTINGS_PORT2", "LINK_TYPE_P2=<1|2|3>");
     printf(IDENT2"%-24s : %s\n","BAR_SIZE", "LOG_BAR_SIZE=<Base_2_log_in_mb> , example: for 8Mb bar size set LOG_BAR_SIZE=3");
     printf(IDENT2"%-24s : %s\n","FPP", "FPP_EN=<1|0>");
+    printf(IDENT2"%-24s : %s\n","INTERNAL_SETTINGS", "INT_LOG_MAX_PAYLOAD_SIZE=<0|12> , 0=Auto 12=4KB Burst length.");
+
 
     // print usage examples
     printf("\n");
@@ -105,6 +107,8 @@ void MlxCfg::printHelp()
     printf(IDENT"Supported devices:\n");
     printf(IDENT2"ConnectX3, ConnectX3-Pro (FW 2.31.5000 and above).\n");
     printf(IDENT2"ConnectIB, ConnectX4.\n");
+    printf("\n");
+    printf(IDENT"Note: query device to view supported configurations.\n");
     printf("\n");
 }
 

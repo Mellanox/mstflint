@@ -1275,7 +1275,165 @@ bool PciParams5thGen::hardLimitCheck()
             return false;
         }
     }
+    return true;
+}
 
+/*
+ * TptParams5thGen Class implementation:
+ */
 
+bool TptParams5thGen::cfgSupported(mfile* mf, mlxCfgParam param)
+{
+    MError rc;
+    (void)param;
+    bool suppRead, suppWrite;
+    rc = nvqcCom5thGen(mf, getTptCapabilitiesTlvTypeBe(), suppRead, suppWrite);
+    if (rc) {
+        errmsg("Failed to get TPT capabilities parameter capabilities. %s", m_err2str(rc));
+        return false;
+    }
+    if (!suppRead) {
+        return false;
+    }
+
+    if (getDefaultsAndCapabilities(mf) != MCE_SUCCESS) {
+        return false;
+    }
+
+    rc = nvqcCom5thGen(mf, getTptSettingsTlvTypeBe(), suppRead, suppWrite);
+    if (rc) {
+        errmsg("Failed to get TPT settings parameter capabilities. %s", m_err2str(rc));
+        return false;
+    }
+    if (!(suppRead && suppWrite && _logMaxPayloadSizeSupported)) {
+        return false;
+    }
+    return true;
+}
+
+void TptParams5thGen::setParam(mlxCfgParam paramType, u_int32_t val)
+{
+    if (paramType == Mcp_Log_Tpt_Size) {
+        _logMaxPayloadSize = val;
+    }
+}
+
+u_int32_t TptParams5thGen::getParam(mlxCfgParam paramType)
+{
+    if (paramType == Mcp_Log_Tpt_Size) {
+        return _logMaxPayloadSize;
+    }
+
+    return MLXCFG_UNKNOWN;
+}
+
+int TptParams5thGen::getFromDev(mfile* mf)
+{
+    MError mRc;
+    u_int8_t tlvBuff[TOOLS_OPEN_TPT_CONFIGURATION_SIZE] = {0};
+    struct tools_open_tpt_configuration tptSettingsTlv;
+    memset(&tptSettingsTlv, 0, sizeof(tptSettingsTlv));
+
+    if (_updated) {
+        return MCE_SUCCESS;
+    }
+
+    mRc = mnvaCom5thGen(mf, &tlvBuff[0], TOOLS_OPEN_TPT_CONFIGURATION_SIZE, getTptSettingsTlvTypeBe(), REG_ACCESS_METHOD_GET);
+
+    if (mRc) {
+        if (mRc == ME_REG_ACCESS_RES_NOT_AVLBL) {
+            return MCE_SUCCESS;
+        }
+        return errmsg("Failed to get TPT configuration: %s", m_err2str(mRc));
+    }
+    // unpack and update
+    tools_open_tpt_configuration_unpack(&tptSettingsTlv, &tlvBuff[0]);
+    _logMaxPayloadSize = tptSettingsTlv.log_max_payload_size;
+    _updated = true;
+
+   return MCE_SUCCESS;
+}
+
+int TptParams5thGen::setOnDev(mfile* mf, bool ignoreCheck)
+{
+    MError mRc;
+
+    if (!ignoreCheck && !checkCfg()) {
+        return MCE_BAD_PARAMS;
+    }
+    // get Tlv modify it and set it
+    u_int8_t tlvBuff[TOOLS_OPEN_TPT_CONFIGURATION_SIZE] = {0};
+    struct tools_open_tpt_configuration tptSettingsTlv;
+    memset(&tptSettingsTlv, 0, sizeof(tptSettingsTlv));
+
+    mRc = mnvaCom5thGen(mf, tlvBuff, TOOLS_OPEN_TPT_CONFIGURATION_SIZE, getTptSettingsTlvTypeBe(), REG_ACCESS_METHOD_GET);
+    if (mRc && mRc != ME_REG_ACCESS_RES_NOT_AVLBL) {
+        return errmsg("failed to set TPT settings: %s", m_err2str(mRc));
+    }
+    tools_open_tpt_configuration_unpack(&tptSettingsTlv, tlvBuff);
+
+    tptSettingsTlv.log_max_payload_size = _logMaxPayloadSize;
+
+    // pack it
+    tools_open_tpt_configuration_pack(&tptSettingsTlv, tlvBuff);
+
+    mRc = mnvaCom5thGen(mf, tlvBuff, TOOLS_OPEN_TPT_CONFIGURATION_SIZE, getTptSettingsTlvTypeBe(), REG_ACCESS_METHOD_SET);
+
+    if (mRc) {
+        return errmsg("failed to set PCI settings: %s", m_err2str(mRc));
+    }
+    _updated = false;
+
+    return MCE_SUCCESS;
+}
+
+int TptParams5thGen::getDefaultParams(mfile* mf)
+{
+    return getDefaultsAndCapabilities(mf);
+}
+
+int TptParams5thGen::getDefaultsAndCapabilities(mfile* mf)
+{
+    MError rc;
+    u_int8_t tlvBuff[TOOLS_OPEN_TPT_CAPABILITIES_SIZE] = {0};
+    struct tools_open_tpt_capabilities tptCapabilitesTlv;
+    memset(&tptCapabilitesTlv, 0, sizeof(tptCapabilitesTlv));
+    rc = mnvaCom5thGen(mf, &tlvBuff[0], TOOLS_OPEN_TPT_CAPABILITIES_SIZE, getTptCapabilitiesTlvTypeBe(), REG_ACCESS_METHOD_GET);
+    if (rc) {
+        return errmsg("Failed to get TPT capabilities parameter. %s", m_err2str(rc));
+    }
+    tools_open_tpt_capabilities_unpack(&tptCapabilitesTlv, tlvBuff);
+    _logMaxPayloadSizeSupported = tptCapabilitesTlv.log_max_payload_size_supported;
+
+    return MCE_SUCCESS;
+}
+
+u_int32_t TptParams5thGen::getTptSettingsTlvTypeBe()
+{
+    struct tools_open_global_type type;
+    u_int32_t tlvType = 0;
+
+    type.param_class = CLASS_GLOBAL;
+    type.param_idx = tlvTypeIdx;
+    tools_open_global_type_pack(&type, (u_int8_t*)&tlvType);
+    return tlvType;
+}
+
+u_int32_t TptParams5thGen::getTptCapabilitiesTlvTypeBe()
+{
+    struct tools_open_global_type type;
+    u_int32_t tlvType = 0;
+
+    type.param_class = CLASS_GLOBAL;
+    type.param_idx = TPT_CAPABILITES_TYPE;
+    tools_open_global_type_pack(&type, (u_int8_t*)&tlvType);
+    return tlvType;
+}
+
+bool TptParams5thGen::hardLimitCheck()
+{
+    if (_logMaxPayloadSize != 0 && _logMaxPayloadSize != 12) {
+        return errmsg("Illegal LOG_MAX_TPT_PAYLOAD_SIZE parameters value. (should be 0(auto) or 12(4KB))");
+    }
     return true;
 }

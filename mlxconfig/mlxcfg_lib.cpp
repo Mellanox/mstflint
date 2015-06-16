@@ -29,7 +29,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
 /*
  * mlxcfg_lib.cpp
  *
@@ -263,6 +262,7 @@ int MlxCfgOps::opend(mfile* mf, bool forceClearSem)
         _cfgList[Mct_Vpi_P2]   = new VpiParams5thGen(2);
         _cfgList[Mct_Bar_Size] = new BarSzParams5thGen();
         _cfgList[Mct_Pci]      = new PciParams5thGen();
+        _cfgList[Mct_Tpt]      = new TptParams5thGen();
     } else {
         _cfgList[Mct_Sriov]    = new SriovParams4thGen();
         _cfgList[Mct_Wol_P1]   = new WolParams4thGen(1);
@@ -483,6 +483,8 @@ mlxCfgType MlxCfgOps::cfgParam2Type(mlxCfgParam param)
         return _isFifthGen ? Mct_Pci : Mct_Sriov;
     case Mcp_Fpp_En:
         return _isFifthGen ? Mct_Pci : Mct_Last;
+    case Mcp_Log_Tpt_Size :
+        return _isFifthGen ? Mct_Tpt : Mct_Last;
     case Mcp_Wol_Magic_En_P1 :
         return Mct_Wol_P1;
     case Mcp_Wol_Magic_En_P2 :

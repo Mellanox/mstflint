@@ -14,12 +14,12 @@
  *      - Redistributions of source code must retain the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer.
- * 
+ *
  *      - Redistributions in binary form must reproduce the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer in the documentation and/or other materials
  *        provided with the distribution.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -121,7 +121,7 @@ void initHandler()
 #endif
 
 std::string MlxCfgParams::param2str[Mcp_Last]= {"SRIOV_EN", "NUM_OF_VFS", "FPP_EN", "WOL_MAGIC_EN_P1", "WOL_MAGIC_EN_P2",\
-                                                "LINK_TYPE_P1", "LINK_TYPE_P2", "LOG_BAR_SIZE"};
+                                                "LINK_TYPE_P1", "LINK_TYPE_P2", "LOG_BAR_SIZE", "INT_LOG_MAX_PAYLOAD_SIZE"};
 
 u_int32_t MlxCfgParams::getParamVal(mlxCfgParam p)
 {
@@ -221,22 +221,22 @@ mlxCfgStatus MlxCfg::queryDevsCfg()
 static void printParam(u_int32_t param)
 {
     if (param == MLXCFG_UNKNOWN) {
-            printf("%-8s", "N/A");
+            printf("%-16s", "N/A");
         } else {
-            printf("%-8d", param);
+            printf("%-16d", param);
         }
     return;
 }
 
 static void printOneParam(const char* name, u_int32_t currVal, bool printNewCfg=false, u_int32_t newVal= MLXCFG_UNKNOWN)
 {
-    printf("         %-16s", name);
+    printf("         %-32s", name);
     printParam(currVal);
     if (printNewCfg) {
         if (newVal == MLXCFG_UNKNOWN) {
             printParam(currVal);
         } else {
-            printf("%-8d", newVal);
+            printf("%-16d", newVal);
         }
     }
     printf("\n");
@@ -286,9 +286,9 @@ mlxCfgStatus MlxCfg::queryDevCfg(const char* dev,const char* pci, int devIndex, 
     }
 
     //print configuration Header
-    printf("%-16s%16s","Configurations:","Current");
+    printf("%-16s%32s","Configurations:","Current");
     if (printNewCfg) {
-        printf(" %s", "New");
+        printf("         %s", "New");
     }
     printf("\n");
 
