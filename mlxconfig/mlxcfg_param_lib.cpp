@@ -1433,7 +1433,8 @@ u_int32_t TptParams5thGen::getTptCapabilitiesTlvTypeBe()
 bool TptParams5thGen::hardLimitCheck()
 {
     if (_logMaxPayloadSize != 0 && _logMaxPayloadSize != 12) {
-        return errmsg("Illegal LOG_MAX_TPT_PAYLOAD_SIZE parameters value. (should be 0(auto) or 12(4KB))");
+        errmsg("Illegal LOG_MAX_TPT_PAYLOAD_SIZE parameters value. (should be 0(auto) or 12(4KB))");
+        return false;
     }
     return true;
 }
