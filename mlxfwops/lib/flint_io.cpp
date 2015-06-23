@@ -554,8 +554,13 @@ bool Flash::write_sector_with_erase(u_int32_t addr, void *data, int cnt)
         return false;
     }
 
+    if (!erase_sector(sector)) {
+        return false;
+    }
+
     memcpy(&buff[word_in_sector], data, cnt);
-    return write(sector, &buff[0], sector_size);
+    // no need to erase twice noerase=true
+    return write(sector, &buff[0], sector_size, true);
 }
 
 bool Flash::write_with_erase(u_int32_t addr, void *data, int cnt)
