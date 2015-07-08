@@ -1255,8 +1255,18 @@ int mwrite4_block (mfile *mf, unsigned int offset, u_int32_t* data, int byte_len
 
 int msw_reset(mfile *mf)
 {
-    (void)mf; /* Warning */
+#ifndef NO_INBAND
+    switch (mf->access_type) {
+    case MTCR_ACCESS_INBAND:
+        return mib_swreset(mf);
+    default:
+        errno = EPERM;
+        return -1;
+    }
+#else
+    (void)mf;
     return -1;
+#endif
 }
 
 int mdevices(char *buf, int len, int mask)
