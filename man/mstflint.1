@@ -9,16 +9,14 @@
       [\fB-d\fP|\fB--device\fP <device>] [\fB--guid\fP <GUID>]
       [\fB--guids\fP <GUIDS\.\.\.>] [\fB--mac\fP <MAC>]
       [\fB--macs\fP <MACs\.\.\.>] [\fB--uid\fP <UID>]
-      [\fB--uids\fP <UIDs\.\.\.>] [\fB--blank_guids\fP]
-      [\fB--clear_semaphore\fP] [\fB-h\fP|\fB--help\fP] [\fB--hh\fP]
-      [\fB-i\fP|\fB--image\fP <image>] [\fB--qq\fP] [\fB--nofs\fP]
-      [\fB--allow_psid_change\fP] [\fB--allow_rom_change\fP]
+      [\fB--blank_guids\fP] [\fB--clear_semaphore\fP]
+      [\fB-h\fP|\fB--help\fP] [\fB--hh\fP] [\fB-i\fP|\fB--image\fP <image>]
+      [\fB--qq\fP] [\fB--nofs\fP] [\fB--allow_psid_change\fP] [\fB--allow_rom_change\fP]
       [\fB--override_cache_replacement\fP] [\fB--no_flash_verify\fP]
       [\fB-s\fP|\fB--silent\fP] [\fB-y\fP|\fB--yes\fP] [\fB--no\fP] [\fB--vsd\fP <string>]
       [\fB--use_image_ps\fP] [\fB--use_image_guids\fP]
       [\fB--use_image_rom\fP] [\fB--dual_image\fP] [\fB--ignore_dev_data\fP]
-      [\fB--use_fw\fP]
-      [\fB--striped_image\fP] [\fB--banks\fP <bank>]
+      [\fB--use_fw\fP] [\fB--striped_image\fP] [\fB--banks\fP <bank>]
       [\fB--log\fP <log_file>] [\fB--flash_params\fP <type, log2size, num_of_flashes>]
       [\fB-v\fP|\fB--version\fP] 
 .fam T
@@ -108,31 +106,11 @@ Technologies ethernet products.
 .TP
 .B
 \fB--uid\fP <UID>
-: BridgeX only. Derive and set the device UIDs 
-(GUIDs, MACs, WWNs).
+: ConnectIB/SwitchIB only. Derive and set the device UIDs 
+(GUIDs, MACs).
 UIDs are derived from the given base UID 
 according to Mellanox Methodology
 Commands affected: burn, sg
-.TP
-.B
-\fB--uids\fP <UIDs\.\.\.>
-: BridgeX only. 29 space separated UIDs must 
-be specified here.
-The specified UIDs are assigned to the following 
-fields, repectively:
-.RS
-G0-MAC-PI0      G0-MAC-PI1      G0-MAC-PI2      G0-MAC-PE0
-G0-MAC-PE1      G0-MAC-PE2      G0-MAC-PE3      G0-FC-WWPN-P0
-G0-FC-WWPN-P1   G0-FC-WWPN-P2   G0-FC-WWPN-P3   G0-IB-NODE-GUID
-G0-IB-PORT-GUID G0-FC-WWNN      G1-MAC-PI0      G1-MAC-PI1
-G1-MAC-PI2      G1-MAC-PE0      G1-MAC-PE1      G1-MAC-PE2
-G1-MAC-PE3      G1-FC-WWPN-P0   G1-FC-WWPN-P1   G1-FC-WWPN-P2
-G1-FC-WWPN-P3   G1-IB-NODE-GUID G1-IB-PORT-GUID G1-FC-WWNN
-IB-SYSTEM-GUID
-
-Commands affected: 
-burn, sg
-.RE
 .TP
 .B
 \fB--blank_guids\fP

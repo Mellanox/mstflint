@@ -1,5 +1,4 @@
-/*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+/* Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,12 +27,9 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- */
-/*
- * mlxcfg_lib.cpp
  *
- *  Created on: Feb 17, 2014
- *      Author: adrianc
+ *  Version: $Id$
+ *
  */
 
 #include <set>
@@ -206,6 +202,7 @@ int MlxCfgOps::openComChk()
     }
 
     // update cfg specific info.
+    // TODO: adrianc: when getting defaults for 4th gen , perform queryDefParams only once and pass struct to classes to avoid calling multiple times
     for (std::map<mlxCfgType, CfgParams*>::iterator paramIt = _cfgList.begin(); paramIt != _cfgList.end(); paramIt++) {
         paramIt->second->setDevCapVec(_suppVec);
         if (paramIt->second->cfgSupported(_mf)) {
@@ -247,29 +244,131 @@ int MlxCfgOps::opend(mfile* mf, bool forceClearSem)
         break;
     case DeviceConnectIB:
     case DeviceConnectX4:
+    case DeviceConnectX4LX:
         _isFifthGen = true;
         break;
     default:
         return errmsg(MCE_UNSUPPORTED_DEVICE);
     }
 
-    // init _cfgList
+    // init _cfgList, _param2TypeMap
     if (_isFifthGen) {
-        _cfgList[Mct_Sriov]    = new SriovParams5thGen();
-        _cfgList[Mct_Wol_P1]   = new WolParams5thGen(1);
-        _cfgList[Mct_Wol_P2]   = new WolParams5thGen(2);
-        _cfgList[Mct_Vpi_P1]   = new VpiParams5thGen(1);
-        _cfgList[Mct_Vpi_P2]   = new VpiParams5thGen(2);
-        _cfgList[Mct_Bar_Size] = new BarSzParams5thGen();
-        _cfgList[Mct_Pci]      = new PciParams5thGen();
-        _cfgList[Mct_Tpt]      = new TptParams5thGen();
+        // Wake On LAN
+        _cfgList[Mct_Wol] = new WolParams5thGen();
+        _param2TypeMap[Mcp_Wol_Magic_En] = Mct_Wol;
+        // Vpi Settings
+        _cfgList[Mct_Vpi_P1] = new VpiParams5thGen(1);
+        _cfgList[Mct_Vpi_P2] = new VpiParams5thGen(2);
+        _param2TypeMap[Mcp_Link_Type_P1] = Mct_Vpi_P1;
+        _param2TypeMap[Mcp_Link_Type_P2] = Mct_Vpi_P2;
+        // PCI settings
+        _cfgList[Mct_Pci] = new PciParams5thGen();
+        _param2TypeMap[Mcp_Sriov_En] = Mct_Pci;
+        _param2TypeMap[Mcp_Num_Of_Vfs] = Mct_Pci;
+        _param2TypeMap[Mcp_Fpp_En] = Mct_Pci;
+        // TPT settings
+        _cfgList[Mct_Tpt] = new TptParams5thGen();
+        _param2TypeMap[Mcp_Log_Tpt_Size] = Mct_Tpt;
+        // Infiniband DC settings
+        _cfgList[Mct_Dc] = new IBDCParams5thGen();
+        _param2TypeMap[Mcp_Log_Dcr_Hash_Table_Size] = Mct_Dc;
+        _param2TypeMap[Mcp_Dcr_Lifo_Size] = Mct_Dc;
+        // Port Boot State
+        /*_cfgList[Mct_Boot_State_P1] = new PortBootStateParams5thGen(1);
+        _cfgList[Mct_Boot_State_P2] = new PortBootStateParams5thGen(2);
+        _param2TypeMap[Mcp_Boot_State_P1] = Mct_Boot_State_P1;
+        _param2TypeMap[Mcp_Boot_State_P2] = Mct_Boot_State_P2;
+        */
+        // RoCE v1.5 next protocol
+        _cfgList[Mct_RoCE_Next_Protocol] = new RoCENextProtocolParams5thGen();
+        _param2TypeMap[Mcp_RoCE_Next_Protocol] = Mct_RoCE_Next_Protocol;
+        // RoCE CC parameters
+        _cfgList[Mct_RoCE_CC_P1] = new RoCECCParams5thGen(1);
+        _cfgList[Mct_RoCE_CC_P2] = new RoCECCParams5thGen(2);
+        _param2TypeMap[Mcp_RoCE_CC_Algorithm_P1] = Mct_RoCE_CC_P1;
+        _param2TypeMap[Mcp_RoCE_CC_Prio_Mask_P1] = Mct_RoCE_CC_P1;
+        _param2TypeMap[Mcp_RoCE_CC_Algorithm_P2] = Mct_RoCE_CC_P2;
+        _param2TypeMap[Mcp_RoCE_CC_Prio_Mask_P2] = Mct_RoCE_CC_P2;
+        // RoCE CC ECN parameters
+        _cfgList[Mct_RoCE_CC_Ecn_P1] = new RoCECCEcnParams5thGen(1);
+        _cfgList[Mct_RoCE_CC_Ecn_P2] = new RoCECCEcnParams5thGen(2);
+        _param2TypeMap[Mcp_Clamp_Tgt_Rate_P1] = Mct_RoCE_CC_Ecn_P1;
+        _param2TypeMap[Mcp_Clamp_Tgt_Rate_After_Time_Inc_P1] = Mct_RoCE_CC_Ecn_P1;
+        _param2TypeMap[Mcp_Rpg_Time_Reset_P1] = Mct_RoCE_CC_Ecn_P1;
+        _param2TypeMap[Mcp_Rpg_Byte_Reset_P1] = Mct_RoCE_CC_Ecn_P1;
+        _param2TypeMap[Mcp_Rpg_Threshold_P1] = Mct_RoCE_CC_Ecn_P1;
+        _param2TypeMap[Mcp_Rpg_Max_Rate_P1] = Mct_RoCE_CC_Ecn_P1;
+        _param2TypeMap[Mcp_Rpg_Ai_Rate_P1] = Mct_RoCE_CC_Ecn_P1;
+        _param2TypeMap[Mcp_Rpg_Hai_Rate_P1] = Mct_RoCE_CC_Ecn_P1;
+        _param2TypeMap[Mcp_Rpg_Gd_P1] = Mct_RoCE_CC_Ecn_P1;
+        _param2TypeMap[Mcp_Rpg_Min_Dec_Fac_P1] = Mct_RoCE_CC_Ecn_P1;
+        _param2TypeMap[Mcp_Rpg_Min_Rate_P1] = Mct_RoCE_CC_Ecn_P1;
+        _param2TypeMap[Mcp_Rate_To_Set_On_First_Cnp_P1] = Mct_RoCE_CC_Ecn_P1;
+        _param2TypeMap[Mcp_Dce_Tcp_G_P1] = Mct_RoCE_CC_Ecn_P1;
+        _param2TypeMap[Mcp_Dce_Tcp_Rtt_P1] = Mct_RoCE_CC_Ecn_P1;
+        _param2TypeMap[Mcp_Rate_Reduce_Monitor_Period_P1] = Mct_RoCE_CC_Ecn_P1;
+        _param2TypeMap[Mcp_Initial_Alpha_Value_P1] = Mct_RoCE_CC_Ecn_P1;
+        _param2TypeMap[Mcp_Min_Time_Between_Cnps_P1] = Mct_RoCE_CC_Ecn_P1;
+        _param2TypeMap[Mcp_Cnp_Dscp_P1] = Mct_RoCE_CC_Ecn_P1;
+        _param2TypeMap[Mcp_Cnp_802p_Prio_P1] = Mct_RoCE_CC_Ecn_P1;
+
+        _param2TypeMap[Mcp_Clamp_Tgt_Rate_P2] = Mct_RoCE_CC_Ecn_P2;
+        _param2TypeMap[Mcp_Clamp_Tgt_Rate_After_Time_Inc_P2] = Mct_RoCE_CC_Ecn_P2;
+        _param2TypeMap[Mcp_Rpg_Time_Reset_P2] = Mct_RoCE_CC_Ecn_P2;
+        _param2TypeMap[Mcp_Rpg_Byte_Reset_P2] = Mct_RoCE_CC_Ecn_P2;
+        _param2TypeMap[Mcp_Rpg_Threshold_P2] = Mct_RoCE_CC_Ecn_P2;
+        _param2TypeMap[Mcp_Rpg_Max_Rate_P2] = Mct_RoCE_CC_Ecn_P2;
+        _param2TypeMap[Mcp_Rpg_Ai_Rate_P2] = Mct_RoCE_CC_Ecn_P2;
+        _param2TypeMap[Mcp_Rpg_Hai_Rate_P2] = Mct_RoCE_CC_Ecn_P2;
+        _param2TypeMap[Mcp_Rpg_Gd_P2] = Mct_RoCE_CC_Ecn_P2;
+        _param2TypeMap[Mcp_Rpg_Min_Dec_Fac_P2] = Mct_RoCE_CC_Ecn_P2;
+        _param2TypeMap[Mcp_Rpg_Min_Rate_P2] = Mct_RoCE_CC_Ecn_P2;
+        _param2TypeMap[Mcp_Rate_To_Set_On_First_Cnp_P2] = Mct_RoCE_CC_Ecn_P2;
+        _param2TypeMap[Mcp_Dce_Tcp_G_P2] = Mct_RoCE_CC_Ecn_P2;
+        _param2TypeMap[Mcp_Dce_Tcp_Rtt_P2] = Mct_RoCE_CC_Ecn_P2;
+        _param2TypeMap[Mcp_Rate_Reduce_Monitor_Period_P2] = Mct_RoCE_CC_Ecn_P2;
+        _param2TypeMap[Mcp_Initial_Alpha_Value_P2] = Mct_RoCE_CC_Ecn_P2;
+        _param2TypeMap[Mcp_Min_Time_Between_Cnps_P2] = Mct_RoCE_CC_Ecn_P2;
+        _param2TypeMap[Mcp_Cnp_Dscp_P2] = Mct_RoCE_CC_Ecn_P2;
+        _param2TypeMap[Mcp_Cnp_802p_Prio_P2] = Mct_RoCE_CC_Ecn_P2;
+
     } else {
-        _cfgList[Mct_Sriov]    = new SriovParams4thGen();
-        _cfgList[Mct_Wol_P1]   = new WolParams4thGen(1);
-        _cfgList[Mct_Wol_P2]   = new WolParams4thGen(2);
-        _cfgList[Mct_Vpi_P1]   = new VpiParams4thGen(1);
-        _cfgList[Mct_Vpi_P2]   = new VpiParams4thGen(2);
+        // SR-IOV
+        _cfgList[Mct_Sriov] = new SriovParams4thGen();
+        _param2TypeMap[Mcp_Sriov_En] = Mct_Sriov;
+        _param2TypeMap[Mcp_Num_Of_Vfs] = Mct_Sriov;
+        // Wake on LAN
+        _cfgList[Mct_Wol_P1] = new WolParams4thGen(1);
+        _cfgList[Mct_Wol_P2] = new WolParams4thGen(2);
+        _param2TypeMap[Mcp_Wol_Magic_En_P1] = Mct_Wol_P1;
+        _param2TypeMap[Mcp_Wol_Magic_En_P2] = Mct_Wol_P2;
+        // Vpi Settings
+        _cfgList[Mct_Vpi_P1] = new VpiParams4thGen(1);
+        _cfgList[Mct_Vpi_P2] = new VpiParams4thGen(2);
+        _param2TypeMap[Mcp_Link_Type_P1] = Mct_Vpi_P1;
+        _param2TypeMap[Mcp_Link_Type_P2] = Mct_Vpi_P2;
+        // BAR size
         _cfgList[Mct_Bar_Size] = new BarSzParams4thGen();
+        _param2TypeMap[Mcp_Log_Bar_Size] = Mct_Bar_Size;
+        // Infiniband Boot Settings
+        _cfgList[Mct_Boot_Settings_P1] = new InfinibandBootSettingsParams4thGen(1);
+        _cfgList[Mct_Boot_Settings_P2] = new InfinibandBootSettingsParams4thGen(2);
+        _param2TypeMap[Mcp_Boot_Pkey_P1] = Mct_Boot_Settings_P1;
+        _param2TypeMap[Mcp_Boot_Pkey_P2] = Mct_Boot_Settings_P2;
+        // Preboot Boot Settings
+        _cfgList[Mct_Preboot_Boot_Settings_P1] = new PrebootBootSettingsParams4thGen(1);
+        _cfgList[Mct_Preboot_Boot_Settings_P2] = new PrebootBootSettingsParams4thGen(2);
+        _param2TypeMap[Mcp_Boot_Option_Rom_En_P1] = Mct_Preboot_Boot_Settings_P1;
+        _param2TypeMap[Mcp_Boot_Vlan_En_P1] = Mct_Preboot_Boot_Settings_P1;
+        _param2TypeMap[Mcp_Boot_Retry_Cnt_P1] = Mct_Preboot_Boot_Settings_P1;
+        _param2TypeMap[Mcp_Legacy_Boot_Protocol_P1] = Mct_Preboot_Boot_Settings_P1;
+        _param2TypeMap[Mcp_Boot_Vlan_P1] = Mct_Preboot_Boot_Settings_P1;
+
+        _param2TypeMap[Mcp_Boot_Option_Rom_En_P2] = Mct_Preboot_Boot_Settings_P2;
+        _param2TypeMap[Mcp_Boot_Vlan_En_P2] = Mct_Preboot_Boot_Settings_P2;
+        _param2TypeMap[Mcp_Boot_Retry_Cnt_P2] = Mct_Preboot_Boot_Settings_P2;
+        _param2TypeMap[Mcp_Legacy_Boot_Protocol_P2] = Mct_Preboot_Boot_Settings_P2;
+        _param2TypeMap[Mcp_Boot_Vlan_P2] = Mct_Preboot_Boot_Settings_P2;
     }
 
 
@@ -406,29 +505,26 @@ void MlxCfgOps::setIgnoreHardLimits(bool val)
 int MlxCfgOps::invalidateCfgs4thGen()
 {
     struct tools_open_mnvia mnviaTlv;
-    u_int8_t buffer[tools_open_mnvia_size()];
+    u_int8_t buffer[TOOLS_OPEN_MNVIA_SIZE] = {0};
     memset(&mnviaTlv, 0, sizeof(struct tools_open_mnvia));
-    memset(buffer, 0, tools_open_mnvia_size());
     tools_open_mnvia_pack(&mnviaTlv, buffer);
     return reg_access_mnvia(_mf, REG_ACCESS_METHOD_SET, &mnviaTlv);
 }
 
 int MlxCfgOps::invalidateCfgs5thGen()
 {
-    struct tools_open_nvdia nvdiaTlv;
-    u_int8_t buffer[tools_open_nvdia_size()];
-    memset(&nvdiaTlv, 0, sizeof(struct tools_open_nvdia));
-    memset(buffer, 0, tools_open_nvdia_size());
-    tools_open_nvdia_pack(&nvdiaTlv, buffer);
-    return reg_access_nvdia(_mf, REG_ACCESS_METHOD_SET, &nvdiaTlv);
+    struct tools_open_nvia nviaTlv;
+    u_int8_t buffer[TOOLS_OPEN_NVIA_SIZE] = {0};
+    memset(&nviaTlv, 0, sizeof(struct tools_open_nvia));
+    tools_open_nvia_pack(&nviaTlv, buffer);
+    return reg_access_nvia(_mf, REG_ACCESS_METHOD_SET, &nviaTlv);
 }
 
 int MlxCfgOps::invalidateCfgs()
 {
     int rc;
     if (_isFifthGen) {
-        return errmsg(MCE_REG_NOT_SUPP, "Reset configuration not supported.");
-        //rc = invalidateCfgs5thGen();
+        rc = invalidateCfgs5thGen();
     } else {
         rc = invalidateCfgs4thGen();
     }
@@ -462,7 +558,7 @@ const char* MlxCfgOps::loadConfigurationGetStr()
     int rc;
     struct cibfw_register_mfrl mfrl;
     memset(&mfrl, 0, sizeof(mfrl));
-    if (_isFifthGen && _deviceId == DeviceConnectX4) {
+    if (_isFifthGen && (_deviceId == DeviceConnectX4 || _deviceId == DeviceConnectX4LX)) {
         // send warm boot (bit 6)
         mfrl.reset_level = 1 << 6;
         rc = reg_access_mfrl(_mf,REG_ACCESS_METHOD_SET, &mfrl);
@@ -476,27 +572,34 @@ const char* MlxCfgOps::loadConfigurationGetStr()
 
 mlxCfgType MlxCfgOps::cfgParam2Type(mlxCfgParam param)
 {
-    switch (param) {
-    case Mcp_Sriov_En :
-        return _isFifthGen ? Mct_Pci :Mct_Sriov;
-    case Mcp_Num_Of_Vfs :
-        return _isFifthGen ? Mct_Pci : Mct_Sriov;
-    case Mcp_Fpp_En:
-        return _isFifthGen ? Mct_Pci : Mct_Last;
-    case Mcp_Log_Tpt_Size :
-        return _isFifthGen ? Mct_Tpt : Mct_Last;
-    case Mcp_Wol_Magic_En_P1 :
-        return Mct_Wol_P1;
-    case Mcp_Wol_Magic_En_P2 :
-        return Mct_Wol_P2;
-    case Mcp_Link_Type_P1 :
-        return Mct_Vpi_P1;
-    case Mcp_Link_Type_P2 :
-        return Mct_Vpi_P2;
-    case Mcp_Log_Bar_Size :
-        return Mct_Bar_Size;
-    default :
-            return Mct_Last;
+    if (_param2TypeMap.find(param) == _param2TypeMap.end()) {
+        return Mct_Last;
     }
+    return _param2TypeMap[param];
 }
 
+int MlxCfgOps::setRawCfg(std::vector<u_int32_t> rawTlvVec)
+{
+    if (!_isFifthGen) {
+        return errmsg("Setting Raw Configuration is supported for 5th Generation devices only.");
+    }
+    RawCfgParams5thGen rawTlv;
+    if (rawTlv.setRawData(rawTlvVec)) {
+        return errmsg("%s", rawTlv.err());
+    }
+
+    if (rawTlv.setOnDev(_mf)) {
+        return errmsg("%s", rawTlv.err());
+    }
+    return MCE_SUCCESS;
+}
+
+int MlxCfgOps::dumpRawCfg(std::vector<u_int32_t> rawTlvVec, std::string& tlvDump)
+{
+    RawCfgParams5thGen rawTlv;
+    if (rawTlv.setRawData(rawTlvVec)) {
+        return errmsg("%s", rawTlv.err());
+    }
+    tlvDump = rawTlv.dumpTlv();
+    return MCE_SUCCESS;
+}

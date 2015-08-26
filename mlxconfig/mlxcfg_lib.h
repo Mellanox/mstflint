@@ -1,5 +1,4 @@
-/*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+/* Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,12 +27,9 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- */
-/*
- * mlxcfg_lib.h
  *
- *  Created on: Feb 17, 2014
- *      Author: adrianc
+ *  Version: $Id$
+ *
  */
 
 #ifndef MLXCFG_LIB_H_
@@ -67,6 +63,10 @@ public:
     int setCfg(mlxCfgParam cfgParam, u_int32_t val);
     int setCfg(const std::vector<cfgInfo>& infoVec);
 
+    int setRawCfg(std::vector<u_int32_t> rawTlvVec);
+
+    int dumpRawCfg(std::vector<u_int32_t> rawTlvVec, std::string& tlvDump);
+
     int invalidateCfgs();
 
     // Set/Un-Set ignore limits for all configurations
@@ -90,6 +90,7 @@ private:
 
     mlxCfgType cfgParam2Type(mlxCfgParam param);
     std::map<mlxCfgType, CfgParams*> _cfgList; // needs to be initialized in constructor and freed in destructor, will contain all the  tools supported cfgs
+    std::map<mlxCfgParam, mlxCfgType> _param2TypeMap;
     dm_dev_id_t _deviceId;
     mfile* _mf;
     u_int64_t _suppVec;

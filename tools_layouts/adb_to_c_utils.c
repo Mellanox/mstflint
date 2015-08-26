@@ -31,9 +31,9 @@
  */
 
 /***
- *** This file was generated at "2015-04-20 13:45:50"
+ *** This file was generated at "2015-06-17 12:05:46"
  *** by:
- ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/connectx4/connectx4.adb --file-prefix connectx4 --prefix connectx4_
+ ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/tools_open/tools_open.adb --file-prefix tools_open --prefix tools_open_
  ***/
 
 #include <assert.h>

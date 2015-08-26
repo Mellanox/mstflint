@@ -31,7 +31,7 @@
  */
 
 /***
- *** This file was generated at "2015-02-05 17:00:49"
+ *** This file was generated at "2015-06-17 12:05:15"
  *** by:
  ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/cibfw/cibfw.adb --file-prefix cibfw --prefix cibfw_
  ***/
@@ -115,6 +115,19 @@ struct cibfw_module_versions {
 	/* Description -  */
 	/* 20.0 - 24.31 */
 	 struct cibfw_module_version mad;
+};
+
+/* Description -   */
+/* Size in bytes - 8 */
+struct cibfw_image_size {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - log of next address in bytes to search for an image. Address in bytes is 2^log_step */
+	/* 0.0 - 0.7 */
+	 u_int8_t log_step;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - Max possible size in bytes of image. Image read / write should not occure beyond this address */
+	/* 4.0 - 8.31 */
+	 u_int32_t max_size;
 };
 
 /* Description -   */
@@ -211,6 +224,13 @@ struct cibfw_operation_key {
 /* Description -   */
 /* Size in bytes - 1024 */
 struct cibfw_image_info {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - IMAGE_INFO section minor version */
+	/* 0.16 - 0.23 */
+	 u_int8_t minor_version;
+	/* Description - IMAGE_INFO section major version */
+	/* 0.24 - 4.31 */
+	 u_int8_t major_version;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description -  */
 	/* 4.0 - 20.31 */
@@ -231,6 +251,10 @@ struct cibfw_image_info {
 	/* Description -  */
 	/* 56.24 - 264.23 */
 	 char vsd[209];
+/*---------------- DWORD[66] (Offset 0x108) ----------------*/
+	/* Description - image size parameters */
+	/* 264.0 - 272.31 */
+	 struct cibfw_image_size image_size;
 /*---------------- DWORD[70] (Offset 0x118) ----------------*/
 	/* Description - HW device(s) supported by this FW image.
 0 means invalid entry.
@@ -498,7 +522,6 @@ void cibfw_uint64_print(const struct cibfw_uint64 *ptr_struct, FILE* file, int i
 int cibfw_uint64_size(void);
 #define CIBFW_UINT64_SIZE    (0x8)
 void cibfw_uint64_dump(const struct cibfw_uint64 *ptr_struct, FILE* file);
-;
 /* module_version */
 void cibfw_module_version_pack(const struct cibfw_module_version *ptr_struct, u_int8_t* ptr_buff);
 void cibfw_module_version_unpack(struct cibfw_module_version *ptr_struct, const u_int8_t* ptr_buff);
@@ -506,7 +529,6 @@ void cibfw_module_version_print(const struct cibfw_module_version *ptr_struct, F
 int cibfw_module_version_size(void);
 #define CIBFW_MODULE_VERSION_SIZE    (0x4)
 void cibfw_module_version_dump(const struct cibfw_module_version *ptr_struct, FILE* file);
-;
 /* uid_entry */
 void cibfw_uid_entry_pack(const struct cibfw_uid_entry *ptr_struct, u_int8_t* ptr_buff);
 void cibfw_uid_entry_unpack(struct cibfw_uid_entry *ptr_struct, const u_int8_t* ptr_buff);
@@ -514,7 +536,6 @@ void cibfw_uid_entry_print(const struct cibfw_uid_entry *ptr_struct, FILE* file,
 int cibfw_uid_entry_size(void);
 #define CIBFW_UID_ENTRY_SIZE    (0x10)
 void cibfw_uid_entry_dump(const struct cibfw_uid_entry *ptr_struct, FILE* file);
-;
 /* module_versions */
 void cibfw_module_versions_pack(const struct cibfw_module_versions *ptr_struct, u_int8_t* ptr_buff);
 void cibfw_module_versions_unpack(struct cibfw_module_versions *ptr_struct, const u_int8_t* ptr_buff);
@@ -522,7 +543,13 @@ void cibfw_module_versions_print(const struct cibfw_module_versions *ptr_struct,
 int cibfw_module_versions_size(void);
 #define CIBFW_MODULE_VERSIONS_SIZE    (0x40)
 void cibfw_module_versions_dump(const struct cibfw_module_versions *ptr_struct, FILE* file);
-;
+/* image_size */
+void cibfw_image_size_pack(const struct cibfw_image_size *ptr_struct, u_int8_t* ptr_buff);
+void cibfw_image_size_unpack(struct cibfw_image_size *ptr_struct, const u_int8_t* ptr_buff);
+void cibfw_image_size_print(const struct cibfw_image_size *ptr_struct, FILE* file, int indent_level);
+int cibfw_image_size_size(void);
+#define CIBFW_IMAGE_SIZE_SIZE    (0x8)
+void cibfw_image_size_dump(const struct cibfw_image_size *ptr_struct, FILE* file);
 /* TRIPPLE_VERSION */
 void cibfw_TRIPPLE_VERSION_pack(const struct cibfw_TRIPPLE_VERSION *ptr_struct, u_int8_t* ptr_buff);
 void cibfw_TRIPPLE_VERSION_unpack(struct cibfw_TRIPPLE_VERSION *ptr_struct, const u_int8_t* ptr_buff);
@@ -530,7 +557,6 @@ void cibfw_TRIPPLE_VERSION_print(const struct cibfw_TRIPPLE_VERSION *ptr_struct,
 int cibfw_TRIPPLE_VERSION_size(void);
 #define CIBFW_TRIPPLE_VERSION_SIZE    (0x8)
 void cibfw_TRIPPLE_VERSION_dump(const struct cibfw_TRIPPLE_VERSION *ptr_struct, FILE* file);
-;
 /* FW_VERSION */
 void cibfw_FW_VERSION_pack(const struct cibfw_FW_VERSION *ptr_struct, u_int8_t* ptr_buff);
 void cibfw_FW_VERSION_unpack(struct cibfw_FW_VERSION *ptr_struct, const u_int8_t* ptr_buff);
@@ -538,7 +564,6 @@ void cibfw_FW_VERSION_print(const struct cibfw_FW_VERSION *ptr_struct, FILE* fil
 int cibfw_FW_VERSION_size(void);
 #define CIBFW_FW_VERSION_SIZE    (0x10)
 void cibfw_FW_VERSION_dump(const struct cibfw_FW_VERSION *ptr_struct, FILE* file);
-;
 /* guids */
 void cibfw_guids_pack(const struct cibfw_guids *ptr_struct, u_int8_t* ptr_buff);
 void cibfw_guids_unpack(struct cibfw_guids *ptr_struct, const u_int8_t* ptr_buff);
@@ -546,7 +571,6 @@ void cibfw_guids_print(const struct cibfw_guids *ptr_struct, FILE* file, int ind
 int cibfw_guids_size(void);
 #define CIBFW_GUIDS_SIZE    (0x40)
 void cibfw_guids_dump(const struct cibfw_guids *ptr_struct, FILE* file);
-;
 /* operation_key */
 void cibfw_operation_key_pack(const struct cibfw_operation_key *ptr_struct, u_int8_t* ptr_buff);
 void cibfw_operation_key_unpack(struct cibfw_operation_key *ptr_struct, const u_int8_t* ptr_buff);
@@ -554,7 +578,6 @@ void cibfw_operation_key_print(const struct cibfw_operation_key *ptr_struct, FIL
 int cibfw_operation_key_size(void);
 #define CIBFW_OPERATION_KEY_SIZE    (0x10)
 void cibfw_operation_key_dump(const struct cibfw_operation_key *ptr_struct, FILE* file);
-;
 /* image_info */
 void cibfw_image_info_pack(const struct cibfw_image_info *ptr_struct, u_int8_t* ptr_buff);
 void cibfw_image_info_unpack(struct cibfw_image_info *ptr_struct, const u_int8_t* ptr_buff);
@@ -562,7 +585,6 @@ void cibfw_image_info_print(const struct cibfw_image_info *ptr_struct, FILE* fil
 int cibfw_image_info_size(void);
 #define CIBFW_IMAGE_INFO_SIZE    (0x400)
 void cibfw_image_info_dump(const struct cibfw_image_info *ptr_struct, FILE* file);
-;
 /* mfg_info */
 void cibfw_mfg_info_pack(const struct cibfw_mfg_info *ptr_struct, u_int8_t* ptr_buff);
 void cibfw_mfg_info_unpack(struct cibfw_mfg_info *ptr_struct, const u_int8_t* ptr_buff);
@@ -570,7 +592,6 @@ void cibfw_mfg_info_print(const struct cibfw_mfg_info *ptr_struct, FILE* file, i
 int cibfw_mfg_info_size(void);
 #define CIBFW_MFG_INFO_SIZE    (0x140)
 void cibfw_mfg_info_dump(const struct cibfw_mfg_info *ptr_struct, FILE* file);
-;
 /* device_info */
 void cibfw_device_info_pack(const struct cibfw_device_info *ptr_struct, u_int8_t* ptr_buff);
 void cibfw_device_info_unpack(struct cibfw_device_info *ptr_struct, const u_int8_t* ptr_buff);
@@ -578,7 +599,6 @@ void cibfw_device_info_print(const struct cibfw_device_info *ptr_struct, FILE* f
 int cibfw_device_info_size(void);
 #define CIBFW_DEVICE_INFO_SIZE    (0x200)
 void cibfw_device_info_dump(const struct cibfw_device_info *ptr_struct, FILE* file);
-;
 /* register_mfrl */
 void cibfw_register_mfrl_pack(const struct cibfw_register_mfrl *ptr_struct, u_int8_t* ptr_buff);
 void cibfw_register_mfrl_unpack(struct cibfw_register_mfrl *ptr_struct, const u_int8_t* ptr_buff);
@@ -586,7 +606,6 @@ void cibfw_register_mfrl_print(const struct cibfw_register_mfrl *ptr_struct, FIL
 int cibfw_register_mfrl_size(void);
 #define CIBFW_REGISTER_MFRL_SIZE    (0x10)
 void cibfw_register_mfrl_dump(const struct cibfw_register_mfrl *ptr_struct, FILE* file);
-;
 /* itoc_header */
 void cibfw_itoc_header_pack(const struct cibfw_itoc_header *ptr_struct, u_int8_t* ptr_buff);
 void cibfw_itoc_header_unpack(struct cibfw_itoc_header *ptr_struct, const u_int8_t* ptr_buff);
@@ -594,7 +613,6 @@ void cibfw_itoc_header_print(const struct cibfw_itoc_header *ptr_struct, FILE* f
 int cibfw_itoc_header_size(void);
 #define CIBFW_ITOC_HEADER_SIZE    (0x20)
 void cibfw_itoc_header_dump(const struct cibfw_itoc_header *ptr_struct, FILE* file);
-;
 /* itoc_entry */
 void cibfw_itoc_entry_pack(const struct cibfw_itoc_entry *ptr_struct, u_int8_t* ptr_buff);
 void cibfw_itoc_entry_unpack(struct cibfw_itoc_entry *ptr_struct, const u_int8_t* ptr_buff);
@@ -602,7 +620,6 @@ void cibfw_itoc_entry_print(const struct cibfw_itoc_entry *ptr_struct, FILE* fil
 int cibfw_itoc_entry_size(void);
 #define CIBFW_ITOC_ENTRY_SIZE    (0x20)
 void cibfw_itoc_entry_dump(const struct cibfw_itoc_entry *ptr_struct, FILE* file);
-;
 /* register_mfai */
 void cibfw_register_mfai_pack(const struct cibfw_register_mfai *ptr_struct, u_int8_t* ptr_buff);
 void cibfw_register_mfai_unpack(struct cibfw_register_mfai *ptr_struct, const u_int8_t* ptr_buff);
@@ -610,7 +627,6 @@ void cibfw_register_mfai_print(const struct cibfw_register_mfai *ptr_struct, FIL
 int cibfw_register_mfai_size(void);
 #define CIBFW_REGISTER_MFAI_SIZE    (0x10)
 void cibfw_register_mfai_dump(const struct cibfw_register_mfai *ptr_struct, FILE* file);
-;
 /* cibfw_Nodes */
 void cibfw_cibfw_Nodes_pack(const union cibfw_cibfw_Nodes *ptr_struct, u_int8_t* ptr_buff);
 void cibfw_cibfw_Nodes_unpack(union cibfw_cibfw_Nodes *ptr_struct, const u_int8_t* ptr_buff);
@@ -618,7 +634,6 @@ void cibfw_cibfw_Nodes_print(const union cibfw_cibfw_Nodes *ptr_struct, FILE* fi
 int cibfw_cibfw_Nodes_size(void);
 #define CIBFW_CIBFW_NODES_SIZE    (0x400)
 void cibfw_cibfw_Nodes_dump(const union cibfw_cibfw_Nodes *ptr_struct, FILE* file);
-;
 
 
 #ifdef __cplusplus

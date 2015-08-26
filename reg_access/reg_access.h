@@ -69,7 +69,7 @@ reg_access_status_t reg_access_mfrl (mfile* mf, reg_access_method_t method, stru
 reg_access_status_t reg_access_mfai (mfile* mf, reg_access_method_t method, struct cibfw_register_mfai* mfai);
 reg_access_status_t reg_access_nvda (mfile* mf, reg_access_method_t method, struct tools_open_nvda* nvda);
 reg_access_status_t reg_access_nvdi (mfile* mf, reg_access_method_t method, struct tools_open_nvdi* nvdi);
-reg_access_status_t reg_access_nvdia (mfile* mf, reg_access_method_t method, struct tools_open_nvdia* nvdia);
+reg_access_status_t reg_access_nvia (mfile* mf, reg_access_method_t method, struct tools_open_nvia* nvdia);
 reg_access_status_t reg_access_nvqc (mfile* mf, reg_access_method_t method, struct tools_open_nvqc* nvqc);
 
 #ifdef __cplusplus

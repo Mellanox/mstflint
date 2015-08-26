@@ -45,13 +45,6 @@ extern "C" {
 
 typedef struct mlxfwops mlxfwops_t;
 
-enum {
-    MLXFW_OK = 0,
-    MLXFW_ERR,
-    MLXFW_MEM_ERR,
-    MLXFW_ERR_IN_STR,
-};
-
 struct image_context {
     void * data;
     u_int32_t size;
@@ -67,15 +60,19 @@ MLXFWOP_API int MLXFWOPCALL mlxfw_open_buffer(mlxfwops_t** mlxfwops_p, void* buf
 
 
 #ifdef UEFI_BUILD
+#include <mft_uefi_common.h>
 
-MLXFWOP_API int MLXFWOPCALL mlxfw_open_uefi(mlxfwops_t** mlxfwops_p, uefi_Dev_t* dev, f_fw_cmd fw_cmd_func);
+MLXFWOP_API int MLXFWOPCALL mlxfw_open_uefi(mlxfwops_t** mlxfwops_p, uefi_Dev_t* dev, f_fw_cmd fw_cmd_func, uefi_dev_info_t* dev_info);
 MLXFWOP_API int MLXFWOPCALL mlxfw_set_print(mlxfwops_t* mlxfwops, f_prog_func_str print_func);
+MLXFWOP_API const char* MLXFWOPCALL mlxfw_err2str(int err);
 
 #endif
 
 MLXFWOP_API const char* MLXFWOPCALL mlxfw_get_last_error(mlxfwops_t* mlxfwops);
 
-MLXFWOP_API int MLXFWOPCALL mlxfw_burn(mlxfwops_t* dev_mlxfwops, mlxfwops_t* img_mlxfwops, u_int8_t force_version, f_prog_func prog_func);
+MLXFWOP_API int MLXFWOPCALL mlxfw_get_last_error_code(mlxfwops_t* mlxfwops);
+
+MLXFWOP_API int MLXFWOPCALL mlxfw_burn(mlxfwops_t* dev_mlxfwops, mlxfwops_t* img_mlxfwops, u_int8_t force_version, f_prog_func prog_func, int allow_psid_change);
 
 MLXFWOP_API int MLXFWOPCALL mlxfw_read_image(mlxfwops_t* mlxfwops, void* image, u_int32_t* image_size);
 

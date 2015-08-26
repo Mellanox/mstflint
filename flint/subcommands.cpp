@@ -280,19 +280,20 @@ int SubCommand::verifyCbFunc(char* str)
     return 0;
 }
 
+
 int SubCommand::CbCommon(int completion, char*preStr, char* endStr)
 {
     if (completion < 100) {
-            printf("\r%s%%%03d", preStr, completion);
+            printf("\r%s%03d%%", preStr, completion);
         }else if (completion == 100) {
             printf("\r%sOK  \n", preStr);
         } else {// printing endStr
             if (endStr){
                 printf("\r%s\n", endStr);
             }
-        }
-        fflush(stdout);
-        return 0;
+    }
+    fflush(stdout);
+    return 0;
 }
 
 // HACK: the endStr is printed when we reach 101% this is for backward compat with the original flint
@@ -412,7 +413,7 @@ FlintStatus SubCommand:: openIo()
     if (_flintParams.device_specified) {
         _io = new Flash;
         if (!((Flash*)_io)->open(_flintParams.device.c_str(), _flintParams.clear_semaphore, false, _flintParams.banks, \
-                _flintParams.flash_params_specified ? &_flintParams.flash_params : NULL, _flintParams.override_cache_replacement, _flintParams.use_fw)) {
+                _flintParams.flash_params_specified ? &_flintParams.flash_params : NULL, _flintParams.override_cache_replacement, true, _flintParams.use_fw)) {
             // if we have Hw_Access command we dont fail straght away
             if (_flintParams.cmd == SC_Hw_Access && ((Flash*)_io)->get_cr_space_locked()) {
                 return FLINT_SUCCESS;
@@ -1061,10 +1062,54 @@ void SubCommand::printMissingGuidErr(bool ibDev, bool ethDev, bool bxDev)
     return;
 }
 
-bool SubCommand::extractUIDArgs(std::vector<string>& cmdArgs, u_int8_t& numOfGuids, u_int8_t& stepSize){
+bool SubCommand::extractValuesFromString(string valStr, u_int8_t values[2], string origArg) {
+    // check if we need to extract 2 values or 1
+    u_int32_t tempNum0 = 0, tempNum1 = 0;
+    string tempNumStr;
+    if (valStr.find(',') != string::npos) {
+        std::stringstream ss((valStr.c_str()));
+        // get first value
+        if (!std::getline(ss, tempNumStr, ',')) {
+            reportErr(true, FLINT_INVALID_ARG_ERROR,origArg.c_str());
+            return false;
+        }
+        if (!str2Num(tempNumStr.c_str(), tempNum0)) {
+            reportErr(true, FLINT_INVALID_ARG_ERROR, origArg.c_str());
+            return false;
+        }
+        // get second value
+        if (!std::getline(ss, tempNumStr, ',')) {
+            reportErr(true, FLINT_INVALID_ARG_ERROR, origArg.c_str());
+            return false;
+        }
+        if (!str2Num(tempNumStr.c_str(), tempNum1)) {
+            reportErr(true, FLINT_INVALID_ARG_ERROR, origArg.c_str());
+            return false;
+        }
+        // make sure no other tokens are present
+        if (!(!std::getline(ss, tempNumStr, ','))) {
+            reportErr(true, FLINT_INVALID_ARG_ERROR, origArg.c_str());
+            return false;
+        }
+    } else {
+        if (!str2Num(valStr.c_str(), tempNum0)) {
+            reportErr(true, FLINT_INVALID_ARG_ERROR, origArg.c_str());
+            return false;
+        }
+        tempNum1 = tempNum0;
+    }
+    // perform checks
+    if (tempNum0 >= 255 || tempNum1 >= 255) {
+        reportErr(true, "Invalid argument values, values should be taken from the range [0..254]\n");
+        return false;
+    }
+    values[0] = tempNum0;
+    values[1] = tempNum1;
+    return true;
+}
+
+bool SubCommand::extractUIDArgs(std::vector<string>& cmdArgs, u_int8_t numOfGuids[2], u_int8_t stepSize[2]){
     //extract num_of_guids and step_size from numGuidsStr, stepStr
-    u_int32_t tempNumOfGuids = 0;
-    u_int32_t tempStepSize = 0;
     string tag, valStr;
     for (std::vector<string>::iterator it = cmdArgs.begin(); it != cmdArgs.end(); it++) {
         std::stringstream ss((it->c_str()));
@@ -1084,13 +1129,11 @@ bool SubCommand::extractUIDArgs(std::vector<string>& cmdArgs, u_int8_t& numOfGui
             return false;
         }
         if (tag == "guids_num") {
-            if (!str2Num(valStr.c_str(), tempNumOfGuids)) {
-                reportErr(true, FLINT_INVALID_ARG_ERROR, it->c_str());
+            if (!extractValuesFromString(valStr, numOfGuids, *it)) {
                 return false;
             }
         } else if (tag == "step_size") {
-            if (!str2Num(valStr.c_str(), tempStepSize)) {
-                reportErr(true, FLINT_INVALID_ARG_ERROR, it->c_str());
+            if (!extractValuesFromString(valStr, stepSize, *it)) {
                 return false;
             }
         } else {
@@ -1098,13 +1141,6 @@ bool SubCommand::extractUIDArgs(std::vector<string>& cmdArgs, u_int8_t& numOfGui
             return false;
         }
     }
-    // perform checks
-    if (tempNumOfGuids <= 0 || tempNumOfGuids >= 256 ||  tempStepSize<=0 || tempStepSize>=256) {
-        reportErr(true, "Invalid argument values, values should be taken from the range [1..255]\n");
-        return false;
-    }
-    numOfGuids = tempNumOfGuids;
-    stepSize = tempStepSize;
     return true;
 }
 
@@ -1225,14 +1261,14 @@ void BurnSubCommand::updateBurnParams()
     _burnParams.userUids.resize(MAX_GUIDS, (guid_t){0xffffffff,0xffffffff});
 }
 
-#define VERSION_FORMAT(isFs2) isFs2 ? "%d.%d.%d" : "%d.%04d.%04d"
+#define VERSION_FORMAT(minor) minor < 100 ? "%d.%d.%04d" : "%d.%04d.%04d"
 bool BurnSubCommand::checkFwVersion()
 {
     char curr_ver[124], new_ver[124];
     printf("\n");
     printf("    Current FW version on flash:  ");
     if (_devInfo.fw_info.fw_ver[0] != 0) { // i.e if we have a fw_version we assume this is != 0
-        snprintf(curr_ver, 124, VERSION_FORMAT(_devInfo.fw_type == FIT_FS2), _devInfo.fw_info.fw_ver[0], _devInfo.fw_info.fw_ver[1], _devInfo.fw_info.fw_ver[2]);
+        snprintf(curr_ver, 124, VERSION_FORMAT(_devInfo.fw_info.fw_ver[1]), _devInfo.fw_info.fw_ver[0], _devInfo.fw_info.fw_ver[1], _devInfo.fw_info.fw_ver[2]);
     } else {
         snprintf(curr_ver, 124, "N/A");
     }
@@ -1240,7 +1276,7 @@ bool BurnSubCommand::checkFwVersion()
 
     printf("    New FW version:               ");
     if (_imgInfo.fw_info.fw_ver[0] != 0) {
-        snprintf(new_ver, 124, VERSION_FORMAT(_imgInfo.fw_type == FIT_FS2), _imgInfo.fw_info.fw_ver[0], _imgInfo.fw_info.fw_ver[1], _imgInfo.fw_info.fw_ver[2]);
+        snprintf(new_ver, 124, VERSION_FORMAT(_imgInfo.fw_info.fw_ver[1]), _imgInfo.fw_info.fw_ver[0], _imgInfo.fw_info.fw_ver[1], _imgInfo.fw_info.fw_ver[2]);
     } else {
         snprintf(new_ver, 124, "N/A");
     }
@@ -1249,24 +1285,19 @@ bool BurnSubCommand::checkFwVersion()
     if (_flintParams.log_specified) {
         print_line_to_log("Current FW version on flash: %s,  New FW version: %s\n", curr_ver, new_ver);
     }
-    int verStatus = FVI_UNKNOWN;
+    int verStatus;
 
     if (_devInfo.fw_info.fw_ver[0] != 0  &&
-            _imgInfo.fw_info.fw_ver[0] != 0) {
-        verStatus = FwOperations::FwVerLessThan(_devInfo.fw_info.fw_ver,_imgInfo.fw_info.fw_ver, _devInfo.fw_type);
+            _imgInfo.fw_info.fw_ver[0] != 0) { // nofs pitfall here - on nofs burn no fwver of device
+        verStatus = FwOperations::FwVerLessThan(_devInfo.fw_info.fw_ver, _imgInfo.fw_info.fw_ver);
+        if (verStatus == FVI_EQUAL || verStatus == FVI_GREATER) {
+            printf("\n    Note: The new FW version is %s the current FW version on flash.\n", verStatus == FVI_EQUAL ? "the same as" : "older than");
+            if (!askUser()) {
+                return false;
+            }
+        }
     }
 
-    if (verStatus == FVI_UNKNOWN) {
-        printf("\n    Warning: Cannot compare between FW versions(different branches).\n");
-        if (!askUser()) {
-            return false;
-        }
-    } else if (verStatus == FVI_EQUAL || verStatus == FVI_GREATER) {
-        printf("\n    Note: The new FW version is not newer than the current FW version on flash.\n");
-        if (!askUser()) {
-            return false;
-        }
-    }
     printf("\n");
     _burnParams.ignoreVersionCheck = true;
     return true;
@@ -1305,11 +1336,7 @@ FlintStatus BurnSubCommand::burnFs3()
         reportErr(true, FLINT_IMG_DEV_COMPAT_ERROR, "FS3", "FS3");
         return FLINT_FAILED;
         }
-    // If we are burning nofs then -ocr flag needs to be specified
-    if (!_burnParams.burnFailsafe && !_flintParams.override_cache_replacement) {
-        reportErr(true, FLINT_FLAG_WITH_FLAG_ERROR, "override_cache_replacement", "nofs");
-        return FLINT_FAILED;
-    }
+
     // on FS3 burn we require query to pass
     if (!_devQueryRes && _burnParams.burnFailsafe) {
         reportErr(true, FLINT_FS3_BURN_ERROR, _fwOps->err());
@@ -1560,15 +1587,18 @@ bool BurnSubCommand::dealWithGuids()
     return true;
 }
 
+#define IS_HCA(chipType) \
+    (((chipType) == CT_CONNECTX) || ((chipType) == CT_CONNECT_IB) || ((chipType) == CT_CONNECTX4) || ((chipType) == CT_CONNECTX4_LX))
+
 void BurnSubCommand::dealWithExpRom()
 {
     bool getRomFromDev = false;
     // Check exp rom:
-    bool fs2Cond = _fwType == FIT_FS2? (_devQueryRes && _devInfo.fw_info.chip_type == CT_CONNECTX && \
+    bool fs2Cond = _fwType == FIT_FS2? (_devQueryRes && IS_HCA(_devInfo.fw_info.chip_type) && \
             (FwOperations::IsFwSupportingRomModify(_devInfo.fw_info.fw_ver) || (_imgInfo.fw_info.roms_info.num_of_exp_rom > 0))\
             && !_flintParams.use_image_rom && !strcmp(_devInfo.fw_info.product_ver,"") && !strcmp(_imgInfo.fw_info.product_ver, "")) : false;
 
-    bool fs3Cond = _fwType == FIT_FS3 ? (_devQueryRes && (_devInfo.fw_info.chip_type == CT_CONNECT_IB || _devInfo.fw_info.chip_type == CT_CONNECTX) && \
+    bool fs3Cond = _fwType == FIT_FS3 ? (_devQueryRes && IS_HCA(_devInfo.fw_info.chip_type) && \
             (FwOperations::IsFwSupportingRomModify(_devInfo.fw_info.fw_ver) || (_imgInfo.fw_info.roms_info.num_of_exp_rom > 0))\
             && !_flintParams.use_image_rom) && !strcmp(_devInfo.fw_info.product_ver,"") && !strcmp(_imgInfo.fw_info.product_ver, "") : false;
 
@@ -1840,7 +1870,7 @@ bool QuerySubCommand::displayFs2Uids(const fw_info_t& fwInfo)
     printf("\n");
 #define PRINT_FS3_UIDS(uid1, uid2, str, printStep) {\
     	PRINT_FS3_UID(uid1, BASE_STR" "str":", printStep);\
-    if (uid1.uid !=  uid2.uid || uid1.num_allocated != uid2.num_allocated  || uid1.step != uid2.step) {\
+    if (uid1.uid !=  uid2.uid || uid1.num_allocated != uid2.num_allocated  || ( printStep && uid1.step != uid2.step)) {\
         PRINT_FS3_UID(uid2, "Orig " BASE_STR " "str":", printStep);\
     } \
 }
@@ -1850,14 +1880,14 @@ bool QuerySubCommand::displayFs3Uids(const fw_info_t& fwInfo)
     if (fwInfo.fs3_info.fs3_uids_info.valid_field) {
         // new GUIDs format
         printf("Description:     UID                GuidsNumber\n");
-        PRINT_FS3_UIDS(fwInfo.fs3_info.fs3_uids_info.cx4_uids.base_guid, fwInfo.fs3_info.orig_fs3_uids_info.cx4_uids.base_guid, "GUID", 0);
-        PRINT_FS3_UIDS(fwInfo.fs3_info.fs3_uids_info.cx4_uids.base_mac, fwInfo.fs3_info.orig_fs3_uids_info.cx4_uids.base_mac, "MAC", 0);
+        PRINT_FS3_UIDS(fwInfo.fs3_info.fs3_uids_info.cx4_uids.base_guid, fwInfo.fs3_info.orig_fs3_uids_info.cx4_uids.base_guid, "GUID", false);
+        PRINT_FS3_UIDS(fwInfo.fs3_info.fs3_uids_info.cx4_uids.base_mac, fwInfo.fs3_info.orig_fs3_uids_info.cx4_uids.base_mac, "MAC", false);
     } else {
         printf("Description:     UID                GuidsNumber  Step\n");
-        PRINT_FS3_UIDS(fwInfo.fs3_info.fs3_uids_info.cib_uids.guids[0], fwInfo.fs3_info.orig_fs3_uids_info.cib_uids.guids[0], "GUID1", 1);
-        PRINT_FS3_UIDS(fwInfo.fs3_info.fs3_uids_info.cib_uids.guids[1], fwInfo.fs3_info.orig_fs3_uids_info.cib_uids.guids[1], "GUID2", 1);
-        PRINT_FS3_UIDS(fwInfo.fs3_info.fs3_uids_info.cib_uids.macs[0], fwInfo.fs3_info.orig_fs3_uids_info.cib_uids.macs[0], "MAC1", 1);
-        PRINT_FS3_UIDS(fwInfo.fs3_info.fs3_uids_info.cib_uids.macs[1], fwInfo.fs3_info.orig_fs3_uids_info.cib_uids.macs[1], "MAC2", 1);
+        PRINT_FS3_UIDS(fwInfo.fs3_info.fs3_uids_info.cib_uids.guids[0], fwInfo.fs3_info.orig_fs3_uids_info.cib_uids.guids[0], "GUID1", true);
+        PRINT_FS3_UIDS(fwInfo.fs3_info.fs3_uids_info.cib_uids.guids[1], fwInfo.fs3_info.orig_fs3_uids_info.cib_uids.guids[1], "GUID2", true);
+        PRINT_FS3_UIDS(fwInfo.fs3_info.fs3_uids_info.cib_uids.macs[0], fwInfo.fs3_info.orig_fs3_uids_info.cib_uids.macs[0], "MAC1", true);
+        PRINT_FS3_UIDS(fwInfo.fs3_info.fs3_uids_info.cib_uids.macs[1], fwInfo.fs3_info.orig_fs3_uids_info.cib_uids.macs[1], "MAC2", true);
     }
     return true;
 }
@@ -1871,13 +1901,10 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
     printf("Image type:      %s\n",(isFs2)? "FS2" : "FS3");
 
     if (fwInfo.fw_info.fw_ver[0] || fwInfo.fw_info.fw_ver[1] || fwInfo.fw_info.fw_ver[2]) {
-        if (isFs2) {
-        printf("FW Version:      %d.%d.%d\n", fwInfo.fw_info.fw_ver[0], fwInfo.fw_info.fw_ver[1],\
+        char versionStr[64] = {0};
+        snprintf(versionStr, 64, VERSION_FORMAT(fwInfo.fw_info.fw_ver[1]), fwInfo.fw_info.fw_ver[0], fwInfo.fw_info.fw_ver[1],
                 fwInfo.fw_info.fw_ver[2]);
-        } else {
-            printf("FW Version:      %d.%04d.%04d\n", fwInfo.fw_info.fw_ver[0], fwInfo.fw_info.fw_ver[1],\
-                            fwInfo.fw_info.fw_ver[2]);
-        }
+        printf("FW Version:      %s\n", versionStr);
     }
 
     if (fwInfo.fw_info.fw_rel_date[0] || fwInfo.fw_info.fw_rel_date[1] || fwInfo.fw_info.fw_rel_date[2]) {
@@ -1895,13 +1922,16 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
             printf("MIC Version:     %d.%d.%d\n", fwInfo.fw_info.mic_ver[0],\
                     fwInfo.fw_info.mic_ver[1], fwInfo.fw_info.mic_ver[2]);
         }
-        if (isFs2)
-        {   if (fwInfo.fs2_info.config_sectors)
+        if (isFs2) {
+            if (fwInfo.fs2_info.config_sectors) {
                 printf("Config Sectors:  %d\n", fwInfo.fs2_info.config_sectors);
+            }
             if (fwInfo.fs2_info.config_pad) {
                     printf("Config Pad:      %d\n", fwInfo.fs2_info.config_pad);
-        }
-
+            }
+            if (strlen(fwInfo.fs2_info.prs_name)) {
+                printf("PRS Name:        %s\n", fwInfo.fs2_info.prs_name);
+            }
         }
     }
 
@@ -2433,11 +2463,12 @@ SgSubCommand:: SgSubCommand()
                 INDENTEX"flint will re-burn the current image using the given GUIDs/MACs/UIDs.";
     _flagLong = "sg";
     _flagShort = "";
-    _param = "[guids_num=<num> step_size=<size>] | [nocrc]";
+    _param = "[guids_num=<num|num_port1,num_port2> step_size=<size|size_port1,size_port2>] | [nocrc]";
     _paramExp = "nocrc: (optional) When specified the flint would not update\n"
                 INDENTEX"the full image crc after changing the guids\n"
-                INDENTEX"num_of_guids: number of GUIDs to be allocated per physical port (FS3 Only)\n"
-                INDENTEX"step_size: step size between GUIDs (FS3 Only)";
+                INDENTEX"guids_num: (optional) number of GUIDs to be allocated per physical port (FS3 Only)\n"
+                INDENTEX"step_size: (optional) step size between GUIDs (FS3 Only)\n"
+                INDENTEX"Note: guids_num/step_size values can be specified per port or for both ports";
     _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" -guid 0x0002c9000100d050 sg"
   "\n"INDENTEX FLINT_NAME" -d "MST_DEV_EXAMPLE4" -guid 0x0002c9000100d050 -mac 0x0002c900d050 sg";
     _v = Wtv_Dev_Or_Img;
@@ -2446,6 +2477,9 @@ SgSubCommand:: SgSubCommand()
     _ops     = NULL;
     memset(&_info, 0, sizeof(_info));
     memset(&_sgParams, 0, sizeof(_sgParams));
+    memset(&(_sgParams.numOfGUIDsPP), 0xff, sizeof(_sgParams.numOfGUIDsPP));
+    memset(&(_sgParams.stepSizePP), 0xff, sizeof(_sgParams.stepSizePP));
+    _sgParams.usePPAttr = true;
 }
 
 SgSubCommand:: ~SgSubCommand()
@@ -2457,7 +2491,7 @@ bool SgSubCommand::verifyParams()
 {
     if ((_flintParams.cmd_params.size() == 1 && _flintParams.cmd_params[0] != "nocrc")||\
             (_flintParams.cmd_params.size() == 2 && \
-                    !extractUIDArgs(_flintParams.cmd_params, _sgParams.numOfGUIDs, _sgParams.stepSize))) {
+                    !extractUIDArgs(_flintParams.cmd_params, _sgParams.numOfGUIDsPP, _sgParams.stepSizePP))) {
         reportErr(true, "The sg parameter should be \"nocrc\", \"guids_num=<num> step_size=<size>\" or nothing\n");
         return false;
     }
@@ -2498,7 +2532,6 @@ bool SgSubCommand::verifyParams()
     _sgParams.uidsSpecified = _flintParams.uid_specified || _flintParams.uids_specified;
     _sgParams.updateCrc = !(_flintParams.cmd_params.size() == 1);
     _sgParams.stripedImage = _flintParams.striped_image;
-
     return true;
 }
 
@@ -2595,10 +2628,23 @@ FlintStatus SgSubCommand::sgFs3()
     if (!CheckSetGuidsFlags()){
         return FLINT_FAILED;
     }
+    if (_flintParams.guids_specified || _flintParams.macs_specified) {
+        reportErr(true, FLINT_NO_GUID_MAC_FLAGS_ERROR);
+        return FLINT_FAILED;
+    }
+
     // TODO: create method that checks the flags for FS3/FS2
-    if (_info.fw_info.chip_type == CT_CONNECTX) {
+    if (_info.fw_info.chip_type == CT_CONNECT_IB || _info.fw_info.chip_type == CT_SWITCH_IB) {
+        if (!_flintParams.uid_specified) {
+            reportErr(true, FLINT_NO_UID_FLAG_ERROR);
+            return FLINT_FAILED;
+        }
+            // for connectib we just need the base guid so we put it in the first location.
+            _sgParams.userGuids.resize(1);
+            _sgParams.userGuids[0]= _flintParams.baseUid;
+    } else {
         if (!_flintParams.uid_specified && !_flintParams.guid_specified && !_flintParams.mac_specified) {
-            reportErr(true, "Can not set GUIDs/MACs: please run with -uid/-guid/-mac flag.\n");
+            reportErr(true, FLINT_NO_GUID_MAC_FLAGS_ERROR);
             return FLINT_FAILED;
         }
         if (_flintParams.uid_specified) {
@@ -2610,14 +2656,6 @@ FlintStatus SgSubCommand::sgFs3()
             _sgParams.userGuids[0]= _sgParams.guidsSpecified ? _flintParams.user_guids[0] : (guid_t){0, 0};
             _sgParams.userGuids[1]= _sgParams.macsSpecified ? _flintParams.user_macs[0] : (guid_t){0, 0};
         }
-    } else {
-        if (!_flintParams.uid_specified) {
-            reportErr(true, "Can not set GUIDs/MACs: uid is not specified, please run with -uid flag.\n");
-            return FLINT_FAILED;
-        }
-            // for connectib we just need the base guid so we put it in the first location.
-            _sgParams.userGuids.resize(1);
-            _sgParams.userGuids[0]= _flintParams.baseUid;
     }
 
     if (!_ops->FwSetGuids(_sgParams, &verifyCbFunc)) {
@@ -2657,9 +2695,10 @@ SmgSubCommand:: SmgSubCommand()
                 INDENTEX"Use -uid flag to set the desired GUIDs, intended for production use only.";
     _flagLong = "smg";
     _flagShort = "";
-    _param = "[guids_num=<num> step_size=<size>]";
-    _paramExp = "guids_num: number of GUIDs to be allocated per physical port\n"
-                INDENTEX"step_size: step size between GUIDs";
+    _param = "[guids_num=<num|num_port1,num_port2> step_size=<size|size_port1,size_port2>]";
+    _paramExp = "guids_num: (optional) number of GUIDs to be allocated per physical port\n"
+                INDENTEX"step_size: (optional) step size between GUIDs\n"
+                INDENTEX"Note: guids_num/step_size values can be specified per port or for both ports";
     _example = FLINT_NAME" -i fw_image.bin -uid 0x0002c9000100d050 smg"
 #ifndef __WIN__
     		"\n"INDENTEX FLINT_NAME" -d "MST_DEV_EXAMPLE3" -uid 0x0002c9000100d050 smg (should be used when device is idle)"
@@ -2671,6 +2710,9 @@ SmgSubCommand:: SmgSubCommand()
     _ops = NULL;
     memset(&_baseGuid, 0, sizeof(_baseGuid));
     memset(&_info, 0, sizeof(_info));
+    memset(&(_baseGuid.num_of_guids_pp), 0xff, sizeof(_baseGuid.num_of_guids_pp));
+    memset(&(_baseGuid.step_size_pp), 0xff, sizeof(_baseGuid.step_size_pp));
+    _baseGuid.use_pp_attr = 1;
 }
 
 SmgSubCommand:: ~SmgSubCommand()
@@ -2707,7 +2749,7 @@ bool SmgSubCommand::verifyParams()
     }
 
     if (_flintParams.cmd_params.size() == 2 &&\
-        !extractUIDArgs(_flintParams.cmd_params, _baseGuid.num_of_guids, _baseGuid.step_size)) {
+        !extractUIDArgs(_flintParams.cmd_params, _baseGuid.num_of_guids_pp, _baseGuid.step_size_pp)) {
         return false;
     }
 
@@ -2740,17 +2782,19 @@ FlintStatus SmgSubCommand::executeCommand()
          reportErr(true, FLINT_MFG_ERROR, _ops->err());
          return FLINT_FAILED;
      }
-     if (_info.fw_info.chip_type == CT_CONNECTX) {
+
+     if (_info.fw_info.chip_type == CT_CONNECT_IB || _info.fw_info.chip_type == CT_SWITCH_IB) {
+         if (!_flintParams.uid_specified) {
+         reportErr(true, "Can not set GUIDs/MACs: uid is not specified, please run with -uid flag.\n");
+         return FLINT_FAILED;
+         }
+     } else {
          if (!_flintParams.uid_specified && !_flintParams.guid_specified && !_flintParams.mac_specified ) {
              reportErr(true, "Can not set GUIDs/MACs: GUIDs/MACs are not specified, please run with -uid/-guid/-mac flags.\n");
              return FLINT_FAILED;
          }
-     } else {
-        if (!_flintParams.uid_specified) {
-        reportErr(true, "Can not set GUIDs/MACs: uid is not specified, please run with -uid flag.\n");
-        return FLINT_FAILED;
-        }
      }
+
     bool ret;
     ret = _ops->FwSetMFG(_baseGuid, &verifyCbFunc);
     if (!ret) {

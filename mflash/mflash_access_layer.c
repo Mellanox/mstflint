@@ -1,5 +1,4 @@
-/*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+/* Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,8 +27,10 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
+ *  Version: $Id$
+ *
  */
-
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -37,7 +38,10 @@
 
 #include <mtcr.h>
 #include <reg_access.h>
+
+#ifndef UEFI_BUILD
 #include <tools_res_mgmt.h>
+#endif
 
 #include "mflash_types.h"
 #include "mflash_pack_layer.h"
@@ -127,6 +131,7 @@ int sx_block_write_by_type(mflash* mfl, u_int32_t addr, u_int32_t size, u_int8_t
 #define MAX_FLASH_PROG_SEM_RETRY_CNT 2048
 static int lock_flash_programing_sem(mflash* mfl)
 {
+#ifndef UEFI_BUILD
     int rc;
     if (mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_ICMD) {
         rc = trm_lock(mfl->mf, TRM_RES_FLASH_PROGRAMING, MAX_FLASH_PROG_SEM_RETRY_CNT);
@@ -139,11 +144,13 @@ static int lock_flash_programing_sem(mflash* mfl)
             return MFE_SEM_LOCKED;
         }
     }
+#endif
     return MFE_OK;
 }
 
 static int unlock_flash_programing_sem(mflash* mfl)
 {
+#ifndef UEFI_BUILD
     int rc;
     if (mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_ICMD) {
         rc = trm_unlock(mfl->mf, TRM_RES_FLASH_PROGRAMING);
@@ -156,6 +163,7 @@ static int unlock_flash_programing_sem(mflash* mfl)
             return MFE_SEM_LOCKED;
         }
     }
+#endif
     return MFE_OK;
 }
 

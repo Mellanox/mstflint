@@ -1,5 +1,4 @@
-/*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+/* Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,6 +27,9 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
+ *  Version: $Id$
+ *
  */
 
 #include <stdlib.h>
@@ -36,6 +38,8 @@
 #include <stdarg.h>
 #include <signal.h>
 #include <iostream>
+#include <fstream>
+#include <sstream>
 
 #include <tools_dev_types.h>
 
@@ -113,6 +117,7 @@ void initHandler()
 #define MAX_ERR_STR_LEN 1024
 #define MAX_BUF_SIZE 1024
 #define PRE_ERR_MSG "-E-"
+#define MLNX_RAW_TLV_FILE_SIG "MLNX_RAW_TLV_FILE"
 
 #ifdef MST_UL
     #define NO_DEV_ERR "No devices found."
@@ -120,8 +125,32 @@ void initHandler()
     #define NO_DEV_ERR "No devices found, mst might be stopped. You may need to run 'mst start' to load MST modules. "
 #endif
 
-std::string MlxCfgParams::param2str[Mcp_Last]= {"SRIOV_EN", "NUM_OF_VFS", "FPP_EN", "WOL_MAGIC_EN_P1", "WOL_MAGIC_EN_P2",\
-                                                "LINK_TYPE_P1", "LINK_TYPE_P2", "LOG_BAR_SIZE", "INT_LOG_MAX_PAYLOAD_SIZE"};
+// TODO: adrianc: change to map<mlxCfgParam, string>
+std::string MlxCfgParams::param2str[Mcp_Last]= {"SRIOV_EN", "NUM_OF_VFS", "FPP_EN",
+                                                "WOL_MAGIC_EN_P1", "WOL_MAGIC_EN_P2",
+                                                "WOL_MAGIC_EN",
+                                                "LINK_TYPE_P1", "LINK_TYPE_P2",
+                                                "LOG_BAR_SIZE",
+                                                "INT_LOG_MAX_PAYLOAD_SIZE",
+                                                "BOOT_PKEY_P1", "BOOT_PKEY_P2",
+                                                "LOG_DCR_HASH_TABLE_SIZE", "DCR_LIFO_SIZE",
+                                                 "PORT_BOOT_STATE_P1", "PORT_BOOT_STATE_P2",
+                                                 "ROCE_NEXT_PROTOCOL",
+                                                 "ROCE_CC_ALGORITHM_P1", "ROCE_CC_PRIO_MASK_P1", "ROCE_CC_ALGORITHM_P2", "ROCE_CC_PRIO_MASK_P2",
+                                                 "CLAMP_TGT_RATE_P1", "CLAMP_TGT_RATE_AFTER_TIME_INC_P1", "RPG_TIME_RESET_P1",
+                                                 "RPG_BYTE_RESET_P1", "RPG_THRESHOLD_P1", "RPG_MAX_RATE_P1", "RPG_AI_RATE_P1",
+                                                 "RPG_HAI_RATE_P1", "RPG_GD_P1", "RPG_MIN_DEC_FAC_P1", "RPG_MIN_RATE_P1",
+                                                 "RATE_TO_SET_ON_FIRST_CNP_P1", "DCE_TCP_G_P1", "DCE_TCP_RTT_P1",
+                                                 "RATE_REDUCE_MONITOR_PERIOD_P1", "INITIAL_ALPHA_VALUE_P1", "MIN_TIME_BETWEEN_CNPS_P1",
+                                                 "CNP_DSCP_P1", "CNP_802P_PRIO_P1",
+                                                 "CLAMP_TGT_RATE_P2", "CLAMP_TGT_RATE_AFTER_TIME_INC_P2", "RPG_TIME_RESET_P2",
+                                                 "RPG_BYTE_RESET_P2", "RPG_THRESHOLD_P2", "RPG_MAX_RATE_P2", "RPG_AI_RATE_P2",
+                                                 "RPG_HAI_RATE_P2", "RPG_GD_P2", "RPG_MIN_DEC_FAC_P2", "RPG_MIN_RATE_P2",
+                                                 "RATE_TO_SET_ON_FIRST_CNP_P2", "DCE_TCP_G_P2", "DCE_TCP_RTT_P2", "RATE_REDUCE_MONITOR_PERIOD_P2",
+                                                 "INITIAL_ALPHA_VALUE_P2", "MIN_TIME_BETWEEN_CNPS_P2", "CNP_DSCP_P2", "CNP_802P_PRIO_P2",
+                                                 "BOOT_OPTION_ROM_EN_P1", "BOOT_VLAN_EN_P1", "BOOT_RETRY_CNT_P1", "LEGACY_BOOT_PROTOCOL_P1", "BOOT_VLAN_P1",
+                                                 "BOOT_OPTION_ROM_EN_P2", "BOOT_VLAN_EN_P2", "BOOT_RETRY_CNT_P2", "LEGACY_BOOT_PROTOCOL_P2", "BOOT_VLAN_P2",
+                                                  };
 
 u_int32_t MlxCfgParams::getParamVal(mlxCfgParam p)
 {
@@ -205,7 +234,12 @@ mlxCfgStatus MlxCfg::queryDevsCfg()
         char pcibuf[32]= {0};
 
         for(int i=0 ; i < numOfDev ; i++) {
-            snprintf(pcibuf,32, "%04x:%02x:%02x.%x", devPtr->pci.domain, devPtr->pci.bus,\
+#ifdef __FREEBSD__
+            const char* device_name_ptrn = "pci%d:%d:%d:%d";
+#else
+            const char* device_name_ptrn = "%04x:%02x:%02x.%x";
+#endif
+            snprintf(pcibuf,32, device_name_ptrn, devPtr->pci.domain, devPtr->pci.bus,\
                     devPtr->pci.dev, devPtr->pci.func);
             if (queryDevCfg(devPtr->pci.conf_dev, pcibuf, i+1)){
                 printErr();
@@ -223,20 +257,20 @@ static void printParam(u_int32_t param)
     if (param == MLXCFG_UNKNOWN) {
             printf("%-16s", "N/A");
         } else {
-            printf("%-16d", param);
+            printf("%-16u", param);
         }
     return;
 }
 
 static void printOneParam(const char* name, u_int32_t currVal, bool printNewCfg=false, u_int32_t newVal= MLXCFG_UNKNOWN)
 {
-    printf("         %-32s", name);
+    printf("         %-36s", name);
     printParam(currVal);
     if (printNewCfg) {
         if (newVal == MLXCFG_UNKNOWN) {
             printParam(currVal);
         } else {
-            printf("%-16d", newVal);
+            printf("%-16u", newVal);
         }
     }
     printf("\n");
@@ -286,7 +320,7 @@ mlxCfgStatus MlxCfg::queryDevCfg(const char* dev,const char* pci, int devIndex, 
     }
 
     //print configuration Header
-    printf("%-16s%32s","Configurations:","Current");
+    printf("%-16s%36s","Configurations:","Current");
     if (printNewCfg) {
         printf("         %s", "New");
     }
@@ -438,6 +472,87 @@ mlxCfgStatus MlxCfg::clrDevSem()
     return MLX_CFG_OK;
 }
 
+mlxCfgStatus MlxCfg::setDevRawCfg()
+{
+    // open device
+    MlxCfgOps ops;
+    bool rc;
+    rc = ops.open(_mlxParams.device.c_str());
+    if (rc) {
+        return err(true, "Failed to set configuration on device: %s. %s", _mlxParams.device.c_str(), \
+               ops.err());
+    }
+    // open file
+    std::ifstream ifs(_mlxParams.rawTlvFile.c_str());
+    if (ifs.fail()) {
+        return err(true, "Failed to open file: %s", _mlxParams.rawTlvFile.c_str());
+    }
+    std::vector<std::vector<u_int32_t> > rawTlvsAsDw;
+    rawTlvsAsDw.resize(0);
+    // Check file Sig
+    std::string startLine;
+    std::getline(ifs, startLine);
+    if (startLine != MLNX_RAW_TLV_FILE_SIG) {
+        return err(true, "Invalid raw TLV file header.");
+    }
+    // parse the rest of the Lines
+    int lineIdx = 1;
+    for (std::string line; std::getline(ifs, line); lineIdx++) {
+        std::vector<u_int32_t> rawTlvVec;
+        if (line[0] == '%') { // comment - skip
+            continue;
+        }
+        // convert line to DW
+        if (tlvLine2DwVec(line, rawTlvVec)) {
+            return err(true, "Failed to parse Raw TLV at line %d: %s", lineIdx, _errStr.c_str());
+        }
+        rawTlvsAsDw.push_back(rawTlvVec);
+    }
+    // dump raw TLVs from the file
+    std::string dumpStr;
+    int tlvIdx = 1;
+    for (std::vector<std::vector<u_int32_t> >::iterator it = rawTlvsAsDw.begin(); it != rawTlvsAsDw.end(); it++, tlvIdx++) {
+        if (ops.dumpRawCfg(*it, dumpStr)) {
+            return err(true, "Error at Raw TLV #%d: %s", tlvIdx, ops.err());
+        }
+        printf("Raw TLV #%d Info:\n%s\n", tlvIdx, dumpStr.c_str());
+    }
+    // ask user
+    if(!askUser("Operation intended for advanced users.\n Are you sure you want to apply raw TLV file?")) {
+        printErr();
+        return MLX_CFG_ABORTED;
+    }
+    printf("Applying... ");
+    // set each of the raw TLVs
+    tlvIdx = 1;
+    for (std::vector<std::vector<u_int32_t> >::iterator it = rawTlvsAsDw.begin(); it != rawTlvsAsDw.end(); it++, tlvIdx++) {
+        if (ops.setRawCfg(*it)) {
+            printf("Failed!\n");
+            return err(true, "Failed to set Raw TLV #%d: %s", tlvIdx, ops.err());
+        }
+    }
+    // done successfully
+    printf("Done!\n");
+    printf("-I- Please reboot machine to load new configurations.\n");
+    return MLX_CFG_OK;
+}
+
+mlxCfgStatus MlxCfg::tlvLine2DwVec(const std::string& tlvStringLine, std::vector<u_int32_t>& tlvVec) {
+    tlvVec.resize(0);
+    std::string dwStr;
+    u_int32_t dw;
+    char* p = NULL;
+    std::istringstream isstm(tlvStringLine);
+    while (isstm >> dwStr) {
+        dw = strtoul(dwStr.c_str(), &p, 0);
+        if (*p) {
+            return err(false, "Input is not an unsigned number: %s", dwStr.c_str());
+        }
+        tlvVec.push_back(dw);
+    }
+    return MLX_CFG_OK;
+}
+
 mlxCfgStatus MlxCfg::resetDevCfg(const char* dev)
 {
     MlxCfgOps ops;
@@ -484,6 +599,9 @@ mlxCfgStatus MlxCfg::execute(int argc, char* argv[])
         break;
     case Mc_Clr_Sem:
         ret = clrDevSem();
+        break;
+    case Mc_Set_Raw:
+        ret = setDevRawCfg();
         break;
     default:
         // should not reach here.

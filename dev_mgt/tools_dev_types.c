@@ -1,5 +1,4 @@
-/*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+/* Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,6 +27,9 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
+ *  Version: $Id$
+ *
  */
 
 #include <stdio.h>
@@ -194,11 +196,11 @@ static struct dev_info g_devs_info[] = {
         .dev_type  = DM_SWITCH
     },
     {
-        .dm_id     = DeviceSwitchEN,
+        .dm_id     = DeviceSpectrum,
         .hw_dev_id = 0x249,
         .hw_rev_id = -1,
         .sw_dev_id = -1,
-        .name      = "SwitchEN",
+        .name      = "Spectrum",
         .port_num  = 64,
         .dev_type  = DM_SWITCH
     },
@@ -246,6 +248,15 @@ int dm_get_device_id(mfile* mf,
     u_int32_t i;
     int rc;
     u_int32_t dev_flags;
+
+    //Special case: FPGA device:
+#ifndef MST_UL
+    if (mf->tp == MST_FPGA) {
+        *ptr_dm_dev_id = DeviceFPGA;
+        *ptr_hw_dev_id = 0x600;
+        return 0;
+    }
+#endif
 
     #if 1
     for (i = 0; i < DeviceEndMarker; i++) {
@@ -429,7 +440,9 @@ u_int32_t dm_get_hw_rev_id(dm_dev_id_t type)
 
 int dm_is_fpp_supported(dm_dev_id_t type)
 {
-    if (g_devs_info[type].dm_id == DeviceConnectX4 || g_devs_info[type].dm_id == DeviceConnectX4LX) {
+    if (g_devs_info[type].dm_id == DeviceConnectIB ||
+        g_devs_info[type].dm_id == DeviceConnectX4 ||
+        g_devs_info[type].dm_id == DeviceConnectX4LX) {
         return 1;
     } else {
         return 0;

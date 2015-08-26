@@ -151,7 +151,7 @@ static struct device_sem_info g_dev_sem_info_db[] = {
                 0,               // vsec_sem_supported
         },
         {
-                DeviceSwitchEN,  // dev_id
+                DeviceSpectrum,  // dev_id
                 {0xa24f8},       // hw_sem_addr
                 0,               // vsec_sem_supported
         },

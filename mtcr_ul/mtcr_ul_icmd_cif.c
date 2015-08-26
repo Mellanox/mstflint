@@ -59,7 +59,6 @@
 #define OPCODE_BITLEN       16
 #define STATUS_BITOFF       8
 #define STATUS_BITLEN       8
-#define ICMD_MAX_CMD_SIZE   256
 
 #define VCR_CTRL_ADDR       0x0
 #define VCR_SEMAPHORE62     0x0 // semaphore Domain
@@ -182,6 +181,7 @@ enum {
 #define HW_ID_ADDR 0xf0014
 #define CIB_HW_ID 511
 #define CX4_HW_ID 521
+#define CX4LX_HW_ID 523
 #define SW_IB_HW_ID 583
 #define SW_EN_HW_ID 585
 
@@ -191,6 +191,7 @@ enum {
         MREAD4((mf), (HW_ID_ADDR), &(_hw_id));\
         switch (_hw_id & 0xffff) {\
         case (CX4_HW_ID):\
+        case (CX4LX_HW_ID):\
             addr = addr_cx4;\
             break;\
         case (SW_IB_HW_ID):\

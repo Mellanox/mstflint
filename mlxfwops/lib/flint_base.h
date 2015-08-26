@@ -71,18 +71,6 @@
 // djgpp stdio does not define vsnprintf. I simply call vsprintf (and pray ...)
         #define vsnprintf(buf, len, format, args) (vsprintf(buf, format, args))
         #define snprintf(buf, len, format, args...) (sprintf(buf, format, args))
-    #else // Linux GCC
-        #ifdef __FreeBSD__
-            #define SWAPL(l) ntohl(l)
-            #include <sys/endian.h>
-            #define bswap_32(x) ntohl(x)
-        #else // Linux
-            #include <byteswap.h>
-            #include <endian.h>
-        #endif
-        #include <netinet/in.h>
-        #include <unistd.h>
-
     #endif // __DJGPP__
 
 #else // __WIN__
@@ -90,9 +78,6 @@
 //
 // Windows (Under DDK)
 //
-
-    #include <io.h>
-    #include <Winsock2.h>
     #include <mtcr.h>
 // Sleep adaptor
     #define usleep(x) Sleep((x)/1000)
@@ -101,25 +86,9 @@
     #define vsnprintf      _vsnprintf
     #define isatty         _isatty
 
-    #define COMP_CDECL     __cdecl
-
-    #define __LITTLE_ENDIAN 1234
-    #define __BIG_ENDIAN 4321
-    #define __BYTE_ORDER __LITTLE_ENDIAN
-
-
-
-    #if __BYTE_ORDER == __LITTLE_ENDIAN
-        #define bswap_32(x) ntohl(x)
-    #else
-        #error windows is assumed to run a on little endian architecture
-    #endif
-
     // MINGW
     #if defined(__MINGW32__) || (__MINGW64__)
-        #define strtoull       strtoull
         #define _UNISTD_H // Zlib includes unistd.h which causes some compilation errors.
-
     #else
         #define strtoull       _strtoui64
     #endif
@@ -127,7 +96,7 @@
 
 
 #include <vector>
-#include "compatibility.h"
+#include <compatibility.h>
 #include "mlxfwops_com.h"
 
 static inline void be_guid_to_cpu(guid_t* to, guid_t* from) {
@@ -218,7 +187,7 @@ namespace std {}; using namespace std;
 #define FS_DATA_OFF      0x28
 #define SWITCHX_HW_ID    581
 #define SWITCH_IB_HW_ID  583
-#define SWITCH_EN_HW_ID  585
+#define SPECTRUM_HW_ID  585
 
 #define CX4_HW_ID         521
 #define CX4LX_HW_ID       523
@@ -367,68 +336,7 @@ enum CommandType {
     CMD_SET_MFG_GUIDS,
     CMD_BURN_VPD,
 };
-enum CommandInput {
-    CI_NONE         = 0x01,
-    CI_IMG_ONLY     = 0x02,
-    CI_DEV_ONLY     = 0x04,
-    CI_IMG_OR_DEV   = 0x06,
-    CI_IMG_AND_DEV  = 0x08
-};
 
-
-
-struct CommandInfo {
-    CommandType  cmd;
-    const char*  cmdName;
-    bool         requireExactMatch;
-    int          maxArgs;
-    CommandInput requiredInput;
-    const char*  cmdDescription;
-
-};
-
-
-////////////////////////////////////////////////////////////////////////
- //
- // Commands database and parsing methods
- //
-////////////////////////////////////////////////////////////////////////
-CommandInfo const g_commands[] = {
-    { CMD_BURN           , "burn"  ,false , 0, CI_IMG_AND_DEV , ""},
-    { CMD_BURN_BLOCK     , "bb"    ,true  , 0, CI_IMG_AND_DEV , ""},
-    { CMD_SET_GUIDS      , "sg"    ,true  , 1, CI_IMG_OR_DEV  , ""},
-    { CMD_SET_MFG_GUIDS  , "smg"    ,true  , 0, CI_IMG_ONLY  , ""},
-    { CMD_BURN_VPD       , "set_vpd"    ,true  , 1, CI_IMG_ONLY  , ""},
-
-
-    { CMD_SET_VSD        , "sv"    ,true  , 0, CI_IMG_OR_DEV  , ""},
-    { CMD_SET_KEY        , "set_key" ,true , 1, CI_DEV_ONLY  , ""},
-    { CMD_QUERY_FORCE    , "qf"    ,true  , 0, CI_IMG_OR_DEV  , ""},
-    { CMD_QUERY          , "query" ,false , 1, CI_IMG_OR_DEV  , ""},
-    { CMD_QUERY_ROM      , "qrom"  ,true  , 0, CI_IMG_ONLY    , ""},
-    { CMD_VERIFY         , "verify",false , 1, CI_IMG_OR_DEV  , ""},
-    { CMD_READ_WORD      , "rw"    ,true  , 1, CI_DEV_ONLY    , ""},
-    { CMD_READ_BLOCK     , "rb"    ,true  , 3, CI_IMG_OR_DEV  , ""},
-    { CMD_WRITE_WORD     , "ww"    ,true  , 2, CI_DEV_ONLY    , ""},
-    { CMD_WRITE_WORD_NE  , "wwne"  ,true  , 2, CI_DEV_ONLY    , ""},
-    { CMD_WRITE_BLOCK    , "wb"    ,true  , 2, CI_DEV_ONLY    , ""},
-    { CMD_WRITE_BLOCK_NE , "wbne"  ,true  ,-1, CI_DEV_ONLY    , ""},
-    { CMD_ERASE_SECT     , "erase" ,false , 1, CI_DEV_ONLY    , ""},
-    { CMD_DUMP_CONF      , "dc"    ,true  , 1, CI_IMG_OR_DEV  , ""},
-    { CMD_DUMP_HASH      , "dh"    ,true  , 1, CI_IMG_OR_DEV  , ""},
-    { CMD_DUMP_JSON      , "dj"    ,true  , 1, CI_IMG_OR_DEV  , ""},
-    { CMD_READ_IMAGE     , "ri"    ,true  , 1, CI_DEV_ONLY    , ""},
-    { CMD_CLEAR_SEM      , "clear_semaphore"   ,true  , 0 , CI_DEV_ONLY    , ""},
-    { CMD_SWRESET        , "swreset" ,true , 0, CI_DEV_ONLY    , ""},
-    { CMD_HW_INFO        , "hw"      ,false  , 2, CI_DEV_ONLY    , ""},
-    { CMD_BURN_ROM       , "brom"    ,true  , 1, CI_DEV_ONLY    , ""},
-    { CMD_REMOVE_ROM     , "drom"    ,true  , 0, CI_DEV_ONLY    , ""},
-    { CMD_READ_ROM       , "rrom"    ,true  , 1, CI_DEV_ONLY   , ""},
-    { CMD_HW_ACCESS      , "hw_access" , true , 2, CI_DEV_ONLY   , ""},
-    { CMD_DUMP_TRACER_HASH , "dth"    ,true  , 1, CI_IMG_OR_DEV  , ""},
-
-
-};
 
 struct GPH {
     u_int32_t type;
@@ -448,12 +356,6 @@ struct BOARD_ID {
     char      bid[BOARD_ID_BID_LEN];
 };
 
-/*
-int  const VSD_LEN  = 208;
-int  const PSID_LEN = 16;
-int  const PRODUCT_VER_LEN = 16;
-*/
-
 #define PROFILES_LIST_SECT "Profiles List section"
 #define TLV_FORMAT_SECT    "TLVs format section"
 #define TRACER_HASH_SECT   "Tracer Hash section"
@@ -464,7 +366,6 @@ void report_callback(f_prog_func_str func_str, const char *format, ...);
 void report_err(char err_buff[MAX_ERR_STR_LEN], const char *format, ...);
 void report_warn(const char *format, ...);
 void report_repair_msg(const char* common_msg);
-const CommandInfo* GetCommandInfo(CommandType cmd);
 
 
 
@@ -475,10 +376,11 @@ const CommandInfo* GetCommandInfo(CommandType cmd);
 
 class MLXFWOP_API ErrMsg {
 public:
-    ErrMsg() : _err(0)       {}
+    ErrMsg() : _err(0), _errCode(0){}
     ~ErrMsg()                { err_clear();}
     const char *err() const  { return _err;}
     void err_clear();
+    int getErrorCode() {return _errCode;}
 
 protected:
 
@@ -506,6 +408,12 @@ protected:
 #endif
     ;
 
+    bool errmsg(int errorCode, const char *format, ...)
+#ifdef __GNUC__
+    __attribute__ ((format (printf, 3, 4)))
+#endif
+    ;
+
     // this is abit ugly as there are no checks on the normalFmt string
     bool errmsgAdv(bool showAdv, const char *normalFmt, const char *AdvFmt, ...)
 #ifdef __GNUC__
@@ -516,6 +424,7 @@ protected:
 private:
 
     char       *_err;
+    int         _errCode;
 };
 
 

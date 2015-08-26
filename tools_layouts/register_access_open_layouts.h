@@ -31,7 +31,7 @@
  */
 
 /***
- *** This file was generated at "2015-02-05 17:01:35"
+ *** This file was generated at "2015-06-17 12:05:44"
  *** by:
  ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/register_access_open/register_access_open.adb --file-prefix register_access_open --prefix register_access_
  ***/
@@ -142,7 +142,6 @@ void register_access_mfba_print(const struct register_access_mfba *ptr_struct, F
 int register_access_mfba_size(void);
 #define REGISTER_ACCESS_MFBA_SIZE    (0x10c)
 void register_access_mfba_dump(const struct register_access_mfba *ptr_struct, FILE* file);
-;
 /* mfpa */
 void register_access_mfpa_pack(const struct register_access_mfpa *ptr_struct, u_int8_t* ptr_buff);
 void register_access_mfpa_unpack(struct register_access_mfpa *ptr_struct, const u_int8_t* ptr_buff);
@@ -150,7 +149,6 @@ void register_access_mfpa_print(const struct register_access_mfpa *ptr_struct, F
 int register_access_mfpa_size(void);
 #define REGISTER_ACCESS_MFPA_SIZE    (0x24)
 void register_access_mfpa_dump(const struct register_access_mfpa *ptr_struct, FILE* file);
-;
 /* mfbe */
 void register_access_mfbe_pack(const struct register_access_mfbe *ptr_struct, u_int8_t* ptr_buff);
 void register_access_mfbe_unpack(struct register_access_mfbe *ptr_struct, const u_int8_t* ptr_buff);
@@ -158,7 +156,6 @@ void register_access_mfbe_print(const struct register_access_mfbe *ptr_struct, F
 int register_access_mfbe_size(void);
 #define REGISTER_ACCESS_MFBE_SIZE    (0xc)
 void register_access_mfbe_dump(const struct register_access_mfbe *ptr_struct, FILE* file);
-;
 /* register_access_open_Nodes */
 void register_access_register_access_open_Nodes_pack(const union register_access_register_access_open_Nodes *ptr_struct, u_int8_t* ptr_buff);
 void register_access_register_access_open_Nodes_unpack(union register_access_register_access_open_Nodes *ptr_struct, const u_int8_t* ptr_buff);
@@ -166,7 +163,6 @@ void register_access_register_access_open_Nodes_print(const union register_acces
 int register_access_register_access_open_Nodes_size(void);
 #define REGISTER_ACCESS_REGISTER_ACCESS_OPEN_NODES_SIZE    (0x10c)
 void register_access_register_access_open_Nodes_dump(const union register_access_register_access_open_Nodes *ptr_struct, FILE* file);
-;
 
 
 #ifdef __cplusplus

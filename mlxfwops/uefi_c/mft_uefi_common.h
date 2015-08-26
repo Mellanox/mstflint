@@ -1,4 +1,9 @@
-/* Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
+/*
+ *
+ * mft_uefi_common.h - Mellanox Technilogies LTD. UEFI common structs header file
+ * ==================================================================
+ *
+ * Copyright (c) 2005 Mellanox Technologies Ltd.  All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,26 +33,27 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- *  Version: $Id$
+ *  Version: $Id: $
  *
  */
-
-#ifndef MFLASH_ACCESS_LAYER_H_
-#define MFLASH_ACCESS_LAYER_H_
-
-#include <compatibility.h>
-//#include "cib_cif.h"
-
-#include "mflash_common_structs.h"
-
-#define BOOT_CR_SPACE_ADDR 0xf0000
-
-int sx_get_flash_info_by_type(mflash* mfl, unsigned *type_index, int *log2size, u_int8_t *no_flash);
-int sx_block_read_by_type(mflash* mfl, u_int32_t blk_addr, u_int32_t blk_size, u_int8_t* data);
-int sx_block_write_by_type(mflash* mfl, u_int32_t addr, u_int32_t size, u_int8_t* data);
-int sx_flash_lock_by_type(mflash* mfl, int lock_state);
-int sx_erase_sect_by_type(mflash* mfl, u_int32_t addr);
-int mf_update_boot_addr_by_type(mflash* mfl, u_int32_t boot_addr);
+#ifndef MFT_MLXFWOPS_UEFI_C_MFT_UEFI_COMMON_H_
+#define MFT_MLXFWOPS_UEFI_C_MFT_UEFI_COMMON_H_
 
 
-#endif /* MFLASH_ACCESS_LAYER_H_ */
+typedef struct _MLX4_DEV uefi_Dev_t;
+
+typedef int (*f_fw_cmd) (uefi_Dev_t* dev, void* buffer, int* w_size, int* r_size);
+
+typedef struct uefi_dev_info {
+	u_int32_t hw_dev_id;
+	u_int32_t rev_id;
+	u_int32_t max_buffer_size;
+} uefi_dev_info_t;
+
+typedef struct uefi_dev_extra{
+    f_fw_cmd fw_cmd_func;
+    uefi_dev_info_t* dev_info;
+}uefi_dev_extra_t;
+
+
+#endif /* MFT_MLXFWOPS_UEFI_C_MFT_UEFI_COMMON_H_ */

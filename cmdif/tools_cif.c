@@ -35,7 +35,7 @@
 #include <common/compatibility.h>
 #include <common/bit_slice.h>
 
-#ifndef __FreeBSD__
+#if !defined (__FreeBSD__) && !defined(UEFI_BUILD)
 #include <mtcr_tools_cif.h>
 #endif
 
@@ -131,7 +131,7 @@ const char* tcif_err2str(MError rc) {
 
 MError tcif_cr_mbox_supported(mfile* dev)
 {
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) || defined(UEFI_BUILD)
     (void)dev;
     return ME_NOT_IMPLEMENTED;
 #else

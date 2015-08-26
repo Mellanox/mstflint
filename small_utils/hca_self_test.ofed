@@ -109,11 +109,12 @@ done
 
 
 HCA_LSPCI_NAME="InfiniBand"
+HCA_LSPCI_NAME_NEW="Infiniband controller"
 VPI_LSPCI_NAME="Network controller"
 NIC_LSPCI_NAME="Ethernet controller"
 MEM_CON_LSPCI_NAME="Memory controller"
 
-MEL_LSPCI_NAME_EXP="${HCA_LSPCI_NAME}|${VPI_LSPCI_NAME}|${NIC_LSPCI_NAME}"
+MEL_LSPCI_NAME_EXP="${HCA_LSPCI_NAME}|${HCA_LSPCI_NAME_NEW}|${VPI_LSPCI_NAME}|${NIC_LSPCI_NAME}"
 
 echo "---- Performing Adapter Device Self Test ----"
 
@@ -244,7 +245,7 @@ function get_ca_type() {
 
     current_pci_info=`get_curr_ca_pci_info $loop_cnt`
 
-    if [[ ${current_pci_info} =~ ${HCA_LSPCI_NAME} ]] || [[ ${current_pci_info} =~ ${MEM_CON_LSPCI_NAME} ]]; then
+    if [[ ${current_pci_info} =~ ${HCA_LSPCI_NAME} ]] || [[ ${current_pci_info} =~ ${HCA_LSPCI_NAME_NEW} ]] || [[ ${current_pci_info} =~ ${MEM_CON_LSPCI_NAME} ]]; then
         ca_type=HCA
     elif [[ ${current_pci_info}  =~ ${VPI_LSPCI_NAME} ]]; then
         ca_type=VPI

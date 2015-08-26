@@ -36,6 +36,10 @@
 
 #include <compatibility.h>
 
+#ifdef UEFI_BUILD
+#include <mft_uefi_common.h>
+#endif
+
 #ifdef __WIN__
 
 #ifdef MLXFWOP_EXPORTS
@@ -60,6 +64,7 @@ typedef int (*f_prog_func_str) (char* str);
 #define VSD_LEN  208
 #define PSID_LEN 16
 #define PRODUCT_VER_LEN 16
+#define PRS_NAME_LEN 100
 
 #define FREE_STR_MAX_LEN    256
 
@@ -79,6 +84,39 @@ typedef int (*f_prog_func_str) (char* str);
 	        printFunc((arg));\
 	    }\
 	} while(0)\
+
+enum {
+    MLXFW_OK = 0,
+    MLXFW_ERR,
+    MLXFW_MEM_ERR,
+    MLXFW_ERR_IN_STR,
+    MLXFW_PSID_MISSMATCH_ERR,
+    MLXFW_FLASH_WRITE_ERR,
+    MLXFW_NO_VALID_IMAGE_ERR,
+    MLXFW_MULTIPLE_VALID_IMAGES_ERR,
+    MLXFW_BAD_CRC_ERR,
+    MLXFW_BAD_CHECKSUM_ERR,
+    MLXFW_SECTION_TOO_LARGE_ERR,
+    MLXFW_SECTION_CORRUPTED_ERR,
+    MLXFW_IMAGE_NOT_FS_ERR,
+    MLXFW_IMAGE_TOO_LARGE_ERR,
+    MLXFW_IMAGE_FORMAT_ERR,
+    MLXFW_DEVICE_IMAGE_MISSMATCH_ERR,
+    MLXFW_IMAGE_CORRUPTED_ERR,
+    MLXFW_FS_INFO_MISSMATCH_ERR,
+    MLXFW_DEV_ID_ERR,
+    MLXFW_UNSUPPORTED_BIN_VER_ERR,
+    MLXFW_NO_VALID_ITOC_ERR,
+    MLXFW_NO_MFG_ERR,
+    MLXFW_UNKNOWN_SECT_VER_ERR,
+    MLXFW_OCR_ERR,
+    MLXFW_OPEN_OCR_ERR,
+    MLXFW_FW_ALREADY_UPDATED_ERR,
+    MLXFW_ROM_UPDATE_IN_IMAGE_ERR,
+    MLXFW_GET_SECT_ERR,
+    MLXFW_UPDATE_SECT_ERR,
+    MLXFW_BAD_PARAM_ERR
+};
 
 enum {
     GUIDS         = 4,
@@ -119,7 +157,9 @@ typedef enum chip_type {
     CT_IS4,
     CT_CONNECT_IB,
     CT_SWITCH_IB,
-    CT_SWITCH_EN,
+    CT_SPECTRUM,
+    CT_CONNECTX4,
+    CT_CONNECTX4_LX,
 }chip_type_t;
 
 typedef struct guid {
@@ -136,6 +176,9 @@ typedef struct fs3_uid {
     u_int8_t num_of_guids; // set 0 for default
     u_int8_t step_size; // set 0 for default, not relevant for devices >= CX4
     int set_mac_from_guid;  // if set , base_mac will be derrived automatically from base guid
+    int use_pp_attr; // if set, num_of_guids[2] and step_size[2] will be used for the uid attributes.
+    u_int8_t num_of_guids_pp[2]; // set 0xff for default
+    u_int8_t step_size_pp[2]; // set 0xff for default, not relevant for devices >= CX4
 } fs3_uid_t;
 
 typedef struct rom_info {
@@ -191,6 +234,7 @@ typedef struct fs2_info_ext {
     u_int8_t     access_key_exists;
     guid_t       access_key_value;
     u_int8_t     blank_guids;
+    char         prs_name[PRS_NAME_LEN];
 } fs2_info_t;
 
 typedef struct roms_info {
@@ -252,15 +296,9 @@ enum ExpRomProto {
 };
 
 typedef enum fw_ver_info {
-    FVI_UNKNOWN = -1,
-    FVI_SMALLER = 0,
-    FVI_EQUAL = 1,
-    FVI_GREATER = 2,
+    FVI_SMALLER = -1,
+    FVI_EQUAL = 0,
+    FVI_GREATER = 1,
 } fw_ver_info_t;
-
-typedef struct _MLX4_DEV uefi_Dev_t;
-typedef int (*f_fw_cmd) (uefi_Dev_t* dev, void* buffer, int* size);
-
-
 
 #endif

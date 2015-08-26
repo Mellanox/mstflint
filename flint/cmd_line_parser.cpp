@@ -153,7 +153,6 @@ FlagMetaData::FlagMetaData() {
     _flags.push_back(new Flag("", "mac", 1));
     _flags.push_back(new Flag("", "macs", MACS));
     _flags.push_back(new Flag("", "uid", 1));
-    _flags.push_back(new Flag("", "uids", 29)); //TODO: update this with the correct constatnt from mlxfwops
     _flags.push_back(new Flag("", "blank_guids", 0));
     _flags.push_back(new Flag("", "clear_semaphore", 0));
     _flags.push_back(new Flag("h", "help", 0));
@@ -503,24 +502,8 @@ void Flint::initCmdParser() {
     AddOptions("uid",
                ' ',
                 "<UID>",
-                "BridgeX/ConnectIB only. Derive and set the device UIDs (GUIDs, MACs, WWNs).\n"
+                "ConnectIB/SwitchIB only. Derive and set the device UIDs (GUIDs, MACs, WWNs).\n"
                 "UIDs are derived from the given base UID according to Mellanox Methodology\n"
-                "Commands affected: burn, sg");
-
-    AddOptions("uids",
-               ' ',
-                "<UIDs...>",
-                "BridgeX only. 29 space separated UIDs must be specified here.\n"
-                "The specified UIDs are assigned to the following fields, repectively:\n"
-                "G0-MAC-PI0      G0-MAC-PI1      G0-MAC-PI2\n"
-                "G0-MAC-PE0      G0-MAC-PE1      G0-MAC-PE2    G0-MAC-PE3\n"
-                "G0-FC-WWPN-P0   G0-FC-WWPN-P1   G0-FC-WWPN-P2 G0-FC-WWPN-P3\n"
-                "G0-IB-NODE-GUID G0-IB-PORT-GUID G0-FC-WWNN\n"
-                "G1-MAC-PI0      G1-MAC-PI1      G1-MAC-PI2\n"
-                "G1-MAC-PE0      G1-MAC-PE1      G1-MAC-PE2    G1-MAC-PE3\n"
-                "G1-FC-WWPN-P0   G1-FC-WWPN-P1   G1-FC-WWPN-P2 G1-FC-WWPN-P3\n"
-                "G1-IB-NODE-GUID G1-IB-PORT-GUID G1-FC-WWNN\n"
-                "IB-SYSTEM-GUID\n"
                 "Commands affected: burn, sg");
 
     AddOptions("blank_guids",
@@ -605,7 +588,7 @@ void Flint::initCmdParser() {
     AddOptions("use_image_guids",
                ' ',
                 "",
-                "Burn (guids/uids/macs) as appears in the given image.\n"
+                "Burn (guids/macs) as appears in the given image.\n"
                 "Commands affected: burn");
 
     AddOptions("use_image_rom",
@@ -808,21 +791,6 @@ ParseStatus Flint::HandleOption(string name, string value)
         if (!InitBxGuids( _flintParams.user_uids, _flintParams.baseUid)) {
             printf("-E- failed to extract UIDs from UID.");
             return PARSE_ERROR;
-        }
-    } else if (name == "uids") {
-        _flintParams.uids_specified = true;
-        std::vector<std::string> strs;
-        splitByDelimiters(strs, value,",");
-        if (strs.size() < BX_ALL_GUIDS) {
-        	return PARSE_ERROR;
-        }
-        for (int i = 0; i < BX_ALL_GUIDS; i++) {
-            guid_t u;
-            if (!getGUIDFromStr(strs[i], u)){
-                return PARSE_ERROR;
-            }else{
-                _flintParams.user_uids.push_back(u);
-            }
         }
     } else if (name == "blank_guids") {
         _flintParams.blank_guids = true;

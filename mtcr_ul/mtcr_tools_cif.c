@@ -121,14 +121,7 @@ static int translate_status(int status) {
     }
 }
 
-#ifdef __FreeBSD__
-void mpci_change(mfile* mf)
-{
-    (void)mf;
-}
-#else
 extern void mpci_change(mfile* mf);
-#endif
 
 static void tools_cmdif_pack(tools_cmdif* cmd, u_int32_t* buf) {
     memset((char*)buf, 0, CMD_IF_SIZE);
@@ -372,6 +365,8 @@ static int tools_cmdif_cr_mbox_read(mfile* mf, u_int32_t offset, u_int8_t* data,
 int tools_cmdif_is_supported(mfile *mf)
 {
     int rc = ME_OK;
+    // run mailbox write cmd (read command fails after driver restart or internal reset)
+    u_int32_t writebuf[2] = {0};
     if (!mf) {
         return ME_BAD_PARAMS;
     }
@@ -381,8 +376,6 @@ int tools_cmdif_is_supported(mfile *mf)
         rc = ME_SEM_LOCKED;
         goto cleanup;
     }
-    // run mailbox write cmd (read command fails after driver restart or internal reset)
-    u_int32_t writebuf[2] = {0};
     rc = tools_cmdif_mbox_write(mf, 0, writebuf);
     if (rc) {
         tools_cmdif_flash_lock(mf, 0);

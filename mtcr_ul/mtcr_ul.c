@@ -132,9 +132,13 @@ struct pciconf_context {
     int              fd;
 };
 
+#define CX3_SW_ID    4099
+#define CX3PRO_SW_ID 4103
+
 /* Forward decl*/
 static int get_inband_dev_from_pci(char* inband_dev, char* pci_dev);
 
+int check_force_config(unsigned my_domain, unsigned my_bus, unsigned my_dev, unsigned my_func);
 /*
  * Lock file section:
  *
@@ -540,7 +544,6 @@ int mtcr_mmap(struct pcicr_context *mf, const char *name, off_t off, int ioctl_n
         errno = err;
         return -1;
     }
-
     return 0;
 }
 
@@ -606,7 +609,6 @@ int mtcr_pcicr_open(mfile *mf, const char *name, char* conf_name, off_t off, int
     }
 
     rc = mtcr_check_signature(mf);
-
 end:
     if (rc) {
         mtcr_pcicr_mclose(mf);
@@ -1141,8 +1143,6 @@ int mtcr_inband_open(mfile* mf, const char* name)
 #endif
 }
 
-
-
 static
 enum mtcr_access_method mtcr_parse_name(const char* name, int *force,
                         unsigned *domain_p, unsigned *bus_p,
@@ -1153,6 +1153,7 @@ enum mtcr_access_method mtcr_parse_name(const char* name, int *force,
     unsigned my_dev;
     unsigned my_func;
     int scnt, r;
+    int force_config = 0;
     char config[] = "/config";
     char resource0[] = "/resource0";
     char procbuspci[] = "/proc/bus/pci/";
@@ -1212,16 +1213,23 @@ enum mtcr_access_method mtcr_parse_name(const char* name, int *force,
                   &my_domain, &my_bus, &my_dev, &my_func);
         if (scnt != 4)
             goto parse_error;
+        if (sscanf(name, "mlx5_%x", &tmp) == 1) {
+            force_config = 1;
+        }
         goto name_parsed;
     }
 
     scnt = sscanf(name, "%x:%x.%x", &my_bus, &my_dev, &my_func);
-    if (scnt == 3)
+    if (scnt == 3) {
+        force_config = check_force_config(my_domain, my_bus, my_dev, my_func);
         goto name_parsed;
+    }
 
     scnt = sscanf(name, "%x:%x:%x.%x", &my_domain, &my_bus, &my_dev, &my_func);
-    if (scnt == 4)
+    if (scnt == 4) {
+        force_config = check_force_config(my_domain, my_bus, my_dev, my_func);
         goto name_parsed;
+    }
 
 parse_error:
     fprintf(stderr,"Unable to parse device name %s\n", name);
@@ -1238,6 +1246,9 @@ name_parsed:
     // on ARM processors MMAP not supported
     return MTCR_ACCESS_CONFIG;
 #else
+    if (force_config) {
+        return MTCR_ACCESS_CONFIG;
+    }
     return MTCR_ACCESS_MEMORY;
 #endif
 }
@@ -1267,6 +1278,44 @@ int msw_reset(mfile *mf)
     (void)mf;
     return -1;
 #endif
+}
+
+int mhca_reset(mfile *mf)
+{
+    (void)mf;
+    errno = ENOTSUP;
+    return -1;
+}
+
+int is_supported_device(char* devname)
+{
+    static char* unsupported_dev_ids[] = {
+            "0x0600", //FPGA
+            "-1"
+    };
+    char fname[64];
+    char devid[64];
+    FILE* f;
+    int ret_val = 1;
+    int i = 0;
+    sprintf(fname, "/sys/bus/pci/devices/%s/device", devname);
+    f = fopen(fname, "r");
+    if (f == NULL) {
+        //printf("-D- Could not open file: %s\n", fname);
+        return 1;
+    }
+    if (fgets(devid, sizeof(devid), f)) {
+        while (strcmp(unsupported_dev_ids[i], "-1")) {
+            if (!strncmp(devid, unsupported_dev_ids[i], strlen(unsupported_dev_ids[i]))) {
+                //printf("-D- device: %s, with devid: %s is unsupported\n", devname, devid);
+                ret_val = 0;
+                break;
+            }
+            i++;
+        }
+    }
+    fclose(f);
+    return ret_val;
 }
 
 int mdevices(char *buf, int len, int mask)
@@ -1319,7 +1368,8 @@ int mdevices(char *buf, int len, int mask)
             goto cleanup_dir_opened;
         }
         if (fgets(inbuf, sizeof(inbuf), f)) {
-            if(!strncmp(inbuf, MLNX_PCI_VENDOR_ID, strlen(MLNX_PCI_VENDOR_ID))) {
+            if(!strncmp(inbuf, MLNX_PCI_VENDOR_ID, strlen(MLNX_PCI_VENDOR_ID)) &&
+                    is_supported_device(dir->d_name)) {
                 rsz = sz + 1; //dev name size + place for Null char
                 if ((pos + rsz) > len) {
                     ndevs = -1;
@@ -1363,6 +1413,22 @@ int read_pci_config_header(u_int16_t domain, u_int8_t bus, u_int8_t dev, u_int8_
     fclose(f);
     return 0;
 }
+
+
+int check_force_config(unsigned my_domain, unsigned my_bus, unsigned my_dev, unsigned my_func)
+{
+    u_int8_t conf_header[0x40];
+    u_int32_t *conf_header_32p = (u_int32_t*)conf_header;
+    if (read_pci_config_header(my_domain, my_bus, my_dev, my_func, conf_header)) {
+        return 0;
+    }
+    u_int32_t devid = __le32_to_cpu(conf_header_32p[0]) >> 16;
+    if (devid == CX3PRO_SW_ID || devid == CX3_SW_ID) {
+        return 0;
+    }
+    return 1;
+}
+
 
 dev_info* mdevices_info(int mask, int* len)
 {
@@ -1679,11 +1745,12 @@ extern void mpci_change(mfile* mf)
     mf->ctx = tmp_ctx;
 }
 
-mfile *mopen_fw_ctx(void* fw_cmd_context, void* fw_cmd_func)
+mfile *mopen_fw_ctx(void* fw_cmd_context, void* fw_cmd_func, void* extra_data)
 {
 	// not implemented
     TOOLS_UNUSED(fw_cmd_context);
     TOOLS_UNUSED(fw_cmd_func);
+    TOOLS_UNUSED(extra_data);
 	return NULL;
 }
 
@@ -1874,7 +1941,7 @@ enum {
 
 #define REGISTER_HEADERS_SIZE 12
 #define INBAND_MAX_REG_SIZE 44
-#define ICMD_MAX_REG_SIZE 236
+#define ICMD_MAX_REG_SIZE (ICMD_MAX_CMD_SIZE - REGISTER_HEADERS_SIZE)
 #define TOOLS_HCR_MAX_REG_SIZE (TOOLS_HCR_MAX_MBOX - REGISTER_HEADERS_SIZE)
 
 static int supports_icmd(mfile* mf);
@@ -2079,41 +2146,41 @@ static int mreg_send_raw(mfile *mf, u_int16_t reg_id, maccess_reg_method_t metho
     return ME_OK;
 }
 
-
-#define CIB_HW_ID     511
-#define CX4_HW_ID     521
-#define CX4LX_HW_ID   523
-#define SW_IB_HW_ID   583
-#define CX3_PRO_HW_ID 0x1F7
-#define CX3_HW_ID_REV 0x1f5
+// needed device HW IDs
+#define CONNECTX3_PRO_HW_ID 0x1f7
+#define CONNECTX3_HW_ID 0x1f5
+#define SWITCHX_HW_ID 0x245
+#define INFINISCALE4_HW_ID 0x1b3
 
 #define HW_ID_ADDR 0xf0014
 
+
 static int supports_icmd(mfile* mf) {
     u_int32_t dev_id;
-    if (mread4(mf,HW_ID_ADDR, &dev_id) !=4) { // cr might be locked and retured 0xbad0cafe but we dont care we search for device that supports icmd
-        return 1;
-    }
-    switch (dev_id & 0xffff) { // that the hw device id
-        case CIB_HW_ID :
-        case CX4_HW_ID :
-        case CX4LX_HW_ID :
-        case SW_IB_HW_ID :
-            return 1;
-        default:
-            break;
-    }
-   return 0;
+
+     if (mread4(mf,HW_ID_ADDR, &dev_id) != 4 ) {// cr might be locked and retured 0xbad0cafe but we dont care we search for device that supports icmd
+         return 0;
+     }
+     switch (dev_id & 0xffff) { // that the hw device id
+         case CONNECTX3_HW_ID :
+         case CONNECTX3_PRO_HW_ID :
+         case INFINISCALE4_HW_ID :
+         case SWITCHX_HW_ID :
+            return 0;
+         default:
+             break;
+     }
+   return 1;
 }
 
 static int supports_tools_cmdif_reg(mfile* mf) {
     u_int32_t dev_id;
     if (mread4(mf,HW_ID_ADDR, &dev_id) != 4) { // cr might be locked and retured 0xbad0cafe but we dont care we search for device that supports tools cmdif
-        return 1;
+        return 0;
     }
     switch (dev_id & 0xffff) { // that the hw device id
-    case CX3_HW_ID_REV : //Cx3
-    case CX3_PRO_HW_ID : // Cx3-pro
+    case CONNECTX3_HW_ID : //Cx3
+    case CONNECTX3_PRO_HW_ID : // Cx3-pro
         if (tools_cmdif_is_supported(mf) == ME_OK) {
             return 1;
         }

@@ -57,5 +57,5 @@ mstconfig_SOURCES = mlxcfg_status.h mlxcfg_ui.h mlxcfg_ui.cpp\
 
 #get mst device examples and tool name from makefile
 AM_CXXFLAGS += -DMLXCFG_NAME=\"mstconfig\"
-AM_CXXFLAGS += -DMST_DEV_EXAMPLE=\"/sys/bus/pci/devices/0000:04:00.0/config\"
+AM_CXXFLAGS += -DMST_DEV_EXAMPLE=\"04:00.0\" -DMST_DEV_EXAMPLE2=\"05:00.0\"
 

@@ -40,8 +40,9 @@
 #define REG_ID_PMDIC 0x9021
 #define REG_ID_MNVA  0x9024
 #define REG_ID_MNVI  0x9025
-#define REG_ID_MNVIA 0x9029
+#define REG_ID_MNVIA 0x9029 // 4th gen
 #define REG_ID_NVQC  0x9030
+#define REG_ID_NVIA  0x9033 // 5th gen
 
 // TODO: get correct register ID for mfrl mfai
 #define REG_ID_MFRL 0x9028
@@ -228,14 +229,14 @@ reg_access_status_t reg_access_nvdi (mfile* mf, reg_access_method_t method, stru
 }
 
 /************************************
- * Function: reg_access_nvdia
+ * Function: reg_access_nvia
  ************************************/
-reg_access_status_t reg_access_nvdia (mfile* mf, reg_access_method_t method, struct tools_open_nvdia* nvdia)
+reg_access_status_t reg_access_nvia (mfile* mf, reg_access_method_t method, struct tools_open_nvia* nvia)
 {
     if (method != REG_ACCESS_METHOD_SET ) { // this register supports only set method
         return ME_REG_ACCESS_BAD_METHOD;
     }
-    REG_ACCCESS(mf, method, REG_ID_MNVIA, nvdia, nvdia, tools_open);
+    REG_ACCCESS(mf, method, REG_ID_NVIA, nvia, nvia, tools_open);
 }
 
 /************************************

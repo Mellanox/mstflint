@@ -129,6 +129,8 @@ typedef enum {
 #define FLINT_NO_ZLIB_ERROR                   "Executable was compiled with \"dump files\" option disabled.\n"
 #define FLINT_FLAG_WITH_FLAG_ERROR            "\"%s\" flag must be specified with \"%s\" flag.\n"
 #define FLINT_INVALID_PASSWORD                "Invalid Password.\n"
+#define FLINT_NO_GUID_MAC_FLAGS_ERROR         "Can not set GUIDs/MACs: please run with -uid/-guid/-mac flag.\n"
+#define FLINT_NO_UID_FLAG_ERROR               "Can not set GUIDs/MACs: uid is not specified, please run with -uid flag.\n"
 
 /**************************
  * Flint Warning Messages

@@ -88,12 +88,13 @@ bool Fs2Operations::ParseInfoSect(u_int8_t* buff, u_int32_t byteSize) {
         u_int32_t tagId   = __be32_to_cpu(*p) >> 24;
 
         if (offs + tagSize > byteSize) {
-            return errmsg("Info section corrupted: Tag %d (TagId %d, size %d) exceeds Info section size (%d bytes) ",
+            return errmsg(MLXFW_SECTION_TOO_LARGE_ERR, "Info section corrupted: Tag %d (TagId %d, size %d) exceeds Info section size (%d bytes) ",
                           tagNum, tagId, tagSize, byteSize);
         }
         // printf("-D- tagId = (%#x), tagSize = (%#x), offs = %#x\n", tagId, tagSize, offs);
         u_int32_t   tmp;
         const char* str;
+        int size;
         switch (tagId) {
         case II_FwVersion:
             _fwImgInfo.ext_info.fw_ver[0] = u_int16_t(__be32_to_cpu(*(p+1)) >> 16);
@@ -148,6 +149,17 @@ bool Fs2Operations::ParseInfoSect(u_int8_t* buff, u_int32_t byteSize) {
                     _fwImgInfo.ext_info.psid[i] = str[i];
                 }
                 _fwImgInfo.ext_info.psid[PSID_LEN] = '\0';
+            break;
+
+        case II_PSInfo:
+            str = (const char*)p;
+            str += 4;
+            size = strlen(str) + 1; // include '\0'
+            if (size > PRS_NAME_LEN ) {
+                // ensure '\0' at the end
+                size = PRS_NAME_LEN - 1;
+            }
+            memcpy(_fs2ImgInfo.ext_info.prs_name, str, size);
             break;
 
         case II_VSD:
@@ -239,10 +251,10 @@ bool Fs2Operations::ParseInfoSect(u_int8_t* buff, u_int32_t byteSize) {
 
     if (offs != byteSize) {
         if (endFound) {
-            return errmsg("Info section corrupted: Section data size is 0x%x bytes, "
+            return errmsg(MLXFW_SECTION_CORRUPTED_ERR, "Info section corrupted: Section data size is 0x%x bytes, "
                           "but end tag found after 0x%x bytes.", byteSize, offs);
         } else {
-            return errmsg("Info section corrupted: Section data size is 0x%x bytes, "
+            return errmsg(MLXFW_SECTION_CORRUPTED_ERR, "Info section corrupted: Section data size is 0x%x bytes, "
                           "but end tag not found before section end.", byteSize);
         }
     }
@@ -436,10 +448,10 @@ bool Fs2Operations::Fs2Verify(VerifyCallBack verifyCallBackFunc, bool is_striped
     // Look for image in "physical addresses
     CntxFindAllImageStart(_ioAccess, cntx_image_start, &cntx_image_num);
     if (cntx_image_num == 0) {
-        return errmsg("No valid image found");
+        return errmsg(MLXFW_NO_VALID_IMAGE_ERR, "No valid image found");
     } else if (cntx_image_num > 2) {
         // This check may be redundant - Maybe ignore if more than 2 images found
-        return errmsg("More than 2 image start locations found at addresses 0x%x, 0x%x and 0x%x. Image may be corrupted.",
+        return errmsg(MLXFW_MULTIPLE_VALID_IMAGES_ERR, "More than 2 image start locations found at addresses 0x%x, 0x%x and 0x%x. Image may be corrupted.",
                       cntx_image_start[0],
                       cntx_image_start[1],
                       cntx_image_start[2]);
@@ -684,7 +696,7 @@ bool Fs2Operations::Fs2Query () {
     }
 
     if (info_ptr_cs) {
-        return errmsg("Failed to read Info Section - Bad checksum for Info section pointer (%08x). Probably the image is corrupted.", info_ptr);
+        return errmsg(MLXFW_BAD_CHECKSUM_ERR, "Failed to read Info Section - Bad checksum for Info section pointer (%08x). Probably the image is corrupted.", info_ptr);
     }
 
     info_ptr = info_ptr_ba.range(23,0);
@@ -693,7 +705,7 @@ bool Fs2Operations::Fs2Query () {
 
         info_ptr += im_start;
         if (info_ptr >= _ioAccess->get_size()) {
-            return errmsg("Failed to read Info Section - Info section pointer (%08x) too large. Probably the image is corrupted.", info_ptr);
+            return errmsg(MLXFW_SECTION_TOO_LARGE_ERR, "Failed to read Info Section - Info section pointer (%08x) too large. Probably the image is corrupted.", info_ptr);
         }
         READ4((*_ioAccess), info_ptr - 3*sizeof(u_int32_t), &info_size, "Info section size");
         TOCPU1(info_size);
@@ -722,7 +734,7 @@ bool Fs2Operations::Fs2IntQuery(bool readRom, bool isStripedImage)
     } else {
         initSectToRead(H_LAST);
     }
-    if (!Fs2Verify(NULL, isStripedImage)) {
+    if (!Fs2Verify((VerifyCallBack)NULL, isStripedImage)) {
         initSectToRead(H_LAST);
         return false;
     }
@@ -862,11 +874,11 @@ bool Fs2Operations::Fs2FailSafeBurn(Fs2Operations &imageOps,
     // TODO: Do we need the verify ORENK
     if (!allow_nofs) {
         if (!imageOps._fwImgInfo.ext_info.is_failsafe) {
-            return errmsg("The given image is not a failsafe image");
+            return errmsg(MLXFW_IMAGE_NOT_FS_ERR, "The given image is not a failsafe image");
         }
 
         if (_fwImgInfo.cntxLog2ChunkSize != imageOps._fwImgInfo.cntxLog2ChunkSize) {
-            return errmsg("Failsafe chunk sizes in flash (0x%x) and in image (0x%x) are not the same.",
+            return errmsg(MLXFW_FS_INFO_MISSMATCH_ERR, "Failsafe chunk sizes in flash (0x%x) and in image (0x%x) are not the same.",
                           1 << _fwImgInfo.cntxLog2ChunkSize,
                           1 << imageOps._fwImgInfo.cntxLog2ChunkSize);
         }
@@ -883,7 +895,7 @@ bool Fs2Operations::Fs2FailSafeBurn(Fs2Operations &imageOps,
         const char *image_type = (imageOps._fwImgInfo.ext_info.is_failsafe) ? "failsafe" : "non-failsafe";
         const char *note_str   = (imageOps._fwImgInfo.ext_info.is_failsafe) ? " - half of total flash size" : " - total flash size";
 
-        return errmsg("Size of %s image (0x%x) is greater than max %s image size (0x%x%s)",
+        return errmsg(MLXFW_IMAGE_TOO_LARGE_ERR, "Size of %s image (0x%x) is greater than max %s image size (0x%x%s)",
                  image_type, imageOps._fwImgInfo.ext_info.image_size, image_type, max_image_size, note_str);
 
     }
@@ -914,7 +926,7 @@ bool Fs2Operations::Fs2FailSafeBurn(Fs2Operations &imageOps,
     // Write new signature
     if (!f->write(0, data8, 16, true)) {
         //return false;
-        return errmsg("Flash write failed. %s", f->err());
+        return errmsg(MLXFW_FLASH_WRITE_ERR, "Flash write failed. %s", f->err());
     }
     bool boot_address_was_updated = true;
     // Write new image start address to crspace (for SW reset)
@@ -937,7 +949,7 @@ bool Fs2Operations::Fs2FailSafeBurn(Fs2Operations &imageOps,
                 if (cntx_image_start[i] != new_image_start) {
                     if (!f->write(cntx_image_start[i], &zeroes, sizeof(zeroes), true)) {
                         //return false;
-                        return errmsg("Flash write failed. %s", f->err());
+                        return errmsg(MLXFW_FLASH_WRITE_ERR, "Flash write failed. %s", f->err());
                     }
                 }
             }
@@ -946,7 +958,7 @@ bool Fs2Operations::Fs2FailSafeBurn(Fs2Operations &imageOps,
             f->set_address_convertor(imageOps._fwImgInfo.cntxLog2ChunkSize, is_curr_image_in_odd_chunks);
             if (!f->write(0, &zeroes, sizeof(zeroes), true)) {
                 //return false;
-                return errmsg("Flash write failed. %s", f->err());
+                return errmsg(MLXFW_FLASH_WRITE_ERR, "Flash write failed. %s", f->err());
             }
         }
     }
@@ -1344,7 +1356,7 @@ bool Fs2Operations::IntegrateDevRomInImage(Fs2Operations &imageOps)
     ((FImage*)(imageOps._ioAccess))->open((u_int32_t*)(&new_data[0]), actual_image_size);
 
 
-    if (!imageOps.FwVerify(NULL) || !imageOps.Fs2IntQuery()) {
+    if (!imageOps.FwVerify((VerifyCallBack)NULL) || !imageOps.Fs2IntQuery()) {
         return errmsg("Internal error: verify/query of image after integrating ROM failed\n");
     }
 
@@ -1355,7 +1367,7 @@ bool Fs2Operations::IntegrateDevRomInImage(Fs2Operations &imageOps)
 bool Fs2Operations::Fs2Burn(Fs2Operations &imageOps, ExtBurnParams& burnParams)
 {
     if (imageOps.FwType() != FIT_FS2) {
-        return errmsg("FW image type is not FS2\n");
+        return errmsg(MLXFW_IMAGE_FORMAT_ERR, "FW image type is not FS2\n");
     }
 
     if (!imageOps.Fs2IntQuery()) {
@@ -1369,25 +1381,21 @@ bool Fs2Operations::Fs2Burn(Fs2Operations &imageOps, ExtBurnParams& burnParams)
    }
 
     // Check Matching device ID
-    // HACK
-#ifndef UEFI_BUILD // NO Device ID here..
-
     if (!burnParams.noDevidCheck) {
         if (imageOps._fs2ImgInfo.infoOffs[II_HwDevsId]) {
              if (!CheckMatchingHwDevId(_ioAccess->get_dev_id(),
                                          _ioAccess->get_rev_id(),
                                          imageOps._fwImgInfo.supportedHwId,
                                          imageOps._fwImgInfo.supportedHwIdNum)) {
-                 return errmsg("Device/Image mismatch: %s\n",this->err( ));
+                 return errmsg(MLXFW_DEVICE_IMAGE_MISSMATCH_ERR, "Device/Image mismatch: %s\n",this->err( ));
              }
          } else if (imageOps._fs2ImgInfo.infoOffs[II_DeviceType]) {
              if (!CheckMatchingDevId(_ioAccess->get_dev_id(), imageOps._fwImgInfo.ext_info.dev_type)) {
-                 return errmsg("Device/Image mismatch: %s\n",this->err());
+                 return errmsg(MLXFW_DEVICE_IMAGE_MISSMATCH_ERR, "Device/Image mismatch: %s\n",this->err());
              }
          }
 
     }
-#endif
 
     // Check PSID
     if (devIntQueryRes && !CheckPSID(imageOps, burnParams.allowPsidChange)) {
@@ -1556,11 +1564,11 @@ bool Fs2Operations::ReburnNewImage(u_int8_t *data, const char *feature_name, Pro
 
     // Verify the new image and exit if it's not VALID.
     if (!((Fs2Operations*)newOps)->Fs2IntQuery()) {
-        return errmsg("Internal error: The prepared image After modifying the %s is corrupted: %s\n", feature_name, newOps->err());
+        return errmsg(MLXFW_IMAGE_CORRUPTED_ERR, "Internal error: The prepared image After modifying the %s is corrupted: %s\n", feature_name, newOps->err());
     }
     if (!is_image) {
         // Modify the flash
-        if (!Fs2FailSafeBurn(*((Fs2Operations*)newOps), true, NULL, callBackFunc)) {
+        if (!Fs2FailSafeBurn(*((Fs2Operations*)newOps), true, (const char*)NULL, callBackFunc)) {
             return false;
         }
     } else {
@@ -1716,7 +1724,7 @@ bool Fs2Operations::Fs2SetGuidsForBlank(sg_params_t& sgParam)
         u_int32_t new_crc_dw = CPUTO1(old_dw);
 
         if (!((Flash*)_ioAccess)->write(IMG_CRC_OFF, &new_crc_dw, 4, true)) {
-            return errmsg("flash write error (%s).", _ioAccess->err());
+            return errmsg(MLXFW_FLASH_WRITE_ERR, "flash write error (%s).", _ioAccess->err());
         }
     }
     return true;
@@ -1731,7 +1739,7 @@ bool Fs2Operations::Fs2SetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc
     // Get the FW types
     bx_dev = _fwImgInfo.ext_info.chip_type == CT_BRIDGEX;
     SetDevFlags(_fwImgInfo.ext_info.chip_type, _fwImgInfo.ext_info.dev_type, FIT_FS2, ib_dev, eth_dev);
-    guid_t* old_guids = _fwImgInfo.imageOk ? _fs2ImgInfo.ext_info.guids : NULL;
+    guid_t* old_guids = _fwImgInfo.imageOk ? _fs2ImgInfo.ext_info.guids : (guid_t*)NULL;
     guid_t* used_guids;
 
     // Patch the GUIDs and prints any needed warnings
@@ -1891,7 +1899,7 @@ bool Fs2Operations::FwDeleteRom(bool ignoreProdIdCheck, ProgressCallBack progres
     }
     int new_image_size;
     if(!UpdateRomInImage((u_int8_t*)(&new_data[0]), (u_int8_t*)(&data[0]),
-                             NULL, 0, &new_image_size)) {
+                             (u_int8_t*)NULL, 0, &new_image_size)) {
         return errmsg("%s", _ioAccess->err());
     }
 
@@ -2040,7 +2048,7 @@ bool Fs2Operations::FwShiftDevData(PrintCallBack progressFunc)
 const char* Fs2Operations::FwGetResetRecommandationStr()
 {
     if (!_devName) {// not an mst device
-        return NULL;
+        return (const char*)NULL;
     }
-    return NULL;
+    return (const char*)NULL;
 }

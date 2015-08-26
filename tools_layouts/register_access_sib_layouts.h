@@ -31,7 +31,7 @@
  */
 
 /***
- *** This file was generated at "2015-02-05 17:00:28"
+ *** This file was generated at "2015-06-17 12:04:46"
  *** by:
  ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/register_access/register_access_sib.adb --file-prefix register_access_sib --prefix register_access_sib_
  ***/
@@ -162,7 +162,7 @@ struct register_access_sib_mgir {
 };
 
 /* Description -   */
-/* Size in bytes - 28 */
+/* Size in bytes - 32 */
 struct register_access_sib_mtmp {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Sensors index to access */
@@ -200,14 +200,14 @@ will be generated */
 	/* Description -  */
 	/* 16.0 - 16.15 */
 	 u_int16_t temperature_threshold_lo;
-/*---------------- DWORD[5] (Offset 0x14) ----------------*/
-	/* Description -  */
-	/* 20.0 - 24.31 */
-	 u_int32_t name_lo;
 /*---------------- DWORD[6] (Offset 0x18) ----------------*/
 	/* Description -  */
 	/* 24.0 - 28.31 */
 	 u_int32_t name_hi;
+/*---------------- DWORD[7] (Offset 0x1c) ----------------*/
+	/* Description -  */
+	/* 28.0 - 32.31 */
+	 u_int32_t name_lo;
 };
 
 /* Description -   */
@@ -215,7 +215,7 @@ will be generated */
 union register_access_sib_register_access_sib_Nodes {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
-	/* 0.0 - 28.31 */
+	/* 0.0 - 32.31 */
 	 struct register_access_sib_mtmp mtmp;
 	/* Description -  */
 	/* 0.0 - 128.31 */
@@ -231,7 +231,6 @@ void register_access_sib_IB_PSID__print(const struct register_access_sib_IB_PSID
 int register_access_sib_IB_PSID__size(void);
 #define REGISTER_ACCESS_SIB_IB_PSID__SIZE    (0x10)
 void register_access_sib_IB_PSID__dump(const struct register_access_sib_IB_PSID_ *ptr_struct, FILE* file);
-;
 /* IB_SWInfo_ */
 void register_access_sib_IB_SWInfo__pack(const struct register_access_sib_IB_SWInfo_ *ptr_struct, u_int8_t* ptr_buff);
 void register_access_sib_IB_SWInfo__unpack(struct register_access_sib_IB_SWInfo_ *ptr_struct, const u_int8_t* ptr_buff);
@@ -239,7 +238,6 @@ void register_access_sib_IB_SWInfo__print(const struct register_access_sib_IB_SW
 int register_access_sib_IB_SWInfo__size(void);
 #define REGISTER_ACCESS_SIB_IB_SWINFO__SIZE    (0x20)
 void register_access_sib_IB_SWInfo__dump(const struct register_access_sib_IB_SWInfo_ *ptr_struct, FILE* file);
-;
 /* IB_FWInfo_ */
 void register_access_sib_IB_FWInfo__pack(const struct register_access_sib_IB_FWInfo_ *ptr_struct, u_int8_t* ptr_buff);
 void register_access_sib_IB_FWInfo__unpack(struct register_access_sib_IB_FWInfo_ *ptr_struct, const u_int8_t* ptr_buff);
@@ -247,7 +245,6 @@ void register_access_sib_IB_FWInfo__print(const struct register_access_sib_IB_FW
 int register_access_sib_IB_FWInfo__size(void);
 #define REGISTER_ACCESS_SIB_IB_FWINFO__SIZE    (0x40)
 void register_access_sib_IB_FWInfo__dump(const struct register_access_sib_IB_FWInfo_ *ptr_struct, FILE* file);
-;
 /* IB_HWInfo_ */
 void register_access_sib_IB_HWInfo__pack(const struct register_access_sib_IB_HWInfo_ *ptr_struct, u_int8_t* ptr_buff);
 void register_access_sib_IB_HWInfo__unpack(struct register_access_sib_IB_HWInfo_ *ptr_struct, const u_int8_t* ptr_buff);
@@ -255,7 +252,6 @@ void register_access_sib_IB_HWInfo__print(const struct register_access_sib_IB_HW
 int register_access_sib_IB_HWInfo__size(void);
 #define REGISTER_ACCESS_SIB_IB_HWINFO__SIZE    (0x20)
 void register_access_sib_IB_HWInfo__dump(const struct register_access_sib_IB_HWInfo_ *ptr_struct, FILE* file);
-;
 /* mgir */
 void register_access_sib_mgir_pack(const struct register_access_sib_mgir *ptr_struct, u_int8_t* ptr_buff);
 void register_access_sib_mgir_unpack(struct register_access_sib_mgir *ptr_struct, const u_int8_t* ptr_buff);
@@ -263,15 +259,13 @@ void register_access_sib_mgir_print(const struct register_access_sib_mgir *ptr_s
 int register_access_sib_mgir_size(void);
 #define REGISTER_ACCESS_SIB_MGIR_SIZE    (0x80)
 void register_access_sib_mgir_dump(const struct register_access_sib_mgir *ptr_struct, FILE* file);
-;
 /* mtmp */
 void register_access_sib_mtmp_pack(const struct register_access_sib_mtmp *ptr_struct, u_int8_t* ptr_buff);
 void register_access_sib_mtmp_unpack(struct register_access_sib_mtmp *ptr_struct, const u_int8_t* ptr_buff);
 void register_access_sib_mtmp_print(const struct register_access_sib_mtmp *ptr_struct, FILE* file, int indent_level);
 int register_access_sib_mtmp_size(void);
-#define REGISTER_ACCESS_SIB_MTMP_SIZE    (0x1c)
+#define REGISTER_ACCESS_SIB_MTMP_SIZE    (0x20)
 void register_access_sib_mtmp_dump(const struct register_access_sib_mtmp *ptr_struct, FILE* file);
-;
 /* register_access_sib_Nodes */
 void register_access_sib_register_access_sib_Nodes_pack(const union register_access_sib_register_access_sib_Nodes *ptr_struct, u_int8_t* ptr_buff);
 void register_access_sib_register_access_sib_Nodes_unpack(union register_access_sib_register_access_sib_Nodes *ptr_struct, const u_int8_t* ptr_buff);
@@ -279,7 +273,6 @@ void register_access_sib_register_access_sib_Nodes_print(const union register_ac
 int register_access_sib_register_access_sib_Nodes_size(void);
 #define REGISTER_ACCESS_SIB_REGISTER_ACCESS_SIB_NODES_SIZE    (0x80)
 void register_access_sib_register_access_sib_Nodes_dump(const union register_access_sib_register_access_sib_Nodes *ptr_struct, FILE* file);
-;
 
 
 #ifdef __cplusplus

@@ -1,5 +1,4 @@
-/*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+/* Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,6 +27,9 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
+ *  Version: $Id$
+ *
  */
 
 #include <stdio.h>
@@ -172,7 +174,7 @@ int set_bank_int(mflash* mfl, int bank_num) {
 
     mflash_env = getenv(MFLASH_BANK_DEBUG);
         if (mflash_env) {
-            max_bank =  atoi(mflash_env);
+            max_bank =  atol(mflash_env);
             if (bank_num > max_bank) {
                 printf("-E- there was an attempt to set the flash bank to: %d. max allowed value: %d\n", bank_num, max_bank);
                 return MFE_ILLEGAL_BANK_NUM;

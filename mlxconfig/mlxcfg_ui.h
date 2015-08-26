@@ -1,5 +1,4 @@
-/*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+/* Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,6 +27,9 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
+ *  Version: $Id$
+ *
  */
 
 #ifndef MLXCFG_UI_H_
@@ -45,6 +47,7 @@ typedef enum {
     Mc_Query,
     Mc_Reset,
     Mc_Clr_Sem,
+    Mc_Set_Raw,
     Mc_UnknownCmd
 } mlxCfgCmd;
 
@@ -60,10 +63,11 @@ typedef enum {
 class MlxCfgParams
 {
 public:
-    MlxCfgParams() : device(),cmd(Mc_UnknownCmd), yes(false), force(false) {}
+    MlxCfgParams() : device(), rawTlvFile(), cmd(Mc_UnknownCmd), yes(false), force(false) {}
     ~MlxCfgParams() {}
 
     std::string device;
+    std::string rawTlvFile;
     mlxCfgCmd cmd;
     bool yes;
     std::vector<cfgInfo> params;
@@ -102,6 +106,9 @@ private:
     // reset Cmd
     mlxCfgStatus resetDevsCfg();
     mlxCfgStatus resetDevCfg(const char* dev);
+    // Set Raw TLV file
+    mlxCfgStatus setDevRawCfg();
+    mlxCfgStatus tlvLine2DwVec(const std::string& tlvStringLine, std::vector<u_int32_t>& tlvVec);
 
     mlxCfgStatus clrDevSem();
     //

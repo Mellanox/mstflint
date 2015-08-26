@@ -128,7 +128,8 @@ protected:
             bool guidsSpecified, bool macsSpecified, bool uidsSpecified, bool ibDev, bool ethDev);
     void printMissingGuidErr(bool ibDev, bool ethDev, bool bxDev);
 
-    bool extractUIDArgs(std::vector<string>& cmdArgs, u_int8_t& numOfGuids, u_int8_t& stepSize);
+    bool extractUIDArgs(std::vector<string>& cmdArgs, u_int8_t numOfGuids[2], u_int8_t stepSize[2]);
+    bool extractValuesFromString(string valStr, u_int8_t values[2], string origArg);
     bool getGUIDFromStr(string str, guid_t& guid, string prefixErr="");
     bool  getPasswordFromUser(const char *preStr, char buffer[MAX_PASSWORD_LEN+1]);
     bool askUser(const char* question=NULL, bool printAbrtMsg=true);

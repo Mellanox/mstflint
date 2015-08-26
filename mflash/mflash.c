@@ -1,5 +1,4 @@
-/*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+/* Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -29,12 +28,12 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
+ *  Version: $Id$
+ *
  */
 
-
-// TODO: remove all commented defines and ifdefs of __be32.... or __cpu_to_be32... etc (they are taken from compatibility.h now)
 #ifdef IRISC
-//#define __cpu_to_be32(val) (val)
+
 #define NULL 0
 
 #else
@@ -64,28 +63,12 @@
 //
 // DJGPP - GCC PORT TO MS DOS
 //
-
 #include <netinet/in.h>
 #include <unistd.h>
 
 #define bswap_32(x) ntohl(x)
 
-
-#else
-#ifdef __FreeBSD__
-#include <netinet/in.h>
-#define SWAPL(l) ntohl(l)
-#include <sys/endian.h>
-#else // Linux
-#include <byteswap.h>
-#include <endian.h>
-#endif
-
 #endif // __DJGPP__
-
-#ifndef __FreeBSD__
-#define SWAPL(l) bswap_32(l)
-#endif
 
 #define OP_NOT_SUPPORTED EOPNOTSUPP
 
@@ -94,13 +77,6 @@
 //
 // Windows (Under DDK)
 //
-
-#include <io.h>
-#include <Winsock2.h>
-#include <windows.h>
-#define SWAPL(l) ntohl(l)
-#define inline __inline
-
 #define OP_NOT_SUPPORTED EINVAL
 #define usleep(x) Sleep(((x + 999)/1000))
 
@@ -234,7 +210,7 @@ int release_semaphore(mflash* mfl, int ignore_writer_lock);
 
 #define CONNECT_IB_HW_ID 0x1FF
 #define SWITCH_IB_HW_ID 0x247
-#define SWITCH_EN_HW_ID 0x249
+#define SPECTRUM_HW_ID 0x249
 
 /*
  * Device IDs Macros:
@@ -247,7 +223,7 @@ int release_semaphore(mflash* mfl, int ignore_writer_lock);
 #define IS_SIB(dev_id) \
         ((dev_id) == SWITCH_IB_HW_ID)
 #define IS_SEN(dev_id) \
-        ((dev_id) == SWITCH_EN_HW_ID)
+        ((dev_id) == SPECTRUM_HW_ID)
 #define IS_IS4_FAMILY(dev_id) \
     (((dev_id) == 435) || ((dev_id) == 6100)) // 435 == InfiniScaleIV, 6100 == BridgeX
 #define IS_CONNECT_IB(dev_id) \
@@ -1358,8 +1334,10 @@ int cntx_spi_write_status_reg(mflash* mfl, u_int32_t status_reg, u_int8_t write_
     if (bytes_num == 2) {
         gw_cmd = MERGE(gw_cmd, 1, HBO_MSIZE,      1);
     }
-
-    return cntx_exec_cmd_set(mfl, gw_cmd, &status_reg, 1, NULL, "Write-Status-Register");
+    rc = cntx_exec_cmd_set(mfl, gw_cmd, &status_reg, 1, NULL, "Write-Status-Register");
+    // wait for flash to write the register
+    msleep(30);
+    return rc;
 }
 
 
@@ -1417,7 +1395,7 @@ int spi_get_num_of_flashes(int prev_num_of_flashes)
 
     mflash_env = getenv(MFLASH_ENV);
     if (mflash_env) {
-        num =  atoi(mflash_env);
+        num =  atol(mflash_env);
         // make sure the value makes sense
         num = (num > 16 || num <= 0) ? -1 : num;
         return num;
@@ -2142,17 +2120,21 @@ int empty_get_status(mflash* mfl, u_int8_t op_type, u_int8_t* status)
     return MFE_NOT_SUPPORTED_OPERATION;
 }
 
+#define MAX_BLOCK_SIZE(hw_dev_id)\
+        (((hw_dev_id) == CX3_HW_ID || hw_dev_id == CX3_PRO_HW_ID) ? MAX_WRITE_BUFFER_SIZE : 128)
+
 static int update_max_write_size(mflash* mfl)
 {
     u_int32_t max_reg_size = mget_max_reg_size(mfl->mf);
+    u_int32_t max_block_size = MAX_BLOCK_SIZE(mfl->attr.hw_dev_id);
     if (!max_reg_size) {
     	return MFE_BAD_PARAMS;
     }
     max_reg_size = NEAREST_POW2(max_reg_size);
-    // limit maximal write to MAX_WRITE_BUFFER_SIZE
-    max_reg_size = max_reg_size > MAX_WRITE_BUFFER_SIZE ? MAX_WRITE_BUFFER_SIZE : max_reg_size;
-    mfl->attr.block_write = max_reg_size;
-    mfl->attr.page_write  = max_reg_size;
+    // limit maximal write to max_block_size
+    max_block_size = max_reg_size < max_block_size ? max_reg_size : max_block_size;
+    mfl->attr.block_write = max_block_size;
+    mfl->attr.page_write  = max_block_size;
     return ME_OK;
 }
 
@@ -2222,7 +2204,6 @@ int flash_init_fw_access(mflash* mfl, flash_params_t* flash_params)
     if (mfl->opts[MFO_IGNORE_SEM_LOCK]) {
        rc = mfl->f_lock(mfl, 0); CHECK_RC(rc);
     }
-
     return MFE_OK;
 }
 
@@ -2461,7 +2442,7 @@ int mf_open_fw(mflash* mfl, flash_params_t* flash_params, int num_of_banks)
 }
 
 int     mf_opend_int       (mflash** pmfl, void* access_dev, int num_of_banks, flash_params_t* flash_params, int ignore_cache_rep_guard, u_int8_t access_type,
-        void* access_func, int cx3_fw_access) {
+        void* dev_extra, int cx3_fw_access) {
     int rc;
     *pmfl = (mflash*)malloc(sizeof(mflash));
     if (!*pmfl) {
@@ -2478,9 +2459,15 @@ int     mf_opend_int       (mflash** pmfl, void* access_dev, int num_of_banks, f
         (*pmfl)->mf = (mfile*)access_dev;
     } else if (access_type ==  MFAT_UEFI) {
     	// open mfile as uefi
-    	if (!((*pmfl)->mf = mopen_fw_ctx(access_dev, access_func))){
+        if (!((*pmfl)->mf = mopen_fw_ctx(access_dev, ((uefi_dev_extra_t*)dev_extra)->fw_cmd_func,\
+                ((uefi_dev_extra_t*)dev_extra)->dev_info)) ){
     		free((*pmfl));
     		return MFE_NOMEM;
+    	}
+    	// fill some device information
+    	if (((uefi_dev_extra_t*)dev_extra)->dev_info) {
+    		(*pmfl)->attr.hw_dev_id = ((uefi_dev_extra_t*)dev_extra)->dev_info->hw_dev_id;
+    		(*pmfl)->attr.rev_id = ((uefi_dev_extra_t*)dev_extra)->dev_info->rev_id;
     	}
     }
 
@@ -2494,10 +2481,10 @@ int     mf_opend       (mflash** pmfl, struct mfile_t* mf, int num_of_banks, fla
 }
 
 
-int     mf_open_uefi(mflash** pmfl, uefi_Dev_t *uefi_dev, f_fw_cmd fw_cmd_func)
+int     mf_open_uefi(mflash** pmfl, uefi_Dev_t *uefi_dev, uefi_dev_extra_t* uefi_dev_extra)
 {
 
-    return mf_opend_int(pmfl, (void*)uefi_dev, 4, NULL, 0, MFAT_UEFI, (void*)fw_cmd_func, 0);
+    return mf_opend_int(pmfl, (void*)uefi_dev, 4, NULL, 0, MFAT_UEFI, (void*)uefi_dev_extra, 0);
 }
 
 int     mf_open_int        (mflash** pmfl, const char* dev, int num_of_banks, flash_params_t* flash_params,

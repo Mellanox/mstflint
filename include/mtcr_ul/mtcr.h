@@ -1,5 +1,4 @@
-/*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+/* Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,6 +27,9 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
+ *  Version: $Id$
+ *
  */
 
 #ifndef MTCR_H
@@ -201,7 +203,7 @@ typedef enum mtcr_access_method {
     MTCR_ACCESS_ERROR  = 0x0,
     MTCR_ACCESS_MEMORY = 0x1,
     MTCR_ACCESS_CONFIG = 0x2,
-    MTCR_ACCESS_INBAND = 0x3,
+    MTCR_ACCESS_INBAND = 0x3
 } mtcr_access_method_t;
 /*
  * Read 4 bytes, return number of succ. read bytes or -1 on failure
@@ -218,6 +220,7 @@ int mread4_block (mfile *mf, unsigned int offset, u_int32_t* data, int byte_len)
 int mwrite4_block (mfile *mf, unsigned int offset, u_int32_t* data, int byte_len);
 
 int msw_reset(mfile *mf);
+int mhca_reset(mfile *mf);
 
 /*
  * Get list of MST (Mellanox Software Tools) devices.
@@ -249,7 +252,7 @@ mfile *mopen(const char *name);
 
 mfile *mopend(const char *name, int type);
 
-mfile *mopen_fw_ctx(void* fw_cmd_context, void* fw_cmd_func);
+mfile *mopen_fw_ctx(void* fw_cmd_context, void* fw_cmd_func, void* extra_data);
 
 /*
  * Close Mellanox driver

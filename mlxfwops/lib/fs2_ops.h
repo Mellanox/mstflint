@@ -100,7 +100,8 @@ private:
         II_CONFIG_INFO        = 16,
         II_TLVS_FORMAT        = 17,
         II_TRACER_HASH        = 18,
-        II_ConfigArea        = 19,
+        II_ConfigArea         = 19,
+        II_PSInfo             = 20,
         II_Last,              // Mark the end of used tag ids
         II_End                = 0xff
     };

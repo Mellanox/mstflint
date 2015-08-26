@@ -1,5 +1,4 @@
-/*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+/* Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -29,8 +28,9 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
+ *  Version: $Id$
+ *
  */
-
 
 #ifndef MFLASH_H
 #define MFLASH_H
@@ -38,6 +38,8 @@
 #include <compatibility.h>
 #include "mflash_types.h"
 #include "mflash_common_structs.h"
+
+#include <mlxfwops/uefi_c/mft_uefi_common.h>
 
 #ifdef __cplusplus
 #define EXTERN_C_START extern "C" {
@@ -68,10 +70,6 @@ typedef struct write_protect_info {
     u_int8_t is_bottom;
     u_int8_t sectors_num;
 } write_protect_info_t;
-
-// TODO: remove UEFI REMNANTS
-typedef struct _MLX4_DEV uefi_Dev_t;
-typedef int (*f_fw_cmd) (uefi_Dev_t* dev, void* buffer, int* size);
 
 /////////////////////////////////////////////
 //
@@ -112,7 +110,7 @@ int     mf_opend       (mflash** pmfl, struct mfile_t* mf, int num_of_banks,  fl
 int     mf_open_adv       (mflash** pmfl, const char* dev, int num_of_banks, flash_params_t* flash_params,
         int ignore_cache_rep_guard, int cx3_fw_access);
 
-int     mf_open_uefi(mflash** pmfl, uefi_Dev_t *uefi_dev, f_fw_cmd fw_cmd_func);
+int     mf_open_uefi(mflash** pmfl, uefi_Dev_t *uefi_dev, uefi_dev_extra_t* dev_extra);
 
 int     mf_open_ignore_lock(mflash* mfl);
 void     mf_close       (mflash* mfl);

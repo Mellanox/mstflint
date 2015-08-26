@@ -159,20 +159,6 @@ void report_warn(const char *format, ...)
 #endif
 }
 
-
-
-
-const CommandInfo* GetCommandInfo(CommandType cmd) {
-    for (u_int32_t i = 0 ; i < numbel(g_commands); i++ ) {
-        if (cmd == g_commands[i].cmd) {
-            return &g_commands[i];
-        }
-    }
-
-    return (CommandInfo*)NULL;
-}
-
-
 bool ErrMsg::errmsg(const char *format, ...) {
     va_list   args;
 
@@ -184,6 +170,20 @@ bool ErrMsg::errmsg(const char *format, ...) {
 
     delete[] prev_err;
 
+    return false;
+}
+
+bool ErrMsg::errmsg(int errorCode, const char *format, ...) {
+    va_list   args;
+
+    char* prev_err = _err;
+
+    va_start(args, format);
+    _err = vprint(format, args);
+    va_end(args);
+
+    delete[] prev_err;
+    _errCode = errorCode;
     return false;
 }
 

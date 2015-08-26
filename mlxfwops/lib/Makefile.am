@@ -38,9 +38,10 @@ MINIXZ_DIR = $(top_srcdir)/ext_libs/minixz
 COMMON_DIR = $(top_srcdir)/common
 LAYOUTS_DIR = $(top_srcdir)/tools_layouts
 UTILS_LIB = $(top_srcdir)/mft_utils
+UEFI_COMMON_DIR = $(top_srcdir)/mlxfwops/uefi_c
 
 INCLUDES = -I$(srcdir) -I$(MTCR_INC_DIR) -I$(MFLASH_DIR) -I$(top_srcdir)/ext_libs/json -I$(MINIXZ_DIR)\
-           -I$(COMMON_DIR) -I$(MFT_EXT_LIBS_INC_DIR)/zlib -I $(LAYOUTS_DIR) -I$(top_srcdir)/common -I$(UTILS_LIB)
+           -I$(COMMON_DIR) -I$(MFT_EXT_LIBS_INC_DIR)/zlib -I $(LAYOUTS_DIR) -I$(top_srcdir)/common -I$(UTILS_LIB) -I$(UEFI_COMMON_DIR)
 
 MLXFWOPS_VERSION = 1
 
