@@ -1244,6 +1244,7 @@ name_parsed:
     *force = 0;
 #ifdef __aarch64__
     // on ARM processors MMAP not supported
+    (void)force_config; // avoid warrnings
     return MTCR_ACCESS_CONFIG;
 #else
     if (force_config) {
