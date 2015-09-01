@@ -1084,7 +1084,7 @@ bool Fs3Operations::Fs3Burn(Fs3Operations &imageOps, ExtBurnParams& burnParams)
         // image vsd patch
         if (!burnParams.useImagePs && burnParams.vsdSpecified ) {
             // get image info section :
-            struct toc_info *imageInfoToc;
+            struct toc_info *imageInfoToc = NULL;
             if (!imageOps.Fs3GetItocInfo(imageOps._fs3ImgInfo.tocArr, imageOps._fs3ImgInfo.numOfItocs, FS3_IMAGE_INFO, imageInfoToc)){
                 return errmsg(MLXFW_GET_SECT_ERR, "failed to get Image Info section.");
             }
@@ -1757,7 +1757,7 @@ bool Fs3Operations::Fs3GetNewSectionAddr(struct toc_info *curr_toc, u_int32_t &N
 
     if (failsafe_section) {// we assume dev_info is the only FS section.
         // get the two dev_info addresses (section is failsafe) according to the location of the mfg section
-        toc_info* toc;
+        toc_info* toc = NULL;
         u_int32_t devInfoAddr1 = 0;
         u_int32_t devInfoAddr2 = 0;
 
@@ -1848,7 +1848,7 @@ bool Fs3Operations::Fs3ReburnItocSection(u_int32_t newSectionAddr,
 //add callback if we want info during section update
 bool  Fs3Operations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, bool is_sect_failsafe, CommandType cmd_type, PrintCallBack callBackFunc)
 {
-    struct toc_info *curr_toc;
+    struct toc_info *curr_toc = NULL;
     std::vector<u_int8_t> newUidSection;
     u_int32_t newSectionAddr;
     const char *type_msg;
