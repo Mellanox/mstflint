@@ -220,8 +220,8 @@ int pci_read_vpd_dword_gw(int fd, int vpd_cap_offset, unsigned offset, unsigned 
 		}
 	}
 
-	ret = pread(fd, data, sizeof data, vpd_cap_offset + VPD_DATA_OFFSET);
-	if (ret != sizeof data) {
+	ret = pread(fd, data, 0x4, vpd_cap_offset + VPD_DATA_OFFSET);
+	if (ret != 0x4) {
 		return ret;
 	}
 
