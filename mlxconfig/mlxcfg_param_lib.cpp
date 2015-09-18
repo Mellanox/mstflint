@@ -2501,7 +2501,7 @@ bool PrebootBootSettingsParams4thGen::cfgSupported(mfile* mf, mlxCfgParam param)
     if (rc) {
         return false;
     }
-    return portParams.nv_config_boot_parameters;
+    return true; //portParams.nv_config_boot_parameters; <--BUG fw is not updating this bit, assume supported if query_def_params command passess
 }
 
 void PrebootBootSettingsParams4thGen::setParam(mlxCfgParam paramType, u_int32_t val)
