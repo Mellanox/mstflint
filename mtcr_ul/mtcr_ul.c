@@ -781,6 +781,10 @@ int pci_find_capability(mfile* mf, int cap_id)
         }
 
         offset = data[1];
+
+        if (offset > PCI_EXT_SPACE_ADDR) {
+            return 0;
+        }
         if (visited[offset]) {
             return 0;
         }
@@ -1034,8 +1038,7 @@ int mtcr_pciconf_mclose(mfile *mf)
     struct pciconf_context *ctx = mf->ctx;
     unsigned int word;
     if (ctx) {
-        //TODO: apparently this read is useless here , need to check
-        // what happens if we remove it , (maybe something to do with ConnectX WA ??)
+        // Adrianc: set address in PCI configuration space to be non-semaphore.
         mread4(mf, 0xf0014, &word);
         if (ctx->fd != -1) {
             close(ctx->fd);
@@ -1132,8 +1135,14 @@ int mtcr_inband_open(mfile* mf, const char* name)
     mf->mwrite4_block = mib_writeblock;
     mf->maccess_reg   = mib_acces_reg_mad;
     mf->mclose        = mib_close;
-
-    return mib_open(name,mf,0);
+    char* p;
+    if ((p = strstr(name, "ibdr-")) != 0 ||
+        (p = strstr(name, "iblid-")) != 0 ||
+        (p = strstr(name, "lid-")) != 0) {
+        return mib_open(p, mf, 0);
+    } else {
+        return -1;
+    }
 
 #else
     (void) name;
@@ -1244,7 +1253,6 @@ name_parsed:
     *force = 0;
 #ifdef __aarch64__
     // on ARM processors MMAP not supported
-    (void)force_config; // avoid warrnings
     return MTCR_ACCESS_CONFIG;
 #else
     if (force_config) {
@@ -1288,32 +1296,49 @@ int mhca_reset(mfile *mf)
     return -1;
 }
 
+static long supported_dev_ids[] = {
+        0x1003, //Connect-X3
+        0x1007, //Connect-X3Pro
+        0x1011, //Connect-IB
+        0x1013, //Connect-X4
+        0x1015, //Connect-X4Lx
+        0x1017, //Connect-X5
+        0xc738, //SwitchX
+        0xcb20, //Switch-IB
+        0xcb84, //Spectrum
+        -1
+};
+
+int is_supported_devid(long devid)
+{
+    int i = 0;
+    int ret_val = 0;
+    while (supported_dev_ids[i] != -1) {
+        if (devid == supported_dev_ids[i]) {
+            ret_val = 1;
+            break;
+        }
+        i++;
+    }
+    return ret_val;
+}
+
 int is_supported_device(char* devname)
 {
-    static char* unsupported_dev_ids[] = {
-            "0x0600", //FPGA
-            "-1"
-    };
+
     char fname[64];
-    char devid[64];
+    char inbuf[64];
     FILE* f;
-    int ret_val = 1;
-    int i = 0;
+    int ret_val = 0;
     sprintf(fname, "/sys/bus/pci/devices/%s/device", devname);
     f = fopen(fname, "r");
     if (f == NULL) {
         //printf("-D- Could not open file: %s\n", fname);
         return 1;
     }
-    if (fgets(devid, sizeof(devid), f)) {
-        while (strcmp(unsupported_dev_ids[i], "-1")) {
-            if (!strncmp(devid, unsupported_dev_ids[i], strlen(unsupported_dev_ids[i]))) {
-                //printf("-D- device: %s, with devid: %s is unsupported\n", devname, devid);
-                ret_val = 0;
-                break;
-            }
-            i++;
-        }
+    if (fgets(inbuf, sizeof(inbuf), f)) {
+        long devid = strtol(inbuf, NULL, 0);
+        ret_val = is_supported_devid(devid);
     }
     fclose(f);
     return ret_val;
@@ -1323,7 +1348,7 @@ int mdevices(char *buf, int len, int mask)
 {
 
 #define MDEVS_TAVOR_CR  0x20
-#define MLNX_PCI_VENDOR_ID  "0x15b3"
+#define MLNX_PCI_VENDOR_ID  0x15b3
 
     FILE* f;
     DIR* d;
@@ -1369,8 +1394,8 @@ int mdevices(char *buf, int len, int mask)
             goto cleanup_dir_opened;
         }
         if (fgets(inbuf, sizeof(inbuf), f)) {
-            if(!strncmp(inbuf, MLNX_PCI_VENDOR_ID, strlen(MLNX_PCI_VENDOR_ID)) &&
-                    is_supported_device(dir->d_name)) {
+            long venid = strtoul(inbuf, NULL, 0);
+            if(venid == MLNX_PCI_VENDOR_ID && is_supported_device(dir->d_name)) {
                 rsz = sz + 1; //dev name size + place for Null char
                 if ((pos + rsz) > len) {
                     ndevs = -1;
@@ -1401,7 +1426,7 @@ int read_pci_config_header(u_int16_t domain, u_int8_t bus, u_int8_t dev, u_int8_
     sprintf(proc_dev, "/sys/bus/pci/devices/%04x:%02x:%02x.%d/config", domain, bus, dev, func);
     FILE* f = fopen(proc_dev, "r");
     if (!f) {
-        fprintf(stderr, "Failed to open (%s) for reading: %s\n", proc_dev, strerror(errno));
+        //fprintf(stderr, "Failed to open (%s) for reading: %s\n", proc_dev, strerror(errno));
         return 1;
     }
     setvbuf(f, NULL, _IONBF, 0);
@@ -1531,7 +1556,7 @@ mfile *mopen(const char *name)
     char cbuf[] = "/sys/bus/pci/devices/XXXX:XX:XX.X/config";
     char pdbuf[] = "/proc/bus/pci/XXXX:XX/XX.X";
     char pbuf[] = "/proc/bus/pci/XX/XX.X";
-    char errbuf[4048]="";
+    char pcidev[] = "XXXX:XX:XX.X";
     int err;
     int rc;
 
@@ -1563,6 +1588,12 @@ mfile *mopen(const char *name)
         if (_create_lock(mf, domain, bus, dev, func , access)) {
             goto open_failed;
         }
+
+        sprintf(pcidev, "%4.4x:%2.2x:%2.2x.%1.1x", domain, bus, dev, func);
+        if (!is_supported_device(pcidev)) {
+            errno = ENOTSUP;
+            goto open_failed;
+        }
     }
 
     sprintf(cbuf, "/sys/bus/pci/devices/%4.4x:%2.2x:%2.2x.%1.1x/config",
@@ -1585,9 +1616,8 @@ mfile *mopen(const char *name)
 
         if (0 == rc) {
             return mf;
-        } else {
-            goto open_failed;
         }
+        goto open_failed;
     }
 
     if (access == MTCR_ACCESS_CONFIG)
@@ -1608,7 +1638,7 @@ mfile *mopen(const char *name)
     if (offset == -1 && !domain)
         offset = mtcr_procfs_get_offset(bus, dev, func);
     if (offset == -1)
-        goto access_config;
+        goto access_config_forced;
 
     sprintf(pdbuf, "/proc/bus/pci/%4.4x:%2.2x/%2.2x.%1.1x",
         domain, bus, dev, func);
@@ -1616,7 +1646,7 @@ mfile *mopen(const char *name)
     if (rc == 0) {
         return mf;
     } else if (rc == 1) {
-        goto access_config;
+        goto access_config_forced;
     }
 
     if (!domain) {
@@ -1626,7 +1656,7 @@ mfile *mopen(const char *name)
         if (rc == 0) {
             return mf;
         } else if (rc == 1) {
-            goto access_config;
+            goto access_config_forced;
         }
     }
 
@@ -1634,14 +1664,6 @@ mfile *mopen(const char *name)
     /* Non-portable, but helps some systems */
     if (!mtcr_pcicr_open(mf, "/dev/mem", cbuf, offset, 0))
         return mf;
-#endif
-
-access_config:
-#if CONFIG_ENABLE_PCICONF && CONFIG_ENABLE_PCICONF
-    strerror_r(errno, errbuf, sizeof errbuf);
-    fprintf(stderr,
-            "Warning: memory access to device %s failed: %s. Switching to PCI config access.\n",
-            name, errbuf);
 #endif
 
 access_config_forced:
@@ -2151,7 +2173,6 @@ static int mreg_send_raw(mfile *mf, u_int16_t reg_id, maccess_reg_method_t metho
 #define CONNECTX3_PRO_HW_ID 0x1f7
 #define CONNECTX3_HW_ID 0x1f5
 #define SWITCHX_HW_ID 0x245
-#define INFINISCALE4_HW_ID 0x1b3
 
 #define HW_ID_ADDR 0xf0014
 
@@ -2165,7 +2186,6 @@ static int supports_icmd(mfile* mf) {
      switch (dev_id & 0xffff) { // that the hw device id
          case CONNECTX3_HW_ID :
          case CONNECTX3_PRO_HW_ID :
-         case INFINISCALE4_HW_ID :
          case SWITCHX_HW_ID :
             return 0;
          default:

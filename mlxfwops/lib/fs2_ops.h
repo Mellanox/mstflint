@@ -76,6 +76,7 @@ public:
     virtual bool FwInit();
     virtual bool FwReadData(void* image, u_int32_t* image_size);
     virtual bool FwReadRom(std::vector<u_int8_t>& romSect);
+    virtual bool FwCalcMD5(u_int8_t md5sum[16]);
 
 
 private:
@@ -143,9 +144,9 @@ private:
     bool Fs2FailSafeBurn(Fs2Operations &imageOps, bool allow_nofs, const char* pre_message,
             ProgressCallBack progressFunc);
     bool ModifyGuidSection(guid_t *user_guids, ProgressCallBack progressFunc=(ProgressCallBack)NULL);
-    bool preFS2PatchGUIDs(bool patch_macs, bool patch_uids, bool user_guids, bool user_macs,
-            bool user_uids, guid_t new_guids[MAX_GUIDS], guid_t old_guids[MAX_GUIDS], guid_t **used_guids_p, u_int32_t num_of_old_guids);
-    bool patchGUIDs (Fs2Operations& imageOps, bool patch_macs, bool patch_uids, bool user_guids, bool user_macs, bool user_uids,
+    bool preFS2PatchGUIDs(bool patch_macs, bool user_guids, bool user_macs,
+            guid_t new_guids[MAX_GUIDS], guid_t old_guids[MAX_GUIDS], guid_t **used_guids_p, u_int32_t num_of_old_guids);
+    bool patchGUIDs (Fs2Operations& imageOps, bool patch_macs, bool user_guids, bool user_macs,
                                  guid_t new_guids[MAX_GUIDS], guid_t old_guids[MAX_GUIDS], u_int32_t num_of_old_guids);
     void patchGUIDsSection(u_int32_t *buf, u_int32_t ind, guid_t guids[MAX_GUIDS], int nguids);
     bool patchImageVsd(Fs2Operations &imgFwOps, const char* userVsd=(char*)NULL);
@@ -161,8 +162,6 @@ private:
 
     bool ModifyKeySection(guid_t access_key, ProgressCallBack callBackFunc=(ProgressCallBack)NULL);
     void PatchKeySect(u_int32_t* buff, u_int32_t keyOff, guid_t hw_key);
-    bool Fs2IsMacAvailable();
-    bool CheckBxMacsFormat(guid_t* guids, int index, int user_uids);
 
     bool ModifyVSDSection(const char *vsd, ProgressCallBack callBackFunc=(ProgressCallBack)NULL);
     bool ReburnNewImage(u_int8_t *data, const char *feature_name, ProgressCallBack callBackFunc=(ProgressCallBack)NULL);
@@ -170,6 +169,7 @@ private:
                               bool needs_repack, u_int32_t cntxLog2ChunkSize);
     bool Fs2SetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc=(PrintCallBack)NULL, ProgressCallBack progressFunc=(ProgressCallBack)NULL);
     bool Fs2SetGuidsForBlank(sg_params_t& sgParam);
+    bool getRunningFwVer();
 
 
     Fs2ImgInfo _fs2ImgInfo;

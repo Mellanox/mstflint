@@ -1,4 +1,5 @@
-/* Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
+/*
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,8 +29,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- *  Version: $Id$
- *
  */
 
 #ifdef IRISC
@@ -46,7 +45,10 @@
 #include <common/bit_slice.h>
 #include <mtcr.h>
 #include <reg_access.h>
+
+#ifndef UEFI_BUILD
 #include <tools_cif.h>
+#endif
 
 #include "mflash_pack_layer.h"
 #include "mflash_access_layer.h"
@@ -207,10 +209,12 @@ int release_semaphore(mflash* mfl, int ignore_writer_lock);
 #define CX3_HW_ID     0x1F5
 #define CX4_HW_ID	  0x209
 #define CX4LX_HW_ID   0x20b
+#define CX5_HW_ID     0x20d
 
 #define CONNECT_IB_HW_ID 0x1FF
 #define SWITCH_IB_HW_ID 0x247
 #define SPECTRUM_HW_ID 0x249
+#define SWITCH_IB2_HW_ID 0x24b
 
 /*
  * Device IDs Macros:
@@ -222,28 +226,26 @@ int release_semaphore(mflash* mfl, int ignore_writer_lock);
         ((dev_id) == SWITCHX_HW_ID)
 #define IS_SIB(dev_id) \
         ((dev_id) == SWITCH_IB_HW_ID)
+#define IS_SIB2(dev_id) \
+        ((dev_id) == SWITCH_IB2_HW_ID)
 #define IS_SEN(dev_id) \
         ((dev_id) == SPECTRUM_HW_ID)
-#define IS_IS4_FAMILY(dev_id) \
-    (((dev_id) == 435) || ((dev_id) == 6100)) // 435 == InfiniScaleIV, 6100 == BridgeX
 #define IS_CONNECT_IB(dev_id) \
-        ((dev_id) ==CONNECT_IB_HW_ID)
+        ((dev_id) == CONNECT_IB_HW_ID)
 #define IS_CONNECTX4(dev_id) \
-        ((dev_id) ==CX4_HW_ID)
+        ((dev_id) == CX4_HW_ID)
 #define IS_CONNECTX4LX(dev_id) \
-        ((dev_id) ==CX4LX_HW_ID)
+        ((dev_id) == CX4LX_HW_ID)
+#define IS_CONNECTX5(dev_id) \
+        ((dev_id) == CX5_HW_ID)
 #define HAS_TOOLS_CMDIF(dev_id) \
     ((((dev_id) == CX3_HW_ID) || ((dev_id) == CX3_PRO_HW_ID)))
 #define HAS_ICMD_IF(dev_id) \
-    ((IS_CONNECT_IB(dev_id)) || (IS_SIB(dev_id)) || (IS_CONNECTX4(dev_id)) || (IS_CONNECTX4LX(dev_id)) || (IS_SEN(dev_id)))
+    ((IS_CONNECT_IB(dev_id)) || (IS_SIB(dev_id)) || (IS_CONNECTX4(dev_id)) || (IS_CONNECTX4LX(dev_id)) || (IS_SEN(dev_id)) || (IS_SIB2(dev_id)) || (IS_CONNECTX5(dev_id)))
 #define IS_SWITCH(dev_id) \
-       ((IS_IS4_FAMILY(dev_id)) || (IS_SX(dev_id)) || (IS_SIB(dev_id)) || (IS_SEN(dev_id)))
-#define IS_REALLY_OLD_DEVICE(dev_id) \
-        (((dev_id) == 23108) || ((dev_id) == 25208) || ((dev_id) == 24204) || ((dev_id) == 25204))
-#define IS_OLD_DEVICE(dev_id) \
-    ((IS_REALLY_OLD_DEVICE(dev_id)) || (IS_CONNECTX_4TH_GEN_FAMILY(dev_id)))
+       ((IS_SX(dev_id)) || (IS_SIB(dev_id)) || (IS_SEN(dev_id)) || (IS_SIB2(dev_id)))
 #define SUPPORTS_SW_RESET(devid)\
-        (((devid) == 435) || ((devid) == SWITCHX_HW_ID) || ((devid) == SWITCH_IB_HW_ID))
+        (((devid) == SWITCHX_HW_ID) || ((devid) == SWITCH_IB_HW_ID) || ((devid) == SWITCH_IB2_HW_ID))
 
 
 // Write/Erase delays
@@ -346,6 +348,8 @@ int cntx_spi_get_type(mflash* mfl, u_int8_t op_type, u_int8_t *vendor, u_int8_t 
 int cntx_spi_write_status_reg(mflash* mfl, u_int32_t status_reg, u_int8_t write_cmd, u_int8_t bytes_num);
 
 int spi_get_num_of_flashes(int prev_num_of_flashes);
+
+static int trm2mfe_err(trm_sts rc);
 
 
 int my_memset(void* dst, u_int8_t data, u_int32_t len) {
@@ -520,19 +524,6 @@ enum StFlashCommand {
     SFC_WRSR  = 0x01
 };
 
-typedef struct flash_info {
-    const char *name;
-    u_int8_t vendor;
-    u_int8_t type;
-    int command_set;
-    int erase_command;
-    int sector_size;
-    u_int8_t quad_en_support;
-    u_int8_t write_protected_support;
-    u_int8_t protect_sub_and_sector;
-    u_int8_t dummy_cycles_support;
-} flash_info_t;
-
 #define SST_FLASH_NAME   "SST25VFxx"
 #define WINBOND_NAME     "W25QxxBV"
 #define WINBOND_W25X     "W25Xxx"
@@ -564,16 +555,16 @@ typedef enum flash_memory_type {
 
 flash_info_t g_flash_info_arr[] =
 {
-        {"M25PXxx",      FV_ST,      FMT_ST_M25PX,     MCS_STSPI,  SFC_SSE, 0x1000,  0, 0, 0, 0},
-        {"M25Pxx",       FV_ST,      FMT_ST_M25P,      MCS_STSPI,  SFC_SE,  0x10000, 0, 0, 0, 0},
-        {"N25Q0XX",      FV_ST,      FMT_N25QXXX,      MCS_STSPI,  SFC_SSE, 0x1000,  1, 1, 0, 1},
-        {SST_FLASH_NAME, FV_SST,     FMT_SST_25,       MCS_SSTSPI, SFC_SE,  0x10000, 0, 0, 0, 0},
-        {WINBOND_NAME,   FV_WINBOND, FMT_WINBOND,      MCS_STSPI,  SFC_SSE, 0x1000,  1, 1, 1, 0},
-        {WINBOND_W25X,   FV_WINBOND, FMT_WINBOND_W25X, MCS_STSPI,  SFC_SSE, 0x1000,  0, 0, 0, 0},
-        {ATMEL_NAME,     FV_ATMEL,   FMT_ATMEL,        MCS_STSPI,  SFC_SSE, 0x1000,  0, 0, 0, 0},
-        {S25FLXXXP_NAME, FV_S25FLXXXX, FMT_S25FLXXXP,  MCS_STSPI,  SFC_SE,  0x10000, 0, 0, 0, 0},
-        {S25FL116K_NAME, FV_S25FLXXXX, FMT_S25FL116K, MCS_STSPI, SFC_SSE,   0x1000,  0, 0, 0, 0}, // this flash actually supports quad and write protect but we dont need it at this moment
-        {MACRONIX_NAME, FV_MX25K16XXX, FMT_ST_M25P, MCS_STSPI, SFC_SSE,     0x1000,  0, 0, 0, 0}, // this flash actually supports write protection but we dont use it at this time
+        {"M25PXxx",      FV_ST,      FMT_ST_M25PX,     MCS_STSPI,  SFC_SSE, FSS_4KB,  0, 0, 0, 0, 0},
+        {"M25Pxx",       FV_ST,      FMT_ST_M25P,      MCS_STSPI,  SFC_SE,  FSS_64KB, 0, 0, 0, 0, 0},
+        {"N25Q0XX",      FV_ST,      FMT_N25QXXX,      MCS_STSPI,  SFC_SSE, FSS_4KB,  1, 1, 1, 0, 1},
+        {SST_FLASH_NAME, FV_SST,     FMT_SST_25,       MCS_SSTSPI, SFC_SE,  FSS_64KB, 0, 0, 0, 0, 0},
+        {WINBOND_NAME,   FV_WINBOND, FMT_WINBOND,      MCS_STSPI,  SFC_SSE, FSS_4KB,  1, 1, 1, 1, 0},
+        {WINBOND_W25X,   FV_WINBOND, FMT_WINBOND_W25X, MCS_STSPI,  SFC_SSE, FSS_4KB,  0, 0, 0, 0, 0},
+        {ATMEL_NAME,     FV_ATMEL,   FMT_ATMEL,        MCS_STSPI,  SFC_SSE, FSS_4KB,  0, 0, 0, 0, 0},
+        {S25FLXXXP_NAME, FV_S25FLXXXX, FMT_S25FLXXXP,  MCS_STSPI,  SFC_SE,  FSS_64KB, 0, 0, 0, 0, 0},
+        {S25FL116K_NAME, FV_S25FLXXXX, FMT_S25FL116K, MCS_STSPI,   SFC_SSE, FSS_4KB,  0, 0, 0, 0, 0}, // this flash actually supports quad and write protect but we dont need it at this moment
+        {MACRONIX_NAME,  FV_MX25K16XXX, FMT_ST_M25P, MCS_STSPI,    SFC_SSE, FSS_4KB,  0, 0, 0, 0, 0}, // this flash actually supports write protection but we dont use it at this time
 };
 
 int cntx_sst_get_log2size(u_int8_t capacity, int* log2spi_size)
@@ -687,11 +678,12 @@ int get_flash_info_by_res(mflash* mfl, unsigned *type_index, int *log2size, u_in
     return MFE_OK;
 }
 
-int cntx_get_flash_info(mflash* mfl, unsigned *type_index, int *log2size, u_int8_t *no_flash)
+int cntx_get_flash_info(mflash* mfl, flash_info_t *f_info, int *log2size, u_int8_t *no_flash)
 {
     int rc;
     u_int8_t type = 0, capacity = 0, vendor = 0, no_flash_res = 0, no_flash_rdid = 0;
     unsigned char es = 0;
+    unsigned type_index = 0;
     // Assume there is a flash.
     *no_flash = 0;
 
@@ -699,24 +691,24 @@ int cntx_get_flash_info(mflash* mfl, unsigned *type_index, int *log2size, u_int8
     no_flash_rdid = is_no_flash_detected(type, vendor, capacity);
     // printf("-D- cntx_spi_get_type: rc: %#x, vendor=%#x, type=%#x, capacity=%#x\n", rc, vendor, type, capacity);
     // printf("-D- rc = %d, no_flash_rdid = %d\n", rc, no_flash_rdid);
-    if (get_type_index_by_vendor_and_type(vendor, type, type_index) == MFE_OK) {
+    if (get_type_index_by_vendor_and_type(vendor, type, &type_index) == MFE_OK) {
         // RDID Succeded.
         // Get the capacity
-        if (get_log2size_by_capcity(*type_index, capacity, log2size) != MFE_OK) {
+        if (get_log2size_by_capcity(type_index, capacity, log2size) != MFE_OK) {
             printf("-E- SST SPI flash #%d (vendor: %#x, type: %#x, capacity:%#x) is not supported.\n", get_bank_int(mfl), vendor,
                     type, capacity);
-            return MFE_UNSUPPORTED_FLASH_TOPOLOGY;
+            rc = MFE_UNSUPPORTED_FLASH_TOPOLOGY;
         }
-         return MFE_OK;
-    }
+         rc = MFE_OK;
+    } else if (no_flash_rdid) {
     // printf("-D- no support for rdid\n");
     // RDID Failed due to:
     // 1- RDID is not supported but RES is - Old flashes.
     // 2- There is no Flash
     // 3- Flash is not supported
-    if (no_flash_rdid) {
+
         // Trying RES
-        rc = get_flash_info_by_res(mfl, type_index, log2size, &no_flash_res, &es);
+        rc = get_flash_info_by_res(mfl, &type_index, log2size, &no_flash_res, &es);
         if (rc == 0 && no_flash_res == 1) {
             // RES Succeeded due to: no flash, unsupported flash or old flash.
                 *no_flash = 1;
@@ -730,6 +722,7 @@ int cntx_get_flash_info(mflash* mfl, unsigned *type_index, int *log2size, u_int8
         printf("-E- SPI flash #%d (vendor: %#x, memory type: %#x, es: %#x) is not supported.\n", get_bank_int(mfl), vendor, type, es);
     }
     // printf("-D- rc = %d, no_flash_res = %d, type_index = %d.\n", rc, no_flash_res, *type_index);
+    memcpy(f_info, &g_flash_info_arr[type_index], sizeof(flash_info_t));
     return rc;
 }
 
@@ -768,12 +761,11 @@ int get_num_of_banks_int(mflash *mfl) {
     return mfl->opts[MFO_NUM_OF_BANKS];
 }
 
-int get_flash_params(mflash* mfl, flash_params_t *flash_params, unsigned *type_index)
+int get_flash_params(mflash* mfl, flash_params_t *flash_params, flash_info_t *flash_info)
 {
     int num_of_flashes = get_num_of_banks_int(mfl);
     int spi_sel, rc;
     int params_were_set = 0;
-    flash_info_t *flash_info;
     memset(flash_params, 0, sizeof(flash_params_t));
 
     // if number of flash banks is zero exit with error
@@ -786,7 +778,7 @@ int get_flash_params(mflash* mfl, flash_params_t *flash_params, unsigned *type_i
             u_int8_t no_flash = 0;
             const char *type_name;
             rc = set_bank(mfl, spi_sel); CHECK_RC(rc);
-            rc = mfl->f_get_info(mfl, type_index, &log2size, &no_flash); CHECK_RC(rc);
+            rc = mfl->f_get_info(mfl, flash_info, &log2size, &no_flash); CHECK_RC(rc);
             //printf("-D- spi_sel = %d, num_of_flashes = %d, rc = %d, no_flash = %d\n", spi_sel, num_of_flashes, rc, no_flash);
 
             if (no_flash == 1) {
@@ -797,7 +789,6 @@ int get_flash_params(mflash* mfl, flash_params_t *flash_params, unsigned *type_i
                 }
                 break;
             }
-            flash_info = &(g_flash_info_arr[*type_index]);
 
             type_name = flash_info->name;
             if (params_were_set == 0) {
@@ -821,25 +812,19 @@ int get_flash_params(mflash* mfl, flash_params_t *flash_params, unsigned *type_i
     return MFE_OK;
 }
 
-int spi_fill_attr_from_params(mflash* mfl, flash_params_t* flash_params, unsigned type_index)
+int spi_fill_attr_from_params(mflash* mfl, flash_params_t* flash_params, flash_info_t *flash_info)
 {
-    flash_info_t *flash_info = &(g_flash_info_arr[type_index]);
-
     mfl->attr.log2_bank_size = flash_params->log2size;
     mfl->attr.bank_size      = 1 << flash_params->log2size;
     mfl->attr.size           = mfl->attr.bank_size * flash_params->num_of_flashes;
     mfl->attr.block_write                = 16; // In SPI context, this is the transaction size. Max is 16.
-    mfl->attr.num_erase_blocks           = 1;
-    // HACK: Use fw_sector size only in CX3 family devices for now 
+    // HACK: Use fw_sector size as the sector size only in CX3 family devices for now
+    // TODO: adrianc : this sould be in sx_get_flash_info_by_type()
     if (HAS_TOOLS_CMDIF(mfl->attr.hw_dev_id)) {
-        mfl->attr.erase_block[0].sector_size = mfl->attr.fw_flash_sector_sz ? mfl->attr.fw_flash_sector_sz : (u_int32_t)flash_info->sector_size;
-    } else {
-        mfl->attr.erase_block[0].sector_size = (u_int32_t)flash_info->sector_size;
+        flash_info->sector_size = mfl->attr.fw_flash_sector_sz ? mfl->attr.fw_flash_sector_sz : flash_info->sector_size;
     }
-
-    mfl->attr.erase_block[0].sector_mask = ~(mfl->attr.erase_block[0].sector_size - 1);
-    mfl->attr.sector_size = mfl->attr.erase_block[0].sector_size;
-
+    mfl->attr.sector_size = flash_info->sector_size;
+    mfl->attr.support_sub_and_sector = flash_info->support_sub_and_sector;
     mfl->attr.command_set   = flash_info->command_set;
     mfl->attr.erase_command = flash_info->erase_command;
     mfl->attr.type_str      = flash_info->name;
@@ -859,6 +844,7 @@ int spi_fill_attr_from_params(mflash* mfl, flash_params_t* flash_params, unsigne
 int st_spi_fill_attr(mflash* mfl, flash_params_t* flash_params) {
     int rc;
     flash_params_t *cur_flash_params, tmp_flash_params;
+    flash_info_t flash_info;
     unsigned type_index;
 
     // printf("-D- st_spi_fill_attr: ignore_detect = %d, log2size = %#x.\n", mfl->ignore_flash_detect, mfl->user_attr.log2size);
@@ -868,7 +854,7 @@ int st_spi_fill_attr(mflash* mfl, flash_params_t* flash_params) {
         cur_flash_params = &tmp_flash_params;
 
         while (i < GET_FLASH_RETRY) {
-            rc = get_flash_params(mfl, cur_flash_params, &type_index);
+            rc = get_flash_params(mfl, cur_flash_params, &flash_info);
             if (rc != MFE_NO_FLASH_DETECTED) {
                 break;
             }
@@ -879,11 +865,11 @@ int st_spi_fill_attr(mflash* mfl, flash_params_t* flash_params) {
     } else {
         // Get the flash params from the user.
         rc = get_type_index_by_name(flash_params->type_name, &type_index); CHECK_RC(rc);
+        memcpy(&flash_info, &(g_flash_info_arr[type_index]), sizeof(flash_info_t));
         cur_flash_params = flash_params;
     }
-
     // Init the flash attr according to the flash parameters (which was wither given by the user or read from the flash)
-    rc = spi_fill_attr_from_params(mfl, cur_flash_params, type_index); CHECK_RC(rc);
+    rc = spi_fill_attr_from_params(mfl, cur_flash_params, &flash_info); CHECK_RC(rc);
     // printf("-D- spi_size = %#x,  log2spi_size = %#x, bank_size = %#x, flashes_num = %d\n", mfl->attr.size, mfl->attr.log2_bank_size,
     //       mfl->attr.bank_size, cur_flash_params->num_of_flashes);
     return MFE_OK;
@@ -1104,7 +1090,7 @@ int empty_set_bank(mflash* mfl, u_int32_t bank) {
 }
 
 int cntx_exec_cmd(mflash* mfl, u_int32_t gw_cmd, char* msg) {
-    if (!IS_OLD_DEVICE(mfl->attr.hw_dev_id)) {
+    if (!IS_CONNECTX_4TH_GEN_FAMILY(mfl->attr.hw_dev_id)) {
         // for old devices lock bit is separate from the flash HW ifc
         //for new devices need to make sure this bit remains locked when writing the dword
         gw_cmd = MERGE(gw_cmd,              1,       31,                       1);
@@ -1410,7 +1396,7 @@ int spi_update_num_of_banks(mflash* mfl, int prev_num_of_flashes)
 
     num_of_banks = spi_get_num_of_flashes(prev_num_of_flashes);
     if (num_of_banks == -1) {
-        if (IS_SX(mfl->attr.hw_dev_id) || IS_SIB(mfl->attr.hw_dev_id) || IS_SEN(mfl->attr.hw_dev_id)) {
+        if (IS_SX(mfl->attr.hw_dev_id) || IS_SIB(mfl->attr.hw_dev_id) || IS_SEN(mfl->attr.hw_dev_id) || IS_SIB2(mfl->attr.hw_dev_id)) {
             mfl->opts[MFO_NUM_OF_BANKS] = 2;
         } else {
             mfl->opts[MFO_NUM_OF_BANKS] = 1;
@@ -1943,6 +1929,10 @@ int check_cache_replacement_gaurd(mflash* mfl, u_int8_t *needs_cache_replacement
 
     // When we access via command interface, we assume there is a cache replacement!
     if (mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_MLNXOS_CMDIF) {
+        if (mfl->opts[MFO_IGNORE_CASHE_REP_GUARD]) {
+            // dont allow overidding cache replacement in mellanox OS env
+            return MFE_OCR_NOT_SUPPORTED;
+        }
         *needs_cache_replacement = 1;
         return MFE_OK;
     }
@@ -1974,7 +1964,7 @@ int mfl_com_lock(mflash* mfl)
 {
     int rc;
     // if we already locked the semaphore we dont want to re-lock it
-    if (mfl->is_locked) {
+    if (mfl->is_locked && (mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] != ATBM_INBAND || mfl->opts[MFO_IGNORE_CASHE_REP_GUARD] == 1)) { // on inband w/o ocr we need to extend the lock
         return MFE_OK;
     }
     rc = mfl->f_lock(mfl, 1);
@@ -2037,12 +2027,6 @@ int gen4_flash_init_com(mflash* mfl, flash_params_t* flash_params, u_int8_t init
 
 }
 
-int is4_flash_init(mflash* mfl, flash_params_t* flash_params) {
-
-    mfl->f_lock           = is4_flash_lock;
-    return gen4_flash_init_com(mfl, flash_params, 0);
-}
-
 int sx_flash_init_direct_access(mflash* mfl, flash_params_t* flash_params)
 {
     mfl->f_lock           = is4_flash_lock;
@@ -2051,24 +2035,24 @@ int sx_flash_init_direct_access(mflash* mfl, flash_params_t* flash_params)
 
 int fifth_gen_init_direct_access(mflash* mfl, flash_params_t* flash_params)
 {
-
     mfl->f_lock           = connectib_flash_lock;
     return gen4_flash_init_com(mfl, flash_params, 0);
 }
 
+/*
 typedef int (*f_sx_flash_lock)      (mflash* mfl, int lock_state);
 typedef int (*f_sx_erase_sect)      (mflash* mfl, u_int32_t addr);
 typedef int (*f_sx_block_access)    (mflash* mfl, u_int32_t addr, u_int32_t size, u_int8_t* data);
 typedef int (*f_sx_get_flash_info)  (mflash* mfl, unsigned *type_index, int *log2size, u_int8_t *no_flash);
+*/
 
 
-
-int sx_get_flash_info(mflash* mfl, unsigned *type_index, int *log2size, u_int8_t *no_flash)
+int sx_get_flash_info(mflash* mfl, flash_info_t* f_info, int *log2size, u_int8_t *no_flash)
 {
     int rc;
     int sem_rc;
     sem_rc = mfl_com_lock(mfl); CHECK_RC(sem_rc);
-    rc = sx_get_flash_info_by_type(mfl, type_index, log2size, no_flash);
+    rc = sx_get_flash_info_by_type(mfl, f_info, log2size, no_flash);
     sem_rc = release_semaphore(mfl, 0); CHECK_RC(sem_rc);
     return rc;
 }
@@ -2104,7 +2088,7 @@ int sx_erase_sect(mflash* mfl, u_int32_t addr)
     int rc;
     int sem_rc;
     sem_rc = mfl_com_lock(mfl); CHECK_RC(sem_rc);
-    rc = sx_erase_sect_by_type(mfl, addr);
+    rc = sx_erase_sect_by_type(mfl, addr, mfl->attr.sector_size);
     sem_rc = release_semaphore(mfl, 0); CHECK_RC(sem_rc);
     return rc;
 }
@@ -2159,7 +2143,7 @@ int flash_init_inband_access(mflash* mfl, flash_params_t* flash_params)
     mfl->supp_sr_mod = 0;
 
     // Get the flash attribute
-    rc = st_spi_fill_attr(mfl, flash_params);   CHECK_RC(rc);
+    rc = st_spi_fill_attr(mfl, flash_params); CHECK_RC(rc);
     update_max_write_size(mfl); CHECK_RC(rc);
     return MFE_OK;
 }
@@ -2270,7 +2254,12 @@ int cntx_flash_init(mflash* mfl, flash_params_t* flash_params)
     if ( mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_TOOLS_CMDIF &&\
          mfl->opts[MFO_IGNORE_CASHE_REP_GUARD] == 0 &&\
          mfl->opts[MFO_CX3_FW_ACCESS_EN]) {
+        #ifdef UEFI_BUILD
+        // tools CMDIF not supported in UEFI
+        rc = ME_NOT_IMPLEMENTED;
+        #else
         rc = tcif_cr_mbox_supported(mfl->mf);
+        #endif
         // init with direct access if not supported
         if (rc == ME_NOT_IMPLEMENTED || rc == ME_CMDIF_NOT_SUPP ) {
             mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] = ATBM_NO;
@@ -2314,14 +2303,43 @@ int     mf_write       (mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* da
     return mfl->f_write(mfl, addr, len, data);
 }
 
-int     mf_erase_sector(mflash* mfl, u_int32_t addr) {
+static int erase_com(mflash* mfl, u_int32_t addr, unsigned int sector_size, int erase_cmd)
+{
+    int rc;
+    u_int32_t backup_sector_size;
+    int backup_erase_command;
     if (addr >= mfl->attr.size) {
         return MFE_OUT_OF_RANGE;
     }
     // Locking semaphore for the entire existence of the mflash obj for write and erase only.
-    int rc = mfl_com_lock(mfl); CHECK_RC(rc);
+    rc = mfl_com_lock(mfl); CHECK_RC(rc);
     mfl->writer_lock = 1;
-    return mfl->f_erase_sect(mfl, addr);
+    backup_sector_size = mfl->attr.sector_size;
+    backup_erase_command = mfl->attr.erase_command;
+    mfl->attr.sector_size = sector_size;
+    mfl->attr.erase_command = erase_cmd;
+    rc = mfl->f_erase_sect(mfl, addr);
+    mfl->attr.sector_size = backup_sector_size;
+    mfl->attr.erase_command = backup_erase_command;
+    return rc;
+}
+
+int     mf_erase(mflash* mfl, u_int32_t addr) {
+    return erase_com(mfl, addr, mfl->attr.sector_size, mfl->attr.erase_command);
+}
+
+int     mf_erase_64k_sector(mflash* mfl, u_int32_t addr) {
+    if (!mfl->attr.support_sub_and_sector) {
+        return MFE_UNSUPPORTED_ERASE_OPERATION;
+    }
+    return erase_com(mfl, addr, FSS_64KB, SFC_SE);
+}
+
+int     mf_erase_4k_sector(mflash* mfl, u_int32_t addr) {
+    if (!mfl->attr.support_sub_and_sector) {
+        return MFE_UNSUPPORTED_ERASE_OPERATION;
+    }
+    return erase_com(mfl, addr, FSS_4KB, SFC_SSE);
 }
 
 int mf_open_ignore_lock(mflash* mfl) {
@@ -2352,6 +2370,7 @@ int get_dev_info(mflash* mfl)
     // get hw id
     // Special case for MLNX OS getting dev_id using REG MGIR
     if (dev_flags & MDEVS_MLNX_OS) {
+    #ifndef UEFI_BUILD
         reg_access_status_t rc;
         struct register_access_sib_mgir mgir;
         memset(&mgir, 0, sizeof(mgir));
@@ -2372,6 +2391,11 @@ int get_dev_info(mflash* mfl)
                 mfl->attr.rev_id = 0; //WA: MGIR should have also hw_rev_id and then we can use it.
             }
         }
+    #else
+        // no MLNX_OS in UEFI, no mgir register in UEFI package
+        // we should never reach here
+        return MFE_UNKOWN_ACCESS_TYPE;
+    #endif
     } else {
         MREAD4(HW_DEV_ID, &dev_id);
         if (dev_id == CR_LOCK_HW_ID) {
@@ -2384,7 +2408,7 @@ int get_dev_info(mflash* mfl)
     if (dev_flags & MDEVS_MLNX_OS) {
           mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] = ATBM_MLNXOS_CMDIF;
     } else if (dev_flags & MDEVS_IB){
-              mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] = ATBM_INBAND;
+          mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] = ATBM_INBAND;
     } else { // not mlnxOS or IB device - check HW ID to determine Access type
          if (HAS_ICMD_IF(mfl->attr.hw_dev_id)){
              if (mfl->opts[MFO_IGNORE_CASHE_REP_GUARD] == 0) {
@@ -2403,7 +2427,7 @@ int get_dev_info(mflash* mfl)
 int mf_open_fw(mflash* mfl, flash_params_t* flash_params, int num_of_banks)
 {
     int rc;
-
+    trm_sts trm_rc;
     if (!mfl) {
         return MFE_BAD_PARAMS;
     }
@@ -2411,15 +2435,16 @@ int mf_open_fw(mflash* mfl, flash_params_t* flash_params, int num_of_banks)
     if (mfl->access_type == MFAT_MFILE ) {
         rc = get_dev_info(mfl); CHECK_RC(rc);
 
+        trm_rc = trm_create(&(mfl->trm), mfl->mf);
+        if (trm_rc) {
+            return trm2mfe_err(trm_rc);
+        }
+
         mfl->opts[MFO_NUM_OF_BANKS] = spi_get_num_of_flashes(num_of_banks);
         rc = spi_update_num_of_banks(mfl, num_of_banks);CHECK_RC(rc);
 
-        if (mfl->attr.hw_dev_id == 23108 || mfl->attr.hw_dev_id == 25208 || mfl->attr.hw_dev_id == 24204 || mfl->attr.hw_dev_id == 25204) {
-            rc = MFE_OLD_DEVICE_TYPE;
-        } else if (IS_CONNECTX_4TH_GEN_FAMILY(mfl->attr.hw_dev_id)) {
+        if (IS_CONNECTX_4TH_GEN_FAMILY(mfl->attr.hw_dev_id)) {
             rc = cntx_flash_init(mfl, flash_params);
-        } else if (IS_IS4_FAMILY(mfl->attr.hw_dev_id)) {
-            rc = is4_flash_init(mfl, flash_params);
         } else if (IS_SX(mfl->attr.hw_dev_id)) {
             rc = sx_flash_init(mfl, flash_params);
         } else if (HAS_ICMD_IF(mfl->attr.hw_dev_id)) {
@@ -2461,7 +2486,6 @@ int     mf_opend_int       (mflash** pmfl, void* access_dev, int num_of_banks, f
     	// open mfile as uefi
         if (!((*pmfl)->mf = mopen_fw_ctx(access_dev, ((uefi_dev_extra_t*)dev_extra)->fw_cmd_func,\
                 ((uefi_dev_extra_t*)dev_extra)->dev_info)) ){
-    		free((*pmfl));
     		return MFE_NOMEM;
     	}
     	// fill some device information
@@ -2470,7 +2494,6 @@ int     mf_opend_int       (mflash** pmfl, void* access_dev, int num_of_banks, f
     		(*pmfl)->attr.rev_id = ((uefi_dev_extra_t*)dev_extra)->dev_info->rev_id;
     	}
     }
-
     rc = mf_open_fw(*pmfl, flash_params, num_of_banks);
     return rc;
 }
@@ -2541,7 +2564,12 @@ void     mf_close       (mflash* mfl) {
     if (mfl->mf && (mfl)->opts[MFO_CLOSE_MF_ON_EXIT]) {
         mclose(mfl->mf);
     }
-
+#ifndef UEFI_BUILD
+    if (mfl->trm) {
+        trm_destroy(mfl->trm);
+        mfl->trm = (trm_ctx)NULL;
+    }
+#endif
     free(mfl);
     return;
 }
@@ -2650,6 +2678,8 @@ const char*   mf_err2str (int err_code) {
         return "MFE_UNKOWN_ACCESS_TYPE";
     case MFE_UNSUPPORTED_DEVICE:
         return "MFE_UNSUPPORTED_DEVICE";
+    case MFE_UNSUPPORTED_ERASE_OPERATION:
+        return "MFE_UNSUPPORTED_ERASE_OPERATION";
     case MFE_OLD_DEVICE_TYPE:
         return "MFE_OLD_DEVICE_TYPE";
     case MFE_ICMD_INIT_FAILED:
@@ -2698,8 +2728,24 @@ const char*   mf_err2str (int err_code) {
         return "Access to device should be through configuration cycles.";
     case MFE_ILLEGAL_BANK_NUM:
         return "MFE_ILLEGAL_BANK_NUM";
+    case MFE_OCR_NOT_SUPPORTED:
+        return "Direct flash access is not supported.";
     default:
         return "Unknown error";
+    }
+}
+
+int trm2mfe_err(trm_sts rc)
+{
+    switch (rc) {
+    case TRM_STS_DEV_NOT_SUPPORTED:
+        return MFE_UNSUPPORTED_DEVICE;
+    case TRM_STS_CR_ACCESS_ERR:
+        return MFE_CR_ERROR;
+    case TRM_STS_MEM_ERROR:
+        return MFE_NOMEM;
+    default:
+        return MFE_ERROR;
     }
 }
 
@@ -2970,18 +3016,33 @@ int     mf_get_write_protect(mflash *mfl, u_int8_t bank_num, write_protect_info_
 
 int mf_enable_hw_access(mflash* mfl, u_int64_t key)
 {
+#ifndef UEFI_BUILD
     int rc;
     rc = tcif_hw_access(mfl->mf, key, 0 /* Unlock */);
     return (rc == ME_CMDIF_UNKN_TLV) ? MFE_MISMATCH_KEY : MError2MfError(rc);
-
+#else
+    (void)mfl;
+    (void)key;
+    return MFE_NOT_SUPPORTED_OPERATION;
+#endif
 }
 
 int mf_disable_hw_access(mflash* mfl)
 {
+#ifndef UEFI_BUILD
     int rc;
     // We need to release the semaphore because we will not have any access to semaphore after disabling the HW access
     rc = release_semaphore(mfl, 1); CHECK_RC(rc);
     rc = tcif_hw_access(mfl->mf, 0, 1 /* Lock */);
     return (rc == ME_CMDIF_UNKN_TLV) ? MFE_MISMATCH_KEY : MError2MfError(rc);
+#else
+    (void)mfl;
+    return MFE_NOT_SUPPORTED_OPERATION;
+#endif
+}
+
+mfile* mf_get_mfile(mflash* mfl)
+{
+    return mfl->mf;
 }
 

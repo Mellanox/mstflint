@@ -31,17 +31,24 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 
 #include <common/tools_utils.h>
 #include <common/bit_slice.h>
 #include <common/compatibility.h>
 #include <dev_mgt/tools_dev_types.h>
-#include "tools_res_mgmt.h"
+
+#if !defined(__FreeBSD__) && !defined(UEFI_BUILD)
+#include <mtcr_ib_res_mgt.h>
+#endif
 
 #ifdef __WIN__
 #include <process.h>
 #define getpid() _getpid()
 #endif
+
+#include "tools_res_mgmt.h"
+#include "tools_time.h"
 
 #define VSEC_SEM_NUM 10
 #define HW_SEM_NUM VSEC_SEM_NUM
@@ -90,7 +97,8 @@ static const char* status_to_str[] =
         "Tools resource management interface not available",
         "Device not supported",
         "Resource not supported",
-        "CR-Space access error"
+        "CR-Space access error",
+        "Memory allocation failed"
 };
 
 struct device_sem_info
@@ -106,16 +114,6 @@ static u_int32_t g_vsec_sem_addr[VSEC_SEM_NUM] = {0x0, 0x10};
 
 static struct device_sem_info g_dev_sem_info_db[] = {
         {
-                DeviceConnectX,             // dev_id
-                {0xf03bc},                  // hw_sem_addr
-                0,                          // vsec_sem_supported
-        },
-        {
-                DeviceConnectX2,            // dev_id
-                {0xf03bc},                  // hw_sem_addr
-                0,                          // vsec_sem_supported
-        },
-        {
                 DeviceConnectX3,            // dev_id
                 {0xf03bc, 0xf03a0},         // hw_sem_addr
                 0,                          // vsec_sem_supported
@@ -123,11 +121,6 @@ static struct device_sem_info g_dev_sem_info_db[] = {
         {
                 DeviceConnectX3Pro,         // dev_id
                 {0xf03bc, 0xf03a0},         // hw_sem_addr
-                0,                          // vsec_sem_supported
-        },
-        {
-                DeviceInfiniScaleIV,        // dev_id
-                {0},                        // hw_sem_addr
                 0,                          // vsec_sem_supported
         },
         {
@@ -160,6 +153,26 @@ static struct device_sem_info g_dev_sem_info_db[] = {
                 {0xe250c},       // hw_sem_addr
                 1,               // vsec_sem_supported
         },
+        {
+                DeviceSwitchIB2,  // dev_id
+                {0xa24f8},       // hw_sem_addr
+                0,               // vsec_sem_supported
+        },
+};
+
+#define MAX_SEMAPHORE_ADDRES 8
+
+struct mad_lock_info {
+    u_int32_t lock_key;
+    u_int32_t lease_time_ms;
+    tt_ctx_t  start_time;
+};
+
+struct trm_t {
+        mfile* mf;
+        const struct device_sem_info* dev_sem_info;
+        struct mad_lock_info mad_lock[MAX_SEMAPHORE_ADDRES];
+        int ib_semaphore_lock_is_supported;
 };
 
 /************************************
@@ -232,6 +245,107 @@ static trm_sts unlock_vsec_semaphore(mfile* mf, u_int32_t addr)
     return TRM_STS_OK;
 }
 
+#if !defined(__FreeBSD__) && !defined(UEFI_BUILD)
+/************************************
+ * Function: release_vs_mad_semaphore()
+ ************************************/
+#define GET_LEASE_TIME_MS(is_leaseable, lease_time_exp) ((is_leaseable) ? (50 * (1 << (lease_time_exp))) : 0)
+
+static trm_sts release_vs_mad_semaphore(trm_ctx trm, trm_resourse resource)
+{
+    u_int32_t lock_key;
+    u_int8_t new_lease_exponent;
+    int is_leaseable = 0;
+
+    int rc = TRM_STS_OK;
+    if (!trm->mad_lock[resource].lock_key) {
+        return TRM_STS_OK;
+    }
+    if (trm->ib_semaphore_lock_is_supported == 0) {
+        return TRM_STS_RES_NOT_SUPPORTED;
+    }
+    rc = mib_semaphore_lock_vs_mad(trm->mf, SMP_SEM_RELEASE, g_vsec_sem_addr[resource],
+                                   trm->mad_lock[resource].lock_key, &lock_key, &is_leaseable, &new_lease_exponent, SEM_LOCK_SET);
+    if (rc == ME_MAD_BUSY) {
+        return TRM_STS_RES_BUSY;
+    } else if (rc) {
+        return TRM_STS_RES_NOT_SUPPORTED;
+    } else if (lock_key != 0) {
+        return TRM_STS_CR_ACCESS_ERR;
+    }
+    trm->mad_lock[resource].lock_key = 0;
+    trm->mad_lock[resource].lease_time_ms = 0;
+    return TRM_STS_OK;
+}
+
+/************************************
+ * Function: lock_vs_mad_semaphore()
+ ************************************/
+
+
+static trm_sts lock_vs_mad_semaphore(trm_ctx trm, trm_resourse resource, unsigned int max_retries)
+{
+    u_int32_t new_lock_key;
+    u_int8_t new_lease_exponent;
+    int is_leaseable = 0;
+    tt_ctx_t curr_time;
+    int rc = TRM_STS_OK;
+    unsigned int cnt = 0;
+
+    if (trm->ib_semaphore_lock_is_supported == 0) {
+        return TRM_STS_RES_NOT_SUPPORTED;
+    }
+
+    // check if we got lock_key
+    if (trm->mad_lock[resource].lock_key) {
+        // TODO: use threads to extend lock every ~20 seconds untill releasing the lock
+        // check if extension is needed
+        if (trm->mad_lock[resource].lease_time_ms == 0) {
+            // no need to extend lease is untill device reboot
+            return TRM_STS_OK;
+        }
+
+        tt_get_time(&curr_time);
+        double diff = tt_diff_in_ms(trm->mad_lock[resource].start_time, curr_time);
+        if ( diff <= trm->mad_lock[resource].lease_time_ms * 0.6) {
+            return TRM_STS_OK;
+        }
+        // extension needed try to extend
+        rc = mib_semaphore_lock_vs_mad(trm->mf, SMP_SEM_EXTEND, g_vsec_sem_addr[resource],
+                trm->mad_lock[resource].lock_key, &new_lock_key, &is_leaseable, &new_lease_exponent, SEM_LOCK_SET);
+        if (rc == ME_OK && new_lock_key == trm->mad_lock[resource].lock_key) {
+            // extend OK
+            trm->mad_lock[resource].lease_time_ms = GET_LEASE_TIME_MS(is_leaseable, new_lease_exponent);
+            trm->mad_lock[resource].start_time = curr_time;
+            return TRM_STS_OK;
+        } else {
+            // extend failed try to re-lock the semaphore
+            trm->mad_lock[resource].lock_key = 0;
+            trm->mad_lock[resource].lease_time_ms = 0;
+            new_lock_key = 0;
+        }
+    }
+    // if not or extend failed try to lock
+    do {
+        if (cnt++ > max_retries) {
+            return TRM_STS_RES_BUSY;
+        }
+        rc = mib_semaphore_lock_vs_mad(trm->mf, SMP_SEM_LOCK, g_vsec_sem_addr[resource],
+                                       0, &new_lock_key, &is_leaseable, &new_lease_exponent, SEM_LOCK_SET);
+        if (rc == ME_MAD_BUSY || new_lock_key == 0) {
+            msleep(((rand() % 5) + 1));
+        }
+    } while (rc == ME_MAD_BUSY || new_lock_key == 0) ;
+
+    if (rc) {
+        return TRM_STS_RES_NOT_SUPPORTED;
+    }
+    trm->mad_lock[resource].lock_key = new_lock_key;
+    trm->mad_lock[resource].lease_time_ms = GET_LEASE_TIME_MS(is_leaseable, new_lease_exponent);
+    tt_get_time(&(trm->mad_lock[resource].start_time));
+    return TRM_STS_OK;
+}
+#endif
 /************************************
  * Function: get_device_sem_info
  ************************************/
@@ -248,48 +362,97 @@ static struct device_sem_info* get_device_sem_info(dm_dev_id_t dev_id)
 }
 
 /************************************
- * Function: trm_lock
+ * Function: trm_create
  ************************************/
-trm_sts trm_lock(mfile* mf, trm_resourse res, unsigned int max_retries)
+trm_sts trm_create(trm_ctx* trm_p, mfile* mf)
 {
-    dm_dev_id_t dev_id;
+    dm_dev_id_t dev_id = DeviceStartMarker;
     u_int32_t hw_dev_id;
     u_int32_t chip_rev;
-    struct device_sem_info* dev_sem_info;
 
-    if (dm_get_device_id(mf, &dev_id, &hw_dev_id, &chip_rev)) {
-        return TRM_STS_CR_ACCESS_ERR;
+    *trm_p = (trm_ctx) malloc (sizeof(struct trm_t));
+    if (! (*trm_p)) {
+        return TRM_STS_MEM_ERROR;
+    }
+    memset((*trm_p), 0, sizeof(struct trm_t));
+    (*trm_p)->mf = mf;
+
+#if !defined(__FreeBSD__) && !defined(UEFI_BUILD)
+    u_int32_t dev_flags = 0;
+    if (!mget_mdevs_flags(mf, &dev_flags)) {
+        if ((dev_flags & MDEVS_IB) && mib_semaphore_lock_is_supported(mf) == 1) {
+            (*trm_p)->ib_semaphore_lock_is_supported = 1;
+        }
+    }
+#endif
+
+    if (dm_get_device_id((*trm_p)->mf, &dev_id, &hw_dev_id, &chip_rev)) {
+        free(*trm_p);
+        *trm_p = (trm_ctx)NULL;
+        return dev_id == DeviceUnknown ? TRM_STS_DEV_NOT_SUPPORTED : TRM_STS_CR_ACCESS_ERR;
     }
 
-    dev_sem_info = get_device_sem_info(dev_id);
+    (*trm_p)->dev_sem_info = get_device_sem_info(dev_id);
 
     // Not supported device
-    if (!dev_sem_info) {
+    if (!((*trm_p)->dev_sem_info)) {
+        free(*trm_p);
+        *trm_p = (trm_ctx)NULL;
         return TRM_STS_DEV_NOT_SUPPORTED;
     }
+
+    return TRM_STS_OK;
+}
+
+/************************************
+ * Function: trm_destroy
+ ************************************/
+trm_sts trm_destroy(trm_ctx trm)
+{
+    if (trm) {
+        free(trm);
+    }
+    return TRM_STS_OK;
+}
+
+/************************************
+ * Function: trm_lock
+ ************************************/
+trm_sts trm_lock(trm_ctx trm, trm_resourse res, unsigned int max_retries)
+{
+    u_int32_t dev_type = 0;
+    mget_mdevs_flags(trm->mf, &dev_type);
 
     // lock resource on appropriate ifc if supported
     switch ((int)res) {
     case TRM_RES_ICMD:
-        if (dev_sem_info->vsec_sem_supported && mget_vsec_supp(mf)) {
-            return lock_vsec_semaphore(mf, g_vsec_sem_addr[TRM_RES_ICMD], max_retries);
-        } else if (dev_sem_info->hw_sem_addr[TRM_RES_MAIN_SEM & HW_SEM_ADDR_MASK]){ // lock hw semaphore
-            return lock_hw_semaphore(mf, dev_sem_info->hw_sem_addr[TRM_RES_MAIN_SEM & HW_SEM_ADDR_MASK], max_retries);
+        if (trm->dev_sem_info->vsec_sem_supported && mget_vsec_supp(trm->mf)) {
+            return lock_vsec_semaphore(trm->mf, g_vsec_sem_addr[TRM_RES_ICMD], max_retries);
+#if !defined(__FreeBSD__) && !defined(UEFI_BUILD)
+        } else if (trm->dev_sem_info->vsec_sem_supported && (dev_type & MDEVS_IB)) {
+            return lock_vs_mad_semaphore(trm, TRM_RES_ICMD, max_retries);
+#endif
+        } else if (trm->dev_sem_info->hw_sem_addr[TRM_RES_MAIN_SEM & HW_SEM_ADDR_MASK]) { // lock hw semaphore
+            return lock_hw_semaphore(trm->mf, trm->dev_sem_info->hw_sem_addr[TRM_RES_MAIN_SEM & HW_SEM_ADDR_MASK], max_retries);
         }
         break;
     case TRM_RES_FLASH_PROGRAMING:
-        if (dev_sem_info->vsec_sem_supported && mget_vsec_supp(mf)) {
-            return lock_vsec_semaphore(mf, g_vsec_sem_addr[TRM_RES_FLASH_PROGRAMING], max_retries);
+        if (trm->dev_sem_info->vsec_sem_supported && mget_vsec_supp(trm->mf)) {
+            return lock_vsec_semaphore(trm->mf, g_vsec_sem_addr[TRM_RES_FLASH_PROGRAMING], max_retries);
+#if !defined(__FreeBSD__) && !defined(UEFI_BUILD)
+        } else if (trm->dev_sem_info->vsec_sem_supported && (dev_type & MDEVS_IB)) {
+            return lock_vs_mad_semaphore(trm, TRM_RES_FLASH_PROGRAMING, max_retries);
+#endif
         }
         break;
     case TRM_RES_HCR_FLASH_PROGRAMING:
-        if (dev_sem_info->hw_sem_addr[TRM_RES_HCR_FLASH_PROGRAMING & HW_SEM_ADDR_MASK]){ // lock hw semaphore
-            return lock_hw_semaphore(mf, dev_sem_info->hw_sem_addr[TRM_RES_HCR_FLASH_PROGRAMING & HW_SEM_ADDR_MASK], max_retries);
+        if (trm->dev_sem_info->hw_sem_addr[TRM_RES_HCR_FLASH_PROGRAMING & HW_SEM_ADDR_MASK]){ // lock hw semaphore
+            return lock_hw_semaphore(trm->mf, trm->dev_sem_info->hw_sem_addr[TRM_RES_HCR_FLASH_PROGRAMING & HW_SEM_ADDR_MASK], max_retries);
         }
         break;
     case TRM_RES_HW_TRACER:
-        if (dev_sem_info->hw_sem_addr[TRM_RES_HW_TRACER & HW_SEM_ADDR_MASK]){ // lock hw semaphore
-            return lock_hw_semaphore(mf, dev_sem_info->hw_sem_addr[TRM_RES_HW_TRACER & HW_SEM_ADDR_MASK], max_retries);
+        if (trm->dev_sem_info->hw_sem_addr[TRM_RES_HW_TRACER & HW_SEM_ADDR_MASK]){ // lock hw semaphore
+            return lock_hw_semaphore(trm->mf, trm->dev_sem_info->hw_sem_addr[TRM_RES_HW_TRACER & HW_SEM_ADDR_MASK], max_retries);
         }
     break;
     default:
@@ -301,54 +464,49 @@ trm_sts trm_lock(mfile* mf, trm_resourse res, unsigned int max_retries)
 /************************************
  * Function: trm_try_lock
  ************************************/
-trm_sts trm_try_lock(mfile* mf, trm_resourse res)
+trm_sts trm_try_lock(trm_ctx trm, trm_resourse res)
 {
-    return trm_lock(mf, res, 1);
+    return trm_lock(trm, res, 1);
 }
 
 /************************************
  * Function: trm_unlock
  ************************************/
-trm_sts trm_unlock(mfile* mf, trm_resourse res)
+trm_sts trm_unlock(trm_ctx trm, trm_resourse res)
 {
-    dm_dev_id_t dev_id;
-    u_int32_t hw_dev_id;
-    u_int32_t chip_rev;
-    struct device_sem_info* dev_sem_info;
-
-    if (dm_get_device_id(mf, &dev_id, &hw_dev_id, &chip_rev)) {
-        return TRM_STS_CR_ACCESS_ERR;
-    }
-
-    dev_sem_info = get_device_sem_info(dev_id);
-
-    // Not supported device
-    if (!dev_sem_info) {
-        return TRM_STS_DEV_NOT_SUPPORTED;
-    }
+    u_int32_t dev_type = 0;
+    mget_mdevs_flags(trm->mf, &dev_type);
 
     // lock resource on appropriate ifc if supported
     switch ((int)res) {
     case TRM_RES_ICMD:
-        if (dev_sem_info->vsec_sem_supported && mget_vsec_supp(mf)) {
-            return unlock_vsec_semaphore(mf, g_vsec_sem_addr[TRM_RES_ICMD]);
-        } else if (dev_sem_info->hw_sem_addr[TRM_RES_MAIN_SEM & HW_SEM_ADDR_MASK]){ // lock hw semaphore
-            return unlock_hw_semaphore(mf, dev_sem_info->hw_sem_addr[TRM_RES_MAIN_SEM & HW_SEM_ADDR_MASK]);
+        if (trm->dev_sem_info->vsec_sem_supported && mget_vsec_supp(trm->mf)) {
+            return unlock_vsec_semaphore(trm->mf, g_vsec_sem_addr[TRM_RES_ICMD]);
+#if !defined(__FreeBSD__) && !defined(UEFI_BUILD)
+        } else if (trm->dev_sem_info->vsec_sem_supported && (dev_type & MDEVS_IB)) {
+            return release_vs_mad_semaphore(trm, TRM_RES_ICMD);
+#endif
+        } else if (trm->dev_sem_info->hw_sem_addr[TRM_RES_MAIN_SEM & HW_SEM_ADDR_MASK]){ // lock hw semaphore
+            return unlock_hw_semaphore(trm->mf, trm->dev_sem_info->hw_sem_addr[TRM_RES_MAIN_SEM & HW_SEM_ADDR_MASK]);
         }
         break;
     case TRM_RES_FLASH_PROGRAMING:
-        if (dev_sem_info->vsec_sem_supported && mget_vsec_supp(mf)) {
-                   return unlock_vsec_semaphore(mf, g_vsec_sem_addr[TRM_RES_FLASH_PROGRAMING]);
+        if (trm->dev_sem_info->vsec_sem_supported && mget_vsec_supp(trm->mf)) {
+                   return unlock_vsec_semaphore(trm->mf, g_vsec_sem_addr[TRM_RES_FLASH_PROGRAMING]);
+#if !defined(__FreeBSD__) && !defined(UEFI_BUILD)
+        } else if (trm->dev_sem_info->vsec_sem_supported && (dev_type & MDEVS_IB)) {
+            return release_vs_mad_semaphore(trm, TRM_RES_FLASH_PROGRAMING);
+#endif
         }
         break;
     case TRM_RES_HCR_FLASH_PROGRAMING:
-        if (dev_sem_info->hw_sem_addr[TRM_RES_HCR_FLASH_PROGRAMING & HW_SEM_ADDR_MASK]){ // lock hw semaphore
-            return unlock_hw_semaphore(mf, dev_sem_info->hw_sem_addr[TRM_RES_HCR_FLASH_PROGRAMING & HW_SEM_ADDR_MASK]);
+        if (trm->dev_sem_info->hw_sem_addr[TRM_RES_HCR_FLASH_PROGRAMING & HW_SEM_ADDR_MASK]){ // lock hw semaphore
+            return unlock_hw_semaphore(trm->mf, trm->dev_sem_info->hw_sem_addr[TRM_RES_HCR_FLASH_PROGRAMING & HW_SEM_ADDR_MASK]);
         }
         break;
     case TRM_RES_HW_TRACER:
-        if (dev_sem_info->hw_sem_addr[TRM_RES_HW_TRACER & HW_SEM_ADDR_MASK]){ // lock hw semaphore
-            return unlock_hw_semaphore(mf, dev_sem_info->hw_sem_addr[TRM_RES_HW_TRACER & HW_SEM_ADDR_MASK]);
+        if (trm->dev_sem_info->hw_sem_addr[TRM_RES_HW_TRACER & HW_SEM_ADDR_MASK]){ // lock hw semaphore
+            return unlock_hw_semaphore(trm->mf, trm->dev_sem_info->hw_sem_addr[TRM_RES_HW_TRACER & HW_SEM_ADDR_MASK]);
         }
     break;
     default:

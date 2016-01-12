@@ -1,4 +1,5 @@
-/* Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
+/*
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -27,8 +28,6 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
- *  Version: $Id$
  *
  */
 
@@ -127,6 +126,8 @@ void initHandler()
 
 // TODO: adrianc: change to map<mlxCfgParam, string>
 std::string MlxCfgParams::param2str[Mcp_Last]= {"SRIOV_EN", "NUM_OF_VFS", "FPP_EN",
+                                                "PF_LOG_BAR_SIZE", "VF_LOG_BAR_SIZE",
+                                                "NUM_PF_MSIX", "NUM_VF_MSIX",
                                                 "WOL_MAGIC_EN_P1", "WOL_MAGIC_EN_P2",
                                                 "WOL_MAGIC_EN",
                                                 "LINK_TYPE_P1", "LINK_TYPE_P2",
@@ -134,7 +135,6 @@ std::string MlxCfgParams::param2str[Mcp_Last]= {"SRIOV_EN", "NUM_OF_VFS", "FPP_E
                                                 "INT_LOG_MAX_PAYLOAD_SIZE",
                                                 "BOOT_PKEY_P1", "BOOT_PKEY_P2",
                                                 "LOG_DCR_HASH_TABLE_SIZE", "DCR_LIFO_SIZE",
-                                                 "PORT_BOOT_STATE_P1", "PORT_BOOT_STATE_P2",
                                                  "ROCE_NEXT_PROTOCOL",
                                                  "ROCE_CC_ALGORITHM_P1", "ROCE_CC_PRIO_MASK_P1", "ROCE_CC_ALGORITHM_P2", "ROCE_CC_PRIO_MASK_P2",
                                                  "CLAMP_TGT_RATE_P1", "CLAMP_TGT_RATE_AFTER_TIME_INC_P1", "RPG_TIME_RESET_P1",
@@ -150,6 +150,7 @@ std::string MlxCfgParams::param2str[Mcp_Last]= {"SRIOV_EN", "NUM_OF_VFS", "FPP_E
                                                  "INITIAL_ALPHA_VALUE_P2", "MIN_TIME_BETWEEN_CNPS_P2", "CNP_DSCP_P2", "CNP_802P_PRIO_P2",
                                                  "BOOT_OPTION_ROM_EN_P1", "BOOT_VLAN_EN_P1", "BOOT_RETRY_CNT_P1", "LEGACY_BOOT_PROTOCOL_P1", "BOOT_VLAN_P1",
                                                  "BOOT_OPTION_ROM_EN_P2", "BOOT_VLAN_EN_P2", "BOOT_RETRY_CNT_P2", "LEGACY_BOOT_PROTOCOL_P2", "BOOT_VLAN_P2",
+                                                 "PORT_OWNER", "ALLOW_RD_COUNTERS", "IP_VER", "IP_VER_P1", "IP_VER_P2"
                                                   };
 
 u_int32_t MlxCfgParams::getParamVal(mlxCfgParam p)
@@ -252,25 +253,47 @@ mlxCfgStatus MlxCfg::queryDevsCfg()
     return shouldFail? MLX_CFG_ERROR : MLX_CFG_OK;
 }
 
-static void printParam(u_int32_t param)
+static void printParam(string param, u_int32_t val)
 {
-    if (param == MLXCFG_UNKNOWN) {
+    if (val == MLXCFG_UNKNOWN) {
             printf("%-16s", "N/A");
         } else {
-            printf("%-16u", param);
+            if(param == "") {
+                printf("%-16d", val);
+            } else {
+                stringstream convert;
+                convert << val;
+                param += "(" + convert.str() + ")";
+                printf("%-16s", param.c_str());
+            }
         }
     return;
 }
 
-static void printOneParam(const char* name, u_int32_t currVal, bool printNewCfg=false, u_int32_t newVal= MLXCFG_UNKNOWN)
+static void printOneParam(const char* name, u_int32_t currVal, string currStrVal, bool showDefault=false, u_int32_t defaultVal=MLXCFG_UNKNOWN,
+        string defaultStrVal="MLXCFG_UNKNOWN", bool printNewCfg=false, u_int32_t newVal=MLXCFG_UNKNOWN, string newStrVal= "MLXCFG_UNKNOWN")
 {
     printf("         %-36s", name);
-    printParam(currVal);
+    if (showDefault) {
+        printParam(defaultStrVal, defaultVal);
+    }
+    printParam(currStrVal, currVal);
+    if (showDefault &&
+            currVal != defaultVal) {
+        printf("*");
+    }
     if (printNewCfg) {
         if (newVal == MLXCFG_UNKNOWN) {
-            printParam(currVal);
+            printParam(currStrVal, currVal);
         } else {
-            printf("%-16u", newVal);
+            if(newStrVal == "") {
+                printf("%-16d", newVal);
+            } else {
+                stringstream convert;
+                convert << newVal;
+                newStrVal += "(" + convert.str() + ")";
+                printf("%-16s", newStrVal.c_str());
+            }
         }
     }
     printf("\n");
@@ -302,6 +325,7 @@ mlxCfgStatus MlxCfg::queryDevCfg(const char* dev,const char* pci, int devIndex, 
     bool rc;
     bool failedToGetCfg = false;
     bool nothingSupported = true;
+    bool isParamsDiffer = false;
     (void) pci;
     // print opening
     printf("\nDevice #%d:\n", devIndex);
@@ -320,17 +344,45 @@ mlxCfgStatus MlxCfg::queryDevCfg(const char* dev,const char* pci, int devIndex, 
     }
 
     //print configuration Header
-    printf("%-16s%36s","Configurations:","Current");
+    if (_mlxParams.showDefault) {
+        printf("%-16s%36s%16s","Configurations:","Default","Current");
+    } else {
+        printf("%-16s%36s","Configurations:","Current");
+    }
     if (printNewCfg) {
         printf("         %s", "New");
     }
     printf("\n");
 
+    bool defaultSupported = false;
+    if (_mlxParams.showDefault){
+        if(ops.isDefaultSupported(defaultSupported)) {
+                return err(false, "Error when checked if Firmware supports querying default configurations or not.");
+        } else {
+            if(!defaultSupported){
+                return err(false, "Firmware does not support querying default configurations");
+            }
+        }
+    }
+
     for (int p = (int)Mcp_Sriov_En ; p < (int)Mcp_Last; ++p) {
+        if (printNewCfg) {
+            // display only cfgs we wanted to set (can be done more efficient)
+            std::vector<cfgInfo>::iterator it;
+            for (it = _mlxParams.params.begin(); it != _mlxParams.params.end(); it++) {
+                if (it->first == (mlxCfgParam)p) {
+                    break;
+                }
+            }
+            if (it == _mlxParams.params.end()) {
+                continue;
+            }
+        }
         if (!ops.supportsParam((mlxCfgParam)p)) {
             continue;
         }
         nothingSupported= false;
+        u_int32_t defaultParam = MLXCFG_UNKNOWN;
         u_int32_t currentParam = MLXCFG_UNKNOWN ;
         u_int32_t newParam = _mlxParams.getParamVal((mlxCfgParam)p);
         rc = ops.getCfg((mlxCfgParam)p, currentParam);
@@ -338,10 +390,32 @@ mlxCfgStatus MlxCfg::queryDevCfg(const char* dev,const char* pci, int devIndex, 
             failedToGetCfg = true;
             printf("         %-16s%-16s %s\n", MlxCfgParams::param2str[p].c_str(), "failed to get current configuration.",\
                     ops.err());
-            err(false, "Failed to query device configuration");
+            err(false, "Failed to query device current configuration");
         } else {
-            printOneParam(MlxCfgParams::param2str[p].c_str(), currentParam, printNewCfg, newParam);
+            if (_mlxParams.showDefault) {
+                rc = ops.getCfg((mlxCfgParam)p, defaultParam, true);
+                if (rc) {
+                    failedToGetCfg = true;
+                    err(false, "Failed to query device default configuration");
+                } else {
+                    isParamsDiffer |= (defaultParam != currentParam);
+                }
+            }
+            MlxCfgParamParser paramParser;
+            if(_allInfo.getParamParser((mlxCfgParam)p, paramParser) == MLX_CFG_OK){
+                string defaultParamStr = paramParser.getStrVal(defaultParam);
+                string currentParamStr = paramParser.getStrVal(currentParam);
+                string newParamStr = paramParser.getStrVal(newParam);
+                printOneParam(MlxCfgParams::param2str[p].c_str(), currentParam, currentParamStr, _mlxParams.showDefault,
+                        defaultParam, defaultParamStr, printNewCfg, newParam, newParamStr);
+            } else {
+                failedToGetCfg = true;
+                err(false, "Internal Error");
+            }
         }
+    }
+    if(isParamsDiffer) {
+        printf("The '*' shows parameters with current value different from default value.\n");
     }
     if (nothingSupported) {
         err(false, "Device Doesn't support any configuration changes.");
@@ -461,7 +535,7 @@ mlxCfgStatus MlxCfg::clrDevSem()
     MlxCfgOps ops;
     bool rc;
 
-    printf("-W- Forcefully clearing device Semaphore(47)...");
+    printf("-W- Forcefully clearing device Semaphore...");
 
     rc = ops.open(_mlxParams.device.c_str(), true);
     if (rc) {

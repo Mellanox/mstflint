@@ -28,7 +28,6 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
  */
 
 #include <stdio.h>
@@ -40,6 +39,7 @@
 #include <bit_slice.h>
 #include <common/tools_utils.h>
 #include "mtcr_icmd_cif.h"
+#include "mtcr_ib_res_mgt.h"
 
 //#define _DEBUG_MODE   // un-comment this to enable debug prints
 
@@ -50,8 +50,8 @@
 #define STAT_CFG_NOT_DONE_ADDR_CIB   0xb0004
 #define STAT_CFG_NOT_DONE_ADDR_CX4   0xb0004
 #define STAT_CFG_NOT_DONE_ADDR_SW_IB   0x80010
-#define STAT_CFG_NOT_DONE_BITOFF_CIB 31
-#define STAT_CFG_NOT_DONE_BITOFF_CX4 31
+#define STAT_CFG_NOT_DONE_BITOFF_CIB   31
+#define STAT_CFG_NOT_DONE_BITOFF_CX4   31
 #define STAT_CFG_NOT_DONE_BITOFF_SW_IB 0
 #define BUSY_BITOFF         0
 #define BUSY_BITLEN         1
@@ -59,7 +59,6 @@
 #define OPCODE_BITLEN       16
 #define STATUS_BITOFF       8
 #define STATUS_BITLEN       8
-
 #define VCR_CTRL_ADDR       0x0
 #define VCR_SEMAPHORE62     0x0 // semaphore Domain
 #define VCR_CMD_ADDR        0x100000 // mailbox addr
@@ -87,19 +86,19 @@
  */
 #define SET_SPACE_FOR_ICMD_ACCESS(mf)   \
     if (mf->vsec_supp) {               \
-        mf->address_space = AS_ICMD;   \
+        mset_addr_space(mf, AS_ICMD);   \
     }
 #define SET_SPACE_FOR_SEMAPHORE_ACCESS(mf)   \
     if (mf->vsec_supp) {               \
-        mf->address_space = AS_SEMAPHORE;   \
+        mset_addr_space(mf, AS_SEMAPHORE);   \
     }
-#define RESTORE_SPACE(mf) mf->address_space = AS_CR_SPACE
+#define RESTORE_SPACE(mf) mset_addr_space(mf, AS_CR_SPACE)
 
 #define MWRITE4_ICMD(mf, offset, value, action_on_fail)\
     do {\
         SET_SPACE_FOR_ICMD_ACCESS(mf);\
         if (mwrite4(mf, offset, value) != 4) {\
-            mf->address_space = AS_CR_SPACE;\
+            mset_addr_space(mf, AS_CR_SPACE);\
             action_on_fail;\
         }\
         RESTORE_SPACE(mf);\
@@ -160,7 +159,6 @@
     }while(0)
 
 
-
 #ifdef _DEBUG_MODE
 #define DBG_PRINTF(...) fprintf(stderr, __VA_ARGS__)
 #else
@@ -182,8 +180,10 @@ enum {
 #define CIB_HW_ID 511
 #define CX4_HW_ID 521
 #define CX4LX_HW_ID 523
+#define CX5_HW_ID 525
 #define SW_IB_HW_ID 583
 #define SW_EN_HW_ID 585
+#define SW_IB2_HW_ID 587
 
 #define GET_ADDR(mf, addr_cib, addr_cx4, addr_sw_ib, addr)\
     do {\
@@ -192,10 +192,12 @@ enum {
         switch (_hw_id & 0xffff) {\
         case (CX4_HW_ID):\
         case (CX4LX_HW_ID):\
+        case (CX5_HW_ID):\
             addr = addr_cx4;\
             break;\
         case (SW_IB_HW_ID):\
         case (SW_EN_HW_ID):\
+        case (SW_IB2_HW_ID):\
             addr = addr_sw_ib;\
             break;\
         default:\
@@ -316,17 +318,19 @@ static int icmd_is_cmd_ifc_ready(mfile *mf) {
     return (bit_val == expected_val) ?  ME_OK: ME_ICMD_STATUS_ICMD_NOT_READY;
 }
 
+#define SMP_ICMD_SEM_ADDR 0x0
+
 /*
  * icmd_clear_semaphore
  */
-int icmd_clear_semaphore(mfile *mf) {
+int icmd_clear_semaphore(mfile *mf)
+{
     DBG_PRINTF("Clearing semaphore\n");
     // open icmd interface by demand
-	int ret;
-	if ((ret = icmd_open(mf))) {
-		return ret;
-	}
-
+    int ret;
+    if ((ret = icmd_open(mf))) {
+        return ret;
+    }
     MWRITE4_SEMAPHORE(mf, mf->icmd.semaphore_addr, 0, return ME_ICMD_STATUS_CR_FAIL);
     mf->icmd.took_semaphore = 0;
     return ME_OK;
@@ -335,20 +339,18 @@ int icmd_clear_semaphore(mfile *mf) {
 /*
  * icmd_take_semaphore
  */
-/*
- * icmd_take_semaphore
- */
+
 static int icmd_take_semaphore_com(mfile *mf, u_int32_t expected_read_val)
 {
     u_int32_t read_val;
     unsigned retries = 0;
 
     DBG_PRINTF("Taking semaphore...\n");
-
      do {    // loop while the semaphore is taken by someone else
          if (++retries > 256) {
              return ME_ICMD_STATUS_SEMAPHORE_TO;
          }
+
          if (mf->vsec_supp) {
              //write expected val before reading it
              MWRITE4_SEMAPHORE(mf, mf->icmd.semaphore_addr, expected_read_val, return ME_ICMD_STATUS_CR_FAIL);
@@ -450,13 +452,6 @@ cleanup:
     return ret;
 }
 
-
-static int icmd_init_cr(mfile *mf)
-{
-    (void)mf;
-    return ME_NOT_IMPLEMENTED;
-}
-
 static int icmd_init_vcr(mfile* mf)
 {
      mf->icmd.cmd_addr = VCR_CMD_ADDR;
@@ -486,13 +481,12 @@ int icmd_open(mfile *mf)
     }
 
     mf->icmd.took_semaphore = 0;
+    mf->icmd.ib_semaphore_lock_supported = 0;
     // attempt to open via CR-Space
 #if defined(MST_UL) && !defined(MST_UL_ICMD)
     if (mf->vsec_supp) {
         return icmd_init_vcr(mf);
     }
-    // ugly hack avoid compiler warrnings
-    if (0) icmd_init_cr(mf);
     return ME_ICMD_NOT_SUPPORTED;
 #else
     if (mf->vsec_supp) {

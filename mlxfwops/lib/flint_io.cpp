@@ -217,7 +217,7 @@ bool Flash::open_com_checks(const char *device, int rc, bool force_lock)
 
     if (rc != MFE_OK) {
         if (rc == MFE_SEM_LOCKED) {
-            return errmsgAdv(_advErrors, "Can not obtain Flash semaphore (63).", "You can run \"flint -clear_semaphore -d <device>\" to force semaphore unlock. See help for details.");
+            return errmsgAdv(_advErrors, "Can not obtain Flash semaphore.", "You can run \"flint -clear_semaphore -d <device>\" to force semaphore unlock. See help for details.");
         }
         if (rc == MFE_LOCKED_CRSPACE) {
             _cr_space_locked = 1;
@@ -237,6 +237,7 @@ bool Flash::open_com_checks(const char *device, int rc, bool force_lock)
     if (rc != MFE_OK) {
         return errmsg("Failed getting flash attributes for device %s: %s", device,  mf_err2str(rc));
     }
+    _curr_sector_size = _attr.sector_size;
 
     rc = mf_set_opt(_mfl, MFO_NO_VERIFY, _no_flash_verify? 1: 0);
     if (rc != MFE_OK) {
@@ -244,10 +245,8 @@ bool Flash::open_com_checks(const char *device, int rc, bool force_lock)
     }
 
 
-    if (_attr.hw_dev_id == 435 || _attr.hw_dev_id == SWITCHX_HW_ID) {
+    if (_attr.hw_dev_id == SWITCHX_HW_ID) {
         _port_num = 0;
-    } else if (_attr.hw_dev_id == 25204 || _attr.hw_dev_id == 24204) {
-        _port_num = 1;
     } else {
         _port_num = 2;
     }
@@ -255,15 +254,14 @@ bool Flash::open_com_checks(const char *device, int rc, bool force_lock)
 }
 
 bool Flash::set_no_flash_verify(bool val) {
-
-	_no_flash_verify = val;
-	int rc;
-	if (_mfl) {
-		rc = mf_set_opt(_mfl, MFO_NO_VERIFY, val? 1: 0);
-		if (rc != MFE_OK) {
-			return errmsg("Failed setting no flash verify on device: %s", mf_err2str(rc));
-			}
-	}
+    int rc;
+    if (_mfl) {
+        rc = mf_set_opt(_mfl, MFO_NO_VERIFY, val? 1: 0);
+        if (rc != MFE_OK) {
+            return errmsg("Failed setting no flash verify on device: %s", mf_err2str(rc));
+            }
+    }
+    _no_flash_verify = val;
     return true;
 }
 
@@ -423,7 +421,21 @@ bool Flash::write_phy(u_int32_t phy_addr, void* data, int cnt, bool noerase)
 {
     // Avoid warning
     (void)noerase;
+    NATIVE_PHY_ADDR_FUNC(write, (phy_addr, data, cnt));
+}
+
+bool Flash::read_modify_write_phy(u_int32_t phy_addr, void* data, int cnt, bool noerase)
+{
+    // Avoid warning
+    (void)noerase;
     NATIVE_PHY_ADDR_FUNC(write_with_erase, (phy_addr, data, cnt));
+}
+
+bool Flash::read_modify_write(u_int32_t phy_addr, void* data, int cnt, bool noerase)
+{
+    // Avoid warning
+    (void)noerase;
+    return write_with_erase(phy_addr, data, cnt);
 }
 
 bool Flash::erase_sector_phy  (u_int32_t phy_addr)
@@ -438,7 +450,6 @@ bool Flash::write  (u_int32_t addr,
                     int       cnt,
                     bool      noerase)
 {
-
     // FIX:
     noerase = _no_erase || noerase;
 
@@ -459,7 +470,7 @@ bool Flash::write  (u_int32_t addr,
     }
 
     u_int8_t         *p = (u_int8_t *)data;
-    u_int32_t sect_size = get_sector_size();
+    u_int32_t sect_size = get_current_sector_size();
 
     u_int32_t chunk_addr;
     u_int32_t chunk_size;
@@ -544,8 +555,7 @@ bool Flash::write(u_int32_t addr, u_int32_t data)
 
 bool Flash::write_sector_with_erase(u_int32_t addr, void *data, int cnt)
 {
-
-    u_int32_t sector_size = _attr.sector_size;
+    u_int32_t sector_size = get_current_sector_size();
     u_int32_t sector_mask = ~(sector_size - 1);
 
     u_int32_t sector = addr & sector_mask;
@@ -560,9 +570,8 @@ bool Flash::write_sector_with_erase(u_int32_t addr, void *data, int cnt)
     if (!read(sector, &buff[0] , sector_size)) {
         return false;
     }
-
     if (!erase_sector(sector)) {
-        return false;
+            return false;
     }
 
     memcpy(&buff[word_in_sector], data, cnt);
@@ -578,8 +587,9 @@ bool Flash::write_with_erase(u_int32_t addr, void *data, int cnt)
     u_int32_t currAddr = addr;
     u_int32_t alreadyWritten = 0;
     u_int32_t sizeUntillEndOfSector = 0;
+    u_int32_t sector_size = get_current_sector_size();
     while (towrite > 0) {
-        sizeUntillEndOfSector = _attr.sector_size - (currAddr & (_attr.sector_size - 1));
+        sizeUntillEndOfSector = sector_size - (currAddr & (sector_size - 1));
         currSize = towrite >  sizeUntillEndOfSector ? sizeUntillEndOfSector : towrite;
         if (!write_sector_with_erase(currAddr, ((u_int8_t*)data + alreadyWritten), currSize)) {
             return false;
@@ -593,10 +603,15 @@ bool Flash::write_with_erase(u_int32_t addr, void *data, int cnt)
 
 bool Flash::erase_sector  (u_int32_t addr) {
     int rc;
-
     u_int32_t phys_addr = cont2phys(addr);
     mft_signal_set_handling(1);
-    rc = mf_erase_sector(_mfl, phys_addr);
+    if (_flash_working_mode == Flash::Fwm_4KB) {
+        rc = mf_erase_4k_sector(_mfl, phys_addr);
+    } else if (_flash_working_mode == Flash::Fwm_64KB) {
+        rc = mf_erase_64k_sector(_mfl, phys_addr);
+    } else {
+        rc = mf_erase(_mfl, phys_addr);
+    }
     deal_with_signal();
     if (rc != MFE_OK) {
         if (rc == MFE_REG_ACCESS_RES_NOT_AVLBL || rc == MFE_REG_ACCESS_BAD_PARAM) {
@@ -811,4 +826,39 @@ void Flash::deal_with_signal()
     return;
 }
 
+#define FLINT_ERASE_SIZE_HOOK "FLINT_ERASE_SIZE"
+bool Flash::set_flash_working_mode(int mode)
+{
+    if (!_attr.support_sub_and_sector && mode != Flash::Fwm_Default) {
+        return errmsg("Changing Flash IO working mode not supported.");
+    }
+    // Verification Hook
+    if (_attr.support_sub_and_sector) {
+        char* flint_io_env = getenv(FLINT_ERASE_SIZE_HOOK);
+        if (flint_io_env) {
+            int num =  strtoul(flint_io_env, (char**)NULL, 0);
+            if (num == 0x1000 || num == 0x10000) {
+                _curr_sector_size = (u_int32_t)num;
+                _flash_working_mode = _curr_sector_size == 0x1000 ? Flash::Fwm_4KB : Flash::Fwm_64KB;
+                _curr_sector = _curr_sector & ~(_curr_sector_size - 1);
+                return true;
+            }
+        }
+    }
+    // Verification Hook end
 
+    if (mode == Flash::Fwm_Default) {
+        _curr_sector_size = _attr.sector_size;
+        _flash_working_mode = Flash::Fwm_Default;
+    } else if (mode == Flash::Fwm_4KB) {
+        _curr_sector_size = 0x1000;
+        _flash_working_mode = Flash::Fwm_4KB;
+    } else if (mode == Flash::Fwm_64KB) {
+        _curr_sector_size = 0x10000;
+        _flash_working_mode = Flash::Fwm_64KB;
+    } else {
+        return errmsg("Unknown Flash IO working mode: 0x%x", mode);
+    }
+    _curr_sector = _curr_sector & ~(_curr_sector_size - 1);
+    return true;
+}

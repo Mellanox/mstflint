@@ -34,11 +34,11 @@
 #ifndef FS3_OPS_
 #define FS3_OPS_
 
-// #include "flint_base.h"
-#include "fw_ops.h"
 #include <cibfw_layouts.h>
 #include <cx4fw_layouts.h>
-
+#include <tools_open_layouts.h>
+#include "fw_ops.h"
+#include "aux_tlv_ops.h"
 
 
 class Fs3Operations : public FwOperations {
@@ -74,6 +74,10 @@ public:
     virtual bool FwShiftDevData(PrintCallBack progressFunc=(PrintCallBack)NULL);
     virtual const char*  FwGetResetRecommandationStr();
     virtual bool CheckCX4Device() {return (CheckAndFixCX4() && FixCX4WriteProtection());}
+    virtual bool FwCalcMD5(u_int8_t md5sum[16]);
+    virtual bool FwSetTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer);
+    virtual bool FwQueryTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer, bool queryRunning=false);
+    virtual bool FwResetTimeStamp();
 
 
 private:
@@ -185,10 +189,10 @@ private:
     bool Fs3AddSection(fs3_section_t sectionType, fs3_section_t neighbourSection, u_int32_t* newSectData, u_int32_t newSectSize,
             ProgressCallBack progressFunc);
     bool CheckFs3ImgSize(Fs3Operations& imageOps, bool useImageDevData=false);
-    bool GetMaxImageSize(u_int32_t flash_size, bool image_is_fs, u_int32_t &max_image_size);
     bool CheckItocArray();
     bool CheckItocArrConsistency(std::vector<struct toc_info*>& sortedTocVec, u_int32_t imageStartAddr);
     bool CheckBinVersion(u_int8_t binVerMajor, u_int8_t binVerMinor);
+    bool getRunningFwVersion();
 
     u_int32_t getAbsAddr(toc_info* toc);
     u_int32_t getAbsAddr(toc_info* toc, u_int32_t imgStart);
@@ -196,6 +200,9 @@ private:
     bool getFirstDevDataAddr(u_int32_t& firstAddr);
     bool reburnItocSection(PrintCallBack callBackFunc);
     bool Fs3IsfuActivateImage(u_int32_t newImageStart);
+
+    bool TestAndSetTimeStamp(Fs3Operations &imageOps);
+    Tlv_Status_t GetTsObj(TimeStampIFC** tsObj);
 
     bool CheckAndFixCX4(bool justCheck=true);
     bool FixCX4Uids();
@@ -211,9 +218,6 @@ private:
     private:
     	u_int32_t _startAdd;
     };
-
-
-
 
     // Members
     static const SectionInfo _fs3SectionsInfoArr[];

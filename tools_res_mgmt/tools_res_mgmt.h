@@ -44,7 +44,8 @@ typedef enum {
     TRM_STS_IFC_NA,
     TRM_STS_DEV_NOT_SUPPORTED,
     TRM_STS_RES_NOT_SUPPORTED,
-    TRM_STS_CR_ACCESS_ERR
+    TRM_STS_CR_ACCESS_ERR,
+    TRM_STS_MEM_ERROR
 } trm_sts;
 
 typedef enum {
@@ -59,6 +60,25 @@ typedef enum {
     TRM_RES_ALL                  = 0xffff,
 } trm_resourse;
 
+typedef struct trm_t* trm_ctx;
+
+
+/*
+ * Create tools resource context
+ * trm_p: trm_ctx pointer to be allocated
+ * Parameter (mf)  - an opened mst device handler
+ * Return TOOLS_STS_OK on success of creating the context, otherwise any other error code.
+ */
+trm_sts trm_create(trm_ctx* trm_p, mfile* mf);
+
+
+/*
+ * Destroy the context
+ * trm: trm_ctx to be destroyed
+ * Return TOOLS_STS_OK on success of destroying the context, otherwise any other error code.
+ */
+trm_sts trm_destroy(trm_ctx trm);
+
 /*
  * Lock tools resource
  * Parameter (mf)  - an opened mst device handler
@@ -66,7 +86,7 @@ typedef enum {
  * Parameter (max_retry) - max retry count before declaring resource busy.
  * Return TOOLS_STS_OK on success of locking all the desired resources, otherwise any other error code.
  */
-trm_sts trm_lock(mfile* mf, trm_resourse res, unsigned int max_retry);
+trm_sts trm_lock(trm_ctx trm, trm_resourse res, unsigned int max_retry);
 
 /*
  * Try to lock tools resource (returns immediately if resource busy)
@@ -74,7 +94,7 @@ trm_sts trm_lock(mfile* mf, trm_resourse res, unsigned int max_retry);
  * Parameter (res) - resource to acquire.
  * Return TOOLS_STS_OK on success of locking all the desired resources, otherwise any other error code.
  */
-trm_sts trm_try_lock(mfile* mf, trm_resourse res);
+trm_sts trm_try_lock(trm_ctx trm, trm_resourse res);
 
 /*
  * Unlock tools resource
@@ -82,7 +102,7 @@ trm_sts trm_try_lock(mfile* mf, trm_resourse res);
  * Parameter (res) - resource to release.
  * Return TOOLS_STS_OK if all given resources were unlocked successfully.
  */
-trm_sts trm_unlock(mfile* mf, trm_resourse res);
+trm_sts trm_unlock(trm_ctx trm, trm_resourse res);
 
 /*
  * Translate tools_sem_mgmt_sts status code to a human readable string.

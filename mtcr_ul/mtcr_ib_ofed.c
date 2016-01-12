@@ -584,7 +584,7 @@ int mib_open(const char *name, mfile *mf, int mad_init)
     ib_portid_t *sm_id           = 0;
     int          ca_port         = 0;
     int          dest_type       = IB_DEST_LID;
-    ibvs_mad    *ivm;
+    ibvs_mad    *ivm             = NULL;
     char        *nbuf            = NULL;
     char        *path_str, *p;
     int          rc              = -1;
@@ -594,6 +594,11 @@ int mib_open(const char *name, mfile *mf, int mad_init)
     char* first_comma;
     char* second_comma;
     //ibdebug = 1;
+    if (!mf || !name) {
+        IBERROR(("Bad(null) device argument for inband access"));
+        errno = EINVAL;
+        goto end;
+    }
     if (!(ivm=(ibvs_mad*)malloc(sizeof(ibvs_mad))))
     {
         IBERROR(("can't allocate ibvsmad_mfile"));
@@ -759,15 +764,17 @@ end:
 int
 mib_close(mfile *mf)
 {
-    if (mf->ctx) {
-    // TODO: free the ddl handlers
-        ibvs_mad* h = (ibvs_mad*)(mf->ctx);
-        h->mad_rpc_close_port(h->srcport);
-#ifndef IBVSMAD_DLOPEN
-        free_dll_handle(mf);
-#endif
-        free(mf->ctx);
-        mf->ctx = NULL;
+    if (mf) {
+        if (mf->ctx) {
+        // TODO: free the ddl handlers
+            ibvs_mad* h = (ibvs_mad*)(mf->ctx);
+            h->mad_rpc_close_port(h->srcport);
+    #ifndef IBVSMAD_DLOPEN
+            free_dll_handle(mf);
+    #endif
+            free(mf->ctx);
+            mf->ctx = NULL;
+        }
     }
     return 0;
 }
@@ -782,6 +789,10 @@ mib_close(mfile *mf)
 
 int mib_get_chunk_size(mfile *mf)
 {
+    if (!mf || !mf->ctx) {
+        IBERROR(("get chunk size failed. Null Param."));
+        return -1;
+    }
     ibvs_mad* h = (ibvs_mad*)(mf->ctx);
     if (h->use_smp) {
         return MAX_IB_SMP_DATA_SIZE;
@@ -797,6 +808,10 @@ int mib_get_chunk_size(mfile *mf)
 int
 mib_read4(mfile *mf, u_int32_t memory_address, u_int32_t *data)
 {
+    if (!mf || !mf->ctx || !data) {
+        IBERROR(("cr access read failed. Null Param."));
+        return -1;
+    }
     ibvs_mad* h = (ibvs_mad*)(mf->ctx);
 
     DEBUG(("mread4 of 0x%08x", memory_address));
@@ -807,10 +822,6 @@ mib_read4(mfile *mf, u_int32_t memory_address, u_int32_t *data)
     return 4;
 }
 
-
-
-
-
 /********************************************************
 **
 *    Write an IS3 CR-Space 32 bit register
@@ -819,6 +830,10 @@ mib_read4(mfile *mf, u_int32_t memory_address, u_int32_t *data)
 int
 mib_write4(mfile *mf, u_int32_t memory_address, u_int32_t _data)
 {
+    if (!mf || !mf->ctx) {
+        IBERROR(("cr access write failed. Null Param."));
+        return -1;
+    }
     ibvs_mad* h = (ibvs_mad*)(mf->ctx);
 
     u_int32_t data = _data;
@@ -833,6 +848,10 @@ mib_write4(mfile *mf, u_int32_t memory_address, u_int32_t _data)
 
 MTCR_API int mib_readblock(mfile *mf, unsigned int offset, u_int32_t *data, int length)
 {
+    if (!mf || !mf->ctx || !data) {
+        IBERROR(("cr access read failed. Null Param."));
+        return -1;
+    }
     ibvs_mad* h = (ibvs_mad*)(mf->ctx);
 
     CHECK_ALLIGN(length);
@@ -846,6 +865,10 @@ MTCR_API int mib_readblock(mfile *mf, unsigned int offset, u_int32_t *data, int 
 }
 MTCR_API int mib_writeblock(mfile *mf, unsigned int offset, u_int32_t *data, int length)
 {
+    if (!mf || !mf->ctx || !data) {
+        IBERROR(("cr access write failed. Null Param."));
+        return -1;
+    }
     ibvs_mad* h = (ibvs_mad*)(mf->ctx);
 
     CHECK_ALLIGN(length);
@@ -883,6 +906,12 @@ int is_node_managed(ibvs_mad* h)
 int
 mib_swreset(mfile *mf)
 {
+    if (!mf || !mf->ctx) {
+        errno = EINVAL;
+        IBERROR(("swreset write failed. Null Param."));
+        return -1;
+    }
+
     u_int32_t swreset_timer = 15;
     char* ep;
     char* swreset_env;
@@ -951,6 +980,10 @@ static int mib_status_translate(int status)
 
 int mib_acces_reg_mad(mfile *mf, u_int8_t *data)
 {
+    if (!mf || !mf->ctx || !data) {
+        IBERROR(("mib_acces_reg_mad failed. Null Param."));
+        return ME_BAD_PARAMS;
+    }
     u_int8_t* p;
     ibvs_mad* h = (ibvs_mad*)(mf->ctx);
     int status = -1;
@@ -974,6 +1007,10 @@ int mib_acces_reg_mad(mfile *mf, u_int8_t *data)
 
 int mib_smp_set(mfile* mf, u_int8_t* data, u_int16_t attr_id, u_int32_t attr_mod)
 {
+    if (!mf || !mf->ctx || !data) {
+        IBERROR(("mib_smp_set failed. Null Param."));
+        return ME_BAD_PARAMS;
+    }
     u_int8_t* p;
     int status = -1;
     ibvs_mad* h = (ibvs_mad*)(mf->ctx);
@@ -996,6 +1033,10 @@ int mib_smp_set(mfile* mf, u_int8_t* data, u_int16_t attr_id, u_int32_t attr_mod
 
 int mib_smp_get(mfile* mf, u_int8_t* data, u_int16_t attr_id, u_int32_t attr_mod)
 {
+    if (!mf || !mf->ctx || !data) {
+        IBERROR(("mib_smp_get failed. Null Param."));
+        return ME_BAD_PARAMS;
+    }
     u_int8_t* p;
     int status = -1;
     ibvs_mad* h = (ibvs_mad*)(mf->ctx);

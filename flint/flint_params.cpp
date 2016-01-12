@@ -48,7 +48,6 @@ FlintParams::FlintParams()
     mac_specified = false;
     macs_specified = false;
     uid_specified = false;
-    uids_specified = false;
     device_specified = false;
     blank_guids = false;
     clear_semaphore = false;
@@ -81,6 +80,7 @@ FlintParams::FlintParams()
     baseUid.l = 0;
     flash_params.num_of_flashes = 0;
     flash_params.log2size = 0;
+    use_dev_img_info = false;
 }
 
 FlintParams::~FlintParams()

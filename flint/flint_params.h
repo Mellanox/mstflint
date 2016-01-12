@@ -76,7 +76,9 @@ typedef enum {
     SC_Rb,
     SC_Clear_Sem,
     SC_Fix_Img,
-    SC_Qrom
+    SC_Qrom,
+    SC_Check_Sum,
+    SC_Time_Stamp
 } sub_cmd_t;
 
 class FlintParams {
@@ -93,9 +95,7 @@ public:
     bool macs_specified;
     std::vector<guid_t> user_macs;
     bool uid_specified;
-    bool uids_specified;
     guid_t baseUid;
-    std::vector<guid_t> user_uids;
     bool help;
     bool version;
     bool extended_help;
@@ -131,6 +131,7 @@ public:
     sub_cmd_t cmd;
     vector<string> cmd_params;
     string fullCmd;
+    bool use_dev_img_info;
 };
 
 #endif

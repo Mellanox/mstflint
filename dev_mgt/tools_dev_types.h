@@ -1,4 +1,5 @@
-/* Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
+/*
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -27,9 +28,6 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
- *  Version: $Id$
- *
  */
 
 #ifndef TOOLS_DEV_TYPE_H
@@ -45,19 +43,21 @@ extern "C" {
 
 enum dm_dev_id
 {
+    DeviceUnknown = -1,       //Dummy Device - Marker for indicating error.
     DeviceStartMarker = 0,    // Dummy Device - Marker for first device
                               // to let user iterate from DeviceStartMarker to DeviceEndMarker
+                              // Note: Call dm_is_device_supported() to see if a device is supported by the lib.
 
-    DeviceInfiniScale = 0,
-    DeviceInfiniHost,
-    DeviceInfiniHostIIIEx,
-    DeviceInfiniHostIIIEx_MF,
-    DeviceInfiniScaleIII,
-    DeviceInfiniHostIIILx,
-    DeviceConnectX,
-    DeviceConnectX2,
-    DeviceInfiniScaleIV,
-    DeviceBridgeX,
+    DeviceInfiniScale = 0,  // UnSupported
+    DeviceInfiniHost,       // UnSupported
+    DeviceInfiniHostIIIEx,  // UnSupported
+    DeviceInfiniHostIIIEx_MF,// UnSupported
+    DeviceInfiniScaleIII,   // UnSupported
+    DeviceInfiniHostIIILx,  // UnSupported
+    DeviceConnectX,         // UnSupported
+    DeviceConnectX2,        // UnSupported
+    DeviceInfiniScaleIV,    // UnSupported
+    DeviceBridgeX,          // UnSupported
     DeviceSwitchX,
     DeviceConnectX3,
     DeviceConnectIB,
@@ -66,9 +66,13 @@ enum dm_dev_id
     DeviceSpectrum,
     DeviceConnectX4,
     DeviceConnectX4LX,
+    DeviceConnectX5,
     DeviceFPGA,
+    DeviceSwitchIB2,
+    DeviceFPGANewton,
+    DeviceDummy,
 
-    DeviceEndMarker           // Dummy Device - Marker for indicating error and end of devices
+    DeviceEndMarker           // Dummy Device - Marker for indicating end of devices when iterating
 };
 
 typedef enum dm_dev_id dm_dev_id_t;
@@ -88,10 +92,22 @@ int dm_get_device_id_offline(u_int32_t devid,
                              u_int32_t chip_rev,
                              dm_dev_id_t* ptr_dev_type);
 
+
+/**
+ * Returns 1 if device is supported and 0 otherwise (library dependant)
+ */
+int dm_is_device_supported(dm_dev_id_t type);
+
+
 /**
  * Returns the device name as a "const char*"
  */
 const char* dm_dev_type2str(dm_dev_id_t type);
+
+/**
+ * Returns the device id
+ */
+dm_dev_id_t dm_dev_str2type(const char* str);
 
 /**
  * A predicate returning if the device is an hca

@@ -1,4 +1,5 @@
-/* Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
+/*
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -27,9 +28,6 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
- *  Version: $Id$
- *
  */
 
 #ifndef MFLASH_COMMON_STRUCTS_H
@@ -84,11 +82,6 @@ typedef struct flash_attr {
     u_int32_t sector_size;
 
     int       num_erase_blocks;         // Number of sector defs.
-    struct {
-        unsigned long sector_size;      // Byte size of sector
-        int           num_sectors;      // Num sectors of this size
-        u_int32_t     sector_mask;      // Sector mask
-    } erase_block[8];
 
     //
     // bank_size:   Different bank means a different chip sellect or gpio settings is needed when crossing
@@ -127,8 +120,25 @@ typedef struct flash_attr {
     // the flash sector size as seen by FW
     u_int32_t fw_flash_sector_sz;
 
+    u_int8_t support_sub_and_sector; // true if flash can work in both 64KB and 4KB sectors
+
 
 } flash_attr;
+
+typedef struct flash_info {
+    const char *name;
+    u_int8_t vendor;
+    u_int8_t type;
+    int command_set;
+    int erase_command;
+    u_int32_t sector_size;
+    u_int8_t support_sub_and_sector;
+    u_int8_t quad_en_support;
+    u_int8_t write_protected_support;
+    u_int8_t protect_sub_and_sector;
+    u_int8_t dummy_cycles_support;
+} flash_info_t;
+
 
 #endif // MFLASH_COMMON_STRUCTS_H
 

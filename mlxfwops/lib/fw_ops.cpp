@@ -376,14 +376,6 @@ bool FwOperations::CntxFindAllImageStart (FBase* ioAccess, u_int32_t start_locat
 
     needed_pos_num = CNTX_START_POS_SIZE;
 
-    if (ioAccess->is_flash()) {
-        if ( (((Flash*)ioAccess)->get_dev_id() == 400) ||
-             (((Flash*)ioAccess)->get_dev_id() == 435) ||
-             (((Flash*)ioAccess)->get_dev_id() == 6100)) {
-            needed_pos_num = OLD_CNTX_START_POS_SIZE;
-        }
-    }
-
     /* WA: due to bug on SwichIB first GA FW (FW doesnt look at chip select field in mfba)
     *     when reading from flash address 0x400000 it wraps around to 0x0 causing more than one
     *     valid image to be found. as a WA we dont check at 0x400000. basic flash operations
@@ -520,6 +512,8 @@ bool FwOperations::FwAccessCreate(fw_ops_params_t& fwParams, FBase **ioAccessP)
         }
         //set no flash verify if needed (default =false)
         ((Flash*)*ioAccessP)->set_no_flash_verify(fwParams.noFlashVerify);
+        // work with 64KB sector size if possible to increase performace in full fw burn
+        (((Flash*)*ioAccessP)->set_flash_working_mode(Flash::Fwm_64KB));
      } else {
          WriteToErrBuff(fwParams.errBuff,"Unknown Handle Type.", fwParams.errBuffSize);
          return false;
@@ -529,18 +523,17 @@ bool FwOperations::FwAccessCreate(fw_ops_params_t& fwParams, FBase **ioAccessP)
 
 u_int8_t FwOperations::CheckFwFormat(FBase& f, bool getFwFormatFromImg) {
     if (f.is_flash() && !getFwFormatFromImg) {
-        if (  ( ((Flash*)&f)->get_dev_id() == 400)              ||
-                ( ((Flash*)&f)->get_dev_id() == 435)              ||
-                ( ((Flash*)&f)->get_dev_id() == CX3_HW_ID)        ||
+        if (    ( ((Flash*)&f)->get_dev_id() == CX3_HW_ID)        ||
                 ( ((Flash*)&f)->get_dev_id() == SWITCHX_HW_ID)    ||
-                ( ((Flash*)&f)->get_dev_id() == 6100) ||
                 ( ((Flash*)&f)->get_dev_id() == CX3_PRO_HW_ID)) {
             return FS_FS2_GEN;
         } else if ( (((Flash*)&f)->get_dev_id() == CONNECT_IB_HW_ID) ||
                     (((Flash*)&f)->get_dev_id() == SWITCH_IB_HW_ID)  ||
                     (((Flash*)&f)->get_dev_id() == CX4_HW_ID)        ||
                     (((Flash*)&f)->get_dev_id() == CX4LX_HW_ID)      ||
-                    (((Flash*)&f)->get_dev_id() == SPECTRUM_HW_ID)) {
+                    (((Flash*)&f)->get_dev_id() == CX5_HW_ID)        ||
+                    (((Flash*)&f)->get_dev_id() == SPECTRUM_HW_ID)   ||
+                    (((Flash*)&f)->get_dev_id() == SWITCH_IB2_HW_ID)) {
             return FS_FS3_GEN;
         }
     } else {
@@ -675,25 +668,40 @@ u_int32_t FwOperations::CalcImageCRC(u_int32_t* buff, u_int32_t size)
     return new_crc;
 }
 
-bool FwOperations::writeImage(ProgressCallBack progressFunc, u_int32_t addr, void *data, int cnt, bool isPhysAddr, int totalSz, int alreadyWrittenSz)
+bool FwOperations::writeImage(ProgressCallBack progressFunc, u_int32_t addr, void *data, int cnt, bool isPhysAddr, bool readModifyWrite, int totalSz, int alreadyWrittenSz)
 {
     u_int8_t   *p = (u_int8_t *)data;
     u_int32_t  curr_addr = addr;
     u_int32_t  towrite = cnt;
     totalSz = totalSz == -1 ? cnt : totalSz;
+    int origFlashWorkingMode = Flash::Fwm_Default;
     bool rc;
-//    if (!_ioAccess->is_flash()) {
- //       return errmsg("Internal error: writeImage is supported only on flash.");
-   // }
     while (towrite) {
         // Write
         int trans;
         if (_ioAccess->is_flash()) {
+            if (readModifyWrite) {
+                // perform write with the smallest supported sector size
+                origFlashWorkingMode = ((Flash*)_ioAccess)->get_flash_working_mode();
+                ((Flash*)_ioAccess)->set_flash_working_mode(Flash::Fwm_Default);
+            }
             trans = (towrite > (int)Flash::TRANS) ? (int)Flash::TRANS : towrite;
             if (isPhysAddr) {
-                rc = ((Flash*)_ioAccess)->write_phy(curr_addr, p, trans);
+                if (readModifyWrite) {
+                    rc = ((Flash*)_ioAccess)->read_modify_write_phy(curr_addr, p, trans);
+                } else {
+                    rc = ((Flash*)_ioAccess)->write_phy(curr_addr, p, trans);
+                }
             } else {
-                rc = ((Flash*)_ioAccess)->write(curr_addr, p, trans);
+                if (readModifyWrite) {
+                    rc = ((Flash*)_ioAccess)->read_modify_write(curr_addr, p, trans);
+                } else {
+                    rc = ((Flash*)_ioAccess)->write(curr_addr, p, trans);
+                }
+            }
+            if (readModifyWrite) {
+                // restore erase sector size
+                ((Flash*)_ioAccess)->set_flash_working_mode(origFlashWorkingMode);
             }
             if (!rc) {
                 return errmsg(MLXFW_FLASH_WRITE_ERR, "Flash write failed: %s", _ioAccess->err());
@@ -818,13 +826,6 @@ bool FwOperations::getInfoFromHwDevid(u_int32_t hwDevId, chip_type_t& chipT, con
 
 // TODO:combine both databases(hwDevData and hwDev2Str) and remove old unsupporded devices i.e infinihost infinihost_iii_ex infinihost_iii_lx
 const FwOperations::HwDevData FwOperations::hwDevData[] = {
-    { "InfiniHost",        INFINIHOST_HW_ID, CT_UNKNOWN, 2, {23108, 0}},
-    { "InfiniHost III Ex", INFINIHOST_III_EX_HW_ID, CT_UNKNOWN,2 , {25208, 25218, 0}},
-    { "InfiniHost III Lx", INFINIHOST_III_LX_HW_ID, CT_UNKNOWN, 1, {25204, 0}},
-    { "ConnectX",          CX_HW_ID, CT_CONNECTX, 2,  {25408, 25418, 26418, 26438,
-                                         26428, 25448, 26448, 26468,
-                                         25458, 26458, 26478, 26488,
-                                         4097, 4098, 0}},
     { "ConnectX-3",        CX3_HW_ID, CT_CONNECTX, 2,  {4099, 4100, 4101, 4102,
                                          4104, 4105, 4106,
                                          4107, 4108, 4109, 4110,
@@ -833,36 +834,29 @@ const FwOperations::HwDevData FwOperations::hwDevData[] = {
     { "Connect_IB",       CONNECT_IB_HW_ID, CT_CONNECT_IB, 2, {CONNECT_IB_SW_ID, 4114, 4115, 4116,
                                          4117, 4118, 4119, 4120,
                                          4121, 4122, 4123, 4124, 0}},
-    { "InfiniScale IV",   IS4_HW_ID,        CT_IS4,         0, {48436, 48437, 48438, 0}},
-    { "BridgeX",          BRIDGEX_HW_ID,    CT_BRIDGEX,     0, {64102, 64112, 64122, 0}},
     { "SwitchX",          SWITCHX_HW_ID,    CT_SWITCHX,     0, {51000, 0}},
     { "Switch_IB",        SWITCH_IB_HW_ID,  CT_SWITCH_IB,   0, {52000, 0}},
     { "ConnectX-4",       CX4_HW_ID,        CT_CONNECTX4,    0, {4115, 0}},
     { "ConnectX-4LX",     CX4LX_HW_ID,      CT_CONNECTX4_LX,    0, {4117, 0}},
+    { "ConnectX-5",       CX5_HW_ID,        CT_CONNECTX5,    0, {4119, 0}},
     { "Spectrum",         SPECTRUM_HW_ID,   CT_SPECTRUM,   0, {52100, 0}},
+    { "Switch_IB2",       SWITCH_IB2_HW_ID, CT_SWITCH_IB2,   0, {53000, 0}},
     { (char*)NULL ,              0, CT_UNKNOWN, 0, {0}},// zero devid terminator
 };
 
 const FwOperations::HwDev2Str FwOperations::hwDev2Str[] = {
         {"ConnectIB",         CONNECT_IB_HW_ID, 0x00},
-        {"ConnectX",          CX_HW_ID,         0xA0},
-        {"ConnectX-2",        CX_HW_ID,         0xB0},
         {"ConnectX-3 A0",     CX3_HW_ID,        0x00},
         {"ConnectX-3 A1",     CX3_HW_ID,        0x01},
         {"ConnectX-3Pro",     CX3_PRO_HW_ID,    0x00},
         {"ConnectX-4",        CX4_HW_ID,        0x00},
         {"ConnectX-4LX",      CX4LX_HW_ID,      0x00},
+        {"ConnectX-5",        CX5_HW_ID,        0x00},
         {"SwitchX A0",        SWITCHX_HW_ID,    0x00},
         {"SwitchX A1",        SWITCHX_HW_ID,    0x01},
-        {"BridgeX",           BRIDGEX_HW_ID,    0xA0},
-        {"InfiniScale IV A0", IS4_HW_ID,        0xA0},
-        {"InfiniScale IV A1", IS4_HW_ID,        0xA1},
-        {"InfiniHost A0",     INFINIHOST_HW_ID,      0xA0},
-        {"InfiniHost A1",     INFINIHOST_HW_ID,      0xA1},
-        {"InfiniHost III Lx", INFINIHOST_III_LX_HW_ID,      0xA0},
-        {"InfiniHost III Ex", INFINIHOST_III_EX_HW_ID,      0xA0},
         {"SwitchIB A0",       SWITCH_IB_HW_ID,  0x00},
-        {"Spectrum A0",       SPECTRUM_HW_ID,  0x00},
+        {"Spectrum A0",       SPECTRUM_HW_ID,   0x00},
+        {"SwitchIB2 A0",      SWITCH_IB2_HW_ID, 0x00},
         { (char*)NULL ,       (u_int32_t)0, (u_int8_t)0x00}, // zero device ID terminator
 };
 
@@ -947,10 +941,6 @@ bool FwOperations::CheckMatchingDevId(u_int32_t hwDevId, u_int32_t imageDevId) {
 
     const HwDevData* devData = (const HwDevData*)NULL;
     const char* hwDevName = (const char*)NULL;
-    // HACK: InfiniHost III LX may have 2 HW device ids. - Map the second devid to the first.
-    if (hwDevId == 24204) {
-        hwDevId = 25204;
-    }
 
     // First, find the HW device that the SW id matches
     for (int i = 0; hwDevData[i].hwDevId != 0 ; i++) {
@@ -1019,7 +1009,7 @@ bool FwOperations::CheckFwVersion(FwOperations &imageOps, u_int8_t forceVersion)
 
 bool FwOperations::FwSwReset() {
     if (!_ioAccess->is_flash()) {
-        return errmsg("operation supported only for switch devices InfiniScaleIV, SwitchX and SwitchIB over an IB interface");
+        return errmsg("operation supported only for switch devices: SwitchX and SwitchIB over an IB interface");
     }
     if (!((Flash*)_ioAccess)->sw_reset()) {
         return errmsg("%s",  _ioAccess->err());
@@ -1053,12 +1043,8 @@ bool FwOperations::UpdateImgCache(u_int8_t *buff, u_int32_t addr, u_int32_t size
 
 bool FwOperations::CntxEthOnly(u_int32_t devid)
 {
-    return(devid == 25448) || // ETH
-            (devid == 26448) || // ETH
-            (devid == 25458) || //
-            (devid == 26458) || //
-            (devid == 26468) ||
-            (devid == 26478);
+    (void)devid;
+    return false;
 }
 
 // RomInfo implementation
@@ -1419,15 +1405,13 @@ bool FwOperations::ReadImageFile(const char *fimage, u_int8_t *&file_data, int &
 
 void FwOperations::SetDevFlags(chip_type_t chipType, u_int32_t devType, fw_img_type_t fwType, bool &ibDev, bool &ethDev) {
 
-    if (chipType == CT_IS4) {
-        ibDev =  true;
-        ethDev = false;
-    } else if (chipType == CT_SWITCHX) {
+    (void)devType;
+    if (chipType == CT_SWITCHX) {
         ibDev = true;
         ethDev = true;
     } else {
-        ibDev  = (fwType == FIT_FS3 && chipType != CT_SPECTRUM) || !CntxEthOnly(devType);
-        ethDev = (chipType == CT_CONNECTX) || (chipType == CT_SPECTRUM) || (chipType == CT_CONNECTX4) || (chipType == CT_CONNECTX4_LX);
+        ibDev  = (fwType == FIT_FS3 && chipType != CT_SPECTRUM) || chipType == CT_CONNECTX;
+        ethDev = (chipType == CT_CONNECTX) || (chipType == CT_SPECTRUM) || (chipType == CT_CONNECTX4) || (chipType == CT_CONNECTX4_LX) || (chipType == CT_CONNECTX5);
     }
 
     if ((!ibDev && !ethDev) || chipType == CT_UNKNOWN) {
@@ -1580,4 +1564,24 @@ const char* FwOperations::expRomType2Str(u_int16_t type)
 	            return (const char*)NULL;
 	        }
 	return (const char*)NULL;
+}
+
+bool FwOperations::FwSetTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer)
+{
+    (void)timestamp;
+    (void)fwVer;
+    return errmsg("Operation not supported.");
+}
+
+bool FwOperations::FwResetTimeStamp()
+{
+    return errmsg("Operation not supported.");
+}
+
+bool FwOperations::FwQueryTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer, bool queryRunning)
+{
+    (void)timestamp;
+    (void)fwVer;
+    (void)queryRunning;
+    return errmsg("Operation not supported.");
 }

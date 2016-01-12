@@ -1,4 +1,5 @@
-/* Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
+/*
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -27,13 +28,16 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
- *  Version: $Id$
- *
  */
 
 #ifndef MFLASH_TYPES_H
 #define MFLASH_TYPES_H
+
+typedef enum {
+    FSS_4KB = 0x1000,
+    FSS_64KB = 0x10000
+} Flash_Sector_Size_t;
+
 
 typedef enum MfError {
     MFE_OK = 0,
@@ -75,6 +79,7 @@ typedef enum MfError {
     MFE_SECTORS_NUM_NOT_POWER_OF_TWO,
     MFE_UNKOWN_ACCESS_TYPE,
     MFE_UNSUPPORTED_DEVICE,
+    MFE_UNSUPPORTED_ERASE_OPERATION,
     MFE_OLD_DEVICE_TYPE,
     MFE_ICMD_INIT_FAILED,
     MFE_ICMD_NOT_SUPPORTED,
@@ -100,7 +105,7 @@ typedef enum MfError {
     MFE_REG_ACCESS_SIZE_EXCCEEDS_LIMIT,
     MFE_PCICONF,
     MFE_ILLEGAL_BANK_NUM,
-
+    MFE_OCR_NOT_SUPPORTED,
 
     MFE_LAST
 } MfError;

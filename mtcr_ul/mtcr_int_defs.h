@@ -52,6 +52,8 @@ typedef struct icmd_params_t {
     int semaphore_addr;
     int static_cfg_not_done_addr;
     int static_cfg_not_done_offs;
+    u_int32_t lock_key;
+    int ib_semaphore_lock_supported;
 }icmd_params;
 
 typedef struct tools_hcr_params_t {

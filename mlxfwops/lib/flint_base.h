@@ -187,20 +187,16 @@ namespace std {}; using namespace std;
 #define FS_DATA_OFF      0x28
 #define SWITCHX_HW_ID    581
 #define SWITCH_IB_HW_ID  583
-#define SPECTRUM_HW_ID  585
+#define SPECTRUM_HW_ID   585
+#define SWITCH_IB2_HW_ID 587
+
 
 #define CX4_HW_ID         521
 #define CX4LX_HW_ID       523
+#define CX5_HW_ID         525
 #define CX3_HW_ID         501
 #define CX3_PRO_HW_ID     503
-#define CX_HW_ID          400
-#define IS_HW_ID          435
 #define CONNECT_IB_HW_ID  511
-#define BRIDGEX_HW_ID     6100
-#define IS4_HW_ID         435
-#define INFINIHOST_HW_ID            23108
-#define INFINIHOST_III_EX_HW_ID     25208
-#define INFINIHOST_III_LX_HW_ID     25204
 #define CONNECT_IB_SW_ID  4113
 
 // FS3 defines
@@ -418,6 +414,12 @@ protected:
     bool errmsgAdv(bool showAdv, const char *normalFmt, const char *AdvFmt, ...)
 #ifdef __GNUC__
     __attribute__ ((format (printf, 4, 5)))
+#endif
+    ;
+
+    int errmsgWCode(int errorCode, const char *format, ...)
+#ifdef __GNUC__
+    __attribute__ ((format (printf, 3, 4)))
 #endif
     ;
 

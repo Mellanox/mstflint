@@ -31,7 +31,7 @@
  */
 
 /***
- *** This file was generated at "2015-06-17 12:05:44"
+ *** This file was generated at "2016-02-23 00:12:07"
  *** by:
  ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/register_access_open/register_access_open.adb --file-prefix register_access_open --prefix register_access_
  ***/
@@ -85,6 +85,9 @@ struct register_access_mfpa {
 	/* Description - number of flash devices connected */
 	/* 16.0 - 16.3 */
 	 u_int8_t flash_num;
+	/* Description -  */
+	/* 16.29 - 16.29 */
+	 u_int8_t bulk_64kb_erase_en;
 /*---------------- DWORD[5] (Offset 0x14) ----------------*/
 	/* Description - Flash JEDEC ID */
 	/* 20.0 - 20.23 */
@@ -112,6 +115,9 @@ struct register_access_mfbe {
 	/* Description - Parallel */
 	/* 0.8 - 0.8 */
 	 u_int8_t p;
+	/* Description - erase 64KB flash area */
+	/* 0.29 - 0.29 */
+	 u_int8_t bulk_64kb_erase;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - address in bytes */
 	/* 8.0 - 8.23 */

@@ -1,4 +1,5 @@
-/* Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
+/*
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -27,9 +28,6 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
- *  Version: $Id$
- *
  */
 
 #include <stdio.h>
@@ -39,13 +37,11 @@
 #include <mtcr.h>
 #include <reg_access.h>
 
-#ifndef UEFI_BUILD
-#include <tools_res_mgmt.h>
-#endif
-
 #include "mflash_types.h"
 #include "mflash_pack_layer.h"
 #include "mflash_access_layer.h"
+
+extern flash_info_t g_flash_info_arr[];
 
  // On windows we don't support cmdIf access!
 int check_access_type(mflash* mfl)
@@ -74,14 +70,17 @@ int check_access_type(mflash* mfl)
 }
 
 
-int sx_get_flash_info_by_type(mflash* mfl, unsigned *type_index, int *log2size, u_int8_t *no_flash)
+int sx_get_flash_info_by_type(mflash* mfl, flash_info_t *f_info, int *log2size, u_int8_t *no_flash)
 {
     int rc;
     u_int8_t vendor, type, capacity;
     u_int32_t jedec_id;
+    unsigned type_index = 0;
+    u_int8_t support_sub_and_sector = 0;
+
 
     rc = check_access_type( mfl); CHECK_RC(rc);
-    rc = com_get_jedec(mfl->mf, get_bank_int(mfl), &jedec_id, &(mfl->attr.fw_flash_sector_sz)); CHECK_RC(rc);
+    rc = com_get_jedec(mfl->mf, get_bank_int(mfl), &jedec_id, &(mfl->attr.fw_flash_sector_sz), &support_sub_and_sector); CHECK_RC(rc);
     //printf("-D- jedec_id = %#x\n", jedec_id);
     rc = get_info_from_jededc_id(jedec_id, &vendor, &type, &capacity); CHECK_RC(rc);
     // Return there is no flash when all the params are 0xff
@@ -89,10 +88,12 @@ int sx_get_flash_info_by_type(mflash* mfl, unsigned *type_index, int *log2size, 
         *no_flash = 1;
         return MFE_OK;
     }
-    rc = get_type_index_by_vendor_and_type(vendor, type, type_index); CHECK_RC(rc);
-    rc = get_log2size_by_capcity(*type_index, capacity, log2size);    CHECK_RC(rc);
-    return MFE_OK;
+    rc = get_type_index_by_vendor_and_type(vendor, type, &type_index); CHECK_RC(rc);
+    rc = get_log2size_by_capcity(type_index, capacity, log2size);    CHECK_RC(rc);
 
+    memcpy(f_info, &(g_flash_info_arr[type_index]), sizeof(flash_info_t));
+    f_info->support_sub_and_sector = support_sub_and_sector;
+    return MFE_OK;
 }
 
 int sx_block_read_by_type(mflash* mfl, u_int32_t blk_addr, u_int32_t blk_size, u_int8_t* data)
@@ -133,13 +134,13 @@ static int lock_flash_programing_sem(mflash* mfl)
 {
 #ifndef UEFI_BUILD
     int rc;
-    if (mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_ICMD) {
-        rc = trm_lock(mfl->mf, TRM_RES_FLASH_PROGRAMING, MAX_FLASH_PROG_SEM_RETRY_CNT);
+    if (mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_ICMD || mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_INBAND) {
+        rc = trm_lock(mfl->trm, TRM_RES_FLASH_PROGRAMING, MAX_FLASH_PROG_SEM_RETRY_CNT);
         if (rc && rc != TRM_STS_RES_NOT_SUPPORTED) {
             return MFE_SEM_LOCKED;
         }
     } else if (mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_TOOLS_CMDIF) {
-        rc = trm_lock(mfl->mf, TRM_RES_HCR_FLASH_PROGRAMING, MAX_FLASH_PROG_SEM_RETRY_CNT);
+        rc = trm_lock(mfl->trm, TRM_RES_HCR_FLASH_PROGRAMING, MAX_FLASH_PROG_SEM_RETRY_CNT);
         if (rc && rc != TRM_STS_RES_NOT_SUPPORTED) {
             return MFE_SEM_LOCKED;
         }
@@ -152,13 +153,13 @@ static int unlock_flash_programing_sem(mflash* mfl)
 {
 #ifndef UEFI_BUILD
     int rc;
-    if (mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_ICMD) {
-        rc = trm_unlock(mfl->mf, TRM_RES_FLASH_PROGRAMING);
+    if (mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_ICMD || mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_INBAND) {
+        rc = trm_unlock(mfl->trm, TRM_RES_FLASH_PROGRAMING);
         if (rc && rc != TRM_STS_RES_NOT_SUPPORTED) {
             return MFE_SEM_LOCKED;
         }
     } else if (mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_TOOLS_CMDIF) {
-        rc = trm_unlock(mfl->mf, TRM_RES_HCR_FLASH_PROGRAMING);
+        rc = trm_unlock(mfl->trm, TRM_RES_HCR_FLASH_PROGRAMING);
         if (rc && rc != TRM_STS_RES_NOT_SUPPORTED) {
             return MFE_SEM_LOCKED;
         }
@@ -182,14 +183,14 @@ int sx_flash_lock_by_type(mflash* mfl, int lock_state)
     return rc;
 }
 
-int sx_erase_sect_by_type(mflash* mfl, u_int32_t addr)
+int sx_erase_sect_by_type(mflash* mfl, u_int32_t addr, u_int32_t erase_size)
 {
     int rc, bank;
     u_int32_t flash_addr;
 
     rc = mfl_get_bank_info(mfl, addr, &flash_addr, &bank); CHECK_RC(rc);
     rc = check_access_type( mfl); CHECK_RC(rc);
-    rc = common_erase_sector(mfl->mf, flash_addr, bank); CHECK_RC(rc);
+    rc = common_erase_sector(mfl->mf, flash_addr, bank, erase_size); CHECK_RC(rc);
     return MFE_OK;
 }
 
@@ -198,7 +199,7 @@ int mf_update_boot_addr_by_type(mflash* mfl, u_int32_t boot_addr)
     int rc;
     if (mfl->access_type == MFAT_UEFI || mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_MLNXOS_CMDIF) {
         // No CR-Space access - use mfpa register
-        rc = run_mfpa_command(mfl->mf, REG_ACCESS_METHOD_SET, get_bank_int(mfl), boot_addr, NULL, NULL, NULL); CHECK_RC(rc);
+        rc = run_mfpa_command(mfl->mf, REG_ACCESS_METHOD_SET, get_bank_int(mfl), boot_addr, NULL, NULL, NULL, NULL); CHECK_RC(rc);
     }
     return MFE_OK;
 }

@@ -1,4 +1,5 @@
-/* Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
+/*
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -27,8 +28,6 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
- *  Version: $Id$
  *
  */
 
@@ -93,7 +92,7 @@ MlxCfgOps::MlxCfgOps()
 
     updateErrCodes(errmap);
     _mf = NULL;
-    _deviceId = DeviceEndMarker;
+    _deviceId = DeviceUnknown;
     _suppVec = 0;
     _isFifthGen = false;
     return;
@@ -190,12 +189,48 @@ int MlxCfgOps::supportsNVData()
     return MCE_SUCCESS;
 }
 
+int MlxCfgOps::isDefaultSupported(bool &defaultSupported)
+{
+    struct tools_open_nvqgc nvqgcTlv;
+
+    if(!_isFifthGen){
+        defaultSupported = true;
+        return ME_OK;
+    }
+
+    memset(&nvqgcTlv, 0, sizeof(struct tools_open_nvqgc));
+    MError rc;
+
+    mft_signal_set_handling(1);
+    rc = reg_access_nvqgc(_mf, REG_ACCESS_METHOD_GET, &nvqgcTlv);
+    dealWithSignal();
+    if (rc == ME_REG_ACCESS_BAD_PARAM || rc == ME_REG_ACCESS_INTERNAL_ERROR) {
+        defaultSupported = 0;
+        return ME_OK;
+    } else if(rc == ME_OK){
+        defaultSupported = nvqgcTlv.read_factory_settings_support;
+        return ME_OK;
+    }
+    return rc;
+}
+
 int MlxCfgOps::openComChk()
 {
     bool rc;
     int ret;
+    u_int32_t type = 0;
     // check if we support Tools HCR and update _suppVec
     if (_isFifthGen) {
+        rc = mget_mdevs_type(_mf, &type);
+        #ifndef MST_UL
+            if (type != MST_PCICONF && type != MST_PCI) {
+                return errmsg(MCE_PCI);
+            }
+        #else
+            if (type != MTCR_ACCESS_CONFIG && type != MTCR_ACCESS_MEMORY) {
+                return errmsg(MCE_PCI);
+            }
+        #endif
         rc = supportsNVData(); CHECK_RC(rc);
     } else {
         rc = supportsToolsHCR(); CHECK_RC(rc);
@@ -266,6 +301,10 @@ int MlxCfgOps::opend(mfile* mf, bool forceClearSem)
         _param2TypeMap[Mcp_Sriov_En] = Mct_Pci;
         _param2TypeMap[Mcp_Num_Of_Vfs] = Mct_Pci;
         _param2TypeMap[Mcp_Fpp_En] = Mct_Pci;
+        _param2TypeMap[Mcp_PF_Log_Bar_Size] = Mct_Pci;
+        _param2TypeMap[Mcp_VF_Log_Bar_Size] = Mct_Pci;
+        _param2TypeMap[Mcp_Num_Pf_Msix] = Mct_Pci;
+        _param2TypeMap[Mcp_Num_Vf_Msix] = Mct_Pci;
         // TPT settings
         _cfgList[Mct_Tpt] = new TptParams5thGen();
         _param2TypeMap[Mcp_Log_Tpt_Size] = Mct_Tpt;
@@ -273,12 +312,6 @@ int MlxCfgOps::opend(mfile* mf, bool forceClearSem)
         _cfgList[Mct_Dc] = new IBDCParams5thGen();
         _param2TypeMap[Mcp_Log_Dcr_Hash_Table_Size] = Mct_Dc;
         _param2TypeMap[Mcp_Dcr_Lifo_Size] = Mct_Dc;
-        // Port Boot State
-        /*_cfgList[Mct_Boot_State_P1] = new PortBootStateParams5thGen(1);
-        _cfgList[Mct_Boot_State_P2] = new PortBootStateParams5thGen(2);
-        _param2TypeMap[Mcp_Boot_State_P1] = Mct_Boot_State_P1;
-        _param2TypeMap[Mcp_Boot_State_P2] = Mct_Boot_State_P2;
-        */
         // RoCE v1.5 next protocol
         _cfgList[Mct_RoCE_Next_Protocol] = new RoCENextProtocolParams5thGen();
         _param2TypeMap[Mcp_RoCE_Next_Protocol] = Mct_RoCE_Next_Protocol;
@@ -332,6 +365,13 @@ int MlxCfgOps::opend(mfile* mf, bool forceClearSem)
         _param2TypeMap[Mcp_Cnp_Dscp_P2] = Mct_RoCE_CC_Ecn_P2;
         _param2TypeMap[Mcp_Cnp_802p_Prio_P2] = Mct_RoCE_CC_Ecn_P2;
 
+        _cfgList[Mct_External_Port] = new ExternalPort5thGen();
+        _param2TypeMap[Mcp_Port_Owner] = Mct_External_Port;
+        _param2TypeMap[Mcp_Allow_Rd_Counters] = Mct_External_Port;
+
+        _cfgList[Mct_Boot_Settings_Extras_5thGen] = new BootSettingsExtParams5thGen();
+        _param2TypeMap[Mcp_Boot_Settings_Ext_IP_Ver] = Mct_Boot_Settings_Extras_5thGen;
+
     } else {
         // SR-IOV
         _cfgList[Mct_Sriov] = new SriovParams4thGen();
@@ -369,6 +409,11 @@ int MlxCfgOps::opend(mfile* mf, bool forceClearSem)
         _param2TypeMap[Mcp_Boot_Retry_Cnt_P2] = Mct_Preboot_Boot_Settings_P2;
         _param2TypeMap[Mcp_Legacy_Boot_Protocol_P2] = Mct_Preboot_Boot_Settings_P2;
         _param2TypeMap[Mcp_Boot_Vlan_P2] = Mct_Preboot_Boot_Settings_P2;
+
+        _cfgList[Mct_Boot_Settings_Extras_4thGen_P1] = new BootSettingsExtParams4thGen(1);
+        _cfgList[Mct_Boot_Settings_Extras_4thGen_P2] = new BootSettingsExtParams4thGen(2);
+        _param2TypeMap[Mcp_Boot_Settings_Ext_IP_Ver_P1] = Mct_Boot_Settings_Extras_4thGen_P1;
+        _param2TypeMap[Mcp_Boot_Settings_Ext_IP_Ver_P2] = Mct_Boot_Settings_Extras_4thGen_P2;
     }
 
 
@@ -403,7 +448,7 @@ bool MlxCfgOps::supportsParam(mlxCfgParam param)
     return _cfgList[cfgParam2Type(param)]->cfgSupported(_mf, param);
 }
 
-int MlxCfgOps::getCfg(mlxCfgParam cfgParam, u_int32_t& val)
+int MlxCfgOps::getCfg(mlxCfgParam cfgParam, u_int32_t& val, bool getDefault)
 {
     if (!isLegal(cfgParam)) {
         return MCE_BAD_PARAMS;
@@ -413,11 +458,16 @@ int MlxCfgOps::getCfg(mlxCfgParam cfgParam, u_int32_t& val)
         return errmsg(MCE_UNSUPPORTED_CFG);
     }
 
-    int rc = _cfgList[cfgParam2Type(cfgParam)]->getFromDev(_mf);
-    if (rc) {
-        return errmsgConcatMsg(rc,*_cfgList[cfgParam2Type(cfgParam)]);
+    if (getDefault) {
+        val = (_cfgList[cfgParam2Type(cfgParam)])->getDefaultParam(cfgParam);
+    } else {
+        int rc;
+        rc = _cfgList[cfgParam2Type(cfgParam)]->getFromDev(_mf);
+        if (rc) {
+            return errmsgConcatMsg(rc,*_cfgList[cfgParam2Type(cfgParam)]);
+        }
+        val = (_cfgList[cfgParam2Type(cfgParam)])->getParam(cfgParam);
     }
-    val = (_cfgList[cfgParam2Type(cfgParam)])->getParam(cfgParam);
     return MCE_SUCCESS;
 }
 
@@ -506,18 +556,26 @@ int MlxCfgOps::invalidateCfgs4thGen()
 {
     struct tools_open_mnvia mnviaTlv;
     u_int8_t buffer[TOOLS_OPEN_MNVIA_SIZE] = {0};
+    int rc;
     memset(&mnviaTlv, 0, sizeof(struct tools_open_mnvia));
     tools_open_mnvia_pack(&mnviaTlv, buffer);
-    return reg_access_mnvia(_mf, REG_ACCESS_METHOD_SET, &mnviaTlv);
+    mft_signal_set_handling(1);
+    rc = reg_access_mnvia(_mf, REG_ACCESS_METHOD_SET, &mnviaTlv);
+    dealWithSignal();
+    return rc;
 }
 
 int MlxCfgOps::invalidateCfgs5thGen()
 {
     struct tools_open_nvia nviaTlv;
     u_int8_t buffer[TOOLS_OPEN_NVIA_SIZE] = {0};
+    int rc;
     memset(&nviaTlv, 0, sizeof(struct tools_open_nvia));
     tools_open_nvia_pack(&nviaTlv, buffer);
-    return reg_access_nvia(_mf, REG_ACCESS_METHOD_SET, &nviaTlv);
+    mft_signal_set_handling(1);
+    rc = reg_access_nvia(_mf, REG_ACCESS_METHOD_SET, &nviaTlv);
+    dealWithSignal();
+    return rc;
 }
 
 int MlxCfgOps::invalidateCfgs()
@@ -561,7 +619,9 @@ const char* MlxCfgOps::loadConfigurationGetStr()
     if (_isFifthGen && (_deviceId == DeviceConnectX4 || _deviceId == DeviceConnectX4LX)) {
         // send warm boot (bit 6)
         mfrl.reset_level = 1 << 6;
+        mft_signal_set_handling(1);
         rc = reg_access_mfrl(_mf,REG_ACCESS_METHOD_SET, &mfrl);
+        dealWithSignal();
         if (rc) {
             return "Please power cycle machine to load new configurations.";
         }

@@ -42,6 +42,9 @@
 #define MAX_PASSWORD_LEN 256
 
 #include <string>
+
+#include <tools_layouts/tools_open_layouts.h>
+
 #include "flint_params.h"
 #include "mlxfwops/lib/fw_ops.h"
 #include "err_msgs.h"
@@ -73,6 +76,7 @@ protected:
     FBase* _io;
     what_to_ver_t _v;
     int _maxCmdParamNum;
+    int _minCmdParamNum;
     FlintParams _flintParams;
     //info about the Subcommand
     string _name;
@@ -114,19 +118,15 @@ protected:
     static int resetCfgCbFunc(int completion);
 
     bool printGuidLine(guid_t* new_guids, guid_t* old_guids, int guid_index);
-    bool printBxGuids(guid_t* new_guids, guid_t* old_guids, int index,\
-                        int num_of_guids, const char* pre_str);
     bool printMacLine(guid_t* new_guids, guid_t* old_guids, int mac_index);
-    bool printBxMacs(guid_t* new_guids, guid_t* old_guids, int index, int num_of_guids, const char* pre_str);
-    bool printUidsFunc(guid_t* new_guids, guid_t* old_guids);
     bool printGUIDsFunc(guid_t guids[GUIDS],guid_t macs[MACS], guid_t old_guids[GUIDS],\
             guid_t old_macs[MACS], bool print_guids, bool print_macs, int portNum, bool old_guid_fmt);
     bool reportGuidChanges(guid_t* new_guids, guid_t* new_macs,\
                                         guid_t* old_guids, guid_t* old_macs, bool printGuids,\
-                                        bool printMacs, bool printUids, int guidNum);
-    bool checkGuidsFlags(chip_type_t ct, u_int16_t devType, u_int8_t fwType,
-            bool guidsSpecified, bool macsSpecified, bool uidsSpecified, bool ibDev, bool ethDev);
-    void printMissingGuidErr(bool ibDev, bool ethDev, bool bxDev);
+                                        bool printMacs, int guidNum);
+    bool checkGuidsFlags(u_int16_t devType, u_int8_t fwType,
+            bool guidsSpecified, bool macsSpecified, bool uidSpecified, bool ibDev, bool ethDev);
+    void printMissingGuidErr(bool ibDev, bool ethDev);
 
     bool extractUIDArgs(std::vector<string>& cmdArgs, u_int8_t numOfGuids[2], u_int8_t stepSize[2]);
     bool extractValuesFromString(string valStr, u_int8_t values[2], string origArg);
@@ -148,7 +148,7 @@ protected:
 
 
 public:
-    SubCommand(): _fwOps(NULL), _imgOps(NULL), _io(NULL), _v(Wtv_Uninitilized), _maxCmdParamNum(-1)
+    SubCommand(): _fwOps(NULL), _imgOps(NULL), _io(NULL), _v(Wtv_Uninitilized), _maxCmdParamNum(-1),  _minCmdParamNum(-1)
     {
         _cmdType = SC_No_Cmd;
         memset(_errBuff, 0, sizeof(_errBuff));
@@ -178,7 +178,7 @@ private:
     FlintStatus burnFs3();
     FlintStatus burnFs2();
     bool checkFwVersion();
-    bool checkPSIDAndIbEth();
+    bool checkPSID();
     void updateBurnParams();
     void dealWithExpRom();
     bool checkMatchingExpRomDevId(const fw_info_t& info);
@@ -197,9 +197,6 @@ private:
     FlintStatus printInfo(const fw_info_t& fwInfo, bool fullQuery);
     bool displayFs3Uids(const fw_info_t& fwInfo);
     bool displayFs2Uids(const fw_info_t& fwInfo);
-    bool reportBxGuidsQuery(const guid_t* guids, int base1, int guids_num, int index, const char* pre_str);
-    bool reportBxMacsQuery(const guid_t* guids, int base1, int guids_num, int index, const char* pre_str);
-    bool reportBxMacsWarnings(const guid_t* guids, int index, int warning, int user_uids);
     bool checkMac(u_int64_t mac, string& warrStr);
 public:
     QuerySubCommand();
@@ -240,7 +237,6 @@ public:
     BromSubCommand();
     ~BromSubCommand();
     inline FlintStatus executeCommand();
-    bool verifyParams();
     bool getExpRomStrVer(roms_info_t& roms_info, char* version);
 };
 
@@ -314,7 +310,6 @@ public:
     SetVpdSubCommand();
     ~SetVpdSubCommand();
     FlintStatus executeCommand();
-    bool verifyParams();
 };
 
 class SvSubCommand : public SubCommand
@@ -335,7 +330,6 @@ public:
     RiSubCommand();
     ~RiSubCommand();
     FlintStatus executeCommand();
-    bool verifyParams();
 };
 
 class DcSubCommand : public SubCommand
@@ -401,7 +395,6 @@ public:
     EraseSubCommand();
     ~EraseSubCommand();
     inline FlintStatus executeCommand();
-    inline bool verifyParams();
 };
 class RwSubCommand : public SubCommand
 {
@@ -411,7 +404,6 @@ public:
     RwSubCommand();
     ~RwSubCommand();
     inline FlintStatus executeCommand();
-    inline bool verifyParams();
 };
 class WwSubCommand : public SubCommand
 {
@@ -421,7 +413,6 @@ public:
     WwSubCommand();
     ~WwSubCommand();
     inline FlintStatus executeCommand();
-    inline bool verifyParams();
 };
 
 class WwneSubCommand : public SubCommand
@@ -432,7 +423,6 @@ public:
     WwneSubCommand();
     ~WwneSubCommand();
     inline FlintStatus executeCommand();
-    inline bool verifyParams();
 };
 
 class WbSubCommand : public SubCommand
@@ -443,7 +433,6 @@ public:
     WbSubCommand();
     ~WbSubCommand();
     FlintStatus executeCommand();
-    bool verifyParams();
 };
 
 
@@ -456,7 +445,6 @@ public:
     WbneSubCommand();
     ~WbneSubCommand();
     FlintStatus executeCommand();
-    bool verifyParams();
 };
 
 class RbSubCommand : public SubCommand
@@ -468,7 +456,6 @@ public:
     RbSubCommand();
     ~RbSubCommand();
     FlintStatus executeCommand();
-    bool verifyParams();
 };
 
 class ClearSemSubCommand : public SubCommand
@@ -505,6 +492,48 @@ public:
     FiSubCommand();
     ~FiSubCommand();
     FlintStatus executeCommand();
+};
+
+class CheckSumSubCommand : public SubCommand
+{
+public:
+    CheckSumSubCommand();
+    ~CheckSumSubCommand();
+    FlintStatus executeCommand();
+private:
+    bool extractChecksumFromStr(string str, u_int8_t checkSum[16]);
+    string checkSum2Str(u_int8_t checkSum[16]);
+    u_int8_t _checkSum[16];
+};
+
+class TimeStampSubCommand : public SubCommand
+{
+public:
+    TimeStampSubCommand();
+    ~TimeStampSubCommand();
+    FlintStatus executeCommand();
+private:
+    enum {
+        TS_No_Command,
+        TS_Query,
+        TS_Set,
+        TS_Reset
+    };
+
+    bool verifyParams();
+    bool parseTimeStamp(string tsStr);
+    bool parseFwVersion(string verStr);
+    inline u_int8_t getDaysInMonth(u_int16_t year, u_int8_t month);
+    inline void printTsAndFwVer(string prefix, struct tools_open_ts_entry& tsEntry, struct tools_open_fw_version& fwVer);
+    void getMachineUTCTime();
+    bool queryTs();
+    bool setTs();
+    bool resetTs();
+
+    int _operation;
+    FwOperations* _ops;
+    struct tools_open_ts_entry _userTsEntry;
+    struct tools_open_fw_version _userFwVer;
 };
 
 #endif

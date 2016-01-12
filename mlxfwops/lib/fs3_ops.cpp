@@ -40,6 +40,18 @@
 #include <mtcr.h>
 #include <reg_access/reg_access.h>
 
+#ifdef MST_UL
+#include <cmdif/icmd_cif_open.h>
+#else
+#ifndef UEFI_BUILD
+#include <cmdif/cib_cif.h>
+#endif
+#endif
+
+#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
+#include <tools_crypto/tools_md5.h>
+#endif
+
 #include "fs3_ops.h"
 
 #define FS3_FLASH_SIZE 0x400000
@@ -193,6 +205,14 @@ bool Fs3Operations::GetMfgInfo(u_int8_t *buff)
     } else {
         return errmsg(MLXFW_UNKNOWN_SECT_VER_ERR, "Unknown MFG_INFO format version (%d.%d).", cib_mfg_info.major_version, cib_mfg_info.minor_version);
     }
+
+    if (cib_mfg_info.minor_version == 1) {
+        //get orig_prs name
+        struct tools_open_mfg_info tools_mfg_info;
+        memset(&tools_mfg_info, 0, sizeof(tools_mfg_info));
+        tools_open_mfg_info_unpack(&tools_mfg_info, buff);
+        strncpy(_fs3ImgInfo.ext_info.orig_prs_name, tools_mfg_info.orig_prs_name, FS3_PRS_NAME_LEN - 1);
+    }
     return true;
 
 }
@@ -243,11 +263,20 @@ bool Fs3Operations::GetImageInfo(u_int8_t *buff)
     strcpy(_fs3ImgInfo.ext_info.image_vsd, image_info.vsd);
     strcpy(_fwImgInfo.ext_info.psid, image_info.psid);
     strcpy(_fwImgInfo.ext_info.product_ver, image_info.prod_ver);
+    if (IIMinor == 2) {
+        // get name, prs name and description
+        struct tools_open_image_info tools_image_info;
+        memset(&tools_image_info, 0, sizeof(tools_image_info));
+        tools_open_image_info_unpack(&tools_image_info, buff);
+        strncpy(_fs3ImgInfo.ext_info.name, tools_image_info.name, NAME_LEN - 1);
+        strncpy(_fs3ImgInfo.ext_info.description, tools_image_info.description, DESCRIPTION_LEN - 1);
+        strncpy(_fs3ImgInfo.ext_info.prs_name, tools_image_info.prs_name, FS3_PRS_NAME_LEN - 1);
+    }
     return true;
 }
 
 #define CHECK_DEV_INFO_NEW_FORMAT(info_st)\
-        (info_st.major_version == 2)
+        (info_st.major_version == 2 )
 #define CHECK_DEV_INFO_OLD_FORMAT(info_st)\
         (info_st.major_version == 1)
 bool Fs3Operations::GetDevInfo(u_int8_t *buff)
@@ -328,11 +357,16 @@ bool Fs3Operations::IsFs3SectionReadable(u_int8_t type, QueryOptions queryOption
         }
         return false;
 
-    } else if (queryOptions.quickQuery) {
-        if ( IsGetInfoSupported(type)) {
-            return true;
+    } else{
+        if (!queryOptions.readRom && type == FS3_ROM_CODE) {
+            return false;
         }
-        return false;
+        if (queryOptions.quickQuery) {
+            if ( IsGetInfoSupported(type)) {
+                return true;
+            }
+            return false;
+        }
     }
     return true;
 }
@@ -586,7 +620,8 @@ bool Fs3Operations::Fs3Verify(VerifyCallBack verifyCallBackFunc, bool show_itoc,
     _fs3ImgInfo.firstItocIsEmpty = false;
     // printf("-D- image_start = %#x\n", image_start);
     // Go over the ITOC entries
-    u_int32_t sector_size = (_ioAccess->is_flash()) ? _ioAccess->get_sector_size() : FS3_DEFAULT_SECTOR_SIZE;
+    // adrianc: need to have the sector size hardcoded in the FW binary (since its determined in the image generation process)
+    u_int32_t sector_size = FS3_DEFAULT_SECTOR_SIZE;
     offset = (offset % sector_size == 0) ? offset : (offset + sector_size - offset % 0x1000);
     while (offset < _ioAccess->get_size())
     {
@@ -621,7 +656,28 @@ bool Fs3Operations::Fs3IntQuery(bool readRom, bool quickQuery)
             return false;
         }
         _fwImgInfo.ext_info.dev_type = swId[0];
+        if (!_fwParams.ignoreCacheRep) {
+            getRunningFwVersion();
+        }
     }
+    return true;
+}
+
+bool Fs3Operations::getRunningFwVersion()
+{
+#ifndef UEFI_BUILD
+    struct connectib_icmd_get_fw_info fwVer;
+    memset(&fwVer, 0, sizeof(fwVer));
+    int rc =  gcif_get_fw_info(((Flash*)_ioAccess)->getMfileObj(), &fwVer);
+    if (rc && rc != GCIF_STATUS_UNSUPPORTED_ICMD_VERSION && rc != GCIF_STATUS_INVALID_OPCODE && rc != GCIF_ICMD_NOT_SUPPORTED) {
+        return errmsg("Failed to get running FW version. %s", gcif_err_str(rc));
+    }
+    if (!rc) {
+        _fwImgInfo.ext_info.running_fw_ver[0] = fwVer.fw_version.MAJOR;
+        _fwImgInfo.ext_info.running_fw_ver[1] = fwVer.fw_version.MINOR;
+        _fwImgInfo.ext_info.running_fw_ver[2] = fwVer.fw_version.SUBMINOR;
+    }
+#endif
     return true;
 }
 
@@ -783,26 +839,8 @@ bool Fs3Operations::CheckFs3ImgSize(Fs3Operations& imageOps, bool useImageDevDat
     return true;
 }
 
-bool Fs3Operations::GetMaxImageSize(u_int32_t flash_size, bool image_is_fs, u_int32_t &max_image_size)
-{
-	// max image size is calculated as the following :
-	// for failsafe image :   flash_size/2 - 6*sector_size
-	// for nonfailsafe image: flash_size - 6*sector_size
-	// the 6*sector_size is for the last two sections on the flash (DEV_INFO and MFG_INFO) which are not part of the image burnt.
-
-    u_int32_t sector_size = _ioAccess->get_sector_size();
-    if (image_is_fs) {
-        max_image_size = (flash_size / 2) - (6 * sector_size);
-    } else {
-        // For non FS image,
-        max_image_size = flash_size - (6 * sector_size);
-    }
-
-return true;
-}
-
 #define SUPPORTS_ISFU(chip_type) \
-    (chip_type == CT_CONNECT_IB || chip_type == CT_CONNECTX4 || chip_type == CT_CONNECTX4_LX)
+    (chip_type == CT_CONNECT_IB || chip_type == CT_CONNECTX4 || chip_type == CT_CONNECTX4_LX || chip_type == CT_CONNECTX5)
 
 #define FLASH_RESTORE(origFlashObj) \
         if (origFlashObj) {\
@@ -818,7 +856,7 @@ bool Fs3Operations::BurnFs3Image(Fs3Operations &imageOps,
     u_int8_t  is_curr_image_in_odd_chunks;
     u_int32_t new_image_start;
     u_int32_t total_img_size = 0;
-    u_int32_t sector_size = (_ioAccess->is_flash()) ? _ioAccess->get_sector_size() : FS3_DEFAULT_SECTOR_SIZE;
+    u_int32_t sector_size = FS3_DEFAULT_SECTOR_SIZE;
 
     Flash    *f     = (Flash*)(this->_ioAccess);
     FImage   *fim   = (FImage*)(imageOps._ioAccess);
@@ -891,6 +929,7 @@ bool Fs3Operations::BurnFs3Image(Fs3Operations &imageOps,
                     data8 + FS3_FW_SIGNATURE_SIZE,
                     imageOps._fs3ImgInfo.itocAddr + sector_size - FS3_FW_SIGNATURE_SIZE,
                     false,
+                    false,
                     total_img_size,
                     alreadyWrittenSz)) {
         return false;
@@ -906,7 +945,7 @@ bool Fs3Operations::BurnFs3Image(Fs3Operations &imageOps,
         }
 
         if (writeSection) {
-            if (!writeImage(burnParams.progressFunc, toc_entry->flash_addr << 2 , &(itoc_info_p->section_data[0]), itoc_info_p->section_data.size(), !toc_entry->relative_addr, total_img_size, alreadyWrittenSz)) {
+            if (!writeImage(burnParams.progressFunc, toc_entry->flash_addr << 2 , &(itoc_info_p->section_data[0]), itoc_info_p->section_data.size(), !toc_entry->relative_addr, false, total_img_size, alreadyWrittenSz)) {
                 return false;
             }
             alreadyWrittenSz += itoc_info_p->section_data.size();
@@ -1066,6 +1105,11 @@ bool Fs3Operations::Fs3Burn(Fs3Operations &imageOps, ExtBurnParams& burnParams)
             return false;
         }
 
+        // Check TimeStamp
+        if (!TestAndSetTimeStamp(imageOps)) {
+            return false;
+        }
+
         // ROM patchs
         if (((burnParams.burnRomOptions == ExtBurnParams::BRO_FROM_DEV_IF_EXIST) && (_fwImgInfo.ext_info.roms_info.exp_rom_found)) || // There is ROM in device and user choses to keep it
                 ((burnParams.burnRomOptions == ExtBurnParams::BRO_DEFAULT) && (!imageOps._fwImgInfo.ext_info.roms_info.exp_rom_found && _fwImgInfo.ext_info.roms_info.exp_rom_found))) { // No ROM in image and ROM in device
@@ -1082,7 +1126,7 @@ bool Fs3Operations::Fs3Burn(Fs3Operations &imageOps, ExtBurnParams& burnParams)
         }
 
         // image vsd patch
-        if (!burnParams.useImagePs && burnParams.vsdSpecified ) {
+        if (!burnParams.useImagePs && (burnParams.vsdSpecified || burnParams.useDevImgInfo)) {
             // get image info section :
             struct toc_info *imageInfoToc = (struct toc_info *)NULL;
             if (!imageOps.Fs3GetItocInfo(imageOps._fs3ImgInfo.tocArr, imageOps._fs3ImgInfo.numOfItocs, FS3_IMAGE_INFO, imageInfoToc)){
@@ -1092,12 +1136,24 @@ bool Fs3Operations::Fs3Burn(Fs3Operations &imageOps, ExtBurnParams& burnParams)
             std::vector<u_int8_t> imageInfoSect = imageInfoToc->section_data;
             struct cibfw_image_info image_info;
             cibfw_image_info_unpack(&image_info, &imageInfoSect[0]);
-            strncpy(image_info.vsd, burnParams.userVsd, VSD_LEN);
+            if (burnParams.vsdSpecified) {
+                strncpy(image_info.vsd, burnParams.userVsd, VSD_LEN);
+            }
             cibfw_image_info_pack(&image_info, &imageInfoSect[0]);
+            if (burnParams.useDevImgInfo) {
+                // update PSID, name and description in image info
+                struct tools_open_image_info tools_image_info;
+                tools_open_image_info_unpack(&tools_image_info, &imageInfoSect[0]);
+                strncpy(tools_image_info.psid, _fwImgInfo.ext_info.psid, PSID_LEN - 1);
+                strncpy(tools_image_info.name, _fs3ImgInfo.ext_info.name, NAME_LEN - 1);
+                strncpy(tools_image_info.description, _fs3ImgInfo.ext_info.description, DESCRIPTION_LEN - 1);
+                tools_open_image_info_pack(&tools_image_info, &imageInfoSect[0]);
+            }
+
             // re-insert it into the image:
             if (!imageOps.Fs3ReplaceSectionInDevImg(FS3_IMAGE_INFO, FS3_FW_ADB, true, (u_int8_t*)&newImageData[0], imageOps._fwImgInfo.lastImageAddr,
                     (u_int32_t*)&imageInfoSect[0], (u_int32_t)imageInfoSect.size(), true)) {
-                return errmsg(MLXFW_UPDATE_SECT_ERR, "failed to update image VSD in image. %s", imageOps.err());
+                return errmsg(MLXFW_UPDATE_SECT_ERR, "failed to update IMAGE_INFO section in image. %s", imageOps.err());
             }
             createNewImg = true;
         }
@@ -1281,10 +1337,10 @@ bool Fs3Operations::FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc,
     usrGuid.base_mac_specified = false;
     usrGuid.set_mac_from_guid = false;
 
-    if (sgParam.guidsSpecified || sgParam.uidsSpecified) {
+    if (sgParam.guidsSpecified || sgParam.uidSpecified) {
         usrGuid.base_guid_specified = true;
         usrGuid.base_guid = sgParam.userGuids[0];
-        usrGuid.set_mac_from_guid = sgParam.uidsSpecified ? true : false;
+        usrGuid.set_mac_from_guid = sgParam.uidSpecified ? true : false;
     }
     if (sgParam.macsSpecified) {
         // check base mac
@@ -1594,6 +1650,7 @@ bool Fs3Operations::Fs3UpdateMfgUidsSection(struct toc_info *curr_toc, std::vect
 {
     struct cibfw_mfg_info cib_mfg_info;
     struct cx4fw_mfg_info cx4_mfg_info;
+    (void)curr_toc;
     cibfw_mfg_info_unpack(&cib_mfg_info, (u_int8_t*)&section_data[0]);
 
     if (CHECK_MFG_OLD_FORMAT(cib_mfg_info)) {
@@ -1609,7 +1666,6 @@ bool Fs3Operations::Fs3UpdateMfgUidsSection(struct toc_info *curr_toc, std::vect
         return errmsg("Unknown MFG_INFO format version (%d.%d).", cib_mfg_info.major_version, cib_mfg_info.minor_version);
     }
     newSectionData = section_data;
-    memset((u_int8_t*)&newSectionData[0], 0, curr_toc->toc_entry.size * 4);
 
     if (CHECK_MFG_NEW_FORMAT(cib_mfg_info)) {
         cx4fw_mfg_info_pack(&cx4_mfg_info, (u_int8_t*)&newSectionData[0]);
@@ -1686,6 +1742,7 @@ bool Fs3Operations::Fs3UpdateUidsSection(struct toc_info *curr_toc, std::vector<
 {
     struct cibfw_device_info cib_dev_info;
     struct cx4fw_device_info cx4_dev_info;
+    (void)curr_toc;
     cibfw_device_info_unpack(&cib_dev_info, (u_int8_t*)&section_data[0]);
 
     if (CHECK_DEV_INFO_OLD_FORMAT(cib_dev_info)) {
@@ -1701,7 +1758,6 @@ bool Fs3Operations::Fs3UpdateUidsSection(struct toc_info *curr_toc, std::vector<
         return errmsg("Unknown DEV_INFO format version (%d.%d).", cib_dev_info.major_version, cib_dev_info.minor_version);
     }
     newSectionData = section_data;
-    memset((u_int8_t*)&newSectionData[0], 0, curr_toc->toc_entry.size * 4);
 
     if (CHECK_DEV_INFO_NEW_FORMAT(cib_dev_info)) {
         cx4fw_device_info_pack(&cx4_dev_info, (u_int8_t*)&newSectionData[0]);
@@ -1715,11 +1771,11 @@ bool Fs3Operations::Fs3UpdateVsdSection(struct toc_info *curr_toc, std::vector<u
         std::vector<u_int8_t>  &newSectionData)
 {
     struct cibfw_device_info dev_info;
+    (void)curr_toc;
     cibfw_device_info_unpack(&dev_info, (u_int8_t*)&section_data[0]);
     memset(dev_info.vsd, 0, sizeof(dev_info.vsd));
     strncpy(dev_info.vsd, user_vsd, TOOLS_ARR_SZ(dev_info.vsd) - 1);
     newSectionData = section_data;
-    memset((u_int8_t*)&newSectionData[0], 0, curr_toc->toc_entry.size * 4);
     cibfw_device_info_pack(&dev_info, (u_int8_t*)&newSectionData[0]);
     return true;
 }
@@ -1736,6 +1792,11 @@ bool Fs3Operations::Fs3UpdateVpdSection(struct toc_info *curr_toc, char *vpd,
     if (vpd_size % 4) {
         delete[] vpd_data;
         return errmsg("Size of VPD file: %d is not 4-byte alligned!", vpd_size);
+    }
+    // assuming VPD section is the last piece of Data on the flash
+    if ( (_ioAccess)->is_flash() && (getAbsAddr(curr_toc) + vpd_size > (_ioAccess)->get_size())) {
+        delete[] vpd_data;
+        return errmsg("VPD data exceeds flash size, max VPD size: 0x%x bytes", (_ioAccess)->get_size() - getAbsAddr(curr_toc));
     }
     GetSectData(newSectionData, (u_int32_t*)vpd_data, vpd_size);
     curr_toc->toc_entry.size = vpd_size / 4;
@@ -1833,7 +1894,7 @@ bool Fs3Operations::Fs3ReburnItocSection(u_int32_t newSectionAddr,
 
     PRINT_PROGRESS(callBackFunc, message);
 
-    if (!writeImage((ProgressCallBack)NULL, newSectionAddr , (u_int8_t*)&newSectionData[0], newSectionSize, true)) {
+    if (!writeImage((ProgressCallBack)NULL, newSectionAddr , (u_int8_t*)&newSectionData[0], newSectionSize, true, true)) {
     	PRINT_PROGRESS(callBackFunc, (char*)"FAILED\n");
         return false;
     }
@@ -2030,7 +2091,7 @@ bool Fs3Operations::getFirstDevDataAddr(u_int32_t& firstAddr) {
 bool Fs3Operations::reburnItocSection(PrintCallBack callBackFunc) {
 
     // HACK SHOULD BE REMOVED ASAP
-    u_int32_t sector_size = (_ioAccess->is_flash()) ? _ioAccess->get_sector_size() : FS3_DEFAULT_SECTOR_SIZE;
+    u_int32_t sector_size = FS3_DEFAULT_SECTOR_SIZE;
     // Itoc section is failsafe (two sectors after boot section are reserved for itoc entries)
     u_int32_t oldItocAddr = _fs3ImgInfo.itocAddr;
     u_int32_t newItocAddr = (_fs3ImgInfo.firstItocIsEmpty) ? (_fs3ImgInfo.itocAddr - sector_size) :  (_fs3ImgInfo.itocAddr + sector_size);
@@ -2045,7 +2106,7 @@ bool Fs3Operations::reburnItocSection(PrintCallBack callBackFunc) {
     memset(&p[itocSize] - CIBFW_ITOC_ENTRY_SIZE, FS3_END, CIBFW_ITOC_ENTRY_SIZE);
 
     PRINT_PROGRESS(callBackFunc, (char*)"Updating ITOC section - ");
-    bool rc = writeImage((ProgressCallBack)NULL, newItocAddr , p, itocSize, false);
+    bool rc = writeImage((ProgressCallBack)NULL, newItocAddr , p, itocSize, false, true);
     delete[] p;
     if (!rc) {
     	PRINT_PROGRESS(callBackFunc,(char*)"FAILED\n");
@@ -2055,7 +2116,7 @@ bool Fs3Operations::reburnItocSection(PrintCallBack callBackFunc) {
     u_int32_t zeros = 0;
 
     PRINT_PROGRESS(callBackFunc,(char*)"Restoring signature   - ");
-    if (!writeImage((ProgressCallBack)NULL, oldItocAddr, (u_int8_t*)&zeros, 4, false)) {
+    if (!writeImage((ProgressCallBack)NULL, oldItocAddr, (u_int8_t*)&zeros, 4, false, true)) {
         PRINT_PROGRESS(callBackFunc,(char*)"FAILED\n");
         return false;
     }
@@ -2127,7 +2188,7 @@ bool Fs3Operations::FwShiftDevData(PrintCallBack progressFunc)
 		return errmsg("Failed to get MFG_INFO ITOC information.");
 	}
 
-	if (getAbsAddr(mfgToc) < _ioAccess->get_size() - _ioAccess->get_sector_size()) {
+	if (getAbsAddr(mfgToc) < _ioAccess->get_size() - (((Flash*)(_ioAccess))->get_sector_size())) {
 		return errmsg("Device data sections already shifted.");
 	}
 
@@ -2158,7 +2219,7 @@ bool Fs3Operations::FwShiftDevData(PrintCallBack progressFunc)
                 return false;
             }
             // write the section to its new place in the flash
-            if (!writeImage((ProgressCallBack)NULL, getAbsAddr(currToc) , (u_int8_t*)&currToc->section_data[0], (currToc->toc_entry.size << 2), true)) {
+            if (!writeImage((ProgressCallBack)NULL, getAbsAddr(currToc) , (u_int8_t*)&currToc->section_data[0], (currToc->toc_entry.size << 2), true, true)) {
                 PRINT_PROGRESS(progressFunc,(char*)"FAILED\n");
                 return false;
             }
@@ -2227,20 +2288,16 @@ const char* Fs3Operations::FwGetResetRecommandationStr()
 bool Fs3Operations::Fs3IsfuActivateImage(u_int32_t newImageStart)
 {
     int rc = 0;
-    mfile *mf = (mfile*)NULL;
+    mfile *mf = _ioAccess->is_flash() ? ((Flash*)_ioAccess)->getMfileObj() : (mfile*)NULL;
     struct cibfw_register_mfai mfai;
     struct cibfw_register_mfrl mfrl;
     memset(&mfai, 0, sizeof(mfai));
     memset(&mfrl, 0, sizeof(mfrl));
 
-    if (!_devName) {// not an mst device
-        return true;
-    }
-    // send MFRL register
-    mf = mopen(_devName);
     if (!mf) {
-        return false;
+        return errmsg("Failed to activate image. No mfile object found.");
     }
+
     mfai.address = newImageStart;
     mfai.use_address = 1;
     rc = reg_access_mfai(mf,REG_ACCESS_METHOD_SET, &mfai);
@@ -2253,7 +2310,6 @@ bool Fs3Operations::Fs3IsfuActivateImage(u_int32_t newImageStart)
     // ignore ME_REG_ACCESS_BAD_PARAM error for old FW
     rc = (rc == ME_REG_ACCESS_BAD_PARAM) ? ME_OK : rc;
 cleanup:
-    mclose(mf);
     if (rc) {
         return errmsg("Failed to activate image. %s", m_err2str((MError)rc));
     }
@@ -2505,4 +2561,245 @@ bool Fs3Operations::FixCX4WriteProtection(bool justCheck)
         return errmsg("Failed to query device after fixing write protected sections");
     }
     return true;
+}
+
+bool Fs3Operations::FwCalcMD5(u_int8_t md5sum[16])
+{
+#if defined(UEFI_BUILD) || defined(NO_OPEN_SSL)
+    (void)md5sum;
+    return errmsg("Operation not supported");
+#else
+    if (!Fs3IntQuery(true, false)) {
+        return false;
+    }
+    // push beggining of image to md5buff
+    int sz = FS3_BOOT_START + _fwImgInfo.bootSize;
+    std::vector<u_int8_t> md5buff(_fs3ImgInfo.imageCache.begin(), _fs3ImgInfo.imageCache.begin() + sz);
+    // push all non dev data sections to md5buff
+    for (unsigned int j = 0; j < TOC_HEADER_SIZE; j++) {
+        md5buff.push_back(_fs3ImgInfo.imageCache[_fs3ImgInfo.itocAddr + j]);
+    }
+    // push itoc header
+    for (int i = 0; i < _fs3ImgInfo.numOfItocs; i++) {
+        // push each non-dev-data section to md5sum buffer
+        u_int32_t tocEntryAddr = _fs3ImgInfo.tocArr[i].entry_addr;
+        u_int32_t tocDataAddr = _fs3ImgInfo.tocArr[i].toc_entry.flash_addr << 2;
+        u_int32_t tocDataSize =  _fs3ImgInfo.tocArr[i].toc_entry.size << 2;
+        if (!_fs3ImgInfo.tocArr[i].toc_entry.device_data) {
+            // itoc entry
+            for (unsigned int j = 0; j < TOC_ENTRY_SIZE; j++) {
+                md5buff.push_back(_fs3ImgInfo.imageCache[tocEntryAddr + j]);
+            }
+            // itoc data
+            for (unsigned int j = 0; j < tocDataSize; j++) {
+                md5buff.push_back(_fs3ImgInfo.imageCache[tocDataAddr + j]);
+            }
+        }
+    }
+    // calc md5
+    tools_md5(&md5buff[0], md5buff.size(), md5sum);
+    return true;
+#endif
+}
+
+Tlv_Status_t Fs3Operations::GetTsObj(TimeStampIFC** tsObj)
+{
+    if (_ioAccess->is_flash()) {
+        *tsObj = TimeStampIFC::getIFC(((Flash*)(_ioAccess))->getMfileObj());
+    } else {
+        // check if buffer or file and allocate accrodingly
+        if (_fwParams.hndlType == FHT_FW_FILE) {
+            *tsObj = TimeStampIFC::getIFC(_fname, _fwImgInfo.lastImageAddr);
+        } else if (_fwParams.hndlType == FHT_FW_BUFF) {
+            *tsObj = TimeStampIFC::getIFC((u_int8_t*)((FImage*)_ioAccess)->getBuf(), ((FImage*)_ioAccess)->getBufLength());
+        } else {
+            *tsObj = (TimeStampIFC*)NULL;
+            errmsg("Unsupported FW handle type.");
+            return TS_HANDLE_NOT_SUPPORTED;
+        }
+    }
+    Tlv_Status_t rc = (*tsObj)->init();
+    if (rc) {
+        errmsg("%s", (*tsObj)->err());
+        delete *tsObj;
+        *tsObj = (TimeStampIFC*)NULL;
+        return rc;
+    }
+    return TS_OK;
+}
+
+bool Fs3Operations::FwSetTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer)
+{
+    TimeStampIFC* tsObj;
+    Tlv_Status_t rc;
+
+    if (!_ioAccess->is_flash() && !Fs3IntQuery(false, true)) {
+        return false;
+    }
+    if (GetTsObj(&tsObj)) {
+        return errmsg("Failed to set timestamp. %s", err());
+    }
+
+    if (!_ioAccess->is_flash()) {
+        // if caller hasnt specified fw version take from image
+        struct tools_open_fw_version zeroVer;
+        memset(&zeroVer, 0, sizeof(zeroVer));
+        if (!memcmp(&fwVer, &zeroVer, sizeof(fwVer))) {
+            fwVer.fw_ver_major = _fwImgInfo.ext_info.fw_ver[0];
+            fwVer.fw_ver_minor = _fwImgInfo.ext_info.fw_ver[1];
+            fwVer.fw_ver_subminor = _fwImgInfo.ext_info.fw_ver[2];
+        }
+    }
+
+    rc = tsObj->setTimeStamp(timestamp, fwVer);
+    if (rc) {
+        errmsg("%s", tsObj->err());
+    }
+    delete tsObj;
+    return rc ? false : true;
+}
+
+bool Fs3Operations::FwResetTimeStamp()
+{
+    TimeStampIFC* tsObj;
+    Tlv_Status_t rc;
+
+    if (!_ioAccess->is_flash() && !Fs3IntQuery(false, true)) {
+        return false;
+    }
+    if (GetTsObj(&tsObj)) {
+        return errmsg("Failed to reset timestamp. %s", err());
+    }
+    rc = tsObj->resetTimeStamp();
+    if (rc) {
+        errmsg("%s", tsObj->err());
+    }
+    delete tsObj;
+    return rc ? false : true;
+}
+
+bool Fs3Operations::FwQueryTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer, bool queryRunning)
+{
+    TimeStampIFC* tsObj;
+    Tlv_Status_t rc;
+    if (!_ioAccess->is_flash()) {
+        if (queryRunning) {
+            return errmsg("cannot get running FW Timestamp on image file");
+        }
+        if (!Fs3IntQuery(false, true)) {
+            return false;
+        }
+    }
+
+    if (GetTsObj(&tsObj)) {
+        return errmsg("Failed to query timestamp. %s", err());
+    }
+
+    rc = tsObj->queryTimeStamp(timestamp, fwVer, queryRunning);
+    if (rc) {
+        errmsg("%s", tsObj->err());
+    }
+    delete tsObj;
+    return rc ? false : true;
+}
+
+bool Fs3Operations::TestAndSetTimeStamp(Fs3Operations &imageOps)
+{
+    Tlv_Status_t rc;
+    Tlv_Status_t devTsQueryRc;
+    bool retRc = true;
+    TimeStampIFC* imgTsObj;
+    TimeStampIFC* devTsObj;
+    bool tsFoundOnImage = false;
+    struct tools_open_ts_entry imgTs;
+    struct tools_open_fw_version imgFwVer;
+    struct tools_open_ts_entry devTs;
+    struct tools_open_fw_version devFwVer;
+    memset(&imgTs, 0, sizeof(imgTs));
+    memset(&imgFwVer, 0, sizeof(imgFwVer));
+    memset(&devTs, 0, sizeof(devTs));
+    memset(&devFwVer, 0, sizeof(devFwVer));
+
+    if (!_ioAccess->is_flash()) {
+        return errmsg("cannot run TestAndSetTimeStamp on image");
+    }
+
+    if (_fwParams.ignoreCacheRep) {
+        // direct flash access no check is needed
+        return true;
+    }
+    if (imageOps._ioAccess->is_flash()) {
+        return errmsg("TestAndSetTimeStamp bad params");
+    }
+    if (imageOps.GetTsObj(&imgTsObj)) {
+        return errmsg("%s", imageOps.err());
+    }
+    rc = GetTsObj(&devTsObj);
+    if (rc) {
+        delete imgTsObj;
+        return rc == TS_TIMESTAMPING_NOT_SUPPORTED ? true : false;
+    }
+    // check if device supports timestamping or if device is not in livefish
+    devTsQueryRc = devTsObj->queryTimeStamp(devTs, devFwVer);
+    if (devTsQueryRc == TS_TIMESTAMPING_NOT_SUPPORTED || devTsQueryRc == TS_UNSUPPORTED_ICMD_VERSION) {
+        retRc = true;
+        goto cleanup;
+    } else if (devTsQueryRc && devTsQueryRc != TS_NO_VALID_TIMESTAMP) {
+        retRc = errmsg("%s", devTsObj->err());
+        goto cleanup;
+    }
+
+    // Option 1 image was timestampped need to try and set it on device
+    // Option 2 image was not timestampped but device was timestampped
+    rc = imgTsObj->queryTimeStamp(imgTs, imgFwVer);
+    if (rc == TS_OK) {
+        tsFoundOnImage = true;
+    } else if (rc != TS_TLV_NOT_FOUND ) {
+        retRc = errmsg("%s", imgTsObj->err());
+        goto cleanup;
+    }
+
+    if (tsFoundOnImage) {
+        // timestamp found on image, attempt to set it on device
+        rc = devTsObj->setTimeStamp(imgTs, imgFwVer);
+        if (rc == TS_OK) {
+            retRc = true;
+        } else {
+            retRc = errmsg("%s", devTsObj->err());
+        }
+    } else {
+        if (devTsQueryRc == TS_NO_VALID_TIMESTAMP) {
+            // no timestamp on image and no valid timestamp on device check if we got running timestamp if we do then fail
+            devTsQueryRc = devTsObj->queryTimeStamp(devTs, devFwVer, true);
+            if (devTsQueryRc == TS_OK) {
+                // we got running timestamp return error
+                retRc = errmsg("No valid timestamp detected. please set a valid timestamp on image/device or reset timestamps on device.");
+
+            } else if (devTsQueryRc == TS_NO_VALID_TIMESTAMP) {
+                // timestamping not used on device.
+                retRc = true;
+            } else {
+                retRc = errmsg("%s", devTsObj->err());
+            }
+        } else {
+            // we got a valid timestamp on device but not on image! compare the FW version
+            if (devFwVer.fw_ver_major == imageOps._fwImgInfo.ext_info.fw_ver[0] &&
+                    devFwVer.fw_ver_minor == imageOps._fwImgInfo.ext_info.fw_ver[1] &&
+                    devFwVer.fw_ver_subminor == imageOps._fwImgInfo.ext_info.fw_ver[2]) {
+                // versions match allow update
+                retRc = true;
+            } else {
+                retRc = errmsg("Stamped FW version missmatch: %d.%d.%04d differs from %d.%d.%04d", devFwVer.fw_ver_major,\
+                                                                                                devFwVer.fw_ver_minor,\
+                                                                                                devFwVer.fw_ver_subminor,\
+                                                                                                imageOps._fwImgInfo.ext_info.fw_ver[0],\
+                                                                                                imageOps._fwImgInfo.ext_info.fw_ver[1],\
+                                                                                                imageOps._fwImgInfo.ext_info.fw_ver[2]);
+            }
+        }
+    }
+cleanup:
+    delete imgTsObj;
+    delete devTsObj;
+    return retRc;
 }

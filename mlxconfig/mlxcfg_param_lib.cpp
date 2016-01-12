@@ -1,4 +1,5 @@
-/* Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
+/*
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -27,8 +28,6 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
- *  Version: $Id$
  *
  */
 
@@ -125,6 +124,25 @@ enum {
         }\
         _updated = false;\
         return MCE_SUCCESS
+
+#define GET_DEFAULT_5TH_GEN(mf, tlvStructName, tlvNameStr) \
+        MError __mRc;\
+        int __tlvBuffSize = tlvStructName##_size();\
+        u_int8_t __tlvBuff[__tlvBuffSize];\
+        memset(__tlvBuff, 0, __tlvBuffSize);\
+        struct tlvStructName __tlvStruct;\
+        memset(&__tlvStruct, 0, sizeof(__tlvStruct));\
+        __mRc = mnvaCom5thGen(mf, &__tlvBuff[0], __tlvBuffSize, getTlvTypeBe(), REG_ACCESS_METHOD_GET, true);\
+        if (__mRc) {\
+            if (__mRc == ME_REG_ACCESS_RES_NOT_AVLBL) {\
+                return MCE_SUCCESS;\
+            }\
+            return errmsg("Failed to get %s settings: %s", tlvNameStr, m_err2str(__mRc));\
+        }\
+        tlvStructName##_unpack(&__tlvStruct, &__tlvBuff[0]);\
+        updateClassDefaultAttrFromTlv((void*)&__tlvStruct);\
+        updateClassAttrFromDefaultParams();\
+       return MCE_SUCCESS
 
 #define GET_FROM_DEV_5TH_GEN(mf, tlvStructName, tlvNameStr) \
         MError __mRc;\
@@ -237,7 +255,7 @@ MError mnvaCom4thGen(mfile* mf, u_int8_t* buff, u_int16_t len, u_int16_t tlvType
     return ME_OK;
 }
 
-MError mnvaCom5thGen(mfile* mf, u_int8_t* buff, u_int16_t len, u_int32_t tlvType, reg_access_method_t method)
+MError mnvaCom5thGen(mfile* mf, u_int8_t* buff, u_int16_t len, u_int32_t tlvType, reg_access_method_t method, bool getDefault=false)
 {
     struct tools_open_nvda mnvaTlv;
     memset(&mnvaTlv, 0, sizeof(struct tools_open_nvda));
@@ -245,6 +263,9 @@ MError mnvaCom5thGen(mfile* mf, u_int8_t* buff, u_int16_t len, u_int32_t tlvType
     mnvaTlv.nv_hdr.length = len;
     mnvaTlv.nv_hdr.rd_en = 0;
     mnvaTlv.nv_hdr.over_en = 1;
+    if (getDefault) {
+        mnvaTlv.nv_hdr.default_ = 1;
+    }
     // tlvType should be in the correct endianess
     mnvaTlv.nv_hdr.type.tlv_type_dw.tlv_type_dw =  __be32_to_cpu(tlvType);
     memcpy(mnvaTlv.data, buff, len);
@@ -289,6 +310,9 @@ MError nvqcCom5thGen(mfile* mf, u_int32_t tlvType, bool& suppRead, bool& suppWri
 /*
  * RawCfgParams5thGen Class implementation
  */
+RawCfgParams5thGen::RawCfgParams5thGen() {
+    memset(&_nvdaTlv, 0, sizeof(struct tools_open_nvda));
+}
 
 int RawCfgParams5thGen::setRawData(const std::vector<u_int32_t>& tlvBuff) {
     _tlvBuff = tlvBuff;
@@ -361,7 +385,9 @@ CfgParams::CfgParams(mlxCfgType t, u_int32_t tlvT) {
 
 int CfgParams::getDefaultParams4thGen(mfile* mf, struct tools_open_query_def_params_global* global_params)
 {
+    mft_signal_set_handling(1);
     MError rc  = tcif_query_global_def_params(mf, global_params);
+    dealWithSignal();
     if (rc) {
         return errmsg(MCE_BAD_STATUS, "Failed to get default parameters: %s", tcif_err2str(rc));
     }
@@ -370,7 +396,9 @@ int CfgParams::getDefaultParams4thGen(mfile* mf, struct tools_open_query_def_par
 
 int CfgParams::getDefaultParams4thGen(mfile* mf, int port, struct tools_open_query_def_params_per_port* port_params)
 {
+    mft_signal_set_handling(1);
     MError rc  = tcif_query_per_port_def_params(mf, port, port_params);
+    dealWithSignal();
     if (rc) {
         return errmsg(MCE_BAD_STATUS, "Failed to get default parameters: %s", tcif_err2str(rc));
     }
@@ -413,10 +441,265 @@ void CfgParams::setIgnoreHardLimits(bool val)
 }
 
 /*
- * SriovParam Class implementation:
+ * BootSettingsExtParams Class implementation:
+ */
+bool BootSettingsExtParams::hardLimitCheck()
+{
+    if(_ipVer > 3) {
+        errmsg("illegal IP Ver parameter value. can be 0..3");
+        return false;
+    }
+    return true;
+}
+
+void BootSettingsExtParams::setParams(u_int32_t ipVer)
+{
+    _ipVer = ipVer;
+}
+
+/*
+ * BootSettingsExtParams4thGen Class implementation:
  */
 
-void SriovParams::setParam(mlxCfgParam paramType, u_int32_t val)
+u_int32_t BootSettingsExtParams4thGen::getDefaultParam(mlxCfgParam paramType)
+{
+    if (paramType == Mcp_Boot_Settings_Ext_IP_Ver_P1 ||
+            paramType == Mcp_Boot_Settings_Ext_IP_Ver_P2) {
+        return _ipVerDefault;
+    }
+    return MLXCFG_UNKNOWN;
+}
+
+void BootSettingsExtParams4thGen::setParam(mlxCfgParam paramType, u_int32_t val)
+{
+    if (paramType == Mcp_Boot_Settings_Ext_IP_Ver_P1 ||
+            paramType == Mcp_Boot_Settings_Ext_IP_Ver_P2) {
+        _ipVer = val;
+    }
+}
+
+u_int32_t BootSettingsExtParams4thGen::getParam(mlxCfgParam paramType)
+{
+    if (paramType == Mcp_Boot_Settings_Ext_IP_Ver_P1 ||
+            paramType == Mcp_Boot_Settings_Ext_IP_Ver_P2) {
+        return _ipVer;
+    }
+    return MLXCFG_UNKNOWN;
+}
+
+bool BootSettingsExtParams4thGen::cfgSupported(mfile* mf, mlxCfgParam param)
+{
+    (void)param;
+    struct tools_open_query_def_params_global params;
+    int rc;
+    rc = getDefaultParams4thGen(mf, &params);
+    if (rc) {
+        return false;
+    }
+    return params.boot_ip_ver;
+}
+
+int BootSettingsExtParams4thGen::getDefaultParams(mfile* mf)
+{
+    struct tools_open_query_def_params_per_port params;
+    int rc;
+    rc = getDefaultParams4thGen(mf, _port, &params);
+    if (rc) {
+        return false;
+    }
+    _ipVerDefault = params.boot_ip_ver;
+    setParams(_ipVerDefault);
+    return MCE_SUCCESS;
+}
+
+int BootSettingsExtParams4thGen::getFromDev(mfile* mf)
+{
+    if (_updated) {
+        return MCE_SUCCESS;
+    }
+    MError rc;
+    // prep tlv
+    u_int8_t buff[tools_open_sriov_size()];
+    struct tools_open_boot_settings_ext bootSettingsExtTlv;
+    memset(buff, 0, tools_open_boot_settings_ext_size());
+    memset(&bootSettingsExtTlv, 0, sizeof(struct tools_open_boot_settings_ext));
+    // pack it
+    tools_open_boot_settings_ext_pack(&bootSettingsExtTlv, buff);
+    // send it
+    DEBUG_PRINT_SEND(&bootSettingsExtTlv, boot_settings_ext);
+    rc = mnvaCom4thGen(mf, buff, tools_open_boot_settings_ext_size(), tlvTypeIdx, REG_ACCESS_METHOD_GET, _port);
+    // check rc
+    DEBUG_PRINT_RECIEVE(&bootSettingsExtTlv, boot_settings_ext);
+    if (rc) {// when attempting to get a nv_cfg tlv from device ME_REG_ACCESS_RES_NOT_AVLBL means - no valid
+             // tlv found. i.e default configuration are on.
+        if (rc == ME_REG_ACCESS_RES_NOT_AVLBL) {
+            return MCE_SUCCESS;
+        }
+        return errmsg(MCE_BAD_STATUS, "Failed to get Boot Settings Extras configuration: %s", m_err2str(rc));
+    }
+    // unpack and update
+    tools_open_boot_settings_ext_unpack(&bootSettingsExtTlv, buff);
+    setParams(bootSettingsExtTlv.ip_ver);
+    _updated = true;
+
+    return MCE_SUCCESS;
+}
+
+int BootSettingsExtParams4thGen::setOnDev(mfile* mf, bool ignoreCheck)
+{
+    if (_ipVer == MLXCFG_UNKNOWN) {
+        return errmsg("%s please specify all parameters for Boot Settings Extras.", err() ? err() : "");
+    }
+    if (!ignoreCheck && !checkCfg(mf)) {
+        return MCE_BAD_PARAMS;
+    }
+
+    // prep tlv
+    MError ret;
+    u_int8_t buff[tools_open_boot_settings_ext_size()];
+    struct tools_open_boot_settings_ext bootSettingsExtTlv;
+
+    memset(buff, 0, tools_open_boot_settings_ext_size());
+    memset(&bootSettingsExtTlv, 0, sizeof(struct tools_open_boot_settings_ext));
+    bootSettingsExtTlv.ip_ver = _ipVer;
+    // pack it
+    tools_open_boot_settings_ext_pack(&bootSettingsExtTlv, buff);
+    // send it
+    ret = mnvaCom4thGen(mf, buff, tools_open_boot_settings_ext_size(), tlvTypeIdx, REG_ACCESS_METHOD_SET, _port);
+    // check rc
+    if (ret) {
+        return errmsg("failed to set Boot Settings Extras params: %s",m_err2str(ret));
+    }
+    _updated = false;
+    return MCE_SUCCESS;
+}
+
+/*
+ * BootSettingsExtParams5thGen Class implementation:
+ */
+
+u_int32_t BootSettingsExtParams5thGen::getDefaultParam(mlxCfgParam paramType)
+{
+    if (paramType == Mcp_Boot_Settings_Ext_IP_Ver) {
+        return _ipVerDefault;
+    }
+    return MLXCFG_UNKNOWN;
+}
+
+void BootSettingsExtParams5thGen::setParam(mlxCfgParam paramType, u_int32_t val)
+{
+    if (paramType == Mcp_Boot_Settings_Ext_IP_Ver) {
+        _ipVer = val;
+    }
+}
+
+u_int32_t BootSettingsExtParams5thGen::getParam(mlxCfgParam paramType)
+{
+    if (paramType == Mcp_Boot_Settings_Ext_IP_Ver) {
+        return _ipVer;
+    }
+    return MLXCFG_UNKNOWN;
+}
+
+u_int32_t BootSettingsExtParams5thGen::getBootSettingsExtCapabilitiesTlvTypeBe()
+{
+    struct tools_open_global_type type;
+    u_int32_t tlvType = 0;
+
+    type.param_class = CLASS_GLOBAL;
+    type.param_idx = BOOT_SETTINGS_EXTRAS_GEN5_CAP;
+    tools_open_global_type_pack(&type, (u_int8_t*)&tlvType);
+    return tlvType;
+}
+
+bool BootSettingsExtParams5thGen::cfgSupported(mfile* mf, mlxCfgParam param)
+{
+    MError rc;
+    (void)param;
+    u_int8_t tlvCapBuff[TOOLS_OPEN_OPTION_ROM_CAPABILITY_SIZE] = {0};
+    struct tools_open_option_rom_capability optionRomCapabilitesTlv;
+    bool suppRead, suppWrite;
+    rc = nvqcCom5thGen(mf, getBootSettingsExtCapabilitiesTlvTypeBe(), suppRead, suppWrite);
+    if (rc) {
+        return false;
+    }
+    memset(&optionRomCapabilitesTlv, 0, sizeof(optionRomCapabilitesTlv));
+    rc = mnvaCom5thGen(mf, &tlvCapBuff[0], TOOLS_OPEN_OPTION_ROM_CAPABILITY_SIZE, getBootSettingsExtCapabilitiesTlvTypeBe(), REG_ACCESS_METHOD_GET);
+    if (rc) {
+        return errmsg("Failed to get Boot Settings Ext capabilities parameter. %s", m_err2str(rc));
+    }
+    tools_open_option_rom_capability_unpack(&optionRomCapabilitesTlv, tlvCapBuff);
+    return optionRomCapabilitesTlv.ip_ver;
+}
+
+int BootSettingsExtParams5thGen::getFromDev(mfile* mf)
+{
+    GET_FROM_DEV_5TH_GEN(mf, tools_open_boot_settings_ext, "Boot Settings Ext");
+}
+
+void BootSettingsExtParams5thGen::updateClassAttrFromDefaultParams()
+{
+    setParams(_ipVerDefault);
+}
+
+int BootSettingsExtParams5thGen::setOnDev(mfile* mf, bool ignoreCheck)
+{
+    SET_ON_DEV_5TH_GEN(mf, ignoreCheck, tools_open_boot_settings_ext, "Boot Settings Ext");
+}
+
+u_int32_t BootSettingsExtParams5thGen::getTlvTypeBe()
+{
+    struct tools_open_per_host_type type;
+    u_int32_t tlvType = 0;
+
+    type.param_class = CLASS_PER_HOST;
+    type.param_idx = tlvTypeIdx;
+    type.function = 0; // currently support only host 0 (FW should fill this field with correct func)
+    type.host = 0; // currently support only host 0 (FW should fill this field with correct host)
+    tools_open_per_host_type_pack(&type, (u_int8_t*)&tlvType);
+    return tlvType;
+}
+
+void BootSettingsExtParams5thGen::updateTlvFromClassAttr(void* tlv)
+{
+    struct tools_open_boot_settings_ext* bootSettingsExt = (struct tools_open_boot_settings_ext*)tlv;
+    bootSettingsExt->ip_ver = _ipVer;
+    return;
+}
+void BootSettingsExtParams5thGen::updateClassAttrFromTlv(void* tlv)
+{
+    struct tools_open_boot_settings_ext* bootSettingsExt = (struct tools_open_boot_settings_ext*)tlv;
+    setParams(bootSettingsExt->ip_ver);
+    return;
+}
+
+void BootSettingsExtParams5thGen::updateClassDefaultAttrFromTlv(void* tlv)
+{
+    struct tools_open_boot_settings_ext* bootSettingsExt = (struct tools_open_boot_settings_ext*)tlv;
+    _ipVerDefault = bootSettingsExt->ip_ver;
+    return;
+}
+
+int BootSettingsExtParams5thGen::getDefaultParamsAux(mfile* mf)
+{
+    GET_DEFAULT_5TH_GEN(mf, tools_open_boot_settings_ext, "Boot Settings Extras");
+}
+
+int BootSettingsExtParams5thGen::getDefaultParams(mfile* mf)
+{
+    int rc = getDefaultParamsAux(mf);
+    if(!rc || _ipVerDefault == MLXCFG_UNKNOWN){
+        _ipVerDefault = 0;
+        setParams(_ipVerDefault);
+    }
+    return MCE_SUCCESS;
+}
+
+/*
+ * SriovParams4thGen Class implementation:
+ */
+
+void SriovParams4thGen::setParam(mlxCfgParam paramType, u_int32_t val)
 {
     if (paramType == Mcp_Sriov_En) {
         _sriovEn = val;
@@ -425,7 +708,7 @@ void SriovParams::setParam(mlxCfgParam paramType, u_int32_t val)
     }
 }
 
-u_int32_t SriovParams::getParam(mlxCfgParam paramType)
+u_int32_t SriovParams4thGen::getParam(mlxCfgParam paramType)
 {
     if (paramType == Mcp_Sriov_En) {
         return _sriovEn;
@@ -435,7 +718,17 @@ u_int32_t SriovParams::getParam(mlxCfgParam paramType)
     return MLXCFG_UNKNOWN;
 }
 
-bool SriovParams::hardLimitCheck()
+u_int32_t SriovParams4thGen::getDefaultParam(mlxCfgParam paramType)
+{
+    if (paramType == Mcp_Sriov_En) {
+        return _sriovEnDefault;
+    } else if (paramType == Mcp_Num_Of_Vfs) {
+        return _numOfVfsDefault;
+    }
+    return MLXCFG_UNKNOWN;
+}
+
+bool SriovParams4thGen::hardLimitCheck()
 {
     if ((_numOfVfs > _maxVfs)) {
         errmsg("Number of VFs exceeds limit (%d).", _maxVfs);
@@ -467,12 +760,19 @@ int SriovParams4thGen::getDefaultParams(mfile* mf)
     rc = updateMaxVfs(mf); CHECK_RC(rc);
     rc = getDefaultParams4thGen(mf, &global_params);
     if (rc == MCE_SUCCESS) {
-        _sriovEn = global_params.sriov_en;
-        _numOfVfs = global_params.num_vfs;
+        _sriovEnDefault = global_params.sriov_en;
+        _numOfVfsDefault = global_params.num_vfs;
+        setParams(_sriovEnDefault, _numOfVfsDefault);
     } else {
         rc = MCE_GET_DEFAULT_PARAMS;
     }
     return rc;
+}
+
+void SriovParams4thGen::setParams(u_int32_t sriovEn, u_int32_t numOfVfs)
+{
+    _sriovEn = sriovEn;
+    _numOfVfs = numOfVfs;
 }
 
 int SriovParams4thGen::getFromDev(mfile* mf)
@@ -496,15 +796,13 @@ int SriovParams4thGen::getFromDev(mfile* mf)
     if (rc) {// when attempting to get a nv_cfg tlv from device ME_REG_ACCESS_RES_NOT_AVLBL means - no valid
              // tlv found. i.e default configuration are on.
         if (rc == ME_REG_ACCESS_RES_NOT_AVLBL) {
-
             return MCE_SUCCESS;
         }
         return errmsg(MCE_BAD_STATUS, "Failed to get SRIOV configuration: %s", m_err2str(rc));
     }
     // unpack and update
     tools_open_sriov_unpack(&sriovTlv, buff);
-    _sriovEn = sriovTlv.sriov_en;
-    _numOfVfs = sriovTlv.total_vfs;
+    setParams(sriovTlv.sriov_en, sriovTlv.total_vfs);
     _updated = true;
 
     return MCE_SUCCESS;
@@ -603,6 +901,11 @@ bool WolParams::hardLimitCheck()
     return false;
 }
 
+void WolParams::setParams(u_int32_t wolMagicEn)
+{
+    _wolMagicEn = wolMagicEn;
+}
+
 /*
  * WolParams4thGen Class implementation :
  */
@@ -622,6 +925,14 @@ u_int32_t WolParams4thGen::getParam(mlxCfgParam paramType)
     return MLXCFG_UNKNOWN;
 }
 
+u_int32_t WolParams4thGen::getDefaultParam(mlxCfgParam paramType)
+{
+    if ((paramType == Mcp_Wol_Magic_En_P1  && _port == 1) || (paramType == Mcp_Wol_Magic_En_P2 && _port == 2)) {
+        return _wolMagicEnDefault;
+    }
+    return MLXCFG_UNKNOWN;
+}
+
 bool WolParams4thGen::cfgSupported(mfile* mf, mlxCfgParam param)
 {
     (void)mf;
@@ -634,7 +945,8 @@ int WolParams4thGen::getDefaultParams(mfile* mf)
     struct tools_open_query_def_params_per_port port_params;
     int rc = getDefaultParams4thGen(mf, _port , &port_params);
     if (rc == MCE_SUCCESS) {
-        _wolMagicEn = port_params.default_en_wol_magic;
+        _wolMagicEnDefault = port_params.default_en_wol_magic;
+        setParams(_wolMagicEnDefault);
     } else {
         rc = MCE_GET_DEFAULT_PARAMS;
     }
@@ -665,7 +977,7 @@ int WolParams4thGen::getFromDev(mfile* mf)
     }
     // unpack and update
     tools_open_wol_unpack(&wolTlv, buff);
-    _wolMagicEn = wolTlv.en_wol_magic;
+    setParams(wolTlv.en_wol_magic);
     _updated = true;
 
     return MCE_SUCCESS;
@@ -719,6 +1031,14 @@ u_int32_t WolParams5thGen::getParam(mlxCfgParam paramType)
     return MLXCFG_UNKNOWN;
 }
 
+u_int32_t WolParams5thGen::getDefaultParam(mlxCfgParam paramType)
+{
+    if (paramType == Mcp_Wol_Magic_En) {
+        return _wolMagicEnDefault;
+    }
+    return MLXCFG_UNKNOWN;
+}
+
 bool WolParams5thGen::cfgSupported(mfile* mf, mlxCfgParam param)
 {
     MError rc;
@@ -734,7 +1054,12 @@ bool WolParams5thGen::cfgSupported(mfile* mf, mlxCfgParam param)
 
 int WolParams5thGen::getDefaultParams(mfile* mf)
 {
-    return getFromDev(mf);
+    GET_DEFAULT_5TH_GEN(mf, tools_open_wol, "Wake On LAN");
+}
+
+void WolParams5thGen::updateClassAttrFromDefaultParams()
+{
+    setParams(_wolMagicEnDefault);
 }
 
 int WolParams5thGen::getFromDev(mfile* mf)
@@ -769,11 +1094,16 @@ void WolParams5thGen::updateTlvFromClassAttr(void* tlv)
 void WolParams5thGen::updateClassAttrFromTlv(void* tlv)
 {
     struct tools_open_wol* wolTlv = (struct tools_open_wol*)tlv;
-    _wolMagicEn = wolTlv->en_wol_magic;
+    setParams(wolTlv->en_wol_magic);
     return;
 }
 
-
+void WolParams5thGen::updateClassDefaultAttrFromTlv(void* tlv)
+{
+    struct tools_open_wol* wolTlv = (struct tools_open_wol*)tlv;
+    _wolMagicEnDefault = wolTlv->en_wol_magic;
+    return;
+}
 /*
  * BarSzParams Class implementation :
  */
@@ -794,6 +1124,13 @@ u_int32_t BarSzParams::getParam(mlxCfgParam paramType)
     return MLXCFG_UNKNOWN;
 }
 
+u_int32_t BarSzParams::getDefaultParam(mlxCfgParam paramType)
+{
+    if (paramType == Mcp_Log_Bar_Size) {
+        return _logBarSzDefault;
+    }
+    return MLXCFG_UNKNOWN;
+}
 
 bool BarSzParams::hardLimitCheck()
 {
@@ -804,6 +1141,10 @@ bool BarSzParams::hardLimitCheck()
     return true;
 }
 
+void BarSzParams::setParams(u_int32_t logBarSz)
+{
+    _logBarSz = logBarSz;
+}
 /*
  * BarSzParams4thGen Class implementation :
  */
@@ -820,8 +1161,9 @@ int BarSzParams4thGen::getDefaultParams(mfile* mf)
     struct tools_open_query_def_params_global global_params;
     int rc = getDefaultParams4thGen(mf, &global_params);
     if ((rc == MCE_SUCCESS) & 0) { //TODO: adrianc: remove the & 0 when FW displays thesee parameters correctly in QUERY_DEF_PARAMS command
-        _logBarSz = global_params.uar_bar_size;
+        _logBarSzDefault = global_params.uar_bar_size;
         _maxLogBarSz = global_params.max_uar_bar_size;
+        setParams(_logBarSzDefault);
     } else {
         // attempt to take from query_dev_cap
         rc = getDefaultBarSz(mf);
@@ -844,7 +1186,8 @@ int BarSzParams4thGen::getDefaultBarSz(mfile* mf)
         return errmsg(MCE_BAD_STATUS,"Failed to query device capabilities. %s", tcif_err2str(rc));
     }
 
-    _logBarSz = EXTRACT64(data, 16, 6) + 1; //adrianc: this field reports only half of the bar size (i.e without the blue flame)
+    _logBarSzDefault = EXTRACT64(data, 16, 6) + 1; //adrianc: this field reports only half of the bar size (i.e without the blue flame)
+    setParams(_logBarSzDefault);
     return MCE_SUCCESS;
 }
 
@@ -872,7 +1215,7 @@ int BarSzParams4thGen::getFromDev(mfile* mf)
     }
     // unpack and update
     tools_open_bar_size_unpack(&barSzTlv, buff);
-    _logBarSz = barSzTlv.log_uar_bar_size;
+    setParams(barSzTlv.log_uar_bar_size);
     _updated = true;
 
     return MCE_SUCCESS;
@@ -974,11 +1317,16 @@ int VpiParams::getFromDevComPost(MError mnvaComRC)
      }
      // unpack and update
      tools_open_vpi_settings_unpack(&_vpiTlv, &_tlvBuff[0]);
-     _linkType = _vpiTlv.network_link_type;
-     _defaultLinkType = _vpiTlv.default_link_type;
+     setParams(_vpiTlv.network_link_type, _vpiTlv.default_link_type);
      _updated = true;
      return MCE_SUCCESS;
 
+}
+
+void VpiParams::setParams(u_int32_t linkType, u_int32_t defaultLinkType)
+{
+    _linkType = linkType;
+    _defaultLinkType = defaultLinkType;
 }
 
 int VpiParams::setOnDevComPre(bool ignoreCheck)
@@ -1026,6 +1374,14 @@ u_int32_t VpiParams4thGen::getParam(mlxCfgParam paramType)
     return MLXCFG_UNKNOWN;
 }
 
+u_int32_t VpiParams4thGen::getDefaultParam(mlxCfgParam paramType)
+{
+    if ((paramType == Mcp_Link_Type_P1 && _port == 1 ) || (paramType == Mcp_Link_Type_P2 && _port == 2) ) {
+        return _linkTypeDefault;
+    }
+    return MLXCFG_UNKNOWN;
+}
+
 bool VpiParams4thGen::cfgSupported(mfile* mf, mlxCfgParam param)
 {
     (void)mf;
@@ -1036,14 +1392,15 @@ bool VpiParams4thGen::cfgSupported(mfile* mf, mlxCfgParam param)
 int VpiParams4thGen::getDefaultParams(mfile* mf)
 {
     struct tools_open_query_def_params_per_port port_params;
-    _defaultLinkType = 0; // not used for 4th gen devices , we give it a default value
+    _defaultLinkTypeDefault = 0; // not used for 4th gen devices , we give it a default value
     int rc = getDefaultParams4thGen(mf, _port , &port_params);
     if (rc) {
         return MCE_GET_DEFAULT_PARAMS;
     }
     if (port_params.default_network_link_type) {
-        _linkType = port_params.default_network_link_type;
+        _linkTypeDefault = port_params.default_network_link_type;
     }
+    setParams(_linkTypeDefault, _defaultLinkTypeDefault);
     return MCE_SUCCESS;
 }
 
@@ -1101,6 +1458,14 @@ u_int32_t VpiParams5thGen::getParam(mlxCfgParam paramType)
     return MLXCFG_UNKNOWN;
 }
 
+u_int32_t VpiParams5thGen::getDefaultParam(mlxCfgParam paramType)
+{
+    if ((paramType == Mcp_Link_Type_P1 && _port == 1 ) || (paramType == Mcp_Link_Type_P2 && _port == 2) ) {
+        return _defaultLinkTypeDefault;
+    }
+    return MLXCFG_UNKNOWN;
+}
+
 u_int32_t VpiParams5thGen::getTlvTypeBe()
 {
     struct tools_open_per_port_type type;
@@ -1131,9 +1496,32 @@ bool VpiParams5thGen::cfgSupported(mfile* mf, mlxCfgParam param)
 
 int VpiParams5thGen::getDefaultParams(mfile* mf)
 {
+    MError mRc;
+    int rc;
+
     // if configuration is supported then network link type must be 3
-    _linkType = 3;
-    return getFromDev(mf);
+    _linkTypeDefault = 3;
+
+    if((rc = getFromDevComPre())) {
+        return rc;
+    }
+
+    mRc = mnvaCom5thGen(mf, &_tlvBuff[0], TOOLS_OPEN_VPI_SETTINGS_SIZE, getTlvTypeBe(), REG_ACCESS_METHOD_GET, true);
+
+    if (mRc) {
+        if (mRc == ME_REG_ACCESS_RES_NOT_AVLBL) {
+            return MCE_SUCCESS;
+        }
+        return errmsg("Failed to get VPI port%d configuration: %s", _port, m_err2str(mRc));
+    }
+
+    // unpack and update
+    tools_open_vpi_settings_unpack(&_vpiTlv, &_tlvBuff[0]);
+    _linkTypeDefault = _vpiTlv.network_link_type;
+    _defaultLinkTypeDefault = _vpiTlv.default_link_type;
+    setParams(_linkTypeDefault, _defaultLinkTypeDefault);
+    return MCE_SUCCESS;
+
 }
 
 int VpiParams5thGen::getFromDev(mfile* mf)
@@ -1148,7 +1536,11 @@ int VpiParams5thGen::getFromDev(mfile* mf)
         return rc;
     }
     mRc = mnvaCom5thGen(mf, &_tlvBuff[0], TOOLS_OPEN_VPI_SETTINGS_SIZE, getTlvTypeBe(), REG_ACCESS_METHOD_GET);
-    return getFromDevComPost(mRc);
+    rc = getFromDevComPost(mRc);
+
+    _updated = true;
+
+    return rc;
 }
 
 int VpiParams5thGen::setOnDev(mfile* mf, bool ignoreCheck)
@@ -1210,7 +1602,15 @@ bool PciParams5thGen::cfgSupported(mfile* mf, mlxCfgParam param)
     case Mcp_Fpp_En:
         return _fppSupported;
     case Mcp_Last:
-        return (_sriovSupported && _fppSupported);
+        return true;
+    case Mcp_PF_Log_Bar_Size:
+        return _pfLogBarSizeSuppored;
+    case Mcp_VF_Log_Bar_Size:
+        return _vfLogBarSizeSuppored;
+    case Mcp_Num_Pf_Msix:
+        return _numPfMsixSupported;
+    case Mcp_Num_Vf_Msix:
+        return _numVfMsixSupported;
     default:
         return false;
     }
@@ -1227,6 +1627,18 @@ void PciParams5thGen::setParam(mlxCfgParam paramType, u_int32_t val)
     } else if (paramType == Mcp_Fpp_En) {
         _fppEn = val;
         _userSpecifiedFPP = true;
+    } else if(paramType == Mcp_PF_Log_Bar_Size) {
+        _pfLogBarSize = val;
+        _userSpecifiedPfLogBarSize = true;
+    } else if(paramType == Mcp_VF_Log_Bar_Size) {
+        _vfLogBarSize = val;
+        _userSpecifiedVfLogBarSize = true;
+    } else if(paramType == Mcp_Num_Pf_Msix) {
+        _numPfMsix = val;
+        _userSpecifiedNumPfMsix = true;
+    } else if(paramType == Mcp_Num_Vf_Msix) {
+        _numVfMsix = val;
+        _userSpecifiedNumVfMsix = true;
     }
 }
 
@@ -1238,6 +1650,35 @@ u_int32_t PciParams5thGen::getParam(mlxCfgParam paramType)
         return _numOfVfs;
     } else if (paramType == Mcp_Fpp_En) {
         return _fppEn;
+    } else if(paramType == Mcp_PF_Log_Bar_Size) {
+        return _pfLogBarSize;
+    } else if(paramType == Mcp_VF_Log_Bar_Size) {
+        return _vfLogBarSize;
+    } else if(paramType == Mcp_Num_Pf_Msix) {
+        return _numPfMsix;
+    } else if(paramType == Mcp_Num_Vf_Msix) {
+        return _numVfMsix;
+    }
+
+    return MLXCFG_UNKNOWN;
+}
+
+u_int32_t PciParams5thGen::getDefaultParam(mlxCfgParam paramType)
+{
+    if (paramType == Mcp_Sriov_En) {
+        return _sriovEnDefault;
+    } else if (paramType == Mcp_Num_Of_Vfs) {
+        return _numOfVfsDefault;
+    } else if (paramType == Mcp_Fpp_En) {
+        return _fppEnDefault;
+    } else if(paramType == Mcp_PF_Log_Bar_Size) {
+        return _pfLogBarSizeDefault;
+    } else if(paramType == Mcp_VF_Log_Bar_Size) {
+        return _vfLogBarSizeDefault;
+    } else if(paramType == Mcp_Num_Pf_Msix) {
+        return _numPfMsixDefault;
+    } else if(paramType == Mcp_Num_Vf_Msix) {
+        return _numVfMsixDefault;
     }
 
     return MLXCFG_UNKNOWN;
@@ -1253,7 +1694,6 @@ int PciParams5thGen::getFromDev(mfile* mf)
     if (_updated) {
         return MCE_SUCCESS;
     }
-
     mRc = mnvaCom5thGen(mf, &tlvBuff[0], TOOLS_OPEN_PCI_CONFIGURATION_SIZE, getPciSettingsTlvTypeBe(), REG_ACCESS_METHOD_GET);
 
     if (mRc) {
@@ -1271,7 +1711,22 @@ int PciParams5thGen::getFromDev(mfile* mf)
     if (pciSettingsTlv.fpp_valid) {
         _fppEn = pciSettingsTlv.fpp_en;
     }
-
+    if(pciSettingsTlv.pf_bar_size_valid) {
+        _pfLogBarSize = pciSettingsTlv.log_pf_uar_bar_size;
+    }
+    if(pciSettingsTlv.vf_bar_size_valid) {
+        _vfLogBarSize = pciSettingsTlv.log_vf_uar_bar_size;
+    }
+    if(pciSettingsTlv.num_pfs_valid){
+        _numOfPfs = pciSettingsTlv.num_pfs;
+        _numOfPfsValid = true;
+    }
+    if(pciSettingsTlv.num_pfs_msix_valid){
+        _numPfMsix = pciSettingsTlv.num_pf_msix;
+    }
+    if(pciSettingsTlv.num_vfs_msix_valid){
+        _numVfMsix = pciSettingsTlv.num_vf_msix;
+    }
     _updated = true;
 
    return MCE_SUCCESS;
@@ -1309,8 +1764,28 @@ int PciParams5thGen::setOnDev(mfile* mf, bool ignoreCheck)
         pciSettingsTlv.fpp_valid = 1;
     }
 
+    if (_pfLogBarSizeSuppored && _userSpecifiedPfLogBarSize) {
+        pciSettingsTlv.log_pf_uar_bar_size = _pfLogBarSize;
+        pciSettingsTlv.pf_bar_size_valid = 1;
+    }
+
+    if (_vfLogBarSizeSuppored && _userSpecifiedVfLogBarSize) {
+        pciSettingsTlv.log_vf_uar_bar_size = _vfLogBarSize;
+        pciSettingsTlv.vf_bar_size_valid = 1;
+    }
+
     if (pciSettingsTlv.sriov_en && !pciSettingsTlv.fpp_en) {
         return errmsg("FPP should be enabled while SRIOV is enabled");
+    }
+
+    if(_numPfMsixSupported && _userSpecifiedNumPfMsix) {
+        pciSettingsTlv.num_pf_msix = _numPfMsix;
+        pciSettingsTlv.num_pfs_msix_valid = 1;
+    }
+
+    if(_numVfMsixSupported && _userSpecifiedNumVfMsix) {
+        pciSettingsTlv.num_vf_msix = _numVfMsix;
+        pciSettingsTlv.num_vfs_msix_valid = 1;
     }
     // pack it
     tools_open_pci_configuration_pack(&pciSettingsTlv, tlvBuff);
@@ -1327,23 +1802,94 @@ int PciParams5thGen::setOnDev(mfile* mf, bool ignoreCheck)
 
 int PciParams5thGen::getDefaultParams(mfile* mf)
 {
-    return getDefaultsAndCapabilities(mf);
+    int rc = getDefaultsAndCapabilities(mf);
+
+    setParams(
+     _sriovEnDefault,
+     _numOfVfsDefault,
+     _fppEnDefault,
+     _pfLogBarSizeDefault,
+     _vfLogBarSizeDefault,
+     _numOfPfs,
+     _numPfMsixDefault,
+     _numVfMsixDefault);
+
+    return rc;
+}
+
+void PciParams5thGen::setParams(u_int32_t sriovEn, u_int32_t numOfVfs, u_int32_t fppEn, u_int32_t pfLogBarSize,
+            u_int32_t vfLogBarSize, u_int32_t numOfPfs, u_int32_t numPfMsix, u_int32_t numVfMsix)
+{
+    _sriovEn = sriovEn;
+    _numOfVfs = numOfVfs;
+    _fppEn = fppEn;
+    _pfLogBarSize = pfLogBarSize;
+    _vfLogBarSize = vfLogBarSize;
+    _numOfPfs = numOfPfs;
+    _numPfMsix = numPfMsix;
+    _numVfMsix = numVfMsix;
 }
 
 int PciParams5thGen::getDefaultsAndCapabilities(mfile* mf)
 {
     MError rc;
-    u_int8_t tlvBuff[TOOLS_OPEN_PCI_CAPABILITIES_SIZE] = {0};
+    u_int8_t tlvCapBuff[TOOLS_OPEN_PCI_CAPABILITIES_SIZE] = {0};
     struct tools_open_pci_capabilities pciCapabilitesTlv;
     memset(&pciCapabilitesTlv, 0, sizeof(pciCapabilitesTlv));
-    rc = mnvaCom5thGen(mf, &tlvBuff[0], TOOLS_OPEN_PCI_CAPABILITIES_SIZE, getPciCapabilitiesTlvTypeBe(), REG_ACCESS_METHOD_GET);
+    rc = mnvaCom5thGen(mf, &tlvCapBuff[0], TOOLS_OPEN_PCI_CAPABILITIES_SIZE, getPciCapabilitiesTlvTypeBe(), REG_ACCESS_METHOD_GET);
     if (rc) {
         return errmsg("Failed to get PCI capabilities parameter. %s", m_err2str(rc));
     }
-    tools_open_pci_capabilities_unpack(&pciCapabilitesTlv, tlvBuff);
+    tools_open_pci_capabilities_unpack(&pciCapabilitesTlv, tlvCapBuff);
     _sriovSupported = pciCapabilitesTlv.sriov_support;
     _maxVfsPerPf = pciCapabilitesTlv.max_vfs_per_pf_valid ? pciCapabilitesTlv.max_vfs_per_pf : 0;
     _fppSupported = pciCapabilitesTlv.fpp_support;
+    _pfLogBarSizeSuppored = pciCapabilitesTlv.pf_bar_size_supported;
+    _vfLogBarSizeSuppored = pciCapabilitesTlv.vf_bar_size_supported;
+    _numPfMsixSupported = pciCapabilitesTlv.num_pf_msix_supported;
+    _numVfMsixSupported = pciCapabilitesTlv.num_vf_msix_supported;
+    _maxLogPfBarSize = pciCapabilitesTlv.log_max_pf_uar_bar_size1;
+    _maxLogVfBarSize = pciCapabilitesTlv.log_max_vf_uar_bar_size;
+    _maxTotalBarValid = pciCapabilitesTlv.max_total_bar_valid;
+    _maxTotalBar = pciCapabilitesTlv.max_total_bar;
+    _maxNumPfMsix = pciCapabilitesTlv.max_num_pf_msix;
+    _maxNumVfMsix = pciCapabilitesTlv.max_num_vf_msix;
+    _maxTotalMsixValid = pciCapabilitesTlv.max_total_msix_valid;
+    _maxTotalMsix = pciCapabilitesTlv.max_total_msix;
+
+    u_int8_t tlvBuff[TOOLS_OPEN_PCI_CONFIGURATION_SIZE] = {0};
+    struct tools_open_pci_configuration pciSettingsTlv;
+    memset(&pciSettingsTlv, 0, sizeof(pciSettingsTlv));
+
+    rc = mnvaCom5thGen(mf, &tlvBuff[0], TOOLS_OPEN_PCI_CONFIGURATION_SIZE, getPciSettingsTlvTypeBe(), REG_ACCESS_METHOD_GET, true);
+
+    if (rc) {
+        if (rc == ME_REG_ACCESS_RES_NOT_AVLBL) {
+            return MCE_SUCCESS;
+        }
+        return errmsg("Failed to get PCI configuration: %s", m_err2str(rc));
+    }
+    // unpack and update
+    tools_open_pci_configuration_unpack(&pciSettingsTlv, &tlvBuff[0]);
+    if (pciSettingsTlv.sriov_valid) {
+        _sriovEnDefault = pciSettingsTlv.sriov_en;
+        _numOfVfsDefault = pciSettingsTlv.total_vfs;
+    }
+    if (pciSettingsTlv.fpp_valid) {
+        _fppEnDefault = pciSettingsTlv.fpp_en;
+    }
+    if(pciSettingsTlv.pf_bar_size_valid) {
+        _pfLogBarSizeDefault = pciSettingsTlv.log_pf_uar_bar_size;
+    }
+    if(pciSettingsTlv.vf_bar_size_valid) {
+        _vfLogBarSizeDefault = pciSettingsTlv.log_vf_uar_bar_size;
+    }
+    if(pciSettingsTlv.num_pfs_msix_valid) {
+        _numPfMsixDefault = pciSettingsTlv.num_pf_msix;
+    }
+    if(pciSettingsTlv.num_vfs_msix_valid) {
+        _numVfMsixDefault = pciSettingsTlv.num_vf_msix;
+    }
 
     return MCE_SUCCESS;
 }
@@ -1390,8 +1936,134 @@ bool PciParams5thGen::hardLimitCheck()
             return false;
         }
     }
+
+    if (_pfLogBarSizeSuppored && _userSpecifiedPfLogBarSize) {
+        if (_pfLogBarSize > _maxLogPfBarSize) {
+            errmsg("Illegal PF_LOG_BAR_SIZE parameter value, Max allowed value is %d", _maxLogPfBarSize);
+            return false;
+        }
+    }
+
+    if (_vfLogBarSizeSuppored && _userSpecifiedVfLogBarSize) {
+        if (_vfLogBarSize > _maxLogVfBarSize) {
+            errmsg("Illegal VF_LOG_BAR_SIZE parameter value, Max allowed value is %d", _maxLogVfBarSize);
+            return false;
+        }
+    }
+
+    if(_numPfMsixSupported && _userSpecifiedNumPfMsix) {
+        if(_numPfMsix > _maxNumPfMsix) {
+            errmsg("Illegal NUM_PF_MSIX parameter value, Max allowed value is %d", _maxNumPfMsix);
+            return false;
+        }
+    }
+
+    if(_numVfMsixSupported && _userSpecifiedNumVfMsix) {
+        if(_numVfMsix > _maxNumVfMsix) {
+            errmsg("Illegal NUM_VF_MSIX parameter value, Max allowed value is %d", _maxNumVfMsix);
+            return false;
+        }
+    }
+
     return true;
 }
+
+//waiting for arch to correct the constraint formula
+u_int32_t PciParams5thGen::calcNumOfVfs()
+{
+    if(_fppEn == 1){
+        return (_maxTotalBar / _numOfPfs - (1 << _pfLogBarSize))/ (1 << _vfLogBarSize);
+    } else {
+        return (_maxTotalBar - (1 << _pfLogBarSize)) / (1 << _vfLogBarSize);
+    }
+}
+
+u_int32_t PciParams5thGen::calcVfLogBarSize()
+{
+    if(_fppEn == 1){
+        return static_cast<unsigned int>(log2((_maxTotalBar / _numOfPfs - (1 << _pfLogBarSize)) / _numOfVfs));
+    } else {
+        return static_cast<unsigned int>(log2((_maxTotalBar - (1 << _pfLogBarSize)) / _numOfVfs));
+    }
+}
+
+u_int32_t PciParams5thGen::calcPfLogBarSize()
+{
+    if(_fppEn == 1){
+        return static_cast<unsigned int>(log2((_maxTotalBar / _numOfPfs - (1 << _vfLogBarSize) * _numOfVfs)));
+    } else {
+        return static_cast<unsigned int>(log2((_maxTotalBar - (1 << _vfLogBarSize) * _numOfVfs)));
+    }
+}
+
+u_int32_t PciParams5thGen::calcTotalBar()
+{
+    if(_fppEn == 1){
+        return (_numOfPfs * ((1 << _pfLogBarSize) + (1 << _vfLogBarSize) * _numOfVfs));
+    } else {
+        return ((1 << _pfLogBarSize) + (1 << _vfLogBarSize) * _numOfVfs);
+    }
+}
+
+bool PciParams5thGen::softLimitCheck(mfile* mf)
+{
+    (void)mf;
+    if (_maxTotalBarValid == 1 && _maxTotalBar != 0 && _sriovEn == 1) {
+        if(_userSpecifiedSRIOV || _userSpecifiedPfLogBarSize || _userSpecifiedVfLogBarSize){
+            if(_fppEn == 1){
+                if(!_numOfPfsValid){
+                    errmsg("Cannot perform advanced calculations, cannot extract number of physical functions from Firmware.");
+                    return false;
+                }
+               if(calcTotalBar() > _maxTotalBar) {
+                   if(_userSpecifiedSRIOV) {
+                       errmsg("Given the specified parameter: NUM_OF_VFS, the maximum allowed values is %d",calcNumOfVfs());
+                   } else if(_userSpecifiedVfLogBarSize) {
+                       errmsg("Given the specified parameter: VF_Log_Bar_Size, the maximum allowed values is %d",calcVfLogBarSize());
+                   } else if(_userSpecifiedPfLogBarSize) {
+                       errmsg("Given the specified parameter: PF_Log_Bar_Size, the maximum allowed values is %d",calcPfLogBarSize());
+                   }
+                   return false;
+               }
+            } else {
+                if(calcTotalBar() > _maxTotalBar) {
+                    if(_userSpecifiedSRIOV){
+                       errmsg("Given the specified parameter: NUM_OF_VFS, the maximum allowed values is %d",calcNumOfVfs());
+                    } else if(_userSpecifiedVfLogBarSize) {
+                      errmsg("Given the specified parameter: VF_Log_Bar_Size, the maximum allowed values is %d",calcVfLogBarSize());
+                    } else if(_userSpecifiedPfLogBarSize) {
+                      errmsg("Given the specified parameter: PF_Log_Bar_Size, the maximum allowed values is %d",calcPfLogBarSize());
+                    }
+                    return false;
+                }
+            }
+        }
+    }
+
+    if (_maxTotalMsixValid == 1) {
+        if (_userSpecifiedSRIOV || _userSpecifiedNumPfMsix || _userSpecifiedNumVfMsix) {
+            if (!_numOfPfsValid){
+                errmsg("Cannot perform advanced calculations, cannot extract number of physical functions from Firmware.");
+                return false;
+            }
+        }
+        if ((_numOfPfs * (_numPfMsix + _numOfVfs * _numVfMsix)) > _maxTotalMsix){
+            if(_userSpecifiedSRIOV){
+               errmsg("Given the specified parameter: NUM_OF_VFS, the maximum allowed values is %d",
+                                       (((_maxTotalMsix / _numOfPfs) - _numPfMsix) / _numVfMsix));
+            } else if(_userSpecifiedNumPfMsix){
+                errmsg("Given the specified parameter: NUM_PF_MSIX, the maximum allowed values is %d",
+                                       ((_maxTotalMsix / _numOfPfs) - (_numOfVfs * _numVfMsix)));
+            } else if(_userSpecifiedNumVfMsix){
+                errmsg("Given the specified parameter: NUM_VF_MSIX, the maximum allowed values is %d",
+                                       (((_maxTotalMsix / _numOfPfs) - _numPfMsix) /_numOfVfs));
+            }
+        }
+    }
+
+    return true;
+}
+
 
 /*
  * TptParams5thGen Class implementation:
@@ -1442,6 +2114,15 @@ u_int32_t TptParams5thGen::getParam(mlxCfgParam paramType)
     return MLXCFG_UNKNOWN;
 }
 
+u_int32_t TptParams5thGen::getDefaultParam(mlxCfgParam paramType)
+{
+    if (paramType == Mcp_Log_Tpt_Size) {
+        return _logMaxPayloadSizeDefault;
+    }
+
+    return MLXCFG_UNKNOWN;
+}
+
 int TptParams5thGen::getFromDev(mfile* mf)
 {
     MError mRc;
@@ -1464,6 +2145,7 @@ int TptParams5thGen::getFromDev(mfile* mf)
     // unpack and update
     tools_open_tpt_configuration_unpack(&tptSettingsTlv, &tlvBuff[0]);
     _logMaxPayloadSize = tptSettingsTlv.log_max_payload_size;
+
     _updated = true;
 
    return MCE_SUCCESS;
@@ -1504,21 +2186,44 @@ int TptParams5thGen::setOnDev(mfile* mf, bool ignoreCheck)
 
 int TptParams5thGen::getDefaultParams(mfile* mf)
 {
-    return getDefaultsAndCapabilities(mf);
+    int rc = getDefaultsAndCapabilities(mf);
+    setParams(_logMaxPayloadSizeDefault);
+    return rc;
+}
+
+void TptParams5thGen::setParams(u_int32_t logMaxPayloadSize)
+{
+    _logMaxPayloadSize = logMaxPayloadSize;
 }
 
 int TptParams5thGen::getDefaultsAndCapabilities(mfile* mf)
 {
     MError rc;
-    u_int8_t tlvBuff[TOOLS_OPEN_TPT_CAPABILITIES_SIZE] = {0};
+    u_int8_t tlvCapBuff[TOOLS_OPEN_TPT_CAPABILITIES_SIZE] = {0};
     struct tools_open_tpt_capabilities tptCapabilitesTlv;
     memset(&tptCapabilitesTlv, 0, sizeof(tptCapabilitesTlv));
-    rc = mnvaCom5thGen(mf, &tlvBuff[0], TOOLS_OPEN_TPT_CAPABILITIES_SIZE, getTptCapabilitiesTlvTypeBe(), REG_ACCESS_METHOD_GET);
+    rc = mnvaCom5thGen(mf, &tlvCapBuff[0], TOOLS_OPEN_TPT_CAPABILITIES_SIZE, getTptCapabilitiesTlvTypeBe(), REG_ACCESS_METHOD_GET);
     if (rc) {
         return errmsg("Failed to get TPT capabilities parameter. %s", m_err2str(rc));
     }
-    tools_open_tpt_capabilities_unpack(&tptCapabilitesTlv, tlvBuff);
+    tools_open_tpt_capabilities_unpack(&tptCapabilitesTlv, tlvCapBuff);
     _logMaxPayloadSizeSupported = tptCapabilitesTlv.log_max_payload_size_supported;
+
+    u_int8_t tlvBuff[TOOLS_OPEN_TPT_CONFIGURATION_SIZE] = {0};
+    struct tools_open_tpt_configuration tptSettingsTlv;
+    memset(&tptSettingsTlv, 0, sizeof(tptSettingsTlv));
+
+    rc = mnvaCom5thGen(mf, &tlvBuff[0], TOOLS_OPEN_TPT_CONFIGURATION_SIZE, getTptSettingsTlvTypeBe(), REG_ACCESS_METHOD_GET, true);
+
+    if (rc) {
+        if (rc == ME_REG_ACCESS_RES_NOT_AVLBL) {
+            return MCE_SUCCESS;
+        }
+        return errmsg("Failed to get TPT default configuration: %s", m_err2str(rc));
+    }
+    // unpack and update
+    tools_open_tpt_configuration_unpack(&tptSettingsTlv, &tlvBuff[0]);
+    _logMaxPayloadSizeDefault = tptSettingsTlv.log_max_payload_size;
 
     return MCE_SUCCESS;
 }
@@ -1585,6 +2290,15 @@ u_int32_t InfinibandBootSettingsParams4thGen::getParam(mlxCfgParam paramType)
     return MLXCFG_UNKNOWN;
 }
 
+u_int32_t InfinibandBootSettingsParams4thGen::getDefaultParam(mlxCfgParam paramType)
+{
+    if ((paramType == Mcp_Boot_Pkey_P1 && _port == 1) || (paramType == Mcp_Boot_Pkey_P2 && _port == 2)) {
+        return _bootPkeyDefault;
+    }
+    return MLXCFG_UNKNOWN;
+}
+
+
 int InfinibandBootSettingsParams4thGen::getFromDev(mfile* mf)
 {
     MError mRc;
@@ -1644,11 +2358,17 @@ int InfinibandBootSettingsParams4thGen::getDefaultParams(mfile* mf)
     int rc;
     rc = getDefaultParams4thGen(mf, _port, &portParams);
     if (rc == MCE_SUCCESS) {
-        _bootPkey = portParams.default_boot_pkey;
+        _bootPkeyDefault = portParams.default_boot_pkey;
+        setParams(_bootPkeyDefault);
     } else {
         rc = MCE_GET_DEFAULT_PARAMS;
     }
     return rc;
+}
+
+void InfinibandBootSettingsParams4thGen::setParams(u_int32_t bootPkey)
+{
+    _bootPkey = bootPkey;
 }
 
 bool InfinibandBootSettingsParams4thGen::hardLimitCheck()
@@ -1711,6 +2431,30 @@ u_int32_t IBDCParams5thGen::getParam(mlxCfgParam paramType)
     return MLXCFG_UNKNOWN;
 }
 
+u_int32_t IBDCParams5thGen::getDefaultParam(mlxCfgParam paramType)
+{
+    if (paramType == Mcp_Log_Dcr_Hash_Table_Size) {
+        return _logDcrHashTableSizeDefault;
+    }
+    if (paramType == Mcp_Dcr_Lifo_Size) {
+        return _dcrLifoSizeDefault;
+    }
+
+    return MLXCFG_UNKNOWN;
+}
+
+void IBDCParams5thGen::setParams(u_int32_t logDcrHashTableSize, u_int32_t dcrLifoSize)
+{
+    _logDcrHashTableSize = logDcrHashTableSize;
+    _dcrLifoSize = dcrLifoSize;
+}
+
+void IBDCParams5thGen::updateClassAttrFromDefaultParams()
+{
+    setParams(_logDcrHashTableSizeDefault,
+            _dcrLifoSizeDefault);
+}
+
 int IBDCParams5thGen::getFromDev(mfile* mf)
 {
     GET_FROM_DEV_5TH_GEN(mf, tools_open_infiniband_dc_settings, "IB Dynamically Connected");
@@ -1729,19 +2473,20 @@ int IBDCParams5thGen::getDefaultParams(mfile* mf)
 int IBDCParams5thGen::getDefaultsAndCapabilities(mfile* mf)
 {
     MError rc;
-    u_int8_t tlvBuff[TOOLS_OPEN_INFINIBAND_DC_CAPABILITIES_SIZE] = {0};
+    u_int8_t tlvCapBuff[TOOLS_OPEN_INFINIBAND_DC_CAPABILITIES_SIZE] = {0};
     struct tools_open_infiniband_dc_capabilities dcCapabilitesTlv;
     memset(&dcCapabilitesTlv, 0, sizeof(dcCapabilitesTlv));
-    rc = mnvaCom5thGen(mf, &tlvBuff[0], TOOLS_OPEN_INFINIBAND_DC_CAPABILITIES_SIZE, getDcCapabilitiesTlvTypeBe(), REG_ACCESS_METHOD_GET);
+    rc = mnvaCom5thGen(mf, &tlvCapBuff[0], TOOLS_OPEN_INFINIBAND_DC_CAPABILITIES_SIZE, getDcCapabilitiesTlvTypeBe(), REG_ACCESS_METHOD_GET);
     if (rc) {
         return errmsg("Failed to get Infiniband DC capabilities parameter. %s", m_err2str(rc));
     }
-    tools_open_infiniband_dc_capabilities_unpack(&dcCapabilitesTlv, tlvBuff);
+    tools_open_infiniband_dc_capabilities_unpack(&dcCapabilitesTlv, tlvCapBuff);
     _minLogDcrHashTableSize = dcCapabilitesTlv.min_log_dcr_hash_table_size;
     _maxLogDcrHashTableSize = dcCapabilitesTlv.max_log_dcr_hash_table_size;
     _minDcrLifoSize = dcCapabilitesTlv.min_dcr_lifo_size;
     _maxDcrLifoSize = dcCapabilitesTlv.max_dcr_lifo_size;
-    return MCE_SUCCESS;
+
+    GET_DEFAULT_5TH_GEN(mf, tools_open_infiniband_dc_settings, "IB Dynamically Connected");
 }
 
 u_int32_t IBDCParams5thGen::getTlvTypeBe()
@@ -1795,89 +2540,11 @@ void IBDCParams5thGen::updateClassAttrFromTlv(void* tlv)
     return;
 }
 
-/*
- * PortBootStateParams5thGen Class implementation
- */
-
-bool PortBootStateParams5thGen::cfgSupported(mfile* mf, mlxCfgParam param)
+void IBDCParams5thGen::updateClassDefaultAttrFromTlv(void* tlv)
 {
-    MError rc;
-    (void)param;
-    bool suppRead, suppWrite;
-    rc = nvqcCom5thGen(mf, getTlvTypeBe(), suppRead, suppWrite);
-    if (rc) {
-        errmsg("Failed to get port boot state parameter capabilities. %s", m_err2str(rc));
-        return false;
-    }
-    if (!suppRead || !suppWrite) {
-        return false;
-    }
-    return true;
-}
-
-void PortBootStateParams5thGen::setParam(mlxCfgParam paramType, u_int32_t val)
-{
-    if ((paramType == Mcp_Boot_State_P1 && _port == 1) || (paramType == Mcp_Boot_State_P2 && _port == 2)) {
-        _portBootState = val;
-    }
-    return;
-}
-
-u_int32_t PortBootStateParams5thGen::getParam(mlxCfgParam paramType)
-{
-    if ((paramType == Mcp_Boot_State_P1 && _port == 1) || (paramType == Mcp_Boot_State_P2 && _port == 2)) {
-        return _portBootState;
-    }
-    return MLXCFG_UNKNOWN;
-}
-
-int PortBootStateParams5thGen::getFromDev(mfile* mf)
-{
-    GET_FROM_DEV_5TH_GEN(mf, tools_open_port_boot_state, "Port Boot State");
-}
-
-int PortBootStateParams5thGen::setOnDev(mfile* mf, bool ignoreCheck)
-{
-    SET_ON_DEV_5TH_GEN(mf, ignoreCheck, tools_open_port_boot_state, "Port Boot State");
-}
-
-int PortBootStateParams5thGen::getDefaultParams(mfile* mf)
-{
-        return getFromDev(mf);
-}
-
-bool PortBootStateParams5thGen::hardLimitCheck()
-{
-    if (_portBootState > 3) {
-        errmsg("Illegal BOOT_STATE_P%d parameter value (0=Normal Operation, 1=SFP power off, 2=SERDES power off, 3=Admin linkdown)", _port);
-        return false;
-    }
-    return true;
-}
-
-u_int32_t PortBootStateParams5thGen::getTlvTypeBe()
-{
-    struct tools_open_per_port_type type;
-    u_int32_t tlvType = 0;
-
-    type.param_class = CLASS_PHYS_PORT;
-    type.param_idx = tlvTypeIdx;
-    type.port = _port;
-    tools_open_per_port_type_pack(&type, (u_int8_t*)&tlvType);
-    return tlvType;
-}
-
-void PortBootStateParams5thGen::updateTlvFromClassAttr(void* tlv)
-{
-    struct tools_open_port_boot_state* portBootStateTlv = (struct tools_open_port_boot_state*)tlv;
-    portBootStateTlv->port_boot_state = _portBootState;
-    return;
-}
-
-void PortBootStateParams5thGen::updateClassAttrFromTlv(void* tlv)
-{
-    struct tools_open_port_boot_state* portBootStateTlv = (struct tools_open_port_boot_state*)tlv;
-    _portBootState = portBootStateTlv->port_boot_state;
+    struct tools_open_infiniband_dc_settings* ibDcTlv = (struct tools_open_infiniband_dc_settings*)tlv;
+    _dcrLifoSizeDefault = ibDcTlv->dcr_lifo_size;
+    _logDcrHashTableSizeDefault = ibDcTlv->log_dcr_hash_table_size;
     return;
 }
 
@@ -1918,6 +2585,24 @@ u_int32_t RoCENextProtocolParams5thGen::getParam(mlxCfgParam paramType)
     return MLXCFG_UNKNOWN;
 }
 
+u_int32_t RoCENextProtocolParams5thGen::getDefaultParam(mlxCfgParam paramType)
+{
+    if ( paramType == Mcp_RoCE_Next_Protocol) {
+        return _nextProtocolDefault;
+    }
+    return MLXCFG_UNKNOWN;
+}
+
+void RoCENextProtocolParams5thGen::setParams(u_int32_t nextProtocol)
+{
+    _nextProtocol = nextProtocol;
+}
+
+void RoCENextProtocolParams5thGen::updateClassAttrFromDefaultParams()
+{
+    setParams(_nextProtocolDefault);
+}
+
 int RoCENextProtocolParams5thGen::getFromDev(mfile* mf)
 {
    GET_FROM_DEV_5TH_GEN(mf, tools_open_roce_v_1_5_next_protocol, "RoCE Next Protocol");
@@ -1930,7 +2615,7 @@ int RoCENextProtocolParams5thGen::setOnDev(mfile* mf, bool ignoreCheck)
 
 int RoCENextProtocolParams5thGen::getDefaultParams(mfile* mf)
 {
-        return getFromDev(mf);
+    GET_DEFAULT_5TH_GEN(mf, tools_open_roce_v_1_5_next_protocol, "RoCE Next Protocol");
 }
 
 bool RoCENextProtocolParams5thGen::hardLimitCheck()
@@ -1964,6 +2649,13 @@ void RoCENextProtocolParams5thGen::updateClassAttrFromTlv(void* tlv)
 {
     struct tools_open_roce_v_1_5_next_protocol* roceNpTlv = (struct tools_open_roce_v_1_5_next_protocol*)tlv;
     _nextProtocol = roceNpTlv->roce_over_ip_next_protocol;
+    return;
+}
+
+void RoCENextProtocolParams5thGen::updateClassDefaultAttrFromTlv(void* tlv)
+{
+    struct tools_open_roce_v_1_5_next_protocol* roceNpTlv = (struct tools_open_roce_v_1_5_next_protocol*)tlv;
+    _nextProtocolDefault = roceNpTlv->roce_over_ip_next_protocol;
     return;
 }
 
@@ -2010,6 +2702,30 @@ u_int32_t RoCECCParams5thGen::getParam(mlxCfgParam paramType)
     return MLXCFG_UNKNOWN;
 }
 
+u_int32_t RoCECCParams5thGen::getDefaultParam(mlxCfgParam paramType)
+{
+    if ( (paramType == Mcp_RoCE_CC_Algorithm_P1 && _port == 1) || (paramType == Mcp_RoCE_CC_Algorithm_P2 && _port == 2)) {
+        return _roceCcAlgorithmDefault;
+    }
+    if ( (paramType == Mcp_RoCE_CC_Prio_Mask_P1 && _port == 1) || (paramType == Mcp_RoCE_CC_Prio_Mask_P2 && _port == 2)) {
+        return _roceCcPrioMaskDefault;
+    }
+    return MLXCFG_UNKNOWN;
+}
+
+void RoCECCParams5thGen::setParams(u_int32_t roceCcAlgorithm, u_int32_t roceCcPrioMask)
+{
+    _roceCcAlgorithm = roceCcAlgorithm;
+    _roceCcPrioMask = roceCcPrioMask;
+}
+
+void RoCECCParams5thGen::updateClassAttrFromDefaultParams()
+{
+    setParams(
+        _roceCcAlgorithmDefault,
+        _roceCcPrioMaskDefault);
+}
+
 int RoCECCParams5thGen::getFromDev(mfile* mf)
 {
     GET_FROM_DEV_5TH_GEN(mf, tools_open_roce_cc, "RoCE CC");
@@ -2021,7 +2737,7 @@ int RoCECCParams5thGen::setOnDev(mfile* mf, bool ignoreCheck)
 }
 int RoCECCParams5thGen::getDefaultParams(mfile* mf)
 {
-        return getFromDev(mf);
+    GET_DEFAULT_5TH_GEN(mf, tools_open_roce_cc, "RoCE CC");
 }
 
 bool RoCECCParams5thGen::hardLimitCheck()
@@ -2061,6 +2777,14 @@ void RoCECCParams5thGen::updateClassAttrFromTlv(void* tlv)
     struct tools_open_roce_cc* roceCcTlv = (struct tools_open_roce_cc*)tlv;
     _roceCcAlgorithm = roceCcTlv->roce_cc_algorithm;
     _roceCcPrioMask = roceCcTlv->roce_cc_enable_priority;
+    return;
+}
+
+void RoCECCParams5thGen::updateClassDefaultAttrFromTlv(void* tlv)
+{
+    struct tools_open_roce_cc* roceCcTlv = (struct tools_open_roce_cc*)tlv;
+    _roceCcAlgorithmDefault = roceCcTlv->roce_cc_algorithm;
+    _roceCcPrioMaskDefault = roceCcTlv->roce_cc_enable_priority;
     return;
 }
 
@@ -2309,6 +3033,147 @@ u_int32_t RoCECCEcnParams5thGen::getParam(mlxCfgParam paramType)
     return MLXCFG_UNKNOWN;
 }
 
+u_int32_t RoCECCEcnParams5thGen::getDefaultParam(mlxCfgParam paramType)
+{
+    // adrianc: consider moving to MAP on large scale TLVs
+    if (_port == 1) {
+        switch (paramType) {
+        case Mcp_Clamp_Tgt_Rate_P1:
+            return _clampTgtRateDefault;
+        case Mcp_Clamp_Tgt_Rate_After_Time_Inc_P1:
+            return _clampTgtRateAfterTimeIncDefault;
+        case Mcp_Rpg_Time_Reset_P1:
+            return _rpgTimeResetDefault;
+        case Mcp_Rpg_Byte_Reset_P1:
+            return _rpgByteResetDefault;
+        case Mcp_Rpg_Threshold_P1:
+            return _rpgThresholdDefault;
+        case Mcp_Rpg_Max_Rate_P1:
+            return _rpgMaxRateDefault;
+        case Mcp_Rpg_Ai_Rate_P1:
+            return _rpgAiRateDefault;
+        case Mcp_Rpg_Hai_Rate_P1:
+            return _rpgHaiRateDefault;
+        case Mcp_Rpg_Gd_P1:
+            return _rpgGdDefault;
+        case Mcp_Rpg_Min_Dec_Fac_P1:
+            return _rpgMinDecFacDefault;
+        case Mcp_Rpg_Min_Rate_P1:
+            return _rpgMinRateDefault;
+        case Mcp_Rate_To_Set_On_First_Cnp_P1:
+            return _rateToSetOnFirstCnpDefault;
+        case Mcp_Dce_Tcp_G_P1:
+            return _dceTcpGDefault;
+        case Mcp_Dce_Tcp_Rtt_P1:
+            return _dceTcpRttDefault;
+        case Mcp_Rate_Reduce_Monitor_Period_P1:
+            return _rateReduceMonitorPeriodDefault;
+        case Mcp_Initial_Alpha_Value_P1:
+            return _initialAlphaValueDefault;
+        case Mcp_Min_Time_Between_Cnps_P1:
+            return _minTimeBetweenCnpsDefault;
+        case Mcp_Cnp_Dscp_P1:
+            return _cnpDscpDefault;
+        case Mcp_Cnp_802p_Prio_P1:
+            return _cnp802pPrioDefault;
+        default:
+            break;
+        }
+    } else if (_port == 2) {
+        switch (paramType) {
+        case Mcp_Clamp_Tgt_Rate_P2:
+            return _clampTgtRateDefault;
+        case Mcp_Clamp_Tgt_Rate_After_Time_Inc_P2:
+            return _clampTgtRateAfterTimeIncDefault;
+        case Mcp_Rpg_Time_Reset_P2:
+            return _rpgTimeResetDefault;
+        case Mcp_Rpg_Byte_Reset_P2:
+            return _rpgByteResetDefault;
+        case Mcp_Rpg_Threshold_P2:
+            return _rpgThresholdDefault;
+        case Mcp_Rpg_Max_Rate_P2:
+            return _rpgMaxRateDefault;
+        case Mcp_Rpg_Ai_Rate_P2:
+            return _rpgAiRateDefault;
+        case Mcp_Rpg_Hai_Rate_P2:
+            return _rpgHaiRateDefault;
+        case Mcp_Rpg_Gd_P2:
+            return _rpgGdDefault;
+        case Mcp_Rpg_Min_Dec_Fac_P2:
+            return _rpgMinDecFacDefault;
+        case Mcp_Rpg_Min_Rate_P2:
+            return _rpgMinRateDefault;
+        case Mcp_Rate_To_Set_On_First_Cnp_P2:
+            return _rateToSetOnFirstCnpDefault;
+        case Mcp_Dce_Tcp_G_P2:
+            return _dceTcpGDefault;
+        case Mcp_Dce_Tcp_Rtt_P2:
+            return _dceTcpRttDefault;
+        case Mcp_Rate_Reduce_Monitor_Period_P2:
+            return _rateReduceMonitorPeriodDefault;
+        case Mcp_Initial_Alpha_Value_P2:
+            return _initialAlphaValueDefault;
+        case Mcp_Min_Time_Between_Cnps_P2:
+            return _minTimeBetweenCnpsDefault;
+        case Mcp_Cnp_Dscp_P2:
+            return _cnpDscpDefault;
+        case Mcp_Cnp_802p_Prio_P2:
+            return _cnp802pPrioDefault;
+        default:
+            break;
+        }
+    }
+    return MLXCFG_UNKNOWN;
+}
+
+void RoCECCEcnParams5thGen::setParams(u_int32_t clampTgtRate, u_int32_t clampTgtRateAfterTimeInc, u_int32_t rpgTimeReset, u_int32_t rpgByteReset,
+            u_int32_t rpgThreshold, u_int32_t rpgMaxRate, u_int32_t rpgAiRate, u_int32_t rpgHaiRate,
+            u_int32_t rpgGd, u_int32_t rpgMinDecFac, u_int32_t rpgMinRate, u_int32_t rateToSetOnFirstCnp,
+            u_int32_t dceTcpG, u_int32_t dceTcpRtt, u_int32_t rateReduceMonitorPeriod, u_int32_t initialAlphaValue,
+            u_int32_t minTimeBetweenCnps, u_int32_t cnpDscp, u_int32_t cnp802pPrio){
+    _clampTgtRate = clampTgtRate;
+    _clampTgtRateAfterTimeInc = clampTgtRateAfterTimeInc;
+    _rpgTimeReset = rpgTimeReset;
+    _rpgByteReset = rpgByteReset;
+    _rpgThreshold = rpgThreshold;
+    _rpgMaxRate = rpgMaxRate;
+    _rpgAiRate = rpgAiRate;
+    _rpgHaiRate = rpgHaiRate;
+    _rpgGd = rpgGd;
+    _rpgMinDecFac = rpgMinDecFac;
+    _rpgMinRate = rpgMinRate;
+    _rateToSetOnFirstCnp = rateToSetOnFirstCnp;
+    _dceTcpG = dceTcpG;
+    _dceTcpRtt = dceTcpRtt;
+    _rateReduceMonitorPeriod = rateReduceMonitorPeriod;
+    _initialAlphaValue = initialAlphaValue;
+    _minTimeBetweenCnps = minTimeBetweenCnps;
+    _cnpDscp = cnpDscp;
+    _cnp802pPrio = cnp802pPrio;
+}
+
+void RoCECCEcnParams5thGen::updateClassAttrFromDefaultParams()
+{
+    setParams(_clampTgtRateDefault,_clampTgtRateAfterTimeIncDefault,
+     _rpgTimeResetDefault,
+     _rpgByteResetDefault,
+     _rpgThresholdDefault,
+     _rpgMaxRateDefault,
+     _rpgAiRateDefault,
+     _rpgHaiRateDefault,
+     _rpgGdDefault,
+     _rpgMinDecFacDefault,
+     _rpgMinRateDefault,
+     _rateToSetOnFirstCnpDefault,
+     _dceTcpGDefault,
+     _dceTcpRttDefault,
+     _rateReduceMonitorPeriodDefault,
+     _initialAlphaValueDefault,
+     _minTimeBetweenCnpsDefault,
+     _cnpDscpDefault,
+     _cnp802pPrioDefault);
+}
+
 int RoCECCEcnParams5thGen::getFromDev(mfile* mf)
 {
     GET_FROM_DEV_5TH_GEN(mf, tools_open_roce_cc_ecn, "RoCE CC ECN");
@@ -2320,7 +3185,7 @@ int RoCECCEcnParams5thGen::setOnDev(mfile* mf, bool ignoreCheck)
 }
 int RoCECCEcnParams5thGen::getDefaultParams(mfile* mf)
 {
-        return getFromDev(mf);
+    GET_DEFAULT_5TH_GEN(mf, tools_open_roce_cc_ecn, "RoCE CC ECN");
 }
 
 u_int32_t _dceTcpG;
@@ -2487,6 +3352,30 @@ void RoCECCEcnParams5thGen::updateClassAttrFromTlv(void* tlv)
     return;
 }
 
+void RoCECCEcnParams5thGen::updateClassDefaultAttrFromTlv(void* tlv)
+{
+    struct tools_open_roce_cc_ecn* roceCcEcnTlv = (struct tools_open_roce_cc_ecn*)tlv;
+    _clampTgtRateDefault = roceCcEcnTlv->clamp_tgt_rate;
+    _clampTgtRateAfterTimeIncDefault = roceCcEcnTlv->clamp_tgt_rate_after_time_inc;
+    _cnp802pPrioDefault = roceCcEcnTlv->cnp_802p_prio;
+    _cnpDscpDefault = roceCcEcnTlv->cnp_dscp;
+    _dceTcpGDefault = roceCcEcnTlv->dce_tcp_g;
+    _dceTcpRttDefault = roceCcEcnTlv->dce_tcp_rtt;
+    _initialAlphaValueDefault = roceCcEcnTlv->initial_alpha_value;
+    _minTimeBetweenCnpsDefault = roceCcEcnTlv->min_time_between_cnps;
+    _rateReduceMonitorPeriodDefault = roceCcEcnTlv->rate_reduce_monitor_period;
+    _rateToSetOnFirstCnpDefault = roceCcEcnTlv->rate_to_set_on_first_cnp;
+    _rpgAiRateDefault = roceCcEcnTlv->rpg_ai_rate;
+    _rpgByteResetDefault = roceCcEcnTlv->rpg_byte_reset;
+    _rpgGdDefault = roceCcEcnTlv->rpg_gd;
+    _rpgHaiRateDefault = roceCcEcnTlv->rpg_hai_rate;
+    _rpgMaxRateDefault = roceCcEcnTlv->rpg_max_rate;
+    _rpgMinDecFacDefault = roceCcEcnTlv->rpg_min_dec_fac;
+    _rpgMinRateDefault = roceCcEcnTlv->rpg_min_rate;
+    _rpgThresholdDefault = roceCcEcnTlv->rpg_threshold;
+    _rpgTimeResetDefault = roceCcEcnTlv->rpg_time_reset;
+    return;
+}
 
 /*
  * PrebootBootSettingsParams4thGen Class implementation:
@@ -2552,6 +3441,47 @@ u_int32_t PrebootBootSettingsParams4thGen::getParam(mlxCfgParam paramType)
     return MLXCFG_UNKNOWN;
 }
 
+u_int32_t PrebootBootSettingsParams4thGen::getDefaultParam(mlxCfgParam paramType)
+{
+    if ((paramType == Mcp_Boot_Option_Rom_En_P1 && _port == 1) || (paramType == Mcp_Boot_Option_Rom_En_P2 && _port == 2)) {
+        return _bootOptionRomEnDefault;
+    }
+
+    if ((paramType == Mcp_Boot_Vlan_En_P1 && _port == 1) || (paramType == Mcp_Boot_Vlan_En_P2 && _port == 2)) {
+        return _bootVlanEnDefault;
+    }
+
+    if ((paramType == Mcp_Boot_Retry_Cnt_P1 && _port == 1) || (paramType == Mcp_Boot_Retry_Cnt_P2 && _port == 2)) {
+        return _bootRetryCntDefault;
+    }
+
+    if ((paramType == Mcp_Legacy_Boot_Protocol_P1 && _port == 1) || (paramType == Mcp_Legacy_Boot_Protocol_P2 && _port == 2)) {
+        return _legacyBootProtocolDefault;
+    }
+
+    if ((paramType == Mcp_Boot_Vlan_P1 && _port == 1) || (paramType == Mcp_Boot_Vlan_P2 && _port == 2)) {
+        return _bootVlanDefault;
+    }
+
+    return MLXCFG_UNKNOWN;
+}
+
+void PrebootBootSettingsParams4thGen::setParams(u_int32_t bootOptionRomEn, u_int32_t bootVlanEn, u_int32_t bootRetryCnt,
+            u_int32_t legacyBootProtocol, u_int32_t bootVlan)
+{
+    _bootOptionRomEn = bootOptionRomEn;
+    _bootVlanEn = bootVlanEn;
+    _bootRetryCnt = bootRetryCnt;
+    _legacyBootProtocol = legacyBootProtocol;
+    _bootVlan = bootVlan;
+}
+
+void PrebootBootSettingsParams4thGen::updateClassAttrFromDefaultParams()
+{
+    setParams(_bootOptionRomEnDefault, _bootVlanEnDefault, _bootRetryCntDefault,
+            _legacyBootProtocolDefault, _bootVlanDefault);
+}
+
 int PrebootBootSettingsParams4thGen::getFromDev(mfile* mf)
 {
     GET_FROM_DEV_4TH_GEN(mf, tools_open_preboot_boot_settings, "Preboot Boot Settings", _port);
@@ -2584,17 +3514,28 @@ void PrebootBootSettingsParams4thGen::updateClassAttrFromTlv(void* tlv)
     _bootVlan = prebootTlv->boot_vlan;
 }
 
+void PrebootBootSettingsParams4thGen::updateClassDefaultAttrFromTlv(void* tlv)
+{
+    struct tools_open_preboot_boot_settings* prebootTlv = (struct tools_open_preboot_boot_settings*)tlv;
+    _bootOptionRomEnDefault = prebootTlv->boot_option_rom_en;
+    _bootVlanEnDefault = prebootTlv->boot_vlan_en;
+    _bootRetryCntDefault = prebootTlv->boot_retry_count;
+    _legacyBootProtocolDefault = prebootTlv->legacy_boot_protocol;
+    _bootVlanDefault = prebootTlv->boot_vlan;
+}
+
 int PrebootBootSettingsParams4thGen::getDefaultParams(mfile* mf)
 {
     struct tools_open_query_def_params_per_port portParams;
     int rc;
     rc = getDefaultParams4thGen(mf, _port, &portParams);
     if (rc == MCE_SUCCESS) {
-        _bootOptionRomEn = portParams.default_boot_option_rom_en;
-        _bootVlanEn = portParams.default_boot_vlan_en;
-        _bootRetryCnt = portParams.default_boot_retry_cnt;
-        _legacyBootProtocol = portParams.default_boot_protocol;
-        _bootVlan = portParams.default_boot_vlan;
+        _bootOptionRomEnDefault = portParams.default_boot_option_rom_en;
+        _bootVlanEnDefault = portParams.default_boot_vlan_en;
+        _bootRetryCntDefault = portParams.default_boot_retry_cnt;
+        _legacyBootProtocolDefault = portParams.default_boot_protocol;
+        _bootVlanDefault = portParams.default_boot_vlan;
+        updateClassAttrFromDefaultParams();
     } else {
         rc = MCE_GET_DEFAULT_PARAMS;
     }
@@ -2625,3 +3566,134 @@ bool PrebootBootSettingsParams4thGen::hardLimitCheck()
     }
     return true;
 }
+
+/*
+ * ExternalPort5thGen Class implementation
+ */
+
+
+bool ExternalPort5thGen::cfgSupported(mfile* mf, mlxCfgParam param)
+{
+    MError rc;
+    (void)param;
+    bool suppRead, suppWrite;
+    rc = nvqcCom5thGen(mf, getTlvTypeBe(), suppRead, suppWrite);
+    if (rc) {
+        errmsg("Failed to get External Port parameter capabilities. %s", m_err2str(rc));
+        return false;
+    }
+    if (!suppRead || !suppWrite) {
+        return false;
+    }
+    return true;
+}
+
+void ExternalPort5thGen::setParam(mlxCfgParam paramType, u_int32_t val)
+{
+    if (paramType == Mcp_Port_Owner) {
+        _portOwner = val;
+    }
+    if (paramType == Mcp_Allow_Rd_Counters) {
+        _allowRdCounters = val;
+    }
+    return;
+}
+
+u_int32_t ExternalPort5thGen::getParam(mlxCfgParam paramType)
+{
+    if (paramType == Mcp_Port_Owner) {
+        return _portOwner;
+    }
+    if (paramType == Mcp_Allow_Rd_Counters) {
+        return _allowRdCounters;
+    }
+    return MLXCFG_UNKNOWN;
+}
+
+u_int32_t ExternalPort5thGen::getDefaultParam(mlxCfgParam paramType)
+{
+    if (paramType == Mcp_Port_Owner) {
+        return _portOwnerDefault;
+    }
+    if (paramType == Mcp_Allow_Rd_Counters) {
+        return _allowRdCountersDefault;
+    }
+    return MLXCFG_UNKNOWN;
+}
+
+void ExternalPort5thGen::setParams(u_int32_t portOwner, u_int32_t allowRdCounters)
+{
+    _portOwner = portOwner;
+    _allowRdCounters = allowRdCounters;
+}
+
+void ExternalPort5thGen::updateClassAttrFromDefaultParams()
+{
+    setParams(
+            _portOwnerDefault,
+            _allowRdCounters);
+}
+
+int ExternalPort5thGen::getFromDev(mfile* mf)
+{
+    GET_FROM_DEV_5TH_GEN(mf, tools_open_external_port, "External Port");
+}
+
+int ExternalPort5thGen::setOnDev(mfile* mf, bool ignoreCheck)
+{
+    SET_ON_DEV_5TH_GEN(mf, ignoreCheck, tools_open_external_port, "External Port");
+}
+int ExternalPort5thGen::getDefaultParams(mfile* mf)
+{
+    GET_DEFAULT_5TH_GEN(mf, tools_open_external_port, "External Port");
+}
+
+bool ExternalPort5thGen::hardLimitCheck()
+{
+    if (_portOwner > 1) {
+        errmsg("Illegal PORT_OWNER parameter value(%d), value should be 0 or 1", _portOwner);
+        return false;
+    }
+    if (_allowRdCounters > 1) {
+        errmsg("Illegal ALLOW_RD_COUNTERS parameter value(%d), value should be 0 or 1", _allowRdCounters);
+        return false;
+    }
+    return true;
+}
+
+u_int32_t ExternalPort5thGen::getTlvTypeBe()
+{
+    struct tools_open_per_host_type type;
+    u_int32_t tlvType = 0;
+    type.param_class = CLASS_PER_HOST;
+    type.param_idx = tlvTypeIdx;
+    type.function = 0;
+    type.host = 0;
+    tools_open_per_host_type_pack(&type, (u_int8_t*)&tlvType);
+    return tlvType;
+}
+
+void ExternalPort5thGen::updateTlvFromClassAttr(void* tlv)
+{
+    struct tools_open_external_port* externalPortTlv = (struct tools_open_external_port*)tlv;
+    externalPortTlv->port_owner = _portOwner;
+    externalPortTlv->allow_rd_counters = _allowRdCounters;
+    return;
+}
+
+void ExternalPort5thGen::updateClassAttrFromTlv(void* tlv)
+{
+    struct tools_open_external_port* externalPortTlv = (struct tools_open_external_port*)tlv;
+    _portOwner = externalPortTlv->port_owner;
+    _allowRdCounters = externalPortTlv->allow_rd_counters;
+    return;
+}
+
+void ExternalPort5thGen::updateClassDefaultAttrFromTlv(void* tlv)
+{
+    struct tools_open_external_port* externalPortTlv = (struct tools_open_external_port*)tlv;
+    _portOwnerDefault = externalPortTlv->port_owner;
+    _allowRdCountersDefault = externalPortTlv->allow_rd_counters;
+    return;
+}
+

@@ -167,8 +167,8 @@ MLXFWOP_API int MLXFWOPCALL mlxfw_burn(mlxfwops_t* dev_mlxfwops, mlxfwops_t* img
     burnParams.progressFunc = prog_func;
     burnParams.allowPsidChange = allow_psid_change ? true : false;
     bool rc = !static_cast<FwOperations*>((void*)dev_mlxfwops)->FwBurnAdvanced(static_cast<FwOperations*>((void*)img_mlxfwops),burnParams);
-    return static_cast<FwOperations*>((void*)dev_mlxfwops)->getErrorCode() ?\
-    		static_cast<FwOperations*>((void*)dev_mlxfwops)->getErrorCode() : rc;
+    int errorCode = static_cast<FwOperations*>((void*)dev_mlxfwops)->getErrorCode(); // the class's verbose error code
+    return rc ? ( errorCode ? errorCode : rc) : rc;
 }
 
 MLXFWOP_API int MLXFWOPCALL mlxfw_query(mlxfwops_t* mlxfwops, fw_info_t* fw_info)
@@ -176,7 +176,12 @@ MLXFWOP_API int MLXFWOPCALL mlxfw_query(mlxfwops_t* mlxfwops, fw_info_t* fw_info
     if (mlxfwops == NULL) {
         return MLXFW_BAD_PARAM_ERR;
     }
+#ifdef UEFI_BUILD
+    // skip reading ROM in UEFI due to performance issues
+    return (static_cast<FwOperations*>((void*)mlxfwops)->FwQuery(fw_info, false) == true) ? MLXFW_OK :  MLXFW_ERR_IN_STR;
+#else
     return (static_cast<FwOperations*>((void*)mlxfwops)->FwQuery(fw_info, true) == true) ? MLXFW_OK :  MLXFW_ERR_IN_STR;
+#endif
 }
 
 MLXFWOP_API const char* MLXFWOPCALL mlxfw_exp_rom_type_to_str(u_int16_t type)

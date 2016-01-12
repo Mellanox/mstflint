@@ -108,6 +108,10 @@ public:
     virtual bool FwShiftDevData(PrintCallBack progressFunc=(PrintCallBack)NULL) = 0;
     virtual const char*  FwGetResetRecommandationStr() = 0;
 
+    virtual bool FwSetTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer);
+    virtual bool FwQueryTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer, bool queryRunning=false);
+    virtual bool FwResetTimeStamp();
+
     void FwCleanUp();
     virtual bool FwInit() = 0;
     bool FwSetPrint(PrintCallBack PrintFunc);
@@ -115,6 +119,7 @@ public:
     //needed for flint low level operations
     bool FwSwReset();
     virtual bool CheckCX4Device() {return true;}
+    virtual bool FwCalcMD5(u_int8_t md5sum[16]) = 0;
 
     
     //virtual bool FwBurnBlock(FwOperations &FwImageAccess); // Add call back
@@ -173,7 +178,7 @@ public:
         //burn params
         bool userGuidsSpecified;
         bool userMacsSpecified;
-        bool userUidsSpecified;
+        bool userUidSpecified;
         bool vsdSpecified;
         bool blankGuids;
         bool burnFailsafe;
@@ -184,6 +189,7 @@ public:
         bool noDevidCheck;
         bool ignoreVersionCheck;
         bool useImgDevData; // FS3 image only - take device data sections from image (valid only if burnFailsafe== false)
+        bool useDevImgInfo; // FS3 image only - preserve select fields of image_info section on the device when burning.
         BurnRomOption burnRomOptions;
 
         //callback fun
@@ -193,10 +199,11 @@ public:
         std::vector<guid_t> userUids; //contains eiter guids or uids
 
 
-        ExtBurnParams():userGuidsSpecified(false), userMacsSpecified(false), userUidsSpecified(false),
+        ExtBurnParams():userGuidsSpecified(false), userMacsSpecified(false), userUidSpecified(false),
                         vsdSpecified(false),blankGuids(false), burnFailsafe(true), allowPsidChange(false),
                         useImagePs(false), useImageGuids(false), singleImageBurn(true), noDevidCheck(false),
-                        ignoreVersionCheck(false), useImgDevData(false), burnRomOptions(BRO_DEFAULT), progressFunc((ProgressCallBack)NULL),
+                        ignoreVersionCheck(false), useImgDevData(false), useDevImgInfo(false),
+                        burnRomOptions(BRO_DEFAULT), progressFunc((ProgressCallBack)NULL),
                         userVsd((char*)NULL){}
         };
 
@@ -231,7 +238,7 @@ public:
             bool stripedImage; // default shuold be set to false unless working on striped image file
             bool macsSpecified;
             bool guidsSpecified;
-            bool uidsSpecified; // valid for BridgeX and ConnectIB only
+            bool uidSpecified; // valid for ConnectIB only
             std::vector<guid_t> userGuids;
             u_int8_t numOfGUIDs; // number of GUIDs to allocate for each port. keep zero for default. (FS3 image Only)
             u_int8_t stepSize; // step size between GUIDs. keep zero for default. (FS3 Image Only)
@@ -260,7 +267,6 @@ protected:
         fw_img_type_t fwType;
     };
     enum {
-        OLD_CNTX_START_POS_SIZE = 6,
         CNTX_START_POS_SIZE = 8
     };
     enum {
@@ -308,7 +314,7 @@ protected:
     bool checkBoot2(u_int32_t beg, u_int32_t offs, u_int32_t& next, bool fullRead, const char *pref,
             VerifyCallBack verifyCallBackFunc = (VerifyCallBack)NULL);
     u_int32_t CalcImageCRC(u_int32_t* buff, u_int32_t size);
-    bool writeImage(ProgressCallBack progressFunc, u_int32_t addr, void *data, int cnt, bool isPhysAddr = false, int totalSz = -1, int alreadyWrittenSz = 0);
+    bool writeImage(ProgressCallBack progressFunc, u_int32_t addr, void *data, int cnt, bool isPhysAddr = false, bool readModifyWrite=false, int totalSz = -1, int alreadyWrittenSz = 0);
     //////////////////////////////////////////////////////////////////
     bool GetSectData(std::vector<u_int8_t>& file_sect, const u_int32_t *buff, const u_int32_t size);
     ////////////////////////////////////////////////////////////////////

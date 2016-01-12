@@ -41,8 +41,10 @@
 #define REG_ID_MNVA  0x9024
 #define REG_ID_MNVI  0x9025
 #define REG_ID_MNVIA 0x9029 // 4th gen
+#define REG_ID_MVTS  0x902c
 #define REG_ID_NVQC  0x9030
 #define REG_ID_NVIA  0x9033 // 5th gen
+#define REG_ID_NVQGC 0x9034
 
 // TODO: get correct register ID for mfrl mfai
 #define REG_ID_MFRL 0x9028
@@ -249,6 +251,26 @@ reg_access_status_t reg_access_nvqc (mfile* mf, reg_access_method_t method, stru
     }
     REG_ACCCESS(mf, method, REG_ID_NVQC, nvqc, nvqc, tools_open);
 }
+
+/************************************
+ * Function: reg_access_nvqgc
+ ************************************/
+reg_access_status_t reg_access_nvqgc (mfile* mf, reg_access_method_t method, struct tools_open_nvqgc* nvqgc)
+{
+    if (method != REG_ACCESS_METHOD_GET ) { // this register supports only get method
+        return ME_REG_ACCESS_BAD_METHOD;
+    }
+    REG_ACCCESS(mf, method, REG_ID_NVQGC, nvqgc, nvqgc, tools_open);
+}
+
+/************************************
+ * Function: reg_access_mvts
+ ************************************/
+reg_access_status_t reg_access_mvts (mfile* mf, reg_access_method_t method, struct tools_open_mvts* mvts)
+{
+    REG_ACCCESS(mf, method, REG_ID_MVTS, mvts, mvts, tools_open);
+}
+
 /************************************
  * Function: reg_access_err2str
  ************************************/

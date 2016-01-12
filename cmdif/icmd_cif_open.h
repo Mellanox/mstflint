@@ -28,47 +28,34 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
  */
 
-#ifndef MLXCFG_STATUS_H_
-#define MLXCFG_STATUS_H_
+#ifndef _ICMD_OPEN_LIB     /* guard */
+#define _ICMD_OPEN_LIB
 
-/*
- * Enum for handling error messages
- */
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-typedef enum {
-    MCE_SUCCESS = 0,
-    MCE_FAILED,
-    MCE_TLV_NOT_FOUND,
-    MCE_TLV_NOT_SUPP,
-    MCE_NVCFG_NOT_SUPP,
-    MCE_TOOLS_HCR_NOT_SUPP,
-    MCE_DRIVER_DOWN,
-    MCE_UNSUPPORTED_DEVICE,
-    MCE_UNSUPPORTED_CFG,
-    MCE_BAD_PARAMS,
-    MCE_BAD_PARAM_VAL,
-    MCE_DEV_BUSY,
-    MCE_UNKNOWN_TLV,
-    MCE_REG_NOT_SUPP,
-    MCE_METHOD_NOT_SUPP,
-    MCE_RES_NOT_AVAIL,
-    MCE_CONF_CORRUPT,
-    MCE_TLV_LEN_TOO_SMALL,
-    MCE_BAD_CONFIG,
-    MCE_ERASE_EXEEDED,
-    MCE_BAD_OP,
-    MCE_BAD_STATUS,
-    MCE_CR_ERROR,
-    MCE_NOT_IMPLEMENTED,
-    MCE_INCOMPLETE_PARAMS,
-    MCE_OPEN_DEVICE,
-    MCE_PCI,
-    MCE_GET_DEFAULT_PARAMS,
-    MCE_UNKNOWN_ERR
-}McStatus;
+#include <mtcr.h>
+#include <common/compatibility.h>
+#include <tools_layouts/connectib_layouts.h>
+#include "icmd_cif_common.h"
+
+#define IN
+#define OUT
+#define INOUT
 
 
-#endif /* MLXCFG_STATUS_H_ */
+int gcif_get_fw_info(mfile *mf,
+                     OUT struct connectib_icmd_get_fw_info* fw_info);
+
+#undef IN
+#undef OUT
+#undef INOUT
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

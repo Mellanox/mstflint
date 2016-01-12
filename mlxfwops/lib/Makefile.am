@@ -45,7 +45,7 @@ INCLUDES = -I$(srcdir) -I$(MTCR_INC_DIR) -I$(MFLASH_DIR) -I$(top_srcdir)/ext_lib
 
 MLXFWOPS_VERSION = 1
 
-AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe -DNO_MFA_SUPPORT
+AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe -DNO_MFA_SUPPORT -DNO_OPEN_SSL
 
 noinst_LIBRARIES = libmlxfwops.a
 
@@ -55,5 +55,6 @@ libmlxfwops_a_SOURCES = flint_base.cpp \
                fs2_ops.cpp fs2_ops.h \
                fs3_ops.cpp fs3_ops.h \
                mlxfwops.cpp mlxfwops.h \
-               mlxfwops_com.h mlxfwops.h fw_ops.h flint_base.h flint_io.h
+               mlxfwops_com.h mlxfwops.h fw_ops.h flint_base.h flint_io.h\
+               aux_tlv_ops.h aux_tlv_ops.cpp
 

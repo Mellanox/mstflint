@@ -211,6 +211,20 @@ bool ErrMsg::errmsgAdv(bool showAdv, const char *normalFmt, const char *AdvFmt, 
     return false;
 }
 
+int ErrMsg::errmsgWCode(int errorCode, const char *format, ...) {
+    va_list   args;
+
+    char* prev_err = _err;
+
+    va_start(args, format);
+    _err = vprint(format, args);
+    va_end(args);
+
+    delete[] prev_err;
+    _errCode = errorCode;
+    return errorCode;
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 void Crc16::add(u_int32_t o)

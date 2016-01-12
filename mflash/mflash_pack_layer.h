@@ -1,4 +1,5 @@
-/* Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
+/*
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -27,9 +28,6 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
- *  Version: $Id$
- *
  */
 
 #ifndef MFLASH_COMMON_H_
@@ -37,6 +35,7 @@
 
 #include "mflash_types.h"
 #include "mflash_common_structs.h"
+#include <tools_res_mgmt.h>
 
 // TODO: use: (int)log2((float)num)  
 #define NEAREST_POW2(num)\
@@ -64,7 +63,7 @@ typedef int (*f_mf_erase_sect)(mflash* mfl, u_int32_t addr);
 typedef int (*f_mf_reset)     (mflash* mfl);
 
 typedef int (*f_st_spi_status)(mflash* mfl, u_int8_t op_type, u_int8_t* status);
-typedef int (*f_mf_get_info)  (mflash* mfl, unsigned *type_index, int *log2size, u_int8_t *no_flash);
+typedef int (*f_mf_get_info)  (mflash* mfl, flash_info_t *f_info, int *log2size, u_int8_t *no_flash);
 /////////////////////////////////////////////
 //
 // MFlash struct
@@ -104,6 +103,7 @@ struct mflash {
 	char            last_err_str[MFLASH_ERR_STR_SIZE];
 
 	u_int8_t   access_type; //0 = mfile , 1 = uefi
+	trm_ctx trm;
 
 };
 
@@ -184,11 +184,12 @@ int sx_st_block_access(mfile *mf, u_int32_t flash_addr, u_int8_t bank, u_int32_t
 		u_int8_t method);
 
 
-int common_erase_sector(mfile *mf, u_int32_t addr, u_int8_t flash_bank);
+int common_erase_sector(mfile *mf, u_int32_t addr, u_int8_t flash_bank, u_int32_t erase_size);
 
-int run_mfpa_command(mfile *mf, u_int8_t access_cmd, u_int8_t flash_bank, u_int32_t boot_address, u_int32_t *jedec_p, int *num_of_banks, u_int32_t* fw_flash_sector_sz);
+int run_mfpa_command(mfile *mf, u_int8_t access_cmd, u_int8_t flash_bank, u_int32_t boot_address,\
+                    u_int32_t *jedec_p, int *num_of_banks, u_int32_t* fw_flash_sector_sz, u_int8_t* supp_sub_and_sector);
 
-int com_get_jedec(mfile *mf, u_int8_t flash_bank, u_int32_t *jedec_p, u_int32_t* fw_flash_sector_sz);
+int com_get_jedec(mfile *mf, u_int8_t flash_bank, u_int32_t *jedec_p, u_int32_t* fw_flash_sector_sz, u_int8_t* supp_sub_and_sector);
 int get_num_of_banks(mfile *mf);
 int get_info_from_jededc_id(u_int32_t jededc_id, u_int8_t *vendor, u_int8_t* type, u_int8_t* capacity);
 int get_type_index_by_vendor_and_type(u_int8_t vendor, u_int8_t type, unsigned *type_index);

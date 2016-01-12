@@ -1,4 +1,5 @@
-/* Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
+/*
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -27,8 +28,6 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
- *  Version: $Id$
  *
  */
 
@@ -62,7 +61,10 @@
 #define ROCE_CC_ECN_TYPE 0x108
 #define LLDP_NB_SETTINGS_TYPE 0x10a
 #define LLDP_NB_CAPABILITIES_TYPE 0x10b
-
+#define EXTERNAL_PORT 0x192
+#define BOOT_SETTINGS_EXTRAS_GEN4 0x2001
+#define BOOT_SETTINGS_EXTRAS_GEN5 0x195
+#define BOOT_SETTINGS_EXTRAS_GEN5_CAP 0x101
 typedef enum {
     // SRIOV
     Mct_Sriov = 0,
@@ -85,9 +87,6 @@ typedef enum {
     Mct_Boot_Settings_P2,
     // IB dynamically connected (5th gen)
     Mct_Dc,
-    // Port Boot State (5th gen)
-    Mct_Boot_State_P1,
-    Mct_Boot_State_P2,
     // RoCE v1.5 next protocol (5th gen)
     Mct_RoCE_Next_Protocol,
     // RoCE congestion control (5th gen)
@@ -99,6 +98,11 @@ typedef enum {
     // Preboot Boot Settings (4th Gen)
     Mct_Preboot_Boot_Settings_P1,
     Mct_Preboot_Boot_Settings_P2,
+    Mct_External_Port,
+    //TODO: Boot Settings Extras
+    Mct_Boot_Settings_Extras_5thGen,
+    Mct_Boot_Settings_Extras_4thGen_P1,
+    Mct_Boot_Settings_Extras_4thGen_P2,
     Mct_Last
 } mlxCfgType;
 
@@ -107,6 +111,10 @@ typedef enum {
     Mcp_Sriov_En = 0,
     Mcp_Num_Of_Vfs,
     Mcp_Fpp_En,
+    Mcp_PF_Log_Bar_Size,
+    Mcp_VF_Log_Bar_Size,
+    Mcp_Num_Pf_Msix,
+    Mcp_Num_Vf_Msix,
     // Wake On LAN 4th Gen Port 1
     Mcp_Wol_Magic_En_P1,
     // Wake On LAN 4th Gen Port 2
@@ -128,10 +136,6 @@ typedef enum {
     // IB Dynamically connected
     Mcp_Log_Dcr_Hash_Table_Size,
     Mcp_Dcr_Lifo_Size,
-    // Port Boot state Port 1
-    Mcp_Boot_State_P1,
-    // Port Boot state Port 2
-    Mcp_Boot_State_P2,
     // RoCE v1.5 Next protocol
     Mcp_RoCE_Next_Protocol,
     // RoCE Congestion Control Parameters Port 1
@@ -192,6 +196,13 @@ typedef enum {
     Mcp_Boot_Retry_Cnt_P2,
     Mcp_Legacy_Boot_Protocol_P2,
     Mcp_Boot_Vlan_P2,
+    //External port
+    Mcp_Port_Owner,
+    Mcp_Allow_Rd_Counters,
+    //Boot Settings Ext
+    Mcp_Boot_Settings_Ext_IP_Ver,
+    Mcp_Boot_Settings_Ext_IP_Ver_P1,
+    Mcp_Boot_Settings_Ext_IP_Ver_P2,
     Mcp_Last
 } mlxCfgParam;
 
@@ -208,7 +219,7 @@ typedef std::pair<mlxCfgParam, u_int32_t> cfgInfo;
 class RawCfgParams5thGen : public ErrMsg
 {
 public:
-    RawCfgParams5thGen(){}
+    RawCfgParams5thGen();
     ~RawCfgParams5thGen() {}
     int setRawData(const std::vector<u_int32_t>& tlvBuff);
     int setOnDev(mfile* mf);
@@ -231,6 +242,7 @@ public:
 
     virtual void setParam(mlxCfgParam paramType, u_int32_t val) = 0;
     virtual u_int32_t getParam(mlxCfgParam paramType) = 0;
+    virtual u_int32_t getDefaultParam(mlxCfgParam paramType) = 0;
 
     virtual int getDefaultAndFromDev(mfile* mf);
     virtual int getFromDev(mfile* mf) = 0;
@@ -254,6 +266,7 @@ protected:
 
     virtual void updateTlvFromClassAttr(void* tlv) {(void)tlv; throw std::logic_error("Function Not Implemented");}
     virtual void updateClassAttrFromTlv(void* tlv) {(void)tlv; throw std::logic_error("Function Not Implemented");}
+    virtual void updateClassDefaultAttrFromTlv(void* tlv) {(void)tlv; throw std::logic_error("Function Not Implemented");}
 
     u_int64_t _devCapVec; // relevant for 4th gen devices
     bool _updated; // set true on get and false on set
@@ -265,43 +278,106 @@ protected:
  * SRIOV param classes:
  */
 
-class SriovParams : public CfgParams
+class SriovParams4thGen : public CfgParams
 {
 public:
-    SriovParams() : CfgParams(Mct_Sriov, SRIOV_TYPE) , _sriovEn(MLXCFG_UNKNOWN), _numOfVfs(MLXCFG_UNKNOWN), _maxVfs(1) {}
-    ~SriovParams() {};
-
-    virtual bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last) = 0;
-
-    virtual void setParam(mlxCfgParam paramType, u_int32_t val);
-    virtual u_int32_t getParam(mlxCfgParam paramType);
-
-protected:
-    virtual bool hardLimitCheck();
-    virtual bool softLimitCheck(mfile* mf=NULL) = 0;
-
-    u_int32_t _sriovEn;
-    u_int32_t _numOfVfs;
-    u_int32_t _maxVfs;
-};
-
-class SriovParams4thGen : public SriovParams
-{
-public:
-    SriovParams4thGen() : SriovParams() {}
+    SriovParams4thGen() : CfgParams(Mct_Sriov, SRIOV_TYPE) , _sriovEn(MLXCFG_UNKNOWN), _numOfVfs(MLXCFG_UNKNOWN),
+                _sriovEnDefault(MLXCFG_UNKNOWN), _numOfVfsDefault(MLXCFG_UNKNOWN), _maxVfs(1) {}
     ~SriovParams4thGen() {};
 
     virtual bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last);
 
+    virtual void setParam(mlxCfgParam paramType, u_int32_t val);
+    virtual u_int32_t getParam(mlxCfgParam paramType);
+    virtual u_int32_t getDefaultParam(mlxCfgParam paramType);
+
     virtual int getFromDev(mfile* mf);
     virtual int setOnDev(mfile* mf, bool ignoreCheck=false);
     virtual int getDefaultParams(mfile* mf);
+
 protected:
+    virtual bool hardLimitCheck();
+
     virtual int updateMaxVfs(mfile* mf);
     virtual bool softLimitCheck(mfile* mf=NULL);
+    void setParams(u_int32_t sriovEn, u_int32_t numOfVfs);
 
+    u_int32_t _sriovEn;
+    u_int32_t _numOfVfs;
+    u_int32_t _sriovEnDefault;
+    u_int32_t _numOfVfsDefault;
+    u_int32_t _maxVfs;
 };
 
+/*
+ * Boot Settings Extras param classes:
+ */
+
+class BootSettingsExtParams : public CfgParams
+{
+public:
+    BootSettingsExtParams(mlxCfgType t, u_int32_t tlvT) : CfgParams(t, tlvT), _ipVer(MLXCFG_UNKNOWN), _ipVerDefault(MLXCFG_UNKNOWN){}
+    virtual ~BootSettingsExtParams() {}
+
+    virtual bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last) = 0;
+
+    virtual void setParam(mlxCfgParam paramType, u_int32_t val) = 0;
+    virtual u_int32_t getParam(mlxCfgParam paramType) = 0;
+    virtual u_int32_t getDefaultParam(mlxCfgParam paramType) = 0;
+
+    virtual int getFromDev(mfile* mf) = 0;
+    virtual int setOnDev(mfile* mf, bool ignoreCheck=false) = 0;
+    virtual int getDefaultParams(mfile* mf)=0;
+
+protected:
+    bool hardLimitCheck();
+    void setParams(u_int32_t _ipVer);
+
+    u_int32_t _ipVer;
+    u_int32_t _ipVerDefault;
+};
+
+class BootSettingsExtParams4thGen : public BootSettingsExtParams
+{
+public:
+    BootSettingsExtParams4thGen(int port) : BootSettingsExtParams((port == 1) ? Mct_Boot_Settings_Extras_4thGen_P1 : Mct_Boot_Settings_Extras_4thGen_P2,
+            BOOT_SETTINGS_EXTRAS_GEN4),
+        _port(port){}
+    ~BootSettingsExtParams4thGen() {}
+
+    u_int32_t getDefaultParam(mlxCfgParam paramType);
+    void setParam(mlxCfgParam paramType, u_int32_t val);
+    u_int32_t getParam(mlxCfgParam paramType);
+    bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last);
+    int getDefaultParams(mfile* mf);
+
+    int getFromDev(mfile* mf);
+    int setOnDev(mfile* mf, bool ignoreCheck=false);
+private:
+    int _port;
+};
+
+class BootSettingsExtParams5thGen : public BootSettingsExtParams
+{
+public:
+    BootSettingsExtParams5thGen() : BootSettingsExtParams(Mct_Boot_Settings_Extras_5thGen, BOOT_SETTINGS_EXTRAS_GEN5) {}
+    ~BootSettingsExtParams5thGen() {}
+
+    u_int32_t getBootSettingsExtCapabilitiesTlvTypeBe();
+    bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last);
+    u_int32_t getParam(mlxCfgParam paramType);
+    u_int32_t getDefaultParam(mlxCfgParam paramType);
+    void setParam(mlxCfgParam paramType, u_int32_t val);
+    int getFromDev(mfile* mf);
+    int setOnDev(mfile* mf, bool ignoreCheck=false);
+    void updateClassAttrFromDefaultParams();
+    void updateTlvFromClassAttr(void* tlv);
+    void updateClassAttrFromTlv(void* tlv);
+    void updateClassDefaultAttrFromTlv(void* tlv);
+    u_int32_t getTlvTypeBe();
+    int getDefaultParams(mfile* mf);
+    int getDefaultParamsAux(mfile* mf);
+};
 /*
  * WOL param classes:
  */
@@ -309,13 +385,14 @@ protected:
 class WolParams : public CfgParams
 {
 public:
-    WolParams() : CfgParams(Mct_Last, WOL_TYPE), _wolMagicEn(MLXCFG_UNKNOWN) {}
+    WolParams() : CfgParams(Mct_Last, WOL_TYPE), _wolMagicEn(MLXCFG_UNKNOWN), _wolMagicEnDefault(MLXCFG_UNKNOWN) {}
     virtual ~WolParams() {}
 
     virtual bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last) = 0;
 
     virtual void setParam(mlxCfgParam paramType, u_int32_t val) = 0;
     virtual u_int32_t getParam(mlxCfgParam paramType) = 0;
+    virtual u_int32_t getDefaultParam(mlxCfgParam paramType) = 0;
 
     virtual int getFromDev(mfile* mf) = 0;
     virtual int setOnDev(mfile* mf, bool ignoreCheck=false) = 0;
@@ -323,9 +400,11 @@ public:
 
 protected:
     virtual bool hardLimitCheck();
+    void setParams(u_int32_t wolMagicEn);
     // Wake on magic packet (atm this is the only mode which is supported)
 
     u_int32_t _wolMagicEn;
+    u_int32_t _wolMagicEnDefault;
 };
 
 class WolParams4thGen : public WolParams
@@ -338,6 +417,7 @@ public:
 
     virtual void setParam(mlxCfgParam paramType, u_int32_t val);
     virtual u_int32_t getParam(mlxCfgParam paramType);
+    virtual u_int32_t getDefaultParam(mlxCfgParam paramType);
 
     virtual int getFromDev(mfile* mf);
     virtual int setOnDev(mfile* mf, bool ignoreCheck=false);
@@ -356,15 +436,19 @@ public:
 
     virtual void setParam(mlxCfgParam paramType, u_int32_t val);
     virtual u_int32_t getParam(mlxCfgParam paramType);
+    virtual u_int32_t getDefaultParam(mlxCfgParam paramType);
 
     virtual int getFromDev(mfile* mf);
     virtual int setOnDev(mfile* mf, bool ignoreCheck=false);
     virtual int getDefaultParams(mfile* mf);
+
 protected:
     u_int32_t getTlvTypeBe();
 
     virtual void updateTlvFromClassAttr(void* tlv);
     virtual void updateClassAttrFromTlv(void* tlv);
+    virtual void updateClassDefaultAttrFromTlv(void* tlv);
+    void updateClassAttrFromDefaultParams();
 };
 
 
@@ -375,7 +459,11 @@ protected:
 class VpiParams : public CfgParams
 {
 public:
-    VpiParams(int port) : CfgParams(port == 1 ? Mct_Vpi_P1 : Mct_Vpi_P2, VPI_TYPE), _port(port), _linkType(MLXCFG_UNKNOWN), _defaultLinkType(MLXCFG_UNKNOWN){}
+    VpiParams(int port) : CfgParams(port == 1 ? Mct_Vpi_P1 : Mct_Vpi_P2, VPI_TYPE), _port(port), _linkType(MLXCFG_UNKNOWN), _defaultLinkType(MLXCFG_UNKNOWN)
+    , _linkTypeDefault(MLXCFG_UNKNOWN), _defaultLinkTypeDefault(MLXCFG_UNKNOWN){
+        _vpiTlv.default_link_type = 0;
+        _vpiTlv.network_link_type = 0;
+    }
     ~VpiParams() {}
 
     virtual bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last) = 0;
@@ -389,10 +477,13 @@ protected:
     int getFromDevComPost(MError mnvaComRC);
     int setOnDevComPre(bool ignoreCheck);
     int setOnDevComPost(MError mnvaComRC);
+    void setParams(u_int32_t _linkType, u_int32_t _defaultLinkType);
 
     int _port;
     u_int32_t _linkType;
     u_int32_t _defaultLinkType;
+    u_int32_t _linkTypeDefault;
+    u_int32_t _defaultLinkTypeDefault;
     // FW TLV (used when actually setting/getting the TLV from FW)
     std::vector<u_int8_t> _tlvBuff;
     struct tools_open_vpi_settings _vpiTlv;
@@ -409,6 +500,7 @@ public:
     virtual bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last);
     virtual void setParam(mlxCfgParam paramType, u_int32_t val);
     virtual u_int32_t getParam(mlxCfgParam paramType);
+    virtual u_int32_t getDefaultParam(mlxCfgParam paramType);
     virtual bool hardLimitCheck();
 
     virtual int getFromDev(mfile* mf);
@@ -425,6 +517,7 @@ public:
     virtual bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last);
     virtual void setParam(mlxCfgParam paramType, u_int32_t val);
     virtual u_int32_t getParam(mlxCfgParam paramType);
+    virtual u_int32_t getDefaultParam(mlxCfgParam paramType);
     virtual bool hardLimitCheck();
 
     virtual int getFromDev(mfile* mf);
@@ -441,13 +534,14 @@ protected:
 class BarSzParams : public CfgParams
 {
 public:
-    BarSzParams() : CfgParams(Mct_Bar_Size, BAR_SIZE_TYPE) ,_maxLogBarSz(1), _logBarSz(MLXCFG_UNKNOWN) {}
+    BarSzParams() : CfgParams(Mct_Bar_Size, BAR_SIZE_TYPE) ,_maxLogBarSz(1), _logBarSz(MLXCFG_UNKNOWN), _logBarSzDefault(MLXCFG_UNKNOWN) {}
     ~BarSzParams() {}
 
     virtual bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last) = 0;
 
     virtual void setParam(mlxCfgParam paramType, u_int32_t val);
     virtual u_int32_t getParam(mlxCfgParam paramType);
+    virtual u_int32_t getDefaultParam(mlxCfgParam paramType);
 
     virtual int getFromDev(mfile* mf) = 0;
     virtual int setOnDev(mfile* mf, bool ignoreCheck=false) = 0;
@@ -457,8 +551,10 @@ protected:
     virtual bool hardLimitCheck();
     virtual bool softLimitCheck(mfile* mf=NULL) = 0;
     virtual int getDefaultBarSz(mfile* mf) = 0;
+    void setParams(u_int32_t logBarSz);
     u_int32_t _maxLogBarSz;
     u_int32_t _logBarSz;
+    u_int32_t _logBarSzDefault;
 
 };
 
@@ -487,14 +583,23 @@ class PciParams5thGen : public CfgParams
 {
 public:
     PciParams5thGen() : CfgParams(Mct_Pci, PCI_SETTINGS_TYPE) , _sriovEn(MLXCFG_UNKNOWN), _numOfVfs(MLXCFG_UNKNOWN),\
-                        _fppEn(MLXCFG_UNKNOWN), _sriovSupported(false), _maxVfsPerPf(0), _fppSupported(false),\
-                        _userSpecifiedSRIOV(false), _userSpecifiedFPP(false){}
+                        _fppEn(MLXCFG_UNKNOWN), _pfLogBarSize(MLXCFG_UNKNOWN), _vfLogBarSize(MLXCFG_UNKNOWN),\
+                        _numPfMsix(MLXCFG_UNKNOWN), _numVfMsix(MLXCFG_UNKNOWN), _sriovEnDefault(MLXCFG_UNKNOWN),\
+                        _numOfVfsDefault(MLXCFG_UNKNOWN), _fppEnDefault(MLXCFG_UNKNOWN), _pfLogBarSizeDefault(MLXCFG_UNKNOWN),\
+                        _vfLogBarSizeDefault(MLXCFG_UNKNOWN), _numPfMsixDefault(MLXCFG_UNKNOWN), _numVfMsixDefault(MLXCFG_UNKNOWN),\
+                        _numOfPfs(MLXCFG_UNKNOWN), _numOfPfsValid(0), _sriovSupported(false),_maxVfsPerPf(0),\
+                        _fppSupported(false), _pfLogBarSizeSuppored(false), _vfLogBarSizeSuppored(false),\
+                        _numPfMsixSupported(false), _numVfMsixSupported(false),_maxLogPfBarSize(0), _maxLogVfBarSize(0),\
+                        _maxTotalBarValid(0), _maxTotalBar(1), _maxNumPfMsix(0), _maxNumVfMsix(0),_maxTotalMsixValid(0),\
+                        _maxTotalMsix(0), _userSpecifiedSRIOV(false), _userSpecifiedFPP(false),_userSpecifiedPfLogBarSize(false),\
+                        _userSpecifiedVfLogBarSize(false),_userSpecifiedNumPfMsix(false),_userSpecifiedNumVfMsix(false){}
     ~PciParams5thGen() {};
 
     virtual bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last);
 
     virtual void setParam(mlxCfgParam paramType, u_int32_t val);
     virtual u_int32_t getParam(mlxCfgParam paramType);
+    virtual u_int32_t getDefaultParam(mlxCfgParam paramType);
 
     virtual int getFromDev(mfile* mf);
     virtual int setOnDev(mfile* mf, bool ignoreCheck=false);
@@ -502,22 +607,63 @@ public:
 
 protected:
     virtual bool hardLimitCheck();
+    virtual bool softLimitCheck(mfile* mf=NULL);
     int getDefaultsAndCapabilities(mfile* mf);
     u_int32_t getPciSettingsTlvTypeBe();
     u_int32_t getPciCapabilitiesTlvTypeBe();
+    void setParams(u_int32_t sriovEn, u_int32_t numOfVfs, u_int32_t fppEn, u_int32_t pfLogBarSize,
+            u_int32_t vfLogBarSize, u_int32_t numOfPfs, u_int32_t numPfMsix, u_int32_t numVfMsix);
+
+private:
+    u_int32_t calcVfLogBarSize();
+    u_int32_t calcPfLogBarSize();
+    u_int32_t calcTotalBar();
+    u_int32_t calcNumOfVfs();
 
     u_int32_t _sriovEn;
     u_int32_t _numOfVfs;
     u_int32_t _fppEn;
+    u_int32_t _pfLogBarSize;
+    u_int32_t _vfLogBarSize;
+    u_int32_t _numPfMsix;
+    u_int32_t _numVfMsix;
+
+    u_int32_t _sriovEnDefault;
+    u_int32_t _numOfVfsDefault;
+    u_int32_t _fppEnDefault;
+    u_int32_t _pfLogBarSizeDefault;
+    u_int32_t _vfLogBarSizeDefault;
+    u_int32_t _numPfMsixDefault;
+    u_int32_t _numVfMsixDefault;
+
+    u_int32_t _numOfPfs;
+    u_int32_t _numOfPfsValid;
+
 
     // defaults and capabilities
     bool      _sriovSupported;
     u_int32_t _maxVfsPerPf;
     bool      _fppSupported;
+    bool      _pfLogBarSizeSuppored;
+    bool      _vfLogBarSizeSuppored;
+    bool      _numPfMsixSupported;
+    bool      _numVfMsixSupported;
+    u_int32_t _maxLogPfBarSize;
+    u_int32_t _maxLogVfBarSize;
+    u_int32_t _maxTotalBarValid;
+    u_int32_t _maxTotalBar;
+    u_int32_t _maxNumPfMsix;
+    u_int32_t _maxNumVfMsix;
+    u_int32_t _maxTotalMsixValid;
+    u_int32_t _maxTotalMsix;
 
     // class members used for indication
     bool _userSpecifiedSRIOV;
     bool _userSpecifiedFPP;
+    bool _userSpecifiedPfLogBarSize;
+    bool _userSpecifiedVfLogBarSize;
+    bool _userSpecifiedNumPfMsix;
+    bool _userSpecifiedNumVfMsix;
 
 };
 
@@ -528,15 +674,19 @@ protected:
 class TptParams5thGen : public CfgParams
 {
 public:
-    TptParams5thGen() : CfgParams(Mct_Tpt, TPT_SETTINGS_TYPE) , _logMaxPayloadSize(MLXCFG_UNKNOWN), _logMaxPayloadSizeSupported(false) {}
+    TptParams5thGen() : CfgParams(Mct_Tpt, TPT_SETTINGS_TYPE) , _logMaxPayloadSize(MLXCFG_UNKNOWN),
+    _logMaxPayloadSizeDefault(MLXCFG_UNKNOWN), _logMaxPayloadSizeSupported(false)
+    {}
     ~TptParams5thGen() {};
 
     virtual bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last);
 
     virtual void setParam(mlxCfgParam paramType, u_int32_t val);
     virtual u_int32_t getParam(mlxCfgParam paramType);
+    virtual u_int32_t getDefaultParam(mlxCfgParam paramType);
 
     virtual int getFromDev(mfile* mf);
+    int getFromDev(mfile* mf, bool getDefault);
     virtual int setOnDev(mfile* mf, bool ignoreCheck=false);
     virtual int getDefaultParams(mfile* mf);
 
@@ -545,8 +695,10 @@ protected:
     int getDefaultsAndCapabilities(mfile* mf);
     u_int32_t getTptSettingsTlvTypeBe();
     u_int32_t getTptCapabilitiesTlvTypeBe();
+    void setParams(u_int32_t logMaxPayloadSize);
 
     u_int32_t _logMaxPayloadSize;
+    u_int32_t _logMaxPayloadSizeDefault;
 
     // defaults and capabilities
     bool      _logMaxPayloadSizeSupported;
@@ -559,13 +711,14 @@ class InfinibandBootSettingsParams4thGen : public CfgParams
 {
 public:
     InfinibandBootSettingsParams4thGen(int port) : CfgParams((port == 1 ? Mct_Boot_Settings_P1 : Mct_Boot_Settings_P2),
-            INFINIBAND_BOOT_SETTINGS_TYPE) , _port(port), _bootPkey(MLXCFG_UNKNOWN) {}
+            INFINIBAND_BOOT_SETTINGS_TYPE) , _port(port), _bootPkey(MLXCFG_UNKNOWN), _bootPkeyDefault(MLXCFG_UNKNOWN) {}
     ~InfinibandBootSettingsParams4thGen() {};
 
     virtual bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last);
 
     virtual void setParam(mlxCfgParam paramType, u_int32_t val);
     virtual u_int32_t getParam(mlxCfgParam paramType);
+    virtual u_int32_t getDefaultParam(mlxCfgParam paramType);
 
     virtual int getFromDev(mfile* mf);
     virtual int setOnDev(mfile* mf, bool ignoreCheck=false);
@@ -573,9 +726,11 @@ public:
 
 protected:
     virtual bool hardLimitCheck();
+    void setParams(u_int32_t bootPkey);
 
     int _port;
     u_int32_t _bootPkey;
+    u_int32_t _bootPkeyDefault;
 
 };
 
@@ -587,15 +742,18 @@ class IBDCParams5thGen : public CfgParams
 {
 public:
     IBDCParams5thGen() : CfgParams(Mct_Dc, INFINIBAND_DC_SETTINGS_TYPE) , _logDcrHashTableSize(MLXCFG_UNKNOWN), _dcrLifoSize(MLXCFG_UNKNOWN),
-                        _minLogDcrHashTableSize(0), _maxLogDcrHashTableSize(0), _minDcrLifoSize(0), _maxDcrLifoSize(0){}
+        _logDcrHashTableSizeDefault(MLXCFG_UNKNOWN), _dcrLifoSizeDefault(MLXCFG_UNKNOWN), _minLogDcrHashTableSize(0),
+        _maxLogDcrHashTableSize(0), _minDcrLifoSize(0), _maxDcrLifoSize(0){}
     ~IBDCParams5thGen() {};
 
     virtual bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last);
 
     virtual void setParam(mlxCfgParam paramType, u_int32_t val);
     virtual u_int32_t getParam(mlxCfgParam paramType);
+    virtual u_int32_t getDefaultParam(mlxCfgParam paramType);
 
     virtual int getFromDev(mfile* mf);
+    int getFromDev(mfile* mf, bool getDefault);
     virtual int setOnDev(mfile* mf, bool ignoreCheck=false);
     virtual int getDefaultParams(mfile* mf);
 
@@ -607,9 +765,15 @@ protected:
 
     virtual void updateTlvFromClassAttr(void* tlv);
     virtual void updateClassAttrFromTlv(void* tlv);
+    virtual void updateClassDefaultAttrFromTlv(void* tlv);
+    void updateClassAttrFromDefaultParams();
+    void setParams(u_int32_t logDcrHashTableSize, u_int32_t dcrLifoSize);
 
     u_int32_t _logDcrHashTableSize;
     u_int32_t _dcrLifoSize;
+
+    u_int32_t _logDcrHashTableSizeDefault;
+    u_int32_t _dcrLifoSizeDefault;
 
     // defaults and capabilities
     u_int32_t _minLogDcrHashTableSize;
@@ -619,49 +783,21 @@ protected:
 };
 
 /*
- * Port boot state Class (5thGen devices only)
- */
-
-class PortBootStateParams5thGen : public CfgParams
-{
-public:
-    PortBootStateParams5thGen(int port) : CfgParams((port == 1 ? Mct_Boot_State_P1 : Mct_Boot_State_P2), PORT_BOOT_STATE_TYPE) , _portBootState(MLXCFG_UNKNOWN), _port(port) {}
-    ~PortBootStateParams5thGen() {};
-
-    virtual bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last);
-
-    virtual void setParam(mlxCfgParam paramType, u_int32_t val);
-    virtual u_int32_t getParam(mlxCfgParam paramType);
-
-    virtual int getFromDev(mfile* mf);
-    virtual int setOnDev(mfile* mf, bool ignoreCheck=false);
-    virtual int getDefaultParams(mfile* mf);
-
-protected:
-    virtual bool hardLimitCheck();
-    u_int32_t getTlvTypeBe();
-
-    virtual void updateTlvFromClassAttr(void* tlv);
-    virtual void updateClassAttrFromTlv(void* tlv);
-
-    u_int32_t _portBootState;
-    int _port;
-};
-
-/*
  * RoCE v1.5 next protocol Class (5thGen devices only)
  */
 
 class RoCENextProtocolParams5thGen : public CfgParams
 {
 public:
-    RoCENextProtocolParams5thGen() : CfgParams(Mct_RoCE_Next_Protocol, ROCE_NEXT_PROTOCOL_TYPE) , _nextProtocol(MLXCFG_UNKNOWN) {}
+    RoCENextProtocolParams5thGen() : CfgParams(Mct_RoCE_Next_Protocol, ROCE_NEXT_PROTOCOL_TYPE) , _nextProtocol(MLXCFG_UNKNOWN)
+                                    , _nextProtocolDefault(MLXCFG_UNKNOWN){}
     ~RoCENextProtocolParams5thGen() {};
 
     virtual bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last);
 
     virtual void setParam(mlxCfgParam paramType, u_int32_t val);
     virtual u_int32_t getParam(mlxCfgParam paramType);
+    virtual u_int32_t getDefaultParam(mlxCfgParam paramType);
 
     virtual int getFromDev(mfile* mf);
     virtual int setOnDev(mfile* mf, bool ignoreCheck=false);
@@ -673,8 +809,13 @@ protected:
 
     virtual void updateTlvFromClassAttr(void* tlv);
     virtual void updateClassAttrFromTlv(void* tlv);
+    virtual void updateClassDefaultAttrFromTlv(void* tlv);
+    void updateClassAttrFromDefaultParams();
+    void setParams(u_int32_t nextProtocol);
 
     u_int32_t _nextProtocol;
+
+    u_int32_t _nextProtocolDefault;
 };
 
 /*
@@ -685,13 +826,15 @@ class RoCECCParams5thGen : public CfgParams
 {
 public:
     RoCECCParams5thGen(int port) : CfgParams((port == 1 ? Mct_RoCE_CC_P1 : Mct_RoCE_CC_P2), ROCE_CC_TYPE),
-                                   _port(port), _roceCcAlgorithm(MLXCFG_UNKNOWN), _roceCcPrioMask(MLXCFG_UNKNOWN) {}
+                                   _port(port), _roceCcAlgorithm(MLXCFG_UNKNOWN), _roceCcPrioMask(MLXCFG_UNKNOWN)
+                                    , _roceCcAlgorithmDefault(MLXCFG_UNKNOWN), _roceCcPrioMaskDefault(MLXCFG_UNKNOWN){}
     ~RoCECCParams5thGen() {};
 
     virtual bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last);
 
     virtual void setParam(mlxCfgParam paramType, u_int32_t val);
     virtual u_int32_t getParam(mlxCfgParam paramType);
+    virtual u_int32_t getDefaultParam(mlxCfgParam paramType);
 
     virtual int getFromDev(mfile* mf);
     virtual int setOnDev(mfile* mf, bool ignoreCheck=false);
@@ -703,10 +846,16 @@ protected:
 
     virtual void updateTlvFromClassAttr(void* tlv);
     virtual void updateClassAttrFromTlv(void* tlv);
+    virtual void updateClassDefaultAttrFromTlv(void* tlv);
+    void updateClassAttrFromDefaultParams();
+    void setParams(u_int32_t roceCcAlgorithm, u_int32_t roceCcPrioMask);
 
     int _port;
     u_int32_t _roceCcAlgorithm;
     u_int32_t _roceCcPrioMask;
+
+    u_int32_t _roceCcAlgorithmDefault;
+    u_int32_t _roceCcPrioMaskDefault;
 };
 
 /*
@@ -723,13 +872,21 @@ public:
                                     _rpgGd(MLXCFG_UNKNOWN), _rpgMinDecFac(MLXCFG_UNKNOWN), _rpgMinRate(MLXCFG_UNKNOWN),
                                     _rateToSetOnFirstCnp(MLXCFG_UNKNOWN), _dceTcpG(MLXCFG_UNKNOWN), _dceTcpRtt(MLXCFG_UNKNOWN),
                                     _rateReduceMonitorPeriod(MLXCFG_UNKNOWN), _initialAlphaValue(MLXCFG_UNKNOWN),
-                                    _minTimeBetweenCnps(MLXCFG_UNKNOWN), _cnpDscp(MLXCFG_UNKNOWN), _cnp802pPrio(MLXCFG_UNKNOWN){};
+                                    _minTimeBetweenCnps(MLXCFG_UNKNOWN), _cnpDscp(MLXCFG_UNKNOWN), _cnp802pPrio(MLXCFG_UNKNOWN)
+                                    , _clampTgtRateDefault(MLXCFG_UNKNOWN), _clampTgtRateAfterTimeIncDefault(MLXCFG_UNKNOWN),
+                                    _rpgTimeResetDefault(MLXCFG_UNKNOWN), _rpgByteResetDefault(MLXCFG_UNKNOWN), _rpgThresholdDefault(MLXCFG_UNKNOWN),
+                                    _rpgMaxRateDefault(MLXCFG_UNKNOWN), _rpgAiRateDefault(MLXCFG_UNKNOWN), _rpgHaiRateDefault(MLXCFG_UNKNOWN),
+                                    _rpgGdDefault(MLXCFG_UNKNOWN), _rpgMinDecFacDefault(MLXCFG_UNKNOWN), _rpgMinRateDefault(MLXCFG_UNKNOWN),
+                                    _rateToSetOnFirstCnpDefault(MLXCFG_UNKNOWN), _dceTcpGDefault(MLXCFG_UNKNOWN), _dceTcpRttDefault(MLXCFG_UNKNOWN),
+                                    _rateReduceMonitorPeriodDefault(MLXCFG_UNKNOWN), _initialAlphaValueDefault(MLXCFG_UNKNOWN),
+                                    _minTimeBetweenCnpsDefault(MLXCFG_UNKNOWN), _cnpDscpDefault(MLXCFG_UNKNOWN), _cnp802pPrioDefault(MLXCFG_UNKNOWN){};
     ~RoCECCEcnParams5thGen() {};
 
     virtual bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last);
 
     virtual void setParam(mlxCfgParam paramType, u_int32_t val);
     virtual u_int32_t getParam(mlxCfgParam paramType);
+    virtual u_int32_t getDefaultParam(mlxCfgParam paramType);
 
     virtual int getFromDev(mfile* mf);
     virtual int setOnDev(mfile* mf, bool ignoreCheck=false);
@@ -741,6 +898,13 @@ protected:
 
     virtual void updateTlvFromClassAttr(void* tlv);
     virtual void updateClassAttrFromTlv(void* tlv);
+    virtual void updateClassDefaultAttrFromTlv(void* tlv);
+    void updateClassAttrFromDefaultParams();
+    void setParams(u_int32_t clampTgtRate, u_int32_t clampTgtRateAfterTimeInc, u_int32_t rpgTimeReset, u_int32_t rpgByteReset,
+            u_int32_t rpgThreshold, u_int32_t rpgMaxRate, u_int32_t rpgAiRate, u_int32_t rpgHaiRate,
+            u_int32_t rpgGd, u_int32_t rpgMinDecFac, u_int32_t rpgMinRate, u_int32_t rateToSetOnFirstCnp,
+            u_int32_t dceTcpG, u_int32_t dceTcpRtt, u_int32_t rateReduceMonitorPeriod, u_int32_t initialAlphaValue,
+            u_int32_t minTimeBetweenCnps, u_int32_t cnpDscp, u_int32_t cnp802pPrio);
 
     int _port;
 
@@ -763,6 +927,26 @@ protected:
     u_int32_t _minTimeBetweenCnps;
     u_int32_t _cnpDscp;
     u_int32_t _cnp802pPrio;
+
+    u_int32_t _clampTgtRateDefault;
+    u_int32_t _clampTgtRateAfterTimeIncDefault;
+    u_int32_t _rpgTimeResetDefault;
+    u_int32_t _rpgByteResetDefault;
+    u_int32_t _rpgThresholdDefault;
+    u_int32_t _rpgMaxRateDefault;
+    u_int32_t _rpgAiRateDefault;
+    u_int32_t _rpgHaiRateDefault;
+    u_int32_t _rpgGdDefault;
+    u_int32_t _rpgMinDecFacDefault;
+    u_int32_t _rpgMinRateDefault;
+    u_int32_t _rateToSetOnFirstCnpDefault;
+    u_int32_t _dceTcpGDefault;
+    u_int32_t _dceTcpRttDefault;
+    u_int32_t _rateReduceMonitorPeriodDefault;
+    u_int32_t _initialAlphaValueDefault;
+    u_int32_t _minTimeBetweenCnpsDefault;
+    u_int32_t _cnpDscpDefault;
+    u_int32_t _cnp802pPrioDefault;
 };
 
 
@@ -775,13 +959,17 @@ class PrebootBootSettingsParams4thGen : public CfgParams
 public:
     PrebootBootSettingsParams4thGen(int port) : CfgParams((port == 1 ? Mct_Preboot_Boot_Settings_P1 : Mct_Preboot_Boot_Settings_P2), PREBOOT_BOOT_SETTINGS_TYPE),
                                                 _bootOptionRomEn(MLXCFG_UNKNOWN), _bootVlanEn(MLXCFG_UNKNOWN), _bootRetryCnt(MLXCFG_UNKNOWN),
-                                                _legacyBootProtocol(MLXCFG_UNKNOWN), _bootVlan(MLXCFG_UNKNOWN), _port(port) {}
+                                                _legacyBootProtocol(MLXCFG_UNKNOWN), _bootVlan(MLXCFG_UNKNOWN),
+                                                _bootOptionRomEnDefault(MLXCFG_UNKNOWN), _bootVlanEnDefault(MLXCFG_UNKNOWN), _bootRetryCntDefault(MLXCFG_UNKNOWN),
+                                                _legacyBootProtocolDefault(MLXCFG_UNKNOWN), _bootVlanDefault(MLXCFG_UNKNOWN),
+                                                _port(port) {}
     ~PrebootBootSettingsParams4thGen() {};
 
     virtual bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last);
 
     virtual void setParam(mlxCfgParam paramType, u_int32_t val);
     virtual u_int32_t getParam(mlxCfgParam paramType);
+    virtual u_int32_t getDefaultParam(mlxCfgParam paramType);
 
     virtual int getFromDev(mfile* mf);
     virtual int setOnDev(mfile* mf, bool ignoreCheck=false);
@@ -792,14 +980,64 @@ protected:
 
     virtual void updateTlvFromClassAttr(void* tlv);
     virtual void updateClassAttrFromTlv(void* tlv);
+    virtual void updateClassDefaultAttrFromTlv(void* tlv);
+    void updateClassAttrFromDefaultParams();
+    void setParams(u_int32_t bootOptionRomEn, u_int32_t bootVlanEn, u_int32_t bootRetryCnt,
+            u_int32_t legacyBootProtocol, u_int32_t bootVlan);
 
     u_int32_t _bootOptionRomEn;
     u_int32_t _bootVlanEn;
     u_int32_t _bootRetryCnt;
     u_int32_t _legacyBootProtocol;
     u_int32_t _bootVlan;
+
+    u_int32_t _bootOptionRomEnDefault;
+    u_int32_t _bootVlanEnDefault;
+    u_int32_t _bootRetryCntDefault;
+    u_int32_t _legacyBootProtocolDefault;
+    u_int32_t _bootVlanDefault;
+
     int _port;
 };
 
+/*
+ * ExternalPort5thGen parameters Class (5thGen devices only)
+ */
+
+class ExternalPort5thGen : public CfgParams
+{
+public:
+    ExternalPort5thGen() : CfgParams(Mct_External_Port, EXTERNAL_PORT),
+        _portOwner(MLXCFG_UNKNOWN), _allowRdCounters(MLXCFG_UNKNOWN),
+        _portOwnerDefault(MLXCFG_UNKNOWN), _allowRdCountersDefault(MLXCFG_UNKNOWN){}
+    ~ExternalPort5thGen() {};
+
+    virtual bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last);
+
+    virtual void setParam(mlxCfgParam paramType, u_int32_t val);
+    virtual u_int32_t getParam(mlxCfgParam paramType);
+    virtual u_int32_t getDefaultParam(mlxCfgParam paramType);
+
+    virtual int getFromDev(mfile* mf);
+    virtual int setOnDev(mfile* mf, bool ignoreCheck=false);
+    virtual int getDefaultParams(mfile* mf);
+
+protected:
+    virtual bool hardLimitCheck();
+    u_int32_t getTlvTypeBe();
+
+    virtual void updateTlvFromClassAttr(void* tlv);
+    virtual void updateClassAttrFromTlv(void* tlv);
+    virtual void updateClassDefaultAttrFromTlv(void* tlv);
+    void updateClassAttrFromDefaultParams();
+    void setParams(u_int32_t portOwner, u_int32_t allowRdCounters);
+
+    u_int32_t _portOwner;
+    u_int32_t _allowRdCounters;
+
+    u_int32_t _portOwnerDefault;
+    u_int32_t _allowRdCountersDefault;
+
+};
 
 #endif /* MLXCFG_PARAM_LIB_H_ */

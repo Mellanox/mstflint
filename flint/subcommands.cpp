@@ -12,7 +12,7 @@
  *
  *     Redistribution and use in source and binary forms, with or
  *     without modification, are permitted provided that the following
- *     conditions are met:FwVerify
+ *     conditions are met:
  *
  *      - Redistributions of source code must retain the above
  *        copyright notice, this list of conditions and the following
@@ -451,12 +451,18 @@ bool SubCommand::basicVerifyParams()
     //open log if needed
     openLog();
 
-    if (_maxCmdParamNum != -1 && (int)_flintParams.cmd_params.size() > _maxCmdParamNum) {// _maxCmdParamNum == -1 means ignore this check
+    if (_maxCmdParamNum == _minCmdParamNum && _maxCmdParamNum != -1 && (int)_flintParams.cmd_params.size() != _maxCmdParamNum) {
+        reportErr(true, FLINT_CMD_ARGS_ERROR, _name.c_str(), _maxCmdParamNum, _flintParams.cmd_params.size());
+        return false;
+    } else if (_maxCmdParamNum != -1 && (int)_flintParams.cmd_params.size() > _maxCmdParamNum) { // _maxCmdParamNum == -1 means ignore this check
         if (_maxCmdParamNum) {
-        reportErr(true, FLINT_CMD_ARGS_ERROR2, _name.c_str(), _maxCmdParamNum, _flintParams.cmd_params.size());
+            reportErr(true, FLINT_CMD_ARGS_ERROR2, _name.c_str(), _maxCmdParamNum, _flintParams.cmd_params.size());
         } else {
             reportErr(true, FLINT_CMD_ARGS_ERROR5, _name.c_str());
         }
+        return false;
+    } else if (_minCmdParamNum != -1 && (int)_flintParams.cmd_params.size() < _minCmdParamNum) { // _minCmdParamNum == -1 means ignore this check
+        reportErr(true, FLINT_CMD_ARGS_ERROR3, _name.c_str(), _minCmdParamNum, _flintParams.cmd_params.size());
         return false;
     }
 
@@ -824,25 +830,6 @@ bool SubCommand::printGuidLine(guid_t* new_guids, guid_t* old_guids, int guid_in
     return true;
 }
 
-bool SubCommand::printBxGuids(guid_t* new_guids, guid_t* old_guids, int index, int num_of_guids, const char* pre_str)
-{
-    int guid_index = index;
-    int _is_wwpn = ((guid_index - BI_WWPNS) % BX_SLICE_GUIDS);
-
-    for (int i = 0; i < num_of_guids; i++) {
-        printf("    G%d", (index >= BX_SLICE_GUIDS));
-        if (i == 0 && _is_wwpn) {
-           printf(" Node  %s:      ", pre_str);
-        } else {
-            int j = _is_wwpn ? i : i + 1;
-            printf(" Port%d %s:      ", j, pre_str);
-        }
-        printGuidLine(new_guids, old_guids,  guid_index);
-        guid_index++;
-    }
-    return true;
-}
-
 bool SubCommand::printMacLine(guid_t* new_guids, guid_t* old_guids, int mac_index)
 {
     printf("    "MAC_FORMAT MAC_SPACES, new_guids[mac_index].h, new_guids[mac_index].l);
@@ -852,41 +839,6 @@ bool SubCommand::printMacLine(guid_t* new_guids, guid_t* old_guids, int mac_inde
         printf("  N/A");
     }
     printf("\n");
-    return true;
-}
-
-bool SubCommand::printBxMacs(guid_t* new_guids, guid_t* old_guids, int index, int num_of_guids, const char* pre_str)
-{
-    int guid_index = index;
-
-    for (int i = 0; i < num_of_guids; i++) {
-        printf("    G%d", (index >= BX_SLICE_GUIDS));
-        printf(" Port%d %s:      ", i + 1, pre_str);
-        printMacLine(new_guids, old_guids, guid_index);
-        guid_index++;
-    }
-    return true;
-}
-
-bool SubCommand::printUidsFunc(guid_t* new_guids, guid_t* old_guids)
-{
-    int base_index = 0, guid_index;
-
-    for (int i = 0; i < BX_SLICES_NUM; i++) {
-        base_index = i * BX_SLICE_GUIDS;
-        // Init Guids
-        printBxGuids(new_guids, old_guids, base_index + BI_GUIDS, BX_NP_GUIDS, "Guid");
-        printBxMacs (new_guids, old_guids, base_index + BI_IMACS, BX_IMACS,    "IMAC");
-        printBxMacs (new_guids, old_guids, base_index + BI_EMACS, BX_EMACS,    "EMAC");
-        printBxGuids(new_guids, old_guids, base_index + BI_WWNNS, BX_WWNNS,    "WWNN");
-        printBxGuids(new_guids, old_guids, base_index + BI_WWPNS, BX_WWPNS,    "WWPN");
-     }
-
-    // Init SysGuid
-    //INCR_GUID(base_guid1, user_guids[Operations::BI_SYS_GUID], 7);
-    guid_index = BI_SYS_GUID;
-    printf("    System   GUID:      ");
-    printGuidLine(new_guids, old_guids,  guid_index);
     return true;
 }
 
@@ -921,21 +873,18 @@ bool SubCommand::printGUIDsFunc(guid_t guids[GUIDS],guid_t macs[MACS], guid_t ol
 
 bool SubCommand::reportGuidChanges(guid_t* new_guids, guid_t* new_macs,\
                                     guid_t* old_guids, guid_t* old_macs, bool printGuids,\
-                                    bool printMacs, bool printUids, int guidNum)
+                                    bool printMacs, int guidNum)
 {
     //should be used ONLY on FS2 in current implementation
     printf("    You are about to change the Guids/Macs/Uids on the %s:\n\n", _flintParams.device_specified ? "device" : "image");
     printf("                        New Values      " GUID_SPACES "Current Values\n");
-    if (printUids) {
-        printUidsFunc(new_guids, old_guids );
-    } else {
-       printGUIDsFunc(new_guids, new_macs,
-                  old_guids, old_macs,
-                  printGuids,
-                  printMacs,
-                  guidNum,
-                  guidNum < GUIDS);
-    }
+   printGUIDsFunc(new_guids, new_macs,
+              old_guids, old_macs,
+              printGuids,
+              printMacs,
+              guidNum,
+              guidNum < GUIDS);
+
     if (!askUser())
         return false;
 
@@ -1015,49 +964,37 @@ bool SubCommand::dumpFile(const char* confFile, std::vector<u_int8_t>& data, con
     return true;
 }
 
-bool SubCommand::checkGuidsFlags (chip_type_t ct, u_int16_t devType, u_int8_t fwType,
-                            bool guidsSpecified, bool macsSpecified, bool uidsSpecified, bool ibDev, bool ethDev) {
+bool SubCommand::checkGuidsFlags (u_int16_t devType, u_int8_t fwType,
+                            bool guidsSpecified, bool macsSpecified, bool uidSpecified, bool ibDev, bool ethDev) {
     (void)ibDev;
-    if (guidsSpecified || macsSpecified || uidsSpecified) {
-        if (ct == CT_BRIDGEX) {
-            if (macsSpecified || guidsSpecified) {
-                reportErr(true, "-mac(s)/-guid(s) flags is not applicable for MT%d.\n",devType);
-                return false;
-            }
-        } else {
-            if (uidsSpecified && fwType != FIT_FS3) {
-                reportErr(true, "-uid(s) flag is applicable only for BridgeX and FS3 FW.\n");
-                return false;
-            } else if (fwType != FIT_FS2 && !ethDev && macsSpecified ) {
-                reportErr(true, "-mac(s) flag is not applicable for IB MT%d device.\n", devType);
-                return false;
-            }
+    if (guidsSpecified || macsSpecified || uidSpecified) {
+        if (uidSpecified && fwType != FIT_FS3) {
+            reportErr(true, "-uid flag is applicable only for FS3 FW Only.\n");
+            return false;
+        } else if (fwType != FIT_FS2 && !ethDev && macsSpecified ) {
+            reportErr(true, "-mac(s) flag is not applicable for IB MT%d device.\n", devType);
+            return false;
         }
     }
     return true;
 }
 
-void SubCommand::printMissingGuidErr(bool ibDev, bool ethDev, bool bxDev)
+void SubCommand::printMissingGuidErr(bool ibDev, bool ethDev)
 {
     const char* missingInfo;
     const char* missingFlags;
 
-    if (bxDev) {
-        missingInfo  = "UIDs (GUIDs / MACs / WWNs)";
-        missingFlags = "-uid(s)";
+    if (ibDev && ethDev) {
+        missingInfo  = "GUIDs / MACs";
+        missingFlags = "-guid(s) / -mac(s)";
+    } else if (ibDev) {
+        missingInfo  = "GUIDs";
+        missingFlags = "-guid(s)";
     } else {
-        if (ibDev && ethDev) {
-            missingInfo  = "GUIDs / MACs";
-            missingFlags = "-guid(s) / -mac(s)";
-        } else if (ibDev) {
-            missingInfo  = "GUIDs";
-            missingFlags = "-guid(s)";
-        } else {
-            missingInfo  = "MACs";
-            missingFlags = "-mac(s)";
-        }
-
+        missingInfo  = "MACs";
+        missingFlags = "-mac(s)";
     }
+
     printf("Please specify %s (using command line flags %s ).\n", missingInfo, missingFlags);
     return;
 }
@@ -1179,16 +1116,16 @@ BurnSubCommand:: ~BurnSubCommand()
 
 bool BurnSubCommand::verifyParams()
 {
-    if ((_flintParams.guid_specified || _flintParams.guids_specified) && (_flintParams.uid_specified || _flintParams.uids_specified)) {
-            reportErr(true, FLINT_COMMAND_FLAGS_ERROR, _name.c_str(), "either GUIDs / UIDs (using command line flags -guid(s) / -uid(s) )");
+    if ((_flintParams.guid_specified || _flintParams.guids_specified) && (_flintParams.uid_specified)) {
+            reportErr(true, FLINT_COMMAND_FLAGS_ERROR, _name.c_str(), "either GUIDs / UID (using command line flags -guid(s) / -uid )");
             return false;
         }
-    if ((_flintParams.mac_specified || _flintParams.macs_specified) && (_flintParams.uid_specified || _flintParams.uids_specified)) {
-            reportErr(true, FLINT_COMMAND_FLAGS_ERROR, _name.c_str(), "either MACs / UIDs (using command line flags -mac(s) / -uid(s) )");
+    if ((_flintParams.mac_specified || _flintParams.macs_specified) && (_flintParams.uid_specified)) {
+            reportErr(true, FLINT_COMMAND_FLAGS_ERROR, _name.c_str(), "either MACs / UID (using command line flags -mac(s) / -uid )");
             return false;
         }
     bool GuidsFromUser = _flintParams.guid_specified || _flintParams.guids_specified ||\
-            _flintParams.uid_specified || _flintParams.uids_specified|| \
+            _flintParams.uid_specified || \
             _flintParams.mac_specified || _flintParams.macs_specified;
     if (GuidsFromUser && _flintParams.use_image_guids) {
         reportErr(true, FLINT_INVALID_FLAG_WITH_FLAG_ERROR,"GUIDs/UIDs/MACs", "-use_image_guids");
@@ -1205,10 +1142,6 @@ bool BurnSubCommand::verifyParams()
     }
     if (_flintParams.mac_specified && _flintParams.macs_specified) {
         reportErr(true, FLINT_INVALID_FLAG_WITH_FLAG_ERROR, "-macs", "-mac" );
-        return false;
-    }
-    if (_flintParams.uid_specified && _flintParams.uids_specified) {
-        reportErr(true, FLINT_INVALID_FLAG_WITH_FLAG_ERROR, "-uids", "-uid" );
         return false;
     }
     if (_flintParams.use_image_ps && _flintParams.vsd_specified) {
@@ -1228,11 +1161,12 @@ void BurnSubCommand::updateBurnParams()
     		_fwType == FIT_FS2? &burnCbFs2Func : &burnCbFs3Func;
     _burnParams.userGuidsSpecified = _flintParams.guids_specified || _flintParams.guid_specified;
     _burnParams.userMacsSpecified = _flintParams.macs_specified || _flintParams.mac_specified;
-    _burnParams.userUidsSpecified = _flintParams.uids_specified || _flintParams.uid_specified;
+    _burnParams.userUidSpecified = _flintParams.uid_specified;
     _burnParams.vsdSpecified = _flintParams.vsd_specified;
     _burnParams.blankGuids = _flintParams.blank_guids;
     _burnParams.burnFailsafe = !_flintParams.nofs;
     _burnParams.allowPsidChange = _flintParams.allow_psid_change;
+    _burnParams.useDevImgInfo = _flintParams.use_dev_img_info;
     _burnParams.useImagePs = _flintParams.use_image_ps;
     _burnParams.burnRomOptions = _flintParams.use_image_rom ? FwOperations::ExtBurnParams::BRO_ONLY_FROM_IMG \
                                                                 : FwOperations::ExtBurnParams::BRO_DEFAULT ;
@@ -1243,8 +1177,9 @@ void BurnSubCommand::updateBurnParams()
     if (_burnParams.userGuidsSpecified) {
         _burnParams.userUids = _flintParams.user_guids;
     }
-    if (_burnParams.userUidsSpecified) {
-        _burnParams.userUids = _flintParams.user_uids;
+    if (_burnParams.userUidSpecified) {
+        _burnParams.userUids.resize(0);
+        _burnParams.userUids.push_back(_flintParams.baseUid);
     }
     if (_burnParams.userMacsSpecified) {
         if (!_burnParams.userGuidsSpecified) {
@@ -1301,16 +1236,10 @@ bool BurnSubCommand::checkFwVersion()
     printf("\n");
     _burnParams.ignoreVersionCheck = true;
     return true;
-
 }
 
-bool BurnSubCommand::checkPSIDAndIbEth()
+bool BurnSubCommand::checkPSID()
 {
-    //bool ib_dev;
-    //bool eth_dev;
-    //setDevFlags(_devInfo, ib_dev, eth_dev);
-    //all FW now support both ETH and IB so the OLD IB/ETH FW check is not needed anymore (see old implementation of flint)
-
     if (strlen(_imgInfo.fw_info.psid) != 0  && strlen(_devInfo.fw_info.psid) != 0 &&
             strncmp( _imgInfo.fw_info.psid, _devInfo.fw_info.psid, PSID_LEN)) {
         if (_flintParams.allow_psid_change) {
@@ -1348,7 +1277,7 @@ FlintStatus BurnSubCommand::burnFs3()
         return FLINT_BURN_ABORTED;
     }
     // check Psid
-    if (_devQueryRes && !checkPSIDAndIbEth()) {
+    if (_devQueryRes && !checkPSID()) {
         return FLINT_FAILED;
     }
     // deal with rom
@@ -1455,7 +1384,7 @@ FlintStatus BurnSubCommand::burnFs2()
         return FLINT_BURN_ABORTED;
     }
     //check Psid
-    if (_devQueryRes && !checkPSIDAndIbEth()) {
+    if (_devQueryRes && !checkPSID()) {
         return FLINT_FAILED;
     }
 
@@ -1529,22 +1458,19 @@ bool BurnSubCommand::dealWithGuids()
     bool read_guids = true;
     bool ib_dev;
     bool eth_dev;
-    bool bx_dev;
     // Get the FW types
-    bx_dev = _imgInfo.fw_info.chip_type == CT_BRIDGEX;
     FwOperations::SetDevFlags(_imgInfo.fw_info.chip_type, _imgInfo.fw_info.dev_type, (fw_img_type)_imgInfo.fw_type, ib_dev, eth_dev);
     //setDevFlags(_imgInfo, ib_dev, eth_dev);
 
     // Check if there is a need to read guids
     if (_burnParams.useImageGuids || _burnParams.blankGuids
             || (_burnParams.userGuidsSpecified && ib_dev)
-            || (_burnParams.userMacsSpecified)
-            || (_burnParams.userUidsSpecified && bx_dev)) {
+            || (_burnParams.userMacsSpecified)) {
         read_guids = false;
     }
     // Check if the burnt FW is ok and readable in order to get the GUIDs later
     if (read_guids && !_devQueryRes) {
-        //printMissingGuidErr(ib_dev, eth_dev, bx_dev);
+        //printMissingGuidErr(ib_dev, eth_dev);
         if (_burnParams.burnFailsafe) {
             reportErr(true,
                     "Can not extract GUIDs/MACs info from flash, %s\n"
@@ -1552,23 +1478,23 @@ bool BurnSubCommand::dealWithGuids()
                             "    If you want to burn in non failsafe mode, use the \"-nofs\" switch.\n", _fwOps->err());
         } else {
             reportErr(true, "Can not extract GUIDs/MACs info from flash, %s", _fwOps->err());
-            printMissingGuidErr(ib_dev, eth_dev, bx_dev);
+            printMissingGuidErr(ib_dev, eth_dev);
         }
         return false;
     }
     // Check guids flag to ensure correct patching of guids in mlxfwops
     bool is_guids_specified = _burnParams.userGuidsSpecified
             || _burnParams.userMacsSpecified
-            || _burnParams.userUidsSpecified;
+            || _burnParams.userUidSpecified;
     if (is_guids_specified) {
-        if (!checkGuidsFlags((chip_type_t)_imgInfo.fw_info.chip_type, _imgInfo.fw_info.dev_type, _fwType,\
-                _burnParams.userGuidsSpecified, _burnParams.userMacsSpecified, _burnParams.userUidsSpecified, ib_dev, eth_dev)) {
+        if (!checkGuidsFlags( _imgInfo.fw_info.dev_type, _fwType,\
+                _burnParams.userGuidsSpecified, _burnParams.userMacsSpecified, _burnParams.userUidSpecified, ib_dev, eth_dev)) {
             return false;
         }
     }
     //report guid changes if needed. and update the user_guids vector in _burnParams
      if (is_guids_specified || _flintParams.use_image_guids) {
-         guid_t* new_guids = ( _burnParams.userGuidsSpecified || _burnParams.userUidsSpecified )?\
+         guid_t* new_guids = ( _burnParams.userGuidsSpecified || _burnParams.userUidSpecified )?\
                  &_burnParams.userUids[0] : _devInfo.fs2_info.guids;
          guid_t* new_macs = _burnParams.userMacsSpecified != 0 ? &_burnParams.userUids[GUIDS] : &_devInfo.fs2_info.guids[GUIDS];
          guid_t* old_guids = !_devQueryRes ? NULL : _devInfo.fs2_info.guids;
@@ -1579,7 +1505,7 @@ bool BurnSubCommand::dealWithGuids()
          }
          //printf("-D- l=%d, h=%d\n", new_macs->l, new_macs->h);
              if (!reportGuidChanges(new_guids, new_macs, old_guids, old_macs, ib_dev,\
-                     eth_dev, bx_dev, _imgInfo.fs2_info.guid_num)) {
+                     eth_dev, _imgInfo.fs2_info.guid_num)) {
                  return false;
              }
 
@@ -1588,7 +1514,7 @@ bool BurnSubCommand::dealWithGuids()
 }
 
 #define IS_HCA(chipType) \
-    (((chipType) == CT_CONNECTX) || ((chipType) == CT_CONNECT_IB) || ((chipType) == CT_CONNECTX4) || ((chipType) == CT_CONNECTX4_LX))
+    (((chipType) == CT_CONNECTX) || ((chipType) == CT_CONNECT_IB) || ((chipType) == CT_CONNECTX4) || ((chipType) == CT_CONNECTX4_LX) || ((chipType) == CT_CONNECTX5))
 
 void BurnSubCommand::dealWithExpRom()
 {
@@ -1705,72 +1631,6 @@ bool QuerySubCommand::checkMac(u_int64_t mac, string& warrStr) {
     return true;
 }
 
-bool QuerySubCommand::reportBxGuidsQuery(const guid_t* guids, int base1, int guids_num, int index, const char* pre_str)
-{
-    int i, first_index, base, wwnns_index;
-
-    printf("G%d %-14s", index, pre_str);
-    first_index = index * BX_SLICE_GUIDS;
-    if (base1 == BI_WWPNS) {
-        wwnns_index = first_index + (BX_SLICE_GUIDS - 1);
-        printf(GUID_FORMAT " ", guids[wwnns_index].h, guids[wwnns_index].l);
-    }
-    base = first_index + base1;
-    for (i = base; i < base + guids_num; i++) {
-        int j = i;
-        // HACK
-        if (i == BI_GUIDS + BX_SLICE_GUIDS) {
-            // We display the same node guid on the two slices.
-            j = BI_GUIDS;
-        }
-        printf(GUID_FORMAT " ", guids[j].h, guids[j].l);
-    }
-    printf("\n");
-    return true;
-}
-
-
-bool QuerySubCommand::reportBxMacsQuery(const guid_t* guids, int base1, int guids_num, int index, const char* pre_str)
-{
-    int i, base;
-
-    base = index * BX_SLICE_GUIDS + base1;
-    printf("G%d %-30s", index, pre_str);
-    for (i = base; i < base + guids_num; i++) {
-            printf("     " MAC_FORMAT , guids[i].h, guids[i].l);
-    }
-    printf("\n");
-    return true;
-}
-
-bool QuerySubCommand::reportBxMacsWarnings(const guid_t* guids, int index, int warning, int user_uids)
-{
-    int i, base;
-    int is_first = 1;
-    base = index * BX_SLICE_GUIDS + BI_IMACS;
-    for (i = base; i < base + BX_MACS; i++) {
-         u_int64_t mac = (((u_int64_t)guids[i].h) << 32) | guids[i].l;
-         string warrStr;
-         if (!checkMac(mac, warrStr)) {
-             if (warning) {
-                 if (is_first) {
-                     printf("\n\n");
-                     is_first = 0;
-                 }
-                 printf(FLINT_BAD_MAC_ADRESS_WARNING, guids[i].h, guids[i].l, warrStr.c_str());
-             } else {
-                 printf(FLINT_BX_BAD_MAC_FORMAT_ERROR,
-                        guids[i].h,
-                        guids[i].l,
-                        user_uids ? "given" : "found on flash");
-                 return false;
-             }
-         }
-     }
-     return true;
-}
-
-
 bool QuerySubCommand::displayFs2Uids(const fw_info_t& fwInfo)
 {
     const char* mac_indent = "";
@@ -1779,115 +1639,104 @@ bool QuerySubCommand::displayFs2Uids(const fw_info_t& fwInfo)
     FwOperations::SetDevFlags(fwInfo.fw_info.chip_type, fwInfo.fw_info.dev_type, (fw_img_type)fwInfo.fw_type, ibDev, ethDev);
     //setDevFlags(fwInfo, ibDev, ethDev);
     int numPorts = 2;
-    if ((fwInfo.fw_info.chip_type == CT_IS4) || (fwInfo.fw_info.chip_type == CT_SWITCHX)) {
+    if ((fwInfo.fw_info.chip_type == CT_SWITCHX)) {
         numPorts = 0;
     }
     //we do not support cards with one port anymore.
 
     // GUIDS:
+    if (ibDev) {
+        //report("GUID Des:        Node             Port1            ");
+        printf("Description:         Node             ");
+        if (numPorts > 0)
+            printf("Port1            ");
+        if (numPorts > 1)
+            printf("Port2            ");
+        printf( "Sys image\n");
 
-    if (fwInfo.fw_info.chip_type == CT_BRIDGEX) {
-        int i;
-        if (fwInfo.fs2_info.guid_num != BX_ALL_GUIDS) {
-            reportErr(true, FLINT_INVALID_UID_NUM_BX_ERROR, BX_ALL_GUIDS);
-            return false;
-        }
-        printf("Description:     Node             Port1            Port2            Port3            Port4\n");
-        for (i = 0; i < BX_SLICES_NUM; i++) {
-            reportBxGuidsQuery(fwInfo.fs2_info.guids, BI_GUIDS,  BX_NP_GUIDS, i, "GUIDs:");
-            reportBxMacsQuery(fwInfo.fs2_info.guids,  BI_IMACS, BX_IMACS,    i, "IMACs:");
-            reportBxMacsQuery(fwInfo.fs2_info.guids,  BI_EMACS, BX_EMACS,    i, "EMACs:");
-            reportBxGuidsQuery(fwInfo.fs2_info.guids, BI_WWPNS, BX_WWPNS,    i, "WWNs: ");
-        }
-        printf("SYS GUID:        " GUID_FORMAT " ",\
-                fwInfo.fs2_info.guids[fwInfo.fs2_info.guid_num - 1].h,\
-                fwInfo.fs2_info.guids[fwInfo.fs2_info.guid_num - 1].l);
-        if (!fwInfo.fs2_info.blank_guids) {
-            for (i = 0; i < BX_SLICES_NUM; i++) {
-                reportBxMacsWarnings(fwInfo.fs2_info.guids, i, 1, 0);
+        printf("GUIDs:               ");
+        for (u_int32_t i=0; i < GUIDS; i++) {
+            if ((i == 1 && numPorts < 1) ||
+                (i == 2 && numPorts < 2)) {
+                continue;
             }
+            printf(GUID_FORMAT " ", fwInfo.fs2_info.guids[i].h, fwInfo.fs2_info.guids[i].l);
         }
-    } else {
-        if (ibDev) {
-            //report("GUID Des:        Node             Port1            ");
-            printf("Description:     Node             ");
-            if (numPorts > 0)
-                printf("Port1            ");
-            if (numPorts > 1)
-                printf("Port2            ");
-            printf( "Sys image\n");
-
-            printf("GUIDs:           ");
-            for (u_int32_t i=0; i < GUIDS; i++) {
-                if ((i == 1 && numPorts < 1) ||
-                    (i == 2 && numPorts < 2)) {
-                    continue;
-                }
-                printf(GUID_FORMAT " ", fwInfo.fs2_info.guids[i].h, fwInfo.fs2_info.guids[i].l);
-            }
-            if (numPorts > 0) {
-                mac_indent = "                 ";
-            }
-        }
-        // MACS:
-        if (ethDev) {
-            if (fwInfo.fs2_info.guid_num == 6) {
-                if (!ibDev) {
-                    printf("Description:%s     Port1            Port2\n", mac_indent);
-                } else if (fwInfo.fw_info.chip_type == CT_SWITCHX) {
-                    printf("\nDescription:     Base             Switch\n");
-                } else {
-                    printf("\n");
-                }
-                printf("MACs:    %s       ", mac_indent);
-                for (u_int32_t i=GUIDS; i < 6; i++) {
-                    printf("     " MAC_FORMAT , fwInfo.fs2_info.guids[i].h, fwInfo.fs2_info.guids[i].l);
-                }
-
-                for (u_int32_t i=GUIDS; i < 6; i++) {
-                    u_int64_t mac = (((u_int64_t)fwInfo.fs2_info.guids[i].h) << 32) | fwInfo.fs2_info.guids[i].l;
-                    string warrStr;
-                    if (!fwInfo.fs2_info.blank_guids && !checkMac(mac, warrStr)) {
-                        if (i==GUIDS) printf("\n\n");
-                        printf(FLINT_BAD_MAC_ADRESS_WARNING, fwInfo.fs2_info.guids[i].h, fwInfo.fs2_info.guids[i].l, warrStr.c_str());
-                    }
-                }
-            } else {
-                printf(FLINT_MAC_ENTRIES_WARNING, 6, fwInfo.fs2_info.guid_num);
-            }
+        if (numPorts > 0) {
+            mac_indent = "                 ";
         }
     }
+    // MACS:
+    if (ethDev) {
+        if (fwInfo.fs2_info.guid_num == 6) {
+            if (!ibDev) {
+                printf("Description:%s    Port1            Port2\n", mac_indent);
+            } else if (fwInfo.fw_info.chip_type == CT_SWITCHX) {
+                printf("\nDescription:         Base             Switch\n");
+            } else {
+                printf("\n");
+            }
+            printf("MACs:        %s       ", mac_indent);
+            for (u_int32_t i=GUIDS; i < 6; i++) {
+                printf("     " MAC_FORMAT , fwInfo.fs2_info.guids[i].h, fwInfo.fs2_info.guids[i].l);
+            }
+
+            for (u_int32_t i=GUIDS; i < 6; i++) {
+                u_int64_t mac = (((u_int64_t)fwInfo.fs2_info.guids[i].h) << 32) | fwInfo.fs2_info.guids[i].l;
+                string warrStr;
+                if (!fwInfo.fs2_info.blank_guids && !checkMac(mac, warrStr)) {
+                    if (i==GUIDS) printf("\n\n");
+                    printf(FLINT_BAD_MAC_ADRESS_WARNING, fwInfo.fs2_info.guids[i].h, fwInfo.fs2_info.guids[i].l, warrStr.c_str());
+                }
+            }
+        } else {
+            printf(FLINT_MAC_ENTRIES_WARNING, 6, fwInfo.fs2_info.guid_num);
+        }
+    }
+
     printf("\n");
     return true;
 }
 
 #define BASE_STR "Base"
 #define PRINT_FS3_UID(uid1, str, printStep) \
-    printf("%-16s %016"U64H_FMT_GEN"        %d", str, uid1.uid, uid1.num_allocated);\
+    printf("%-16s     %016"U64H_FMT_GEN"        %d", str, uid1.uid, uid1.num_allocated);\
     if (printStep) {\
-        printf("       %d", uid1.step);\
+        printf("          %d", uid1.step);\
     }\
     printf("\n");
-#define PRINT_FS3_UIDS(uid1, uid2, str, printStep) {\
-    	PRINT_FS3_UID(uid1, BASE_STR" "str":", printStep);\
-    if (uid1.uid !=  uid2.uid || uid1.num_allocated != uid2.num_allocated  || ( printStep && uid1.step != uid2.step)) {\
-        PRINT_FS3_UID(uid2, "Orig " BASE_STR " "str":", printStep);\
-    } \
+
+static inline void printFs3Uids(struct fs3_uid_entry uid, struct fs3_uid_entry orig_uid, string guidMac, bool printStep)
+{
+    string prefix = BASE_STR + string(" ") + guidMac + ":";
+    PRINT_FS3_UID(uid, prefix.c_str(), printStep);
+    if (uid.uid !=  orig_uid.uid || uid.num_allocated != orig_uid.num_allocated  || ( printStep && uid.step != orig_uid.step)) {
+        // Print MFG UIDs as well
+        prefix = "Orig " + prefix;
+        PRINT_FS3_UID(orig_uid, prefix.c_str(), printStep);
+    }
 }
 
 bool QuerySubCommand::displayFs3Uids(const fw_info_t& fwInfo)
 {
     if (fwInfo.fs3_info.fs3_uids_info.valid_field) {
         // new GUIDs format
-        printf("Description:     UID                GuidsNumber\n");
-        PRINT_FS3_UIDS(fwInfo.fs3_info.fs3_uids_info.cx4_uids.base_guid, fwInfo.fs3_info.orig_fs3_uids_info.cx4_uids.base_guid, "GUID", false);
-        PRINT_FS3_UIDS(fwInfo.fs3_info.fs3_uids_info.cx4_uids.base_mac, fwInfo.fs3_info.orig_fs3_uids_info.cx4_uids.base_mac, "MAC", false);
+        printf("Description:         UID                GuidsNumber\n");
+        printFs3Uids(fwInfo.fs3_info.fs3_uids_info.cx4_uids.base_guid, fwInfo.fs3_info.orig_fs3_uids_info.cx4_uids.base_guid, "GUID", false);
+        printFs3Uids(fwInfo.fs3_info.fs3_uids_info.cx4_uids.base_mac, fwInfo.fs3_info.orig_fs3_uids_info.cx4_uids.base_mac, "MAC", false);
     } else {
-        printf("Description:     UID                GuidsNumber  Step\n");
-        PRINT_FS3_UIDS(fwInfo.fs3_info.fs3_uids_info.cib_uids.guids[0], fwInfo.fs3_info.orig_fs3_uids_info.cib_uids.guids[0], "GUID1", true);
-        PRINT_FS3_UIDS(fwInfo.fs3_info.fs3_uids_info.cib_uids.guids[1], fwInfo.fs3_info.orig_fs3_uids_info.cib_uids.guids[1], "GUID2", true);
-        PRINT_FS3_UIDS(fwInfo.fs3_info.fs3_uids_info.cib_uids.macs[0], fwInfo.fs3_info.orig_fs3_uids_info.cib_uids.macs[0], "MAC1", true);
-        PRINT_FS3_UIDS(fwInfo.fs3_info.fs3_uids_info.cib_uids.macs[1], fwInfo.fs3_info.orig_fs3_uids_info.cib_uids.macs[1], "MAC2", true);
+        printf("Description:         UID                GuidsNumber  Step\n");
+        string firstGuid = (fwInfo.fw_info.chip_type != CT_SWITCH_IB) ? "GUID1" : "GUID";
+        string firstMac = (fwInfo.fw_info.chip_type != CT_SWITCH_IB) ? "MAC1" : "MAC";
+
+        printFs3Uids(fwInfo.fs3_info.fs3_uids_info.cib_uids.guids[0], fwInfo.fs3_info.orig_fs3_uids_info.cib_uids.guids[0], firstGuid, true);
+        if (fwInfo.fw_info.chip_type != CT_SWITCH_IB) {
+            printFs3Uids(fwInfo.fs3_info.fs3_uids_info.cib_uids.guids[1], fwInfo.fs3_info.orig_fs3_uids_info.cib_uids.guids[1], "GUID2", true);
+        }
+        printFs3Uids(fwInfo.fs3_info.fs3_uids_info.cib_uids.macs[0], fwInfo.fs3_info.orig_fs3_uids_info.cib_uids.macs[0], firstMac, true);
+        if (fwInfo.fw_info.chip_type != CT_SWITCH_IB) {
+            printFs3Uids(fwInfo.fs3_info.fs3_uids_info.cib_uids.macs[1], fwInfo.fs3_info.orig_fs3_uids_info.cib_uids.macs[1], "MAC2", true);
+        }
     }
     return true;
 }
@@ -1898,58 +1747,79 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
 {
     bool isFs2 = (fwInfo.fw_type == FIT_FS2) ? true : false;
 
-    printf("Image type:      %s\n",(isFs2)? "FS2" : "FS3");
+    printf("Image type:          %s\n",(isFs2)? "FS2" : "FS3");
 
     if (fwInfo.fw_info.fw_ver[0] || fwInfo.fw_info.fw_ver[1] || fwInfo.fw_info.fw_ver[2]) {
         char versionStr[64] = {0};
         snprintf(versionStr, 64, VERSION_FORMAT(fwInfo.fw_info.fw_ver[1]), fwInfo.fw_info.fw_ver[0], fwInfo.fw_info.fw_ver[1],
                 fwInfo.fw_info.fw_ver[2]);
-        printf("FW Version:      %s\n", versionStr);
+        printf("FW Version:          %s\n", versionStr);
+        if ((fwInfo.fw_info.running_fw_ver[0] || fwInfo.fw_info.running_fw_ver[1] || fwInfo.fw_info.running_fw_ver[2]) && \
+                (fwInfo.fw_info.running_fw_ver[0] != fwInfo.fw_info.fw_ver[0] || \
+                        fwInfo.fw_info.running_fw_ver[1] != fwInfo.fw_info.fw_ver[1] || \
+                        fwInfo.fw_info.running_fw_ver[2] != fwInfo.fw_info.fw_ver[2])) {
+            snprintf(versionStr, 64, VERSION_FORMAT(fwInfo.fw_info.running_fw_ver[1]), fwInfo.fw_info.running_fw_ver[0], fwInfo.fw_info.running_fw_ver[1],
+                    fwInfo.fw_info.running_fw_ver[2]);
+            printf("FW Version(Running): %s\n", versionStr);
+        }
     }
 
     if (fwInfo.fw_info.fw_rel_date[0] || fwInfo.fw_info.fw_rel_date[1] || fwInfo.fw_info.fw_rel_date[2]) {
-        printf("FW Release Date: %x.%x.%x\n", fwInfo.fw_info.fw_rel_date[0], fwInfo.fw_info.fw_rel_date[1],\
+        printf("FW Release Date:     %x.%x.%x\n", fwInfo.fw_info.fw_rel_date[0], fwInfo.fw_info.fw_rel_date[1],\
                 fwInfo.fw_info.fw_rel_date[2]);
     }
 
     if (fullQuery) { // there is no full query atm just quick query
         if (fwInfo.fw_info.min_fit_ver[0] || fwInfo.fw_info.min_fit_ver[1]\
                 || fwInfo.fw_info.min_fit_ver[2]||fwInfo.fw_info.min_fit_ver[3]) {
-            printf("Min FIT Version: %d.%d.%d.%d\n", fwInfo.fw_info.min_fit_ver[0],\
+            printf("Min FIT Version:     %d.%d.%d.%d\n", fwInfo.fw_info.min_fit_ver[0],\
                     fwInfo.fw_info.min_fit_ver[1], fwInfo.fw_info.min_fit_ver[2], fwInfo.fw_info.min_fit_ver[3]);
         }
         if ((fwInfo.fw_info.mic_ver[0] || fwInfo.fw_info.mic_ver[1] || fwInfo.fw_info.mic_ver[2])) {
-            printf("MIC Version:     %d.%d.%d\n", fwInfo.fw_info.mic_ver[0],\
+            printf("MIC Version:         %d.%d.%d\n", fwInfo.fw_info.mic_ver[0],\
                     fwInfo.fw_info.mic_ver[1], fwInfo.fw_info.mic_ver[2]);
         }
         if (isFs2) {
             if (fwInfo.fs2_info.config_sectors) {
-                printf("Config Sectors:  %d\n", fwInfo.fs2_info.config_sectors);
+                printf("Config Sectors:      %d\n", fwInfo.fs2_info.config_sectors);
             }
             if (fwInfo.fs2_info.config_pad) {
-                    printf("Config Pad:      %d\n", fwInfo.fs2_info.config_pad);
+                    printf("Config Pad:          %d\n", fwInfo.fs2_info.config_pad);
             }
             if (strlen(fwInfo.fs2_info.prs_name)) {
-                printf("PRS Name:        %s\n", fwInfo.fs2_info.prs_name);
+                printf("PRS Name:            %s\n", fwInfo.fs2_info.prs_name);
+            }
+        } else { // FS3
+            if (strlen(fwInfo.fs3_info.prs_name)) {
+                printf("PRS Name:            %s\n", fwInfo.fs3_info.prs_name);
+            }
+            if (strlen(fwInfo.fs3_info.orig_prs_name)) {
+                printf("Orig PRS Name:       %s\n", fwInfo.fs3_info.orig_prs_name);
+            }
+            if (strlen(fwInfo.fs3_info.name)) {
+                printf("Part Number:         %s\n", fwInfo.fs3_info.name);
+            }
+            if (strlen(fwInfo.fs3_info.description)) {
+                printf("Description:         %s\n", fwInfo.fs3_info.description);
             }
         }
     }
 
     if (strlen(fwInfo.fw_info.product_ver)) {
-        printf("Product Version: %s\n", fwInfo.fw_info.product_ver);
+        printf("Product Version:     %s\n", fwInfo.fw_info.product_ver);
     }
 
     if (fwInfo.fw_info.roms_info.exp_rom_found) {
-        displayExpRomInfo(fwInfo.fw_info.roms_info, "Rom Info:        ");
+        displayExpRomInfo(fwInfo.fw_info.roms_info, "Rom Info:            ");
     }
 
     if (isFs2)
     {
-        printf("Device ID:       %d\n", fwInfo.fw_info.dev_type);
+        printf("Device ID:           %d\n", fwInfo.fw_info.dev_type);
     }
 
     if (isFs2 && fwInfo.fs2_info.access_key_exists) {
-        printf("HW Access Key:   ");
+        printf("HW Access Key:       ");
         if (fwInfo.fs2_info.access_key_value.l || fwInfo.fs2_info.access_key_value.h) {
             printf("Enabled\n");
         } else {
@@ -1970,15 +1840,15 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
     // VSD, PSID
     if (!fwInfo.fw_info.vsd_vendor_id || fwInfo.fw_info.vsd_vendor_id == MELLANOX_VENDOR_ID) {
         if (!isFs2) {
-            printf("Image VSD:       %s\n", fwInfo.fs3_info.image_vsd);
-            printf("Device VSD:      %s\n", fwInfo.fw_info.vsd);
-            printf("PSID:            %s\n", fwInfo.fw_info.psid);
+            printf("Image VSD:           %s\n", fwInfo.fs3_info.image_vsd);
+            printf("Device VSD:          %s\n", fwInfo.fw_info.vsd);
+            printf("PSID:                %s\n", fwInfo.fw_info.psid);
             if (strncmp(fwInfo.fw_info.psid, fwInfo.fs3_info.orig_psid, 13) != 0) {
-                printf("Orig PSID:       %s\n", fwInfo.fs3_info.orig_psid);
+                printf("Orig PSID:           %s\n", fwInfo.fs3_info.orig_psid);
             }
         } else {
-            printf("VSD:             %s\n", fwInfo.fw_info.vsd);
-            printf("PSID:            %s\n", fwInfo.fw_info.psid);
+            printf("VSD:                 %s\n", fwInfo.fw_info.vsd);
+            printf("PSID:                %s\n", fwInfo.fw_info.psid);
         }
     } else {
         printf(FLINT_NOT_MLNX_FW_WARNING, fwInfo.fw_info.vsd_vendor_id);
@@ -2175,6 +2045,7 @@ BromSubCommand:: BromSubCommand()
     _v = Wtv_Dev_Or_Img;
     _cmdType = SC_Brom;
     _maxCmdParamNum = 1;
+    _minCmdParamNum = 1;
     memset(&_info, 0, sizeof(_info));
     memset(&_romsInfo, 0, sizeof(_romsInfo));
 }
@@ -2183,14 +2054,6 @@ BromSubCommand:: ~BromSubCommand()
 {
     closeLog();
     _fRom.close();
-}
-
-bool BromSubCommand::verifyParams() {
-    if (_flintParams.cmd_params.size() != 1) {
-        reportErr(true, FLINT_CMD_ARGS_ERROR,_name.c_str() , 1, (int)_flintParams.cmd_params.size());
-        return false;
-    }
-    return true;
 }
 
 
@@ -2336,6 +2199,7 @@ RromSubCommand:: RromSubCommand()
     _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" rrom exp-rom.rom";
     _v = Wtv_Dev_Or_Img;
     _maxCmdParamNum = 1;
+    _minCmdParamNum = 1;
     _cmdType = SC_Rrom;
 }
 
@@ -2346,10 +2210,6 @@ RromSubCommand:: ~RromSubCommand()
 
 bool RromSubCommand::verifyParams()
 {
-    if (_flintParams.cmd_params.size() != 1) {
-        reportErr(true, FLINT_CMD_ARGS_ERROR,_name.c_str() , 1, (int)_flintParams.cmd_params.size());
-        return false;
-    }
     FILE * file;
     if ((file = fopen(_flintParams.cmd_params[0].c_str(), "r")) != NULL) {
         fclose(file);
@@ -2501,17 +2361,17 @@ bool SgSubCommand::verifyParams()
         return false;
     }
     if (!(_flintParams.guid_specified || _flintParams.guids_specified ||\
-            _flintParams.uid_specified || _flintParams.uids_specified || \
+            _flintParams.uid_specified || \
             _flintParams.mac_specified || _flintParams.macs_specified)){
-        reportErr(true, FLINT_COMMAND_FLAGS_ERROR, _name.c_str(), "GUIDs / MACs (using command line flags -guid(s) / -mac(s) )");
+        reportErr(true, FLINT_COMMAND_FLAGS_ERROR, _name.c_str(), "GUIDs / MACs / UID (using command line flags -guid(s) / -mac(s) / -uid )");
         return false;
     }
-    if ((_flintParams.guid_specified || _flintParams.guids_specified) && (_flintParams.uid_specified || _flintParams.uids_specified)) {
-        reportErr(true, FLINT_COMMAND_FLAGS_ERROR, _name.c_str(), "either GUIDs / UIDs (using command line flags -guid(s) / -uid(s) )");
+    if ((_flintParams.guid_specified || _flintParams.guids_specified) && (_flintParams.uid_specified)) {
+        reportErr(true, FLINT_COMMAND_FLAGS_ERROR, _name.c_str(), "either GUIDs / UIDs (using command line flags -guid(s) / -uid )");
         return false;
     }
-    if ((_flintParams.mac_specified || _flintParams.macs_specified) && (_flintParams.uid_specified || _flintParams.uids_specified)) {
-        reportErr(true, FLINT_COMMAND_FLAGS_ERROR, _name.c_str(), "either MACs / UIDs (using command line flags -mac(s) / -uid(s) )");
+    if ((_flintParams.mac_specified || _flintParams.macs_specified) && (_flintParams.uid_specified)) {
+        reportErr(true, FLINT_COMMAND_FLAGS_ERROR, _name.c_str(), "either MACs / UIDs (using command line flags -mac(s) / -uid )");
         return false;
     }
     if (_flintParams.guid_specified && _flintParams.guids_specified) {
@@ -2522,14 +2382,10 @@ bool SgSubCommand::verifyParams()
         reportErr(true, FLINT_INVALID_FLAG_WITH_FLAG_ERROR, "-macs", "-mac" );
         return false;
     }
-    if (_flintParams.uid_specified && _flintParams.uids_specified) {
-        reportErr(true, FLINT_INVALID_FLAG_WITH_FLAG_ERROR, "-uids", "-uid" );
-        return false;
-    }
 
     _sgParams.guidsSpecified = _flintParams.guid_specified || _flintParams.guids_specified;
     _sgParams.macsSpecified = _flintParams.mac_specified || _flintParams.macs_specified;
-    _sgParams.uidsSpecified = _flintParams.uid_specified || _flintParams.uids_specified;
+    _sgParams.uidSpecified = _flintParams.uid_specified;
     _sgParams.updateCrc = !(_flintParams.cmd_params.size() == 1);
     _sgParams.stripedImage = _flintParams.striped_image;
     return true;
@@ -2553,8 +2409,9 @@ void SgSubCommand::setUserGuidsAndMacs()
         _sgParams.userGuids.push_back(_flintParams.user_macs[0]);
         _sgParams.userGuids.push_back(_flintParams.user_macs[1]);
     }
-    if (_sgParams.uidsSpecified) {
-        _sgParams.userGuids = _flintParams.user_uids;
+    if (_sgParams.uidSpecified) {
+        _sgParams.userGuids.resize(0);
+        _sgParams.userGuids.push_back(_flintParams.baseUid);
     }
     _sgParams.userGuids.resize(MAX_GUIDS);
 }
@@ -2563,18 +2420,17 @@ bool SgSubCommand::CheckSetGuidsFlags()
 {
     bool ibDev;
     bool ethDev;
-    bool bxDev = _info.fw_info.chip_type == CT_BRIDGEX;
     FwOperations::SetDevFlags(_info.fw_info.chip_type, _info.fw_info.dev_type, (fw_img_type)_info.fw_type, ibDev, ethDev);
     //setDevFlags(_info, ibDev,ethDev);
 
-    if (_sgParams.macsSpecified || _sgParams.guidsSpecified || _sgParams.uidsSpecified) {
-        if (!checkGuidsFlags((chip_type_t)_info.fw_info.chip_type, _info.fw_info.dev_type,_info.fw_type,\
-                _sgParams.guidsSpecified, _sgParams.macsSpecified, _sgParams.uidsSpecified, ibDev, ethDev)) {
+    if (_sgParams.macsSpecified || _sgParams.guidsSpecified || _sgParams.uidSpecified) {
+        if (!checkGuidsFlags(_info.fw_info.dev_type,_info.fw_type,\
+                _sgParams.guidsSpecified, _sgParams.macsSpecified, _sgParams.uidSpecified, ibDev, ethDev)) {
             return false;
         }
     } else {
         printf("-E- ");
-        printMissingGuidErr(ibDev, ethDev, bxDev);
+        printMissingGuidErr(ibDev, ethDev);
         printf("\n");
         return false;
     }
@@ -2603,15 +2459,14 @@ FlintStatus SgSubCommand::sgFs2()
         //report guid changes
         bool ethDev;
         bool ibDev;
-        bool bxDev = _info.fw_info.chip_type == CT_BRIDGEX;
         FwOperations::SetDevFlags(_info.fw_info.chip_type, _info.fw_info.dev_type, (fw_img_type)_info.fw_type, ibDev, ethDev);
         //setDevFlags(_info, ibDev, ethDev);
         //decide what are our new guids/macs
-        guid_t *new_guids = (_sgParams.guidsSpecified ||_sgParams.uidsSpecified) ? & _sgParams.userGuids[0] : &_info.fs2_info.guids[0] ;
+        guid_t *new_guids = (_sgParams.guidsSpecified ||_sgParams.uidSpecified) ? & _sgParams.userGuids[0] : &_info.fs2_info.guids[0] ;
         guid_t *new_macs =  _sgParams.macsSpecified ? &_sgParams.userGuids[GUIDS] : &_info.fs2_info.guids[GUIDS] ;
 
         if (!reportGuidChanges(new_guids, new_macs, &_info.fs2_info.guids[0], &_info.fs2_info.guids[GUIDS], ibDev,\
-                ethDev, bxDev, _info.fs2_info.guid_num)){
+                ethDev, _info.fs2_info.guid_num)){
             return FLINT_FAILED;
         }
     }
@@ -2634,7 +2489,7 @@ FlintStatus SgSubCommand::sgFs3()
     }
 
     // TODO: create method that checks the flags for FS3/FS2
-    if (_info.fw_info.chip_type == CT_CONNECT_IB || _info.fw_info.chip_type == CT_SWITCH_IB) {
+    if (_info.fw_info.chip_type == CT_CONNECT_IB || _info.fw_info.chip_type == CT_SWITCH_IB || _info.fw_info.chip_type == CT_SWITCH_IB2) {
         if (!_flintParams.uid_specified) {
             reportErr(true, FLINT_NO_UID_FLAG_ERROR);
             return FLINT_FAILED;
@@ -2726,10 +2581,6 @@ bool SmgSubCommand::verifyParams()
         reportErr(true, FLINT_COMMAND_FLAGS_ERROR, _name.c_str(), "\"-uid or -guid/-mac\" flags");
         return false;
     }
-    if (_flintParams.uids_specified) {
-        reportErr(true, FLINT_INVALID_OPTION_ERROR, "\"-uids\"", _name.c_str(), "\"-uid\"");
-        return false;
-    }
     if (_flintParams.guids_specified) {
         reportErr(true, FLINT_INVALID_OPTION_ERROR, "\"-guids\"", _name.c_str(), "\"-guid\"");
         return false;
@@ -2783,7 +2634,7 @@ FlintStatus SmgSubCommand::executeCommand()
          return FLINT_FAILED;
      }
 
-     if (_info.fw_info.chip_type == CT_CONNECT_IB || _info.fw_info.chip_type == CT_SWITCH_IB) {
+     if (_info.fw_info.chip_type == CT_CONNECT_IB || _info.fw_info.chip_type == CT_SWITCH_IB || _info.fw_info.chip_type == CT_SWITCH_IB2) {
          if (!_flintParams.uid_specified) {
          reportErr(true, "Can not set GUIDs/MACs: uid is not specified, please run with -uid flag.\n");
          return FLINT_FAILED;
@@ -2823,21 +2674,13 @@ SetVpdSubCommand:: SetVpdSubCommand()
     			;
     _v = Wtv_Dev_Or_Img;
     _maxCmdParamNum = 1;
+    _minCmdParamNum = 1;
     _cmdType = SC_Set_Vpd;
 }
 
 SetVpdSubCommand:: ~SetVpdSubCommand()
 {
 
-}
-
-bool SetVpdSubCommand:: verifyParams()
-{
-    if( _flintParams.cmd_params.size() != 1) {
-        reportErr(true, FLINT_CMD_ARGS_ERROR, _name.c_str(), 1, (int)_flintParams.cmd_params.size());
-        return false;
-    }
-    return true;
 }
 
 FlintStatus SetVpdSubCommand:: executeCommand()
@@ -2927,20 +2770,13 @@ RiSubCommand:: RiSubCommand()
     _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" ri file.bin";
     _v = Wtv_Dev;
     _maxCmdParamNum = 1;
+    _minCmdParamNum = 1;
     _cmdType = SC_Ri;
 }
 
 RiSubCommand:: ~RiSubCommand()
 {
 
-}
-
-bool RiSubCommand::verifyParams() {
-    if (_flintParams.cmd_params.size() != 1) {
-        reportErr(true, FLINT_CMD_ARGS_ERROR,_name.c_str() , 1, (int)_flintParams.cmd_params.size());
-        return false;
-    }
-    return true;
 }
 
 FlintStatus RiSubCommand::executeCommand() {
@@ -3317,6 +3153,7 @@ HwSubCommand:: HwSubCommand()
 #endif
     _v = Wtv_Dev;
     _maxCmdParamNum = 2;
+    _minCmdParamNum = 1;
     _cmdType = SC_Hw;
 }
 
@@ -3494,21 +3331,13 @@ EraseSubCommand:: EraseSubCommand()
     _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" erase 0x10000";
     _v = Wtv_Dev;
     _maxCmdParamNum = 1;
+    _minCmdParamNum = 1;
     _cmdType = SC_Erase;
 }
 
 EraseSubCommand:: ~EraseSubCommand()
 {
 
-}
-
-bool EraseSubCommand::verifyParams() {
-    if (_flintParams.cmd_params.size() != 1) {
-        reportErr(true, FLINT_CMD_ARGS_ERROR,_name.c_str() , 1, (int)_flintParams.cmd_params.size());
-        return false;
-    }
-    //parameter format will be checked in executeCommand.
-    return true;
 }
 
 FlintStatus EraseSubCommand::executeCommand() {
@@ -3548,19 +3377,12 @@ RwSubCommand:: RwSubCommand() {
     _example = "flint -d "MST_DEV_EXAMPLE1" rw 0x20";
     _v = Wtv_Dev_Or_Img;
     _maxCmdParamNum = 1;
+    _minCmdParamNum = 1;
     _cmdType = SC_Rw;
 }
 
 RwSubCommand:: ~RwSubCommand() {
 
-}
-
-bool RwSubCommand::verifyParams() {
-        if (_flintParams.cmd_params.size() != 1) {
-            reportErr(true, FLINT_CMD_ARGS_ERROR,_name.c_str() , 1, (int)_flintParams.cmd_params.size());
-            return false;
-        }
-    return true;
 }
 
 FlintStatus RwSubCommand::executeCommand() {
@@ -3606,20 +3428,13 @@ WwSubCommand:: WwSubCommand()
     _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" ww 0x10008 0x5a445a44";
     _v = Wtv_Dev;
     _maxCmdParamNum = 2;
+    _minCmdParamNum = 2;
     _cmdType = SC_Ww;
 }
 
 WwSubCommand:: ~WwSubCommand()
 {
 
-}
-
-bool WwSubCommand::verifyParams() {
-        if (_flintParams.cmd_params.size() != 2) {
-            reportErr(true, FLINT_CMD_ARGS_ERROR,_name.c_str() , 2, (int)_flintParams.cmd_params.size());
-            return false;
-        }
-    return true;
 }
 
 FlintStatus WwSubCommand::executeCommand() {
@@ -3675,20 +3490,13 @@ WwneSubCommand:: WwneSubCommand()
     _example = "flint -d "MST_DEV_EXAMPLE1" wwne 0x10008 0x5a445a44";
     _v = Wtv_Dev;
     _maxCmdParamNum = 2;
+    _minCmdParamNum = 2;
     _cmdType = SC_Wwne;
 }
 
 WwneSubCommand:: ~WwneSubCommand()
 {
 
-}
-
-bool WwneSubCommand::verifyParams() {
-        if (_flintParams.cmd_params.size() != 2) {
-            reportErr(true, FLINT_CMD_ARGS_ERROR,_name.c_str() , 2, (int)_flintParams.cmd_params.size());
-            return false;
-        }
-    return true;
 }
 
 FlintStatus WwneSubCommand::executeCommand() {
@@ -3741,19 +3549,12 @@ WbSubCommand:: WbSubCommand() {
     _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" wb myData.bin 0x0";
     _v = Wtv_Dev;
     _maxCmdParamNum = 2;
+    _minCmdParamNum = 2;
     _cmdType = SC_Wb;
 }
 
 WbSubCommand:: ~WbSubCommand() {
 
-}
-
-bool WbSubCommand::verifyParams() {
-        if (_flintParams.cmd_params.size() != 2) {
-            reportErr(true, FLINT_CMD_ARGS_ERROR,_name.c_str() , 2, (int)_flintParams.cmd_params.size());
-            return false;
-        }
-    return true;
 }
 
 bool WbSubCommand::extractData(const std::vector<string>& cmdParams , u_int32_t* addr, std::vector<u_int8_t>& data) {
@@ -3813,7 +3614,7 @@ WbneSubCommand:: WbneSubCommand() {
                 INDENTEX"data - data to write - space seperated dwords";
     _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" wbne 0x10000 12 0x30000 0x76800 0x5a445a44";
     _v = Wtv_Dev;
-    _maxCmdParamNum = -1;
+    _minCmdParamNum = 3;
     _cmdType = SC_Wbne;
 }
 
@@ -3833,14 +3634,6 @@ bool WbneSubCommand::writeBlock(u_int32_t addr, std::vector<u_int32_t> dataVec) 
         reportErr(true, FLINT_FLASH_WRITE_ERROR,_io->err());
         return false;
     }
-    return true;
-}
-
-bool WbneSubCommand::verifyParams() {
-        if (_flintParams.cmd_params.size() < 3) {
-            reportErr(true, FLINT_CMD_ARGS_ERROR3,_name.c_str() , 3, (int)_flintParams.cmd_params.size());
-            return false;
-        }
     return true;
 }
 
@@ -3909,6 +3702,7 @@ RbSubCommand:: RbSubCommand()
     _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" rb 0x10000 100 file.bin";
     _v = Wtv_Dev_Or_Img;
     _maxCmdParamNum = 3;
+    _minCmdParamNum = 2;
     _cmdType = SC_Rb;
 }
 
@@ -3930,14 +3724,6 @@ bool RbSubCommand::readBlock(u_int32_t addr, std::vector<u_int8_t>& buff, bool i
         reportErr(true, FLINT_IMAGE_READ_ERROR, _io->err());
         return false;
     }
-    return true;
-}
-
-bool RbSubCommand::verifyParams() {
-        if (_flintParams.cmd_params.size() < 2) {
-            reportErr(true, FLINT_CMD_ARGS_ERROR3,_name.c_str() , 2, (int)_flintParams.cmd_params.size());
-            return false;
-        }
     return true;
 }
 
@@ -4154,3 +3940,370 @@ FlintStatus FiSubCommand::executeCommand()
     return FLINT_SUCCESS;
 
 }
+
+/***********************
+ *Class: CheckSum
+ **********************/
+CheckSumSubCommand:: CheckSumSubCommand()
+{
+    _name = "checksum";
+    _desc = "perform MD5 checksum on FW.";
+    _extendedDesc = "perform an MD5 checksum on relevant(non-persistent between FW upgrades) data on device/image.";
+    _flagLong = "checksum";
+    _flagShort = "cs";
+    _param = "";
+    _paramExp = "";
+    _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" checksum";
+    _v = Wtv_Dev_Or_Img;
+    _maxCmdParamNum = 0;
+    _cmdType = SC_Check_Sum;
+    memset(_checkSum, 0, sizeof(_checkSum));
+}
+
+CheckSumSubCommand:: ~CheckSumSubCommand()
+{
+
+}
+
+bool CheckSumSubCommand::extractChecksumFromStr(string str, u_int8_t checkSum[16])
+{
+    char ptr[2];
+    int i = 15;
+    if (str.size() < 2) {
+        reportErr(true, FLINT_CHECKSUM_LEN_ERROR );
+        return false;
+    }
+    if (!strncasecmp(str.c_str(), "0x", 2)) {
+        // str starts with 0x or 0X, remove prefix
+        str = &(str.c_str()[2]);
+    }
+
+    if (str.size() != 32) {
+        reportErr(true, FLINT_CHECKSUM_LEN_ERROR );
+        return false;
+    }
+    stringstream ss(str);
+    while (i >= 0) {
+        ss.read(ptr, 2);
+        if (!isxdigit(ptr[0]) || !isxdigit(ptr[1])) {
+            reportErr(true, FLINT_CHECKSUM_HEX_ERROR);
+            return false;
+        }
+        checkSum[i] = (u_int8_t)strtoul(ptr, NULL, 16);
+        if (!checkSum[i] && strncmp(ptr, "00", 2)) {
+            reportErr(true, FLINT_CHECKSUM_PARSE_ERROR);
+            return false;
+        }
+        i--;
+    }
+    return true;
+}
+
+string CheckSumSubCommand::checkSum2Str(u_int8_t chksm[16])
+{
+    stringstream ss;
+    for (int i=15; i >= 0; i--) {
+        char chunk[3];
+        snprintf(chunk, 3, "%02x", chksm[i]);
+        ss << chunk;
+    }
+    string s = ss.str();
+    return s;
+}
+
+FlintStatus CheckSumSubCommand::executeCommand()
+{
+    if (preFwOps() == FLINT_FAILED) {
+        return FLINT_FAILED;
+    }
+    FwOperations* ops = _fwOps ? _fwOps : _imgOps;
+    printf("-I- Calculating Checksum ...\n");
+    if (!ops->FwCalcMD5(_checkSum)){
+        reportErr(true, FLINT_CHECKSUM_ERROR, (_flintParams.device_specified ? "device" : "image"), ops->err());
+        return FLINT_FAILED;
+    }
+    // just print it!
+    printf("Checksum: %s\n", checkSum2Str(_checkSum).c_str());
+    return FLINT_SUCCESS;
+
+}
+
+
+/***********************
+ *Class: TimeStamp
+ **********************/
+TimeStampSubCommand:: TimeStampSubCommand()
+{
+    _name = "time stamp";
+    _desc = "FW time stamping.";
+    _extendedDesc = "set/query/reset time stamp on device/image.";
+    _flagLong = "timestamp";
+    _flagShort = "ts";
+    _param = "<set|query|reset> [timestamp] [FW version]";
+    _paramExp = "set <timestamp> [FW version] : set the specified timestamp. if set on device FW version must be specified\n"
+        INDENTEX"                               timestamp should comply with ISO 8601 format and provided with UTC timezone: YYYY-MM-DDThh:mm:ssZ\n"
+                INDENTEX"query : query device/image to view the timestamp\n"
+                INDENTEX"reset : reset the timestamp, remove the timestamp from device/image.\n";
+    _example = FLINT_NAME" -d "MST_DEV_EXAMPLE4" ts set 2015-12-24T14:52:33Z 14.12.1100\n"
+      INDENTEX FLINT_NAME" -d "MST_DEV_EXAMPLE4" ts reset\n"
+      INDENTEX FLINT_NAME" -i ./fw4115.bin ts set\n"
+      INDENTEX FLINT_NAME" -i ./fw4115.bin ts query";
+    _v = Wtv_Dev_Or_Img;
+    _maxCmdParamNum = 3;
+    _minCmdParamNum = 1;
+    _cmdType = SC_Time_Stamp;
+    memset(&_userFwVer, 0, sizeof(_userFwVer));
+    memset(&_userTsEntry, 0, sizeof(_userTsEntry));
+    _operation = TS_No_Command;
+    _ops = (FwOperations*)NULL;
+}
+
+TimeStampSubCommand:: ~TimeStampSubCommand()
+{
+
+}
+bool TimeStampSubCommand::parseFwVersion(string verStr)
+{
+    unsigned int major = 0;
+    unsigned int minor = 0;
+    unsigned int subminor = 0;
+    int count = sscanf(verStr.c_str(), "%02d.%02d.%04d", &major, &minor, &subminor);
+    if (count !=3) {
+        count = sscanf(verStr.c_str(), "%02d.%04d.%04d", &major, &minor, &subminor);
+        if (count != 3) {
+            reportErr(true, "Failed to parse FW version. expected format: MM.mm.ssss\n");
+            return false;
+        }
+    }
+    _userFwVer.fw_ver_major = major;
+    _userFwVer.fw_ver_minor = minor;
+    _userFwVer.fw_ver_subminor = subminor;
+    //printf("-D- Fw version: %d.%d.%d\n", _userFwVer.fw_ver_major, _userFwVer.fw_ver_minor, _userFwVer.fw_ver_subminor);
+    return true;
+}
+
+#define BCD2_TO_NUM(bcd)\
+    ((((bcd) >> 4 & 0xf) * 10) + ((bcd) & 0xf))
+
+#define BCD4_TO_NUM(bcd) \
+        ((BCD2_TO_NUM((bcd) >> 8 & 0xff) * 100) + (BCD2_TO_NUM((bcd) & 0xff)))
+
+#define NUM2_TO_BCD(num) \
+    ((((num) / 10) * 16) + ((num) % 10))
+
+#define NUM4_TO_BCD(num) \
+        ((NUM2_TO_BCD((num) / 100 ) * 256) + NUM2_TO_BCD((num) % 100 ))
+
+u_int8_t TimeStampSubCommand::getDaysInMonth(u_int16_t year, u_int8_t month)
+{
+    u_int8_t days = 0;
+    bool isLeapYear = year % 4 == 0; // evenly divisible by 4
+    isLeapYear &= (year % 100 != 0) || (year % 400 == 0); // not evenly divided by 100 or  evenly divisible by 400
+    switch(month) {
+    case 2:
+        days = isLeapYear ? 29 : 28;
+        break;
+    case 4:
+    case 6:
+    case 9:
+    case 11:
+        days = 30;
+        break;
+    case 1:
+    case 3:
+    case 5:
+    case 7:
+    case 8:
+    case 10:
+    case 12:
+        days = 31;
+        break;
+    default:
+        break;
+    }
+    return days;
+}
+
+void TimeStampSubCommand::getMachineUTCTime()
+{
+    time_t rawTime;
+    struct tm * timeInfo;
+    time ( &rawTime );
+    timeInfo = gmtime ( &rawTime );
+
+    _userTsEntry.ts_year = NUM4_TO_BCD(timeInfo->tm_year + 1900);
+    _userTsEntry.ts_month = NUM2_TO_BCD(timeInfo->tm_mon + 1);
+    _userTsEntry.ts_day = NUM2_TO_BCD(timeInfo->tm_mday);
+    _userTsEntry.ts_hour = NUM2_TO_BCD(timeInfo->tm_hour);
+    _userTsEntry.ts_minutes = NUM2_TO_BCD(timeInfo->tm_min);
+    _userTsEntry.ts_seconds =  NUM2_TO_BCD(timeInfo->tm_sec);
+
+    //printf("-D- timestamp: %04x-%02x-%02xT%02x:%02x:%02x\n", _userTsEntry.ts_year, _userTsEntry.ts_month,
+    //                                                        _userTsEntry.ts_day, _userTsEntry.ts_hour, _userTsEntry.ts_minutes, _userTsEntry.ts_seconds);
+    return;
+}
+
+bool TimeStampSubCommand::parseTimeStamp(string tsStr)
+{
+    unsigned int year = 0;
+    unsigned int month = 0;
+    unsigned int day = 0;
+    unsigned int hour = 0;
+    unsigned int minutes = 0;
+    unsigned int seconds = 0;
+    if (*tsStr.rbegin() != 'Z') {
+        reportErr(true, "Failed to parse timestamp: Timestamp timezone must be UTC. format should be: YYYY-MM-DDThh:mm:ssZ\n");
+        return false;
+    }
+    // scan and store
+    int count = sscanf(tsStr.c_str(), "%04d-%02d-%02dT%02d:%02d:%02dZ", &year, &month, &day, &hour, &minutes, &seconds);
+    if (count !=6) {
+        reportErr(true, "Failed to parse timestamp: input should be compliant to the following ISO 8601 format: YYYY-MM-DDThh:mm:ssZ\n");
+        return false;
+    }
+    // check time args
+    if ( month == 0 || month > 12) {
+        reportErr(true, "Failed to parse timestamp: illegal month value (%d)\n", month);
+                return false;
+    }
+    if (day > getDaysInMonth(year, month)) {
+        reportErr(true, "Failed to parse timestamp: illegal day value (%d)\n", day);
+                return false;
+    }
+    if ( hour  > 23 || minutes  > 59 || seconds  > 59 ) {
+        reportErr(true, "Failed to parse timestamp: illegal time value (%02d:%02d:%02d)\n", hour, minutes, seconds);
+                return false;
+    }
+    // store as BCD
+    _userTsEntry.ts_year = NUM4_TO_BCD(year);
+    _userTsEntry.ts_month = NUM2_TO_BCD(month);
+    _userTsEntry.ts_day = NUM2_TO_BCD(day);
+    _userTsEntry.ts_hour = NUM2_TO_BCD(hour);
+    _userTsEntry.ts_minutes = NUM2_TO_BCD(minutes);
+    _userTsEntry.ts_seconds =  NUM2_TO_BCD(seconds);
+
+    //printf("-D- timestamp: %04x-%02x-%02xT%02x:%02x:%02x\n", _userTsEntry.ts_year, _userTsEntry.ts_month,
+    //                                                        _userTsEntry.ts_day, _userTsEntry.ts_hour, _userTsEntry.ts_minutes, _userTsEntry.ts_seconds);
+    return true;
+}
+
+bool TimeStampSubCommand::verifyParams()
+{
+    if (_flintParams.cmd_params[0] == "query") {
+        if (_flintParams.cmd_params.size() > 1) {
+            reportErr(true, "query operation requires no arguments.\n");
+            return false;
+        }
+        _operation = TimeStampSubCommand::TS_Query;
+    } else if (_flintParams.cmd_params[0] == "set") {
+        if (_flintParams.image_specified && _flintParams.cmd_params.size() > 2) {
+            reportErr(true, "too many arguments for set operation on image.\n");
+            return false;
+        } else if (_flintParams.device_specified && _flintParams.cmd_params.size() != 3) {
+            reportErr(true, "set operation on device requires timestamp and FW version arguments.\n\n");
+            return false;
+        }
+        _operation = TimeStampSubCommand::TS_Set;
+        // attempt to parse timestamp and fw version
+        if (_flintParams.image_specified && _flintParams.cmd_params.size() == 1) {
+            // take time from machine
+            getMachineUTCTime();
+        } else if (!parseTimeStamp(_flintParams.cmd_params[1])) {
+            return false;
+        }
+        if (_flintParams.device_specified && !parseFwVersion(_flintParams.cmd_params[2])) {
+            return false;
+        }
+    } else if (_flintParams.cmd_params[0] == "reset") {
+        if (_flintParams.cmd_params.size() > 1) {
+            reportErr(true, "erase operation requires no arguments.\n");
+            return false;
+        }
+        _operation = TimeStampSubCommand::TS_Reset;
+    } else {
+        reportErr(true, "Unknown operation, allowed operations: query/set/reset.\n");
+        return false;
+    }
+    return true;
+}
+
+void TimeStampSubCommand::printTsAndFwVer(string prefix, struct tools_open_ts_entry& tsEntry, struct tools_open_fw_version& fwVer)
+{
+    printf("%-24s: %04x-%02x-%02xT%02x:%02x:%02xZ    %02d.%02d.%04d\n", prefix.c_str(), tsEntry.ts_year, tsEntry.ts_month, tsEntry.ts_day,
+                                                                     tsEntry.ts_hour, tsEntry.ts_minutes, tsEntry.ts_seconds,
+                                                                     fwVer.fw_ver_major, fwVer.fw_ver_minor, fwVer.fw_ver_subminor);
+}
+
+bool TimeStampSubCommand::queryTs()
+{
+    struct tools_open_ts_entry tsEntry;
+    struct tools_open_fw_version fwVer;
+    memset(&tsEntry, 0, sizeof(tsEntry));
+    memset(&fwVer, 0, sizeof(fwVer));
+    // get and Print Current Running FW TS in case of device
+    if (_flintParams.device_specified) {
+        if (!_ops->FwQueryTimeStamp(tsEntry, fwVer, true)) {
+            printf("%-24s: N/A. %s\n", "Current timestamp", _ops->err());
+        } else {
+            printTsAndFwVer("Current timestamp", tsEntry, fwVer);
+        }
+    }
+    // get and print next FW timestamp
+    if (!_ops->FwQueryTimeStamp(tsEntry, fwVer, false)) {
+        printf("%-24s: N/A. %s\n", "Next timestamp", _ops->err());
+    } else {
+        printTsAndFwVer("Next timestamp", tsEntry, fwVer);
+    }
+    return true;
+}
+
+bool TimeStampSubCommand::setTs()
+{
+    if (!_ops->FwSetTimeStamp(_userTsEntry, _userFwVer)) {
+        reportErr(false, "%s", _ops->err());
+        return false;
+    }
+    return true;
+}
+
+bool TimeStampSubCommand::resetTs()
+{
+    if (!_ops->FwResetTimeStamp()) {
+        reportErr(false, "%s", _ops->err());
+        return false;
+    }
+    return true;
+}
+
+FlintStatus TimeStampSubCommand::executeCommand()
+{
+    bool rc;
+
+    if (preFwOps() == FLINT_FAILED) {
+        return FLINT_FAILED;
+    }
+    _ops = _flintParams.device_specified ? _fwOps : _imgOps;
+    (void)_ops;
+    switch (_operation) {
+    case TimeStampSubCommand::TS_Set:
+        rc = setTs();
+        break;
+    case TimeStampSubCommand::TS_Query:
+        rc = queryTs();
+        break;
+    case TimeStampSubCommand::TS_Reset:
+        rc = resetTs();
+        break;
+    default:
+        // should not be reached
+        reportErr(true, "Failed to perform timestamp operation: Unknown Error\n");
+        return FLINT_FAILED;
+    }
+    if (!rc) {
+        printf("-E- Failed to perform timestamp %s operation. %s\n", _flintParams.cmd_params[0].c_str(), _errBuff);
+        return FLINT_FAILED;
+    }
+    return FLINT_SUCCESS;
+}
+
+

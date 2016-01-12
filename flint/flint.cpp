@@ -159,6 +159,8 @@ map_sub_cmd_t_to_subcommand Flint::initSubcommandMap()
     cmdMap[SC_Wb] = new WbSubCommand();
     cmdMap[SC_Rb] = new RbSubCommand();
     cmdMap[SC_Clear_Sem] = new ClearSemSubCommand();
+    cmdMap[SC_Check_Sum] = new CheckSumSubCommand();
+    cmdMap[SC_Time_Stamp] = new TimeStampSubCommand();
     return cmdMap;
 }
 

@@ -1,4 +1,9 @@
-/* Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
+/*
+ *
+ * mflash.h - Mellanox Technilogies LTD. Flash access lib heared file
+ * ==================================================================
+ *
+ * Copyright (c) 2005 Mellanox Technologies Ltd.  All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,7 +33,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- *  Version: $Id$
+ *  Version: $Id: $
  *
  */
 
@@ -36,6 +41,7 @@
 #define MFLASH_H
 
 #include <compatibility.h>
+#include <mtcr.h>
 #include "mflash_types.h"
 #include "mflash_common_structs.h"
 
@@ -121,7 +127,14 @@ void     mf_close       (mflash* mfl);
 //
 int     mf_read        (mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data);
 int     mf_write       (mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data);
-int     mf_erase_sector(mflash* mfl, u_int32_t addr);
+// mf_erase performs an erase on the smallest block
+int     mf_erase(mflash* mfl, u_int32_t addr);
+// adv erasing
+int     mf_erase_64k_sector(mflash* mfl, u_int32_t addr);
+int     mf_erase_4k_sector(mflash* mfl, u_int32_t addr);
+
+// swap between erasing 4KB or 64KB chunks (performance optimization)
+
 
 //
 // Crspace access through mflash:
@@ -155,6 +168,9 @@ int     mf_get_opt     (mflash* mfl, MfOpt opt, int *val);
 int     mf_enable_hw_access(mflash* mfl, u_int64_t key);
 int     mf_disable_hw_access(mflash* mfl);
 int     mf_release_semaphore();
+
+// get mfile object
+mfile* mf_get_mfile(mflash* mfl);
 
 //
 // err code to string translation for printing.

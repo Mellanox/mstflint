@@ -75,8 +75,6 @@ typedef enum {
 #define FLINT_CMD_ARGS_ERROR5                 "Command \"%s\" does not require arguments\n"
 #define FLINT_INVALID_OPTION_ERROR            "Unknown option \"%s\" for the \"%s\" command. you can use %s.\n"
 #define FLINT_INVALID_FLAG_ERROR              "Invalid switch \"%s\" is specified.\n"
-#define FLINT_INVALID_UID_NUM_BX_ERROR        "Number of UIDs on BridgeX should be %d\n"
-#define FLINT_BX_BAD_MAC_FORMAT_ERROR         "Bad mac ( %4.4x%8.8x ) %s. Please re-burn with a valid MACs value.\n"
 #define FLINT_INVALID_FLAG_WITH_FLAG_ERROR    "Cannot specify \"%s\" flag with \"%s\" flag.\n"
 #define FLINT_INVALID_FLAG_WITHOUT_FLAG_ERROR "\"%s\" flag must be specified with \"%s\" flag.\n"
 #define FLINT_INVALID_FLAG_WITH_CMD_ERROR     "Cannot specify flag: %s with Command: %s\n"
@@ -131,6 +129,11 @@ typedef enum {
 #define FLINT_INVALID_PASSWORD                "Invalid Password.\n"
 #define FLINT_NO_GUID_MAC_FLAGS_ERROR         "Can not set GUIDs/MACs: please run with -uid/-guid/-mac flag.\n"
 #define FLINT_NO_UID_FLAG_ERROR               "Can not set GUIDs/MACs: uid is not specified, please run with -uid flag.\n"
+#define FLINT_CHECKSUM_ERROR                  "Failed to calculate checksum on %s: %s\n"
+#define FLINT_CHECKSUM_MISSMATCH_ERROR        "Given checksum: %s does not match the checksum calculated on device FW: %s.\n"
+#define FLINT_CHECKSUM_PARSE_ERROR            "Failed to parse given checksum.\n"
+#define FLINT_CHECKSUM_LEN_ERROR              "MD5 checksum should be exactly 16 bytes long.\n"
+#define FLINT_CHECKSUM_HEX_ERROR              "MD5 checksum should contain only hexadecimal digits.\n"
 
 /**************************
  * Flint Warning Messages

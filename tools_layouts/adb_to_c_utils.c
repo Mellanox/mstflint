@@ -31,7 +31,7 @@
  */
 
 /***
- *** This file was generated at "2015-06-17 12:05:46"
+ *** This file was generated at "2016-04-22 14:35:59"
  *** by:
  ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/tools_open/tools_open.adb --file-prefix tools_open --prefix tools_open_
  ***/
@@ -48,12 +48,12 @@ u_int32_t adb2c_calc_array_field_address(u_int32_t start_bit_offset, u_int32_t a
 {
     u_int32_t offs;
 
-	if (arr_elemnt_size > 32)
-	{
-		assert(!(arr_elemnt_size % 32));
-    	start_bit_offset += arr_elemnt_size*(u_int32_t)arr_idx;                                                                                     
-		return start_bit_offset;
-	}
+    if (arr_elemnt_size > 32)
+    {
+        assert(!(arr_elemnt_size % 32));
+        start_bit_offset += arr_elemnt_size*(u_int32_t)arr_idx;                                                                                     
+        return start_bit_offset;
+    }
 
     if (is_big_endian_arr)
     {

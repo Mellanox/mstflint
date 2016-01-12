@@ -31,7 +31,7 @@
  */
 
 /***
- *** This file was generated at "2015-02-05 17:01:35"
+ *** This file was generated at "2016-02-23 00:12:07"
  *** by:
  ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/register_access_open/register_access_open.adb --file-prefix register_access_open --prefix register_access_
  ***/
@@ -148,6 +148,9 @@ void register_access_mfpa_pack(const struct register_access_mfpa *ptr_struct, u_
 	offset=156;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->flash_num);
 
+	offset=130;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->bulk_64kb_erase_en);
+
 	offset=168;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 24, (u_int32_t)ptr_struct->jedec_id);
 
@@ -184,6 +187,9 @@ void register_access_mfpa_unpack(struct register_access_mfpa *ptr_struct, const 
 	offset=156;
 	ptr_struct->flash_num = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
 
+	offset=130;
+	ptr_struct->bulk_64kb_erase_en = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
 	offset=168;
 	ptr_struct->jedec_id = (u_int32_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 24);
 
@@ -217,6 +223,9 @@ void register_access_mfpa_print(const struct register_access_mfpa *ptr_struct, F
 
 	adb2c_add_indentation(file, indent_level);
 	fprintf(file, "flash_num            : "UH_FMT"\n", ptr_struct->flash_num);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "bulk_64kb_erase_en   : "UH_FMT"\n", ptr_struct->bulk_64kb_erase_en);
 
 	adb2c_add_indentation(file, indent_level);
 	fprintf(file, "jedec_id             : "UH_FMT"\n", ptr_struct->jedec_id);
@@ -254,6 +263,9 @@ void register_access_mfbe_pack(const struct register_access_mfbe *ptr_struct, u_
 	offset=23;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->p);
 
+	offset=2;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->bulk_64kb_erase);
+
 	offset=72;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 24, (u_int32_t)ptr_struct->address);
 
@@ -275,6 +287,9 @@ void register_access_mfbe_unpack(struct register_access_mfbe *ptr_struct, const 
 	offset=23;
 	ptr_struct->p = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 
+	offset=2;
+	ptr_struct->bulk_64kb_erase = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
 	offset=72;
 	ptr_struct->address = (u_int32_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 24);
 
@@ -293,6 +308,9 @@ void register_access_mfbe_print(const struct register_access_mfbe *ptr_struct, F
 
 	adb2c_add_indentation(file, indent_level);
 	fprintf(file, "p                    : "UH_FMT"\n", ptr_struct->p);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "bulk_64kb_erase      : "UH_FMT"\n", ptr_struct->bulk_64kb_erase);
 
 	adb2c_add_indentation(file, indent_level);
 	fprintf(file, "address              : "UH_FMT"\n", ptr_struct->address);

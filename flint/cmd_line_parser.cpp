@@ -108,6 +108,8 @@ SubCmdMetaData::SubCmdMetaData() {
     _sCmds.push_back(new SubCmd("", "rb", SC_Rb));
     _sCmds.push_back(new SubCmd("", "clear_semaphore", SC_Clear_Sem));
     _sCmds.push_back(new SubCmd("", "fi", SC_Fix_Img));
+    _sCmds.push_back(new SubCmd("cs", "checksum", SC_Check_Sum));
+    _sCmds.push_back(new SubCmd("ts", "timestamp", SC_Time_Stamp));
 }
 
 SubCmdMetaData::~SubCmdMetaData() {
@@ -181,6 +183,7 @@ FlagMetaData::FlagMetaData() {
     _flags.push_back(new Flag("v", "version", 0));
     _flags.push_back(new Flag("", "no_devid_check", 0));
     _flags.push_back(new Flag("", "use_fw", 0));
+    _flags.push_back(new Flag("", "use_dev_img_info", 0));
 }
 
 FlagMetaData::~FlagMetaData() {
@@ -330,54 +333,6 @@ guid_t GetBaseMac(guid_t baseGuid)
     baseMac.l = (baseGuid.l & 0x00ffffff) | ((baseGuid.h & 0xff00) << 16);
     baseMac.h = baseGuid.h >> 16;
     return baseMac;
-}
-
-bool InitBxGuids(std::vector<guid_t>& user_guids, guid_t base_guid1) {
-
-    int base_index = 0;
-    guid_t base_mac, base_guid;
-    user_guids.resize(MAX_GUIDS);
-
-    for (int i = 0; i < BX_SLICES_NUM; i++) {
-        base_index = i * BX_SLICE_GUIDS;
-        base_guid = incrGuid(base_guid1, i * 8);
-        // Init Guids
-        int base_guids_index = base_index + BI_GUIDS;
-        for (int j = 0; j < BX_NP_GUIDS; j++) {
-            if (j == 0) {
-                // The node guid should be the same one on the two slices.
-                user_guids[base_guids_index + j] = incrGuid(base_guid1, j);
-            } else {
-                user_guids[base_guids_index + j] = incrGuid(base_guid, j);
-            }
-
-        }
-        // Init Macs
-        base_mac = GetBaseMac(base_guid);
-        int base_macs_index = base_index + BI_IMACS;
-        for (int j = 0; j < BX_MACS; j++) {
-            user_guids[base_macs_index + j] = incrGuid(base_mac, j);
-        }
-        // Init WWPNSs
-        int base_wwpn_index = base_index + BI_WWPNS;
-        int base_emac_index = base_index + BI_EMACS;
-
-        for (int j = 0; j < BX_WWPNS; j++) {
-            user_guids[base_wwpn_index + j].l =  user_guids[base_emac_index + j].l;
-            user_guids[base_wwpn_index + j].h = (user_guids[base_emac_index + j].h | (0x2000 << 16));
-        }
-
-        // Init WWNNS
-        int base_wwnn_index = base_index + BI_WWNNS;
-        base_emac_index = base_index + BI_EMACS;
-
-        user_guids[base_wwnn_index].l =  user_guids[base_emac_index].l;
-        user_guids[base_wwnn_index].h = (user_guids[base_emac_index].h | (0x2001 << 16));
-    }
-
-    // Init SysGuid
-    user_guids[BI_SYS_GUID] = incrGuid(base_guid1, 7);
-    return true;
 }
 
 bool parseFlashParams(string params, flash_params_t& fp)
@@ -603,6 +558,13 @@ void Flint::initCmdParser() {
                 "Do not attempt to take device data sections from device(sections will be taken from the image. FS3 Only).\n"
                 "Commands affected: burn");
 
+    AddOptions("use_dev_img_info",
+               ' ',
+                "",
+                "preserve select image info fields from the device upon FW update (FS3 Only).\n"
+                "Commands affected: burn",
+                true);
+
     AddOptions("dual_image",
                ' ',
                 "",
@@ -788,10 +750,6 @@ ParseStatus Flint::HandleOption(string name, string value)
         if (!getGUIDFromStr(value, _flintParams.baseUid)) {
             return PARSE_ERROR;
         }
-        if (!InitBxGuids( _flintParams.user_uids, _flintParams.baseUid)) {
-            printf("-E- failed to extract UIDs from UID.");
-            return PARSE_ERROR;
-        }
     } else if (name == "blank_guids") {
         _flintParams.blank_guids = true;
     } else if (name == "clear_semaphore") {
@@ -834,7 +792,9 @@ ParseStatus Flint::HandleOption(string name, string value)
         _flintParams.dual_image = true;
     } else if (name == "striped_image") {
         _flintParams.striped_image = true;
-    } else if (name == "banks") {
+    }else if (name == "use_dev_img_info") {
+        _flintParams.use_dev_img_info = true;
+    }else if (name == "banks") {
         _flintParams.banks_specified = true;
         u_int64_t banksNum;
         if (!strToNum(value, banksNum)) {

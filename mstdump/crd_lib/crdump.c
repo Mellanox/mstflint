@@ -327,16 +327,9 @@ static int crd_get_csv_path(IN dm_dev_id_t dev_type, OUT char *csv_file_path) {
     const int dev_name_len = 100;
     char dev_name[100] = {0};
     int  rc;
-    switch (dev_type) {
-    case DeviceInfiniHostIIIEx:
-    case DeviceInfiniHostIIIEx_MF:
-    case DeviceInfiniHost:
-    case DeviceInfiniScale:
-    case DeviceInfiniHostIIILx:
-        return CRD_NOT_SUPPORTED;
-    default:
-        strncpy(dev_name, dm_dev_type2str(dev_type), dev_name_len - 1);
-    }
+
+    strncpy(dev_name, dm_dev_type2str(dev_type), dev_name_len - 1);
+
     if (!strcmp(dev_name, "Unknown Device")) {
         return CRD_UNKOWN_DEVICE;
     }
@@ -504,8 +497,8 @@ static int crd_read_line(IN FILE *fd, OUT char *tmp) {
         if (!feof(fd)) {
             int c = fgetc(fd);
             if (c == '#') {
-                char* _ptr=fgets (tmp, 300, fd);
-                (void)_ptr;//avoid warning
+                if (!fgets (tmp, 300, fd)) { // Avoid warning
+                }
                 tmp[0] = 0;
                 continue;
             }

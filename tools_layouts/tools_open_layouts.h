@@ -31,7 +31,7 @@
  */
 
 /***
- *** This file was generated at "2015-08-31 18:48:47"
+ *** This file was generated at "2016-05-04 19:06:49"
  *** by:
  ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/tools_open/tools_open.adb --file-prefix tools_open --prefix tools_open_
  ***/
@@ -134,6 +134,47 @@ struct tools_open_global_type {
 };
 
 /* Description -   */
+/* Size in bytes - 8 */
+struct tools_open_ts_entry {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Timestamp day     - 2 packed BCD */
+	/* 0.0 - 0.7 */
+	 u_int8_t ts_day;
+	/* Description - Timestamp month   - 2 packed BCD */
+	/* 0.8 - 0.15 */
+	 u_int8_t ts_month;
+	/* Description - Timestamp year    - 4 packed BCD */
+	/* 0.16 - 4.31 */
+	 u_int16_t ts_year;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - Timestamp seconds - 2 packed BCD */
+	/* 4.8 - 4.15 */
+	 u_int8_t ts_seconds;
+	/* Description - Timestamp minotes - 2 packed BCD */
+	/* 4.16 - 4.23 */
+	 u_int8_t ts_minutes;
+	/* Description - Timestamp hour    - 2 packed BCD */
+	/* 4.24 - 8.31 */
+	 u_int8_t ts_hour;
+};
+
+/* Description -   */
+/* Size in bytes - 8 */
+struct tools_open_fw_version {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - fw_version_major */
+	/* 0.16 - 4.31 */
+	 u_int16_t fw_ver_major;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - fw version subminor */
+	/* 4.0 - 4.15 */
+	 u_int16_t fw_ver_subminor;
+	/* Description - fw_version_minor */
+	/* 4.16 - 8.31 */
+	 u_int16_t fw_ver_minor;
+};
+
+/* Description -   */
 /* Size in bytes - 4 */
 union tools_open_tlv_type {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
@@ -172,6 +213,19 @@ This field is only valid for Address + Read and Address + Write operations, prov
 };
 
 /* Description -   */
+/* Size in bytes - 16 */
+struct tools_open_timestamp {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - fw_version */
+	/* 0.0 - 8.31 */
+	 struct tools_open_fw_version fw_version;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - Timestamp */
+	/* 8.0 - 16.31 */
+	 struct tools_open_ts_entry ts_entry;
+};
+
+/* Description -   */
 /* Size in bytes - 12 */
 struct tools_open_nv_hdr_fifth_gen {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
@@ -185,6 +239,12 @@ struct tools_open_nv_hdr_fifth_gen {
 	/* Description - Configuration item version */
 	/* 0.12 - 0.15 */
 	 u_int8_t version;
+	/* Description - when set, the default field is supported. */
+	/* 0.22 - 0.22 */
+	 u_int8_t default_supported;
+	/* Description - when set in query , will display the default configuration */
+	/* 0.23 - 0.23 */
+	 u_int8_t default_;
 	/* Description - enables reading the TLV by lower priorities
 0 - TLV can be read by the subsequent lifecycle priorities.
 1 - TLV cannot be read by the subsequent lifecycle priorities.
@@ -198,9 +258,6 @@ struct tools_open_nv_hdr_fifth_gen {
  */
 	/* 0.25 - 0.25 */
 	 u_int8_t over_en;
-	/* Description - when set in query , will display the default configuration */
-	/* 0.28 - 0.28 */
-	 u_int8_t default_;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description -  */
 	/* 4.0 - 8.31 */
@@ -230,6 +287,40 @@ struct tools_open_nv_hdr {
 	/* Description - Data version can be set by caller or left as 0. */
 	/* 4.28 - 8.31 */
 	 u_int8_t version;
+};
+
+/* Description -   */
+/* Size in bytes - 20 */
+struct tools_open_aux_tlv_header {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0.0 - 0.7 */
+	 u_int8_t minor_version;
+	/* Description -  */
+	/* 0.8 - 0.15 */
+	 u_int8_t major_version;
+	/* Description -  */
+	/* 0.16 - 0.23 */
+	 u_int8_t type;
+	/* Description -  */
+	/* 0.28 - 4.31 */
+	 u_int8_t header_type;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description -  */
+	/* 4.0 - 8.31 */
+	 u_int32_t length;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description -  */
+	/* 8.0 - 8.15 */
+	 u_int16_t crc;
+/*---------------- DWORD[3] (Offset 0xc) ----------------*/
+	/* Description -  */
+	/* 12.0 - 16.31 */
+	 u_int32_t reserved0;
+/*---------------- DWORD[4] (Offset 0x10) ----------------*/
+	/* Description -  */
+	/* 16.0 - 20.31 */
+	 u_int32_t reserved1;
 };
 
 /* Description -   */
@@ -321,6 +412,34 @@ Used for external Phy FW burning. When set, the MDIO I/F is used for an external
 };
 
 /* Description -   */
+/* Size in bytes - 20 */
+struct tools_open_mvts {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - A SET operation with this flag set will only check if the new timestamp can be configured without upda ting NVRAM */
+	/* 0.29 - 0.29 */
+	 u_int8_t check_timestamp_flag;
+	/* Description - A GET operation with this flag set, will return the running FW version instead */
+	/* 0.30 - 0.30 */
+	 u_int8_t running_flag;
+	/* Description - A SET operation with this flag on will clear the running and other bank timestamps */
+	/* 0.31 - 4.31 */
+	 u_int8_t clear_all_ts_flag;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - Timestamp entry */
+	/* 4.0 - 20.31 */
+	 struct tools_open_timestamp timestamp;
+};
+
+/* Description -   */
+/* Size in bytes - 16 */
+struct tools_open_nvqgc {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - NVDA read factory settings. 0: Unsupported. 1: Supported. */
+	/* 0.0 - 0.0 */
+	 u_int8_t read_factory_settings_support;
+};
+
+/* Description -   */
 /* Size in bytes - 12 */
 struct tools_open_nvdi {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
@@ -409,6 +528,89 @@ struct tools_open_mnva {
 };
 
 /* Description -   */
+/* Size in bytes - 320 */
+struct tools_open_mfg_info {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0.24 - 16.23 */
+	 char psid[17];
+/*---------------- DWORD[7] (Offset 0x1c) ----------------*/
+	/* Description - MFG_INFO section minor version */
+	/* 28.16 - 28.23 */
+	 u_int8_t minor_version;
+	/* Description - MFG_INFO section major version */
+	/* 28.24 - 32.31 */
+	 u_int8_t major_version;
+/*---------------- DWORD[24] (Offset 0x60) ----------------*/
+	/* Description - original PRS used to generate the FW binary */
+	/* 96.24 - 192.23 */
+	 char orig_prs_name[97];
+};
+
+/* Description -   */
+/* Size in bytes - 1024 */
+struct tools_open_image_info {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - IMAGE_INFO section minor version */
+	/* 0.16 - 0.23 */
+	 u_int8_t minor_version;
+	/* Description - IMAGE_INFO section major version */
+	/* 0.24 - 4.31 */
+	 u_int8_t major_version;
+/*---------------- DWORD[9] (Offset 0x24) ----------------*/
+	/* Description -  */
+	/* 36.24 - 52.23 */
+	 char psid[17];
+/*---------------- DWORD[116] (Offset 0x1d0) ----------------*/
+	/* Description - Product description */
+	/* 464.24 - 720.23 */
+	 char description[257];
+/*---------------- DWORD[208] (Offset 0x340) ----------------*/
+	/* Description - Product name */
+	/* 832.24 - 896.23 */
+	 char name[65];
+/*---------------- DWORD[224] (Offset 0x380) ----------------*/
+	/* Description - PRS used to generate the FW binary */
+	/* 896.24 - 992.23 */
+	 char prs_name[97];
+};
+
+/* Description -   */
+/* Size in bytes - 256 */
+struct tools_open_aux_tlv {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0.0 - 20.31 */
+	 struct tools_open_aux_tlv_header aux_tlv_header;
+/*---------------- DWORD[5] (Offset 0x14) ----------------*/
+	/* Description - tlv data */
+	/* 20.24 - 148.23 */
+	 u_int8_t data[128];
+};
+
+/* Description -   */
+/* Size in bytes - 16 */
+struct tools_open_aux_data_hdr {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - 0x544c563a : ascii for "TLV:"
+ */
+	/* 0.0 - 4.31 */
+	 u_int32_t signature0;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - 0x6548bc86 */
+	/* 4.0 - 8.31 */
+	 u_int32_t signature1;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - 0x01020305 */
+	/* 8.0 - 12.31 */
+	 u_int32_t signature2;
+/*---------------- DWORD[3] (Offset 0xc) ----------------*/
+	/* Description - 0x080d1522 */
+	/* 12.0 - 16.31 */
+	 u_int32_t signature3;
+};
+
+/* Description -   */
 /* Size in bytes - 28 */
 struct tools_open_query_def_params_per_port {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
@@ -453,6 +655,9 @@ struct tools_open_query_def_params_per_port {
 	/* Description -  */
 	/* 8.0 - 8.15 */
 	 u_int16_t default_boot_pkey;
+	/* Description -  */
+	/* 8.24 - 8.25 */
+	 u_int8_t boot_ip_ver;
 	/* Description - Legacy option ROM supports NV config setting 0x2023. */
 	/* 8.27 - 8.27 */
 	 u_int8_t nv_config_infiniband_dhcp_settings;
@@ -522,6 +727,9 @@ struct tools_open_query_def_params_global {
 	/* Description - maximum value allowed for the uar bar size (log2 base) */
 	/* 4.12 - 4.15 */
 	 u_int8_t max_uar_bar_size;
+	/* Description -  */
+	/* 4.21 - 4.21 */
+	 u_int8_t boot_ip_ver;
 	/* Description - default value of sriov (enabled or disabled) */
 	/* 4.31 - 8.31 */
 	 u_int8_t sriov_en;
@@ -564,6 +772,42 @@ union tools_open_mnv_cfg {
 	/* Description -  */
 	/* 0.0 - 12.31 */
 	 struct tools_open_nvdi nvdi;
+	/* Description -  */
+	/* 0.0 - 16.31 */
+	 struct tools_open_nvqgc nvqgc;
+	/* Description -  */
+	/* 0.0 - 20.31 */
+	 struct tools_open_mvts mvts;
+};
+
+/* Description -   */
+/* Size in bytes - 4 */
+struct tools_open_option_rom_capability {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - flexboot supports configuration of PXE boot IP version defined in boot settings ext parameter */
+	/* 0.31 - 4.31 */
+	 u_int8_t ip_ver;
+};
+
+/* Description -   */
+/* Size in bytes - 4 */
+struct tools_open_boot_settings_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Select which IP protocol version will be used by flexboot */
+	/* 0.8 - 0.9 */
+	 u_int8_t ip_ver;
+};
+
+/* Description -   */
+/* Size in bytes - 8 */
+struct tools_open_external_port {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0.0 - 0.0 */
+	 u_int8_t port_owner;
+	/* Description -  */
+	/* 0.1 - 0.1 */
+	 u_int8_t allow_rd_counters;
 };
 
 /* Description -   */
@@ -967,13 +1211,24 @@ struct tools_open_iscsi_settings {
 /* Size in bytes - 4 */
 struct tools_open_port_boot_state {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - 0 Normal operation
-1 SFP power off
-2 SERDES power off
-3 admin linkDown
- */
-	/* 0.0 - 0.1 */
-	 u_int8_t port_boot_state;
+	/* Description - The number of the GPIO that is connected to the AUX power setting circuitry */
+	/* 0.0 - 0.7 */
+	 u_int8_t aux_power_indication_gpio;
+	/* Description - 0  not present
+ 1 present
+ if the NIC has a circuitry that can indicate when the device is working on AUX power. */
+	/* 0.29 - 0.29 */
+	 u_int8_t aux_power_indication_gpio_en;
+	/* Description - 0  disabled
+ 1 enabled
+ When enabled, the device will response to standby indication from PCI or GPIO (if configured) and reduce power consumption while keeping the SMBUS on. To meet the power requirement, the NIC will disable the network ports and cage power on standby mode (indicate with PCIe L2/L3 message sequence of with the GPIO */
+	/* 0.30 - 0.30 */
+	 u_int8_t standby_on_aux;
+	/* Description - 0 Normal (admin-on)
+ 1 low power
+ When set to low-power the device will boot with minimal power until the GPIO detects that the PCIe power rails are active. The low power mode is effective ONLY when there is a circuitry to detect AUX power condition (with GPIO indication) */
+	/* 0.31 - 4.31 */
+	 u_int8_t power_up_on_aux;
 };
 
 /* Description -   */
@@ -1023,12 +1278,12 @@ struct tools_open_pci_configuration {
 	/* 4.31 - 8.31 */
 	 u_int8_t sriov_en;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description - Log 2 of the size of a VF's UAR BAR */
-	/* 8.0 - 8.5 */
-	 u_int8_t log_vf_uar_bar_size;
 	/* Description - Log 2 of the size of a PF's UAR BAR */
-	/* 8.6 - 8.11 */
+	/* 8.0 - 8.5 */
 	 u_int8_t log_pf_uar_bar_size;
+	/* Description - Log 2 of the size of a VF's UAR BAR */
+	/* 8.6 - 8.11 */
+	 u_int8_t log_vf_uar_bar_size;
 	/* Description - Number of MSI-X vectors and EQs per PF */
 	/* 8.12 - 8.21 */
 	 u_int16_t num_pf_msix;
@@ -1056,9 +1311,9 @@ struct tools_open_pci_capabilities {
 	/* Description - 1 when the num_pfs field is configurable and max_num_pfs is valid */
 	/* 0.28 - 0.28 */
 	 u_int8_t num_pfs_supported;
-	/* Description - 1 when the log_max_total_bar field is valid */
+	/* Description - 1 when the max_total_bar field is valid */
 	/* 0.29 - 0.29 */
-	 u_int8_t log_max_total_bar_valid;
+	 u_int8_t max_total_bar_valid;
 	/* Description - 1 when the total_msix field is valid */
 	/* 0.30 - 0.30 */
 	 u_int8_t max_total_msix_valid;
@@ -1099,9 +1354,9 @@ struct tools_open_pci_capabilities {
 	/* 12.0 - 16.31 */
 	 u_int32_t max_total_msix;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
-	/* Description - Log 2 of the maximum total of the MMIO space for all PFs and VFs combined */
+	/* Description - Maximum total of the MMIO space for all PFs and VFs combined, in megabytes. */
 	/* 16.0 - 20.31 */
-	 u_int32_t log_max_total_bar;
+	 u_int32_t max_total_bar;
 };
 
 /* Description -   */
@@ -1187,6 +1442,30 @@ struct tools_open_wol {
 	/* Description - Enable Wake on PHY activity */
 	/* 0.15 - 0.15 */
 	 u_int8_t en_wol_phy;
+};
+
+/* Description -   */
+/* Size in bytes - 1024 */
+union tools_open_misc_structs {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0.0 - 1024.31 */
+	 struct tools_open_image_info image_info;
+	/* Description -  */
+	/* 0.0 - 320.31 */
+	 struct tools_open_mfg_info mfg_info;
+};
+
+/* Description -   */
+/* Size in bytes - 256 */
+union tools_open_aux_img_data {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - image aux data section header */
+	/* 0.0 - 16.31 */
+	 struct tools_open_aux_data_hdr aux_data_hdr;
+	/* Description - image tlv entry */
+	/* 0.0 - 256.31 */
+	 struct tools_open_aux_tlv aux_tlv;
 };
 
 /* Description -   */
@@ -1280,6 +1559,15 @@ union tools_open_nv_cfg {
 	/* Description -  */
 	/* 0.0 - 24.31 */
 	 struct tools_open_lldp_nb_capability lldp_nb_capability;
+	/* Description -  */
+	/* 0.0 - 8.31 */
+	 struct tools_open_external_port external_port;
+	/* Description -  */
+	/* 0.0 - 4.31 */
+	 struct tools_open_boot_settings_ext boot_settings_ext;
+	/* Description -  */
+	/* 0.0 - 4.31 */
+	 struct tools_open_option_rom_capability option_rom_capability;
 };
 
 /* Description -   */
@@ -1295,6 +1583,12 @@ union tools_open_tools_open {
 	/* Description - Tools HCR commands structs */
 	/* 0.0 - 264.31 */
 	 union tools_open_hcr_cmds HcrCmds;
+	/* Description - aux image data layout */
+	/* 0.0 - 256.31 */
+	 union tools_open_aux_img_data AuxImgData;
+	/* Description - Misc structs needed for integration on new FW features */
+	/* 0.0 - 1024.31 */
+	 union tools_open_misc_structs MiscStructs;
 };
 
 /* Description -   */
@@ -1354,6 +1648,20 @@ void tools_open_global_type_print(const struct tools_open_global_type *ptr_struc
 int tools_open_global_type_size(void);
 #define TOOLS_OPEN_GLOBAL_TYPE_SIZE    (0x4)
 void tools_open_global_type_dump(const struct tools_open_global_type *ptr_struct, FILE* file);
+/* ts_entry */
+void tools_open_ts_entry_pack(const struct tools_open_ts_entry *ptr_struct, u_int8_t* ptr_buff);
+void tools_open_ts_entry_unpack(struct tools_open_ts_entry *ptr_struct, const u_int8_t* ptr_buff);
+void tools_open_ts_entry_print(const struct tools_open_ts_entry *ptr_struct, FILE* file, int indent_level);
+int tools_open_ts_entry_size(void);
+#define TOOLS_OPEN_TS_ENTRY_SIZE    (0x8)
+void tools_open_ts_entry_dump(const struct tools_open_ts_entry *ptr_struct, FILE* file);
+/* fw_version */
+void tools_open_fw_version_pack(const struct tools_open_fw_version *ptr_struct, u_int8_t* ptr_buff);
+void tools_open_fw_version_unpack(struct tools_open_fw_version *ptr_struct, const u_int8_t* ptr_buff);
+void tools_open_fw_version_print(const struct tools_open_fw_version *ptr_struct, FILE* file, int indent_level);
+int tools_open_fw_version_size(void);
+#define TOOLS_OPEN_FW_VERSION_SIZE    (0x8)
+void tools_open_fw_version_dump(const struct tools_open_fw_version *ptr_struct, FILE* file);
 /* tlv_type */
 void tools_open_tlv_type_pack(const union tools_open_tlv_type *ptr_struct, u_int8_t* ptr_buff);
 void tools_open_tlv_type_unpack(union tools_open_tlv_type *ptr_struct, const u_int8_t* ptr_buff);
@@ -1368,6 +1676,13 @@ void tools_open_pmdio_addr_data_print(const struct tools_open_pmdio_addr_data *p
 int tools_open_pmdio_addr_data_size(void);
 #define TOOLS_OPEN_PMDIO_ADDR_DATA_SIZE    (0x4)
 void tools_open_pmdio_addr_data_dump(const struct tools_open_pmdio_addr_data *ptr_struct, FILE* file);
+/* timestamp */
+void tools_open_timestamp_pack(const struct tools_open_timestamp *ptr_struct, u_int8_t* ptr_buff);
+void tools_open_timestamp_unpack(struct tools_open_timestamp *ptr_struct, const u_int8_t* ptr_buff);
+void tools_open_timestamp_print(const struct tools_open_timestamp *ptr_struct, FILE* file, int indent_level);
+int tools_open_timestamp_size(void);
+#define TOOLS_OPEN_TIMESTAMP_SIZE    (0x10)
+void tools_open_timestamp_dump(const struct tools_open_timestamp *ptr_struct, FILE* file);
 /* nv_hdr_fifth_gen */
 void tools_open_nv_hdr_fifth_gen_pack(const struct tools_open_nv_hdr_fifth_gen *ptr_struct, u_int8_t* ptr_buff);
 void tools_open_nv_hdr_fifth_gen_unpack(struct tools_open_nv_hdr_fifth_gen *ptr_struct, const u_int8_t* ptr_buff);
@@ -1382,6 +1697,13 @@ void tools_open_nv_hdr_print(const struct tools_open_nv_hdr *ptr_struct, FILE* f
 int tools_open_nv_hdr_size(void);
 #define TOOLS_OPEN_NV_HDR_SIZE    (0x8)
 void tools_open_nv_hdr_dump(const struct tools_open_nv_hdr *ptr_struct, FILE* file);
+/* aux_tlv_header */
+void tools_open_aux_tlv_header_pack(const struct tools_open_aux_tlv_header *ptr_struct, u_int8_t* ptr_buff);
+void tools_open_aux_tlv_header_unpack(struct tools_open_aux_tlv_header *ptr_struct, const u_int8_t* ptr_buff);
+void tools_open_aux_tlv_header_print(const struct tools_open_aux_tlv_header *ptr_struct, FILE* file, int indent_level);
+int tools_open_aux_tlv_header_size(void);
+#define TOOLS_OPEN_AUX_TLV_HEADER_SIZE    (0x14)
+void tools_open_aux_tlv_header_dump(const struct tools_open_aux_tlv_header *ptr_struct, FILE* file);
 /* pmdio */
 void tools_open_pmdio_pack(const struct tools_open_pmdio *ptr_struct, u_int8_t* ptr_buff);
 void tools_open_pmdio_unpack(struct tools_open_pmdio *ptr_struct, const u_int8_t* ptr_buff);
@@ -1396,6 +1718,20 @@ void tools_open_pmdic_print(const struct tools_open_pmdic *ptr_struct, FILE* fil
 int tools_open_pmdic_size(void);
 #define TOOLS_OPEN_PMDIC_SIZE    (0xc)
 void tools_open_pmdic_dump(const struct tools_open_pmdic *ptr_struct, FILE* file);
+/* mvts */
+void tools_open_mvts_pack(const struct tools_open_mvts *ptr_struct, u_int8_t* ptr_buff);
+void tools_open_mvts_unpack(struct tools_open_mvts *ptr_struct, const u_int8_t* ptr_buff);
+void tools_open_mvts_print(const struct tools_open_mvts *ptr_struct, FILE* file, int indent_level);
+int tools_open_mvts_size(void);
+#define TOOLS_OPEN_MVTS_SIZE    (0x14)
+void tools_open_mvts_dump(const struct tools_open_mvts *ptr_struct, FILE* file);
+/* nvqgc */
+void tools_open_nvqgc_pack(const struct tools_open_nvqgc *ptr_struct, u_int8_t* ptr_buff);
+void tools_open_nvqgc_unpack(struct tools_open_nvqgc *ptr_struct, const u_int8_t* ptr_buff);
+void tools_open_nvqgc_print(const struct tools_open_nvqgc *ptr_struct, FILE* file, int indent_level);
+int tools_open_nvqgc_size(void);
+#define TOOLS_OPEN_NVQGC_SIZE    (0x10)
+void tools_open_nvqgc_dump(const struct tools_open_nvqgc *ptr_struct, FILE* file);
 /* nvdi */
 void tools_open_nvdi_pack(const struct tools_open_nvdi *ptr_struct, u_int8_t* ptr_buff);
 void tools_open_nvdi_unpack(struct tools_open_nvdi *ptr_struct, const u_int8_t* ptr_buff);
@@ -1445,6 +1781,34 @@ void tools_open_mnva_print(const struct tools_open_mnva *ptr_struct, FILE* file,
 int tools_open_mnva_size(void);
 #define TOOLS_OPEN_MNVA_SIZE    (0x100)
 void tools_open_mnva_dump(const struct tools_open_mnva *ptr_struct, FILE* file);
+/* mfg_info */
+void tools_open_mfg_info_pack(const struct tools_open_mfg_info *ptr_struct, u_int8_t* ptr_buff);
+void tools_open_mfg_info_unpack(struct tools_open_mfg_info *ptr_struct, const u_int8_t* ptr_buff);
+void tools_open_mfg_info_print(const struct tools_open_mfg_info *ptr_struct, FILE* file, int indent_level);
+int tools_open_mfg_info_size(void);
+#define TOOLS_OPEN_MFG_INFO_SIZE    (0x140)
+void tools_open_mfg_info_dump(const struct tools_open_mfg_info *ptr_struct, FILE* file);
+/* image_info */
+void tools_open_image_info_pack(const struct tools_open_image_info *ptr_struct, u_int8_t* ptr_buff);
+void tools_open_image_info_unpack(struct tools_open_image_info *ptr_struct, const u_int8_t* ptr_buff);
+void tools_open_image_info_print(const struct tools_open_image_info *ptr_struct, FILE* file, int indent_level);
+int tools_open_image_info_size(void);
+#define TOOLS_OPEN_IMAGE_INFO_SIZE    (0x400)
+void tools_open_image_info_dump(const struct tools_open_image_info *ptr_struct, FILE* file);
+/* aux_tlv */
+void tools_open_aux_tlv_pack(const struct tools_open_aux_tlv *ptr_struct, u_int8_t* ptr_buff);
+void tools_open_aux_tlv_unpack(struct tools_open_aux_tlv *ptr_struct, const u_int8_t* ptr_buff);
+void tools_open_aux_tlv_print(const struct tools_open_aux_tlv *ptr_struct, FILE* file, int indent_level);
+int tools_open_aux_tlv_size(void);
+#define TOOLS_OPEN_AUX_TLV_SIZE    (0x100)
+void tools_open_aux_tlv_dump(const struct tools_open_aux_tlv *ptr_struct, FILE* file);
+/* aux_data_hdr */
+void tools_open_aux_data_hdr_pack(const struct tools_open_aux_data_hdr *ptr_struct, u_int8_t* ptr_buff);
+void tools_open_aux_data_hdr_unpack(struct tools_open_aux_data_hdr *ptr_struct, const u_int8_t* ptr_buff);
+void tools_open_aux_data_hdr_print(const struct tools_open_aux_data_hdr *ptr_struct, FILE* file, int indent_level);
+int tools_open_aux_data_hdr_size(void);
+#define TOOLS_OPEN_AUX_DATA_HDR_SIZE    (0x10)
+void tools_open_aux_data_hdr_dump(const struct tools_open_aux_data_hdr *ptr_struct, FILE* file);
 /* query_def_params_per_port */
 void tools_open_query_def_params_per_port_pack(const struct tools_open_query_def_params_per_port *ptr_struct, u_int8_t* ptr_buff);
 void tools_open_query_def_params_per_port_unpack(struct tools_open_query_def_params_per_port *ptr_struct, const u_int8_t* ptr_buff);
@@ -1473,6 +1837,27 @@ void tools_open_mnv_cfg_print(const union tools_open_mnv_cfg *ptr_struct, FILE* 
 int tools_open_mnv_cfg_size(void);
 #define TOOLS_OPEN_MNV_CFG_SIZE    (0x100)
 void tools_open_mnv_cfg_dump(const union tools_open_mnv_cfg *ptr_struct, FILE* file);
+/* option_rom_capability */
+void tools_open_option_rom_capability_pack(const struct tools_open_option_rom_capability *ptr_struct, u_int8_t* ptr_buff);
+void tools_open_option_rom_capability_unpack(struct tools_open_option_rom_capability *ptr_struct, const u_int8_t* ptr_buff);
+void tools_open_option_rom_capability_print(const struct tools_open_option_rom_capability *ptr_struct, FILE* file, int indent_level);
+int tools_open_option_rom_capability_size(void);
+#define TOOLS_OPEN_OPTION_ROM_CAPABILITY_SIZE    (0x4)
+void tools_open_option_rom_capability_dump(const struct tools_open_option_rom_capability *ptr_struct, FILE* file);
+/* boot_settings_ext */
+void tools_open_boot_settings_ext_pack(const struct tools_open_boot_settings_ext *ptr_struct, u_int8_t* ptr_buff);
+void tools_open_boot_settings_ext_unpack(struct tools_open_boot_settings_ext *ptr_struct, const u_int8_t* ptr_buff);
+void tools_open_boot_settings_ext_print(const struct tools_open_boot_settings_ext *ptr_struct, FILE* file, int indent_level);
+int tools_open_boot_settings_ext_size(void);
+#define TOOLS_OPEN_BOOT_SETTINGS_EXT_SIZE    (0x4)
+void tools_open_boot_settings_ext_dump(const struct tools_open_boot_settings_ext *ptr_struct, FILE* file);
+/* external_port */
+void tools_open_external_port_pack(const struct tools_open_external_port *ptr_struct, u_int8_t* ptr_buff);
+void tools_open_external_port_unpack(struct tools_open_external_port *ptr_struct, const u_int8_t* ptr_buff);
+void tools_open_external_port_print(const struct tools_open_external_port *ptr_struct, FILE* file, int indent_level);
+int tools_open_external_port_size(void);
+#define TOOLS_OPEN_EXTERNAL_PORT_SIZE    (0x8)
+void tools_open_external_port_dump(const struct tools_open_external_port *ptr_struct, FILE* file);
 /* lldp_nb_capability */
 void tools_open_lldp_nb_capability_pack(const struct tools_open_lldp_nb_capability *ptr_struct, u_int8_t* ptr_buff);
 void tools_open_lldp_nb_capability_unpack(struct tools_open_lldp_nb_capability *ptr_struct, const u_int8_t* ptr_buff);
@@ -1620,6 +2005,20 @@ void tools_open_wol_print(const struct tools_open_wol *ptr_struct, FILE* file, i
 int tools_open_wol_size(void);
 #define TOOLS_OPEN_WOL_SIZE    (0x8)
 void tools_open_wol_dump(const struct tools_open_wol *ptr_struct, FILE* file);
+/* misc_structs */
+void tools_open_misc_structs_pack(const union tools_open_misc_structs *ptr_struct, u_int8_t* ptr_buff);
+void tools_open_misc_structs_unpack(union tools_open_misc_structs *ptr_struct, const u_int8_t* ptr_buff);
+void tools_open_misc_structs_print(const union tools_open_misc_structs *ptr_struct, FILE* file, int indent_level);
+int tools_open_misc_structs_size(void);
+#define TOOLS_OPEN_MISC_STRUCTS_SIZE    (0x400)
+void tools_open_misc_structs_dump(const union tools_open_misc_structs *ptr_struct, FILE* file);
+/* aux_img_data */
+void tools_open_aux_img_data_pack(const union tools_open_aux_img_data *ptr_struct, u_int8_t* ptr_buff);
+void tools_open_aux_img_data_unpack(union tools_open_aux_img_data *ptr_struct, const u_int8_t* ptr_buff);
+void tools_open_aux_img_data_print(const union tools_open_aux_img_data *ptr_struct, FILE* file, int indent_level);
+int tools_open_aux_img_data_size(void);
+#define TOOLS_OPEN_AUX_IMG_DATA_SIZE    (0x100)
+void tools_open_aux_img_data_dump(const union tools_open_aux_img_data *ptr_struct, FILE* file);
 /* hcr_cmds */
 void tools_open_hcr_cmds_pack(const union tools_open_hcr_cmds *ptr_struct, u_int8_t* ptr_buff);
 void tools_open_hcr_cmds_unpack(union tools_open_hcr_cmds *ptr_struct, const u_int8_t* ptr_buff);

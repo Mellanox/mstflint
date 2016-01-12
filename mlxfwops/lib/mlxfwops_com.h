@@ -65,6 +65,9 @@ typedef int (*f_prog_func_str) (char* str);
 #define PSID_LEN 16
 #define PRODUCT_VER_LEN 16
 #define PRS_NAME_LEN 100
+#define FS3_PRS_NAME_LEN 97
+#define NAME_LEN 65
+#define DESCRIPTION_LEN 257
 
 #define FREE_STR_MAX_LEN    256
 
@@ -115,7 +118,8 @@ enum {
     MLXFW_ROM_UPDATE_IN_IMAGE_ERR,
     MLXFW_GET_SECT_ERR,
     MLXFW_UPDATE_SECT_ERR,
-    MLXFW_BAD_PARAM_ERR
+    MLXFW_BAD_PARAM_ERR,
+    MLXFW_PRS_MISSMATCH_ERR
 };
 
 enum {
@@ -153,13 +157,13 @@ typedef enum chip_type {
     CT_UNKNOWN = 0,
     CT_CONNECTX,
     CT_SWITCHX,
-    CT_BRIDGEX,
-    CT_IS4,
     CT_CONNECT_IB,
     CT_SWITCH_IB,
     CT_SPECTRUM,
     CT_CONNECTX4,
     CT_CONNECTX4_LX,
+    CT_SWITCH_IB2,
+    CT_CONNECTX5,
 }chip_type_t;
 
 typedef struct guid {
@@ -222,6 +226,10 @@ typedef struct fs3_info_ext {
     uids_t          orig_fs3_uids_info;
     char            image_vsd[VSD_LEN+1];
     char            orig_psid[PSID_LEN+1];
+    char            prs_name[FS3_PRS_NAME_LEN];
+    char            orig_prs_name[FS3_PRS_NAME_LEN];
+    char            name[NAME_LEN];
+    char            description[DESCRIPTION_LEN];
 
 } fs3_info_t;
 
@@ -265,6 +273,7 @@ typedef struct fw_info_com {
     u_int8_t     is_failsafe;
     chip_type_t  chip_type;
     roms_info_t  roms_info;
+    u_int16_t    running_fw_ver[3];
 } fw_info_com_t;
 
 

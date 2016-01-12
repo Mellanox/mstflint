@@ -67,7 +67,7 @@ typedef struct ext_flash_attr {
     u_int32_t rev_id;
     char*   type_str; // NULL if not available
     u_int32_t size;
-    u_int32_t sector_size;
+    u_int32_t sector_size; // minimal sec
     int block_write;
     int command_set;
     u_int8_t quad_en_support;
@@ -225,8 +225,10 @@ public:
     _no_flash_verify(false),
     _ignore_cache_replacement(false),
     _curr_sector(0xffffffff),
+    _curr_sector_size(0),
     _port_num(0),
-    _cr_space_locked(0)
+    _cr_space_locked(0),
+    _flash_working_mode(Flash::Fwm_Default)
     {
         memset(&_attr, 0, sizeof(_attr));
     }
@@ -260,8 +262,9 @@ public:
                                 int       len,
                                 bool      verbose = false,
                                 const char* message = "");
-    bool write_phy(u_int32_t phy_addr, void* data, int cnt, bool noerase = false);
-    bool write_phy(u_int32_t phy_addr, u_int32_t data);
+    bool write_phy(u_int32_t phy_addr, void* data, int cnt, bool noerase = false); // read modify write
+    bool read_modify_write_phy(u_int32_t phy_addr, void* data, int cnt, bool noerase = false); // read modify write
+    bool write_phy(u_int32_t phy_addr, u_int32_t data); // read modify write
     bool erase_sector_phy  (u_int32_t phy_addr);
 
     bool         update_boot_addr (u_int32_t boot_addr)
@@ -270,7 +273,8 @@ public:
     // Flash Interface
     //
 
-    u_int32_t get_sector_size        ()  {return _attr.sector_size;}
+    u_int32_t get_current_sector_size ()  {return _curr_sector_size;}
+    u_int32_t get_sector_size()          {return _attr.sector_size;}
     u_int32_t get_size               ()  {return _attr.size;}
 
     u_int32_t get_dev_id             ()  {return _attr.hw_dev_id; }
@@ -293,6 +297,8 @@ public:
                                 int       cnt,
                                 bool      noerase = false);
 
+    bool read_modify_write(u_int32_t phy_addr, void* data, int cnt, bool noerase=false);
+
     virtual bool write         (u_int32_t addr,
                                 u_int32_t data);
 
@@ -307,11 +313,23 @@ public:
     bool         set_attr(char *param_name,
                           char *param_val_str);
 
+    bool flash_working_mode_supported() {return _attr.support_sub_and_sector;}
+    int get_flash_working_mode() {return _flash_working_mode;}
+    bool set_flash_working_mode(int mode=Flash::Fwm_Default);
+
     bool is_flash_write_protected();
     static void  deal_with_signal();
 
+    mfile* getMfileObj() {return mf_get_mfile(_mfl);}
+
     enum {
         TRANS = 4096
+    };
+
+    enum {
+        Fwm_Default = 0,
+        Fwm_4KB = 1,
+        Fwm_64KB = 2
     };
 
     bool open_com_checks(const char *device,
@@ -329,9 +347,7 @@ public:
 #define WP_SUBSEC_STR "SubSectors"
 #define WP_DISABLED_STR "Disabled"
 
-#ifndef _MSC_VER
 protected:
-#endif
     bool write_sector_with_erase(u_int32_t addr, void *data, int cnt);
     bool write_with_erase(u_int32_t addr, void *data, int cnt);
 
@@ -342,8 +358,10 @@ protected:
     bool _ignore_cache_replacement; // for FS3 devices flash access.
 
     u_int32_t  _curr_sector;
+    u_int32_t  _curr_sector_size; // can work with both 4KB and 64KB sectors
     u_int32_t  _port_num;
     u_int8_t   _cr_space_locked;
+    int        _flash_working_mode;
 };
 
 #endif

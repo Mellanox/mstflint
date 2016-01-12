@@ -28,47 +28,34 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
  */
 
-#ifndef MLXCFG_STATUS_H_
-#define MLXCFG_STATUS_H_
+#ifndef _MTCR_IB_RES_MGT_H_
+#define _MTCR_IB_RES_MGT_H_
 
-/*
- * Enum for handling error messages
- */
+#include <mtcr.h>
 
 typedef enum {
-    MCE_SUCCESS = 0,
-    MCE_FAILED,
-    MCE_TLV_NOT_FOUND,
-    MCE_TLV_NOT_SUPP,
-    MCE_NVCFG_NOT_SUPP,
-    MCE_TOOLS_HCR_NOT_SUPP,
-    MCE_DRIVER_DOWN,
-    MCE_UNSUPPORTED_DEVICE,
-    MCE_UNSUPPORTED_CFG,
-    MCE_BAD_PARAMS,
-    MCE_BAD_PARAM_VAL,
-    MCE_DEV_BUSY,
-    MCE_UNKNOWN_TLV,
-    MCE_REG_NOT_SUPP,
-    MCE_METHOD_NOT_SUPP,
-    MCE_RES_NOT_AVAIL,
-    MCE_CONF_CORRUPT,
-    MCE_TLV_LEN_TOO_SMALL,
-    MCE_BAD_CONFIG,
-    MCE_ERASE_EXEEDED,
-    MCE_BAD_OP,
-    MCE_BAD_STATUS,
-    MCE_CR_ERROR,
-    MCE_NOT_IMPLEMENTED,
-    MCE_INCOMPLETE_PARAMS,
-    MCE_OPEN_DEVICE,
-    MCE_PCI,
-    MCE_GET_DEFAULT_PARAMS,
-    MCE_UNKNOWN_ERR
-}McStatus;
+    SMP_SEM_LOCK = 1,
+    SMP_SEM_EXTEND,
+    SMP_SEM_RELEASE
+} sem_op_t;
 
+typedef enum {
+    SEM_LOCK_GET = 0x0,
+    SEM_LOCK_SET = 0x1
+} sem_lock_method_t;
 
-#endif /* MLXCFG_STATUS_H_ */
+int mib_semaphore_lock_vs_mad(
+        mfile* mf,
+        sem_op_t op,
+        u_int32_t sem_addr,
+        u_int32_t lock_key,
+        u_int32_t* res,
+        int* is_leaseable,
+        u_int8_t* lease_time_exp,
+        sem_lock_method_t method);
+
+int mib_semaphore_lock_is_supported(mfile* mf);
+
+#endif

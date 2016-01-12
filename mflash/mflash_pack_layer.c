@@ -1,4 +1,5 @@
-/* Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
+/*
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -27,9 +28,6 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
- *  Version: $Id$
- *
  */
 
 #include <stdio.h>
@@ -86,17 +84,23 @@ int sx_st_block_access(mfile *mf, u_int32_t flash_addr, u_int8_t bank, u_int32_t
 }
 
 
-int common_erase_sector(mfile *mf, u_int32_t addr, u_int8_t flash_bank)
+int common_erase_sector(mfile *mf, u_int32_t addr, u_int8_t flash_bank, u_int32_t erase_size)
 {
 	struct register_access_mfbe    mfbe;
-
+    if (addr & (erase_size-1)) {
+        return MFE_ERASE_ERROR;
+    }
     memset(&mfbe, 0, sizeof(mfbe));
     mfbe.address = addr;
     mfbe.fs      = flash_bank;
+    if (erase_size == FSS_64KB) {
+        mfbe.bulk_64kb_erase = 1;
+    }
     return MError2MfError(reg_access_mfbe (mf, REG_ACCESS_METHOD_SET, &mfbe));
 }
 
-int run_mfpa_command(mfile *mf, u_int8_t access_cmd, u_int8_t flash_bank, u_int32_t boot_address, u_int32_t *jedec_p, int *num_of_banks, u_int32_t* fw_sector_size)
+int run_mfpa_command(mfile *mf, u_int8_t access_cmd, u_int8_t flash_bank, u_int32_t boot_address,\
+                     u_int32_t *jedec_p, int *num_of_banks, u_int32_t* fw_sector_size, u_int8_t* support_sub_and_sector)
 {
 	struct register_access_mfpa    mfpa;
     int rc;
@@ -138,22 +142,26 @@ int run_mfpa_command(mfile *mf, u_int8_t access_cmd, u_int8_t flash_bank, u_int3
         }
     }
 
+    if (support_sub_and_sector != NULL) {
+        *support_sub_and_sector = mfpa.bulk_64kb_erase_en;
+    }
+
     return MFE_OK;
 }
 
 int get_num_of_banks(mfile *mf)
 {
     int num_of_banks;
-    int rc = run_mfpa_command(mf, REG_ACCESS_METHOD_GET, 0, 0, NULL, &num_of_banks, NULL);
+    int rc = run_mfpa_command(mf, REG_ACCESS_METHOD_GET, 0, 0, NULL, &num_of_banks, NULL, NULL);
     if (rc) {
         return -1;
     }
     return num_of_banks;
 }
 
-int com_get_jedec(mfile *mf, u_int8_t flash_bank, u_int32_t *jedec_p, u_int32_t* fw_flash_sector_size)
+int com_get_jedec(mfile *mf, u_int8_t flash_bank, u_int32_t *jedec_p, u_int32_t* fw_flash_sector_size, u_int8_t* supp_sub_and_sector)
 {
-    return run_mfpa_command(mf, REG_ACCESS_METHOD_GET, flash_bank, 0, jedec_p, NULL, fw_flash_sector_size);
+    return run_mfpa_command(mf, REG_ACCESS_METHOD_GET, flash_bank, 0, jedec_p, NULL, fw_flash_sector_size, supp_sub_and_sector);
 }
 
 /*

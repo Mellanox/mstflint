@@ -38,5 +38,5 @@ INCLUDES = -I. -I../common -I$(MTCR_DIR) -I.. -I$(USER_DIR)/mtcr_ul
 AM_CFLAGS = -W -Wall -Werror -g -MP -MD $(COMPILER_FPIC) 
 noinst_LIBRARIES = libtools_res_mgmt.a
 
-libtools_res_mgmt_a_SOURCES = tools_res_mgmt.c
+libtools_res_mgmt_a_SOURCES = tools_res_mgmt.c tools_time.c
 

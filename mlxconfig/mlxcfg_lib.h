@@ -1,4 +1,5 @@
-/* Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
+/*
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,8 +29,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- *  Version: $Id$
- *
  */
 
 #ifndef MLXCFG_LIB_H_
@@ -57,7 +56,7 @@ public:
     bool supportsCfg(mlxCfgType cfg);
     bool supportsParam(mlxCfgParam param);
 
-    int getCfg(mlxCfgParam cfgParam, u_int32_t& val);
+    int getCfg(mlxCfgParam cfgParam, u_int32_t& val, bool getDefault = false);
     int getCfg(std::vector<cfgInfo>& infoVec);
 
     int setCfg(mlxCfgParam cfgParam, u_int32_t val);
@@ -77,6 +76,8 @@ public:
     // Adrianc: TBD
 
     const char* loadConfigurationGetStr();
+
+    int isDefaultSupported(bool &defaultSupported);
 
 private:
     int openComChk();

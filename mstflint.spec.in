@@ -1,6 +1,6 @@
 %{!?ibmadlib: %define ibmadlib libibmad-devel}
 %{!?name: %define name mstflint}
-%{!?version: %define version 4.1.0}
+%{!?version: %define version 4.3.0}
 %{!?release: %define release 1}
 %{!?buildtype: %define buildtype "native"}
 %{!?noinband: %define noinband 0}
@@ -84,6 +84,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 
 %changelog
+* Mon Jan 11 2016 Adrian Chiris <adrianc@dev.mellanox.co.il>
+   MFT 4.3.0 Updates
+
 * Wed Aug 26 2015 Adrian Chiris <adrianc@dev.mellanox.co.il>
    MFT 4.1.0 Updates
    

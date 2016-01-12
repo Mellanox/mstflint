@@ -31,8 +31,11 @@
  */
 
 
+#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
+#include <tools_crypto/tools_md5.h>
+#endif
+#include <cibfw_layouts.h>
 #include "fs2_ops.h"
-// #include "flint_ops.h"
 
 #define PRE_CRC_OUTPUT   "    "
 #define CRC_CHECK_OUTPUT  CRC_CHECK_OLD")"
@@ -743,6 +746,11 @@ bool Fs2Operations::Fs2IntQuery(bool readRom, bool isStripedImage)
         return false;
     }
     _fwImgInfo.ext_info.chip_type = getChipType();
+
+    // get running FW version
+    if (_ioAccess->is_flash() && _fwImgInfo.ext_info.chip_type != CT_UNKNOWN) {
+        getRunningFwVer();
+    }
     return true;
 }
 
@@ -755,6 +763,46 @@ bool Fs2Operations::FwQuery(fw_info_t *fwInfo, bool readRom, bool isStripedImage
     memcpy(&(fwInfo->fs2_info), &(_fs2ImgInfo.ext_info), sizeof(fs2_info_t));
     //set the chipType in fwInfo
     fwInfo->fw_type = FIT_FS2;
+    return true;
+}
+
+#define CX3_FW_VER_CR_ADDR 0x1f064
+#define SX_FW_VER_CR_ADDR 0x60040
+
+bool Fs2Operations::getRunningFwVer()
+{
+#ifndef UEFI_BUILD
+    u_int32_t fwVerBaseAddr = 0x0;
+    u_int32_t mflags;
+    struct cibfw_FW_VERSION fwVer;
+    u_int8_t buff[CIBFW_FW_VERSION_SIZE] = {0};
+    memset(&fwVer, 0, sizeof(fwVer));
+    // make sure its not mellanox OS
+    if (mget_mdevs_flags(((Flash*)_ioAccess)->getMfileObj(), &mflags)) {
+        return errmsg("Failed to get device access type");
+    }
+    if (mflags & MDEVS_MLNX_OS) {
+        return true;
+    }
+    switch (_fwImgInfo.ext_info.chip_type) {
+    case CT_CONNECTX:
+        fwVerBaseAddr = CX3_FW_VER_CR_ADDR;
+        break;
+    case CT_SWITCHX:
+        fwVerBaseAddr = SX_FW_VER_CR_ADDR;
+        break;
+    default:
+        return errmsg("Unsupported chip type.");
+    }
+
+    if (mread_buffer(((Flash*)_ioAccess)->getMfileObj(), fwVerBaseAddr, buff, CIBFW_FW_VERSION_SIZE) != CIBFW_FW_VERSION_SIZE) {
+        return errmsg("Failed to extract FW version from device. CR_ERROR\n");
+    }
+    cibfw_FW_VERSION_unpack(&fwVer, buff);
+    _fwImgInfo.ext_info.running_fw_ver[0] = fwVer.MAJOR;
+    _fwImgInfo.ext_info.running_fw_ver[1] = fwVer.MINOR;
+    _fwImgInfo.ext_info.running_fw_ver[2] = fwVer.SUBMINOR;
+#endif
     return true;
 }
 
@@ -772,7 +820,6 @@ u_int32_t Fs2Operations::getDefaultSectorSz()
     // an older mlxburn the fw_sector_size wount be available
     u_int32_t devid = _ioAccess->get_dev_id();
     switch (devid) {
-    case CX_HW_ID:
     case CX3_HW_ID:
     case CX3_PRO_HW_ID:
         return CX_DFLT_SECTOR_SIZE;
@@ -971,10 +1018,8 @@ bool Fs2Operations::Fs2FailSafeBurn(Fs2Operations &imageOps,
 
 
 bool Fs2Operations::preFS2PatchGUIDs(bool      patch_macs,
-        bool      patch_uids,
         bool      user_guids,
         bool      user_macs,
-        bool      user_uids,
         guid_t    new_guids[MAX_GUIDS],
         guid_t    old_guids[MAX_GUIDS],
         guid_t    **used_guids_p,
@@ -987,95 +1032,63 @@ bool Fs2Operations::preFS2PatchGUIDs(bool      patch_macs,
         // if only guids or only macs are specified by user, keep the other
         // as currently set of flash. This is in order to simplify transitions between
         // burning IB and ETH FW.
-        if (!patch_uids) {
-            if (old_guids && !user_guids) {
-                for (int i = 0; i < GUIDS; i++) {
-                    new_guids[i] = old_guids[i];
-                }
+        if (old_guids && !user_guids) {
+            for (int i = 0; i < GUIDS; i++) {
+                new_guids[i] = old_guids[i];
             }
+        }
 
-            if (old_guids && !user_macs) {
-                for (int i = GUIDS; i < MAX_GUIDS; i++) {
-                    new_guids[i] = old_guids[i];
-                }
+        if (old_guids && !user_macs) {
+            for (int i = GUIDS; i < MAX_GUIDS; i++) {
+                new_guids[i] = old_guids[i];
             }
         }
         *used_guids_p = new_guids;
     }
     used_guids = *used_guids_p;
 
-    if (!patch_uids) {
-        if (patch_macs) {
+    if (patch_macs) {
 
-            // To ease upgrade from 4 GUIDS format to 4+2 format, or to move from IB to ETH,
-            // if macs are not
-            // explicitly set in flash, they are derived from the GUIDs according to
-            // Mellanox methodology - 48 bit MAC == 64 bit GUID without the middle 16 bits.
+        // To ease upgrade from 4 GUIDS format to 4+2 format, or to move from IB to ETH,
+        // if macs are not
+        // explicitly set in flash, they are derived from the GUIDs according to
+        // Mellanox methodology - 48 bit MAC == 64 bit GUID without the middle 16 bits.
 
-            if (old_guids && ((num_of_old_guids == 4) ||
-                              (num_of_old_guids == 6 &&
-                               (old_guids[GUIDS  ].h & 0xffff)     == 0xffff     &&
-                               (old_guids[GUIDS  ].l & 0xffffffff) == 0xffffffff &&
-                               (old_guids[GUIDS+1].h & 0xffff)     == 0xffff     &&
-                               (old_guids[GUIDS+1].l & 0xffffffff) == 0xffffffff))) {
-                for (int i = 0 ; i < MACS; i++) {
-                    u_int64_t mac  =  old_guids[i+1].h >> 8;
-                    mac <<= 24;
-                    mac |= (old_guids[i+1].l & 0xffffff);
+        if (old_guids && ((num_of_old_guids == 4) ||
+                          (num_of_old_guids == 6 &&
+                           (old_guids[GUIDS  ].h & 0xffff)     == 0xffff     &&
+                           (old_guids[GUIDS  ].l & 0xffffffff) == 0xffffffff &&
+                           (old_guids[GUIDS+1].h & 0xffff)     == 0xffff     &&
+                           (old_guids[GUIDS+1].l & 0xffffffff) == 0xffffffff))) {
+            for (int i = 0 ; i < MACS; i++) {
+                u_int64_t mac  =  old_guids[i+1].h >> 8;
+                mac <<= 24;
+                mac |= (old_guids[i+1].l & 0xffffff);
 
-                    old_guids[GUIDS+i].h = u_int32_t(mac >> 32);
-                    old_guids[GUIDS+i].l = u_int32_t(mac  & 0xffffffff);
+                old_guids[GUIDS+i].h = u_int32_t(mac >> 32);
+                old_guids[GUIDS+i].l = u_int32_t(mac  & 0xffffffff);
 
-                    // printf("-D- Guid " GUID_FORMAT " to MAC "MAC_FORMAT"\n", old_guids[i+1].h, old_guids[i+1].l, old_guids[i+GUIDS].h,old_guids[i+GUIDS].l  );
-                }
-            }
-
-            guid_t* macs = &used_guids[4];
-
-            for (int i = 0 ; i < MACS ; i++) {
-                u_int64_t mac = (((u_int64_t)macs[i].h) << 32) | macs[i].l;
-                if (!_burnBlankGuids && !CheckMac(mac)) {
-                    return errmsg("Bad mac (" MAC_FORMAT ") %s: %s. Please re-burn with a valid -mac flag value.", macs[i].h,
-                           macs[i].l,
-                           user_macs ? "given" : "found on flash", err());
-                }
-
-            }
-        }
-    } else {
-        if (!_burnBlankGuids) {
-            for (int i = 0; i < BX_SLICES_NUM; i++ ) {
-                if (CheckBxMacsFormat(used_guids, i, user_uids) == false) {
-                    return false;
-                }
+                // printf("-D- Guid " GUID_FORMAT " to MAC "MAC_FORMAT"\n", old_guids[i+1].h, old_guids[i+1].l, old_guids[i+GUIDS].h,old_guids[i+GUIDS].l  );
             }
         }
 
+        guid_t* macs = &used_guids[4];
+
+        for (int i = 0 ; i < MACS ; i++) {
+            u_int64_t mac = (((u_int64_t)macs[i].h) << 32) | macs[i].l;
+            if (!_burnBlankGuids && !CheckMac(mac)) {
+                return errmsg("Bad mac (" MAC_FORMAT ") %s: %s. Please re-burn with a valid -mac flag value.", macs[i].h,
+                       macs[i].l,
+                       user_macs ? "given" : "found on flash", err());
+            }
+
+        }
     }
-    // Avoid warnings
-    user_uids = true;
 
     return true;
 }
 
 
-bool Fs2Operations::CheckBxMacsFormat(guid_t* guids, int index, int user_uids)
-{
-    int base;
-    base = index * BX_SLICE_GUIDS + BI_IMACS;
-    for (int i = base; i < base + BX_MACS; i++) {
-         u_int64_t mac = (((u_int64_t)guids[i].h) << 32) | guids[i].l;
-         if (!CheckMac(mac)) {
-             return errmsg("Bad mac (" MAC_FORMAT ") %s: %s. Please re-burn with a valid MACs flag value.", guids[i].h,
-                     guids[i].l,
-                     user_uids ? "given" : "found on flash", err());
-
-         }
-     }
-     return true;
-}
-
-////////////////////////////////////////////////////////////////////////
 void Fs2Operations::patchGUIDsSection(u_int32_t *buf, u_int32_t ind, guid_t guids[MAX_GUIDS], int nguids)
 {
     u_int32_t       new_buf[MAX_GUIDS*2] = {0};
@@ -1105,10 +1118,8 @@ void Fs2Operations::patchGUIDsSection(u_int32_t *buf, u_int32_t ind, guid_t guid
 
 bool Fs2Operations::patchGUIDs (Fs2Operations&   imageOps,
                              bool      patch_macs,
-                             bool      patch_uids,
                              bool      user_guids,
                              bool      user_macs,
-                             bool      user_uids,
                              guid_t    new_guids[MAX_GUIDS],
                              guid_t    old_guids[MAX_GUIDS],
                              u_int32_t num_of_old_guids)
@@ -1117,17 +1128,13 @@ bool Fs2Operations::patchGUIDs (Fs2Operations&   imageOps,
     u_int32_t       *buf = ((FImage*)imageOps._ioAccess)->getBuf();
 
     // Call common function
-    if (!preFS2PatchGUIDs(patch_macs, patch_uids, user_guids, user_macs, user_uids, new_guids, old_guids, &used_guids, num_of_old_guids)) {
+    if (!preFS2PatchGUIDs(patch_macs, user_guids, user_macs, new_guids, old_guids, &used_guids, num_of_old_guids)) {
         return false;
     }
     // Path GUIDs section
     if (imageOps._fs2ImgInfo.guidPtr) {
         patchGUIDsSection(buf, imageOps._fwImgInfo.imgStart + imageOps._fs2ImgInfo.guidPtr, used_guids, imageOps._fs2ImgInfo.ext_info.guid_num);
     }
-
-
-    // Avoid warnings
-    user_uids = true;
     return true;
 }
 
@@ -1417,19 +1424,16 @@ bool Fs2Operations::Fs2Burn(Fs2Operations &imageOps, ExtBurnParams& burnParams)
 
     // Guids patch
     _burnBlankGuids = burnParams.blankGuids;
-    bool  isGuidsSpecified  =  burnParams.userMacsSpecified || burnParams.userGuidsSpecified ||
-            burnParams.userUidsSpecified;
+    bool  isGuidsSpecified  =  burnParams.userMacsSpecified || burnParams.userGuidsSpecified;
     if (isGuidsSpecified) {
         // Get the GUIDS/MACsUIDs from the user input
-        bool isBridgeX = (_fwImgInfo.ext_info.chip_type == CT_BRIDGEX);
-        bool isMacAvailable = Fs2IsMacAvailable();
-        if (!patchGUIDs(imageOps, isMacAvailable, isBridgeX, burnParams.userGuidsSpecified, burnParams.userMacsSpecified, burnParams.userUidsSpecified,
+        if (!patchGUIDs(imageOps, true, burnParams.userGuidsSpecified, burnParams.userMacsSpecified,
                 (guid_t*)(&(burnParams.userUids[0])), _fs2ImgInfo.ext_info.guids, _fs2ImgInfo.ext_info.guid_num)) {
             return false;
         }
     } else if (!burnParams.useImageGuids) {
         // Get the GUIDS/MACsUIDs from the device
-        if (!patchGUIDs(imageOps, true, false, false, false, false, (guid_t*)NULL,
+        if (!patchGUIDs(imageOps, true, false, false, (guid_t*)NULL,
                 _fs2ImgInfo.ext_info.guids, _fs2ImgInfo.ext_info.guid_num)) {
             return false;
         }
@@ -1443,15 +1447,6 @@ bool Fs2Operations::Fs2Burn(Fs2Operations &imageOps, ExtBurnParams& burnParams)
     return Fs2FailSafeBurn(imageOps, !burnParams.burnFailsafe, "", burnParams.progressFunc);
 }
 
-
-bool Fs2Operations::Fs2IsMacAvailable()
-{
-
-    if (_fwImgInfo.ext_info.chip_type == CT_IS4 ) {
-        return false;
-    }
-    return true;
-}
 bool Fs2Operations::FwBurn(FwOperations *imageOps, u_int8_t forceVersion, ProgressCallBack progressFunc)
 {
     if (imageOps == NULL) {
@@ -1735,9 +1730,8 @@ bool Fs2Operations::Fs2SetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc
     // avoid compiler warrnings
     (void)callBackFunc;
     //
-    bool ib_dev, eth_dev, bx_dev;
+    bool ib_dev, eth_dev;
     // Get the FW types
-    bx_dev = _fwImgInfo.ext_info.chip_type == CT_BRIDGEX;
     SetDevFlags(_fwImgInfo.ext_info.chip_type, _fwImgInfo.ext_info.dev_type, FIT_FS2, ib_dev, eth_dev);
     guid_t* old_guids = _fwImgInfo.imageOk ? _fs2ImgInfo.ext_info.guids : (guid_t*)NULL;
     guid_t* used_guids;
@@ -1747,7 +1741,7 @@ bool Fs2Operations::Fs2SetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc
         //resize our user guids vector to MAX_GUIDS
     sgParam.userGuids.resize(MAX_GUIDS);
 
-    if (!preFS2PatchGUIDs(eth_dev, bx_dev, sgParam.guidsSpecified, sgParam.macsSpecified, sgParam.uidsSpecified, &sgParam.userGuids[0],
+    if (!preFS2PatchGUIDs(eth_dev, sgParam.guidsSpecified, sgParam.macsSpecified, &sgParam.userGuids[0],
                         old_guids, &used_guids, _fs2ImgInfo.ext_info.guid_num)) {
         return false;
     }
@@ -2018,6 +2012,7 @@ bool Fs2Operations::FwResetNvData()
 			//_fs2ImgInfo.ext_info.config_sectors, _fs2ImgInfo.ext_info.config_pad, fwSectorSz,configBaseAddr, availFlashSize);
 
 	//erase addresses : [configBaseAddr..AvailFlashSize]
+    ((Flash*)_ioAccess)->set_flash_working_mode(Flash::Fwm_Default);
     u_int32_t sectorSize = _ioAccess->get_sector_size();
     u_int32_t configEndAddr = availFlashSize - (_fs2ImgInfo.ext_info.config_pad * fwSectorSz);
 	for (u_int32_t eraseAddr=configBaseAddr; eraseAddr < configEndAddr; eraseAddr+=sectorSize ) {
@@ -2051,4 +2046,39 @@ const char* Fs2Operations::FwGetResetRecommandationStr()
         return (const char*)NULL;
     }
     return (const char*)NULL;
+}
+
+bool Fs2Operations::FwCalcMD5(u_int8_t md5sum[16])
+{
+#if defined(UEFI_BUILD) || defined(NO_OPEN_SSL)
+    (void)md5sum;
+    return errmsg("Operation not supported");
+#else
+    // no support for striped image ATM
+    if (!Fs2IntQuery(true, false)) {
+        return false;
+    }
+    if (_fwImgInfo.ext_info.is_failsafe && _fwImgInfo.actuallyFailsafe) {
+        _ioAccess->set_address_convertor(_fwImgInfo.cntxLog2ChunkSize, _fwImgInfo.imgStart != 0);
+    } else {
+        _ioAccess->set_address_convertor(0, 0);
+    }
+    // read entire flash
+    std::vector<u_int8_t> md5buff;
+    md5buff.resize(_fwImgInfo.lastImageAddr);
+    READBUF((*_ioAccess), 0, &md5buff[0], _fwImgInfo.lastImageAddr, "Calculate MD5");
+    // mask out image CRC, GUIDs, VSD, ImageInfo CRC
+    // full image CRC DW
+    memset(&md5buff[0x20], 0xff, 4);
+    // GUIDs
+    memset(&md5buff[_fs2ImgInfo.guidPtr - 0x10], 0xff, 0x44);
+    // VSD
+    memset(&md5buff[_fs2ImgInfo.infoSectPtr + _fs2ImgInfo.infoOffs[II_VSD]], 0xff, 0xd0);
+    // Image Info CRC
+    u_int32_t infoSectSize = __be32_to_cpu(*(u_int32_t*)&md5buff[_fs2ImgInfo.infoSectPtr - sizeof(GPH) + 0x4]) << 2;
+    memset(&md5buff[_fs2ImgInfo.infoSectPtr + infoSectSize], 0xff, 4);
+    // calc md5 sum
+    tools_md5(&md5buff[0], md5buff.size(), md5sum);
+    return true;
+#endif
 }
