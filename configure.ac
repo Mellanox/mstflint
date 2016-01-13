@@ -21,6 +21,8 @@ AC_CONFIG_HEADERS( config.h )
 dnl Checks for headers
 AC_CHECK_HEADER(termios.h,[CXXFLAGS="${CXXFLAGS} -DHAVE_TERMIOS_H"])
 
+TOOLS_CRYPTO=""
+
 AC_MSG_CHECKING(--enable-dc argument)
 AC_ARG_ENABLE(dc,
 		    [  --disable-dc            Disable mstflint "dc" command. Eliminates zlib dependency],
@@ -47,6 +49,19 @@ fi
 
 AM_CONDITIONAL(ENABLE_INBAND, [test  "x$enable_inband" = "xyes"])
 
+AC_MSG_CHECKING(--enable-cs argument)
+AC_ARG_ENABLE(cs,
+            [  --enable-cs          Enable mstflint "checksum" command, dependant of openssl library],
+            [enable_cs="yes"],
+            [enable_cs="no"])
+AC_MSG_RESULT($enable_cs)
+if test "x$enable_cs" = "xyes"; then
+  AC_CHECK_HEADER(openssl/md5.h,,AC_MSG_ERROR([cannot find openssl/md5.h . remove --enable-openssl to remove this dependaency or install openssl]))
+  TOOLS_CRYPTO="tools_crypto"
+fi
+AC_SUBST(TOOLS_CRYPTO)
+AM_CONDITIONAL(ENABLE_OPENSSL, [test  "x$enable_cs" = "xyes"])
+
 AC_ARG_ENABLE([static_libstdcpp],
     AS_HELP_STRING([--enable-static-libstdcpp], [Enable link static to libstdc++]))
 
@@ -66,7 +81,10 @@ CXXFLAGS="$CXXFLAGS -Werror -DMST_UL"
 
 AC_CONFIG_FILES( mstflint.spec )
 
+AS_IF([test "x$enable_cs" = "xyes"], [
+        AC_CONFIG_FILES(tools_crypto/Makefile)
+    ])
+
 AC_OUTPUT( Makefile mft_utils/Makefile mtcr_ul/Makefile dev_mgt/Makefile tools_layouts/Makefile reg_access/Makefile cmdif/Makefile tools_res_mgmt/Makefile \
 		mlxconfig/Makefile mflash/Makefile mlxfwops/Makefile mlxfwops/lib/Makefile cmdparser/Makefile flint/Makefile \
  		small_utils/Makefile mstdump/Makefile mstdump/crd_lib/Makefile mstdump/crd_main/Makefile  mstdump/mstdump_dbs/Makefile )
-

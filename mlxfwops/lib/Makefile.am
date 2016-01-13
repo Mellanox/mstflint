@@ -45,7 +45,12 @@ INCLUDES = -I$(srcdir) -I$(MTCR_INC_DIR) -I$(MFLASH_DIR) -I$(top_srcdir)/ext_lib
 
 MLXFWOPS_VERSION = 1
 
-AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe -DNO_MFA_SUPPORT -DNO_OPEN_SSL
+AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe -DNO_MFA_SUPPORT
+
+if ENABLE_OPENSSL
+else
+AM_CXXFLAGS += -DNO_OPEN_SSL
+endif
 
 noinst_LIBRARIES = libmlxfwops.a
 

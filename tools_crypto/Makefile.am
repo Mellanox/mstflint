@@ -1,25 +1,25 @@
 #--
 # Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
-# 
+#
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
 # General Public License (GPL) Version 2, available from the file
 # COPYING in the main directory of this source tree, or the
 # OpenIB.org BSD license below:
-# 
+#
 #     Redistribution and use in source and binary forms, with or
 #     without modification, are permitted provided that the following
 #     conditions are met:
-# 
+#
 #      - Redistributions of source code must retain the above
 #        copyright notice, this list of conditions and the following
 #        disclaimer.
-# 
+#
 #      - Redistributions in binary form must reproduce the above
 #        copyright notice, this list of conditions and the following
 #        disclaimer in the documentation and/or other materials
 #        provided with the distribution.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 # EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 # MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -30,14 +30,11 @@
 # SOFTWARE.
 #--
 
-SUBDIRS = mft_utils $(TOOLS_CRYPTO) tools_layouts mtcr_ul reg_access cmdif dev_mgt tools_res_mgmt mflash mlxconfig mlxfwops cmdparser flint small_utils mstdump
+# Makefile.am -- Process this file with automake to produce Makefile.in
+USER_DIR = $(top_srcdir)
+INCLUDES = -I$(USER_DIR) -I$(USER_DIR)/common
+AM_CFLAGS =  -MD -pipe -Wall -W -DMST_UL -g
 
-man_MANS = man/mstflint.1
-
-EXTRA_DIST = \
-	mstflint.spec \
-	small_utils/hca_self_test.ofed \
-	common/gitversion.h \
-	debian \
-	$(man_MANS)
+noinst_LIBRARIES = libtools_crypto.a
+libtools_crypto_a_SOURCES = tools_md5.c tools_md5.h
 
