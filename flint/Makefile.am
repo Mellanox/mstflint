@@ -66,6 +66,11 @@ else
 mstflint_CXXFLAGS += -DNO_ZLIB
 endif
 
+if ENABLE_OPENSSL
+mstflint_LDADD += $(top_srcdir)/tools_crypto/libtools_crypto.a -lcrypto
+else
+endif
+
 #get mst device examples and tool name from makefile
 mstflint_CXXFLAGS+= -DFLINT_NAME=\"mstflint\" -DFLINT_DISPLAY_NAME=\"MstFlint\"
 mstflint_CXXFLAGS += -DMST_DEV_EXAMPLE1=\"03:00.0\" -DMST_DEV_EXAMPLE2=\"mlx4_0\" -DMST_DEV_EXAMPLE3=\"03:00.0\" -DMST_DEV_EXAMPLE4=\"04:00.0\"
