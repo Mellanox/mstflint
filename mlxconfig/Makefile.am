@@ -43,7 +43,7 @@ CMDIF_DIR = $(USER_DIR)/cmdif
 
 
 INCLUDES = -I. -I$(USER_DIR) -I$(top_srcdir)/include/mtcr_ul -I$(MTCR_DIR) -I$(COMMON_DIR) $(WIN64_INC)\
-           -I$(MFT_EXT_LIBS_INC_DIR) -I $(LAYOUTS_DIR) -I$(MFT_EXT_LIBS_INC_DIR)/zlib -I $(UTILS_DIR) -I$(DEV_MGT_DIR) -I$(CMDIF_DIR)
+           -I $(LAYOUTS_DIR) -I $(UTILS_DIR) -I$(DEV_MGT_DIR) -I$(CMDIF_DIR)
 
 AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe
 bin_PROGRAMS = mstconfig
