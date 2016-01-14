@@ -722,7 +722,9 @@ int cntx_get_flash_info(mflash* mfl, flash_info_t *f_info, int *log2size, u_int8
         printf("-E- SPI flash #%d (vendor: %#x, memory type: %#x, es: %#x) is not supported.\n", get_bank_int(mfl), vendor, type, es);
     }
     // printf("-D- rc = %d, no_flash_res = %d, type_index = %d.\n", rc, no_flash_res, *type_index);
-    memcpy(f_info, &g_flash_info_arr[type_index], sizeof(flash_info_t));
+    if (rc == MFE_OK && *no_flash == 0) {
+        memcpy(f_info, &g_flash_info_arr[type_index], sizeof(flash_info_t));
+    }
     return rc;
 }
 
