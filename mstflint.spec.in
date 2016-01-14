@@ -5,6 +5,7 @@
 %{!?buildtype: %define buildtype "native"}
 %{!?noinband: %define noinband 0}
 %{!?nodc: %define nodc 0}
+%{!?enablecs: %define enablecs 0}
 
 %define debug_package %{nil}
 %define optflags -g -O2
@@ -36,6 +37,10 @@ for network adapters based on Mellanox Technologies chips.
 
 %if %{noinband}
     config_flags="$config_flags --disable-inband"
+%endif
+
+%if %{enablecs}
+    config_flags="$config_flags --enable-cs"
 %endif
 
 %if %{buildtype} == "ppc"
