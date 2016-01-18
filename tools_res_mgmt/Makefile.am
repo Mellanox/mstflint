@@ -40,3 +40,7 @@ noinst_LIBRARIES = libtools_res_mgmt.a
 
 libtools_res_mgmt_a_SOURCES = tools_res_mgmt.c tools_time.c
 
+if ENABLE_INBAND
+else
+AM_CFLAGS += -DNO_INBAND
+endif
