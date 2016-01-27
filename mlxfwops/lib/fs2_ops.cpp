@@ -820,6 +820,7 @@ u_int32_t Fs2Operations::getDefaultSectorSz()
     // an older mlxburn the fw_sector_size wount be available
     u_int32_t devid = _ioAccess->get_dev_id();
     switch (devid) {
+    case CX2_HW_ID:
     case CX3_HW_ID:
     case CX3_PRO_HW_ID:
         return CX_DFLT_SECTOR_SIZE;
@@ -1445,6 +1446,15 @@ bool Fs2Operations::Fs2Burn(Fs2Operations &imageOps, ExtBurnParams& burnParams)
         }
     }
     return Fs2FailSafeBurn(imageOps, !burnParams.burnFailsafe, "", burnParams.progressFunc);
+}
+
+bool Fs2Operations::Fs2IsMacAvailable()
+{
+
+    if (_fwImgInfo.ext_info.chip_type == CT_IS4 ) {
+        return false;
+    }
+    return true;
 }
 
 bool Fs2Operations::FwBurn(FwOperations *imageOps, u_int8_t forceVersion, ProgressCallBack progressFunc)

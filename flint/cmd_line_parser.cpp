@@ -287,7 +287,7 @@ bool verifyNumOfArgs(string name, string value) {
 bool strToNum(string str, u_int64_t& num, int base=0)
 {
     char *endp;
-    char* numStr = strcpy(new char[str.size()],str.c_str());
+    char* numStr = strcpy(new char[str.size() + 1],str.c_str());
     num = strtoul(numStr, &endp, base);
     if (*endp) {
         delete[] numStr;

@@ -315,9 +315,15 @@ RawCfgParams5thGen::RawCfgParams5thGen() {
 }
 
 int RawCfgParams5thGen::setRawData(const std::vector<u_int32_t>& tlvBuff) {
+    if(tlvBuff.size() * 4 > TOOLS_OPEN_NVDA_SIZE){
+        return errmsg(MCE_BAD_PARAM_VAL, "TLV size exceeds maximal limit. Maximum size is 0x%x bytes, actual length is 0x%x bytes", TOOLS_OPEN_NVDA_SIZE, (u_int32_t)(tlvBuff.size() * 4));
+    }
     _tlvBuff = tlvBuff;
     memset(&_nvdaTlv, 0, sizeof(struct tools_open_nvda));
     std::vector<u_int32_t> tlvBuffBe = _tlvBuff;
+    tlvBuffBe.resize(TOOLS_OPEN_NVDA_SIZE >> 2);
+    memset(&tlvBuffBe[0], 0, TOOLS_OPEN_NVDA_SIZE);
+    tlvBuffBe.insert(tlvBuffBe.begin(), _tlvBuff.begin(), _tlvBuff.end());
     for (std::vector<u_int32_t>::iterator it = tlvBuffBe.begin(); it != tlvBuffBe.end(); it++ ) {
         *it = __cpu_to_be32(*it);
     }

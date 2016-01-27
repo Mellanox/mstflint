@@ -1298,15 +1298,28 @@ int mhca_reset(mfile *mf)
 }
 
 static long supported_dev_ids[] = {
+        /* CX2 */
+        0x6340,
+        0x634a,
+        0x6368,
+        0x6372,
+        0x6732,
+        0x673c,
+        0x6750,
+        0x675a,
+        0x676e,
+        0x6746,
+        0x6764,
+        /*****/
         0x1003, //Connect-X3
         0x1007, //Connect-X3Pro
         0x1011, //Connect-IB
         0x1013, //Connect-X4
         0x1015, //Connect-X4Lx
-        0x1017, //Connect-X5
         0xc738, //SwitchX
         0xcb20, //Switch-IB
         0xcb84, //Spectrum
+        0xcf08, //Switch-IB2
         -1
 };
 
@@ -2172,8 +2185,10 @@ static int mreg_send_raw(mfile *mf, u_int16_t reg_id, maccess_reg_method_t metho
 
 // needed device HW IDs
 #define CONNECTX3_PRO_HW_ID 0x1f7
+#define CONNECTX2_HW_ID 0x190
 #define CONNECTX3_HW_ID 0x1f5
 #define SWITCHX_HW_ID 0x245
+#define INFINISCALE4_HW_ID 0x1b3
 
 #define HW_ID_ADDR 0xf0014
 
@@ -2181,18 +2196,20 @@ static int mreg_send_raw(mfile *mf, u_int16_t reg_id, maccess_reg_method_t metho
 static int supports_icmd(mfile* mf) {
     u_int32_t dev_id;
 
-     if (mread4(mf,HW_ID_ADDR, &dev_id) != 4 ) {// cr might be locked and retured 0xbad0cafe but we dont care we search for device that supports icmd
-         return 0;
-     }
-     switch (dev_id & 0xffff) { // that the hw device id
-         case CONNECTX3_HW_ID :
-         case CONNECTX3_PRO_HW_ID :
-         case SWITCHX_HW_ID :
-            return 0;
-         default:
-             break;
-     }
-   return 1;
+    if (mread4(mf,HW_ID_ADDR, &dev_id) != 4 ) {// cr might be locked and retured 0xbad0cafe but we dont care we search for device that supports icmd
+        return 0;
+    }
+    switch (dev_id & 0xffff) { // that the hw device id
+        case CONNECTX2_HW_ID:
+        case CONNECTX3_HW_ID :
+        case CONNECTX3_PRO_HW_ID :
+        case INFINISCALE4_HW_ID :
+        case SWITCHX_HW_ID :
+           return 0;
+        default:
+            break;
+    }
+    return 1;
 }
 
 static int supports_tools_cmdif_reg(mfile* mf) {

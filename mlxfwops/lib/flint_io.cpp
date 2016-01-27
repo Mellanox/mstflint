@@ -245,7 +245,7 @@ bool Flash::open_com_checks(const char *device, int rc, bool force_lock)
     }
 
 
-    if (_attr.hw_dev_id == SWITCHX_HW_ID) {
+    if (_attr.hw_dev_id == 435 || _attr.hw_dev_id == SWITCHX_HW_ID) {
         _port_num = 0;
     } else {
         _port_num = 2;

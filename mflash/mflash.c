@@ -222,6 +222,8 @@ int release_semaphore(mflash* mfl, int ignore_writer_lock);
 
 #define IS_CONNECTX_4TH_GEN_FAMILY(dev_id) \
         (((dev_id) == CONNECTX_HW_ID) || ((dev_id) == CX3_HW_ID) || ((dev_id) == CX3_PRO_HW_ID))
+#define IS_IS4_FAMILY(dev_id) \
+    (((dev_id) == 435)) // 435 == InfiniScaleIV
 #define IS_SX(dev_id) \
         ((dev_id) == SWITCHX_HW_ID)
 #define IS_SIB(dev_id) \
@@ -243,9 +245,9 @@ int release_semaphore(mflash* mfl, int ignore_writer_lock);
 #define HAS_ICMD_IF(dev_id) \
     ((IS_CONNECT_IB(dev_id)) || (IS_SIB(dev_id)) || (IS_CONNECTX4(dev_id)) || (IS_CONNECTX4LX(dev_id)) || (IS_SEN(dev_id)) || (IS_SIB2(dev_id)) || (IS_CONNECTX5(dev_id)))
 #define IS_SWITCH(dev_id) \
-       ((IS_SX(dev_id)) || (IS_SIB(dev_id)) || (IS_SEN(dev_id)) || (IS_SIB2(dev_id)))
+       ((IS_IS4_FAMILY(dev_id)) || (IS_SX(dev_id)) || (IS_SIB(dev_id)) || (IS_SEN(dev_id)) || (IS_SIB2(dev_id)))
 #define SUPPORTS_SW_RESET(devid)\
-        (((devid) == SWITCHX_HW_ID) || ((devid) == SWITCH_IB_HW_ID) || ((devid) == SWITCH_IB2_HW_ID))
+        (((devid) == 435) || ((devid) == SWITCHX_HW_ID) || ((devid) == SWITCH_IB_HW_ID) || ((devid) == SWITCH_IB2_HW_ID))
 
 
 // Write/Erase delays
@@ -2029,6 +2031,13 @@ int gen4_flash_init_com(mflash* mfl, flash_params_t* flash_params, u_int8_t init
 
 }
 
+int is4_flash_init(mflash* mfl, flash_params_t* flash_params) {
+
+    mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] = ATBM_NO;
+    mfl->f_lock           = is4_flash_lock;
+    return gen4_flash_init_com(mfl, flash_params, 0);
+}
+
 int sx_flash_init_direct_access(mflash* mfl, flash_params_t* flash_params)
 {
     mfl->f_lock           = is4_flash_lock;
@@ -2447,6 +2456,8 @@ int mf_open_fw(mflash* mfl, flash_params_t* flash_params, int num_of_banks)
 
         if (IS_CONNECTX_4TH_GEN_FAMILY(mfl->attr.hw_dev_id)) {
             rc = cntx_flash_init(mfl, flash_params);
+        } else if (IS_IS4_FAMILY(mfl->attr.hw_dev_id)) {
+            rc = is4_flash_init(mfl, flash_params);
         } else if (IS_SX(mfl->attr.hw_dev_id)) {
             rc = sx_flash_init(mfl, flash_params);
         } else if (HAS_ICMD_IF(mfl->attr.hw_dev_id)) {

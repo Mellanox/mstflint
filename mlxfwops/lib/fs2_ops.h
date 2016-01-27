@@ -162,6 +162,7 @@ private:
 
     bool ModifyKeySection(guid_t access_key, ProgressCallBack callBackFunc=(ProgressCallBack)NULL);
     void PatchKeySect(u_int32_t* buff, u_int32_t keyOff, guid_t hw_key);
+    bool Fs2IsMacAvailable();
 
     bool ModifyVSDSection(const char *vsd, ProgressCallBack callBackFunc=(ProgressCallBack)NULL);
     bool ReburnNewImage(u_int8_t *data, const char *feature_name, ProgressCallBack callBackFunc=(ProgressCallBack)NULL);

@@ -55,8 +55,8 @@ enum dm_dev_id
     DeviceInfiniScaleIII,   // UnSupported
     DeviceInfiniHostIIILx,  // UnSupported
     DeviceConnectX,         // UnSupported
-    DeviceConnectX2,        // UnSupported
-    DeviceInfiniScaleIV,    // UnSupported
+    DeviceConnectX2,
+    DeviceInfiniScaleIV,
     DeviceBridgeX,          // UnSupported
     DeviceSwitchX,
     DeviceConnectX3,

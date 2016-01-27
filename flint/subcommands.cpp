@@ -1639,7 +1639,7 @@ bool QuerySubCommand::displayFs2Uids(const fw_info_t& fwInfo)
     FwOperations::SetDevFlags(fwInfo.fw_info.chip_type, fwInfo.fw_info.dev_type, (fw_img_type)fwInfo.fw_type, ibDev, ethDev);
     //setDevFlags(fwInfo, ibDev, ethDev);
     int numPorts = 2;
-    if ((fwInfo.fw_info.chip_type == CT_SWITCHX)) {
+    if ((fwInfo.fw_info.chip_type == CT_IS4 || fwInfo.fw_info.chip_type == CT_SWITCHX)) {
         numPorts = 0;
     }
     //we do not support cards with one port anymore.

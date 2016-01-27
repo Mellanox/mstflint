@@ -194,8 +194,10 @@ namespace std {}; using namespace std;
 #define CX4_HW_ID         521
 #define CX4LX_HW_ID       523
 #define CX5_HW_ID         525
+#define CX2_HW_ID         400
 #define CX3_HW_ID         501
 #define CX3_PRO_HW_ID     503
+#define IS4_HW_ID         435
 #define CONNECT_IB_HW_ID  511
 #define CONNECT_IB_SW_ID  4113
 

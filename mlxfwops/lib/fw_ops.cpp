@@ -376,6 +376,12 @@ bool FwOperations::CntxFindAllImageStart (FBase* ioAccess, u_int32_t start_locat
 
     needed_pos_num = CNTX_START_POS_SIZE;
 
+    if (ioAccess->is_flash()) {
+        if ( (((Flash*)ioAccess)->get_dev_id() == 400) ||
+             (((Flash*)ioAccess)->get_dev_id() == 435)) {
+            needed_pos_num = OLD_CNTX_START_POS_SIZE;
+        }
+    }
     /* WA: due to bug on SwichIB first GA FW (FW doesnt look at chip select field in mfba)
     *     when reading from flash address 0x400000 it wraps around to 0x0 causing more than one
     *     valid image to be found. as a WA we dont check at 0x400000. basic flash operations
@@ -523,7 +529,9 @@ bool FwOperations::FwAccessCreate(fw_ops_params_t& fwParams, FBase **ioAccessP)
 
 u_int8_t FwOperations::CheckFwFormat(FBase& f, bool getFwFormatFromImg) {
     if (f.is_flash() && !getFwFormatFromImg) {
-        if (    ( ((Flash*)&f)->get_dev_id() == CX3_HW_ID)        ||
+        if (    ( ((Flash*)&f)->get_dev_id() == CX2_HW_ID)        ||
+                ( ((Flash*)&f)->get_dev_id() == CX3_HW_ID)        ||
+                ( ((Flash*)&f)->get_dev_id() == IS4_HW_ID)              ||
                 ( ((Flash*)&f)->get_dev_id() == SWITCHX_HW_ID)    ||
                 ( ((Flash*)&f)->get_dev_id() == CX3_PRO_HW_ID)) {
             return FS_FS2_GEN;
@@ -826,6 +834,10 @@ bool FwOperations::getInfoFromHwDevid(u_int32_t hwDevId, chip_type_t& chipT, con
 
 // TODO:combine both databases(hwDevData and hwDev2Str) and remove old unsupporded devices i.e infinihost infinihost_iii_ex infinihost_iii_lx
 const FwOperations::HwDevData FwOperations::hwDevData[] = {
+    { "ConnectX",          CX2_HW_ID, CT_CONNECTX, 2,  {25408, 25418, 26418, 26438,
+                                                 26428, 25448, 26448, 26468,
+                                                 25458, 26458, 26478, 26488,
+                                                 4097, 4098, 0}},
     { "ConnectX-3",        CX3_HW_ID, CT_CONNECTX, 2,  {4099, 4100, 4101, 4102,
                                          4104, 4105, 4106,
                                          4107, 4108, 4109, 4110,
@@ -834,6 +846,7 @@ const FwOperations::HwDevData FwOperations::hwDevData[] = {
     { "Connect_IB",       CONNECT_IB_HW_ID, CT_CONNECT_IB, 2, {CONNECT_IB_SW_ID, 4114, 4115, 4116,
                                          4117, 4118, 4119, 4120,
                                          4121, 4122, 4123, 4124, 0}},
+    { "InfiniScale IV",   IS4_HW_ID,        CT_IS4,         0, {48436, 48437, 48438, 0}},
     { "SwitchX",          SWITCHX_HW_ID,    CT_SWITCHX,     0, {51000, 0}},
     { "Switch_IB",        SWITCH_IB_HW_ID,  CT_SWITCH_IB,   0, {52000, 0}},
     { "ConnectX-4",       CX4_HW_ID,        CT_CONNECTX4,    0, {4115, 0}},
@@ -845,6 +858,7 @@ const FwOperations::HwDevData FwOperations::hwDevData[] = {
 };
 
 const FwOperations::HwDev2Str FwOperations::hwDev2Str[] = {
+        {"ConnectX-2",        CX2_HW_ID,        0xB0},
         {"ConnectIB",         CONNECT_IB_HW_ID, 0x00},
         {"ConnectX-3 A0",     CX3_HW_ID,        0x00},
         {"ConnectX-3 A1",     CX3_HW_ID,        0x01},
@@ -854,6 +868,8 @@ const FwOperations::HwDev2Str FwOperations::hwDev2Str[] = {
         {"ConnectX-5",        CX5_HW_ID,        0x00},
         {"SwitchX A0",        SWITCHX_HW_ID,    0x00},
         {"SwitchX A1",        SWITCHX_HW_ID,    0x01},
+        {"InfiniScale IV A0", IS4_HW_ID,        0xA0},
+        {"InfiniScale IV A1", IS4_HW_ID,        0xA1},
         {"SwitchIB A0",       SWITCH_IB_HW_ID,  0x00},
         {"Spectrum A0",       SPECTRUM_HW_ID,   0x00},
         {"SwitchIB2 A0",      SWITCH_IB2_HW_ID, 0x00},
@@ -1009,7 +1025,7 @@ bool FwOperations::CheckFwVersion(FwOperations &imageOps, u_int8_t forceVersion)
 
 bool FwOperations::FwSwReset() {
     if (!_ioAccess->is_flash()) {
-        return errmsg("operation supported only for switch devices: SwitchX and SwitchIB over an IB interface");
+        return errmsg("operation supported only for switch devices: InfiniScaleIV SwitchX and SwitchIB over an IB interface");
     }
     if (!((Flash*)_ioAccess)->sw_reset()) {
         return errmsg("%s",  _ioAccess->err());
@@ -1043,8 +1059,12 @@ bool FwOperations::UpdateImgCache(u_int8_t *buff, u_int32_t addr, u_int32_t size
 
 bool FwOperations::CntxEthOnly(u_int32_t devid)
 {
-    (void)devid;
-    return false;
+    return      (devid == 25448) || // ETH
+                (devid == 26448) || // ETH
+                (devid == 25458) || //
+                (devid == 26458) || //
+                (devid == 26468) ||
+                (devid == 26478);
 }
 
 // RomInfo implementation
@@ -1406,11 +1426,14 @@ bool FwOperations::ReadImageFile(const char *fimage, u_int8_t *&file_data, int &
 void FwOperations::SetDevFlags(chip_type_t chipType, u_int32_t devType, fw_img_type_t fwType, bool &ibDev, bool &ethDev) {
 
     (void)devType;
-    if (chipType == CT_SWITCHX) {
+    if (chipType == CT_IS4) {
+        ibDev =  true;
+        ethDev = false;
+    } else if (chipType == CT_SWITCHX) {
         ibDev = true;
         ethDev = true;
     } else {
-        ibDev  = (fwType == FIT_FS3 && chipType != CT_SPECTRUM) || chipType == CT_CONNECTX;
+        ibDev  = (fwType == FIT_FS3 && chipType != CT_SPECTRUM) || (chipType == CT_CONNECTX && !CntxEthOnly(devType));
         ethDev = (chipType == CT_CONNECTX) || (chipType == CT_SPECTRUM) || (chipType == CT_CONNECTX4) || (chipType == CT_CONNECTX4_LX) || (chipType == CT_CONNECTX5);
     }
 

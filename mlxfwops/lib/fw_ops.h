@@ -267,6 +267,7 @@ protected:
         fw_img_type_t fwType;
     };
     enum {
+        OLD_CNTX_START_POS_SIZE = 6,
         CNTX_START_POS_SIZE = 8
     };
     enum {

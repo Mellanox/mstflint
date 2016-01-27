@@ -157,6 +157,7 @@ typedef enum chip_type {
     CT_UNKNOWN = 0,
     CT_CONNECTX,
     CT_SWITCHX,
+    CT_IS4,
     CT_CONNECT_IB,
     CT_SWITCH_IB,
     CT_SPECTRUM,

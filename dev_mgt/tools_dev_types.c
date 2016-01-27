@@ -57,6 +57,16 @@ struct dev_info {
 #define DEVID_ADDR                          0xf0014
 
 static struct dev_info g_devs_info[] = {
+
+    {
+        .dm_id     = DeviceInfiniScaleIV,
+        .hw_dev_id = 0x01b3,
+        .hw_rev_id = -1,
+        .sw_dev_id = -1,
+        .name      = "InfiniScaleIV",
+        .port_num  = 36,
+        .dev_type  = DM_SWITCH
+    },
     {
         .dm_id     = DeviceSwitchX,
         .hw_dev_id = 0x0245,
@@ -65,6 +75,15 @@ static struct dev_info g_devs_info[] = {
         .name      = "SwitchX",
         .port_num  = 64,
         .dev_type  = DM_SWITCH
+    },
+    {
+        .dm_id     = DeviceConnectX2,
+        .hw_dev_id = 0x190,
+        .hw_rev_id = 0xb0,
+        .sw_dev_id = -1,
+        .name      = "ConnectX2",
+        .port_num  = 2,
+        .dev_type  = DM_HCA
     },
     {
         .dm_id     = DeviceConnectX3,

@@ -114,6 +114,11 @@ static u_int32_t g_vsec_sem_addr[VSEC_SEM_NUM] = {0x0, 0x10};
 
 static struct device_sem_info g_dev_sem_info_db[] = {
         {
+                DeviceConnectX2,            // dev_id
+                {0xf03bc},                  // hw_sem_addr
+                0,                          // vsec_sem_supported
+        },
+        {
                 DeviceConnectX3,            // dev_id
                 {0xf03bc, 0xf03a0},         // hw_sem_addr
                 0,                          // vsec_sem_supported
@@ -121,6 +126,11 @@ static struct device_sem_info g_dev_sem_info_db[] = {
         {
                 DeviceConnectX3Pro,         // dev_id
                 {0xf03bc, 0xf03a0},         // hw_sem_addr
+                0,                          // vsec_sem_supported
+        },
+        {
+                DeviceInfiniScaleIV,        // dev_id
+                {0},                        // hw_sem_addr
                 0,                          // vsec_sem_supported
         },
         {

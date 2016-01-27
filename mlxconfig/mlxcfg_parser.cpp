@@ -166,7 +166,7 @@ mlxCfgStatus MlxCfg::processArg(string tag, u_int32_t val)
 static bool strToNum(string str, u_int32_t& num, int base=0)
 {
     char *endp;
-    char* numStr = strcpy(new char[str.size()],str.c_str());
+    char* numStr = strcpy(new char[str.size() + 1],str.c_str());
     num = strtoul(numStr, &endp, base);
     if (*endp) {
         delete[] numStr;
@@ -709,7 +709,7 @@ MlxCfgInfo MlxCfgAllInfo::createExternalPort()
 
     //External ports
     params[Mcp_Port_Owner] = MlxCfgParamParser(Mcp_Port_Owner, "PORT_OWNER", "If Set, Indicates this function of this host own the external physical port.", paramMap);
-    params[Mcp_Allow_Rd_Counters] = MlxCfgParamParser(Mcp_Allow_Rd_Counters, "ALLOW_RD_COUNTERS", "If Set, Indicates this function of this host allowed to rd counters of external physical port.", "0|1");
+    params[Mcp_Allow_Rd_Counters] = MlxCfgParamParser(Mcp_Allow_Rd_Counters, "ALLOW_RD_COUNTERS", "If Set, Indicates this function of this host allowed to rd counters of external physical port.", paramMap);
     return MlxCfgInfo("External Ports", "", params);
 }
 
