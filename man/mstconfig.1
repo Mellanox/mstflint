@@ -1,0 +1,249 @@
+.TH MSTCONFIG "4.4.0" "" ""
+.SH NAME
+mstconfig
+.IP
+.SH SYNOPSIS:
+.IP
+mstconfig [\-d <mst device> ] [\-y|\-e] <s[et] <parameters to set>|q[uery]|r[eset]>
+.IP
+.SH OPTIONS:
+.TP
+\fB\-d\fR|\-\-dev <device>
+: Perform operation for a specified mst device.
+.TP
+\fB\-f\fR|\-\-file <conf_file>
+: raw configuration file.
+.TP
+\fB\-h\fR|\-\-help
+: Display help message.
+.TP
+\fB\-hh\fR|\-\-full_help
+: Display full help message.
+.TP
+\fB\-v\fR|\-\-version
+: Display version info.
+.TP
+\fB\-e\fR|\-\-show_default
+: Show default configurations.
+.TP
+\fB\-y\fR|\-\-yes
+: Answer yes in prompt.
+.IP
+.SH COMMANDS:
+.TP
+clear_semaphore
+: clear the tool semaphore.
+.TP
+q[uery]
+: query current supported configurations.
+.TP
+r[eset]
+: reset all configurations to their default value.
+.TP
+s[et]
+: set configurations to a specific device.
+.TP
+set_raw
+: set raw configuration file.(5th generation devices only.)
+.IP
+Supported Configurations:
+.IP
+\fBBoot Settings Extras:\fR These parameters are relevant only for servers using legacy BIOS PXE boot (flexboot).
+.IP
+IP_VER=<IPv4|IPv4_IPv6|IPv6|IPv6_IPv4>
+.IP
+IP_VER_P1=<IPv4|IPv4_IPv6|IPv6|IPv6_IPv4>
+.IP
+IP_VER_P2=<IPv4|IPv4_IPv6|IPv6|IPv6_IPv4>
+.IP
+\fBExternal Ports:\fR
+.IP
+ALLOW_RD_COUNTERS=<False|True>
+.IP
+PORT_OWNER=<False|True>
+.IP
+\fBIB Dynamically Connect:\fR
+.IP
+DCR_LIFO_SIZE=<SIZE>
+.IP
+LOG_DCR_HASH_TABLE_SIZE=<SIZE>
+.IP
+\fBInfiniband Boot Settings:\fR
+.IP
+BOOT_PKEY_P1=<PKEY>
+.IP
+BOOT_PKEY_P2=<PKEY>
+.IP
+\fBInternal Settings:\fR
+.IP
+INT_LOG_MAX_PAYLOAD_SIZE=<4KB|Auto>
+.IP
+\fBPCI Settings:\fR
+.IP
+FPP_EN=<False|True>
+.IP
+LOG_BAR_SIZE=<base_2_log_in_mb>
+.IP
+NUM_OF_VFS=<NUM>
+.IP
+NUM_PF_MSIX=<NUM>
+.IP
+NUM_VF_MSIX=<NUM>
+.IP
+PF_LOG_BAR_SIZE=<base_2_log_in_mb>
+.IP
+SRIOV_EN=<False|True>
+.IP
+VF_LOG_BAR_SIZE=<base_2_log_in_mb>
+.IP
+\fBPreboot Boot Settings:\fR Settings that control the legacy option ROM
+.IP
+BOOT_OPTION_ROM_EN_P1=<False|True>
+.IP
+BOOT_OPTION_ROM_EN_P2=<False|True>
+.IP
+BOOT_RETRY_CNT_P1=<0..7>
+.IP
+BOOT_RETRY_CNT_P2=<0..7>
+.IP
+BOOT_VLAN_EN_P1=<False|True>
+.IP
+BOOT_VLAN_EN_P2=<False|True>
+.IP
+BOOT_VLAN_P1=<VLAN ID>
+.IP
+BOOT_VLAN_P2=<VLAN ID>
+.IP
+LEGACY_BOOT_PROTOCOL_P1=<Both|None|PXE|iSCSI>
+.IP
+LEGACY_BOOT_PROTOCOL_P2=<Both|None|PXE|iSCSI>
+.IP
+\fBRoCE Congestion Control ECN:\fR
+.IP
+CLAMP_TGT_RATE_AFTER_TIME_INC_P1=<0|1>
+.IP
+CLAMP_TGT_RATE_AFTER_TIME_INC_P2=<0|1>
+.IP
+CLAMP_TGT_RATE_P1=<0|1>
+.IP
+CLAMP_TGT_RATE_P2=<0|1>
+.IP
+CNP_802P_PRIO_P1=<NUM>
+.IP
+CNP_802P_PRIO_P2=<NUM>
+.IP
+CNP_DSCP_P1=<0..7>
+.IP
+CNP_DSCP_P2=<0..7>
+.IP
+DCE_TCP_G_P1=<NUM>
+.IP
+DCE_TCP_G_P2=<NUM>
+.IP
+DCE_TCP_RTT_P1=<USEC>
+.IP
+DCE_TCP_RTT_P2=<USEC>
+.IP
+INITIAL_ALPHA_VALUE_P1=<NUM>
+.IP
+INITIAL_ALPHA_VALUE_P2=<NUM>
+.IP
+MIN_TIME_BETWEEN_CNPS_P1=<USEC>
+.IP
+MIN_TIME_BETWEEN_CNPS_P2=<USEC>
+.IP
+RATE_REDUCE_MONITOR_PERIOD_P1=<USEC>
+.IP
+RATE_REDUCE_MONITOR_PERIOD_P2=<USEC>
+.IP
+RATE_TO_SET_ON_FIRST_CNP_P1=<RATE_IN_MBIT>
+.IP
+RATE_TO_SET_ON_FIRST_CNP_P2=<RATE_IN_MBIT>
+.IP
+RPG_AI_RATE_P1=<RATE_IN_MBIT>
+.IP
+RPG_AI_RATE_P2=<RATE_IN_MBIT>
+.IP
+RPG_BYTE_RESET_P1=<BYTE_NUM>
+.IP
+RPG_BYTE_RESET_P2=<BYTE_NUM>
+.IP
+RPG_GD_P1=<0..15>
+.IP
+RPG_GD_P2=<0..15>
+.IP
+RPG_HAI_RATE_P1=<RATE_IN_MBIT>
+.IP
+RPG_HAI_RATE_P2=<RATE_IN_MBIT>
+.IP
+RPG_MAX_RATE_P1=<RATE_IN_MBIT>
+.IP
+RPG_MAX_RATE_P2=<RATE_IN_MBIT>
+.IP
+RPG_MIN_DEC_FAC_P1=<1..100>
+.IP
+RPG_MIN_DEC_FAC_P2=<1..100>
+.IP
+RPG_MIN_RATE_P1=<RATE_IN_MBIT>
+.IP
+RPG_MIN_RATE_P2=<RATE_IN_MBIT>
+.IP
+RPG_THRESHOLD_P1=<0..31>
+.IP
+RPG_THRESHOLD_P2=<0..31>
+.IP
+RPG_TIME_RESET_P1=<USEC>
+.IP
+RPG_TIME_RESET_P2=<USEC>
+.IP
+\fBRoCE Congestion Control Parameters:\fR
+.IP
+ROCE_CC_ALGORITHM_P1=<ECN|QCN>
+.IP
+ROCE_CC_ALGORITHM_P2=<ECN|QCN>
+.IP
+ROCE_CC_PRIO_MASK_P1=<0..255>
+.IP
+ROCE_CC_PRIO_MASK_P2=<0..255>
+.IP
+\fBRoCE V1.5 next protocol:\fR
+.IP
+ROCE_NEXT_PROTOCOL=<0..255>
+.IP
+\fBVPI Settings:\fR Control network link type
+.IP
+LINK_TYPE_P1=<ETH|IB|VPI>
+.IP
+LINK_TYPE_P2=<ETH|IB|VPI>
+.IP
+\fBWake On LAN:\R
+.IP
+WOL_MAGIC_EN=<False|True>
+.IP
+WOL_MAGIC_EN_P1=<False|True>
+.IP
+WOL_MAGIC_EN_P2=<False|True>
+.IP
+.SH Examples:
+.TP
+To query current configuration
+: mstconfig \fB\-d\fR \fI04:00.0\fP query
+.TP
+To set configuration
+: mstconfig \fB\-d\fR \fI05:00.0\fP set SRIOV_EN=1 NUM_OF_VFS=16 WOL_MAGIC_EN_P1=1
+.TP
+To set raw configuration
+: mstconfig \fB\-d\fR \fI05:00.0\fP \fB\-f\fR conf_file set_raw
+.TP
+To reset configuration
+: mstconfig \fB\-d\fR \fI04:00.0\fP reset
+.IP
+.SH Supported devices:
+.IP
+4th Generation devices: ConnectX3, ConnectX3\-Pro (FW 2.31.5000 and above).
+.IP
+5th Generation devices: ConnectIB, ConnectX4, ConnectX4\-LX.
+.IP
+.TP
+\fBNote: query device to view supported configurations.\fR
+

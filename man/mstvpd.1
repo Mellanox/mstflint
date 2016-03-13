@@ -1,0 +1,37 @@
+.TH MSTVPD "4.4.0" "" ""
+.SH NAME
+mstvpd
+.IP
+.SH SYNOPSIS:
+.IP
+Mellanox VPD read tool
+
+mstvpd [-m|-n] [-t ##] <file> [\-- keyword ...]
+.IP
+.SH OPTIONS:
+.TP
+\fB-h\fR      :Print this help.
+.TP
+\fB-v\fR      :Print tool version.
+.TP
+\fB-m\fR      :Dump raw VPD data to stdout.
+.TP
+\fB-n\fR      :Do not validate check sum.
+.TP
+\fB-r\fR      :Do not check and display the VPD_W tag in the vpd data.
+.TP
+\fB-t\fR ##   :Time out after ## seconds. (Default is 30.)
+.IP
+.SH File:
+.TP
+The PCI id number of the HCA (for example, "2:00.0"),
+.TP
+the device name (such as "mlx4_0")
+.TP
+the absolute path to the device ("/sys/class/infiniband/mlx4_0/device")
+.TP
+or '-' to read VPD data from the standard input.
+.IP
+.SH Keyword(s):
+.TP
+Only display the requested information. (ID, PN, EC, SN, etc...)

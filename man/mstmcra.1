@@ -1,0 +1,34 @@
+.TH MSTMCRA "4.4.0" "" ""
+.SH NAME
+mstmcra
+.IP
+.SH SYNOPSIS:
+.IP
+Mellanox Configuration Registers Access tool
+
+mstmcra [-s <i2c-slave>] [-a <adb dump>] [-v] [-h] <device>
+     <addr[.<bit offset>:<bit size>]|[,<bytes number>]> [data]
+
+    If data is given, operation is write. Otherwise it is read.
+    If a bit range is given in the address (E.G.: 0xf0014.16:8):
+          For read  - Only the requested bits are printed.
+          For write - Read-Modify-Write. Only the requested bits are changed.
+    If 'bytes number' is given in the address (E.G.: 0xf0014,16):
+          For read  - Will read a block (its size is the given bytes number).
+          For write - User need to give list of dwrods to write,
+                      number of dwords should be (bytes number/4).
+.IP
+.SH OPTIONS:
+.TP
+\fB-s\fR <i2c\-slave> : I2C slave address.
+.TP
+\fB-a\fR <dump file>  : adb dump file, used for access by path.
+.TP
+\fB-h\fR              : Print this help message.
+.TP
+\fB-v\fR              : Display version info
+.IP
+.SH Environment Vairables:
+.TP
+ADB_DUMP              : Holds the path to adb dump, used for access by path (can be overriden by "\-a").
+.TP

@@ -32,7 +32,7 @@
 
 SUBDIRS = mft_utils $(TOOLS_CRYPTO) tools_layouts mtcr_ul reg_access cmdif dev_mgt tools_res_mgmt mflash mlxconfig mlxfwops cmdparser flint small_utils mstdump
 
-man_MANS = man/mstflint.1
+man_MANS = man/mstflint.1 man/mstconfig.1 man/mstmcra.1 man/mstmread.1 man/mstmwrite.1 man/mstmtserver.1 man/mstregdump.1 man/mstvpd.1
 
 EXTRA_DIST = \
 	mstflint.spec \
