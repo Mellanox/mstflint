@@ -39,6 +39,8 @@
 #ifndef _MTCR_IB_H
 #define _MTCR_IB_H
 
+#include "mtcr_com_defs.h"
+
 #ifdef __WIN__
     #include <mtcr.h>
 #endif

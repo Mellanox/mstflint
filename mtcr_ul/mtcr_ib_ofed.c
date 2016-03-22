@@ -59,12 +59,15 @@
 
 #ifdef MST_UL
 #include <errno.h>
-#include "mtcr.h"
 #include "mtcr_int_defs.h"
 #endif
 
 #include "mtcr_ib.h"
-#include <mtcr.h>
+
+#ifndef __WIN__
+#include "mtcr_mf.h"
+#include "mtcr_com_defs.h"
+#endif
 
 #include <infiniband/mad.h>
 

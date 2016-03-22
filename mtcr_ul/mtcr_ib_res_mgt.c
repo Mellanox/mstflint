@@ -31,9 +31,8 @@
  */
 
 #include <string.h>
-
-#include "mtcr_ib_res_mgt.h"
 #include "mtcr_ib.h"
+#include "mtcr_ib_res_mgt.h"
 #include "packets_common.h"
 
 #define IB_SMP_DATA_SIZE 48

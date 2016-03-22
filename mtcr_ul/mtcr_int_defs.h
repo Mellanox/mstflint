@@ -33,7 +33,7 @@
 #ifndef MTCR_INT_DEFS
 #define MTCR_INT_DEFS
 
-#include <mtcr.h>
+#include "mtcr_com_defs.h"
 
 typedef int (*f_mread4)        (mfile *mf, unsigned int offset, u_int32_t *value);
 typedef int (*f_mwrite4)       (mfile *mf, unsigned int offset, u_int32_t  value);
@@ -42,33 +42,11 @@ typedef int (*f_mwrite4_block) (mfile *mf, unsigned int offset, u_int32_t* data,
 typedef int (*f_maccess_reg)   (mfile *mf, u_int8_t *data);
 typedef int (*f_mclose)        (mfile* mf);
 
-
-typedef struct icmd_params_t {
-    int icmd_opened;
-    int took_semaphore;
-    int ctrl_addr;
-    int cmd_addr;
-    u_int32_t max_cmd_size;
-    int semaphore_addr;
-    int static_cfg_not_done_addr;
-    int static_cfg_not_done_offs;
-    u_int32_t lock_key;
-    int ib_semaphore_lock_supported;
-}icmd_params;
-
-typedef struct tools_hcr_params_t {
-    int supp_cr_mbox; // 1: mbox supported , -1: mbox not supported
-}tools_hcr_params;
-
-typedef struct access_reg_params_t {
-    int max_reg_size;
-}access_reg_params;
-
-struct mfile_t {
-    char*            dev_name;
-    void            *ctx; // Access method context
-    int              access_type;
+typedef struct ul_ctx {
     int              fdlock;
+    /* Hermon WA */
+    int              connectx_flush; /* For ConnectX A0 */
+    int              need_flush; /* For ConnectX A0 */
 
     f_mread4         mread4;
     f_mwrite4        mwrite4;
@@ -78,7 +56,6 @@ struct mfile_t {
     f_mclose         mclose;
 
     /******** RESERVED FIELDS FOR SWITCHING METHOD IF NEEDED ******/
-    void            *res_ctx; // Reserved access method context
     int              res_access_type;
     int              res_fdlock;
     f_mread4         res_mread4;
@@ -86,18 +63,7 @@ struct mfile_t {
     f_mread4_block   res_mread4_block;
     f_mwrite4_block  res_mwrite4_block;
     /*************************************************************/
-
-    //for ICMD access
-    icmd_params icmd;
-    // for vendor specific pci capability
-    int vsec_supp;
-    u_int32_t vsec_addr;
-    int address_space;
-    // for tools HCR access
-    tools_hcr_params hcr_params;
-    // for sending access registers
-    access_reg_params acc_reg_params;
-};
+} ul_ctx_t;
 #endif
 
 

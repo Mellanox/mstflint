@@ -40,7 +40,6 @@
 #include <common/tools_utils.h>
 #include "mtcr_icmd_cif.h"
 #include "mtcr_ib_res_mgt.h"
-
 //#define _DEBUG_MODE   // un-comment this to enable debug prints
 
 #define IN
@@ -53,6 +52,14 @@
 #define STAT_CFG_NOT_DONE_BITOFF_CIB   31
 #define STAT_CFG_NOT_DONE_BITOFF_CX4   31
 #define STAT_CFG_NOT_DONE_BITOFF_SW_IB 0
+#define ICMD_VERSION_BITOFF 24
+#define ICMD_VERSION_BITLEN 8
+#define CMD_PTR_ADDR_CIB        0x0
+#define CMD_PTR_ADDR_SW_IB      0x80000
+#define CMD_PTR_ADDR_CX4        CMD_PTR_ADDR_CIB
+#define CMD_PTR_BITOFF      0
+#define CMD_PTR_BITLEN      24
+#define CTRL_OFFSET         0x3fc
 #define BUSY_BITOFF         0
 #define BUSY_BITLEN         1
 #define OPCODE_BITOFF       16
@@ -107,6 +114,7 @@
 #define MREAD4_ICMD(mf, offset, ptr, action_on_fail)\
     do {\
         SET_SPACE_FOR_ICMD_ACCESS(mf);\
+        DBG_PRINTF("-D- MREAD4_ICMD: off: %x, addr_space: %x\n", offset, mf->address_space);\
         if (mread4(mf, offset, ptr) != 4) {\
             RESTORE_SPACE(mf);\
             action_on_fail;\
@@ -350,7 +358,6 @@ static int icmd_take_semaphore_com(mfile *mf, u_int32_t expected_read_val)
          if (++retries > 256) {
              return ME_ICMD_STATUS_SEMAPHORE_TO;
          }
-
          if (mf->vsec_supp) {
              //write expected val before reading it
              MWRITE4_SEMAPHORE(mf, mf->icmd.semaphore_addr, expected_read_val, return ME_ICMD_STATUS_CR_FAIL);
@@ -414,6 +421,8 @@ int icmd_send_command_int(mfile    *mf,
     // check data size does not exceed mailbox size
     if (write_data_size > (int)mf->icmd.max_cmd_size || \
          read_data_size > (int)mf->icmd.max_cmd_size ) {
+        DBG_PRINTF("write_data_size <%x-%x> mf->icmd.max_cmd_size .. ", write_data_size, mf->icmd.max_cmd_size);
+        DBG_PRINTF("read_data_size <%x-%x> mf->icmd.max_cmd_size \n", read_data_size, mf->icmd.max_cmd_size);
         return ME_ICMD_SIZE_EXCEEDS_LIMIT;
     }
 
@@ -457,7 +466,7 @@ static int icmd_init_vcr(mfile* mf)
      mf->icmd.cmd_addr = VCR_CMD_ADDR;
      mf->icmd.ctrl_addr = VCR_CTRL_ADDR;
      mf->icmd.semaphore_addr = VCR_SEMAPHORE62;
-
+     DBG_PRINTF("-D- Getting VCR_CMD_SIZE_ADDR\n");
      // get max command size
      MREAD4_ICMD(mf,VCR_CMD_SIZE_ADDR, &(mf->icmd.max_cmd_size), return ME_ICMD_STATUS_CR_FAIL;);
 
