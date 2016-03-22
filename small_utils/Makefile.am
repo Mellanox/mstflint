@@ -30,7 +30,7 @@
 # SOFTWARE.
 #--
 
-INCLUDES= -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common
+AM_CPPFLAGS= -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common
 
 LDADD= ../mtcr_ul/libmtcr_ul.a -ldl
 

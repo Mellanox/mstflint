@@ -33,7 +33,7 @@
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
 
-INCLUDES =	-I$(top_srcdir) -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common
+AM_CPPFLAGS =	-I$(top_srcdir) -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common
 AM_CFLAGS = -Wall -W -g -MP -MD -pipe -Wno-unused-function  $(COMPILER_FPIC) -DMTCR_EXPORT -DMST_UL -DDATA_PATH=\"$(pkgdatadir)\"
 
 noinst_LIBRARIES = libcrdump.a

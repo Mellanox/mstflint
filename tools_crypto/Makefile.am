@@ -32,7 +32,7 @@
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 USER_DIR = $(top_srcdir)
-INCLUDES = -I$(USER_DIR) -I$(USER_DIR)/common
+AM_CPPFLAGS = -I$(USER_DIR) -I$(USER_DIR)/common
 AM_CFLAGS =  -MD -pipe -Wall -W -DMST_UL -g
 
 noinst_LIBRARIES = libtools_crypto.a

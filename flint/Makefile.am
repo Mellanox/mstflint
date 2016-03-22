@@ -39,7 +39,7 @@ LAYOUTS_DIR = $(top_srcdir)/tools_layouts
 MFT_UTILS_DIR = $(top_srcdir)/mft_utils
 CMDIF_DIR   = $(top_srcdir)/cmdif
 
-INCLUDES = -I$(top_srcdir) -I$(srcdir) -I$(MTCR_DIR) -I$(MFLASH_DIR) -I$(COMMON_DIR) \
+AM_CPPFLAGS = -I$(top_srcdir) -I$(srcdir) -I$(MTCR_DIR) -I$(MFLASH_DIR) -I$(COMMON_DIR) \
            -I$(LAYOUTS_DIR) -I$(MFT_UTILS_DIR) -I$(MTCR_INC_DIR)
 
 mstflint_CXXFLAGS = -Wall -W -g -MP -MD -pipe -DEXTERNAL

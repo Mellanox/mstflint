@@ -83,10 +83,19 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/mstmcra
 %{_bindir}/mstconfig
 %{_bindir}/hca_self_test.ofed
-%{_includedir}/mtcr_ul/mtcr.h
-%{_libdir}/libmtcr_ul.a
+
+%{_includedir}/mstfllint/mtcr.h
+%{_libdir}/mstflint/libmtcr_ul.a
+
 %{_datadir}/mstflint
 %{_mandir}/man1/*
+
+%post
+# link mtcr_ul to old include path
+mkdir -p %{_includedir}/mtcr_ul
+ln -s %{_includedir}/mstflint/mtcr.h            %{_includedir}/mtcr_ul/mtcr.h
+# link mtcr_ul to old lib path
+ln -s %{_libdir}/mstflint/libmtcr_ul.a            %{_libdir}/libmtcr_ul.a 
 
 %changelog
 * Mon Jan 11 2016 Adrian Chiris <adrianc@dev.mellanox.co.il>

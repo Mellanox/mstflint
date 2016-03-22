@@ -10,11 +10,12 @@ AC_SUBST([VERSION])
 
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_SRCDIR([README])
-AM_INIT_AUTOMAKE(mstflint, 4.3.0)
+AM_INIT_AUTOMAKE
 
 dnl Checks for programs
 AC_PROG_CC
 AC_PROG_CXX
+AM_PROG_AR
 AC_PROG_LIBTOOL
 AC_CONFIG_HEADERS( config.h )
 
@@ -85,6 +86,6 @@ AS_IF([test "x$enable_cs" = "xyes"], [
         AC_CONFIG_FILES(tools_crypto/Makefile)
     ])
 
-AC_OUTPUT( Makefile mft_utils/Makefile mtcr_ul/Makefile dev_mgt/Makefile tools_layouts/Makefile reg_access/Makefile cmdif/Makefile tools_res_mgmt/Makefile \
-		mlxconfig/Makefile mflash/Makefile mlxfwops/Makefile mlxfwops/lib/Makefile cmdparser/Makefile flint/Makefile \
+AC_OUTPUT( Makefile common/Makefile mft_utils/Makefile mtcr_ul/Makefile dev_mgt/Makefile tools_layouts/Makefile reg_access/Makefile \
+        cmdif/Makefile tools_res_mgmt/Makefile mlxconfig/Makefile mflash/Makefile mlxfwops/Makefile mlxfwops/lib/Makefile cmdparser/Makefile flint/Makefile \
  		small_utils/Makefile mstdump/Makefile mstdump/crd_lib/Makefile mstdump/crd_main/Makefile  mstdump/mstdump_dbs/Makefile )

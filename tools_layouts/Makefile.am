@@ -31,9 +31,10 @@
 #--
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
-INCLUDES = -I$(top_srcdir)/mtcr_ul -I$(top_srcdir)/common
+AM_CPPFLAGS = -I$(top_srcdir)/mtcr_ul -I$(top_srcdir)/common
 AM_CFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC)
-noinst_LIBRARIES = libtools_layouts.a
+
+noinst_LTLIBRARIES = libtools_layouts.a
 
 libtools_layouts_a_SOURCES = adb_to_c_utils.c adb_to_c_utils.h \
 				cibfw_layouts.c cibfw_layouts.h \

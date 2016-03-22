@@ -31,9 +31,9 @@
 #--
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
-INCLUDES = -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common
+AM_CPPFLAGS = -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common
 
-lib_LIBRARIES = libmtcr_ul.a
+pkglib_LIBRARIES = libmtcr_ul.a
 
 libmtcr_ul_a_SOURCES = mtcr_ul.c mtcr_ib.h  mtcr_int_defs.h\
 			mtcr_ib_res_mgt.h mtcr_ib_res_mgt.c\
@@ -49,6 +49,6 @@ else
 libmtcr_ul_a_CFLAGS += -DNO_INBAND
 endif
 
-libraryincludedir=$(includedir)/mtcr_ul
-libraryinclude_HEADERS = $(top_srcdir)/include/mtcr_ul/mtcr.h
+libraryincludedir=$(includedir)/mstflint
+libraryinclude_HEADERS = $(top_srcdir)/include/mtcr_ul/mtcr.h  $(top_srcdir)/include/mtcr_ul/mtcr_com_defs.h
 

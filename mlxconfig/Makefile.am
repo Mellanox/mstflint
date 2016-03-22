@@ -42,7 +42,7 @@ UTILS_LIB = $(USER_DIR)/mft_utils/libmftutils.a
 CMDIF_DIR = $(USER_DIR)/cmdif
 
 
-INCLUDES = -I. -I$(USER_DIR) -I$(top_srcdir)/include/mtcr_ul -I$(MTCR_DIR) -I$(COMMON_DIR) $(WIN64_INC)\
+AM_CPPFLAGS = -I. -I$(USER_DIR) -I$(top_srcdir)/include/mtcr_ul -I$(MTCR_DIR) -I$(COMMON_DIR) $(WIN64_INC)\
            -I $(LAYOUTS_DIR) -I $(UTILS_DIR) -I$(DEV_MGT_DIR) -I$(CMDIF_DIR)
 
 AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe
