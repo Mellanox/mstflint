@@ -1,6 +1,6 @@
 %{!?ibmadlib: %define ibmadlib libibmad-devel}
 %{!?name: %define name mstflint}
-%{!?version: %define version 4.3.0}
+%{!?version: %define version 4.4.0}
 %{!?release: %define release 1}
 %{!?buildtype: %define buildtype "native"}
 %{!?noinband: %define noinband 0}
@@ -84,7 +84,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/mstconfig
 %{_bindir}/hca_self_test.ofed
 
-%{_includedir}/mstfllint/mtcr.h
+%{_includedir}/mstflint/mtcr.h
+%{_includedir}/mstflint/mtcr_com_defs.h
 %{_libdir}/mstflint/libmtcr_ul.a
 
 %{_datadir}/mstflint
@@ -98,6 +99,9 @@ ln -s %{_includedir}/mstflint/mtcr.h            %{_includedir}/mtcr_ul/mtcr.h
 ln -s %{_libdir}/mstflint/libmtcr_ul.a            %{_libdir}/libmtcr_ul.a 
 
 %changelog
+* Wed Mar 23 2016 Adrian Chiris <adrianc@dev.mellanox.co.il>
+   MFT 4.4.0 Updates
+
 * Mon Jan 11 2016 Adrian Chiris <adrianc@dev.mellanox.co.il>
    MFT 4.3.0 Updates
 
