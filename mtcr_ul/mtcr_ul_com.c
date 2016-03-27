@@ -1029,8 +1029,8 @@ int mtcr_pciconf_open(mfile *mf, const char *name)
 static
 int mtcr_inband_open(mfile* mf, const char* name)
 {
-    ul_ctx_t *ctx = mf->ul_ctx;
 #ifndef NO_INBAND
+    ul_ctx_t *ctx = mf->ul_ctx;
     mf->tp = MST_IB;
     ctx->mread4 = mib_read4;
     ctx->mwrite4 = mib_write4;
