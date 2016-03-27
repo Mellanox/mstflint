@@ -629,17 +629,17 @@ int main(int argc, char **argv)
 	return 0;
 
 usage:
-	fprintf(stderr, "Usage: %s [-m|-n] [-t ##] <file> [-- keyword ...]\n", argv[0]);
-	fprintf(stderr, "-h\tPrint this help.\n");
-	fprintf(stderr, "-v\tPrint tool version.\n");
-	fprintf(stderr, "-m\tDump raw VPD data to stdout.\n");
-	fprintf(stderr, "-n\tDo not validate check sum.\n");
-	fprintf(stderr, "-r\tDo not check and display the VPD_W tag in the vpd data.\n");
-	fprintf(stderr, "-t ##\tTime out after ## seconds. (Default is 30.)\n\n");
-	fprintf(stderr, "file\tThe PCI id number of the HCA (for example, \"2:00.0\"),\n");
-	fprintf(stderr, "\tthe device name (such as \"mlx4_0\")\n");
-	fprintf(stderr, "\tthe absolute path to the device (\"/sys/class/infiniband/mlx4_0/device\")\n");
-	fprintf(stderr, "\tor '-' to read VPD data from the standard input.\n\n");
-	fprintf(stderr, "keyword(s): Only display the requested information. (ID, PN, EC, SN, etc...)\n");
+	printf("Usage: %s [-m|-n] [-t ##] <file> [-- keyword ...]\n", argv[0]);
+	printf("-h\tPrint this help.\n");
+	printf("-v\tPrint tool version.\n");
+	printf("-m\tDump raw VPD data to stdout.\n");
+	printf("-n\tDo not validate check sum.\n");
+	printf("-r\tDo not check and display the VPD_W tag in the vpd data.\n");
+	printf("-t ##\tTime out after ## seconds. (Default is 30.)\n\n");
+	printf("file\tThe PCI id number of the HCA (for example, \"2:00.0\"),\n");
+	printf("\tthe device name (such as \"mlx4_0\")\n");
+	printf("\tthe absolute path to the device (\"/sys/class/infiniband/mlx4_0/device\")\n");
+	printf("\tor '-' to read VPD data from the standard input.\n\n");
+	printf("keyword(s): Only display the requested information. (ID, PN, EC, SN, etc...)\n");
 	return rc;
 }
