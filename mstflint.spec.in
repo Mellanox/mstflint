@@ -69,6 +69,14 @@ make DESTDIR=${RPM_BUILD_ROOT} install
 # remove unpackaged files from the buildroot
 rm -f $RPM_BUILD_ROOT%{_libdir}/*.la
 
+# create softlinks to old mtcr header and lib locations
+# link mtcr_ul to old location
+mkdir -p %{buildroot}/%{_includedir}/mtcr_ul
+ln -s %{_includedir}/mstflint/mtcr.h %{buildroot}/%{_includedir}/mtcr_ul/mtcr.h
+ln -s %{_includedir}/mstflint/mtcr_com_defs.h %{buildroot}/%{_includedir}/mtcr_ul/mtcr_com_defs.h
+# link mtcr_ul to old lib path
+ln -s %{_libdir}/mstflint/libmtcr_ul.a %{buildroot}/%{_libdir}/libmtcr_ul.a 
+
 %clean
 rm -rf $RPM_BUILD_ROOT
 
@@ -86,17 +94,13 @@ rm -rf $RPM_BUILD_ROOT
 
 %{_includedir}/mstflint/mtcr.h
 %{_includedir}/mstflint/mtcr_com_defs.h
+%{_includedir}/mtcr_ul/mtcr.h
+%{_includedir}/mtcr_ul/mtcr_com_defs.h
 %{_libdir}/mstflint/libmtcr_ul.a
+%{_libdir}/libmtcr_ul.a
 
 %{_datadir}/mstflint
 %{_mandir}/man1/*
-
-%post
-# link mtcr_ul to old include path
-mkdir -p %{_includedir}/mtcr_ul
-ln -s %{_includedir}/mstflint/mtcr.h            %{_includedir}/mtcr_ul/mtcr.h
-# link mtcr_ul to old lib path
-ln -s %{_libdir}/mstflint/libmtcr_ul.a            %{_libdir}/libmtcr_ul.a 
 
 %changelog
 * Wed Mar 23 2016 Adrian Chiris <adrianc@dev.mellanox.co.il>
