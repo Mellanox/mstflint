@@ -38,15 +38,25 @@
 
 #define CAUSE_FLAG "--cause"
 #define MAX_DEV_LEN 512
+
+#ifndef MSTDUMP_NAME
+#define MSTDUMP_NAME "mstdump"
+#endif
+
+#ifndef DEV_EXAMPLE
+#define DEV_EXAMPLE "/dev/mst/mt4099_pci_cr0"
+#endif
+
+
 // string explaining the cmd-line structure
-char correct_cmdline[] = "   Mellanox mstdump utility, dumps device internal configuration data\n\
-   Usage: mstdump [-full] <device> [i2c-slave] [-v[ersion] [-h[elp]]]\n\n\
+char correct_cmdline[] = "   Mellanox "MSTDUMP_NAME" utility, dumps device internal configuration data\n\
+   Usage: "MSTDUMP_NAME" [-full] <device> [i2c-slave] [-v[ersion] [-h[elp]]]\n\n\
    -full              :  Dump more expanded list of addresses\n\
                          Note : be careful when using this flag, None safe addresses might be read.\n\
    -v                 :  Display version info\n\
    -h                 :  Print this help message\n\
    Example :\n\
-            mstdump /dev/mst/mt4099_pci_cr0\n";
+            "MSTDUMP_NAME" "DEV_EXAMPLE"\n";
 
 
 void print_dword(crd_dword_t *dword) {

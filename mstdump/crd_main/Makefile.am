@@ -40,3 +40,5 @@ mstregdump_SOURCES = mstdump.c
 mstregdump_LDADD = ../crd_lib/libcrdump.a ../../dev_mgt/libdev_mgt.a ../../reg_access/libreg_access.a ../../tools_layouts/libtools_layouts.a \
 			../../mtcr_ul/libmtcr_ul.a  -lm -ldl
 
+mstregdump_CFLAGS = -DMSTDUMP_NAME=\"mstregdump\" -DDEV_EXAMPLE=\"0b:00.0\"
+
