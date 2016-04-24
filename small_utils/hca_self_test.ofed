@@ -155,6 +155,9 @@ if [ $OS_TYPE = "DEBIAN" ]; then
     RPM_USR_VER=`dpkg -s libibverbs1 2> /dev/null | wc -l`
     RPM_KER_VER=`dpkg -l 2> /dev/null | grep -E "ofed-kernel" | wc -l`
     RPM_KER_NAME=`echo $mlx4_core_ko | awk -F '/' '{print$4}'`
+    if [ $RPM_KER_VER -eq 0 ] && [ "$RPM_KER_NAME" != "" ]; then
+        RPM_KER_VER=1
+    fi
     BOOTED_KER=`uname -r`
     if [ "$BOOTED_KER" != "$RPM_KER_NAME" ]; then
         RPM_CUR_BOOTED_KER=0
