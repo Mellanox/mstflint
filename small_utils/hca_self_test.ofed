@@ -58,6 +58,8 @@ HERMON_FW_NEEDED=
 CX3_FW_NEEDED=
 CX3_PRO_FW_NEEDED=
 CONNECTIB_FW_NEEDED=
+CONNECTX4_FW_NEEDED=
+CONNECTX4LX_FW_NEEDED=
 ########################################################################################
 
 
@@ -153,6 +155,9 @@ if [ $OS_TYPE = "DEBIAN" ]; then
     RPM_USR_VER=`dpkg -s libibverbs1 2> /dev/null | wc -l`
     RPM_KER_VER=`dpkg -l 2> /dev/null | grep -E "ofed-kernel" | wc -l`
     RPM_KER_NAME=`echo $mlx4_core_ko | awk -F '/' '{print$4}'`
+    if [ $RPM_KER_VER -eq 0 ] && [ "$RPM_KER_NAME" != "" ]; then
+        RPM_KER_VER=1
+    fi
     BOOTED_KER=`uname -r`
     if [ "$BOOTED_KER" != "$RPM_KER_NAME" ]; then
         RPM_CUR_BOOTED_KER=0
@@ -279,6 +284,8 @@ g_connectx="ConnectX"
 g_connectx3="ConnectX-3"
 g_connectx3_pro="ConnectX-3_Pro"
 g_connectib="Connect-IB"
+g_connectx4="ConnectX-4"
+g_connectx4lx="ConnectX-4_Lx"
 g_InfiniHost_III_Ex="InfiniHost_III_Ex"
 g_InfiniHost_III_Ex_memfree="InfiniHost_III_Ex_m"
 g_InfiniHost_III_Lx="InfiniHost_III_Lx"
@@ -301,8 +308,12 @@ function  get_hca_name {
         ret_val=$g_connectx3_pro
     elif [ $dev_id -eq 4113 ]; then
         ret_val=$g_connectib
+    elif [ $dev_id -eq 4115 ]; then
+        ret_val=$g_connectx4
+    elif [ $dev_id -eq 4117 ]; then
+        ret_val=$g_connectx4lx
     else
-        ret_val=$g_connectx
+        ret_val=$g_connectx4
     fi
     echo $ret_val
 
@@ -318,7 +329,7 @@ function get_driver {
         if [ "$hca_name" != "" ]; then
             if [ "$hca_name" == "$g_connectx" ] || [ "$hca_name" == "$g_connectx3" ] || [ "$hca_name" == "$g_connectx3_pro" ]; then
                 driver_need=$HERMON_DRIVER_NEEDED
-            elif [ "$hca_name" == "$g_connectib" ]; then 
+            elif [ "$hca_name" == "$g_connectib" ] || [ "$hca_name" == "$g_connectx4" ] || [ "$hca_name" == "$g_connectx4lx" ]; then 
                 driver_need=$CONNECTIB_DRIVER_NEEDED
             else
                 driver_need=$MTHCA_DRIVER_NEEDED
@@ -411,6 +422,14 @@ if [ $NUM_HCAS -ne 0 ]; then
                         FW_NEEDED=$CONNECTIB_FW_NEEDED
                         DRIVER_NEEDED=$CONNECTIB_DRIVER_NEEDED
                         device_num=$mlx5_dev_num
+                    elif [ "$hca_name" == "$g_connectx4" ]; then
+                        FW_NEEDED=$CONNECTX4_FW_NEEDED
+                        DRIVER_NEEDED=$CONNECTIB_DRIVER_NEEDED
+                        device_num=$mlx5_dev_num
+                    elif [ "$hca_name" == "$g_connectx4lx" ]; then
+                        FW_NEEDED=$CONNECTX4LX_FW_NEEDED
+                        DRIVER_NEEDED=$CONNECTIB_DRIVER_NEEDED
+                        device_num=$mlx5_dev_num
                     elif [ "$hca_name" == "$g_InfiniHost" ]; then
                         FW_NEEDED=$TAVOR_FW_NEEDED
                     fi
@@ -421,7 +440,7 @@ if [ $NUM_HCAS -ne 0 ]; then
                     "$g_connectx"|"$g_connectx3"|"$g_connectx3_pro")
                         let "mlx_dev_num=$mlx_dev_num + 1"
                     ;;
-                    "$g_connectib")
+                    "$g_connectib"|"$g_connectx4"|"$g_connectx4lx")
                         let "mlx5_dev_num=$mlx5_dev_num + 1"
                     ;;                    *)
                         let "mthca_dev_num=$mthca_dev_num + 1"
