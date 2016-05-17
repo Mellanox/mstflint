@@ -28,6 +28,11 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
+ * mtcr_ul_com.h
+ *
+ *  Created on: Feb 16, 2016
+ *      Author: adham
  */
 
 #ifndef USER_MTCR_MTCR_UL_COM_H_
@@ -128,6 +133,8 @@ int mget_max_reg_size_ul(mfile* mf);
 
 int mread_buffer_ul(mfile* mf, unsigned int offset, u_int8_t* data, int byte_len);
 int mwrite_buffer_ul(mfile* mf, unsigned int offset, u_int8_t* data, int byte_len);
+
+int mclear_pci_semaphore_ul(const char* name);
 
 #ifdef __cplusplus
 }

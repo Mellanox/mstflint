@@ -64,13 +64,13 @@ typedef struct aux_tlv {
 } aux_tlv_t;
 
 
-class ImageTlvOps : public ErrMsg
+class ImageTlvOps : public FlintErrMsg
 {
 public:
-    ImageTlvOps(const char* fname, bool readOnly=false) : ErrMsg() , _fname(fname), _tlvSectionFound(false),
+    ImageTlvOps(const char* fname, bool readOnly=false) : FlintErrMsg() , _fname(fname), _tlvSectionFound(false),
                                                           _tlvSectionFilePos(0), _initialized(false),
                                                           _readOnly(readOnly){}
-    ImageTlvOps(u_int8_t* buf, unsigned int size) : ErrMsg() , _fname((const char*)NULL),
+    ImageTlvOps(u_int8_t* buf, unsigned int size) : FlintErrMsg() , _fname((const char*)NULL),
                                                     _tlvSectionFound(false), _tlvSectionFilePos(0),
                                                     _initialized(false), _readOnly(true)
                                                     {
@@ -110,10 +110,10 @@ private:
 };
 
 
-class TimeStampIFC : public ErrMsg
+class TimeStampIFC : public FlintErrMsg
 {
 public:
-    TimeStampIFC() : ErrMsg() {};
+    TimeStampIFC() : FlintErrMsg() {};
     virtual ~TimeStampIFC(){};
     static TimeStampIFC* getIFC(mfile* mf);
     static TimeStampIFC* getIFC(const char* fname, u_int32_t lastFWAddr=0);

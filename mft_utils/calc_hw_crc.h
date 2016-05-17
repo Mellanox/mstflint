@@ -30,18 +30,19 @@
  * SOFTWARE.
  */
 
-#ifndef TOOLS_MD5_H
-#define TOOLS_MD5_H
+#ifndef MFT_CALC_HW_CRC
+#define MFT_CALC_HW_CRC
+
+#include <tools_utils.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <common/compatibility.h>
-u_int8_t *tools_md5(const u_int8_t* src, u_int32_t src_len, u_int8_t dst[16]);
+u_int16_t calc_hw_crc(u_int8_t* data, int size);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // TOOLS_MD5_H
+#endif

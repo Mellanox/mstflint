@@ -38,6 +38,10 @@
 #include "flint_io.h"
 #include "mlxfwops_com.h"
 
+#ifdef CABLES_SUPP
+#include <cable_access/cable_access.h>
+#endif
+
 typedef f_prog_func_str VerifyCallBack;
 typedef f_prog_func     ProgressCallBack;
 typedef f_prog_func_str PrintCallBack;
@@ -45,7 +49,7 @@ typedef fw_ver_info_t   FwVerInfo;
 
 typedef int (*PrintCallBackAdv) (int completion, char* str);
 
-class MLXFWOP_API FwOperations : public ErrMsg {
+class MLXFWOP_API FwOperations : public FlintErrMsg {
 
 
 public:
@@ -59,9 +63,10 @@ public:
     // typedef std::tr1::function<void (void)> VerifyCallback;
 
     FwOperations(FBase *ioAccess) :
-    	_ioAccess(ioAccess), _isCached(false), _wasVerified(false),
+        _ioAccess(ioAccess), _isCached(false), _wasVerified(false),
         _quickQuery(false), _printFunc((PrintCallBack)NULL), _fname((const char*)NULL),\
-		_devName((const char*)NULL), _advErrors(true)
+        _devName((const char*)NULL), _advErrors(true), _minBinMinorVer(0), _minBinMajorVer(0),
+        _maxBinMajorVer(0)
     {
         memset(_sectionsToRead, 0, sizeof(_sectionsToRead));
         memset(&_fwImgInfo, 0, sizeof(_fwImgInfo));
@@ -118,7 +123,7 @@ public:
 
     //needed for flint low level operations
     bool FwSwReset();
-    virtual bool CheckCX4Device() {return true;}
+    virtual bool CheckCX4Device() {return true; /* deprecated always return true*/ }
     virtual bool FwCalcMD5(u_int8_t md5sum[16]) = 0;
 
     
@@ -129,7 +134,7 @@ public:
     //bool GetExpRomVersionWrapper();
     void getSupporteHwId(u_int32_t **supportedHwId, u_int32_t &supportedHwIdNum);
 
-    class MLXFWOP_API RomInfo : ErrMsg {
+    class MLXFWOP_API RomInfo : FlintErrMsg {
     public:
         RomInfo(const std::vector<u_int8_t>& romSector, bool resEndi=true);
         ~RomInfo() {};
@@ -231,6 +236,7 @@ public:
             bool noFlashVerify;
             bool shortErrors; // show short/long error msgs (default shuold be false)
             int cx3FwAccess;
+            int isCableFw;
         };
 
         struct sgParams {
@@ -248,6 +254,7 @@ public:
         };
 protected:
     #define FS3_IND_ADDR 0x24
+    #define FS4_IND_ADDR 0x10
     #define ARR_SIZE(arr) sizeof(arr)/sizeof(arr[0])
     #define RESTORING_MSG "Restoring signature"
 
@@ -277,23 +284,28 @@ protected:
         IMG_SIG_TYPE_UNKNOWN = 0,
         IMG_SIG_TYPE_BIN = 1,
         IMG_SIG_TYPE_MFA = 2,
-        IMG_SIG_OPEN_FILE_FAILED = 3
+        IMG_SIG_TYPE_CF  = 3,
+        IMG_SIG_OPEN_FILE_FAILED = 4
     };
 
     enum {
         IMG_VER_FS2 = 0,
         IMG_VER_FS3 = 3,
+        IMG_VER_FS4 = 4
     };
     enum {
         FS_OLD_GEN = 0,
         FS_FS2_GEN,
         FS_FS3_GEN,
+        FS_FS4_GEN,
+        FS_UNKNOWN_IMG
     };
 
     struct HwDevData {
         const char*      name;
         u_int32_t        hwDevId;
         chip_type_t      chipType;
+        chip_family_type chipFamilyType;
         int              portNum;
         // Zero terminated list of SW device ids
         const u_int32_t  swDevIds[MAX_SW_DEVICES_PER_HW];
@@ -303,6 +315,16 @@ protected:
         const char*      name;
         u_int32_t        hwDevId;
         u_int8_t         revId;
+    };
+
+    struct SectionInfo {
+        u_int8_t      type;
+        const char    *name;
+    };
+
+    struct QueryOptions {
+        bool quickQuery;
+        bool readRom;
     };
 
     typedef int (*print2log_func) (const char* format, ...);
@@ -328,7 +350,7 @@ protected:
     void FwInitCom();
     void FwDebugPrint(char *str);
 
-    static bool CntxFindAllImageStart (FBase *ioAccess, u_int32_t start_locations[CNTX_START_POS_SIZE], u_int32_t* found_images);
+    static bool FindAllImageStart (FBase *ioAccess, u_int32_t start_locations[CNTX_START_POS_SIZE], u_int32_t* found_images, u_int32_t const cntx_magic_pattern[]);
     static bool     getRomsInfo(FBase* io, roms_info_t& romsInfo);
 
     bool GetQuickQuery()           {return _quickQuery;}
@@ -336,12 +358,14 @@ protected:
     bool CheckPSID(FwOperations &imageOps, u_int8_t allow_psid_change = false);
     chip_type_t getChipType();
     bool getInfoFromHwDevid(u_int32_t hwDevId, chip_type_t& chipT, const u_int32_t** swIds);
+    HwDevData getInfoFromChipType(chip_type_t chipT) const;
 
     bool ReadImageFile(const char *fimage, u_int8_t *&file_data, int &file_size, int min_size=-1); // min_size=-1 like int flint_ops needed for fs3updateSection
     bool ModifyImageFile(const char *fimage, u_int32_t addr, void *data, int cnt);
     bool WriteImageToFile(const char *file_name, u_int8_t *data, u_int32_t length);
     bool FwBurnData(u_int32_t *data, u_int32_t dataSize, ProgressCallBack progressFunc);
     static bool FwAccessCreate(fw_ops_params_t& fwParams, FBase **ioAccessP);
+    bool CheckBinVersion(u_int8_t binVerMajor, u_int8_t binVerMinor);
 
     // Protected Members
     FBase*    _ioAccess;
@@ -363,6 +387,10 @@ protected:
     // show advanced error msgs
     bool _advErrors;
 
+    u_int8_t _minBinMinorVer;
+    u_int8_t _minBinMajorVer;
+    u_int8_t _maxBinMajorVer;
+
 private:
 
     // Static Methods
@@ -373,7 +401,11 @@ private:
     static int      getFileSignature(const char* fname);
     static int      getBufferSignature(u_int8_t* buf, u_int32_t size);
     static u_int8_t CheckFwFormat(FBase& f, bool getFwFormatFromImg = false);
-    static bool     CntxFindMagicPattern  (FBase* ioAccess, u_int32_t addr);
+    static u_int8_t IsFS4Image(FBase& f, u_int32_t* found_images);
+    static u_int8_t IsFS3OrFS2Image(FBase& f, u_int32_t* found_images);
+    static bool     FindMagicPattern  (FBase* ioAccess, u_int32_t addr,
+            u_int32_t const cntx_magic_pattern[]);
+
     static void     WriteToErrBuff(char* errBuff, const char* errStr, int size);
     void BackUpFwParams(fw_ops_params_t& fwParams);
     static const char * err2str(int errNum);
@@ -381,13 +413,15 @@ private:
 
     // Static Members
     static const u_int32_t _cntx_image_start_pos[CNTX_START_POS_SIZE];
-    static const u_int32_t _cntx_magic_pattern[4];
 
     // Members
     static const HwDevData hwDevData[];
     static const HwDev2Str hwDev2Str[];
     //fw_hndl_type_t _hndlType;  //not used atm
 
+protected:
+    static const u_int32_t _cntx_magic_pattern[4];
+    static const u_int32_t _fs4_magic_pattern[4];
 };
 
 #endif // FW_ACCESS_H

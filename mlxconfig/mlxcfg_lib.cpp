@@ -28,7 +28,12 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ */
+/*
+ * mlxcfg_lib.cpp
  *
+ *  Created on: Feb 17, 2014
+ *      Author: adrianc
  */
 
 #include <set>
@@ -286,6 +291,10 @@ int MlxCfgOps::opend(mfile* mf, bool forceClearSem)
         return errmsg(MCE_UNSUPPORTED_DEVICE);
     }
 
+    if(dm_is_livefish_mode(mf)) {
+        return errmsg("Device in Livefish mode is not supported.");
+    }
+
     // init _cfgList, _param2TypeMap
     if (_isFifthGen) {
         // Wake On LAN
@@ -371,6 +380,31 @@ int MlxCfgOps::opend(mfile* mf, bool forceClearSem)
 
         _cfgList[Mct_Boot_Settings_Extras_5thGen] = new BootSettingsExtParams5thGen();
         _param2TypeMap[Mcp_Boot_Settings_Ext_IP_Ver] = Mct_Boot_Settings_Extras_5thGen;
+
+        _cfgList[Mct_QoS_P1] = new QoS(1);
+        _cfgList[Mct_QoS_P2] = new QoS(2);
+        _param2TypeMap[Mcp_QoS_Num_of_TC_P1] = Mct_QoS_P1;
+        _param2TypeMap[Mcp_QoS_Num_of_VL_P1] = Mct_QoS_P1;
+        _param2TypeMap[Mcp_QoS_Num_of_TC_P2] = Mct_QoS_P2;
+        _param2TypeMap[Mcp_QoS_Num_of_VL_P2] = Mct_QoS_P2;
+
+        _cfgList[Mct_LLDP_Client_Settings_P1] = new LLDPClientSettings(1);
+        _cfgList[Mct_LLDP_Client_Settings_P2] = new LLDPClientSettings(2);
+        _param2TypeMap[Mcp_LLDP_NB_RX_Mode_P1] = Mct_LLDP_Client_Settings_P1;
+        _param2TypeMap[Mcp_LLDP_NB_TX_Mode_P1] = Mct_LLDP_Client_Settings_P1;
+        _param2TypeMap[Mcp_LLDP_NB_DCBX_P1] = Mct_LLDP_Client_Settings_P1;
+        _param2TypeMap[Mcp_LLDP_NB_RX_Mode_P2] = Mct_LLDP_Client_Settings_P2;
+        _param2TypeMap[Mcp_LLDP_NB_TX_Mode_P2] = Mct_LLDP_Client_Settings_P2;
+        _param2TypeMap[Mcp_LLDP_NB_DCBX_P2] = Mct_LLDP_Client_Settings_P2;
+
+        _cfgList[Mct_DCBX_P1] = new DCBX(1);
+        _cfgList[Mct_DCBX_P2] = new DCBX(2);
+        _param2TypeMap[Mcp_DCBX_IEEE_EN_P1] = Mct_DCBX_P1;
+        _param2TypeMap[Mcp_DCBX_CEE_EN_P1] = Mct_DCBX_P1;
+        _param2TypeMap[Mcp_DCBX_WILLING_P1] = Mct_DCBX_P1;
+        _param2TypeMap[Mcp_DCBX_IEEE_EN_P2] = Mct_DCBX_P2;
+        _param2TypeMap[Mcp_DCBX_CEE_EN_P2] = Mct_DCBX_P2;
+        _param2TypeMap[Mcp_DCBX_WILLING_P2] = Mct_DCBX_P2;
 
     } else {
         // SR-IOV
@@ -505,7 +539,7 @@ int MlxCfgOps::setCfg(mlxCfgParam cfgParam, u_int32_t val)
     return MCE_SUCCESS;
 }
 
-int MlxCfgOps::setCfg(const std::vector<cfgInfo>& infoVec)
+int MlxCfgOps::setCfg(const std::vector<cfgInfo>& infoVec, mlxCfgParam& failedParam)
 {
     // set params
     std::set<CfgParams*> CfgToSet;
@@ -516,6 +550,7 @@ int MlxCfgOps::setCfg(const std::vector<cfgInfo>& infoVec)
             return MCE_BAD_PARAMS;
         }
         if (!supportsParam(it->first)) {
+            failedParam = it->first;
             return errmsg(MCE_UNSUPPORTED_CFG);
         }
         // get configuration from device first (if preset) in case of multiple params per type
@@ -592,6 +627,42 @@ int MlxCfgOps::invalidateCfgs()
     return MCE_SUCCESS;
 }
 
+int MlxCfgOps::backupCfgs(vector< pair< u_int32_t, vector<u_int8_t> > >& cfgsMap)
+{
+    int rc;
+    int status = 0;
+    u_int32_t ptr = 0;
+    struct tools_open_mnvgn mnvgnTlv;
+    do {
+        memset(&mnvgnTlv, 0, sizeof(struct tools_open_mnvgn));
+        mnvgnTlv.nv_pointer = ptr;
+        mft_signal_set_handling(1);
+        rc = reg_access_mnvgn(_mf, REG_ACCESS_METHOD_GET, &mnvgnTlv, &status);
+        dealWithSignal();
+        if (rc) {
+            if(status == ME_NOT_IMPLEMENTED) {
+                return errmsg("Firmware does not support backup command");
+            }
+            return errmsg("failed to backup configurations, %s.", m_err2str((MError)rc));
+        }
+        ptr = mnvgnTlv.nv_pointer;
+        if (ptr != 0) {
+            u_int32_t k = mnvgnTlv.nv_hdr.type.tlv_type_dw.tlv_type_dw;
+            vector<u_int8_t> v;
+            v.resize(TOOLS_OPEN_NV_HDR_FIFTH_GEN_SIZE + mnvgnTlv.nv_hdr.length);
+            //Copy header:
+            tools_open_nv_hdr_fifth_gen_pack(&mnvgnTlv.nv_hdr, v.data());
+            //Copy data:
+            memcpy(v.data() + TOOLS_OPEN_NV_HDR_FIFTH_GEN_SIZE,
+                    &mnvgnTlv.nv_data,
+                    mnvgnTlv.nv_hdr.length);
+            cfgsMap.push_back(make_pair(k, v));
+        }
+    } while (ptr != 0);
+
+    return rc;
+}
+
 bool MlxCfgOps::isLegal(mlxCfgType cfg)
 {
     if (_cfgList.find(cfg) != _cfgList.end()) {
@@ -641,7 +712,7 @@ mlxCfgType MlxCfgOps::cfgParam2Type(mlxCfgParam param)
 int MlxCfgOps::setRawCfg(std::vector<u_int32_t> rawTlvVec)
 {
     if (!_isFifthGen) {
-        return errmsg("Setting Raw Configuration is supported for 5th Generation devices only.");
+        return errmsg("Setting Raw Configuration is supported for " FIFTH_GENERATION_LIST " devices only.");
     }
     RawCfgParams5thGen rawTlv;
     if (rawTlv.setRawData(rawTlvVec)) {

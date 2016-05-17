@@ -141,6 +141,21 @@ int mclose(mfile *mf)
     return mclose_ul(mf);
 }
 
+mfile *mopen_adv(const char *name, MType mtype)
+{
+    mfile* mf = mopend(name, MST_TAVOR);
+    if (mf) {
+        if (mf->tp & mtype) {
+            return mf;
+        } else {
+            errno = EPERM;
+            mclose(mf);
+            return NULL;
+        }
+    }
+    return mf;
+}
+
 mfile *mopen_fw_ctx(void* fw_cmd_context, void* fw_cmd_func, void* extra_data)
 {
     // not implemented
@@ -250,152 +265,9 @@ int mget_mdevs_type(mfile *mf, u_int32_t *mtype)
     *mtype = mf->tp;
     return 0;
 }
-/************************************
- * Function: m_err2str
- ************************************/
-const char* m_err2str(MError status)
+
+int mclear_pci_semaphore(const char* name)
 {
-    switch (status) {
-        case ME_OK:
-            return "ME_OK";
-        case ME_ERROR:
-            return "General error";
-        case ME_BAD_PARAMS:
-            return "ME_BAD_PARAMS";
-        case ME_CR_ERROR:
-            return "ME_CR_ERROR";
-        case ME_NOT_IMPLEMENTED:
-            return "ME_NOT_IMPLEMENTED";
-        case ME_SEM_LOCKED:
-            return "Semaphore locked";
-        case ME_MEM_ERROR:
-            return "ME_MEM_ERROR";
-        case ME_PCI_READ_ERROR:
-            return "ME_PCI_READ_ERROR";
-        case ME_PCI_WRITE_ERROR:
-            return "ME_PCI_WRITE_ERROR";
-        case ME_PCI_SPACE_NOT_SUPPORTED:
-            return "ME_PCI_SPACE_NOT_SUPPORTED";
-        case ME_PCI_IFC_TOUT:
-            return "ME_PCI_IFC_TOUT";
-
-        case ME_MAD_SEND_FAILED:
-            return "ME_MAD_SEND_FAILED";
-        case ME_UNKOWN_ACCESS_TYPE:
-            return "ME_UNKOWN_ACCESS_TYPE";
-        case ME_UNSUPPORTED_DEVICE:
-            return "ME_UNSUPPORTED_DEVICE";
-
-            // Reg access errors
-        case ME_REG_ACCESS_BAD_STATUS_ERR:
-            return "ME_REG_ACCESS_BAD_STATUS_ERR";
-        case ME_REG_ACCESS_BAD_METHOD:
-            return "Bad method";
-        case ME_REG_ACCESS_NOT_SUPPORTED:
-            return "Register access isn't supported by device";
-        case ME_REG_ACCESS_DEV_BUSY:
-            return "Device is busy";
-        case ME_REG_ACCESS_VER_NOT_SUPP:
-            return "Version not supported";
-        case ME_REG_ACCESS_UNKNOWN_TLV:
-            return "Unknown TLV";
-        case ME_REG_ACCESS_REG_NOT_SUPP:
-            return "Register not supported";
-        case ME_REG_ACCESS_CLASS_NOT_SUPP:
-            return "Class not supported";
-        case ME_REG_ACCESS_METHOD_NOT_SUPP:
-            return "Method not supported";
-        case ME_REG_ACCESS_BAD_PARAM:
-            return "Bad parameter";
-        case ME_REG_ACCESS_RES_NOT_AVLBL:
-            return "Resource not available";
-        case ME_REG_ACCESS_MSG_RECPT_ACK:
-            return "Message receipt ack";
-        case ME_REG_ACCESS_UNKNOWN_ERR:
-            return "Unknown register error";
-        case ME_REG_ACCESS_SIZE_EXCCEEDS_LIMIT:
-            return "Register is too large";
-        case ME_REG_ACCESS_CONF_CORRUPT:
-            return "Config Section Corrupted";
-        case ME_REG_ACCESS_LEN_TOO_SMALL:
-            return "given register length too small for Tlv";
-        case ME_REG_ACCESS_BAD_CONFIG:
-            return "configuration refused";
-        case ME_REG_ACCESS_ERASE_EXEEDED:
-            return "erase count exceeds limit";
-        case ME_REG_ACCESS_INTERNAL_ERROR:
-            return "FW internal error";
-
-            // ICMD access errors
-        case ME_ICMD_STATUS_CR_FAIL:
-            return "ME_ICMD_STATUS_CR_FAIL";
-        case ME_ICMD_STATUS_SEMAPHORE_TO:
-            return "ME_ICMD_STATUS_SEMAPHORE_TO";
-        case ME_ICMD_STATUS_EXECUTE_TO:
-            return "ME_ICMD_STATUS_EXECUTE_TO";
-        case ME_ICMD_STATUS_IFC_BUSY:
-            return "ME_ICMD_STATUS_IFC_BUSY";
-        case ME_ICMD_STATUS_ICMD_NOT_READY:
-            return "ME_ICMD_STATUS_ICMD_NOT_READY";
-        case ME_ICMD_UNSUPPORTED_ICMD_VERSION:
-            return "ME_ICMD_UNSUPPORTED_ICMD_VERSION";
-        case ME_ICMD_NOT_SUPPORTED:
-            return "ME_REG_ACCESS_ICMD_NOT_SUPPORTED";
-        case ME_ICMD_INVALID_OPCODE:
-            return "ME_ICMD_INVALID_OPCODE";
-        case ME_ICMD_INVALID_CMD:
-            return "ME_ICMD_INVALID_CMD";
-        case ME_ICMD_OPERATIONAL_ERROR:
-            return "ME_ICMD_OPERATIONAL_ERROR";
-        case ME_ICMD_BAD_PARAM:
-            return "ME_ICMD_BAD_PARAM";
-        case ME_ICMD_BUSY:
-            return "ME_ICMD_BUSY";
-        case ME_ICMD_ICM_NOT_AVAIL:
-            return "ME_ICMD_ICM_NOT_AVAIL";
-        case ME_ICMD_WRITE_PROTECT:
-            return "ME_ICMD_WRITE_PROTECT";
-        case ME_ICMD_SIZE_EXCEEDS_LIMIT:
-            return "ME_ICMD_SIZE_EXCEEDS_LIMIT";
-        case ME_ICMD_UNKNOWN_STATUS:
-            return "ME_ICMD_UNKNOWN_STATUS";
-
-            // TOOLS HCR access errors
-        case ME_CMDIF_BUSY:
-            return "Tools HCR busy";
-        case ME_CMDIF_TOUT:
-            return "Tools HCR time out";
-        case ME_CMDIF_BAD_OP:
-            return "Operation not supported";
-        case ME_CMDIF_NOT_SUPP:
-            return "Tools HCR not supported";
-        case ME_CMDIF_BAD_SYS:
-            return "bad system status (driver may be down or Fw does not support this operation)";
-        case ME_CMDIF_UNKN_TLV:
-            return "Unknown TLV";
-        case ME_CMDIF_RES_STATE:
-            return "Bad reset state";
-        case ME_CMDIF_UNKN_STATUS:
-            return "Unknown status";
-
-            // MAD IFC errors
-        case ME_MAD_BUSY:
-            return "Temporarily busy. MAD discarded. This is not an error";
-        case ME_MAD_REDIRECT:
-            return "Redirection. This is not an error";
-        case ME_MAD_BAD_VER:
-            return "Bad version";
-        case ME_MAD_METHOD_NOT_SUPP:
-            return "Method not supported";
-        case ME_MAD_METHOD_ATTR_COMB_NOT_SUPP:
-            return "Method and attribute combination isn't supported";
-        case ME_MAD_BAD_DATA:
-            return "Bad attribute modifer or field";
-        case ME_MAD_GENERAL_ERR:
-            return "Unknown MAD error";
-
-        default:
-            return "Unknown error code";
-    }
+    return mclear_pci_semaphore_ul(name);
 }
 

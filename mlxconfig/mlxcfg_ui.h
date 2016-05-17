@@ -28,7 +28,6 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
  */
 
 #ifndef MLXCFG_UI_H_
@@ -47,6 +46,7 @@ typedef enum {
     Mc_Reset,
     Mc_Clr_Sem,
     Mc_Set_Raw,
+    Mc_Backup,
     Mc_UnknownCmd
 } mlxCfgCmd;
 
@@ -146,6 +146,9 @@ private:
     MlxCfgInfo createWakeOnLAN();
     MlxCfgInfo createExternalPort();
     MlxCfgInfo createBootSettingsExt();
+    MlxCfgInfo createQoS();
+    MlxCfgInfo createLLDPClientSettings();
+    MlxCfgInfo createLLDPNBDCBX();
 };
 
 class MlxCfgParams
@@ -176,7 +179,7 @@ public:
 private:
 
     // User interface and parsing methods
-    void printHelp(bool longDesc=false);
+    void printHelp();
     void printVersion();
     void printUsage();
     mlxCfgStatus parseArgs(int argc, char* argv[]);
@@ -197,11 +200,10 @@ private:
     mlxCfgStatus resetDevCfg(const char* dev);
     // Set Raw TLV file
     mlxCfgStatus setDevRawCfg();
+    mlxCfgStatus backupCfg();
     mlxCfgStatus tlvLine2DwVec(const std::string& tlvStringLine, std::vector<u_int32_t>& tlvVec);
 
     mlxCfgStatus clrDevSem();
-    //
-    mlxCfgStatus test(const char* dev);
 
     bool askUser(const char* question);
     mlxCfgStatus err(bool report, const char* errMsg, ...);

@@ -301,6 +301,8 @@ MfError MError2MfError(MError rc) {
 
    case ME_CMDIF_UNKN_TLV:
        return MFE_CMDIF_UNKN_TLV;
+   case ME_CMDIF_BAD_OP:
+       return MFE_CMDIF_BAD_OP;
    default:
 	   break;
    }

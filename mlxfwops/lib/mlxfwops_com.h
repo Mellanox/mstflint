@@ -66,6 +66,7 @@ typedef int (*f_prog_func_str) (char* str);
 #define PRODUCT_VER_LEN 16
 #define PRS_NAME_LEN 100
 #define FS3_PRS_NAME_LEN 97
+#define FS4_PRS_NAME_LEN 97
 #define NAME_LEN 65
 #define DESCRIPTION_LEN 257
 
@@ -119,7 +120,10 @@ enum {
     MLXFW_GET_SECT_ERR,
     MLXFW_UPDATE_SECT_ERR,
     MLXFW_BAD_PARAM_ERR,
-    MLXFW_PRS_MISSMATCH_ERR
+    MLXFW_PRS_MISSMATCH_ERR,
+    MLXFW_NO_VALID_DEVICE_INFO_ERR,
+    MLXFW_TWO_VALID_DEVICE_INFO_ERR,
+    MLXFW_DTOC_OVERWRITE_CHUNK
 };
 
 enum {
@@ -167,6 +171,12 @@ typedef enum chip_type {
     CT_CONNECTX5,
 }chip_type_t;
 
+typedef enum chip_family_type {
+    CFT_UNKNOWN = 0,
+    CFT_HCA,
+    CFT_SWITCH,
+}chip_family_type_t;
+
 typedef struct guid {
     u_int32_t h;
     u_int32_t l;
@@ -185,6 +195,19 @@ typedef struct fs3_uid {
     u_int8_t num_of_guids_pp[2]; // set 0xff for default
     u_int8_t step_size_pp[2]; // set 0xff for default, not relevant for devices >= CX4
 } fs3_uid_t;
+
+typedef struct fs4_uid {
+    guid_t base_guid;
+    int base_guid_specified;
+    guid_t base_mac;
+    int base_mac_specified;
+    u_int8_t num_of_guids; // set 0 for default
+    u_int8_t step_size; // set 0 for default, not relevant for devices >= CX4
+    int set_mac_from_guid;  // if set , base_mac will be derrived automatically from base guid
+    int use_pp_attr; // if set, num_of_guids[2] and step_size[2] will be used for the uid attributes.
+    u_int8_t num_of_guids_pp[2]; // set 0xff for default
+    u_int8_t step_size_pp[2]; // set 0xff for default, not relevant for devices >= CX4
+} fs4_uid_t;
 
 typedef struct rom_info {
     u_int16_t exp_rom_product_id; // 0 - invalid.
@@ -234,6 +257,7 @@ typedef struct fs3_info_ext {
 
 } fs3_info_t;
 
+typedef struct fs3_info_ext fs4_info_t;
 
 typedef struct fs2_info_ext {
     guid_t       guids[MAX_GUIDS];
@@ -245,6 +269,15 @@ typedef struct fs2_info_ext {
     u_int8_t     blank_guids;
     char         prs_name[PRS_NAME_LEN];
 } fs2_info_t;
+
+#ifdef CABLES_SUPP
+typedef struct cablefw_info_ext {
+        u_int8_t  fw_gw_revision[2];
+        u_int16_t fw_dev_id;
+        u_int32_t fw_revision;
+        u_int8_t  image_key;
+} cablefw_info_t;
+#endif
 
 typedef struct roms_info {
     u_int8_t     exp_rom_found;
@@ -279,10 +312,14 @@ typedef struct fw_info_com {
 
 
 typedef struct fw_info_ext {
-    u_int8_t      fw_type;
-    fw_info_com_t fw_info;
-    fs2_info_t    fs2_info;
-    fs3_info_t    fs3_info;
+    u_int8_t       fw_type;
+    fw_info_com_t  fw_info;
+    fs2_info_t     fs2_info;
+    fs3_info_t     fs3_info;
+#ifdef CABLES_SUPP
+    cablefw_info_t cablefw_info;
+#endif
+    fs3_info_t    fs4_info;
 } fw_info_t;
 
 typedef enum fw_hndl_type {
@@ -290,12 +327,15 @@ typedef enum fw_hndl_type {
     FHT_FW_FILE,
     FHT_UEFI_DEV,
     FHT_FW_BUFF,
+    FHT_CABLE_DEV,
 } fw_hndl_type_t;
 
 
 typedef enum fw_img_type {
     FIT_FS2,
     FIT_FS3,
+    FIT_FC1,
+    FIT_FS4,
 } fw_img_type_t;
 
 

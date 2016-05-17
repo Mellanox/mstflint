@@ -89,7 +89,7 @@ int main(int argc, char* argv[]) {
     for (i = 1; i < argc; ++i) {
         /* check position-independent flags */
         if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "-help")) {
-            fprintf(stderr, "%s", correct_cmdline);
+            fprintf(stdout, "%s", correct_cmdline);
             exit (0);
         }
         else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "-version")) {
@@ -119,7 +119,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     strncpy(device, argv[i], MAX_DEV_LEN -1);
-    if (!( mf = mopen((const char *)device))) {
+    if (!( mf = mopen_adv((const char *)device, (MType)(MST_DEFAULT | MST_CABLE)))) {
         fprintf(stderr, "Unable to open device %s. Exiting.\n", argv[i]);
         return 1;
     }

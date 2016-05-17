@@ -36,7 +36,6 @@
  *  Version: $Id: $
  *
  */
-
 #ifndef MFLASH_H
 #define MFLASH_H
 
@@ -167,7 +166,7 @@ int     mf_get_opt     (mflash* mfl, MfOpt opt, int *val);
 
 int     mf_enable_hw_access(mflash* mfl, u_int64_t key);
 int     mf_disable_hw_access(mflash* mfl);
-int     mf_release_semaphore();
+int     mf_release_semaphore(mflash* mfl);
 
 // get mfile object
 mfile* mf_get_mfile(mflash* mfl);

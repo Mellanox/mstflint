@@ -110,6 +110,7 @@ SubCmdMetaData::SubCmdMetaData() {
     _sCmds.push_back(new SubCmd("", "fi", SC_Fix_Img));
     _sCmds.push_back(new SubCmd("cs", "checksum", SC_Check_Sum));
     _sCmds.push_back(new SubCmd("ts", "timestamp", SC_Time_Stamp));
+    _sCmds.push_back(new SubCmd("ci", "cache_image", SC_Cache_Image));
 }
 
 SubCmdMetaData::~SubCmdMetaData() {

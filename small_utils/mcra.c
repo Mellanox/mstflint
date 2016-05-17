@@ -59,7 +59,7 @@
 void usage(const char *n, int with_exit)
 {
     printf("  Mellanox Configuration Registers Access tool\n");
-    printf("  Usage: %s [-s <i2c-slave>] [-a <adb dump>] [-v] [-h] <device>\n", n);
+    printf("  Usage: %s [-s <i2c-slave>] [-a <adb dump>] [-v] [-h] [-c] <device>\n", n);
     printf("         <addr[.<bit offset>:<bit size>]|[,<bytes number>]> [data]\n");
     printf("         If data is given, operation is write. Otherwise it is read.\n");
     printf("         If a bit range is given in the address (E.G.: 0xf0014.16:8):\n");
@@ -71,6 +71,7 @@ void usage(const char *n, int with_exit)
            "                          number of dwords should be (bytes number/4).\n\n");
     printf("  -s <i2c-slave> : I2C slave address.\n");
     printf("  -a <dump file> : adb dump file, used for access by path.\n");
+    printf("  -c             : clear the device's PCI semaphore.\n");
     printf("  -h             : Print this help message.\n");
     printf("  -v             : Display version info\n");
     printf("\n");
@@ -100,6 +101,7 @@ int main(int argc, char *argv[])
     int           bit_size = 32;
     int           byte_size = 0;
     int           read_block = 0;       /* if 0 then read field according to "addr.bit:size", else read block of size "byte_size" */
+    int          clear_semaphore = 0;
     const char*   op_name = "cr write";
 
 #if 0
@@ -118,7 +120,7 @@ int main(int argc, char *argv[])
         usage(argv[0], 1);
     }
 
-    while ((c = getopt(argc, argv, "s:a:hv")) != -1) {
+    while ((c = getopt(argc, argv, "s:a:hvc")) != -1) {
         switch (c)  {
         case 's':
             i2c_slave  = strtoul(optarg, &endp, 0);
@@ -140,8 +142,12 @@ int main(int argc, char *argv[])
             usage(argv[0], 0);
             exit(0);
 
-        case '?':
+        case 'c':
+            clear_semaphore = 1;
             break;
+
+        case '?':
+            exit(1);
 
         default:
             fprintf(stderr, "-E- Unknown flag \"%c\"\n", c);
@@ -156,6 +162,15 @@ int main(int argc, char *argv[])
     } else {
         dev = argv[optind];
         optind++;
+    }
+
+    if (clear_semaphore) {
+        if ((rc = mclear_pci_semaphore(dev))) {
+            fprintf(stderr, "-E- Failed to clear PCI semaphore for device: %s. %s\n", dev, m_err2str((MError)rc));
+            exit(1);
+        }
+        printf("-I- PCI Semaphore cleared successfully.\n");
+        exit(0);
     }
 
     if (optind >= argc) {
@@ -251,7 +266,7 @@ int main(int argc, char *argv[])
     }
     strncpy(device, dev, MAX_DEV_LEN -1);
     // Do the job
-    mf = mopen((const char *)device);
+    mf = mopen_adv((const char *)device, (MType)(MST_DEFAULT | MST_CABLE));
     if (!mf) {
         perror("mopen");
         return 1;

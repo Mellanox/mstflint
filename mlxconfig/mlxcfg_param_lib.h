@@ -28,7 +28,12 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ */
+/*
+ * mlxcfg_param_lib.h
  *
+ *  Created on: Mar 22, 2015
+ *      Author: adrianc
  */
 
 #ifndef MLXCFG_PARAM_LIB_H_
@@ -59,12 +64,16 @@
 #define ROCE_NEXT_PROTOCOL_TYPE 0x10
 #define ROCE_CC_TYPE 0x107
 #define ROCE_CC_ECN_TYPE 0x108
-#define LLDP_NB_SETTINGS_TYPE 0x10a
+#define LLDP_CLIENT_SETTINGS_TYPE 0x10a
 #define LLDP_NB_CAPABILITIES_TYPE 0x10b
 #define EXTERNAL_PORT 0x192
 #define BOOT_SETTINGS_EXTRAS_GEN4 0x2001
 #define BOOT_SETTINGS_EXTRAS_GEN5 0x195
 #define BOOT_SETTINGS_EXTRAS_GEN5_CAP 0x101
+#define QOS 0x192
+#define QOS_CAP 0x193
+#define LLDP_NB_DCBX 0x18E
+
 typedef enum {
     // SRIOV
     Mct_Sriov = 0,
@@ -103,6 +112,12 @@ typedef enum {
     Mct_Boot_Settings_Extras_5thGen,
     Mct_Boot_Settings_Extras_4thGen_P1,
     Mct_Boot_Settings_Extras_4thGen_P2,
+    Mct_QoS_P1,
+    Mct_QoS_P2,
+    Mct_LLDP_Client_Settings_P1,
+    Mct_LLDP_Client_Settings_P2,
+    Mct_DCBX_P1,
+    Mct_DCBX_P2,
     Mct_Last
 } mlxCfgType;
 
@@ -203,6 +218,22 @@ typedef enum {
     Mcp_Boot_Settings_Ext_IP_Ver,
     Mcp_Boot_Settings_Ext_IP_Ver_P1,
     Mcp_Boot_Settings_Ext_IP_Ver_P2,
+    Mcp_QoS_Num_of_TC_P1,
+    Mcp_QoS_Num_of_VL_P1,
+    Mcp_QoS_Num_of_TC_P2,
+    Mcp_QoS_Num_of_VL_P2,
+    Mcp_LLDP_NB_RX_Mode_P1,
+    Mcp_LLDP_NB_TX_Mode_P1,
+    Mcp_LLDP_NB_DCBX_P1,
+    Mcp_LLDP_NB_RX_Mode_P2,
+    Mcp_LLDP_NB_TX_Mode_P2,
+    Mcp_LLDP_NB_DCBX_P2,
+    Mcp_DCBX_IEEE_EN_P1,
+    Mcp_DCBX_CEE_EN_P1,
+    Mcp_DCBX_WILLING_P1,
+    Mcp_DCBX_IEEE_EN_P2,
+    Mcp_DCBX_CEE_EN_P2,
+    Mcp_DCBX_WILLING_P2,
     Mcp_Last
 } mlxCfgParam;
 
@@ -1040,4 +1071,157 @@ protected:
 
 };
 
+/*
+ * QoS parameters Class
+ */
+
+class QoS : public CfgParams
+{
+public:
+    QoS(int port) : CfgParams(port == 1 ? Mct_QoS_P1 : Mct_QoS_P2, QOS),
+        _port(port), _numOfTC(MLXCFG_UNKNOWN), _numOfVL(MLXCFG_UNKNOWN),
+        _numOfTCDefault(MLXCFG_UNKNOWN), _numOfVLDefault(MLXCFG_UNKNOWN),
+        _maxNumOfTC(MLXCFG_UNKNOWN), _maxNumOfVL(MLXCFG_UNKNOWN){}
+    ~QoS() {};
+
+    virtual bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last);
+
+    virtual void setParam(mlxCfgParam paramType, u_int32_t val);
+    virtual u_int32_t getParam(mlxCfgParam paramType);
+    virtual u_int32_t getDefaultParam(mlxCfgParam paramType);
+
+    virtual int getFromDev(mfile* mf);
+    virtual int setOnDev(mfile* mf, bool ignoreCheck=false);
+    virtual int getDefaultParams(mfile* mf);
+    bool getCap(mfile *mf);
+    u_int32_t getQoSCapTlvTypeBe();
+
+protected:
+    bool hardLimitCheckAux(u_int32_t maxNumOfX, u_int32_t numOfX,const char *x);
+    virtual bool hardLimitCheck();
+    u_int32_t getTlvTypeBe();
+
+    virtual void updateTlvFromClassAttr(void* tlv);
+    virtual void updateClassAttrFromTlv(void* tlv);
+    virtual void updateClassDefaultAttrFromTlv(void* tlv);
+    void updateClassAttrFromDefaultParams();
+    void setParams(u_int32_t numOfTCDefault, u_int32_t numOfVLDefault);
+
+    int _port;
+
+    u_int32_t _numOfTC;
+    u_int32_t _numOfVL;
+
+    u_int32_t _numOfTCDefault;
+    u_int32_t _numOfVLDefault;
+
+    u_int32_t _maxNumOfTC;
+    u_int32_t _maxNumOfVL;
+};
+
+/*
+ * LLDP Client Settings Class
+ */
+
+class LLDPClientSettings : public CfgParams
+{
+public:
+    LLDPClientSettings(int port) : CfgParams(port == 1 ?
+            Mct_LLDP_Client_Settings_P1 : Mct_LLDP_Client_Settings_P2, LLDP_CLIENT_SETTINGS_TYPE),
+        _port(port), _lldpNbTxMode(MLXCFG_UNKNOWN), _lldpNbRxMode(MLXCFG_UNKNOWN), _lldpNbDcbx(MLXCFG_UNKNOWN),
+        _userSpecifiedRx(false), _userSpecifiedTx(false), _userSpecifiedDcbx(false),
+        _lldpNbTxModeDefault(MLXCFG_UNKNOWN), _lldpNbRxModeDefault(MLXCFG_UNKNOWN),
+        _lldpNbDcbxDefault(MLXCFG_UNKNOWN), _lldpNbTxCap(MLXCFG_UNKNOWN),
+        _lldpNbRxCap(MLXCFG_UNKNOWN), _lldpNbDcbxEn(MLXCFG_UNKNOWN){}
+    ~LLDPClientSettings() {};
+
+    virtual bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last);
+
+    virtual void setParam(mlxCfgParam paramType, u_int32_t val);
+    virtual u_int32_t getParam(mlxCfgParam paramType);
+    virtual u_int32_t getDefaultParam(mlxCfgParam paramType);
+
+    virtual int getFromDev(mfile* mf);
+    virtual int setOnDev(mfile* mf, bool ignoreCheck=false);
+    virtual int getDefaultParams(mfile* mf);
+    bool getCap(mfile *mf);
+    u_int32_t getLLDPNBCapTlvTypeBe();
+
+protected:
+    virtual bool hardLimitCheck();
+    u_int32_t getTlvTypeBe();
+
+    virtual void updateTlvFromClassAttr(void* tlv);
+    virtual void updateClassAttrFromTlv(void* tlv);
+    virtual void updateClassDefaultAttrFromTlv(void* tlv);
+    void updateClassAttrFromDefaultParams();
+    void setParams(u_int32_t lldpNbRxMode, u_int32_t lldpNbTxMode, u_int32_t lldpNbDcbx);
+
+    int _port;
+
+    u_int32_t _lldpNbTxMode;
+    u_int32_t _lldpNbRxMode;
+    u_int32_t _lldpNbDcbx;
+
+    bool _userSpecifiedRx;
+    bool _userSpecifiedTx;
+    bool _userSpecifiedDcbx;
+
+    u_int32_t _lldpNbTxModeDefault;
+    u_int32_t _lldpNbRxModeDefault;
+    u_int32_t _lldpNbDcbxDefault;
+
+    u_int32_t _lldpNbTxCap;
+    u_int32_t _lldpNbRxCap;
+    u_int32_t _lldpNbDcbxEn;
+};
+
+/*
+ * LLDP NB DCBX Class
+ */
+
+class DCBX : public CfgParams
+{
+public:
+    DCBX(int port) : CfgParams(port == 1 ?
+            Mct_DCBX_P1 : Mct_DCBX_P2, LLDP_NB_DCBX),
+        _port(port), _ieee(MLXCFG_UNKNOWN), _cee(MLXCFG_UNKNOWN), _willing(MLXCFG_UNKNOWN),
+        _lldpNbDcbxEn(MLXCFG_UNKNOWN),
+        _ieeeDefault(MLXCFG_UNKNOWN), _ceeDefault(MLXCFG_UNKNOWN), _willingDefault(MLXCFG_UNKNOWN){}
+    ~DCBX() {};
+
+    virtual bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last);
+
+    virtual void setParam(mlxCfgParam paramType, u_int32_t val);
+    virtual u_int32_t getParam(mlxCfgParam paramType);
+    virtual u_int32_t getDefaultParam(mlxCfgParam paramType);
+
+    virtual int getFromDev(mfile* mf);
+    virtual int setOnDev(mfile* mf, bool ignoreCheck=false);
+    virtual int getDefaultParams(mfile* mf);
+
+protected:
+    virtual bool hardLimitCheck();
+    u_int32_t getTlvTypeBe();
+    u_int32_t getLLDPNBCapTlvTypeBe();
+
+    virtual void updateTlvFromClassAttr(void* tlv);
+    virtual void updateClassAttrFromTlv(void* tlv);
+    virtual void updateClassDefaultAttrFromTlv(void* tlv);
+    void updateClassAttrFromDefaultParams();
+    void setParams(u_int32_t lldpNbRxMode, u_int32_t lldpNbTxMode, u_int32_t lldpNbDcbx);
+    bool getCap(mfile* m);
+
+    int _port;
+
+    u_int32_t _ieee;
+    u_int32_t _cee;
+    u_int32_t _willing;
+
+    u_int32_t _lldpNbDcbxEn;
+
+    u_int32_t _ieeeDefault;
+    u_int32_t _ceeDefault;
+    u_int32_t _willingDefault;
+};
 #endif /* MLXCFG_PARAM_LIB_H_ */

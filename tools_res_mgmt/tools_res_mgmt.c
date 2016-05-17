@@ -38,7 +38,7 @@
 #include <common/compatibility.h>
 #include <dev_mgt/tools_dev_types.h>
 
-#if !defined(__FreeBSD__) && !defined(UEFI_BUILD) && !defined(NO_INBAND)
+#if !defined(__FreeBSD__) && !defined(UEFI_BUILD)
 #include <mtcr_ib_res_mgt.h>
 #endif
 
@@ -168,6 +168,11 @@ static struct device_sem_info g_dev_sem_info_db[] = {
                 {0xa24f8},       // hw_sem_addr
                 0,               // vsec_sem_supported
         },
+        {
+                DeviceConnectX5, // dev_id
+                {0xe250c},       // hw_sem_addr
+                1,               // vsec_sem_supported
+        },
 };
 
 #define MAX_SEMAPHORE_ADDRES 8
@@ -255,7 +260,7 @@ static trm_sts unlock_vsec_semaphore(mfile* mf, u_int32_t addr)
     return TRM_STS_OK;
 }
 
-#if !defined(__FreeBSD__) && !defined(UEFI_BUILD) && !defined(NO_INBAND)
+#if !defined(__FreeBSD__) && !defined(UEFI_BUILD)
 /************************************
  * Function: release_vs_mad_semaphore()
  ************************************/
@@ -387,7 +392,7 @@ trm_sts trm_create(trm_ctx* trm_p, mfile* mf)
     memset((*trm_p), 0, sizeof(struct trm_t));
     (*trm_p)->mf = mf;
 
-#if !defined(__FreeBSD__) && !defined(UEFI_BUILD) && !defined(NO_INBAND)
+#if !defined(__FreeBSD__) && !defined(UEFI_BUILD)
     u_int32_t dev_flags = 0;
     if (!mget_mdevs_flags(mf, &dev_flags)) {
         if ((dev_flags & MDEVS_IB) && mib_semaphore_lock_is_supported(mf) == 1) {
@@ -438,7 +443,7 @@ trm_sts trm_lock(trm_ctx trm, trm_resourse res, unsigned int max_retries)
     case TRM_RES_ICMD:
         if (trm->dev_sem_info->vsec_sem_supported && mget_vsec_supp(trm->mf)) {
             return lock_vsec_semaphore(trm->mf, g_vsec_sem_addr[TRM_RES_ICMD], max_retries);
-#if !defined(__FreeBSD__) && !defined(UEFI_BUILD) && !defined(NO_INBAND)
+#if !defined(__FreeBSD__) && !defined(UEFI_BUILD)
         } else if (trm->dev_sem_info->vsec_sem_supported && (dev_type & MDEVS_IB)) {
             return lock_vs_mad_semaphore(trm, TRM_RES_ICMD, max_retries);
 #endif
@@ -449,7 +454,7 @@ trm_sts trm_lock(trm_ctx trm, trm_resourse res, unsigned int max_retries)
     case TRM_RES_FLASH_PROGRAMING:
         if (trm->dev_sem_info->vsec_sem_supported && mget_vsec_supp(trm->mf)) {
             return lock_vsec_semaphore(trm->mf, g_vsec_sem_addr[TRM_RES_FLASH_PROGRAMING], max_retries);
-#if !defined(__FreeBSD__) && !defined(UEFI_BUILD) && !defined(NO_INBAND)
+#if !defined(__FreeBSD__) && !defined(UEFI_BUILD)
         } else if (trm->dev_sem_info->vsec_sem_supported && (dev_type & MDEVS_IB)) {
             return lock_vs_mad_semaphore(trm, TRM_RES_FLASH_PROGRAMING, max_retries);
 #endif
@@ -492,7 +497,7 @@ trm_sts trm_unlock(trm_ctx trm, trm_resourse res)
     case TRM_RES_ICMD:
         if (trm->dev_sem_info->vsec_sem_supported && mget_vsec_supp(trm->mf)) {
             return unlock_vsec_semaphore(trm->mf, g_vsec_sem_addr[TRM_RES_ICMD]);
-#if !defined(__FreeBSD__) && !defined(UEFI_BUILD) && !defined(NO_INBAND)
+#if !defined(__FreeBSD__) && !defined(UEFI_BUILD)
         } else if (trm->dev_sem_info->vsec_sem_supported && (dev_type & MDEVS_IB)) {
             return release_vs_mad_semaphore(trm, TRM_RES_ICMD);
 #endif
@@ -503,7 +508,7 @@ trm_sts trm_unlock(trm_ctx trm, trm_resourse res)
     case TRM_RES_FLASH_PROGRAMING:
         if (trm->dev_sem_info->vsec_sem_supported && mget_vsec_supp(trm->mf)) {
                    return unlock_vsec_semaphore(trm->mf, g_vsec_sem_addr[TRM_RES_FLASH_PROGRAMING]);
-#if !defined(__FreeBSD__) && !defined(UEFI_BUILD) && !defined(NO_INBAND)
+#if !defined(__FreeBSD__) && !defined(UEFI_BUILD)
         } else if (trm->dev_sem_info->vsec_sem_supported && (dev_type & MDEVS_IB)) {
             return release_vs_mad_semaphore(trm, TRM_RES_FLASH_PROGRAMING);
 #endif

@@ -37,6 +37,10 @@
 #include <cibfw_layouts.h>
 #include "fs2_ops.h"
 
+#ifdef __WIN__
+#include <win_driver_cif.h>
+#endif
+
 #define PRE_CRC_OUTPUT   "    "
 #define CRC_CHECK_OUTPUT  CRC_CHECK_OLD")"
 
@@ -449,7 +453,7 @@ bool Fs2Operations::Fs2Verify(VerifyCallBack verifyCallBackFunc, bool is_striped
 
     // printf("-D- VerifyFs2 = ok\n");
     // Look for image in "physical addresses
-    CntxFindAllImageStart(_ioAccess, cntx_image_start, &cntx_image_num);
+    FindAllImageStart(_ioAccess, cntx_image_start, &cntx_image_num, _cntx_magic_pattern);
     if (cntx_image_num == 0) {
         return errmsg(MLXFW_NO_VALID_IMAGE_ERR, "No valid image found");
     } else if (cntx_image_num > 2) {
@@ -991,7 +995,7 @@ bool Fs2Operations::Fs2FailSafeBurn(Fs2Operations &imageOps,
             u_int32_t cntx_image_start[CNTX_START_POS_SIZE];
             u_int32_t cntx_image_num;
 
-            CntxFindAllImageStart(_ioAccess, cntx_image_start, &cntx_image_num);
+            FindAllImageStart(_ioAccess, cntx_image_start, &cntx_image_num, _cntx_magic_pattern);
             // Address convertor is disabled now - use phys addresses
             for (u_int32_t i = 0; i < cntx_image_num; i++) {
                 if (cntx_image_start[i] != new_image_start) {
@@ -1014,6 +1018,11 @@ bool Fs2Operations::Fs2FailSafeBurn(Fs2Operations &imageOps,
         report_warn("Failed to update FW boot address. Power cycle the device in order to load the new FW.\n");
     }
 
+    // on windows send caching command to driver (best effort)
+#ifdef __WIN__
+    mf_release_semaphore(((Flash*)_ioAccess)->getMflashObj());
+    wdcif_send_image_cache_request(((Flash*)_ioAccess)->getMfileObj());
+#endif
     return true;
 }
 
@@ -1793,7 +1802,7 @@ bool Fs2Operations::FwBurnRom(FImage* romImg, bool ignoreProdIdCheck, bool ignor
 
     u_int32_t cntx_image_start[CNTX_START_POS_SIZE];
     u_int32_t cntx_image_num;
-    CntxFindAllImageStart(romImg, cntx_image_start, &cntx_image_num);
+    FindAllImageStart(romImg, cntx_image_start, &cntx_image_num, _cntx_magic_pattern);
     if (cntx_image_num != 0) {
         return errmsg("Expecting an expansion ROM image, Recieved Mellanox FW image.");
     }

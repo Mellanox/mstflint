@@ -58,6 +58,9 @@ MLXFWOP_API int MLXFWOPCALL mlxfw_open_image(mlxfwops_t** mlxfwops_p, char *file
 
 MLXFWOP_API int MLXFWOPCALL mlxfw_open_buffer(mlxfwops_t** mlxfwops_p, void* buffer, u_int32_t size, char *psid);
 
+#ifdef CABLES_SUPP
+MLXFWOP_API int MLXFWOPCALL mlxfw_open_cable(mlxfwops_t** mlxfwops_p, char *handle_name, int port);
+#endif
 
 #ifdef UEFI_BUILD
 #include <mft_uefi_common.h>

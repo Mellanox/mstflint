@@ -87,7 +87,7 @@ typedef struct ext_flash_attr {
 } ext_flash_attr_t;
 
 // Common base class for Flash and for FImage
-class MLXFWOP_API FBase : public ErrMsg {
+class MLXFWOP_API FBase : public FlintErrMsg {
 public:
     FBase(bool is_flash) :
     _is_image_in_odd_chunks(false),
@@ -128,6 +128,9 @@ public:
         set_address_convertor(log2_chunk_size_bak, is_image_in_odd_chunks_bak);
         return phys_addr;
     }
+
+    u_int32_t   get_log2_chunk_size(){return _log2_chunk_size;}
+    bool        get_is_image_in_odd_chunks(){return _is_image_in_odd_chunks;}
 
     enum {
         MAX_FLASH = 4*1048576
@@ -185,11 +188,13 @@ class MLXFWOP_API FImage : public FBase {
 public:
     FImage() :
     FBase(false),
+    _fname(0),
     _buf(0),
+    _isFile(false),
     _len(0) {}
     virtual ~FImage() { close();}
 
-    u_int32_t    *getBuf()      { return _buf;}
+    u_int32_t    *getBuf();
     u_int32_t    getBufLength() { return _len;}
     virtual bool open(const char *fname, bool read_only = false, bool advErr = true);
     using FBase::open;
@@ -203,7 +208,9 @@ public:
     virtual u_int32_t get_dev_id()   { return  0;}
     virtual u_int32_t get_rev_id()   { return  0;}
 private:
+    const char*     _fname;
     u_int32_t *_buf;
+    bool      _isFile;
     u_int32_t _len;
 };
 
@@ -321,6 +328,7 @@ public:
     static void  deal_with_signal();
 
     mfile* getMfileObj() {return mf_get_mfile(_mfl);}
+    mflash* getMflashObj() {return _mfl;}
 
     enum {
         TRANS = 4096

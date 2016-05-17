@@ -28,7 +28,6 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
  */
 
 #include <stdlib.h>
@@ -69,13 +68,13 @@ static void printFlagLine(string flag_s, string flag_l, string param, string des
 #define DEVICE_NAME "mst device"
 #endif
 
-void MlxCfg::printHelp(bool longDesc)
+void MlxCfg::printHelp()
 {
     // print opening
     printf(IDENT"NAME:\n"
            IDENT2   MLXCFG_NAME"\n"
            IDENT"SYNOPSIS:\n"
-           IDENT2    MLXCFG_NAME " [-d <%s> ] [-y|-e] <s[et] <parameters to set>|q[uery]|r[eset]>\n", DEVICE_NAME);
+           IDENT2    MLXCFG_NAME " [-d <%s> ] [-y|-e] <s[et] <parameters to set>|q[uery]|r[eset]|[ -f <filename> backup|set_raw]>\n", DEVICE_NAME);
 
     // print options
     printf("\n");
@@ -83,7 +82,6 @@ void MlxCfg::printHelp(bool longDesc)
     printFlagLine("d", "dev", "device", "Perform operation for a specified mst device.");
     printFlagLine("f", "file", "conf_file", "raw configuration file.");
     printFlagLine("h", "help", "", "Display help message.");
-    printFlagLine("hh", "full_help", "", "Display full help message.");
     printFlagLine("v", "version", "", "Display version info.");
     printFlagLine("e", "show_default", "", "Show default configurations.");
     printFlagLine("y", "yes", "", "Answer yes in prompt.");
@@ -95,18 +93,15 @@ void MlxCfg::printHelp(bool longDesc)
     printf(IDENT2"%-24s : %s\n","q[uery]", "query current supported configurations.");
     printf(IDENT2"%-24s : %s\n","r[eset]", "reset all configurations to their default value.");
     printf(IDENT2"%-24s : %s\n","s[et]", "set configurations to a specific device.");
-    printf(IDENT2"%-24s : %s\n","set_raw", "set raw configuration file.(5th generation devices only.)");
+    printf(IDENT2"%-24s : %s\n","set_raw", "set raw configuration file.(only "  FIFTH_GENERATION_LIST ".)");
+    printf(IDENT2"%-24s : %s\n","backup", "backup configurations to a file (only "  FIFTH_GENERATION_LIST ".). Use set_raw command to restore file.");
 
     // print supported commands
     printf("\n");
     printf(IDENT"Supported Configurations:\n");
     printf("\n");
 
-    if(longDesc) {
-        _allInfo.printLongDesc();
-    } else {
-        _allInfo.printShortDesc();
-    }
+    _allInfo.printLongDesc();
 
     // print usage examples
     printf("\n");
@@ -131,7 +126,7 @@ void MlxCfg::printVersion()
 
 void MlxCfg::printUsage() {
     printf("\n"IDENT"Usage:\n"
-           IDENT2    MLXCFG_NAME " [-d <%s> ] [-y|-e] <s[et] <parameters to set>|q[uery]|r[eset]>\n\n", DEVICE_NAME);
+           IDENT2    MLXCFG_NAME " [-d <%s> ] [-y|-e] <s[et] <parameters to set>|q[uery]|r[eset]|[ -f <filename> backup|set_raw]>\n\n", DEVICE_NAME);
 }
 
 bool MlxCfg::tagExsists(mlxCfgParam tag) {
@@ -234,9 +229,6 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
         } else if (arg == "-h" || arg == "--help"){
             printHelp();
             return MLX_CFG_OK_EXIT;
-        } else if (arg == "-hh" || arg == "--full_help"){
-            printHelp(true);
-            return MLX_CFG_OK_EXIT;
         } else if (arg == "-d" || arg == "--dev") {
             if (++i == argc) {
                 return err(true, "missing device name");
@@ -269,8 +261,11 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
         } else if (arg == "set_raw") {
             _mlxParams.cmd = Mc_Set_Raw;
             break;
+        } else if (arg == "backup") {
+            _mlxParams.cmd = Mc_Backup;
+            break;
         // hidden flag --force used to ignore parameter checks
-        }else if (arg == "--force"){
+        } else if (arg == "--force"){
             _mlxParams.force = true;
         } else {
             return err(true, "invalid argument: %s", arg.c_str());
@@ -287,13 +282,21 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
     if (i != argc && (_mlxParams.cmd == Mc_Reset || _mlxParams.cmd == Mc_Query)) {
         return err(true, "%s command expects no argument but %d argument recieved", (_mlxParams.cmd == Mc_Reset) ? "reset" : "query", argc -i);
     }
-    if ((_mlxParams.cmd == Mc_Set || _mlxParams.cmd == Mc_Clr_Sem || _mlxParams.cmd == Mc_Set_Raw) && _mlxParams.device.length() == 0) {
-        return err(true, "%s command expects device to be specified.", _mlxParams.cmd == Mc_Set ? "set" : _mlxParams.cmd == Mc_Set_Raw ? "set_raw" : "clear_semaphore");
+    if ((_mlxParams.cmd == Mc_Set || _mlxParams.cmd == Mc_Clr_Sem || _mlxParams.cmd == Mc_Set_Raw || _mlxParams.cmd == Mc_Backup) && _mlxParams.device.length() == 0) {
+        return err(true, "%s command expects device to be specified.",
+                _mlxParams.cmd == Mc_Set ?
+                        "set" : _mlxParams.cmd == Mc_Set_Raw ?
+                                "set_raw" : _mlxParams.cmd == Mc_Clr_Sem ?
+                                        "clear_semaphore" : "backup");
     }
     if ((_mlxParams.cmd == Mc_Set_Raw && _mlxParams.rawTlvFile.size() == 0 )) {
         return err(true, "set_raw command expects raw TLV file to be specified.");
     }
-    if ((_mlxParams.cmd != Mc_Set_Raw && _mlxParams.rawTlvFile.size() != 0 )) {
+    if ((_mlxParams.cmd == Mc_Backup && _mlxParams.rawTlvFile.size() == 0 )) {
+        return err(true, "backup command expects file to be specified.");
+    }
+    if (((_mlxParams.cmd != Mc_Set_Raw && _mlxParams.cmd != Mc_Backup) &&
+            _mlxParams.rawTlvFile.size() != 0 )) {
         return err(true, "raw TLV file can only be specified with set_raw command.");
     }
 
@@ -305,6 +308,9 @@ mlxCfgStatus MlxCfgParamParser::parseUserInput(string input, u_int32_t& val)
     std::map<string, u_int32_t>::iterator it;
     //first check if it is a numeric value
     if(strToNum(input, val, 0)) {
+        if(val == MLXCFG_UNKNOWN) {
+            return MLX_CFG_ERROR;
+        }
         return MLX_CFG_OK;
     }
     for(it = _strMap.begin(); it != _strMap.end(); it++){
@@ -480,13 +486,13 @@ MlxCfgInfo MlxCfgAllInfo::createPciSettings()
     paramMap["True"] = 1;
     paramMap["False"] = 0;
     params[Mcp_Fpp_En] = MlxCfgParamParser(Mcp_Fpp_En, "FPP_EN", "Enable function per port", paramMap);
-    params[Mcp_Log_Bar_Size] = MlxCfgParamParser(Mcp_Log_Bar_Size, "LOG_BAR_SIZE", "example: for 8Mb bar size set LOG_BAR_SIZE=3 (4th Generation)", "base_2_log_in_mb");
+    params[Mcp_Log_Bar_Size] = MlxCfgParamParser(Mcp_Log_Bar_Size, "LOG_BAR_SIZE", "example: for 8Mb bar size set LOG_BAR_SIZE=3 (only "  FOURTH_GENERATION_LIST")", "base_2_log_in_mb");
     params[Mcp_Sriov_En] = MlxCfgParamParser(Mcp_Sriov_En, "SRIOV_EN", "Enable SR-IOV", paramMap);
-    params[Mcp_PF_Log_Bar_Size] = MlxCfgParamParser(Mcp_PF_Log_Bar_Size, "PF_LOG_BAR_SIZE", "example: for 8Mb bar size set PF_LOG_BAR_SIZE=3 (5th Generation)", "base_2_log_in_mb");
-    params[Mcp_VF_Log_Bar_Size] = MlxCfgParamParser(Mcp_VF_Log_Bar_Size, "VF_LOG_BAR_SIZE", "example: for 8Mb bar size set VF_LOG_BAR_SIZE=3 (5th Generation)", "base_2_log_in_mb");
+    params[Mcp_PF_Log_Bar_Size] = MlxCfgParamParser(Mcp_PF_Log_Bar_Size, "PF_LOG_BAR_SIZE", "example: for 8Mb bar size set PF_LOG_BAR_SIZE=3 (only "  FIFTH_GENERATION_LIST ")", "base_2_log_in_mb");
+    params[Mcp_VF_Log_Bar_Size] = MlxCfgParamParser(Mcp_VF_Log_Bar_Size, "VF_LOG_BAR_SIZE", "example: for 8Mb bar size set VF_LOG_BAR_SIZE=3 (only "  FIFTH_GENERATION_LIST ")", "base_2_log_in_mb");
     params[Mcp_Num_Of_Vfs] = MlxCfgParamParser(Mcp_Num_Of_Vfs, "NUM_OF_VFS", "desired amount of virtual functions", "NUM");
-    params[Mcp_Num_Pf_Msix] = MlxCfgParamParser(Mcp_Num_Pf_Msix, "NUM_PF_MSIX", "Number of MSI-X vectors and EQs per PF (5th Generation)", "NUM");
-    params[Mcp_Num_Vf_Msix] = MlxCfgParamParser(Mcp_Num_Vf_Msix, "NUM_VF_MSIX", "Number of MSI-X vectors and EQs per VF (5th Generation)", "NUM");
+    params[Mcp_Num_Pf_Msix] = MlxCfgParamParser(Mcp_Num_Pf_Msix, "NUM_PF_MSIX", "Number of MSI-X vectors and EQs per PF (only "FIFTH_GENERATION_LIST")", "NUM");
+    params[Mcp_Num_Vf_Msix] = MlxCfgParamParser(Mcp_Num_Vf_Msix, "NUM_VF_MSIX", "Number of MSI-X vectors and EQs per VF (only "FIFTH_GENERATION_LIST")", "NUM");
     return MlxCfgInfo("PCI Settings", "", params);
 }
 
@@ -693,9 +699,9 @@ MlxCfgInfo MlxCfgAllInfo::createWakeOnLAN()
     //Wake On LAN
     paramMap["True"] = 1;
     paramMap["False"] = 0;
-    params[Mcp_Wol_Magic_En] = MlxCfgParamParser(Mcp_Wol_Magic_En, "WOL_MAGIC_EN", "5th generation devices only (per physical function)", paramMap);
+    params[Mcp_Wol_Magic_En] = MlxCfgParamParser(Mcp_Wol_Magic_En, "WOL_MAGIC_EN", "only " FIFTH_GENERATION_LIST " (per physical function)", paramMap);
     params[Mcp_Wol_Magic_En_P1] = MlxCfgParamParser(Mcp_Wol_Magic_En_P1, "WOL_MAGIC_EN_P1", "enable wake on magic packet(per port.)", paramMap);
-    params[Mcp_Wol_Magic_En_P2] = MlxCfgParamParser(Mcp_Wol_Magic_En_P2, "WOL_MAGIC_EN_P2", "4th generation devices only", paramMap);
+    params[Mcp_Wol_Magic_En_P2] = MlxCfgParamParser(Mcp_Wol_Magic_En_P2, "WOL_MAGIC_EN_P2", "only " FOURTH_GENERATION_LIST, paramMap);
     return MlxCfgInfo("Wake On LAN", "", params);
 }
 
@@ -723,10 +729,72 @@ MlxCfgInfo MlxCfgAllInfo::createBootSettingsExt()
     paramMap["IPv6"] = 1;
     paramMap["IPv4_IPv6"] = 2;
     paramMap["IPv6_IPv4"] = 3;
-    params[Mcp_Boot_Settings_Ext_IP_Ver] = MlxCfgParamParser(Mcp_Boot_Settings_Ext_IP_Ver, "IP_VER", "Select which IP protocol version will be used by flexboot. 5th Generation only.", paramMap);
-    params[Mcp_Boot_Settings_Ext_IP_Ver_P1] = MlxCfgParamParser(Mcp_Boot_Settings_Ext_IP_Ver_P1, "IP_VER_P1", "Select which IP protocol version will be used by flexboot, 4th Generation (per port).", paramMap);
+    params[Mcp_Boot_Settings_Ext_IP_Ver] = MlxCfgParamParser(Mcp_Boot_Settings_Ext_IP_Ver, "IP_VER", "Select which IP protocol version will be used by flexboot. only " FIFTH_GENERATION_LIST ".", paramMap);
+    params[Mcp_Boot_Settings_Ext_IP_Ver_P1] = MlxCfgParamParser(Mcp_Boot_Settings_Ext_IP_Ver_P1, "IP_VER_P1", "Select which IP protocol version will be used by flexboot, only "  FOURTH_GENERATION_LIST " (per port).", paramMap);
     params[Mcp_Boot_Settings_Ext_IP_Ver_P2] = MlxCfgParamParser(Mcp_Boot_Settings_Ext_IP_Ver_P2, "IP_VER_P2", "", paramMap);
     return MlxCfgInfo("Boot Settings Extras", "These parameters are relevant only for servers using legacy BIOS PXE boot (flexboot).", params);
+}
+
+MlxCfgInfo MlxCfgAllInfo::createQoS()
+{
+    map<string, u_int32_t> vlParamMap;
+    map<string, u_int32_t> tcParamMap;
+    map<mlxCfgParam, MlxCfgParamParser> params;
+
+    tcParamMap["8_TCS"] = 0;
+    tcParamMap["1_TC"] = 1;
+    tcParamMap["2_TCS"] = 2;
+    tcParamMap["3_TCS"] = 3;
+    tcParamMap["4_TCS"] = 4;
+    tcParamMap["5_TCS"] = 5;
+    tcParamMap["6_TCS"] = 6;
+    tcParamMap["7_TCS"] = 7;
+
+    vlParamMap["1_VL"] = 1;
+    vlParamMap["2_VLS"] = 2;
+    vlParamMap["4_VLS"] = 3;
+    vlParamMap["8_VLS"] = 4;
+    vlParamMap["15_VLS"] = 5;
+
+    params[Mcp_QoS_Num_of_TC_P1] = MlxCfgParamParser(Mcp_QoS_Num_of_TC_P1, "NUM_OF_TC_P1", "Number of traffic classes, when DCB-X is enabled, this is the maximum number of TC that can negotiated with the remote peer.", tcParamMap);
+    params[Mcp_QoS_Num_of_TC_P2] = MlxCfgParamParser(Mcp_QoS_Num_of_TC_P2, "NUM_OF_TC_P2", "", tcParamMap);
+    params[Mcp_QoS_Num_of_VL_P1] = MlxCfgParamParser(Mcp_QoS_Num_of_VL_P1, "NUM_OF_VL_P1", "Number of Infiniband Virtual Lanes for this port.", vlParamMap);
+    params[Mcp_QoS_Num_of_VL_P2] = MlxCfgParamParser(Mcp_QoS_Num_of_VL_P2, "NUM_OF_VL_P2", "", vlParamMap);
+    return MlxCfgInfo("QoS", "", params);
+}
+
+MlxCfgInfo MlxCfgAllInfo::createLLDPClientSettings()
+{
+    map<string, u_int32_t> paramMap;
+    map<mlxCfgParam, MlxCfgParamParser> params;
+
+    paramMap["False"] = 0;
+    paramMap["True"] = 1;
+
+    params[Mcp_LLDP_NB_RX_Mode_P1] = MlxCfgParamParser(Mcp_LLDP_NB_RX_Mode_P1, "LLDP_NB_RX_MODE_P1", "Enable the internal LLDP client, and define which TLV it will process.", "0..2");
+    params[Mcp_LLDP_NB_TX_Mode_P1] = MlxCfgParamParser(Mcp_LLDP_NB_TX_Mode_P1, "LLDP_NB_TX_MODE_P1", "Select which LLDP TLV will be generated by the NIC.", "0..2");
+    params[Mcp_LLDP_NB_DCBX_P1] = MlxCfgParamParser(Mcp_LLDP_NB_DCBX_P1, "LLDP_NB_DCBX_P1", "Enable DCBX (applicable when LLDP_NB_TX_MODE and LLDP_NB_RX_MODE are in ALL mode)", paramMap);
+    params[Mcp_LLDP_NB_RX_Mode_P2] = MlxCfgParamParser(Mcp_LLDP_NB_RX_Mode_P2, "LLDP_NB_RX_MODE_P2", "", "0..2");
+    params[Mcp_LLDP_NB_TX_Mode_P2] = MlxCfgParamParser(Mcp_LLDP_NB_TX_Mode_P2, "LLDP_NB_TX_MODE_P2", "", "0..2");
+    params[Mcp_LLDP_NB_DCBX_P2] = MlxCfgParamParser(Mcp_LLDP_NB_DCBX_P2, "LLDP_NB_DCBX_P2", "", paramMap);
+    return MlxCfgInfo("LLDP Client Settings", "", params);
+}
+
+MlxCfgInfo MlxCfgAllInfo::createLLDPNBDCBX()
+{
+    map<string, u_int32_t> paramMap;
+    map<mlxCfgParam, MlxCfgParamParser> params;
+
+    paramMap["False"] = 0;
+    paramMap["True"] = 1;
+
+    params[Mcp_DCBX_IEEE_EN_P1] = MlxCfgParamParser(Mcp_DCBX_IEEE_EN_P1, "DCBX_IEEE_P1", "Enable DCBX in IEEE mode.", paramMap);
+    params[Mcp_DCBX_CEE_EN_P1] = MlxCfgParamParser(Mcp_DCBX_CEE_EN_P1, "DCBX_CEE_P1", "Enable DCBX in CEE mode.", paramMap);
+    params[Mcp_DCBX_WILLING_P1] = MlxCfgParamParser(Mcp_DCBX_WILLING_P1, "DCBX_WILLING_P1", "Allow the NIC to accept DCBX configuration from the remote peer.", paramMap);
+    params[Mcp_DCBX_IEEE_EN_P2] = MlxCfgParamParser(Mcp_DCBX_IEEE_EN_P2, "DCBX_IEEE_P2", "", paramMap);
+    params[Mcp_DCBX_CEE_EN_P2] = MlxCfgParamParser(Mcp_DCBX_CEE_EN_P2, "DCBX_CEE_P2", "", paramMap);
+    params[Mcp_DCBX_WILLING_P2] = MlxCfgParamParser(Mcp_DCBX_WILLING_P2, "DCBX_WILLING_P2", "", paramMap);
+    return MlxCfgInfo("LLDP NB DCBX", "", params);
 }
 
 bool sortCfg(MlxCfgInfo a, MlxCfgInfo b)
@@ -752,6 +820,9 @@ MlxCfgAllInfo::MlxCfgAllInfo()
     _allInfo.push_back(createWakeOnLAN());
     _allInfo.push_back(createExternalPort());
     _allInfo.push_back(createBootSettingsExt());
+    _allInfo.push_back(createQoS());
+    _allInfo.push_back(createLLDPClientSettings());
+    _allInfo.push_back(createLLDPNBDCBX());
     std::sort(_allInfo.begin(), _allInfo.end(), sortCfg);
 }
 

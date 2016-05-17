@@ -39,10 +39,6 @@ extern "C" {
 
 
 #include <compatibility.h>
-#ifdef MST_UL
-#include <mtcr_int_defs.h>
-#include <mtcr_mf.h>
-#endif
 #include <mtcr.h>
 
 #define FLASH_REG_ACCESS	0x9001

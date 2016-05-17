@@ -46,6 +46,10 @@
     #include "uefi_c.h"
 #endif
 
+#if defined __FreeBSD__
+    #include <stdarg.h>
+#endif
+
 #include <signal.h>
 #include "tools_version.h"
 
@@ -182,6 +186,13 @@ namespace std {}; using namespace std;
 		return false; }} while (0)
 #define READBUF(f,o,d,l,p) do { if (!f.read(o,d,l)) { \
     return errmsg("%s - read error (%s)\n", p, f.err()); }} while (0)
+#define READALLOCBUF(f,o,d,l,p) do {\
+    d = (u_int8_t*) malloc(sizeof(u_int8_t) * l);\
+    if (!f.read(o,d,l)) { \
+        free(d);\
+        return errmsg("%s - read error (%s)\n", p, f.err());\
+    }\
+} while (0)
 
 #define FS2_BOOT_START   0x38
 #define FS_DATA_OFF      0x28
@@ -204,7 +215,6 @@ namespace std {}; using namespace std;
 // FS3 defines
 #define FS3_BOOT_START        FS2_BOOT_START
 #define FS3_BOOT_START_IN_DW  FS3_BOOT_START/4
-
 
 #define CRC_CHECK_OLD "%s /0x%08x-0x%08x (0x%06x)/ (%s"
 
@@ -294,10 +304,12 @@ typedef enum fs3_section {
     FS3_NV_DATA2      = 0xe4,
     FS3_FW_NV_LOG     = 0xe5,
     FS3_NV_DATA0      = 0xe6, // replaces FS3_NV_DATA1
+    FS4_HW_PTR        = 0xfb,
+    FS4_TOOLS_AREA    = 0xfc,
     FS3_ITOC          = 0xfd,
+    FS3_DTOC          = 0xfe,
     FS3_END           = 0xff,
 } fs3_section_t;
-
 
 enum CommandType {
     CMD_UNKNOWN,
@@ -372,10 +384,10 @@ void report_repair_msg(const char* common_msg);
 //                  BASE CLASSES
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class MLXFWOP_API ErrMsg {
+class MLXFWOP_API FlintErrMsg {
 public:
-    ErrMsg() : _err(0), _errCode(0){}
-    ~ErrMsg()                { err_clear();}
+    FlintErrMsg() : _err(0), _errCode(0){}
+    ~FlintErrMsg()                { err_clear();}
     const char *err() const  { return _err;}
     void err_clear();
     int getErrorCode() {return _errCode;}

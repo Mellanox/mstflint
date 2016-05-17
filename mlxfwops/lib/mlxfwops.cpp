@@ -68,6 +68,13 @@ MLXFWOP_API int MLXFWOPCALL mlxfw_open_buffer(mlxfwops_t** mlxfwops_p, void* buf
     return mlxfw_open_int(mlxfwops_p, buffer, &size, psid, FHT_FW_BUFF, (char*)NULL, 0);
 }
 
+#ifdef CABLES_SUPP
+MLXFWOP_API int MLXFWOPCALL mlxfw_open_cable(mlxfwops_t** mlxfwops_p, char *handle_name, int port)
+{
+    return mlxfw_open_int(mlxfwops_p, handle_name, &port, (char*)NULL, FHT_CABLE_DEV, (char*)NULL, 0);
+}
+#endif
+
 #ifdef UEFI_BUILD
 
 MLXFWOP_API int MLXFWOPCALL mlxfw_open_uefi(mlxfwops_t** mlxfwops_p, uefi_Dev_t* dev, f_fw_cmd fw_cmd_func, uefi_dev_info_t* dev_info)

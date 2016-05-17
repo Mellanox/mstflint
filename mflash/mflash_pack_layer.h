@@ -30,12 +30,24 @@
  * SOFTWARE.
  */
 
+/*
+ * mflash_inband.h
+ *
+ *  Created on: Jul 6, 2011
+ *      Author: mohammad
+ */
+
 #ifndef MFLASH_COMMON_H_
 #define MFLASH_COMMON_H_
 
 #include "mflash_types.h"
 #include "mflash_common_structs.h"
+
+#ifndef UEFI_BUILD
 #include <tools_res_mgmt.h>
+#else
+typedef void* trm_ctx;
+#endif
 
 // TODO: use: (int)log2((float)num)  
 #define NEAREST_POW2(num)\

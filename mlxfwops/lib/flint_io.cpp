@@ -62,9 +62,7 @@ bool FImage::open(const char *fname, bool read_only, bool advErr)
 {
 
 #ifndef UEFI_BUILD
-//#ifndef 1
     int                fsize;
-    int                r_cnt;
     FILE              *fh;
 
     (void)read_only;  // FImage can be opened only for read so we ignore compiler warnings
@@ -96,18 +94,9 @@ bool FImage::open(const char *fname, bool read_only, bool advErr)
                       fname);
     }
 
-    _buf = new u_int32_t[fsize/4];
-    if ((r_cnt = fread(_buf, 1, fsize, fh)) != fsize) {
-        fclose(fh);
-        if (r_cnt < 0) {
-            return errmsg("Read error on file \"%s\" - %s",fname, strerror(errno));
-        } else {
-            return errmsg("Read error on file \"%s\" - read only %d bytes (from %ld)",
-                          fname, r_cnt, (unsigned long)fsize);
-        }
-    }
-
+    _fname = fname;
     _len = fsize;
+    _isFile = true;
     fclose(fh);
     return true;
 #else
@@ -130,6 +119,44 @@ void FImage::close()
     _buf = 0;
 } // FImage::close
 
+/////////////////////////////////////////////////////////////////////////
+u_int32_t* FImage::getBuf()
+{
+    if (_isFile) {
+        // Read the entire file on demand
+        FILE* fh = fopen(_fname, "rb");
+        int r_cnt;
+        u_int32_t* retBuf;
+        if (!fh) {
+            errmsg("Can not open file \"%s\" - %s", _fname, strerror(errno));
+            return (u_int32_t*)NULL;
+        }
+        _buf = new u_int32_t[_len/4];
+        if ((r_cnt = fread(_buf, 1, _len, fh)) != (int)_len) {
+            if (r_cnt < 0) {
+                errmsg("Read error on file \"%s\" - %s",_fname, strerror(errno));
+                retBuf = (u_int32_t*)NULL;
+                goto cleanup;
+            } else {
+                errmsg("Read error on file \"%s\" - read only %d bytes (from %ld)",
+                        _fname, r_cnt, (unsigned long)_len);
+                retBuf = (u_int32_t*)NULL;
+                goto cleanup;
+            }
+        }
+        _isFile = false;
+        retBuf = _buf;
+    cleanup:
+        fclose(fh);
+        if (!retBuf) {
+            delete[] _buf;
+        }
+        return retBuf;
+    } else {
+        return _buf;
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////
 bool FImage::read(u_int32_t addr, u_int32_t *data)
 {
@@ -146,7 +173,7 @@ bool FImage::read(u_int32_t addr, void *data, int len, bool, const char*)
     if (len & 0x3) {
         return errmsg("Length should be 4-bytes aligned.");
     }
-    if (!_buf) {
+    if (!_isFile && !_buf) {
         return errmsg("read() when not opened");
     }
 
@@ -164,10 +191,22 @@ bool FImage::read(u_int32_t addr, void *data, int len, bool, const char*)
     align.Init (addr, len);
     while (align.GetNextChunk(chunk_addr, chunk_size)) {
         u_int32_t phys_addr = cont2phys(chunk_addr);
-
-        memcpy((u_int8_t*)data + (chunk_addr - addr),
+        if (_isFile) {
+            FILE* fh = fopen(_fname, "rb");
+            if (!fh) {
+                return errmsg("Can not open file \"%s\" - %s", _fname, strerror(errno));
+            }
+            fseek(fh, phys_addr, SEEK_SET);
+            if (fread((u_int8_t*)data + (chunk_addr - addr), chunk_size, 1, fh) != 1) {
+                fclose(fh);
+                return errmsg("Failed to read from FW file, offset: %#x - %s", phys_addr, strerror(errno));
+            }
+            fclose(fh);
+        } else {
+            memcpy((u_int8_t*)data + (chunk_addr - addr),
                (u_int8_t*)_buf +  phys_addr,
                chunk_size);
+        }
     }
 
     return true;
@@ -245,7 +284,7 @@ bool Flash::open_com_checks(const char *device, int rc, bool force_lock)
     }
 
 
-    if (_attr.hw_dev_id == 435 || _attr.hw_dev_id == SWITCHX_HW_ID) {
+    if (_attr.hw_dev_id == IS4_HW_ID || _attr.hw_dev_id == SWITCHX_HW_ID) {
         _port_num = 0;
     } else {
         _port_num = 2;

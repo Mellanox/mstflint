@@ -28,7 +28,12 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ */
+/*
+ * mlxcfg_param_lib.cpp
  *
+ *  Created on: Mar 22, 2015
+ *      Author: adrianc
  */
 
 #include <signal.h>
@@ -3214,28 +3219,28 @@ bool RoCECCEcnParams5thGen::hardLimitCheck()
         return false;
     }
 
-    if ( _rpgTimeReset >= (1 << 16)) {
-        errmsg("Illegal RPG_TIME_RESET_P%d parameter value(%d), value should be [0..%d]", _port, _rpgTimeReset, (1 << 16) - 1);
+    if ( _rpgTimeReset >= (1 << 17)) {
+        errmsg("Illegal RPG_TIME_RESET_P%d parameter value(%d), value should be [0..%d]", _port, _rpgTimeReset, (1 << 17) - 1);
         return false;
     }
 
-    if (_rpgByteReset >= (1 << 14)) {
-        errmsg("Illegal RPG_BYTE_RESET_P%d parameter value(%d), value should be [0..%d]", _port, _rpgByteReset, (1 << 14) - 1);
+    if (_rpgByteReset >= (1 << 15)) {
+        errmsg("Illegal RPG_BYTE_RESET_P%d parameter value(%d), value should be [0..%d]", _port, _rpgByteReset, (1 << 15) - 1);
         return false;
     }
 
-    if (_rpgThreshold >= (1 << 4)) {
-        errmsg("Illegal RPG_THRESHOLD_P%d parameter value(%d), value should be [0..%d]", _port, _rpgThreshold, (1 << 4) - 1);
+    if (_rpgThreshold >= (1 << 5)) {
+        errmsg("Illegal RPG_THRESHOLD_P%d parameter value(%d), value should be [0..%d]", _port, _rpgThreshold, (1 << 5) - 1);
         return false;
     }
 
-    if ( _rpgAiRate >= (1 << 16)) {
-        errmsg("Illegal RPG_AI_RATE_P%d parameter value(%d), value should be [0..%d]", _port, _rpgAiRate, (1 << 16) - 1);
+    if ( _rpgAiRate >= (1 << 17)) {
+        errmsg("Illegal RPG_AI_RATE_P%d parameter value(%d), value should be [0..%d]", _port, _rpgAiRate, (1 << 17) - 1);
         return false;
     }
 
-    if ( _rpgHaiRate >= (1 << 16)) {
-        errmsg("Illegal RPG_HAI_RATE_P%d parameter value(%d), value should be [0..%d]", _port, _rpgHaiRate, (1 << 16) - 1);
+    if ( _rpgHaiRate >= (1 << 17)) {
+        errmsg("Illegal RPG_HAI_RATE_P%d parameter value(%d), value should be [0..%d]", _port, _rpgHaiRate, (1 << 17) - 1);
         return false;
     }
 
@@ -3249,48 +3254,48 @@ bool RoCECCEcnParams5thGen::hardLimitCheck()
         return false;
     }
 
-    if (_rpgMinRate >= (1 << 16)) {
-        errmsg("Illegal RPG_MIN_RATE_P%d parameters value(%d), value should be [1..%d]", _port, _rpgMinRate, (1 << 16) - 1);
+    if (_rpgMinRate >= (1 << 17)) {
+        errmsg("Illegal RPG_MIN_RATE_P%d parameters value(%d), value should be [0..%d]", _port, _rpgMinRate, (1 << 17) - 1);
         return false;
     }
 
-    if (_rateToSetOnFirstCnp >= (1 << 16)) {
-        errmsg("Illegal RATE_TO_SET_ON_FIRST_CNP_P%d parameters value(%d), value should be [1..%d]", _port, _rateToSetOnFirstCnp, (1 << 16) - 1);
+    if (_rateToSetOnFirstCnp >= (1 << 17)) {
+        errmsg("Illegal RATE_TO_SET_ON_FIRST_CNP_P%d parameters value(%d), value should be [0..%d]", _port, _rateToSetOnFirstCnp, (1 << 17) - 1);
         return false;
     }
 
-    if (_dceTcpG >= (1 << 9)) {
-        errmsg("Illegal DCE_TCP_G_P%d parameters value(%d), value should be [1..%d]", _port, _dceTcpG, (1 << 9) - 1);
+    if (_dceTcpG == 0 || _dceTcpG >= (1 << 10)) {
+        errmsg("Illegal DCE_TCP_G_P%d parameters value(%d), value should be [1..%d]", _port, _dceTcpG, (1 << 10) - 1);
         return false;
     }
 
-    if (_dceTcpRtt >= (1 << 16)) {
-        errmsg("Illegal DCE_TCP_RTT_P%d parameters value(%d), value should be [1..%d]", _port, _dceTcpRtt, (1 << 16) - 1);
+    if (_dceTcpRtt == 0 || _dceTcpRtt >= (1 << 17)) {
+        errmsg("Illegal DCE_TCP_RTT_P%d parameters value(%d), value should be [1..%d]", _port, _dceTcpRtt, (1 << 17) - 1);
         return false;
     }
 
-    if (_rateReduceMonitorPeriod >= (1 << 16)) {
-        errmsg("Illegal RATE_REDUCE_MONITOR_PERIOD_P%d parameters value(%d), value should be [1..%d]", _port, _rateReduceMonitorPeriod, (1 << 16) - 1);
+    if (_rateReduceMonitorPeriod == 0 || _rateReduceMonitorPeriod >= (1 << 17)) {
+        errmsg("Illegal RATE_REDUCE_MONITOR_PERIOD_P%d parameters value(%d), value should be [1..%d]", _port, _rateReduceMonitorPeriod, (1 << 17) - 1);
         return false;
     }
 
-    if (_initialAlphaValue >= (1 << 9)) {
-        errmsg("Illegal INITIAL_ALPHA_VALUE_P%d parameters value(%d), value should be [1..%d]", _port, _initialAlphaValue, (1 << 9) - 1);
+    if (_initialAlphaValue >= (1 << 10)) {
+        errmsg("Illegal INITIAL_ALPHA_VALUE_P%d parameters value(%d), value should be [0..%d]", _port, _initialAlphaValue, (1 << 10) - 1);
         return false;
     }
 
-    if (_minTimeBetweenCnps >= (1 << 16)) {
-        errmsg("Illegal MIN_TIME_BETWEEN_CNPS_P%d parameters value(%d), value should be [1..%d]", _port, _minTimeBetweenCnps, (1 << 16) - 1);
+    if (_minTimeBetweenCnps >= (1 << 17)) {
+        errmsg("Illegal MIN_TIME_BETWEEN_CNPS_P%d parameters value(%d), value should be [0..%d]", _port, _minTimeBetweenCnps, (1 << 17) - 1);
         return false;
     }
 
-    if (_cnpDscp > 7) {
-        errmsg("Illegal CNP_DSCP_P%d parameters value(%d), value should be [0..7]", _port, _cnpDscp);
+    if (_cnpDscp >= (1 << 6)) {
+        errmsg("Illegal CNP_DSCP_P%d parameters value(%d), value should be [0..%d]", _port, _cnpDscp, (1 << 6) - 1);
         return false;
     }
 
-    if (_cnp802pPrio >= (1 << 6)) {
-        errmsg("Illegal CNP_802P_PRIO_P%d parameters value(%d), value should be [1..%d]", _port, _cnp802pPrio, (1 << 6) - 1);
+    if (_cnp802pPrio >= (1 << 3)) {
+        errmsg("Illegal CNP_802P_PRIO_P%d parameters value(%d), value should be [0..%d]", _port, _cnp802pPrio, (1 << 3) - 1);
         return false;
     }
     return true;
@@ -3703,3 +3708,576 @@ void ExternalPort5thGen::updateClassDefaultAttrFromTlv(void* tlv)
     return;
 }
 
+/*
+ * QoS Class implementation
+ */
+
+bool QoS::cfgSupported(mfile* mf, mlxCfgParam param)
+{
+    MError rc;
+    (void)param;
+    bool suppRead, suppWrite;
+    rc = nvqcCom5thGen(mf, getTlvTypeBe(), suppRead, suppWrite);
+    if (rc) {
+        errmsg("Failed to get QoS capabilities. %s", m_err2str(rc));
+        return false;
+    }
+    if (!suppRead || !suppWrite) {
+        return false;
+    }
+
+    if (!getCap(mf)) {
+        return false;
+    }
+
+    return true;
+}
+
+void QoS::setParam(mlxCfgParam paramType, u_int32_t val)
+{
+    if (paramType == Mcp_QoS_Num_of_TC_P1 || paramType == Mcp_QoS_Num_of_TC_P2) {
+        _numOfTC = val;
+    }
+
+    if (paramType == Mcp_QoS_Num_of_VL_P1 || paramType == Mcp_QoS_Num_of_VL_P2) {
+        _numOfVL = val;
+    }
+    return;
+}
+
+u_int32_t QoS::getParam(mlxCfgParam paramType)
+{
+    if (paramType == Mcp_QoS_Num_of_TC_P1 || paramType == Mcp_QoS_Num_of_TC_P2) {
+        return _numOfTC;
+    }
+    if (paramType == Mcp_QoS_Num_of_VL_P1 || paramType == Mcp_QoS_Num_of_VL_P2) {
+        return _numOfVL;
+    }
+    return MLXCFG_UNKNOWN;
+}
+
+u_int32_t QoS::getDefaultParam(mlxCfgParam paramType)
+{
+    if (paramType == Mcp_QoS_Num_of_TC_P1 || paramType == Mcp_QoS_Num_of_TC_P2) {
+        return _numOfTCDefault;
+    }
+    if (paramType == Mcp_QoS_Num_of_VL_P1 || paramType == Mcp_QoS_Num_of_VL_P2) {
+        return _numOfVLDefault;
+    }
+    return MLXCFG_UNKNOWN;
+}
+
+void QoS::setParams(u_int32_t numOfTC, u_int32_t numOfVL)
+{
+    _numOfTC = numOfTC;
+    _numOfVL = numOfVL;
+}
+
+void QoS::updateClassAttrFromDefaultParams()
+{
+    setParams(
+            _numOfTC,
+            _numOfVL);
+}
+
+int QoS::getFromDev(mfile* mf)
+{
+    GET_FROM_DEV_5TH_GEN(mf, tools_open_qos, "QoS Conf");
+}
+
+int QoS::setOnDev(mfile* mf, bool ignoreCheck)
+{
+    SET_ON_DEV_5TH_GEN(mf, ignoreCheck, tools_open_qos, "QoS Conf");
+}
+
+int QoS::getDefaultParams(mfile* mf)
+{
+    GET_DEFAULT_5TH_GEN(mf, tools_open_qos, "QoS Conf");
+}
+
+bool QoS::getCap(mfile *mf)
+{
+    MError rc;
+    u_int8_t tlvCapBuff[TOOLS_OPEN_QOS_CAP_SIZE] = {0};
+    struct tools_open_qos_cap qosCapTlv;
+    memset(&qosCapTlv, 0, sizeof(qosCapTlv));
+    rc = mnvaCom5thGen(mf, &tlvCapBuff[0], TOOLS_OPEN_QOS_CAP_SIZE, getQoSCapTlvTypeBe(), REG_ACCESS_METHOD_GET);
+    if (rc) {
+        return false;
+    }
+    tools_open_qos_cap_unpack(&qosCapTlv, tlvCapBuff);
+    _maxNumOfTC = qosCapTlv.max_num_of_tc;
+    _maxNumOfVL = qosCapTlv.max_num_of_vl;
+    return true;
+}
+
+bool QoS::hardLimitCheckAux(u_int32_t maxNumOfX, u_int32_t numOfX,const char *x)
+{
+    u_int32_t minVal;
+    u_int32_t maxVal;
+    // 0 and 8 have the same maxNumOfX meaning (they both indicate max 8 TCs which translates to the value 0)
+    minVal = (maxNumOfX == 0 || maxNumOfX >= 8) ? 0 : 1;
+    maxVal = (maxNumOfX == 0 || maxNumOfX == 8) ? 7 : maxNumOfX;
+    if ((numOfX < minVal) || numOfX > maxVal) {
+        errmsg("Illegal %s parameter value(%d), max allowed value is (%d), min allowed value is (%d)",
+                x,
+                numOfX,
+                maxVal,
+                minVal);
+        return false;
+    }
+
+    return true;
+}
+
+bool QoS::hardLimitCheck()
+{
+    if(!hardLimitCheckAux(_maxNumOfTC, _numOfTC, _port == 1 ? "NUM_OF_TC_P1" : "NUM_OF_TC_P2")) {
+        return false;
+    }
+
+    if(_numOfVL < 1 || _numOfVL > _maxNumOfVL){
+        errmsg("Illegal %s parameter value(%x), max allowed value is (%x), min allowed value is (%x)",
+            _port == 1 ? "NUM_OF_VL_P1" : "NUM_OF_VL_P2",
+            _numOfVL,
+            _maxNumOfVL,
+            1);
+        return false;
+    }
+
+    return true;
+}
+
+u_int32_t QoS::getTlvTypeBe()
+{
+    struct tools_open_per_port_type type;
+    u_int32_t tlvType = 0;
+    type.param_class = CLASS_PHYS_PORT;
+    type.param_idx = tlvTypeIdx;
+    type.port = _port;
+    tools_open_per_port_type_pack(&type, (u_int8_t*)&tlvType);
+    return tlvType;
+}
+
+void QoS::updateTlvFromClassAttr(void* tlv)
+{
+    struct tools_open_qos* qosPortTlv = (struct tools_open_qos*)tlv;
+    qosPortTlv->num_of_tc = _numOfTC;
+    qosPortTlv->num_of_vl = _numOfVL;
+    return;
+}
+
+void QoS::updateClassAttrFromTlv(void* tlv)
+{
+    struct tools_open_qos* qosPortTlv = (struct tools_open_qos*)tlv;
+    _numOfTC = qosPortTlv->num_of_tc;
+    _numOfVL = qosPortTlv->num_of_vl;
+    return;
+}
+
+void QoS::updateClassDefaultAttrFromTlv(void* tlv)
+{
+    struct tools_open_qos* qosPortTlv = (struct tools_open_qos*)tlv;
+    _numOfTCDefault = qosPortTlv->num_of_tc;
+    _numOfVLDefault = qosPortTlv->num_of_vl;
+    return;
+}
+
+u_int32_t QoS::getQoSCapTlvTypeBe()
+{
+    struct tools_open_per_port_type type;
+    u_int32_t tlvType = 0;
+    type.param_class = CLASS_PHYS_PORT;
+    type.param_idx = QOS_CAP;
+    type.port = _port;
+    tools_open_per_port_type_pack(&type, (u_int8_t*)&tlvType);
+    return tlvType;
+}
+
+
+/*
+ * LLDP Client Settings Class implementation
+ */
+
+bool LLDPClientSettings::cfgSupported(mfile* mf, mlxCfgParam param)
+{
+    MError rc;
+    (void)param;
+    bool suppRead, suppWrite;
+    rc = nvqcCom5thGen(mf, getTlvTypeBe(), suppRead, suppWrite);
+    if (rc) {
+        errmsg("Failed to get LLDP Client Settings capabilities. %s", m_err2str(rc));
+        return false;
+    }
+    if (!suppRead || !suppWrite) {
+        return false;
+    }
+
+    if (!getCap(mf)) {
+        return false;
+    }
+
+    return true;
+}
+
+void LLDPClientSettings::setParam(mlxCfgParam paramType, u_int32_t val)
+{
+    if (paramType == Mcp_LLDP_NB_RX_Mode_P1|| paramType == Mcp_LLDP_NB_RX_Mode_P2) {
+        _userSpecifiedRx = true;
+        _lldpNbRxMode = val;
+    }
+    if (paramType == Mcp_LLDP_NB_TX_Mode_P1|| paramType == Mcp_LLDP_NB_TX_Mode_P2) {
+        _userSpecifiedTx = true;
+        _lldpNbTxMode = val;
+    }
+    if (paramType == Mcp_LLDP_NB_DCBX_P1|| paramType == Mcp_LLDP_NB_DCBX_P2) {
+        _userSpecifiedDcbx = true;
+        _lldpNbDcbx = val;
+    }
+    return;
+}
+
+u_int32_t LLDPClientSettings::getParam(mlxCfgParam paramType)
+{
+    if (paramType == Mcp_LLDP_NB_RX_Mode_P1|| paramType == Mcp_LLDP_NB_RX_Mode_P2) {
+        return _lldpNbRxMode;
+    }
+    if (paramType == Mcp_LLDP_NB_TX_Mode_P1|| paramType == Mcp_LLDP_NB_TX_Mode_P2) {
+        return _lldpNbTxMode;
+    }
+    if (paramType == Mcp_LLDP_NB_DCBX_P1|| paramType == Mcp_LLDP_NB_DCBX_P2) {
+        return _lldpNbDcbx;
+    }
+    return MLXCFG_UNKNOWN;
+}
+
+u_int32_t LLDPClientSettings::getDefaultParam(mlxCfgParam paramType)
+{
+    if (paramType == Mcp_LLDP_NB_RX_Mode_P1|| paramType == Mcp_LLDP_NB_RX_Mode_P2) {
+        return _lldpNbRxModeDefault;
+    }
+    if (paramType == Mcp_LLDP_NB_TX_Mode_P1|| paramType == Mcp_LLDP_NB_TX_Mode_P2) {
+        return _lldpNbTxModeDefault;
+    }
+    if (paramType == Mcp_LLDP_NB_DCBX_P1|| paramType == Mcp_LLDP_NB_DCBX_P2) {
+        return _lldpNbDcbxDefault;
+    }
+    return MLXCFG_UNKNOWN;
+}
+
+void LLDPClientSettings::setParams(u_int32_t lldpNbRxMode, u_int32_t lldpNbTxMode, u_int32_t lldpNbDcbx)
+{
+    _lldpNbRxMode = lldpNbRxMode;
+    _lldpNbTxMode = lldpNbTxMode;
+    _lldpNbDcbx = lldpNbDcbx;
+}
+
+void LLDPClientSettings::updateClassAttrFromDefaultParams()
+{
+    setParams(
+            _lldpNbRxModeDefault,
+            _lldpNbTxModeDefault,
+            _lldpNbDcbxDefault);
+}
+
+int LLDPClientSettings::getFromDev(mfile* mf)
+{
+    GET_FROM_DEV_5TH_GEN(mf, tools_open_lldp_client_settings, "LLDP Client Settings");
+}
+
+int LLDPClientSettings::setOnDev(mfile* mf, bool ignoreCheck)
+{
+    SET_ON_DEV_5TH_GEN(mf, ignoreCheck, tools_open_lldp_client_settings, "LLDP Client Settings");
+}
+
+int LLDPClientSettings::getDefaultParams(mfile* mf)
+{
+    GET_DEFAULT_5TH_GEN(mf, tools_open_lldp_client_settings, "LLDP Client Settings");
+}
+
+bool LLDPClientSettings::getCap(mfile *mf)
+{
+    MError rc;
+    u_int8_t tlvCapBuff[TOOLS_OPEN_LLDP_NB_CAP_SIZE] = {0};
+    struct tools_open_lldp_nb_cap lldpNbCapTlv;
+    memset(&lldpNbCapTlv, 0, sizeof(lldpNbCapTlv));
+    rc = mnvaCom5thGen(mf, &tlvCapBuff[0], TOOLS_OPEN_LLDP_NB_CAP_SIZE, getLLDPNBCapTlvTypeBe(), REG_ACCESS_METHOD_GET);
+    if (rc) {
+        return false;
+    }
+    tools_open_lldp_nb_cap_unpack(&lldpNbCapTlv, tlvCapBuff);
+    _lldpNbTxCap = lldpNbCapTlv.lldp_nb_tx_cap;
+    _lldpNbRxCap = lldpNbCapTlv.lldp_nb_rx_cap;
+    _lldpNbDcbxEn = lldpNbCapTlv.lldp_nb_dcbx_en;
+    return true;
+}
+
+bool LLDPClientSettings::hardLimitCheck()
+{
+    if (_userSpecifiedRx && _lldpNbRxCap == 0) {
+        errmsg("The LLDP_NB_RX_MODE parameter cannot be set");
+        return false;
+    }
+
+    if (_lldpNbRxMode > _lldpNbRxCap) {
+        errmsg("Illegal LLDP_NB_RX_MODE parameter value(%d), max allowed value is (%d)", _lldpNbRxMode, _lldpNbRxCap);
+        return false;
+    }
+
+    if (_userSpecifiedTx && _lldpNbTxCap == 0) {
+        errmsg("The LLDP_NB_TX_MODE parameter cannot be set");
+        return false;
+    }
+
+    if (_lldpNbTxMode > _lldpNbTxCap) {
+        errmsg("Illegal LLDP_NB_TX_MODE parameter value(%d), max allowed value is (%d)", _lldpNbTxMode, _lldpNbTxCap);
+        return false;
+    }
+
+    if (_userSpecifiedDcbx && _lldpNbDcbxEn == 0) {
+        errmsg("LLDP_NB_RX_MODE parameter can not be set.");
+        return false;
+    }
+
+    if (_lldpNbDcbx > 1) {
+        errmsg("Illegal LLDP_NB_RX_MODE parameter value(%d), value must be False(0) or True(1)", _lldpNbDcbx);
+        return false;
+    }
+
+    return true;
+}
+
+u_int32_t LLDPClientSettings::getTlvTypeBe()
+{
+    struct tools_open_per_port_type type;
+    u_int32_t tlvType = 0;
+    type.param_class = CLASS_PHYS_PORT;
+    type.param_idx = tlvTypeIdx;
+    type.port = _port;
+    tools_open_per_port_type_pack(&type, (u_int8_t*)&tlvType);
+    return tlvType;
+}
+
+void LLDPClientSettings::updateTlvFromClassAttr(void* tlv)
+{
+    struct tools_open_lldp_client_settings* lldpClientSettingsPortTlv = (struct tools_open_lldp_client_settings*)tlv;
+    lldpClientSettingsPortTlv->lldp_nb_dcbx = _lldpNbDcbx;
+    lldpClientSettingsPortTlv->lldp_nb_rx_mode = _lldpNbRxMode;
+    lldpClientSettingsPortTlv->lldp_nb_tx_mode = _lldpNbTxMode;
+    return;
+}
+
+void LLDPClientSettings::updateClassAttrFromTlv(void* tlv)
+{
+    struct tools_open_lldp_client_settings* lldpClientSettingsPortTlv = (struct tools_open_lldp_client_settings*)tlv;
+    _lldpNbDcbx = lldpClientSettingsPortTlv->lldp_nb_dcbx;
+    _lldpNbRxMode = lldpClientSettingsPortTlv->lldp_nb_rx_mode;
+    _lldpNbTxMode = lldpClientSettingsPortTlv->lldp_nb_tx_mode;
+    return;
+}
+
+void LLDPClientSettings::updateClassDefaultAttrFromTlv(void* tlv)
+{
+    struct tools_open_lldp_client_settings* lldpClientSettingsPortTlv = (struct tools_open_lldp_client_settings*)tlv;
+    _lldpNbDcbxDefault = lldpClientSettingsPortTlv->lldp_nb_dcbx;
+    _lldpNbRxModeDefault = lldpClientSettingsPortTlv->lldp_nb_rx_mode;
+    _lldpNbTxModeDefault = lldpClientSettingsPortTlv->lldp_nb_tx_mode;
+    return;
+}
+
+u_int32_t LLDPClientSettings::getLLDPNBCapTlvTypeBe()
+{
+    struct tools_open_per_port_type type;
+    u_int32_t tlvType = 0;
+    type.param_class = CLASS_PHYS_PORT;
+    type.param_idx = LLDP_NB_CAPABILITIES_TYPE;
+    type.port = _port;
+    tools_open_per_port_type_pack(&type, (u_int8_t*)&tlvType);
+    return tlvType;
+}
+
+
+/*
+ * LLDP NB DCBX Class implementation
+ */
+
+bool DCBX::cfgSupported(mfile* mf, mlxCfgParam param)
+{
+    MError rc;
+    (void)param;
+    bool suppRead, suppWrite;
+    rc = nvqcCom5thGen(mf, getTlvTypeBe(), suppRead, suppWrite);
+    if (rc) {
+        errmsg("Failed to get LLDP NB DCBX capabilities. %s", m_err2str(rc));
+        return false;
+    }
+    if (!suppRead || !suppWrite) {
+        return false;
+    }
+
+    if (!getCap(mf)) {
+        return false;
+    }
+
+    return true;
+}
+
+void DCBX::setParam(mlxCfgParam paramType, u_int32_t val)
+{
+    if (paramType == Mcp_DCBX_IEEE_EN_P1|| paramType == Mcp_DCBX_IEEE_EN_P2) {
+        _ieee = val;
+    }
+    if (paramType == Mcp_DCBX_CEE_EN_P1|| paramType == Mcp_DCBX_CEE_EN_P2) {
+        _cee = val;
+    }
+    if (paramType == Mcp_DCBX_WILLING_P1|| paramType == Mcp_DCBX_WILLING_P2) {
+        _willing = val;
+    }
+    return;
+}
+
+u_int32_t DCBX::getParam(mlxCfgParam paramType)
+{
+    if (paramType == Mcp_DCBX_IEEE_EN_P1|| paramType == Mcp_DCBX_IEEE_EN_P2) {
+        return _ieee;
+    }
+    if (paramType == Mcp_DCBX_CEE_EN_P1|| paramType == Mcp_DCBX_CEE_EN_P2) {
+        return _cee;
+    }
+    if (paramType == Mcp_DCBX_WILLING_P1|| paramType == Mcp_DCBX_WILLING_P2) {
+        return _willing;
+    }
+    return MLXCFG_UNKNOWN;
+}
+
+u_int32_t DCBX::getDefaultParam(mlxCfgParam paramType)
+{
+    if (paramType == Mcp_DCBX_IEEE_EN_P1|| paramType == Mcp_DCBX_IEEE_EN_P2) {
+        return _ieeeDefault;
+    }
+    if (paramType == Mcp_DCBX_CEE_EN_P1|| paramType == Mcp_DCBX_CEE_EN_P2) {
+        return _ceeDefault;
+    }
+    if (paramType == Mcp_DCBX_WILLING_P1|| paramType == Mcp_DCBX_WILLING_P2) {
+        return _willingDefault;
+    }
+    return MLXCFG_UNKNOWN;
+}
+
+void DCBX::setParams(u_int32_t ieee, u_int32_t cee, u_int32_t willing)
+{
+    _ieee = ieee;
+    _cee = cee;
+    _willing = willing;
+}
+
+void DCBX::updateClassAttrFromDefaultParams()
+{
+    setParams(
+            _ieeeDefault,
+            _ceeDefault,
+            _willingDefault);
+}
+
+int DCBX::getFromDev(mfile* mf)
+{
+    GET_FROM_DEV_5TH_GEN(mf, tools_open_lldp_nb_dcbx, "LLDP NB DCBX");
+}
+
+int DCBX::setOnDev(mfile* mf, bool ignoreCheck)
+{
+    SET_ON_DEV_5TH_GEN(mf, ignoreCheck, tools_open_lldp_nb_dcbx, "LLDP NB DCBX");
+}
+
+int DCBX::getDefaultParams(mfile* mf)
+{
+    GET_DEFAULT_5TH_GEN(mf, tools_open_lldp_nb_dcbx, "LLDP NB DCBX");
+}
+
+bool DCBX::hardLimitCheck()
+{
+    if (_lldpNbDcbxEn == 0) {
+        errmsg("DCBX parameters cannot be set");
+        return false;
+    }
+    if (_ieee > 1) {
+        errmsg("Illegal %s parameter value(%d)", _port == 1 ?
+                "DCBX_IEEE_P1" : "DCBX_IEEE_P2", _ieee);
+        return false;
+    }
+    if (_cee > 1) {
+        errmsg("Illegal %s parameter value(%d)", _port == 1 ?
+                "DCBX_CEE_P1" : "DCBX_CEE_P2", _cee);
+        return false;
+    }
+    if (_willing > 1) {
+        errmsg("Illegal %s parameter value(%d)", _port == 1 ?
+                "DCBX_WILLING_P1" : "DCBX_WILLING_P2", _willing);
+        return false;
+    }
+    return true;
+}
+
+u_int32_t DCBX::getTlvTypeBe()
+{
+    struct tools_open_per_port_type type;
+    u_int32_t tlvType = 0;
+    type.param_class = CLASS_PHYS_PORT;
+    type.param_idx = tlvTypeIdx;
+    type.port = _port;
+    tools_open_per_port_type_pack(&type, (u_int8_t*)&tlvType);
+    return tlvType;
+}
+
+u_int32_t DCBX::getLLDPNBCapTlvTypeBe()
+{
+    struct tools_open_per_port_type type;
+    u_int32_t tlvType = 0;
+    type.param_class = CLASS_PHYS_PORT;
+    type.param_idx = LLDP_NB_CAPABILITIES_TYPE;
+    type.port = _port;
+    tools_open_per_port_type_pack(&type, (u_int8_t*)&tlvType);
+    return tlvType;
+}
+
+void DCBX::updateTlvFromClassAttr(void* tlv)
+{
+    struct tools_open_lldp_nb_dcbx* DCBXPortTlv = (struct tools_open_lldp_nb_dcbx*)tlv;
+    DCBXPortTlv->ieee_dcbx_en = _ieee;
+    DCBXPortTlv->cee_dcbx_en = _cee;
+    DCBXPortTlv->dcbx_willing = _willing;
+    return;
+}
+
+void DCBX::updateClassAttrFromTlv(void* tlv)
+{
+    struct tools_open_lldp_nb_dcbx* lldpClientSettingsPortTlv = (struct tools_open_lldp_nb_dcbx*)tlv;
+    _ieee = lldpClientSettingsPortTlv->ieee_dcbx_en;
+    _cee = lldpClientSettingsPortTlv->cee_dcbx_en;
+    _willing = lldpClientSettingsPortTlv->dcbx_willing;
+    return;
+}
+
+void DCBX::updateClassDefaultAttrFromTlv(void* tlv)
+{
+    struct tools_open_lldp_nb_dcbx* lldpClientSettingsPortTlv = (struct tools_open_lldp_nb_dcbx*)tlv;
+    _ieeeDefault = lldpClientSettingsPortTlv->ieee_dcbx_en;
+    _ceeDefault = lldpClientSettingsPortTlv->cee_dcbx_en;
+    _willingDefault = lldpClientSettingsPortTlv->dcbx_willing;
+    return;
+}
+
+bool DCBX::getCap(mfile *mf)
+{
+    MError rc;
+    u_int8_t tlvCapBuff[TOOLS_OPEN_LLDP_NB_CAP_SIZE] = {0};
+    struct tools_open_lldp_nb_cap lldpNbCapTlv;
+    memset(&lldpNbCapTlv, 0, sizeof(lldpNbCapTlv));
+    rc = mnvaCom5thGen(mf, &tlvCapBuff[0], TOOLS_OPEN_LLDP_NB_CAP_SIZE, getLLDPNBCapTlvTypeBe(), REG_ACCESS_METHOD_GET);
+    if (rc) {
+        return false;
+    }
+    tools_open_lldp_nb_cap_unpack(&lldpNbCapTlv, tlvCapBuff);
+    _lldpNbDcbxEn = lldpNbCapTlv.lldp_nb_dcbx_en;
+    return true;
+}

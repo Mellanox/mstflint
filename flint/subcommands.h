@@ -536,4 +536,12 @@ private:
     struct tools_open_fw_version _userFwVer;
 };
 
+class CacheImageSubCommand : public SubCommand
+{
+public:
+    CacheImageSubCommand();
+    ~CacheImageSubCommand();
+    FlintStatus executeCommand();
+};
+
 #endif

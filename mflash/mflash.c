@@ -203,6 +203,7 @@ int release_semaphore(mflash* mfl, int ignore_writer_lock);
 #define CPUMODE_SHIFT  30
 #define CPUMODE        0xf0150
 
+#define IS4_HW_ID 0x1b3
 #define SWITCHX_HW_ID 0x245
 #define CONNECTX_HW_ID  0x190
 #define CX3_PRO_HW_ID 0x1F7
@@ -210,7 +211,6 @@ int release_semaphore(mflash* mfl, int ignore_writer_lock);
 #define CX4_HW_ID	  0x209
 #define CX4LX_HW_ID   0x20b
 #define CX5_HW_ID     0x20d
-
 #define CONNECT_IB_HW_ID 0x1FF
 #define SWITCH_IB_HW_ID 0x247
 #define SPECTRUM_HW_ID 0x249
@@ -223,7 +223,7 @@ int release_semaphore(mflash* mfl, int ignore_writer_lock);
 #define IS_CONNECTX_4TH_GEN_FAMILY(dev_id) \
         (((dev_id) == CONNECTX_HW_ID) || ((dev_id) == CX3_HW_ID) || ((dev_id) == CX3_PRO_HW_ID))
 #define IS_IS4_FAMILY(dev_id) \
-    (((dev_id) == 435)) // 435 == InfiniScaleIV
+    (((dev_id) == IS4_HW_ID))
 #define IS_SX(dev_id) \
         ((dev_id) == SWITCHX_HW_ID)
 #define IS_SIB(dev_id) \
@@ -247,7 +247,7 @@ int release_semaphore(mflash* mfl, int ignore_writer_lock);
 #define IS_SWITCH(dev_id) \
        ((IS_IS4_FAMILY(dev_id)) || (IS_SX(dev_id)) || (IS_SIB(dev_id)) || (IS_SEN(dev_id)) || (IS_SIB2(dev_id)))
 #define SUPPORTS_SW_RESET(devid)\
-        (((devid) == 435) || ((devid) == SWITCHX_HW_ID) || ((devid) == SWITCH_IB_HW_ID) || ((devid) == SWITCH_IB2_HW_ID))
+        (((devid) == IS4_HW_ID) || ((devid) == SWITCHX_HW_ID) || ((devid) == SWITCH_IB_HW_ID) || ((devid) == SWITCH_IB2_HW_ID))
 
 
 // Write/Erase delays
@@ -351,8 +351,9 @@ int cntx_spi_write_status_reg(mflash* mfl, u_int32_t status_reg, u_int8_t write_
 
 int spi_get_num_of_flashes(int prev_num_of_flashes);
 
+#ifndef UEFI_BUILD
 static int trm2mfe_err(trm_sts rc);
-
+#endif
 
 int my_memset(void* dst, u_int8_t data, u_int32_t len) {
     u_int32_t i;
@@ -519,6 +520,8 @@ enum StFlashCommand {
     SFC_RDSR2 = 0x35,
     SFC_WREN  = 0x06,
     SFC_READ  = 0x03,
+    SFC_FAST_READ  = 0x3B,
+    SFC_QUAD_READ  = 0x3B,
     SFC_RES   = 0xAB,
     SFC_JEDEC = 0x9F,
     SFC_RDNVR = 0xB5,
@@ -557,7 +560,7 @@ typedef enum flash_memory_type {
 
 flash_info_t g_flash_info_arr[] =
 {
-        {"M25PXxx",      FV_ST,      FMT_ST_M25PX,     MCS_STSPI,  SFC_SSE, FSS_4KB,  0, 0, 0, 0, 0},
+        {"M25PXxx",      FV_ST,      FMT_ST_M25PX,     MCS_STSPI,  SFC_SSE, FSS_4KB,  1, 0, 0, 0, 0},
         {"M25Pxx",       FV_ST,      FMT_ST_M25P,      MCS_STSPI,  SFC_SE,  FSS_64KB, 0, 0, 0, 0, 0},
         {"N25Q0XX",      FV_ST,      FMT_N25QXXX,      MCS_STSPI,  SFC_SSE, FSS_4KB,  1, 1, 1, 0, 1},
         {SST_FLASH_NAME, FV_SST,     FMT_SST_25,       MCS_SSTSPI, SFC_SE,  FSS_64KB, 0, 0, 0, 0, 0},
@@ -565,7 +568,7 @@ flash_info_t g_flash_info_arr[] =
         {WINBOND_W25X,   FV_WINBOND, FMT_WINBOND_W25X, MCS_STSPI,  SFC_SSE, FSS_4KB,  0, 0, 0, 0, 0},
         {ATMEL_NAME,     FV_ATMEL,   FMT_ATMEL,        MCS_STSPI,  SFC_SSE, FSS_4KB,  0, 0, 0, 0, 0},
         {S25FLXXXP_NAME, FV_S25FLXXXX, FMT_S25FLXXXP,  MCS_STSPI,  SFC_SE,  FSS_64KB, 0, 0, 0, 0, 0},
-        {S25FL116K_NAME, FV_S25FLXXXX, FMT_S25FL116K, MCS_STSPI,   SFC_SSE, FSS_4KB,  0, 0, 0, 0, 0}, // this flash actually supports quad and write protect but we dont need it at this moment
+        {S25FL116K_NAME, FV_S25FLXXXX, FMT_S25FL116K, MCS_STSPI,   SFC_SSE, FSS_4KB,  1, 1, 1, 1, 0}, // this flash actually supports quad and write protect but we dont need it at this moment
         {MACRONIX_NAME,  FV_MX25K16XXX, FMT_ST_M25P, MCS_STSPI,    SFC_SSE, FSS_4KB,  0, 0, 0, 0, 0}, // this flash actually supports write protection but we dont use it at this time
 };
 
@@ -770,7 +773,10 @@ int get_flash_params(mflash* mfl, flash_params_t *flash_params, flash_info_t *fl
     int num_of_flashes = get_num_of_banks_int(mfl);
     int spi_sel, rc;
     int params_were_set = 0;
+    flash_info_t tmp_flash_info;
     memset(flash_params, 0, sizeof(flash_params_t));
+    memset (flash_info, 0, sizeof(flash_info_t));
+    memset (&tmp_flash_info, 0, sizeof(flash_info_t));
 
     // if number of flash banks is zero exit with error
     if (num_of_flashes == 0) {
@@ -782,7 +788,7 @@ int get_flash_params(mflash* mfl, flash_params_t *flash_params, flash_info_t *fl
             u_int8_t no_flash = 0;
             const char *type_name;
             rc = set_bank(mfl, spi_sel); CHECK_RC(rc);
-            rc = mfl->f_get_info(mfl, flash_info, &log2size, &no_flash); CHECK_RC(rc);
+            rc = mfl->f_get_info(mfl, &tmp_flash_info, &log2size, &no_flash); CHECK_RC(rc);
             //printf("-D- spi_sel = %d, num_of_flashes = %d, rc = %d, no_flash = %d\n", spi_sel, num_of_flashes, rc, no_flash);
 
             if (no_flash == 1) {
@@ -794,10 +800,11 @@ int get_flash_params(mflash* mfl, flash_params_t *flash_params, flash_info_t *fl
                 break;
             }
 
-            type_name = flash_info->name;
+            type_name = tmp_flash_info.name;
             if (params_were_set == 0) {
                 flash_params->type_name = type_name;
                 flash_params->log2size  = log2size;
+                memcpy(flash_info, &tmp_flash_info, sizeof(flash_info_t));
                 params_were_set = 1;
             } else {
                 rc = compare_flash_params(flash_params, spi_sel, type_name, log2size); CHECK_RC(rc);
@@ -1980,6 +1987,11 @@ int mfl_com_lock(mflash* mfl)
     return MFE_OK;
 }
 
+int     mf_release_semaphore(mflash* mfl)
+{
+    return release_semaphore(mfl, 1);
+}
+
 int release_semaphore(mflash* mfl, int ignore_writer_lock) {
     int rc;
     if (mfl->is_locked && mfl->f_lock && (!mfl->writer_lock || ignore_writer_lock)) {
@@ -2031,8 +2043,8 @@ int gen4_flash_init_com(mflash* mfl, flash_params_t* flash_params, u_int8_t init
 
 }
 
-int is4_flash_init(mflash* mfl, flash_params_t* flash_params) {
-
+int is4_flash_init(mflash* mfl, flash_params_t* flash_params)
+{
     mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] = ATBM_NO;
     mfl->f_lock           = is4_flash_lock;
     return gen4_flash_init_com(mfl, flash_params, 0);
@@ -2438,7 +2450,6 @@ int get_dev_info(mflash* mfl)
 int mf_open_fw(mflash* mfl, flash_params_t* flash_params, int num_of_banks)
 {
     int rc;
-    trm_sts trm_rc;
     if (!mfl) {
         return MFE_BAD_PARAMS;
     }
@@ -2446,10 +2457,13 @@ int mf_open_fw(mflash* mfl, flash_params_t* flash_params, int num_of_banks)
     if (mfl->access_type == MFAT_MFILE ) {
         rc = get_dev_info(mfl); CHECK_RC(rc);
 
+#ifndef UEFI_BUILD
+        trm_sts trm_rc;
         trm_rc = trm_create(&(mfl->trm), mfl->mf);
         if (trm_rc) {
             return trm2mfe_err(trm_rc);
         }
+#endif
 
         mfl->opts[MFO_NUM_OF_BANKS] = spi_get_num_of_flashes(num_of_banks);
         rc = spi_update_num_of_banks(mfl, num_of_banks);CHECK_RC(rc);
@@ -2667,6 +2681,10 @@ const char*   mf_err2str (int err_code) {
         return "MFE_CMDIF_TIMEOUT_ERR";
     case MFE_CMDIF_GO_BIT_BUSY:
         return "MFE_CMDIF_GO_BIT_BUSY";
+    case MFE_CMDIF_BAD_OP:
+        return "MFE_CMDIF_BAD_OP";
+    case MFE_MISSING_KEY:
+        return "No key was set";
     case MFE_MISMATCH_KEY:
         return "The given key is incorrect";
     case MFE_UNKNOWN_REG:
@@ -2748,6 +2766,7 @@ const char*   mf_err2str (int err_code) {
     }
 }
 
+#ifndef UEFI_BUILD
 int trm2mfe_err(trm_sts rc)
 {
     switch (rc) {
@@ -2761,6 +2780,7 @@ int trm2mfe_err(trm_sts rc)
         return MFE_ERROR;
     }
 }
+#endif
 
 int     mf_set_opt     (mflash* mfl, MfOpt opt, int  val) {
     if ((int)opt < 0 || opt >= MFO_LAST) {
@@ -2810,7 +2830,8 @@ int     mf_read_modify_status_winbond (mflash *mfl, u_int8_t bank_num, u_int8_t 
     int rc;
 
     rc = set_bank_int(mfl, bank_num); CHECK_RC(rc);
-    if ( mfl->attr.vendor == FV_WINBOND &&  mfl->attr.type == FMT_WINBOND) {
+    if ( (mfl->attr.vendor == FV_WINBOND &&  mfl->attr.type == FMT_WINBOND) ||
+         (mfl->attr.vendor ==  FV_S25FLXXXX && mfl->attr.type == FMT_S25FL116K)) {
         /*
          * if we have 2 status registers, winbond are allowing us to write both of them
          * in a single command WRSR  status_reg1 located in MSB, status_reg2 after status_reg1
@@ -2920,7 +2941,7 @@ int     mf_set_quad_en (mflash *mfl, u_int8_t quad_en)
         return MFE_NOT_SUPPORTED_OPERATION;
     }
     for (bank = 0; bank < mfl->attr.banks_num; bank++) {
-        if (mfl->attr.vendor == FV_WINBOND) {
+        if (mfl->attr.vendor == FV_WINBOND ||  mfl->attr.vendor == FV_S25FLXXXX) {
             rc = mf_read_modify_status_winbond(mfl, bank, 0, quad_en, QUAD_EN_OFFSET, 1); CHECK_RC(rc);
         } else if (mfl->attr.vendor == FV_ST) {
             rc = mf_read_modify_status_new(mfl, bank, SFC_RDNVR, SFC_WRNVR, !quad_en, QUAD_EN_OFFSET_ST, 1, 2); CHECK_RC(rc);
@@ -2938,7 +2959,7 @@ int mf_get_quad_en(mflash* mfl, u_int8_t *quad_en_p)
         return MFE_NOT_SUPPORTED_OPERATION;
     }
 
-    if (mfl->attr.vendor == FV_WINBOND) {
+    if (mfl->attr.vendor == FV_WINBOND || mfl->attr.vendor == FV_S25FLXXXX) {
         return  mf_get_param_int(mfl, quad_en_p, SFC_RDSR2, QUAD_EN_OFFSET, 1, 1, 1);
     } else if (mfl->attr.vendor == FV_ST) {
         return  mf_get_param_int(mfl, quad_en_p, SFC_RDNVR, QUAD_EN_OFFSET_ST, 1, 2, 0);
@@ -3047,7 +3068,19 @@ int mf_disable_hw_access(mflash* mfl)
     // We need to release the semaphore because we will not have any access to semaphore after disabling the HW access
     rc = release_semaphore(mfl, 1); CHECK_RC(rc);
     rc = tcif_hw_access(mfl->mf, 0, 1 /* Lock */);
-    return (rc == ME_CMDIF_UNKN_TLV) ? MFE_MISMATCH_KEY : MError2MfError(rc);
+    // translate to operation specific errors
+    switch (rc) {
+    case ME_CMDIF_UNKN_TLV:
+        rc = MFE_MISMATCH_KEY;
+        break;
+    case ME_CMDIF_BAD_OP:
+        rc = MFE_MISSING_KEY;
+        break;
+    default:
+        rc =  MError2MfError(rc);
+        break;
+    }
+    return rc;
 #else
     (void)mfl;
     return MFE_NOT_SUPPORTED_OPERATION;

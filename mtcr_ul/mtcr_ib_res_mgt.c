@@ -31,9 +31,11 @@
  */
 
 #include <string.h>
+
 #include "mtcr_ib.h"
 #include "mtcr_ib_res_mgt.h"
 #include "packets_common.h"
+
 
 #define IB_SMP_DATA_SIZE 48
 #define SMP_SEMAPHOE_LOCK_CMD 0xff53
@@ -62,7 +64,7 @@ struct semaphore_lock_cmd {
      u_int8_t op;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
     /* Description - This field is provided by the device on a successful lock. It should be used by the user in order to either extend or release of the lock. */
-    /* 8.0 - 12.31 */
+    /* 8.0 - 8.31 */
      u_int32_t lock_key;
 };
 
@@ -91,7 +93,7 @@ void semaphore_lock_cmd_pack(const struct semaphore_lock_cmd *ptr_struct, u_int8
     push_to_buff(ptr_buff, offset, 2, (u_int32_t)ptr_struct->op);
 
     offset=64;
-    push_to_buff_64(ptr_buff, offset, (u_int64_t)ptr_struct->lock_key);
+    push_to_buff_32(ptr_buff, offset, ptr_struct->lock_key);
 
 }
 
@@ -121,7 +123,7 @@ void semaphore_lock_cmd_unpack(struct semaphore_lock_cmd *ptr_struct, u_int8_t* 
     ptr_struct->op = (u_int8_t)pop_from_buff(ptr_buff, offset, 2);
 
     offset=64;
-    ptr_struct->lock_key = (u_int32_t)pop_from_buff_64(ptr_buff, offset);
+    ptr_struct->lock_key = pop_from_buff_32(ptr_buff, offset);
 
 }
 

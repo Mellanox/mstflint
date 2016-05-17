@@ -30,6 +30,7 @@
  * SOFTWARE.
  */
 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -41,7 +42,9 @@ enum dm_dev_type {
     DM_UNKNOWN = -1,
     DM_HCA,
     DM_SWITCH,
-    DM_BRIDGE
+    DM_BRIDGE,
+    DM_QSFP_CABLE,
+    DM_SFP_CABLE,
 };
 
 struct dev_info {
@@ -55,9 +58,27 @@ struct dev_info {
 };
 
 #define DEVID_ADDR                          0xf0014
+#define CABLEID_ADDR                        0x0
+#define SFP_51_ADDR                         92
+#define SFP_51_PAGING_ADDR                  64
+
+#ifdef CABLES_SUPP
+enum dm_dev_type getCableType(u_int8_t id) {
+    switch (id) {
+        case 0xd:
+        case 0x11:
+        case 0xe:
+        case 0xc:
+            return DM_QSFP_CABLE;
+        case 0x3:
+            return DM_SFP_CABLE;
+        default:
+            return DM_UNKNOWN;
+    }
+}
+#endif
 
 static struct dev_info g_devs_info[] = {
-
     {
         .dm_id     = DeviceInfiniScaleIV,
         .hw_dev_id = 0x01b3,
@@ -85,6 +106,7 @@ static struct dev_info g_devs_info[] = {
         .port_num  = 2,
         .dev_type  = DM_HCA
     },
+
     {
         .dm_id     = DeviceConnectX3,
         .hw_dev_id = 0x1f5,
@@ -185,6 +207,60 @@ static struct dev_info g_devs_info[] = {
         .dev_type  = DM_SWITCH
     },
     {
+        .dm_id     = DeviceCable,
+        .hw_dev_id = 0xffff,
+        .hw_rev_id = -1,
+        .sw_dev_id = -1,
+        .name      = "Cable",
+        .port_num  = -1,
+        .dev_type  = DM_QSFP_CABLE
+    },
+    {
+        .dm_id     = DeviceCableQSFP,
+        .hw_dev_id = 0xffff,
+        .hw_rev_id = 0,
+        .sw_dev_id = -1,
+        .name      = "CableQSFP",
+        .port_num  = -1,
+        .dev_type  = DM_QSFP_CABLE
+    },
+    {
+        .dm_id     = DeviceCableQSFPaging,
+        .hw_dev_id = 0xffff,
+        .hw_rev_id = 1,
+        .sw_dev_id = -1,
+        .name      = "CableQSFPaging",
+        .port_num  = -1,
+        .dev_type  = DM_QSFP_CABLE
+    },
+    {
+        .dm_id     = DeviceCableSFP,
+        .hw_dev_id = 0xffff,
+        .hw_rev_id = 1,
+        .sw_dev_id = -1,
+        .name      = "CableSFP",
+        .port_num  = -1,
+        .dev_type  = DM_SFP_CABLE
+    },
+    {
+        .dm_id     = DeviceCableSFP51,
+        .hw_dev_id = 0xffff,
+        .hw_rev_id = 1,
+        .sw_dev_id = -1,
+        .name      = "CableSFP51",
+        .port_num  = -1,
+        .dev_type  = DM_SFP_CABLE
+    },
+    {
+        .dm_id     = DeviceCableSFP51Paging,
+        .hw_dev_id = 0xffff,
+        .hw_rev_id = 1,
+        .sw_dev_id = -1,
+        .name      = "CableSFP51Paging",
+        .port_num  = -1,
+        .dev_type  = DM_SFP_CABLE
+    },
+    {
         .dm_id     = DeviceDummy,
         .hw_dev_id = 0x1,
         .hw_rev_id = -1,
@@ -255,7 +331,53 @@ int dm_get_device_id(mfile* mf,
        return 0;
     }
 #endif
-
+#ifdef CABLES_SUPP
+    if (mf->tp == MST_CABLE) {
+        //printf("-D- Getting cable ID\n");
+        if (mread4(mf, CABLEID_ADDR, &dword) != 4)
+        {
+            //printf("FATAL - crspace read (0x%x) failed: %s\n", DEVID_ADDR, strerror(errno));
+            return 1;
+        }
+        dword = __cpu_to_le32(dword); // Cable pages are in LE
+        *ptr_hw_dev_id = 0xffff;
+        u_int8_t id = EXTRACT(dword, 0, 8);
+        enum dm_dev_type cbl_type = getCableType(id);
+        if (cbl_type == DM_QSFP_CABLE) {
+            // Get Byte 2 bit 2 ~ bit 18
+            u_int8_t paging = EXTRACT(dword, 18, 1);
+            //printf("DWORD: %#x, paging: %d\n", dword, paging);
+            if (paging == 0) {
+                *ptr_dm_dev_id = DeviceCableQSFPaging;
+            } else {
+                *ptr_dm_dev_id = DeviceCableQSFP;
+            }
+        } else if (cbl_type == DM_SFP_CABLE) {
+            *ptr_dm_dev_id = DeviceCableSFP;
+            if (mread4(mf, SFP_51_ADDR, &dword) != 4)
+            {
+               //printf("FATAL - crspace read (0x%x) failed: %s\n", DEVID_ADDR, strerror(errno));
+               return 1;
+            }
+            u_int8_t byte = EXTRACT(dword, 6, 1); //Byte 92 bit 6
+            if (byte) {
+                *ptr_dm_dev_id = DeviceCableSFP51;
+                if (mread4(mf, SFP_51_PAGING_ADDR, &dword) != 4)
+                {
+                   //printf("FATAL - crspace read (0x%x) failed: %s\n", DEVID_ADDR, strerror(errno));
+                   return 1;
+                }
+                byte = EXTRACT(dword, 4, 1); //Byte 64 bit 4
+                if (byte) {
+                    *ptr_dm_dev_id = DeviceCableSFP51Paging;
+                }
+            }
+        } else {
+            *ptr_dm_dev_id = DeviceUnknown;
+        }
+        return 0;
+    }
+#endif
 
 
     rc = mget_mdevs_flags(mf, &dev_flags);
@@ -354,6 +476,11 @@ int dm_dev_is_bridge(dm_dev_id_t type)
     return get_entry(type)->dev_type == DM_BRIDGE;
 }
 
+int dm_dev_is_cable(dm_dev_id_t type)
+{
+    return (get_entry(type)->dev_type == DM_QSFP_CABLE || get_entry(type)->dev_type == DM_SFP_CABLE);
+}
+
 u_int32_t dm_get_hw_dev_id(dm_dev_id_t type)
 {
     return get_entry(type)->hw_dev_id;
@@ -381,5 +508,32 @@ int dm_is_fpp_supported(dm_dev_id_t type)
 int dm_is_device_supported(dm_dev_id_t type)
 {
     return get_entry(type)->dm_id != DeviceUnknown;
+}
+
+int dm_is_livefish_mode(mfile* mf)
+{
+    if(!mf || !mf->dinfo) {
+        return 0;
+    }
+    dm_dev_id_t devid_t;
+    u_int32_t devid = 0;
+    u_int32_t revid = 0;
+    int rc = dm_get_device_id(mf, &devid_t, &devid, &revid);
+    if (rc) {
+        // Could not detrmine , by default is not livefish
+        return 0;
+    }
+    u_int32_t swid = mf->dinfo->pci.dev_id;
+    //printf("-D- swid: %#x, devid: %#x\n", swid, devid);
+    if (devid_t == DeviceConnectX2    ||
+        devid_t == DeviceConnectX3    ||
+        devid_t == DeviceConnectX3Pro ||
+        devid_t == DeviceSwitchX        ) {
+        return (devid == swid - 1);
+    } else {
+        return (devid == swid);
+    }
+
+    return 0;
 }
 

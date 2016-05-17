@@ -30,8 +30,9 @@
  * SOFTWARE.
  */
 
+
 /***
- *** This file was generated at "2016-02-23 00:12:07"
+ *** This file was generated at "2016-05-02 14:45:27"
  *** by:
  ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/register_access_open/register_access_open.adb --file-prefix register_access_open --prefix register_access_
  ***/
@@ -68,7 +69,7 @@ struct register_access_mfba {
 };
 
 /* Description -   */
-/* Size in bytes - 36 */
+/* Size in bytes - 32 */
 struct register_access_mfpa {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Flash Select */
@@ -85,9 +86,12 @@ struct register_access_mfpa {
 	/* Description - number of flash devices connected */
 	/* 16.0 - 16.3 */
 	 u_int8_t flash_num;
-	/* Description -  */
+	/* Description - If set, MFBE register supports 64KB bulk erase operation. */
 	/* 16.29 - 16.29 */
 	 u_int8_t bulk_64kb_erase_en;
+	/* Description - If set, MFBE register supports 32KB bulk erase operation. */
+	/* 16.30 - 16.30 */
+	 u_int8_t bulk_32kb_erase_en;
 /*---------------- DWORD[5] (Offset 0x14) ----------------*/
 	/* Description - Flash JEDEC ID */
 	/* 20.0 - 20.23 */
@@ -115,9 +119,12 @@ struct register_access_mfbe {
 	/* Description - Parallel */
 	/* 0.8 - 0.8 */
 	 u_int8_t p;
-	/* Description - erase 64KB flash area */
+	/* Description - Erase a 64KB flash area in one bulk operation. */
 	/* 0.29 - 0.29 */
 	 u_int8_t bulk_64kb_erase;
+	/* Description - Erase a 32KB flash area in one bulk operation. */
+	/* 0.30 - 0.30 */
+	 u_int8_t bulk_32kb_erase;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - address in bytes */
 	/* 8.0 - 8.23 */
@@ -132,7 +139,7 @@ union register_access_register_access_open_Nodes {
 	/* 0.0 - 12.31 */
 	 struct register_access_mfbe mfbe;
 	/* Description -  */
-	/* 0.0 - 36.31 */
+	/* 0.0 - 32.31 */
 	 struct register_access_mfpa mfpa;
 	/* Description -  */
 	/* 0.0 - 268.31 */
@@ -153,7 +160,7 @@ void register_access_mfpa_pack(const struct register_access_mfpa *ptr_struct, u_
 void register_access_mfpa_unpack(struct register_access_mfpa *ptr_struct, const u_int8_t* ptr_buff);
 void register_access_mfpa_print(const struct register_access_mfpa *ptr_struct, FILE* file, int indent_level);
 int register_access_mfpa_size(void);
-#define REGISTER_ACCESS_MFPA_SIZE    (0x24)
+#define REGISTER_ACCESS_MFPA_SIZE    (0x20)
 void register_access_mfpa_dump(const struct register_access_mfpa *ptr_struct, FILE* file);
 /* mfbe */
 void register_access_mfbe_pack(const struct register_access_mfbe *ptr_struct, u_int8_t* ptr_buff);

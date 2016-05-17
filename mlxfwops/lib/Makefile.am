@@ -41,7 +41,7 @@ UTILS_LIB = $(top_srcdir)/mft_utils
 UEFI_COMMON_DIR = $(top_srcdir)/mlxfwops/uefi_c
 
 AM_CPPFLAGS = -I$(srcdir) -I$(MTCR_INC_DIR) -I$(MFLASH_DIR) -I$(top_srcdir)/ext_libs/json -I$(MINIXZ_DIR)\
-           -I$(COMMON_DIR) -I $(LAYOUTS_DIR) -I$(top_srcdir)/common -I$(UTILS_LIB) -I$(UEFI_COMMON_DIR)
+           -I$(COMMON_DIR) -I$(LAYOUTS_DIR) -I$(top_srcdir)/common -I$(UTILS_LIB) -I$(UEFI_COMMON_DIR)
 
 MLXFWOPS_VERSION = 1
 

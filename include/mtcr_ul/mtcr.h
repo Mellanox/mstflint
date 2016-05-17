@@ -41,6 +41,7 @@ extern "C" {
 #include <sys/types.h>
 
 #include "mtcr_com_defs.h"
+#include "mtcr_mf.h"
 
 typedef enum mtcr_access_method {
     MTCR_ACCESS_ERROR  = MST_ERROR,
@@ -97,6 +98,8 @@ mfile *mopend(const char *name, int type);
 
 mfile *mopen_fw_ctx(void* fw_cmd_context, void* fw_cmd_func, void* extra_data);
 
+mfile *mopen_adv(const char *name, MType mtype);
+
 /*
  * Close Mellanox driver
  * req. descriptor
@@ -148,6 +151,8 @@ int mget_vsec_supp(mfile* mf);
 
 int mget_addr_space(mfile* mf);
 int mset_addr_space(mfile* mf, int space);
+
+int mclear_pci_semaphore(const char* name);
 
 #ifdef __cplusplus
 }

@@ -30,6 +30,7 @@
  * SOFTWARE.
  */
 
+
 #ifndef _MTCR_COM_DEFS_H
 #define _MTCR_COM_DEFS_H
 
@@ -96,6 +97,7 @@ typedef enum MError {
     ME_BAD_PARAMS,
     ME_CR_ERROR,
     ME_NOT_IMPLEMENTED,
+
     ME_SEM_LOCKED,
     ME_MEM_ERROR,
 
@@ -108,6 +110,9 @@ typedef enum MError {
     ME_PCI_WRITE_ERROR,
     ME_PCI_SPACE_NOT_SUPPORTED,
     ME_PCI_IFC_TOUT,
+
+    ME_UNSUPPORTED_OPERATION,
+    ME_UNSUPPORTED_ACCESS_TYPE,
 
     // errors regarding REG_ACCESS
     ME_REG_ACCESS_OK = 0,
@@ -198,7 +203,7 @@ typedef enum MType_t {
     // 0x2000 reserved
     MST_FPGA_NEWTON = 0x4000,
     MST_CABLE = 0x8000,
-    MST_DEFAULT = 0xffffffff & ~MST_FPGA
+    MST_DEFAULT = 0xffffffff & ~MST_FPGA & ~MST_CABLE
 } MType;
 
 typedef enum DType_t {

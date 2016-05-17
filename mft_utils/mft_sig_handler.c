@@ -142,3 +142,18 @@ void mft_signal_set_msg(char* msg)
     s_interrupt_message = msg;
 }
 
+void mft_restore_and_raise()
+{
+    int sig;
+    sig = mft_signal_is_fired();
+    if (sig) {
+        // reset recieved signal
+        mft_signal_set_fired(0);
+        // retore prev handler
+        mft_signal_set_handling(0);
+        //raise signal to let the previous handle deal with it.
+        raise(sig);
+    }
+    mft_signal_set_handling(0);
+    return;
+}

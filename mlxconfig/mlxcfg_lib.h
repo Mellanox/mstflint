@@ -28,7 +28,12 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ */
+/*
+ * mlxcfg_lib.h
  *
+ *  Created on: Feb 17, 2014
+ *      Author: adrianc
  */
 
 #ifndef MLXCFG_LIB_H_
@@ -43,6 +48,9 @@
 
 #include "mlxcfg_status.h"
 #include "mlxcfg_param_lib.h"
+
+#define FIFTH_GENERATION_LIST "Connect-IB/Connect-X4/LX"
+#define FOURTH_GENERATION_LIST "ConnectX3/Pro"
 
 class MlxCfgOps : public ErrMsg {
 public:
@@ -60,7 +68,7 @@ public:
     int getCfg(std::vector<cfgInfo>& infoVec);
 
     int setCfg(mlxCfgParam cfgParam, u_int32_t val);
-    int setCfg(const std::vector<cfgInfo>& infoVec);
+    int setCfg(const std::vector<cfgInfo>& infoVec, mlxCfgParam& cfgParam);
 
     int setRawCfg(std::vector<u_int32_t> rawTlvVec);
 
@@ -78,6 +86,8 @@ public:
     const char* loadConfigurationGetStr();
 
     int isDefaultSupported(bool &defaultSupported);
+
+    int backupCfgs(std::vector<std::pair<u_int32_t, std::vector<u_int8_t> > >& cfgs);
 
 private:
     int openComChk();

@@ -101,6 +101,7 @@ typedef enum {
 #define FLINT_IMAGE_READ_ERROR                "Failed to read image. %s\n"
 #define FLINT_READ_ERROR                      "Failed to read from %s. %s\n"
 #define FLINT_WIN_NOT_SUPP_ERROR              "Command \"%s\" is not supported in windows.\n"
+#define FLINT_WIN_ONLY_SUPP_ERROR             "Command  \"%s\" is supported only in windows.\n"
 #define FLINT_GEN_COMMAND_ERROR               "Failed to execute command %s. %s\n"
 #define FLINT_FS3_BB_ERROR                    "bb command is not supported anymore in FS3 image, please use b for burning FS3 image.\n"
 #define FLINT_FS3_BURN_ERROR                  "Burning FS3 image failed: %s\n"
@@ -134,6 +135,7 @@ typedef enum {
 #define FLINT_CHECKSUM_PARSE_ERROR            "Failed to parse given checksum.\n"
 #define FLINT_CHECKSUM_LEN_ERROR              "MD5 checksum should be exactly 16 bytes long.\n"
 #define FLINT_CHECKSUM_HEX_ERROR              "MD5 checksum should contain only hexadecimal digits.\n"
+#define FLINT_CACHE_IMAGE_ERROR                 "Failed to issue image cache request to driver. %s. make sure Mellanox driver is loaded and working properly.\n"
 
 /**************************
  * Flint Warning Messages

@@ -45,6 +45,7 @@
 #define REG_ID_NVQC  0x9030
 #define REG_ID_NVIA  0x9033 // 5th gen
 #define REG_ID_NVQGC 0x9034
+#define REG_ID_MNVGN 0x9035
 
 // TODO: get correct register ID for mfrl mfai
 #define REG_ID_MFRL 0x9028
@@ -73,29 +74,40 @@
 
 // register access for variable size registers (like mfba)
 
-#define REG_ACCCESS_VAR(mf, methdod, reg_id, data_struct, struct_name, reg_size , r_reg_size, w_reg_size, prefix)\
-    int status = 0;\
+#define REG_ACCESS_GENERIC_VAR_WITH_STATUS(mf, methdod, reg_id, data_struct, struct_name, reg_size , r_reg_size, w_reg_size, pack_func,\
+        unpack_func, size_func, print_func, status)\
     int rc;\
-    int max_data_size = prefix##_##struct_name##_size();\
+    int max_data_size = size_func();\
     u_int8_t data[max_data_size];\
     memset(data, 0, max_data_size);\
-    prefix##_##struct_name##_pack(data_struct, data);\
+    pack_func(data_struct, data);\
     if (method != REG_ACCESS_METHOD_GET && method != REG_ACCESS_METHOD_SET) {\
         return ME_REG_ACCESS_BAD_METHOD;\
     }\
-    DEBUG_PRINT_SEND(data_struct, struct_name, method, prefix);\
-    rc = maccess_reg(mf, reg_id, (maccess_reg_method_t)method, data, reg_size, r_reg_size, w_reg_size, &status);\
-    prefix##_##struct_name##_unpack(data_struct, data);\
-    DEBUG_PRINT_RECIEVE(data_struct, struct_name, method, prefix);\
+    DEBUG_PRINT_SEND(data_struct, struct_name, method, print_func);\
+    rc = maccess_reg(mf, reg_id, (maccess_reg_method_t)method, data, reg_size, r_reg_size, w_reg_size, status);\
+    unpack_func(data_struct, data);\
+    DEBUG_PRINT_RECIEVE(data_struct, struct_name, method, print_func);
+
+#define REG_ACCESS_GENERIC_VAR(mf, methdod, reg_id, data_struct, struct_name, reg_size , r_reg_size, w_reg_size, pack_func,\
+        unpack_func, size_func, print_func)\
+    int status = 0;\
+    REG_ACCESS_GENERIC_VAR_WITH_STATUS(mf, methdod, reg_id, data_struct, struct_name, reg_size , r_reg_size, w_reg_size, pack_func,\
+        unpack_func, size_func, print_func, &status)\
     if (rc || status) {\
         return (reg_access_status_t)rc;\
     }\
     return ME_OK
 
+#define REG_ACCCESS_VAR(mf, methdod, reg_id, data_struct, struct_name, reg_size , r_reg_size, w_reg_size, prefix)\
+    REG_ACCESS_GENERIC_VAR(mf, method, reg_id, data_struct, struct_name, reg_size, r_reg_size, w_reg_size,\
+            prefix##_##struct_name##_pack, prefix##_##struct_name##_unpack, prefix##_##struct_name##_size,\
+            prefix##_##struct_name##_print)
+
 // register access for static sized registers
 #define REG_ACCCESS(mf, methdod, reg_id, data_struct, struct_name, prefix)\
-	int data_size = prefix##_##struct_name##_size();\
-	REG_ACCCESS_VAR(mf, methdod, reg_id, data_struct, struct_name, data_size, data_size, data_size, prefix)
+    int data_size = prefix##_##struct_name##_size();\
+    REG_ACCCESS_VAR(mf, methdod, reg_id, data_struct, struct_name, data_size, data_size, data_size, prefix)
 
 /************************************
  * Function: reg_access_mfba
@@ -269,6 +281,26 @@ reg_access_status_t reg_access_nvqgc (mfile* mf, reg_access_method_t method, str
 reg_access_status_t reg_access_mvts (mfile* mf, reg_access_method_t method, struct tools_open_mvts* mvts)
 {
     REG_ACCCESS(mf, method, REG_ID_MVTS, mvts, mvts, tools_open);
+}
+
+/************************************
+ * Function: reg_access_mnvgn
+ ************************************/
+reg_access_status_t reg_access_mnvgn (mfile* mf, reg_access_method_t method, struct tools_open_mnvgn* mnvgn, int *status)
+{
+    int data_size = tools_open_mnvgn_size();
+    if (method != REG_ACCESS_METHOD_GET ) { // this register supports only get method
+        return ME_REG_ACCESS_BAD_METHOD;
+    }
+
+    REG_ACCESS_GENERIC_VAR_WITH_STATUS(mf, method, REG_ID_MNVGN, mnvgn, mnvgn, data_size, data_size, data_size,\
+                tools_open_mnvgn_pack, tools_open_mnvgn_unpack, tools_open_mnvgn_size,\
+                tools_open_mnvgn_print, status);
+
+    if (rc || *status) {\
+        return (reg_access_status_t)rc;\
+    }\
+    return ME_OK;
 }
 
 /************************************

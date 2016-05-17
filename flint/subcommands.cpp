@@ -59,6 +59,8 @@
 #ifdef __WIN__
 #include <windows.h>
 #include <ctype.h>
+
+#include <win_driver_cif.h>
 #endif
 
 #include "subcommands.h"
@@ -1261,17 +1263,15 @@ bool BurnSubCommand::checkPSID()
 FlintStatus BurnSubCommand::burnFs3()
 {
     // Here we want to burn FS3 device so we check if the image is indeed FS3 image
-    if (_imgInfo.fw_type != FIT_FS3) {
+    if (_imgInfo.fw_type != FIT_FS3 && _imgInfo.fw_type != FIT_FS4) {
         reportErr(true, FLINT_IMG_DEV_COMPAT_ERROR, "FS3", "FS3");
         return FLINT_FAILED;
-        }
-
+    }
     // on FS3 burn we require query to pass
     if (!_devQueryRes && _burnParams.burnFailsafe) {
         reportErr(true, FLINT_FS3_BURN_ERROR, _fwOps->err());
         return FLINT_FAILED;
     }
-
     //check FwVersion
     if ( !checkFwVersion()) {
         return FLINT_BURN_ABORTED;
@@ -1281,7 +1281,6 @@ FlintStatus BurnSubCommand::burnFs3()
         return FLINT_FAILED;
     }
     // deal with rom
-
     dealWithExpRom();
     bool getRomFromDev = ( _burnParams.burnRomOptions == FwOperations::ExtBurnParams::BRO_FROM_DEV_IF_EXIST);
     if (!getRomFromDev && !checkMatchingExpRomDevId(_imgInfo)) {
@@ -1302,23 +1301,11 @@ FlintStatus BurnSubCommand::burnFs3()
         }
     }
 
-    // perform some checks incase of a corrupt CX4
-    // TODO: remove this check in MFT-4.1.0
-    if(_burnParams.burnFailsafe) {
-        if (!_fwOps->CheckCX4Device()) {
-            printf(" An inconsistency was detected in the device parameters. A fix must be performed before burning FW.\n");
-            printf(" Please do not terminate the process. Operation is not failsafe.\n");
-            if (!askUser()) {
-                return FLINT_FAILED;
-            }
-        }
-    }
     if (!_fwOps->FwBurnAdvanced(_imgOps, _burnParams)) {
         reportErr(true, FLINT_FS3_BURN_ERROR, _fwOps->err());
         return FLINT_FAILED;
     }
     PRINT_PROGRESS(_burnParams.progressFunc, 101);
-
     write_result_to_log(FLINT_SUCCESS, "", _flintParams.log_specified);
     const char* resetRec = _fwOps->FwGetResetRecommandationStr();
     if (resetRec) {
@@ -1581,16 +1568,17 @@ FlintStatus BurnSubCommand::executeCommand()
     // query both image and device (deviceQuery can fail but we save rc)
     _devQueryRes = _fwOps->FwQuery(&_devInfo);
     if (!_imgOps->FwQuery(&_imgInfo))
-        {
-            reportErr(true, FLINT_FAILED_QUERY_ERROR, "image", _flintParams.image.c_str(), _imgOps->err());
-            return FLINT_FAILED;
-        }
+    {
+        reportErr(true, FLINT_FAILED_QUERY_ERROR, "image", _flintParams.image.c_str(), _imgOps->err());
+        return FLINT_FAILED;
+    }
     //updateBurnParams with input given by user
     updateBurnParams();
-    if (_fwType == FIT_FS3) {
-        return burnFs3();
+    if (_fwType == FIT_FS3 || _fwType == FIT_FS4) {
+
+        return burnFs3();//CodeView: change the name of this function
     } else if (_fwType == FIT_FS2) {
-    return burnFs2();
+        return burnFs2();
     }
     // unknown fw type
     reportErr(true, FLINT_UNKNOWN_FW_TYPE_ERROR);
@@ -1745,9 +1733,23 @@ bool QuerySubCommand::displayFs3Uids(const fw_info_t& fwInfo)
 
 FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
 {
+    //char imageTypeStr[4] = {'\0', '\0', '\0', '\0'};
     bool isFs2 = (fwInfo.fw_type == FIT_FS2) ? true : false;
+    bool isFs3 = (fwInfo.fw_type == FIT_FS3) ? true : false;
+    bool isFs4 = (fwInfo.fw_type == FIT_FS4) ? true : false;
 
-    printf("Image type:          %s\n",(isFs2)? "FS2" : "FS3");
+    /*switch(fwInfo.fw_type){
+        case FIT_FS2:
+            snprintf(imageTypeStr, 4, "FS2");
+            break;
+        case FIT_FS3:
+            snprintf(imageTypeStr, 4, "FS3");
+            break;
+        case FIT_FS4:
+            snprintf(imageTypeStr, 4, "FS4");
+            break;
+    }*/
+    printf("Image type:          %s\n", isFs2 ? "FS2" : (isFs3 ? "FS3" : isFs4 ? "FS4" : "Unknown"));
 
     if (fwInfo.fw_info.fw_ver[0] || fwInfo.fw_info.fw_ver[1] || fwInfo.fw_info.fw_ver[2]) {
         char versionStr[64] = {0};
@@ -4307,3 +4309,47 @@ FlintStatus TimeStampSubCommand::executeCommand()
 }
 
 
+/***********************
+ *Class: CacheImage
+ **********************/
+CacheImageSubCommand:: CacheImageSubCommand()
+{
+    _name = "cache image";
+    _desc = "cache FW image(Windows only).";
+    _extendedDesc = "cache the FW image using Mellanox driver to allow faster FW load time upon loading the driver(Windows only).";
+    _flagLong = "cache_image";
+    _flagShort = "ci";
+    _param = "";
+    _paramExp = "";
+    _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" cache_image";
+    _v = Wtv_Dev;
+    _maxCmdParamNum = 0;
+    _minCmdParamNum = 0;
+    _cmdType = SC_Cache_Image;
+}
+
+CacheImageSubCommand:: ~CacheImageSubCommand()
+{
+
+}
+
+FlintStatus CacheImageSubCommand:: executeCommand()
+{
+#ifdef __WIN__
+    int rc;
+
+    if (preFwAccess() == FLINT_FAILED) {
+        return FLINT_FAILED;
+    }
+    rc = wdcif_send_image_cache_request(((Flash*)_io)->getMfileObj());
+    if (rc) {
+        reportErr(true, FLINT_CACHE_IMAGE_ERROR, wdcif_err_str(rc));
+        return FLINT_FAILED;
+    }
+    printf("\n-I- FW was successfully cached by driver.\n");
+    return FLINT_SUCCESS;
+#else
+    reportErr(true, FLINT_WIN_ONLY_SUPP_ERROR, _name.c_str());
+    return FLINT_FAILED;
+#endif
+}

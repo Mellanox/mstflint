@@ -29,75 +29,78 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+ 
 
 /***
- *** This file was generated at "2016-02-23 00:12:07"
+ *** This file was generated at "2016-05-02 14:45:27"
  *** by:
  ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/register_access_open/register_access_open.adb --file-prefix register_access_open --prefix register_access_
  ***/
 #include "register_access_open_layouts.h"
 
-void register_access_mfba_pack(const struct register_access_mfba *ptr_struct, u_int8_t* ptr_buff){
+void register_access_mfba_pack(const struct register_access_mfba *ptr_struct, u_int8_t* ptr_buff)
+{
 	u_int32_t offset;
-	int i=0;
+	int i = 0;
 	(void)offset;
 	(void)i;
 	(void)ptr_struct;
 	(void)ptr_buff;
 
-	offset=26;
+	offset = 26;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 2, (u_int32_t)ptr_struct->fs);
 
-	offset=23;
+	offset = 23;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->p);
 
-	offset=55;
+	offset = 55;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 9, (u_int32_t)ptr_struct->size);
 
-	offset=72;
+	offset = 72;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 24, (u_int32_t)ptr_struct->address);
 
-	for (i=0; i < 64; i++) {
-	offset=adb2c_calc_array_field_address(96, 32, i, 2144, 0);
+	for (i = 0; i < 64; i++) {
+	offset = adb2c_calc_array_field_address(96, 32, i, 2144, 0);
 	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int64_t)ptr_struct->data[i]);
 	}
 
 }
 
-void register_access_mfba_unpack(struct register_access_mfba *ptr_struct, const u_int8_t* ptr_buff){
+void register_access_mfba_unpack(struct register_access_mfba *ptr_struct, const u_int8_t* ptr_buff)
+{
 	u_int32_t offset;
-	int i=0;
-	u_int8_t val=0;
-	(void)val;
+	int i = 0;
 	(void)offset;
 	(void)i;
 	(void)ptr_struct;
 	(void)ptr_buff;
 
-	offset=26;
+	offset = 26;
 	ptr_struct->fs = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 2);
 
-	offset=23;
+	offset = 23;
 	ptr_struct->p = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 
-	offset=55;
+	offset = 55;
 	ptr_struct->size = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 9);
 
-	offset=72;
+	offset = 72;
 	ptr_struct->address = (u_int32_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 24);
 
-	for (i=0; i < 64; i++) {
-	offset=adb2c_calc_array_field_address(96, 32, i, 2144, 0);
+	for (i = 0; i < 64; i++) {
+	offset = adb2c_calc_array_field_address(96, 32, i, 2144, 0);
 	ptr_struct->data[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
 	}
 
 }
 
-void register_access_mfba_print(const struct register_access_mfba *ptr_struct, FILE* file, int indent_level){
+void register_access_mfba_print(const struct register_access_mfba *ptr_struct, FILE* file, int indent_level)
+{
 	adb2c_add_indentation(file, indent_level);
 	fprintf(file, "======== register_access_mfba ========\n");
-	int i=0;
-	(void)i;(void)ptr_struct;
+	int i = 0;
+	(void)i;
+	(void)ptr_struct;
 	(void)file;
 	(void)indent_level;
 
@@ -113,102 +116,112 @@ void register_access_mfba_print(const struct register_access_mfba *ptr_struct, F
 	adb2c_add_indentation(file, indent_level);
 	fprintf(file, "address              : "UH_FMT"\n", ptr_struct->address);
 
-	for (i=0; i < 64; i++) {
+	for (i = 0; i < 64; i++) {
 	adb2c_add_indentation(file, indent_level);
 	fprintf(file, "data_%03d            : "U32H_FMT"\n", i, ptr_struct->data[i]);
 	}
 
 }
 
-int register_access_mfba_size(void){
+int register_access_mfba_size(void)
+{
 	 return 268;
 }
 
-void register_access_mfba_dump(const struct register_access_mfba *ptr_struct, FILE* file) {
+void register_access_mfba_dump(const struct register_access_mfba *ptr_struct, FILE* file)
+{
 	register_access_mfba_print(ptr_struct, file, 0);
 }
 
-void register_access_mfpa_pack(const struct register_access_mfpa *ptr_struct, u_int8_t* ptr_buff){
+void register_access_mfpa_pack(const struct register_access_mfpa *ptr_struct, u_int8_t* ptr_buff)
+{
 	u_int32_t offset;
-	int i=0;
+	int i = 0;
 	(void)offset;
 	(void)i;
 	(void)ptr_struct;
 	(void)ptr_buff;
 
-	offset=26;
+	offset = 26;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 2, (u_int32_t)ptr_struct->fs);
 
-	offset=23;
+	offset = 23;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->p);
 
-	offset=40;
+	offset = 40;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 24, (u_int32_t)ptr_struct->boot_address);
 
-	offset=156;
+	offset = 156;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->flash_num);
 
-	offset=130;
+	offset = 130;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->bulk_64kb_erase_en);
 
-	offset=168;
+	offset = 129;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->bulk_32kb_erase_en);
+
+	offset = 168;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 24, (u_int32_t)ptr_struct->jedec_id);
 
-	offset=214;
+	offset = 214;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 10, (u_int32_t)ptr_struct->sector_size);
 
-	offset=200;
+	offset = 200;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->block_allignment);
 
-	offset=224;
+	offset = 224;
 	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int64_t)ptr_struct->capability_mask);
 
 }
 
-void register_access_mfpa_unpack(struct register_access_mfpa *ptr_struct, const u_int8_t* ptr_buff){
+void register_access_mfpa_unpack(struct register_access_mfpa *ptr_struct, const u_int8_t* ptr_buff)
+{
 	u_int32_t offset;
-	int i=0;
-	u_int8_t val=0;
-	(void)val;
+	int i = 0;
 	(void)offset;
 	(void)i;
 	(void)ptr_struct;
 	(void)ptr_buff;
 
-	offset=26;
+	offset = 26;
 	ptr_struct->fs = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 2);
 
-	offset=23;
+	offset = 23;
 	ptr_struct->p = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 
-	offset=40;
+	offset = 40;
 	ptr_struct->boot_address = (u_int32_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 24);
 
-	offset=156;
+	offset = 156;
 	ptr_struct->flash_num = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
 
-	offset=130;
+	offset = 130;
 	ptr_struct->bulk_64kb_erase_en = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 
-	offset=168;
+	offset = 129;
+	ptr_struct->bulk_32kb_erase_en = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset = 168;
 	ptr_struct->jedec_id = (u_int32_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 24);
 
-	offset=214;
+	offset = 214;
 	ptr_struct->sector_size = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 10);
 
-	offset=200;
+	offset = 200;
 	ptr_struct->block_allignment = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 
-	offset=224;
+	offset = 224;
 	ptr_struct->capability_mask = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
 
 }
 
-void register_access_mfpa_print(const struct register_access_mfpa *ptr_struct, FILE* file, int indent_level){
+void register_access_mfpa_print(const struct register_access_mfpa *ptr_struct, FILE* file, int indent_level)
+{
 	adb2c_add_indentation(file, indent_level);
 	fprintf(file, "======== register_access_mfpa ========\n");
-	int i=0;
-	(void)i;(void)ptr_struct;
+	int i = 0;
+	(void)i;
+	(void)ptr_struct;
 	(void)file;
 	(void)indent_level;
 
@@ -228,6 +241,9 @@ void register_access_mfpa_print(const struct register_access_mfpa *ptr_struct, F
 	fprintf(file, "bulk_64kb_erase_en   : "UH_FMT"\n", ptr_struct->bulk_64kb_erase_en);
 
 	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "bulk_32kb_erase_en   : "UH_FMT"\n", ptr_struct->bulk_32kb_erase_en);
+
+	adb2c_add_indentation(file, indent_level);
 	fprintf(file, "jedec_id             : "UH_FMT"\n", ptr_struct->jedec_id);
 
 	adb2c_add_indentation(file, indent_level);
@@ -241,65 +257,75 @@ void register_access_mfpa_print(const struct register_access_mfpa *ptr_struct, F
 
 }
 
-int register_access_mfpa_size(void){
-	 return 36;
+int register_access_mfpa_size(void)
+{
+	 return 32;
 }
 
-void register_access_mfpa_dump(const struct register_access_mfpa *ptr_struct, FILE* file) {
+void register_access_mfpa_dump(const struct register_access_mfpa *ptr_struct, FILE* file)
+{
 	register_access_mfpa_print(ptr_struct, file, 0);
 }
 
-void register_access_mfbe_pack(const struct register_access_mfbe *ptr_struct, u_int8_t* ptr_buff){
+void register_access_mfbe_pack(const struct register_access_mfbe *ptr_struct, u_int8_t* ptr_buff)
+{
 	u_int32_t offset;
-	int i=0;
+	int i = 0;
 	(void)offset;
 	(void)i;
 	(void)ptr_struct;
 	(void)ptr_buff;
 
-	offset=26;
+	offset = 26;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 2, (u_int32_t)ptr_struct->fs);
 
-	offset=23;
+	offset = 23;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->p);
 
-	offset=2;
+	offset = 2;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->bulk_64kb_erase);
 
-	offset=72;
+	offset = 1;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->bulk_32kb_erase);
+
+	offset = 72;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 24, (u_int32_t)ptr_struct->address);
 
 }
 
-void register_access_mfbe_unpack(struct register_access_mfbe *ptr_struct, const u_int8_t* ptr_buff){
+void register_access_mfbe_unpack(struct register_access_mfbe *ptr_struct, const u_int8_t* ptr_buff)
+{
 	u_int32_t offset;
-	int i=0;
-	u_int8_t val=0;
-	(void)val;
+	int i = 0;
 	(void)offset;
 	(void)i;
 	(void)ptr_struct;
 	(void)ptr_buff;
 
-	offset=26;
+	offset = 26;
 	ptr_struct->fs = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 2);
 
-	offset=23;
+	offset = 23;
 	ptr_struct->p = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 
-	offset=2;
+	offset = 2;
 	ptr_struct->bulk_64kb_erase = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 
-	offset=72;
+	offset = 1;
+	ptr_struct->bulk_32kb_erase = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset = 72;
 	ptr_struct->address = (u_int32_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 24);
 
 }
 
-void register_access_mfbe_print(const struct register_access_mfbe *ptr_struct, FILE* file, int indent_level){
+void register_access_mfbe_print(const struct register_access_mfbe *ptr_struct, FILE* file, int indent_level)
+{
 	adb2c_add_indentation(file, indent_level);
 	fprintf(file, "======== register_access_mfbe ========\n");
-	int i=0;
-	(void)i;(void)ptr_struct;
+	int i = 0;
+	(void)i;
+	(void)ptr_struct;
 	(void)file;
 	(void)indent_level;
 
@@ -313,15 +339,20 @@ void register_access_mfbe_print(const struct register_access_mfbe *ptr_struct, F
 	fprintf(file, "bulk_64kb_erase      : "UH_FMT"\n", ptr_struct->bulk_64kb_erase);
 
 	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "bulk_32kb_erase      : "UH_FMT"\n", ptr_struct->bulk_32kb_erase);
+
+	adb2c_add_indentation(file, indent_level);
 	fprintf(file, "address              : "UH_FMT"\n", ptr_struct->address);
 
 }
 
-int register_access_mfbe_size(void){
+int register_access_mfbe_size(void)
+{
 	 return 12;
 }
 
-void register_access_mfbe_dump(const struct register_access_mfbe *ptr_struct, FILE* file) {
+void register_access_mfbe_dump(const struct register_access_mfbe *ptr_struct, FILE* file)
+{
 	register_access_mfbe_print(ptr_struct, file, 0);
 }
 
@@ -335,11 +366,13 @@ void register_access_register_access_open_Nodes_unpack(union register_access_reg
 	register_access_mfba_unpack(&(ptr_struct->mfba), ptr_buff);
 }
 
-void register_access_register_access_open_Nodes_print(const union register_access_register_access_open_Nodes *ptr_struct, FILE* file, int indent_level){
+void register_access_register_access_open_Nodes_print(const union register_access_register_access_open_Nodes *ptr_struct, FILE* file, int indent_level)
+{
 	adb2c_add_indentation(file, indent_level);
 	fprintf(file, "======== register_access_register_access_open_Nodes ========\n");
-	int i=0;
-	(void)i;(void)ptr_struct;
+	int i = 0;
+	(void)i;
+	(void)ptr_struct;
 	(void)file;
 	(void)indent_level;
 
@@ -357,11 +390,13 @@ void register_access_register_access_open_Nodes_print(const union register_acces
 
 }
 
-int register_access_register_access_open_Nodes_size(void){
+int register_access_register_access_open_Nodes_size(void)
+{
 	 return 268;
 }
 
-void register_access_register_access_open_Nodes_dump(const union register_access_register_access_open_Nodes *ptr_struct, FILE* file) {
+void register_access_register_access_open_Nodes_dump(const union register_access_register_access_open_Nodes *ptr_struct, FILE* file)
+{
 	register_access_register_access_open_Nodes_print(ptr_struct, file, 0);
 }
 

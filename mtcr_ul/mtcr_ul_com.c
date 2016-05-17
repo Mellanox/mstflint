@@ -124,10 +124,15 @@
 #define CX3_SW_ID    4099
 #define CX3PRO_SW_ID 4103
 
+typedef enum {
+    Clear_Vsec_Semaphore = 0x1,
+} adv_opt_t;
+
 /* Forward decl*/
 static int get_inband_dev_from_pci(char* inband_dev, char* pci_dev);
-
 int check_force_config(unsigned my_domain, unsigned my_bus, unsigned my_dev, unsigned my_func);
+mfile *mopen_ul_int(const char *name, u_int32_t adv_opt);
+int init_dev_info_ul(mfile* mf, const char* dev_name, unsigned domain, unsigned bus, unsigned dev, unsigned func);
 /*
  * Lock file section:
  *
@@ -515,7 +520,7 @@ int mtcr_pcicr_mwrite4(mfile *mf, unsigned int offset, u_int32_t value)
 }
 
 static
-int mtcr_pcicr_open(mfile *mf, const char *name, char* conf_name, off_t off, int ioctl_needed)
+int mtcr_pcicr_open(mfile *mf, const char *name, char* conf_name, off_t off, int ioctl_needed, u_int32_t adv_opt)
 {
     int rc;
     ul_ctx_t *ctx = mf->ul_ctx;
@@ -543,7 +548,7 @@ end:
     if (rc) {
         mtcr_pcicr_mclose(mf);
     } else if (conf_name != NULL) {
-        mfile* conf_mf = mopen_ul(conf_name);
+        mfile* conf_mf = mopen_ul_int(conf_name, adv_opt);
         if (conf_mf != NULL) {
             mf->res_fd = conf_mf->fd;
             ul_ctx_t *conf_ctx = conf_mf->ul_ctx;
@@ -964,10 +969,8 @@ int mtcr_pciconf_mclose(mfile *mf)
 }
 
 static
-int mtcr_pciconf_open(mfile *mf, const char *name)
+int mtcr_pciconf_open(mfile *mf, const char *name, u_int32_t adv_opt)
 {
-    int err;
-    int rc;
     ul_ctx_t *ctx = mf->ul_ctx;
     mf->fd = -1;
     mf->fd = open(name, O_RDWR | O_SYNC);
@@ -979,12 +982,21 @@ int mtcr_pciconf_open(mfile *mf, const char *name)
 
     if ((mf->vsec_addr = pci_find_capability(mf, CAP_ID))) {
         // check if the needed spaces are supported
+        if (adv_opt & Clear_Vsec_Semaphore) {
+            mtcr_pciconf_cap9_sem(mf, 0);
+        }
+        if (mtcr_pciconf_cap9_sem(mf, 1)) {
+            close(mf->fd);
+            errno = EBUSY;
+            return -1;
+        }
         if (mtcr_pciconf_set_addr_space(mf, ICMD_DOMAIN) || mtcr_pciconf_set_addr_space(mf, SEMAPHORE_DOMAIN)
                 || mtcr_pciconf_set_addr_space(mf, CR_SPACE_DOMAIN)) {
             mf->vsec_supp = 0;
         } else {
             mf->vsec_supp = 1;
         }
+        mtcr_pciconf_cap9_sem(mf, 0);
     }
 
     if (mf->vsec_supp) {
@@ -1000,23 +1012,11 @@ int mtcr_pciconf_open(mfile *mf, const char *name)
         ctx->mwrite4_block = mwrite_chunk_as_multi_mwrite4;
     }
     ctx->mclose = mtcr_pciconf_mclose;
-
-    rc = mtcr_check_signature(mf);
-    if (rc) {
-        rc = -1;
-        goto end;
-    }
-
-    end: if (rc) {
-        err = errno;
-        mtcr_pciconf_mclose(mf);
-        errno = err;
-    }
-    return rc;
+    return 0;
 }
 #else
 static
-int mtcr_pciconf_open(mfile *mf, const char *name)
+int mtcr_pciconf_open(mfile *mf, const char *name, u_int32_t adv_opt)
 {
     return -1;
 }
@@ -1223,18 +1223,38 @@ static long supported_dev_ids[] = {
         0xcf08, //Switch-IB2
         -1 };
 
+static long live_fish_id_database[] = {
+        0x191,
+        0x246,
+        0x249,
+        0x24b,
+        0x1F6,
+        0x1F8,
+        0x1FF,
+        0x247,
+        0x209,
+        0x20b,
+        0x20d,
+        -1
+};
+
 int is_supported_devid(long devid)
 {
     int i = 0;
-    int ret_val = 0;
     while (supported_dev_ids[i] != -1) {
         if (devid == supported_dev_ids[i]) {
-            ret_val = 1;
-            break;
+            return 1;
         }
         i++;
     }
-    return ret_val;
+    i = 0;
+    while (live_fish_id_database[i] != -1) {
+        if (devid == live_fish_id_database[i]) {
+            return 1;
+        }
+        i++;
+    }
+    return 0;
 }
 
 int is_supported_device(char* devname)
@@ -1452,6 +1472,24 @@ mem_error:
     return NULL;
 }
 
+static void get_numa_node(u_int16_t domain, u_int8_t bus, u_int8_t dev, u_int8_t func, char* data)
+{
+    char numa_path[64];
+    int c;
+    int i = 0;
+    sprintf(numa_path, "/sys/bus/pci/devices/%04x:%02x:%02x.%d/numa_node", domain, bus, dev, func);
+    FILE* f = fopen(numa_path, "rb");
+    if (!f) {
+        strcpy(data, "NA");
+        return;
+    }
+
+    while((c = getc(f)) != EOF && c != '\n') {
+        data[i++] = c;
+    }
+    data[i] = '\0';
+    fclose(f);
+}
 
 dev_info* mdevices_info_ul(int mask, int* len)
 {
@@ -1477,7 +1515,7 @@ dev_info* mdevices_info_v_ul(int mask, int* len, int verbosity)
     } while (rc == -1);
 
     if (rc <= 0) {
-        len = 0;
+        *len = 0;
         if (devs) {
             free(devs);
         }
@@ -1523,6 +1561,7 @@ dev_info* mdevices_info_v_ul(int mask, int* len, int verbosity)
         // Get attached infiniband devices
         dev_info_arr[i].pci.ib_devs  = get_ib_net_devs(domain, bus, dev, func, 1);
         dev_info_arr[i].pci.net_devs = get_ib_net_devs(domain, bus, dev, func, 0);
+        get_numa_node(domain, bus, dev, func, (char*)(dev_info_arr[i].pci.numa_node));
 
         // read configuration space header
         if (read_pci_config_header(domain, bus, dev, func, conf_header)) {
@@ -1546,6 +1585,35 @@ next:
     return dev_info_arr;
 }
 
+
+void mdevices_info_destroy_ul(dev_info* dev_info, int len)
+{
+    int i, j;
+    if (dev_info) {
+        for (i = 0; i < len; i++) {
+            if (dev_info[i].type == MDEVS_TAVOR_CR &&
+                dev_info[i].pci.ib_devs) {
+                for (j = 0; dev_info[i].pci.ib_devs[j]; j++) {
+                    if (dev_info[i].pci.ib_devs[j]) {
+                        free(dev_info[i].pci.ib_devs[j]);
+                    }
+                }
+                free(dev_info[i].pci.ib_devs);
+            }
+            if (dev_info[i].type == MDEVS_TAVOR_CR &&
+                dev_info[i].pci.net_devs) {
+                for (j = 0; dev_info[i].pci.net_devs[j]; j++) {
+                    if (dev_info[i].pci.net_devs[j]) {
+                        free(dev_info[i].pci.net_devs[j]);
+                    }
+                }
+                free(dev_info[i].pci.net_devs);
+            }
+
+        }
+        free(dev_info);
+    }
+}
 
 /*
  * This function used to change from running on CONF to CR
@@ -1597,8 +1665,7 @@ extern void mpci_change(mfile* mf)
     mf->res_fd = fd;
 }
 
-
-mfile *mopen_ul(const char *name)
+mfile *mopen_ul_int(const char *name, u_int32_t adv_opt)
 {
     mfile *mf;
     off_t offset;
@@ -1640,6 +1707,7 @@ mfile *mopen_ul(const char *name)
         goto open_failed;
     }
     mf->tp = dev_type;
+    mf->flags = MDEVS_TAVOR_CR;
     if (dev_type == MST_PCICONF || dev_type == MST_PCI) {
         // allocate lock to sync between parallel cr space requests (CONF/MEMORY only)
         if (force) {
@@ -1657,17 +1725,20 @@ mfile *mopen_ul(const char *name)
             errno = ENOTSUP;
             goto open_failed;
         }
-    }
 
+        if (init_dev_info_ul(mf, name, domain, bus, dev, func)) {
+            goto open_failed;
+        }
+    }
     sprintf(cbuf, "/sys/bus/pci/devices/%4.4x:%2.2x:%2.2x.%1.1x/config", domain, bus, dev, func);
 
     if (force) {
         switch (dev_type) {
             case MST_PCICONF:
-                rc = mtcr_pciconf_open(mf, name);
+                rc = mtcr_pciconf_open(mf, name, adv_opt);
                 break;
             case MST_PCI:
-                rc = mtcr_pcicr_open(mf, name, cbuf, 0, 0);
+                rc = mtcr_pcicr_open(mf, name, cbuf, 0, 0, adv_opt);
                 break;
             case MST_IB:
                 rc = mtcr_inband_open(mf, name);
@@ -1687,7 +1758,7 @@ mfile *mopen_ul(const char *name)
 
     sprintf(rbuf, "/sys/bus/pci/devices/%4.4x:%2.2x:%2.2x.%1.1x/resource0", domain, bus, dev, func);
 
-    rc = mtcr_pcicr_open(mf, rbuf, cbuf, 0, 0);
+    rc = mtcr_pcicr_open(mf, rbuf, cbuf, 0, 0, adv_opt);
     if (rc == 0) {
         return mf;
     } else if (rc == 1) {
@@ -1702,7 +1773,7 @@ mfile *mopen_ul(const char *name)
         goto access_config_forced;
 
     sprintf(pdbuf, "/proc/bus/pci/%4.4x:%2.2x/%2.2x.%1.1x", domain, bus, dev, func);
-    rc = mtcr_pcicr_open(mf, pdbuf, cbuf, offset, 1);
+    rc = mtcr_pcicr_open(mf, pdbuf, cbuf, offset, 1, adv_opt);
     if (rc == 0) {
         return mf;
     } else if (rc == 1) {
@@ -1711,7 +1782,7 @@ mfile *mopen_ul(const char *name)
 
     if (!domain) {
         sprintf(pbuf, "/proc/bus/pci/%2.2x/%2.2x.%1.1x", bus, dev, func);
-        rc = mtcr_pcicr_open(mf, pbuf, cbuf, offset, 1);
+        rc = mtcr_pcicr_open(mf, pbuf, cbuf, offset, 1, adv_opt);
         if (rc == 0) {
             return mf;
         } else if (rc == 1) {
@@ -1721,22 +1792,22 @@ mfile *mopen_ul(const char *name)
 
 #if CONFIG_USE_DEV_MEM
     /* Non-portable, but helps some systems */
-    if (!mtcr_pcicr_open(mf, "/dev/mem", cbuf, offset, 0))
+    if (!mtcr_pcicr_open(mf, "/dev/mem", cbuf, offset, 0, adv_opt))
         return mf;
 #endif
 
 access_config_forced:
     sprintf(cbuf, "/sys/bus/pci/devices/%4.4x:%2.2x:%2.2x.%1.1x/config", domain, bus, dev, func);
-    if (!mtcr_pciconf_open(mf, cbuf))
+    if (!mtcr_pciconf_open(mf, cbuf, adv_opt))
         return mf;
 
     sprintf(pdbuf, "/proc/bus/pci/%4.4x:%2.2x/%2.2x.%1.1x", domain, bus, dev, func);
-    if (!mtcr_pciconf_open(mf, pdbuf))
+    if (!mtcr_pciconf_open(mf, pdbuf, adv_opt))
         return mf;
 
     if (!domain) {
         sprintf(pbuf, "/proc/bus/pci/%2.2x/%2.2x.%1.1x", bus, dev, func);
-        if (!mtcr_pciconf_open(mf, pdbuf))
+        if (!mtcr_pciconf_open(mf, pdbuf, adv_opt))
             return mf;
     }
 
@@ -1745,6 +1816,101 @@ open_failed:
     mclose_ul(mf);
     errno = err;
     return NULL;
+}
+
+int init_dev_info_ul(mfile* mf, const char* dev_name, unsigned domain, unsigned bus, unsigned dev, unsigned func)
+{
+    int i;
+    int devs_len;
+    int ret = 0;
+    dev_info* devs = mdevices_info_v_ul(0xffffffff, &devs_len, 1);
+    for (i = 0; i < devs_len; i++) {
+        if (devs[i].pci.domain == domain &&
+            devs[i].pci.bus == bus &&
+            devs[i].pci.dev == dev &&
+            devs[i].pci.func == func) {
+                break;
+            }
+    }
+
+    if (i == devs_len) {
+        ret = 1;
+        goto cleanup;
+    }
+
+    mf->dinfo = malloc(sizeof(*mf->dinfo));
+    if (!mf->dinfo) {
+        errno = ENOMEM;
+        ret = 2;
+        goto cleanup;
+    }
+
+    memcpy(mf->dinfo, &devs[i], sizeof(*mf->dinfo));
+    strncpy(mf->dinfo->dev_name, dev_name, sizeof(mf->dinfo->dev_name)/sizeof(mf->dinfo->dev_name[0])-1);
+    if (mf->dinfo->type == MDEVS_TAVOR_CR) {
+        if (devs[i].pci.ib_devs) {
+            // count ib devs
+            int j;
+            char** curr = devs[i].pci.ib_devs;
+            int cnt = 0;
+            while (*(curr++)) {
+                cnt++;
+            }
+
+            mf->dinfo->pci.ib_devs = malloc((cnt + 1) * sizeof(char*));
+            if (!mf->dinfo->pci.ib_devs) {
+                errno = ENOMEM;
+                free(mf->dinfo);
+                ret = 3;
+                goto cleanup;
+            }
+
+            for (j = 0; j < cnt; j++) {
+                mf->dinfo->pci.ib_devs[j] = malloc(strlen(devs[i].pci.ib_devs[j]) + 1);
+                strcpy(mf->dinfo->pci.ib_devs[j], devs[i].pci.ib_devs[j]);
+            }
+            mf->dinfo->pci.ib_devs[cnt] = NULL;
+        }
+
+        if (devs[i].pci.net_devs) {
+            // count net devs
+            int j;
+            char** curr = devs[i].pci.net_devs;
+            int cnt = 0;
+            while (*(curr++)) {
+                cnt++;
+            }
+
+            mf->dinfo->pci.net_devs = malloc((cnt + 1) * sizeof(char*));
+            if (!mf->dinfo->pci.net_devs) {
+                errno = ENOMEM;
+                if (mf->dinfo->pci.ib_devs) {
+                    free(mf->dinfo->pci.ib_devs);
+                }
+                free(mf->dinfo);
+                ret = 4;
+                goto cleanup;
+            }
+
+            for (j = 0; j < cnt; j++) {
+                mf->dinfo->pci.net_devs[j] = malloc(strlen(devs[i].pci.net_devs[j]) + 1);
+                strcpy(mf->dinfo->pci.net_devs[j], devs[i].pci.net_devs[j]);
+            }
+            mf->dinfo->pci.net_devs[cnt] = NULL;
+        }
+    }
+
+    cleanup:
+    mdevices_info_destroy_ul(devs, devs_len);
+    return ret;
+}
+
+
+mfile *mopen_ul(const char *name)
+{
+    mfile* mf = mopen_ul_int(name, 0);
+
+    return mf;
 }
 
 int mclose_ul(mfile *mf)
@@ -2177,4 +2343,164 @@ int mget_max_reg_size_ul(mfile *mf)
         mf->acc_reg_params.max_reg_size = TOOLS_HCR_MAX_REG_SIZE;
     }
     return mf->acc_reg_params.max_reg_size;
+}
+
+int mclear_pci_semaphore_ul(const char* name)
+{
+   mfile* mf;
+   int rc = ME_OK;
+   mf = mopen_ul_int(name, Clear_Vsec_Semaphore);
+   if (!mf) {
+       return ME_ERROR;
+   }
+   if ((mf->tp & (MST_PCICONF | MST_PCI)) == 0) {
+       rc = ME_UNSUPPORTED_ACCESS_TYPE;
+   }
+   mclose_ul(mf);
+   return rc;
+}
+
+/************************************
+ * Function: m_err2str
+ ************************************/
+const char* m_err2str(MError status)
+{
+   switch(status) {
+   case ME_OK:
+       return "ME_OK";
+   case ME_ERROR:
+       return "General error";
+   case ME_BAD_PARAMS:
+       return "ME_BAD_PARAMS";
+   case ME_CR_ERROR:
+       return "ME_CR_ERROR";
+   case ME_NOT_IMPLEMENTED:
+       return "ME_NOT_IMPLEMENTED";
+   case ME_SEM_LOCKED:
+       return "Semaphore locked";
+   case ME_MEM_ERROR:
+       return "ME_MEM_ERROR";
+   case ME_UNSUPPORTED_OPERATION:
+       return "ME_UNSUPPORTED_OPERATION";
+
+   case ME_MAD_SEND_FAILED:
+       return "ME_MAD_SEND_FAILED";
+   case ME_UNKOWN_ACCESS_TYPE:
+       return "ME_UNKOWN_ACCESS_TYPE";
+   case ME_UNSUPPORTED_ACCESS_TYPE:
+       return "ME_UNSUPPORTED_ACCESS_TYPE";
+   case ME_UNSUPPORTED_DEVICE:
+       return "ME_UNSUPPORTED_DEVICE";
+
+   // Reg access errors
+   case ME_REG_ACCESS_BAD_STATUS_ERR:
+       return "ME_REG_ACCESS_BAD_STATUS_ERR";
+   case ME_REG_ACCESS_BAD_METHOD:
+       return "Bad method";
+   case ME_REG_ACCESS_NOT_SUPPORTED:
+       return "Register access isn't supported by device";
+   case ME_REG_ACCESS_DEV_BUSY:
+       return "Device is busy";
+   case ME_REG_ACCESS_VER_NOT_SUPP:
+       return "Version not supported";
+   case ME_REG_ACCESS_UNKNOWN_TLV:
+       return "Unknown TLV";
+   case ME_REG_ACCESS_REG_NOT_SUPP:
+       return "Register not supported";
+   case ME_REG_ACCESS_CLASS_NOT_SUPP:
+       return "Class not supported";
+   case ME_REG_ACCESS_METHOD_NOT_SUPP:
+       return "Method not supported";
+   case ME_REG_ACCESS_BAD_PARAM:
+       return "Bad parameter";
+   case ME_REG_ACCESS_RES_NOT_AVLBL:
+       return "Resource not available";
+   case ME_REG_ACCESS_MSG_RECPT_ACK:
+       return "Message receipt ack";
+   case ME_REG_ACCESS_UNKNOWN_ERR:
+       return "Unknown register error";
+   case ME_REG_ACCESS_SIZE_EXCCEEDS_LIMIT:
+       return "Register is too large";
+   case ME_REG_ACCESS_CONF_CORRUPT:
+       return "Config Section Corrupted";
+   case ME_REG_ACCESS_LEN_TOO_SMALL:
+       return "given register length too small for Tlv";
+   case ME_REG_ACCESS_BAD_CONFIG:
+       return "configuration refused";
+   case ME_REG_ACCESS_ERASE_EXEEDED:
+       return   "erase count exceeds limit";
+   case ME_REG_ACCESS_INTERNAL_ERROR:
+       return "FW internal error";
+
+   // ICMD access errors
+   case ME_ICMD_STATUS_CR_FAIL:
+       return "ME_ICMD_STATUS_CR_FAIL";
+   case ME_ICMD_STATUS_SEMAPHORE_TO:
+       return "ME_ICMD_STATUS_SEMAPHORE_TO";
+   case ME_ICMD_STATUS_EXECUTE_TO:
+       return "ME_ICMD_STATUS_EXECUTE_TO";
+   case ME_ICMD_STATUS_IFC_BUSY:
+       return "ME_ICMD_STATUS_IFC_BUSY";
+   case ME_ICMD_STATUS_ICMD_NOT_READY:
+       return "ME_ICMD_STATUS_ICMD_NOT_READY";
+   case ME_ICMD_UNSUPPORTED_ICMD_VERSION:
+       return "ME_ICMD_UNSUPPORTED_ICMD_VERSION";
+   case ME_ICMD_NOT_SUPPORTED:
+       return "ME_REG_ACCESS_ICMD_NOT_SUPPORTED";
+   case ME_ICMD_INVALID_OPCODE:
+       return "ME_ICMD_INVALID_OPCODE";
+   case ME_ICMD_INVALID_CMD:
+       return "ME_ICMD_INVALID_CMD";
+   case ME_ICMD_OPERATIONAL_ERROR:
+       return "ME_ICMD_OPERATIONAL_ERROR";
+   case ME_ICMD_BAD_PARAM:
+       return "ME_ICMD_BAD_PARAM";
+   case ME_ICMD_BUSY:
+       return "ME_ICMD_BUSY";
+   case ME_ICMD_ICM_NOT_AVAIL:
+       return "ME_ICMD_ICM_NOT_AVAIL";
+   case ME_ICMD_WRITE_PROTECT:
+       return "ME_ICMD_WRITE_PROTECT";
+   case ME_ICMD_UNKNOWN_STATUS:
+       return "ME_ICMD_UNKNOWN_STATUS";
+   case ME_ICMD_SIZE_EXCEEDS_LIMIT:
+       return "ME_ICMD_SIZE_EXCEEDS_LIMIT";
+
+       // TOOLS HCR access errors
+   case ME_CMDIF_BUSY:
+       return "Tools HCR busy";
+   case ME_CMDIF_TOUT:
+       return "Tools HCR time out.";
+   case ME_CMDIF_BAD_OP:
+       return "Operation not supported";
+   case ME_CMDIF_NOT_SUPP:
+       return "Tools HCR not supported";
+   case ME_CMDIF_BAD_SYS:
+       return "bad system status (driver may be down or Fw does not support this operation)";
+   case ME_CMDIF_UNKN_TLV:
+       return "Unknown TLV";
+   case ME_CMDIF_RES_STATE:
+       return "Bad reset state";
+   case ME_CMDIF_UNKN_STATUS:
+       return "Unknown status";
+
+       // MAD IFC errors
+   case ME_MAD_BUSY:
+       return "Temporarily busy. MAD discarded. This is not an error";
+   case ME_MAD_REDIRECT:
+       return "Redirection. This is not an error";
+   case ME_MAD_BAD_VER:
+       return "Bad version";
+   case ME_MAD_METHOD_NOT_SUPP:
+       return "Method not supported";
+   case ME_MAD_METHOD_ATTR_COMB_NOT_SUPP:
+       return "Method and attribute combination isn't supported";
+   case ME_MAD_BAD_DATA:
+       return "Bad attribute modifier or field";
+   case ME_MAD_GENERAL_ERR:
+       return "Unknown MAD error";
+
+   default:
+       return "Unknown error code";
+   }
 }

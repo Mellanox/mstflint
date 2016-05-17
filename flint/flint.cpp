@@ -161,6 +161,7 @@ map_sub_cmd_t_to_subcommand Flint::initSubcommandMap()
     cmdMap[SC_Clear_Sem] = new ClearSemSubCommand();
     cmdMap[SC_Check_Sum] = new CheckSumSubCommand();
     cmdMap[SC_Time_Stamp] = new TimeStampSubCommand();
+    cmdMap[SC_Cache_Image] = new CacheImageSubCommand();
     return cmdMap;
 }
 
@@ -233,6 +234,11 @@ FlintStatus Flint::run(int argc, char* argv[])
     }
     //TODO: Step 3 check flintParams for contradictions?
     //Step 4 execute command from the correct subcommand class
+    if (_subcommands.count(_flintParams.cmd) == 0) {
+        // should not be reached
+        printf("-E- FATAL: command object not found.");
+        return FLINT_FAILED;
+    }
     _subcommands[_flintParams.cmd]->setParams(_flintParams);
     return _subcommands[_flintParams.cmd]->executeCommand();
 }
