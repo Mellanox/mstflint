@@ -137,6 +137,7 @@ int mib_semaphore_lock_vs_mad(
         u_int8_t* lease_time_exp,
         sem_lock_method_t method)
 {
+#ifndef NO_INBAND
     u_int8_t mad_data[IB_SMP_DATA_SIZE] = {0};
     int rc = ME_OK;
     struct semaphore_lock_cmd cmd;
@@ -159,10 +160,22 @@ int mib_semaphore_lock_vs_mad(
     *is_leaseable = (int)cmd.is_lease;
     *lease_time_exp = cmd.lease_time_exponent;
     return rc;
+#else
+    (void)mf;
+    (void)op;
+    (void)sem_addr;
+    (void)lock_key;
+    (void)res;
+    (void)is_leaseable;
+    (void)lease_time_exp;
+    (void)method;
+    return 1;
+#endif
 }
 
 int mib_semaphore_lock_is_supported(mfile* mf)
 {
+#ifndef NO_INBAND
     u_int8_t mad_data[IB_SMP_DATA_SIZE] = {0};
     struct semaphore_lock_cmd cmd;
     memset(&cmd, 0, sizeof(cmd));
@@ -174,4 +187,8 @@ int mib_semaphore_lock_is_supported(mfile* mf)
     } else {
         return 0;
     }
+#else
+    (void)mf;
+    return 1;
+#endif
 }
