@@ -268,7 +268,7 @@ function get_device_id {
     current_pci_info=`get_curr_ca_pci_info $loop_cnt`
     PCI_DEV=$(echo $current_pci_info | awk '{print $1}')
 
-    HexDevice_ID=$(lspci -n -d "15b3:"  2> /dev/null | grep $PCI_DEV |  tail -1 | cut -d ":" -f4 | cut -d " " -f1)
+    HexDevice_ID=$(lspci -D -n -d "15b3:"  2> /dev/null | grep $PCI_DEV |  tail -1 | cut -d ":" -f5 | cut -d " " -f1)
     if [ "$HexDevice_ID" != "" ]; then
         HexDevice_ID=0x$HexDevice_ID
         let "tmp=$HexDevice_ID"
