@@ -13,7 +13,7 @@
 Summary: Mellanox firmware burning application
 Name: %{name}
 Version: %{version}
-Release: 1
+Release: %{release} 
 License: GPL/BSD
 Url: http://openfabrics.org
 Group: System Environment/Base
