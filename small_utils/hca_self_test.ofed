@@ -96,9 +96,15 @@ elif [ -f /etc/debian_version ]; then
     INSTALL_PREFIX=/opt/topspin
     g_pkg_cmd="dpkg"
 else
-    echo "Error: hca_self_test does not support this OS."
-    EXIT_CODE=1
-    exit $EXIT_CODE
+    OUT=`grep -q "Wind River" /etc/issue`
+    is_wind_river=$?
+    if [ "$is_wind_river" -eq "0" ]; then
+        OS_TYPE="RED_HAT"
+    else
+        echo "Error: hca_self_test does not support this OS."
+        EXIT_CODE=1
+        exit $EXIT_CODE
+    fi
 fi
 
 for cmd in  lspci cat id $g_pkg_cmd uname grep ls awk egrep modprobe; do
