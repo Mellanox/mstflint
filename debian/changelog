@@ -1,18 +1,23 @@
 mstflint (4.4.0-1) unstable; urgency=low
 
   * Updated from MFT-4.4.0
-  
+
+ -- Adrian Chiris <adrianc@unknown>  Tue, 24 May 2016 15:31:33 +0200
+
+
 mstflint (4.3.0-1) unstable; urgency=low
 
   * Updated from MFT-4.4.0 initial release
 
  -- Adrian Chiris <adrianc@unknown>  Wed, 23 Mar 2016 15:31:33 +0200
- 
+
+
 mstflint (4.3.0-1) unstable; urgency=low
 
   * Updated from MFT-4.3.0
 
  -- Adrian Chiris <adrianc@unknown>  Mon, 11 Jan 2016 15:31:33 +0200
+
 
 mstflint (4.1.0-1) unstable; urgency=low
 
@@ -20,11 +25,13 @@ mstflint (4.1.0-1) unstable; urgency=low
 
  -- Adrian Chiris <adrianc@unknown>  Wed, 26 Aug 2015 15:31:33 +0200
 
+
 mstflint (4.0.1-1) unstable; urgency=low
 
   * Updated from MFT-4.0.1
 
  -- Adrian Chiris <adrianc@unknown>  Wed, 03 Jun 2015 13:38:33 +0200
+
 
 mstflint (4.0.0-1) unstable; urgency=low
 
