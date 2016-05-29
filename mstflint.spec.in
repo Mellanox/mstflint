@@ -22,6 +22,10 @@ Source: %{name}-%{version}.tar.gz
 ExclusiveArch: i386 i486 i586 i686 x86_64 ia64 ppc ppc64 ppc64le arm64 aarch64
 BuildRequires: zlib-devel %{ibmadlib}
 
+%if %{buildtype} == "ppc64le"
+Requires: advance-toolchain-at7.1-runtime
+%endif
+
 %description
 This package contains firmware update tool, vpd dump and register dump tools
 for network adapters based on Mellanox Technologies chips.
@@ -52,7 +56,7 @@ for network adapters based on Mellanox Technologies chips.
 %endif
 
 %if %{buildtype} == "ppc64le"
-    config_flags="$config_flags --host=powerpc64le-linux-gnu --enable-dynamic-ld=yes"
+    config_flags="$config_flags --host=powerpc64le-linux-gnu"
 %endif
 
 %if %{buildtype} == "arm64"
