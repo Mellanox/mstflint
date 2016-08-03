@@ -28,6 +28,7 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
 
 #include <stdlib.h>
@@ -72,7 +73,7 @@ void MlxCfg::printHelp()
 {
     // print opening
     printf(IDENT"NAME:\n"
-           IDENT2   MLXCFG_NAME"\n"
+           IDENT2   MLXCFG_NAME "\n"
            IDENT"SYNOPSIS:\n"
            IDENT2    MLXCFG_NAME " [-d <%s> ] [-y|-e] <s[et] <parameters to set>|q[uery]|r[eset]|[ -f <filename> backup|set_raw]>\n", DEVICE_NAME);
 
@@ -93,8 +94,8 @@ void MlxCfg::printHelp()
     printf(IDENT2"%-24s : %s\n","q[uery]", "query current supported configurations.");
     printf(IDENT2"%-24s : %s\n","r[eset]", "reset all configurations to their default value.");
     printf(IDENT2"%-24s : %s\n","s[et]", "set configurations to a specific device.");
-    printf(IDENT2"%-24s : %s\n","set_raw", "set raw configuration file.(only "  FIFTH_GENERATION_LIST ".)");
-    printf(IDENT2"%-24s : %s\n","backup", "backup configurations to a file (only "  FIFTH_GENERATION_LIST ".). Use set_raw command to restore file.");
+    printf(IDENT2"%-24s : %s\n","set_raw", "set raw configuration file.(only " FIFTH_GENERATION_LIST ".)");
+    printf(IDENT2"%-24s : %s\n","backup", "backup configurations to a file (only " FIFTH_GENERATION_LIST ".). Use set_raw command to restore file.");
 
     // print supported commands
     printf("\n");
@@ -106,10 +107,10 @@ void MlxCfg::printHelp()
     // print usage examples
     printf("\n");
     printf(IDENT"Examples:\n");
-    printf(IDENT2"%-35s: %s\n", "To query current configuration", MLXCFG_NAME" -d "MST_DEV_EXAMPLE" query");
-    printf(IDENT2"%-35s: %s\n", "To set configuration", MLXCFG_NAME" -d "MST_DEV_EXAMPLE" set SRIOV_EN=1 NUM_OF_VFS=16 WOL_MAGIC_EN_P1=1");
-    printf(IDENT2"%-35s: %s\n", "To set raw configuration", MLXCFG_NAME" -d "MST_DEV_EXAMPLE2" -f conf_file set_raw");
-    printf(IDENT2"%-35s: %s\n", "To reset configuration", MLXCFG_NAME" -d "MST_DEV_EXAMPLE" reset");
+    printf(IDENT2"%-35s: %s\n", "To query current configuration", MLXCFG_NAME " -d " MST_DEV_EXAMPLE " query");
+    printf(IDENT2"%-35s: %s\n", "To set configuration", MLXCFG_NAME " -d " MST_DEV_EXAMPLE " set SRIOV_EN=1 NUM_OF_VFS=16 WOL_MAGIC_EN_P1=1");
+    printf(IDENT2"%-35s: %s\n", "To set raw configuration", MLXCFG_NAME " -d " MST_DEV_EXAMPLE2 " -f conf_file set_raw");
+    printf(IDENT2"%-35s: %s\n", "To reset configuration", MLXCFG_NAME " -d " MST_DEV_EXAMPLE " reset");
     printf("\n");
     printf(IDENT"Supported devices:\n");
     printf(IDENT2"4th Generation devices: ConnectX3, ConnectX3-Pro (FW 2.31.5000 and above).\n");
@@ -125,8 +126,8 @@ void MlxCfg::printVersion()
 }
 
 void MlxCfg::printUsage() {
-    printf("\n"IDENT"Usage:\n"
-           IDENT2    MLXCFG_NAME " [-d <%s> ] [-y|-e] <s[et] <parameters to set>|q[uery]|r[eset]|[ -f <filename> backup|set_raw]>\n\n", DEVICE_NAME);
+    printf("\n" IDENT "Usage:\n"
+           IDENT2 MLXCFG_NAME " [-d <%s> ] [-y|-e] <s[et] <parameters to set>|q[uery]|r[eset]|[ -f <filename> backup|set_raw]>\n\n", DEVICE_NAME);
 }
 
 bool MlxCfg::tagExsists(mlxCfgParam tag) {
@@ -273,11 +274,11 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
     }
     i++;
     if (_mlxParams.cmd == Mc_UnknownCmd) {
-        return err(true, "No command found. For more information please run "MLXCFG_NAME" -h|--help.");
+        return err(true, "No command found. For more information please run " MLXCFG_NAME " -h|--help.");
     }
     // we parsed input until the set/query/reset cmd
     if (i == argc && _mlxParams.cmd == Mc_Set) {
-        return err(true, "missing configuration arguments. For more information please run "MLXCFG_NAME" -h|--help.");
+        return err(true, "missing configuration arguments. For more information please run " MLXCFG_NAME " -h|--help.");
     }
     if (i != argc && (_mlxParams.cmd == Mc_Reset || _mlxParams.cmd == Mc_Query)) {
         return err(true, "%s command expects no argument but %d argument received", (_mlxParams.cmd == Mc_Reset) ? "reset" : "query", argc -i);
@@ -486,13 +487,13 @@ MlxCfgInfo MlxCfgAllInfo::createPciSettings()
     paramMap["True"] = 1;
     paramMap["False"] = 0;
     params[Mcp_Fpp_En] = MlxCfgParamParser(Mcp_Fpp_En, "FPP_EN", "Enable function per port", paramMap);
-    params[Mcp_Log_Bar_Size] = MlxCfgParamParser(Mcp_Log_Bar_Size, "LOG_BAR_SIZE", "example: for 8Mb bar size set LOG_BAR_SIZE=3 (only "  FOURTH_GENERATION_LIST")", "base_2_log_in_mb");
+    params[Mcp_Log_Bar_Size] = MlxCfgParamParser(Mcp_Log_Bar_Size, "LOG_BAR_SIZE", "example: for 8Mb bar size set LOG_BAR_SIZE=3 (only " FOURTH_GENERATION_LIST ")", "base_2_log_in_mb");
     params[Mcp_Sriov_En] = MlxCfgParamParser(Mcp_Sriov_En, "SRIOV_EN", "Enable SR-IOV", paramMap);
-    params[Mcp_PF_Log_Bar_Size] = MlxCfgParamParser(Mcp_PF_Log_Bar_Size, "PF_LOG_BAR_SIZE", "example: for 8Mb bar size set PF_LOG_BAR_SIZE=3 (only "  FIFTH_GENERATION_LIST ")", "base_2_log_in_mb");
-    params[Mcp_VF_Log_Bar_Size] = MlxCfgParamParser(Mcp_VF_Log_Bar_Size, "VF_LOG_BAR_SIZE", "example: for 8Mb bar size set VF_LOG_BAR_SIZE=3 (only "  FIFTH_GENERATION_LIST ")", "base_2_log_in_mb");
+    params[Mcp_PF_Log_Bar_Size] = MlxCfgParamParser(Mcp_PF_Log_Bar_Size, "PF_LOG_BAR_SIZE", "example: for 8Mb bar size set PF_LOG_BAR_SIZE=3 (only " FIFTH_GENERATION_LIST ")", "base_2_log_in_mb");
+    params[Mcp_VF_Log_Bar_Size] = MlxCfgParamParser(Mcp_VF_Log_Bar_Size, "VF_LOG_BAR_SIZE", "example: for 8Mb bar size set VF_LOG_BAR_SIZE=3 (only " FIFTH_GENERATION_LIST ")", "base_2_log_in_mb");
     params[Mcp_Num_Of_Vfs] = MlxCfgParamParser(Mcp_Num_Of_Vfs, "NUM_OF_VFS", "desired amount of virtual functions", "NUM");
-    params[Mcp_Num_Pf_Msix] = MlxCfgParamParser(Mcp_Num_Pf_Msix, "NUM_PF_MSIX", "Number of MSI-X vectors and EQs per PF (only "FIFTH_GENERATION_LIST")", "NUM");
-    params[Mcp_Num_Vf_Msix] = MlxCfgParamParser(Mcp_Num_Vf_Msix, "NUM_VF_MSIX", "Number of MSI-X vectors and EQs per VF (only "FIFTH_GENERATION_LIST")", "NUM");
+    params[Mcp_Num_Pf_Msix] = MlxCfgParamParser(Mcp_Num_Pf_Msix, "NUM_PF_MSIX", "Number of MSI-X vectors and EQs per PF (only " FIFTH_GENERATION_LIST ")", "NUM");
+    params[Mcp_Num_Vf_Msix] = MlxCfgParamParser(Mcp_Num_Vf_Msix, "NUM_VF_MSIX", "Number of MSI-X vectors and EQs per VF (only " FIFTH_GENERATION_LIST ")", "NUM");
     return MlxCfgInfo("PCI Settings", "", params);
 }
 

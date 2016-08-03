@@ -751,7 +751,7 @@ const char* Flash::getFlashType() {
     } else if (!strcmp(param_in, second_op)) {\
         out = 0;\
     } else {\
-        return errmsg("bad argument (%s) it can be "first_op" or " second_op"", param_in);\
+        return errmsg("bad argument (%s) it can be " first_op " or " second_op "", param_in);\
     }\
 }
 bool  Flash::set_attr(char *param_name, char *param_val_str)
@@ -763,11 +763,11 @@ bool  Flash::set_attr(char *param_name, char *param_val_str)
         u_int8_t quad_en_val;
         quad_en_val = strtoul(param_val_str, &endp, 0);
         if (*endp != '\0' || quad_en_val > 1) {
-            return errmsg("Bad "QUAD_EN_PARAM" value (%s), it can be 0 or 1\n", param_val_str);
+            return errmsg("Bad " QUAD_EN_PARAM " value (%s), it can be 0 or 1\n", param_val_str);
         }
         rc = mf_set_quad_en(_mfl, quad_en_val);
         if (rc != MFE_OK) {
-            return errmsg("Setting "QUAD_EN_PARAM" failed: (%s)", mf_err2str(rc));
+            return errmsg("Setting " QUAD_EN_PARAM " failed: (%s)", mf_err2str(rc));
         }
     } else if (!strcmp(param_name, DUMMY_CYCLES_PARAM)) {
         char* endp;
@@ -775,11 +775,11 @@ bool  Flash::set_attr(char *param_name, char *param_val_str)
         dummy_cycles_val = strtoul(param_val_str, &endp, 0);
         if (*endp != '\0' || dummy_cycles_val < 1 || dummy_cycles_val > 15) {
         	// value is actually [0.15] but val=0 and val=15 indicate default state (thus they are the same so no need for both values to be accepted)
-            return errmsg("Bad "DUMMY_CYCLES_PARAM" value (%s), it can be [1..15]\n", param_val_str);
+            return errmsg("Bad " DUMMY_CYCLES_PARAM " value (%s), it can be [1..15]\n", param_val_str);
         }
         rc = mf_set_dummy_cycles(_mfl, dummy_cycles_val);
         if (rc != MFE_OK) {
-            return errmsg("Setting "DUMMY_CYCLES_PARAM" failed: (%s)", mf_err2str(rc));
+            return errmsg("Setting " DUMMY_CYCLES_PARAM " failed: (%s)", mf_err2str(rc));
         }
     } else if (strstr(param_name, FLASH_NAME) == param_name) {
         char *flash_param, *param_str, *endp, *bank_num_str;
@@ -801,7 +801,7 @@ bool  Flash::set_attr(char *param_name, char *param_val_str)
                 num_str = strtok((char*)NULL, "-");
                 sec = strtok((char*)NULL, "");
                 if (tb == NULL || num_str == NULL || sec == NULL) {
-                    return errmsg("missing parameters for setting the "WRITE_PROTECT" attribute, see help for more info.");
+                    return errmsg("missing parameters for setting the " WRITE_PROTECT " attribute, see help for more info.");
                 }
                 GET_IN_PARAM(tb, protect_info.is_bottom, WP_BOTTOM_STR, WP_TOP_STR);
                 GET_IN_PARAM(sec, protect_info.is_subsector, WP_SUBSEC_STR, WP_SEC_STR);
@@ -813,7 +813,7 @@ bool  Flash::set_attr(char *param_name, char *param_val_str)
            }
             rc = mf_set_write_protect(_mfl, bank_num, &protect_info);
             if (rc != MFE_OK) {
-                return errmsg("Setting "WRITE_PROTECT" failed: (%s)", mf_err2str(rc));
+                return errmsg("Setting " WRITE_PROTECT " failed: (%s)", mf_err2str(rc));
             }
         } else {
             return errmsg("Unknown attribute %s.%s", flash_param, param_str);
