@@ -482,7 +482,7 @@ bool Fs3Operations::VerifyTOC(u_int32_t dtoc_addr, bool& bad_signature, VerifyCa
 
     if (!mfg_exists) {
         _badDevDataSections = true;
-        return errmsg(MLXFW_NO_MFG_ERR, "No \""MFG_INFO"\" info section.");
+        return errmsg(MLXFW_NO_MFG_ERR, "No \"" MFG_INFO "\" info section.");
     }
     return ret_val;
 }
