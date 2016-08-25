@@ -3613,7 +3613,7 @@ WbneSubCommand:: WbneSubCommand() {
     _param = "<addr> <size> <data ...>";
     _paramExp = "addr - address of block\n"
                 INDENTEX"size - size of data to write in bytes\n"
-                INDENTEX"data - data to write - space seperated dwords";
+                INDENTEX"data - data to write - space separated dwords";
     _example = FLINT_NAME" -d "MST_DEV_EXAMPLE1" wbne 0x10000 12 0x30000 0x76800 0x5a445a44";
     _v = Wtv_Dev;
     _minCmdParamNum = 3;

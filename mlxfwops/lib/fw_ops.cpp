@@ -827,7 +827,7 @@ bool FwOperations::writeImage(ProgressCallBack progressFunc, u_int32_t addr, voi
             u_int32_t new_perc = ((cnt - towrite + alreadyWrittenSz) * 100) / totalSz;
 
                     if (progressFunc((int)new_perc)) {
-                        return errmsg("Aborting... recieved interrupt signal");
+                        return errmsg("Aborting... received interrupt signal");
                     }
             }
         }

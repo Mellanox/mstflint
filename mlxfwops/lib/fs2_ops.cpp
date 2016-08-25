@@ -1804,7 +1804,7 @@ bool Fs2Operations::FwBurnRom(FImage* romImg, bool ignoreProdIdCheck, bool ignor
     u_int32_t cntx_image_num;
     FindAllImageStart(romImg, cntx_image_start, &cntx_image_num, _cntx_magic_pattern);
     if (cntx_image_num != 0) {
-        return errmsg("Expecting an expansion ROM image, Recieved Mellanox FW image.");
+        return errmsg("Expecting an expansion ROM image, Received Mellanox FW image.");
     }
 
     if (!Fs2IntQuery()) {

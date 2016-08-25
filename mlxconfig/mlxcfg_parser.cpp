@@ -280,7 +280,7 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
         return err(true, "missing configuration arguments. For more information please run "MLXCFG_NAME" -h|--help.");
     }
     if (i != argc && (_mlxParams.cmd == Mc_Reset || _mlxParams.cmd == Mc_Query)) {
-        return err(true, "%s command expects no argument but %d argument recieved", (_mlxParams.cmd == Mc_Reset) ? "reset" : "query", argc -i);
+        return err(true, "%s command expects no argument but %d argument received", (_mlxParams.cmd == Mc_Reset) ? "reset" : "query", argc -i);
     }
     if ((_mlxParams.cmd == Mc_Set || _mlxParams.cmd == Mc_Clr_Sem || _mlxParams.cmd == Mc_Set_Raw || _mlxParams.cmd == Mc_Backup) && _mlxParams.device.length() == 0) {
         return err(true, "%s command expects device to be specified.",

@@ -83,7 +83,7 @@ enum {
     printf("-I- Data Sent:\n");\
     tools_open_##struct_name##_print(data_struct, stdout, 1)
 # define DEBUG_PRINT_RECIEVE(data_struct, struct_name)\
-    printf("-I- Data Recieved:\n");\
+    printf("-I- Data Received:\n");\
     tools_open_##struct_name##_print(data_struct, stdout, 1)
 #else
 # define DEBUG_PRINT_SEND(data_struct, struct_name)
@@ -1499,7 +1499,7 @@ bool VpiParams5thGen::cfgSupported(mfile* mf, mlxCfgParam param)
     bool suppRead, suppWrite;
     rc = nvqcCom5thGen(mf, getTlvTypeBe(), suppRead, suppWrite);
     if (rc) {
-        errmsg("Failed to get VPI params capabilites. %s", m_err2str(rc));
+        errmsg("Failed to get VPI params capabilities. %s", m_err2str(rc));
         return false;
     }
     return suppRead && suppWrite;
