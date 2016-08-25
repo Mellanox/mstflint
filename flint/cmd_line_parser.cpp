@@ -428,7 +428,7 @@ void Flint::initCmdParser() {
                 "<GUIDS...>",
                 "4 GUIDs must be specified here.\n"
                 "The specified GUIDs are assigned\n"
-                "to the following fields, repectively:\n"
+                "to the following fields, respectively:\n"
                 "node, port1, port2 and system image GUID.\n\n"
                 "Note: port2 guid must be specified even for a\n"
                 "single port HCA - The HCA ignores this value.\n"
@@ -450,7 +450,7 @@ void Flint::initCmdParser() {
                 "<MACs...>",
                 "2 MACs must be specified here.\n"
                 "The specified MACs are assigned\n"
-                "to port1, port2, repectively.\n"
+                "to port1, port2, respectively.\n"
                 "Commands affected: burn, sg\n\n"
                 "Note: -mac/-macs flags are applicable only for Mellanox\n"
                 "\tTechnologies ethernet products.");
