@@ -76,6 +76,19 @@ typedef int (*f_mf_reset)     (mflash* mfl);
 
 typedef int (*f_st_spi_status)(mflash* mfl, u_int8_t op_type, u_int8_t* status);
 typedef int (*f_mf_get_info)  (mflash* mfl, flash_info_t *f_info, int *log2size, u_int8_t *no_flash);
+
+/*
+ * flash parameters methods get/set
+ */
+typedef int     (*f_mf_get_quad_en)    (mflash *mfl, u_int8_t *quad_en);
+typedef int     (*f_mf_set_quad_en)    (mflash *mfl, u_int8_t quad_en);
+
+typedef int     (*f_mf_get_write_protect)    (mflash *mfl, u_int8_t bank_num, write_protect_info_t *protect_info);
+typedef int     (*f_mf_set_write_protect)    (mflash *mfl, u_int8_t bank_num, write_protect_info_t *protect_info);
+
+typedef int     (*f_mf_get_dummy_cycles)    (mflash *mfl, u_int8_t *num_of_cycles);
+typedef int     (*f_mf_set_dummy_cycles)    (mflash *mfl, u_int8_t num_of_cycles);
+
 /////////////////////////////////////////////
 //
 // MFlash struct
@@ -99,6 +112,13 @@ struct mflash {
 	f_mf_erase_sect f_erase_sect;
 	f_mf_reset      f_reset;
 
+    f_mf_get_quad_en                f_get_quad_en;
+	f_mf_set_quad_en                f_set_quad_en;
+    f_mf_get_write_protect         f_get_write_protect;
+	f_mf_set_write_protect         f_set_write_protect;
+    f_mf_get_dummy_cycles      f_get_dummy_cycles;
+	f_mf_set_dummy_cycles     f_set_dummy_cycles;
+
 	// Relevant for SPI flash (InfiniHostIIILx, ConnectX) only
 	f_st_spi_status f_spi_status;
 	// when set(1) we support modification of the flash status register
@@ -118,6 +138,19 @@ struct mflash {
 	trm_ctx trm;
 
 };
+
+typedef struct mfpa_command_args {
+    u_int8_t flash_bank;                                // IN
+    u_int32_t boot_address;                           // IN/OUT
+    int num_of_banks;                                // OUT
+    u_int32_t jedec_id;                                 // OUT
+    u_int32_t fw_flash_sector_sz;               //OUT
+    u_int8_t supp_sub_and_sector_erase; // OUT
+    u_int8_t supp_sector_write_prot;         // OUT
+    u_int8_t supp_sub_sector_write_prot; // OUT
+    u_int8_t supp_quad_en;                      // OUT
+    u_int8_t supp_dummy_cycles;             //OUT
+} mfpa_command_args;
 
 enum AccessTypeByMfile{
     ATBM_NO = 0,
@@ -198,10 +231,9 @@ int sx_st_block_access(mfile *mf, u_int32_t flash_addr, u_int8_t bank, u_int32_t
 
 int common_erase_sector(mfile *mf, u_int32_t addr, u_int8_t flash_bank, u_int32_t erase_size);
 
-int run_mfpa_command(mfile *mf, u_int8_t access_cmd, u_int8_t flash_bank, u_int32_t boot_address,\
-                    u_int32_t *jedec_p, int *num_of_banks, u_int32_t* fw_flash_sector_sz, u_int8_t* supp_sub_and_sector);
+int run_mfpa_command(mfile *mf, u_int8_t access_cmd, mfpa_command_args* mfpa_args);
 
-int com_get_jedec(mfile *mf, u_int8_t flash_bank, u_int32_t *jedec_p, u_int32_t* fw_flash_sector_sz, u_int8_t* supp_sub_and_sector);
+int com_get_jedec(mfile *mf, mfpa_command_args* mfpa_args);
 int get_num_of_banks(mfile *mf);
 int get_info_from_jededc_id(u_int32_t jededc_id, u_int8_t *vendor, u_int8_t* type, u_int8_t* capacity);
 int get_type_index_by_vendor_and_type(u_int8_t vendor, u_int8_t type, unsigned *type_index);

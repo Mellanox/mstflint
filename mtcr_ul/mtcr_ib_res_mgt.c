@@ -28,14 +28,13 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
-
-#include <string.h>
 
 #include "mtcr_ib.h"
 #include "mtcr_ib_res_mgt.h"
 #include "packets_common.h"
-
+#include <string.h>
 
 #define IB_SMP_DATA_SIZE 48
 #define SMP_SEMAPHOE_LOCK_CMD 0xff53

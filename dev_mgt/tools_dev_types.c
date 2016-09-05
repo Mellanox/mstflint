@@ -28,8 +28,16 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
+ * End of legal section ......................................................
+ *
+ *  toos_dev_types.c - Defines static info records for all mellanox chips in order to
+ *                     have a uniform IDs and info for all tools.
+ *
+ *  Version: $Id$
+ *
+ *  Author: Wasim Abo Moch (wasim@mellanox.co.il)
  */
-
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -180,15 +188,6 @@ static struct dev_info g_devs_info[] = {
         .dev_type  = DM_HCA
     },
     {
-        .dm_id     = DeviceFPGA,
-        .hw_dev_id = 0x600,
-        .hw_rev_id = -1,
-        .sw_dev_id = -1,
-        .name      = "FPGA",
-        .port_num  = 2,
-        .dev_type  = DM_HCA
-    },
-    {
         .dm_id     = DeviceFPGANewton,
         .hw_dev_id = 0xfff, // Dummy device ID till we have official one
         .hw_rev_id = -1,
@@ -207,17 +206,8 @@ static struct dev_info g_devs_info[] = {
         .dev_type  = DM_SWITCH
     },
     {
-        .dm_id     = DeviceCable,
-        .hw_dev_id = 0xffff,
-        .hw_rev_id = -1,
-        .sw_dev_id = -1,
-        .name      = "Cable",
-        .port_num  = -1,
-        .dev_type  = DM_QSFP_CABLE
-    },
-    {
         .dm_id     = DeviceCableQSFP,
-        .hw_dev_id = 0xffff,
+        .hw_dev_id = 0x0d,
         .hw_rev_id = 0,
         .sw_dev_id = -1,
         .name      = "CableQSFP",
@@ -226,8 +216,8 @@ static struct dev_info g_devs_info[] = {
     },
     {
         .dm_id     = DeviceCableQSFPaging,
-        .hw_dev_id = 0xffff,
-        .hw_rev_id = 1,
+        .hw_dev_id = 0x11,
+        .hw_rev_id = 0xab,
         .sw_dev_id = -1,
         .name      = "CableQSFPaging",
         .port_num  = -1,
@@ -235,7 +225,7 @@ static struct dev_info g_devs_info[] = {
     },
     {
         .dm_id     = DeviceCableSFP,
-        .hw_dev_id = 0xffff,
+        .hw_dev_id = 0x03,
         .hw_rev_id = 1,
         .sw_dev_id = -1,
         .name      = "CableSFP",
@@ -244,7 +234,7 @@ static struct dev_info g_devs_info[] = {
     },
     {
         .dm_id     = DeviceCableSFP51,
-        .hw_dev_id = 0xffff,
+        .hw_dev_id = 0x03,
         .hw_rev_id = 1,
         .sw_dev_id = -1,
         .name      = "CableSFP51",
@@ -253,7 +243,7 @@ static struct dev_info g_devs_info[] = {
     },
     {
         .dm_id     = DeviceCableSFP51Paging,
-        .hw_dev_id = 0xffff,
+        .hw_dev_id = 0x03,
         .hw_rev_id = 1,
         .sw_dev_id = -1,
         .name      = "CableSFP51Paging",
@@ -320,12 +310,7 @@ int dm_get_device_id(mfile* mf,
 
     //Special case: FPGA device:
 #ifndef MST_UL
-    if (mf->tp == MST_FPGA) {
-        *ptr_dm_dev_id = DeviceFPGA;
-        *ptr_hw_dev_id = 0x600;
-        return 0;
-    }
-    if (mf->tp == MST_FPGA_NEWTON) {
+    if (mf->tp == MST_FPGA_ICMD || mf->tp == MST_FPGA_DRIVER) {
        *ptr_dm_dev_id = DeviceFPGANewton;
        *ptr_hw_dev_id = 0xfff;
        return 0;

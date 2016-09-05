@@ -95,11 +95,11 @@
 #if defined(ARCH_x86) || defined(ARCH_ppc) || defined(UEFI_BUILD)
 #   if defined(__MINGW32__) || defined(__MINGW64__)
 #       include <inttypes.h>
-#       define U64D_FMT    "0x%"PRId64
-#       define U64H_FMT    "0x%"PRIx64
-#       define U64H_FMT_GEN ""PRIx64
-#       define U48H_FMT    "0x%"PRIx64
-#       define U64D_FMT_GEN ""PRId64
+#       define U64D_FMT    "0x%" PRId64
+#       define U64H_FMT    "0x%" PRIx64
+#       define U64H_FMT_GEN "" PRIx64
+#       define U48H_FMT    "0x%" PRIx64
+#       define U64D_FMT_GEN "" PRId64
 #   else
 #       define U64D_FMT     "%llu"
 #       define U64H_FMT     "0x%016llx"

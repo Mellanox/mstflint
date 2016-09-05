@@ -13,6 +13,9 @@ MSTFLINT Package - Firmware Burning and Diagnostics Tools
 
     ----------------------------------------------------------------------------
     NOTE:
+    As of mstflint-4.6.0 hca_self_test.ofed will not be a part of msflint package,
+    it will be found in ofed-scripts  provided by mellanox OFED package. 
+    
     This burning tool should be used only with Mellanox-manufactured
     HCA/NIC cards. Using it with cards manufactured by other vendors 
     may be harmful  to  the cards (due to different configurations).

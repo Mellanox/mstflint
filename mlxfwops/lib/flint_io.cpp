@@ -106,8 +106,8 @@ bool FImage::open(const char *fname, bool read_only, bool advErr)
 
 bool FImage::open(u_int32_t *buf, u_int32_t len, bool advErr)
 {
-    _buf = new u_int32_t[len / 4];
-    memcpy(_buf, buf, len);
+    _buf.resize(len);
+    memcpy(_buf.data(), buf, len);
     _len = len;
     _advErrors = advErr;
     return true;
@@ -115,8 +115,10 @@ bool FImage::open(u_int32_t *buf, u_int32_t len, bool advErr)
 ////////////////////////////////////////////////////////////////////////
 void FImage::close()
 {
-    delete [] _buf;
-    _buf = 0;
+    _fname = (const char*)NULL;
+    _buf.resize(0);
+    _len = 0;
+    _isFile = false;
 } // FImage::close
 
 /////////////////////////////////////////////////////////////////////////
@@ -131,8 +133,8 @@ u_int32_t* FImage::getBuf()
             errmsg("Can not open file \"%s\" - %s", _fname, strerror(errno));
             return (u_int32_t*)NULL;
         }
-        _buf = new u_int32_t[_len/4];
-        if ((r_cnt = fread(_buf, 1, _len, fh)) != (int)_len) {
+        _buf.resize(_len);
+        if ((r_cnt = fread(_buf.data(), 1, _len, fh)) != (int)_len) {
             if (r_cnt < 0) {
                 errmsg("Read error on file \"%s\" - %s",_fname, strerror(errno));
                 retBuf = (u_int32_t*)NULL;
@@ -145,15 +147,12 @@ u_int32_t* FImage::getBuf()
             }
         }
         _isFile = false;
-        retBuf = _buf;
+        retBuf = (u_int32_t*)_buf.data();
     cleanup:
         fclose(fh);
-        if (!retBuf) {
-            delete[] _buf;
-        }
         return retBuf;
     } else {
-        return _buf;
+        return (u_int32_t*)_buf.data();
     }
 }
 
@@ -164,16 +163,16 @@ bool FImage::read(u_int32_t addr, u_int32_t *data)
 } // FImage::read
 
 ////////////////////////////////////////////////////////////////////////
-bool FImage::read(u_int32_t addr, void *data, int len, bool, const char*)
+bool FImage::read(u_int32_t addr, void *data, int len, bool verbose, const char* message)
 {
+    (void)verbose;
+    (void) message;
 
-    if (addr & 0x3) {
-        return errmsg("Address should be 4-bytes aligned.");
+    if (!readWriteCommCheck(addr, len)) {
+        return false;
     }
-    if (len & 0x3) {
-        return errmsg("Length should be 4-bytes aligned.");
-    }
-    if (!_isFile && !_buf) {
+
+    if (!_isFile && _buf.size() == 0) {
         return errmsg("read() when not opened");
     }
 
@@ -204,7 +203,7 @@ bool FImage::read(u_int32_t addr, void *data, int len, bool, const char*)
             fclose(fh);
         } else {
             memcpy((u_int8_t*)data + (chunk_addr - addr),
-               (u_int8_t*)_buf +  phys_addr,
+               _buf.data() +  phys_addr,
                chunk_size);
         }
     }
@@ -238,7 +237,87 @@ u_int32_t FImage::get_sector_size()
     }
 }
 
+bool FImage::readFileGetBuffer(std::vector<u_int8_t>& dataBuf)
+{
+    int fileSize;
+    FILE* fh;
 
+    if (!getFileSize(fileSize)) {
+        return false;
+    }
+    dataBuf.resize(fileSize);
+    if ((fh = fopen(_fname, "rb")) == NULL) {
+        return errmsg("Can not open %s: %s\n",_fname, strerror(errno));
+    }
+
+    if (fread(dataBuf.data(), 1, fileSize, fh) != (size_t)fileSize) {
+        dataBuf.resize(0);
+        fclose(fh);
+        return errmsg("Failed to read entire file %s: %s\n", _fname, strerror(errno));
+    }
+    fclose(fh);
+    return true;
+}
+bool FImage::writeEntireFile(std::vector<u_int8_t>& fileContent)
+{
+    FILE* fh;
+    if ((fh = fopen(_fname, "wb")) == (FILE*)NULL) {
+        return errmsg("Can not open %s: %s\n",_fname, strerror(errno));
+    }
+
+    if (fwrite(fileContent.data(), 1, fileContent.size(), fh) != fileContent.size()) {
+        fclose(fh);
+        return errmsg("Failed to write entire file %s: %s\n", _fname, strerror(errno));
+    }
+    fclose(fh);
+    return true;
+}
+
+bool FImage::getFileSize(int& fileSize)
+{
+    FILE* fh;
+    if ((fh = fopen(_fname, "rb")) == NULL) {
+        return errmsg("Can not open %s: %s\n",_fname, strerror(errno));
+    }
+
+    if (fseek(fh, 0, SEEK_END) < 0) {
+        fclose(fh);
+        return errmsg("Failed to get size of the file \"%s\": %s\n", _fname, strerror(errno));
+    }
+    fileSize = ftell(fh);
+    fclose(fh);
+    if (fileSize < 0) {
+        return errmsg("Failed to get size of the file \"%s\": %s\n", _fname, strerror(errno));
+    }
+    return true;
+}
+
+bool FImage::write(u_int32_t addr, void* data, int cnt)
+{
+    if ( !_isFile ) {
+        return errmsg("Cannot perfrom write to file. no file specified.");
+    }
+
+    if (!readWriteCommCheck(addr, 0)) {
+        return false;
+    }
+    // read entire file
+    std::vector<u_int8_t> dataVec;
+    if (!readFileGetBuffer(dataVec)) {
+        return false;
+    }
+    // modify content (extend if needed)
+    if ((dataVec.size() < addr + cnt) ) {
+        dataVec.resize(addr + cnt);
+    }
+    memcpy(&dataVec[addr], data, cnt);
+    // re-write the file
+    if (!writeEntireFile(dataVec)) {
+        return false;
+    }
+    _len = dataVec.size();
+    return true;
+}
 
 ////////////////////////////////////////////////////////////////////////
 //
@@ -366,11 +445,8 @@ bool Flash::read(u_int32_t addr,
 bool Flash::read(u_int32_t addr, void *data, int len, bool verbose, const char* message)
 {
     int rc;
-    if (addr & 0x3) {
-        return errmsg("Address should be 4-bytes aligned.");
-    }
-    if (len & 0x3) {
-        return errmsg("Length should be 4-bytes aligned.");
+    if (!readWriteCommCheck(addr, len)) {
+        return false;
     }
 
     // Much better perf for read in a single chunk. need to work on progress report though.

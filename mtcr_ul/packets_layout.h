@@ -28,7 +28,10 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- */
+ *
+ *  End of legal section ......................................................
+ *
+*/
 /***
  *** This file was generated at "Mon May 30 15:06:41 2011"
  *** by:

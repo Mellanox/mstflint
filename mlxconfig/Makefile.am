@@ -40,20 +40,25 @@ DEV_MGT_DIR = $(top_srcdir)/dev_mgt
 LAYOUTS_LIB = $(LAYOUTS_DIR)/libtools_layouts.a
 UTILS_LIB = $(USER_DIR)/mft_utils/libmftutils.a
 CMDIF_DIR = $(USER_DIR)/cmdif
+EXT_LIB_DIR = $(USER_DIR)/ext_libs
 
+SUBDIRS = mlxconfig_dbs
 
 AM_CPPFLAGS = -I. -I$(USER_DIR) -I$(top_srcdir)/include/mtcr_ul -I$(MTCR_DIR) -I$(COMMON_DIR) $(WIN64_INC)\
-           -I $(LAYOUTS_DIR) -I $(UTILS_DIR) -I$(DEV_MGT_DIR) -I$(CMDIF_DIR)
+           -I $(LAYOUTS_DIR) -I $(UTILS_DIR) -I$(DEV_MGT_DIR) -I$(CMDIF_DIR) -I$(XML2_INC_DIR)
 
-AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe
+AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe  -DDATA_PATH=\"$(pkgdatadir)\"
 bin_PROGRAMS = mstconfig
 
-mstconfig_LDADD = $(CMDIF_DIR)/libcmdif.a ../reg_access/libreg_access.a $(LAYOUTS_LIB) $(MTCR_DIR)/libmtcr_ul.a $(MLNXOS_PPC_LIBS) $(LIBSTD_CPP) $(UTILS_LIB) $(DEV_MGT_DIR)/libdev_mgt.a -ldl
+mstconfig_LDADD = $(UTILS_LIB) $(EXT_LIB_DIR)/sqlite/libsqlite3.a $(EXT_LIB_DIR)/muparser/libmuparser.a -lxml2\
+								$(CMDIF_DIR)/libcmdif.a ../reg_access/libreg_access.a $(LAYOUTS_LIB) $(MTCR_DIR)/libmtcr_ul.a\
+								$(DEV_MGT_DIR)/libdev_mgt.a $(MLNXOS_PPC_LIBS) $(LIBSTD_CPP) -ldl
 
-mstconfig_SOURCES = mlxcfg_status.h mlxcfg_ui.h mlxcfg_ui.cpp\
-			mlxcfg_parser.cpp\
-			mlxcfg_lib.h mlxcfg_lib.cpp\
-			mlxcfg_param_lib.h mlxcfg_param_lib.cpp
+mstconfig_SOURCES =  mlxcfg_ui.h mlxcfg_parser.cpp mlxcfg_ui.cpp\
+			mlxcfg_status.h mlxcfg_utils.h mlxcfg_utils.cpp mlxcfg_view.h\
+			 mlxcfg_db_manager.h mlxcfg_db_manager.cpp mlxcfg_param.h mlxcfg_param.cpp mlxcfg_tlv.h mlxcfg_tlv.cpp\
+			 mlxcfg_commander.h mlxcfg_commander.cpp mlxcfg_generic_commander.h mlxcfg_generic_commander.cpp\
+			 mlxcfg_param_lib.h mlxcfg_param_lib.cpp mlxcfg_4thgen_commander.h mlxcfg_4thgen_commander.cpp
 
 #get mst device examples and tool name from makefile
 AM_CXXFLAGS += -DMLXCFG_NAME=\"mstconfig\"

@@ -30,6 +30,13 @@
  * SOFTWARE.
  */
 
+/*
+ * mflash_inband.h
+ *
+ *  Created on: Jul 6, 2011
+ *      Author: mohammad
+ */
+
 #ifndef MFLASH_ACCESS_LAYER_H_
 #define MFLASH_ACCESS_LAYER_H_
 
@@ -45,6 +52,12 @@ int sx_block_write_by_type(mflash* mfl, u_int32_t addr, u_int32_t size, u_int8_t
 int sx_flash_lock_by_type(mflash* mfl, int lock_state);
 int sx_erase_sect_by_type(mflash* mfl, u_int32_t addr, u_int32_t erase_size);
 int mf_update_boot_addr_by_type(mflash* mfl, u_int32_t boot_addr);
+int     sx_set_quad_en (mflash *mfl, u_int8_t quad_en);
+int     sx_get_quad_en (mflash *mfl, u_int8_t *quad_en);
+int     sx_set_write_protect(mflash *mfl, u_int8_t bank_num, write_protect_info_t *protect_info);
+int     sx_get_write_protect(mflash *mfl, u_int8_t bank_num, write_protect_info_t *protect_info);
+int     sx_set_dummy_cycles (mflash *mfl, u_int8_t num_of_cycles);
+int     sx_get_dummy_cycles (mflash *mfl, u_int8_t *num_of_cycles);
 
 
 #endif /* MFLASH_ACCESS_LAYER_H_ */

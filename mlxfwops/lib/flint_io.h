@@ -171,6 +171,16 @@ protected:
         return result;
     }
 
+    bool readWriteCommCheck(u_int32_t addr, int len) {
+        if (addr & 0x3) {
+            return errmsg("Address should be 4-bytes aligned.");
+        }
+        if (len & 0x3) {
+            return errmsg("Length should be 4-bytes aligned.");
+        }
+        return true;
+    }
+
     bool       _is_image_in_odd_chunks;
     u_int32_t  _log2_chunk_size;
     Crc16      _image_crc;
@@ -189,7 +199,7 @@ public:
     FImage() :
     FBase(false),
     _fname(0),
-    _buf(0),
+    _buf(),
     _isFile(false),
     _len(0) {}
     virtual ~FImage() { close();}
@@ -202,14 +212,20 @@ public:
     virtual void close();
     virtual bool read(u_int32_t addr, u_int32_t *data);
     virtual bool read(u_int32_t addr, void *data, int len, bool verbose=false, const char* message= "");
+    virtual bool write(u_int32_t addr, void* data, int cnt);
+
 
     virtual u_int32_t get_sector_size();
     virtual u_int32_t get_size()     { return  getBufLength();}
     virtual u_int32_t get_dev_id()   { return  0;}
     virtual u_int32_t get_rev_id()   { return  0;}
 private:
+    bool readFileGetBuffer(std::vector<u_int8_t>& dataBuf);
+    bool writeEntireFile(std::vector<u_int8_t>& fileContent);
+    bool getFileSize(int& fileSize);
+
     const char*     _fname;
-    u_int32_t *_buf;
+    std::vector<u_int8_t> _buf;
     bool      _isFile;
     u_int32_t _len;
 };

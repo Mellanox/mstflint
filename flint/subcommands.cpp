@@ -312,6 +312,9 @@ int SubCommand::burnCbFs2Func(int completion)
 {
     char* message = (char*)"Burning FS2 FW image without signatures - ";
     char* endStr =  (char*)"Restoring signature                     - OK";
+    if (completion == 102) {
+        endStr = (char*)"Image was successfully cached by driver.";
+    }
     return CbCommon(completion, message, endStr);
 }
 
@@ -1175,6 +1178,7 @@ void BurnSubCommand::updateBurnParams()
     _burnParams.useImageGuids = _flintParams.use_image_guids;
     _burnParams.singleImageBurn = !_flintParams.dual_image;
     _burnParams.noDevidCheck = _flintParams.no_devid_check;
+    _burnParams.skipCiReq = _flintParams.skip_ci_req;
     _burnParams.useImgDevData = _flintParams.ignore_dev_data;
     if (_burnParams.userGuidsSpecified) {
         _burnParams.userUids = _flintParams.user_guids;
@@ -1415,6 +1419,9 @@ FlintStatus BurnSubCommand::burnFs2()
     }
     PRINT_PROGRESS(_burnParams.progressFunc, 101);
     write_result_to_log(FLINT_SUCCESS, "", _flintParams.log_specified);
+    if (_burnParams.burnStatus.imageCachedSuccessfully) {
+        PRINT_PROGRESS(_burnParams.progressFunc, 102);
+    }
     return FLINT_SUCCESS;
 }
 

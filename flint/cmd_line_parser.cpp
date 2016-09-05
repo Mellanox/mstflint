@@ -185,6 +185,7 @@ FlagMetaData::FlagMetaData() {
     _flags.push_back(new Flag("", "no_devid_check", 0));
     _flags.push_back(new Flag("", "use_fw", 0));
     _flags.push_back(new Flag("", "use_dev_img_info", 0));
+    _flags.push_back(new Flag("", "skip_ci_req", 0));
 }
 
 FlagMetaData::~FlagMetaData() {
@@ -613,6 +614,11 @@ void Flint::initCmdParser() {
                 "",
                 "ignore device_id checks", true);
 
+    AddOptions("skip_ci_req",
+               ' ',
+                "",
+                "skip sending cache image request to driver(windows)", true);
+
     AddOptions("ocr",
                ' ',
                 "",
@@ -694,6 +700,9 @@ ParseStatus Flint::HandleOption(string name, string value)
     }
     else if (name == "no_devid_check") {
             _flintParams.no_devid_check = true;
+    }
+    else if (name == "skip_ci_req") {
+            _flintParams.skip_ci_req = true;
     }
     else if (name == "guid") {
         _flintParams.guid_specified = true;

@@ -36,6 +36,7 @@
  *  Version: $Id: $
  *
  */
+
 #ifndef MFLASH_H
 #define MFLASH_H
 
@@ -63,18 +64,6 @@ typedef enum MfCommandSet {
     MCS_STSPI  = 0x80,  // This is not a "real" CFI command set - it's used as a "Meta" command set number.
     MCS_SSTSPI = 0x81
 } MfCommandSet;
-
-typedef struct flash_params {
-    const char *type_name;
-    int log2size;
-    int num_of_flashes;
-} flash_params_t;
-
-typedef struct write_protect_info {
-    u_int8_t is_subsector;
-    u_int8_t is_bottom;
-    u_int8_t sectors_num;
-} write_protect_info_t;
 
 /////////////////////////////////////////////
 //

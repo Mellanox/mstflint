@@ -14,12 +14,12 @@
  *      - Redistributions of source code must retain the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer.
- * 
+ *
  *      - Redistributions in binary form must reproduce the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer in the documentation and/or other materials
  *        provided with the distribution.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -28,6 +28,7 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
 
 #ifndef packet_common_H
@@ -120,6 +121,8 @@
 #define BE32_TO_CPU(x)  ntohl(x)
 #define CPU_TO_BE16(x)  htons(x)
 #define BE16_TO_CPU(x)  ntohs(x)
+#define CPU_TO_LE32(x)  __cpu_to_le32(x)
+#define LE32_TO_CPU(x)  __le32_to_cpu(x)
 #ifdef _LITTLE_ENDIANESS
     #define CPU_TO_BE64(x) (((u_int64_t)htonl((u_int32_t)((x) & 0xffffffff)) << 32) | \
                             ((u_int64_t)htonl((u_int32_t)((x >> 32) & 0xffffffff))))
@@ -189,8 +192,8 @@ void push_to_buff_32(u_int8_t *buff, u_int32_t bit_offset, u_int32_t field_value
 void push_to_buff(u_int8_t *buff, u_int32_t bit_offset, u_int32_t field_size, u_int32_t field_value);
 u_int64_t pop_from_buff_64(u_int8_t *buff, u_int32_t bit_offset);
 u_int32_t pop_from_buff_32(u_int8_t *buff, u_int32_t bit_offset);
-u_int32_t pop_from_buff(u_int8_t *buff, u_int32_t bit_offset, u_int32_t field_size);
-
+u_int32_t pop_from_buff(const u_int8_t *buff, u_int32_t bit_offset, u_int32_t field_size);
+u_int32_t calc_array_field_offset(u_int32_t start_bit_offset, u_int32_t arr_elemnt_size, int arr_idx, u_int32_t parent_node_size, int is_big_endian_arr);
 #endif          /* def packet_common_H */
 
 
