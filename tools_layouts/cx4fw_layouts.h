@@ -31,9 +31,9 @@
  */
 
 /***
- *** This file was generated at "2015-04-20 13:45:40"
+ *** This file was generated at "2016-06-02 22:38:18"
  *** by:
- ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/connectx4/connectx4.adb --file-prefix cx4fw --prefix cx4fw_
+ ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/cx4fw/cx4fw.adb --file-prefix cx4fw --prefix cx4fw_
  ***/
 #ifndef CX4FW_LAYOUTS_H
 #define CX4FW_LAYOUTS_H
@@ -44,19 +44,6 @@ extern "C" {
 #endif
 
 #include "adb_to_c_utils.h"/* Description -   */
-/* Size in bytes - 8 */
-struct cx4fw_uint64 {
-/*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description -  */
-	/* 0.0 - 4.31 */
-	 u_int32_t hi;
-/*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description -  */
-	/* 4.0 - 8.31 */
-	 u_int32_t lo;
-};
-
-/* Description -   */
 /* Size in bytes - 16 */
 struct cx4fw_uid_entry {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
@@ -185,13 +172,6 @@ union cx4fw_cx4fw_Nodes {
 
 
 /*================= PACK/UNPACK/PRINT FUNCTIONS ======================*/
-/* uint64 */
-void cx4fw_uint64_pack(const struct cx4fw_uint64 *ptr_struct, u_int8_t* ptr_buff);
-void cx4fw_uint64_unpack(struct cx4fw_uint64 *ptr_struct, const u_int8_t* ptr_buff);
-void cx4fw_uint64_print(const struct cx4fw_uint64 *ptr_struct, FILE* file, int indent_level);
-int cx4fw_uint64_size(void);
-#define CX4FW_UINT64_SIZE    (0x8)
-void cx4fw_uint64_dump(const struct cx4fw_uint64 *ptr_struct, FILE* file);
 /* uid_entry */
 void cx4fw_uid_entry_pack(const struct cx4fw_uid_entry *ptr_struct, u_int8_t* ptr_buff);
 void cx4fw_uid_entry_unpack(struct cx4fw_uid_entry *ptr_struct, const u_int8_t* ptr_buff);

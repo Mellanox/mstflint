@@ -111,6 +111,7 @@ protected:
     #define FS3_FW_SIGNATURE_SIZE 0x10
     #define MAX_TOCS_NUM         64
     #define MFG_INFO "MFG_INFO"
+    #define DEV_INFO "DEV_INFO"
     #define UNKNOWN_SECTION "UNKNOWN"
 
     virtual bool FsBurnAux(FwOperations *imageOps, ExtBurnParams& burnParams);

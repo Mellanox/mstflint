@@ -28,8 +28,16 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
+ * End of legal section ......................................................
+ *
+ *  toos_dev_types.h - Defines an enum value for all mellanox chips in order to
+ *                     have a uniform IDs for all toos.
+ *
+ *  Version: $Id$
+ *
+ *  Author: Wasim Abo Moch (wasim@mellanox.co.il)
  */
-
 
 #ifndef TOOLS_DEV_TYPE_H
 #define TOOLS_DEV_TYPE_H
@@ -68,7 +76,7 @@ enum dm_dev_id
     DeviceConnectX4,
     DeviceConnectX4LX,
     DeviceConnectX5,
-    DeviceFPGA,
+    DeviceFPGA,             // UnSupported
     DeviceSwitchIB2,
     DeviceFPGANewton,
     DeviceCable,

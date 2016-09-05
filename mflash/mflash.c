@@ -351,6 +351,18 @@ int cntx_spi_write_status_reg(mflash* mfl, u_int32_t status_reg, u_int8_t write_
 
 int spi_get_num_of_flashes(int prev_num_of_flashes);
 
+int mf_get_write_protect_direct_access(mflash *mfl, u_int8_t bank_num, write_protect_info_t *protect_info);
+
+int mf_set_write_protect_direct_access(mflash *mfl, u_int8_t bank_num, write_protect_info_t *protect_info);
+
+int mf_get_quad_en_direct_access(mflash* mfl, u_int8_t *quad_en_p);
+
+int mf_set_quad_en_direct_access(mflash *mfl, u_int8_t quad_en);
+
+int mf_get_dummy_cycles_direct_access(mflash* mfl, u_int8_t *dummy_cycles_p);
+
+int mf_set_dummy_cycles_direct_access(mflash *mfl, u_int8_t num_of_cycles);
+
 #ifndef UEFI_BUILD
 static int trm2mfe_err(trm_sts rc);
 #endif
@@ -829,11 +841,7 @@ int spi_fill_attr_from_params(mflash* mfl, flash_params_t* flash_params, flash_i
     mfl->attr.bank_size      = 1 << flash_params->log2size;
     mfl->attr.size           = mfl->attr.bank_size * flash_params->num_of_flashes;
     mfl->attr.block_write                = 16; // In SPI context, this is the transaction size. Max is 16.
-    // HACK: Use fw_sector size as the sector size only in CX3 family devices for now
-    // TODO: adrianc : this sould be in sx_get_flash_info_by_type()
-    if (HAS_TOOLS_CMDIF(mfl->attr.hw_dev_id)) {
-        flash_info->sector_size = mfl->attr.fw_flash_sector_sz ? mfl->attr.fw_flash_sector_sz : flash_info->sector_size;
-    }
+
     mfl->attr.sector_size = flash_info->sector_size;
     mfl->attr.support_sub_and_sector = flash_info->support_sub_and_sector;
     mfl->attr.command_set   = flash_info->command_set;
@@ -1825,6 +1833,14 @@ int cntx_flash_init_direct_access(mflash* mfl, flash_params_t* flash_params) {
         return MFE_UNSUPPORTED_FLASH_TYPE;
     }
 
+    // flash parameter access methods:
+    mfl->f_get_quad_en = mf_get_quad_en_direct_access;
+    mfl->f_set_quad_en = mf_set_quad_en_direct_access;
+    mfl->f_get_dummy_cycles = mf_get_dummy_cycles_direct_access;
+    mfl->f_set_dummy_cycles = mf_set_dummy_cycles_direct_access;
+    mfl->f_get_write_protect = mf_get_write_protect_direct_access;
+    mfl->f_set_write_protect = mf_set_write_protect_direct_access;
+
     rc = mfl->f_reset(mfl);
 
     return MFE_OK;
@@ -2037,6 +2053,14 @@ int gen4_flash_init_com(mflash* mfl, flash_params_t* flash_params, u_int8_t init
         return MFE_UNSUPPORTED_FLASH_TYPE;
     }
 
+    // flash parameter access methods:
+    mfl->f_get_quad_en = mf_get_quad_en_direct_access;
+    mfl->f_set_quad_en = mf_set_quad_en_direct_access;
+    mfl->f_get_dummy_cycles = mf_get_dummy_cycles_direct_access;
+    mfl->f_set_dummy_cycles = mf_set_dummy_cycles_direct_access;
+    mfl->f_get_write_protect = mf_get_write_protect_direct_access;
+    mfl->f_set_write_protect = mf_set_write_protect_direct_access;
+
     rc = mfl->f_reset(mfl);
 
     return MFE_OK;
@@ -2165,6 +2189,14 @@ int flash_init_inband_access(mflash* mfl, flash_params_t* flash_params)
 
     mfl->supp_sr_mod = 0;
 
+    // flash parameter access methods:
+    mfl->f_get_quad_en = sx_get_quad_en;
+    mfl->f_set_quad_en = sx_set_quad_en;
+    mfl->f_get_dummy_cycles = sx_get_dummy_cycles;
+    mfl->f_set_dummy_cycles = sx_set_dummy_cycles;
+    mfl->f_get_write_protect = sx_get_write_protect;
+    mfl->f_set_write_protect = sx_set_write_protect;
+
     // Get the flash attribute
     rc = st_spi_fill_attr(mfl, flash_params); CHECK_RC(rc);
     update_max_write_size(mfl); CHECK_RC(rc);
@@ -2189,6 +2221,13 @@ int uefi_flash_init(mflash* mfl, flash_params_t* flash_params)
 
     mfl->supp_sr_mod = 0;
 
+    // flash parameter access methods:
+    mfl->f_get_quad_en = sx_get_quad_en;
+    mfl->f_set_quad_en = sx_set_quad_en;
+    mfl->f_get_dummy_cycles = sx_get_dummy_cycles;
+    mfl->f_set_dummy_cycles = sx_set_dummy_cycles;
+    mfl->f_get_write_protect = sx_get_write_protect;
+    mfl->f_set_write_protect = sx_set_write_protect;
     // Get the flash attribute
 
     rc = st_spi_fill_attr(mfl, flash_params);   CHECK_RC(rc);
@@ -2679,8 +2718,8 @@ const char*   mf_err2str (int err_code) {
         return "MFE_CMDIF_BAD_STATUS_ERR";
     case MFE_CMDIF_TIMEOUT_ERR:
         return "MFE_CMDIF_TIMEOUT_ERR";
-    case MFE_CMDIF_GO_BIT_BUSY:
-        return "MFE_CMDIF_GO_BIT_BUSY";
+    case MFE_CMDIF_NOT_READY:
+        return "MFE_CMDIF_NOT_READY";
     case MFE_CMDIF_BAD_OP:
         return "MFE_CMDIF_BAD_OP";
     case MFE_MISSING_KEY:
@@ -2902,7 +2941,7 @@ int mf_get_param_int(mflash* mfl, u_int8_t *param_p, u_int8_t cmd, u_int8_t offs
     return MFE_OK;
 }
 
-int     mf_set_dummy_cycles (mflash *mfl, u_int8_t num_of_cycles)
+int mf_set_dummy_cycles_direct_access(mflash *mfl, u_int8_t num_of_cycles)
 {
 	if (!mfl || num_of_cycles < 1 || num_of_cycles > 15) {
         return MFE_BAD_PARAMS;
@@ -2917,7 +2956,7 @@ int     mf_set_dummy_cycles (mflash *mfl, u_int8_t num_of_cycles)
     return MFE_OK;
 }
 
-int mf_get_dummy_cycles(mflash* mfl, u_int8_t *dummy_cycles_p)
+int mf_get_dummy_cycles_direct_access(mflash* mfl, u_int8_t *dummy_cycles_p)
 {
 	if (!mfl || !dummy_cycles_p) {
         return MFE_BAD_PARAMS;
@@ -2929,9 +2968,7 @@ int mf_get_dummy_cycles(mflash* mfl, u_int8_t *dummy_cycles_p)
     return MFE_OK;
 }
 
-
-
-int     mf_set_quad_en (mflash *mfl, u_int8_t quad_en)
+int mf_set_quad_en_direct_access(mflash *mfl, u_int8_t quad_en)
 {
 	if (!mfl) {
 		return MFE_BAD_PARAMS;
@@ -2950,7 +2987,7 @@ int     mf_set_quad_en (mflash *mfl, u_int8_t quad_en)
     return MFE_OK;
 }
 
-int mf_get_quad_en(mflash* mfl, u_int8_t *quad_en_p)
+int mf_get_quad_en_direct_access(mflash* mfl, u_int8_t *quad_en_p)
 {
 	if (!mfl || !quad_en_p) {
 		return MFE_BAD_PARAMS;
@@ -2973,18 +3010,7 @@ int mf_get_quad_en(mflash* mfl, u_int8_t *quad_en_p)
 #define REG1_BP_SIZE   3
 #define ONE_BIT_SIZE   1
 
-#define WRITE_PROTECT_CHECKS(mfl, bank_num) { \
-	    if (!mfl->attr.write_protect_support) {\
-	        return MFE_NOT_SUPPORTED_OPERATION;\
-	    }\
-	    if (bank_num >= mfl->attr.banks_num) {\
-	        return MFE_FLASH_NOT_EXIST;\
-	    }\
-}
-#define MAX_SUBSECTOR_NUM 8
-#define MAX_SECTORS_NUM   64
-
-int     mf_set_write_protect(mflash *mfl, u_int8_t bank_num, write_protect_info_t *protect_info)
+int mf_set_write_protect_direct_access(mflash *mfl, u_int8_t bank_num, write_protect_info_t *protect_info)
 {
     u_int8_t protect_mask = 0, log2_sect_num = 0;
     u_int8_t sectors_num =  protect_info->sectors_num;
@@ -2999,6 +3025,9 @@ int     mf_set_write_protect(mflash *mfl, u_int8_t bank_num, write_protect_info_
     if (protect_info->sectors_num > MAX_SECTORS_NUM) {
         return MFE_EXCEED_SECTORS_MAX_NUM;
     }
+    if (protect_info->is_subsector && !mfl->attr.protect_sub_and_sector) {
+        return MFE_NOT_SUPPORTED_OPERATION;
+    }
 
     if (mfl->attr.protect_sub_and_sector && protect_info->is_subsector) {
         if (protect_info->sectors_num > MAX_SUBSECTOR_NUM) {
@@ -3011,8 +3040,8 @@ int     mf_set_write_protect(mflash *mfl, u_int8_t bank_num, write_protect_info_
             break;
         }
         sectors_num >>= 1;
-        // printf("-D- sectors_num = %d\n", sectors_num);
     }
+    // adrianc: at this point log2_sect_num is actually  bigger by 1(if sectors_num!=0) to fit the BP bit values in the flash spec
     u_int8_t modify_size = 0;
 
     protect_mask = MERGE(protect_mask, log2_sect_num, 0, REG1_BP_SIZE);
@@ -3027,7 +3056,7 @@ int     mf_set_write_protect(mflash *mfl, u_int8_t bank_num, write_protect_info_
     return mf_read_modify_status_winbond(mfl, bank_num, 1, protect_mask, REG1_BP_OFFSET, modify_size);
 }
 
-int     mf_get_write_protect(mflash *mfl, u_int8_t bank_num, write_protect_info_t *protect_info)
+int mf_get_write_protect_direct_access(mflash *mfl, u_int8_t bank_num, write_protect_info_t *protect_info)
 {
     int rc;
     u_int8_t status;
@@ -3090,5 +3119,35 @@ int mf_disable_hw_access(mflash* mfl)
 mfile* mf_get_mfile(mflash* mfl)
 {
     return mfl->mf;
+}
+
+int mf_set_quad_en (mflash *mfl, u_int8_t quad_en)
+{
+    return mfl->f_set_quad_en(mfl, quad_en);
+}
+
+int mf_get_quad_en (mflash *mfl, u_int8_t *quad_en)
+{
+    return mfl->f_get_quad_en(mfl, quad_en);
+}
+
+int mf_set_write_protect(mflash *mfl, u_int8_t bank_num, write_protect_info_t *protect_info)
+{
+    return mfl->f_set_write_protect(mfl, bank_num, protect_info);
+}
+
+int mf_get_write_protect(mflash *mfl, u_int8_t bank_num, write_protect_info_t *protect_info)
+{
+    return mfl->f_get_write_protect(mfl, bank_num, protect_info);
+}
+
+int mf_set_dummy_cycles (mflash *mfl, u_int8_t num_of_cycles)
+{
+    return mfl->f_set_dummy_cycles(mfl, num_of_cycles);
+}
+
+int mf_get_dummy_cycles (mflash *mfl, u_int8_t *num_of_cycles)
+{
+    return mfl->f_get_dummy_cycles(mfl, num_of_cycles);
 }
 

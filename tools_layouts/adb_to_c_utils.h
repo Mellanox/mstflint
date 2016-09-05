@@ -31,10 +31,10 @@
  */
 
 /***
- *** This file was generated at "2016-04-22 14:35:59"
- *** by:
- ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/tools_open/tools_open.adb --file-prefix tools_open --prefix tools_open_
- ***/
+         *** This file was generated at "2016-09-24 01:49:33"
+         *** by:
+         ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/register_access/register_access_sib.adb --file-prefix register_access_sib --prefix register_access_sib_
+         ***/
 
 #ifndef ADABE_TO_C_UTILS
 #define ADABE_TO_C_UTILS
@@ -172,9 +172,9 @@ extern "C" {
 #if defined(ARCH_x86) || defined(ARCH_ppc) || defined(UEFI_BUILD)
 #   if defined(__MINGW32__) || defined(__MINGW64__)
 #       include <inttypes.h>
-#       define U64D_FMT    "0x%"PRId64
-#       define U64H_FMT    "0x%"PRIx64
-#       define U48H_FMT    "0x%"PRIx64
+#       define U64D_FMT    "0x%" PRId64
+#       define U64H_FMT    "0x%" PRIx64
+#       define U48H_FMT    "0x%" PRIx64
 #   else
 #       define U64D_FMT    "%llu"
 #       define U64H_FMT    "0x%016llx"

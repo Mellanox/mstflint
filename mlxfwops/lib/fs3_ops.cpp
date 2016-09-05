@@ -973,17 +973,8 @@ bool Fs3Operations::FsBurnAux(FwOperations *imgops, ExtBurnParams& burnParams)
     if (burnParams.burnFailsafe) {
         // Check image and device chunk sizes are Ok
         if (_fwImgInfo.cntxLog2ChunkSize != imageOps._fwImgInfo.cntxLog2ChunkSize) {
-            //TODO: remove both cond before release
-            if (_ioAccess->get_size() < 0x1000000) {
-                return errmsg(MLXFW_DEVICE_IMAGE_MISSMATCH_ERR, "Image intended for 16MB Flash. please replace your HCA or perform rework before updating.");
-            }
-            // if (imageOps._fwImgInfo.cntxLog2ChunkSize == 0x16 ) {
-                return errmsg(MLXFW_FS_INFO_MISSMATCH_ERR, "Device and Image chunk sizes differ\n"
-                              "    Internal users: in order to fix, please run:  mlxfwup -d %s -f %d.%04d.%04d --fix_cx4_image\n"
-                              "    External users: contact Mellanox support team.", _devName, imageOps._fwImgInfo.ext_info.fw_ver[0],
-                              imageOps._fwImgInfo.ext_info.fw_ver[1], imageOps._fwImgInfo.ext_info.fw_ver[2]); 
-            //}
-            // return errmsg("Device and Image chunk sizes differ, use non failsafe burn flow.");
+            return errmsg("Device and Image partition size differ(0x%x/0x%x), use non failsafe burn flow.",
+                    _fwImgInfo.cntxLog2ChunkSize, imageOps._fwImgInfo.cntxLog2ChunkSize);
         }
 
         // Check if the burnt FW version is OK

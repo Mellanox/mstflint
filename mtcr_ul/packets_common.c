@@ -14,12 +14,12 @@
  *      - Redistributions of source code must retain the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer.
- * 
+ *
  *      - Redistributions in binary form must reproduce the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer in the documentation and/or other materials
  *        provided with the distribution.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -28,6 +28,7 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
 
 #include "packets_common.h"
@@ -109,7 +110,7 @@ u_int32_t pop_from_buff_32(u_int8_t *buff, u_int32_t bit_offset)
 /************************************/
 //the next function will pop the field into the buffer by removing it's MSB bits first
 //and therefore by doing it we save the BE_TO_CPU operation
-u_int32_t pop_from_buff(u_int8_t *buff, u_int32_t bit_offset, u_int32_t field_size)
+u_int32_t pop_from_buff(const u_int8_t *buff, u_int32_t bit_offset, u_int32_t field_size)
 {
     u_int32_t i 		= 0;
     u_int32_t byte_n	= bit_offset / 8;
@@ -127,6 +128,39 @@ u_int32_t pop_from_buff(u_int8_t *buff, u_int32_t bit_offset, u_int32_t field_si
         byte_n++;
     }
     return field_32;
+}
+
+/************************************
+ * Function: calc_array_field_address
+ * Calculates array fields offset address
+ ************************************/
+u_int32_t calc_array_field_offset(u_int32_t start_bit_offset,
+                                u_int32_t arr_elemnt_size,
+                                int arr_idx, u_int32_t parent_node_size,
+                                int is_big_endian_arr)
+{
+    u_int32_t offs;
+
+    if (arr_elemnt_size > 32) {
+        if(arr_elemnt_size % 32) {
+            fprintf(stderr, "\n-W- Array field size is not 32 bit aligned.\n");
+        }
+        start_bit_offset += arr_elemnt_size*(u_int32_t)arr_idx;
+        return start_bit_offset;
+    }
+
+    if (is_big_endian_arr) {
+        u_int32_t dword_delta;
+        offs = start_bit_offset - arr_elemnt_size*(u_int32_t)arr_idx;
+        dword_delta = (((start_bit_offset >> 5) << 2) - ((offs >> 5) <<2 )) / 4;
+        if (dword_delta) {
+            offs += 64*dword_delta;
+        }
+    } else {
+        offs = start_bit_offset + arr_elemnt_size*(u_int32_t)arr_idx;
+    }
+
+    return PCK_MIN(32, parent_node_size) - (offs%32) - arr_elemnt_size + ((offs >> 5) << 5);
 }
 
 

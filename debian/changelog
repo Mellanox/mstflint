@@ -1,3 +1,12 @@
+mstflint (4.5.0-1) unstable; urgency=low
+
+  * Updated from MFT-4.5.0
+  * Notice: as of mstflint-4.6.0 the scrip, hca_ofed_self_test.ofed will no longer be a part of mstflint,
+                 Instead it will be a part of Mellanox OFED package.
+
+ -- Adrian Chiris <adrianc@unknown>  Mon, 05 Sep 2016 15:31:33 +0200
+ 
+
 mstflint (4.4.0-1) unstable; urgency=low
 
   * Updated from MFT-4.4.0

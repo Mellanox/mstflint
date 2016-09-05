@@ -157,21 +157,11 @@ public:
         bool GetExpRomVersion();
     };
 
-    // virtual bool FwBurn(FwOperations &FwImageAccess);
-    /*
-    FwAcessRom();
-    FwReadImage();
-    FwSwReset();
-    FwDumpConf();
-    FwSetGuid();
-    FwSetVsd();
-    FwHwAccessChangeMode();
-    FwHwaccessSetKey();
-    FwGetHwInfo();
-    FwSetHWParam();
-    FwQueryROM();
-    FwClearSemaphore();
-*/
+    class ExtBurnStatus {
+    public:
+        bool imageCachedSuccessfully;
+        ExtBurnStatus() : imageCachedSuccessfully(false) {}
+    };
     class ExtBurnParams {
 
     public:
@@ -192,6 +182,7 @@ public:
         bool useImageGuids;
         bool singleImageBurn;
         bool noDevidCheck;
+        bool skipCiReq; // FS2 image only - skip sending cache image request to driver at the end of the burn
         bool ignoreVersionCheck;
         bool useImgDevData; // FS3 image only - take device data sections from image (valid only if burnFailsafe== false)
         bool useDevImgInfo; // FS3 image only - preserve select fields of image_info section on the device when burning.
@@ -202,12 +193,12 @@ public:
         //data
         char* userVsd;
         std::vector<guid_t> userUids; //contains eiter guids or uids
-
+        ExtBurnStatus burnStatus;
 
         ExtBurnParams():userGuidsSpecified(false), userMacsSpecified(false), userUidSpecified(false),
                         vsdSpecified(false),blankGuids(false), burnFailsafe(true), allowPsidChange(false),
                         useImagePs(false), useImageGuids(false), singleImageBurn(true), noDevidCheck(false),
-                        ignoreVersionCheck(false), useImgDevData(false), useDevImgInfo(false),
+                        skipCiReq(false), ignoreVersionCheck(false), useImgDevData(false), useDevImgInfo(false),
                         burnRomOptions(BRO_DEFAULT), progressFunc((ProgressCallBack)NULL),
                         userVsd((char*)NULL){}
         };
@@ -298,6 +289,7 @@ protected:
         FS_FS2_GEN,
         FS_FS3_GEN,
         FS_FS4_GEN,
+        FS_FC1_GEN,
         FS_UNKNOWN_IMG
     };
 
@@ -360,9 +352,7 @@ protected:
     bool getInfoFromHwDevid(u_int32_t hwDevId, chip_type_t& chipT, const u_int32_t** swIds);
     HwDevData getInfoFromChipType(chip_type_t chipT) const;
 
-    bool ReadImageFile(const char *fimage, u_int8_t *&file_data, int &file_size, int min_size=-1); // min_size=-1 like int flint_ops needed for fs3updateSection
-    bool ModifyImageFile(const char *fimage, u_int32_t addr, void *data, int cnt);
-    bool WriteImageToFile(const char *file_name, u_int8_t *data, u_int32_t length);
+    bool ReadImageFile(const char *fimage, u_int8_t *&file_data, int &file_size);
     bool FwBurnData(u_int32_t *data, u_int32_t dataSize, ProgressCallBack progressFunc);
     static bool FwAccessCreate(fw_ops_params_t& fwParams, FBase **ioAccessP);
     bool CheckBinVersion(u_int8_t binVerMajor, u_int8_t binVerMinor);
@@ -403,6 +393,7 @@ private:
     static u_int8_t CheckFwFormat(FBase& f, bool getFwFormatFromImg = false);
     static u_int8_t IsFS4Image(FBase& f, u_int32_t* found_images);
     static u_int8_t IsFS3OrFS2Image(FBase& f, u_int32_t* found_images);
+    static u_int8_t IsCableImage(FBase& f);
     static bool     FindMagicPattern  (FBase* ioAccess, u_int32_t addr,
             u_int32_t const cntx_magic_pattern[]);
 

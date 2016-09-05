@@ -133,6 +133,7 @@ public:
     vector<string> cmd_params;
     string fullCmd;
     bool use_dev_img_info;
+    bool skip_ci_req;
 };
 
 #endif

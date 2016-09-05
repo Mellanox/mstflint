@@ -899,14 +899,11 @@ bool Fs2Operations::UpdateFullImageCRC(u_int32_t* buff, u_int32_t size, bool bla
     return true;
 }
 #define ERASE_MESSAGE "    Please erase them by using the command: \"" MLXCONFIG_CMD " " ERASE_CMD "\" and then re-burn"
-//TODO: remove pre_message from function def
+
 bool Fs2Operations::Fs2FailSafeBurn(Fs2Operations &imageOps,
-                                  bool      allow_nofs,
-                                  const char* pre_message,
-                                  ProgressCallBack progressFunc) {
-    //we do not use pre_message, avoid warrning
-	//TODO: remove pre_message from function definition
-    (void)pre_message;
+                                                                   ExtBurnParams& burnParams) {
+    bool allow_nofs = !burnParams.burnFailsafe;
+    ProgressCallBack progressFunc = burnParams.progressFunc;
 
     Flash  *f = (Flash*)(this->_ioAccess);
     FImage *fim = (FImage*)(imageOps._ioAccess);
@@ -1017,11 +1014,26 @@ bool Fs2Operations::Fs2FailSafeBurn(Fs2Operations &imageOps,
     if (boot_address_was_updated == false) {
         report_warn("Failed to update FW boot address. Power cycle the device in order to load the new FW.\n");
     }
-
     // on windows send caching command to driver (best effort)
 #ifdef __WIN__
-    mf_release_semaphore(((Flash*)_ioAccess)->getMflashObj());
-    wdcif_send_image_cache_request(((Flash*)_ioAccess)->getMfileObj());
+    if (!burnParams.skipCiReq) {
+        int rc;
+        mf_release_semaphore(((Flash*)_ioAccess)->getMflashObj());
+        rc = wdcif_send_image_cache_request(((Flash*)_ioAccess)->getMfileObj());
+        switch (rc) {
+        case WDCIF_STATUS_SUCCESS :
+            burnParams.burnStatus.imageCachedSuccessfully=true;
+            break;
+        case WDCIF_STATUS_OPERATION_NOT_SUPPORTED_BY_DRIVER :
+        case WDCIF_STATUS_OPERATION_NOT_SUPPORTED_BY_DEVICE :
+        case WDCIF_STATUS_UNSUPPORTED_DEVICE :
+        case WDCIF_STATUS_UNSUPPORTED_ACCESS_TYPE :
+        case WDCIF_STATUS_FAILED_TO_RETRIEVE_DRIVER_HANDLE :
+            break;
+        default:
+            report_warn("Failed to Issue cache request to driver. next driver load may take more time.\n");
+        }
+    }
 #endif
     return true;
 }
@@ -1454,7 +1466,7 @@ bool Fs2Operations::Fs2Burn(Fs2Operations &imageOps, ExtBurnParams& burnParams)
             return false;
         }
     }
-    return Fs2FailSafeBurn(imageOps, !burnParams.burnFailsafe, "", burnParams.progressFunc);
+    return Fs2FailSafeBurn(imageOps, burnParams);
 }
 
 bool Fs2Operations::Fs2IsMacAvailable()
@@ -1566,6 +1578,10 @@ bool Fs2Operations::ModifyVSDSection(const char *vsd, ProgressCallBack callBackF
 
 bool Fs2Operations::ReburnNewImage(u_int8_t *data, const char *feature_name, ProgressCallBack callBackFunc)
 {
+    ExtBurnParams burnParams;
+    burnParams.progressFunc = callBackFunc;
+    burnParams.burnFailsafe = false;
+
     u_int32_t length        = _fwImgInfo.lastImageAddr;
     //char burn_str[100];
     bool is_image = (_fname != NULL);
@@ -1582,7 +1598,7 @@ bool Fs2Operations::ReburnNewImage(u_int8_t *data, const char *feature_name, Pro
     }
     if (!is_image) {
         // Modify the flash
-        if (!Fs2FailSafeBurn(*((Fs2Operations*)newOps), true, (const char*)NULL, callBackFunc)) {
+        if (!Fs2FailSafeBurn(*((Fs2Operations*)newOps), burnParams)) {
             return false;
         }
     } else {
@@ -1598,7 +1614,7 @@ bool Fs2Operations::ReburnNewImage(u_int8_t *data, const char *feature_name, Pro
         packStripedImageData(striped_data, data, length, striped_length, needs_repack, _fwImgInfo.cntxLog2ChunkSize);
 
         // Re-write the image to the file.
-        if (!WriteImageToFile(_fname, striped_data, striped_length)) {
+        if (!((FImage*)_ioAccess)->write(0, striped_data, striped_length)) {
             delete[] striped_data;
             return false;
        }
@@ -1794,6 +1810,10 @@ bool Fs2Operations::FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc,
 
 bool Fs2Operations::FwBurnRom(FImage* romImg, bool ignoreProdIdCheck, bool ignoreDevidCheck, ProgressCallBack progressFunc)
 {
+    ExtBurnParams burnParams;
+    burnParams.progressFunc = progressFunc;
+    burnParams.burnFailsafe = false;
+
     // we dont support adding rom to an image just yet
     if (!_ioAccess->is_flash()) {
         return errmsg("Burn ROM not supported for FS2 image.");
@@ -1804,7 +1824,7 @@ bool Fs2Operations::FwBurnRom(FImage* romImg, bool ignoreProdIdCheck, bool ignor
     u_int32_t cntx_image_num;
     FindAllImageStart(romImg, cntx_image_start, &cntx_image_num, _cntx_magic_pattern);
     if (cntx_image_num != 0) {
-        return errmsg("Expecting an expansion ROM image, Received Mellanox FW image.");
+        return errmsg("Expecting an expansion ROM image, Recieved Mellanox FW image.");
     }
 
     if (!Fs2IntQuery()) {
@@ -1868,7 +1888,7 @@ bool Fs2Operations::FwBurnRom(FImage* romImg, bool ignoreProdIdCheck, bool ignor
         return false;
     }
 
-    bool rc = Fs2FailSafeBurn(*((Fs2Operations*)newOps), true, "Burning ROM image", progressFunc);
+    bool rc = Fs2FailSafeBurn(*((Fs2Operations*)newOps), burnParams);
     newOps->FwCleanUp();
     delete newOps;
     return rc;
@@ -1876,6 +1896,10 @@ bool Fs2Operations::FwBurnRom(FImage* romImg, bool ignoreProdIdCheck, bool ignor
 
 bool Fs2Operations::FwDeleteRom(bool ignoreProdIdCheck, ProgressCallBack progressFunc)
 {
+    ExtBurnParams burnParams;
+    burnParams.progressFunc = progressFunc;
+    burnParams.burnFailsafe = false;
+
     // we dont support delete rom in FS2 image yet
     if (!_ioAccess->is_flash()) {
         return errmsg("Delete ROM not supported for FS2 image.");
@@ -1929,7 +1953,7 @@ bool Fs2Operations::FwDeleteRom(bool ignoreProdIdCheck, ProgressCallBack progres
         delete newOps;
         return false;
     }
-    bool rc = Fs2FailSafeBurn(*((Fs2Operations*)newOps), true, "Removing ROM image", progressFunc);
+    bool rc = Fs2FailSafeBurn(*((Fs2Operations*)newOps), burnParams);
     newOps->FwCleanUp();
     delete newOps;
     return rc;
