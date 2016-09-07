@@ -35,15 +35,26 @@ if test "$enable_dc" = "yes"; then
 fi
 
 # XML2
-if test ! -f /usr/include/libxml2/libxml/xpath.h; then
-    AC_MSG_NOTICE([checking for libxml2... no])
-    AC_MSG_ERROR([libxml2: xpath.h is not found in the system PATH. make sure libxml2 headres are installed.])
-else
-    AC_MSG_NOTICE([checking for libxml2... yes])
-    XML2_INC_DIR=/usr/include/libxml2/
+AC_MSG_CHECKING(--enable-xml2 argument)
+AC_ARG_ENABLE(xml2,
+            [  --enable-xml2           Enable mstflint libxml2 dependant features],
+            [enable_xml2="yes"],
+            [enable_xml2="no"])
+AC_MSG_RESULT($enable_xml2)
+if test "x$enable_xml2" = "xyes"; then
+    # XML2 checks
+    if test ! -f /usr/include/libxml2/libxml/xpath.h; then
+        AC_MSG_NOTICE([checking for libxml2... no])
+        AC_MSG_ERROR([libxml2: xpath.h is not found in the system PATH. make sure libxml2 headres are installed.])
+    else
+        AC_MSG_NOTICE([checking for libxml2... yes])
+        XML2_INC_DIR=/usr/include/libxml2/
+    fi
+    AC_CHECK_LIB(xml2, xmlDocDumpFormatMemoryEnc,, AC_MSG_ERROR([cannot find xml2 xmlDocDumpFormatMemoryEnc() function. Try re-installing the library...]))
+    AC_SUBST(XML2_INC_DIR)
 fi
-AC_CHECK_LIB(xml2, xmlDocDumpFormatMemoryEnc,, AC_MSG_ERROR([cannot find xml2 xmlDocDumpFormatMemoryEnc() function. Try re-installing the library...]))
-AC_SUBST(XML2_INC_DIR)
+AM_CONDITIONAL(DISABLE_XML2, [test  "x$enable_xml2" = "xno"])
+AC_SUBST(DISABLE_XML2)
 
 AM_CONDITIONAL(ENABLE_DC, [test  "x$enable_dc" = "xyes"])
 AC_SUBST(ENABLE_DC)
@@ -62,7 +73,7 @@ AM_CONDITIONAL(ENABLE_INBAND, [test  "x$enable_inband" = "xyes"])
 
 AC_MSG_CHECKING(--enable-cs argument)
 AC_ARG_ENABLE(cs,
-            [  --enable-cs          Enable mstflint "checksum" command, dependant of openssl library],
+            [  --enable-cs             Enable mstflint "checksum" command, dependant of openssl library],
             [enable_cs="yes"],
             [enable_cs="no"])
 AC_MSG_RESULT($enable_cs)

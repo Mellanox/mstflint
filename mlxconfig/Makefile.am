@@ -45,14 +45,22 @@ EXT_LIB_DIR = $(USER_DIR)/ext_libs
 SUBDIRS = mlxconfig_dbs
 
 AM_CPPFLAGS = -I. -I$(USER_DIR) -I$(top_srcdir)/include/mtcr_ul -I$(MTCR_DIR) -I$(COMMON_DIR) $(WIN64_INC)\
-           -I $(LAYOUTS_DIR) -I $(UTILS_DIR) -I$(DEV_MGT_DIR) -I$(CMDIF_DIR) -I$(XML2_INC_DIR)
+           -I $(LAYOUTS_DIR) -I $(UTILS_DIR) -I$(DEV_MGT_DIR) -I$(CMDIF_DIR)
+
 
 AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe  -DDATA_PATH=\"$(pkgdatadir)\"
 bin_PROGRAMS = mstconfig
 
-mstconfig_LDADD = $(UTILS_LIB) $(EXT_LIB_DIR)/sqlite/libsqlite3.a $(EXT_LIB_DIR)/muparser/libmuparser.a -lxml2\
+mstconfig_LDADD = $(UTILS_LIB) $(EXT_LIB_DIR)/sqlite/libsqlite3.a $(EXT_LIB_DIR)/muparser/libmuparser.a\
 								$(CMDIF_DIR)/libcmdif.a ../reg_access/libreg_access.a $(LAYOUTS_LIB) $(MTCR_DIR)/libmtcr_ul.a\
 								$(DEV_MGT_DIR)/libdev_mgt.a $(MLNXOS_PPC_LIBS) $(LIBSTD_CPP) -ldl
+
+if DISABLE_XML2
+AM_CXXFLAGS += -DDISABLE_XML2
+else
+AM_CPPFLAGS += -I$(XML2_INC_DIR)
+mstconfig_LDADD += -lxml2
+endif
 
 mstconfig_SOURCES =  mlxcfg_ui.h mlxcfg_parser.cpp mlxcfg_ui.cpp\
 			mlxcfg_status.h mlxcfg_utils.h mlxcfg_utils.cpp mlxcfg_view.h\
