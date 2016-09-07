@@ -33,7 +33,8 @@
 
 AM_CFLAGS = -W -Werror -g -MP -MD ${COMPILER_FPIC} 
 
-lib_LTLIBRARIES = libmuparser.a
+noinst_LIBRARIES = libmuparser.a
+noinst_HEADERS = muParser.h muParserBase.h muParserBytecode.h muParserCallback.h muParserDef.h muParserError.h muParserFixes.h muParserStack.h muParserToken.h muParserTokenReader.h muParserTemplateMagic.h
 
 libmuparser_a_SOURCES = \
 	muParserBase.cpp muParserBytecode.cpp muParserCallback.cpp muParser.cpp muParserError.cpp muParserTokenReader.cpp \

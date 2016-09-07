@@ -48,8 +48,10 @@ using namespace std;
 #include "mlxcfg_tlv.h"
 #include "mlxcfg_status.h"
 
-#include <libxml/parser.h>
-#include <libxml/tree.h>
+#if ! defined(DISABLE_XML2)
+    #include <libxml/parser.h>
+    #include <libxml/tree.h>
+#endif
 
 #define TLVCLASS_OFFSET 24
 #define TLVCLASS_SIZE 8
@@ -723,6 +725,7 @@ void GenericCommander::binTLV2XML(vector<u_int32_t> binTLV, string& xmlTemplate)
 
 void GenericCommander::XML2TLVConf(const string xmlContent, vector<TLVConf*>& tlvs)
 {
+#if ! defined(DISABLE_XML2)
     xmlDocPtr doc;
     xmlNodePtr root, currTlv, currParam;
     xmlChar* portAttr = NULL, *hostAttr = NULL,
@@ -808,6 +811,11 @@ void GenericCommander::XML2TLVConf(const string xmlContent, vector<TLVConf*>& tl
         throw e;
     }
     xmlFreeDoc(doc);
+#else
+    (void) xmlContent;
+    (void) tlvs;
+    throw MlxcfgException("Can not run the command, the tool was not compiled against libxml2");
+#endif
 }
 
 void GenericCommander::XML2Raw(const string xmlContent, string& raw)

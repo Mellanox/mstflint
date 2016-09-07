@@ -31,9 +31,11 @@
 #--
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-AM_CFLAGS = -W -Werror -g -MP -MD -DSQLITE_THREADSAFE=0 ${COMPILER_FPIC} -Wno-error=maybe-uninitialized
+AM_CFLAGS = -W -Werror -g -MP -MD -DSQLITE_THREADSAFE=0 ${COMPILER_FPIC}
 
-lib_LTLIBRARIES = libsqlite3.a
+noinst_LIBRARIES = libsqlite3.a
+noinst_HEADERS = sqlite3.h
+
 
 libsqlite3_a_SOURCES = \
 	sqlite3.c sqlite3.h
