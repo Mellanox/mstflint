@@ -856,7 +856,7 @@ mlxCfgStatus MlxCfg::writeNVOutputFile(string content)
         return err(true, "Failed to open file: %s",
                 _mlxParams.NVOutputFile.c_str());
     }
-    fprintf(file, content.c_str());
+    fprintf(file, "%s", content.c_str());
     fclose(file);
     return MLX_CFG_OK;
 }
@@ -916,7 +916,7 @@ mlxCfgStatus MlxCfg::genXMLTemplate()
                 tlvName += tLine[i];
             } else {
                 while ((tLine[i] == ' ' || tLine[i] == '\t')
-                        && (++i < tLine.size()));
+                        && (++i < tLine.size())) { };
                 if ((i == tLine.size()) ||
                         (tLine[i] != '0' && tLine[i] != '1') ||
                         (i != tLine.size() - 1) ||
