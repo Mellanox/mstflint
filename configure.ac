@@ -15,7 +15,7 @@ AM_INIT_AUTOMAKE
 dnl Checks for programs
 AC_PROG_CC
 AC_PROG_CXX
-AM_PROG_AR
+m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 AC_PROG_LIBTOOL
 AC_CONFIG_HEADERS( config.h )
 

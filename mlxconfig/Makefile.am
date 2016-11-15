@@ -48,7 +48,7 @@ AM_CPPFLAGS = -I. -I$(USER_DIR) -I$(top_srcdir)/include/mtcr_ul -I$(MTCR_DIR) -I
            -I $(LAYOUTS_DIR) -I $(UTILS_DIR) -I$(DEV_MGT_DIR) -I$(CMDIF_DIR)
 
 
-AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe  -DDATA_PATH=\"$(pkgdatadir)\"
+AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe  -Wno-deprecated-declarations -DDATA_PATH=\"$(pkgdatadir)\"
 bin_PROGRAMS = mstconfig
 
 mstconfig_LDADD = $(UTILS_LIB) $(EXT_LIB_DIR)/sqlite/libsqlite3.a $(EXT_LIB_DIR)/muparser/libmuparser.a\

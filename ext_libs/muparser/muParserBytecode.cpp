@@ -210,7 +210,7 @@ namespace mu
       }
       else
       {
-        switch(a_Oprt)
+        switch((int)a_Oprt)
         {
         case  cmPOW:
               // Optimization for polynomials of low order

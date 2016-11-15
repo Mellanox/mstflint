@@ -121,10 +121,10 @@ void MlxCfg::printHelp()
     // print usage examples
     printf("\n");
     printf(IDENT"Examples:\n");
-    printf(IDENT2"%-35s: %s\n", "To query current configuration", MLXCFG_NAME" -d "MST_DEV_EXAMPLE" query");
-    printf(IDENT2"%-35s: %s\n", "To set configuration", MLXCFG_NAME" -d "MST_DEV_EXAMPLE" set SRIOV_EN=1 NUM_OF_VFS=16 WOL_MAGIC_EN_P1=1");
-    printf(IDENT2"%-35s: %s\n", "To set raw configuration", MLXCFG_NAME" -d "MST_DEV_EXAMPLE2" -f conf_file set_raw");
-    printf(IDENT2"%-35s: %s\n", "To reset configuration", MLXCFG_NAME" -d "MST_DEV_EXAMPLE" reset");
+    printf(IDENT2"%-35s: %s\n", "To query current configuration", MLXCFG_NAME " -d " MST_DEV_EXAMPLE " query");
+    printf(IDENT2"%-35s: %s\n", "To set configuration", MLXCFG_NAME " -d " MST_DEV_EXAMPLE " set SRIOV_EN=1 NUM_OF_VFS=16 WOL_MAGIC_EN_P1=1");
+    printf(IDENT2"%-35s: %s\n", "To set raw configuration", MLXCFG_NAME " -d " MST_DEV_EXAMPLE2 " -f conf_file set_raw");
+    printf(IDENT2"%-35s: %s\n", "To reset configuration", MLXCFG_NAME " -d " MST_DEV_EXAMPLE " reset");
     printf("\n");
     printf(IDENT"Supported devices:\n");
     printf(IDENT2"4th Generation devices: ConnectX3, ConnectX3-Pro (FW 2.31.5000 and above).\n");
@@ -316,7 +316,7 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
     }
     // we parsed input until the set/query/reset cmd
     if (i == argc && _mlxParams.cmd == Mc_Set) {
-        return err(true, "missing configuration arguments. For more information please run "MLXCFG_NAME" -h|--help.");
+        return err(true, "missing configuration arguments. For more information please run " MLXCFG_NAME " -h|--help.");
     }
     if (i != argc && (_mlxParams.cmd == Mc_Reset || _mlxParams.cmd == Mc_Query)) {
         return err(true, "%s command expects no argument but %d argument recieved", (_mlxParams.cmd == Mc_Reset) ? "reset" : "query", argc -i);

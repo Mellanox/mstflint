@@ -835,7 +835,7 @@ namespace mu
         Error(ecVAL_EXPECTED, m_pTokenReader->GetPos(), funTok.GetAsString());
     }
 
-    switch(funTok.GetCode())
+    switch((int)funTok.GetCode())
     {
     case  cmFUNC_STR:  
           stArg.push_back(a_stVal.pop());

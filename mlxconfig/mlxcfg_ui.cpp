@@ -839,7 +839,8 @@ mlxCfgStatus MlxCfg::writeNVOutputFile(vector<u_int32_t> content)
                 _mlxParams.NVOutputFile.c_str());
     }
     for (u_int32_t i = 0 ; i < content.size() * 4; i += 4) {
-        fwrite(((u_int8_t*)content.data()) + i ,1 , 4 , file);
+        size_t cnt = fwrite(((u_int8_t*)content.data()) + i ,1 , 4 , file);
+        (void)cnt; // avoid annoying unused return code/ unused variable in certain compilers
         if (ferror(file)) {
             fclose(file);
             return err(true, "Write failed: %s.", strerror(errno));
