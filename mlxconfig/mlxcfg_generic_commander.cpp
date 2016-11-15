@@ -62,8 +62,8 @@ using namespace std;
 #define XML_ROOT "config"
 
 #define XML_DOCUMENT_START  "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"\
-        "<"XML_ROOT" xmlns=\"" XMLNS "\">"
-#define XML_DOCUMENT_END "</"XML_ROOT">"
+        "<" XML_ROOT " xmlns=\"" XMLNS "\">"
+#define XML_DOCUMENT_END "</" XML_ROOT ">"
 #define XML_COMMENT_NODE "comment"
 
 #define IGNORE_IF_EMPTY_NODE(n) \
@@ -841,7 +841,7 @@ void GenericCommander::raw2XML(vector<string> lines, string& xmlTemplate)
     //check fingerprint in first line
     vector<string>::iterator it = lines.begin();
     if (*it != RAW_FILE_FINGERPRINT) {
-        throw MlxcfgException("Raw Content Fingerprint "RAW_FILE_FINGERPRINT" is missing or incorrect");
+        throw MlxcfgException("Raw Content Fingerprint " RAW_FILE_FINGERPRINT " is missing or incorrect");
     }
 
     it++;
@@ -877,7 +877,7 @@ void GenericCommander::raw2XML(vector<string> lines, string& xmlTemplate)
         throw MlxcfgException("No TLV configurations were found in the raw file");
     }
 
-    xmlTemplate += "</"XML_ROOT">";
+    xmlTemplate += "</" XML_ROOT ">";
     //printf("xmlTemplate=\n%s", xmlTemplate.c_str());
 }
 
