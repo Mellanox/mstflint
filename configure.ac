@@ -144,8 +144,8 @@ AS_IF([test "x$enable_dynamic_ld" = "xyes"], [
   LDFLAGS="$LDFLAGS -Wl,--dynamic-linker=/lib64/ld64.so.2"
 ])
 
-CFLAGS="$CFLAGS -Werror -DMST_UL"
-CXXFLAGS="$CXXFLAGS -Werror -DMST_UL"
+CFLAGS="$CFLAGS -DMST_UL"
+CXXFLAGS="$CXXFLAGS -DMST_UL"
 
 AC_CONFIG_FILES( mstflint.spec )
 
