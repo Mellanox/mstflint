@@ -35,6 +35,7 @@
 #define REG_ID_MFPA  0x9010
 #define REG_ID_MFBA  0x9011
 #define REG_ID_MFBE  0x9012
+#define REG_ID_MFMC  0x9013
 #define REG_ID_PMDIO 0x9017
 #define REG_ID_MGIR  0x9020
 #define REG_ID_PMDIC 0x9021
@@ -301,6 +302,22 @@ reg_access_status_t reg_access_mnvgn (mfile* mf, reg_access_method_t method, str
         return (reg_access_status_t)rc;\
     }\
     return ME_OK;
+}
+
+/************************************
+ * Function: reg_access_mfmc
+ ************************************/
+reg_access_status_t reg_access_mfmc (mfile* mf, reg_access_method_t method, struct tools_open_mfmc* mfmc)
+{
+    REG_ACCCESS(mf, method, REG_ID_MFMC, mfmc, mfmc, tools_open);
+}
+
+/************************************
+ * Function: reg_access_mfpa_new
+ ************************************/
+reg_access_status_t reg_access_mfpa_new(mfile* mf, reg_access_method_t method, struct tools_open_mfpa* mfpa)
+{
+    REG_ACCCESS(mf, method, REG_ID_MFPA, mfpa, mfpa, tools_open);
 }
 
 /************************************

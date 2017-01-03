@@ -28,8 +28,8 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
-
 
 #ifndef _MTCR_COM_DEFS_H
 #define _MTCR_COM_DEFS_H
@@ -97,7 +97,6 @@ typedef enum MError {
     ME_BAD_PARAMS,
     ME_CR_ERROR,
     ME_NOT_IMPLEMENTED,
-
     ME_SEM_LOCKED,
     ME_MEM_ERROR,
 
@@ -184,7 +183,7 @@ typedef enum MError {
 #endif
 typedef enum MType_t {
     MST_ERROR = 0x0,
-    MST_FPGA = 0x1,
+    MST_FPGA = 0x1,     // Unsupported
     MST_MLNXOS = 0x2,
     MST_LPC = 0x4,
     MST_PCI = 0x8,
@@ -201,9 +200,10 @@ typedef enum MType_t {
     MST_DEV_I2C = 0x1000,
 #endif
     // 0x2000 reserved
-    MST_FPGA_NEWTON = 0x4000,
+    MST_FPGA_ICMD = 0x4000,
     MST_CABLE = 0x8000,
-    MST_DEFAULT = 0xffffffff & ~MST_FPGA & ~MST_CABLE
+    MST_FPGA_DRIVER = 0x10000,
+    MST_DEFAULT = 0xffffffff & ~MST_CABLE & ~MST_FPGA & ~MST_FPGA_ICMD & ~MST_FPGA_DRIVER
 } MType;
 
 typedef enum DType_t {

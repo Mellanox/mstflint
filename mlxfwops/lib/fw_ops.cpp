@@ -553,7 +553,7 @@ u_int8_t FwOperations::IsFS4Image(FBase& f, u_int32_t* found_images) {
         READ4_NOERRMSG(f, image_start[0] + 0x10, &data);
         TOCPU1(data);
         image_version = data >> 24;
-        if(image_version == 1){//1 is the current version
+        if(image_version == 1) {//1 is the current version
             return FS_FS4_GEN;
         } else {
             return FS_UNKNOWN_IMG;
@@ -567,9 +567,7 @@ u_int8_t FwOperations::IsFS3OrFS2Image(FBase& f, u_int32_t* found_images) {
     u_int32_t data;
     u_int8_t image_version;
     u_int32_t image_start[CNTX_START_POS_SIZE];
-
     FindAllImageStart(&f, image_start, found_images, _cntx_magic_pattern);
-
     if (found_images) {
         READ4_NOERRMSG(f, image_start[0] + FS3_IND_ADDR, &data);
         TOCPU1(data);
@@ -581,7 +579,15 @@ u_int8_t FwOperations::IsFS3OrFS2Image(FBase& f, u_int32_t* found_images) {
             return FS_FS2_GEN;
         }
     }
+    return FS_UNKNOWN_IMG;
+}
 
+u_int8_t FwOperations::IsCableImage(FBase& f) {
+    char data[5] = {0};
+    READ4_NOERRMSG(f, 0, (u_int32_t*)&data);
+    if (!strncmp(data, "MTCF", 4)) {
+        return FS_FC1_GEN;
+    }
     return FS_UNKNOWN_IMG;
 }
 
@@ -605,6 +611,10 @@ u_int8_t FwOperations::CheckFwFormat(FBase& f, bool getFwFormatFromImg) {
             return FS_FS3_GEN;
         }
     } else {
+        v = IsCableImage(f);
+        if (v != FS_UNKNOWN_IMG) {
+            return v;
+        }
         //First check if it is FS4
         v = IsFS4Image(f, &found_images);
         if (found_images) {
@@ -726,27 +736,27 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
             // IN UEFI we don't have an access to read devID from cr-space so we are reading it from FW  image signature
             getFwFormatFromImg = true;
         }
-#if 0 // TODO: Fix when you have cable_fw
-        if (fwParams.isCableFw) {
-            fwops = new CableFwOperations(ioAccess);
-        } else
-#endif
-        {
-            fwFormat = CheckFwFormat(*ioAccess, getFwFormatFromImg);
-            switch (fwFormat) {
-                case FS_FS2_GEN: {
-                    fwops = new Fs2Operations(ioAccess);
-                    break;
-                }
-                case FS_FS3_GEN: {
-                    fwops = new Fs3Operations(ioAccess);
-                    break;
-                }
-                default:
-                    delete ioAccess;
-                    WriteToErrBuff(fwParams.errBuff,"invalid Firmware Format (found FS Gen 1)", fwParams.errBuffSize);
-                    return (FwOperations*)NULL;
+
+        fwFormat = CheckFwFormat(*ioAccess, getFwFormatFromImg);
+        switch (fwFormat) {
+            case FS_FS2_GEN: {
+                fwops = new Fs2Operations(ioAccess);
+                break;
             }
+            case FS_FS3_GEN: {
+                fwops = new Fs3Operations(ioAccess);
+                break;
+            }
+#ifdef CABLES_SUPP
+            case FS_FC1_GEN: {
+                fwops = new CableFwOperations(ioAccess);
+                break;
+            }
+#endif
+            default:
+                delete ioAccess;
+                WriteToErrBuff(fwParams.errBuff,"invalid Firmware Format (found FS Gen 1)", fwParams.errBuffSize);
+                return (FwOperations*)NULL;
         }
         // save initialization parameters
         fwops->BackUpFwParams(fwParams);
@@ -814,7 +824,7 @@ bool FwOperations::writeImage(ProgressCallBack progressFunc, u_int32_t addr, voi
             }
         } else {
             trans = towrite;
-            if (!ModifyImageFile(_fname, curr_addr, p, trans)) {
+            if (!((FImage*)_ioAccess)->write(curr_addr, p, trans)) {
                 return false;
             }
         }
@@ -834,44 +844,6 @@ bool FwOperations::writeImage(ProgressCallBack progressFunc, u_int32_t addr, voi
 
     return true;
 } //  Flash::WriteImage
-
-bool FwOperations::ModifyImageFile(const char *fimage, u_int32_t addr, void *data, int cnt)
-{
-    int file_size = 0;
-    u_int8_t * file_data = (u_int8_t*)NULL;
-
-    if (!ReadImageFile(fimage, file_data, file_size, addr + cnt)) {
-        return false;
-    }
-    memcpy(&file_data[addr], data, cnt);
-
-    if (!WriteImageToFile(fimage, file_data, file_size)) {
-        delete[] file_data;
-        return false;
-    }
-    delete[] file_data;
-    return true;
-}
-
-bool FwOperations::WriteImageToFile(const char *file_name, u_int8_t *data, u_int32_t length)
-{
-#ifndef UEFI_BUILD
-    FILE* fh;
-    if ((fh = fopen(file_name, "wb")) == (FILE*)NULL) {
-        return errmsg("Can not open %s: %s\n", file_name, strerror(errno));
-    }
-
-    // Write output
-    if (fwrite(data, 1, length, fh) != length) {
-        fclose(fh);
-        return errmsg("Failed to write to %s: %s\n", file_name, strerror(errno));
-    }
-    fclose(fh);
-    return true;
-#else
-    return errmsg("Not Implemented\n");
-#endif
-}
 
 bool FwOperations::CheckMac(u_int64_t mac) {
     if ((mac >> 40) & 0x1) {
@@ -1489,7 +1461,7 @@ bool FwOperations::RomInfo::GetExpRomVerForOneRom(u_int32_t verOffset)
     return true;
 }
 
-bool FwOperations::ReadImageFile(const char *fimage, u_int8_t *&file_data, int &file_size, int min_size)
+bool FwOperations::ReadImageFile(const char *fimage, u_int8_t *&file_data, int &file_size)
 {
 #ifndef UEFI_BUILD
     FILE* fh;
@@ -1511,14 +1483,6 @@ bool FwOperations::ReadImageFile(const char *fimage, u_int8_t *&file_data, int &
     rewind(fh);
 
     file_size = read_file_size;
-    if (min_size != -1) {// take min of min_size and read_file_size
-        if (min_size < 0) {
-            fclose(fh);
-            return errmsg("Internal error, minimal image read size cannot be negative.");
-        }
-        file_size = ( min_size > read_file_size ) ? min_size : read_file_size;
-    }
-
     file_data = new u_int8_t[file_size];
     if (fread(file_data, 1, read_file_size, fh) != (size_t)read_file_size) {
         delete[] file_data;

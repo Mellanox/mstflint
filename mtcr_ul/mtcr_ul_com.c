@@ -1216,7 +1216,6 @@ static long supported_dev_ids[] = {
         0x1011, //Connect-IB
         0x1013, //Connect-X4
         0x1015, //Connect-X4Lx
-        0x1017, //Connect-X5
         0xc738, //SwitchX
         0xcb20, //Switch-IB
         0xcb84, //Spectrum
@@ -1234,7 +1233,6 @@ static long live_fish_id_database[] = {
         0x247,
         0x209,
         0x20b,
-        0x20d,
         -1
 };
 

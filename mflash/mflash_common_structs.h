@@ -56,6 +56,18 @@ enum MfAccessType {
     MFAT_UEFI,
 };
 
+typedef struct flash_params {
+    const char *type_name;
+    int log2size;
+    int num_of_flashes;
+} flash_params_t;
+
+typedef struct write_protect_info {
+    u_int8_t is_subsector;
+    u_int8_t is_bottom;
+    u_int8_t sectors_num;
+} write_protect_info_t;
+
 /////////////////////////////////////////////
 //
 // Flash attributes struct
@@ -117,8 +129,6 @@ typedef struct flash_attr {
     u_int8_t protect_sub_and_sector;
     u_int8_t vendor;
     u_int8_t type;
-    // the flash sector size as seen by FW
-    u_int32_t fw_flash_sector_sz;
 
     u_int8_t support_sub_and_sector; // true if flash can work in both 64KB and 4KB sectors
 
@@ -139,6 +149,19 @@ typedef struct flash_info {
     u_int8_t dummy_cycles_support;
 } flash_info_t;
 
+/*
+ * Common Macros:
+ */
+#define WRITE_PROTECT_CHECKS(mfl, bank_num) { \
+        if (!mfl->attr.write_protect_support) {\
+            return MFE_NOT_SUPPORTED_OPERATION;\
+        }\
+        if (bank_num >= mfl->attr.banks_num) {\
+            return MFE_FLASH_NOT_EXIST;\
+        }\
+}
+#define MAX_SUBSECTOR_NUM 8
+#define MAX_SECTORS_NUM   64
 
 #endif // MFLASH_COMMON_STRUCTS_H
 

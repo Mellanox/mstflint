@@ -154,6 +154,13 @@ fi
 
 mlx4_core_ko=`modinfo mlx4_core | grep filename | awk '{print $NF}'`
 mlx4_core_ko=`readlink -f $mlx4_core_ko`
+
+# check for inbox driver
+is_inbox=0
+if [[ $mlx4_core_ko =~ "/kernel/drivers" ]]; then
+    is_inbox=1
+fi
+
 if [ $OS_TYPE = "DEBIAN" ]; then
     RPM_CHECK_FAIL=0
     RPM_CUR_BOOTED_KER=1
@@ -188,6 +195,7 @@ else
         fi
     fi
 fi
+
 OFED_VERSION=$(ofed_info 2> /dev/null | head -1)    
 RPM_KER_ARCH=`uname -m`    
 if [ $OS_TYPE = "RED_HAT" ]; then    
@@ -195,9 +203,13 @@ if [ $OS_TYPE = "RED_HAT" ]; then
 elif [ $OS_TYPE = "SUSE" ]; then    
     # Have to munge uname output a bit.    
     BOOTED_KER=`uname -r | sed s@-@_@g`    
-fi    
+fi
 
-if [ $RPM_USR_VER -eq 0 ] && [ $RPM_KER_VER -eq 0 ]; then    
+if [ $RPM_KER_VER -eq 0 ] && [ $is_inbox -eq 1 ]; then
+    RPM_KER_VER=1
+fi
+
+if [ $RPM_USR_VER -eq 0 ] && [ $RPM_KER_VER -eq 0 ]; then
     echo -e "Host Driver RPM Check .................. ${red}FAIL"    
     tput sgr0    
     echo "    REASON: no RPMs found"    
@@ -217,7 +229,9 @@ elif [ $RPM_KER_VER -eq 0 ]; then
     EXIT_CODE=1    
 fi    
 
-if [ $RPM_KER_VER -ne 0 ]; then    
+# if not inbox check if driver kernel RPM matches the booted kernel
+
+if [ $is_inbox -eq 0 ] && [ $RPM_KER_VER -ne 0 ]; then    
     if [ $RPM_CUR_BOOTED_KER -eq 0 ]; then    
         echo -e "Host Driver RPM Check .................. ${red}FAIL"    
         tput sgr0    
@@ -467,28 +481,6 @@ if [ $NUM_HCAS -ne 0 ]; then
 
                     if [ "$no_firmware" != "1" ]; then
                         echo -e "Firmware on CA #$LOOP_COUNT ${ca_type} .................. $FW_FOUND"
-                        if [ "$FW_NEEDED" == "$legal" -a "$FW_NEEDED" != "" ]; then
-                            if [ "$FW_FOUND" = "$FW_NEEDED" ]; then
-                                echo_fw_check ${LOOP_COUNT} ${ca_type} "${green}PASS"
-                            else
-                                newest=$(compare_fw $FW_FOUND $FW_NEEDED)
-                                if [ "$newest" = "found" ]; then
-                                    echo_fw_check ${LOOP_COUNT} ${ca_type} "${green}PASS"
-                                    echo "    NOTE: The found fw version is higher than the fw included in this package ($FW_NEEDED)"
-                                else
-                                    echo_fw_check ${LOOP_COUNT} ${ca_type} "${red}FAIL"
-                                    echo "    REASON: mismatch CA #$LOOP_COUNT firmware detected (found $FW_FOUND, required $FW_NEEDED)"
-                                    EXIT_CODE=1
-                                fi
-                            fi
-                        else
-                            echo_fw_check ${LOOP_COUNT} ${ca_type} "NA"
-                            if [ "$FW_NEEDED" == "" ]; then
-                                echo "    REASON: NO required fw version"
-                            else
-                                echo "    REASON: Bad required fw version format ($FW_NEEDED)"
-                            fi
-                        fi
                     fi
                 else
                     echo_fw_check ${LOOP_COUNT} ${ca_type} "NA"
