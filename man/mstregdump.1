@@ -1,14 +1,12 @@
 .TH MSTREGDUMP "1" "4.7.0" "" ""
 .SH NAME
-mstregdump
+mstregdump \- Mellanox mstdump utility, dumps device internal configuration data
 .IP
-.SH SYNOPSIS:
+.SH SYNOPSIS
 .IP
-Mellanox mstdump utility, dumps device internal configuration data
-
 mstregdump [-full] <device> [i2c-slave] [-v[ersion] [-h[elp]]]
 .IP
-.SH OPTIONS:
+.SH OPTIONS
 .TP
 \fB-full\fR           : Dump more expanded list of addresses
          \fBNote\fR : be careful when using this flag, None safe addresses might be read.
@@ -20,4 +18,3 @@ mstregdump [-full] <device> [i2c-slave] [-v[ersion] [-h[elp]]]
 .SH EXAMPLE:
 .TP
 mstregdump 04:00.0
-.TP
