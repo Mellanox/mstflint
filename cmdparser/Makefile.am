@@ -34,7 +34,7 @@
 
 INCLUDES = -I. -I../common
 
-AM_CPPFLAGS = -W  -g -MP -MD $(COMPILER_FPIC) -Werror
+AM_CPPFLAGS = -W  -g -MP -MD $(COMPILER_FPIC)
 
 noinst_LIBRARIES = libcmdparser.a
 

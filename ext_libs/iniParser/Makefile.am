@@ -36,7 +36,7 @@ USER_DIR = ../..
 MTCR_DIR = $(USER_DIR)/${MTCR_CONFIG_DIR}
 INCLUDES = -I. -I$(USER_DIR) -I$(MTCR_DIR) -I$(USER_DIR)/common
 
-AM_CFLAGS = -W -Werror -g -MP -MD ${COMPILER_FPIC} 
+AM_CFLAGS = -W -g -MP -MD ${COMPILER_FPIC}
 
 noinst_LTLIBRARIES = libiniparser.a
 
