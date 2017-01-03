@@ -1285,7 +1285,7 @@ bool Fs4Operations::Fs4UpdateVpdSection(struct fs4_toc_info *curr_toc, char *vpd
     }
     if (vpd_size % 4) {
         delete[] vpd_data;
-        return errmsg("Size of VPD file: %d is not 4-byte alligned!", vpd_size);
+        return errmsg("Size of VPD file: %d is not 4-byte aligned!", vpd_size);
     }
 
     //check if vpd exceeds the dtoc array

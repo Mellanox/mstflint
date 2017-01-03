@@ -4426,7 +4426,7 @@ Sector block size is available in MFMC.sector_protect_size */
 	 u_int16_t sector_size;
 	/* Description -  */
 	/* 0x18.16 - 0x18.23 */
-	 u_int8_t block_allignment;
+	 u_int8_t block_alignment;
 	/* Description -  */
 	/* 0x18.24 - 0x18.31 */
 	 u_int8_t block_size;
@@ -8132,7 +8132,7 @@ struct connectib_register_mfpa {
 	 u_int16_t sector_size;
 	/* Description -  */
 	/* 0x18.16 - 0x18.23 */
-	 u_int8_t block_allignment;
+	 u_int8_t block_alignment;
 /*---------------- DWORD[7] (Offset 0x1c) ----------------*/
 	/* Description - capability mask ;bit 0:Parallel flash Support;else:Reserved  */
 	/* 0x1c.0 - 0x20.31 */
