@@ -2910,7 +2910,7 @@ static int mreg_send_raw(mfile *mf, u_int16_t reg_id, maccess_reg_method_t metho
     memcpy(reg_data, buffer + OP_TLV_SIZE + REG_TLV_HEADER_LEN, reg_size);
 
 #ifdef _ENABLE_DEBUG_
-    fprintf(stdout, "-I-Tlv's of Data Recieved:\n");
+    fprintf(stdout, "-I-Tlv's of Data Received:\n");
     fprintf(stdout, "\tOperation Tlv\n");
     OperationTlv_dump(&tlv, stdout);
     fprintf(stdout, "\tReg Tlv\n");
