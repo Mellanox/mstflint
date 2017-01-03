@@ -37,7 +37,7 @@ MTCR_INC_DIR = $(top_srcdir)/include/mtcr_ul
 
 INCLUDES = -I. -I.. -I$(MTCR_INC_DIR) -I../${MTCR_CONF_DIR} -I$(USER_DIR)/tools_ayouts/ 
 
-AM_CFLAGS = -W -Wall -Werror -g -MP -MD $(COMPILER_FPIC)
+AM_CFLAGS = -W -Wall -g -MP -MD $(COMPILER_FPIC)
 
 
 noinst_LIBRARIES = libmad_ifc.a

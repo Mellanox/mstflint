@@ -35,7 +35,7 @@ USER_DIR = $(top_srcdir)
 #INCLUDES = -I. -I$(USER_DIR)/ext_libs/libtar -I$(USER_DIR)/ext_libs/libtar/listhash -I$(USER_DIR)/ext_libs/minixz
 INCLUDES = -I. -I$(USER_DIR)/ext_libs/minixz -I$(USER_DIR)/common
 
-AM_CFLAGS = -MD -pipe -Wall -W  -g -Werror $(COMPILER_FPIC) 
+AM_CFLAGS = -MD -pipe -Wall -W -g $(COMPILER_FPIC)
 
 noinst_LTLIBRARIES = libmfa.a
 libmfa_a_LIBADD = -L$(USER_DIR)/ext_libs/minixz -lminixz
