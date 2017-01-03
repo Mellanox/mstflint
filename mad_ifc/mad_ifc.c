@@ -45,12 +45,12 @@
 # define DEBUG_PRINT_SEND(data_struct, struct_name, method) \
     printf("-I- Data Sent (Method: %s):\n", method == MAD_IFC_METHOD_SET ? "SET" : "GET"); \
     tools_open_##struct_name##_print(data_struct, stdout, 1)
-# define DEBUG_PRINT_RECIEVE(data_struct, struct_name, method) \
+# define DEBUG_PRINT_RECEIVE(data_struct, struct_name, method) \
     printf("-I- Data Received (Mehtod: %s):\n", method == MAD_IFC_METHOD_SET ? "SET" : "GET"); \
     tools_open_##struct_name##_print(data_struct, stdout, 1)
 #else
 # define DEBUG_PRINT_SEND(data_struct, struct_name, method)
-# define DEBUG_PRINT_RECIEVE(data_struct, struct_name, method)
+# define DEBUG_PRINT_RECEIVE(data_struct, struct_name, method)
 #endif
 
 /***************************************************/
@@ -70,7 +70,7 @@
             status = mib_smp_set(mf, data, attr_id, attr_mod); \
         } \
         tools_open_##struct_name##_unpack(data_struct, data); \
-        DEBUG_PRINT_RECIEVE(data_struct, struct_name, method); \
+        DEBUG_PRINT_RECEIVE(data_struct, struct_name, method); \
         if (status) { \
             return (mad_ifc_status_t)status; \
         } \
