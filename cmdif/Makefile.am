@@ -36,7 +36,7 @@ MTCR_DIR = $(USER_DIR)/include/mtcr_ul
 TOOLS_LAYOUTS_DIR = $(USER_DIR)/tools_layouts
 AM_CPPFLAGS = -I. -I../common -I../tools_layouts  -I$(MTCR_DIR) -I.. -I$(USER_DIR)/mtcr_ul
 
-AM_CFLAGS = -W -Wall -Werror -g -MP -MD $(COMPILER_FPIC) -DCMDIF_EXPORTS
+AM_CFLAGS = -W -Wall -g -MP -MD $(COMPILER_FPIC) -DCMDIF_EXPORTS
 CMDIF_VERSION = 1
 noinst_LIBRARIES = libcmdif.a
 
