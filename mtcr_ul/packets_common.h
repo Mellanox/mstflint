@@ -135,57 +135,6 @@
 #endif
 
 
-/************************************/
-/* define macros to the architecture of the CPU */
-#if defined(__linux__) || defined(__FreeBSD__)
-#   if defined(__i386__)
-#       define ARCH_x86
-#   elif defined(__x86_64__)
-#       define ARCH_x86_64
-#   elif defined(__ia64__)
-#       define ARCH_ia64
-#   elif defined(__PPC64__) || defined(__s390x__)
-#       define ARCH_ppc64
-#   elif defined(__PPC__)
-#       define ARCH_ppc
-#   elif defined(__aarch64__)
-#       define ARCH_arm64
-#   elif defined(__arm__)
-#       define ARCH_arm6l
-#   else
-#       error Unknown CPU architecture using the linux OS
-#   endif
-#elif defined(_WIN32)
-//#   error Windows OS need to define macros
-#else
-#   error Unknown OS
-#endif
-
-/**********************************/
-/* define macros for print fields */
-//#if defined (ARCH_ia64) || defined(ARCH_x86_64) || defined(ARCH_ppc64) || defined(__MINGW64__)
-/*
- #if !defined(UEFI_BUILD) && (defined (ARCH_ia64) || defined(ARCH_x86_64) || defined(ARCH_ppc64) || defined(__MINGW64__))
- #   define U64H_FMT "0x%016lx"
- #   define U64D_FMT "%lu"
- #   define U32H_FMT "0x%08x"
- #   define U16H_FMT "0x%04x"
- #   define U8H_FMT  "0x%02x"
- #   define U32D_FMT "%u"
- #   define STR_FMT "%s"
- #elif defined(ARCH_x86) || defined(ARCH_ppc) || defined(__MINGW32__) || defined(UEFI_BUILD) || defined(ARCH_arm6l)
- #   define U64H_FMT "0x%016llx"
- #   define U64D_FMT "%llu"
- #   define U32H_FMT "0x%08x"
- #   define U16H_FMT "0x%04x"
- #   define U8H_FMT  "0x%02x"
- #   define U32D_FMT "%u"
- #   define STR_FMT "%s"
- #else  // ARCH
- #   error Unknown architecture
- #endif // ARCH
- */
-
 /**********************************/
 void push_to_buff_64(u_int8_t *buff, u_int32_t bit_offset, u_int64_t field_value);
 void push_to_buff_32(u_int8_t *buff, u_int32_t bit_offset, u_int32_t field_value);

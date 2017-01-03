@@ -122,25 +122,7 @@ extern "C" {
 
 
 /* define macros to the architecture of the CPU */
-#if defined(__linux__) || defined(__FreeBSD__)             /* __linux || __FreeBSD__ */
-#   if defined(__i386__)
-#       define ARCH_x86
-#   elif defined(__x86_64__)
-#       define ARCH_x86_64
-#   elif defined(__ia64__)
-#       define ARCH_ia64
-#   elif defined(__PPC64__) || defined(__s390x__)
-#       define ARCH_ppc64
-#   elif defined(__PPC__)
-#       define ARCH_ppc
-#   elif defined(__aarch64__)
-#       define ARCH_arm64
-#   elif defined(__arm__)
-#       define ARCH_arm6l
-#   else
-#       error Unknown CPU architecture using the linux OS
-#   endif
-#elif defined(__MINGW32__) || defined(__MINGW64__)		/* Windows MINGW */
+#if defined(__MINGW32__) || defined(__MINGW64__)		/* Windows MINGW */
 #   if defined(__MINGW32__)
 #       define ARCH_x86
 #   elif defined(__MINGW64__)
@@ -156,7 +138,7 @@ extern "C" {
 #   else
 #       error Unknown CPU architecture using the windows OS
 #   endif
-#else                                                   /* Unknown */
+#elif ! (defined(__linux) || defined(__FreeBSD__))      /* Unknown */
 #   error Unknown OS
 #endif
 
@@ -169,7 +151,12 @@ extern "C" {
 #define U16H_FMT    "0x%04x"
 #define U8H_FMT     "0x%02x"
 
-#if defined(ARCH_x86) || defined(ARCH_ppc) || defined(UEFI_BUILD) || defined(ARCH_arm6l)
+#if defined(__linux) || defined(__FreeBSD__)
+#    include <inttypes.h>
+#    define U64D_FMT    "%" PRId64
+#    define U64H_FMT    "0x%" PRIx64
+#    define U48H_FMT    "0x%" PRIx64
+#elif defined(ARCH_x86) || defined(ARCH_ppc) || defined(UEFI_BUILD) || defined(ARCH_arm6l)
 #   if defined(__MINGW32__) || defined(__MINGW64__)
 #       include <inttypes.h>
 #       define U64D_FMT    "0x%" PRId64
