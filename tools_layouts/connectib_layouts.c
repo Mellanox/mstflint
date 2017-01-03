@@ -5542,10 +5542,10 @@ void connectib_eth_802_3_cntrs_grp_data_layout_pack(const struct connectib_eth_8
 	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->a_multicast_frames_received_ok_low);
 
 	offset = 576;
-	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->a_broadcast_frames_recieved_ok_high);
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->a_broadcast_frames_received_ok_high);
 
 	offset = 608;
-	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->a_broadcast_frames_recieved_ok_low);
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->a_broadcast_frames_received_ok_low);
 
 	offset = 640;
 	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->a_in_range_length_errors_high);
@@ -5667,10 +5667,10 @@ void connectib_eth_802_3_cntrs_grp_data_layout_unpack(struct connectib_eth_802_3
 	ptr_struct->a_multicast_frames_received_ok_low = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
 
 	offset = 576;
-	ptr_struct->a_broadcast_frames_recieved_ok_high = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	ptr_struct->a_broadcast_frames_received_ok_high = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
 
 	offset = 608;
-	ptr_struct->a_broadcast_frames_recieved_ok_low = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	ptr_struct->a_broadcast_frames_received_ok_low = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
 
 	offset = 640;
 	ptr_struct->a_in_range_length_errors_high = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
@@ -5793,10 +5793,10 @@ void connectib_eth_802_3_cntrs_grp_data_layout_print(const struct connectib_eth_
 	fprintf(file, "a_multicast_frames_received_ok_low : " U32H_FMT "\n", ptr_struct->a_multicast_frames_received_ok_low);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "a_broadcast_frames_recieved_ok_high : " U32H_FMT "\n", ptr_struct->a_broadcast_frames_recieved_ok_high);
+	fprintf(file, "a_broadcast_frames_received_ok_high : " U32H_FMT "\n", ptr_struct->a_broadcast_frames_received_ok_high);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "a_broadcast_frames_recieved_ok_low : " U32H_FMT "\n", ptr_struct->a_broadcast_frames_recieved_ok_low);
+	fprintf(file, "a_broadcast_frames_received_ok_low : " U32H_FMT "\n", ptr_struct->a_broadcast_frames_received_ok_low);
 
 	adb2c_add_indentation(file, indent_level);
 	fprintf(file, "a_in_range_length_errors_high : " U32H_FMT "\n", ptr_struct->a_in_range_length_errors_high);
