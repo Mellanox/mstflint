@@ -35,7 +35,7 @@
 USER_DIR = ..
 MTCR_DIR = $(USER_DIR)/${MTCR_CONF_DIR}
 INCLUDES = -I. -I$(USER_DIR) -I$(MTCR_DIR) -I$(USER_DIR)/common
-AM_CFLAGS = -W  -g -MP -MD ${COMPILER_FPIC} -Werror
+AM_CFLAGS = -W  -g -MP -MD ${COMPILER_FPIC}
 noinst_LTLIBRARIES = libxz_utils.a
 libxz_utils_a_SOURCES = xz_utils.c xz_utils.h
 

@@ -34,7 +34,7 @@
 
 USER_DIR = ../
 INCLUDES =
-AM_CPPFLAGS = -W -Werror -g -MP -MD ${COMPILER_FPIC}
+AM_CPPFLAGS = -W -g -MP -MD ${COMPILER_FPIC}
 noinst_LTLIBRARIES = libjson.a
 libjson_a_SOURCES = json_reader.cpp  json_value.cpp  json_batchallocator.h  json_writer.cpp  json/*.h
 

@@ -168,8 +168,8 @@ AS_IF([test "x$enable_dynamic_ld" = "xyes"], [
 CFLAGS="$CFLAGS -DMST_UL"
 CXXFLAGS="$CXXFLAGS -DMST_UL"
 
-AM_CFLAGS="-Wall -Werror"
-AM_CXXFLAGS="-Wall -Werror"
+AM_CFLAGS="-Wall"
+AM_CXXFLAGS="-Wall"
 
 AC_CONFIG_FILES( mstflint.spec )
 
