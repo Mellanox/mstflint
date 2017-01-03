@@ -187,7 +187,7 @@ class DriverUnknownMode(Exception):
 ######################################################################
 
 def sigHndl(signal, frame):
-    print("\nSignal %d Recieved, Exiting..." % signal)
+    print("\nSignal %d Received, Exiting..." % signal)
     sys.exit(1)
 
 ######################################################################
@@ -230,7 +230,7 @@ def printAndFlush(str, endChar='\n'):
     sys.stdout.flush()
 
 ######################################################################
-# Description:  ask user Y/N question if N/n/No/no was recieved raise
+# Description:  ask user Y/N question if N/n/No/no was received raise
 #                RuntimeError.
 # OS Support :  Linux/Windows.
 ######################################################################
@@ -1169,7 +1169,7 @@ def getResetLevel(device):
     try:
         actualLevel = RegAccessObj.sendMFRL(0, regaccess.REG_ACCESS_METHOD_GET)
         if actualLevel == 0:
-            RuntimeError("Bad reset level Value recieved from FW. please reboot machine to load new FW.")
+            RuntimeError("Bad reset level Value received from FW. please reboot machine to load new FW.")
     except Exception as e:
         if "(265)" in str(e):
             raise NoError("Failed to get Reset level from device. this might indicate that FW was already loaded")
@@ -1224,7 +1224,7 @@ def sendResetToFW(device, level, force):
         printAndFlush("Done")
     except Exception as e:
         if force :
-            printAndFlush("Failed (force flag recieved)")
+            printAndFlush("Failed (force flag received)")
         else:
             raise e
 
@@ -1379,7 +1379,7 @@ def rebootComFlow(device, level, force):
         if "(265)" in str(e):  # we ignore bad params here in case of old fw that those reset levels are not supported
             printAndFlush("Done")
         elif force :
-            printAndFlush("Failed (force flag recieved)")
+            printAndFlush("Failed (force flag received)")
         else:
             printAndFlush("Failed")
             raise e
