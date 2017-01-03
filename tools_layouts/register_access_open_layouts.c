@@ -166,7 +166,7 @@ void register_access_mfpa_pack(const struct register_access_mfpa *ptr_struct, u_
 	adb2c_push_bits_to_buff(ptr_buff, offset, 10, (u_int32_t)ptr_struct->sector_size);
 
 	offset = 200;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->block_allignment);
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->block_alignment);
 
 	offset = 224;
 	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->capability_mask);
@@ -207,7 +207,7 @@ void register_access_mfpa_unpack(struct register_access_mfpa *ptr_struct, const 
 	ptr_struct->sector_size = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 10);
 
 	offset = 200;
-	ptr_struct->block_allignment = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	ptr_struct->block_alignment = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 
 	offset = 224;
 	ptr_struct->capability_mask = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
@@ -249,7 +249,7 @@ void register_access_mfpa_print(const struct register_access_mfpa *ptr_struct, F
 	fprintf(file, "sector_size          : " UH_FMT "\n", ptr_struct->sector_size);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "block_allignment     : " UH_FMT "\n", ptr_struct->block_allignment);
+	fprintf(file, "block_alignment      : " UH_FMT "\n", ptr_struct->block_alignment);
 
 	adb2c_add_indentation(file, indent_level);
 	fprintf(file, "capability_mask      : " U32H_FMT "\n", ptr_struct->capability_mask);
