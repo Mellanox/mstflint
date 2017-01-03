@@ -70,10 +70,8 @@ int get_version_string(char* buf, int buf_size, const char* exe_name, const char
         len = snprintf(buf, buf_size, "%s %s, ", exe_name, tool_version);
     }
     // cut out first and last "$" from the SVN version string:
-    len += snprintf(buf + len, buf_size - len, "%s, built on %s, %s. Git SHA Hash: %s",
+    len += snprintf(buf + len, buf_size - len, "%s. Git SHA Hash: %s",
                   MFT_VERSION_STR,
-                  __DATE__,
-                  __TIME__,
                   TOOLS_GIT_SHA);
     return len;
 }
