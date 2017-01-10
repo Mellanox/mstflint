@@ -90,7 +90,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/mstvpd
 %{_bindir}/mstmcra
 %{_bindir}/mstconfig
-%{_bindir}/hca_self_test.ofed
 
 %{_includedir}/mstflint/mtcr.h
 %{_includedir}/mstflint/mtcr_com_defs.h
@@ -103,6 +102,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 
 %changelog
+* Mon Jan 10 2017 Adham Masarwah <adham@dev.mellanox.co.il>
+   Removed hca_self_test.ofed installation from the package
+    
 * Mon Jan 9 2017 Adham Masarwah <adham@dev.mellanox.co.il>
    MFT 4.6.0 Updates
     
