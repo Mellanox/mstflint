@@ -1,6 +1,6 @@
 %{!?ibmadlib: %define ibmadlib libibmad-devel}
 %{!?name: %define name mstflint}
-%{!?version: %define version 4.4.0}
+%{!?version: %define version 4.6.0}
 %{!?release: %define release 1}
 %{!?buildtype: %define buildtype "native"}
 %{!?noinband: %define noinband 0}
@@ -103,6 +103,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 
 %changelog
+* Mon Jan 9 2017 Adham Masarwah <adham@dev.mellanox.co.il>
+   MFT 4.6.0 Updates
+    
 * Wed May 17 2016 Adrian Chiris <adrianc@dev.mellanox.co.il>
    MFT 4.4.0 Updates
    

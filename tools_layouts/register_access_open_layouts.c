@@ -29,13 +29,12 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
- 
 
 /***
- *** This file was generated at "2016-05-02 14:45:27"
- *** by:
- ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/register_access_open/register_access_open.adb --file-prefix register_access_open --prefix register_access_
- ***/
+         *** This file was generated at "2016-10-01 01:27:03"
+         *** by:
+         ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/register_access_open/register_access_open.adb --file-prefix register_access_open --prefix register_access_
+         ***/
 #include "register_access_open_layouts.h"
 
 void register_access_mfba_pack(const struct register_access_mfba *ptr_struct, u_int8_t* ptr_buff)
@@ -61,7 +60,7 @@ void register_access_mfba_pack(const struct register_access_mfba *ptr_struct, u_
 
 	for (i = 0; i < 64; i++) {
 	offset = adb2c_calc_array_field_address(96, 32, i, 2144, 0);
-	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int64_t)ptr_struct->data[i]);
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->data[i]);
 	}
 
 }
@@ -105,20 +104,20 @@ void register_access_mfba_print(const struct register_access_mfba *ptr_struct, F
 	(void)indent_level;
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "fs                   : "UH_FMT"\n", ptr_struct->fs);
+	fprintf(file, "fs                   : " UH_FMT "\n", ptr_struct->fs);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "p                    : "UH_FMT"\n", ptr_struct->p);
+	fprintf(file, "p                    : " UH_FMT "\n", ptr_struct->p);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "size                 : "UH_FMT"\n", ptr_struct->size);
+	fprintf(file, "size                 : " UH_FMT "\n", ptr_struct->size);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "address              : "UH_FMT"\n", ptr_struct->address);
+	fprintf(file, "address              : " UH_FMT "\n", ptr_struct->address);
 
 	for (i = 0; i < 64; i++) {
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "data_%03d            : "U32H_FMT"\n", i, ptr_struct->data[i]);
+	fprintf(file, "data_%03d            : " U32H_FMT "\n", i, ptr_struct->data[i]);
 	}
 
 }
@@ -170,7 +169,7 @@ void register_access_mfpa_pack(const struct register_access_mfpa *ptr_struct, u_
 	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->block_allignment);
 
 	offset = 224;
-	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int64_t)ptr_struct->capability_mask);
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->capability_mask);
 
 }
 
@@ -226,34 +225,34 @@ void register_access_mfpa_print(const struct register_access_mfpa *ptr_struct, F
 	(void)indent_level;
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "fs                   : "UH_FMT"\n", ptr_struct->fs);
+	fprintf(file, "fs                   : " UH_FMT "\n", ptr_struct->fs);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "p                    : "UH_FMT"\n", ptr_struct->p);
+	fprintf(file, "p                    : " UH_FMT "\n", ptr_struct->p);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "boot_address         : "UH_FMT"\n", ptr_struct->boot_address);
+	fprintf(file, "boot_address         : " UH_FMT "\n", ptr_struct->boot_address);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "flash_num            : "UH_FMT"\n", ptr_struct->flash_num);
+	fprintf(file, "flash_num            : " UH_FMT "\n", ptr_struct->flash_num);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "bulk_64kb_erase_en   : "UH_FMT"\n", ptr_struct->bulk_64kb_erase_en);
+	fprintf(file, "bulk_64kb_erase_en   : " UH_FMT "\n", ptr_struct->bulk_64kb_erase_en);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "bulk_32kb_erase_en   : "UH_FMT"\n", ptr_struct->bulk_32kb_erase_en);
+	fprintf(file, "bulk_32kb_erase_en   : " UH_FMT "\n", ptr_struct->bulk_32kb_erase_en);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "jedec_id             : "UH_FMT"\n", ptr_struct->jedec_id);
+	fprintf(file, "jedec_id             : " UH_FMT "\n", ptr_struct->jedec_id);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "sector_size          : "UH_FMT"\n", ptr_struct->sector_size);
+	fprintf(file, "sector_size          : " UH_FMT "\n", ptr_struct->sector_size);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "block_allignment     : "UH_FMT"\n", ptr_struct->block_allignment);
+	fprintf(file, "block_allignment     : " UH_FMT "\n", ptr_struct->block_allignment);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "capability_mask      : "U32H_FMT"\n", ptr_struct->capability_mask);
+	fprintf(file, "capability_mask      : " U32H_FMT "\n", ptr_struct->capability_mask);
 
 }
 
@@ -330,19 +329,19 @@ void register_access_mfbe_print(const struct register_access_mfbe *ptr_struct, F
 	(void)indent_level;
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "fs                   : "UH_FMT"\n", ptr_struct->fs);
+	fprintf(file, "fs                   : " UH_FMT "\n", ptr_struct->fs);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "p                    : "UH_FMT"\n", ptr_struct->p);
+	fprintf(file, "p                    : " UH_FMT "\n", ptr_struct->p);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "bulk_64kb_erase      : "UH_FMT"\n", ptr_struct->bulk_64kb_erase);
+	fprintf(file, "bulk_64kb_erase      : " UH_FMT "\n", ptr_struct->bulk_64kb_erase);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "bulk_32kb_erase      : "UH_FMT"\n", ptr_struct->bulk_32kb_erase);
+	fprintf(file, "bulk_32kb_erase      : " UH_FMT "\n", ptr_struct->bulk_32kb_erase);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "address              : "UH_FMT"\n", ptr_struct->address);
+	fprintf(file, "address              : " UH_FMT "\n", ptr_struct->address);
 
 }
 

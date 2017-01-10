@@ -49,14 +49,30 @@
 #define STAT_CFG_NOT_DONE_ADDR_CIB   0xb0004
 #define STAT_CFG_NOT_DONE_ADDR_CX4   0xb0004
 #define STAT_CFG_NOT_DONE_ADDR_SW_IB   0x80010
+#define STAT_CFG_NOT_DONE_ADDR_QUANTUM   0x100010
+#define STAT_CFG_NOT_DONE_ADDR_CX5   0xb5e04
 #define STAT_CFG_NOT_DONE_BITOFF_CIB   31
 #define STAT_CFG_NOT_DONE_BITOFF_CX4   31
 #define STAT_CFG_NOT_DONE_BITOFF_SW_IB 0
+#define STAT_CFG_NOT_DONE_BITOFF_CX5   31
+#define STAT_CFG_NOT_DONE_BITOFF_CX5 31
+#define SEMAPHORE_ADDR_CIB   0xe27f8 //sem62
+#define SEMAPHORE_ADDR_CX4   0xe250c // sem67 bit31 is the semaphore bit here (only one semaphore in this dword)
+#define SEMAPHORE_ADDR_SW_IB 0xa24f8 // sem 62
+#define SEMAPHORE_ADDR_QUANTUM 0xa68f8
+#define SEMAPHORE_ADDR_CX5   0xe74e0
+#define HCR_ADDR_CIB         0x0
+#define HCR_ADDR_CX4         HCR_ADDR_CIB
+#define HCR_ADDR_CX5         HCR_ADDR_CIB
+#define HCR_ADDR_SW_IB       0x80000
+#define HCR_ADDR_QUANTUM       0x100000
 #define ICMD_VERSION_BITOFF 24
 #define ICMD_VERSION_BITLEN 8
 #define CMD_PTR_ADDR_CIB        0x0
 #define CMD_PTR_ADDR_SW_IB      0x80000
+#define CMD_PTR_ADDR_QUANTUM      0x100000
 #define CMD_PTR_ADDR_CX4        CMD_PTR_ADDR_CIB
+#define CMD_PTR_ADDR_CX5        CMD_PTR_ADDR_CIB
 #define CMD_PTR_BITOFF      0
 #define CMD_PTR_BITLEN      24
 #define CTRL_OFFSET         0x3fc
@@ -192,15 +208,15 @@ enum {
 #define SW_IB_HW_ID 583
 #define SW_EN_HW_ID 585
 #define SW_IB2_HW_ID 587
+#define QUANTUM_HW_ID 589
 
-#define GET_ADDR(mf, addr_cib, addr_cx4, addr_sw_ib, addr)\
+#define GET_ADDR(mf, addr_cib, addr_cx4, addr_sw_ib, addr_cx5, addr_quantum, addr)\
     do {\
         u_int32_t _hw_id;\
         MREAD4((mf), (HW_ID_ADDR), &(_hw_id));\
         switch (_hw_id & 0xffff) {\
         case (CX4_HW_ID):\
         case (CX4LX_HW_ID):\
-        case (CX5_HW_ID):\
             addr = addr_cx4;\
             break;\
         case (SW_IB_HW_ID):\
@@ -208,11 +224,28 @@ enum {
         case (SW_IB2_HW_ID):\
             addr = addr_sw_ib;\
             break;\
+        case (QUANTUM_HW_ID):\
+            addr = addr_quantum;\
+            break;\
+        case (CX5_HW_ID):\
+            addr = addr_cx5;\
+            break;\
         default:\
             addr = addr_cib;\
             break;\
         }\
 	} while(0)
+
+/*************************************************************************************/
+/*
+ * get_version
+ */
+static int get_version(mfile *mf, u_int32_t hcr_address) {
+    u_int32_t reg;
+    if (MREAD4(mf, hcr_address, &reg)) return ME_ICMD_STATUS_CR_FAIL;
+    reg = EXTRACT(reg, ICMD_VERSION_BITOFF, ICMD_VERSION_BITLEN);
+    return reg;
+}
 
 /*
  * go - Sets the busy bit to 1, wait untill it is 0 again.
@@ -320,8 +353,8 @@ static int icmd_is_cmd_ifc_ready(mfile *mf) {
     u_int32_t expected_val;
 
     {
-        //          CIB  CX4  SW-IB
-        GET_ADDR(mf, 0,   0,    0, expected_val); // we expect the bit_val to be : 0- CIB , 1- CX4/SWIB
+        //          CIB  CX4  SW-IB CX5
+        GET_ADDR(mf, 0,   0,    0, 0, 0, expected_val); // we expect the bit_val to be : 0- CIB , 1- CX4/SWIB
     }
     return (bit_val == expected_val) ?  ME_OK: ME_ICMD_STATUS_ICMD_NOT_READY;
 }
@@ -339,7 +372,27 @@ int icmd_clear_semaphore(mfile *mf)
     if ((ret = icmd_open(mf))) {
         return ret;
     }
-    MWRITE4_SEMAPHORE(mf, mf->icmd.semaphore_addr, 0, return ME_ICMD_STATUS_CR_FAIL);
+    int is_leaseable;
+    u_int8_t lease_exp;
+    if ((mf->icmd.semaphore_addr == SEMAPHORE_ADDR_CIB  ||
+         mf->icmd.semaphore_addr == SEMAPHORE_ADDR_CX4) &&
+         mf->icmd.ib_semaphore_lock_supported) {
+        if (!mf->icmd.lock_key) {
+            return ME_OK;
+        }
+        DBG_PRINTF("VS_MAD SEM Release .. ");
+        if (mib_semaphore_lock_vs_mad(mf, SMP_SEM_RELEASE, SMP_ICMD_SEM_ADDR, mf->icmd.lock_key,
+                &(mf->icmd.lock_key), &is_leaseable, &lease_exp, SEM_LOCK_SET)) {
+            DBG_PRINTF("Failed!\n");
+            return ME_ICMD_STATUS_CR_FAIL;
+        }
+        if (mf->icmd.lock_key != 0) {
+            return ME_ICMD_STATUS_CR_FAIL;
+        }
+        DBG_PRINTF("Succeeded!\n");
+    } else {
+        MWRITE4_SEMAPHORE(mf, mf->icmd.semaphore_addr, 0, return ME_ICMD_STATUS_CR_FAIL);
+    }
     mf->icmd.took_semaphore = 0;
     return ME_OK;
 }
@@ -347,7 +400,6 @@ int icmd_clear_semaphore(mfile *mf)
 /*
  * icmd_take_semaphore
  */
-
 static int icmd_take_semaphore_com(mfile *mf, u_int32_t expected_read_val)
 {
     u_int32_t read_val;
@@ -358,13 +410,33 @@ static int icmd_take_semaphore_com(mfile *mf, u_int32_t expected_read_val)
          if (++retries > 256) {
              return ME_ICMD_STATUS_SEMAPHORE_TO;
          }
-         if (mf->vsec_supp) {
-             //write expected val before reading it
-             MWRITE4_SEMAPHORE(mf, mf->icmd.semaphore_addr, expected_read_val, return ME_ICMD_STATUS_CR_FAIL);
+
+         int is_leaseable;
+         u_int8_t lease_exp;
+         if ((mf->icmd.semaphore_addr == SEMAPHORE_ADDR_CIB  ||
+              mf->icmd.semaphore_addr == SEMAPHORE_ADDR_CX4) &&
+              mf->icmd.ib_semaphore_lock_supported) {
+             DBG_PRINTF("VS_MAD SEM LOCK .. ");
+             read_val = mib_semaphore_lock_vs_mad(mf, SMP_SEM_LOCK, SMP_ICMD_SEM_ADDR, 0,
+                                                  &(mf->icmd.lock_key), &is_leaseable, &lease_exp, SEM_LOCK_SET);
+             if (read_val && read_val != ME_MAD_BUSY) {
+                 DBG_PRINTF("Failed!\n");
+                 return ME_ICMD_STATUS_ICMD_NOT_READY;
+             }
+             /* Fail to obtain the lock */
+             if (mf->icmd.lock_key == 0) {
+                 read_val = 1;
+             }
+             DBG_PRINTF("Succeeded!\n");
+         } else {
+             if (mf->vsec_supp) {
+                 //write expected val before reading it
+                 MWRITE4_SEMAPHORE(mf, mf->icmd.semaphore_addr, expected_read_val, return ME_ICMD_STATUS_CR_FAIL);
+             }
+             MREAD4_SEMAPHORE(mf, mf->icmd.semaphore_addr, &read_val, return ME_ICMD_STATUS_CR_FAIL);
+             if (read_val == expected_read_val)
+                 break;
          }
-         MREAD4_SEMAPHORE(mf, mf->icmd.semaphore_addr, &read_val, return ME_ICMD_STATUS_CR_FAIL);
-         if (read_val == expected_read_val)
-             break;
          msleep(rand() % 20);
      } while (read_val != expected_read_val);
 
@@ -461,6 +533,87 @@ cleanup:
     return ret;
 }
 
+
+static int icmd_init_cr(mfile *mf)
+{
+    int icmd_ver;
+    u_int32_t hcr_address;
+    u_int32_t cmd_ptr_addr;
+    u_int32_t reg;
+    u_int32_t hw_id;
+    u_int32_t dev_type = 0;
+
+    // get device specific addresses
+    MREAD4((mf), (HW_ID_ADDR), &(hw_id));
+    switch (hw_id & 0xffff) {
+    case (CIB_HW_ID):
+        cmd_ptr_addr = CMD_PTR_ADDR_CIB;
+        hcr_address = HCR_ADDR_CIB;
+        mf->icmd.semaphore_addr = SEMAPHORE_ADDR_CIB;
+        mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CIB;
+        mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CIB;
+        break;
+    case (CX4LX_HW_ID):
+    case (CX4_HW_ID):
+        cmd_ptr_addr = CMD_PTR_ADDR_CX4;
+        hcr_address = HCR_ADDR_CX4;
+        mf->icmd.semaphore_addr = SEMAPHORE_ADDR_CX4;
+        mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CX4;
+        mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CIB;
+        break;
+    case (CX5_HW_ID):
+        cmd_ptr_addr = CMD_PTR_ADDR_CX5;
+        hcr_address = HCR_ADDR_CX5;
+        mf->icmd.semaphore_addr = SEMAPHORE_ADDR_CX5;
+        mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CX5;
+        mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CIB;
+        break;
+    case (SW_IB_HW_ID):
+    case (SW_EN_HW_ID):
+    case (SW_IB2_HW_ID):
+        cmd_ptr_addr = CMD_PTR_ADDR_SW_IB;
+        hcr_address = HCR_ADDR_SW_IB;
+        mf->icmd.semaphore_addr = SEMAPHORE_ADDR_SW_IB;
+        mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_SW_IB;
+        mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_SW_IB;
+        break;
+    case (QUANTUM_HW_ID):
+        cmd_ptr_addr = CMD_PTR_ADDR_QUANTUM;
+        hcr_address = HCR_ADDR_QUANTUM;
+        mf->icmd.semaphore_addr = SEMAPHORE_ADDR_QUANTUM;
+        mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_QUANTUM;
+        mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_SW_IB;
+        break;
+    default:
+        return ME_ICMD_NOT_SUPPORTED;
+    }
+    mf->icmd.max_cmd_size = ICMD_MAX_CMD_SIZE;
+    icmd_ver = get_version(mf, hcr_address);
+    // get command and control addresses
+    switch (icmd_ver) {
+    case 1:
+        if (MREAD4(mf, cmd_ptr_addr, &reg)){
+            return ME_ICMD_STATUS_CR_FAIL;
+        }
+        mf->icmd.cmd_addr  = EXTRACT(reg, CMD_PTR_BITOFF, CMD_PTR_BITLEN);
+        mf->icmd.ctrl_addr = mf->icmd.cmd_addr + CTRL_OFFSET;
+        break;
+    case ME_ICMD_STATUS_CR_FAIL:
+        return ME_ICMD_STATUS_CR_FAIL;
+    default:
+        return ME_ICMD_UNSUPPORTED_ICMD_VERSION;
+    }
+    // if IB check if we support locking via MAD
+#ifndef __FreeBSD__
+    mget_mdevs_flags(mf, &dev_type);
+    if ((dev_type & MDEVS_IB) && (mib_semaphore_lock_is_supported(mf))) {
+        mf->icmd.ib_semaphore_lock_supported = 1;
+    }
+#endif
+    mf->icmd.icmd_opened = 1;
+    return ME_OK;
+}
+
 static int icmd_init_vcr(mfile* mf)
 {
      mf->icmd.cmd_addr = VCR_CMD_ADDR;
@@ -471,8 +624,9 @@ static int icmd_init_vcr(mfile* mf)
      MREAD4_ICMD(mf,VCR_CMD_SIZE_ADDR, &(mf->icmd.max_cmd_size), return ME_ICMD_STATUS_CR_FAIL;);
 
      // adrianc: they should provide this bit as well in virtual cr-space atm get from cr-space
-     GET_ADDR(mf,STAT_CFG_NOT_DONE_ADDR_CIB, STAT_CFG_NOT_DONE_ADDR_CX4, STAT_CFG_NOT_DONE_ADDR_SW_IB, mf->icmd.static_cfg_not_done_addr);
-     GET_ADDR(mf, STAT_CFG_NOT_DONE_BITOFF_CIB, STAT_CFG_NOT_DONE_BITOFF_CIB, STAT_CFG_NOT_DONE_BITOFF_SW_IB, mf->icmd.static_cfg_not_done_offs);
+     // macro is getting ugly as more devices are added...
+     GET_ADDR(mf,STAT_CFG_NOT_DONE_ADDR_CIB, STAT_CFG_NOT_DONE_ADDR_CX4, STAT_CFG_NOT_DONE_ADDR_SW_IB, STAT_CFG_NOT_DONE_ADDR_CX5, STAT_CFG_NOT_DONE_ADDR_QUANTUM, mf->icmd.static_cfg_not_done_addr);
+     GET_ADDR(mf, STAT_CFG_NOT_DONE_BITOFF_CIB, STAT_CFG_NOT_DONE_BITOFF_CIB, STAT_CFG_NOT_DONE_BITOFF_SW_IB, STAT_CFG_NOT_DONE_BITOFF_CX5, STAT_CFG_NOT_DONE_BITOFF_SW_IB, mf->icmd.static_cfg_not_done_offs);
      mf->icmd.icmd_opened = 1;
      DBG_PRINTF("-D- iCMD command addr: 0x%x\n", mf->icmd.cmd_addr);
      DBG_PRINTF("-D- iCMD ctrl addr: 0x%x\n", mf->icmd.ctrl_addr);
@@ -496,6 +650,8 @@ int icmd_open(mfile *mf)
     if (mf->vsec_supp) {
         return icmd_init_vcr(mf);
     }
+    // ugly hack avoid compiler warrnings
+    if (0) icmd_init_cr(mf);
     return ME_ICMD_NOT_SUPPORTED;
 #else
     if (mf->vsec_supp) {

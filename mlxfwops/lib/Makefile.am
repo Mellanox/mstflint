@@ -59,6 +59,7 @@ libmlxfwops_a_SOURCES = flint_base.cpp \
                fw_ops.cpp \
                fs2_ops.cpp fs2_ops.h \
                fs3_ops.cpp fs3_ops.h \
+               fs4_ops.cpp fs4_ops.h \
                mlxfwops.cpp mlxfwops.h \
                mlxfwops_com.h mlxfwops.h fw_ops.h flint_base.h flint_io.h\
                aux_tlv_ops.h aux_tlv_ops.cpp

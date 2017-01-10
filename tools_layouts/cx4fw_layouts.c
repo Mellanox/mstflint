@@ -29,13 +29,12 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
- 
 
 /***
- *** This file was generated at "2016-06-02 22:38:18"
- *** by:
- ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/cx4fw/cx4fw.adb --file-prefix cx4fw --prefix cx4fw_
- ***/
+         *** This file was generated at "2016-11-06 15:18:05"
+         *** by:
+         ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/cx4fw/cx4fw.adb --file-prefix cx4fw --prefix cx4fw_
+         ***/
 #include "cx4fw_layouts.h"
 
 void cx4fw_uid_entry_pack(const struct cx4fw_uid_entry *ptr_struct, u_int8_t* ptr_buff)
@@ -89,13 +88,13 @@ void cx4fw_uid_entry_print(const struct cx4fw_uid_entry *ptr_struct, FILE* file,
 	(void)indent_level;
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "num_allocated        : "UH_FMT"\n", ptr_struct->num_allocated);
+	fprintf(file, "num_allocated        : " UH_FMT "\n", ptr_struct->num_allocated);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "step                 : "UH_FMT"\n", ptr_struct->step);
+	fprintf(file, "step                 : " UH_FMT "\n", ptr_struct->step);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "uid                  : "U64H_FMT"\n", ptr_struct->uid);
+	fprintf(file, "uid                  : " U64H_FMT "\n", ptr_struct->uid);
 
 }
 
@@ -218,10 +217,10 @@ void cx4fw_operation_key_print(const struct cx4fw_operation_key *ptr_struct, FIL
 	(void)indent_level;
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "key_modifier         : "UH_FMT"\n", ptr_struct->key_modifier);
+	fprintf(file, "key_modifier         : " UH_FMT "\n", ptr_struct->key_modifier);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "key                  : "U64H_FMT"\n", ptr_struct->key);
+	fprintf(file, "key                  : " U64H_FMT "\n", ptr_struct->key);
 
 }
 
@@ -304,13 +303,13 @@ void cx4fw_mfg_info_print(const struct cx4fw_mfg_info *ptr_struct, FILE* file, i
 
 	fprintf(file, "psid                 : \"%s\"\n", ptr_struct->psid);
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "guids_override_en    : "UH_FMT"\n", ptr_struct->guids_override_en);
+	fprintf(file, "guids_override_en    : " UH_FMT "\n", ptr_struct->guids_override_en);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "minor_version        : "UH_FMT"\n", ptr_struct->minor_version);
+	fprintf(file, "minor_version        : " UH_FMT "\n", ptr_struct->minor_version);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "major_version        : "UH_FMT"\n", ptr_struct->major_version);
+	fprintf(file, "major_version        : " UH_FMT "\n", ptr_struct->major_version);
 
 	adb2c_add_indentation(file, indent_level);
 	fprintf(file, "guids:\n");
@@ -338,16 +337,16 @@ void cx4fw_device_info_pack(const struct cx4fw_device_info *ptr_struct, u_int8_t
 	(void)ptr_buff;
 
 	offset = 0;
-	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int64_t)ptr_struct->signature0);
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->signature0);
 
 	offset = 32;
-	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int64_t)ptr_struct->signature1);
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->signature1);
 
 	offset = 64;
-	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int64_t)ptr_struct->signature2);
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->signature2);
 
 	offset = 96;
-	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int64_t)ptr_struct->signature3);
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->signature3);
 
 	offset = 152;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->minor_version);
@@ -430,29 +429,29 @@ void cx4fw_device_info_print(const struct cx4fw_device_info *ptr_struct, FILE* f
 	(void)indent_level;
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "signature0           : "U32H_FMT"\n", ptr_struct->signature0);
+	fprintf(file, "signature0           : " U32H_FMT "\n", ptr_struct->signature0);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "signature1           : "U32H_FMT"\n", ptr_struct->signature1);
+	fprintf(file, "signature1           : " U32H_FMT "\n", ptr_struct->signature1);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "signature2           : "U32H_FMT"\n", ptr_struct->signature2);
+	fprintf(file, "signature2           : " U32H_FMT "\n", ptr_struct->signature2);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "signature3           : "U32H_FMT"\n", ptr_struct->signature3);
+	fprintf(file, "signature3           : " U32H_FMT "\n", ptr_struct->signature3);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "minor_version        : "UH_FMT"\n", ptr_struct->minor_version);
+	fprintf(file, "minor_version        : " UH_FMT "\n", ptr_struct->minor_version);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "major_version        : "UH_FMT"\n", ptr_struct->major_version);
+	fprintf(file, "major_version        : " UH_FMT "\n", ptr_struct->major_version);
 
 	adb2c_add_indentation(file, indent_level);
 	fprintf(file, "guids:\n");
 	cx4fw_guids_print(&(ptr_struct->guids), file, indent_level + 1);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "vsd_vendor_id        : "UH_FMT"\n", ptr_struct->vsd_vendor_id);
+	fprintf(file, "vsd_vendor_id        : " UH_FMT "\n", ptr_struct->vsd_vendor_id);
 
 	fprintf(file, "vsd                  : \"%s\"\n", ptr_struct->vsd);
 	for (i = 0; i < 4; i++) {
@@ -471,6 +470,95 @@ int cx4fw_device_info_size(void)
 void cx4fw_device_info_dump(const struct cx4fw_device_info *ptr_struct, FILE* file)
 {
 	cx4fw_device_info_print(ptr_struct, file, 0);
+}
+
+void cx4fw_image_signature_pack(const struct cx4fw_image_signature *ptr_struct, u_int8_t* ptr_buff)
+{
+	u_int32_t offset;
+	int i = 0;
+	(void)offset;
+	(void)i;
+	(void)ptr_struct;
+	(void)ptr_buff;
+
+	for (i = 0; i < 4; i++) {
+	offset = adb2c_calc_array_field_address(0, 32, i, 2560, 1);
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->signature_uuid[i]);
+	}
+
+	for (i = 0; i < 4; i++) {
+	offset = adb2c_calc_array_field_address(128, 32, i, 2560, 1);
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->keypair_uuid[i]);
+	}
+
+	for (i = 0; i < 64; i++) {
+	offset = adb2c_calc_array_field_address(256, 32, i, 2560, 1);
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->signature[i]);
+	}
+
+}
+
+void cx4fw_image_signature_unpack(struct cx4fw_image_signature *ptr_struct, const u_int8_t* ptr_buff)
+{
+	u_int32_t offset;
+	int i = 0;
+	(void)offset;
+	(void)i;
+	(void)ptr_struct;
+	(void)ptr_buff;
+
+	for (i = 0; i < 4; i++) {
+	offset = adb2c_calc_array_field_address(0, 32, i, 2560, 1);
+	ptr_struct->signature_uuid[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	}
+
+	for (i = 0; i < 4; i++) {
+	offset = adb2c_calc_array_field_address(128, 32, i, 2560, 1);
+	ptr_struct->keypair_uuid[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	}
+
+	for (i = 0; i < 64; i++) {
+	offset = adb2c_calc_array_field_address(256, 32, i, 2560, 1);
+	ptr_struct->signature[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	}
+
+}
+
+void cx4fw_image_signature_print(const struct cx4fw_image_signature *ptr_struct, FILE* file, int indent_level)
+{
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "======== cx4fw_image_signature ========\n");
+	int i = 0;
+	(void)i;
+	(void)ptr_struct;
+	(void)file;
+	(void)indent_level;
+
+	for (i = 0; i < 4; i++) {
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "signature_uuid_%03d  : " U32H_FMT "\n", i, ptr_struct->signature_uuid[i]);
+	}
+
+	for (i = 0; i < 4; i++) {
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "keypair_uuid_%03d    : " U32H_FMT "\n", i, ptr_struct->keypair_uuid[i]);
+	}
+
+	for (i = 0; i < 64; i++) {
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "signature_%03d       : " U32H_FMT "\n", i, ptr_struct->signature[i]);
+	}
+
+}
+
+int cx4fw_image_signature_size(void)
+{
+	 return 320;
+}
+
+void cx4fw_image_signature_dump(const struct cx4fw_image_signature *ptr_struct, FILE* file)
+{
+	cx4fw_image_signature_print(ptr_struct, file, 0);
 }
 
 void cx4fw_cx4fw_Nodes_pack(const union cx4fw_cx4fw_Nodes *ptr_struct, u_int8_t* ptr_buff)
@@ -492,6 +580,10 @@ void cx4fw_cx4fw_Nodes_print(const union cx4fw_cx4fw_Nodes *ptr_struct, FILE* fi
 	(void)ptr_struct;
 	(void)file;
 	(void)indent_level;
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "image_signature:\n");
+	cx4fw_image_signature_print(&(ptr_struct->image_signature), file, indent_level + 1);
 
 	adb2c_add_indentation(file, indent_level);
 	fprintf(file, "device_info:\n");

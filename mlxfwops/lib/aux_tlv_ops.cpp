@@ -147,6 +147,9 @@ Tlv_Status_t ImageTlvOps::init(u_int32_t startPos, bool force)
     }
     fsize = _rawFileBuff.size();
     for (long int i = startPos; i < fsize; i += 4) {
+        if ((i + 16) > fsize) {
+            break; // reached EOF
+        }
         std::vector<u_int8_t> possibleSig(_rawFileBuff.begin() + i , _rawFileBuff.begin() + i + 16);
         TOCPUn(&possibleSig[0], 4);
         if (checkSig(possibleSig)) {

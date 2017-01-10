@@ -63,7 +63,7 @@ class Fs3Operations : public FwOperations {
 public:
 
 
-    Fs3Operations(FBase *ioAccess) : FwOperations(ioAccess),
+    Fs3Operations(FBase *ioAccess) : FwOperations(ioAccess), _imageCache(0xFF),
         _isfuSupported(false), _badDevDataSections(false), _maxImgLog2Size(0){
         _minBinMinorVer = FS3_MIN_BIN_VER_MINOR;
         _minBinMajorVer = FS3_MIN_BIN_VER_MAJOR;
@@ -136,6 +136,11 @@ protected:
     virtual bool getRunningFwVersion();
     virtual bool Fs3IsfuActivateImage(u_int32_t newImageStart);
     bool TestAndSetTimeStamp(Fs3Operations &imageOps);
+    bool Fs3ReburnItocSection(u_int32_t newSectionAddr, u_int32_t newSectionSize, std::vector<u_int8_t>  newSectionData, const char *msg, PrintCallBack callBackFunc=(PrintCallBack)NULL);
+    bool Fs3ChangeUidsFromBase(fs3_uid_t base_uid, struct cibfw_guids& guids);
+    bool Fs3ChangeUidsFromBase(fs3_uid_t base_uid, struct cx4fw_guids& guids);
+    bool DeviceTimestampEnabled();
+    bool RomCommonCheck(bool ignoreProdIdCheck, bool checkIfRomEmpty);
 
     struct toc_info {
         u_int32_t entry_addr;
@@ -179,12 +184,10 @@ private:
     bool UpdateDevDataITOC(Fs3Operations &imageOps, struct toc_info *image_toc_info_entry, struct toc_info *flash_toc_arr, int flash_toc_size);
 
     bool AddDevDataITOC(struct toc_info *flash_toc_entry, u_int8_t *image_data, struct toc_info *image_toc_arr, int& image_toc_size);
-    bool Fs3UpdateSection(void *new_info, fs3_section_t sect_type=FS3_DEV_INFO, bool is_sect_failsafe=true, CommandType cmd_type=CMD_UNKNOWN, PrintCallBack callBackFunc=(PrintCallBack)NULL );
+    virtual bool Fs3UpdateSection(void *new_info, fs3_section_t sect_type=FS3_DEV_INFO, bool is_sect_failsafe=true, CommandType cmd_type=CMD_UNKNOWN, PrintCallBack callBackFunc=(PrintCallBack)NULL );
     bool Fs3GetItocInfo(struct toc_info *tocArr, int num_of_itocs, fs3_section_t sect_type, struct toc_info *&curr_toc);
     bool Fs3UpdateMfgUidsSection(struct toc_info *curr_toc, std::vector<u_int8_t>  section_data, fs3_uid_t base_uid,
                                             std::vector<u_int8_t>  &newSectionData);
-    bool Fs3ChangeUidsFromBase(fs3_uid_t base_uid, struct cibfw_guids& guids);
-    bool Fs3ChangeUidsFromBase(fs3_uid_t base_uid, struct cx4fw_guids& guids);
     bool Fs3UpdateUidsSection(struct toc_info *curr_toc, std::vector<u_int8_t>  section_data, fs3_uid_t base_uid,
                                              std::vector<u_int8_t>  &newSectionData);
     bool Fs3UpdateVsdSection(struct toc_info *curr_toc, std::vector<u_int8_t>  section_data, char* user_vsd,
@@ -196,7 +199,6 @@ private:
     bool Fs3UpdateItocInfo(struct toc_info *newItocInfo, u_int32_t newSectionAddr, fs3_section_t sectionType, u_int32_t* newSectData, u_int32_t NewSectSize);
     bool Fs3UpdateItocData(struct toc_info *currToc);
 
-    bool Fs3ReburnItocSection(u_int32_t newSectionAddr, u_int32_t newSectionSize, std::vector<u_int8_t>  newSectionData, const char *msg, PrintCallBack callBackFunc=(PrintCallBack)NULL);
     bool GetModifiedSectionInfo(fs3_section_t sectionType, fs3_section_t nextSectionType, u_int32_t &newSectAddr,
             fs3_section_t &sectToPut, u_int32_t &oldSectSize);
     bool UpdateItocAfterInsert(fs3_section_t sectionType, u_int32_t newSectAddr, fs3_section_t SectToPut,  bool toAdd, u_int32_t* newSectData, u_int32_t NewSectSize,
@@ -209,7 +211,7 @@ private:
     bool CopyItocInfo(struct toc_info *newTocInfo, struct toc_info *currToc);
     bool Fs3ModifySection(fs3_section_t sectionType, fs3_section_t neighbourSection, bool toAdd, u_int32_t* newSectData,
             u_int32_t newImageSize, ProgressCallBack progressFunc);
-    bool Fs3RemoveSection(fs3_section_t sectionType, ProgressCallBack progressFunc);
+    virtual bool Fs3RemoveSection(fs3_section_t sectionType, ProgressCallBack progressFunc);
     bool Fs3AddSection(fs3_section_t sectionType, fs3_section_t neighbourSection, u_int32_t* newSectData, u_int32_t newSectSize,
             ProgressCallBack progressFunc);
     bool CheckFs3ImgSize(Fs3Operations& imageOps, bool useImageDevData=false);
@@ -221,9 +223,8 @@ private:
     u_int32_t getAbsAddr(toc_info* toc, u_int32_t imgStart);
     bool getLastFwSAddr(u_int32_t& lastAddr);
     bool getFirstDevDataAddr(u_int32_t& firstAddr);
-    bool reburnItocSection(PrintCallBack callBackFunc);
+    virtual bool reburnItocSection(PrintCallBack callBackFunc, bool burnFailsafe=true);
 
-    bool DeviceTimestampEnabled();
     Tlv_Status_t GetTsObj(TimeStampIFC** tsObj);
 
     // this class is for sorting the itoc array by ascending absolute flash_addr used in FwShiftDevData

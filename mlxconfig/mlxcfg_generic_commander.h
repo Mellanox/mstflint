@@ -46,7 +46,6 @@
 
 class GenericCommander : public Commander {
 private:
-    mfile* _mf;
     MlxcfgDBManager *_dbManager;
 
     void supportsNVData();
@@ -69,12 +68,13 @@ public:
     void getCfg(ParamView& cfgParam, QueryType qt = QueryNext);
     void setCfg(std::vector<ParamView>& params, bool force);
     bool isDefaultSupported();
+    bool isCurrentSupported();
     void clearSemaphore();
     void invalidateCfgs();
     const char* loadConfigurationGetStr();
     void setRawCfg(std::vector<u_int32_t> rawTlvVec);
     void dumpRawCfg(std::vector<u_int32_t> rawTlvVec, std::string& tlvDump);
-    void backupCfgs(std::vector<std::pair<u_int32_t, std::vector<u_int8_t> > >& cfgs);
+    void backupCfgs(vector<BackupView>& view);
     void updateParamViewValue(ParamView&, std::string);
 
     void genTLVsList(vector<string>& tlvs);

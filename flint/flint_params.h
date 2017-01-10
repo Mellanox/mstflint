@@ -134,6 +134,7 @@ public:
     string fullCmd;
     bool use_dev_img_info;
     bool skip_ci_req;
+    bool use_dev_rom;
 };
 
 #endif

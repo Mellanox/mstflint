@@ -68,7 +68,7 @@ class MlxCfgParams
 public:
     MlxCfgParams() : device(), rawTlvFile(), NVInputFile(), NVOutputFile(),
                      dbName(DB_NAME), allAttrs(false), cmd(Mc_UnknownCmd),
-                     yes(false), force(false), showDefault(false) {}
+                     yes(false), force(false), enableVerbosity(false) {}
     ~MlxCfgParams() {}
 
     std::string device;
@@ -81,7 +81,7 @@ public:
     bool yes;
     std::vector<ParamView> setParams;
     bool force;// ignore parameter checks
-    bool showDefault;
+    bool enableVerbosity;
 
 };
 
@@ -99,7 +99,7 @@ private:
     void printVersion();
     void printUsage();
     void printOpening(const char* dev, int devIndex);
-    void printConfHeader(bool showDefualt, bool showNew);
+    void printConfHeader(bool showDefualt, bool showNew, bool showCurrent);
     mlxCfgStatus parseArgs(int argc, char* argv[]);
     //Helper functions for parse args
     mlxCfgStatus extractNVInputFile(int argc, char* argv[]);

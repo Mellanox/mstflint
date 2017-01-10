@@ -186,6 +186,7 @@ FlagMetaData::FlagMetaData() {
     _flags.push_back(new Flag("", "use_fw", 0));
     _flags.push_back(new Flag("", "use_dev_img_info", 0));
     _flags.push_back(new Flag("", "skip_ci_req", 0));
+    _flags.push_back(new Flag("", "use_dev_rom", 0));
 }
 
 FlagMetaData::~FlagMetaData() {
@@ -554,6 +555,12 @@ void Flint::initCmdParser() {
                 "Do not save the ROM which exists in the device.\n"
                 "Commands affected: burn");
 
+    AddOptions("use_dev_rom",
+               ' ',
+                "",
+                "Save the ROM which exists in the device.\n"
+                "Commands affected: burn");
+
     AddOptions("ignore_dev_data",
                ' ',
                 "",
@@ -796,6 +803,8 @@ ParseStatus Flint::HandleOption(string name, string value)
         _flintParams.use_image_guids = true;
     } else if (name == "use_image_rom") {
         _flintParams.use_image_rom = true;
+    } else if (name == "use_dev_rom") {
+        _flintParams.use_dev_rom = true;
     } else if (name == "ignore_dev_data") {
         _flintParams.ignore_dev_data = true;
     } else if (name == "dual_image") {

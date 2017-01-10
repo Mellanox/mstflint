@@ -78,6 +78,7 @@ struct mfile_t {
         int is_vm; /*  if the machine is VM    */
         int cr_access; /* If cr access is allowed in MLNXOS devices */
         unsigned char i2c_slave;
+        int           gpio_en;
         io_region* iorw_regions; /* For LPC devices */
         int regions_num;
         char* dev_name;
@@ -95,6 +96,7 @@ struct mfile_t {
         MIB_Private mib; /*  Data for IB interface (if relevant) */
         void *ctx;
         unsigned int i2c_RESERVED; /*  Reserved for internal usage (i2c internal) */
+        int i2c_smbus;
         enum Mdevs_t flags;
         u_int32_t connectx_wa_slot; /* apply connectx cr write workaround */
         int connectx_wa_last_op_write;

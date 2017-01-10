@@ -91,7 +91,7 @@ void MlxCfg::printHelp()
     printFlagLine("f", "file", "conf_file", "raw configuration file.");
     printFlagLine("h", "help", "", "Display help message.");
     printFlagLine("v", "version", "", "Display version info.");
-    printFlagLine("e", "show_default", "", "Show default configurations.");
+    printFlagLine("e", "enable_verbosity", "", "Show default and current configurations.");
     printFlagLine("y", "yes", "", "Answer yes in prompt.");
     printFlagLine("a", "all_attrs", "", "Show all attributes in the XML template");
 
@@ -100,7 +100,7 @@ void MlxCfg::printHelp()
     printf(IDENT"COMMANDS:\n");
     printf(IDENT2"%-24s : %s\n","clear_semaphore", "clear the tool semaphore.");
     printf(IDENT2"%-24s : %s\n","i[show_confs]", "display informations about all configurations.");
-    printf(IDENT2"%-24s : %s\n","q[uery]", "query current supported configurations.");
+    printf(IDENT2"%-24s : %s\n","q[uery]", "query supported configurations.");
     printf(IDENT2"%-24s : %s\n","r[eset]", "reset all configurations to their default value.");
     printf(IDENT2"%-24s : %s\n","s[et]", "set configurations to a specific device.");
     printf(IDENT2"%-24s : %s\n","set_raw", "set raw configuration file.(only "  FIFTH_GENERATION_LIST ".)");
@@ -121,14 +121,14 @@ void MlxCfg::printHelp()
     // print usage examples
     printf("\n");
     printf(IDENT"Examples:\n");
-    printf(IDENT2"%-35s: %s\n", "To query current configuration", MLXCFG_NAME " -d " MST_DEV_EXAMPLE " query");
+    printf(IDENT2"%-35s: %s\n", "To query configurations", MLXCFG_NAME " -d " MST_DEV_EXAMPLE " query");
     printf(IDENT2"%-35s: %s\n", "To set configuration", MLXCFG_NAME " -d " MST_DEV_EXAMPLE " set SRIOV_EN=1 NUM_OF_VFS=16 WOL_MAGIC_EN_P1=1");
     printf(IDENT2"%-35s: %s\n", "To set raw configuration", MLXCFG_NAME " -d " MST_DEV_EXAMPLE2 " -f conf_file set_raw");
     printf(IDENT2"%-35s: %s\n", "To reset configuration", MLXCFG_NAME " -d " MST_DEV_EXAMPLE " reset");
     printf("\n");
     printf(IDENT"Supported devices:\n");
     printf(IDENT2"4th Generation devices: ConnectX3, ConnectX3-Pro (FW 2.31.5000 and above).\n");
-    printf(IDENT2"5th Generation devices: ConnectIB, ConnectX4, ConnectX4-LX.\n");
+    printf(IDENT2"5th Generation devices: ConnectIB, ConnectX4, ConnectX4-LX, ConnectX5.\n");
     printf("\n");
     printf(IDENT"Note: query device to view supported configurations by Firmware.\n");
     printf("\n");
@@ -263,8 +263,8 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
                 return err(true, "missing file name");
             }
             _mlxParams.rawTlvFile = argv[i];
-        } else if (arg == "-e" || arg == "--show_default") {
-            _mlxParams.showDefault = true;
+        } else if (arg == "-e" || arg == "--enable_verbosity") {
+            _mlxParams.enableVerbosity = true;
         } else if (arg == "-a" || arg == "--all_attrs") {
             _mlxParams.allAttrs = true;
         } else if (arg == "set" || arg == "s") {

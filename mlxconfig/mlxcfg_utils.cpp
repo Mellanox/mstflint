@@ -68,7 +68,7 @@ void dealWithSignal()
 }
 
 MError mnvaCom5thGen(mfile* mf, u_int8_t* buff, u_int16_t len, u_int32_t tlvType,
-        reg_access_method_t method, bool getDefault)
+        reg_access_method_t method, QueryType qT)
 {
     struct tools_open_nvda mnvaTlv;
     memset(&mnvaTlv, 0, sizeof(struct tools_open_nvda));
@@ -76,8 +76,11 @@ MError mnvaCom5thGen(mfile* mf, u_int8_t* buff, u_int16_t len, u_int32_t tlvType
     mnvaTlv.nv_hdr.length = len;
     mnvaTlv.nv_hdr.rd_en = 0;
     mnvaTlv.nv_hdr.over_en = 1;
-    if (getDefault) {
+    mnvaTlv.nv_hdr.writer_id = WRITER_ID_ICMD_MLXCONFIG;
+    if (qT == QueryDefault) {
         mnvaTlv.nv_hdr.default_ = 1;
+    } else if (qT == QueryCurrent) {
+        mnvaTlv.nv_hdr.read_current = 1;
     }
     // tlvType should be in the correct endianess
     mnvaTlv.nv_hdr.type.tlv_type_dw.tlv_type_dw =  __be32_to_cpu(tlvType);
@@ -183,6 +186,42 @@ string mlxcfg_trim(string s)
 {
     return mlxcfg_rtrim(mlxcfg_ltrim(s));
 }
+
+string writerIdToStr(WriterId writerId)
+{
+    switch(writerId) {
+        case WRITER_ID_UNSPECIFIED:
+            return "Unspecified";
+        case WRITER_ID_CHASSIS_BMC:
+            return "Chassis BMC";
+        case WRITER_ID_MAD:
+            return "MAD";
+        case WRITER_ID_BMC:
+            return "BMC";
+        case WRITER_ID_CMD_IF:
+            return "CMD IF";
+        case WRITER_ID_ICMD:
+            return "ICMD";
+        case WRITER_ID_ICMD_UEFI_HII:
+            return "ICMD UEFI HII";
+        case WRITER_ID_ICMD_UEFI_CLP:
+            return "ICMD UEFI CLP";
+        case WRITER_ID_ICMD_FLEXBOOT:
+            return "ICMD FLEXBOOT";
+        case WRITER_ID_ICMD_MLXCONFIG:
+            return "ICMD MLXCONFIG";
+        case WRITER_ID_ICMD_USER1:
+            return "ICMD USER1";
+        case WRITER_ID_ICMD_USER2:
+            return "ICMD USER2";
+        case WRITER_ID_ICMD_MLXCONFIG_SET_RAW:
+            return "ICMD MLXCONFIG SET RAW";
+        case WRITER_ID_OTHER:
+            return "OTHER";
+        default:
+            return "Unknown";
+    }
+};
 
 MlxcfgException::MlxcfgException(const char* fmt, ...){
     char tmp[1024];

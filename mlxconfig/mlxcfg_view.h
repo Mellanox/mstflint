@@ -67,4 +67,10 @@ typedef struct TLVConfView {
     std::vector<ParamView> params;
 } TLVConfView;
 
+typedef struct BackupView {
+    u_int32_t           type;
+    u_int8_t            writerId;
+    u_int8_t            writerHostId;
+    std::vector<u_int8_t>    tlvBin;
+} BackupView;
 #endif /* MLXCFG_VIEW_H_ */

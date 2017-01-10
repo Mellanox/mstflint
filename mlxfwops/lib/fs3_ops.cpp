@@ -63,6 +63,7 @@
 #define DEFAULT_GUID_NUM 0xff
 #define DEFAULT_STEP DEFAULT_GUID_NUM
 
+
 //fs4 use the same itoc signatures, please double check
 const u_int32_t Fs3Operations::_itocSignature[4] = {
         ITOC_ASCII,   // Ascii of "MTFW"
@@ -86,6 +87,7 @@ const Fs3Operations::SectionInfo Fs3Operations::_fs3SectionsInfoArr[] = {
     {FS3_HW_MAIN_CFG,   "HW_MAIN_CFG"},
     {FS3_PHY_UC_CODE,   "PHY_UC_CODE"},
     {FS3_PHY_UC_CONSTS, "PHY_UC_CONSTS"},
+    {FS3_PHY_UC_CMD,    "PHY_UC_CMD"},
     {FS3_IMAGE_INFO,    "IMAGE_INFO"},
     {FS3_FW_BOOT_CFG,   "FW_BOOT_CFG"},
     {FS3_FW_MAIN_CFG,   "FW_MAIN_CFG"},
@@ -94,6 +96,9 @@ const Fs3Operations::SectionInfo Fs3Operations::_fs3SectionsInfoArr[] = {
     {FS3_DBG_FW_INI,    "DBG_FW_INI"},
     {FS3_DBG_FW_PARAMS, "DBG_FW_PARAMS"},
     {FS3_FW_ADB,        "FW_ADB"},
+    {FS3_IMAGE_SIGNATURE, "IMAGE_SIGNATURE"},
+    {FS3_PUBLIC_KEYS,   "PUBLIC_KEYS"},
+    {FS3_FORBIDDEN_VERSIONS, "FORBIDDEN_VERSIONS"},
 
     {FS3_MFG_INFO,      MFG_INFO},
     {FS3_DEV_INFO,      "DEV_INFO"},
@@ -351,7 +356,7 @@ bool Fs3Operations::IsFs3SectionReadable(u_int8_t type, QueryOptions queryOption
             return false;
         }
         if (queryOptions.quickQuery) {
-            if ( IsGetInfoSupported(type)) {
+            if (IsGetInfoSupported(type)) {
                 return true;
             }
             return false;
@@ -424,7 +429,7 @@ bool Fs3Operations::VerifyTOC(u_int32_t dtoc_addr, bool& bad_signature, VerifyCa
                 } else {
                     phys_addr = _ioAccess->get_phys_from_cont(flash_addr, _fwImgInfo.cntxLog2ChunkSize, _fwImgInfo.imgStart != 0);
                     u_int32_t currSizeOfImgdata = phys_addr + entry_size_in_bytes;
-                    _fs3ImgInfo.sizeOfImgData = (_fs3ImgInfo.sizeOfImgData > currSizeOfImgdata) ? _fs3ImgInfo.sizeOfImgData : phys_addr;
+                    _fs3ImgInfo.sizeOfImgData = (_fs3ImgInfo.sizeOfImgData > currSizeOfImgdata) ? _fs3ImgInfo.sizeOfImgData : currSizeOfImgdata;
                 }
                 section_last_addr = phys_addr + entry_size_in_bytes;
                 _fwImgInfo.lastImageAddr = (_fwImgInfo.lastImageAddr >= section_last_addr) ? _fwImgInfo.lastImageAddr : section_last_addr;
@@ -988,8 +993,7 @@ bool Fs3Operations::FsBurnAux(FwOperations *imgops, ExtBurnParams& burnParams)
         }
 
         // ROM patchs
-        if (((burnParams.burnRomOptions == ExtBurnParams::BRO_FROM_DEV_IF_EXIST) && (_fwImgInfo.ext_info.roms_info.exp_rom_found)) || // There is ROM in device and user choses to keep it
-                ((burnParams.burnRomOptions == ExtBurnParams::BRO_DEFAULT) && (!imageOps._fwImgInfo.ext_info.roms_info.exp_rom_found && _fwImgInfo.ext_info.roms_info.exp_rom_found))) { // No ROM in image and ROM in device
+        if ((burnParams.burnRomOptions == ExtBurnParams::BRO_FROM_DEV_IF_EXIST) && (_fwImgInfo.ext_info.roms_info.exp_rom_found)) {
             // here we should take rom from device and insert into the image
             // i.e if we have rom in image remove it and put the rom from the device else just put rom from device.
             // 1. use Fs3ModifySection to integrate _romSect buff with the image , newImageData contains the modified image buffer
@@ -999,7 +1003,6 @@ bool Fs3Operations::FsBurnAux(FwOperations *imgops, ExtBurnParams& burnParams)
                     (u_int32_t*)&romSect[0], (u_int32_t)romSect.size())) {
                 return errmsg(MLXFW_ROM_UPDATE_IN_IMAGE_ERR, "failed to update ROM in image. %s", imageOps.err());
             }
-
         }
         // image vsd patch
         if (!burnParams.useImagePs && (burnParams.vsdSpecified || burnParams.useDevImgInfo)) {
@@ -1502,22 +1505,15 @@ bool Fs3Operations::FwBurnRom(FImage* romImg, bool ignoreProdIdCheck, bool ignor
         return false;
     }
 
-    if (getInfoFromChipType(_fwImgInfo.ext_info.chip_type).chipFamilyType != CFT_HCA) {
-        return errmsg("Burn ROM is supported only for HCA devices.");
-    }
-
-    if (!ignoreProdIdCheck && strcmp(_fwImgInfo.ext_info.product_ver, "") != 0) {
-        return errmsg("The device FW contains common FW/ROM Product Version - The ROM cannot be updated separately.");
-    }
-
     if (!ignoreDevidCheck && !FwOperations::checkMatchingExpRomDevId(_fwImgInfo.ext_info.dev_type, romsInfo)) {
         return errmsg("Image file ROM: FW is for device %d, but Exp-ROM is for device %d\n", _fwImgInfo.ext_info.dev_type,
                 romsInfo.exp_rom_com_devid);
     }
-    // Burning ROM is not allowed on Device with Timestamp enabled.
-    if (DeviceTimestampEnabled()) {
-        return errmsg("A valid Timestamp was detected on device. ROM cannot be updated. reset timestamp and resume operation");
+
+    if (!RomCommonCheck(ignoreProdIdCheck, false)) {
+        return false;
     }
+
     return Fs3AddSection(FS3_ROM_CODE, FS3_PCI_CODE, romImg->getBuf(), romImg->getBufLength(), progressFunc);
 }
 
@@ -1528,21 +1524,10 @@ bool Fs3Operations::FwDeleteRom(bool ignoreProdIdCheck, ProgressCallBack progres
         return false;
     }
 
-    if (getInfoFromChipType(_fwImgInfo.ext_info.chip_type).chipFamilyType != CFT_HCA) {
-        return errmsg("Delete ROM is supported only for HCA devices.");
+    if (!RomCommonCheck(ignoreProdIdCheck, true)) {
+        return false;
     }
 
-    if (_romSect.empty()) {
-        return errmsg("The FW does not contain a ROM section");
-    }
-
-    if (!ignoreProdIdCheck && strcmp(_fwImgInfo.ext_info.product_ver, "") != 0) {
-        return errmsg("The device FW contains common FW/ROM Product Version - The ROM cannot be updated separately.");
-    }
-    // Deleting ROM is not allowed on Device with Timestamp enabled.
-    if (DeviceTimestampEnabled()) {
-        return errmsg("A valid Timestamp was detected on device. ROM cannot be updated. reset timestamp and resume operation");
-    }
     return Fs3RemoveSection(FS3_ROM_CODE, progressFunc);
 }
 
@@ -1812,7 +1797,7 @@ bool Fs3Operations::Fs3ReburnItocSection(u_int32_t newSectionAddr,
     }
     PRINT_PROGRESS(callBackFunc, (char*)"OK\n");
     // Update new ITOC section
-    if (!reburnItocSection(callBackFunc)) {
+    if (!reburnItocSection(callBackFunc, _ioAccess->is_flash())) {
     	return false;
     }
     return true;
@@ -2000,13 +1985,17 @@ bool Fs3Operations::getFirstDevDataAddr(u_int32_t& firstAddr) {
 	return true;
 }
 
-bool Fs3Operations::reburnItocSection(PrintCallBack callBackFunc) {
+bool Fs3Operations::reburnItocSection(PrintCallBack callBackFunc, bool burnFailsafe) {
 
     // HACK SHOULD BE REMOVED ASAP
     u_int32_t sector_size = FS3_DEFAULT_SECTOR_SIZE;
     // Itoc section is failsafe (two sectors after boot section are reserved for itoc entries)
     u_int32_t oldItocAddr = _fs3ImgInfo.itocAddr;
-    u_int32_t newItocAddr = (_fs3ImgInfo.firstItocIsEmpty) ? (_fs3ImgInfo.itocAddr - sector_size) :  (_fs3ImgInfo.itocAddr + sector_size);
+    u_int32_t newItocAddr = oldItocAddr;
+    if (burnFailsafe) {
+        newItocAddr = (_fs3ImgInfo.firstItocIsEmpty) ? (_fs3ImgInfo.itocAddr - sector_size) :  (_fs3ImgInfo.itocAddr + sector_size);
+    }
+
     // Update new ITOC
     u_int32_t itocSize = (_fs3ImgInfo.numOfItocs + 1 ) * CIBFW_ITOC_ENTRY_SIZE + CIBFW_ITOC_HEADER_SIZE;
     u_int8_t *p = new u_int8_t[itocSize];
@@ -2027,12 +2016,14 @@ bool Fs3Operations::reburnItocSection(PrintCallBack callBackFunc) {
     PRINT_PROGRESS(callBackFunc,(char*)"OK\n");
     u_int32_t zeros = 0;
 
-    PRINT_PROGRESS(callBackFunc,(char*)"Restoring signature   - ");
-    if (!writeImage((ProgressCallBack)NULL, oldItocAddr, (u_int8_t*)&zeros, 4, false, true)) {
-        PRINT_PROGRESS(callBackFunc,(char*)"FAILED\n");
-        return false;
+    if (burnFailsafe) {
+        PRINT_PROGRESS(callBackFunc,(char*)"Restoring signature   - ");
+        if (!writeImage((ProgressCallBack)NULL, oldItocAddr, (u_int8_t*)&zeros, 4, false, true)) {
+            PRINT_PROGRESS(callBackFunc,(char*)"FAILED\n");
+            return false;
+        }
+        PRINT_PROGRESS(callBackFunc,(char*)"OK\n");
     }
-    PRINT_PROGRESS(callBackFunc,(char*)"OK\n");
     return true;
 }
 
@@ -2469,6 +2460,32 @@ cleanup:
     delete imgTsObj;
     delete devTsObj;
     return retRc;
+}
+
+bool Fs3Operations::RomCommonCheck(bool ignoreProdIdCheck, bool checkIfRomEmpty)
+{
+    if (getInfoFromChipType(_fwImgInfo.ext_info.chip_type).chipFamilyType
+            != CFT_HCA) {
+        return errmsg("Updating ROM is supported only for HCA devices.");
+    }
+
+    if (checkIfRomEmpty && _romSect.empty()) {
+        return errmsg("The FW does not contain a ROM section");
+    }
+
+    if (!ignoreProdIdCheck &&
+            strcmp(_fwImgInfo.ext_info.product_ver, "") != 0) {
+        return errmsg("The device FW contains common FW/ROM Product Version - "
+                "The ROM cannot be updated separately.");
+    }
+
+    // Deleting ROM is not allowed on Device with Timestamp enabled.
+    if (DeviceTimestampEnabled()) {
+        return errmsg("A valid Timestamp was detected on device."
+                " ROM cannot be updated. reset timestamp and resume operation");
+    }
+
+    return true;
 }
 
 bool Fs3Operations::DeviceTimestampEnabled()

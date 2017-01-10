@@ -29,10 +29,9 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
- 
 
 /***
-         *** This file was generated at "2016-09-24 01:49:33"
+         *** This file was generated at "2016-10-01 01:16:16"
          *** by:
          ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/register_access/register_access_sib.adb --file-prefix register_access_sib --prefix register_access_sib_
          ***/
@@ -49,7 +48,7 @@ void register_access_sib_IB_PSID__pack(const struct register_access_sib_IB_PSID_
 
 	for (i = 0; i < 4; i++) {
 	offset = adb2c_calc_array_field_address(0, 32, i, 128, 1);
-	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int64_t)ptr_struct->PS_ID[i]);
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->PS_ID[i]);
 	}
 
 }
@@ -187,7 +186,7 @@ void register_access_sib_IB_FWInfo__pack(const struct register_access_sib_IB_FWI
 	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->Major);
 
 	offset = 32;
-	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int64_t)ptr_struct->BuildID);
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->BuildID);
 
 	offset = 80;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->Year);
@@ -205,16 +204,16 @@ void register_access_sib_IB_FWInfo__pack(const struct register_access_sib_IB_FWI
 	register_access_sib_IB_PSID__pack(&(ptr_struct->PSID), ptr_buff + offset/8);
 
 	offset = 256;
-	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int64_t)ptr_struct->INIFileNum);
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->INIFileNum);
 
 	offset = 288;
-	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int64_t)ptr_struct->extended_major);
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->extended_major);
 
 	offset = 320;
-	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int64_t)ptr_struct->extended_minor);
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->extended_minor);
 
 	offset = 352;
-	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int64_t)ptr_struct->extended_subminor);
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->extended_subminor);
 
 }
 
@@ -352,7 +351,7 @@ void register_access_sib_IB_HWInfo__pack(const struct register_access_sib_IB_HWI
 	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->hw_dev_id);
 
 	offset = 224;
-	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int64_t)ptr_struct->UpTime);
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->UpTime);
 
 }
 
@@ -628,10 +627,10 @@ void register_access_sib_mtmp_pack(const struct register_access_sib_mtmp *ptr_st
 	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->temperature_threshold_lo);
 
 	offset = 192;
-	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int64_t)ptr_struct->name_hi);
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->name_hi);
 
 	offset = 224;
-	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int64_t)ptr_struct->name_lo);
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->name_lo);
 
 }
 

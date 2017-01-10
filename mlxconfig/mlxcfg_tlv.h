@@ -57,8 +57,8 @@
 
 enum TLVTarget {
     NIC,
-    EXP_ROM
-    //TODO what about NIC_internal
+    EXP_ROM,
+    NIC_INTERNAL
 };
 
 enum TLVClass {
@@ -89,7 +89,7 @@ class TLVConf {
         u_int32_t getPerHostFunctionTypeBe();
         u_int32_t getTlvTypeBe();
         void mnva(mfile* mf, u_int8_t* buff, u_int16_t len, u_int32_t type,
-                reg_access_method_t method, bool getDefault=false);
+                reg_access_method_t method, QueryType qT = QueryNext);
         static TLVTarget str2TLVTarget(char *s);
         static TLVClass str2TLVClass(char *s);
 
@@ -107,6 +107,7 @@ class TLVConf {
         u_int8_t _port;
         bool _alreadyQueried;
         map<string,string> _attrs;
+        vector<u_int8_t> _buff;
 
         TLVConf(int columnsCount, char **dataRow, char **headerRow);
 
@@ -115,7 +116,7 @@ class TLVConf {
         bool isFWSupported(mfile* mf, bool read_write);
         Param* getValidBitParam(std::string n);
         bool checkParamValidBit(Param* p);
-        std::vector<std::pair<ParamView, std::string> > query(mfile* mf, bool getDefault);
+        std::vector<std::pair<ParamView, std::string> > query(mfile* mf, QueryType qT);
         void updateParamByMlxconfigName(std::string param, std::string val);
         void updateParamByName(string param, string val);
         u_int32_t getParamValueByName(std::string n);

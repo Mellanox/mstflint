@@ -79,7 +79,9 @@ public:
     // methods
     CommandLineRequester(string req_name) : name(req_name) {}
     virtual ~CommandLineRequester() {}
-
+    inline void setToolName(string req_name) {
+        name = req_name;
+    }
     inline void AddOptions(option_ifc_t options[], int arr_size) {
         for (int i = 0; i < arr_size; ++i)
             this->options.push_back(options[i]);
@@ -139,7 +141,9 @@ public:
 
     inline const char * GetErrDesc() { return this->last_error.c_str(); }
     inline const char * GetUnknownOptions() { return this->last_unknown_options.c_str(); }
-
+    inline void setParserName(string parser_name) {
+        name = parser_name;
+    }
     int AddRequester(CommandLineRequester *p_req);      //if multiple option than fail
 
     ParseStatus ParseOptions(int argc, char **argv,

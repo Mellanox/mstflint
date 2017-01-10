@@ -29,10 +29,9 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
- 
 
 /***
-         *** This file was generated at "2016-09-25 23:16:13"
+         *** This file was generated at "2016-12-11 13:27:43"
          *** by:
          ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/tools_open/tools_open.adb --file-prefix tools_open --prefix tools_open_
          ***/
@@ -218,18 +217,22 @@ This field is only valid for Address + Read and Address + Write operations, prov
 struct tools_open_nv_hdr_fifth_gen {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Size of configuration item data in bytes between 0..256 */
-	/* 0x0.0 - 0x0.7 */
-	 u_int8_t length;
-	/* Description - 0 - FW writes configuration item directly
-1 - FW writes configuration to a temporary aread untill NVCT operation is called */
-	/* 0x0.11 - 0x0.11 */
-	 u_int8_t shadow;
+	/* 0x0.0 - 0x0.8 */
+	 u_int16_t length;
+	/* Description - tlv writer host index */
+	/* 0x0.9 - 0x0.11 */
+	 u_int8_t writer_host_id;
 	/* Description - Configuration item version */
 	/* 0x0.12 - 0x0.15 */
 	 u_int8_t version;
-	/* Description - when set, the default field is supported. */
+	/* Description - Writer ID */
+	/* 0x0.16 - 0x0.20 */
+	 u_int8_t writer_id;
+	/* Description - Choose - read current values or user defined values: 0x0 - u ser defined values
+ 0x1 - current values ( values that are loaded in last boot)
+ */
 	/* 0x0.22 - 0x0.22 */
-	 u_int8_t default_supported;
+	 u_int8_t read_current;
 	/* Description - when set in query , will display the default configuration */
 	/* 0x0.23 - 0x0.23 */
 	 u_int8_t default_;
@@ -559,6 +562,9 @@ struct tools_open_nvqgc {
 	/* Description - NVDA read factory settings. 0: Unsupported. 1: Supported. */
 	/* 0x0.0 - 0x0.0 */
 	 u_int8_t read_factory_settings_support;
+	/* Description - NVDA read current settings, 0=unsupported, 1=supported */
+	/* 0x0.1 - 0x0.1 */
+	 u_int8_t nvda_read_current_settings;
 };
 
 /* Description -   */
@@ -571,7 +577,7 @@ struct tools_open_nvdi {
 };
 
 /* Description -   */
-/* Size in bytes - 256 */
+/* Size in bytes - 268 */
 struct tools_open_nvda {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
@@ -579,8 +585,8 @@ struct tools_open_nvda {
 	 struct tools_open_nv_hdr_fifth_gen nv_hdr;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description -  */
-	/* 0xc.24 - 0x8c.23 */
-	 u_int8_t data[128];
+	/* 0xc.24 - 0x10c.23 */
+	 u_int8_t data[256];
 };
 
 /* Description -   */
@@ -736,6 +742,9 @@ struct tools_open_aux_data_hdr {
 /* Size in bytes - 28 */
 struct tools_open_query_def_params_per_port {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0x0.17 - 0x0.17 */
+	 u_int8_t nv_config_vpi_force_mode;
 	/* Description - Firmware supports NV config settings 0x12 on the given port. */
 	/* 0x0.18 - 0x0.18 */
 	 u_int8_t nv_config_vpi;
@@ -796,12 +805,15 @@ struct tools_open_query_def_params_per_port {
 	/* 0x8.31 - 0x8.31 */
 	 u_int8_t nv_config_boot_parameters;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
-	/* Description - Default value of the client_identifier field in the InfiniBand DHCP settings TLV. */
-	/* 0xc.18 - 0xc.19 */
-	 u_int8_t client_indentifier;
-	/* Description - Default value of the mac_admin_bit in the InfiniBand DHCP settings TLV. */
-	/* 0xc.20 - 0xc.21 */
-	 u_int8_t mac_admin_bit;
+	/* Description -  */
+	/* 0xc.9 - 0xc.9 */
+	 u_int8_t default_vpi_force_mode;
+	/* Description -  */
+	/* 0xc.10 - 0xc.11 */
+	 u_int8_t default_vpi_xfi_mode;
+	/* Description -  */
+	/* 0xc.12 - 0xc.13 */
+	 u_int8_t default_vpi_phy_type;
 	/* Description -  */
 	/* 0xc.22 - 0xc.23 */
 	 u_int8_t iscsi_boot_to_target;
@@ -870,7 +882,7 @@ union tools_open_phy_reg {
 };
 
 /* Description -   */
-/* Size in bytes - 256 */
+/* Size in bytes - 268 */
 union tools_open_mnv_cfg {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
@@ -889,7 +901,7 @@ union tools_open_mnv_cfg {
 	/* 0x0.0 - 0x14.31 */
 	 struct tools_open_nvia nvia;
 	/* Description -  */
-	/* 0x0.0 - 0x100.31 */
+	/* 0x0.0 - 0x10c.31 */
 	 struct tools_open_nvda nvda;
 	/* Description -  */
 	/* 0x0.0 - 0xc.31 */
@@ -1032,7 +1044,7 @@ Default: 30
 	 u_int16_t lldp_msg_tx_interval;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description - A bitmask saying which of the LLDP-TLV to send
-Default: b1111  (only TLVs 0..3)  according to the standard these are mandatory TLVs that must always be enabled
+Default: b1111  (only TLVs 0..3) �� according to the standard these are mandatory TLVs that must always be enabled
 
 An enabled TLV will not be send if a corresponding TLV is not defined
  */
@@ -1074,7 +1086,7 @@ Default: 5
 	 u_int8_t rpg_threshold;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - The maximum rate, in Mbits per second, at which an RP can transmit. Once this limit is reached, the RP rate limited is released and the flow is not rate limited any more.
-Default: 0 (Full port speed)  TBD update PRM
+Default: 0 (Full port speed) �� TBD update PRM
  */
 	/* 0x10.0 - 0x10.30 */
 	 u_int32_t rpg_max_rate;
@@ -1207,13 +1219,22 @@ when VPI network link type is selcted this field determines
 the default link type when no cable is connected */
 	/* 0x0.2 - 0x0.3 */
 	 u_int8_t default_link_type;
+	/* Description -  */
+	/* 0x0.4 - 0x0.5 */
+	 u_int8_t phy_type;
+	/* Description -  */
+	/* 0x0.6 - 0x0.7 */
+	 u_int8_t xfi_mode;
+	/* Description -  */
+	/* 0x0.8 - 0x0.8 */
+	 u_int8_t force_mode;
 };
 
 /* Description -   */
 /* Size in bytes - 4 */
 struct tools_open_bar_size {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Base 2 log of the size of the physical functions first BAR, in MBs. E.g. for 8MB the value is 3. */
+	/* Description - Base 2 log of the size of the physical function��s first BAR, in MBs. E.g. for 8MB the value is 3. */
 	/* 0x0.0 - 0x4.31 */
 	 u_int32_t log_uar_bar_size;
 };
@@ -1235,15 +1256,15 @@ struct tools_open_sriov {
 struct tools_open_preboot_flow_ctrl {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Per priority bit mask. For each priority:
-0  ignore incoming PFC frames regarding this priority.
-1  respect incoming PFC frames on this priority.
+0 �� ignore incoming PFC frames regarding this priority.
+1 �� respect incoming PFC frames on this priority.
  */
 	/* 0x0.0 - 0x0.7 */
 	 u_int8_t pfcrx;
 	/* Description - Per priority bit mask. For each priority:
 
-0  no PFC pause frames generation for this priority.
-1  generate PFC pause frames for this priority.
+0 �� no PFC pause frames generation for this priority.
+1 �� generate PFC pause frames for this priority.
 PFC and global pauses are mutually exclusive.
  */
 	/* 0x0.8 - 0x0.15 */
@@ -1251,13 +1272,13 @@ PFC and global pauses are mutually exclusive.
 	/* Description - For future DCBX support. */
 	/* 0x0.29 - 0x0.29 */
 	 u_int8_t pfc_willing;
-	/* Description - 0  ignore received pause frames
-1  respect received pause frames
+	/* Description - 0 �� ignore received pause frames
+1 �� respect received pause frames
  */
 	/* 0x0.30 - 0x0.30 */
 	 u_int8_t pprx;
-	/* Description - 0  no pause frame generation.
-1  generate pause frames.
+	/* Description - 0 �� no pause frame generation.
+1 �� generate pause frames.
 PFC and global pauses are mutually exclusive.
  */
 	/* 0x0.31 - 0x0.31 */
@@ -1302,11 +1323,11 @@ struct tools_open_boot_settings {
 	/* Description - VLAN ID for network boot. */
 	/* 0x0.0 - 0x0.11 */
 	 u_int16_t boot_vlan;
-	/* Description - 0  None  disable legacy boot.
-1  PXE (DHCP/TFTP boot).
-2  iSCSI
-3  PXE + iSCSI
-4-255  Reserved
+	/* Description - 0 �� None �� disable legacy boot.
+1 �� PXE (DHCP/TFTP boot).
+2 �� iSCSI
+3 �� PXE + iSCSI
+4-255 �� Reserved
  */
 	/* 0x0.16 - 0x0.23 */
 	 u_int8_t legacy_boot_protocol;
@@ -1315,11 +1336,11 @@ struct tools_open_boot_settings {
  */
 	/* 0x0.24 - 0x0.26 */
 	 u_int8_t boot_retry_conut;
-	/* Description - 1  Enable VLAN mode for network boot. */
+	/* Description - 1 �� Enable VLAN mode for network boot. */
 	/* 0x0.30 - 0x0.30 */
 	 u_int8_t boot_vlan_en;
-	/* Description - 0  disable boot option ROM: disables installation of the UNDI/16 driver. The option ROM is still required to expose CLP, UEFI and so on.
-1  enable boot option ROM
+	/* Description - 0 �� disable boot option ROM: disables installation of the UNDI/16 driver. The option ROM is still required to expose CLP, UEFI and so on.
+1 �� enable boot option ROM
  */
 	/* 0x0.31 - 0x0.31 */
 	 u_int8_t boot_option_rom_en;
@@ -1342,10 +1363,10 @@ struct tools_open_iscsi_settings {
 	/* 0x0.21 - 0x0.21 */
 	 u_int8_t target_as_first_hdd_en;
 	/* Description - Boot to iSCSI target after connection. 
- 0  Enabled
- 1  Disabled
- 2 - One time disabled
- 3 - Invalid setting
+�� 0 �� Enabled
+�� 1 �� Disabled
+�� 2 - One time disabled
+�� 3 - Invalid setting
  */
 	/* 0x0.22 - 0x0.23 */
 	 u_int8_t boot_to_target;
@@ -1661,7 +1682,7 @@ union tools_open_hcr_cmds {
 union tools_open_access_registers {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Misc NV Registers, this is temporary untill we integrate with fw db */
-	/* 0x0.0 - 0x100.31 */
+	/* 0x0.0 - 0x10c.31 */
 	 union tools_open_mnv_cfg MNVReg;
 	/* Description - Register for accessing FW managed external PHY */
 	/* 0x0.0 - 0x108.31 */
@@ -1940,7 +1961,7 @@ void tools_open_nvda_pack(const struct tools_open_nvda *ptr_struct, u_int8_t* pt
 void tools_open_nvda_unpack(struct tools_open_nvda *ptr_struct, const u_int8_t* ptr_buff);
 void tools_open_nvda_print(const struct tools_open_nvda *ptr_struct, FILE* file, int indent_level);
 int tools_open_nvda_size(void);
-#define TOOLS_OPEN_NVDA_SIZE    (0x100)
+#define TOOLS_OPEN_NVDA_SIZE    (0x10c)
 void tools_open_nvda_dump(const struct tools_open_nvda *ptr_struct, FILE* file);
 /* nvia */
 void tools_open_nvia_pack(const struct tools_open_nvia *ptr_struct, u_int8_t* ptr_buff);
@@ -2031,7 +2052,7 @@ void tools_open_mnv_cfg_pack(const union tools_open_mnv_cfg *ptr_struct, u_int8_
 void tools_open_mnv_cfg_unpack(union tools_open_mnv_cfg *ptr_struct, const u_int8_t* ptr_buff);
 void tools_open_mnv_cfg_print(const union tools_open_mnv_cfg *ptr_struct, FILE* file, int indent_level);
 int tools_open_mnv_cfg_size(void);
-#define TOOLS_OPEN_MNV_CFG_SIZE    (0x100)
+#define TOOLS_OPEN_MNV_CFG_SIZE    (0x10c)
 void tools_open_mnv_cfg_dump(const union tools_open_mnv_cfg *ptr_struct, FILE* file);
 /* lldp_nb_dcbx */
 void tools_open_lldp_nb_dcbx_pack(const struct tools_open_lldp_nb_dcbx *ptr_struct, u_int8_t* ptr_buff);

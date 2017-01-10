@@ -84,6 +84,8 @@ char* gcif_err_str(int rc) {
             return "icmd initialization failed";
         case GCIF_ICMD_BUSY:
             return "icmd busy";
+        case GCIF_STATUS_ICM_NOT_AVAIL:
+            return "ICM not available";
         default:
             return "Unknown error";
     }
