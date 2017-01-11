@@ -703,6 +703,9 @@ void cibfw_image_info_pack(const struct cibfw_image_info *ptr_struct, u_int8_t* 
 	offset = 160;
 	cibfw_TRIPPLE_VERSION_pack(&(ptr_struct->mic_version), ptr_buff + offset/8);
 
+	offset = 224;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->pci_device_id);
+
 	for (i = 0; i < 16; i++) {
 	offset = adb2c_calc_array_field_address(312, 8, i, 8192, 1);
 	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->psid[i]);
@@ -760,6 +763,9 @@ void cibfw_image_info_unpack(struct cibfw_image_info *ptr_struct, const u_int8_t
 
 	offset = 160;
 	cibfw_TRIPPLE_VERSION_unpack(&(ptr_struct->mic_version), ptr_buff + offset/8);
+
+	offset = 224;
+	ptr_struct->pci_device_id = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
 
 	for (i = 0; i < 16; i++) {
 	offset = adb2c_calc_array_field_address(312, 8, i, 8192, 1);
@@ -824,6 +830,9 @@ void cibfw_image_info_print(const struct cibfw_image_info *ptr_struct, FILE* fil
 	adb2c_add_indentation(file, indent_level);
 	fprintf(file, "mic_version:\n");
 	cibfw_TRIPPLE_VERSION_print(&(ptr_struct->mic_version), file, indent_level + 1);
+
+	adb2c_add_indentation(file, indent_level);
+	fprintf(file, "pci_device_id        : " UH_FMT "\n", ptr_struct->pci_device_id);
 
 	fprintf(file, "psid                 : \"%s\"\n", ptr_struct->psid);
 	adb2c_add_indentation(file, indent_level);

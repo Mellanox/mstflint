@@ -10784,7 +10784,7 @@ condition:ts==DCI */
 /* Size in bytes - 64 */
 union connectib_hw_r_qpc {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Controls handling of packets with correct and incorrect PSN and opcode sequences 0: Unconnected - QPC ePSN and opcode sequence are invalid 1:Connected (good flow) - QPC.ePSN and correct opcode sequence are forwarded; everything else triggers FW 2: Resync (^����xxstate^����) -  QPC.ePSN and correct opcode sequence will cause HW to move QPC to Connected state; everything else is dropped 3: Closed - everything is dropped in RXT HW writes to this field in RNR-nack flow */
+	/* Description - Controls handling of packets with correct and incorrect PSN and opcode sequences 0: Unconnected - QPC ePSN and opcode sequence are invalid 1:Connected (good flow) - QPC.ePSN and correct opcode sequence are forwarded; everything else triggers FW 2: Resync (^xxstate^) -  QPC.ePSN and correct opcode sequence will cause HW to move QPC to Connected state; everything else is dropped 3: Closed - everything is dropped in RXT HW writes to this field in RNR-nack flow */
 	/* 0x0.0 - 0x40.31 */
 	 struct connectib_hw_r_qpc_connection_state connection_state;
 	/* Description - check source (choose source based on QP bit) for multicast wire */
@@ -10862,7 +10862,7 @@ union connectib_hw_r_qpc {
 	/* Description - Indicates which MSN was done */
 	/* 0x0.0 - 0x40.31 */
 	 struct connectib_hw_r_qpc_msn msn;
-	/* Description - how many bytes received ^���� modulo 4G */
+	/* Description - how many bytes received ^ modulo 4G */
 	/* 0x0.0 - 0x40.31 */
 	 struct connectib_hw_r_qpc_rcyclic_consumer rcyclic_consumer;
 	/* Description - in hermon: last_acked_psn (+1 from hermon) */

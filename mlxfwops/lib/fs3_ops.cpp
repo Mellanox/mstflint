@@ -238,6 +238,9 @@ bool Fs3Operations::GetImageInfo(u_int8_t *buff)
     cibfw_image_info_unpack(&image_info, buff);
     // cibfw_image_info_dump(&image_info, stdout);
 
+    _fwImgInfo.ext_info.image_info_minor_version = image_info.minor_version;
+    _fwImgInfo.ext_info.image_info_major_version = image_info.major_version;
+
     _fwImgInfo.ext_info.fw_ver[0] = image_info.FW_VERSION.MAJOR;
     _fwImgInfo.ext_info.fw_ver[1] = image_info.FW_VERSION.MINOR;
     _fwImgInfo.ext_info.fw_ver[2] = image_info.FW_VERSION.SUBMINOR;
@@ -253,6 +256,8 @@ bool Fs3Operations::GetImageInfo(u_int8_t *buff)
     // assuming number of supported_hw_id < MAX_NUM_SUPP_HW_IDS
     memcpy(_fwImgInfo.supportedHwId, image_info.supported_hw_id, sizeof(image_info.supported_hw_id));
     _fwImgInfo.supportedHwIdNum = (sizeof(image_info.supported_hw_id))/sizeof(image_info.supported_hw_id[0]);
+
+    _fwImgInfo.ext_info.pci_device_id = image_info.pci_device_id;
 
     strcpy(_fs3ImgInfo.ext_info.image_vsd, image_info.vsd);
     strcpy(_fwImgInfo.ext_info.psid, image_info.psid);
@@ -640,6 +645,11 @@ bool Fs3Operations::FsIntQueryAux(bool readRom, bool quickQuery)
             return false;
         }
         _fwImgInfo.ext_info.dev_type = swId[0];
+    }
+    if (FwType() == FIT_FS4 &&
+            _fwImgInfo.ext_info.image_info_minor_version >= 3 &&
+            _fwImgInfo.ext_info.pci_device_id != 0) {
+        _fwImgInfo.ext_info.dev_type = _fwImgInfo.ext_info.pci_device_id;
     }
     return true;
 }

@@ -229,6 +229,10 @@ struct cibfw_image_info {
 	/* Description -  */
 	/* 0x14.0 - 0x1c.31 */
 	 struct cibfw_TRIPPLE_VERSION mic_version;
+/*---------------- DWORD[7] (Offset 0x1c) ----------------*/
+	/* Description -  */
+	/* 0x1c.16 - 0x1c.31 */
+	 u_int16_t pci_device_id;
 /*---------------- DWORD[9] (Offset 0x24) ----------------*/
 	/* Description -  */
 	/* 0x24.24 - 0x34.23 */
