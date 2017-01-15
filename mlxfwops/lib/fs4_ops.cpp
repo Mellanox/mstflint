@@ -412,7 +412,7 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isD
     if (isDtoc) {
         if (!mfgExists) {
             _badDevDataSections = true;
-            return errmsg(MLXFW_NO_MFG_ERR, "No \""MFG_INFO"\" info section.");
+            return errmsg(MLXFW_NO_MFG_ERR, "No \"" MFG_INFO "\" info section.");
         }
         //when you start checking device info signatures => uncomment this code
         if (validDevInfoCount != 1 && !show_itoc &&
@@ -421,10 +421,10 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isD
                  ) {
             _badDevDataSections = true;
             if(validDevInfoCount == 0){
-                return errmsg(MLXFW_NO_VALID_DEVICE_INFO_ERR, "No \""DEV_INFO"\" info section.");
+                return errmsg(MLXFW_NO_VALID_DEVICE_INFO_ERR, "No \"" DEV_INFO "\" info section.");
             }
             //more than one valid devinfo:
-            return errmsg(MLXFW_TWO_VALID_DEVICE_INFO_ERR, "Two \""DEV_INFO"\" info sections.");
+            return errmsg(MLXFW_TWO_VALID_DEVICE_INFO_ERR, "Two \"" DEV_INFO "\" info sections.");
         }
     }
 
