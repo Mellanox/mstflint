@@ -54,7 +54,7 @@ typedef struct ul_ctx {
     f_mwrite4_block  mwrite4_block;
     f_maccess_reg    maccess_reg;
     f_mclose         mclose;
-
+    int              wo_addr; /* Is write Only Addr GW */
     /******** RESERVED FIELDS FOR SWITCHING METHOD IF NEEDED ******/
     int              res_access_type;
     int              res_fdlock;

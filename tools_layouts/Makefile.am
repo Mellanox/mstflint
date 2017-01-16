@@ -42,4 +42,5 @@ libtools_layouts_a_SOURCES = adb_to_c_utils.c adb_to_c_utils.h \
 				tools_open_layouts.c tools_open_layouts.h\
 				register_access_sib_layouts.h register_access_sib_layouts.c \
 				cx4fw_layouts.c cx4fw_layouts.h\
+				cx5fw_layouts.c cx5fw_layouts.h\
 				connectib_layouts.c connectib_layouts.h

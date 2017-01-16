@@ -651,6 +651,30 @@ enum {
             }                                                               \
         } while (0)
 
+
+#define WO_REG_ADDR_DATA 0xbadacce5
+#define DEVID_OFFSET     0xf0014
+#define PCICONF_ADDR_OFF 0x58
+#define PCICONF_DATA_OFF 0x5c
+
+static int is_wo_pciconf_gw(mfile* mf)
+{
+    unsigned offset = DEVID_OFFSET;
+    u_int32_t data = 0;
+    int rc = pwrite(mf->fd, &offset, 4, PCICONF_ADDR_OFF);
+    if (rc < 0) {
+        return 0;
+    }
+    rc = pread(mf->fd, &data, 4, PCICONF_ADDR_OFF);
+    if (rc < 0) {
+        return 0;
+    }
+    if ( data == WO_REG_ADDR_DATA) {
+        return 1;
+    }
+    return 0;
+}
+
 int pci_find_capability(mfile* mf, int cap_id)
 {
     unsigned offset;
@@ -898,14 +922,18 @@ static int mwrite4_block_pciconf(mfile *mf, unsigned int offset, u_int32_t* data
 int mtcr_pciconf_mread4_old(mfile *mf, unsigned int offset, u_int32_t *value)
 {
     ul_ctx_t *ctx = mf->ul_ctx;
+    unsigned int new_offset = offset;
     int rc;
+    if (ctx->wo_addr) {
+        new_offset |= 0x1;
+    }
     // adrianc: PCI registers always in le32
-    offset = __cpu_to_le32(offset);
+    offset = __cpu_to_le32(new_offset);
     rc = _flock_int(ctx->fdlock, LOCK_EX);
     if (rc) {
         goto pciconf_read_cleanup;
     }
-    rc = pwrite(mf->fd, &offset, 4, 22 * 4);
+    rc = pwrite(mf->fd, &offset, 4, PCICONF_ADDR_OFF);
     if (rc < 0) {
         perror("write offset");
         goto pciconf_read_cleanup;
@@ -915,7 +943,7 @@ int mtcr_pciconf_mread4_old(mfile *mf, unsigned int offset, u_int32_t *value)
         goto pciconf_read_cleanup;
     }
 
-    rc = pread(mf->fd, value, 4, 23 * 4);
+    rc = pread(mf->fd, value, 4, PCICONF_DATA_OFF);
     if (rc < 0) {
         perror("read value");
         goto pciconf_read_cleanup;
@@ -934,20 +962,39 @@ int mtcr_pciconf_mwrite4_old(mfile *mf, unsigned int offset, u_int32_t value)
     if (rc) {
         goto pciconf_write_cleanup;
     }
-    rc = pwrite(mf->fd, &offset, 4, 22 * 4);
-    if (rc < 0) {
-        perror("write offset");
-        goto pciconf_write_cleanup;
-    }
-    if (rc != 4) {
-        rc = 0;
-        goto pciconf_write_cleanup;
-    }
-    value = __cpu_to_le32(value);
-    rc = pwrite(mf->fd, &value, 4, 23 * 4);
-    if (rc < 0) {
-        perror("write value");
-        goto pciconf_write_cleanup;
+    if (ctx->wo_addr) {
+        rc = pwrite(mf->fd, &value, 4, PCICONF_DATA_OFF);
+        if (rc < 0) {
+            perror("write value");
+            goto pciconf_write_cleanup;
+        }
+        if (rc != 4) {
+            rc = 0;
+            goto pciconf_write_cleanup;
+        }
+        value = __cpu_to_le32(value);
+        rc = pwrite(mf->fd, &offset, 4, PCICONF_ADDR_OFF);
+        if (rc < 0) {
+            perror("write offset");
+            goto pciconf_write_cleanup;
+        }
+
+    } else {
+        rc = pwrite(mf->fd, &offset, 4, PCICONF_ADDR_OFF);
+        if (rc < 0) {
+            perror("write offset");
+            goto pciconf_write_cleanup;
+        }
+        if (rc != 4) {
+            rc = 0;
+            goto pciconf_write_cleanup;
+        }
+        value = __cpu_to_le32(value);
+        rc = pwrite(mf->fd, &value, 4, PCICONF_DATA_OFF);
+        if (rc < 0) {
+            perror("write value");
+            goto pciconf_write_cleanup;
+        }
     }
     pciconf_write_cleanup: _flock_int(ctx->fdlock, LOCK_UN);
     return rc;
@@ -1006,6 +1053,8 @@ int mtcr_pciconf_open(mfile *mf, const char *name, u_int32_t adv_opt)
         ctx->mread4_block = mread4_block_pciconf;
         ctx->mwrite4_block = mwrite4_block_pciconf;
     } else {
+        ctx->wo_addr = is_wo_pciconf_gw(mf);
+        //printf("Write Only Address: %#x\n", ctx->wo_addr);
         ctx->mread4 = mtcr_pciconf_mread4_old;
         ctx->mwrite4 = mtcr_pciconf_mwrite4_old;
         ctx->mread4_block = mread_chunk_as_multi_mread4;
@@ -1217,6 +1266,8 @@ static long supported_dev_ids[] = {
         0x1011, //Connect-IB
         0x1013, //Connect-X4
         0x1015, //Connect-X4Lx
+        0x1017, //Connect-X5
+        0x1019, //Connect-X5Ex
         0xc738, //SwitchX
         0xcb20, //Switch-IB
         0xcb84, //Spectrum
@@ -1234,6 +1285,7 @@ static long live_fish_id_database[] = {
         0x247,
         0x209,
         0x20b,
+        0x20d,
         -1
 };
 
@@ -2263,7 +2315,7 @@ static int mreg_send_raw(mfile *mf, u_int16_t reg_id, maccess_reg_method_t metho
     memcpy(reg_data, buffer + OP_TLV_SIZE + REG_TLV_HEADER_LEN, reg_size);
 
 #ifdef _ENABLE_DEBUG_
-    fprintf(stdout, "-I-Tlv's of Data Received:\n");
+    fprintf(stdout, "-I-Tlv's of Data Recieved:\n");
     fprintf(stdout, "\tOperation Tlv\n");
     OperationTlv_dump(&tlv, stdout);
     fprintf(stdout, "\tReg Tlv\n");

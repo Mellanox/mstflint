@@ -51,11 +51,6 @@ class MlxcfgDBManager {
 private:
     std::string _dbName;
     sqlite3* _db;
-    /*static TLVsTableSchema tlvsTableSchema;
-
-    class TLVsTableSchema {
-
-    };*/
 
     static int selectTLVCallBack(void *, int, char **, char **);
     static int selectParamCallBack(void *, int, char **, char **);
@@ -67,7 +62,9 @@ private:
 public:
     MlxcfgDBManager(std::string dbName);
     ~MlxcfgDBManager();
+    std::string _callBackErr;
     bool _isAllFetched;
+    Param* _paramSqlResult;
     std::vector<TLVConf*> fetchedTLVs;
     std::vector<Param*> fetchedParams;
     void getAllTLVs();
@@ -76,6 +73,7 @@ public:
     TLVConf* getTLVByName(std::string n, u_int8_t port);
     TLVConf* getTLVByParamMlxconfigName(std::string n);
     TLVConf* getTLVByIndexAndClass(u_int32_t id, TLVClass c);
+    void execSQL(sqlite3_callback f, void* obj, const char* stat, ...);
 
 };
 

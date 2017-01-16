@@ -40,7 +40,6 @@ bin_PROGRAMS = mstmread \
 					mstmtserver \
 					mstvpd
 
-bin_SCRIPTS = hca_self_test.ofed
 
 mstmread_SOURCES = mread.c
 

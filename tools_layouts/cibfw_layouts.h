@@ -31,10 +31,10 @@
  */
 
 /***
- *** This file was generated at "2015-06-17 12:05:15"
- *** by:
- ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/cibfw/cibfw.adb --file-prefix cibfw --prefix cibfw_
- ***/
+         *** This file was generated at "2016-11-07 11:30:09"
+         *** by:
+         ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/cibfw/cibfw.adb --file-prefix cibfw --prefix cibfw_
+         ***/
 #ifndef CIBFW_LAYOUTS_H
 #define CIBFW_LAYOUTS_H
 
@@ -44,30 +44,17 @@ extern "C" {
 #endif
 
 #include "adb_to_c_utils.h"/* Description -   */
-/* Size in bytes - 8 */
-struct cibfw_uint64 {
-/*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description -  */
-	/* 0.0 - 4.31 */
-	 u_int32_t hi;
-/*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description -  */
-	/* 4.0 - 8.31 */
-	 u_int32_t lo;
-};
-
-/* Description -   */
 /* Size in bytes - 4 */
 struct cibfw_module_version {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
-	/* 0.0 - 0.7 */
+	/* 0x0.0 - 0x0.7 */
 	 u_int8_t branch;
 	/* Description -  */
-	/* 0.8 - 0.19 */
+	/* 0x0.8 - 0x0.19 */
 	 u_int16_t minor;
 	/* Description -  */
-	/* 0.20 - 4.31 */
+	/* 0x0.20 - 0x0.31 */
 	 u_int16_t major;
 };
 
@@ -76,15 +63,15 @@ struct cibfw_module_version {
 struct cibfw_uid_entry {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Number of allocated UIDs in this entry */
-	/* 0.0 - 0.7 */
+	/* 0x0.0 - 0x0.7 */
 	 u_int8_t num_allocated;
 	/* Description - Step size by which to derive the UIDs for this entry
 See struct description */
-	/* 0.8 - 0.15 */
+	/* 0x0.8 - 0x0.15 */
 	 u_int8_t step;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - For MACs, the upper 16 bits in the 'hi' dword are reserved */
-	/* 8.0 - 16.31 */
+	/* 0x8.0 - 0x10.31 */
 	 u_int64_t uid;
 };
 
@@ -93,27 +80,27 @@ See struct description */
 struct cibfw_module_versions {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
-	/* 0.0 - 4.31 */
+	/* 0x0.0 - 0x4.31 */
 	 struct cibfw_module_version core;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description -  */
-	/* 4.0 - 8.31 */
+	/* 0x4.0 - 0x8.31 */
 	 struct cibfw_module_version phy;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description -  */
-	/* 8.0 - 12.31 */
+	/* 0x8.0 - 0xc.31 */
 	 struct cibfw_module_version kernel;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description -  */
-	/* 12.0 - 16.31 */
+	/* 0xc.0 - 0x10.31 */
 	 struct cibfw_module_version iron_image;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description -  */
-	/* 16.0 - 20.31 */
+	/* 0x10.0 - 0x14.31 */
 	 struct cibfw_module_version host_management;
 /*---------------- DWORD[5] (Offset 0x14) ----------------*/
 	/* Description -  */
-	/* 20.0 - 24.31 */
+	/* 0x14.0 - 0x18.31 */
 	 struct cibfw_module_version mad;
 };
 
@@ -122,11 +109,11 @@ struct cibfw_module_versions {
 struct cibfw_image_size {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - log of next address in bytes to search for an image. Address in bytes is 2^log_step */
-	/* 0.0 - 0.7 */
+	/* 0x0.0 - 0x0.7 */
 	 u_int8_t log_step;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - Max possible size in bytes of image. Image read / write should not occure beyond this address */
-	/* 4.0 - 8.31 */
+	/* 0x4.0 - 0x8.31 */
 	 u_int32_t max_size;
 };
 
@@ -135,14 +122,14 @@ struct cibfw_image_size {
 struct cibfw_TRIPPLE_VERSION {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
-	/* 0.16 - 4.31 */
+	/* 0x0.16 - 0x0.31 */
 	 u_int16_t MAJOR;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description -  */
-	/* 4.0 - 4.15 */
+	/* 0x4.0 - 0x4.15 */
 	 u_int16_t SUBMINOR;
 	/* Description -  */
-	/* 4.16 - 8.31 */
+	/* 0x4.16 - 0x4.31 */
 	 u_int16_t MINOR;
 };
 
@@ -151,34 +138,34 @@ struct cibfw_TRIPPLE_VERSION {
 struct cibfw_FW_VERSION {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
-	/* 0.16 - 4.31 */
+	/* 0x0.16 - 0x0.31 */
 	 u_int16_t MAJOR;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description -  */
-	/* 4.0 - 4.15 */
+	/* 0x4.0 - 0x4.15 */
 	 u_int16_t SUBMINOR;
 	/* Description -  */
-	/* 4.16 - 8.31 */
+	/* 0x4.16 - 0x4.31 */
 	 u_int16_t MINOR;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description -  */
-	/* 8.8 - 8.15 */
+	/* 0x8.8 - 0x8.15 */
 	 u_int8_t Hour;
 	/* Description -  */
-	/* 8.16 - 8.23 */
+	/* 0x8.16 - 0x8.23 */
 	 u_int8_t Minutes;
 	/* Description -  */
-	/* 8.24 - 12.31 */
+	/* 0x8.24 - 0x8.31 */
 	 u_int8_t Seconds;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description -  */
-	/* 12.0 - 12.7 */
+	/* 0xc.0 - 0xc.7 */
 	 u_int8_t Day;
 	/* Description -  */
-	/* 12.8 - 12.15 */
+	/* 0xc.8 - 0xc.15 */
 	 u_int8_t Month;
 	/* Description -  */
-	/* 12.16 - 16.31 */
+	/* 0xc.16 - 0xc.31 */
 	 u_int16_t Year;
 };
 
@@ -200,11 +187,11 @@ Then the GUIDs for this port would be:
     0x2c9030001008
     0x2c9030001010
     0x2c9030001018 */
-	/* 0.0 - 32.31 */
+	/* 0x0.0 - 0x20.31 */
 	 struct cibfw_uid_entry guids[2];
 /*---------------- DWORD[8] (Offset 0x20) ----------------*/
 	/* Description -  */
-	/* 32.0 - 64.31 */
+	/* 0x20.0 - 0x40.31 */
 	 struct cibfw_uid_entry macs[2];
 };
 
@@ -213,11 +200,11 @@ Then the GUIDs for this port would be:
 struct cibfw_operation_key {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
-	/* 0.0 - 0.15 */
+	/* 0x0.0 - 0x0.15 */
 	 u_int16_t key_modifier;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description -  */
-	/* 8.0 - 16.31 */
+	/* 0x8.0 - 0x10.31 */
 	 u_int64_t key;
 };
 
@@ -225,56 +212,63 @@ struct cibfw_operation_key {
 /* Size in bytes - 1024 */
 struct cibfw_image_info {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - [MCC/MCDA flow] if set, the SHA 256 digest is encrypted - enabled by default for secure_fw - cr-space not closed */
+	/* 0x0.14 - 0x0.14 */
+	 u_int8_t signed_fw;
 	/* Description - IMAGE_INFO section minor version */
-	/* 0.16 - 0.23 */
+	/* 0x0.16 - 0x0.23 */
 	 u_int8_t minor_version;
 	/* Description - IMAGE_INFO section major version */
-	/* 0.24 - 4.31 */
+	/* 0x0.24 - 0x0.31 */
 	 u_int8_t major_version;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description -  */
-	/* 4.0 - 20.31 */
+	/* 0x4.0 - 0x14.31 */
 	 struct cibfw_FW_VERSION FW_VERSION;
 /*---------------- DWORD[5] (Offset 0x14) ----------------*/
 	/* Description -  */
-	/* 20.0 - 28.31 */
+	/* 0x14.0 - 0x1c.31 */
 	 struct cibfw_TRIPPLE_VERSION mic_version;
+/*---------------- DWORD[7] (Offset 0x1c) ----------------*/
+	/* Description -  */
+	/* 0x1c.16 - 0x1c.31 */
+	 u_int16_t pci_device_id;
 /*---------------- DWORD[9] (Offset 0x24) ----------------*/
 	/* Description -  */
-	/* 36.24 - 52.23 */
+	/* 0x24.24 - 0x34.23 */
 	 char psid[17];
 /*---------------- DWORD[13] (Offset 0x34) ----------------*/
 	/* Description -  */
-	/* 52.0 - 52.15 */
+	/* 0x34.0 - 0x34.15 */
 	 u_int16_t vsd_vendor_id;
 /*---------------- DWORD[14] (Offset 0x38) ----------------*/
 	/* Description -  */
-	/* 56.24 - 264.23 */
+	/* 0x38.24 - 0x108.23 */
 	 char vsd[209];
 /*---------------- DWORD[66] (Offset 0x108) ----------------*/
 	/* Description - image size parameters */
-	/* 264.0 - 272.31 */
+	/* 0x108.0 - 0x110.31 */
 	 struct cibfw_image_size image_size;
 /*---------------- DWORD[70] (Offset 0x118) ----------------*/
 	/* Description - HW device(s) supported by this FW image.
 0 means invalid entry.
 For Golan A0, first entry should be 0x1ff
  */
-	/* 280.0 - 296.31 */
+	/* 0x118.0 - 0x128.31 */
 	 u_int32_t supported_hw_id[4];
 /*---------------- DWORD[74] (Offset 0x128) ----------------*/
 	/* Description -  */
-	/* 296.0 - 300.31 */
+	/* 0x128.0 - 0x12c.31 */
 	 u_int32_t ini_file_num;
 /*---------------- DWORD[112] (Offset 0x1c0) ----------------*/
 	/* Description - Product Version is the unified version of the FW and expansion ROM.
 Format is defined by the packager.
 When set to a non-empty string the FW update tool burns the image as a monolythic entity and refuses to update rom only or FW only. */
-	/* 448.24 - 464.23 */
+	/* 0x1c0.24 - 0x1d0.23 */
 	 char prod_ver[17];
 /*---------------- DWORD[192] (Offset 0x300) ----------------*/
 	/* Description -  */
-	/* 768.0 - 832.31 */
+	/* 0x300.0 - 0x340.31 */
 	 struct cibfw_module_versions module_versions;
 };
 
@@ -283,22 +277,22 @@ When set to a non-empty string the FW update tool burns the image as a monolythi
 struct cibfw_mfg_info {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
-	/* 0.24 - 16.23 */
+	/* 0x0.24 - 0x10.23 */
 	 char psid[17];
 /*---------------- DWORD[7] (Offset 0x1c) ----------------*/
 	/* Description - When this bit is set, the GUIDs should be taken from the device_info node.
 When this bit is cleared, the GUIDs should be taken from the mfg_info node. */
-	/* 28.0 - 28.0 */
+	/* 0x1c.0 - 0x1c.0 */
 	 u_int8_t guids_override_en;
 	/* Description - MFG_INFO section minor version */
-	/* 28.16 - 28.23 */
+	/* 0x1c.16 - 0x1c.23 */
 	 u_int8_t minor_version;
 	/* Description - MFG_INFO section major version */
-	/* 28.24 - 32.31 */
+	/* 0x1c.24 - 0x1c.31 */
 	 u_int8_t major_version;
 /*---------------- DWORD[8] (Offset 0x20) ----------------*/
 	/* Description -  */
-	/* 32.0 - 96.31 */
+	/* 0x20.0 - 0x60.31 */
 	 struct cibfw_guids guids;
 };
 
@@ -307,42 +301,42 @@ When this bit is cleared, the GUIDs should be taken from the mfg_info node. */
 struct cibfw_device_info {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
-	/* 0.0 - 4.31 */
+	/* 0x0.0 - 0x4.31 */
 	 u_int32_t signature0;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description -  */
-	/* 4.0 - 8.31 */
+	/* 0x4.0 - 0x8.31 */
 	 u_int32_t signature1;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description -  */
-	/* 8.0 - 12.31 */
+	/* 0x8.0 - 0xc.31 */
 	 u_int32_t signature2;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description -  */
-	/* 12.0 - 16.31 */
+	/* 0xc.0 - 0x10.31 */
 	 u_int32_t signature3;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - Format version for this struct */
-	/* 16.0 - 16.7 */
+	/* 0x10.0 - 0x10.7 */
 	 u_int8_t minor_version;
 	/* Description - Format version for this struct */
-	/* 16.8 - 16.16 */
+	/* 0x10.8 - 0x10.16 */
 	 u_int16_t major_version;
 /*---------------- DWORD[8] (Offset 0x20) ----------------*/
 	/* Description -  */
-	/* 32.0 - 96.31 */
+	/* 0x20.0 - 0x60.31 */
 	 struct cibfw_guids guids;
 /*---------------- DWORD[27] (Offset 0x6c) ----------------*/
 	/* Description -  */
-	/* 108.0 - 108.15 */
+	/* 0x6c.0 - 0x6c.15 */
 	 u_int16_t vsd_vendor_id;
 /*---------------- DWORD[28] (Offset 0x70) ----------------*/
 	/* Description -  */
-	/* 112.24 - 320.23 */
+	/* 0x70.24 - 0x140.23 */
 	 char vsd[209];
 /*---------------- DWORD[88] (Offset 0x160) ----------------*/
 	/* Description -  */
-	/* 352.0 - 416.31 */
+	/* 0x160.0 - 0x1a0.31 */
 	 struct cibfw_operation_key keys[4];
 };
 
@@ -357,7 +351,7 @@ struct cibfw_register_mfrl {
  3-driver down, link down pci disable/enable
  7-server warm reboot
  8-server cold reboot */
-	/* 4.0 - 4.7 */
+	/* 0x4.0 - 0x4.7 */
 	 u_int8_t reset_level;
 };
 
@@ -366,27 +360,27 @@ struct cibfw_register_mfrl {
 struct cibfw_itoc_header {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - 49 54 4f 43 */
-	/* 0.0 - 4.31 */
+	/* 0x0.0 - 0x4.31 */
 	 u_int32_t signature0;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - 04 08 15 16 */
-	/* 4.0 - 8.31 */
+	/* 0x4.0 - 0x8.31 */
 	 u_int32_t signature1;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - 23 42 ca fa */
-	/* 8.0 - 12.31 */
+	/* 0x8.0 - 0xc.31 */
 	 u_int32_t signature2;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description - ba ca fe 00 */
-	/* 12.0 - 16.31 */
+	/* 0xc.0 - 0x10.31 */
 	 u_int32_t signature3;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - Current version: 1 */
-	/* 16.0 - 16.7 */
+	/* 0x10.0 - 0x10.7 */
 	 u_int8_t version;
 /*---------------- DWORD[7] (Offset 0x1c) ----------------*/
 	/* Description -  */
-	/* 28.0 - 28.15 */
+	/* 0x1c.0 - 0x1c.15 */
 	 u_int16_t itoc_entry_crc;
 };
 
@@ -395,7 +389,7 @@ struct cibfw_itoc_header {
 struct cibfw_itoc_entry {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
-	/* 0.2 - 0.23 */
+	/* 0x0.2 - 0x0.23 */
 	 u_int32_t size;
 	/* Description - Section ID Section Type DESCRIPTION
 0x1 BOOT_CODE FW loader code
@@ -420,44 +414,44 @@ struct cibfw_itoc_entry {
 0xff END_MARKER A type of 0xff marks the end of the iTOC entries array. It is recommended to leave the unused part of the iTOC section blank (that is, 0xff in all unused bytes)
 All other values Reserved 
  */
-	/* 0.24 - 4.31 */
+	/* 0x0.24 - 0x0.31 */
 	 u_int8_t type;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - if partition type is code or ini then the load address is in here */
-	/* 4.0 - 4.29 */
+	/* 0x4.0 - 0x4.29 */
 	 u_int32_t param0;
 	/* Description - When this bit is set, Data within the section is protected by per-line crc. See yu.flash.replacement.crc_en */
-	/* 4.30 - 4.30 */
+	/* 0x4.30 - 0x4.30 */
 	 u_int8_t cache_line_crc;
 	/* Description - When this bit is set, image is zipped */
-	/* 4.31 - 8.31 */
+	/* 0x4.31 - 0x4.31 */
 	 u_int8_t zipped_image;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - if partition type is code then the jump address is in here */
-	/* 8.0 - 12.31 */
+	/* 0x8.0 - 0xc.31 */
 	 u_int32_t param1;
 /*---------------- DWORD[5] (Offset 0x14) ----------------*/
 	/* Description -  */
-	/* 20.2 - 20.30 */
+	/* 0x14.2 - 0x14.30 */
 	 u_int32_t flash_addr;
 	/* Description -  */
-	/* 20.31 - 24.31 */
+	/* 0x14.31 - 0x14.31 */
 	 u_int8_t relative_addr;
 /*---------------- DWORD[6] (Offset 0x18) ----------------*/
 	/* Description -  */
-	/* 24.0 - 24.15 */
+	/* 0x18.0 - 0x18.15 */
 	 u_int16_t section_crc;
 	/* Description -  */
-	/* 24.16 - 24.16 */
+	/* 0x18.16 - 0x18.16 */
 	 u_int8_t no_crc;
 	/* Description - When this bit is set, the section pointed by this entry in belongs to teh device tather than to teh FW image.
 A device_data section should not be updated in a regular FW update.
 Example for device_data section: VPD_R, GUIDs. */
-	/* 24.17 - 24.17 */
+	/* 0x18.17 - 0x18.17 */
 	 u_int8_t device_data;
 /*---------------- DWORD[7] (Offset 0x1c) ----------------*/
 	/* Description -  */
-	/* 28.0 - 28.15 */
+	/* 0x1c.0 - 0x1c.15 */
 	 u_int16_t itoc_entry_crc;
 };
 
@@ -466,20 +460,20 @@ Example for device_data section: VPD_R, GUIDs. */
 struct cibfw_register_mfai {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
-	/* 0.0 - 0.23 */
+	/* 0x0.0 - 0x0.23 */
 	 u_int32_t address;
 	/* Description - if set make image permamnent */
-	/* 0.29 - 0.29 */
+	/* 0x0.29 - 0x0.29 */
 	 u_int8_t permanent;
 	/* Description - if set use address */
-	/* 0.30 - 0.30 */
+	/* 0x0.30 - 0x0.30 */
 	 u_int8_t use_address;
 	/* Description - if set use image id and not address */
-	/* 0.31 - 4.31 */
+	/* 0x0.31 - 0x0.31 */
 	 u_int8_t use_image_id;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description -  */
-	/* 4.0 - 4.7 */
+	/* 0x4.0 - 0x4.7 */
 	 u_int8_t image_id;
 };
 
@@ -488,40 +482,33 @@ struct cibfw_register_mfai {
 union cibfw_cibfw_Nodes {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
-	/* 0.0 - 16.31 */
+	/* 0x0.0 - 0x10.31 */
 	 struct cibfw_register_mfai register_mfai;
 	/* Description -  */
-	/* 0.0 - 32.31 */
+	/* 0x0.0 - 0x20.31 */
 	 struct cibfw_itoc_entry itoc_entry;
 	/* Description -  */
-	/* 0.0 - 64.31 */
+	/* 0x0.0 - 0x40.31 */
 	 struct cibfw_guids guids;
 	/* Description -  */
-	/* 0.0 - 32.31 */
+	/* 0x0.0 - 0x20.31 */
 	 struct cibfw_itoc_header itoc_header;
 	/* Description -  */
-	/* 0.0 - 16.31 */
+	/* 0x0.0 - 0x10.31 */
 	 struct cibfw_register_mfrl register_mfrl;
 	/* Description -  */
-	/* 0.0 - 512.31 */
+	/* 0x0.0 - 0x200.31 */
 	 struct cibfw_device_info device_info;
 	/* Description -  */
-	/* 0.0 - 320.31 */
+	/* 0x0.0 - 0x140.31 */
 	 struct cibfw_mfg_info mfg_info;
 	/* Description -  */
-	/* 0.0 - 1024.31 */
+	/* 0x0.0 - 0x400.31 */
 	 struct cibfw_image_info image_info;
 };
 
 
 /*================= PACK/UNPACK/PRINT FUNCTIONS ======================*/
-/* uint64 */
-void cibfw_uint64_pack(const struct cibfw_uint64 *ptr_struct, u_int8_t* ptr_buff);
-void cibfw_uint64_unpack(struct cibfw_uint64 *ptr_struct, const u_int8_t* ptr_buff);
-void cibfw_uint64_print(const struct cibfw_uint64 *ptr_struct, FILE* file, int indent_level);
-int cibfw_uint64_size(void);
-#define CIBFW_UINT64_SIZE    (0x8)
-void cibfw_uint64_dump(const struct cibfw_uint64 *ptr_struct, FILE* file);
 /* module_version */
 void cibfw_module_version_pack(const struct cibfw_module_version *ptr_struct, u_int8_t* ptr_buff);
 void cibfw_module_version_unpack(struct cibfw_module_version *ptr_struct, const u_int8_t* ptr_buff);

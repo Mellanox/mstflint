@@ -36,7 +36,6 @@
  *      Author: ahmads
  */
 
-using namespace std;
 #include <set>
 #include <cmath>
 #include <signal.h>
@@ -51,6 +50,8 @@ using namespace std;
 #include "mlxcfg_4thgen_commander.h"
 #include "mlxcfg_param_lib.h"
 #include "mlxcfg_utils.h"
+
+using namespace std;
 
 /*
  * Mask and offsets for working with the capability vector
@@ -68,7 +69,8 @@ using namespace std;
 
 string FourthGenCommander::param2str[Mcp_Last]= {"SRIOV_EN", "NUM_OF_VFS",
         "WOL_MAGIC_EN_P1", "WOL_MAGIC_EN_P2",
-        "LINK_TYPE_P1", "LINK_TYPE_P2",
+        "LINK_TYPE_P1", "PHY_TYPE_P1", "XFI_MODE_P1", "FORCE_MODE_P1",
+        "LINK_TYPE_P2", "PHY_TYPE_P2", "XFI_MODE_P2", "FORCE_MODE_P2",
         "LOG_BAR_SIZE",
         "INT_LOG_MAX_PAYLOAD_SIZE",
         "BOOT_PKEY_P1", "BOOT_PKEY_P2",
@@ -91,7 +93,7 @@ string FourthGenCommander::param2str[Mcp_Last]= {"SRIOV_EN", "NUM_OF_VFS",
          "PORT_OWNER", "ALLOW_RD_COUNTERS", "IP_VER", "IP_VER_P1", "IP_VER_P2",
           };
 
-FourthGenCommander::FourthGenCommander(mfile* mf, string dev) : _mf(mf), _dev(dev),
+FourthGenCommander::FourthGenCommander(mfile* mf, string dev) : Commander(mf), _dev(dev),
         _allInfo() {
 
     // init the ErrMsg Class
@@ -143,7 +145,13 @@ FourthGenCommander::FourthGenCommander(mfile* mf, string dev) : _mf(mf), _dev(de
     _cfgList[Mct_Vpi_P1] = new VpiParams4thGen(1);
     _cfgList[Mct_Vpi_P2] = new VpiParams4thGen(2);
     _param2TypeMap[Mcp_Link_Type_P1] = Mct_Vpi_P1;
+    _param2TypeMap[Mcp_Phy_Type_P1] = Mct_Vpi_P1;
+    _param2TypeMap[Mcp_Xfi_Mode_P1] = Mct_Vpi_P1;
+    _param2TypeMap[Mcp_Force_Mode_P1] = Mct_Vpi_P1;
     _param2TypeMap[Mcp_Link_Type_P2] = Mct_Vpi_P2;
+    _param2TypeMap[Mcp_Phy_Type_P2] = Mct_Vpi_P2;
+    _param2TypeMap[Mcp_Xfi_Mode_P2] = Mct_Vpi_P2;
+    _param2TypeMap[Mcp_Force_Mode_P2] = Mct_Vpi_P2;
     // BAR size
     _cfgList[Mct_Bar_Size] = new BarSzParams4thGen();
     _param2TypeMap[Mcp_Log_Bar_Size] = Mct_Bar_Size;
@@ -178,10 +186,8 @@ FourthGenCommander::FourthGenCommander(mfile* mf, string dev) : _mf(mf), _dev(de
     }
 }
 
-FourthGenCommander::~FourthGenCommander(){
-    if (_mf) {
-        mclose(_mf);
-    }
+FourthGenCommander::~FourthGenCommander()
+{
     for(map<mlxCfgType, CfgParams*>::iterator it = _cfgList.begin(); it != _cfgList.end(); it++) {
         delete it->second;
     }
@@ -291,8 +297,8 @@ void FourthGenCommander::dumpRawCfg(std::vector<u_int32_t> rawTlvVec, std::strin
     throw MlxcfgException("set_raw command is not supported for this device\n");
 }
 
-void FourthGenCommander::backupCfgs(std::vector<std::pair<u_int32_t, std::vector<u_int8_t> > >& cfgs) {
-    (void)cfgs;
+void FourthGenCommander::backupCfgs(vector<BackupView>& views) {
+    (void)views;
     throw MlxcfgException("backup command is not supported for this device\n");
 }
 
@@ -319,8 +325,7 @@ int FourthGenCommander::openComChk()
         if (paramIt->second->cfgSupported(_mf)) {
             ret = paramIt->second->getDefaultParams(_mf);
             if (ret && ret!= MCE_GET_DEFAULT_PARAMS && ret != MCE_NOT_IMPLEMENTED) {
-                //printf("qqqqq id=%d\n", paramIt->first);
-                //return ret;
+                return ret;
             }
         }
     }
@@ -970,6 +975,27 @@ MlxCfgInfo MlxCfgAllInfo::createVPISettings()
     paramMap["VPI"] = 3;
     params[Mcp_Link_Type_P1] = MlxCfgParamParser(Mcp_Link_Type_P1, "LINK_TYPE_P1", "", paramMap);
     params[Mcp_Link_Type_P2] = MlxCfgParamParser(Mcp_Link_Type_P2, "LINK_TYPE_P2", "", paramMap);
+
+    paramMap.clear();
+    paramMap["XAUI"] = 0x1;
+    paramMap["XFI"] = 0x2;
+    paramMap["SGMII"] = 0x3;
+    params[Mcp_Phy_Type_P1] = MlxCfgParamParser(Mcp_Phy_Type_P1, "PHY_TYPE_P1", "", paramMap);
+    params[Mcp_Phy_Type_P2] = MlxCfgParamParser(Mcp_Phy_Type_P2, "PHY_TYPE_P2", "", paramMap);
+
+    paramMap.clear();
+    paramMap["_10G"] = 0x0;
+    paramMap["_20G"] = 0x1;
+    paramMap["_40G"] = 0x2;
+    params[Mcp_Xfi_Mode_P1] = MlxCfgParamParser(Mcp_Xfi_Mode_P1, "XFI_MODE_P1", "", paramMap);
+    params[Mcp_Xfi_Mode_P2] = MlxCfgParamParser(Mcp_Xfi_Mode_P2, "XFI_MODE_P2", "", paramMap);
+
+    paramMap.clear();
+    paramMap["False"] = 0x0;
+    paramMap["True"] = 0x1;
+    params[Mcp_Force_Mode_P1] = MlxCfgParamParser(Mcp_Force_Mode_P1, "FORCE_MODE_P1", "", paramMap);
+    params[Mcp_Force_Mode_P2] = MlxCfgParamParser(Mcp_Force_Mode_P2, "FORCE_MODE_P2", "", paramMap);
+
     return MlxCfgInfo("VPI Settings", "Control network link type", params);
 }
 

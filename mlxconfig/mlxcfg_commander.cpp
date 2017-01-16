@@ -36,7 +36,6 @@
  *      Author: ahmads
  */
 
-using namespace std;
 
 #include <set>
 #include <mtcr.h>
@@ -45,18 +44,25 @@ using namespace std;
 #include "mlxcfg_param_lib.h"
 #include "mlxcfg_utils.h"
 
+using namespace std;
+
 Commander* Commander::create(std::string device, std::string dbName) {
     mfile* mf;
-    bool isFifthGen;
-    dm_dev_id_t deviceId;
-    u_int32_t hwDevId, hwRevId;
-    Commander* commander = NULL;
-
     mf = mopen(device.c_str());
     if (mf == NULL) {
         throw MlxcfgException("Failed to open the device");
     }
+    Commander* cmdr = create(mf, device, dbName);
+    cmdr->setExtResourceType(false);
+    return cmdr;
+}
 
+Commander* Commander::create(mfile* mf, std::string device, std::string dbName) {
+
+    bool isFifthGen;
+    dm_dev_id_t deviceId;
+    u_int32_t hwDevId, hwRevId;
+    Commander* commander = NULL;
     if( dm_get_device_id(mf, &deviceId, &hwDevId, &hwRevId) ) {
         throw MlxcfgException("Failed to identify the device");
     }
@@ -70,6 +76,7 @@ Commander* Commander::create(std::string device, std::string dbName) {
         case DeviceConnectIB:
         case DeviceConnectX4:
         case DeviceConnectX4LX:
+        case DeviceConnectX5:
             isFifthGen = true;
             break;
         default:
@@ -85,6 +92,12 @@ Commander* Commander::create(std::string device, std::string dbName) {
     } else {
         commander = new FourthGenCommander(mf, device);
     }
-
     return commander;
+}
+
+Commander::~Commander()
+{
+    if (!_extResource && _mf) {
+        mclose(_mf);
+    }
 }

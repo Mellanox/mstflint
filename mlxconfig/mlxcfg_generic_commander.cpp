@@ -36,7 +36,6 @@
  *      Author: ahmads
  */
 
-using namespace std;
 
 #include <set>
 #include <mtcr.h>
@@ -48,10 +47,13 @@ using namespace std;
 #include "mlxcfg_tlv.h"
 #include "mlxcfg_status.h"
 
+
 #if ! defined(DISABLE_XML2)
     #include <libxml/parser.h>
     #include <libxml/tree.h>
 #endif
+
+using namespace std;
 
 #define TLVCLASS_OFFSET 24
 #define TLVCLASS_SIZE 8
@@ -124,7 +126,7 @@ void GenericCommander::supportsNVData()
 }
 
 GenericCommander::GenericCommander(mfile* mf, string dbName)
-                                 : _mf(mf), _dbManager(NULL) {
+                                 : Commander(mf), _dbManager(NULL) {
     int rc;
     u_int32_t type = 0;
 
@@ -189,10 +191,8 @@ GenericCommander::GenericCommander(mfile* mf, string dbName)
     _dbManager = new MlxcfgDBManager(dbName);
 }
 
-GenericCommander::~GenericCommander() {
-    if (_mf) {
-        mclose(_mf);
-    }
+GenericCommander::~GenericCommander()
+{
     delete _dbManager;
 }
 
@@ -364,7 +364,7 @@ bool GenericCommander::checkDependency(TLVConf* cTLV, string dStr) {
         if (!dTLV->isFWSupported(_mf, false)) {
             return false;
         }
-        dTLV->query(_mf, false);
+        dTLV->query(_mf, QueryNext);
         l = dTLV->getParamValueByName(dParamName);
     }
     //printf("-D- l=%d r=%d op=%d\n", l, r, (u_int32_t)op);
@@ -388,7 +388,7 @@ void GenericCommander::queryTLV(TLVConf* tlv,
             tlv->isMlxconfigSupported() &&
             tlv->isFWSupported(_mf, true)) {
         vector<pair<ParamView, string> > dependencyTable =
-                tlv->query(_mf, qt == QueryDefault);
+                tlv->query(_mf, qt);
         filterByDependency(tlv, dependencyTable, paramsConf);
     }
     return;
@@ -484,7 +484,7 @@ void GenericCommander::setCfg(vector<ParamView>& params, bool force) {
                             strRuleTLV.c_str());
                     break;
                 }
-                ruleTLV->query(_mf, false);
+                ruleTLV->query(_mf, QueryNext);
                 ruleTLVs.push_back(ruleTLV);
             }
             tlv->checkRules(ruleTLVs);
@@ -515,6 +515,26 @@ bool GenericCommander::isDefaultSupported() {
         return nvqgcTlv.read_factory_settings_support;
     }
     throw MlxcfgException("Error when checked if Firmware supports querying default configurations or not: %s.", m_err2str((MError)rc));
+}
+
+bool GenericCommander::isCurrentSupported() {
+    struct tools_open_nvqgc nvqgcTlv;
+
+    memset(&nvqgcTlv, 0, sizeof(struct tools_open_nvqgc));
+    MError rc;
+
+    mft_signal_set_handling(1);
+    rc = reg_access_nvqgc(_mf, REG_ACCESS_METHOD_GET, &nvqgcTlv);
+    dealWithSignal();
+    if (rc == ME_REG_ACCESS_BAD_PARAM || rc == ME_REG_ACCESS_INTERNAL_ERROR) {
+        return false;
+    } else if(rc == ME_OK){
+        return nvqgcTlv.nvda_read_current_settings;
+    }
+    throw MlxcfgException(
+            "Error when checked if Firmware supports "
+            "querying current configurations or not: %s.",
+            m_err2str((MError)rc));
 }
 
 void GenericCommander::clearSemaphore() {
@@ -551,7 +571,7 @@ const char* GenericCommander::loadConfigurationGetStr() {
 
     memset(&mfrl, 0, sizeof(mfrl));
 
-    if (deviceId == DeviceConnectX4 || deviceId == DeviceConnectX4LX) {
+    if (deviceId == DeviceConnectX4 || deviceId == DeviceConnectX4LX || deviceId == DeviceConnectX5) {
         // send warm boot (bit 6)
         mfrl.reset_level = 1 << 6;
         mft_signal_set_handling(1);
@@ -586,7 +606,7 @@ void GenericCommander::dumpRawCfg(std::vector<u_int32_t> rawTlvVec, std::string&
     tlvDump = rawTlv.dumpTlv();
 }
 
-void GenericCommander::backupCfgs(vector< pair< u_int32_t, vector<u_int8_t> > >& cfgsMap)
+void GenericCommander::backupCfgs(vector<BackupView>& views)
 {
     int rc;
     int status = 0;
@@ -606,7 +626,10 @@ void GenericCommander::backupCfgs(vector< pair< u_int32_t, vector<u_int8_t> > >&
         }
         ptr = mnvgnTlv.nv_pointer;
         if (ptr != 0) {
-            u_int32_t k = mnvgnTlv.nv_hdr.type.tlv_type_dw.tlv_type_dw;
+            BackupView view;
+            view.type = mnvgnTlv.nv_hdr.type.tlv_type_dw.tlv_type_dw;
+            view.writerId = mnvgnTlv.nv_hdr.writer_id;
+            view.writerHostId = mnvgnTlv.nv_hdr.writer_host_id;
             vector<u_int8_t> v;
             v.resize(TOOLS_OPEN_NV_HDR_FIFTH_GEN_SIZE + mnvgnTlv.nv_hdr.length);
             //Copy header:
@@ -615,7 +638,8 @@ void GenericCommander::backupCfgs(vector< pair< u_int32_t, vector<u_int8_t> > >&
             memcpy(v.data() + TOOLS_OPEN_NV_HDR_FIFTH_GEN_SIZE,
                     &mnvgnTlv.nv_data,
                     mnvgnTlv.nv_hdr.length);
-            cfgsMap.push_back(make_pair(k, v));
+            view.tlvBin = v;
+            views.push_back(view);
         }
     } while (ptr != 0);
 
@@ -840,7 +864,7 @@ void GenericCommander::raw2XML(vector<string> lines, string& xmlTemplate)
 
     //check fingerprint in first line
     vector<string>::iterator it = lines.begin();
-    if (*it != RAW_FILE_FINGERPRINT) {
+    if (it == lines.end() || *it != RAW_FILE_FINGERPRINT) {
         throw MlxcfgException("Raw Content Fingerprint " RAW_FILE_FINGERPRINT " is missing or incorrect");
     }
 
@@ -902,6 +926,7 @@ int RawCfgParams5thGen::setRawData(const std::vector<u_int32_t>& tlvBuff) {
         *it = __cpu_to_be32(*it);
     }
     tools_open_nvda_unpack(&_nvdaTlv, ((u_int8_t*)(&tlvBuffBe[0])));
+    _nvdaTlv.nv_hdr.writer_id = WRITER_ID_ICMD_MLXCONFIG_SET_RAW;
     return verifyTlv();
 }
 

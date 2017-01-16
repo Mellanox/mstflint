@@ -136,6 +136,8 @@ TLVConf::TLVConf(int columnsCount, char **dataRow, char **headerRow) :
     }
     _attrs[OVR_EN_ATTR]="1";
     _attrs[RD_EN_ATTR]="1";
+
+    _buff.resize(_size, 0);
 }
 
 void TLVConf::getView(TLVConfView& tlvConfView) {
@@ -311,10 +313,10 @@ bool TLVConf::checkParamValidBit(Param* p) {
 }
 
 void TLVConf::mnva(mfile* mf, u_int8_t* buff, u_int16_t len, u_int32_t type,
-        reg_access_method_t method, bool getDefault) {
+        reg_access_method_t method, QueryType qT) {
     bool isSet = (method == REG_ACCESS_METHOD_SET);
     MError mRc = mnvaCom5thGen(mf, buff, len, type,
-            method, getDefault);
+            method, qT);
     if (mRc) {
         //Todo: ask for this check:
         if (mRc != ME_REG_ACCESS_RES_NOT_AVLBL || isSet) {
@@ -338,12 +340,13 @@ void TLVConf::parseParamValue(string paramMlxconfigName, string valToParse, u_in
     p->parseValue(valToParse, val, strVal);
 }
 
-vector<pair<ParamView, string> > TLVConf::query(mfile* mf, bool getDefault) {
+vector<pair<ParamView, string> > TLVConf::query(mfile* mf, QueryType qT) {
     bool defaultQueried = false;
+    bool getDefault = (qT == QueryDefault);
     vector<pair<ParamView, string> > queryResult;
-    vector<u_int8_t> buff(_size, 0), defaultBuff(_size, 0);
+    vector<u_int8_t> defaultBuff(_size, 0);
 
-    mnva(mf, buff.data(), _size, getTlvTypeBe(), REG_ACCESS_METHOD_GET, getDefault);
+    mnva(mf, _buff.data(), _size, getTlvTypeBe(), REG_ACCESS_METHOD_GET, qT);
     //convert buff to le (TODO: ask Dan if tlv size is dw aligned)
     /*for(unsigned int i = 0; i < buff.size() / 4; i++){
         ((u_int32_t*)buff.data())[i] =
@@ -351,14 +354,14 @@ vector<pair<ParamView, string> > TLVConf::query(mfile* mf, bool getDefault) {
                         __be32_to_cpu(((u_int32_t*)buff.data())[i]));
     }*/
 
-    unpack(buff.data());
+    unpack(_buff.data());
 
     VECTOR_ITERATOR(Param*, _params, it) {
         ParamView paramView;
         Param* p = *(it);
         if (!getDefault && !checkParamValidBit(p)) {//then take default value
             if(!defaultQueried) {
-                mnva(mf, defaultBuff.data(), _size, getTlvTypeBe(), REG_ACCESS_METHOD_GET, true);
+                mnva(mf, defaultBuff.data(), _size, getTlvTypeBe(), REG_ACCESS_METHOD_GET, QueryDefault);
                 defaultQueried = true;
             }
             p->unpack(defaultBuff.data());
@@ -413,6 +416,8 @@ TLVTarget TLVConf::str2TLVTarget(char *s)
         return NIC;
     } else if(strcmp(s, "EXP_ROM") == 0){
         return EXP_ROM;
+    } else if (strcmp(s, "NIC-internal") == 0) {
+        return NIC_INTERNAL;
     }
     throw MlxcfgException("Unknown target '%s'", s);
 }
@@ -644,9 +649,8 @@ void TLVConf::checkRules(vector<TLVConf*> ruleTLVs) {
 }
 
 void TLVConf::setOnDevice(mfile* mf) {
-    vector<u_int8_t> buff(_size, 0);
-    pack(buff.data());
-    mnva(mf, buff.data(), _size, getTlvTypeBe(), REG_ACCESS_METHOD_SET);
+    pack(_buff.data());
+    mnva(mf, _buff.data(), _size, getTlvTypeBe(), REG_ACCESS_METHOD_SET);
 }
 
 void TLVConf::getRuleTLVs(std::set<string>& result) {

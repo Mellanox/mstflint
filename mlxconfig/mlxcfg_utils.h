@@ -57,8 +57,30 @@ using namespace std;
 
 enum QueryType {
     QueryNext,
-    //QueryCurrent,
+    QueryCurrent,
     QueryDefault
+};
+
+#define QUERY_NEXT_MASK (1 << QueryNext)
+#define QUERY_CURRENT_MASK (1 << QueryCurrent)
+#define QUERY_DEFAULT_MASK (1 << QueryDefault)
+
+enum WriterId {
+    WRITER_ID_UNSPECIFIED=0x0,
+    WRITER_ID_CHASSIS_BMC=0x1,
+    WRITER_ID_MAD=0x2,
+    WRITER_ID_BMC=0x3,
+    WRITER_ID_CMD_IF=0x4,
+    WRITER_ID_ICMD=0x5,
+    WRITER_ID_ICMD_UEFI_HII=0x6,
+    WRITER_ID_ICMD_UEFI_CLP=0x7,
+    WRITER_ID_ICMD_FLEXBOOT=0x8,
+    WRITER_ID_ICMD_MLXCONFIG=0x9,
+    WRITER_ID_ICMD_USER1=0xa,
+    WRITER_ID_ICMD_USER2=0xb,
+    WRITER_ID_ICMD_MLXCONFIG_SET_RAW=0xc,
+    WRITER_ID_OTHER=0x1f,
+    WRITER_ID_LAST=0x20
 };
 
 #define VECTOR_ITERATOR(t, v, i) \
@@ -93,7 +115,7 @@ enum QueryType {
 
 void dealWithSignal();
 
-MError mnvaCom5thGen(mfile* mf, u_int8_t* buff, u_int16_t len, u_int32_t tlvType, reg_access_method_t method, bool getDefault=false);
+MError mnvaCom5thGen(mfile* mf, u_int8_t* buff, u_int16_t len, u_int32_t tlvType, reg_access_method_t method, QueryType qT = QueryNext);
 
 MError nvqcCom5thGen(mfile* mf, u_int32_t tlvType, bool& suppRead, bool& suppWrite);
 
@@ -108,6 +130,8 @@ string mlxcfg_rtrim(string s);
 string mlxcfg_ltrim(string s);
 
 string mlxcfg_trim(string s);
+
+string writerIdToStr(WriterId writerId);
 
 class MlxcfgException {
 public:

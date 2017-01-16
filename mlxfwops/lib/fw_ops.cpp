@@ -38,6 +38,7 @@
 #include "flint_base.h"
 #include "flint_io.h"
 #include "fw_ops.h"
+#include "fs4_ops.h"
 #include "fs3_ops.h"
 #include "fs2_ops.h"
 
@@ -553,7 +554,7 @@ u_int8_t FwOperations::IsFS4Image(FBase& f, u_int32_t* found_images) {
         READ4_NOERRMSG(f, image_start[0] + 0x10, &data);
         TOCPU1(data);
         image_version = data >> 24;
-        if(image_version == 1) {//1 is the current version
+        if(image_version == 1){//1 is the current version
             return FS_FS4_GEN;
         } else {
             return FS_UNKNOWN_IMG;
@@ -609,6 +610,8 @@ u_int8_t FwOperations::CheckFwFormat(FBase& f, bool getFwFormatFromImg) {
                     (((Flash*)&f)->get_dev_id() == SPECTRUM_HW_ID)   ||
                     (((Flash*)&f)->get_dev_id() == SWITCH_IB2_HW_ID)) {
             return FS_FS3_GEN;
+        } else if (((Flash*)&f)->get_dev_id() == CX5_HW_ID){
+            return FS_FS4_GEN;
         }
     } else {
         v = IsCableImage(f);
@@ -745,6 +748,10 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
             }
             case FS_FS3_GEN: {
                 fwops = new Fs3Operations(ioAccess);
+                break;
+            }
+            case FS_FS4_GEN: {
+                fwops = new Fs4Operations(ioAccess);
                 break;
             }
 #ifdef CABLES_SUPP
@@ -932,7 +939,7 @@ const FwOperations::HwDevData FwOperations::hwDevData[] = {
     { "Switch_IB",        SWITCH_IB_HW_ID,  CT_SWITCH_IB, CFT_SWITCH,   0, {52000, 0}},
     { "ConnectX-4",       CX4_HW_ID,        CT_CONNECTX4, CFT_HCA,    0, {4115, 0}},
     { "ConnectX-4LX",     CX4LX_HW_ID,      CT_CONNECTX4_LX, CFT_HCA,    0, {4117, 0}},
-    { "ConnectX-5",       CX5_HW_ID,        CT_CONNECTX5, CFT_HCA,    0, {4119, 0}},
+    { "ConnectX-5",       CX5_HW_ID,        CT_CONNECTX5, CFT_HCA,    0, {4119, 4121, 0}},
     { "Spectrum",         SPECTRUM_HW_ID,   CT_SPECTRUM, CFT_SWITCH,   0, {52100, 0}},
     { "Switch_IB2",       SWITCH_IB2_HW_ID, CT_SWITCH_IB2, CFT_SWITCH,   0, {53000, 0}},
     { (char*)NULL ,              0, CT_UNKNOWN, CFT_UNKNOWN, 0, {0}},// zero devid terminator
@@ -954,6 +961,7 @@ const FwOperations::HwDev2Str FwOperations::hwDev2Str[] = {
         {"SwitchIB A0",       SWITCH_IB_HW_ID,  0x00},
         {"Spectrum A0",       SPECTRUM_HW_ID,   0x00},
         {"SwitchIB2 A0",      SWITCH_IB2_HW_ID, 0x00},
+        {"Spectrum A1",       SPECTRUM_HW_ID,   0x01},
         { (char*)NULL ,       (u_int32_t)0, (u_int8_t)0x00}, // zero device ID terminator
 };
 
@@ -1416,7 +1424,7 @@ bool FwOperations::RomInfo::GetExpRomVerForOneRom(u_int32_t verOffset)
         }
     } else if (romInfo->exp_rom_product_id == 0xf) {
         // get string length
-        u_int32_ba tmp_ba = *((u_int32_t*) &romSect[verOffset + 0xc]);
+        u_int32_ba tmp_ba = __le32_to_cpu(*((u_int32_t*) &romSect[verOffset + 0xc]));
         u_int32_t str_len = u_int32_t(tmp_ba.range(15, 8));
         u_int32_t sign_length = u_int32_t(tmp_ba.range(7, 0));
         u_int32_t dws_num = ((str_len + 3) / 4) + 4;

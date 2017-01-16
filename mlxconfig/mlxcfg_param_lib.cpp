@@ -1037,22 +1037,29 @@ int VpiParams::getFromDevComPost(MError mnvaComRC)
      }
      // unpack and update
      tools_open_vpi_settings_unpack(&_vpiTlv, &_tlvBuff[0]);
-     setParams(_vpiTlv.network_link_type, _vpiTlv.default_link_type);
+     setParams(_vpiTlv.network_link_type, _vpiTlv.default_link_type,
+               _vpiTlv.phy_type, _vpiTlv.xfi_mode, _vpiTlv.force_mode);
      _updated = true;
      return MCE_SUCCESS;
 
 }
 
-void VpiParams::setParams(u_int32_t linkType, u_int32_t defaultLinkType)
-{
+void VpiParams::setParams(u_int32_t linkType, u_int32_t defaultLinkType,
+                   u_int32_t phyType, u_int32_t xfiMode, u_int32_t forceMode){
     _linkType = linkType;
     _defaultLinkType = defaultLinkType;
+    _phyType = phyType;
+    _xfiMode = xfiMode;
+    _forceMode = forceMode;
 }
 
 int VpiParams::setOnDevComPre(bool ignoreCheck)
 {
-    if (_linkType == MLXCFG_UNKNOWN || _defaultLinkType == MLXCFG_UNKNOWN) {
+    if (_isVPISupported && (_linkType == MLXCFG_UNKNOWN || _defaultLinkType == MLXCFG_UNKNOWN)) {
         return errmsg("%s please specify all the parameters for VPI settings.", err() ? err() : "");
+    }
+    if (_isForceModeSupported && (_phyType == MLXCFG_UNKNOWN || _xfiMode == MLXCFG_UNKNOWN || _forceMode == MLXCFG_UNKNOWN)) {
+        return errmsg("%s please specify all the parameters for VPI Force Mode settings.", err() ? err() : "");
     }
     if (!ignoreCheck && !checkCfg()) {
         return MCE_BAD_PARAMS;
@@ -1062,6 +1069,9 @@ int VpiParams::setOnDevComPre(bool ignoreCheck)
      memset(&_vpiTlv, 0, sizeof(struct tools_open_vpi_settings));
      _vpiTlv.network_link_type = _linkType;
      _vpiTlv.default_link_type = _defaultLinkType;
+     _vpiTlv.phy_type = _phyType;
+     _vpiTlv.xfi_mode = _xfiMode;
+     _vpiTlv.force_mode = _forceMode;
      // pack it
      tools_open_vpi_settings_pack(&_vpiTlv, &_tlvBuff[0]);
     return MCE_SUCCESS;
@@ -1081,8 +1091,14 @@ int VpiParams::setOnDevComPost(MError mnvaComRC)
  */
 void VpiParams4thGen::setParam(mlxCfgParam paramType, u_int32_t val)
 {
-    if ((paramType == Mcp_Link_Type_P1 && _port == 1 ) || (paramType == Mcp_Link_Type_P2 && _port == 2) ) {
+    if ((paramType == Mcp_Link_Type_P1 && _port == 1 ) || (paramType == Mcp_Link_Type_P2 && _port == 2)) {
         _linkType = val;
+    } else if ((paramType == Mcp_Phy_Type_P1 && _port == 1) || (paramType == Mcp_Phy_Type_P2 && _port == 2)) {
+        _phyType = val;
+    } else if ((paramType == Mcp_Xfi_Mode_P1 && _port == 1) || (paramType == Mcp_Xfi_Mode_P2 && _port == 2)) {
+        _xfiMode = val;
+    } else if ((paramType == Mcp_Force_Mode_P1 && _port == 1) || (paramType == Mcp_Force_Mode_P2 && _port == 2)) {
+        _forceMode = val;
     }
 }
 
@@ -1090,6 +1106,12 @@ u_int32_t VpiParams4thGen::getParam(mlxCfgParam paramType)
 {
     if ((paramType == Mcp_Link_Type_P1 && _port == 1 ) || (paramType == Mcp_Link_Type_P2 && _port == 2) ) {
         return _linkType;
+    } else if ((paramType == Mcp_Phy_Type_P1 && _port == 1) || (paramType == Mcp_Phy_Type_P2 && _port == 2)) {
+        return _phyType;
+    } else if ((paramType == Mcp_Xfi_Mode_P1 && _port == 1) || (paramType == Mcp_Xfi_Mode_P2 && _port == 2)) {
+        return _xfiMode;
+    } else if ((paramType == Mcp_Force_Mode_P1 && _port == 1) || (paramType == Mcp_Force_Mode_P2 && _port == 2)) {
+        return _forceMode;
     }
     return MLXCFG_UNKNOWN;
 }
@@ -1098,20 +1120,20 @@ u_int32_t VpiParams4thGen::getDefaultParam(mlxCfgParam paramType)
 {
     if ((paramType == Mcp_Link_Type_P1 && _port == 1 ) || (paramType == Mcp_Link_Type_P2 && _port == 2) ) {
         return _linkTypeDefault;
+    } else if ((paramType == Mcp_Phy_Type_P1 && _port == 1) || (paramType == Mcp_Phy_Type_P2 && _port == 2)) {
+        return _phyTypeDefault;
+    } else if ((paramType == Mcp_Xfi_Mode_P1 && _port == 1) || (paramType == Mcp_Xfi_Mode_P2 && _port == 2)) {
+        return _xfiModeDefault;
+    } else if ((paramType == Mcp_Force_Mode_P1 && _port == 1) || (paramType == Mcp_Force_Mode_P2 && _port == 2)) {
+        return _forceModeDefault;
     }
     return MLXCFG_UNKNOWN;
 }
 
-bool VpiParams4thGen::cfgSupported(mfile* mf, mlxCfgParam param)
-{
-    (void)mf;
-    (void)param;
-    return ((_devCapVec & VPI_P1_MASK) && _port == 1) || ((_devCapVec & VPI_P2_MASK) && _port == 2);
-}
-
-int VpiParams4thGen::getDefaultParams(mfile* mf)
+int VpiParams4thGen::getDefaultParamsAux(mfile* mf)
 {
     struct tools_open_query_def_params_per_port port_params;
+    memset(&port_params, 0, sizeof(port_params));
     _defaultLinkTypeDefault = 0; // not used for 4th gen devices , we give it a default value
     int rc = getDefaultParams4thGen(mf, _port , &port_params);
     if (rc) {
@@ -1120,7 +1142,52 @@ int VpiParams4thGen::getDefaultParams(mfile* mf)
     if (port_params.default_network_link_type) {
         _linkTypeDefault = port_params.default_network_link_type;
     }
-    setParams(_linkTypeDefault, _defaultLinkTypeDefault);
+    _isForceModeSupported = port_params.nv_config_vpi_force_mode;
+    _phyTypeDefault = port_params.default_vpi_phy_type;
+    _xfiModeDefault = port_params.default_vpi_xfi_mode;
+    _forceModeDefault = port_params.default_vpi_force_mode;
+
+    return MCE_SUCCESS;
+}
+
+bool VpiParams4thGen::cfgSupported(mfile* mf, mlxCfgParam param)
+{
+    (void)mf;
+    (void)param;
+    int rc;
+
+    if (((param == Mcp_Phy_Type_P1 || param == Mcp_Xfi_Mode_P1 || param == Mcp_Force_Mode_P1) && (_port == 1))
+        ||
+        ((param == Mcp_Phy_Type_P2 || param == Mcp_Xfi_Mode_P2 || param == Mcp_Force_Mode_P2) && (_port == 2))) {
+        rc = getDefaultParamsAux(mf);
+        bool x = ((!rc) && _isForceModeSupported);
+        return x;
+    }
+
+    _isVPISupported = ((_devCapVec & VPI_P1_MASK) && _port == 1) || ((_devCapVec & VPI_P2_MASK) && _port == 2);
+
+    if (param == Mcp_Last) {
+        rc = getDefaultParamsAux(mf);
+        bool x = ((!rc) && _isForceModeSupported);
+        return (x || _isVPISupported);
+    }
+    return _isVPISupported;
+}
+
+int VpiParams4thGen::getDefaultParams(mfile* mf)
+{
+
+    int rc = getDefaultParamsAux(mf);
+    if (rc) {
+        return rc;
+    }
+
+    _linkType = _linkTypeDefault;
+    _defaultLinkType = _defaultLinkTypeDefault;
+    _phyType = _phyTypeDefault;
+    _xfiMode = _xfiModeDefault;
+    _forceMode = _forceModeDefault;
+
     return MCE_SUCCESS;
 }
 
@@ -1153,11 +1220,32 @@ int VpiParams4thGen::setOnDev(mfile* mf, bool ignoreCheck)
 
 bool VpiParams4thGen::hardLimitCheck()
 {
-    if (_linkType == 1 || _linkType == 2 || _linkType == 3 ) {
-        return true;
+
+    if (_isVPISupported) {
+        if (_linkType < 1 || _linkType > 3) {
+            errmsg("illegal VPI link type (should be 1|2|3).");
+            return false;
+        }
     }
-    errmsg("illegal VPI link type (should be 1|2|3).");
-    return false;
+
+    if (_isForceModeSupported) {
+         if (_phyType < 1 || _phyType > 3) {
+             errmsg("illegal Phy Type value (shold be 1|2|3)");
+             return false;
+         }
+
+         if (_xfiMode > 2) {
+             errmsg("illegal Xfi Mode value (should be 0|1|2)");
+             return false;
+         }
+
+         if (_forceMode > 1) {
+             errmsg("illegal Force Mode value (should be 0|1)");
+             return false;
+        }
+    }
+
+    return true;
 }
 
 /*

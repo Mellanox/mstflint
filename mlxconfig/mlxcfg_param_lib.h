@@ -107,8 +107,14 @@ typedef enum {
     Mcp_Wol_Magic_En_P2,
     // VPI settings Port 1
     Mcp_Link_Type_P1,
+    Mcp_Phy_Type_P1,
+    Mcp_Xfi_Mode_P1,
+    Mcp_Force_Mode_P1,
     // VPI settings Port 2
     Mcp_Link_Type_P2,
+    Mcp_Phy_Type_P2,
+    Mcp_Xfi_Mode_P2,
+    Mcp_Force_Mode_P2,
     // BAR size
     Mcp_Log_Bar_Size,
     // TPT settings
@@ -381,9 +387,12 @@ class VpiParams : public CfgParams
 {
 public:
     VpiParams(int port) : CfgParams(port == 1 ? Mct_Vpi_P1 : Mct_Vpi_P2, VPI_TYPE), _port(port), _linkType(MLXCFG_UNKNOWN), _defaultLinkType(MLXCFG_UNKNOWN)
-    , _linkTypeDefault(MLXCFG_UNKNOWN), _defaultLinkTypeDefault(MLXCFG_UNKNOWN){
-        _vpiTlv.default_link_type = 0;
-        _vpiTlv.network_link_type = 0;
+    , _linkTypeDefault(MLXCFG_UNKNOWN), _defaultLinkTypeDefault(MLXCFG_UNKNOWN),
+    _isForceModeSupported(false), _isVPISupported(false), _phyType(MLXCFG_UNKNOWN),
+    _phyTypeDefault(MLXCFG_UNKNOWN), _xfiMode(MLXCFG_UNKNOWN),
+    _xfiModeDefault(MLXCFG_UNKNOWN), _forceMode(MLXCFG_UNKNOWN),
+    _forceModeDefault(MLXCFG_UNKNOWN){
+        memset(&_vpiTlv, 0, sizeof(_vpiTlv));
     }
     ~VpiParams() {}
 
@@ -398,13 +407,21 @@ protected:
     int getFromDevComPost(MError mnvaComRC);
     int setOnDevComPre(bool ignoreCheck);
     int setOnDevComPost(MError mnvaComRC);
-    void setParams(u_int32_t _linkType, u_int32_t _defaultLinkType);
-
+    void setParams(u_int32_t linkType, u_int32_t defaultLinkType,
+                   u_int32_t phyType, u_int32_t xfiMode, u_int32_t forceMode);
     int _port;
     u_int32_t _linkType;
     u_int32_t _defaultLinkType;
     u_int32_t _linkTypeDefault;
     u_int32_t _defaultLinkTypeDefault;
+    bool      _isForceModeSupported;
+    bool      _isVPISupported;
+    u_int32_t _phyType;
+    u_int32_t _phyTypeDefault;
+    u_int32_t _xfiMode;
+    u_int32_t _xfiModeDefault;
+    u_int32_t _forceMode;
+    u_int32_t _forceModeDefault;
     // FW TLV (used when actually setting/getting the TLV from FW)
     std::vector<u_int8_t> _tlvBuff;
     struct tools_open_vpi_settings _vpiTlv;
@@ -427,6 +444,7 @@ public:
     virtual int getFromDev(mfile* mf);
     virtual int setOnDev(mfile* mf, bool ignoreCheck=false);
     virtual int getDefaultParams(mfile* mf);
+    int getDefaultParamsAux(mfile* mft);
 };
 
 /*

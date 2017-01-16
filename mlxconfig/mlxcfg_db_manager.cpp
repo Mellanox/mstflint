@@ -66,25 +66,9 @@ using namespace std;
 #define SQL_SELECT_PARAM_BY_MLXCONFIG_NAME \
     "SELECT * FROM params WHERE mlxconfig_name='%s'"
 
-void execSQL(sqlite3* db, sqlite3_callback f, void* obj,
-        const char* stat, ...) {
-    va_list vl;
-    char sql[1024];
-    char *zErrMsg = 0;
-
-    va_start(vl, stat);
-    vsnprintf(sql, sizeof(sql), stat, vl);
-    va_end(vl);
-
-    if(sqlite3_exec(db, sql, f, obj, &zErrMsg) != SQLITE_OK) {
-        string e = zErrMsg;
-        sqlite3_free(zErrMsg);
-        throw MlxcfgException("Cannot execute %s, %s", sql, e.c_str());
-    }
-}
-
 MlxcfgDBManager::MlxcfgDBManager(string dbName) : _dbName(dbName),
-        _db(NULL), _isAllFetched(false) {
+        _db(NULL), _callBackErr(""), _isAllFetched(false),
+        _paramSqlResult(NULL) {
     openDB();
 }
 
@@ -107,7 +91,7 @@ void MlxcfgDBManager::openDB() {
         throw MlxcfgException("Database file %s does not exist", _dbName.c_str());
     }
 
-    if (sqlite3_open(_dbName.c_str(), &_db)) {
+    if (sqlite3_open_v2(_dbName.c_str(), &_db, SQLITE_OPEN_READONLY, 0)) {
         string e = sqlite3_errmsg(_db);
         sqlite3_close(_db);
         _db = NULL;
@@ -117,13 +101,38 @@ void MlxcfgDBManager::openDB() {
     return;
 }
 
+void MlxcfgDBManager::execSQL(sqlite3_callback f, void* obj,
+        const char* stat, ...) {
+    va_list vl;
+    char sql[1024];
+    char *zErrMsg = 0;
+
+    va_start(vl, stat);
+    vsnprintf(sql, sizeof(sql), stat, vl);
+    va_end(vl);
+
+    if(sqlite3_exec(_db, sql, f, obj, &zErrMsg) != SQLITE_OK) {
+        string e = zErrMsg;
+        sqlite3_free(zErrMsg);
+        if (_callBackErr.empty()) {
+            throw MlxcfgException("Cannot execute %s, %s", sql, e.c_str());
+        } else {
+            throw MlxcfgException(_callBackErr.c_str());
+        }
+    }
+}
+
 int MlxcfgDBManager::selectTLVCallBack(void *object, int argc, char **argv, char **azColName) {
 
     MlxcfgDBManager* dbManager = reinterpret_cast<MlxcfgDBManager*>(object); //TODOO check this casting
 
-    TLVConf* tlv = new TLVConf(argc, argv, azColName);
-    dbManager->fetchedTLVs.push_back(tlv);
-
+    try {
+        TLVConf* tlv = new TLVConf(argc, argv, azColName);
+        dbManager->fetchedTLVs.push_back(tlv);
+    } catch (MlxcfgException& e) {
+        dbManager->_callBackErr = e._err;
+        return SQLITE_ABORT;
+    }
     //printf("-D- Added new TLV = %s\n", tlv->_name.c_str());
 
     return 0;
@@ -134,18 +143,26 @@ int MlxcfgDBManager::selectParamCallBack(void *object, int argc, char **argv,
 
     MlxcfgDBManager* dbManager = reinterpret_cast<MlxcfgDBManager*>(object); //TODOO check this casting
 
-    Param* param = new Param(argc, argv, azColName);
-    dbManager->fetchedParams.push_back(param);
-
+    try {
+        Param* param = new Param(argc, argv, azColName);
+        dbManager->fetchedParams.push_back(param);
+    } catch (MlxcfgException& e) {
+        dbManager->_callBackErr = e._err;
+        return SQLITE_ABORT;
+    }
     //printf("-D- Added new Param = %s\n", param->_name.c_str());
-
     return 0;
 }
 
 int MlxcfgDBManager::selectParamByMlxconfigNameCallBack(void *object, int argc,
         char **argv, char **azColName){
-    Param** paramP = reinterpret_cast<Param**>(object);
-    (*paramP) = new Param(argc, argv, azColName);
+    MlxcfgDBManager* dbManager = reinterpret_cast<MlxcfgDBManager*>(object);
+    try {
+        dbManager->_paramSqlResult = new Param(argc, argv, azColName);
+    } catch (MlxcfgException& e) {
+        dbManager->_callBackErr = e._err;
+        return SQLITE_ABORT;
+    }
     return 0;
 }
 
@@ -157,10 +174,10 @@ void MlxcfgDBManager::getAllTLVs() {
     }
 
     //fetch from db all tlvs
-    execSQL(_db, selectTLVCallBack, this, SQL_SELECT_ALL_TLVS);
+    execSQL(selectTLVCallBack, this, SQL_SELECT_ALL_TLVS);
 
     //fetch from db all params
-    execSQL(_db, selectParamCallBack, this, SQL_SELECT_ALL_PARAMS);
+    execSQL(selectParamCallBack, this, SQL_SELECT_ALL_PARAMS);
 
     /*
      Fill in TLV.params vector
@@ -198,7 +215,7 @@ TLVConf* MlxcfgDBManager::fetchTLVByName(string n, u_int8_t port) {
     TLVConf* t;
     const char* nc = n.c_str();
 
-    execSQL(_db, selectTLVCallBack, this, SQL_SELECT_TLV_BY_NAME_AND_PORT,
+    execSQL(selectTLVCallBack, this, SQL_SELECT_TLV_BY_NAME_AND_PORT,
             nc, port);
     t = getTLVByNameAux(n, port);
     if(!t) {
@@ -206,7 +223,7 @@ TLVConf* MlxcfgDBManager::fetchTLVByName(string n, u_int8_t port) {
     }
 
     //fetch the parameters
-    execSQL(_db, selectParamCallBack, this,
+    execSQL(selectParamCallBack, this,
             SQL_SELECT_PARAMS_BY_TLV_NAME_AND_PORT, nc, port);
 
     //fill in params vector of the tlv
@@ -223,7 +240,7 @@ TLVConf* MlxcfgDBManager::fetchTLVByIndexAndClass(u_int32_t id, TLVClass c)
 {
     TLVConf* t;
 
-    execSQL(_db, selectTLVCallBack, this, SQL_SELECT_TLV_BY_INDEX_AND_CLASS,
+    execSQL(selectTLVCallBack, this, SQL_SELECT_TLV_BY_INDEX_AND_CLASS,
             id, c);
     t = getTLVByIndexAndClassAux(id, c);
     if (!t) {
@@ -231,7 +248,7 @@ TLVConf* MlxcfgDBManager::fetchTLVByIndexAndClass(u_int32_t id, TLVClass c)
     }
 
     //fetch the parameters
-    execSQL(_db, selectParamCallBack, this,
+    execSQL(selectParamCallBack, this,
             SQL_SELECT_PARAMS_BY_TLV_NAME_AND_PORT, t->_name.c_str(), t->_port);
 
     //fill in params vector of the tlv
@@ -267,7 +284,6 @@ TLVConf* MlxcfgDBManager::getTLVByIndexAndClassAux(u_int32_t id, TLVClass c)
 }
 
 TLVConf* MlxcfgDBManager::getTLVByParamMlxconfigName(std::string n) {
-    Param* param = NULL;
     u_int32_t port;
     string tlvName;
 
@@ -279,18 +295,20 @@ TLVConf* MlxcfgDBManager::getTLVByParamMlxconfigName(std::string n) {
 
     //printf("-D- Try to find it in DB\n");
     //Try to find it in DB:
-    execSQL(_db, selectParamByMlxconfigNameCallBack, &param,
+    execSQL(selectParamByMlxconfigNameCallBack, this,
             SQL_SELECT_PARAM_BY_MLXCONFIG_NAME, n.c_str());
 
-    if(!param) {
+    if(!_paramSqlResult) {
         throw MlxcfgException(
                 "Unknown Parameter: %s",
                 n.c_str());
     }
 
-    port = param->_port;
-    tlvName = param->_tlvName;
-    delete param;
+    port = _paramSqlResult->_port;
+    tlvName = _paramSqlResult->_tlvName;
+    delete _paramSqlResult;
+    _paramSqlResult = NULL;
+
     return fetchTLVByName(tlvName, port);
 }
 

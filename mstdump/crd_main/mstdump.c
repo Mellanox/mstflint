@@ -76,7 +76,7 @@ int main(int argc, char* argv[]) {
     char device[MAX_DEV_LEN] = {0};
 #if defined(linux)
     if (geteuid() != 0) {
-        printf("Permission denied, you need to run this tool as root\n");
+        printf("-E- Permission denied: User is not root\n");
         return 1;
     }
 #endif

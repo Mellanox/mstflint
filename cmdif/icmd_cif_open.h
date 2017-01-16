@@ -46,6 +46,10 @@ extern "C" {
 #define OUT
 #define INOUT
 
+enum {
+    GET_FW_INFO             = 0x8007,
+    FLASH_REG_ACCESS        = 0x9001,
+};
 
 int gcif_get_fw_info(mfile *mf,
                      OUT struct connectib_icmd_get_fw_info* fw_info);

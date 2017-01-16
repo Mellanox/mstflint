@@ -154,7 +154,6 @@ private:
 
 class FourthGenCommander : public Commander,  public ErrMsg {
 private:
-    mfile* _mf;
     std::string _dev;
     u_int64_t _suppVec;
     MlxCfgAllInfo _allInfo;
@@ -171,6 +170,7 @@ public:
     ~FourthGenCommander();
     void printLongDesc(FILE* f) {_allInfo.printLongDesc(f);}
     bool isDefaultSupported() {return true;}
+    bool isCurrentSupported() {return false;}
     void queryAux(std::vector<ParamView>&, QueryType, bool);
     void queryParamViews(std::vector<ParamView>& paramsToQuery, QueryType qt = QueryNext);
     void queryAll(std::vector<ParamView>& params, QueryType qt = QueryNext);
@@ -179,7 +179,7 @@ public:
     const char* loadConfigurationGetStr();
     void setRawCfg(std::vector<u_int32_t> rawTlvVec);
     void dumpRawCfg(std::vector<u_int32_t> rawTlvVec, std::string& tlvDump);
-    void backupCfgs(std::vector<std::pair<u_int32_t, std::vector<u_int8_t> > >& cfgs);
+    void backupCfgs(vector<BackupView>& views);
     bool supportsCfg(mlxCfgType cfg);
     bool supportsParam(mlxCfgParam param);
     void getCfg(ParamView& cfgParam, QueryType qt = QueryNext);

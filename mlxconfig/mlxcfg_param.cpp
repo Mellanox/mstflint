@@ -36,7 +36,6 @@
  *      Author: ahmads
  */
 
-using namespace std;
 
 #include <sstream>
 #include <stdio.h>
@@ -48,6 +47,8 @@ using namespace std;
 
 #include "mlxcfg_param.h"
 #include "mlxcfg_utils.h"
+
+using namespace std;
 
 #define ENABLED "True"
 #define DISABLED "False"

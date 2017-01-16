@@ -216,6 +216,13 @@ namespace std {}; using namespace std;
 #define FS3_BOOT_START        FS2_BOOT_START
 #define FS3_BOOT_START_IN_DW  FS3_BOOT_START/4
 
+// FS4 defines
+#define FS4_BOOT_START        0x10
+#define FS4_BOOT_START_IN_DW  FS4_BOOT_START/4
+#define FS4_BOOT2_START        0x188
+#define FS4_HW_PTR_START       0x18
+#define FS4_HW_PTR_SIZE_DW     CX5FW_HW_POINTERS_SIZE / 4
+
 #define CRC_CHECK_OLD "%s /0x%08x-0x%08x (0x%06x)/ (%s"
 
 #define MAX_NUM_SUPP_HW_IDS 200
@@ -288,6 +295,7 @@ typedef enum fs3_section {
     FS3_HW_MAIN_CFG   = 0x9,
     FS3_PHY_UC_CODE   = 0xa,
     FS3_PHY_UC_CONSTS = 0xb,
+    FS3_PHY_UC_CMD    = 0xc,
     FS3_IMAGE_INFO    = 0x10,
     FS3_FW_BOOT_CFG   = 0x11,
     FS3_FW_MAIN_CFG   = 0x12,
@@ -297,6 +305,9 @@ typedef enum fs3_section {
     // FS3_DBG_LOG_MAP = 0x30 - in practice its unused and DBG_FW_INI is found in that section instead
     FS3_DBG_FW_PARAMS = 0x32,
     FS3_FW_ADB        = 0x33,
+    FS3_IMAGE_SIGNATURE = 0xa0,
+    FS3_PUBLIC_KEYS   = 0xa1,
+    FS3_FORBIDDEN_VERSIONS = 0xa2,
     FS3_MFG_INFO      = 0xe0,
     FS3_DEV_INFO      = 0xe1,
     FS3_NV_DATA1      = 0xe2,

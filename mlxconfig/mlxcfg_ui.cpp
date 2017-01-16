@@ -47,6 +47,8 @@
 #include "mlxcfg_utils.h"
 #include "mlxcfg_generic_commander.h"
 
+#define NEXT_STR "Next Boot"
+#define DEFAULT_CURRENT_NOT_SUPPORTED_PREFIX "Device Firmware does not support reading "
 #define TLV_NAME_MAX_LENGTH 256
 #define EXIT_IF_RC_NOT_OK(rc) \
     if (rc != MLX_CFG_OK) {\
@@ -139,6 +141,8 @@ void initHandler()
 
 typedef struct QueryOutputItem {
     string mlxconfigName;
+    u_int32_t nextVal;
+    string strNextVal;
     u_int32_t currVal;
     string strCurrVal;
     u_int32_t defVal;
@@ -147,16 +151,18 @@ typedef struct QueryOutputItem {
     string strSetVal;
 } QueryOutputItem;
 
-inline void copyCurr(QueryOutputItem&o , const ParamView& p)
+inline void copyVal(QueryOutputItem&o , const ParamView& p, QueryType qT)
 {
-    o.currVal = p.val;
-    o.strCurrVal = p.strVal;
-}
-
-inline void copyDef(QueryOutputItem&o , const ParamView& p)
-{
-    o.defVal = p.val;
-    o.strDefVal = p.strVal;
+    if (qT == QueryDefault) {
+        o.defVal = p.val;
+        o.strDefVal = p.strVal;
+    } else if (qT == QueryCurrent) {
+        o.currVal = p.val;
+        o.strCurrVal = p.strVal;
+    } else if (qT == QueryNext) {
+        o.nextVal = p.val;
+        o.strNextVal = p.strVal;
+    }
 }
 
 inline void copySet(QueryOutputItem&o , const ParamView& p)
@@ -278,24 +284,31 @@ static void printParam(string param, u_int32_t val)
     return;
 }
 
-static void printOneParam(const char* name, u_int32_t currVal, string currStrVal, bool showDefault=false, u_int32_t defaultVal=MLXCFG_UNKNOWN,
-        string defaultStrVal="MLXCFG_UNKNOWN", bool printNewCfg=false, u_int32_t newVal=MLXCFG_UNKNOWN, string newStrVal= "MLXCFG_UNKNOWN")
+static void printOneParam(const char* name, QueryOutputItem o,
+        u_int8_t verbose, bool printNewCfg)
 {
-    if (showDefault && currVal != defaultVal) {
+    bool showDefault = QUERY_DEFAULT_MASK & verbose;
+    bool showCurrent = QUERY_CURRENT_MASK & verbose;
+
+    if ((showDefault && o.nextVal != o.defVal) ||
+            (showCurrent && o.nextVal != o.currVal)) {
         printf("*        %-36s", name);
     } else {
         printf("         %-36s", name);
     }
     if (showDefault) {
-        printParam(defaultStrVal, defaultVal);
+        printParam(o.strDefVal, o.defVal);
     }
-    printParam(currStrVal, currVal);
+    if (showCurrent) {
+        printParam(o.strCurrVal, o.currVal);
+    }
+    printParam(o.strNextVal, o.nextVal);
 
     if (printNewCfg) {
-        if (newVal == MLXCFG_UNKNOWN) {
-            printParam(currStrVal, currVal);
+        if (o.setVal == MLXCFG_UNKNOWN) {
+            printParam(o.strNextVal, o.nextVal);
         } else {
-            printValue(newStrVal, newVal);
+            printValue(o.strSetVal, o.setVal);
         }
     }
     printf("\n");
@@ -332,16 +345,25 @@ void MlxCfg::printOpening(const char* dev, int devIndex)
     //printf("%-16s%-16s\n", "Psid:", "78901111");
 }
 
-void MlxCfg::printConfHeader(bool showDefualt, bool showNew)
+void MlxCfg::printConfHeader(bool showDefualt, bool showNew, bool showCurrent)
 {
     //print configuration Header
     if (showDefualt) {
-        printf("%-16s%36s%16s","Configurations:","Default","Current");
+        if (showCurrent) {
+            printf("%-16s%36s%16s%18s","Configurations:","Default","Current",
+                    NEXT_STR);
+        } else {
+            printf("%-16s%36s%18s","Configurations:","Default", NEXT_STR);
+        }
     } else {
-        printf("%-16s%36s","Configurations:","Current");
+        if (showCurrent) {
+            printf("%-16s%36s%18s","Configurations:","Current", NEXT_STR);
+        } else {
+            printf("%-16s%38s","Configurations:", NEXT_STR);
+        }
     }
     if (showNew) {
-        printf("         %s", "New");
+        printf("       %s", "New");
     }
 }
 
@@ -351,24 +373,22 @@ void prepareSetInput(vector<QueryOutputItem>& output,
     VECTOR_ITERATOR(ParamView, params, p) {
         QueryOutputItem o;
         o.mlxconfigName = p->mlxconfigName;
+        o.defVal = MLXCFG_UNKNOWN;
+        o.currVal = MLXCFG_UNKNOWN;
+        o.nextVal = MLXCFG_UNKNOWN;
         copySet(o, *p);
         output.push_back(o);
     }
 }
 
 void prepareQueryOutput(vector<QueryOutputItem>& output,
-        vector<ParamView>& params, bool isDefault)
+        vector<ParamView>& params, QueryType qT)
 {
     VECTOR_ITERATOR(ParamView, params, p) {
         bool found = false;
         VECTOR_ITERATOR(QueryOutputItem, output, o) {
             if (p->mlxconfigName == o->mlxconfigName) {
-                if(isDefault) {
-                    copyDef(*o, *p);
-                    o->currVal = MLXCFG_UNKNOWN;
-                } else {
-                    copyCurr(*o, *p);
-                }
+                copyVal(*o, *p, qT);
                 found = true;
                 break;
             }
@@ -376,26 +396,23 @@ void prepareQueryOutput(vector<QueryOutputItem>& output,
         if(!found) {
             QueryOutputItem o;
             o.mlxconfigName = p->mlxconfigName;
-            if (isDefault) {
-                copyDef(o, *p);
-                o.currVal = MLXCFG_UNKNOWN;
-            } else {
-                copyCurr(o, *p);
-            }
+            o.defVal = MLXCFG_UNKNOWN;
+            o.currVal = MLXCFG_UNKNOWN;
+            o.nextVal = MLXCFG_UNKNOWN;
+            copyVal(o, *p, qT);
             output.push_back(o);
         }
     }
 }
 
 void queryAux(Commander* commander, vector<ParamView>& params,
-        vector<ParamView>& setParams, bool isSetCmd, bool isDefault)
+        vector<ParamView>& setParams, bool isSetCmd, QueryType qT)
 {
     if (isSetCmd) {
         params = setParams;
-        commander->queryParamViews(params,
-                isDefault ? QueryDefault : QueryNext);
+        commander->queryParamViews(params, qT);
     } else {
-        commander->queryAll(params, isDefault ? QueryDefault : QueryNext);
+        commander->queryAll(params, qT);
     }
 }
 
@@ -404,54 +421,88 @@ mlxCfgStatus MlxCfg::queryDevCfg(Commander* commander, const char* dev,const cha
 {
     (void) pci;
     std::vector<QueryOutputItem> output;
-    std::vector<ParamView> params, defaultParams;
+    std::vector<ParamView> params, defaultParams, currentParams;
     bool failedToGetCfg = false, isParamsDiffer = false;
+    bool defaultSupported = false, currentSupported = false;
+    bool showDefault = false, showCurrent = false;
 
     printOpening(dev, devIndex);
     printf("\n");
 
-    printConfHeader(_mlxParams.showDefault, printNewCfg);
-    printf("\n");
-
     try {
-        if(printNewCfg) {
+
+        if (_mlxParams.enableVerbosity) {
+            if (commander->isDefaultSupported()) {
+                defaultSupported = true;
+            }
+            if (commander->isCurrentSupported()) {
+                currentSupported = true;
+            }
+        }
+
+        showDefault = defaultSupported;
+        showCurrent = currentSupported;
+
+        printConfHeader(showDefault, printNewCfg, showCurrent);
+        printf("\n");
+
+        if (printNewCfg) {
             VECTOR_ITERATOR(ParamView, _mlxParams.setParams, p) {
                 commander->updateParamViewValue(*p, p->setVal);
             }
             prepareSetInput(output, _mlxParams.setParams);
         }
 
-        if (_mlxParams.showDefault){
-            if(!commander->isDefaultSupported()) {
-                return err(false,
-                        "Firmware does not support querying default configurations");
-            }
+        if (showDefault) {
             queryAux(commander, defaultParams, _mlxParams.setParams,
-                    printNewCfg, true);
+                    printNewCfg, QueryDefault);
         }
-        queryAux(commander, params, _mlxParams.setParams, printNewCfg, false);
+        if (showCurrent) {
+            queryAux(commander, currentParams, _mlxParams.setParams,
+                    printNewCfg, QueryCurrent);
+        }
+        queryAux(commander, params, _mlxParams.setParams, printNewCfg, QueryNext);
     } catch (MlxcfgException& e) {
         err(false, "%s", e._err.c_str());
         return MLX_CFG_ERROR_EXIT;
     }
 
-    if (_mlxParams.showDefault){
-        prepareQueryOutput(output, defaultParams, true);
+    if (showDefault) {
+        prepareQueryOutput(output, defaultParams, QueryDefault);
     }
-    prepareQueryOutput(output, params, false);
+    if (showCurrent) {
+        prepareQueryOutput(output, currentParams, QueryCurrent);
+    }
+    prepareQueryOutput(output, params, QueryNext);
     
     //print output table:
     VECTOR_ITERATOR(QueryOutputItem, output, o) {
         printOneParam(o->mlxconfigName.c_str(),
-                o->currVal, o->strCurrVal,
-                _mlxParams.showDefault, o->defVal, o->strDefVal,
-                printNewCfg, o->setVal, o->strSetVal);
-        isParamsDiffer |= (o->currVal != o->defVal);
+                *o,
+                QUERY_NEXT_MASK |
+                    (showDefault ? QUERY_DEFAULT_MASK :0) |
+                    (showCurrent ? QUERY_CURRENT_MASK : 0),
+                printNewCfg);
+        isParamsDiffer |= (showDefault && (o->nextVal != o->defVal))
+                || (showCurrent && (o->nextVal != o->currVal));
     }
 
-    if(_mlxParams.showDefault && isParamsDiffer) {
-        printf("The '*' shows parameters with current value different "
-                "from default value.\n");
+    if (isParamsDiffer) {
+        printf("The '*' shows parameters with next value different "
+                "from default/current value.\n");
+    }
+
+    if (_mlxParams.enableVerbosity) {
+        if (!defaultSupported && !currentSupported) {
+            printf(DEFAULT_CURRENT_NOT_SUPPORTED_PREFIX
+                    "default and current configurations\n");
+        } else if (!defaultSupported) {
+            printf(DEFAULT_CURRENT_NOT_SUPPORTED_PREFIX
+                    "default configurations\n");
+        } else if (!currentSupported) {
+            printf(DEFAULT_CURRENT_NOT_SUPPORTED_PREFIX
+                    "current configurations\n");
+        }
     }
 
     if (params.size() == 0) {
@@ -640,7 +691,7 @@ mlxCfgStatus MlxCfg::setDevRawCfg()
         int lineIdx = 1;
         for (std::string line; std::getline(ifs, line); lineIdx++) {
             std::vector<u_int32_t> rawTlvVec;
-            if (line[0] == '%') { // comment - skip
+            if (line.empty() || line[0] == '%') { // comment - skip
                 continue;
             }
             // convert line to DW
@@ -683,12 +734,12 @@ mlxCfgStatus MlxCfg::backupCfg()
 {
     FILE * file;
     Commander* commander = NULL;
-    vector<pair<u_int32_t, vector<u_int8_t> > > cfgsMap;
+    vector<BackupView> views;
 
     try {
         commander = Commander::create(_mlxParams.device, _mlxParams.dbName);
         printf("Collecting...\n");
-        commander->backupCfgs(cfgsMap);
+        commander->backupCfgs(views);
         delete commander;
     } catch(MlxcfgException& e) {
         printf(" Failed!\n");
@@ -698,28 +749,38 @@ mlxCfgStatus MlxCfg::backupCfg()
         return err(true, "Failed to backup the configurations: %s", e._err.c_str());
     }
 
-    // open file
-    printf("Saving output...\n");
-    file = fopen(_mlxParams.rawTlvFile.c_str(), "w");
-    if (file == NULL) {
-        return err(true, "Failed to open file: %s", _mlxParams.rawTlvFile.c_str());
-    }
-
-    fprintf(file, "%s\n", MLNX_RAW_TLV_FILE_SIG);
-
-    for(std::vector<pair<u_int32_t, vector<u_int8_t> > >::iterator it = cfgsMap.begin();
-            it != cfgsMap.end(); it++) {
-        fprintf(file, "%% TLV Type: 0x%08x\n", it->first);
-        vector<u_int8_t> v = it->second;
-        for(size_t i = 0; i < v.size() / 4; i++) {
-            fprintf(file, "0x%08x ", __cpu_to_be32(((u_int32_t*)v.data())[i]));
+    //check if views empty
+    if (views.empty()) {
+        printf("No TLVs were found.\n");
+    } else {
+        // open file
+        printf("Saving output...\n");
+        file = fopen(_mlxParams.rawTlvFile.c_str(), "w");
+        if (file == NULL) {
+            return err(true, "Failed to open file: %s", _mlxParams.rawTlvFile.c_str());
         }
-        fprintf(file, "\n");
+
+        fprintf(file, "%s\n", MLNX_RAW_TLV_FILE_SIG);
+
+        for(std::vector<BackupView>::iterator it = views.begin();
+                it != views.end(); it++) {
+            fprintf(file, "%% TLV Type: 0x%08x, Writer ID: %s(0x%02x)"
+                    ", Writer Host ID: 0x%02x\n",
+                    it->type,
+                    writerIdToStr((WriterId)(it->writerId)).c_str(),
+                    it->writerId,
+                    it->writerHostId);
+            vector<u_int8_t> v = it->tlvBin;
+            for(size_t i = 0; i < v.size() / 4; i++) {
+                fprintf(file, "0x%08x ", __cpu_to_be32(((u_int32_t*)v.data())[i]));
+            }
+            fprintf(file, "\n");
+        }
+
+        fclose(file);
+
+        printf("Done!\n");
     }
-
-    fclose(file);
-
-    printf("Done!\n");
     return MLX_CFG_OK;
 }
 
@@ -979,7 +1040,12 @@ mlxCfgStatus MlxCfg::raw2XMLAux(bool isBin)
         if (isBin) {
             //commander.bin2XML(buff, xmlTemplate);
         } else {
-            commander.raw2XML(lines, xmlTemplate);
+            if (lines.size() == 0) {
+                fprintf(stderr, "-E- Empty file was provided\n");
+                rc = MLX_CFG_ERROR;
+            } else {
+                commander.raw2XML(lines, xmlTemplate);
+            }
         }
     } catch(MlxcfgException& e) {
         printf("-E- %s\n", e._err.c_str());

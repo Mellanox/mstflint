@@ -94,6 +94,11 @@ dev_info* mdevices_info(int mask, int* len)
     return mdevices_info_ul(mask, len);
 }
 
+dev_info* mdevices_info_v(int mask, int* len, int verbosity)
+{
+    return mdevices_info_v_ul(mask, len, verbosity);
+}
+
 void mdevices_info_destroy(dev_info* dev_info, int len)
 {
     int i, j;

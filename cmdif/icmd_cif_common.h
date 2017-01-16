@@ -71,12 +71,6 @@ enum {
 };
 
 enum {
-    GET_FW_INFO             = 0x8007,
-    FLASH_REG_ACCESS        = 0x9001,
-};
-
-
-enum {
     RW_READ  = 0x1,
     RW_WRITE = 0x0
 };

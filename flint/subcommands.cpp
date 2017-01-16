@@ -264,6 +264,24 @@ bool SubCommand::writeToFile(string filePath, const std::vector<u_int8_t>& buff)
     return true;
 }
 
+FlintStatus SubCommand::writeImageToFile(const char *file_name, u_int8_t *data, u_int32_t length)
+{
+    FILE* fh;
+    if ((fh = fopen(file_name, "wb")) == NULL) {
+        reportErr(true, "Can not open %s: %s\n", file_name, strerror(errno));
+        return FLINT_FAILED;
+    }
+
+    // Write output
+    if (fwrite(data, 1, length, fh) != length) {
+        fclose(fh);
+        reportErr(true, "Failed to write to %s: %s\n", file_name, strerror(errno));
+        return FLINT_FAILED;
+    }
+    fclose(fh);
+    return FLINT_SUCCESS;
+}
+
 void SubCommand::openLog()
 {
     if (isCmdSupportLog()) {
@@ -303,7 +321,7 @@ int SubCommand::CbCommon(int completion, char*preStr, char* endStr)
 
 int SubCommand::burnCbFs3Func(int completion)
 {
-    char* message = (char*)"Burning FS3 FW image without signatures - ";
+    char* message = (char*)"Burning FW image without signatures - ";
     char* endStr =  (char*)"Restoring signature                     - OK";
     return CbCommon(completion, message, endStr);
 }
@@ -973,8 +991,8 @@ bool SubCommand::checkGuidsFlags (u_int16_t devType, u_int8_t fwType,
                             bool guidsSpecified, bool macsSpecified, bool uidSpecified, bool ibDev, bool ethDev) {
     (void)ibDev;
     if (guidsSpecified || macsSpecified || uidSpecified) {
-        if (uidSpecified && fwType != FIT_FS3) {
-            reportErr(true, "-uid flag is applicable only for FS3 FW Only.\n");
+        if (uidSpecified && fwType != FIT_FS3 && fwType != FIT_FS4) {
+            reportErr(true, "-uid flag is applicable only for FS3/FS4 FW Only.\n");
             return false;
         } else if (fwType != FIT_FS2 && !ethDev && macsSpecified ) {
             reportErr(true, "-mac(s) flag is not applicable for IB MT%d device.\n", devType);
@@ -1157,6 +1175,10 @@ bool BurnSubCommand::verifyParams()
         reportErr(true, FLINT_INVALID_FLAG_WITHOUT_FLAG_ERROR, "-nofs", "-ignore_dev_data");
         return false;
     }
+    if (_flintParams.use_dev_rom && _flintParams.use_image_rom) {
+        reportErr(true, FLINT_INVALID_FLAG_WITH_FLAG_ERROR, "--use_dev_rom", "--use_image_rom");
+        return false;
+    }
     return true;
 }
 
@@ -1285,7 +1307,9 @@ FlintStatus BurnSubCommand::burnFs3()
         return FLINT_FAILED;
     }
     // deal with rom
-    dealWithExpRom();
+    if (!dealWithExpRom()) {
+        return FLINT_FAILED;
+    }
     bool getRomFromDev = ( _burnParams.burnRomOptions == FwOperations::ExtBurnParams::BRO_FROM_DEV_IF_EXIST);
     if (!getRomFromDev && !checkMatchingExpRomDevId(_imgInfo)) {
         printf("Image file ROM: FW is for device %d, but Exp-ROM is for device %d\n", _imgInfo.fw_info.dev_type,\
@@ -1333,7 +1357,7 @@ FlintStatus BurnSubCommand::burnFs2()
     //CheckMatchingHwDevId is done in mlxfwops burn routine.
     //CheckMatchingDevId is done in mlxfwops burn routine.
 
-    dealWithExpRom();
+    (void)dealWithExpRom();
     bool getRomFromDev = _burnParams.burnRomOptions == FwOperations::ExtBurnParams::BRO_FROM_DEV_IF_EXIST;
     if (!getRomFromDev && !checkMatchingExpRomDevId(_imgInfo)) {
         printf("Image file ROM: FW is for device %d, but Exp-ROM is for device %d\n", _imgInfo.fw_info.dev_type,\
@@ -1510,21 +1534,54 @@ bool BurnSubCommand::dealWithGuids()
 #define IS_HCA(chipType) \
     (((chipType) == CT_CONNECTX) || ((chipType) == CT_CONNECT_IB) || ((chipType) == CT_CONNECTX4) || ((chipType) == CT_CONNECTX4_LX) || ((chipType) == CT_CONNECTX5))
 
-void BurnSubCommand::dealWithExpRom()
+bool BurnSubCommand::dealWithExpRom()
 {
     bool getRomFromDev = false;
+
     // Check exp rom:
-    bool fs2Cond = _fwType == FIT_FS2? (_devQueryRes && IS_HCA(_devInfo.fw_info.chip_type) && \
-            (FwOperations::IsFwSupportingRomModify(_devInfo.fw_info.fw_ver) || (_imgInfo.fw_info.roms_info.num_of_exp_rom > 0))\
-            && !_flintParams.use_image_rom && !strcmp(_devInfo.fw_info.product_ver,"") && !strcmp(_imgInfo.fw_info.product_ver, "")) : false;
+    bool fs2Cond;
 
-    bool fs3Cond = _fwType == FIT_FS3 ? (_devQueryRes && IS_HCA(_devInfo.fw_info.chip_type) && \
-            (FwOperations::IsFwSupportingRomModify(_devInfo.fw_info.fw_ver) || (_imgInfo.fw_info.roms_info.num_of_exp_rom > 0))\
-            && !_flintParams.use_image_rom) && !strcmp(_devInfo.fw_info.product_ver,"") && !strcmp(_imgInfo.fw_info.product_ver, "") : false;
+    if (_fwType != FIT_FS2) {
+        _burnParams.burnRomOptions =
+                FwOperations::ExtBurnParams::BRO_ONLY_FROM_IMG;
+        bool cond = _devQueryRes && IS_HCA(_devInfo.fw_info.chip_type);
+        if (cond && _flintParams.use_dev_rom) {
+            if (_devInfo.fw_info.roms_info.num_of_exp_rom > 0) {
+                if (!strcmp(_devInfo.fw_info.product_ver,"") && !strcmp(_imgInfo.fw_info.product_ver, "")) {
+                    _burnParams.burnRomOptions =
+                            FwOperations::ExtBurnParams::BRO_FROM_DEV_IF_EXIST;
+                } else if (_flintParams.allow_rom_change) {
+                    _burnParams.burnRomOptions =
+                            FwOperations::ExtBurnParams::BRO_FROM_DEV_IF_EXIST;
+                } else {
+                    //error, please use allow_rom_change flag
+                    reportErr(true, "The device FW contains common FW/ROM Product Version - "
+                            "The ROM cannot be updated separately.\n");
+                    return false;
+                }
+            } else {
+                if (_imgInfo.fw_info.roms_info.num_of_exp_rom > 0) {
+                    if (!askUser("No Expansion ROM found in the device, "
+                        "Do you want to use the ROM from the image file",
+                        false)) {
+                        return false;
+                    }
+                } else {
+                    if (!askUser("No Expansion ROM found in the device"
+                            ", Do you want to continue")) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
 
-    bool cond = _fwType == FIT_FS2 ? fs2Cond : fs3Cond;
+    fs2Cond = (_devQueryRes && IS_HCA(_devInfo.fw_info.chip_type) && \
+                (FwOperations::IsFwSupportingRomModify(_devInfo.fw_info.fw_ver) || (_imgInfo.fw_info.roms_info.num_of_exp_rom > 0))\
+                && !_flintParams.use_image_rom && !strcmp(_devInfo.fw_info.product_ver,"") && !strcmp(_imgInfo.fw_info.product_ver, ""));
 
-    if (cond) {
+    if (fs2Cond) {
         // Enter here when:
         //                  The fw on the flash is OK (passed query, and it should pass verify in mlxfwops) &&
         //                  ( The device is connectx ||  connectib    )&&
@@ -1551,7 +1608,7 @@ void BurnSubCommand::dealWithExpRom()
     if (getRomFromDev) {
         _burnParams.burnRomOptions = FwOperations::ExtBurnParams::BRO_FROM_DEV_IF_EXIST;
     }
-    return;
+    return true;
 }
 
 bool BurnSubCommand::checkMatchingExpRomDevId(const fw_info_t& info)
@@ -1735,8 +1792,6 @@ bool QuerySubCommand::displayFs3Uids(const fw_info_t& fwInfo)
     }
     return true;
 }
-
-
 
 FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
 {
@@ -1923,7 +1978,7 @@ VerifySubCommand:: VerifySubCommand()
 {
     _name = "verify";
     _desc = "Verify entire flash, use \"showitoc\" to see ITOC headers\n"
-            INDENT"in FS3 image only.";
+            INDENT"in FS3/FS4 image only.";
     _extendedDesc = "Verify entire flash.";
     _flagLong = "verify";
     _flagShort = "v";
@@ -2498,7 +2553,7 @@ FlintStatus SgSubCommand::sgFs3()
     }
 
     // TODO: create method that checks the flags for FS3/FS2
-    if (_info.fw_info.chip_type == CT_CONNECT_IB || _info.fw_info.chip_type == CT_SWITCH_IB || _info.fw_info.chip_type == CT_SWITCH_IB2) {
+    if (_info.fw_info.chip_type == CT_CONNECT_IB || _info.fw_info.chip_type == CT_SWITCH_IB) {
         if (!_flintParams.uid_specified) {
             reportErr(true, FLINT_NO_UID_FLAG_ERROR);
             return FLINT_FAILED;
@@ -2554,8 +2609,8 @@ FlintStatus SgSubCommand::executeCommand()
 SmgSubCommand:: SmgSubCommand()
 {
     _name = "smg";
-    _desc = "Set manufacture GUIDs (For FS3 image only).";
-    _extendedDesc = "Set manufacture GUID, Set manufacture GUIDs in the given FS3 image.\n"
+    _desc = "Set manufacture GUIDs (For FS3/FS4 image only).";
+    _extendedDesc = "Set manufacture GUID, Set manufacture GUIDs in the given FS3/FS4 image.\n"
                 INDENTEX "Use -uid flag to set the desired GUIDs, intended for production use only.";
     _flagLong = "smg";
     _flagShort = "";
@@ -2643,7 +2698,7 @@ FlintStatus SmgSubCommand::executeCommand()
          return FLINT_FAILED;
      }
 
-     if (_info.fw_info.chip_type == CT_CONNECT_IB || _info.fw_info.chip_type == CT_SWITCH_IB || _info.fw_info.chip_type == CT_SWITCH_IB2) {
+     if (_info.fw_info.chip_type == CT_CONNECT_IB || _info.fw_info.chip_type == CT_SWITCH_IB) {
          if (!_flintParams.uid_specified) {
          reportErr(true, "Can not set GUIDs/MACs: uid is not specified, please run with -uid flag.\n");
          return FLINT_FAILED;
@@ -2670,8 +2725,8 @@ FlintStatus SmgSubCommand::executeCommand()
 SetVpdSubCommand:: SetVpdSubCommand()
 {
     _name = "set vpd";
-    _desc = "Set read-only VPD (For FS3 image only).";
-    _extendedDesc = "Set Read-only VPD, Set VPD in the given FS3 image, intended for production use only.";
+    _desc = "Set read-only VPD (For FS3/FS4 image only).";
+    _extendedDesc = "Set Read-only VPD, Set VPD in the given FS3/FS4 image, intended for production use only.";
     _flagLong = "set_vpd";
     _flagShort = "";
     _param = "[vpd file]";
@@ -2814,24 +2869,6 @@ FlintStatus RiSubCommand::executeCommand() {
         return FLINT_FAILED;
     }
     return writeImageToFile(_flintParams.cmd_params[0].c_str(), &(imgBuff[0]), imgSize );
-}
-
-FlintStatus RiSubCommand::writeImageToFile(const char *file_name, u_int8_t *data, u_int32_t length)
-{
-    FILE* fh;
-    if ((fh = fopen(file_name, "wb")) == NULL) {
-        reportErr(true, "Can not open %s: %s\n", file_name, strerror(errno));
-        return FLINT_FAILED;
-    }
-
-    // Write output
-    if (fwrite(data, 1, length, fh) != length) {
-        fclose(fh);
-        reportErr(true, "Failed to write to %s: %s\n", file_name, strerror(errno));
-        return FLINT_FAILED;
-    }
-    fclose(fh);
-    return FLINT_SUCCESS;
 }
 
 /***********************

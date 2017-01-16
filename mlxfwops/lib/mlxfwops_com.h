@@ -308,6 +308,9 @@ typedef struct fw_info_com {
     chip_type_t  chip_type;
     roms_info_t  roms_info;
     u_int16_t    running_fw_ver[3];
+    u_int8_t     image_info_minor_version;
+    u_int8_t     image_info_major_version;
+    u_int16_t    pci_device_id;
 } fw_info_com_t;
 
 

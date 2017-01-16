@@ -83,6 +83,15 @@ int mdevices(char *buf, int len, int mask);
  */
 dev_info* mdevices_info(int mask, int* len);
 
+/*
+ *  * Get list of MST (Mellanox Software Tools) devices info records.
+ *  * Return a dynamic allocated array of dev_info records.
+ *  * len will be updated to hold the array length
+ *  * Verbosity will decide whether to get all the Physical functions or not.
+ */
+
+dev_info* mdevices_info_v(int mask, int* len, int verbosity);
+
 void mdevice_info_destroy(dev_info* dev_info, int len);
 void mdevices_info_destroy(dev_info* dev_info, int len);
 
