@@ -935,7 +935,7 @@ int RawCfgParams5thGen::setOnDev(mfile* mf) {
     mft_signal_set_handling(1);
     DEBUG_PRINT_SEND(&_nvdaTlv, nvda);
     rc = reg_access_nvda(mf, REG_ACCESS_METHOD_SET, &_nvdaTlv);
-    DEBUG_PRINT_RECIEVE(&_nvdaTlv, nvda);
+    DEBUG_PRINT_RECEIVE(&_nvdaTlv, nvda);
     dealWithSignal();
     if (rc) {
         return errmsg("Failed to set raw TLV: %s", m_err2str((MError)rc));

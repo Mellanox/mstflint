@@ -52,7 +52,7 @@ static void (*prev_handlers[sizeof(signals_array)/sizeof(signals_array[0])])(int
 
 static void my_termination_handler(int sig)
 {
-    s_is_fired = sig; // assuming signals recieved are always different then zero
+    s_is_fired = sig; // assuming signals received are always different then zero
     if (s_interrupt_message) {
         fprintf(stderr, "%s", s_interrupt_message);
     }
@@ -147,7 +147,7 @@ void mft_restore_and_raise()
     int sig;
     sig = mft_signal_is_fired();
     if (sig) {
-        // reset recieved signal
+        // reset received signal
         mft_signal_set_fired(0);
         // retore prev handler
         mft_signal_set_handling(0);

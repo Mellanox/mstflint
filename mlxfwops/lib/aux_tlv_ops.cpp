@@ -342,7 +342,7 @@ Tlv_Status_t ImageTlvOps::parseTlvs()
         if (tlv.hdr.header_type == 0x0) { // only know how to deal with header of type 0x0
             // check CRC and store
             if (tlv.hdr.crc != calcTlvCrc(tlv)) {
-                return (Tlv_Status_t)errmsgWCode(TS_TLV_CRC_MISSMATCH, "Failed to parse TLVs, CRC missmatch for TLV type 0x%x", tlv.hdr.type);
+                return (Tlv_Status_t)errmsgWCode(TS_TLV_CRC_MISMATCH, "Failed to parse TLVs, CRC mismatch for TLV type 0x%x", tlv.hdr.type);
             }
             // store it
             _tlvVec.push_back(tlv);

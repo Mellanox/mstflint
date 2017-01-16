@@ -76,7 +76,7 @@ void usage(const char *n, int with_exit)
     printf("  -v             : Display version info\n");
     printf("\n");
     printf("Environment Variables:\n");
-    printf("   ADB_DUMP      : Holds the path to adb dump, used for access by path (can be overriden by \"-a\").\n");
+    printf("   ADB_DUMP      : Holds the path to adb dump, used for access by path (can be overridden by \"-a\").\n");
     if (with_exit) {
         exit(1);
     }

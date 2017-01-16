@@ -63,12 +63,12 @@
 # define DEBUG_PRINT_SEND(data_struct, struct_name, method, prefix)\
 	printf("-I- Data Sent (Method: %s):\n", method == REG_ACCESS_METHOD_SET ? "SET" : "GET");\
 	prefix##_##struct_name##_print(data_struct, stdout, 1)
-# define DEBUG_PRINT_RECIEVE(data_struct, struct_name, method, prefix)\
+# define DEBUG_PRINT_RECEIVE(data_struct, struct_name, method, prefix)\
 	printf("-I- Data Received (Mehtod: %s):\n", method == REG_ACCESS_METHOD_SET ? "SET" : "GET");\
 	prefix##_##struct_name##_print(data_struct, stdout, 1)
 #else
 # define DEBUG_PRINT_SEND(data_struct, struct_name, method, prefix)
-# define DEBUG_PRINT_RECIEVE(data_struct, struct_name, method, prefix)
+# define DEBUG_PRINT_RECEIVE(data_struct, struct_name, method, prefix)
 #endif
 
 /***************************************************/
@@ -88,7 +88,7 @@
     DEBUG_PRINT_SEND(data_struct, struct_name, method, print_func);\
     rc = maccess_reg(mf, reg_id, (maccess_reg_method_t)method, data, reg_size, r_reg_size, w_reg_size, status);\
     unpack_func(data_struct, data);\
-    DEBUG_PRINT_RECIEVE(data_struct, struct_name, method, print_func);
+    DEBUG_PRINT_RECEIVE(data_struct, struct_name, method, print_func);
 
 #define REG_ACCESS_GENERIC_VAR(mf, methdod, reg_id, data_struct, struct_name, reg_size , r_reg_size, w_reg_size, pack_func,\
         unpack_func, size_func, print_func)\

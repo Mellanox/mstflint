@@ -927,7 +927,7 @@ bool Fs2Operations::Fs2FailSafeBurn(Fs2Operations &imageOps,
         }
 
         if (_fwImgInfo.cntxLog2ChunkSize != imageOps._fwImgInfo.cntxLog2ChunkSize) {
-            return errmsg(MLXFW_FS_INFO_MISSMATCH_ERR, "Failsafe chunk sizes in flash (0x%x) and in image (0x%x) are not the same.",
+            return errmsg(MLXFW_FS_INFO_MISMATCH_ERR, "Failsafe chunk sizes in flash (0x%x) and in image (0x%x) are not the same.",
                           1 << _fwImgInfo.cntxLog2ChunkSize,
                           1 << imageOps._fwImgInfo.cntxLog2ChunkSize);
         }
@@ -1416,11 +1416,11 @@ bool Fs2Operations::Fs2Burn(Fs2Operations &imageOps, ExtBurnParams& burnParams)
                                          _ioAccess->get_rev_id(),
                                          imageOps._fwImgInfo.supportedHwId,
                                          imageOps._fwImgInfo.supportedHwIdNum)) {
-                 return errmsg(MLXFW_DEVICE_IMAGE_MISSMATCH_ERR, "Device/Image mismatch: %s\n",this->err( ));
+                 return errmsg(MLXFW_DEVICE_IMAGE_MISMATCH_ERR, "Device/Image mismatch: %s\n",this->err( ));
              }
          } else if (imageOps._fs2ImgInfo.infoOffs[II_DeviceType]) {
              if (!CheckMatchingDevId(_ioAccess->get_dev_id(), imageOps._fwImgInfo.ext_info.dev_type)) {
-                 return errmsg(MLXFW_DEVICE_IMAGE_MISSMATCH_ERR, "Device/Image mismatch: %s\n",this->err());
+                 return errmsg(MLXFW_DEVICE_IMAGE_MISMATCH_ERR, "Device/Image mismatch: %s\n",this->err());
              }
          }
 
@@ -1824,7 +1824,7 @@ bool Fs2Operations::FwBurnRom(FImage* romImg, bool ignoreProdIdCheck, bool ignor
     u_int32_t cntx_image_num;
     FindAllImageStart(romImg, cntx_image_start, &cntx_image_num, _cntx_magic_pattern);
     if (cntx_image_num != 0) {
-        return errmsg("Expecting an expansion ROM image, Recieved Mellanox FW image.");
+        return errmsg("Expecting an expansion ROM image, Received Mellanox FW image.");
     }
 
     if (!Fs2IntQuery()) {

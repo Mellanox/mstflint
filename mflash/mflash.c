@@ -946,7 +946,7 @@ int read_chunks   (mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data) {
 
         //
         // First and last cycles (can be the same one) may not be block aligned.
-        // Check the status, and copy data to a padded temp bufer if not alligned.
+        // Check the status, and copy data to a padded temp bufer if not aligned.
         // (there's an option to write partial buffer, but Intel reference code always
         // writes full buffer, with pads if needed. I do the dame ...)
         //
@@ -1486,7 +1486,7 @@ int cntx_st_spi_block_read_ex  (mflash* mfl, u_int32_t blk_addr, u_int32_t blk_s
     u_int32_t gw_addr  = 0;
 
     //printf("-D- cntx_st_spi_block_read_ex(addr=%05x, u_int32_t size=%03x, first=%d, last=%d)\n", blk_addr, blk_size, (u_int32_t) is_first, (u_int32_t) is_last);
-    COM_CHECK_ALLIGN(blk_addr, blk_size);
+    COM_CHECK_ALIGN(blk_addr, blk_size);
 
     if (blk_size > (u_int32_t)mfl->attr.block_write  || blk_size < 4) {
         return MFE_BAD_PARAMS;
@@ -1536,7 +1536,7 @@ int cntx_st_spi_block_read_old  (mflash* mfl, u_int32_t blk_addr, u_int32_t blk_
     u_int32_t gw_cmd   = 0;
     u_int32_t gw_addr  = 0;
 
-    COM_CHECK_ALLIGN(blk_addr, blk_size);
+    COM_CHECK_ALIGN(blk_addr, blk_size);
 
     if (blk_size > (u_int32_t)mfl->attr.block_write  || blk_size < 4) {
         return MFE_BAD_PARAMS;
@@ -1574,7 +1574,7 @@ int cntx_st_spi_page_write    (mflash* mfl, u_int32_t addr, u_int32_t size, u_in
     u_int8_t  is_last  = 0;
     u_int8_t* p        = data;
 
-    WRITE_CHECK_ALLIGN(addr, mfl->attr.block_write, size);
+    WRITE_CHECK_ALIGN(addr, mfl->attr.block_write, size);
 
     last_addr     = addr + size;
     last_blk_addr = last_addr - mfl->attr.block_write;
@@ -1600,7 +1600,7 @@ int cntx_sst_spi_byte_write    (mflash* mfl, u_int32_t addr, u_int32_t size, u_i
     u_int32_t last_addr;
     u_int8_t* p        = data;
 
-    WRITE_CHECK_ALLIGN(addr, mfl->attr.block_write, size);
+    WRITE_CHECK_ALIGN(addr, mfl->attr.block_write, size);
 
     last_addr     = addr + size;
 

@@ -204,7 +204,7 @@ enum {
     int sig;
     sig = mft_signal_is_fired();
     if (sig) {
-        // reset recieved signal
+        // reset received signal
         mft_signal_set_fired(0);
         // retore prev handler
         mft_signal_set_handling(0);
@@ -260,7 +260,7 @@ MError mnvaCom4thGen(mfile* mf, u_int8_t* buff, u_int16_t len, u_int16_t tlvType
     mft_signal_set_handling(1);
     DEBUG_PRINT_SEND(&mnvaTlv, nvda);
     rc = reg_access_nvda(mf, method, &mnvaTlv);
-    DEBUG_PRINT_RECIEVE(&mnvaTlv, nvda);
+    DEBUG_PRINT_RECEIVE(&mnvaTlv, nvda);
     dealWithSignal();
     if (rc) {
         return rc;
@@ -462,7 +462,7 @@ int BootSettingsExtParams4thGen::getFromDev(mfile* mf)
     DEBUG_PRINT_SEND(&bootSettingsExtTlv, boot_settings_ext);
     rc = mnvaCom4thGen(mf, buff, tools_open_boot_settings_ext_size(), tlvTypeIdx, REG_ACCESS_METHOD_GET, _port);
     // check rc
-    DEBUG_PRINT_RECIEVE(&bootSettingsExtTlv, boot_settings_ext);
+    DEBUG_PRINT_RECEIVE(&bootSettingsExtTlv, boot_settings_ext);
     if (rc) {// when attempting to get a nv_cfg tlv from device ME_REG_ACCESS_RES_NOT_AVLBL means - no valid
              // tlv found. i.e default configuration are on.
         if (rc == ME_REG_ACCESS_RES_NOT_AVLBL) {
@@ -604,7 +604,7 @@ int SriovParams4thGen::getFromDev(mfile* mf)
     DEBUG_PRINT_SEND(&sriovTlv, sriov);
     rc = mnvaCom4thGen(mf, buff, tools_open_sriov_size(), tlvTypeIdx, REG_ACCESS_METHOD_GET, 0);
     // check rc
-    DEBUG_PRINT_RECIEVE(&sriovTlv, sriov);
+    DEBUG_PRINT_RECEIVE(&sriovTlv, sriov);
     if (rc) {// when attempting to get a nv_cfg tlv from device ME_REG_ACCESS_RES_NOT_AVLBL means - no valid
              // tlv found. i.e default configuration are on.
         if (rc == ME_REG_ACCESS_RES_NOT_AVLBL) {

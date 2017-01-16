@@ -1001,12 +1001,12 @@ bool Fs4Operations::FsBurnAux(FwOperations *imgops, ExtBurnParams& burnParams)
                                          _ioAccess->get_rev_id(),
                                          imageOps._fwImgInfo.supportedHwId,
                                          imageOps._fwImgInfo.supportedHwIdNum)) {
-                 return errmsg(MLXFW_DEVICE_IMAGE_MISSMATCH_ERR,
+                 return errmsg(MLXFW_DEVICE_IMAGE_MISMATCH_ERR,
                          "Device/Image mismatch: %s\n",this->err( ));
              }
          } else {
              //No supported HW IDs (problem with the image ?)
-             return errmsg(MLXFW_DEVICE_IMAGE_MISSMATCH_ERR,
+             return errmsg(MLXFW_DEVICE_IMAGE_MISMATCH_ERR,
                      "No supported devices were found in the FW image.");
          }
     }
@@ -1059,7 +1059,7 @@ bool Fs4Operations::FsBurnAux(FwOperations *imgops, ExtBurnParams& burnParams)
     if (burnParams.burnFailsafe) {
         // Check image and device chunk sizes are Ok
         if (_fwImgInfo.cntxLog2ChunkSize != imageOps._fwImgInfo.cntxLog2ChunkSize) {
-            return errmsg(MLXFW_DEVICE_IMAGE_MISSMATCH_ERR,
+            return errmsg(MLXFW_DEVICE_IMAGE_MISMATCH_ERR,
                     "Device and Image file partition size differ(0x%x/0x%x), use non failsafe burn flow.",
                     _fwImgInfo.cntxLog2ChunkSize, imageOps._fwImgInfo.cntxLog2ChunkSize);
         }

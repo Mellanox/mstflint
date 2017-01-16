@@ -100,12 +100,12 @@ enum WriterId {
 # define DEBUG_PRINT_SEND(data_struct, struct_name)\
     printf("-I- Data Sent:\n");\
     tools_open_##struct_name##_print(data_struct, stdout, 1)
-# define DEBUG_PRINT_RECIEVE(data_struct, struct_name)\
-    printf("-I- Data Recieved:\n");\
+# define DEBUG_PRINT_RECEIVE(data_struct, struct_name)\
+    printf("-I- Data Received:\n");\
     tools_open_##struct_name##_print(data_struct, stdout, 1)
 #else
 # define DEBUG_PRINT_SEND(data_struct, struct_name)
-# define DEBUG_PRINT_RECIEVE(data_struct, struct_name)
+# define DEBUG_PRINT_RECEIVE(data_struct, struct_name)
 #endif
 
 #define CHECK_RC(rc)\

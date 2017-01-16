@@ -668,7 +668,7 @@ bool SubCommand::getPasswordFromUser(const char *preStr, char buffer[MAX_PASSWOR
     int i;
 
     if (!stdinHndl) {
-        // adrianc: this might be problematic if called and stdout was alreading overriden use CIN$ instead
+        // adrianc: this might be problematic if called and stdout was alreading overridden use CIN$ instead
         stdinHndl = GetStdHandle(STD_INPUT_HANDLE);
     }
     printf("%s:", preStr);
@@ -1405,7 +1405,7 @@ FlintStatus BurnSubCommand::burnFs2()
 
     // Warn if a fw which does not support config is burnt over fw that does support config
     // The other way (new fw with config, old fw w/o config) is a normal update flow.
-    // Update: all fw should now support config sectors, so we just check any missmatch in the config pads
+    // Update: all fw should now support config sectors, so we just check any mismatch in the config pads
 
 
     // Verify config offset. Should never be different between image and flash (unless changing PSID).
