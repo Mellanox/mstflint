@@ -325,7 +325,7 @@ void usage(const char *s)
     printf("Usage:\n\t%s [switches]\n\n", s);
     printf("Switches may be:\n");
     printf("\t-p[ort] <port> - Listen to specify port (default is %d).\n", port);
-    printf("\t-d[ebug]       - Print all socket traffic (for debuging only).\n");
+    printf("\t-d[ebug]       - Print all socket traffic (for debugging only).\n");
     printf("%s", sim_str);
     printf("\t-h[elp]        - Print help message.\n");
     exit (1);

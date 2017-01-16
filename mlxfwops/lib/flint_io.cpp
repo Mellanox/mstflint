@@ -295,7 +295,7 @@ bool FImage::getFileSize(int& fileSize)
 bool FImage::write(u_int32_t addr, void* data, int cnt)
 {
     if ( !_isFile ) {
-        return errmsg("Cannot perfrom write to file. no file specified.");
+        return errmsg("Cannot perform write to file. no file specified.");
     }
 
     if (!readWriteCommCheck(addr, 0)) {
@@ -427,7 +427,7 @@ bool Flash::read(u_int32_t addr,
 
     u_int32_t phys_addr = cont2phys(addr);
     // printf("-D- read1: addr = %#x, phys_addr = %#x\n", addr, phys_addr);
-    // here we set a "silent" signal handler and deal with the recieved signal after the read
+    // here we set a "silent" signal handler and deal with the received signal after the read
     mft_signal_set_handling(1);
     rc = mf_read(_mfl, phys_addr, 4, (u_int8_t*)data);
     deal_with_signal();
@@ -597,7 +597,7 @@ bool Flash::write  (u_int32_t addr,
     Aligner align(first_set);
     align.Init (addr, cnt);
     while (align.GetNextChunk(chunk_addr, chunk_size)) {
-        // Write / Erase in sector_size alligned chunks
+        // Write / Erase in sector_size aligned chunks
         int rc;
 
         if (!noerase) {
@@ -929,7 +929,7 @@ void Flash::deal_with_signal()
     int sig;
     sig = mft_signal_is_fired();
     if (sig) {
-        // reset recieved signal
+        // reset received signal
         mft_signal_set_fired(0);
         // retore prev handler
         mft_signal_set_handling(0);

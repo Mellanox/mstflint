@@ -719,7 +719,7 @@ bool Fs3Operations::UpdateDevDataITOC(Fs3Operations &imageOps, struct toc_info *
             if ( (flash_toc_entry->device_data != image_toc_entry->device_data) || \
                  (flash_toc_entry->no_crc != image_toc_entry->no_crc) || \
                  (flash_toc_entry->relative_addr != image_toc_entry->relative_addr)) {
-                    return errmsg(MLXFW_DEVICE_IMAGE_MISSMATCH_ERR, "An inconsistency was found in %s section attributes. %s ITOC attribute differs",\
+                    return errmsg(MLXFW_DEVICE_IMAGE_MISMATCH_ERR, "An inconsistency was found in %s section attributes. %s ITOC attribute differs",\
                             GetSectionNameByType(image_toc_entry->type), GET_DIFFER_STR(flash_toc_entry, image_toc_entry));
             }
             // replace itoc entry in the image
@@ -942,10 +942,10 @@ bool Fs3Operations::FsBurnAux(FwOperations *imgops, ExtBurnParams& burnParams)
                                          _ioAccess->get_rev_id(),
                                          imageOps._fwImgInfo.supportedHwId,
                                          imageOps._fwImgInfo.supportedHwIdNum)) {
-                 return errmsg(MLXFW_DEVICE_IMAGE_MISSMATCH_ERR, "Device/Image mismatch: %s\n",this->err( ));
+                 return errmsg(MLXFW_DEVICE_IMAGE_MISMATCH_ERR, "Device/Image mismatch: %s\n",this->err( ));
              }
          } else { // no suppored hw ids (problem with the image ?)
-             return errmsg(MLXFW_DEVICE_IMAGE_MISSMATCH_ERR, "No supported devices were found in the FW image.");
+             return errmsg(MLXFW_DEVICE_IMAGE_MISMATCH_ERR, "No supported devices were found in the FW image.");
          }
     }
 
@@ -1699,7 +1699,7 @@ bool Fs3Operations::Fs3UpdateVpdSection(struct toc_info *curr_toc, char *vpd,
     }
     if (vpd_size % 4) {
         delete[] vpd_data;
-        return errmsg("Size of VPD file: %d is not 4-byte alligned!", vpd_size);
+        return errmsg("Size of VPD file: %d is not 4-byte aligned!", vpd_size);
     }
     // assuming VPD section is the last piece of Data on the flash
     if ( (_ioAccess)->is_flash() && (getAbsAddr(curr_toc) + vpd_size > (_ioAccess)->get_size())) {
@@ -1797,7 +1797,7 @@ bool Fs3Operations::Fs3ReburnItocSection(u_int32_t newSectionAddr,
     sprintf(message, "Updating %-4s section - ", msg);
     // Burn new Section
     // we pass a null callback and print the progress here as the writes are small (guids/mfg/vpd_str)
-    // in the future if we want to pass the cb prints to writeImage , need to change the signature of progressCallBack to recieve and optional string to print
+    // in the future if we want to pass the cb prints to writeImage , need to change the signature of progressCallBack to receive and optional string to print
 
     PRINT_PROGRESS(callBackFunc, message);
 
@@ -2457,7 +2457,7 @@ bool Fs3Operations::TestAndSetTimeStamp(Fs3Operations &imageOps)
                 // versions match allow update
                 retRc = true;
             } else {
-                retRc = errmsg("Stamped FW version missmatch: %d.%d.%04d differs from %d.%d.%04d", devFwVer.fw_ver_major,\
+                retRc = errmsg("Stamped FW version mismatch: %d.%d.%04d differs from %d.%d.%04d", devFwVer.fw_ver_major,\
                                                                                                 devFwVer.fw_ver_minor,\
                                                                                                 devFwVer.fw_ver_subminor,\
                                                                                                 imageOps._fwImgInfo.ext_info.fw_ver[0],\

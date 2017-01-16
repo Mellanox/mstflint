@@ -131,7 +131,7 @@ typedef enum {
 #define FLINT_NO_GUID_MAC_FLAGS_ERROR         "Can not set GUIDs/MACs: please run with -uid/-guid/-mac flag.\n"
 #define FLINT_NO_UID_FLAG_ERROR               "Can not set GUIDs/MACs: uid is not specified, please run with -uid flag.\n"
 #define FLINT_CHECKSUM_ERROR                  "Failed to calculate checksum on %s: %s\n"
-#define FLINT_CHECKSUM_MISSMATCH_ERROR        "Given checksum: %s does not match the checksum calculated on device FW: %s.\n"
+#define FLINT_CHECKSUM_MISMATCH_ERROR         "Given checksum: %s does not match the checksum calculated on device FW: %s.\n"
 #define FLINT_CHECKSUM_PARSE_ERROR            "Failed to parse given checksum.\n"
 #define FLINT_CHECKSUM_LEN_ERROR              "MD5 checksum should be exactly 16 bytes long.\n"
 #define FLINT_CHECKSUM_HEX_ERROR              "MD5 checksum should contain only hexadecimal digits.\n"

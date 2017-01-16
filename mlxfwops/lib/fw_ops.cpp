@@ -990,7 +990,7 @@ bool FwOperations::HWIdRevToName(u_int32_t hw_id, u_int8_t rev_id, char *hw_name
 
 // This function gets the HW ID of the target device and the dev ID from
 // the image. It then matches the 2 IDs and returns an error in case of
-// missmatch. The match is not 1:1 , since the FW image contains the SW
+// mismatch. The match is not 1:1 , since the FW image contains the SW
 // dev id, and a single hw dev id may match multiple SW dev IDs.
 //
 bool FwOperations::CheckMatchingHwDevId(u_int32_t hwDevId, u_int32_t rev_id, u_int32_t* supportedHwId, u_int32_t supportedHwIdNum) {
@@ -1039,7 +1039,7 @@ bool FwOperations::CheckMatchingHwDevId(u_int32_t hwDevId, u_int32_t rev_id, u_i
         return false;
     }
 
-    return errmsg(MLXFW_DEVICE_IMAGE_MISSMATCH_ERR, "FW image file cannot be programmed to device %s, it is intended for: %s only",
+    return errmsg(MLXFW_DEVICE_IMAGE_MISMATCH_ERR, "FW image file cannot be programmed to device %s, it is intended for: %s only",
             curr_hw_id_name, supp_hw_id_list);
 }
 bool FwOperations::CheckMatchingDevId(u_int32_t hwDevId, u_int32_t imageDevId) {
@@ -1093,7 +1093,7 @@ bool FwOperations::CheckPSID(FwOperations &imageOps, u_int8_t allow_psid_change)
 {
     if (!allow_psid_change) {
         if (strncmp( _fwImgInfo.ext_info.psid, imageOps._fwImgInfo.ext_info.psid, PSID_LEN)) {
-            return errmsg(MLXFW_PSID_MISSMATCH_ERR, "Image PSID is %s, it cannot be burnt into current device (PSID: %s)",
+            return errmsg(MLXFW_PSID_MISMATCH_ERR, "Image PSID is %s, it cannot be burnt into current device (PSID: %s)",
                     imageOps._fwImgInfo.ext_info.psid, _fwImgInfo.ext_info.psid);
         }
     }

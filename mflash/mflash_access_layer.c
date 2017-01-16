@@ -121,7 +121,7 @@ int sx_block_read_by_type(mflash* mfl, u_int32_t blk_addr, u_int32_t blk_size, u
         return MFE_BAD_PARAMS;
     }
     rc = mfl_get_bank_info(mfl, blk_addr, &flash_offset, &bank); CHECK_RC(rc);
-    COM_CHECK_ALLIGN(flash_offset, blk_size);
+    COM_CHECK_ALIGN(flash_offset, blk_size);
 
     rc = check_access_type( mfl); CHECK_RC(rc);
     rc = sx_st_block_access(mfl->mf, flash_offset, bank, blk_size, data, REG_ACCESS_METHOD_GET);CHECK_RC(rc);
@@ -134,11 +134,11 @@ int sx_block_write_by_type(mflash* mfl, u_int32_t addr, u_int32_t size, u_int8_t
     int rc, bank;
     u_int32_t flash_offset;
 
-    WRITE_CHECK_ALLIGN(addr, mfl->attr.block_write, size);
+    WRITE_CHECK_ALIGN(addr, mfl->attr.block_write, size);
 
 
     rc = mfl_get_bank_info(mfl, addr, &flash_offset, &bank); CHECK_RC(rc);
-    COM_CHECK_ALLIGN(flash_offset, size);
+    COM_CHECK_ALIGN(flash_offset, size);
 
     rc = check_access_type( mfl); CHECK_RC(rc);
     rc = sx_st_block_access(mfl->mf, flash_offset, bank, size, data, REG_ACCESS_METHOD_SET);CHECK_RC(rc);

@@ -204,7 +204,7 @@ enum AccessTypeByMfile{
 #endif
 */
 
-#define WRITE_CHECK_ALLIGN(addr, block_write, size) {\
+#define WRITE_CHECK_ALIGN(addr, block_write, size) {\
     if (addr & ((u_int32_t)block_write - 1)) {\
         return MFE_BAD_ALIGN;\
     }\
@@ -213,7 +213,7 @@ enum AccessTypeByMfile{
     }\
 }
 
-#define COM_CHECK_ALLIGN(flash_addr, size) {\
+#define COM_CHECK_ALIGN(flash_addr, size) {\
     if (flash_addr & (size - 1 )) {\
         return MFE_BAD_ALIGN;\
     }\

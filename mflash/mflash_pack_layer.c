@@ -164,7 +164,7 @@ int com_get_jedec(mfile *mf, mfpa_command_args* mfpa_args)
 
 /*
  * getters and setters for mfl->curr_bank
- * manily used to  monitor values mfl->curr_bank recieves
+ * manily used to  monitor values mfl->curr_bank receives
  * used for a verification hack to make sure facebook reset bug doesnt reproduce.
  * (bug where accessing gpio of flash bank 4 caused system reboot)
  */

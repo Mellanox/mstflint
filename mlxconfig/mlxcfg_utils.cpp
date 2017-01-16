@@ -56,7 +56,7 @@ void dealWithSignal()
     int sig;
     sig = mft_signal_is_fired();
     if (sig) {
-        // reset recieved signal
+        // reset received signal
         mft_signal_set_fired(0);
         // retore prev handler
         mft_signal_set_handling(0);
@@ -90,7 +90,7 @@ MError mnvaCom5thGen(mfile* mf, u_int8_t* buff, u_int16_t len, u_int32_t tlvType
     mft_signal_set_handling(1);
     //DEBUG_PRINT_SEND(&mnvaTlv, nvda);
     rc = reg_access_nvda(mf, method, &mnvaTlv);
-    //DEBUG_PRINT_RECIEVE(&mnvaTlv, nvda);
+    //DEBUG_PRINT_RECEIVE(&mnvaTlv, nvda);
     dealWithSignal();
     if (rc) {
         return rc;
