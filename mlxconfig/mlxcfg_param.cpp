@@ -69,6 +69,7 @@ using namespace std;
 #define PARAM_RULE_HEADER "rule"
 #define PARAM_REGEX_HEADER "regex"
 #define PARAM_PORT_HEADER "port"
+#define PARAM_SUPPORTED_FROM_VERSION_HEADER "supported_from_version"
 
 #define CHECK_IF_FIELD_FOUND(b, s) \
     if(!b) {\
@@ -87,7 +88,7 @@ Param::Param(int columnsCount, char **dataRow, char **headerRow) :
     _isTextualValuesFound(false), _isMlxconfigNameFound(false),
     _isDependencyFound(false), _isValidBitFound(false), _isTempVarsFound(false),
     _isMinValFound(false), _isMaxValFound(false), _isRuleFound(false),
-    _isRegexFound(false), _isPortFound(false)
+    _isRegexFound(false), _isPortFound(false), _supportedFromVersion(0)
 {
 
     for(int i = 0; i < columnsCount; i++){
@@ -153,6 +154,8 @@ Param::Param(int columnsCount, char **dataRow, char **headerRow) :
             CHECKFIELD(dataRow[i], headerRow[i])
             _port = atoi(dataRow[i]);
             _isPortFound = true;
+        } else if (strcmp(headerRow[i], PARAM_SUPPORTED_FROM_VERSION_HEADER) == 0) {
+            _supportedFromVersion = atoi(dataRow[i]);
         } else {
             throw MlxcfgException("Unknown parameter field: %s", headerRow[i]);
         }

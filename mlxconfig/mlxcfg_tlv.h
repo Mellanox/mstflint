@@ -108,6 +108,7 @@ class TLVConf {
         bool _alreadyQueried;
         map<string,string> _attrs;
         vector<u_int8_t> _buff;
+        u_int32_t _maxTlvVersionSuppByFw;
 
         TLVConf(int columnsCount, char **dataRow, char **headerRow);
 
