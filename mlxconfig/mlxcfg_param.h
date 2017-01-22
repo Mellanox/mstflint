@@ -70,6 +70,7 @@ class Param {
         std::string _regex;
         u_int32_t _port;
         u_int32_t _value;
+        u_int32_t _supportedFromVersion;
 
         Param(int columnsCount, char **dataRow, char **headerRow);
 

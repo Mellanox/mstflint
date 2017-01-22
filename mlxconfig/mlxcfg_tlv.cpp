@@ -72,7 +72,8 @@ TLVConf::TLVConf(int columnsCount, char **dataRow, char **headerRow) :
     _isNameFound(false), _isIdFound(false), _isSizeFound(false),
     _isCapFound(false), _isTargetFound(false), _isClassFound(false),
     _isVersion(false), _isDescriptionFound(false),
-    _isMlxconfigNameFound(false), _isPortFound(false)
+    _isMlxconfigNameFound(false), _isPortFound(false),
+    _maxTlvVersionSuppByFw(0)
 {
 
     for (int i = 0; i < columnsCount; i++) {
@@ -170,7 +171,7 @@ bool TLVConf::isFWSupported(mfile* mf, bool read_write) {
         return true;
     }
 
-    if (nvqcCom5thGen(mf, getTlvTypeBe(), suppRead, suppWrite)) {
+    if (nvqcCom5thGen(mf, getTlvTypeBe(), suppRead, suppWrite, _maxTlvVersionSuppByFw)) {
         //Don't throw exception if we fail to run nvqc, maybe its an old fw
         return false;
     }
@@ -315,8 +316,7 @@ bool TLVConf::checkParamValidBit(Param* p) {
 void TLVConf::mnva(mfile* mf, u_int8_t* buff, u_int16_t len, u_int32_t type,
         reg_access_method_t method, QueryType qT) {
     bool isSet = (method == REG_ACCESS_METHOD_SET);
-    MError mRc = mnvaCom5thGen(mf, buff, len, type,
-            method, qT);
+    MError mRc = mnvaCom5thGen(mf, buff, len, type, method, qT);
     if (mRc) {
         //Todo: ask for this check:
         if (mRc != ME_REG_ACCESS_RES_NOT_AVLBL || isSet) {
@@ -366,7 +366,7 @@ vector<pair<ParamView, string> > TLVConf::query(mfile* mf, QueryType qT) {
             }
             p->unpack(defaultBuff.data());
         }
-        if (p->_mlxconfigName.empty()) {
+        if (p->_mlxconfigName.empty() || p->_supportedFromVersion > _maxTlvVersionSuppByFw) {
             continue;
         }
         p->getView(paramView);

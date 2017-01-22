@@ -117,7 +117,8 @@ void dealWithSignal();
 
 MError mnvaCom5thGen(mfile* mf, u_int8_t* buff, u_int16_t len, u_int32_t tlvType, reg_access_method_t method, QueryType qT = QueryNext);
 
-MError nvqcCom5thGen(mfile* mf, u_int32_t tlvType, bool& suppRead, bool& suppWrite);
+MError nvqcCom5thGen(mfile* mf, u_int32_t tlvType, bool& suppRead,
+                         bool& suppWrite, u_int32_t& version);
 
 bool strToNum(std::string str, u_int32_t& num, int base=0);
 

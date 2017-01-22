@@ -99,7 +99,8 @@ MError mnvaCom5thGen(mfile* mf, u_int8_t* buff, u_int16_t len, u_int32_t tlvType
     return ME_OK;
 }
 
-MError nvqcCom5thGen(mfile* mf, u_int32_t tlvType, bool& suppRead, bool& suppWrite)
+MError nvqcCom5thGen(mfile* mf, u_int32_t tlvType, bool& suppRead,
+                          bool& suppWrite, u_int32_t& version)
 {
     struct tools_open_nvqc nvqcTlv;
     memset(&nvqcTlv, 0, sizeof(struct tools_open_nvqc));
@@ -116,6 +117,7 @@ MError nvqcCom5thGen(mfile* mf, u_int32_t tlvType, bool& suppRead, bool& suppWri
     }
     suppRead = nvqcTlv.support_rd;
     suppWrite = nvqcTlv.support_wr;
+    version = nvqcTlv.version;
     //printf("-D- nvqcTlv.support_rd=%d nvqcTlv.support_wr=%d\n", nvqcTlv.support_rd, nvqcTlv.support_wr);
     return ME_OK;
 }
