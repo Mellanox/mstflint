@@ -147,7 +147,9 @@ u_int8_t MlargeBuffer::operator[] (const u_int32_t offset)
 }
 void MlargeBuffer::get(std::vector<u_int8_t>& data, u_int32_t offset, u_int32_t size)
 {
-    data.resize(size);
+    if (data.size() < size) {
+        data.resize(size);
+    }
     return get(&data[0], offset, size);
 }
 
