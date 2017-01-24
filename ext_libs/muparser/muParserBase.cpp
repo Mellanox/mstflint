@@ -546,7 +546,7 @@ namespace mu
       \param [in] a_eAssociativity The associativity of the operator.
       \param [in] a_bAllowOpt If this is true the operator may be optimized away.
       
-      Adds a new Binary operator the the parser instance. 
+      Adds a new Binary operator to the parser instance.
   */
   void ParserBase::DefineOprt( const string_type &a_sName, 
                                fun_type2 a_pFun, 
