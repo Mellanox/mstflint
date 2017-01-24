@@ -7050,7 +7050,7 @@ to internal clock. The 1st pulse will be generated at out_time time
 Reserved when pin_mode is not equal to ptp_out. */
 	/* 0x20.16 - 0x20.19 */
 	 u_int8_t pattern;
-	/* Description - Enables the PPS functionality the the specific pin.
+	/* Description - Enables the PPS functionality the specific pin.
 0x0
 :
  
@@ -20234,7 +20234,7 @@ After this timeout (started upon entering to phase 2) we move to phase 3. */
 	/* Description - The time (in usec) we wait for error in TS */
 	/* 0x30.8 - 0x30.15 */
 	 u_int8_t phase_err_wait_time;
-	/* Description - The time (in usec) we wait since mix90phase set, and till we reset the the TS error counter */
+	/* Description - The time (in usec) we wait since mix90phase set, and till we reset the TS error counter */
 	/* 0x30.16 - 0x30.19 */
 	 u_int8_t phase_stabilize_time;
 };
