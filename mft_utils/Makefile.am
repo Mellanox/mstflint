@@ -34,7 +34,7 @@
 USER_DIR = $(top_srcdir)
 AM_CPPFLAGS = -I. -I$(USER_DIR)/common
 
-AM_CFLAGS = -MD -pipe -Wall -W -Werror
+AM_CFLAGS = -MD -pipe -Wall -W
 
 noinst_HEADERS = mft_sig_handler.h errmsg.h
 

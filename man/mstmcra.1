@@ -1,11 +1,9 @@
 .TH MSTMCRA "1" "4.6.0" ""
 .SH NAME
-mstmcra
+mstmcra \- Mellanox Configuration Registers Access tool
 .IP
-.SH SYNOPSIS:
+.SH SYNOPSIS
 .IP
-Mellanox Configuration Registers Access tool
-
 mstmcra [-s <i2c-slave>] [-a <adb dump>] [-v] [-h] <device>
      <addr[.<bit offset>:<bit size>]|[,<bytes number>]> [data]
 
@@ -31,4 +29,3 @@ mstmcra [-s <i2c-slave>] [-a <adb dump>] [-v] [-h] <device>
 .SH Environment Vairables:
 .TP
 ADB_DUMP              : Holds the path to adb dump, used for access by path (can be overridden by "\-a").
-.TP

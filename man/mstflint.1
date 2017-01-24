@@ -29,12 +29,10 @@
 flint is a FW (firmware) burning and flash memory operations tool for
 Mellanox Infiniband HCAs, Ethernet NIC cards, and switch devices.
 .SH OPTIONS
-\fBMstFlint\fP [\fIOPTIONS\fP] <command> [\fIParameters\fP]
-.RS
 .TP
 .B
 \fB-d\fP|\fB--device\fP <device>
-: Device flash is connected to.
+Device flash is connected to.
 Commands affected: all
 .TP
 .B
@@ -287,12 +285,11 @@ device.
 .RE
 .RE
 .PP
-COMMANDS SUMMARY:
-.RS
+COMMANDS SUMMARY
 .TP
 .B
 burn|b
-: Burn flash
+Burn flash
 .TP
 .B
 query|q [full]
@@ -325,9 +322,8 @@ rrom
 bb
 : Burn Block - Burns the given image as is. No checks are done.
 .TP
-.B
-sg
-[guids_num=<num|num_port1,num_port2> step_size=<size|size_port1,size_port2>] | [nocrc] : Set GUIDs.
+\fBsg\fR [guids_num=<num|num_port1,num_port2> step_size=<size|size_port1,size_port2>] | [nocrc]
+Set GUIDs.
 .TP
 .B
 sv

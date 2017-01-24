@@ -1,16 +1,25 @@
 Source: mstflint
 Section: net
 Priority: extra
-Maintainer: Gal Sivan <gsivan@unknown>
-Build-Depends: debhelper (>= 8.0.0), autotools-dev
-Standards-Version: 3.9.2
-Homepage: http://www.mellanox.com
-#Vcs-Git: git://git.debian.org/collab-maint/mstflint.git
-#Vcs-Browser: http://git.debian.org/?p=collab-maint/mstflint.git;a=summary
+Maintainer: OFED and Debian Developement and Discussion <pkg-ofed-devel@lists.alioth.debian.org>
+Uploaders: Ana Beatriz Guerrero Lopez <ana@debian.org>,
+           Benjamin Drung <benjamin.drung@profitbricks.com>
+Build-Depends: debhelper (>= 9),
+               dh-autoreconf,
+               libibmad-dev,
+               libmuparser-dev,
+               libsqlite3-dev,
+               pkg-config,
+               zlib1g-dev
+Standards-Version: 3.9.8
+Vcs-Git: https://anonscm.debian.org/git/pkg-ofed/mstflint.git
+Vcs-Browser: https://anonscm.debian.org/cgit/pkg-ofed/mstflint.git
+Homepage: https://www.openfabrics.org/downloads/mstflint/
 
 Package: mstflint
-Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Architecture: linux-any
+Depends: libibmad5, ${misc:Depends}, ${shlibs:Depends}
 Description: Mellanox firmware burning application
- This package contains firmware update tool, vpd dump and register dump tools
- for network adapters based on Mellanox Technologies chips.
+ This package contains a burning tool and diagnostic tools for Mellanox
+ manufactured HCA/NIC cards. It also provides access to the relevant source
+ code.

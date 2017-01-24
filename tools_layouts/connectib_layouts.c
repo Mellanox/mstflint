@@ -5542,10 +5542,10 @@ void connectib_eth_802_3_cntrs_grp_data_layout_pack(const struct connectib_eth_8
 	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->a_multicast_frames_received_ok_low);
 
 	offset = 576;
-	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->a_broadcast_frames_recieved_ok_high);
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->a_broadcast_frames_received_ok_high);
 
 	offset = 608;
-	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->a_broadcast_frames_recieved_ok_low);
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->a_broadcast_frames_received_ok_low);
 
 	offset = 640;
 	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->a_in_range_length_errors_high);
@@ -5667,10 +5667,10 @@ void connectib_eth_802_3_cntrs_grp_data_layout_unpack(struct connectib_eth_802_3
 	ptr_struct->a_multicast_frames_received_ok_low = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
 
 	offset = 576;
-	ptr_struct->a_broadcast_frames_recieved_ok_high = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	ptr_struct->a_broadcast_frames_received_ok_high = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
 
 	offset = 608;
-	ptr_struct->a_broadcast_frames_recieved_ok_low = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	ptr_struct->a_broadcast_frames_received_ok_low = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
 
 	offset = 640;
 	ptr_struct->a_in_range_length_errors_high = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
@@ -5793,10 +5793,10 @@ void connectib_eth_802_3_cntrs_grp_data_layout_print(const struct connectib_eth_
 	fprintf(file, "a_multicast_frames_received_ok_low : " U32H_FMT "\n", ptr_struct->a_multicast_frames_received_ok_low);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "a_broadcast_frames_recieved_ok_high : " U32H_FMT "\n", ptr_struct->a_broadcast_frames_recieved_ok_high);
+	fprintf(file, "a_broadcast_frames_received_ok_high : " U32H_FMT "\n", ptr_struct->a_broadcast_frames_received_ok_high);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "a_broadcast_frames_recieved_ok_low : " U32H_FMT "\n", ptr_struct->a_broadcast_frames_recieved_ok_low);
+	fprintf(file, "a_broadcast_frames_received_ok_low : " U32H_FMT "\n", ptr_struct->a_broadcast_frames_received_ok_low);
 
 	adb2c_add_indentation(file, indent_level);
 	fprintf(file, "a_in_range_length_errors_high : " U32H_FMT "\n", ptr_struct->a_in_range_length_errors_high);
@@ -10862,7 +10862,7 @@ void connectib_mfpa_pack(const struct connectib_mfpa *ptr_struct, u_int8_t* ptr_
 	adb2c_push_bits_to_buff(ptr_buff, offset, 10, (u_int32_t)ptr_struct->sector_size);
 
 	offset = 200;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->block_allignment);
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->block_alignment);
 
 	offset = 192;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->block_size);
@@ -10915,7 +10915,7 @@ void connectib_mfpa_unpack(struct connectib_mfpa *ptr_struct, const u_int8_t* pt
 	ptr_struct->sector_size = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 10);
 
 	offset = 200;
-	ptr_struct->block_allignment = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	ptr_struct->block_alignment = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 
 	offset = 192;
 	ptr_struct->block_size = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
@@ -10969,7 +10969,7 @@ void connectib_mfpa_print(const struct connectib_mfpa *ptr_struct, FILE* file, i
 	fprintf(file, "sector_size          : " UH_FMT "\n", ptr_struct->sector_size);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "block_allignment     : " UH_FMT "\n", ptr_struct->block_allignment);
+	fprintf(file, "block_alignment      : " UH_FMT "\n", ptr_struct->block_alignment);
 
 	adb2c_add_indentation(file, indent_level);
 	fprintf(file, "block_size           : " UH_FMT "\n", ptr_struct->block_size);
@@ -23988,7 +23988,7 @@ void connectib_register_mfpa_pack(const struct connectib_register_mfpa *ptr_stru
 	adb2c_push_bits_to_buff(ptr_buff, offset, 10, (u_int32_t)ptr_struct->sector_size);
 
 	offset = 200;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->block_allignment);
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->block_alignment);
 
 	offset = 224;
 	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->capability_mask);
@@ -24032,7 +24032,7 @@ void connectib_register_mfpa_unpack(struct connectib_register_mfpa *ptr_struct, 
 	ptr_struct->sector_size = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 10);
 
 	offset = 200;
-	ptr_struct->block_allignment = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	ptr_struct->block_alignment = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 
 	offset = 224;
 	ptr_struct->capability_mask = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
@@ -24077,7 +24077,7 @@ void connectib_register_mfpa_print(const struct connectib_register_mfpa *ptr_str
 	fprintf(file, "sector_size          : " UH_FMT "\n", ptr_struct->sector_size);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "block_allignment     : " UH_FMT "\n", ptr_struct->block_allignment);
+	fprintf(file, "block_alignment      : " UH_FMT "\n", ptr_struct->block_alignment);
 
 	adb2c_add_indentation(file, indent_level);
 	fprintf(file, "capability_mask      : " U32H_FMT "\n", ptr_struct->capability_mask);

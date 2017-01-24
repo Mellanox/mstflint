@@ -1038,7 +1038,7 @@ Otherwise, undefined. */
 /* Size in bytes - 248 */
 struct connectib_llr_counters {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - The total number of cells recieved (including bad cells) */
+	/* Description - The total number of cells received (including bad cells) */
 	/* 0x0.0 - 0x4.31 */
 	 u_int32_t llr_rx_cells_high;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
@@ -1046,7 +1046,7 @@ struct connectib_llr_counters {
 	/* 0x4.0 - 0x8.31 */
 	 u_int32_t llr_rx_cells_low;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description - The total number of bad cells recieved (including CRC error) */
+	/* Description - The total number of bad cells received (including CRC error) */
 	/* 0x8.0 - 0xc.31 */
 	 u_int32_t llr_rx_error_high;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
@@ -1054,7 +1054,7 @@ struct connectib_llr_counters {
 	/* 0xc.0 - 0x10.31 */
 	 u_int32_t llr_rx_error_low;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
-	/* Description - The total number of cells recieved with CRC error */
+	/* Description - The total number of cells received with CRC error */
 	/* 0x10.0 - 0x14.31 */
 	 u_int32_t llr_rx_crc_error_high;
 /*---------------- DWORD[5] (Offset 0x14) ----------------*/
@@ -2504,13 +2504,13 @@ internal MAC sublayer error. */
 to the broadcast address. Frames transmitted to multicast 
 addresses are not broadcast frames and are excluded. */
 	/* 0x48.0 - 0x4c.31 */
-	 u_int32_t a_broadcast_frames_recieved_ok_high;
+	 u_int32_t a_broadcast_frames_received_ok_high;
 /*---------------- DWORD[19] (Offset 0x4c) ----------------*/
 	/* Description - A count of the frames that were successfully transmitted 
 to the broadcast address. Frames transmitted to multicast 
 addresses are not broadcast frames and are excluded. */
 	/* 0x4c.0 - 0x50.31 */
-	 u_int32_t a_broadcast_frames_recieved_ok_low;
+	 u_int32_t a_broadcast_frames_received_ok_low;
 /*---------------- DWORD[20] (Offset 0x50) ----------------*/
 	/* Description - A count of frames with a length/type field value between 
 the minimum unpadded MAC client data size and the 
@@ -4426,7 +4426,7 @@ Sector block size is available in MFMC.sector_protect_size */
 	 u_int16_t sector_size;
 	/* Description -  */
 	/* 0x18.16 - 0x18.23 */
-	 u_int8_t block_allignment;
+	 u_int8_t block_alignment;
 	/* Description -  */
 	/* 0x18.24 - 0x18.31 */
 	 u_int8_t block_size;
@@ -7050,7 +7050,7 @@ to internal clock. The 1st pulse will be generated at out_time time
 Reserved when pin_mode is not equal to ptp_out. */
 	/* 0x20.16 - 0x20.19 */
 	 u_int8_t pattern;
-	/* Description - Enables the PPS functionality the the specific pin.
+	/* Description - Enables the PPS functionality the specific pin.
 0x0
 :
  
@@ -8132,7 +8132,7 @@ struct connectib_register_mfpa {
 	 u_int16_t sector_size;
 	/* Description -  */
 	/* 0x18.16 - 0x18.23 */
-	 u_int8_t block_allignment;
+	 u_int8_t block_alignment;
 /*---------------- DWORD[7] (Offset 0x1c) ----------------*/
 	/* Description - capability mask ;bit 0:Parallel flash Support;else:Reserved  */
 	/* 0x1c.0 - 0x20.31 */
@@ -20234,7 +20234,7 @@ After this timeout (started upon entering to phase 2) we move to phase 3. */
 	/* Description - The time (in usec) we wait for error in TS */
 	/* 0x30.8 - 0x30.15 */
 	 u_int8_t phase_err_wait_time;
-	/* Description - The time (in usec) we wait since mix90phase set, and till we reset the the TS error counter */
+	/* Description - The time (in usec) we wait since mix90phase set, and till we reset the TS error counter */
 	/* 0x30.16 - 0x30.19 */
 	 u_int8_t phase_stabilize_time;
 };
@@ -27873,7 +27873,7 @@ values 15-9 are reserved - does not work */
 	/* 0x8.23 - 0x8.23 */
 	 u_int8_t i2c_slave_en;
 	/* Description - value 0 will disabe yu_fuse read/write requests to reach the fuse (in case Fuse is malfunctioning).
-upon reads, data recieved will be hard wired zeros.
+upon reads, data received will be hard wired zeros.
 upon write, efuse_done will rise after 1 cycle. */
 	/* 0x8.24 - 0x8.24 */
 	 u_int8_t fuse_enable;

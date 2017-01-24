@@ -1409,7 +1409,7 @@ void tools_open_mfpa_pack(const struct tools_open_mfpa *ptr_struct, u_int8_t* pt
 	adb2c_push_bits_to_buff(ptr_buff, offset, 10, (u_int32_t)ptr_struct->sector_size);
 
 	offset = 200;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->block_allignment);
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->block_alignment);
 
 	offset = 192;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->block_size);
@@ -1462,7 +1462,7 @@ void tools_open_mfpa_unpack(struct tools_open_mfpa *ptr_struct, const u_int8_t* 
 	ptr_struct->sector_size = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 10);
 
 	offset = 200;
-	ptr_struct->block_allignment = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	ptr_struct->block_alignment = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 
 	offset = 192;
 	ptr_struct->block_size = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
@@ -1516,7 +1516,7 @@ void tools_open_mfpa_print(const struct tools_open_mfpa *ptr_struct, FILE* file,
 	fprintf(file, "sector_size          : " UH_FMT "\n", ptr_struct->sector_size);
 
 	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "block_allignment     : " UH_FMT "\n", ptr_struct->block_allignment);
+	fprintf(file, "block_alignment      : " UH_FMT "\n", ptr_struct->block_alignment);
 
 	adb2c_add_indentation(file, indent_level);
 	fprintf(file, "block_size           : " UH_FMT "\n", ptr_struct->block_size);
