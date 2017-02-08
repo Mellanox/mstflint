@@ -1032,6 +1032,7 @@ int mtcr_inband_open(mfile* mf, const char* name)
 #ifndef NO_INBAND
     ul_ctx_t *ctx = mf->ul_ctx;
     mf->tp = MST_IB;
+    mf->flags |= MDEVS_IB;
     ctx->mread4 = mib_read4;
     ctx->mwrite4 = mib_write4;
     ctx->mread4_block = mib_readblock;
