@@ -850,50 +850,45 @@ mib_write4(mfile *mf, u_int32_t memory_address, u_int32_t _data)
     return 4;
 }
 
-MTCR_API int mib_readblock(mfile *mf, unsigned int offset, u_int32_t *data, int length)
+enum {
+    BLOCKOP_READ,
+    BLOCKOP_WRITE
+};
+
+int mib_block_op(mfile *mf, unsigned int offset, u_int32_t *data, int length, int op)
 {
     if (!mf || !mf->ctx || !data) {
         IBERROR(("cr access read failed. Null Param."));
         return -1;
     }
     ibvs_mad* h = (ibvs_mad*)(mf->ctx);
-
+    int method = IB_MAD_METHOD_GET;
+    if (op == BLOCKOP_WRITE) {
+        method = IB_MAD_METHOD_SET;
+    }
     CHECK_ALIGN(length);
     int chunk_size = mib_get_chunk_size(mf);
     int t_offset = 0;
     while (t_offset < length) {
         int left_size = length - t_offset;
-        int to_read = left_size > chunk_size ? chunk_size : left_size;
-        if (ibvsmad_craccess_rw(h, offset + t_offset, IB_MAD_METHOD_GET, (to_read / 4), data + t_offset/4) == ~0ull) {
-            IBERROR(("cr access read to %s failed", h->portid2str(&h->portid)));
+        int to_op = left_size > chunk_size ? chunk_size : left_size;
+        if (ibvsmad_craccess_rw(h, offset + t_offset, method, (to_op / 4), data + t_offset/4) == ~0ull) {
+            IBERROR(("cr access %s to %s failed", op == BLOCKOP_READ ? "read" : "write",
+                    h->portid2str(&h->portid)));
             return -1;
         }
         t_offset += chunk_size;
     }
     return length;
+}
 
+MTCR_API int mib_readblock(mfile *mf, unsigned int offset, u_int32_t *data, int length)
+{
+    return mib_block_op(mf, offset, data, length, BLOCKOP_READ);
 }
 MTCR_API int mib_writeblock(mfile *mf, unsigned int offset, u_int32_t *data, int length)
 {
-    if (!mf || !mf->ctx || !data) {
-        IBERROR(("cr access write failed. Null Param."));
-        return -1;
-    }
-    ibvs_mad* h = (ibvs_mad*)(mf->ctx);
-
-    CHECK_ALIGN(length);
-    int chunk_size = mib_get_chunk_size(mf);
-    int t_offset = 0;
-    while (t_offset < length) {
-        int left_size = length - t_offset;
-        int to_write = left_size > chunk_size ? chunk_size : left_size;
-        if (ibvsmad_craccess_rw(h, offset + t_offset, IB_MAD_METHOD_SET, (to_write / 4), data + t_offset/4) == ~0ull) {
-            IBERROR(("cr access write to %s failed", h->portid2str(&h->portid)));
-            return -1;
-        }
-        t_offset += chunk_size;
-    }
-    return length;
+    return mib_block_op(mf, offset, data, length, BLOCKOP_WRITE);
 }
 
 int is_node_managed(ibvs_mad* h)
