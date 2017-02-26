@@ -28,6 +28,7 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
 
 /********************************************************
@@ -858,10 +859,16 @@ MTCR_API int mib_readblock(mfile *mf, unsigned int offset, u_int32_t *data, int 
     ibvs_mad* h = (ibvs_mad*)(mf->ctx);
 
     CHECK_ALIGN(length);
-
-    if (ibvsmad_craccess_rw(h, offset, IB_MAD_METHOD_GET, (length / 4), data) == ~0ull) {
-        IBERROR(("cr access read to %s failed", h->portid2str(&h->portid)));
-        return -1;
+    int chunk_size = mib_get_chunk_size(mf);
+    int t_offset = 0;
+    while (t_offset < length) {
+        int left_size = length - t_offset;
+        int to_read = left_size > chunk_size ? chunk_size : left_size;
+        if (ibvsmad_craccess_rw(h, offset + t_offset, IB_MAD_METHOD_GET, (to_read / 4), data + t_offset/4) == ~0ull) {
+            IBERROR(("cr access read to %s failed", h->portid2str(&h->portid)));
+            return -1;
+        }
+        t_offset += chunk_size;
     }
     return length;
 
@@ -875,10 +882,16 @@ MTCR_API int mib_writeblock(mfile *mf, unsigned int offset, u_int32_t *data, int
     ibvs_mad* h = (ibvs_mad*)(mf->ctx);
 
     CHECK_ALIGN(length);
-
-    if (ibvsmad_craccess_rw(h, offset, IB_MAD_METHOD_SET, (length / 4), data) == ~0ull) {
-        IBERROR(("cr access read to %s failed", h->portid2str(&h->portid)));
-        return -1;
+    int chunk_size = mib_get_chunk_size(mf);
+    int t_offset = 0;
+    while (t_offset < length) {
+        int left_size = length - t_offset;
+        int to_write = left_size > chunk_size ? chunk_size : left_size;
+        if (ibvsmad_craccess_rw(h, offset + t_offset, IB_MAD_METHOD_SET, (to_write / 4), data + t_offset/4) == ~0ull) {
+            IBERROR(("cr access write to %s failed", h->portid2str(&h->portid)));
+            return -1;
+        }
+        t_offset += chunk_size;
     }
     return length;
 }
