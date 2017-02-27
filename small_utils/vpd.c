@@ -75,8 +75,6 @@ enum {
 	VPD_MAX_SIZE         = 1<<12
 };
 
-static unsigned int g_vpd_file_size = VPD_MAX_SIZE;
-
 struct vpd_field {
 	unsigned char keyword[2];
 	unsigned char length;
@@ -170,20 +168,24 @@ int pci_find_capability(int fd, int cap_id)
 	return 0;
 }
 
-int pci_read_vpd_dword_file(int fd, unsigned offset, unsigned char data[4])
+int pci_read_vpd_dword_file(int fd, unsigned offset, unsigned char data[4], int* eof_reached)
 {
-    if (offset >= g_vpd_file_size || (offset & 0x3)) {
+    int cnt=0;
+    *eof_reached = 0;
+    if (offset >= VPD_MAX_SIZE || (offset & 0x3)) {
         return -1;
     }
-
     if (lseek(fd, offset, SEEK_SET) < 0)
     {
         fprintf(stderr, "Reached End Of VPD region: %s\n", strerror(errno));
         return errno;
     }
-    if (read(fd, data, 0x4) != 4) {
-        fprintf(stderr, "Failed to read VPD: %s\n", strerror(errno));
-        return errno;
+    if ((cnt = read(fd, data, 0x4)) != 4) {
+        if (cnt < 0) {
+            fprintf(stderr, "Failed to read VPD: %s\n", strerror(errno));
+            return errno;
+        }
+        *eof_reached = 1;
     }
     return 0;
 }
@@ -235,9 +237,10 @@ int vpd_read(int fd, vpd_t vpd, int vpd_path_exists)
     if (vpd_path_exists) {
         unsigned offset;
         int ret;
-        for (offset = 0; offset < g_vpd_file_size; offset += 0x4) {
-            ret = pci_read_vpd_dword_file(fd, offset, vpd + offset);
-            if (ret) {
+        int eof_reached = 0;
+        for (offset = 0; offset < VPD_MAX_SIZE; offset += 0x4) {
+            ret = pci_read_vpd_dword_file(fd, offset, vpd + offset, &eof_reached);
+            if (ret || eof_reached) {
                 return ret;
             }
         }
@@ -515,55 +518,18 @@ int pci_parse_name(const char *name, char buf[4096], int* vpd_path_exists)
 	return 0;
 }
 
-int get_file_size(const char *fname, unsigned int* fsize)
-{
-    FILE* fd;
-    fd = fopen(fname, "r");
-    if (!fd) {
-        fprintf(stderr,"Failed to open VPD file: %s\n", fname);
-        return -1;
-    }
-    if (fseek(fd, 0, SEEK_END) < 0) {
-           fclose(fd);
-           fprintf(stderr,"Failed to get the size of file:%s, %s\n", fname, strerror(errno));
-           return -1;
-       }
-       int read_file_size = ftell(fd);
-       if (read_file_size < 0) {
-           fclose(fd);
-           fprintf(stderr, "Failed to get size of the file  %s\n", fname, strerror(errno));
-           return -1;
-       }
-       *fsize = read_file_size;
-       rewind(fd);
-       fclose(fd);
-       return 0;
-}
-
 int vpd_open(const char *name, int* vpd_path_exists)
 {
 	int fd;
-	char buf[4096] = {0};
-	unsigned int vpd_file_size = 0;
+	char buf[4096];
 
 	if (pci_parse_name(name, buf, vpd_path_exists)) {
 		fprintf(stderr, "-E- Unable to parse device name %s\n", name);
 		return -1;
 	}
-	if (*vpd_path_exists) {
-	    // update the actual VPD file size
-	    if (get_file_size(buf, &vpd_file_size)) {
-	        return -1;
-	    }
-	    if (vpd_file_size < g_vpd_file_size) {
-	        g_vpd_file_size = vpd_file_size;
-	    }
-	}
 	fd = open(buf, O_RDWR);
-
 	if (fd < 0) {
 		fprintf(stderr, "-E- Unable to open file %s: %s\n", buf, strerror(errno));
-		return -1;
 	}
 	return fd;
 }
