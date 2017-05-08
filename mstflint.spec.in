@@ -1,6 +1,6 @@
 %{!?ibmadlib: %define ibmadlib libibmad-devel}
 %{!?name: %define name mstflint}
-%{!?version: %define version 4.6.0}
+%{!?version: %define version 4.7.0}
 %{!?release: %define release 1}
 %{!?buildtype: %define buildtype "native"}
 %{!?noinband: %define noinband 0}
@@ -102,6 +102,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 
 %changelog
+* Mon May 08 2017 Adrian Chiris <adrianc@dev.mellanox.co.il>
+   MFT 4.7.0 Updates
+   
 * Mon Jan 10 2017 Adham Masarwah <adham@dev.mellanox.co.il>
    Removed hca_self_test.ofed installation from the package
     

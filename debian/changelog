@@ -1,9 +1,16 @@
+mstflint (4.7.0-1) unstable; urgency=low
+
+  * Updated from MFT-4.7.0
+
+ -- Adrian Chiris <adrianc@unknown>  Mon, 08 May 2017 11:00:33 +0200
+
+
 mstflint (4.6.0-1) unstable; urgency=low
 
   * Updated from MFT-4.6.0
 
  -- Adham Masarwah <adham@unknown>  Wed, 11 Jan 2017 20:01:33 +0200
- 
+
 
 mstflint (4.5.0-1) unstable; urgency=low
 
@@ -12,7 +19,7 @@ mstflint (4.5.0-1) unstable; urgency=low
                  Instead it will be a part of Mellanox OFED package.
 
  -- Adrian Chiris <adrianc@unknown>  Mon, 05 Sep 2016 15:31:33 +0200
- 
+
 
 mstflint (4.4.0-1) unstable; urgency=low
 
