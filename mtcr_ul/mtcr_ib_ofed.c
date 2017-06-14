@@ -750,6 +750,11 @@ int mib_open(const char *name, mfile *mf, int mad_init)
     return 0;
 end:
     if (ivm) {
+#ifndef __WIN__
+        if (ivm->dl_handle) {
+            dlclose(ivm->dl_handle);
+        }
+#endif
         free(ivm);
     }
     if (nbuf) {

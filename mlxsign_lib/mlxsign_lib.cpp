@@ -1,0 +1,292 @@
+/*
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ *
+ * This software is available to you under a choice of one of two
+ * licenses.  You may choose to be licensed under the terms of the GNU
+ * General Public License (GPL) Version 2, available from the file
+ * COPYING in the main directory of this source tree, or the
+ * OpenIB.org BSD license below:
+ *
+ *     Redistribution and use in source and binary forms, with or
+ *     without modification, are permitted provided that the following
+ *     conditions are met:
+ *
+ *      - Redistributions of source code must retain the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer.
+ *
+ *      - Redistributions in binary form must reproduce the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer in the documentation and/or other materials
+ *        provided with the distribution.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+#ifndef NO_OPEN_SSL
+#include <openssl/sha.h>
+#include <openssl/rsa.h>
+#include <openssl/pem.h>
+#include <openssl/bio.h>
+
+#include "mlxsign_lib.h"
+
+#define CHECK_RC(rc, expRc, errCode) do {\
+    if ((rc) != (expRc)) return (errCode);\
+}while (0)
+
+
+ int MlxSignSHA256::getDigest(std::vector<u_int8_t>& digest)
+ {
+     int rc;
+     SHA256_CTX ctx;
+    digest.resize(SHA256_DIGEST_LENGTH);
+    memset(&digest[0], 0, digest.size());
+     rc = SHA256_Init( &ctx); CHECK_RC(rc, 1, MLX_SIGN_SHA256_INIT_ERROR);
+     rc = SHA256_Update(&ctx, (void*)(&_buff[0]), _buff.size()); CHECK_RC(rc, 1, MLX_SIGN_SHA256_CALCULATION_ERROR);
+     rc = SHA256_Final(&digest[0], &ctx); CHECK_RC(rc, 1,MLX_SIGN_SHA256_CALCULATION_ERROR);
+     return MLX_SIGN_SUCCESS;
+ }
+
+int MlxSignSHA256::getDigest(std::string& digest)
+{
+    int rc;
+    std::vector<u_int8_t> digestVec;
+    char digestStr[SHA256_DIGEST_LENGTH*2 + 1] = {0};
+
+    rc = getDigest(digestVec); CHECK_RC(rc, MLX_SIGN_SUCCESS, rc);
+    // transform to string
+    for (int i=0; i < digestVec.size(); i++) {
+        snprintf(digestStr + i*2, 3, "%02x", digestVec[i]);
+    }
+    digest = digestStr;
+    return MLX_SIGN_SUCCESS;
+}
+
+void MlxSignSHA256::reset()
+{
+    _buff.resize(0);
+}
+
+MlxSignSHA256& operator<<(MlxSignSHA256& lhs, u_int8_t data)
+{
+    lhs._buff.push_back(data);
+    return lhs;
+}
+
+MlxSignSHA256& operator<<(MlxSignSHA256& lhs, const std::vector<u_int8_t>& buff)
+{
+    for (std::vector<u_int8_t>::const_iterator it = buff.begin(); it != buff.end(); it++) {
+        lhs._buff.push_back(*it);
+    }
+    return lhs;
+}
+
+
+MlxSignRSA::~MlxSignRSA()
+{
+    if (_privCtx) {
+        RSA_free((RSA*)_privCtx);
+    }
+
+    if (_pubCtx) {
+        RSA_free((RSA*)_pubCtx);
+    }
+}
+int MlxSignRSA::setPrivKeyFromFile(std::string& pemKeyFilePath)
+{
+    return createRSAFromPEMFileName(pemKeyFilePath, true);
+}
+
+int MlxSignRSA::setPrivKey(std::string& pemKey)
+{
+    return createRSAFromPEMKeyString(pemKey, true);
+}
+
+int MlxSignRSA::setPubKeyFromFile(std::string& pemKeyFilePath)
+{
+    return createRSAFromPEMFileName(pemKeyFilePath, false);
+}
+
+int MlxSignRSA::setPubKey(std::string& pemKey)
+{
+    return createRSAFromPEMKeyString(pemKey, false);
+}
+
+int MlxSignRSA::sign(const std::vector<u_int8_t>& msg, std::vector<u_int8_t>& encryptedMsg)
+{
+    unsigned int maxMsgSize, signLen;
+    std::vector<u_int8_t> encryptedMsgTemp;
+
+    if (!_privCtx) {
+        return MLX_SIGN_RSA_NO_PRIV_KEY_ERROR;
+    }
+
+    // size check
+    maxMsgSize = RSA_size((RSA*)_privCtx);
+    if (msg.size() > maxMsgSize) {
+        return MLX_SIGN_RSA_MESSAGE_TOO_LONG_ERROR;
+    }
+    // do the job
+    encryptedMsgTemp.resize(maxMsgSize, 0);
+
+    if (!RSA_sign(NID_sha256, msg.data(), msg.size(), encryptedMsgTemp.data(), &signLen, (RSA*)_privCtx)) {
+        return MLX_SIGN_RSA_CALCULATION_ERROR;
+    }
+
+    encryptedMsg.resize(signLen, 0);
+    memcpy(encryptedMsg.data(), encryptedMsgTemp.data(), signLen);
+
+    return MLX_SIGN_SUCCESS;
+}
+
+int MlxSignRSA::verify(const std::vector<u_int8_t>& sha256Dgst, const std::vector<u_int8_t>& sig, bool& result)
+{
+
+    if (!_pubCtx) {
+        return MLX_SIGN_RSA_NO_PUB_KEY_ERROR;
+    }
+
+    result = RSA_verify(NID_sha256, sha256Dgst.data(), sha256Dgst.size(), sig.data(), sig.size(), (RSA*)_pubCtx);
+
+    return MLX_SIGN_SUCCESS;
+}
+
+int MlxSignRSA::encrypt(const std::vector<u_int8_t>& msg, std::vector<u_int8_t>& encryptedMsg)
+{
+    int maxMsgSize;
+
+    if (!_privCtx) {
+        return MLX_SIGN_RSA_NO_PRIV_KEY_ERROR;
+    }
+    // size check
+    maxMsgSize = RSA_size((RSA*)_privCtx);
+    if (msg.size() > maxMsgSize) {
+        return MLX_SIGN_RSA_MESSAGE_TOO_LONG_ERROR;
+    }
+    // do the job
+    encryptedMsg.resize(maxMsgSize, 0);
+    if (RSA_private_encrypt((int)msg.size(), &msg[0], &encryptedMsg[0], (RSA*)_privCtx, RSA_PKCS1_PADDING ) != maxMsgSize) {
+        return MLX_SIGN_RSA_CALCULATION_ERROR;
+    }
+    return MLX_SIGN_SUCCESS;
+}
+
+int MlxSignRSA::decrypt(const std::vector<u_int8_t>& encryptedMsg, std::vector<u_int8_t>& originalMsg)
+{
+    int maxMsgSize;
+    int origMsgSize;
+    if (!_pubCtx) {
+        return MLX_SIGN_RSA_NO_PUB_KEY_ERROR;
+    }
+    // size check
+    maxMsgSize = RSA_size((RSA*)_pubCtx);
+    if (encryptedMsg.size() > maxMsgSize) {
+        return MLX_SIGN_RSA_MESSAGE_TOO_LONG_ERROR;
+    }
+    // do the job
+    originalMsg.resize(maxMsgSize, 0);
+    if ((origMsgSize = RSA_public_decrypt((int)encryptedMsg.size(), &encryptedMsg[0], &originalMsg[0], (RSA*)_pubCtx, RSA_PKCS1_PADDING )) == -1) {
+        return MLX_SIGN_RSA_CALCULATION_ERROR;
+    }
+    originalMsg.resize(origMsgSize);
+    return MLX_SIGN_SUCCESS;
+}
+
+int MlxSignRSA::getEncryptMaxMsgSize()
+{
+    if (_privCtx) {
+        return RSA_size((RSA*)_privCtx);
+    }
+    return 0;
+}
+
+int MlxSignRSA::getDecryptMaxMsgSize()
+{
+    if (_pubCtx) {
+        return RSA_size((RSA*)_pubCtx);
+    }
+    return 0;
+}
+
+std::string MlxSignRSA::str(const std::vector<u_int8_t>& msg)
+{
+    char* digestStr = NULL;
+    try {
+        digestStr = new char[msg.size()*2 + 1];
+        memset(digestStr, 0 , sizeof(char) * (msg.size()*2 + 1));
+    }catch (...) {
+        return "";
+    }
+
+    for (int i=0; i < msg.size(); i++) {
+        snprintf(digestStr + i*2, 3, "%02x", msg[i]);
+    }
+    std::string result = digestStr;
+    delete[] digestStr;
+    return result;
+}
+
+#define REPLACE_RSA_CTX(ctx, newCtx)\
+    do {                                                            \
+        if ((newCtx)) {                                         \
+            if ((ctx)) {                                            \
+                RSA_free((RSA*)(ctx));                 \
+            }                                                           \
+            (ctx) = (void*)(newCtx);                        \
+        }                                                               \
+    } while(0)
+
+int MlxSignRSA::createRSAFromPEMFileName(std::string& fname, bool isPrivateKey)
+{
+    FILE* fp = fopen(fname.c_str(), "rb");
+    RSA* rsa = NULL;
+    if (!fp) {
+        return MLX_SIGN_RSA_FILE_OPEN_ERROR;
+    }
+    rsa = RSA_new();
+    if (isPrivateKey) {
+        rsa = PEM_read_RSAPrivateKey(fp, &rsa, NULL, NULL);
+        REPLACE_RSA_CTX(_privCtx, rsa);
+    } else {
+        rsa = PEM_read_RSA_PUBKEY(fp, &rsa, NULL, NULL);
+        REPLACE_RSA_CTX(_pubCtx, rsa);
+    }
+
+    fclose(fp);
+    if(rsa == NULL) {
+        return MLX_SIGN_RSA_INIT_CTX_ERROR;
+    }
+    return MLX_SIGN_SUCCESS;
+}
+
+int MlxSignRSA::createRSAFromPEMKeyString(std::string& pemKey,  bool isPrivateKey)
+{
+    RSA *rsa= NULL;
+    BIO *keybio ;
+    // TODO: check if this may leak
+    keybio = BIO_new_mem_buf((void*)pemKey.c_str(), -1);
+    if (keybio==NULL) {
+        return MLX_SIGN_RSA_KEY_BIO_ERROR;
+    }
+    if(isPrivateKey) {
+        rsa = PEM_read_bio_RSAPrivateKey(keybio, &rsa,NULL, NULL);
+        REPLACE_RSA_CTX(_privCtx, rsa);
+    } else {
+        rsa = PEM_read_bio_RSA_PUBKEY(keybio, &rsa,NULL, NULL);
+        REPLACE_RSA_CTX(_pubCtx, rsa);
+    }
+    BIO_free_all(keybio);
+    if(rsa == NULL) {
+        return MLX_SIGN_RSA_INIT_CTX_ERROR;
+    }
+    return MLX_SIGN_SUCCESS;
+}
+#endif //ENABLE_OPENSSL

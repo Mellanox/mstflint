@@ -28,6 +28,7 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
 
 #include <stdlib.h>
@@ -173,6 +174,21 @@ static struct device_sem_info g_dev_sem_info_db[] = {
                 {0xe250c},       // hw_sem_addr
                 1,               // vsec_sem_supported
         },
+        {
+                DeviceBlueField, // dev_id
+                {0xe250c},       // hw_sem_addr
+                1,               // vsec_sem_supported
+        },
+        {
+                DeviceQuantum,  // dev_id
+                {0xa24f8},       // hw_sem_addr
+                0,               // vsec_sem_supported
+        },
+        {
+                DeviceSpectrum2,  // dev_id
+                {0xa24f8},       // hw_sem_addr
+                0,               // vsec_sem_supported
+        },
 };
 
 #define MAX_SEMAPHORE_ADDRES 8
@@ -195,7 +211,7 @@ struct trm_t {
  ************************************/
 static trm_sts lock_hw_semaphore(mfile* mf, u_int32_t addr, unsigned int max_retries)
 {
-    u_int32_t val;
+    u_int32_t val = 0;
     unsigned int cnt = 0;
     int rc;
 
@@ -230,7 +246,7 @@ static trm_sts unlock_hw_semaphore(mfile* mf, u_int32_t addr)
 static trm_sts lock_vsec_semaphore(mfile* mf, u_int32_t addr, unsigned int max_retries)
 {
     static u_int32_t pid = 0;
-    u_int32_t read_val;
+    u_int32_t read_val = 0;
     unsigned cnt = 0;
 
     if (!pid) {
@@ -268,8 +284,8 @@ static trm_sts unlock_vsec_semaphore(mfile* mf, u_int32_t addr)
 
 static trm_sts release_vs_mad_semaphore(trm_ctx trm, trm_resourse resource)
 {
-    u_int32_t lock_key;
-    u_int8_t new_lease_exponent;
+    u_int32_t lock_key = 0;
+    u_int8_t new_lease_exponent = 0;
     int is_leaseable = 0;
 
     int rc = TRM_STS_OK;
@@ -300,8 +316,8 @@ static trm_sts release_vs_mad_semaphore(trm_ctx trm, trm_resourse resource)
 
 static trm_sts lock_vs_mad_semaphore(trm_ctx trm, trm_resourse resource, unsigned int max_retries)
 {
-    u_int32_t new_lock_key;
-    u_int8_t new_lease_exponent;
+    u_int32_t new_lock_key = 0;
+    u_int8_t new_lease_exponent = 0;
     int is_leaseable = 0;
     tt_ctx_t curr_time;
     int rc = TRM_STS_OK;

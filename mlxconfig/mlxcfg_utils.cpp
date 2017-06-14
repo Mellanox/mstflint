@@ -41,6 +41,7 @@
 #include <signal.h>
 #include <errno.h>
 #include <stdio.h>
+#include <iomanip>
 #include <mft_sig_handler.h>
 #include <bit_slice.h>
 #include <cmdif/tools_cif.h>
@@ -73,7 +74,11 @@ MError mnvaCom5thGen(mfile* mf, u_int8_t* buff, u_int16_t len, u_int32_t tlvType
     struct tools_open_nvda mnvaTlv;
     memset(&mnvaTlv, 0, sizeof(struct tools_open_nvda));
 
-    mnvaTlv.nv_hdr.length = len;
+    if (method == REG_ACCESS_METHOD_GET) {
+        mnvaTlv.nv_hdr.length = sizeof(mnvaTlv.data);
+    } else {
+        mnvaTlv.nv_hdr.length = len;
+    }
     mnvaTlv.nv_hdr.rd_en = 0;
     mnvaTlv.nv_hdr.over_en = 1;
     mnvaTlv.nv_hdr.writer_id = WRITER_ID_ICMD_MLXCONFIG;
@@ -122,6 +127,31 @@ MError nvqcCom5thGen(mfile* mf, u_int32_t tlvType, bool& suppRead,
     return ME_OK;
 }
 
+MError nvdiCom5thGen(mfile* mf, u_int32_t tlvType)
+{
+    struct tools_open_nvdi nvdiTlv;
+    memset(&nvdiTlv, 0, sizeof(struct tools_open_nvdi));
+
+    nvdiTlv.nv_hdr.length = 0;
+    nvdiTlv.nv_hdr.rd_en = 0;
+    nvdiTlv.nv_hdr.over_en = 1;
+
+    // tlvType should be in the correct endianess
+    nvdiTlv.nv_hdr.type.tlv_type_dw.tlv_type_dw =  __be32_to_cpu(tlvType);
+
+    MError rc;
+    // "suspend" signals as we are going to take semaphores
+    mft_signal_set_handling(1);
+    // DEBUG_PRINT_SEND(&nvdiTlv, nvdi);
+    rc = reg_access_nvdi(mf, REG_ACCESS_METHOD_SET, &nvdiTlv);
+    // DEBUG_PRINT_RECIEVE(&nvdiTlv, nvdi);
+    dealWithSignal();
+    if (rc) {
+        return rc;
+    }
+    return ME_OK;
+}
+
 bool strToNum(string str, u_int32_t& num, int base)
 {
     char *endp;
@@ -139,9 +169,14 @@ bool strToNum(string str, u_int32_t& num, int base)
     return true;
 }
 
-string numToStr(u_int32_t num)
+string numToStr(u_int32_t num, bool isHex)
 {
     stringstream ss;
+
+    if (isHex) {
+        ss << std::uppercase << std::setfill('0') << std::setw(4) << std::hex;
+    }
+
     ss << num;
     return ss.str();
 }
@@ -224,6 +259,19 @@ string writerIdToStr(WriterId writerId)
             return "Unknown";
     }
 };
+
+
+void copyDwVectorToBytesVector(const vector<u_int32_t>& dwV, vector<u_int8_t>& bV)
+{
+    bV.resize(dwV.size() << 2);
+    memcpy(bV.data(), dwV.data(), bV.size());
+}
+
+void copyBytesVectorToDwVector(const vector<u_int8_t>& bV, vector<u_int32_t>& dwV)
+{
+    dwV.resize(bV.size() >> 2);
+    memcpy(dwV.data(), bV.data(), bV.size());
+}
 
 MlxcfgException::MlxcfgException(const char* fmt, ...){
     char tmp[1024];

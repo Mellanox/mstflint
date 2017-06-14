@@ -52,7 +52,9 @@ private:
     std::string _dbName;
     sqlite3* _db;
 
+    static int selectAndCreateNewTLVCallBack(void *object, int argc, char **argv, char **azColName);
     static int selectTLVCallBack(void *, int, char **, char **);
+    static int selectAndCreateParamCallBack(void *object, int argc, char **argv, char **azColName);
     static int selectParamCallBack(void *, int, char **, char **);
     static int selectParamByMlxconfigNameCallBack(void *, int, char **, char **);
     void openDB();
@@ -71,6 +73,7 @@ public:
     TLVConf* getTLVByNameAux(std::string n, u_int8_t port);
     TLVConf* getTLVByIndexAndClassAux(u_int32_t id, TLVClass c);
     TLVConf* getTLVByName(std::string n, u_int8_t port);
+    TLVConf* getAndCreateTLVByName(std::string n, u_int8_t port);
     TLVConf* getTLVByParamMlxconfigName(std::string n);
     TLVConf* getTLVByIndexAndClass(u_int32_t id, TLVClass c);
     void execSQL(sqlite3_callback f, void* obj, const char* stat, ...);

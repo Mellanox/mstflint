@@ -136,6 +136,9 @@ typedef enum {
 #define FLINT_CHECKSUM_LEN_ERROR              "MD5 checksum should be exactly 16 bytes long.\n"
 #define FLINT_CHECKSUM_HEX_ERROR              "MD5 checksum should contain only hexadecimal digits.\n"
 #define FLINT_CACHE_IMAGE_ERROR                 "Failed to issue image cache request to driver. %s. make sure Mellanox driver is loaded and working properly.\n"
+#define FLINT_SET_PUBLIC_KEY_ERROR            "Failed to set the public key: %s\n"
+#define FLINT_SET_FORBIDDEN_VERSIONS_ERROR    "Failed to set the forbidden versions: %s\n"
+#define FLINT_SIGN_ERROR                      "Failed to sign the image: %s\n"
 
 /**************************
  * Flint Warning Messages

@@ -49,7 +49,7 @@
 #endif
 #endif
 
-#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
+#if !defined(UEFI_BUILD) && !defined(NO_CS_CMD)
 #include <tools_crypto/tools_md5.h>
 #endif
 
@@ -72,6 +72,8 @@
             return errmsg(\
                     "Timestamp operation for FS4 FW image files is not supported");\
         }
+
+#define COUNT_OF_SECTIONS_TO_ALIGN 5
 
 bool Fs4Operations::CheckSignatures(u_int32_t a[], u_int32_t b[], int n)
 {
@@ -108,7 +110,7 @@ bool Fs4Operations::CheckDevInfoSignature(u_int32_t* buff)
 //CodeView: move it to Base class
 bool Fs4Operations::getImgStart() {
 
-    u_int32_t cntx_image_start[CNTX_START_POS_SIZE];
+    u_int32_t cntx_image_start[CNTX_START_POS_SIZE] = {0};
     u_int32_t cntx_image_num = 0;
 
     FindAllImageStart(_ioAccess, cntx_image_start,
@@ -434,7 +436,7 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isD
 
 
 bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_itoc,
-        struct QueryOptions queryOptions) {
+        struct QueryOptions queryOptions, bool ignoreDToc) {
 
     u_int32_t dtocPtr;
     u_int8_t* buff;
@@ -485,7 +487,9 @@ bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_ito
             queryOptions, verifyCallBackFunc)){
         return false;
     }
-
+    if (ignoreDToc) {
+        return true;
+    }
     // Verify DTOC:
     log2_chunk_size = _ioAccess->get_log2_chunk_size();
     is_image_in_odd_chunks = _ioAccess->get_is_image_in_odd_chunks();
@@ -808,6 +812,16 @@ void Fs4Operations::updateTocEntryCRC(struct fs4_toc_info *tocEntry)
             CalcImageCRC((u_int32_t*)tocEntryBuff, TOC_ENTRY_SIZE / 4 - 1);
 }
 
+void Fs4Operations::updateTocHeaderCRC(struct cx5fw_itoc_header *tocHeader)
+{
+    u_int8_t tocHeaderBuff[CX5FW_ITOC_HEADER_SIZE];
+
+    memset(tocHeaderBuff, 0, CX5FW_ITOC_HEADER_SIZE);
+    cx5fw_itoc_header_pack(tocHeader, tocHeaderBuff);
+    tocHeader->itoc_entry_crc =
+            CalcImageCRC((u_int32_t*)tocHeaderBuff, CX5FW_ITOC_HEADER_SIZE / 4 - 1);
+}
+
 void Fs4Operations::updateTocEntryData(struct fs4_toc_info *tocEntry)
 {
     memset(tocEntry->data, 0, CX5FW_ITOC_ENTRY_SIZE);
@@ -820,6 +834,239 @@ void Fs4Operations::updateTocEntrySectionData(struct fs4_toc_info *tocEntry,
     tocEntry->section_data.resize(dataSize);
     memcpy(tocEntry->section_data.data(), data, dataSize);
 }
+
+bool Fs4Operations::restoreWriteProtection(mflash* mfl, u_int8_t banksNum,
+        write_protect_info_t protect_info[])
+{
+    for (unsigned int i = 0; i < banksNum; i++) {
+        int rc = mf_set_write_protect(mfl, i, protect_info + i);
+        if (rc != MFE_OK) {
+            return errmsg("Failed to restore write protection settings: %s",
+                                mf_err2str(rc));
+        }
+    }
+    return true;
+}
+
+/* - Alignment feature will be used later..
+bool Fs4Operations::AlignDeviceSections(u_int8_t flashLayoutVersion)
+{
+    bool rc = true;
+    u_int8_t data[FS4_DEFAULT_SECTOR_SIZE] = {0};
+    if (flashLayoutVersion != 1) {
+        return errmsg("Please update MFT package");
+    }
+
+    unsigned int retries = 0;
+    const int nvLogIndex = 0, nvData0Index = 1, nvData1Index = 2,
+              devInfo0Index = 3, devInfo1Index = 4;
+
+    struct fs4_toc_info* sections[COUNT_OF_SECTIONS_TO_ALIGN] = {(struct fs4_toc_info*)NULL,
+                                                                 (struct fs4_toc_info*)NULL,
+                                                                 (struct fs4_toc_info*)NULL,
+                                                                 (struct fs4_toc_info*)NULL,
+                                                                 (struct fs4_toc_info*)NULL};
+
+    const char* sectionsNames[COUNT_OF_SECTIONS_TO_ALIGN] = { GetSectionNameByType(FS3_FW_NV_LOG),
+                GetSectionNameByType(FS3_NV_DATA0),
+                GetSectionNameByType(FS3_NV_DATA2),
+                GetSectionNameByType(FS3_DEV_INFO),
+                GetSectionNameByType(FS3_DEV_INFO) };
+
+    const u_int32_t newOffsets[COUNT_OF_SECTIONS_TO_ALIGN] = {0xf90000, 0xfb0000,
+                                     0xfc0000, 0xfd0000, 0xfe0000};
+
+    const u_int32_t offsets[COUNT_OF_SECTIONS_TO_ALIGN] = {0xc00000, 0xc10000,
+                                     0xc20000, 0xc30000, 0xc40000};
+
+    //find related sections
+    for (int i = 0; i < _fs4ImgInfo.dtocArr.numOfTocs; i++) {
+        struct fs4_toc_info *toc = &_fs4ImgInfo.dtocArr.tocArr[i];
+        if (toc->toc_entry.type == FS3_FW_NV_LOG) {
+            sections[nvLogIndex] = toc;
+        } else if (toc->toc_entry.type == FS3_NV_DATA0) {
+            sections[nvData0Index] = toc;
+        } else if (toc->toc_entry.type == FS3_NV_DATA2) {
+            sections[nvData1Index] = toc;
+        } else if (toc->toc_entry.type == FS3_DEV_INFO) {
+            if (sections[devInfo0Index]) {
+                sections[devInfo1Index] = toc;
+            } else {
+                sections[devInfo0Index] = toc;
+            }
+        }
+    }
+
+    for (unsigned int i = 0; i < COUNT_OF_SECTIONS_TO_ALIGN; i++) {
+        if (sections[i] == NULL) {
+            return errmsg("%s section was not found!",
+                          sectionsNames[i]);
+        }
+        if ((sections[i]->toc_entry.flash_addr << 2) != offsets[i]) {
+            return errmsg("The section %s was expected to be at address "
+                          "0x%x but it is at 0x%x",
+                          sectionsNames[i], offsets[i],
+                          sections[i]->toc_entry.flash_addr << 2);
+        }
+        for (int j = 0; j < _fs4ImgInfo.dtocArr.numOfTocs; j++) {
+            struct fs4_toc_info *toc = &_fs4ImgInfo.dtocArr.tocArr[j];
+            u_int32_t start = toc->toc_entry.flash_addr << 2;
+            u_int32_t end = (toc->toc_entry.flash_addr << 2) + (toc->toc_entry.size << 2) - 1;
+            if (checkIfSectionsOverlap(newOffsets[i],
+                                       newOffsets[i] + (sections[i]->toc_entry.size << 2) - 1,
+                                       start, end)) {
+                return errmsg("%s section's new address overlaps with %s section",
+                              sectionsNames[i],
+                              GetSectionNameByType(toc->toc_entry.type));
+            }
+        }
+        //check if new offset overlaps with other new offsets
+        for (unsigned int j = 0; j < COUNT_OF_SECTIONS_TO_ALIGN; j++) {
+            if (i != j) {
+                if (checkIfSectionsOverlap(newOffsets[i],
+                        newOffsets[i] + (sections[i]->toc_entry.size << 2) - 1,
+                        newOffsets[j],
+                        newOffsets[j] + (sections[j]->toc_entry.size << 2) - 1)) {
+                    return errmsg("%s section's new address overlaps with %s section new address",
+                            sectionsNames[i], sectionsNames[j]);
+                }
+            }
+        }
+
+    }
+
+    FBase* origFlashObj = (FBase*)NULL;
+
+    //Re-open flash with -ocr if needed
+    if (_fwParams.ignoreCacheRep == 0) {
+        origFlashObj = _ioAccess;
+        _fwParams.ignoreCacheRep = 1;
+        if (!FwOperations::FwAccessCreate(_fwParams, &_ioAccess)) {
+            _ioAccess = origFlashObj;
+            _fwParams.ignoreCacheRep = 0;
+            return errmsg("Failed to open device for direct flash access");
+        }
+    }
+
+     //disable write protection:
+    ext_flash_attr_t attr;
+    memset(&attr, 0x0 ,sizeof(attr));
+    ((Flash*)_ioAccess)->get_attr(attr);
+
+    mflash* mfl = ((Flash*)_ioAccess)->getMflashObj();
+    write_protect_info_t protect_info;
+    memset(&protect_info, 0, sizeof(protect_info));
+    for (unsigned int i = 0; i < attr.banks_num; i++) {
+        int rc = mf_set_write_protect(mfl, i, &protect_info);
+        if (rc != MFE_OK) {
+            errmsg("Failed to disable flash write protection: %s",
+                    mf_err2str(rc));
+            rc = false;
+            goto cleanup;
+        }
+    }
+
+    while (((Flash*)_ioAccess)->is_flash_write_protected() && retries++ < 5) {
+        msleep(500);
+    }
+    if (retries == 5) {
+        FLASH_RESTORE(origFlashObj);
+        errmsg("Failed to disable flash write protection");
+        rc = false;
+        goto cleanup;
+    }
+
+    //move to the new offsets:
+    for (unsigned int i = 0; i < COUNT_OF_SECTIONS_TO_ALIGN; i++) {
+        //flash address is in DW and offset is given in bytes
+        sections[i]->toc_entry.flash_addr = newOffsets[i] >> 2;
+        //we updated the entry => calculate new CRC
+        updateTocEntryCRC(sections[i]);
+        //update the image cache with the toc entry changes:
+        u_int8_t buff[CX5FW_ITOC_ENTRY_SIZE];
+        memset(buff, 0x0, CX5FW_ITOC_ENTRY_SIZE);
+        cx5fw_itoc_entry_pack(&(sections[i]->toc_entry), buff);
+        Fs3UpdateImgCache(buff, _fs4ImgInfo.dtocArr.tocArrayAddr +
+                ((sections[i] - _fs4ImgInfo.dtocArr.tocArr + 1)
+                        * CX5FW_ITOC_ENTRY_SIZE), CX5FW_ITOC_ENTRY_SIZE);
+        //write the section data to the new offset
+        if (!writeImageEx((ProgressCallBackEx)NULL, NULL, (ProgressCallBack)NULL, newOffsets[i],
+                sections[i]->section_data.data(),
+                sections[i]->section_data.size(), true, true, 0, 0)) {
+            if (!restoreWriteProtection(mfl, attr.banks_num,
+                    attr.protect_info_array)) {
+                FLASH_RESTORE(origFlashObj);
+                rc = false;
+                goto cleanup;
+            }
+            FLASH_RESTORE(origFlashObj);
+            errmsg("Failed to move %s Section", sectionsNames[i]);
+            rc = false;
+            goto cleanup;
+        }
+        //update the image cache with the new section:
+        Fs3UpdateImgCache(sections[i]->section_data.data(), newOffsets[i],
+                sections[i]->section_data.size());
+    }
+
+    //set dtoc.header.flash_layout_version to 0x1
+    struct cx5fw_itoc_header dtocHeader;
+    cx5fw_itoc_header_unpack(&dtocHeader, _fs4ImgInfo.dtocArr.tocHeader);
+    dtocHeader.flash_layout_version = 0x1;
+    updateTocHeaderCRC(&dtocHeader);
+    cx5fw_itoc_header_pack(&dtocHeader, _fs4ImgInfo.dtocArr.tocHeader);
+    //update image cache with the dtoc headers changes:
+    Fs3UpdateImgCache(_fs4ImgInfo.dtocArr.tocHeader,
+            _fs4ImgInfo.dtocArr.tocArrayAddr,
+            CX5FW_ITOC_HEADER_SIZE);
+
+    //write the dtoc array
+    _imageCache.get(data, _fs4ImgInfo.dtocArr.tocArrayAddr,
+            FS4_DEFAULT_SECTOR_SIZE);
+    if (!writeImageEx((ProgressCallBackEx)NULL, NULL, (ProgressCallBack)NULL, _fs4ImgInfo.dtocArr.tocArrayAddr, data,
+            FS4_DEFAULT_SECTOR_SIZE, true, true, 0, 0)) {
+        if (!restoreWriteProtection(mfl, attr.banks_num,
+                attr.protect_info_array)) {
+            FLASH_RESTORE(origFlashObj);
+            rc = false;
+            goto cleanup;
+        }
+        FLASH_RESTORE(origFlashObj);
+        errmsg("Failed to update DToC Header");
+        rc = false;
+        goto cleanup;
+    }
+
+    if (!restoreWriteProtection(mfl, attr.banks_num, attr.protect_info_array)) {
+        FLASH_RESTORE(origFlashObj);
+        rc = false;
+        goto cleanup;
+    }
+    FLASH_RESTORE(origFlashObj);
+
+cleanup:
+    if (attr.type_str) {
+        delete attr.type_str;
+    }
+    return rc;
+}*/
+
+/*
+bool Fs4Operations::CheckIfAlignmentIsNeeded(FwOperations *imgops)
+{
+    Fs4Operations& imageOps = * ((Fs4Operations *) imgops);
+    struct cx5fw_itoc_header itocHeader, dtocHeader;
+    cx5fw_itoc_header_unpack(&dtocHeader, _fs4ImgInfo.dtocArr.tocHeader);
+    cx5fw_itoc_header_unpack(&itocHeader, imageOps._fs4ImgInfo.itocArr.tocHeader);
+
+    if (dtocHeader.flash_layout_version <
+                itocHeader.flash_layout_version) {
+        return true;
+    }
+
+    return false;
+}
+*/
 
 bool Fs4Operations::BurnFs4Image(Fs4Operations &imageOps,
                                   ExtBurnParams& burnParams)
@@ -859,6 +1106,19 @@ bool Fs4Operations::BurnFs4Image(Fs4Operations &imageOps,
         return errmsg(MLXFW_IMAGE_CORRUPTED_ERR, "%s", imageOps.err());
     }
 
+    /*
+    //check if alignment is needed:
+    if ((burnParams.burnFailsafe ||
+            (!burnParams.burnFailsafe && !burnParams.useImgDevData)) &&
+        CheckIfAlignmentIsNeeded(&imageOps)) {
+        struct cx5fw_itoc_header itocHeader;
+        cx5fw_itoc_header_unpack(&itocHeader, imageOps._fs4ImgInfo.itocArr.tocHeader);
+        if (!AlignDeviceSections(itocHeader.flash_layout_version)) {
+            return errmsg("Failed to align the device sections: %s", err());
+        }
+    }
+    */
+
     //Find total image size that will be written
     total_img_size += imageOps._fs4ImgInfo.itocArr.getSectionsTotalSize();//itoc sections
     //Add boot section, itoc array (wo signature)
@@ -882,14 +1142,17 @@ bool Fs4Operations::BurnFs4Image(Fs4Operations &imageOps,
     imageOps._imageCache.get(data8, FS3_FW_SIGNATURE_SIZE, beginingWithoutSignatureSize);
 
     //Write boot section and IToc array (without signature)
-    if (!writeImage(burnParams.progressFunc,
-                    FS3_FW_SIGNATURE_SIZE,
-                    data8,
-                    imageOps._fs4ImgInfo.itocArr.tocArrayAddr + sector_size - FS3_FW_SIGNATURE_SIZE,
-                    false,
-                    false,
-                    total_img_size,
-                    alreadyWrittenSz)) {
+    if (!writeImageEx(
+            burnParams.progressFuncEx,
+            burnParams.progressUserData,
+            burnParams.progressFunc,
+            FS3_FW_SIGNATURE_SIZE,
+            data8,
+            imageOps._fs4ImgInfo.itocArr.tocArrayAddr + sector_size - FS3_FW_SIGNATURE_SIZE,
+            false,
+            false,
+            total_img_size,
+            alreadyWrittenSz)) {
         delete[] data8;
         return false;
     }
@@ -900,7 +1163,10 @@ bool Fs4Operations::BurnFs4Image(Fs4Operations &imageOps,
     for (int i = 0; i < imageOps._fs4ImgInfo.itocArr.numOfTocs; i++) {
         struct fs4_toc_info *itoc_info_p = &imageOps._fs4ImgInfo.itocArr.tocArr[i];
         struct cx5fw_itoc_entry *toc_entry = &itoc_info_p->toc_entry;
-        if (!writeImage(burnParams.progressFunc,
+        if (!writeImageEx(
+                burnParams.progressFuncEx,
+                burnParams.progressUserData,
+                burnParams.progressFunc,
                 toc_entry->flash_addr << 2 ,
                 &(itoc_info_p->section_data[0]),
                 itoc_info_p->section_data.size(),
@@ -924,14 +1190,17 @@ bool Fs4Operations::BurnFs4Image(Fs4Operations &imageOps,
         data8 = new u_int8_t[sector_size];
         imageOps._imageCache.get(data8, imageOps._fs4ImgInfo.dtocArr.tocArrayAddr,
                 sector_size);
-        if (!writeImage(burnParams.progressFunc,
-                        imageOps._fs4ImgInfo.dtocArr.tocArrayAddr,
-                        data8,
-                        sector_size,
-                        true,
-                        true,
-                        total_img_size,
-                        alreadyWrittenSz)) {
+        if (!writeImageEx(
+                burnParams.progressFuncEx,
+                burnParams.progressUserData,
+                burnParams.progressFunc,
+                imageOps._fs4ImgInfo.dtocArr.tocArrayAddr,
+                data8,
+                sector_size,
+                true,
+                true,
+                total_img_size,
+                alreadyWrittenSz)) {
             delete[] data8;
             return false;
         }
@@ -942,7 +1211,10 @@ bool Fs4Operations::BurnFs4Image(Fs4Operations &imageOps,
         for (int i = 0; i < imageOps._fs4ImgInfo.dtocArr.numOfTocs; i++) {
             struct fs4_toc_info *itoc_info_p = &imageOps._fs4ImgInfo.dtocArr.tocArr[i];
             struct cx5fw_itoc_entry *toc_entry = &itoc_info_p->toc_entry;
-            if (!writeImage(burnParams.progressFunc,
+            if (!writeImageEx(
+                    burnParams.progressFuncEx,
+                    burnParams.progressUserData,
+                    burnParams.progressFunc,
                     toc_entry->flash_addr << 2 ,
                     &(itoc_info_p->section_data[0]),
                     itoc_info_p->section_data.size(),
@@ -1445,6 +1717,7 @@ bool Fs4Operations::isDTocSection(fs3_section_t sect_type, bool& isDtoc)
         case FS3_VPD_R0:
            isDtoc = true;
            break;
+        case FS3_PUBLIC_KEYS:
         case FS3_IMAGE_SIGNATURE:
            isDtoc = false;
            break;
@@ -1558,6 +1831,17 @@ bool Fs4Operations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, bo
         char *vpd_file = (char*)new_info;
         type_msg = "VPD";
         if (!Fs4UpdateVpdSection(curr_toc, vpd_file, newUidSection)) {
+            return false;
+        }
+    } else if (sect_type == FS3_IMAGE_SIGNATURE && cmd_type == CMD_SET_SIGNATURE) {
+        vector<u_int8_t> sig((u_int8_t*)new_info, (u_int8_t*)new_info + CX4FW_IMAGE_SIGNATURE_SIZE);
+        type_msg = "SIGNATURE";
+        newUidSection.resize(CX4FW_IMAGE_SIGNATURE_SIZE);
+        memcpy(newUidSection.data(), sig.data(), CX4FW_IMAGE_SIGNATURE_SIZE);
+    } else if (sect_type == FS3_PUBLIC_KEYS && cmd_type == CMD_SET_PUBLIC_KEY) {
+        char *publickeys_file = (char*)new_info;
+        type_msg = "PUBLIC KEYS";
+        if (!Fs3UpdatePublicKeysSection(curr_toc->toc_entry.size, publickeys_file, newUidSection)) {
             return false;
         }
     } else {
@@ -1713,6 +1997,24 @@ u_int32_t Fs4Operations::getImageSize()
     return _fwImgInfo.lastImageAddr - _fwImgInfo.imgStart;
 }
 
+void Fs4Operations::maskImageSignature(vector<u_int8_t>& img)
+{
+    for (int i = 0; i < _fs4ImgInfo.itocArr.numOfTocs; i++) {
+        if (_fs4ImgInfo.itocArr.tocArr[i].toc_entry.type == FS3_IMAGE_SIGNATURE) {
+             u_int32_t tocEntryAddr = _fs4ImgInfo.itocArr.tocArr[i].entry_addr;
+             u_int32_t tocEntryDataAddr = _fs4ImgInfo.itocArr.tocArr[i].toc_entry.flash_addr << 2;
+             memset(img.data() + tocEntryAddr, 0xFF, TOC_ENTRY_SIZE);
+             memset(img.data() + tocEntryDataAddr, 0xFF, CX4FW_IMAGE_SIGNATURE_SIZE);
+        }
+    }
+}
+
+void Fs4Operations::maskDevToc(vector<u_int8_t>& img)
+{
+    //no device tocs in the itoc
+    (void)img;
+    return;
+}
 
 bool Fs4Operations::FwSetTimeStamp(struct tools_open_ts_entry& timestamp,
         struct tools_open_fw_version& fwVer)

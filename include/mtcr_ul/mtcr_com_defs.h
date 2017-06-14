@@ -45,14 +45,18 @@
 #define MTCR_API __declspec(dllimport)
 #endif
 
-typedef unsigned __int8  u_int8_t;
-typedef __int8           int8_t;
-typedef unsigned __int16 u_int16_t;
-typedef __int16          int16_t;
-typedef unsigned __int32 u_int32_t;
-typedef __int32          int32_t;
-typedef unsigned __int64 u_int64_t;
-typedef __int64          int64_t;
+#if defined(_MSC_VER)
+    #include <stdint.h>
+#else
+    typedef __int8           int8_t;
+    typedef __int16          int16_t;
+    typedef __int32          int32_t;
+    typedef __int64          int64_t;
+#endif // !_MSC_VER
+    typedef unsigned __int8  u_int8_t;
+    typedef unsigned __int16 u_int16_t;
+    typedef unsigned __int32 u_int32_t;
+    typedef unsigned __int64 u_int64_t;
 
 #if defined(_WIN64)
     typedef __int64 MT_long_ptr_t;
@@ -241,6 +245,16 @@ typedef enum {
     AS_ICMD = 3, AS_CR_SPACE = 2, AS_SEMAPHORE = 0xa
 } address_space_t;
 
+typedef struct vf_info_t {
+    char dev_name[512];
+    u_int16_t domain;
+    u_int8_t bus;
+    u_int8_t dev;
+    u_int8_t func;
+    char** net_devs;      // Null terminated array
+    char** ib_devs;       // Null terminated array
+} vf_info;
+
 typedef struct dev_info_t {
         Mdevs type;
         char dev_name[512];
@@ -264,6 +278,8 @@ typedef struct dev_info_t {
                         char** net_devs;      // Null terminated array
                         char** ib_devs;       // Null terminated array
                         char numa_node[4096];     //
+                        vf_info * virtfn_arr;
+                        u_int16_t virtfn_count;
                 } pci;
 
                 struct {

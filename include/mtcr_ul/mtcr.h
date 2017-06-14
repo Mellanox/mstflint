@@ -163,6 +163,11 @@ int mset_addr_space(mfile* mf, int space);
 
 int mclear_pci_semaphore(const char* name);
 
+#ifndef NO_INBAND
+int mib_smp_set(mfile* mf, u_int8_t* data, u_int16_t attr_id, u_int32_t attr_mod);
+int mib_smp_get(mfile* mf, u_int8_t* data, u_int16_t attr_id, u_int32_t attr_mod);
+#endif
+
 #ifdef __cplusplus
 }
 #endif

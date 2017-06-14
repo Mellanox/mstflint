@@ -155,7 +155,7 @@ static void tools_cmdif_unpack(tools_cmdif* cmd, u_int32_t* buf) {
 static int tools_cmdif_flash_lock(mfile* mf, int lock_state) {
     // Obtain Semaphore
     u_int32_t cnt=0;
-    u_int32_t word;
+    u_int32_t word = 0;
     if (lock_state) {
         do {
             if (++cnt > TOOLS_SEM_TRIES) {
@@ -185,7 +185,7 @@ static int tools_cmdif_wait_go(mfile* mf, int* retries)
     int wait=1;
 
     for (i = 0; i < CMD_IF_WAIT_GO; i++) {
-        u_int32_t word;
+        u_int32_t word = 0;
         MREAD4(TOOLS_HCR_ADDR + CMD_IF_SIZE - 4, &word);
         go_bit = EXTRACT(word, 23, 1);
         if (!go_bit) {

@@ -318,7 +318,7 @@ static void printOneParam(const char* name, QueryOutputItem o,
 const char* MlxCfg::getDeviceName(const char* dev)
 {
     mfile* mf;
-    dm_dev_id_t dev_type;
+    dm_dev_id_t dev_type = DeviceUnknown;
     u_int32_t dev_id;
     u_int32_t chip_rev;
 
@@ -399,6 +399,7 @@ void prepareQueryOutput(vector<QueryOutputItem>& output,
             o.defVal = MLXCFG_UNKNOWN;
             o.currVal = MLXCFG_UNKNOWN;
             o.nextVal = MLXCFG_UNKNOWN;
+            o.setVal = MLXCFG_UNKNOWN;
             copyVal(o, *p, qT);
             output.push_back(o);
         }
@@ -654,7 +655,7 @@ mlxCfgStatus MlxCfg::clrDevSem()
         rc = MLX_CFG_ERROR;
     }
 
-    if(!commander) {
+    if(commander != NULL) {
         delete commander;
     }
 
@@ -711,6 +712,7 @@ mlxCfgStatus MlxCfg::setDevRawCfg()
         // ask user
         if(!askUser("Operation intended for advanced users.\n Are you sure you want to apply raw TLV file?")) {
             printErr();
+            delete commander;
             return MLX_CFG_ABORTED;
         }
         printf("Applying... ");
@@ -723,7 +725,9 @@ mlxCfgStatus MlxCfg::setDevRawCfg()
         delete commander;
         return err(true, "Failed to run set_raw command: %s", e._err.c_str());
     }
-    delete commander;
+    if (commander != NULL) {
+        delete commander;
+    }
     // done successfully
     printf("Done!\n");
     printf("-I- Please reboot machine to load new configurations.\n");
@@ -842,26 +846,29 @@ mlxCfgStatus MlxCfg::showDevConfs()
     return rc;
 }
 
-mlxCfgStatus MlxCfg::readNVInputFile(vector<u_int32_t>& buff)
+mlxCfgStatus MlxCfg::readBinFile(string fileName, vector<u_int32_t>& buff)
 {
     streampos size;
 
-    std::ifstream ifs(_mlxParams.NVInputFile.c_str(),
+    std::ifstream ifs(fileName.c_str(),
             ios::in|ios::binary|ios::ate);
     if (ifs.fail()) {
-        return err(true, "Failed to open file: %s",
-                _mlxParams.NVInputFile.c_str());
+        return err(true, "Failed to open file: %s", fileName.c_str());
     }
     size = ifs.tellg();
     if (size%4 != 0) {
-        return err(true, "File %s is not DW aligned",
-                _mlxParams.NVInputFile.c_str());
+        return err(true, "File %s is not DW aligned", fileName.c_str());
     }
     buff.resize((size_t)size / 4);
     ifs.seekg(0, ios::beg);
     ifs.read((char*)buff.data(), size);
     ifs.close();
     return MLX_CFG_OK;
+}
+
+mlxCfgStatus MlxCfg::readNVInputFile(vector<u_int32_t>& buff)
+{
+    return readBinFile(_mlxParams.NVInputFile, buff);
 }
 
 mlxCfgStatus MlxCfg::readNVInputFile(vector<string>& lines)
@@ -942,7 +949,7 @@ mlxCfgStatus MlxCfg::genTLVsFile()
         GenericCommander commander(NULL, _mlxParams.dbName);
         commander.genTLVsList(tlvs);
         VECTOR_ITERATOR(string, tlvs, it) {
-            sprintf(buff, "%-40s0\n", it->c_str());
+            sprintf(buff, "%-50s0\n", it->c_str());
             (*it) = buff;
         }
     } catch(MlxcfgException& e) {
@@ -1080,7 +1087,7 @@ mlxCfgStatus MlxCfg::XML2RawAux(bool isBin)
     try {
         GenericCommander commander(NULL, _mlxParams.dbName);
         if (isBin) {
-            //commander.XML2Bin(xml, binBuff);
+            commander.XML2Bin(xml, binBuff, false);
         } else {
             commander.XML2Raw(xml, raw);
         }
@@ -1109,6 +1116,75 @@ mlxCfgStatus MlxCfg::XML2Raw()
     return XML2RawAux(false);
 }
 
+mlxCfgStatus MlxCfg::XML2Bin()
+{
+    return XML2RawAux(true);
+}
+
+mlxCfgStatus MlxCfg::createConf()
+{
+    string xml;
+    vector<u_int32_t> buff;
+    mlxCfgStatus rc = MLX_CFG_OK;
+
+    rc = readNVInputFile(xml);
+    EXIT_IF_RC_NOT_OK(rc)
+
+    try {
+        GenericCommander commander(NULL, _mlxParams.dbName);
+        commander.createConf(xml, buff);
+        if (!_mlxParams.privPemFile.empty() && !_mlxParams.keyPairUUID.empty()) {
+            commander.sign(buff, _mlxParams.privPemFile, _mlxParams.keyPairUUID);
+        } else {
+            commander.sign(buff);
+        }
+    } catch(MlxcfgException& e) {
+        printf("-E- %s\n", e._err.c_str());
+        rc = MLX_CFG_ERROR;
+    }
+
+    if (rc == MLX_CFG_OK) {
+        printf("Saving output...\n");
+        rc = writeNVOutputFile(buff);
+        if (rc == MLX_CFG_OK) {
+            printf("Done!\n");
+        }
+    }
+
+    return rc;
+}
+
+mlxCfgStatus MlxCfg::apply()
+{
+    vector<u_int32_t> buff;
+    vector<u_int8_t> bytesBuff;
+    Commander* commander = NULL;
+    mlxCfgStatus rc = MLX_CFG_OK;
+
+    rc = readNVInputFile(buff);
+    EXIT_IF_RC_NOT_OK(rc)
+
+    copyDwVectorToBytesVector(buff, bytesBuff);
+
+    try {
+        commander = Commander::create(_mlxParams.device, _mlxParams.dbName);
+        printf("Applying...\n");
+        ((GenericCommander*)commander)->apply(bytesBuff);
+    } catch(MlxcfgException& e) {
+        printf("-E- %s\n", e._err.c_str());
+        rc = MLX_CFG_ERROR;
+    }
+
+    if (commander != NULL) {
+        delete commander;
+    }
+
+    if (rc == MLX_CFG_OK) {
+        printf("Done!\n");
+    }
+
+    return rc;
+}
 
 mlxCfgStatus MlxCfg::execute(int argc, char* argv[])
 {
@@ -1156,6 +1232,15 @@ mlxCfgStatus MlxCfg::execute(int argc, char* argv[])
         break;
     case Mc_XML2Raw:
         ret = XML2Raw();
+        break;
+    case Mc_XML2Bin:
+        ret = XML2Bin();
+        break;
+    case Mc_CreateConf:
+        ret = createConf();
+        break;
+    case Mc_Apply:
+        ret = apply();
         break;
     default:
         // should not reach here.

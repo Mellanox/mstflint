@@ -48,7 +48,24 @@ enum ParamType {
     ENUM,
     INTEGER,
     UNSIGNED,
-    STRING
+    STRING,
+    BINARY,
+    BYTES
+};
+
+enum TLVClass {
+    Global,
+    Physical_Port,
+    BMC,
+    Per_Host_Per_Function,
+    Per_SWID,
+    NVLog,
+    NVFile,
+    Per_Host,
+    Physical_Port_Common = 0x81,
+    Per_Host_All_Functions = 0x43,
+    All_Hosts_Per_Function = 0x83,
+    All_Hosts_All_Functions = 0xC3
 };
 
 typedef struct ParamView {
@@ -57,6 +74,7 @@ typedef struct ParamView {
     enum ParamType type;
     std::map<std::string, u_int32_t> textualVals;
     u_int32_t val;
+    u_int32_t port;
     std::string strVal;
     std::string setVal;
 } ParamView;
@@ -64,6 +82,7 @@ typedef struct ParamView {
 typedef struct TLVConfView {
     std::string name;
     std::string description;
+    TLVClass tlvClass;
     std::vector<ParamView> params;
 } TLVConfView;
 

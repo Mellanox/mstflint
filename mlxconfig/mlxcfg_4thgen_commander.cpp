@@ -93,6 +93,13 @@ string FourthGenCommander::param2str[Mcp_Last]= {"SRIOV_EN", "NUM_OF_VFS",
          "PORT_OWNER", "ALLOW_RD_COUNTERS", "IP_VER", "IP_VER_P1", "IP_VER_P2",
           };
 
+void FourthGenCommander::freeCfgList()
+{
+    for(map<mlxCfgType, CfgParams*>::iterator it = _cfgList.begin(); it != _cfgList.end(); it++) {
+        delete it->second;
+    }
+}
+
 FourthGenCommander::FourthGenCommander(mfile* mf, string dev) : Commander(mf), _dev(dev),
         _allInfo() {
 
@@ -181,6 +188,7 @@ FourthGenCommander::FourthGenCommander(mfile* mf, string dev) : Commander(mf), _
     _param2TypeMap[Mcp_Boot_Settings_Ext_IP_Ver_P2] = Mct_Boot_Settings_Extras_4thGen_P2;
 
     if (openComChk()) {
+        freeCfgList();
         throw MlxcfgException("Failed to open device: %s. %s",
                 _dev.c_str(), err());
     }
@@ -188,9 +196,7 @@ FourthGenCommander::FourthGenCommander(mfile* mf, string dev) : Commander(mf), _
 
 FourthGenCommander::~FourthGenCommander()
 {
-    for(map<mlxCfgType, CfgParams*>::iterator it = _cfgList.begin(); it != _cfgList.end(); it++) {
-        delete it->second;
-    }
+    freeCfgList();
     return;
 }
 
@@ -204,7 +210,7 @@ void FourthGenCommander::clearSemaphore() {
 int FourthGenCommander::supportsToolsHCR()
 {
     // we also update the support vector
-    u_int32_t devId;
+    u_int32_t devId = 0x0;
     u_int32_t type = 0;
     int rc;
 
@@ -448,7 +454,7 @@ void FourthGenCommander::queryParamViews(std::vector<ParamView>& paramsToQuery, 
 
 void FourthGenCommander::setCfg(std::vector<ParamView>& params, bool force)
 {
-    mlxCfgParam failedParam;
+    mlxCfgParam failedParam = Mcp_Last;
     vector<cfgInfo> infoVec;
 
     VECTOR_ITERATOR(ParamView, params, pv) {
@@ -466,7 +472,7 @@ void FourthGenCommander::setCfg(std::vector<ParamView>& params, bool force)
 
     int rc = setCfgAux(infoVec, failedParam);
     if(rc) {
-        if(rc == MCE_UNSUPPORTED_CFG) {
+        if(rc == MCE_UNSUPPORTED_CFG && failedParam != Mcp_Last) {
             throw MlxcfgException("Unsupported Configuration: %s",
                     param2str[failedParam].c_str());
         } else {

@@ -41,6 +41,9 @@
 
 #include <errmsg.h>
 #include <tools_layouts/tools_open_layouts.h>
+
+#include "fw_comps_mgr/fw_comps_mgr.h"
+
 #include "mlxcfg_commander.h"
 #include "mlxcfg_db_manager.h"
 
@@ -71,18 +74,31 @@ public:
     bool isCurrentSupported();
     void clearSemaphore();
     void invalidateCfgs();
+    void invalidateCfg(const std::string & configName);
     const char* loadConfigurationGetStr();
     void setRawCfg(std::vector<u_int32_t> rawTlvVec);
     void dumpRawCfg(std::vector<u_int32_t> rawTlvVec, std::string& tlvDump);
     void backupCfgs(vector<BackupView>& view);
     void updateParamViewValue(ParamView&, std::string);
+    void queryConfigViews(std::vector<TLVConfView> & confs, const std::string & configName="", QueryType qt=QueryNext);
+    void getConfigViews(std::vector<TLVConfView> & confs, const std::string & configName="");
 
     void genTLVsList(vector<string>& tlvs);
     void genXMLTemplate(vector<string> tlvs, string& xml, bool allAttrs);
-    void XML2TLVConf(const string xmlContent, vector<TLVConf*>& tlvs);
-    void binTLV2XML(vector<u_int32_t>binTLV, string& xml);
-    void raw2XML(const vector<string> lines, string& xml);
-    void XML2Raw(const string xml, string& raw);
+    void XML2TLVConf(const string& xmlContent, vector<TLVConf*>& tlvs);
+    void binTLV2XML(const vector<u_int32_t>& binTLV, string& xml);
+    void binTLV2TLVConf(const vector<u_int32_t>& binTLV, TLVConf*& tlv);
+    void bin2TLVConfs(const vector<u_int32_t>& tlvsBin, vector<TLVConf*>& tlvs);
+    void raw2XML(const vector<string>& lines, string& xml);
+    void XML2Raw(const string& xml, string& raw);
+    void XML2Bin(const string& xml, vector<u_int32_t>& buff, bool withHeader = true);
+    void TLVConf2Bin(const vector<TLVConf*>& tlvs, vector<u_int32_t>& buff, bool withHeader = true);
+    void checkConfTlvs(const vector<TLVConf*>& tlvs, FwComponent::comps_ids_t& compsId);
+    void orderConfTlvs(vector<TLVConf*>& tlvs);
+    void createConf(const string& xml, vector<u_int32_t>& buff);
+    void sign(vector<u_int32_t>& buff, string privPemFile, const string& keyPairUUid);
+    void sign(vector<u_int32_t>& buff);
+    void apply(const vector<u_int8_t>& buff);
 };
 
 class RawCfgParams5thGen : public ErrMsg

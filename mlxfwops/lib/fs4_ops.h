@@ -1,25 +1,25 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
- *
+ * 
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
  * General Public License (GPL) Version 2, available from the file
  * COPYING in the main directory of this source tree, or the
  * OpenIB.org BSD license below:
- *
+ * 
  *     Redistribution and use in source and binary forms, with or
  *     without modification, are permitted provided that the following
  *     conditions are met:
- *
+ * 
  *      - Redistributions of source code must retain the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer.
- *
+ * 
  *      - Redistributions in binary form must reproduce the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer in the documentation and/or other materials
  *        provided with the distribution.
- *
+ * 
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -71,6 +71,7 @@ public:
     bool FwQueryTimeStamp(struct tools_open_ts_entry& timestamp,
             struct tools_open_fw_version& fwVer, bool queryRunning=false);
     bool FwResetTimeStamp();
+    //bool CheckIfAlignmentIsNeeded(FwOperations *imgops);
 
 
 protected:
@@ -108,7 +109,7 @@ private:
     };
 
     bool CheckSignatures(u_int32_t a[], u_int32_t b[], int n);
-    bool FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_itoc, struct QueryOptions queryOptions);
+    bool FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_itoc, struct QueryOptions queryOptions, bool ignoreDToc = false);
     bool CheckTocSignature(struct cx5fw_itoc_header *itoc_header, u_int32_t first_signature);
     bool CheckDevInfoSignature(u_int32_t* buff);
     bool FsBurnAux(FwOperations *imageOps, ExtBurnParams& burnParams);
@@ -156,6 +157,10 @@ private:
     void updateTocEntryData(struct fs4_toc_info *tocEntry);
     void updateTocEntrySectionData(struct fs4_toc_info *tocEntry,
             u_int8_t* data, u_int32_t dataSize);
+    void updateTocHeaderCRC(struct cx5fw_itoc_header *tocHeader);
+    inline bool checkIfSectionsOverlap(u_int32_t s1, u_int32_t e1, u_int32_t s2,
+                                       u_int32_t e2);
+
 
 
     bool CheckFs4ImgSize(Fs4Operations& imageOps, bool useImageDevData=false);
@@ -172,7 +177,15 @@ private:
     bool CheckITocArray();
     bool CheckDTocArray();
     u_int32_t getImageSize();
+    void maskDevToc(vector<u_int8_t>& img);
+    void maskImageSignature(vector<u_int8_t>& img);
+    bool Fs4UpdateSignatureSection(vector<u_int8_t>  sha256Buff,
+        vector<u_int8_t>  &newSectionData);
     bool isDTocSection(fs3_section_t sect_type, bool& isDtoc);
+
+    //bool AlignDeviceSections(u_int8_t flashLayoutVersion);
+    bool restoreWriteProtection(mflash* mfl, u_int8_t banksNum,
+            write_protect_info_t protect_info[]);
 
 
     // Members
@@ -193,6 +206,14 @@ private:
 
 };
 
+bool Fs4Operations::checkIfSectionsOverlap(u_int32_t s1, u_int32_t e1, u_int32_t s2,
+                                       u_int32_t e2)
+{
+    if ((s1 >= s2 && s1 <= e2) || (s2 >= s1 && s2 <= e1)) {
+        return true;
+    }
 
+    return false;
+}
 
 #endif // FS4_OPS_

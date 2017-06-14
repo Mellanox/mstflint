@@ -22,6 +22,7 @@ AC_CONFIG_HEADERS( config.h )
 dnl Checks for headers
 AC_CHECK_HEADER(termios.h,[CXXFLAGS="${CXXFLAGS} -DHAVE_TERMIOS_H"])
 TOOLS_CRYPTO=""
+MAD_IFC=""
 
 AC_MSG_CHECKING(--enable-dc argument)
 AC_ARG_ENABLE(dc,
@@ -67,7 +68,9 @@ AC_ARG_ENABLE(inband,
 AC_MSG_RESULT($enable_inband)
 if test "x$enable_inband" = "xyes"; then
   AC_CHECK_HEADER(infiniband/mad.h,,AC_MSG_ERROR([cannot find infiniband/mad.h . Use --disable-inband to remove this dependaency]))
+  MAD_IFC="mad_ifc"
 fi
+AC_SUBST(MAD_IFC)
 
 AM_CONDITIONAL(ENABLE_INBAND, [test  "x$enable_inband" = "xyes"])
 
@@ -78,11 +81,28 @@ AC_ARG_ENABLE(cs,
             [enable_cs="no"])
 AC_MSG_RESULT($enable_cs)
 if test "x$enable_cs" = "xyes"; then
-  AC_CHECK_HEADER(openssl/md5.h,,AC_MSG_ERROR([cannot find openssl/md5.h . remove --enable-openssl to remove this dependaency or install openssl]))
+  AC_CHECK_HEADER(openssl/md5.h,,AC_MSG_ERROR([cannot find openssl/md5.h . remove --enable-cs to remove this dependaency or install openssl]))
   TOOLS_CRYPTO="tools_crypto"
 fi
+
+AC_MSG_CHECKING(--enable-openssl argument)
+AC_ARG_ENABLE(openssl,
+            [  --enable-openssl       Enable all openssl features, dependant of openssl library],
+            [enable_openssl="yes"],
+            [enable_openssl="no"])
+AC_MSG_RESULT($enable_openssl)
+if test "x$enable_openssl" = "xyes"; then
+  AC_CHECK_HEADER(openssl/sha.h,,AC_MSG_ERROR([cannot find openssl/sha.h . remove --enable-openssl to remove this dependaency or install openssl]))
+  AC_CHECK_HEADER(openssl/rsa.h,,AC_MSG_ERROR([cannot find openssl/rsa.h . remove --enable-openssl to remove this dependaency or install openssl]))
+  AC_CHECK_HEADER(openssl/pem.h,,AC_MSG_ERROR([cannot find openssl/pem.h . remove --enable-openssl to remove this dependaency or install openssl]))
+  AC_CHECK_HEADER(openssl/bio.h,,AC_MSG_ERROR([cannot find openssl/bio.h . remove --enable-openssl to remove this dependaency or install openssl]))
+  AC_CHECK_HEADER(openssl/md5.h,,AC_MSG_ERROR([cannot find openssl/md5.h . remove --enable-openssl to remove this dependaency or install openssl]))
+  TOOLS_CRYPTO="tools_crypto mlxsign_lib"
+fi
+
 AC_SUBST(TOOLS_CRYPTO)
-AM_CONDITIONAL(ENABLE_OPENSSL, [test  "x$enable_cs" = "xyes"])
+AM_CONDITIONAL(ENABLE_OPENSSL, [test "x$enable_openssl" = "xyes" ])
+AM_CONDITIONAL(ENABLE_CS, [test  "x$enable_cs" = "xyes" || test "x$enable_openssl" = "xyes" ])
 
 AC_ARG_ENABLE([static_libstdcpp],
     AS_HELP_STRING([--enable-static-libstdcpp], [Enable link static to libstdc++]))
@@ -103,10 +123,15 @@ CXXFLAGS="$CXXFLAGS -Werror -DMST_UL"
 
 AC_CONFIG_FILES( mstflint.spec )
 
-AS_IF([test "x$enable_cs" = "xyes"], [
+AS_IF([test "x$enable_cs" = "xyes" || test "x$enable_openssl" = "xyes"], [
         AC_CONFIG_FILES(tools_crypto/Makefile)
+    ])
+    
+AS_IF([test "x$enable_openssl" = "xyes"], [
+        AC_CONFIG_FILES(mlxsign_lib/Makefile)
     ])
 
 AC_OUTPUT( Makefile common/Makefile mft_utils/Makefile mtcr_ul/Makefile ext_libs/Makefile ext_libs/sqlite/Makefile ext_libs/muparser/Makefile dev_mgt/Makefile tools_layouts/Makefile reg_access/Makefile \
         cmdif/Makefile tools_res_mgmt/Makefile mlxconfig/Makefile mlxconfig/mlxconfig_dbs/Makefile mflash/Makefile mlxfwops/Makefile mlxfwops/lib/Makefile cmdparser/Makefile flint/Makefile \
- 		small_utils/Makefile mstdump/Makefile mstdump/crd_lib/Makefile mstdump/crd_main/Makefile mstdump/mstdump_dbs/Makefile )
+ 		small_utils/Makefile mstdump/Makefile mstdump/crd_lib/Makefile mstdump/crd_main/Makefile mstdump/mstdump_dbs/Makefile \
+ 		 fw_comps_mgr/Makefile mad_ifc/Makefile )

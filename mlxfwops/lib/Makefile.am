@@ -52,6 +52,12 @@ else
 AM_CXXFLAGS += -DNO_OPEN_SSL
 endif
 
+if ENABLE_CS
+else
+AM_CXXFLAGS += -DNO_CS_CMD
+endif
+
+
 noinst_LIBRARIES = libmlxfwops.a
 
 libmlxfwops_a_SOURCES = flint_base.cpp \
@@ -61,6 +67,7 @@ libmlxfwops_a_SOURCES = flint_base.cpp \
                fs3_ops.cpp fs3_ops.h \
                fs4_ops.cpp fs4_ops.h \
                mlxfwops.cpp mlxfwops.h \
-               mlxfwops_com.h mlxfwops.h fw_ops.h flint_base.h flint_io.h\
+               fsctrl_ops.cpp fsctrl_ops.h \
+               mlxfwops_com.h fw_ops.h flint_base.h flint_io.h \
                aux_tlv_ops.h aux_tlv_ops.cpp
 

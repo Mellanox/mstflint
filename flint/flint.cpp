@@ -143,6 +143,7 @@ map_sub_cmd_t_to_subcommand Flint::initSubcommandMap()
     cmdMap[SC_Smg] = new SmgSubCommand();
     cmdMap[SC_Set_Vpd] = new SetVpdSubCommand();
     cmdMap[SC_Fix_Img] = new FiSubCommand();
+    cmdMap[SC_Extract_4MB_Image] = new Extract4MBImageSubCommand();
 #endif
     cmdMap[SC_Sv] = new SvSubCommand();
     cmdMap[SC_Ri] = new RiSubCommand();
@@ -162,6 +163,9 @@ map_sub_cmd_t_to_subcommand Flint::initSubcommandMap()
     cmdMap[SC_Check_Sum] = new CheckSumSubCommand();
     cmdMap[SC_Time_Stamp] = new TimeStampSubCommand();
     cmdMap[SC_Cache_Image] = new CacheImageSubCommand();
+    cmdMap[SC_Sign] = new SignSubCommand();
+    cmdMap[SC_Set_Public_Key] = new SetPublicKeySubCommand();
+    cmdMap[SC_Set_Forbidden_Versions] = new SetForbiddenVersionsSubCommand();
     return cmdMap;
 }
 

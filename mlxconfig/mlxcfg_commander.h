@@ -66,6 +66,7 @@ public:
     virtual void backupCfgs(vector<BackupView>& views) = 0;
     virtual void updateParamViewValue(ParamView&, std::string val) = 0;
     void setExtResourceType(bool extT) { _extResource = extT; }
+    mfile * mf() { return _mf;}
     Commander(mfile* mf) : _mf(mf), _extResource(true) {} ;
     virtual ~Commander();
 

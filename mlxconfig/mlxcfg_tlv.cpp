@@ -144,6 +144,7 @@ TLVConf::TLVConf(int columnsCount, char **dataRow, char **headerRow) :
 void TLVConf::getView(TLVConfView& tlvConfView) {
     tlvConfView.name = _mlxconfigName;
     tlvConfView.description = _description;
+    tlvConfView.tlvClass = _tlvClass;
     for (size_t j = 0; j < _params.size(); j++) {
         if (!_params[j]->_mlxconfigName.empty()) {
             ParamView paramView;
@@ -187,15 +188,25 @@ bool TLVConf::isFWSupported(mfile* mf, bool read_write) {
 }
 
 void TLVConf::unpack(u_int8_t* buff) {
-    for (size_t i = 0; i < _params.size(); i++) {
-        _params[i]->unpack(buff);
+    VECTOR_ITERATOR(Param*, _params, p) {
+        (*p)->unpack(buff);
     }
 }
 
 void TLVConf::pack(u_int8_t* buff) {
     VECTOR_ITERATOR(Param*, _params, p) {
         (*p)->pack(buff);
-        //printf("-D- p=%s v=%d\n", (*p)->_name.c_str(), (*p)->_value);
+    }
+}
+
+void TLVConf::invalidate(mfile * mf)
+{
+	MError mRc = nvdiCom5thGen(mf,  getTlvTypeBe());
+    if (mRc) {
+    	throw MlxcfgException(
+    			"Failed to reset %s settings %s",
+                _name.c_str(),
+                m_err2str(mRc));
     }
 }
 
@@ -224,6 +235,18 @@ u_int32_t TLVConf::getPhysicalPortTypeBe() {
     type.param_idx = _id;
 
     tools_open_per_port_type_pack(&type, (u_int8_t*) &tlvType);
+    return tlvType;
+}
+
+u_int32_t TLVConf::getPerHostTypeBe() {
+    u_int32_t tlvType = 0;
+    struct tools_open_host_type type;
+
+    memset(&type, 0x0, sizeof(type));
+    type.param_class = (u_int8_t)_tlvClass;
+    type.param_idx = _id;
+    tools_open_host_type_pack(&type, (u_int8_t*) &tlvType);
+
     return tlvType;
 }
 
@@ -275,6 +298,7 @@ u_int32_t TLVConf::getPerHostFunctionTypeBe() {
 u_int32_t TLVConf::getTlvTypeBe()
 {
     switch (_tlvClass) {
+        case NVFile:
         case Global:
             return getGlobalTypeBe();
         case Physical_Port_Common:
@@ -285,6 +309,8 @@ u_int32_t TLVConf::getTlvTypeBe()
         case Per_Host_All_Functions:
         case Per_Host_Per_Function:
             return getPerHostFunctionTypeBe();
+        case Per_Host:
+            return getPerHostTypeBe();
         default:
             break;
     }
@@ -299,6 +325,11 @@ Param* TLVConf::getValidBitParam(string n) {
                 "The valid bit %s in the tlv %s was not found\n",
                 n.c_str(),
                 _name.c_str());
+    }
+    if (vP->_type != UNSIGNED && vP->_type != INTEGER &&
+            vP->_type != ENUM && vP->_type != BOOLEAN_TYPE) {
+        throw MlxcfgException("The valid bit %s is of invalid type",
+                n.c_str());
     }
     return vP;
 }
@@ -337,7 +368,7 @@ void TLVConf::parseParamValue(string paramMlxconfigName, string valToParse, u_in
         throw MlxcfgException("Unknown Parameter %s",
                 paramMlxconfigName.c_str());
     }
-    p->parseValue(valToParse, val, strVal);
+    p->_value->parseValue(valToParse, val, strVal);
 }
 
 vector<pair<ParamView, string> > TLVConf::query(mfile* mf, QueryType qT) {
@@ -386,7 +417,7 @@ void TLVConf::updateParamByMlxconfigName(string paramMlxconfigName, string val)
     p->setVal(val);
     //check if there is a valid bit
     if(!p->_validBit.empty()) {
-        (getValidBitParam(p->_validBit))->_value = 1;
+        (getValidBitParam(p->_validBit))->_value->setVal(1);
     }
 }
 
@@ -400,14 +431,24 @@ void TLVConf::updateParamByName(string paramName, string val)
         }
     }
     if(!p) {
-        throw MlxcfgException("Unknown parameter: %s",
-                paramName.c_str());
+        throw MlxcfgException("Unknown parameter %s of the configuration %s",
+                paramName.c_str(), _name.c_str());
     }
     p->setVal(val);
     //check if there is a valid bit
     if(!p->_validBit.empty()) {
-        (getValidBitParam(p->_validBit))->_value = 1;
+        (getValidBitParam(p->_validBit))->_value->setVal(1);
     }
+}
+
+bool TLVConf::isAStringParam(string paramName)
+{
+    Param* param = getParamByName(paramName);
+    if (!param) {
+        throw MlxcfgException("Unknown parameter %s of the configuration %s",
+                        paramName.c_str(), _name.c_str());
+    }
+    return (param->_type == STRING);
 }
 
 TLVTarget TLVConf::str2TLVTarget(char *s)
@@ -433,6 +474,10 @@ TLVClass TLVConf::str2TLVClass(char *s) {
         return BMC;
     case 3:
         return Per_Host_Per_Function;
+    case 6:
+        return NVFile;
+    case 7:
+        return Per_Host;
     }
     throw MlxcfgException("Unknown TLV class %d", i);
 }
@@ -456,12 +501,22 @@ Param* TLVConf::findParamByMlxconfigName(string n) {
     return NULL;
 }
 
+Param* TLVConf::findParamByName(string name)
+{
+    VECTOR_ITERATOR(Param*, _params, it){
+        if (name == (*it)->_name) {
+            return *it;
+        }
+    }
+    return NULL;
+}
+
 u_int32_t TLVConf::getParamValueByName(string n) {
     Param* p = getParamByName(n);
     if (!p) {
         throw MlxcfgException("The parameter %s was not found", n.c_str());
     }
-    return p->_value;
+    return p->_value->getIntVal();
 }
 
 void evalExpr(string expr, string var, u_int32_t& varVal,
@@ -514,7 +569,7 @@ void TLVConf::getExprVarsValues(vector<string>& vars,
                         var.c_str(),
                         expr.c_str());
             }
-            var2ValMap[var] = vP->_value;
+            var2ValMap[var] = vP->_value->getIntVal();
         }
     }
 }
@@ -600,6 +655,10 @@ void TLVConf::checkRules(vector<TLVConf*> ruleTLVs) {
         Param* p = *it;
         map<string, u_int32_t> var2ValMap;
 
+        if (p->_supportedFromVersion > _maxTlvVersionSuppByFw) {
+            continue;
+        }
+
         //first, find values of temp vars
         if(!p->_tempVars.empty()) {
             evalTempVars(p, ruleTLVs, var2ValMap);
@@ -607,7 +666,7 @@ void TLVConf::checkRules(vector<TLVConf*> ruleTLVs) {
 
         if (!p->_maxVal.empty()) {
             u_int32_t r = evalRule(p, p->_maxVal, ruleTLVs, var2ValMap);
-            if(p->_value > r) {
+            if(p->_value->getIntVal() > r) {
                 throw MlxcfgException(
                         "Parameter %s' value is larger than maximum allowed %d",
                         p->_mlxconfigName.c_str(),
@@ -617,7 +676,7 @@ void TLVConf::checkRules(vector<TLVConf*> ruleTLVs) {
 
         if (!p->_minVal.empty()) {
             u_int32_t r = evalRule(p, p->_minVal, ruleTLVs, var2ValMap);
-            if(p->_value < r) {
+            if(p->_value->getIntVal() < r) {
                 throw MlxcfgException(
                         "Parameter %s' value is smaller than minimum allowed %d",
                         p->_mlxconfigName.c_str(),
@@ -707,9 +766,11 @@ void TLVConf::unpackTLVType(TLVClass tlvClass,
         tools_open_tlv_type& type, u_int32_t& id)
 {
     struct tools_open_global_type global;
+    struct tools_open_host_type per_host;
     struct tools_open_per_port_type per_port;
     struct tools_open_per_host_type per_host_function;
     switch(tlvClass) {
+        case NVFile:
         case Global:
             //printf("-D- global\n");
             tools_open_global_type_unpack(&global,
@@ -733,6 +794,12 @@ void TLVConf::unpackTLVType(TLVClass tlvClass,
                     (u_int8_t*)&(type.tlv_type_dw.tlv_type_dw));
             id = per_host_function.param_idx;
             type.per_host = per_host_function;
+            break;
+        case Per_Host:
+            tools_open_host_type_unpack(&per_host,
+                    (u_int8_t*)&(type.tlv_type_dw.tlv_type_dw));
+            id = per_host.param_idx;
+            type.host = per_host;
             break;
         default:
             throw MlxcfgException("Unknown TLV class %d", (u_int32_t)tlvClass);
@@ -762,41 +829,40 @@ void TLVConf::genRaw(string& raw)
         buffSS << "0x";
         buffSS << std::setfill('0') << std::setw(8) << std::hex;
         buffSS << buff.data()[i] << " ";
-        //printf("0x%x ", ((u_int32_t*)buff.data())[i]);
     }
-    //printf("\n");
     raw = buffSS.str();
-    //printf("-D- raw=%s\n", raw.c_str());
 }
 
-void TLVConf::genBin(vector<u_int32_t>& buff)
+void TLVConf::genBin(vector<u_int32_t>& buff, bool withHeader)
 {
     u_int32_t rd_en, ovr_en;
     tools_open_nv_hdr_fifth_gen hdr;
-    u_int32_t hdrSize = tools_open_nv_hdr_fifth_gen_size();
 
-    buff.resize((_size + hdrSize) / 4);
+    if (withHeader) {
+        u_int32_t hdrSize = tools_open_nv_hdr_fifth_gen_size();
 
-    memset(&hdr, 0, sizeof(hdr));
-    hdr.length = _size;
+        buff.resize((_size + hdrSize) >> 2);
 
-    //printf("-D- rd_en=%s\n", _attrs["rd_en"].c_str());
-    if (!strToNum(_attrs[RD_EN_ATTR], rd_en) || (rd_en > 1)) {
-        throw MlxcfgException("Illegal value for " RD_EN_ATTR);
+        memset(&hdr, 0, sizeof(hdr));
+        hdr.length = _size;
+
+        if (!strToNum(_attrs[RD_EN_ATTR], rd_en) || (rd_en > 1)) {
+            throw MlxcfgException("Illegal value for " RD_EN_ATTR);
+        }
+        hdr.rd_en = (u_int8_t)rd_en;
+
+        if (!strToNum(_attrs[OVR_EN_ATTR], ovr_en) || (ovr_en > 1)) {
+            throw MlxcfgException("Illegal value for " OVR_EN_ATTR);
+        }
+        hdr.over_en = (u_int8_t)ovr_en;
+
+        hdr.type.tlv_type_dw.tlv_type_dw = __be32_to_cpu(getTlvTypeBe());
+
+        tools_open_nv_hdr_fifth_gen_pack(&hdr, (u_int8_t*)buff.data());
+
+        pack((u_int8_t*)buff.data() + hdrSize);
+    } else {
+        buff.resize(_size >> 2);
+        pack((u_int8_t*)buff.data());
     }
-    hdr.rd_en = (u_int8_t)rd_en;
-
-    //printf("-D- ovr_en=%s\n", _attrs["ovr_en"].c_str());
-    if (!strToNum(_attrs[OVR_EN_ATTR], ovr_en) || (ovr_en > 1)) {
-        throw MlxcfgException("Illegal value for " OVR_EN_ATTR);
-    }
-    hdr.over_en = (u_int8_t)ovr_en;
-
-    hdr.type.tlv_type_dw.tlv_type_dw = __be32_to_cpu(getTlvTypeBe());
-
-    tools_open_nv_hdr_fifth_gen_pack(&hdr, (u_int8_t*)buff.data());
-
-    //printf("dataBuff=");
-    pack((u_int8_t*)buff.data() + hdrSize); //it will construct BE buffer
-
 }

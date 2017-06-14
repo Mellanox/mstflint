@@ -111,6 +111,10 @@ SubCmdMetaData::SubCmdMetaData() {
     _sCmds.push_back(new SubCmd("cs", "checksum", SC_Check_Sum));
     _sCmds.push_back(new SubCmd("ts", "timestamp", SC_Time_Stamp));
     _sCmds.push_back(new SubCmd("ci", "cache_image", SC_Cache_Image));
+    _sCmds.push_back(new SubCmd("", "sign", SC_Sign));
+    _sCmds.push_back(new SubCmd("", "extract_fw_data", SC_Extract_4MB_Image));
+    _sCmds.push_back(new SubCmd("", "set_public_keys", SC_Set_Public_Key));
+    _sCmds.push_back(new SubCmd("", "set_forbidden_versions", SC_Set_Forbidden_Versions));
 }
 
 SubCmdMetaData::~SubCmdMetaData() {
@@ -187,6 +191,9 @@ FlagMetaData::FlagMetaData() {
     _flags.push_back(new Flag("", "use_dev_img_info", 0));
     _flags.push_back(new Flag("", "skip_ci_req", 0));
     _flags.push_back(new Flag("", "use_dev_rom", 0));
+    _flags.push_back(new Flag("", "private_key", 1));
+    _flags.push_back(new Flag("", "key_uuid", 1));
+    _flags.push_back(new Flag("", "no_fw_ctrl", 0));
 }
 
 FlagMetaData::~FlagMetaData() {
@@ -373,8 +380,12 @@ bool parseFlashParams(string params, flash_params_t& fp)
 #define FLASH_LIST_SZ 256
 
 void Flint::initCmdParser() {
-    AddDescription("flint is a FW (firmware) burning and flash memory operations tool for\n"
-            "Mellanox Infiniband HCAs, Ethernet NIC cards, and switch devices.");
+    bool isExternal = false;
+#ifdef EXTERNAL
+    isExternal = true;
+#endif
+    AddDescription("flint is a FW (firmware) burning and flash memory operations tool for Mellanox Infiniband HCAs,"
+                   "Ethernet NIC cards, and switch devices.");
 
     AddOptions("device",
                 'd',
@@ -401,48 +412,40 @@ void Flint::initCmdParser() {
     AddOptions("yes",
                'y',
                 "",
-                "Non interactive mode - assume answer\n"
-                "\"yes\" to all questions.\n"
+                "Non interactive mode - assume answer \"yes\" to all questions.\n"
                 "Commands affected: all");
 
     AddOptions("no",
                ' ',
                 "",
-                "Non interactive mode - assume answer\n"
-                "\"no\" to all questions.\n"
+                "Non interactive mode - assume answer \"no\" to all questions.\n"
                 "Commands affected: all");
 
     AddOptions("guid",
                ' ',
                 "<GUID>",
-                "GUID base value. 4 GUIDs\n"
-                "are automatically assigned to the following values:\n\n"
+                "GUID base value. 4 GUIDs are automatically assigned to the following values:\n\n"
                 "guid   -> node GUID\n"
                 "guid+1 -> port1\n"
                 "guid+2 -> port2\n"
                 "guid+3 -> system image GUID.\n\n"
-                "Note: port2 guid will be assigned even for a\n"
-                "single port HCA - The HCA ignores this value.\n\n"
+                "Note: port2 guid will be assigned even for a single port HCA - The HCA ignores this value.\n\n"
                 "Commands affected: burn, sg");
 
     AddOptions("guids",
                ' ',
                 "<GUIDS...>",
                 "4 GUIDs must be specified here.\n"
-                "The specified GUIDs are assigned\n"
-                "to the following fields, respectively:\n"
+                "The specified GUIDs are assigned to the following fields, respectively:\n"
                 "node, port1, port2 and system image GUID.\n\n"
-                "Note: port2 guid must be specified even for a\n"
-                "single port HCA - The HCA ignores this value.\n"
+                "Note: port2 guid must be specified even for a single port HCA - The HCA ignores this value.\n"
                 "It can be set to 0x0.\n\n"
                 "Commands affected: burn, sg");
 
     AddOptions("mac",
                ' ',
                 "<MAC>",
-                "MAC address base value. 2 MACs\n"
-                "are automatically assigned to the\n"
-                "following values:\n\n"
+                "MAC address base value. 2 MACs are automatically assigned to the following values:\n\n"
                 "mac    -> port1\n"
                 "mac+1  -> port2\n\n"
                 "Commands affected: burn, sg");
@@ -451,8 +454,7 @@ void Flint::initCmdParser() {
                ' ',
                 "<MACs...>",
                 "2 MACs must be specified here.\n"
-                "The specified MACs are assigned\n"
-                "to port1, port2, respectively.\n"
+                "The specified MACs are assigned to port1, port2, respectively.\n"
                 "Commands affected: burn, sg\n\n"
                 "Note: -mac/-macs flags are applicable only for Mellanox\n"
                 "\tTechnologies ethernet products.");
@@ -467,9 +469,8 @@ void Flint::initCmdParser() {
     AddOptions("blank_guids",
                ' ',
                 "",
-                "Burn the image with blank GUIDs and MACs (where\n"
-                "applicable). These values can be set later using\n"
-                "the \"sg\" command (see details below).\n\n"
+                "Burn the image with blank GUIDs and MACs (where applicable). These values can be set later using the"
+                " \"sg\" command (see details below).\n\n"
                 "Commands affected: burn");
 
     AddOptions("clear_semaphore",
@@ -477,17 +478,15 @@ void Flint::initCmdParser() {
                 "",
                 "Force clear the flash semaphore on the device.\n"
                 "No command is allowed when this flag is used.\n"
-                "NOTE: May result in system instability or flash\n"
-                "\tcorruption if the device or another\n"
-                "\tapplication is currently using the flash.\n"
-                "\tExercise caution.\n");
+                "NOTE: May result in system instability or flash corruption if the device or another application is"
+                " currently using the flash.\n"
+                "Exercise caution.\n");
 
     AddOptions("qq",
                ' ',
                 "",
-                "Run a quick query. When specified, flint will not perform full\n"
-                "image integrity checks during the query operation. This may shorten\n"
-                "execution time when running over slow interfaces (e.g., I2C, MTUSB-1).\n"
+                "Run a quick query. When specified, flint will not perform full image integrity checks during the query"
+                " operation. This may shorten execution time when running over slow interfaces (e.g., I2C, MTUSB-1).\n"
                 "Commands affected: burn, query");
 
     AddOptions("nofs",
@@ -498,9 +497,8 @@ void Flint::initCmdParser() {
     AddOptions("allow_psid_change",
                ' ',
                 "",
-                "Allow burning a FW image with a different PSID (Parameter Set ID)than the\n"
-                "one currently on flash. Note that changing a PSID may cause the device to\n"
-                "malfunction. Use only if you know what you are doing");
+                "Allow burning a FW image with a different PSID (Parameter Set ID)than the one currently on flash. Note"
+                " that changing a PSID may cause the device to malfunction. Use only if you know what you are doing", isExternal);
 
     AddOptions("allow_rom_change",
                ' ',
@@ -514,7 +512,7 @@ void Flint::initCmdParser() {
                 "On SwitchX/ConnectIB devices:\n"
                 "Allow accessing the flash even if the cache replacement mode is enabled.\n"
                 "NOTE: This flag is intended for advanced users only.\n"
-                "\tRunning in this mode may cause the firmware to hang.\n");
+                "Running in this mode may cause the firmware to hang.\n");
 
     AddOptions("no_flash_verify",
                ' ',
@@ -564,8 +562,14 @@ void Flint::initCmdParser() {
     AddOptions("ignore_dev_data",
                ' ',
                 "",
-                "Do not attempt to take device data sections from device(sections will be taken from the image. FS3 Only).\n"
+                "Do not attempt to take device data sections from device(sections will be taken from the image. FS3"
+                " Only).\n"
                 "Commands affected: burn");
+
+    AddOptions("no_fw_ctrl",
+               ' ',
+                "",
+                "Do not attempt to work with the FW Ctrl update commands");
 
     AddOptions("use_dev_img_info",
                ' ',
@@ -577,8 +581,8 @@ void Flint::initCmdParser() {
     AddOptions("dual_image",
                ' ',
                 "",
-                "Make the burn process burn two images on flash (previously default algorithm). Current"
-                "default failsafe burn process burns a single image (in alternating locations).\n"
+                "Make the burn process burn two images on flash (previously default algorithm). Current default"
+                " failsafe burn process burns a single image (in alternating locations).\n"
                 "Commands affected: burn");
 
     AddOptions("striped_image",
@@ -600,11 +604,13 @@ void Flint::initCmdParser() {
     char flashList[FLASH_LIST_SZ];
     char flashParDesc[FLASH_LIST_SZ*2];
     Flash::get_flash_list(flashList);
-    snprintf(flashParDesc, FLASH_LIST_SZ*2,"Use the given parameters to access the flash instead of reading them from the flash.\n"\
+    snprintf(flashParDesc, FLASH_LIST_SZ*2,"Use the given parameters to access the flash instead of reading them from "
+                                           "the flash.\n"\
             							   "Supported parameters:\n"\
             							   "Type: The type of the flash, such as:%s.\n"\
             							   "log2size: The log2 of the flash size."\
-            							   "num_of_flashes: the number of the flashes connected to the device.", flashList);
+            							   "num_of_flashes: the number of the flashes connected to the device.",
+                                            flashList);
 
 
     AddOptions("flash_params",
@@ -630,6 +636,55 @@ void Flint::initCmdParser() {
                ' ',
                 "",
                 "another flag for override cache replacement", true);
+    AddOptions("private_key",
+               ' ',
+                "<key_file>",
+                "path to PEM formatted private key to be used by the sign command");
+
+    AddOptions("key_uuid",
+               ' ',
+                "<uuid_file>",
+                "UUID matching the given private key to be used by the sign command");
+
+    for (map_sub_cmd_t_to_subcommand::iterator it=_subcommands.begin(); it != _subcommands.end(); it++)
+        {
+            if (it->first == SC_ResetCfg) {
+                // hidden command so "forget" mentioning it
+                continue;
+            }
+            string str1 = it->second->getFlagL()+((it->second->getFlagS() == "") ? ("  ") :
+                          ("|"))+it->second->getFlagS()\
+                    +" "+it->second->getParam();
+            string str2 = it->second->getDesc();
+
+            AddOptionalSectionData("COMMANDS SUMMARY", str1, str2);
+        }
+    
+    AddOptionalSectionData("RETURN VALUES", "0", "Successful completion.");
+    AddOptionalSectionData("RETURN VALUES", "1", "An error has occurred.");
+    AddOptionalSectionData("RETURN VALUES", "7", "For burn command - FW already updated - burn was aborted.");
+
+
+    for (map_sub_cmd_t_to_subcommand::iterator it=_subcommands.begin(); it != _subcommands.end(); it++)
+        {
+            if (it->first == SC_ResetCfg) {
+                // hidden command so "forget" mentioning it
+                continue;
+            }
+            string str =   "Name:\n"
+                         "\t" + it->second->getName() + "\n"
+                         + "Description:\n"
+                         "\t" + it->second->getExtDesc() + "\n"
+                         + "Command:\n"
+                         "\t" + it->second->getFlagL() +
+                         ((it->second->getFlagS() == "") ? ("  ") : ("|"))+it->second->getFlagS()
+                         + " " + it->second->getParam() + "\n"
+                         + "Parameters:\n" 
+                         "\t" + it->second->getParamExp() + "\n"
+                         + "Examples:\n"
+                         "\t" + it->second->getExample() + "\n\n\n";
+            AddOptionalSectionData("COMMANDS DESCRIPTION", str);
+        }
 
 
     _cmdParser.AddRequester(this);
@@ -649,21 +704,9 @@ ParseStatus Flint::HandleOption(string name, string value)
     }
     else if (name == "help" || name == "h")
     {
-        cout<< _cmdParser.GetUsage()<<endl;
-        cout<<"COMMANDS SUMMARY:"<<endl;
-        for (map_sub_cmd_t_to_subcommand::iterator it=_subcommands.begin(); it != _subcommands.end(); it++)
-        {
-			if (it->first == SC_ResetCfg) {
-				// hidden command so "forget" mentioning it
-				continue;
-			}
-            string str1 = "  "+it->second->getFlagL()+((it->second->getFlagS() == "") ? ("  ") : ("|"))+it->second->getFlagS()\
-                    +" "+it->second->getParam();
-            string str2 = ": " + it->second->getDesc()+"\n";
-            printf("%-44s %s", str1.c_str(), str2.c_str());
-        }
-        cout<<endl<<"  Return values:\n  0 - Successful completion\n  1 - An error has occurred\n"
-                "  7 - For burn command - FW already updated - burn was aborted."<<endl << endl;
+        vector<string> excluded_sections;
+        excluded_sections.push_back("COMMANDS DESCRIPTION");
+        cout<< _cmdParser.GetUsage(false, excluded_sections);
         return PARSE_OK_WITH_EXIT;
     }
     else if (name == "version" || name == "v")
@@ -677,32 +720,7 @@ ParseStatus Flint::HandleOption(string name, string value)
     }
     else if (name == "hh")
     {
-        cout << _cmdParser.GetUsage()<<endl;
-        cout<<"COMMANDS SUMMARY:"<<endl;
-        for (map_sub_cmd_t_to_subcommand::iterator it=_subcommands.begin(); it != _subcommands.end(); it++)
-            {
-                string str1 = "  "+it->second->getFlagL()+((it->second->getFlagS() == "") ? ("  ") : ("|"))+it->second->getFlagS()\
-                        +" "+it->second->getParam();
-                string str2 = ": " + it->second->getDesc()+"\n";
-                printf("%-40s %s", str1.c_str(), str2.c_str());
-            }
-        cout<<endl<<endl<<"COMMANDS DESCRIPTION:"<<endl;
-        for (map_sub_cmd_t_to_subcommand::iterator it=_subcommands.begin(); it != _subcommands.end(); it++)
-                {
-        			if (it->first == SC_ResetCfg) {
-        				// hidden command so "forget" mentioning it
-        				continue;
-        			}
-                    cout<<"  Name:"<<endl<<"\t"<<it->second->getName()<<endl\
-                            <<"  Description:"<<endl<<"\t"<<it->second->getExtDesc()<<endl\
-                            <<"  Command:"<<endl<<"\t"<<it->second->getFlagL()<<\
-                            ((it->second->getFlagS() == "") ? ("  ") : ("|"))+it->second->getFlagS()\
-                            <<" "<<it->second->getParam()<<endl\
-                            <<"  Parameters:"<<endl<<"\t"<<it->second->getParamExp()<<endl\
-                            <<"  Examples:"<<endl<<"\t"<<it->second->getExample()<<endl<<endl<<endl;
-                }
-                cout<<endl<<"  Return values:\n  0 - Successful completion\n  1 - An error has occurred\n"
-                        "  7 - For burn command - FW already updated - burn was aborted."<<endl<< endl;
+        cout << _cmdParser.GetUsage();
         return PARSE_OK_WITH_EXIT;
     }
     else if (name == "no_devid_check") {
@@ -807,6 +825,8 @@ ParseStatus Flint::HandleOption(string name, string value)
         _flintParams.use_dev_rom = true;
     } else if (name == "ignore_dev_data") {
         _flintParams.ignore_dev_data = true;
+    } else if (name == "no_fw_ctrl") {
+        _flintParams.no_fw_ctrl = true;
     } else if (name == "dual_image") {
         _flintParams.dual_image = true;
     } else if (name == "striped_image") {
@@ -829,8 +849,15 @@ ParseStatus Flint::HandleOption(string name, string value)
             return PARSE_ERROR;
         }
         //printf("-D- flashType=%s , log2size = %d , numOfBanks = %d\n", _flintParams.flash_params.type_name, _flintParams.flash_params.log2size, _flintParams.flash_params.num_of_flashes);
+    } else if (name == "private_key") {
+        _flintParams.privkey_specified = true;
+        _flintParams.privkey_file = value;
+    } else if (name == "key_uuid") {
+        _flintParams.uuid_specified = true;
+        _flintParams.privkey_uuid = value;
     } else {
         cout << "Unknown Flag: " << name;
+        cout<< _cmdParser.GetSynopsis();
         return PARSE_ERROR;
     }
     return PARSE_OK;
@@ -861,7 +888,7 @@ ParseStatus Flint::parseCmdLine(int argc, char* argv[]) {
     //printf("-D- argcOpt:%d argvOpt:%s argcCmd:%d argvCmd:%s\n", argcOpt, argvOpt[0], argcCmd, argvCmd[0]);
     //_cmdparser should deal with the case of no arguments in argv except the program.
     //Step2 unite with comma multiple args in the options section
-    char* newArgv[argcOpt];
+    char** newArgv = new char*[argcOpt];
     int newArgc = 0;
     int i = 1, j = 1, argStart = 1, argEnd = 1;
     //first arg is the flint command we can copy as is
@@ -930,6 +957,7 @@ ParseStatus Flint::parseCmdLine(int argc, char* argv[]) {
         if ((argc - 1 - lastFlagPos) > numOfArgs) {
             printf(FLINT_INVALID_COMMAD_ERROR, argv[argc - 1]);
             rc = PARSE_ERROR;
+            cout<< _cmdParser.GetSynopsis();
             goto clean_up;
         }
     }
@@ -939,5 +967,6 @@ ParseStatus Flint::parseCmdLine(int argc, char* argv[]) {
     clean_up: for (int i = 0; i < newArgc; i++) {
         delete[] newArgv[i];
     }
+    delete[] newArgv;
     return rc;
 }

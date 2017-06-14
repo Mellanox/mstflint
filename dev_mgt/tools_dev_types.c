@@ -55,7 +55,7 @@ enum dm_dev_type {
     DM_SFP_CABLE,
 };
 
-struct dev_info {
+struct device_info {
     dm_dev_id_t      dm_id;
     u_int16_t        hw_dev_id;
     int              hw_rev_id;  /* -1 means all revisions match this record */
@@ -86,193 +86,219 @@ enum dm_dev_type getCableType(u_int8_t id) {
 }
 #endif
 
-static struct dev_info g_devs_info[] = {
+static struct device_info g_devs_info[] = {
     {
-        .dm_id     = DeviceInfiniScaleIV,
-        .hw_dev_id = 0x01b3,
-        .hw_rev_id = -1,
-        .sw_dev_id = -1,
-        .name      = "InfiniScaleIV",
-        .port_num  = 36,
-        .dev_type  = DM_SWITCH
+        DeviceInfiniScaleIV,    //dm_id
+        0x01b3,                 //hw_dev_id
+        -1,                     //hw_rev_id
+        -1,                     //sw_dev_id
+        "InfiniScaleIV",        //name
+        36,                     //port_num
+        DM_SWITCH               //dev_type
     },
     {
-        .dm_id     = DeviceSwitchX,
-        .hw_dev_id = 0x0245,
-        .hw_rev_id = -1,
-        .sw_dev_id = -1,
-        .name      = "SwitchX",
-        .port_num  = 64,
-        .dev_type  = DM_SWITCH
+        DeviceSwitchX,          //dm_id
+        0x0245,                 //hw_dev_i
+        -1,                     //hw_rev_i
+        -1,                     //sw_dev_i
+        "SwitchX",              //name
+        64,                     //port_num
+        DM_SWITCH               //dev_type
+    },
+    { 
+        DeviceConnectX2,        //dm_id
+        0x190,                  //hw_dev_i
+        0xb0,                   //hw_rev_i
+        -1,                     //sw_dev_i
+        "ConnectX2",            //name
+        2,                      //port_num
+        DM_HCA                  //dev_type
+    },
+    {       
+        DeviceConnectX3,        //dm_id
+        0x1f5,                  //hw_dev_i
+        -1,                     //hw_rev_i
+        -1,                     //sw_dev_i
+        "ConnectX3",            //name
+        2,                      //port_num
+        DM_HCA                  //dev_type
     },
     {
-        .dm_id     = DeviceConnectX2,
-        .hw_dev_id = 0x190,
-        .hw_rev_id = 0xb0,
-        .sw_dev_id = -1,
-        .name      = "ConnectX2",
-        .port_num  = 2,
-        .dev_type  = DM_HCA
-    },
-
-    {
-        .dm_id     = DeviceConnectX3,
-        .hw_dev_id = 0x1f5,
-        .hw_rev_id = -1,
-        .sw_dev_id = -1,
-        .name      = "ConnectX3",
-        .port_num  = 2,
-        .dev_type  = DM_HCA
+        DeviceConnectIB,        //dm_id
+        0x1ff,                  //hw_dev_i
+        -1,                     //hw_rev_i
+        -1,                     //sw_dev_i
+        "ConnectIB",            //name
+        2,                      //port_num
+        DM_HCA                  //dev_type
     },
     {
-        .dm_id     = DeviceConnectIB,
-        .hw_dev_id = 0x1ff,
-        .hw_rev_id = -1,
-        .sw_dev_id = -1,
-        .name      = "ConnectIB",
-        .port_num  = 2,
-        .dev_type  = DM_HCA
+        DeviceConnectX3Pro,     //dm_id
+        0x1f7,                  //hw_dev_i
+        -1,                     //hw_rev_i
+        -1,                     //sw_dev_i
+        "ConnectX3Pro",         //name
+        2,                      //port_num
+        DM_HCA                  //dev_type
     },
     {
-        .dm_id     = DeviceConnectX3Pro,
-        .hw_dev_id = 0x1f7,
-        .hw_rev_id = -1,
-        .sw_dev_id = -1,
-        .name      = "ConnectX3Pro",
-        .port_num  = 2,
-        .dev_type  = DM_HCA
+        DeviceSwitchIB,         //dm_id
+        0x247,                  //hw_dev_i
+        -1,                     //hw_rev_i
+        -1,                     //sw_dev_i
+        "SwitchIB",             //name
+        36,                     //port_num
+        DM_SWITCH               //dev_type
     },
     {
-        .dm_id     = DeviceSwitchIB,
-        .hw_dev_id = 0x247,
-        .hw_rev_id = -1,
-        .sw_dev_id = -1,
-        .name      = "SwitchIB",
-        .port_num  = 36,
-        .dev_type  = DM_SWITCH
+        DeviceSpectrum,         //dm_id
+        0x249,                  //hw_dev_i
+        -1,                     //hw_rev_i
+        -1,                     //sw_dev_i
+        "Spectrum",             //name
+        64,                     //port_num
+        DM_SWITCH               //dev_type
     },
     {
-        .dm_id     = DeviceSpectrum,
-        .hw_dev_id = 0x249,
-        .hw_rev_id = -1,
-        .sw_dev_id = -1,
-        .name      = "Spectrum",
-        .port_num  = 64,
-        .dev_type  = DM_SWITCH
+        DeviceConnectX4,        //dm_id
+        0x209,                  //hw_dev_i
+        -1,                     //hw_rev_i
+        -1,                     //sw_dev_i
+        "ConnectX4",            //name
+        2,                      //port_num
+        DM_HCA                  //dev_type
     },
     {
-        .dm_id     = DeviceConnectX4,
-        .hw_dev_id = 0x209,
-        .hw_rev_id = -1,
-        .sw_dev_id = -1,
-        .name      = "ConnectX4",
-        .port_num  = 2,
-        .dev_type  = DM_HCA
+        DeviceConnectX4LX,      //dm_id
+        0x20b,                  //hw_dev_i
+        -1,                     //hw_rev_i
+        -1,                     //sw_dev_i
+        "ConnectX4LX",          //name
+        2,                      //port_num
+        DM_HCA                  //dev_type
     },
     {
-        .dm_id     = DeviceConnectX4LX,
-        .hw_dev_id = 0x20b,
-        .hw_rev_id = -1,
-        .sw_dev_id = -1,
-        .name      = "ConnectX4LX",
-        .port_num  = 2,
-        .dev_type  = DM_HCA
+        DeviceConnectX5,        //dm_id
+        0x20d,                  //hw_dev_i
+        -1,                     //hw_rev_i
+        -1,                     //sw_dev_i
+        "ConnectX5",            //name
+        2,                      //port_num
+        DM_HCA                  //dev_type
     },
     {
-        .dm_id     = DeviceConnectX5,
-        .hw_dev_id = 0x20d,
-        .hw_rev_id = -1,
-        .sw_dev_id = -1,
-        .name      = "ConnectX5",
-        .port_num  = 2,
-        .dev_type  = DM_HCA
+        DeviceBlueField,        //dm_id
+        0x211,                  //hw_dev_i
+        -1,                     //hw_rev_i
+        -1,                     //sw_dev_i
+        "BlueField",            //name
+        2,                      //port_num
+        DM_HCA                  //dev_type
     },
     {
-        .dm_id     = DeviceFPGANewton,
-        .hw_dev_id = 0xfff, // Dummy device ID till we have official one
-        .hw_rev_id = -1,
-        .sw_dev_id = -1,
-        .name      = "FPGA_NEWTON",
-        .port_num  = 2,
-        .dev_type  = DM_HCA
+        DeviceFPGANewton,       //dm_id
+        0xfff,                  //hw_dev_i - Dummy device ID till we have official one
+        -1,                     //hw_rev_i
+        -1,                     //sw_dev_i
+        "FPGA_NEWTON",          //name
+        2,                      //port_num
+        DM_HCA                  //dev_type
     },
     {
-        .dm_id     = DeviceSwitchIB2,
-        .hw_dev_id = 0x24b,
-        .hw_rev_id = -1,
-        .sw_dev_id = -1,
-        .name      = "SwitchIB2",
-        .port_num  = 36,
-        .dev_type  = DM_SWITCH
+        DeviceSwitchIB2,        //dm_id
+        0x24b,                  //hw_dev_i
+        -1,                     //hw_rev_i
+        -1,                     //sw_dev_i
+        "SwitchIB2",            //name
+        36,                     //port_num
+        DM_SWITCH               //dev_type
+    },      
+    {       
+        DeviceCableQSFP,        //dm_id
+        0x0d,                   //hw_dev_i
+        0,                      //hw_rev_i
+        -1,                     //sw_dev_i
+        "CableQSFP",            //name
+        -1,                     //port_num
+        DM_QSFP_CABLE           //dev_type
     },
     {
-        .dm_id     = DeviceCableQSFP,
-        .hw_dev_id = 0x0d,
-        .hw_rev_id = 0,
-        .sw_dev_id = -1,
-        .name      = "CableQSFP",
-        .port_num  = -1,
-        .dev_type  = DM_QSFP_CABLE
+        DeviceCableQSFPaging,   //dm_id
+        0x11,                   //hw_dev_i
+        0xab,                   //hw_rev_i
+        -1,                     //sw_dev_i
+        "CableQSFPaging",       //name
+        -1,                     //port_num
+        DM_QSFP_CABLE           //dev_type
     },
     {
-        .dm_id     = DeviceCableQSFPaging,
-        .hw_dev_id = 0x11,
-        .hw_rev_id = 0xab,
-        .sw_dev_id = -1,
-        .name      = "CableQSFPaging",
-        .port_num  = -1,
-        .dev_type  = DM_QSFP_CABLE
+        DeviceCableSFP,         //dm_id
+        0x03,                   //hw_dev_i
+        1,                      //hw_rev_i
+        -1,                     //sw_dev_i
+        "CableSFP",             //name
+        -1,                     //port_num
+        DM_SFP_CABLE            //dev_type
     },
     {
-        .dm_id     = DeviceCableSFP,
-        .hw_dev_id = 0x03,
-        .hw_rev_id = 1,
-        .sw_dev_id = -1,
-        .name      = "CableSFP",
-        .port_num  = -1,
-        .dev_type  = DM_SFP_CABLE
+        DeviceCableSFP51,       //dm_id
+        0x03,                   //hw_dev_i
+        1,                      //hw_rev_i
+        -1,                     //sw_dev_i
+        "CableSFP51",           //name
+        -1,                     //port_num
+        DM_SFP_CABLE            //dev_type
     },
     {
-        .dm_id     = DeviceCableSFP51,
-        .hw_dev_id = 0x03,
-        .hw_rev_id = 1,
-        .sw_dev_id = -1,
-        .name      = "CableSFP51",
-        .port_num  = -1,
-        .dev_type  = DM_SFP_CABLE
+        DeviceCableSFP51Paging, //dm_id
+        0x03,                   //hw_dev_i
+        1,                      //hw_rev_i
+        -1,                     //sw_dev_i
+        "CableSFP51Paging",     //name
+        -1,                     //port_num
+        DM_SFP_CABLE            //dev_type
     },
     {
-        .dm_id     = DeviceCableSFP51Paging,
-        .hw_dev_id = 0x03,
-        .hw_rev_id = 1,
-        .sw_dev_id = -1,
-        .name      = "CableSFP51Paging",
-        .port_num  = -1,
-        .dev_type  = DM_SFP_CABLE
+        DeviceSpectrum2,        //dm_id
+        0x24f,                  //hw_dev_i
+        -1,                     //hw_rev_i
+        -1,                     //sw_dev_i
+        "Spectrum2",            //name
+        64,                     //port_num
+        DM_SWITCH               //dev_type
     },
     {
-        .dm_id     = DeviceDummy,
-        .hw_dev_id = 0x1,
-        .hw_rev_id = -1,
-        .sw_dev_id = -1,
-        .name      = "DummyDevice",
-        .port_num  = 2,
-        .dev_type  = DM_HCA
+        DeviceDummy,            //dm_id
+        0x1,                    //hw_dev_i
+        -1,                     //hw_rev_i
+        -1,                     //sw_dev_i
+        "DummyDevice",          //name
+        2,                      //port_num
+        DM_HCA                  //dev_type
+    },          
+    {           
+        DeviceQuantum,          //dm_id
+        0x24d,                  //hw_dev_i
+        -1,                     //hw_rev_i
+        -1,                     //sw_dev_i
+        "Quantum",              //name
+        80,                     //port_num
+        DM_SWITCH               //dev_type
     },
     {
-        .dm_id     = DeviceUnknown,
-        .hw_dev_id = 0,
-        .hw_rev_id = 0,
-        .sw_dev_id = 0,
-        .name      = "Unknown Device",
-        .port_num  = -1,
-        .dev_type  = DM_UNKNOWN
+        DeviceUnknown,          //dm_id
+        0,                      //hw_dev_i
+        0,                      //hw_rev_i
+        0,                      //sw_dev_i
+        "Unknown Device",       //name
+        -1,                     //port_num
+        DM_UNKNOWN              //dev_type
     }
 };
 
-static const struct dev_info* get_entry(dm_dev_id_t type)
+static const struct device_info* get_entry(dm_dev_id_t type)
 {
-    const struct dev_info* p = g_devs_info;
+    const struct device_info* p = g_devs_info;
     while (p->dm_id != DeviceUnknown) {
         if (type == p->dm_id) {
             break;
@@ -282,9 +308,9 @@ static const struct dev_info* get_entry(dm_dev_id_t type)
     return p;
 }
 
-static const struct dev_info* get_entry_by_dev_rev_id(u_int32_t hw_dev_id, u_int32_t hw_rev_id)
+static const struct device_info* get_entry_by_dev_rev_id(u_int32_t hw_dev_id, u_int32_t hw_rev_id)
 {
-    const struct dev_info* p = g_devs_info;
+    const struct device_info* p = g_devs_info;
     while (p->dm_id != DeviceUnknown) {
         if (hw_dev_id == p->hw_dev_id) {
             if ((p->hw_rev_id == -1) ||  ((int)hw_rev_id == p->hw_rev_id)) {
@@ -304,7 +330,7 @@ int dm_get_device_id(mfile* mf,
                     u_int32_t*   ptr_hw_dev_id,
                     u_int32_t*   ptr_hw_rev)
 {
-    u_int32_t dword;
+    u_int32_t dword = 0;
     int rc;
     u_int32_t dev_flags;
 
@@ -373,7 +399,7 @@ int dm_get_device_id(mfile* mf,
     // Special case for MLNX OS getting dev_id using REG MGIR
     if (dev_flags & MDEVS_MLNX_OS) {
         reg_access_status_t rc;
-        struct register_access_sib_mgir mgir;
+        struct tools_open_mgir mgir;
         memset(&mgir, 0, sizeof(mgir));
         rc = reg_access_mgir(mf, REG_ACCESS_METHOD_GET, &mgir);
         //printf("-D- RC[%s] -- REVID: %d -- DEVID: %d hw_dev_id: %d\n", m_err2str(rc), mgir.HWInfo.REVID, mgir.HWInfo.DEVID, mgir.HWInfo.hw_dev_id);
@@ -382,11 +408,11 @@ int dm_get_device_id(mfile* mf,
             *ptr_hw_rev    = 0;
             *ptr_hw_dev_id = get_entry(DeviceSwitchX)->hw_dev_id;
         } else {
-            dword = mgir.HWInfo.hw_dev_id;
+            dword = mgir.hw_info.hw_dev_id;
             if (dword == 0) {
                 dword = get_entry(DeviceSwitchX)->hw_dev_id;
                 *ptr_hw_dev_id = get_entry(DeviceSwitchX)->hw_dev_id;
-                *ptr_hw_rev = mgir.HWInfo.REVID & 0xf;
+                *ptr_hw_rev = mgir.hw_info.device_hw_revision & 0xf;
             } else {
                 *ptr_hw_dev_id = dword;
                 *ptr_hw_rev = 0; //WA: MGIR should have also hw_rev_id and then we can use it.
@@ -429,7 +455,7 @@ const char* dm_dev_type2str(dm_dev_id_t type)
 
 dm_dev_id_t dm_dev_str2type(const char* str)
 {
-    const struct dev_info* p = g_devs_info;
+    const struct device_info* p = g_devs_info;
     if (!str) {
         return DeviceUnknown;
     }
@@ -478,12 +504,13 @@ u_int32_t dm_get_hw_rev_id(dm_dev_id_t type)
 
 int dm_is_fpp_supported(dm_dev_id_t type)
 {
-    const struct dev_info* dp = get_entry(type);
+    const struct device_info* dp = get_entry(type);
     if (
-        dp->dm_id == DeviceConnectIB ||
-        dp->dm_id == DeviceConnectX4 ||
+        dp->dm_id == DeviceConnectIB   ||
+        dp->dm_id == DeviceConnectX4   ||
         dp->dm_id == DeviceConnectX4LX ||
-        dp->dm_id == DeviceConnectX5) {
+        dp->dm_id == DeviceConnectX5   ||
+        dp->dm_id == DeviceBlueField     ) {
         return 1;
     } else {
         return 0;
@@ -500,7 +527,7 @@ int dm_is_livefish_mode(mfile* mf)
     if(!mf || !mf->dinfo) {
         return 0;
     }
-    dm_dev_id_t devid_t;
+    dm_dev_id_t devid_t = DeviceUnknown;
     u_int32_t devid = 0;
     u_int32_t revid = 0;
     int rc = dm_get_device_id(mf, &devid_t, &devid, &revid);

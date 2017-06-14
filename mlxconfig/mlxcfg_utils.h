@@ -86,11 +86,19 @@ enum WriterId {
 #define VECTOR_ITERATOR(t, v, i) \
     for(vector<t>::iterator i = v.begin() ; i != v.end(); ++i)
 
+#define CONST_VECTOR_ITERATOR(t, v, i)\
+    for(vector<t>::const_iterator i = v.begin() ; i != v.end(); ++i)
+
 #define SET_ITERATOR(t, v, i) \
     for(std::set<t>::iterator i = v.begin() ; i != v.end(); ++i)
 
 #define MAP_ITERATOR(t1, t2, m, i) \
     for(std::map<t1,t2>::iterator i = m.begin() ; i != m.end(); ++i)
+
+#define VECTOR_BE32_TO_CPU(buff) \
+    for (unsigned int i = 0; i < buff.size(); i++) {\
+        buff[i] = __be32_to_cpu(buff[i]);\
+    }
 
 /*
  * Debug print MACRO of the NV Tlvs:
@@ -120,9 +128,11 @@ MError mnvaCom5thGen(mfile* mf, u_int8_t* buff, u_int16_t len, u_int32_t tlvType
 MError nvqcCom5thGen(mfile* mf, u_int32_t tlvType, bool& suppRead,
                          bool& suppWrite, u_int32_t& version);
 
+MError nvdiCom5thGen(mfile* mf, u_int32_t tlvType);
+
 bool strToNum(std::string str, u_int32_t& num, int base=0);
 
-std::string numToStr(u_int32_t num);
+std::string numToStr(u_int32_t num, bool isHex = false);
 
 vector<string> splitStr(const string s, char d);
 
@@ -133,6 +143,10 @@ string mlxcfg_ltrim(string s);
 string mlxcfg_trim(string s);
 
 string writerIdToStr(WriterId writerId);
+
+void copyDwVectorToBytesVector(const vector<u_int32_t>& dwV, vector<u_int8_t>& bV);
+
+void copyBytesVectorToDwVector(const vector<u_int8_t>& bV, vector<u_int32_t>& dwV);
 
 class MlxcfgException {
 public:

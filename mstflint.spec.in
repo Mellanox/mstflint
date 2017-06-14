@@ -6,6 +6,7 @@
 %{!?noinband: %define noinband 0}
 %{!?nodc: %define nodc 0}
 %{!?enablecs: %define enablecs 0}
+%{!?nopenssl: %define nopenssl 1}
 
 %define debug_package %{nil}
 %define optflags -g -O2
@@ -37,6 +38,10 @@ for network adapters based on Mellanox Technologies chips.
 
 %if %{noinband}
     config_flags="$config_flags --disable-inband"
+%endif
+
+%if ! %{nopenssl}
+    config_flags="$config_flags --enable-openssl"
 %endif
 
 %if %{enablecs}
