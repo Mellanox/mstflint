@@ -39,7 +39,7 @@ extern "C" {
 
 #include <mtcr.h>
 #include <common/compatibility.h>
-#include <tools_layouts/connectib_layouts.h>
+#include <tools_layouts/icmd_layouts.h>
 #include "icmd_cif_common.h"
 
 #define IN
