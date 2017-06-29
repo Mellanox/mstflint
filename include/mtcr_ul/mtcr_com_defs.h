@@ -77,7 +77,6 @@
     typedef unsigned long long u_int64_t;
     typedef long long        int64_t;
 
-#define bswap_32(x) ntohl(x)
 #define MTCR_API
 
 #else  /* UNIX */

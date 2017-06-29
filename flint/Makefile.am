@@ -42,7 +42,7 @@ CMDIF_DIR   = $(top_srcdir)/cmdif
 AM_CPPFLAGS = -I$(top_srcdir) -I$(srcdir) -I$(MTCR_DIR) -I$(MFLASH_DIR) -I$(COMMON_DIR) \
            -I$(LAYOUTS_DIR) -I$(MFT_UTILS_DIR) -I$(MTCR_INC_DIR)
 
-mstflint_CXXFLAGS = -Wall -W -g -MP -MD -pipe -DEXTERNAL
+mstflint_CXXFLAGS = -Wall -W -g -MP -MD -pipe -DEXTERNAL $(COMPILER_FPIC)
 bin_PROGRAMS = mstflint
 
 mstflint_SOURCES = flint.cpp flint.h subcommands.cpp subcommands.h\

@@ -48,10 +48,10 @@ COMPS_MGR_DIR = $(USER_DIR)/fw_comps_mgr
 SUBDIRS = mlxconfig_dbs
 
 AM_CPPFLAGS = -I. -I$(USER_DIR) -I$(top_srcdir)/include/mtcr_ul -I$(MTCR_DIR) -I$(COMMON_DIR) $(WIN64_INC)\
-           -I $(LAYOUTS_DIR) -I $(UTILS_DIR) -I$(DEV_MGT_DIR) -I$(CMDIF_DIR)
+           -I$(LAYOUTS_DIR) -I$(UTILS_DIR) -I$(DEV_MGT_DIR) -I$(CMDIF_DIR) $(COMPILER_FPIC)
 
 
-AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe  -Wno-deprecated-declarations -DDATA_PATH=\"$(pkgdatadir)\"
+AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe  -Wno-deprecated-declarations  $(COMPILER_FPIC) -DDATA_PATH=\"$(pkgdatadir)\"
 bin_PROGRAMS = mstconfig
 
 mstconfig_LDADD = $(UTILS_LIB) $(EXT_LIB_DIR)/sqlite/libsqlite3.a $(EXT_LIB_DIR)/muparser/libmuparser.a\

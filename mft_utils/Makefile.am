@@ -32,9 +32,9 @@
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 USER_DIR = $(top_srcdir)
-AM_CPPFLAGS = -I. -I$(USER_DIR)/common
+AM_CPPFLAGS = -I. -I$(USER_DIR)/common $(COMPILER_FPIC)
 
-AM_CFLAGS = -MD -pipe -Wall -W -Werror
+AM_CFLAGS = -MD -pipe -Wall -W -Werror $(COMPILER_FPIC)
 
 noinst_HEADERS = mft_sig_handler.h errmsg.h
 

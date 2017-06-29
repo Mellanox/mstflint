@@ -63,8 +63,6 @@
 #include <unistd.h>
 
 #include <netinet/in.h>
-#include <endian.h>
-#include <byteswap.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -91,35 +89,8 @@
 #ifndef MST_UL
 #include "../mtcr_mlnxos.h"
 #endif
-#ifndef __be32_to_cpu
-#define __be32_to_cpu(x) ntohl(x)
-#endif
-#ifndef __cpu_to_be32
-#define __cpu_to_be32(x) htonl(x)
-#endif
 
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-#ifndef __cpu_to_le32
-#define  __cpu_to_le32(x) (x)
-#endif
-#ifndef __le32_to_cpu
-#define  __le32_to_cpu(x) (x)
-#endif
-#elif __BYTE_ORDER == __BIG_ENDIAN
-#ifndef __cpu_to_le32
-#define  __cpu_to_le32(x) bswap_32(x)
-#endif
-#ifndef __le32_to_cpu
-#define  __le32_to_cpu(x) bswap_32(x)
-#endif
-#else
-#ifndef __cpu_to_le32
-#define  __cpu_to_le32(x) bswap_32(__cpu_to_be32(x))
-#endif
-#ifndef __le32_to_cpu
-#define  __le32_to_cpu(x) __be32_to_cpu(bswap_32(x))
-#endif
-#endif
+//#include "../common/compatibility.h"
 
 #define CX3_SW_ID    4099
 #define CX3PRO_SW_ID 4103
@@ -236,7 +207,8 @@ static int mtcr_connectx_flush(void *ptr, int fdlock)
     *((u_int32_t *) ((char *) ptr + 0xf0380)) = 0x0;
     do {
         asm volatile ("":::"memory");
-        value = __be32_to_cpu(*((u_int32_t * )((char * )ptr + 0xf0380)));
+        u_int32_t tmp = *((u_int32_t * )((char * )ptr + 0xf0380));
+        value = __be32_to_cpu(tmp);
     } while (value);
     rc = _flock_int(fdlock, LOCK_UN);
     CHECK_LOCK(rc)
@@ -469,7 +441,6 @@ int mtcr_mmap(mfile *mf, const char *name, off_t off, int ioctl_needed)
     mf->fd = open(name, O_RDWR | O_SYNC);
     if (mf->fd < 0)
         return -1;
-
     if (ioctl_needed && ioctl(mf->fd, PCIIOC_MMAP_IS_MEM) < 0) {
         err = errno;
         close(mf->fd);
@@ -491,7 +462,6 @@ int mtcr_mmap(mfile *mf, const char *name, off_t off, int ioctl_needed)
 int mtcr_pcicr_mread4(mfile *mf, unsigned int offset, u_int32_t *value)
 {
     ul_ctx_t *ctx = mf->ul_ctx;
-
     if (offset >= MTCR_MAP_SIZE) {
         errno = EINVAL;
         return 0;
@@ -502,8 +472,9 @@ int mtcr_pcicr_mread4(mfile *mf, unsigned int offset, u_int32_t *value)
         }
         ctx->need_flush = 0;
     }
-    *value = __be32_to_cpu(*((u_int32_t * )((char * )mf->ptr + offset)));
-    return 4;
+    u_int32_t tmp = ((u_int32_t*)mf->ptr)[offset/4];
+    *value = __be32_to_cpu(tmp);
+return 4;
 }
 
 int mtcr_pcicr_mwrite4(mfile *mf, unsigned int offset, u_int32_t value)
@@ -542,7 +513,6 @@ int mtcr_pcicr_open(mfile *mf, const char *name, char* conf_name, off_t off, int
     if (rc) {
         goto end;
     }
-
     rc = mtcr_check_signature(mf);
 end:
     if (rc) {
@@ -2224,7 +2194,8 @@ static void mtcr_fix_endianness(u_int32_t *buf, int len)
     int i;
 
     for (i = 0; i < (len / 4); ++i) {
-        buf[i] = __be32_to_cpu(buf[i]);
+        u_int32_t tmp = buf[i];
+        buf[i] = __be32_to_cpu(tmp);
     }
 }
 

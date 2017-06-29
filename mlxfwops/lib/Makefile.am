@@ -45,7 +45,7 @@ AM_CPPFLAGS = -I$(srcdir) -I$(MTCR_INC_DIR) -I$(MFLASH_DIR) -I$(top_srcdir)/ext_
 
 MLXFWOPS_VERSION = 1
 
-AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe -DNO_MFA_SUPPORT
+AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe -DNO_MFA_SUPPORT  $(COMPILER_FPIC)
 
 if ENABLE_OPENSSL
 else

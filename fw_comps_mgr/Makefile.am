@@ -46,6 +46,8 @@ INCLUDES = -I. -I$(USER_DIR) -I$(MTCR_INC_DIR) -I$(MTCR_DIR) -I$(REG_ACCESS_DIR)
 
 FWCOMPS_VERSION = 1
 
+AM_CFLAGS = -MD -pipe -Wall -W -Werror $(COMPILER_FPIC)
+
 AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe -Werror $(COMPILER_FPIC)
 
 noinst_LIBRARIES = libfw_comps_mgr.a
@@ -55,7 +57,7 @@ libfw_comps_mgr_a_SOURCES = \
                   
 if ENABLE_INBAND
 else
-libfw_comps_mgr_a_CXXFLAGS = "-DNO_INBAND"
+AM_CXXFLAGS += "-DNO_INBAND"
 endif
 
 libfw_comps_mgr_a_LIBADD = ../reg_access/libreg_access.a $(MTCR_DIR)/libmtcr_ul.a $(LAYOUTS_LIB)
