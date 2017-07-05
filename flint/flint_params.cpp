@@ -83,6 +83,9 @@ FlintParams::FlintParams()
     use_dev_img_info = false;
     skip_ci_req = false;
     use_dev_rom = false;
+    privkey_specified = false;
+    uuid_specified = false;
+    no_fw_ctrl = false;
 }
 
 FlintParams::~FlintParams()

@@ -43,6 +43,7 @@ extern "C" {
 
 // Hack, we include this for the MNV registers as they are not officialy a part of register_access so we defined them in tools.adb
 #include <tools_layouts/tools_open_layouts.h>
+#include <tools_layouts/reg_access_hca_layouts.h>
 
 enum { // header lengths in bytes
     REG_ACCESS_MFBA_HEADER_LEN = 12,
@@ -66,7 +67,6 @@ reg_access_status_t reg_access_mfmc (mfile* mf, reg_access_method_t method, stru
 reg_access_status_t reg_access_mnva (mfile* mf, reg_access_method_t method, struct tools_open_mnva* mnva);
 reg_access_status_t reg_access_mnvi (mfile* mf, reg_access_method_t method, struct tools_open_mnvi* mnvi);
 reg_access_status_t reg_access_mnvia (mfile* mf, reg_access_method_t method, struct tools_open_mnvia* mnvia);
-reg_access_status_t reg_access_mgir (mfile* mf, reg_access_method_t method, struct register_access_sib_mgir* mgir);
 reg_access_status_t reg_access_mfrl (mfile* mf, reg_access_method_t method, struct cibfw_register_mfrl* mfrl);
 reg_access_status_t reg_access_mfai (mfile* mf, reg_access_method_t method, struct cibfw_register_mfai* mfai);
 reg_access_status_t reg_access_nvda (mfile* mf, reg_access_method_t method, struct tools_open_nvda* nvda);
@@ -76,6 +76,19 @@ reg_access_status_t reg_access_nvqc (mfile* mf, reg_access_method_t method, stru
 reg_access_status_t reg_access_nvqgc (mfile* mf, reg_access_method_t method, struct tools_open_nvqgc* nvqgc);
 reg_access_status_t reg_access_mvts (mfile* mf, reg_access_method_t method, struct tools_open_mvts* mvts);
 reg_access_status_t reg_access_mnvgn (mfile* mf, reg_access_method_t method, struct tools_open_mnvgn* mnvgn, int *status);
+reg_access_status_t reg_access_mfmc (mfile* mf, reg_access_method_t method, struct tools_open_mfmc* mfmc);
+
+reg_access_status_t reg_access_mcam (mfile* mf, reg_access_method_t method, struct tools_open_mcam* mcam);
+/*
+ * MCXX new burn commands
+ */
+reg_access_status_t reg_access_mcda (mfile* mf, reg_access_method_t method, struct reg_access_hca_mcda_reg* mcda);
+reg_access_status_t reg_access_mcc  (mfile* mf, reg_access_method_t method, struct reg_access_hca_mcc_reg*  mcc );
+reg_access_status_t reg_access_mcqs (mfile* mf, reg_access_method_t method, struct reg_access_hca_mcqs_reg* mcqs);
+reg_access_status_t reg_access_mcqi (mfile* mf, reg_access_method_t method, struct reg_access_hca_mcqi_reg* mcqi);
+reg_access_status_t reg_access_mgir (mfile* mf, reg_access_method_t method, struct tools_open_mgir* mgir);
+
+const char* reg_access_err2str(reg_access_status_t status);
 
 #ifdef __cplusplus
 }

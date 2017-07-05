@@ -32,9 +32,9 @@
  
 
 /***
-         *** This file was generated at "2016-10-09 21:47:09"
+         *** This file was generated at "2017-05-28 21:03:29"
          *** by:
-         ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/cx5fw/cx5fw.adb --file-prefix cx5fw --prefix cx5fw_
+         ***    > /mswg/release/tools/a-me/last_stable/adabe_plugins/adb2c/adb2pack.py --input adb/cx5fw/cx5fw.adb --file-prefix cx5fw --prefix cx5fw_
          ***/
 #ifndef CX5FW_LAYOUTS_H
 #define CX5FW_LAYOUTS_H
@@ -44,90 +44,18 @@
 extern "C" {
 #endif
 
-#include "adb_to_c_utils.h"/* Description -   */
-/* Size in bytes - 16 */
-struct cx5fw_uid_entry {
-/*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Number of allocated UIDs in this entry */
-	/* 0x0.0 - 0x0.7 */
-	 u_int8_t num_allocated;
-	/* Description - Step size by which to derive the UIDs for this entry
-See struct description */
-	/* 0x0.8 - 0x0.15 */
-	 u_int8_t step;
-/*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description - For MACs, the upper 16 bits in the 'hi' dword are reserved */
-	/* 0x8.0 - 0x10.31 */
-	 u_int64_t uid;
-};
-
+#include "adb_to_c_utils.h"
 /* Description -  HW pointer entry */
 /* Size in bytes - 8 */
 struct cx5fw_hw_pointer_entry {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - pointer */
-	/* 0x0.0 - 0x4.31 */
+	/* 0x0.0 - 0x0.31 */
 	 u_int32_t ptr;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - crc16 as calculated by HW */
 	/* 0x4.0 - 0x4.15 */
 	 u_int16_t crc;
-};
-
-/* Description -   */
-/* Size in bytes - 16 */
-struct cx5fw_operation_key {
-/*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description -  */
-	/* 0x0.0 - 0x0.15 */
-	 u_int16_t key_modifier;
-/*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description -  */
-	/* 0x8.0 - 0x10.31 */
-	 u_int64_t key;
-};
-
-/* Description -   */
-/* Size in bytes - 64 */
-struct cx5fw_guids {
-/*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - UIDs (MACs and GUIDs) Allocation Entry.
-guids, is used for system GUID, node GUID and port GUID of port 0. ;/Multiple UIDs can be assigned to a single port, to be used for multiple virtual guests, multi host and managment */
-	/* 0x0.0 - 0x10.31 */
-	 struct cx5fw_uid_entry guids;
-/*---------------- DWORD[4] (Offset 0x10) ----------------*/
-	/* Description -  */
-	/* 0x10.0 - 0x20.31 */
-	 struct cx5fw_uid_entry macs;
-};
-
-/* Description -  HW pointers */
-/* Size in bytes - 48 */
-struct cx5fw_hw_pointers {
-/*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description -  */
-	/* 0x0.0 - 0x8.31 */
-	 struct cx5fw_hw_pointer_entry boot_record_ptr;
-/*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description -  */
-	/* 0x8.0 - 0x10.31 */
-	 struct cx5fw_hw_pointer_entry boot2_ptr;
-/*---------------- DWORD[4] (Offset 0x10) ----------------*/
-	/* Description -  */
-	/* 0x10.0 - 0x18.31 */
-	 struct cx5fw_hw_pointer_entry toc_ptr;
-/*---------------- DWORD[6] (Offset 0x18) ----------------*/
-	/* Description -  */
-	/* 0x18.0 - 0x20.31 */
-	 struct cx5fw_hw_pointer_entry tools_ptr;
-/*---------------- DWORD[8] (Offset 0x20) ----------------*/
-	/* Description -  */
-	/* 0x20.0 - 0x28.31 */
-	 struct cx5fw_hw_pointer_entry reserved0_ptr;
-/*---------------- DWORD[10] (Offset 0x28) ----------------*/
-	/* Description -  */
-	/* 0x28.0 - 0x30.31 */
-	 struct cx5fw_hw_pointer_entry reserved1_ptr;
 };
 
 /* Description -   */
@@ -174,7 +102,7 @@ All other values Reserved
 	 u_int8_t zipped_image;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - if partition type is code then the jump address is in here */
-	/* 0x8.0 - 0xc.31 */
+	/* 0x8.0 - 0x8.31 */
 	 u_int32_t param1;
 /*---------------- DWORD[5] (Offset 0x14) ----------------*/
 	/* Description -  */
@@ -187,6 +115,40 @@ All other values Reserved
 	/* Description -  */
 	/* 0x18.16 - 0x18.18 */
 	 u_int8_t crc;
+/*---------------- DWORD[7] (Offset 0x1c) ----------------*/
+	/* Description -  */
+	/* 0x1c.0 - 0x1c.15 */
+	 u_int16_t itoc_entry_crc;
+};
+
+/* Description -   */
+/* Size in bytes - 32 */
+struct cx5fw_itoc_header {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - for itoc 49 54 4f 43 
+for dtoc 44 54 4f 43 */
+	/* 0x0.0 - 0x0.31 */
+	 u_int32_t signature0;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - 04 08 15 16 */
+	/* 0x4.0 - 0x4.31 */
+	 u_int32_t signature1;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - 23 42 ca fa */
+	/* 0x8.0 - 0x8.31 */
+	 u_int32_t signature2;
+/*---------------- DWORD[3] (Offset 0xc) ----------------*/
+	/* Description - ba ca fe 00 */
+	/* 0xc.0 - 0xc.31 */
+	 u_int32_t signature3;
+/*---------------- DWORD[4] (Offset 0x10) ----------------*/
+	/* Description - Current version: 1 */
+	/* 0x10.0 - 0x10.7 */
+	 u_int8_t version;
+	/* Description - itoc_header: Represents the minimal layout version expected on the flash: 1.
+dtoc_header: Represents the layout version depicted by the dTOC: 1. */
+	/* 0x10.24 - 0x10.31 */
+	 u_int8_t flash_layout_version;
 /*---------------- DWORD[7] (Offset 0x1c) ----------------*/
 	/* Description -  */
 	/* 0x1c.0 - 0x1c.15 */
@@ -219,34 +181,77 @@ struct cx5fw_tools_area {
 	 u_int16_t crc;
 };
 
-/* Description -   */
-/* Size in bytes - 32 */
-struct cx5fw_itoc_header {
+/* Description -  HW pointers */
+/* Size in bytes - 48 */
+struct cx5fw_hw_pointers {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - for itoc 49 54 4f 43 
-for dtoc 44 54 4f 43 */
-	/* 0x0.0 - 0x4.31 */
-	 u_int32_t signature0;
-/*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - 04 08 15 16 */
-	/* 0x4.0 - 0x8.31 */
-	 u_int32_t signature1;
-/*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description - 23 42 ca fa */
-	/* 0x8.0 - 0xc.31 */
-	 u_int32_t signature2;
-/*---------------- DWORD[3] (Offset 0xc) ----------------*/
-	/* Description - ba ca fe 00 */
-	/* 0xc.0 - 0x10.31 */
-	 u_int32_t signature3;
-/*---------------- DWORD[4] (Offset 0x10) ----------------*/
-	/* Description - Current version: 1 */
-	/* 0x10.0 - 0x10.7 */
-	 u_int8_t version;
-/*---------------- DWORD[7] (Offset 0x1c) ----------------*/
 	/* Description -  */
-	/* 0x1c.0 - 0x1c.15 */
-	 u_int16_t itoc_entry_crc;
+	/* 0x0.0 - 0x4.31 */
+	 struct cx5fw_hw_pointer_entry boot_record_ptr;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description -  */
+	/* 0x8.0 - 0xc.31 */
+	 struct cx5fw_hw_pointer_entry boot2_ptr;
+/*---------------- DWORD[4] (Offset 0x10) ----------------*/
+	/* Description -  */
+	/* 0x10.0 - 0x14.31 */
+	 struct cx5fw_hw_pointer_entry toc_ptr;
+/*---------------- DWORD[6] (Offset 0x18) ----------------*/
+	/* Description -  */
+	/* 0x18.0 - 0x1c.31 */
+	 struct cx5fw_hw_pointer_entry tools_ptr;
+/*---------------- DWORD[8] (Offset 0x20) ----------------*/
+	/* Description -  */
+	/* 0x20.0 - 0x24.31 */
+	 struct cx5fw_hw_pointer_entry reserved0_ptr;
+/*---------------- DWORD[10] (Offset 0x28) ----------------*/
+	/* Description -  */
+	/* 0x28.0 - 0x2c.31 */
+	 struct cx5fw_hw_pointer_entry reserved1_ptr;
+};
+
+/* Description -   */
+/* Size in bytes - 16 */
+struct cx5fw_operation_key {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0x0.0 - 0x0.15 */
+	 u_int16_t key_modifier;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description -  */
+	/* 0x8.0 - 0xc.31 */
+	 u_int64_t key;
+};
+
+/* Description -   */
+/* Size in bytes - 16 */
+struct cx5fw_uid_entry {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Number of allocated UIDs in this entry */
+	/* 0x0.0 - 0x0.7 */
+	 u_int8_t num_allocated;
+	/* Description - Step size by which to derive the UIDs for this entry
+See struct description */
+	/* 0x0.8 - 0x0.15 */
+	 u_int8_t step;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - For MACs, the upper 16 bits in the 'hi' dword are reserved */
+	/* 0x8.0 - 0xc.31 */
+	 u_int64_t uid;
+};
+
+/* Description -   */
+/* Size in bytes - 64 */
+struct cx5fw_guids {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - UIDs (MACs and GUIDs) Allocation Entry.
+guids, is used for system GUID, node GUID and port GUID of port 0. ;/Multiple UIDs can be assigned to a single port, to be used for multiple virtual guests, multi host and managment */
+	/* 0x0.0 - 0xc.31 */
+	 struct cx5fw_uid_entry guids;
+/*---------------- DWORD[4] (Offset 0x10) ----------------*/
+	/* Description -  */
+	/* 0x10.0 - 0x1c.31 */
+	 struct cx5fw_uid_entry macs;
 };
 
 /* Description -   */
@@ -254,19 +259,19 @@ for dtoc 44 54 4f 43 */
 struct cx5fw_device_info {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
-	/* 0x0.0 - 0x4.31 */
+	/* 0x0.0 - 0x0.31 */
 	 u_int32_t signature0;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description -  */
-	/* 0x4.0 - 0x8.31 */
+	/* 0x4.0 - 0x4.31 */
 	 u_int32_t signature1;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description -  */
-	/* 0x8.0 - 0xc.31 */
+	/* 0x8.0 - 0x8.31 */
 	 u_int32_t signature2;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description -  */
-	/* 0xc.0 - 0x10.31 */
+	/* 0xc.0 - 0xc.31 */
 	 u_int32_t signature3;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - Format version for this struct */
@@ -277,7 +282,7 @@ struct cx5fw_device_info {
 	 u_int16_t major_version;
 /*---------------- DWORD[8] (Offset 0x20) ----------------*/
 	/* Description -  */
-	/* 0x20.0 - 0x60.31 */
+	/* 0x20.0 - 0x5c.31 */
 	 struct cx5fw_guids guids;
 /*---------------- DWORD[27] (Offset 0x6c) ----------------*/
 	/* Description -  */
@@ -289,7 +294,7 @@ struct cx5fw_device_info {
 	 char vsd[209];
 /*---------------- DWORD[88] (Offset 0x160) ----------------*/
 	/* Description -  */
-	/* 0x160.0 - 0x1a0.31 */
+	/* 0x160.0 - 0x19c.31 */
 	 struct cx5fw_operation_key keys[4];
 /*---------------- DWORD[127] (Offset 0x1fc) ----------------*/
 	/* Description -  */
@@ -302,31 +307,24 @@ struct cx5fw_device_info {
 union cx5fw_cx5fw_Nodes {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
-	/* 0x0.0 - 0x200.31 */
+	/* 0x0.0 - 0x1fc.31 */
 	 struct cx5fw_device_info device_info;
 	/* Description -  */
-	/* 0x0.0 - 0x20.31 */
+	/* 0x0.0 - 0x1c.31 */
 	 struct cx5fw_itoc_header itoc_header;
 	/* Description -  */
-	/* 0x0.0 - 0x40.31 */
+	/* 0x0.0 - 0x3c.31 */
 	 struct cx5fw_tools_area tools_area;
 	/* Description -  */
-	/* 0x0.0 - 0x20.31 */
+	/* 0x0.0 - 0x1c.31 */
 	 struct cx5fw_itoc_entry itoc_entry;
 	/* Description -  */
-	/* 0x0.0 - 0x30.31 */
+	/* 0x0.0 - 0x2c.31 */
 	 struct cx5fw_hw_pointers hw_pointers;
 };
 
 
 /*================= PACK/UNPACK/PRINT FUNCTIONS ======================*/
-/* uid_entry */
-void cx5fw_uid_entry_pack(const struct cx5fw_uid_entry *ptr_struct, u_int8_t* ptr_buff);
-void cx5fw_uid_entry_unpack(struct cx5fw_uid_entry *ptr_struct, const u_int8_t* ptr_buff);
-void cx5fw_uid_entry_print(const struct cx5fw_uid_entry *ptr_struct, FILE* file, int indent_level);
-int cx5fw_uid_entry_size(void);
-#define CX5FW_UID_ENTRY_SIZE    (0x10)
-void cx5fw_uid_entry_dump(const struct cx5fw_uid_entry *ptr_struct, FILE* file);
 /* hw_pointer_entry */
 void cx5fw_hw_pointer_entry_pack(const struct cx5fw_hw_pointer_entry *ptr_struct, u_int8_t* ptr_buff);
 void cx5fw_hw_pointer_entry_unpack(struct cx5fw_hw_pointer_entry *ptr_struct, const u_int8_t* ptr_buff);
@@ -334,27 +332,6 @@ void cx5fw_hw_pointer_entry_print(const struct cx5fw_hw_pointer_entry *ptr_struc
 int cx5fw_hw_pointer_entry_size(void);
 #define CX5FW_HW_POINTER_ENTRY_SIZE    (0x8)
 void cx5fw_hw_pointer_entry_dump(const struct cx5fw_hw_pointer_entry *ptr_struct, FILE* file);
-/* operation_key */
-void cx5fw_operation_key_pack(const struct cx5fw_operation_key *ptr_struct, u_int8_t* ptr_buff);
-void cx5fw_operation_key_unpack(struct cx5fw_operation_key *ptr_struct, const u_int8_t* ptr_buff);
-void cx5fw_operation_key_print(const struct cx5fw_operation_key *ptr_struct, FILE* file, int indent_level);
-int cx5fw_operation_key_size(void);
-#define CX5FW_OPERATION_KEY_SIZE    (0x10)
-void cx5fw_operation_key_dump(const struct cx5fw_operation_key *ptr_struct, FILE* file);
-/* guids */
-void cx5fw_guids_pack(const struct cx5fw_guids *ptr_struct, u_int8_t* ptr_buff);
-void cx5fw_guids_unpack(struct cx5fw_guids *ptr_struct, const u_int8_t* ptr_buff);
-void cx5fw_guids_print(const struct cx5fw_guids *ptr_struct, FILE* file, int indent_level);
-int cx5fw_guids_size(void);
-#define CX5FW_GUIDS_SIZE    (0x40)
-void cx5fw_guids_dump(const struct cx5fw_guids *ptr_struct, FILE* file);
-/* hw_pointers */
-void cx5fw_hw_pointers_pack(const struct cx5fw_hw_pointers *ptr_struct, u_int8_t* ptr_buff);
-void cx5fw_hw_pointers_unpack(struct cx5fw_hw_pointers *ptr_struct, const u_int8_t* ptr_buff);
-void cx5fw_hw_pointers_print(const struct cx5fw_hw_pointers *ptr_struct, FILE* file, int indent_level);
-int cx5fw_hw_pointers_size(void);
-#define CX5FW_HW_POINTERS_SIZE    (0x30)
-void cx5fw_hw_pointers_dump(const struct cx5fw_hw_pointers *ptr_struct, FILE* file);
 /* itoc_entry */
 void cx5fw_itoc_entry_pack(const struct cx5fw_itoc_entry *ptr_struct, u_int8_t* ptr_buff);
 void cx5fw_itoc_entry_unpack(struct cx5fw_itoc_entry *ptr_struct, const u_int8_t* ptr_buff);
@@ -362,13 +339,6 @@ void cx5fw_itoc_entry_print(const struct cx5fw_itoc_entry *ptr_struct, FILE* fil
 int cx5fw_itoc_entry_size(void);
 #define CX5FW_ITOC_ENTRY_SIZE    (0x20)
 void cx5fw_itoc_entry_dump(const struct cx5fw_itoc_entry *ptr_struct, FILE* file);
-/* tools_area */
-void cx5fw_tools_area_pack(const struct cx5fw_tools_area *ptr_struct, u_int8_t* ptr_buff);
-void cx5fw_tools_area_unpack(struct cx5fw_tools_area *ptr_struct, const u_int8_t* ptr_buff);
-void cx5fw_tools_area_print(const struct cx5fw_tools_area *ptr_struct, FILE* file, int indent_level);
-int cx5fw_tools_area_size(void);
-#define CX5FW_TOOLS_AREA_SIZE    (0x40)
-void cx5fw_tools_area_dump(const struct cx5fw_tools_area *ptr_struct, FILE* file);
 /* itoc_header */
 void cx5fw_itoc_header_pack(const struct cx5fw_itoc_header *ptr_struct, u_int8_t* ptr_buff);
 void cx5fw_itoc_header_unpack(struct cx5fw_itoc_header *ptr_struct, const u_int8_t* ptr_buff);
@@ -376,6 +346,41 @@ void cx5fw_itoc_header_print(const struct cx5fw_itoc_header *ptr_struct, FILE* f
 int cx5fw_itoc_header_size(void);
 #define CX5FW_ITOC_HEADER_SIZE    (0x20)
 void cx5fw_itoc_header_dump(const struct cx5fw_itoc_header *ptr_struct, FILE* file);
+/* tools_area */
+void cx5fw_tools_area_pack(const struct cx5fw_tools_area *ptr_struct, u_int8_t* ptr_buff);
+void cx5fw_tools_area_unpack(struct cx5fw_tools_area *ptr_struct, const u_int8_t* ptr_buff);
+void cx5fw_tools_area_print(const struct cx5fw_tools_area *ptr_struct, FILE* file, int indent_level);
+int cx5fw_tools_area_size(void);
+#define CX5FW_TOOLS_AREA_SIZE    (0x40)
+void cx5fw_tools_area_dump(const struct cx5fw_tools_area *ptr_struct, FILE* file);
+/* hw_pointers */
+void cx5fw_hw_pointers_pack(const struct cx5fw_hw_pointers *ptr_struct, u_int8_t* ptr_buff);
+void cx5fw_hw_pointers_unpack(struct cx5fw_hw_pointers *ptr_struct, const u_int8_t* ptr_buff);
+void cx5fw_hw_pointers_print(const struct cx5fw_hw_pointers *ptr_struct, FILE* file, int indent_level);
+int cx5fw_hw_pointers_size(void);
+#define CX5FW_HW_POINTERS_SIZE    (0x30)
+void cx5fw_hw_pointers_dump(const struct cx5fw_hw_pointers *ptr_struct, FILE* file);
+/* operation_key */
+void cx5fw_operation_key_pack(const struct cx5fw_operation_key *ptr_struct, u_int8_t* ptr_buff);
+void cx5fw_operation_key_unpack(struct cx5fw_operation_key *ptr_struct, const u_int8_t* ptr_buff);
+void cx5fw_operation_key_print(const struct cx5fw_operation_key *ptr_struct, FILE* file, int indent_level);
+int cx5fw_operation_key_size(void);
+#define CX5FW_OPERATION_KEY_SIZE    (0x10)
+void cx5fw_operation_key_dump(const struct cx5fw_operation_key *ptr_struct, FILE* file);
+/* uid_entry */
+void cx5fw_uid_entry_pack(const struct cx5fw_uid_entry *ptr_struct, u_int8_t* ptr_buff);
+void cx5fw_uid_entry_unpack(struct cx5fw_uid_entry *ptr_struct, const u_int8_t* ptr_buff);
+void cx5fw_uid_entry_print(const struct cx5fw_uid_entry *ptr_struct, FILE* file, int indent_level);
+int cx5fw_uid_entry_size(void);
+#define CX5FW_UID_ENTRY_SIZE    (0x10)
+void cx5fw_uid_entry_dump(const struct cx5fw_uid_entry *ptr_struct, FILE* file);
+/* guids */
+void cx5fw_guids_pack(const struct cx5fw_guids *ptr_struct, u_int8_t* ptr_buff);
+void cx5fw_guids_unpack(struct cx5fw_guids *ptr_struct, const u_int8_t* ptr_buff);
+void cx5fw_guids_print(const struct cx5fw_guids *ptr_struct, FILE* file, int indent_level);
+int cx5fw_guids_size(void);
+#define CX5FW_GUIDS_SIZE    (0x40)
+void cx5fw_guids_dump(const struct cx5fw_guids *ptr_struct, FILE* file);
 /* device_info */
 void cx5fw_device_info_pack(const struct cx5fw_device_info *ptr_struct, u_int8_t* ptr_buff);
 void cx5fw_device_info_unpack(struct cx5fw_device_info *ptr_struct, const u_int8_t* ptr_buff);

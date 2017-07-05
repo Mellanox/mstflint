@@ -52,7 +52,13 @@ Commander* Commander::create(std::string device, std::string dbName) {
     if (mf == NULL) {
         throw MlxcfgException("Failed to open the device");
     }
-    Commander* cmdr = create(mf, device, dbName);
+    Commander* cmdr = NULL;
+    try {
+        cmdr = create(mf, device, dbName);
+    } catch(MlxcfgException& exp) {
+        mclose(mf);
+        throw exp;
+    }
     cmdr->setExtResourceType(false);
     return cmdr;
 }
@@ -60,7 +66,7 @@ Commander* Commander::create(std::string device, std::string dbName) {
 Commander* Commander::create(mfile* mf, std::string device, std::string dbName) {
 
     bool isFifthGen;
-    dm_dev_id_t deviceId;
+    dm_dev_id_t deviceId = DeviceUnknown;
     u_int32_t hwDevId, hwRevId;
     Commander* commander = NULL;
     if( dm_get_device_id(mf, &deviceId, &hwDevId, &hwRevId) ) {
@@ -77,6 +83,7 @@ Commander* Commander::create(mfile* mf, std::string device, std::string dbName) 
         case DeviceConnectX4:
         case DeviceConnectX4LX:
         case DeviceConnectX5:
+        case DeviceBlueField:
             isFifthGen = true;
             break;
         default:

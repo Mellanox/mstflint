@@ -31,7 +31,7 @@
  */
 
 
-#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
+#if !defined(UEFI_BUILD) && !defined(NO_CS_CMD)
 #include <tools_crypto/tools_md5.h>
 #endif
 #include <cibfw_layouts.h>
@@ -290,8 +290,7 @@ void Fs2Operations::initSectToRead(int imp_index)
 bool Fs2Operations::checkGen(u_int32_t beg,u_int32_t offs, u_int32_t& next, const char *pref,
         VerifyCallBack verifyCallBackFunc)
 {
-    // char         *pr = (char *)alloca(strlen(pref) + 100);
-    char pr[strlen(pref) + 100];
+    char* pr = new char[strlen(pref) + 100];
 
     char         unknown_sect_name[128];
     const char*  sect_name;
@@ -299,10 +298,9 @@ bool Fs2Operations::checkGen(u_int32_t beg,u_int32_t offs, u_int32_t& next, cons
     u_int32_t    size = 0;
     GPH          gph;
     bool is_sect_to_read = false;
-    // printf("-D- checkGen ... \n");
     // GPH
     sprintf(pr, "%s /0x%08x/ (GeneralHeader)", pref, offs+beg);
-    READBUF((*_ioAccess), offs + beg, &gph, sizeof(GPH), pr);
+    readBufAux((*_ioAccess), offs + beg, &gph, sizeof(GPH), pr);
     TOCPUBY(gph);
 
     // Body
@@ -310,11 +308,8 @@ bool Fs2Operations::checkGen(u_int32_t beg,u_int32_t offs, u_int32_t& next, cons
 
     // May be BOOT3?
     if (gph.type < H_FIRST  ||  gph.type >= H_LAST) {
-        if (part_cnt > 2) {
-            //report_callback(verifyCallBackFunc, "%s /0x%x/ - Invalid partition type (%d)\n",
-            //       pref, offs+beg, gph.type);
-            //return false;
-        } else {
+        if (part_cnt <= 2) {
+            delete[] pr;
             return checkBoot2(beg, offs, next, _isFullVerify, pref, verifyCallBackFunc);
         }
     }
@@ -354,6 +349,7 @@ bool Fs2Operations::checkGen(u_int32_t beg,u_int32_t offs, u_int32_t& next, cons
     if (size > MAX_SECTION_SIZE) {
         report_callback(verifyCallBackFunc, "%s - size too big (0x%x)\n",
                pr, size);
+        delete[] pr;
         return false;
     }
     if (is_sect_to_read) {
@@ -362,7 +358,7 @@ bool Fs2Operations::checkGen(u_int32_t beg,u_int32_t offs, u_int32_t& next, cons
         std::vector<u_int8_t> buffv(size);
         u_int32_t *buff = (u_int32_t*)(&(buffv[0]));
 
-        READBUF((*_ioAccess), offs+sizeof(gph), buff, size, pr);
+        readBufAux((*_ioAccess), offs+sizeof(gph), buff, size, pr);
 
         TOCPUn(buff,size/4);
         CRCBY(crc, gph);
@@ -378,21 +374,22 @@ bool Fs2Operations::checkGen(u_int32_t beg,u_int32_t offs, u_int32_t& next, cons
         bool blank_crc = false;
 
         if (gph.type == H_GUID && crc_act == 0xffff) {
-        	// in case we get 0xffff as crc BUT the section is not empty (i.e not ffffs)
-        	//check the 64 bits of the NGUID (node guid) located at offs + sizeof(gph)
-        	u_int64_t nguid;
-        	READBUF((*_ioAccess), offs+sizeof(gph), (u_int8_t*)&nguid, 8, pr);
-        	if (nguid == 0xffffffffffffffffULL) {
-        		blank_crc = true;
-        		_fs2ImgInfo.ext_info.blank_guids = true;
-        	}
+            // in case we get 0xffff as crc BUT the section is not empty (i.e not ffffs)
+            //check the 64 bits of the NGUID (node guid) located at offs + sizeof(gph)
+            u_int64_t nguid;
+            READBUF((*_ioAccess), offs+sizeof(gph), (u_int8_t*)&nguid, 8, pr);
+            if (nguid == 0xffffffffffffffffULL) {
+                blank_crc = true;
+                _fs2ImgInfo.ext_info.blank_guids = true;
+            }
         }
 
         if (!CheckAndPrintCrcRes(pr, blank_crc, offs, crc_act, crc.get(), false, verifyCallBackFunc)) {
+            delete[] pr;
             return false;
-
         }
-
+        delete[] pr;
+        pr = (char*) NULL;
         _ioAccess->get_image_crc() << crc.get();
         // The image info may be null, please check that before using it.
         if (gph.type == H_FW_CONF) {
@@ -421,6 +418,9 @@ bool Fs2Operations::checkGen(u_int32_t beg,u_int32_t offs, u_int32_t& next, cons
     _fwImgInfo.lastImageAddr = offs + size + sizeof(gph) + 4;  // the 4 is for the trailing crc
     next = gph.next;
 
+    if (pr) {
+        delete[] pr;
+    }
     return true;
 } // checkGen
 
@@ -444,7 +444,7 @@ bool Fs2Operations::checkList(u_int32_t offs, u_int32_t fw_start, const char *pr
 bool Fs2Operations::Fs2Verify(VerifyCallBack verifyCallBackFunc, bool is_striped_image, bool both_images, bool only_get_start, bool ignore_full_image_crc,
                               bool force_no_striped_image)
 {
-    u_int32_t cntx_image_start[CNTX_START_POS_SIZE];
+    u_int32_t cntx_image_start[CNTX_START_POS_SIZE] = {0};
     u_int32_t cntx_image_num;
 
     bool      ret = true;
@@ -577,10 +577,11 @@ bool Fs2Operations::Fs2Verify(VerifyCallBack verifyCallBackFunc, bool is_striped
      }
      return ret;
 }
-bool Fs2Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedImage, bool showItoc)
+bool Fs2Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedImage, bool showItoc, bool ignoreDToc)
 {
     // avoid compiler warrning (showItoc is not used in fs2)
     (void)showItoc;
+    (void)ignoreDToc;
 
     initSectToRead(FULL_VERIFY);
     if (!Fs2Verify(verifyCallBackFunc, isStripedImage)) {
@@ -720,13 +721,18 @@ bool Fs2Operations::Fs2Query () {
         // byte size;
         info_size *= 4;
 
-        // u_int8_t* info_buff = (u_int8_t*)alloca(info_size);
-        u_int8_t info_buff[info_size];
-        READBUF((*_ioAccess), info_ptr, info_buff, info_size, "Info Section");
-
-        if (!ParseInfoSect(info_buff, info_size)) {
+        u_int8_t* info_buff = new u_int8_t[info_size];
+        bool rc = readBufAux((*_ioAccess), info_ptr, info_buff, info_size, "Info Section");
+        if (!rc) {
+            delete info_buff;
             return false;
         }
+
+        if (!ParseInfoSect(info_buff, info_size)) {
+            delete info_buff;
+            return false;
+        }
+        delete info_buff;
     }
 
     _fwImgInfo.imageOk = true;
@@ -904,6 +910,8 @@ bool Fs2Operations::Fs2FailSafeBurn(Fs2Operations &imageOps,
                                                                    ExtBurnParams& burnParams) {
     bool allow_nofs = !burnParams.burnFailsafe;
     ProgressCallBack progressFunc = burnParams.progressFunc;
+    ProgressCallBackEx progressFuncEx = burnParams.progressFuncEx;
+    void * progressUserData = burnParams.progressUserData;
 
     Flash  *f = (Flash*)(this->_ioAccess);
     FImage *fim = (FImage*)(imageOps._ioAccess);
@@ -969,7 +977,7 @@ bool Fs2Operations::Fs2FailSafeBurn(Fs2Operations &imageOps,
 
     // Go ahead and burn!
     //const char* image_name = new_image_start == 0 ? "first" : "second";
-    if (!writeImage(progressFunc, 16 , data8 + 16, image_size - 16)) {
+    if (!writeImageEx(progressFuncEx, progressUserData, progressFunc, 16 , data8 + 16, image_size - 16)) {
         return false;
     }
     // Write new signature
@@ -989,7 +997,7 @@ bool Fs2Operations::Fs2FailSafeBurn(Fs2Operations &imageOps,
             // may reside on the flash -
             // Invalidate all images marking on flash except the one we've just burnt
 
-            u_int32_t cntx_image_start[CNTX_START_POS_SIZE];
+            u_int32_t cntx_image_start[CNTX_START_POS_SIZE] = {0};
             u_int32_t cntx_image_num;
 
             FindAllImageStart(_ioAccess, cntx_image_start, &cntx_image_num, _cntx_magic_pattern);
@@ -1146,7 +1154,7 @@ bool Fs2Operations::patchGUIDs (Fs2Operations&   imageOps,
                              guid_t    old_guids[MAX_GUIDS],
                              u_int32_t num_of_old_guids)
 {
-    guid_t*         used_guids;
+    guid_t*         used_guids = (guid_t*)NULL;
     u_int32_t       *buf = ((FImage*)imageOps._ioAccess)->getBuf();
 
     // Call common function
@@ -1599,6 +1607,7 @@ bool Fs2Operations::ReburnNewImage(u_int8_t *data, const char *feature_name, Pro
     if (!is_image) {
         // Modify the flash
         if (!Fs2FailSafeBurn(*((Fs2Operations*)newOps), burnParams)) {
+            delete newOps;
             return false;
         }
     } else {
@@ -1616,10 +1625,12 @@ bool Fs2Operations::ReburnNewImage(u_int8_t *data, const char *feature_name, Pro
         // Re-write the image to the file.
         if (!((FImage*)_ioAccess)->write(0, striped_data, striped_length)) {
             delete[] striped_data;
+            delete newOps;
             return false;
        }
         delete[] striped_data;
     }
+    delete newOps;
     return true;
 }
 
@@ -1769,7 +1780,7 @@ bool Fs2Operations::Fs2SetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc
     // Get the FW types
     SetDevFlags(_fwImgInfo.ext_info.chip_type, _fwImgInfo.ext_info.dev_type, FIT_FS2, ib_dev, eth_dev);
     guid_t* old_guids = _fwImgInfo.imageOk ? _fs2ImgInfo.ext_info.guids : (guid_t*)NULL;
-    guid_t* used_guids;
+    guid_t* used_guids = (guid_t*)NULL;
 
     // Patch the GUIDs and prints any needed warnings
 
@@ -1824,7 +1835,7 @@ bool Fs2Operations::FwBurnRom(FImage* romImg, bool ignoreProdIdCheck, bool ignor
     u_int32_t cntx_image_num;
     FindAllImageStart(romImg, cntx_image_start, &cntx_image_num, _cntx_magic_pattern);
     if (cntx_image_num != 0) {
-        return errmsg("Expecting an expansion ROM image, Received Mellanox FW image.");
+        return errmsg("Expecting an expansion ROM image, Recieved Mellanox FW image.");
     }
 
     if (!Fs2IntQuery()) {
@@ -2093,7 +2104,7 @@ const char* Fs2Operations::FwGetResetRecommandationStr()
 
 bool Fs2Operations::FwCalcMD5(u_int8_t md5sum[16])
 {
-#if defined(UEFI_BUILD) || defined(NO_OPEN_SSL)
+#if defined(UEFI_BUILD) || defined(NO_CS_CMD)
     (void)md5sum;
     return errmsg("Operation not supported");
 #else

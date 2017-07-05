@@ -79,7 +79,11 @@ typedef enum {
     SC_Qrom,
     SC_Check_Sum,
     SC_Time_Stamp,
-    SC_Cache_Image
+    SC_Cache_Image,
+    SC_Sign,
+    SC_Extract_4MB_Image,
+    SC_Set_Public_Key,
+    SC_Set_Forbidden_Versions
 } sub_cmd_t;
 
 class FlintParams {
@@ -135,6 +139,11 @@ public:
     bool use_dev_img_info;
     bool skip_ci_req;
     bool use_dev_rom;
+    bool privkey_specified;
+    string privkey_file;
+    bool uuid_specified;
+    string privkey_uuid;
+    bool no_fw_ctrl;
 };
 
 #endif

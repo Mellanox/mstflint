@@ -64,7 +64,7 @@ enum dm_dev_id
     DeviceInfiniScaleIII,   // UnSupported
     DeviceInfiniHostIIILx,  // UnSupported
     DeviceConnectX,         // UnSupported
-    DeviceConnectX2,       
+    DeviceConnectX2,
     DeviceInfiniScaleIV,
     DeviceBridgeX,          // UnSupported
     DeviceSwitchX,
@@ -73,9 +73,11 @@ enum dm_dev_id
     DeviceConnectX3Pro,
     DeviceSwitchIB,
     DeviceSpectrum,
+    DeviceQuantum,
     DeviceConnectX4,
     DeviceConnectX4LX,
     DeviceConnectX5,
+    DeviceBlueField,
     DeviceFPGA,             // UnSupported
     DeviceSwitchIB2,
     DeviceFPGANewton,
@@ -85,6 +87,7 @@ enum dm_dev_id
     DeviceCableSFP,
     DeviceCableSFP51,
     DeviceCableSFP51Paging,
+    DeviceSpectrum2,
     DeviceDummy,
 
     DeviceEndMarker           // Dummy Device - Marker for indicating end of devices when iterating

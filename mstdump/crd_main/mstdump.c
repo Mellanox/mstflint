@@ -14,12 +14,12 @@
  *      - Redistributions of source code must retain the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer.
- * 
+ *
  *      - Redistributions in binary form must reproduce the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer in the documentation and/or other materials
  *        provided with the distribution.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -28,6 +28,7 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
 
 #include <crdump.h>
@@ -53,8 +54,8 @@ char correct_cmdline[] = "   Mellanox "MSTDUMP_NAME" utility, dumps device inter
    Usage: "MSTDUMP_NAME" [-full] <device> [i2c-slave] [-v[ersion] [-h[elp]]]\n\n\
    -full              :  Dump more expanded list of addresses\n\
                          Note : be careful when using this flag, None safe addresses might be read.\n\
-   -v                 :  Display version info\n\
-   -h                 :  Print this help message\n\
+   -v | --version     :  Display version info\n\
+   -h | --help        :  Print this help message\n\
    Example :\n\
             "MSTDUMP_NAME" "DEV_EXAMPLE"\n";
 
@@ -74,7 +75,7 @@ int main(int argc, char* argv[]) {
     char *endptr;
     u_int8_t new_i2c_slave = 0;
     char device[MAX_DEV_LEN] = {0};
-#if defined(linux)
+#if defined(__linux) || defined (__FreeBSD__)
     if (geteuid() != 0) {
         printf("-E- Permission denied: User is not root\n");
         return 1;
@@ -88,17 +89,18 @@ int main(int argc, char* argv[]) {
 
     for (i = 1; i < argc; ++i) {
         /* check position-independent flags */
-        if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "-help")) {
+        if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "-help") || !strcmp(argv[i], "--help")) {
             fprintf(stdout, "%s", correct_cmdline);
             exit (0);
         }
-        else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "-version")) {
+        else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "-version") || !strcmp(argv[i], "--version")) {
             print_version_string("mstdump", "");
             exit(0);
         }
         else if (!strncmp(argv[i], CAUSE_FLAG, strlen(CAUSE_FLAG))) {
             if (sscanf(argv[i], CAUSE_FLAG"=%i.%d", &cause_addr, &cause_off) != 2) {
                 fprintf(stderr, "Invalid parameters to " CAUSE_FLAG " flag\n");
+                fprintf(stdout, "%s", correct_cmdline);
                 exit(1);
             }
             if (cause_addr < 0 || cause_off < 0) {
@@ -116,6 +118,7 @@ int main(int argc, char* argv[]) {
     }
     if (i >= argc) {
         fprintf(stderr, "Device is not specified in command line. Exiting.\n");
+        fprintf(stdout, "%s", correct_cmdline);
         return 1;
     }
     strncpy(device, argv[i], MAX_DEV_LEN -1);
@@ -153,7 +156,7 @@ int main(int argc, char* argv[]) {
         }
     }
     rc = CRD_OK;
-    rc = crd_init(&context, mf, full, cause_addr, cause_off);
+    rc = crd_init(&context, mf, full, cause_addr, cause_off, NULL);
     if (rc) {
         mclose(mf);
         goto error;

@@ -32,7 +32,9 @@
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-AM_CPPFLAGS = -W  -g -MP -MD -fPIC
+INCLUDES = -I. -I../common
+
+AM_CPPFLAGS = -W  -g -MP -MD $(COMPILER_FPIC) -Werror
 
 noinst_LIBRARIES = libcmdparser.a
 

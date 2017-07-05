@@ -44,6 +44,109 @@
 #include <map>
 #include "mlxcfg_view.h"
 
+using namespace std;
+
+class ParamValue {
+    public:
+        ParamValue(string    size);
+        ParamValue(u_int32_t size) : _size(size) {}
+
+        virtual string      getVal      () = 0;
+        virtual void        setVal      (string s) = 0;
+        virtual void        setVal      (u_int32_t);
+        virtual void        pack        (u_int8_t* buff, string offset) = 0;
+        virtual void        unpack      (u_int8_t* buff, string offset) = 0;
+        virtual u_int32_t   getIntVal   ();
+        virtual void        parseValue  (string, u_int32_t&, string&);
+
+        virtual ~ParamValue() {};
+
+    protected:
+        u_int32_t _size;
+    private:
+        u_int32_t getSizeInBits(string size);
+};
+
+class UnsignedParamValue : public ParamValue {
+    public:
+        UnsignedParamValue(string size)     :   ParamValue(size){}
+        UnsignedParamValue(u_int32_t size)  :   ParamValue(size){}
+
+        virtual string      getVal      ();
+        virtual void        setVal      (string s);
+        virtual void        setVal      (const u_int32_t);
+                void        pack        (u_int8_t* buff, u_int32_t offset);
+                void        pack        (u_int8_t* buff, string offset);
+                void        unpack      (u_int8_t* buff, string offset);
+                void        unpack      (u_int8_t* buff, u_int32_t offset);
+                u_int32_t   getIntVal   ();
+        virtual void        parseValue  (string, u_int32_t&, string&);
+
+        u_int32_t _value;
+
+    protected:
+                void        parseValueAux(string, u_int32_t&, string&, int base = 0);
+};
+
+class EnumParamValue : public UnsignedParamValue {
+    public:
+        EnumParamValue(string size, map<string, u_int32_t> textualValues);
+
+        string  getVal      ();
+        void    setVal      (string     strVal);
+        void    setVal      (u_int32_t  val);
+        void    parseValue  (string, u_int32_t&, string&);
+
+        map<string, u_int32_t> _textualValues;
+};
+
+class BoolParamValue : public EnumParamValue {
+    public:
+        BoolParamValue(string size);
+
+    private:
+        static map<string, u_int32_t> initBoolTextualValues();
+};
+
+class BinaryParamValue : public UnsignedParamValue {
+    public:
+        BinaryParamValue(string size)       : UnsignedParamValue(size) {};
+        BinaryParamValue(u_int32_t size)    : UnsignedParamValue(size) {};
+
+        string  getVal      ();
+        void    setVal      (string val);
+        void    parseValue  (string, u_int32_t&, string&);
+
+        static void trimHexString(string& s);
+};
+
+class StringParamValue : public ParamValue {
+    public:
+        StringParamValue(u_int32_t size) : ParamValue(size) {}
+
+        string  getVal  ();
+        void    setVal  (string s);
+        void    pack    (u_int8_t* buff, string offset);
+        void    unpack  (u_int8_t* buff, string offset);
+
+        string _value;
+};
+
+class BytesParamValue : public ParamValue {
+    public:
+        BytesParamValue(u_int32_t size) : ParamValue(size) {}
+
+        string  getVal      ();
+        void    setVal      (string val);
+        void    setVal      (const vector<u_int32_t>& buffVal);
+        void    parseValue  (string, u_int32_t&, string&);
+        void    pack        (u_int8_t* buff, string offset);
+        void    unpack      (u_int8_t* buff, string offset);
+
+    private:
+        vector<BinaryParamValue> _bytes;
+};
+
 class Param {
 
     private:
@@ -53,52 +156,44 @@ class Param {
              _isTempVarsFound, _isMinValFound, _isMaxValFound, _isRuleFound,
              _isRegexFound, _isPortFound;
     public:
-        std::string _name;
-        std::string _tlvName;
-        std::string _offset;
-        std::string _size;
-        enum ParamType _type;
-        std::string _description;
-        std::map<std::string, u_int32_t> _textualValues;
-        std::string _mlxconfigName;
-        std::string _dependency;
-        std::string _validBit;
-        std::string _tempVars;
-        std::string _minVal;
-        std::string _maxVal;
-        std::string _rule;
-        std::string _regex;
-        u_int32_t _port;
-        u_int32_t _value;
-        u_int32_t _supportedFromVersion;
+        string                  _name;
+        string                  _tlvName;
+        string                  _offset;
+        string                  _size;
+        enum ParamType          _type;
+        string                  _description;
+        map<string, u_int32_t>  _textualValues;
+        string                  _mlxconfigName;
+        string                  _dependency;
+        string                  _validBit;
+        string                  _tempVars;
+        string                  _minVal;
+        string                  _maxVal;
+        string                  _rule;
+        string                  _regex;
+        u_int32_t               _port;
+        ParamValue*             _value;
+        u_int32_t               _supportedFromVersion;
+        u_int32_t               _arrayLength;
 
         Param(int columnsCount, char **dataRow, char **headerRow);
+        ~Param();
 
-        std::string getDisplayName();
-        void getView(ParamView& paramView);
-        void helpAux();
-        void pack(u_int8_t* buff);
-        void unpack(u_int8_t* buff);
-        void setVal(std::string val);
-        std::string getVal(u_int32_t);
-        std::string getVal();
-        void parseBoolValue(std::string valToParse, u_int32_t& val,
-                std::string& strVal);
-        void parseEnumValue(std::string valToParse, u_int32_t& val,
-                std::string& strVal);
-        void parseValue(std::string, u_int32_t&, std::string&);
+        string      getDisplayName  ();
+        void        getView         (ParamView& paramView);
+        void        helpAux         ();
+        void        pack            (u_int8_t* buff);
+        void        unpack          (u_int8_t* buff);
+        void        setVal          (string val);
+        string      getVal          ();
+        void        extractVars     (vector<string>& rulesVars, string rule);
+        void        getRulesTLV     (vector<string>& rulesTlvs);
+        u_int32_t   getSizeInBits   ();
+        void        genXMLTemplate  (string& xmlTemplate, bool withVal);
 
-        void extractVars(std::vector<std::string>& rulesVars, std::string rule);
-        void getRulesTLV(std::vector<std::string>& rulesTlvs);
-
-        u_int32_t getSizeInBits();
-
-        static enum ParamType str2ParamType(const char* s);
-        static void str2TextualValuesMap(const char* s, std::map<std::string, u_int32_t>& m);
-
-        void genXMLTemplate(std::string& xmlTemplate, bool withVal);
+        static enum ParamType   str2ParamType       (const char* s);
+        static void             str2TextualValuesMap(const char* s, map<string, u_int32_t>& m);
 
 };
-
 
 #endif

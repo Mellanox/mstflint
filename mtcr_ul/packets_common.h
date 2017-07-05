@@ -144,22 +144,23 @@
 #       define ARCH_x86_64
 #   elif defined(__ia64__)
 #       define ARCH_ia64
-#   elif defined(__PPC64__)
+#   elif defined(__PPC64__) || defined(__s390x__)
 #       define ARCH_ppc64
 #   elif defined(__PPC__)
 #       define ARCH_ppc
 #   elif defined(__aarch64__)
 #       define ARCH_arm64
+#   elif defined(__arm__)
+#       define ARCH_arm6l
 #   else
 #       error Unknown CPU architecture using the linux OS
 #   endif
 #elif defined(_WIN32)
 
 //#   error Windows OS need to define macros
-#else       /* __linux || __FreeBSD__ */
+#else       // __linux || __FreeBSD__
 #   error Unknown OS
-#endif      /* __linux || __FreeBSD__ */
-
+#endif      // __linux || __FreeBSD__
 
 /**********************************/
 /* define macros for print fields */
@@ -173,7 +174,7 @@
 #   define U8H_FMT  "0x%02x"
 #   define U32D_FMT "%u"
 #   define STR_FMT "%s"
-#elif defined(ARCH_x86) || defined(ARCH_ppc) || defined(__MINGW32__) || defined(UEFI_BUILD)
+#elif defined(ARCH_x86) || defined(ARCH_ppc) || defined(__MINGW32__) || defined(UEFI_BUILD) || defined(ARCH_arm6l)
 #   define U64H_FMT "0x%016llx"
 #   define U64D_FMT "%llu"
 #   define U32H_FMT "0x%08x"

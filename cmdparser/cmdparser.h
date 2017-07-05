@@ -62,8 +62,16 @@ typedef struct option_ifc {
     bool is_mandatory;
 } option_ifc_t;
 
-typedef vector < struct option_ifc > vec_option_t;
+typedef struct optional_help_section_data {
+    // format is:
+    // <str1>: <str2> (with alignments)
+    string name;                    //section's name
+    string str1;                    //left string
+    string str2;                    //right string
+} optional_sec_data_t;
 
+typedef vector < struct option_ifc > vec_option_t;
+typedef vector < pair < string, vector < struct optional_help_section_data > > > optional_sections_t;
 
 class CommandLineRequester {
 protected:
@@ -71,9 +79,14 @@ protected:
     vec_option_t options;
     string name;
     string description;
+    optional_sections_t optional_sections_vec;
 
     // methods
     string BuildOptStr(option_ifc_t &opt);
+    string FormatUsageStr(string str, int str_type_len, int ident_size, int is_not_description, bool is_left_side);
+    string GetUsageOptionalSection(vector<struct optional_help_section_data> section_vec);
+    string GetUsageOptional1Str(vector<struct optional_help_section_data>::iterator it);
+    string GetUsageOptional2Str(vector<struct optional_help_section_data>::iterator it);
 
 public:
     // methods
@@ -87,27 +100,35 @@ public:
             this->options.push_back(options[i]);
     }
     inline void AddOptions(string option_name,
-            char option_short_name,
-            string option_value,
-            string description,
-	    bool hidden = false,
-	    bool is_mandatory = false) {
+        char option_short_name,
+        string option_value,
+        string description,
+        bool hidden = false,
+        bool is_mandatory = false) {
         option_ifc_t opt;
         opt.option_name = option_name;
         opt.option_short_name = option_short_name;
         opt.option_value = option_value;
         opt.description = description;
         opt.hidden = hidden;
-	opt.is_mandatory = is_mandatory;
+        opt.is_mandatory = is_mandatory;
         this->options.push_back(opt);
     }
-    inline void AddDescription(string desc) { this->description = desc; }
+    inline void AddDescription(string desc) {
+        this->description = desc;
+    }
+
     inline vec_option_t& GetOptions() { return this->options; }
     inline string& GetName() { return this->name; }
+
+    // Add the data str1 and/or str2 to the optional help section "section_name".
+    // If "section_name" does not exist, don't worry, it would be created."
+    void AddOptionalSectionData(string section_name = "", string str1 = "", string str2 = "");
 
     string GetUsageSynopsis(bool hidden_options = false);
     string GetUsageDescription();
     string GetUsageOptions(bool hidden_options = false);
+    string GetUsageOptionalSections(vector<string> excluded_sections = vector<string>());
 
     virtual ParseStatus HandleOption(string name, string value) = 0;
 };
@@ -132,7 +153,6 @@ private:
 
     // methods
     void SetLastError(const char *fmt, ...);
-
 public:
     // methods
     CommandLineParser(string parser_name) :
@@ -150,8 +170,11 @@ public:
             bool to_ignore_unknown_options = false,
             list_p_command_line_req *p_ignored_requesters_list = NULL);
 
-    string GetUsage(bool hidden_options = false);
+    string GetSynopsis(bool hidden_options = false);
+    string GetUsage(bool hidden_options = false, vector<string> excluded_sections = vector<string>());
 };
 
 
 #endif          /* not defined _OPT_PARSER_H_ */
+
+

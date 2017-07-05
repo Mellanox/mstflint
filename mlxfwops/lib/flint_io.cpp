@@ -195,7 +195,10 @@ bool FImage::read(u_int32_t addr, void *data, int len, bool verbose, const char*
             if (!fh) {
                 return errmsg("Can not open file \"%s\" - %s", _fname, strerror(errno));
             }
-            fseek(fh, phys_addr, SEEK_SET);
+            if (fseek(fh, phys_addr, SEEK_SET) != 0) {
+                fclose(fh);
+                return errmsg("Failed to read from FW file, offset: %#x - %s", phys_addr, strerror(errno));
+            }
             if (fread((u_int8_t*)data + (chunk_addr - addr), chunk_size, 1, fh) != 1) {
                 fclose(fh);
                 return errmsg("Failed to read from FW file, offset: %#x - %s", phys_addr, strerror(errno));
@@ -908,6 +911,7 @@ bool Flash::is_flash_write_protected()
     int rc;
     write_protect_info_t protect_info;
 
+    memset(&protect_info, 0x0, sizeof(protect_info));
     if (_attr.write_protect_support) {
         for (bank = 0; bank < _attr.banks_num; bank++) {
             rc = mf_get_write_protect(_mfl, bank, &protect_info);

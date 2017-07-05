@@ -41,19 +41,22 @@ LAYOUTS_LIB = $(LAYOUTS_DIR)/libtools_layouts.a
 UTILS_LIB = $(USER_DIR)/mft_utils/libmftutils.a
 CMDIF_DIR = $(USER_DIR)/cmdif
 EXT_LIB_DIR = $(USER_DIR)/ext_libs
+MLXSIGN_DIR = $(USER_DIR)/mlxsign_lib
+MLXSIGN_LIB = $(MLXSIGN_DIR)/libmlxsign.a
+COMPS_MGR_DIR = $(USER_DIR)/fw_comps_mgr
 
 SUBDIRS = mlxconfig_dbs
 
 AM_CPPFLAGS = -I. -I$(USER_DIR) -I$(top_srcdir)/include/mtcr_ul -I$(MTCR_DIR) -I$(COMMON_DIR) $(WIN64_INC)\
-           -I $(LAYOUTS_DIR) -I $(UTILS_DIR) -I$(DEV_MGT_DIR) -I$(CMDIF_DIR)
+           -I$(LAYOUTS_DIR) -I$(UTILS_DIR) -I$(DEV_MGT_DIR) -I$(CMDIF_DIR) $(COMPILER_FPIC)
 
 
-AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe  -Wno-deprecated-declarations -DDATA_PATH=\"$(pkgdatadir)\"
+AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe  -Wno-deprecated-declarations  $(COMPILER_FPIC) -DDATA_PATH=\"$(pkgdatadir)\"
 bin_PROGRAMS = mstconfig
 
 mstconfig_LDADD = $(UTILS_LIB) $(EXT_LIB_DIR)/sqlite/libsqlite3.a $(EXT_LIB_DIR)/muparser/libmuparser.a\
 								$(CMDIF_DIR)/libcmdif.a ../reg_access/libreg_access.a $(LAYOUTS_LIB) $(MTCR_DIR)/libmtcr_ul.a\
-								$(DEV_MGT_DIR)/libdev_mgt.a $(MLNXOS_PPC_LIBS) $(LIBSTD_CPP) -ldl
+								$(DEV_MGT_DIR)/libdev_mgt.a $(COMPS_MGR_DIR)/libfw_comps_mgr.a $(MLNXOS_PPC_LIBS) $(LIBSTD_CPP) -ldl
 
 if DISABLE_XML2
 AM_CXXFLAGS += -DDISABLE_XML2
@@ -62,8 +65,20 @@ AM_CPPFLAGS += -I$(XML2_INC_DIR)
 mstconfig_LDADD += -lxml2
 endif
 
+if ENABLE_INBAND
+mstconfig_LDADD += $(top_srcdir)/mad_ifc/libmad_ifc.a
+else
+endif
+
+if ENABLE_OPENSSL
+mstconfig_LDADD +=   $(MLXSIGN_LIB) -lcrypto
+else
+AM_CXXFLAGS += -DNO_OPN_SSL
+endif
+
 mstconfig_SOURCES =  mlxcfg_ui.h mlxcfg_parser.cpp mlxcfg_ui.cpp\
-			mlxcfg_status.h mlxcfg_utils.h mlxcfg_utils.cpp mlxcfg_view.h\
+             mlxcfg_expression.h mlxcfg_expression.cpp\
+			 mlxcfg_status.h mlxcfg_utils.h mlxcfg_utils.cpp mlxcfg_view.h\
 			 mlxcfg_db_manager.h mlxcfg_db_manager.cpp mlxcfg_param.h mlxcfg_param.cpp mlxcfg_tlv.h mlxcfg_tlv.cpp\
 			 mlxcfg_commander.h mlxcfg_commander.cpp mlxcfg_generic_commander.h mlxcfg_generic_commander.cpp\
 			 mlxcfg_param_lib.h mlxcfg_param_lib.cpp mlxcfg_4thgen_commander.h mlxcfg_4thgen_commander.cpp

@@ -31,19 +31,34 @@
  */
 
 
+/*Includes*/
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
+#include <algorithm>
 #include <stdio.h>
-#include <unistd.h>
 #include <errno.h>
+#include "compatibility.h"
 #include "my_getopt.h"
 #include "cmdparser.h"
 
 
-/****************************************************/
+/*Constants*/
+#define IDENT_LENGTH 4
+#define PREFIX_SPACE_SIZE 8
+#define LEFT_STR_MAX_LEN 45
+#define RIGHT_STR_MAX_LEN 45
+#define COLON_AND_SPACE_SIZE 2
+#define TAB_SIZE 4
+
+
+/*Declarations*/
 typedef vector < bool > vec_bool;
 
+static string CreateIndentFromInt(int ident_size);
+static void FindAndReplace(string& source, string::size_type pos, string const& find, string const& replace);
+static bool FindAndHandleNewLinePos(string& str, int& product_length, int& local_space_size, int& str_type_len,
+                                    int& new_line_pos, string newline_and_ident, int deli_is_space);
 
 /****************************************************/
 /************class CommandLineRequester**************/
@@ -67,18 +82,91 @@ string CommandLineRequester::BuildOptStr(option_ifc_t &opt)
     return str;
 }
 
+string CommandLineRequester::FormatUsageStr(string str, int str_type_len, int ident_size,
+                                                   int is_not_description, bool is_left_side)
+{
+    string ident = CreateIndentFromInt(ident_size);
+    string newline_and_ident = "\n" + ident;
+    //replace tabs in spaces
+    FindAndReplace(str, 0, "\t", CreateIndentFromInt(TAB_SIZE));
+    //helper variables for formatting
+    int residual = str.size();
+    int initial_residual = residual;
+    int product_length = 0;
+    int local_space_size = is_not_description * ident_size;
+    int new_line_pos = 0;
+    int space_not_exists_count = 0;
+    
+    //iterate while the remained text is longer then a valid line length
+    while (residual >= str_type_len + local_space_size) {
+        //search for a user defined new line.
+        if (FindAndHandleNewLinePos(str, product_length, local_space_size, str_type_len, new_line_pos,
+                                    newline_and_ident, 0)) {
+            goto next_iteration;
+        }
+        //if no such is found. try to find a space to break the line at it's position.
+        if (FindAndHandleNewLinePos(str, product_length, local_space_size, str_type_len, new_line_pos,
+                                    newline_and_ident, 1)) {
+            goto next_iteration;
+        }
+        //if not found, break the line in a middle of a spaceless word.
+        space_not_exists_count++; 
+        new_line_pos = local_space_size + str_type_len + product_length; 
+        str.insert(new_line_pos, newline_and_ident); 
+next_iteration:
+        //update iteration variables 
+        local_space_size = ident_size; 
+        initial_residual += ident_size; 
+        residual = initial_residual - new_line_pos - 1 + space_not_exists_count; 
+        product_length = new_line_pos; 
+    }
+    //handle the last line remained. if it is the left string - add aligned colon.
+    if (is_left_side) { 
+        while (residual < str_type_len + ident_size) { 
+            str += " "; 
+            residual++; 
+        } 
+        str += ": "; 
+    } 
+    //Add user defined new lines in last line remained.
+    FindAndReplace(str, product_length + local_space_size + 1, "\n", newline_and_ident);
+    return str;
+}
 
 /* public methods */
-#define OPT_STR_LEN 40
-#define OPT_DESC_LEN 40
-#define PREFIX_SPACE "        "
-#define PREFIX_SHORT_SPACE "    "
+
+// Add the data str1 and/or str2 to the optional help section "section_name".
+// If "section_name" does not exist, don't worry, it would be created."
+void CommandLineRequester::AddOptionalSectionData(string section_name, string str1, string str2) { 
+    int pos;
+    optional_sec_data_t sec_data;
+    sec_data.name = section_name;
+    sec_data.str1 = str1;
+    sec_data.str2 = str2;
+
+    for (optional_sections_t::iterator it = this->optional_sections_vec.begin(); 
+         it != this->optional_sections_vec.end(); ++it) {
+        if (it->first == section_name) {
+            pos = distance(optional_sections_vec.begin(), it);
+            this->optional_sections_vec[pos].second.push_back(sec_data);
+            return;
+        }
+    }
+    this->optional_sections_vec.push_back(pair < string, vector<struct optional_help_section_data > >
+                                          (section_name, vector < struct optional_help_section_data >()));
+    pos = optional_sections_vec.size() - 1;
+    this->optional_sections_vec[pos].second.push_back(sec_data);
+}
 
 
 string CommandLineRequester::GetUsageSynopsis(bool hidden_options)
 {
-    string str = "";
-    string curr_str = PREFIX_SPACE;
+    string prefix_space = CreateIndentFromInt(PREFIX_SPACE_SIZE);
+    string prefix_short_space = CreateIndentFromInt(IDENT_LENGTH);
+    string curr_str = "";
+    string str = prefix_space;
+    int curr_line_len = PREFIX_SPACE_SIZE;
+    int new_line_pos;
 
     for (vec_option_t::iterator it = this->options.begin(); it != this->options.end(); ++it) {
         if (hidden_options == false) {          //display only not hidden options
@@ -90,25 +178,52 @@ string CommandLineRequester::GetUsageSynopsis(bool hidden_options)
                 continue;
             }
         }
-
         curr_str += (*it).is_mandatory ? "<" : "[";
         curr_str += this->BuildOptStr(*it);
         curr_str += (*it).is_mandatory ? ">" : "]";
-        if (curr_str.size() < OPT_STR_LEN) {
-            curr_str += " ";
-        } else {
+        if (curr_str.size() + curr_line_len <  RIGHT_STR_MAX_LEN + LEFT_STR_MAX_LEN) {
+            if (curr_line_len > PREFIX_SPACE_SIZE) {
+                str += " ";
+            }
+            curr_line_len += curr_str.size();
             str += curr_str;
-            str += "\n";
-            curr_str = PREFIX_SPACE;
+            curr_str = "";
+            continue;
+        }
+        while (curr_str.size() + curr_line_len >= RIGHT_STR_MAX_LEN + LEFT_STR_MAX_LEN) {
+            if (curr_str.size() < RIGHT_STR_MAX_LEN + LEFT_STR_MAX_LEN) {
+                str += "\n" + prefix_space + curr_str;
+                curr_line_len = PREFIX_SPACE_SIZE + curr_str.size();
+                curr_str = "";
+                continue;
+            }
+            new_line_pos = curr_str.find_last_of(" ", RIGHT_STR_MAX_LEN + LEFT_STR_MAX_LEN);
+            if ((size_t)new_line_pos == curr_str.npos) {
+                new_line_pos = RIGHT_STR_MAX_LEN + LEFT_STR_MAX_LEN;
+            } else {
+                new_line_pos += 1;
+            }
+            if (curr_line_len > PREFIX_SPACE_SIZE) {
+                str += "\n" + prefix_space;
+                curr_line_len = PREFIX_SPACE_SIZE;
+            }
+            str += curr_str.substr(0, new_line_pos);
+            curr_str = curr_str.substr(new_line_pos, curr_str.npos);
+            str += "\n" + prefix_space;
+            curr_line_len = PREFIX_SPACE_SIZE;
+        }
+        if (curr_str != "") {
+            str += curr_str;
+            curr_line_len += PREFIX_SPACE_SIZE + curr_str.size();
+            curr_str = "";
         }
     }
-    if (curr_str != PREFIX_SPACE) {
+    if (curr_str != prefix_space) {
         str += curr_str;
         str += "\n";
     }
-
     if (str != "") {
-        str = PREFIX_SHORT_SPACE + this->name + "\n" + str;
+        str = prefix_short_space + this->name + "\n" + str;
     }
 
     return str;
@@ -117,37 +232,12 @@ string CommandLineRequester::GetUsageSynopsis(bool hidden_options)
 
 string CommandLineRequester::GetUsageDescription()
 {
-    if (this->description == "")
-        return "";
-    string str = this->description;
-
-    int prev_found = 0;
-    int found2 = str.find('\n', prev_found);
-    int found = str.find(" ", prev_found);
-    while (found != (int)string::npos) {
-        if ((found2 != (int)string::npos) && (found2 < found)) {
-            prev_found = found2;
-        }
-        if ((found - prev_found) > OPT_DESC_LEN + OPT_STR_LEN) {
-            prev_found = found + 1;
-            str.insert(found + 1, "\n");
-        }
-        found2 = str.find('\n', found + 1);
-        found = str.find(" ", found + 1);
-    }
-
-    prev_found = 0;
-    found = str.find('\n', prev_found);
-    while (found != (int)string::npos) {
-        str.insert(found + 1, PREFIX_SPACE);
-        prev_found = found + strlen(PREFIX_SPACE);
-        found = str.find('\n', prev_found);
-    }
-
-    str = PREFIX_SPACE + str;
-    str = PREFIX_SHORT_SPACE + this->name + "\n" + str + "\n";
-
-    return str;
+    optional_sec_data_t desc_data;
+    desc_data.name = "DESCRIPTION";
+    desc_data.str1 = this->description;
+    vector<struct optional_help_section_data> desc_vector;
+    desc_vector.push_back(desc_data);
+    return this->GetUsageOptionalSection(desc_vector);
 }
 
 
@@ -155,6 +245,8 @@ string CommandLineRequester::GetUsageOptions(bool hidden_options)
 {
     string str = "";
     string opt_str, desc_str;
+    string prefix_space = CreateIndentFromInt(PREFIX_SPACE_SIZE);
+    string prefix_short_space = CreateIndentFromInt(IDENT_LENGTH);
 
     for (vec_option_t::iterator it = this->options.begin(); it != this->options.end(); ++it) {
         if (hidden_options == false) {          //display only not hidden options
@@ -166,48 +258,76 @@ string CommandLineRequester::GetUsageOptions(bool hidden_options)
                 continue;
             }
         }
-
-        opt_str = PREFIX_SPACE;
+        opt_str = prefix_space;
         opt_str += this->BuildOptStr(*it);
-        while (opt_str.size() < OPT_STR_LEN - 2)
-            opt_str += " ";
-        opt_str += ": ";
-
-        desc_str = (*it).description;
-        int prev_found = 0;
-        int found2 = desc_str.find('\n', prev_found);
-        int found = desc_str.find(" ", prev_found);
-        while (found != (int)string::npos) {
-            if ((found2 != (int)string::npos) && (found2 < found)) {
-                prev_found = found2;
-            }
-            if ((found - prev_found + 1) > OPT_DESC_LEN) {
-                prev_found = found + 1;
-                desc_str.insert(found + 1, "\n");
-            }
-            found2 = desc_str.find('\n', found + 1);
-            found = desc_str.find(" ", found + 1);
-        }
-
-        prev_found = 0;
-        found = desc_str.find('\n', prev_found);
-        while (found != (int)string::npos) {
-            for (int i = 0; i < OPT_STR_LEN; ++i)
-                desc_str.insert(found + 1, " ");
-            prev_found = found + OPT_STR_LEN;
-            found = desc_str.find('\n', prev_found);
-        }
-
+        opt_str = FormatUsageStr(opt_str, LEFT_STR_MAX_LEN, PREFIX_SPACE_SIZE, 1, true);
         str += opt_str;
+        desc_str = FormatUsageStr((*it).description, RIGHT_STR_MAX_LEN, LEFT_STR_MAX_LEN + PREFIX_SPACE_SIZE + 
+                        COLON_AND_SPACE_SIZE, 0, false);
         str += desc_str;
         str += "\n";
     }
-
     if (str != "") {
-        str = PREFIX_SHORT_SPACE + this->name + "\n" + str;
+        str = prefix_short_space + this->name + "\n" + str;
     }
-
     return str;
+}
+
+
+string CommandLineRequester::GetUsageOptionalSections(vector<string> excluded_sections)
+{
+    string res = "";
+    int i;
+    optional_sections_t::iterator sec_it;
+
+    for (i=0, sec_it = this->optional_sections_vec.begin(); sec_it != this->optional_sections_vec.end(); 
+         ++i, ++sec_it) {
+        if (find(excluded_sections.begin(), excluded_sections.end(), this->optional_sections_vec[i].first) !=
+            excluded_sections.end()) {
+            continue;
+        }
+        res += this->optional_sections_vec[i].first;
+        res += "\n";
+        res += this->GetUsageOptionalSection(sec_it->second) + "\n";
+    }
+    return res;
+}
+
+string CommandLineRequester::GetUsageOptional1Str(vector<struct optional_help_section_data>::iterator it)
+{
+    string data_string("");
+    string prefix_space = CreateIndentFromInt(PREFIX_SPACE_SIZE);
+    data_string += FormatUsageStr(prefix_space + it->str1, LEFT_STR_MAX_LEN + RIGHT_STR_MAX_LEN, PREFIX_SPACE_SIZE, 1,
+                                  false);
+    data_string += "\n";
+    return data_string;
+}
+
+string CommandLineRequester::GetUsageOptional2Str(vector<struct optional_help_section_data>::iterator it)
+{
+    string data_string("");
+    string prefix_space = CreateIndentFromInt(PREFIX_SPACE_SIZE);
+    data_string += FormatUsageStr(prefix_space + it->str1, LEFT_STR_MAX_LEN , PREFIX_SPACE_SIZE, 1, true);
+    data_string += FormatUsageStr(it->str2, RIGHT_STR_MAX_LEN,
+                                  LEFT_STR_MAX_LEN  + PREFIX_SPACE_SIZE + COLON_AND_SPACE_SIZE, 0, false);
+    data_string += "\n";
+    return data_string;
+}
+
+string CommandLineRequester::GetUsageOptionalSection(vector<struct optional_help_section_data> section_vec)
+{
+    string section_str("");
+    if (section_vec.empty()) {
+        return section_str;
+    }
+    for (vector<struct optional_help_section_data>::iterator it = section_vec.begin(); it != section_vec.end(); ++it) {
+        if (it->str2 != "") {
+            section_str += this->GetUsageOptional2Str(it);
+        } else {
+            section_str += this->GetUsageOptional1Str(it);
+        }
+    }
+    return section_str;
 }
 
 
@@ -280,16 +400,16 @@ int CommandLineParser::AddRequester(CommandLineRequester *p_req)
     return 0;
 }
 
-
-string CommandLineParser::GetUsage(bool hidden_options)
+string CommandLineParser::GetSynopsis(bool hidden_options)
 {
     string res;
+    string prefix_short_space = CreateIndentFromInt(IDENT_LENGTH);
 
     //name
     res = "NAME\n";
-    res += PREFIX_SHORT_SPACE;
+    res += prefix_short_space;
     res += this->name;
-    res += "\n";
+    res += "\n\n";
 
     //synopsis
     res += "SYNOPSIS\n";
@@ -297,13 +417,24 @@ string CommandLineParser::GetUsage(bool hidden_options)
             it != this->p_requesters_list.end(); ++it) {
         res += (*it)->GetUsageSynopsis(hidden_options);
     }
+    res += "\n";
+
+    return res;
+}
+
+string CommandLineParser::GetUsage(bool hidden_options, vector<string> excluded_sections)
+{
+    string res;
+    
+    //synopsis
+    res = GetSynopsis(hidden_options);
 
     //description
     if (hidden_options == false) {
         res += "DESCRIPTION\n";
         for (list_p_command_line_req::iterator it = this->p_requesters_list.begin();
                 it != this->p_requesters_list.end(); ++it) {
-            res += (*it)->GetUsageDescription();
+            res += (*it)->GetUsageDescription() + "\n";
         }
     }
 
@@ -311,7 +442,13 @@ string CommandLineParser::GetUsage(bool hidden_options)
     res += "OPTIONS\n";
     for (list_p_command_line_req::iterator it = this->p_requesters_list.begin();
             it != this->p_requesters_list.end(); ++it) {
-        res += (*it)->GetUsageOptions(hidden_options);
+        res += (*it)->GetUsageOptions(hidden_options) + "\n";
+    }
+
+    //optinal sections
+    for (list_p_command_line_req::iterator req_it = this->p_requesters_list.begin();
+         req_it != this->p_requesters_list.end(); ++req_it) {
+        res += (*req_it)->GetUsageOptionalSections(excluded_sections);
     }
     return res;
 }
@@ -337,14 +474,14 @@ ParseStatus CommandLineParser::ParseOptions(int argc, char **argv,
         return PARSE_ERROR;
     }
     for (int j = 0; j < argc; ++j) {
-    	 internal_argv[j] = NULL;
+         internal_argv[j] = NULL;
     }
     for (int j = 0; j < argc; ++j) {
         internal_argv[j] = new char[strlen(argv[j]) + 1];
         if (!internal_argv[j]) {
             this->SetLastError("Fail to allocate internal argv[%u] for parsing", j);
             rc = PARSE_ERROR;
-			goto argv_err_exit;
+            goto argv_err_exit;
         }
         strcpy(internal_argv[j], argv[j]);
     }
@@ -371,7 +508,7 @@ ParseStatus CommandLineParser::ParseOptions(int argc, char **argv,
         for (vec_option_t::iterator it2 = (*it)->GetOptions().begin();
                 it2 != (*it)->GetOptions().end(); ++it2) {
             options_str += (*it2).option_short_name;
-            options_arr[i].name = (*it2).option_name.c_str();
+            options_arr[i].name = (char *)(*it2).option_name.c_str();
             if ((*it2).option_value != "") {
                 options_arr[i].has_arg = 1;
                 options_str += ":";
@@ -426,7 +563,7 @@ ParseStatus CommandLineParser::ParseOptions(int argc, char **argv,
 do_handle_option:
         CommandLineRequester *p_req = this->long_opt_to_req_map[long_opt_name];
         bool ignore_this_req = false;
-        if (p_ignored_requesters_list)
+        if (p_ignored_requesters_list) {
             for (list_p_command_line_req::iterator it = p_ignored_requesters_list->begin();
                     it != p_ignored_requesters_list->end(); ++it) {
                 if (p_req == (*it)) {
@@ -434,6 +571,7 @@ do_handle_option:
                     break;
                 }
             }
+        }
         if (ignore_this_req == false) {
             curr_result = p_req->HandleOption(long_opt_name, (tools_optarg == NULL) ? "" : tools_optarg);
             if (curr_result) {
@@ -470,9 +608,52 @@ parse_exit:
     delete [] options_arr;
     return rc;
 argv_err_exit:
-	for (int i = 0; i < argc; ++i)
+    for (int i = 0; i < argc; ++i)
         delete [] internal_argv[i];
     delete [] internal_argv;
+    if (options_arr) {
+        delete [] options_arr;
+    }
     return rc;
 }
 
+
+/*Static functions*/
+
+static string CreateIndentFromInt(int ident_size)
+{
+    string ident = "";
+    int i;
+    for (i = 0; i < ident_size; i++) {
+        ident += " ";
+    }
+    return ident;
+}
+
+
+static void FindAndReplace(string& source, string::size_type pos, string const& find, string const& replace)
+{
+    for(string::size_type i = pos; (i = source.find(find, i)) != string::npos;) {
+        source.replace(i, find.length(), replace);
+        i += replace.length();
+    }
+}
+
+
+static bool FindAndHandleNewLinePos(string& str, int& product_length, int& local_space_size, int& str_type_len,
+                                    int& new_line_pos, string newline_and_ident, int deli_is_space)
+{
+    int plus_one_for_space = 1 * deli_is_space;
+    if (!deli_is_space) {
+        new_line_pos = str.substr(product_length + local_space_size, str_type_len).find("\n");
+    } else {
+        new_line_pos = str.substr(product_length + local_space_size + 1, str.npos).
+                               find_last_of(" ", str_type_len - 1);
+    }
+    if ((size_t)new_line_pos != str.npos) {
+        new_line_pos += local_space_size + product_length + plus_one_for_space;
+        str.replace(new_line_pos, 1, newline_and_ident);
+        return true;
+    }
+    return false;
+}

@@ -63,8 +63,6 @@
 #include <unistd.h>
 
 #include <netinet/in.h>
-#include <endian.h>
-#include <byteswap.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -90,35 +88,6 @@
 #include "mtcr_icmd_cif.h"
 #ifndef MST_UL
 #include "../mtcr_mlnxos.h"
-#endif
-#ifndef __be32_to_cpu
-#define __be32_to_cpu(x) ntohl(x)
-#endif
-#ifndef __cpu_to_be32
-#define __cpu_to_be32(x) htonl(x)
-#endif
-
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-#ifndef __cpu_to_le32
-#define  __cpu_to_le32(x) (x)
-#endif
-#ifndef __le32_to_cpu
-#define  __le32_to_cpu(x) (x)
-#endif
-#elif __BYTE_ORDER == __BIG_ENDIAN
-#ifndef __cpu_to_le32
-#define  __cpu_to_le32(x) bswap_32(x)
-#endif
-#ifndef __le32_to_cpu
-#define  __le32_to_cpu(x) bswap_32(x)
-#endif
-#else
-#ifndef __cpu_to_le32
-#define  __cpu_to_le32(x) bswap_32(__cpu_to_be32(x))
-#endif
-#ifndef __le32_to_cpu
-#define  __le32_to_cpu(x) __be32_to_cpu(bswap_32(x))
-#endif
 #endif
 
 #define CX3_SW_ID    4099
@@ -236,7 +205,8 @@ static int mtcr_connectx_flush(void *ptr, int fdlock)
     *((u_int32_t *) ((char *) ptr + 0xf0380)) = 0x0;
     do {
         asm volatile ("":::"memory");
-        value = __be32_to_cpu(*((u_int32_t * )((char * )ptr + 0xf0380)));
+        u_int32_t tmp = *((u_int32_t * )((char * )ptr + 0xf0380));
+        value = __be32_to_cpu(tmp);
     } while (value);
     rc = _flock_int(fdlock, LOCK_UN);
     CHECK_LOCK(rc)
@@ -258,12 +228,12 @@ int mwrite4_ul(mfile *mf, unsigned int offset, u_int32_t value)
 // TODO: Verify change 'data' type from void* to u_in32_t* does not mess up things
 static int mread_chunk_as_multi_mread4(mfile *mf, unsigned int offset, u_int32_t* data, int length)
 {
-    int i;
+    int i = 0;
     if (length % 4) {
         return EINVAL;
     }
     for (i = 0; i < length; i += 4) {
-        u_int32_t value;
+        u_int32_t value = 0;
         if (mread4_ul(mf, offset + i, &value) != 4) {
             return -1;
         }
@@ -274,12 +244,12 @@ static int mread_chunk_as_multi_mread4(mfile *mf, unsigned int offset, u_int32_t
 
 static int mwrite_chunk_as_multi_mwrite4(mfile *mf, unsigned int offset, u_int32_t* data, int length)
 {
-    int i;
+    int i = 0;
     if (length % 4) {
         return EINVAL;
     }
     for (i = 0; i < length; i += 4) {
-        u_int32_t value;
+        u_int32_t value = 0;
         memcpy(&value, (char*) data + i, 4);
         if (mwrite4_ul(mf, offset + i, value) != 4) {
             return -1;
@@ -298,7 +268,7 @@ static int mwrite_chunk_as_multi_mwrite4(mfile *mf, unsigned int offset, u_int32
 static
 int mtcr_check_signature(mfile *mf)
 {
-    unsigned signature;
+    unsigned signature = 0;
     int rc;
     char* connectx_flush = getenv("CONNECTX_FLUSH");
     rc = mread4_ul(mf, 0xF0014, &signature);
@@ -502,8 +472,9 @@ int mtcr_pcicr_mread4(mfile *mf, unsigned int offset, u_int32_t *value)
         }
         ctx->need_flush = 0;
     }
-    *value = __be32_to_cpu(*((u_int32_t * )((char * )mf->ptr + offset)));
-    return 4;
+    u_int32_t tmp = ((u_int32_t*)mf->ptr)[offset/4];
+    *value = __be32_to_cpu(tmp);
+return 4;
 }
 
 int mtcr_pcicr_mwrite4(mfile *mf, unsigned int offset, u_int32_t value)
@@ -1456,13 +1427,7 @@ static char** get_ib_net_devs(int domain, int bus, int dev, int func, int ib_eth
     struct dirent *dirent;
     char** ib_net_devs_r;
     char sysfs_path[256];
-    DIR* physfndir;
-    /* Check that the DBDF is not for Virtual function */
-    sprintf(sysfs_path, "/sys/bus/pci/devices/%04x:%02x:%02x.%x/physfn", domain, bus, dev, func);
-    if ((physfndir = opendir(sysfs_path)) != NULL) {
-        closedir(physfndir);
-        return NULL;
-    }
+
     if (ib_eth_)
         sprintf(sysfs_path, "/sys/bus/pci/devices/%04x:%02x:%02x.%x/infiniband", domain, bus, dev, func);
     else
@@ -1521,6 +1486,120 @@ mem_error:
     }
 
     return NULL;
+}
+
+static int get_vf_devs(int domain, int bus, int dev, int func, char * buf,
+        int len)
+{
+    int             count = 0;
+    DIR*            physfndir;
+    struct dirent*  _dirent;
+    char            sysfs_path[256];
+    int             pos=0;
+
+    sprintf(sysfs_path, "/sys/bus/pci/devices/%04x:%02x:%02x.%x",
+            domain, bus, dev, func);
+    if ((physfndir = opendir(sysfs_path)) == NULL) {
+        return count;
+    }
+    while ((_dirent = readdir(physfndir)) != NULL) {
+        char *name = _dirent->d_name;
+        int sz=0;
+        if (strstr(name, "virtfn") != name)
+            continue;
+        sz = strlen(name) + 1;
+        if ((pos + sz) > len) {
+            count = -1;
+            closedir(physfndir);
+            return count;
+        }
+        memcpy(&buf[pos], name, sz);
+        pos += sz;
+        count++;
+    }
+    closedir(physfndir);
+    return count;
+}
+
+#define VIRTFN_LINK_NAME_SIZE 128
+#define VIRTFN_PATH_SIZE 128
+static void read_vf_info(vf_info * virtfn_info, u_int16_t domain, u_int8_t bus,
+        u_int8_t dev, u_int8_t func, char * virtfn)
+{
+    char linkname[VIRTFN_LINK_NAME_SIZE];
+    char virtfn_path[VIRTFN_PATH_SIZE];
+    int link_size;
+    MType dev_type;
+    unsigned vf_domain = 0;
+    unsigned vf_bus = 0;
+    unsigned vf_dev = 0;
+    unsigned vf_func = 0;
+    int force;
+
+    sprintf(virtfn_path, "/sys/bus/pci/devices/%04x:%02x:%02x.%x/%s",
+            domain, bus, dev, func, virtfn);
+
+
+    link_size = readlink(virtfn_path, linkname, VIRTFN_LINK_NAME_SIZE - 1);
+    if(link_size < 0) {
+        return;
+    }
+    linkname[link_size] = '\0';
+    strncpy(virtfn_info->dev_name, basename(linkname),
+            sizeof(virtfn_info->dev_name) - 1);
+
+    dev_type = mtcr_parse_name(virtfn_info->dev_name, &force, &vf_domain,
+            &vf_bus, &vf_dev, &vf_func);
+    (void)dev_type;
+
+    virtfn_info->domain = vf_domain;
+    virtfn_info->bus = vf_bus;
+    virtfn_info->dev = vf_dev;
+    virtfn_info->func = vf_func;
+
+    virtfn_info->ib_devs = get_ib_net_devs(vf_domain, vf_bus, vf_dev, vf_func, 1);
+    virtfn_info->net_devs = get_ib_net_devs(vf_domain, vf_bus, vf_dev, vf_func, 0);
+}
+
+vf_info * get_vf_info(u_int16_t domain, u_int8_t bus, u_int8_t dev,
+        u_int8_t func, u_int16_t *len)
+{
+    int         vf_count = 0;
+    char *      vf_devs = NULL;
+    vf_info *   vf_arr = NULL;
+    char *      virtfn;
+    int         i;
+    int         size = 2048;
+
+    // Get list of devices
+    do {
+        if (vf_devs) {
+            free(vf_devs);
+        }
+        size *= 2;
+        vf_devs = (char*) malloc(size);
+        vf_count = get_vf_devs(domain, bus, dev, func, vf_devs, size);
+    } while (vf_count == -1);
+
+    if (vf_count <= 0) {
+        *len = 0;
+        if (vf_devs) {
+            free(vf_devs);
+        }
+        return NULL;
+    }
+    *len = vf_count;
+    virtfn = vf_devs;
+    vf_arr = (vf_info*) malloc(sizeof(vf_info) * vf_count);
+    memset(vf_arr, 0, sizeof(vf_info) * vf_count);
+
+    for (i = 0; i < vf_count; i++) {
+        read_vf_info(&vf_arr[i], domain, bus, dev, func, virtfn);
+        virtfn += strlen(virtfn) + 1;
+    }
+    free(vf_devs);
+
+    return vf_arr;
 }
 
 static void get_numa_node(u_int16_t domain, u_int8_t bus, u_int8_t dev, u_int8_t func, char* data)
@@ -1613,6 +1692,8 @@ dev_info* mdevices_info_v_ul(int mask, int* len, int verbosity)
         dev_info_arr[i].pci.ib_devs  = get_ib_net_devs(domain, bus, dev, func, 1);
         dev_info_arr[i].pci.net_devs = get_ib_net_devs(domain, bus, dev, func, 0);
         get_numa_node(domain, bus, dev, func, (char*)(dev_info_arr[i].pci.numa_node));
+        dev_info_arr[i].pci.virtfn_arr = get_vf_info(domain, bus, dev, func,
+                &(dev_info_arr[i].pci.virtfn_count));
 
         // read configuration space header
         if (read_pci_config_header(domain, bus, dev, func, conf_header)) {
@@ -1636,31 +1717,49 @@ next:
     return dev_info_arr;
 }
 
+static void destroy_ib_net_devs(char ** devs)
+{
+    int j;
+    for (j = 0; devs[j]; j++) {
+        if (devs[j]) {
+            free(devs[j]);
+        }
+    }
+    free(devs);
+}
+
+static void destroy_vf_devs(vf_info * vf_info_arr, int len)
+{
+    int i;
+    if (vf_info_arr) {
+        for (i = 0; i < len; i++) {
+            if(vf_info_arr[i].ib_devs)
+                destroy_ib_net_devs(vf_info_arr[i].ib_devs);
+            if(vf_info_arr[i].net_devs)
+                destroy_ib_net_devs(vf_info_arr[i].net_devs);
+        }
+        free(vf_info_arr);
+    }
+}
 
 void mdevices_info_destroy_ul(dev_info* dev_info, int len)
 {
-    int i, j;
+    int i;
     if (dev_info) {
         for (i = 0; i < len; i++) {
             if (dev_info[i].type == MDEVS_TAVOR_CR &&
-                dev_info[i].pci.ib_devs) {
-                for (j = 0; dev_info[i].pci.ib_devs[j]; j++) {
-                    if (dev_info[i].pci.ib_devs[j]) {
-                        free(dev_info[i].pci.ib_devs[j]);
-                    }
-                }
-                free(dev_info[i].pci.ib_devs);
+                    dev_info[i].pci.ib_devs) {
+                destroy_ib_net_devs(dev_info[i].pci.ib_devs);
             }
             if (dev_info[i].type == MDEVS_TAVOR_CR &&
-                dev_info[i].pci.net_devs) {
-                for (j = 0; dev_info[i].pci.net_devs[j]; j++) {
-                    if (dev_info[i].pci.net_devs[j]) {
-                        free(dev_info[i].pci.net_devs[j]);
-                    }
-                }
-                free(dev_info[i].pci.net_devs);
+                    dev_info[i].pci.net_devs) {
+                destroy_ib_net_devs(dev_info[i].pci.net_devs);
             }
-
+            if (dev_info[i].type == MDEVS_TAVOR_CR &&
+                    dev_info[i].pci.virtfn_arr) {
+                destroy_vf_devs(dev_info[i].pci.virtfn_arr,
+                        dev_info[i].pci.virtfn_count);
+            }
         }
         free(dev_info);
     }
@@ -1781,6 +1880,7 @@ mfile *mopen_ul_int(const char *name, u_int32_t adv_opt)
             goto open_failed;
         }
     }
+
     sprintf(cbuf, "/sys/bus/pci/devices/%4.4x:%2.2x:%2.2x.%1.1x/config", domain, bus, dev, func);
 
     if (force) {
@@ -2024,6 +2124,13 @@ int get_inband_dev_from_pci(char* inband_dev, char* pci_dev)
         }
         sprintf(subdirname, "%s/%s/device", dirname, dir->d_name);
         link_size = readlink(subdirname, linkname, DEV_DIR_MAX_SIZE);
+
+        if (link_size < BDF_NAME_SIZE) {
+            /*
+             * Fixing coverity issue to make [link_size - BDF_NAME_SIZE] valid
+             */
+            continue;
+        }
         dev_type = mtcr_parse_name(&linkname[link_size - BDF_NAME_SIZE], &curr_force, &curr_domain, &curr_bus,
                 &curr_dev, &curr_func);
 
@@ -2088,7 +2195,8 @@ static void mtcr_fix_endianness(u_int32_t *buf, int len)
     int i;
 
     for (i = 0; i < (len / 4); ++i) {
-        buf[i] = __be32_to_cpu(buf[i]);
+        u_int32_t tmp = buf[i];
+        buf[i] = __be32_to_cpu(tmp);
     }
 }
 
@@ -2278,7 +2386,7 @@ static int mreg_send_raw(mfile *mf, u_int16_t reg_id, maccess_reg_method_t metho
     int mad_rc, cmdif_size = 0;
     struct OperationTlv tlv;
     struct reg_tlv tlv_info;
-    u_int8_t buffer[1024];
+    u_int8_t buffer[1024] = {0};
 
     init_operation_tlv(&(tlv), reg_id, method);
     // Fill Reg TLV
@@ -2340,7 +2448,7 @@ static int mreg_send_raw(mfile *mf, u_int16_t reg_id, maccess_reg_method_t metho
 
 static int supports_icmd(mfile* mf)
 {
-    u_int32_t dev_id;
+    u_int32_t dev_id = 0;
 
     if (mread4_ul(mf, HW_ID_ADDR, &dev_id) != 4) { // cr might be locked and retured 0xbad0cafe but we dont care we search for device that supports icmd
         return 0;
@@ -2360,7 +2468,7 @@ static int supports_icmd(mfile* mf)
 
 static int supports_tools_cmdif_reg(mfile* mf)
 {
-    u_int32_t dev_id;
+    u_int32_t dev_id = 0;
     if (mread4_ul(mf, HW_ID_ADDR, &dev_id) != 4) { // cr might be locked and retured 0xbad0cafe but we dont care we search for device that supports tools cmdif
         return 0;
     }
@@ -2449,7 +2557,7 @@ const char* m_err2str(MError status)
    case ME_REG_ACCESS_BAD_METHOD:
        return "Bad method";
    case ME_REG_ACCESS_NOT_SUPPORTED:
-       return "Register access isn't supported by device";
+       return "The Register access is not supported by the device";
    case ME_REG_ACCESS_DEV_BUSY:
        return "Device is busy";
    case ME_REG_ACCESS_VER_NOT_SUPP:
@@ -2465,7 +2573,7 @@ const char* m_err2str(MError status)
    case ME_REG_ACCESS_BAD_PARAM:
        return "Bad parameter";
    case ME_REG_ACCESS_RES_NOT_AVLBL:
-       return "Resource not available";
+       return "Resource unavailable";
    case ME_REG_ACCESS_MSG_RECPT_ACK:
        return "Message receipt ack";
    case ME_REG_ACCESS_UNKNOWN_ERR:
@@ -2475,13 +2583,13 @@ const char* m_err2str(MError status)
    case ME_REG_ACCESS_CONF_CORRUPT:
        return "Config Section Corrupted";
    case ME_REG_ACCESS_LEN_TOO_SMALL:
-       return "given register length too small for Tlv";
+       return "The given Register length is too small for the Tlv";
    case ME_REG_ACCESS_BAD_CONFIG:
-       return "configuration refused";
+       return "The configuration is rejected";
    case ME_REG_ACCESS_ERASE_EXEEDED:
-       return   "erase count exceeds limit";
+       return   "The erase count exceeds its limit";
    case ME_REG_ACCESS_INTERNAL_ERROR:
-       return "FW internal error";
+       return "Firmware internal error";
 
    // ICMD access errors
    case ME_ICMD_STATUS_CR_FAIL:

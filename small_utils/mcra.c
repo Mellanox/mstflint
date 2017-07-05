@@ -147,10 +147,12 @@ int main(int argc, char *argv[])
             break;
 
         case '?':
+            usage(argv[0], 0);
             exit(1);
 
         default:
             fprintf(stderr, "-E- Unknown flag \"%c\"\n", c);
+            usage(argv[0], 0);
             exit(1);
         }
     }
@@ -362,13 +364,16 @@ int main(int argc, char *argv[])
             }
 
             addr = (addr >> 2) << 2;
-            if (mread4_block(mf, addr, data, dowrd_size*4) != dowrd_size*4)
+            if (mread4_block(mf, addr, data, dowrd_size*4) != dowrd_size*4) {
+                free(data);
                 goto access_error;
+            }
 
             // print the dowrds
             for (i = 0; i < dowrd_size; i++) {
                 printf("0x%08x 0x%08x\n", addr + i*4, data[i]);
             }
+            free(data);
         } else {
             if (mread4(mf, addr, &val) != 4)
                 goto access_error;

@@ -19,7 +19,7 @@
  *        copyright notice, this list of conditions and the following
  *        disclaimer in the documentation and/or other materials
  *        provided with the distribution.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -28,6 +28,10 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
+ *  Alaa Al-barari Abarari@asaltech.com
+ *  Version: $Id: crdump.c 20-Feb-2013 $
+ *
  */
 
 #define _GNU_SOURCE
@@ -100,7 +104,7 @@ static char crd_error[256];
 /*
 Store the csv file path at csv_file_path.
  */
-static int crd_get_csv_path(IN dm_dev_id_t dev_type, OUT char *csv_file_path);
+static int crd_get_csv_path(IN dm_dev_id_t dev_type, OUT char *csv_file_path, IN const char * db_path);
 
 /*
 count number of dwords, and store all needed data from csv file at parsed_csv
@@ -125,7 +129,7 @@ Tokenize line for address, len, and enable_adder
 
 static void crd_parse(IN  char *record, IN  char *delim, OUT char arr[][CRD_MAXFLDSIZE], OUT int *field_count);
 
-static int crd_update_csv_path(IN OUT char *csv_file_path);
+static int crd_update_csv_path(IN OUT char *csv_file_path, IN const char * db_path);
 
 static int crd_count_blocks(IN char *csv_file_path, OUT u_int32_t *block_count, u_int8_t read_single_dword);
 
@@ -144,13 +148,13 @@ static char *crd_ltrim(char *s);
     static int crd_get_exec_name_from_path(IN char *str, OUT char *exec_name);
 #endif
 
-int crd_init(OUT crd_ctxt_t **context, IN mfile *mf, IN int is_full, IN int cause_addr, IN int cause_off) {
+int crd_init(OUT crd_ctxt_t **context, IN mfile *mf, IN int is_full, IN int cause_addr, IN int cause_off, IN const char * db_path) {
 
-    dm_dev_id_t dev_type;
-    u_int32_t   dev_id;
-    u_int32_t   chip_rev;
+    dm_dev_id_t dev_type = DeviceUnknown;
+    u_int32_t   dev_id = 0;
+    u_int32_t   chip_rev = 0;
     u_int32_t   number_of_dwords = 0;
-    u_int32_t   block_count;
+    u_int32_t   block_count = 0;
     u_int8_t    read_single_dword = 0;
     char        csv_file_path [CRD_CSV_PATH_SIZE] = {0x0};
 
@@ -175,7 +179,7 @@ int crd_init(OUT crd_ctxt_t **context, IN mfile *mf, IN int is_full, IN int caus
     }
 
     CRD_DEBUG("Device type : 0x%x, device id : 0x%x, chip rev : 0x%x\n", dev_type, dev_id, chip_rev);
-    if ((rc = crd_get_csv_path(dev_type, csv_file_path)) != CRD_OK) {
+    if ((rc = crd_get_csv_path(dev_type, csv_file_path, db_path)) != CRD_OK) {
         return rc;
     }
 
@@ -239,13 +243,13 @@ int crd_get_addr_list(IN crd_ctxt_t *context, OUT crd_dword_t* dword_arr) {
     return CRD_OK;
 }
 
-int crd_dump_data(IN crd_ctxt_t *context, OUT crd_dword_t* dword_arr, IN crd_callback_t func) {
-
+int crd_dump_data(IN crd_ctxt_t *context, OUT crd_dword_t* dword_arr, IN crd_callback_t func)
+{
     u_int32_t i = 0;
     u_int32_t j = 0;
     u_int32_t rc;
     u_int32_t addr;
-    u_int32_t cause_reg;
+    u_int32_t cause_reg = 0;
 
     int total = 0;
     char *data;
@@ -267,6 +271,7 @@ int crd_dump_data(IN crd_ctxt_t *context, OUT crd_dword_t* dword_arr, IN crd_cal
         if (data == NULL) {
             return CRD_MEM_ALLOCATION_ERR;
         }
+        memset(data, 0, context->blocks[i].len * sizeof(u_int32_t));
 
         rc = mread4_block (context->mf, context->blocks[i].addr, (u_int32_t *)data, context->blocks[i].len * sizeof(u_int32_t));
         if (context->blocks[i].len * sizeof(u_int32_t) != rc) {
@@ -278,6 +283,7 @@ int crd_dump_data(IN crd_ctxt_t *context, OUT crd_dword_t* dword_arr, IN crd_cal
         for (j = 0; j< context->blocks[i].len; j++) {
             if ((u_int32_t)total >= context->number_of_dwords) { // dummy check tadah!
                 CRD_DEBUG("value exceeded, something wrong in calculation!");
+                free(data);
                 return CRD_EXCEED_VALUE;
             }
             addr =  context->blocks[i].addr + (j * sizeof(u_int32_t));
@@ -322,7 +328,7 @@ int crd_get_dword_num(IN crd_ctxt_t *context, OUT u_int32_t *arr_size) {
 }
 
 
-static int crd_get_csv_path(IN dm_dev_id_t dev_type, OUT char *csv_file_path) {
+static int crd_get_csv_path(IN dm_dev_id_t dev_type, OUT char *csv_file_path, IN const char * db_path) {
 
     const int dev_name_len = 100;
     char dev_name[100] = {0};
@@ -334,7 +340,7 @@ static int crd_get_csv_path(IN dm_dev_id_t dev_type, OUT char *csv_file_path) {
         return CRD_UNKOWN_DEVICE;
     }
 
-    rc = crd_update_csv_path(csv_file_path);
+    rc = crd_update_csv_path(csv_file_path, db_path);
     if (rc != CRD_OK) {
         return rc;
     }
@@ -585,17 +591,19 @@ static char *crd_trim(char *s){
 }
 #endif 
 
-static int crd_update_csv_path(IN OUT char *csv_file_path) {
+static int crd_update_csv_path(IN OUT char *csv_file_path, IN const char * db_path) {
 
     int       found  = 0;
 #ifdef __WIN__
     char exec_name[CRD_CSV_PATH_SIZE];
+    (void)db_path;
     GetModuleFileName(GetModuleHandle(CRD_MTCR_DLL_NAME), csv_file_path, CRD_CSV_PATH_SIZE);
     crd_get_exec_name_from_path(csv_file_path, exec_name);
     crd_replace(csv_file_path, exec_name, "mstdump_dbs\\");
     found = 1;
 
 #elif defined MST_UL
+    (void)db_path;
     strcat(csv_file_path, DATA_PATH "/");
     found = 1;
 
@@ -606,6 +614,12 @@ static int crd_update_csv_path(IN OUT char *csv_file_path) {
     char      * tmp_value = NULL;
     char      line[CRD_MAXLINESIZE] = {0};
     FILE      *fd;
+
+    if(db_path != NULL && *db_path != '\0')
+    {
+        strncpy(csv_file_path, db_path, CRD_CSV_PATH_SIZE - 1);
+        return CRD_OK;
+    }
     strcat(conf_path, "etc/mft/mft.conf");
     fd = fopen(conf_path, "r");
     if (fd == NULL) {

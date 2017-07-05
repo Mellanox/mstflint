@@ -104,6 +104,8 @@ protected:
     bool getRomsInfo(FBase* io, roms_info_t& romsInfo);
     void displayOneExpRomInfo(const rom_info_t& info);
     void displayExpRomInfo(const roms_info_t& romsInfo, const char *preStr);
+    string getRomProtocolStr(u_int8_t proto);
+    string getRomSuppCpuStr(u_int8_t suppCpu);
 
     static int verifyCbFunc(char* str);
     static int CbCommon(int completion, char*preStr, char* endStr=NULL);
@@ -195,6 +197,7 @@ public:
 class QuerySubCommand : public SubCommand
 {
 private:
+    string printSecurityAttrInfo(u_int32_t m);
     FlintStatus printInfo(const fw_info_t& fwInfo, bool fullQuery);
     bool displayFs3Uids(const fw_info_t& fwInfo);
     bool displayFs2Uids(const fw_info_t& fwInfo);
@@ -204,6 +207,44 @@ public:
     ~QuerySubCommand();
     FlintStatus executeCommand();
     bool verifyParams();
+};
+
+class Extract4MBImageSubCommand : public SubCommand
+{
+private:
+public:
+    Extract4MBImageSubCommand();
+    ~Extract4MBImageSubCommand();
+    FlintStatus executeCommand();
+};
+
+
+class SignSubCommand : public SubCommand
+{
+private:
+public:
+    SignSubCommand();
+    ~SignSubCommand();
+    FlintStatus executeCommand();
+    bool verifyParams();
+};
+
+class SetPublicKeySubCommand : public SubCommand
+{
+private:
+public:
+    SetPublicKeySubCommand();
+    ~SetPublicKeySubCommand();
+    FlintStatus executeCommand();
+};
+
+class SetForbiddenVersionsSubCommand : public SubCommand
+{
+private:
+public:
+    SetForbiddenVersionsSubCommand();
+    ~SetForbiddenVersionsSubCommand();
+    FlintStatus executeCommand();
 };
 
 class VerifySubCommand : public SubCommand

@@ -72,7 +72,7 @@ public:
 
     virtual ~Fs3Operations()  {};
     //virtual void print_type() {printf("-D- FS3 type!\n");};
-    virtual bool FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedImage = false, bool showItoc = false);
+    virtual bool FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedImage = false, bool showItoc = false, bool ignoreDToc = false);
     virtual bool FwQuery(fw_info_t *fwInfo, bool readRom = true, bool isStripedImage = false);
     virtual u_int8_t FwType();
     virtual bool FwInit();
@@ -96,6 +96,11 @@ public:
     virtual bool FwResetNvData();
     virtual bool FwShiftDevData(PrintCallBack progressFunc=(PrintCallBack)NULL);
     virtual const char*  FwGetResetRecommandationStr();
+    bool FwInsertEncSHA256(const char* privPemFile, const  char* uuid, PrintCallBack printFunc=(PrintCallBack)NULL);
+    bool FwInsertSHA256(PrintCallBack printFunc=(PrintCallBack)NULL);
+    virtual bool FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatternAndDevToc);
+    virtual bool FwSetPublicKey(char* fname, PrintCallBack callBackFunc=(PrintCallBack)NULL);
+    virtual bool FwSetForbiddenVersions(char* fname, PrintCallBack callBackFunc=(PrintCallBack)NULL);
     virtual bool FwCalcMD5(u_int8_t md5sum[16]);
     virtual bool FwSetTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer);
     virtual bool FwQueryTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer, bool queryRunning=false);
@@ -119,7 +124,7 @@ protected:
                 bool ignore_crc = false, VerifyCallBack verifyCallBackFunc = (VerifyCallBack)NULL);
     bool Fs3UpdateImgCache(u_int8_t *buff, u_int32_t addr, u_int32_t size);
     virtual bool UpdateImgCache(u_int8_t *buff, u_int32_t addr, u_int32_t size);
-    virtual bool FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_itoc, struct QueryOptions queryOptions);
+    virtual bool FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_itoc, struct QueryOptions queryOptions, bool ignoreDToc = false);
     bool FsIntQueryAux(bool readRom = true, bool quickQuery=true);
     const char* GetSectionNameByType(u_int8_t section_type);
     bool GetImageInfoFromSection(u_int8_t *buff, u_int8_t sect_type, u_int32_t sect_size, u_int8_t check_support_only = 0);
@@ -129,6 +134,7 @@ protected:
     bool GetDevInfo(u_int8_t *buff);
     bool GetImageInfo(u_int8_t *buff);
     bool GetRomInfo(u_int8_t *buff, u_int32_t size);
+    bool GetImgSigInfo(u_int8_t *buff);
     bool DoAfterBurnJobs(const u_int32_t magic_patter[], Fs3Operations &imageOps,
             ExtBurnParams& burnParams, Flash *f,
             u_int32_t new_image_start, u_int8_t  is_curr_image_in_odd_chunks);
@@ -141,6 +147,10 @@ protected:
     bool Fs3ChangeUidsFromBase(fs3_uid_t base_uid, struct cx4fw_guids& guids);
     bool DeviceTimestampEnabled();
     bool RomCommonCheck(bool ignoreProdIdCheck, bool checkIfRomEmpty);
+    bool extractUUIDFromString(const char* uuid, std::vector<u_int32_t>& uuidData);
+
+    bool Fs3UpdatePublicKeysSection(unsigned int size, char *publicKeys,
+                               std::vector<u_int8_t>  &newSectionData);
 
     struct toc_info {
         u_int32_t entry_addr;
@@ -177,7 +187,7 @@ private:
 
 
     bool VerifyTOC(u_int32_t dtoc_addr, bool& bad_signature, VerifyCallBack verifyCallBackFunc, bool show_itoc,
-            struct QueryOptions queryOptions);
+            struct QueryOptions queryOptions, bool ignoreDToc = false);
     bool checkPreboot(u_int32_t* prebootBuff, u_int32_t size, VerifyCallBack verifyCallBackFunc);
     bool CheckTocSignature(struct cibfw_itoc_header *itoc_header, u_int32_t first_signature);
     bool BurnFs3Image(Fs3Operations &imageOps, ExtBurnParams& burnParams);
@@ -224,6 +234,10 @@ private:
     bool getLastFwSAddr(u_int32_t& lastAddr);
     bool getFirstDevDataAddr(u_int32_t& firstAddr);
     virtual bool reburnItocSection(PrintCallBack callBackFunc, bool burnFailsafe=true);
+    virtual u_int32_t getImageSize();
+    virtual void maskDevToc(vector<u_int8_t>& img);
+    virtual void maskImageSignature(vector<u_int8_t>& img);
+    bool FwCalcSHA256(vector<u_int8_t>& sha256);
 
     Tlv_Status_t GetTsObj(TimeStampIFC** tsObj);
 

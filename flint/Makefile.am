@@ -42,7 +42,7 @@ CMDIF_DIR   = $(top_srcdir)/cmdif
 AM_CPPFLAGS = -I$(top_srcdir) -I$(srcdir) -I$(MTCR_DIR) -I$(MFLASH_DIR) -I$(COMMON_DIR) \
            -I$(LAYOUTS_DIR) -I$(MFT_UTILS_DIR) -I$(MTCR_INC_DIR)
 
-mstflint_CXXFLAGS = -Wall -W -g -MP -MD -pipe -DEXTERNAL
+mstflint_CXXFLAGS = -Wall -W -g -MP -MD -pipe -DEXTERNAL $(COMPILER_FPIC)
 bin_PROGRAMS = mstflint
 
 mstflint_SOURCES = flint.cpp flint.h subcommands.cpp subcommands.h\
@@ -56,7 +56,8 @@ mstflint_LDADD =  ../mlxfwops/lib/libmlxfwops.a  \
 		  ../reg_access/libreg_access.a  \
 		  ../dev_mgt/libdev_mgt.a        \
 		  ../mtcr_ul/libmtcr_ul.a        \
-                  ../tools_layouts/libtools_layouts.a \
+          ../tools_layouts/libtools_layouts.a \
+          ../fw_comps_mgr/libfw_comps_mgr.a \
 		  ../mft_utils/libmftutils.a\
 		  $(LIBSTD_CPP) -ldl
 
@@ -67,8 +68,18 @@ else
 mstflint_CXXFLAGS += -DNO_ZLIB
 endif
 
-if ENABLE_OPENSSL
+if ENABLE_CS
 mstflint_LDADD += $(top_srcdir)/tools_crypto/libtools_crypto.a -lcrypto
+else
+endif
+
+if ENABLE_INBAND
+mstflint_LDADD += $(top_srcdir)/mad_ifc/libmad_ifc.a
+else
+endif
+
+if ENABLE_OPENSSL
+mstflint_LDADD += $(top_srcdir)/mlxsign_lib/libmlxsign.a -lcrypto
 else
 endif
 

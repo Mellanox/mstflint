@@ -48,6 +48,7 @@ typedef struct uefi_dev_info {
 	u_int32_t hw_dev_id;
 	u_int32_t rev_id;
 	u_int32_t max_buffer_size;
+	u_int8_t  no_fw_ctrl;
 } uefi_dev_info_t;
 
 typedef struct uefi_dev_extra{

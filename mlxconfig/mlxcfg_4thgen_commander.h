@@ -165,6 +165,7 @@ private:
     bool isLegal(mlxCfgParam cfg);
     int openComChk();
     mlxCfgType cfgParam2Type(mlxCfgParam param);
+    void freeCfgList();
 public:
     FourthGenCommander(mfile* mf, std::string dev);
     ~FourthGenCommander();

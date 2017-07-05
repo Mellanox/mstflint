@@ -168,20 +168,24 @@ int pci_find_capability(int fd, int cap_id)
 	return 0;
 }
 
-int pci_read_vpd_dword_file(int fd, unsigned offset, unsigned char data[4])
+int pci_read_vpd_dword_file(int fd, unsigned offset, unsigned char data[4], int* eof_reached)
 {
+    int cnt=0;
+    *eof_reached = 0;
     if (offset >= VPD_MAX_SIZE || (offset & 0x3)) {
         return -1;
     }
-
     if (lseek(fd, offset, SEEK_SET) < 0)
     {
         fprintf(stderr, "Reached End Of VPD region: %s\n", strerror(errno));
         return errno;
     }
-    if (read(fd, data, 0x4) != 4) {
-        fprintf(stderr, "Failed to read VPD: %s\n", strerror(errno));
-        return errno;
+    if ((cnt = read(fd, data, 0x4)) != 4) {
+        if (cnt < 0) {
+            fprintf(stderr, "Failed to read VPD: %s\n", strerror(errno));
+            return errno;
+        }
+        *eof_reached = 1;
     }
     return 0;
 }
@@ -233,9 +237,10 @@ int vpd_read(int fd, vpd_t vpd, int vpd_path_exists)
     if (vpd_path_exists) {
         unsigned offset;
         int ret;
+        int eof_reached = 0;
         for (offset = 0; offset < VPD_MAX_SIZE; offset += 0x4) {
-            ret = pci_read_vpd_dword_file(fd, offset, vpd + offset);
-            if (ret) {
+            ret = pci_read_vpd_dword_file(fd, offset, vpd + offset, &eof_reached);
+            if (ret || eof_reached) {
                 return ret;
             }
         }

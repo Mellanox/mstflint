@@ -77,8 +77,8 @@ int check_access_type(mflash* mfl)
 
 int sx_get_flash_info_by_type(mflash* mfl, flash_info_t *f_info, int *log2size, u_int8_t *no_flash)
 {
-    int rc;
-    u_int8_t vendor, type, capacity;
+    int rc = 0;
+    u_int8_t vendor = 0, type = 0, capacity = 0;
     unsigned type_index = 0;
 
     mfpa_command_args mfpa_args;
@@ -114,8 +114,8 @@ int sx_get_flash_info_by_type(mflash* mfl, flash_info_t *f_info, int *log2size, 
 
 int sx_block_read_by_type(mflash* mfl, u_int32_t blk_addr, u_int32_t blk_size, u_int8_t* data)
 {
-    int rc, bank;
-    u_int32_t flash_offset;
+    int rc = 0, bank = 0;
+    u_int32_t flash_offset = 0;
 
     if (blk_size > (u_int32_t)mfl->attr.block_write  || blk_size < 4) {
         return MFE_BAD_PARAMS;
@@ -131,8 +131,8 @@ int sx_block_read_by_type(mflash* mfl, u_int32_t blk_addr, u_int32_t blk_size, u
 
 int sx_block_write_by_type(mflash* mfl, u_int32_t addr, u_int32_t size, u_int8_t* data)
 {
-    int rc, bank;
-    u_int32_t flash_offset;
+    int rc = 0, bank = 0;
+    u_int32_t flash_offset = 0;
 
     WRITE_CHECK_ALIGN(addr, mfl->attr.block_write, size);
 
@@ -149,7 +149,7 @@ int sx_block_write_by_type(mflash* mfl, u_int32_t addr, u_int32_t size, u_int8_t
 static int lock_flash_programing_sem(mflash* mfl)
 {
 #ifndef UEFI_BUILD
-    int rc;
+    int rc = 0;
     if (mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_ICMD || mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_INBAND) {
         rc = trm_lock(mfl->trm, TRM_RES_FLASH_PROGRAMING, MAX_FLASH_PROG_SEM_RETRY_CNT);
         if (rc && rc != TRM_STS_RES_NOT_SUPPORTED) {
@@ -168,7 +168,7 @@ static int lock_flash_programing_sem(mflash* mfl)
 static int unlock_flash_programing_sem(mflash* mfl)
 {
 #ifndef UEFI_BUILD
-    int rc;
+    int rc = 0;
     if (mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_ICMD || mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_INBAND) {
         rc = trm_unlock(mfl->trm, TRM_RES_FLASH_PROGRAMING);
         if (rc && rc != TRM_STS_RES_NOT_SUPPORTED) {
@@ -187,7 +187,7 @@ static int unlock_flash_programing_sem(mflash* mfl)
 int sx_flash_lock_by_type(mflash* mfl, int lock_state)
 {
 	// burning through some FW interface , lock flash programing semaphore if possible
-    int rc;
+    int rc = 0;
     if (lock_state) {
         rc = lock_flash_programing_sem(mfl);
     } else {
@@ -201,8 +201,8 @@ int sx_flash_lock_by_type(mflash* mfl, int lock_state)
 
 int sx_erase_sect_by_type(mflash* mfl, u_int32_t addr, u_int32_t erase_size)
 {
-    int rc, bank;
-    u_int32_t flash_addr;
+    int rc = 0, bank = 0;
+    u_int32_t flash_addr = 0;
 
     rc = mfl_get_bank_info(mfl, addr, &flash_addr, &bank); CHECK_RC(rc);
     rc = check_access_type( mfl); CHECK_RC(rc);
@@ -212,7 +212,7 @@ int sx_erase_sect_by_type(mflash* mfl, u_int32_t addr, u_int32_t erase_size)
 
 int mf_update_boot_addr_by_type(mflash* mfl, u_int32_t boot_addr)
 {
-    int rc;
+    int rc = 0;
     if (mfl->access_type == MFAT_UEFI || mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_MLNXOS_CMDIF) {
         // No CR-Space access - use mfpa register
         mfpa_command_args mfpa_args;
@@ -226,8 +226,8 @@ int mf_update_boot_addr_by_type(mflash* mfl, u_int32_t boot_addr)
 
 int sx_set_quad_en (mflash *mfl, u_int8_t quad_en)
 {
-    int bank;
-    int rc;
+    int bank = 0;
+    int rc = 0;
     struct tools_open_mfmc mfmc;
 
     if (!mfl) {
@@ -251,7 +251,7 @@ int sx_set_quad_en (mflash *mfl, u_int8_t quad_en)
 
 int sx_get_quad_en (mflash *mfl, u_int8_t *quad_en)
 {
-    int bank;
+    int bank = 0;
     int rc = MFE_OK;
     struct tools_open_mfmc mfmc;
     int is_first_val = 1;
@@ -285,9 +285,9 @@ int sx_get_quad_en (mflash *mfl, u_int8_t *quad_en)
 int sx_set_write_protect(mflash *mfl, u_int8_t bank_num, write_protect_info_t *protect_info)
 {
     u_int8_t log2_sect_num = 0;
-    u_int8_t sectors_num;
+    u_int8_t sectors_num = 0;
     struct tools_open_mfmc mfmc;
-    int rc;
+    int rc = 0;
 
     if (!mfl || !protect_info) {
         return MFE_BAD_PARAMS;
@@ -342,7 +342,7 @@ int sx_set_write_protect(mflash *mfl, u_int8_t bank_num, write_protect_info_t *p
 
 int     sx_get_write_protect(mflash *mfl, u_int8_t bank_num, write_protect_info_t *protect_info)
 {
-    int rc;
+    int rc = 0;
     struct tools_open_mfmc mfmc;
 
     if (!mfl || !protect_info) {
@@ -364,8 +364,8 @@ int     sx_get_write_protect(mflash *mfl, u_int8_t bank_num, write_protect_info_
 
 int sx_set_dummy_cycles (mflash *mfl, u_int8_t num_of_cycles)
 {
-    int bank;
-    int rc;
+    int bank = 0;
+    int rc = 0;
     struct tools_open_mfmc mfmc;
 
     if (!mfl || num_of_cycles < 1 || num_of_cycles > 15) {
@@ -388,7 +388,7 @@ int sx_set_dummy_cycles (mflash *mfl, u_int8_t num_of_cycles)
 }
 int sx_get_dummy_cycles (mflash *mfl, u_int8_t *num_of_cycles)
 {
-    int bank;
+    int bank = 0;
     int rc = MFE_OK;
     struct tools_open_mfmc mfmc;
     int is_first_val = 1;

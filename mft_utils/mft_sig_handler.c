@@ -43,7 +43,7 @@ static char* s_interrupt_message = NULL;
     static int signals_array[] =
     {SIGINT};
 #else
-    static int signals_array[] = {SIGINT, SIGQUIT, SIGTERM};
+    static int signals_array[] = {SIGINT, SIGQUIT, SIGTERM, SIGUSR1};
 #endif
 
 static void (*prev_handlers[sizeof(signals_array)/sizeof(signals_array[0])])(int sig);

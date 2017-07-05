@@ -61,21 +61,6 @@ enum TLVTarget {
     NIC_INTERNAL
 };
 
-enum TLVClass {
-    Global,
-    Physical_Port,
-    BMC,
-    Per_Host_Per_Function,
-    Per_SWID,
-    NVLog,
-    NVFILE,
-    Per_Host,
-    Physical_Port_Common = 0x81,
-    Per_Host_All_Functions = 0x43,
-    All_Hosts_Per_Function = 0x83,
-    All_Hosts_All_Functions = 0xC3
-};
-
 class TLVConf {
 
     private:
@@ -87,6 +72,7 @@ class TLVConf {
         u_int32_t getGlobalTypeBe();
         u_int32_t getPhysicalPortTypeBe();
         u_int32_t getPerHostFunctionTypeBe();
+        u_int32_t getPerHostTypeBe();
         u_int32_t getTlvTypeBe();
         void mnva(mfile* mf, u_int8_t* buff, u_int16_t len, u_int32_t type,
                 reg_access_method_t method, QueryType qT = QueryNext);
@@ -122,6 +108,7 @@ class TLVConf {
         void updateParamByName(string param, string val);
         u_int32_t getParamValueByName(std::string n);
         Param* findParamByMlxconfigName(std::string n);
+        Param* findParamByName(std::string n);
         void getExprVarsValues(std::vector<std::string>&, std::vector<TLVConf*>,
                 std::map<std::string, u_int32_t>&, std::string);
         void evalTempVars(Param*, std::vector<TLVConf*>,
@@ -136,8 +123,10 @@ class TLVConf {
         void genXMLTemplate(string& xmlTemplate, bool allAttrs, bool withVal,
                 bool defaultAttrVal);
         void genRaw(string& raw);
-        void genBin(vector<u_int32_t>& buff);
+        void genBin(vector<u_int32_t>& buff, bool withHeader = true);
+        bool isAStringParam(string paramName);
         void setAttr(string attr, string val);
+        void invalidate(mfile * mf);
         static void unpackTLVType(TLVClass tlvClass,
                 tools_open_tlv_type& type, u_int32_t& id);
 };

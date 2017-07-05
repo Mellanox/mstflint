@@ -71,7 +71,7 @@ int sx_st_block_access(mfile *mf, u_int32_t flash_addr, u_int8_t bank, u_int32_t
             mfba.data[i] = __le32_to_cpu(*((u_int32_t*)&(data[4*i])));
         }
     }
-    rc = reg_access_mfba (mf, (reg_access_method_t) method, &mfba); CHECK_RC(MError2MfError(rc));
+    rc = reg_access_mfba (mf, (reg_access_method_t) method, &mfba); CHECK_RC(MError2MfError((MError)rc));
 
     // Get data from mfba
     if (method == REG_ACCESS_METHOD_GET) {
@@ -110,7 +110,7 @@ int run_mfpa_command(mfile *mf, u_int8_t access_cmd, mfpa_command_args* mfpa_arg
     if (access_cmd == REG_ACCESS_METHOD_SET) {
         mfpa.boot_address = mfpa_args->boot_address;
     }
-    rc = MError2MfError(reg_access_mfpa_new(mf, access_cmd, &mfpa));
+    rc = MError2MfError(reg_access_mfpa_new(mf, (reg_access_method_t)access_cmd, &mfpa));
 
     if (rc && rc != MFE_REG_ACCESS_BAD_PARAM) {
         // if rc is REG_ACCESS_BAD_PARAM it means we dont have that flash bank connected (no need to fail)
