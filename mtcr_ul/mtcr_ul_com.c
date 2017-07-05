@@ -90,8 +90,6 @@
 #include "../mtcr_mlnxos.h"
 #endif
 
-//#include "../common/compatibility.h"
-
 #define CX3_SW_ID    4099
 #define CX3PRO_SW_ID 4103
 
@@ -251,7 +249,7 @@ static int mwrite_chunk_as_multi_mwrite4(mfile *mf, unsigned int offset, u_int32
         return EINVAL;
     }
     for (i = 0; i < length; i += 4) {
-        u_int32_t value;
+        u_int32_t value = 0;
         memcpy(&value, (char*) data + i, 4);
         if (mwrite4_ul(mf, offset + i, value) != 4) {
             return -1;
@@ -270,7 +268,7 @@ static int mwrite_chunk_as_multi_mwrite4(mfile *mf, unsigned int offset, u_int32
 static
 int mtcr_check_signature(mfile *mf)
 {
-    unsigned signature;
+    unsigned signature = 0;
     int rc;
     char* connectx_flush = getenv("CONNECTX_FLUSH");
     rc = mread4_ul(mf, 0xF0014, &signature);
@@ -441,6 +439,7 @@ int mtcr_mmap(mfile *mf, const char *name, off_t off, int ioctl_needed)
     mf->fd = open(name, O_RDWR | O_SYNC);
     if (mf->fd < 0)
         return -1;
+
     if (ioctl_needed && ioctl(mf->fd, PCIIOC_MMAP_IS_MEM) < 0) {
         err = errno;
         close(mf->fd);
@@ -462,6 +461,7 @@ int mtcr_mmap(mfile *mf, const char *name, off_t off, int ioctl_needed)
 int mtcr_pcicr_mread4(mfile *mf, unsigned int offset, u_int32_t *value)
 {
     ul_ctx_t *ctx = mf->ul_ctx;
+
     if (offset >= MTCR_MAP_SIZE) {
         errno = EINVAL;
         return 0;
@@ -513,6 +513,7 @@ int mtcr_pcicr_open(mfile *mf, const char *name, char* conf_name, off_t off, int
     if (rc) {
         goto end;
     }
+
     rc = mtcr_check_signature(mf);
 end:
     if (rc) {
