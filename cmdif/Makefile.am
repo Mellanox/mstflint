@@ -35,6 +35,7 @@ USER_DIR = $(top_srcdir)
 MTCR_DIR = $(USER_DIR)/include/mtcr_ul
 TOOLS_LAYOUTS_DIR = $(USER_DIR)/tools_layouts
 AM_CPPFLAGS = -I. -I../common -I../tools_layouts  -I$(MTCR_DIR) -I.. -I$(USER_DIR)/mtcr_ul
+CCMDIF_SO = ccmdif.so
 
 AM_CFLAGS = -W -Wall -Werror -g -MP -MD $(COMPILER_FPIC) -DCMDIF_EXPORTS
 CMDIF_VERSION = 1
@@ -42,3 +43,11 @@ noinst_LIBRARIES = libcmdif.a
 
 libcmdif_a_SOURCES = tools_cif.c tools_cif.h icmd_cif_common.c icmd_cif_common.h icmd_cif_open.c icmd_cif_open.h
 
+cmdif_pylibdir = $(libdir)/mstflint/python_tools/
+cmdif_pylib_DATA = ${CCMDIF_SO} cmdif.py
+dist_cmdif_pylib_DATA = cmdif.py
+${CCMDIF_SO}: libcmdif.a
+	$(CC) -g -Wall -pthread -shared ${CFLAGS} *.o -o ${CCMDIF_SO} \
+	-L$(USER_DIR)/tools_layouts -ltools_layouts -L$(USER_DIR)/mtcr_ul -lmtcr_ul
+
+CLEANFILES = ${CCMDIF_SO}

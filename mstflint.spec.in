@@ -8,6 +8,9 @@
 %{!?enablecs: %define enablecs 0}
 %{!?nopenssl: %define nopenssl 1}
 
+%define mstflint_python_tools %{_libdir}/mstflint/python_tools
+
+%define _unpackaged_files_terminate_build 0
 %define debug_package %{nil}
 %define optflags -g -O2
 
@@ -95,6 +98,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/mstvpd
 %{_bindir}/mstmcra
 %{_bindir}/mstconfig
+%{_bindir}/mstfwreset
 
 %{_includedir}/mstflint/mtcr.h
 %{_includedir}/mstflint/mtcr_com_defs.h
@@ -103,10 +107,24 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/mstflint/libmtcr_ul.a
 %{_libdir}/libmtcr_ul.a
 
+%{mstflint_python_tools}/tools_version.py
+%{mstflint_python_tools}/mstfwreset/mstfwreset.py
+%{mstflint_python_tools}/mtcr.py
+%{mstflint_python_tools}/cmtcr.so
+%{mstflint_python_tools}/cmdif.py
+%{mstflint_python_tools}/ccmdif.so
+%{mstflint_python_tools}/regaccess.py
+%{mstflint_python_tools}/rreg_access.so
+%{mstflint_python_tools}/dev_mgt.py
+%{mstflint_python_tools}/c_dev_mgt.so
+
 %{_datadir}/mstflint
 %{_mandir}/man1/*
 
 %changelog
+* Mon Jul 17 2017 Adham Masarwah <adham@dev.mellanox.co.il>
+   Adding mlxfwreset to mstflint
+   
 * Mon May 08 2017 Adrian Chiris <adrianc@dev.mellanox.co.il>
    MFT 4.7.0 Updates
    

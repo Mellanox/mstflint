@@ -1,0 +1,23 @@
+#
+# Generic version for all python tools
+#
+
+# To be replaced by an external script:
+TOOLS_GIT_SHA="@TOOLS_GIT_SHA@"
+MFT_VERSION_STR="@MFT_VERSION_STR@"
+TOOLS_BUILD_TIME="@TOOLS_BUILD_TIME@"
+
+####################################################################
+def GetVersionString(execName, toolVersion = None):
+	# "svn ci" updates the below line
+	res = ""
+	if (toolVersion == None or toolVersion == ""):
+		res = execName + ", "
+	else:
+		res = "%s %s, " % (execName,toolVersion)
+
+	res += "%s, built on %s. Git SHA Hash: %s" % (MFT_VERSION_STR, TOOLS_BUILD_TIME, TOOLS_GIT_SHA)
+	return res;
+####################################################################
+def PrintVersionString(execName, toolVersion = None):
+	print (GetVersionString(execName, toolVersion))

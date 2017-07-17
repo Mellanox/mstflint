@@ -48,11 +48,18 @@ extern "C" {
 
 enum {
     GET_FW_INFO             = 0x8007,
+    GET_ICMD_QUERY_CAP      = 0x8400,
     FLASH_REG_ACCESS        = 0x9001,
 };
 
 int gcif_get_fw_info(mfile *mf,
                      OUT struct connectib_icmd_get_fw_info* fw_info);
+
+int get_icmd_query_cap(mfile *mf, struct connectx4_icmd_query_cap_general* icmd_query_caps);
+
+int gcif_mh_sync(mfile* mf, struct connectx4_icmd_mh_sync* mh_sync);
+
+int gcif_mh_sync_status(mfile* mf, struct connectx4_icmd_mh_sync *mh_sync);
 
 #undef IN
 #undef OUT
