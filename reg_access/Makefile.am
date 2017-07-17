@@ -46,3 +46,14 @@ libreg_access_a_SOURCES = reg_access.c reg_access.h
 libreg_access_a_DEPENDENCIES = $(USER_DIR)/tools_layouts/libtools_layouts.a
 libreg_access_a_LIBADD = $(libreg_access_a_DEPENDENCIES)
 
+RREG_ACCESS_SO = rreg_access.so
+reg_access_pylibdir = $(libdir)/mstflint/python_tools/
+
+reg_access_pylib_DATA = ${RREG_ACCESS_SO} regaccess.py
+dist_reg_access_pylib_DATA = regaccess.py
+
+${RREG_ACCESS_SO}: libreg_access.a
+	$(CC) -g -Wall -pthread -shared ${CFLAGS} *.o -o ${RREG_ACCESS_SO} \
+	-L$(USER_DIR)/tools_layouts -ltools_layouts -L$(MTCR_DIR) -lmtcr_ul
+
+CLEANFILES = ${RREG_ACCESS_SO}

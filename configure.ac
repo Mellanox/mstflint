@@ -134,7 +134,7 @@ AS_IF([test "x$enable_openssl" = "xyes"], [
         AC_CONFIG_FILES(mlxsign_lib/Makefile)
     ])
 
-AC_OUTPUT( Makefile common/Makefile mft_utils/Makefile mtcr_ul/Makefile ext_libs/Makefile ext_libs/sqlite/Makefile ext_libs/muparser/Makefile dev_mgt/Makefile tools_layouts/Makefile reg_access/Makefile \
+AC_OUTPUT( Makefile common/Makefile mft_utils/Makefile mtcr_ul/Makefile mtcr_py/Makefile ext_libs/Makefile ext_libs/sqlite/Makefile ext_libs/muparser/Makefile dev_mgt/Makefile tools_layouts/Makefile reg_access/Makefile \
         cmdif/Makefile tools_res_mgmt/Makefile mlxconfig/Makefile mlxconfig/mlxconfig_dbs/Makefile mflash/Makefile mlxfwops/Makefile mlxfwops/lib/Makefile cmdparser/Makefile flint/Makefile \
  		small_utils/Makefile mstdump/Makefile mstdump/crd_lib/Makefile mstdump/crd_main/Makefile mstdump/mstdump_dbs/Makefile \
  		 fw_comps_mgr/Makefile mad_ifc/Makefile )

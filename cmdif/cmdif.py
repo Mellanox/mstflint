@@ -1,0 +1,148 @@
+
+#--
+#                 - Mellanox Confidential and Proprietary -
+#
+# Copyright (C) Jan 2013, Mellanox Technologies Ltd.  ALL RIGHTS RESERVED.
+#
+# Except as specifically permitted herein, no portion of the information,
+# including but not limited to object code and source code, may be reproduced,
+# modified, distributed, republished or otherwise exploited in any form or by
+# any means for any purpose without the prior written permission of Mellanox
+# Technologies Ltd. Use of software subject to the terms and conditions
+# detailed in the file "LICENSE.txt".
+#--
+
+import os
+import sys
+import platform
+import ctypes
+import mtcr
+
+def ones(n):
+    return (1 << n) - 1
+
+def extractField(val, start, size):
+    return (val & (ones(size)<<start)) >> start
+
+def insertField(val1, start1, val2, start2, size):
+    return val1 & ~(ones(size)<<start1) | (extractField(val2, start2, size) << start1)
+
+class CmdIfException(Exception):
+    pass
+
+##########################
+CMDIF = None
+try:
+    from ctypes import *
+    if platform.system() == "Windows" or os.name == "nt":
+        CMDIF = CDLL("libcmdif-1.dll")
+    else:
+        try:
+            CMDIF = CDLL("ccmdif.so")
+        except:
+            CMDIF = CDLL(os.path.join(os.path.dirname(os.path.realpath(__file__)), "ccmdif.so"))
+except Exception, exp:
+    raise CmdIfException("Failed to load shared library ccmdif.so/libcmdif-1.dll: %s" % exp)
+
+if CMDIF:
+    class CmdIf:
+        ##########################
+        def __init__(self, dev):
+            self.mstDev = dev
+            self.getLastErrFunc = CMDIF.gcif_get_last_err
+            self.getLastErrFunc.restype = c_char_p
+            self.errStrFunc = CMDIF.gcif_err_str
+            self.errStrFunc.restype = c_char_p
+            self.getFwInfoFunc = CMDIF.gcif_get_fw_info
+            self.multiHostSyncFunc = CMDIF.gcif_mh_sync
+            self.multiHostSyncStatusFunc = CMDIF.gcif_mh_sync_status
+            self.getIcmdQueryCap = CMDIF.get_icmd_query_cap
+
+        ##########################
+        def close(self):
+            self.mstDev = None
+
+        ##########################
+        def __del__(self):
+            if self.mstDev:
+                self.close()
+
+        ##########################
+        def sendCmd(self, opcode, data, skipWrite):
+            self.mstDev.icmdSendCmd(opcode, data, skipWrite)
+        
+        ##########################
+        def getFwInfo(self):
+            class FW_INFO_ST(Structure):
+                _fields_ = [("MAJOR", c_uint16), ("SUBMINOR", c_uint16),
+                            ("MINOR", c_uint16), ("Hour", c_uint8),
+                            ("Minutes", c_uint8), ("Seconds", c_uint8),
+                            ("Day", c_uint8), ("Month", c_uint8),
+                            ("Year", c_uint16), ("hash_signature", c_uint16),
+                            ("psid", c_char_p * 17)]
+            getFwInfoStruct = FW_INFO_ST()
+            getFwInfoStructPtr = pointer(getFwInfoStruct)
+            rc = self.getFwInfoFunc(self.mstDev.mf, getFwInfoStructPtr)
+            if rc:
+                raise CmdIfException("Failed to get FW INFO: %s, device maybe in livefish mode." % (self.errStrFunc(rc)))
+            return getFwInfoStruct
+
+        ##########################
+        class MH_SYNC_ST(Structure):
+            _fields_ = [("input_state",                 c_uint8),
+                        ("input_sync_type",             c_uint8),
+                        ("input_ignore_inactive_host",  c_uint8),
+                        ("fsm_state",                   c_uint8),
+                        ("fsm_sync_type",               c_uint8),
+                        ("fsm_ignore_inactive_host",    c_uint8),
+                        ("fsm_host_ready",              c_uint8),
+                        ("fsm_start_uptime",            c_uint32)]
+
+        ##########################
+        def multiHostSync(self, state, syncType, ignoreInactiveHost = 0x0):
+            multiHostSyncOutStruct = self.MH_SYNC_ST()
+            multiHostSyncOutStructPtr = pointer(multiHostSyncOutStruct)
+            multiHostSyncOutStructPtr.contents.input_ignore_inactive_host = c_uint8(ignoreInactiveHost)
+            multiHostSyncOutStructPtr.contents.input_state = c_uint8(state)
+            multiHostSyncOutStructPtr.contents.input_sync_type = c_uint8(syncType)
+            rc = self.multiHostSyncFunc(self.mstDev.mf, multiHostSyncOutStructPtr)
+            if rc:
+                raise CmdIfException("Failed to run multi host icmd: %s (%d)" % (self.errStrFunc(rc), rc))
+            return multiHostSyncOutStruct
+
+        ##########################
+        def multiHostSyncStatus(self):
+            multiHostSyncOutStruct = self.MH_SYNC_ST()
+            multiHostSyncOutStructPtr = pointer(multiHostSyncOutStruct)
+            rc = self.multiHostSyncStatusFunc(self.mstDev.mf, multiHostSyncOutStructPtr)
+            if rc:
+                raise CmdIfException("Failed to run multi host icmd: %s (%d)" % (self.errStrFunc(rc), rc))
+            return multiHostSyncOutStruct
+
+        ##########################
+        class QUERY_CAP_ST(Structure):
+            _fields_ = [("fw_ctrl_update_icmd",                    c_uint8),
+                        ("kdnet_ctrl",                             c_uint8),
+                        ("mh_sync",                                c_uint8),
+                        ("allow_icmd_access_reg_on_all_registers", c_uint8),
+                        ("fw_info_psid",                           c_uint8),
+                        ("nv_access",                              c_uint8)]
+
+        ##########################
+        def isMultiHostSyncSupported(self):
+            queryCapStruct = self.QUERY_CAP_ST()
+            queryCapStructPtr = pointer(queryCapStruct)
+            rc = self.getIcmdQueryCap(self.mstDev.mf, queryCapStructPtr)
+            if rc:
+                raise CmdIfException("Failed to run query cap icmd: %s (%d)" % (self.errStrFunc(rc), rc))
+            return (queryCapStruct.mh_sync == 0x1)
+
+else:
+    raise CmdIfException("Failed to load cmdif.so/cmdif.dll")
+
+####################################################################################
+if __name__ == "__main__":
+    mstdev = mtcr.MstDevice("/dev/mst/mt4113_pciconf0")
+    cmdif = CmdIf(mstdev)
+    
+    cmdif.setItrace(0x1001, 8)

@@ -34,3 +34,25 @@
 
 noinst_HEADERS=compatibility.h bit_slice.h tools_utils.h tools_utils.h tools_version.h
 
+update_prefix = sed -e 's,[@]MST_LIB_DIR[@]${CONF_DISABLE_PATH_UPDATE},$(libdir),g'\
+                    -e 's,[@]MST_BIN_DIR[@]${CONF_DISABLE_PATH_UPDATE},$(bindir),g'\
+                    -e 's,[@]MFTCONF_PREFIX[@],$(prefix),g'
+                    
+update_tools_version = sed -e 's,[@]MFT_VERSION_STR[@],${MFT_VERSION_STR},g' \
+     	          	-e 's,[@]TOOLS_BUILD_TIME[@],${TOOLS_BUILD_TIME},g' \
+                    -e 's,[@]TOOLS_GIT_SHA[@],${TOOLS_GIT_SHA},g'
+
+all: python_wrapper.sh tools_version.py
+	$(update_prefix) < $(srcdir)/python_wrapper.sh > python_wrapper
+	chmod +x python_wrapper
+	
+tools_version.py:
+	$(update_tools_version) < $(srcdir)/tools_version.py.in > tools_version.py
+
+tools_version_pylibdir=$(libdir)/mstflint/python_tools/
+tools_version_pylib_DATA = tools_version.py
+
+EXTRA_DIST = tools_version.py.in python_wrapper.sh
+
+CLEANFILES = python_wrapper tools_version.py
+
