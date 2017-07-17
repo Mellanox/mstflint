@@ -134,7 +134,23 @@ AS_IF([test "x$enable_openssl" = "xyes"], [
         AC_CONFIG_FILES(mlxsign_lib/Makefile)
     ])
 
+TOOLS_BUILD_TIME=`date  +"%b %d %Y\, %H:%M:%S"`
+AC_SUBST(TOOLS_BUILD_TIME)
+
+AC_ARG_VAR(MFT_VERSION_STR, The MSTFLINT version)
+if test x"$MFT_VERSION_STR" == x; then
+    MFT_VERSION_STR="$PACKAGE_STRING"
+fi
+AC_SUBST(MFT_VERSION_STR)
+
+AC_ARG_VAR(TOOLS_GIT_SHA, The MSTFLINT tree git sha hash version)
+if test x"$TOOLS_GIT_SHA" == x; then
+    TOOLS_GIT_SHA="N/A"
+fi
+AC_SUBST(TOOLS_GIT_SHA)
+
 AC_OUTPUT( Makefile common/Makefile mft_utils/Makefile mtcr_ul/Makefile mtcr_py/Makefile ext_libs/Makefile ext_libs/sqlite/Makefile ext_libs/muparser/Makefile dev_mgt/Makefile tools_layouts/Makefile reg_access/Makefile \
         cmdif/Makefile tools_res_mgmt/Makefile mlxconfig/Makefile mlxconfig/mlxconfig_dbs/Makefile mflash/Makefile mlxfwops/Makefile mlxfwops/lib/Makefile cmdparser/Makefile flint/Makefile \
  		small_utils/Makefile mstdump/Makefile mstdump/crd_lib/Makefile mstdump/crd_main/Makefile mstdump/mstdump_dbs/Makefile \
  		 fw_comps_mgr/Makefile mad_ifc/Makefile )
+
