@@ -7,6 +7,8 @@
 %{!?nodc: %define nodc 0}
 %{!?enablecs: %define enablecs 0}
 %{!?nopenssl: %define nopenssl 1}
+%{!?enablefwmgr: %define enablefwmgr 0}
+%{!?CONF_DIR: %define CONF_DIR /etc/mstflint}
 
 %define mstflint_python_tools %{_libdir}/mstflint/python_tools
 
@@ -49,6 +51,10 @@ for network adapters based on Mellanox Technologies chips.
 
 %if %{enablecs}
     config_flags="$config_flags --enable-cs"
+%endif
+
+%if %{enablefwmgr}
+    config_flags="$config_flags --enable-fw-mgr"
 %endif
 
 %if %{buildtype} == "ppc"
@@ -99,6 +105,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/mstmcra
 %{_bindir}/mstconfig
 %{_bindir}/mstfwreset
+%{_bindir}/mstfwmanager
 
 %{_includedir}/mstflint/mtcr.h
 %{_includedir}/mstflint/mtcr_com_defs.h
@@ -120,6 +127,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %{_datadir}/mstflint
 %{_mandir}/man1/*
+%{CONF_DIR}/ca-bundle.crt
 
 %changelog
 * Mon Jul 17 2017 Adham Masarwah <adham@dev.mellanox.co.il>

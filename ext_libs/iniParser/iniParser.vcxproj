@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(SolutionDir)\CommonSettingsStatic.vcxproj.inc" />
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{61E55B18-3FA8-40E6-B24E-C9DC33FFA45D}</ProjectGuid>
+    <RootNamespace>iniParser</RootNamespace>
+    <Keyword>%(Keyword)</Keyword>
+    <WindowsTargetPlatformVersion>%(WindowsTargetPlatformVersion)</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <ClCompile Include="dictionary.c" />
+    <ClCompile Include="iniparser.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="dictionary.h" />
+    <ClInclude Include="iniparser.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

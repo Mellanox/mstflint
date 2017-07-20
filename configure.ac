@@ -23,6 +23,7 @@ dnl Checks for headers
 AC_CHECK_HEADER(termios.h,[CXXFLAGS="${CXXFLAGS} -DHAVE_TERMIOS_H"])
 TOOLS_CRYPTO=""
 MAD_IFC=""
+MLXFWUPDATE=""
 
 COMPILER_FPIC="-fPIC"
 AC_SUBST(COMPILER_FPIC)
@@ -38,6 +39,27 @@ if test "$enable_dc" = "yes"; then
   AC_CHECK_LIB(z, uncompress,, AC_MSG_ERROR([cannot find zlib uncompress() function. Use --disable-dc to remove this dependaency]))
 fi
 
+# FWMANAGER
+AC_MSG_CHECKING(--enable-fw-mgr argument)
+AC_ARG_ENABLE(fw-mgr,
+             [  --enable-fw-mgr        Enable compiling mstfwmanager tool and features],
+             [enable_fw_mgr="yes"],
+             [enable_fw_mgr="no"])
+AC_MSG_RESULT($enable_fw_mgr)
+if test "x$enable_fw_mgr" = "xyes"; then
+    AC_CHECK_HEADER(zlib.h,,AC_MSG_ERROR([cannot find zlib.h . this header is needed for compiling fw manager tool]))
+    AC_CHECK_HEADER(curl/curl.h,,AC_MSG_ERROR([cannot find curl/curl.h . this header is needed for compiling fw manager tool]))
+    AC_CHECK_LIB(z, uncompress,, AC_MSG_ERROR([cannot find zlib uncompress() function.]))
+    AC_CHECK_LIB(boost_regex, regcompA,, AC_MSG_ERROR([cannot find boost_regex regcompA() function. Try re-installing the library...]))
+    CURL_INC_DIR=/usr/include/curl/
+fi
+
+AC_SUBST(CURL_INC_DIR)
+
+AM_CONDITIONAL(ENABLE_FWMGR, [test "x$enable_fw_mgr" = "xyes" ])
+AC_SUBST(ENABLE_FWMGR)
+
+AC_SUBST(ENABLE_FWMGR)
 # XML2
 AC_MSG_CHECKING(--enable-xml2 argument)
 AC_ARG_ENABLE(xml2,
@@ -45,7 +67,7 @@ AC_ARG_ENABLE(xml2,
             [enable_xml2="yes"],
             [enable_xml2="no"])
 AC_MSG_RESULT($enable_xml2)
-if test "x$enable_xml2" = "xyes"; then
+if test [ "x$enable_xml2" = "xyes" ] || [ test "x$enable_fw_mgr" = "xyes" ]; then
     # XML2 checks
     if test ! -f /usr/include/libxml2/libxml/xpath.h; then
         AC_MSG_NOTICE([checking for libxml2... no])
@@ -57,6 +79,7 @@ if test "x$enable_xml2" = "xyes"; then
     AC_CHECK_LIB(xml2, xmlDocDumpFormatMemoryEnc,, AC_MSG_ERROR([cannot find xml2 xmlDocDumpFormatMemoryEnc() function. Try re-installing the library...]))
     AC_SUBST(XML2_INC_DIR)
 fi
+
 AM_CONDITIONAL(DISABLE_XML2, [test  "x$enable_xml2" = "xno"])
 AC_SUBST(DISABLE_XML2)
 
@@ -126,14 +149,6 @@ CXXFLAGS="$CXXFLAGS -Werror -DMST_UL"
 
 AC_CONFIG_FILES( mstflint.spec )
 
-AS_IF([test "x$enable_cs" = "xyes" || test "x$enable_openssl" = "xyes"], [
-        AC_CONFIG_FILES(tools_crypto/Makefile)
-    ])
-    
-AS_IF([test "x$enable_openssl" = "xyes"], [
-        AC_CONFIG_FILES(mlxsign_lib/Makefile)
-    ])
-
 TOOLS_BUILD_TIME=`date  +"%b %d %Y\, %H:%M:%S"`
 AC_SUBST(TOOLS_BUILD_TIME)
 
@@ -148,6 +163,26 @@ if test x"$TOOLS_GIT_SHA" == x; then
     TOOLS_GIT_SHA="N/A"
 fi
 AC_SUBST(TOOLS_GIT_SHA)
+
+AS_IF([test "x$enable_cs" = "xyes" || test "x$enable_openssl" = "xyes"], [
+        AC_CONFIG_FILES(tools_crypto/Makefile)
+    ])
+    
+AS_IF([test "x$enable_openssl" = "xyes"], [
+        AC_CONFIG_FILES(mlxsign_lib/Makefile)
+    ])
+
+AS_IF([test "x$enable_fw_mgr" = "xyes"], [
+        AC_CONFIG_FILES(mlxfwupdate/Makefile)
+        AC_CONFIG_FILES(libmfa/Makefile)
+        AC_CONFIG_FILES(xz_utils/Makefile)
+        AC_CONFIG_FILES(ext_libs/iniParser/Makefile)
+        AC_CONFIG_FILES(ext_libs/json/Makefile)
+        AC_CONFIG_FILES(ext_libs/minixz/Makefile)
+        MLXFWUPDATE="libmfa xz_utils mlxfwupdate"
+    ])
+    
+AC_SUBST(MLXFWUPDATE)
 
 AC_OUTPUT( Makefile common/Makefile mft_utils/Makefile mtcr_ul/Makefile mtcr_py/Makefile ext_libs/Makefile ext_libs/sqlite/Makefile ext_libs/muparser/Makefile dev_mgt/Makefile tools_layouts/Makefile reg_access/Makefile \
         cmdif/Makefile tools_res_mgmt/Makefile mlxconfig/Makefile mlxconfig/mlxconfig_dbs/Makefile mflash/Makefile mlxfwops/Makefile mlxfwops/lib/Makefile cmdparser/Makefile flint/Makefile \

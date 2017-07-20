@@ -33,5 +33,7 @@
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
 SUBDIRS = muparser sqlite
-
+if ENABLE_FWMGR
+SUBDIRS += iniParser minixz json
+endif
 
