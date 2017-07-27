@@ -105,7 +105,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/mstmcra
 %{_bindir}/mstconfig
 %{_bindir}/mstfwreset
-%{_bindir}/mstfwmanager
+%if %{enablefwmgr}
+ %{_bindir}/mstfwmanager
+%{CONF_DIR}/ca-bundle.crt
+%endif
 
 %{_includedir}/mstflint/mtcr.h
 %{_includedir}/mstflint/mtcr_com_defs.h
@@ -127,7 +130,6 @@ rm -rf $RPM_BUILD_ROOT
 
 %{_datadir}/mstflint
 %{_mandir}/man1/*
-%{CONF_DIR}/ca-bundle.crt
 
 %changelog
 * Mon Jul 17 2017 Adham Masarwah <adham@dev.mellanox.co.il>
