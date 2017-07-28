@@ -12,6 +12,17 @@ AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_SRCDIR([README])
 AM_INIT_AUTOMAKE([foreign])
 
+dnl Fix automake error
+dnl see also https://bugs.launchpad.net/geda/+bug/1229074
+dnl
+dnl configure.ac:18: error: possibly undefined macro: AM_PROG_AR
+dnl       If this token and others are legitimate, please use m4_pattern_allow.
+dnl       See the Autoconf documentation.
+dnl make[1]: *** [autogen.ok] Error 1
+dnl $ automake --version
+dnl automake (GNU automake) 1.11.1
+m4_pattern_allow([AM_PROG_AR])
+
 dnl Checks for programs
 AC_PROG_CC
 AC_PROG_CXX
