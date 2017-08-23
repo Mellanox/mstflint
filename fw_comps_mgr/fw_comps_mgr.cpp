@@ -804,7 +804,7 @@ void FwCompsMgr::extractRomInfo(tools_open_mgir* mgir, fwInfoT* fwQuery)
 bool FwCompsMgr::queryFwInfo(fwInfoT* query)
 {
     if (!query) {
-        return FWCOMPS_BAD_PARAM;
+        _lastError = FWCOMPS_BAD_PARAM;
         return false;
     }
     memset(query, 0, sizeof(fwInfoT));

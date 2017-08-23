@@ -31,7 +31,7 @@
 #--
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
-AM_CPPFLAGS = -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common
+AM_CPPFLAGS = -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common 
 
 pkglib_LIBRARIES = libmtcr_ul.a
 
@@ -43,7 +43,7 @@ libmtcr_ul_a_SOURCES = mtcr_ul.c mtcr_ib.h  mtcr_int_defs.h\
 			mtcr_ul_com.h mtcr_ul_com.c\
 			packets_common.c packets_common.h\
 			packets_layout.c packets_layout.h
-libmtcr_ul_a_CFLAGS = -W -Wall -g -MP -MD -fPIC -DMTCR_API="" -DMST_UL
+libmtcr_ul_a_CFLAGS = -W -Wall -g -MP -MD -fPIC -DMTCR_API="" -DMST_UL -Wno-format-overflow
 
 if ENABLE_INBAND
 libmtcr_ul_a_SOURCES += mtcr_ib_ofed.c

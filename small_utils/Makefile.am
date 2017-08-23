@@ -56,9 +56,10 @@ mstmtserver_SOURCES = mtserver.c tcp.c tcp.h
 mstmtserver_CFLAGS = -DMST_UL
 
 
-MLXFWRESET_PYTHON_WRAPPER=mstfwreset
-${MLXFWRESET_PYTHON_WRAPPER}: $(PYTHON_WRAPPER_SCRIPT)
+MSTFWRESET_PYTHON_WRAPPER=mstfwreset
+${MSTFWRESET_PYTHON_WRAPPER}: $(PYTHON_WRAPPER_SCRIPT)
 	cp $(PYTHON_WRAPPER_SCRIPT) $@
 	cp mlxfwreset.py mstfwreset.py
-mlxfwresetlibdir=$(libdir)/mstflint/python_tools/$(MLXFWRESET_PYTHON_WRAPPER)
-mlxfwresetlib_DATA = $(MLXFWRESET_PYTHON_WRAPPER).py
+mstfwresetlibdir=$(libdir)/mstflint/python_tools/$(MSTFWRESET_PYTHON_WRAPPER)
+mstfwresetlib_DATA = $(MSTFWRESET_PYTHON_WRAPPER).py
+
