@@ -59,7 +59,6 @@ mstmtserver_CFLAGS = -DMST_UL
 MSTFWRESET_PYTHON_WRAPPER=mstfwreset
 ${MSTFWRESET_PYTHON_WRAPPER}: $(PYTHON_WRAPPER_SCRIPT)
 	cp $(PYTHON_WRAPPER_SCRIPT) $@
-	cp mlxfwreset.py mstfwreset.py
 mstfwresetlibdir=$(libdir)/mstflint/python_tools/$(MSTFWRESET_PYTHON_WRAPPER)
 mstfwresetlib_DATA = $(MSTFWRESET_PYTHON_WRAPPER).py
 
