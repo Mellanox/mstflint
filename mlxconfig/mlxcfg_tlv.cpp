@@ -594,7 +594,7 @@ void substituteVarsValues(string orgExpr, string& expr,
                 j++;
             }
             if(var[0] == '_' && isTempVars) {
-                tempVar = var.substr(1);//don't take first char(because of exprtk)
+                tempVar = var.substr(1);//don't take first char(because of muParser)
                 expr += tempVar;
             } else {
                 stringstream ss;
