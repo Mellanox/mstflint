@@ -1400,7 +1400,9 @@ def main():
     if platform.system() != "Windows" and os.geteuid() != 0:
         print("-E- Only root user can run this tool.")
         return 1
-
+    if "ppc64" in platform.machine():
+        print("-E- Mstfwreset is not supported on PPC64 platforms")
+        return 1
     # Workaround python "--version" argparse bug:
     verFlag = ""
     helpFlag = ""
