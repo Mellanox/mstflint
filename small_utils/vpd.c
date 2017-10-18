@@ -73,7 +73,7 @@ void print_bin_field(char* key, char* val) {
         sprintf(valTmp + i * 2, "%02x", (u_int8_t)val[i]);
         i++;
     }
-    printf("  %s: (BIN)%c %s\n", key, ' ', valTmp);
+    printf("%s(BIN): %s\n", key, valTmp);
     free(valTmp);
 }
 
