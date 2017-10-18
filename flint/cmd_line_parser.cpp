@@ -113,7 +113,7 @@ SubCmdMetaData::SubCmdMetaData() {
     _sCmds.push_back(new SubCmd("ci", "cache_image", SC_Cache_Image));
     _sCmds.push_back(new SubCmd("", "sign", SC_Sign));
     _sCmds.push_back(new SubCmd("", "extract_fw_data", SC_Extract_4MB_Image));
-    _sCmds.push_back(new SubCmd("", "set_public_keys", SC_Set_Public_Key));
+    _sCmds.push_back(new SubCmd("", "set_public_keys", SC_Set_Public_Keys));
     _sCmds.push_back(new SubCmd("", "set_forbidden_versions", SC_Set_Forbidden_Versions));
 }
 

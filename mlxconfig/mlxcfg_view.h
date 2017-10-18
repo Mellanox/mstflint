@@ -43,6 +43,8 @@
 #include <vector>
 #include <map>
 
+#include "mlxcfg_utils.h"
+
 enum ParamType {
     BOOLEAN_TYPE,
     ENUM,
@@ -69,6 +71,9 @@ enum TLVClass {
 };
 
 typedef struct ParamView {
+    ParamView() : mlxconfigName(""), description(""),
+                  type(BOOLEAN_TYPE), val(MLXCFG_UNKNOWN),
+                  port(0), strVal(""), setVal("") {};
     std::string mlxconfigName;
     std::string description;
     enum ParamType type;
@@ -77,6 +82,8 @@ typedef struct ParamView {
     u_int32_t port;
     std::string strVal;
     std::string setVal;
+    std::vector<u_int32_t> arrayVal;
+    std::vector<std::string> strArrayVal;
 } ParamView;
 
 typedef struct TLVConfView {

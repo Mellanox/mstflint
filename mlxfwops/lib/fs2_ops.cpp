@@ -721,18 +721,15 @@ bool Fs2Operations::Fs2Query () {
         // byte size;
         info_size *= 4;
 
-        u_int8_t* info_buff = new u_int8_t[info_size];
-        bool rc = readBufAux((*_ioAccess), info_ptr, info_buff, info_size, "Info Section");
+        std::vector<u_int8_t> info_buff(info_size);
+        bool rc = readBufAux((*_ioAccess), info_ptr, static_cast<u_int8_t *>(&info_buff[0]), info_size, "Info Section");
         if (!rc) {
-            delete info_buff;
             return false;
         }
 
-        if (!ParseInfoSect(info_buff, info_size)) {
-            delete info_buff;
+        if (!ParseInfoSect(static_cast<u_int8_t *>(&info_buff[0]), info_size)) {
             return false;
         }
-        delete info_buff;
     }
 
     _fwImgInfo.imageOk = true;
@@ -1549,7 +1546,7 @@ bool Fs2Operations::FwSetMFG(guid_t baseGuid, PrintCallBack callBackFunc)
 bool Fs2Operations::FwGetSection (u_int32_t sectType, std::vector<u_int8_t>& sectInfo, bool stripedImage)
 {
     if (sectType != H_FW_CONF && sectType != H_HASH_FILE) {
-        return errmsg("Hash File section not found in the given image.");
+        return errmsg("Unsupported section type.");
     }
     initSectToRead(sectType);
     if (!Fs2Verify((VerifyCallBack)NULL, stripedImage)) {
@@ -1561,7 +1558,7 @@ bool Fs2Operations::FwGetSection (u_int32_t sectType, std::vector<u_int8_t>& sec
         sectInfo = _hashFileSect;
     }
     if (sectInfo.empty()) {
-        return errmsg("Hash File section not found in the given image.");
+        return errmsg("FW section not found in the given image.");
     }
     return true;
 }

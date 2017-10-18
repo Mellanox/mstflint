@@ -56,6 +56,13 @@ enum MfAccessType {
     MFAT_UEFI,
 };
 
+typedef enum {
+    UNKNOWN_BIN = 0x0,
+    CX5_LOW_BIN  = 0x1,
+    CX5_HIGH_BIN = 0x2,
+
+} BinIdT;
+
 typedef struct flash_params {
     const char *type_name;
     int log2size;
@@ -65,7 +72,7 @@ typedef struct flash_params {
 typedef struct write_protect_info {
     u_int8_t is_subsector;
     u_int8_t is_bottom;
-    u_int8_t sectors_num;
+    u_int8_t sectors_num;  // if zero: is_subsector and is_bottom are invalid.
 } write_protect_info_t;
 
 /////////////////////////////////////////////
@@ -80,6 +87,7 @@ typedef struct flash_attr {
     //
     u_int32_t hw_dev_id;
     u_int32_t rev_id;
+    BinIdT    bin_id;
 
     //
     // size:        Total size (in bytes) of all flash devices connected to

@@ -54,7 +54,10 @@ class ParamValue {
         virtual string      getVal      () = 0;
         virtual void        setVal      (string s) = 0;
         virtual void        setVal      (u_int32_t);
+        virtual void        setVal      (vector<string>);
+        virtual void        pack        (u_int8_t* buff, u_int32_t offset) = 0;
         virtual void        pack        (u_int8_t* buff, string offset) = 0;
+        virtual void        unpack      (u_int8_t* buff, u_int32_t offset) = 0;
         virtual void        unpack      (u_int8_t* buff, string offset) = 0;
         virtual u_int32_t   getIntVal   ();
         virtual void        parseValue  (string, u_int32_t&, string&);
@@ -91,6 +94,7 @@ class UnsignedParamValue : public ParamValue {
 class EnumParamValue : public UnsignedParamValue {
     public:
         EnumParamValue(string size, map<string, u_int32_t> textualValues);
+        EnumParamValue(u_int32_t size, map<string, u_int32_t> textualValues);
 
         string  getVal      ();
         void    setVal      (string     strVal);
@@ -126,7 +130,9 @@ class StringParamValue : public ParamValue {
 
         string  getVal  ();
         void    setVal  (string s);
+        void    pack    (u_int8_t* buff, u_int32_t bitOffset);
         void    pack    (u_int8_t* buff, string offset);
+        void    unpack  (u_int8_t* buff, u_int32_t bitOffset);
         void    unpack  (u_int8_t* buff, string offset);
 
         string _value;
@@ -140,11 +146,44 @@ class BytesParamValue : public ParamValue {
         void    setVal      (string val);
         void    setVal      (const vector<u_int32_t>& buffVal);
         void    parseValue  (string, u_int32_t&, string&);
+        void    pack        (u_int8_t* buff, u_int32_t offset);
         void    pack        (u_int8_t* buff, string offset);
+        void    unpack      (u_int8_t* buff, u_int32_t offset);
         void    unpack      (u_int8_t* buff, string offset);
 
     private:
         vector<BinaryParamValue> _bytes;
+};
+
+
+class ArrayParamValue : public ParamValue {
+
+public:
+    ArrayParamValue(string size, u_int32_t count, enum ParamType paramType);
+    ~ArrayParamValue();
+    string              getVal      ();
+    void                setVal      (string val);
+    void                setVal      (vector<string> vals);
+    string              getVal      (u_int32_t index);
+    void                setVal      (string val, u_int32_t index);
+    u_int32_t           getIntVal();
+    vector<u_int32_t>   getIntVals();
+    vector<string>      getStrVals();
+    void                parseValue  (string, u_int32_t&, string&);
+    void                pack        (u_int8_t* buff, u_int32_t offset);
+    void                pack        (u_int8_t* buff, string offset);
+    void                unpack      (u_int8_t* buff, u_int32_t offset);
+    void                unpack      (u_int8_t* buff, string offset);
+
+protected:
+    u_int32_t _elementSizeInBits;
+    vector<ParamValue*> _values;
+};
+
+class EnumArrayParamValue : public ArrayParamValue {
+public:
+    EnumArrayParamValue(string size, u_int32_t count, enum ParamType paramType,
+                        map<string, u_int32_t> textualValues);
 };
 
 class Param {
@@ -185,13 +224,18 @@ class Param {
         void        pack            (u_int8_t* buff);
         void        unpack          (u_int8_t* buff);
         void        setVal          (string val);
+        void        setVal          (string val, u_int32_t index);
+        void        setVal          (vector<string> vals);
         string      getVal          ();
+        string      getVal          (u_int32_t index);
         void        extractVars     (vector<string>& rulesVars, string rule);
         void        getRulesTLV     (vector<string>& rulesTlvs);
         u_int32_t   getSizeInBits   ();
         void        genXMLTemplate  (string& xmlTemplate, bool withVal);
+        void        genXMLTemplateAux  (string& xmlTemplate, bool withVal, bool isPartOfArray, u_int32_t index);
 
         static enum ParamType   str2ParamType       (const char* s);
+        static string           paramType2Str       (enum ParamType);
         static void             str2TextualValuesMap(const char* s, map<string, u_int32_t>& m);
 
 };

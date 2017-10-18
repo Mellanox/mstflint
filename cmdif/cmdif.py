@@ -71,6 +71,7 @@ if CMDIF:
             self.getLastErrFunc.restype = c_char_p
             self.errStrFunc = CMDIF.gcif_err_str
             self.errStrFunc.restype = c_char_p
+            self.setItraceFunc = CMDIF.gcif_set_itrace
             self.getFwInfoFunc = CMDIF.gcif_get_fw_info
             self.multiHostSyncFunc = CMDIF.gcif_mh_sync
             self.multiHostSyncStatusFunc = CMDIF.gcif_mh_sync_status
@@ -140,7 +141,6 @@ if CMDIF:
         ##########################
         class QUERY_CAP_ST(Structure):
             _fields_ = [("fw_ctrl_update_icmd",                    c_uint8),
-                        ("kdnet_ctrl",                             c_uint8),
                         ("mh_sync",                                c_uint8),
                         ("allow_icmd_access_reg_on_all_registers", c_uint8),
                         ("fw_info_psid",                           c_uint8),

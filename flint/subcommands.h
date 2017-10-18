@@ -89,7 +89,7 @@ protected:
     string _example;
     char  _errBuff[FLINT_ERR_LEN];
     sub_cmd_t _cmdType;
-
+    bool _mccSupported;
 
     //Methods that are commonly used in the various subcommands:
     //TODO: add middle classes and segregate as much of these common methods between these classes
@@ -111,6 +111,7 @@ protected:
     static int CbCommon(int completion, char*preStr, char* endStr=NULL);
     static int burnCbFs2Func(int completion);
     static int burnCbFs3Func(int completion);
+    static int advProgressFunc(int completion, const char* stage, prog_t type, int* unknownProgress);
     static int burnBCbFunc(int completion);
     static int vsdCbFunc(int completion);
     static int setKeyCbFunc(int completion);
@@ -151,7 +152,7 @@ protected:
 
 
 public:
-    SubCommand(): _fwOps(NULL), _imgOps(NULL), _io(NULL), _v(Wtv_Uninitilized), _maxCmdParamNum(-1),  _minCmdParamNum(-1)
+    SubCommand(): _fwOps(NULL), _imgOps(NULL), _io(NULL), _v(Wtv_Uninitilized), _maxCmdParamNum(-1),  _minCmdParamNum(-1), _mccSupported(false)
     {
         _cmdType = SC_No_Cmd;
         memset(_errBuff, 0, sizeof(_errBuff));
@@ -177,6 +178,7 @@ private:
     fw_info_t _imgInfo;
     FwOperations::ExtBurnParams _burnParams;
     bool _devQueryRes;
+    int _unknownProgress; // used to trace the progress of unknown progress.
 
     FlintStatus burnFs3();
     FlintStatus burnFs2();
@@ -229,12 +231,12 @@ public:
     bool verifyParams();
 };
 
-class SetPublicKeySubCommand : public SubCommand
+class SetPublicKeysSubCommand : public SubCommand
 {
 private:
 public:
-    SetPublicKeySubCommand();
-    ~SetPublicKeySubCommand();
+    SetPublicKeysSubCommand();
+    ~SetPublicKeysSubCommand();
     FlintStatus executeCommand();
 };
 

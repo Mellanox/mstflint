@@ -127,6 +127,7 @@ int    prompt(const char* str, int yes_no_);
 FILE*  createOutFile(string &fileName, bool fileSpecified);
 int    progressCB_nodisplay(int completion);
 int    progressCB_display(int completion);
+int    advProgressFunc_display(int completion, const char* stage, prog_t type, int* unknownProgress);
 bool   checkCmdParams(CmdLineParams &cmd_params, config_t &config);
 bool   initConfig(config_t &config, char* argv[], CmdLineParams &cmd_params);
 bool   getIniParams(config_t &config);

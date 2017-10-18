@@ -48,10 +48,12 @@
 
 #include "mlxcfg_utils.h"
 
+
 #define WOL_TYPE 0x10
 #define SRIOV_TYPE 0x11
 #define VPI_TYPE 0x12
 #define BAR_SIZE_TYPE 0x13
+#define CX3_GLOBAL_CONF_TYPE 0x14
 #define PCI_SETTINGS_TYPE 0x80
 #define PCI_CAPABILITES_TYPE 0x81
 #define TPT_SETTINGS_TYPE 0x82
@@ -94,6 +96,8 @@ typedef enum {
     //TODO: Boot Settings Extras
     Mct_Boot_Settings_Extras_4thGen_P1,
     Mct_Boot_Settings_Extras_4thGen_P2,
+    //CX3 Global Conf
+    Mct_CX3_Global_Conf,
     Mct_Last
 } mlxCfgType;
 
@@ -193,6 +197,8 @@ typedef enum {
     Mcp_Boot_Settings_Ext_IP_Ver,
     Mcp_Boot_Settings_Ext_IP_Ver_P1,
     Mcp_Boot_Settings_Ext_IP_Ver_P2,
+    //CX3 Global conf
+    Mcp_CQ_Timestamp,
     Mcp_Last
 } mlxCfgParam;
 
@@ -282,6 +288,36 @@ protected:
     u_int32_t _numOfVfsDefault;
     u_int32_t _maxVfs;
 };
+
+
+/*
+ * HW Timestamp params
+ */
+
+class CX3GlobalConfParams : public CfgParams
+{
+public:
+    CX3GlobalConfParams() : CfgParams(Mct_CX3_Global_Conf, CX3_GLOBAL_CONF_TYPE), _timestamp(MLXCFG_UNKNOWN),
+                         _timestampDefault(MLXCFG_UNKNOWN) {}
+    ~CX3GlobalConfParams() {};
+
+    bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last);
+    void setParam(mlxCfgParam paramType, u_int32_t val);
+    u_int32_t getParam(mlxCfgParam paramType);
+    u_int32_t getDefaultParam(mlxCfgParam paramType);
+    int getFromDev(mfile* mf);
+    int setOnDev(mfile* mf, bool ignoreCheck=false);
+    int getDefaultParams(mfile* mf);
+
+private:
+    bool hardLimitCheck();
+    void setParams(u_int32_t timestamp);
+
+    u_int32_t _timestamp;
+    u_int32_t _timestampDefault;
+};
+
+
 
 /*
  * Boot Settings Extras param classes:

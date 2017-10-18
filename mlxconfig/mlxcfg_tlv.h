@@ -54,6 +54,7 @@
 #define HOST_ATTR "host"
 #define FUNC_ATTR "function"
 #define ALL_ATTR_VAL "all"
+#define INDEX_ATTR "index"
 
 enum TLVTarget {
     NIC,
@@ -105,7 +106,9 @@ class TLVConf {
         bool checkParamValidBit(Param* p);
         std::vector<std::pair<ParamView, std::string> > query(mfile* mf, QueryType qT);
         void updateParamByMlxconfigName(std::string param, std::string val);
+        void updateParamByMlxconfigName(std::string param, std::string val, u_int32_t index);
         void updateParamByName(string param, string val);
+        void updateParamByName(string paramName, vector<string> vals);
         u_int32_t getParamValueByName(std::string n);
         Param* findParamByMlxconfigName(std::string n);
         Param* findParamByName(std::string n);

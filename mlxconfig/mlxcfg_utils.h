@@ -148,10 +148,19 @@ void copyDwVectorToBytesVector(const vector<u_int32_t>& dwV, vector<u_int8_t>& b
 
 void copyBytesVectorToDwVector(const vector<u_int8_t>& bV, vector<u_int32_t>& dwV);
 
+string parseIndexStr(const string& indexedMlxconfigName);
+
+void parseIndexedMlxconfigName(const string& indexedMlxconfigName, string& mlxconfigName, u_int32_t& index);
+
+void extractIndexes(const string& indexesStr, vector<u_int32_t>& indexes);
+
+bool isIndexedMlxconfigName(const string& mlxconfigName);
+
 class MlxcfgException {
 public:
     std::string _err;
     MlxcfgException(const char* fmt, ...);
     ~MlxcfgException() {};
 };
+
 #endif /* MLXCFG_UTILS_H_ */

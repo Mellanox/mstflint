@@ -41,6 +41,7 @@
 #include <stdlib.h>
 #include <sys/times.h>
 #include "tools_version.h"
+#include <ctype.h>
 
 #include "mvpd/mvpd.h"
 

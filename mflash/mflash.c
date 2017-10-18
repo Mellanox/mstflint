@@ -53,6 +53,7 @@
 #include "mflash_pack_layer.h"
 #include "mflash_access_layer.h"
 #include "mflash.h"
+#include "flash_int_defs.h"
 
 #define ICMD_MAX_BLOCK_WRITE   128
 #define INBAND_MAX_BLOCK_WRITE 32
@@ -288,7 +289,26 @@ enum FlashConstant {
 
     GPIO_SEM_TRIES = 1024 ,     // Number of tries to obtain a GPIO sem.
 
-    MAX_WRITE_BUFFER_SIZE = 256 // Max buffer size for buffer write devices
+    MAX_WRITE_BUFFER_SIZE = 256, // Max buffer size for buffer write devices
+
+    WRITE_STATUS_REGISTER_DELAY_CYPRESS = 750,
+    WRITE_STATUS_REGISTER_DELAY_MICRON  = 1000,
+    WRITE_STATUS_REGISTER_DELAY_MIN     = 40,
+
+    DUMMY_CYCLES_OFFSET_ST         = 12,
+
+    QUAD_EN_OFFSET_WINBOND_CYPRESS = 1,
+    QUAD_EN_OFFSET_MICRON          = 3,
+    QUAD_EN_OFFSET_ISSI_MACRONIX   = 6,
+
+    TB_OFFSET_MACRONIX       = 3,
+    SEC_OFFSET               = 6,
+    TB_OFFSET                = 5,
+    TB_OFFSET_ISSI           = 1,
+    BP_OFFSET                = 2,
+    BP_4TH_BIT_OFFSET_MICRON = 6,
+    BP_SIZE                  = 3,
+    PROTECT_BITS_SIZE        = 5
 };
 
 
@@ -530,70 +550,18 @@ int write_chunks   (mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data) 
     return MFE_OK;
 }
 
-
-////////////////////////////////////////
-//
-// ST SPI functions - common for InfiniHostIIILx and ConnectX
-//
-////////////////////////////////////////
-enum StFlashCommand {
-    SFC_SE    = 0xD8,
-    SFC_SSE   = 0x20,
-    SFC_PP    = 0x02,
-    SFC_RDSR  = 0x05,
-    SFC_RDSR2 = 0x35,
-    SFC_WREN  = 0x06,
-    SFC_READ  = 0x03,
-    SFC_FAST_READ  = 0x3B,
-    SFC_QUAD_READ  = 0x3B,
-    SFC_RES   = 0xAB,
-    SFC_JEDEC = 0x9F,
-    SFC_RDNVR = 0xB5,
-    SFC_WRNVR = 0xB1,
-    SFC_WRSR  = 0x01
-};
-
-#define SST_FLASH_NAME   "SST25VFxx"
-#define WINBOND_NAME     "W25QxxBV"
-#define WINBOND_W25X     "W25Xxx"
-#define ATMEL_NAME       "AT25DFxxx"
-#define S25FLXXXP_NAME   "S25FLXXXP"
-#define S25FL116K_NAME   "S25FL11xx"
-#define MACRONIX_NAME	 "MX25L16xxx"
-
-typedef enum flash_vendor {
-    FV_ST      = 0x20,
-    FV_SST     = 0xbf,
-    FV_WINBOND = 0xef,
-    FV_ATMEL   = 0x1f,
-    FV_S25FLXXXX = 0x01,
-    FV_MX25K16XXX = 0xc2,
-} flash_vendor_t;
-
-typedef enum flash_memory_type {
-    FMT_ST_M25P  = 0x20,
-    FMT_ST_M25PX = 0x71,
-    FMT_SST_25   = 0x25,
-    FMT_WINBOND  = 0x40,
-    FMT_WINBOND_W25X = 0x30,
-    FMT_ATMEL    = 0x2,
-    FMT_N25QXXX  = 0xba,
-    FMT_S25FLXXXP = 0x02,
-    FMT_S25FL116K = 0x40,
-} flash_memory_type_t;
-
 flash_info_t g_flash_info_arr[] =
 {
-        {"M25PXxx",      FV_ST,      FMT_ST_M25PX,     MCS_STSPI,  SFC_SSE, FSS_4KB,  1, 0, 0, 0, 0},
-        {"M25Pxx",       FV_ST,      FMT_ST_M25P,      MCS_STSPI,  SFC_SE,  FSS_64KB, 0, 0, 0, 0, 0},
-        {"N25Q0XX",      FV_ST,      FMT_N25QXXX,      MCS_STSPI,  SFC_SSE, FSS_4KB,  1, 1, 1, 0, 1},
-        {SST_FLASH_NAME, FV_SST,     FMT_SST_25,       MCS_SSTSPI, SFC_SE,  FSS_64KB, 0, 0, 0, 0, 0},
-        {WINBOND_NAME,   FV_WINBOND, FMT_WINBOND,      MCS_STSPI,  SFC_SSE, FSS_4KB,  1, 1, 1, 1, 0},
-        {WINBOND_W25X,   FV_WINBOND, FMT_WINBOND_W25X, MCS_STSPI,  SFC_SSE, FSS_4KB,  0, 0, 0, 0, 0},
-        {ATMEL_NAME,     FV_ATMEL,   FMT_ATMEL,        MCS_STSPI,  SFC_SSE, FSS_4KB,  0, 0, 0, 0, 0},
-        {S25FLXXXP_NAME, FV_S25FLXXXX, FMT_S25FLXXXP,  MCS_STSPI,  SFC_SE,  FSS_64KB, 0, 0, 0, 0, 0},
-        {S25FL116K_NAME, FV_S25FLXXXX, FMT_S25FL116K, MCS_STSPI,   SFC_SSE, FSS_4KB,  1, 1, 1, 1, 0}, // this flash actually supports quad and write protect but we dont need it at this moment
-        {MACRONIX_NAME,  FV_MX25K16XXX, FMT_ST_M25P, MCS_STSPI,    SFC_SSE, FSS_4KB,  0, 0, 0, 0, 0}, // this flash actually supports write protection but we dont use it at this time
+        {"M25PXxx",        FV_ST,         FMT_ST_M25PX,     MCS_STSPI,  SFC_SSE, FSS_4KB,  1, 0, 0, 0, 0},
+        {"M25Pxx",         FV_ST,         FMT_ST_M25P,      MCS_STSPI,  SFC_SE,  FSS_64KB, 0, 0, 0, 0, 0},
+        {"N25Q0XX",        FV_ST,         FMT_N25QXXX,      MCS_STSPI,  SFC_SSE, FSS_4KB, 1, 1, 1, 0, 1},
+        {SST_FLASH_NAME,   FV_SST,        FMT_SST_25,       MCS_SSTSPI, SFC_SE,  FSS_64KB, 0, 0, 0, 0, 0},
+        {WINBOND_NAME,     FV_WINBOND,    FMT_WINBOND,      MCS_STSPI,  SFC_SSE, FSS_4KB,  1, 1, 1, 1, 0},
+        {WINBOND_W25X,     FV_WINBOND,    FMT_WINBOND_W25X, MCS_STSPI,  SFC_SSE, FSS_4KB,  0, 0, 0, 0, 0},
+        {ATMEL_NAME,       FV_ATMEL,      FMT_ATMEL,        MCS_STSPI,  SFC_SSE, FSS_4KB,  0, 0, 0, 0, 0},
+        {S25FLXXXP_NAME,   FV_S25FLXXXX,  FMT_S25FLXXXP,    MCS_STSPI,  SFC_SE,  FSS_64KB, 0, 0, 0, 0, 0},
+        {S25FL116K_NAME,   FV_S25FLXXXX,  FMT_S25FL116K,    MCS_STSPI,  SFC_SSE, FSS_4KB,  1, 1, 1, 1, 0},
+        {MACRONIX_NAME,    FV_MX25K16XXX, FMT_ST_M25P,      MCS_STSPI,  SFC_SSE, FSS_4KB,  0, 0, 0, 0, 0}
 };
 
 int cntx_sst_get_log2size(u_int8_t capacity, int* log2spi_size)
@@ -892,7 +860,6 @@ int st_spi_fill_attr(mflash* mfl, flash_params_t* flash_params) {
             i++;
         }
         CHECK_RC(rc);
-
     } else {
         // Get the flash params from the user.
         rc = get_type_index_by_name(flash_params->type_name, &type_index); CHECK_RC(rc);
@@ -1353,7 +1320,13 @@ int cntx_spi_write_status_reg(mflash* mfl, u_int32_t status_reg, u_int8_t write_
     }
     rc = cntx_exec_cmd_set(mfl, gw_cmd, &status_reg, 1, NULL, "Write-Status-Register");
     // wait for flash to write the register
-    msleep(30);
+    if (mfl->attr.vendor == FV_S25FLXXXX && mfl->attr.type == FMT_S25FLXXXL) { // New CYPRESS
+        msleep(WRITE_STATUS_REGISTER_DELAY_CYPRESS);
+    } else if (mfl->attr.vendor == FV_ST && mfl->attr.type == FMT_N25QXXX) { // New MICRON
+        msleep(WRITE_STATUS_REGISTER_DELAY_MICRON);
+    } else {
+        msleep(WRITE_STATUS_REGISTER_DELAY_MIN);  // Some can sleep only 30 or even 15. We should consider optimize this.
+    }
     return rc;
 }
 
@@ -1754,7 +1727,6 @@ int cntx_st_spi_erase_sect(mflash* mfl, u_int32_t addr) {
 
     // Wait for erase completion
     rc = st_spi_wait_wip(mfl, ERASE_SUBSECTOR_INIT_DELAY, ERASE_SUBSECTOR_RETRY_DELAY, ERASE_SUBSECTOR_RETRIES); CHECK_RC(rc);
-
     return MFE_OK;
 }
 
@@ -1959,9 +1931,10 @@ int sx_init_cs_support(mflash* mfl) {
     return 0;
 }
 
-#define HW_DEV_ID     0xf0014
-#define CACHE_REP_OFF 0xf0408
-#define CASHE_REP_CMD 0xf040c
+#define HW_DEV_ID      0xf0014
+#define CACHE_REP_OFF  0xf0408
+#define CASHE_REP_CMD  0xf040c
+#define CX5_EFUSE_ADDR 0xf0c0c
 
 int check_cache_replacement_gaurd(mflash* mfl, u_int8_t *needs_cache_replacement)
 {
@@ -2431,7 +2404,21 @@ int mf_open_ignore_lock(mflash* mfl) {
 #define IS_PCI_DEV(access_type) (access_type == MTCR_ACCESS_CONFIG || access_type == MTCR_ACCESS_MEMORY)
 #endif
 
-
+BinIdT get_bin_id(mflash* mfl, u_int32_t hw_dev_id)
+{
+    u_int32_t dword = 0;
+    if (hw_dev_id == CX5_HW_ID) {
+        if (mread4(mfl->mf, CX5_EFUSE_ADDR, &dword) == 4) {
+            u_int8_t bin_speed = EXTRACT(dword, 30, 2);
+            if (bin_speed == 0) {
+                return CX5_LOW_BIN;
+            } else if (bin_speed == 1) {
+                return CX5_HIGH_BIN;
+            }
+        }
+    }
+    return UNKNOWN_BIN;
+}
 
 int get_dev_info(mflash* mfl)
 {
@@ -2442,7 +2429,7 @@ int get_dev_info(mflash* mfl)
     mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] = ATBM_NO;
     rc = mget_mdevs_flags(mfl->mf, &dev_flags); CHECK_RC(rc);
     rc = mget_mdevs_type(mfl->mf, &access_type); CHECK_RC(rc);
-
+    mfl->attr.bin_id = UNKNOWN_BIN;
     // get hw id
     // Special case for MLNX OS getting dev_id using REG MGIR
     if (dev_flags & MDEVS_MLNX_OS) {
@@ -2479,6 +2466,8 @@ int get_dev_info(mflash* mfl)
         }
         mfl->attr.rev_id    = (dev_id & 0xff0000) >> 16;
         mfl->attr.hw_dev_id = dev_id & 0xffff;
+        mfl->attr.bin_id = get_bin_id(mfl, mfl->attr.hw_dev_id);
+
     }
 
     if (dev_flags & MDEVS_MLNX_OS) {
@@ -2520,7 +2509,6 @@ int mf_open_fw(mflash* mfl, flash_params_t* flash_params, int num_of_banks)
 
         mfl->opts[MFO_NUM_OF_BANKS] = spi_get_num_of_flashes(num_of_banks);
         rc = spi_update_num_of_banks(mfl, num_of_banks);CHECK_RC(rc);
-
         if (IS_CONNECTX_4TH_GEN_FAMILY(mfl->attr.hw_dev_id)) {
             rc = cntx_flash_init(mfl, flash_params);
         } else if (IS_IS4_FAMILY(mfl->attr.hw_dev_id)) {
@@ -2542,7 +2530,6 @@ int mf_open_fw(mflash* mfl, flash_params_t* flash_params, int num_of_banks)
         return MFE_UNKOWN_ACCESS_TYPE;
     }
     mfl->f_set_bank(mfl,0);
-
     return MFE_OK;
 }
 
@@ -2559,7 +2546,6 @@ int     mf_opend_int       (mflash** pmfl, void* access_dev, int num_of_banks, f
     (*pmfl)->opts[MFO_IGNORE_CASHE_REP_GUARD] = ignore_cache_rep_guard;
     (*pmfl)->opts[MFO_CX3_FW_ACCESS_EN] = cx3_fw_access;
     (*pmfl)->access_type = access_type;
-
     if (access_type ==  MFAT_MFILE) {
         (*pmfl)->mf = (mfile*)access_dev;
     } else if (access_type ==  MFAT_UEFI) {
@@ -2758,6 +2744,8 @@ const char*   mf_err2str (int err_code) {
         return "MFE_EXCEED_SECTORS_MAX_NUM";
     case MFE_SECTORS_NUM_NOT_POWER_OF_TWO:
         return "MFE_SECTORS_NUM_NOT_POWER_OF_TWO";
+    case MFE_SECTORS_NUM_MORE_THEN_0_LESS_THEN_4:
+        return "Can not protect 1 or 2 blocks in this flash. Minimum is 4.";
     case MFE_UNKOWN_ACCESS_TYPE:
         return "MFE_UNKOWN_ACCESS_TYPE";
     case MFE_UNSUPPORTED_DEVICE:
@@ -2782,6 +2770,8 @@ const char*   mf_err2str (int err_code) {
         return "MFE_ICMD_INVALID_CMD";
     case MFE_ICMD_OPERATIONAL_ERROR:
         return "MFE_ICMD_OPERATIONAL_ERROR";
+    case MFE_DATA_IS_OTP:
+        return "The data you are trying to write is OTP and have already been programmed.";
     case MFE_REG_ACCESS_BAD_METHOD:
         return "MFE_REG_ACCESS_BAD_METHOD";
     case MFE_REG_ACCESS_NOT_SUPPORTED:
@@ -2884,7 +2874,8 @@ int     mf_read_modify_status_winbond (mflash *mfl, u_int8_t bank_num, u_int8_t 
 
     rc = set_bank_int(mfl, bank_num); CHECK_RC(rc);
     if ( (mfl->attr.vendor == FV_WINBOND &&  mfl->attr.type == FMT_WINBOND) ||
-         (mfl->attr.vendor ==  FV_S25FLXXXX && mfl->attr.type == FMT_S25FL116K)) {
+         (mfl->attr.vendor ==  FV_S25FLXXXX && (mfl->attr.type == FMT_S25FL116K || mfl->attr.type == FMT_S25FLXXXL)) ||
+         (mfl->attr.vendor == FV_MX25K16XXX && mfl->attr.type == FMT_MX25K16XXX)) {
         /*
          * if we have 2 status registers, winbond are allowing us to write both of them
          * in a single command WRSR  status_reg1 located in MSB, status_reg2 after status_reg1
@@ -2895,7 +2886,11 @@ int     mf_read_modify_status_winbond (mflash *mfl, u_int8_t bank_num, u_int8_t 
     // Read register status
     rc = mfl->f_spi_status(mfl, SFC_RDSR, &status1); CHECK_RC(rc);
     if (use_rdsr2) {
-        rc = mfl->f_spi_status(mfl, SFC_RDSR2, &status2); CHECK_RC(rc);
+        if (mfl->attr.vendor == FV_MX25K16XXX) {
+            rc = mfl->f_spi_status(mfl, SFC_RDCR, &status2); CHECK_RC(rc);
+        } else {
+            rc = mfl->f_spi_status(mfl, SFC_RDSR2, &status2); CHECK_RC(rc);
+        }
         status = MERGE(0, status2, 0, 8);
         bytes_to_write = 2;
     }
@@ -2911,9 +2906,7 @@ int     mf_read_modify_status_winbond (mflash *mfl, u_int8_t bank_num, u_int8_t 
     rc = cntx_spi_write_status_reg(mfl, status, SFC_WRSR, bytes_to_write); CHECK_RC(rc);
     return MFE_OK;
 }
-#define QUAD_EN_OFFSET 1
-#define QUAD_EN_OFFSET_ST 3
-#define DUMMY_CYCLES_OFFSET_ST 12
+
 
 int mf_read_modify_status_new(mflash *mfl, u_int8_t bank_num, u_int8_t read_cmd, u_int8_t write_cmd, u_int8_t val,
                               u_int8_t offset, u_int8_t size, u_int8_t bytes_num)
@@ -2992,10 +2985,14 @@ int mf_set_quad_en_direct_access(mflash *mfl, u_int8_t quad_en)
         return MFE_NOT_SUPPORTED_OPERATION;
     }
     for (bank = 0; bank < mfl->attr.banks_num; bank++) {
-        if (mfl->attr.vendor == FV_WINBOND ||  mfl->attr.vendor == FV_S25FLXXXX) {
-            rc = mf_read_modify_status_winbond(mfl, bank, 0, quad_en, QUAD_EN_OFFSET, 1); CHECK_RC(rc);
+        if (mfl->attr.vendor == FV_WINBOND && mfl->attr.type == FMT_WINBOND_3V) {
+            rc = mf_read_modify_status_new(mfl, bank, SFC_RDSR2, SFC_WRSR2, quad_en, QUAD_EN_OFFSET_WINBOND_CYPRESS, 1, 1); CHECK_RC(rc);
+        }else if (mfl->attr.vendor == FV_WINBOND ||  mfl->attr.vendor == FV_S25FLXXXX) {
+            rc = mf_read_modify_status_winbond(mfl, bank, 0, quad_en, QUAD_EN_OFFSET_WINBOND_CYPRESS, 1); CHECK_RC(rc);
         } else if (mfl->attr.vendor == FV_ST) {
-            rc = mf_read_modify_status_new(mfl, bank, SFC_RDNVR, SFC_WRNVR, !quad_en, QUAD_EN_OFFSET_ST, 1, 2); CHECK_RC(rc);
+            rc = mf_read_modify_status_new(mfl, bank, SFC_RDNVR, SFC_WRNVR, !quad_en, QUAD_EN_OFFSET_MICRON, 1, 2); CHECK_RC(rc);
+        } else if (mfl->attr.vendor == FV_IS25LPXXX || mfl->attr.vendor == FV_MX25K16XXX) {
+            rc = mf_read_modify_status_winbond(mfl, bank, 1, quad_en, QUAD_EN_OFFSET_ISSI_MACRONIX, 1); CHECK_RC(rc);
         }
     }
     return MFE_OK;
@@ -3009,25 +3006,23 @@ int mf_get_quad_en_direct_access(mflash* mfl, u_int8_t *quad_en_p)
     if (!(mfl->attr.quad_en_support && mfl->supp_sr_mod)) {
         return MFE_NOT_SUPPORTED_OPERATION;
     }
-
     if (mfl->attr.vendor == FV_WINBOND || mfl->attr.vendor == FV_S25FLXXXX) {
-        return  mf_get_param_int(mfl, quad_en_p, SFC_RDSR2, QUAD_EN_OFFSET, 1, 1, 1);
+        return  mf_get_param_int(mfl, quad_en_p, SFC_RDSR2, QUAD_EN_OFFSET_WINBOND_CYPRESS, 1, 1, 1);
     } else if (mfl->attr.vendor == FV_ST) {
-        return  mf_get_param_int(mfl, quad_en_p, SFC_RDNVR, QUAD_EN_OFFSET_ST, 1, 2, 0);
+        return  mf_get_param_int(mfl, quad_en_p, SFC_RDNVR, QUAD_EN_OFFSET_MICRON, 1, 2, 0);
+    } else if (mfl->attr.vendor == FV_IS25LPXXX || mfl->attr.vendor == FV_MX25K16XXX) {
+        return mf_get_param_int(mfl, quad_en_p, SFC_RDSR, QUAD_EN_OFFSET_ISSI_MACRONIX, 1, 1, 1);
     }
     return MFE_NOT_SUPPORTED_OPERATION;
 }
 
-#define REG1_TB_OFFSET  5
-#define REG1_SEC_OFFSET 6
-#define REG1_BP_OFFSET 2
-#define REG1_BP_SIZE   3
-#define ONE_BIT_SIZE   1
-
 int mf_set_write_protect_direct_access(mflash *mfl, u_int8_t bank_num, write_protect_info_t *protect_info)
 {
-    u_int8_t protect_mask = 0, log2_sect_num = 0;
-    u_int8_t sectors_num =  protect_info->sectors_num;
+    u_int32_t protect_mask = 0, log2_sect_num;
+    u_int32_t sectors_num =  protect_info->sectors_num;
+    int rc;
+    write_protect_info_t cur_protect_info;
+    memset(&cur_protect_info, 0x0, sizeof(cur_protect_info));
 
     //printf("-D- mf_set_write_protect: bank_num = %#x, subsec: %#x, bottom: %#x, sectors_num=%#x\n", bank_num,
     //       protect_info->is_subsector, protect_info->is_bottom, protect_info->sectors_num);
@@ -3039,13 +3034,28 @@ int mf_set_write_protect_direct_access(mflash *mfl, u_int8_t bank_num, write_pro
     if (protect_info->sectors_num > MAX_SECTORS_NUM) {
         return MFE_EXCEED_SECTORS_MAX_NUM;
     }
+    if ((mfl->attr.vendor == FV_S25FLXXXX && mfl->attr.type == FMT_S25FLXXXL) ||
+            (mfl->attr.vendor == FV_WINBOND && mfl->attr.type == FMT_WINBOND_3V)) {
+        if (!protect_info->is_subsector && (protect_info->sectors_num == 1 || protect_info->sectors_num == 2)) {
+            return MFE_SECTORS_NUM_MORE_THEN_0_LESS_THEN_4;
+        }
+    }
     if (protect_info->is_subsector && !mfl->attr.protect_sub_and_sector) {
         return MFE_NOT_SUPPORTED_OPERATION;
     }
-
     if (mfl->attr.protect_sub_and_sector && protect_info->is_subsector) {
         if (protect_info->sectors_num > MAX_SUBSECTOR_NUM) {
             return MFE_EXCEED_SUBSECTORS_MAX_NUM;
+        }
+    }
+    if (mfl->attr.vendor == FV_MX25K16XXX || mfl->attr.vendor == FV_IS25LPXXX) {
+        rc = mf_get_write_protect(mfl, bank_num, &cur_protect_info); CHECK_RC(rc);
+        if (cur_protect_info.is_bottom && !protect_info->is_bottom){
+            if (protect_info->sectors_num) {
+                return MFE_DATA_IS_OTP;
+            } else {
+                protect_info->is_bottom = cur_protect_info.is_bottom; // write protect is disabled, so we don't really care about top/bottom bit.
+            }
         }
     }
 
@@ -3056,37 +3066,72 @@ int mf_set_write_protect_direct_access(mflash *mfl, u_int8_t bank_num, write_pro
         sectors_num >>= 1;
     }
     // adrianc: at this point log2_sect_num is actually  bigger by 1(if sectors_num!=0) to fit the BP bit values in the flash spec
-    u_int8_t modify_size = 0;
 
-    protect_mask = MERGE(protect_mask, log2_sect_num, 0, REG1_BP_SIZE);
-    modify_size += REG1_BP_SIZE;
-
-    protect_mask = MERGE(protect_mask, protect_info->is_bottom, REG1_BP_SIZE, ONE_BIT_SIZE);
-    modify_size += ONE_BIT_SIZE;
-    if (mfl->attr.protect_sub_and_sector) {
-        protect_mask = MERGE(protect_mask, protect_info->is_subsector, REG1_BP_SIZE + ONE_BIT_SIZE, ONE_BIT_SIZE);
-        modify_size += ONE_BIT_SIZE;
+    if (log2_sect_num != 0 && !protect_info->is_subsector && ((mfl->attr.vendor == FV_S25FLXXXX && mfl->attr.type == FMT_S25FLXXXL) ||
+            (mfl->attr.vendor == FV_WINBOND && mfl->attr.type == FMT_WINBOND_3V))) {
+        log2_sect_num -= 2; // spec alignment
     }
-    return mf_read_modify_status_winbond(mfl, bank_num, 1, protect_mask, REG1_BP_OFFSET, modify_size);
+
+    if (mfl->attr.vendor == FV_ST && mfl->attr.type == FMT_N25QXXX) {
+        protect_mask = MERGE(protect_mask, log2_sect_num & 0x7, 0, BP_SIZE);
+        protect_mask = MERGE(protect_mask, protect_info->is_bottom, BP_SIZE, 1);
+        protect_mask = MERGE(protect_mask, (log2_sect_num & 0x8) >> 3, BP_SIZE + 1, 1);
+        return mf_read_modify_status_winbond(mfl, bank_num, 1, protect_mask, BP_OFFSET, PROTECT_BITS_SIZE);
+    } else if (mfl->attr.vendor == FV_MX25K16XXX || mfl->attr.vendor == FV_IS25LPXXX) {
+        if (mfl->attr.vendor == FV_MX25K16XXX) {
+            rc = mf_read_modify_status_winbond(mfl, bank_num, 0, protect_info->is_bottom, TB_OFFSET_MACRONIX, 1); CHECK_RC(rc);
+        } else { // vendor == FV_IS25LPXXX
+            rc = mf_read_modify_status_new(mfl, bank_num, SFC_RDFR, SFC_WRFR, protect_info->is_bottom, TB_OFFSET_ISSI, 1, 1); CHECK_RC(rc);
+        }
+        return mf_read_modify_status_winbond(mfl, bank_num, 1, log2_sect_num, BP_OFFSET, 4);
+    } else {
+        u_int8_t modify_size = 0;
+
+        protect_mask = MERGE(protect_mask, log2_sect_num, 0, BP_SIZE);
+        modify_size += BP_SIZE;
+
+        protect_mask = MERGE(protect_mask, protect_info->is_bottom, BP_SIZE, 1);
+        modify_size += 1;
+        if (mfl->attr.protect_sub_and_sector) {
+            protect_mask = MERGE(protect_mask, protect_info->is_subsector, BP_SIZE + 1, 1);
+            modify_size += 1;
+        }
+        return mf_read_modify_status_winbond(mfl, bank_num, 1, protect_mask, BP_OFFSET, modify_size);
+    }
 }
 
 int mf_get_write_protect_direct_access(mflash *mfl, u_int8_t bank_num, write_protect_info_t *protect_info)
 {
     int rc = 0;
     u_int8_t status = 0;
+    int spec_alignment_factor;
 
     WRITE_PROTECT_CHECKS(mfl, bank_num);
     rc = set_bank_int(mfl, bank_num); CHECK_RC(rc);
-    rc = mfl->f_spi_status(mfl, SFC_RDSR, &status); CHECK_RC(rc);
-    protect_info->is_bottom = EXTRACT(status, REG1_TB_OFFSET, 1);
-
-    if (mfl->attr.protect_sub_and_sector) {
-        protect_info->is_subsector = EXTRACT(status, REG1_SEC_OFFSET, 1);
+    protect_info->is_subsector = 0; // Defaultly no support for subsector protection
+    if (mfl->attr.vendor == FV_MX25K16XXX) {
+        rc = mfl->f_spi_status(mfl, SFC_RDCR, &status); CHECK_RC(rc);
+        protect_info->is_bottom = EXTRACT(status, TB_OFFSET_MACRONIX, 1);
+    } else if (mfl->attr.vendor == FV_IS25LPXXX){
+        rc = mfl->f_spi_status(mfl, SFC_RDFR, &status); CHECK_RC(rc);
+        protect_info->is_bottom = EXTRACT(status, TB_OFFSET_ISSI, 1);
     } else {
-        protect_info->is_subsector = 0;
+        rc = mfl->f_spi_status(mfl, SFC_RDSR, &status); CHECK_RC(rc);
+        protect_info->is_bottom = EXTRACT(status, TB_OFFSET, 1);
+        if (mfl->attr.protect_sub_and_sector) {
+            protect_info->is_subsector = EXTRACT(status, SEC_OFFSET, 1);
+        } else {
+            protect_info->is_subsector = 0;
+        }
     }
-
-    protect_info->sectors_num = 1 << (EXTRACT(status, REG1_BP_OFFSET, REG1_BP_SIZE) - 1);
+    rc = mfl->f_spi_status(mfl, SFC_RDSR, &status); CHECK_RC(rc);
+    if (EXTRACT(status, BP_OFFSET, BP_SIZE) == 0) {
+        protect_info->sectors_num = 0;
+    } else {
+        spec_alignment_factor = ((mfl->attr.vendor == FV_S25FLXXXX && mfl->attr.type == FMT_S25FLXXXL) ||
+                (mfl->attr.vendor == FV_WINBOND && mfl->attr.type == FMT_WINBOND_3V)) && !protect_info->is_subsector ? 1 : -1;
+        protect_info->sectors_num = 1 << (EXTRACT(status, BP_OFFSET, BP_SIZE) + spec_alignment_factor);
+    }
 
     return MFE_OK;
 }

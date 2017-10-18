@@ -73,6 +73,16 @@
                     "Timestamp operation for FS4 FW image files is not supported");\
         }
 
+#define INSERT_SHA256_IF_NEEDS_NO_PRINT() do {\
+                                    if (!_ioAccess->is_flash()) {\
+                                        if (!(_fs3ImgInfo.ext_info.security_mode & SMM_SIGNED_FW)) {\
+                                            if (!FwInsertSHA256((PrintCallBack)NULL)) {\
+                                                return false;\
+                                            }\
+                                        } \
+                                    }\
+                                 } while (0)
+
 #define COUNT_OF_SECTIONS_TO_ALIGN 5
 
 bool Fs4Operations::CheckSignatures(u_int32_t a[], u_int32_t b[], int n)
@@ -664,7 +674,11 @@ bool Fs4Operations::FwDeleteRom(bool ignoreProdIdCheck, ProgressCallBack progres
         return false;
     }
 
-    return Fs4RemoveSection(FS3_ROM_CODE, progressFunc);
+    bool rc = Fs4RemoveSection(FS3_ROM_CODE, progressFunc);
+    if (rc == true) {
+        INSERT_SHA256_IF_NEEDS_NO_PRINT();
+    }
+    return rc;
 }
 
 bool Fs4Operations::Fs4AddSectionAux(fs3_section_t sectionType,
@@ -683,7 +697,7 @@ bool Fs4Operations::Fs4AddSectionAux(fs3_section_t sectionType,
                 > (u_int32_t)(1 << _maxImgLog2Size)) {
             return errmsg("Section size is too large");
         }
-        if (!Fs4RemoveSectionAux(FS3_ROM_CODE)) {
+        if (!Fs4RemoveSectionAux(sectionType)) {
             return false;
         }
     } else {
@@ -750,7 +764,6 @@ bool Fs4Operations::Fs4AddSection(fs3_section_t sectionType,
     }
 
     _imageCache.get(newImageData, 0, (_ioAccess)->get_size());
-
     if (!FwBurnData((u_int32_t*)newImageData.data(), newImageData.size(),
             progressFunc)) {
         return false;
@@ -791,8 +804,11 @@ bool Fs4Operations::FwBurnRom(FImage* romImg, bool ignoreProdIdCheck, bool ignor
         return false;
     }
 
-    return Fs4AddSection(FS3_ROM_CODE, INITOCENTRY, 0, romImg->getBuf(),
-            romImg->getBufLength(), progressFunc);
+    bool rc = Fs4AddSection(FS3_ROM_CODE, INITOCENTRY, 0, romImg->getBuf(), romImg->getBufLength(), progressFunc);
+    if (rc == true) {
+        INSERT_SHA256_IF_NEEDS_NO_PRINT();
+    }
+    return rc;
 }
 
 void Fs4Operations::updateTocEndEntryInImgCache(u_int32_t lastItocSectAddress)
@@ -848,7 +864,6 @@ bool Fs4Operations::restoreWriteProtection(mflash* mfl, u_int8_t banksNum,
     return true;
 }
 
-/* - Alignment feature will be used later..
 bool Fs4Operations::AlignDeviceSections(u_int8_t flashLayoutVersion)
 {
     bool rc = true;
@@ -936,6 +951,7 @@ bool Fs4Operations::AlignDeviceSections(u_int8_t flashLayoutVersion)
     }
 
     FBase* origFlashObj = (FBase*)NULL;
+    FBase* flashObjWithOcr = (FBase*)NULL;
 
     //Re-open flash with -ocr if needed
     if (_fwParams.ignoreCacheRep == 0) {
@@ -946,6 +962,7 @@ bool Fs4Operations::AlignDeviceSections(u_int8_t flashLayoutVersion)
             _fwParams.ignoreCacheRep = 0;
             return errmsg("Failed to open device for direct flash access");
         }
+        flashObjWithOcr = _ioAccess;
     }
 
      //disable write protection:
@@ -970,10 +987,14 @@ bool Fs4Operations::AlignDeviceSections(u_int8_t flashLayoutVersion)
         msleep(500);
     }
     if (retries == 5) {
-        FLASH_RESTORE(origFlashObj);
         errmsg("Failed to disable flash write protection");
         rc = false;
         goto cleanup;
+    }
+
+    if (flashObjWithOcr != NULL) {
+        _ioAccess = origFlashObj;
+        _fwParams.ignoreCacheRep = 0;
     }
 
     //move to the new offsets:
@@ -995,11 +1016,9 @@ bool Fs4Operations::AlignDeviceSections(u_int8_t flashLayoutVersion)
                 sections[i]->section_data.size(), true, true, 0, 0)) {
             if (!restoreWriteProtection(mfl, attr.banks_num,
                     attr.protect_info_array)) {
-                FLASH_RESTORE(origFlashObj);
                 rc = false;
                 goto cleanup;
             }
-            FLASH_RESTORE(origFlashObj);
             errmsg("Failed to move %s Section", sectionsNames[i]);
             rc = false;
             goto cleanup;
@@ -1027,31 +1046,36 @@ bool Fs4Operations::AlignDeviceSections(u_int8_t flashLayoutVersion)
             FS4_DEFAULT_SECTOR_SIZE, true, true, 0, 0)) {
         if (!restoreWriteProtection(mfl, attr.banks_num,
                 attr.protect_info_array)) {
-            FLASH_RESTORE(origFlashObj);
             rc = false;
             goto cleanup;
         }
-        FLASH_RESTORE(origFlashObj);
         errmsg("Failed to update DToC Header");
         rc = false;
         goto cleanup;
     }
 
+    if (flashObjWithOcr != NULL) {
+        _ioAccess = flashObjWithOcr;
+        _fwParams.ignoreCacheRep = 1;
+    }
     if (!restoreWriteProtection(mfl, attr.banks_num, attr.protect_info_array)) {
-        FLASH_RESTORE(origFlashObj);
         rc = false;
         goto cleanup;
     }
-    FLASH_RESTORE(origFlashObj);
 
 cleanup:
     if (attr.type_str) {
         delete attr.type_str;
     }
+    if (flashObjWithOcr != NULL) {
+        _ioAccess = origFlashObj;
+        _fwParams.ignoreCacheRep = 0;
+        flashObjWithOcr->close();
+        delete flashObjWithOcr;
+    }
     return rc;
-}*/
+}
 
-/*
 bool Fs4Operations::CheckIfAlignmentIsNeeded(FwOperations *imgops)
 {
     Fs4Operations& imageOps = * ((Fs4Operations *) imgops);
@@ -1066,7 +1090,6 @@ bool Fs4Operations::CheckIfAlignmentIsNeeded(FwOperations *imgops)
 
     return false;
 }
-*/
 
 bool Fs4Operations::BurnFs4Image(Fs4Operations &imageOps,
                                   ExtBurnParams& burnParams)
@@ -1106,7 +1129,6 @@ bool Fs4Operations::BurnFs4Image(Fs4Operations &imageOps,
         return errmsg(MLXFW_IMAGE_CORRUPTED_ERR, "%s", imageOps.err());
     }
 
-    /*
     //check if alignment is needed:
     if ((burnParams.burnFailsafe ||
             (!burnParams.burnFailsafe && !burnParams.useImgDevData)) &&
@@ -1117,7 +1139,6 @@ bool Fs4Operations::BurnFs4Image(Fs4Operations &imageOps,
             return errmsg("Failed to align the device sections: %s", err());
         }
     }
-    */
 
     //Find total image size that will be written
     total_img_size += imageOps._fs4ImgInfo.itocArr.getSectionsTotalSize();//itoc sections
@@ -1273,6 +1294,13 @@ bool Fs4Operations::FsBurnAux(FwOperations *imgops, ExtBurnParams& burnParams)
                                          _ioAccess->get_rev_id(),
                                          imageOps._fwImgInfo.supportedHwId,
                                          imageOps._fwImgInfo.supportedHwIdNum)) {
+                 return errmsg(MLXFW_DEVICE_IMAGE_MISMATCH_ERR,
+                         "Device/Image mismatch: %s\n",this->err( ));
+             }
+             if (burnParams.burnFailsafe == false &&
+                 !CheckMatchingBinning(_ioAccess->get_dev_id(),
+                                       _ioAccess->get_bin_id(),
+                                       imageOps._fwImgInfo.ext_info.pci_device_id)) {
                  return errmsg(MLXFW_DEVICE_IMAGE_MISMATCH_ERR,
                          "Device/Image mismatch: %s\n",this->err( ));
              }
@@ -1719,6 +1747,7 @@ bool Fs4Operations::isDTocSection(fs3_section_t sect_type, bool& isDtoc)
            break;
         case FS3_PUBLIC_KEYS:
         case FS3_IMAGE_SIGNATURE:
+        case FS3_FORBIDDEN_VERSIONS:
            isDtoc = false;
            break;
         default:
@@ -1838,12 +1867,18 @@ bool Fs4Operations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, bo
         type_msg = "SIGNATURE";
         newUidSection.resize(CX4FW_IMAGE_SIGNATURE_SIZE);
         memcpy(newUidSection.data(), sig.data(), CX4FW_IMAGE_SIGNATURE_SIZE);
-    } else if (sect_type == FS3_PUBLIC_KEYS && cmd_type == CMD_SET_PUBLIC_KEY) {
+    } else if (sect_type == FS3_PUBLIC_KEYS && cmd_type == CMD_SET_PUBLIC_KEYS) {
         char *publickeys_file = (char*)new_info;
         type_msg = "PUBLIC KEYS";
         if (!Fs3UpdatePublicKeysSection(curr_toc->toc_entry.size, publickeys_file, newUidSection)) {
             return false;
         }
+    } else if (sect_type == FS3_FORBIDDEN_VERSIONS && cmd_type == CMD_SET_FORBIDDEN_VERSIONS) {
+       char *forbiddenVersions_file = (char*)new_info;
+       type_msg = "Forbidden Versions";
+       if (!Fs3UpdateForbiddenVersionsSection(curr_toc->toc_entry.size, forbiddenVersions_file, newUidSection)) {
+           return false;
+       }
     } else {
         return errmsg("Section type %s is not supported\n", GetSectionNameByType(sect_type));
     }

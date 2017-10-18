@@ -110,11 +110,11 @@ public:
     MlxSignRSA() : _privCtx(NULL), _pubCtx(NULL) {};
     ~MlxSignRSA();
 
-    int setPrivKeyFromFile(std::string& pemKeyFilePath);
-    int setPrivKey(std::string& pemKey);
+    int setPrivKeyFromFile(const std::string& pemKeyFilePath);
+    int setPrivKey(const std::string& pemKey);
 
-    int setPubKeyFromFile(std::string& pemKeyFilePath);
-    int setPubKey(std::string& pemKey);
+    int setPubKeyFromFile(const std::string& pemKeyFilePath);
+    int setPubKey(const std::string& pemKey);
 
     int getEncryptMaxMsgSize();
     int getDecryptMaxMsgSize();
@@ -127,8 +127,8 @@ public:
 
     std::string str(const std::vector<u_int8_t>& msg);
 private:
-    int createRSAFromPEMFileName(std::string& fname, bool isPrivateKey);
-    int createRSAFromPEMKeyString(std::string& pemKey,  bool isPrivateKey);
+    int createRSAFromPEMFileName(const std::string& fname, bool isPrivateKey);
+    int createRSAFromPEMKeyString(const std::string& pemKey,  bool isPrivateKey);
     void* _privCtx;
     void* _pubCtx;
 };

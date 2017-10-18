@@ -36,7 +36,8 @@
 
 #include <map>
 #include <string>
-#include <cstdarg>
+
+#include <stdarg.h>
 
 /**
  *  ErrMsg Class Provides API for returning both error codes and error messages to the user app.

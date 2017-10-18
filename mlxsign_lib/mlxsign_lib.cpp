@@ -100,22 +100,22 @@ MlxSignRSA::~MlxSignRSA()
         RSA_free((RSA*)_pubCtx);
     }
 }
-int MlxSignRSA::setPrivKeyFromFile(std::string& pemKeyFilePath)
+int MlxSignRSA::setPrivKeyFromFile(const std::string& pemKeyFilePath)
 {
     return createRSAFromPEMFileName(pemKeyFilePath, true);
 }
 
-int MlxSignRSA::setPrivKey(std::string& pemKey)
+int MlxSignRSA::setPrivKey(const std::string& pemKey)
 {
     return createRSAFromPEMKeyString(pemKey, true);
 }
 
-int MlxSignRSA::setPubKeyFromFile(std::string& pemKeyFilePath)
+int MlxSignRSA::setPubKeyFromFile(const std::string& pemKeyFilePath)
 {
     return createRSAFromPEMFileName(pemKeyFilePath, false);
 }
 
-int MlxSignRSA::setPubKey(std::string& pemKey)
+int MlxSignRSA::setPubKey(const std::string& pemKey)
 {
     return createRSAFromPEMKeyString(pemKey, false);
 }
@@ -244,7 +244,7 @@ std::string MlxSignRSA::str(const std::vector<u_int8_t>& msg)
         }                                                               \
     } while(0)
 
-int MlxSignRSA::createRSAFromPEMFileName(std::string& fname, bool isPrivateKey)
+int MlxSignRSA::createRSAFromPEMFileName(const std::string& fname, bool isPrivateKey)
 {
     FILE* fp = fopen(fname.c_str(), "rb");
     RSA* rsa = NULL;
@@ -267,7 +267,7 @@ int MlxSignRSA::createRSAFromPEMFileName(std::string& fname, bool isPrivateKey)
     return MLX_SIGN_SUCCESS;
 }
 
-int MlxSignRSA::createRSAFromPEMKeyString(std::string& pemKey,  bool isPrivateKey)
+int MlxSignRSA::createRSAFromPEMKeyString(const std::string& pemKey,  bool isPrivateKey)
 {
     RSA *rsa= NULL;
     BIO *keybio ;

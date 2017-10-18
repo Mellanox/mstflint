@@ -55,7 +55,7 @@ public:
     ~MlnxDev();
 
     int    query();
-    int    preBurn(string mfa_file, f_prog_func prog_cb, bool burnFailsafe,  bool& isAlignmentNeeded);
+    int    preBurn(string mfa_file, f_prog_func prog_cb, bool burnFailsafe,  bool& isAlignmentNeeded, f_prog_func_adv stage_prog=(f_prog_func_adv)NULL);
     int    burn(bool&);
     bool   clearSemaphore();
     int    isBurnSuccess();
@@ -78,8 +78,12 @@ public:
     void   setDevToNeedUpdate();
     bool   doesDevNeedUpdate();
     void   setNoFwCtrl();
+    void   setMccSupport(bool val=true) {_mccSupport = val;};
     vector<ImgVersion> _imageVers;
     inline bool isAlignmentNeeded();
+
+    bool checkExistence(vector<MlnxDev*>& devs);
+    string getUniqueId() {return _uniqueId;};
 public :
     string guidPortOne;
     string guidPortTwo;
@@ -102,6 +106,8 @@ private:
     bool OpenDev();
     bool openImg(u_int32_t * fileBuffer, u_int32_t bufferSize);
     port_type_t findPortType(int port);
+    void initUniqueId();
+    bool equals(MlnxDev* dev);
 
 private :
     typedef enum    {
@@ -120,7 +126,7 @@ private :
     string _log;
     string _errMsg;
     string _boardTypeId;
-
+    string _uniqueId;
     FwOperations* _devFwOps;
     FwOperations* _imgFwOps;
     FwOperations::fw_ops_params_t _devFwParams;
@@ -133,12 +139,14 @@ private :
     int    _ExpRomExists;
     bool   _needsUpdate;
     bool   _noFwCtrl;
+    bool   _mccSupport;
     string _description;
     string _partNumber;
     string _deviceTypeStr;
     dm_dev_id_t _deviceType;
 
     bool _preBurnInit;
+    int _unknowProgress;
 };
 
 #endif

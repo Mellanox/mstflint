@@ -378,12 +378,6 @@ vector<pair<ParamView, string> > TLVConf::query(mfile* mf, QueryType qT) {
     vector<u_int8_t> defaultBuff(_size, 0);
 
     mnva(mf, _buff.data(), _size, getTlvTypeBe(), REG_ACCESS_METHOD_GET, qT);
-    //convert buff to le (TODO: ask Dan if tlv size is dw aligned)
-    /*for(unsigned int i = 0; i < buff.size() / 4; i++){
-        ((u_int32_t*)buff.data())[i] =
-                __cpu_to_le32(
-                        __be32_to_cpu(((u_int32_t*)buff.data())[i]));
-    }*/
 
     unpack(_buff.data());
 
@@ -421,6 +415,16 @@ void TLVConf::updateParamByMlxconfigName(string paramMlxconfigName, string val)
     }
 }
 
+void TLVConf::updateParamByMlxconfigName(string paramMlxconfigName, string val, u_int32_t index)
+{
+    Param* p = findParamByMlxconfigName(paramMlxconfigName);
+    if(!p) {
+        throw MlxcfgException("Unknown parameter: %s",
+                paramMlxconfigName.c_str());
+    }
+    p->setVal(val, index);
+}
+
 void TLVConf::updateParamByName(string paramName, string val)
 {
     Param* p = NULL;
@@ -439,6 +443,24 @@ void TLVConf::updateParamByName(string paramName, string val)
     if(!p->_validBit.empty()) {
         (getValidBitParam(p->_validBit))->_value->setVal(1);
     }
+}
+
+void TLVConf::updateParamByName(string paramName, vector<string> vals)
+{
+    Param* p = NULL;
+    VECTOR_ITERATOR(Param*, _params, it){
+        if (paramName == (*it)->_name) {
+            p = *it;
+            break;
+        }
+    }
+
+    if(!p) {
+        throw MlxcfgException("Unknown parameter %s of the configuration %s",
+                paramName.c_str(), _name.c_str());
+    }
+
+    p->setVal(vals);
 }
 
 bool TLVConf::isAStringParam(string paramName)

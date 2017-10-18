@@ -889,6 +889,9 @@ bool  Flash::set_attr(char *param_name, char *param_val_str)
                 if (*endp != '\0') {
                     return errmsg("bad argument (%s), only integer value is allowed.", num_str);
                 }
+                if (!protect_info.sectors_num) {
+                    return errmsg("Invalid sectors number, Use \"Disabled\" instead.");
+                }
            }
             rc = mf_set_write_protect(_mfl, bank_num, &protect_info);
             if (rc != MFE_OK) {

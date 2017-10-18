@@ -269,7 +269,9 @@ static void printValue(string strVal, u_int32_t val)
     if(strVal == "" || strVal == s || (strToNum(strVal, n) && n == val)) {
         printf("%-16u", val);
     } else {
-        strVal += "(" + s + ")";
+        if (strVal.find("Array") == string::npos) {
+            strVal += "(" + s + ")";
+        }
         printf("%-16s", strVal.c_str());
     }
 }
@@ -407,10 +409,10 @@ void prepareQueryOutput(vector<QueryOutputItem>& output,
 }
 
 void queryAux(Commander* commander, vector<ParamView>& params,
-        vector<ParamView>& setParams, bool isSetCmd, QueryType qT)
+        vector<ParamView>& paramsToQuery, QueryType qT)
 {
-    if (isSetCmd) {
-        params = setParams;
+    if (paramsToQuery.size() != 0) {
+        params = paramsToQuery;
         commander->queryParamViews(params, qT);
     } else {
         commander->queryAll(params, qT);
@@ -455,14 +457,12 @@ mlxCfgStatus MlxCfg::queryDevCfg(Commander* commander, const char* dev,const cha
         }
 
         if (showDefault) {
-            queryAux(commander, defaultParams, _mlxParams.setParams,
-                    printNewCfg, QueryDefault);
+            queryAux(commander, defaultParams, _mlxParams.setParams, QueryDefault);
         }
         if (showCurrent) {
-            queryAux(commander, currentParams, _mlxParams.setParams,
-                    printNewCfg, QueryCurrent);
+            queryAux(commander, currentParams, _mlxParams.setParams, QueryCurrent);
         }
-        queryAux(commander, params, _mlxParams.setParams, printNewCfg, QueryNext);
+        queryAux(commander, params, _mlxParams.setParams, QueryNext);
     } catch (MlxcfgException& e) {
         err(false, "%s", e._err.c_str());
         return MLX_CFG_ERROR_EXIT;

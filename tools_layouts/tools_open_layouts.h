@@ -1,37 +1,20 @@
-/*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+
+/*                  - Mellanox Confidential and Proprietary -
  *
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
- * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
- * OpenIB.org BSD license below:
+ *  Copyright (C) 2010-2011, Mellanox Technologies Ltd.  ALL RIGHTS RESERVED.
  *
- *     Redistribution and use in source and binary forms, with or
- *     without modification, are permitted provided that the following
- *     conditions are met:
+ *  Except as specifically permitted herein, no portion of the information,
+ *  including but not limited to object code and source code, may be reproduced,
+ *  modified, distributed, republished or otherwise exploited in any form or by
+ *  any means for any purpose without the prior written permission of Mellanox
+ *  Technologies Ltd. Use of software subject to the terms and conditions
+ *  detailed in the file "LICENSE.txt".
  *
- *      - Redistributions of source code must retain the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer.
- *
- *      - Redistributions in binary form must reproduce the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
  */
+ 
 
 /***
-         *** This file was generated at "2017-06-27 08:13:13"
+         *** This file was generated at "2017-08-20 10:44:46"
          *** by:
          ***    > /mswg/release/tools/a-me/last_stable/adabe_plugins/adb2c/adb2pack.py --input adb/tools_open/tools_open.adb --file-prefix tools_open --prefix tools_open_
          ***/
@@ -1366,7 +1349,7 @@ struct tools_open_aux_tlv {
 /* Size in bytes - 4 */
 struct tools_open_bar_size {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Base 2 log of the size of the physical function������s first BAR, in MBs. E.g. for 8MB the value is 3. */
+	/* Description - Base 2 log of the size of the physical function��s first BAR, in MBs. E.g. for 8MB the value is 3. */
 	/* 0x0.0 - 0x0.31 */
 	 u_int32_t log_uar_bar_size;
 };
@@ -1378,11 +1361,11 @@ struct tools_open_boot_settings {
 	/* Description - VLAN ID for network boot. */
 	/* 0x0.0 - 0x0.11 */
 	 u_int16_t boot_vlan;
-	/* Description - 0 ������ None ������ disable legacy boot.
-1 ������ PXE (DHCP/TFTP boot).
-2 ������ iSCSI
-3 ������ PXE + iSCSI
-4-255 ������ Reserved
+	/* Description - 0 �� None �� disable legacy boot.
+1 �� PXE (DHCP/TFTP boot).
+2 �� iSCSI
+3 �� PXE + iSCSI
+4-255 �� Reserved
  */
 	/* 0x0.16 - 0x0.23 */
 	 u_int8_t legacy_boot_protocol;
@@ -1391,11 +1374,11 @@ struct tools_open_boot_settings {
  */
 	/* 0x0.24 - 0x0.26 */
 	 u_int8_t boot_retry_conut;
-	/* Description - 1 ������ Enable VLAN mode for network boot. */
+	/* Description - 1 �� Enable VLAN mode for network boot. */
 	/* 0x0.30 - 0x0.30 */
 	 u_int8_t boot_vlan_en;
-	/* Description - 0 ������ disable boot option ROM: disables installation of the UNDI/16 driver. The option ROM is still required to expose CLP, UEFI and so on.
-1 ������ enable boot option ROM
+	/* Description - 0 �� disable boot option ROM: disables installation of the UNDI/16 driver. The option ROM is still required to expose CLP, UEFI and so on.
+1 �� enable boot option ROM
  */
 	/* 0x0.31 - 0x0.31 */
 	 u_int8_t boot_option_rom_en;
@@ -1501,10 +1484,10 @@ struct tools_open_iscsi_settings {
 	/* 0x0.21 - 0x0.21 */
 	 u_int8_t target_as_first_hdd_en;
 	/* Description - Boot to iSCSI target after connection. 
-������ 0 ������ Enabled
-������ 1 ������ Disabled
-������ 2 - One time disabled
-������ 3 - Invalid setting
+�� 0 �� Enabled
+�� 1 �� Disabled
+�� 2 - One time disabled
+�� 3 - Invalid setting
  */
 	/* 0x0.22 - 0x0.23 */
 	 u_int8_t boot_to_target;
@@ -1579,7 +1562,7 @@ Default: 30
 	 u_int16_t lldp_msg_tx_interval;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description - A bitmask saying which of the LLDP-TLV to send
-Default: b1111  (only TLVs 0..3) ������ according to the standard these are mandatory TLVs that must always be enabled
+Default: b1111  (only TLVs 0..3) �� according to the standard these are mandatory TLVs that must always be enabled
 
 An enabled TLV will not be send if a corresponding TLV is not defined
  */
@@ -1715,6 +1698,15 @@ struct tools_open_nv_base_mac_guid_cap {
 	/* Description -  */
 	/* 0x4.16 - 0x4.31 */
 	 u_int16_t num_of_allocated_guids;
+};
+
+/* Description -   */
+/* Size in bytes - 32 */
+struct tools_open_nv_cx3_global_conf {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - When set, IEE1588 (PTP) HW timestamping capability is reported to the device driver. */
+	/* 0x0.31 - 0x0.31 */
+	 u_int8_t cq_timestamp;
 };
 
 /* Description -   */
@@ -1926,15 +1918,15 @@ struct tools_open_preboot_boot_settings {
 struct tools_open_preboot_flow_ctrl {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Per priority bit mask. For each priority:
-0 ������ ignore incoming PFC frames regarding this priority.
-1 ������ respect incoming PFC frames on this priority.
+0 �� ignore incoming PFC frames regarding this priority.
+1 �� respect incoming PFC frames on this priority.
  */
 	/* 0x0.0 - 0x0.7 */
 	 u_int8_t pfcrx;
 	/* Description - Per priority bit mask. For each priority:
 
-0 ������ no PFC pause frames generation for this priority.
-1 ������ generate PFC pause frames for this priority.
+0 �� no PFC pause frames generation for this priority.
+1 �� generate PFC pause frames for this priority.
 PFC and global pauses are mutually exclusive.
  */
 	/* 0x0.8 - 0x0.15 */
@@ -1942,13 +1934,13 @@ PFC and global pauses are mutually exclusive.
 	/* Description - For future DCBX support. */
 	/* 0x0.29 - 0x0.29 */
 	 u_int8_t pfc_willing;
-	/* Description - 0 ������ ignore received pause frames
-1 ������ respect received pause frames
+	/* Description - 0 �� ignore received pause frames
+1 �� respect received pause frames
  */
 	/* 0x0.30 - 0x0.30 */
 	 u_int8_t pprx;
-	/* Description - 0 ������ no pause frame generation.
-1 ������ generate pause frames.
+	/* Description - 0 �� no pause frame generation.
+1 �� generate pause frames.
 PFC and global pauses are mutually exclusive.
  */
 	/* 0x0.31 - 0x0.31 */
@@ -1983,6 +1975,9 @@ struct tools_open_qos_cap {
 /* Size in bytes - 20 */
 struct tools_open_query_def_params_global {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - When set, CX3_GLOBAL_CONF.cq_timestamp bit is supported */
+	/* 0x0.17 - 0x0.17 */
+	 u_int8_t nv_cq_timestamp_supported;
 	/* Description -  */
 	/* 0x0.24 - 0x0.31 */
 	 u_int8_t fw_default_config_payload_version;
@@ -1999,6 +1994,9 @@ struct tools_open_query_def_params_global {
 	/* Description -  */
 	/* 0x4.21 - 0x4.21 */
 	 u_int8_t boot_ip_ver;
+	/* Description - The value reported by QUERY_DEV_CAP.cq_timestamp when a CX3_GLOBAL_CONF TLV is not present */
+	/* 0x4.29 - 0x4.29 */
+	 u_int8_t default_cq_timestamp;
 	/* Description - default value of sriov (enabled or disabled) */
 	/* 0x4.31 - 0x4.31 */
 	 u_int8_t sriov_en;
@@ -2160,7 +2158,7 @@ Default: 5
 	 u_int8_t rpg_threshold;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - The maximum rate, in Mbits per second, at which an RP can transmit. Once this limit is reached, the RP rate limited is released and the flow is not rate limited any more.
-Default: 0 (Full port speed) ������ TBD update PRM
+Default: 0 (Full port speed) �� TBD update PRM
  */
 	/* 0x10.0 - 0x10.30 */
 	 u_int32_t rpg_max_rate;
@@ -2520,6 +2518,9 @@ union tools_open_nv_cfg {
 	/* Description -  */
 	/* 0x0.0 - 0x4.31 */
 	 struct tools_open_nv_base_mac_guid_cap nv_base_mac_guid_cap;
+	/* Description -  */
+	/* 0x0.0 - 0x1c.31 */
+	 struct tools_open_nv_cx3_global_conf nv_cx3_global_conf;
 };
 
 /* Description -   */
@@ -2551,605 +2552,612 @@ union tools_open_tools_open {
 /* bmc_type */
 void tools_open_bmc_type_pack(const struct tools_open_bmc_type *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_bmc_type_unpack(struct tools_open_bmc_type *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_bmc_type_print(const struct tools_open_bmc_type *ptr_struct, FILE *file, int indent_level);
-int tools_open_bmc_type_size(void);
+void tools_open_bmc_type_print(const struct tools_open_bmc_type *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_bmc_type_size(void);
 #define TOOLS_OPEN_BMC_TYPE_SIZE    (0x4)
-void tools_open_bmc_type_dump(const struct tools_open_bmc_type *ptr_struct, FILE *file);
+void tools_open_bmc_type_dump(const struct tools_open_bmc_type *ptr_struct, FILE *fd);
 /* eswitch_type */
 void tools_open_eswitch_type_pack(const struct tools_open_eswitch_type *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_eswitch_type_unpack(struct tools_open_eswitch_type *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_eswitch_type_print(const struct tools_open_eswitch_type *ptr_struct, FILE *file, int indent_level);
-int tools_open_eswitch_type_size(void);
+void tools_open_eswitch_type_print(const struct tools_open_eswitch_type *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_eswitch_type_size(void);
 #define TOOLS_OPEN_ESWITCH_TYPE_SIZE    (0x4)
-void tools_open_eswitch_type_dump(const struct tools_open_eswitch_type *ptr_struct, FILE *file);
+void tools_open_eswitch_type_dump(const struct tools_open_eswitch_type *ptr_struct, FILE *fd);
 /* global_type */
 void tools_open_global_type_pack(const struct tools_open_global_type *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_global_type_unpack(struct tools_open_global_type *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_global_type_print(const struct tools_open_global_type *ptr_struct, FILE *file, int indent_level);
-int tools_open_global_type_size(void);
+void tools_open_global_type_print(const struct tools_open_global_type *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_global_type_size(void);
 #define TOOLS_OPEN_GLOBAL_TYPE_SIZE    (0x4)
-void tools_open_global_type_dump(const struct tools_open_global_type *ptr_struct, FILE *file);
+void tools_open_global_type_dump(const struct tools_open_global_type *ptr_struct, FILE *fd);
 /* host_type */
 void tools_open_host_type_pack(const struct tools_open_host_type *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_host_type_unpack(struct tools_open_host_type *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_host_type_print(const struct tools_open_host_type *ptr_struct, FILE *file, int indent_level);
-int tools_open_host_type_size(void);
+void tools_open_host_type_print(const struct tools_open_host_type *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_host_type_size(void);
 #define TOOLS_OPEN_HOST_TYPE_SIZE    (0x4)
-void tools_open_host_type_dump(const struct tools_open_host_type *ptr_struct, FILE *file);
+void tools_open_host_type_dump(const struct tools_open_host_type *ptr_struct, FILE *fd);
 /* per_host_type */
 void tools_open_per_host_type_pack(const struct tools_open_per_host_type *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_per_host_type_unpack(struct tools_open_per_host_type *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_per_host_type_print(const struct tools_open_per_host_type *ptr_struct, FILE *file, int indent_level);
-int tools_open_per_host_type_size(void);
+void tools_open_per_host_type_print(const struct tools_open_per_host_type *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_per_host_type_size(void);
 #define TOOLS_OPEN_PER_HOST_TYPE_SIZE    (0x4)
-void tools_open_per_host_type_dump(const struct tools_open_per_host_type *ptr_struct, FILE *file);
+void tools_open_per_host_type_dump(const struct tools_open_per_host_type *ptr_struct, FILE *fd);
 /* per_port_type */
 void tools_open_per_port_type_pack(const struct tools_open_per_port_type *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_per_port_type_unpack(struct tools_open_per_port_type *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_per_port_type_print(const struct tools_open_per_port_type *ptr_struct, FILE *file, int indent_level);
-int tools_open_per_port_type_size(void);
+void tools_open_per_port_type_print(const struct tools_open_per_port_type *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_per_port_type_size(void);
 #define TOOLS_OPEN_PER_PORT_TYPE_SIZE    (0x4)
-void tools_open_per_port_type_dump(const struct tools_open_per_port_type *ptr_struct, FILE *file);
+void tools_open_per_port_type_dump(const struct tools_open_per_port_type *ptr_struct, FILE *fd);
 /* tlv_type_dw */
 void tools_open_tlv_type_dw_pack(const struct tools_open_tlv_type_dw *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_tlv_type_dw_unpack(struct tools_open_tlv_type_dw *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_tlv_type_dw_print(const struct tools_open_tlv_type_dw *ptr_struct, FILE *file, int indent_level);
-int tools_open_tlv_type_dw_size(void);
+void tools_open_tlv_type_dw_print(const struct tools_open_tlv_type_dw *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_tlv_type_dw_size(void);
 #define TOOLS_OPEN_TLV_TYPE_DW_SIZE    (0x4)
-void tools_open_tlv_type_dw_dump(const struct tools_open_tlv_type_dw *ptr_struct, FILE *file);
+void tools_open_tlv_type_dw_dump(const struct tools_open_tlv_type_dw *ptr_struct, FILE *fd);
 /* fw_version */
 void tools_open_fw_version_pack(const struct tools_open_fw_version *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_fw_version_unpack(struct tools_open_fw_version *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_fw_version_print(const struct tools_open_fw_version *ptr_struct, FILE *file, int indent_level);
-int tools_open_fw_version_size(void);
+void tools_open_fw_version_print(const struct tools_open_fw_version *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_fw_version_size(void);
 #define TOOLS_OPEN_FW_VERSION_SIZE    (0x8)
-void tools_open_fw_version_dump(const struct tools_open_fw_version *ptr_struct, FILE *file);
+void tools_open_fw_version_dump(const struct tools_open_fw_version *ptr_struct, FILE *fd);
 /* tlv_type */
 void tools_open_tlv_type_pack(const union tools_open_tlv_type *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_tlv_type_unpack(union tools_open_tlv_type *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_tlv_type_print(const union tools_open_tlv_type *ptr_struct, FILE *file, int indent_level);
-int tools_open_tlv_type_size(void);
+void tools_open_tlv_type_print(const union tools_open_tlv_type *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_tlv_type_size(void);
 #define TOOLS_OPEN_TLV_TYPE_SIZE    (0x4)
-void tools_open_tlv_type_dump(const union tools_open_tlv_type *ptr_struct, FILE *file);
+void tools_open_tlv_type_dump(const union tools_open_tlv_type *ptr_struct, FILE *fd);
 /* ts_entry */
 void tools_open_ts_entry_pack(const struct tools_open_ts_entry *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_ts_entry_unpack(struct tools_open_ts_entry *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_ts_entry_print(const struct tools_open_ts_entry *ptr_struct, FILE *file, int indent_level);
-int tools_open_ts_entry_size(void);
+void tools_open_ts_entry_print(const struct tools_open_ts_entry *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_ts_entry_size(void);
 #define TOOLS_OPEN_TS_ENTRY_SIZE    (0x8)
-void tools_open_ts_entry_dump(const struct tools_open_ts_entry *ptr_struct, FILE *file);
+void tools_open_ts_entry_dump(const struct tools_open_ts_entry *ptr_struct, FILE *fd);
 /* cap_mask */
 void tools_open_cap_mask_pack(const struct tools_open_cap_mask *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_cap_mask_unpack(struct tools_open_cap_mask *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_cap_mask_print(const struct tools_open_cap_mask *ptr_struct, FILE *file, int indent_level);
-int tools_open_cap_mask_size(void);
+void tools_open_cap_mask_print(const struct tools_open_cap_mask *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_cap_mask_size(void);
 #define TOOLS_OPEN_CAP_MASK_SIZE    (0x4)
-void tools_open_cap_mask_dump(const struct tools_open_cap_mask *ptr_struct, FILE *file);
+void tools_open_cap_mask_dump(const struct tools_open_cap_mask *ptr_struct, FILE *fd);
 /* capability_mask_smp */
 void tools_open_capability_mask_smp_pack(const struct tools_open_capability_mask_smp *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_capability_mask_smp_unpack(struct tools_open_capability_mask_smp *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_capability_mask_smp_print(const struct tools_open_capability_mask_smp *ptr_struct, FILE *file, int indent_level);
-int tools_open_capability_mask_smp_size(void);
+void tools_open_capability_mask_smp_print(const struct tools_open_capability_mask_smp *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_capability_mask_smp_size(void);
 #define TOOLS_OPEN_CAPABILITY_MASK_SMP_SIZE    (0x40)
-void tools_open_capability_mask_smp_dump(const struct tools_open_capability_mask_smp *ptr_struct, FILE *file);
+void tools_open_capability_mask_smp_dump(const struct tools_open_capability_mask_smp *ptr_struct, FILE *fd);
 /* fw_info */
 void tools_open_fw_info_pack(const struct tools_open_fw_info *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_fw_info_unpack(struct tools_open_fw_info *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_fw_info_print(const struct tools_open_fw_info *ptr_struct, FILE *file, int indent_level);
-int tools_open_fw_info_size(void);
+void tools_open_fw_info_print(const struct tools_open_fw_info *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_fw_info_size(void);
 #define TOOLS_OPEN_FW_INFO_SIZE    (0x40)
-void tools_open_fw_info_dump(const struct tools_open_fw_info *ptr_struct, FILE *file);
+void tools_open_fw_info_dump(const struct tools_open_fw_info *ptr_struct, FILE *fd);
 /* hw_info */
 void tools_open_hw_info_pack(const struct tools_open_hw_info *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_hw_info_unpack(struct tools_open_hw_info *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_hw_info_print(const struct tools_open_hw_info *ptr_struct, FILE *file, int indent_level);
-int tools_open_hw_info_size(void);
+void tools_open_hw_info_print(const struct tools_open_hw_info *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_hw_info_size(void);
 #define TOOLS_OPEN_HW_INFO_SIZE    (0x20)
-void tools_open_hw_info_dump(const struct tools_open_hw_info *ptr_struct, FILE *file);
+void tools_open_hw_info_dump(const struct tools_open_hw_info *ptr_struct, FILE *fd);
 /* nv_hdr */
 void tools_open_nv_hdr_pack(const struct tools_open_nv_hdr *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_nv_hdr_unpack(struct tools_open_nv_hdr *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_nv_hdr_print(const struct tools_open_nv_hdr *ptr_struct, FILE *file, int indent_level);
-int tools_open_nv_hdr_size(void);
+void tools_open_nv_hdr_print(const struct tools_open_nv_hdr *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_nv_hdr_size(void);
 #define TOOLS_OPEN_NV_HDR_SIZE    (0x8)
-void tools_open_nv_hdr_dump(const struct tools_open_nv_hdr *ptr_struct, FILE *file);
+void tools_open_nv_hdr_dump(const struct tools_open_nv_hdr *ptr_struct, FILE *fd);
 /* nv_hdr_fifth_gen */
 void tools_open_nv_hdr_fifth_gen_pack(const struct tools_open_nv_hdr_fifth_gen *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_nv_hdr_fifth_gen_unpack(struct tools_open_nv_hdr_fifth_gen *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_nv_hdr_fifth_gen_print(const struct tools_open_nv_hdr_fifth_gen *ptr_struct, FILE *file, int indent_level);
-int tools_open_nv_hdr_fifth_gen_size(void);
+void tools_open_nv_hdr_fifth_gen_print(const struct tools_open_nv_hdr_fifth_gen *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_nv_hdr_fifth_gen_size(void);
 #define TOOLS_OPEN_NV_HDR_FIFTH_GEN_SIZE    (0xc)
-void tools_open_nv_hdr_fifth_gen_dump(const struct tools_open_nv_hdr_fifth_gen *ptr_struct, FILE *file);
+void tools_open_nv_hdr_fifth_gen_dump(const struct tools_open_nv_hdr_fifth_gen *ptr_struct, FILE *fd);
 /* pmdio_addr_data */
 void tools_open_pmdio_addr_data_pack(const struct tools_open_pmdio_addr_data *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_pmdio_addr_data_unpack(struct tools_open_pmdio_addr_data *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_pmdio_addr_data_print(const struct tools_open_pmdio_addr_data *ptr_struct, FILE *file, int indent_level);
-int tools_open_pmdio_addr_data_size(void);
+void tools_open_pmdio_addr_data_print(const struct tools_open_pmdio_addr_data *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_pmdio_addr_data_size(void);
 #define TOOLS_OPEN_PMDIO_ADDR_DATA_SIZE    (0x4)
-void tools_open_pmdio_addr_data_dump(const struct tools_open_pmdio_addr_data *ptr_struct, FILE *file);
+void tools_open_pmdio_addr_data_dump(const struct tools_open_pmdio_addr_data *ptr_struct, FILE *fd);
 /* sw_info */
 void tools_open_sw_info_pack(const struct tools_open_sw_info *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_sw_info_unpack(struct tools_open_sw_info *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_sw_info_print(const struct tools_open_sw_info *ptr_struct, FILE *file, int indent_level);
-int tools_open_sw_info_size(void);
+void tools_open_sw_info_print(const struct tools_open_sw_info *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_sw_info_size(void);
 #define TOOLS_OPEN_SW_INFO_SIZE    (0x20)
-void tools_open_sw_info_dump(const struct tools_open_sw_info *ptr_struct, FILE *file);
+void tools_open_sw_info_dump(const struct tools_open_sw_info *ptr_struct, FILE *fd);
 /* timestamp */
 void tools_open_timestamp_pack(const struct tools_open_timestamp *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_timestamp_unpack(struct tools_open_timestamp *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_timestamp_print(const struct tools_open_timestamp *ptr_struct, FILE *file, int indent_level);
-int tools_open_timestamp_size(void);
+void tools_open_timestamp_print(const struct tools_open_timestamp *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_timestamp_size(void);
 #define TOOLS_OPEN_TIMESTAMP_SIZE    (0x10)
-void tools_open_timestamp_dump(const struct tools_open_timestamp *ptr_struct, FILE *file);
+void tools_open_timestamp_dump(const struct tools_open_timestamp *ptr_struct, FILE *fd);
 /* aux_tlv_header */
 void tools_open_aux_tlv_header_pack(const struct tools_open_aux_tlv_header *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_aux_tlv_header_unpack(struct tools_open_aux_tlv_header *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_aux_tlv_header_print(const struct tools_open_aux_tlv_header *ptr_struct, FILE *file, int indent_level);
-int tools_open_aux_tlv_header_size(void);
+void tools_open_aux_tlv_header_print(const struct tools_open_aux_tlv_header *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_aux_tlv_header_size(void);
 #define TOOLS_OPEN_AUX_TLV_HEADER_SIZE    (0x14)
-void tools_open_aux_tlv_header_dump(const struct tools_open_aux_tlv_header *ptr_struct, FILE *file);
+void tools_open_aux_tlv_header_dump(const struct tools_open_aux_tlv_header *ptr_struct, FILE *fd);
 /* extended_ib_port_info */
 void tools_open_extended_ib_port_info_pack(const struct tools_open_extended_ib_port_info *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_extended_ib_port_info_unpack(struct tools_open_extended_ib_port_info *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_extended_ib_port_info_print(const struct tools_open_extended_ib_port_info *ptr_struct, FILE *file, int indent_level);
-int tools_open_extended_ib_port_info_size(void);
+void tools_open_extended_ib_port_info_print(const struct tools_open_extended_ib_port_info *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_extended_ib_port_info_size(void);
 #define TOOLS_OPEN_EXTENDED_IB_PORT_INFO_SIZE    (0x3c)
-void tools_open_extended_ib_port_info_dump(const struct tools_open_extended_ib_port_info *ptr_struct, FILE *file);
+void tools_open_extended_ib_port_info_dump(const struct tools_open_extended_ib_port_info *ptr_struct, FILE *fd);
 /* ib_port_info */
 void tools_open_ib_port_info_pack(const struct tools_open_ib_port_info *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_ib_port_info_unpack(struct tools_open_ib_port_info *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_ib_port_info_print(const struct tools_open_ib_port_info *ptr_struct, FILE *file, int indent_level);
-int tools_open_ib_port_info_size(void);
+void tools_open_ib_port_info_print(const struct tools_open_ib_port_info *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_ib_port_info_size(void);
 #define TOOLS_OPEN_IB_PORT_INFO_SIZE    (0x40)
-void tools_open_ib_port_info_dump(const struct tools_open_ib_port_info *ptr_struct, FILE *file);
+void tools_open_ib_port_info_dump(const struct tools_open_ib_port_info *ptr_struct, FILE *fd);
 /* mcam */
 void tools_open_mcam_pack(const struct tools_open_mcam *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_mcam_unpack(struct tools_open_mcam *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_mcam_print(const struct tools_open_mcam *ptr_struct, FILE *file, int indent_level);
-int tools_open_mcam_size(void);
+void tools_open_mcam_print(const struct tools_open_mcam *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_mcam_size(void);
 #define TOOLS_OPEN_MCAM_SIZE    (0x48)
-void tools_open_mcam_dump(const struct tools_open_mcam *ptr_struct, FILE *file);
+void tools_open_mcam_dump(const struct tools_open_mcam *ptr_struct, FILE *fd);
 /* mfmc */
 void tools_open_mfmc_pack(const struct tools_open_mfmc *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_mfmc_unpack(struct tools_open_mfmc *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_mfmc_print(const struct tools_open_mfmc *ptr_struct, FILE *file, int indent_level);
-int tools_open_mfmc_size(void);
+void tools_open_mfmc_print(const struct tools_open_mfmc *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_mfmc_size(void);
 #define TOOLS_OPEN_MFMC_SIZE    (0x1c)
-void tools_open_mfmc_dump(const struct tools_open_mfmc *ptr_struct, FILE *file);
+void tools_open_mfmc_dump(const struct tools_open_mfmc *ptr_struct, FILE *fd);
 /* mfpa */
 void tools_open_mfpa_pack(const struct tools_open_mfpa *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_mfpa_unpack(struct tools_open_mfpa *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_mfpa_print(const struct tools_open_mfpa *ptr_struct, FILE *file, int indent_level);
-int tools_open_mfpa_size(void);
+void tools_open_mfpa_print(const struct tools_open_mfpa *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_mfpa_size(void);
 #define TOOLS_OPEN_MFPA_SIZE    (0x20)
-void tools_open_mfpa_dump(const struct tools_open_mfpa *ptr_struct, FILE *file);
+void tools_open_mfpa_dump(const struct tools_open_mfpa *ptr_struct, FILE *fd);
 /* mgir */
 void tools_open_mgir_pack(const struct tools_open_mgir *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_mgir_unpack(struct tools_open_mgir *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_mgir_print(const struct tools_open_mgir *ptr_struct, FILE *file, int indent_level);
-int tools_open_mgir_size(void);
+void tools_open_mgir_print(const struct tools_open_mgir *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_mgir_size(void);
 #define TOOLS_OPEN_MGIR_SIZE    (0x80)
-void tools_open_mgir_dump(const struct tools_open_mgir *ptr_struct, FILE *file);
+void tools_open_mgir_dump(const struct tools_open_mgir *ptr_struct, FILE *fd);
 /* mnva */
 void tools_open_mnva_pack(const struct tools_open_mnva *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_mnva_unpack(struct tools_open_mnva *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_mnva_print(const struct tools_open_mnva *ptr_struct, FILE *file, int indent_level);
-int tools_open_mnva_size(void);
+void tools_open_mnva_print(const struct tools_open_mnva *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_mnva_size(void);
 #define TOOLS_OPEN_MNVA_SIZE    (0x100)
-void tools_open_mnva_dump(const struct tools_open_mnva *ptr_struct, FILE *file);
+void tools_open_mnva_dump(const struct tools_open_mnva *ptr_struct, FILE *fd);
 /* mnvgn */
 void tools_open_mnvgn_pack(const struct tools_open_mnvgn *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_mnvgn_unpack(struct tools_open_mnvgn *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_mnvgn_print(const struct tools_open_mnvgn *ptr_struct, FILE *file, int indent_level);
-int tools_open_mnvgn_size(void);
+void tools_open_mnvgn_print(const struct tools_open_mnvgn *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_mnvgn_size(void);
 #define TOOLS_OPEN_MNVGN_SIZE    (0x9c)
-void tools_open_mnvgn_dump(const struct tools_open_mnvgn *ptr_struct, FILE *file);
+void tools_open_mnvgn_dump(const struct tools_open_mnvgn *ptr_struct, FILE *fd);
 /* mnvi */
 void tools_open_mnvi_pack(const struct tools_open_mnvi *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_mnvi_unpack(struct tools_open_mnvi *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_mnvi_print(const struct tools_open_mnvi *ptr_struct, FILE *file, int indent_level);
-int tools_open_mnvi_size(void);
+void tools_open_mnvi_print(const struct tools_open_mnvi *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_mnvi_size(void);
 #define TOOLS_OPEN_MNVI_SIZE    (0x8)
-void tools_open_mnvi_dump(const struct tools_open_mnvi *ptr_struct, FILE *file);
+void tools_open_mnvi_dump(const struct tools_open_mnvi *ptr_struct, FILE *fd);
 /* mnvia */
 void tools_open_mnvia_pack(const struct tools_open_mnvia *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_mnvia_unpack(struct tools_open_mnvia *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_mnvia_print(const struct tools_open_mnvia *ptr_struct, FILE *file, int indent_level);
-int tools_open_mnvia_size(void);
+void tools_open_mnvia_print(const struct tools_open_mnvia *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_mnvia_size(void);
 #define TOOLS_OPEN_MNVIA_SIZE    (0x8)
-void tools_open_mnvia_dump(const struct tools_open_mnvia *ptr_struct, FILE *file);
+void tools_open_mnvia_dump(const struct tools_open_mnvia *ptr_struct, FILE *fd);
 /* mvts */
 void tools_open_mvts_pack(const struct tools_open_mvts *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_mvts_unpack(struct tools_open_mvts *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_mvts_print(const struct tools_open_mvts *ptr_struct, FILE *file, int indent_level);
-int tools_open_mvts_size(void);
+void tools_open_mvts_print(const struct tools_open_mvts *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_mvts_size(void);
 #define TOOLS_OPEN_MVTS_SIZE    (0x14)
-void tools_open_mvts_dump(const struct tools_open_mvts *ptr_struct, FILE *file);
+void tools_open_mvts_dump(const struct tools_open_mvts *ptr_struct, FILE *fd);
 /* node_info */
 void tools_open_node_info_pack(const struct tools_open_node_info *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_node_info_unpack(struct tools_open_node_info *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_node_info_print(const struct tools_open_node_info *ptr_struct, FILE *file, int indent_level);
-int tools_open_node_info_size(void);
+void tools_open_node_info_print(const struct tools_open_node_info *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_node_info_size(void);
 #define TOOLS_OPEN_NODE_INFO_SIZE    (0x40)
-void tools_open_node_info_dump(const struct tools_open_node_info *ptr_struct, FILE *file);
+void tools_open_node_info_dump(const struct tools_open_node_info *ptr_struct, FILE *fd);
 /* nvda */
 void tools_open_nvda_pack(const struct tools_open_nvda *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_nvda_unpack(struct tools_open_nvda *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_nvda_print(const struct tools_open_nvda *ptr_struct, FILE *file, int indent_level);
-int tools_open_nvda_size(void);
+void tools_open_nvda_print(const struct tools_open_nvda *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_nvda_size(void);
 #define TOOLS_OPEN_NVDA_SIZE    (0x10c)
-void tools_open_nvda_dump(const struct tools_open_nvda *ptr_struct, FILE *file);
+void tools_open_nvda_dump(const struct tools_open_nvda *ptr_struct, FILE *fd);
 /* nvdi */
 void tools_open_nvdi_pack(const struct tools_open_nvdi *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_nvdi_unpack(struct tools_open_nvdi *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_nvdi_print(const struct tools_open_nvdi *ptr_struct, FILE *file, int indent_level);
-int tools_open_nvdi_size(void);
+void tools_open_nvdi_print(const struct tools_open_nvdi *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_nvdi_size(void);
 #define TOOLS_OPEN_NVDI_SIZE    (0xc)
-void tools_open_nvdi_dump(const struct tools_open_nvdi *ptr_struct, FILE *file);
+void tools_open_nvdi_dump(const struct tools_open_nvdi *ptr_struct, FILE *fd);
 /* nvia */
 void tools_open_nvia_pack(const struct tools_open_nvia *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_nvia_unpack(struct tools_open_nvia *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_nvia_print(const struct tools_open_nvia *ptr_struct, FILE *file, int indent_level);
-int tools_open_nvia_size(void);
+void tools_open_nvia_print(const struct tools_open_nvia *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_nvia_size(void);
 #define TOOLS_OPEN_NVIA_SIZE    (0x14)
-void tools_open_nvia_dump(const struct tools_open_nvia *ptr_struct, FILE *file);
+void tools_open_nvia_dump(const struct tools_open_nvia *ptr_struct, FILE *fd);
 /* nvqc */
 void tools_open_nvqc_pack(const struct tools_open_nvqc *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_nvqc_unpack(struct tools_open_nvqc *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_nvqc_print(const struct tools_open_nvqc *ptr_struct, FILE *file, int indent_level);
-int tools_open_nvqc_size(void);
+void tools_open_nvqc_print(const struct tools_open_nvqc *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_nvqc_size(void);
 #define TOOLS_OPEN_NVQC_SIZE    (0x8)
-void tools_open_nvqc_dump(const struct tools_open_nvqc *ptr_struct, FILE *file);
+void tools_open_nvqc_dump(const struct tools_open_nvqc *ptr_struct, FILE *fd);
 /* nvqgc */
 void tools_open_nvqgc_pack(const struct tools_open_nvqgc *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_nvqgc_unpack(struct tools_open_nvqgc *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_nvqgc_print(const struct tools_open_nvqgc *ptr_struct, FILE *file, int indent_level);
-int tools_open_nvqgc_size(void);
+void tools_open_nvqgc_print(const struct tools_open_nvqgc *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_nvqgc_size(void);
 #define TOOLS_OPEN_NVQGC_SIZE    (0x10)
-void tools_open_nvqgc_dump(const struct tools_open_nvqgc *ptr_struct, FILE *file);
+void tools_open_nvqgc_dump(const struct tools_open_nvqgc *ptr_struct, FILE *fd);
 /* pmdic */
 void tools_open_pmdic_pack(const struct tools_open_pmdic *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_pmdic_unpack(struct tools_open_pmdic *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_pmdic_print(const struct tools_open_pmdic *ptr_struct, FILE *file, int indent_level);
-int tools_open_pmdic_size(void);
+void tools_open_pmdic_print(const struct tools_open_pmdic *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_pmdic_size(void);
 #define TOOLS_OPEN_PMDIC_SIZE    (0xc)
-void tools_open_pmdic_dump(const struct tools_open_pmdic *ptr_struct, FILE *file);
+void tools_open_pmdic_dump(const struct tools_open_pmdic *ptr_struct, FILE *fd);
 /* pmdio */
 void tools_open_pmdio_pack(const struct tools_open_pmdio *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_pmdio_unpack(struct tools_open_pmdio *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_pmdio_print(const struct tools_open_pmdio *ptr_struct, FILE *file, int indent_level);
-int tools_open_pmdio_size(void);
+void tools_open_pmdio_print(const struct tools_open_pmdio *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_pmdio_size(void);
 #define TOOLS_OPEN_PMDIO_SIZE    (0x108)
-void tools_open_pmdio_dump(const struct tools_open_pmdio *ptr_struct, FILE *file);
+void tools_open_pmdio_dump(const struct tools_open_pmdio *ptr_struct, FILE *fd);
 /* smp_vsp_general_info */
 void tools_open_smp_vsp_general_info_pack(const union tools_open_smp_vsp_general_info *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_smp_vsp_general_info_unpack(union tools_open_smp_vsp_general_info *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_smp_vsp_general_info_print(const union tools_open_smp_vsp_general_info *ptr_struct, FILE *file, int indent_level);
-int tools_open_smp_vsp_general_info_size(void);
+void tools_open_smp_vsp_general_info_print(const union tools_open_smp_vsp_general_info *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_smp_vsp_general_info_size(void);
 #define TOOLS_OPEN_SMP_VSP_GENERAL_INFO_SIZE    (0x40)
-void tools_open_smp_vsp_general_info_dump(const union tools_open_smp_vsp_general_info *ptr_struct, FILE *file);
+void tools_open_smp_vsp_general_info_dump(const union tools_open_smp_vsp_general_info *ptr_struct, FILE *fd);
 /* aux_data_hdr */
 void tools_open_aux_data_hdr_pack(const struct tools_open_aux_data_hdr *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_aux_data_hdr_unpack(struct tools_open_aux_data_hdr *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_aux_data_hdr_print(const struct tools_open_aux_data_hdr *ptr_struct, FILE *file, int indent_level);
-int tools_open_aux_data_hdr_size(void);
+void tools_open_aux_data_hdr_print(const struct tools_open_aux_data_hdr *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_aux_data_hdr_size(void);
 #define TOOLS_OPEN_AUX_DATA_HDR_SIZE    (0x10)
-void tools_open_aux_data_hdr_dump(const struct tools_open_aux_data_hdr *ptr_struct, FILE *file);
+void tools_open_aux_data_hdr_dump(const struct tools_open_aux_data_hdr *ptr_struct, FILE *fd);
 /* aux_tlv */
 void tools_open_aux_tlv_pack(const struct tools_open_aux_tlv *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_aux_tlv_unpack(struct tools_open_aux_tlv *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_aux_tlv_print(const struct tools_open_aux_tlv *ptr_struct, FILE *file, int indent_level);
-int tools_open_aux_tlv_size(void);
+void tools_open_aux_tlv_print(const struct tools_open_aux_tlv *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_aux_tlv_size(void);
 #define TOOLS_OPEN_AUX_TLV_SIZE    (0x100)
-void tools_open_aux_tlv_dump(const struct tools_open_aux_tlv *ptr_struct, FILE *file);
+void tools_open_aux_tlv_dump(const struct tools_open_aux_tlv *ptr_struct, FILE *fd);
 /* bar_size */
 void tools_open_bar_size_pack(const struct tools_open_bar_size *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_bar_size_unpack(struct tools_open_bar_size *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_bar_size_print(const struct tools_open_bar_size *ptr_struct, FILE *file, int indent_level);
-int tools_open_bar_size_size(void);
+void tools_open_bar_size_print(const struct tools_open_bar_size *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_bar_size_size(void);
 #define TOOLS_OPEN_BAR_SIZE_SIZE    (0x4)
-void tools_open_bar_size_dump(const struct tools_open_bar_size *ptr_struct, FILE *file);
+void tools_open_bar_size_dump(const struct tools_open_bar_size *ptr_struct, FILE *fd);
 /* boot_settings */
 void tools_open_boot_settings_pack(const struct tools_open_boot_settings *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_boot_settings_unpack(struct tools_open_boot_settings *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_boot_settings_print(const struct tools_open_boot_settings *ptr_struct, FILE *file, int indent_level);
-int tools_open_boot_settings_size(void);
+void tools_open_boot_settings_print(const struct tools_open_boot_settings *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_boot_settings_size(void);
 #define TOOLS_OPEN_BOOT_SETTINGS_SIZE    (0x4)
-void tools_open_boot_settings_dump(const struct tools_open_boot_settings *ptr_struct, FILE *file);
+void tools_open_boot_settings_dump(const struct tools_open_boot_settings *ptr_struct, FILE *fd);
 /* boot_settings_ext */
 void tools_open_boot_settings_ext_pack(const struct tools_open_boot_settings_ext *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_boot_settings_ext_unpack(struct tools_open_boot_settings_ext *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_boot_settings_ext_print(const struct tools_open_boot_settings_ext *ptr_struct, FILE *file, int indent_level);
-int tools_open_boot_settings_ext_size(void);
+void tools_open_boot_settings_ext_print(const struct tools_open_boot_settings_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_boot_settings_ext_size(void);
 #define TOOLS_OPEN_BOOT_SETTINGS_EXT_SIZE    (0x4)
-void tools_open_boot_settings_ext_dump(const struct tools_open_boot_settings_ext *ptr_struct, FILE *file);
+void tools_open_boot_settings_ext_dump(const struct tools_open_boot_settings_ext *ptr_struct, FILE *fd);
 /* external_port */
 void tools_open_external_port_pack(const struct tools_open_external_port *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_external_port_unpack(struct tools_open_external_port *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_external_port_print(const struct tools_open_external_port *ptr_struct, FILE *file, int indent_level);
-int tools_open_external_port_size(void);
+void tools_open_external_port_print(const struct tools_open_external_port *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_external_port_size(void);
 #define TOOLS_OPEN_EXTERNAL_PORT_SIZE    (0x8)
-void tools_open_external_port_dump(const struct tools_open_external_port *ptr_struct, FILE *file);
+void tools_open_external_port_dump(const struct tools_open_external_port *ptr_struct, FILE *fd);
 /* image_info */
 void tools_open_image_info_pack(const struct tools_open_image_info *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_image_info_unpack(struct tools_open_image_info *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_image_info_print(const struct tools_open_image_info *ptr_struct, FILE *file, int indent_level);
-int tools_open_image_info_size(void);
+void tools_open_image_info_print(const struct tools_open_image_info *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_image_info_size(void);
 #define TOOLS_OPEN_IMAGE_INFO_SIZE    (0x400)
-void tools_open_image_info_dump(const struct tools_open_image_info *ptr_struct, FILE *file);
+void tools_open_image_info_dump(const struct tools_open_image_info *ptr_struct, FILE *fd);
 /* infiniband_boot_settings */
 void tools_open_infiniband_boot_settings_pack(const struct tools_open_infiniband_boot_settings *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_infiniband_boot_settings_unpack(struct tools_open_infiniband_boot_settings *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_infiniband_boot_settings_print(const struct tools_open_infiniband_boot_settings *ptr_struct, FILE *file, int indent_level);
-int tools_open_infiniband_boot_settings_size(void);
+void tools_open_infiniband_boot_settings_print(const struct tools_open_infiniband_boot_settings *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_infiniband_boot_settings_size(void);
 #define TOOLS_OPEN_INFINIBAND_BOOT_SETTINGS_SIZE    (0x4)
-void tools_open_infiniband_boot_settings_dump(const struct tools_open_infiniband_boot_settings *ptr_struct, FILE *file);
+void tools_open_infiniband_boot_settings_dump(const struct tools_open_infiniband_boot_settings *ptr_struct, FILE *fd);
 /* infiniband_dc_capabilities */
 void tools_open_infiniband_dc_capabilities_pack(const struct tools_open_infiniband_dc_capabilities *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_infiniband_dc_capabilities_unpack(struct tools_open_infiniband_dc_capabilities *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_infiniband_dc_capabilities_print(const struct tools_open_infiniband_dc_capabilities *ptr_struct, FILE *file, int indent_level);
-int tools_open_infiniband_dc_capabilities_size(void);
+void tools_open_infiniband_dc_capabilities_print(const struct tools_open_infiniband_dc_capabilities *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_infiniband_dc_capabilities_size(void);
 #define TOOLS_OPEN_INFINIBAND_DC_CAPABILITIES_SIZE    (0x10)
-void tools_open_infiniband_dc_capabilities_dump(const struct tools_open_infiniband_dc_capabilities *ptr_struct, FILE *file);
+void tools_open_infiniband_dc_capabilities_dump(const struct tools_open_infiniband_dc_capabilities *ptr_struct, FILE *fd);
 /* infiniband_dc_settings */
 void tools_open_infiniband_dc_settings_pack(const struct tools_open_infiniband_dc_settings *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_infiniband_dc_settings_unpack(struct tools_open_infiniband_dc_settings *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_infiniband_dc_settings_print(const struct tools_open_infiniband_dc_settings *ptr_struct, FILE *file, int indent_level);
-int tools_open_infiniband_dc_settings_size(void);
+void tools_open_infiniband_dc_settings_print(const struct tools_open_infiniband_dc_settings *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_infiniband_dc_settings_size(void);
 #define TOOLS_OPEN_INFINIBAND_DC_SETTINGS_SIZE    (0x8)
-void tools_open_infiniband_dc_settings_dump(const struct tools_open_infiniband_dc_settings *ptr_struct, FILE *file);
+void tools_open_infiniband_dc_settings_dump(const struct tools_open_infiniband_dc_settings *ptr_struct, FILE *fd);
 /* iscsi_settings */
 void tools_open_iscsi_settings_pack(const struct tools_open_iscsi_settings *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_iscsi_settings_unpack(struct tools_open_iscsi_settings *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_iscsi_settings_print(const struct tools_open_iscsi_settings *ptr_struct, FILE *file, int indent_level);
-int tools_open_iscsi_settings_size(void);
+void tools_open_iscsi_settings_print(const struct tools_open_iscsi_settings *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_iscsi_settings_size(void);
 #define TOOLS_OPEN_ISCSI_SETTINGS_SIZE    (0xc)
-void tools_open_iscsi_settings_dump(const struct tools_open_iscsi_settings *ptr_struct, FILE *file);
+void tools_open_iscsi_settings_dump(const struct tools_open_iscsi_settings *ptr_struct, FILE *fd);
 /* lldp_client_settings */
 void tools_open_lldp_client_settings_pack(const struct tools_open_lldp_client_settings *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_lldp_client_settings_unpack(struct tools_open_lldp_client_settings *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_lldp_client_settings_print(const struct tools_open_lldp_client_settings *ptr_struct, FILE *file, int indent_level);
-int tools_open_lldp_client_settings_size(void);
+void tools_open_lldp_client_settings_print(const struct tools_open_lldp_client_settings *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_lldp_client_settings_size(void);
 #define TOOLS_OPEN_LLDP_CLIENT_SETTINGS_SIZE    (0xc)
-void tools_open_lldp_client_settings_dump(const struct tools_open_lldp_client_settings *ptr_struct, FILE *file);
+void tools_open_lldp_client_settings_dump(const struct tools_open_lldp_client_settings *ptr_struct, FILE *fd);
 /* lldp_nb */
 void tools_open_lldp_nb_pack(const struct tools_open_lldp_nb *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_lldp_nb_unpack(struct tools_open_lldp_nb *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_lldp_nb_print(const struct tools_open_lldp_nb *ptr_struct, FILE *file, int indent_level);
-int tools_open_lldp_nb_size(void);
+void tools_open_lldp_nb_print(const struct tools_open_lldp_nb *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_lldp_nb_size(void);
 #define TOOLS_OPEN_LLDP_NB_SIZE    (0x1c)
-void tools_open_lldp_nb_dump(const struct tools_open_lldp_nb *ptr_struct, FILE *file);
+void tools_open_lldp_nb_dump(const struct tools_open_lldp_nb *ptr_struct, FILE *fd);
 /* lldp_nb_cap */
 void tools_open_lldp_nb_cap_pack(const struct tools_open_lldp_nb_cap *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_lldp_nb_cap_unpack(struct tools_open_lldp_nb_cap *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_lldp_nb_cap_print(const struct tools_open_lldp_nb_cap *ptr_struct, FILE *file, int indent_level);
-int tools_open_lldp_nb_cap_size(void);
+void tools_open_lldp_nb_cap_print(const struct tools_open_lldp_nb_cap *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_lldp_nb_cap_size(void);
 #define TOOLS_OPEN_LLDP_NB_CAP_SIZE    (0xc)
-void tools_open_lldp_nb_cap_dump(const struct tools_open_lldp_nb_cap *ptr_struct, FILE *file);
+void tools_open_lldp_nb_cap_dump(const struct tools_open_lldp_nb_cap *ptr_struct, FILE *fd);
 /* lldp_nb_dcbx */
 void tools_open_lldp_nb_dcbx_pack(const struct tools_open_lldp_nb_dcbx *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_lldp_nb_dcbx_unpack(struct tools_open_lldp_nb_dcbx *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_lldp_nb_dcbx_print(const struct tools_open_lldp_nb_dcbx *ptr_struct, FILE *file, int indent_level);
-int tools_open_lldp_nb_dcbx_size(void);
+void tools_open_lldp_nb_dcbx_print(const struct tools_open_lldp_nb_dcbx *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_lldp_nb_dcbx_size(void);
 #define TOOLS_OPEN_LLDP_NB_DCBX_SIZE    (0x4)
-void tools_open_lldp_nb_dcbx_dump(const struct tools_open_lldp_nb_dcbx *ptr_struct, FILE *file);
+void tools_open_lldp_nb_dcbx_dump(const struct tools_open_lldp_nb_dcbx *ptr_struct, FILE *fd);
 /* mfg_info */
 void tools_open_mfg_info_pack(const struct tools_open_mfg_info *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_mfg_info_unpack(struct tools_open_mfg_info *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_mfg_info_print(const struct tools_open_mfg_info *ptr_struct, FILE *file, int indent_level);
-int tools_open_mfg_info_size(void);
+void tools_open_mfg_info_print(const struct tools_open_mfg_info *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_mfg_info_size(void);
 #define TOOLS_OPEN_MFG_INFO_SIZE    (0x140)
-void tools_open_mfg_info_dump(const struct tools_open_mfg_info *ptr_struct, FILE *file);
+void tools_open_mfg_info_dump(const struct tools_open_mfg_info *ptr_struct, FILE *fd);
 /* mnv_cfg */
 void tools_open_mnv_cfg_pack(const union tools_open_mnv_cfg *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_mnv_cfg_unpack(union tools_open_mnv_cfg *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_mnv_cfg_print(const union tools_open_mnv_cfg *ptr_struct, FILE *file, int indent_level);
-int tools_open_mnv_cfg_size(void);
+void tools_open_mnv_cfg_print(const union tools_open_mnv_cfg *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_mnv_cfg_size(void);
 #define TOOLS_OPEN_MNV_CFG_SIZE    (0x16c)
-void tools_open_mnv_cfg_dump(const union tools_open_mnv_cfg *ptr_struct, FILE *file);
+void tools_open_mnv_cfg_dump(const union tools_open_mnv_cfg *ptr_struct, FILE *fd);
 /* nv_base_mac_guid */
 void tools_open_nv_base_mac_guid_pack(const struct tools_open_nv_base_mac_guid *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_nv_base_mac_guid_unpack(struct tools_open_nv_base_mac_guid *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_nv_base_mac_guid_print(const struct tools_open_nv_base_mac_guid *ptr_struct, FILE *file, int indent_level);
-int tools_open_nv_base_mac_guid_size(void);
+void tools_open_nv_base_mac_guid_print(const struct tools_open_nv_base_mac_guid *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_nv_base_mac_guid_size(void);
 #define TOOLS_OPEN_NV_BASE_MAC_GUID_SIZE    (0x10)
-void tools_open_nv_base_mac_guid_dump(const struct tools_open_nv_base_mac_guid *ptr_struct, FILE *file);
+void tools_open_nv_base_mac_guid_dump(const struct tools_open_nv_base_mac_guid *ptr_struct, FILE *fd);
 /* nv_base_mac_guid_cap */
 void tools_open_nv_base_mac_guid_cap_pack(const struct tools_open_nv_base_mac_guid_cap *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_nv_base_mac_guid_cap_unpack(struct tools_open_nv_base_mac_guid_cap *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_nv_base_mac_guid_cap_print(const struct tools_open_nv_base_mac_guid_cap *ptr_struct, FILE *file, int indent_level);
-int tools_open_nv_base_mac_guid_cap_size(void);
+void tools_open_nv_base_mac_guid_cap_print(const struct tools_open_nv_base_mac_guid_cap *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_nv_base_mac_guid_cap_size(void);
 #define TOOLS_OPEN_NV_BASE_MAC_GUID_CAP_SIZE    (0x8)
-void tools_open_nv_base_mac_guid_cap_dump(const struct tools_open_nv_base_mac_guid_cap *ptr_struct, FILE *file);
+void tools_open_nv_base_mac_guid_cap_dump(const struct tools_open_nv_base_mac_guid_cap *ptr_struct, FILE *fd);
+/* nv_cx3_global_conf */
+void tools_open_nv_cx3_global_conf_pack(const struct tools_open_nv_cx3_global_conf *ptr_struct, u_int8_t *ptr_buff);
+void tools_open_nv_cx3_global_conf_unpack(struct tools_open_nv_cx3_global_conf *ptr_struct, const u_int8_t *ptr_buff);
+void tools_open_nv_cx3_global_conf_print(const struct tools_open_nv_cx3_global_conf *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_nv_cx3_global_conf_size(void);
+#define TOOLS_OPEN_NV_CX3_GLOBAL_CONF_SIZE    (0x20)
+void tools_open_nv_cx3_global_conf_dump(const struct tools_open_nv_cx3_global_conf *ptr_struct, FILE *fd);
 /* option_rom_capability */
 void tools_open_option_rom_capability_pack(const struct tools_open_option_rom_capability *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_option_rom_capability_unpack(struct tools_open_option_rom_capability *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_option_rom_capability_print(const struct tools_open_option_rom_capability *ptr_struct, FILE *file, int indent_level);
-int tools_open_option_rom_capability_size(void);
+void tools_open_option_rom_capability_print(const struct tools_open_option_rom_capability *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_option_rom_capability_size(void);
 #define TOOLS_OPEN_OPTION_ROM_CAPABILITY_SIZE    (0x4)
-void tools_open_option_rom_capability_dump(const struct tools_open_option_rom_capability *ptr_struct, FILE *file);
+void tools_open_option_rom_capability_dump(const struct tools_open_option_rom_capability *ptr_struct, FILE *fd);
 /* pci_capabilities */
 void tools_open_pci_capabilities_pack(const struct tools_open_pci_capabilities *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_pci_capabilities_unpack(struct tools_open_pci_capabilities *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_pci_capabilities_print(const struct tools_open_pci_capabilities *ptr_struct, FILE *file, int indent_level);
-int tools_open_pci_capabilities_size(void);
+void tools_open_pci_capabilities_print(const struct tools_open_pci_capabilities *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_pci_capabilities_size(void);
 #define TOOLS_OPEN_PCI_CAPABILITIES_SIZE    (0x14)
-void tools_open_pci_capabilities_dump(const struct tools_open_pci_capabilities *ptr_struct, FILE *file);
+void tools_open_pci_capabilities_dump(const struct tools_open_pci_capabilities *ptr_struct, FILE *fd);
 /* pci_configuration */
 void tools_open_pci_configuration_pack(const struct tools_open_pci_configuration *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_pci_configuration_unpack(struct tools_open_pci_configuration *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_pci_configuration_print(const struct tools_open_pci_configuration *ptr_struct, FILE *file, int indent_level);
-int tools_open_pci_configuration_size(void);
+void tools_open_pci_configuration_print(const struct tools_open_pci_configuration *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_pci_configuration_size(void);
 #define TOOLS_OPEN_PCI_CONFIGURATION_SIZE    (0xc)
-void tools_open_pci_configuration_dump(const struct tools_open_pci_configuration *ptr_struct, FILE *file);
+void tools_open_pci_configuration_dump(const struct tools_open_pci_configuration *ptr_struct, FILE *fd);
 /* phy_reg */
 void tools_open_phy_reg_pack(const union tools_open_phy_reg *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_phy_reg_unpack(union tools_open_phy_reg *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_phy_reg_print(const union tools_open_phy_reg *ptr_struct, FILE *file, int indent_level);
-int tools_open_phy_reg_size(void);
+void tools_open_phy_reg_print(const union tools_open_phy_reg *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_phy_reg_size(void);
 #define TOOLS_OPEN_PHY_REG_SIZE    (0x108)
-void tools_open_phy_reg_dump(const union tools_open_phy_reg *ptr_struct, FILE *file);
+void tools_open_phy_reg_dump(const union tools_open_phy_reg *ptr_struct, FILE *fd);
 /* port_boot_state */
 void tools_open_port_boot_state_pack(const struct tools_open_port_boot_state *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_port_boot_state_unpack(struct tools_open_port_boot_state *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_port_boot_state_print(const struct tools_open_port_boot_state *ptr_struct, FILE *file, int indent_level);
-int tools_open_port_boot_state_size(void);
+void tools_open_port_boot_state_print(const struct tools_open_port_boot_state *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_port_boot_state_size(void);
 #define TOOLS_OPEN_PORT_BOOT_STATE_SIZE    (0x4)
-void tools_open_port_boot_state_dump(const struct tools_open_port_boot_state *ptr_struct, FILE *file);
+void tools_open_port_boot_state_dump(const struct tools_open_port_boot_state *ptr_struct, FILE *fd);
 /* preboot_boot_settings */
 void tools_open_preboot_boot_settings_pack(const struct tools_open_preboot_boot_settings *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_preboot_boot_settings_unpack(struct tools_open_preboot_boot_settings *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_preboot_boot_settings_print(const struct tools_open_preboot_boot_settings *ptr_struct, FILE *file, int indent_level);
-int tools_open_preboot_boot_settings_size(void);
+void tools_open_preboot_boot_settings_print(const struct tools_open_preboot_boot_settings *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_preboot_boot_settings_size(void);
 #define TOOLS_OPEN_PREBOOT_BOOT_SETTINGS_SIZE    (0x4)
-void tools_open_preboot_boot_settings_dump(const struct tools_open_preboot_boot_settings *ptr_struct, FILE *file);
+void tools_open_preboot_boot_settings_dump(const struct tools_open_preboot_boot_settings *ptr_struct, FILE *fd);
 /* preboot_flow_ctrl */
 void tools_open_preboot_flow_ctrl_pack(const struct tools_open_preboot_flow_ctrl *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_preboot_flow_ctrl_unpack(struct tools_open_preboot_flow_ctrl *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_preboot_flow_ctrl_print(const struct tools_open_preboot_flow_ctrl *ptr_struct, FILE *file, int indent_level);
-int tools_open_preboot_flow_ctrl_size(void);
+void tools_open_preboot_flow_ctrl_print(const struct tools_open_preboot_flow_ctrl *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_preboot_flow_ctrl_size(void);
 #define TOOLS_OPEN_PREBOOT_FLOW_CTRL_SIZE    (0x4)
-void tools_open_preboot_flow_ctrl_dump(const struct tools_open_preboot_flow_ctrl *ptr_struct, FILE *file);
+void tools_open_preboot_flow_ctrl_dump(const struct tools_open_preboot_flow_ctrl *ptr_struct, FILE *fd);
 /* qos */
 void tools_open_qos_pack(const struct tools_open_qos *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_qos_unpack(struct tools_open_qos *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_qos_print(const struct tools_open_qos *ptr_struct, FILE *file, int indent_level);
-int tools_open_qos_size(void);
+void tools_open_qos_print(const struct tools_open_qos *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_qos_size(void);
 #define TOOLS_OPEN_QOS_SIZE    (0xc)
-void tools_open_qos_dump(const struct tools_open_qos *ptr_struct, FILE *file);
+void tools_open_qos_dump(const struct tools_open_qos *ptr_struct, FILE *fd);
 /* qos_cap */
 void tools_open_qos_cap_pack(const struct tools_open_qos_cap *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_qos_cap_unpack(struct tools_open_qos_cap *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_qos_cap_print(const struct tools_open_qos_cap *ptr_struct, FILE *file, int indent_level);
-int tools_open_qos_cap_size(void);
+void tools_open_qos_cap_print(const struct tools_open_qos_cap *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_qos_cap_size(void);
 #define TOOLS_OPEN_QOS_CAP_SIZE    (0xc)
-void tools_open_qos_cap_dump(const struct tools_open_qos_cap *ptr_struct, FILE *file);
+void tools_open_qos_cap_dump(const struct tools_open_qos_cap *ptr_struct, FILE *fd);
 /* query_def_params_global */
 void tools_open_query_def_params_global_pack(const struct tools_open_query_def_params_global *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_query_def_params_global_unpack(struct tools_open_query_def_params_global *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_query_def_params_global_print(const struct tools_open_query_def_params_global *ptr_struct, FILE *file, int indent_level);
-int tools_open_query_def_params_global_size(void);
+void tools_open_query_def_params_global_print(const struct tools_open_query_def_params_global *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_query_def_params_global_size(void);
 #define TOOLS_OPEN_QUERY_DEF_PARAMS_GLOBAL_SIZE    (0x14)
-void tools_open_query_def_params_global_dump(const struct tools_open_query_def_params_global *ptr_struct, FILE *file);
+void tools_open_query_def_params_global_dump(const struct tools_open_query_def_params_global *ptr_struct, FILE *fd);
 /* query_def_params_per_port */
 void tools_open_query_def_params_per_port_pack(const struct tools_open_query_def_params_per_port *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_query_def_params_per_port_unpack(struct tools_open_query_def_params_per_port *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_query_def_params_per_port_print(const struct tools_open_query_def_params_per_port *ptr_struct, FILE *file, int indent_level);
-int tools_open_query_def_params_per_port_size(void);
+void tools_open_query_def_params_per_port_print(const struct tools_open_query_def_params_per_port *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_query_def_params_per_port_size(void);
 #define TOOLS_OPEN_QUERY_DEF_PARAMS_PER_PORT_SIZE    (0x1c)
-void tools_open_query_def_params_per_port_dump(const struct tools_open_query_def_params_per_port *ptr_struct, FILE *file);
+void tools_open_query_def_params_per_port_dump(const struct tools_open_query_def_params_per_port *ptr_struct, FILE *fd);
 /* roce_cc */
 void tools_open_roce_cc_pack(const struct tools_open_roce_cc *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_roce_cc_unpack(struct tools_open_roce_cc *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_roce_cc_print(const struct tools_open_roce_cc *ptr_struct, FILE *file, int indent_level);
-int tools_open_roce_cc_size(void);
+void tools_open_roce_cc_print(const struct tools_open_roce_cc *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_roce_cc_size(void);
 #define TOOLS_OPEN_ROCE_CC_SIZE    (0x4)
-void tools_open_roce_cc_dump(const struct tools_open_roce_cc *ptr_struct, FILE *file);
+void tools_open_roce_cc_dump(const struct tools_open_roce_cc *ptr_struct, FILE *fd);
 /* roce_cc_ecn */
 void tools_open_roce_cc_ecn_pack(const struct tools_open_roce_cc_ecn *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_roce_cc_ecn_unpack(struct tools_open_roce_cc_ecn *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_roce_cc_ecn_print(const struct tools_open_roce_cc_ecn *ptr_struct, FILE *file, int indent_level);
-int tools_open_roce_cc_ecn_size(void);
+void tools_open_roce_cc_ecn_print(const struct tools_open_roce_cc_ecn *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_roce_cc_ecn_size(void);
 #define TOOLS_OPEN_ROCE_CC_ECN_SIZE    (0x44)
-void tools_open_roce_cc_ecn_dump(const struct tools_open_roce_cc_ecn *ptr_struct, FILE *file);
+void tools_open_roce_cc_ecn_dump(const struct tools_open_roce_cc_ecn *ptr_struct, FILE *fd);
 /* roce_v_1_5_next_protocol */
 void tools_open_roce_v_1_5_next_protocol_pack(const struct tools_open_roce_v_1_5_next_protocol *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_roce_v_1_5_next_protocol_unpack(struct tools_open_roce_v_1_5_next_protocol *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_roce_v_1_5_next_protocol_print(const struct tools_open_roce_v_1_5_next_protocol *ptr_struct, FILE *file, int indent_level);
-int tools_open_roce_v_1_5_next_protocol_size(void);
+void tools_open_roce_v_1_5_next_protocol_print(const struct tools_open_roce_v_1_5_next_protocol *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_roce_v_1_5_next_protocol_size(void);
 #define TOOLS_OPEN_ROCE_V_1_5_NEXT_PROTOCOL_SIZE    (0x4)
-void tools_open_roce_v_1_5_next_protocol_dump(const struct tools_open_roce_v_1_5_next_protocol *ptr_struct, FILE *file);
+void tools_open_roce_v_1_5_next_protocol_dump(const struct tools_open_roce_v_1_5_next_protocol *ptr_struct, FILE *fd);
 /* smp_data */
 void tools_open_smp_data_pack(const union tools_open_smp_data *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_smp_data_unpack(union tools_open_smp_data *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_smp_data_print(const union tools_open_smp_data *ptr_struct, FILE *file, int indent_level);
-int tools_open_smp_data_size(void);
+void tools_open_smp_data_print(const union tools_open_smp_data *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_smp_data_size(void);
 #define TOOLS_OPEN_SMP_DATA_SIZE    (0x40)
-void tools_open_smp_data_dump(const union tools_open_smp_data *ptr_struct, FILE *file);
+void tools_open_smp_data_dump(const union tools_open_smp_data *ptr_struct, FILE *fd);
 /* sriov */
 void tools_open_sriov_pack(const struct tools_open_sriov *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_sriov_unpack(struct tools_open_sriov *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_sriov_print(const struct tools_open_sriov *ptr_struct, FILE *file, int indent_level);
-int tools_open_sriov_size(void);
+void tools_open_sriov_print(const struct tools_open_sriov *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_sriov_size(void);
 #define TOOLS_OPEN_SRIOV_SIZE    (0x4)
-void tools_open_sriov_dump(const struct tools_open_sriov *ptr_struct, FILE *file);
+void tools_open_sriov_dump(const struct tools_open_sriov *ptr_struct, FILE *fd);
 /* tpt_capabilities */
 void tools_open_tpt_capabilities_pack(const struct tools_open_tpt_capabilities *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_tpt_capabilities_unpack(struct tools_open_tpt_capabilities *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_tpt_capabilities_print(const struct tools_open_tpt_capabilities *ptr_struct, FILE *file, int indent_level);
-int tools_open_tpt_capabilities_size(void);
+void tools_open_tpt_capabilities_print(const struct tools_open_tpt_capabilities *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_tpt_capabilities_size(void);
 #define TOOLS_OPEN_TPT_CAPABILITIES_SIZE    (0x4)
-void tools_open_tpt_capabilities_dump(const struct tools_open_tpt_capabilities *ptr_struct, FILE *file);
+void tools_open_tpt_capabilities_dump(const struct tools_open_tpt_capabilities *ptr_struct, FILE *fd);
 /* tpt_configuration */
 void tools_open_tpt_configuration_pack(const struct tools_open_tpt_configuration *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_tpt_configuration_unpack(struct tools_open_tpt_configuration *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_tpt_configuration_print(const struct tools_open_tpt_configuration *ptr_struct, FILE *file, int indent_level);
-int tools_open_tpt_configuration_size(void);
+void tools_open_tpt_configuration_print(const struct tools_open_tpt_configuration *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_tpt_configuration_size(void);
 #define TOOLS_OPEN_TPT_CONFIGURATION_SIZE    (0x4)
-void tools_open_tpt_configuration_dump(const struct tools_open_tpt_configuration *ptr_struct, FILE *file);
+void tools_open_tpt_configuration_dump(const struct tools_open_tpt_configuration *ptr_struct, FILE *fd);
 /* vpi_settings */
 void tools_open_vpi_settings_pack(const struct tools_open_vpi_settings *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_vpi_settings_unpack(struct tools_open_vpi_settings *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_vpi_settings_print(const struct tools_open_vpi_settings *ptr_struct, FILE *file, int indent_level);
-int tools_open_vpi_settings_size(void);
+void tools_open_vpi_settings_print(const struct tools_open_vpi_settings *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_vpi_settings_size(void);
 #define TOOLS_OPEN_VPI_SETTINGS_SIZE    (0x4)
-void tools_open_vpi_settings_dump(const struct tools_open_vpi_settings *ptr_struct, FILE *file);
+void tools_open_vpi_settings_dump(const struct tools_open_vpi_settings *ptr_struct, FILE *fd);
 /* wol */
 void tools_open_wol_pack(const struct tools_open_wol *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_wol_unpack(struct tools_open_wol *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_wol_print(const struct tools_open_wol *ptr_struct, FILE *file, int indent_level);
-int tools_open_wol_size(void);
+void tools_open_wol_print(const struct tools_open_wol *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_wol_size(void);
 #define TOOLS_OPEN_WOL_SIZE    (0x8)
-void tools_open_wol_dump(const struct tools_open_wol *ptr_struct, FILE *file);
+void tools_open_wol_dump(const struct tools_open_wol *ptr_struct, FILE *fd);
 /* IbMads */
 void tools_open_IbMads_pack(const union tools_open_IbMads *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_IbMads_unpack(union tools_open_IbMads *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_IbMads_print(const union tools_open_IbMads *ptr_struct, FILE *file, int indent_level);
-int tools_open_IbMads_size(void);
+void tools_open_IbMads_print(const union tools_open_IbMads *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_IbMads_size(void);
 #define TOOLS_OPEN_IBMADS_SIZE    (0xc0)
-void tools_open_IbMads_dump(const union tools_open_IbMads *ptr_struct, FILE *file);
+void tools_open_IbMads_dump(const union tools_open_IbMads *ptr_struct, FILE *fd);
 /* access_registers */
 void tools_open_access_registers_pack(const union tools_open_access_registers *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_access_registers_unpack(union tools_open_access_registers *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_access_registers_print(const union tools_open_access_registers *ptr_struct, FILE *file, int indent_level);
-int tools_open_access_registers_size(void);
+void tools_open_access_registers_print(const union tools_open_access_registers *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_access_registers_size(void);
 #define TOOLS_OPEN_ACCESS_REGISTERS_SIZE    (0x200)
-void tools_open_access_registers_dump(const union tools_open_access_registers *ptr_struct, FILE *file);
+void tools_open_access_registers_dump(const union tools_open_access_registers *ptr_struct, FILE *fd);
 /* aux_img_data */
 void tools_open_aux_img_data_pack(const union tools_open_aux_img_data *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_aux_img_data_unpack(union tools_open_aux_img_data *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_aux_img_data_print(const union tools_open_aux_img_data *ptr_struct, FILE *file, int indent_level);
-int tools_open_aux_img_data_size(void);
+void tools_open_aux_img_data_print(const union tools_open_aux_img_data *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_aux_img_data_size(void);
 #define TOOLS_OPEN_AUX_IMG_DATA_SIZE    (0x100)
-void tools_open_aux_img_data_dump(const union tools_open_aux_img_data *ptr_struct, FILE *file);
+void tools_open_aux_img_data_dump(const union tools_open_aux_img_data *ptr_struct, FILE *fd);
 /* hcr_cmds */
 void tools_open_hcr_cmds_pack(const union tools_open_hcr_cmds *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_hcr_cmds_unpack(union tools_open_hcr_cmds *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_hcr_cmds_print(const union tools_open_hcr_cmds *ptr_struct, FILE *file, int indent_level);
-int tools_open_hcr_cmds_size(void);
+void tools_open_hcr_cmds_print(const union tools_open_hcr_cmds *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_hcr_cmds_size(void);
 #define TOOLS_OPEN_HCR_CMDS_SIZE    (0x108)
-void tools_open_hcr_cmds_dump(const union tools_open_hcr_cmds *ptr_struct, FILE *file);
+void tools_open_hcr_cmds_dump(const union tools_open_hcr_cmds *ptr_struct, FILE *fd);
 /* misc_structs */
 void tools_open_misc_structs_pack(const union tools_open_misc_structs *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_misc_structs_unpack(union tools_open_misc_structs *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_misc_structs_print(const union tools_open_misc_structs *ptr_struct, FILE *file, int indent_level);
-int tools_open_misc_structs_size(void);
+void tools_open_misc_structs_print(const union tools_open_misc_structs *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_misc_structs_size(void);
 #define TOOLS_OPEN_MISC_STRUCTS_SIZE    (0x400)
-void tools_open_misc_structs_dump(const union tools_open_misc_structs *ptr_struct, FILE *file);
+void tools_open_misc_structs_dump(const union tools_open_misc_structs *ptr_struct, FILE *fd);
 /* nv_cfg */
 void tools_open_nv_cfg_pack(const union tools_open_nv_cfg *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_nv_cfg_unpack(union tools_open_nv_cfg *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_nv_cfg_print(const union tools_open_nv_cfg *ptr_struct, FILE *file, int indent_level);
-int tools_open_nv_cfg_size(void);
+void tools_open_nv_cfg_print(const union tools_open_nv_cfg *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_nv_cfg_size(void);
 #define TOOLS_OPEN_NV_CFG_SIZE    (0x100)
-void tools_open_nv_cfg_dump(const union tools_open_nv_cfg *ptr_struct, FILE *file);
+void tools_open_nv_cfg_dump(const union tools_open_nv_cfg *ptr_struct, FILE *fd);
 /* tools_open */
 void tools_open_tools_open_pack(const union tools_open_tools_open *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_tools_open_unpack(union tools_open_tools_open *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_tools_open_print(const union tools_open_tools_open *ptr_struct, FILE *file, int indent_level);
-int tools_open_tools_open_size(void);
+void tools_open_tools_open_print(const union tools_open_tools_open *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_tools_open_size(void);
 #define TOOLS_OPEN_TOOLS_OPEN_SIZE    (0x100000)
-void tools_open_tools_open_dump(const union tools_open_tools_open *ptr_struct, FILE *file);
+void tools_open_tools_open_dump(const union tools_open_tools_open *ptr_struct, FILE *fd);
 
 
 #ifdef __cplusplus

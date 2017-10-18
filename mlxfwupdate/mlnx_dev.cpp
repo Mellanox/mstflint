@@ -43,7 +43,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "image_access.h"
-
+#include "mvpd/mvpd.h"
 
 #if !defined(__WIN__) && !defined(__FreeBSD__)
 #include <sys/socket.h>
@@ -76,6 +76,34 @@ struct ethtool_drvinfo {
 #endif
 
 using namespace std;
+
+
+void MlnxDev::initUniqueId()
+{
+    mfile* mf = mopen(getDevName().c_str());
+    if (!mf) {
+        return;
+    }
+    vpd_result_t* vpdP = NULL;
+    if (mvpd_read(mf, &vpdP, VPD_RO) == 0 && vpdP != NULL) {
+        int i = 0;
+        string pn;
+        string sn;
+        while (i < vpdP->ro_fields_size) {
+            string id = string(vpdP->ro_fields[i].id);
+            if (id == "PN") {
+                pn = string(vpdP->ro_fields[i].data);
+            } else if (id == "SN") {
+                sn = string(vpdP->ro_fields[i].data);
+            }
+            i++;
+        }
+        _uniqueId = pn + "_" + sn;
+        mvpd_result_free(vpdP);
+    }
+    mclose(mf);
+}
+
 void MlnxDev::_MlnxDevInit(int compare_ffv)
 {
     _compareFFV = compare_ffv;
@@ -100,7 +128,11 @@ void MlnxDev::_MlnxDevInit(int compare_ffv)
     isOnlyBase   = false;
     _commander = NULL;
     _noFwCtrl  = false;
+    _mccSupport = true;
     _preBurnInit = false;
+    _uniqueId = "NA";
+    _unknowProgress = 0;
+    initUniqueId();
     setDeviceType();
 }
 
@@ -323,6 +355,7 @@ void MlnxDev::setDeviceType(void)
             break;
         case DeviceSwitchIB:
         case DeviceSwitchIB2:
+        case DeviceQuantum:
             portOneType = PORT_IB;
             portTwoType = PORT_IB;
             isOnlyBase = true;
@@ -443,7 +476,7 @@ bool MlnxDev::openImg(u_int32_t * fileBuffer, u_int32_t bufferSize)
     return true;
 }
 
-int MlnxDev::preBurn(string mfa_file, f_prog_func prog_cb, bool burnFailsafe, bool& isAlignmentNeeded)
+int MlnxDev::preBurn(string mfa_file, f_prog_func prog_cb, bool burnFailsafe, bool& isAlignmentNeeded, f_prog_func_adv stage_prog)
 {
     string cmd;
     int rc;
@@ -505,6 +538,8 @@ int MlnxDev::preBurn(string mfa_file, f_prog_func prog_cb, bool burnFailsafe, bo
         }
     }
     _burnParams.progressFunc = prog_cb;
+    _burnParams.ProgressFuncAdv.func = stage_prog;
+    _burnParams.ProgressFuncAdv.opaque = &_unknowProgress;
     _burnParams.ignoreVersionCheck = true;
 
     // Check if alignment is needed in CX5
@@ -597,6 +632,7 @@ bool MlnxDev::OpenDev()
     _devFwParams.psid = (char *)_psid.c_str();
     _devFwParams.shortErrors = true;
     _devFwParams.noFwCtrl = _noFwCtrl;
+    _devFwParams.mccUnsupported = !(_mccSupport);
     _devFwOps = FwOperations::FwOperationsCreate(_devFwParams);
     free(tmp);
     if (_devFwOps == NULL) {
@@ -648,6 +684,13 @@ int MlnxDev::queryFwops()
     }
 
     if ( !_description.size() || !_partNumber.size()) { // take missing from ini
+        setMccSupport(false);
+        _devFwOps->FwCleanUp();
+        delete _devFwOps;
+        if(!OpenDev()) {
+            return -1;
+        }
+        setMccSupport(true);
         if (_devFwOps->FwGetSection((_devFwOps->FwType() == FIT_FS2) ? (int)H_FW_CONF : (int)FS3_DBG_FW_INI, sect)) {
             // Take from ini
             if (unzipDataFile(sect, dest, "Fw Configuration")) {
@@ -1052,4 +1095,26 @@ string MlnxDev::getDescription()
 string MlnxDev::getPartNumber()
 {
     return _partNumber;
+}
+
+bool MlnxDev::checkExistence(vector<MlnxDev*>& devs)
+{
+    for (vector<MlnxDev*>::iterator it = devs.begin(); it != devs.end(); it++) {
+        if (this->equals(*it) == true) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
+bool MlnxDev::equals(MlnxDev* dev)
+{
+    string devUinqueId = dev->getUniqueId();
+    if (_uniqueId != "NA" && devUinqueId != "NA") {
+        if (_uniqueId == devUinqueId) {
+            return true;
+        }
+    }
+    return false;
 }

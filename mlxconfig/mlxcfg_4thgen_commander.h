@@ -147,6 +147,7 @@ private:
     MlxCfgInfo createVPISettings();
     MlxCfgInfo createWakeOnLAN();
     MlxCfgInfo createBootSettingsExt();
+    MlxCfgInfo createCX3GlobalConf();
     MlxCfgInfo createQoS();
     MlxCfgInfo createLLDPClientSettings();
     MlxCfgInfo createLLDPNBDCBX();

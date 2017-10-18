@@ -235,6 +235,31 @@ bool Fs3Operations::GetMfgInfo(u_int8_t *buff)
                         }\
                     } while (0)
 
+#define RESIGN_MSG "-W- The image requires to be signed by a valid key, run sign command before applying.\n"
+
+#define INSERT_SHA256_IF_NEEDS(callBackF) do {\
+                                    if (!_ioAccess->is_flash()) {\
+                                        if (!(_fs3ImgInfo.ext_info.security_mode & SMM_SIGNED_FW)) {\
+                                            PRINT_PROGRESS(callBackF, (char*)"-I- Updating image digest.\n");\
+                                            if (!FwInsertSHA256((PrintCallBack)NULL)) {\
+                                                return false;\
+                                            }\
+                                        } else {\
+                                            PRINT_PROGRESS(callBackF, (char*)RESIGN_MSG);\
+                                        }\
+                                    }\
+                                 } while (0)
+
+#define INSERT_SHA256_IF_NEEDS_NO_PRINT() do {\
+                                    if (!_ioAccess->is_flash()) {\
+                                        if (!(_fs3ImgInfo.ext_info.security_mode & SMM_SIGNED_FW)) {\
+                                            if (!FwInsertSHA256((PrintCallBack)NULL)) {\
+                                                return false;\
+                                            }\
+                                        } \
+                                    }\
+                                 } while (0)
+
 bool Fs3Operations::GetImageInfo(u_int8_t *buff)
 {
     struct cibfw_image_info image_info;
@@ -297,7 +322,7 @@ bool Fs3Operations::GetImgSigInfo(u_int8_t *buff)
     struct cx4fw_image_signature fwSignature;
     cx4fw_image_signature_unpack(&fwSignature, buff);
     //cx4fw_image_signature_dump(&fwSignature, stdout);
-    _fs3ImgInfo.ext_info.signature_existed = 1;
+    _signatureExists = 1;
     if (fwSignature.keypair_uuid[0] == 0 &&
         fwSignature.keypair_uuid[1] == 0 &&
         fwSignature.keypair_uuid[2] == 0 &&
@@ -369,6 +394,9 @@ bool Fs3Operations::GetImageInfoFromSection(u_int8_t *buff, u_int8_t sect_type, 
             return EXEC_GET_INFO_OR_GET_SUPPORT(GetImgSigInfo, buff, check_support_only);
         case FS3_ROM_CODE:
             return check_support_only ? true : GetRomInfo(buff, sect_size);
+        case FS3_PUBLIC_KEYS:
+            _publicKeysExists = 1;
+            break;
         default:
             break;
     }
@@ -693,7 +721,7 @@ bool Fs3Operations::FsIntQueryAux(bool readRom, bool quickQuery)
             _fwImgInfo.ext_info.pci_device_id != 0) {
         _fwImgInfo.ext_info.dev_type = _fwImgInfo.ext_info.pci_device_id;
     }
-    if (_fs3ImgInfo.ext_info.signature_existed == 0) {
+    if (_signatureExists == 0 || _publicKeysExists == 0) {
         _fs3ImgInfo.ext_info.security_mode = SM_NONE;
     }
     return true;
@@ -841,7 +869,7 @@ bool Fs3Operations::CheckFs3ImgSize(Fs3Operations& imageOps, bool useImageDevDat
 }
 
 #define SUPPORTS_ISFU(chip_type) \
-    (chip_type == CT_CONNECT_IB || chip_type == CT_CONNECTX4 || chip_type == CT_CONNECTX4_LX || chip_type == CT_CONNECTX5 || chip_type == CT_BLUEFIELD)
+    (chip_type == CT_CONNECT_IB || chip_type == CT_CONNECTX4 || chip_type == CT_CONNECTX4_LX || chip_type == CT_CONNECTX5 || chip_type == CT_CONNECTX6 || chip_type == CT_BLUEFIELD)
 
 bool Fs3Operations::BurnFs3Image(Fs3Operations &imageOps,
                                   ExtBurnParams& burnParams)
@@ -1191,7 +1219,7 @@ bool Fs3Operations::FwGetSection (u_int32_t sectType, std::vector<u_int8_t>& sec
     _readSectList.pop_back();
     sectInfo = _fwConfSect;
     if (sectInfo.empty()) {
-        return errmsg("Hash File section not found in the given image.");
+        return errmsg("INI section not found in the given image.");
     }
     return true;
 }
@@ -1275,7 +1303,9 @@ bool Fs3Operations::FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc,
     if (!usrGuid.base_guid_specified && !usrGuid.base_mac_specified) {
         return errmsg("base GUID/MAC were not specified.");
     }
-    FAIL_NO_OCR("set GUIDs/MACs");
+    if (FwType() == FIT_FS3) {
+        FAIL_NO_OCR("set GUIDs/MACs");
+    }
     if (!Fs3UpdateSection(&usrGuid, FS3_DEV_INFO, false, CMD_SET_GUIDS, callBackFunc)) {
         return false;
     }
@@ -1285,6 +1315,8 @@ bool Fs3Operations::FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc,
     }
     return true;
 }
+
+
 
 bool Fs3Operations::FwSetVPD(char* vpdFileStr, PrintCallBack callBackFunc)
 {
@@ -1582,8 +1614,11 @@ bool Fs3Operations::FwBurnRom(FImage* romImg, bool ignoreProdIdCheck, bool ignor
     if (!RomCommonCheck(ignoreProdIdCheck, false)) {
         return false;
     }
-
-    return Fs3AddSection(FS3_ROM_CODE, FS3_PCI_CODE, romImg->getBuf(), romImg->getBufLength(), progressFunc);
+    bool rc = Fs3AddSection(FS3_ROM_CODE, FS3_PCI_CODE, romImg->getBuf(), romImg->getBufLength(), progressFunc);
+    if (rc == true) {
+        INSERT_SHA256_IF_NEEDS_NO_PRINT();
+    }
+    return rc;
 }
 
 bool Fs3Operations::FwDeleteRom(bool ignoreProdIdCheck, ProgressCallBack progressFunc)
@@ -1596,8 +1631,11 @@ bool Fs3Operations::FwDeleteRom(bool ignoreProdIdCheck, ProgressCallBack progres
     if (!RomCommonCheck(ignoreProdIdCheck, true)) {
         return false;
     }
-
-    return Fs3RemoveSection(FS3_ROM_CODE, progressFunc);
+    bool rc = Fs3RemoveSection(FS3_ROM_CODE, progressFunc);
+    if (rc == true) {
+        INSERT_SHA256_IF_NEEDS_NO_PRINT();
+    }
+    return rc;
 }
 
 bool Fs3Operations::Fs3GetItocInfo(struct toc_info *tocArr, int num_of_itocs, fs3_section_t sect_type, struct toc_info *&curr_toc)
@@ -1895,6 +1933,28 @@ bool Fs3Operations::Fs3ReburnItocSection(u_int32_t newSectionAddr,
     return true;
 }
 
+bool Fs3Operations::Fs3UpdateForbiddenVersionsSection(unsigned int currSectionSize, char *fileName,
+                               std::vector<u_int8_t>  &newSectionData)
+{
+    int size = 0, sizeInDW = 0;
+    u_int8_t *data = (u_int8_t*)NULL;
+
+    if (!ReadImageFile(fileName, data, size)) {
+        return false;
+    }
+
+    sizeInDW = size >> 2;
+
+    if (sizeInDW != (int)currSectionSize) {
+        delete[] data;
+        return errmsg("The Size of the given forbidden versions section (%d bytes) is not valid", size);
+    }
+
+    GetSectData(newSectionData, (u_int32_t*)data, size);
+    delete[] data;
+    return true;
+}
+
 //add callback if we want info during section update
 bool  Fs3Operations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, bool is_sect_failsafe, CommandType cmd_type, PrintCallBack callBackFunc)
 {
@@ -1949,12 +2009,18 @@ bool  Fs3Operations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, b
         type_msg = "SIGNATURE";
         newUidSection.resize(CX4FW_IMAGE_SIGNATURE_SIZE);
         memcpy(newUidSection.data(), sig.data(), CX4FW_IMAGE_SIGNATURE_SIZE);
-    } else if (sect_type == FS3_PUBLIC_KEYS && cmd_type == CMD_SET_PUBLIC_KEY) {
+    } else if (sect_type == FS3_PUBLIC_KEYS && cmd_type == CMD_SET_PUBLIC_KEYS) {
         char *publickeys_file = (char*)new_info;
         type_msg = "PUBLIC KEYS";
         if (!Fs3UpdatePublicKeysSection(curr_toc->toc_entry.size, publickeys_file, newUidSection)) {
             return false;
         }
+    } else if (sect_type == FS3_FORBIDDEN_VERSIONS && cmd_type == CMD_SET_FORBIDDEN_VERSIONS) {
+       char *forbiddenVersions_file = (char*)new_info;
+       type_msg = "Forbidden Versions";
+       if (!Fs3UpdateForbiddenVersionsSection(curr_toc->toc_entry.size, forbiddenVersions_file, newUidSection)) {
+           return false;
+       }
     } else {
         return errmsg("Section type %s is not supported\n", GetSectionNameByType(sect_type));
     }
@@ -2258,31 +2324,48 @@ bool Fs3Operations::FwInsertSHA256(PrintCallBack printFunc)
     return true;
 }
 
-bool Fs3Operations::FwSetPublicKey(char* fname, PrintCallBack callBackFunc)
+bool Fs3Operations::FwSetPublicKeys(char* fname, PrintCallBack callBackFunc)
 {
     if (!fname) {
-        return errmsg("Please specify a valid public key file.");
+        return errmsg("Please specify a valid public keys file.");
     }
 
     if (_ioAccess->is_flash()) {
-        return errmsg("Setting Public Key is not applicable for devices.");
+        return errmsg("Setting Public Keys is not applicable for devices.");
     }
 
-    if (!Fs3UpdateSection(fname, FS3_PUBLIC_KEYS, false, CMD_SET_PUBLIC_KEY, callBackFunc)) {
+    if (!Fs3UpdateSection(fname, FS3_PUBLIC_KEYS, false, CMD_SET_PUBLIC_KEYS, callBackFunc)) {
         return false;
     }
 
     if (!FsIntQueryAux(false, false)) {
         return false;
     }
+    INSERT_SHA256_IF_NEEDS(callBackFunc);
 
     return true;
 }
 
 bool Fs3Operations::FwSetForbiddenVersions(char* fname, PrintCallBack callBackFunc)
 {
-    (void) fname; (void) callBackFunc;
-    return errmsg("Setting forbidden versions still not supported.");
+    if (!fname) {
+        return errmsg("Please specify a valid forbidden versions file.");
+    }
+
+    if (_ioAccess->is_flash()) {
+        return errmsg("Setting Forbidden Versions is not applicable for devices.");
+    }
+
+    if (!Fs3UpdateSection(fname, FS3_FORBIDDEN_VERSIONS, false, CMD_SET_FORBIDDEN_VERSIONS, callBackFunc)) {
+        return false;
+    }
+
+    if (!FsIntQueryAux(false, false)) {
+        return false;
+    }
+    INSERT_SHA256_IF_NEEDS(callBackFunc);
+
+    return true;
 }
 
 u_int32_t Fs3Operations::getImageSize()
@@ -2340,7 +2423,8 @@ bool Fs3Operations::FwCalcSHA256(vector<u_int8_t>& sha256)
 #if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
     vector<u_int8_t> img;
     MlxSignSHA256 mlxSignSHA256;
-
+    FwInit();
+    _imageCache.clear();
     if (!FwExtract4MBImage(img, true)) {
         return false;
     }
@@ -2518,6 +2602,15 @@ const char* Fs3Operations::FwGetResetRecommandationStr()
         return (const char*)NULL;
     }
     return "To load new FW run mlxfwreset or reboot machine.";
+}
+
+
+const char*  Fs3Operations::FwGetReSignMsgStr()
+{
+    if (!_ioAccess->is_flash() && (_fs3ImgInfo.ext_info.security_mode & SMM_SIGNED_FW)) {
+        return RESIGN_MSG;
+    }
+    return (const char*)NULL;
 }
 
 bool Fs3Operations::Fs3IsfuActivateImage(u_int32_t newImageStart)

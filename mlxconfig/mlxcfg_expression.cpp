@@ -161,7 +161,14 @@ double Expression::evaluate()
          } else {
              double x;
              const string varXTempName = "x";
-             expression.replace(expression.find(varXName),
+             size_t pos = expression.find(varXName);
+             if (pos == string::npos) {
+                 throw MlxcfgException("Unexpected error - "
+                                       "The variable '%s' was not found in "
+                                       "the expression '%s'",
+                                       varXName.c_str(), expression.c_str());
+             }
+             expression.replace(pos,
                                 varXName.length(),
                                 varXTempName);
              p.DefineVar(varXTempName, &x);

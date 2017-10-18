@@ -45,6 +45,7 @@ public:
 
     virtual bool FwQuery(fw_info_t *fwInfo, bool readRom = true, bool isStripedImage = false);
     virtual bool FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedImage = false, bool showItoc = false, bool ignoreDToc = false); // Add callback print
+    virtual bool FwVerifyAdv(ExtVerifyParams& verifyParams);
     //on call of FwReadData with Null image we get image_size
     virtual bool FwReadData(void* image, u_int32_t* image_size);
     virtual bool FwReadBlock(u_int32_t addr, u_int32_t size, std::vector<u_int8_t>& dataVec);
@@ -78,8 +79,9 @@ public:
 protected:
     bool FsIntQuery();
     bool GetImageInfo(u_int8_t *buff);
-    bool ReadBootImage(void* image, u_int32_t* image_size);
+    bool ReadBootImage(void* image, u_int32_t* image_size, ProgressCallBackAdvSt* stProgressFunc=(ProgressCallBackAdvSt*)NULL);
     bool unsupportedOperation();
+    int  FwCompsErrToFwOpsErr(fw_comps_error_t err);
 
     fs3_info_t  _fsCtrlImgInfo;
     FwCompsMgr* _fwCompsAccess;

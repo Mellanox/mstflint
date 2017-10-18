@@ -2066,6 +2066,33 @@ mfile *mopen_ul(const char *name)
     return mf;
 }
 
+void free_dev_info_ul(mfile* mf) {
+    if (mf->dinfo) {
+        if (mf->dinfo->pci.ib_devs) {
+            char** curr = mf->dinfo->pci.ib_devs;
+            while (*(curr)) {
+                free(*curr);
+                curr++;
+            }
+
+            free(mf->dinfo->pci.ib_devs);
+        }
+
+        if (mf->dinfo->pci.net_devs) {
+            char** curr = mf->dinfo->pci.net_devs;
+            while (*(curr)) {
+                free(*curr);
+                curr++;
+            }
+
+            free(mf->dinfo->pci.net_devs);
+        }
+
+        free(mf->dinfo);
+        mf->dinfo = NULL;
+    }
+}
+
 int mclose_ul(mfile *mf)
 {
     if (mf != NULL) {
@@ -2090,6 +2117,7 @@ int mclose_ul(mfile *mf)
         if (mf->dev_name) {
             free(mf->dev_name);
         }
+        free_dev_info_ul(mf);
         free(mf);
     }
     return 0;
