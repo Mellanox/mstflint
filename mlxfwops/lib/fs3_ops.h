@@ -64,7 +64,8 @@ public:
 
 
     Fs3Operations(FBase *ioAccess) : FwOperations(ioAccess), _imageCache(0xFF),
-        _isfuSupported(false), _badDevDataSections(false), _maxImgLog2Size(0){
+        _isfuSupported(false), _badDevDataSections(false), _maxImgLog2Size(0),
+        _signatureExists(0), _publicKeysExists(0) {
         _minBinMinorVer = FS3_MIN_BIN_VER_MINOR;
         _minBinMajorVer = FS3_MIN_BIN_VER_MAJOR;
         _maxBinMajorVer = FS3_MAX_BIN_VER_MAJOR;
@@ -96,10 +97,12 @@ public:
     virtual bool FwResetNvData();
     virtual bool FwShiftDevData(PrintCallBack progressFunc=(PrintCallBack)NULL);
     virtual const char*  FwGetResetRecommandationStr();
+    virtual const char*  FwGetReSignMsgStr();
+
     bool FwInsertEncSHA256(const char* privPemFile, const  char* uuid, PrintCallBack printFunc=(PrintCallBack)NULL);
     bool FwInsertSHA256(PrintCallBack printFunc=(PrintCallBack)NULL);
     virtual bool FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatternAndDevToc);
-    virtual bool FwSetPublicKey(char* fname, PrintCallBack callBackFunc=(PrintCallBack)NULL);
+    virtual bool FwSetPublicKeys(char* fname, PrintCallBack callBackFunc=(PrintCallBack)NULL);
     virtual bool FwSetForbiddenVersions(char* fname, PrintCallBack callBackFunc=(PrintCallBack)NULL);
     virtual bool FwCalcMD5(u_int8_t md5sum[16]);
     virtual bool FwSetTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer);
@@ -151,6 +154,8 @@ protected:
 
     bool Fs3UpdatePublicKeysSection(unsigned int size, char *publicKeys,
                                std::vector<u_int8_t>  &newSectionData);
+    bool Fs3UpdateForbiddenVersionsSection(unsigned int size, char *publicKeys,
+                                   std::vector<u_int8_t>  &newSectionData);
 
     struct toc_info {
         u_int32_t entry_addr;
@@ -177,6 +182,9 @@ protected:
     bool _isfuSupported;
     bool _badDevDataSections; // set true if during verify one of the device data section is corrupt or mfg section missing
     u_int32_t _maxImgLog2Size;
+
+    u_int8_t        _signatureExists;
+    u_int8_t        _publicKeysExists;
 
 private:
     #define CRC_CHECK_OUTPUT  CRC_CHECK_OLD")"

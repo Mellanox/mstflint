@@ -188,7 +188,7 @@ enum read_states {
     COPY
 };
 
-int mfasec_get_data_chunk(u_int8_t* data_sec_ptr, size_t chunk_offset, size_t length, u_int8_t* outbuf)
+int mfasec_get_data_chunk(u_int8_t* data_sec_ptr, size_t data_sec_len, size_t chunk_offset, size_t length, u_int8_t* outbuf)
 {
     int res = 0;
     int rc;
@@ -197,7 +197,11 @@ int mfasec_get_data_chunk(u_int8_t* data_sec_ptr, size_t chunk_offset, size_t le
     size_t src_sz;
 
     u_int8_t* ptr = data_sec_ptr;
+    if (data_sec_len < sizeof(section_hdr)) {
+        return _ERR(MFA_ERR_BUFF_SIZE);
+    }
     ptr += sizeof(section_hdr);
+    data_sec_len -= sizeof(section_hdr);
 
     section_hdr* hdr = (section_hdr*) data_sec_ptr;
     src_sz = __be32_to_cpu(hdr->size);
@@ -208,7 +212,10 @@ int mfasec_get_data_chunk(u_int8_t* data_sec_ptr, size_t chunk_offset, size_t le
         if (buf == NULL) {
             return _ERR(MFA_ERR_MEM_ALLOC);
         }
-
+        if (data_sec_len < src_sz) {
+            res = _ERR(MFA_ERR_BUFF_SIZE);
+            goto clean_up;
+        }
         sz = xz_stream_len(ptr, src_sz);
         if (sz <= 0) {
             res = _ERR(MFA_ERR_DECOMPRESSION);

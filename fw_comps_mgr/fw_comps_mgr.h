@@ -45,9 +45,13 @@
 #include "reg_access/reg_access.h"
 
 #include "mlxfwops/uefi_c/mft_uefi_common.h"
+#include "mlxfwops/lib/mlxfwops_com.h"
+
+using namespace std;
 
 #define PSID_LEN 16
 #define MAX_ROM_NUM 4
+#define PRODUCT_VER_LEN 16
 
 typedef struct reg_access_hca_mcqs_reg comp_status_st;
 typedef struct reg_access_hca_mcqi_reg comp_info_st;
@@ -57,6 +61,8 @@ typedef struct reg_access_hca_mcqi_cap comp_cap_st;
 typedef struct reg_access_hca_mcqi_version component_version_st;
 
 typedef int (*ProgressFunc) (int completion);
+
+typedef f_prog_func_adv_st  ProgressCallBackAdvSt;
 
 struct uid_entry {
      u_int8_t num_allocated;
@@ -81,6 +87,7 @@ typedef struct {
     component_version_st running_fw_version;
     security_fw_t        security_type;
     char        psid[PSID_LEN + 1];
+    char        product_ver[PRODUCT_VER_LEN + 1];
     uid_entry   base_guid;
     uid_entry   base_mac;
     uid_entry   base_guid_orig;
@@ -248,12 +255,14 @@ public:
     u_int32_t        getFwSupport();
     mfile*           getMfileObj() {return _mf;};
 
-    bool             burnComponents (std::vector<FwComponent>& comps, ProgressFunc func=(ProgressFunc)NULL);
+    bool             burnComponents (std::vector<FwComponent>& comps,
+                                     ProgressCallBackAdvSt* progressFuncAdv=(ProgressCallBackAdvSt*)NULL);
     bool             getFwComponents(std::vector<FwComponent>& comps, bool readEn=false);
 
     bool             readComponent(FwComponent::comps_ids_t compType,
                                     FwComponent& fwComp,
-                                    bool readPending=false);
+                                    bool readPending=false,
+                                    ProgressCallBackAdvSt* progressFuncAdv=(ProgressCallBackAdvSt*)NULL);
 
     bool             getComponentVersion(FwComponent::comps_ids_t compType,
                                          bool                     pending,
@@ -305,6 +314,9 @@ private:
         MCC_ERRCODE_FLASH_ERASE_ERROR,
     };
 
+    const char* stateToStr(fsm_state_t);
+    const char* commandToStr(fsm_command_t cmd);
+
     void          initialize(mfile* mf);
 
     void          generateHandle();
@@ -317,7 +329,7 @@ private:
                             u_int32_t   size,
                             u_int32_t   data[],
                             access_type_t access,
-                            ProgressFunc func=(ProgressFunc)NULL);
+                            ProgressCallBackAdvSt* progressFuncAdv=(ProgressCallBackAdvSt*)NULL);
 
     bool           queryComponentStaus(u_int32_t componentIndex,
                             comp_status_st* query);
@@ -325,7 +337,8 @@ private:
     bool           controlFsm(fsm_command_t command,
                             fsm_state_t   expStatus=FSMST_NA,
                             u_int32_t     size=0,
-                            fsm_state_t   currState=FSMST_NA);
+                            fsm_state_t   currState=FSMST_NA,
+                            ProgressCallBackAdvSt* progressFuncAdv=(ProgressCallBackAdvSt*)NULL);
 
     bool           queryComponentInfo(u_int32_t componentIndex,
                             u_int8_t   readPending,
@@ -377,6 +390,9 @@ private:
     reg_access_status_t _lastRegAccessStatus;
     u_int32_t           _hwDevId;
     mfile* _mf;
+    const char*         _currComponentStr;
+
+    std::vector<u_int8_t> _productVerStr;
 };
 
 #endif /* USER_MLXFWOPS_LIB_FW_COMPS_MGR_H_ */

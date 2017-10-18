@@ -74,6 +74,7 @@ if REG_ACCESS:
             self._err2str = REG_ACCESS.reg_access_err2str
             self._err2str.restype = c_char_p
             self._sendMFRL = REG_ACCESS.reg_access_mfrl
+            self._mgir = REG_ACCESS.reg_access_mgir
 
         ##########################
         def close(self):
@@ -104,6 +105,60 @@ if REG_ACCESS:
             
             if method == REG_ACCESS_METHOD_GET:
                 return mfrlRegisterP.contents.reset_level
+
+        ##########################
+        def getFWUptime(self):
+            class MGIR_ST(Structure):
+                _fields_ = [("device_id", c_uint16),
+                            ("device_hw_revision", c_uint16),
+                            ("pvs", c_uint8),
+                            ("hw_dev_id", c_uint16),
+                            ("manufacturing_base_mac_47_32", c_uint16),
+                            ("manufacturing_base_mac_31_0", c_uint32),
+                            ("uptime", c_uint32),
+                            ("sub_minor", c_uint8),
+                            ("minor", c_uint8),
+                            ("major", c_uint8),
+                            ("secure_fw", c_uint8),
+                            ("signed_fw", c_uint8),
+                            ("debug_fw", c_uint8),
+                            ("dev_fw", c_uint8),
+                            ("build_id", c_uint32),
+                            ("year", c_uint16),
+                            ("day", c_uint8),
+                            ("month", c_uint8),
+                            ("hour", c_uint16),
+                            ("psid1", c_uint32),
+                            ("psid2", c_uint32),
+                            ("psid3", c_uint32),
+                            ("psid4", c_uint32),
+                            ("ini_file_version", c_uint32),
+                            ("extended_major", c_uint32),
+                            ("extended_minor", c_uint32),
+                            ("extended_sub_minor", c_uint32),
+                            ("subminor", c_uint8),
+                            ("minor", c_uint8),
+                            ("major", c_uint8),
+                            ("rom3_type", c_uint8),
+                            ("rom3_arch", c_uint8),
+                            ("rom2_type", c_uint8),
+                            ("rom2_arch", c_uint8),
+                            ("rom1_type", c_uint8),
+                            ("rom1_arch", c_uint8),
+                            ("rom0_type", c_uint8),
+                            ("rom0_arch", c_uint8),
+                            ("rom0_version", c_uint32),
+                            ("rom1_version", c_uint32),
+                            ("rom2_version", c_uint32),
+                            ("rom3_version", c_uint32)]
+
+            mgirRegisterP = pointer(MGIR_ST())
+
+            rc = self._mgir(self._mstDev.mf, REG_ACCESS_METHOD_GET, mgirRegisterP)
+            if rc:
+                raise RegAccException("Failed to send Register: %s (%d)" % (self._err2str(rc), rc))
+
+            return mgirRegisterP.contents.uptime
 else:
     raise RegAccException("Failed to load rreg_access.so/libreg_access.dll")
 

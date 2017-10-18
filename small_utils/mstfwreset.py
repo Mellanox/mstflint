@@ -52,7 +52,7 @@ try:
     import re
     import time
     import signal
-    #import commands
+    import abc
     import mtcr
     import regaccess
     import tools_version
@@ -103,6 +103,7 @@ TOOL_VERSION = "1.0.0"
 DEVID_ADDR = [0xf0014, 0     , 16   ]
 REVID_ADDR = [0xf0014, 16    , 8    ]
 
+COMMAND_ADDR = 0x4
 IS_MSTFLINT = "mstfwreset" in __file__
 MCRA = 'mcra'
 if IS_MSTFLINT:
@@ -142,8 +143,12 @@ MstDevObj = None
 MstFlags = ""
 # Pci device Obj
 PciOpsObj = None
+
+DevDBDF = None
 # icmd object
 CmdifObj = None
+# FirmwareResetStatusChecker object
+FWResetStatusChecker = None
 
 # Global options
 SkipMstRestart = False
@@ -259,17 +264,74 @@ def mcraWrite(device, addr, offset, length, value):
         raise RuntimeError (str(stderr))
 
 ######################################################################
+# Description:  FirmwareResetStatusChecker
+# OS Support :  Linux/Windows.
+######################################################################
+class FirmwareResetStatusChecker(object):
+
+    FirmwareUptimeStatusInit = 0x0
+    FirmwareUptimeStatusBeforeDone = 0x1
+    FirmwareUptimeStatusAfterDone = 0x2
+    FirmwareUptimeStatusError = 0x3
+
+    FirmwareResetStatusDone = 0x0
+    FirmwareResetStatusFailed = 0x1
+    FirmwareResetStatusUnknown = 0x2
+
+    def __init__(self, regAccessObj):
+        self._RegAccessObj = regAccessObj
+        self._UptimeBeforeReset = 0x0
+        self._UptimeBeforeStatus = FirmwareResetStatusChecker.FirmwareUptimeStatusInit
+        self._UptimeAfterReset = 0x0
+        self._UptimeAfterStatus = FirmwareResetStatusChecker.FirmwareUptimeStatusInit
+
+    def UpdateUptimeBeforeReset(self):
+        try:
+            self._UptimeBeforeReset = self._RegAccessObj.getFWUptime()
+            self._UptimeBeforeStatus = FirmwareResetStatusChecker.FirmwareUptimeStatusBeforeDone
+        except Exception as e:
+            self._UptimeBeforeStatus = FirmwareResetStatusChecker.FirmwareUptimeStatusError
+
+    def UpdateUptimeAfterReset(self):
+        try:
+            self._UptimeAfterReset = self._RegAccessObj.getFWUptime()
+            self._UptimeAfterStatus = FirmwareResetStatusChecker.FirmwareUptimeStatusAfterDone
+        except Exception as e:
+            self._UptimeAfterStatus = FirmwareResetStatusChecker.FirmwareUptimeStatusError
+
+    def GetStatus(self):
+        if self._UptimeBeforeStatus == FirmwareResetStatusChecker.FirmwareUptimeStatusBeforeDone and\
+                        self._UptimeAfterStatus == FirmwareResetStatusChecker.FirmwareUptimeStatusAfterDone:
+            if self._UptimeAfterReset < self._UptimeBeforeReset:
+                return FirmwareResetStatusChecker.FirmwareResetStatusDone
+            else:
+                if self._UptimeBeforeReset > 5: #5 seconds
+                    return FirmwareResetStatusChecker.FirmwareResetStatusFailed
+                else:
+                    return FirmwareResetStatusChecker.FirmwareResetStatusUnknown
+        return FirmwareResetStatusChecker.FirmwareResetStatusUnknown
+
+######################################################################
 # Description:  Driver Class , use factory to get instance
 # OS Support :  Linux/Windows.
 ######################################################################
 
 class MlnxDriver(object):
+    __metaclass__ = abc.ABCMeta
     """ Abstract driver Class that provides a simple start stop status methods
     """
+    
+    def __init__(self, driverStatus):
+        self.driverStatus = driverStatus
+
+    @abc.abstractmethod
     def driverStart(self):
         raise NotImplementedError("driverStart() is not implemented")
+
+    @abc.abstractmethod
     def driverStop(self):
         raise NotImplementedError("driverStop() is not implemented")
+
     def getDriverStatus(self):
         return self.driverStatus
 
@@ -279,7 +341,7 @@ class MlnxDriverLinux(MlnxDriver):
         for driverScript in KNOWN_DRIVER_SCRIPTS:
             if os.path.exists(driverScript):
                 self._driverScript = driverScript
-        self.driverStatus = driverStatus
+        super(MlnxDriverLinux, self).__init__(driverStatus)
 
     def driverStart(self):
         if self._driverScript == None:
@@ -313,7 +375,7 @@ class MlnxInboxDriverLinux(MlnxDriver):
         self.isAccellToolsLoaded = self.isModuleLoaded("mlx_accel_tools") # Only for temporary backward comp. Should be removed in the future
         self.isAccellCoreLoaded = self.isModuleLoaded("mlx_accel_core") # Only for temporary backward comp. Should be removed in the future
         self.isFpgaToolsLoaded = self.isModuleLoaded("mlx5_fpga_tools")
-        self.driverStatus = driverStatus
+        super(MlnxInboxDriverLinux, self).__init__(driverStatus)
 
     def loadViaModeProbe(self, moduleName):
         cmd = "modprobe " + moduleName
@@ -365,7 +427,7 @@ class MlnxDriverFreeBSD(MlnxDriver):
             (rc, _, _) = cmdExec(cmd)
             if rc == 0:
                 self._knownModules[i] = (self._knownModules[i][0], True)
-        self.driverStatus = self.getDriverStatusAux()
+        super(MlnxDriverFreeBSD, self).__init__(self.getDriverStatusAux())
 
     def driverStart(self):
         for moduleName, isPresent in self._knownModules:
@@ -394,7 +456,7 @@ class MlnxDriverFreeBSD(MlnxDriver):
 class MlnxDriverWindows(MlnxDriver):
     def __init__(self, skip, device):
         if skip == True:
-            self.driverStatus = DRIVER_IGNORE
+            super(MlnxDriverWindows, self).__init__(DRIVER_IGNORE)
             return
 
         deviceBus = int((getDevDBDF(device)).split(":")[0], 16)
@@ -419,8 +481,8 @@ class MlnxDriverWindows(MlnxDriver):
                 raise RuntimeError("Failed to get Adapter '%s' Information" % targetedAdapter)
             if ("Disabled" not in out):
                 self.targetedAdapters.append(targetedAdapter)
-        self.driverStatus = DRIVER_LOADED if (len(self.targetedAdapters) > 0) else DRIVER_IGNORE
-
+        driverStatus = DRIVER_LOADED if (len(self.targetedAdapters) > 0) else DRIVER_IGNORE
+        super(MlnxDriverWindows, self).__init__(driverStatus)
         return
 
     def driverStart(self):
@@ -530,7 +592,8 @@ class MlnxPciOpLinux(MlnxPciOp):
         return int(capAddr, 16)
     
     def getMFDeviceList(self, mstDev):
-        devAddr = getDevDBDF(mstDev)
+        global DevDBDF
+        devAddr = DevDBDF
         domainBus = ":".join(devAddr.split(":")[:2])
         MFDevices = []
         cmd = "lspci -d 15b3: -D | grep %s | cut -d' ' -f1" %domainBus
@@ -653,8 +716,9 @@ class MlnxPciOpFreeBSD(MlnxPciOp):
         return int(capAddr, 16)
     
     def getMFDeviceList(self, mstDev):
+        global DevDBDF
         MFDevices = []
-        devAddr = getDevDBDF(mstDev)
+        devAddr = DevDBDF
         domainBus = ":".join(devAddr.split(":")[:-2])
         domainBus = "pci" + domainBus
         cmd = "pciconf -l | grep 'chip=0x[0-9,a-f]\{4\}15b3 ' | grep %s | cut -f1 | cut -d@ -f2" %domainBus
@@ -935,12 +999,33 @@ def getPciModulePath():
         return (False, getAllPciModulePaths())
 
 ######################################################################
+# Description: Run PPC Pci Reset Module
+# OS Support: Linux
+#####################################################################
+
+def runPPCPciResetModule(path, busId):
+    cmd = "insmod %s pci_dev=%s" % (path, busId)
+    (rc, out, err) = cmdExec(cmd)
+    if rc != 0 :
+        #check if failure is related to SELinux
+        if "Permission denied" in err:
+            chconCmd = "chcon -t modules_object_t %s" % path
+            (rc, out, err) = cmdExec(chconCmd)
+            if rc != 0:
+                return (False, err)
+            (rc, out, err) = cmdExec(cmd)
+            if rc != 0:
+                return (False, err)
+    return (True, "")
+
+######################################################################
 # Description:  reset PCI of a certain device for PPC setup (special flow)
 # OS Support : Linux
 ######################################################################
 
 def resetPciAddrPPC(busId):
     global pciModuleName
+    global FWResetStatusChecker
     # check supported system
     if platform.system() != "Linux":
         raise RuntimeError("Unsupported OS(%s) for PPC reset flow" % (platform.system()) )
@@ -952,16 +1037,14 @@ def resetPciAddrPPC(busId):
 
     (foundModule, path) = getPciModulePath()
     if foundModule == True:
-        cmd = "insmod %s pci_dev=%s" % (path, busId)
-        (rc, out, err) = cmdExec(cmd)
-        if rc != 0 :
+        (res, err) = runPPCPciResetModule(path, busId)
+        if res == False:
             raise RuntimeError("Failed to load pci reset module, make sure kernel-mft is installed properly: %s" % err)
     else:
         foundWorkingModule = False
         for p in path:
-            cmd = "insmod %s pci_dev=%s" % (p, busId)
-            (rc, out, err) = cmdExec(cmd)
-            if rc == 0:
+            (res, err) = runPPCPciResetModule(path, busId)
+            if res == True:
                 foundWorkingModule = True
                 break
         if foundWorkingModule == False:
@@ -973,6 +1056,7 @@ def resetPciAddrPPC(busId):
         raise RuntimeError("Failed to unload pci reset module: %s please unload the module manually" % err)
     #sleep to be on the safe side
     time.sleep(1)
+
     return
 
 ######################################################################
@@ -982,6 +1066,7 @@ def resetPciAddrPPC(busId):
 
 def resetPciAddrWindows(busId):
     global MstDevObj
+    global FWResetStatusChecker
     MstDevObj.mHcaReset()
     return
 
@@ -992,6 +1077,7 @@ def resetPciAddrWindows(busId):
 
 def resetPciAddrDefault(busId):
     global PciOpsObj
+    global FWResetStatusChecker
     bridgeDev = PciOpsObj.getPciBridgeAddr(busId)
     # Link Control Register : PCI_EXPRESS_CAP_OFFS + 0x10
     capAddr = PciOpsObj.getPciECapAddr(bridgeDev)
@@ -1013,11 +1099,14 @@ def resetPciAddrDefault(busId):
 ######################################################################
 
 def resetPciAddr(device):
+    global DevDBDF
     # save pci conf space
     savePciConfSpace(device)
 
-    busId = getDevDBDF(device)
+    busId = DevDBDF
     isPPC = "ppc64" in platform.machine()
+    #update FWResetStatusChecker
+    FWResetStatusChecker.UpdateUptimeBeforeReset()
     try:
         if platform.system() == "Windows" :
             resetPciAddrWindows(busId)
@@ -1031,6 +1120,8 @@ def resetPciAddr(device):
     time.sleep(1)
     # restore pci conf space
     loadPciConfSpace(device)
+    #update FWResetStatusChecker
+    FWResetStatusChecker.UpdateUptimeAfterReset()
     return
 
 ######################################################################
@@ -1061,7 +1152,9 @@ def loadPciConfSpace(mstDev):
     global PciOpsObj
     devList = PciOpsObj.getMFDeviceList(mstDev)
     for pciDev in devList:
-        PciOpsObj.loadPCIConfigurationSpace(pciDev)
+        command_reg = PciOpsObj.read(pciDev, COMMAND_ADDR, "W")
+        if (command_reg & 0x2) == 0: #Second bit in command register is off
+            PciOpsObj.loadPCIConfigurationSpace(pciDev)
     return
 
 ######################################################################
@@ -1143,7 +1236,7 @@ def sendResetToFWSync(device, level, force):
     if (status.fsm_state == SYNC_STATE_GET_READY and
                  status.fsm_sync_type != SYNC_TYPE_FW_RESET) or\
             status.fsm_state == SYNC_STATE_GO:
-        raise RuntimeError("the fsm register is busy, use the %s flag" % RESET_MULTIHOST_REGISTER_FLAG)
+        raise RuntimeError("the fsm register is busy, run reset_fsm_register command")
     elif status.fsm_state == SYNC_STATE_IDLE:
         CmdifObj.multiHostSync(SYNC_STATE_GET_READY, SYNC_TYPE_FW_RESET, 0x1)
         #WA: send again because in single host case the firmware will wait for a second call (fw bug ??)
@@ -1162,7 +1255,12 @@ def sendResetToFWSync(device, level, force):
 def stopDriver(driverObj):
     if driverObj.getDriverStatus() == DRIVER_LOADED:
         printAndFlush("-I- %-40s-" % ("Stopping Driver"), endChar="")
-        driverObj.driverStop()
+        try:
+            driverObj.driverStop()
+        except Exception as e:
+            #try again, that will prevent problems in multihost
+            time.sleep(1)
+            driverObj.driverStop()
         printAndFlush("Done")
 
 ######################################################################
@@ -1171,11 +1269,16 @@ def stopDriver(driverObj):
 def stopDriverSync(driverObj):
     status = CmdifObj.multiHostSyncStatus()
     timestamp = time.time()
+    print_waiting_msg = True
     while(status.fsm_state == SYNC_STATE_GET_READY and
-                status.fsm_sync_type == SYNC_TYPE_FW_RESET):
+          status.fsm_sync_type == SYNC_TYPE_FW_RESET):
         status = CmdifObj.multiHostSyncStatus()
-        if time.time() - timestamp > 180:
+        diffTime = time.time() - timestamp
+        if diffTime > 180:
             raise RuntimeError("fsm sync timed out")
+        if print_waiting_msg and diffTime > 2:
+            print("Waiting for mlxfwreset to run on all other hosts, press 'ctrl+c' to abort")
+            print_waiting_msg = False
         time.sleep(0.5)
 
     if status.fsm_state != SYNC_STATE_GO or status.fsm_sync_type != SYNC_TYPE_FW_RESET:
@@ -1186,12 +1289,24 @@ def stopDriverSync(driverObj):
     CmdifObj.multiHostSync(SYNC_STATE_GO, SYNC_TYPE_FW_RESET)
     status = CmdifObj.multiHostSyncStatus()
     timestamp = time.time()
+    print_waiting_msg = True
     while status.fsm_host_ready != 0x0:
         status = CmdifObj.multiHostSyncStatus()
         if status.fsm_sync_type != SYNC_TYPE_FW_RESET or status.fsm_state != SYNC_STATE_GO:
             raise RuntimeError("Operation failed, the fsm register state or type is not as expected")
-        if time.time() - timestamp > 180:
-            raise RuntimeError("fsm sync timed out")
+        diffTime = time.time() - timestamp
+        if diffTime > 180:
+            errmsg = "fsm sync timed out"
+            if driverObj.getDriverStatus() == DRIVER_LOADED:
+                try:
+                    driverObj.driverStart()
+                    errmsg = errmsg + " (driver was reloaded)"
+                except Exception as e:
+                    errmsg = errmsg + " (driver failed to reload: %s)" % str(e)
+            raise RuntimeError(errmsg)
+        if print_waiting_msg and diffTime > 2:
+            print("Waiting for mlxfwreset to run on all other hosts, press 'ctrl+c' to abort")
+            print_waiting_msg = False
         time.sleep(0.5)
 
     if status.fsm_sync_type != SYNC_TYPE_FW_RESET or status.fsm_state != SYNC_STATE_GO:
@@ -1204,9 +1319,6 @@ def stopDriverSync(driverObj):
 def resetFlow(device, level, force=False):
     infoStr = ""
     try:
-        if ResetMultihostReg and not SkipMultihostSync:
-            status = CmdifObj.multiHostSyncStatus()
-            CmdifObj.multiHostSync(SYNC_STATE_IDLE, status.fsm_sync_type)
 
         if SkipMultihostSync or not CmdifObj.isMultiHostSyncSupported():
             sendResetToFW(device, level, force)
@@ -1241,9 +1353,10 @@ def resetFlow(device, level, force=False):
         # we close MstDevObj to allow a clean operation of mst restart
         MstDevObj.close()
         global SkipMstRestart
+        global DevDBDF
         if SkipMstRestart == False:
             printAndFlush("-I- %-40s-" % ("Restarting MST"), endChar="")
-            if mstRestart(getDevDBDF(device)) == 0:
+            if mstRestart(DevDBDF) == 0:
                 printAndFlush("Done")
             else:
                 printAndFlush("Skipped")
@@ -1470,7 +1583,7 @@ def main():
     # reset the multihost sync register to idle state
     options_group.add_argument(RESET_MULTIHOST_REGISTER_FLAG,
                                action="store_true",
-                               help="Reset the fsm sync register to idle state")
+                               help=argparse.SUPPRESS)
 
     options_group.add_argument('--skip_fsm_sync',
                                action="store_true",
@@ -1479,15 +1592,19 @@ def main():
     command_group = parser.add_argument_group('Commands')
     command_group.add_argument('command',
                         nargs=1,
-                        choices=["q", "query", "r", "reset"],
-                        help='Query/Execute reset Level.')
+                        choices=["q", "query", "r", "reset", "reset_fsm_register"],
+                        help='query: Query reset Level.\n reset: Execute reset.\n reset_fsm_register: Reset the fsm register.')
     args = parser.parse_args()
     device = args.device
     level = args.level
     yes = args.yes
     command = args.command[0]
-    command = ("query", "reset")[command in ["r", "reset"]]
-    
+    if command in ["r", "reset"]:
+        command = "reset"
+    elif command in ["q", "query"]:
+        command = "query"
+    elif command in ["reset_fsm_register"]:
+        command = "reset_fsm_register"
     # Insert Flow here
     isDevSupp(device)
     # open reg access obj
@@ -1500,16 +1617,19 @@ def main():
     global CmdifObj
     global ResetMultihostReg
     global SkipMultihostSync
-    global IS_MSTFLINT
-    if not IS_MSTFLINT and platform.system() == "Linux":
+    global DevDBDF
+    global FWResetStatusChecker
+    if platform.system() == "Linux":
         device = map2DevPath(device)
+    DevDBDF = getDevDBDF(device)
     SkipMstRestart = args.no_mst_restart
     skipDriver = args.skip_driver
     ResetMultihostReg = args.reset_fsm_register
-    SkipMultihostSync = args.skip_fsm_sync
-    if ResetMultihostReg and SkipMultihostSync:
-        print("-E- Can not skip fsm sync and reset fsm sync register in the same time.")
+    #TODO: remove this check for January release
+    if ResetMultihostReg:
+        print("-E- %s flag was deprecated, use reset_fsm_register command instead" % RESET_MULTIHOST_REGISTER_FLAG)
         return 1
+    SkipMultihostSync = args.skip_fsm_sync
     MstDevObj = mtcr.MstDevice(device)
     RegAccessObj = regaccess.RegAccess(MstDevObj)
     CmdifObj = cmdif.CmdIf(MstDevObj)
@@ -1520,7 +1640,9 @@ def main():
     if DevMgtObj.isLivefishMode() == 1:
         raise RuntimeError("mlxfwreset is not supported for device in livefish")
         return 1 
-    
+
+    FWResetStatusChecker = FirmwareResetStatusChecker(RegAccessObj)
+
     try:
         if args.pci_bridge:
             PciOpsObj.setPciBridgeAddr(args.pci_bridge[0])
@@ -1546,7 +1668,15 @@ def main():
         AskUser("Continue with reset", yes)
         execResLvl(device, level, args.force)
         if level != RL_COLD_REBOOT and level != RL_WARM_REBOOT:
-            print("-I- FW was loaded successfully.")
+            if FWResetStatusChecker.GetStatus() == FirmwareResetStatusChecker.FirmwareResetStatusFailed:
+                print("-E- Firmware reset failed, retry operation or reboot machine.")
+                return 1
+            else:
+                print("-I- FW was loaded successfully.")
+    elif command == "reset_fsm_register":
+        status = CmdifObj.multiHostSyncStatus()
+        CmdifObj.multiHostSync(SYNC_STATE_IDLE, status.fsm_sync_type)
+        print("-I- FSM register was reseted successfully.")
     return 0
 
 if __name__ == '__main__':

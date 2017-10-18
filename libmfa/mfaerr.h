@@ -51,6 +51,7 @@ enum {
     MFA_ERR_DECOMPRESSION,
     MFA_ERR_FSEEK,
     MFA_ERR_FTELL,
+    MFA_ERR_BUFF_SIZE
 };
 
 #endif

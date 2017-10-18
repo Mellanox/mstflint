@@ -110,7 +110,9 @@ private:
     //Helper functions for parse args
     mlxCfgStatus extractNVInputFile(int argc, char* argv[]);
     mlxCfgStatus extractNVOutputFile(int argc, char* argv[]);
-    mlxCfgStatus extractCfgArgs(int argc, char* argv[]);
+    mlxCfgStatus extractSetCfgArgs(int argc, char* argv[]);
+    mlxCfgStatus extractQueryCfgArgs(int argc, char* argv[]);
+
     bool tagExsists(string tag);
     const char* getDeviceName(const char* dev);
 

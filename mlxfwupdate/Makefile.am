@@ -81,6 +81,7 @@ common_SOURCEES =  mlxfwmanager_common.cpp mlxfwmanager_common.h\
                         err_msgs.h
                         
 common_LDADD  = $(USER_DIR)/dev_mgt/libdev_mgt.a\
+                        $(USER_DIR)/mvpd/libmvpd.a\
                         $(USER_DIR)/mlxfwops/lib/libmlxfwops.a\
                         $(USER_DIR)/mlxconfig/libmlxcfg.a\
                         $(USER_DIR)/libmfa/libmfa.a\

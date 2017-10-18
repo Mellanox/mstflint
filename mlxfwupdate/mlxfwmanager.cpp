@@ -79,6 +79,7 @@ int mainEntry(int argc, char* argv[])
     string errorMsg = "";
     string logDir;
     int    (*progressCB)(int);
+    int    (*advProgressCB)(int, const char*, prog_t, void*);
     ServerRequest *srq = NULL;
     initHandler();
     CmdLineParser cmdParser(&cmd_params, argv, argc);
@@ -135,8 +136,10 @@ int mainEntry(int argc, char* argv[])
         fprintf(stdout, "-W- XML is not functional when -d is used in  command line\n");
     }
     progressCB = progressCB_nodisplay;
+    advProgressCB = NULL;
     if (cmd_params.show_progress) {
         progressCB = progressCB_display;
+        advProgressCB = (f_prog_func_adv)&advProgressFunc_display;
     }
 
     formatted_output = cmd_params.write_xml;
@@ -309,6 +312,10 @@ int mainEntry(int argc, char* argv[])
                 continue;
             }
         }
+        if (dev->checkExistence(devs) == true) {
+            delete dev;
+            continue;
+        }
         devs.push_back(dev);
     }
     if (!devs.size()){
@@ -410,15 +417,17 @@ int mainEntry(int argc, char* argv[])
         }
         require_update_cnt++;
     }
-    if (require_update_cnt != 0) {
-        int answer = prompt("Perform FW update? [y/N]: ", cmd_params.yes_no_);
-        if (!answer) {
-            print_out("No updates performed\n");
-            //res = rc;
-            goto clean_up;
+    if (!cmd_params.force_update) {
+        if (require_update_cnt != 0) {
+            int answer = prompt("Perform FW update? [y/N]: ", cmd_params.yes_no_);
+            if (!answer) {
+                print_out("No updates performed\n");
+                //res = rc;
+                goto clean_up;
+            }
+        } else {
+            goto early_err_clean_up;
         }
-    } else {
-        goto early_err_clean_up;
     }
 
     if (cmd_params.update_online && require_update_cnt) {
@@ -439,7 +448,7 @@ int mainEntry(int argc, char* argv[])
             print_out("Device #%d: %s\n", (i+1), status_strings[i].c_str());
             continue;
         } else {
-            print_out("Device #%d: %s", (i+1), "Updating FW ...     ");
+            print_out("Device #%d: %s", (i+1), "Updating FW ...     \n");
         }
         burn_cnt++;
         string mfa_file = config.mfa_path;
@@ -456,7 +465,7 @@ int mainEntry(int argc, char* argv[])
         }
         bool imageWasCached = false;
         bool isAlignmentNeeded = false;
-        rc0 = devs[i]->preBurn(mfa_file, progressCB, cmd_params.burnFailsafe, isAlignmentNeeded);
+        rc0 = devs[i]->preBurn(mfa_file, progressCB, cmd_params.burnFailsafe, isAlignmentNeeded, advProgressCB);
         if (rc0) {
             if (abort_request) {
                 print_out("\b\b\b\bInterrupted\n");
@@ -1387,6 +1396,31 @@ FILE* createOutFile(string &fileName, bool fileSpecified)
 int progressCB_display(int completion)
 {
     print_out("\b\b\b\b%3d%%", completion);
+    fflush(stdout);
+    return abort_request;
+}
+
+int advProgressFunc_display(int completion, const char* stage, prog_t type, int* unknownProgress)
+{
+    switch (type) {
+    case PROG_WITH_PRECENTAGE:
+        print_out("\r%s - %3d%%", stage, completion);
+        break;
+    case PROG_OK:
+        print_out("\r%s -   OK          \n", stage);
+        break;
+    case PROG_STRING_ONLY:
+        print_out("%s\n", stage);
+        break;
+    case PROG_WITHOUT_PRECENTAGE:
+        if (unknownProgress) {
+            static const char* progStr[] = { "[.    ]", "[..   ]", "[...  ]", "[.... ]", "[.....]", "[ ....]", "[  ...]", "[   ..]", "[    .]", "[     ]" };
+            int size = sizeof(progStr) / sizeof(progStr[0]);
+            print_out("\r%s - %s", stage, progStr[(*unknownProgress) % size]);
+            (*unknownProgress) ++;
+        }
+        break;
+    }
     fflush(stdout);
     return abort_request;
 }

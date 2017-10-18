@@ -513,7 +513,8 @@ ssize_t mfa_get_image(mfa_desc* mfa_d, char* board_type_id, u_int8_t type, char*
         if (toce_ar[i]->data_size == 0) {
             continue;
         }
-        int rc = mfasec_get_data_chunk(mfa_d->data_ptr, toce_ar[i]->data_offset, toce_ar[i]->data_size, &((*buffer)[accum_size]));
+        int rc = mfasec_get_data_chunk(mfa_d->data_ptr, (mfa_d->buffer + mfa_d->bufsz) - mfa_d->data_ptr, toce_ar[i]->data_offset,
+                toce_ar[i]->data_size, &((*buffer)[accum_size]));
         if (rc < 0) {
             res = _ERR_STR(mfa_d, -rc, "Failed to get image");
             goto img_alloc_clean_up;

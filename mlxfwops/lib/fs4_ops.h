@@ -71,7 +71,7 @@ public:
     bool FwQueryTimeStamp(struct tools_open_ts_entry& timestamp,
             struct tools_open_fw_version& fwVer, bool queryRunning=false);
     bool FwResetTimeStamp();
-    //bool CheckIfAlignmentIsNeeded(FwOperations *imgops);
+    bool CheckIfAlignmentIsNeeded(FwOperations *imgops);
 
 
 protected:
@@ -183,7 +183,7 @@ private:
         vector<u_int8_t>  &newSectionData);
     bool isDTocSection(fs3_section_t sect_type, bool& isDtoc);
 
-    //bool AlignDeviceSections(u_int8_t flashLayoutVersion);
+    bool AlignDeviceSections(u_int8_t flashLayoutVersion);
     bool restoreWriteProtection(mflash* mfl, u_int8_t banksNum,
             write_protect_info_t protect_info[]);
 

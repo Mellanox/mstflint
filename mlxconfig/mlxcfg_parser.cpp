@@ -192,8 +192,38 @@ mlxCfgStatus MlxCfg::extractNVOutputFile(int argc, char* argv[])
     return MLX_CFG_OK;
 }
 
+mlxCfgStatus MlxCfg::extractQueryCfgArgs(int argc, char* argv[])
+{
+    int i = 0;
 
-mlxCfgStatus MlxCfg::extractCfgArgs(int argc, char* argv[])
+    for (;i < argc;i++) {
+        ParamView pv;
+        string mlxconfigName = argv[i];
+        if (isIndexedMlxconfigName(mlxconfigName)) {
+            string indexStr = parseIndexStr(mlxconfigName);
+            vector<u_int32_t> indexes;
+            extractIndexes(indexStr, indexes);
+            if (indexes.size() > 1) {
+                mlxconfigName = mlxconfigName.substr(0, mlxconfigName.find('['));
+                VECTOR_ITERATOR(u_int32_t, indexes, it) {
+                    ParamView paramView;
+                    paramView.mlxconfigName = mlxconfigName + "[" + numToStr(*it) + "]";
+                    _mlxParams.setParams.push_back(paramView);
+                }
+                continue;
+            } else {
+                pv.mlxconfigName = mlxconfigName;
+            }
+        } else {
+            pv.mlxconfigName = mlxconfigName;
+        }
+        _mlxParams.setParams.push_back(pv);
+    }
+
+    return MLX_CFG_OK;
+}
+
+mlxCfgStatus MlxCfg::extractSetCfgArgs(int argc, char* argv[])
 {
     int i = 0;
     string tag, strVal;
@@ -221,10 +251,28 @@ mlxCfgStatus MlxCfg::extractCfgArgs(int argc, char* argv[])
         }
 
         ParamView pv;
-        pv.mlxconfigName = tag;
+
+        if (isIndexedMlxconfigName(tag)) {
+            string indexStr = parseIndexStr(tag);
+            vector<u_int32_t> indexes;
+            extractIndexes(indexStr, indexes);
+            if (indexes.size() > 1) {
+                string mlxconfigName = tag.substr(0, tag.find('['));
+                VECTOR_ITERATOR(u_int32_t, indexes, it) {
+                    ParamView paramView;
+                    paramView.setVal = strVal;
+                    paramView.mlxconfigName = mlxconfigName + "[" + numToStr(*it) + "]";
+                    _mlxParams.setParams.push_back(paramView);
+                }
+                continue;
+            } else {
+                pv.mlxconfigName = tag;
+            }
+        } else {
+            pv.mlxconfigName = tag;
+        }
+
         pv.setVal = strVal;
-        pv.type = BOOLEAN_TYPE;
-        pv.val = MLXCFG_UNKNOWN;
         _mlxParams.setParams.push_back(pv);
 
     }
@@ -335,8 +383,8 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
     if (i == argc && _mlxParams.cmd == Mc_Set) {
         return err(true, "missing configuration arguments. For more information please run " MLXCFG_NAME " -h|--help.");
     }
-    if (i != argc && (_mlxParams.cmd == Mc_Reset || _mlxParams.cmd == Mc_Query)) {
-        return err(true, "%s command expects no argument but %d argument received", (_mlxParams.cmd == Mc_Reset) ? "reset" : "query", argc -i);
+    if (i != argc && (_mlxParams.cmd == Mc_Reset)) {
+        return err(true, "%s command expects no argument but %d argument received", "reset", argc -i);
     }
     if ((_mlxParams.cmd == Mc_Set || _mlxParams.cmd == Mc_Clr_Sem || _mlxParams.cmd == Mc_Set_Raw || _mlxParams.cmd == Mc_Backup || _mlxParams.cmd == Mc_ShowConfs || _mlxParams.cmd == Mc_Apply) && _mlxParams.device.length() == 0) {
         return err(true, "%s command expects device to be specified.",
@@ -383,7 +431,10 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
         return extractNVOutputFile(argc-i-1, &(argv[i+1]));
     }
 
-
-    return extractCfgArgs(argc-i, &(argv[i]));
+    if (_mlxParams.cmd == Mc_Query) {
+        return extractQueryCfgArgs(argc - i, &(argv[i]));
+    } else {
+        return extractSetCfgArgs(argc-i, &(argv[i]));
+    }
 }
 

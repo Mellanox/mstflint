@@ -134,7 +134,7 @@ void      mfasec_init();
 u_int32_t mfasec_crc32(const u_int8_t *buf, size_t size, u_int32_t crc);
 ssize_t   mfasec_get_map(u_int8_t* inbuf, size_t inbufsz, u_int8_t** outbuf);
 ssize_t   mfasec_get_toc(u_int8_t* inbuf, size_t inbufsz, u_int8_t** outbuf);
-int       mfasec_get_data_chunk(u_int8_t* data_sec_ptr, size_t chunk_offset, size_t length, u_int8_t* outbuf);
+int       mfasec_get_data_chunk(u_int8_t* data_sec_ptr, size_t data_sec_len, size_t chunk_offset, size_t length, u_int8_t* outbuf);
 char*     mfasec_get_sub_image_type_str(int t);
 #endif
 

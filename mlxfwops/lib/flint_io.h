@@ -108,6 +108,7 @@ public:
 
     virtual u_int32_t get_dev_id()                         = 0;
     virtual u_int32_t get_rev_id()                         = 0;
+    virtual BinIdT    get_bin_id() { return UNKNOWN_BIN;} ;
     Crc16&            get_image_crc() {return _image_crc;};
     bool              is_flash() {return _is_flash;};
 
@@ -302,6 +303,7 @@ public:
 
     u_int32_t get_dev_id             ()  {return _attr.hw_dev_id; }
     u_int32_t get_rev_id             ()  {return _attr.rev_id; }
+    BinIdT    get_bin_id             ()  {return _attr.bin_id;} ;
     u_int32_t get_port_num           ()  {return _port_num;}
     u_int8_t  get_cr_space_locked    ()  {return _cr_space_locked;}
     bool  get_ignore_cache_replacment()  {return _ignore_cache_replacement;}

@@ -90,7 +90,7 @@ string FourthGenCommander::param2str[Mcp_Last]= {"SRIOV_EN", "NUM_OF_VFS",
          "INITIAL_ALPHA_VALUE_P2", "MIN_TIME_BETWEEN_CNPS_P2", "CNP_DSCP_P2", "CNP_802P_PRIO_P2",
          "BOOT_OPTION_ROM_EN_P1", "BOOT_VLAN_EN_P1", "BOOT_RETRY_CNT_P1", "LEGACY_BOOT_PROTOCOL_P1", "BOOT_VLAN_P1",
          "BOOT_OPTION_ROM_EN_P2", "BOOT_VLAN_EN_P2", "BOOT_RETRY_CNT_P2", "LEGACY_BOOT_PROTOCOL_P2", "BOOT_VLAN_P2",
-         "PORT_OWNER", "ALLOW_RD_COUNTERS", "IP_VER", "IP_VER_P1", "IP_VER_P2",
+         "PORT_OWNER", "ALLOW_RD_COUNTERS", "IP_VER", "IP_VER_P1", "IP_VER_P2", "CQ_TIMESTAMP"
           };
 
 void FourthGenCommander::freeCfgList()
@@ -186,6 +186,11 @@ FourthGenCommander::FourthGenCommander(mfile* mf, string dev) : Commander(mf), _
     _cfgList[Mct_Boot_Settings_Extras_4thGen_P2] = new BootSettingsExtParams4thGen(2);
     _param2TypeMap[Mcp_Boot_Settings_Ext_IP_Ver_P1] = Mct_Boot_Settings_Extras_4thGen_P1;
     _param2TypeMap[Mcp_Boot_Settings_Ext_IP_Ver_P2] = Mct_Boot_Settings_Extras_4thGen_P2;
+
+    // CX3 Global Conf
+    _cfgList[Mct_CX3_Global_Conf] = new CX3GlobalConfParams();
+    _param2TypeMap[Mcp_CQ_Timestamp] = Mct_CX3_Global_Conf;
+
 
     if (openComChk()) {
         freeCfgList();
@@ -448,6 +453,18 @@ int FourthGenCommander::setCfgAux(mlxCfgParam cfgParam, u_int32_t val)
 
 void FourthGenCommander::queryParamViews(std::vector<ParamView>& paramsToQuery, QueryType qt)
 {
+    VECTOR_ITERATOR(ParamView, paramsToQuery, param) {
+        bool found = false;
+        for (int i = (int)Mcp_Sriov_En ; i < (int)Mcp_Last ; i++) {
+            if (param->mlxconfigName == param2str[i]) {
+                found = true;
+            }
+        }
+        if (!found) {
+            throw MlxcfgException("Unknown Parameter: %s",
+                                   param->mlxconfigName.c_str());
+        }
+    }
     queryAux(paramsToQuery, qt, true);
     return;
 }
@@ -1033,6 +1050,19 @@ MlxCfgInfo MlxCfgAllInfo::createBootSettingsExt()
     return MlxCfgInfo("Boot Settings Extras", "These parameters are relevant only for servers using legacy BIOS PXE boot (flexboot).", params);
 }
 
+MlxCfgInfo MlxCfgAllInfo::createCX3GlobalConf()
+{
+    map<string, u_int32_t> paramMap;
+    map<mlxCfgParam, MlxCfgParamParser> params;
+
+    paramMap["True"] = 1;
+    paramMap["False"] = 0;
+    params[Mcp_CQ_Timestamp] = MlxCfgParamParser(Mcp_CQ_Timestamp, "CQ_TIMESTAMP",
+                                                     "When set, IEE1588 (PTP) HW timestamping capability is"
+                                                     " reported to the device driver.", paramMap);
+    return MlxCfgInfo("CX3 Global", "", params);
+}
+
 bool sortCfg(MlxCfgInfo a, MlxCfgInfo b)
 {
     return a.getName() < b.getName();
@@ -1055,6 +1085,7 @@ MlxCfgAllInfo::MlxCfgAllInfo()
     _allInfo.push_back(createVPISettings());
     _allInfo.push_back(createWakeOnLAN());
     _allInfo.push_back(createBootSettingsExt());
+    _allInfo.push_back(createCX3GlobalConf());
     std::sort(_allInfo.begin(), _allInfo.end(), sortCfg);
 }
 

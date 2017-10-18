@@ -32,5 +32,5 @@
 
 
 docdir = $(pkgdatadir)/mlxconfig_dbs
-dist_doc_DATA = mlxconfig.db
+dist_doc_DATA = mlxconfig_host.db mlxconfig_switch.db
 
