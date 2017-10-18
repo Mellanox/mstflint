@@ -60,6 +60,11 @@ int mwrite4_block(mfile *mf, unsigned int offset, u_int32_t* data, int byte_len)
     return mwrite4_block_ul(mf, offset, data, byte_len);
 }
 
+int mvpd_read4(mfile *mf, unsigned int offset, u_int8_t value[4])
+{
+    return mvpd_read4_ul(mf, offset, value);
+}
+
 int msw_reset(mfile *mf)
 {
 #ifndef NO_INBAND

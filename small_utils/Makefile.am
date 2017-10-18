@@ -32,9 +32,9 @@
 
 PYTHON_WRAPPER_SCRIPT = ../common/python_wrapper
 
-AM_CPPFLAGS= -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common
+AM_CPPFLAGS= -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common -I$(top_srcdir)/mvpd
 
-LDADD= ../mtcr_ul/libmtcr_ul.a -ldl
+LDADD= ../mvpd/libmvpd.a ../mtcr_ul/libmtcr_ul.a -ldl
 
 bin_PROGRAMS = mstmread \
 					mstmwrite \
