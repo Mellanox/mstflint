@@ -58,7 +58,7 @@ void print_field(char* key, char* val)
     if (strcmp(key, "RV") == 0) {
         return;
     } else if (strlen(val)) {
-        printf("%s: %s\n", key, val);
+        printf("%s:      %s\n", key, val);
     }
 }
 
