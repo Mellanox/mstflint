@@ -1125,6 +1125,7 @@ void GenericCommander::sign(vector<u_int32_t>& buff, string privPemFile, const s
 #else
     (void)buff;
     (void)privPemFile;
+    throw MlxcfgException("Sign command is not implemented\n");
 #endif
 }
 
