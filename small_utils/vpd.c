@@ -48,7 +48,7 @@
 
 static clock_t timeout_t = 5; // Just for compatibility, no meaning
 
-#define VPD_MAX_SIZE 1<<12
+#define VPD_MAX_SIZE 4096
 #define VPD_TOOL_VERSON "2.0.0"
 
 typedef unsigned char vpd_t[VPD_MAX_SIZE];
@@ -203,7 +203,13 @@ int main(int argc, char **argv)
             fprintf(stderr, "-E- Failed to open device %s!\n", name);
             return MVPD_BAD_PARAMS;
 	    }
-		rc = mvpd_get_raw_vpd(mf, (u_int8_t *)d, VPD_MAX_SIZE);
+	    int mvpd_len = VPD_MAX_SIZE;
+	    rc = mvpd_get_vpd_size(mf, &mvpd_len);
+        if (rc != 0) {
+            fprintf(stderr, "-E- Failed to read VPD from %s!\n", name);
+            return MVPD_ERR;
+        }
+		rc = mvpd_get_raw_vpd(mf, (u_int8_t *)d, mvpd_len);
 	    if (rc) {
 	        fprintf(stderr, "-E- Failed to read VPD from %s!\n", name);
 	        return MVPD_ERR;
