@@ -79,6 +79,8 @@ typedef struct{
     vpd_tag_t* rw_fields;
 } vpd_result_t;
 
+int mvpd_get_vpd_size(mfile *mf, int *size);
+
 int mvpd_read(mfile* mf, vpd_result_t** result, vpd_tags_type_t read_type);
 
 int mvpd_read_adv(mfile* mf, vpd_result_t** result, vpd_tags_type_t read_type, int strict);

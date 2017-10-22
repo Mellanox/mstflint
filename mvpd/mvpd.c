@@ -83,7 +83,7 @@ int my_vpd_read(mfile*    mf,
     unsigned i;
     int ret;
     if (mf != NULL) {
-        for (i = 0; (int)i < size; i += 0x4) {
+        for (i = 0; i < (unsigned)size; i += 0x4) {
             u_int8_t value[4];
             ret = mvpd_read4(mf, offset + i, value);
             if (ret) {
@@ -433,5 +433,30 @@ int mvpd_result_free(vpd_result_t* result)
     }
     free(result);
     return MVPD_OK;
+}
+
+int mvpd_get_vpd_size(mfile *mf, int *size)
+{
+    int mvpd_len;
+    int len = 0;
+    u_int8_t buff[4] = {0};
+    int res;
+
+    for (mvpd_len = 0; mvpd_len < VPD_MAX_SIZE; mvpd_len += len) {
+        res = my_vpd_read(mf, NULL, 0, buff, mvpd_len, 4);
+        if (res != MVPD_OK) {
+            return res;
+        }
+        len = VPD_TAG_HEAD(buff) + VPD_TAG_LENGTH(buff);
+        if (VPD_TAG_NAME(buff) == VPD_TAG_END) {
+            break;
+        }
+        if (VPD_TAG_NAME(buff) != VPD_TAG_ID && VPD_TAG_NAME(buff) != VPD_TAG_R && VPD_TAG_NAME(buff) != VPD_TAG_W){
+            syslog(3, "LIBMVPD: Unknown TAG %x in offset: %x !", VPD_TAG_NAME(buff), mvpd_len);
+            return MVPD_FORMAT_ERR;
+        }
+    }
+    *size = mvpd_len;
+    return 0;
 }
 
