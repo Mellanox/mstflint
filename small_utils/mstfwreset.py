@@ -1507,13 +1507,14 @@ def map2DevPath(device):
 ######################################################################
 
 def main():
+    global IS_MSTFLINT
     if platform.system() not in SUPP_OS:
         print("-E- Unsupported OS.")
         return 1
     if platform.system() != "Windows" and os.geteuid() != 0:
         print("-E- Only root user can run this tool.")
         return 1
-    if "ppc64" in platform.machine():
+    if IS_MSTFLINT and "ppc64" in platform.machine():
         print("-E- Mstfwreset is not supported on PPC64 platforms")
         return 1
     # Workaround python "--version" argparse bug:
@@ -1618,8 +1619,7 @@ def main():
     global ResetMultihostReg
     global SkipMultihostSync
     global DevDBDF
-    global FWResetStatusChecker
-    global IS_MSTFLINT 
+    global FWResetStatusChecker    
     if not IS_MSTFLINT and platform.system() == "Linux":
         device = map2DevPath(device)
     DevDBDF = getDevDBDF(device)
