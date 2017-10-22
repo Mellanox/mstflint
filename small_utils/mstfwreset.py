@@ -1619,7 +1619,8 @@ def main():
     global SkipMultihostSync
     global DevDBDF
     global FWResetStatusChecker
-    if platform.system() == "Linux":
+    global IS_MSTFLINT 
+    if not IS_MSTFLINT and platform.system() == "Linux":
         device = map2DevPath(device)
     DevDBDF = getDevDBDF(device)
     SkipMstRestart = args.no_mst_restart
