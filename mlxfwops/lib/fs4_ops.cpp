@@ -872,6 +872,9 @@ bool Fs4Operations::AlignDeviceSections(u_int8_t flashLayoutVersion)
         return errmsg("Please update MFT package");
     }
 
+    u_int32_t log2_chunk_size_bu = _ioAccess->get_log2_chunk_size();
+    bool is_image_in_odd_chunks_bu = _ioAccess->get_is_image_in_odd_chunks();
+
     unsigned int retries = 0;
     const int nvLogIndex = 0, nvData0Index = 1, nvData1Index = 2,
               devInfo0Index = 3, devInfo1Index = 4;
@@ -997,6 +1000,24 @@ bool Fs4Operations::AlignDeviceSections(u_int8_t flashLayoutVersion)
         _fwParams.ignoreCacheRep = 0;
     }
 
+    //read the sections from the flash
+    _readSectList.push_back(FS3_FW_NV_LOG);
+    _readSectList.push_back(FS3_NV_DATA0);
+    _readSectList.push_back(FS3_NV_DATA2);
+    _readSectList.push_back(FS3_DEV_INFO);
+    if (!FsIntQueryAux()) {
+        _readSectList.pop_back();
+        _readSectList.pop_back();
+        _readSectList.pop_back();
+        _readSectList.pop_back();
+        rc = false;
+        goto cleanup;
+    }
+    _readSectList.pop_back();
+    _readSectList.pop_back();
+    _readSectList.pop_back();
+    _readSectList.pop_back();
+
     //move to the new offsets:
     for (unsigned int i = 0; i < COUNT_OF_SECTIONS_TO_ALIGN; i++) {
         //flash address is in DW and offset is given in bytes
@@ -1073,6 +1094,9 @@ cleanup:
         flashObjWithOcr->close();
         delete flashObjWithOcr;
     }
+
+    _ioAccess->set_address_convertor(log2_chunk_size_bu, is_image_in_odd_chunks_bu);
+
     return rc;
 }
 
