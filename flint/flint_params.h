@@ -82,7 +82,7 @@ typedef enum {
     SC_Cache_Image,
     SC_Sign,
     SC_Extract_4MB_Image,
-    SC_Set_Public_Key,
+    SC_Set_Public_Keys,
     SC_Set_Forbidden_Versions
 } sub_cmd_t;
 

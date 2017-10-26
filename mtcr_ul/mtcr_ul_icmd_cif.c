@@ -121,6 +121,7 @@
 #define MWRITE4_ICMD(mf, offset, value, action_on_fail)\
     do {\
         SET_SPACE_FOR_ICMD_ACCESS(mf);\
+        DBG_PRINTF("-D- MWRITE4_ICMD: off: %x, addr_space: %x\n", offset, mf->address_space);\
         if (mwrite4(mf, offset, value) != 4) {\
             mset_addr_space(mf, AS_CR_SPACE);\
             action_on_fail;\
@@ -142,6 +143,7 @@
 #define MWRITE_BUF_ICMD(mf, offset, data, byte_len, action_on_fail)\
     do {\
         SET_SPACE_FOR_ICMD_ACCESS(mf);\
+        DBG_PRINTF("-D- MWRITE_BUF_ICMD: off: %x, addr_space: %x\n", offset, mf->address_space);\
         if ((unsigned)mwrite_buffer(mf, offset, data, byte_len) != (unsigned)byte_len) {\
             RESTORE_SPACE(mf);\
             action_on_fail;\
@@ -152,6 +154,7 @@
 #define MREAD_BUF_ICMD(mf, offset, data, byte_len, action_on_fail)\
     do {\
         SET_SPACE_FOR_ICMD_ACCESS(mf);\
+        DBG_PRINTF("-D- MREAD_BUF_ICMD: off: %x, addr_space: %x\n", offset, mf->address_space);\
         if ((unsigned)mread_buffer(mf, offset, data, byte_len) != (unsigned)byte_len) {\
             RESTORE_SPACE(mf);\
             action_on_fail;\
@@ -184,11 +187,9 @@
     }while(0)
 
 
-#ifdef _DEBUG_MODE
-#define DBG_PRINTF(...) fprintf(stderr, __VA_ARGS__)
-#else
-#define DBG_PRINTF(...)
-#endif
+
+#define DBG_PRINTF(...) if (getenv("MFT_DEBUG")) fprintf(stderr, __VA_ARGS__)
+
 
 enum {
     RW_READ  = 0x1,
@@ -213,7 +214,7 @@ enum {
 
 #define GET_ADDR(mf, addr_cib, addr_cx4, addr_sw_ib, addr_cx5, addr_quantum, addr)\
     do {\
-        u_int32_t _hw_id;\
+        u_int32_t _hw_id = 0x0;\
         MREAD4((mf), (HW_ID_ADDR), &(_hw_id));\
         switch (_hw_id & 0xffff) {\
         case (CX4_HW_ID):\
@@ -242,7 +243,7 @@ enum {
  * get_version
  */
 static int get_version(mfile *mf, u_int32_t hcr_address) {
-    u_int32_t reg;
+    u_int32_t reg = 0x0;
     if (MREAD4(mf, hcr_address, &reg)) return ME_ICMD_STATUS_CR_FAIL;
     reg = EXTRACT(reg, ICMD_VERSION_BITOFF, ICMD_VERSION_BITLEN);
     return reg;
@@ -252,7 +253,7 @@ static int get_version(mfile *mf, u_int32_t hcr_address) {
  * go - Sets the busy bit to 1, wait untill it is 0 again.
  */
 static int go(mfile *mf) {
-    u_int32_t reg,
+    u_int32_t reg = 0x0,
               busy;
     int i, wait;
 
@@ -271,7 +272,7 @@ static int go(mfile *mf) {
     // wait for command to execute
     i = 0; wait = 1;
     do {
-        if (++i > 1024) {  // this number of iterations should take ~~30sec, which is the defined command t/o
+        if (++i > 5120) {  // this number of iterations should take ~~30sec, which is the defined command t/o
             DBG_PRINTF("Execution timed-out\n");
             return ME_ICMD_STATUS_EXECUTE_TO;
         }
@@ -296,7 +297,7 @@ static int go(mfile *mf) {
  * set_opcode
  */
 static int set_opcode(mfile *mf, u_int16_t opcode) {
-    u_int32_t reg;
+    u_int32_t reg = 0x0;
 
     MREAD4_ICMD(mf, mf->icmd.ctrl_addr, &reg, return ME_ICMD_STATUS_CR_FAIL);
     reg = MERGE(reg, opcode, OPCODE_BITOFF, OPCODE_BITLEN);
@@ -332,7 +333,7 @@ static int translate_status(int status) {
 	}
 }
 static int get_status(mfile *mf) {
-    u_int32_t reg;
+    u_int32_t reg = 0x0;
 
     MREAD4_ICMD(mf, mf->icmd.ctrl_addr, &reg, return ME_ICMD_STATUS_CR_FAIL);
     return translate_status(EXTRACT(reg, STATUS_BITOFF, STATUS_BITLEN));
@@ -342,7 +343,7 @@ static int get_status(mfile *mf) {
  * icmd_is_cmd_ifc_ready
  */
 static int icmd_is_cmd_ifc_ready(mfile *mf) {
-    u_int32_t reg;
+    u_int32_t reg = 0x0;
     if (MREAD4(mf, mf->icmd.static_cfg_not_done_addr, &reg)) return ME_ICMD_STATUS_CR_FAIL;
     u_int32_t bit_val = EXTRACT(reg, mf->icmd.static_cfg_not_done_offs, 1);
     /* adrianc: for SWITCHIB the polarity of this bit is opposite than CONNECTIB/CONNECTX4
@@ -403,7 +404,7 @@ int icmd_clear_semaphore(mfile *mf)
  */
 static int icmd_take_semaphore_com(mfile *mf, u_int32_t expected_read_val)
 {
-    u_int32_t read_val;
+    u_int32_t read_val = 0x0;
     unsigned retries = 0;
 
     DBG_PRINTF("Taking semaphore...\n");
@@ -540,8 +541,8 @@ static int icmd_init_cr(mfile *mf)
     int icmd_ver;
     u_int32_t hcr_address;
     u_int32_t cmd_ptr_addr;
-    u_int32_t reg;
-    u_int32_t hw_id;
+    u_int32_t reg = 0x0;
+    u_int32_t hw_id = 0x0;
     u_int32_t dev_type = 0;
 
     // get device specific addresses

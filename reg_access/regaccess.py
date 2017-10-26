@@ -1,15 +1,33 @@
 
-#--
-#                 - Mellanox Confidential and Proprietary -
+# Copyright (c) 2004-2010 Mellanox Technologies LTD. All rights reserved.
 #
-# Copyright (C) Jan 2013, Mellanox Technologies Ltd.  ALL RIGHTS RESERVED.
+# This software is available to you under a choice of one of two
+# licenses.  You may choose to be licensed under the terms of the GNU
+# General Public License (GPL) Version 2, available from the file
+# COPYING in the main directory of this source tree, or the
+# OpenIB.org BSD license below:
 #
-# Except as specifically permitted herein, no portion of the information,
-# including but not limited to object code and source code, may be reproduced,
-# modified, distributed, republished or otherwise exploited in any form or by
-# any means for any purpose without the prior written permission of Mellanox
-# Technologies Ltd. Use of software subject to the terms and conditions
-# detailed in the file "LICENSE.txt".
+#     Redistribution and use in source and binary forms, with or
+#     without modification, are permitted provided that the following
+#     conditions are met:
+#
+#      - Redistributions of source code must retain the above
+#        copyright notice, this list of conditions and the following
+#        disclaimer.
+#
+#      - Redistributions in binary form must reproduce the above
+#        copyright notice, this list of conditions and the following
+#        disclaimer in the documentation and/or other materials
+#        provided with the distribution.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+# BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+# ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 #--
 
 import os
@@ -56,6 +74,7 @@ if REG_ACCESS:
             self._err2str = REG_ACCESS.reg_access_err2str
             self._err2str.restype = c_char_p
             self._sendMFRL = REG_ACCESS.reg_access_mfrl
+            self._mgir = REG_ACCESS.reg_access_mgir
 
         ##########################
         def close(self):
@@ -86,6 +105,60 @@ if REG_ACCESS:
             
             if method == REG_ACCESS_METHOD_GET:
                 return mfrlRegisterP.contents.reset_level
+
+        ##########################
+        def getFWUptime(self):
+            class MGIR_ST(Structure):
+                _fields_ = [("device_id", c_uint16),
+                            ("device_hw_revision", c_uint16),
+                            ("pvs", c_uint8),
+                            ("hw_dev_id", c_uint16),
+                            ("manufacturing_base_mac_47_32", c_uint16),
+                            ("manufacturing_base_mac_31_0", c_uint32),
+                            ("uptime", c_uint32),
+                            ("sub_minor", c_uint8),
+                            ("minor", c_uint8),
+                            ("major", c_uint8),
+                            ("secure_fw", c_uint8),
+                            ("signed_fw", c_uint8),
+                            ("debug_fw", c_uint8),
+                            ("dev_fw", c_uint8),
+                            ("build_id", c_uint32),
+                            ("year", c_uint16),
+                            ("day", c_uint8),
+                            ("month", c_uint8),
+                            ("hour", c_uint16),
+                            ("psid1", c_uint32),
+                            ("psid2", c_uint32),
+                            ("psid3", c_uint32),
+                            ("psid4", c_uint32),
+                            ("ini_file_version", c_uint32),
+                            ("extended_major", c_uint32),
+                            ("extended_minor", c_uint32),
+                            ("extended_sub_minor", c_uint32),
+                            ("subminor", c_uint8),
+                            ("minor", c_uint8),
+                            ("major", c_uint8),
+                            ("rom3_type", c_uint8),
+                            ("rom3_arch", c_uint8),
+                            ("rom2_type", c_uint8),
+                            ("rom2_arch", c_uint8),
+                            ("rom1_type", c_uint8),
+                            ("rom1_arch", c_uint8),
+                            ("rom0_type", c_uint8),
+                            ("rom0_arch", c_uint8),
+                            ("rom0_version", c_uint32),
+                            ("rom1_version", c_uint32),
+                            ("rom2_version", c_uint32),
+                            ("rom3_version", c_uint32)]
+
+            mgirRegisterP = pointer(MGIR_ST())
+
+            rc = self._mgir(self._mstDev.mf, REG_ACCESS_METHOD_GET, mgirRegisterP)
+            if rc:
+                raise RegAccException("Failed to send Register: %s (%d)" % (self._err2str(rc), rc))
+
+            return mgirRegisterP.contents.uptime
 else:
     raise RegAccException("Failed to load rreg_access.so/libreg_access.dll")
 

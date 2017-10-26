@@ -72,6 +72,8 @@ using namespace std;
 #define PARAM_SUPPORTED_FROM_VERSION_HEADER "supported_from_version"
 #define PARAM_ARRAY_LENGTH "array_length"
 
+#define OPERATION_NOT_SUPPORTED "Operation is not supported"
+
 #define CHECK_IF_FIELD_FOUND(b, s) \
     if(!b) {\
         throw MlxcfgException("The Parameter field %s was not initialized", s);\
@@ -182,7 +184,7 @@ Param::Param(int columnsCount, char **dataRow, char **headerRow) :
     CHECK_IF_FIELD_FOUND(_isRegexFound, PARAM_REGEX_HEADER)
     CHECK_IF_FIELD_FOUND(_isPortFound, PARAM_PORT_HEADER)
 
-    if(_type == ENUM && _textualValues.empty()) {
+    if (_type == ENUM && _textualValues.empty()) {
         throw MlxcfgException(
                 "The parameter: %s, "
                 "is type of ENUM but there is no any enum provided",
@@ -194,14 +196,26 @@ Param::Param(int columnsCount, char **dataRow, char **headerRow) :
             _value = new BoolParamValue(_size);
             break;
         case ENUM:
-            _value = new EnumParamValue(_size, _textualValues);
-            break;
+            if (_arrayLength == 0) {
+                _value = new EnumParamValue(_size, _textualValues);
+            } else {
+                _value = new EnumArrayParamValue(_size, _arrayLength, ENUM, _textualValues);
+            }
+           break;
         case INTEGER:
         case UNSIGNED:
-            _value = new UnsignedParamValue(_size);
+            if (_arrayLength == 0) {
+                _value = new UnsignedParamValue(_size);
+            } else {
+                _value = new ArrayParamValue(_size, _arrayLength, UNSIGNED);
+            }
             break;
         case BINARY:
-            _value = new BinaryParamValue(_size);
+            if (_arrayLength == 0) {
+                _value = new BinaryParamValue(_size);
+            } else {
+                _value = new ArrayParamValue(_size, _arrayLength, BINARY);
+            }
             break;
         case STRING:
             _value = new StringParamValue(_arrayLength);
@@ -240,25 +254,54 @@ void Param::setVal(string val)
     }
 }
 
+void Param::setVal(string val, u_int32_t index)
+{
+    if (_arrayLength == 0 || _type == STRING || _type == BYTES) {
+        throw MlxcfgException("Operation not supported for this type of parameters");
+    }
+    ((ArrayParamValue*)_value)->setVal(val, index);
+}
+
+void Param::setVal(vector<string> vals)
+{
+    _value->setVal(vals);
+}
+
 string Param::getVal()
 {
     return _value->getVal();
 }
 
+string Param::getVal(u_int32_t index)
+{
+    if (_arrayLength == 0 || _type == STRING || _type == BYTES) {
+        throw MlxcfgException("Operation not supported for this type of parameters");
+    }
+    return ((ArrayParamValue*)_value)->getVal(index);
+}
+
 void Param::getView(ParamView& paramView)
 {
-    if (_type != BOOLEAN_TYPE && _type != ENUM && _type != INTEGER && _type != UNSIGNED) {
+    if ((_type != BOOLEAN_TYPE && _type != ENUM && _type != INTEGER && _type != UNSIGNED && _type != BINARY)||
+        (_arrayLength !=0 && (_type == STRING || _type == BYTES))) {
         throw MlxcfgException("Operation not supported");
     }
     paramView.mlxconfigName = _mlxconfigName;
     paramView.description = _description;
     paramView.type = _type;
     paramView.port = _port;
-    if (_type == ENUM) {
-        paramView.textualVals = ((EnumParamValue*)_value)->_textualValues;
+    paramView.textualVals = _textualValues;
+    if (_arrayLength !=0 && _type != STRING && _type != BYTES) {
+        string strVal = "Array[0..";
+        strVal += numToStr(_arrayLength - 1) + "]";
+        paramView.strVal = strVal;
+        paramView.val = 0x0;
+        paramView.arrayVal = ((ArrayParamValue*)_value)->getIntVals();
+        paramView.strArrayVal = ((ArrayParamValue*)_value)->getStrVals();
+    } else {
+        paramView.val = ((UnsignedParamValue*)_value)->_value;
+        paramView.strVal = _value->getVal();
     }
-    paramView.val = ((UnsignedParamValue*)_value)->_value;
-    paramView.strVal = _value->getVal();
 }
 
 string Param::getDisplayName()
@@ -286,6 +329,27 @@ ParamType Param::str2ParamType(const char* s)
         return BYTES;
     }
     throw MlxcfgException("Unknown parameter type '%s'", s);
+}
+
+string Param::paramType2Str(enum ParamType paramType)
+{
+    if (paramType == BOOLEAN_TYPE) {
+        return "BOOL";;
+    } else if(paramType == ENUM) {
+        return "ENUM";
+    } else if(paramType == INTEGER) {
+        return "INTEGER";
+    } else if(paramType == UNSIGNED) {
+        return "UNSIGNED";
+    } else if(paramType == STRING) {
+        return "STRING";
+    } else if(paramType == BINARY) {
+        return "BINARY";
+    } else if(paramType == BYTES) {
+        return "BYTES";
+    } else {
+        throw MlxcfgException("Unknown parameter type %d", paramType);
+    }
 }
 
 //split a string by comma, updates result vector with all sub-strings
@@ -377,7 +441,7 @@ void Param::str2TextualValuesMap(const char* s, map<string, u_int32_t>& m)
     }
 }
 
-void Param::genXMLTemplate(std::string& xmlTemplate, bool withVal)
+void Param::genXMLTemplateAux(std::string& xmlTemplate, bool withVal, bool isPartOfArray, u_int32_t index)
 {
     if (_type == ENUM) {
         xmlTemplate += "<!-- Legal Values:";
@@ -391,11 +455,22 @@ void Param::genXMLTemplate(std::string& xmlTemplate, bool withVal)
     } else if (_type == BOOLEAN_TYPE) {
         xmlTemplate += "<!-- Legal Values: " DISABLED "/" ENABLED " -->\n";
     }
-    xmlTemplate += "<" + _name + ">" +
-            (withVal ? getVal() : "") +
+    xmlTemplate += "<" + _name + (isPartOfArray ? (" index='" + numToStr(index) + "' ")  : "") + ">" +
+            (withVal ? (isPartOfArray ? getVal(index) : getVal()) : "") +
             "</" + _name + ">";
+    xmlTemplate += isPartOfArray ? "\n" : "";
 }
 
+void Param::genXMLTemplate(std::string& xmlTemplate, bool withVal)
+{
+    if (_arrayLength != 0 && _type != STRING && _type != BYTES) {
+        for (u_int32_t i = 0; i < _arrayLength; i++) {
+            genXMLTemplateAux(xmlTemplate, withVal, true, i);
+        }
+    } else {
+        genXMLTemplateAux(xmlTemplate, withVal, false, 0);
+    }
+}
 
 /* ParamValue Class */
 ParamValue::ParamValue(string size)
@@ -405,17 +480,22 @@ ParamValue::ParamValue(string size)
 
 u_int32_t ParamValue::getIntVal()
 {
-    throw MlxcfgException("Operation not supported");
+    throw MlxcfgException(OPERATION_NOT_SUPPORTED);
 }
 
 void ParamValue::setVal(u_int32_t)
 {
-    throw MlxcfgException("Operation not supported");
+    throw MlxcfgException(OPERATION_NOT_SUPPORTED);
+}
+
+void ParamValue::setVal(vector<string> /*vals*/)
+{
+    throw MlxcfgException(OPERATION_NOT_SUPPORTED);
 }
 
 void ParamValue::parseValue(string, u_int32_t&, string&)
 {
-    throw MlxcfgException("Operation not supported");
+    throw MlxcfgException(OPERATION_NOT_SUPPORTED);
 }
 
 u_int32_t ParamValue::getSizeInBits(string size)
@@ -514,6 +594,12 @@ void UnsignedParamValue::parseValue(string strToParse, u_int32_t& value, string&
 
 /* EnumParamValue Class */
 EnumParamValue::EnumParamValue(string size, map<string, u_int32_t> textualValues) :
+        UnsignedParamValue(size), _textualValues(textualValues)
+{
+
+}
+
+EnumParamValue::EnumParamValue(u_int32_t size, map<string, u_int32_t> textualValues) :
         UnsignedParamValue(size), _textualValues(textualValues)
 {
 
@@ -650,43 +736,52 @@ void StringParamValue::setVal(string val)
     _value = val;
 }
 
+void StringParamValue::pack(u_int8_t* buff, u_int32_t bitOffset)
+{
+    unsigned int i = 0;
+    u_int32_t byteOffset = bitOffset / 8;
+
+    for(; i < _value.length(); i++) {
+        buff[byteOffset + i] = _value[i];
+    }
+    if (_value.length() < _size) {
+        buff[byteOffset + i] = '\0';
+    }
+}
+
 void StringParamValue::pack(u_int8_t* buff, string offset)
 {
-    u_int32_t bit_offset, byte_offset;
     u_int32_t pos;
-    unsigned int i;
 
     pos = offset.find('.');
     //only parse the number before the dot, because it is an array
-    bit_offset = 8 * strtol(offset.substr(0, pos).c_str(), NULL, 0);
+    u_int32_t bitOffset = 8 * strtol(offset.substr(0, pos).c_str(), NULL, 0);
 
-    byte_offset = bit_offset / 8;
+    pack(buff, bitOffset);
+}
 
-    for(i = 0; i < _value.length(); i++) {
-        buff[byte_offset + i] = _value[i];
-    }
-    if (_value.length() < _size) {
-        buff[byte_offset + i] = '\0';
+void StringParamValue::unpack(u_int8_t* buff, u_int32_t bitOffset)
+{
+    u_int32_t byteOffset = bitOffset / 8;
+
+    for(unsigned int i = 0; i < _size; i++) {
+        if (buff[byteOffset + i] == '\0') {
+            break;
+        }
+        _value += buff[byteOffset + i];
     }
 }
 
 void StringParamValue::unpack(u_int8_t* buff, string offset)
 {
-    u_int32_t bit_offset, byte_offset;
+    u_int32_t bitOffset;
     u_int32_t pos;
 
     pos = offset.find('.');
     //only parse the number before the dot, because it is an array
-    bit_offset = 8 * strtol(offset.substr(0, pos).c_str(), NULL, 0);
+    bitOffset = 8 * strtol(offset.substr(0, pos).c_str(), NULL, 0);
 
-    byte_offset = bit_offset / 8;
-
-    for(unsigned int i = 0; i < _size; i++) {
-        if (buff[byte_offset + i] == '\0') {
-            break;
-        }
-        _value += buff[byte_offset + i];
-    }
+    unpack(buff, bitOffset);
 }
 
 
@@ -733,34 +828,45 @@ void BytesParamValue::parseValue(string, u_int32_t&, string&)
     throw MlxcfgException("Not supported for BYTES types\n");
 }
 
+void BytesParamValue::pack(u_int8_t* buff, u_int32_t bitOffset)
+{
+
+    VECTOR_ITERATOR(BinaryParamValue, _bytes, binary) {
+        binary->pack(buff, bitOffset);
+        bitOffset += 32;
+    }
+}
+
 void BytesParamValue::pack(u_int8_t* buff, string offset)
 {
-    u_int32_t bit_offset;
+    u_int32_t bitOffset;
     u_int32_t pos;
 
     pos = offset.find('.');
     //only parse the number before the dot, because it is an array
-    bit_offset = 8 * strtol(offset.substr(0, pos).c_str(), NULL, 0);
+    bitOffset = 8 * strtol(offset.substr(0, pos).c_str(), NULL, 0);
 
+    pack(buff, bitOffset);
+}
+
+void BytesParamValue::unpack(u_int8_t* buff, u_int32_t bitOffset)
+{
     VECTOR_ITERATOR(BinaryParamValue, _bytes, binary) {
-        binary->pack(buff, bit_offset);
-        bit_offset += 32;
+        binary->unpack(buff, bitOffset);
+        bitOffset += 32;
     }
 }
 
 void BytesParamValue::unpack(u_int8_t* buff, string offset)
 {
-    u_int32_t bit_offset;
+    u_int32_t bitOffset;
     u_int32_t pos;
 
     pos = offset.find('.');
     //only parse the number before the dot, because it is an array
-    bit_offset = 8 * strtol(offset.substr(0, pos).c_str(), NULL, 0);
+    bitOffset = 8 * strtol(offset.substr(0, pos).c_str(), NULL, 0);
 
-    VECTOR_ITERATOR(BinaryParamValue, _bytes, binary) {
-        binary->unpack(buff, bit_offset);
-        bit_offset += 32;
-    }
+    unpack(buff, bitOffset);
 }
 
 void BytesParamValue::setVal(const vector<u_int32_t>& buffVal)
@@ -769,5 +875,181 @@ void BytesParamValue::setVal(const vector<u_int32_t>& buffVal)
         BinaryParamValue b("0x4.0");
         b.UnsignedParamValue::setVal(*it);
         _bytes.push_back(b);
+    }
+}
+
+
+
+ArrayParamValue::ArrayParamValue(string size, u_int32_t count, enum ParamType paramType) :
+        ParamValue(size), _elementSizeInBits(_size / count)
+{
+    if (_elementSizeInBits != 32 &&
+            _elementSizeInBits != 16 &&
+            _elementSizeInBits != 8) {
+        throw MlxcfgException("The size of the elements of array values must be 1, 2 or 4 bytes!");
+    }
+    if (paramType == ENUM) {
+        return;
+    }
+    for(u_int32_t i = 0; i < count; i++) {
+        ParamValue* t;
+        switch (paramType) {
+            case UNSIGNED:
+                t = new UnsignedParamValue(_elementSizeInBits);
+                break;
+            case BINARY:
+                t = new BinaryParamValue(_elementSizeInBits);
+                break;
+            default:
+                throw MlxcfgException("% is not supported in Array parameters!", Param::paramType2Str(paramType).c_str());
+                break;
+        }
+        _values.push_back(t);
+    }
+};
+
+ArrayParamValue::~ArrayParamValue()
+{
+    for(u_int32_t i = 0; i < _values.size(); i++) {
+        if (_values[i] != NULL) {
+            delete _values[i];
+        }
+    }
+}
+
+u_int32_t ArrayParamValue::getIntVal()
+{
+    throw MlxcfgException(OPERATION_NOT_SUPPORTED);
+}
+
+string ArrayParamValue::getVal()
+{
+    throw MlxcfgException(OPERATION_NOT_SUPPORTED);
+}
+
+void ArrayParamValue::setVal(string /*val*/)
+{
+    throw MlxcfgException(OPERATION_NOT_SUPPORTED);
+}
+
+string ArrayParamValue::getVal(u_int32_t index)
+{
+    if (index >= _values.size()) {
+        //TODO give another message
+        throw MlxcfgException("Index %d is out of range", index);
+    }
+    return _values.at(index)->getVal();
+}
+
+void ArrayParamValue::setVal(vector<string> vals)
+{
+    if (_values.size() != vals.size()) {
+        throw MlxcfgException(
+                "The size of the given input %d is not the same as the size of the parameter array %d",
+                vals.size(), _values.size());
+    }
+    for (u_int32_t i = 0; i < vals.size(); i++) {
+        _values[i]->setVal(vals[i]);
+    }
+}
+
+void ArrayParamValue::setVal(string val, u_int32_t index)
+{
+    if (index >= _values.size()) {
+        throw MlxcfgException("Index %d is out of range", index);
+    }
+    _values[index]->setVal(val);
+}
+
+void ArrayParamValue::pack(u_int8_t* buff, u_int32_t offset)
+{
+    /* The FW expect a big endian buffer for both the order of the elements in the array
+     * and the values of each element. So if elementsInDW = 2, _values[0] will point to buff[16..31]
+     * To understand this piece of code, try to think about these cases:
+     * elementsInDW = 1, 2, 4
+     */
+    vector<ParamValue*>::iterator j;
+    for(vector<ParamValue*>::iterator it = _values.begin() ; it != _values.end();) {
+        int elementsInDW = 32 / _elementSizeInBits;
+        j = it + elementsInDW - 1;
+        unsigned int iterations = elementsInDW;
+        while (iterations) {
+            (*j)->pack(buff, offset);
+            offset += _elementSizeInBits;
+            iterations--;
+            j--;
+        }
+        it += elementsInDW;
+    }
+}
+
+void ArrayParamValue::pack(u_int8_t* buff, string offset)
+{
+    u_int32_t bitOffset;
+    u_int32_t pos;
+
+    pos = offset.find('.');
+    //only parse the number before the dot, because it is an array
+    bitOffset = 8 * strtol(offset.substr(0, pos).c_str(), NULL, 0);
+    pack(buff, bitOffset);
+
+}
+
+void ArrayParamValue::unpack(u_int8_t* buff, u_int32_t offset)
+{
+    vector<ParamValue*>::iterator j;
+    for(vector<ParamValue*>::iterator it = _values.begin(); it != _values.end();) {
+        int elementsInDW = 32 / _elementSizeInBits;
+        j = it + elementsInDW - 1;
+        unsigned int iterations = elementsInDW;
+        while (iterations) {
+            (*j)->unpack(buff, offset);
+            offset += _elementSizeInBits;
+            iterations--;
+            j--;
+        }
+        it += elementsInDW;
+    }
+}
+
+void ArrayParamValue::unpack(u_int8_t* buff, string offset)
+{
+    u_int32_t bitOffset;
+    u_int32_t pos;
+
+    pos = offset.find('.');
+    //only parse the number before the dot, because it is an array
+    bitOffset = 8 * strtol(offset.substr(0, pos).c_str(), NULL, 0);
+    unpack(buff, bitOffset);
+}
+
+void ArrayParamValue::parseValue(string strToParse, u_int32_t& val, string& strVal)
+{
+    _values[0]->parseValue(strToParse, val, strVal);
+}
+
+vector<u_int32_t> ArrayParamValue::getIntVals()
+{
+    vector<u_int32_t> v;
+    for(vector<ParamValue*>::iterator it = _values.begin(); it != _values.end();it++) {
+        v.push_back((*it)->getIntVal());
+    }
+    return v;
+}
+
+vector<string> ArrayParamValue::getStrVals()
+{
+    vector<string> v;
+    for(vector<ParamValue*>::iterator it = _values.begin(); it != _values.end(); it++) {
+        v.push_back((*it)->getVal());
+    }
+    return v;
+}
+
+EnumArrayParamValue::EnumArrayParamValue(string size, u_int32_t count, enum ParamType paramType,
+        map<string, u_int32_t> textualValues) : ArrayParamValue(size, count, paramType) {
+    for(u_int32_t i = 0; i < count; i++) {
+        ParamValue* t = new EnumParamValue(_elementSizeInBits, textualValues);
+        _values.push_back(t);
     }
 }

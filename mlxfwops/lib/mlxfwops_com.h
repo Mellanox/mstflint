@@ -58,9 +58,22 @@
     #define EFIAPI
 #endif
 
+typedef enum {
+    PROG_WITH_PRECENTAGE,
+    PROG_WITHOUT_PRECENTAGE,
+    PROG_STRING_ONLY,
+    PROG_OK
+} prog_t;
+
 typedef int EFIAPI (*f_prog_func) (int completion);
 typedef int EFIAPI (*f_prog_func_ex) (int completion, void * opaque);
+typedef int EFIAPI (*f_prog_func_adv) (int completion, const char* str, prog_t, void * opaque);
 typedef int (*f_prog_func_str) (char* str);
+
+typedef struct {
+    f_prog_func_adv func;
+    void* opaque;
+} f_prog_func_adv_st;
 
 #define VSD_LEN  208
 #define PSID_LEN 16
@@ -126,6 +139,26 @@ enum {
     MLXFW_TWO_VALID_DEVICE_INFO_ERR,
     MLXFW_DTOC_OVERWRITE_CHUNK,
     MLXFW_FLASH_READ_ERR,
+
+    /* Secure Error Codes */
+    MLXFW_BURN_REJECTED_DIGEST_ERR        ,
+    MLXFW_BURN_REJECTED_NOT_APPLICABLE    ,
+    MLXFW_BURN_REJECTED_UNKNOWN_KEY       ,
+    MLXFW_BURN_REJECTED_AUTH_FAILED       ,
+    MLXFW_BURN_REJECTED_UNSIGNED          ,
+    MLXFW_BURN_REJECTED_KEY_NOT_APPLICABLE,
+    MLXFW_BURN_REJECTED_BAD_FORMAT        ,
+    MLXFW_BURN_BLOCKED_PENDING_RESET      ,
+    MLXFW_FSM_UNEXPECTED_STATE            ,
+    MLXFW_REJECTED_NOT_A_SECURED_FW       ,
+    MLXFW_REJECTED_MFG_BASE_MAC_NOT_LISTED,
+    MLXFW_REJECTED_NO_DEBUG_TOKEN         ,
+    MLXFW_REJECTED_VERSION_NUM_MISMATCH   ,
+    MLXFW_REJECTED_USER_TIMESTAMP_MISMATCH,
+    MLXFW_REJECTED_FORBIDDEN_VERSION      ,
+    MLXFW_FLASH_ERASE_ERROR               ,
+    MLXFW_MISSING_IMAGE_SIGNATURE         ,
+    /* ******************* */
 };
 
 enum {
@@ -187,6 +220,7 @@ typedef enum chip_type {
     CT_CONNECTX4_LX,
     CT_SWITCH_IB2,
     CT_CONNECTX5,
+    CT_CONNECTX6,
     CT_BLUEFIELD,
     CT_QUANTUM,
     CT_SPECTRUM2,
@@ -278,7 +312,6 @@ typedef struct fs3_info_ext {
     char            description[DESCRIPTION_LEN];
     u_int32_t       security_mode;
     u_int8_t        mcc_en;
-    u_int8_t        signature_existed;
 
 } fs3_info_t;
 

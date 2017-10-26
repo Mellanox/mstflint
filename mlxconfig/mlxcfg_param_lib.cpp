@@ -701,6 +701,137 @@ bool SriovParams4thGen::softLimitCheck(mfile* mf)
 
 
 /*
+ * CX3GlobalConfParams Class implementation:
+ */
+
+bool CX3GlobalConfParams::cfgSupported(mfile* mf, mlxCfgParam param)
+{
+    (void)param;
+    struct tools_open_query_def_params_global params;
+    int rc;
+
+    rc = getDefaultParams4thGen(mf, &params);
+    if (rc) {
+        return false;
+    }
+    return params.nv_cq_timestamp_supported;
+}
+
+void CX3GlobalConfParams::setParam(mlxCfgParam paramType, u_int32_t val)
+{
+    if (paramType == Mcp_CQ_Timestamp) {
+        _timestamp = val;
+    }
+}
+
+u_int32_t CX3GlobalConfParams::getParam(mlxCfgParam paramType)
+{
+    if (paramType == Mcp_CQ_Timestamp) {
+        return _timestamp;
+    }
+    return MLXCFG_UNKNOWN;
+}
+
+u_int32_t CX3GlobalConfParams::getDefaultParam(mlxCfgParam paramType)
+{
+    if (paramType == Mcp_CQ_Timestamp) {
+        return _timestampDefault;
+    }
+    return MLXCFG_UNKNOWN;
+}
+
+int CX3GlobalConfParams::getFromDev(mfile* mf)
+{
+    if (_updated) {
+        return MCE_SUCCESS;
+    }
+    MError rc;
+    // prep tlv
+    u_int8_t buff[tools_open_nv_cx3_global_conf_size()];
+    struct tools_open_nv_cx3_global_conf globalConfTlv;
+    memset(buff, 0, tools_open_nv_cx3_global_conf_size());
+    memset(&globalConfTlv, 0, sizeof(struct tools_open_nv_cx3_global_conf));
+    // pack it
+    tools_open_nv_cx3_global_conf_pack(&globalConfTlv, buff);
+    // send it
+    DEBUG_PRINT_SEND(&globalConfTlv, nv_cx3_global_conf);
+    rc = mnvaCom4thGen(mf, buff, tools_open_nv_cx3_global_conf_size(), tlvTypeIdx, REG_ACCESS_METHOD_GET, 0);
+    // check rc
+    DEBUG_PRINT_RECEIVE(&globalConfTlv, nv_cx3_global_conf);
+    if (rc) {// when attempting to get a nv_cfg tlv from device ME_REG_ACCESS_RES_NOT_AVLBL means - no valid
+             // tlv found. i.e default configuration are on.
+        if (rc == ME_REG_ACCESS_RES_NOT_AVLBL) {
+            return MCE_SUCCESS;
+        }
+        return errmsg(MCE_BAD_STATUS, "Failed to get CX3_GLOBAL_CONF configuration: %s", m_err2str(rc));
+    }
+    // unpack and update
+    tools_open_nv_cx3_global_conf_unpack(&globalConfTlv, buff);
+    setParams(globalConfTlv.cq_timestamp);
+    _updated = true;
+
+    return MCE_SUCCESS;
+}
+
+int CX3GlobalConfParams::setOnDev(mfile* mf, bool ignoreCheck)
+{
+    if (_timestamp == MLXCFG_UNKNOWN) {
+        return errmsg("%s please specify all parameters for CX3_GLOBAL_CONF.", err() ? err() : "");
+    }
+    if (!ignoreCheck && !checkCfg(mf)) {
+        return MCE_BAD_PARAMS;
+    }
+
+    // prep tlv
+    MError ret;
+    u_int8_t buff[tools_open_nv_cx3_global_conf_size()];
+    struct tools_open_nv_cx3_global_conf globalConfTlv;
+    memset(buff, 0, tools_open_nv_cx3_global_conf_size());
+    memset(&globalConfTlv, 0, sizeof(struct tools_open_nv_cx3_global_conf));
+    globalConfTlv.cq_timestamp = _timestamp;
+    // pack it
+    tools_open_nv_cx3_global_conf_pack(&globalConfTlv, buff);
+    // send it
+    ret = mnvaCom4thGen(mf, buff, tools_open_nv_cx3_global_conf_size(), tlvTypeIdx, REG_ACCESS_METHOD_SET, 0);
+    // check rc
+    if (ret) {
+        return errmsg("failed to set CX3_GLOBAL_CONF params: %s",m_err2str(ret));
+    }
+    _updated = false;
+    return MCE_SUCCESS;
+}
+
+int CX3GlobalConfParams::getDefaultParams(mfile *mf)
+{
+    struct tools_open_query_def_params_global global_params;
+    int rc;
+
+    rc = getDefaultParams4thGen(mf, &global_params);
+    if (rc) {
+        return MCE_GET_DEFAULT_PARAMS;
+    }
+    _timestampDefault = global_params.default_cq_timestamp;
+    setParams(_timestampDefault);
+    return MCE_SUCCESS;
+}
+
+bool CX3GlobalConfParams::hardLimitCheck()
+{
+    if (_timestamp != 0 && _timestamp != 1) {
+        errmsg("illegal CQ_TIMESTAMP parameter value. (should be 0 or 1)");
+        return false;
+    }
+    return true;
+}
+
+void CX3GlobalConfParams::setParams(u_int32_t timestamp)
+{
+    _timestamp = timestamp;
+}
+
+
+
+/*
  * WolParams Class implementation :
  */
 
@@ -1558,3 +1689,7 @@ bool PrebootBootSettingsParams4thGen::hardLimitCheck()
     }
     return true;
 }
+
+
+
+

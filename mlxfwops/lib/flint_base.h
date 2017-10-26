@@ -207,6 +207,7 @@ namespace std {}; using namespace std;
 #define CX4_HW_ID         521
 #define CX4LX_HW_ID       523
 #define CX5_HW_ID         525
+#define CX6_HW_ID         527
 #define BF_HW_ID          529
 #define CX2_HW_ID         400
 #define CX3_HW_ID         501
@@ -360,7 +361,7 @@ enum CommandType {
     CMD_SET_MFG_GUIDS,
     CMD_BURN_VPD,
     CMD_SET_SIGNATURE,
-    CMD_SET_PUBLIC_KEY,
+    CMD_SET_PUBLIC_KEYS,
     CMD_SET_FORBIDDEN_VERSIONS
 };
 

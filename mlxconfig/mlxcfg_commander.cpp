@@ -46,6 +46,7 @@
 
 using namespace std;
 
+
 Commander* Commander::create(std::string device, std::string dbName) {
     mfile* mf;
     mf = mopen(device.c_str());
@@ -65,7 +66,7 @@ Commander* Commander::create(std::string device, std::string dbName) {
 
 Commander* Commander::create(mfile* mf, std::string device, std::string dbName) {
 
-    bool isFifthGen;
+    bool isFifthGen, isSwitch = false;
     dm_dev_id_t deviceId = DeviceUnknown;
     u_int32_t hwDevId, hwRevId;
     Commander* commander = NULL;
@@ -86,15 +87,26 @@ Commander* Commander::create(mfile* mf, std::string device, std::string dbName) 
         case DeviceBlueField:
             isFifthGen = true;
             break;
+        case DeviceSwitchIB:
+        case DeviceSpectrum:
+        case DeviceSwitchIB2:
+        case DeviceQuantum:
+        case DeviceSpectrum2:
+            isSwitch = true;
+            isFifthGen = true;
+            break;
         default:
             throw MlxcfgException("Unsupported device");
     }
 
-    if(dm_is_livefish_mode(mf)) {
+    if (dm_is_livefish_mode(mf)) {
         throw MlxcfgException("Device in Livefish mode is not supported");
     }
 
-    if(isFifthGen) {
+    if (isFifthGen) {
+        if (dbName.empty()) {//take internal db file
+            dbName = getDefaultDBName(isSwitch);
+        }
         commander = new GenericCommander(mf, dbName);
     } else {
         commander = new FourthGenCommander(mf, device);
@@ -108,3 +120,50 @@ Commander::~Commander()
         mclose(_mf);
     }
 }
+
+string Commander::getDefaultDBName(bool isSwitch) {
+    const string dbDirName = "mlxconfig_dbs";
+    const string hostDBName = "mlxconfig_host.db";
+    const string switchDBName = "mlxconfig_switch.db";
+    const string dbFileName = isSwitch ? switchDBName : hostDBName;
+    string dbPathName = "";
+#ifdef __WIN__
+    char execFilePathCStr[1024] = {0x0};
+    GetModuleFileName(GetModuleHandle("libmtcr-1.dll"), execFilePathCStr, 1024);
+    dbPathName = execFilePathCStr;
+    dbPathName = dbPathName.substr(0, dbPathName.rfind("\\") + 1);
+    dbPathName += dbDirName + "\\" + dbFileName;
+#elif defined MST_UL
+    dbPathName = DATA_PATH "/" + dbDirName + "/" + dbFileName;
+#else
+    char line[1024] = {0};
+    string confFile = string(ROOT_PATH) + string("etc/mft/mft.conf");
+    FILE* fd = fopen(confFile.c_str(), "r");
+    if (!fd) {
+        throw MlxcfgException("Failed to open conf file : %s\n", confFile.c_str());
+    }
+    string prefix = "", dataPath = "";
+    while ((fgets(line, 1024, fd))) {
+        string l = line;
+        if (l.find(dbDirName) != string::npos) {
+           size_t eqPos = l.find("=");
+           if (eqPos != string::npos) {
+               dataPath = l.substr(eqPos + 1);
+               dataPath = mlxcfg_trim(dataPath);
+           }
+        } else if(l.find("mft_prefix_location") != string::npos) {
+            size_t eqPos = l.find("=");
+            if (eqPos != string::npos) {
+                prefix = l.substr(eqPos + 1);
+                prefix = mlxcfg_trim(prefix);
+            }
+        }
+     }
+     if (!prefix.empty() && !dataPath.empty()) {
+         dbPathName = prefix + dataPath + "/" + dbFileName;
+     }
+     fclose(fd);
+#endif
+    return dbPathName;
+}
+

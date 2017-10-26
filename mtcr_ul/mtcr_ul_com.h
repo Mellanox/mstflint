@@ -1,5 +1,6 @@
 /*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ *
+ * Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,6 +29,7 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  *
  * mtcr_ul_com.h
  *
@@ -135,6 +137,9 @@ int mread_buffer_ul(mfile* mf, unsigned int offset, u_int8_t* data, int byte_len
 int mwrite_buffer_ul(mfile* mf, unsigned int offset, u_int8_t* data, int byte_len);
 
 int mclear_pci_semaphore_ul(const char* name);
+
+int mvpd_read4_ul(mfile *mf, unsigned int offset, u_int8_t value[4]);
+
 
 #ifdef __cplusplus
 }

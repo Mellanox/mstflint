@@ -116,6 +116,10 @@ void print_time_to_log()
     }
     time ( &rawtime );
     timeinfo = localtime ( &rawtime );
+    if (!timeinfo) {
+        printf("localtime returned NULL. Can't print time.\n");
+        return;
+    }
 
     fprintf(flint_log_fh, "%-3s %2d %02d:%02d:%02d ", month_2monstr(timeinfo->tm_mon), timeinfo->tm_mday,
             timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
@@ -302,7 +306,7 @@ int SubCommand::CbCommon(int completion, char*preStr, char* endStr)
 {
     if (completion < 100) {
             printf("\r%s%3d%%", preStr, completion);
-        }else if (completion == 100) {
+        } else if (completion == 100) {
             printf("\r%sOK  \n", preStr);
         } else {// printing endStr
             if (endStr){
@@ -321,6 +325,31 @@ int SubCommand::burnCbFs3Func(int completion)
     char* message = (char*)"Burning FW image without signatures - ";
     char* endStr =  (char*)"Restoring signature                     - OK";
     return CbCommon(completion, message, endStr);
+}
+
+int SubCommand::advProgressFunc(int completion, const char* stage, prog_t type, int* unknownProgress)
+{
+    switch (type) {
+    case PROG_WITH_PRECENTAGE:
+        printf("\r%s - %3d%%", stage, completion);
+        break;
+    case PROG_OK:
+        printf("\r%s -   OK          \n", stage);
+        break;
+    case PROG_STRING_ONLY:
+        printf("%s\n", stage);
+        break;
+    case PROG_WITHOUT_PRECENTAGE:
+        if (unknownProgress) {
+            static const char* progStr[] = { "[.    ]", "[..   ]", "[...  ]", "[.... ]", "[.....]", "[ ....]", "[  ...]", "[   ..]", "[    .]", "[     ]" };
+            int size = sizeof(progStr) / sizeof(progStr[0]);
+            printf("\r%s - %s", stage, progStr[(*unknownProgress) % size]);
+            (*unknownProgress)++;
+        }
+        break;
+    }
+    fflush(stdout);
+    return 0;
 }
 
 int SubCommand::burnCbFs2Func(int completion)
@@ -401,6 +430,7 @@ FlintStatus SubCommand:: openOps()
         fwParams.noFlashVerify = _flintParams.no_flash_verify;
         fwParams.cx3FwAccess = _flintParams.use_fw;
         fwParams.noFwCtrl = _flintParams.no_fw_ctrl;
+        fwParams.mccUnsupported = !_mccSupported;
         if (_flintParams.image_specified) {
             FwOperations::fw_ops_params_t imgFwParams;
             memset(&imgFwParams, 0 , sizeof(imgFwParams));
@@ -1291,8 +1321,10 @@ BurnSubCommand:: BurnSubCommand()
     _cmdType = SC_Burn;
     _fwType = 0;
     _devQueryRes = 0;
+    _mccSupported = true;
     memset(&_devInfo, 0, sizeof(_devInfo));
     memset(&_imgInfo, 0, sizeof(_imgInfo));
+    _unknownProgress = 0;
 }
 
 BurnSubCommand:: ~BurnSubCommand()
@@ -1352,6 +1384,10 @@ void BurnSubCommand::updateBurnParams()
 {
     _burnParams.progressFunc = _flintParams.silent == true ? (ProgressCallBack)NULL :\
     		_fwType == FIT_FS2? &burnCbFs2Func : &burnCbFs3Func;
+
+    _burnParams.ProgressFuncAdv.func = _flintParams.silent == true ? (f_prog_func_adv)NULL : (f_prog_func_adv)&advProgressFunc;
+    _burnParams.ProgressFuncAdv.opaque = &_unknownProgress;
+
     _burnParams.userGuidsSpecified = _flintParams.guids_specified || _flintParams.guid_specified;
     _burnParams.userMacsSpecified = _flintParams.macs_specified || _flintParams.mac_specified;
     _burnParams.userUidSpecified = _flintParams.uid_specified;
@@ -2124,8 +2160,16 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
     // VSD, PSID
     if (!fwInfo.fw_info.vsd_vendor_id || fwInfo.fw_info.vsd_vendor_id == MELLANOX_VENDOR_ID) {
         if (!isFs2) {
-            printf("Image VSD:             %s\n", fwInfo.fs3_info.image_vsd);
-            printf("Device VSD:            %s\n", fwInfo.fw_info.vsd);
+            const char* imageVSD = fwInfo.fs3_info.image_vsd;
+            const char* deviceVSD = fwInfo.fw_info.vsd;
+            if (strlen(imageVSD) == 0) {
+                imageVSD = NA_STR;
+            }
+            if (strlen(deviceVSD) == 0) {
+                deviceVSD = NA_STR;
+            }
+            printf("Image VSD:             %s\n", imageVSD);
+            printf("Device VSD:            %s\n", deviceVSD);
             printf("PSID:                  %s\n", fwInfo.fw_info.psid);
             if (strncmp(fwInfo.fw_info.psid, fwInfo.fs3_info.orig_psid, 13) != 0) {
                 if (strlen(fwInfo.fs3_info.orig_psid)) {
@@ -2173,6 +2217,7 @@ QuerySubCommand:: QuerySubCommand()
     _v = Wtv_Dev_Or_Img;
     _maxCmdParamNum = 1;
     _cmdType = SC_Query;
+    _mccSupported = true;
 }
 
 QuerySubCommand:: ~QuerySubCommand()
@@ -2256,8 +2301,16 @@ FlintStatus VerifySubCommand::executeCommand()
     FwOperations* ops;
     bool showItoc = (_flintParams.cmd_params.size() == 1) ? true : false;
     //check on what we are wroking
+    int opaque = 0;
+    ProgressCallBackAdvSt advProgress;
+    advProgress.func = (f_prog_func_adv)&advProgressFunc;
+    advProgress.opaque = &opaque;
     ops = (_flintParams.device_specified) ? _fwOps : _imgOps;
-    if (!ops->FwVerify(&verifyCbFunc, _flintParams.striped_image, showItoc)) {
+    FwOperations::ExtVerifyParams verifyParams(&verifyCbFunc);
+    verifyParams.isStripedImage = _flintParams.striped_image;
+    verifyParams.showItoc = showItoc;
+    verifyParams.progressFuncAdv = &advProgress;
+    if (!ops->FwVerifyAdv(verifyParams)) {
         printf("\n\n");
         reportErr(true, FLINT_CMD_VERIFY_ERROR, ops->err());
 
@@ -2428,6 +2481,10 @@ FlintStatus BromSubCommand::executeCommand()
         }
     bromCbFunc(101);
     printf("\n");
+    const char* resignStr = ops->FwGetReSignMsgStr();
+    if (resignStr) {
+        printf("%s", resignStr);
+    }
     write_result_to_log(FLINT_SUCCESS, "", _flintParams.log_specified);
     return FLINT_SUCCESS;
 }
@@ -2479,6 +2536,10 @@ FlintStatus DromSubCommand::executeCommand()
         return FLINT_FAILED;
     }
     dromCbFunc(101);
+    const char* resignStr = ops->FwGetReSignMsgStr();
+    if (resignStr) {
+        printf("%s", resignStr);
+    }
     return FLINT_SUCCESS;
 }
 /***********************
@@ -2773,6 +2834,8 @@ FlintStatus SgSubCommand::sgFs2()
     return FLINT_SUCCESS;
 }
 
+#define FW_RESET_MSG "To load new configuration run mlxfwreset or reboot machine"
+
 FlintStatus SgSubCommand::sgFs3()
 {
     if (!CheckSetGuidsFlags()){
@@ -2814,6 +2877,9 @@ FlintStatus SgSubCommand::sgFs3()
     if (!_ops->FwSetGuids(_sgParams, &verifyCbFunc)) {
         reportErr(true, FLINT_SG_UID_ERROR, _ops->err());
         return FLINT_FAILED;
+    }
+    if (_flintParams.device_specified) {
+        printf("-I- %s\n", FW_RESET_MSG);
     }
     return FLINT_SUCCESS;
 }
@@ -2950,6 +3016,9 @@ FlintStatus SmgSubCommand::executeCommand()
         reportErr(true, FLINT_MFG_ERROR, _ops->err());
         return FLINT_FAILED;
     }
+    if (_flintParams.device_specified && _info.fw_type != FIT_FS2) {
+        printf("-I- %s\n", FW_RESET_MSG);
+    }
     return FLINT_SUCCESS;
 }
 
@@ -2995,36 +3064,36 @@ FlintStatus SetVpdSubCommand:: executeCommand()
 }
 
 /***********************
- *Class: SetPublicKeySubcommand
+ *Class: SetPublicKeysSubcommand
  **********************/
-SetPublicKeySubCommand:: SetPublicKeySubCommand()
+SetPublicKeysSubCommand:: SetPublicKeysSubCommand()
 {
     _name = "set public keys";
     _desc = "Set Public Keys (For FS3/FS4 image only).";
-    _extendedDesc = "Set Public Key in the given FS3/FS4 image.";
+    _extendedDesc = "Set Public Keys in the given FS3/FS4 image.";
     _flagLong = "set_public_keys";
     _flagShort = "";
-    _param = "[public key binary file]";
-    _paramExp = "public key file: bin file containing the public key data";
-    _example = FLINT_NAME " -i fw_image.bin set_public_key publickey.bin";
+    _param = "[public keys binary file]";
+    _paramExp = "public keys file: bin file containing the public keys data";
+    _example = FLINT_NAME " -i fw_image.bin set_public_keys publickeys.bin";
     _v = Wtv_Img;
     _maxCmdParamNum = 1;
     _minCmdParamNum = 1;
-    _cmdType = SC_Set_Public_Key;
+    _cmdType = SC_Set_Public_Keys;
 }
 
-SetPublicKeySubCommand:: ~SetPublicKeySubCommand()
+SetPublicKeysSubCommand:: ~SetPublicKeysSubCommand()
 {
 }
 
-FlintStatus SetPublicKeySubCommand:: executeCommand()
+FlintStatus SetPublicKeysSubCommand:: executeCommand()
 {
     if (preFwOps() == FLINT_FAILED) {
         return FLINT_FAILED;
     }
     FwOperations *ops = _imgOps;
-    if (!ops->FwSetPublicKey((char*)_flintParams.cmd_params[0].c_str(), &verifyCbFunc)) {
-        reportErr(true, FLINT_SET_PUBLIC_KEY_ERROR, ops->err());
+    if (!ops->FwSetPublicKeys((char*)_flintParams.cmd_params[0].c_str(), &verifyCbFunc)) {
+        reportErr(true, FLINT_SET_PUBLIC_KEYS_ERROR, ops->err());
         return FLINT_FAILED;
     }
     return FLINT_SUCCESS;
@@ -3040,9 +3109,9 @@ SetForbiddenVersionsSubCommand::SetForbiddenVersionsSubCommand()
     _extendedDesc = "Set Forbidden Versions in the given FS3/FS4 image.";
     _flagLong = "set_forbidden_versions";
     _flagShort = "";
-    _param = "[public key binary file]";
-    _paramExp = "public key file: bin file containing the public key data";
-    _example = FLINT_NAME " -i fw_image.bin set_public_key publickey.bin";
+    _param = "[forbidden versions binary file]";
+    _paramExp = "forbidden versions file: bin file containing the forbidden versions data";
+    _example = FLINT_NAME " -i fw_image.bin set_forbidden_versions forbidden_versions.bin";
     _v = Wtv_Img;
     _maxCmdParamNum = 1;
     _minCmdParamNum = 1;
@@ -3924,6 +3993,10 @@ bool WbSubCommand::extractData(const std::vector<string>& cmdParams , u_int32_t*
     }
     //copy data to vector
     data.resize(img.getBufLength());
+    if (!img.getBuf()) {
+        reportErr(true, FLINT_IMAGE_READ_ERROR, img.err());
+        return false;
+    }
     memcpy(&data[0], img.getBuf(), img.getBufLength());
 
     return true;
@@ -4470,6 +4543,10 @@ void TimeStampSubCommand::getMachineUTCTime()
     struct tm * timeInfo;
     time ( &rawTime );
     timeInfo = gmtime ( &rawTime );
+    if (!timeInfo) {
+        reportErr(true, "gmtime returned NULL. Can't get machine's UTC time.");
+        return;
+    }
 
     _userTsEntry.ts_year = NUM4_TO_BCD(timeInfo->tm_year + 1900);
     _userTsEntry.ts_month = NUM2_TO_BCD(timeInfo->tm_mon + 1);

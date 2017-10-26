@@ -72,6 +72,7 @@ public:
     void get(std::vector<u_int8_t>& data, u_int32_t size) {return get(data, 0, size);}
     void get(u_int8_t* data, u_int32_t offset, u_int32_t size);
     void get(u_int8_t* data, u_int32_t size) {return get(data, 0, size);}
+    void clear() {_bData.clear();}
 private:
     u_int8_t _defaultValue;
     std::vector<MBufferUnit> _bData;

@@ -55,8 +55,9 @@ static void mft_signal_set_handling(int isOn) {
 #endif
 
 #define DEFAULT_SIZE 64
-#define MAX_TOUT 600
+#define MAX_TOUT 1000
 #define SLEEP_TIME 80
+#define MAX_MSG_SIZE 128
 
 #define MAX_REG_DATA 128
 
@@ -71,7 +72,6 @@ static void mft_signal_set_handling(int isOn) {
 #define CX3PRO_DEVID    0x1f7
 #define SX_DEVID        0x245
 #define IS4_DEVID       0x1b3
-#define CX5_DEVID       0x20d
 
 
 typedef struct reg_access_hca_mcda_reg mcdaReg;
@@ -119,11 +119,15 @@ bool FwCompsMgr::accessComponent(u_int32_t   offset,
                                   u_int32_t   size,
                                   u_int32_t   data[],
                                   access_type_t access,
-                                  ProgressFunc func)
+                                  ProgressCallBackAdvSt* progressFuncAdv)
 {
     int leftSize = (int)size;
     u_int32_t i = 0;
     mcdaReg accessData;
+    char stage[MAX_MSG_SIZE] = {0};
+    if (progressFuncAdv && progressFuncAdv->func) {
+        snprintf(stage, MAX_MSG_SIZE, "%s %s component", (access == MCDA_READ_COMP) ? "Reading" : "Writing", _currComponentStr);
+    }
     int maxDataSize = mget_max_reg_size(_mf) - sizeof(accessData);
     if (maxDataSize > MAX_REG_DATA) {
         maxDataSize = MAX_REG_DATA;
@@ -159,16 +163,21 @@ bool FwCompsMgr::accessComponent(u_int32_t   offset,
                 return false;
             }
         }
-        if (func && func(((size - leftSize) * 100)/size)) {
-            //printf("-D- ABORTED !!!\n");
-            _lastError = FWCOMPS_ABORTED;
-            return false;
+        if (progressFuncAdv && progressFuncAdv->func) {
+            if (progressFuncAdv->func((((size - leftSize) * 100)/size), stage,
+                                    PROG_WITH_PRECENTAGE, progressFuncAdv->opaque)) {
+                _lastError = FWCOMPS_ABORTED;
+                return false;
+            }
         }
         leftSize -= maxDataSize;
     }
-    if (func && func(101)) {
-        _lastError = FWCOMPS_ABORTED;
-        return false;
+    if (progressFuncAdv && progressFuncAdv->func) {
+        if (progressFuncAdv->func(0, stage,
+                        PROG_OK, progressFuncAdv->opaque))  {
+            _lastError = FWCOMPS_ABORTED;
+            return false;
+        }
     }
     return true;
 }
@@ -187,10 +196,33 @@ bool FwCompsMgr::queryComponentStaus(u_int32_t componentIndex,
     return true;
 }
 
+const char* FwCompsMgr::stateToStr(fsm_state_t st)
+{
+    switch (st) {
+    case FSMST_INITIALIZE:
+        return "Initializing image partition";
+    default:
+        return "Progress";
+    }
+}
+
+const char* FwCompsMgr::commandToStr(fsm_command_t cmd)
+{
+    switch (cmd) {
+    case FSM_CMD_VERIFY_COMPONENT:
+        return "Verifying component";
+    case FSM_CMD_UPDATE_COMPONENT:
+        return "Updating component";
+    default:
+        return "Unknown Command";
+    }
+}
+
 bool FwCompsMgr::controlFsm(fsm_command_t command,
                              fsm_state_t   expStatus,
                              u_int32_t     size,
-                             fsm_state_t   currState)
+                             fsm_state_t   currState,
+                             ProgressCallBackAdvSt* progressFuncAdv)
 {
     reg_access_status_t rc = ME_OK;
     int count = 0;
@@ -212,7 +244,6 @@ bool FwCompsMgr::controlFsm(fsm_command_t command,
 
         deal_with_signal();
     } while (rc == ME_REG_ACCESS_RES_NOT_AVLBL && count++ < MAX_TOUT);
-
     if (rc) {
         if (_lastFsmCtrl.error_code) {
             _lastError = mccErrTrans(_lastFsmCtrl.error_code);
@@ -229,6 +260,12 @@ bool FwCompsMgr::controlFsm(fsm_command_t command,
         if (count) {
             msleep(SLEEP_TIME);
         }
+        if (progressFuncAdv && progressFuncAdv->func) {
+            if (progressFuncAdv->func(0, stateToStr(currState), PROG_WITHOUT_PRECENTAGE, progressFuncAdv->opaque))  {
+                _lastError = FWCOMPS_ABORTED;
+                return false;
+            }
+        }
         if (!controlFsm(FSM_QUERY)) {
             return false;
         }
@@ -241,6 +278,13 @@ bool FwCompsMgr::controlFsm(fsm_command_t command,
     if (expStatus != FSMST_NA && _lastFsmCtrl.control_state != expStatus) {
         _lastError = FWCOMPS_MCC_UNEXPECTED_STATE;
         return false;
+    }
+
+    if (progressFuncAdv && progressFuncAdv->func && currState != FSMST_NA) {
+        if (progressFuncAdv->func(100, stateToStr(currState), PROG_OK, progressFuncAdv->opaque)) {
+            _lastError = FWCOMPS_ABORTED;
+            return false;
+        }
     }
     return true;
 }
@@ -323,7 +367,7 @@ reg_access_status_t FwCompsMgr::getGI(mfile* mf, struct tools_open_mgir* gi)
     u_int32_t tp = 0;
     mget_mdevs_type(mf, &tp);
     mft_signal_set_handling(1);
-#ifndef NO_INBAND
+#if !defined(UEFI_BUILD) && !defined(NO_INBAND)
     if (tp == MST_IB) {
         rc = (reg_access_status_t)mad_ifc_general_info_hw(mf, &gi->hw_info); if (rc) { goto cleanup;}
         rc = (reg_access_status_t)mad_ifc_general_info_fw(mf, &gi->fw_info); if (rc) { goto cleanup;}
@@ -501,7 +545,8 @@ bool FwCompsMgr::refreshComponentsStatus()
 
 //TODO: Check all the rc ..
 
-bool FwCompsMgr::readComponent(FwComponent::comps_ids_t compType, FwComponent& fwComp, bool readPending)
+bool FwCompsMgr::readComponent(FwComponent::comps_ids_t compType, FwComponent& fwComp, bool readPending,
+                                ProgressCallBackAdvSt* progressFuncAdv)
 {
     if (!refreshComponentsStatus()) {
         return false;
@@ -519,7 +564,8 @@ bool FwCompsMgr::readComponent(FwComponent::comps_ids_t compType, FwComponent& f
             controlFsm(FSM_CMD_RELEASE_UPDATE_HANDLE);
             return false;
         }
-        if (!accessComponent(0, compSize, (u_int32_t*)(data.data()), MCDA_READ_COMP)) {
+        _currComponentStr = FwComponent::getCompIdStr(compType);
+        if (!accessComponent(0, compSize, (u_int32_t*)(data.data()), MCDA_READ_COMP, progressFuncAdv)) {
             //_lastError = FWCOMPS_READ_COMP_FAILED;
             return false;
         }
@@ -561,7 +607,8 @@ bool FwCompsMgr::readComponentInfo(FwComponent::comps_ids_t compType,
 }
 
 
-bool FwCompsMgr::burnComponents (std::vector<FwComponent>& comps, ProgressFunc func)
+bool FwCompsMgr::burnComponents (std::vector<FwComponent>& comps,
+                                ProgressCallBackAdvSt* progressFuncAdv)
 {
     unsigned i = 0;
     if (!refreshComponentsStatus()) {
@@ -577,14 +624,15 @@ bool FwCompsMgr::burnComponents (std::vector<FwComponent>& comps, ProgressFunc f
             return false;
         }
         _componentIndex = _currCompQuery->comp_status.component_index;
-        if (!controlFsm(FSM_CMD_UPDATE_COMPONENT, FSMST_DOWNLOAD, 0, FSMST_INITIALIZE)) {
+        if (!controlFsm(FSM_CMD_UPDATE_COMPONENT, FSMST_DOWNLOAD, 0, FSMST_INITIALIZE, progressFuncAdv)) {
             return false;
         }
-        if (!accessComponent(0, comps[i].getSize(), (u_int32_t*)(comps[i].getData().data()), MCDA_WRITE_COMP, func)) {
+        _currComponentStr = FwComponent::getCompIdStr(comps[i].getType());
+        if (!accessComponent(0, comps[i].getSize(), (u_int32_t*)(comps[i].getData().data()), MCDA_WRITE_COMP, progressFuncAdv)) {
             //_lastError = FWCOMPS_DOWNLOAD_FAILED;
             return false;
         }
-        if (!controlFsm(FSM_CMD_VERIFY_COMPONENT, FSMST_LOCKED)) {
+        if (!controlFsm(FSM_CMD_VERIFY_COMPONENT, FSMST_LOCKED, 0, FSMST_NA, progressFuncAdv)) {
             return false;
         }
     }
@@ -624,7 +672,7 @@ const char* FwComponent::getCompIdStr(comps_ids_t compId)
 {
     switch (compId) {
         case COMPID_BOOT_IMG:
-            return "BOOT_IMAGE";
+            return "Boot image";
             break;
         case COMPID_RUNTIME_IMG:
             return "RUNTIME_IMAGE";
@@ -652,6 +700,7 @@ void FwCompsMgr::getInfoAsVersion(std::vector<u_int32_t>& infoData,
 {
     u_int8_t* data = (u_int8_t*)(infoData.data());
     reg_access_hca_mcqi_version_unpack(cmpVer, data);
+    cmpVer->version_string = (u_int32_t*)(data + reg_access_hca_mcqi_version_size());
     //reg_access_hca_mcqi_version_print(cmpVer, stdout, 4);
 }
 
@@ -675,14 +724,12 @@ u_int32_t FwCompsMgr::getFwSupport()
     devid = EXTRACT(devid, 0, 16);
     /*
      * If 4TH gen return not supported
-     * Ignore CX5 in mft-4.7.0 release
      */
     if (devid == CX2_DEVID    ||
         devid == CX3_DEVID    ||
         devid == CX3PRO_DEVID ||
         devid == SX_DEVID     ||
-        devid == IS4_DEVID    ||
-        devid == CX5_DEVID) {
+        devid == IS4_DEVID       ) {
         _lastError = FWCOMPS_UNSUPPORTED_DEVICE;
         return 0;
     }
@@ -804,7 +851,7 @@ void FwCompsMgr::extractRomInfo(tools_open_mgir* mgir, fwInfoT* fwQuery)
 bool FwCompsMgr::queryFwInfo(fwInfoT* query)
 {
     if (!query) {
-        return FWCOMPS_BAD_PARAM;
+        _lastError = FWCOMPS_BAD_PARAM;
         return false;
     }
     memset(query, 0, sizeof(fwInfoT));
@@ -813,6 +860,11 @@ bool FwCompsMgr::queryFwInfo(fwInfoT* query)
     }
     if (!getComponentVersion(FwComponent::COMPID_BOOT_IMG, false, &query->running_fw_version)) {
         return false;
+    }
+
+    if (query->running_fw_version.version_string_length &&
+        query->running_fw_version.version_string_length <= PRODUCT_VER_LEN) {
+        strcpy(query->product_ver, (char*)_productVerStr.data());
     }
 
     /*
@@ -970,6 +1022,11 @@ bool FwCompsMgr::getComponentVersion(FwComponent::comps_ids_t compType,
     }
     memset(cmpVer, 0, sizeof(component_version_st));
     getInfoAsVersion(imageInfoData, cmpVer);
+    if (cmpVer->version_string_length) {
+        _productVerStr.resize(cmpVer->version_string_length);
+        memcpy(_productVerStr.data(), cmpVer->version_string, cmpVer->version_string_length);
+        cmpVer->version_string = NULL;
+    }
     return true;
 }
 

@@ -273,6 +273,58 @@ void copyBytesVectorToDwVector(const vector<u_int8_t>& bV, vector<u_int32_t>& dw
     memcpy(dwV.data(), bV.data(), bV.size());
 }
 
+string parseIndexStr(const string& indexedMlxconfigName)
+{
+    return indexedMlxconfigName.substr(indexedMlxconfigName.find('[') + 1,
+                             indexedMlxconfigName.find(']') - indexedMlxconfigName.find('[') - 1);
+}
+
+void parseIndexedMlxconfigName(const string& indexedMlxconfigName, string& mlxconfigName, u_int32_t& index)
+{
+   string indexStr = parseIndexStr(indexedMlxconfigName);
+
+    if (!strToNum(indexStr, index)) {
+       throw MlxcfgException("Can not parse the index of %s\n", indexedMlxconfigName.c_str());
+    }
+
+    mlxconfigName = indexedMlxconfigName.substr(0, indexedMlxconfigName.find('['));
+}
+
+void extractIndexes(const string& indexesStr, vector<u_int32_t>& indexes)
+{
+    if (indexesStr.find("..") != string::npos) {
+        unsigned int leftIndex = 0, rightIndex = 0;
+        string leftIndexStr = indexesStr.substr(0, indexesStr.find(".."));
+        string rightIndexStr = indexesStr.substr(indexesStr.find("..") + 2);
+        if (!strToNum(leftIndexStr, leftIndex)) {
+            throw MlxcfgException("Can not parse the index %s", leftIndexStr.c_str());
+        }
+        if (!strToNum(rightIndexStr, rightIndex)) {
+            throw MlxcfgException("Can not parse the index %s", rightIndexStr.c_str());
+        }
+        if (leftIndex > rightIndex) {
+            throw MlxcfgException("Left index %d can not be greater than right index %d",
+                                   leftIndex, rightIndex);
+        }
+        while (rightIndex >= leftIndex) {
+            indexes.push_back(leftIndex);
+            leftIndex++;
+        }
+    } else {
+        u_int32_t index = 0;
+        if (!strToNum(indexesStr, index)) {
+            throw MlxcfgException("Can not parse the index %s", indexesStr.c_str());
+        }
+        indexes.push_back(index);
+    }
+    
+}
+
+bool isIndexedMlxconfigName(const string& mlxconfigName)
+{
+    return (mlxconfigName.find("[") != string::npos);
+}
+
 MlxcfgException::MlxcfgException(const char* fmt, ...){
     char tmp[1024];
     va_list args;
@@ -282,3 +334,6 @@ MlxcfgException::MlxcfgException(const char* fmt, ...){
     va_end(args);
     _err = tmp;
 }
+
+
+

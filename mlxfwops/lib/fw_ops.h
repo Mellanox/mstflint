@@ -42,11 +42,12 @@
 #include <cable_access/cable_access.h>
 #endif
 
-typedef f_prog_func_str VerifyCallBack;
-typedef f_prog_func     ProgressCallBack;
-typedef f_prog_func_ex  ProgressCallBackEx;
-typedef f_prog_func_str PrintCallBack;
-typedef fw_ver_info_t   FwVerInfo;
+typedef f_prog_func_str    VerifyCallBack;
+typedef f_prog_func        ProgressCallBack;
+typedef f_prog_func_ex     ProgressCallBackEx;
+typedef f_prog_func_adv_st ProgressCallBackAdvSt;
+typedef f_prog_func_str    PrintCallBack;
+typedef fw_ver_info_t      FwVerInfo;
 
 typedef int (*PrintCallBackAdv) (int completion, char* str);
 
@@ -57,6 +58,7 @@ public:
     #define EXP_ROM_GEN_DEVID 0
     #define MISS_MATCH_DEV_ID 0xffff
     class ExtBurnParams;
+    class ExtVerifyParams;
     struct fwOpsParams;
     struct sgParams;
     typedef fwOpsParams fw_ops_params_t;
@@ -93,6 +95,7 @@ public:
     bool readBufAux(FBase& f, u_int32_t o, void * d, int l, const char* p);
     virtual bool FwQuery(fw_info_t *fwInfo, bool readRom = true, bool isStripedImage = false) = 0;
     virtual bool FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedImage = false, bool showItoc = false, bool ignoreDToc = false) = 0; // Add callback print
+    virtual bool FwVerifyAdv(ExtVerifyParams& verifyParams);
     //on call of FwReadData with Null image we get image_size
     virtual bool FwReadData(void* image, u_int32_t* image_size) = 0;
     virtual bool FwReadBlock(u_int32_t addr, u_int32_t size, std::vector<u_int8_t>& dataVec);
@@ -100,7 +103,7 @@ public:
     virtual bool FwInsertEncSHA256(const char* privPemFile, const char* uuid, PrintCallBack printFunc=(PrintCallBack)NULL);
     virtual bool FwInsertSHA256(PrintCallBack printFunc=(PrintCallBack)NULL);
     virtual bool FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatternAndDevToc);
-    virtual bool FwSetPublicKey(char* fname, PrintCallBack callBackFunc=(PrintCallBack)NULL);
+    virtual bool FwSetPublicKeys(char* fname, PrintCallBack callBackFunc=(PrintCallBack)NULL);
     virtual bool FwSetForbiddenVersions(char* fname, PrintCallBack callBackFunc=(PrintCallBack)NULL);
 
     virtual bool FwReadRom(std::vector<u_int8_t>& romSect) = 0;
@@ -124,6 +127,7 @@ public:
     virtual bool FwResetNvData() = 0;
     virtual bool FwShiftDevData(PrintCallBack progressFunc=(PrintCallBack)NULL) = 0;
     virtual const char*  FwGetResetRecommandationStr() = 0;
+    virtual const char*  FwGetReSignMsgStr();
 
     virtual bool FwSetTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer);
     virtual bool FwQueryTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer, bool queryRunning=false);
@@ -157,6 +161,7 @@ public:
         ~RomInfo() {};
         bool initRomsInfo(roms_info_t* info);
         bool ParseInfo();
+        static u_int8_t getNumVerFromProdId(u_int16_t prodId);
     private:
         //Rom Information
         bool         expRomFound;
@@ -207,11 +212,12 @@ public:
 
         //callback fun
         ProgressCallBack progressFunc;
+        ProgressCallBackAdvSt ProgressFuncAdv;
         ProgressCallBackEx progressFuncEx;
         void * progressUserData;
         //data
         char* userVsd;
-        std::vector<guid_t> userUids; //contains eiter guids or uids
+        std::vector<guid_t> userUids; //contains either guids or uids
         ExtBurnStatus burnStatus;
 
         ExtBurnParams():userGuidsSpecified(false), userMacsSpecified(false), userUidSpecified(false),
@@ -219,7 +225,20 @@ public:
                         useImagePs(false), useImageGuids(false), singleImageBurn(true), noDevidCheck(false),
                         skipCiReq(false), ignoreVersionCheck(false), useImgDevData(false), useDevImgInfo(false),
                         burnRomOptions(BRO_DEFAULT), progressFunc((ProgressCallBack)NULL),
-                        progressFuncEx((ProgressCallBackEx)NULL), progressUserData(NULL), userVsd((char*)NULL){}
+                        progressFuncEx((ProgressCallBackEx)NULL), progressUserData(NULL), userVsd((char*)NULL){ ProgressFuncAdv.func = (f_prog_func_adv)NULL; ProgressFuncAdv.opaque = NULL;}
+        };
+
+    class ExtVerifyParams {
+
+    public:
+        VerifyCallBack verifyCallBackFunc; // Print function call back for print the different sections in the verify
+        bool isStripedImage; // If the image is striped
+        bool showItoc; // Show the ITOC header only
+        bool ignoreDToc; // Ignore verifying DTOC sections
+        ProgressCallBackAdvSt* progressFuncAdv; // Advance progress function that used in FW controlled operations (e.g. under secure fw)
+
+        ExtVerifyParams(VerifyCallBack vFunc):verifyCallBackFunc(vFunc), isStripedImage(false), showItoc(false),
+                ignoreDToc(false),progressFuncAdv((ProgressCallBackAdvSt*)NULL) {};
         };
 
         struct fwOpsParams{
@@ -248,6 +267,7 @@ public:
             int cx3FwAccess;
             int isCableFw;
             bool noFwCtrl;
+            bool mccUnsupported;
         };
 
         struct sgParams {
@@ -314,6 +334,12 @@ protected:
         FS_UNKNOWN_IMG
     };
 
+    struct BinId2SwId {
+        BinIdT binId;
+        // Zero terminated list of SW device ids
+        u_int32_t swId[MAX_SW_DEVICES_PER_HW];
+    };
+
     struct HwDevData {
         const char*      name;
         u_int32_t        hwDevId;
@@ -322,6 +348,8 @@ protected:
         int              portNum;
         // Zero terminated list of SW device ids
         const u_int32_t  swDevIds[MAX_SW_DEVICES_PER_HW];
+        // -1 terminated list of the bins of the device that match every SW ID
+        const BinId2SwId binningId[MAX_SW_DEVICES_PER_HW];
     };
 
     struct HwDev2Str {
@@ -357,6 +385,7 @@ protected:
     ////////////////////////////////////////////////////////////////////
     bool CheckMatchingDevId(u_int32_t hwDevId, u_int32_t imageDevId);
     bool CheckMatchingHwDevId(u_int32_t hwDevId, u_int32_t rev_id, u_int32_t* supportedHwId, u_int32_t supportedHwIdNum);
+    bool CheckMatchingBinning(u_int32_t hwDevId, BinIdT binningVal, u_int32_t imageDevId);
     bool HWIdRevToName(u_int32_t hw_id, u_int8_t rev_id, char *hw_name);
     bool CheckMac(u_int64_t mac);
     bool CheckMac(guid_t mac);
@@ -409,8 +438,10 @@ private:
 
     // Static Methods
 #ifndef NO_MFA_SUPPORT
-    static int      getMfaImg(char* fileName, char *psid, u_int8_t **imgbuf);
-    static int      getMfaImg(u_int8_t* mfa_buf, int size, char *psid, u_int8_t **imgbuf);
+    static int      getMfaImgInner(char* fileName, u_int8_t* mfa_buf, int size,
+                                   char *psid, u_int8_t **imgbuf, char* errBuf, int errBufSize);
+    static int      getMfaImg(char* fileName, char *psid, u_int8_t **imgbuf, char* errBuf, int errBufSize);
+    static int      getMfaImg(u_int8_t* mfa_buf, int size, char *psid, u_int8_t **imgbuf, char* errMsg, int errBufSize);
 #endif
     static int      getFileSignature(const char* fname);
     static int      getBufferSignature(u_int8_t* buf, u_int32_t size);
@@ -421,9 +452,16 @@ private:
     static bool     FindMagicPattern  (FBase* ioAccess, u_int32_t addr,
             u_int32_t const cntx_magic_pattern[]);
 
-    static void     WriteToErrBuff(char* errBuff, const char* errStr, int size);
+    /* Name:        WriteToErrBuff
+     * Description: Write a string into buffer.
+     *              if buffer is null or smaller than string size,
+     *              write "..." as at the end of the string.
+     * @param[in] errBuff - pointer to dist error buffer
+     * @param[in] errStr - pointer to source string
+     * @param[in] bufSize - size of error buffer */
+    static void WriteToErrBuff(char* errBuff, const char* errStr, int bufSize);
+
     void BackUpFwParams(fw_ops_params_t& fwParams);
-    static const char * err2str(int errNum);
     // Methods
 
     // Static Members

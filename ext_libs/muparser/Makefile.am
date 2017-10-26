@@ -31,7 +31,7 @@
 #--
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-AM_CXXFLAGS = -W -Werror -g -MP -MD ${COMPILER_FPIC} -Wno-deprecated-declarations
+AM_CXXFLAGS = -W -Wno-error -g -MP -MD ${COMPILER_FPIC} -Wno-deprecated-declarations
 
 noinst_LIBRARIES = libmuparser.a
 noinst_HEADERS = muParser.h muParserBase.h muParserBytecode.h muParserCallback.h muParserDef.h muParserError.h muParserFixes.h muParserStack.h muParserToken.h muParserTokenReader.h muParserTemplateMagic.h

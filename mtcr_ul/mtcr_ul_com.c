@@ -63,6 +63,8 @@
 #include <unistd.h>
 
 #include <netinet/in.h>
+#include <endian.h>
+#include <byteswap.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -2064,6 +2066,33 @@ mfile *mopen_ul(const char *name)
     return mf;
 }
 
+void free_dev_info_ul(mfile* mf) {
+    if (mf->dinfo) {
+        if (mf->dinfo->pci.ib_devs) {
+            char** curr = mf->dinfo->pci.ib_devs;
+            while (*(curr)) {
+                free(*curr);
+                curr++;
+            }
+
+            free(mf->dinfo->pci.ib_devs);
+        }
+
+        if (mf->dinfo->pci.net_devs) {
+            char** curr = mf->dinfo->pci.net_devs;
+            while (*(curr)) {
+                free(*curr);
+                curr++;
+            }
+
+            free(mf->dinfo->pci.net_devs);
+        }
+
+        free(mf->dinfo);
+        mf->dinfo = NULL;
+    }
+}
+
 int mclose_ul(mfile *mf)
 {
     if (mf != NULL) {
@@ -2088,6 +2117,7 @@ int mclose_ul(mfile *mf)
         if (mf->dev_name) {
             free(mf->dev_name);
         }
+        free_dev_info_ul(mf);
         free(mf);
     }
     return 0;
@@ -2517,6 +2547,58 @@ int mclear_pci_semaphore_ul(const char* name)
    }
    mclose_ul(mf);
    return rc;
+}
+
+int mvpd_read4_ul_int(mfile *mf, unsigned int offset, u_int8_t value[4]){
+    char proc_dev[64];
+    if (!(mf->dinfo)) {
+        errno = EPERM;
+        return -1;
+    }
+    u_int16_t domain = (mf->dinfo)->pci.domain;
+    u_int8_t  bus = (mf->dinfo)->pci.bus;
+    u_int8_t  dev = (mf->dinfo)->pci.dev;
+    u_int8_t  func = (mf->dinfo)->pci.func;
+
+    sprintf(proc_dev, "/sys/bus/pci/devices/%04x:%02x:%02x.%d/vpd", domain, bus, dev, func);
+    FILE* f = fopen(proc_dev, "r");
+    if (!f) {
+        //fprintf(stderr, "Failed to open (%s) for reading: %s\n", proc_dev, strerror(errno));
+        return errno;
+    }
+
+    setvbuf(f, NULL, _IONBF, 0);
+    if (fseek(f, offset, SEEK_SET))
+    {
+        //fprintf(stderr, "Reached End Of File: %s\n", strerror(errno));
+        fclose(f);
+        return errno;
+    }
+    if (fread(value, 1, 4, f) < 1) {
+        //fprintf(stderr, "Failed to read from (%s): %s\n", proc_dev, strerror(errno));
+        fclose(f);
+        return errno;
+    }
+    fclose(f);
+    return 0;
+}
+
+int mvpd_read4_ul(mfile *mf, unsigned int offset, u_int8_t value[4])
+{
+    if (offset % 4) {
+        u_int8_t qword[8] = {0};
+        int rc = 0;
+        unsigned int aligned_offset = (offset / 4) * 4;
+        rc = mvpd_read4_ul_int(mf, aligned_offset, qword);
+        if (rc) {
+            return rc;
+        }
+        rc = mvpd_read4_ul_int(mf, aligned_offset + 4, qword + 4);
+        memcpy(value, qword + (offset % 4), 4);
+        return 0;
+    } else {
+        return mvpd_read4_ul_int(mf, offset, value);
+    }
 }
 
 /************************************

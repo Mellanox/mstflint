@@ -50,7 +50,7 @@
 #define QPC_WRITE_OP 0x69
 
 #define CHECK_RC(rc) \
-    if (rc) return rc;
+    if (rc) return (MError)rc;
 
 #define BE32_TO_CPU(s, n) do {                                          \
 	u_int32_t i;                                                   \
@@ -122,7 +122,7 @@ MError tcif_qpc_context_write(mfile* dev, u_int32_t qpn, u_int32_t source, u_int
 
 MError tcif_hw_access(mfile* dev, u_int64_t key, int lock_unlock)
 {
-    return tools_cmdif_send_inline_cmd(dev, key, NULL, 0, HW_ACCESS_OP, lock_unlock);
+    return (MError)tools_cmdif_send_inline_cmd(dev, key, NULL, 0, HW_ACCESS_OP, lock_unlock);
 }
 const char* tcif_err2str(MError rc) {
     return m_err2str(rc);
@@ -135,7 +135,7 @@ MError tcif_cr_mbox_supported(mfile* dev)
     (void)dev;
     return ME_NOT_IMPLEMENTED;
 #else
-    return tools_cmdif_is_cr_mbox_supported(dev);
+    return (MError)tools_cmdif_is_cr_mbox_supported(dev);
 #endif
 
 }
