@@ -39,7 +39,7 @@ bin_PROGRAMS = mstfwmanager
 docdir=$(INSTALL_BASEDIR)/etc/mstflint
 dist_doc_DATA=certificate/ca-bundle.crt
 
-MTCR_UL_DIR = $(USER_DIR)/mtcr_ul
+MTCR_UL_DIR = $(USER_DIR)/${MTCR_CONF_DIR}
 MTCR_UL_LIB = -L$(MTCR_UL_DIR) -lmtcr_ul
 
 XML_FLAGS = -DUSE_XML -DLIBXML_STATIC
@@ -100,7 +100,7 @@ common_LDADD  = $(USER_DIR)/dev_mgt/libdev_mgt.a\
                         $(USER_DIR)/fw_comps_mgr/libfw_comps_mgr.a\
                         $(XML_LIBS)\
                         $(CURL_LIBS)\
-                        -lm $(LIBSTD_CPP) -ldl
+                        -lm $(LIBSTD_CPP) ${LDL}
                         
 if ENABLE_OPENSSL
 common_LDADD += $(top_srcdir)/mlxsign_lib/libmlxsign.a -lcrypto

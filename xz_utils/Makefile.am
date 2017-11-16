@@ -33,7 +33,7 @@
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
 USER_DIR = ..
-MTCR_DIR = $(USER_DIR)/mtcr_ul
+MTCR_DIR = $(USER_DIR)/${MTCR_CONF_DIR}
 INCLUDES = -I. -I$(USER_DIR) -I$(MTCR_DIR) -I$(USER_DIR)/common
 AM_CFLAGS = -W  -g -MP -MD ${COMPILER_FPIC} -Werror
 noinst_LTLIBRARIES = libxz_utils.a

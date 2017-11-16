@@ -34,7 +34,7 @@
 MTCR_CONFIG_DIR = mtcr_ul
 mtcr_pylibdir = $(libdir)/mstflint/python_tools/
 USER_DIR = ..
-MTCR_DIR = $(USER_DIR)/${MTCR_CONFIG_DIR}
+MTCR_DIR = $(USER_DIR)/${MTCR_CONF_DIR}
 
 mtcr_pylib_DATA = cmtcr.so mtcr.py
 dist_mtcr_pylib_DATA = mtcr.py

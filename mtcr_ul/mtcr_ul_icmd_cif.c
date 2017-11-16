@@ -543,7 +543,9 @@ static int icmd_init_cr(mfile *mf)
     u_int32_t cmd_ptr_addr;
     u_int32_t reg = 0x0;
     u_int32_t hw_id = 0x0;
+#ifndef __FreeBSD__
     u_int32_t dev_type = 0;
+#endif
 
     // get device specific addresses
     MREAD4((mf), (HW_ID_ADDR), &(hw_id));

@@ -32,10 +32,10 @@
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 USER_DIR = ..
-MTCR_DIR = $(USER_DIR)/mtcr_ul
+MTCR_DIR = $(USER_DIR)/${MTCR_CONF_DIR}
 MTCR_INC_DIR = $(top_srcdir)/include/mtcr_ul
 
-INCLUDES = -I. -I.. -I$(MTCR_INC_DIR) -I../mtcr_ul -I$(USER_DIR)/tools_ayouts/ 
+INCLUDES = -I. -I.. -I$(MTCR_INC_DIR) -I../${MTCR_CONF_DIR} -I$(USER_DIR)/tools_ayouts/ 
 
 AM_CFLAGS = -W -Wall -Werror -g -MP -MD $(COMPILER_FPIC)
 

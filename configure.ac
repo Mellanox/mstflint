@@ -20,6 +20,24 @@ m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 AC_PROG_LIBTOOL
 AC_CONFIG_HEADERS( config.h )
 
+OS=$(uname -s)
+
+MTCR_CONF_DIR=""
+LDL=""
+default_en_inband=""
+if test "x$OS" = "xFreeBSD"; then
+    AC_MSG_NOTICE(FreeBSD Build)
+    MTCR_CONF_DIR="mtcr_freebsd"
+    default_en_inband = "no"
+else
+    MTCR_CONF_DIR="mtcr_ul"
+    LDL="-ldl"
+    default_en_inband = "yes"
+fi
+AC_SUBST(MTCR_CONF_DIR)
+AC_SUBST(LDL)
+AC_SUBST(default_en_inband)
+
 dnl Checks for headers
 AC_CHECK_HEADER(termios.h,[CXXFLAGS="${CXXFLAGS} -DHAVE_TERMIOS_H"])
 TOOLS_CRYPTO=""
@@ -91,7 +109,7 @@ AC_MSG_CHECKING(--enable-inband argument)
 AC_ARG_ENABLE(inband,
 		    [  --disable-inband        Disable inabnd access. Prevents FW updtes for Mellanox SwitchX and ConnectIB devices. Eliminates infiniband/mad.h dependency],
 		    [enable_inband=$enableval],
-		    [enable_inband="yes"])
+		    [enable_inband=$default_en_inband])        
 AC_MSG_RESULT($enable_inband)
 if test "x$enable_inband" = "xyes"; then
   AC_CHECK_HEADER(infiniband/mad.h,,AC_MSG_ERROR([cannot find infiniband/mad.h . Use --disable-inband to remove this dependaency]))
@@ -150,11 +168,13 @@ CXXFLAGS="$CXXFLAGS -Werror -DMST_UL"
 
 AC_CONFIG_FILES( mstflint.spec )
 
-#Check for new ignore flags needed for GCC >= 7
-AX_CHECK_COMPILE_FLAG([-Wno-implicit-fallthrough], [CXXFLAGS="$CXXFLAGS -Wno-implicit-fallthrough"], [], [])
-AX_CHECK_COMPILE_FLAG([-Wno-format-overflow], [CFLAGS="$CFLAGS -Wno-format-overflow"], [], [])
-AX_CHECK_COMPILE_FLAG([-Wno-implicit-fallthrough], [CFLAGS="$CFLAGS -Wno-implicit-fallthrough"], [], [])
-AX_CHECK_COMPILE_FLAG([-Wno-format-overflow], [CXXFLAGS="$CXXFLAGS -Wno-format-overflow"], [], [])
+if test "x$OS" != "xFreeBSD"; then
+	#Check for new ignore flags needed for GCC >= 7
+	AX_CHECK_COMPILE_FLAG([-Wno-implicit-fallthrough], [CXXFLAGS="$CXXFLAGS -Wno-implicit-fallthrough"], [], [])
+	AX_CHECK_COMPILE_FLAG([-Wno-format-overflow], [CFLAGS="$CFLAGS -Wno-format-overflow"], [], [])
+	AX_CHECK_COMPILE_FLAG([-Wno-implicit-fallthrough], [CFLAGS="$CFLAGS -Wno-implicit-fallthrough"], [], [])
+	AX_CHECK_COMPILE_FLAG([-Wno-format-overflow], [CXXFLAGS="$CXXFLAGS -Wno-format-overflow"], [], [])
+fi
 
 
 TOOLS_BUILD_TIME=`date  +"%b %d %Y\, %H:%M:%S"`
@@ -192,7 +212,17 @@ AS_IF([test "x$enable_fw_mgr" = "xyes"], [
     
 AC_SUBST(MLXFWUPDATE)
 
-AC_OUTPUT( Makefile common/Makefile mft_utils/Makefile mtcr_ul/Makefile mtcr_py/Makefile ext_libs/Makefile ext_libs/sqlite/Makefile ext_libs/muparser/Makefile dev_mgt/Makefile tools_layouts/Makefile reg_access/Makefile \
+
+
+if test "x$OS" = "xFreeBSD"; then
+    AC_MSG_NOTICE(FreeBSD MTCR)
+    AC_CONFIG_FILES(mtcr_freebsd/Makefile)
+else
+    AC_MSG_NOTICE(Linux MTCR)
+    AC_CONFIG_FILES(mtcr_ul/Makefile)
+fi
+
+AC_OUTPUT( Makefile common/Makefile mft_utils/Makefile mtcr_py/Makefile ext_libs/Makefile ext_libs/sqlite/Makefile ext_libs/muparser/Makefile dev_mgt/Makefile tools_layouts/Makefile reg_access/Makefile \
         cmdif/Makefile tools_res_mgmt/Makefile mlxconfig/Makefile mlxconfig/mlxconfig_dbs/Makefile mflash/Makefile mlxfwops/Makefile mlxfwops/lib/Makefile cmdparser/Makefile flint/Makefile \
  		small_utils/Makefile mstdump/Makefile mstdump/crd_lib/Makefile mstdump/crd_main/Makefile mstdump/mstdump_dbs/Makefile mvpd/Makefile \
  		 fw_comps_mgr/Makefile mad_ifc/Makefile )

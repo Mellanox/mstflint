@@ -31,7 +31,7 @@
 #--
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
-MTCR_DIR    = $(top_srcdir)/mtcr_ul
+MTCR_DIR    = $(top_srcdir)/${MTCR_CONF_DIR}
 MTCR_INC_DIR = $(top_srcdir)/include/mtcr_ul
 MFLASH_DIR  = $(top_srcdir)/mflash
 COMMON_DIR  = $(top_srcdir)/common
@@ -55,11 +55,11 @@ mstflint_LDADD =  ../mlxfwops/lib/libmlxfwops.a  \
 		  $(CMDIF_DIR)/libcmdif.a        \
 		  ../reg_access/libreg_access.a  \
 		  ../dev_mgt/libdev_mgt.a        \
-		  ../mtcr_ul/libmtcr_ul.a        \
+		  ../${MTCR_CONF_DIR}/libmtcr_ul.a        \
           ../tools_layouts/libtools_layouts.a \
           ../fw_comps_mgr/libfw_comps_mgr.a \
 		  ../mft_utils/libmftutils.a\
-		  $(LIBSTD_CPP) -ldl
+		  ${LDL}
 
 
 if ENABLE_DC

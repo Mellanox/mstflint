@@ -53,6 +53,6 @@ c_dev_mgt.so: libdev_mgt.a
 	$(CC) -g -Wall -pthread -shared ${CFLAGS} tools_dev_types.o -o c_dev_mgt.so \
 	-L$(USER_DIR)/reg_access -lreg_access \
 	-L$(USER_DIR)/tools_layouts -ltools_layouts \
-	-L$(USER_DIR)/mtcr_ul -lmtcr_ul
+	-L$(USER_DIR)/${MTCR_CONF_DIR} -lmtcr_ul
 
 CLEANFILES = c_dev_mgt.so

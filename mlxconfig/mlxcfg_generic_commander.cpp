@@ -1209,8 +1209,9 @@ void GenericCommander::createConf(const string& xml, vector<u_int32_t>& buff)
     FwComponent::comps_ids_t compsId;
 
     //Add the fingerprint
-    for (unsigned int i = 0; i < strlen(BIN_FILE_FINGERPRINT); i += 4) {
-        buff.push_back(*(u_int32_t*)(BIN_FILE_FINGERPRINT + i));
+    string fingerPrint(BIN_FILE_FINGERPRINT);
+    for (unsigned int i = 0; i < fingerPrint.length(); i += 4) {
+        buff.push_back(*(u_int32_t*)(fingerPrint.c_str() + i));
     }
 
     XML2TLVConf(xml, tlvs);

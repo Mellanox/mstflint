@@ -102,6 +102,7 @@ typedef enum MError {
     ME_NOT_IMPLEMENTED,
     ME_SEM_LOCKED,
     ME_MEM_ERROR,
+    ME_TIMEOUT,
 
     ME_MAD_SEND_FAILED,
     ME_UNKOWN_ACCESS_TYPE,
