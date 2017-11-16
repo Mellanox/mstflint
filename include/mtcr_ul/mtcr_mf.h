@@ -33,6 +33,13 @@
 #ifndef __MTCR_MF__
 #define __MTCR_MF__
 
+
+#ifdef __FreeBSD__
+#include <sys/types.h>
+#include <sys/pciio.h>
+#endif
+
+
 typedef struct icmd_params_t {
         int icmd_opened;
         int took_semaphore;
@@ -131,6 +138,13 @@ struct mfile_t {
         int is_cable;
         void* cable_ctx;
         f_mpci_change mpci_change;
+#ifdef __FreeBSD__
+        struct pcisel sel;
+        unsigned int vpd_cap_addr;
+        int wo_addr;
+        int connectx_flush;
+#endif
+
 };
 
 #endif

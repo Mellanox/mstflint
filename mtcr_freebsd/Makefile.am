@@ -31,38 +31,25 @@
 #--
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
-USER_DIR = $(top_srcdir)
-MTCR_DIR = $(USER_DIR)/${MTCR_CONF_DIR}
-MTCR_INC_DIR = $(top_srcdir)/include/mtcr_ul
-CMDIF_DIR = $(USER_DIR)/cmdif
-REG_ACCESS_DIR = $(USER_DIR)/reg_access
-COMMON_DIR = $(USER_DIR)/common
-LAYOUTS_DIR = $(USER_DIR)/tools_layouts
-UTILS_DIR = $(USER_DIR)/mft_utils
-MAD_IFC_DIR = $(USER_DIR)/mad_ifc
+AM_CPPFLAGS = -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common -I../mtcr_ul
 
-INCLUDES = -I. -I$(USER_DIR) -I$(MTCR_INC_DIR) -I$(MTCR_DIR) -I$(REG_ACCESS_DIR) -I$(CMDIF_DIR) \
-           -I$(COMMON_DIR) -I $(LAYOUTS_DIR) -I $(UTILS_DIR)  
+pkglib_LIBRARIES = libmtcr_ul.a
 
-FWCOMPS_VERSION = 1
-
-AM_CFLAGS = -MD -pipe -Wall -W -Werror $(COMPILER_FPIC)
-
-AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe -Werror $(COMPILER_FPIC)
-
-noinst_LIBRARIES = libfw_comps_mgr.a
-
-libfw_comps_mgr_a_SOURCES = \
-                  fw_comps_mgr.cpp fw_comps_mgr.h
-                  
-if ENABLE_INBAND
-else
-AM_CXXFLAGS += "-DNO_INBAND"
-endif
-
-libfw_comps_mgr_a_LIBADD = ../reg_access/libreg_access.a $(MTCR_DIR)/libmtcr_ul.a $(LAYOUTS_LIB)
+libmtcr_ul_a_SOURCES = mtcr_ul.c ../mtcr_ul/mtcr_ib.h  ../mtcr_ul/mtcr_int_defs.h\
+			../mtcr_ul/mtcr_ib_res_mgt.h ../mtcr_ul/mtcr_ib_res_mgt.c\
+			../mtcr_ul/mtcr_tools_cif.c ../mtcr_ul/mtcr_tools_cif.h\
+			../mtcr_ul/mtcr_ul_icmd_cif.c ../mtcr_ul/mtcr_icmd_cif.h\
+			mtcr_ul_com_defs.h mtcr_mf.h\
+			../mtcr_ul/packets_common.c ../mtcr_ul/packets_common.h\
+			../mtcr_ul/packets_layout.c ../mtcr_ul/packets_layout.h
+libmtcr_ul_a_CFLAGS = -W -Wall -g -MP -MD -fPIC -DMTCR_API="" -DMST_UL
 
 if ENABLE_INBAND
-libfw_comps_mgr_a_LIBADD +=  $(top_srcdir)/mad_ifc/libmad_ifc.a
+libmtcr_ul_a_SOURCES += ../mtcr_ul/mtcr_ib_ofed.c
 else
+libmtcr_ul_a_CFLAGS += -DNO_INBAND
 endif
+
+libraryincludedir=$(includedir)/mstflint
+libraryinclude_HEADERS = $(top_srcdir)/include/mtcr_ul/mtcr.h  $(top_srcdir)/include/mtcr_ul/mtcr_com_defs.h
+

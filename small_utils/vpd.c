@@ -35,14 +35,15 @@
  * SOFTWARE.
  */
 
-#define _XOPEN_SOURCE 500
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/times.h>
-#include "tools_version.h"
+#include <unistd.h>
 #include <ctype.h>
 
+#include "tools_version.h"
 #include "mvpd/mvpd.h"
 
 
@@ -206,7 +207,7 @@ int main(int argc, char **argv)
 	    int mvpd_len = VPD_MAX_SIZE;
 	    rc = mvpd_get_vpd_size(mf, &mvpd_len);
         if (rc != 0) {
-            fprintf(stderr, "-E- Failed to read VPD from %s!\n", name);
+            fprintf(stderr, "-E- Failed to get VPD size from %s!\n", name);
             return MVPD_ERR;
         }
 		rc = mvpd_get_raw_vpd(mf, (u_int8_t *)d, mvpd_len);

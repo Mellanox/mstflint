@@ -33,7 +33,7 @@
 
 USER_DIR = $(top_srcdir)
 MTCR_DIR = $(USER_DIR)/include/mtcr_ul
-AM_CPPFLAGS = -I. -I../common -I$(MTCR_DIR) -I.. -I$(USER_DIR)/mtcr_ul
+AM_CPPFLAGS = -I. -I../common -I$(MTCR_DIR) -I.. -I$(USER_DIR)/${MTCR_CONF_DIR}
 
 AM_CFLAGS = -W -Wall -Werror -g -MP -MD $(COMPILER_FPIC) 
 noinst_LIBRARIES = libtools_res_mgmt.a

@@ -37,9 +37,9 @@
 #define TOOLS_VERSION_H
 
 
-#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 // To be replaced by an external script:
 #include "gitversion.h"

@@ -31,7 +31,7 @@
 #--
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
-MTCR_DIR = $(top_srcdir)/mtcr_ul
+MTCR_DIR = $(top_srcdir)/${MTCR_CONF_DIR}
 COMMON_DIR = $(top_srcdir)/common
 LAYOUTS_DIR = $(top_srcdir)/tools_layouts
 USER_DIR = $(top_srcdir)
@@ -49,7 +49,7 @@ libmvpd_a_LIBADD = $(libmvpd_a_DEPENDENCIES)
 RMVPD_SO = rmvpd.so
 
 		  
-LDADD= ../mtcr_ul/libmtcr_ul.a -ldl
+LDADD= ../${MTCR_CONF_DIR}/libmtcr_ul.a ${LDL}
 
 
 noinst_HEADERS = mvpd.h

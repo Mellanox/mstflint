@@ -140,6 +140,7 @@ class StringParamValue : public ParamValue {
 
 class BytesParamValue : public ParamValue {
     public:
+        using ParamValue::setVal;
         BytesParamValue(u_int32_t size) : ParamValue(size) {}
 
         string  getVal      ();
@@ -157,8 +158,8 @@ class BytesParamValue : public ParamValue {
 
 
 class ArrayParamValue : public ParamValue {
-
 public:
+    using ParamValue::setVal;
     ArrayParamValue(string size, u_int32_t count, enum ParamType paramType);
     ~ArrayParamValue();
     string              getVal      ();

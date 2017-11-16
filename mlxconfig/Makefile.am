@@ -32,7 +32,7 @@
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 USER_DIR = $(top_srcdir)
-MTCR_DIR = $(top_srcdir)/mtcr_ul
+MTCR_DIR = $(top_srcdir)/${MTCR_CONF_DIR}
 COMMON_DIR = $(top_srcdir)/common
 LAYOUTS_DIR = $(top_srcdir)/tools_layouts
 UTILS_DIR = $(top_srcdir)/mft_utils
@@ -63,11 +63,11 @@ libmlxcfg_a_SOURCES =  mlxcfg_status.h mlxcfg_utils.h mlxcfg_utils.cpp mlxcfg_vi
 
 libmlxcfg_a_LIBADD = $(UTILS_LIB) $(EXT_LIB_DIR)/sqlite/libsqlite3.a $(EXT_LIB_DIR)/muparser/libmuparser.a\
 				$(CMDIF_DIR)/libcmdif.a ../reg_access/libreg_access.a $(LAYOUTS_LIB) $(MTCR_DIR)/libmtcr_ul.a\
-				$(DEV_MGT_DIR)/libdev_mgt.a $(COMPS_MGR_DIR)/libfw_comps_mgr.a $(MLNXOS_PPC_LIBS) $(LIBSTD_CPP) -ldl
+				$(DEV_MGT_DIR)/libdev_mgt.a $(COMPS_MGR_DIR)/libfw_comps_mgr.a $(MLNXOS_PPC_LIBS) $(LIBSTD_CPP) ${LDL}
 
 mstconfig_LDADD = libmlxcfg.a $(UTILS_LIB) $(EXT_LIB_DIR)/sqlite/libsqlite3.a $(EXT_LIB_DIR)/muparser/libmuparser.a\
 				$(CMDIF_DIR)/libcmdif.a ../reg_access/libreg_access.a $(LAYOUTS_LIB) $(MTCR_DIR)/libmtcr_ul.a\
-				$(DEV_MGT_DIR)/libdev_mgt.a $(COMPS_MGR_DIR)/libfw_comps_mgr.a $(MLNXOS_PPC_LIBS) $(LIBSTD_CPP) -ldl
+				$(DEV_MGT_DIR)/libdev_mgt.a $(COMPS_MGR_DIR)/libfw_comps_mgr.a $(MLNXOS_PPC_LIBS) $(LIBSTD_CPP) ${LDL}
 
 if DISABLE_XML2
 AM_CXXFLAGS += -DDISABLE_XML2

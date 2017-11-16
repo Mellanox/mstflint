@@ -33,8 +33,9 @@
 PYTHON_WRAPPER_SCRIPT = ../common/python_wrapper
 
 AM_CPPFLAGS= -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common -I$(top_srcdir)/mvpd
+AM_CFLAGS= -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common -I$(top_srcdir)/mvpd
 
-LDADD= ../mtcr_ul/libmtcr_ul.a -ldl
+LDADD= $(top_srcdir)/${MTCR_CONF_DIR}/libmtcr_ul.a ${LDL}
 
 bin_PROGRAMS = mstmread \
 					mstmwrite \
@@ -49,7 +50,7 @@ mstmread_SOURCES = mread.c
 mstmwrite_SOURCES = mwrite.c
 
 mstvpd_SOURCES = vpd.c
-mstvpd_LDADD = $(top_srcdir)/mvpd/libmvpd.a ../mtcr_ul/libmtcr_ul.a -ldl
+mstvpd_LDADD = $(top_srcdir)/mvpd/libmvpd.a $(top_srcdir)/${MTCR_CONF_DIR}/libmtcr_ul.a ${LDL}
 
 mstmcra_SOURCES  = mcra.c
 
