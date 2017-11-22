@@ -1463,8 +1463,8 @@ bool getIniParams(config_t &config)
         return false;
     }
 
-    config.mfa_path = iniparser_getstring(ini_dict, INI_FILESYSTEM_SECTION":"INI_SRCDIR_KEY, (char*)config.mfa_path.c_str());
-    config.http_proxy = iniparser_getstring(ini_dict, INI_SERVER_SECTION":"INI_PROXY_KEY, (char*)config.http_proxy.c_str());
+    config.mfa_path = iniparser_getstring(ini_dict, INI_FILESYSTEM_SECTION ":" INI_SRCDIR_KEY, (char*)config.mfa_path.c_str());
+    config.http_proxy = iniparser_getstring(ini_dict, INI_SERVER_SECTION ":" INI_PROXY_KEY, (char*)config.http_proxy.c_str());
 
     if (ini_dict) {
         iniparser_freedict(ini_dict);
