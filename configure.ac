@@ -152,7 +152,7 @@ AC_ARG_ENABLE([static_libstdcpp],
     AS_HELP_STRING([--enable-static-libstdcpp], [Enable link static to libstdc++]))
 
 AS_IF([test "x$enable_static_libstdcpp" = "xyes"], [
-  CXXFLAGS="$CXXFLAGS -static-libstdc++"
+  CXXFLAGS="$CXXFLAGS -static-libstdc++ -static-libgcc"
 ])
 
 AC_ARG_ENABLE([dynamic_ld],
