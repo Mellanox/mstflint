@@ -28,6 +28,7 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
 
 #ifndef MTCR_INT_DEFS
@@ -63,6 +64,7 @@ typedef struct ul_ctx {
     f_mread4_block   res_mread4_block;
     f_mwrite4_block  res_mwrite4_block;
     /*************************************************************/
+    int              via_driver;
 } ul_ctx_t;
 #endif
 
