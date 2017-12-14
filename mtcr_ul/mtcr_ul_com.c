@@ -92,12 +92,19 @@
 #include "../mtcr_mlnxos.h"
 #endif
 
+#include "../kernel/mst.h"
+
 #define CX3_SW_ID    4099
 #define CX3PRO_SW_ID 4103
 
 typedef enum {
     Clear_Vsec_Semaphore = 0x1,
 } adv_opt_t;
+
+
+#define DBDF             "%4.4x:%2.2x:%2.2x.%1.1x"
+#define DRIVER_CR_NAME   "/dev/"DBDF"_mstcr"
+#define DRIVER_CONF_NAME "/dev/"DBDF"_mstconf"
 
 /* Forward decl*/
 static int get_inband_dev_from_pci(char* inband_dev, char* pci_dev);
@@ -260,6 +267,11 @@ static int mwrite_chunk_as_multi_mwrite4(mfile *mf, unsigned int offset, u_int32
     return length;
 }
 
+
+static int mst_driver_connectx_flush(mfile *mf);
+int mtcr_driver_cr_mread4(mfile *mf, unsigned int offset, u_int32_t *value);
+void mpci_change_ul(mfile* mf);
+
 /*
  * Return values:
  * 0:  OK
@@ -293,12 +305,37 @@ int mtcr_check_signature(mfile *mf)
                 && mf->tp == MST_PCI) {
             ul_ctx_t* ctx = mf->ul_ctx;
             ctx->connectx_flush = 1;
-            if (mtcr_connectx_flush(mf->ptr, ctx->fdlock)) {
+            if (ctx->via_driver) {
+                if (mst_driver_connectx_flush(mf)) {
+                    return -1;
+                }
+            } else if (mtcr_connectx_flush(mf->ptr, ctx->fdlock)) {
                 return -1;
             }
         }
     }
 
+    return 0;
+}
+
+int mst_driver_vpd_read4(mfile* mf, unsigned int offset, u_int8_t value[])
+{
+    int flag = 0;
+    struct mst_vpd_read4_st read_vpd4;
+    if (mf->tp != MST_PCICONF) {
+        mpci_change_ul(mf);
+        flag = 1;
+    }
+    memset(&read_vpd4, 0, sizeof(read_vpd4));
+    read_vpd4.offset = offset;
+    int ret = ioctl(mf->fd, PCICONF_VPD_READ4, &read_vpd4);
+    if (ret < 0) {
+        return ret;
+    }
+    memcpy(value, &read_vpd4.data, 4);
+    if (flag) {
+        mpci_change_ul(mf);
+    }
     return 0;
 }
 
@@ -536,6 +573,197 @@ end:
             ctx->res_mwrite4_block = conf_ctx->mwrite4_block;
             free(conf_mf);
         }
+    }
+
+    return rc;
+}
+
+int mtcr_driver_mread4(mfile *mf, unsigned int offset, u_int32_t *value)
+{
+    int rc = 4;
+    struct mst_read4_st r4;
+    memset(&r4, 0, sizeof(struct mst_read4_st));
+
+    r4.offset = offset;
+    if ((ioctl(mf->fd, PCICONF_READ4, &r4)) < 0) {
+        rc = -1;
+    } else {
+        *value = r4.data;
+    }
+
+    return rc;
+}
+
+int mtcr_driver_mwrite4(mfile *mf, unsigned int offset, u_int32_t value)
+{
+    int rc = 4;
+    struct mst_write4_st r4;
+    memset(&r4, 0, sizeof(struct mst_write4_st));
+
+    r4.offset = offset;
+    r4.data = value;
+    if (ioctl(mf->fd, PCICONF_WRITE4, &r4) < 0) {
+        rc = -1;
+    } else {
+        rc = 4;
+    }
+    return rc;
+}
+
+static
+int mst_driver_connectx_flush(mfile *mf)
+{
+    mtcr_driver_mwrite4(mf, mf->connectx_wa_slot, 0);
+    u_int32_t value = 0x1;
+    do {
+        mtcr_driver_mread4(mf, mf->connectx_wa_slot, &value);
+    } while (value);
+    return 0;
+}
+
+int mtcr_driver_cr_mread4(mfile *mf, unsigned int offset, u_int32_t *value)
+{
+    ul_ctx_t *ctx = mf->ul_ctx;
+    if (ctx->need_flush) {
+        if (mst_driver_connectx_flush(mf)) {
+            return 0;
+        }
+        ctx->need_flush = 0;
+    }
+    return mtcr_driver_mread4(mf, offset, value);
+}
+
+int mtcr_driver_cr_mwrite4(mfile *mf, unsigned int offset, u_int32_t value)
+{
+    ul_ctx_t *ctx = mf->ul_ctx;
+    if (mtcr_driver_mwrite4(mf, offset, value) != 4) {
+        return 0;
+    }
+    ctx->need_flush = ctx->connectx_flush;
+    return 4;
+}
+
+static int driver_mread_chunk_as_multi_mread4(mfile *mf, unsigned int offset, u_int32_t* data, int length)
+{
+    int i;
+    for (i = 0; i < length ; i += 4) {
+        u_int32_t value;
+
+        if (mread4(mf, offset + i, &value) != 4) {
+            return -1;
+        }
+        memcpy(data + i/4 , &value, 4);
+    }
+    return length;
+}
+
+static int driver_mwrite_chunk_as_multi_mwrite4(mfile *mf, unsigned int offset, u_int32_t* data, int length)
+{
+    int i;
+    if (length % 4) {
+        return EINVAL;
+    }
+    for (i = 0; i < length ; i += 4) {
+        u_int32_t value;
+        memcpy(&value,data + i/4 ,4);
+        if (mwrite4(mf, offset + i, value) != 4) {
+            return -1;
+        }
+    }
+    return length;
+}
+
+static
+int mtcr_driver_mclose(mfile *mf)
+{
+    if (mf) {
+        if (mf->ptr) {
+            munmap(mf->ptr, MTCR_MAP_SIZE);
+        }
+        if (mf->fd > 0) {
+            close(mf->fd);
+        }
+        if (mf->res_fd > 0) {
+            close(mf->res_fd);
+        }
+    }
+    return 0;
+}
+
+static
+int mtcr_driver_open(mfile *mf, MType dev_type,
+        unsigned domain_p, unsigned bus_p, unsigned dev_p, unsigned func_p) {
+    int rc = 0;
+    ul_ctx_t *ctx = mf->ul_ctx;
+    char driver_cr_name[40];
+    char driver_conf_name[40];
+
+    sprintf(driver_cr_name, DRIVER_CR_NAME, domain_p, bus_p, dev_p, func_p);
+    sprintf(driver_conf_name, DRIVER_CONF_NAME, domain_p, bus_p, dev_p, func_p);
+
+
+    int cr_valid = 0;
+    ctx->connectx_flush = 0;
+    ctx->need_flush     = 0;
+    ctx->via_driver     = 1;
+    if (dev_type == MST_DRIVER_CR) {
+        mf->fd = open(driver_cr_name, O_RDWR | O_SYNC);
+        //Failed to open cr, go to conf
+        if (mf->fd < 0) {
+            goto end;
+        }
+
+        mf->tp = MST_PCI;
+
+        ctx->mread4        = mtcr_driver_cr_mread4;
+        ctx->mwrite4       = mtcr_driver_cr_mwrite4;
+        ctx->mread4_block  = driver_mread_chunk_as_multi_mread4;
+        ctx->mwrite4_block = driver_mwrite_chunk_as_multi_mwrite4;
+        ctx->mclose        = mtcr_driver_mclose;
+
+        mf->ptr             = NULL;
+
+        unsigned int slot_num;
+        rc = ioctl(mf->fd, PCI_CONNECTX_WA, &slot_num);
+        if (rc < 0) {
+            goto end;
+        }
+
+        mf->connectx_wa_slot = CONNECTX_WA_BASE + 4*slot_num;
+        cr_valid = 1;
+        rc = mtcr_check_signature(mf);
+
+        init_dev_info_ul(mf, driver_cr_name, domain_p, bus_p, dev_p, func_p);
+    }
+
+end:
+    if (rc) {
+        mtcr_driver_mclose(mf);
+    } else if (cr_valid && driver_conf_name != NULL) {
+        mf->res_fd = open(driver_conf_name, O_RDWR | O_SYNC);
+        if (mf->res_fd < 0) {
+            return -1;
+        }
+        mf->res_tp             = MST_PCICONF;
+        ctx->res_mread4        = mtcr_driver_mread4;
+        ctx->res_mwrite4       = mtcr_driver_mwrite4;
+        ctx->res_mread4_block  = driver_mread_chunk_as_multi_mread4;
+        ctx->res_mwrite4_block = driver_mwrite_chunk_as_multi_mwrite4;
+    }
+
+    if (!cr_valid && driver_conf_name != NULL) {
+        rc = 0;
+        mf->fd = open(driver_conf_name, O_RDWR | O_SYNC);
+        if (mf->fd < 0) {
+            return -1;
+        }
+        mf->tp = MST_PCICONF;
+        ctx->mread4        = mtcr_driver_mread4;
+        ctx->mwrite4       = mtcr_driver_mwrite4;
+        ctx->mread4_block  = driver_mread_chunk_as_multi_mread4;
+        ctx->mwrite4_block = driver_mwrite_chunk_as_multi_mwrite4;
+        ctx->mclose        = mtcr_driver_mclose;
+        init_dev_info_ul(mf, driver_conf_name, domain_p, bus_p, dev_p, func_p);
     }
 
     return rc;
@@ -1088,6 +1316,8 @@ static MType mtcr_parse_name(const char* name, int *force, unsigned *domain_p, u
     char config[] = "/config";
     char resource0[] = "/resource0";
     char procbuspci[] = "/proc/bus/pci/";
+    char driver_cr_name[40];
+    char driver_conf_name[40];
 
     unsigned len = strlen(name);
     unsigned tmp;
@@ -1180,6 +1410,19 @@ name_parsed:
     *dev_p = my_dev;
     *func_p = my_func;
     *force = 0;
+
+    sprintf(driver_conf_name, DRIVER_CONF_NAME, my_domain, my_bus, my_dev, my_func);
+    sprintf(driver_cr_name,   DRIVER_CR_NAME,   my_domain, my_bus, my_dev, my_func);
+
+    if (access (driver_cr_name, F_OK) != -1) {
+        return MST_DRIVER_CR;
+    }
+
+    if (access (driver_conf_name, F_OK) != -1) {
+        return MST_DRIVER_CONF;
+    }
+
+
 #ifdef __aarch64__
     // on ARM processors MMAP not supported
     (void)force_config;
@@ -1855,6 +2098,13 @@ mfile *mopen_ul_int(const char *name, u_int32_t adv_opt)
     mf->res_fd = -1;
     mf->mpci_change = mpci_change_ul;
     dev_type = mtcr_parse_name(name, &force, &domain, &bus, &dev, &func);
+    if (dev_type == MST_DRIVER_CR || dev_type == MST_DRIVER_CONF) {
+        rc = mtcr_driver_open(mf, dev_type, domain, bus, dev, func);
+        if (rc) {
+            return NULL;
+        }
+        return mf;
+    }
     if (dev_type == MST_ERROR) {
         goto open_failed;
     }
@@ -2554,6 +2804,9 @@ int mvpd_read4_ul_int(mfile *mf, unsigned int offset, u_int8_t value[4]){
     if (!(mf->dinfo)) {
         errno = EPERM;
         return -1;
+    }
+    if (((ul_ctx_t*)mf->ul_ctx)->via_driver) {
+        return mst_driver_vpd_read4(mf, offset, value);
     }
     u_int16_t domain = (mf->dinfo)->pci.domain;
     u_int8_t  bus = (mf->dinfo)->pci.bus;
