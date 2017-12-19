@@ -65,8 +65,9 @@ AC_ARG_ENABLE(fw-mgr,
              [enable_fw_mgr="no"])
 AC_MSG_RESULT($enable_fw_mgr)
 if test "x$enable_fw_mgr" = "xyes"; then
-    AC_CHECK_HEADER(zlib.h,,AC_MSG_ERROR([cannot find zlib.h . this header is needed for compiling fw manager tool]))
     AC_CHECK_HEADER(curl/curl.h,,AC_MSG_ERROR([cannot find curl/curl.h . this header is needed for compiling fw manager tool]))
+    AC_CHECK_HEADER(zlib.h,,AC_MSG_ERROR([cannot find zlib.h . this header is needed for compiling fw manager tool]))
+    AC_CHECK_HEADER(lzma.h,,AC_MSG_ERROR([cannot find lzma.h . this header is needed for compiling fw manager tool]))
     AC_CHECK_LIB(z, uncompress,, AC_MSG_ERROR([cannot find zlib uncompress() function.]))
     AC_CHECK_LIB(boost_regex, regcompA,, AC_MSG_ERROR([cannot find boost_regex regcompA() function. Try re-installing the library...]))
     CURL_INC_DIR=/usr/include/curl/
