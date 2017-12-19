@@ -31,7 +31,7 @@
  */
 
 #include <linux/highmem.h>
-
+#include <linux/sched.h>
 #include "mst_kernel.h"
 
 
