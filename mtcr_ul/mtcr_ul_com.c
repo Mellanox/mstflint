@@ -2802,7 +2802,7 @@ int mvpd_read4_ul_int(mfile *mf, unsigned int offset, u_int8_t value[4]){
         errno = EPERM;
         return -1;
     }
-    if (((ul_ctx_t*)mf->ul_ctx)->via_driver) {
+    if ((ul_ctx_t*)mf->ul_ctx && ((ul_ctx_t*)mf->ul_ctx)->via_driver) {
         return mst_driver_vpd_read4(mf, offset, value);
     }
     u_int16_t domain = (mf->dinfo)->pci.domain;
