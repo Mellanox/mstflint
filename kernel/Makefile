@@ -43,8 +43,8 @@ ifneq ($(shell if (echo $(KPVER) | grep -qE 'uek'); then \
 override WITH_MAKE_PARAMS += ctf-dir=$(CWD)/.ctf
 endif
 
-obj-m += mstflint_driver.o
-mstflint_driver-objs += mst_vpd.o mst_main.o
+obj-m += mstflint_access.o
+mstflint_access-objs += mst_vpd.o mst_main.o
 
 all:
 	make -C $(KSRC) M=$(PWD) CONFIG_CTF= CONFIG_CC_STACKPROTECTOR_STRONG= $(WITH_MAKE_PARAMS) modules
