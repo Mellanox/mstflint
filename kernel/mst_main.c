@@ -329,8 +329,9 @@ static int mst_ioctl(struct inode *inode, struct file *file,
 			/* read from hardware */
 			out = ioread32(dev->hw_addr + readst.offset);
 
-			/* endianness conversion */
-			be32_to_cpus(&out);
+			/* endianness conversion - we noticed that we need to swap always */
+                        be32_to_cpus(&out);
+                        out = cpu_to_le32(out);
 			break;
 		}
 
@@ -381,8 +382,9 @@ static int mst_ioctl(struct inode *inode, struct file *file,
 				goto fin;
 			}
 
-			/* endianness conversion */
+			/* endianness conversion - we noticed that we need to swap always */
 			cpu_to_be32s(&(writest.data));
+                        writest.data = cpu_to_le32(writest.data);
 
 			/* write to hardware */
 			iowrite32(writest.data, dev->hw_addr + writest.offset);
@@ -670,8 +672,9 @@ static int mst_ioctl(struct inode *inode, struct file *file,
 			goto fin;
 		}
 
-		/* retrieve to user */
+		/* retrieve to user - we noticed that we need to swap always */
 		dataout = &((struct mst_vpd_read4_st *)user_buf)->data;
+                out = le32_to_cpu(out);
 		if (copy_to_user(dataout, &out, sizeof(u32))) {
 			res = -EFAULT;
 			goto fin;
@@ -698,7 +701,7 @@ static int mst_ioctl(struct inode *inode, struct file *file,
 			res = -EFAULT;
 			goto fin;
 		}
-
+                writest.data = le32_to_cpu(writest.data);
 		res = pci_write4_vpd(dev, writest.timeout, writest.offset, writest.data);
 		if (res) {
 			goto fin;
