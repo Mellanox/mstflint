@@ -22,7 +22,7 @@
 %global _name kernel-mstflint
 %endif
 
-%{!?version: %global version 4.9.0}
+%{!?version: %global version 4.8.0}
 %{!?_release: %global _release 1}
 %global _kmp_rel %{_release}%{?_kmp_build_num}%{?_dist}
 
@@ -138,7 +138,7 @@ for flavor in %{flavors_to_build}; do
 	export KSRC=%{kernel_source $flavor}
 	export KVERSION=%{kernel_release $KSRC}
 	install -d $INSTALL_MOD_PATH/lib/modules/$KVERSION/%{install_mod_dir}
-	cp $PWD/obj/$flavor/mstflint_driver.ko $INSTALL_MOD_PATH/lib/modules/$KVERSION/%{install_mod_dir}/
+	cp $PWD/obj/$flavor/mstflint_access.ko $INSTALL_MOD_PATH/lib/modules/$KVERSION/%{install_mod_dir}/
 done
 
 %if "%{_vendor}" == "redhat"
@@ -146,7 +146,7 @@ done
 find %{buildroot} -type f -name \*.ko -exec %{__chmod} u+x \{\} \;
 %if "%{KMP}" == "1"
 %{__install} -d $RPM_BUILD_ROOT%{_sysconfdir}/depmod.d/
-echo "override mstflint_driver * weak-updates/mstflint" > $RPM_BUILD_ROOT%{_sysconfdir}/depmod.d/kernel-mstflint.conf
+echo "override mstflint_access * weak-updates/mstflint" > $RPM_BUILD_ROOT%{_sysconfdir}/depmod.d/kernel-mstflint.conf
 %endif
 %else
 find %{buildroot} -type f -name \*.ko -exec %{__strip} -p --strip-debug --discard-locals -R .comment -R .note \{\} \;
