@@ -1534,6 +1534,20 @@ FlintStatus BurnSubCommand::burnFs3()
         }
     }
 
+    //Check if we need to shift 8MB to 0x0
+    if (_fwType == FIT_FS3 || _fwType == FIT_FS4) {
+        if (_fwOps->FwCheckIf8MBShiftingNeeded(_imgOps, _burnParams)) {
+            printf("\n    Shifting between different image partition sizes requires current image "
+                    "to be re-programmed on the flash."
+                   "\n    Once the operation is done, "
+                    "reload FW and run the command again.\n");
+            if (!askUser()) {
+                return FLINT_FAILED;
+            }
+            _burnParams.shift8MB = true;
+        }
+    }
+
     // Check if alignment is needed in CX5
     if (_fwType == FIT_FS4 &&
         (_burnParams.burnFailsafe ||

@@ -313,6 +313,8 @@ bool Fs3Operations::GetImageInfo(u_int8_t *buff)
                                          ((image_info.debug_fw  == 1) ? SMM_DEBUG_FW  : 0) |
                                          ((image_info.signed_fw == 1) ? SMM_SIGNED_FW : 0) |
                                          ((image_info.secure_fw == 1) ? SMM_SECURE_FW : 0));
+
+    _fs3ImgInfo.runFromAny = image_info.image_size.run_from_any;
     return true;
 }
 
@@ -652,10 +654,15 @@ bool Fs3Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_ito
     // Put info
     _fwImgInfo.imgStart = image_start;
     // read the chunk size from the image header
-    _fwImgInfo.cntxLog2ChunkSize = _maxImgLog2Size;
+    if (_maxImgLog2Size == 0x16 && _fwImgInfo.imgStart == 0x800000) {
+        _fwImgInfo.cntxLog2ChunkSize = 0x17;
+    } else {
+        _fwImgInfo.cntxLog2ChunkSize = _maxImgLog2Size;
+    }
     _fwImgInfo.ext_info.is_failsafe        = true;
     _fwImgInfo.actuallyFailsafe  = true;
     _fwImgInfo.magicPatternFound = 1;
+
     _ioAccess->set_address_convertor(_fwImgInfo.cntxLog2ChunkSize, _fwImgInfo.imgStart != 0);
 
 
@@ -838,7 +845,7 @@ bool Fs3Operations::CheckFs3ImgSize(Fs3Operations& imageOps, bool useImageDevDat
      * if flash size is greater than 2^(_maxImgLogSize+1) than device sections and first/second image dont share same area
      * */
     Fs3Operations& ops = useImageDevData ? imageOps : *this;
-    u_int32_t maxFsImgSize = 1 << ops._maxImgLog2Size;
+    u_int32_t maxFsImgSize = 1 << imageOps._maxImgLog2Size;
     u_int32_t smallestAbsAddrSlot0 = maxFsImgSize;
     u_int32_t smallestAbsAddrSlot1 = 2*maxFsImgSize;
     u_int32_t maxImgDataSizeSlot0, maxImgDataSizeSlot1;
@@ -871,11 +878,26 @@ bool Fs3Operations::CheckFs3ImgSize(Fs3Operations& imageOps, bool useImageDevDat
 #define SUPPORTS_ISFU(chip_type) \
     (chip_type == CT_CONNECT_IB || chip_type == CT_CONNECTX4 || chip_type == CT_CONNECTX4_LX || chip_type == CT_CONNECTX5 || chip_type == CT_CONNECTX6 || chip_type == CT_BLUEFIELD)
 
+u_int32_t Fs3Operations::getNewImageStartAddress(Fs3Operations &imageOps, bool isBurnFailSafe)
+{
+    u_int32_t newImageStartAddress;
+    if ((_fwImgInfo.imgStart != 0 && imageOps._fwImgInfo.cntxLog2ChunkSize != 0x17) ||
+            (_fwImgInfo.imgStart == 0x800000 && imageOps._fwImgInfo.cntxLog2ChunkSize == 0x17) ||
+            (!isBurnFailSafe && ((Flash*)_ioAccess)->get_ignore_cache_replacment())) {
+        // if the burn is not failsafe and with -ocr, the image is burnt at 0x0
+        newImageStartAddress = 0;
+    } else if (_fwImgInfo.cntxLog2ChunkSize == 0x17) {
+        newImageStartAddress = 0x800000;
+    } else {
+        newImageStartAddress = (1 << imageOps._fwImgInfo.cntxLog2ChunkSize);
+    }
+    return newImageStartAddress;
+}
+
 bool Fs3Operations::BurnFs3Image(Fs3Operations &imageOps,
                                   ExtBurnParams& burnParams)
 {
-    u_int8_t  is_curr_image_in_odd_chunks;
-    u_int32_t new_image_start;
+    u_int8_t is_curr_image_in_odd_chunks;
     u_int32_t total_img_size = 0;
     u_int32_t sector_size = FS3_DEFAULT_SECTOR_SIZE;
     u_int8_t imageSignature[16];
@@ -883,19 +905,22 @@ bool Fs3Operations::BurnFs3Image(Fs3Operations &imageOps,
     FImage   *fim   = (FImage*)(imageOps._ioAccess);
     u_int8_t *data8;
 
-    if (_fwImgInfo.imgStart != 0 || (!burnParams.burnFailsafe && ((Flash*)_ioAccess)->get_ignore_cache_replacment())) {
-        // if the burn is not failsafe and with -ocr, the image is burnt at 0x0
-        is_curr_image_in_odd_chunks = 1;
-        new_image_start = 0;
-    } else {
-        is_curr_image_in_odd_chunks = 0;
-        new_image_start = (1 << imageOps._fwImgInfo.cntxLog2ChunkSize);
-    }
+   if (_fwImgInfo.imgStart != 0 || (!burnParams.burnFailsafe && ((Flash*)_ioAccess)->get_ignore_cache_replacment())) {
+       is_curr_image_in_odd_chunks = 1;
+   } else {
+       is_curr_image_in_odd_chunks = 0;
+   }
+
+    u_int32_t new_image_start = getNewImageStartAddress(imageOps, burnParams.burnFailsafe);
     /*printf("-D- new_image_start = %#x, is_curr_image_in_odd_chunks = %#x\n", new_image_start, is_curr_image_in_odd_chunks);*/
 
+    if (new_image_start == 0x800000) {
+        f->set_address_convertor(0x17, 1);
+    } else {
+        // take chunk size from image in case of a non failsafe burn (in any case they should be the same)
+        f->set_address_convertor(imageOps._fwImgInfo.cntxLog2ChunkSize, !is_curr_image_in_odd_chunks);
+    }
 
-    // take chunk size from image in case of a non failsafe burn (in any case they should be the same)
-    f->set_address_convertor(imageOps._fwImgInfo.cntxLog2ChunkSize, !is_curr_image_in_odd_chunks);
 
     // check max image size
     bool useImageDevData =  !burnParams.burnFailsafe && burnParams.useImgDevData;
@@ -1005,6 +1030,24 @@ bool Fs3Operations::BurnFs3Image(Fs3Operations &imageOps,
             new_image_start, is_curr_image_in_odd_chunks);
 }
 
+bool Fs3Operations::CheckAndDealWithChunkSizes(u_int32_t cntxLog2ChunkSize, u_int32_t imageCntxLog2ChunkSize)
+{
+    if (cntxLog2ChunkSize > 0x17) {
+        return errmsg("Unsupported Device partition size 0x%x", cntxLog2ChunkSize);
+    }
+    if (imageCntxLog2ChunkSize > 0x17) {
+        return errmsg("Unsupported Image partition size 0x%x", imageCntxLog2ChunkSize);
+    }
+    if (cntxLog2ChunkSize != imageCntxLog2ChunkSize) {
+        if (((cntxLog2ChunkSize != 0x16) && (cntxLog2ChunkSize != 0x17)) ||
+                ((imageCntxLog2ChunkSize != 0x16) && (imageCntxLog2ChunkSize != 0x17))) {
+            return errmsg("Device and Image partition size differ(0x%x/0x%x), use non failsafe burn flow.",
+                    cntxLog2ChunkSize, imageCntxLog2ChunkSize);
+        }
+    }
+    return true;
+}
+
 bool Fs3Operations::FsBurnAux(FwOperations *imgops, ExtBurnParams& burnParams)
 {
     Fs3Operations& imageOps = * ((Fs3Operations *) imgops);
@@ -1074,9 +1117,8 @@ bool Fs3Operations::FsBurnAux(FwOperations *imgops, ExtBurnParams& burnParams)
 
     if (burnParams.burnFailsafe) {
         // Check image and device chunk sizes are Ok
-        if (_fwImgInfo.cntxLog2ChunkSize != imageOps._fwImgInfo.cntxLog2ChunkSize) {
-            return errmsg("Device and Image partition size differ(0x%x/0x%x), use non failsafe burn flow.",
-                    _fwImgInfo.cntxLog2ChunkSize, imageOps._fwImgInfo.cntxLog2ChunkSize);
+        if (!CheckAndDealWithChunkSizes(_fwImgInfo.cntxLog2ChunkSize, imageOps._fwImgInfo.cntxLog2ChunkSize)) {
+            return false;
         }
 
         // Check if the burnt FW version is OK
@@ -1132,6 +1174,7 @@ bool Fs3Operations::FsBurnAux(FwOperations *imgops, ExtBurnParams& burnParams)
             }
         }
     }
+
     return BurnFs3Image(imageOps, burnParams);
 }
 
@@ -1145,8 +1188,40 @@ bool Fs3Operations::FwBurn(FwOperations *imageOps, u_int8_t forceVersion, Progre
     burnParams.ignoreVersionCheck = forceVersion;
     burnParams.progressFunc = progressFunc;
 
-    return FsBurnAux(imageOps, burnParams);
+    return FwBurnAdvanced(imageOps, burnParams);
 
+}
+
+bool Fs3Operations::ReBurnCurrentImage(ProgressCallBack progressFunc)
+{
+    if (!FsIntQueryAux(true, false)) {
+        return false;
+    }
+
+    const unsigned int size = (_ioAccess->get_size());
+    vector<u_int8_t> newImageData(size);
+    _imageCache.get(newImageData, 0x0, size);
+
+    FwOperations* newImageOps;
+    ExtBurnParams newBurnParams;
+
+    if (!CreateBasicImageFromData((u_int32_t*)newImageData.data(),
+            size, &newImageOps)) {
+        return false;
+    }
+
+    newBurnParams.updateParamsForBasicImage(progressFunc);
+
+    if (!FsBurnAux(newImageOps, newBurnParams)) {
+        newImageOps->FwCleanUp();
+        delete newImageOps;
+        return errmsg("Failed to re-burn image after modify: %s", err());
+    }
+
+    newImageOps->FwCleanUp();
+    delete newImageOps;
+
+    return true;
 }
 
 bool Fs3Operations::FwBurnAdvanced(FwOperations *imageOps, ExtBurnParams& burnParams)
@@ -1154,6 +1229,18 @@ bool Fs3Operations::FwBurnAdvanced(FwOperations *imageOps, ExtBurnParams& burnPa
     if (imageOps == NULL) {
         return errmsg("bad parameter is given to FwBurnAdvanced\n");
     }
+
+    if (FwCheckIf8MBShiftingNeeded(imageOps, burnParams)) {
+        if (burnParams.shift8MB) {
+            if (!ReBurnCurrentImage(burnParams.progressFunc)) {
+                return false;
+            }
+            return true;
+        } else {
+            return errmsg("Cannot Burn given FW, need to reburn the same Firmware to the second flash partition");
+        }
+    }
+
     return FsBurnAux(imageOps, burnParams);
 }
 
@@ -1316,7 +1403,16 @@ bool Fs3Operations::FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc,
     return true;
 }
 
-
+bool Fs3Operations::FwCheckIf8MBShiftingNeeded(FwOperations* imageOps,
+        const ExtBurnParams& burnParams)
+{
+    u_int32_t new_image_start = getNewImageStartAddress(*(Fs3Operations*)imageOps,
+            burnParams.burnFailsafe);
+    bool res = (new_image_start == 0x800000 &&
+                    !(*(Fs3Operations*)imageOps)._fs3ImgInfo.runFromAny &&
+                    (*(Fs3Operations*)imageOps)._fwImgInfo.cntxLog2ChunkSize == 0x16);
+    return res;
+}
 
 bool Fs3Operations::FwSetVPD(char* vpdFileStr, PrintCallBack callBackFunc)
 {
@@ -2986,7 +3082,13 @@ bool Fs3Operations::DoAfterBurnJobs(const u_int32_t magic_patter[],
             }
         } else {
             // invalidate previous signature
-            f->set_address_convertor(imageOps._fwImgInfo.cntxLog2ChunkSize, is_curr_image_in_odd_chunks);
+            if (_fwImgInfo.imgStart == 0x800000) {
+                f->set_address_convertor(0x17, is_curr_image_in_odd_chunks);
+            } else if(_fwImgInfo.imgStart == 0x400000) {
+                f->set_address_convertor(_fwImgInfo.cntxLog2ChunkSize, 1/*is_curr_image_in_odd_chunks*/);
+            } else {
+                f->set_address_convertor(imageOps._fwImgInfo.cntxLog2ChunkSize, is_curr_image_in_odd_chunks);
+            }
             if (!f->write(0, &zeroes, sizeof(zeroes), true)) {
                 return errmsg(MLXFW_FLASH_WRITE_ERR, "Failed to invalidate old fw signature: %s", f->err());
             }

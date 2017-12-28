@@ -398,7 +398,8 @@ const u_int32_t FwOperations::_cntx_image_start_pos[FwOperations::CNTX_START_POS
     0x80000,
     0x100000,
     0x200000,
-    0x400000
+    0x400000,
+    0x800000
 };
 
 bool FwOperations::FindMagicPattern(FBase* ioAccess, u_int32_t addr,
@@ -1716,9 +1717,8 @@ bool FwOperations::FwWriteBlock(u_int32_t addr, std::vector<u_int8_t> dataVec, P
     return true;
 };
 
-
-bool FwOperations::FwBurnData(u_int32_t *data, u_int32_t dataSize, ProgressCallBack progressFunc) {
-    FwOperations* newImgOps;
+bool FwOperations::CreateBasicImageFromData(u_int32_t *data, u_int32_t dataSize,
+        FwOperations** newImgOps) {
     fwOpsParams imgOpsParams;
     memset(&imgOpsParams, 0, sizeof(imgOpsParams));
     char errBuff[1024] = {0};
@@ -1730,31 +1730,41 @@ bool FwOperations::FwBurnData(u_int32_t *data, u_int32_t dataSize, ProgressCallB
     imgOpsParams.errBuffSize = 1024;
     imgOpsParams.hndlType = FHT_FW_BUFF;
 
-    newImgOps = FwOperationsCreate(imgOpsParams);
-    if (newImgOps == NULL) {
-        return errmsg("Internal error: Failed to create modified image: %s", errBuff);
+    *newImgOps = FwOperationsCreate(imgOpsParams);
+    if (*newImgOps == NULL) {
+        return errmsg("Internal error: Failed to create modified image: %s",
+                errBuff);
     }
-    if (!newImgOps->FwVerify((VerifyCallBack)NULL)) {
-    	errmsg("Internal error: Modified image failed to verify: %s", newImgOps->err());
-        newImgOps->FwCleanUp();
-        delete newImgOps;
+    if (!(*newImgOps)->FwVerify((VerifyCallBack)NULL)) {
+        errmsg("Internal error: Modified image failed to verify: %s",
+                (*newImgOps)->err());
+        (*newImgOps)->FwCleanUp();
+        delete (*newImgOps);
         return false;
     }
 
-    ExtBurnParams burnParams = ExtBurnParams();
-    burnParams.ignoreVersionCheck = true;
-    burnParams.progressFunc = progressFunc;
-    burnParams.useImagePs = true;
-    burnParams.useImageGuids = true;
-    burnParams.burnRomOptions = ExtBurnParams::BRO_ONLY_FROM_IMG;
+    return true;
+}
+
+bool FwOperations::FwBurnData(u_int32_t *data, u_int32_t dataSize, ProgressCallBack progressFunc) {
+    FwOperations* newImgOps;
+    ExtBurnParams burnParams;
+
+    if (!CreateBasicImageFromData(data, dataSize, &newImgOps)) {
+        return false;
+    }
+
+    burnParams.updateParamsForBasicImage(progressFunc);
 
     if (!FwBurnAdvanced(newImgOps, burnParams)) {
         newImgOps->FwCleanUp();
         delete newImgOps;
         return errmsg("Failed to re-burn image after modify: %s", err());
     }
+
     newImgOps->FwCleanUp();
     delete newImgOps;
+
     return true;
 }
 

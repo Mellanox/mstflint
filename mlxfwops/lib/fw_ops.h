@@ -133,6 +133,10 @@ public:
     virtual bool FwQueryTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer, bool queryRunning=false);
     virtual bool FwResetTimeStamp();
 
+    virtual bool FwCheckIf8MBShiftingNeeded(FwOperations *, const ExtBurnParams&) {return false;}
+
+    bool CreateBasicImageFromData(u_int32_t *data, u_int32_t dataSize, FwOperations** newImgOps);
+
     virtual bool CheckIfAlignmentIsNeeded(FwOperations *) { return false; }
 
     void FwCleanUp();
@@ -209,6 +213,7 @@ public:
         bool useImgDevData; // FS3 image only - take device data sections from image (valid only if burnFailsafe== false)
         bool useDevImgInfo; // FS3 image only - preserve select fields of image_info section on the device when burning.
         BurnRomOption burnRomOptions;
+        bool shift8MB;
 
         //callback fun
         ProgressCallBack progressFunc;
@@ -224,8 +229,17 @@ public:
                         vsdSpecified(false),blankGuids(false), burnFailsafe(true), allowPsidChange(false),
                         useImagePs(false), useImageGuids(false), singleImageBurn(true), noDevidCheck(false),
                         skipCiReq(false), ignoreVersionCheck(false), useImgDevData(false), useDevImgInfo(false),
-                        burnRomOptions(BRO_DEFAULT), progressFunc((ProgressCallBack)NULL),
-                        progressFuncEx((ProgressCallBackEx)NULL), progressUserData(NULL), userVsd((char*)NULL){ ProgressFuncAdv.func = (f_prog_func_adv)NULL; ProgressFuncAdv.opaque = NULL;}
+                        burnRomOptions(BRO_DEFAULT), shift8MB(false), progressFunc((ProgressCallBack)NULL),
+                        progressFuncEx((ProgressCallBackEx)NULL), progressUserData(NULL), userVsd((char*)NULL)
+                        { ProgressFuncAdv.func = (f_prog_func_adv)NULL; ProgressFuncAdv.opaque = NULL;}
+
+        void updateParamsForBasicImage(ProgressCallBack progressFunc) {
+            ignoreVersionCheck = true;
+            this->progressFunc = progressFunc;
+            useImagePs = true;
+            useImageGuids = true;
+            burnRomOptions = ExtBurnParams::BRO_ONLY_FROM_IMG;
+        }
         };
 
     class ExtVerifyParams {
@@ -306,7 +320,7 @@ protected:
     };
     enum {
         OLD_CNTX_START_POS_SIZE = 6,
-        CNTX_START_POS_SIZE = 8
+        CNTX_START_POS_SIZE = 9
     };
     enum {
         MAX_SW_DEVICES_PER_HW=32

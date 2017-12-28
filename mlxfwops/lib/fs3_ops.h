@@ -109,6 +109,8 @@ public:
     virtual bool FwQueryTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer, bool queryRunning=false);
     virtual bool FwResetTimeStamp();
 
+    bool FwCheckIf8MBShiftingNeeded(FwOperations* imageOps, const ExtBurnParams& burnParams);
+
 protected:
     #define ITOC_ASCII 0x49544f43
     #define TOC_RAND1  0x04081516
@@ -122,6 +124,7 @@ protected:
     #define DEV_INFO "DEV_INFO"
     #define UNKNOWN_SECTION "UNKNOWN"
 
+    u_int32_t getNewImageStartAddress(Fs3Operations &imageOps, bool isBurnFailSafe);
     virtual bool FsBurnAux(FwOperations *imageOps, ExtBurnParams& burnParams);
     bool DumpFs3CRCCheck(u_int8_t sect_type, u_int32_t sect_addr, u_int32_t sect_size, u_int32_t crc_act, u_int32_t crc_exp,
                 bool ignore_crc = false, VerifyCallBack verifyCallBackFunc = (VerifyCallBack)NULL);
@@ -157,6 +160,9 @@ protected:
     bool Fs3UpdateForbiddenVersionsSection(unsigned int size, char *publicKeys,
                                    std::vector<u_int8_t>  &newSectionData);
 
+    bool CheckAndDealWithChunkSizes(u_int32_t cntxLog2ChunkSize, u_int32_t imageCntxLog2ChunkSize);
+    bool ReBurnCurrentImage(ProgressCallBack progressFunc);
+
     struct toc_info {
         u_int32_t entry_addr;
         struct cibfw_itoc_entry toc_entry;
@@ -173,6 +179,7 @@ protected:
         u_int32_t       itocAddr;
         u_int32_t       smallestAbsAddr;
         u_int32_t       sizeOfImgData;
+        bool            runFromAny;
     };
 
     static const SectionInfo _fs3SectionsInfoArr[];

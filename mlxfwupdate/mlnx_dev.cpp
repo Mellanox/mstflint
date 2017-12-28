@@ -476,7 +476,8 @@ bool MlnxDev::openImg(u_int32_t * fileBuffer, u_int32_t bufferSize)
     return true;
 }
 
-int MlnxDev::preBurn(string mfa_file, f_prog_func prog_cb, bool burnFailsafe, bool& isAlignmentNeeded, f_prog_func_adv stage_prog)
+int MlnxDev::preBurn(string mfa_file, f_prog_func prog_cb, bool burnFailsafe,
+        bool& isAlignmentNeeded, bool& isShifting8MBNeeded, f_prog_func_adv stage_prog)
 {
     string cmd;
     int rc;
@@ -541,6 +542,13 @@ int MlnxDev::preBurn(string mfa_file, f_prog_func prog_cb, bool burnFailsafe, bo
     _burnParams.ProgressFuncAdv.func = stage_prog;
     _burnParams.ProgressFuncAdv.opaque = &_unknowProgress;
     _burnParams.ignoreVersionCheck = true;
+
+    //Check if we need to shift 8MB to 0x0
+    if (_devFwOps->FwType() == FIT_FS3 || _devFwOps->FwType() == FIT_FS4) {
+        if (_devFwOps->FwCheckIf8MBShiftingNeeded(_imgFwOps, _burnParams)) {
+            isShifting8MBNeeded = true;
+        }
+    }
 
     // Check if alignment is needed in CX5
     if (_devFwOps->FwType() == FIT_FS4 &&
