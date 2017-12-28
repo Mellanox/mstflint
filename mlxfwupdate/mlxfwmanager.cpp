@@ -465,7 +465,9 @@ int mainEntry(int argc, char* argv[])
         }
         bool imageWasCached = false;
         bool isAlignmentNeeded = false;
-        rc0 = devs[i]->preBurn(mfa_file, progressCB, cmd_params.burnFailsafe, isAlignmentNeeded, advProgressCB);
+        bool isShifting8MBNeeded = false;
+        rc0 = devs[i]->preBurn(mfa_file, progressCB, cmd_params.burnFailsafe,
+                isAlignmentNeeded, isShifting8MBNeeded, advProgressCB);
         if (rc0) {
             if (abort_request) {
                 print_out("\b\b\b\bInterrupted\n");
@@ -476,6 +478,17 @@ int mainEntry(int argc, char* argv[])
                 print_out("\b\b\b\bFail : %s \n", devs[i]->getLastErrMsg().c_str());
             }
         } else {
+            if (isShifting8MBNeeded) {
+                print_out("\nShifting between different image partition sizes requires "
+                        "current image to be re-programmed on the flash.\nOnce the operation is done, "
+                        "reload FW and run the command again.\n");
+                int answer = prompt("Perform update? [y/N]: ", cmd_params.yes_no_);
+                if (!answer) {
+                    print_out("No updates performed\n");
+                    goto clean_up;
+                }
+                devs[i]->setShifting8MBInBurnParams(true);
+            }
             if (isAlignmentNeeded) {
                 print_out("\nAn update is needed for the flash layout.\n");
                 int answer = prompt("Perform update? [y/N]: ", cmd_params.yes_no_);

@@ -28,10 +28,10 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- */
+ */ 
 
 /***
-         *** This file was generated at "2017-03-16 11:34:05"
+         *** This file was generated at "2018-01-07 08:13:17"
          *** by:
          ***    > /mswg/release/tools/a-me/last_stable/adabe_plugins/adb2c/adb2pack.py --input adb/cibfw/cibfw.adb --file-prefix cibfw --prefix cibfw_
          ***/
@@ -44,6 +44,47 @@ extern "C" {
 #endif
 
 #include "adb_to_c_utils.h"
+/* Description -   */
+/* Size in bytes - 8 */
+struct cibfw_uint64 {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0x0.0 - 0x4.31 */
+	 u_int64_t uint64;
+};
+
+/* Description -   */
+/* Size in bytes - 4 */
+struct cibfw_module_version {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0x0.0 - 0x0.7 */
+	 u_int8_t branch;
+	/* Description -  */
+	/* 0x0.8 - 0x0.19 */
+	 u_int16_t minor;
+	/* Description -  */
+	/* 0x0.20 - 0x0.31 */
+	 u_int16_t major;
+};
+
+/* Description -   */
+/* Size in bytes - 16 */
+struct cibfw_uid_entry {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Number of allocated UIDs in this entry */
+	/* 0x0.0 - 0x0.7 */
+	 u_int8_t num_allocated;
+	/* Description - Step size by which to derive the UIDs for this entry
+See struct description */
+	/* 0x0.8 - 0x0.15 */
+	 u_int8_t step;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - For MACs, the upper 16 bits in the 'hi' dword are reserved */
+	/* 0x8.0 - 0xc.31 */
+	 u_int64_t uid;
+};
+
 /* Description -   */
 /* Size in bytes - 16 */
 struct cibfw_FW_VERSION {
@@ -97,16 +138,204 @@ struct cibfw_TRIPPLE_VERSION {
 };
 
 /* Description -   */
+/* Size in bytes - 64 */
+struct cibfw_guids {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - UIDs (MACs and GUIDs) Allocation Entry.
+guids[0], is used for system GUID, node GUID and port GUID of port 0. guids[1], is used for port GUID of port 1.;/Multiple UIDs can be assigned to a single port, to be used for multiple virtual guests.
+
+Allocation Example:
+For a port GUID, if the
+    UID = 0x2c9030001000
+    num_allocated  = 4, 
+    step = 8
+
+Then the GUIDs for this port would be:
+    0x2c9030001000
+    0x2c9030001008
+    0x2c9030001010
+    0x2c9030001018 */
+	/* 0x0.0 - 0x1c.31 */
+	 struct cibfw_uid_entry guids[2];
+/*---------------- DWORD[8] (Offset 0x20) ----------------*/
+	/* Description -  */
+	/* 0x20.0 - 0x3c.31 */
+	 struct cibfw_uid_entry macs[2];
+};
+
+/* Description -   */
 /* Size in bytes - 8 */
 struct cibfw_image_size {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - log of next address in bytes to search for an image. Address in bytes is 2^log_step */
 	/* 0x0.0 - 0x0.7 */
 	 u_int8_t log_step;
+	/* Description - this image can run from any partition starting at address 0x0000000, 0x4000000, 0x800000. The code supports only two partitions. */
+	/* 0x0.31 - 0x0.31 */
+	 u_int8_t run_from_any;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - Max possible size in bytes of image. Image read / write should not occure beyond this address */
 	/* 0x4.0 - 0x4.31 */
 	 u_int32_t max_size;
+};
+
+/* Description -   */
+/* Size in bytes - 64 */
+struct cibfw_module_versions {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0x0.0 - 0x0.31 */
+	 struct cibfw_module_version core;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description -  */
+	/* 0x4.0 - 0x4.31 */
+	 struct cibfw_module_version phy;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description -  */
+	/* 0x8.0 - 0x8.31 */
+	 struct cibfw_module_version kernel;
+/*---------------- DWORD[3] (Offset 0xc) ----------------*/
+	/* Description -  */
+	/* 0xc.0 - 0xc.31 */
+	 struct cibfw_module_version iron_image;
+/*---------------- DWORD[4] (Offset 0x10) ----------------*/
+	/* Description -  */
+	/* 0x10.0 - 0x10.31 */
+	 struct cibfw_module_version host_management;
+/*---------------- DWORD[5] (Offset 0x14) ----------------*/
+	/* Description -  */
+	/* 0x14.0 - 0x14.31 */
+	 struct cibfw_module_version mad;
+};
+
+/* Description -   */
+/* Size in bytes - 16 */
+struct cibfw_operation_key {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0x0.0 - 0x0.15 */
+	 u_int16_t key_modifier;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description -  */
+	/* 0x8.0 - 0xc.31 */
+	 u_int64_t key;
+};
+
+/* Description -   */
+/* Size in bytes - 512 */
+struct cibfw_device_info {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0x0.0 - 0x0.31 */
+	 u_int32_t signature0;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description -  */
+	/* 0x4.0 - 0x4.31 */
+	 u_int32_t signature1;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description -  */
+	/* 0x8.0 - 0x8.31 */
+	 u_int32_t signature2;
+/*---------------- DWORD[3] (Offset 0xc) ----------------*/
+	/* Description -  */
+	/* 0xc.0 - 0xc.31 */
+	 u_int32_t signature3;
+/*---------------- DWORD[4] (Offset 0x10) ----------------*/
+	/* Description - Format version for this struct */
+	/* 0x10.0 - 0x10.7 */
+	 u_int8_t minor_version;
+	/* Description - Format version for this struct */
+	/* 0x10.8 - 0x10.16 */
+	 u_int16_t major_version;
+/*---------------- DWORD[8] (Offset 0x20) ----------------*/
+	/* Description -  */
+	/* 0x20.0 - 0x5c.31 */
+	 struct cibfw_guids guids;
+/*---------------- DWORD[27] (Offset 0x6c) ----------------*/
+	/* Description -  */
+	/* 0x6c.0 - 0x6c.15 */
+	 u_int16_t vsd_vendor_id;
+/*---------------- DWORD[28] (Offset 0x70) ----------------*/
+	/* Description -  */
+	/* 0x70.24 - 0x140.23 */
+	 char vsd[209];
+/*---------------- DWORD[88] (Offset 0x160) ----------------*/
+	/* Description -  */
+	/* 0x160.0 - 0x19c.31 */
+	 struct cibfw_operation_key keys[4];
+};
+
+/* Description -   */
+/* Size in bytes - 1024 */
+struct cibfw_image_info {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - The image can be updated using the MCC/MCDA commands */
+	/* 0x0.8 - 0x0.8 */
+	 u_int8_t mcc_en;
+	/* Description - This is a debug firmware */
+	/* 0x0.13 - 0x0.13 */
+	 u_int8_t debug_fw;
+	/* Description - [MCC/MCDA flow] if set, the SHA 256 digest is encrypted - enabled by default for secure_fw - cr-space not closed */
+	/* 0x0.14 - 0x0.14 */
+	 u_int8_t signed_fw;
+	/* Description - [MCC/MCDA flow] cr-space closed */
+	/* 0x0.15 - 0x0.15 */
+	 u_int8_t secure_fw;
+	/* Description - IMAGE_INFO section minor version */
+	/* 0x0.16 - 0x0.23 */
+	 u_int8_t minor_version;
+	/* Description - IMAGE_INFO section major version */
+	/* 0x0.24 - 0x0.31 */
+	 u_int8_t major_version;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description -  */
+	/* 0x4.0 - 0x10.31 */
+	 struct cibfw_FW_VERSION FW_VERSION;
+/*---------------- DWORD[5] (Offset 0x14) ----------------*/
+	/* Description -  */
+	/* 0x14.0 - 0x18.31 */
+	 struct cibfw_TRIPPLE_VERSION mic_version;
+/*---------------- DWORD[7] (Offset 0x1c) ----------------*/
+	/* Description -  */
+	/* 0x1c.16 - 0x1c.31 */
+	 u_int16_t pci_device_id;
+/*---------------- DWORD[9] (Offset 0x24) ----------------*/
+	/* Description -  */
+	/* 0x24.24 - 0x34.23 */
+	 char psid[17];
+/*---------------- DWORD[13] (Offset 0x34) ----------------*/
+	/* Description -  */
+	/* 0x34.0 - 0x34.15 */
+	 u_int16_t vsd_vendor_id;
+/*---------------- DWORD[14] (Offset 0x38) ----------------*/
+	/* Description -  */
+	/* 0x38.24 - 0x108.23 */
+	 char vsd[209];
+/*---------------- DWORD[66] (Offset 0x108) ----------------*/
+	/* Description - image size parameters */
+	/* 0x108.0 - 0x10c.31 */
+	 struct cibfw_image_size image_size;
+/*---------------- DWORD[70] (Offset 0x118) ----------------*/
+	/* Description - HW device(s) supported by this FW image.
+0 means invalid entry.
+For Golan A0, first entry should be 0x1ff
+ */
+	/* 0x118.0 - 0x124.31 */
+	 u_int32_t supported_hw_id[4];
+/*---------------- DWORD[74] (Offset 0x128) ----------------*/
+	/* Description -  */
+	/* 0x128.0 - 0x128.31 */
+	 u_int32_t ini_file_num;
+/*---------------- DWORD[112] (Offset 0x1c0) ----------------*/
+	/* Description - Product Version is the unified version of the FW and expansion ROM.
+Format is defined by the packager.
+When set to a non-empty string the FW update tool burns the image as a monolythic entity and refuses to update rom only or FW only. */
+	/* 0x1c0.24 - 0x1d0.23 */
+	 char prod_ver[17];
+/*---------------- DWORD[192] (Offset 0x300) ----------------*/
+	/* Description -  */
+	/* 0x300.0 - 0x33c.31 */
+	 struct cibfw_module_versions module_versions;
 };
 
 /* Description -   */
@@ -210,18 +439,27 @@ struct cibfw_itoc_header {
 };
 
 /* Description -   */
-/* Size in bytes - 4 */
-struct cibfw_module_version {
+/* Size in bytes - 320 */
+struct cibfw_mfg_info {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
-	/* 0x0.0 - 0x0.7 */
-	 u_int8_t branch;
+	/* 0x0.24 - 0x10.23 */
+	 char psid[17];
+/*---------------- DWORD[7] (Offset 0x1c) ----------------*/
+	/* Description - When this bit is set, the GUIDs should be taken from the device_info node.
+When this bit is cleared, the GUIDs should be taken from the mfg_info node. */
+	/* 0x1c.0 - 0x1c.0 */
+	 u_int8_t guids_override_en;
+	/* Description - MFG_INFO section minor version */
+	/* 0x1c.16 - 0x1c.23 */
+	 u_int8_t minor_version;
+	/* Description - MFG_INFO section major version */
+	/* 0x1c.24 - 0x1c.31 */
+	 u_int8_t major_version;
+/*---------------- DWORD[8] (Offset 0x20) ----------------*/
 	/* Description -  */
-	/* 0x0.8 - 0x0.19 */
-	 u_int16_t minor;
-	/* Description -  */
-	/* 0x0.20 - 0x0.31 */
-	 u_int16_t major;
+	/* 0x20.0 - 0x5c.31 */
+	 struct cibfw_guids guids;
 };
 
 /* Description -   */
@@ -262,232 +500,6 @@ struct cibfw_register_mfrl {
 };
 
 /* Description -   */
-/* Size in bytes - 64 */
-struct cibfw_module_versions {
-/*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description -  */
-	/* 0x0.0 - 0x0.31 */
-	 struct cibfw_module_version core;
-/*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description -  */
-	/* 0x4.0 - 0x4.31 */
-	 struct cibfw_module_version phy;
-/*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description -  */
-	/* 0x8.0 - 0x8.31 */
-	 struct cibfw_module_version kernel;
-/*---------------- DWORD[3] (Offset 0xc) ----------------*/
-	/* Description -  */
-	/* 0xc.0 - 0xc.31 */
-	 struct cibfw_module_version iron_image;
-/*---------------- DWORD[4] (Offset 0x10) ----------------*/
-	/* Description -  */
-	/* 0x10.0 - 0x10.31 */
-	 struct cibfw_module_version host_management;
-/*---------------- DWORD[5] (Offset 0x14) ----------------*/
-	/* Description -  */
-	/* 0x14.0 - 0x14.31 */
-	 struct cibfw_module_version mad;
-};
-
-/* Description -   */
-/* Size in bytes - 16 */
-struct cibfw_operation_key {
-/*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description -  */
-	/* 0x0.0 - 0x0.15 */
-	 u_int16_t key_modifier;
-/*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description -  */
-	/* 0x8.0 - 0xc.31 */
-	 u_int64_t key;
-};
-
-/* Description -   */
-/* Size in bytes - 16 */
-struct cibfw_uid_entry {
-/*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Number of allocated UIDs in this entry */
-	/* 0x0.0 - 0x0.7 */
-	 u_int8_t num_allocated;
-	/* Description - Step size by which to derive the UIDs for this entry
-See struct description */
-	/* 0x0.8 - 0x0.15 */
-	 u_int8_t step;
-/*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description - For MACs, the upper 16 bits in the 'hi' dword are reserved */
-	/* 0x8.0 - 0xc.31 */
-	 u_int64_t uid;
-};
-
-/* Description -   */
-/* Size in bytes - 64 */
-struct cibfw_guids {
-/*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - UIDs (MACs and GUIDs) Allocation Entry.
-guids[0], is used for system GUID, node GUID and port GUID of port 0. guids[1], is used for port GUID of port 1.;/Multiple UIDs can be assigned to a single port, to be used for multiple virtual guests.
-
-Allocation Example:
-For a port GUID, if the
-    UID = 0x2c9030001000
-    num_allocated  = 4, 
-    step = 8
-
-Then the GUIDs for this port would be:
-    0x2c9030001000
-    0x2c9030001008
-    0x2c9030001010
-    0x2c9030001018 */
-	/* 0x0.0 - 0x1c.31 */
-	 struct cibfw_uid_entry guids[2];
-/*---------------- DWORD[8] (Offset 0x20) ----------------*/
-	/* Description -  */
-	/* 0x20.0 - 0x3c.31 */
-	 struct cibfw_uid_entry macs[2];
-};
-
-/* Description -   */
-/* Size in bytes - 1024 */
-struct cibfw_image_info {
-/*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - The image can be updated using the MCC/MCDA commands */
-	/* 0x0.8 - 0x0.8 */
-	 u_int8_t mcc_en;
-	/* Description - This is a debug firmware */
-	/* 0x0.13 - 0x0.13 */
-	 u_int8_t debug_fw;
-	/* Description - [MCC/MCDA flow] if set, the SHA 256 digest is encrypted - enabled by default for secure_fw - cr-space not closed */
-	/* 0x0.14 - 0x0.14 */
-	 u_int8_t signed_fw;
-	/* Description - [MCC/MCDA flow] cr-space closed */
-	/* 0x0.15 - 0x0.15 */
-	 u_int8_t secure_fw;
-	/* Description - IMAGE_INFO section minor version */
-	/* 0x0.16 - 0x0.23 */
-	 u_int8_t minor_version;
-	/* Description - IMAGE_INFO section major version */
-	/* 0x0.24 - 0x0.31 */
-	 u_int8_t major_version;
-/*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description -  */
-	/* 0x4.0 - 0x10.31 */
-	 struct cibfw_FW_VERSION FW_VERSION;
-/*---------------- DWORD[5] (Offset 0x14) ----------------*/
-	/* Description -  */
-	/* 0x14.0 - 0x18.31 */
-	 struct cibfw_TRIPPLE_VERSION mic_version;
-/*---------------- DWORD[7] (Offset 0x1c) ----------------*/
-	/* Description -  */
-	/* 0x1c.16 - 0x1c.31 */
-	 u_int16_t pci_device_id;
-/*---------------- DWORD[9] (Offset 0x24) ----------------*/
-	/* Description -  */
-	/* 0x24.24 - 0x34.23 */
-	 char psid[17];
-/*---------------- DWORD[13] (Offset 0x34) ----------------*/
-	/* Description -  */
-	/* 0x34.0 - 0x34.15 */
-	 u_int16_t vsd_vendor_id;
-/*---------------- DWORD[14] (Offset 0x38) ----------------*/
-	/* Description -  */
-	/* 0x38.24 - 0x108.23 */
-	 char vsd[209];
-/*---------------- DWORD[66] (Offset 0x108) ----------------*/
-	/* Description - image size parameters */
-	/* 0x108.0 - 0x10c.31 */
-	 struct cibfw_image_size image_size;
-/*---------------- DWORD[70] (Offset 0x118) ----------------*/
-	/* Description - HW device(s) supported by this FW image.
-0 means invalid entry.
-For Golan A0, first entry should be 0x1ff
- */
-	/* 0x118.0 - 0x124.31 */
-	 u_int32_t supported_hw_id[4];
-/*---------------- DWORD[74] (Offset 0x128) ----------------*/
-	/* Description -  */
-	/* 0x128.0 - 0x128.31 */
-	 u_int32_t ini_file_num;
-/*---------------- DWORD[112] (Offset 0x1c0) ----------------*/
-	/* Description - Product Version is the unified version of the FW and expansion ROM.
-Format is defined by the packager.
-When set to a non-empty string the FW update tool burns the image as a monolythic entity and refuses to update rom only or FW only. */
-	/* 0x1c0.24 - 0x1d0.23 */
-	 char prod_ver[17];
-/*---------------- DWORD[192] (Offset 0x300) ----------------*/
-	/* Description -  */
-	/* 0x300.0 - 0x33c.31 */
-	 struct cibfw_module_versions module_versions;
-};
-
-/* Description -   */
-/* Size in bytes - 512 */
-struct cibfw_device_info {
-/*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description -  */
-	/* 0x0.0 - 0x0.31 */
-	 u_int32_t signature0;
-/*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description -  */
-	/* 0x4.0 - 0x4.31 */
-	 u_int32_t signature1;
-/*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description -  */
-	/* 0x8.0 - 0x8.31 */
-	 u_int32_t signature2;
-/*---------------- DWORD[3] (Offset 0xc) ----------------*/
-	/* Description -  */
-	/* 0xc.0 - 0xc.31 */
-	 u_int32_t signature3;
-/*---------------- DWORD[4] (Offset 0x10) ----------------*/
-	/* Description - Format version for this struct */
-	/* 0x10.0 - 0x10.7 */
-	 u_int8_t minor_version;
-	/* Description - Format version for this struct */
-	/* 0x10.8 - 0x10.16 */
-	 u_int16_t major_version;
-/*---------------- DWORD[8] (Offset 0x20) ----------------*/
-	/* Description -  */
-	/* 0x20.0 - 0x5c.31 */
-	 struct cibfw_guids guids;
-/*---------------- DWORD[27] (Offset 0x6c) ----------------*/
-	/* Description -  */
-	/* 0x6c.0 - 0x6c.15 */
-	 u_int16_t vsd_vendor_id;
-/*---------------- DWORD[28] (Offset 0x70) ----------------*/
-	/* Description -  */
-	/* 0x70.24 - 0x140.23 */
-	 char vsd[209];
-/*---------------- DWORD[88] (Offset 0x160) ----------------*/
-	/* Description -  */
-	/* 0x160.0 - 0x19c.31 */
-	 struct cibfw_operation_key keys[4];
-};
-
-/* Description -   */
-/* Size in bytes - 320 */
-struct cibfw_mfg_info {
-/*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description -  */
-	/* 0x0.24 - 0x10.23 */
-	 char psid[17];
-/*---------------- DWORD[7] (Offset 0x1c) ----------------*/
-	/* Description - When this bit is set, the GUIDs should be taken from the device_info node.
-When this bit is cleared, the GUIDs should be taken from the mfg_info node. */
-	/* 0x1c.0 - 0x1c.0 */
-	 u_int8_t guids_override_en;
-	/* Description - MFG_INFO section minor version */
-	/* 0x1c.16 - 0x1c.23 */
-	 u_int8_t minor_version;
-	/* Description - MFG_INFO section major version */
-	/* 0x1c.24 - 0x1c.31 */
-	 u_int8_t major_version;
-/*---------------- DWORD[8] (Offset 0x20) ----------------*/
-	/* Description -  */
-	/* 0x20.0 - 0x5c.31 */
-	 struct cibfw_guids guids;
-};
-
-/* Description -   */
 /* Size in bytes - 1024 */
 union cibfw_cibfw_Nodes {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
@@ -519,118 +531,125 @@ union cibfw_cibfw_Nodes {
 
 
 /*================= PACK/UNPACK/PRINT FUNCTIONS ======================*/
-/* FW_VERSION */
-void cibfw_FW_VERSION_pack(const struct cibfw_FW_VERSION *ptr_struct, u_int8_t* ptr_buff);
-void cibfw_FW_VERSION_unpack(struct cibfw_FW_VERSION *ptr_struct, const u_int8_t* ptr_buff);
-void cibfw_FW_VERSION_print(const struct cibfw_FW_VERSION *ptr_struct, FILE* file, int indent_level);
-int cibfw_FW_VERSION_size(void);
-#define CIBFW_FW_VERSION_SIZE    (0x10)
-void cibfw_FW_VERSION_dump(const struct cibfw_FW_VERSION *ptr_struct, FILE* file);
-/* TRIPPLE_VERSION */
-void cibfw_TRIPPLE_VERSION_pack(const struct cibfw_TRIPPLE_VERSION *ptr_struct, u_int8_t* ptr_buff);
-void cibfw_TRIPPLE_VERSION_unpack(struct cibfw_TRIPPLE_VERSION *ptr_struct, const u_int8_t* ptr_buff);
-void cibfw_TRIPPLE_VERSION_print(const struct cibfw_TRIPPLE_VERSION *ptr_struct, FILE* file, int indent_level);
-int cibfw_TRIPPLE_VERSION_size(void);
-#define CIBFW_TRIPPLE_VERSION_SIZE    (0x8)
-void cibfw_TRIPPLE_VERSION_dump(const struct cibfw_TRIPPLE_VERSION *ptr_struct, FILE* file);
-/* image_size */
-void cibfw_image_size_pack(const struct cibfw_image_size *ptr_struct, u_int8_t* ptr_buff);
-void cibfw_image_size_unpack(struct cibfw_image_size *ptr_struct, const u_int8_t* ptr_buff);
-void cibfw_image_size_print(const struct cibfw_image_size *ptr_struct, FILE* file, int indent_level);
-int cibfw_image_size_size(void);
-#define CIBFW_IMAGE_SIZE_SIZE    (0x8)
-void cibfw_image_size_dump(const struct cibfw_image_size *ptr_struct, FILE* file);
-/* itoc_entry */
-void cibfw_itoc_entry_pack(const struct cibfw_itoc_entry *ptr_struct, u_int8_t* ptr_buff);
-void cibfw_itoc_entry_unpack(struct cibfw_itoc_entry *ptr_struct, const u_int8_t* ptr_buff);
-void cibfw_itoc_entry_print(const struct cibfw_itoc_entry *ptr_struct, FILE* file, int indent_level);
-int cibfw_itoc_entry_size(void);
-#define CIBFW_ITOC_ENTRY_SIZE    (0x20)
-void cibfw_itoc_entry_dump(const struct cibfw_itoc_entry *ptr_struct, FILE* file);
-/* itoc_header */
-void cibfw_itoc_header_pack(const struct cibfw_itoc_header *ptr_struct, u_int8_t* ptr_buff);
-void cibfw_itoc_header_unpack(struct cibfw_itoc_header *ptr_struct, const u_int8_t* ptr_buff);
-void cibfw_itoc_header_print(const struct cibfw_itoc_header *ptr_struct, FILE* file, int indent_level);
-int cibfw_itoc_header_size(void);
-#define CIBFW_ITOC_HEADER_SIZE    (0x20)
-void cibfw_itoc_header_dump(const struct cibfw_itoc_header *ptr_struct, FILE* file);
+/* uint64 */
+void cibfw_uint64_pack(const u_int64_t *ptr_struct, u_int8_t *ptr_buff);
+void cibfw_uint64_unpack(u_int64_t *ptr_struct, const u_int8_t *ptr_buff);
+void cibfw_uint64_print(const u_int64_t *ptr_struct, FILE *fd, int indent_level);
+unsigned int cibfw_uint64_size(void);
+#define CIBFW_UINT64_SIZE    (0x8)
+void cibfw_uint64_dump(const u_int64_t *ptr_struct, FILE *fd);
 /* module_version */
-void cibfw_module_version_pack(const struct cibfw_module_version *ptr_struct, u_int8_t* ptr_buff);
-void cibfw_module_version_unpack(struct cibfw_module_version *ptr_struct, const u_int8_t* ptr_buff);
-void cibfw_module_version_print(const struct cibfw_module_version *ptr_struct, FILE* file, int indent_level);
-int cibfw_module_version_size(void);
+void cibfw_module_version_pack(const struct cibfw_module_version *ptr_struct, u_int8_t *ptr_buff);
+void cibfw_module_version_unpack(struct cibfw_module_version *ptr_struct, const u_int8_t *ptr_buff);
+void cibfw_module_version_print(const struct cibfw_module_version *ptr_struct, FILE *fd, int indent_level);
+unsigned int cibfw_module_version_size(void);
 #define CIBFW_MODULE_VERSION_SIZE    (0x4)
-void cibfw_module_version_dump(const struct cibfw_module_version *ptr_struct, FILE* file);
-/* register_mfai */
-void cibfw_register_mfai_pack(const struct cibfw_register_mfai *ptr_struct, u_int8_t* ptr_buff);
-void cibfw_register_mfai_unpack(struct cibfw_register_mfai *ptr_struct, const u_int8_t* ptr_buff);
-void cibfw_register_mfai_print(const struct cibfw_register_mfai *ptr_struct, FILE* file, int indent_level);
-int cibfw_register_mfai_size(void);
-#define CIBFW_REGISTER_MFAI_SIZE    (0x10)
-void cibfw_register_mfai_dump(const struct cibfw_register_mfai *ptr_struct, FILE* file);
-/* register_mfrl */
-void cibfw_register_mfrl_pack(const struct cibfw_register_mfrl *ptr_struct, u_int8_t* ptr_buff);
-void cibfw_register_mfrl_unpack(struct cibfw_register_mfrl *ptr_struct, const u_int8_t* ptr_buff);
-void cibfw_register_mfrl_print(const struct cibfw_register_mfrl *ptr_struct, FILE* file, int indent_level);
-int cibfw_register_mfrl_size(void);
-#define CIBFW_REGISTER_MFRL_SIZE    (0x10)
-void cibfw_register_mfrl_dump(const struct cibfw_register_mfrl *ptr_struct, FILE* file);
-/* module_versions */
-void cibfw_module_versions_pack(const struct cibfw_module_versions *ptr_struct, u_int8_t* ptr_buff);
-void cibfw_module_versions_unpack(struct cibfw_module_versions *ptr_struct, const u_int8_t* ptr_buff);
-void cibfw_module_versions_print(const struct cibfw_module_versions *ptr_struct, FILE* file, int indent_level);
-int cibfw_module_versions_size(void);
-#define CIBFW_MODULE_VERSIONS_SIZE    (0x40)
-void cibfw_module_versions_dump(const struct cibfw_module_versions *ptr_struct, FILE* file);
-/* operation_key */
-void cibfw_operation_key_pack(const struct cibfw_operation_key *ptr_struct, u_int8_t* ptr_buff);
-void cibfw_operation_key_unpack(struct cibfw_operation_key *ptr_struct, const u_int8_t* ptr_buff);
-void cibfw_operation_key_print(const struct cibfw_operation_key *ptr_struct, FILE* file, int indent_level);
-int cibfw_operation_key_size(void);
-#define CIBFW_OPERATION_KEY_SIZE    (0x10)
-void cibfw_operation_key_dump(const struct cibfw_operation_key *ptr_struct, FILE* file);
+void cibfw_module_version_dump(const struct cibfw_module_version *ptr_struct, FILE *fd);
 /* uid_entry */
-void cibfw_uid_entry_pack(const struct cibfw_uid_entry *ptr_struct, u_int8_t* ptr_buff);
-void cibfw_uid_entry_unpack(struct cibfw_uid_entry *ptr_struct, const u_int8_t* ptr_buff);
-void cibfw_uid_entry_print(const struct cibfw_uid_entry *ptr_struct, FILE* file, int indent_level);
-int cibfw_uid_entry_size(void);
+void cibfw_uid_entry_pack(const struct cibfw_uid_entry *ptr_struct, u_int8_t *ptr_buff);
+void cibfw_uid_entry_unpack(struct cibfw_uid_entry *ptr_struct, const u_int8_t *ptr_buff);
+void cibfw_uid_entry_print(const struct cibfw_uid_entry *ptr_struct, FILE *fd, int indent_level);
+unsigned int cibfw_uid_entry_size(void);
 #define CIBFW_UID_ENTRY_SIZE    (0x10)
-void cibfw_uid_entry_dump(const struct cibfw_uid_entry *ptr_struct, FILE* file);
+void cibfw_uid_entry_dump(const struct cibfw_uid_entry *ptr_struct, FILE *fd);
+/* FW_VERSION */
+void cibfw_FW_VERSION_pack(const struct cibfw_FW_VERSION *ptr_struct, u_int8_t *ptr_buff);
+void cibfw_FW_VERSION_unpack(struct cibfw_FW_VERSION *ptr_struct, const u_int8_t *ptr_buff);
+void cibfw_FW_VERSION_print(const struct cibfw_FW_VERSION *ptr_struct, FILE *fd, int indent_level);
+unsigned int cibfw_FW_VERSION_size(void);
+#define CIBFW_FW_VERSION_SIZE    (0x10)
+void cibfw_FW_VERSION_dump(const struct cibfw_FW_VERSION *ptr_struct, FILE *fd);
+/* TRIPPLE_VERSION */
+void cibfw_TRIPPLE_VERSION_pack(const struct cibfw_TRIPPLE_VERSION *ptr_struct, u_int8_t *ptr_buff);
+void cibfw_TRIPPLE_VERSION_unpack(struct cibfw_TRIPPLE_VERSION *ptr_struct, const u_int8_t *ptr_buff);
+void cibfw_TRIPPLE_VERSION_print(const struct cibfw_TRIPPLE_VERSION *ptr_struct, FILE *fd, int indent_level);
+unsigned int cibfw_TRIPPLE_VERSION_size(void);
+#define CIBFW_TRIPPLE_VERSION_SIZE    (0x8)
+void cibfw_TRIPPLE_VERSION_dump(const struct cibfw_TRIPPLE_VERSION *ptr_struct, FILE *fd);
 /* guids */
-void cibfw_guids_pack(const struct cibfw_guids *ptr_struct, u_int8_t* ptr_buff);
-void cibfw_guids_unpack(struct cibfw_guids *ptr_struct, const u_int8_t* ptr_buff);
-void cibfw_guids_print(const struct cibfw_guids *ptr_struct, FILE* file, int indent_level);
-int cibfw_guids_size(void);
+void cibfw_guids_pack(const struct cibfw_guids *ptr_struct, u_int8_t *ptr_buff);
+void cibfw_guids_unpack(struct cibfw_guids *ptr_struct, const u_int8_t *ptr_buff);
+void cibfw_guids_print(const struct cibfw_guids *ptr_struct, FILE *fd, int indent_level);
+unsigned int cibfw_guids_size(void);
 #define CIBFW_GUIDS_SIZE    (0x40)
-void cibfw_guids_dump(const struct cibfw_guids *ptr_struct, FILE* file);
-/* image_info */
-void cibfw_image_info_pack(const struct cibfw_image_info *ptr_struct, u_int8_t* ptr_buff);
-void cibfw_image_info_unpack(struct cibfw_image_info *ptr_struct, const u_int8_t* ptr_buff);
-void cibfw_image_info_print(const struct cibfw_image_info *ptr_struct, FILE* file, int indent_level);
-int cibfw_image_info_size(void);
-#define CIBFW_IMAGE_INFO_SIZE    (0x400)
-void cibfw_image_info_dump(const struct cibfw_image_info *ptr_struct, FILE* file);
+void cibfw_guids_dump(const struct cibfw_guids *ptr_struct, FILE *fd);
+/* image_size */
+void cibfw_image_size_pack(const struct cibfw_image_size *ptr_struct, u_int8_t *ptr_buff);
+void cibfw_image_size_unpack(struct cibfw_image_size *ptr_struct, const u_int8_t *ptr_buff);
+void cibfw_image_size_print(const struct cibfw_image_size *ptr_struct, FILE *fd, int indent_level);
+unsigned int cibfw_image_size_size(void);
+#define CIBFW_IMAGE_SIZE_SIZE    (0x8)
+void cibfw_image_size_dump(const struct cibfw_image_size *ptr_struct, FILE *fd);
+/* module_versions */
+void cibfw_module_versions_pack(const struct cibfw_module_versions *ptr_struct, u_int8_t *ptr_buff);
+void cibfw_module_versions_unpack(struct cibfw_module_versions *ptr_struct, const u_int8_t *ptr_buff);
+void cibfw_module_versions_print(const struct cibfw_module_versions *ptr_struct, FILE *fd, int indent_level);
+unsigned int cibfw_module_versions_size(void);
+#define CIBFW_MODULE_VERSIONS_SIZE    (0x40)
+void cibfw_module_versions_dump(const struct cibfw_module_versions *ptr_struct, FILE *fd);
+/* operation_key */
+void cibfw_operation_key_pack(const struct cibfw_operation_key *ptr_struct, u_int8_t *ptr_buff);
+void cibfw_operation_key_unpack(struct cibfw_operation_key *ptr_struct, const u_int8_t *ptr_buff);
+void cibfw_operation_key_print(const struct cibfw_operation_key *ptr_struct, FILE *fd, int indent_level);
+unsigned int cibfw_operation_key_size(void);
+#define CIBFW_OPERATION_KEY_SIZE    (0x10)
+void cibfw_operation_key_dump(const struct cibfw_operation_key *ptr_struct, FILE *fd);
 /* device_info */
-void cibfw_device_info_pack(const struct cibfw_device_info *ptr_struct, u_int8_t* ptr_buff);
-void cibfw_device_info_unpack(struct cibfw_device_info *ptr_struct, const u_int8_t* ptr_buff);
-void cibfw_device_info_print(const struct cibfw_device_info *ptr_struct, FILE* file, int indent_level);
-int cibfw_device_info_size(void);
+void cibfw_device_info_pack(const struct cibfw_device_info *ptr_struct, u_int8_t *ptr_buff);
+void cibfw_device_info_unpack(struct cibfw_device_info *ptr_struct, const u_int8_t *ptr_buff);
+void cibfw_device_info_print(const struct cibfw_device_info *ptr_struct, FILE *fd, int indent_level);
+unsigned int cibfw_device_info_size(void);
 #define CIBFW_DEVICE_INFO_SIZE    (0x200)
-void cibfw_device_info_dump(const struct cibfw_device_info *ptr_struct, FILE* file);
+void cibfw_device_info_dump(const struct cibfw_device_info *ptr_struct, FILE *fd);
+/* image_info */
+void cibfw_image_info_pack(const struct cibfw_image_info *ptr_struct, u_int8_t *ptr_buff);
+void cibfw_image_info_unpack(struct cibfw_image_info *ptr_struct, const u_int8_t *ptr_buff);
+void cibfw_image_info_print(const struct cibfw_image_info *ptr_struct, FILE *fd, int indent_level);
+unsigned int cibfw_image_info_size(void);
+#define CIBFW_IMAGE_INFO_SIZE    (0x400)
+void cibfw_image_info_dump(const struct cibfw_image_info *ptr_struct, FILE *fd);
+/* itoc_entry */
+void cibfw_itoc_entry_pack(const struct cibfw_itoc_entry *ptr_struct, u_int8_t *ptr_buff);
+void cibfw_itoc_entry_unpack(struct cibfw_itoc_entry *ptr_struct, const u_int8_t *ptr_buff);
+void cibfw_itoc_entry_print(const struct cibfw_itoc_entry *ptr_struct, FILE *fd, int indent_level);
+unsigned int cibfw_itoc_entry_size(void);
+#define CIBFW_ITOC_ENTRY_SIZE    (0x20)
+void cibfw_itoc_entry_dump(const struct cibfw_itoc_entry *ptr_struct, FILE *fd);
+/* itoc_header */
+void cibfw_itoc_header_pack(const struct cibfw_itoc_header *ptr_struct, u_int8_t *ptr_buff);
+void cibfw_itoc_header_unpack(struct cibfw_itoc_header *ptr_struct, const u_int8_t *ptr_buff);
+void cibfw_itoc_header_print(const struct cibfw_itoc_header *ptr_struct, FILE *fd, int indent_level);
+unsigned int cibfw_itoc_header_size(void);
+#define CIBFW_ITOC_HEADER_SIZE    (0x20)
+void cibfw_itoc_header_dump(const struct cibfw_itoc_header *ptr_struct, FILE *fd);
 /* mfg_info */
-void cibfw_mfg_info_pack(const struct cibfw_mfg_info *ptr_struct, u_int8_t* ptr_buff);
-void cibfw_mfg_info_unpack(struct cibfw_mfg_info *ptr_struct, const u_int8_t* ptr_buff);
-void cibfw_mfg_info_print(const struct cibfw_mfg_info *ptr_struct, FILE* file, int indent_level);
-int cibfw_mfg_info_size(void);
+void cibfw_mfg_info_pack(const struct cibfw_mfg_info *ptr_struct, u_int8_t *ptr_buff);
+void cibfw_mfg_info_unpack(struct cibfw_mfg_info *ptr_struct, const u_int8_t *ptr_buff);
+void cibfw_mfg_info_print(const struct cibfw_mfg_info *ptr_struct, FILE *fd, int indent_level);
+unsigned int cibfw_mfg_info_size(void);
 #define CIBFW_MFG_INFO_SIZE    (0x140)
-void cibfw_mfg_info_dump(const struct cibfw_mfg_info *ptr_struct, FILE* file);
+void cibfw_mfg_info_dump(const struct cibfw_mfg_info *ptr_struct, FILE *fd);
+/* register_mfai */
+void cibfw_register_mfai_pack(const struct cibfw_register_mfai *ptr_struct, u_int8_t *ptr_buff);
+void cibfw_register_mfai_unpack(struct cibfw_register_mfai *ptr_struct, const u_int8_t *ptr_buff);
+void cibfw_register_mfai_print(const struct cibfw_register_mfai *ptr_struct, FILE *fd, int indent_level);
+unsigned int cibfw_register_mfai_size(void);
+#define CIBFW_REGISTER_MFAI_SIZE    (0x10)
+void cibfw_register_mfai_dump(const struct cibfw_register_mfai *ptr_struct, FILE *fd);
+/* register_mfrl */
+void cibfw_register_mfrl_pack(const struct cibfw_register_mfrl *ptr_struct, u_int8_t *ptr_buff);
+void cibfw_register_mfrl_unpack(struct cibfw_register_mfrl *ptr_struct, const u_int8_t *ptr_buff);
+void cibfw_register_mfrl_print(const struct cibfw_register_mfrl *ptr_struct, FILE *fd, int indent_level);
+unsigned int cibfw_register_mfrl_size(void);
+#define CIBFW_REGISTER_MFRL_SIZE    (0x10)
+void cibfw_register_mfrl_dump(const struct cibfw_register_mfrl *ptr_struct, FILE *fd);
 /* cibfw_Nodes */
-void cibfw_cibfw_Nodes_pack(const union cibfw_cibfw_Nodes *ptr_struct, u_int8_t* ptr_buff);
-void cibfw_cibfw_Nodes_unpack(union cibfw_cibfw_Nodes *ptr_struct, const u_int8_t* ptr_buff);
-void cibfw_cibfw_Nodes_print(const union cibfw_cibfw_Nodes *ptr_struct, FILE* file, int indent_level);
-int cibfw_cibfw_Nodes_size(void);
+void cibfw_cibfw_Nodes_pack(const union cibfw_cibfw_Nodes *ptr_struct, u_int8_t *ptr_buff);
+void cibfw_cibfw_Nodes_unpack(union cibfw_cibfw_Nodes *ptr_struct, const u_int8_t *ptr_buff);
+void cibfw_cibfw_Nodes_print(const union cibfw_cibfw_Nodes *ptr_struct, FILE *fd, int indent_level);
+unsigned int cibfw_cibfw_Nodes_size(void);
 #define CIBFW_CIBFW_NODES_SIZE    (0x400)
-void cibfw_cibfw_Nodes_dump(const union cibfw_cibfw_Nodes *ptr_struct, FILE* file);
+void cibfw_cibfw_Nodes_dump(const union cibfw_cibfw_Nodes *ptr_struct, FILE *fd);
 
 
 #ifdef __cplusplus

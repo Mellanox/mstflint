@@ -31,7 +31,6 @@
  * SOFTWARE.
  *
  */
-
 #ifndef __MLNX_DEV_H__
 #define __MLNX_DEV_H__
 
@@ -55,7 +54,8 @@ public:
     ~MlnxDev();
 
     int    query();
-    int    preBurn(string mfa_file, f_prog_func prog_cb, bool burnFailsafe,  bool& isAlignmentNeeded, f_prog_func_adv stage_prog=(f_prog_func_adv)NULL);
+    int    preBurn(string mfa_file, f_prog_func prog_cb, bool burnFailsafe,  bool& isAlignmentNeeded,
+            bool& isShifting8MBNeeded, f_prog_func_adv stage_prog=(f_prog_func_adv)NULL);
     int    burn(bool&);
     bool   clearSemaphore();
     int    isBurnSuccess();
@@ -81,6 +81,7 @@ public:
     void   setMccSupport(bool val=true) {_mccSupport = val;};
     vector<ImgVersion> _imageVers;
     inline bool isAlignmentNeeded();
+    inline void setShifting8MBInBurnParams(bool v) {_burnParams.shift8MB = v;}
 
     bool checkExistence(vector<MlnxDev*>& devs);
     string getUniqueId() {return _uniqueId;};

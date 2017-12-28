@@ -31,13 +31,13 @@
  */
 
 /***
-         *** This file was generated at "2017-03-16 11:34:05"
+         *** This file was generated at "2018-01-07 08:13:17"
          *** by:
          ***    > /mswg/release/tools/a-me/last_stable/adabe_plugins/adb2c/adb2pack.py --input adb/cibfw/cibfw.adb --file-prefix cibfw --prefix cibfw_
          ***/
 #include "cibfw_layouts.h"
 
-void cibfw_FW_VERSION_pack(const struct cibfw_FW_VERSION *ptr_struct, u_int8_t* ptr_buff)
+void cibfw_uint64_pack(const u_int64_t *ptr_struct, u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
 	int i = 0;
@@ -47,35 +47,10 @@ void cibfw_FW_VERSION_pack(const struct cibfw_FW_VERSION *ptr_struct, u_int8_t* 
 	(void)ptr_buff;
 
 	offset = 0;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->MAJOR);
-
-	offset = 48;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->SUBMINOR);
-
-	offset = 32;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->MINOR);
-
-	offset = 80;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->Hour);
-
-	offset = 72;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->Minutes);
-
-	offset = 64;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->Seconds);
-
-	offset = 120;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->Day);
-
-	offset = 112;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->Month);
-
-	offset = 96;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->Year);
-
+	adb2c_push_integer_to_buff(ptr_buff, offset, 8, *ptr_struct);
 }
 
-void cibfw_FW_VERSION_unpack(struct cibfw_FW_VERSION *ptr_struct, const u_int8_t* ptr_buff)
+void cibfw_uint64_unpack(u_int64_t *ptr_struct, const u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
 	int i = 0;
@@ -85,467 +60,35 @@ void cibfw_FW_VERSION_unpack(struct cibfw_FW_VERSION *ptr_struct, const u_int8_t
 	(void)ptr_buff;
 
 	offset = 0;
-	ptr_struct->MAJOR = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
-
-	offset = 48;
-	ptr_struct->SUBMINOR = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
-
-	offset = 32;
-	ptr_struct->MINOR = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
-
-	offset = 80;
-	ptr_struct->Hour = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
-
-	offset = 72;
-	ptr_struct->Minutes = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
-
-	offset = 64;
-	ptr_struct->Seconds = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
-
-	offset = 120;
-	ptr_struct->Day = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
-
-	offset = 112;
-	ptr_struct->Month = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
-
-	offset = 96;
-	ptr_struct->Year = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
-
+	*ptr_struct = adb2c_pop_integer_from_buff(ptr_buff, offset, 8);
 }
 
-void cibfw_FW_VERSION_print(const struct cibfw_FW_VERSION *ptr_struct, FILE* file, int indent_level)
+void cibfw_uint64_print(const u_int64_t *ptr_struct, FILE *fd, int indent_level)
 {
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "======== cibfw_FW_VERSION ========\n");
 	int i = 0;
 	(void)i;
 	(void)ptr_struct;
-	(void)file;
+	(void)fd;
 	(void)indent_level;
 
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "MAJOR                : " UH_FMT "\n", ptr_struct->MAJOR);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== cibfw_uint64 ========\n");
 
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "SUBMINOR             : " UH_FMT "\n", ptr_struct->SUBMINOR);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "MINOR                : " UH_FMT "\n", ptr_struct->MINOR);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "Hour                 : " UH_FMT "\n", ptr_struct->Hour);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "Minutes              : " UH_FMT "\n", ptr_struct->Minutes);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "Seconds              : " UH_FMT "\n", ptr_struct->Seconds);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "Day                  : " UH_FMT "\n", ptr_struct->Day);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "Month                : " UH_FMT "\n", ptr_struct->Month);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "Year                 : " UH_FMT "\n", ptr_struct->Year);
-
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "uint64               : " U64H_FMT "\n", (u_int64_t) *ptr_struct);
 }
 
-int cibfw_FW_VERSION_size(void)
+unsigned int cibfw_uint64_size(void)
 {
-	 return 16;
+	return CIBFW_UINT64_SIZE;
 }
 
-void cibfw_FW_VERSION_dump(const struct cibfw_FW_VERSION *ptr_struct, FILE* file)
+void cibfw_uint64_dump(const u_int64_t *ptr_struct, FILE *fd)
 {
-	cibfw_FW_VERSION_print(ptr_struct, file, 0);
+	cibfw_uint64_print(ptr_struct, fd, 0);
 }
 
-void cibfw_TRIPPLE_VERSION_pack(const struct cibfw_TRIPPLE_VERSION *ptr_struct, u_int8_t* ptr_buff)
-{
-	u_int32_t offset;
-	int i = 0;
-	(void)offset;
-	(void)i;
-	(void)ptr_struct;
-	(void)ptr_buff;
-
-	offset = 0;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->MAJOR);
-
-	offset = 48;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->SUBMINOR);
-
-	offset = 32;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->MINOR);
-
-}
-
-void cibfw_TRIPPLE_VERSION_unpack(struct cibfw_TRIPPLE_VERSION *ptr_struct, const u_int8_t* ptr_buff)
-{
-	u_int32_t offset;
-	int i = 0;
-	(void)offset;
-	(void)i;
-	(void)ptr_struct;
-	(void)ptr_buff;
-
-	offset = 0;
-	ptr_struct->MAJOR = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
-
-	offset = 48;
-	ptr_struct->SUBMINOR = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
-
-	offset = 32;
-	ptr_struct->MINOR = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
-
-}
-
-void cibfw_TRIPPLE_VERSION_print(const struct cibfw_TRIPPLE_VERSION *ptr_struct, FILE* file, int indent_level)
-{
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "======== cibfw_TRIPPLE_VERSION ========\n");
-	int i = 0;
-	(void)i;
-	(void)ptr_struct;
-	(void)file;
-	(void)indent_level;
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "MAJOR                : " UH_FMT "\n", ptr_struct->MAJOR);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "SUBMINOR             : " UH_FMT "\n", ptr_struct->SUBMINOR);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "MINOR                : " UH_FMT "\n", ptr_struct->MINOR);
-
-}
-
-int cibfw_TRIPPLE_VERSION_size(void)
-{
-	 return 8;
-}
-
-void cibfw_TRIPPLE_VERSION_dump(const struct cibfw_TRIPPLE_VERSION *ptr_struct, FILE* file)
-{
-	cibfw_TRIPPLE_VERSION_print(ptr_struct, file, 0);
-}
-
-void cibfw_image_size_pack(const struct cibfw_image_size *ptr_struct, u_int8_t* ptr_buff)
-{
-	u_int32_t offset;
-	int i = 0;
-	(void)offset;
-	(void)i;
-	(void)ptr_struct;
-	(void)ptr_buff;
-
-	offset = 24;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->log_step);
-
-	offset = 32;
-	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->max_size);
-
-}
-
-void cibfw_image_size_unpack(struct cibfw_image_size *ptr_struct, const u_int8_t* ptr_buff)
-{
-	u_int32_t offset;
-	int i = 0;
-	(void)offset;
-	(void)i;
-	(void)ptr_struct;
-	(void)ptr_buff;
-
-	offset = 24;
-	ptr_struct->log_step = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
-
-	offset = 32;
-	ptr_struct->max_size = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
-
-}
-
-void cibfw_image_size_print(const struct cibfw_image_size *ptr_struct, FILE* file, int indent_level)
-{
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "======== cibfw_image_size ========\n");
-	int i = 0;
-	(void)i;
-	(void)ptr_struct;
-	(void)file;
-	(void)indent_level;
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "log_step             : " UH_FMT "\n", ptr_struct->log_step);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "max_size             : " U32H_FMT "\n", ptr_struct->max_size);
-
-}
-
-int cibfw_image_size_size(void)
-{
-	 return 8;
-}
-
-void cibfw_image_size_dump(const struct cibfw_image_size *ptr_struct, FILE* file)
-{
-	cibfw_image_size_print(ptr_struct, file, 0);
-}
-
-void cibfw_itoc_entry_pack(const struct cibfw_itoc_entry *ptr_struct, u_int8_t* ptr_buff)
-{
-	u_int32_t offset;
-	int i = 0;
-	(void)offset;
-	(void)i;
-	(void)ptr_struct;
-	(void)ptr_buff;
-
-	offset = 8;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 22, (u_int32_t)ptr_struct->size);
-
-	offset = 0;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->type);
-
-	offset = 34;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 30, (u_int32_t)ptr_struct->param0);
-
-	offset = 33;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->cache_line_crc);
-
-	offset = 32;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->zipped_image);
-
-	offset = 64;
-	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->param1);
-
-	offset = 161;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 29, (u_int32_t)ptr_struct->flash_addr);
-
-	offset = 160;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->relative_addr);
-
-	offset = 208;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->section_crc);
-
-	offset = 207;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->no_crc);
-
-	offset = 206;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->device_data);
-
-	offset = 240;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->itoc_entry_crc);
-
-}
-
-void cibfw_itoc_entry_unpack(struct cibfw_itoc_entry *ptr_struct, const u_int8_t* ptr_buff)
-{
-	u_int32_t offset;
-	int i = 0;
-	(void)offset;
-	(void)i;
-	(void)ptr_struct;
-	(void)ptr_buff;
-
-	offset = 8;
-	ptr_struct->size = (u_int32_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 22);
-
-	offset = 0;
-	ptr_struct->type = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
-
-	offset = 34;
-	ptr_struct->param0 = (u_int32_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 30);
-
-	offset = 33;
-	ptr_struct->cache_line_crc = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
-
-	offset = 32;
-	ptr_struct->zipped_image = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
-
-	offset = 64;
-	ptr_struct->param1 = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
-
-	offset = 161;
-	ptr_struct->flash_addr = (u_int32_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 29);
-
-	offset = 160;
-	ptr_struct->relative_addr = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
-
-	offset = 208;
-	ptr_struct->section_crc = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
-
-	offset = 207;
-	ptr_struct->no_crc = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
-
-	offset = 206;
-	ptr_struct->device_data = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
-
-	offset = 240;
-	ptr_struct->itoc_entry_crc = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
-
-}
-
-void cibfw_itoc_entry_print(const struct cibfw_itoc_entry *ptr_struct, FILE* file, int indent_level)
-{
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "======== cibfw_itoc_entry ========\n");
-	int i = 0;
-	(void)i;
-	(void)ptr_struct;
-	(void)file;
-	(void)indent_level;
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "size                 : " UH_FMT "\n", ptr_struct->size);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "type                 : " UH_FMT "\n", ptr_struct->type);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "param0               : " UH_FMT "\n", ptr_struct->param0);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "cache_line_crc       : " UH_FMT "\n", ptr_struct->cache_line_crc);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "zipped_image         : " UH_FMT "\n", ptr_struct->zipped_image);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "param1               : " U32H_FMT "\n", ptr_struct->param1);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "flash_addr           : " UH_FMT "\n", ptr_struct->flash_addr);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "relative_addr        : " UH_FMT "\n", ptr_struct->relative_addr);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "section_crc          : " UH_FMT "\n", ptr_struct->section_crc);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "no_crc               : " UH_FMT "\n", ptr_struct->no_crc);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "device_data          : " UH_FMT "\n", ptr_struct->device_data);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "itoc_entry_crc       : " UH_FMT "\n", ptr_struct->itoc_entry_crc);
-
-}
-
-int cibfw_itoc_entry_size(void)
-{
-	 return 32;
-}
-
-void cibfw_itoc_entry_dump(const struct cibfw_itoc_entry *ptr_struct, FILE* file)
-{
-	cibfw_itoc_entry_print(ptr_struct, file, 0);
-}
-
-void cibfw_itoc_header_pack(const struct cibfw_itoc_header *ptr_struct, u_int8_t* ptr_buff)
-{
-	u_int32_t offset;
-	int i = 0;
-	(void)offset;
-	(void)i;
-	(void)ptr_struct;
-	(void)ptr_buff;
-
-	offset = 0;
-	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->signature0);
-
-	offset = 32;
-	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->signature1);
-
-	offset = 64;
-	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->signature2);
-
-	offset = 96;
-	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->signature3);
-
-	offset = 152;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->version);
-
-	offset = 240;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->itoc_entry_crc);
-
-}
-
-void cibfw_itoc_header_unpack(struct cibfw_itoc_header *ptr_struct, const u_int8_t* ptr_buff)
-{
-	u_int32_t offset;
-	int i = 0;
-	(void)offset;
-	(void)i;
-	(void)ptr_struct;
-	(void)ptr_buff;
-
-	offset = 0;
-	ptr_struct->signature0 = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
-
-	offset = 32;
-	ptr_struct->signature1 = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
-
-	offset = 64;
-	ptr_struct->signature2 = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
-
-	offset = 96;
-	ptr_struct->signature3 = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
-
-	offset = 152;
-	ptr_struct->version = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
-
-	offset = 240;
-	ptr_struct->itoc_entry_crc = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
-
-}
-
-void cibfw_itoc_header_print(const struct cibfw_itoc_header *ptr_struct, FILE* file, int indent_level)
-{
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "======== cibfw_itoc_header ========\n");
-	int i = 0;
-	(void)i;
-	(void)ptr_struct;
-	(void)file;
-	(void)indent_level;
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "signature0           : " U32H_FMT "\n", ptr_struct->signature0);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "signature1           : " U32H_FMT "\n", ptr_struct->signature1);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "signature2           : " U32H_FMT "\n", ptr_struct->signature2);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "signature3           : " U32H_FMT "\n", ptr_struct->signature3);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "version              : " UH_FMT "\n", ptr_struct->version);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "itoc_entry_crc       : " UH_FMT "\n", ptr_struct->itoc_entry_crc);
-
-}
-
-int cibfw_itoc_header_size(void)
-{
-	 return 32;
-}
-
-void cibfw_itoc_header_dump(const struct cibfw_itoc_header *ptr_struct, FILE* file)
-{
-	cibfw_itoc_header_print(ptr_struct, file, 0);
-}
-
-void cibfw_module_version_pack(const struct cibfw_module_version *ptr_struct, u_int8_t* ptr_buff)
+void cibfw_module_version_pack(const struct cibfw_module_version *ptr_struct, u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
 	int i = 0;
@@ -556,16 +99,13 @@ void cibfw_module_version_pack(const struct cibfw_module_version *ptr_struct, u_
 
 	offset = 24;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->branch);
-
 	offset = 12;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 12, (u_int32_t)ptr_struct->minor);
-
 	offset = 0;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 12, (u_int32_t)ptr_struct->major);
-
 }
 
-void cibfw_module_version_unpack(struct cibfw_module_version *ptr_struct, const u_int8_t* ptr_buff)
+void cibfw_module_version_unpack(struct cibfw_module_version *ptr_struct, const u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
 	int i = 0;
@@ -576,355 +116,42 @@ void cibfw_module_version_unpack(struct cibfw_module_version *ptr_struct, const 
 
 	offset = 24;
 	ptr_struct->branch = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
-
 	offset = 12;
 	ptr_struct->minor = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 12);
-
 	offset = 0;
 	ptr_struct->major = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 12);
-
 }
 
-void cibfw_module_version_print(const struct cibfw_module_version *ptr_struct, FILE* file, int indent_level)
+void cibfw_module_version_print(const struct cibfw_module_version *ptr_struct, FILE *fd, int indent_level)
 {
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "======== cibfw_module_version ========\n");
 	int i = 0;
 	(void)i;
 	(void)ptr_struct;
-	(void)file;
+	(void)fd;
 	(void)indent_level;
 
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "branch               : " UH_FMT "\n", ptr_struct->branch);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== cibfw_module_version ========\n");
 
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "minor                : " UH_FMT "\n", ptr_struct->minor);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "major                : " UH_FMT "\n", ptr_struct->major);
-
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "branch               : " UH_FMT "\n", ptr_struct->branch);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "minor                : " UH_FMT "\n", ptr_struct->minor);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "major                : " UH_FMT "\n", ptr_struct->major);
 }
 
-int cibfw_module_version_size(void)
+unsigned int cibfw_module_version_size(void)
 {
-	 return 4;
+	return CIBFW_MODULE_VERSION_SIZE;
 }
 
-void cibfw_module_version_dump(const struct cibfw_module_version *ptr_struct, FILE* file)
+void cibfw_module_version_dump(const struct cibfw_module_version *ptr_struct, FILE *fd)
 {
-	cibfw_module_version_print(ptr_struct, file, 0);
+	cibfw_module_version_print(ptr_struct, fd, 0);
 }
 
-void cibfw_register_mfai_pack(const struct cibfw_register_mfai *ptr_struct, u_int8_t* ptr_buff)
-{
-	u_int32_t offset;
-	int i = 0;
-	(void)offset;
-	(void)i;
-	(void)ptr_struct;
-	(void)ptr_buff;
-
-	offset = 8;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 24, (u_int32_t)ptr_struct->address);
-
-	offset = 2;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->permanent);
-
-	offset = 1;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->use_address);
-
-	offset = 0;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->use_image_id);
-
-	offset = 56;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->image_id);
-
-}
-
-void cibfw_register_mfai_unpack(struct cibfw_register_mfai *ptr_struct, const u_int8_t* ptr_buff)
-{
-	u_int32_t offset;
-	int i = 0;
-	(void)offset;
-	(void)i;
-	(void)ptr_struct;
-	(void)ptr_buff;
-
-	offset = 8;
-	ptr_struct->address = (u_int32_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 24);
-
-	offset = 2;
-	ptr_struct->permanent = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
-
-	offset = 1;
-	ptr_struct->use_address = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
-
-	offset = 0;
-	ptr_struct->use_image_id = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
-
-	offset = 56;
-	ptr_struct->image_id = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
-
-}
-
-void cibfw_register_mfai_print(const struct cibfw_register_mfai *ptr_struct, FILE* file, int indent_level)
-{
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "======== cibfw_register_mfai ========\n");
-	int i = 0;
-	(void)i;
-	(void)ptr_struct;
-	(void)file;
-	(void)indent_level;
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "address              : " UH_FMT "\n", ptr_struct->address);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "permanent            : " UH_FMT "\n", ptr_struct->permanent);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "use_address          : " UH_FMT "\n", ptr_struct->use_address);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "use_image_id         : " UH_FMT "\n", ptr_struct->use_image_id);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "image_id             : " UH_FMT "\n", ptr_struct->image_id);
-
-}
-
-int cibfw_register_mfai_size(void)
-{
-	 return 16;
-}
-
-void cibfw_register_mfai_dump(const struct cibfw_register_mfai *ptr_struct, FILE* file)
-{
-	cibfw_register_mfai_print(ptr_struct, file, 0);
-}
-
-void cibfw_register_mfrl_pack(const struct cibfw_register_mfrl *ptr_struct, u_int8_t* ptr_buff)
-{
-	u_int32_t offset;
-	int i = 0;
-	(void)offset;
-	(void)i;
-	(void)ptr_struct;
-	(void)ptr_buff;
-
-	offset = 56;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->reset_level);
-
-}
-
-void cibfw_register_mfrl_unpack(struct cibfw_register_mfrl *ptr_struct, const u_int8_t* ptr_buff)
-{
-	u_int32_t offset;
-	int i = 0;
-	(void)offset;
-	(void)i;
-	(void)ptr_struct;
-	(void)ptr_buff;
-
-	offset = 56;
-	ptr_struct->reset_level = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
-
-}
-
-void cibfw_register_mfrl_print(const struct cibfw_register_mfrl *ptr_struct, FILE* file, int indent_level)
-{
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "======== cibfw_register_mfrl ========\n");
-	int i = 0;
-	(void)i;
-	(void)ptr_struct;
-	(void)file;
-	(void)indent_level;
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "reset_level          : " UH_FMT "\n", ptr_struct->reset_level);
-
-}
-
-int cibfw_register_mfrl_size(void)
-{
-	 return 16;
-}
-
-void cibfw_register_mfrl_dump(const struct cibfw_register_mfrl *ptr_struct, FILE* file)
-{
-	cibfw_register_mfrl_print(ptr_struct, file, 0);
-}
-
-void cibfw_module_versions_pack(const struct cibfw_module_versions *ptr_struct, u_int8_t* ptr_buff)
-{
-	u_int32_t offset;
-	int i = 0;
-	(void)offset;
-	(void)i;
-	(void)ptr_struct;
-	(void)ptr_buff;
-
-	offset = 0;
-	cibfw_module_version_pack(&(ptr_struct->core), ptr_buff + offset/8);
-
-	offset = 32;
-	cibfw_module_version_pack(&(ptr_struct->phy), ptr_buff + offset/8);
-
-	offset = 64;
-	cibfw_module_version_pack(&(ptr_struct->kernel), ptr_buff + offset/8);
-
-	offset = 96;
-	cibfw_module_version_pack(&(ptr_struct->iron_image), ptr_buff + offset/8);
-
-	offset = 128;
-	cibfw_module_version_pack(&(ptr_struct->host_management), ptr_buff + offset/8);
-
-	offset = 160;
-	cibfw_module_version_pack(&(ptr_struct->mad), ptr_buff + offset/8);
-
-}
-
-void cibfw_module_versions_unpack(struct cibfw_module_versions *ptr_struct, const u_int8_t* ptr_buff)
-{
-	u_int32_t offset;
-	int i = 0;
-	(void)offset;
-	(void)i;
-	(void)ptr_struct;
-	(void)ptr_buff;
-
-	offset = 0;
-	cibfw_module_version_unpack(&(ptr_struct->core), ptr_buff + offset/8);
-
-	offset = 32;
-	cibfw_module_version_unpack(&(ptr_struct->phy), ptr_buff + offset/8);
-
-	offset = 64;
-	cibfw_module_version_unpack(&(ptr_struct->kernel), ptr_buff + offset/8);
-
-	offset = 96;
-	cibfw_module_version_unpack(&(ptr_struct->iron_image), ptr_buff + offset/8);
-
-	offset = 128;
-	cibfw_module_version_unpack(&(ptr_struct->host_management), ptr_buff + offset/8);
-
-	offset = 160;
-	cibfw_module_version_unpack(&(ptr_struct->mad), ptr_buff + offset/8);
-
-}
-
-void cibfw_module_versions_print(const struct cibfw_module_versions *ptr_struct, FILE* file, int indent_level)
-{
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "======== cibfw_module_versions ========\n");
-	int i = 0;
-	(void)i;
-	(void)ptr_struct;
-	(void)file;
-	(void)indent_level;
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "core:\n");
-	cibfw_module_version_print(&(ptr_struct->core), file, indent_level + 1);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "phy:\n");
-	cibfw_module_version_print(&(ptr_struct->phy), file, indent_level + 1);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "kernel:\n");
-	cibfw_module_version_print(&(ptr_struct->kernel), file, indent_level + 1);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "iron_image:\n");
-	cibfw_module_version_print(&(ptr_struct->iron_image), file, indent_level + 1);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "host_management:\n");
-	cibfw_module_version_print(&(ptr_struct->host_management), file, indent_level + 1);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "mad:\n");
-	cibfw_module_version_print(&(ptr_struct->mad), file, indent_level + 1);
-
-}
-
-int cibfw_module_versions_size(void)
-{
-	 return 64;
-}
-
-void cibfw_module_versions_dump(const struct cibfw_module_versions *ptr_struct, FILE* file)
-{
-	cibfw_module_versions_print(ptr_struct, file, 0);
-}
-
-void cibfw_operation_key_pack(const struct cibfw_operation_key *ptr_struct, u_int8_t* ptr_buff)
-{
-	u_int32_t offset;
-	int i = 0;
-	(void)offset;
-	(void)i;
-	(void)ptr_struct;
-	(void)ptr_buff;
-
-	offset = 16;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->key_modifier);
-
-	offset = 64;
-	adb2c_push_integer_to_buff(ptr_buff, offset, 8, ptr_struct->key);
-
-}
-
-void cibfw_operation_key_unpack(struct cibfw_operation_key *ptr_struct, const u_int8_t* ptr_buff)
-{
-	u_int32_t offset;
-	int i = 0;
-	(void)offset;
-	(void)i;
-	(void)ptr_struct;
-	(void)ptr_buff;
-
-	offset = 16;
-	ptr_struct->key_modifier = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
-
-	offset = 64;
-	ptr_struct->key = adb2c_pop_integer_from_buff(ptr_buff, offset, 8);
-
-}
-
-void cibfw_operation_key_print(const struct cibfw_operation_key *ptr_struct, FILE* file, int indent_level)
-{
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "======== cibfw_operation_key ========\n");
-	int i = 0;
-	(void)i;
-	(void)ptr_struct;
-	(void)file;
-	(void)indent_level;
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "key_modifier         : " UH_FMT "\n", ptr_struct->key_modifier);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "key                  : " U64H_FMT "\n", ptr_struct->key);
-
-}
-
-int cibfw_operation_key_size(void)
-{
-	 return 16;
-}
-
-void cibfw_operation_key_dump(const struct cibfw_operation_key *ptr_struct, FILE* file)
-{
-	cibfw_operation_key_print(ptr_struct, file, 0);
-}
-
-void cibfw_uid_entry_pack(const struct cibfw_uid_entry *ptr_struct, u_int8_t* ptr_buff)
+void cibfw_uid_entry_pack(const struct cibfw_uid_entry *ptr_struct, u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
 	int i = 0;
@@ -935,16 +162,13 @@ void cibfw_uid_entry_pack(const struct cibfw_uid_entry *ptr_struct, u_int8_t* pt
 
 	offset = 24;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->num_allocated);
-
 	offset = 16;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->step);
-
 	offset = 64;
 	adb2c_push_integer_to_buff(ptr_buff, offset, 8, ptr_struct->uid);
-
 }
 
-void cibfw_uid_entry_unpack(struct cibfw_uid_entry *ptr_struct, const u_int8_t* ptr_buff)
+void cibfw_uid_entry_unpack(struct cibfw_uid_entry *ptr_struct, const u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
 	int i = 0;
@@ -955,68 +179,42 @@ void cibfw_uid_entry_unpack(struct cibfw_uid_entry *ptr_struct, const u_int8_t* 
 
 	offset = 24;
 	ptr_struct->num_allocated = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
-
 	offset = 16;
 	ptr_struct->step = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
-
 	offset = 64;
 	ptr_struct->uid = adb2c_pop_integer_from_buff(ptr_buff, offset, 8);
-
 }
 
-void cibfw_uid_entry_print(const struct cibfw_uid_entry *ptr_struct, FILE* file, int indent_level)
+void cibfw_uid_entry_print(const struct cibfw_uid_entry *ptr_struct, FILE *fd, int indent_level)
 {
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "======== cibfw_uid_entry ========\n");
 	int i = 0;
 	(void)i;
 	(void)ptr_struct;
-	(void)file;
+	(void)fd;
 	(void)indent_level;
 
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "num_allocated        : " UH_FMT "\n", ptr_struct->num_allocated);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== cibfw_uid_entry ========\n");
 
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "step                 : " UH_FMT "\n", ptr_struct->step);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "uid                  : " U64H_FMT "\n", ptr_struct->uid);
-
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "num_allocated        : " UH_FMT "\n", ptr_struct->num_allocated);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "step                 : " UH_FMT "\n", ptr_struct->step);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "uid                  : " U64H_FMT "\n", ptr_struct->uid);
 }
 
-int cibfw_uid_entry_size(void)
+unsigned int cibfw_uid_entry_size(void)
 {
-	 return 16;
+	return CIBFW_UID_ENTRY_SIZE;
 }
 
-void cibfw_uid_entry_dump(const struct cibfw_uid_entry *ptr_struct, FILE* file)
+void cibfw_uid_entry_dump(const struct cibfw_uid_entry *ptr_struct, FILE *fd)
 {
-	cibfw_uid_entry_print(ptr_struct, file, 0);
+	cibfw_uid_entry_print(ptr_struct, fd, 0);
 }
 
-void cibfw_guids_pack(const struct cibfw_guids *ptr_struct, u_int8_t* ptr_buff)
-{
-	u_int32_t offset;
-	int i = 0;
-	(void)offset;
-	(void)i;
-	(void)ptr_struct;
-	(void)ptr_buff;
-
-	for (i = 0; i < 2; i++) {
-	offset = adb2c_calc_array_field_address(0, 128, i, 512, 1);
-	cibfw_uid_entry_pack(&(ptr_struct->guids[i]), ptr_buff + offset/8);
-	}
-
-	for (i = 0; i < 2; i++) {
-	offset = adb2c_calc_array_field_address(256, 128, i, 512, 1);
-	cibfw_uid_entry_pack(&(ptr_struct->macs[i]), ptr_buff + offset/8);
-	}
-
-}
-
-void cibfw_guids_unpack(struct cibfw_guids *ptr_struct, const u_int8_t* ptr_buff)
+void cibfw_FW_VERSION_pack(const struct cibfw_FW_VERSION *ptr_struct, u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
 	int i = 0;
@@ -1024,124 +222,28 @@ void cibfw_guids_unpack(struct cibfw_guids *ptr_struct, const u_int8_t* ptr_buff
 	(void)i;
 	(void)ptr_struct;
 	(void)ptr_buff;
-
-	for (i = 0; i < 2; i++) {
-	offset = adb2c_calc_array_field_address(0, 128, i, 512, 1);
-	cibfw_uid_entry_unpack(&(ptr_struct->guids[i]), ptr_buff + offset/8);
-	}
-
-	for (i = 0; i < 2; i++) {
-	offset = adb2c_calc_array_field_address(256, 128, i, 512, 1);
-	cibfw_uid_entry_unpack(&(ptr_struct->macs[i]), ptr_buff + offset/8);
-	}
-
-}
-
-void cibfw_guids_print(const struct cibfw_guids *ptr_struct, FILE* file, int indent_level)
-{
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "======== cibfw_guids ========\n");
-	int i = 0;
-	(void)i;
-	(void)ptr_struct;
-	(void)file;
-	(void)indent_level;
-
-	for (i = 0; i < 2; i++) {
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "guids_%03d:\n", i);
-	cibfw_uid_entry_print(&(ptr_struct->guids[i]), file, indent_level + 1);
-	}
-
-	for (i = 0; i < 2; i++) {
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "macs_%03d:\n", i);
-	cibfw_uid_entry_print(&(ptr_struct->macs[i]), file, indent_level + 1);
-	}
-
-}
-
-int cibfw_guids_size(void)
-{
-	 return 64;
-}
-
-void cibfw_guids_dump(const struct cibfw_guids *ptr_struct, FILE* file)
-{
-	cibfw_guids_print(ptr_struct, file, 0);
-}
-
-void cibfw_image_info_pack(const struct cibfw_image_info *ptr_struct, u_int8_t* ptr_buff)
-{
-	u_int32_t offset;
-	int i = 0;
-	(void)offset;
-	(void)i;
-	(void)ptr_struct;
-	(void)ptr_buff;
-
-	offset = 23;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->mcc_en);
-
-	offset = 18;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->debug_fw);
-
-	offset = 17;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->signed_fw);
-
-	offset = 16;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->secure_fw);
-
-	offset = 8;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->minor_version);
 
 	offset = 0;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->major_version);
-
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->MAJOR);
+	offset = 48;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->SUBMINOR);
 	offset = 32;
-	cibfw_FW_VERSION_pack(&(ptr_struct->FW_VERSION), ptr_buff + offset/8);
-
-	offset = 160;
-	cibfw_TRIPPLE_VERSION_pack(&(ptr_struct->mic_version), ptr_buff + offset/8);
-
-	offset = 224;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->pci_device_id);
-
-	for (i = 0; i < 16; i++) {
-	offset = adb2c_calc_array_field_address(312, 8, i, 8192, 1);
-	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->psid[i]);
-	}
-
-	offset = 432;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->vsd_vendor_id);
-
-	for (i = 0; i < 208; i++) {
-	offset = adb2c_calc_array_field_address(472, 8, i, 8192, 1);
-	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->vsd[i]);
-	}
-
-	offset = 2112;
-	cibfw_image_size_pack(&(ptr_struct->image_size), ptr_buff + offset/8);
-
-	for (i = 0; i < 4; i++) {
-	offset = adb2c_calc_array_field_address(2240, 32, i, 8192, 1);
-	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->supported_hw_id[i]);
-	}
-
-	offset = 2368;
-	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->ini_file_num);
-
-	for (i = 0; i < 16; i++) {
-	offset = adb2c_calc_array_field_address(3608, 8, i, 8192, 1);
-	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->prod_ver[i]);
-	}
-
-	offset = 6144;
-	cibfw_module_versions_pack(&(ptr_struct->module_versions), ptr_buff + offset/8);
-
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->MINOR);
+	offset = 80;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->Hour);
+	offset = 72;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->Minutes);
+	offset = 64;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->Seconds);
+	offset = 120;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->Day);
+	offset = 112;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->Month);
+	offset = 96;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->Year);
 }
 
-void cibfw_image_info_unpack(struct cibfw_image_info *ptr_struct, const u_int8_t* ptr_buff)
+void cibfw_FW_VERSION_unpack(struct cibfw_FW_VERSION *ptr_struct, const u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
 	int i = 0;
@@ -1150,144 +252,413 @@ void cibfw_image_info_unpack(struct cibfw_image_info *ptr_struct, const u_int8_t
 	(void)ptr_struct;
 	(void)ptr_buff;
 
-	offset = 23;
-	ptr_struct->mcc_en = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
-
-	offset = 18;
-	ptr_struct->debug_fw = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
-
-	offset = 17;
-	ptr_struct->signed_fw = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
-
-	offset = 16;
-	ptr_struct->secure_fw = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
-
-	offset = 8;
-	ptr_struct->minor_version = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
-
 	offset = 0;
-	ptr_struct->major_version = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
-
+	ptr_struct->MAJOR = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 48;
+	ptr_struct->SUBMINOR = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
 	offset = 32;
-	cibfw_FW_VERSION_unpack(&(ptr_struct->FW_VERSION), ptr_buff + offset/8);
-
-	offset = 160;
-	cibfw_TRIPPLE_VERSION_unpack(&(ptr_struct->mic_version), ptr_buff + offset/8);
-
-	offset = 224;
-	ptr_struct->pci_device_id = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
-
-	for (i = 0; i < 16; i++) {
-	offset = adb2c_calc_array_field_address(312, 8, i, 8192, 1);
-	ptr_struct->psid[i] = (char)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
-	}
-
-	ptr_struct->psid[16] = '\0';
-	offset = 432;
-	ptr_struct->vsd_vendor_id = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
-
-	for (i = 0; i < 208; i++) {
-	offset = adb2c_calc_array_field_address(472, 8, i, 8192, 1);
-	ptr_struct->vsd[i] = (char)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
-	}
-
-	ptr_struct->vsd[208] = '\0';
-	offset = 2112;
-	cibfw_image_size_unpack(&(ptr_struct->image_size), ptr_buff + offset/8);
-
-	for (i = 0; i < 4; i++) {
-	offset = adb2c_calc_array_field_address(2240, 32, i, 8192, 1);
-	ptr_struct->supported_hw_id[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
-	}
-
-	offset = 2368;
-	ptr_struct->ini_file_num = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
-
-	for (i = 0; i < 16; i++) {
-	offset = adb2c_calc_array_field_address(3608, 8, i, 8192, 1);
-	ptr_struct->prod_ver[i] = (char)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
-	}
-
-	ptr_struct->prod_ver[16] = '\0';
-	offset = 6144;
-	cibfw_module_versions_unpack(&(ptr_struct->module_versions), ptr_buff + offset/8);
-
+	ptr_struct->MINOR = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 80;
+	ptr_struct->Hour = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 72;
+	ptr_struct->Minutes = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 64;
+	ptr_struct->Seconds = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 120;
+	ptr_struct->Day = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 112;
+	ptr_struct->Month = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 96;
+	ptr_struct->Year = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
 }
 
-void cibfw_image_info_print(const struct cibfw_image_info *ptr_struct, FILE* file, int indent_level)
+void cibfw_FW_VERSION_print(const struct cibfw_FW_VERSION *ptr_struct, FILE *fd, int indent_level)
 {
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "======== cibfw_image_info ========\n");
 	int i = 0;
 	(void)i;
 	(void)ptr_struct;
-	(void)file;
+	(void)fd;
 	(void)indent_level;
 
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "mcc_en               : " UH_FMT "\n", ptr_struct->mcc_en);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== cibfw_FW_VERSION ========\n");
 
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "debug_fw             : " UH_FMT "\n", ptr_struct->debug_fw);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "MAJOR                : " UH_FMT "\n", ptr_struct->MAJOR);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "SUBMINOR             : " UH_FMT "\n", ptr_struct->SUBMINOR);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "MINOR                : " UH_FMT "\n", ptr_struct->MINOR);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "Hour                 : " UH_FMT "\n", ptr_struct->Hour);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "Minutes              : " UH_FMT "\n", ptr_struct->Minutes);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "Seconds              : " UH_FMT "\n", ptr_struct->Seconds);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "Day                  : " UH_FMT "\n", ptr_struct->Day);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "Month                : " UH_FMT "\n", ptr_struct->Month);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "Year                 : " UH_FMT "\n", ptr_struct->Year);
+}
 
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "signed_fw            : " UH_FMT "\n", ptr_struct->signed_fw);
+unsigned int cibfw_FW_VERSION_size(void)
+{
+	return CIBFW_FW_VERSION_SIZE;
+}
 
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "secure_fw            : " UH_FMT "\n", ptr_struct->secure_fw);
+void cibfw_FW_VERSION_dump(const struct cibfw_FW_VERSION *ptr_struct, FILE *fd)
+{
+	cibfw_FW_VERSION_print(ptr_struct, fd, 0);
+}
 
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "minor_version        : " UH_FMT "\n", ptr_struct->minor_version);
+void cibfw_TRIPPLE_VERSION_pack(const struct cibfw_TRIPPLE_VERSION *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+	int i = 0;
+	(void)offset;
+	(void)i;
+	(void)ptr_struct;
+	(void)ptr_buff;
 
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "major_version        : " UH_FMT "\n", ptr_struct->major_version);
+	offset = 0;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->MAJOR);
+	offset = 48;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->SUBMINOR);
+	offset = 32;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->MINOR);
+}
 
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "FW_VERSION:\n");
-	cibfw_FW_VERSION_print(&(ptr_struct->FW_VERSION), file, indent_level + 1);
+void cibfw_TRIPPLE_VERSION_unpack(struct cibfw_TRIPPLE_VERSION *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+	int i = 0;
+	(void)offset;
+	(void)i;
+	(void)ptr_struct;
+	(void)ptr_buff;
 
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "mic_version:\n");
-	cibfw_TRIPPLE_VERSION_print(&(ptr_struct->mic_version), file, indent_level + 1);
+	offset = 0;
+	ptr_struct->MAJOR = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 48;
+	ptr_struct->SUBMINOR = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 32;
+	ptr_struct->MINOR = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+}
 
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "pci_device_id        : " UH_FMT "\n", ptr_struct->pci_device_id);
+void cibfw_TRIPPLE_VERSION_print(const struct cibfw_TRIPPLE_VERSION *ptr_struct, FILE *fd, int indent_level)
+{
+	int i = 0;
+	(void)i;
+	(void)ptr_struct;
+	(void)fd;
+	(void)indent_level;
 
-	fprintf(file, "psid                 : \"%s\"\n", ptr_struct->psid);
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "vsd_vendor_id        : " UH_FMT "\n", ptr_struct->vsd_vendor_id);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== cibfw_TRIPPLE_VERSION ========\n");
 
-	fprintf(file, "vsd                  : \"%s\"\n", ptr_struct->vsd);
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "image_size:\n");
-	cibfw_image_size_print(&(ptr_struct->image_size), file, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "MAJOR                : " UH_FMT "\n", ptr_struct->MAJOR);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "SUBMINOR             : " UH_FMT "\n", ptr_struct->SUBMINOR);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "MINOR                : " UH_FMT "\n", ptr_struct->MINOR);
+}
 
-	for (i = 0; i < 4; i++) {
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "supported_hw_id_%03d : " U32H_FMT "\n", i, ptr_struct->supported_hw_id[i]);
+unsigned int cibfw_TRIPPLE_VERSION_size(void)
+{
+	return CIBFW_TRIPPLE_VERSION_SIZE;
+}
+
+void cibfw_TRIPPLE_VERSION_dump(const struct cibfw_TRIPPLE_VERSION *ptr_struct, FILE *fd)
+{
+	cibfw_TRIPPLE_VERSION_print(ptr_struct, fd, 0);
+}
+
+void cibfw_guids_pack(const struct cibfw_guids *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+	int i = 0;
+	(void)offset;
+	(void)i;
+	(void)ptr_struct;
+	(void)ptr_buff;
+
+	for (i = 0; i < 2; ++i) {
+		offset = adb2c_calc_array_field_address(0, 128, i, 512, 1);
+		cibfw_uid_entry_pack(&(ptr_struct->guids[i]), ptr_buff + offset / 8);
 	}
 
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "ini_file_num         : " U32H_FMT "\n", ptr_struct->ini_file_num);
-
-	fprintf(file, "prod_ver             : \"%s\"\n", ptr_struct->prod_ver);
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "module_versions:\n");
-	cibfw_module_versions_print(&(ptr_struct->module_versions), file, indent_level + 1);
+	for (i = 0; i < 2; ++i) {
+		offset = adb2c_calc_array_field_address(256, 128, i, 512, 1);
+		cibfw_uid_entry_pack(&(ptr_struct->macs[i]), ptr_buff + offset / 8);
+	}
 
 }
 
-int cibfw_image_info_size(void)
+void cibfw_guids_unpack(struct cibfw_guids *ptr_struct, const u_int8_t *ptr_buff)
 {
-	 return 1024;
+	u_int32_t offset;
+	int i = 0;
+	(void)offset;
+	(void)i;
+	(void)ptr_struct;
+	(void)ptr_buff;
+
+	for (i = 0; i < 2; ++i) {
+		offset = adb2c_calc_array_field_address(0, 128, i, 512, 1);
+		cibfw_uid_entry_unpack(&(ptr_struct->guids[i]), ptr_buff + offset / 8);
+	}
+
+	for (i = 0; i < 2; ++i) {
+		offset = adb2c_calc_array_field_address(256, 128, i, 512, 1);
+		cibfw_uid_entry_unpack(&(ptr_struct->macs[i]), ptr_buff + offset / 8);
+	}
+
 }
 
-void cibfw_image_info_dump(const struct cibfw_image_info *ptr_struct, FILE* file)
+void cibfw_guids_print(const struct cibfw_guids *ptr_struct, FILE *fd, int indent_level)
 {
-	cibfw_image_info_print(ptr_struct, file, 0);
+	int i = 0;
+	(void)i;
+	(void)ptr_struct;
+	(void)fd;
+	(void)indent_level;
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== cibfw_guids ========\n");
+
+	for (i = 0; i < 2; ++i) {
+		adb2c_add_indentation(fd, indent_level);
+		fprintf(fd, "guids_%03d:\n", i);
+		cibfw_uid_entry_print(&(ptr_struct->guids[i]), fd, indent_level + 1);
+	}
+	for (i = 0; i < 2; ++i) {
+		adb2c_add_indentation(fd, indent_level);
+		fprintf(fd, "macs_%03d:\n", i);
+		cibfw_uid_entry_print(&(ptr_struct->macs[i]), fd, indent_level + 1);
+	}
 }
 
-void cibfw_device_info_pack(const struct cibfw_device_info *ptr_struct, u_int8_t* ptr_buff)
+unsigned int cibfw_guids_size(void)
+{
+	return CIBFW_GUIDS_SIZE;
+}
+
+void cibfw_guids_dump(const struct cibfw_guids *ptr_struct, FILE *fd)
+{
+	cibfw_guids_print(ptr_struct, fd, 0);
+}
+
+void cibfw_image_size_pack(const struct cibfw_image_size *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+	int i = 0;
+	(void)offset;
+	(void)i;
+	(void)ptr_struct;
+	(void)ptr_buff;
+
+	offset = 24;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->log_step);
+	offset = 0;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->run_from_any);
+	offset = 32;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->max_size);
+}
+
+void cibfw_image_size_unpack(struct cibfw_image_size *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+	int i = 0;
+	(void)offset;
+	(void)i;
+	(void)ptr_struct;
+	(void)ptr_buff;
+
+	offset = 24;
+	ptr_struct->log_step = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 0;
+	ptr_struct->run_from_any = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 32;
+	ptr_struct->max_size = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+}
+
+void cibfw_image_size_print(const struct cibfw_image_size *ptr_struct, FILE *fd, int indent_level)
+{
+	int i = 0;
+	(void)i;
+	(void)ptr_struct;
+	(void)fd;
+	(void)indent_level;
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== cibfw_image_size ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "log_step             : " UH_FMT "\n", ptr_struct->log_step);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "run_from_any         : " UH_FMT "\n", ptr_struct->run_from_any);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "max_size             : " U32H_FMT "\n", ptr_struct->max_size);
+}
+
+unsigned int cibfw_image_size_size(void)
+{
+	return CIBFW_IMAGE_SIZE_SIZE;
+}
+
+void cibfw_image_size_dump(const struct cibfw_image_size *ptr_struct, FILE *fd)
+{
+	cibfw_image_size_print(ptr_struct, fd, 0);
+}
+
+void cibfw_module_versions_pack(const struct cibfw_module_versions *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+	int i = 0;
+	(void)offset;
+	(void)i;
+	(void)ptr_struct;
+	(void)ptr_buff;
+
+	offset = 0;
+	cibfw_module_version_pack(&(ptr_struct->core), ptr_buff + offset / 8);
+	offset = 32;
+	cibfw_module_version_pack(&(ptr_struct->phy), ptr_buff + offset / 8);
+	offset = 64;
+	cibfw_module_version_pack(&(ptr_struct->kernel), ptr_buff + offset / 8);
+	offset = 96;
+	cibfw_module_version_pack(&(ptr_struct->iron_image), ptr_buff + offset / 8);
+	offset = 128;
+	cibfw_module_version_pack(&(ptr_struct->host_management), ptr_buff + offset / 8);
+	offset = 160;
+	cibfw_module_version_pack(&(ptr_struct->mad), ptr_buff + offset / 8);
+}
+
+void cibfw_module_versions_unpack(struct cibfw_module_versions *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+	int i = 0;
+	(void)offset;
+	(void)i;
+	(void)ptr_struct;
+	(void)ptr_buff;
+
+	offset = 0;
+	cibfw_module_version_unpack(&(ptr_struct->core), ptr_buff + offset / 8);
+	offset = 32;
+	cibfw_module_version_unpack(&(ptr_struct->phy), ptr_buff + offset / 8);
+	offset = 64;
+	cibfw_module_version_unpack(&(ptr_struct->kernel), ptr_buff + offset / 8);
+	offset = 96;
+	cibfw_module_version_unpack(&(ptr_struct->iron_image), ptr_buff + offset / 8);
+	offset = 128;
+	cibfw_module_version_unpack(&(ptr_struct->host_management), ptr_buff + offset / 8);
+	offset = 160;
+	cibfw_module_version_unpack(&(ptr_struct->mad), ptr_buff + offset / 8);
+}
+
+void cibfw_module_versions_print(const struct cibfw_module_versions *ptr_struct, FILE *fd, int indent_level)
+{
+	int i = 0;
+	(void)i;
+	(void)ptr_struct;
+	(void)fd;
+	(void)indent_level;
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== cibfw_module_versions ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "core:\n");
+	cibfw_module_version_print(&(ptr_struct->core), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "phy:\n");
+	cibfw_module_version_print(&(ptr_struct->phy), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "kernel:\n");
+	cibfw_module_version_print(&(ptr_struct->kernel), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "iron_image:\n");
+	cibfw_module_version_print(&(ptr_struct->iron_image), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "host_management:\n");
+	cibfw_module_version_print(&(ptr_struct->host_management), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "mad:\n");
+	cibfw_module_version_print(&(ptr_struct->mad), fd, indent_level + 1);
+}
+
+unsigned int cibfw_module_versions_size(void)
+{
+	return CIBFW_MODULE_VERSIONS_SIZE;
+}
+
+void cibfw_module_versions_dump(const struct cibfw_module_versions *ptr_struct, FILE *fd)
+{
+	cibfw_module_versions_print(ptr_struct, fd, 0);
+}
+
+void cibfw_operation_key_pack(const struct cibfw_operation_key *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+	int i = 0;
+	(void)offset;
+	(void)i;
+	(void)ptr_struct;
+	(void)ptr_buff;
+
+	offset = 16;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->key_modifier);
+	offset = 64;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 8, ptr_struct->key);
+}
+
+void cibfw_operation_key_unpack(struct cibfw_operation_key *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+	int i = 0;
+	(void)offset;
+	(void)i;
+	(void)ptr_struct;
+	(void)ptr_buff;
+
+	offset = 16;
+	ptr_struct->key_modifier = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 64;
+	ptr_struct->key = adb2c_pop_integer_from_buff(ptr_buff, offset, 8);
+}
+
+void cibfw_operation_key_print(const struct cibfw_operation_key *ptr_struct, FILE *fd, int indent_level)
+{
+	int i = 0;
+	(void)i;
+	(void)ptr_struct;
+	(void)fd;
+	(void)indent_level;
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== cibfw_operation_key ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "key_modifier         : " UH_FMT "\n", ptr_struct->key_modifier);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "key                  : " U64H_FMT "\n", ptr_struct->key);
+}
+
+unsigned int cibfw_operation_key_size(void)
+{
+	return CIBFW_OPERATION_KEY_SIZE;
+}
+
+void cibfw_operation_key_dump(const struct cibfw_operation_key *ptr_struct, FILE *fd)
+{
+	cibfw_operation_key_print(ptr_struct, fd, 0);
+}
+
+void cibfw_device_info_pack(const struct cibfw_device_info *ptr_struct, u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
 	int i = 0;
@@ -1298,41 +669,33 @@ void cibfw_device_info_pack(const struct cibfw_device_info *ptr_struct, u_int8_t
 
 	offset = 0;
 	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->signature0);
-
 	offset = 32;
 	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->signature1);
-
 	offset = 64;
 	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->signature2);
-
 	offset = 96;
 	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->signature3);
-
 	offset = 152;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->minor_version);
-
 	offset = 143;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 9, (u_int32_t)ptr_struct->major_version);
-
 	offset = 256;
-	cibfw_guids_pack(&(ptr_struct->guids), ptr_buff + offset/8);
-
+	cibfw_guids_pack(&(ptr_struct->guids), ptr_buff + offset / 8);
 	offset = 880;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->vsd_vendor_id);
-
-	for (i = 0; i < 208; i++) {
-	offset = adb2c_calc_array_field_address(920, 8, i, 4096, 1);
-	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->vsd[i]);
+	for (i = 0; i < 208; ++i) {
+		offset = adb2c_calc_array_field_address(920, 8, i, 4096, 1);
+		adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->vsd[i]);
 	}
 
-	for (i = 0; i < 4; i++) {
-	offset = adb2c_calc_array_field_address(2816, 128, i, 4096, 1);
-	cibfw_operation_key_pack(&(ptr_struct->keys[i]), ptr_buff + offset/8);
+	for (i = 0; i < 4; ++i) {
+		offset = adb2c_calc_array_field_address(2816, 128, i, 4096, 1);
+		cibfw_operation_key_pack(&(ptr_struct->keys[i]), ptr_buff + offset / 8);
 	}
 
 }
 
-void cibfw_device_info_unpack(struct cibfw_device_info *ptr_struct, const u_int8_t* ptr_buff)
+void cibfw_device_info_unpack(struct cibfw_device_info *ptr_struct, const u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
 	int i = 0;
@@ -1343,96 +706,80 @@ void cibfw_device_info_unpack(struct cibfw_device_info *ptr_struct, const u_int8
 
 	offset = 0;
 	ptr_struct->signature0 = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
-
 	offset = 32;
 	ptr_struct->signature1 = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
-
 	offset = 64;
 	ptr_struct->signature2 = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
-
 	offset = 96;
 	ptr_struct->signature3 = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
-
 	offset = 152;
 	ptr_struct->minor_version = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
-
 	offset = 143;
 	ptr_struct->major_version = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 9);
-
 	offset = 256;
-	cibfw_guids_unpack(&(ptr_struct->guids), ptr_buff + offset/8);
-
+	cibfw_guids_unpack(&(ptr_struct->guids), ptr_buff + offset / 8);
 	offset = 880;
 	ptr_struct->vsd_vendor_id = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
-
-	for (i = 0; i < 208; i++) {
-	offset = adb2c_calc_array_field_address(920, 8, i, 4096, 1);
-	ptr_struct->vsd[i] = (char)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	for (i = 0; i < 208; ++i) {
+		offset = adb2c_calc_array_field_address(920, 8, i, 4096, 1);
+		ptr_struct->vsd[i] = (char)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 	}
 
-	ptr_struct->vsd[208] = '\0';
-	for (i = 0; i < 4; i++) {
-	offset = adb2c_calc_array_field_address(2816, 128, i, 4096, 1);
-	cibfw_operation_key_unpack(&(ptr_struct->keys[i]), ptr_buff + offset/8);
+		ptr_struct->vsd[208] = '\0';
+	for (i = 0; i < 4; ++i) {
+		offset = adb2c_calc_array_field_address(2816, 128, i, 4096, 1);
+		cibfw_operation_key_unpack(&(ptr_struct->keys[i]), ptr_buff + offset / 8);
 	}
 
 }
 
-void cibfw_device_info_print(const struct cibfw_device_info *ptr_struct, FILE* file, int indent_level)
+void cibfw_device_info_print(const struct cibfw_device_info *ptr_struct, FILE *fd, int indent_level)
 {
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "======== cibfw_device_info ========\n");
 	int i = 0;
 	(void)i;
 	(void)ptr_struct;
-	(void)file;
+	(void)fd;
 	(void)indent_level;
 
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "signature0           : " U32H_FMT "\n", ptr_struct->signature0);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== cibfw_device_info ========\n");
 
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "signature1           : " U32H_FMT "\n", ptr_struct->signature1);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "signature2           : " U32H_FMT "\n", ptr_struct->signature2);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "signature3           : " U32H_FMT "\n", ptr_struct->signature3);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "minor_version        : " UH_FMT "\n", ptr_struct->minor_version);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "major_version        : " UH_FMT "\n", ptr_struct->major_version);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "guids:\n");
-	cibfw_guids_print(&(ptr_struct->guids), file, indent_level + 1);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "vsd_vendor_id        : " UH_FMT "\n", ptr_struct->vsd_vendor_id);
-
-	fprintf(file, "vsd                  : \"%s\"\n", ptr_struct->vsd);
-	for (i = 0; i < 4; i++) {
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "keys_%03d:\n", i);
-	cibfw_operation_key_print(&(ptr_struct->keys[i]), file, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "signature0           : " U32H_FMT "\n", ptr_struct->signature0);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "signature1           : " U32H_FMT "\n", ptr_struct->signature1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "signature2           : " U32H_FMT "\n", ptr_struct->signature2);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "signature3           : " U32H_FMT "\n", ptr_struct->signature3);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "minor_version        : " UH_FMT "\n", ptr_struct->minor_version);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "major_version        : " UH_FMT "\n", ptr_struct->major_version);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "guids:\n");
+	cibfw_guids_print(&(ptr_struct->guids), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "vsd_vendor_id        : " UH_FMT "\n", ptr_struct->vsd_vendor_id);
+		fprintf(fd, "vsd                  : \"%s\"\n", ptr_struct->vsd);
+	for (i = 0; i < 4; ++i) {
+		adb2c_add_indentation(fd, indent_level);
+		fprintf(fd, "keys_%03d:\n", i);
+		cibfw_operation_key_print(&(ptr_struct->keys[i]), fd, indent_level + 1);
 	}
-
 }
 
-int cibfw_device_info_size(void)
+unsigned int cibfw_device_info_size(void)
 {
-	 return 512;
+	return CIBFW_DEVICE_INFO_SIZE;
 }
 
-void cibfw_device_info_dump(const struct cibfw_device_info *ptr_struct, FILE* file)
+void cibfw_device_info_dump(const struct cibfw_device_info *ptr_struct, FILE *fd)
 {
-	cibfw_device_info_print(ptr_struct, file, 0);
+	cibfw_device_info_print(ptr_struct, fd, 0);
 }
 
-void cibfw_mfg_info_pack(const struct cibfw_mfg_info *ptr_struct, u_int8_t* ptr_buff)
+void cibfw_image_info_pack(const struct cibfw_image_info *ptr_struct, u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
 	int i = 0;
@@ -1441,26 +788,397 @@ void cibfw_mfg_info_pack(const struct cibfw_mfg_info *ptr_struct, u_int8_t* ptr_
 	(void)ptr_struct;
 	(void)ptr_buff;
 
-	for (i = 0; i < 16; i++) {
-	offset = adb2c_calc_array_field_address(24, 8, i, 2560, 1);
-	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->psid[i]);
+	offset = 23;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->mcc_en);
+	offset = 18;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->debug_fw);
+	offset = 17;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->signed_fw);
+	offset = 16;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->secure_fw);
+	offset = 8;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->minor_version);
+	offset = 0;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->major_version);
+	offset = 32;
+	cibfw_FW_VERSION_pack(&(ptr_struct->FW_VERSION), ptr_buff + offset / 8);
+	offset = 160;
+	cibfw_TRIPPLE_VERSION_pack(&(ptr_struct->mic_version), ptr_buff + offset / 8);
+	offset = 224;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->pci_device_id);
+	for (i = 0; i < 16; ++i) {
+		offset = adb2c_calc_array_field_address(312, 8, i, 8192, 1);
+		adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->psid[i]);
+	}
+
+	offset = 432;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->vsd_vendor_id);
+	for (i = 0; i < 208; ++i) {
+		offset = adb2c_calc_array_field_address(472, 8, i, 8192, 1);
+		adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->vsd[i]);
+	}
+
+	offset = 2112;
+	cibfw_image_size_pack(&(ptr_struct->image_size), ptr_buff + offset / 8);
+	for (i = 0; i < 4; ++i) {
+		offset = adb2c_calc_array_field_address(2240, 32, i, 8192, 1);
+		adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->supported_hw_id[i]);
+	}
+
+	offset = 2368;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->ini_file_num);
+	for (i = 0; i < 16; ++i) {
+		offset = adb2c_calc_array_field_address(3608, 8, i, 8192, 1);
+		adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->prod_ver[i]);
+	}
+
+	offset = 6144;
+	cibfw_module_versions_pack(&(ptr_struct->module_versions), ptr_buff + offset / 8);
+}
+
+void cibfw_image_info_unpack(struct cibfw_image_info *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+	int i = 0;
+	(void)offset;
+	(void)i;
+	(void)ptr_struct;
+	(void)ptr_buff;
+
+	offset = 23;
+	ptr_struct->mcc_en = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 18;
+	ptr_struct->debug_fw = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 17;
+	ptr_struct->signed_fw = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 16;
+	ptr_struct->secure_fw = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 8;
+	ptr_struct->minor_version = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 0;
+	ptr_struct->major_version = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 32;
+	cibfw_FW_VERSION_unpack(&(ptr_struct->FW_VERSION), ptr_buff + offset / 8);
+	offset = 160;
+	cibfw_TRIPPLE_VERSION_unpack(&(ptr_struct->mic_version), ptr_buff + offset / 8);
+	offset = 224;
+	ptr_struct->pci_device_id = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	for (i = 0; i < 16; ++i) {
+		offset = adb2c_calc_array_field_address(312, 8, i, 8192, 1);
+		ptr_struct->psid[i] = (char)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	}
+
+		ptr_struct->psid[16] = '\0';
+	offset = 432;
+	ptr_struct->vsd_vendor_id = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	for (i = 0; i < 208; ++i) {
+		offset = adb2c_calc_array_field_address(472, 8, i, 8192, 1);
+		ptr_struct->vsd[i] = (char)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	}
+
+		ptr_struct->vsd[208] = '\0';
+	offset = 2112;
+	cibfw_image_size_unpack(&(ptr_struct->image_size), ptr_buff + offset / 8);
+	for (i = 0; i < 4; ++i) {
+		offset = adb2c_calc_array_field_address(2240, 32, i, 8192, 1);
+		ptr_struct->supported_hw_id[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	}
+
+	offset = 2368;
+	ptr_struct->ini_file_num = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	for (i = 0; i < 16; ++i) {
+		offset = adb2c_calc_array_field_address(3608, 8, i, 8192, 1);
+		ptr_struct->prod_ver[i] = (char)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	}
+
+		ptr_struct->prod_ver[16] = '\0';
+	offset = 6144;
+	cibfw_module_versions_unpack(&(ptr_struct->module_versions), ptr_buff + offset / 8);
+}
+
+void cibfw_image_info_print(const struct cibfw_image_info *ptr_struct, FILE *fd, int indent_level)
+{
+	int i = 0;
+	(void)i;
+	(void)ptr_struct;
+	(void)fd;
+	(void)indent_level;
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== cibfw_image_info ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "mcc_en               : " UH_FMT "\n", ptr_struct->mcc_en);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "debug_fw             : " UH_FMT "\n", ptr_struct->debug_fw);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "signed_fw            : " UH_FMT "\n", ptr_struct->signed_fw);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "secure_fw            : " UH_FMT "\n", ptr_struct->secure_fw);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "minor_version        : " UH_FMT "\n", ptr_struct->minor_version);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "major_version        : " UH_FMT "\n", ptr_struct->major_version);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "FW_VERSION:\n");
+	cibfw_FW_VERSION_print(&(ptr_struct->FW_VERSION), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "mic_version:\n");
+	cibfw_TRIPPLE_VERSION_print(&(ptr_struct->mic_version), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "pci_device_id        : " UH_FMT "\n", ptr_struct->pci_device_id);
+		fprintf(fd, "psid                 : \"%s\"\n", ptr_struct->psid);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "vsd_vendor_id        : " UH_FMT "\n", ptr_struct->vsd_vendor_id);
+		fprintf(fd, "vsd                  : \"%s\"\n", ptr_struct->vsd);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "image_size:\n");
+	cibfw_image_size_print(&(ptr_struct->image_size), fd, indent_level + 1);
+	for (i = 0; i < 4; ++i) {
+		adb2c_add_indentation(fd, indent_level);
+		fprintf(fd, "supported_hw_id_%03d : " U32H_FMT "\n", i, ptr_struct->supported_hw_id[i]);
+	}
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "ini_file_num         : " U32H_FMT "\n", ptr_struct->ini_file_num);
+		fprintf(fd, "prod_ver             : \"%s\"\n", ptr_struct->prod_ver);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "module_versions:\n");
+	cibfw_module_versions_print(&(ptr_struct->module_versions), fd, indent_level + 1);
+}
+
+unsigned int cibfw_image_info_size(void)
+{
+	return CIBFW_IMAGE_INFO_SIZE;
+}
+
+void cibfw_image_info_dump(const struct cibfw_image_info *ptr_struct, FILE *fd)
+{
+	cibfw_image_info_print(ptr_struct, fd, 0);
+}
+
+void cibfw_itoc_entry_pack(const struct cibfw_itoc_entry *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+	int i = 0;
+	(void)offset;
+	(void)i;
+	(void)ptr_struct;
+	(void)ptr_buff;
+
+	offset = 8;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 22, (u_int32_t)ptr_struct->size);
+	offset = 0;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->type);
+	offset = 34;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 30, (u_int32_t)ptr_struct->param0);
+	offset = 33;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->cache_line_crc);
+	offset = 32;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->zipped_image);
+	offset = 64;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->param1);
+	offset = 161;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 29, (u_int32_t)ptr_struct->flash_addr);
+	offset = 160;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->relative_addr);
+	offset = 208;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->section_crc);
+	offset = 207;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->no_crc);
+	offset = 206;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->device_data);
+	offset = 240;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->itoc_entry_crc);
+}
+
+void cibfw_itoc_entry_unpack(struct cibfw_itoc_entry *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+	int i = 0;
+	(void)offset;
+	(void)i;
+	(void)ptr_struct;
+	(void)ptr_buff;
+
+	offset = 8;
+	ptr_struct->size = (u_int32_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 22);
+	offset = 0;
+	ptr_struct->type = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 34;
+	ptr_struct->param0 = (u_int32_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 30);
+	offset = 33;
+	ptr_struct->cache_line_crc = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 32;
+	ptr_struct->zipped_image = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 64;
+	ptr_struct->param1 = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	offset = 161;
+	ptr_struct->flash_addr = (u_int32_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 29);
+	offset = 160;
+	ptr_struct->relative_addr = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 208;
+	ptr_struct->section_crc = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 207;
+	ptr_struct->no_crc = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 206;
+	ptr_struct->device_data = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 240;
+	ptr_struct->itoc_entry_crc = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+}
+
+void cibfw_itoc_entry_print(const struct cibfw_itoc_entry *ptr_struct, FILE *fd, int indent_level)
+{
+	int i = 0;
+	(void)i;
+	(void)ptr_struct;
+	(void)fd;
+	(void)indent_level;
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== cibfw_itoc_entry ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "size                 : " UH_FMT "\n", ptr_struct->size);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "type                 : " UH_FMT "\n", ptr_struct->type);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "param0               : " UH_FMT "\n", ptr_struct->param0);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "cache_line_crc       : " UH_FMT "\n", ptr_struct->cache_line_crc);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "zipped_image         : " UH_FMT "\n", ptr_struct->zipped_image);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "param1               : " U32H_FMT "\n", ptr_struct->param1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "flash_addr           : " UH_FMT "\n", ptr_struct->flash_addr);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "relative_addr        : " UH_FMT "\n", ptr_struct->relative_addr);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "section_crc          : " UH_FMT "\n", ptr_struct->section_crc);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "no_crc               : " UH_FMT "\n", ptr_struct->no_crc);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "device_data          : " UH_FMT "\n", ptr_struct->device_data);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "itoc_entry_crc       : " UH_FMT "\n", ptr_struct->itoc_entry_crc);
+}
+
+unsigned int cibfw_itoc_entry_size(void)
+{
+	return CIBFW_ITOC_ENTRY_SIZE;
+}
+
+void cibfw_itoc_entry_dump(const struct cibfw_itoc_entry *ptr_struct, FILE *fd)
+{
+	cibfw_itoc_entry_print(ptr_struct, fd, 0);
+}
+
+void cibfw_itoc_header_pack(const struct cibfw_itoc_header *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+	int i = 0;
+	(void)offset;
+	(void)i;
+	(void)ptr_struct;
+	(void)ptr_buff;
+
+	offset = 0;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->signature0);
+	offset = 32;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->signature1);
+	offset = 64;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->signature2);
+	offset = 96;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->signature3);
+	offset = 152;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->version);
+	offset = 240;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->itoc_entry_crc);
+}
+
+void cibfw_itoc_header_unpack(struct cibfw_itoc_header *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+	int i = 0;
+	(void)offset;
+	(void)i;
+	(void)ptr_struct;
+	(void)ptr_buff;
+
+	offset = 0;
+	ptr_struct->signature0 = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	offset = 32;
+	ptr_struct->signature1 = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	offset = 64;
+	ptr_struct->signature2 = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	offset = 96;
+	ptr_struct->signature3 = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	offset = 152;
+	ptr_struct->version = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 240;
+	ptr_struct->itoc_entry_crc = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+}
+
+void cibfw_itoc_header_print(const struct cibfw_itoc_header *ptr_struct, FILE *fd, int indent_level)
+{
+	int i = 0;
+	(void)i;
+	(void)ptr_struct;
+	(void)fd;
+	(void)indent_level;
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== cibfw_itoc_header ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "signature0           : " U32H_FMT "\n", ptr_struct->signature0);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "signature1           : " U32H_FMT "\n", ptr_struct->signature1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "signature2           : " U32H_FMT "\n", ptr_struct->signature2);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "signature3           : " U32H_FMT "\n", ptr_struct->signature3);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "version              : " UH_FMT "\n", ptr_struct->version);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "itoc_entry_crc       : " UH_FMT "\n", ptr_struct->itoc_entry_crc);
+}
+
+unsigned int cibfw_itoc_header_size(void)
+{
+	return CIBFW_ITOC_HEADER_SIZE;
+}
+
+void cibfw_itoc_header_dump(const struct cibfw_itoc_header *ptr_struct, FILE *fd)
+{
+	cibfw_itoc_header_print(ptr_struct, fd, 0);
+}
+
+void cibfw_mfg_info_pack(const struct cibfw_mfg_info *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+	int i = 0;
+	(void)offset;
+	(void)i;
+	(void)ptr_struct;
+	(void)ptr_buff;
+
+	for (i = 0; i < 16; ++i) {
+		offset = adb2c_calc_array_field_address(24, 8, i, 2560, 1);
+		adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->psid[i]);
 	}
 
 	offset = 255;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->guids_override_en);
-
 	offset = 232;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->minor_version);
-
 	offset = 224;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->major_version);
-
 	offset = 256;
-	cibfw_guids_pack(&(ptr_struct->guids), ptr_buff + offset/8);
-
+	cibfw_guids_pack(&(ptr_struct->guids), ptr_buff + offset / 8);
 }
 
-void cibfw_mfg_info_unpack(struct cibfw_mfg_info *ptr_struct, const u_int8_t* ptr_buff)
+void cibfw_mfg_info_unpack(struct cibfw_mfg_info *ptr_struct, const u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
 	int i = 0;
@@ -1469,123 +1187,235 @@ void cibfw_mfg_info_unpack(struct cibfw_mfg_info *ptr_struct, const u_int8_t* pt
 	(void)ptr_struct;
 	(void)ptr_buff;
 
-	for (i = 0; i < 16; i++) {
-	offset = adb2c_calc_array_field_address(24, 8, i, 2560, 1);
-	ptr_struct->psid[i] = (char)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	for (i = 0; i < 16; ++i) {
+		offset = adb2c_calc_array_field_address(24, 8, i, 2560, 1);
+		ptr_struct->psid[i] = (char)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 	}
 
-	ptr_struct->psid[16] = '\0';
+		ptr_struct->psid[16] = '\0';
 	offset = 255;
 	ptr_struct->guids_override_en = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
-
 	offset = 232;
 	ptr_struct->minor_version = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
-
 	offset = 224;
 	ptr_struct->major_version = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
-
 	offset = 256;
-	cibfw_guids_unpack(&(ptr_struct->guids), ptr_buff + offset/8);
-
+	cibfw_guids_unpack(&(ptr_struct->guids), ptr_buff + offset / 8);
 }
 
-void cibfw_mfg_info_print(const struct cibfw_mfg_info *ptr_struct, FILE* file, int indent_level)
+void cibfw_mfg_info_print(const struct cibfw_mfg_info *ptr_struct, FILE *fd, int indent_level)
 {
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "======== cibfw_mfg_info ========\n");
 	int i = 0;
 	(void)i;
 	(void)ptr_struct;
-	(void)file;
+	(void)fd;
 	(void)indent_level;
 
-	fprintf(file, "psid                 : \"%s\"\n", ptr_struct->psid);
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "guids_override_en    : " UH_FMT "\n", ptr_struct->guids_override_en);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== cibfw_mfg_info ========\n");
 
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "minor_version        : " UH_FMT "\n", ptr_struct->minor_version);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "major_version        : " UH_FMT "\n", ptr_struct->major_version);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "guids:\n");
-	cibfw_guids_print(&(ptr_struct->guids), file, indent_level + 1);
-
+		fprintf(fd, "psid                 : \"%s\"\n", ptr_struct->psid);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "guids_override_en    : " UH_FMT "\n", ptr_struct->guids_override_en);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "minor_version        : " UH_FMT "\n", ptr_struct->minor_version);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "major_version        : " UH_FMT "\n", ptr_struct->major_version);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "guids:\n");
+	cibfw_guids_print(&(ptr_struct->guids), fd, indent_level + 1);
 }
 
-int cibfw_mfg_info_size(void)
+unsigned int cibfw_mfg_info_size(void)
 {
-	 return 320;
+	return CIBFW_MFG_INFO_SIZE;
 }
 
-void cibfw_mfg_info_dump(const struct cibfw_mfg_info *ptr_struct, FILE* file)
+void cibfw_mfg_info_dump(const struct cibfw_mfg_info *ptr_struct, FILE *fd)
 {
-	cibfw_mfg_info_print(ptr_struct, file, 0);
+	cibfw_mfg_info_print(ptr_struct, fd, 0);
 }
 
-void cibfw_cibfw_Nodes_pack(const union cibfw_cibfw_Nodes *ptr_struct, u_int8_t* ptr_buff)
+void cibfw_register_mfai_pack(const struct cibfw_register_mfai *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+	int i = 0;
+	(void)offset;
+	(void)i;
+	(void)ptr_struct;
+	(void)ptr_buff;
+
+	offset = 8;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 24, (u_int32_t)ptr_struct->address);
+	offset = 2;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->permanent);
+	offset = 1;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->use_address);
+	offset = 0;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->use_image_id);
+	offset = 56;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->image_id);
+}
+
+void cibfw_register_mfai_unpack(struct cibfw_register_mfai *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+	int i = 0;
+	(void)offset;
+	(void)i;
+	(void)ptr_struct;
+	(void)ptr_buff;
+
+	offset = 8;
+	ptr_struct->address = (u_int32_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 24);
+	offset = 2;
+	ptr_struct->permanent = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 1;
+	ptr_struct->use_address = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 0;
+	ptr_struct->use_image_id = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 56;
+	ptr_struct->image_id = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+}
+
+void cibfw_register_mfai_print(const struct cibfw_register_mfai *ptr_struct, FILE *fd, int indent_level)
+{
+	int i = 0;
+	(void)i;
+	(void)ptr_struct;
+	(void)fd;
+	(void)indent_level;
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== cibfw_register_mfai ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "address              : " UH_FMT "\n", ptr_struct->address);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "permanent            : " UH_FMT "\n", ptr_struct->permanent);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "use_address          : " UH_FMT "\n", ptr_struct->use_address);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "use_image_id         : " UH_FMT "\n", ptr_struct->use_image_id);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "image_id             : " UH_FMT "\n", ptr_struct->image_id);
+}
+
+unsigned int cibfw_register_mfai_size(void)
+{
+	return CIBFW_REGISTER_MFAI_SIZE;
+}
+
+void cibfw_register_mfai_dump(const struct cibfw_register_mfai *ptr_struct, FILE *fd)
+{
+	cibfw_register_mfai_print(ptr_struct, fd, 0);
+}
+
+void cibfw_register_mfrl_pack(const struct cibfw_register_mfrl *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+	int i = 0;
+	(void)offset;
+	(void)i;
+	(void)ptr_struct;
+	(void)ptr_buff;
+
+	offset = 56;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->reset_level);
+}
+
+void cibfw_register_mfrl_unpack(struct cibfw_register_mfrl *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+	int i = 0;
+	(void)offset;
+	(void)i;
+	(void)ptr_struct;
+	(void)ptr_buff;
+
+	offset = 56;
+	ptr_struct->reset_level = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+}
+
+void cibfw_register_mfrl_print(const struct cibfw_register_mfrl *ptr_struct, FILE *fd, int indent_level)
+{
+	int i = 0;
+	(void)i;
+	(void)ptr_struct;
+	(void)fd;
+	(void)indent_level;
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== cibfw_register_mfrl ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "reset_level          : " UH_FMT "\n", ptr_struct->reset_level);
+}
+
+unsigned int cibfw_register_mfrl_size(void)
+{
+	return CIBFW_REGISTER_MFRL_SIZE;
+}
+
+void cibfw_register_mfrl_dump(const struct cibfw_register_mfrl *ptr_struct, FILE *fd)
+{
+	cibfw_register_mfrl_print(ptr_struct, fd, 0);
+}
+
+void cibfw_cibfw_Nodes_pack(const union cibfw_cibfw_Nodes *ptr_struct, u_int8_t *ptr_buff)
 {
 	cibfw_image_info_pack(&(ptr_struct->image_info), ptr_buff);
 }
 
-void cibfw_cibfw_Nodes_unpack(union cibfw_cibfw_Nodes *ptr_struct, const u_int8_t* ptr_buff)
+void cibfw_cibfw_Nodes_unpack(union cibfw_cibfw_Nodes *ptr_struct, const u_int8_t *ptr_buff)
 {
 	cibfw_image_info_unpack(&(ptr_struct->image_info), ptr_buff);
 }
 
-void cibfw_cibfw_Nodes_print(const union cibfw_cibfw_Nodes *ptr_struct, FILE* file, int indent_level)
+void cibfw_cibfw_Nodes_print(const union cibfw_cibfw_Nodes *ptr_struct, FILE *fd, int indent_level)
 {
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "======== cibfw_cibfw_Nodes ========\n");
 	int i = 0;
 	(void)i;
 	(void)ptr_struct;
-	(void)file;
+	(void)fd;
 	(void)indent_level;
 
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "register_mfai:\n");
-	cibfw_register_mfai_print(&(ptr_struct->register_mfai), file, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== cibfw_cibfw_Nodes ========\n");
 
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "itoc_entry:\n");
-	cibfw_itoc_entry_print(&(ptr_struct->itoc_entry), file, indent_level + 1);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "guids:\n");
-	cibfw_guids_print(&(ptr_struct->guids), file, indent_level + 1);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "itoc_header:\n");
-	cibfw_itoc_header_print(&(ptr_struct->itoc_header), file, indent_level + 1);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "register_mfrl:\n");
-	cibfw_register_mfrl_print(&(ptr_struct->register_mfrl), file, indent_level + 1);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "device_info:\n");
-	cibfw_device_info_print(&(ptr_struct->device_info), file, indent_level + 1);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "mfg_info:\n");
-	cibfw_mfg_info_print(&(ptr_struct->mfg_info), file, indent_level + 1);
-
-	adb2c_add_indentation(file, indent_level);
-	fprintf(file, "image_info:\n");
-	cibfw_image_info_print(&(ptr_struct->image_info), file, indent_level + 1);
-
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "register_mfai:\n");
+	cibfw_register_mfai_print(&(ptr_struct->register_mfai), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "itoc_entry:\n");
+	cibfw_itoc_entry_print(&(ptr_struct->itoc_entry), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "guids:\n");
+	cibfw_guids_print(&(ptr_struct->guids), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "itoc_header:\n");
+	cibfw_itoc_header_print(&(ptr_struct->itoc_header), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "register_mfrl:\n");
+	cibfw_register_mfrl_print(&(ptr_struct->register_mfrl), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "device_info:\n");
+	cibfw_device_info_print(&(ptr_struct->device_info), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "mfg_info:\n");
+	cibfw_mfg_info_print(&(ptr_struct->mfg_info), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "image_info:\n");
+	cibfw_image_info_print(&(ptr_struct->image_info), fd, indent_level + 1);
 }
 
-int cibfw_cibfw_Nodes_size(void)
+unsigned int cibfw_cibfw_Nodes_size(void)
 {
-	 return 1024;
+	return CIBFW_CIBFW_NODES_SIZE;
 }
 
-void cibfw_cibfw_Nodes_dump(const union cibfw_cibfw_Nodes *ptr_struct, FILE* file)
+void cibfw_cibfw_Nodes_dump(const union cibfw_cibfw_Nodes *ptr_struct, FILE *fd)
 {
-	cibfw_cibfw_Nodes_print(ptr_struct, file, 0);
+	cibfw_cibfw_Nodes_print(ptr_struct, fd, 0);
 }
 

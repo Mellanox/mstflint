@@ -219,7 +219,11 @@ bool Fs4Operations::verifyToolsArea(VerifyCallBack verifyCallBackFunc) {
     }
 
     //Put info
-    _fwImgInfo.cntxLog2ChunkSize = _maxImgLog2Size;
+    if (_maxImgLog2Size == 0x16 && _fwImgInfo.imgStart == 0x800000) {
+        _fwImgInfo.cntxLog2ChunkSize = 0x17;
+    } else {
+        _fwImgInfo.cntxLog2ChunkSize = _maxImgLog2Size;
+    }
     _fwImgInfo.ext_info.is_failsafe = true;
     _fwImgInfo.actuallyFailsafe  = true;
     _fwImgInfo.magicPatternFound = 1;
@@ -1118,8 +1122,7 @@ bool Fs4Operations::CheckIfAlignmentIsNeeded(FwOperations *imgops)
 bool Fs4Operations::BurnFs4Image(Fs4Operations &imageOps,
                                   ExtBurnParams& burnParams)
 {
-    u_int8_t  is_curr_image_in_odd_chunks;
-    u_int32_t new_image_start;
+    u_int8_t is_curr_image_in_odd_chunks;
     u_int32_t total_img_size = 0;
     u_int32_t sector_size = FS4_DEFAULT_SECTOR_SIZE;
     Flash    *f     = (Flash*)(this->_ioAccess);
@@ -1127,20 +1130,21 @@ bool Fs4Operations::BurnFs4Image(Fs4Operations &imageOps,
     bool useImageDevData;
     int alreadyWrittenSz;
 
-    if (_fwImgInfo.imgStart != 0
-        || (!burnParams.burnFailsafe
-             && ((Flash*)_ioAccess)->get_ignore_cache_replacment())) {
-        //If the burn is not failsafe and with -ocr, the image is burnt at 0x0
-        is_curr_image_in_odd_chunks = 1; //Ahmads: why odd chunks?
-        new_image_start = 0;
+    if (_fwImgInfo.imgStart != 0 ||
+            (!burnParams.burnFailsafe && ((Flash*)_ioAccess)->get_ignore_cache_replacment())) {
+        is_curr_image_in_odd_chunks = 1;
     } else {
         is_curr_image_in_odd_chunks = 0;
-        new_image_start = (1 << imageOps._fwImgInfo.cntxLog2ChunkSize);
     }
 
-    //Take chunk size from image in case of a non failsafe burn (in any case they should be the same)
-    f->set_address_convertor(imageOps._fwImgInfo.cntxLog2ChunkSize,
-            !is_curr_image_in_odd_chunks);
+    u_int32_t new_image_start = getNewImageStartAddress(imageOps, burnParams.burnFailsafe);
+
+    if (new_image_start == 0x800000) {
+        f->set_address_convertor(0x17, 1);
+    } else {
+        // take chunk size from image in case of a non failsafe burn (in any case they should be the same)
+        f->set_address_convertor(imageOps._fwImgInfo.cntxLog2ChunkSize, !is_curr_image_in_odd_chunks);
+    }
 
     // check max image size
     useImageDevData =  !burnParams.burnFailsafe && burnParams.useImgDevData;
@@ -1381,11 +1385,8 @@ bool Fs4Operations::FsBurnAux(FwOperations *imgops, ExtBurnParams& burnParams)
     }
 
     if (burnParams.burnFailsafe) {
-        // Check image and device chunk sizes are Ok
-        if (_fwImgInfo.cntxLog2ChunkSize != imageOps._fwImgInfo.cntxLog2ChunkSize) {
-            return errmsg(MLXFW_DEVICE_IMAGE_MISMATCH_ERR,
-                    "Device and Image file partition size differ(0x%x/0x%x), use non failsafe burn flow.",
-                    _fwImgInfo.cntxLog2ChunkSize, imageOps._fwImgInfo.cntxLog2ChunkSize);
+        if (!CheckAndDealWithChunkSizes(_fwImgInfo.cntxLog2ChunkSize, imageOps._fwImgInfo.cntxLog2ChunkSize)) {
+            return false;
         }
 
         // Check if the burnt FW version is OK
