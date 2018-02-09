@@ -44,7 +44,7 @@ noinst_LIBRARIES = libcmdif.a
 libcmdif_a_SOURCES = tools_cif.c tools_cif.h icmd_cif_common.c icmd_cif_common.h icmd_cif_open.c icmd_cif_open.h
 
 cmdif_pylibdir = $(libdir)/mstflint/python_tools/
-cmdif_pylib_DATA = ${CCMDIF_SO} cmdif.py
+cmdif_pylib_DATA = ${CCMDIF_SO}
 dist_cmdif_pylib_DATA = cmdif.py
 ${CCMDIF_SO}: libcmdif.a
 	$(CC) -g -Wall -pthread -shared ${CFLAGS} *.o -o ${CCMDIF_SO} \
