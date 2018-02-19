@@ -100,8 +100,10 @@ public:
     virtual bool FwReadData(void* image, u_int32_t* image_size) = 0;
     virtual bool FwReadBlock(u_int32_t addr, u_int32_t size, std::vector<u_int8_t>& dataVec);
 
-    virtual bool FwInsertEncSHA256(const char* privPemFile, const char* uuid, PrintCallBack printFunc=(PrintCallBack)NULL);
     virtual bool FwInsertSHA256(PrintCallBack printFunc=(PrintCallBack)NULL);
+    virtual bool FwSignWithOneRSAKey(const char* privPemFile, const char* uuid, PrintCallBack printFunc=(PrintCallBack)NULL);
+    virtual bool FwSignWithTwoRSAKeys(const char* privPemFile1, const char* uuid1,
+            const char* privPemFile2, const char* uuid2, PrintCallBack printFunc=(PrintCallBack)NULL);
     virtual bool FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatternAndDevToc);
     virtual bool FwSetPublicKeys(char* fname, PrintCallBack callBackFunc=(PrintCallBack)NULL);
     virtual bool FwSetForbiddenVersions(char* fname, PrintCallBack callBackFunc=(PrintCallBack)NULL);
@@ -133,11 +135,13 @@ public:
     virtual bool FwQueryTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer, bool queryRunning=false);
     virtual bool FwResetTimeStamp();
 
+    virtual bool FwCheckIfWeCanBurnWithFwControl(FwOperations*) {return true;}
     virtual bool FwCheckIf8MBShiftingNeeded(FwOperations *, const ExtBurnParams&) {return false;}
 
     bool CreateBasicImageFromData(u_int32_t *data, u_int32_t dataSize, FwOperations** newImgOps);
 
     virtual bool CheckIfAlignmentIsNeeded(FwOperations *) { return false; }
+    virtual bool AlignDeviceSections(FwOperations */*imageOps*/) { return errmsg("Align device sections is not supported"); }
 
     void FwCleanUp();
     virtual bool FwInit() = 0;
@@ -155,6 +159,8 @@ public:
 
     static bool          imageDevOperationsCreate(fw_ops_params_t& devParams, fw_ops_params_t& imgParams,
                                                    FwOperations** devFwOps, FwOperations** imgFwOps);
+
+    virtual bool IsFsCtrlOperations() {return false;}
 
     //bool GetExpRomVersionWrapper();
     void getSupporteHwId(u_int32_t **supportedHwId, u_int32_t &supportedHwIdNum);
@@ -382,6 +388,17 @@ protected:
         bool readRom;
     };
 
+
+    class burnDataParamsT {
+    public:
+        u_int32_t *data;
+        u_int32_t dataSize;
+        ProgressCallBack progressFunc;
+        bool calcSha;
+
+        burnDataParamsT() : data((u_int32_t*)NULL), dataSize(0), progressFunc ((ProgressCallBack)NULL), calcSha(false) {};
+    };
+
     typedef int (*print2log_func) (const char* format, ...);
 
     // Protected Methods
@@ -419,6 +436,7 @@ protected:
 
     bool ReadImageFile(const char *fimage, u_int8_t *&file_data, int &file_size);
     bool FwBurnData(u_int32_t *data, u_int32_t dataSize, ProgressCallBack progressFunc);
+    bool FwBurnData(burnDataParamsT& burnDataParams);
     static bool FwAccessCreate(fw_ops_params_t& fwParams, FBase **ioAccessP);
     bool CheckBinVersion(u_int8_t binVerMajor, u_int8_t binVerMinor);
 

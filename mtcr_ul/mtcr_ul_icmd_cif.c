@@ -40,8 +40,18 @@
 #include <bit_slice.h>
 #include <common/tools_utils.h>
 #include "mtcr_icmd_cif.h"
+
+#ifndef __FreeBSD__
 #include "mtcr_ib_res_mgt.h"
+#endif
 //#define _DEBUG_MODE   // un-comment this to enable debug prints
+
+#if !defined(__WIN__) && !defined(DISABLE_OFED)
+#include <dlfcn.h>
+#include <infiniband/verbs.h>
+#endif
+
+// _DEBUG_MODE   // un-comment this to enable debug prints
 
 #define IN
 #define OUT
@@ -79,6 +89,8 @@
 #define CTRL_OFFSET         0x3fc
 #define BUSY_BITOFF         0
 #define BUSY_BITLEN         1
+#define EXMB_BITOFF         1
+#define EXMB_BITLEN         1
 #define OPCODE_BITOFF       16
 #define OPCODE_BITLEN       16
 #define STATUS_BITOFF       8
@@ -87,6 +99,28 @@
 #define VCR_SEMAPHORE62     0x0 // semaphore Domain
 #define VCR_CMD_ADDR        0x100000 // mailbox addr
 #define VCR_CMD_SIZE_ADDR   0x1000 // mailbox size
+
+#define EXT_MBOX_MKEY_OFF   0x8
+
+struct dma_lib_hdl_t {
+    void*               lib_handle;
+#if !defined(__WIN__) && !defined(DISABLE_OFED)
+    struct ibv_device** (*ibv_get_device_list)(int *num_devices);
+    const char *        (*ibv_get_device_name)(struct ibv_device *device);
+    void                (*ibv_free_device_list)(struct ibv_device **list);
+    struct ibv_context* (*ibv_open_device)(struct ibv_device *device);
+    int                 (*ibv_close_device)(struct ibv_context *context);
+    struct ibv_pd*      (*ibv_alloc_pd)(struct ibv_context *context);
+    int                 (*ibv_dealloc_pd)(struct ibv_pd *pd);
+    struct ibv_mr*      (*ibv_reg_mr)(struct ibv_pd *pd, void *addr, size_t length, int access);
+    int                 (*ibv_dereg_mr)(struct ibv_mr *mr);
+
+    struct ibv_device       **dev_list;
+    struct ibv_context      *ib_ctx;
+    struct ibv_pd           *pd;
+    struct ibv_mr           *mr;
+#endif
+};
 
 /*
  * Macros for accessing CR-Space
@@ -142,24 +176,32 @@
 
 #define MWRITE_BUF_ICMD(mf, offset, data, byte_len, action_on_fail)\
     do {\
-        SET_SPACE_FOR_ICMD_ACCESS(mf);\
-        DBG_PRINTF("-D- MWRITE_BUF_ICMD: off: %x, addr_space: %x\n", offset, mf->address_space);\
-        if ((unsigned)mwrite_buffer(mf, offset, data, byte_len) != (unsigned)byte_len) {\
+        if (mf->icmd.dma_mbox) { \
+            memcpy(mf->icmd.dma_mbox, data, byte_len);\
+        } else {\
+            SET_SPACE_FOR_ICMD_ACCESS(mf);\
+            DBG_PRINTF("-D- MWRITE_BUF_ICMD: off: %x, addr_space: %x\n", offset, mf->address_space);\
+            if ((unsigned)mwrite_buffer(mf, offset, data, byte_len) != (unsigned)byte_len) {\
+                RESTORE_SPACE(mf);\
+                action_on_fail;\
+            }\
             RESTORE_SPACE(mf);\
-            action_on_fail;\
         }\
-        RESTORE_SPACE(mf);\
     }while(0)
 
 #define MREAD_BUF_ICMD(mf, offset, data, byte_len, action_on_fail)\
     do {\
-        SET_SPACE_FOR_ICMD_ACCESS(mf);\
-        DBG_PRINTF("-D- MREAD_BUF_ICMD: off: %x, addr_space: %x\n", offset, mf->address_space);\
-        if ((unsigned)mread_buffer(mf, offset, data, byte_len) != (unsigned)byte_len) {\
+        if (mf->icmd.dma_mbox) { \
+            memcpy(data, mf->icmd.dma_mbox, byte_len);\
+        } else {\
+            SET_SPACE_FOR_ICMD_ACCESS(mf);\
+            DBG_PRINTF("-D- MREAD_BUF_ICMD: off: %x, addr_space: %x\n", offset, mf->address_space);\
+            if ((unsigned)mread_buffer(mf, offset, data, byte_len) != (unsigned)byte_len) {\
+                RESTORE_SPACE(mf);\
+                action_on_fail;\
+            }\
             RESTORE_SPACE(mf);\
-            action_on_fail;\
         }\
-        RESTORE_SPACE(mf);\
     }while(0)
 
 /*
@@ -202,15 +244,17 @@ enum {
  *  according to Hw devid
  */
 
-#define HW_ID_ADDR 0xf0014
-#define CIB_HW_ID 511
-#define CX4_HW_ID 521
-#define CX4LX_HW_ID 523
-#define CX5_HW_ID 525
-#define SW_IB_HW_ID 583
-#define SW_EN_HW_ID 585
-#define SW_IB2_HW_ID 587
-#define QUANTUM_HW_ID 589
+#define HW_ID_ADDR      0xf0014
+#define CIB_HW_ID       511
+#define CX4_HW_ID       521
+#define CX4LX_HW_ID     523
+#define CX5_HW_ID       525
+#define BF_HW_ID        529
+#define SW_IB_HW_ID     583
+#define SW_EN_HW_ID     585
+#define SW_IB2_HW_ID    587
+#define QUANTUM_HW_ID   589
+#define SPECTRUM2_HW_ID 591
 
 #define GET_ADDR(mf, addr_cib, addr_cx4, addr_sw_ib, addr_cx5, addr_quantum, addr)\
     do {\
@@ -227,9 +271,11 @@ enum {
             addr = addr_sw_ib;\
             break;\
         case (QUANTUM_HW_ID):\
+        case (SPECTRUM2_HW_ID):\
             addr = addr_quantum;\
             break;\
         case (CX5_HW_ID):\
+        case (BF_HW_ID):\
             addr = addr_cx5;\
             break;\
         default:\
@@ -298,9 +344,10 @@ static int go(mfile *mf) {
  */
 static int set_opcode(mfile *mf, u_int16_t opcode) {
     u_int32_t reg = 0x0;
-
+    u_int8_t exmb = (mf->icmd.dma_mbox != NULL) ? 1 : 0;
     MREAD4_ICMD(mf, mf->icmd.ctrl_addr, &reg, return ME_ICMD_STATUS_CR_FAIL);
     reg = MERGE(reg, opcode, OPCODE_BITOFF, OPCODE_BITLEN);
+    reg = MERGE(reg, exmb, EXMB_BITOFF, EXMB_BITLEN);
     MWRITE4_ICMD(mf, mf->icmd.ctrl_addr, reg, return ME_ICMD_STATUS_CR_FAIL);
 
     return ME_OK;
@@ -374,6 +421,7 @@ int icmd_clear_semaphore(mfile *mf)
     if ((ret = icmd_open(mf))) {
         return ret;
     }
+#ifndef __FreeBSD__
     int is_leaseable;
     u_int8_t lease_exp;
     if ((mf->icmd.semaphore_addr == SEMAPHORE_ADDR_CIB  ||
@@ -392,7 +440,9 @@ int icmd_clear_semaphore(mfile *mf)
             return ME_ICMD_STATUS_CR_FAIL;
         }
         DBG_PRINTF("Succeeded!\n");
-    } else {
+    } else
+#endif
+    {
         MWRITE4_SEMAPHORE(mf, mf->icmd.semaphore_addr, 0, return ME_ICMD_STATUS_CR_FAIL);
     }
     mf->icmd.took_semaphore = 0;
@@ -412,7 +462,7 @@ static int icmd_take_semaphore_com(mfile *mf, u_int32_t expected_read_val)
          if (++retries > 256) {
              return ME_ICMD_STATUS_SEMAPHORE_TO;
          }
-
+#ifndef __FreeBSD__
          int is_leaseable;
          u_int8_t lease_exp;
          if ((mf->icmd.semaphore_addr == SEMAPHORE_ADDR_CIB  ||
@@ -430,7 +480,9 @@ static int icmd_take_semaphore_com(mfile *mf, u_int32_t expected_read_val)
                  read_val = 1;
              }
              DBG_PRINTF("Succeeded!\n");
-         } else {
+         } else
+#endif
+         {
              if (mf->vsec_supp) {
                  //write expected val before reading it
                  MWRITE4_SEMAPHORE(mf, mf->icmd.semaphore_addr, expected_read_val, return ME_ICMD_STATUS_CR_FAIL);
@@ -519,6 +571,9 @@ int icmd_send_command_int(mfile    *mf,
         MWRITE_BUF_ICMD(mf, mf->icmd.cmd_addr, data, write_data_size, ret=ME_ICMD_STATUS_CR_FAIL; goto cleanup;);
     }
 
+    if (mf->icmd.dma_icmd) {
+        MWRITE4_ICMD(mf, mf->icmd.ctrl_addr + EXT_MBOX_MKEY_OFF, mf->icmd.mbox_mkey, return ME_ICMD_STATUS_CR_FAIL;);
+    }
     if ((ret = go(mf))) {
         goto cleanup;
     }
@@ -531,7 +586,7 @@ int icmd_send_command_int(mfile    *mf,
 
     ret = ME_OK;
 cleanup:
-    icmd_clear_semaphore(mf);
+    ret = icmd_clear_semaphore(mf);
     return ret;
 }
 
@@ -566,6 +621,7 @@ static int icmd_init_cr(mfile *mf)
         mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CIB;
         break;
     case (CX5_HW_ID):
+    case (BF_HW_ID):
         cmd_ptr_addr = CMD_PTR_ADDR_CX5;
         hcr_address = HCR_ADDR_CX5;
         mf->icmd.semaphore_addr = SEMAPHORE_ADDR_CX5;
@@ -582,6 +638,7 @@ static int icmd_init_cr(mfile *mf)
         mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_SW_IB;
         break;
     case (QUANTUM_HW_ID):
+    case (SPECTRUM2_HW_ID):
         cmd_ptr_addr = CMD_PTR_ADDR_QUANTUM;
         hcr_address = HCR_ADDR_QUANTUM;
         mf->icmd.semaphore_addr = SEMAPHORE_ADDR_QUANTUM;
@@ -609,13 +666,173 @@ static int icmd_init_cr(mfile *mf)
     }
     // if IB check if we support locking via MAD
 #ifndef __FreeBSD__
-    mget_mdevs_flags(mf, &dev_type);
+    if (mget_mdevs_flags(mf, &dev_type)) {
+        dev_type = 0;
+    }
     if ((dev_type & MDEVS_IB) && (mib_semaphore_lock_is_supported(mf))) {
         mf->icmd.ib_semaphore_lock_supported = 1;
     }
 #endif
     mf->icmd.icmd_opened = 1;
     return ME_OK;
+}
+
+#if !defined(__WIN__) && !defined(DISABLE_OFED)
+char* libs[] = {"libibverbs.so.1"};
+
+#define MY_DLSYM(lib_ctx, func_name) do { \
+      const char* dl_error; \
+      lib_ctx->func_name = dlsym(lib_ctx->lib_handle, #func_name); \
+      if ((dl_error = dlerror()) != NULL)  {\
+          DBG_PRINTF("-E- %s", dl_error);\
+          return ME_ERROR;\
+      } \
+} while(0)
+
+static int init_lib_hdl(mfile* mf)
+{
+    unsigned i = 0;
+    for (i = 0; i < sizeof(libs)/sizeof(libs[0]) ; i++) {
+        mf->icmd.dma_lib_ctx->lib_handle = dlopen (libs[i], RTLD_LAZY);
+        if (mf->icmd.dma_lib_ctx->lib_handle) {
+            break;
+        }
+    }
+    if (!mf->icmd.dma_lib_ctx->lib_handle) {
+        DBG_PRINTF("-E- Ib verbs lib open failure: %s", dlerror());
+        return ME_ERROR;
+    }
+    MY_DLSYM(mf->icmd.dma_lib_ctx, ibv_get_device_list);
+    MY_DLSYM(mf->icmd.dma_lib_ctx, ibv_get_device_name);
+    MY_DLSYM(mf->icmd.dma_lib_ctx, ibv_free_device_list);
+    MY_DLSYM(mf->icmd.dma_lib_ctx, ibv_open_device);
+    MY_DLSYM(mf->icmd.dma_lib_ctx, ibv_close_device);
+    MY_DLSYM(mf->icmd.dma_lib_ctx, ibv_alloc_pd);
+    MY_DLSYM(mf->icmd.dma_lib_ctx, ibv_dealloc_pd);
+    MY_DLSYM(mf->icmd.dma_lib_ctx, ibv_reg_mr);
+    MY_DLSYM(mf->icmd.dma_lib_ctx, ibv_dereg_mr);
+    return ME_OK;
+}
+#endif
+
+static int mailbox_alloc(mfile* mf)
+{
+    TOOLS_UNUSED(mf);
+#if !defined(__WIN__) && !defined(DISABLE_OFED)
+    size_t i;
+    int num_devices = 0;
+    int mr_flags = IBV_ACCESS_LOCAL_WRITE;
+    struct ibv_device *ib_dev = 0;
+    char ibdev_name[16] = {0};
+
+    if (mf->dinfo->pci.ib_devs == NULL) {
+        return ME_ERROR;
+    }
+    strncpy(ibdev_name, mf->dinfo->pci.ib_devs[0], sizeof(ibdev_name)/sizeof(ibdev_name[0]) - 1);
+    if (posix_memalign ((void**)&(mf->icmd.dma_mbox), 0x1000, VCR_CMD_SIZE_ADDR)) {
+        DBG_PRINTF("-E- Failed to align memory\n");
+        return ME_MEM_ERROR;
+    }
+    if (!mf->icmd.dma_mbox) {
+        DBG_PRINTF("-E- Failed to allocate mailbox\n");
+        return ME_MEM_ERROR;
+    }
+    memset(mf->icmd.dma_mbox, 0, VCR_CMD_SIZE_ADDR);
+    mf->icmd.dma_lib_ctx = malloc (sizeof(dma_lib_hdl));
+    if (!mf->icmd.dma_lib_ctx) {
+        free(mf->icmd.dma_mbox);
+        DBG_PRINTF("-E- Failed to allocate lib hdl struct\n");
+        return ME_MEM_ERROR;
+    }
+    memset(mf->icmd.dma_lib_ctx, 0, sizeof(dma_lib_hdl));
+    if(init_lib_hdl(mf)) {
+        free(mf->icmd.dma_lib_ctx);
+        free(mf->icmd.dma_mbox);
+        DBG_PRINTF("-E- Failed to initialize DMA functions\n");
+        return ME_ERROR;
+    }
+    mf->icmd.dma_lib_ctx->dev_list = mf->icmd.dma_lib_ctx->ibv_get_device_list(&num_devices);
+    if (!mf->icmd.dma_lib_ctx->dev_list) {
+        DBG_PRINTF("-E- failed to get IB devices list\n");
+        free(mf->icmd.dma_lib_ctx);
+        free(mf->icmd.dma_mbox);
+        return ME_ERROR;
+    }
+
+    /* if there isn't any IB device in host */
+    if (!num_devices) {
+        DBG_PRINTF("-E- found %d ib device(s)\n", num_devices);
+        free(mf->icmd.dma_lib_ctx);
+        free(mf->icmd.dma_mbox);
+        return ME_ERROR;
+    }
+
+    for (i = 0; i < (size_t)num_devices; i ++) {
+        if (!strcmp(mf->icmd.dma_lib_ctx->ibv_get_device_name(mf->icmd.dma_lib_ctx->dev_list[i]), ibdev_name))
+        {
+            ib_dev = mf->icmd.dma_lib_ctx->dev_list[i];
+            break;
+        }
+    }
+
+    if (!ib_dev) {
+        DBG_PRINTF("-E- IB device %s wasn't found\n", ibdev_name);
+        free(mf->icmd.dma_lib_ctx);
+        free(mf->icmd.dma_mbox);
+        return ME_ERROR;
+    }
+
+    mf->icmd.dma_lib_ctx->ib_ctx = mf->icmd.dma_lib_ctx->ibv_open_device(ib_dev);
+    if (!mf->icmd.dma_lib_ctx->ib_ctx) {
+        DBG_PRINTF("-E- failed to open IB device %s\n", ibdev_name);
+        free(mf->icmd.dma_lib_ctx);
+        free(mf->icmd.dma_mbox);
+        return ME_ERROR;
+    }
+
+    mf->icmd.dma_lib_ctx->pd = mf->icmd.dma_lib_ctx->ibv_alloc_pd(mf->icmd.dma_lib_ctx->ib_ctx);
+    if (!mf->icmd.dma_lib_ctx->pd) {
+        DBG_PRINTF("-E- ibv_alloc_pd failed\n");
+        free(mf->icmd.dma_lib_ctx);
+        free(mf->icmd.dma_mbox);
+        return ME_ERROR;
+    }
+
+    mf->icmd.dma_lib_ctx->mr = mf->icmd.dma_lib_ctx->ibv_reg_mr(mf->icmd.dma_lib_ctx->pd, mf->icmd.dma_mbox,
+                                                                    VCR_CMD_SIZE_ADDR, mr_flags);
+    if (!mf->icmd.dma_lib_ctx->mr) {
+        DBG_PRINTF("-E- ibv_reg_mr failed with mr_flags=0x%x\n", mr_flags);
+        free(mf->icmd.dma_lib_ctx);
+        free(mf->icmd.dma_mbox);
+        return ME_ERROR;
+    }
+
+    mf->icmd.mbox_mkey = mf->icmd.dma_lib_ctx->mr->lkey;
+#endif
+    return ME_OK;
+}
+
+static void mailbox_dealloc(mfile* mf)
+{
+    TOOLS_UNUSED(mf);
+#if !defined(__WIN__) && !defined(DISABLE_OFED)
+    if (mf->icmd.dma_lib_ctx->dev_list && mf->icmd.dma_lib_ctx->ibv_free_device_list) {
+        mf->icmd.dma_lib_ctx->ibv_free_device_list(mf->icmd.dma_lib_ctx->dev_list);
+    }
+    if (mf->icmd.dma_lib_ctx->mr && mf->icmd.dma_lib_ctx->ibv_dereg_mr) {
+        mf->icmd.dma_lib_ctx->ibv_dereg_mr(mf->icmd.dma_lib_ctx->mr);
+    }
+    if (mf->icmd.dma_lib_ctx->pd && mf->icmd.dma_lib_ctx->ibv_dealloc_pd) {
+        mf->icmd.dma_lib_ctx->ibv_dealloc_pd(mf->icmd.dma_lib_ctx->pd);
+    }
+    if (mf->icmd.dma_lib_ctx->ib_ctx && mf->icmd.dma_lib_ctx->ibv_close_device) {
+    }
+    if (mf->icmd.dma_lib_ctx->lib_handle) {
+        dlclose(mf->icmd.dma_lib_ctx->lib_handle);
+    }
+    free(mf->icmd.dma_lib_ctx);
+    free(mf->icmd.dma_mbox);
+#endif
 }
 
 static int icmd_init_vcr(mfile* mf)
@@ -637,6 +854,13 @@ static int icmd_init_vcr(mfile* mf)
      DBG_PRINTF("-D- iCMD semaphore addr(semaphore space): 0x%x\n", mf->icmd.semaphore_addr);
      DBG_PRINTF("-D- iCMD max mailbox size: 0x%x\n", mf->icmd.max_cmd_size);
      DBG_PRINTF("-D- iCMD stat_cfg_not_done addr: 0x%x:%d\n", mf->icmd.static_cfg_not_done_addr, mf->icmd.static_cfg_not_done_offs);
+     if (mf->icmd.dma_icmd) {
+         if (mailbox_alloc(mf)) {
+             mf->icmd.dma_icmd = 0;
+             mf->icmd.dma_mbox = NULL;
+             DBG_PRINTF("-W- Failed to allocate DMA mailbox\n");
+         }
+     }
      return ME_OK;
 }
 
@@ -649,6 +873,10 @@ int icmd_open(mfile *mf)
 
     mf->icmd.took_semaphore = 0;
     mf->icmd.ib_semaphore_lock_supported = 0;
+    mf->icmd.dma_icmd = 0;
+    if (getenv("ENABLE_DMA_ICMD")) {
+        mf->icmd.dma_icmd = 1;
+    }
     // attempt to open via CR-Space
 #if defined(MST_UL) && !defined(MST_UL_ICMD)
     if (mf->vsec_supp) {
@@ -671,9 +899,15 @@ int icmd_open(mfile *mf)
  */
 void icmd_close(mfile *mf) {
     if (mf) {
-        if (mf->icmd.took_semaphore)
-            icmd_clear_semaphore(mf);
+        if (mf->icmd.took_semaphore) {
+            if (icmd_clear_semaphore(mf)) {
+                DBG_PRINTF("Failed to clear semaphore!\n");
+            }
+        }
         mf->icmd.icmd_opened = 0;
+    }
+    if (mf->icmd.dma_lib_ctx) {
+        mailbox_dealloc(mf);
     }
 }
 

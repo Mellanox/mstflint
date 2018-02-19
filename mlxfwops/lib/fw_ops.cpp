@@ -720,9 +720,20 @@ bool FwOperations::imageDevOperationsCreate(fw_ops_params_t& devParams, fw_ops_p
     if (!(*imgFwOps)) {
         return false;
     }
+
+    if ((*imgFwOps)->FwType() == FIT_FS2) {
+        *devFwOps = FwOperationsCreate(devParams);
+        if (!(*devFwOps)) {
+            return false;
+        }
+        return true;
+    }
+
     fw_info_t imgQuery;
     memset(&imgQuery, 0, sizeof(fw_info_t));
-    (*imgFwOps)->FwQuery(&imgQuery);
+    if (!(*imgFwOps)->FwQuery(&imgQuery)) {
+        return false;
+    }
     if (imgQuery.fs3_info.security_mode == SM_NONE) {
         devParams.noFwCtrl = true;
     }
@@ -916,7 +927,7 @@ bool FwOperations::writeImageEx(ProgressCallBackEx progressFuncEx, void * progre
         } else {
             trans = towrite;
             if (!((FImage*)_ioAccess)->write(curr_addr, p, trans)) {
-                return false;
+                return errmsg("%s", _ioAccess->err());
             }
         }
         p += trans;
@@ -1033,6 +1044,7 @@ const FwOperations::HwDevData FwOperations::hwDevData[] = {
     { "ConnectX-5",       CX5_HW_ID,        CT_CONNECTX5,    CFT_HCA,     0, {4119, 4121, 0}, {{CX5_LOW_BIN, {4119, 0}},
                                                                                                {CX5_HIGH_BIN, {4119, 4121, 0}},
                                                                                                {UNKNOWN_BIN,{0}}}},
+    { "BlueField",        BF_HW_ID,         CT_BLUEFIELD,    CFT_HCA,     0, {41680, 41681, 41682, 0}, {{UNKNOWN_BIN,{0}}}},
     { "Spectrum",         SPECTRUM_HW_ID,   CT_SPECTRUM,     CFT_SWITCH,  0, {52100, 0}, {{UNKNOWN_BIN,{0}}}},
     { "Switch_IB2",       SWITCH_IB2_HW_ID, CT_SWITCH_IB2,   CFT_SWITCH,  0, {53000, 0}, {{UNKNOWN_BIN,{0}}}},
     { (char*)NULL ,       0,                CT_UNKNOWN,      CFT_UNKNOWN, 0, {0}, {{UNKNOWN_BIN,{0}}}},// zero devid terminator
@@ -1047,6 +1059,7 @@ const FwOperations::HwDev2Str FwOperations::hwDev2Str[] = {
         {"ConnectX-4",        CX4_HW_ID,        0x00},
         {"ConnectX-4LX",      CX4LX_HW_ID,      0x00},
         {"ConnectX-5",        CX5_HW_ID,        0x00},
+        {"BlueField",         BF_HW_ID,         0x00},
         {"SwitchX A0",        SWITCHX_HW_ID,    0x00},
         {"SwitchX A1",        SWITCHX_HW_ID,    0x01},
         {"InfiniScale IV A0", IS4_HW_ID,        0xA0},
@@ -1472,11 +1485,9 @@ bool FwOperations::RomInfo::GetExpRomVersion()
 
 u_int8_t FwOperations::RomInfo::getNumVerFromProdId(u_int16_t prodId)
 {
-    if (prodId < 0xF || prodId == 0x12) {
-        return 1;//For CLPs
-    } else if (prodId == 0xF) {
-        return 0;
-    } else { // >= 0x10
+    if (prodId == 0xF) {
+        return 1;
+    } else {
         return 3;
     }
 }
@@ -1499,39 +1510,21 @@ bool FwOperations::RomInfo::GetExpRomVerForOneRom(u_int32_t verOffset)
     }
     romInfo = &(romsInfo[numOfExpRom]);
 
-    // Following mlxsign:
-    // 31:24    0    Compatible with UEFI
-    // 23:16    ProductID   Product ID:
-    //                          0x1 - CLP implementation for InfiniHost_III_Lx (MT25408)
-    //                          0x2 - CLP implementation for Connectx DDR (MT25418)
-    //							0x3 - CLP implementation for Connectx QDR (MT26428)
-    //							0x4 - CLP implementation for Connectx ETHERNET (MT25448)
-    //                          0X10 - PXE
-    //							0x11 - UEFI
-    //							0x12 - CLP with device ID and Version
-    //							0x21 - FCODE - IBM's ROM version format, the same as PXE
-    //						   (0xf) - extended format(see code or rom version format document)
-    //
-    // 15:0 Major version   If ProductID < 0x10 or == 0x12 this field is subversion
-    //                          number, otherwise It's product major version.
-    //
-    // 31:16    Minor version   Product minor version*. Not valid if
-    //                          roductID < 0x10 or == 0x12.
-    // 15:0 SubMinor version    Product sub minor version*. Not valid if
-    //                                  ProductID < 0x10 or == 0x12.
-    //
-    // 31:16    Device ID   The PCI Device ID (ex. 0x634A for Connectx
-    //                          DDR). Not valid if ProductID < 0x10.
-    // 15:12    Port Number Port number: 0 - Port independent, 1 - Port 1, 2 - Port 2
-    //  8:11    Reserved
-    //  0:7     Protocol type: 0=IB 1=ETH 2=VPI
+    // Following mlxsign: refer to layout in Flash Programminng application note.
 
     // Get expansion rom product ID
     tmp = __le32_to_cpu(*((u_int32_t*) &romSect[verOffset]));
-    romInfo->exp_rom_product_id = tmp >> 16;
-    romInfo->exp_rom_ver[0] = tmp & 0xffff;
+    offs4 = __le32_to_cpu(*((u_int32_t*) &romSect[verOffset + 4]));
 
+    romInfo->exp_rom_product_id = tmp >> 16;
     romInfo->exp_rom_num_ver_fields = FwOperations::RomInfo::getNumVerFromProdId(romInfo->exp_rom_product_id);
+
+    // Get ROM version
+    romInfo->exp_rom_ver[0] = tmp & 0xff; // always valid
+    if (romInfo->exp_rom_product_id != 0xf) {
+        romInfo->exp_rom_ver[1] = offs4 >> 16 & 0xff;
+        romInfo->exp_rom_ver[2] = offs4 & 0xffff;
+    }
 
     if (romInfo->exp_rom_product_id == 0x11 || romInfo->exp_rom_product_id == 0x21) {
         noRomChecksum = true;
@@ -1541,14 +1534,10 @@ bool FwOperations::RomInfo::GetExpRomVerForOneRom(u_int32_t verOffset)
         offs8 = __le32_to_cpu(*((u_int32_t*) &romSect[verOffset + 8]));
         romInfo->exp_rom_supp_cpu_arch = (offs8 >> 8) & 0xf;
         romInfo->exp_rom_dev_id = offs8 >> 16;
-    	//0x12 is CLP we have only 1 version field and no port
-    	if (romInfo->exp_rom_product_id != 0x12){
-    		offs4 = __le32_to_cpu(*((u_int32_t*) &romSect[verOffset + 4]));
-    		romInfo->exp_rom_ver[1] = offs4 >> 16;
-    		romInfo->exp_rom_ver[2] = offs4 & 0xffff;
-
-        	romInfo->exp_rom_port = (offs8 >> 12) & 0xf;
-        	romInfo->exp_rom_proto = offs8 & 0xff;
+        //0x12 is CLP we have only 1 version field and no port
+        if (romInfo->exp_rom_product_id != 0x12){
+            romInfo->exp_rom_port = (offs8 >> 12) & 0xf;
+            romInfo->exp_rom_proto = offs8 & 0xff;
         }
     } else if (romInfo->exp_rom_product_id == 0xf) {
         // get string length
@@ -1717,6 +1706,7 @@ bool FwOperations::FwWriteBlock(u_int32_t addr, std::vector<u_int8_t> dataVec, P
     return true;
 };
 
+
 bool FwOperations::CreateBasicImageFromData(u_int32_t *data, u_int32_t dataSize,
         FwOperations** newImgOps) {
     fwOpsParams imgOpsParams;
@@ -1744,13 +1734,32 @@ bool FwOperations::CreateBasicImageFromData(u_int32_t *data, u_int32_t dataSize,
     }
 
     return true;
-}
+};
+
 
 bool FwOperations::FwBurnData(u_int32_t *data, u_int32_t dataSize, ProgressCallBack progressFunc) {
+    burnDataParamsT params;
+    params.data = data;
+    params.dataSize = dataSize;
+    params.progressFunc = progressFunc;
+    params.calcSha = false;
+    return FwBurnData(params);
+}
+bool FwOperations::FwBurnData(burnDataParamsT& burnDataParams) {
+    u_int32_t *data = burnDataParams.data;
+    u_int32_t dataSize = burnDataParams.dataSize;
+    ProgressCallBack progressFunc = burnDataParams.progressFunc;
     FwOperations* newImgOps;
-    ExtBurnParams burnParams;
+    ExtBurnParams burnParams = ExtBurnParams();
 
     if (!CreateBasicImageFromData(data, dataSize, &newImgOps)) {
+        return false;
+    }
+
+    if (burnDataParams.calcSha && !newImgOps->FwInsertSHA256((PrintCallBack)NULL)) {
+        errmsg("Inserting SHA256/SHA512 failed: %s", newImgOps->err());
+        newImgOps->FwCleanUp();
+        delete newImgOps;
         return false;
     }
 
@@ -1830,18 +1839,19 @@ bool FwOperations::FwQueryTimeStamp(struct tools_open_ts_entry& timestamp, struc
     return errmsg("Operation not supported.");
 }
 
-bool FwOperations::FwInsertEncSHA256(const char* privPemFile, const char* uuid, PrintCallBack printFunc)
+bool FwOperations::FwInsertSHA256(PrintCallBack)
 {
-    (void) privPemFile;
-    (void) uuid;
-    (void) printFunc;
-    return errmsg("Operation not supported");
+    return errmsg("FwInsertSHA256 not supported");
 }
 
-bool FwOperations::FwInsertSHA256(PrintCallBack printFunc)
+bool FwOperations::FwSignWithOneRSAKey(const char*, const char*, PrintCallBack)
 {
-    (void) printFunc;
-    return errmsg("Operation not supported");
+    return errmsg("FwSignWithOneRSAKey not supported");
+}
+
+bool FwOperations::FwSignWithTwoRSAKeys(const char*, const char*, const char*, const char*, PrintCallBack)
+{
+    return errmsg("FwSignWithTwoRSAKeys not supported");
 }
 
 bool FwOperations::FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatternAndDevToc)

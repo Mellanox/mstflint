@@ -193,6 +193,8 @@ FlagMetaData::FlagMetaData() {
     _flags.push_back(new Flag("", "use_dev_rom", 0));
     _flags.push_back(new Flag("", "private_key", 1));
     _flags.push_back(new Flag("", "key_uuid", 1));
+    _flags.push_back(new Flag("", "private_key2", 1));
+    _flags.push_back(new Flag("", "key_uuid2", 1));
     _flags.push_back(new Flag("", "no_fw_ctrl", 0));
 }
 
@@ -487,7 +489,7 @@ void Flint::initCmdParser() {
                 "",
                 "Run a quick query. When specified, flint will not perform full image integrity checks during the query"
                 " operation. This may shorten execution time when running over slow interfaces (e.g., I2C, MTUSB-1).\n"
-                "Commands affected: burn, query");
+                "Commands affected: query");
 
     AddOptions("nofs",
                ' ',
@@ -645,6 +647,15 @@ void Flint::initCmdParser() {
                ' ',
                 "<uuid_file>",
                 "UUID matching the given private key to be used by the sign command");
+    AddOptions("private_key2",
+               ' ',
+                "<key_file>",
+                "path to PEM formatted private key to be used by the sign command");
+
+    AddOptions("key_uuid2",
+               ' ',
+                "<uuid_file>",
+                "UUID matching the given private key to be used by the sign command");
 
     for (map_sub_cmd_t_to_subcommand::iterator it=_subcommands.begin(); it != _subcommands.end(); it++)
         {
@@ -794,6 +805,7 @@ ParseStatus Flint::HandleOption(string name, string value)
         _flintParams.image = value;
     } else if (name == "qq") {
         _flintParams.quick_query = true;
+        _flintParams.skip_rom_query = true;
     } else if (name == "nofs") {
         _flintParams.nofs = true;
     } else if (name == "allow_psid_change") {
@@ -855,6 +867,12 @@ ParseStatus Flint::HandleOption(string name, string value)
     } else if (name == "key_uuid") {
         _flintParams.uuid_specified = true;
         _flintParams.privkey_uuid = value;
+    } else if (name == "private_key2") {
+        _flintParams.privkey2_specified = true;
+        _flintParams.privkey2_file = value;
+    } else if (name == "key_uuid2") {
+        _flintParams.uuid2_specified = true;
+        _flintParams.privkey2_uuid = value;
     } else {
         cout << "Unknown Flag: " << name;
         cout<< _cmdParser.GetSynopsis();
@@ -872,12 +890,25 @@ ParseStatus Flint::parseCmdLine(int argc, char* argv[]) {
     char **argvCmd = NULL;
     char **argvOpt = NULL;
     int argcCmd = 0, argcOpt = 0;
-    for (int i = (argc - 1); i > 0; i--) {
-        if ((subCmds.getCmdNum(argv[i])) != SC_No_Cmd) { // i.e we found a subcommand
-        argcOpt = i;
-        argvOpt = argv;
-        argcCmd = argc - i;
-        argvCmd = &argv[i];
+    bool foundOptionWhenLookingForCmd = false;
+    ParseStatus rc;
+    char** newArgv = NULL;
+    int newArgc = 0;
+    int i = 1, j = 1, argStart = 1, argEnd = 1;
+
+    for (int k = (argc - 1); k > 0; k--) {
+        if ((subCmds.getCmdNum(argv[k])) != SC_No_Cmd) { // i.e we found a subcommand
+            if (foundOptionWhenLookingForCmd) {
+                cout << "Specifying options flags after command is not allowed.\n\n";
+                rc = PARSE_ERROR_SHOW_USAGE;
+                goto clean_up;
+            }
+            argcOpt = k;
+            argvOpt = argv;
+            argcCmd = argc - k;
+            argvCmd = &argv[k];
+        } else if (argv[k][0] == '-' && !IS_NUM(argv[k][1])) {
+            foundOptionWhenLookingForCmd = true;
         }
     }
     if (argcCmd == 0) {
@@ -888,9 +919,7 @@ ParseStatus Flint::parseCmdLine(int argc, char* argv[]) {
     //printf("-D- argcOpt:%d argvOpt:%s argcCmd:%d argvCmd:%s\n", argcOpt, argvOpt[0], argcCmd, argvCmd[0]);
     //_cmdparser should deal with the case of no arguments in argv except the program.
     //Step2 unite with comma multiple args in the options section
-    char** newArgv = new char*[argcOpt];
-    int newArgc = 0;
-    int i = 1, j = 1, argStart = 1, argEnd = 1;
+    newArgv = new char*[argcOpt];
     //first arg is the flint command we can copy as is
     newArgv[0] = strcpy(new char[strlen(argvOpt[0]) + 1], argvOpt[0]);
     while (i < argcOpt) {
@@ -930,7 +959,6 @@ ParseStatus Flint::parseCmdLine(int argc, char* argv[]) {
     newArgc = j;
 
     //Step3 set the command and its args in the FlintParams struct if present
-    ParseStatus rc;
     if (argcCmd > 0) {
         this->_flintParams.cmd = subCmds.getCmdNum(argvCmd[0]);
         for (int i = 1; i < argcCmd; ++i) {
@@ -956,8 +984,7 @@ ParseStatus Flint::parseCmdLine(int argc, char* argv[]) {
         //if too many args return arg in pos num_of_args+1 as the invalid command.
         if ((argc - 1 - lastFlagPos) > numOfArgs) {
             printf(FLINT_INVALID_COMMAD_ERROR, argv[argc - 1]);
-            rc = PARSE_ERROR;
-            cout<< _cmdParser.GetSynopsis();
+            rc = PARSE_ERROR_SHOW_USAGE;
             goto clean_up;
         }
     }
@@ -968,5 +995,8 @@ ParseStatus Flint::parseCmdLine(int argc, char* argv[]) {
         delete[] newArgv[i];
     }
     delete[] newArgv;
+    if (rc == PARSE_ERROR_SHOW_USAGE) {
+        cout << _cmdParser.GetSynopsis();
+    }
     return rc;
 }

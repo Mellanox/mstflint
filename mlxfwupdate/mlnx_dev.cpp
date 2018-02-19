@@ -142,6 +142,7 @@ MlnxDev::MlnxDev(dev_info* devinfo, int compare_ffv)
     _init_type = INIT_DEVINFO;
     _devinfo = devinfo;
     _MlnxDevInit(compare_ffv);
+    memset(_errBuff, 0, sizeof(_errBuff));
 }
 
 
@@ -168,25 +169,25 @@ void MlnxDev::setGuidMac(fw_info_t &fw_query) {
         }
         if (fw_query.fs2_info.guid_num < 6) {
             if (fw_query.fs2_info.guids[1].h || fw_query.fs2_info.guids[1].l) {
-                sprintf(buff, guild_format.c_str(),
+                snprintf(buff, sizeof(buff) - 1, guild_format.c_str(),
                         fw_query.fs2_info.guids[1].h, fw_query.fs2_info.guids[1].l);
                 guidPortOne = (string)buff;
             }
             if (fw_query.fs2_info.guids[2].h || fw_query.fs2_info.guids[2].l) {
-                sprintf(buff, guild_format.c_str(),
+                snprintf(buff, sizeof(buff) - 1, guild_format.c_str(),
                         fw_query.fs2_info.guids[2].h, fw_query.fs2_info.guids[2].l);
                 guidPortTwo = (string)buff;
             }
         } else {
             if (portOneType == PORT_ETH) {
                 if (fw_query.fs2_info.guids[4].h || fw_query.fs2_info.guids[4].l) {
-                    sprintf(buff, mac_format.c_str(),
+                    snprintf(buff, sizeof(buff) - 1, mac_format.c_str(),
                                         fw_query.fs2_info.guids[4].h, fw_query.fs2_info.guids[4].l);
                     macPortOne = (string)buff;
                 }
             } else if (portOneType == PORT_IB) {
                 if (fw_query.fs2_info.guids[1].h || fw_query.fs2_info.guids[1].l) {
-                    sprintf(buff, guild_format.c_str(),
+                    snprintf(buff, sizeof(buff) - 1, guild_format.c_str(),
                             fw_query.fs2_info.guids[1].h, fw_query.fs2_info.guids[1].l);
                     guidPortOne = (string)buff;
                 }
@@ -194,13 +195,13 @@ void MlnxDev::setGuidMac(fw_info_t &fw_query) {
 
             if (portTwoType == PORT_ETH) {
                 if (fw_query.fs2_info.guids[5].h || fw_query.fs2_info.guids[5].l) {
-                    sprintf(buff, mac_format.c_str(),
+                    snprintf(buff, sizeof(buff) - 1, mac_format.c_str(),
                                         fw_query.fs2_info.guids[5].h, fw_query.fs2_info.guids[5].l);
                     macPortTwo = (string)buff;
                 }
             } else if (portTwoType == PORT_IB) {
                 if (fw_query.fs2_info.guids[2].h || fw_query.fs2_info.guids[2].l) {
-                    sprintf(buff, guild_format.c_str(),
+                    snprintf(buff, sizeof(buff) - 1, guild_format.c_str(),
                             fw_query.fs2_info.guids[2].h, fw_query.fs2_info.guids[2].l);
                     guidPortTwo = (string)buff;
                 }
@@ -208,11 +209,11 @@ void MlnxDev::setGuidMac(fw_info_t &fw_query) {
         }
     } else {
         if (fw_query.fs3_info.fs3_uids_info.valid_field) {
-            sprintf(buff, "%016"U64H_FMT_GEN,
+            snprintf(buff, sizeof(buff) - 1, "%016" U64H_FMT_GEN,
                             fw_query.fs3_info.fs3_uids_info.cx4_uids.base_guid.uid);
 
         } else {
-            sprintf(buff, "%016"U64H_FMT_GEN,
+            snprintf(buff, sizeof(buff) - 1, "%016" U64H_FMT_GEN,
                             fw_query.fs3_info.fs3_uids_info.cib_uids.guids[0].uid);
         }
         if (fw_query.fs3_info.fs3_uids_info.cib_uids.guids[0].uid ||
@@ -220,16 +221,15 @@ void MlnxDev::setGuidMac(fw_info_t &fw_query) {
             guidPortOne = (string)buff;
         }
         if (fw_query.fs3_info.fs3_uids_info.valid_field) {
-
-            sprintf(buff, "%016"U64H_FMT_GEN,
+            snprintf(buff, sizeof(buff) - 1, "%012" U64H_FMT_GEN,
                                         fw_query.fs3_info.fs3_uids_info.cx4_uids.base_mac.uid);
             if (fw_query.fs3_info.fs3_uids_info.cx4_uids.base_mac.uid) {
                 macPortOne = (string)buff;
             }
             sprintf(buff, " ");
         } else {
-        sprintf(buff, "%016"U64H_FMT_GEN,
-                fw_query.fs3_info.fs3_uids_info.cib_uids.guids[1].uid);
+            snprintf(buff, sizeof(buff) - 1, "%016" U64H_FMT_GEN,
+                    fw_query.fs3_info.fs3_uids_info.cib_uids.guids[1].uid);
         }
         if (fw_query.fs3_info.fs3_uids_info.cx4_uids.base_mac.uid ||
             fw_query.fs3_info.fs3_uids_info.cib_uids.guids[1].uid   ) {
@@ -477,7 +477,7 @@ bool MlnxDev::openImg(u_int32_t * fileBuffer, u_int32_t bufferSize)
 }
 
 int MlnxDev::preBurn(string mfa_file, f_prog_func prog_cb, bool burnFailsafe,
-        bool& isAlignmentNeeded, bool& isShifting8MBNeeded, f_prog_func_adv stage_prog)
+        bool& isTimeConsumingFixesNeeded, vector<string>& questions, f_prog_func_adv stage_prog)
 {
     string cmd;
     int rc;
@@ -526,8 +526,9 @@ int MlnxDev::preBurn(string mfa_file, f_prog_func prog_cb, bool burnFailsafe,
             if (!img_fw_query.fw_info.is_failsafe && !dev_fw_query.fw_info.is_failsafe) {
                 _burnParams.burnFailsafe = false;
             } else {
-                char err[512];
-                sprintf(err, "Failsafe burn failed: FW image in the %s is non failsafe.\n"
+                char err[512] = {0};
+                snprintf(err, sizeof(err) - 1,
+                            "Failsafe burn failed: FW image in the %s is non failsafe.\n"
                             "    you cannot burn a%s failsafe image over a%s failsafe image in a failsafe mode.\n"
                             "    If you want to burn in non failsafe mode, use the \"--nofs\" switch along with \"-d device\".\n",
                             img_fw_query.fw_info.is_failsafe ? "flash" : "given file",  img_fw_query.fw_info.is_failsafe? "" : " non",\
@@ -537,26 +538,25 @@ int MlnxDev::preBurn(string mfa_file, f_prog_func prog_cb, bool burnFailsafe,
                 goto clean_up_on_error;
             }
         }
+
+        FwOperations::fw_ops_params_t fwParams;
+        if (InitDevFWParams(fwParams)) {
+            FsChecks fsChecks(dev_fw_query, _devFwOps, _imgFwOps, _burnParams, fwParams);
+            if (fsChecks.ExecuteChecks(&_devFwOps, _burnParams, dev_fw_query)) {
+                fsChecks.GetUserQuestions(questions);
+                isTimeConsumingFixesNeeded = fsChecks._isTimeConsumingFixesNeeded;
+                delete[] fwParams.mstHndl;
+            } else {
+                delete[] fwParams.mstHndl;
+                goto clean_up_on_error;
+            }
+        }
+
     }
     _burnParams.progressFunc = prog_cb;
     _burnParams.ProgressFuncAdv.func = stage_prog;
     _burnParams.ProgressFuncAdv.opaque = &_unknowProgress;
     _burnParams.ignoreVersionCheck = true;
-
-    //Check if we need to shift 8MB to 0x0
-    if (_devFwOps->FwType() == FIT_FS3 || _devFwOps->FwType() == FIT_FS4) {
-        if (_devFwOps->FwCheckIf8MBShiftingNeeded(_imgFwOps, _burnParams)) {
-            isShifting8MBNeeded = true;
-        }
-    }
-
-    // Check if alignment is needed in CX5
-    if (_devFwOps->FwType() == FIT_FS4 &&
-        (_burnParams.burnFailsafe ||
-                (!_burnParams.burnFailsafe && !_burnParams.useImgDevData)) &&
-        _devFwOps->CheckIfAlignmentIsNeeded(_imgFwOps)) {
-        isAlignmentNeeded = true;
-    }
 
     _preBurnInit = true;
 
@@ -617,7 +617,7 @@ clean_up:
     return res;
 }
 
-bool MlnxDev::OpenDev()
+bool MlnxDev::InitDevFWParams(FwOperations::fw_ops_params_t& devFwParams)
 {
     string devName = getDevName();
     memset(_errBuff, 0, sizeof(_errBuff));
@@ -627,22 +627,31 @@ bool MlnxDev::OpenDev()
         _log    += _errMsg;
         return false;
     }
-    _devFwParams.errBuff = _errBuff;
-    _devFwParams.errBuffSize = MLNX_ERR_BUFF_SIZE;
-    _devFwParams.hndlType = FHT_MST_DEV;
-    _devFwParams.mstHndl = strcpy(tmp, devName.c_str());
-    _devFwParams.forceLock = false;
-    _devFwParams.readOnly = false;
-    _devFwParams.numOfBanks = -1;
-    _devFwParams.flashParams = (flash_params_t*)NULL;
-    _devFwParams.ignoreCacheRep = 0;
-    _devFwParams.noFlashVerify = false;
-    _devFwParams.psid = (char *)_psid.c_str();
-    _devFwParams.shortErrors = true;
-    _devFwParams.noFwCtrl = _noFwCtrl;
-    _devFwParams.mccUnsupported = !(_mccSupport);
+     memset(tmp, 0, (devName.length() + 1) * sizeof(char));
+    devFwParams.errBuff = _errBuff;
+    devFwParams.errBuffSize = MLNX_ERR_BUFF_SIZE;
+    devFwParams.hndlType = FHT_MST_DEV;
+    devFwParams.mstHndl = strcpy(tmp, devName.c_str());
+    devFwParams.forceLock = false;
+    devFwParams.readOnly = false;
+    devFwParams.numOfBanks = -1;
+    devFwParams.flashParams = (flash_params_t*)NULL;
+    devFwParams.ignoreCacheRep = 0;
+    devFwParams.noFlashVerify = false;
+    devFwParams.psid = (char *)_psid.c_str();
+    devFwParams.shortErrors = true;
+    devFwParams.noFwCtrl = _noFwCtrl;
+    devFwParams.mccUnsupported = !(_mccSupport);
+    return true;
+}
+
+bool MlnxDev::OpenDev()
+{
+    if (!InitDevFWParams(_devFwParams)) {
+        return false;
+    }
     _devFwOps = FwOperations::FwOperationsCreate(_devFwParams);
-    free(tmp);
+    delete[] _devFwParams.mstHndl;
     if (_devFwOps == NULL) {
         _errMsg  = _errBuff;
         _log    += _errMsg;
@@ -767,9 +776,6 @@ int MlnxDev::queryFwops()
             tpc = "UNKNOWN_ROM";
         }
         int sz = fw_query.fw_info.roms_info.rom_info[i].exp_rom_num_ver_fields;
-        if (fw_query.fw_info.roms_info.rom_info[i].exp_rom_product_id == 0xf) {
-            sz = 1;
-        }
         imgVer.setVersion(tpc, sz, fw_query.fw_info.roms_info.rom_info[i].exp_rom_ver);
         _imageVers.push_back(imgVer);
     }
@@ -793,13 +799,13 @@ clean_up:
 static int readSysFs(dev_info* devinfo, fw_info_t *fw_query)
 {
     int res = -1;
-    char path[256];
-    char buf [40];
+    char path[256] = {0};
+    char buf [40] = {0};
     DIR* d;
     struct dirent *dir;
     int v0, v1, v2, v20, v21;
 
-    sprintf(path, "/sys/bus/pci/devices/%04x:%02x:%02x.%x/infiniband", devinfo->pci.domain, devinfo->pci.bus, devinfo->pci.dev, devinfo->pci.func);
+    snprintf(path, sizeof(path) - 1, "/sys/bus/pci/devices/%04x:%02x:%02x.%x/infiniband", devinfo->pci.domain, devinfo->pci.bus, devinfo->pci.dev, devinfo->pci.func);
     d = opendir(path);
     if (d == NULL) {
         return -1;
@@ -829,7 +835,7 @@ static int readSysFs(dev_info* devinfo, fw_info_t *fw_query)
             v20 = v2 / 100;
             v21 = v2 % 100;
             (void) tmp;
-            sprintf(fw_query->fw_info.product_ver, "%02d.%02d.%02d.%02d", v0, v1, v20, v21);
+            snprintf(fw_query->fw_info.product_ver, sizeof(fw_query->fw_info.product_ver) - 1, "%02d.%02d.%02d.%02d", v0 % 100, v1 % 100, v20 % 100, v21 % 100);
         }
         fclose(f);
 
@@ -861,12 +867,12 @@ static int getEthtoolInfo(dev_info* devinfo, fw_info_t *fw_query)
     struct ethtool_drvinfo edata;
     int rc;
     int res = -1;
-    char path[256];
+    char path[256] = {0};
     DIR* d;
     struct dirent *dir;
     int v0, v1, v2, v20, v21;
 
-    sprintf(path, "/sys/bus/pci/devices/%04x:%02x:%02x.%x/net", devinfo->pci.domain, devinfo->pci.bus, devinfo->pci.dev, devinfo->pci.func);
+    snprintf(path, sizeof(path) - 1, "/sys/bus/pci/devices/%04x:%02x:%02x.%x/net", devinfo->pci.domain, devinfo->pci.bus, devinfo->pci.dev, devinfo->pci.func);
     d = opendir(path);
     if (d == NULL) {
         return -1;
@@ -902,7 +908,7 @@ static int getEthtoolInfo(dev_info* devinfo, fw_info_t *fw_query)
             v20 = v2 / 100;
             v21 = v2 % 100;
         (void) tmp;
-        sprintf(fw_query->fw_info.product_ver, "%02d.%02d.%02d.%02d", v0, v1, v20, v21);
+        snprintf(fw_query->fw_info.product_ver, sizeof(fw_query->fw_info.product_ver) - 1, "%02d.%02d.%02d.%02d", v0 % 100, v1 % 100, v20 % 100, v21 % 100);
 
         fw_query->fw_info.psid[0] = '\0';
         res = 0;
@@ -922,7 +928,7 @@ int MlnxDev::query()
     int res = -1;
     int i;
     int rc;
-    char buf[32];
+    char buf[32] = {0};
     (void) buf;
     ImgVersion imgv;
     u_int16_t fwVer[4];
@@ -945,7 +951,7 @@ int MlnxDev::query()
             if (rc) {
                 goto clean_up;
             }
-            sprintf(buf, "%04x:%04x:%04x:%04x", _devinfo->pci.vend_id, _devinfo->pci.dev_id, _devinfo->pci.subsys_vend_id, _devinfo->pci.subsys_id);
+            snprintf(buf, sizeof(buf) - 1, "%04x:%04x:%04x:%04x", _devinfo->pci.vend_id, _devinfo->pci.dev_id, _devinfo->pci.subsys_vend_id, _devinfo->pci.subsys_id);
             _boardTypeId = buf;
         }
         #else
@@ -991,12 +997,12 @@ int MlnxDev::query()
 
 string MlnxDev::getDevDisplayName(bool pci_if_possible)
 {
-    char tmpb[20];
+  char tmpb[20] = {0};
     string devname = "";
 
     if (_init_type == INIT_DEVINFO) {
         if (_devinfo->type == MDEVS_TAVOR_CR) {
-            sprintf(tmpb, "%04x:%02x:%02x.%x", _devinfo->pci.domain,
+            snprintf(tmpb, sizeof(tmpb) - 1, "%04x:%02x:%02x.%x", _devinfo->pci.domain,
                     _devinfo->pci.bus, _devinfo->pci.dev, _devinfo->pci.func);
             devname = tmpb;
             //_devinfo->pci.conf_dev;

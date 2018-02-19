@@ -28,8 +28,8 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
-
 /*
  *
  *  mtcr_ib.h - Mellanox Software tools (mst) IB related driver definitions
@@ -39,7 +39,7 @@
 #ifndef _MTCR_IB_H
 #define _MTCR_IB_H
 
- #include <mtcr.h>
+#include <mtcr.h>
 
 int mib_open(const char *name, mfile *mf, int mad_init);
 int mib_close(mfile *mf);

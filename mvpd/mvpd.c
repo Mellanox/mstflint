@@ -84,7 +84,7 @@ int my_vpd_read(mfile*    mf,
     int ret;
     if (mf != NULL) {
         for (i = 0; i < (unsigned)size; i += 0x4) {
-            u_int8_t value[4];
+            u_int8_t value[4] = {0};
             ret = mvpd_read4(mf, offset + i, value);
             if (ret) {
                 syslog(3, "LIBMVPD: MVPD_READ4 failed on offset:%d, RC[%d]", offset, ret);

@@ -199,6 +199,7 @@ typedef enum {
     Mcp_Boot_Settings_Ext_IP_Ver_P2,
     //CX3 Global conf
     Mcp_CQ_Timestamp,
+    Mcp_Steer_ForceVlan,
     Mcp_Last
 } mlxCfgParam;
 
@@ -297,8 +298,9 @@ protected:
 class CX3GlobalConfParams : public CfgParams
 {
 public:
-    CX3GlobalConfParams() : CfgParams(Mct_CX3_Global_Conf, CX3_GLOBAL_CONF_TYPE), _timestamp(MLXCFG_UNKNOWN),
-                         _timestampDefault(MLXCFG_UNKNOWN) {}
+    CX3GlobalConfParams() : CfgParams(Mct_CX3_Global_Conf, CX3_GLOBAL_CONF_TYPE),
+                         _timestamp(MLXCFG_UNKNOWN), _timestampDefault(MLXCFG_UNKNOWN),
+                         _steerForceVlan(MLXCFG_UNKNOWN), _steerForceVlanDefault(MLXCFG_UNKNOWN) {}
     ~CX3GlobalConfParams() {};
 
     bool cfgSupported(mfile* mf, mlxCfgParam param=Mcp_Last);
@@ -311,10 +313,12 @@ public:
 
 private:
     bool hardLimitCheck();
-    void setParams(u_int32_t timestamp);
+    void setParams(u_int32_t timestamp, u_int32_t steer_force_vlan);
 
     u_int32_t _timestamp;
     u_int32_t _timestampDefault;
+    u_int32_t _steerForceVlan;
+    u_int32_t _steerForceVlanDefault;
 };
 
 

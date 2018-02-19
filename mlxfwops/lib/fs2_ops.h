@@ -78,6 +78,7 @@ public:
     virtual bool FwReadRom(std::vector<u_int8_t>& romSect);
     virtual bool FwCalcMD5(u_int8_t md5sum[16]);
 
+    bool FwCheckIfWeCanBurnWithFwControl(FwOperations*) {return false;}
 
 private:
 

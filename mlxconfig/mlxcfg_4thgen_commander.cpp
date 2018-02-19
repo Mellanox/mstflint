@@ -90,7 +90,7 @@ string FourthGenCommander::param2str[Mcp_Last]= {"SRIOV_EN", "NUM_OF_VFS",
          "INITIAL_ALPHA_VALUE_P2", "MIN_TIME_BETWEEN_CNPS_P2", "CNP_DSCP_P2", "CNP_802P_PRIO_P2",
          "BOOT_OPTION_ROM_EN_P1", "BOOT_VLAN_EN_P1", "BOOT_RETRY_CNT_P1", "LEGACY_BOOT_PROTOCOL_P1", "BOOT_VLAN_P1",
          "BOOT_OPTION_ROM_EN_P2", "BOOT_VLAN_EN_P2", "BOOT_RETRY_CNT_P2", "LEGACY_BOOT_PROTOCOL_P2", "BOOT_VLAN_P2",
-         "PORT_OWNER", "ALLOW_RD_COUNTERS", "IP_VER", "IP_VER_P1", "IP_VER_P2", "CQ_TIMESTAMP"
+         "PORT_OWNER", "ALLOW_RD_COUNTERS", "IP_VER", "IP_VER_P1", "IP_VER_P2", "CQ_TIMESTAMP", "STEER_FORCE_VLAN",
           };
 
 void FourthGenCommander::freeCfgList()
@@ -190,6 +190,7 @@ FourthGenCommander::FourthGenCommander(mfile* mf, string dev) : Commander(mf), _
     // CX3 Global Conf
     _cfgList[Mct_CX3_Global_Conf] = new CX3GlobalConfParams();
     _param2TypeMap[Mcp_CQ_Timestamp] = Mct_CX3_Global_Conf;
+    _param2TypeMap[Mcp_Steer_ForceVlan] = Mct_CX3_Global_Conf;
 
 
     if (openComChk()) {
@@ -1060,6 +1061,9 @@ MlxCfgInfo MlxCfgAllInfo::createCX3GlobalConf()
     params[Mcp_CQ_Timestamp] = MlxCfgParamParser(Mcp_CQ_Timestamp, "CQ_TIMESTAMP",
                                                      "When set, IEE1588 (PTP) HW timestamping capability is"
                                                      " reported to the device driver.", paramMap);
+    params[Mcp_Steer_ForceVlan] = MlxCfgParamParser(Mcp_Steer_ForceVlan, "STEER_FORCE_VLAN",
+                                                  "Force VLAN steering configuration", paramMap);
+
     return MlxCfgInfo("CX3 Global", "", params);
 }
 

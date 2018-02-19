@@ -51,6 +51,7 @@
 #define PORT_ATTR "port"
 #define OVR_EN_ATTR "ovr_en"
 #define RD_EN_ATTR "rd_en"
+#define WRITER_ID_ATTR "writer_id"
 #define HOST_ATTR "host"
 #define FUNC_ATTR "function"
 #define ALL_ATTR_VAL "all"

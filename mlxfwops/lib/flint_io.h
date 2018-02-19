@@ -331,6 +331,8 @@ public:
 
     virtual bool disable_hw_access();
 
+    bool         disable_hw_access(u_int64_t key);
+    bool         is_fifth_gen();
     const char* getFlashType();
 
     bool         get_attr(ext_flash_attr_t& attr);

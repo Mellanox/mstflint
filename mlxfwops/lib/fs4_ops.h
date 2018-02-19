@@ -82,6 +82,9 @@ protected:
         std::vector<u_int8_t>  section_data;
     };
 
+    virtual bool IsSectionExists(fs3_section_t sectType);
+
+
 private:
     #define PRE_CRC_OUTPUT   "    "
     #define FS4_DEFAULT_SECTOR_SIZE 0x1000
@@ -178,12 +181,12 @@ private:
     bool CheckDTocArray();
     u_int32_t getImageSize();
     void maskDevToc(vector<u_int8_t>& img);
-    void maskImageSignature(vector<u_int8_t>& img);
+    void maskIToCSection(u_int32_t itocType, vector<u_int8_t>& img);
     bool Fs4UpdateSignatureSection(vector<u_int8_t>  sha256Buff,
         vector<u_int8_t>  &newSectionData);
     bool isDTocSection(fs3_section_t sect_type, bool& isDtoc);
 
-    bool AlignDeviceSections(u_int8_t flashLayoutVersion);
+    bool AlignDeviceSections(FwOperations *imageOps);
     bool restoreWriteProtection(mflash* mfl, u_int8_t banksNum,
             write_protect_info_t protect_info[]);
 

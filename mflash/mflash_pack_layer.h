@@ -176,7 +176,7 @@ enum AccessTypeByMfile{
 #else
 
 #include <io.h>
-#include <Winsock2.h>
+#include <winsock2.h>
 #define SWAPL(l) ntohl(l)
 #define __BYTE_ORDER __LITTLE_ENDIAN
 */

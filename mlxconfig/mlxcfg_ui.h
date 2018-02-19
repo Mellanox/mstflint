@@ -99,6 +99,11 @@ public:
     mlxCfgStatus execute(int argc, char* argv[]);
 private:
 
+    typedef enum {
+        Device_Name,
+        Device_Description_info
+    } deviceDescription;
+
     // User interface and parsing methods
     void printHelp();
     mlxCfgStatus showDevConfs();
@@ -115,6 +120,7 @@ private:
 
     bool tagExsists(string tag);
     const char* getDeviceName(const char* dev);
+    bool getDeviceDescription(const char* dev, MlxCfg::deviceDescription op, vector<char>& infoString);
 
     // Query cmd
     mlxCfgStatus queryDevsCfg();
@@ -159,6 +165,7 @@ private:
     MlxCfgParams _mlxParams;
     std::string _errStr;
     MlxCfgAllInfo _allInfo;
+    dm_dev_id_t _devType;
 
 };
 

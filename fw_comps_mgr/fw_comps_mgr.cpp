@@ -57,6 +57,7 @@ static void mft_signal_set_handling(int isOn) {
 #define DEFAULT_SIZE 64
 #define MAX_TOUT 1000
 #define SLEEP_TIME 80
+#define INIT_PARTITION_SLEEP_TIME 240
 #define MAX_MSG_SIZE 128
 
 #define MAX_REG_DATA 128
@@ -91,8 +92,6 @@ bool FwCompsMgr::runNVDA(std::vector<u_int8_t>& buff,
     nvdaTlv.nv_hdr.length = len;
     if (queryDefault) {
         nvdaTlv.nv_hdr.default_ = 1;
-    } else {
-        nvdaTlv.nv_hdr.read_current = 1;
     }
     // tlvType should be in the correct endianess
     nvdaTlv.nv_hdr.type.tlv_type_dw.tlv_type_dw =  tlvType;
@@ -256,9 +255,11 @@ bool FwCompsMgr::controlFsm(fsm_command_t command,
         return true;
     }
     count = 0;
+    // initialization longer then other states
+    unsigned sleep_time = currState == FSMST_INITIALIZE ? INIT_PARTITION_SLEEP_TIME : SLEEP_TIME;
     while (currState != FSMST_NA && _lastFsmCtrl.control_state == currState && count < MAX_TOUT) {
         if (count) {
-            msleep(SLEEP_TIME);
+            msleep(sleep_time);
         }
         if (progressFuncAdv && progressFuncAdv->func) {
             if (progressFuncAdv->func(0, stateToStr(currState), PROG_WITHOUT_PRECENTAGE, progressFuncAdv->opaque))  {
@@ -431,7 +432,7 @@ FwCompsMgr::FwCompsMgr(const char* devname)
     if (getenv(MTCR_IB_TIMEOUT_VAR) == NULL) {
         _clearSetEnv = true;
 #if defined(_WIN32) || defined(_WIN64) || defined(__MINGW64__) || defined(__MINGW32__)
-        putenv(MTCR_IB_TIMEOUT_VAR"="MTCR_IB_TIMEOUT_VAL);
+        putenv(MTCR_IB_TIMEOUT_VAR "=" MTCR_IB_TIMEOUT_VAL);
 #else
         setenv(MTCR_IB_TIMEOUT_VAR, MTCR_IB_TIMEOUT_VAL, 1);
 #endif
@@ -624,7 +625,7 @@ bool FwCompsMgr::burnComponents (std::vector<FwComponent>& comps,
             return false;
         }
         _componentIndex = _currCompQuery->comp_status.component_index;
-        if (!controlFsm(FSM_CMD_UPDATE_COMPONENT, FSMST_DOWNLOAD, 0, FSMST_INITIALIZE, progressFuncAdv)) {
+        if (!controlFsm(FSM_CMD_UPDATE_COMPONENT, FSMST_DOWNLOAD, comps[i].getSize(), FSMST_INITIALIZE, progressFuncAdv)) {
             return false;
         }
         _currComponentStr = FwComponent::getCompIdStr(comps[i].getType());
@@ -792,7 +793,6 @@ bool FwCompsMgr::extractMacsGuids(fwInfoT* fwQuery)
 
     UID_EXTRACT(fwQuery->base_mac.uid, currMacGuid.base_mac);
     UID_EXTRACT(fwQuery->base_guid.uid, currMacGuid.base_guid);
-    UID_EXTRACT(fwQuery->base_mac_orig.uid, origMacGuid.base_mac);
     UID_EXTRACT(fwQuery->base_guid_orig.uid, origMacGuid.base_guid);
 
     fwQuery->base_mac.num_allocated = currMacGuidCap.num_of_allocated_macs;
@@ -800,6 +800,23 @@ bool FwCompsMgr::extractMacsGuids(fwInfoT* fwQuery)
     fwQuery->base_mac_orig.num_allocated = origMacGuidCap.num_of_allocated_macs;
     fwQuery->base_guid_orig.num_allocated = origMacGuidCap.num_of_allocated_guids;
     return true;
+}
+
+
+bool FwCompsMgr::setMacsGuids(mac_guid_t macGuid)
+{
+    std::vector<u_int8_t> macsGuidsBuff(16, 0);
+
+    struct tools_open_nv_base_mac_guid baseMacGuid;
+
+    baseMacGuid.base_guid[0] = macGuid.guid.h;
+    baseMacGuid.base_guid[1] = macGuid.guid.l;
+    baseMacGuid.base_mac[0] = macGuid.mac.h;
+    baseMacGuid.base_mac[1] = macGuid.mac.l;
+
+    tools_open_nv_base_mac_guid_pack(&baseMacGuid, macsGuidsBuff.data());
+
+    return runNVDA(macsGuidsBuff, 16, NV_BASE_MAC_GUID_IDX, REG_ACCESS_METHOD_SET, false);
 }
 
 u_int8_t transRomType(u_int8_t mgirRomType)
@@ -889,11 +906,13 @@ bool FwCompsMgr::queryFwInfo(fwInfoT* query)
     query->security_type.dev_fw    = mgir.fw_info.dev_fw;
     query->signed_fw = _compsQueryMap[FwComponent::COMPID_BOOT_IMG].comp_cap.signed_updates_only;
 
+    query->base_mac_orig.uid = ((u_int64_t)mgir.hw_info.manufacturing_base_mac_47_32 << 32 | mgir.hw_info.manufacturing_base_mac_31_0);
     if (!extractMacsGuids(query)) {
         /*
          * We don't fail, it will show NA in the query
          */
     }
+
     extractRomInfo(&mgir, query);
     return true;
 }
@@ -957,6 +976,9 @@ const char*  FwCompsMgr::getLastErrMsg()
             break;
         case FWCOMPS_MCC_TOUT:
             return "Time-out reached while waiting for the FSM to be updated";
+            break;
+        case FWCOMPS_MCC_REJECTED_IMAGE_CAN_NOT_BOOT_FROM_PARTITION:
+            return "Image cannot boot from partition.";
             break;
         case FWCOMPS_UNSUPPORTED_DEVICE:
             return "Unsupported device";
@@ -1158,6 +1180,8 @@ fw_comps_error_t FwCompsMgr::mccErrTrans(u_int8_t err)
             return FWCOMPS_MCC_REJECTED_FORBIDDEN_VERSION;
         case MCC_ERRCODE_FLASH_ERASE_ERROR:
             return FWCOMPS_MCC_FLASH_ERASE_ERROR;
+        case MCC_ERRCODE_REJECTED_IMAGE_CAN_NOT_BOOT_FROM_PARTITION:
+            return FWCOMPS_MCC_REJECTED_IMAGE_CAN_NOT_BOOT_FROM_PARTITION;
         default:
 //            printf("MCC ERROR: %#x\n", err);
             return FWCOMPS_GENERAL_ERR;

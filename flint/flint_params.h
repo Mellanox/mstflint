@@ -107,6 +107,7 @@ public:
     bool blank_guids;
     bool clear_semaphore;
     bool quick_query;
+    bool skip_rom_query;
     bool image_specified;
     string image;
     bool nofs;
@@ -143,6 +144,10 @@ public:
     string privkey_file;
     bool uuid_specified;
     string privkey_uuid;
+    bool privkey2_specified;
+    string privkey2_file;
+    bool uuid2_specified;
+    string privkey2_uuid;
     bool no_fw_ctrl;
 };
 

@@ -88,7 +88,7 @@ if CMDIF:
         ##########################
         def sendCmd(self, opcode, data, skipWrite):
             self.mstDev.icmdSendCmd(opcode, data, skipWrite)
-        
+            
         ##########################
         def getFwInfo(self):
             class FW_INFO_ST(Structure):
@@ -140,11 +140,20 @@ if CMDIF:
         ##########################
         class QUERY_CAP_ST(Structure):
             _fields_ = [("fw_ctrl_update_icmd",                    c_uint8),
-                        ("kdnet_ctrl",                             c_uint8),
                         ("mh_sync",                                c_uint8),
                         ("allow_icmd_access_reg_on_all_registers", c_uint8),
                         ("fw_info_psid",                           c_uint8),
-                        ("nv_access",                              c_uint8)]
+                        ("nv_access",                              c_uint8),
+                        ("wol_p",                                  c_uint8),
+                        ("wol_u",                                  c_uint8),
+                        ("wol_m",                                  c_uint8),
+                        ("wol_b",                                  c_uint8),
+                        ("wol_a",                                  c_uint8),
+                        ("wol_g",                                  c_uint8),
+                        ("wol_s",                                  c_uint8),
+                        ("rol_g",                                  c_uint8),
+                        ("rol_s",                                  c_uint8),
+                        ("fpga",                                   c_uint8)]
 
         ##########################
         def isMultiHostSyncSupported(self):

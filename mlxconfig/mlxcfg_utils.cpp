@@ -326,11 +326,12 @@ bool isIndexedMlxconfigName(const string& mlxconfigName)
 }
 
 MlxcfgException::MlxcfgException(const char* fmt, ...){
-    char tmp[1024];
+    const unsigned int max = 1024;
+    char tmp[max];
     va_list args;
 
     va_start (args, fmt);
-    vsprintf(tmp, fmt, args);
+    vsnprintf(tmp, max, fmt, args);
     va_end(args);
     _err = tmp;
 }

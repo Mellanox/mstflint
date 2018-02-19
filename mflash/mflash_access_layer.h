@@ -45,6 +45,10 @@
 #include "mflash_common_structs.h"
 
 #define BOOT_CR_SPACE_ADDR 0xf0000
+#define BOOT_CR_SPACE_ADDR_OFFSET 8
+
+#define BOOT_CR_SPACE_ADDR_CX5_OR_HIGHER 0xf00c0
+#define BOOT_CR_SPACE_ADDR_CX5_OR_HIGHER_OFFSET 0
 
 int sx_get_flash_info_by_type(mflash* mfl, flash_info_t* type_index, int *log2size, u_int8_t *no_flash);
 int sx_block_read_by_type(mflash* mfl, u_int32_t blk_addr, u_int32_t blk_size, u_int8_t* data);

@@ -112,6 +112,11 @@ typedef enum {
     MCDA_WRITE_COMP
 } access_type_t;
 
+typedef struct mac_guid {
+    guid_t mac;
+    guid_t guid;
+} mac_guid_t;
+
 typedef enum {
     COMPINFO_CAPABILITIES,
     COMPINFO_VERSIONS,
@@ -200,6 +205,7 @@ typedef enum {
     FWCOMPS_MCC_REJECTED_USER_TIMESTAMP_MISMATCH,
     FWCOMPS_MCC_REJECTED_FORBIDDEN_VERSION      ,
     FWCOMPS_MCC_FLASH_ERASE_ERROR               ,
+    FWCOMPS_MCC_REJECTED_IMAGE_CAN_NOT_BOOT_FROM_PARTITION,
 
     // errors regarding REG_ACCESS
     FWCOMPS_REG_ACCESS_OK = 0,
@@ -278,6 +284,7 @@ public:
                                             u_int32_t offset,
                                             u_int32_t size,
                                             std::vector<u_int8_t>& data);
+    bool             setMacsGuids(mac_guid_t macGuid);
 
 private:
 
@@ -312,6 +319,7 @@ private:
         MCC_ERRCODE_REJECTED_USER_TIMESTAMP_MISMATCH,
         MCC_ERRCODE_REJECTED_FORBIDDEN_VERSION,
         MCC_ERRCODE_FLASH_ERASE_ERROR,
+        MCC_ERRCODE_REJECTED_IMAGE_CAN_NOT_BOOT_FROM_PARTITION,
     };
 
     const char* stateToStr(fsm_state_t);

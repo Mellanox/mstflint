@@ -47,6 +47,7 @@
 
 #include "flint_params.h"
 #include "mlxfwops/lib/fw_ops.h"
+#include "mlxfwops/lib/fs_checks.h"
 #include "err_msgs.h"
 using namespace std;
 
@@ -96,6 +97,7 @@ protected:
 
     virtual bool verifyParams() {return true;};
     bool basicVerifyParams();
+    void initDeviceFwParams(char* errBuff, FwOperations::fw_ops_params_t& fwParams);
     FlintStatus openOps();
     FlintStatus openIo();
     virtual FlintStatus preFwOps();
@@ -104,6 +106,7 @@ protected:
     bool getRomsInfo(FBase* io, roms_info_t& romsInfo);
     void displayOneExpRomInfo(const rom_info_t& info);
     void displayExpRomInfo(const roms_info_t& romsInfo, const char *preStr);
+    string getExpRomVerStr(const rom_info_t& info);
     string getRomProtocolStr(u_int8_t proto);
     string getRomSuppCpuStr(u_int8_t suppCpu);
 
@@ -148,7 +151,7 @@ protected:
 
     bool dumpFile(const char* confFile, std::vector<u_int8_t>& data, const char *sectionName);
     bool unzipDataFile (std::vector<u_int8_t> data, std::vector<u_int8_t> &newData, const char *sectionName);
-
+    const char* fwImgTypeToStr(u_int8_t fwImgType);
 
 
 public:
@@ -180,6 +183,7 @@ private:
     bool _devQueryRes;
     int _unknownProgress; // used to trace the progress of unknown progress.
 
+    FlintStatus checkFs3Fs4NeededFixes(bool& isFs3Fs4FixesNeeded);
     FlintStatus burnFs3();
     FlintStatus burnFs2();
     bool checkFwVersion();

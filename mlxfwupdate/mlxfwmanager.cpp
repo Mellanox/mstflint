@@ -464,10 +464,10 @@ int mainEntry(int argc, char* argv[])
             mfa_file = tmp;
         }
         bool imageWasCached = false;
-        bool isAlignmentNeeded = false;
-        bool isShifting8MBNeeded = false;
+        vector<string> questions;
+        bool isTimeConsumingFixesNeeded = false;
         rc0 = devs[i]->preBurn(mfa_file, progressCB, cmd_params.burnFailsafe,
-                isAlignmentNeeded, isShifting8MBNeeded, advProgressCB);
+                isTimeConsumingFixesNeeded, questions, advProgressCB);
         if (rc0) {
             if (abort_request) {
                 print_out("\b\b\b\bInterrupted\n");
@@ -478,25 +478,16 @@ int mainEntry(int argc, char* argv[])
                 print_out("\b\b\b\bFail : %s \n", devs[i]->getLastErrMsg().c_str());
             }
         } else {
-            if (isShifting8MBNeeded) {
-                print_out("\nShifting between different image partition sizes requires "
-                        "current image to be re-programmed on the flash.\nOnce the operation is done, "
-                        "reload FW and run the command again.\n");
+            for(unsigned int questionIndex = 0; questionIndex < questions.size(); questionIndex++) {
+                print_out("%s", questions[questionIndex].c_str());
                 int answer = prompt("Perform update? [y/N]: ", cmd_params.yes_no_);
                 if (!answer) {
                     print_out("No updates performed\n");
                     goto clean_up;
                 }
-                devs[i]->setShifting8MBInBurnParams(true);
             }
-            if (isAlignmentNeeded) {
-                print_out("\nAn update is needed for the flash layout.\n");
-                int answer = prompt("Perform update? [y/N]: ", cmd_params.yes_no_);
-                if (!answer) {
-                    print_out("No updates performed\n");
-                    goto clean_up;
-                }
-                print_out("Operation is not failsafe. Do not terminate the process.\n");
+            if (isTimeConsumingFixesNeeded) {
+                print_out("Preparing...\n");
             }
             rc0 = devs[i]->burn(imageWasCached);
             if (!rc0) {
@@ -1387,6 +1378,9 @@ FILE* createOutFile(string &fileName, bool fileSpecified)
 
         now = time(0);
         ltm = localtime(&now);
+        if (ltm == NULL) {
+            return NULL;
+        }
         sprintf(name, "%s-%d%02d%02d_%02d%02d%02d_%u.log",toolName.c_str(),
                 ltm->tm_year + 1900, ltm->tm_mon + 1, ltm->tm_mday,
                 ltm->tm_hour, ltm->tm_min, ltm->tm_sec, pid);
@@ -1476,8 +1470,8 @@ bool getIniParams(config_t &config)
         return false;
     }
 
-    config.mfa_path = iniparser_getstring(ini_dict, INI_FILESYSTEM_SECTION":"INI_SRCDIR_KEY, (char*)config.mfa_path.c_str());
-    config.http_proxy = iniparser_getstring(ini_dict, INI_SERVER_SECTION":"INI_PROXY_KEY, (char*)config.http_proxy.c_str());
+    config.mfa_path = iniparser_getstring(ini_dict, INI_FILESYSTEM_SECTION ":" INI_SRCDIR_KEY, (char*)config.mfa_path.c_str());
+    config.http_proxy = iniparser_getstring(ini_dict, INI_SERVER_SECTION ":" INI_PROXY_KEY, (char*)config.http_proxy.c_str());
 
     if (ini_dict) {
         iniparser_freedict(ini_dict);

@@ -1,5 +1,6 @@
 /*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ *
+ * Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,6 +29,8 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
+ *  mtcr_ul.c - Mellanox Hardware Access implementation
  *
  */
 
@@ -89,7 +92,7 @@
 #include "../mtcr_mlnxos.h"
 #endif
 
-#include "../kernel/mst.h"
+#include "kernel/mst.h"
 
 #define CX3_SW_ID    4099
 #define CX3PRO_SW_ID 4103
@@ -160,7 +163,7 @@ static int _create_lock(mfile* mf, unsigned domain, unsigned bus, unsigned dev, 
     if (!(mf->ul_ctx)) {
         goto cl_clean_up;
     }
-    snprintf(fname, 64, LOCK_FILE_FORMAT, domain, bus, dev, func, mf->tp == MST_PCICONF ? "config" : "mem");
+    snprintf(fname, sizeof(fname) - 1, LOCK_FILE_FORMAT, domain, bus, dev, func, mf->tp == MST_PCICONF ? "config" : "mem");
     rc = mkdir("/tmp", 0777);
     if (rc && errno != EEXIST) {
         goto cl_clean_up;
@@ -644,7 +647,7 @@ static int driver_mread_chunk_as_multi_mread4(mfile *mf, unsigned int offset, u_
 {
     int i;
     for (i = 0; i < length ; i += 4) {
-        u_int32_t value;
+        u_int32_t value = 0x0;
 
         if (mread4(mf, offset + i, &value) != 4) {
             return -1;
@@ -1146,8 +1149,11 @@ int mtcr_pciconf_mread4_old(mfile *mf, unsigned int offset, u_int32_t *value)
         perror("read value");
         goto pciconf_read_cleanup;
     }
-    *value = __le32_to_cpu(*value);
-    pciconf_read_cleanup: _flock_int(ctx->fdlock, LOCK_UN);
+    *value = __le32_to_cpu(*value);;
+pciconf_read_cleanup:
+    if (_flock_int(ctx->fdlock, LOCK_UN)) {
+        return rc;
+    }
     return rc;
 }
 
@@ -1155,6 +1161,7 @@ int mtcr_pciconf_mwrite4_old(mfile *mf, unsigned int offset, u_int32_t value)
 {
     ul_ctx_t *ctx = mf->ul_ctx;
     int rc;
+    value = __cpu_to_le32(value);
     offset = __cpu_to_le32(offset);
     rc = _flock_int(ctx->fdlock, LOCK_EX);
     if (rc) {
@@ -1170,7 +1177,6 @@ int mtcr_pciconf_mwrite4_old(mfile *mf, unsigned int offset, u_int32_t value)
             rc = 0;
             goto pciconf_write_cleanup;
         }
-        value = __cpu_to_le32(value);
         rc = pwrite(mf->fd, &offset, 4, PCICONF_ADDR_OFF);
         if (rc < 0) {
             perror("write offset");
@@ -1187,14 +1193,16 @@ int mtcr_pciconf_mwrite4_old(mfile *mf, unsigned int offset, u_int32_t value)
             rc = 0;
             goto pciconf_write_cleanup;
         }
-        value = __cpu_to_le32(value);
         rc = pwrite(mf->fd, &value, 4, PCICONF_DATA_OFF);
         if (rc < 0) {
             perror("write value");
             goto pciconf_write_cleanup;
         }
     }
-    pciconf_write_cleanup: _flock_int(ctx->fdlock, LOCK_UN);
+pciconf_write_cleanup:
+    if (_flock_int(ctx->fdlock, LOCK_UN)) {
+        return rc;
+    }
     return rc;
 }
 
@@ -1204,9 +1212,12 @@ int mtcr_pciconf_mclose(mfile *mf)
     unsigned int word;
     if (mf) {
         // Adrianc: set address in PCI configuration space to be non-semaphore.
-        mread4_ul(mf, 0xf0014, &word);
+        int rc = mread4_ul(mf, 0xf0014, &word);
         if (mf->fd > 0) {
             close(mf->fd);
+        }
+        if (rc != 4) {
+            return 1;
         }
     }
 
@@ -1342,17 +1353,17 @@ static MType mtcr_parse_name(const char* name, int *force, unsigned *domain_p, u
 
     if (sscanf(name, "mthca%x", &tmp) == 1 || sscanf(name, "mlx4_%x", &tmp) == 1
             || sscanf(name, "mlx5_%x", &tmp) == 1) {
-        char mbuf[4048];
-        char pbuf[4048];
+        char mbuf[4048] = {0};
+        char pbuf[4048] = {0};
         char *base;
 
-        r = snprintf(mbuf, sizeof mbuf, "/sys/class/infiniband/%s/device", name);
+        r = snprintf(mbuf, sizeof(mbuf) - 1, "/sys/class/infiniband/%s/device", name);
         if (r <= 0 || r >= (int) sizeof mbuf) {
             fprintf(stderr, "Unable to print device name %s\n", name);
             goto parse_error;
         }
 
-        r = readlink(mbuf, pbuf, sizeof pbuf - 1);
+        r = readlink(mbuf, pbuf, sizeof(pbuf) - 1);
         if (r < 0) {
             perror("read link");
             fprintf(stderr, "Unable to read link %s\n", mbuf);
@@ -1485,6 +1496,7 @@ static long supported_dev_ids[] = {
         0xcb20, //Switch-IB
         0xcb84, //Spectrum
         0xcf08, //Switch-IB2
+        0xa2d2, //MT416842 Family BlueField integrated ConnectX-5 network controller
         -1 };
 
 static long live_fish_id_database[] = {
@@ -1499,6 +1511,7 @@ static long live_fish_id_database[] = {
         0x209,
         0x20b,
         0x20d,
+        0x20f,
         -1
 };
 
@@ -1524,11 +1537,11 @@ int is_supported_devid(long devid)
 int is_supported_device(char* devname)
 {
 
-    char fname[64];
-    char inbuf[64];
+    char fname[64] = {0};
+    char inbuf[64] = {0};
     FILE* f;
     int ret_val = 0;
-    sprintf(fname, "/sys/bus/pci/devices/%s/device", devname);
+    snprintf(fname, sizeof(fname) - 1, "/sys/bus/pci/devices/%s/device", devname);
     f = fopen(fname, "r");
     if (f == NULL) {
         //printf("-D- Could not open file: %s\n", fname);
@@ -1565,8 +1578,8 @@ int mdevices_v_ul(char *buf, int len, int mask, int verbosity)
         return 0;
     }
 
-    char inbuf[64];
-    char fname[64];
+    char inbuf[64] = {0};
+    char fname[64] = {0};
 
     d = opendir("/sys/bus/pci/devices");
     if (d == NULL) {
@@ -1582,15 +1595,15 @@ int mdevices_v_ul(char *buf, int len, int mask, int verbosity)
             continue;
         } else if (sz > 4 && strcmp(dir->d_name + sz - 4, "00.0") && !verbosity) {
             // Skip virtual functions
-            char physfn[64];
+            char physfn[64] = {0};
             DIR* physfndir;
-            sprintf(physfn, "/sys/bus/pci/devices/%s/physfn", dir->d_name);
+            snprintf(physfn, sizeof(physfn) - 1, "/sys/bus/pci/devices/%.34s/physfn", dir->d_name);
             if ((physfndir = opendir(physfn)) != NULL) {
                 closedir(physfndir);
                 continue;
             }
         }
-        sprintf(fname, "/sys/bus/pci/devices/%s/vendor", dir->d_name);
+        snprintf(fname, sizeof(fname) - 1, "/sys/bus/pci/devices/%.34s/vendor", dir->d_name);
         f = fopen(fname, "r");
         if (f == NULL) {
             ndevs = -2;
@@ -1820,6 +1833,9 @@ vf_info * get_vf_info(u_int16_t domain, u_int8_t bus, u_int8_t dev,
         }
         size *= 2;
         vf_devs = (char*) malloc(size);
+        if (!vf_devs) {
+            return NULL;
+        }
         vf_count = get_vf_devs(domain, bus, dev, func, vf_devs, size);
     } while (vf_count == -1);
 
@@ -1883,6 +1899,9 @@ dev_info* mdevices_info_v_ul(int mask, int* len, int verbosity)
         }
         size *= 2;
         devs = (char*) malloc(size);
+        if (!devs) {
+            return NULL;
+        }
         rc = mdevices_v_ul(devs, size, mask, verbosity);
     } while (rc == -1);
 
@@ -1926,7 +1945,7 @@ dev_info* mdevices_info_v_ul(int mask, int* len, int verbosity)
         dev_info_arr[i].pci.func = func;
 
         // set pci conf device
-        snprintf(dev_info_arr[i].pci.conf_dev, sizeof(dev_info_arr[i].pci.conf_dev),
+        snprintf(dev_info_arr[i].pci.conf_dev, sizeof(dev_info_arr[i].pci.conf_dev) - 1,
                 "/sys/bus/pci/devices/%04x:%02x:%02x.%x/config", domain, bus, dev, func);
 
 
@@ -2098,7 +2117,7 @@ mfile *mopen_ul_int(const char *name, u_int32_t adv_opt)
     if (dev_type == MST_DRIVER_CR || dev_type == MST_DRIVER_CONF) {
         rc = mtcr_driver_open(mf, dev_type, domain, bus, dev, func);
         if (rc) {
-            return NULL;
+            goto open_failed;
         }
         return mf;
     }
@@ -2381,12 +2400,13 @@ int get_inband_dev_from_pci(char* inband_dev, char* pci_dev)
     MType dev_type;
     DIR* d;
     struct dirent *dir;
-    char dirname[DEV_DIR_MAX_SIZE], subdirname[DEV_DIR_MAX_SIZE], linkname[DEV_DIR_MAX_SIZE];
+    char subdirname[DEV_DIR_MAX_SIZE] = {0};
+    char linkname[DEV_DIR_MAX_SIZE] = {0};
     int found = 0;
-
+    char dirname[] = "/sys/class/infiniband";
     dev_type = mtcr_parse_name(pci_dev, &force, &domain, &bus, &dev, &func);
 
-    strcpy(dirname, "/sys/class/infiniband");
+
     d = opendir(dirname);
     if (d == NULL) {
         errno = ENODEV;
@@ -2399,7 +2419,7 @@ int get_inband_dev_from_pci(char* inband_dev, char* pci_dev)
         if (dir->d_name[0] == '.') {
             continue;
         }
-        sprintf(subdirname, "%s/%s/device", dirname, dir->d_name);
+        snprintf(subdirname, DEV_DIR_MAX_SIZE - 1, "%s/%.100s/device", dirname, dir->d_name);
         link_size = readlink(subdirname, linkname, DEV_DIR_MAX_SIZE);
 
         if (link_size < BDF_NAME_SIZE) {
@@ -2412,7 +2432,7 @@ int get_inband_dev_from_pci(char* inband_dev, char* pci_dev)
                 &curr_dev, &curr_func);
 
         if (domain == curr_domain && bus == curr_bus && dev == curr_dev && func == curr_func) {
-            sprintf(inband_dev, "ibdr-0,%s,1", dir->d_name);
+            snprintf(inband_dev, IBDR_MAX_NAME_SIZE - 1, "ibdr-0,%.100s,1", dir->d_name);
             found = 1;
             break;
         }
@@ -2432,7 +2452,7 @@ static
 int reopen_pci_as_inband(mfile* mf)
 {
     int rc;
-    char inband_dev[IBDR_MAX_NAME_SIZE];
+    char inband_dev[IBDR_MAX_NAME_SIZE] = {0};
     rc = get_inband_dev_from_pci(inband_dev, mf->dev_name);
     if (rc) {
         errno = ENODEV;
@@ -2809,6 +2829,11 @@ int mvpd_read4_ul_int(mfile *mf, unsigned int offset, u_int8_t value[4]){
     u_int8_t  bus = (mf->dinfo)->pci.bus;
     u_int8_t  dev = (mf->dinfo)->pci.dev;
     u_int8_t  func = (mf->dinfo)->pci.func;
+    /**************************/
+    /*
+     * In case ioctl is not defined or failed.
+     * Secondary way using File System
+     */
 
     sprintf(proc_dev, "/sys/bus/pci/devices/%04x:%02x:%02x.%d/vpd", domain, bus, dev, func);
     FILE* f = fopen(proc_dev, "r");

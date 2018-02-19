@@ -942,8 +942,8 @@ mib_swreset(mfile *mf)
          u_int32_t new_timer = strtol(swreset_env, &ep, 0);
          if (*ep != '\0') {
              fprintf(stderr, "-W- Bad %s env var format. Ignoring\n", MTCR_SWRESET_ENV);
-         } else if (swreset_timer > 255) {
-             fprintf(stderr, "-W- Bad %s env var value ( > 255). Ignoring\n", MTCR_SWRESET_ENV);
+         } else if (new_timer > 255) {
+                     fprintf(stderr, "-W- Bad %s env var value ( > 255). Ignoring\n", MTCR_SWRESET_ENV);
          } else {
             /* All OK */
             fprintf(stderr, "-I- Set reset timer to %d seconds\n", new_timer);

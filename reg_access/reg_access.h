@@ -79,10 +79,12 @@ reg_access_status_t reg_access_mnvgn (mfile* mf, reg_access_method_t method, str
 reg_access_status_t reg_access_mfmc (mfile* mf, reg_access_method_t method, struct tools_open_mfmc* mfmc);
 
 reg_access_status_t reg_access_mcam (mfile* mf, reg_access_method_t method, struct tools_open_mcam* mcam);
+reg_access_status_t reg_access_secure_host (mfile* mf, reg_access_method_t method, struct tools_open_mlock* mlock);
 /*
  * MCXX new burn commands
  */
 reg_access_status_t reg_access_mcda (mfile* mf, reg_access_method_t method, struct reg_access_hca_mcda_reg* mcda);
+reg_access_status_t reg_access_mqis (mfile* mf, reg_access_method_t method, struct reg_access_hca_mqis_reg* mqis);
 reg_access_status_t reg_access_mcc  (mfile* mf, reg_access_method_t method, struct reg_access_hca_mcc_reg*  mcc );
 reg_access_status_t reg_access_mcqs (mfile* mf, reg_access_method_t method, struct reg_access_hca_mcqs_reg* mcqs);
 reg_access_status_t reg_access_mcqi (mfile* mf, reg_access_method_t method, struct reg_access_hca_mcqi_reg* mcqi);

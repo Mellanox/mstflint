@@ -298,7 +298,12 @@ bool FImage::getFileSize(int& fileSize)
 bool FImage::write(u_int32_t addr, void* data, int cnt)
 {
     if ( !_isFile ) {
-        return errmsg("Cannot perform write to file. no file specified.");
+        if (_buf.size() < addr + cnt) {
+            _buf.resize(addr + cnt);
+        }
+
+        memcpy(&_buf[addr], data, cnt);
+        return true;
     }
 
     if (!readWriteCommCheck(addr, 0)) {
@@ -342,7 +347,7 @@ bool Flash::open_com_checks(const char *device, int rc, bool force_lock)
         }
         if (rc == MFE_LOCKED_CRSPACE) {
             _cr_space_locked = 1;
-            return errmsgAdv(_advErrors, "HW access is disabled on the device.", "\n-E- Run \"flint -d %s hw_access enable\" in order to enable HW access.", device);
+            return errmsgAdv(_advErrors, "HW access is disabled on the device.", "\n-E- Run \"flint -d %s hw_access enable [key]\" in order to enable HW access.", device);
         }
         if (rc == MFE_REG_ACCESS_NOT_SUPPORTED) {
             return errmsgAdv(_advErrors, "The target device FW does not support flash access commands.", "\n-E- Please use the -override_cache_replacement option in order to access the flash directly.");
@@ -759,10 +764,28 @@ bool Flash::enable_hw_access(u_int64_t key)
     return true;
 }
 
+
+bool Flash::is_fifth_gen()
+{
+    return mf_is_fifth_gen(_mfl);
+}
+
 bool Flash::disable_hw_access(void)
 {
     int rc;
     rc = mf_disable_hw_access(_mfl);
+
+    if (rc != MFE_OK) {
+        return errmsg("Disable HW access failed: %s", mf_err2str(rc));
+    }
+    return true;
+
+}
+
+bool Flash::disable_hw_access(u_int64_t key)
+{
+    int rc;
+    rc = mf_disable_hw_access_with_key(_mfl, key);
 
     if (rc != MFE_OK) {
         return errmsg("Disable HW access failed: %s", mf_err2str(rc));

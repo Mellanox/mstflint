@@ -744,10 +744,13 @@ void GenericCommander::backupCfgs(vector<BackupView>& views)
         rc = reg_access_mnvgn(_mf, REG_ACCESS_METHOD_GET, &mnvgnTlv, &status);
         dealWithSignal();
         if (rc) {
-            if(status == ME_NOT_IMPLEMENTED) {
+            if (status == ME_NOT_IMPLEMENTED) {
                 throw MlxcfgException("Firmware does not support backup command");
+            } else if (rc == ME_REG_ACCESS_RES_NOT_AVLBL) {
+                throw MlxcfgException("NV data area may be empty, nothing to backup.");
+            } else {
+                throw MlxcfgException("Failed to backup configurations: %s.", m_err2str((MError)rc));
             }
-            throw MlxcfgException("Failed to backup configurations: %s.", m_err2str((MError)rc));
         }
         ptr = mnvgnTlv.nv_pointer;
         if (ptr != 0) {
@@ -852,6 +855,7 @@ void GenericCommander::binTLV2TLVConf(const vector<u_int32_t>& binTLV, TLVConf*&
     }
     tlv = _dbManager->getTLVByIndexAndClass(id, tlvClassTemp);
     //set attrs
+    tlv->_attrs[WRITER_ID_ATTR] = numToStr(hdr.writer_id);
     tlv->_attrs[RD_EN_ATTR] = numToStr(hdr.rd_en);
     tlv->_attrs[OVR_EN_ATTR] = numToStr(hdr.over_en);
     if (tlvClass == Physical_Port) {
@@ -917,7 +921,7 @@ void GenericCommander::XML2TLVConf(const string& xmlContent, vector<TLVConf*>& t
     xmlChar* portAttr = NULL, *hostAttr = NULL,
             *funcAttr = NULL, *rdEnAttr = NULL,
             *ovrEnAttr = NULL, *xmlVal = NULL,
-            *indexAttr = NULL;
+            *indexAttr = NULL, *writerIdAttr = NULL;
 
     doc = xmlReadMemory(xmlContent.c_str(),
             xmlContent.size(), "noname.xml", NULL, 0);
@@ -928,7 +932,7 @@ void GenericCommander::XML2TLVConf(const string& xmlContent, vector<TLVConf*>& t
     try {
         root = xmlDocGetRootElement(doc);
         if(!root || xmlStrcmp(root->name, (const xmlChar *)XML_ROOT)) {
-            throw MlxcfgException("The XML root node must be "XML_ROOT);
+            throw MlxcfgException("The XML root node must be " XML_ROOT);
         }
 
         //check fingerprint
@@ -962,6 +966,7 @@ void GenericCommander::XML2TLVConf(const string& xmlContent, vector<TLVConf*>& t
             if (isAllPorts) {
                 tlvConf->setAttr(PORT_ATTR, ALL_ATTR_VAL);
             }
+            GET_AND_SET_ATTR(writerIdAttr, currTlv, WRITER_ID_ATTR)
             GET_AND_SET_ATTR(ovrEnAttr, currTlv, OVR_EN_ATTR)
             GET_AND_SET_ATTR(rdEnAttr, currTlv, RD_EN_ATTR)
             GET_AND_SET_ATTR(hostAttr, currTlv, HOST_ATTR)
@@ -1017,6 +1022,7 @@ void GenericCommander::XML2TLVConf(const string& xmlContent, vector<TLVConf*>& t
             throw MlxcfgException("No TLV configurations were found in the XML");
         }
     } catch (MlxcfgException& e) {
+        XMLFREE_AND_SET_NULL(writerIdAttr)
         XMLFREE_AND_SET_NULL(portAttr)
         XMLFREE_AND_SET_NULL(ovrEnAttr)
         XMLFREE_AND_SET_NULL(rdEnAttr)
@@ -1082,49 +1088,119 @@ void GenericCommander::XML2Bin(const string& xml, vector<u_int32_t>& buff, bool 
     }
 }
 
-void GenericCommander::sign(vector<u_int32_t>& buff, string privPemFile, const string& keyPairUUid)
+void GenericCommander::sign(vector<u_int32_t>& buff, const string& privateKeyFile, const string& keyPairUUid)
 {
     (void)keyPairUUid;
 #if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
     MlxSignRSA rsa;
-    MlxSignSHA256 mlxSignSHA256;
+    MlxSignSHA* mlxSignSHA = NULL;
     vector<u_int32_t> encDigestDW;
     vector<u_int8_t> digest, encDigest, bytesBuff;
+    MlxSign::SHAType shaType;
 
     copyDwVectorToBytesVector(buff, bytesBuff);
-    mlxSignSHA256 << bytesBuff;
-    mlxSignSHA256.getDigest(digest);
 
-    if (privPemFile.empty()) {
+    if (privateKeyFile.empty()) {
+        shaType = MlxSign::SHA256;
+        mlxSignSHA = new MlxSignSHA256();
+    } else {
+        int rc = rsa.setPrivKeyFromFile(privateKeyFile);
+        if (rc) {
+            throw MlxcfgException("Failed to set private key (rc = 0x%x)\n", rc);
+        }
+        int privKeyLength = rsa.getPrivKeyLength();
+        if (privKeyLength == 0x100) {
+            shaType = MlxSign::SHA256;
+            mlxSignSHA = new MlxSignSHA256();
+        } else if (privKeyLength == 0x200) {
+            shaType = MlxSign::SHA512;
+            mlxSignSHA = new MlxSignSHA512();
+        } else {
+            throw MlxcfgException("Invalid length of private key(%d bytes)",
+                 privKeyLength);
+        }
+    }
+
+    (*mlxSignSHA) << bytesBuff;
+    mlxSignSHA->getDigest(digest);
+    delete mlxSignSHA;
+
+    if (privateKeyFile.empty()) {
         encDigest.insert(encDigest.begin(), digest.begin(), digest.end());
     } else {
-        int rc = rsa.setPrivKeyFromFile(privPemFile);
-        if (rc) {
-            throw MlxcfgException("Failed to set private key from file (rc = 0x%x)\n", rc);
-        }
-        rc = rsa.sign(digest, encDigest);
+        int rc = rsa.sign(shaType, digest, encDigest);
         if (rc) {
             throw MlxcfgException("Failed to encrypt the digest (rc = 0x%x)\n", rc);
         }
     }
     //fetch the signature tlv from the database and fill in the data
-    vector<u_int32_t> signTlvBin;
-    TLVConf* signTLV = _dbManager->getTLVByName("file_signature", 0);
+    if (shaType == MlxSign::SHA256) {
+        vector<u_int32_t> signTlvBin;
+        TLVConf* signTLV = _dbManager->getTLVByName("file_signature", 0);
 
-    Param* keyPairUUidParam = signTLV->findParamByName("keypair_uuid");
-    ((BytesParamValue*) keyPairUUidParam->_value)->setVal(keyPairUUid);
+        Param* keyPairUUidParam = signTLV->findParamByName("keypair_uuid");
+        ((BytesParamValue*) keyPairUUidParam->_value)->setVal(keyPairUUid);
 
-    Param* signatureParam = signTLV->findParamByName("signature");
-    copyBytesVectorToDwVector(encDigest, encDigestDW);
-    VECTOR_BE32_TO_CPU(encDigestDW)
-    ((BytesParamValue*) signatureParam->_value)->setVal(encDigestDW);
+        Param* signatureParam = signTLV->findParamByName("signature");
+        copyBytesVectorToDwVector(encDigest, encDigestDW);
+        VECTOR_BE32_TO_CPU(encDigestDW)
+        ((BytesParamValue*) signatureParam->_value)->setVal(encDigestDW);
 
-    signTLV->genBin(signTlvBin);
+        signTLV->genBin(signTlvBin);
 
-    buff.insert(buff.end(), signTlvBin.begin(), signTlvBin.end());
+        buff.insert(buff.end(), signTlvBin.begin(), signTlvBin.end());
+    } else {
+        TLVConf* signTLV1 = _dbManager->getTLVByName("file_signature_512_a", 0);
+        TLVConf* signTLV2 = _dbManager->getTLVByName("file_signature_512_b", 0);
+
+        Param* keyPairUUidParam1 = signTLV1->findParamByName("keypair_uuid");
+        ((BytesParamValue*) keyPairUUidParam1->_value)->setVal(keyPairUUid);
+        Param* keyPairUUidParam2 = signTLV2->findParamByName("keypair_uuid");
+        ((BytesParamValue*) keyPairUUidParam2->_value)->setVal(keyPairUUid);
+
+        copyBytesVectorToDwVector(encDigest, encDigestDW);
+        VECTOR_BE32_TO_CPU(encDigestDW)
+
+        Param* signatureParam1 = signTLV1->findParamByName("signature");
+        Param* signatureParam2 = signTLV2->findParamByName("signature");
+
+        //For Debug:
+        /*for(unsigned int i = 0; i < encDigestDW.size(); i++) {
+            printf("0x%x ", encDigestDW[i]);
+        }
+        printf("\n");*/
+
+        //split encDigestDW
+        unsigned int middleOfEncDigestDW = encDigestDW.size() / 2;
+        vector<u_int32_t> encDigestDW1(middleOfEncDigestDW), encDigestDW2(middleOfEncDigestDW);
+        for(unsigned int i = 0; i < middleOfEncDigestDW; i++) {
+            encDigestDW1[i] = encDigestDW[i];
+            encDigestDW2[i] = encDigestDW[encDigestDW.size() / 2 + i];
+        }
+        ((BytesParamValue*) signatureParam1->_value)->setVal(encDigestDW1);
+        ((BytesParamValue*) signatureParam2->_value)->setVal(encDigestDW2);
+
+        //For Debug:
+        /*for(unsigned int i = 0; i < encDigestDW1.size(); i++) {
+            printf("0x%x ", encDigestDW1[i]);
+        }
+        printf("\n");
+        for(unsigned int i = 0; i < encDigestDW2.size(); i++) {
+            printf("0x%x ", encDigestDW2[i]);
+        }
+        printf("\n");*/
+
+        vector<u_int32_t> signTlvBin1;
+        signTLV1->genBin(signTlvBin1);
+        buff.insert(buff.end(), signTlvBin1.begin(), signTlvBin1.end());
+
+        vector<u_int32_t> signTlvBin2;
+        signTLV2->genBin(signTlvBin2);
+        buff.insert(buff.end(), signTlvBin2.begin(), signTlvBin2.end());
+    }
 #else
     (void)buff;
-    (void)privPemFile;
+    (void)privateKeyFile;
     throw MlxcfgException("Sign command is not implemented\n");
 #endif
 }
@@ -1209,9 +1285,8 @@ void GenericCommander::createConf(const string& xml, vector<u_int32_t>& buff)
     FwComponent::comps_ids_t compsId;
 
     //Add the fingerprint
-    string fingerPrint(BIN_FILE_FINGERPRINT);
-    for (unsigned int i = 0; i < fingerPrint.length(); i += 4) {
-        buff.push_back(*(u_int32_t*)(fingerPrint.c_str() + i));
+    for (unsigned int i = 0; i < strlen(BIN_FILE_FINGERPRINT); i += 4) {
+        buff.push_back(*(u_int32_t*)(BIN_FILE_FINGERPRINT + i));
     }
 
     XML2TLVConf(xml, tlvs);

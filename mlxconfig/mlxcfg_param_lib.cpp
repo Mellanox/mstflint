@@ -714,13 +714,20 @@ bool CX3GlobalConfParams::cfgSupported(mfile* mf, mlxCfgParam param)
     if (rc) {
         return false;
     }
-    return params.nv_cq_timestamp_supported;
+    return (param == Mcp_CQ_Timestamp && params.nv_cq_timestamp_supported) 
+           || (param == Mcp_Steer_ForceVlan && params.nv_steer_force_vlan_supported)
+           || (param == Mcp_Last &&
+               (params.nv_cq_timestamp_supported || params.nv_steer_force_vlan_supported));
 }
 
 void CX3GlobalConfParams::setParam(mlxCfgParam paramType, u_int32_t val)
 {
     if (paramType == Mcp_CQ_Timestamp) {
         _timestamp = val;
+    }
+
+    if (paramType == Mcp_Steer_ForceVlan) {
+        _steerForceVlan = val;
     }
 }
 
@@ -729,6 +736,11 @@ u_int32_t CX3GlobalConfParams::getParam(mlxCfgParam paramType)
     if (paramType == Mcp_CQ_Timestamp) {
         return _timestamp;
     }
+
+    if (paramType == Mcp_Steer_ForceVlan) {
+        return _steerForceVlan;
+    }
+
     return MLXCFG_UNKNOWN;
 }
 
@@ -737,6 +749,11 @@ u_int32_t CX3GlobalConfParams::getDefaultParam(mlxCfgParam paramType)
     if (paramType == Mcp_CQ_Timestamp) {
         return _timestampDefault;
     }
+
+    if (paramType == Mcp_Steer_ForceVlan) {
+        return _steerForceVlanDefault;
+    }
+
     return MLXCFG_UNKNOWN;
 }
 
@@ -767,7 +784,7 @@ int CX3GlobalConfParams::getFromDev(mfile* mf)
     }
     // unpack and update
     tools_open_nv_cx3_global_conf_unpack(&globalConfTlv, buff);
-    setParams(globalConfTlv.cq_timestamp);
+    setParams(globalConfTlv.cq_timestamp, globalConfTlv.steer_force_vlan);
     _updated = true;
 
     return MCE_SUCCESS;
@@ -778,6 +795,10 @@ int CX3GlobalConfParams::setOnDev(mfile* mf, bool ignoreCheck)
     if (_timestamp == MLXCFG_UNKNOWN) {
         return errmsg("%s please specify all parameters for CX3_GLOBAL_CONF.", err() ? err() : "");
     }
+    if (_steerForceVlan == MLXCFG_UNKNOWN) {
+        return errmsg("%s please specify all parameters for CX3_GLOBAL_CONF.", err() ? err() : "");
+    }
+
     if (!ignoreCheck && !checkCfg(mf)) {
         return MCE_BAD_PARAMS;
     }
@@ -789,6 +810,7 @@ int CX3GlobalConfParams::setOnDev(mfile* mf, bool ignoreCheck)
     memset(buff, 0, tools_open_nv_cx3_global_conf_size());
     memset(&globalConfTlv, 0, sizeof(struct tools_open_nv_cx3_global_conf));
     globalConfTlv.cq_timestamp = _timestamp;
+    globalConfTlv.steer_force_vlan = _steerForceVlan;
     // pack it
     tools_open_nv_cx3_global_conf_pack(&globalConfTlv, buff);
     // send it
@@ -811,7 +833,8 @@ int CX3GlobalConfParams::getDefaultParams(mfile *mf)
         return MCE_GET_DEFAULT_PARAMS;
     }
     _timestampDefault = global_params.default_cq_timestamp;
-    setParams(_timestampDefault);
+    _steerForceVlanDefault = global_params.default_steer_force_vlan;
+    setParams(_timestampDefault, _steerForceVlanDefault);
     return MCE_SUCCESS;
 }
 
@@ -821,12 +844,19 @@ bool CX3GlobalConfParams::hardLimitCheck()
         errmsg("illegal CQ_TIMESTAMP parameter value. (should be 0 or 1)");
         return false;
     }
+
+    if (_steerForceVlan != 0 && _steerForceVlan != 1) {
+        errmsg("illegal STEER_FORCE_VLAN parameter value. (should be 0 or 1)");
+        return false;
+    }
+
     return true;
 }
 
-void CX3GlobalConfParams::setParams(u_int32_t timestamp)
+void CX3GlobalConfParams::setParams(u_int32_t timestamp, u_int32_t steer_force_vlan)
 {
     _timestamp = timestamp;
+    _steerForceVlan = steer_force_vlan;
 }
 
 

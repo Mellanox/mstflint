@@ -297,7 +297,7 @@ static trm_sts release_vs_mad_semaphore(trm_ctx trm, trm_resourse resource)
     }
     rc = mib_semaphore_lock_vs_mad(trm->mf, SMP_SEM_RELEASE, g_vsec_sem_addr[resource],
                                    trm->mad_lock[resource].lock_key, &lock_key, &is_leaseable, &new_lease_exponent, SEM_LOCK_SET);
-    if (rc == ME_MAD_BUSY) {
+    if (rc == (int)ME_MAD_BUSY) {
         return TRM_STS_RES_BUSY;
     } else if (rc) {
         return TRM_STS_RES_NOT_SUPPORTED;
@@ -363,10 +363,10 @@ static trm_sts lock_vs_mad_semaphore(trm_ctx trm, trm_resourse resource, unsigne
         }
         rc = mib_semaphore_lock_vs_mad(trm->mf, SMP_SEM_LOCK, g_vsec_sem_addr[resource],
                                        0, &new_lock_key, &is_leaseable, &new_lease_exponent, SEM_LOCK_SET);
-        if (rc == ME_MAD_BUSY || new_lock_key == 0) {
+        if (rc == (int)ME_MAD_BUSY || new_lock_key == 0) {
             msleep(((rand() % 5) + 1));
         }
-    } while (rc == ME_MAD_BUSY || new_lock_key == 0) ;
+    } while (rc == (int)ME_MAD_BUSY || new_lock_key == 0) ;
 
     if (rc) {
         return TRM_STS_RES_NOT_SUPPORTED;
@@ -452,7 +452,9 @@ trm_sts trm_destroy(trm_ctx trm)
 trm_sts trm_lock(trm_ctx trm, trm_resourse res, unsigned int max_retries)
 {
     u_int32_t dev_type = 0;
-    mget_mdevs_flags(trm->mf, &dev_type);
+    if (mget_mdevs_flags(trm->mf, &dev_type)) {
+        return TRM_STS_DEV_NOT_SUPPORTED;
+    }
 
     // lock resource on appropriate ifc if supported
     switch ((int)res) {
@@ -506,7 +508,9 @@ trm_sts trm_try_lock(trm_ctx trm, trm_resourse res)
 trm_sts trm_unlock(trm_ctx trm, trm_resourse res)
 {
     u_int32_t dev_type = 0;
-    mget_mdevs_flags(trm->mf, &dev_type);
+    if (mget_mdevs_flags(trm->mf, &dev_type)) {
+        return TRM_STS_DEV_NOT_SUPPORTED;
+    }
 
     // lock resource on appropriate ifc if supported
     switch ((int)res) {

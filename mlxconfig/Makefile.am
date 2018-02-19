@@ -48,7 +48,7 @@ COMPS_MGR_DIR = $(USER_DIR)/fw_comps_mgr
 SUBDIRS = mlxconfig_dbs
 
 AM_CPPFLAGS = -I. -I$(USER_DIR) -I$(top_srcdir)/include/mtcr_ul -I$(MTCR_DIR) -I$(COMMON_DIR) $(WIN64_INC)\
-           -I$(LAYOUTS_DIR) -I$(UTILS_DIR) -I$(DEV_MGT_DIR) -I$(CMDIF_DIR) $(COMPILER_FPIC)
+           -I$(LAYOUTS_DIR) -I$(UTILS_DIR) -I$(DEV_MGT_DIR) -I$(CMDIF_DIR) -I$(EXT_LIB_DIR)/muparser $(COMPILER_FPIC)
 
 
 AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe  -Wno-deprecated-declarations  $(COMPILER_FPIC) -DDATA_PATH=\"$(pkgdatadir)\"
@@ -57,6 +57,7 @@ noinst_LTLIBRARIES = libmlxcfg.a
 
 libmlxcfg_a_SOURCES =  mlxcfg_status.h mlxcfg_utils.h mlxcfg_utils.cpp mlxcfg_view.h\
         mlxcfg_expression.h mlxcfg_expression.cpp\
+mlxcfg_db_items.h mlxcfg_db_items.cpp\
         mlxcfg_db_manager.h mlxcfg_db_manager.cpp mlxcfg_param.h mlxcfg_param.cpp mlxcfg_tlv.h mlxcfg_tlv.cpp\
         mlxcfg_commander.h mlxcfg_commander.cpp mlxcfg_generic_commander.h mlxcfg_generic_commander.cpp\
         mlxcfg_param_lib.h mlxcfg_param_lib.cpp mlxcfg_4thgen_commander.h mlxcfg_4thgen_commander.cpp

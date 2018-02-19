@@ -28,6 +28,7 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
 
 /*
@@ -56,10 +57,10 @@
 #define ADB_DUMP_VAR   "ADB_DUMP"
 #define MAX_DEV_LEN 512
 
-void usage(const char *n, int with_exit)
+void usage(int with_exit)
 {
     printf("  Mellanox Configuration Registers Access tool\n");
-    printf("  Usage: %s [-s <i2c-slave>] [-a <adb dump>] [-v] [-h] [-c] <device>\n", n);
+    printf("  Usage: mcra [-s <i2c-slave>] [-a <adb dump>] [-v] [-h] [-c] <device>\n");
     printf("         <addr[.<bit offset>:<bit size>]|[,<bytes number>]> [data]\n");
     printf("         If data is given, operation is write. Otherwise it is read.\n");
     printf("         If a bit range is given in the address (E.G.: 0xf0014.16:8):\n");
@@ -117,7 +118,7 @@ int main(int argc, char *argv[])
     (void)rc; // avoid warnings (we dont use it just assign)
     // Parse cmd line:
     if (argc < 2) {
-        usage(argv[0], 1);
+        usage(1);
     }
 
     while ((c = getopt(argc, argv, "s:a:hvc")) != -1) {
@@ -139,7 +140,7 @@ int main(int argc, char *argv[])
             exit(0);
 
         case 'h':
-            usage(argv[0], 0);
+            usage(0);
             exit(0);
 
         case 'c':
@@ -147,12 +148,12 @@ int main(int argc, char *argv[])
             break;
 
         case '?':
-            usage(argv[0], 0);
+            usage(0);
             exit(1);
 
         default:
             fprintf(stderr, "-E- Unknown flag \"%c\"\n", c);
-            usage(argv[0], 0);
+            usage(0);
             exit(1);
         }
     }

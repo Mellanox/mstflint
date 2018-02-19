@@ -38,7 +38,7 @@
 
 #include <algorithm>
 
-#include "ext_libs/muparser/muParser.h"
+#include <muParser.h>
 #include "mlxcfg_utils.h"
 #include "mlxcfg_expression.h"
 
