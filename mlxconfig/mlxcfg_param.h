@@ -134,7 +134,7 @@ class StringParamValue : public ParamValue {
 class BytesParamValue : public ParamValue {
     public:
         BytesParamValue(u_int32_t size) : ParamValue(size) {}
-
+        using ParamValue::setVal;
         string  getVal      ();
         void    setVal      (string val);
         void    setVal      (const vector<u_int32_t>& buffVal);
@@ -152,6 +152,7 @@ class ArrayParamValue : public ParamValue {
 public:
     ArrayParamValue(string size, u_int32_t count, enum ParamType paramType);
     ~ArrayParamValue();
+    using ParamValue::setVal;
     string              getVal      ();
     void                setVal      (string val);
     void                setVal      (vector<string> vals);
