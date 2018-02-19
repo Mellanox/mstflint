@@ -65,6 +65,7 @@ if CMTCR:
     class MstDevice:
         ##########################
         def __init__(self, dev):
+            self.mdev = dev
             self.mf = 0
             self.mopenFunc = CMTCR.mopen
             self.mopenFunc.restype = c_void_p
@@ -76,15 +77,20 @@ if CMTCR:
             self.icmdSendCommandFunc = CMTCR.icmd_send_command
             self.mHcaResetFunc = CMTCR.mhca_reset
 
-            self.mf = ctypes.c_void_p(self.mopenFunc(dev))
-            if not self.mf:
-                raise MtcrException("Failed to open device (%s): %s" % (dev, os.strerror(ctypes.get_errno())))
+            self.open()
 
         ##########################
         def close(self):
             if self.mf:
                 self.mcloseFunc(self.mf)
             self.mf = None
+
+        def open(self):
+            self.mf = ctypes.c_void_p(self.mopenFunc(self.mdev))
+            if not self.mf:
+                raise MtcrException("Failed to re-open device (%s): %s" % (self.mdev, os.strerror(ctypes.get_errno())))
+
+
 
         ##########################
         def __del__(self):

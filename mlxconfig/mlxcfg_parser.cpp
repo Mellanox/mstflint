@@ -431,10 +431,15 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
         return extractNVOutputFile(argc-i-1, &(argv[i+1]));
     }
 
-    if (_mlxParams.cmd == Mc_Query) {
-        return extractQueryCfgArgs(argc - i, &(argv[i]));
-    } else {
-        return extractSetCfgArgs(argc-i, &(argv[i]));
+
+    try {
+        if (_mlxParams.cmd == Mc_Query) {
+            return extractQueryCfgArgs(argc - i, &(argv[i]));
+        } else {
+            return extractSetCfgArgs(argc-i, &(argv[i]));
+        }
+    } catch (MlxcfgException& e) {
+        return err(true, "%s", e._err.c_str());
     }
 }
 

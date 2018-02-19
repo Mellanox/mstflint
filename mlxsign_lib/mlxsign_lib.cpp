@@ -35,6 +35,7 @@
 #include <openssl/rsa.h>
 #include <openssl/pem.h>
 #include <openssl/bio.h>
+#include <openssl/hmac.h>
 
 #include "mlxsign_lib.h"
 
@@ -43,45 +44,43 @@
 }while (0)
 
 
- int MlxSignSHA256::getDigest(std::vector<u_int8_t>& digest)
- {
-     int rc;
-     SHA256_CTX ctx;
-    digest.resize(SHA256_DIGEST_LENGTH);
-    memset(&digest[0], 0, digest.size());
-     rc = SHA256_Init( &ctx); CHECK_RC(rc, 1, MLX_SIGN_SHA256_INIT_ERROR);
-     rc = SHA256_Update(&ctx, (void*)(&_buff[0]), _buff.size()); CHECK_RC(rc, 1, MLX_SIGN_SHA256_CALCULATION_ERROR);
-     rc = SHA256_Final(&digest[0], &ctx); CHECK_RC(rc, 1,MLX_SIGN_SHA256_CALCULATION_ERROR);
-     return MLX_SIGN_SUCCESS;
- }
+MlxSignSHA::MlxSignSHA(u_int32_t digestLength)
+{
+    _digestLength = digestLength;
+}
 
-int MlxSignSHA256::getDigest(std::string& digest)
+int MlxSignSHA::getDigest(std::string& digest)
 {
     int rc;
     std::vector<u_int8_t> digestVec;
-    char digestStr[SHA256_DIGEST_LENGTH*2 + 1] = {0};
+    char* digestStr = new char[_digestLength*2 + 1];
 
-    rc = getDigest(digestVec); CHECK_RC(rc, MLX_SIGN_SUCCESS, rc);
+    rc = getDigest(digestVec);
+    if (rc != MLX_SIGN_SUCCESS) {
+        delete[] digestStr;
+        return rc;
+    }
     // transform to string
     for (int i=0; i < digestVec.size(); i++) {
         snprintf(digestStr + i*2, 3, "%02x", digestVec[i]);
     }
     digest = digestStr;
+    delete[] digestStr;
     return MLX_SIGN_SUCCESS;
 }
 
-void MlxSignSHA256::reset()
+void MlxSignSHA::reset()
 {
     _buff.resize(0);
 }
 
-MlxSignSHA256& operator<<(MlxSignSHA256& lhs, u_int8_t data)
+MlxSignSHA& operator<<(MlxSignSHA& lhs, u_int8_t data)
 {
     lhs._buff.push_back(data);
     return lhs;
 }
 
-MlxSignSHA256& operator<<(MlxSignSHA256& lhs, const std::vector<u_int8_t>& buff)
+MlxSignSHA& operator<<(MlxSignSHA& lhs, const std::vector<u_int8_t>& buff)
 {
     for (std::vector<u_int8_t>::const_iterator it = buff.begin(); it != buff.end(); it++) {
         lhs._buff.push_back(*it);
@@ -89,6 +88,46 @@ MlxSignSHA256& operator<<(MlxSignSHA256& lhs, const std::vector<u_int8_t>& buff)
     return lhs;
 }
 
+/*
+ *MlxSignSHA256
+ *
+ */
+
+MlxSignSHA256::MlxSignSHA256() : MlxSignSHA(SHA256_DIGEST_LENGTH)
+{
+}
+
+int MlxSignSHA256::getDigest(std::vector<u_int8_t>& digest)
+{
+     int rc;
+     SHA256_CTX ctx;
+    digest.resize(_digestLength);
+    memset(&digest[0], 0, digest.size());
+     rc = SHA256_Init( &ctx); CHECK_RC(rc, 1, MLX_SIGN_SHA_INIT_ERROR);
+     rc = SHA256_Update(&ctx, (void*)(&_buff[0]), _buff.size()); CHECK_RC(rc, 1, MLX_SIGN_SHA_CALCULATION_ERROR);
+     rc = SHA256_Final(&digest[0], &ctx); CHECK_RC(rc, 1,MLX_SIGN_SHA_CALCULATION_ERROR);
+     return MLX_SIGN_SUCCESS;
+}
+
+/*
+ * MlxSignSHA512
+ *
+ */
+MlxSignSHA512::MlxSignSHA512() : MlxSignSHA(SHA512_DIGEST_LENGTH)
+{
+}
+
+int MlxSignSHA512::getDigest(std::vector<u_int8_t>& digest)
+{
+    int rc;
+    SHA512_CTX ctx;
+    digest.resize(_digestLength);
+    memset(&digest[0], 0, digest.size());
+    rc = SHA512_Init( &ctx); CHECK_RC(rc, 1, MLX_SIGN_SHA_INIT_ERROR);
+    rc = SHA512_Update(&ctx, (void*)(&_buff[0]), _buff.size()); CHECK_RC(rc, 1, MLX_SIGN_SHA_CALCULATION_ERROR);
+    rc = SHA512_Final(&digest[0], &ctx); CHECK_RC(rc, 1,MLX_SIGN_SHA_CALCULATION_ERROR);
+    return MLX_SIGN_SUCCESS;
+}
 
 MlxSignRSA::~MlxSignRSA()
 {
@@ -110,6 +149,15 @@ int MlxSignRSA::setPrivKey(const std::string& pemKey)
     return createRSAFromPEMKeyString(pemKey, true);
 }
 
+int MlxSignRSA::getPrivKeyLength() const
+{
+    if (_privCtx) {
+        return RSA_size((RSA*)_privCtx);
+    } else {
+        return 0x0;
+    }
+}
+
 int MlxSignRSA::setPubKeyFromFile(const std::string& pemKeyFilePath)
 {
     return createRSAFromPEMFileName(pemKeyFilePath, false);
@@ -120,7 +168,7 @@ int MlxSignRSA::setPubKey(const std::string& pemKey)
     return createRSAFromPEMKeyString(pemKey, false);
 }
 
-int MlxSignRSA::sign(const std::vector<u_int8_t>& msg, std::vector<u_int8_t>& encryptedMsg)
+int MlxSignRSA::sign(MlxSign::SHAType shaType, const std::vector<u_int8_t>& msg, std::vector<u_int8_t>& encryptedMsg)
 {
     unsigned int maxMsgSize, signLen;
     std::vector<u_int8_t> encryptedMsgTemp;
@@ -137,7 +185,17 @@ int MlxSignRSA::sign(const std::vector<u_int8_t>& msg, std::vector<u_int8_t>& en
     // do the job
     encryptedMsgTemp.resize(maxMsgSize, 0);
 
-    if (!RSA_sign(NID_sha256, msg.data(), msg.size(), encryptedMsgTemp.data(), &signLen, (RSA*)_privCtx)) {
+    int type;
+
+    if (shaType == MlxSign::SHA256) {
+        type = NID_sha256;
+    } else if (shaType == MlxSign::SHA512) {
+        type = NID_sha512;
+    } else {
+        return MLX_SIGN_UNSUPPORTED_SHA_TYPE;
+    }
+
+    if (!RSA_sign(type, msg.data(), msg.size(), encryptedMsgTemp.data(), &signLen, (RSA*)_privCtx)) {
         return MLX_SIGN_RSA_CALCULATION_ERROR;
     }
 
@@ -147,14 +205,24 @@ int MlxSignRSA::sign(const std::vector<u_int8_t>& msg, std::vector<u_int8_t>& en
     return MLX_SIGN_SUCCESS;
 }
 
-int MlxSignRSA::verify(const std::vector<u_int8_t>& sha256Dgst, const std::vector<u_int8_t>& sig, bool& result)
+int MlxSignRSA::verify(MlxSign::SHAType shaType, const std::vector<u_int8_t>& digest, const std::vector<u_int8_t>& sig, bool& result)
 {
 
     if (!_pubCtx) {
         return MLX_SIGN_RSA_NO_PUB_KEY_ERROR;
     }
 
-    result = RSA_verify(NID_sha256, sha256Dgst.data(), sha256Dgst.size(), sig.data(), sig.size(), (RSA*)_pubCtx);
+    int type;
+
+    if (shaType == MlxSign::SHA256) {
+        type = NID_sha256;
+    } else if (shaType == MlxSign::SHA512) {
+        type = NID_sha512;
+    } else {
+        return MLX_SIGN_UNSUPPORTED_SHA_TYPE;
+    }
+
+    result = RSA_verify(type, digest.data(), digest.size(), sig.data(), sig.size(), (RSA*)_pubCtx);
 
     return MLX_SIGN_SUCCESS;
 }
@@ -289,4 +357,66 @@ int MlxSignRSA::createRSAFromPEMKeyString(const std::string& pemKey,  bool isPri
     }
     return MLX_SIGN_SUCCESS;
 }
+
+MlxSignHMAC::MlxSignHMAC()
+{
+    ctx = malloc(sizeof(HMAC_CTX));
+    HMAC_CTX_init((HMAC_CTX*)ctx);
+}
+
+int MlxSignHMAC::setKey(const std::string& key)
+{
+    if (HMAC_Init_ex((HMAC_CTX*)ctx , key.c_str(), key.length(), EVP_sha512(), NULL) == 0) {
+        return MLX_SIGN_HMAC_ERROR;
+    }
+
+    return MLX_SIGN_SUCCESS;
+}
+
+/*int MlxSignHMAC::update(const std::vector<u_int8_t>& buff)
+{
+    if (HMAC_Update(&ctx, (unsigned char*)buff.data(), buff.size()) == 0) {
+        return MLX_SIGN_HMAC_ERROR;
+    }
+
+    return MLX_SIGN_SUCCESS;
+}*/
+
+MlxSignHMAC& operator<<(MlxSignHMAC& lhs, const std::vector<u_int8_t>& buff)
+{
+    for (std::vector<u_int8_t>::const_iterator it = buff.begin(); it != buff.end(); it++) {
+        lhs.data.push_back(*it);
+    }
+
+    return lhs;
+}
+
+int MlxSignHMAC::getDigest(std::vector<u_int8_t>& digest)
+{
+    unsigned int len = 64; //512 bits
+
+    if (HMAC_Update((HMAC_CTX*)ctx, (unsigned char*)data.data(), data.size()) == 0) {
+        return MLX_SIGN_HMAC_ERROR;
+    }
+
+    digest.resize(len);
+
+    //TODO why len is passed by reference?
+    //TODO HMAC_Final must return 1 on success and 0 on failure but that is not happening!
+    HMAC_Final((HMAC_CTX*)ctx, digest.data(), &len);
+
+    /*for (int i = 0; i != len; i++)
+            printf("%02x", (unsigned int)digest[i]);
+    printf("\n");
+      */
+
+    return MLX_SIGN_SUCCESS;
+}
+
+MlxSignHMAC::~MlxSignHMAC()
+{
+    HMAC_CTX_cleanup((HMAC_CTX*)ctx);
+    free(ctx);
+}
+
 #endif //ENABLE_OPENSSL

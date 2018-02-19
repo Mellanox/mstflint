@@ -665,7 +665,6 @@ void crd_free(IN crd_ctxt_t *context) {
     free(context);
 }
 
-
 const char* crd_err_str(int rc) {
     switch (rc) {
         case CRD_OK:

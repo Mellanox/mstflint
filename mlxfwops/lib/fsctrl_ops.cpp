@@ -48,7 +48,9 @@ bool FsCtrlOperations::unsupportedOperation()
 u_int8_t FsCtrlOperations::FwType()
 {
     if (!_hwDevId) {
-        FsIntQuery();
+        if (!FsIntQuery()) {
+            return FS_UNKNOWN_IMG;
+        }
     }
     u_int8_t fwFormat = GetFwFormatFromHwDevID(_hwDevId);
     if (fwFormat == FS_FS2_GEN) {
@@ -345,10 +347,59 @@ bool FsCtrlOperations::FwWriteBlock(u_int32_t addr, std::vector<u_int8_t> dataVe
 
 bool FsCtrlOperations::FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc, ProgressCallBack progressFunc)
 {
-    (void)sgParam;
     (void)callBackFunc;
     (void)progressFunc;
-    return unsupportedOperation();
+    mac_guid_t macGuid;
+
+    memset(&macGuid, 0, sizeof(macGuid));
+
+    if (sgParam.userGuids.empty()) {
+        return errmsg("Base GUID not found.");
+    }
+    if (!sgParam.guidsSpecified  && !sgParam.macsSpecified && !sgParam.uidSpecified) {
+        return errmsg("base GUID/MAC were not specified.");
+    }
+    if (!sgParam.updateCrc || sgParam.numOfGUIDs != 0 || sgParam.stepSize != 0 ||
+        sgParam.numOfGUIDsPP[0] != 0xff || sgParam.numOfGUIDsPP[1] != 0xff ||
+            sgParam.stepSizePP[0] != 0xff || sgParam.stepSizePP[1] != 0xff) {
+        return errmsg("Tried to set unsupported values. Allowed values to set are mac,guid,uid.");
+    }
+
+    if (sgParam.uidSpecified) {
+        macGuid.guid = sgParam.userGuids[0];
+        u_int64_t baseMac = (((u_int64_t)macGuid.guid.l & 0xffffff) | (((u_int64_t)macGuid.guid.h & 0xffffff00) << 16));
+        macGuid.mac.h = baseMac >> 32;
+        macGuid.mac.l = baseMac & 0x00000000ffffffff;
+    } else {
+        fwInfoT fwQuery;
+        if (!_fwCompsAccess->queryFwInfo(&fwQuery)) {
+            return false;
+        }
+        if (sgParam.macsSpecified) {
+            if (sgParam.userGuids.size() < 2) {
+                return errmsg("MAC was not found.");
+            }
+            // check base mac
+            if (!CheckMac(sgParam.userGuids[1])) {
+                return errmsg("Bad MAC (" MAC_FORMAT ") given: %s. Please specify a valid MAC value",
+                    sgParam.userGuids[1].h, sgParam.userGuids[1].l, err());
+            }
+            macGuid.mac = sgParam.userGuids[1];
+        } else {
+            macGuid.mac.h = fwQuery.base_mac.uid >> 32;
+            macGuid.mac.l = fwQuery.base_mac.uid & 0x00000000ffffffff;
+        }
+        if (sgParam.guidsSpecified) {
+             macGuid.guid = sgParam.userGuids[0];
+        } else {
+            macGuid.guid.h = fwQuery.base_guid.uid >> 32;
+            macGuid.guid.l = fwQuery.base_guid.uid & 0x00000000ffffffff;
+        }
+    }
+    if  (!_fwCompsAccess->setMacsGuids(macGuid)) {
+        return errmsg(FwCompsErrToFwOpsErr(_fwCompsAccess->getLastError()), "%s", _fwCompsAccess->getLastErrMsg());
+    }
+    return true;
 }
 
 bool FsCtrlOperations::FwSetMFG(fs3_uid_t baseGuid, PrintCallBack callBackFunc)
@@ -494,6 +545,9 @@ int  FsCtrlOperations::FwCompsErrToFwOpsErr(fw_comps_error_t err)
             break;
         case FWCOMPS_MEM_ALLOC_FAILED:
             fwOpsErr = MLXFW_MEM_ERR;
+            break;
+        case FWCOMPS_MCC_REJECTED_IMAGE_CAN_NOT_BOOT_FROM_PARTITION:
+            fwOpsErr = MLXFW_REJECTED_IMAGE_CAN_NOT_BOOT_FROM_PARTITION;
             break;
         default:
             if (err != FWCOMPS_SUCCESS) {

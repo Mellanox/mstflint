@@ -44,8 +44,8 @@
  */
 enum {
     MLX_SIGN_SUCCESS = 0,
-    MLX_SIGN_SHA256_INIT_ERROR,
-    MLX_SIGN_SHA256_CALCULATION_ERROR,
+    MLX_SIGN_SHA_INIT_ERROR,
+    MLX_SIGN_SHA_CALCULATION_ERROR,
 
     MLX_SIGN_RSA_PEM_FILE_ERROR = 0x100,
     MLX_SIGN_RSA_MESSAGE_TOO_LONG_ERROR,
@@ -56,10 +56,17 @@ enum {
     MLX_SIGN_RSA_NO_PRIV_KEY_ERROR,
     MLX_SIGN_RSA_NO_PUB_KEY_ERROR,
     MLX_SIGN_RSA_KEY_BIO_ERROR,
+    MLX_SIGN_UNSUPPORTED_SHA_TYPE,
+
+    MLX_SIGN_HMAC_ERROR
 };
 
+namespace MlxSign {
+    enum SHAType {SHA256, SHA512};
+}
+
 /*
- * Class MlxSignSHA256: used for calculating SHA256 digest on a data buffer.
+ * Class MlxSignSHA: used for calculating SHA digest on a data buffer.
  * Usage:
  *     use operator <<  to fill the class's internal buffer.
  *     call getDigest() method to get the digest in either string or raw buffer format.
@@ -67,25 +74,38 @@ enum {
  *      string digest;
  *      vector<u_int8_t> dataVec;
  *      // fill dataVec with data.....
- *      MlxSignSHA256 sha256;
+ *      MlxSignSHA sha256;
  *      sha256 << dataVec;
  *      sha256.getDigest(result);
  *      cout << result;
  */
-class MlxSignSHA256 {
+class MlxSignSHA {
 public:
-    MlxSignSHA256() {};
-    ~MlxSignSHA256() {};
-    friend MlxSignSHA256& operator<<(MlxSignSHA256& lhs, u_int8_t data);
-    friend MlxSignSHA256& operator<<(MlxSignSHA256& lhs, const std::vector<u_int8_t>& buff);
+    MlxSignSHA(u_int32_t);
+    virtual ~MlxSignSHA() {};
+    friend MlxSignSHA& operator<<(MlxSignSHA& lhs, u_int8_t data);
+    friend MlxSignSHA& operator<<(MlxSignSHA& lhs, const std::vector<u_int8_t>& buff);
 
     int getDigest(std::string& digest);
-    int getDigest(std::vector<u_int8_t>& digest);
+    virtual int getDigest(std::vector<u_int8_t>& digest) = 0;
     void reset();
-private:
+
+protected:
+    u_int32_t _digestLength;
     std::vector<u_int8_t> _buff;
 };
 
+class MlxSignSHA256 : public MlxSignSHA {
+public:
+    MlxSignSHA256();
+    int getDigest(std::vector<u_int8_t>& digest);
+};
+
+class MlxSignSHA512 : public MlxSignSHA {
+public:
+    MlxSignSHA512();
+    int getDigest(std::vector<u_int8_t>& digest);
+};
 
 /*
  * Class MlxSignRSA: used for encrypting/decrypting messages using RSA encryption algorithm
@@ -112,6 +132,7 @@ public:
 
     int setPrivKeyFromFile(const std::string& pemKeyFilePath);
     int setPrivKey(const std::string& pemKey);
+    int getPrivKeyLength() const;
 
     int setPubKeyFromFile(const std::string& pemKeyFilePath);
     int setPubKey(const std::string& pemKey);
@@ -122,8 +143,8 @@ public:
     int encrypt(const std::vector<u_int8_t>& msg, std::vector<u_int8_t>& encryptedMsg);     // encrypt with private
     int decrypt(const std::vector<u_int8_t>& encryptedMsg, std::vector<u_int8_t>& originalMsg);    // decrypt with public (used for testing for now)
 
-    int sign(const std::vector<u_int8_t>& msg, std::vector<u_int8_t>& encryptedMsg);
-    int verify(const std::vector<u_int8_t>& sha256Dgst, const std::vector<u_int8_t>& sig, bool& result);
+    int sign(MlxSign::SHAType shaType, const std::vector<u_int8_t>& msg, std::vector<u_int8_t>& encryptedMsg);
+    int verify(MlxSign::SHAType shaType, const std::vector<u_int8_t>& sha256Dgst, const std::vector<u_int8_t>& sig, bool& result);
 
     std::string str(const std::vector<u_int8_t>& msg);
 private:
@@ -131,6 +152,22 @@ private:
     int createRSAFromPEMKeyString(const std::string& pemKey,  bool isPrivateKey);
     void* _privCtx;
     void* _pubCtx;
+};
+
+
+class MlxSignHMAC {
+public:
+    MlxSignHMAC();
+    int setKey(const std::string& key);
+    //int update(const std::vector<u_int8_t>& buff);
+    friend MlxSignHMAC& operator<<(MlxSignHMAC& lhs, const std::vector<u_int8_t>& buff);
+    int getDigest(std::vector<u_int8_t>& digest);
+    ~MlxSignHMAC();
+
+private:
+    void* ctx;
+    std::vector<u_int8_t> data;
+
 };
 
 #endif /* USER_MLXSIGN_LIB_MLXSIGN_LIB_H_ */

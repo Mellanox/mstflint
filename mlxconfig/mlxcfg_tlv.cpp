@@ -47,7 +47,7 @@
 #include "../tools_layouts/tools_open_layouts.h"
 #include "mlxcfg_tlv.h"
 
-#include "ext_libs/muparser/muParser.h"
+#include <muParser.h>
 
 using namespace mu;
 
@@ -135,6 +135,7 @@ TLVConf::TLVConf(int columnsCount, char **dataRow, char **headerRow) :
         _attrs[FUNC_ATTR]="0";
         _attrs[HOST_ATTR]="0";
     }
+    _attrs[WRITER_ID_ATTR]=numToStr(WRITER_ID_UNSPECIFIED);
     _attrs[OVR_EN_ATTR]="1";
     _attrs[RD_EN_ATTR]="1";
 
@@ -763,6 +764,7 @@ void TLVConf::genXMLTemplate(string& xmlTemplate, bool allAttrs, bool withVal,
     if (allAttrs) {
         attrs[OVR_EN_ATTR] = defaultAttrVal ? "1" : _attrs[OVR_EN_ATTR];
         attrs[RD_EN_ATTR] = defaultAttrVal ? "1" : _attrs[RD_EN_ATTR];
+        attrs[WRITER_ID_ATTR] = defaultAttrVal ? numToStr(WRITER_ID_UNSPECIFIED) : _attrs[WRITER_ID_ATTR];
     }
 
     xmlTemplate = "<" + _name;
@@ -857,7 +859,7 @@ void TLVConf::genRaw(string& raw)
 
 void TLVConf::genBin(vector<u_int32_t>& buff, bool withHeader)
 {
-    u_int32_t rd_en, ovr_en;
+    u_int32_t writer_id, rd_en, ovr_en;
     tools_open_nv_hdr_fifth_gen hdr;
 
     if (withHeader) {
@@ -867,6 +869,11 @@ void TLVConf::genBin(vector<u_int32_t>& buff, bool withHeader)
 
         memset(&hdr, 0, sizeof(hdr));
         hdr.length = _size;
+
+        if (!strToNum(_attrs[WRITER_ID_ATTR], writer_id)) {
+            throw MlxcfgException("Illegal value for " WRITER_ID_ATTR);
+        }
+        hdr.writer_id = (u_int8_t)writer_id;
 
         if (!strToNum(_attrs[RD_EN_ATTR], rd_en) || (rd_en > 1)) {
             throw MlxcfgException("Illegal value for " RD_EN_ATTR);

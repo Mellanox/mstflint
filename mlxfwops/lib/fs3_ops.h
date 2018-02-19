@@ -59,6 +59,8 @@
             _fwParams.ignoreCacheRep = 0;\
         }
 
+enum SHATYPE { SHA256, SHA512};
+
 class Fs3Operations : public FwOperations {
 public:
 
@@ -99,8 +101,14 @@ public:
     virtual const char*  FwGetResetRecommandationStr();
     virtual const char*  FwGetReSignMsgStr();
 
-    bool FwInsertEncSHA256(const char* privPemFile, const  char* uuid, PrintCallBack printFunc=(PrintCallBack)NULL);
     bool FwInsertSHA256(PrintCallBack printFunc=(PrintCallBack)NULL);
+    bool FwSignWithOneRSAKey(const char* privPemFile, const char* uuid, PrintCallBack printFunc=(PrintCallBack)NULL);
+    bool FwSignWithTwoRSAKeys(const char* privPemFile1, const char* uuid1,
+                const char* privPemFile2, const char* uuid2, PrintCallBack printFunc=(PrintCallBack)NULL);
+
+    bool FwInsertEncSHA(SHATYPE shaType, const char* privPemFile,
+            const char* uuid, PrintCallBack printFunc=(PrintCallBack)NULL);
+
     virtual bool FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatternAndDevToc);
     virtual bool FwSetPublicKeys(char* fname, PrintCallBack callBackFunc=(PrintCallBack)NULL);
     virtual bool FwSetForbiddenVersions(char* fname, PrintCallBack callBackFunc=(PrintCallBack)NULL);
@@ -109,6 +117,7 @@ public:
     virtual bool FwQueryTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer, bool queryRunning=false);
     virtual bool FwResetTimeStamp();
 
+    bool FwCheckIfWeCanBurnWithFwControl(FwOperations* imageOps);
     bool FwCheckIf8MBShiftingNeeded(FwOperations* imageOps, const ExtBurnParams& burnParams);
 
 protected:
@@ -162,6 +171,11 @@ protected:
 
     bool CheckAndDealWithChunkSizes(u_int32_t cntxLog2ChunkSize, u_int32_t imageCntxLog2ChunkSize);
     bool ReBurnCurrentImage(ProgressCallBack progressFunc);
+
+    bool Fs3MemSetSignature(fs3_section_t sectType, u_int32_t size, PrintCallBack printFunc=(PrintCallBack)NULL);
+    virtual bool IsSectionExists(fs3_section_t sectType);
+
+    bool isOld4MBImage(FwOperations* imageOps);
 
     struct toc_info {
         u_int32_t entry_addr;
@@ -251,8 +265,10 @@ private:
     virtual bool reburnItocSection(PrintCallBack callBackFunc, bool burnFailsafe=true);
     virtual u_int32_t getImageSize();
     virtual void maskDevToc(vector<u_int8_t>& img);
-    virtual void maskImageSignature(vector<u_int8_t>& img);
-    bool FwCalcSHA256(vector<u_int8_t>& sha256);
+    virtual void maskIToCSection(u_int32_t itocType, vector<u_int8_t>& img);
+    bool FwCalcSHA(SHATYPE shaType, vector<u_int8_t>& sha256);
+
+    bool CheckPublicKeysFile(char* fname, fs3_section_t& sectionType);
 
     Tlv_Status_t GetTsObj(TimeStampIFC** tsObj);
 

@@ -31,6 +31,7 @@
  * SOFTWARE.
  *
  */
+
 #ifndef __MLNX_DEV_H__
 #define __MLNX_DEV_H__
 
@@ -54,8 +55,8 @@ public:
     ~MlnxDev();
 
     int    query();
-    int    preBurn(string mfa_file, f_prog_func prog_cb, bool burnFailsafe,  bool& isAlignmentNeeded,
-            bool& isShifting8MBNeeded, f_prog_func_adv stage_prog=(f_prog_func_adv)NULL);
+    int    preBurn(string mfa_file, f_prog_func prog_cb, bool burnFailsafe, bool& isTimeConsumingFixesNeeded,
+                   vector<string>& questions, f_prog_func_adv stage_prog=(f_prog_func_adv)NULL);
     int    burn(bool&);
     bool   clearSemaphore();
     int    isBurnSuccess();
@@ -99,6 +100,7 @@ public :
     port_type_t   portTwoType;
     bool   isOnlyBase;
 private:
+    bool InitDevFWParams(FwOperations::fw_ops_params_t& devFwParams);
     void setDeviceType(void);
     void setGuidMac(fw_info_t &fw_query);
     void _MlnxDevInit(int compare_ffv);

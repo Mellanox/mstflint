@@ -293,7 +293,8 @@ int tools_cmdif_send_inline_cmd(mfile* mf,
     in_param = SWAP_DW_BE(in_param);
     rc = tools_cmdif_send_inline_cmd_int(mf, (u_int32_t*)((u_int8_t*)&in_param), (u_int32_t*)out_param, input_modifier, opcode, opcode_modifier);
     if (out_param) {
-        *out_param = SWAP_DW_BE(*out_param);
+        u_int64_t swapped_out_param = SWAP_DW_BE(*out_param);
+        *out_param = swapped_out_param;
     }
     return rc;
 }

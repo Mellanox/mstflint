@@ -47,6 +47,7 @@
 typedef enum {
     FLINT_SUCCESS = 0,
     FLINT_FAILED = 1,
+    FLINT_QUERY_ERROR = 2,
     FLINT_BURN_ABORTED = 7
 }FlintStatus;
 
@@ -103,8 +104,8 @@ typedef enum {
 #define FLINT_WIN_NOT_SUPP_ERROR              "Command \"%s\" is not supported in windows.\n"
 #define FLINT_WIN_ONLY_SUPP_ERROR             "Command  \"%s\" is supported only in windows.\n"
 #define FLINT_GEN_COMMAND_ERROR               "Failed to execute command %s. %s\n"
-#define FLINT_FS3_BB_ERROR                    "bb command is not supported anymore in FS3 image, please use b for burning FS3 image.\n"
-#define FLINT_FS3_BURN_ERROR                  "Burning FS3 image failed: %s\n"
+#define FLINT_FS3_BB_ERROR                    "bb command is not supported anymore in FS3/FS4 images, please use b for burning FS3/FS4 images.\n"
+#define FLINT_FSX_BURN_ERROR                  "Burning %s image failed: %s\n"
 #define FLINT_FS2_BURN_ERROR                  "Burning FS2 image failed: %s\n"
 #define FLINT_PSID_ERROR                      "PSID mismatch. The PSID on flash (%s) differs from the PSID in the given image (%s).\n"
 #define FLINT_FS2_STRIPED_ERROR               "The -striped_image cannot be used with the burn command\n"

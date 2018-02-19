@@ -309,9 +309,11 @@ typedef enum fs3_section {
     // FS3_DBG_LOG_MAP = 0x30 - in practice its unused and DBG_FW_INI is found in that section instead
     FS3_DBG_FW_PARAMS = 0x32,
     FS3_FW_ADB        = 0x33,
-    FS3_IMAGE_SIGNATURE = 0xa0,
-    FS3_PUBLIC_KEYS   = 0xa1,
+    FS3_IMAGE_SIGNATURE_256 = 0xa0,
+    FS3_PUBLIC_KEYS_2048   = 0xa1,
     FS3_FORBIDDEN_VERSIONS = 0xa2,
+    FS3_IMAGE_SIGNATURE_512 = 0xa3,
+    FS3_PUBLIC_KEYS_4096 = 0xa4,
     FS3_MFG_INFO      = 0xe0,
     FS3_DEV_INFO      = 0xe1,
     FS3_NV_DATA1      = 0xe2,
@@ -319,6 +321,7 @@ typedef enum fs3_section {
     FS3_NV_DATA2      = 0xe4,
     FS3_FW_NV_LOG     = 0xe5,
     FS3_NV_DATA0      = 0xe6, // replaces FS3_NV_DATA1
+    FS3_CRDUMP_MASK_DATA = 0xe9,
     FS4_HW_PTR        = 0xfb,
     FS4_TOOLS_AREA    = 0xfc,
     FS3_ITOC          = 0xfd,

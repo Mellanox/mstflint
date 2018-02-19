@@ -153,7 +153,8 @@ int cntx_int_spi_get_status_data(mflash* mfl, u_int8_t op_type, u_int32_t* statu
 // forward decl:
 int mfl_com_lock(mflash* mfl);
 int release_semaphore(mflash* mfl, int ignore_writer_lock);
-
+int mf_get_secure_host(mflash* mfl, int* mode);
+int mf_secure_host_op(mflash* mfl, u_int64_t key, int op);
 
 // NOTE: This macro returns ... not nice.
 #define CHECK_RC(rc) do {if (rc) return rc;} while(0)
@@ -223,7 +224,6 @@ int release_semaphore(mflash* mfl, int ignore_writer_lock);
 /*
  * Device IDs Macros:
  */
-
 #define IS_CONNECTX_4TH_GEN_FAMILY(dev_id) \
         (((dev_id) == CONNECTX_HW_ID) || ((dev_id) == CX3_HW_ID) || ((dev_id) == CX3_PRO_HW_ID))
 #define IS_IS4_FAMILY(dev_id) \
@@ -261,6 +261,10 @@ int release_semaphore(mflash* mfl, int ignore_writer_lock);
        ((IS_IS4_FAMILY(dev_id)) || (IS_SX(dev_id)) || (IS_SIB(dev_id)) || (IS_SEN(dev_id)) || (IS_SIB2(dev_id)) || (IS_QUANTUM(dev_id)) || (IS_SPECTRUM2(dev_id)))
 #define SUPPORTS_SW_RESET(devid)\
         (((devid) == IS4_HW_ID) || ((devid) == SWITCHX_HW_ID) || ((devid) == SWITCH_IB_HW_ID) || ((devid) == SWITCH_IB2_HW_ID) || ((devid) == QUANTUM_HW_ID))
+#define IS_CX5_OR_NEWER(dev_id) \
+        !((dev_id == CX3_PRO_HW_ID) || (dev_id == CX3_HW_ID) || (dev_id == CX4_HW_ID) || (dev_id == CX4LX_HW_ID) || \
+          (dev_id == CONNECT_IB_HW_ID) || IS_SX(dev_id) || IS_SIB(dev_id) || IS_SIB2(dev_id) || IS_SEN(dev_id) || \
+           IS_SPECTRUM2(dev_id))
 
 
 // Write/Erase delays
@@ -561,7 +565,10 @@ flash_info_t g_flash_info_arr[] =
         {ATMEL_NAME,       FV_ATMEL,      FMT_ATMEL,        MCS_STSPI,  SFC_SSE, FSS_4KB,  0, 0, 0, 0, 0},
         {S25FLXXXP_NAME,   FV_S25FLXXXX,  FMT_S25FLXXXP,    MCS_STSPI,  SFC_SE,  FSS_64KB, 0, 0, 0, 0, 0},
         {S25FL116K_NAME,   FV_S25FLXXXX,  FMT_S25FL116K,    MCS_STSPI,  SFC_SSE, FSS_4KB,  1, 1, 1, 1, 0},
-        {MACRONIX_NAME,    FV_MX25K16XXX, FMT_ST_M25P,      MCS_STSPI,  SFC_SSE, FSS_4KB,  0, 0, 0, 0, 0}
+        {MACRONIX_NAME,    FV_MX25K16XXX, FMT_MX25K16XXX,   MCS_STSPI,  SFC_SSE, FSS_4KB,  1, 1, 1, 0, 0},
+        {CYPRESS_3V_NAME,  FV_S25FLXXXX,  FMT_S25FLXXXL,    MCS_STSPI,  SFC_SSE, FSS_4KB,  1, 1, 1, 1, 0},
+        {ISSI_3V_NAME,     FV_IS25LPXXX,  FMT_IS25LPXXX,    MCS_STSPI,  SFC_SSE, FSS_4KB,  1, 1, 1, 0, 0},
+        {WINBOND_3V_NAME,  FV_WINBOND,    FMT_WINBOND_3V,   MCS_STSPI,  SFC_SSE, FSS_4KB,  1, 1, 1, 1, 0}
 };
 
 int cntx_sst_get_log2size(u_int8_t capacity, int* log2spi_size)
@@ -2468,6 +2475,12 @@ int get_dev_info(mflash* mfl)
         mfl->attr.hw_dev_id = dev_id & 0xffff;
         mfl->attr.bin_id = get_bin_id(mfl, mfl->attr.hw_dev_id);
 
+        if (HAS_ICMD_IF(mfl->attr.hw_dev_id)) {
+            int mode = 0;
+            if (!mf_get_secure_host(mfl, &mode) && mode) {
+                return MFE_LOCKED_CRSPACE;
+            }
+        }
     }
 
     if (dev_flags & MDEVS_MLNX_OS) {
@@ -2475,7 +2488,7 @@ int get_dev_info(mflash* mfl)
     } else if (dev_flags & MDEVS_IB){
           mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] = ATBM_INBAND;
     } else { // not mlnxOS or IB device - check HW ID to determine Access type
-         if (HAS_ICMD_IF(mfl->attr.hw_dev_id)){
+         if (HAS_ICMD_IF(mfl->attr.hw_dev_id)) {
              if (mfl->opts[MFO_IGNORE_CASHE_REP_GUARD] == 0) {
                  mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] = ATBM_ICMD;
              }
@@ -2857,9 +2870,14 @@ int     mf_cr_write    (mflash* mfl, u_int32_t cr_addr, u_int32_t  data) {
 
 int	mf_update_boot_addr(mflash* mfl, u_int32_t boot_addr)
 {
+    u_int32_t boot_cr_space_address = IS_CX5_OR_NEWER(mfl->attr.hw_dev_id) ? BOOT_CR_SPACE_ADDR_CX5_OR_HIGHER :
+                                      BOOT_CR_SPACE_ADDR;
+    int offset_in_address = IS_CX5_OR_NEWER(mfl->attr.hw_dev_id) ? BOOT_CR_SPACE_ADDR_CX5_OR_HIGHER_OFFSET :
+                            BOOT_CR_SPACE_ADDR_OFFSET;
+
     if (mfl->access_type != MFAT_UEFI && mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] != ATBM_MLNXOS_CMDIF) {
         // the boot addr will be updated directly via cr-space
-        return mf_cr_write(mfl, BOOT_CR_SPACE_ADDR, ((boot_addr << 8) | 0x06));
+        return mf_cr_write(mfl, boot_cr_space_address, boot_addr << offset_in_address);
     }
     // the boot addr will be updated via reg
     return mf_update_boot_addr_by_type(mfl, boot_addr);
@@ -3136,17 +3154,65 @@ int mf_get_write_protect_direct_access(mflash *mfl, u_int8_t bank_num, write_pro
     return MFE_OK;
 }
 
+int mf_is_fifth_gen(mflash* mfl)
+{
+    return HAS_ICMD_IF(mfl->attr.hw_dev_id);
+}
+
 int mf_enable_hw_access(mflash* mfl, u_int64_t key)
 {
 #ifndef UEFI_BUILD
     int rc = 0;
-    rc = tcif_hw_access(mfl->mf, key, 0 /* Unlock */);
-    return (rc == ME_CMDIF_UNKN_TLV) ? MFE_MISMATCH_KEY : MError2MfError((MError)rc);
+    if (mf_is_fifth_gen(mfl)) {
+        return mf_secure_host_op(mfl, key, 0);
+    } else {
+        rc = tcif_hw_access(mfl->mf, key, 0 /* Unlock */);
+        return (rc == ME_CMDIF_UNKN_TLV) ? MFE_MISMATCH_KEY : MError2MfError((MError)rc);
+    }
 #else
     (void)mfl;
     (void)key;
     return MFE_NOT_SUPPORTED_OPERATION;
 #endif
+}
+/*
+ * Op:
+ * 0 - disable
+ * 1 - enable
+ */
+int mf_secure_host_op(mflash* mfl, u_int64_t key, int op)
+{
+    struct tools_open_mlock mlock;
+    memset(&mlock, 0, sizeof(mlock));
+    mlock.operation = op;
+    mlock.key = key;
+    int rc = ME_OK;
+    if (IS_CONNECT_IB(mfl->attr.hw_dev_id)) {
+        rc = ME_REG_ACCESS_REG_NOT_SUPP;
+    } else {
+        rc = (int)reg_access_secure_host(mfl->mf, REG_ACCESS_METHOD_SET, &mlock);
+    }
+    switch (rc) {
+    case ME_REG_ACCESS_REG_NOT_SUPP:
+        rc = MFE_NOT_SUPPORTED_OPERATION;
+        break;
+    case ME_REG_ACCESS_BAD_PARAM:
+        rc = MFE_MISMATCH_KEY;
+        break;
+    default:
+        rc =  MError2MfError((MError)rc);
+        break;
+    }
+    return rc;
+}
+
+int mf_get_secure_host(mflash* mfl, int* mode)
+{
+    struct tools_open_mlock mlock;
+    memset(&mlock, 0, sizeof(mlock));
+    int rc = (int)reg_access_secure_host(mfl->mf, REG_ACCESS_METHOD_GET, &mlock);
+    *mode = mlock.operation;
+    return rc;
 }
 
 int mf_disable_hw_access(mflash* mfl)
@@ -3155,6 +3221,7 @@ int mf_disable_hw_access(mflash* mfl)
     int rc = 0;
     // We need to release the semaphore because we will not have any access to semaphore after disabling the HW access
     rc = release_semaphore(mfl, 1); CHECK_RC(rc);
+
     rc = tcif_hw_access(mfl->mf, 0, 1 /* Lock */);
     // translate to operation specific errors
     switch (rc) {
@@ -3173,6 +3240,15 @@ int mf_disable_hw_access(mflash* mfl)
     (void)mfl;
     return MFE_NOT_SUPPORTED_OPERATION;
 #endif
+}
+
+int mf_disable_hw_access_with_key(mflash* mfl, u_int64_t key)
+{
+
+    if (!mf_is_fifth_gen(mfl)) {
+        return MFE_NOT_SUPPORTED_OPERATION;
+    }
+    return mf_secure_host_op(mfl, key, 1);
 }
 
 mfile* mf_get_mfile(mflash* mfl)

@@ -44,8 +44,8 @@
 #include "cmd_line_params.h"
 #include "tools_version.h"
 
-#ifdef ONLY_PCI_FORMAT
-    #define TOOL_NAME "mlxfwmanager_pci"
+#ifdef MST_UL
+    #define TOOL_NAME "mstfwmanager"
 #else
     #define TOOL_NAME "mlxfwmanager"
 #endif
@@ -448,7 +448,7 @@ void CmdLineParser::initOptions()
         this->AddOptions(LIST_CONTENT_L,
                          LIST_CONTENT_S,
                          "",
-                         "List file/Directory content, used with --" USE_IMG_DIR_L " and --"USE_IMG_FILE_L " flags");
+                         "List file/Directory content, used with --" USE_IMG_DIR_L " and --" USE_IMG_FILE_L " flags");
 
         this->AddOptions(ARCHIVE_NAMES_L,
                          ARCHIVE_NAMES_S,
@@ -536,13 +536,13 @@ void CmdLineParser::initOptions()
      this->AddOptions(DNLD_DEV_L,
                       DNLD_DEV_S,
                       "Device",
-                      "Use '--"GET_DNLD_OPT_L" Device' option to view available devices for device specific downloads",
+                      "Use '--" GET_DNLD_OPT_L " Device' option to view available devices for device specific downloads",
                       false);
 
      this->AddOptions(DNLD_OS_L,
                       DNLD_OS_S,
                       "OS",
-                      "Only for self_extractor download: Use '--"GET_DNLD_OPT_L" OS' option to view available OS for sfx download",
+                      "Only for self_extractor download: Use '--" GET_DNLD_OPT_L " OS' option to view available OS for sfx download",
                       false);
 
      this->AddOptions(DNLD_TYPE_L,

@@ -37,7 +37,7 @@
 #include <string.h>
 #include <sys/types.h>
 #ifdef __WIN__
-    #include <Winsock2.h>   // for htonl
+    #include <winsock2.h>   // for htonl
 #endif
 
 

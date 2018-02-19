@@ -85,7 +85,7 @@ const u_int32_t Fs3Operations::_itocSignature[4] = {
 
 const Fs3Operations::SectionInfo Fs3Operations::_fs3SectionsInfoArr[] = {
     {FS3_END,           "END"},
-    {FS3_ITOC,          "ITOC_Header"},
+    {FS3_ITOC,          "ITOC_HEADER"},
 
     {FS3_BOOT_CODE,     "BOOT_CODE"},
     {FS3_PCI_CODE,      "PCI_CODE"},
@@ -107,9 +107,12 @@ const Fs3Operations::SectionInfo Fs3Operations::_fs3SectionsInfoArr[] = {
     {FS3_DBG_FW_INI,    "DBG_FW_INI"},
     {FS3_DBG_FW_PARAMS, "DBG_FW_PARAMS"},
     {FS3_FW_ADB,        "FW_ADB"},
-    {FS3_IMAGE_SIGNATURE, "IMAGE_SIGNATURE"},
-    {FS3_PUBLIC_KEYS,   "PUBLIC_KEYS"},
+    {FS3_IMAGE_SIGNATURE_256, "IMAGE_SIGNATURE_256"},
+    {FS3_PUBLIC_KEYS_2048,   "PUBLIC_KEYS_2048"},
+    {FS3_PUBLIC_KEYS_4096,   "PUBLIC_KEYS_4096"},
     {FS3_FORBIDDEN_VERSIONS, "FORBIDDEN_VERSIONS"},
+    {FS3_IMAGE_SIGNATURE_512, "IMAGE_SIGNATURE_512"},
+    {FS3_CRDUMP_MASK_DATA, "CRDUMP_MASK_DATA"},
 
     {FS3_MFG_INFO,      MFG_INFO},
     {FS3_DEV_INFO,      "DEV_INFO"},
@@ -119,9 +122,9 @@ const Fs3Operations::SectionInfo Fs3Operations::_fs3SectionsInfoArr[] = {
     {FS3_NV_DATA0,      "NV_DATA"},
     {FS3_FW_NV_LOG,     "FW_NV_LOG"},
     {FS3_NV_DATA0,      "NV_DATA"},
-    {FS3_DTOC,          "DTOC_Header"},
-    {FS4_HW_PTR,        "HW Pointers"},
-    {FS4_TOOLS_AREA,    "Tools Area"}
+    {FS3_DTOC,          "DTOC_HEADER"},
+    {FS4_HW_PTR,    "HW_POINTERS"},
+    {FS4_TOOLS_AREA,    "TOOLS_AREA"}
 };
 
 bool Fs3Operations::Fs3UpdateImgCache(u_int8_t *buff, u_int32_t addr, u_int32_t size)
@@ -237,7 +240,7 @@ bool Fs3Operations::GetMfgInfo(u_int8_t *buff)
 
 #define RESIGN_MSG "-W- The image requires to be signed by a valid key, run sign command before applying.\n"
 
-#define INSERT_SHA256_IF_NEEDS(callBackF) do {\
+#define INSERT_SHA_IF_NEEDS(callBackF) do {\
                                     if (!_ioAccess->is_flash()) {\
                                         if (!(_fs3ImgInfo.ext_info.security_mode & SMM_SIGNED_FW)) {\
                                             PRINT_PROGRESS(callBackF, (char*)"-I- Updating image digest.\n");\
@@ -247,16 +250,6 @@ bool Fs3Operations::GetMfgInfo(u_int8_t *buff)
                                         } else {\
                                             PRINT_PROGRESS(callBackF, (char*)RESIGN_MSG);\
                                         }\
-                                    }\
-                                 } while (0)
-
-#define INSERT_SHA256_IF_NEEDS_NO_PRINT() do {\
-                                    if (!_ioAccess->is_flash()) {\
-                                        if (!(_fs3ImgInfo.ext_info.security_mode & SMM_SIGNED_FW)) {\
-                                            if (!FwInsertSHA256((PrintCallBack)NULL)) {\
-                                                return false;\
-                                            }\
-                                        } \
                                     }\
                                  } while (0)
 
@@ -321,8 +314,8 @@ bool Fs3Operations::GetImageInfo(u_int8_t *buff)
 
 bool Fs3Operations::GetImgSigInfo(u_int8_t *buff)
 {
-    struct cx4fw_image_signature fwSignature;
-    cx4fw_image_signature_unpack(&fwSignature, buff);
+    struct cx4fw_image_signature_256 fwSignature;
+    cx4fw_image_signature_256_unpack(&fwSignature, buff);
     //cx4fw_image_signature_dump(&fwSignature, stdout);
     _signatureExists = 1;
     if (fwSignature.keypair_uuid[0] == 0 &&
@@ -392,11 +385,13 @@ bool Fs3Operations::GetImageInfoFromSection(u_int8_t *buff, u_int8_t sect_type, 
             return EXEC_GET_INFO_OR_GET_SUPPORT(GetImageInfo, buff, check_support_only);
         case FS3_DEV_INFO:
             return EXEC_GET_INFO_OR_GET_SUPPORT(GetDevInfo, buff, check_support_only);
-        case FS3_IMAGE_SIGNATURE:
+        case FS3_IMAGE_SIGNATURE_256:
             return EXEC_GET_INFO_OR_GET_SUPPORT(GetImgSigInfo, buff, check_support_only);
+        //case FS3_IMAGE_SIGNATURE_512:
         case FS3_ROM_CODE:
             return check_support_only ? true : GetRomInfo(buff, sect_size);
-        case FS3_PUBLIC_KEYS:
+        case FS3_PUBLIC_KEYS_2048:
+        case FS3_PUBLIC_KEYS_4096:
             _publicKeysExists = 1;
             break;
         default:
@@ -447,7 +442,6 @@ bool Fs3Operations::VerifyTOC(u_int32_t dtoc_addr, bool& bad_signature, VerifyCa
     bool ret_val = true, mfg_exists = false;
     u_int32_t phys_addr;
     bad_signature = false;
-
 
     // Read the sigmature and check it
     READBUF((*_ioAccess), dtoc_addr, buffer, TOC_HEADER_SIZE, "TOC Header");
@@ -518,7 +512,9 @@ bool Fs3Operations::VerifyTOC(u_int32_t dtoc_addr, bool& bad_signature, VerifyCa
                     u_int8_t *buff = (u_int8_t*)(&(buffv[0]));
                     if (show_itoc) {
                         cibfw_itoc_entry_dump(&toc_entry, stdout);
-                        DumpFs3CRCCheck(toc_entry.type, phys_addr, entry_size_in_bytes, 0, 0, true, verifyCallBackFunc);
+                        if (!DumpFs3CRCCheck(toc_entry.type, phys_addr, entry_size_in_bytes, 0, 0, true, verifyCallBackFunc)) {
+                            ret_val = false;
+                        }
                     } else {
                         READBUF((*_ioAccess), flash_addr, buff, entry_size_in_bytes, "Section");
                         Fs3UpdateImgCache(buff, flash_addr, entry_size_in_bytes);
@@ -1053,7 +1049,7 @@ bool Fs3Operations::FsBurnAux(FwOperations *imgops, ExtBurnParams& burnParams)
     Fs3Operations& imageOps = * ((Fs3Operations *) imgops);
 
     if (imageOps.FwType() != FIT_FS3) {
-        return errmsg(MLXFW_IMAGE_FORMAT_ERR, "FW image type is not FS3\n");
+        return errmsg(MLXFW_IMAGE_FORMAT_ERR, "FW image type is not compatible with device (FS3)");
     }
     bool devIntQueryRes = FsIntQueryAux();
 
@@ -1230,6 +1226,15 @@ bool Fs3Operations::FwBurnAdvanced(FwOperations *imageOps, ExtBurnParams& burnPa
         return errmsg("bad parameter is given to FwBurnAdvanced\n");
     }
 
+    //Check if alignment is needed
+    if ((burnParams.burnFailsafe ||
+            (!burnParams.burnFailsafe && !burnParams.useImgDevData)) &&
+         CheckIfAlignmentIsNeeded(imageOps)) {
+        if (!AlignDeviceSections(imageOps)) {
+            return errmsg("Failed to align the device sections: %s", err());
+        }
+    }
+
     if (FwCheckIf8MBShiftingNeeded(imageOps, burnParams)) {
         if (burnParams.shift8MB) {
             if (!ReBurnCurrentImage(burnParams.progressFunc)) {
@@ -1327,7 +1332,9 @@ bool Fs3Operations::FwSetMFG(fs3_uid_t baseGuid, PrintCallBack callBackFunc)
         baseGuid.step_size_pp[1] = baseGuid.step_size ? baseGuid.step_size : DEFAULT_STEP;
         baseGuid.use_pp_attr = 1;
     }
-    FAIL_NO_OCR("set manufacture GUIDs/MACs");
+    if (FwType() == FIT_FS3) {
+        FAIL_NO_OCR("set manufacture GUIDs/MACs");
+    }
     if (!Fs3UpdateSection(&baseGuid, FS3_MFG_INFO, false, CMD_SET_MFG_GUIDS, callBackFunc)) {
         return false;
     }
@@ -1403,14 +1410,52 @@ bool Fs3Operations::FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc,
     return true;
 }
 
+bool Fs3Operations::isOld4MBImage(FwOperations* imageOps)
+{
+    return (!(*(Fs3Operations*)imageOps)._fs3ImgInfo.runFromAny &&
+            ((*(Fs3Operations*)imageOps)._fwImgInfo.cntxLog2ChunkSize == 0x16));
+}
+
+bool Fs3Operations::FwCheckIfWeCanBurnWithFwControl(FwOperations* imageOps)
+{
+    /*
+     * The function check what happen if we are in mcc mode, can we burn the given image?
+     *
+     * When do we need to do fallback to regular flow:
+     *  - New 4MB/7MB FW running from 0x0 or 0x400,000 and we try to burn old FW => Do FallBack
+     *
+     */
+
+
+    bool result = (_fs3ImgInfo.runFromAny && (_fwImgInfo.imgStart == 0x0 || _fwImgInfo.imgStart == 0x400000)) &&
+            isOld4MBImage(imageOps);
+    //printf("-D- result=%d\n", result);
+    return result;
+}
+
 bool Fs3Operations::FwCheckIf8MBShiftingNeeded(FwOperations* imageOps,
         const ExtBurnParams& burnParams)
 {
+    /*
+     * When do we need to do shifting?
+     * If mcc_en=1:
+     *  - 7MB FW running from 0x0 and we try to burn old FW => Do FallBack & shifting
+     *  - New 4MB FW running from 0x0 and we try to burn old FW => Do FallBack only
+     * If mcc_en=0:
+     *  - 7MB FW running from 0x0 and we try to burn old FW => Do shifting
+     */
+
+    /*
+     * From above we can conclude that if the running FW is old (runFromAny==0) then
+     * no need for shifting.
+     */
+    if (!_fs3ImgInfo.runFromAny) {
+        return false;
+    }
     u_int32_t new_image_start = getNewImageStartAddress(*(Fs3Operations*)imageOps,
             burnParams.burnFailsafe);
-    bool res = (new_image_start == 0x800000 &&
-                    !(*(Fs3Operations*)imageOps)._fs3ImgInfo.runFromAny &&
-                    (*(Fs3Operations*)imageOps)._fwImgInfo.cntxLog2ChunkSize == 0x16);
+    bool res = (new_image_start == 0x800000 && isOld4MBImage(imageOps));
+    //printf("-D- res=%d\n", res);
     return res;
 }
 
@@ -1665,7 +1710,12 @@ bool Fs3Operations::Fs3ModifySection(fs3_section_t sectionType, fs3_section_t ne
         return false;
     }
     // Burn the new image into the device.
-    if (!FwBurnData((u_int32_t*)&newImageData[0], _fwImgInfo.lastImageAddr, progressFunc)) {
+    burnDataParamsT params;
+    params.data = (u_int32_t*)&newImageData[0];
+    params.dataSize = _fwImgInfo.lastImageAddr;
+    params.progressFunc = progressFunc;
+    params.calcSha = (_fs3ImgInfo.ext_info.security_mode & SMM_MCC_EN);
+    if (!FwBurnData(params)) {
         return false;
     }
     return true;
@@ -1710,11 +1760,7 @@ bool Fs3Operations::FwBurnRom(FImage* romImg, bool ignoreProdIdCheck, bool ignor
     if (!RomCommonCheck(ignoreProdIdCheck, false)) {
         return false;
     }
-    bool rc = Fs3AddSection(FS3_ROM_CODE, FS3_PCI_CODE, romImg->getBuf(), romImg->getBufLength(), progressFunc);
-    if (rc == true) {
-        INSERT_SHA256_IF_NEEDS_NO_PRINT();
-    }
-    return rc;
+    return Fs3AddSection(FS3_ROM_CODE, FS3_PCI_CODE, romImg->getBuf(), romImg->getBufLength(), progressFunc);
 }
 
 bool Fs3Operations::FwDeleteRom(bool ignoreProdIdCheck, ProgressCallBack progressFunc)
@@ -1727,11 +1773,7 @@ bool Fs3Operations::FwDeleteRom(bool ignoreProdIdCheck, ProgressCallBack progres
     if (!RomCommonCheck(ignoreProdIdCheck, true)) {
         return false;
     }
-    bool rc = Fs3RemoveSection(FS3_ROM_CODE, progressFunc);
-    if (rc == true) {
-        INSERT_SHA256_IF_NEEDS_NO_PRINT();
-    }
-    return rc;
+    return Fs3RemoveSection(FS3_ROM_CODE, progressFunc);
 }
 
 bool Fs3Operations::Fs3GetItocInfo(struct toc_info *tocArr, int num_of_itocs, fs3_section_t sect_type, struct toc_info *&curr_toc)
@@ -2023,7 +2065,8 @@ bool Fs3Operations::Fs3ReburnItocSection(u_int32_t newSectionAddr,
     }
     PRINT_PROGRESS(callBackFunc, (char*)"OK\n");
     // Update new ITOC section
-    if (!reburnItocSection(callBackFunc, _ioAccess->is_flash())) {
+    bool is_flash = _ioAccess->is_flash();
+    if (!reburnItocSection(callBackFunc, is_flash)) {
     	return false;
     }
     return true;
@@ -2055,7 +2098,7 @@ bool Fs3Operations::Fs3UpdateForbiddenVersionsSection(unsigned int currSectionSi
 bool  Fs3Operations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, bool is_sect_failsafe, CommandType cmd_type, PrintCallBack callBackFunc)
 {
     struct toc_info *curr_toc = (struct toc_info *)NULL;
-    std::vector<u_int8_t> newUidSection;
+    std::vector<u_int8_t> newSection;
     u_int32_t newSectionAddr;
     const char *type_msg;
     // init sector to read
@@ -2074,20 +2117,20 @@ bool  Fs3Operations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, b
     if (sect_type == FS3_MFG_INFO) {
         fs3_uid_t base_uid = *(fs3_uid_t*)new_info;
         type_msg = "GUID";
-        if (!Fs3UpdateMfgUidsSection(curr_toc, curr_toc->section_data, base_uid, newUidSection)) {
+        if (!Fs3UpdateMfgUidsSection(curr_toc, curr_toc->section_data, base_uid, newSection)) {
             return false;
         }
     } else if (sect_type == FS3_DEV_INFO) {
         if (cmd_type == CMD_SET_GUIDS) {
             fs3_uid_t base_uid = *(fs3_uid_t*)new_info;
             type_msg = "GUID";
-            if (!Fs3UpdateUidsSection(curr_toc, curr_toc->section_data, base_uid, newUidSection)) {
+            if (!Fs3UpdateUidsSection(curr_toc, curr_toc->section_data, base_uid, newSection)) {
                 return false;
             }
         } else if(cmd_type == CMD_SET_VSD) {
             char* user_vsd = (char*)new_info;
             type_msg = "VSD";
-            if (!Fs3UpdateVsdSection(curr_toc, curr_toc->section_data, user_vsd, newUidSection)) {
+            if (!Fs3UpdateVsdSection(curr_toc, curr_toc->section_data, user_vsd, newSection)) {
                 return false;
             }
             } else {
@@ -2097,38 +2140,48 @@ bool  Fs3Operations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, b
     } else if (sect_type == FS3_VPD_R0) {
         char *vpd_file = (char*)new_info;
         type_msg = "VPD";
-        if (!Fs3UpdateVpdSection(curr_toc, vpd_file, newUidSection)) {
+        if (!Fs3UpdateVpdSection(curr_toc, vpd_file, newSection)) {
             return false;
         }
-    } else if (sect_type == FS3_IMAGE_SIGNATURE && cmd_type == CMD_SET_SIGNATURE) {
-        vector<u_int8_t> sig((u_int8_t*)new_info, (u_int8_t*)new_info + CX4FW_IMAGE_SIGNATURE_SIZE);
+    } else if (sect_type == FS3_IMAGE_SIGNATURE_256 && cmd_type == CMD_SET_SIGNATURE) {
+        vector<u_int8_t> sig((u_int8_t*)new_info, (u_int8_t*)new_info + CX4FW_IMAGE_SIGNATURE_256_SIZE);
         type_msg = "SIGNATURE";
-        newUidSection.resize(CX4FW_IMAGE_SIGNATURE_SIZE);
-        memcpy(newUidSection.data(), sig.data(), CX4FW_IMAGE_SIGNATURE_SIZE);
-    } else if (sect_type == FS3_PUBLIC_KEYS && cmd_type == CMD_SET_PUBLIC_KEYS) {
+        newSection.resize(CX4FW_IMAGE_SIGNATURE_256_SIZE);
+        memcpy(newSection.data(), sig.data(), CX4FW_IMAGE_SIGNATURE_256_SIZE);
+    } else if (sect_type == FS3_IMAGE_SIGNATURE_512 && cmd_type == CMD_SET_SIGNATURE) {
+        vector<u_int8_t> sig((u_int8_t*)new_info, (u_int8_t*)new_info + CX4FW_IMAGE_SIGNATURE_512_SIZE);
+        type_msg = "SIGNATURE";
+        newSection.resize(CX4FW_IMAGE_SIGNATURE_512_SIZE);
+        memcpy(newSection.data(), sig.data(), CX4FW_IMAGE_SIGNATURE_512_SIZE);
+    } else if (sect_type == FS3_PUBLIC_KEYS_2048 && cmd_type == CMD_SET_PUBLIC_KEYS) {
         char *publickeys_file = (char*)new_info;
-        type_msg = "PUBLIC KEYS";
-        if (!Fs3UpdatePublicKeysSection(curr_toc->toc_entry.size, publickeys_file, newUidSection)) {
+        type_msg = "PUBLIC KEYS 2048";
+        if (!Fs3UpdatePublicKeysSection(curr_toc->toc_entry.size, publickeys_file, newSection)) {
+            return false;
+        }
+    } else if (sect_type == FS3_PUBLIC_KEYS_4096 && cmd_type == CMD_SET_PUBLIC_KEYS) {
+        char *publickeys_file = (char*)new_info;
+        type_msg = "PUBLIC KEYS 4096";
+        if (!Fs3UpdatePublicKeysSection(curr_toc->toc_entry.size, publickeys_file, newSection)) {
             return false;
         }
     } else if (sect_type == FS3_FORBIDDEN_VERSIONS && cmd_type == CMD_SET_FORBIDDEN_VERSIONS) {
        char *forbiddenVersions_file = (char*)new_info;
        type_msg = "Forbidden Versions";
-       if (!Fs3UpdateForbiddenVersionsSection(curr_toc->toc_entry.size, forbiddenVersions_file, newUidSection)) {
+       if (!Fs3UpdateForbiddenVersionsSection(curr_toc->toc_entry.size, forbiddenVersions_file, newSection)) {
            return false;
        }
     } else {
         return errmsg("Section type %s is not supported\n", GetSectionNameByType(sect_type));
     }
 
-
     if (!Fs3GetNewSectionAddr(curr_toc, newSectionAddr, is_sect_failsafe)) {
         return false;
     }
-    if (!Fs3UpdateItocInfo(curr_toc, newSectionAddr, curr_toc->toc_entry.size, newUidSection)) {
+    if (!Fs3UpdateItocInfo(curr_toc, newSectionAddr, curr_toc->toc_entry.size, newSection)) {
         return false;
     }
-    if (!Fs3ReburnItocSection(newSectionAddr, curr_toc->toc_entry.size * 4, newUidSection, type_msg, callBackFunc)) {
+    if (!Fs3ReburnItocSection(newSectionAddr, curr_toc->toc_entry.size * 4, newSection, type_msg, callBackFunc)) {
         return false;
     }
     return true;
@@ -2327,15 +2380,130 @@ bool Fs3Operations::extractUUIDFromString(const char* uuid, std::vector<u_int32_
 #endif
 }
 
-bool Fs3Operations::FwInsertEncSHA256(const char* privPemFile, const char* uuid, PrintCallBack printFunc)
+bool Fs3Operations::FwSignWithTwoRSAKeys(const char* privPemFile1, const char* uuid1,
+                const char* privPemFile2, const char* uuid2, PrintCallBack printFunc)
+{
+#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
+    MlxSignRSA rsa1, rsa2;
+
+    int rc = rsa1.setPrivKeyFromFile(privPemFile1);
+    if (rc) {
+        return errmsg("Failed to set the first private key from file (rc = 0x%x)\n", rc);
+    }
+
+    rc = rsa2.setPrivKeyFromFile(privPemFile2);
+    if (rc) {
+        return errmsg("Failed to set the second private key from file (rc = 0x%x)\n", rc);
+    }
+
+    int privKey1Length = rsa1.getPrivKeyLength();
+    int privKey2Length = rsa2.getPrivKeyLength();
+
+    if (privKey1Length == 0x100 && privKey2Length == 0x200) {
+        if (!FwInsertEncSHA(SHA512, privPemFile2, uuid2, printFunc)) {
+            return false;
+        }
+        if (!FwInsertEncSHA(SHA256, privPemFile1, uuid1, printFunc)) {
+            return false;
+        }
+    } else if(privKey1Length == 0x200 && privKey2Length == 0x100) {
+        if (!FwInsertEncSHA(SHA512, privPemFile1, uuid1, printFunc)) {
+            return false;
+        }
+        if (!FwInsertEncSHA(SHA256, privPemFile2, uuid2, printFunc)) {
+            return false;
+        }
+    } else {
+        return errmsg("Unexpected length of keys (first key %d bytes, second key length %d)",
+                privKey1Length, privKey2Length);
+    }
+    return true;
+#else
+    (void)privPemFile1;
+    (void)uuid1;
+    (void)privPemFile2;
+    (void)uuid2;
+    (void)printFunc;
+    return errmsg("FwSignWithOneRSAKey is not supported.");
+#endif
+}
+bool Fs3Operations::IsSectionExists(fs3_section_t sectType)
+{
+    struct toc_info *curr_toc = (struct toc_info *)NULL;
+    if (!Fs3GetItocInfo(_fs3ImgInfo.tocArr, _fs3ImgInfo.numOfItocs, sectType, curr_toc)) {
+         return false;
+     }
+    return true;
+}
+
+bool Fs3Operations::Fs3MemSetSignature(fs3_section_t sectType, u_int32_t size, PrintCallBack printFunc)
+{
+    vector<u_int8_t> buff;
+    if (sectType != FS3_IMAGE_SIGNATURE_256 &&
+        sectType != FS3_IMAGE_SIGNATURE_512) {
+        return false;
+    }
+    if (!FsIntQueryAux(false)) {
+        return false;
+    }
+    if (!IsSectionExists(sectType)) {
+        return true;
+    }
+    buff.resize(size, 0x0);
+    if (!Fs3UpdateSection(buff.data(), sectType, false, CMD_SET_SIGNATURE, printFunc)) {
+        return false;
+    }
+    return true;
+}
+bool Fs3Operations::FwSignWithOneRSAKey(const char* privPemFile, const char* uuid, PrintCallBack printFunc)
+{
+#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
+    MlxSignRSA rsa;
+
+    int rc = rsa.setPrivKeyFromFile(privPemFile);
+    if (rc) {
+        return errmsg("Failed to set private key from file (rc = 0x%x)\n", rc);
+    }
+
+    int privKeyLength = rsa.getPrivKeyLength();
+    if (privKeyLength == 0x100) {
+        //MemsetSection();
+        if (!Fs3MemSetSignature(FS3_IMAGE_SIGNATURE_512, CX4FW_IMAGE_SIGNATURE_512_SIZE, printFunc)) {
+            return false;
+        }
+        if (!FwInsertEncSHA(SHA256, privPemFile, uuid, printFunc)) {
+            return false;
+        }
+    } else if (privKeyLength == 0x200) {
+        //MemsetSection();
+        if (!Fs3MemSetSignature(FS3_IMAGE_SIGNATURE_256, CX4FW_IMAGE_SIGNATURE_256_SIZE, printFunc)) {
+            return false;
+        }
+        if (!FwInsertEncSHA(SHA512, privPemFile, uuid, printFunc)) {
+            return false;
+        }
+    } else {
+        return errmsg("Unexpected length of key(%d bytes)", privKeyLength);
+    }
+    return true;
+#else
+    (void)privPemFile;
+    (void)uuid;
+    (void)printFunc;
+    return errmsg("FwSignWithOneRSAKey is not supported.");
+#endif
+}
+
+bool Fs3Operations::FwInsertEncSHA(SHATYPE shaType, const char* privPemFile,
+        const char* uuid, PrintCallBack printFunc)
 {
 #if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
     MlxSignRSA rsa;
     int rc;
-    vector<u_int8_t> sha256, encSha256, sig;
+    vector<u_int8_t> sha, encSha, sig;
     vector <u_int32_t> uuidData;
-    struct cx4fw_image_signature image_signature;
-    memset(&image_signature, 0, sizeof(image_signature));
+    struct cx4fw_image_signature_256 image_signature_256;
+    struct cx4fw_image_signature_512 image_signature_512;
 
     if (_ioAccess->is_flash()) {
         return errmsg("Signing is not applicable for devices");
@@ -2345,11 +2513,12 @@ bool Fs3Operations::FwInsertEncSHA256(const char* privPemFile, const char* uuid,
         return false;
     }
 
-    if ((uuidData.size() << 2) != sizeof(image_signature.keypair_uuid) ) {
-        return errmsg("Missmatching UUID size(%d), expected %d bytes", (int)uuidData.size() << 2, (int)sizeof(image_signature.keypair_uuid));
+    if ((uuidData.size() << 2) != sizeof(image_signature_256.keypair_uuid) ) {
+        return errmsg("Mismatching UUID size(%d), expected %d bytes",
+                (int)uuidData.size() << 2, (int)sizeof(image_signature_256.keypair_uuid));
     }
 
-    if (!FwCalcSHA256(sha256)) {
+    if (!FwCalcSHA(shaType, sha)) {
         return false;
     }
 
@@ -2359,21 +2528,37 @@ bool Fs3Operations::FwInsertEncSHA256(const char* privPemFile, const char* uuid,
     if (rc) {
         return errmsg("Failed to set private key from file (rc = 0x%x)\n", rc);
     }
-    rc = rsa.sign(sha256, encSha256);
+    rc = rsa.sign(shaType == SHA256 ? MlxSign::SHA256 : MlxSign::SHA512, sha, encSha);
     if (rc) {
-        return errmsg("Failed to encrypt the SHA256 (rc = 0x%x)\n", rc);
+        return errmsg("Failed to encrypt the SHA (rc = 0x%x)\n", rc);
     }
 
+    if (shaType == SHA256) {
+        memset(&image_signature_256, 0, sizeof(image_signature_256));
+        memcpy(image_signature_256.signature, encSha.data(), encSha.size());
+        TOCPUn(image_signature_256.signature, encSha.size() >> 2);
+        memcpy(image_signature_256.keypair_uuid, uuidData.data(), uuidData.size() << 2);
+        sig.resize(CX4FW_IMAGE_SIGNATURE_256_SIZE, 0x0);
+        cx4fw_image_signature_256_pack(&image_signature_256, sig.data());
 
-    memcpy(image_signature.signature, encSha256.data(), encSha256.size());
-    TOCPUn(image_signature.signature, encSha256.size() >> 2);
-    memcpy(image_signature.keypair_uuid, uuidData.data(), uuidData.size() << 2);
-    sig.resize(CX4FW_IMAGE_SIGNATURE_SIZE);
-    cx4fw_image_signature_pack(&image_signature, sig.data());
+        if (!Fs3UpdateSection(sig.data(), FS3_IMAGE_SIGNATURE_256,
+                false, CMD_SET_SIGNATURE, printFunc)) {
+            return false;
+        }
+    } else if (shaType == SHA512) {
+        memset(&image_signature_512, 0, sizeof(image_signature_512));
+        memcpy(image_signature_512.signature, encSha.data(), encSha.size());
+        TOCPUn(image_signature_512.signature, encSha.size() >> 2);
+        memcpy(image_signature_512.keypair_uuid, uuidData.data(), uuidData.size() << 2);
+        sig.resize(CX4FW_IMAGE_SIGNATURE_512_SIZE, 0x0);
+        cx4fw_image_signature_512_pack(&image_signature_512, sig.data());
 
-    if (!Fs3UpdateSection(sig.data(), FS3_IMAGE_SIGNATURE,
-            false, CMD_SET_SIGNATURE, printFunc)) {
-        return false;
+        if (!Fs3UpdateSection(sig.data(), FS3_IMAGE_SIGNATURE_512,
+                false, CMD_SET_SIGNATURE, printFunc)) {
+            return false;
+        }
+    } else {
+        return errmsg("Unexpected type of SHA");
     }
 
     if (!FsIntQueryAux(false, false)) {
@@ -2382,6 +2567,7 @@ bool Fs3Operations::FwInsertEncSHA256(const char* privPemFile, const char* uuid,
 
     return true;
 #else
+    (void)shaType;
     (void)privPemFile;
     (void)uuid;
     (void)printFunc;
@@ -2391,25 +2577,25 @@ bool Fs3Operations::FwInsertEncSHA256(const char* privPemFile, const char* uuid,
 
 bool Fs3Operations::FwInsertSHA256(PrintCallBack printFunc)
 {
-    vector<u_int8_t> sha256, sig;
-    struct cx4fw_image_signature image_signature;
+    vector<u_int8_t> sha, sig;
+    struct cx4fw_image_signature_256 image_signature_256;
 
     if(_ioAccess->is_flash()) {
         return errmsg("Signing is not applicable for devices");
     }
 
-    if (!FwCalcSHA256(sha256)) {
+    if (!FwCalcSHA(SHA256, sha)) {
         return false;
     }
 
-    memset(&image_signature, 0, sizeof(image_signature));
-    memcpy(image_signature.signature, sha256.data(), sha256.size());
-    TOCPUn(image_signature.signature, sha256.size() >> 2);
-    sig.resize(CX4FW_IMAGE_SIGNATURE_SIZE);
-    cx4fw_image_signature_pack(&image_signature, sig.data());
+    memset(&image_signature_256, 0, sizeof(image_signature_256));
+    memcpy(image_signature_256.signature, sha.data(), sha.size());
+    TOCPUn(image_signature_256.signature, sha.size() >> 2);
+    sig.resize(CX4FW_IMAGE_SIGNATURE_256_SIZE);
+    cx4fw_image_signature_256_pack(&image_signature_256, sig.data());
 
-    if (!Fs3UpdateSection(sig.data(), FS3_IMAGE_SIGNATURE,
-            false, CMD_SET_SIGNATURE, printFunc)) {
+    if (!Fs3UpdateSection(sig.data(), FS3_IMAGE_SIGNATURE_256,
+           false, CMD_SET_SIGNATURE, printFunc)) {
         return false;
     }
 
@@ -2420,8 +2606,44 @@ bool Fs3Operations::FwInsertSHA256(PrintCallBack printFunc)
     return true;
 }
 
+bool Fs3Operations::CheckPublicKeysFile(char* fname, fs3_section_t& sectionType)
+{
+    int publicKeysSize = 0;
+    u_int8_t *publicKeysData = (u_int8_t*)NULL;
+    if (!ReadImageFile(fname, publicKeysData, publicKeysSize)) {
+        return false;
+    }
+
+    if (publicKeysSize < CX4FW_PUBLIC_KEY_2048_SIZE || publicKeysSize < CX4FW_PUBLIC_KEY_4096_SIZE) {
+        delete[] publicKeysData;
+        return errmsg("Invalid size (%d bytes) of public keys file", publicKeysSize);
+    }
+
+    //try to parse as cx4fw_public_key_2048:
+    struct cx4fw_public_key_2048 cx4fw_public_key_2048;
+    memset(&cx4fw_public_key_2048, 0x0, sizeof(cx4fw_public_key_2048));
+    cx4fw_public_key_2048_unpack(&cx4fw_public_key_2048, publicKeysData);
+    if (cx4fw_public_key_2048.auth_type == 0x3) {
+        sectionType = FS3_PUBLIC_KEYS_2048;
+    } else {//Try to parse it as 4096
+        struct cx4fw_public_key_4096 cx4fw_public_key_4096;
+        memset(&cx4fw_public_key_4096, 0x0, sizeof(cx4fw_public_key_4096));
+        cx4fw_public_key_4096_unpack(&cx4fw_public_key_4096, publicKeysData);
+        if (cx4fw_public_key_4096.auth_type == 0x4) {
+            sectionType = FS3_PUBLIC_KEYS_4096;
+        } else {
+            delete[] publicKeysData;
+            return errmsg("Invalid type of key found in the public keys file");
+        }
+    }
+    delete[] publicKeysData;
+    return true;
+}
+
 bool Fs3Operations::FwSetPublicKeys(char* fname, PrintCallBack callBackFunc)
 {
+    fs3_section_t sectionType;
+
     if (!fname) {
         return errmsg("Please specify a valid public keys file.");
     }
@@ -2430,14 +2652,19 @@ bool Fs3Operations::FwSetPublicKeys(char* fname, PrintCallBack callBackFunc)
         return errmsg("Setting Public Keys is not applicable for devices.");
     }
 
-    if (!Fs3UpdateSection(fname, FS3_PUBLIC_KEYS, false, CMD_SET_PUBLIC_KEYS, callBackFunc)) {
+    if (!CheckPublicKeysFile(fname, sectionType)) {
+        return false;
+    }
+
+    if (!Fs3UpdateSection(fname, sectionType, false, CMD_SET_PUBLIC_KEYS, callBackFunc)) {
         return false;
     }
 
     if (!FsIntQueryAux(false, false)) {
         return false;
     }
-    INSERT_SHA256_IF_NEEDS(callBackFunc);
+
+    INSERT_SHA_IF_NEEDS(callBackFunc);
 
     return true;
 }
@@ -2459,7 +2686,7 @@ bool Fs3Operations::FwSetForbiddenVersions(char* fname, PrintCallBack callBackFu
     if (!FsIntQueryAux(false, false)) {
         return false;
     }
-    INSERT_SHA256_IF_NEEDS(callBackFunc);
+    INSERT_SHA_IF_NEEDS(callBackFunc);
 
     return true;
 }
@@ -2491,14 +2718,14 @@ bool Fs3Operations::FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatte
     return true;
 }
 
-void Fs3Operations::maskImageSignature(vector<u_int8_t>& img)
+void Fs3Operations::maskIToCSection(u_int32_t itocType, vector<u_int8_t>& img)
 {
     for (int i = 0; i < _fs3ImgInfo.numOfItocs; i++) {
-        if (_fs3ImgInfo.tocArr[i].toc_entry.type == FS3_IMAGE_SIGNATURE) {
+        if (_fs3ImgInfo.tocArr[i].toc_entry.type == itocType) {
              u_int32_t tocEntryAddr = _fs3ImgInfo.tocArr[i].entry_addr;
              u_int32_t tocEntryDataAddr = _fs3ImgInfo.tocArr[i].toc_entry.flash_addr << 2;
              memset(img.data() + tocEntryAddr, 0xFF, TOC_ENTRY_SIZE);
-             memset(img.data() + tocEntryDataAddr, 0xFF, CX4FW_IMAGE_SIGNATURE_SIZE);
+             memset(img.data() + tocEntryDataAddr, 0xFF, _fs3ImgInfo.tocArr[i].toc_entry.size << 2);
         }
     }
 }
@@ -2514,28 +2741,40 @@ void Fs3Operations::maskDevToc(vector<u_int8_t>& img)
     }
 }
 
-bool Fs3Operations::FwCalcSHA256(vector<u_int8_t>& sha256)
+bool Fs3Operations::FwCalcSHA(SHATYPE shaType, vector<u_int8_t>& sha)
 {
 #if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
     vector<u_int8_t> img;
-    MlxSignSHA256 mlxSignSHA256;
+    MlxSignSHA* mlxSignSHA = NULL;
     FwInit();
     _imageCache.clear();
     if (!FwExtract4MBImage(img, true)) {
         return false;
     }
 
-    maskImageSignature(img);
-
-    mlxSignSHA256 << img;
-    mlxSignSHA256.getDigest(sha256);
+    if (shaType == SHA256) {
+        maskIToCSection(FS3_IMAGE_SIGNATURE_256, img);
+        mlxSignSHA = new MlxSignSHA256();
+    } else if (shaType == SHA512) {
+        maskIToCSection(FS3_IMAGE_SIGNATURE_256, img);
+        maskIToCSection(FS3_IMAGE_SIGNATURE_512, img);
+        mlxSignSHA = new MlxSignSHA512();
+    } else {
+        return errmsg("Unexpected type of SHA");
+    }
+    (*mlxSignSHA) << img;
+    mlxSignSHA->getDigest(sha);
 
     string debugDigest;
-    mlxSignSHA256.getDigest(debugDigest);
+    mlxSignSHA->MlxSignSHA::getDigest(debugDigest);
+
+
+    delete mlxSignSHA;
     return true;
 #else
-    (void)sha256;
-    return errmsg("FwCalcSHA256 is not supported.");
+    (void)shaType;
+    (void)sha;
+    return errmsg("FwCalcSHA is not supported.");
 #endif
 }
 

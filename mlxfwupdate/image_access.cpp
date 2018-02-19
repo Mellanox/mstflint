@@ -52,6 +52,7 @@ ImageAccess::ImageAccess(int compareFFV)
     _imgFwOps   = NULL;
     _compareFFV = compareFFV;
     memset(&_imgFwParams, 0, sizeof(_imgFwParams));
+    memset(_errBuff, 0, sizeof(_errBuff));
 }
 
 ImageAccess::~ImageAccess()
@@ -244,9 +245,6 @@ int ImageAccess::queryPsid(const string &fname, const string &psid,
                 tpc = "UNKNOWN_ROM";
             }
             int sz = img_query.fw_info.roms_info.rom_info[i].exp_rom_num_ver_fields;
-            if (img_query.fw_info.roms_info.rom_info[i].exp_rom_product_id == 0xf) {
-                sz = 1;
-            }
             imgVer.setVersion(tpc, sz, img_query.fw_info.roms_info.rom_info[i].exp_rom_ver);
             ri.imgVers.push_back(imgVer);
         }

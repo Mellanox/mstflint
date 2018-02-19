@@ -31,8 +31,8 @@
  *
  */
 
-#include "mtcr_ib.h"
 #include "mtcr_ib_res_mgt.h"
+#include "mtcr_ib.h"
 #include "packets_common.h"
 #include <string.h>
 

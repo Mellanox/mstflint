@@ -96,7 +96,7 @@ public:
     void checkConfTlvs(const vector<TLVConf*>& tlvs, FwComponent::comps_ids_t& compsId);
     void orderConfTlvs(vector<TLVConf*>& tlvs);
     void createConf(const string& xml, vector<u_int32_t>& buff);
-    void sign(vector<u_int32_t>& buff, string privPemFile, const string& keyPairUUid);
+    void sign(vector<u_int32_t>& buff, const string& privateKeyFile, const string& keyPairUUid);
     void sign(vector<u_int32_t>& buff);
     void apply(const vector<u_int8_t>& buff);
 };

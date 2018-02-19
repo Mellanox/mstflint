@@ -37,7 +37,9 @@
 class FsCtrlOperations : public FwOperations {
 public:
 
-    FsCtrlOperations(FwCompsMgr* fwComps) : FwOperations((FBase*)NULL), _fwCompsAccess(fwComps), _isSecured(false), _hwDevId(0) {};
+    FsCtrlOperations(FwCompsMgr* fwComps) : FwOperations((FBase*)NULL), _fwCompsAccess(fwComps), _isSecured(false), _hwDevId(0) {
+        memset(&_fsCtrlImgInfo, 0, sizeof(_fsCtrlImgInfo));
+    };
 
     virtual ~FsCtrlOperations();
 
@@ -75,6 +77,8 @@ public:
 
     virtual bool FwInit();
     virtual bool FwCalcMD5(u_int8_t md5sum[16]);
+
+    bool IsFsCtrlOperations() {return true;}
 
 protected:
     bool FsIntQuery();

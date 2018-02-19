@@ -52,6 +52,7 @@
 #include <tools_dev_types.h>
 #include <mlxfwops.h>
 #include <mlxfwops_com.h>
+#include <fs_checks.h>
 #include <mflash.h>
 #include <fw_ops.h>
 #include <sys/types.h>

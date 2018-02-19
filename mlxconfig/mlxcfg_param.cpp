@@ -85,6 +85,18 @@ using namespace std;
         throw MlxcfgException("The field: %s, cannot be empty", n);\
     }
 
+u_int32_t getSizeInBits(string size)
+{
+    u_int32_t bits = 0;
+    size_t pos = size.find('.');
+
+    if (pos != string::npos) {
+        bits += atoi(size.substr(pos + 1).c_str());
+    }
+    bits += (8 * strtol(size.substr(0, pos).c_str(), NULL, 0));
+    return bits;
+}
+
 Param::Param(int columnsCount, char **dataRow, char **headerRow) :
     _isNameFound(false), _isTLVNameFound(false), _isOffsetFound(false),
     _isSizeFound(false), _isTypeFound(false), _isDescriptionFound(false),
@@ -94,7 +106,7 @@ Param::Param(int columnsCount, char **dataRow, char **headerRow) :
     _isRegexFound(false), _isPortFound(false), _supportedFromVersion(0),
     _arrayLength(0)
 {
-
+    _offset = (DBOffset*)NULL;
     for(int i = 0; i < columnsCount; i++){
         if (strcmp(headerRow[i], PARAM_NAME_HEADER) == 0) {
             CHECKFIELD(dataRow[i], headerRow[i])
@@ -109,7 +121,10 @@ Param::Param(int columnsCount, char **dataRow, char **headerRow) :
             _isTLVNameFound = true;
         } else if (strcmp(headerRow[i], PARAM_OFFSET_HEADER) == 0) {
             CHECKFIELD(dataRow[i], headerRow[i])
-            _offset = dataRow[i];
+            if (_offset) {
+                delete _offset;
+            }
+            _offset = new DBOffset(dataRow[i]);
             _isOffsetFound = true;
         } else if (strcmp(headerRow[i], PARAM_SIZE_HEADER) == 0) {
             CHECKFIELD(dataRow[i], headerRow[i])
@@ -232,16 +247,17 @@ Param::Param(int columnsCount, char **dataRow, char **headerRow) :
 Param::~Param()
 {
     delete _value;
+    delete _offset;
 }
 
 void Param::pack(u_int8_t* buff)
 {
-    _value->pack(buff, _offset);
+    _value->pack(buff, _offset->getOffsetInBE(getSizeInBits(_size), _arrayLength == 0));
 }
 
 void Param::unpack(u_int8_t* buff)
 {
-    _value->unpack(buff, _offset);
+    _value->unpack(buff, _offset->getOffsetInBE(getSizeInBits(_size), _arrayLength == 0));
 }
 
 void Param::setVal(string val)
@@ -498,18 +514,6 @@ void ParamValue::parseValue(string, u_int32_t&, string&)
     throw MlxcfgException(OPERATION_NOT_SUPPORTED);
 }
 
-u_int32_t ParamValue::getSizeInBits(string size)
-{
-    u_int32_t bits = 0;
-    size_t pos = size.find('.');
-
-    if (pos != string::npos) {
-        bits += atoi(size.substr(pos + 1).c_str());
-    }
-    bits += (8 * strtol(size.substr(0, pos).c_str(), NULL, 0));
-    return bits;
-}
-
 
 /* UnsignedParamValue Class */
 string UnsignedParamValue::getVal() {
@@ -539,33 +543,9 @@ void UnsignedParamValue::pack(u_int8_t* buff, u_int32_t bitOffset)
     adb2c_push_bits_to_buff(buff, bitOffset, _size, _value);
 }
 
-void UnsignedParamValue::pack(u_int8_t* buff, string offset)
-{
-    u_int32_t bitOffset;
-    u_int32_t pos;
-
-    pos = offset.find('.');
-    bitOffset = 8 * strtol(offset.substr(0, pos).c_str(), NULL, 0) + atoi(offset.substr(pos + 1).c_str());
-    bitOffset = 32 - bitOffset % 32 - _size + ((bitOffset >> 5) << 5);
-
-    pack(buff, bitOffset);
-}
-
 void UnsignedParamValue::unpack(u_int8_t* buff, u_int32_t bitOffset)
 {
     _value = adb2c_pop_bits_from_buff(buff, bitOffset, _size);
-}
-
-void UnsignedParamValue::unpack(u_int8_t* buff, string offset)
-{
-    u_int32_t bitOffset;
-    u_int32_t pos;
-
-    pos = offset.find('.');
-    bitOffset = 8 * strtol(offset.substr(0, pos).c_str(), NULL, 0) + atoi(offset.substr(pos + 1).c_str());
-    bitOffset = 32 - bitOffset % 32 - _size + ((bitOffset >> 5) << 5);
-
-    unpack(buff, bitOffset);
 }
 
 u_int32_t UnsignedParamValue::getIntVal()
@@ -749,17 +729,6 @@ void StringParamValue::pack(u_int8_t* buff, u_int32_t bitOffset)
     }
 }
 
-void StringParamValue::pack(u_int8_t* buff, string offset)
-{
-    u_int32_t pos;
-
-    pos = offset.find('.');
-    //only parse the number before the dot, because it is an array
-    u_int32_t bitOffset = 8 * strtol(offset.substr(0, pos).c_str(), NULL, 0);
-
-    pack(buff, bitOffset);
-}
-
 void StringParamValue::unpack(u_int8_t* buff, u_int32_t bitOffset)
 {
     u_int32_t byteOffset = bitOffset / 8;
@@ -770,18 +739,6 @@ void StringParamValue::unpack(u_int8_t* buff, u_int32_t bitOffset)
         }
         _value += buff[byteOffset + i];
     }
-}
-
-void StringParamValue::unpack(u_int8_t* buff, string offset)
-{
-    u_int32_t bitOffset;
-    u_int32_t pos;
-
-    pos = offset.find('.');
-    //only parse the number before the dot, because it is an array
-    bitOffset = 8 * strtol(offset.substr(0, pos).c_str(), NULL, 0);
-
-    unpack(buff, bitOffset);
 }
 
 
@@ -837,36 +794,12 @@ void BytesParamValue::pack(u_int8_t* buff, u_int32_t bitOffset)
     }
 }
 
-void BytesParamValue::pack(u_int8_t* buff, string offset)
-{
-    u_int32_t bitOffset;
-    u_int32_t pos;
-
-    pos = offset.find('.');
-    //only parse the number before the dot, because it is an array
-    bitOffset = 8 * strtol(offset.substr(0, pos).c_str(), NULL, 0);
-
-    pack(buff, bitOffset);
-}
-
 void BytesParamValue::unpack(u_int8_t* buff, u_int32_t bitOffset)
 {
     VECTOR_ITERATOR(BinaryParamValue, _bytes, binary) {
         binary->unpack(buff, bitOffset);
         bitOffset += 32;
     }
-}
-
-void BytesParamValue::unpack(u_int8_t* buff, string offset)
-{
-    u_int32_t bitOffset;
-    u_int32_t pos;
-
-    pos = offset.find('.');
-    //only parse the number before the dot, because it is an array
-    bitOffset = 8 * strtol(offset.substr(0, pos).c_str(), NULL, 0);
-
-    unpack(buff, bitOffset);
 }
 
 void BytesParamValue::setVal(const vector<u_int32_t>& buffVal)
@@ -983,18 +916,6 @@ void ArrayParamValue::pack(u_int8_t* buff, u_int32_t offset)
     }
 }
 
-void ArrayParamValue::pack(u_int8_t* buff, string offset)
-{
-    u_int32_t bitOffset;
-    u_int32_t pos;
-
-    pos = offset.find('.');
-    //only parse the number before the dot, because it is an array
-    bitOffset = 8 * strtol(offset.substr(0, pos).c_str(), NULL, 0);
-    pack(buff, bitOffset);
-
-}
-
 void ArrayParamValue::unpack(u_int8_t* buff, u_int32_t offset)
 {
     vector<ParamValue*>::iterator j;
@@ -1010,17 +931,6 @@ void ArrayParamValue::unpack(u_int8_t* buff, u_int32_t offset)
         }
         it += elementsInDW;
     }
-}
-
-void ArrayParamValue::unpack(u_int8_t* buff, string offset)
-{
-    u_int32_t bitOffset;
-    u_int32_t pos;
-
-    pos = offset.find('.');
-    //only parse the number before the dot, because it is an array
-    bitOffset = 8 * strtol(offset.substr(0, pos).c_str(), NULL, 0);
-    unpack(buff, bitOffset);
 }
 
 void ArrayParamValue::parseValue(string strToParse, u_int32_t& val, string& strVal)

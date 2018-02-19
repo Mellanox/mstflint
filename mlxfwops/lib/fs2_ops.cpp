@@ -923,6 +923,9 @@ bool Fs2Operations::Fs2FailSafeBurn(Fs2Operations &imageOps,
     // Update CRC.
     // TODO: No support for blank guids
     bool isBlankGuids = ( _burnBlankGuids || imageOps._fs2ImgInfo.ext_info.blank_guids );
+    if (fim->getBuf() == NULL) {
+        return errmsg(MLXFW_ERR, "Bad FW image buffer.");
+    }
     UpdateFullImageCRC(fim->getBuf(), image_size / 4, isBlankGuids); // size in dwords
 
     // TODO: Do we need the verify ORENK
@@ -1379,6 +1382,9 @@ bool Fs2Operations::IntegrateDevRomInImage(Fs2Operations &imageOps)
     //vector<u_int8_t> romWithEndian<>
     //TOCPUn((u_int8_t*)(&_romSect[0]), rom_size/4);
 
+    if (fim->getBuf() == NULL) {
+        return errmsg("Bad FW image buffer\n");
+    }
     // Compine the image and the rom into new daa
     if(!UpdateRomInImage((u_int8_t*)(&new_data[0]), (u_int8_t*)(fim->getBuf()),
                          (u_int8_t*)(&_romSect[0]), rom_size, &actual_image_size)) {
@@ -1401,7 +1407,7 @@ bool Fs2Operations::IntegrateDevRomInImage(Fs2Operations &imageOps)
 bool Fs2Operations::Fs2Burn(Fs2Operations &imageOps, ExtBurnParams& burnParams)
 {
     if (imageOps.FwType() != FIT_FS2) {
-        return errmsg(MLXFW_IMAGE_FORMAT_ERR, "FW image type is not FS2\n");
+        return errmsg(MLXFW_IMAGE_FORMAT_ERR, "FW image type is not compatible with device (FS2)");
     }
 
     if (!imageOps.Fs2IntQuery()) {
@@ -2093,9 +2099,6 @@ bool Fs2Operations::FwShiftDevData(PrintCallBack progressFunc)
 
 const char* Fs2Operations::FwGetResetRecommandationStr()
 {
-    if (!_devName) {// not an mst device
-        return (const char*)NULL;
-    }
     return (const char*)NULL;
 }
 

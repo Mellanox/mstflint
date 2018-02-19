@@ -43,6 +43,7 @@
 #include <vector>
 #include <map>
 #include "mlxcfg_view.h"
+#include "mlxcfg_db_items.h"
 
 using namespace std;
 
@@ -56,9 +57,7 @@ class ParamValue {
         virtual void        setVal      (u_int32_t);
         virtual void        setVal      (vector<string>);
         virtual void        pack        (u_int8_t* buff, u_int32_t offset) = 0;
-        virtual void        pack        (u_int8_t* buff, string offset) = 0;
         virtual void        unpack      (u_int8_t* buff, u_int32_t offset) = 0;
-        virtual void        unpack      (u_int8_t* buff, string offset) = 0;
         virtual u_int32_t   getIntVal   ();
         virtual void        parseValue  (string, u_int32_t&, string&);
 
@@ -66,8 +65,6 @@ class ParamValue {
 
     protected:
         u_int32_t _size;
-    private:
-        u_int32_t getSizeInBits(string size);
 };
 
 class UnsignedParamValue : public ParamValue {
@@ -79,8 +76,6 @@ class UnsignedParamValue : public ParamValue {
         virtual void        setVal      (string s);
         virtual void        setVal      (const u_int32_t);
                 void        pack        (u_int8_t* buff, u_int32_t offset);
-                void        pack        (u_int8_t* buff, string offset);
-                void        unpack      (u_int8_t* buff, string offset);
                 void        unpack      (u_int8_t* buff, u_int32_t offset);
                 u_int32_t   getIntVal   ();
         virtual void        parseValue  (string, u_int32_t&, string&);
@@ -131,16 +126,13 @@ class StringParamValue : public ParamValue {
         string  getVal  ();
         void    setVal  (string s);
         void    pack    (u_int8_t* buff, u_int32_t bitOffset);
-        void    pack    (u_int8_t* buff, string offset);
         void    unpack  (u_int8_t* buff, u_int32_t bitOffset);
-        void    unpack  (u_int8_t* buff, string offset);
 
         string _value;
 };
 
 class BytesParamValue : public ParamValue {
     public:
-        using ParamValue::setVal;
         BytesParamValue(u_int32_t size) : ParamValue(size) {}
 
         string  getVal      ();
@@ -148,9 +140,7 @@ class BytesParamValue : public ParamValue {
         void    setVal      (const vector<u_int32_t>& buffVal);
         void    parseValue  (string, u_int32_t&, string&);
         void    pack        (u_int8_t* buff, u_int32_t offset);
-        void    pack        (u_int8_t* buff, string offset);
         void    unpack      (u_int8_t* buff, u_int32_t offset);
-        void    unpack      (u_int8_t* buff, string offset);
 
     private:
         vector<BinaryParamValue> _bytes;
@@ -158,8 +148,8 @@ class BytesParamValue : public ParamValue {
 
 
 class ArrayParamValue : public ParamValue {
+
 public:
-    using ParamValue::setVal;
     ArrayParamValue(string size, u_int32_t count, enum ParamType paramType);
     ~ArrayParamValue();
     string              getVal      ();
@@ -172,9 +162,7 @@ public:
     vector<string>      getStrVals();
     void                parseValue  (string, u_int32_t&, string&);
     void                pack        (u_int8_t* buff, u_int32_t offset);
-    void                pack        (u_int8_t* buff, string offset);
     void                unpack      (u_int8_t* buff, u_int32_t offset);
-    void                unpack      (u_int8_t* buff, string offset);
 
 protected:
     u_int32_t _elementSizeInBits;
@@ -198,7 +186,7 @@ class Param {
     public:
         string                  _name;
         string                  _tlvName;
-        string                  _offset;
+        DBOffset*               _offset;
         string                  _size;
         enum ParamType          _type;
         string                  _description;
@@ -231,7 +219,6 @@ class Param {
         string      getVal          (u_int32_t index);
         void        extractVars     (vector<string>& rulesVars, string rule);
         void        getRulesTLV     (vector<string>& rulesTlvs);
-        u_int32_t   getSizeInBits   ();
         void        genXMLTemplate  (string& xmlTemplate, bool withVal);
         void        genXMLTemplateAux  (string& xmlTemplate, bool withVal, bool isPartOfArray, u_int32_t index);
 

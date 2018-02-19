@@ -140,7 +140,7 @@ enum {
     MLXFW_DTOC_OVERWRITE_CHUNK,
     MLXFW_FLASH_READ_ERR,
 
-    /* Secure Error Codes */
+    /* MCC_EN/Secure Error Codes */
     MLXFW_BURN_REJECTED_DIGEST_ERR        ,
     MLXFW_BURN_REJECTED_NOT_APPLICABLE    ,
     MLXFW_BURN_REJECTED_UNKNOWN_KEY       ,
@@ -158,6 +158,7 @@ enum {
     MLXFW_REJECTED_FORBIDDEN_VERSION      ,
     MLXFW_FLASH_ERASE_ERROR               ,
     MLXFW_MISSING_IMAGE_SIGNATURE         ,
+    MLXFW_REJECTED_IMAGE_CAN_NOT_BOOT_FROM_PARTITION,
     /* ******************* */
 };
 

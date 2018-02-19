@@ -57,7 +57,7 @@ mstmcra_SOURCES  = mcra.c
 mstmtserver_SOURCES = mtserver.c tcp.c tcp.h
 mstmtserver_CFLAGS = -DMST_UL
 
-
+SUBDIRS = mlxfwresetlib
 MSTFWRESET_PYTHON_WRAPPER=mstfwreset
 ${MSTFWRESET_PYTHON_WRAPPER}: $(PYTHON_WRAPPER_SCRIPT)
 	cp $(PYTHON_WRAPPER_SCRIPT) $@

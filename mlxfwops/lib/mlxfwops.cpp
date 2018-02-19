@@ -173,6 +173,7 @@ MLXFWOP_API int MLXFWOPCALL mlxfw_burn(mlxfwops_t* dev_mlxfwops, mlxfwops_t* img
     burnParams.ignoreVersionCheck = force_version;
     burnParams.progressFunc = prog_func;
     burnParams.allowPsidChange = allow_psid_change ? true : false;
+    burnParams.shift8MB = true;
     bool rc = !static_cast<FwOperations*>((void*)dev_mlxfwops)->FwBurnAdvanced(static_cast<FwOperations*>((void*)img_mlxfwops),burnParams);
     int errorCode = static_cast<FwOperations*>((void*)dev_mlxfwops)->getErrorCode(); // the class's verbose error code
     return rc ? ( errorCode ? errorCode : rc) : rc;

@@ -49,10 +49,11 @@ int PsidLookupDB::csv2vector(string str, vector<string> &explode)
     do {
         cnt++;
         pos = str.find(',');
-        explode.push_back(str.substr(0, pos));
         if (pos == string::npos) {
+            explode.push_back(str);
             break;
         }
+        explode.push_back(str.substr(0, pos));
         str = str.substr(pos+1);
     } while (str.size() > 0);
 
