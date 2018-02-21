@@ -69,6 +69,8 @@ bool FsChecks::ExecuteChecks(FwOperations** devFwOps, FwOperations::ExtBurnParam
         //We need to query again (no need for rom)
         fw_info_t devInfo2;
         if (!tempDevFwOps->FwQuery(&devInfo2, false)) {
+            tempDevFwOps->FwCleanUp();
+            delete tempDevFwOps;
             return true;
         }
     }
@@ -79,7 +81,9 @@ bool FsChecks::ExecuteChecks(FwOperations** devFwOps, FwOperations::ExtBurnParam
          (!_burnParams.burnFailsafe && !_burnParams.useImgDevData))) {
         if (tempDevFwOps->CheckIfAlignmentIsNeeded(_imageFwOps)) {
             _isAlignmentNeeded = true;
-            _isFallBackToRegularFlowNeeded = true;
+            if (isFsCtrlOperations) {
+                _isFallBackToRegularFlowNeeded = true;
+            }
             _isTimeConsumingFixesNeeded = true;
         }
     }
@@ -92,7 +96,9 @@ bool FsChecks::ExecuteChecks(FwOperations** devFwOps, FwOperations::ExtBurnParam
     //Check if shifting is needed
     if (tempDevFwOps->FwCheckIf8MBShiftingNeeded(_imageFwOps, _burnParams)) {
         _is8MBShiftingNeeded = true;
-        _isFallBackToRegularFlowNeeded = true;
+        if (isFsCtrlOperations) {
+            _isFallBackToRegularFlowNeeded = true;
+        }
         _burnParams.shift8MB = true;
         _isTimeConsumingFixesNeeded = true;
     }
@@ -103,6 +109,8 @@ bool FsChecks::ExecuteChecks(FwOperations** devFwOps, FwOperations::ExtBurnParam
             memset(&_devInfo, 0, sizeof(_devInfo));
             _devQueryRes = tempDevFwOps->FwQuery(&_devInfo);
             if (!_devQueryRes) {
+                tempDevFwOps->FwCleanUp();
+                delete tempDevFwOps;
                 return false;
             }
             _devFwOps = tempDevFwOps;
@@ -123,8 +131,10 @@ void FsChecks::UpdateContext(FwOperations** devFwOps, FwOperations::ExtBurnParam
         (*devFwOps)->FwCleanUp();
         delete (*devFwOps);
         (*devFwOps) = _devFwOps;
-        burnParams = _burnParams;
         devInfo = _devInfo;
+    }
+    if (_is8MBShiftingNeeded) {
+        burnParams = _burnParams;
     }
 }
 
