@@ -208,11 +208,11 @@ void MlnxDev::setGuidMac(fw_info_t &fw_query) {
         }
     } else {
         if (fw_query.fs3_info.fs3_uids_info.valid_field) {
-            sprintf(buff, "%016"U64H_FMT_GEN,
+            sprintf(buff, "%016" U64H_FMT_GEN,
                             fw_query.fs3_info.fs3_uids_info.cx4_uids.base_guid.uid);
 
         } else {
-            sprintf(buff, "%016"U64H_FMT_GEN,
+            sprintf(buff, "%016" U64H_FMT_GEN,
                             fw_query.fs3_info.fs3_uids_info.cib_uids.guids[0].uid);
         }
         if (fw_query.fs3_info.fs3_uids_info.cib_uids.guids[0].uid ||
@@ -221,14 +221,14 @@ void MlnxDev::setGuidMac(fw_info_t &fw_query) {
         }
         if (fw_query.fs3_info.fs3_uids_info.valid_field) {
 
-            sprintf(buff, "%016"U64H_FMT_GEN,
+            sprintf(buff, "%016" U64H_FMT_GEN,
                                         fw_query.fs3_info.fs3_uids_info.cx4_uids.base_mac.uid);
             if (fw_query.fs3_info.fs3_uids_info.cx4_uids.base_mac.uid) {
                 macPortOne = (string)buff;
             }
             sprintf(buff, " ");
         } else {
-        sprintf(buff, "%016"U64H_FMT_GEN,
+        sprintf(buff, "%016" U64H_FMT_GEN,
                 fw_query.fs3_info.fs3_uids_info.cib_uids.guids[1].uid);
         }
         if (fw_query.fs3_info.fs3_uids_info.cx4_uids.base_mac.uid ||
