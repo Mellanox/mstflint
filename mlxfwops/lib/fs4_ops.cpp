@@ -604,7 +604,7 @@ bool Fs4Operations::CheckFs4ImgSize(Fs4Operations& imageOps, bool useImageDevDat
                       imageOps._maxImgLog2Size);
     }
 
-    //check if minimal dtoc is not overwriting the preceeding chunk
+    //check if minimal dtoc is not overwriting the preceding chunk
     if (useImageDevData) {
         u_int32_t devAreaStartAddress = _ioAccess->get_size() - (1 << imageOps._maxImgLog2Size);
         if (imageOps._fs4ImgInfo.smallestDTocAddr < devAreaStartAddress) {
