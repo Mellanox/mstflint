@@ -1057,7 +1057,6 @@ bool SubCommand::dumpFile(const char* confFile, std::vector<u_int8_t>& data, con
         }
     }
     if (unzipDataFile(data, dest, sectionName) == false) {
-        fclose(out);
         return false;
     }
     fprintf(out, "%s", (char*)&(dest[0]));
