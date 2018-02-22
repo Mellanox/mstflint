@@ -45,7 +45,6 @@ libcmdif_a_SOURCES = tools_cif.c tools_cif.h icmd_cif_common.c icmd_cif_common.h
 
 cmdif_pylibdir = $(libdir)/mstflint/python_tools/
 cmdif_pylib_DATA = ${CCMDIF_SO} cmdif.py
-dist_cmdif_pylib_DATA = cmdif.py
 ${CCMDIF_SO}: libcmdif.a
 	$(CC) -g -Wall -pthread -shared ${CFLAGS} *.o -o ${CCMDIF_SO} \
 	-L$(USER_DIR)/tools_layouts -ltools_layouts -L$(USER_DIR)/${MTCR_CONF_DIR} -lmtcr_ul
