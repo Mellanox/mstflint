@@ -44,6 +44,8 @@ MSTFLINT Package - Firmware Burning and Diagnostics Tools
 3) Installation
     a) Build the mstflint utility. This package is built using a standard
        autotools method.
+
+	   NOTE: if you are trying to build from the GitHub repository, need to run ./autogen.sh first.
 	   
        Example: 
        > ./configure
