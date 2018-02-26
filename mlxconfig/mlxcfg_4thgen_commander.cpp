@@ -476,7 +476,6 @@ void FourthGenCommander::setCfg(std::vector<ParamView>& params, bool force)
     vector<cfgInfo> infoVec;
 
     VECTOR_ITERATOR(ParamView, params, pv) {
-        cfgInfo info;
         int i;
         for (i = (int)Mcp_Sriov_En ; i < (int)Mcp_Last ; i++) {
             if (pv->mlxconfigName == param2str[i]) {
