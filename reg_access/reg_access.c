@@ -86,9 +86,9 @@
 
 #define REG_ACCESS_GEN_DATA_WITH_STATUS(mf, method, reg_id, data_struct, struct_name, prefix, reg_size , r_reg_size, w_reg_size\
         , size_func, data_p_name, data_size_name)\
-   u_int32_t reg_size = data_struct->data_size_name + size_func() - sizeof(*data_struct->data_p_name);\
+   u_int32_t reg_size = data_struct->data_size_name + size_func();\
    void* t_data = data_struct->data_p_name;\
-   u_int32_t t_offset = size_func() - sizeof(*data_struct->data_p_name);\
+   u_int32_t t_offset = size_func();\
    u_int32_t r_size_reg = reg_size;\
    u_int32_t w_size_reg= reg_size;\
    if (method == REG_ACCESS_METHOD_GET) {\
@@ -126,6 +126,7 @@
     int rc;\
     int max_data_size = size_func();\
     u_int8_t *data = (u_int8_t *)malloc(sizeof(u_int8_t) * max_data_size);\
+    if (!data) { return ME_MEM_ERROR;}; \
     memset(data, 0, max_data_size);\
     pack_func(data_struct, data);\
     if (method != REG_ACCESS_METHOD_GET && method != REG_ACCESS_METHOD_SET) {\
