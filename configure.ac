@@ -28,11 +28,11 @@ default_en_inband=""
 if test "x$OS" = "xFreeBSD"; then
     AC_MSG_NOTICE(FreeBSD Build)
     MTCR_CONF_DIR="mtcr_freebsd"
-    default_en_inband = "no"
+    default_en_inband="no"
 else
     MTCR_CONF_DIR="mtcr_ul"
     LDL="-ldl"
-    default_en_inband = "yes"
+    default_en_inband="yes"
 fi
 AC_SUBST(MTCR_CONF_DIR)
 AC_SUBST(LDL)
