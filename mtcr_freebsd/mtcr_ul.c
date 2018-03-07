@@ -165,11 +165,12 @@ int mtcr_check_signature(mfile *mf)
     }
 
     switch (signature & 0xffff) {
-        case 0x190: /* 400 */
+        case 0x190: /* Fallthrough 400 */
             if (signature == 0xa00190 && mf->ptr) {
                 mf->connectx_flush = 1;
                 mtcr_connectx_flush(mf->ptr);
             }
+	    return 0;
 
         case 0x5a44: /* 23108 */
         case 0x6278: /* 25208 */
