@@ -675,7 +675,7 @@ int mtcr_driver_mread4(mfile *mf, unsigned int offset, u_int32_t *value)
     int rc = 4;
     struct mst_read4_st r4;
     memset(&r4, 0, sizeof(struct mst_read4_st));
-    r4.address_space = mf->address_space;
+    r4.address_space = (unsigned int)mf->address_space;
     r4.offset = offset;
     if ((ioctl(mf->fd, PCICONF_READ4, &r4)) < 0) {
         rc = -1;
@@ -694,7 +694,7 @@ int mtcr_driver_mwrite4(mfile *mf, unsigned int offset, u_int32_t value)
 
     r4.offset = offset;
     r4.data = value;
-    r4.address_space = mf->address_space;
+    r4.address_space = (unsigned int)mf->address_space;
     if (ioctl(mf->fd, PCICONF_WRITE4, &r4) < 0) {
         rc = -1;
     } else {
@@ -779,7 +779,7 @@ static int driver_mwrite4_block(mfile *mf, unsigned int offset, u_int32_t* data,
                 errno = ENOMEM;
                 return -1;
             }
-            write4_buf.address_space = mf->address_space;
+            write4_buf.address_space = (unsigned int)mf->address_space;
             write4_buf.offset = offset;
             write4_buf.size = towrite;
             memcpy(write4_buf.data, dest_ptr, towrite);
@@ -789,7 +789,6 @@ static int driver_mwrite4_block(mfile *mf, unsigned int offset, u_int32_t* data,
             }
             offset += towrite;
             dest_ptr += towrite;
-            left_size -= towrite;
         }
         return length;
     } else {
@@ -811,7 +810,7 @@ static int driver_mread4_block(mfile *mf, unsigned int offset, u_int32_t* data, 
                 errno = ENOMEM;
                 return -1;
             }
-            read4_buf.address_space = mf->address_space;
+            read4_buf.address_space = (unsigned int)mf->address_space;
             read4_buf.offset = offset;
             read4_buf.size = toread;
             int ret = ioctl(mf->fd, PCICONF_READ4_BUFFER, &read4_buf);
@@ -821,7 +820,6 @@ static int driver_mread4_block(mfile *mf, unsigned int offset, u_int32_t* data, 
             memcpy(dest_ptr, read4_buf.data, toread);
             offset += toread;
             dest_ptr += toread;
-            left_size -= toread;
         }
         return length;
     } else {
@@ -874,7 +872,7 @@ int mtcr_driver_open(mfile *mf, MType dev_type,
         ctx->mread4_block  = driver_mread4_block;
         ctx->mwrite4_block = driver_mwrite4_block;
         ctx->mclose        = mtcr_driver_mclose;
-        mf->ptr             = NULL;
+        mf->ptr            = NULL;
         unsigned int slot_num;
         rc = ioctl(mf->fd, PCI_CONNECTX_WA, &slot_num);
         if (rc < 0) {
@@ -915,7 +913,7 @@ end:
             fprintf(stderr, "-E- Failed to get Device PARAMS!\n");
             return -1;
         }
-        mf->vsec_supp = dev_params.vendor_specific_cap;
+        mf->vsec_supp = (int)dev_params.vendor_specific_cap;
         if (dev_params.vendor_specific_cap) {
             mf->address_space = CR_SPACE_DOMAIN;
         }
