@@ -139,6 +139,7 @@ int main(int argc, char **argv)
 	vpd_t d;
 	int m = 0;
 	int n = 0;
+	int strict = 0;
 	mfile *mf;
 	vpd_result_t *read_result;
 	vpd_tags_type_t read_type = VPD_ALL;
@@ -150,7 +151,7 @@ int main(int argc, char **argv)
 
 	do
 	{
-		i=getopt(argc, argv, "mvhnrt:");
+		i=getopt(argc, argv, "mvhnsrt:");
 		if (i<0) {
 			break;
 		}
@@ -162,6 +163,9 @@ int main(int argc, char **argv)
 			case 'n':
 				n=1;
 				break;
+            case 's':
+                strict = 1;
+                break;
 			case 'h':
 			    rc = 0;
 			    goto usage;
@@ -220,7 +224,7 @@ int main(int argc, char **argv)
 	if (m) {
 		return fwrite(d, VPD_MAX_SIZE, 1, stdout) != 1;
 	}
-	rc = mvpd_parse_adv((u_int8_t *)d, VPD_MAX_SIZE, &read_result, read_type, 1, !n);
+	rc = mvpd_parse_adv((u_int8_t *)d, VPD_MAX_SIZE, &read_result, read_type, strict, !n);
 	if (rc) {
         fprintf(stderr, "-E- Failed to parse VPD from %s!\n", name);
         return MVPD_ERR;
@@ -247,6 +251,9 @@ usage:
 	printf("-n\tDo not validate check sum.\n");
 	printf("-r\tDo not check and display the VPD_W tag in the vpd data.\n");
 	printf("-t ##\tTime out after ## seconds. (Default is 30.)\n\n");  // Currently ignored - for compatibility
+	// We have also "-s" ("s" for "strict"), which is a hidden flag used by production.
+	// There are cards out there with inconsistent format, ~200K cards,
+    // which will cause the tool to fail if this flag is specified.
 	printf("file\tThe PCI id number of the HCA (for example, \"2:00.0\"),\n");
 	printf("\tthe device name (such as \"mlx4_0\")\n");
 	printf("\tthe absolute path to the device (\"/sys/class/infiniband/mlx4_0/device\")\n");
