@@ -1,3 +1,9 @@
+mstflint (4.10.0-1) unstable; urgency=low
+
+  * Updated from MFT-4.10.0
+
+ -- Adham Masarwah <adham@unknown>  Mon, 2 Apr 2018 15:35:46 +0200
+
 mstflint (4.9.0-1) unstable; urgency=low
 
   * Updated from MFT-4.9.0
