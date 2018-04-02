@@ -52,6 +52,8 @@ static clock_t timeout_t = 5; // Just for compatibility, no meaning
 #define VPD_MAX_SIZE 4096
 #define VPD_TOOL_VERSON "2.0.0"
 
+#define OPTSTR "mvhnsrt:"
+
 typedef unsigned char vpd_t[VPD_MAX_SIZE];
 
 void print_field(char* key, char* val)
@@ -129,6 +131,46 @@ void find_and_print_vpd_data(vpd_result_t* vpd_data, vpd_tags_type_t vpd_type, c
     }
 }
 
+//Returns a pointer to the position of the arg in OPTSTR, or NULL if not found
+char const *get_opt_pos(const char *option_suspect, int enforce_option_with_args)
+{
+    if (!(strlen(option_suspect) == 2 && option_suspect[0] == '-')) {
+        return NULL;
+    }
+    char suspect_to_search[3];
+    suspect_to_search[0] = option_suspect[1];
+    if (enforce_option_with_args) {
+        suspect_to_search[1] = ':';
+        suspect_to_search[2] = 0;
+    } else {
+        suspect_to_search[1] = 0;
+    }
+    return strstr(OPTSTR, suspect_to_search);
+}
+
+int verify_command_layout(int argc, char const **argv)
+{
+    if (argc < 2) {
+        return 0;
+    }
+
+    int i;
+    for (i = 1; i < argc; i++) {
+        if (get_opt_pos(argv[i], 0) || get_opt_pos(argv[i-1], 1)) {
+            continue;
+        } else {
+            break;
+        }
+    }
+    //i is file argument or at the end of argv
+    for (i = i + 1; i < argc; i++) {
+        if (get_opt_pos(argv[i], 0)) {
+           return 0;
+        }
+    }
+    return 1;
+}
+
 
 int main(int argc, char **argv)
 {
@@ -144,14 +186,15 @@ int main(int argc, char **argv)
 	vpd_result_t *read_result;
 	vpd_tags_type_t read_type = VPD_ALL;
 
-	if (argc < 2) {
+	if (!verify_command_layout(argc, (char const **)argv)) {
+	    fprintf(stderr, "-E- Bad input parameter.\n");
 		rc = 1;
 		goto usage;
 	}
 
 	do
 	{
-		i=getopt(argc, argv, "mvhnsrt:");
+		i=getopt(argc, argv, OPTSTR);
 		if (i<0) {
 			break;
 		}
@@ -244,7 +287,7 @@ int main(int argc, char **argv)
 	return 0;
 
 usage:
-	printf("Usage: %s [-m|-n] [-t ##] <file> [-- keyword ...]\n", argv[0]);
+	printf("Usage: %s [-m|-n|-r] [-t ##] <file> [-- keyword ...]\n", argv[0]);
 	printf("-h\tPrint this help.\n");
 	printf("-v\tPrint tool version.\n");
 	printf("-m\tDump raw VPD data to stdout.\n");
