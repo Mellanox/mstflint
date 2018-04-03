@@ -1,7 +1,7 @@
 %{!?ibmadlib: %define ibmadlib libibmad-devel}
 %{!?name: %define name mstflint}
 %{!?version: %define version 4.9.0}
-%{!?release: %define release 1}
+%{!?release: %define release 2}
 %{!?buildtype: %define buildtype "native"}
 %{!?noinband: %define noinband 0}
 %{!?nodc: %define nodc 0}
@@ -133,6 +133,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 
 %changelog
+* Sun Apr 1 2018 Adham Masarwah <adham@dev.mellanox.co.il>
+   Adding support for newer device in Secure Boot kernel and mtcr
+   
 * Mon Jul 17 2017 Adham Masarwah <adham@dev.mellanox.co.il>
    Adding mlxfwreset to mstflint
    
