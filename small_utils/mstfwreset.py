@@ -488,9 +488,10 @@ class MlnxPciOpLinuxUl(MlnxPciOpLinux): # Copied from old commit - TODO need to 
     def savePCIConfigurationSpace(self, devAddr):
         confSpaceList = []
         for addr in range(0, 0xfff, 4):
-            if (addr == 0x58 or addr == 0x5c):
-                confSpaceList.append(0)
-                continue
+            if self.isMellanoxDevice(devAddr):
+                if (addr == 0x58 or addr == 0x5c):
+                    confSpaceList.append(0)
+                    continue
             val = self.read(devAddr, addr)
             confSpaceList.append(val)
         self.pciConfSpaceMap[devAddr] = confSpaceList
@@ -506,8 +507,9 @@ class MlnxPciOpLinuxUl(MlnxPciOpLinux): # Copied from old commit - TODO need to 
             raise RuntimeError("PCI configuration space for device %s was not saved properly please reboot server" % devAddr)
         for i in range(0, 0x400):
             addr = i * 4
-            if (addr == 0x58 or addr == 0x5c):
-                continue
+            if self.isMellanoxDevice(devAddr):
+                if (addr == 0x58 or addr == 0x5c):
+                    continue
             self.write(devAddr, addr, pciConfSpaceList[i])
         return
 
@@ -591,9 +593,10 @@ class MlnxPciOpFreeBSD(MlnxPciOp):
     def savePCIConfigurationSpace(self, devAddr):
         confSpaceList = []
         for addr in range(0, 0xff, 4):
-            if (addr == 0x58 or addr == 0x5c):
-                confSpaceList.append(0)
-                continue
+            if self.isMellanoxDevice(devAddr):
+                if (addr == 0x58 or addr == 0x5c):
+                    confSpaceList.append(0)
+                    continue
             val = self.read(devAddr, addr)
             confSpaceList.append(val)
         self.pciConfSpaceMap[devAddr] = confSpaceList
@@ -609,8 +612,9 @@ class MlnxPciOpFreeBSD(MlnxPciOp):
             raise RuntimeError("PCI configuration space for device %s was not saved properly please reboot server" % devAddr)
         for i in range(0, 64):
             addr = i * 4
-            if (addr == 0x58 or addr == 0x5c):
-                continue
+            if self.isMellanoxDevice(devAddr):
+                if (addr == 0x58 or addr == 0x5c):
+                    continue
             self.write(devAddr, addr, pciConfSpaceList[i])
         return
 
