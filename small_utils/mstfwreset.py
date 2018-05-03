@@ -480,6 +480,40 @@ class MlnxPciOpLinux(MlnxPciOp):
         return True if rc == 0 else False
 
 
+class MlnxPciOpLinuxUl(MlnxPciOpLinux): # Copied from old commit - TODO need to use the same logic of mst load/save
+    def __init__(self):
+        super(MlnxPciOpLinuxUl, self).__init__()
+        self.pciConfSpaceMap = {}
+
+    def savePCIConfigurationSpace(self, devAddr):
+        confSpaceList = []
+        for addr in range(0, 0xfff, 4):
+            if self.isMellanoxDevice(devAddr):
+                if (addr == 0x58 or addr == 0x5c):
+                    confSpaceList.append(0)
+                    continue
+            val = self.read(devAddr, addr)
+            confSpaceList.append(val)
+        self.pciConfSpaceMap[devAddr] = confSpaceList
+        return
+
+    def loadPCIConfigurationSpace(self, devAddr):
+        pciConfSpaceList = []
+        try:
+            pciConfSpaceList = self.pciConfSpaceMap[devAddr]
+        except KeyError as ke:
+            raise RuntimeError("PCI configuration space for device %s was not saved please reboot server" % devAddr)
+        if len(pciConfSpaceList) != 0x400:
+            raise RuntimeError("PCI configuration space for device %s was not saved properly please reboot server" % devAddr)
+        for i in range(0, 0x400):
+            addr = i * 4
+            if self.isMellanoxDevice(devAddr):
+                if (addr == 0x58 or addr == 0x5c):
+                    continue
+            self.write(devAddr, addr, pciConfSpaceList[i])
+        return
+
+
 class MlnxPciOpFreeBSD(MlnxPciOp):
 
     def __init__(self):
@@ -559,9 +593,10 @@ class MlnxPciOpFreeBSD(MlnxPciOp):
     def savePCIConfigurationSpace(self, devAddr):
         confSpaceList = []
         for addr in range(0, 0xff, 4):
-            if (addr == 0x58 or addr == 0x5c):
-                confSpaceList.append(0)
-                continue
+            if self.isMellanoxDevice(devAddr):
+                if (addr == 0x58 or addr == 0x5c):
+                    confSpaceList.append(0)
+                    continue
             val = self.read(devAddr, addr)
             confSpaceList.append(val)
         self.pciConfSpaceMap[devAddr] = confSpaceList
@@ -577,8 +612,9 @@ class MlnxPciOpFreeBSD(MlnxPciOp):
             raise RuntimeError("PCI configuration space for device %s was not saved properly please reboot server" % devAddr)
         for i in range(0, 64):
             addr = i * 4
-            if (addr == 0x58 or addr == 0x5c):
-                continue
+            if self.isMellanoxDevice(devAddr):
+                if (addr == 0x58 or addr == 0x5c):
+                    continue
             self.write(devAddr, addr, pciConfSpaceList[i])
         return
 
@@ -621,7 +657,7 @@ class MlnxPciOpFactory(object):
     def getPciOpObj(self):
         operatingSystem = platform.system()
         if operatingSystem == "Linux":
-            return MlnxPciOpLinux()
+            return MlnxPciOpLinuxUl() if IS_MSTFLINT else MlnxPciOpLinux()
         elif operatingSystem == "FreeBSD":
             return MlnxPciOpFreeBSD()
         elif operatingSystem == "Windows":
