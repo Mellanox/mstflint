@@ -54,7 +54,7 @@ static clock_t timeout_t = 5; // Just for compatibility, no meaning
 
 typedef unsigned char vpd_t[VPD_MAX_SIZE];
 
-void print_field(char* key, char* val)
+void print_field(char *key, char *val)
 {
     if (strcmp(key, "RV") == 0) {
         return;
@@ -63,9 +63,9 @@ void print_field(char* key, char* val)
     }
 }
 
-void print_bin_field(char* key, char* val)
+void print_bin_field(char *key, char *val)
 {
-    char* valTmp = malloc((strlen(val) * 2 + 1) * sizeof(char));
+    char *valTmp = malloc((strlen(val) * 2 + 1) * sizeof(char));
     if (!valTmp) {
         printf("-E- Failed to Allocate Memory");
         return;
@@ -80,7 +80,7 @@ void print_bin_field(char* key, char* val)
     free(valTmp);
 }
 
-int is_printable(char* value)
+int is_printable(char *value)
 {
     int i = 0;
     while (value[i] != '\0') {
@@ -95,7 +95,7 @@ int is_printable(char* value)
 }
 
 //If you want to print all, pass NULL keyword
-void find_and_print_vpd_data(vpd_result_t* vpd_data, vpd_tags_type_t vpd_type, const char *keyword)
+void find_and_print_vpd_data(vpd_result_t *vpd_data, vpd_tags_type_t vpd_type, const char *keyword)
 {
     if (vpd_type & VPD_RO) {
         int i;
@@ -132,7 +132,7 @@ void find_and_print_vpd_data(vpd_result_t* vpd_data, vpd_tags_type_t vpd_type, c
 }
 
 //Returns a pointer to the position of the arg in OPTSTR, or NULL if not found
-char const *get_opt_pos(const char *option_suspect, int enforce_option_with_args)
+char const* get_opt_pos(const char *option_suspect, int enforce_option_with_args)
 {
     if (!(strlen(option_suspect) == 2 && option_suspect[0] == '-')) {
         return NULL;
@@ -174,7 +174,7 @@ int verify_command_layout(int argc, char const **argv)
 int main(int argc, char **argv)
 {
     const char *name;
-    char* endptr;
+    char *endptr;
     int i;
     int rc = 0;
     vpd_t d;
@@ -185,7 +185,7 @@ int main(int argc, char **argv)
     vpd_result_t *read_result;
     vpd_tags_type_t read_type = VPD_ALL;
 
-    if (!verify_command_layout(argc, (char const **) argv)) {
+    if (!verify_command_layout(argc, (char const**) argv)) {
         fprintf(stderr, "-E- Bad input parameter.\n");
         rc = 1;
         goto usage;
@@ -201,21 +201,27 @@ int main(int argc, char **argv)
         case 'm':
             m = 1;
             break;
+
         case 'n':
             n = 1;
             break;
+
         case 's':
             strict = 1;
             break;
+
         case 'h':
             rc = 0;
             goto usage;
+
         case 'v':
             print_version_string("mstvpd", VPD_TOOL_VERSON);
             exit(0);
+
         case 'r':
             read_type = VPD_RO;
             break;
+
         case 't':
             timeout_t = strtol(optarg, &endptr, 0);
             if (*endptr != '\0') {
@@ -227,6 +233,7 @@ int main(int argc, char **argv)
                 return 1;
             }
             break;
+
         default:
             rc = 1;
             goto usage;
@@ -241,8 +248,9 @@ int main(int argc, char **argv)
         return 33;
     }
     if (!strcmp("-", name)) {
-        if (fread(d, VPD_MAX_SIZE, 1, stdin) != 1)
+        if (fread(d, VPD_MAX_SIZE, 1, stdin) != 1) {
             return 3;
+        }
     } else {
         mf = mopen(name);
         if (!mf) {
@@ -255,7 +263,7 @@ int main(int argc, char **argv)
             fprintf(stderr, "-E- Failed to get VPD size from %s!\n", name);
             return MVPD_ERR;
         }
-        rc = mvpd_get_raw_vpd(mf, (u_int8_t *) d, mvpd_len);
+        rc = mvpd_get_raw_vpd(mf, (u_int8_t*) d, mvpd_len);
         if (rc) {
             fprintf(stderr, "-E- Failed to read VPD from %s!\n", name);
             return MVPD_ERR;
@@ -265,7 +273,7 @@ int main(int argc, char **argv)
     if (m) {
         return fwrite(d, VPD_MAX_SIZE, 1, stdout) != 1;
     }
-    rc = mvpd_parse_adv((u_int8_t *) d, VPD_MAX_SIZE, &read_result, read_type, strict, !n);
+    rc = mvpd_parse_adv((u_int8_t*) d, VPD_MAX_SIZE, &read_result, read_type, strict, !n);
     if (rc) {
         fprintf(stderr, "-E- Failed to parse VPD from %s!\n", name);
         return MVPD_ERR;
@@ -274,8 +282,9 @@ int main(int argc, char **argv)
         find_and_print_vpd_data(read_result, read_type, NULL);
     } else {
         for (i = 0; i < argc - 1; ++i) {
-            if (!strcmp(argv[i + 1], "--"))
+            if (!strcmp(argv[i + 1], "--")) {
                 continue;
+            }
             find_and_print_vpd_data(read_result, read_type, argv[i + 1]);
         }
     }
@@ -284,7 +293,7 @@ int main(int argc, char **argv)
     }
     return 0;
 
-    usage: printf("Usage: %s [-m|-n|-r] [-t ##] <file> [-- keyword ...]\n", argv[0]);
+usage: printf("Usage: %s [-m|-n|-r] [-t ##] <file> [-- keyword ...]\n", argv[0]);
     printf("-h\tPrint this help.\n");
     printf("-v\tPrint tool version.\n");
     printf("-m\tDump raw VPD data to stdout.\n");

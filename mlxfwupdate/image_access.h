@@ -71,19 +71,19 @@ private:
     int queryPsidBin(const string &fname, const string &psid, PsidQueryItem &ri);
     int getImageBin(const string &fname, u_int8_t **filebuf);
     int getImageMfa(const string &fname, const string &psid, string &selector_tag, int image_type, u_int8_t **filebuf);
-    int checkImgSignature(const char* fname);
+    int checkImgSignature(const char *fname);
 
     int get_mfa_content(string fpath, vector<PsidQueryItem> &riv);
     int get_bin_content(string fpath, vector<PsidQueryItem> &riv);
-    static int getBufferSignature(u_int8_t* buf, u_int32_t size);
-    bool openImg(fw_hndl_type_t hndlType, char *psid, char * fileHndl);
+    static int getBufferSignature(u_int8_t *buf, u_int32_t size);
+    bool openImg(fw_hndl_type_t hndlType, char *psid, char *fileHndl);
     char _errBuff[MLNX_ERR_BUFF_SIZE];
-    int  _compareFFV;
+    int _compareFFV;
     string _log;
     string _errMsg;
     string _warning;
     FwOperations::fw_ops_params_t _imgFwParams;
-    FwOperations* _imgFwOps;
+    FwOperations *_imgFwOps;
 };
 
 #endif

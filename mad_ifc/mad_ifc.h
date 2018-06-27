@@ -48,13 +48,13 @@ typedef enum {
 typedef MError mad_ifc_status_t;
 
 const char* mad_ifc_err2str(mad_ifc_status_t status);
-mad_ifc_status_t mad_ifc_port_info(mfile* mf, mad_ifc_method_t method, u_int16_t attr_mod, struct tools_open_ib_port_info* port_info);
-mad_ifc_status_t mad_ifc_node_info(mfile* mf, mad_ifc_method_t method, u_int16_t attr_mod, struct tools_open_node_info* node_info);
-mad_ifc_status_t mad_ifc_extended_port_info(mfile* mf, mad_ifc_method_t method, u_int16_t attr_mod, struct tools_open_extended_ib_port_info* ext_port_info);
-mad_ifc_status_t mad_ifc_general_info_smp(mfile* mf, mad_ifc_method_t method, u_int16_t attr_mod, union tools_open_smp_vsp_general_info* general_info);
-mad_ifc_status_t mad_ifc_general_info_hw(mfile* mf, struct tools_open_hw_info* hw_info);
-mad_ifc_status_t mad_ifc_general_info_fw(mfile* mf, struct tools_open_fw_info* fw_info);
-mad_ifc_status_t mad_ifc_general_info_sw(mfile* mf, struct tools_open_sw_info* sw_info);
+mad_ifc_status_t mad_ifc_port_info(mfile *mf, mad_ifc_method_t method, u_int16_t attr_mod, struct tools_open_ib_port_info *port_info);
+mad_ifc_status_t mad_ifc_node_info(mfile *mf, mad_ifc_method_t method, u_int16_t attr_mod, struct tools_open_node_info *node_info);
+mad_ifc_status_t mad_ifc_extended_port_info(mfile *mf, mad_ifc_method_t method, u_int16_t attr_mod, struct tools_open_extended_ib_port_info *ext_port_info);
+mad_ifc_status_t mad_ifc_general_info_smp(mfile *mf, mad_ifc_method_t method, u_int16_t attr_mod, union tools_open_smp_vsp_general_info *general_info);
+mad_ifc_status_t mad_ifc_general_info_hw(mfile *mf, struct tools_open_hw_info *hw_info);
+mad_ifc_status_t mad_ifc_general_info_fw(mfile *mf, struct tools_open_fw_info *fw_info);
+mad_ifc_status_t mad_ifc_general_info_sw(mfile *mf, struct tools_open_sw_info *sw_info);
 #ifdef __cplusplus
 }
 #endif

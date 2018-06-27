@@ -87,7 +87,7 @@ typedef struct flash_attr {
     //
     u_int32_t hw_dev_id;
     u_int32_t rev_id;
-    BinIdT    bin_id;
+    BinIdT bin_id;
 
     //
     // size:        Total size (in bytes) of all flash devices connected to
@@ -101,7 +101,7 @@ typedef struct flash_attr {
     //
     u_int32_t sector_size;
 
-    int       num_erase_blocks;         // Number of sector defs.
+    int num_erase_blocks;               // Number of sector defs.
 
     //
     // bank_size:   Different bank means a different chip sellect or gpio settings is needed when crossing
@@ -161,12 +161,12 @@ typedef struct flash_info {
  * Common Macros:
  */
 #define WRITE_PROTECT_CHECKS(mfl, bank_num) { \
-        if (!mfl->attr.write_protect_support) {\
-            return MFE_NOT_SUPPORTED_OPERATION;\
-        }\
-        if (bank_num >= mfl->attr.banks_num) {\
-            return MFE_FLASH_NOT_EXIST;\
-        }\
+        if (!mfl->attr.write_protect_support) { \
+            return MFE_NOT_SUPPORTED_OPERATION; \
+        } \
+        if (bank_num >= mfl->attr.banks_num) { \
+            return MFE_FLASH_NOT_EXIST; \
+        } \
 }
 #define MAX_SUBSECTOR_NUM 8
 #define MAX_SECTORS_NUM   64

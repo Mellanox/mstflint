@@ -146,10 +146,10 @@ typedef enum {
 void mtcr_connectx_flush(void *ptr)
 {
     u_int32_t value;
-    *((u_int32_t *) ((char *) ptr + 0xf0380)) = 0x0;
+    *((u_int32_t*) ((char*) ptr + 0xf0380)) = 0x0;
     do {
-        asm volatile ("":::"memory");
-        value = __be32_to_cpu(*((u_int32_t *) ((char *) ptr + 0xf0380)));
+        asm volatile ("" ::: "memory");
+        value = __be32_to_cpu(*((u_int32_t*) ((char*) ptr + 0xf0380)));
     } while (value);
 }
 
@@ -159,27 +159,29 @@ int mtcr_check_signature(mfile *mf)
     int rc;
     rc = mread4(mf, 0xF0014, &signature);
     if (rc != 4) {
-        if (!errno)
+        if (!errno) {
             errno = EIO;
+        }
         return -1;
     }
 
     switch (signature & 0xffff) {
-        case 0x190: /* Fallthrough 400 */
-            if (signature == 0xa00190 && mf->ptr) {
-                mf->connectx_flush = 1;
-                mtcr_connectx_flush(mf->ptr);
-            }
-	    return 0;
+    case 0x190:     /* Fallthrough 400 */
+        if (signature == 0xa00190 && mf->ptr) {
+            mf->connectx_flush = 1;
+            mtcr_connectx_flush(mf->ptr);
+        }
+        return 0;
 
-        case 0x5a44: /* 23108 */
-        case 0x6278: /* 25208 */
-        case 0x5e8c: /* 24204 */
-        case 0x6274: /* 25204 */
-            return 0;
-        default:
-            errno = ENOTTY;
-            return -1;
+    case 0x5a44:     /* 23108 */
+    case 0x6278:     /* 25208 */
+    case 0x5e8c:     /* 24204 */
+    case 0x6274:     /* 25204 */
+        return 0;
+
+    default:
+        errno = ENOTTY;
+        return -1;
     }
 }
 
@@ -218,8 +220,8 @@ enum {
     READ_OP = 0, WRITE_OP = 1,
 };
 
-int read_config(int fd, struct pcisel *sel, unsigned int reg, uint32_t* data,
-        int width)
+int read_config(int fd, struct pcisel *sel, unsigned int reg, uint32_t *data,
+                int width)
 {
     struct pci_io pi;
 
@@ -237,7 +239,7 @@ int read_config(int fd, struct pcisel *sel, unsigned int reg, uint32_t* data,
 }
 
 int write_config(int fd, struct pcisel *sel, unsigned int reg, uint32_t data,
-        int width)
+                 int width)
 {
     struct pci_io pi;
 
@@ -261,7 +263,7 @@ int write_config(int fd, struct pcisel *sel, unsigned int reg, uint32_t data,
 #define PCICONF_ADDR_OFF 0x58
 #define PCICONF_DATA_OFF 0x5c
 
-static int is_wo_pciconf_gw(mfile* mf)
+static int is_wo_pciconf_gw(mfile *mf)
 {
     unsigned offset = DEVID_OFFSET;
     u_int32_t data = 0;
@@ -274,7 +276,7 @@ static int is_wo_pciconf_gw(mfile* mf)
         return 0;
     }
     //printf("-D- Data: %#x\n", data);
-    if ( data == WO_REG_ADDR_DATA) {
+    if (data == WO_REG_ADDR_DATA) {
         return 1;
     }
     return 0;
@@ -287,7 +289,7 @@ static int is_wo_pciconf_gw(mfile* mf)
 /*set addr space*/
 
 /* Read Write new functions (4Bytes, Block)*/
-int pci_find_capability(mfile* mf, int cap_id)
+int pci_find_capability(mfile *mf, int cap_id)
 {
     unsigned offset;
     unsigned char visited[256] = { 0 }; /* Prevent infinite loops */
@@ -328,7 +330,7 @@ int pci_find_capability(mfile* mf, int cap_id)
     return 0;
 }
 
-static int _vendor_specific_sem(mfile* mf, int state)
+static int _vendor_specific_sem(mfile *mf, int state)
 {
     uint32_t lock_val;
     uint32_t counter = 0;
@@ -336,9 +338,10 @@ static int _vendor_specific_sem(mfile* mf, int state)
     int ret;
     if (!state) { // unlock
         ret = write_config(mf->fd, &mf->sel,
-                mf->vsec_addr + PCI_SEMAPHORE_OFFSET, 0, 4);
-        if (ret)
+                           mf->vsec_addr + PCI_SEMAPHORE_OFFSET, 0, 4);
+        if (ret) {
             return ret;
+        }
     } else { // lock
         do {
             if (retries > SEM_MAX_RETRIES) {
@@ -346,9 +349,10 @@ static int _vendor_specific_sem(mfile* mf, int state)
             }
             // read semaphore untill 0x0
             ret = read_config(mf->fd, &mf->sel,
-                    mf->vsec_addr + PCI_SEMAPHORE_OFFSET, &lock_val, 4);
-            if (ret)
+                              mf->vsec_addr + PCI_SEMAPHORE_OFFSET, &lock_val, 4);
+            if (ret) {
                 return ret;
+            }
 
             if (lock_val) { //semaphore is taken
                 retries++;
@@ -357,26 +361,29 @@ static int _vendor_specific_sem(mfile* mf, int state)
             }
             //read ticket
             ret = read_config(mf->fd, &mf->sel,
-                    mf->vsec_addr + PCI_COUNTER_OFFSET, &counter, 4);
-            if (ret)
+                              mf->vsec_addr + PCI_COUNTER_OFFSET, &counter, 4);
+            if (ret) {
                 return ret;
+            }
             //write ticket to semaphore dword
             ret = write_config(mf->fd, &mf->sel,
-                    mf->vsec_addr + PCI_SEMAPHORE_OFFSET, counter, 4);
-            if (ret)
+                               mf->vsec_addr + PCI_SEMAPHORE_OFFSET, counter, 4);
+            if (ret) {
                 return ret;
+            }
             // read back semaphore make sure ticket == semaphore else repeat
             ret = read_config(mf->fd, &mf->sel,
-                    mf->vsec_addr + PCI_SEMAPHORE_OFFSET, &lock_val, 4);
-            if (ret)
+                              mf->vsec_addr + PCI_SEMAPHORE_OFFSET, &lock_val, 4);
+            if (ret) {
                 return ret;
+            }
             retries++;
         } while (counter != lock_val);
     }
     return 0;
 }
 
-static int _wait_on_flag(mfile* mf, u8 expected_val)
+static int _wait_on_flag(mfile *mf, u8 expected_val)
 {
     int retries = 0;
     int ret;
@@ -387,9 +394,10 @@ static int _wait_on_flag(mfile* mf, u8 expected_val)
         }
 
         ret = read_config(mf->fd, &mf->sel, mf->vsec_addr + PCI_ADDR_OFFSET,
-                &flag, 4);
-        if (ret)
+                          &flag, 4);
+        if (ret) {
             return ret;
+        }
 
         flag = EXTRACT(flag, PCI_FLAG_BIT_OFFS, 1);
         retries++;
@@ -400,25 +408,28 @@ static int _wait_on_flag(mfile* mf, u8 expected_val)
     return 0;
 }
 
-static int _set_addr_space(mfile* mf, u16 space)
+static int _set_addr_space(mfile *mf, u16 space)
 {
     // read modify write
     uint32_t val;
     int ret;
     ret = read_config(mf->fd, &mf->sel, mf->vsec_addr + PCI_CTRL_OFFSET, &val,
-            4);
-    if (ret)
+                      4);
+    if (ret) {
         return ret;
+    }
     val = MERGE(val, space, PCI_SPACE_BIT_OFFS, PCI_SPACE_BIT_LEN);
     ret = write_config(mf->fd, &mf->sel, mf->vsec_addr + PCI_CTRL_OFFSET, val,
-            4);
-    if (ret)
+                       4);
+    if (ret) {
         return ret;
+    }
     // read status and make sure space is supported
     ret = read_config(mf->fd, &mf->sel, mf->vsec_addr + PCI_CTRL_OFFSET, &val,
-            4);
-    if (ret)
+                      4);
+    if (ret) {
         return ret;
+    }
 
     if (EXTRACT(val, PCI_STATUS_BIT_OFFS, PCI_STATUS_BIT_LEN) == 0) {
 
@@ -427,7 +438,7 @@ static int _set_addr_space(mfile* mf, u16 space)
     return 0;
 }
 
-static int _pciconf_rw(mfile* mf, unsigned int offset, uint32_t* data, int rw)
+static int _pciconf_rw(mfile *mf, unsigned int offset, uint32_t *data, int rw)
 {
     int ret = 0;
     uint32_t address = offset;
@@ -441,35 +452,39 @@ static int _pciconf_rw(mfile* mf, unsigned int offset, uint32_t* data, int rw)
     if (rw == WRITE_OP) {
         // write data
         ret = write_config(mf->fd, &mf->sel, mf->vsec_addr + PCI_DATA_OFFSET,
-                *data, 4);
-        if (ret)
+                           *data, 4);
+        if (ret) {
             return ret;
+        }
         // write address
         ret = write_config(mf->fd, &mf->sel, mf->vsec_addr + PCI_ADDR_OFFSET,
-                address, 4);
-        if (ret)
+                           address, 4);
+        if (ret) {
             return ret;
+        }
         // wait on flag
         ret = _wait_on_flag(mf, 0);
     } else {
         // write address
         ret = write_config(mf->fd, &mf->sel, mf->vsec_addr + PCI_ADDR_OFFSET,
-                address, 4);
-        if (ret)
+                           address, 4);
+        if (ret) {
             return ret;
+        }
         // wait on flag
         ret = _wait_on_flag(mf, 1);
         // read data
         ret = read_config(mf->fd, &mf->sel, mf->vsec_addr + PCI_DATA_OFFSET,
-                data, 4);
-        if (ret)
+                          data, 4);
+        if (ret) {
             return ret;
+        }
     }
     return ret;
 }
 
-static int _send_pci_cmd_int(mfile* mf, int space, unsigned int offset,
-        uint32_t* data, int rw)
+static int _send_pci_cmd_int(mfile *mf, int space, unsigned int offset,
+                             uint32_t *data, int rw)
 {
     int ret = 0;
 
@@ -487,14 +502,14 @@ static int _send_pci_cmd_int(mfile* mf, int space, unsigned int offset,
     }
     // read/write the data
     ret = _pciconf_rw(mf, offset, data, rw);
-    cleanup:
+cleanup:
     // clear semaphore
     _vendor_specific_sem(mf, 0);
     return ret;
 }
 
-static int _block_op(mfile* mf, int space, unsigned int offset, int size,
-        uint32_t* data, int rw)
+static int _block_op(mfile *mf, int space, unsigned int offset, int size,
+                     uint32_t *data, int rw)
 {
     int i;
     int ret = 0;
@@ -519,11 +534,11 @@ static int _block_op(mfile* mf, int space, unsigned int offset, int size,
             goto cleanup;
         }
     }
-    cleanup: _vendor_specific_sem(mf, 0);
+cleanup: _vendor_specific_sem(mf, 0);
     return wrote_or_read;
 }
 
-static int mwrite4_new(mfile* mf, unsigned int offset, uint32_t data)
+static int mwrite4_new(mfile *mf, unsigned int offset, uint32_t data)
 {
     int ret;
 
@@ -534,7 +549,7 @@ static int mwrite4_new(mfile* mf, unsigned int offset, uint32_t data)
     return 4;
 }
 
-static int mread4_new(mfile* mf, unsigned int offset, uint32_t* data)
+static int mread4_new(mfile *mf, unsigned int offset, uint32_t *data)
 {
     int ret;
 
@@ -545,19 +560,19 @@ static int mread4_new(mfile* mf, unsigned int offset, uint32_t* data)
     return 4;
 }
 
-static int mwrite4_block_new(mfile* mf, unsigned int offset, int size,
-        uint32_t* data)
+static int mwrite4_block_new(mfile *mf, unsigned int offset, int size,
+                             uint32_t *data)
 {
     return _block_op(mf, mf->address_space, offset, size, data, WRITE_OP);
 }
 
-static int mread4_block_new(mfile* mf, unsigned int offset, int size,
-        uint32_t* data)
+static int mread4_block_new(mfile *mf, unsigned int offset, int size,
+                            uint32_t *data)
 {
     return _block_op(mf, mf->address_space, offset, size, data, READ_OP);
 }
 
-static int vsec_spaces_supported(mfile* mf)
+static int vsec_spaces_supported(mfile *mf)
 {
     // take semaphore
     int supported = 1;
@@ -566,7 +581,7 @@ static int vsec_spaces_supported(mfile* mf)
         return supported;
     }
     if (_set_addr_space(mf, AS_CR_SPACE) || _set_addr_space(mf, AS_ICMD)
-            || _set_addr_space(mf, AS_SEMAPHORE)) {
+        || _set_addr_space(mf, AS_SEMAPHORE)) {
         supported = 0;
     }
     // clear semaphore
@@ -584,16 +599,16 @@ static int vsec_spaces_supported(mfile* mf)
  * Return valid mfile ptr or 0 on failure
  */
 
-int device_exists(const char* devname);
+int device_exists(const char *devname);
 int mtcr_open_config(mfile *mf, const char *name);
 
 
-mfile *mopen_int(const char *name, u_int32_t adv_opt)
+mfile* mopen_int(const char *name, u_int32_t adv_opt)
 {
-    char* real_name = (char*)name;
+    char *real_name = (char*)name;
 #ifndef MST_UL
     int port;
-    char* p_cable;
+    char *p_cable;
     char tmp_name[512] = {0};
 #endif
     int is_cable = 0;
@@ -604,8 +619,8 @@ mfile *mopen_int(const char *name, u_int32_t adv_opt)
     //printf("%s: open %s\n", __FUNCTION__, name);
 #ifndef MST_UL
     if ((p_cable = strstr(name, "_cable")) != 0) {
-        strncpy (tmp_name, name, 512);
-        tmp_name[p_cable-name] = 0;
+        strncpy(tmp_name, name, 512);
+        tmp_name[p_cable - name] = 0;
         is_cable = 1;
         real_name = tmp_name;
 
@@ -653,7 +668,7 @@ mfile *mopen_int(const char *name, u_int32_t adv_opt)
         if (mf->is_cable) {
             mf->flags = MDEVS_CABLE;
             mf->dl_context = mtcr_utils_load_dl_ctx(DL_CABLES);
-            dl_handle_t* hdl = (dl_handle_t*)mf->dl_context;
+            dl_handle_t *hdl = (dl_handle_t*)mf->dl_context;
             if (!hdl || !hdl->mcables.mcables_open || hdl->mcables.mcables_open(mf, port)) {
                 mclose(mf);
                 return 0;
@@ -669,20 +684,20 @@ mfile *mopen_int(const char *name, u_int32_t adv_opt)
     }
 }
 
-mfile *mopen(const char *name)
+mfile* mopen(const char *name)
 {
     return mopen_adv(name, MST_DEFAULT);
 }
-mfile *mopend(const char *name, int dtype)
+mfile* mopend(const char *name, int dtype)
 {
     (void)dtype;
 
     return mopen_int(name, 0);
 }
 
-mfile *mopen_adv(const char *name, MType mtype)
+mfile* mopen_adv(const char *name, MType mtype)
 {
-    mfile* mf = mopend(name, MST_TAVOR);
+    mfile *mf = mopend(name, MST_TAVOR);
     if (mf) {
         if (mf->tp & mtype) {
             return mf;
@@ -695,7 +710,7 @@ mfile *mopen_adv(const char *name, MType mtype)
     return mf;
 }
 
-mfile* mopen_fw_ctx(void* fw_cmd_context, void* fw_cmd_func, void* extra_data)
+mfile* mopen_fw_ctx(void *fw_cmd_context, void *fw_cmd_func, void *extra_data)
 {
     (void)fw_cmd_context;
     (void)fw_cmd_func;
@@ -731,8 +746,7 @@ int mclose(mfile *mf)
 }
 
 #if __FreeBSD_version > 700000
-int
-getsel(const char *str, struct pcisel *selout)
+int getsel(const char *str, struct pcisel *selout)
 {
     char *ep = strchr(str, '@');
     char *epbase;
@@ -741,10 +755,11 @@ getsel(const char *str, struct pcisel *selout)
     int i;
     //printf("__FreeBSD_version > 700000 detected.\n");
 
-    if (ep == NULL)
-    ep = (char *)str;
-    else
-    ep++;
+    if (ep == NULL) {
+        ep = (char*)str;
+    } else {
+        ep++;
+    }
 
     epbase = ep;
 
@@ -753,18 +768,20 @@ getsel(const char *str, struct pcisel *selout)
         i = 0;
         do {
             selarr[i++] = strtoul(ep, &ep, 10);
-        }while ((*ep == ':' || *ep == '.') && *++ep != '\0' && i < 4);
+        } while ((*ep == ':' || *ep == '.') && *++ep != '\0' && i < 4);
 
-        if (i > 2)
-        sel.pc_func = selarr[--i];
-        else
-        sel.pc_func = 0;
+        if (i > 2) {
+            sel.pc_func = selarr[--i];
+        } else {
+            sel.pc_func = 0;
+        }
         sel.pc_dev = selarr[--i];
         sel.pc_bus = selarr[--i];
-        if (i > 0)
-        sel.pc_domain = selarr[--i];
-        else
-        sel.pc_domain = 0;
+        if (i > 0) {
+            sel.pc_domain = selarr[--i];
+        } else {
+            sel.pc_domain = 0;
+        }
     }
     if (*ep != '\x0' || ep == epbase) {
         return 1;
@@ -784,10 +801,11 @@ int getsel(const char *str, struct pcisel *selout)
 
     //printf("__FreeBSD_version < 700000 detected: %d\n", __FreeBSD_version);
 
-    if (ep == NULL)
-        ep = (char *) str;
-    else
+    if (ep == NULL) {
+        ep = (char*) str;
+    } else {
         ep++;
+    }
 
     epbase = ep;
 
@@ -806,8 +824,9 @@ int getsel(const char *str, struct pcisel *selout)
             ep++;
             sel.pc_func = strtoul(ep, &ep, 0);
         }
-        if (*ep == ':')
+        if (*ep == ':') {
             ep++;
+        }
     }
     if (*ep != '\x0' || ep == epbase) {
         return 1;
@@ -860,7 +879,7 @@ int mread4_old(mfile *mf, unsigned int offset, u_int32_t *value)
         offset |= 0x1;
     }
     rc = write_config(mf->fd, &mf->sel, PCI_CONF_ADDR, (unsigned long) offset,
-            4);
+                      4);
     if (rc) {
         return rc;
     }
@@ -958,7 +977,8 @@ int mwrite4_old(mfile *mf, unsigned int offset, u_int32_t value)
 int mwrite4(mfile *mf, unsigned int offset, u_int32_t value)
 {
 #ifndef MST_UL
-    if (mf->tp == MST_CABLE) {int rc = 0;
+    if (mf->tp == MST_CABLE) {
+        int rc = 0;
         CALL_DL_FUNC(mcables, mcables_write4, rc, mf, offset, value);
         if (!rc) {
             return 4;
@@ -975,7 +995,7 @@ int mwrite4(mfile *mf, unsigned int offset, u_int32_t value)
 //////////// NEW   ////////////////////
 
 static int mread_chunk_as_multi_mread4(mfile *mf, unsigned int offset,
-        void *data, int length)
+                                       void *data, int length)
 {
     int i;
     if (length % 4) {
@@ -992,7 +1012,7 @@ static int mread_chunk_as_multi_mread4(mfile *mf, unsigned int offset,
 }
 
 static int mwrite_chunk_as_multi_mwrite4(mfile *mf, unsigned int offset,
-        void *data, int length)
+                                         void *data, int length)
 {
     int i;
     if (length % 4) {
@@ -1008,7 +1028,7 @@ static int mwrite_chunk_as_multi_mwrite4(mfile *mf, unsigned int offset,
     return length;
 }
 
-int mread4_block(mfile *mf, unsigned int offset, u_int32_t* data, int byte_len)
+int mread4_block(mfile *mf, unsigned int offset, u_int32_t *data, int byte_len)
 {
 #ifndef MST_UL
     int rc = byte_len;
@@ -1016,7 +1036,7 @@ int mread4_block(mfile *mf, unsigned int offset, u_int32_t* data, int byte_len)
     if (mf->tp == MST_CABLE) {
         int ret = 0;
         CALL_DL_FUNC(mcables, mcables_read4_block, ret, mf, offset, data, byte_len);
-        if ( ret != 0 ) {
+        if (ret != 0) {
             rc -= ret; // Return less than byte_len to ensure error in reading
         }
         return rc;
@@ -1030,7 +1050,7 @@ int mread4_block(mfile *mf, unsigned int offset, u_int32_t* data, int byte_len)
     return mread_chunk_as_multi_mread4(mf, offset, data, byte_len);
 }
 
-int mwrite4_block(mfile *mf, unsigned int offset, u_int32_t* data, int byte_len)
+int mwrite4_block(mfile *mf, unsigned int offset, u_int32_t *data, int byte_len)
 {
 #ifndef MST_UL
     int rc = byte_len;
@@ -1038,7 +1058,7 @@ int mwrite4_block(mfile *mf, unsigned int offset, u_int32_t* data, int byte_len)
     if (mf->tp == MST_CABLE) {
         int ret = 0;
         CALL_DL_FUNC(mcables, mcables_write4_block, ret, mf, offset, data, byte_len);
-        if ( ret != 0 ) {
+        if (ret != 0) {
             rc -= ret; // Return less than byte_len to ensure error in reading
         }
         return rc;
@@ -1072,7 +1092,7 @@ int mi2c_detect(mfile *mf, u_int8_t slv_arr[SLV_ADDRS_NUM])
     return 1;
 }
 int mread_i2cblock(mfile *mf, unsigned char i2c_slave, u_int8_t addr_width,
-        unsigned int offset, void *data, int length)
+                   unsigned int offset, void *data, int length)
 {
     (void)mf;
     (void)i2c_slave;
@@ -1085,7 +1105,7 @@ int mread_i2cblock(mfile *mf, unsigned char i2c_slave, u_int8_t addr_width,
 }
 
 int mwrite_i2cblock(mfile *mf, unsigned char i2c_slave, u_int8_t addr_width,
-        unsigned int offset, void *data, int length)
+                    unsigned int offset, void *data, int length)
 {
     (void)mf;
     (void)i2c_slave;
@@ -1108,7 +1128,7 @@ static void fix_endianness(u_int32_t *buf, int len)
     }
 }
 
-int mread_buffer(mfile *mf, unsigned int offset, u_int8_t* data, int byte_len)
+int mread_buffer(mfile *mf, unsigned int offset, u_int8_t *data, int byte_len)
 {
     int rc;
     rc = mread4_block(mf, offset, (u_int32_t*) data, byte_len);
@@ -1117,7 +1137,7 @@ int mread_buffer(mfile *mf, unsigned int offset, u_int8_t* data, int byte_len)
 
 }
 
-int mwrite_buffer(mfile *mf, unsigned int offset, u_int8_t* data, int byte_len)
+int mwrite_buffer(mfile *mf, unsigned int offset, u_int8_t *data, int byte_len)
 {
     fix_endianness((u_int32_t*) data, byte_len);
     return mwrite4_block(mf, offset, (u_int32_t*) data, byte_len);
@@ -1151,8 +1171,9 @@ unsigned char mset_i2c_slave(mfile *mf, unsigned char new_i2c_slave)
     if (mf) {
         ret = mf->i2c_slave;
         mf->i2c_slave = new_i2c_slave;
-    } else
+    } else {
         ret = 0xff;
+    }
     return ret;
 }
 
@@ -1168,15 +1189,15 @@ int mget_i2c_slave(mfile *mf, unsigned char *new_i2c_slave_p)
 #define MLX_DEV_PREFIX1 "mlx4_core"
 #define MLX_DEV_PREFIX2 "mlx5_core"
 
-static int get_device_ids(const char* dev_name, dev_info* dinfo)
+static int get_device_ids(const char *dev_name, dev_info *dinfo)
 {
-    mfile* mf = mopen(dev_name);
+    mfile *mf = mopen(dev_name);
     int rc = 0;
     u_int32_t buf = 0;
     if (!mf) {
         return 1;
     }
-    rc = read_config(mf->fd, &mf->sel, PCI_HEADER_OFFS,&buf, 4);
+    rc = read_config(mf->fd, &mf->sel, PCI_HEADER_OFFS, &buf, 4);
     if (rc) {
         goto exit;
     }
@@ -1198,10 +1219,10 @@ exit:
     mclose(mf);
     return rc;
 }
-static int get_dev_dbdf(const char* dev_name, unsigned int * domain,
-        unsigned int * bus, unsigned int * dev, unsigned int * func)
+static int get_dev_dbdf(const char *dev_name, unsigned int *domain,
+                        unsigned int *bus, unsigned int *dev, unsigned int *func)
 {
-    char* dbdf_str = strstr(dev_name, "pci");
+    char *dbdf_str = strstr(dev_name, "pci");
     int rc = 0;
     if (!dbdf_str) {
         return 1;
@@ -1215,10 +1236,10 @@ static int get_dev_dbdf(const char* dev_name, unsigned int * domain,
 
 int get_device_flags(const char *name)
 {
-    int mask=0;
+    int mask = 0;
 
     mask = MDEVS_TAVOR_CR;
-    if ( strstr(name, "cable") ) {
+    if (strstr(name, "cable") ) {
         mask = MDEVS_CABLE;
     }
     return mask;
@@ -1226,12 +1247,12 @@ int get_device_flags(const char *name)
 
 #define CABLES_DIR   "/etc/mft/cables"
 #define PUTC(c) do {     \
-    *p++ = (c);        \
-     if (++cnt >= len) { \
-         closedir(dir);  \
-         return -1;      \
-     } } while(0)
-#define PUTS(s) do { for(i=0; (s)[i]; i++) PUTC((s)[i]); } while (0)
+        *p++ = (c);        \
+        if (++cnt >= len) { \
+            closedir(dir);  \
+            return -1;      \
+        } } while (0)
+#define PUTS(s) do { for (i = 0; (s)[i]; i++) PUTC((s)[i]); } while (0)
 
 
 int mdevices_v(char *buf, int len, int mask, int verbosity)
@@ -1246,9 +1267,9 @@ int mdevices_v(char *buf, int len, int mask, int verbosity)
     if (mask & MDEVS_TAVOR_CR) {
         /* Get all Mellanox devices - this cmd will return the needed devices one in every line */
         fp =
-                popen(
-                        "pciconf -lv | grep -B 1 Mellanox | grep pci | cut -f1 | cut -f2 -d \"@\" | cut -f1-4 -d \":\"",
-                        "r");
+            popen(
+                "pciconf -lv | grep -B 1 Mellanox | grep pci | cut -f1 | cut -f2 -d \"@\" | cut -f1-4 -d \":\"",
+                "r");
         if (fp == NULL) {
             return -1;
         }
@@ -1280,16 +1301,16 @@ int mdevices_v(char *buf, int len, int mask, int verbosity)
         struct dirent *dirent;
         if ((dir = opendir(CABLES_DIR)) != NULL) {
 
-           while ((dirent = readdir(dir)) != NULL) {
-               char *name = dirent->d_name;
-               /* According to mask */
-               if (get_device_flags(name) & MDEVS_CABLE) {
-                   PUTS(name);
-                   PUTC('\0');
-                   rc++;
-               }
-           }
-           closedir(dir);
+            while ((dirent = readdir(dir)) != NULL) {
+                char *name = dirent->d_name;
+                /* According to mask */
+                if (get_device_flags(name) & MDEVS_CABLE) {
+                    PUTS(name);
+                    PUTC('\0');
+                    rc++;
+                }
+            }
+            closedir(dir);
         }
     }
     return rc;
@@ -1299,10 +1320,10 @@ int mdevices(char *buf, int len, int mask)
 {
     return mdevices_v(buf, len, mask, 0);
 }
-dev_info* mdevices_info(int mask, int* len)
+dev_info* mdevices_info(int mask, int *len)
 {
-    char* devs = 0;
-    char* dev_name;
+    char *devs = 0;
+    char *dev_name;
     int size = 2048;
     int rc;
     int i;
@@ -1321,7 +1342,7 @@ dev_info* mdevices_info(int mask, int* len)
         rc = mdevices(devs, size, mask);
     } while (rc == -1);
     *len = rc;
-    dev_info* dev_info_arr = malloc(sizeof(dev_info) * rc);
+    dev_info *dev_info_arr = malloc(sizeof(dev_info) * rc);
     if (!dev_info_arr) {
         errno = ENOMEM;
         free(devs);
@@ -1349,14 +1370,14 @@ dev_info* mdevices_info(int mask, int* len)
                 goto next;
             }
         }
-        next:
-            dev_name += strlen(dev_name) + 1;
+next:
+        dev_name += strlen(dev_name) + 1;
     }
     free(devs);
     return dev_info_arr;
 }
 
-void mdevices_info_destroy(dev_info* dev_info, int len)
+void mdevices_info_destroy(dev_info *dev_info, int len)
 {
     (void)len;
 
@@ -1382,15 +1403,15 @@ enum {
 #define FWCTX_MAX_REG_SIZE 16
 #define TOOLS_HCR_MAX_REG_SIZE (TOOLS_HCR_MAX_MBOX - REGISTER_HEADERS_SIZE)
 
-static int supports_icmd(mfile* mf);
-static int supports_tools_cmdif_reg(mfile* mf);
+static int supports_icmd(mfile *mf);
+static int supports_tools_cmdif_reg(mfile *mf);
 static int init_operation_tlv(struct OperationTlv *operation_tlv,
-        u_int16_t reg_id, u_int8_t method);
-static int mreg_send_wrapper(mfile* mf, u_int8_t *data, int r_icmd_size,
-        int w_icmd_size);
+                              u_int16_t reg_id, u_int8_t method);
+static int mreg_send_wrapper(mfile *mf, u_int8_t *data, int r_icmd_size,
+                             int w_icmd_size);
 static int mreg_send_raw(mfile *mf, u_int16_t reg_id,
-        maccess_reg_method_t method, void *reg_data, u_int32_t reg_size,
-        u_int32_t r_size_reg, u_int32_t w_size_reg, int *reg_status);
+                         maccess_reg_method_t method, void *reg_data, u_int32_t reg_size,
+                         u_int32_t r_size_reg, u_int32_t w_size_reg, int *reg_status);
 int mget_max_reg_size(mfile *mf);
 
 // maccess_reg: Do a reg_access for the mf device.
@@ -1399,8 +1420,8 @@ int mget_max_reg_size(mfile *mf);
 //       a specific
 
 int maccess_reg(mfile *mf, u_int16_t reg_id, maccess_reg_method_t reg_method,
-        void* reg_data, u_int32_t reg_size, u_int32_t r_size_reg,
-        u_int32_t w_size_reg, int *reg_status)
+                void *reg_data, u_int32_t reg_size, u_int32_t r_size_reg,
+                u_int32_t w_size_reg, int *reg_status)
 {
     int rc;
     if (mf == NULL || reg_data == NULL || reg_status == NULL || reg_size <= 0) {
@@ -1408,7 +1429,7 @@ int maccess_reg(mfile *mf, u_int16_t reg_id, maccess_reg_method_t reg_method,
     }
     // check register size
     int max_size = mget_max_reg_size(mf);
-    if (max_size < 0 ) {
+    if (max_size < 0) {
         return ME_ERROR;
     }
     if (reg_size > (unsigned)max_size) {
@@ -1416,49 +1437,63 @@ int maccess_reg(mfile *mf, u_int16_t reg_id, maccess_reg_method_t reg_method,
         return ME_REG_ACCESS_SIZE_EXCCEEDS_LIMIT;
     }
     rc = mreg_send_raw(mf, reg_id, reg_method, reg_data, reg_size, r_size_reg,
-            w_size_reg, reg_status);
+                       w_size_reg, reg_status);
 
     if (rc) {
         return rc;
     } else if (*reg_status) {
         switch (*reg_status) {
-            case 1:
-                return ME_REG_ACCESS_DEV_BUSY;
-            case 2:
-                return ME_REG_ACCESS_VER_NOT_SUPP;
-            case 3:
-                return ME_REG_ACCESS_UNKNOWN_TLV;
-            case 4:
-                return ME_REG_ACCESS_REG_NOT_SUPP;
-            case 5:
-                return ME_REG_ACCESS_CLASS_NOT_SUPP;
-            case 6:
-                return ME_REG_ACCESS_METHOD_NOT_SUPP;
-            case 7:
-                return ME_REG_ACCESS_BAD_PARAM;
-            case 8:
-                return ME_REG_ACCESS_RES_NOT_AVLBL;
-            case 9:
-                return ME_REG_ACCESS_MSG_RECPT_ACK;
-            case 0x22:
-                return ME_REG_ACCESS_CONF_CORRUPT;
-            case 0x24:
-                return ME_REG_ACCESS_LEN_TOO_SMALL;
-            case 0x20:
-                return ME_REG_ACCESS_BAD_CONFIG;
-            case 0x21:
-                return ME_REG_ACCESS_ERASE_EXEEDED;
-            case 0x70:
-                return ME_REG_ACCESS_INTERNAL_ERROR;
-            default:
-                return ME_REG_ACCESS_UNKNOWN_ERR;
+        case 1:
+            return ME_REG_ACCESS_DEV_BUSY;
+
+        case 2:
+            return ME_REG_ACCESS_VER_NOT_SUPP;
+
+        case 3:
+            return ME_REG_ACCESS_UNKNOWN_TLV;
+
+        case 4:
+            return ME_REG_ACCESS_REG_NOT_SUPP;
+
+        case 5:
+            return ME_REG_ACCESS_CLASS_NOT_SUPP;
+
+        case 6:
+            return ME_REG_ACCESS_METHOD_NOT_SUPP;
+
+        case 7:
+            return ME_REG_ACCESS_BAD_PARAM;
+
+        case 8:
+            return ME_REG_ACCESS_RES_NOT_AVLBL;
+
+        case 9:
+            return ME_REG_ACCESS_MSG_RECPT_ACK;
+
+        case 0x22:
+            return ME_REG_ACCESS_CONF_CORRUPT;
+
+        case 0x24:
+            return ME_REG_ACCESS_LEN_TOO_SMALL;
+
+        case 0x20:
+            return ME_REG_ACCESS_BAD_CONFIG;
+
+        case 0x21:
+            return ME_REG_ACCESS_ERASE_EXEEDED;
+
+        case 0x70:
+            return ME_REG_ACCESS_INTERNAL_ERROR;
+
+        default:
+            return ME_REG_ACCESS_UNKNOWN_ERR;
         }
     }
     return ME_OK;
 }
 
 static int init_operation_tlv(struct OperationTlv *operation_tlv,
-        u_int16_t reg_id, u_int8_t method)
+                              u_int16_t reg_id, u_int8_t method)
 {
     memset(operation_tlv, 0, sizeof(*operation_tlv));
 
@@ -1472,13 +1507,13 @@ static int init_operation_tlv(struct OperationTlv *operation_tlv,
 
 ///////////////////  Function that sends the register via the correct interface ///////////////////////////
 
-static int mreg_send_wrapper(mfile* mf, u_int8_t *data, int r_icmd_size,
-        int w_icmd_size)
+static int mreg_send_wrapper(mfile *mf, u_int8_t *data, int r_icmd_size,
+                             int w_icmd_size)
 {
     int rc;
     if (supports_icmd(mf)) {
         rc = icmd_send_command_int(mf, FLASH_REG_ACCESS, data, w_icmd_size,
-                r_icmd_size, 0);
+                                   r_icmd_size, 0);
         if (rc) {
             return rc;
         }
@@ -1494,8 +1529,8 @@ static int mreg_send_wrapper(mfile* mf, u_int8_t *data, int r_icmd_size,
 }
 
 static int mreg_send_raw(mfile *mf, u_int16_t reg_id,
-        maccess_reg_method_t method, void *reg_data, u_int32_t reg_size,
-        u_int32_t r_size_reg, u_int32_t w_size_reg, int *reg_status)
+                         maccess_reg_method_t method, void *reg_data, u_int32_t reg_size,
+                         u_int32_t r_size_reg, u_int32_t w_size_reg, int *reg_status)
 {
     //printf("-D- reg_id = %d, reg_size = %d, r_size_reg = %d , w_size_reg = %d \n",reg_id,reg_size,r_size_reg,w_size_reg);
     int mad_rc, cmdif_size = 0;
@@ -1560,25 +1595,27 @@ static int mreg_send_raw(mfile *mf, u_int16_t reg_id,
 #define SWITCHX_HW_ID 0x245
 #define INFINISCALE4_HW_ID 0x1b3
 
-static int supports_icmd(mfile* mf) {
+static int supports_icmd(mfile *mf)
+{
     u_int32_t dev_id;
 
-    if (mread4(mf,HW_ID_ADDR, &dev_id) != 4) { // cr might be locked and retured 0xbad0cafe but we dont care we search for device that supports icmd
+    if (mread4(mf, HW_ID_ADDR, &dev_id) != 4) { // cr might be locked and retured 0xbad0cafe but we dont care we search for device that supports icmd
         return 0;
     }
     switch (dev_id & 0xffff) { // that the hw device id
-        case INFINISCALE4_HW_ID :
-        case CONNECTX3_HW_ID :
-        case CONNECTX3_PRO_HW_ID :
-        case SWITCHX_HW_ID :
-            return 0;
-        default:
-            break;
+    case INFINISCALE4_HW_ID:
+    case CONNECTX3_HW_ID:
+    case CONNECTX3_PRO_HW_ID:
+    case SWITCHX_HW_ID:
+        return 0;
+
+    default:
+        break;
     }
     return 1;
 }
 
-static int supports_tools_cmdif_reg(mfile* mf)
+static int supports_tools_cmdif_reg(mfile *mf)
 {
     u_int32_t dev_id;
 
@@ -1586,14 +1623,15 @@ static int supports_tools_cmdif_reg(mfile* mf)
         return 0;
     }
     switch (dev_id & 0xffff) { // that the hw device id
-        case CONNECTX3_HW_ID: //Cx3
-        case CONNECTX3_PRO_HW_ID: // Cx3-pro
-            if (tools_cmdif_is_supported(mf) == ME_OK) {
-                return 1;
-            }
-            return 0;
-        default:
-            return 0;
+    case CONNECTX3_HW_ID:     //Cx3
+    case CONNECTX3_PRO_HW_ID:     // Cx3-pro
+        if (tools_cmdif_is_supported(mf) == ME_OK) {
+            return 1;
+        }
+        return 0;
+
+    default:
+        return 0;
     }
 
 }
@@ -1612,139 +1650,188 @@ int mget_max_reg_size(mfile *mf)
 }
 
 /************************************
- * Function: m_err2str
- ************************************/
+* Function: m_err2str
+************************************/
 const char* m_err2str(MError status)
 {
     switch (status) {
-        case ME_OK:
-            return "ME_OK";
-        case ME_ERROR:
-            return "General error";
-        case ME_BAD_PARAMS:
-            return "ME_BAD_PARAMS";
-        case ME_CR_ERROR:
-            return "ME_CR_ERROR";
-        case ME_NOT_IMPLEMENTED:
-            return "ME_NOT_IMPLEMENTED";
-        case ME_SEM_LOCKED:
-            return "Semaphore locked";
-        case ME_MEM_ERROR:
-            return "ME_MEM_ERROR";
-        case ME_UNSUPPORTED_OPERATION:
-            return "ME_UNSUPPORTED_OPERATION";
+    case ME_OK:
+        return "ME_OK";
 
-        case ME_MAD_SEND_FAILED:
-            return "ME_MAD_SEND_FAILED";
-        case ME_UNKOWN_ACCESS_TYPE:
-            return "ME_UNKOWN_ACCESS_TYPE";
-        case ME_UNSUPPORTED_ACCESS_TYPE:
-            return "ME_UNSUPPORTED_ACCESS_TYPE";
-        case ME_UNSUPPORTED_DEVICE:
-            return "ME_UNSUPPORTED_DEVICE";
+    case ME_ERROR:
+        return "General error";
 
-        // Reg access errors
-        case ME_REG_ACCESS_BAD_STATUS_ERR:
-            return "ME_REG_ACCESS_BAD_STATUS_ERR";
-        case ME_REG_ACCESS_BAD_METHOD:
-            return "Bad method";
-        case ME_REG_ACCESS_NOT_SUPPORTED:
-            return "The Register access is not supported by the device";
-        case ME_REG_ACCESS_DEV_BUSY:
-            return "Device is busy";
-        case ME_REG_ACCESS_VER_NOT_SUPP:
-            return "Version not supported";
-        case ME_REG_ACCESS_UNKNOWN_TLV:
-            return "Unknown TLV";
-        case ME_REG_ACCESS_REG_NOT_SUPP:
-            return "Register not supported";
-        case ME_REG_ACCESS_CLASS_NOT_SUPP:
-            return "Class not supported";
-        case ME_REG_ACCESS_METHOD_NOT_SUPP:
-            return "Method not supported";
-        case ME_REG_ACCESS_BAD_PARAM:
-            return "Bad parameter";
-        case ME_REG_ACCESS_RES_NOT_AVLBL:
-            return "Resource unavailable";
-        case ME_REG_ACCESS_MSG_RECPT_ACK:
-            return "Message receipt ack";
-        case ME_REG_ACCESS_UNKNOWN_ERR:
-            return "Unknown register error";
-        case ME_REG_ACCESS_SIZE_EXCCEEDS_LIMIT:
-            return "Register is too large";
-        case ME_REG_ACCESS_CONF_CORRUPT:
-            return "Config Section Corrupted";
-        case ME_REG_ACCESS_LEN_TOO_SMALL:
-            return "The given Register length is too small for the Tlv";
-        case ME_REG_ACCESS_BAD_CONFIG:
-            return "The configuration is rejected";
-        case ME_REG_ACCESS_ERASE_EXEEDED:
-            return   "The erase count exceeds its limit";
-        case ME_REG_ACCESS_INTERNAL_ERROR:
-            return "Firmware internal error";
+    case ME_BAD_PARAMS:
+        return "ME_BAD_PARAMS";
 
-            // ICMD access errors
-        case ME_ICMD_STATUS_CR_FAIL:
-            return "ME_ICMD_STATUS_CR_FAIL";
-        case ME_ICMD_STATUS_SEMAPHORE_TO:
-            return "ME_ICMD_STATUS_SEMAPHORE_TO";
-        case ME_ICMD_STATUS_EXECUTE_TO:
-            return "ME_ICMD_STATUS_EXECUTE_TO";
-        case ME_ICMD_STATUS_IFC_BUSY:
-            return "ME_ICMD_STATUS_IFC_BUSY";
-        case ME_ICMD_STATUS_ICMD_NOT_READY:
-            return "ME_ICMD_STATUS_ICMD_NOT_READY";
-        case ME_ICMD_UNSUPPORTED_ICMD_VERSION:
-            return "ME_ICMD_UNSUPPORTED_ICMD_VERSION";
-        case ME_ICMD_NOT_SUPPORTED:
-            return "ME_REG_ACCESS_ICMD_NOT_SUPPORTED";
-        case ME_ICMD_INVALID_OPCODE:
-            return "ME_ICMD_INVALID_OPCODE";
-        case ME_ICMD_INVALID_CMD:
-            return "ME_ICMD_INVALID_CMD";
-        case ME_ICMD_OPERATIONAL_ERROR:
-            return "ME_ICMD_OPERATIONAL_ERROR";
-        case ME_ICMD_BAD_PARAM:
-            return "ME_ICMD_BAD_PARAM";
-        case ME_ICMD_BUSY:
-            return "ME_ICMD_BUSY";
-        case ME_ICMD_ICM_NOT_AVAIL:
-            return "ME_ICMD_ICM_NOT_AVAIL";
-        case ME_ICMD_WRITE_PROTECT:
-            return "ME_ICMD_WRITE_PROTECT";
-        case ME_ICMD_UNKNOWN_STATUS:
-            return "ME_ICMD_UNKNOWN_STATUS";
-        case ME_ICMD_SIZE_EXCEEDS_LIMIT:
-            return "ME_ICMD_SIZE_EXCEEDS_LIMIT";
+    case ME_CR_ERROR:
+        return "ME_CR_ERROR";
 
-            // MAD IFC errors
-        case ME_MAD_BUSY:
-            return "Temporarily busy. MAD discarded. This is not an error";
-        case ME_MAD_REDIRECT:
-            return "Redirection. This is not an error";
-        case ME_MAD_BAD_VER:
-            return "Bad version";
-        case ME_MAD_METHOD_NOT_SUPP:
-            return "Method not supported";
-        case ME_MAD_METHOD_ATTR_COMB_NOT_SUPP:
-            return "Method and attribute combination isn't supported";
-        case ME_MAD_BAD_DATA:
-            return "Bad attribute modifer or field";
-        case ME_MAD_GENERAL_ERR:
-            return "Unknown MAD error";
+    case ME_NOT_IMPLEMENTED:
+        return "ME_NOT_IMPLEMENTED";
 
-        default:
-            return "Unknown error code";
+    case ME_SEM_LOCKED:
+        return "Semaphore locked";
+
+    case ME_MEM_ERROR:
+        return "ME_MEM_ERROR";
+
+    case ME_UNSUPPORTED_OPERATION:
+        return "ME_UNSUPPORTED_OPERATION";
+
+    case ME_MAD_SEND_FAILED:
+        return "ME_MAD_SEND_FAILED";
+
+    case ME_UNKOWN_ACCESS_TYPE:
+        return "ME_UNKOWN_ACCESS_TYPE";
+
+    case ME_UNSUPPORTED_ACCESS_TYPE:
+        return "ME_UNSUPPORTED_ACCESS_TYPE";
+
+    case ME_UNSUPPORTED_DEVICE:
+        return "ME_UNSUPPORTED_DEVICE";
+
+    // Reg access errors
+    case ME_REG_ACCESS_BAD_STATUS_ERR:
+        return "ME_REG_ACCESS_BAD_STATUS_ERR";
+
+    case ME_REG_ACCESS_BAD_METHOD:
+        return "Bad method";
+
+    case ME_REG_ACCESS_NOT_SUPPORTED:
+        return "The Register access is not supported by the device";
+
+    case ME_REG_ACCESS_DEV_BUSY:
+        return "Device is busy";
+
+    case ME_REG_ACCESS_VER_NOT_SUPP:
+        return "Version not supported";
+
+    case ME_REG_ACCESS_UNKNOWN_TLV:
+        return "Unknown TLV";
+
+    case ME_REG_ACCESS_REG_NOT_SUPP:
+        return "Register not supported";
+
+    case ME_REG_ACCESS_CLASS_NOT_SUPP:
+        return "Class not supported";
+
+    case ME_REG_ACCESS_METHOD_NOT_SUPP:
+        return "Method not supported";
+
+    case ME_REG_ACCESS_BAD_PARAM:
+        return "Bad parameter";
+
+    case ME_REG_ACCESS_RES_NOT_AVLBL:
+        return "Resource unavailable";
+
+    case ME_REG_ACCESS_MSG_RECPT_ACK:
+        return "Message receipt ack";
+
+    case ME_REG_ACCESS_UNKNOWN_ERR:
+        return "Unknown register error";
+
+    case ME_REG_ACCESS_SIZE_EXCCEEDS_LIMIT:
+        return "Register is too large";
+
+    case ME_REG_ACCESS_CONF_CORRUPT:
+        return "Config Section Corrupted";
+
+    case ME_REG_ACCESS_LEN_TOO_SMALL:
+        return "The given Register length is too small for the Tlv";
+
+    case ME_REG_ACCESS_BAD_CONFIG:
+        return "The configuration is rejected";
+
+    case ME_REG_ACCESS_ERASE_EXEEDED:
+        return "The erase count exceeds its limit";
+
+    case ME_REG_ACCESS_INTERNAL_ERROR:
+        return "Firmware internal error";
+
+    // ICMD access errors
+    case ME_ICMD_STATUS_CR_FAIL:
+        return "ME_ICMD_STATUS_CR_FAIL";
+
+    case ME_ICMD_STATUS_SEMAPHORE_TO:
+        return "ME_ICMD_STATUS_SEMAPHORE_TO";
+
+    case ME_ICMD_STATUS_EXECUTE_TO:
+        return "ME_ICMD_STATUS_EXECUTE_TO";
+
+    case ME_ICMD_STATUS_IFC_BUSY:
+        return "ME_ICMD_STATUS_IFC_BUSY";
+
+    case ME_ICMD_STATUS_ICMD_NOT_READY:
+        return "ME_ICMD_STATUS_ICMD_NOT_READY";
+
+    case ME_ICMD_UNSUPPORTED_ICMD_VERSION:
+        return "ME_ICMD_UNSUPPORTED_ICMD_VERSION";
+
+    case ME_ICMD_NOT_SUPPORTED:
+        return "ME_REG_ACCESS_ICMD_NOT_SUPPORTED";
+
+    case ME_ICMD_INVALID_OPCODE:
+        return "ME_ICMD_INVALID_OPCODE";
+
+    case ME_ICMD_INVALID_CMD:
+        return "ME_ICMD_INVALID_CMD";
+
+    case ME_ICMD_OPERATIONAL_ERROR:
+        return "ME_ICMD_OPERATIONAL_ERROR";
+
+    case ME_ICMD_BAD_PARAM:
+        return "ME_ICMD_BAD_PARAM";
+
+    case ME_ICMD_BUSY:
+        return "ME_ICMD_BUSY";
+
+    case ME_ICMD_ICM_NOT_AVAIL:
+        return "ME_ICMD_ICM_NOT_AVAIL";
+
+    case ME_ICMD_WRITE_PROTECT:
+        return "ME_ICMD_WRITE_PROTECT";
+
+    case ME_ICMD_UNKNOWN_STATUS:
+        return "ME_ICMD_UNKNOWN_STATUS";
+
+    case ME_ICMD_SIZE_EXCEEDS_LIMIT:
+        return "ME_ICMD_SIZE_EXCEEDS_LIMIT";
+
+    // MAD IFC errors
+    case ME_MAD_BUSY:
+        return "Temporarily busy. MAD discarded. This is not an error";
+
+    case ME_MAD_REDIRECT:
+        return "Redirection. This is not an error";
+
+    case ME_MAD_BAD_VER:
+        return "Bad version";
+
+    case ME_MAD_METHOD_NOT_SUPP:
+        return "Method not supported";
+
+    case ME_MAD_METHOD_ATTR_COMB_NOT_SUPP:
+        return "Method and attribute combination isn't supported";
+
+    case ME_MAD_BAD_DATA:
+        return "Bad attribute modifer or field";
+
+    case ME_MAD_GENERAL_ERR:
+        return "Unknown MAD error";
+
+    default:
+        return "Unknown error code";
     }
 }
 
-void mpci_change(mfile* mf)
+void mpci_change(mfile *mf)
 {
     (void) mf;
 }
 
-int mib_smp_get(mfile* mf, u_int8_t* data, u_int16_t attr_id,
-        u_int32_t attr_mod)
+int mib_smp_get(mfile *mf, u_int8_t *data, u_int16_t attr_id,
+                u_int32_t attr_mod)
 {
     (void)mf;
     (void)data;
@@ -1755,8 +1842,8 @@ int mib_smp_get(mfile* mf, u_int8_t* data, u_int16_t attr_id,
     return -1;
 }
 
-int mib_smp_set(mfile* mf, u_int8_t* data, u_int16_t attr_id,
-        u_int32_t attr_mod)
+int mib_smp_set(mfile *mf, u_int8_t *data, u_int16_t attr_id,
+                u_int32_t attr_mod)
 {
     (void)mf;
     (void)data;
@@ -1767,7 +1854,7 @@ int mib_smp_set(mfile* mf, u_int8_t* data, u_int16_t attr_id,
     return -1;
 }
 
-int mset_cr_access(mfile* mf, int access)
+int mset_cr_access(mfile *mf, int access)
 {
     (void)mf;
     (void)access;
@@ -1776,33 +1863,34 @@ int mset_cr_access(mfile* mf, int access)
     return -1;
 }
 
-int mget_vsec_supp(mfile* mf)
+int mget_vsec_supp(mfile *mf)
 {
     return mf->vsec_supp;
 }
 
-int mget_addr_space(mfile* mf)
+int mget_addr_space(mfile *mf)
 {
     return mf->address_space;
 }
-int mset_addr_space(mfile* mf, int space)
+int mset_addr_space(mfile *mf, int space)
 {
     switch (space) {
-        case AS_CR_SPACE:
-        case AS_ICMD:
-        case AS_SEMAPHORE:
-            break;
-        default:
-            return -1;
+    case AS_CR_SPACE:
+    case AS_ICMD:
+    case AS_SEMAPHORE:
+        break;
+
+    default:
+        return -1;
     }
     mf->address_space = space;
     return 0;
 }
 
-int device_exists(const char* devname)
+int device_exists(const char *devname)
 {
-    char* devs = NULL;
-    char* pdevs;
+    char *devs = NULL;
+    char *pdevs;
     int size = 512;
     int rc = 0;
     int i = 0;
@@ -1827,7 +1915,7 @@ int device_exists(const char* devname)
             goto cleanup;
         }
         pdevs += strlen(pdevs) + 1;
-        i ++;
+        i++;
     }
 cleanup:
     if (devs) {
@@ -1836,9 +1924,9 @@ cleanup:
     return res;
 }
 
-int mclear_pci_semaphore(const char* name)
+int mclear_pci_semaphore(const char *name)
 {
-    mfile* mf;
+    mfile *mf;
     int rc = ME_OK;
     mf = mopen_int(name, Clear_Vsec_Semaphore);
     if (!mf) {
@@ -1859,7 +1947,7 @@ int mvpd_read4_int(mfile *mf, unsigned int offset, u_int8_t value[4])
     int res;
     int count_to_timeout;
     int done = 0;
-	
+
     if (!mf || !value) {
         return ME_BAD_PARAMS;
     }
@@ -1887,7 +1975,7 @@ int mvpd_read4_int(mfile *mf, unsigned int offset, u_int8_t value[4])
         sched_yield();
     }
     if (done) {
-        return read_config(mf->fd, &mf->sel, vpd_cap + PCI_VPD_DATA, (uint32_t *)value, 4);
+        return read_config(mf->fd, &mf->sel, vpd_cap + PCI_VPD_DATA, (uint32_t*)value, 4);
     } else {
         return ME_TIMEOUT;
     }

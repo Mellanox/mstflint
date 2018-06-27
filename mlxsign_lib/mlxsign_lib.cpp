@@ -39,9 +39,9 @@
 
 #include "mlxsign_lib.h"
 
-#define CHECK_RC(rc, expRc, errCode) do {\
-    if ((rc) != (expRc)) return (errCode);\
-}while (0)
+#define CHECK_RC(rc, expRc, errCode) do { \
+        if ((rc) != (expRc)) { return (errCode);} \
+} while (0)
 
 
 MlxSignSHA::MlxSignSHA(u_int32_t digestLength)
@@ -53,7 +53,7 @@ int MlxSignSHA::getDigest(std::string& digest)
 {
     int rc;
     std::vector<u_int8_t> digestVec;
-    char* digestStr = new char[_digestLength*2 + 1];
+    char *digestStr = new char[_digestLength * 2 + 1];
 
     rc = getDigest(digestVec);
     if (rc != MLX_SIGN_SUCCESS) {
@@ -61,8 +61,8 @@ int MlxSignSHA::getDigest(std::string& digest)
         return rc;
     }
     // transform to string
-    for (int i=0; i < digestVec.size(); i++) {
-        snprintf(digestStr + i*2, 3, "%02x", digestVec[i]);
+    for (int i = 0; i < digestVec.size(); i++) {
+        snprintf(digestStr + i * 2, 3, "%02x", digestVec[i]);
     }
     digest = digestStr;
     delete[] digestStr;
@@ -89,7 +89,7 @@ MlxSignSHA& operator<<(MlxSignSHA& lhs, const std::vector<u_int8_t>& buff)
 }
 
 /*
- *MlxSignSHA256
+ * MlxSignSHA256
  *
  */
 
@@ -99,14 +99,14 @@ MlxSignSHA256::MlxSignSHA256() : MlxSignSHA(SHA256_DIGEST_LENGTH)
 
 int MlxSignSHA256::getDigest(std::vector<u_int8_t>& digest)
 {
-     int rc;
-     SHA256_CTX ctx;
+    int rc;
+    SHA256_CTX ctx;
     digest.resize(_digestLength);
     memset(&digest[0], 0, digest.size());
-     rc = SHA256_Init( &ctx); CHECK_RC(rc, 1, MLX_SIGN_SHA_INIT_ERROR);
-     rc = SHA256_Update(&ctx, (void*)(&_buff[0]), _buff.size()); CHECK_RC(rc, 1, MLX_SIGN_SHA_CALCULATION_ERROR);
-     rc = SHA256_Final(&digest[0], &ctx); CHECK_RC(rc, 1,MLX_SIGN_SHA_CALCULATION_ERROR);
-     return MLX_SIGN_SUCCESS;
+    rc = SHA256_Init( &ctx); CHECK_RC(rc, 1, MLX_SIGN_SHA_INIT_ERROR);
+    rc = SHA256_Update(&ctx, (void*)(&_buff[0]), _buff.size()); CHECK_RC(rc, 1, MLX_SIGN_SHA_CALCULATION_ERROR);
+    rc = SHA256_Final(&digest[0], &ctx); CHECK_RC(rc, 1, MLX_SIGN_SHA_CALCULATION_ERROR);
+    return MLX_SIGN_SUCCESS;
 }
 
 /*
@@ -125,7 +125,7 @@ int MlxSignSHA512::getDigest(std::vector<u_int8_t>& digest)
     memset(&digest[0], 0, digest.size());
     rc = SHA512_Init( &ctx); CHECK_RC(rc, 1, MLX_SIGN_SHA_INIT_ERROR);
     rc = SHA512_Update(&ctx, (void*)(&_buff[0]), _buff.size()); CHECK_RC(rc, 1, MLX_SIGN_SHA_CALCULATION_ERROR);
-    rc = SHA512_Final(&digest[0], &ctx); CHECK_RC(rc, 1,MLX_SIGN_SHA_CALCULATION_ERROR);
+    rc = SHA512_Final(&digest[0], &ctx); CHECK_RC(rc, 1, MLX_SIGN_SHA_CALCULATION_ERROR);
     return MLX_SIGN_SUCCESS;
 }
 
@@ -286,23 +286,23 @@ int MlxSignRSA::getDecryptMaxMsgSize()
 
 std::string MlxSignRSA::str(const std::vector<u_int8_t>& msg)
 {
-    char* digestStr = NULL;
+    char *digestStr = NULL;
     try {
-        digestStr = new char[msg.size()*2 + 1];
-        memset(digestStr, 0 , sizeof(char) * (msg.size()*2 + 1));
+        digestStr = new char[msg.size() * 2 + 1];
+        memset(digestStr, 0, sizeof(char) * (msg.size() * 2 + 1));
     }catch (...) {
         return "";
     }
 
-    for (int i=0; i < msg.size(); i++) {
-        snprintf(digestStr + i*2, 3, "%02x", msg[i]);
+    for (int i = 0; i < msg.size(); i++) {
+        snprintf(digestStr + i * 2, 3, "%02x", msg[i]);
     }
     std::string result = digestStr;
     delete[] digestStr;
     return result;
 }
 
-#define REPLACE_RSA_CTX(ctx, newCtx)\
+#define REPLACE_RSA_CTX(ctx, newCtx) \
     do {                                                            \
         if ((newCtx)) {                                         \
             if ((ctx)) {                                            \
@@ -310,12 +310,12 @@ std::string MlxSignRSA::str(const std::vector<u_int8_t>& msg)
             }                                                           \
             (ctx) = (void*)(newCtx);                        \
         }                                                               \
-    } while(0)
+    } while (0)
 
 int MlxSignRSA::createRSAFromPEMFileName(const std::string& fname, bool isPrivateKey)
 {
-    FILE* fp = fopen(fname.c_str(), "rb");
-    RSA* rsa = NULL;
+    FILE *fp = fopen(fname.c_str(), "rb");
+    RSA *rsa = NULL;
     if (!fp) {
         return MLX_SIGN_RSA_FILE_OPEN_ERROR;
     }
@@ -329,7 +329,7 @@ int MlxSignRSA::createRSAFromPEMFileName(const std::string& fname, bool isPrivat
     }
 
     fclose(fp);
-    if(rsa == NULL) {
+    if (rsa == NULL) {
         return MLX_SIGN_RSA_INIT_CTX_ERROR;
     }
     return MLX_SIGN_SUCCESS;
@@ -337,22 +337,22 @@ int MlxSignRSA::createRSAFromPEMFileName(const std::string& fname, bool isPrivat
 
 int MlxSignRSA::createRSAFromPEMKeyString(const std::string& pemKey,  bool isPrivateKey)
 {
-    RSA *rsa= NULL;
-    BIO *keybio ;
+    RSA *rsa = NULL;
+    BIO *keybio;
     // TODO: check if this may leak
     keybio = BIO_new_mem_buf((void*)pemKey.c_str(), -1);
-    if (keybio==NULL) {
+    if (keybio == NULL) {
         return MLX_SIGN_RSA_KEY_BIO_ERROR;
     }
-    if(isPrivateKey) {
-        rsa = PEM_read_bio_RSAPrivateKey(keybio, &rsa,NULL, NULL);
+    if (isPrivateKey) {
+        rsa = PEM_read_bio_RSAPrivateKey(keybio, &rsa, NULL, NULL);
         REPLACE_RSA_CTX(_privCtx, rsa);
     } else {
-        rsa = PEM_read_bio_RSA_PUBKEY(keybio, &rsa,NULL, NULL);
+        rsa = PEM_read_bio_RSA_PUBKEY(keybio, &rsa, NULL, NULL);
         REPLACE_RSA_CTX(_pubCtx, rsa);
     }
     BIO_free_all(keybio);
-    if(rsa == NULL) {
+    if (rsa == NULL) {
         return MLX_SIGN_RSA_INIT_CTX_ERROR;
     }
     return MLX_SIGN_SUCCESS;
@@ -366,7 +366,7 @@ MlxSignHMAC::MlxSignHMAC()
 
 int MlxSignHMAC::setKey(const std::string& key)
 {
-    if (HMAC_Init_ex((HMAC_CTX*)ctx , key.c_str(), key.length(), EVP_sha512(), NULL) == 0) {
+    if (HMAC_Init_ex((HMAC_CTX*)ctx, key.c_str(), key.length(), EVP_sha512(), NULL) == 0) {
         return MLX_SIGN_HMAC_ERROR;
     }
 
@@ -374,13 +374,13 @@ int MlxSignHMAC::setKey(const std::string& key)
 }
 
 /*int MlxSignHMAC::update(const std::vector<u_int8_t>& buff)
-{
+   {
     if (HMAC_Update(&ctx, (unsigned char*)buff.data(), buff.size()) == 0) {
         return MLX_SIGN_HMAC_ERROR;
     }
 
     return MLX_SIGN_SUCCESS;
-}*/
+   }*/
 
 MlxSignHMAC& operator<<(MlxSignHMAC& lhs, const std::vector<u_int8_t>& buff)
 {
@@ -407,8 +407,8 @@ int MlxSignHMAC::getDigest(std::vector<u_int8_t>& digest)
 
     /*for (int i = 0; i != len; i++)
             printf("%02x", (unsigned int)digest[i]);
-    printf("\n");
-      */
+       printf("\n");
+     */
 
     return MLX_SIGN_SUCCESS;
 }

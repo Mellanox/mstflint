@@ -34,7 +34,8 @@
 
 #include "menu.h"
 
-BaseMenu::BaseMenu() {
+BaseMenu::BaseMenu()
+{
     _isPrev = false;
     _valid  = false;
     _all       = 0;
@@ -43,18 +44,22 @@ BaseMenu::BaseMenu() {
     _maxChoice = 0;
 }
 
-BaseMenu::~BaseMenu() {
+BaseMenu::~BaseMenu()
+{
 
 }
 
-FileTypeMenu::FileTypeMenu()  : BaseMenu() {
+FileTypeMenu::FileTypeMenu()  : BaseMenu()
+{
 
 }
 
-FileTypeMenu::~FileTypeMenu() {
+FileTypeMenu::~FileTypeMenu()
+{
 
 }
-BaseMenu * FileTypeMenu::getNextMenu(CmdLineParams &cmd_params, filesOPtions &filterOPtions) {
+BaseMenu* FileTypeMenu::getNextMenu(CmdLineParams &cmd_params, filesOPtions &filterOPtions)
+{
     BaseMenu *newMenu = NULL;
 
     if (!cmd_params.download_dev.length()) {
@@ -76,25 +81,29 @@ BaseMenu * FileTypeMenu::getNextMenu(CmdLineParams &cmd_params, filesOPtions &fi
 
 }
 
-BaseMenu * FileTypeMenu::getPrevMenu(CmdLineParams &cmd_params, filesOPtions &filterOPtions) {
+BaseMenu* FileTypeMenu::getPrevMenu(CmdLineParams &cmd_params, filesOPtions &filterOPtions)
+{
     (void) cmd_params;
     (void) filterOPtions;
     BaseMenu *newMenu = NULL;
     return newMenu;
 }
 
-bool FileTypeMenu::isPrevious(CmdLineParams &cmd_params, filesOPtions &filterOPtions) {
+bool FileTypeMenu::isPrevious(CmdLineParams &cmd_params, filesOPtions &filterOPtions)
+{
     (void) cmd_params;
     (void) filterOPtions;
     return _isPrev;
 }
 
-bool FileTypeMenu::isValid(CmdLineParams &cmd_params, filesOPtions &filterOPtions) {
+bool FileTypeMenu::isValid(CmdLineParams &cmd_params, filesOPtions &filterOPtions)
+{
     (void) filterOPtions;
     return !cmd_params.download_type.length();
 }
 
-void  FileTypeMenu::setValuesDirectly(CmdLineParams &cmd_params, filesOPtions &filterOPtions) {
+void FileTypeMenu::setValuesDirectly(CmdLineParams &cmd_params, filesOPtions &filterOPtions)
+{
     if (cmd_params.download_type == "") {
         filterOPtions.file_type = "";
     } else {
@@ -102,7 +111,8 @@ void  FileTypeMenu::setValuesDirectly(CmdLineParams &cmd_params, filesOPtions &f
     }
 }
 
-void FileTypeMenu::generateMenu(CmdLineParams &cmd_params, filesOPtions &filterOPtions) {
+void FileTypeMenu::generateMenu(CmdLineParams &cmd_params, filesOPtions &filterOPtions)
+{
     _menuText = "";
     if (isValid(cmd_params, filterOPtions)) {
         _menuText = "------ Download Type Selection ------\n";
@@ -118,7 +128,8 @@ void FileTypeMenu::generateMenu(CmdLineParams &cmd_params, filesOPtions &filterO
     }
 }
 
-bool FileTypeMenu::parseChoice(int choice, bool &isExit, bool &isPrev, filesOPtions &filterOPtions) {
+bool FileTypeMenu::parseChoice(int choice, bool &isExit, bool &isPrev, filesOPtions &filterOPtions)
+{
     isPrev = false;
     isExit = false;
     if (choice > _maxChoice or choice <= 0) {
@@ -127,22 +138,26 @@ bool FileTypeMenu::parseChoice(int choice, bool &isExit, bool &isPrev, filesOPti
     }
 
     switch (choice) {
-        case 4:
-            isExit = true;
-            break;
-        case 3:
-            filterOPtions.file_type = "all";
-            break;
-        case 2:
-            filterOPtions.file_type = "self_extractor";
-            break;
-        default:
-            filterOPtions.file_type = "mfa";
+    case 4:
+        isExit = true;
+        break;
+
+    case 3:
+        filterOPtions.file_type = "all";
+        break;
+
+    case 2:
+        filterOPtions.file_type = "self_extractor";
+        break;
+
+    default:
+        filterOPtions.file_type = "mfa";
     }
     return true;
 }
 
-BaseMenu * DevFamilyMenu::getNextMenu(CmdLineParams &cmd_params, filesOPtions &filterOPtions) {
+BaseMenu* DevFamilyMenu::getNextMenu(CmdLineParams &cmd_params, filesOPtions &filterOPtions)
+{
     BaseMenu *newMenu = NULL;
 
     if (filterOPtions.file_type != "mfa" and !cmd_params.download_os.length()) {
@@ -157,15 +172,18 @@ BaseMenu * DevFamilyMenu::getNextMenu(CmdLineParams &cmd_params, filesOPtions &f
 
 }
 
-DevFamilyMenu::DevFamilyMenu()  : BaseMenu() {
+DevFamilyMenu::DevFamilyMenu()  : BaseMenu()
+{
 
 }
 
-DevFamilyMenu::~DevFamilyMenu() {
+DevFamilyMenu::~DevFamilyMenu()
+{
 
 }
 
-BaseMenu * DevFamilyMenu::getPrevMenu(CmdLineParams &cmd_params, filesOPtions &filterOPtions) {
+BaseMenu* DevFamilyMenu::getPrevMenu(CmdLineParams &cmd_params, filesOPtions &filterOPtions)
+{
     (void) filterOPtions;
     BaseMenu *newMenu = NULL;
     if (!cmd_params.download_type.length()) {
@@ -174,20 +192,21 @@ BaseMenu * DevFamilyMenu::getPrevMenu(CmdLineParams &cmd_params, filesOPtions &f
     return newMenu;
 }
 
-bool DevFamilyMenu::isPrevious(CmdLineParams &cmd_params, filesOPtions &filterOPtions) {
+bool DevFamilyMenu::isPrevious(CmdLineParams &cmd_params, filesOPtions &filterOPtions)
+{
     (void) filterOPtions;
     _isPrev = !cmd_params.download_type.length();
     return _isPrev;
 }
 
-bool DevFamilyMenu::isValid(CmdLineParams &cmd_params, filesOPtions &filterOPtions) {
+bool DevFamilyMenu::isValid(CmdLineParams &cmd_params, filesOPtions &filterOPtions)
+{
     unsigned int i = 0;
     vector <string> _availableFamilies;
     if (!cmd_params.download_dev.length()) {
-        for (i = 0; i< filterOPtions.files.size(); i++) {
+        for (i = 0; i < filterOPtions.files.size(); i++) {
             if (std::find(_availableFamilies.begin(), availableFamilies.end(), filterOPtions.files[i].family) == _availableFamilies.end() and
-                (filterOPtions.file_type == "all" or filterOPtions.file_type == filterOPtions.files[i].file_type))
-            {
+                (filterOPtions.file_type == "all" or filterOPtions.file_type == filterOPtions.files[i].file_type)) {
                 _availableFamilies.push_back(filterOPtions.files[i].family);
             }
         }
@@ -202,7 +221,8 @@ bool DevFamilyMenu::isValid(CmdLineParams &cmd_params, filesOPtions &filterOPtio
     }
 }
 
-void  DevFamilyMenu::setValuesDirectly(CmdLineParams &cmd_params, filesOPtions &filterOPtions) {
+void DevFamilyMenu::setValuesDirectly(CmdLineParams &cmd_params, filesOPtions &filterOPtions)
+{
     if (cmd_params.download_dev == "") {
         filterOPtions.family = "all";
     } else {
@@ -210,21 +230,22 @@ void  DevFamilyMenu::setValuesDirectly(CmdLineParams &cmd_params, filesOPtions &
     }
 }
 
-string DevFamilyMenu::beautify(string family) {
+string DevFamilyMenu::beautify(string family)
+{
     return beautify_device_name(family);
 }
 
-void DevFamilyMenu::generateMenu(CmdLineParams &cmd_params, filesOPtions &filterOPtions) {
+void DevFamilyMenu::generateMenu(CmdLineParams &cmd_params, filesOPtions &filterOPtions)
+{
     _menuText = "";
     if (isValid(cmd_params, filterOPtions)) {
 
         _menuText = "------ Device Family Selection ------\n";
         unsigned int i = 0;
 
-        for (i = 0; i< filterOPtions.files.size(); i++) {
+        for (i = 0; i < filterOPtions.files.size(); i++) {
             if (std::find(availableFamilies.begin(), availableFamilies.end(), filterOPtions.files[i].family) == availableFamilies.end() and
-                (filterOPtions.file_type == "all" or filterOPtions.file_type == filterOPtions.files[i].file_type))
-            {
+                (filterOPtions.file_type == "all" or filterOPtions.file_type == filterOPtions.files[i].file_type)) {
                 availableFamilies.push_back(filterOPtions.files[i].family);
             }
         }
@@ -252,7 +273,8 @@ void DevFamilyMenu::generateMenu(CmdLineParams &cmd_params, filesOPtions &filter
     }
 }
 
-bool DevFamilyMenu::parseChoice(int choice, bool &isExit, bool &isPrev, filesOPtions &filterOPtions) {
+bool DevFamilyMenu::parseChoice(int choice, bool &isExit, bool &isPrev, filesOPtions &filterOPtions)
+{
 
     isPrev = false;
     isExit = false;
@@ -265,19 +287,20 @@ bool DevFamilyMenu::parseChoice(int choice, bool &isExit, bool &isPrev, filesOPt
         isPrev = true;
         return true;
     } else if (choice == _exit) {
-       isExit = true;
-       return true;
+        isExit = true;
+        return true;
     } else if (choice == _all) {
         filterOPtions.family = "all";
         return true;
     } else {
-        filterOPtions.family = availableFamilies[choice -1];
+        filterOPtions.family = availableFamilies[choice - 1];
     }
     return true;
 }
 
 
-BaseMenu * OSMenu::getNextMenu(CmdLineParams &cmd_params, filesOPtions &filterOPtions) {
+BaseMenu* OSMenu::getNextMenu(CmdLineParams &cmd_params, filesOPtions &filterOPtions)
+{
     (void) filterOPtions;
     (void) cmd_params;
     //BaseMenu *newMenu =  new PickFilesMenu;
@@ -285,7 +308,8 @@ BaseMenu * OSMenu::getNextMenu(CmdLineParams &cmd_params, filesOPtions &filterOP
 
 }
 
-BaseMenu * OSMenu::getPrevMenu(CmdLineParams &cmd_params, filesOPtions &filterOPtions) {
+BaseMenu* OSMenu::getPrevMenu(CmdLineParams &cmd_params, filesOPtions &filterOPtions)
+{
     (void) filterOPtions;
     BaseMenu *newMenu = NULL;
     if (!cmd_params.download_dev.length()) {
@@ -296,18 +320,21 @@ BaseMenu * OSMenu::getPrevMenu(CmdLineParams &cmd_params, filesOPtions &filterOP
     return newMenu;
 }
 
-bool OSMenu::isPrevious(CmdLineParams &cmd_params, filesOPtions &filterOPtions) {
+bool OSMenu::isPrevious(CmdLineParams &cmd_params, filesOPtions &filterOPtions)
+{
     (void) filterOPtions;
     _isPrev = (!cmd_params.download_type.length() or !cmd_params.download_dev.length());
     return _isPrev;
 }
 
-bool OSMenu::isValid(CmdLineParams &cmd_params, filesOPtions &filterOPtions) {
+bool OSMenu::isValid(CmdLineParams &cmd_params, filesOPtions &filterOPtions)
+{
     (void) filterOPtions;
     return !cmd_params.download_os.length();
 }
 
-void  OSMenu::setValuesDirectly(CmdLineParams &cmd_params, filesOPtions &filterOPtions) {
+void OSMenu::setValuesDirectly(CmdLineParams &cmd_params, filesOPtions &filterOPtions)
+{
     if (cmd_params.download_os == "") {
         filterOPtions.os = "all";
     } else {
@@ -315,11 +342,12 @@ void  OSMenu::setValuesDirectly(CmdLineParams &cmd_params, filesOPtions &filterO
     }
 
 }
-string OSMenu::beautify(string os) {
+string OSMenu::beautify(string os)
+{
     if (os == "linux_ppc64") {
         os = "Linux_PPC64";
     } else if (os == "linux_ppc64le") {
-        os = "Linux_PPC64le"; 
+        os = "Linux_PPC64le";
     } else if (os == "fbsd10_64") {
         os = "FBSD10_64";
     } else if (os == "fbsd10_32") {
@@ -332,17 +360,17 @@ string OSMenu::beautify(string os) {
     os[0] = toupper(os[0]);
     return os;
 }
-void OSMenu::generateMenu(CmdLineParams &cmd_params, filesOPtions &filterOPtions) {
+void OSMenu::generateMenu(CmdLineParams &cmd_params, filesOPtions &filterOPtions)
+{
     _menuText = "";
     if (isValid(cmd_params, filterOPtions)) {
         _menuText = "------ Operating System Selection ------\n";
         unsigned int i = 0;
-        for (i = 0; i< filterOPtions.files.size(); i++) {
+        for (i = 0; i < filterOPtions.files.size(); i++) {
             if (filterOPtions.files[i].os != "all" and
                 std::find(availableOs.begin(), availableOs.end(), filterOPtions.files[i].os) == availableOs.end() and
                 (filterOPtions.family == "all" or filterOPtions.family == filterOPtions.files[i].family) and
-                (filterOPtions.file_type == "all" or filterOPtions.file_type == filterOPtions.files[i].file_type))
-            {
+                (filterOPtions.file_type == "all" or filterOPtions.file_type == filterOPtions.files[i].file_type)) {
                 availableOs.push_back(filterOPtions.files[i].os);
             }
         }
@@ -371,15 +399,18 @@ void OSMenu::generateMenu(CmdLineParams &cmd_params, filesOPtions &filterOPtions
     }
 }
 
-OSMenu::OSMenu()  : BaseMenu() {
+OSMenu::OSMenu()  : BaseMenu()
+{
     ;;
 }
 
-OSMenu::~OSMenu(){
+OSMenu::~OSMenu()
+{
     ;;
 }
 
-bool OSMenu::parseChoice(int choice, bool &isExit, bool &isPrev, filesOPtions &filterOPtions) {
+bool OSMenu::parseChoice(int choice, bool &isExit, bool &isPrev, filesOPtions &filterOPtions)
+{
     isPrev = false;
     isExit = false;
     if (choice > _maxChoice or choice <= 0) {
@@ -397,7 +428,7 @@ bool OSMenu::parseChoice(int choice, bool &isExit, bool &isPrev, filesOPtions &f
         filterOPtions.os = "all";
         return true;
     } else {
-        filterOPtions.os = availableOs[choice -1];
+        filterOPtions.os = availableOs[choice - 1];
     }
     return true;
 }

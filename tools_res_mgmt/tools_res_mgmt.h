@@ -61,7 +61,7 @@ typedef enum {
     TRM_RES_ALL                  = 0xffff,
 } trm_resourse;
 
-typedef struct trm_t* trm_ctx;
+typedef struct trm_t*trm_ctx;
 
 
 /*
@@ -70,7 +70,7 @@ typedef struct trm_t* trm_ctx;
  * Parameter (mf)  - an opened mst device handler
  * Return TOOLS_STS_OK on success of creating the context, otherwise any other error code.
  */
-trm_sts trm_create(trm_ctx* trm_p, mfile* mf);
+trm_sts trm_create(trm_ctx *trm_p, mfile *mf);
 
 
 /*

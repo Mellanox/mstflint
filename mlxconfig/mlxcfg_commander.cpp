@@ -47,16 +47,17 @@
 using namespace std;
 
 
-Commander* Commander::create(std::string device, std::string dbName) {
-    mfile* mf;
+Commander* Commander::create(std::string device, std::string dbName)
+{
+    mfile *mf;
     mf = mopen(device.c_str());
     if (mf == NULL) {
         throw MlxcfgException("Failed to open the device");
     }
-    Commander* cmdr = NULL;
+    Commander *cmdr = NULL;
     try {
         cmdr = create(mf, device, dbName);
-    } catch(MlxcfgException& exp) {
+    } catch (MlxcfgException& exp) {
         mclose(mf);
         throw exp;
     }
@@ -64,39 +65,43 @@ Commander* Commander::create(std::string device, std::string dbName) {
     return cmdr;
 }
 
-Commander* Commander::create(mfile* mf, std::string device, std::string dbName) {
+Commander* Commander::create(mfile *mf, std::string device, std::string dbName)
+{
 
     bool isFifthGen, isSwitch = false;
     dm_dev_id_t deviceId = DeviceUnknown;
     u_int32_t hwDevId, hwRevId;
-    Commander* commander = NULL;
-    if( dm_get_device_id(mf, &deviceId, &hwDevId, &hwRevId) ) {
+    Commander *commander = NULL;
+    if (dm_get_device_id(mf, &deviceId, &hwDevId, &hwRevId) ) {
         throw MlxcfgException("Failed to identify the device");
     }
 
     // check if device is supported:
-    switch(deviceId) {
-        case DeviceConnectX3:
-        case DeviceConnectX3Pro:
-            isFifthGen = false;
-            break;
-        case DeviceConnectIB:
-        case DeviceConnectX4:
-        case DeviceConnectX4LX:
-        case DeviceConnectX5:
-        case DeviceBlueField:
-            isFifthGen = true;
-            break;
-        case DeviceSwitchIB:
-        case DeviceSpectrum:
-        case DeviceSwitchIB2:
-        case DeviceQuantum:
-        case DeviceSpectrum2:
-            isSwitch = true;
-            isFifthGen = true;
-            break;
-        default:
-            throw MlxcfgException("Unsupported device");
+    switch (deviceId) {
+    case DeviceConnectX3:
+    case DeviceConnectX3Pro:
+        isFifthGen = false;
+        break;
+
+    case DeviceConnectIB:
+    case DeviceConnectX4:
+    case DeviceConnectX4LX:
+    case DeviceConnectX5:
+    case DeviceBlueField:
+        isFifthGen = true;
+        break;
+
+    case DeviceSwitchIB:
+    case DeviceSpectrum:
+    case DeviceSwitchIB2:
+    case DeviceQuantum:
+    case DeviceSpectrum2:
+        isSwitch = true;
+        isFifthGen = true;
+        break;
+
+    default:
+        throw MlxcfgException("Unsupported device");
     }
 
     if (dm_is_livefish_mode(mf)) {
@@ -121,7 +126,8 @@ Commander::~Commander()
     }
 }
 
-string Commander::getDefaultDBName(bool isSwitch) {
+string Commander::getDefaultDBName(bool isSwitch)
+{
     const string dbDirName = "mlxconfig_dbs";
     const string hostDBName = "mlxconfig_host.db";
     const string switchDBName = "mlxconfig_switch.db";
@@ -138,7 +144,7 @@ string Commander::getDefaultDBName(bool isSwitch) {
 #else
     char line[1024] = {0};
     string confFile = string(ROOT_PATH) + string("etc/mft/mft.conf");
-    FILE* fd = fopen(confFile.c_str(), "r");
+    FILE *fd = fopen(confFile.c_str(), "r");
     if (!fd) {
         throw MlxcfgException("Failed to open conf file : %s\n", confFile.c_str());
     }
@@ -146,23 +152,23 @@ string Commander::getDefaultDBName(bool isSwitch) {
     while ((fgets(line, 1024, fd))) {
         string l = line;
         if (l.find(dbDirName) != string::npos) {
-           size_t eqPos = l.find("=");
-           if (eqPos != string::npos) {
-               dataPath = l.substr(eqPos + 1);
-               dataPath = mlxcfg_trim(dataPath);
-           }
-        } else if(l.find("mft_prefix_location") != string::npos) {
+            size_t eqPos = l.find("=");
+            if (eqPos != string::npos) {
+                dataPath = l.substr(eqPos + 1);
+                dataPath = mlxcfg_trim(dataPath);
+            }
+        } else if (l.find("mft_prefix_location") != string::npos) {
             size_t eqPos = l.find("=");
             if (eqPos != string::npos) {
                 prefix = l.substr(eqPos + 1);
                 prefix = mlxcfg_trim(prefix);
             }
         }
-     }
-     if (!prefix.empty() && !dataPath.empty()) {
-         dbPathName = prefix + dataPath + "/" + dbFileName;
-     }
-     fclose(fd);
+    }
+    if (!prefix.empty() && !dataPath.empty()) {
+        dbPathName = prefix + dataPath + "/" + dbFileName;
+    }
+    fclose(fd);
 #endif
     return dbPathName;
 }

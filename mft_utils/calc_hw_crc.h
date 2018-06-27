@@ -39,7 +39,7 @@
 extern "C" {
 #endif
 
-u_int16_t calc_hw_crc(u_int8_t* data, int size);
+u_int16_t calc_hw_crc(u_int8_t *data, int size);
 
 #ifdef __cplusplus
 }

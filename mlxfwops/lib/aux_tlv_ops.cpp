@@ -51,7 +51,7 @@ bool ImageTlvOps::test()
     printf("-I- ImageTlvOps Class test");
     u_int32_t data0[] = {0x12345678, 0xabcdef01, 0xab0dab10, 0xcafaba1a, 0x0cafee1e1, 0x12345678, 0x23456789, 0x3456789a};
     u_int32_t data1[] = {0x12345678, 0xabcdef01, 0xab0dab1, 0xcafaba1a, 0x0cafee1e1, 0x12345678, 0x23456789, 0x3456789a};
-    u_int8_t data2[] =  {1, 2, 3, 4, 5, 6 ,7 ,8, 9, 0xa};
+    u_int8_t data2[] =  {1, 2, 3, 4, 5, 6, 7, 8, 9, 0xa};
     // run init
     if (!init(true)) {
         printf("-E- failed on init");
@@ -83,9 +83,9 @@ bool ImageTlvOps::test()
     if (!updateFile()) {
         printf("-E- failed to update file\n");
     }
-    removeTlv(3,0);
-    removeTlv(0,0);
-    removeTlv(0,1);
+    removeTlv(3, 0);
+    removeTlv(0, 0);
+    removeTlv(0, 1);
 
     if (!updateFile()) {
         printf("-E- failed to update file\n");
@@ -95,20 +95,20 @@ bool ImageTlvOps::test()
     return true;
 }
 
-Tlv_Status_t ImageTlvOps::getFileSize(FILE* fd, long int& fileSize)
+Tlv_Status_t ImageTlvOps::getFileSize(FILE *fd, long int& fileSize)
 {
     // Get the file size:
-     if (fseek(fd, 0, SEEK_END) < 0) {
-         fclose(fd);
-         return (Tlv_Status_t)errmsgWCode(TS_FAILED_TO_OPEN_FILE, "Can not get file size for \"%s\"", _fname);
-     }
-     fileSize = ftell(fd);
-     if (fileSize < 0) {
-         fclose(fd);
-         return (Tlv_Status_t)errmsgWCode(TS_FAILED_TO_OPEN_FILE, "Can not get file size for \"%s\"", _fname);
-     }
-     rewind(fd);
-     return TS_OK;
+    if (fseek(fd, 0, SEEK_END) < 0) {
+        fclose(fd);
+        return (Tlv_Status_t)errmsgWCode(TS_FAILED_TO_OPEN_FILE, "Can not get file size for \"%s\"", _fname);
+    }
+    fileSize = ftell(fd);
+    if (fileSize < 0) {
+        fclose(fd);
+        return (Tlv_Status_t)errmsgWCode(TS_FAILED_TO_OPEN_FILE, "Can not get file size for \"%s\"", _fname);
+    }
+    rewind(fd);
+    return TS_OK;
 }
 
 Tlv_Status_t ImageTlvOps::init(u_int32_t startPos, bool force)
@@ -123,7 +123,7 @@ Tlv_Status_t ImageTlvOps::init(u_int32_t startPos, bool force)
 
     if (_fname) {
         _rawFileBuff.resize(0);
-        FILE* fd = fopen(_fname, "rb");
+        FILE *fd = fopen(_fname, "rb");
         if (!fd) {
             return (Tlv_Status_t)errmsgWCode(TS_FAILED_TO_OPEN_FILE, "Failed to open file of reading");
         }
@@ -137,10 +137,10 @@ Tlv_Status_t ImageTlvOps::init(u_int32_t startPos, bool force)
         if ((readCnt = fread(&_rawFileBuff[0], 1, fsize, fd)) != fsize) {
             fclose(fd);
             if (readCnt < 0) {
-                return (Tlv_Status_t)errmsgWCode(TS_FAILED_TO_READ_FILE, "Read error on file \"%s\"",_fname);
+                return (Tlv_Status_t)errmsgWCode(TS_FAILED_TO_READ_FILE, "Read error on file \"%s\"", _fname);
             } else {
                 return (Tlv_Status_t)errmsgWCode(TS_FAILED_TO_READ_FILE, "Read error on file \"%s\" - read only %ld bytes (from %ld)",
-                              _fname, readCnt, (unsigned long)fsize);
+                                                 _fname, readCnt, (unsigned long)fsize);
             }
         }
         fclose(fd);
@@ -150,7 +150,7 @@ Tlv_Status_t ImageTlvOps::init(u_int32_t startPos, bool force)
         if ((i + 16) > fsize) {
             break; // reached EOF
         }
-        std::vector<u_int8_t> possibleSig(_rawFileBuff.begin() + i , _rawFileBuff.begin() + i + 16);
+        std::vector<u_int8_t> possibleSig(_rawFileBuff.begin() + i, _rawFileBuff.begin() + i + 16);
         TOCPUn(&possibleSig[0], 4);
         if (checkSig(possibleSig)) {
             _tlvSectionFound = true;
@@ -187,7 +187,7 @@ void ImageTlvOps::addTLV(aux_tlv& tlv)
 
 Tlv_Status_t ImageTlvOps::removeTlv(u_int16_t tlvType, u_int8_t headerType)
 {
-    for(std::vector<aux_tlv>::iterator it = _tlvVec.begin(); it != _tlvVec.end(); it++) {
+    for (std::vector<aux_tlv>::iterator it = _tlvVec.begin(); it != _tlvVec.end(); it++) {
         if (it->hdr.header_type == headerType && it->hdr.type == tlvType) {
             _tlvVec.erase(it);
             return TS_OK;
@@ -198,7 +198,7 @@ Tlv_Status_t ImageTlvOps::removeTlv(u_int16_t tlvType, u_int8_t headerType)
 
 Tlv_Status_t ImageTlvOps::queryTlv(u_int16_t tlvType, u_int8_t headerType, aux_tlv& tlv)
 {
-    for(std::vector<aux_tlv>::iterator it = _tlvVec.begin(); it != _tlvVec.end(); it++) {
+    for (std::vector<aux_tlv>::iterator it = _tlvVec.begin(); it != _tlvVec.end(); it++) {
         if (it->hdr.header_type == headerType && it->hdr.type == tlvType) {
             tlv = *it;
             return TS_OK;
@@ -214,11 +214,11 @@ std::vector<aux_tlv> ImageTlvOps::queryTlvs()
 
 bool ImageTlvOps::checkSig(std::vector<u_int8_t>& signature)
 {
-    u_int32_t * sigPtr = (u_int32_t*)&signature[0];
-    return  *(sigPtr + 3)  == SIG3 && \
-            *(sigPtr + 2) == SIG2 && \
-            *(sigPtr + 1) == SIG1 && \
-            *(sigPtr) == SIG0;
+    u_int32_t *sigPtr = (u_int32_t*)&signature[0];
+    return *(sigPtr + 3)  == SIG3 && \
+           *(sigPtr + 2) == SIG2 && \
+           *(sigPtr + 1) == SIG1 && \
+           *(sigPtr) == SIG0;
 }
 
 Tlv_Status_t ImageTlvOps::updateFile()
@@ -245,7 +245,7 @@ Tlv_Status_t ImageTlvOps::updateFile()
         TOCPUn(&signature[0], 4);
         _tlvSectionFound = true;
         _tlvSectionFilePos = _rawFileBuff.size();
-        for (unsigned int i =0; i < signature.size() << 2 ; i++) {
+        for (unsigned int i = 0; i < signature.size() << 2; i++) {
             _rawFileBuff.push_back(*(((u_int8_t*)&signature[0]) + i));
         }
         pushTlvsToRawBuffer();
@@ -264,7 +264,7 @@ Tlv_Status_t ImageTlvOps::writeBufferAsFile()
         _rawFileBuff.insert(_rawFileBuff.end(), endMarker.begin(), endMarker.end());
     }
     // TODO: check the need to : write the file under a different name then delete original and rename
-    FILE* fd = fopen(_fname, "wb");
+    FILE *fd = fopen(_fname, "wb");
     if (!fd) {
         return (Tlv_Status_t)errmsgWCode(TS_FAILED_TO_OPEN_FILE, "Failed to open file for writing: %s", _fname);
     }
@@ -282,7 +282,7 @@ void ImageTlvOps::pushTlvsToRawBuffer()
     if (_tlvVec.size() != 0) {
         std::vector<u_int8_t> tlvBuffer;
         tlvBuffer.resize(0);
-        for (std::vector<aux_tlv>::iterator it = _tlvVec.begin(); it != _tlvVec.end(); it ++) {
+        for (std::vector<aux_tlv>::iterator it = _tlvVec.begin(); it != _tlvVec.end(); it++) {
             // push header
             std::vector<u_int8_t> hdrBuf(TOOLS_OPEN_AUX_TLV_HEADER_SIZE, 0x0);
             tools_open_aux_tlv_header_pack(&(it->hdr), &hdrBuf[0]);
@@ -303,7 +303,7 @@ void ImageTlvOps::pushTlvsToRawBuffer()
 
 Tlv_Status_t ImageTlvOps::parseTlvs()
 {
-    if(!_tlvSectionFound) {
+    if (!_tlvSectionFound) {
         // nothing to parse
         return TS_OK;
     }
@@ -335,7 +335,7 @@ Tlv_Status_t ImageTlvOps::parseTlvs()
         if (nextTlvOffs + TOOLS_OPEN_AUX_TLV_HEADER_SIZE + tlv.hdr.length  > bufferSize) {
             return (Tlv_Status_t)errmsgWCode(TS_TLV_PARSE_ERROR, "failed to parse TLVs : unexpected End of extended data section");
         }
-        u_int32_t vecSizeDwAligned = ((tlv.hdr.length + 3) /4) * 4;
+        u_int32_t vecSizeDwAligned = ((tlv.hdr.length + 3) / 4) * 4;
         tlv.data.resize(tlv.hdr.length);
         memset(&tlv.data[0], 0x0, tlv.data.size());
         memcpy(&tlv.data[0], &_rawFileBuff[nextTlvOffs + TOOLS_OPEN_AUX_TLV_HEADER_SIZE], tlv.hdr.length);
@@ -387,17 +387,17 @@ u_int16_t ImageTlvOps::calcTlvCrc(aux_tlv& tlv)
  */
 
 
-TimeStampIFC* TimeStampIFC::getIFC(mfile* mf)
+TimeStampIFC* TimeStampIFC::getIFC(mfile *mf)
 {
     return new DeviceTimeStamp(mf);
 }
 
-TimeStampIFC* TimeStampIFC::getIFC(const char* fname, u_int32_t lastFwAddr)
+TimeStampIFC* TimeStampIFC::getIFC(const char *fname, u_int32_t lastFwAddr)
 {
     return new ImageTimeStamp(fname, lastFwAddr);
 }
 
-TimeStampIFC* TimeStampIFC::getIFC(u_int8_t* buff, unsigned int size, u_int32_t lastFwAddr)
+TimeStampIFC* TimeStampIFC::getIFC(u_int8_t *buff, unsigned int size, u_int32_t lastFwAddr)
 {
     return new ImageTimeStamp(buff, size, lastFwAddr);
 }
@@ -410,7 +410,7 @@ TimeStampIFC* TimeStampIFC::getIFC(u_int8_t* buff, unsigned int size, u_int32_t 
 Tlv_Status_t ImageTimeStamp::init()
 {
     Tlv_Status_t rc = _imgTlvOps.init(_lastFwAddr);
-    return  rc ? (Tlv_Status_t)errmsgWCode(rc, "%s", _imgTlvOps.err()) : TS_OK;
+    return rc ? (Tlv_Status_t)errmsgWCode(rc, "%s", _imgTlvOps.err()) : TS_OK;
 };
 
 Tlv_Status_t ImageTimeStamp::setTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer)
@@ -470,7 +470,7 @@ Tlv_Status_t ImageTimeStamp::resetTimeStamp()
 
 Tlv_Status_t DeviceTimeStamp::init()
 {
-    int rc ;
+    int rc;
     // attempt to get running FW TS
     struct tools_open_mvts mvts;
     memset(&mvts, 0, sizeof(mvts));
@@ -538,11 +538,11 @@ inline Tlv_Status_t DeviceTimeStamp::convertRc(MError rc, int regMethod)
         return TS_OK;
     }
     if (rc == ME_REG_ACCESS_BAD_PARAM || rc == ME_ICMD_OPERATIONAL_ERROR) {
-         return (Tlv_Status_t)errmsgWCode(TS_TIMESTAMPING_NOT_SUPPORTED, "Time stamping not supported by FW");
+        return (Tlv_Status_t)errmsgWCode(TS_TIMESTAMPING_NOT_SUPPORTED, "Time stamping not supported by FW");
     } else if (rc == ME_REG_ACCESS_BAD_CONFIG) {
         return (Tlv_Status_t)errmsgWCode(TS_NO_VALID_TIMESTAMP, regMethod == REG_ACCESS_METHOD_GET ? "No valid timestamp found" : "Timestamp is too old");
     } else if (rc == ME_ICMD_UNSUPPORTED_ICMD_VERSION) {
-         return(Tlv_Status_t)errmsgWCode(TS_UNSUPPORTED_ICMD_VERSION, "Unsupported ICMD version");
+        return (Tlv_Status_t)errmsgWCode(TS_UNSUPPORTED_ICMD_VERSION, "Unsupported ICMD version");
     }
     return (Tlv_Status_t)errmsgWCode(TS_GENERAL_ERROR, "%s",  reg_access_err2str((MError)rc));
 }

@@ -45,14 +45,14 @@
 #include "mtcr.h"
 #include "tools_version.h"
 
-#define ONES32(size)                    ((size)?(0xffffffff>>(32-(size))):0)
-#define MASK32(offset,size)             (ONES32(size)<<(offset))
+#define ONES32(size)                    ((size) ? (0xffffffff >> (32 - (size))) : 0)
+#define MASK32(offset, size)             (ONES32(size) << (offset))
 
-#define EXTRACT_C(source,offset,size)   ((((unsigned)(source))>>(offset)) & ONES32(size))
-#define EXTRACT(src, start,len)          (((len)==32)?(src):EXTRACT_C(src,start,len))
+#define EXTRACT_C(source, offset, size)   ((((unsigned)(source)) >> (offset)) & ONES32(size))
+#define EXTRACT(src, start, len)          (((len) == 32) ? (src) : EXTRACT_C(src, start, len))
 
-#define MERGE_C(rsrc1,rsrc2,start,len)  ((((rsrc2)<<(start)) & (MASK32((start),(len)))) | ((rsrc1) & (~MASK32((start),(len)))))
-#define MERGE(rsrc1,rsrc2,start,len)    (((len)==32)?(rsrc2):MERGE_C(rsrc1,rsrc2,start,len))
+#define MERGE_C(rsrc1, rsrc2, start, len)  ((((rsrc2) << (start)) & (MASK32((start), (len)))) | ((rsrc1) & (~MASK32((start), (len)))))
+#define MERGE(rsrc1, rsrc2, start, len)    (((len) == 32) ? (rsrc2) : MERGE_C(rsrc1, rsrc2, start, len))
 
 #define ADB_DUMP_VAR   "ADB_DUMP"
 #define MAX_DEV_LEN 512
@@ -87,31 +87,31 @@ void usage(int with_exit)
 
 int main(int argc, char *argv[])
 {
-    char*         endp;
-    char*         dev = NULL;
-    char          device[MAX_DEV_LEN] = {0};
-    char*         adb_dump = NULL;
-    char*         path = NULL;
-    int           rc=0;
-    unsigned int  addr = 0, val = 0;
+    char *endp;
+    char *dev = NULL;
+    char device[MAX_DEV_LEN] = {0};
+    char *adb_dump = NULL;
+    char *path = NULL;
+    int rc = 0;
+    unsigned int addr = 0, val = 0;
     mfile         *mf;
-    unsigned int  i2c_slave = 0;
-    int           c;
-    int           read_op = 0;
-    int           bit_offs = 0;
-    int           bit_size = 32;
-    int           byte_size = 0;
-    int           read_block = 0;       /* if 0 then read field according to "addr.bit:size", else read block of size "byte_size" */
-    int          clear_semaphore = 0;
-    const char*   op_name = "cr write";
+    unsigned int i2c_slave = 0;
+    int c;
+    int read_op = 0;
+    int bit_offs = 0;
+    int bit_size = 32;
+    int byte_size = 0;
+    int read_block = 0;                 /* if 0 then read field according to "addr.bit:size", else read block of size "byte_size" */
+    int clear_semaphore = 0;
+    const char *op_name = "cr write";
 
 #if 0
-    int  i, rc1;
-    char buf[1024], *p=buf;
+    int i, rc1;
+    char buf[1024], *p = buf;
     rc1 = mdevices(buf, 1024);
-    for (i=0; i<rc1; i++) {
+    for (i = 0; i < rc1; i++) {
         printf("Found: \"%s\"\n", p);
-        p += strlen(p)+1;
+        p += strlen(p) + 1;
     }
     exit(0);
 #endif
@@ -180,70 +180,70 @@ int main(int argc, char *argv[])
         fprintf(stderr, "-E- Missing address argument\n");
         exit(1);
     } else {
-         addr = strtoul(argv[optind], &endp, 0);
-         if (*endp != '\0' && *endp != '.' && *endp != ',') {
-             //fprintf(stderr, "-E- Bad address given (%s). Unparsed string: \"%s\"\n", av[ap] ,endp);
-             //exit(1);
-             path = argv[optind];
-         }
+        addr = strtoul(argv[optind], &endp, 0);
+        if (*endp != '\0' && *endp != '.' && *endp != ',') {
+            //fprintf(stderr, "-E- Bad address given (%s). Unparsed string: \"%s\"\n", av[ap] ,endp);
+            //exit(1);
+            path = argv[optind];
+        }
 
-         if (*endp == ',') {
-             if (path) {
-                 fprintf(stderr, "-E- Can't read block with full path\n");
-                 exit(1);
-             }
-             read_block = 1;
-             byte_size = strtoul(endp+1, &endp, 0);
+        if (*endp == ',') {
+            if (path) {
+                fprintf(stderr, "-E- Can't read block with full path\n");
+                exit(1);
+            }
+            read_block = 1;
+            byte_size = strtoul(endp + 1, &endp, 0);
 
-             if (*endp != '\0' || byte_size == 0)
-             {
-                 fprintf(stderr, "-E- Bad byte size in given address (%s). Unparsed string: \"%s\"\n", argv[optind] ,endp);
-                 exit(1);
-             }
-         }
+            if (*endp != '\0' || byte_size == 0) {
+                fprintf(stderr, "-E- Bad byte size in given address (%s). Unparsed string: \"%s\"\n", argv[optind], endp);
+                exit(1);
+            }
+        }
 
-         if (*endp == '.') {
-             if (path) {
-                 fprintf(stderr, "-E- Full path with bit address notation is illegal\n");
-                 exit(1);
-             }
+        if (*endp == '.') {
+            if (path) {
+                fprintf(stderr, "-E- Full path with bit address notation is illegal\n");
+                exit(1);
+            }
 
-             bit_offs = strtoul(endp+1, &endp, 0);
-             if ((*endp != '\0' && *endp != ':') || bit_offs >= 32) {
-                 fprintf(stderr, "-E- Bad bit offset in given address (%s). Unparsed string: \"%s\"\n", argv[optind] ,endp);
-                 exit(1);
-             }
-         }
+            bit_offs = strtoul(endp + 1, &endp, 0);
+            if ((*endp != '\0' && *endp != ':') || bit_offs >= 32) {
+                fprintf(stderr, "-E- Bad bit offset in given address (%s). Unparsed string: \"%s\"\n", argv[optind], endp);
+                exit(1);
+            }
+        }
 
-         if (*endp == ':') {
-             if (path) {
-                 fprintf(stderr, "-E- Full path with bit size notation is illegal\n");
-                 exit(1);
-             }
+        if (*endp == ':') {
+            if (path) {
+                fprintf(stderr, "-E- Full path with bit size notation is illegal\n");
+                exit(1);
+            }
 
-             bit_size = strtoul(endp+1, &endp, 0);
-             if (*endp != '\0') {
-                 fprintf(stderr, "-E- Bad bit size in given address (%s). Unparsed string: \"%s\"\n", argv[optind] ,endp);
-                 exit(1);
-             }
+            bit_size = strtoul(endp + 1, &endp, 0);
+            if (*endp != '\0') {
+                fprintf(stderr, "-E- Bad bit size in given address (%s). Unparsed string: \"%s\"\n", argv[optind], endp);
+                exit(1);
+            }
 
-             if (bit_size + bit_offs > 32) {
-                 fprintf(stderr, "-E- Bad bit offset/size in given address (%s) - exceeds 32 bits\n", argv[optind]);
+            if (bit_size + bit_offs > 32) {
+                fprintf(stderr, "-E- Bad bit offset/size in given address (%s) - exceeds 32 bits\n", argv[optind]);
 
-                 exit(1);
-             }
-         }
+                exit(1);
+            }
+        }
 
-         if (!path && *endp) {
-             fprintf(stderr, "-E- Bad address given (%s). Unparsed string: \"%s\"\n", argv[optind] ,endp);
-             exit(1);
-         }
+        if (!path && *endp) {
+            fprintf(stderr, "-E- Bad address given (%s). Unparsed string: \"%s\"\n", argv[optind], endp);
+            exit(1);
+        }
 
-         // Allow the bit_size to be ommited
-         if (bit_size + bit_offs > 32)
-             bit_size = 32 - bit_offs;
+        // Allow the bit_size to be ommited
+        if (bit_size + bit_offs > 32) {
+            bit_size = 32 - bit_offs;
+        }
 
-         optind++;
+        optind++;
     }
 
 
@@ -267,9 +267,9 @@ int main(int argc, char *argv[])
     if (!adb_dump) {
         adb_dump = getenv(ADB_DUMP_VAR);
     }
-    strncpy(device, dev, MAX_DEV_LEN -1);
+    strncpy(device, dev, MAX_DEV_LEN - 1);
     // Do the job
-    mf = mopen_adv((const char *)device, (MType)(MST_DEFAULT | MST_CABLE));
+    mf = mopen_adv((const char*)device, (MType)(MST_DEFAULT | MST_CABLE));
     if (!mf) {
         perror("mopen");
         return 1;
@@ -279,12 +279,13 @@ int main(int argc, char *argv[])
         mset_cr_access(mf, 1);
     }
 #endif
-    if (i2c_slave)
+    if (i2c_slave) {
         mset_i2c_slave(mf, (u_int8_t)i2c_slave);
+    }
 
     if (path) {
-        FILE* fp;
-        char* fpath;
+        FILE *fp;
+        char *fpath;
         char line[1024];
         char *offset, *size;
         int path_found = 0;
@@ -356,8 +357,8 @@ int main(int argc, char *argv[])
     if (read_op) {
         if (read_block) {
             int i;
-            int dowrd_size = ((byte_size - 1)/4) + 1;
-            u_int32_t* data = malloc(sizeof(u_int32_t)*dowrd_size);
+            int dowrd_size = ((byte_size - 1) / 4) + 1;
+            u_int32_t *data = malloc(sizeof(u_int32_t) * dowrd_size);
 
             if (!data) {
                 fprintf(stderr, "-E- Failed to allocate memmory for read block buffer\n");
@@ -365,19 +366,20 @@ int main(int argc, char *argv[])
             }
 
             addr = (addr >> 2) << 2;
-            if (mread4_block(mf, addr, data, dowrd_size*4) != dowrd_size*4) {
+            if (mread4_block(mf, addr, data, dowrd_size * 4) != dowrd_size * 4) {
                 free(data);
                 goto access_error;
             }
 
             // print the dowrds
             for (i = 0; i < dowrd_size; i++) {
-                printf("0x%08x 0x%08x\n", addr + i*4, data[i]);
+                printf("0x%08x 0x%08x\n", addr + i * 4, data[i]);
             }
             free(data);
         } else {
-            if (mread4(mf, addr, &val) != 4)
+            if (mread4(mf, addr, &val) != 4) {
                 goto access_error;
+            }
 
             val = EXTRACT(val, bit_offs, bit_size);
             printf("0x%08x\n", val);
@@ -391,8 +393,9 @@ int main(int argc, char *argv[])
         if (bit_offs != 0 || bit_size != 32) {
             // read-modify-write
             u_int32_t tmp_val;
-            if (mread4(mf, addr, &tmp_val) != 4)
+            if (mread4(mf, addr, &tmp_val) != 4) {
                 goto access_error;
+            }
 
             val = MERGE(tmp_val, val, bit_offs, bit_size);
         }

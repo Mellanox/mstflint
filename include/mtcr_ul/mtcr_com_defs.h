@@ -36,7 +36,7 @@
 
 #ifdef __WIN__
 
-#include<winsock2.h>
+#include <winsock2.h>
 #include <windows.h>
 
 #ifdef MTCR_EXPORTS
@@ -48,34 +48,34 @@
 #if defined(_MSC_VER)
     #include <stdint.h>
 #else
-    typedef __int8           int8_t;
-    typedef __int16          int16_t;
-    typedef __int32          int32_t;
-    typedef __int64          int64_t;
+typedef __int8 int8_t;
+typedef __int16 int16_t;
+typedef __int32 int32_t;
+typedef __int64 int64_t;
 #endif // !_MSC_VER
-    typedef unsigned __int8  u_int8_t;
-    typedef unsigned __int16 u_int16_t;
-    typedef unsigned __int32 u_int32_t;
-    typedef unsigned __int64 u_int64_t;
+typedef unsigned __int8 u_int8_t;
+typedef unsigned __int16 u_int16_t;
+typedef unsigned __int32 u_int32_t;
+typedef unsigned __int64 u_int64_t;
 
 #if defined(_WIN64)
-    typedef __int64 MT_long_ptr_t;
-    typedef unsigned __int64 MT_ulong_ptr_t;
+typedef __int64 MT_long_ptr_t;
+typedef unsigned __int64 MT_ulong_ptr_t;
 #else
-    typedef _W64 long MT_long_ptr_t;
-    typedef _W64 unsigned long MT_ulong_ptr_t;
+typedef _W64 long MT_long_ptr_t;
+typedef _W64 unsigned long MT_ulong_ptr_t;
 #endif
 
 #elif defined(__DJGPP__)
 
-    typedef unsigned char    u_int8_t;
-    typedef char             int8_t;
-    typedef unsigned short   u_int16_t;
-    typedef short            int16_t;
-    typedef unsigned int     u_int32_t;
-    typedef long             int32_t;
-    typedef unsigned long long u_int64_t;
-    typedef long long        int64_t;
+typedef unsigned char u_int8_t;
+typedef char int8_t;
+typedef unsigned short u_int16_t;
+typedef short int16_t;
+typedef unsigned int u_int32_t;
+typedef long int32_t;
+typedef unsigned long long u_int64_t;
+typedef long long int64_t;
 
 #define bswap_32(x) ntohl(x)
 #define MTCR_API
@@ -89,7 +89,7 @@
 
 //#ifndef USE_IB_MGT
 typedef struct mib_private_t {
-        int dummy;
+    int dummy;
 } MIB_Private;
 //#else
 //#include "mtcr_ib_private.h"
@@ -254,57 +254,57 @@ typedef struct vf_info_t {
     u_int8_t bus;
     u_int8_t dev;
     u_int8_t func;
-    char** net_devs;      // Null terminated array
-    char** ib_devs;       // Null terminated array
+    char **net_devs;      // Null terminated array
+    char **ib_devs;       // Null terminated array
 } vf_info;
 
 typedef struct dev_info_t {
-        Mdevs type;
-        char dev_name[512];
-        int ul_mode;
+    Mdevs type;
+    char dev_name[512];
+    int ul_mode;
 
-        union {
-                struct {
-                        u_int16_t domain;
-                        u_int8_t bus;
-                        u_int8_t dev;
-                        u_int8_t func;
+    union {
+        struct {
+            u_int16_t domain;
+            u_int8_t bus;
+            u_int8_t dev;
+            u_int8_t func;
 
-                        u_int16_t dev_id;
-                        u_int16_t vend_id;
-                        u_int32_t class_id;
-                        u_int16_t subsys_id;
-                        u_int16_t subsys_vend_id;
+            u_int16_t dev_id;
+            u_int16_t vend_id;
+            u_int32_t class_id;
+            u_int16_t subsys_id;
+            u_int16_t subsys_vend_id;
 
-                        char cr_dev[512];
-                        char conf_dev[512];
-                        char** net_devs;      // Null terminated array
-                        char** ib_devs;       // Null terminated array
-                        char numa_node[4096];     //
-                        vf_info * virtfn_arr;
-                        u_int16_t virtfn_count;
-                } pci;
+            char cr_dev[512];
+            char conf_dev[512];
+            char **net_devs;                  // Null terminated array
+            char **ib_devs;                   // Null terminated array
+            char numa_node[4096];                 //
+            vf_info *virtfn_arr;
+            u_int16_t virtfn_count;
+        } pci;
 
-                struct {
-                        u_int32_t mtusb_serial;
-                        u_int32_t TBD;
-                } usb;
+        struct {
+            u_int32_t mtusb_serial;
+            u_int32_t TBD;
+        } usb;
 
-                struct {
-                        u_int32_t TBD;
-                } ib;
+        struct {
+            u_int32_t TBD;
+        } ib;
 
-                struct {
-                        u_int32_t TBD;
-                } remote;
-        };
+        struct {
+            u_int32_t TBD;
+        } remote;
+    };
 } dev_info;
 
 
 typedef enum {
-    RA_MFPA=0x9010,
-    RA_MFBA=0x9011,
-    RA_MFBE=0x9012,
+    RA_MFPA = 0x9010,
+    RA_MFBA = 0x9011,
+    RA_MFBE = 0x9012,
 } reg_access_t;
 
 typedef struct mfile_t mfile;

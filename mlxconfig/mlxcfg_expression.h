@@ -47,19 +47,19 @@ using namespace std;
 
 namespace mlxcfg {
 
-    class Expression {
-        private:
-        string _expression;
-        vector<string> _vars;
-        map<string,double> _varsVal;
+class Expression {
+private:
+    string _expression;
+    vector<string> _vars;
+    map<string, double> _varsVal;
 
-        public:
-        explicit Expression(const string& expression);
-        void getVars(vector<string>& vars) const;
-        double getVarVal(const string& var) const;
-        void setVarVal(const string& var, double val);
-        double evaluate();
-    };
+public:
+    explicit Expression(const string& expression);
+    void getVars(vector<string>& vars) const;
+    double getVarVal(const string& var) const;
+    void setVarVal(const string& var, double val);
+    double evaluate();
+};
 
 }
 #endif /* MLXCFG_EXPRESSION_H_ */

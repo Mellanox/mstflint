@@ -68,8 +68,8 @@ void dealWithSignal()
     return;
 }
 
-MError mnvaCom5thGen(mfile* mf, u_int8_t* buff, u_int16_t len, u_int32_t tlvType,
-        reg_access_method_t method, QueryType qT)
+MError mnvaCom5thGen(mfile *mf, u_int8_t *buff, u_int16_t len, u_int32_t tlvType,
+                     reg_access_method_t method, QueryType qT)
 {
     struct tools_open_nvda mnvaTlv;
     memset(&mnvaTlv, 0, sizeof(struct tools_open_nvda));
@@ -104,8 +104,8 @@ MError mnvaCom5thGen(mfile* mf, u_int8_t* buff, u_int16_t len, u_int32_t tlvType
     return ME_OK;
 }
 
-MError nvqcCom5thGen(mfile* mf, u_int32_t tlvType, bool& suppRead,
-                          bool& suppWrite, u_int32_t& version)
+MError nvqcCom5thGen(mfile *mf, u_int32_t tlvType, bool& suppRead,
+                     bool& suppWrite, u_int32_t& version)
 {
     struct tools_open_nvqc nvqcTlv;
     memset(&nvqcTlv, 0, sizeof(struct tools_open_nvqc));
@@ -127,7 +127,7 @@ MError nvqcCom5thGen(mfile* mf, u_int32_t tlvType, bool& suppRead,
     return ME_OK;
 }
 
-MError nvdiCom5thGen(mfile* mf, u_int32_t tlvType)
+MError nvdiCom5thGen(mfile *mf, u_int32_t tlvType)
 {
     struct tools_open_nvdi nvdiTlv;
     memset(&nvdiTlv, 0, sizeof(struct tools_open_nvdi));
@@ -155,7 +155,7 @@ MError nvdiCom5thGen(mfile* mf, u_int32_t tlvType)
 bool strToNum(string str, u_int32_t& num, int base)
 {
     char *endp;
-    char* numStr = strcpy(new char[str.size() + 1],str.c_str());
+    char *numStr = strcpy(new char[str.size() + 1], str.c_str());
     num = strtoul(numStr, &endp, base);
     if (*endp) {
         delete[] numStr;
@@ -187,8 +187,8 @@ vector<string> splitStr(const string s, char d)
     stringstream ss(s);
     string to;
 
-    while(std::getline(ss, to, d)){
-      v.push_back(to);
+    while (std::getline(ss, to, d)) {
+        v.push_back(to);
     }
 
     return v;
@@ -196,8 +196,8 @@ vector<string> splitStr(const string s, char d)
 
 string mlxcfg_ltrim(string s)
 {
-    const char* cs = s.c_str();
-    while(isspace(*cs)){
+    const char *cs = s.c_str();
+    while (isspace(*cs)) {
         cs++;
     }
     return string(cs);
@@ -207,13 +207,13 @@ string mlxcfg_rtrim(string s)
 {
     //todo rewrite it
     unsigned int i = s.size();
-    if(i == 0) {
+    if (i == 0) {
         return s;
     }
     while (--i > 0 && isspace(s[i])) {
         ;
     }
-    if(i == 0 && isspace(s[i])) {
+    if (i == 0 && isspace(s[i])) {
         return "";
     }
     return s.substr(0, i + 1);
@@ -226,37 +226,51 @@ string mlxcfg_trim(string s)
 
 string writerIdToStr(WriterId writerId)
 {
-    switch(writerId) {
-        case WRITER_ID_UNSPECIFIED:
-            return "Unspecified";
-        case WRITER_ID_CHASSIS_BMC:
-            return "Chassis BMC";
-        case WRITER_ID_MAD:
-            return "MAD";
-        case WRITER_ID_BMC:
-            return "BMC";
-        case WRITER_ID_CMD_IF:
-            return "CMD IF";
-        case WRITER_ID_ICMD:
-            return "ICMD";
-        case WRITER_ID_ICMD_UEFI_HII:
-            return "ICMD UEFI HII";
-        case WRITER_ID_ICMD_UEFI_CLP:
-            return "ICMD UEFI CLP";
-        case WRITER_ID_ICMD_FLEXBOOT:
-            return "ICMD FLEXBOOT";
-        case WRITER_ID_ICMD_MLXCONFIG:
-            return "ICMD MLXCONFIG";
-        case WRITER_ID_ICMD_USER1:
-            return "ICMD USER1";
-        case WRITER_ID_ICMD_USER2:
-            return "ICMD USER2";
-        case WRITER_ID_ICMD_MLXCONFIG_SET_RAW:
-            return "ICMD MLXCONFIG SET RAW";
-        case WRITER_ID_OTHER:
-            return "OTHER";
-        default:
-            return "Unknown";
+    switch (writerId) {
+    case WRITER_ID_UNSPECIFIED:
+        return "Unspecified";
+
+    case WRITER_ID_CHASSIS_BMC:
+        return "Chassis BMC";
+
+    case WRITER_ID_MAD:
+        return "MAD";
+
+    case WRITER_ID_BMC:
+        return "BMC";
+
+    case WRITER_ID_CMD_IF:
+        return "CMD IF";
+
+    case WRITER_ID_ICMD:
+        return "ICMD";
+
+    case WRITER_ID_ICMD_UEFI_HII:
+        return "ICMD UEFI HII";
+
+    case WRITER_ID_ICMD_UEFI_CLP:
+        return "ICMD UEFI CLP";
+
+    case WRITER_ID_ICMD_FLEXBOOT:
+        return "ICMD FLEXBOOT";
+
+    case WRITER_ID_ICMD_MLXCONFIG:
+        return "ICMD MLXCONFIG";
+
+    case WRITER_ID_ICMD_USER1:
+        return "ICMD USER1";
+
+    case WRITER_ID_ICMD_USER2:
+        return "ICMD USER2";
+
+    case WRITER_ID_ICMD_MLXCONFIG_SET_RAW:
+        return "ICMD MLXCONFIG SET RAW";
+
+    case WRITER_ID_OTHER:
+        return "OTHER";
+
+    default:
+        return "Unknown";
     }
 };
 
@@ -276,15 +290,15 @@ void copyBytesVectorToDwVector(const vector<u_int8_t>& bV, vector<u_int32_t>& dw
 string parseIndexStr(const string& indexedMlxconfigName)
 {
     return indexedMlxconfigName.substr(indexedMlxconfigName.find('[') + 1,
-                             indexedMlxconfigName.find(']') - indexedMlxconfigName.find('[') - 1);
+                                       indexedMlxconfigName.find(']') - indexedMlxconfigName.find('[') - 1);
 }
 
 void parseIndexedMlxconfigName(const string& indexedMlxconfigName, string& mlxconfigName, u_int32_t& index)
 {
-   string indexStr = parseIndexStr(indexedMlxconfigName);
+    string indexStr = parseIndexStr(indexedMlxconfigName);
 
     if (!strToNum(indexStr, index)) {
-       throw MlxcfgException("Can not parse the index of %s\n", indexedMlxconfigName.c_str());
+        throw MlxcfgException("Can not parse the index of %s\n", indexedMlxconfigName.c_str());
     }
 
     mlxconfigName = indexedMlxconfigName.substr(0, indexedMlxconfigName.find('['));
@@ -304,7 +318,7 @@ void extractIndexes(const string& indexesStr, vector<u_int32_t>& indexes)
         }
         if (leftIndex > rightIndex) {
             throw MlxcfgException("Left index %d can not be greater than right index %d",
-                                   leftIndex, rightIndex);
+                                  leftIndex, rightIndex);
         }
         while (rightIndex >= leftIndex) {
             indexes.push_back(leftIndex);
@@ -317,7 +331,7 @@ void extractIndexes(const string& indexesStr, vector<u_int32_t>& indexes)
         }
         indexes.push_back(index);
     }
-    
+
 }
 
 bool isIndexedMlxconfigName(const string& mlxconfigName)
@@ -325,12 +339,13 @@ bool isIndexedMlxconfigName(const string& mlxconfigName)
     return (mlxconfigName.find("[") != string::npos);
 }
 
-MlxcfgException::MlxcfgException(const char* fmt, ...){
+MlxcfgException::MlxcfgException(const char *fmt, ...)
+{
     const unsigned int max = 1024;
     char tmp[max];
     va_list args;
 
-    va_start (args, fmt);
+    va_start(args, fmt);
     vsnprintf(tmp, max, fmt, args);
     va_end(args);
     _err = tmp;

@@ -54,7 +54,7 @@ int PsidLookupDB::csv2vector(string str, vector<string> &explode)
             break;
         }
         explode.push_back(str.substr(0, pos));
-        str = str.substr(pos+1);
+        str = str.substr(pos + 1);
     } while (str.size() > 0);
 
     return cnt;
@@ -63,7 +63,7 @@ int PsidLookupDB::csv2vector(string str, vector<string> &explode)
 
 void PsidLookupDB::readFile(string fName)
 {
-    FILE* fin;
+    FILE *fin;
     char tmpb[256];
 
     if ((fin = fopen(fName.c_str(), "r")) == NULL) {
@@ -118,7 +118,7 @@ string PsidLookupDB::getPsid(string id)
     return _keyLookupMap[id].psid;
 }
 
-bool   PsidLookupDB::isPsidExist(string psid)
+bool PsidLookupDB::isPsidExist(string psid)
 {
     if (_keyLookupMap.find(psid) == _keyLookupMap.end()) {
         return false;

@@ -69,37 +69,37 @@
 
 #define RESTORE_SPACE(mf) mset_addr_space(mf, AS_CR_SPACE)
 
-#define MWRITE4_SEMAPHORE(mf, offset, value, action_on_fail)\
-        do {\
-        SET_SPACE_FOR_SEMAPHORE_ACCESS(mf);\
-        if (mwrite4(mf, offset, value) != 4) {\
-           RESTORE_SPACE(mf);\
-            action_on_fail;\
-        }\
-        RESTORE_SPACE(mf);\
-    }while(0)
+#define MWRITE4_SEMAPHORE(mf, offset, value, action_on_fail) \
+    do { \
+        SET_SPACE_FOR_SEMAPHORE_ACCESS(mf); \
+        if (mwrite4(mf, offset, value) != 4) { \
+            RESTORE_SPACE(mf); \
+            action_on_fail; \
+        } \
+        RESTORE_SPACE(mf); \
+    } while (0)
 
-#define MREAD4_SEMAPHORE(mf, offset, ptr, action_on_fail)\
-    do {\
-        SET_SPACE_FOR_SEMAPHORE_ACCESS(mf);\
-        if (mread4(mf, offset, ptr) != 4) {\
-            RESTORE_SPACE(mf);\
-            action_on_fail;\
-        }\
-        RESTORE_SPACE(mf);\
-    }while(0)
+#define MREAD4_SEMAPHORE(mf, offset, ptr, action_on_fail) \
+    do { \
+        SET_SPACE_FOR_SEMAPHORE_ACCESS(mf); \
+        if (mread4(mf, offset, ptr) != 4) { \
+            RESTORE_SPACE(mf); \
+            action_on_fail; \
+        } \
+        RESTORE_SPACE(mf); \
+    } while (0)
 
 /***********************/
 
-static const char* status_to_str[] =
+static const char *status_to_str[] =
 {
-        "Ok",
-        "Resource is busy",
-        "Tools resource management interface not available",
-        "Device not supported",
-        "Resource not supported",
-        "CR-Space access error",
-        "Memory allocation failed"
+    "Ok",
+    "Resource is busy",
+    "Tools resource management interface not available",
+    "Device not supported",
+    "Resource not supported",
+    "CR-Space access error",
+    "Memory allocation failed"
 };
 
 struct device_sem_info
@@ -114,81 +114,81 @@ static u_int32_t g_vsec_sem_addr[VSEC_SEM_NUM] = {0x0, 0x10};
 #define HW_SEM_ADDR_MASK 0xf
 
 static struct device_sem_info g_dev_sem_info_db[] = {
-        {
-                DeviceConnectX2,            // dev_id
-                {0xf03bc},                  // hw_sem_addr
-                0,                          // vsec_sem_supported
-        },
-        {
-                DeviceConnectX3,            // dev_id
-                {0xf03bc, 0xf03a0},         // hw_sem_addr
-                0,                          // vsec_sem_supported
-        },
-        {
-                DeviceConnectX3Pro,         // dev_id
-                {0xf03bc, 0xf03a0},         // hw_sem_addr
-                0,                          // vsec_sem_supported
-        },
-        {
-                DeviceInfiniScaleIV,        // dev_id
-                {0},                        // hw_sem_addr
-                0,                          // vsec_sem_supported
-        },
-        {
-                DeviceSwitchX,              // dev_id
-                {0},                        // hw_sem_addr
-                0,                          // vsec_sem_supported
-        },
-        {
-                DeviceConnectIB, // dev_id
-                {0xe27f8},       // hw_sem_addr
-                1,               // vsec_sem_supported
-        },
-        {
-                DeviceConnectX4, // dev_id
-                {0xe250c},       // hw_sem_addr
-                1,               // vsec_sem_supported
-        },
-        {
-                DeviceSwitchIB,  // dev_id
-                {0xa24f8},       // hw_sem_addr
-                0,               // vsec_sem_supported
-        },
-        {
-                DeviceSpectrum,  // dev_id
-                {0xa24f8},       // hw_sem_addr
-                0,               // vsec_sem_supported
-        },
-        {
-                DeviceConnectX4LX, // dev_id
-                {0xe250c},       // hw_sem_addr
-                1,               // vsec_sem_supported
-        },
-        {
-                DeviceSwitchIB2,  // dev_id
-                {0xa24f8},       // hw_sem_addr
-                0,               // vsec_sem_supported
-        },
-        {
-                DeviceConnectX5, // dev_id
-                {0xe250c},       // hw_sem_addr
-                1,               // vsec_sem_supported
-        },
-        {
-                DeviceBlueField, // dev_id
-                {0xe250c},       // hw_sem_addr
-                1,               // vsec_sem_supported
-        },
-        {
-                DeviceQuantum,  // dev_id
-                {0xa24f8},       // hw_sem_addr
-                0,               // vsec_sem_supported
-        },
-        {
-                DeviceSpectrum2,  // dev_id
-                {0xa24f8},       // hw_sem_addr
-                0,               // vsec_sem_supported
-        },
+    {
+        DeviceConnectX2,                    // dev_id
+        {0xf03bc},                          // hw_sem_addr
+        0,                                  // vsec_sem_supported
+    },
+    {
+        DeviceConnectX3,                    // dev_id
+        {0xf03bc, 0xf03a0},                 // hw_sem_addr
+        0,                                  // vsec_sem_supported
+    },
+    {
+        DeviceConnectX3Pro,                 // dev_id
+        {0xf03bc, 0xf03a0},                 // hw_sem_addr
+        0,                                  // vsec_sem_supported
+    },
+    {
+        DeviceInfiniScaleIV,                // dev_id
+        {0},                                // hw_sem_addr
+        0,                                  // vsec_sem_supported
+    },
+    {
+        DeviceSwitchX,                      // dev_id
+        {0},                                // hw_sem_addr
+        0,                                  // vsec_sem_supported
+    },
+    {
+        DeviceConnectIB,         // dev_id
+        {0xe27f8},               // hw_sem_addr
+        1,                       // vsec_sem_supported
+    },
+    {
+        DeviceConnectX4,         // dev_id
+        {0xe250c},               // hw_sem_addr
+        1,                       // vsec_sem_supported
+    },
+    {
+        DeviceSwitchIB,          // dev_id
+        {0xa24f8},               // hw_sem_addr
+        0,                       // vsec_sem_supported
+    },
+    {
+        DeviceSpectrum,          // dev_id
+        {0xa24f8},               // hw_sem_addr
+        0,                       // vsec_sem_supported
+    },
+    {
+        DeviceConnectX4LX,         // dev_id
+        {0xe250c},               // hw_sem_addr
+        1,                       // vsec_sem_supported
+    },
+    {
+        DeviceSwitchIB2,          // dev_id
+        {0xa24f8},               // hw_sem_addr
+        0,                       // vsec_sem_supported
+    },
+    {
+        DeviceConnectX5,         // dev_id
+        {0xe250c},               // hw_sem_addr
+        1,                       // vsec_sem_supported
+    },
+    {
+        DeviceBlueField,         // dev_id
+        {0xe250c},               // hw_sem_addr
+        1,                       // vsec_sem_supported
+    },
+    {
+        DeviceQuantum,          // dev_id
+        {0xa24f8},               // hw_sem_addr
+        0,                       // vsec_sem_supported
+    },
+    {
+        DeviceSpectrum2,          // dev_id
+        {0xa24f8},               // hw_sem_addr
+        0,                       // vsec_sem_supported
+    },
 };
 
 #define MAX_SEMAPHORE_ADDRES 8
@@ -196,27 +196,27 @@ static struct device_sem_info g_dev_sem_info_db[] = {
 struct mad_lock_info {
     u_int32_t lock_key;
     u_int32_t lease_time_ms;
-    tt_ctx_t  start_time;
+    tt_ctx_t start_time;
 };
 
 struct trm_t {
-        mfile* mf;
-        const struct device_sem_info* dev_sem_info;
-        struct mad_lock_info mad_lock[MAX_SEMAPHORE_ADDRES];
-        int ib_semaphore_lock_is_supported;
+    mfile *mf;
+    const struct device_sem_info *dev_sem_info;
+    struct mad_lock_info mad_lock[MAX_SEMAPHORE_ADDRES];
+    int ib_semaphore_lock_is_supported;
 };
 
 /************************************
- * Function: lock_hw_semaphore
- ************************************/
-static trm_sts lock_hw_semaphore(mfile* mf, u_int32_t addr, unsigned int max_retries)
+* Function: lock_hw_semaphore
+************************************/
+static trm_sts lock_hw_semaphore(mfile *mf, u_int32_t addr, unsigned int max_retries)
 {
     u_int32_t val = 0;
     unsigned int cnt = 0;
     int rc;
 
     while (((rc = mread4(mf, addr, &val)) == 4) && val == 1 && cnt < max_retries) {
-        cnt ++;
+        cnt++;
         msleep(((rand() % 5) + 1));
     }
 
@@ -230,9 +230,9 @@ static trm_sts lock_hw_semaphore(mfile* mf, u_int32_t addr, unsigned int max_ret
 }
 
 /************************************
- * Function: unlock_hw_semaphore
- ************************************/
-static trm_sts unlock_hw_semaphore(mfile* mf, u_int32_t addr)
+* Function: unlock_hw_semaphore
+************************************/
+static trm_sts unlock_hw_semaphore(mfile *mf, u_int32_t addr)
 {
     int rc = mwrite4(mf, addr, 0) == 4 ? TRM_STS_OK : TRM_STS_CR_ACCESS_ERR;
     // give up the rest of the time slice
@@ -241,9 +241,9 @@ static trm_sts unlock_hw_semaphore(mfile* mf, u_int32_t addr)
 }
 
 /************************************
- * Function: lock_vsec_semaphore()
- ************************************/
-static trm_sts lock_vsec_semaphore(mfile* mf, u_int32_t addr, unsigned int max_retries)
+* Function: lock_vsec_semaphore()
+************************************/
+static trm_sts lock_vsec_semaphore(mfile *mf, u_int32_t addr, unsigned int max_retries)
 {
     static u_int32_t pid = 0;
     u_int32_t read_val = 0;
@@ -260,17 +260,18 @@ static trm_sts lock_vsec_semaphore(mfile* mf, u_int32_t addr, unsigned int max_r
         MWRITE4_SEMAPHORE(mf, addr, pid, return TRM_STS_CR_ACCESS_ERR);
         // Read back
         MREAD4_SEMAPHORE(mf, addr, &read_val, return TRM_STS_CR_ACCESS_ERR);
-        if (read_val == pid)
+        if (read_val == pid) {
             break;
+        }
         msleep(((rand() % 5) + 1));
     } while (read_val != pid);
     return TRM_STS_OK;
 }
 
 /************************************
- * Function: unlock_vsec_semaphore()
- ************************************/
-static trm_sts unlock_vsec_semaphore(mfile* mf, u_int32_t addr)
+* Function: unlock_vsec_semaphore()
+************************************/
+static trm_sts unlock_vsec_semaphore(mfile *mf, u_int32_t addr)
 {
     MWRITE4_SEMAPHORE(mf, addr, 0, return TRM_STS_CR_ACCESS_ERR);
     return TRM_STS_OK;
@@ -278,8 +279,8 @@ static trm_sts unlock_vsec_semaphore(mfile* mf, u_int32_t addr)
 
 #if !defined(__FreeBSD__) && !defined(UEFI_BUILD)
 /************************************
- * Function: release_vs_mad_semaphore()
- ************************************/
+* Function: release_vs_mad_semaphore()
+************************************/
 #define GET_LEASE_TIME_MS(is_leaseable, lease_time_exp) ((is_leaseable) ? (50 * (1 << (lease_time_exp))) : 0)
 
 static trm_sts release_vs_mad_semaphore(trm_ctx trm, trm_resourse resource)
@@ -310,8 +311,8 @@ static trm_sts release_vs_mad_semaphore(trm_ctx trm, trm_resourse resource)
 }
 
 /************************************
- * Function: lock_vs_mad_semaphore()
- ************************************/
+* Function: lock_vs_mad_semaphore()
+************************************/
 
 
 static trm_sts lock_vs_mad_semaphore(trm_ctx trm, trm_resourse resource, unsigned int max_retries)
@@ -338,12 +339,12 @@ static trm_sts lock_vs_mad_semaphore(trm_ctx trm, trm_resourse resource, unsigne
 
         tt_get_time(&curr_time);
         double diff = tt_diff_in_ms(trm->mad_lock[resource].start_time, curr_time);
-        if ( diff <= trm->mad_lock[resource].lease_time_ms * 0.6) {
+        if (diff <= trm->mad_lock[resource].lease_time_ms * 0.6) {
             return TRM_STS_OK;
         }
         // extension needed try to extend
         rc = mib_semaphore_lock_vs_mad(trm->mf, SMP_SEM_EXTEND, g_vsec_sem_addr[resource],
-                trm->mad_lock[resource].lock_key, &new_lock_key, &is_leaseable, &new_lease_exponent, SEM_LOCK_SET);
+                                       trm->mad_lock[resource].lock_key, &new_lock_key, &is_leaseable, &new_lease_exponent, SEM_LOCK_SET);
         if (rc == ME_OK && new_lock_key == trm->mad_lock[resource].lock_key) {
             // extend OK
             trm->mad_lock[resource].lease_time_ms = GET_LEASE_TIME_MS(is_leaseable, new_lease_exponent);
@@ -366,7 +367,7 @@ static trm_sts lock_vs_mad_semaphore(trm_ctx trm, trm_resourse resource, unsigne
         if (rc == (int)ME_MAD_BUSY || new_lock_key == 0) {
             msleep(((rand() % 5) + 1));
         }
-    } while (rc == (int)ME_MAD_BUSY || new_lock_key == 0) ;
+    } while (rc == (int)ME_MAD_BUSY || new_lock_key == 0);
 
     if (rc) {
         return TRM_STS_RES_NOT_SUPPORTED;
@@ -378,12 +379,12 @@ static trm_sts lock_vs_mad_semaphore(trm_ctx trm, trm_resourse resource, unsigne
 }
 #endif
 /************************************
- * Function: get_device_sem_info
- ************************************/
+* Function: get_device_sem_info
+************************************/
 static struct device_sem_info* get_device_sem_info(dm_dev_id_t dev_id)
 {
     size_t i;
-    for (i = 0; i < sizeof(g_dev_sem_info_db)/sizeof(g_dev_sem_info_db[0]); i++) {
+    for (i = 0; i < sizeof(g_dev_sem_info_db) / sizeof(g_dev_sem_info_db[0]); i++) {
         if (g_dev_sem_info_db[i].dev_id == dev_id) {
             return &g_dev_sem_info_db[i];
         }
@@ -393,16 +394,16 @@ static struct device_sem_info* get_device_sem_info(dm_dev_id_t dev_id)
 }
 
 /************************************
- * Function: trm_create
- ************************************/
-trm_sts trm_create(trm_ctx* trm_p, mfile* mf)
+* Function: trm_create
+************************************/
+trm_sts trm_create(trm_ctx *trm_p, mfile *mf)
 {
     dm_dev_id_t dev_id = DeviceStartMarker;
     u_int32_t hw_dev_id;
     u_int32_t chip_rev;
 
-    *trm_p = (trm_ctx) malloc (sizeof(struct trm_t));
-    if (! (*trm_p)) {
+    *trm_p = (trm_ctx) malloc(sizeof(struct trm_t));
+    if (!(*trm_p)) {
         return TRM_STS_MEM_ERROR;
     }
     memset((*trm_p), 0, sizeof(struct trm_t));
@@ -436,8 +437,8 @@ trm_sts trm_create(trm_ctx* trm_p, mfile* mf)
 }
 
 /************************************
- * Function: trm_destroy
- ************************************/
+* Function: trm_destroy
+************************************/
 trm_sts trm_destroy(trm_ctx trm)
 {
     if (trm) {
@@ -447,8 +448,8 @@ trm_sts trm_destroy(trm_ctx trm)
 }
 
 /************************************
- * Function: trm_lock
- ************************************/
+* Function: trm_lock
+************************************/
 trm_sts trm_lock(trm_ctx trm, trm_resourse res, unsigned int max_retries)
 {
     u_int32_t dev_type = 0;
@@ -469,6 +470,7 @@ trm_sts trm_lock(trm_ctx trm, trm_resourse res, unsigned int max_retries)
             return lock_hw_semaphore(trm->mf, trm->dev_sem_info->hw_sem_addr[TRM_RES_MAIN_SEM & HW_SEM_ADDR_MASK], max_retries);
         }
         break;
+
     case TRM_RES_FLASH_PROGRAMING:
         if (trm->dev_sem_info->vsec_sem_supported && mget_vsec_supp(trm->mf)) {
             return lock_vsec_semaphore(trm->mf, g_vsec_sem_addr[TRM_RES_FLASH_PROGRAMING], max_retries);
@@ -478,16 +480,19 @@ trm_sts trm_lock(trm_ctx trm, trm_resourse res, unsigned int max_retries)
 #endif
         }
         break;
+
     case TRM_RES_HCR_FLASH_PROGRAMING:
-        if (trm->dev_sem_info->hw_sem_addr[TRM_RES_HCR_FLASH_PROGRAMING & HW_SEM_ADDR_MASK]){ // lock hw semaphore
+        if (trm->dev_sem_info->hw_sem_addr[TRM_RES_HCR_FLASH_PROGRAMING & HW_SEM_ADDR_MASK]) { // lock hw semaphore
             return lock_hw_semaphore(trm->mf, trm->dev_sem_info->hw_sem_addr[TRM_RES_HCR_FLASH_PROGRAMING & HW_SEM_ADDR_MASK], max_retries);
         }
         break;
+
     case TRM_RES_HW_TRACER:
-        if (trm->dev_sem_info->hw_sem_addr[TRM_RES_HW_TRACER & HW_SEM_ADDR_MASK]){ // lock hw semaphore
+        if (trm->dev_sem_info->hw_sem_addr[TRM_RES_HW_TRACER & HW_SEM_ADDR_MASK]) { // lock hw semaphore
             return lock_hw_semaphore(trm->mf, trm->dev_sem_info->hw_sem_addr[TRM_RES_HW_TRACER & HW_SEM_ADDR_MASK], max_retries);
         }
-    break;
+        break;
+
     default:
         break;
     }
@@ -495,16 +500,16 @@ trm_sts trm_lock(trm_ctx trm, trm_resourse res, unsigned int max_retries)
 }
 
 /************************************
- * Function: trm_try_lock
- ************************************/
+* Function: trm_try_lock
+************************************/
 trm_sts trm_try_lock(trm_ctx trm, trm_resourse res)
 {
     return trm_lock(trm, res, 1);
 }
 
 /************************************
- * Function: trm_unlock
- ************************************/
+* Function: trm_unlock
+************************************/
 trm_sts trm_unlock(trm_ctx trm, trm_resourse res)
 {
     u_int32_t dev_type = 0;
@@ -521,29 +526,33 @@ trm_sts trm_unlock(trm_ctx trm, trm_resourse res)
         } else if (trm->dev_sem_info->vsec_sem_supported && (dev_type & MDEVS_IB)) {
             return release_vs_mad_semaphore(trm, TRM_RES_ICMD);
 #endif
-        } else if (trm->dev_sem_info->hw_sem_addr[TRM_RES_MAIN_SEM & HW_SEM_ADDR_MASK]){ // lock hw semaphore
+        } else if (trm->dev_sem_info->hw_sem_addr[TRM_RES_MAIN_SEM & HW_SEM_ADDR_MASK]) { // lock hw semaphore
             return unlock_hw_semaphore(trm->mf, trm->dev_sem_info->hw_sem_addr[TRM_RES_MAIN_SEM & HW_SEM_ADDR_MASK]);
         }
         break;
+
     case TRM_RES_FLASH_PROGRAMING:
         if (trm->dev_sem_info->vsec_sem_supported && mget_vsec_supp(trm->mf)) {
-                   return unlock_vsec_semaphore(trm->mf, g_vsec_sem_addr[TRM_RES_FLASH_PROGRAMING]);
+            return unlock_vsec_semaphore(trm->mf, g_vsec_sem_addr[TRM_RES_FLASH_PROGRAMING]);
 #if !defined(__FreeBSD__) && !defined(UEFI_BUILD)
         } else if (trm->dev_sem_info->vsec_sem_supported && (dev_type & MDEVS_IB)) {
             return release_vs_mad_semaphore(trm, TRM_RES_FLASH_PROGRAMING);
 #endif
         }
         break;
+
     case TRM_RES_HCR_FLASH_PROGRAMING:
-        if (trm->dev_sem_info->hw_sem_addr[TRM_RES_HCR_FLASH_PROGRAMING & HW_SEM_ADDR_MASK]){ // lock hw semaphore
+        if (trm->dev_sem_info->hw_sem_addr[TRM_RES_HCR_FLASH_PROGRAMING & HW_SEM_ADDR_MASK]) { // lock hw semaphore
             return unlock_hw_semaphore(trm->mf, trm->dev_sem_info->hw_sem_addr[TRM_RES_HCR_FLASH_PROGRAMING & HW_SEM_ADDR_MASK]);
         }
         break;
+
     case TRM_RES_HW_TRACER:
-        if (trm->dev_sem_info->hw_sem_addr[TRM_RES_HW_TRACER & HW_SEM_ADDR_MASK]){ // lock hw semaphore
+        if (trm->dev_sem_info->hw_sem_addr[TRM_RES_HW_TRACER & HW_SEM_ADDR_MASK]) { // lock hw semaphore
             return unlock_hw_semaphore(trm->mf, trm->dev_sem_info->hw_sem_addr[TRM_RES_HW_TRACER & HW_SEM_ADDR_MASK]);
         }
-    break;
+        break;
+
     default:
         break;
     }
@@ -551,11 +560,11 @@ trm_sts trm_unlock(trm_ctx trm, trm_resourse res)
 }
 
 /************************************
- * Function: trm_sts2str
- ************************************/
+* Function: trm_sts2str
+************************************/
 const char* trm_sts2str(trm_sts status)
 {
-    size_t num_of_sts = sizeof(status_to_str)/sizeof(status_to_str[0]);
+    size_t num_of_sts = sizeof(status_to_str) / sizeof(status_to_str[0]);
 
     if ((size_t)status >= num_of_sts) {
         return "Unknown status code";

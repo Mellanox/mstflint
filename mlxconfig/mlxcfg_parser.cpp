@@ -61,8 +61,8 @@ using namespace std;
 static void printFlagLine(string flag_s, string flag_l, string param, string desc)
 {
     string flags = "-" + flag_s + "|--" + flag_l + (param.length() ?  " <" + param + ">" : "");
-    printf(IDENT2"%-16s", flags.c_str());
-    printf(IDENT3": %s\n", desc.c_str());
+    printf(IDENT2 "%-16s", flags.c_str());
+    printf(IDENT3 ": %s\n", desc.c_str());
 }
 
 #ifdef MTCR_UL
@@ -74,14 +74,14 @@ static void printFlagLine(string flag_s, string flag_l, string param, string des
 void MlxCfg::printHelp()
 {
     // print opening
-    printf(IDENT"NAME:\n"
-           IDENT2   MLXCFG_NAME"\n"
-           IDENT"SYNOPSIS:\n"
-           IDENT2    MLXCFG_NAME " [Options] <Commands> [Parameters]\n");
+    printf(IDENT "NAME:\n"
+           IDENT2 MLXCFG_NAME "\n"
+           IDENT "SYNOPSIS:\n"
+           IDENT2 MLXCFG_NAME " [Options] <Commands> [Parameters]\n");
 
     // print options
     printf("\n");
-    printf(IDENT"OPTIONS:\n");
+    printf(IDENT "OPTIONS:\n");
     printFlagLine("d", "dev", "device", "Perform operation for a specified MST device.");
     printFlagLine("b", "db", "filename", "Use a specific database file.");
     printFlagLine("f", "file", "conf_file", "raw configuration file.");
@@ -95,43 +95,43 @@ void MlxCfg::printHelp()
 
     //print commands
     printf("\n");
-    printf(IDENT"COMMANDS:\n");
-    printf(IDENT2"%-24s : %s\n","clear_semaphore", "clear the tool semaphore.");
-    printf(IDENT2"%-24s : %s\n","i[show_confs]", "display informations about all configurations.");
-    printf(IDENT2"%-24s : %s\n","q[uery]", "query supported configurations.");
-    printf(IDENT2"%-24s : %s\n","r[eset]", "reset all configurations to their default value.");
-    printf(IDENT2"%-24s : %s\n","s[et]", "set configurations to a specific device.");
-    printf(IDENT2"%-24s : %s\n","set_raw", "set raw configuration file.(only "  FIFTH_GENERATION_LIST ".)");
-    printf(IDENT2"%-24s : %s\n","backup", "backup configurations to a file (only "  FIFTH_GENERATION_LIST ".). Use set_raw command to restore file.");
-    printf(IDENT2"%-24s : %s\n","gen_tlvs_file", "Generate List of all TLVs. TLVs output file name must be specified. (*)");
-    printf(IDENT2"%-24s : %s\n","g[en_xml_template]", "Generate XML template. TLVs input file name and XML output file name must be specified. (*)");
-    printf(IDENT2"%-24s : %s\n","xml2raw", "Generate Raw file from XML file. XML input file name and raw output file name must be specified. (*)");
-    printf(IDENT2"%-24s : %s\n","raw2xml", "Generate XML file from Raw file. raw input file name and XML output file name must be specified. (*)");
-    printf(IDENT2"%-24s : %s\n","xml2bin", "Generate Bin file from XML file. XML input file name and bin output file name must be specified. (*)");
-    printf(IDENT2"%-24s : %s\n","create_conf", "Generate Configuration file from XML file. XML input file name and bin output file name must be specified. (*)");
-    printf(IDENT2"%-24s : %s\n","apply", "Apply a Configuration file. bin input file name must be specified. (*)");
+    printf(IDENT "COMMANDS:\n");
+    printf(IDENT2 "%-24s : %s\n", "clear_semaphore", "clear the tool semaphore.");
+    printf(IDENT2 "%-24s : %s\n", "i[show_confs]", "display informations about all configurations.");
+    printf(IDENT2 "%-24s : %s\n", "q[uery]", "query supported configurations.");
+    printf(IDENT2 "%-24s : %s\n", "r[eset]", "reset all configurations to their default value.");
+    printf(IDENT2 "%-24s : %s\n", "s[et]", "set configurations to a specific device.");
+    printf(IDENT2 "%-24s : %s\n", "set_raw", "set raw configuration file.(only "  FIFTH_GENERATION_LIST ".)");
+    printf(IDENT2 "%-24s : %s\n", "backup", "backup configurations to a file (only "  FIFTH_GENERATION_LIST ".). Use set_raw command to restore file.");
+    printf(IDENT2 "%-24s : %s\n", "gen_tlvs_file", "Generate List of all TLVs. TLVs output file name must be specified. (*)");
+    printf(IDENT2 "%-24s : %s\n", "g[en_xml_template]", "Generate XML template. TLVs input file name and XML output file name must be specified. (*)");
+    printf(IDENT2 "%-24s : %s\n", "xml2raw", "Generate Raw file from XML file. XML input file name and raw output file name must be specified. (*)");
+    printf(IDENT2 "%-24s : %s\n", "raw2xml", "Generate XML file from Raw file. raw input file name and XML output file name must be specified. (*)");
+    printf(IDENT2 "%-24s : %s\n", "xml2bin", "Generate Bin file from XML file. XML input file name and bin output file name must be specified. (*)");
+    printf(IDENT2 "%-24s : %s\n", "create_conf", "Generate Configuration file from XML file. XML input file name and bin output file name must be specified. (*)");
+    printf(IDENT2 "%-24s : %s\n", "apply", "Apply a Configuration file. bin input file name must be specified. (*)");
 
     // print supported commands
     printf("\n");
-    printf(IDENT"(*) These commands do not require MST device\n\n");
-    printf(IDENT"To show supported configurations by device type, run show_confs command\n");
+    printf(IDENT "(*) These commands do not require MST device\n\n");
+    printf(IDENT "To show supported configurations by device type, run show_confs command\n");
     printf("\n");
 
 
 
     // print usage examples
     printf("\n");
-    printf(IDENT"Examples:\n");
-    printf(IDENT2"%-35s: %s\n", "To query configurations", MLXCFG_NAME " -d " MST_DEV_EXAMPLE " query");
-    printf(IDENT2"%-35s: %s\n", "To set configuration", MLXCFG_NAME " -d " MST_DEV_EXAMPLE " set SRIOV_EN=1 NUM_OF_VFS=16 WOL_MAGIC_EN_P1=1");
-    printf(IDENT2"%-35s: %s\n", "To set raw configuration", MLXCFG_NAME " -d " MST_DEV_EXAMPLE2 " -f conf_file set_raw");
-    printf(IDENT2"%-35s: %s\n", "To reset configuration", MLXCFG_NAME " -d " MST_DEV_EXAMPLE " reset");
+    printf(IDENT "Examples:\n");
+    printf(IDENT2 "%-35s: %s\n", "To query configurations", MLXCFG_NAME " -d " MST_DEV_EXAMPLE " query");
+    printf(IDENT2 "%-35s: %s\n", "To set configuration", MLXCFG_NAME " -d " MST_DEV_EXAMPLE " set SRIOV_EN=1 NUM_OF_VFS=16 WOL_MAGIC_EN_P1=1");
+    printf(IDENT2 "%-35s: %s\n", "To set raw configuration", MLXCFG_NAME " -d " MST_DEV_EXAMPLE2 " -f conf_file set_raw");
+    printf(IDENT2 "%-35s: %s\n", "To reset configuration", MLXCFG_NAME " -d " MST_DEV_EXAMPLE " reset");
     printf("\n");
-    printf(IDENT"Supported devices:\n");
-    printf(IDENT2"4th Generation devices: ConnectX3, ConnectX3-Pro (FW 2.31.5000 and above).\n");
-    printf(IDENT2"5th Generation devices: ConnectIB, ConnectX4, ConnectX4-LX, ConnectX5.\n");
+    printf(IDENT "Supported devices:\n");
+    printf(IDENT2 "4th Generation devices: ConnectX3, ConnectX3-Pro (FW 2.31.5000 and above).\n");
+    printf(IDENT2 "5th Generation devices: ConnectIB, ConnectX4, ConnectX4-LX, ConnectX5.\n");
     printf("\n");
-    printf(IDENT"Note: query device to view supported configurations by Firmware.\n");
+    printf(IDENT "Note: query device to view supported configurations by Firmware.\n");
     printf("\n");
 }
 
@@ -140,11 +140,13 @@ void MlxCfg::printVersion()
     print_version_string(MLXCFG_NAME, "");
 }
 
-void MlxCfg::printUsage() {
+void MlxCfg::printUsage()
+{
     printHelp();
 }
 
-bool MlxCfg::tagExsists(string tag) {
+bool MlxCfg::tagExsists(string tag)
+{
     VECTOR_ITERATOR(ParamView, _mlxParams.setParams, it) {
         if (it->mlxconfigName == tag) {
             return true;
@@ -153,50 +155,50 @@ bool MlxCfg::tagExsists(string tag) {
     return false;
 }
 
-inline const char* cmdNVInputFileTag(mlxCfgCmd cmd, const char* def)
+inline const char* cmdNVInputFileTag(mlxCfgCmd cmd, const char *def)
 {
     return (cmd == Mc_XML2Raw || cmd == Mc_XML2Bin || cmd == Mc_CreateConf) ?
-            "XML" : (cmd == Mc_Raw2XML) ?
-            "Raw" : (cmd == Mc_GenXMLTemplate) ?
-            "TLVs" : (cmd == Mc_Apply) ?
-            "Configuration" : def;
+           "XML" : (cmd == Mc_Raw2XML) ?
+           "Raw" : (cmd == Mc_GenXMLTemplate) ?
+           "TLVs" : (cmd == Mc_Apply) ?
+           "Configuration" : def;
 }
 
-inline const char* cmdNVOutputFileTag(mlxCfgCmd cmd, const char* def)
+inline const char* cmdNVOutputFileTag(mlxCfgCmd cmd, const char *def)
 {
     return (cmd == Mc_XML2Raw) ?
-            "Raw" : (cmd == Mc_Raw2XML) ?
-            "XML" : (cmd == Mc_GenXMLTemplate) ?
-            "XML" : (cmd == Mc_XML2Bin) ?
-            "Bin" : (cmd == Mc_CreateConf) ?
-            "Configuration" : def;
+           "Raw" : (cmd == Mc_Raw2XML) ?
+           "XML" : (cmd == Mc_GenXMLTemplate) ?
+           "XML" : (cmd == Mc_XML2Bin) ?
+           "Bin" : (cmd == Mc_CreateConf) ?
+           "Configuration" : def;
 }
 
-mlxCfgStatus MlxCfg::extractNVInputFile(int argc, char* argv[])
+mlxCfgStatus MlxCfg::extractNVInputFile(int argc, char *argv[])
 {
     if (argc < 1) {
         return err(true, "%s input file is missing",
-                cmdNVInputFileTag(_mlxParams.cmd,""));
+                   cmdNVInputFileTag(_mlxParams.cmd, ""));
     }
     _mlxParams.NVInputFile = argv[0];
     return MLX_CFG_OK;
 }
 
-mlxCfgStatus MlxCfg::extractNVOutputFile(int argc, char* argv[])
+mlxCfgStatus MlxCfg::extractNVOutputFile(int argc, char *argv[])
 {
     if (argc < 1) {
         return err(true, "%s output file is missing",
-                cmdNVOutputFileTag(_mlxParams.cmd,""));
+                   cmdNVOutputFileTag(_mlxParams.cmd, ""));
     }
     _mlxParams.NVOutputFile = argv[0];
     return MLX_CFG_OK;
 }
 
-mlxCfgStatus MlxCfg::extractQueryCfgArgs(int argc, char* argv[])
+mlxCfgStatus MlxCfg::extractQueryCfgArgs(int argc, char *argv[])
 {
     int i = 0;
 
-    for (;i < argc;i++) {
+    for (; i < argc; i++) {
         ParamView pv;
         string mlxconfigName = argv[i];
         if (isIndexedMlxconfigName(mlxconfigName)) {
@@ -223,13 +225,13 @@ mlxCfgStatus MlxCfg::extractQueryCfgArgs(int argc, char* argv[])
     return MLX_CFG_OK;
 }
 
-mlxCfgStatus MlxCfg::extractSetCfgArgs(int argc, char* argv[])
+mlxCfgStatus MlxCfg::extractSetCfgArgs(int argc, char *argv[])
 {
     int i = 0;
     string tag, strVal;
 
-    for (;i < argc;i++) {
-        char* ptr;
+    for (; i < argc; i++) {
+        char *ptr;
         // get the tag
         ptr = strtok(argv[i], "=");
         if (!ptr) {
@@ -246,7 +248,7 @@ mlxCfgStatus MlxCfg::extractSetCfgArgs(int argc, char* argv[])
             return err(true, "Invalid Configuration argument %s", argv[i]);
         }
 
-        if(tagExsists(tag)) {
+        if (tagExsists(tag)) {
             return err(true, "Duplicate parameter, %s.", tag.c_str());
         }
 
@@ -281,15 +283,15 @@ mlxCfgStatus MlxCfg::extractSetCfgArgs(int argc, char* argv[])
 
 
 
-mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
+mlxCfgStatus MlxCfg::parseArgs(int argc, char *argv[])
 {
     int i = 1;
-    for (; i<argc; i++) {
+    for (; i < argc; i++) {
         string arg = argv[i];
         if (arg == "-v" || arg == "--version") {
             printVersion();
             return MLX_CFG_OK_EXIT;
-        } else if (arg == "-h" || arg == "--help"){
+        } else if (arg == "-h" || arg == "--help") {
             printHelp();
             return MLX_CFG_OK_EXIT;
         } else if (arg == "-d" || arg == "--dev") {
@@ -365,11 +367,11 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
         } else if (arg == "apply") {
             _mlxParams.cmd = Mc_Apply;
             break;
-        } else if (arg == "show_confs" || arg == "i"){
+        } else if (arg == "show_confs" || arg == "i") {
             _mlxParams.cmd = Mc_ShowConfs;
             break;
-        // hidden flag --force used to ignore parameter checks
-        } else if (arg == "--force"){
+            // hidden flag --force used to ignore parameter checks
+        } else if (arg == "--force") {
             _mlxParams.force = true;
         } else {
             return err(true, "invalid argument: %s", arg.c_str());
@@ -384,16 +386,16 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
         return err(true, "missing configuration arguments. For more information please run " MLXCFG_NAME " -h|--help.");
     }
     if (i != argc && (_mlxParams.cmd == Mc_Reset)) {
-        return err(true, "%s command expects no argument but %d argument received", "reset", argc -i);
+        return err(true, "%s command expects no argument but %d argument received", "reset", argc - i);
     }
     if ((_mlxParams.cmd == Mc_Set || _mlxParams.cmd == Mc_Clr_Sem || _mlxParams.cmd == Mc_Set_Raw || _mlxParams.cmd == Mc_Backup || _mlxParams.cmd == Mc_ShowConfs || _mlxParams.cmd == Mc_Apply) && _mlxParams.device.length() == 0) {
         return err(true, "%s command expects device to be specified.",
-                _mlxParams.cmd == Mc_Set ?
-                        "set" : _mlxParams.cmd == Mc_Set_Raw ?
-                                "set_raw" : _mlxParams.cmd == Mc_Clr_Sem ?
-                                        "clear_semaphore" : _mlxParams.cmd == Mc_Backup ?
-                                        "backup" : _mlxParams.cmd == Mc_Apply ?
-                                         "apply" : "show_confs");
+                   _mlxParams.cmd == Mc_Set ?
+                   "set" : _mlxParams.cmd == Mc_Set_Raw ?
+                   "set_raw" : _mlxParams.cmd == Mc_Clr_Sem ?
+                   "clear_semaphore" : _mlxParams.cmd == Mc_Backup ?
+                   "backup" : _mlxParams.cmd == Mc_Apply ?
+                   "apply" : "show_confs");
     }
     if ((_mlxParams.cmd == Mc_Set_Raw && _mlxParams.rawTlvFile.size() == 0 )) {
         return err(true, "set_raw command expects raw TLV file to be specified.");
@@ -402,12 +404,12 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
         return err(true, "backup command expects file to be specified.");
     }
     if (((_mlxParams.cmd != Mc_Set_Raw && _mlxParams.cmd != Mc_Backup) &&
-            _mlxParams.rawTlvFile.size() != 0 )) {
+         _mlxParams.rawTlvFile.size() != 0 )) {
         return err(true, "raw TLV file can only be specified with set_raw command.");
     }
 
     if (_mlxParams.cmd == Mc_GenTLVsFile) {
-        return extractNVOutputFile(argc-i, &(argv[i]));
+        return extractNVOutputFile(argc - i, &(argv[i]));
     }
 
     if (_mlxParams.cmd == Mc_Apply) {
@@ -415,20 +417,20 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
     }
 
     if (_mlxParams.cmd == Mc_CreateConf &&
-            (_mlxParams.privPemFile.empty() ^ _mlxParams.keyPairUUID.empty())) {
+        (_mlxParams.privPemFile.empty() ^ _mlxParams.keyPairUUID.empty())) {
         return err(true, "if you want to sign the configuration file you have to provide private pem file and key pair uuid file");
     }
 
     if (_mlxParams.cmd == Mc_GenXMLTemplate
-            || _mlxParams.cmd == Mc_XML2Raw
-            || _mlxParams.cmd == Mc_Raw2XML
-            || _mlxParams.cmd == Mc_XML2Bin
-            || _mlxParams.cmd == Mc_CreateConf) {
-        mlxCfgStatus rc = extractNVInputFile(argc-i, &(argv[i]));
+        || _mlxParams.cmd == Mc_XML2Raw
+        || _mlxParams.cmd == Mc_Raw2XML
+        || _mlxParams.cmd == Mc_XML2Bin
+        || _mlxParams.cmd == Mc_CreateConf) {
+        mlxCfgStatus rc = extractNVInputFile(argc - i, &(argv[i]));
         if (rc != MLX_CFG_OK) {
             return rc;
         }
-        return extractNVOutputFile(argc-i-1, &(argv[i+1]));
+        return extractNVOutputFile(argc - i - 1, &(argv[i + 1]));
     }
 
 
@@ -436,7 +438,7 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char* argv[])
         if (_mlxParams.cmd == Mc_Query) {
             return extractQueryCfgArgs(argc - i, &(argv[i]));
         } else {
-            return extractSetCfgArgs(argc-i, &(argv[i]));
+            return extractSetCfgArgs(argc - i, &(argv[i]));
         }
     } catch (MlxcfgException& e) {
         return err(true, "%s", e._err.c_str());

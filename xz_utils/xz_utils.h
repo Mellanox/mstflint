@@ -50,8 +50,8 @@ enum
     XZ_ERR_ENCODE_FAULT         = -6
 };
 
-int32_t   xz_compress(u_int32_t preset, u_int8_t* inbuf, u_int32_t insz, u_int8_t* outbuf, u_int32_t outsz);
-int32_t   xz_decompress(u_int8_t* inbuf, u_int32_t insz, u_int8_t* outbuf, u_int32_t outsz);
+int32_t   xz_compress(u_int32_t preset, u_int8_t *inbuf, u_int32_t insz, u_int8_t *outbuf, u_int32_t outsz);
+int32_t   xz_decompress(u_int8_t *inbuf, u_int32_t insz, u_int8_t *outbuf, u_int32_t outsz);
 
 #ifdef __cplusplus
 }

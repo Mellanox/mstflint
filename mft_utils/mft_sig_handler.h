@@ -80,7 +80,7 @@ void mft_signal_set_fired(int is_fired);
  * @param [in] msg - the mesage or NULL if no message is to be
  *        printed.
  */
-void mft_signal_set_msg(char* msg);
+void mft_signal_set_msg(char *msg);
 
 /**
  * @brief Deal with signals, if got signal - raise, otherwise restore it

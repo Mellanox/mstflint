@@ -45,16 +45,16 @@ ImgVersion::ImgVersion()
 }
 
 /*
-void ImgVersion::setExpansionRomtoUnknown()
-{
+   void ImgVersion::setExpansionRomtoUnknown()
+   {
     _isExpansionRomUnkown = true;
-}
+   }
 
-bool ImgVersion::isExpansionRomUnknown()
-{
+   bool ImgVersion::isExpansionRomUnknown()
+   {
     return _isExpansionRomUnkown;
-}
-*/
+   }
+ */
 
 
 u_int16_t ImgVersion::getImgVerField(int index)
@@ -81,7 +81,7 @@ string ImgVersion::getTypeStr()
 }
 
 
-void ImgVersion::setVersion(const char* imgType, u_int8_t verSz, const u_int16_t* ver)
+void ImgVersion::setVersion(const char *imgType, u_int8_t verSz, const u_int16_t *ver)
 {
     _type = imgType;
     for (int i = 0; i < verSz; i++) {
@@ -98,9 +98,9 @@ string ImgVersion::getPrintableVersion(int ffv, bool show_type)
     if (_type.size()) {
         if (!_type.compare("FW") || !_type.compare("Running FW")) {
             if (!ffv) {
-                sprintf(buf, (_ver[1] > 99 ? "%s%d.%04d.%04d" : "%s%d.%d.%04d"), (show_type ?(_type + " ").c_str():""), _ver[0], _ver[1], _ver[2]);
+                sprintf(buf, (_ver[1] > 99 ? "%s%d.%04d.%04d" : "%s%d.%d.%04d"), (show_type ? (_type + " ").c_str() : ""), _ver[0], _ver[1], _ver[2]);
             } else {
-                sprintf(buf, "%s%02d.%02d.%02d.%02d", (show_type ?(_type + " ").c_str():""), _ver[0], _ver[1], _ver[2], _ver[3]);
+                sprintf(buf, "%s%02d.%02d.%02d.%02d", (show_type ? (_type + " ").c_str() : ""), _ver[0], _ver[1], _ver[2], _ver[3]);
             }
             st = buf;
         } else {
@@ -155,18 +155,21 @@ int ImgVersion::compareFw(const ImgVersion &imv) const
     int versionFields = _verNumFields;
     u_int16_t thisFwVer[3] = {0};
     u_int16_t fwVer[3] = {0};
-    memcpy(thisFwVer, _ver, sizeof(thisFwVer[0])*2);
-    thisFwVer[2] = versionFields == 3 ? _ver[2] : _ver[2] *100 + _ver[3];
-    memcpy(fwVer, imv._ver, sizeof(fwVer[0])*2);
-    fwVer[2] = versionFields == 3 ? imv._ver[2] : imv._ver[2] *100 + imv._ver[3];
+    memcpy(thisFwVer, _ver, sizeof(thisFwVer[0]) * 2);
+    thisFwVer[2] = versionFields == 3 ? _ver[2] : _ver[2] * 100 + _ver[3];
+    memcpy(fwVer, imv._ver, sizeof(fwVer[0]) * 2);
+    fwVer[2] = versionFields == 3 ? imv._ver[2] : imv._ver[2] * 100 + imv._ver[3];
     res = FwOperations::FwVerLessThan(thisFwVer, fwVer);
     switch (res) {
     case FVI_SMALLER:
         return 1;
+
     case FVI_GREATER:
         return -1;
+
     case FVI_EQUAL:
         return 0;
+
     default:
         return -2;
     }

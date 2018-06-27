@@ -51,7 +51,7 @@ extern "C" {
 #define OUT
 #define INOUT
 
-#define FLASH_REG_ACCESS	0x9001
+#define FLASH_REG_ACCESS    0x9001
 #define ICMD_MAX_CMD_SIZE   0x300 // max mailbox size
 
 /* --------- Functional API ---------------------------------------- */
@@ -79,11 +79,11 @@ void icmd_close(mfile *mf);
  *                  status value (as indicated in cr-space).
  **/
 int icmd_send_command_int(mfile     *mf,
-                      IN    int     opcode,
-                      INOUT void*   data,
-                      IN    int     write_data_size,
-                      IN    int     read_data_size,
-                      IN    int     skip_write);
+                          IN int opcode,
+                          INOUT void *data,
+                          IN int write_data_size,
+                          IN int read_data_size,
+                          IN int skip_write);
 
 /**
  * Take the Tools-HCR semaphore. This functionality is provided

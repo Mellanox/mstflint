@@ -70,7 +70,7 @@ typedef struct crd_dword {
 } crd_dword_t;
 
 
-typedef void (*crd_callback_t) (crd_dword_t *); // call back
+typedef void (*crd_callback_t) (crd_dword_t*);  // call back
 
 
 #ifndef IN
@@ -87,34 +87,34 @@ typedef void (*crd_callback_t) (crd_dword_t *); // call back
 
 /*
 
-Must be called before others methods to allocat memory and store all needed configuration
+   Must be called before others methods to allocat memory and store all needed configuration
 
  */
-int crd_init(OUT crd_ctxt_t **context, IN mfile *mf, IN int is_full, IN int cause, IN int cause_off, IN const char * db_path); // fill device type, and number of dewords according to the is_full
+int crd_init(OUT crd_ctxt_t **context, IN mfile *mf, IN int is_full, IN int cause, IN int cause_off, IN const char *db_path);  // fill device type, and number of dewords according to the is_full
 
 /*
-Store cr space length at arr_size
+   Store cr space length at arr_size
  */
 int crd_get_dword_num(IN crd_ctxt_t *context, OUT u_int32_t *arr_size);
 
 
 /*
-Store all addresses are dword_arr array
+   Store all addresses are dword_arr array
  */
-int crd_get_addr_list(IN crd_ctxt_t *context, OUT crd_dword_t* dword_arr); // caller well allocate the array and addresses will be filled.
+int crd_get_addr_list(IN crd_ctxt_t *context, OUT crd_dword_t *dword_arr); // caller well allocate the array and addresses will be filled.
 
 /*
-Store all addresses and data in dword_arr, if func is not null, it will be called on each dword
+   Store all addresses and data in dword_arr, if func is not null, it will be called on each dword
  */
-int crd_dump_data(IN crd_ctxt_t *context, OUT crd_dword_t* dword_arr, IN crd_callback_t func);// values will be filled.
+int crd_dump_data(IN crd_ctxt_t *context, OUT crd_dword_t *dword_arr, IN crd_callback_t func);// values will be filled.
 
 /*
-Return string representation of the error code
+   Return string representation of the error code
  */
 const char* crd_err_str(int rc);
 
 /*
-Free context
+   Free context
  */
 void crd_free(IN crd_ctxt_t *context);
 

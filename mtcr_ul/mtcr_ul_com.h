@@ -50,19 +50,19 @@ extern "C" {
 /*
  * Read 4 bytes, return number of succ. read bytes or -1 on failure
  */
-int mread4_ul(mfile* mf, unsigned int offset, u_int32_t *value);
+int mread4_ul(mfile *mf, unsigned int offset, u_int32_t *value);
 
 /*
  * Write 4 bytes, return number of succ. written bytes or -1 on failure
  */
-int mwrite4_ul(mfile* mf, unsigned int offset, u_int32_t value);
+int mwrite4_ul(mfile *mf, unsigned int offset, u_int32_t value);
 
 
-int mread4_block_ul(mfile* mf, unsigned int offset, u_int32_t* data, int byte_len);
-int mwrite4_block_ul(mfile* mf, unsigned int offset, u_int32_t* data, int byte_len);
+int mread4_block_ul(mfile *mf, unsigned int offset, u_int32_t *data, int byte_len);
+int mwrite4_block_ul(mfile *mf, unsigned int offset, u_int32_t *data, int byte_len);
 
-int msw_reset_ul(mfile* mf);
-int mhca_reset_ul(mfile* mf);
+int msw_reset_ul(mfile *mf);
+int mhca_reset_ul(mfile *mf);
 
 /*
  * Get list of MST_ul(Mellanox Software Tools) devices.
@@ -86,7 +86,7 @@ int mdevices_v_ul(char *buf, int len, int mask, int verbosity);
  * len will be updated to hold the array length
  *
  */
-dev_info* mdevices_info_ul(int mask, int* len);
+dev_info* mdevices_info_ul(int mask, int *len);
 
 /*
  *  * Get list of MST (Mellanox Software Tools) devices info records.
@@ -94,49 +94,49 @@ dev_info* mdevices_info_ul(int mask, int* len);
  *  * len will be updated to hold the array length
  *  * Verbosity will decide whether to get all the Physical functions or not.
  */
-dev_info* mdevices_info_v_ul(int mask, int* len, int verbosity);
+dev_info* mdevices_info_v_ul(int mask, int *len, int verbosity);
 
 /*
  * Open Mellanox Software tools_ul(mst) driver. Device type==INFINIHOST
  * Return valid void ptr or 0 on failure
  */
-mfile *mopen_ul(const char *name);
+mfile* mopen_ul(const char *name);
 
 /*
  * Close Mellanox driver
  * req. descriptor
  */
-int mclose_ul(mfile* mf);
+int mclose_ul(mfile *mf);
 
-int maccess_reg_mad_ul(mfile* mf, u_int8_t *data);
+int maccess_reg_mad_ul(mfile *mf, u_int8_t *data);
 
-int maccess_reg_ul(mfile*  mf,
-                u_int16_t  reg_id,
-                maccess_reg_method_t reg_method,
-                void*      reg_data,
-                u_int32_t  reg_size,
-                u_int32_t   r_size_reg, // used when sending via icmd interface_ul(how much data should be read back to the user)
-                u_int32_t   w_size_reg, // used when sending via icmd interface_ul(how much data should be written to the scratchpad)
-                                        // if you dont know what you are doing then r_size_reg = w_size_reg = your_register_size
-                int       *reg_status);
-
-
-
-int tools_cmdif_send_inline_cmd_ul(mfile* mf, u_int64_t in_param, u_int64_t* out_param,
-                                u_int32_t input_modifier, u_int16_t opcode, u_int8_t  opcode_modifier);
-
-int tools_cmdif_send_mbox_command_ul(mfile* mf, u_int32_t input_modifier, u_int16_t opcode, u_int8_t  opcode_modifier,
-                                  int data_offs_in_mbox, void* data, int data_size, int skip_write);
-
-int tools_cmdif_unlock_semaphore_ul(mfile* mf);
+int maccess_reg_ul(mfile *mf,
+                   u_int16_t reg_id,
+                   maccess_reg_method_t reg_method,
+                   void *reg_data,
+                   u_int32_t reg_size,
+                   u_int32_t r_size_reg, // used when sending via icmd interface_ul(how much data should be read back to the user)
+                   u_int32_t w_size_reg, // used when sending via icmd interface_ul(how much data should be written to the scratchpad)
+                                         // if you dont know what you are doing then r_size_reg = w_size_reg = your_register_size
+                   int       *reg_status);
 
 
-int mget_max_reg_size_ul(mfile* mf);
 
-int mread_buffer_ul(mfile* mf, unsigned int offset, u_int8_t* data, int byte_len);
-int mwrite_buffer_ul(mfile* mf, unsigned int offset, u_int8_t* data, int byte_len);
+int tools_cmdif_send_inline_cmd_ul(mfile *mf, u_int64_t in_param, u_int64_t *out_param,
+                                   u_int32_t input_modifier, u_int16_t opcode, u_int8_t opcode_modifier);
 
-int mclear_pci_semaphore_ul(const char* name);
+int tools_cmdif_send_mbox_command_ul(mfile *mf, u_int32_t input_modifier, u_int16_t opcode, u_int8_t opcode_modifier,
+                                     int data_offs_in_mbox, void *data, int data_size, int skip_write);
+
+int tools_cmdif_unlock_semaphore_ul(mfile *mf);
+
+
+int mget_max_reg_size_ul(mfile *mf);
+
+int mread_buffer_ul(mfile *mf, unsigned int offset, u_int8_t *data, int byte_len);
+int mwrite_buffer_ul(mfile *mf, unsigned int offset, u_int8_t *data, int byte_len);
+
+int mclear_pci_semaphore_ul(const char *name);
 
 int mvpd_read4_ul(mfile *mf, unsigned int offset, u_int8_t value[4]);
 

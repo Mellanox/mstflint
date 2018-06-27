@@ -48,16 +48,16 @@ using namespace mlxcfg;
 void extractVars(const string& expression, vector<string>& vars)
 {
     string var;
-    for(unsigned int i = 0; i < expression.size(); i++) {
-        if(expression[i] == '$') {
+    for (unsigned int i = 0; i < expression.size(); i++) {
+        if (expression[i] == '$') {
             var = "$";
             i++;
             while (i < expression.size() &&
-                (expression[i] == '_' ||
-                 expression[i] == '.' ||
-                 ('a' <= expression[i] && expression[i] <= 'z') ||
-                 ('A' <= expression[i] && expression[i] <= 'Z') ||
-                 ('0' <= expression[i] && expression[i] <= '9'))) {
+                   (expression[i] == '_' ||
+                    expression[i] == '.' ||
+                    ('a' <= expression[i] && expression[i] <= 'z') ||
+                    ('A' <= expression[i] && expression[i] <= 'Z') ||
+                    ('0' <= expression[i] && expression[i] <= '9'))) {
                 var += expression[i];
                 i++;
             }
@@ -70,7 +70,7 @@ void extractVars(const string& expression, vector<string>& vars)
 }
 
 void substituteVarsValues(const string& orgExpr,
-        const map<string, double>& var2ValMap, string& expr)
+                          const map<string, double>& var2ValMap, string& expr)
 {
     string var = "";
 
@@ -80,14 +80,14 @@ void substituteVarsValues(const string& orgExpr,
             var = "$";
             j++;
             while (j < orgExpr.size()
-                    && (orgExpr[j] == '_' || orgExpr[j] == '.'
-                            || ('a' <= orgExpr[j] && orgExpr[j] <= 'z')
-                            || ('A' <= orgExpr[j] && orgExpr[j] <= 'Z')
-                            || ('0' <= orgExpr[j] && orgExpr[j] <= '9'))) {
+                   && (orgExpr[j] == '_' || orgExpr[j] == '.'
+                       || ('a' <= orgExpr[j] && orgExpr[j] <= 'z')
+                       || ('A' <= orgExpr[j] && orgExpr[j] <= 'Z')
+                       || ('0' <= orgExpr[j] && orgExpr[j] <= '9'))) {
                 var += orgExpr[j];
                 j++;
             }
-            map<string,double>::const_iterator it = var2ValMap.find(var);
+            map<string, double>::const_iterator it = var2ValMap.find(var);
             if (it == var2ValMap.end()) {
                 expr += var; //no value for var, so append it to expr
             } else {
@@ -116,7 +116,7 @@ void Expression::getVars(vector<string>& vars) const
 
 double Expression::getVarVal(const string& var) const
 {
-    map<string,double>::const_iterator it = _varsVal.find(var);
+    map<string, double>::const_iterator it = _varsVal.find(var);
     if (it == _varsVal.end()) {
         throw MlxcfgException("Unknown variable: %s", var.c_str());
     }
@@ -136,7 +136,7 @@ double Expression::evaluate()
     string expression;
     string varXName;
     mu::Parser p;
- 
+
     substituteVarsValues(_expression, _varsVal, expression);
 
     //find the unknown variable value
@@ -154,30 +154,30 @@ double Expression::evaluate()
     }
 
     try {
-         //currently lets support only one var with unknown val
-         if (varXName.empty()) {
-             p.SetExpr(expression);
-             return p.Eval();
-         } else {
-             double x;
-             const string varXTempName = "x";
-             size_t pos = expression.find(varXName);
-             if (pos == string::npos) {
-                 throw MlxcfgException("Unexpected error - "
-                                       "The variable '%s' was not found in "
-                                       "the expression '%s'",
-                                       varXName.c_str(), expression.c_str());
-             }
-             expression.replace(pos,
-                                varXName.length(),
-                                varXTempName);
-             p.DefineVar(varXTempName, &x);
-             p.SetExpr(expression);
-             double result = p.Eval();
-             _varsVal[varXName] = x;
-             return result;
+        //currently lets support only one var with unknown val
+        if (varXName.empty()) {
+            p.SetExpr(expression);
+            return p.Eval();
+        } else {
+            double x;
+            const string varXTempName = "x";
+            size_t pos = expression.find(varXName);
+            if (pos == string::npos) {
+                throw MlxcfgException("Unexpected error - "
+                                      "The variable '%s' was not found in "
+                                      "the expression '%s'",
+                                      varXName.c_str(), expression.c_str());
+            }
+            expression.replace(pos,
+                               varXName.length(),
+                               varXTempName);
+            p.DefineVar(varXTempName, &x);
+            p.SetExpr(expression);
+            double result = p.Eval();
+            _varsVal[varXName] = x;
+            return result;
         }
-    } catch(mu::Parser::exception_type &e) {
+    } catch (mu::Parser::exception_type &e) {
         throw MlxcfgException("Failed to evaluate the expression(%s): %s\n"
                               " the original expression is: %s",
                               expression.c_str(),

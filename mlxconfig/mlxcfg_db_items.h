@@ -47,14 +47,14 @@
 using namespace std;
 
 class DBOffset {
-    public:
-        explicit DBOffset(const string& offset);
-        u_int32_t getOffsetInBE(u_int32_t sizeInBits,
-                u_int32_t withBitsPart = true);
-        u_int32_t getBytesPart() { return _bytesPart;}
-    private:
-        u_int32_t _bytesPart; //describes the bytes part of the offset string ("0x51.3", the bytes part is 0x51)
-        u_int32_t _bitsPart; //describes the bits part of the offset string ("0x51.3", the bits part is 3)
+public:
+    explicit DBOffset(const string& offset);
+    u_int32_t getOffsetInBE(u_int32_t sizeInBits,
+                            u_int32_t withBitsPart = true);
+    u_int32_t getBytesPart() { return _bytesPart;}
+private:
+    u_int32_t _bytesPart;     //describes the bytes part of the offset string ("0x51.3", the bytes part is 0x51)
+    u_int32_t _bitsPart;     //describes the bits part of the offset string ("0x51.3", the bits part is 3)
 };
 
 #endif

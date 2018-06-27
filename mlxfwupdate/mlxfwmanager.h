@@ -59,40 +59,40 @@
 #include "mlxfwmanager_common.h"
 #include "menu.h"
 
-FILE* FLog = NULL;
-FILE* FOut = stdout;
-FILE* FErr = stderr;
+FILE *FLog = NULL;
+FILE *FOut = stdout;
+FILE *FErr = stderr;
 extern string toolName;
 
-#define print_out(...) do{                                        \
-            if (!formatted_output) {                              \
-                fprintf(FOut,__VA_ARGS__);                        \
-                fflush(FOut);                                     \
-            }                                                     \
-            if (FLog != NULL) fprintf(FLog , __VA_ARGS__);        \
-        }while(0)
+#define print_out(...) do {                                        \
+        if (!formatted_output) {                              \
+            fprintf(FOut, __VA_ARGS__);                        \
+            fflush(FOut);                                     \
+        }                                                     \
+        if (FLog != NULL) { fprintf(FLog, __VA_ARGS__);}        \
+} while (0)
 
-#define print_err(...) do{                                        \
-            if (!formatted_output) {                              \
-                fprintf(FErr, __VA_ARGS__);                       \
-                fflush(FErr);                                     \
-            }                                                     \
-            if (FLog != NULL) fprintf(FLog ,__VA_ARGS__); \
-        }while(0)
-#define print_out_xml(...)do{                                        \
-        fprintf(FOut,__VA_ARGS__);                        \
+#define print_err(...) do {                                        \
+        if (!formatted_output) {                              \
+            fprintf(FErr, __VA_ARGS__);                       \
+            fflush(FErr);                                     \
+        }                                                     \
+        if (FLog != NULL) { fprintf(FLog, __VA_ARGS__);} \
+} while (0)
+#define print_out_xml(...)do {                                        \
+        fprintf(FOut, __VA_ARGS__);                        \
         fflush(FOut);                                     \
-        if (FLog != NULL) fprintf(FLog , __VA_ARGS__);        \
-    }while(0)
+        if (FLog != NULL) {fprintf(FLog, __VA_ARGS__);}        \
+} while (0)
 
-int   formatted_output = 0;
+int formatted_output = 0;
 
 using namespace std;
 
 typedef struct {
     string mfa_path;
-    bool   path_is_file;
-    bool   display_file_names;
+    bool path_is_file;
+    bool display_file_names;
     string exe_path;
     string adjuster_path;
     string http_server;
@@ -101,35 +101,35 @@ typedef struct {
     mlxFWMSetupType::T setupType;
 } config_t;
 
-int mainEntry(int argc, char* argv[]);
+int mainEntry(int argc, char *argv[]);
 string getline();
 //void    displayFilesToBeDownloaded(filesOPtions filterOPtions, CmdLineParams cmd_params);
 int    displayReleaseNoteFiles(const filesOPtions& filterOPtions, const CmdLineParams &cmd_params);
 void   displayReleaseNoteMFAs(map<string, PsidQueryItem> psidUpdateInfo, vector<MlnxDev*> devs, int deviceIndex);
 void   display_file_listing(vector<PsidQueryItem> &items, string psid, bool show_titles);
-int    getLocalDevices(dev_info** devs);
+int    getLocalDevices(dev_info **devs);
 void   getUniquePsidList(vector<MlnxDev*> &devs, vector<string> &psid_list, vector<dm_dev_id_t> &dev_types_list, vector<string> &fw_version_list);
 void   getUniqueMFAList(vector<MlnxDev*> &devs, map<string, PsidQueryItem> &psidUpdateInfo, int force_update, vector<string> &mfa_list, vector <string> &mfa_base_name_list);
 int    queryMFAs(ServerRequest *srq, string &mfa_path, vector<string> &psid_list, vector<dm_dev_id_t> &dev_types_list, map<string, PsidQueryItem> &psidUpdateInfo, int online_update, string &errorMsg, vector<string> &fw_version_list);
 int    download(ServerRequest *srq, vector<string> &url, vector <string>&fileNames, vector <string>&os, string path, bool show_location = true);
 int    checkAndDisplayDeviceQuery1D(vector<MlnxDev*> &devs, map<string, PsidQueryItem> &psidUpdateInfo, PsidLookupDB &psidLookupDB,
-                                    int update_query_ , int img_path_provided, int force_update, bool is_query, bool is_query_xml, string &xml_query, string &errorMsg, CmdLineParams &cmd_params);
+                                    int update_query_, int img_path_provided, int force_update, bool is_query, bool is_query_xml, string &xml_query, string &errorMsg, CmdLineParams &cmd_params);
 
 void printDeviceInfoQuery(int dev_index, string devname, string deviceType, string pn, string description,
-        string statusStr, vector<MlnxDev*> &devs, string ver, string availVer, map<string, bool> expRomTypes,
-        map<string, int> devRomTypeIndex, map<string, int> availRomTypeIndex, map<string, PsidQueryItem> &psidUpdateInfo, bool multiple_images_found);
+                          string statusStr, vector<MlnxDev*> &devs, string ver, string availVer, map<string, bool> expRomTypes,
+                          map<string, int> devRomTypeIndex, map<string, int> availRomTypeIndex, map<string, PsidQueryItem> &psidUpdateInfo, bool multiple_images_found);
 
 string generateQueryXML(int dev_index, string devname, string deviceType, string pn, string description,
-        string statusStr, vector<MlnxDev*> &devs, string ver, string availVer, map<string, bool> expRomTypes,
-        map<string, int> devRomTypeIndex, map<string, int> availRomTypeIndex, map<string, PsidQueryItem> &psidUpdateInfo, bool multiple_images_found);
+                        string statusStr, vector<MlnxDev*> &devs, string ver, string availVer, map<string, bool> expRomTypes,
+                        map<string, int> devRomTypeIndex, map<string, int> availRomTypeIndex, map<string, PsidQueryItem> &psidUpdateInfo, bool multiple_images_found);
 
-int    prompt(const char* str, int yes_no_);
+int    prompt(const char *str, int yes_no_);
 FILE*  createOutFile(string &fileName, bool fileSpecified);
 int    progressCB_nodisplay(int completion);
 int    progressCB_display(int completion);
-int    advProgressFunc_display(int completion, const char* stage, prog_t type, int* unknownProgress);
+int    advProgressFunc_display(int completion, const char *stage, prog_t type, int *unknownProgress);
 bool   checkCmdParams(CmdLineParams &cmd_params, config_t &config);
-bool   initConfig(config_t &config, char* argv[], CmdLineParams &cmd_params);
+bool   initConfig(config_t &config, char *argv[], CmdLineParams &cmd_params);
 bool   getIniParams(config_t &config);
 string adjustRelPath(string path, string adjuster);
 int    isDirectory(string path);
@@ -137,11 +137,11 @@ int    isFile(string path);
 int    list_files_content(config_t &config);
 int    extract_all(CmdLineParams &cmd_params, config_t &config, ServerRequest *srq);
 int    extract_image(CmdLineParams &cmd_params, config_t &config, ServerRequest *srq, bool useExtractDir = false);
-int   CalcFileCrc(char* fileName);
+int   CalcFileCrc(char *fileName);
 void  TerminationHandler(int signum);
 void  initHandler();
 void  replaceStringInPlace(string& subject, const string& search,
-                          const string& replace);
+                           const string& replace);
 void  fixXmlString(string & stringToFix);
 
 bool isServerRequestorRequired(CmdLineParams& cmd_params);
@@ -152,9 +152,9 @@ int   handleDownloadRequest(ServerRequest *srq,
                             CmdLineParams &cmd_params, config_t config);
 
 int handleOnlinePsidsQuery(ServerRequest *srq,
-                            CmdLineParams &cmd_params, config_t config);
+                           CmdLineParams &cmd_params, config_t config);
 int handleOnlinePsidsQueryXml(ServerRequest *srq,
-                            CmdLineParams &cmd_params, config_t config);
+                              CmdLineParams &cmd_params, config_t config);
 void filterFiles(vector <DownloadedFileProperties> files,
                  vector <DownloadedFileProperties> &filtered_files,
                  int file_type, int os, int family);
@@ -163,9 +163,9 @@ int generateProductionName(string &targetFile, PsidQueryItem ri);
 
 
 
-int   abort_request = 0;
-int   CompareFFV = 0;
-bool  IS_OKAY_To_INTERRUPT = false;
+int abort_request = 0;
+int CompareFFV = 0;
+bool IS_OKAY_To_INTERRUPT = false;
 
 
 

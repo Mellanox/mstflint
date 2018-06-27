@@ -47,14 +47,14 @@ class Commander {
 
 public:
     static Commander* create(std::string device, std::string dbName);
-    static Commander* create(mfile* mf, std::string device, std::string dbName);
+    static Commander* create(mfile *mf, std::string device, std::string dbName);
     virtual void printLongDesc(FILE*) = 0;
     virtual bool isDefaultSupported() = 0;
     virtual bool isCurrentSupported() = 0;
     virtual void queryParamViews(std::vector<ParamView>& paramsToQuery,
-            QueryType qt = QueryNext) = 0;
+                                 QueryType qt = QueryNext) = 0;
     virtual void queryAll(std::vector<ParamView>& params,
-            QueryType qt = QueryNext) = 0;
+                          QueryType qt = QueryNext) = 0;
     virtual void getCfg(ParamView& cfgParam, QueryType qt = QueryNext) = 0;
     virtual void setCfg(std::vector<ParamView>&, bool) = 0;
     virtual void clearSemaphore() = 0;
@@ -62,17 +62,17 @@ public:
     virtual const char* loadConfigurationGetStr() = 0;
     virtual void setRawCfg(std::vector<u_int32_t> rawTlvVec) = 0;
     virtual void dumpRawCfg(std::vector<u_int32_t> rawTlvVec,
-            std::string& tlvDump) = 0;
+                            std::string& tlvDump) = 0;
     virtual void backupCfgs(vector<BackupView>& views) = 0;
     virtual void updateParamViewValue(ParamView&, std::string val) = 0;
     void setExtResourceType(bool extT) { _extResource = extT; }
     static string getDefaultDBName(bool isSwitch);
-    mfile * mf() { return _mf;}
-    Commander(mfile* mf) : _mf(mf), _extResource(true) {} ;
+    mfile* mf() { return _mf;}
+    Commander(mfile *mf) : _mf(mf), _extResource(true) {};
     virtual ~Commander();
 
 protected:
-    mfile* _mf;
-    bool   _extResource;
+    mfile *_mf;
+    bool _extResource;
 };
 #endif /* MLXCFG_COMMANDER_H_ */

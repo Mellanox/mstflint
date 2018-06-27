@@ -86,7 +86,7 @@ int OutputFmts::createInventoryXML(vector<MlnxDev*> &devs, PsidLookupDB &psidLoo
         xmlNewProp(devices_node, BAD_CAST "bus", BAD_CAST hex2str(devs[i]->getDevInfo()->pci.bus).c_str());
         xmlNewProp(devices_node, BAD_CAST "device", BAD_CAST hex2str(devs[i]->getDevInfo()->pci.dev).c_str());
         xmlNewProp(devices_node, BAD_CAST "function", BAD_CAST hex2str(devs[i]->getDevInfo()->pci.func).c_str());
-       if (!devs[i]->isQuerySuccess()) {
+        if (!devs[i]->isQuerySuccess()) {
             continue;
         }
         xmlNewProp(devices_node, BAD_CAST "display", BAD_CAST psidLookupDB.getProdDesc(devs[i]->getBoardTypeId()).c_str());
@@ -110,7 +110,7 @@ int OutputFmts::createInventoryXML(vector<MlnxDev*> &devs, PsidLookupDB &psidLoo
             res = -1;
         }
     } else {
-        xmlChar* doc_txt_ptr;
+        xmlChar *doc_txt_ptr;
         int doc_txt_len;
 
         xmlDocDumpFormatMemoryEnc(doc, &doc_txt_ptr, &doc_txt_len, "UTF-8", 1);
@@ -164,7 +164,7 @@ int OutputFmts::createBurnXML(vector<MlnxDev*> &devs, map<string, PsidQueryItem>
         if (psidUpdateInfo.find(devs[i]->getPsid()) != psidUpdateInfo.end()) {
             if (psidUpdateInfo[devs[i]->getPsid()].found) {
                 node = xmlNewChild(app_node, NULL, BAD_CAST "Package", NULL);
-                ImgVersion* fwImgVer = (ImgVersion*)psidUpdateInfo[devs[i]->getPsid()].findImageVersion("FW");
+                ImgVersion *fwImgVer = (ImgVersion*)psidUpdateInfo[devs[i]->getPsid()].findImageVersion("FW");
                 if (fwImgVer != NULL) {
                     xmlNewProp(node, BAD_CAST "version", BAD_CAST fwImgVer->getPrintableVersion(compareFFV, false).c_str());
                 }
@@ -188,7 +188,7 @@ int OutputFmts::createBurnXML(vector<MlnxDev*> &devs, map<string, PsidQueryItem>
                 } else if (psidUpdateInfo[devs[i]->getPsid()].found > 1) {
                     msg += " Multiple image sources found for this device";
                 } else {
-                    ImgVersion* fwImgVer = (ImgVersion*)psidUpdateInfo[devs[i]->getPsid()].findImageVersion("FW");
+                    ImgVersion *fwImgVer = (ImgVersion*)psidUpdateInfo[devs[i]->getPsid()].findImageVersion("FW");
                     if (fwImgVer != NULL) {
                         if ((devs[i]->compareFWVer(fwImgVer->getVerArray()) <= 0) && !_force_mode) {
                             burn_res = MLX_FWM_SUCCESS;
@@ -201,7 +201,7 @@ int OutputFmts::createBurnXML(vector<MlnxDev*> &devs, map<string, PsidQueryItem>
             }
         }
 
-        xmlNewProp(node, BAD_CAST "result", BAD_CAST (burn_res? "false" : "true" ));
+        xmlNewProp(node, BAD_CAST "result", BAD_CAST(burn_res ? "false" : "true" ));
         node = xmlNewChild(node, NULL, BAD_CAST "Message", BAD_CAST msg.c_str());
         xmlNewProp(node, BAD_CAST "id", BAD_CAST int2str(burn_res).c_str());
     }
@@ -213,7 +213,7 @@ int OutputFmts::createBurnXML(vector<MlnxDev*> &devs, map<string, PsidQueryItem>
             res = -1;
         }
     } else {
-        xmlChar* doc_txt_ptr;
+        xmlChar *doc_txt_ptr;
         int doc_txt_len;
 
         xmlDocDumpFormatMemoryEnc(doc, &doc_txt_ptr, &doc_txt_len, "UTF-8", 1);
@@ -264,7 +264,7 @@ int OutputFmts::createFailXML(int result, int update_query_, string &buffer, int
             res = -1;
         }
     } else {
-        xmlChar* doc_txt_ptr;
+        xmlChar *doc_txt_ptr;
         int doc_txt_len;
 
         xmlDocDumpFormatMemoryEnc(doc, &doc_txt_ptr, &doc_txt_len, "UTF-8", 1);

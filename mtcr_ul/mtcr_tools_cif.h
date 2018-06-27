@@ -42,7 +42,7 @@ extern "C" {
 #include <compatibility.h>
 #include <mtcr.h>
 
-#define FLASH_REG_ACCESS	0x9001
+#define FLASH_REG_ACCESS    0x9001
 
 #define TOOLS_HCR_MAX_MBOX 288
 
@@ -53,14 +53,14 @@ extern "C" {
 /*
  * register access tools HCR
  *
- * data: 			the raw register data
+ * data:            the raw register data
  * write_data_size:	amount of data to write to the mailbox (rest assumed to be zero)
  * read_data_size:	amount of data to be read from the mailbox
  *
  * data will contain the updated register.
  */
 
-int tools_cmdif_reg_access(mfile *mf, void* data,int write_data_size, int read_data_size);
+int tools_cmdif_reg_access(mfile *mf, void *data, int write_data_size, int read_data_size);
 
 /*
  * tools_cmdif_is_supported tools HCR

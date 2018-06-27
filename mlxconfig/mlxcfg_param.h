@@ -48,102 +48,102 @@
 using namespace std;
 
 class ParamValue {
-    public:
-        ParamValue(string    size);
-        ParamValue(u_int32_t size) : _size(size) {}
+public:
+    ParamValue(string size);
+    ParamValue(u_int32_t size) : _size(size) {}
 
-        virtual string      getVal      () = 0;
-        virtual void        setVal      (string s) = 0;
-        virtual void        setVal      (u_int32_t);
-        virtual void        setVal      (vector<string>);
-        virtual void        pack        (u_int8_t* buff, u_int32_t offset) = 0;
-        virtual void        unpack      (u_int8_t* buff, u_int32_t offset) = 0;
-        virtual u_int32_t   getIntVal   ();
-        virtual void        parseValue  (string, u_int32_t&, string&);
+    virtual string      getVal() = 0;
+    virtual void        setVal(string s) = 0;
+    virtual void setVal(u_int32_t);
+    virtual void        setVal(vector<string>);
+    virtual void        pack(u_int8_t *buff, u_int32_t offset) = 0;
+    virtual void        unpack(u_int8_t *buff, u_int32_t offset) = 0;
+    virtual u_int32_t   getIntVal();
+    virtual void parseValue(string, u_int32_t&, string&);
 
-        virtual ~ParamValue() {};
+    virtual ~ParamValue() {};
 
-    protected:
-        u_int32_t _size;
+protected:
+    u_int32_t _size;
 };
 
 class UnsignedParamValue : public ParamValue {
-    public:
-        UnsignedParamValue(string size)     :   ParamValue(size){}
-        UnsignedParamValue(u_int32_t size)  :   ParamValue(size){}
+public:
+    UnsignedParamValue(string size)     :   ParamValue(size){}
+    UnsignedParamValue(u_int32_t size)  :   ParamValue(size){}
 
-        virtual string      getVal      ();
-        virtual void        setVal      (string s);
-        virtual void        setVal      (const u_int32_t);
-                void        pack        (u_int8_t* buff, u_int32_t offset);
-                void        unpack      (u_int8_t* buff, u_int32_t offset);
-                u_int32_t   getIntVal   ();
-        virtual void        parseValue  (string, u_int32_t&, string&);
+    virtual string      getVal();
+    virtual void        setVal(string s);
+    virtual void        setVal(const u_int32_t);
+    void        pack(u_int8_t *buff, u_int32_t offset);
+    void        unpack(u_int8_t *buff, u_int32_t offset);
+    u_int32_t   getIntVal();
+    virtual void parseValue(string, u_int32_t&, string&);
 
-        u_int32_t _value;
+    u_int32_t _value;
 
-    protected:
-                void        parseValueAux(string, u_int32_t&, string&, int base = 0);
+protected:
+    void parseValueAux(string, u_int32_t&, string&, int base = 0);
 };
 
 class EnumParamValue : public UnsignedParamValue {
-    public:
-        EnumParamValue(string size, map<string, u_int32_t> textualValues);
-        EnumParamValue(u_int32_t size, map<string, u_int32_t> textualValues);
+public:
+    EnumParamValue(string size, map<string, u_int32_t> textualValues);
+    EnumParamValue(u_int32_t size, map<string, u_int32_t> textualValues);
 
-        string  getVal      ();
-        void    setVal      (string     strVal);
-        void    setVal      (u_int32_t  val);
-        void    parseValue  (string, u_int32_t&, string&);
+    string  getVal();
+    void    setVal(string strVal);
+    void    setVal(u_int32_t val);
+    void parseValue(string, u_int32_t&, string&);
 
-        map<string, u_int32_t> _textualValues;
+    map<string, u_int32_t> _textualValues;
 };
 
 class BoolParamValue : public EnumParamValue {
-    public:
-        BoolParamValue(string size);
+public:
+    BoolParamValue(string size);
 
-    private:
-        static map<string, u_int32_t> initBoolTextualValues();
+private:
+    static map<string, u_int32_t> initBoolTextualValues();
 };
 
 class BinaryParamValue : public UnsignedParamValue {
-    public:
-        BinaryParamValue(string size)       : UnsignedParamValue(size) {};
-        BinaryParamValue(u_int32_t size)    : UnsignedParamValue(size) {};
+public:
+    BinaryParamValue(string size)       : UnsignedParamValue(size) {};
+    BinaryParamValue(u_int32_t size)    : UnsignedParamValue(size) {};
 
-        string  getVal      ();
-        void    setVal      (string val);
-        void    parseValue  (string, u_int32_t&, string&);
+    string  getVal();
+    void    setVal(string val);
+    void parseValue(string, u_int32_t&, string&);
 
-        static void trimHexString(string& s);
+    static void trimHexString(string& s);
 };
 
 class StringParamValue : public ParamValue {
-    public:
-        StringParamValue(u_int32_t size) : ParamValue(size) {}
+public:
+    StringParamValue(u_int32_t size) : ParamValue(size) {}
 
-        string  getVal  ();
-        void    setVal  (string s);
-        void    pack    (u_int8_t* buff, u_int32_t bitOffset);
-        void    unpack  (u_int8_t* buff, u_int32_t bitOffset);
+    string  getVal();
+    void    setVal(string s);
+    void    pack(u_int8_t *buff, u_int32_t bitOffset);
+    void    unpack(u_int8_t *buff, u_int32_t bitOffset);
 
-        string _value;
+    string _value;
 };
 
 class BytesParamValue : public ParamValue {
-    public:
-        BytesParamValue(u_int32_t size) : ParamValue(size) {}
-        using ParamValue::setVal;
-        string  getVal      ();
-        void    setVal      (string val);
-        void    setVal      (const vector<u_int32_t>& buffVal);
-        void    parseValue  (string, u_int32_t&, string&);
-        void    pack        (u_int8_t* buff, u_int32_t offset);
-        void    unpack      (u_int8_t* buff, u_int32_t offset);
+public:
+    BytesParamValue(u_int32_t size) : ParamValue(size) {}
+    using ParamValue::setVal;
+    string  getVal();
+    void    setVal(string val);
+    void    setVal(const vector<u_int32_t>& buffVal);
+    void parseValue(string, u_int32_t&, string&);
+    void    pack(u_int8_t *buff, u_int32_t offset);
+    void    unpack(u_int8_t *buff, u_int32_t offset);
 
-    private:
-        vector<BinaryParamValue> _bytes;
+private:
+    vector<BinaryParamValue> _bytes;
 };
 
 
@@ -153,17 +153,17 @@ public:
     ArrayParamValue(string size, u_int32_t count, enum ParamType paramType);
     ~ArrayParamValue();
     using ParamValue::setVal;
-    string              getVal      ();
-    void                setVal      (string val);
-    void                setVal      (vector<string> vals);
-    string              getVal      (u_int32_t index);
-    void                setVal      (string val, u_int32_t index);
+    string              getVal();
+    void                setVal(string val);
+    void                setVal(vector<string> vals);
+    string              getVal(u_int32_t index);
+    void                setVal(string val, u_int32_t index);
     u_int32_t           getIntVal();
     vector<u_int32_t>   getIntVals();
     vector<string>      getStrVals();
-    void                parseValue  (string, u_int32_t&, string&);
-    void                pack        (u_int8_t* buff, u_int32_t offset);
-    void                unpack      (u_int8_t* buff, u_int32_t offset);
+    void parseValue(string, u_int32_t&, string&);
+    void                pack(u_int8_t *buff, u_int32_t offset);
+    void                unpack(u_int8_t *buff, u_int32_t offset);
 
 protected:
     u_int32_t _elementSizeInBits;
@@ -178,54 +178,54 @@ public:
 
 class Param {
 
-    private:
-        bool _isNameFound, _isTLVNameFound, _isOffsetFound, _isSizeFound,
-             _isTypeFound, _isDescriptionFound, _isTextualValuesFound,
-             _isMlxconfigNameFound, _isDependencyFound, _isValidBitFound,
-             _isTempVarsFound, _isMinValFound, _isMaxValFound, _isRuleFound,
-             _isRegexFound, _isPortFound;
-    public:
-        string                  _name;
-        string                  _tlvName;
-        DBOffset*               _offset;
-        string                  _size;
-        enum ParamType          _type;
-        string                  _description;
-        map<string, u_int32_t>  _textualValues;
-        string                  _mlxconfigName;
-        string                  _dependency;
-        string                  _validBit;
-        string                  _tempVars;
-        string                  _minVal;
-        string                  _maxVal;
-        string                  _rule;
-        string                  _regex;
-        u_int32_t               _port;
-        ParamValue*             _value;
-        u_int32_t               _supportedFromVersion;
-        u_int32_t               _arrayLength;
+private:
+    bool _isNameFound, _isTLVNameFound, _isOffsetFound, _isSizeFound,
+         _isTypeFound, _isDescriptionFound, _isTextualValuesFound,
+         _isMlxconfigNameFound, _isDependencyFound, _isValidBitFound,
+         _isTempVarsFound, _isMinValFound, _isMaxValFound, _isRuleFound,
+         _isRegexFound, _isPortFound;
+public:
+    string _name;
+    string _tlvName;
+    DBOffset *_offset;
+    string _size;
+    enum ParamType _type;
+    string _description;
+    map<string, u_int32_t>  _textualValues;
+    string _mlxconfigName;
+    string _dependency;
+    string _validBit;
+    string _tempVars;
+    string _minVal;
+    string _maxVal;
+    string _rule;
+    string _regex;
+    u_int32_t _port;
+    ParamValue *_value;
+    u_int32_t _supportedFromVersion;
+    u_int32_t _arrayLength;
 
-        Param(int columnsCount, char **dataRow, char **headerRow);
-        ~Param();
+    Param(int columnsCount, char **dataRow, char **headerRow);
+    ~Param();
 
-        string      getDisplayName  ();
-        void        getView         (ParamView& paramView);
-        void        helpAux         ();
-        void        pack            (u_int8_t* buff);
-        void        unpack          (u_int8_t* buff);
-        void        setVal          (string val);
-        void        setVal          (string val, u_int32_t index);
-        void        setVal          (vector<string> vals);
-        string      getVal          ();
-        string      getVal          (u_int32_t index);
-        void        extractVars     (vector<string>& rulesVars, string rule);
-        void        getRulesTLV     (vector<string>& rulesTlvs);
-        void        genXMLTemplate  (string& xmlTemplate, bool withVal);
-        void        genXMLTemplateAux  (string& xmlTemplate, bool withVal, bool isPartOfArray, u_int32_t index);
+    string      getDisplayName();
+    void        getView(ParamView& paramView);
+    void        helpAux();
+    void        pack(u_int8_t *buff);
+    void        unpack(u_int8_t *buff);
+    void        setVal(string val);
+    void        setVal(string val, u_int32_t index);
+    void        setVal(vector<string> vals);
+    string      getVal();
+    string      getVal(u_int32_t index);
+    void        extractVars(vector<string>& rulesVars, string rule);
+    void        getRulesTLV(vector<string>& rulesTlvs);
+    void        genXMLTemplate(string& xmlTemplate, bool withVal);
+    void        genXMLTemplateAux(string& xmlTemplate, bool withVal, bool isPartOfArray, u_int32_t index);
 
-        static enum ParamType   str2ParamType       (const char* s);
-        static string           paramType2Str       (enum ParamType);
-        static void             str2TextualValuesMap(const char* s, map<string, u_int32_t>& m);
+    static enum ParamType   str2ParamType(const char *s);
+    static string           paramType2Str(enum ParamType);
+    static void             str2TextualValuesMap(const char *s, map<string, u_int32_t>& m);
 
 };
 

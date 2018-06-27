@@ -50,14 +50,14 @@ class MlxcfgDBManager {
 
 private:
     std::string _dbName;
-    sqlite3* _db;
+    sqlite3 *_db;
     const unsigned int _supportedVersion;
 
     static int selectAndCreateNewTLVCallBack(void *object, int argc, char **argv, char **azColName);
-    static int selectTLVCallBack(void *, int, char **, char **);
+    static int selectTLVCallBack(void*, int, char**, char**);
     static int selectAndCreateParamCallBack(void *object, int argc, char **argv, char **azColName);
-    static int selectParamCallBack(void *, int, char **, char **);
-    static int selectParamByMlxconfigNameCallBack(void *, int, char **, char **);
+    static int selectParamCallBack(void*, int, char**, char**);
+    static int selectParamByMlxconfigNameCallBack(void*, int, char**, char**);
     void openDB();
     void checkDBVersion();
     inline bool isDBFileExists(const std::string& name);
@@ -68,7 +68,7 @@ public:
     ~MlxcfgDBManager();
     std::string _callBackErr;
     bool _isAllFetched;
-    Param* _paramSqlResult;
+    Param *_paramSqlResult;
     std::vector<TLVConf*> fetchedTLVs;
     std::vector<Param*> fetchedParams;
     void getAllTLVs();
@@ -78,7 +78,7 @@ public:
     TLVConf* getAndCreateTLVByName(std::string n, u_int8_t port);
     TLVConf* getTLVByParamMlxconfigName(std::string n);
     TLVConf* getTLVByIndexAndClass(u_int32_t id, TLVClass c);
-    void execSQL(sqlite3_callback f, void* obj, const char* stat, ...);
+    void execSQL(sqlite3_callback f, void *obj, const char *stat, ...);
 
 };
 

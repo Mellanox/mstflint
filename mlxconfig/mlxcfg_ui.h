@@ -70,9 +70,9 @@ class MlxCfgParams
 {
 public:
     MlxCfgParams() : device(), rawTlvFile(), NVInputFile(), NVOutputFile(),
-                     dbName(DB_NAME), privPemFile(), keyPairUUID(),
-                     allAttrs(false), cmd(Mc_UnknownCmd), yes(false),
-                     force(false), enableVerbosity(false) {}
+        dbName(DB_NAME), privPemFile(), keyPairUUID(),
+        allAttrs(false), cmd(Mc_UnknownCmd), yes(false),
+        force(false), enableVerbosity(false) {}
     ~MlxCfgParams() {}
 
     std::string device;
@@ -96,7 +96,7 @@ class MlxCfg
 public:
     MlxCfg() : _mlxParams(), _errStr(), _allInfo(){}
     ~MlxCfg() {};
-    mlxCfgStatus execute(int argc, char* argv[]);
+    mlxCfgStatus execute(int argc, char *argv[]);
 private:
 
     typedef enum {
@@ -109,29 +109,29 @@ private:
     mlxCfgStatus showDevConfs();
     void printVersion();
     void printUsage();
-    void printOpening(const char* dev, int devIndex);
+    void printOpening(const char *dev, int devIndex);
     void printConfHeader(bool showDefualt, bool showNew, bool showCurrent);
-    mlxCfgStatus parseArgs(int argc, char* argv[]);
+    mlxCfgStatus parseArgs(int argc, char *argv[]);
     //Helper functions for parse args
-    mlxCfgStatus extractNVInputFile(int argc, char* argv[]);
-    mlxCfgStatus extractNVOutputFile(int argc, char* argv[]);
-    mlxCfgStatus extractSetCfgArgs(int argc, char* argv[]);
-    mlxCfgStatus extractQueryCfgArgs(int argc, char* argv[]);
+    mlxCfgStatus extractNVInputFile(int argc, char *argv[]);
+    mlxCfgStatus extractNVOutputFile(int argc, char *argv[]);
+    mlxCfgStatus extractSetCfgArgs(int argc, char *argv[]);
+    mlxCfgStatus extractQueryCfgArgs(int argc, char *argv[]);
 
     bool tagExsists(string tag);
-    const char* getDeviceName(const char* dev);
-    bool getDeviceDescription(const char* dev, MlxCfg::deviceDescription op, vector<char>& infoString);
+    const char* getDeviceName(const char *dev);
+    bool getDeviceDescription(const char *dev, MlxCfg::deviceDescription op, vector<char>& infoString);
 
     // Query cmd
     mlxCfgStatus queryDevsCfg();
-    mlxCfgStatus queryDevCfg(const char* dev, const char* pci=(const char*)NULL, int devIndex=1, bool printNewCfg=false);
-    mlxCfgStatus queryDevCfg(Commander* commander, const char* dev, const char* pci=(const char*)NULL, int devIndex=1, bool printNewCfg=false);
+    mlxCfgStatus queryDevCfg(const char *dev, const char *pci = (const char*)NULL, int devIndex = 1, bool printNewCfg = false);
+    mlxCfgStatus queryDevCfg(Commander *commander, const char *dev, const char *pci = (const char*)NULL, int devIndex = 1, bool printNewCfg = false);
 
     // Set cmd
     mlxCfgStatus setDevCfg();
     // reset Cmd
     mlxCfgStatus resetDevsCfg();
-    mlxCfgStatus resetDevCfg(const char* dev);
+    mlxCfgStatus resetDevCfg(const char *dev);
     // Set Raw TLV file
     mlxCfgStatus setDevRawCfg();
     mlxCfgStatus backupCfg();
@@ -158,8 +158,8 @@ private:
     mlxCfgStatus createConf();
     mlxCfgStatus apply();
 
-    bool askUser(const char* question);
-    mlxCfgStatus err(bool report, const char* errMsg, ...);
+    bool askUser(const char *question);
+    mlxCfgStatus err(bool report, const char *errMsg, ...);
     void printErr();
     // data members
     MlxCfgParams _mlxParams;

@@ -48,15 +48,15 @@ typedef enum {
 } sem_lock_method_t;
 
 MTCR_API int mib_semaphore_lock_vs_mad(
-        mfile* mf,
-        sem_op_t op,
-        u_int32_t sem_addr,
-        u_int32_t lock_key,
-        u_int32_t* res,
-        int* is_leaseable,
-        u_int8_t* lease_time_exp,
-        sem_lock_method_t method);
+    mfile *mf,
+    sem_op_t op,
+    u_int32_t sem_addr,
+    u_int32_t lock_key,
+    u_int32_t *res,
+    int *is_leaseable,
+    u_int8_t *lease_time_exp,
+    sem_lock_method_t method);
 
-MTCR_API int mib_semaphore_lock_is_supported(mfile* mf);
+MTCR_API int mib_semaphore_lock_is_supported(mfile *mf);
 
 #endif

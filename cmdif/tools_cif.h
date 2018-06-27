@@ -51,7 +51,7 @@ extern "C" {
 
  * @return     One of the MError* values, or a raw
  **/
-MError tcif_query_dev_cap(mfile* dev, u_int32_t offs, u_int64_t* data);
+MError tcif_query_dev_cap(mfile *dev, u_int32_t offs, u_int64_t *data);
 
 /**
  * tcif_query_global_def_params:
@@ -60,7 +60,7 @@ MError tcif_query_dev_cap(mfile* dev, u_int32_t offs, u_int64_t* data);
 
  * @return     One of the MError* values, or a raw
  **/
-MError tcif_query_global_def_params(mfile* dev, struct tools_open_query_def_params_global* global_params);
+MError tcif_query_global_def_params(mfile *dev, struct tools_open_query_def_params_global *global_params);
 
 /**
  * tcif_query_per_port_def_params:
@@ -70,7 +70,7 @@ MError tcif_query_global_def_params(mfile* dev, struct tools_open_query_def_para
 
  * @return     One of the MError* values, or a raw
  **/
-MError tcif_query_per_port_def_params(mfile* dev, u_int8_t port, struct tools_open_query_def_params_per_port* port_params);
+MError tcif_query_per_port_def_params(mfile *dev, u_int8_t port, struct tools_open_query_def_params_per_port *port_params);
 
 /**
  * tcif_qpc_context_read:
@@ -81,7 +81,7 @@ MError tcif_query_per_port_def_params(mfile* dev, u_int8_t port, struct tools_op
  *
  * @return     One of the MError* values, or a raw
  **/
-MError tcif_qpc_context_read(mfile* dev, u_int32_t qpn, u_int32_t source, u_int8_t* data, u_int32_t len);
+MError tcif_qpc_context_read(mfile *dev, u_int32_t qpn, u_int32_t source, u_int8_t *data, u_int32_t len);
 
 /**
  * tcif_qpc_context_write:
@@ -92,7 +92,7 @@ MError tcif_qpc_context_read(mfile* dev, u_int32_t qpn, u_int32_t source, u_int8
  *
  * @return     One of the MError* values, or a raw
  **/
-MError tcif_qpc_context_write(mfile* dev, u_int32_t qpn, u_int32_t source, u_int8_t* data, u_int32_t len);
+MError tcif_qpc_context_write(mfile *dev, u_int32_t qpn, u_int32_t source, u_int8_t *data, u_int32_t len);
 
 
 /**
@@ -103,7 +103,7 @@ MError tcif_qpc_context_write(mfile* dev, u_int32_t qpn, u_int32_t source, u_int
 
  * @return     One of the MError* values, or a raw
  **/
-MError tcif_hw_access(mfile* dev, u_int64_t key, int lock_unlock);
+MError tcif_hw_access(mfile *dev, u_int64_t key, int lock_unlock);
 
 /**
  * tcif_cr_mailbox_supported:
@@ -113,7 +113,7 @@ MError tcif_hw_access(mfile* dev, u_int64_t key, int lock_unlock);
  *             ME_SEM_LOCKED        - tools HCR semaphore locked
  *             ME_CMDIF_NOT_SUPP    - cr mailbox not supported
  **/
-MError tcif_cr_mbox_supported(mfile* dev);
+MError tcif_cr_mbox_supported(mfile *dev);
 
 /**
  * tcif_err2str:

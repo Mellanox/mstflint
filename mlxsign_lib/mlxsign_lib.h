@@ -62,7 +62,7 @@ enum {
 };
 
 namespace MlxSign {
-    enum SHAType {SHA256, SHA512};
+enum SHAType {SHA256, SHA512};
 }
 
 /*
@@ -150,8 +150,8 @@ public:
 private:
     int createRSAFromPEMFileName(const std::string& fname, bool isPrivateKey);
     int createRSAFromPEMKeyString(const std::string& pemKey,  bool isPrivateKey);
-    void* _privCtx;
-    void* _pubCtx;
+    void *_privCtx;
+    void *_pubCtx;
 };
 
 
@@ -165,7 +165,7 @@ public:
     ~MlxSignHMAC();
 
 private:
-    void* ctx;
+    void *ctx;
     std::vector<u_int8_t> data;
 
 };

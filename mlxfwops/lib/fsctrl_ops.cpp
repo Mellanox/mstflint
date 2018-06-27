@@ -39,7 +39,7 @@
 bool FsCtrlOperations::unsupportedOperation()
 {
     if (_fsCtrlImgInfo.security_mode & SMM_SECURE_FW) {
-            return errmsg("Unsupported operation under Secure FW");
+        return errmsg("Unsupported operation under Secure FW");
     } else {
         return errmsg("Unsupported operation under Controlled FW, please retry with --no_fw_ctrl <command>");
     }
@@ -75,7 +75,7 @@ bool FsCtrlOperations::FwInit()
     return true;
 }
 
-static void extractFwVersion(u_int16_t* fwVerArr, u_int32_t fwVersion)
+static void extractFwVersion(u_int16_t *fwVerArr, u_int32_t fwVersion)
 {
     if (!fwVerArr) {
         return;
@@ -85,7 +85,7 @@ static void extractFwVersion(u_int16_t* fwVerArr, u_int32_t fwVersion)
     fwVerArr[2] = EXTRACT(fwVersion, 0, 16);
 }
 
-static void extractFwBuildTime(u_int16_t* fwRelDate, u_int32_t buildTime)
+static void extractFwBuildTime(u_int16_t *fwRelDate, u_int32_t buildTime)
 {
     if (!fwRelDate) {
         return;
@@ -130,17 +130,17 @@ bool FsCtrlOperations::FsIntQuery()
     _fwImgInfo.ext_info.dev_rev = fwQery.rev_id;
     _fwImgInfo.ext_info.is_failsafe        = true;
     // get chip type and device sw id, from device/image
-    const u_int32_t* swId = (u_int32_t*)NULL;
+    const u_int32_t *swId = (u_int32_t*)NULL;
     if (!getInfoFromHwDevid(fwQery.hw_dev_id, _fwImgInfo.ext_info.chip_type, &swId)) {
         return false;
     }
 
     _fsCtrlImgInfo.security_mode = (security_mode_t)
-                                         (SMM_MCC_EN |
-                                         ((fwQery.security_type.debug_fw  == 1) ? SMM_DEBUG_FW  : 0) |
-                                         ((fwQery.security_type.signed_fw == 1) ? SMM_SIGNED_FW : 0) |
-                                         ((fwQery.security_type.secure_fw == 1) ? SMM_SECURE_FW : 0) |
-                                         ((fwQery.security_type.dev_fw    == 1) ? SMM_DEV_FW    : 0));
+                                   (SMM_MCC_EN |
+                                    ((fwQery.security_type.debug_fw  == 1) ? SMM_DEBUG_FW  : 0) |
+                                    ((fwQery.security_type.signed_fw == 1) ? SMM_SIGNED_FW : 0) |
+                                    ((fwQery.security_type.secure_fw == 1) ? SMM_SECURE_FW : 0) |
+                                    ((fwQery.security_type.dev_fw    == 1) ? SMM_DEV_FW    : 0));
 
 
     strcpy(_fwImgInfo.ext_info.psid, fwQery.psid);
@@ -206,7 +206,7 @@ bool FsCtrlOperations::FwVerifyAdv(ExtVerifyParams& verifyParams)
     imageParams.buffHndl = (u_int32_t*)imageData.data();
     imageParams.buffSize = imageSize;
     imageParams.hndlType = FHT_FW_BUFF;
-    FwOperations* imageOps = FwOperations::FwOperationsCreate(imageParams);
+    FwOperations *imageOps = FwOperations::FwOperationsCreate(imageParams);
     if (!imageOps) {
         return errmsg("Failed to get boot image");
     }
@@ -218,21 +218,21 @@ bool FsCtrlOperations::FwVerifyAdv(ExtVerifyParams& verifyParams)
     return ret;
 }
 
-bool FsCtrlOperations::FwReadData(void* image, u_int32_t* image_size)
+bool FsCtrlOperations::FwReadData(void *image, u_int32_t *image_size)
 {
     (void)image;
     (void)image_size;
     return errmsg("Read image is not supported");
 }
 
-bool FsCtrlOperations::ReadBootImage(void* image, u_int32_t* image_size, ProgressCallBackAdvSt* stProgressFunc)
+bool FsCtrlOperations::ReadBootImage(void *image, u_int32_t *image_size, ProgressCallBackAdvSt *stProgressFunc)
 {
     if (image) {
         FwComponent bootImgComp;
         if (!_fwCompsAccess->readComponent(FwComponent::COMPID_BOOT_IMG, bootImgComp, true, (ProgressCallBackAdvSt*)stProgressFunc)) {
             if (!_fwCompsAccess->readComponent(FwComponent::COMPID_BOOT_IMG, bootImgComp, false, (ProgressCallBackAdvSt*)stProgressFunc)) {
                 return errmsg(FwCompsErrToFwOpsErr(_fwCompsAccess->getLastError()), "Failed to read boot image, %s - RC[%d]",
-                        _fwCompsAccess->getLastErrMsg(), (int)_fwCompsAccess->getLastError());
+                              _fwCompsAccess->getLastErrMsg(), (int)_fwCompsAccess->getLastError());
             }
         }
         *image_size = bootImgComp.getSize();
@@ -260,7 +260,7 @@ bool FsCtrlOperations::FwReadRom(std::vector<u_int8_t>& romSect)
     return unsupportedOperation();
 }
 
-bool FsCtrlOperations::FwBurnRom(FImage* romImg, bool ignoreProdIdCheck, bool ignoreDevidCheck, ProgressCallBack progressFunc)
+bool FsCtrlOperations::FwBurnRom(FImage *romImg, bool ignoreProdIdCheck, bool ignoreDevidCheck, ProgressCallBack progressFunc)
 {
     (void)romImg;
     (void)ignoreDevidCheck;
@@ -300,10 +300,10 @@ bool FsCtrlOperations::FwBurnAdvanced(FwOperations *imageOps, ExtBurnParams& bur
     FwComponent bootImageComponent;
 
     memset(&fw_query, 0, sizeof(fw_info_t));
-    if(!imageOps->FwQuery(&fw_query, true)) {
+    if (!imageOps->FwQuery(&fw_query, true)) {
         return errmsg(FwCompsErrToFwOpsErr(_fwCompsAccess->getLastError()), "Failed to query the image\n");
     }
-    if(!CheckPSID(*imageOps, false)) {
+    if (!CheckPSID(*imageOps, false)) {
         if (burnParams.allowPsidChange) {
             return errmsg(MLXFW_PSID_MISMATCH_ERR, "Changing PSID is not supported under controlled FW.");
         }
@@ -330,7 +330,7 @@ bool FsCtrlOperations::FwBurnAdvanced(FwOperations *imageOps, ExtBurnParams& bur
     return true;
 }
 
-bool FsCtrlOperations::FwBurnBlock(FwOperations* imageOps, ProgressCallBack progressFunc)
+bool FsCtrlOperations::FwBurnBlock(FwOperations *imageOps, ProgressCallBack progressFunc)
 {
     (void)imageOps;
     (void)progressFunc;
@@ -361,7 +361,7 @@ bool FsCtrlOperations::FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFu
     }
     if (!sgParam.updateCrc || sgParam.numOfGUIDs != 0 || sgParam.stepSize != 0 ||
         sgParam.numOfGUIDsPP[0] != 0xff || sgParam.numOfGUIDsPP[1] != 0xff ||
-            sgParam.stepSizePP[0] != 0xff || sgParam.stepSizePP[1] != 0xff) {
+        sgParam.stepSizePP[0] != 0xff || sgParam.stepSizePP[1] != 0xff) {
         return errmsg("Tried to set unsupported values. Allowed values to set are mac,guid,uid.");
     }
 
@@ -382,7 +382,7 @@ bool FsCtrlOperations::FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFu
             // check base mac
             if (!CheckMac(sgParam.userGuids[1])) {
                 return errmsg("Bad MAC (" MAC_FORMAT ") given: %s. Please specify a valid MAC value",
-                    sgParam.userGuids[1].h, sgParam.userGuids[1].l, err());
+                              sgParam.userGuids[1].h, sgParam.userGuids[1].l, err());
             }
             macGuid.mac = sgParam.userGuids[1];
         } else {
@@ -390,7 +390,7 @@ bool FsCtrlOperations::FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFu
             macGuid.mac.l = fwQuery.base_mac.uid & 0x00000000ffffffff;
         }
         if (sgParam.guidsSpecified) {
-             macGuid.guid = sgParam.userGuids[0];
+            macGuid.guid = sgParam.userGuids[0];
         } else {
             macGuid.guid.h = fwQuery.base_guid.uid >> 32;
             macGuid.guid.l = fwQuery.base_guid.uid & 0x00000000ffffffff;
@@ -417,7 +417,7 @@ bool FsCtrlOperations::FwSetMFG(guid_t baseGuid, PrintCallBack callBackFunc)
 }
 
 // use progressFunc when dealing with FS2 image and printFunc when dealing with FS3 image.
-bool FsCtrlOperations::FwSetVSD(char* vsdStr, ProgressCallBack progressFunc, PrintCallBack printFunc)
+bool FsCtrlOperations::FwSetVSD(char *vsdStr, ProgressCallBack progressFunc, PrintCallBack printFunc)
 {
     (void)vsdStr;
     (void)printFunc;
@@ -425,7 +425,7 @@ bool FsCtrlOperations::FwSetVSD(char* vsdStr, ProgressCallBack progressFunc, Pri
     return unsupportedOperation();
 }
 
-bool FsCtrlOperations::FwSetVPD(char* vpdFileStr, PrintCallBack callBackFunc)
+bool FsCtrlOperations::FwSetVPD(char *vpdFileStr, PrintCallBack callBackFunc)
 {
     (void)vpdFileStr;
     (void)callBackFunc;
@@ -439,7 +439,7 @@ bool FsCtrlOperations::FwSetAccessKey(hw_key_t userKey, ProgressCallBack progres
     return unsupportedOperation();
 }
 
-bool FsCtrlOperations::FwGetSection (u_int32_t sectType, std::vector<u_int8_t>& sectInfo, bool stripedImage)
+bool FsCtrlOperations::FwGetSection(u_int32_t sectType, std::vector<u_int8_t>& sectInfo, bool stripedImage)
 {
     (void)sectInfo;
     (void)sectType;
@@ -483,7 +483,7 @@ bool FsCtrlOperations::FwReadBlock(u_int32_t addr, u_int32_t size, std::vector<u
         fw_comps_error_t errCode = _fwCompsAccess->getLastError();
         if (errCode == FWCOMPS_READ_OUTSIDE_IMAGE_RANGE) {
             return errmsg(MLXFW_BAD_PARAM_ERR, "Reading %#x bytes from address %#x is out of flash limits\n",
-                    size, (unsigned int)addr);
+                          size, (unsigned int)addr);
         } else {
             return errmsg(MLXFW_FLASH_READ_ERR, "%s", _fwCompsAccess->getLastErrMsg());
         }
@@ -491,69 +491,87 @@ bool FsCtrlOperations::FwReadBlock(u_int32_t addr, u_int32_t size, std::vector<u
     return true;
 }
 
-int  FsCtrlOperations::FwCompsErrToFwOpsErr(fw_comps_error_t err)
+int FsCtrlOperations::FwCompsErrToFwOpsErr(fw_comps_error_t err)
 {
     int fwOpsErr = MLXFW_OK;
     switch (err) {
-        case FWCOMPS_MCC_ERR_REJECTED_DIGEST_ERR:
-            fwOpsErr = MLXFW_BURN_REJECTED_DIGEST_ERR;
-            break;
-        case FWCOMPS_MCC_ERR_REJECTED_NOT_APPLICABLE :
-            fwOpsErr = MLXFW_BURN_REJECTED_NOT_APPLICABLE;
-            break;
-        case FWCOMPS_MCC_ERR_REJECTED_UNKNOWN_KEY:
-            fwOpsErr = MLXFW_BURN_REJECTED_UNKNOWN_KEY;
-            break;
-        case FWCOMPS_MCC_ERR_REJECTED_AUTH_FAILED:
-            fwOpsErr = MLXFW_BURN_REJECTED_AUTH_FAILED;
-            break;
-        case FWCOMPS_MCC_ERR_REJECTED_UNSIGNED:
-            fwOpsErr = MLXFW_BURN_REJECTED_UNSIGNED;
-            break;
-        case FWCOMPS_MCC_ERR_REJECTED_KEY_NOT_APPLICABLE:
-            fwOpsErr = MLXFW_BURN_REJECTED_KEY_NOT_APPLICABLE;
-            break;
-        case FWCOMPS_MCC_ERR_REJECTED_BAD_FORMAT:
-            fwOpsErr = MLXFW_BURN_REJECTED_BAD_FORMAT;
-            break;
-        case FWCOMPS_MCC_ERR_BLOCKED_PENDING_RESET:
-            fwOpsErr = MLXFW_BURN_BLOCKED_PENDING_RESET;
-            break;
-        case FWCOMPS_MCC_UNEXPECTED_STATE:
-            fwOpsErr = MLXFW_FSM_UNEXPECTED_STATE;
-            break;
-        case FWCOMPS_MCC_REJECTED_NOT_A_SECURED_FW:
-            fwOpsErr = MLXFW_REJECTED_NOT_A_SECURED_FW;
-            break;
-        case FWCOMPS_MCC_REJECTED_MFG_BASE_MAC_NOT_LISTED:
-            fwOpsErr = MLXFW_REJECTED_MFG_BASE_MAC_NOT_LISTED;
-            break;
-        case FWCOMPS_MCC_REJECTED_NO_DEBUG_TOKEN:
-            fwOpsErr = MLXFW_REJECTED_NO_DEBUG_TOKEN;
-            break;
-        case FWCOMPS_MCC_REJECTED_VERSION_NUM_MISMATCH:
-            fwOpsErr = MLXFW_REJECTED_VERSION_NUM_MISMATCH;
-            break;
-        case FWCOMPS_MCC_REJECTED_USER_TIMESTAMP_MISMATCH:
-            fwOpsErr = MLXFW_REJECTED_USER_TIMESTAMP_MISMATCH;
-            break;
-        case FWCOMPS_MCC_REJECTED_FORBIDDEN_VERSION:
-            fwOpsErr = MLXFW_REJECTED_FORBIDDEN_VERSION;
-            break;
-        case FWCOMPS_MCC_FLASH_ERASE_ERROR:
-            fwOpsErr = MLXFW_FLASH_ERASE_ERROR;
-            break;
-        case FWCOMPS_MEM_ALLOC_FAILED:
-            fwOpsErr = MLXFW_MEM_ERR;
-            break;
-        case FWCOMPS_MCC_REJECTED_IMAGE_CAN_NOT_BOOT_FROM_PARTITION:
-            fwOpsErr = MLXFW_REJECTED_IMAGE_CAN_NOT_BOOT_FROM_PARTITION;
-            break;
-        default:
-            if (err != FWCOMPS_SUCCESS) {
-                fwOpsErr = MLXFW_ERR;
-            }
-            break;
+    case FWCOMPS_MCC_ERR_REJECTED_DIGEST_ERR:
+        fwOpsErr = MLXFW_BURN_REJECTED_DIGEST_ERR;
+        break;
+
+    case FWCOMPS_MCC_ERR_REJECTED_NOT_APPLICABLE:
+        fwOpsErr = MLXFW_BURN_REJECTED_NOT_APPLICABLE;
+        break;
+
+    case FWCOMPS_MCC_ERR_REJECTED_UNKNOWN_KEY:
+        fwOpsErr = MLXFW_BURN_REJECTED_UNKNOWN_KEY;
+        break;
+
+    case FWCOMPS_MCC_ERR_REJECTED_AUTH_FAILED:
+        fwOpsErr = MLXFW_BURN_REJECTED_AUTH_FAILED;
+        break;
+
+    case FWCOMPS_MCC_ERR_REJECTED_UNSIGNED:
+        fwOpsErr = MLXFW_BURN_REJECTED_UNSIGNED;
+        break;
+
+    case FWCOMPS_MCC_ERR_REJECTED_KEY_NOT_APPLICABLE:
+        fwOpsErr = MLXFW_BURN_REJECTED_KEY_NOT_APPLICABLE;
+        break;
+
+    case FWCOMPS_MCC_ERR_REJECTED_BAD_FORMAT:
+        fwOpsErr = MLXFW_BURN_REJECTED_BAD_FORMAT;
+        break;
+
+    case FWCOMPS_MCC_ERR_BLOCKED_PENDING_RESET:
+        fwOpsErr = MLXFW_BURN_BLOCKED_PENDING_RESET;
+        break;
+
+    case FWCOMPS_MCC_UNEXPECTED_STATE:
+        fwOpsErr = MLXFW_FSM_UNEXPECTED_STATE;
+        break;
+
+    case FWCOMPS_MCC_REJECTED_NOT_A_SECURED_FW:
+        fwOpsErr = MLXFW_REJECTED_NOT_A_SECURED_FW;
+        break;
+
+    case FWCOMPS_MCC_REJECTED_MFG_BASE_MAC_NOT_LISTED:
+        fwOpsErr = MLXFW_REJECTED_MFG_BASE_MAC_NOT_LISTED;
+        break;
+
+    case FWCOMPS_MCC_REJECTED_NO_DEBUG_TOKEN:
+        fwOpsErr = MLXFW_REJECTED_NO_DEBUG_TOKEN;
+        break;
+
+    case FWCOMPS_MCC_REJECTED_VERSION_NUM_MISMATCH:
+        fwOpsErr = MLXFW_REJECTED_VERSION_NUM_MISMATCH;
+        break;
+
+    case FWCOMPS_MCC_REJECTED_USER_TIMESTAMP_MISMATCH:
+        fwOpsErr = MLXFW_REJECTED_USER_TIMESTAMP_MISMATCH;
+        break;
+
+    case FWCOMPS_MCC_REJECTED_FORBIDDEN_VERSION:
+        fwOpsErr = MLXFW_REJECTED_FORBIDDEN_VERSION;
+        break;
+
+    case FWCOMPS_MCC_FLASH_ERASE_ERROR:
+        fwOpsErr = MLXFW_FLASH_ERASE_ERROR;
+        break;
+
+    case FWCOMPS_MEM_ALLOC_FAILED:
+        fwOpsErr = MLXFW_MEM_ERR;
+        break;
+
+    case FWCOMPS_MCC_REJECTED_IMAGE_CAN_NOT_BOOT_FROM_PARTITION:
+        fwOpsErr = MLXFW_REJECTED_IMAGE_CAN_NOT_BOOT_FROM_PARTITION;
+        break;
+
+    default:
+        if (err != FWCOMPS_SUCCESS) {
+            fwOpsErr = MLXFW_ERR;
+        }
+        break;
     }
     return fwOpsErr;
 }

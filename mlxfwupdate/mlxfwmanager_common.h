@@ -66,7 +66,7 @@
 #if defined(__WIN__)
 #include <process.h>
 #include <io.h>
-const char* SafeGetEnv(const char* var);
+const char* SafeGetEnv(const char *var);
 #define TMP_DIR SafeGetEnv("TEMP")
 #define PATH_SEPARATOR "\\"
 #define GetCurrDir(sz, buf) GetCurrentDirectory(sz, buf)
@@ -79,16 +79,17 @@ const char* SafeGetEnv(const char* var);
 
 using namespace std;
 
-inline string getLogDir(string toolName) {
+inline string getLogDir(string toolName)
+{
     #if defined(__WIN__)
-        (void)toolName;
-        return TMP_DIR;
+    (void)toolName;
+    return TMP_DIR;
     #else
-        return (string) "/tmp/" + toolName + "_workdir";
+    return (string) "/tmp/" + toolName + "_workdir";
     #endif
 }
 namespace mlxFWMSetupType {
-        enum T {normal, lvim, dl};
+enum T {normal, lvim, dl};
 };
 
 inline string int_to_string(int num)
@@ -102,20 +103,20 @@ string getErrStr(int rc);
 int    mapRetValue(int rc, mlxFWMSetupType::T setupType);
 string beautify_device_name(string family);
 int    CreateTempDir(string tempDir, string& tempBaseDir);
-int    my_chmod(const char * path, mode_t mode);
+int    my_chmod(const char *path, mode_t mode);
 int    RemoveDir(const string &dir);
 
-bool   unzipDataFile (std::vector<u_int8_t> data,
-                   std::vector<u_int8_t> &newData, const char *sectionName);
+bool   unzipDataFile(std::vector<u_int8_t> data,
+                     std::vector<u_int8_t> &newData, const char *sectionName);
 int  MkDir(const string dir);
 
 #if defined(__WIN__)
-    int  ForceMkDir(const string dir);
-    void FixPath(string &s);
-    int mlxfw_replace(char *st, char *orig, char *repl);
-    int mlxfw_get_exec_name_from_path(char *str, char *exec_name);
+int  ForceMkDir(const string dir);
+void FixPath(string &s);
+int mlxfw_replace(char *st, char *orig, char *repl);
+int mlxfw_get_exec_name_from_path(char *str, char *exec_name);
     #define mlxfw_MTCR_DLL_NAME "libmtcr-1.dll"
-    static const mode_t MS_MODE_MASK = 0x0000ffff;
+static const mode_t MS_MODE_MASK = 0x0000ffff;
 #endif
 
 class DownloadedFileProperties {

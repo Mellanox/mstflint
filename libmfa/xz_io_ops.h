@@ -39,11 +39,11 @@ typedef struct xzhandle_t xzhandle_t;
 
 void        xz_init();
 u_int32_t   xz_io_crc32(const u_int8_t *buf, size_t size, u_int32_t crc);
-ssize_t     xz_stream_len(u_int8_t* buffer, ssize_t len);
+ssize_t     xz_stream_len(u_int8_t *buffer, ssize_t len);
 
 xzhandle_t* xz_open_buf(const u_int8_t *buf, size_t size);
-void        xz_close(xzhandle_t* xzh);
-int         xz_read(xzhandle_t* xzh, u_int8_t* buf, size_t len);
+void        xz_close(xzhandle_t *xzh);
+int         xz_read(xzhandle_t *xzh, u_int8_t *buf, size_t len);
 
 #endif
 

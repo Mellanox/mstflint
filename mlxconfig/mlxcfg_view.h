@@ -72,8 +72,8 @@ enum TLVClass {
 
 typedef struct ParamView {
     ParamView() : mlxconfigName(""), description(""),
-                  type(BOOLEAN_TYPE), val(MLXCFG_UNKNOWN),
-                  port(0), strVal(""), setVal("") {};
+        type(BOOLEAN_TYPE), val(MLXCFG_UNKNOWN),
+        port(0), strVal(""), setVal("") {};
     std::string mlxconfigName;
     std::string description;
     enum ParamType type;
@@ -94,9 +94,9 @@ typedef struct TLVConfView {
 } TLVConfView;
 
 typedef struct BackupView {
-    u_int32_t           type;
-    u_int8_t            writerId;
-    u_int8_t            writerHostId;
+    u_int32_t type;
+    u_int8_t writerId;
+    u_int8_t writerHostId;
     std::vector<u_int8_t>    tlvBin;
 } BackupView;
 #endif /* MLXCFG_VIEW_H_ */

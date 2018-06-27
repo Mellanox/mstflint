@@ -1,25 +1,25 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
- * 
+ *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
  * General Public License (GPL) Version 2, available from the file
  * COPYING in the main directory of this source tree, or the
  * OpenIB.org BSD license below:
- * 
+ *
  *     Redistribution and use in source and binary forms, with or
  *     without modification, are permitted provided that the following
  *     conditions are met:
- * 
+ *
  *      - Redistributions of source code must retain the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer.
- * 
+ *
  *      - Redistributions in binary form must reproduce the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer in the documentation and/or other materials
  *        provided with the distribution.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -121,17 +121,17 @@ int port = DEF_PORT;    /* Default port */
     #define WIN_INIT() {                          \
         int rc;                                   \
         WSADATA wsaData;                          \
-        rc = WSAStartup(MAKEWORD(2, 2), &wsaData);\
+        rc = WSAStartup(MAKEWORD(2, 2), &wsaData); \
         if (rc != 0) {                            \
-            printf("-E- Winsock initialization failed (WSAStartup returned %d\n", rc);\
+            printf("-E- Winsock initialization failed (WSAStartup returned %d\n", rc); \
             exit(1);                            \
         }                                         \
-    }
-    #define WIN_CLOSE(mf, cmd) {\
-         if (!mf && cmd != 'V') {\
-             break;\
-         }\
-    }
+}
+    #define WIN_CLOSE(mf, cmd) { \
+        if (!mf && cmd != 'V') { \
+            break; \
+        } \
+}
 
     #define WIN_WHILE() while (1)
 #endif
@@ -148,23 +148,23 @@ int port = DEF_PORT;    /* Default port */
     #define NUM_INTS  (0x40000)
     #define FILE_SIZE (NUM_INTS * sizeof(int))
 
-u_int32_t* cr_space;
+u_int32_t *cr_space;
 char sim_str[100] = "\t-i[d]  <id>   - set the device id.\n";
 int id;
 int fd;
-mfile *mopen(const char *name)
+mfile* mopen(const char *name)
 {
     name = NULL;
-    return(mfile*)0;
+    return (mfile*)0;
 
 }
 
 
-mfile *mopend(const char *name, DType dtype)
+mfile* mopend(const char *name, DType dtype)
 {
     name  = NULL;
     dtype = 0;
-    return(mfile*)1;
+    return (mfile*)1;
 }
 
 int mclose(mfile *mf)
@@ -184,24 +184,24 @@ int mdevices(char *buf, int len, int mask)
 int mread4(mfile *mf, unsigned int offset, u_int32_t *value)
 {
     mf     = NULL;
-    *value = cr_space[offset/4];
+    *value = cr_space[offset / 4];
     return 4;
 }
 
 int mwrite4(mfile *mf, unsigned int offset, u_int32_t value)
 {
     mf = NULL;
-    cr_space[offset/4] = value;
+    cr_space[offset / 4] = value;
     return 4;
 }
-int mi2c_detect (mfile *mf, u_int8_t slv_arr[SLV_ADDRS_NUM])
+int mi2c_detect(mfile *mf, u_int8_t slv_arr[SLV_ADDRS_NUM])
 {
     mf      = NULL;
     slv_arr = NULL;
     return 1;
 }
 int mread_i2cblock(mfile *mf, unsigned char i2c_slave, u_int8_t addr_width,
-                            unsigned int offset, void *data, int length)
+                   unsigned int offset, void *data, int length)
 {
     mf         = NULL;
     i2c_slave  = 1;
@@ -224,10 +224,10 @@ int mwrite_i2cblock(mfile *mf, unsigned char i2c_slave, u_int8_t addr_width,
     return 0;
 }
 
-int mwrite4_block(mfile *mf, unsigned int offset, u_int32_t* data, int byte_len);
+int mwrite4_block(mfile *mf, unsigned int offset, u_int32_t *data, int byte_len);
 
 
-int check_id_arg(char* av[], int ac, int *i)
+int check_id_arg(char *av[], int ac, int *i)
 {
     char *end;
     if (++(*i) >= ac) {
@@ -256,7 +256,7 @@ int prepare_the_map_file(void)
         exit(1);
     }
 
-    result = lseek(fd, FILE_SIZE-1, SEEK_SET);
+    result = lseek(fd, FILE_SIZE - 1, SEEK_SET);
     if (result == -1) {
         close(fd);
         perror("Error calling lseek() to 'stretch' the file");
@@ -282,7 +282,7 @@ int prepare_the_map_file(void)
 
     // write id
     if (id != 0) {
-        cr_space[0xf0014/4] = id;
+        cr_space[0xf0014 / 4] = id;
     }
     return 0;
 }
@@ -298,7 +298,7 @@ int unmap_and_close_file(void)
 #else
 
 char sim_str[100] = "";
-int check_id_arg(char* av[], int ac, int *i)
+int check_id_arg(char *av[], int ac, int *i)
 {
     ac = 0;
     printf("Invalid switch \"%s\".\n", av[*i]);
@@ -328,15 +328,16 @@ void usage(const char *s)
     printf("\t-d[ebug]       - Print all socket traffic (for debugging only).\n");
     printf("%s", sim_str);
     printf("\t-h[elp]        - Print help message.\n");
-    exit (1);
+    exit(1);
 }
 
 /* ////////////////////////////////////////////////////////////////////// */
 static void writes_deb(int con, char *s)
 {
     writes(con, s);
-    if (sdebug)
+    if (sdebug) {
         printf("-> %s\n", s);
+    }
 }
 
 /* ////////////////////////////////////////////////////////////////////// */
@@ -344,8 +345,9 @@ void write_err(int con)
 {
     writen(con, "E ", 2);
     writes(con, strerror(errno));
-    if (sdebug)
+    if (sdebug) {
         printf("-> E %s\n", strerror(errno));
+    }
 }
 
 /* ////////////////////////////////////////////////////////////////////// */
@@ -360,22 +362,22 @@ void mySignal()
     exit(0);
 }
 
-#define GET_PARAM(param, str, type, param_name, err_msg) {\
-    char* end;\
-    param = (type)strtoul(str, &end, 0);\
-    if (*end) {\
-        sprintf(err_msg, "E Invalid %s", param_name);\
-        return 1;\
-    }\
+#define GET_PARAM(param, str, type, param_name, err_msg) { \
+        char *end; \
+        param = (type)strtoul(str, &end, 0); \
+        if (*end) { \
+            sprintf(err_msg, "E Invalid %s", param_name); \
+            return 1; \
+        } \
 }
 
 
 
 
-int parse_i2c_cmd(char* buf, u_int8_t* addr_width, u_int8_t* slave_addr, int* size,
-                  unsigned int* offset, u_int8_t* data, char* err_msg)
+int parse_i2c_cmd(char *buf, u_int8_t *addr_width, u_int8_t *slave_addr, int *size,
+                  unsigned int *offset, u_int8_t *data, char *err_msg)
 {
-    char* p_arr[5];
+    char *p_arr[5];
     u_int8_t args_num;
     int i;
 
@@ -405,7 +407,7 @@ int parse_i2c_cmd(char* buf, u_int8_t* addr_width, u_int8_t* slave_addr, int* si
     GET_PARAM(*offset,     p_arr[3], u_int8_t, "offset", err_msg);
 
     if (args_num == 5) {
-        char* p = p_arr[4];
+        char *p = p_arr[4];
 
         if (*size > 64) {
             sprintf(err_msg, "E Bad size which should be less than 64");
@@ -421,7 +423,7 @@ int parse_i2c_cmd(char* buf, u_int8_t* addr_width, u_int8_t* slave_addr, int* si
             strncpy(tmp_num, "0x", 2);
             strncpy(tmp_num + 2, p, 2);
             tmp_num[4] = '\0';
-            ((u_int8_t*)data)[i] = (u_int8_t)strtoul(tmp_num, 0 , 0);
+            ((u_int8_t*)data)[i] = (u_int8_t)strtoul(tmp_num, 0, 0);
             p += 2;
         }
     }
@@ -429,9 +431,9 @@ int parse_i2c_cmd(char* buf, u_int8_t* addr_width, u_int8_t* slave_addr, int* si
     return 0;
 }
 
-int copy_buff_to_str(char* str, u_int8_t* data, int size)
+int copy_buff_to_str(char *str, u_int8_t *data, int size)
 {
-    char* p = str;
+    char *p = str;
     int i;
     for (i = 0; i < size; i++) {
         sprintf(p, "%02x", data[i]);
@@ -441,25 +443,25 @@ int copy_buff_to_str(char* str, u_int8_t* data, int size)
 }
 
 /* ////////////////////////////////////////////////////////////////////// */
-#define CHK(f)    do { if ((f) < 0) { perror(""); exit(1); } } while(0)
-#define CHK2(f,m) do { if ((f) < 0) { perror(m); exit(1); } } while(0)
+#define CHK(f)    do { if ((f) < 0) { perror(""); exit(1); } } while (0)
+#define CHK2(f, m) do { if ((f) < 0) { perror(m); exit(1); } } while (0)
 #define MSTSERVER_VERSION "1.1"
-int main (int ac, char *av[])
+int main(int ac, char *av[])
 {
     char *end;
-    char* local_dev = NULL;
-	char  buf[BUF_LEN], dev_buf[DEV_LEN];
-    int   i, con, rc;
+    char *local_dev = NULL;
+    char buf[BUF_LEN], dev_buf[DEV_LEN];
+    int i, con, rc;
     mfile *mf = 0;
 
     /* Command line parsing. */
-    for (i=1; i<ac; i++) {
+    for (i = 1; i < ac; i++) {
         switch (*av[i]) {
         case '-':
             ++av[i];
             if (!strcmp(av[i], "p")  ||  !strcmp(av[i], "port")) {
                 if (++i >= ac) {
-                    printf("After switch \"%s\" port number is expected.\n",av[--i]);
+                    printf("After switch \"%s\" port number is expected.\n", av[--i]);
                     printf("Type \"%s -h\" for help.\n", av[0]);
                     exit(1);
                 }
@@ -470,9 +472,8 @@ int main (int ac, char *av[])
                     exit(1);
                 }
             } else if (!strcmp(av[i], "dev")) {
-                if (++i >= ac)
-                {
-                    printf("After switch \"%s\" a device is expected.\n",av[--i]);
+                if (++i >= ac) {
+                    printf("After switch \"%s\" a device is expected.\n", av[--i]);
                     printf("Type \"%s -h\" for help.\n", av[0]);
                     exit(1);
                 }
@@ -490,9 +491,11 @@ int main (int ac, char *av[])
                 exit(1);
             }
             break;
+
         case '?':
             usage(av[0]);
             break;
+
         default:
             printf("Invalid parameter \"%s\".\n", av[i]);
             printf("Type \"%s -h\" for help.\n", av[0]);
@@ -524,16 +527,16 @@ int main (int ac, char *av[])
             switch (*buf) {
             case 'O':   /*  Open mfile */
 
-                if (mf)
+                if (mf) {
                     writes_deb(con, "E Already opened");
-                else {
-                    int dtype = strtoul (buf+2, &end, 0);
-                    if (*end != ' ')  {
+                } else {
+                    int dtype = strtoul(buf + 2, &end, 0);
+                    if (*end != ' ') {
                         /*  Old style (O DEV_NAME) */
-                        mf = mopen(buf+2);
+                        mf = mopen(buf + 2);
                     } else {
                         /*  New style (O FLAG DEV_NAME) */
-                        mf = mopend (end+1, dtype);
+                        mf = mopend(end + 1, dtype);
                     }
 
                     if (mf) {
@@ -543,10 +546,11 @@ int main (int ac, char *av[])
                     }
                 }
                 break;
+
             case 'C':  /*  Close mfile */
-                if (!mf)
+                if (!mf) {
                     writes_deb(con, "E Not opened");
-                else {
+                } else {
                     if (mclose(mf) < 0) {
                         write_err(con);
                     } else {
@@ -555,14 +559,16 @@ int main (int ac, char *av[])
                     }
                 }
                 break;
+
             case 'V':  /*  Get version */
                 writes_deb(con, "O "MSTSERVER_VERSION);
                 break;
-#ifndef MST_UL				
+
+#ifndef MST_UL
             case 'S':  /*  Scan I2C bus */
-                if (!mf)
+                if (!mf) {
                     writes_deb(con, "E Not opened");
-                else {
+                } else {
                     u_int8_t slv_arr[SLV_ADDRS_NUM];
                     if (mi2c_detect(mf, slv_arr) < 0) {
                         write_err(con);
@@ -581,35 +587,37 @@ int main (int ac, char *av[])
                     }
                 }
                 break;
-#endif				
+
+#endif
             case 'L':   /*  Get devices list */
                 if (local_dev == NULL) {
                     rc = mdevices(dev_buf, DEV_LEN, MDEVS_ALL);
-				} else {
+                } else {
 
                     strcpy(dev_buf, "/dev/mst/mtREMOTE_pci_cr0");
                     printf("-D- local_dev=%s dev_buf=%s\n", local_dev, dev_buf);
                     rc = 1;
                 }
 
-                if (rc < 0)
+                if (rc < 0) {
                     write_err(con);
-                else {
+                } else {
                     char *p = &dev_buf[0], vbuf[16];
                     sprintf(vbuf, "O %d", rc);
                     writes_deb(con, vbuf);
-                    for (i = 0; i < rc; i++, p += strlen(p)+1) {
+                    for (i = 0; i < rc; i++, p += strlen(p) + 1) {
                         writes_deb(con, p);
                     }
                 }
                 break;
+
             case 'R':   /*  Read word */
                 if (!mf) {
                     writes_deb(con, "E Not opened");
                 } else {
                     unsigned int offset;
-                    u_int32_t    value;
-                    offset = strtoul(buf+2, &end, 0);
+                    u_int32_t value;
+                    offset = strtoul(buf + 2, &end, 0);
                     if (*end) {
                         writes_deb(con, "E Invalid offset");
                     } else {
@@ -623,6 +631,7 @@ int main (int ac, char *av[])
                     }
                 }
                 break;
+
 #ifndef MST_UL
             case 'r':   /*  Read I2C */
                 if (!mf) {
@@ -632,7 +641,7 @@ int main (int ac, char *av[])
                     char err_msg[256];
                     u_int8_t addr_width, slave_addr;
                     unsigned int offset;
-                    int  size;
+                    int size;
 
                     rc = parse_i2c_cmd(buf, &addr_width, &slave_addr, &size, &offset, data, err_msg);
                     if (rc) {
@@ -649,6 +658,7 @@ int main (int ac, char *av[])
                     }
                 }
                 break;
+
             case 'w':   /*  Read I2C */
                 if (!mf) {
                     writes_deb(con, "E Not opened");
@@ -657,7 +667,7 @@ int main (int ac, char *av[])
                     char err_msg[256];
                     u_int8_t addr_width, slave_addr;
                     unsigned int offset;
-                    int  size;
+                    int size;
 
                     rc = parse_i2c_cmd(buf, &addr_width, &slave_addr, &size, &offset, data, err_msg);
                     if (rc) {
@@ -671,20 +681,21 @@ int main (int ac, char *av[])
                     }
                 }
                 break;
+
 #endif
             case 'W':   /*  Write word */
                 if (!mf) {
                     writes_deb(con, "E Not opened");
                 } else {
                     unsigned int offset;
-                    u_int32_t    value;
-                    char *p = strchr(buf+2, ' ');
+                    u_int32_t value;
+                    char *p = strchr(buf + 2, ' ');
                     if (!p) {
                         writes_deb(con, "E Invalid format (should be OFFS DATA)");
                     } else {
                         *p = '\0';
                         p++;
-                        offset = strtoul(buf+2, &end, 0);
+                        offset = strtoul(buf + 2, &end, 0);
                         if (*end) {
                             writes_deb(con, "E Invalid offset");
                         } else {
@@ -692,7 +703,7 @@ int main (int ac, char *av[])
                             if (*end) {
                                 writes_deb(con, "E Invalid data");
                             } else {
-                                if (mwrite4(mf, offset, value) < 4)  {
+                                if (mwrite4(mf, offset, value) < 4) {
                                     write_err(con);
                                 } else {
                                     write_ok(con);
@@ -702,11 +713,13 @@ int main (int ac, char *av[])
                     }
                 }
                 break;
+
             default:
                 writes(con, "E Invalid command");
-                if (sdebug)
+                if (sdebug) {
                     printf("-> E Invalid command (len:%d cmd:\"%s\")\n",
                            (int)strlen(buf), buf);
+                }
                 break;
             }
             WIN_CLOSE(mf, *buf);

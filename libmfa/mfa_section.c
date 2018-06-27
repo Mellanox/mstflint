@@ -57,14 +57,14 @@ u_int32_t mfasec_crc32(const u_int8_t *buf, size_t size, u_int32_t crc)
 }
 
 
-ssize_t  mfasec_get_section(u_int8_t* inbuf, size_t inbufsz, u_int8_t** outbuf)
+ssize_t  mfasec_get_section(u_int8_t *inbuf, size_t inbufsz, u_int8_t **outbuf)
 {
     int res = 0;
     int rc;
-    xzhandle_t* xzh;
-    u_int8_t* buf;
+    xzhandle_t *xzh;
+    u_int8_t *buf;
 
-    section_hdr* hdr = (section_hdr*) inbuf;
+    section_hdr *hdr = (section_hdr*) inbuf;
     if (hdr->flags & SFLAG_XZ_COMPRESSED) {
         ssize_t sz;
         sz = xz_stream_len(&inbuf[sizeof(section_hdr)], __be32_to_cpu(hdr->size));
@@ -91,11 +91,11 @@ ssize_t  mfasec_get_section(u_int8_t* inbuf, size_t inbufsz, u_int8_t** outbuf)
             res = _ERR(MFA_ERR_ARCHV_FORMAT);
             goto clean_up;
         }
-        section_hdr* hdr = (section_hdr*) buf;
+        section_hdr *hdr = (section_hdr*) buf;
         hdr->flags &= (u_int8_t)(~SFLAG_XZ_COMPRESSED);
         hdr->size = __cpu_to_be32(((u_int32_t)sz));
     } else {
-        ssize_t msize = __be32_to_cpu(hdr->size)+ sizeof(section_hdr);
+        ssize_t msize = __be32_to_cpu(hdr->size) + sizeof(section_hdr);
         buf = (u_int8_t*)malloc(msize);
         if (buf == NULL) {
             return _ERR(MFA_ERR_MEM_ALLOC);
@@ -117,7 +117,7 @@ clean_up:
 }
 
 
-ssize_t  mfasec_get_map(u_int8_t* inbuf, size_t inbufsz, u_int8_t** outbuf)
+ssize_t  mfasec_get_map(u_int8_t *inbuf, size_t inbufsz, u_int8_t **outbuf)
 {
     int res = 0;
     int j;
@@ -130,18 +130,18 @@ ssize_t  mfasec_get_map(u_int8_t* inbuf, size_t inbufsz, u_int8_t** outbuf)
     ssize_t total = res;
 
     while (pos < total) {
-        map_entry_hdr* map_entry = (map_entry_hdr*)&((*outbuf)[pos]);
+        map_entry_hdr *map_entry = (map_entry_hdr*)&((*outbuf)[pos]);
         int n = map_entry->nimages;
         map_entry->metadata_size = __be16_to_cpu(map_entry->metadata_size);
         //printf("%s %d\n", map_entry->board_type_id, n);
         pos += sizeof(map_entry_hdr);
         if (map_entry->metadata_size > 0) {
-            metadata_hdr* md_hdr = (metadata_hdr*)&((*outbuf)[pos]);
+            metadata_hdr *md_hdr = (metadata_hdr*)&((*outbuf)[pos]);
             md_hdr->modifier = __be16_to_cpu(md_hdr->modifier);
         }
         pos += map_entry->metadata_size;
         for (j = 0; j < n; j++) {
-            map_image_entry* img_entry = (map_image_entry*)&((*outbuf)[pos]);
+            map_image_entry *img_entry = (map_image_entry*)&((*outbuf)[pos]);
             img_entry->toc_offset = __be32_to_cpu(img_entry->toc_offset);
             img_entry->image_type = __be16_to_cpu(img_entry->image_type);
             //printf("Image #%d Offset: %08x\n", j, img_entry->toc_offset);
@@ -153,7 +153,7 @@ ssize_t  mfasec_get_map(u_int8_t* inbuf, size_t inbufsz, u_int8_t** outbuf)
 }
 
 
-ssize_t  mfasec_get_toc(u_int8_t* inbuf, size_t inbufsz, u_int8_t** outbuf)
+ssize_t  mfasec_get_toc(u_int8_t *inbuf, size_t inbufsz, u_int8_t **outbuf)
 {
     int res = 0;
     int i;
@@ -166,7 +166,7 @@ ssize_t  mfasec_get_toc(u_int8_t* inbuf, size_t inbufsz, u_int8_t** outbuf)
     ssize_t total = res;
 
     while (pos < total) {
-        toc_entry* toc_e = (toc_entry*)&((*outbuf)[pos]);
+        toc_entry *toc_e = (toc_entry*)&((*outbuf)[pos]);
         toc_e->data_offset = __be32_to_cpu(toc_e->data_offset);
         toc_e->data_size = __be32_to_cpu(toc_e->data_size);
         toc_e->subimage_type = __be16_to_cpu(toc_e->subimage_type);
@@ -188,22 +188,22 @@ enum read_states {
     COPY
 };
 
-int mfasec_get_data_chunk(u_int8_t* data_sec_ptr, size_t data_sec_len, size_t chunk_offset, size_t length, u_int8_t* outbuf)
+int mfasec_get_data_chunk(u_int8_t *data_sec_ptr, size_t data_sec_len, size_t chunk_offset, size_t length, u_int8_t *outbuf)
 {
     int res = 0;
     int rc;
-    xzhandle_t* xzh;
-    u_int8_t* buf = NULL;
+    xzhandle_t *xzh;
+    u_int8_t *buf = NULL;
     size_t src_sz;
 
-    u_int8_t* ptr = data_sec_ptr;
+    u_int8_t *ptr = data_sec_ptr;
     if (data_sec_len < sizeof(section_hdr)) {
         return _ERR(MFA_ERR_BUFF_SIZE);
     }
     ptr += sizeof(section_hdr);
     data_sec_len -= sizeof(section_hdr);
 
-    section_hdr* hdr = (section_hdr*) data_sec_ptr;
+    section_hdr *hdr = (section_hdr*) data_sec_ptr;
     src_sz = __be32_to_cpu(hdr->size);
 
     if (hdr->flags & SFLAG_XZ_COMPRESSED) {
@@ -261,7 +261,7 @@ int mfasec_get_data_chunk(u_int8_t* data_sec_ptr, size_t data_sec_len, size_t ch
             if (rlen == length) {
                 break;
             }
-        } while(rc == BUF_SIZE);
+        } while (rc == BUF_SIZE);
 
         xz_close(xzh);
 
@@ -284,24 +284,29 @@ clean_up:
 
 char* mfasec_get_sub_image_type_str(int t)
 {
-    char* tstr;
+    char *tstr;
 
     switch (t) {
     case SIT_PADDING:
         tstr = "";
         break;
+
     case SIT_FW:
         tstr = "FW";
         break;
+
     case SIT_CLP:
         tstr = "CLP";
         break;
+
     case SIT_PXE:
         tstr = "PXE";
         break;
+
     case SIT_UEFI:
         tstr = "UEFI";
         break;
+
     case SIT_FCODE:
         tstr = "FCODE";
         break;

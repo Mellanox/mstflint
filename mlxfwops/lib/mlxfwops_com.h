@@ -1,25 +1,25 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
- * 
+ *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
  * General Public License (GPL) Version 2, available from the file
  * COPYING in the main directory of this source tree, or the
  * OpenIB.org BSD license below:
- * 
+ *
  *     Redistribution and use in source and binary forms, with or
  *     without modification, are permitted provided that the following
  *     conditions are met:
- * 
+ *
  *      - Redistributions of source code must retain the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer.
- * 
+ *
  *      - Redistributions in binary form must reproduce the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer in the documentation and/or other materials
  *        provided with the distribution.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -66,13 +66,13 @@ typedef enum {
 } prog_t;
 
 typedef int EFIAPI (*f_prog_func) (int completion);
-typedef int EFIAPI (*f_prog_func_ex) (int completion, void * opaque);
-typedef int EFIAPI (*f_prog_func_adv) (int completion, const char* str, prog_t, void * opaque);
-typedef int (*f_prog_func_str) (char* str);
+typedef int EFIAPI (*f_prog_func_ex) (int completion, void *opaque);
+typedef int EFIAPI (*f_prog_func_adv) (int completion, const char *str, prog_t, void *opaque);
+typedef int (*f_prog_func_str) (char *str);
 
 typedef struct {
     f_prog_func_adv func;
-    void* opaque;
+    void *opaque;
 } f_prog_func_adv_st;
 
 #define VSD_LEN  208
@@ -97,11 +97,11 @@ typedef struct {
 
 //Macros
 #define PRINT_PROGRESS(printFunc, arg) \
-	do {\
-	    if (printFunc) {\
-	        printFunc((arg));\
-	    }\
-	} while(0)\
+    do { \
+        if (printFunc) { \
+            printFunc((arg)); \
+        } \
+    } while (0) \
 
 enum {
     MLXFW_OK = 0,
@@ -141,23 +141,23 @@ enum {
     MLXFW_FLASH_READ_ERR,
 
     /* MCC_EN/Secure Error Codes */
-    MLXFW_BURN_REJECTED_DIGEST_ERR        ,
-    MLXFW_BURN_REJECTED_NOT_APPLICABLE    ,
-    MLXFW_BURN_REJECTED_UNKNOWN_KEY       ,
-    MLXFW_BURN_REJECTED_AUTH_FAILED       ,
-    MLXFW_BURN_REJECTED_UNSIGNED          ,
+    MLXFW_BURN_REJECTED_DIGEST_ERR,
+    MLXFW_BURN_REJECTED_NOT_APPLICABLE,
+    MLXFW_BURN_REJECTED_UNKNOWN_KEY,
+    MLXFW_BURN_REJECTED_AUTH_FAILED,
+    MLXFW_BURN_REJECTED_UNSIGNED,
     MLXFW_BURN_REJECTED_KEY_NOT_APPLICABLE,
-    MLXFW_BURN_REJECTED_BAD_FORMAT        ,
-    MLXFW_BURN_BLOCKED_PENDING_RESET      ,
-    MLXFW_FSM_UNEXPECTED_STATE            ,
-    MLXFW_REJECTED_NOT_A_SECURED_FW       ,
+    MLXFW_BURN_REJECTED_BAD_FORMAT,
+    MLXFW_BURN_BLOCKED_PENDING_RESET,
+    MLXFW_FSM_UNEXPECTED_STATE,
+    MLXFW_REJECTED_NOT_A_SECURED_FW,
     MLXFW_REJECTED_MFG_BASE_MAC_NOT_LISTED,
-    MLXFW_REJECTED_NO_DEBUG_TOKEN         ,
-    MLXFW_REJECTED_VERSION_NUM_MISMATCH   ,
+    MLXFW_REJECTED_NO_DEBUG_TOKEN,
+    MLXFW_REJECTED_VERSION_NUM_MISMATCH,
     MLXFW_REJECTED_USER_TIMESTAMP_MISMATCH,
-    MLXFW_REJECTED_FORBIDDEN_VERSION      ,
-    MLXFW_FLASH_ERASE_ERROR               ,
-    MLXFW_MISSING_IMAGE_SIGNATURE         ,
+    MLXFW_REJECTED_FORBIDDEN_VERSION,
+    MLXFW_FLASH_ERASE_ERROR,
+    MLXFW_MISSING_IMAGE_SIGNATURE,
     MLXFW_REJECTED_IMAGE_CAN_NOT_BOOT_FROM_PARTITION,
     /* ******************* */
 };
@@ -170,27 +170,27 @@ enum {
 
 // needed for flint query
 enum {
-     BX_NP_GUIDS   = 2,
-     BX_SYS_GUIDS  = 1,
-     BX_GUIDS      = BX_NP_GUIDS + BX_SYS_GUIDS,
-     BX_IMACS      = 3,
-     BX_EMACS      = 4,
-     BX_MACS       = BX_EMACS + BX_IMACS,
-     BX_WWPNS      = 4,
-     BX_WWNNS      = 1,
-     BX_SLICE_GUIDS = BX_WWNNS + BX_WWPNS + BX_MACS + BX_NP_GUIDS,
+    BX_NP_GUIDS   = 2,
+    BX_SYS_GUIDS  = 1,
+    BX_GUIDS      = BX_NP_GUIDS + BX_SYS_GUIDS,
+    BX_IMACS      = 3,
+    BX_EMACS      = 4,
+    BX_MACS       = BX_EMACS + BX_IMACS,
+    BX_WWPNS      = 4,
+    BX_WWNNS      = 1,
+    BX_SLICE_GUIDS = BX_WWNNS + BX_WWPNS + BX_MACS + BX_NP_GUIDS,
 
-     BX_ALL_GUIDS  = (2 * BX_SLICE_GUIDS) + BX_SYS_GUIDS,
-     BX_SLICES_NUM = 2,
+    BX_ALL_GUIDS  = (2 * BX_SLICE_GUIDS) + BX_SYS_GUIDS,
+    BX_SLICES_NUM = 2,
 };
 
 enum {
-      BI_IMACS    = 0,
-      BI_EMACS    = BI_IMACS + BX_IMACS,
-      BI_WWPNS    = BI_EMACS + BX_EMACS,
-      BI_GUIDS    = BI_WWPNS + BX_WWPNS,
-      BI_WWNNS    = BI_GUIDS  + BX_NP_GUIDS,
-      BI_SYS_GUID = BX_ALL_GUIDS - 1,
+    BI_IMACS    = 0,
+    BI_EMACS    = BI_IMACS + BX_IMACS,
+    BI_WWPNS    = BI_EMACS + BX_EMACS,
+    BI_GUIDS    = BI_WWPNS + BX_WWPNS,
+    BI_WWNNS    = BI_GUIDS  + BX_NP_GUIDS,
+    BI_SYS_GUID = BX_ALL_GUIDS - 1,
 };
 
 typedef enum security_mode_mask {
@@ -225,13 +225,13 @@ typedef enum chip_type {
     CT_BLUEFIELD,
     CT_QUANTUM,
     CT_SPECTRUM2,
-}chip_type_t;
+} chip_type_t;
 
 typedef enum chip_family_type {
     CFT_UNKNOWN = 0,
     CFT_HCA,
     CFT_SWITCH,
-}chip_family_type_t;
+} chip_family_type_t;
 
 typedef struct guid {
     u_int32_t h;
@@ -269,18 +269,18 @@ typedef struct rom_info {
     u_int16_t exp_rom_product_id; // 0 - invalid.
     u_int16_t exp_rom_ver[3];
     u_int16_t exp_rom_dev_id;
-    u_int8_t  exp_rom_port;
-    u_int8_t  exp_rom_proto;
-    u_int8_t  exp_rom_num_ver_fields;
-    u_int8_t  exp_rom_supp_cpu_arch;
+    u_int8_t exp_rom_port;
+    u_int8_t exp_rom_proto;
+    u_int8_t exp_rom_num_ver_fields;
+    u_int8_t exp_rom_supp_cpu_arch;
     //char      expRomFreestr[FREE_STR_MAX_LEN];
 } rom_info_t;
 
 
 struct fs3_uid_entry {
-     u_int8_t num_allocated;
-     u_int8_t step; // not relevant for devices >= CX4
-     u_int64_t uid;
+    u_int8_t num_allocated;
+    u_int8_t step;  // not relevant for devices >= CX4
+    u_int64_t uid;
 };
 
 typedef struct cibfw_uids {
@@ -296,92 +296,92 @@ typedef struct cx4fw_uids {
 typedef struct uids {
     int valid_field; // 0: cib_uids , 1: cx4_uids
     union {
-    cib_uids_t cib_uids;
-    cx4_uids_t cx4_uids;
+        cib_uids_t cib_uids;
+        cx4_uids_t cx4_uids;
     };
 } uids_t;
 
 typedef struct fs3_info_ext {
-    u_int8_t        guids_override_en;
-    uids_t          fs3_uids_info;
-    uids_t          orig_fs3_uids_info;
-    char            image_vsd[VSD_LEN+1];
-    char            orig_psid[PSID_LEN+1];
-    char            prs_name[FS3_PRS_NAME_LEN];
-    char            orig_prs_name[FS3_PRS_NAME_LEN];
-    char            name[NAME_LEN];
-    char            description[DESCRIPTION_LEN];
-    u_int32_t       security_mode;
-    u_int8_t        mcc_en;
+    u_int8_t guids_override_en;
+    uids_t fs3_uids_info;
+    uids_t orig_fs3_uids_info;
+    char image_vsd[VSD_LEN + 1];
+    char orig_psid[PSID_LEN + 1];
+    char prs_name[FS3_PRS_NAME_LEN];
+    char orig_prs_name[FS3_PRS_NAME_LEN];
+    char name[NAME_LEN];
+    char description[DESCRIPTION_LEN];
+    u_int32_t security_mode;
+    u_int8_t mcc_en;
 
 } fs3_info_t;
 
 typedef struct fs3_info_ext fs4_info_t;
 
 typedef struct fs2_info_ext {
-    guid_t       guids[MAX_GUIDS];
-    u_int32_t    guid_num;
-    u_int32_t    config_sectors;
-    u_int32_t    config_pad;
-    u_int8_t     access_key_exists;
-    guid_t       access_key_value;
-    u_int8_t     blank_guids;
-    char         prs_name[PRS_NAME_LEN];
+    guid_t guids[MAX_GUIDS];
+    u_int32_t guid_num;
+    u_int32_t config_sectors;
+    u_int32_t config_pad;
+    u_int8_t access_key_exists;
+    guid_t access_key_value;
+    u_int8_t blank_guids;
+    char prs_name[PRS_NAME_LEN];
 } fs2_info_t;
 
 #ifdef CABLES_SUPP
 typedef struct cablefw_info_ext {
-        u_int8_t  fw_gw_revision[2];
-        u_int16_t fw_dev_id;
-        u_int32_t fw_revision;
-        u_int8_t  image_key;
+    u_int8_t fw_gw_revision[2];
+    u_int16_t fw_dev_id;
+    u_int32_t fw_revision;
+    u_int8_t image_key;
 } cablefw_info_t;
 #endif
 
 typedef struct roms_info {
-    u_int8_t     exp_rom_found;
-    u_int8_t     num_of_exp_rom;
-    u_int8_t     no_rom_checksum;
-    u_int16_t    exp_rom_com_devid;
-    u_int8_t     exp_rom_warning;
-    char         exp_rom_warning_msg[MAX_ROM_ERR_MSG_LEN];
-    u_int8_t     exp_rom_err_msg_valid;
-    char         exp_rom_err_msg[MAX_ROM_ERR_MSG_LEN];
-    rom_info_t   rom_info[MAX_ROMS_NUM];
+    u_int8_t exp_rom_found;
+    u_int8_t num_of_exp_rom;
+    u_int8_t no_rom_checksum;
+    u_int16_t exp_rom_com_devid;
+    u_int8_t exp_rom_warning;
+    char exp_rom_warning_msg[MAX_ROM_ERR_MSG_LEN];
+    u_int8_t exp_rom_err_msg_valid;
+    char exp_rom_err_msg[MAX_ROM_ERR_MSG_LEN];
+    rom_info_t rom_info[MAX_ROMS_NUM];
 } roms_info_t;
 
 typedef struct fw_info_com {
-    char         psid[PSID_LEN + 1];
-    u_int8_t     vsd_sect_found; // relevant to FS2 image only
-    char         vsd[VSD_LEN + 1];
-    char         product_ver[PRODUCT_VER_LEN + 1];
-    u_int16_t    fw_ver[3];
-    u_int16_t	 fw_rel_date[3];
-    u_int16_t    min_fit_ver[4];
-    u_int16_t    mic_ver[3];
-    u_int32_t    image_size;
-    u_int16_t    dev_type;
-    u_int8_t     dev_rev;
-    u_int16_t    vsd_vendor_id;
-    u_int8_t     is_failsafe;
-    chip_type_t  chip_type;
-    roms_info_t  roms_info;
-    u_int16_t    running_fw_ver[3];
-    u_int8_t     image_info_minor_version;
-    u_int8_t     image_info_major_version;
-    u_int16_t    pci_device_id;
+    char psid[PSID_LEN + 1];
+    u_int8_t vsd_sect_found;     // relevant to FS2 image only
+    char vsd[VSD_LEN + 1];
+    char product_ver[PRODUCT_VER_LEN + 1];
+    u_int16_t fw_ver[3];
+    u_int16_t fw_rel_date[3];
+    u_int16_t min_fit_ver[4];
+    u_int16_t mic_ver[3];
+    u_int32_t image_size;
+    u_int16_t dev_type;
+    u_int8_t dev_rev;
+    u_int16_t vsd_vendor_id;
+    u_int8_t is_failsafe;
+    chip_type_t chip_type;
+    roms_info_t roms_info;
+    u_int16_t running_fw_ver[3];
+    u_int8_t image_info_minor_version;
+    u_int8_t image_info_major_version;
+    u_int16_t pci_device_id;
 } fw_info_com_t;
 
 
 typedef struct fw_info_ext {
-    u_int8_t       fw_type;
-    fw_info_com_t  fw_info;
-    fs2_info_t     fs2_info;
-    fs3_info_t     fs3_info;
+    u_int8_t fw_type;
+    fw_info_com_t fw_info;
+    fs2_info_t fs2_info;
+    fs3_info_t fs3_info;
 #ifdef CABLES_SUPP
     cablefw_info_t cablefw_info;
 #endif
-    fs3_info_t    fs4_info;
+    fs3_info_t fs4_info;
 } fw_info_t;
 
 typedef enum fw_hndl_type {

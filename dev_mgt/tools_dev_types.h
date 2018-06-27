@@ -98,17 +98,17 @@ typedef enum dm_dev_id dm_dev_id_t;
 /**
  * Returns 0 on success and 1 on failure.
  */
-int dm_get_device_id(mfile* mf,
-                     dm_dev_id_t* ptr_dev_type,
-                     u_int32_t* ptr_dev_id,
-                     u_int32_t* ptr_chip_rev);
+int dm_get_device_id(mfile *mf,
+                     dm_dev_id_t *ptr_dev_type,
+                     u_int32_t *ptr_dev_id,
+                     u_int32_t *ptr_chip_rev);
 
 /**
  * Returns 0 on success and 1 on failure.
  */
 int dm_get_device_id_offline(u_int32_t devid,
                              u_int32_t chip_rev,
-                             dm_dev_id_t* ptr_dev_type);
+                             dm_dev_id_t *ptr_dev_type);
 
 
 /**
@@ -125,7 +125,7 @@ const char* dm_dev_type2str(dm_dev_id_t type);
 /**
  * Returns the device id
  */
-dm_dev_id_t dm_dev_str2type(const char* str);
+dm_dev_id_t dm_dev_str2type(const char *str);
 
 /**
  * A predicate returning if the device is an hca
@@ -171,7 +171,7 @@ int dm_is_fpp_supported(dm_dev_id_t type);
 /*
  * A predicate returning if the device is in LiveFish mode
  */
-int dm_is_livefish_mode(mfile* mf);
+int dm_is_livefish_mode(mfile *mf);
 
 #ifdef __cplusplus
 }       /* end of 'extern "C"' */

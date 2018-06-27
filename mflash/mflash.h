@@ -97,29 +97,29 @@ struct mfile_t;
 // mf_close() : Deallocates mflash resources.
 //   Note: User should call mf_close() even if mf_open failed (and the returning mfl is not NULL)
 //
-int     mf_open        (mflash** pmfl, const char* dev, int num_of_banks, flash_params_t* flash_params,
-        int ignore_cache_rep_guard);
-int     mf_opend       (mflash** pmfl, struct mfile_t* mf, int num_of_banks,  flash_params_t* flash_params,
-        int ignore_cache_rep_guard);
-int     mf_open_adv       (mflash** pmfl, const char* dev, int num_of_banks, flash_params_t* flash_params,
-        int ignore_cache_rep_guard, int cx3_fw_access);
+int     mf_open(mflash **pmfl, const char *dev, int num_of_banks, flash_params_t *flash_params,
+                int ignore_cache_rep_guard);
+int     mf_opend(mflash **pmfl, struct mfile_t *mf, int num_of_banks,  flash_params_t *flash_params,
+                 int ignore_cache_rep_guard);
+int     mf_open_adv(mflash **pmfl, const char *dev, int num_of_banks, flash_params_t *flash_params,
+                    int ignore_cache_rep_guard, int cx3_fw_access);
 
-int     mf_open_uefi(mflash** pmfl, uefi_Dev_t *uefi_dev, uefi_dev_extra_t* dev_extra);
+int     mf_open_uefi(mflash **pmfl, uefi_Dev_t *uefi_dev, uefi_dev_extra_t *dev_extra);
 
-int     mf_open_ignore_lock(mflash* mfl);
-void     mf_close       (mflash* mfl);
+int     mf_open_ignore_lock(mflash *mfl);
+void     mf_close(mflash *mfl);
 
 //
 // Flash access functions:
 // The data buffer should be pre-allocated by caller. The rest is quite self explanatory. .
 //
-int     mf_read        (mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data);
-int     mf_write       (mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data);
+int     mf_read(mflash *mfl, u_int32_t addr, u_int32_t len, u_int8_t *data);
+int     mf_write(mflash *mfl, u_int32_t addr, u_int32_t len, u_int8_t *data);
 // mf_erase performs an erase on the smallest block
-int     mf_erase(mflash* mfl, u_int32_t addr);
+int     mf_erase(mflash *mfl, u_int32_t addr);
 // adv erasing
-int     mf_erase_64k_sector(mflash* mfl, u_int32_t addr);
-int     mf_erase_4k_sector(mflash* mfl, u_int32_t addr);
+int     mf_erase_64k_sector(mflash *mfl, u_int32_t addr);
+int     mf_erase_4k_sector(mflash *mfl, u_int32_t addr);
 
 // swap between erasing 4KB or 64KB chunks (performance optimization)
 
@@ -127,46 +127,46 @@ int     mf_erase_4k_sector(mflash* mfl, u_int32_t addr);
 //
 // Crspace access through mflash:
 //
-int     mf_cr_read     (mflash* mfl, u_int32_t cr_addr, u_int32_t* data);
-int     mf_cr_write    (mflash* mfl, u_int32_t cr_addr, u_int32_t  data);
+int     mf_cr_read(mflash *mfl, u_int32_t cr_addr, u_int32_t *data);
+int     mf_cr_write(mflash *mfl, u_int32_t cr_addr, u_int32_t data);
 
-int     mf_update_boot_addr(mflash* mfl, u_int32_t boot_addr);
+int     mf_update_boot_addr(mflash *mfl, u_int32_t boot_addr);
 // Software reset the target device. Currently supported for InfiniScale4 switch via IB interface only.
-int     mf_sw_reset     (mflash* mfl);
+int     mf_sw_reset(mflash *mfl);
 //
 // mf_get_attr(): Returns the flash_attr struct
 //
-int     mf_get_attr    (mflash* mfl, flash_attr* attr);
+int     mf_get_attr(mflash *mfl, flash_attr *attr);
 
-int     mf_set_quad_en (mflash *mfl, u_int8_t quad_en);
-int     mf_get_quad_en (mflash *mfl, u_int8_t *quad_en);
+int     mf_set_quad_en(mflash *mfl, u_int8_t quad_en);
+int     mf_get_quad_en(mflash *mfl, u_int8_t *quad_en);
 
 int     mf_set_write_protect(mflash *mfl, u_int8_t bank_num, write_protect_info_t *protect_info);
 int     mf_get_write_protect(mflash *mfl, u_int8_t bank_num, write_protect_info_t *protect_info);
 
-int     mf_set_dummy_cycles (mflash *mfl, u_int8_t num_of_cycles);
-int     mf_get_dummy_cycles (mflash *mfl, u_int8_t *num_of_cycles);
+int     mf_set_dummy_cycles(mflash *mfl, u_int8_t num_of_cycles);
+int     mf_get_dummy_cycles(mflash *mfl, u_int8_t *num_of_cycles);
 
 //
 // Set/Get for some options.
 //
-int     mf_set_opt     (mflash* mfl, MfOpt opt, int  val);
-int     mf_get_opt     (mflash* mfl, MfOpt opt, int *val);
+int     mf_set_opt(mflash *mfl, MfOpt opt, int val);
+int     mf_get_opt(mflash *mfl, MfOpt opt, int *val);
 
-int     mf_is_fifth_gen(mflash* mfl);
+int     mf_is_fifth_gen(mflash *mfl);
 
-int     mf_enable_hw_access(mflash* mfl, u_int64_t key);
-int     mf_disable_hw_access_with_key(mflash* mfl, u_int64_t key);
-int     mf_disable_hw_access(mflash* mfl);
-int     mf_release_semaphore(mflash* mfl);
+int     mf_enable_hw_access(mflash *mfl, u_int64_t key);
+int     mf_disable_hw_access_with_key(mflash *mfl, u_int64_t key);
+int     mf_disable_hw_access(mflash *mfl);
+int     mf_release_semaphore(mflash *mfl);
 
 // get mfile object
-mfile* mf_get_mfile(mflash* mfl);
+mfile* mf_get_mfile(mflash *mfl);
 
 //
 // err code to string translation for printing.
 //
-const char* mf_err2str (int err_code);
+const char* mf_err2str(int err_code);
 
 void mf_flash_list(char *flash_list);
 

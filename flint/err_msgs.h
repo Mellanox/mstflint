@@ -49,7 +49,7 @@ typedef enum {
     FLINT_FAILED = 1,
     FLINT_QUERY_ERROR = 2,
     FLINT_BURN_ABORTED = 7
-}FlintStatus;
+} FlintStatus;
 
 /***********************
  * Flint Error Messages

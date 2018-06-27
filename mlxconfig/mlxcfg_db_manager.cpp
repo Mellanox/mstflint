@@ -57,7 +57,7 @@ using namespace std;
 #define SQL_SELECT_TLV_BY_NAME_AND_PORT \
     "SELECT * FROM tlvs WHERE name='%s' and port='%d'"
 
-#define SQL_SELECT_TLV_BY_INDEX_AND_CLASS\
+#define SQL_SELECT_TLV_BY_INDEX_AND_CLASS \
     "SELECT * FROM tlvs WHERE id=%d and class=%d"
 
 #define SQL_SELECT_PARAMS_BY_TLV_NAME_AND_PORT \
@@ -67,19 +67,21 @@ using namespace std;
     "SELECT * FROM params WHERE mlxconfig_name='%s'"
 
 MlxcfgDBManager::MlxcfgDBManager(string dbName) : _dbName(dbName),
-        _db(NULL), _supportedVersion(0x0), _callBackErr(""), _isAllFetched(false),
-        _paramSqlResult(NULL) {
+    _db(NULL), _supportedVersion(0x0), _callBackErr(""), _isAllFetched(false),
+    _paramSqlResult(NULL)
+{
     openDB();
 }
 
-MlxcfgDBManager::~MlxcfgDBManager() {
+MlxcfgDBManager::~MlxcfgDBManager()
+{
     VECTOR_ITERATOR(TLVConf*, fetchedTLVs, it) {
         delete *it;
     }
     VECTOR_ITERATOR(Param*, fetchedParams, it) {
         delete *it;
     }
-    if(!_db) {
+    if (!_db) {
         return;
     }
     sqlite3_close(_db);
@@ -124,8 +126,9 @@ void MlxcfgDBManager::openDB()
     return;
 }
 
-void MlxcfgDBManager::execSQL(sqlite3_callback f, void* obj,
-        const char* stat, ...) {
+void MlxcfgDBManager::execSQL(sqlite3_callback f, void *obj,
+                              const char *stat, ...)
+{
     va_list vl;
     char sql[1024];
     char *zErrMsg = 0;
@@ -134,7 +137,7 @@ void MlxcfgDBManager::execSQL(sqlite3_callback f, void* obj,
     vsnprintf(sql, sizeof(sql), stat, vl);
     va_end(vl);
 
-    if(sqlite3_exec(_db, sql, f, obj, &zErrMsg) != SQLITE_OK) {
+    if (sqlite3_exec(_db, sql, f, obj, &zErrMsg) != SQLITE_OK) {
         string e = zErrMsg;
         sqlite3_free(zErrMsg);
         if (_callBackErr.empty()) {
@@ -145,12 +148,13 @@ void MlxcfgDBManager::execSQL(sqlite3_callback f, void* obj,
     }
 }
 
-int MlxcfgDBManager::selectTLVCallBack(void *object, int argc, char **argv, char **azColName) {
+int MlxcfgDBManager::selectTLVCallBack(void *object, int argc, char **argv, char **azColName)
+{
 
-    MlxcfgDBManager* dbManager = reinterpret_cast<MlxcfgDBManager*>(object); //TODOO check this casting
+    MlxcfgDBManager *dbManager = reinterpret_cast<MlxcfgDBManager*>(object); //TODOO check this casting
 
     try {
-        TLVConf* tlv = new TLVConf(argc, argv, azColName);
+        TLVConf *tlv = new TLVConf(argc, argv, azColName);
         dbManager->fetchedTLVs.push_back(tlv);
     } catch (MlxcfgException& e) {
         dbManager->_callBackErr = e._err;
@@ -160,9 +164,10 @@ int MlxcfgDBManager::selectTLVCallBack(void *object, int argc, char **argv, char
     return 0;
 }
 
-int MlxcfgDBManager::selectAndCreateNewTLVCallBack(void *object, int argc, char **argv, char **azColName) {
+int MlxcfgDBManager::selectAndCreateNewTLVCallBack(void *object, int argc, char **argv, char **azColName)
+{
 
-    TLVConf* *tlv = reinterpret_cast<TLVConf**>(object);
+    TLVConf **tlv = reinterpret_cast<TLVConf**>(object);
 
     try {
         *tlv = new TLVConf(argc, argv, azColName);
@@ -174,11 +179,12 @@ int MlxcfgDBManager::selectAndCreateNewTLVCallBack(void *object, int argc, char 
 }
 
 int MlxcfgDBManager::selectAndCreateParamCallBack(void *object, int argc, char **argv,
-        char **azColName){
-    TLVConf* tlv = reinterpret_cast<TLVConf*>(object);
+                                                  char **azColName)
+{
+    TLVConf *tlv = reinterpret_cast<TLVConf*>(object);
 
     try {
-        Param* param = new Param(argc, argv, azColName);
+        Param *param = new Param(argc, argv, azColName);
         tlv->_params.push_back(param);
     } catch (MlxcfgException& e) {
         return SQLITE_ABORT;
@@ -188,12 +194,13 @@ int MlxcfgDBManager::selectAndCreateParamCallBack(void *object, int argc, char *
 }
 
 int MlxcfgDBManager::selectParamCallBack(void *object, int argc, char **argv,
-        char **azColName){
+                                         char **azColName)
+{
 
-    MlxcfgDBManager* dbManager = reinterpret_cast<MlxcfgDBManager*>(object); //TODOO check this casting
+    MlxcfgDBManager *dbManager = reinterpret_cast<MlxcfgDBManager*>(object); //TODOO check this casting
 
     try {
-        Param* param = new Param(argc, argv, azColName);
+        Param *param = new Param(argc, argv, azColName);
         dbManager->fetchedParams.push_back(param);
     } catch (MlxcfgException& e) {
         dbManager->_callBackErr = e._err;
@@ -204,8 +211,9 @@ int MlxcfgDBManager::selectParamCallBack(void *object, int argc, char **argv,
 }
 
 int MlxcfgDBManager::selectParamByMlxconfigNameCallBack(void *object, int argc,
-        char **argv, char **azColName){
-    MlxcfgDBManager* dbManager = reinterpret_cast<MlxcfgDBManager*>(object);
+                                                        char **argv, char **azColName)
+{
+    MlxcfgDBManager *dbManager = reinterpret_cast<MlxcfgDBManager*>(object);
     try {
         dbManager->_paramSqlResult = new Param(argc, argv, azColName);
     } catch (MlxcfgException& e) {
@@ -215,10 +223,11 @@ int MlxcfgDBManager::selectParamByMlxconfigNameCallBack(void *object, int argc,
     return 0;
 }
 
-void MlxcfgDBManager::getAllTLVs() {
+void MlxcfgDBManager::getAllTLVs()
+{
     size_t i = 0, j = 0;
 
-    if(_isAllFetched) {
+    if (_isAllFetched) {
         return;
     }
 
@@ -229,13 +238,13 @@ void MlxcfgDBManager::getAllTLVs() {
     execSQL(selectParamCallBack, this, SQL_SELECT_ALL_PARAMS);
 
     /*
-     Fill in TLV.params vector
-     we assume that params table is grouped by tlv name
+       Fill in TLV.params vector
+       we assume that params table is grouped by tlv name
      */
-    while(j < fetchedTLVs.size() && i < fetchedParams.size()) {
-        Param* p = fetchedParams[i];
+    while (j < fetchedTLVs.size() && i < fetchedParams.size()) {
+        Param *p = fetchedParams[i];
         if (p->_tlvName == fetchedTLVs[j]->_name &&
-                p->_port == fetchedTLVs[j]->_port) {
+            p->_port == fetchedTLVs[j]->_port) {
             fetchedTLVs[j]->_params.push_back(p);
             i++;//move to next parameter
         } else {
@@ -250,9 +259,10 @@ void MlxcfgDBManager::getAllTLVs() {
     _isAllFetched = true;
 }
 
-TLVConf* MlxcfgDBManager::getTLVByNameAux(string n, u_int8_t port) {
+TLVConf* MlxcfgDBManager::getTLVByNameAux(string n, u_int8_t port)
+{
     VECTOR_ITERATOR(TLVConf*, fetchedTLVs, it) {
-        TLVConf* t = *it;
+        TLVConf *t = *it;
         if (t->_name == n && t->_port == port) {
             return t;
         }
@@ -260,14 +270,15 @@ TLVConf* MlxcfgDBManager::getTLVByNameAux(string n, u_int8_t port) {
     return NULL;
 }
 
-TLVConf* MlxcfgDBManager::fetchTLVByName(string n, u_int8_t port) {
-    TLVConf* t;
-    const char* nc = n.c_str();
+TLVConf* MlxcfgDBManager::fetchTLVByName(string n, u_int8_t port)
+{
+    TLVConf *t;
+    const char *nc = n.c_str();
 
     execSQL(selectTLVCallBack, this, SQL_SELECT_TLV_BY_NAME_AND_PORT,
             nc, port);
     t = getTLVByNameAux(n, port);
-    if(!t) {
+    if (!t) {
         throw MlxcfgException("The TLV configuration %s was not found", nc);
     }
 
@@ -277,7 +288,7 @@ TLVConf* MlxcfgDBManager::fetchTLVByName(string n, u_int8_t port) {
 
     //fill in params vector of the tlv
     VECTOR_ITERATOR(Param*, fetchedParams, p) {
-        if((*p)->_tlvName == t->_name && (*p)->_port == port) {
+        if ((*p)->_tlvName == t->_name && (*p)->_port == port) {
             t->_params.push_back(*p);
         }
     }
@@ -287,7 +298,7 @@ TLVConf* MlxcfgDBManager::fetchTLVByName(string n, u_int8_t port) {
 
 TLVConf* MlxcfgDBManager::fetchTLVByIndexAndClass(u_int32_t id, TLVClass c)
 {
-    TLVConf* t;
+    TLVConf *t;
 
     execSQL(selectTLVCallBack, this, SQL_SELECT_TLV_BY_INDEX_AND_CLASS,
             id, c);
@@ -302,7 +313,7 @@ TLVConf* MlxcfgDBManager::fetchTLVByIndexAndClass(u_int32_t id, TLVClass c)
 
     //fill in params vector of the tlv
     VECTOR_ITERATOR(Param*, fetchedParams, p) {
-        if((*p)->_tlvName == t->_name && (*p)->_port == t->_port) {
+        if ((*p)->_tlvName == t->_name && (*p)->_port == t->_port) {
             t->_params.push_back(*p);
         }
     }
@@ -310,13 +321,14 @@ TLVConf* MlxcfgDBManager::fetchTLVByIndexAndClass(u_int32_t id, TLVClass c)
     return t;
 }
 
-TLVConf* MlxcfgDBManager::getAndCreateTLVByName(string n, u_int8_t port) {
-    TLVConf* tlv = NULL;
-    const char* nc = n.c_str();
+TLVConf* MlxcfgDBManager::getAndCreateTLVByName(string n, u_int8_t port)
+{
+    TLVConf *tlv = NULL;
+    const char *nc = n.c_str();
 
     execSQL(selectAndCreateNewTLVCallBack, &tlv, SQL_SELECT_TLV_BY_NAME_AND_PORT,
             nc, port);
-    if(!tlv) {
+    if (!tlv) {
         throw MlxcfgException("The TLV configuration %s was not found", nc);
     }
 
@@ -327,11 +339,12 @@ TLVConf* MlxcfgDBManager::getAndCreateTLVByName(string n, u_int8_t port) {
     return tlv;
 }
 
-TLVConf* MlxcfgDBManager::getTLVByName(string n, u_int8_t port) {
-    TLVConf* t = NULL;
+TLVConf* MlxcfgDBManager::getTLVByName(string n, u_int8_t port)
+{
+    TLVConf *t = NULL;
 
     t = getTLVByNameAux(n, port);
-    if(!t) {
+    if (!t) {
         t = fetchTLVByName(n, port);
     }
 
@@ -341,7 +354,7 @@ TLVConf* MlxcfgDBManager::getTLVByName(string n, u_int8_t port) {
 TLVConf* MlxcfgDBManager::getTLVByIndexAndClassAux(u_int32_t id, TLVClass c)
 {
     VECTOR_ITERATOR(TLVConf*, fetchedTLVs, it) {
-        TLVConf* t = *it;
+        TLVConf *t = *it;
         if (t->_id == id && t->_tlvClass == c) {
             return t;
         }
@@ -349,12 +362,13 @@ TLVConf* MlxcfgDBManager::getTLVByIndexAndClassAux(u_int32_t id, TLVClass c)
     return NULL;
 }
 
-TLVConf* MlxcfgDBManager::getTLVByParamMlxconfigName(std::string n) {
+TLVConf* MlxcfgDBManager::getTLVByParamMlxconfigName(std::string n)
+{
     u_int32_t port;
     string tlvName;
 
     VECTOR_ITERATOR(TLVConf*, fetchedTLVs, it) {
-        if((*it)->findParamByMlxconfigName(n)) {
+        if ((*it)->findParamByMlxconfigName(n)) {
             return (*it);
         }
     }
@@ -364,10 +378,10 @@ TLVConf* MlxcfgDBManager::getTLVByParamMlxconfigName(std::string n) {
     execSQL(selectParamByMlxconfigNameCallBack, this,
             SQL_SELECT_PARAM_BY_MLXCONFIG_NAME, n.c_str());
 
-    if(!_paramSqlResult) {
+    if (!_paramSqlResult) {
         throw MlxcfgException(
-                "Unknown Parameter: %s",
-                n.c_str());
+                  "Unknown Parameter: %s",
+                  n.c_str());
     }
 
     port = _paramSqlResult->_port;
@@ -380,17 +394,18 @@ TLVConf* MlxcfgDBManager::getTLVByParamMlxconfigName(std::string n) {
 
 TLVConf* MlxcfgDBManager::getTLVByIndexAndClass(u_int32_t id, TLVClass c)
 {
-    TLVConf* t = NULL;
+    TLVConf *t = NULL;
 
     t = getTLVByIndexAndClassAux(id, c);
-    if(!t) {
+    if (!t) {
         t = fetchTLVByIndexAndClass(id, c);
     }
 
     return t;
 }
 
-inline bool MlxcfgDBManager::isDBFileExists(const std::string& name) {
+inline bool MlxcfgDBManager::isDBFileExists(const std::string& name)
+{
     if (FILE *file = fopen(name.c_str(), "r")) {
         fclose(file);
         return true;
@@ -400,7 +415,7 @@ inline bool MlxcfgDBManager::isDBFileExists(const std::string& name) {
 }
 
 /*
-string MlxcfgDBManagerException::getMessageByCode(ExceptionCode c) const{
+   string MlxcfgDBManagerException::getMessageByCode(ExceptionCode c) const{
     switch(c) {
         case DB_FILE_DOES_NOT_EXIST:
             return "Database file does not exist";
@@ -412,4 +427,4 @@ string MlxcfgDBManagerException::getMessageByCode(ExceptionCode c) const{
         default:
             return "Unknown";
     }
-}*/
+   }*/

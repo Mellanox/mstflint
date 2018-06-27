@@ -54,9 +54,9 @@ using namespace std;
 //we might need to close the log from the main program in case of interrupt
 void close_log();
 void print_time_to_log();
-int print_line_to_log(const char* format, ...);
-int write_cmd_to_log(char* av[], int ac, CommandType cmd, bool write=true);
-int write_result_to_log(int is_failed, const char* err_msg, bool write=true);
+int print_line_to_log(const char *format, ...);
+int write_cmd_to_log(char *av[], int ac, CommandType cmd, bool write = true);
+int write_result_to_log(int is_failed, const char *err_msg, bool write = true);
 
 typedef enum what_to_ver {
     Wtv_Img,
@@ -74,7 +74,7 @@ class SubCommand
 protected:
     FwOperations *_fwOps;
     FwOperations *_imgOps;
-    FBase* _io;
+    FBase *_io;
     what_to_ver_t _v;
     int _maxCmdParamNum;
     int _minCmdParamNum;
@@ -88,7 +88,7 @@ protected:
     string _param;
     string _paramExp;
     string _example;
-    char  _errBuff[FLINT_ERR_LEN];
+    char _errBuff[FLINT_ERR_LEN];
     sub_cmd_t _cmdType;
     bool _mccSupported;
 
@@ -97,24 +97,24 @@ protected:
 
     virtual bool verifyParams() {return true;};
     bool basicVerifyParams();
-    void initDeviceFwParams(char* errBuff, FwOperations::fw_ops_params_t& fwParams);
+    void initDeviceFwParams(char *errBuff, FwOperations::fw_ops_params_t& fwParams);
     FlintStatus openOps();
     FlintStatus openIo();
     virtual FlintStatus preFwOps();
     virtual FlintStatus preFwAccess();
 
-    bool getRomsInfo(FBase* io, roms_info_t& romsInfo);
+    bool getRomsInfo(FBase *io, roms_info_t& romsInfo);
     void displayOneExpRomInfo(const rom_info_t& info);
     void displayExpRomInfo(const roms_info_t& romsInfo, const char *preStr);
     string getExpRomVerStr(const rom_info_t& info);
     string getRomProtocolStr(u_int8_t proto);
     string getRomSuppCpuStr(u_int8_t suppCpu);
 
-    static int verifyCbFunc(char* str);
-    static int CbCommon(int completion, char*preStr, char* endStr=NULL);
+    static int verifyCbFunc(char *str);
+    static int CbCommon(int completion, char *preStr, char *endStr = NULL);
     static int burnCbFs2Func(int completion);
     static int burnCbFs3Func(int completion);
-    static int advProgressFunc(int completion, const char* stage, prog_t type, int* unknownProgress);
+    static int advProgressFunc(int completion, const char *stage, prog_t type, int *unknownProgress);
     static int burnBCbFunc(int completion);
     static int vsdCbFunc(int completion);
     static int setKeyCbFunc(int completion);
@@ -123,22 +123,22 @@ protected:
     static int wbCbFunc(int completion);
     static int resetCfgCbFunc(int completion);
 
-    bool printGuidLine(guid_t* new_guids, guid_t* old_guids, int guid_index);
-    bool printMacLine(guid_t* new_guids, guid_t* old_guids, int mac_index);
-    bool printGUIDsFunc(guid_t guids[GUIDS],guid_t macs[MACS], guid_t old_guids[GUIDS],\
-            guid_t old_macs[MACS], bool print_guids, bool print_macs, int portNum, bool old_guid_fmt);
-    bool reportGuidChanges(guid_t* new_guids, guid_t* new_macs,\
-                                        guid_t* old_guids, guid_t* old_macs, bool printGuids,\
-                                        bool printMacs, int guidNum);
+    bool printGuidLine(guid_t *new_guids, guid_t *old_guids, int guid_index);
+    bool printMacLine(guid_t *new_guids, guid_t *old_guids, int mac_index);
+    bool printGUIDsFunc(guid_t guids[GUIDS], guid_t macs[MACS], guid_t old_guids[GUIDS], \
+                        guid_t old_macs[MACS], bool print_guids, bool print_macs, int portNum, bool old_guid_fmt);
+    bool reportGuidChanges(guid_t *new_guids, guid_t *new_macs, \
+                           guid_t *old_guids, guid_t *old_macs, bool printGuids, \
+                           bool printMacs, int guidNum);
     bool checkGuidsFlags(u_int16_t devType, u_int8_t fwType,
-            bool guidsSpecified, bool macsSpecified, bool uidSpecified, bool ibDev, bool ethDev);
+                         bool guidsSpecified, bool macsSpecified, bool uidSpecified, bool ibDev, bool ethDev);
     void printMissingGuidErr(bool ibDev, bool ethDev);
 
     bool extractUIDArgs(std::vector<string>& cmdArgs, u_int8_t numOfGuids[2], u_int8_t stepSize[2]);
     bool extractValuesFromString(string valStr, u_int8_t values[2], string origArg);
-    bool getGUIDFromStr(string str, guid_t& guid, string prefixErr="");
-    bool  getPasswordFromUser(const char *preStr, char buffer[MAX_PASSWORD_LEN+1]);
-    bool askUser(const char* question=NULL, bool printAbrtMsg=true);
+    bool getGUIDFromStr(string str, guid_t& guid, string prefixErr = "");
+    bool  getPasswordFromUser(const char *preStr, char buffer[MAX_PASSWORD_LEN + 1]);
+    bool askUser(const char *question = NULL, bool printAbrtMsg = true);
 
     bool isCmdSupportLog();
     void openLog();
@@ -149,13 +149,13 @@ protected:
     bool writeToFile(string filePath, const std::vector<u_int8_t>& buff);
     FlintStatus writeImageToFile(const char *file_name, u_int8_t *data, u_int32_t length);
 
-    bool dumpFile(const char* confFile, std::vector<u_int8_t>& data, const char *sectionName);
-    bool unzipDataFile (std::vector<u_int8_t> data, std::vector<u_int8_t> &newData, const char *sectionName);
+    bool dumpFile(const char *confFile, std::vector<u_int8_t>& data, const char *sectionName);
+    bool unzipDataFile(std::vector<u_int8_t> data, std::vector<u_int8_t> &newData, const char *sectionName);
     const char* fwImgTypeToStr(u_int8_t fwImgType);
 
 
 public:
-    SubCommand(): _fwOps(NULL), _imgOps(NULL), _io(NULL), _v(Wtv_Uninitilized), _maxCmdParamNum(-1),  _minCmdParamNum(-1), _mccSupported(false)
+    SubCommand() : _fwOps(NULL), _imgOps(NULL), _io(NULL), _v(Wtv_Uninitilized), _maxCmdParamNum(-1),  _minCmdParamNum(-1), _mccSupported(false)
     {
         _cmdType = SC_No_Cmd;
         memset(_errBuff, 0, sizeof(_errBuff));
@@ -176,7 +176,7 @@ public:
 class BurnSubCommand : public SubCommand
 {
 private:
-	u_int8_t _fwType;
+    u_int8_t _fwType;
     fw_info_t _devInfo;
     fw_info_t _imgInfo;
     FwOperations::ExtBurnParams _burnParams;
@@ -285,7 +285,7 @@ public:
     BromSubCommand();
     ~BromSubCommand();
     inline FlintStatus executeCommand();
-    bool getExpRomStrVer(roms_info_t& roms_info, char* version);
+    bool getExpRomStrVer(roms_info_t& roms_info, char *version);
 };
 
 class DromSubCommand : public SubCommand
@@ -323,7 +323,7 @@ class SgSubCommand : public SubCommand
 {
 private:
     fw_info_t _info;
-    FwOperations* _ops;
+    FwOperations *_ops;
     FwOperations::sg_params_t _sgParams;
 
     FlintStatus sgFs2();
@@ -342,7 +342,7 @@ class SmgSubCommand : public SubCommand
 private:
     fs3_uid_t _baseGuid;
     fw_info_t _info;
-    FwOperations* _ops;
+    FwOperations *_ops;
 public:
     SmgSubCommand();
     ~SmgSubCommand();
@@ -474,7 +474,7 @@ public:
 class WbSubCommand : public SubCommand
 {
 private:
-    bool extractData(const std::vector<string>& cmdParams , u_int32_t* addr, std::vector<u_int8_t>& data);
+    bool extractData(const std::vector<string>& cmdParams, u_int32_t *addr, std::vector<u_int8_t>& data);
 public:
     WbSubCommand();
     ~WbSubCommand();
@@ -485,7 +485,7 @@ public:
 class WbneSubCommand : public SubCommand
 {
 private:
-    bool extractData(const std::vector<string>& cmdParams , u_int32_t* addr, std::vector<u_int32_t>& data);
+    bool extractData(const std::vector<string>& cmdParams, u_int32_t *addr, std::vector<u_int32_t>& data);
     bool writeBlock(u_int32_t addr, std::vector<u_int32_t> dataVec);
 public:
     WbneSubCommand();
@@ -577,7 +577,7 @@ private:
     bool resetTs();
 
     int _operation;
-    FwOperations* _ops;
+    FwOperations *_ops;
     struct tools_open_ts_entry _userTsEntry;
     struct tools_open_fw_version _userFwVer;
 };

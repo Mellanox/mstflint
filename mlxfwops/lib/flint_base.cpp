@@ -41,7 +41,8 @@
 
 
 
-void FlintErrMsg::err_clear(){
+void FlintErrMsg::err_clear()
+{
     delete [] _err;
     _err = 0;
 }
@@ -58,30 +59,30 @@ bool _no_burn       = false;
 bool _unlock_bypass = false;
 bool _byte_write    = false;
 
-const char* g_sectNames[] = {
+const char *g_sectNames[] = {
     "UNKNOWN (0 - Reserved)",
-    "DDR"             ,
-    "Configuration"   ,
-    "Jump addresses"  ,
-    "EMT Service"     ,
-    "ROM"             ,
-    "GUID"            ,
-    "BOARD ID"        ,
-    "User Data"       ,
+    "DDR",
+    "Configuration",
+    "Jump addresses",
+    "EMT Service",
+    "ROM",
+    "GUID",
+    "BOARD ID",
+    "User Data",
     "FW Configuration",
-    "Image Info"      ,
-    "DDRZ"            ,
+    "Image Info",
+    "DDRZ",
     "Hash File"
 };
 
 void report(const char *format, ...)
 #ifdef __GNUC__
-__attribute__ ((format (printf, 1, 2)))
+__attribute__ ((format(printf, 1, 2)))
 #endif
 ;
 void report(const char *format, ...)
 {
-    va_list  args;
+    va_list args;
     va_start(args, format);
     vprintf(format, args);
     va_end(args);
@@ -90,7 +91,7 @@ void report(const char *format, ...)
 #define MAX_STRING_LEN 512
 void report_callback(f_prog_func_str func_str, const char *format, ...)
 {
-    va_list  args;
+    va_list args;
     char buff[MAX_STRING_LEN];
 
     va_start(args, format);
@@ -105,8 +106,8 @@ void report_callback(f_prog_func_str func_str, const char *format, ...)
 
 
 /*
-void report_erase(const char *format, ...)
-{
+   void report_erase(const char *format, ...)
+   {
     va_list  args;
     char buf[256];
     int i;
@@ -122,9 +123,9 @@ void report_erase(const char *format, ...)
     len = strlen(buf);
     for (i=0; i < len; ++i)
         printf("\b");
-} // report_erase
-*/
-void report_repair_msg(const char* common_msg)
+   } // report_erase
+ */
+void report_repair_msg(const char *common_msg)
 {
     printf("\r%s OK         ", common_msg);
 }
@@ -133,14 +134,14 @@ void report_repair_msg(const char* common_msg)
 #define PRE_ERR_MSG "-E-"
 void report_err(char err_buff[MAX_ERR_STR_LEN], const char *format, ...)
 {
-    va_list  args;
+    va_list args;
 
     va_start(args, format);
 
     if (vsnprintf(err_buff, MAX_ERR_STR_LEN, format, args) >= MAX_ERR_STR_LEN) {
         strcpy(&err_buff[MAX_ERR_STR_LEN - 5], "...\n");
     }
-    fprintf(stderr, PRE_ERR_MSG" %s", err_buff);
+    fprintf(stderr, PRE_ERR_MSG " %s", err_buff);
 
     va_end(args);
 
@@ -150,7 +151,7 @@ void report_err(char err_buff[MAX_ERR_STR_LEN], const char *format, ...)
 void report_warn(const char *format, ...)
 {
 #ifndef UEFI_BUILD
-    va_list  args;
+    va_list args;
     va_start(args, format);
     printf("\n-W- ");
     vfprintf(stdout, format, args);
@@ -159,10 +160,11 @@ void report_warn(const char *format, ...)
 #endif
 }
 
-bool FlintErrMsg::errmsg(const char *format, ...) {
-    va_list   args;
+bool FlintErrMsg::errmsg(const char *format, ...)
+{
+    va_list args;
 
-    char* prev_err = _err;
+    char *prev_err = _err;
 
     va_start(args, format);
     _err = vprint(format, args);
@@ -173,10 +175,11 @@ bool FlintErrMsg::errmsg(const char *format, ...) {
     return false;
 }
 
-bool FlintErrMsg::errmsg(int errorCode, const char *format, ...) {
-    va_list   args;
+bool FlintErrMsg::errmsg(int errorCode, const char *format, ...)
+{
+    va_list args;
 
-    char* prev_err = _err;
+    char *prev_err = _err;
 
     va_start(args, format);
     _err = vprint(format, args);
@@ -187,22 +190,23 @@ bool FlintErrMsg::errmsg(int errorCode, const char *format, ...) {
     return false;
 }
 
-bool FlintErrMsg::errmsgAdv(bool showAdv, const char *normalFmt, const char *AdvFmt, ...) {
-	// args should only apply to advanced format (i.e normalFmt does not contain %<char>)
-    va_list   args;
+bool FlintErrMsg::errmsgAdv(bool showAdv, const char *normalFmt, const char *AdvFmt, ...)
+{
+    // args should only apply to advanced format (i.e normalFmt does not contain %<char>)
+    va_list args;
     char errFmt[1024];
 
-    char* prev_err = _err;
+    char *prev_err = _err;
 
     va_start(args, AdvFmt);
 
     if (showAdv) {
-    	snprintf(errFmt, 1024, "%s %s", normalFmt, AdvFmt);
-    	_err = vprint(errFmt, args);
+        snprintf(errFmt, 1024, "%s %s", normalFmt, AdvFmt);
+        _err = vprint(errFmt, args);
     } else {
-    	//For functions where the arguments are not available to be checked (such as vprintf),
-    	//specify the third parameter as zero. In this case the compiler only checks the format string for consistency
-    	errmsg(normalFmt,0);
+        //For functions where the arguments are not available to be checked (such as vprintf),
+        //specify the third parameter as zero. In this case the compiler only checks the format string for consistency
+        errmsg(normalFmt, 0);
     }
     va_end(args);
 
@@ -211,10 +215,11 @@ bool FlintErrMsg::errmsgAdv(bool showAdv, const char *normalFmt, const char *Adv
     return false;
 }
 
-int FlintErrMsg::errmsgWCode(int errorCode, const char *format, ...) {
-    va_list   args;
+int FlintErrMsg::errmsgWCode(int errorCode, const char *format, ...)
+{
+    va_list args;
 
-    char* prev_err = _err;
+    char *prev_err = _err;
 
     va_start(args, format);
     _err = vprint(format, args);
@@ -228,14 +233,16 @@ int FlintErrMsg::errmsgWCode(int errorCode, const char *format, ...) {
 ////////////////////////////////////////////////////////////////////////
 void Crc16::add(u_int32_t o)
 {
-    if (_debug)
+    if (_debug) {
         printf("Crc16::add(%08x)\n", o);
-    for (int i=0; i<32; i++) {
-        if (_crc & 0x8000)
-            _crc = (u_int16_t) ((((_crc<<1) | (o>>31)) ^  0x100b) & 0xffff);
-        else
-            _crc= (u_int16_t) (((_crc<<1) | (o>>31)) & 0xffff);
-        o = (o<<1) & 0xffffffff;
+    }
+    for (int i = 0; i < 32; i++) {
+        if (_crc & 0x8000) {
+            _crc = (u_int16_t) ((((_crc << 1) | (o >> 31)) ^  0x100b) & 0xffff);
+        } else {
+            _crc = (u_int16_t) (((_crc << 1) | (o >> 31)) & 0xffff);
+        }
+        o = (o << 1) & 0xffffffff;
     }
 } // Crc16::add
 
@@ -243,11 +250,12 @@ void Crc16::add(u_int32_t o)
 ////////////////////////////////////////////////////////////////////////
 void Crc16::finish()
 {
-    for (int i=0; i<16; i++) {
-        if (_crc & 0x8000)
-            _crc=((_crc<<1)  ^  0x100b) & 0xffff;
-        else
-            _crc=(_crc<<1) & 0xffff;
+    for (int i = 0; i < 16; i++) {
+        if (_crc & 0x8000) {
+            _crc = ((_crc << 1)  ^  0x100b) & 0xffff;
+        } else {
+            _crc = (_crc << 1) & 0xffff;
+        }
     }
 
     // Revert 16 low bits
@@ -258,14 +266,14 @@ void Crc16::finish()
 
 #ifdef UEFI_BUILD
 
-void *operator new(size_t size)
+void* operator new(size_t size)
 {
     void *p;
     p =  malloc(size);
     return p;
 }
 
-void *operator new[](size_t size)
+void* operator new[](size_t size)
 {
     void *p;
     p =  malloc(size);
@@ -278,33 +286,36 @@ void operator delete(void *p)
     free(p);
 }
 
-void operator delete[] (void* p)
+void operator delete[](void *p)
 {
     free(p);
 }
 
 
 namespace std {
-    void __throw_bad_alloc(void) {
-        // TODO: Check what happens when there is no mem or replace this exit with goto
-        goto hell;
-    hell:
-        goto hell;
-    }
+void __throw_bad_alloc(void)
+{
+    // TODO: Check what happens when there is no mem or replace this exit with goto
+    goto hell;
+hell:
+    goto hell;
+}
 
-    void __throw_length_error(const char*) {
-        // TODO: Check what happens when there is no mem or replace this exit with goto
-        goto hell;
-    hell:
-        goto hell;
-    }
+void __throw_length_error(const char*)
+{
+    // TODO: Check what happens when there is no mem or replace this exit with goto
+    goto hell;
+hell:
+    goto hell;
+}
 
-    void __throw_out_of_range(const char*) {
-        // TODO: Check what happens when there is no mem or replace this exit with goto
-        goto hell;
-    hell:
-        goto hell;
-    }
+void __throw_out_of_range(const char*)
+{
+    // TODO: Check what happens when there is no mem or replace this exit with goto
+    goto hell;
+hell:
+    goto hell;
+}
 }
 
 int goto_function()

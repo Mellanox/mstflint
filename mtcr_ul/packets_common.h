@@ -45,24 +45,24 @@
 /************************************/
 /* Endianess Defines */
 /*
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-    #ifndef PLATFORM_MEM
+ #if __BYTE_ORDER == __LITTLE_ENDIAN
+ #ifndef PLATFORM_MEM
          // #define PLATFORM_MEM "Little Endianess"
-    #endif
-    #define _LITTLE_ENDIANESS
-#endif
+ #endif
+ #define _LITTLE_ENDIANESS
+ #endif
 
-#if __BYTE_ORDER == __BIG_ENDIAN
+ #if __BYTE_ORDER == __BIG_ENDIAN
     //#define PLATFORM_MEM "Big Endianess"
-    #define _BIG_ENDIANESS
-#endif
+ #define _BIG_ENDIANESS
+ #endif
 
-#else
-    #define __BYTE_ORDER __LITTLE_ENDIAN
-    #ifndef PLATFORM_MEM
+ #else
+ #define __BYTE_ORDER __LITTLE_ENDIAN
+ #ifndef PLATFORM_MEM
         //#define PLATFORM_MEM "Big Endianess"
-    #endif
-    #define _BIG_ENDIANESS
+ #endif
+ #define _BIG_ENDIANESS
     typedef unsigned __int8  u_int8_t;
     typedef __int8           int8_t;
     typedef unsigned __int16 u_int16_t;
@@ -71,7 +71,7 @@
     typedef __int32          int32_t;
     typedef unsigned __int64 u_int64_t;
     typedef __int64          int64_t;
-    */
+ */
 #endif
 
 
@@ -81,24 +81,24 @@
 
 /* MASK generate a bit mask S bits width */
 //#define MASK32(S)     ( ((u_int32_t) ~0L) >> (32-(S)) )
-#define MASK8(S)        ( ((u_int8_t) ~0) >> (8-(S)) )
+#define MASK8(S)        ( ((u_int8_t) ~0) >> (8 - (S)) )
 
 /* BITS generate a bit mask with bits O+S..O set (assumes 32 / 8 bit integer) */
 //#define BITS32(O,S)   ( MASK32(S) << (O) )
-#define BITS8(O,S)      ( MASK8(S) << (O) )
+#define BITS8(O, S)      ( MASK8(S) << (O) )
 
 /* EXTRACT32/8 macro extracts S bits from (u_int32_t/u_int8_t)W with offset O
  * and shifts them O places to the right (right justifies the field extracted) */
 //#define EXTRACT32(W,O,S)  ( ((W)>>(O)) & MASK32(S) )
-#define EXTRACT8(W,O,S)     ( ((W)>>(O)) & MASK8(S) )
+#define EXTRACT8(W, O, S)     ( ((W) >> (O)) & MASK8(S) )
 
 #define PCK_MIN(a, b)   ((a) < (b) ? (a) : (b))
 /* INSERT32/8 macro inserts S bits with offset O from field F into word W (u_int32_t/u_int8_t) */
 //#define INSERT32(W,F,O,S)     ((W)= ( ( (W) & (~BITS32(O,S)) ) | (((F) & MASK32(S))<<(O)) ))
-#define INSERT8(W,F,O,S)        ((W)= ( ( (W) & (~BITS8(O,S)) ) | (((F) & MASK8(S))<<(O)) ))
+#define INSERT8(W, F, O, S)        ((W) = ( ( (W) &(~BITS8(O, S)) ) | (((F) &MASK8(S)) << (O)) ))
 
 //#define INSERTF_32(W,O1,F,O2,S)   (INSERT32(W, EXTRACT32(F, O2, S), O1, S) )
-#define INSERTF_8(W,O1,F,O2,S)      (INSERT8(W, EXTRACT8(F, O2, S), O1, S) )
+#define INSERTF_8(W, O1, F, O2, S)      (INSERT8(W, EXTRACT8(F, O2, S), O1, S) )
 
 
 /************************************/
@@ -166,26 +166,26 @@
 /* define macros for print fields */
 //#if defined (ARCH_ia64) || defined(ARCH_x86_64) || defined(ARCH_ppc64) || defined(__MINGW64__)
 /*
-#if !defined(UEFI_BUILD) && (defined (ARCH_ia64) || defined(ARCH_x86_64) || defined(ARCH_ppc64) || defined(__MINGW64__))
-#   define U64H_FMT "0x%016lx"
-#   define U64D_FMT "%lu"
-#   define U32H_FMT "0x%08x"
-#   define U16H_FMT "0x%04x"
-#   define U8H_FMT  "0x%02x"
-#   define U32D_FMT "%u"
-#   define STR_FMT "%s"
-#elif defined(ARCH_x86) || defined(ARCH_ppc) || defined(__MINGW32__) || defined(UEFI_BUILD) || defined(ARCH_arm6l)
-#   define U64H_FMT "0x%016llx"
-#   define U64D_FMT "%llu"
-#   define U32H_FMT "0x%08x"
-#   define U16H_FMT "0x%04x"
-#   define U8H_FMT  "0x%02x"
-#   define U32D_FMT "%u"
-#   define STR_FMT "%s"
-#else  // ARCH
-#   error Unknown architecture
-#endif // ARCH
-*/
+ #if !defined(UEFI_BUILD) && (defined (ARCH_ia64) || defined(ARCH_x86_64) || defined(ARCH_ppc64) || defined(__MINGW64__))
+ #   define U64H_FMT "0x%016lx"
+ #   define U64D_FMT "%lu"
+ #   define U32H_FMT "0x%08x"
+ #   define U16H_FMT "0x%04x"
+ #   define U8H_FMT  "0x%02x"
+ #   define U32D_FMT "%u"
+ #   define STR_FMT "%s"
+ #elif defined(ARCH_x86) || defined(ARCH_ppc) || defined(__MINGW32__) || defined(UEFI_BUILD) || defined(ARCH_arm6l)
+ #   define U64H_FMT "0x%016llx"
+ #   define U64D_FMT "%llu"
+ #   define U32H_FMT "0x%08x"
+ #   define U16H_FMT "0x%04x"
+ #   define U8H_FMT  "0x%02x"
+ #   define U32D_FMT "%u"
+ #   define STR_FMT "%s"
+ #else  // ARCH
+ #   error Unknown architecture
+ #endif // ARCH
+ */
 
 /**********************************/
 void push_to_buff_64(u_int8_t *buff, u_int32_t bit_offset, u_int64_t field_value);

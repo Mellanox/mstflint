@@ -60,7 +60,7 @@ class Flint : public CommandLineRequester
 {
 private:
     FlintParams _flintParams;
-    CommandLineParser   _cmdParser;
+    CommandLineParser _cmdParser;
     map_sub_cmd_t_to_subcommand _subcommands;
 
     //methods
@@ -72,7 +72,7 @@ public:
     ~Flint();
     void initCmdParser();
     virtual ParseStatus HandleOption(string name, string value);
-    ParseStatus parseCmdLine(int argc, char* argv[]);
-    FlintStatus run(int argc, char* argv[]);
+    ParseStatus parseCmdLine(int argc, char *argv[]);
+    FlintStatus run(int argc, char *argv[]);
 };
 #endif
