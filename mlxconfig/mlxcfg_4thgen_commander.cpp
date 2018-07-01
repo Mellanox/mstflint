@@ -612,7 +612,7 @@ void FourthGenCommander::queryAux(vector<ParamView>& params, QueryType qt,
 
 }
 
-void FourthGenCommander::queryAll(std::vector<ParamView>& params, QueryType qt)
+void FourthGenCommander::queryAll(std::vector<ParamView>& params, vector<string>& /*failedTLVs*/, QueryType qt)
 {
     queryAux(params, qt, false);
 }

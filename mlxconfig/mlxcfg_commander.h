@@ -53,7 +53,7 @@ public:
     virtual bool isCurrentSupported() = 0;
     virtual void queryParamViews(std::vector<ParamView>& paramsToQuery,
                                  QueryType qt = QueryNext) = 0;
-    virtual void queryAll(std::vector<ParamView>& params,
+    virtual void queryAll(std::vector<ParamView>& params, vector<string>& failedTLVs,
                           QueryType qt = QueryNext) = 0;
     virtual void getCfg(ParamView& cfgParam, QueryType qt = QueryNext) = 0;
     virtual void setCfg(std::vector<ParamView>&, bool) = 0;

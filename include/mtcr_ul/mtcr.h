@@ -103,7 +103,7 @@ int mget_mdevs_type(mfile *mf, u_int32_t *mtype);
  */
 mfile* mopen(const char *name);
 
-mfile* mopend(const char *name, int type);
+mfile* mopend(const char *name, DType dtype);
 
 mfile* mopen_fw_ctx(void *fw_cmd_context, void *fw_cmd_func, void *extra_data);
 

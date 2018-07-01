@@ -28,8 +28,13 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
+ * errmsg.h - base class that provides the returning of error messages for classes that inherit it.
+ *
+ *  Created on: May 7, 2014
+ *      Author: adrianc
+ *
  */
-
 
 #ifndef ERRMSG_H_
 #define ERRMSG_H_

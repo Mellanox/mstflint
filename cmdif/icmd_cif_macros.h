@@ -36,10 +36,6 @@
 
 int convert_rc(int rc);
 
-#define IN
-#define OUT
-#define INOUT
-
 #ifdef _DEBUG_MODE
 #define DBG_PRINTF(...) fprintf(stderr, __VA_ARGS__)
 #else

@@ -30,7 +30,6 @@
  * SOFTWARE.
  */
 
-
 #ifndef MLXFWOP_COM_H
 #define MLXFWOP_COM_H
 
@@ -55,7 +54,7 @@
 #endif
 
 #ifndef UEFI_BUILD
-    #define EFIAPI
+#define EFIAPI
 #endif
 
 typedef enum {
@@ -65,10 +64,10 @@ typedef enum {
     PROG_OK
 } prog_t;
 
-typedef int EFIAPI (*f_prog_func) (int completion);
-typedef int EFIAPI (*f_prog_func_ex) (int completion, void *opaque);
-typedef int EFIAPI (*f_prog_func_adv) (int completion, const char *str, prog_t, void *opaque);
-typedef int (*f_prog_func_str) (char *str);
+typedef int EFIAPI (*f_prog_func)(int completion);
+typedef int EFIAPI (*f_prog_func_ex)(int completion, void *opaque);
+typedef int EFIAPI (*f_prog_func_adv)(int completion, const char *str, prog_t, void *opaque);
+typedef int (*f_prog_func_str)(char *str);
 
 typedef struct {
     f_prog_func_adv func;
@@ -139,6 +138,8 @@ enum {
     MLXFW_TWO_VALID_DEVICE_INFO_ERR,
     MLXFW_DTOC_OVERWRITE_CHUNK,
     MLXFW_FLASH_READ_ERR,
+    MLXFW_UNSUPPORTED_PARAM,
+    MLXFW_FS_CHECKS_ERR,
 
     /* MCC_EN/Secure Error Codes */
     MLXFW_BURN_REJECTED_DIGEST_ERR,
@@ -159,54 +160,56 @@ enum {
     MLXFW_FLASH_ERASE_ERROR,
     MLXFW_MISSING_IMAGE_SIGNATURE,
     MLXFW_REJECTED_IMAGE_CAN_NOT_BOOT_FROM_PARTITION,
-    /* ******************* */
+/* ******************* */
 };
 
 enum {
-    GUIDS         = 4,
-    MACS          = 2,
-    MAX_GUIDS     = 32
+    GUIDS = 4,
+    MACS = 2,
+    MAX_GUIDS = 32
 };
 
 // needed for flint query
 enum {
-    BX_NP_GUIDS   = 2,
-    BX_SYS_GUIDS  = 1,
-    BX_GUIDS      = BX_NP_GUIDS + BX_SYS_GUIDS,
-    BX_IMACS      = 3,
-    BX_EMACS      = 4,
-    BX_MACS       = BX_EMACS + BX_IMACS,
-    BX_WWPNS      = 4,
-    BX_WWNNS      = 1,
+    BX_NP_GUIDS = 2,
+    BX_SYS_GUIDS = 1,
+    BX_GUIDS = BX_NP_GUIDS + BX_SYS_GUIDS,
+    BX_IMACS = 3,
+    BX_EMACS = 4,
+    BX_MACS = BX_EMACS + BX_IMACS,
+    BX_WWPNS = 4,
+    BX_WWNNS = 1,
     BX_SLICE_GUIDS = BX_WWNNS + BX_WWPNS + BX_MACS + BX_NP_GUIDS,
 
-    BX_ALL_GUIDS  = (2 * BX_SLICE_GUIDS) + BX_SYS_GUIDS,
+    BX_ALL_GUIDS = (2 * BX_SLICE_GUIDS) + BX_SYS_GUIDS,
     BX_SLICES_NUM = 2,
 };
 
 enum {
-    BI_IMACS    = 0,
-    BI_EMACS    = BI_IMACS + BX_IMACS,
-    BI_WWPNS    = BI_EMACS + BX_EMACS,
-    BI_GUIDS    = BI_WWPNS + BX_WWPNS,
-    BI_WWNNS    = BI_GUIDS  + BX_NP_GUIDS,
+    BI_IMACS = 0,
+    BI_EMACS = BI_IMACS + BX_IMACS,
+    BI_WWPNS = BI_EMACS + BX_EMACS,
+    BI_GUIDS = BI_WWPNS + BX_WWPNS,
+    BI_WWNNS = BI_GUIDS + BX_NP_GUIDS,
     BI_SYS_GUID = BX_ALL_GUIDS - 1,
 };
 
 typedef enum security_mode_mask {
     SMM_MCC_EN    = 0x1,
-    SMM_DEBUG_FW  = 0x2,
-    SMM_SIGNED_FW = 0x4,
-    SMM_SECURE_FW = 0x8,
-    SMM_DEV_FW    = 0x10
+    SMM_DEBUG_FW  = 0x1 << 1,
+    SMM_SIGNED_FW = 0x1 << 2,
+    SMM_SECURE_FW = 0x1 << 3,
+    SMM_DEV_FW    = 0x1 << 4,
+    SMM_CS_TOKEN  = 0x1 << 5,
+    SMM_DBG_TOKEN = 0x1 << 6
 } security_mode_mask_t;
 
 typedef enum security_mode {
-    SM_NONE         = 0x0,
-    SM_SHA_DIGEST   = SMM_MCC_EN,
+    SM_NONE = 0x0,
+    SM_SHA_DIGEST = SMM_MCC_EN,
     SM_SIGNED_IMAGE = SMM_MCC_EN | SMM_SIGNED_FW,
-    SM_SECURE_FW    = SMM_MCC_EN | SMM_SIGNED_FW | SMM_SECURE_FW,
-    SM_DEBUG_FW     = SMM_MCC_EN | SMM_SIGNED_FW | SMM_SECURE_FW | SMM_DEBUG_FW
+    SM_SECURE_FW = SMM_MCC_EN | SMM_SIGNED_FW | SMM_SECURE_FW,
+    SM_DEBUG_FW = SMM_MCC_EN | SMM_SIGNED_FW | SMM_SECURE_FW | SMM_DEBUG_FW
 } security_mode_t;
 
 typedef enum chip_type {
@@ -276,10 +279,9 @@ typedef struct rom_info {
     //char      expRomFreestr[FREE_STR_MAX_LEN];
 } rom_info_t;
 
-
 struct fs3_uid_entry {
     u_int8_t num_allocated;
-    u_int8_t step;  // not relevant for devices >= CX4
+    u_int8_t step; // not relevant for devices >= CX4
     u_int64_t uid;
 };
 
@@ -313,7 +315,6 @@ typedef struct fs3_info_ext {
     char description[DESCRIPTION_LEN];
     u_int32_t security_mode;
     u_int8_t mcc_en;
-
 } fs3_info_t;
 
 typedef struct fs3_info_ext fs4_info_t;
@@ -352,7 +353,7 @@ typedef struct roms_info {
 
 typedef struct fw_info_com {
     char psid[PSID_LEN + 1];
-    u_int8_t vsd_sect_found;     // relevant to FS2 image only
+    u_int8_t vsd_sect_found; // relevant to FS2 image only
     char vsd[VSD_LEN + 1];
     char product_ver[PRODUCT_VER_LEN + 1];
     u_int16_t fw_ver[3];
@@ -371,7 +372,6 @@ typedef struct fw_info_com {
     u_int8_t image_info_major_version;
     u_int16_t pci_device_id;
 } fw_info_com_t;
-
 
 typedef struct fw_info_ext {
     u_int8_t fw_type;
@@ -392,7 +392,6 @@ typedef enum fw_hndl_type {
     FHT_CABLE_DEV,
 } fw_hndl_type_t;
 
-
 typedef enum fw_img_type {
     FIT_FS2,
     FIT_FS3,
@@ -401,15 +400,14 @@ typedef enum fw_img_type {
     FIT_FSCTRL,
 } fw_img_type_t;
 
-
 enum ExpRomProto {
-    ER_IB  = 0,
+    ER_IB = 0,
     ER_ETH = 1,
     ER_VPI = 2
 };
 
 enum ExpRomCpuArch {
-    ERC_UNSPECIFIED  = 0,
+    ERC_UNSPECIFIED = 0,
     ERC_AMD64 = 1,
     ERC_AARCH64 = 2,
     ERC_AMD64_AARCH64 = 3,

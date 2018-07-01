@@ -134,9 +134,9 @@ mfile* mopen(const char *name)
     return mopen_ul(name);
 }
 
-mfile* mopend(const char *name, int type)
+mfile* mopend(const char *name, DType dtype)
 {
-    if (type != 1) {
+    if (dtype != 1) {
         return NULL;
     }
     return mopen(name);
@@ -236,19 +236,17 @@ MTCR_API int mget_addr_space(mfile *mf)
 {
     return mf->address_space;
 }
+
 MTCR_API int mset_addr_space(mfile *mf, int space)
 {
-    switch (space) {
-    case AS_CR_SPACE:
-    case AS_ICMD:
-    case AS_SEMAPHORE:
-        break;
-
-    default:
-        return -1;
-    }
-    mf->address_space = space;
-    return 0;
+    if (space < 0 || space >= AS_END) {
+         return -1;
+     }
+    if (VSEC_SUPPORTED_UL(mf) && (mf->vsec_cap_mask & (1 << space_to_cap_offset(space)))) {
+         mf->address_space = space;
+         return 0;
+     }
+     return -1;
 }
 
 int mget_mdevs_flags(mfile *mf, u_int32_t *devs_flags)

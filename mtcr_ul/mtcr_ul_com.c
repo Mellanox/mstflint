@@ -133,6 +133,7 @@ int init_dev_info_ul(mfile *mf, const char *dev_name, unsigned domain, unsigned 
     }
 
 #define MAX_RETRY_CNT 4096
+
 static int _flock_int(int fdlock, int operation)
 {
     int cnt = 0;
@@ -902,7 +903,7 @@ int mtcr_driver_open(mfile *mf, MType dev_type,
 end:
     if (rc) {
         mtcr_driver_mclose(mf);
-    } else if (cr_valid && driver_conf_name != NULL) {
+    } else if (cr_valid) {
         mf->res_fd = open(driver_conf_name, O_RDWR | O_SYNC);
         if (mf->res_fd < 0) {
             return -1;
@@ -914,7 +915,7 @@ end:
         ctx->res_mwrite4_block = driver_mwrite_chunk_as_multi_mwrite4;
     }
 
-    if (!cr_valid && driver_conf_name != NULL) {
+    if (!cr_valid) {
         rc = 0;
         mf->fd = open(driver_conf_name, O_RDWR | O_SYNC);
         if (mf->fd < 0) {
@@ -1309,6 +1310,42 @@ int mtcr_pciconf_mclose(mfile *mf)
     return 0;
 }
 
+int space_to_cap_offset(int space)
+{
+    switch (space) {
+    case AS_ICMD_EXT:
+        return VCC_ICMD_EXT_SPACE_SUPPORTED;
+    case AS_CR_SPACE:
+        return VCC_CRSPACE_SPACE_SUPPORTED;
+    case AS_ICMD:
+        return VCC_ICMD_SPACE_SUPPORTED;
+    case AS_NODNIC_INIT_SEG:
+        return VCC_NODNIC_INIT_SEG_SPACE_SUPPORTED;
+    case AS_EXPANSION_ROM:
+        return VCC_EXPANSION_ROM_SPACE_SUPPORTED;
+    case AS_ND_CRSPACE:
+        return VCC_ND_CRSPACE_SPACE_SUPPORTED;
+    case AS_SCAN_CRSPACE:
+        return VCC_SCAN_CRSPACE_SPACE_SUPPORTED;
+    case AS_SEMAPHORE:
+        return VCC_SEMAPHORE_SPACE_SUPPORTED;
+    case AS_MAC:
+        return VCC_MAC_SPACE_SUPPORTED;
+    default:
+        return 0;
+    }
+}
+
+// Turning on the space capability bit in vsec_cap_mask iff
+// space capability supported
+static
+int get_space_support_status(mfile *mf, u_int16_t space)
+{
+    int status = mtcr_pciconf_set_addr_space(mf, space) == ME_OK ? 1 : 0;
+    mf->vsec_cap_mask |= (status << space_to_cap_offset(space));
+    return status;
+}
+
 static
 int mtcr_pciconf_open(mfile *mf, const char *name, u_int32_t adv_opt)
 {
@@ -1322,6 +1359,7 @@ int mtcr_pciconf_open(mfile *mf, const char *name, u_int32_t adv_opt)
     mf->tp = MST_PCICONF;
 
     if ((mf->vsec_addr = pci_find_capability(mf, CAP_ID))) {
+        mf->vsec_supp = 1;
         // check if the needed spaces are supported
         if (adv_opt & Clear_Vsec_Semaphore) {
             mtcr_pciconf_cap9_sem(mf, 0);
@@ -1331,17 +1369,23 @@ int mtcr_pciconf_open(mfile *mf, const char *name, u_int32_t adv_opt)
             errno = EBUSY;
             return -1;
         }
-        if (mtcr_pciconf_set_addr_space(mf, ICMD_DOMAIN) || mtcr_pciconf_set_addr_space(mf, SEMAPHORE_DOMAIN)
-            || mtcr_pciconf_set_addr_space(mf, CR_SPACE_DOMAIN)) {
-            mf->vsec_supp = 0;
-        } else {
-            mf->vsec_supp = 1;
-        }
+
+        get_space_support_status(mf, AS_ICMD);
+        get_space_support_status(mf, AS_NODNIC_INIT_SEG);
+        get_space_support_status(mf, AS_EXPANSION_ROM);
+        get_space_support_status(mf, AS_ND_CRSPACE);
+        get_space_support_status(mf, AS_SCAN_CRSPACE);
+        get_space_support_status(mf, AS_MAC);
+        get_space_support_status(mf, AS_ICMD_EXT);
+        get_space_support_status(mf, AS_SEMAPHORE);
+        get_space_support_status(mf, AS_CR_SPACE);
+        mf->vsec_cap_mask |= (1 << VCC_INITIALIZED);
+
         mtcr_pciconf_cap9_sem(mf, 0);
     }
 
-    if (mf->vsec_supp) {
-        mf->address_space = CR_SPACE_DOMAIN;
+    if (VSEC_SUPPORTED_UL(mf)) {
+        mf->address_space = AS_CR_SPACE;
         ctx->mread4 = mtcr_pciconf_mread4;
         ctx->mwrite4 = mtcr_pciconf_mwrite4;
         ctx->mread4_block = mread4_block_pciconf;
@@ -1600,7 +1644,7 @@ static long live_fish_id_database[] = {
     0x209,
     0x20b,
     0x20d,
-    0x20f,
+    0x211,
     -1
 };
 
@@ -1942,6 +1986,12 @@ vf_info* get_vf_info(u_int16_t domain, u_int8_t bus, u_int8_t dev,
     *len = vf_count;
     virtfn = vf_devs;
     vf_arr = (vf_info*) malloc(sizeof(vf_info) * vf_count);
+    if (!vf_arr) {
+        if (vf_devs) {
+            free(vf_devs);
+        }
+        return NULL;
+    }
     memset(vf_arr, 0, sizeof(vf_info) * vf_count);
 
     for (i = 0; i < vf_count; i++) {
@@ -2007,6 +2057,12 @@ dev_info* mdevices_info_v_ul(int mask, int *len, int verbosity)
     }
     // For each device read
     dev_info *dev_info_arr = (dev_info*) malloc(sizeof(dev_info) * rc);
+    if (!dev_info_arr) {
+        if (devs) {
+            free(devs);
+        }
+        return NULL;
+    }
     memset(dev_info_arr, 0, sizeof(dev_info) * rc);
     dev_name = devs;
     for (i = 0; i < rc; i++) {

@@ -52,14 +52,11 @@ typedef enum MfOpt {
 } MfOpt;
 
 enum MfAccessType {
-    MFAT_MFILE = 0,
-    MFAT_UEFI,
+    MFAT_MFILE = 0, MFAT_UEFI,
 };
 
 typedef enum {
-    UNKNOWN_BIN = 0x0,
-    CX5_LOW_BIN  = 0x1,
-    CX5_HIGH_BIN = 0x2,
+    UNKNOWN_BIN = 0x0, CX5_LOW_BIN = 0x1, CX5_HIGH_BIN = 0x2,
 
 } BinIdT;
 
@@ -74,6 +71,46 @@ typedef struct write_protect_info {
     u_int8_t is_bottom;
     u_int8_t sectors_num;  // if zero: is_subsector and is_bottom are invalid.
 } write_protect_info_t;
+
+////////////////////////////////////////
+//
+// ST SPI functions - common for InfiniHostIIILx and ConnectX
+//
+////////////////////////////////////////
+typedef enum StFlashCommand {
+    SFC_SE = 0xD8,
+    SFC_4SE = 0xDC,
+    SFC_SSE = 0x20,
+    SFC_4SSE = 0x21,
+    SFC_PP = 0x02,
+    SFC_4PP = 0x12,
+    SFC_READ = 0x03,
+    SFC_4READ = 0x13,
+    SFC_FAST_READ = 0x3B,
+    SFC_4FAST_READ = 0x3C,
+    SFC_QUAD_READ = 0x3B,
+    SFC_4QUAD_READ = 0x3C,
+    SFC_RES = 0xAB,
+    SFC_JEDEC = 0x9F,
+    SFC_RDSR = 0x05,
+    SFC_WRSR2 = 0x31,
+    SFC_RDSR2 = 0x35,
+    SFC_WREN = 0x06,
+    SFC_RDNVR = 0xB5,
+    SFC_RDCR = 0x15,
+    SFC_WRNVR = 0xB1,
+    SFC_WRSR = 0x01,
+    SFC_RDFR = 0x48,
+    SFC_WRFR = 0x42
+} StFlashCommand_t;
+
+typedef struct access_commands {
+    StFlashCommand_t sfc_sector_erase;
+    StFlashCommand_t sfc_subsector_erase;
+    StFlashCommand_t sfc_page_program;
+    StFlashCommand_t sfc_read;
+    StFlashCommand_t sfc_fast_read;
+} flash_access_commands_t;
 
 /////////////////////////////////////////////
 //
@@ -101,7 +138,7 @@ typedef struct flash_attr {
     //
     u_int32_t sector_size;
 
-    int num_erase_blocks;               // Number of sector defs.
+    int num_erase_blocks;         // Number of sector defs.
 
     //
     // bank_size:   Different bank means a different chip sellect or gpio settings is needed when crossing
@@ -140,13 +177,19 @@ typedef struct flash_attr {
 
     u_int8_t support_sub_and_sector; // true if flash can work in both 64KB and 4KB sectors
 
+    flash_access_commands_t access_commands;
 
 } flash_attr;
 
+// Explanation for densities field:
+// Support for density X is represented by setting the log(X) bit of flash_info.densities.
+// That is, a flash related to flash_info supports density X iff ((flash_info.densities & (1 << FD_X)) != 0).
+// FD_X is the density value as it appears in the flash JEDEC ID. For example, FD_128 == 0x18 (128Mb flash).
 typedef struct flash_info {
     const char *name;
     u_int8_t vendor;
     u_int8_t type;
+    u_int32_t densities;
     int command_set;
     int erase_command;
     u_int32_t sector_size;
@@ -172,6 +215,4 @@ typedef struct flash_info {
 #define MAX_SECTORS_NUM   64
 
 #endif // MFLASH_COMMON_STRUCTS_H
-
-
 

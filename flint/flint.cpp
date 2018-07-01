@@ -85,7 +85,6 @@ void TerminationHandler(int signum)
     }
     fatal_error_in_progress = 1;
 
-    signal(signum, SIG_DFL);
     write_result_to_log(BURN_INTERRUPTED, "");
     close_log();
     if (gFlint != NULL) {
@@ -96,6 +95,7 @@ void TerminationHandler(int signum)
         gFlint = NULL;
         printf(" Done.\n");
     }
+    signal(signum, SIG_DFL);
     raise(signum);
 }
 

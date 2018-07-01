@@ -158,7 +158,7 @@ private:
 class MlxSignHMAC {
 public:
     MlxSignHMAC();
-    int setKey(const std::string& key);
+    int setKey(const std::vector<u_int8_t>& key);
     //int update(const std::vector<u_int8_t>& buff);
     friend MlxSignHMAC& operator<<(MlxSignHMAC& lhs, const std::vector<u_int8_t>& buff);
     int getDigest(std::vector<u_int8_t>& digest);

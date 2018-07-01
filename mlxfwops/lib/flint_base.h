@@ -202,7 +202,7 @@ namespace std {}; using namespace std;
 #define SPECTRUM_HW_ID   585
 #define SWITCH_IB2_HW_ID 587
 #define QUANTUM_HW_ID    589
-#define SPECTRUM2_HW_ID  591
+#define SPECTRUM2_HW_ID  590
 
 
 #define CX4_HW_ID         521
@@ -315,6 +315,7 @@ typedef enum fs3_section {
     FS3_FORBIDDEN_VERSIONS = 0xa2,
     FS3_IMAGE_SIGNATURE_512 = 0xa3,
     FS3_PUBLIC_KEYS_4096 = 0xa4,
+    FS3_HMAC          = 0xa5,
     FS3_MFG_INFO      = 0xe0,
     FS3_DEV_INFO      = 0xe1,
     FS3_NV_DATA1      = 0xe2,
@@ -366,7 +367,8 @@ enum CommandType {
     CMD_BURN_VPD,
     CMD_SET_SIGNATURE,
     CMD_SET_PUBLIC_KEYS,
-    CMD_SET_FORBIDDEN_VERSIONS
+    CMD_SET_FORBIDDEN_VERSIONS,
+    CMD_SET_HMAC
 };
 
 

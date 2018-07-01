@@ -175,7 +175,7 @@ public:
     bool isCurrentSupported() {return false;}
     void queryAux(std::vector<ParamView>&, QueryType, bool);
     void queryParamViews(std::vector<ParamView>& paramsToQuery, QueryType qt = QueryNext);
-    void queryAll(std::vector<ParamView>& params, QueryType qt = QueryNext);
+    void queryAll(std::vector<ParamView>& params, vector<string>& failedTLVs, QueryType qt = QueryNext);
     void clearSemaphore();
     void invalidateCfgs();
     const char* loadConfigurationGetStr();

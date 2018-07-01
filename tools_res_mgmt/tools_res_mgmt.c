@@ -171,23 +171,28 @@ static struct device_sem_info g_dev_sem_info_db[] = {
     },
     {
         DeviceConnectX5,         // dev_id
-        {0xe250c},               // hw_sem_addr
+        {0xe74e0},               // hw_sem_addr
         1,                       // vsec_sem_supported
     },
     {
         DeviceBlueField,         // dev_id
-        {0xe250c},               // hw_sem_addr
+        {0xe74e0},               // hw_sem_addr
         1,                       // vsec_sem_supported
     },
     {
         DeviceQuantum,          // dev_id
-        {0xa24f8},               // hw_sem_addr
+        {0xa68f8},               // hw_sem_addr
         0,                       // vsec_sem_supported
     },
     {
         DeviceSpectrum2,          // dev_id
-        {0xa24f8},               // hw_sem_addr
+        {0xa68f8},               // hw_sem_addr
         0,                       // vsec_sem_supported
+    },
+    {
+        DeviceConnectX6,         // dev_id
+        {0xe74e0},               // hw_sem_addr
+        1,                       // vsec_sem_supported
     },
 };
 

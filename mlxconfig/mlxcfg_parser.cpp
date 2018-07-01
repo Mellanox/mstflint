@@ -206,7 +206,11 @@ mlxCfgStatus MlxCfg::extractQueryCfgArgs(int argc, char *argv[])
             vector<u_int32_t> indexes;
             extractIndexes(indexStr, indexes);
             if (indexes.size() > 1) {
-                mlxconfigName = mlxconfigName.substr(0, mlxconfigName.find('['));
+                size_t p = mlxconfigName.find('[');
+                if (p == std::string::npos) {
+                    return err(true, "Expected a parameter with index");
+                }
+                mlxconfigName = mlxconfigName.substr(0, p);
                 VECTOR_ITERATOR(u_int32_t, indexes, it) {
                     ParamView paramView;
                     paramView.mlxconfigName = mlxconfigName + "[" + numToStr(*it) + "]";
@@ -259,7 +263,11 @@ mlxCfgStatus MlxCfg::extractSetCfgArgs(int argc, char *argv[])
             vector<u_int32_t> indexes;
             extractIndexes(indexStr, indexes);
             if (indexes.size() > 1) {
-                string mlxconfigName = tag.substr(0, tag.find('['));
+                size_t p = tag.find('[');
+                if (p == std::string::npos) {
+                    return err(true, "Expected a parameter with index");
+                }
+                string mlxconfigName = tag.substr(0, p);
                 VECTOR_ITERATOR(u_int32_t, indexes, it) {
                     ParamView paramView;
                     paramView.setVal = strVal;

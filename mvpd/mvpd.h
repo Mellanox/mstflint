@@ -44,6 +44,12 @@
 extern "C" {
 #endif
 
+#ifdef _MSC_VER
+#define MVPD_DLL_EXPORT __declspec(dllexport)
+#else
+#define MVPD_DLL_EXPORT
+#endif
+
 enum {
     MVPD_OK = 0,
     MVPD_ERR,
@@ -79,19 +85,19 @@ typedef struct {
     vpd_tag_t *rw_fields;
 } vpd_result_t;
 
-int mvpd_get_vpd_size(mfile *mf, int *size);
+MVPD_DLL_EXPORT int mvpd_get_vpd_size(mfile *mf, int *size);
 
-int mvpd_read(mfile *mf, vpd_result_t **result, vpd_tags_type_t read_type);
+MVPD_DLL_EXPORT int mvpd_read(mfile *mf, vpd_result_t **result, vpd_tags_type_t read_type);
 
-int mvpd_read_adv(mfile *mf, vpd_result_t **result, vpd_tags_type_t read_type, int strict);
+MVPD_DLL_EXPORT int mvpd_read_adv(mfile *mf, vpd_result_t **result, vpd_tags_type_t read_type, int strict);
 
-int mvpd_parse(u_int8_t *raw_vpd, int size, vpd_result_t **result, vpd_tags_type_t read_type);
+MVPD_DLL_EXPORT int mvpd_parse(u_int8_t *raw_vpd, int size, vpd_result_t **result, vpd_tags_type_t read_type);
 
-int mvpd_parse_adv(u_int8_t *raw_vpd, int size, vpd_result_t **result, vpd_tags_type_t read_type, int strict, int checksum_verify);
+MVPD_DLL_EXPORT int mvpd_parse_adv(u_int8_t *raw_vpd, int size, vpd_result_t **result, vpd_tags_type_t read_type, int strict, int checksum_verify);
 
-int mvpd_result_free(vpd_result_t *result);
+MVPD_DLL_EXPORT int mvpd_result_free(vpd_result_t *result);
 
-int mvpd_get_raw_vpd(mfile *mf, u_int8_t *raw_data_buf, int size);
+MVPD_DLL_EXPORT int mvpd_get_raw_vpd(mfile *mf, u_int8_t *raw_data_buf, int size);
 
 #ifdef __cplusplus
 }

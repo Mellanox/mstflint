@@ -50,9 +50,19 @@ struct image_context {
     u_int32_t size;
 };
 
+typedef struct {
+    char *device_name;
+    char *buf;
+    int buf_size;
+    int mcc_unsupported;
+    int no_fw_ctrl;
+} fwops_params_t;
+
 MLXFWOP_API int MLXFWOPCALL mlxfw_open_device(mlxfwops_t **mlxfwops_p, char *device_name);
 
 MLXFWOP_API int MLXFWOPCALL mlxfw_open_device_verbose(mlxfwops_t **mlxfwops_p, char *device_name, char *buf, int buf_size);
+
+MLXFWOP_API int MLXFWOPCALL mlxfw_open_device_adv(mlxfwops_t **mlxfwops_p, fwops_params_t* params);
 
 MLXFWOP_API int MLXFWOPCALL mlxfw_open_image(mlxfwops_t **mlxfwops_p, char *file_name, char *psid);
 
@@ -84,6 +94,9 @@ MLXFWOP_API int MLXFWOPCALL mlxfw_verify(mlxfwops_t *mlxfwops);
 MLXFWOP_API int MLXFWOPCALL mlxfw_query(mlxfwops_t *mlxfwops, fw_info_t *fw_query);
 
 MLXFWOP_API int MLXFWOPCALL mlxfw_type_match(mlxfwops_t *dev_mlxfwops, mlxfwops_t *img_mlxfwops);
+
+MLXFWOP_API int MLXFWOPCALL mlxfw_fs_check_and_update(fw_info_t *fw_info, mlxfwops_t **dev_mlxfwops, mlxfwops_t *img_mlxfwops,
+        u_int8_t force_version, f_prog_func prog_func, int allow_psid_change);
 
 MLXFWOP_API const char* MLXFWOPCALL mlxfw_exp_rom_type_to_str(u_int16_t type);
 

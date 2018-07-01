@@ -68,6 +68,12 @@ except Exception, exp:
 
 if REG_ACCESS:
 
+    class PCNR_ST(Structure):
+        _fields_ = [
+            ("tuning_override",c_uint8),
+            ("local_port",c_uint8)
+        ]
+
     class MFRL_ST(Structure):
         _fields_ = [("reset_level", c_uint8)]
 
@@ -119,12 +125,15 @@ if REG_ACCESS:
     class RegAccess:
 
         ##########################
-        def __init__(self, dev):
+        def __init__(self, dev=None, pci_device=None):
             self._mstDev = dev
+            if pci_device is not None:
+                self._mstDev = mtcr.MstDevice(pci_device)
             self._err2str = REG_ACCESS.reg_access_err2str
             self._err2str.restype = c_char_p
             self._sendMFRL = REG_ACCESS.reg_access_mfrl
             self._mgir = REG_ACCESS.reg_access_mgir
+            self._reg_access_pcnr = REG_ACCESS.reg_access_pcnr
 
         ##########################
         def close(self):
@@ -135,10 +144,21 @@ if REG_ACCESS:
             if self._mstDev:
                 self.close()
 
+
+        def sendPcnr(self, tuning_override, local_port): # Requirments : new FW version + burn with allow_pcnr
+
+            pcnrRegisterP = pointer(PCNR_ST())
+            pcnrRegisterP.contents.tuning_override = c_uint8(tuning_override)
+            pcnrRegisterP.contents.local_port = c_uint8(local_port)
+
+            rc = self._reg_access_pcnr(self._mstDev.mf, c_uint(REG_ACCESS_METHOD_SET), pcnrRegisterP)
+            if rc:
+                raise RegAccException("Failed to send Register: %s (%d)" % (self._err2str(rc), rc))
+
+
         ##########################
         def sendMFRL(self, resetLevel, method):
 
-            
             mfrlRegisterP = pointer(MFRL_ST())
             
             if method == REG_ACCESS_METHOD_SET:
@@ -182,12 +202,26 @@ if REG_ACCESS:
 
             return msp*(2**32)+lsp
 
+        def getSecureFWStatus(self):
+            """ Returns True if the FW is secured, False otherwise.
+            """
+            mgirRegisterP = pointer(MGIR_ST())
+
+            rc = self._mgir(self._mstDev.mf, REG_ACCESS_METHOD_GET, mgirRegisterP)
+            if rc:
+                raise RegAccException("Failed to send Register: %s (%d)" % (self._err2str(rc), rc))
+
+            result = mgirRegisterP.contents.secure_fw
+            result = True if result else False
+            return result
 
 else:
     raise RegAccException("Failed to load rreg_access.so/libreg_access.dll")
 
+
 ####################################################################################
 if __name__ == "__main__":
+
     # mstdev = mtcr.MstDevice("/dev/mst/mt4119_pciconf1")
     # regAc = RegAccess(mstdev)
     #
@@ -218,6 +252,5 @@ if __name__ == "__main__":
         manufacturing_base_mac = regAc.getManufacturingBaseMac()
         print 'manufacturing_base_mac : 0x{0:x}'.format(manufacturing_base_mac)
 
-
-
-
+        secure_fw = RegAccess(pci_device=pci_device).getSecureFWStatus()
+        print 'secure_fw : {0}'.format(secure_fw)

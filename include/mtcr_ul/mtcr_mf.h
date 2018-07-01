@@ -84,6 +84,7 @@ typedef void (*f_mpci_change)        (mfile *mf);
 /*  modified before each access to target I2C slave address */
 struct mfile_t {
     MType tp;     /*  type of driver */
+    MType orig_tp;
     MType res_tp;     /*  Will be used with HCR if need */
     DType dtype;     /*  target device to access to */
     DType itype;     /*  interface device to access via */
@@ -130,6 +131,7 @@ struct mfile_t {
     int old_mst;
     int vsec_supp;
     unsigned int vsec_addr;
+    u_int32_t vsec_cap_mask;
     int address_space;
     int multifunction;
     // for tools HCR access
@@ -149,6 +151,7 @@ struct mfile_t {
     unsigned int vpd_cap_addr;
     int wo_addr;
     int connectx_flush;
+    int fdlock;
 #endif
 
 };

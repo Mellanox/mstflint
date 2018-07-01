@@ -93,18 +93,20 @@ enum {
         return MCE_BAD_PARAMS; \
     } \
     int __tlvBuffSize = tlvStructName##_size(); \
-    u_int8_t __tlvBuff[__tlvBuffSize]; \
+    u_int8_t *__tlvBuff = new u_int8_t[__tlvBuffSize];\
     memset(__tlvBuff, 0, __tlvBuffSize); \
     struct tlvStructName __tlvStruct; \
     memset(&__tlvStruct, 0, sizeof(__tlvStruct)); \
     __mRc = mnvaCom5thGen(mf, __tlvBuff, __tlvBuffSize, getTlvTypeBe(), REG_ACCESS_METHOD_GET); \
     if (__mRc && __mRc != ME_REG_ACCESS_RES_NOT_AVLBL) { \
+        delete[] __tlvBuff; \
         return errmsg("failed to set %s settings: %s", tlvNameStr, m_err2str(__mRc)); \
     } \
     tlvStructName##_unpack(&__tlvStruct, __tlvBuff); \
     updateTlvFromClassAttr((void*)&__tlvStruct); \
     tlvStructName##_pack(&__tlvStruct, __tlvBuff); \
     __mRc = mnvaCom5thGen(mf, __tlvBuff, __tlvBuffSize, getTlvTypeBe(), REG_ACCESS_METHOD_SET); \
+    delete[] __tlvBuff; \
     if (__mRc) { \
         return errmsg("failed to set %s settings: %s", tlvNameStr, m_err2str(__mRc)); \
     } \
@@ -114,12 +116,13 @@ enum {
 #define GET_DEFAULT_5TH_GEN(mf, tlvStructName, tlvNameStr) \
     MError __mRc; \
     int __tlvBuffSize = tlvStructName##_size(); \
-    u_int8_t __tlvBuff[__tlvBuffSize]; \
+    u_int8_t *__tlvBuff = new u_int8_t[__tlvBuffSize]; \
     memset(__tlvBuff, 0, __tlvBuffSize); \
     struct tlvStructName __tlvStruct; \
     memset(&__tlvStruct, 0, sizeof(__tlvStruct)); \
     __mRc = mnvaCom5thGen(mf, &__tlvBuff[0], __tlvBuffSize, getTlvTypeBe(), REG_ACCESS_METHOD_GET, true); \
     if (__mRc) { \
+        delete[] __tlvBuff; \
         if (__mRc == ME_REG_ACCESS_RES_NOT_AVLBL) { \
             return MCE_SUCCESS; \
         } \
@@ -128,20 +131,23 @@ enum {
     tlvStructName##_unpack(&__tlvStruct, &__tlvBuff[0]); \
     updateClassDefaultAttrFromTlv((void*)&__tlvStruct); \
     updateClassAttrFromDefaultParams(); \
+    delete[] __tlvBuff; \
     return MCE_SUCCESS
 
 #define GET_FROM_DEV_5TH_GEN(mf, tlvStructName, tlvNameStr) \
     MError __mRc; \
     int __tlvBuffSize = tlvStructName##_size(); \
-    u_int8_t __tlvBuff[__tlvBuffSize]; \
+    u_int8_t *__tlvBuff = new u_int8_t[__tlvBuffSize]; \
     memset(__tlvBuff, 0, __tlvBuffSize); \
     struct tlvStructName __tlvStruct; \
     memset(&__tlvStruct, 0, sizeof(__tlvStruct)); \
     if (_updated) { \
+        delete[] __tlvBuff; \
         return MCE_SUCCESS; \
     } \
     __mRc = mnvaCom5thGen(mf, &__tlvBuff[0], __tlvBuffSize, getTlvTypeBe(), REG_ACCESS_METHOD_GET); \
     if (__mRc) { \
+        delete[] __tlvBuff; \
         if (__mRc == ME_REG_ACCESS_RES_NOT_AVLBL) { \
             return MCE_SUCCESS; \
         } \
@@ -150,6 +156,7 @@ enum {
     tlvStructName##_unpack(&__tlvStruct, &__tlvBuff[0]); \
     updateClassAttrFromTlv((void*)&__tlvStruct); \
     _updated = true; \
+    delete[] __tlvBuff; \
     return MCE_SUCCESS
 
 #define SET_ON_DEV_4TH_GEN(mf, ignoreCheck, tlvStructName, tlvNameStr, typeMod) \
@@ -158,18 +165,20 @@ enum {
         return MCE_BAD_PARAMS; \
     } \
     int __tlvBuffSize = tlvStructName##_size(); \
-    u_int8_t __tlvBuff[__tlvBuffSize]; \
+    u_int8_t *__tlvBuff = new u_int8_t[__tlvBuffSize]; \
     memset(__tlvBuff, 0, __tlvBuffSize); \
     struct tlvStructName __tlvStruct; \
     memset(&__tlvStruct, 0, sizeof(__tlvStruct)); \
     __mRc = mnvaCom4thGen(mf, __tlvBuff, __tlvBuffSize, tlvTypeIdx, REG_ACCESS_METHOD_GET, typeMod); \
     if (__mRc && __mRc != ME_REG_ACCESS_RES_NOT_AVLBL) { \
+        delete[] __tlvBuff; \
         return errmsg("failed to set %s settings: %s", tlvNameStr, m_err2str(__mRc)); \
     } \
     tlvStructName##_unpack(&__tlvStruct, __tlvBuff); \
     updateTlvFromClassAttr((void*)&__tlvStruct); \
     tlvStructName##_pack(&__tlvStruct, __tlvBuff); \
     __mRc = mnvaCom4thGen(mf, __tlvBuff, __tlvBuffSize, tlvTypeIdx, REG_ACCESS_METHOD_SET, typeMod); \
+    delete[] __tlvBuff; \
     if (__mRc) { \
         return errmsg("failed to set %s settings: %s", tlvNameStr, m_err2str(__mRc)); \
     } \
@@ -179,15 +188,17 @@ enum {
 #define GET_FROM_DEV_4TH_GEN(mf, tlvStructName, tlvNameStr, typeMod) \
     MError __mRc; \
     int __tlvBuffSize = tlvStructName##_size(); \
-    u_int8_t __tlvBuff[__tlvBuffSize]; \
+    u_int8_t *__tlvBuff = new u_int8_t[__tlvBuffSize]; \
     memset(__tlvBuff, 0, __tlvBuffSize); \
     struct tlvStructName __tlvStruct; \
     memset(&__tlvStruct, 0, sizeof(__tlvStruct)); \
     if (_updated) { \
+        delete[] __tlvBuff; \
         return MCE_SUCCESS; \
     } \
     __mRc = mnvaCom4thGen(mf, &__tlvBuff[0], __tlvBuffSize, tlvTypeIdx, REG_ACCESS_METHOD_GET, typeMod); \
     if (__mRc) { \
+        delete[] __tlvBuff; \
         if (__mRc == ME_REG_ACCESS_RES_NOT_AVLBL) { \
             return MCE_SUCCESS; \
         } \
@@ -196,6 +207,7 @@ enum {
     tlvStructName##_unpack(&__tlvStruct, &__tlvBuff[0]); \
     updateClassAttrFromTlv((void*)&__tlvStruct); \
     _updated = true; \
+    delete[] __tlvBuff; \
     return MCE_SUCCESS
 
 
@@ -453,7 +465,7 @@ int BootSettingsExtParams4thGen::getFromDev(mfile *mf)
     }
     MError rc;
     // prep tlv
-    u_int8_t buff[tools_open_sriov_size()];
+    u_int8_t buff[TOOLS_OPEN_SRIOV_SIZE];
     struct tools_open_boot_settings_ext bootSettingsExtTlv;
     memset(buff, 0, tools_open_boot_settings_ext_size());
     memset(&bootSettingsExtTlv, 0, sizeof(struct tools_open_boot_settings_ext));
@@ -490,7 +502,7 @@ int BootSettingsExtParams4thGen::setOnDev(mfile *mf, bool ignoreCheck)
 
     // prep tlv
     MError ret;
-    u_int8_t buff[tools_open_boot_settings_ext_size()];
+    u_int8_t buff[TOOLS_OPEN_BOOT_SETTINGS_EXT_SIZE];
     struct tools_open_boot_settings_ext bootSettingsExtTlv;
 
     memset(buff, 0, tools_open_boot_settings_ext_size());
@@ -595,7 +607,7 @@ int SriovParams4thGen::getFromDev(mfile *mf)
     }
     MError rc;
     // prep tlv
-    u_int8_t buff[tools_open_sriov_size()];
+    u_int8_t buff[TOOLS_OPEN_SRIOV_SIZE];
     struct tools_open_sriov sriovTlv;
     memset(buff, 0, tools_open_sriov_size());
     memset(&sriovTlv, 0, sizeof(struct tools_open_sriov));
@@ -632,7 +644,7 @@ int SriovParams4thGen::setOnDev(mfile *mf, bool ignoreCheck)
 
     // prep tlv
     MError ret;
-    u_int8_t buff[tools_open_sriov_size()];
+    u_int8_t buff[TOOLS_OPEN_SRIOV_SIZE];
     struct tools_open_sriov sriovTlv;
 
     memset(buff, 0, tools_open_sriov_size());
@@ -765,7 +777,7 @@ int CX3GlobalConfParams::getFromDev(mfile *mf)
     }
     MError rc;
     // prep tlv
-    u_int8_t buff[tools_open_nv_cx3_global_conf_size()];
+    u_int8_t buff[TOOLS_OPEN_NV_CX3_GLOBAL_CONF_SIZE];
     struct tools_open_nv_cx3_global_conf globalConfTlv;
     memset(buff, 0, tools_open_nv_cx3_global_conf_size());
     memset(&globalConfTlv, 0, sizeof(struct tools_open_nv_cx3_global_conf));
@@ -806,7 +818,7 @@ int CX3GlobalConfParams::setOnDev(mfile *mf, bool ignoreCheck)
 
     // prep tlv
     MError ret;
-    u_int8_t buff[tools_open_nv_cx3_global_conf_size()];
+    u_int8_t buff[TOOLS_OPEN_NV_CX3_GLOBAL_CONF_SIZE];
     struct tools_open_nv_cx3_global_conf globalConfTlv;
     memset(buff, 0, tools_open_nv_cx3_global_conf_size());
     memset(&globalConfTlv, 0, sizeof(struct tools_open_nv_cx3_global_conf));
@@ -934,7 +946,7 @@ int WolParams4thGen::getFromDev(mfile *mf)
     }
     MError rc;
     // prep tlv
-    u_int8_t buff[tools_open_wol_size()];
+    u_int8_t buff[TOOLS_OPEN_WOL_SIZE];
     struct tools_open_wol wolTlv;
     memset(buff, 0, tools_open_wol_size());
     memset(&wolTlv, 0, sizeof(struct tools_open_wol));
@@ -967,7 +979,7 @@ int WolParams4thGen::setOnDev(mfile *mf, bool ignoreCheck)
     }
     // prep tlv
     MError ret;
-    u_int8_t buff[tools_open_wol_size()];
+    u_int8_t buff[TOOLS_OPEN_WOL_SIZE];
     struct tools_open_wol wolTlv;
 
     memset(buff, 0, tools_open_wol_size());
@@ -1080,7 +1092,7 @@ int BarSzParams4thGen::getFromDev(mfile *mf)
     }
     MError rc;
     // prep tlv
-    u_int8_t buff[tools_open_bar_size_size()];
+    u_int8_t buff[TOOLS_OPEN_BAR_SIZE_SIZE];
     struct tools_open_bar_size barSzTlv;
     memset(buff, 0, tools_open_bar_size_size());
     memset(&barSzTlv, 0, sizeof(struct tools_open_bar_size));
@@ -1115,7 +1127,7 @@ int BarSzParams4thGen::setOnDev(mfile *mf, bool ignoreCheck)
 
     // prep tlv
     MError ret;
-    u_int8_t buff[tools_open_bar_size_size()];
+    u_int8_t buff[TOOLS_OPEN_BAR_SIZE_SIZE];
     struct tools_open_bar_size barSzTlv;
 
     memset(buff, 0, tools_open_bar_size_size());

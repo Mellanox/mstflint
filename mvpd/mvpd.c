@@ -37,8 +37,10 @@
 #include <syslog.h>
 #include "mvpd.h"
 
-#if defined(__MINGW32__) || defined(__MINGW64__)              /* Windows MINGW */
+#if defined(__MINGW32__) || defined(__MINGW64__) || defined(_MSC_VER)    /* Windows */
 #define syslog(lvl, format, ...)
+#else
+#include <syslog.h>
 #endif
 
 enum {
@@ -66,11 +68,18 @@ enum {
 
 #define CONVERT(r) (r == VPD_RO ? VPD_TAG_R : VPD_TAG_W)
 
+#if defined(_MSC_VER)
+#define PACK( __declaration__ ) __pragma( pack(push, 1) ) __declaration__ __pragma( pack(pop) )
+#else
+#define PACK( __declaration__ ) __declaration__ __attribute__((__packed__))
+#endif
+
+PACK(
 struct vpd_field {
     unsigned char keyword[2];
     unsigned char length;
     unsigned char data[0];
-} __attribute__((packed));
+}); 
 
 
 int my_vpd_read(mfile *mf,
@@ -83,7 +92,7 @@ int my_vpd_read(mfile *mf,
     unsigned i;
     int ret;
     if (mf != NULL) {
-        for (i = 0; i < (unsigned)size; i += 0x4) {
+        for (i = 0; (int)i < size; i += 0x4) {
             u_int8_t value[4] = {0};
             ret = mvpd_read4(mf, offset + i, value);
             if (ret) {

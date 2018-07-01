@@ -97,7 +97,7 @@ static void (*prev_handlers[sizeof(signals_array) / sizeof (signals_array[0])])(
     // incr/decr counter
     if (is_on) {
         is_on_counter += 1;
-    } else  {
+    } else {
         is_on_counter = is_on_counter > 0 ? is_on_counter - 1 : is_on_counter;
     }
 

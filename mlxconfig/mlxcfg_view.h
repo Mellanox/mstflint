@@ -64,6 +64,7 @@ enum TLVClass {
     NVLog,
     NVFile,
     Per_Host,
+    Switch_Global,
     Physical_Port_Common = 0x81,
     Per_Host_All_Functions = 0x43,
     All_Hosts_Per_Function = 0x83,

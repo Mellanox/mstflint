@@ -484,7 +484,7 @@ bool Flash::read(u_int32_t addr, void *data, int len, bool verbose, const char *
             }
         }
 
-    } else   {
+    } else {
         u_int32_t perc = 0xffffffff;
         u_int32_t *p = (u_int32_t*)data;
         for (int i = 0; i < len / 4; i++) {

@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
     char *endptr;
     u_int8_t new_i2c_slave = 0;
     char device[MAX_DEV_LEN] = {0};
-#if defined(__linux) || defined(__FreeBSD__)
+#if defined(__linux__) || defined(__FreeBSD__)
     if (geteuid() != 0) {
         printf("-E- Permission denied: User is not root\n");
         return 1;
@@ -127,12 +127,6 @@ int main(int argc, char *argv[])
         return 1;
     }
     ++i;    // move past the device parameter
-
-#ifndef MST_UL
-    if (mf->tp == MST_MLNXOS) {
-        mset_cr_access(mf, 1);
-    }
-#endif
 
     if (i < argc && !strncmp(argv[i], CAUSE_FLAG, strlen(CAUSE_FLAG))) {
         i++;

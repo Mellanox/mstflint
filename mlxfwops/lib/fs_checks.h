@@ -36,9 +36,11 @@
 
 
 #include "fw_ops.h"
+#if !defined(UEFI_BUILD)
 #include <string>
+#endif
 
-class FsChecks {
+class MLXFWOP_API FsChecks {
 public:
     FsChecks(fw_info_t devInfo, FwOperations *devFwOps, FwOperations *imageFwOps,
              FwOperations::ExtBurnParams burnParams,

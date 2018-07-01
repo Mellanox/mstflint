@@ -117,6 +117,7 @@ public:
     virtual bool FwSetTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer);
     virtual bool FwQueryTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer, bool queryRunning = false);
     virtual bool FwResetTimeStamp();
+    Tlv_Status_t GetTsObj(TimeStampIFC **tsObj);
 
     bool FwCheckIfWeCanBurnWithFwControl(FwOperations *imageOps);
     bool FwCheckIf8MBShiftingNeeded(FwOperations *imageOps, const ExtBurnParams& burnParams);
@@ -151,13 +152,13 @@ protected:
     bool GetImageInfo(u_int8_t *buff);
     bool GetRomInfo(u_int8_t *buff, u_int32_t size);
     bool GetImgSigInfo(u_int8_t *buff);
+    bool CalcHMAC(const vector<u_int8_t>& key, vector<u_int8_t>& digest);
     bool DoAfterBurnJobs(const u_int32_t magic_patter[], Fs3Operations &imageOps,
                          ExtBurnParams& burnParams, Flash *f,
                          u_int32_t new_image_start, u_int8_t is_curr_image_in_odd_chunks);
 
     virtual bool getRunningFwVersion();
     virtual bool Fs3IsfuActivateImage(u_int32_t newImageStart);
-    bool TestAndSetTimeStamp(Fs3Operations &imageOps);
     bool Fs3ReburnItocSection(u_int32_t newSectionAddr, u_int32_t newSectionSize, std::vector<u_int8_t>  newSectionData, const char *msg, PrintCallBack callBackFunc = (PrintCallBack)NULL);
     bool Fs3ChangeUidsFromBase(fs3_uid_t base_uid, struct cibfw_guids& guids);
     bool Fs3ChangeUidsFromBase(fs3_uid_t base_uid, struct cx4fw_guids& guids);
@@ -177,6 +178,9 @@ protected:
     virtual bool IsSectionExists(fs3_section_t sectType);
 
     bool isOld4MBImage(FwOperations *imageOps);
+
+    virtual bool GetSectionSizeAndOffset(fs3_section_t sectType, u_int32_t& size, u_int32_t& offset);
+    bool AddHMACIfNeeded(Fs3Operations* imageOps, Flash *f);
 
     struct toc_info {
         u_int32_t entry_addr;
@@ -270,8 +274,6 @@ private:
     bool FwCalcSHA(SHATYPE shaType, vector<u_int8_t>& sha256);
 
     bool CheckPublicKeysFile(char *fname, fs3_section_t& sectionType);
-
-    Tlv_Status_t GetTsObj(TimeStampIFC **tsObj);
 
     // this class is for sorting the itoc array by ascending absolute flash_addr used in FwShiftDevData
     class TocComp {

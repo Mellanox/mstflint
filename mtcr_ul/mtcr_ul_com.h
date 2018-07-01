@@ -140,6 +140,7 @@ int mclear_pci_semaphore_ul(const char *name);
 
 int mvpd_read4_ul(mfile *mf, unsigned int offset, u_int8_t value[4]);
 
+int space_to_cap_offset(int space);
 
 #ifdef __cplusplus
 }

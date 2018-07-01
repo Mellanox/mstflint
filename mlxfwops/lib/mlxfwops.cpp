@@ -35,9 +35,37 @@
 
 #include "mlxfwops.h"
 #include "fw_ops.h"
+#include "fs_checks.h"
 #ifdef UEFI_BUILD
     #include "uefi_c.h"
 #endif
+
+#define ERR_BUFF_SIZE 1024
+
+
+MLXFWOP_API int MLXFWOPCALL mlxfw_open_device_adv(mlxfwops_t **mlxfwops_p, fwops_params_t* params)
+{
+    FwOperations::fw_ops_params_t fwParams;
+    memset(&fwParams, 0, sizeof(fwParams));
+    fwParams.mstHndl = params->device_name;
+    fwParams.errBuff = params->buf;
+    fwParams.errBuffSize = params->buf_size;
+    fwParams.mccUnsupported = params->mcc_unsupported;
+    fwParams.noFwCtrl = params->no_fw_ctrl;
+    fwParams.hndlType = FHT_MST_DEV;
+    fwParams.forceLock = false;
+    fwParams.readOnly = false;
+    fwParams.numOfBanks = -1;
+    fwParams.ignoreCacheRep = 0;
+    fwParams.noFlashVerify = false;
+    fwParams.flashParams = (flash_params_t*)NULL;
+    fwParams.shortErrors = true;
+    *mlxfwops_p = (mlxfwops_t*) FwOperations::FwOperationsCreate(fwParams);
+    if (*mlxfwops_p == NULL) {
+        return MLXFW_MEM_ERR;
+    }
+    return MLXFW_OK;
+}
 
 int mlxfw_open_int(mlxfwops_t **mlxfwops_p, void *fw_hndl, void *extra, char *psid, fw_hndl_type_t hndl_type, char *err_buf, int buf_size)
 {
@@ -46,6 +74,16 @@ int mlxfw_open_int(mlxfwops_t **mlxfwops_p, void *fw_hndl, void *extra, char *ps
         return MLXFW_MEM_ERR;
     }
     return MLXFW_OK;
+}
+
+FwOperations::ExtBurnParams initBurnParams(u_int8_t force_version, f_prog_func prog_func, int allow_psid_change)
+{
+    FwOperations::ExtBurnParams burnParams = FwOperations::ExtBurnParams();
+    burnParams.ignoreVersionCheck = force_version;
+    burnParams.progressFunc = prog_func;
+    burnParams.allowPsidChange = allow_psid_change ? true : false;
+    burnParams.shift8MBIfNeeded = true;
+    return burnParams;
 }
 
 MLXFWOP_API int MLXFWOPCALL mlxfw_open_device_verbose(mlxfwops_t **mlxfwops_p, char *device_name, char *buf, int buf_size)
@@ -186,7 +224,8 @@ MLXFWOP_API const char* MLXFWOPCALL mlxfw_err2str(int err)
 
     case MLXFW_BAD_PARAM_ERR:
         return "Bad parameter";
-
+    case MLXFW_FS_CHECKS_ERR:
+        return "Fixes are needed for Flash layout, an error occurred while preparing the operation";
     default:
         return "Unknown Error";
     }
@@ -199,14 +238,43 @@ MLXFWOP_API int MLXFWOPCALL mlxfw_burn(mlxfwops_t *dev_mlxfwops, mlxfwops_t *img
     if (dev_mlxfwops == NULL || img_mlxfwops == NULL) {
         return MLXFW_BAD_PARAM_ERR;
     }
-    FwOperations::ExtBurnParams burnParams = FwOperations::ExtBurnParams();
-    burnParams.ignoreVersionCheck = force_version;
-    burnParams.progressFunc = prog_func;
-    burnParams.allowPsidChange = allow_psid_change ? true : false;
-    burnParams.shift8MB = true;
-    bool rc = !static_cast<FwOperations*>((void*)dev_mlxfwops)->FwBurnAdvanced(static_cast<FwOperations*>((void*)img_mlxfwops), burnParams);
+    FwOperations::ExtBurnParams burnParams = initBurnParams(force_version, prog_func, allow_psid_change);
+    bool rc = !static_cast<FwOperations*>((void*)dev_mlxfwops)->FwBurnAdvanced(static_cast<FwOperations*>((void*)img_mlxfwops),burnParams);
     int errorCode = static_cast<FwOperations*>((void*)dev_mlxfwops)->getErrorCode(); // the class's verbose error code
     return rc ? ( errorCode ? errorCode : rc) : rc;
+}
+
+MLXFWOP_API int MLXFWOPCALL mlxfw_fs_check_and_update(fw_info_t *fw_info, mlxfwops_t **dev_mlxfwops_p, mlxfwops_t *img_mlxfwops,
+        u_int8_t force_version, f_prog_func prog_func, int allow_psid_change/*, mlxfwparams_t* fwParams*/)
+{
+#ifdef UEFI_BUILD
+    (void) fw_info;
+    (void) dev_mlxfwops_p;
+    (void) img_mlxfwops;
+    (void) force_version;
+    (void) prog_func;
+    (void) allow_psid_change;
+    return MLXFW_ERR;
+#else
+    if (dev_mlxfwops_p == NULL || *dev_mlxfwops_p == NULL || img_mlxfwops == NULL) {
+        return MLXFW_BAD_PARAM_ERR;
+    }
+
+    mlxfwops_t* dev_mlxfwops= *dev_mlxfwops_p;
+
+    FwOperations::ExtBurnParams burnParams = initBurnParams(force_version, prog_func, allow_psid_change);
+    FwOperations::fw_ops_params_t fwParams;
+    (static_cast<FwOperations*>((void*)dev_mlxfwops))->GetFwParams(fwParams);
+
+    FsChecks fsChecks(*fw_info, static_cast<FwOperations*>((void*)dev_mlxfwops),
+            static_cast<FwOperations*>((void*)img_mlxfwops), burnParams,
+            fwParams);
+    if (!fsChecks.ExecuteChecks( static_cast<FwOperations**>((void*)dev_mlxfwops_p), burnParams, *fw_info)) {
+        return MLXFW_FS_CHECKS_ERR;
+    }
+
+    return MLXFW_OK;
+#endif
 }
 
 MLXFWOP_API int MLXFWOPCALL mlxfw_query(mlxfwops_t *mlxfwops, fw_info_t *fw_info)

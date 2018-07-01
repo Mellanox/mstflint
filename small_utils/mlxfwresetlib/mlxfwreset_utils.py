@@ -39,6 +39,7 @@
 import subprocess
 import platform
 import re
+import time
 
 
 ######################################################################
@@ -56,6 +57,19 @@ def cmdExec(cmd):
     output = p.communicate()
     stat = p.wait()
     return (stat, output[0], output[1])  # RC, Stdout, Stderr
+
+######################################################################
+# Description:  Run cmd in loops
+# OS Support :  N/A
+######################################################################
+def cmdExecLoop( cmd, sleep_time, max_retries):
+    retries_num = 0
+    rc = 1
+    while rc and retries_num <  max_retries:
+        (rc, stdout , stderr ) = cmdExec(cmd)
+        retries_num += 1
+        time.sleep(sleep_time)
+    return (rc, stdout, stderr)
 
 ######################################################################
 # Description:  DBDF string manipulation
@@ -95,7 +109,7 @@ def isDevBDFFormat(dev):
 # OS Support :  Linux/Windows.
 ######################################################################
 
-def getDevDBDF(device,logger):
+def getDevDBDF(device,logger=None):
     if isDevDBDFFormat(device):
         return device
     if isDevBDFFormat(device):
@@ -136,6 +150,8 @@ def getDevDBDF(device,logger):
         return bdf
     else:
         raise RuntimeError("Unsupported OS")
+
+
 
 
 if __name__ == '__main__':

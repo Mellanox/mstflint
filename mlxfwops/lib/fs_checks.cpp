@@ -99,7 +99,7 @@ bool FsChecks::ExecuteChecks(FwOperations **devFwOps, FwOperations::ExtBurnParam
         if (isFsCtrlOperations) {
             _isFallBackToRegularFlowNeeded = true;
         }
-        _burnParams.shift8MB = true;
+        _burnParams.shift8MBIfNeeded = true;
         _isTimeConsumingFixesNeeded = true;
     }
 

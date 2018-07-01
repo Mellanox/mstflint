@@ -145,13 +145,13 @@ bool Fs4Operations::getHWPtrs(VerifyCallBack verifyCallBackFunc)
             buff,
             CX5FW_HW_POINTERS_SIZE,
             "HW Pointers");
-    cx5fw_hw_pointers_unpack(&hw_pointers, (u_int8_t*)buff);
+    cx5fw_hw_pointers_unpack(&hw_pointers, (u_int8_t *)buff);
 
     //- Check CRC of each pointers (always check CRC before you call ToCPU
     for (int k = 0; k < FS4_HW_PTR_SIZE_DW; k += 2) {
-        u_int32_t *tempBuff = (u_int32_t*) buff;
+        u_int32_t *tempBuff = (u_int32_t *) buff;
         //Calculate HW CRC:
-        u_int32_t calcPtrCRC = calc_hw_crc((u_int8_t*)((u_int32_t*)tempBuff + k), 6);
+        u_int32_t calcPtrCRC = calc_hw_crc((u_int8_t *)((u_int32_t *)tempBuff + k), 6);
         u_int32_t ptrCRC = tempBuff[k + 1];
         u_int32_t ptr = tempBuff[k];
         TOCPUn(&ptr, 1);
@@ -186,14 +186,14 @@ bool Fs4Operations::verifyToolsArea(VerifyCallBack verifyCallBackFunc)
     struct cx5fw_tools_area tools_area;
 
     READBUF((*_ioAccess), physAddr, buff, CX5FW_TOOLS_AREA_SIZE, "Tools Area");
-    cx5fw_tools_area_unpack(&tools_area, (u_int8_t*)buff);
+    cx5fw_tools_area_unpack(&tools_area, (u_int8_t *)buff);
 
     binVerMinor = tools_area.bin_ver_minor;
     binVerMajor = tools_area.bin_ver_major;
     _maxImgLog2Size = tools_area.log2_img_slot_size;
     toolsAreaCRC = tools_area.crc;
 
-    calculatedToolsAreaCRC = CalcImageCRC((u_int32_t*)buff, CX5FW_TOOLS_AREA_SIZE / 4 - 1);
+    calculatedToolsAreaCRC = CalcImageCRC((u_int32_t *)buff, CX5FW_TOOLS_AREA_SIZE / 4 - 1);
 
     if (!DumpFs3CRCCheck(FS4_TOOLS_AREA, physAddr, CX5FW_TOOLS_AREA_SIZE, calculatedToolsAreaCRC,
                          toolsAreaCRC, false, verifyCallBackFunc)) {
@@ -252,7 +252,7 @@ bool Fs4Operations::verifyTocHeader(u_int32_t tocAddr, bool isDtoc, VerifyCallBa
         return false;
     }
 
-    tocCrc = CalcImageCRC((u_int32_t*)buffer, (TOC_HEADER_SIZE / 4) - 1);
+    tocCrc = CalcImageCRC((u_int32_t *)buffer, (TOC_HEADER_SIZE / 4) - 1);
     physAddr = _ioAccess->get_phys_from_cont(
         tocAddr,
         isDtoc ? 0 : _fwImgInfo.cntxLog2ChunkSize,
@@ -310,7 +310,7 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isD
                     MAX_TOCS_NUM);
             }
 
-            entryCrc = CalcImageCRC((u_int32_t*)entryBuffer, (TOC_ENTRY_SIZE / 4) - 1);
+            entryCrc = CalcImageCRC((u_int32_t *)entryBuffer, (TOC_ENTRY_SIZE / 4) - 1);
             if (tocEntry.itoc_entry_crc != entryCrc) {
                 return errmsg(
                     MLXFW_BAD_CRC_ERR, "Bad %s Entry CRC. Expected: 0x%x , Actual: 0x%x",
@@ -343,7 +343,7 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isD
 
                 // Only when we have full verify or the info of this section should be collected for query
                 std::vector<u_int8_t> buffv(entrySizeInBytes);
-                u_int8_t *buff = (u_int8_t*)(&(buffv[0]));
+                u_int8_t *buff = (u_int8_t *)(&(buffv[0]));
 
                 if (show_itoc) {
                     cx5fw_itoc_entry_dump(&tocEntry, stdout);
@@ -358,20 +358,20 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isD
                     u_int32_t sect_exp_crc = 0;
                     if (tocEntry.crc == INITOCENTRY) {
                         //crc is in the itoc entry
-                        sect_act_crc = CalcImageCRC((u_int32_t*)buff, tocEntry.size);
+                        sect_act_crc = CalcImageCRC((u_int32_t *)buff, tocEntry.size);
                         sect_exp_crc = tocEntry.section_crc;
                         //printf("-D-INITOCENTRY sect_act_crc=%d sect_exp_crc=%d\n", sect_act_crc, sect_exp_crc);
                     } else if (tocEntry.crc == INSECTION) {
                         //calc crc on the section without the last dw which contains crc
-                        sect_act_crc = CalcImageCRC((u_int32_t*)buff, tocEntry.size - 1);
+                        sect_act_crc = CalcImageCRC((u_int32_t *)buff, tocEntry.size - 1);
                         //crc is in the section, last two bytes
-                        sect_exp_crc = ((u_int32_t*)buff)[tocEntry.size - 1];
+                        sect_exp_crc = ((u_int32_t *)buff)[tocEntry.size - 1];
                         TOCPU1(sect_exp_crc)
                         sect_exp_crc = (u_int16_t) sect_exp_crc;
                         //printf("-D-INSECTION sect_act_crc=%d sect_exp_crc=%d\n", sect_act_crc, sect_exp_crc);
                     }
 
-                    if (tocEntry.type != FS3_DEV_INFO || CheckDevInfoSignature((u_int32_t*)buff)) {
+                    if (tocEntry.type != FS3_DEV_INFO || CheckDevInfoSignature((u_int32_t *)buff)) {
                         if (!DumpFs3CRCCheck(tocEntry.type,
                                              physAddr,
                                              entrySizeInBytes,
@@ -385,9 +385,9 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isD
                         } else {
                             //printf("-D- toc type : 0x%.8x\n" , toc_entry.type);
                             GetSectData(tocArray->tocArr[section_index].section_data,
-                                        (u_int32_t*)buff, tocEntry.size * 4);
+                                        (u_int32_t *)buff, tocEntry.size * 4);
                             bool isDevInfoSection = (tocEntry.type == FS3_DEV_INFO);
-                            bool isDevInfoValid = isDevInfoSection && CheckDevInfoSignature((u_int32_t*)buff);
+                            bool isDevInfoValid = isDevInfoSection && CheckDevInfoSignature((u_int32_t *)buff);
                             if (isDevInfoValid) {
                                 validDevInfoCount++;
                             }
@@ -399,13 +399,13 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isD
                                     }
                                 } else if (tocEntry.type == FS3_DBG_FW_INI) {
                                     TOCPUn(buff, tocEntry.size);
-                                    GetSectData(_fwConfSect, (u_int32_t*)buff, tocEntry.size * 4);
+                                    GetSectData(_fwConfSect, (u_int32_t *)buff, tocEntry.size * 4);
                                 }
                             }
                         }
                     } else {
                         GetSectData(tocArray->tocArr[section_index].section_data,
-                                    (u_int32_t*)buff, tocEntry.size * 4);
+                                    (u_int32_t *)buff, tocEntry.size * 4);
                     }
                 }
             }
@@ -532,7 +532,8 @@ bool Fs4Operations::FwInit()
     if (!Fs3Operations::FwInit()) {
         return false;
     }
-    memset(&_fs4ImgInfo, 0, sizeof(_fs4ImgInfo));
+    _fs4ImgInfo.firstItocArrayIsEmpty = 0;
+    _fs4ImgInfo.smallestDTocAddr = 0;
     _fwImgInfo.fwType = (fw_img_type_t) FwType();
     return true;
 }
@@ -580,14 +581,14 @@ bool Fs4Operations::FwReadData(void *image, u_int32_t *imageSize)
         return false;
     }
 
-    _imageCache.get((u_int8_t*)image,
+    _imageCache.get((u_int8_t *)image,
                     _fwImgInfo.lastImageAddr);
     //size will be always as (_ioAccess)->get_size(), as the dtoc always at the end
     *imageSize = (_ioAccess)->get_size();
 
     //take device sections
     if (image != NULL) {
-        _imageCache.get((u_int8_t*)image + _fs4ImgInfo.smallestDTocAddr,
+        _imageCache.get((u_int8_t *)image + _fs4ImgInfo.smallestDTocAddr,
                         _fs4ImgInfo.smallestDTocAddr,
                         (_ioAccess)->get_size() - _fs4ImgInfo.smallestDTocAddr);
     }
@@ -598,7 +599,7 @@ bool Fs4Operations::FwReadData(void *image, u_int32_t *imageSize)
 bool Fs4Operations::Fs4RemoveSectionAux(fs3_section_t sectionType)
 {
     int itocEntryIndex = 0;
-    struct   fs4_toc_info *itocEntry = (struct fs4_toc_info*)NULL;
+    struct   fs4_toc_info *itocEntry = (struct fs4_toc_info *)NULL;
     TocArray *itocArray = &_fs4ImgInfo.itocArr;
 
     if (!Fs4GetItocInfo(itocArray->tocArr, itocArray->numOfTocs,
@@ -631,10 +632,8 @@ bool Fs4Operations::Fs4RemoveSectionAux(fs3_section_t sectionType)
     _fwImgInfo.lastImageAddr = _fwImgInfo.lastImageAddr - sectionSizeInBytes;
 
     //remove the itoc from the array and update the cache
-    for (int i = itocEntryIndex + 1; i < itocArray->numOfTocs + 1; i++) {
-        memcpy(itocArray->tocArr + i - 1,
-               itocArray->tocArr + i,
-               sizeof(struct fs4_toc_info));
+    for (int i = itocEntryIndex + 1; i < (itocArray->numOfTocs + 1); i++) {
+        TocArray::copyTocArrEntry(itocArray->tocArr + i - 1, itocArray->tocArr + i);
     }
 
     _fs4ImgInfo.itocArr.numOfTocs--;
@@ -658,10 +657,10 @@ bool Fs4Operations::Fs4RemoveSection(fs3_section_t sectionType, ProgressCallBack
     _imageCache.get(newImageData, 0, (_ioAccess)->get_size());
 
     burnDataParamsT params;
-    params.data = (u_int32_t*)&newImageData[0];
+    params.data = (u_int32_t *)&newImageData[0];
     params.dataSize = newImageData.size();
     params.progressFunc = progressFunc;
-    params.calcSha = (_fs3ImgInfo.ext_info.security_mode & SMM_MCC_EN);;
+    params.calcSha = _signatureExists;
     if (!FwBurnData(params)) {
         return false;
     }
@@ -687,7 +686,7 @@ bool Fs4Operations::Fs4AddSectionAux(fs3_section_t sectionType,
                                      enum CRCTYPE crcType, u_int8_t zippedImage, u_int32_t *newSectData,
                                      u_int32_t newSectSize)
 {
-    struct fs4_toc_info *itocEntry = (struct fs4_toc_info*)NULL;
+    struct fs4_toc_info *itocEntry = (struct fs4_toc_info *)NULL;
     int itocEntryIndex = 0;
     TocArray *itocArray = &_fs4ImgInfo.itocArr;
     struct fs4_toc_info *newITocEntry;
@@ -716,7 +715,7 @@ bool Fs4Operations::Fs4AddSectionAux(fs3_section_t sectionType,
     newITocEntry = itocArray->tocArr + itocArray->numOfTocs;
 
     //update the new itoc entry
-    memset(newITocEntry, 0, sizeof(struct fs4_toc_info));
+    Fs4Operations::TocArray::initEmptyTocArrEntry(newITocEntry);
 
     newITocEntry->entry_addr = itocArray->tocArrayAddr + TOC_HEADER_SIZE +
                                itocArray->numOfTocs * TOC_ENTRY_SIZE;
@@ -726,14 +725,14 @@ bool Fs4Operations::Fs4AddSectionAux(fs3_section_t sectionType,
         (_fwImgInfo.lastImageAddr - _fwImgInfo.imgStart) >> 2;
     newITocEntry->toc_entry.crc = crcType;
     newITocEntry->toc_entry.zipped_image = zippedImage;
-    newITocEntry->toc_entry.section_crc = CalcImageCRC((u_int32_t*)newSectData,
+    newITocEntry->toc_entry.section_crc = CalcImageCRC((u_int32_t *)newSectData,
                                                        newSectSize >> 2);
 
     updateTocEntryCRC(newITocEntry);
 
     updateTocEntryData(newITocEntry);
 
-    updateTocEntrySectionData(newITocEntry, (u_int8_t*)newSectData, newSectSize);
+    updateTocEntrySectionData(newITocEntry, (u_int8_t *)newSectData, newSectSize);
 
     itocArray->numOfTocs++;
 
@@ -767,10 +766,10 @@ bool Fs4Operations::Fs4AddSection(fs3_section_t sectionType,
 
     _imageCache.get(newImageData, 0, (_ioAccess)->get_size());
     burnDataParamsT params;
-    params.data = (u_int32_t*)&newImageData[0];
+    params.data = (u_int32_t *)&newImageData[0];
     params.dataSize = newImageData.size();
     params.progressFunc = progressFunc;
-    params.calcSha = (_fs3ImgInfo.ext_info.security_mode & SMM_MCC_EN);;
+    params.calcSha = _signatureExists;
     if (!FwBurnData(params)) {
         return false;
     }
@@ -830,7 +829,7 @@ void Fs4Operations::updateTocEntryCRC(struct fs4_toc_info *tocEntry)
     memset(tocEntryBuff, 0, CX5FW_ITOC_ENTRY_SIZE);
     cx5fw_itoc_entry_pack(&(tocEntry->toc_entry), tocEntryBuff);
     tocEntry->toc_entry.itoc_entry_crc =
-        CalcImageCRC((u_int32_t*)tocEntryBuff, TOC_ENTRY_SIZE / 4 - 1);
+        CalcImageCRC((u_int32_t *)tocEntryBuff, TOC_ENTRY_SIZE / 4 - 1);
 }
 
 void Fs4Operations::updateTocHeaderCRC(struct cx5fw_itoc_header *tocHeader)
@@ -840,7 +839,7 @@ void Fs4Operations::updateTocHeaderCRC(struct cx5fw_itoc_header *tocHeader)
     memset(tocHeaderBuff, 0, CX5FW_ITOC_HEADER_SIZE);
     cx5fw_itoc_header_pack(tocHeader, tocHeaderBuff);
     tocHeader->itoc_entry_crc =
-        CalcImageCRC((u_int32_t*)tocHeaderBuff, CX5FW_ITOC_HEADER_SIZE / 4 - 1);
+        CalcImageCRC((u_int32_t *)tocHeaderBuff, CX5FW_ITOC_HEADER_SIZE / 4 - 1);
 }
 
 void Fs4Operations::updateTocEntryData(struct fs4_toc_info *tocEntry)
@@ -875,7 +874,7 @@ bool Fs4Operations::AlignDeviceSections(FwOperations *imageOps)
     u_int8_t data[FS4_DEFAULT_SECTOR_SIZE] = {0};
 
     struct cx5fw_itoc_header itocHeader;
-    cx5fw_itoc_header_unpack(&itocHeader, ((Fs4Operations*)imageOps)->_fs4ImgInfo.itocArr.tocHeader);
+    cx5fw_itoc_header_unpack(&itocHeader, ((Fs4Operations *)imageOps)->_fs4ImgInfo.itocArr.tocHeader);
 
     if (itocHeader.flash_layout_version != 1) {
         return errmsg("Please update MFT package");
@@ -888,11 +887,11 @@ bool Fs4Operations::AlignDeviceSections(FwOperations *imageOps)
     const int nvLogIndex = 0, nvData0Index = 1, nvData1Index = 2,
               devInfo0Index = 3, devInfo1Index = 4;
 
-    struct fs4_toc_info *sections[COUNT_OF_SECTIONS_TO_ALIGN] = {(struct fs4_toc_info*)NULL,
-                                                                 (struct fs4_toc_info*)NULL,
-                                                                 (struct fs4_toc_info*)NULL,
-                                                                 (struct fs4_toc_info*)NULL,
-                                                                 (struct fs4_toc_info*)NULL};
+    struct fs4_toc_info *sections[COUNT_OF_SECTIONS_TO_ALIGN] = {(struct fs4_toc_info *)NULL,
+                                                                 (struct fs4_toc_info *)NULL,
+                                                                 (struct fs4_toc_info *)NULL,
+                                                                 (struct fs4_toc_info *)NULL,
+                                                                 (struct fs4_toc_info *)NULL};
 
     const char *sectionsNames[COUNT_OF_SECTIONS_TO_ALIGN] = { GetSectionNameByType(FS3_FW_NV_LOG),
                                                               GetSectionNameByType(FS3_NV_DATA0),
@@ -962,8 +961,8 @@ bool Fs4Operations::AlignDeviceSections(FwOperations *imageOps)
 
     }
 
-    FBase *origFlashObj = (FBase*)NULL;
-    FBase *flashObjWithOcr = (FBase*)NULL;
+    FBase *origFlashObj = (FBase *)NULL;
+    FBase *flashObjWithOcr = (FBase *)NULL;
 
     //Re-open flash with -ocr if needed
     if (_fwParams.ignoreCacheRep == 0) {
@@ -977,17 +976,17 @@ bool Fs4Operations::AlignDeviceSections(FwOperations *imageOps)
         flashObjWithOcr = _ioAccess;
     }
 
-    mflash *mfl = (mflash*)NULL;
+    mflash *mfl = (mflash *)NULL;
 
     //disable write protection:
     ext_flash_attr_t attr;
     memset(&attr, 0x0, sizeof(attr));
-    if (!((Flash*)_ioAccess)->get_attr(attr)) {
+    if (!((Flash *)_ioAccess)->get_attr(attr)) {
         rc = false;
         goto cleanup;
     }
 
-    mfl = ((Flash*)_ioAccess)->getMflashObj();
+    mfl = ((Flash *)_ioAccess)->getMflashObj();
     write_protect_info_t protect_info;
     memset(&protect_info, 0, sizeof(protect_info));
     for (unsigned int i = 0; i < attr.banks_num; i++) {
@@ -1000,7 +999,7 @@ bool Fs4Operations::AlignDeviceSections(FwOperations *imageOps)
         }
     }
 
-    while (((Flash*)_ioAccess)->is_flash_write_protected() && retries++ < 5) {
+    while (((Flash *)_ioAccess)->is_flash_write_protected() && retries++ < 5) {
         msleep(500);
     }
     if (retries == 5) {
@@ -1116,7 +1115,7 @@ cleanup:
 
 bool Fs4Operations::CheckIfAlignmentIsNeeded(FwOperations *imgops)
 {
-    Fs4Operations& imageOps = *((Fs4Operations*) imgops);
+    Fs4Operations& imageOps = *((Fs4Operations *) imgops);
     struct cx5fw_itoc_header itocHeader, dtocHeader;
     cx5fw_itoc_header_unpack(&dtocHeader, _fs4ImgInfo.dtocArr.tocHeader);
     cx5fw_itoc_header_unpack(&itocHeader, imageOps._fs4ImgInfo.itocArr.tocHeader);
@@ -1135,13 +1134,13 @@ bool Fs4Operations::BurnFs4Image(Fs4Operations &imageOps,
     u_int8_t is_curr_image_in_odd_chunks;
     u_int32_t total_img_size = 0;
     u_int32_t sector_size = FS4_DEFAULT_SECTOR_SIZE;
-    Flash    *f     = (Flash*)(this->_ioAccess);
+    Flash    *f     = (Flash *)(this->_ioAccess);
     u_int8_t *data8;
     bool useImageDevData;
     int alreadyWrittenSz;
 
     if (_fwImgInfo.imgStart != 0 ||
-        (!burnParams.burnFailsafe && ((Flash*)_ioAccess)->get_ignore_cache_replacment())) {
+        (!burnParams.burnFailsafe && ((Flash *)_ioAccess)->get_ignore_cache_replacment())) {
         is_curr_image_in_odd_chunks = 1;
     } else {
         is_curr_image_in_odd_chunks = 0;
@@ -1227,7 +1226,8 @@ bool Fs4Operations::BurnFs4Image(Fs4Operations &imageOps,
         alreadyWrittenSz += itoc_info_p->section_data.size();
     }
 
-    if (burnParams.useImgDevData) {//Write dtoc array only if ignore_dev_data
+    if (burnParams.useImgDevData) {
+        //Write dtoc array only if ignore_dev_data
 
         //Sanity check on the image dtoc array
         if (!imageOps.CheckDTocArray()) {
@@ -1281,6 +1281,10 @@ bool Fs4Operations::BurnFs4Image(Fs4Operations &imageOps,
         return true;
     }
 
+    if (!AddHMACIfNeeded(&imageOps, f)) {
+        return false;
+    }
+
     // Write new signature
     data8 = new u_int8_t[FS3_FW_SIGNATURE_SIZE];
     imageOps._imageCache.get(data8, 0, FS3_FW_SIGNATURE_SIZE);
@@ -1293,11 +1297,12 @@ bool Fs4Operations::BurnFs4Image(Fs4Operations &imageOps,
     return DoAfterBurnJobs(_fs4_magic_pattern, imageOps, burnParams, f,
                            new_image_start, is_curr_image_in_odd_chunks);
 }
+
 bool Fs4Operations::FsBurnAux(FwOperations *imgops, ExtBurnParams& burnParams)
 {
     bool devIntQueryRes;
     bool rc;
-    Fs4Operations& imageOps = *((Fs4Operations*) imgops);
+    Fs4Operations& imageOps = *((Fs4Operations *) imgops);
 
     if (imageOps.FwType() != FIT_FS4) {
         return errmsg(MLXFW_IMAGE_FORMAT_ERR, "FW image type is not compatible with device (FS4)");
@@ -1322,14 +1327,16 @@ bool Fs4Operations::FsBurnAux(FwOperations *imgops, ExtBurnParams& burnParams)
                                       imageOps._fwImgInfo.supportedHwId,
                                       imageOps._fwImgInfo.supportedHwIdNum)) {
                 return errmsg(MLXFW_DEVICE_IMAGE_MISMATCH_ERR,
-                              "Device/Image mismatch: %s\n", this->err( ));
+                              "Device/Image mismatch: %s\n", this->err());
             }
             if (burnParams.burnFailsafe == false &&
                 !CheckMatchingBinning(_ioAccess->get_dev_id(),
                                       _ioAccess->get_bin_id(),
-                                      imageOps._fwImgInfo.ext_info.pci_device_id)) {
+                                      imageOps._fwImgInfo.ext_info.dev_type)) {
+                // we check Chip Bin information only on failsafe burn
+                // during Firmware update flow - PSID will ensure a correct match.
                 return errmsg(MLXFW_DEVICE_IMAGE_MISMATCH_ERR,
-                              "Device/Image mismatch: %s\n", this->err( ));
+                              "Device/Image mismatch: %s\n", this->err());
             }
         } else {
             //No supported HW IDs (problem with the image ?)
@@ -1356,8 +1363,8 @@ bool Fs4Operations::FsBurnAux(FwOperations *imgops, ExtBurnParams& burnParams)
         } else {
             //We will take device data sections from image: make sure device is not write protected
             if (_ioAccess->is_flash()) {
-                FBase *origFlashObj = (FBase*) NULL;
-                if (!((Flash*)_ioAccess)->get_ignore_cache_replacment()) {
+                FBase *origFlashObj = (FBase *) NULL;
+                if (!((Flash *)_ioAccess)->get_ignore_cache_replacment()) {
                     origFlashObj = _ioAccess;
                     _fwParams.ignoreCacheRep = 1;
                     if (!FwOperations::FwAccessCreate(_fwParams, &_ioAccess)) {
@@ -1368,7 +1375,7 @@ bool Fs4Operations::FsBurnAux(FwOperations *imgops, ExtBurnParams& burnParams)
                     }
                 }
 
-                if (((Flash*)_ioAccess)->is_flash_write_protected()) {
+                if (((Flash *)_ioAccess)->is_flash_write_protected()) {
                     FLASH_RESTORE(origFlashObj);
                     return errmsg("Cannot burn device data sections, "
                                   "Flash is write protected.");
@@ -1394,7 +1401,7 @@ bool Fs4Operations::FsBurnAux(FwOperations *imgops, ExtBurnParams& burnParams)
         }
 
         // Check TimeStamp
-        if (!TestAndSetTimeStamp(imageOps)) {
+        if (!TestAndSetTimeStamp(imgops)) {
             return false;
         }
 
@@ -1402,9 +1409,9 @@ bool Fs4Operations::FsBurnAux(FwOperations *imgops, ExtBurnParams& burnParams)
         if ((burnParams.burnRomOptions == ExtBurnParams::BRO_FROM_DEV_IF_EXIST) &&
             _fwImgInfo.ext_info.roms_info.exp_rom_found) {
             std::vector<u_int8_t> romSect = _romSect;
-            TOCPUn((u_int32_t*)romSect.data(), romSect.size() >> 2);
+            TOCPUn((u_int32_t *)romSect.data(), romSect.size() >> 2);
             if (!imageOps.Fs4AddSectionAux(FS3_ROM_CODE, INITOCENTRY, 0,
-                                           (u_int32_t*)romSect.data(), romSect.size())) {
+                                           (u_int32_t *)romSect.data(), romSect.size())) {
                 return errmsg(MLXFW_ROM_UPDATE_IN_IMAGE_ERR,
                               "failed to update ROM in image. %s", imageOps.err());
             }
@@ -1414,7 +1421,7 @@ bool Fs4Operations::FsBurnAux(FwOperations *imgops, ExtBurnParams& burnParams)
         if (!burnParams.useImagePs &&
             (burnParams.vsdSpecified || burnParams.useDevImgInfo)) {
             // get image info section :
-            struct fs4_toc_info *imageInfoToc = (struct fs4_toc_info*)NULL;
+            struct fs4_toc_info *imageInfoToc = (struct fs4_toc_info *)NULL;
             if (!imageOps.Fs4GetItocInfo(imageOps._fs4ImgInfo.itocArr.tocArr,
                                          imageOps._fs4ImgInfo.itocArr.numOfTocs,
                                          FS3_IMAGE_INFO, imageInfoToc)) {
@@ -1467,14 +1474,14 @@ bool Fs4Operations::FsBurnAux(FwOperations *imgops, ExtBurnParams& burnParams)
 }
 
 bool Fs4Operations::Fs4GetItocInfo(struct fs4_toc_info  *tocArr, int num_of_itocs,
-                                   fs3_section_t sect_type, struct fs4_toc_info*&curr_toc)
+                                   fs3_section_t sect_type, struct fs4_toc_info *&curr_toc)
 {
     int tocIndex;
     return Fs4GetItocInfo(tocArr, num_of_itocs, sect_type, curr_toc, tocIndex);
 }
 
 bool Fs4Operations::Fs4GetItocInfo(struct fs4_toc_info  *tocArr, int num_of_itocs,
-                                   fs3_section_t sect_type, struct fs4_toc_info*&curr_toc, int& toc_index)
+                                   fs3_section_t sect_type, struct fs4_toc_info *&curr_toc, int& toc_index)
 {
     for (int i = 0; i < num_of_itocs; i++) {
         struct fs4_toc_info *itoc_info = &tocArr[i];
@@ -1488,7 +1495,7 @@ bool Fs4Operations::Fs4GetItocInfo(struct fs4_toc_info  *tocArr, int num_of_itoc
 }
 
 bool Fs4Operations::Fs4GetItocInfo(struct fs4_toc_info  *tocArr, int num_of_itocs,
-                                   fs3_section_t sect_type, vector<struct fs4_toc_info*>& curr_toc)
+                                   fs3_section_t sect_type, vector<struct fs4_toc_info *>& curr_toc)
 {
     for (int i = 0; i < num_of_itocs; i++) {
         struct fs4_toc_info *itoc_info = &tocArr[i];
@@ -1506,14 +1513,14 @@ bool Fs4Operations::Fs4UpdateMfgUidsSection(struct fs4_toc_info *curr_toc,
     struct cibfw_mfg_info cib_mfg_info;
     struct cx4fw_mfg_info cx4_mfg_info;
     (void)curr_toc;
-    cibfw_mfg_info_unpack(&cib_mfg_info, (u_int8_t*)&section_data[0]);
+    cibfw_mfg_info_unpack(&cib_mfg_info, (u_int8_t *)&section_data[0]);
 
     if (cib_mfg_info.major_version == 0) {
         if (!Fs3ChangeUidsFromBase(base_uid, cib_mfg_info.guids)) {
             return false;
         }
     } else if (cib_mfg_info.major_version == 1) {
-        cx4fw_mfg_info_unpack(&cx4_mfg_info, (u_int8_t*)&section_data[0]);
+        cx4fw_mfg_info_unpack(&cx4_mfg_info, (u_int8_t *)&section_data[0]);
         if (!Fs3ChangeUidsFromBase(base_uid, cx4_mfg_info.guids)) {
             return false;
         }
@@ -1523,9 +1530,9 @@ bool Fs4Operations::Fs4UpdateMfgUidsSection(struct fs4_toc_info *curr_toc,
     newSectionData = section_data;
 
     if (cib_mfg_info.major_version == 1) {
-        cx4fw_mfg_info_pack(&cx4_mfg_info, (u_int8_t*)&newSectionData[0]);
+        cx4fw_mfg_info_pack(&cx4_mfg_info, (u_int8_t *)&newSectionData[0]);
     } else {
-        cibfw_mfg_info_pack(&cib_mfg_info, (u_int8_t*)&newSectionData[0]);
+        cibfw_mfg_info_pack(&cib_mfg_info, (u_int8_t *)&newSectionData[0]);
     }
     return true;
 }
@@ -1563,7 +1570,7 @@ bool Fs4Operations::Fs4UpdateUidsSection(std::vector<u_int8_t>  section_data,
 {
     struct cx5fw_device_info dev_info;
 
-    cx5fw_device_info_unpack(&dev_info, (u_int8_t*)&section_data[0]);
+    cx5fw_device_info_unpack(&dev_info, (u_int8_t *)&section_data[0]);
 
     if (!Fs4ChangeUidsFromBase(base_uid, dev_info.guids)) {
         return false;
@@ -1576,7 +1583,7 @@ bool Fs4Operations::Fs4UpdateUidsSection(std::vector<u_int8_t>  section_data,
 
     newSectionData = section_data;
 
-    cx5fw_device_info_pack(&dev_info, (u_int8_t*)&newSectionData[0]);
+    cx5fw_device_info_pack(&dev_info, (u_int8_t *)&newSectionData[0]);
     return true;
 }
 
@@ -1585,7 +1592,7 @@ bool Fs4Operations::Fs4UpdateVsdSection(std::vector<u_int8_t>  section_data, cha
 {
     struct cx5fw_device_info dev_info;
 
-    cx5fw_device_info_unpack(&dev_info, (u_int8_t*)&section_data[0]);
+    cx5fw_device_info_unpack(&dev_info, (u_int8_t *)&section_data[0]);
     memset(dev_info.vsd, 0, sizeof(dev_info.vsd));
     strncpy(dev_info.vsd, user_vsd, TOOLS_ARR_SZ(dev_info.vsd) - 1);
     newSectionData = section_data;
@@ -1593,7 +1600,7 @@ bool Fs4Operations::Fs4UpdateVsdSection(std::vector<u_int8_t>  section_data, cha
     dev_info.signature1 = DEV_INFO_SIG1;
     dev_info.signature2 = DEV_INFO_SIG2;
     dev_info.signature3 = DEV_INFO_SIG3;
-    cx5fw_device_info_pack(&dev_info, (u_int8_t*)&newSectionData[0]);
+    cx5fw_device_info_pack(&dev_info, (u_int8_t *)&newSectionData[0]);
     return true;
 }
 
@@ -1602,7 +1609,7 @@ bool Fs4Operations::Fs4UpdateVpdSection(struct fs4_toc_info *curr_toc, char *vpd
                                         std::vector<u_int8_t>  &newSectionData)
 {
     int vpd_size = 0;
-    u_int8_t *vpd_data = (u_int8_t*)NULL;
+    u_int8_t *vpd_data = (u_int8_t *)NULL;
 
     if (!ReadImageFile(vpd, vpd_data, vpd_size)) {
         return false;
@@ -1620,7 +1627,7 @@ bool Fs4Operations::Fs4UpdateVpdSection(struct fs4_toc_info *curr_toc, char *vpd
         return errmsg("VPD data exceeds dtoc array, max VPD size: 0x%x bytes",
                       _ioAccess->get_size() - vpdAddress - 1);
     }
-    GetSectData(newSectionData, (u_int32_t*)vpd_data, vpd_size);
+    GetSectData(newSectionData, (u_int32_t *)vpd_data, vpd_size);
     curr_toc->toc_entry.size = vpd_size / 4;
     delete[] vpd_data;
     return true;
@@ -1636,12 +1643,12 @@ bool Fs4Operations::Fs4ReburnSection(u_int32_t newSectionAddr,
     PRINT_PROGRESS(callBackFunc, message);
 
 
-    if (!writeImage((ProgressCallBack)NULL, newSectionAddr, (u_int8_t*)&newSectionData[0], newSectionSize, true, true)) {
-        PRINT_PROGRESS(callBackFunc, (char*)"FAILED\n");
+    if (!writeImage((ProgressCallBack)NULL, newSectionAddr, (u_int8_t *)&newSectionData[0], newSectionSize, true, true)) {
+        PRINT_PROGRESS(callBackFunc, (char *)"FAILED\n");
         return false;
     }
 
-    PRINT_PROGRESS(callBackFunc, (char*)"OK\n");
+    PRINT_PROGRESS(callBackFunc, (char *)"OK\n");
 
     return true;
 }
@@ -1654,8 +1661,7 @@ bool Fs4Operations::Fs4ReburnTocSection(bool isDtoc, PrintCallBack callBackFunc)
             return false;
         }
     } else {
-        bool is_flash = _ioAccess->is_flash();
-        if (!reburnITocSection(callBackFunc, is_flash)) {
+        if (!reburnITocSection(callBackFunc, _ioAccess->is_flash())) {
             return false;
         }
     }
@@ -1667,7 +1673,7 @@ bool Fs4Operations::reburnDTocSection(PrintCallBack callBackFunc)
     // Itoc section is failsafe (two sectors after boot section are reserved for itoc entries)
     u_int32_t tocAddr = _fs4ImgInfo.dtocArr.tocArrayAddr;
     // Update new ITOC
-    u_int32_t tocSize = (_fs4ImgInfo.dtocArr.numOfTocs + 1 ) * CX5FW_ITOC_ENTRY_SIZE + CX5FW_ITOC_HEADER_SIZE;
+    u_int32_t tocSize = (_fs4ImgInfo.dtocArr.numOfTocs + 1) * CX5FW_ITOC_ENTRY_SIZE + CX5FW_ITOC_HEADER_SIZE;
     u_int8_t *p = new u_int8_t[tocSize];
     memcpy(p, _fs4ImgInfo.dtocArr.tocHeader, CIBFW_ITOC_HEADER_SIZE);
     for (int i = 0; i < _fs4ImgInfo.dtocArr.numOfTocs; i++) {
@@ -1678,14 +1684,14 @@ bool Fs4Operations::reburnDTocSection(PrintCallBack callBackFunc)
     }
     memset(&p[tocSize] - CX5FW_ITOC_ENTRY_SIZE, FS3_END, CX5FW_ITOC_ENTRY_SIZE);
 
-    PRINT_PROGRESS(callBackFunc, (char*)"Updating TOC section - ");
+    PRINT_PROGRESS(callBackFunc, (char *)"Updating TOC section - ");
     bool rc = writeImage((ProgressCallBack)NULL, tocAddr, p, tocSize, true, true);
     delete[] p;
     if (!rc) {
-        PRINT_PROGRESS(callBackFunc, (char*)"FAILED\n");
+        PRINT_PROGRESS(callBackFunc, (char *)"FAILED\n");
         return false;
     }
-    PRINT_PROGRESS(callBackFunc, (char*)"OK\n");
+    PRINT_PROGRESS(callBackFunc, (char *)"OK\n");
 
     return true;
 }
@@ -1702,7 +1708,7 @@ bool Fs4Operations::reburnITocSection(PrintCallBack callBackFunc, bool isFailSaf
                       (_fs4ImgInfo.itocArr.tocArrayAddr + sector_size);
     }
     // Update new ITOC
-    u_int32_t tocSize = (_fs4ImgInfo.itocArr.numOfTocs + 1 ) * CX5FW_ITOC_ENTRY_SIZE + CX5FW_ITOC_HEADER_SIZE;
+    u_int32_t tocSize = (_fs4ImgInfo.itocArr.numOfTocs + 1) * CX5FW_ITOC_ENTRY_SIZE + CX5FW_ITOC_HEADER_SIZE;
     u_int8_t *p = new u_int8_t[tocSize];
     memcpy(p, _fs4ImgInfo.itocArr.tocHeader, CIBFW_ITOC_HEADER_SIZE);
     for (int i = 0; i < _fs4ImgInfo.itocArr.numOfTocs; i++) {
@@ -1713,23 +1719,23 @@ bool Fs4Operations::reburnITocSection(PrintCallBack callBackFunc, bool isFailSaf
     }
     memset(&p[tocSize] - CX5FW_ITOC_ENTRY_SIZE, FS3_END, CX5FW_ITOC_ENTRY_SIZE);
 
-    PRINT_PROGRESS(callBackFunc, (char*)"Updating TOC section - ");
+    PRINT_PROGRESS(callBackFunc, (char *)"Updating TOC section - ");
     bool rc = writeImage((ProgressCallBack)NULL, newITocAddr, p, tocSize, true, true);
     delete[] p;
     if (!rc) {
-        PRINT_PROGRESS(callBackFunc, (char*)"FAILED\n");
+        PRINT_PROGRESS(callBackFunc, (char *)"FAILED\n");
         return false;
     }
-    PRINT_PROGRESS(callBackFunc, (char*)"OK\n");
+    PRINT_PROGRESS(callBackFunc, (char *)"OK\n");
 
     u_int32_t zeros = 0;
     if (isFailSafe) {
-        PRINT_PROGRESS(callBackFunc, (char*)"Restoring signature   - ");
-        if (!writeImage((ProgressCallBack)NULL, oldITocAddr, (u_int8_t*)&zeros, 4, false, true)) {
-            PRINT_PROGRESS(callBackFunc, (char*)"FAILED\n");
+        PRINT_PROGRESS(callBackFunc, (char *)"Restoring signature   - ");
+        if (!writeImage((ProgressCallBack)NULL, oldITocAddr, (u_int8_t *)&zeros, 4, false, true)) {
+            PRINT_PROGRESS(callBackFunc, (char *)"FAILED\n");
             return false;
         }
-        PRINT_PROGRESS(callBackFunc, (char*)"OK\n");
+        PRINT_PROGRESS(callBackFunc, (char *)"OK\n");
     }
     return true;
 }
@@ -1743,17 +1749,17 @@ bool Fs4Operations::Fs4UpdateItocInfo(struct fs4_toc_info *curr_toc,
     curr_toc->section_data = newSectionData;
 
     if (curr_toc->toc_entry.crc == INITOCENTRY) {
-        curr_toc->toc_entry.section_crc = CalcImageCRC((u_int32_t*)&newSectionData[0], curr_toc->toc_entry.size);
+        curr_toc->toc_entry.section_crc = CalcImageCRC((u_int32_t *)&newSectionData[0], curr_toc->toc_entry.size);
     } else if (curr_toc->toc_entry.crc == INSECTION) {
-        u_int32_t newSectionCRC = CalcImageCRC((u_int32_t*)&newSectionData[0], curr_toc->toc_entry.size - 1);
-        ((u_int32_t*)curr_toc->section_data.data())[curr_toc->toc_entry.size - 1] = newSectionCRC;
-        ((u_int32_t*)newSectionData.data())[curr_toc->toc_entry.size - 1] = TOCPU1(newSectionCRC);
+        u_int32_t newSectionCRC = CalcImageCRC((u_int32_t *)&newSectionData[0], curr_toc->toc_entry.size - 1);
+        ((u_int32_t *)curr_toc->section_data.data())[curr_toc->toc_entry.size - 1] = newSectionCRC;
+        ((u_int32_t *)newSectionData.data())[curr_toc->toc_entry.size - 1] = TOCPU1(newSectionCRC);
     }
 
     memset(tocEntryBuff, 0, CX5FW_ITOC_ENTRY_SIZE);
     cx5fw_itoc_entry_pack(&curr_toc->toc_entry, tocEntryBuff);
 
-    u_int32_t newEntryCRC = CalcImageCRC((u_int32_t*)tocEntryBuff, (TOC_ENTRY_SIZE / 4) - 1);
+    u_int32_t newEntryCRC = CalcImageCRC((u_int32_t *)tocEntryBuff, (TOC_ENTRY_SIZE / 4) - 1);
     curr_toc->toc_entry.itoc_entry_crc = newEntryCRC;
 
     memset(curr_toc->data, 0, CX5FW_ITOC_ENTRY_SIZE);
@@ -1791,7 +1797,7 @@ bool Fs4Operations::IsSectionExists(fs3_section_t sectType)
     bool isDtoc;
     struct fs4_toc_info  *tocArr;
     u_int32_t numOfTocs;
-    struct fs4_toc_info *curr_toc = (fs4_toc_info*)NULL;
+    struct fs4_toc_info *curr_toc = (fs4_toc_info *)NULL;
     int tocIndex = 0;
 
     if (!isDTocSection(sectType, isDtoc)) {
@@ -1814,8 +1820,8 @@ bool Fs4Operations::IsSectionExists(fs3_section_t sectType)
 bool Fs4Operations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, bool is_sect_failsafe, CommandType cmd_type, PrintCallBack callBackFunc)
 {
     (void) cmd_type;
-    struct fs4_toc_info *curr_toc = (fs4_toc_info*)NULL;
-    struct fs4_toc_info *old_toc = (fs4_toc_info*)NULL;
+    struct fs4_toc_info *curr_toc = (fs4_toc_info *)NULL;
+    struct fs4_toc_info *old_toc = (fs4_toc_info *)NULL;
     std::vector<u_int8_t> newSection;
     u_int32_t newSectionAddr;
     const char *type_msg;
@@ -1846,17 +1852,17 @@ bool Fs4Operations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, bo
     }
 
     if (is_sect_failsafe) {
-        vector<struct fs4_toc_info*> tocs;
+        vector<struct fs4_toc_info *> tocs;
         //find first valid section
         if (!Fs4GetItocInfo(tocArr, numOfTocs, sect_type, tocs)) {
             return false;
         }
         if (tocs.size() < 2) {
-            PRINT_PROGRESS(callBackFunc, (char*)"FAILED\n");
+            PRINT_PROGRESS(callBackFunc, (char *)"FAILED\n");
             return false;
         }
         for (size_t i = 0; i < tocs.size(); i++) {
-            if (CheckDevInfoSignature((u_int32_t*)(tocs[i]->section_data.data()))) {
+            if (CheckDevInfoSignature((u_int32_t *)(tocs[i]->section_data.data()))) {
                 old_toc = tocs[i];
                 //find the second section (valid or not valid, does not matter)
                 if (i == 0) {
@@ -1885,7 +1891,7 @@ bool Fs4Operations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, bo
     }
 
     if (sect_type == FS3_MFG_INFO) {
-        fs3_uid_t base_uid = *(fs3_uid_t*)new_info;
+        fs3_uid_t base_uid = *(fs3_uid_t *)new_info;
         type_msg = "GUID";
         if (!Fs4UpdateMfgUidsSection(curr_toc, curr_toc->section_data, base_uid,
                                      newSection)) {
@@ -1893,13 +1899,13 @@ bool Fs4Operations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, bo
         }
     } else if (sect_type == FS3_DEV_INFO) {
         if (cmd_type == CMD_SET_GUIDS) {
-            fs3_uid_t base_uid = *(fs3_uid_t*)new_info;
+            fs3_uid_t base_uid = *(fs3_uid_t *)new_info;
             type_msg = "GUID";
             if (!Fs4UpdateUidsSection(old_toc->section_data, base_uid, newSection)) {
                 return false;
             }
         } else if (cmd_type == CMD_SET_VSD) {
-            char *user_vsd = (char*)new_info;
+            char *user_vsd = (char *)new_info;
             type_msg = "VSD";
             if (!Fs4UpdateVsdSection(old_toc->section_data,
                                      user_vsd,
@@ -1908,38 +1914,38 @@ bool Fs4Operations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, bo
             }
         } else {
             // We shouldnt reach here EVER
-            type_msg = (char*)"Unknown";
+            type_msg = (char *)"Unknown";
         }
     } else if (sect_type == FS3_VPD_R0) {
-        char *vpd_file = (char*)new_info;
+        char *vpd_file = (char *)new_info;
         type_msg = "VPD";
         if (!Fs4UpdateVpdSection(curr_toc, vpd_file, newSection)) {
             return false;
         }
     } else if (sect_type == FS3_IMAGE_SIGNATURE_256 && cmd_type == CMD_SET_SIGNATURE) {
-        vector<u_int8_t> sig((u_int8_t*)new_info, (u_int8_t*)new_info + CX4FW_IMAGE_SIGNATURE_256_SIZE);
+        vector<u_int8_t> sig((u_int8_t *)new_info, (u_int8_t *)new_info + CX4FW_IMAGE_SIGNATURE_256_SIZE);
         type_msg = "SIGNATURE";
         newSection.resize(CX4FW_IMAGE_SIGNATURE_256_SIZE);
         memcpy(newSection.data(), sig.data(), CX4FW_IMAGE_SIGNATURE_256_SIZE);
     } else if (sect_type == FS3_IMAGE_SIGNATURE_512 && cmd_type == CMD_SET_SIGNATURE) {
-        vector<u_int8_t> sig((u_int8_t*)new_info, (u_int8_t*)new_info + CX4FW_IMAGE_SIGNATURE_512_SIZE);
+        vector<u_int8_t> sig((u_int8_t *)new_info, (u_int8_t *)new_info + CX4FW_IMAGE_SIGNATURE_512_SIZE);
         type_msg = "SIGNATURE";
         newSection.resize(CX4FW_IMAGE_SIGNATURE_512_SIZE);
         memcpy(newSection.data(), sig.data(), CX4FW_IMAGE_SIGNATURE_512_SIZE);
     } else if (sect_type == FS3_PUBLIC_KEYS_2048 && cmd_type == CMD_SET_PUBLIC_KEYS) {
-        char *publickeys_file = (char*)new_info;
+        char *publickeys_file = (char *)new_info;
         type_msg = "PUBLIC KEYS";
         if (!Fs3UpdatePublicKeysSection(curr_toc->toc_entry.size, publickeys_file, newSection)) {
             return false;
         }
     } else if (sect_type == FS3_PUBLIC_KEYS_4096 && cmd_type == CMD_SET_PUBLIC_KEYS) {
-        char *publickeys_file = (char*)new_info;
+        char *publickeys_file = (char *)new_info;
         type_msg = "PUBLIC KEYS 4096";
         if (!Fs3UpdatePublicKeysSection(curr_toc->toc_entry.size, publickeys_file, newSection)) {
             return false;
         }
     } else if (sect_type == FS3_FORBIDDEN_VERSIONS && cmd_type == CMD_SET_FORBIDDEN_VERSIONS) {
-        char *forbiddenVersions_file = (char*)new_info;
+        char *forbiddenVersions_file = (char *)new_info;
         type_msg = "Forbidden Versions";
         if (!Fs3UpdateForbiddenVersionsSection(curr_toc->toc_entry.size, forbiddenVersions_file, newSection)) {
             return false;
@@ -1967,7 +1973,7 @@ bool Fs4Operations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, bo
     if (is_sect_failsafe) {
         if (!writeImage((ProgressCallBack)NULL,
                         old_toc->toc_entry.flash_addr << 2,
-                        (u_int8_t*)&zeroes, sizeof(zeroes), isDtoc, true)) {
+                        (u_int8_t *)&zeroes, sizeof(zeroes), isDtoc, true)) {
             return false;
         }
     }
@@ -2071,13 +2077,13 @@ bool Fs4Operations::CheckTocArrConsistency(TocArray& tocArr, u_int32_t imageStar
     u_int32_t nextSectStrtAddr = 0;
 
     //Sort the tocs
-    std::vector<struct fs4_toc_info*> sortedTocVec(tocArr.numOfTocs);
+    std::vector<struct fs4_toc_info *> sortedTocVec(tocArr.numOfTocs);
     for (int i = 0; i < tocArr.numOfTocs; i++) {
         sortedTocVec[i] = &(tocArr.tocArr[i]);
     }
     std::sort(sortedTocVec.begin(), sortedTocVec.end(), TocComp(imageStartAddr));
 
-    std::vector<struct fs4_toc_info*>::iterator it = sortedTocVec.begin(), itNext = sortedTocVec.begin();
+    std::vector<struct fs4_toc_info *>::iterator it = sortedTocVec.begin(), itNext = sortedTocVec.begin();
     itNext++;
     for (; itNext != sortedTocVec.end(); it++, itNext++) {
         sectEndAddr = getAbsAddr(*it, imageStartAddr) + ((*it)->toc_entry.size << 2) - 1;
@@ -2142,6 +2148,29 @@ bool Fs4Operations::FwResetTimeStamp()
     return Fs3Operations::FwResetTimeStamp();
 }
 
+bool Fs4Operations::GetSectionSizeAndOffset(fs3_section_t sectType, u_int32_t& size, u_int32_t& offset)
+{
+    for (int i = 0; i < _fs4ImgInfo.itocArr.numOfTocs; i++) {
+        struct fs4_toc_info *toc = &_fs4ImgInfo.itocArr.tocArr[i];
+        if (toc->toc_entry.type == sectType) {
+            size = toc->toc_entry.size << 2;
+            offset = toc->toc_entry.flash_addr << 2;
+            return true;
+        }
+    }
+
+    for (int i = 0; i < _fs4ImgInfo.dtocArr.numOfTocs; i++) {
+        struct fs4_toc_info *toc = &_fs4ImgInfo.dtocArr.tocArr[i];
+        if (toc->toc_entry.type == sectType) {
+            size = toc->toc_entry.size << 2;
+            offset = toc->toc_entry.flash_addr << 2;
+            return true;
+        }
+    }
+
+    return false;
+}
+
 bool Fs4Operations::TocComp::operator()(fs4_toc_info *elem1, fs4_toc_info *elem2)
 {
     u_int32_t absAddr1 = (elem1->toc_entry.flash_addr << 2) + _startAdd;
@@ -2161,5 +2190,40 @@ u_int32_t Fs4Operations::TocArray::getSectionsTotalSize()
         s += toc_entry->size << 2;
     }
     return s;
+}
+
+void Fs4Operations::TocArray::initEmptyTocArrEntry(struct fs4_toc_info * tocArrEntry)
+{
+    if (!tocArrEntry) {
+        return;
+    }
+    memset(tocArrEntry->data, 0, sizeof(tocArrEntry->data));
+    memset(&tocArrEntry->toc_entry, 0, sizeof(tocArrEntry->toc_entry));
+    tocArrEntry->entry_addr = 0;
+    tocArrEntry->section_data.resize(0);
+    return;
+}
+
+void Fs4Operations::TocArray::copyTocArrEntry(struct fs4_toc_info * dest, struct fs4_toc_info * src)
+{
+    if (!src || !dest) {
+        return;
+    }
+
+    memcpy(dest->data, src->data, sizeof(src->data));
+    dest->entry_addr = src->entry_addr;
+    dest->section_data = src->section_data;
+    memcpy(&dest->toc_entry, &src->toc_entry, sizeof(src->toc_entry));
+    return;
+}
+
+Fs4Operations::TocArray::TocArray()
+{
+    numOfTocs = 0;
+    tocArrayAddr = 0;
+    for (int i = 0; i < MAX_TOCS_NUM; i++) {
+        Fs4Operations::TocArray::initEmptyTocArrEntry(&tocArr[i]);
+    }
+    memset(&tocHeader, 0, sizeof(tocHeader));
 }
 

@@ -28,6 +28,7 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
 
 #ifndef _MTCR_ICMD_CIF     /* guard */
@@ -47,9 +48,11 @@ extern "C" {
 
 /* --------- Typedefs & Constants ---------------------------------- */
 
+#ifndef IN
 #define IN
 #define OUT
 #define INOUT
+#endif
 
 #define FLASH_REG_ACCESS    0x9001
 #define ICMD_MAX_CMD_SIZE   0x300 // max mailbox size
@@ -94,10 +97,6 @@ int icmd_send_command_int(mfile     *mf,
  *                  status value (as indicated in cr-space).
  **/
 int icmd_take_semaphore(mfile *mf);
-
-#undef IN
-#undef OUT
-#undef INOUT
 
 #ifdef __cplusplus
 }

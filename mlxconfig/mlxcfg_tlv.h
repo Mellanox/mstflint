@@ -60,7 +60,8 @@
 enum TLVTarget {
     NIC,
     EXP_ROM,
-    NIC_INTERNAL
+    NIC_INTERNAL,
+    SWITCH
 };
 
 class TLVConf {

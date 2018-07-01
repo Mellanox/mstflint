@@ -137,7 +137,7 @@
 
 /************************************/
 /* define macros to the architecture of the CPU */
-#if defined(__linux) || defined(__FreeBSD__)
+#if defined(__linux__) || defined(__FreeBSD__)
 #   if defined(__i386__)
 #       define ARCH_x86
 #   elif defined(__x86_64__)
@@ -156,11 +156,10 @@
 #       error Unknown CPU architecture using the linux OS
 #   endif
 #elif defined(_WIN32)
-
 //#   error Windows OS need to define macros
-#else       // __linux || __FreeBSD__
+#else
 #   error Unknown OS
-#endif      // __linux || __FreeBSD__
+#endif
 
 /**********************************/
 /* define macros for print fields */

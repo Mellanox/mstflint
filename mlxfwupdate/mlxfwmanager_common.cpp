@@ -77,7 +77,7 @@ string beautify_device_name(string family)
         return "Connect-IB";
     } else if (family == "connectx-4") {
         return "ConnectX-4";
-    } else  {
+    } else {
         return family;
     }
 }

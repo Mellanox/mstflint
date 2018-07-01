@@ -45,7 +45,7 @@
 #define MTCR_API __declspec(dllimport)
 #endif
 
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__)
     #include <stdint.h>
 #else
 typedef __int8 int8_t;
@@ -208,6 +208,7 @@ typedef enum MType_t {
     MST_FPGA_ICMD = 0x4000,
     MST_CABLE = 0x8000,
     MST_FPGA_DRIVER = 0x10000,
+    MST_SOFTWARE = 0x20000,
     MST_DRIVER_CONF = 0x40000,
     MST_DRIVER_CR = 0x80000,
     MST_DEFAULT = 0xffffffff & ~MST_CABLE & ~MST_FPGA & ~MST_FPGA_ICMD & ~MST_FPGA_DRIVER
@@ -236,6 +237,7 @@ typedef enum Mdevs_t {
     MDEVS_FPGA = 0x2000,/* Access LPC region */
     MDEVS_FPGA_NEWTON = 0x4000,/* Access LPC region */
     MDEVS_CABLE = 0x8000,
+    MDEVS_SOFTWARE = 0x10000, /* Software system char dev */
     MDEVS_TAVOR = (MDEVS_TAVOR_DDR | MDEVS_TAVOR_UAR | MDEVS_TAVOR_CR), MDEVS_ALL = 0xffffffff
 } Mdevs;
 
@@ -245,8 +247,31 @@ typedef enum {
 } maccess_reg_method_t;
 
 typedef enum {
-    AS_ICMD = 3, AS_CR_SPACE = 2, AS_SEMAPHORE = 0xa
+    VCC_INITIALIZED = 0x0,
+    VCC_ICMD_EXT_SPACE_SUPPORTED = 0x1,
+    VCC_CRSPACE_SPACE_SUPPORTED = 0x2,
+    VCC_ICMD_SPACE_SUPPORTED = 0x3,
+    VCC_NODNIC_INIT_SEG_SPACE_SUPPORTED = 0x4,
+    VCC_EXPANSION_ROM_SPACE_SUPPORTED = 0x5,
+    VCC_ND_CRSPACE_SPACE_SUPPORTED = 0x6,
+    VCC_SCAN_CRSPACE_SPACE_SUPPORTED = 0x7,
+    VCC_SEMAPHORE_SPACE_SUPPORTED = 0x8,
+    VCC_MAC_SPACE_SUPPORTED = 0x9,
+} VSCCapCom;
+
+typedef enum {
+    AS_ICMD_EXT = 0x1,
+    AS_CR_SPACE = 0x2,
+    AS_ICMD = 0x3,
+    AS_NODNIC_INIT_SEG = 0x4,
+    AS_EXPANSION_ROM = 0x5,
+    AS_ND_CRSPACE = 0x6,
+    AS_SCAN_CRSPACE = 0x7,
+    AS_SEMAPHORE = 0xa,
+    AS_MAC = 0xf,
+    AS_END
 } address_space_t;
+
 
 typedef struct vf_info_t {
     char dev_name[512];
@@ -308,5 +333,13 @@ typedef enum {
 } reg_access_t;
 
 typedef struct mfile_t mfile;
+
+#define VSEC_MIN_SUPPORT_UL(mf) (((mf)->vsec_cap_mask & (1 << VCC_INITIALIZED)) && \
+                                 ((mf)->vsec_cap_mask & (1 << VCC_CRSPACE_SPACE_SUPPORTED)) && \
+                                 ((mf)->vsec_cap_mask & (1 << VCC_ICMD_EXT_SPACE_SUPPORTED)) && \
+                                 ((mf)->vsec_cap_mask & (1 << VCC_SEMAPHORE_SPACE_SUPPORTED)))
+
+// VSEC supported macro
+#define VSEC_SUPPORTED_UL(mf) ((mf)->vsec_supp && VSEC_MIN_SUPPORT_UL(mf))
 
 #endif

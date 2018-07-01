@@ -95,11 +95,14 @@ private:
 
     class TocArray {
 public:
+        static void initEmptyTocArrEntry(struct fs4_toc_info* tocArrEntry);
+        static void copyTocArrEntry(struct fs4_toc_info* dest, struct fs4_toc_info* src);
+        TocArray();
+        u_int32_t           getSectionsTotalSize();
         int numOfTocs;
         struct fs4_toc_info tocArr[MAX_TOCS_NUM];
         u_int8_t tocHeader[CX5FW_ITOC_HEADER_SIZE];
         u_int32_t tocArrayAddr;
-        u_int32_t           getSectionsTotalSize();
     };
 
     struct Fs4ImgInfo {
@@ -191,6 +194,7 @@ public:
     bool restoreWriteProtection(mflash *mfl, u_int8_t banksNum,
                                 write_protect_info_t protect_info[]);
 
+    bool GetSectionSizeAndOffset(fs3_section_t sectType, u_int32_t& size, u_int32_t& offset);
 
     // Members
     Fs4ImgInfo _fs4ImgInfo;

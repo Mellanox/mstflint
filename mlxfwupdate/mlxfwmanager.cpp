@@ -264,7 +264,7 @@ int mainEntry(int argc, char *argv[])
                 #endif
             }
             goto clean_up;
-        } else if (devs_num < 0)   {
+        } else if (devs_num < 0) {
             print_err("-E- Failed to retrieve device(s) names\n");
             res = ERR_CODE_FETCH_LOCAL_DEVICES_FAIL;
             goto clean_up;
@@ -331,7 +331,7 @@ int mainEntry(int argc, char *argv[])
                 goto early_err_clean_up;
             }
             mpath = config.mfa_path;
-        } else if (cmd_params.use_mfa_file)    {
+        } else if (cmd_params.use_mfa_file) {
             mpath = adjustRelPath(cmd_params.mfa_file, config.adjuster_path);
         }
         rc = queryMFAs(srq, mpath, psid_list, dev_types_list, psidUpdateInfo, cmd_params.update_online, errorMsg, fw_version_list);
@@ -952,7 +952,7 @@ int checkAndDisplayDeviceQuery1D(vector<MlnxDev*> &devs,
             pn = devs[i]->getPartNumber();
             if (pn.length()) {
                 ;;
-            } else if (psidLookupDB.getPN(devs[i]->getBoardTypeId()) != "")   {
+            } else if (psidLookupDB.getPN(devs[i]->getBoardTypeId()) != "") {
                 pn = psidLookupDB.getPN(devs[i]->getBoardTypeId());
             } else {
                 if (psidUpdateInfo.find(devs[i]->getPsid()) != psidUpdateInfo.end()) {
@@ -1081,7 +1081,7 @@ int checkAndDisplayDeviceQuery1D(vector<MlnxDev*> &devs,
                 printDeviceInfo(i, devname, deviceType, pn, description,
                                 statusStr, devs, ver, availVer, expRomTypes, devRomTypeIndex,
                                 availRomTypeIndex, psidUpdateInfo, multiple_images_found);
-            } else   {
+            } else {
                 printDeviceInfoQuery(i, devname, deviceType, pn, description,
                                      statusStr, devs, ver, availVer, expRomTypes, devRomTypeIndex,
                                      availRomTypeIndex, psidUpdateInfo, multiple_images_found);
@@ -1397,7 +1397,6 @@ FILE* createOutFile(string &fileName, bool fileSpecified)
 int progressCB_display(int completion)
 {
     print_out("\b\b\b\b%3d%%", completion);
-    fflush(stdout);
     return abort_request;
 }
 
@@ -1425,7 +1424,6 @@ int advProgressFunc_display(int completion, const char *stage, prog_t type, int 
         }
         break;
     }
-    fflush(stdout);
     return abort_request;
 }
 
@@ -1926,7 +1924,7 @@ void printDeviceInfoQuery(int dev_index, string devname, string deviceType, stri
             print_out("  Base GUID:        %s\n", devs[dev_index]->guidPortOne.c_str());
             print_out("  Base MAC:         %s\n", devs[dev_index]->macPortOne.c_str());
         }
-    } else  {
+    } else {
         if (devs[dev_index]->portOneType  == MlnxDev::PORT_ETH) {
             print_out("  Port1 MAC:        %s\n", devs[dev_index]->macPortOne.c_str());
         } else if (devs[dev_index]->portOneType  == MlnxDev::PORT_IB) {

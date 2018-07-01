@@ -124,9 +124,9 @@ int FwOperations::getMfaImgInner(char *fileName, u_int8_t *mfa_buf, int size,
     // open mfa file
     if (fileName) {
         res = mfa_open_file(&mfa_d, fileName);
-    } else if (mfa_buf && size != 0)   {
+    } else if (mfa_buf && size != 0) {
         res = mfa_open_buf(&mfa_d, mfa_buf, size);
-    } else   {
+    } else {
         WriteToErrBuff(errBuf, "Interanl error: bad parameters to getMfaImg", errBufSize);
         return res;
     }
@@ -222,6 +222,15 @@ void FwOperations::FwInitCom()
     memset(&_fwImgInfo, 0, sizeof(_fwImgInfo));
 }
 
+bool FwOperations::IsFsCtrlOperations()
+{
+    return false;
+}
+
+void FwOperations::GetFwParams(fw_ops_params_t& fwParams)
+{
+    fwParams = _fwParams;
+}
 
 void FwOperations::getSupporteHwId(u_int32_t **supportedHwId, u_int32_t &supportedHwIdNum)
 {
@@ -369,7 +378,7 @@ FwVerInfo FwOperations::FwVerLessThan(u_int16_t r1[3], u_int16_t r2[3])
     for (int i = 0; i < 3; i++) {
         if (fwVer1[i] < fwVer2[i]) {
             return FVI_SMALLER;
-        } else if (fwVer1[i] > fwVer2[i])   {
+        } else if (fwVer1[i] > fwVer2[i]) {
             return FVI_GREATER;
         }
     }
@@ -699,13 +708,13 @@ FwOperations* FwOperations::FwOperationsCreate(void *fwHndl, void *info, char *p
 
     if (hndlType == FHT_FW_FILE) {
         fwParams.fileHndl = (char*)fwHndl;
-    } else if (hndlType == FHT_FW_BUFF)  {
+    } else if (hndlType == FHT_FW_BUFF) {
         fwParams.buffHndl = (u_int32_t*)fwHndl;
         fwParams.buffSize = *((u_int32_t*)info);
-    } else if (hndlType == FHT_UEFI_DEV)  {
+    } else if (hndlType == FHT_UEFI_DEV) {
         fwParams.uefiHndl = (uefi_Dev_t*)fwHndl;
         fwParams.uefiExtra = (uefi_dev_extra_t*)info;
-    } else if (hndlType == FHT_MST_DEV)  {
+    } else if (hndlType == FHT_MST_DEV) {
         fwParams.mstHndl = (char*)fwHndl;
         fwParams.forceLock = false;
         fwParams.readOnly = false;
@@ -946,7 +955,7 @@ bool FwOperations::writeImageEx(ProgressCallBackEx progressFuncEx, void *progres
         towrite -= trans;
 
         // Report
-        if (progressFunc != NULL or progressFuncEx != NULL) {
+        if (progressFunc != NULL || progressFuncEx != NULL) {
             u_int32_t new_perc = ((cnt - towrite + alreadyWrittenSz) * 100) / totalSz;
             if (progressFunc != NULL && progressFunc((int)new_perc)) {
                 return errmsg("Aborting... received interrupt signal");
@@ -1871,6 +1880,13 @@ bool FwOperations::FwQueryTimeStamp(struct tools_open_ts_entry& timestamp, struc
     return errmsg("Operation not supported.");
 }
 
+Tlv_Status_t FwOperations::GetTsObj(TimeStampIFC **tsObj)
+{
+    (void)tsObj;
+    errmsg("Unsupported FW type.");
+    return TS_TIMESTAMPING_NOT_SUPPORTED;
+}
+
 bool FwOperations::FwInsertSHA256(PrintCallBack)
 {
     return errmsg("FwInsertSHA256 not supported");
@@ -1948,4 +1964,112 @@ u_int8_t FwOperations::GetFwFormatFromHwDevID(u_int32_t hwDevId)
 const char*  FwOperations::FwGetReSignMsgStr()
 {
     return (const char*)NULL;
+}
+
+
+bool FwOperations::TestAndSetTimeStamp(FwOperations *imageOps)
+{
+    Tlv_Status_t rc;
+    Tlv_Status_t devTsQueryRc;
+    bool retRc = true;
+    TimeStampIFC *imgTsObj;
+    TimeStampIFC *devTsObj;
+    bool tsFoundOnImage = false;
+    struct tools_open_ts_entry imgTs;
+    struct tools_open_fw_version imgFwVer;
+    struct tools_open_ts_entry devTs;
+    struct tools_open_fw_version devFwVer;
+    memset(&imgTs, 0, sizeof(imgTs));
+    memset(&imgFwVer, 0, sizeof(imgFwVer));
+    memset(&devTs, 0, sizeof(devTs));
+    memset(&devFwVer, 0, sizeof(devFwVer));
+
+    if (_ioAccess && !_ioAccess->is_flash()) {
+        // no need to test timestamp on image
+        return true;
+    }
+
+    if (_fwParams.ignoreCacheRep) {
+        // direct flash access no check is needed
+        return true;
+    }
+    if (imageOps->_ioAccess && imageOps->_ioAccess->is_flash()) {
+        return errmsg("TestAndSetTimeStamp bad params");
+    }
+    if (imageOps->GetTsObj(&imgTsObj)) {
+        return errmsg("%s", imageOps->err());
+    }
+    rc = GetTsObj(&devTsObj);
+    if (rc) {
+        delete imgTsObj;
+        return rc == TS_TIMESTAMPING_NOT_SUPPORTED ? true : false;
+    }
+    // check if device supports timestamping or if device is not in livefish
+    devTsQueryRc = devTsObj->queryTimeStamp(devTs, devFwVer);
+    if (devTsQueryRc == TS_TIMESTAMPING_NOT_SUPPORTED || devTsQueryRc == TS_UNSUPPORTED_ICMD_VERSION) {
+        retRc = true;
+        goto cleanup;
+    } else if (devTsQueryRc && devTsQueryRc != TS_NO_VALID_TIMESTAMP) {
+        retRc = errmsg("%s", devTsObj->err());
+        goto cleanup;
+    }
+
+    // Option 1 image was timestampped need to try and set it on device
+    // Option 2 image was not timestampped but device was timestampped
+    rc = imgTsObj->queryTimeStamp(imgTs, imgFwVer);
+    if (rc == TS_OK) {
+        tsFoundOnImage = true;
+    } else if (rc != TS_TLV_NOT_FOUND) {
+        retRc = errmsg("%s", imgTsObj->err());
+        goto cleanup;
+    }
+
+    if (tsFoundOnImage) {
+        // timestamp found on image, attempt to set it on device
+        rc = devTsObj->setTimeStamp(imgTs, imgFwVer);
+        if (rc == TS_OK) {
+            retRc = true;
+        } else {
+            retRc = errmsg("%s", devTsObj->err());
+        }
+    } else {
+        if (devTsQueryRc == TS_NO_VALID_TIMESTAMP) {
+            // no timestamp on image and no valid timestamp on device check if we got running timestamp if we do then fail
+            devTsQueryRc = devTsObj->queryTimeStamp(devTs, devFwVer, true);
+            if (devTsQueryRc == TS_OK) {
+                // we got running timestamp return error
+                retRc = errmsg("No valid timestamp detected. please set a valid timestamp on image/device or reset timestamps on device.");
+
+            } else if (devTsQueryRc == TS_NO_VALID_TIMESTAMP) {
+                // timestamping not used on device.
+                retRc = true;
+            } else {
+                retRc = errmsg("%s", devTsObj->err());
+            }
+        } else {
+            fw_info_t fw_query;
+            memset(&fw_query, 0, sizeof(fw_info_t));
+            if (!imageOps->FwQuery(&fw_query, true)) {
+                return errmsg("Failed to query the image\n");
+            }
+            // we got a valid timestamp on device but not on image! compare the FW version
+            if (devFwVer.fw_ver_major == fw_query.fw_info.fw_ver[0] &&
+                devFwVer.fw_ver_minor == fw_query.fw_info.fw_ver[1] &&
+                devFwVer.fw_ver_subminor == fw_query.fw_info.fw_ver[2]) {
+                // versions match allow update
+                retRc = true;
+            } else {
+                retRc = errmsg("Stamped FW version mismatch: %d.%d.%04d differs from %d.%d.%04d", devFwVer.fw_ver_major, \
+                               devFwVer.fw_ver_minor, \
+                               devFwVer.fw_ver_subminor, \
+                               fw_query.fw_info.fw_ver[0], \
+                               fw_query.fw_info.fw_ver[1], \
+                               fw_query.fw_info.fw_ver[2]);
+            }
+        }
+    }
+cleanup:
+    delete imgTsObj;
+    delete devTsObj;
+    return retRc;
 }

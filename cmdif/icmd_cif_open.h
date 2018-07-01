@@ -42,9 +42,11 @@ extern "C" {
 #include <tools_layouts/icmd_layouts.h>
 #include "icmd_cif_common.h"
 
+#ifndef IN
 #define IN
 #define OUT
 #define INOUT
+#endif
 
 enum {
     GET_FW_INFO             = 0x8007,
@@ -61,9 +63,6 @@ int gcif_mh_sync(mfile *mf, struct connectx4_icmd_mh_sync *mh_sync);
 
 int gcif_mh_sync_status(mfile *mf, struct connectx4_icmd_mh_sync *mh_sync);
 
-#undef IN
-#undef OUT
-#undef INOUT
 
 #ifdef __cplusplus
 }

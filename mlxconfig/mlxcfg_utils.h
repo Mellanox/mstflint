@@ -121,6 +121,11 @@ enum WriterId {
 
 #define MLXCFG_UNKNOWN 0xffffffff
 
+typedef enum {
+    Device_Name,
+    Device_Description
+} info_type_t;
+
 void dealWithSignal();
 
 MError mnvaCom5thGen(mfile *mf, u_int8_t *buff, u_int16_t len, u_int32_t tlvType, reg_access_method_t method, QueryType qT = QueryNext);
@@ -155,6 +160,8 @@ void parseIndexedMlxconfigName(const string& indexedMlxconfigName, string& mlxco
 void extractIndexes(const string& indexesStr, vector<u_int32_t>& indexes);
 
 bool isIndexedMlxconfigName(const string& mlxconfigName);
+
+bool getDeviceInformationString(const char* dev, info_type_t op, vector<char>& infoString);
 
 class MlxcfgException {
 public:

@@ -48,7 +48,7 @@
 
 
 /* define macros to the architecture of the CPU */
-#if defined(__linux) || defined(__FreeBSD__)             /* __linux || __FreeBSD__ */
+#if defined(__linux__) || defined(__FreeBSD__)
 #   if defined(__i386__)
 #       define ARCH_x86
 #   elif defined(__x86_64__)
@@ -146,7 +146,7 @@
 /*
  * Linux
  */
-#if defined(__linux) || defined(__FreeBSD__)
+#if defined(__linux__) || defined(__FreeBSD__)
 // #include <asm/byteorder.h>
     #include <unistd.h>
     #include <sys/types.h>
@@ -240,7 +240,6 @@
  * Windows (DDK)
  */
 #if defined(__WIN__)
-    #include <Winsock2.h>
     #include <winsock2.h>
     #include <windows.h>
     #include <io.h>

@@ -59,9 +59,6 @@
     printf("-E- Syntax error in: %s\n", line->c_str()); \
     return MLX_CFG_ERROR;
 
-typedef struct reg_access_hca_mqis_reg mqisReg;
-#define MAX_REG_DATA 128
-
 // Signal handler section
 void TerminationHandler(int signum);
 
@@ -326,7 +323,6 @@ const char* MlxCfg::getDeviceName(const char *dev)
     mfile *mf;
     u_int32_t chip_rev;
     u_int32_t _dev_id;
-    _devType = DeviceUnknown;
 
     mf = mopen(dev);
     if (!mf) {
@@ -340,63 +336,6 @@ const char* MlxCfg::getDeviceName(const char *dev)
     return dm_dev_type2str(_devType);
 }
 
-bool MlxCfg::getDeviceDescription(const char *dev, MlxCfg::deviceDescription op, vector<char>& infoString)
-{
-    mqisReg mqisRegister;
-    mfile *mf;
-    mf = mopen(dev);
-    if (!mf) {
-        return false;
-    }
-    reg_access_status_t rc;
-    int maxDataSize = mget_max_reg_size(mf) - sizeof(mqisRegister);
-    if (maxDataSize > MAX_REG_DATA) {
-        maxDataSize = sizeof(mqisRegister);
-    }
-    std::vector<u_int32_t> dataVector(maxDataSize / 4, 0);
-
-    memset(&mqisRegister, 0, sizeof(mqisReg));
-    if (op == Device_Name) {
-        mqisRegister.info_type = 0x1;
-    } else if (op == Device_Description_info) {
-        mqisRegister.info_type = 0x2;
-    }
-    mqisRegister.read_length = maxDataSize;
-    mqisRegister.info_string = dataVector.data();
-
-    rc = reg_access_mqis(mf, REG_ACCESS_METHOD_GET, &mqisRegister);
-    if (rc) {
-        mclose(mf);
-        return false;
-    }
-    int infoSize = mqisRegister.info_length;
-    infoString.resize(infoSize + 1, 0);
-    if (mqisRegister.info_length > maxDataSize) {
-        dataVector.resize((infoSize + 3) / 4);
-        int leftSize = infoSize - maxDataSize;
-        while (leftSize > 0) {
-            mqisRegister.read_offset = infoSize - leftSize;
-            mqisRegister.read_length = leftSize > maxDataSize ? maxDataSize : leftSize;
-            mqisRegister.info_string = dataVector.data() + (mqisRegister.read_offset / 4);
-
-            rc = reg_access_mqis(mf, REG_ACCESS_METHOD_GET, &mqisRegister);
-            if (rc) {
-                mclose(mf);
-                return false;
-            }
-            leftSize = leftSize - maxDataSize;
-        }
-    }
-
-    memcpy(infoString.data(), dataVector.data(), infoSize);
-    mclose(mf);
-    string str = string(infoString.data());
-    if (str.length() == 0) {
-        return false;
-    }
-    return true;
-}
-
 void MlxCfg::printOpening(const char *dev, int devIndex)
 {
     printf("\nDevice #%d:\n", devIndex);
@@ -406,13 +345,13 @@ void MlxCfg::printOpening(const char *dev, int devIndex)
     if ((_devType != DeviceConnectX3 && _devType != DeviceConnectX3Pro && _devType != DeviceConnectX2)) {
         std::vector<char> info;
         info.reserve(16);
-        if (!getDeviceDescription(dev, Device_Name, info)) {
+        if (!getDeviceInformationString(dev, Device_Name, info)) {
             printf("%-16s%-16s\n", "Name:", "N/A");
         } else {
             printf("%-16s%-16s\n", "Name:", info.data());
         }
         info.clear();
-        if (!getDeviceDescription(dev, Device_Description_info, info)) {
+        if (!getDeviceInformationString(dev, Device_Description, info)) {
             printf("%-16s%-16s\n", "Description:", "N/A");
         } else {
             printf("%-16s%-16s\n", "Description:", info.data());
@@ -483,14 +422,27 @@ void prepareQueryOutput(vector<QueryOutputItem>& output,
 }
 
 void queryAux(Commander *commander, vector<ParamView>& params,
-              vector<ParamView>& paramsToQuery, QueryType qT)
+              vector<ParamView>& paramsToQuery, vector<string>& failedTLVs, QueryType qT)
 {
     if (paramsToQuery.size() != 0) {
         params = paramsToQuery;
         commander->queryParamViews(params, qT);
     } else {
-        commander->queryAll(params, qT);
+        commander->queryAll(params, failedTLVs, qT);
     }
+}
+
+string checkFailedTLVsVector(const vector<string>& failedTLVs, string queryType)
+{
+    string failedTLVsErrorMessage = "";
+    if (failedTLVs.size() != 0) {
+        failedTLVsErrorMessage += "    Failed to query the " + queryType + " values of the following TLVs:\n    ";
+        CONST_VECTOR_ITERATOR(string, failedTLVs, it) {
+            failedTLVsErrorMessage += (*it) + " ";
+        }
+        failedTLVsErrorMessage += "\n";
+    }
+    return failedTLVsErrorMessage;
 }
 
 mlxCfgStatus MlxCfg::queryDevCfg(Commander *commander, const char *dev, const char *pci,
@@ -505,6 +457,8 @@ mlxCfgStatus MlxCfg::queryDevCfg(Commander *commander, const char *dev, const ch
 
     printOpening(dev, devIndex);
     printf("\n");
+
+    vector<string> defaultFailedTLVs, currentFailedTLVs, nextFailedTLVs;
 
     try {
 
@@ -531,12 +485,12 @@ mlxCfgStatus MlxCfg::queryDevCfg(Commander *commander, const char *dev, const ch
         }
 
         if (showDefault) {
-            queryAux(commander, defaultParams, _mlxParams.setParams, QueryDefault);
+            queryAux(commander, defaultParams, _mlxParams.setParams, defaultFailedTLVs, QueryDefault);
         }
         if (showCurrent) {
-            queryAux(commander, currentParams, _mlxParams.setParams, QueryCurrent);
+            queryAux(commander, currentParams, _mlxParams.setParams, currentFailedTLVs, QueryCurrent);
         }
-        queryAux(commander, params, _mlxParams.setParams, QueryNext);
+        queryAux(commander, params, _mlxParams.setParams, nextFailedTLVs, QueryNext);
     } catch (MlxcfgException& e) {
         err(false, "%s", e._err.c_str());
         return MLX_CFG_ERROR_EXIT;
@@ -562,6 +516,11 @@ mlxCfgStatus MlxCfg::queryDevCfg(Commander *commander, const char *dev, const ch
                           || (showCurrent && (o->nextVal != o->currVal));
     }
 
+    string failedTLVsErrorMessage = "Failed to query some of the TLVs:\n";
+    failedTLVsErrorMessage += checkFailedTLVsVector(defaultFailedTLVs, "default");
+    failedTLVsErrorMessage += checkFailedTLVsVector(currentFailedTLVs, "current");
+    failedTLVsErrorMessage += checkFailedTLVsVector(nextFailedTLVs, "next");
+
     if (isParamsDiffer) {
         printf("The '*' shows parameters with next value different "
                "from default/current value.\n");
@@ -583,6 +542,12 @@ mlxCfgStatus MlxCfg::queryDevCfg(Commander *commander, const char *dev, const ch
     if (params.size() == 0) {
         err(false, "Device doesn't support any configuration changes.");
         return MLX_CFG_ERROR_EXIT;
+    }
+
+    if (defaultFailedTLVs.size() != 0 ||
+        currentFailedTLVs.size() != 0 || nextFailedTLVs.size() != 0) {
+        err(false, "%s", failedTLVsErrorMessage.c_str());
+        return MLX_CFG_ERROR;
     }
 
     return failedToGetCfg ? MLX_CFG_ERROR : MLX_CFG_OK;
@@ -982,9 +947,9 @@ mlxCfgStatus MlxCfg::writeNVOutputFile(vector<u_int32_t> content)
                    _mlxParams.NVOutputFile.c_str());
     }
     for (u_int32_t i = 0; i < content.size() * 4; i += 4) {
-        size_t cnt = fwrite(((u_int8_t*)content.data()) + i, 1, 4, file);
-        (void)cnt; // avoid annoying unused return code/ unused variable in certain compilers
-        if (ferror(file)) {
+        const size_t count = 4;
+        size_t writtenCount = fwrite(((u_int8_t*)content.data()) + i, 1, count, file);
+        if (writtenCount != count || ferror(file)) {
             fclose(file);
             return err(true, "Write failed: %s.", strerror(errno));
         }
@@ -1200,6 +1165,10 @@ mlxCfgStatus MlxCfg::XML2Bin()
 
 mlxCfgStatus MlxCfg::createConf()
 {
+#if defined(NO_OPEN_SSL)
+    printf("-E- Not Implemented");
+    return MLX_CFG_ERROR_EXIT;
+#else
     string xml;
     vector<u_int32_t> buff;
     mlxCfgStatus rc = MLX_CFG_OK;
@@ -1229,6 +1198,7 @@ mlxCfgStatus MlxCfg::createConf()
     }
 
     return rc;
+#endif
 }
 
 mlxCfgStatus MlxCfg::apply()
@@ -1324,11 +1294,9 @@ mlxCfgStatus MlxCfg::execute(int argc, char *argv[])
     case Mc_XML2Bin:
         ret = XML2Bin();
         break;
-
     case Mc_CreateConf:
         ret = createConf();
         break;
-
     case Mc_Apply:
         ret = apply();
         break;

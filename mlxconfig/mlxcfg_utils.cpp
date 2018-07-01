@@ -52,6 +52,9 @@
 
 using namespace std;
 
+typedef struct reg_access_hca_mqis_reg mqisReg;
+#define MAX_REG_DATA 128
+
 void dealWithSignal()
 {
     int sig;
@@ -289,8 +292,13 @@ void copyBytesVectorToDwVector(const vector<u_int8_t>& bV, vector<u_int32_t>& dw
 
 string parseIndexStr(const string& indexedMlxconfigName)
 {
-    return indexedMlxconfigName.substr(indexedMlxconfigName.find('[') + 1,
-                                       indexedMlxconfigName.find(']') - indexedMlxconfigName.find('[') - 1);
+    size_t pl = indexedMlxconfigName.find('[');
+    size_t pr = indexedMlxconfigName.find(']');
+    if (pl == std::string::npos || pr == std::string::npos) {
+        throw MlxcfgException("Expected a parameter with index");
+    }
+    return indexedMlxconfigName.substr(pl + 1,
+                                       pr - pl - 1);
 }
 
 void parseIndexedMlxconfigName(const string& indexedMlxconfigName, string& mlxconfigName, u_int32_t& index)
@@ -301,15 +309,20 @@ void parseIndexedMlxconfigName(const string& indexedMlxconfigName, string& mlxco
         throw MlxcfgException("Can not parse the index of %s\n", indexedMlxconfigName.c_str());
     }
 
-    mlxconfigName = indexedMlxconfigName.substr(0, indexedMlxconfigName.find('['));
+    size_t p = indexedMlxconfigName.find('[');
+    if (p == std::string::npos) {
+        throw MlxcfgException("Expected a parameter with index");
+    }
+    mlxconfigName = indexedMlxconfigName.substr(0, p);
 }
 
 void extractIndexes(const string& indexesStr, vector<u_int32_t>& indexes)
 {
-    if (indexesStr.find("..") != string::npos) {
+    size_t p = indexesStr.find("..");
+    if (p != string::npos) {
         unsigned int leftIndex = 0, rightIndex = 0;
-        string leftIndexStr = indexesStr.substr(0, indexesStr.find(".."));
-        string rightIndexStr = indexesStr.substr(indexesStr.find("..") + 2);
+        string leftIndexStr = indexesStr.substr(0, p);
+        string rightIndexStr = indexesStr.substr(p + 2);
         if (!strToNum(leftIndexStr, leftIndex)) {
             throw MlxcfgException("Can not parse the index %s", leftIndexStr.c_str());
         }
@@ -337,6 +350,73 @@ void extractIndexes(const string& indexesStr, vector<u_int32_t>& indexes)
 bool isIndexedMlxconfigName(const string& mlxconfigName)
 {
     return (mlxconfigName.find("[") != string::npos);
+}
+
+bool getDeviceInformationString(const char* dev, info_type_t op, vector<char>& infoString)
+{
+    mqisReg mqisRegister;
+    mfile* mf;
+    mf = mopen(dev);
+    if (!mf) {
+       return false;
+    }
+    reg_access_status_t rc;
+    int maxDataSize = mget_max_reg_size(mf) - sizeof(mqisRegister);
+    if (maxDataSize > MAX_REG_DATA) {
+        maxDataSize = sizeof(mqisRegister);
+    }
+    std::vector<u_int32_t> dataVector(maxDataSize / 4, 0);
+
+    memset(&mqisRegister, 0, sizeof(mqisReg));
+    if (op == Device_Name){
+       mqisRegister.info_type = 0x1;
+    } else if (op == Device_Description) {
+       mqisRegister.info_type = 0x2;
+    } else {
+        mclose(mf);
+        return false;
+    }
+    mqisRegister.read_length = maxDataSize;
+    mqisRegister.info_string = dataVector.data();
+    mft_signal_set_handling(1);
+
+    rc = reg_access_mqis(mf, REG_ACCESS_METHOD_GET, &mqisRegister);
+    dealWithSignal();
+    if (rc) {
+       mclose(mf);
+       return false;
+    }
+    int infoSize = mqisRegister.info_length;
+    if (infoSize == 0) {
+        return false;
+    }
+    infoString.resize(infoSize+1, 0);
+    if (mqisRegister.info_length > maxDataSize) {
+        dataVector.resize((infoSize + 3) / 4);
+        int leftSize = infoSize - maxDataSize;
+        while (leftSize > 0) {
+            mqisRegister.read_offset = infoSize - leftSize;
+            mqisRegister.read_length = leftSize > maxDataSize ? maxDataSize : leftSize;
+            mqisRegister.info_string = dataVector.data() + (mqisRegister.read_offset / 4);
+            mft_signal_set_handling(1);
+
+            rc = reg_access_mqis(mf, REG_ACCESS_METHOD_GET, &mqisRegister);
+            dealWithSignal();
+            if (rc) {
+               mclose(mf);
+               return false;
+            }
+            leftSize = leftSize - maxDataSize;
+        }
+    }
+
+    memcpy(infoString.data(), dataVector.data(), infoSize);
+    mclose(mf);
+    string str = string (infoString.data());
+    if (str.length() == 0) {
+        return false;
+    }
+    return true;
 }
 
 MlxcfgException::MlxcfgException(const char *fmt, ...)

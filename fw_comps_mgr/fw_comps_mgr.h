@@ -53,6 +53,7 @@ using namespace std;
 #define MAX_ROM_NUM 4
 #define PRODUCT_VER_LEN 16
 
+typedef struct reg_access_hca_mqis_reg mqisReg;
 typedef struct reg_access_hca_mcqs_reg comp_status_st;
 typedef struct reg_access_hca_mcqi_reg comp_info_st;
 typedef struct reg_access_hca_mcc_reg fsm_control_st;
@@ -99,6 +100,8 @@ typedef struct {
     u_int8_t pending_fw_valid;
     mgirRomInfo roms[MAX_ROM_NUM];
     int nRoms;
+    char name[NAME_LEN];
+    char description[DESCRIPTION_LEN];
 } fwInfoT;
 
 typedef struct {
@@ -141,21 +144,34 @@ public:
         COMPID_UNKNOWN         = 0xff,
     } comps_ids_t;
 
-    FwComponent() : _size(0), _type(COMPID_UNKNOWN), _componentIndex(0xffffffff), _initialized(false) {};
-    FwComponent(comps_ids_t compId) : _size(0), _type(compId), _componentIndex(0xffffffff), _initialized(false) {};
+    typedef enum {
+        COMPSTAT_NOT_PRESENT   = 0x0,
+        COMPSTAT_PRESENT       = 0x1,
+        COMPSTAT_IN_USE        = 0x2,
+        COMPSTAT_UNKNOWN       = 0xff
+    } comps_status_t;
+
+    FwComponent() : _size(0), _type(COMPID_UNKNOWN), _componentIndex(0xffffffff), _initialized(false),
+        _status(COMPSTAT_UNKNOWN) {};
+    FwComponent(comps_ids_t compId) : _size(0), _type(compId), _componentIndex(0xffffffff),
+        _initialized(false), _status(COMPSTAT_UNKNOWN) {};
+    FwComponent(comps_ids_t compId, comps_status_t compStat) : _size(0), _type(compId), _componentIndex(0xffffffff),
+        _initialized(false), _status(compStat) {};
     ~FwComponent() {};
 
     bool        init(const std::vector<u_int8_t>&  buff,
                      u_int32_t size,
                      comps_ids_t type,
                      u_int32_t idx = 0xffffffff);
-    std::vector<u_int8_t>&   getData() { return _data;};
-    u_int32_t                getSize() { return _size;};
-    comps_ids_t              getType() { return _type;};
+    std::vector<u_int8_t>&   getData()   { return _data; };
+    u_int32_t                getSize()   { return _size; };
+    comps_ids_t              getType()   { return _type; };
+    comps_status_t           getStatus() { return _status; };
 
     void                    setData(const std::vector<u_int8_t>&  buff) {_data = buff;};
     void                    setSize(u_int32_t size) {_size = size;};
     void                    setType(comps_ids_t compId) { _type = compId; };
+    void                    setStatus(comps_status_t compStat) { _status = compStat; };
 
     static const char*       getCompIdStr(comps_ids_t compId);
 
@@ -165,6 +181,7 @@ private:
     comps_ids_t _type;
     u_int32_t _componentIndex;
     bool _initialized;
+    comps_status_t _status;
 
 };
 
@@ -252,6 +269,11 @@ typedef enum {
 class FwCompsMgr {
 public:
 
+    typedef enum {
+        DEVICE_NAME,
+        DEVICE_DESCRIPTION_INFO
+    } deviceDescription;
+
     FwCompsMgr(const char *devname);
     FwCompsMgr(mfile *mf);
     FwCompsMgr(uefi_Dev_t *uefi_dev, uefi_dev_extra_t *uefi_extra);
@@ -262,13 +284,13 @@ public:
     mfile*           getMfileObj() {return _mf;};
 
     bool             burnComponents(std::vector<FwComponent>& comps,
-                                    ProgressCallBackAdvSt *progressFuncAdv = (ProgressCallBackAdvSt*)NULL);
+                                    ProgressCallBackAdvSt *progressFuncAdv = (ProgressCallBackAdvSt *)NULL);
     bool             getFwComponents(std::vector<FwComponent>& comps, bool readEn = false);
 
     bool             readComponent(FwComponent::comps_ids_t compType,
                                    FwComponent& fwComp,
                                    bool readPending = false,
-                                   ProgressCallBackAdvSt *progressFuncAdv = (ProgressCallBackAdvSt*)NULL);
+                                   ProgressCallBackAdvSt *progressFuncAdv = (ProgressCallBackAdvSt *)NULL);
 
     bool             getComponentVersion(FwComponent::comps_ids_t compType,
                                          bool pending,
@@ -285,6 +307,10 @@ public:
                                             u_int32_t size,
                                             std::vector<u_int8_t>& data);
     bool             setMacsGuids(mac_guid_t macGuid);
+
+
+    bool             getDeviceHWInfo(FwCompsMgr::deviceDescription op,
+                                     vector<u_int8_t>& infoString);
 
 private:
 
@@ -337,7 +363,7 @@ private:
                                   u_int32_t size,
                                   u_int32_t data[],
                                   access_type_t access,
-                                  ProgressCallBackAdvSt *progressFuncAdv = (ProgressCallBackAdvSt*)NULL);
+                                  ProgressCallBackAdvSt *progressFuncAdv = (ProgressCallBackAdvSt *)NULL);
 
     bool           queryComponentStaus(u_int32_t componentIndex,
                                        comp_status_st *query);
@@ -346,7 +372,7 @@ private:
                               fsm_state_t expStatus = FSMST_NA,
                               u_int32_t size = 0,
                               fsm_state_t currState = FSMST_NA,
-                              ProgressCallBackAdvSt *progressFuncAdv = (ProgressCallBackAdvSt*)NULL);
+                              ProgressCallBackAdvSt *progressFuncAdv = (ProgressCallBackAdvSt *)NULL);
 
     bool           queryComponentInfo(u_int32_t componentIndex,
                                       u_int8_t readPending,

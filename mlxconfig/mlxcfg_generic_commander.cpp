@@ -43,8 +43,9 @@
 #include <tools_dev_types.h>
 #include <algorithm>
 
+#if !defined(NO_OPEN_SSL)
 #include <mlxsign_lib/mlxsign_lib.h>
-
+#endif
 #include "mlxcfg_generic_commander.h"
 #include "mlxcfg_utils.h"
 #include "mlxcfg_tlv.h"
@@ -169,7 +170,7 @@ GenericCommander::~GenericCommander()
     delete _dbManager;
 }
 
-bool sortParamView(ParamView a, ParamView b)
+bool sortParamView(const ParamView& a, const ParamView& b)
 {
     return a.mlxconfigName < b.mlxconfigName;
 }
@@ -240,7 +241,7 @@ void GenericCommander::queryConfigViews(std::vector<TLVConfView> & confs, const 
             VECTOR_ITERATOR(ParamView, result, p) {
                 confs[index].params.push_back(*p);
             }
-        } else   {
+        } else {
             config_found = true;
             TLVConfView tlvConfView;
             tlv->getView(tlvConfView);
@@ -294,7 +295,7 @@ void GenericCommander::getConfigViews(std::vector<TLVConfView> & confs, const st
             VECTOR_ITERATOR(ParamView, tlvConfView.params, p) {
                 confs[index].params.push_back(*p);
             }
-        } else   {
+        } else {
             TLVConfView tlvConfView;
             tlv->getView(tlvConfView);
             confs.push_back(tlvConfView);
@@ -353,7 +354,11 @@ void GenericCommander::printParamViews(FILE *f, vector<ParamView>& v)
         while (pos != std::string::npos) {
             prevPos = pos + 2;
             pos = (*pIt).description.find("\\;", prevPos);
-            fprintf(f, "%60s%s\n", " ",  (*pIt).description.substr(prevPos, pos - prevPos).c_str());
+            if (pos == std::string::npos) {
+                fprintf(f, "%60s%s\n", " ",  (*pIt).description.substr(prevPos, ((*pIt).description.length() + 1) - prevPos).c_str());
+            } else {
+                fprintf(f, "%60s%s\n", " ",  (*pIt).description.substr(prevPos, pos - prevPos).c_str());
+            }
         }
     }
 }
@@ -380,9 +385,9 @@ void GenericCommander::printLongDesc(FILE *f)
 
 }
 
-void GenericCommander::printEnums(ParamView p, string& s)
+void GenericCommander::printEnums(const ParamView& p, string& s)
 {
-    std::map<string, u_int32_t>::iterator it;
+    std::map<string, u_int32_t>::const_iterator it;
 
     it = p.textualVals.begin();
     if (it == p.textualVals.end()) {
@@ -539,13 +544,17 @@ void GenericCommander::queryParamViews(vector<ParamView>& params, QueryType qt)
     }
 }
 
-void GenericCommander::queryAll(vector<ParamView>& params, QueryType qt)
+void GenericCommander::queryAll(vector<ParamView>& params, vector<string>& failedTLVs, QueryType qt)
 {
     _dbManager->getAllTLVs();
     VECTOR_ITERATOR(TLVConf*, _dbManager->fetchedTLVs, it) {
-        vector<ParamView> result;
-        queryTLV((*it), result, qt);
-        params.insert(params.end(), result.begin(), result.end());
+        try {
+            vector<ParamView> result;
+            queryTLV((*it), result, qt);
+            params.insert(params.end(), result.begin(), result.end());
+        } catch (MlxcfgException& e) {
+            failedTLVs.push_back((*it)->_name);
+        }
     }
 }
 
@@ -728,7 +737,8 @@ const char* GenericCommander::loadConfigurationGetStr()
     if (deviceId == DeviceConnectX4   ||
         deviceId == DeviceConnectX4LX ||
         deviceId == DeviceConnectX5   ||
-        deviceId == DeviceBlueField) {
+        deviceId == DeviceBlueField ||
+        deviceId == DeviceConnectX6) {
         // send warm boot (bit 6)
         mfrl.reset_level = 1 << 6;
         mft_signal_set_handling(1);
@@ -1005,6 +1015,7 @@ void GenericCommander::XML2TLVConf(const string& xmlContent, vector<TLVConf*>& t
             GET_AND_SET_ATTR(funcAttr, currTlv, FUNC_ATTR)
 
             //loop over the parameters list
+            vector<string> collectedParams;
             currParam = currTlv->xmlChildrenNode;
             map<string, map<u_int32_t, string> > arrayValues;
             while (currParam) {
@@ -1020,6 +1031,12 @@ void GenericCommander::XML2TLVConf(const string& xmlContent, vector<TLVConf*>& t
                             arrayValues[(char*)currParam->name][*it] = (char*)xmlVal;
                         }
                     } else {
+                        if (find(collectedParams.begin(), collectedParams.end(), (char*)currParam->name)
+                            != collectedParams.end()) {
+                            throw MlxcfgException("Duplicate use of same parameter: %s\n",
+                                                  (char*)currParam->name);
+                        }
+                        collectedParams.push_back((char*)currParam->name);
                         tlvConf->updateParamByName((char*)currParam->name, (char*)xmlVal);
                     }
                 } else {
@@ -1174,6 +1191,9 @@ void GenericCommander::sign(vector<u_int32_t>& buff, const string& privateKeyFil
         ((BytesParamValue*) keyPairUUidParam->_value)->setVal(keyPairUUid);
 
         Param *signatureParam = signTLV->findParamByName("signature");
+        if (NULL == signatureParam) {
+            throw MlxcfgException("The signature parameter was not found\n");
+        }
         copyBytesVectorToDwVector(encDigest, encDigestDW);
         VECTOR_BE32_TO_CPU(encDigestDW)
             ((BytesParamValue*) signatureParam->_value)->setVal(encDigestDW);

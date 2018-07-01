@@ -35,8 +35,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#if !defined(_MSC_VER)
 #include <unistd.h>
-
+#endif
 #include <bit_slice.h>
 #include <common/tools_utils.h>
 #include "mtcr_icmd_cif.h"
@@ -44,7 +45,6 @@
 #ifndef __FreeBSD__
 #include "mtcr_ib_res_mgt.h"
 #endif
-//#define _DEBUG_MODE   // un-comment this to enable debug prints
 
 #if !defined(__WIN__) && !defined(DISABLE_OFED) && !defined(__FreeBSD__) && !defined(NO_INBAND)
 #include <dlfcn.h>
@@ -53,20 +53,17 @@
 
 // _DEBUG_MODE   // un-comment this to enable debug prints
 
-#define IN
-#define OUT
-#define INOUT
 
 #define STAT_CFG_NOT_DONE_ADDR_CIB   0xb0004
 #define STAT_CFG_NOT_DONE_ADDR_CX4   0xb0004
 #define STAT_CFG_NOT_DONE_ADDR_SW_IB   0x80010
 #define STAT_CFG_NOT_DONE_ADDR_QUANTUM   0x100010
 #define STAT_CFG_NOT_DONE_ADDR_CX5   0xb5e04
+#define STAT_CFG_NOT_DONE_ADDR_CX6   0xb5f04
 #define STAT_CFG_NOT_DONE_BITOFF_CIB   31
 #define STAT_CFG_NOT_DONE_BITOFF_CX4   31
 #define STAT_CFG_NOT_DONE_BITOFF_SW_IB 0
 #define STAT_CFG_NOT_DONE_BITOFF_CX5   31
-#define STAT_CFG_NOT_DONE_BITOFF_CX5 31
 #define SEMAPHORE_ADDR_CIB   0xe27f8 //sem62
 #define SEMAPHORE_ADDR_CX4   0xe250c // sem67 bit31 is the semaphore bit here (only one semaphore in this dword)
 #define SEMAPHORE_ADDR_SW_IB 0xa24f8 // sem 62
@@ -121,6 +118,12 @@ struct dma_lib_hdl_t {
     struct ibv_mr           *mr;
 #endif
 };
+
+/*
+ * General Macros
+ */
+#define CHECK_RC(rc) if ((rc)) {return (rc); }
+#define CHECK_RC_GO_TO(rc, lable) if ((rc)) {goto lable; }
 
 /*
  * Macros for accessing CR-Space
@@ -230,7 +233,7 @@ struct dma_lib_hdl_t {
 
 
 
-#define DBG_PRINTF(...) if (getenv("MFT_DEBUG")) fprintf(stderr, __VA_ARGS__)
+#define DBG_PRINTF(...) if (getenv("MFT_DEBUG")) {fprintf(stderr, __VA_ARGS__); }
 
 
 enum {
@@ -249,40 +252,13 @@ enum {
 #define CX4_HW_ID       521
 #define CX4LX_HW_ID     523
 #define CX5_HW_ID       525
+#define CX6_HW_ID       527
 #define BF_HW_ID        529
 #define SW_IB_HW_ID     583
 #define SW_EN_HW_ID     585
 #define SW_IB2_HW_ID    587
 #define QUANTUM_HW_ID   589
-#define SPECTRUM2_HW_ID 591
-
-#define GET_ADDR(mf, addr_cib, addr_cx4, addr_sw_ib, addr_cx5, addr_quantum, addr) \
-    do { \
-        u_int32_t _hw_id = 0x0; \
-        MREAD4((mf), (HW_ID_ADDR), &(_hw_id)); \
-        switch (_hw_id & 0xffff) { \
-        case (CX4_HW_ID): \
-        case (CX4LX_HW_ID): \
-            addr = addr_cx4; \
-            break; \
-        case (SW_IB_HW_ID): \
-        case (SW_EN_HW_ID): \
-        case (SW_IB2_HW_ID): \
-            addr = addr_sw_ib; \
-            break; \
-        case (QUANTUM_HW_ID): \
-        case (SPECTRUM2_HW_ID): \
-            addr = addr_quantum; \
-            break; \
-        case (CX5_HW_ID): \
-        case (BF_HW_ID): \
-            addr = addr_cx5; \
-            break; \
-        default: \
-            addr = addr_cib; \
-            break; \
-        } \
-    } while (0)
+#define SPECTRUM2_HW_ID 590
 
 /*************************************************************************************/
 /*
@@ -323,14 +299,16 @@ static int go(mfile *mf)
     // wait for command to execute
     i = 0; wait = 1;
     do {
-        if (++i > 5120) {  // this number of iterations should take ~~30sec, which is the defined command t/o
+        if (++i > 5120) {
+            // this number of iterations should take ~~30sec, which is the defined command t/o
             DBG_PRINTF("Execution timed-out\n");
             return ME_ICMD_STATUS_EXECUTE_TO;
         }
 
         DBG_PRINTF("Waiting for busy-bit to clear (iteration #%d)...\n", i);
 
-        if (i > 5) { // after some iteration put sleeps bwtween busy-wait
+        if (i > 5) {
+            // after some iteration put sleeps bwtween busy-wait
             msleep(wait);  // don't hog the cpu with busy-wait
             if (wait < 8) {
                 wait *= 2;              // exponential backoff - up-to 8ms between polls
@@ -414,19 +392,7 @@ static int icmd_is_cmd_ifc_ready(mfile *mf)
         return ME_ICMD_STATUS_CR_FAIL;
     }
     u_int32_t bit_val = EXTRACT(reg, mf->icmd.static_cfg_not_done_offs, 1);
-    /* adrianc: for SWITCHIB the polarity of this bit is opposite than CONNECTIB/CONNECTX4
-       i.e for CONNECTIB/CONNECTX4: this bit is 1 while fw is loading(indicating configuration is not done), then this bit is set to 0 by fw when the configurations
-       are finished.
-       for SWITCHIB: this bit indicates "configuration done" i.e when 0 the fw is not ready and when 1 we are ready*/
-    // atm the polarity hasnt changed
-    // ugly Hack to save code: we use the same macro as GET_ADDR (use a block to avoid compilation errors)
-    u_int32_t expected_val;
-
-    {
-        //          CIB  CX4  SW-IB CX5
-        GET_ADDR(mf, 0,   0,    0, 0, 0, expected_val); // we expect the bit_val to be : 0- CIB , 1- CX4/SWIB
-    }
-    return (bit_val == expected_val) ?  ME_OK : ME_ICMD_STATUS_ICMD_NOT_READY;
+    return (bit_val == 0) ?  ME_OK : ME_ICMD_STATUS_ICMD_NOT_READY;
 }
 
 #define SMP_ICMD_SEM_ADDR 0x0
@@ -438,10 +404,8 @@ int icmd_clear_semaphore(mfile *mf)
 {
     DBG_PRINTF("Clearing semaphore\n");
     // open icmd interface by demand
-    int ret;
-    if ((ret = icmd_open(mf))) {
-        return ret;
-    }
+    int ret = icmd_open(mf);
+    CHECK_RC(ret);
 #ifndef __FreeBSD__
     int is_leaseable;
     u_int8_t lease_exp;
@@ -473,6 +437,10 @@ int icmd_clear_semaphore(mfile *mf)
 /*
  * icmd_take_semaphore
  */
+/*
+ * icmd_take_semaphore
+ */
+
 static int icmd_take_semaphore_com(mfile *mf, u_int32_t expected_read_val)
 {
     u_int32_t read_val = 0x0;
@@ -527,9 +495,8 @@ int icmd_take_semaphore(mfile *mf)
     // open icmd interface by demand
     int ret;
     static u_int32_t pid = 0;
-    if ((ret = icmd_open(mf))) {
-        return ret;
-    }
+    ret = icmd_open(mf);
+    CHECK_RC(ret);
 
     if (mf->vsec_supp) {
         if (!pid) {
@@ -563,50 +530,46 @@ int icmd_send_command_int(mfile    *mf,
 
     int ret;
     // open icmd interface by demand
-    if ((ret = icmd_open(mf))) {
-        return ret;
-    }
+    ret = icmd_open(mf);
+    CHECK_RC(ret);
     // check data size does not exceed mailbox size
     if (write_data_size > (int)mf->icmd.max_cmd_size || \
         read_data_size > (int)mf->icmd.max_cmd_size) {
         DBG_PRINTF("write_data_size <%x-%x> mf->icmd.max_cmd_size .. ", write_data_size, mf->icmd.max_cmd_size);
-        DBG_PRINTF("read_data_size <%x-%x> mf->icmd.max_cmd_size \n", read_data_size, mf->icmd.max_cmd_size);
+        DBG_PRINTF("read_data_size <%x-%x> mf->icmd.max_cmd_size\n", read_data_size, mf->icmd.max_cmd_size);
         return ME_ICMD_SIZE_EXCEEDS_LIMIT;
     }
 
-    if ((ret = icmd_is_cmd_ifc_ready(mf))) {
-        return ret;
-    }
+    ret = icmd_is_cmd_ifc_ready(mf);
+    CHECK_RC(ret);
 
-    if ((ret = icmd_take_semaphore(mf))) {
-        return ret;
-    }
+    ret = icmd_take_semaphore(mf);
+    CHECK_RC(ret);
 
-    if ((ret = set_opcode(mf, opcode))) {
-        goto cleanup;
-    }
+    ret = set_opcode(mf, opcode);
+    CHECK_RC_GO_TO(ret, cleanup);
 
     if (!skip_write) {
         DBG_PRINTF("-D- Writing command to mailbox");
-        MWRITE_BUF_ICMD(mf, mf->icmd.cmd_addr, data, write_data_size, ret = ME_ICMD_STATUS_CR_FAIL; goto cleanup; );
+        MWRITE_BUF_ICMD(mf, mf->icmd.cmd_addr, data, write_data_size, ret = ME_ICMD_STATUS_CR_FAIL; goto cleanup;);
     }
 
     if (mf->icmd.dma_icmd) {
-        MWRITE4_ICMD(mf, mf->icmd.ctrl_addr + EXT_MBOX_MKEY_OFF, mf->icmd.mbox_mkey, return ME_ICMD_STATUS_CR_FAIL; );
-    }
-    if ((ret = go(mf))) {
-        goto cleanup;
+        MWRITE4_ICMD(mf, mf->icmd.ctrl_addr + EXT_MBOX_MKEY_OFF, mf->icmd.mbox_mkey, return ME_ICMD_STATUS_CR_FAIL;);
     }
 
-    if ((ret = get_status(mf))) {
-        goto cleanup;
-    }
+    ret = go(mf);
+    CHECK_RC_GO_TO(ret, cleanup);
+
+    ret = get_status(mf);
+    CHECK_RC_GO_TO(ret, cleanup);
+
     DBG_PRINTF("-D- Reading command from mailbox");
-    MREAD_BUF_ICMD(mf, mf->icmd.cmd_addr, data, read_data_size, ret = ME_ICMD_STATUS_CR_FAIL; goto cleanup; );
+    MREAD_BUF_ICMD(mf, mf->icmd.cmd_addr, data, read_data_size, ret = ME_ICMD_STATUS_CR_FAIL; goto cleanup;);
 
     ret = ME_OK;
 cleanup:
-    ret = icmd_clear_semaphore(mf);
+    (void) icmd_clear_semaphore(mf);
     return ret;
 }
 
@@ -670,6 +633,14 @@ static int icmd_init_cr(mfile *mf)
         mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_SW_IB;
         break;
 
+    case (CX6_HW_ID):
+        cmd_ptr_addr = CMD_PTR_ADDR_CX5;
+        hcr_address = HCR_ADDR_CX5;
+        mf->icmd.semaphore_addr = SEMAPHORE_ADDR_CX5;
+        mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CX6;
+        mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CX5;
+        break;
+
     default:
         return ME_ICMD_NOT_SUPPORTED;
     }
@@ -710,7 +681,8 @@ char *libs[] = {"libibverbs.so.1"};
 #define MY_DLSYM(lib_ctx, func_name) do { \
         const char *dl_error; \
         lib_ctx->func_name = dlsym(lib_ctx->lib_handle, #func_name); \
-        if ((dl_error = dlerror()) != NULL)  { \
+        dl_error = dlerror(); \
+        if (dl_error != NULL)  { \
             DBG_PRINTF("-E- %s", dl_error); \
             return ME_ERROR; \
         } \
@@ -756,7 +728,7 @@ static int mailbox_alloc(mfile *mf)
         return ME_ERROR;
     }
     strncpy(ibdev_name, mf->dinfo->pci.ib_devs[0], sizeof(ibdev_name) / sizeof(ibdev_name[0]) - 1);
-    if (posix_memalign((void**)&(mf->icmd.dma_mbox), 0x1000, VCR_CMD_SIZE_ADDR)) {
+    if (posix_memalign((void **)&(mf->icmd.dma_mbox), 0x1000, VCR_CMD_SIZE_ADDR)) {
         DBG_PRINTF("-E- Failed to align memory\n");
         return ME_MEM_ERROR;
     }
@@ -834,8 +806,10 @@ static int mailbox_alloc(mfile *mf)
     }
 
     mf->icmd.mbox_mkey = mf->icmd.dma_lib_ctx->mr->lkey;
-#endif
     return ME_OK;
+#else
+    return ME_NOT_IMPLEMENTED;
+#endif
 }
 
 static void mailbox_dealloc(mfile *mf)
@@ -852,6 +826,7 @@ static void mailbox_dealloc(mfile *mf)
         mf->icmd.dma_lib_ctx->ibv_dealloc_pd(mf->icmd.dma_lib_ctx->pd);
     }
     if (mf->icmd.dma_lib_ctx->ib_ctx && mf->icmd.dma_lib_ctx->ibv_close_device) {
+        mf->icmd.dma_lib_ctx->ibv_close_device(mf->icmd.dma_lib_ctx->ib_ctx);
     }
     if (mf->icmd.dma_lib_ctx->lib_handle) {
         dlclose(mf->icmd.dma_lib_ctx->lib_handle);
@@ -861,19 +836,70 @@ static void mailbox_dealloc(mfile *mf)
 #endif
 }
 
+static int icmd_init_vcr_crspace_addr(mfile* mf)
+{
+    u_int32_t hw_id = 0x0;
+
+    // get device specific addresses
+    MREAD4((mf), (HW_ID_ADDR), &(hw_id));
+    switch (hw_id & 0xffff) {
+    case (CIB_HW_ID):
+        mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CIB;
+        mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CIB;
+        break;
+
+    case (CX4LX_HW_ID):
+    case (CX4_HW_ID):
+        mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CX4;
+        mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CIB;
+        break;
+
+    case (CX5_HW_ID):
+    case (BF_HW_ID):
+        mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CX5;
+        mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CIB;
+        break;
+
+    case (SW_IB_HW_ID):
+    case (SW_EN_HW_ID):
+    case (SW_IB2_HW_ID):
+        mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_SW_IB;
+        mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_SW_IB;
+        break;
+
+    case (QUANTUM_HW_ID):
+    case (SPECTRUM2_HW_ID):
+        mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_QUANTUM;
+        mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_SW_IB;
+        break;
+
+    case (CX6_HW_ID):
+            mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CX6;
+            mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CX5; // same bit offset as CX5
+            break;
+
+    default:
+        return ME_ICMD_NOT_SUPPORTED;
+    }
+    return ME_OK;
+}
+
 static int icmd_init_vcr(mfile *mf)
 {
+    int rc = ME_OK;
+
     mf->icmd.cmd_addr = VCR_CMD_ADDR;
     mf->icmd.ctrl_addr = VCR_CTRL_ADDR;
     mf->icmd.semaphore_addr = VCR_SEMAPHORE62;
     DBG_PRINTF("-D- Getting VCR_CMD_SIZE_ADDR\n");
     // get max command size
-    MREAD4_ICMD(mf, VCR_CMD_SIZE_ADDR, &(mf->icmd.max_cmd_size), return ME_ICMD_STATUS_CR_FAIL; );
+    MREAD4_ICMD(mf, VCR_CMD_SIZE_ADDR, &(mf->icmd.max_cmd_size), return ME_ICMD_STATUS_CR_FAIL;);
 
     // adrianc: they should provide this bit as well in virtual cr-space atm get from cr-space
-    // macro is getting ugly as more devices are added...
-    GET_ADDR(mf, STAT_CFG_NOT_DONE_ADDR_CIB, STAT_CFG_NOT_DONE_ADDR_CX4, STAT_CFG_NOT_DONE_ADDR_SW_IB, STAT_CFG_NOT_DONE_ADDR_CX5, STAT_CFG_NOT_DONE_ADDR_QUANTUM, mf->icmd.static_cfg_not_done_addr);
-    GET_ADDR(mf, STAT_CFG_NOT_DONE_BITOFF_CIB, STAT_CFG_NOT_DONE_BITOFF_CIB, STAT_CFG_NOT_DONE_BITOFF_SW_IB, STAT_CFG_NOT_DONE_BITOFF_CX5, STAT_CFG_NOT_DONE_BITOFF_SW_IB, mf->icmd.static_cfg_not_done_offs);
+    rc = icmd_init_vcr_crspace_addr(mf);
+    if ((rc) != ME_OK) {
+        return rc;
+    }
     mf->icmd.icmd_opened = 1;
     DBG_PRINTF("-D- iCMD command addr: 0x%x\n", mf->icmd.cmd_addr);
     DBG_PRINTF("-D- iCMD ctrl addr: 0x%x\n", mf->icmd.ctrl_addr);
@@ -934,9 +960,9 @@ void icmd_close(mfile *mf)
             }
         }
         mf->icmd.icmd_opened = 0;
-    }
-    if (mf->icmd.dma_lib_ctx) {
-        mailbox_dealloc(mf);
+        if (mf->icmd.dma_lib_ctx) {
+            mailbox_dealloc(mf);
+        }
     }
 }
 

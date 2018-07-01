@@ -278,18 +278,14 @@ string CommandLineRequester::GetUsageOptions(bool hidden_options)
 string CommandLineRequester::GetUsageOptionalSections(vector<string> excluded_sections)
 {
     string res = "";
-    int i;
-    optional_sections_t::iterator sec_it;
 
-    for (i = 0, sec_it = this->optional_sections_vec.begin(); sec_it != this->optional_sections_vec.end();
-         ++i, ++sec_it) {
-        if (find(excluded_sections.begin(), excluded_sections.end(), this->optional_sections_vec[i].first) !=
+    for (unsigned i = 0; i < optional_sections_vec.size(); ++i) {
+        if (find(excluded_sections.begin(), excluded_sections.end(), optional_sections_vec[i].first) !=
             excluded_sections.end()) {
             continue;
         }
-        res += this->optional_sections_vec[i].first;
-        res += "\n";
-        res += this->GetUsageOptionalSection(sec_it->second) + "\n";
+        res += optional_sections_vec[i].first + "\n";
+        res += GetUsageOptionalSection(optional_sections_vec[i].second) + "\n";
     }
     return res;
 }
@@ -556,7 +552,8 @@ ParseStatus CommandLineParser::ParseOptions(int argc, char **argv,
                 continue;
             }
             this->SetLastError("Bad input parameter");
-            goto parse_exit;
+            rc = PARSE_ERROR_SHOW_USAGE;
+            goto argv_err_exit;
         } else if (returned_option_types_vec[option_type] == true) {
             long_opt_name = this->short_opt_to_long_opt[option_type];
             goto do_handle_option;

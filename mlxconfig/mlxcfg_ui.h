@@ -94,15 +94,10 @@ public:
 class MlxCfg
 {
 public:
-    MlxCfg() : _mlxParams(), _errStr(), _allInfo(){}
+    MlxCfg() : _mlxParams(), _errStr(), _allInfo(), _devType(DeviceUnknown) {}
     ~MlxCfg() {};
     mlxCfgStatus execute(int argc, char *argv[]);
 private:
-
-    typedef enum {
-        Device_Name,
-        Device_Description_info
-    } deviceDescription;
 
     // User interface and parsing methods
     void printHelp();
@@ -120,7 +115,6 @@ private:
 
     bool tagExsists(string tag);
     const char* getDeviceName(const char *dev);
-    bool getDeviceDescription(const char *dev, MlxCfg::deviceDescription op, vector<char>& infoString);
 
     // Query cmd
     mlxCfgStatus queryDevsCfg();

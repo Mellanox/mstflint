@@ -308,6 +308,7 @@ u_int32_t TLVConf::getPerHostFunctionTypeBe()
 u_int32_t TLVConf::getTlvTypeBe()
 {
     switch (_tlvClass) {
+    case Switch_Global:
     case NVFile:
     case Global:
         return getGlobalTypeBe();
@@ -499,6 +500,8 @@ TLVTarget TLVConf::str2TLVTarget(char *s)
         return EXP_ROM;
     } else if (strcmp(s, "NIC-internal") == 0) {
         return NIC_INTERNAL;
+    } else if (strcmp(s, "SWITCH") == 0) {
+        return SWITCH;
     }
     throw MlxcfgException("Unknown target '%s'", s);
 }
@@ -507,6 +510,7 @@ TLVClass TLVConf::str2TLVClass(char *s)
 {
     int i = atoi(s);
     switch (i) {
+    case 8:
     case 0:
         return Global;
 
@@ -581,7 +585,7 @@ void evalExpr(string expr, string var, u_int32_t& varVal,
         p.SetExpr(expr);
         exprResult = (u_int32_t) p.Eval();
         varVal = (u_int32_t)x;
-    } catch (Parser::exception_type &e) {
+    } catch (Parser::exception_type &/*e*/) {
         throw MlxcfgException("Error parsing mathematical expression");
     }
 }
@@ -823,6 +827,7 @@ void TLVConf::unpackTLVType(TLVClass tlvClass,
     struct tools_open_per_port_type per_port;
     struct tools_open_per_host_type per_host_function;
     switch (tlvClass) {
+    case Switch_Global:
     case NVFile:
     case Global:
         //printf("-D- global\n");

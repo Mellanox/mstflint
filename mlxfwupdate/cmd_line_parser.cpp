@@ -268,10 +268,10 @@ bool CmdLineParser::parse(char **argv, int argc)
     if (rc == PARSE_ERROR_SHOW_USAGE) { // parse error and we need to dump usage
         cout <<  _cmdParser.GetSynopsis().c_str();
         return false;
-    } else if (rc == PARSE_OK_WITH_EXIT)   { // OK but need to exit
+    } else if (rc == PARSE_OK_WITH_EXIT) {   // OK but need to exit
         exit(0);
         return false;
-    } else if (rc == PARSE_ERROR)   { // error but no need to dump usage
+    } else if (rc == PARSE_ERROR) {   // error but no need to dump usage
         cout <<  _cmdParser.GetSynopsis().c_str();
         return false;
     }
@@ -599,52 +599,52 @@ ParseStatus CmdLineParser::HandleOption(string name, string value)
             return PARSE_ERROR_SHOW_USAGE;
         }
         return PARSE_OK;
-    } else if (name == EXE_REL_PATH_L)   {
+    } else if (name == EXE_REL_PATH_L) {
         _cmdLineParams->use_exe_rel_paths = 1;
         return PARSE_OK;
-    } else if (name == CURRENT_DIR_L)   {
+    } else if (name == CURRENT_DIR_L) {
         _cmdLineParams->current_dir = value;
         return PARSE_OK;
-    } else if (name == CLEAR_SEM_L)   {
+    } else if (name == CLEAR_SEM_L) {
         _cmdLineParams->clear_semaphore = true;
         return PARSE_OK;
-    } else if (name == UPDATE_L)   {
+    } else if (name == UPDATE_L) {
         _cmdLineParams->update_fw = 1;
         return PARSE_OK;
-    } else if (name == ARCHIVE_NAMES_L)   {
+    } else if (name == ARCHIVE_NAMES_L) {
         _cmdLineParams->display_archive_names = true;
         return PARSE_OK;
-    } else if (name == SERVER_URL_L)   {
+    } else if (name == SERVER_URL_L) {
         _cmdLineParams->server_url = value;
         return PARSE_OK;
-    } else if (name == PROXY_L)   {
+    } else if (name == PROXY_L) {
         _cmdLineParams->proxy = value;
         return PARSE_OK;
-    } else if (name == CERTIFICATE_L)   {
+    } else if (name == CERTIFICATE_L) {
         _cmdLineParams->certificate = value;
         return PARSE_OK;
-    } else if (name == ONLINE_IMGS_L)   {
+    } else if (name == ONLINE_IMGS_L) {
         _cmdLineParams->update_online = true;
         return PARSE_OK;
-    } else if (name == ONLINE_QUERY_L)   {
+    } else if (name == ONLINE_QUERY_L) {
         _cmdLineParams->onlineQueryPsids = value;
         return PARSE_OK;
-    } else if (name == USE_IMG_FILE_L)   {
+    } else if (name == USE_IMG_FILE_L) {
         _cmdLineParams->use_mfa_file = 1;
         _cmdLineParams->mfa_file = value;
         return PARSE_OK;
-    } else if (name == USE_IMG_DIR_L)   {
+    } else if (name == USE_IMG_DIR_L) {
         _cmdLineParams->use_mfa_dir = 1;
         _cmdLineParams->mfa_dir = value;
         return PARSE_OK;
-    } else if (name == USE_DEFAULT_L)   {
+    } else if (name == USE_DEFAULT_L) {
         _cmdLineParams->download_default = 1;
         return PARSE_OK;
-    } else if (name == DNLD_L)   {
+    } else if (name == DNLD_L) {
         _cmdLineParams->download = true;
         _cmdLineParams->download_dir = value;
         return PARSE_OK;
-    } else if (name == GET_DNLD_OPT_L)   {
+    } else if (name == GET_DNLD_OPT_L) {
         value = boost::algorithm::to_lower_copy(boost::algorithm::trim_copy(value));
         if (value != "os" && value != "device") {
             printf("-E- Invalid value %s. please specify: OS | Device\n ", value.c_str());
@@ -652,15 +652,15 @@ ParseStatus CmdLineParser::HandleOption(string name, string value)
         }
         _cmdLineParams->get_download_opt = value;
         return PARSE_OK;
-    } else if (name == DNLD_DEV_L)    {
+    } else if (name == DNLD_DEV_L) {
         value = boost::algorithm::to_lower_copy(boost::algorithm::trim_copy(value));
         _cmdLineParams->download_dev = value;
         return PARSE_OK;
-    } else if (name == DNLD_OS_L)    {
+    } else if (name == DNLD_OS_L) {
         value = boost::algorithm::to_lower_copy(boost::algorithm::trim_copy(value));
         _cmdLineParams->download_os = value;
         return PARSE_OK;
-    } else if (name == DNLD_TYPE_L)   {
+    } else if (name == DNLD_TYPE_L) {
         value = boost::algorithm::to_lower_copy(boost::algorithm::trim_copy(value));
         if (value != "mfa" and value != "self_extractor" and value != "all") {
             printf("-E- Value :'%s' is not valid, valid values are : MFA | self_extractor|All\n", value.c_str());
@@ -668,40 +668,40 @@ ParseStatus CmdLineParser::HandleOption(string name, string value)
         }
         _cmdLineParams->download_type = value;
         return PARSE_OK;
-    } else if (name == DNLD_KEY_L)   {
+    } else if (name == DNLD_KEY_L) {
         _cmdLineParams->download_key = value;
         return PARSE_OK;
-    } else if (name == LOG_ON_UPDATE_L)   {
+    } else if (name == LOG_ON_UPDATE_L) {
         _cmdLineParams->log_on_update = true;
         return PARSE_OK;
-    } else if (name == LOG_L)   {
+    } else if (name == LOG_L) {
         _cmdLineParams->create_log = 1;
         return PARSE_OK;
-    } else if (name == PSID_L)   {
+    } else if (name == PSID_L) {
         _cmdLineParams->psid = value;
         return PARSE_OK;
-    } else if (name == CRC_L)   {
+    } else if (name == CRC_L) {
         _cmdLineParams->calc_crc = true;
         return PARSE_OK;
-    } else if (name == EXTRACT_L)   {
+    } else if (name == EXTRACT_L) {
         _cmdLineParams->extract_image = true;
         return PARSE_OK;
-    } else if (name == EXTRACT_ALL_L)   {
+    } else if (name == EXTRACT_ALL_L) {
         _cmdLineParams->extract_all = true;
         return PARSE_OK;
-    } else if (name == EXTRACT_DIR_L)   {
+    } else if (name == EXTRACT_DIR_L) {
         _cmdLineParams->extract_dir = value;
         return PARSE_OK;
-    } else if (name == EXTRACT_FILE_L)   {
+    } else if (name == EXTRACT_FILE_L) {
         _cmdLineParams->target_file = value;
         return PARSE_OK;
-    } else if (name == QUERY_L)   {
+    } else if (name == QUERY_L) {
         _cmdLineParams->query_device = true;
         return PARSE_OK;
-    } else if (name == QUERY_XML_L)   {
+    } else if (name == QUERY_XML_L) {
         _cmdLineParams->query_device_xml = true;
         return PARSE_OK;
-    } else if (name == QUERY_FORMAT_L)   {
+    } else if (name == QUERY_FORMAT_L) {
         value = boost::algorithm::to_lower_copy(boost::algorithm::trim_copy(value));
         if (value != "xml" and value != "text") {
             printf("-E- Value :'%s' is not valid, valid values are : XML | Text\n", value.c_str());
@@ -712,68 +712,68 @@ ParseStatus CmdLineParser::HandleOption(string name, string value)
             _cmdLineParams->query_device_xml = true;
         }
         return PARSE_OK;
-    } else if (name == LOG_FILE_L)   {
+    } else if (name == LOG_FILE_L) {
         _cmdLineParams->create_log = 1;
         _cmdLineParams->use_log_file = 1;
         _cmdLineParams->log_file = value;
         return PARSE_OK;
-    } else if (name == NO_PROGRESS_L)   {
+    } else if (name == NO_PROGRESS_L) {
         _cmdLineParams->show_progress = false;
         return PARSE_OK;
-    } else if (name == XML_L)   {
+    } else if (name == XML_L) {
         _cmdLineParams->write_xml = 1;
         _cmdLineParams->dl = true;
         return PARSE_OK;
-    } else if (name == OUT_FILE_L)   {
+    } else if (name == OUT_FILE_L) {
         _cmdLineParams->use_output_file = 1;
         _cmdLineParams->output_file = value;
         return PARSE_OK;
-    } else if (name == LOOKUP_FILE_L)   {
+    } else if (name == LOOKUP_FILE_L) {
         _cmdLineParams->use_lookup_file = 1;
         _cmdLineParams->lookup_file = value;
         return PARSE_OK;
-    } else if (name == FORCE_L)   {
+    } else if (name == FORCE_L) {
         _cmdLineParams->force_update = 1;
         return PARSE_OK;
-    } else if (name == NO_FW_CTRL_L)   {
+    } else if (name == NO_FW_CTRL_L) {
         _cmdLineParams->no_fw_ctrl = true;
         return PARSE_OK;
-    } else if (name == YES_L)   {
+    } else if (name == YES_L) {
         _cmdLineParams->yes_no_ = 1;
         return PARSE_OK;
-    } else if (name == NO_L)   {
+    } else if (name == NO_L) {
         _cmdLineParams->yes_no_ = 0;
         return PARSE_OK;
-    } else if (name == LIST_CONTENT_L)   {
+    } else if (name == LIST_CONTENT_L) {
         _cmdLineParams->list_file_contents = true;
         return PARSE_OK;
-    } else if (name == FFV_L)   {
+    } else if (name == FFV_L) {
         _cmdLineParams->compare_ffv = 1;
         return PARSE_OK;
-    } else if (name == HELP_L)   {
+    } else if (name == HELP_L) {
         cout << _cmdParser.GetUsage();
         printExamples();
         return PARSE_OK_WITH_EXIT;
-    } else if (name == HIDDEN_HELP_L)   {
+    } else if (name == HIDDEN_HELP_L) {
         cout << _cmdParser.GetUsage(true);
         printExamples();
         return PARSE_OK_WITH_EXIT;
-    } else if (name == VERSION_L)   {
+    } else if (name == VERSION_L) {
         print_version_string((const char*)toolName.c_str(), TOOL_VERSION);
         return PARSE_OK_WITH_EXIT;
-    } else if (name == BURN_FAIL_SAFE_L)   {
+    } else if (name == BURN_FAIL_SAFE_L) {
         _cmdLineParams->burnFailsafe = false;
         return PARSE_OK;
-    } else if (name == RET_DL_L)   {
+    } else if (name == RET_DL_L) {
         _cmdLineParams->dl = true;
         return PARSE_OK;
-    } else if (name == RET_LVIM_L)   {
+    } else if (name == RET_LVIM_L) {
         _cmdLineParams->lvim = true;
         return PARSE_OK;
-    } else if (name == NO_EXTRACT_LIST_L)   {
+    } else if (name == NO_EXTRACT_LIST_L) {
         _cmdLineParams->no_extract_list = true;
         return PARSE_OK;
-    } else if (name == NUM_OF_RETRIALS_L)   {
+    } else if (name == NUM_OF_RETRIALS_L) {
         std::istringstream iss(value);
         iss >> _cmdLineParams->numberOfRetrials >> std::ws;
         if (!iss.eof()) {
@@ -791,7 +791,7 @@ ParseStatus CmdLineParser::HandleOption(string name, string value)
             return PARSE_ERROR;
         }
         return PARSE_OK;
-    } else   {
+    } else {
         cout << "Unknown Flag: " << name << "\n";
         return PARSE_ERROR_SHOW_USAGE;
     }

@@ -36,6 +36,7 @@
 
 #include "flint_base.h"
 #include "flint_io.h"
+#include "aux_tlv_ops.h"
 #include "mlxfwops_com.h"
 
 #ifdef CABLES_SUPP
@@ -161,7 +162,9 @@ public:
     static bool          imageDevOperationsCreate(fw_ops_params_t& devParams, fw_ops_params_t& imgParams,
                                                   FwOperations **devFwOps, FwOperations **imgFwOps);
 
-    virtual bool IsFsCtrlOperations() {return false;}
+    virtual bool IsFsCtrlOperations();
+
+    void GetFwParams(fw_ops_params_t&);
 
     //bool GetExpRomVersionWrapper();
     void getSupporteHwId(u_int32_t **supportedHwId, u_int32_t &supportedHwIdNum);
@@ -220,7 +223,7 @@ public:
         bool useImgDevData; // FS3 image only - take device data sections from image (valid only if burnFailsafe== false)
         bool useDevImgInfo; // FS3 image only - preserve select fields of image_info section on the device when burning.
         BurnRomOption burnRomOptions;
-        bool shift8MB;
+        bool shift8MBIfNeeded;
 
         //callback fun
         ProgressCallBack progressFunc;
@@ -236,7 +239,7 @@ public:
             vsdSpecified(false), blankGuids(false), burnFailsafe(true), allowPsidChange(false),
             useImagePs(false), useImageGuids(false), singleImageBurn(true), noDevidCheck(false),
             skipCiReq(false), ignoreVersionCheck(false), useImgDevData(false), useDevImgInfo(false),
-            burnRomOptions(BRO_DEFAULT), shift8MB(false), progressFunc((ProgressCallBack)NULL),
+            burnRomOptions(BRO_DEFAULT), shift8MBIfNeeded(false), progressFunc((ProgressCallBack)NULL),
             progressFuncEx((ProgressCallBackEx)NULL), progressUserData(NULL), userVsd((char*)NULL)
         { ProgressFuncAdv.func = (f_prog_func_adv)NULL; ProgressFuncAdv.opaque = NULL;}
 
@@ -443,6 +446,9 @@ public:
     bool CheckBinVersion(u_int8_t binVerMajor, u_int8_t binVerMinor);
 
     static u_int8_t GetFwFormatFromHwDevID(u_int32_t hwDevId);
+
+    virtual Tlv_Status_t GetTsObj(TimeStampIFC **tsObj);
+    bool TestAndSetTimeStamp(FwOperations *imageOps);
 
     // Protected Members
     FBase *_ioAccess;

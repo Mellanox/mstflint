@@ -52,7 +52,7 @@ private:
     MlxcfgDBManager *_dbManager;
 
     void supportsNVData();
-    void printEnums(ParamView p, string& s);
+    void printEnums(const ParamView& p, string& s);
     bool checkDependency(TLVConf *cTLV, string dStr);
     void filterByDependency(TLVConf *cTLV, const vector<pair<ParamView, string> >& dependencyTable, vector<ParamView>& result);
     void queryTLV(TLVConf *conf, std::vector<ParamView>& paramsConf, QueryType qt);
@@ -67,7 +67,7 @@ public:
     ~GenericCommander();
     void printLongDesc(FILE*);
     void queryParamViews(std::vector<ParamView>& paramsToQuery, QueryType qt = QueryNext);
-    void queryAll(std::vector<ParamView>& params, QueryType qt = QueryNext);
+    void queryAll(std::vector<ParamView>& params, vector<string>& failedTLVs, QueryType qt = QueryNext);
     void getCfg(ParamView& cfgParam, QueryType qt = QueryNext);
     void setCfg(std::vector<ParamView>& params, bool force);
     bool isDefaultSupported();

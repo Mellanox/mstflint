@@ -69,8 +69,8 @@ protected:
 
 class UnsignedParamValue : public ParamValue {
 public:
-    UnsignedParamValue(string size)     :   ParamValue(size){}
-    UnsignedParamValue(u_int32_t size)  :   ParamValue(size){}
+    UnsignedParamValue(string size)     :   ParamValue(size), _value(0x0) {}
+    UnsignedParamValue(u_int32_t size)  :   ParamValue(size), _value(0x0){}
 
     virtual string      getVal();
     virtual void        setVal(string s);

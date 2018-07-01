@@ -274,11 +274,6 @@ int main(int argc, char *argv[])
         perror("mopen");
         return 1;
     }
-#ifndef MST_UL
-    if (mf->tp == MST_MLNXOS) {
-        mset_cr_access(mf, 1);
-    }
-#endif
     if (i2c_slave) {
         mset_i2c_slave(mf, (u_int8_t)i2c_slave);
     }

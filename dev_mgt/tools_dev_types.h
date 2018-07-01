@@ -77,6 +77,7 @@ enum dm_dev_id
     DeviceConnectX4,
     DeviceConnectX4LX,
     DeviceConnectX5,
+    DeviceConnectX6,
     DeviceBlueField,
     DeviceFPGA,             // UnSupported
     DeviceSwitchIB2,

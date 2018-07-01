@@ -718,26 +718,26 @@ ParseStatus Flint::HandleOption(string name, string value)
     if (name == "device" || name == "d") {
         _flintParams.device_specified = true;
         _flintParams.device = value;
-    } else if (name == "help" || name == "h")   {
+    } else if (name == "help" || name == "h") {
         vector<string> excluded_sections;
         excluded_sections.push_back("COMMANDS DESCRIPTION");
         cout << _cmdParser.GetUsage(false, excluded_sections);
         return PARSE_OK_WITH_EXIT;
-    } else if (name == "version" || name == "v")   {
+    } else if (name == "version" || name == "v") {
 #ifdef EXTERNAL
         print_version_string(FLINT_NAME, "");
 #else
         print_version_string(FLINT_NAME "(oem)", "");
 #endif
         return PARSE_OK_WITH_EXIT;
-    } else if (name == "hh")   {
+    } else if (name == "hh") {
         cout << _cmdParser.GetUsage();
         return PARSE_OK_WITH_EXIT;
-    } else if (name == "no_devid_check")   {
+    } else if (name == "no_devid_check") {
         _flintParams.no_devid_check = true;
-    } else if (name == "skip_ci_req")   {
+    } else if (name == "skip_ci_req") {
         _flintParams.skip_ci_req = true;
-    } else if (name == "guid")   {
+    } else if (name == "guid") {
         _flintParams.guid_specified = true;
         guid_t g;
         if (!getGUIDFromStr(value, g)) {
@@ -760,7 +760,7 @@ ParseStatus Flint::HandleOption(string name, string value)
             guid_t g;
             if (!getGUIDFromStr(strs[i], g)) {
                 return PARSE_ERROR;
-            } else  {
+            } else {
                 _flintParams.user_guids.push_back(g);
             }
         }
@@ -784,7 +784,7 @@ ParseStatus Flint::HandleOption(string name, string value)
             guid_t m;
             if (!getGUIDFromStr(strs[i], m)) {
                 return PARSE_ERROR;
-            } else  {
+            } else {
                 _flintParams.user_macs.push_back(m);
             }
         }
@@ -840,9 +840,9 @@ ParseStatus Flint::HandleOption(string name, string value)
         _flintParams.dual_image = true;
     } else if (name == "striped_image") {
         _flintParams.striped_image = true;
-    } else if (name == "use_dev_img_info")  {
+    } else if (name == "use_dev_img_info") {
         _flintParams.use_dev_img_info = true;
-    } else if (name == "banks")  {
+    } else if (name == "banks") {
         _flintParams.banks_specified = true;
         u_int64_t banksNum;
         if (!strToNum(value, banksNum)) {

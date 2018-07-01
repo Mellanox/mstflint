@@ -364,9 +364,9 @@ MlxSignHMAC::MlxSignHMAC()
     HMAC_CTX_init((HMAC_CTX*)ctx);
 }
 
-int MlxSignHMAC::setKey(const std::string& key)
+int MlxSignHMAC::setKey(const std::vector<u_int8_t>& key)
 {
-    if (HMAC_Init_ex((HMAC_CTX*)ctx, key.c_str(), key.length(), EVP_sha512(), NULL) == 0) {
+    if (HMAC_Init_ex((HMAC_CTX*)ctx, (char*)key.data(), key.size(), EVP_sha512(), NULL) == 0) {
         return MLX_SIGN_HMAC_ERROR;
     }
 

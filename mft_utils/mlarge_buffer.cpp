@@ -108,7 +108,7 @@ void MlargeBuffer::add(const std::vector<u_int8_t>& data, u_int32_t offset)
             } else {
                 break; // done :)
             }
-        } else if (bufferUnit.offset() + bufferUnit.size() < _bData[idx].offset())   {// check if we can insert before
+        } else if (bufferUnit.offset() + bufferUnit.size() < _bData[idx].offset()) {  // check if we can insert before
             _bData.insert(_bData.begin() + idx, bufferUnit);
             unitInserted = true;
             break;

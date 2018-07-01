@@ -82,7 +82,7 @@ public:
     void   setMccSupport(bool val = true) {_mccSupport = val;};
     vector<ImgVersion> _imageVers;
     inline bool isAlignmentNeeded();
-    inline void setShifting8MBInBurnParams(bool v) {_burnParams.shift8MB = v;}
+    inline void setShifting8MBInBurnParams(bool v) {_burnParams.shift8MBIfNeeded = v;}
 
     bool checkExistence(vector<MlnxDev*>& devs);
     string getUniqueId() {return _uniqueId;};

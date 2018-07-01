@@ -67,7 +67,7 @@
 #ifdef CRD_DEBUG_BUILD
 #    define CRD_DEBUG(fmt, ...)printf("%s:%s:%d: "fmt, __FILE__, __FUNCTION__, __LINE__,##__VA_ARGS__);
 #else
-#    define CRD_DEBUG(fmt, args ...)
+#    define CRD_DEBUG(fmt, ...)
 #endif
 
 #define CRD_EMPTY  "EMPTY"
@@ -211,6 +211,8 @@ int crd_init(OUT crd_ctxt_t **context, IN mfile *mf, IN int is_full, IN int caus
     if (rc) {
         goto Cleanup;
     }
+
+    mset_addr_space(mf, AS_ND_CRSPACE);
 
     CRD_DEBUG("Number of found dwords are : %d \n", number_of_dwords);
     (*context)->mf               = mf;
@@ -557,7 +559,11 @@ static int crd_replace(INOUT char *st, IN char *orig, IN char *repl)
 
 static int crd_get_exec_name_from_path(IN char *str, OUT char *exec_name)
 {
-    char tmp_str[strlen(str) + 1];
+    char *tmp_str = malloc(sizeof(char) * (strlen(str) + 1));
+    if (tmp_str == NULL) {
+        CRD_DEBUG("Failed to allocate memmory\n");
+        return CRD_MEM_ALLOCATION_ERR;
+    }
     char *pch;
     strcpy(tmp_str, str);
     pch = strtok(tmp_str, "\\");
@@ -565,6 +571,7 @@ static int crd_get_exec_name_from_path(IN char *str, OUT char *exec_name)
         strcpy(exec_name, pch);
         pch = strtok(NULL, "\\");
     }
+    free(tmp_str);
     return CRD_OK;
 }
 #endif

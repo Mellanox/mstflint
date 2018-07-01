@@ -89,7 +89,7 @@ MlxcfgDBManager::~MlxcfgDBManager()
 
 void MlxcfgDBManager::checkDBVersion()
 {
-    int rc = 0x0;
+    int rc;
     sqlite3_stmt *stmt = NULL;
     unsigned int dbVersion = 0x0;
 
@@ -171,7 +171,7 @@ int MlxcfgDBManager::selectAndCreateNewTLVCallBack(void *object, int argc, char 
 
     try {
         *tlv = new TLVConf(argc, argv, azColName);
-    } catch (MlxcfgException& e) {
+    } catch (MlxcfgException& /*e*/) {
         return SQLITE_ABORT;
     }
 

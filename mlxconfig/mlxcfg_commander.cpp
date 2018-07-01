@@ -88,6 +88,7 @@ Commander* Commander::create(mfile *mf, std::string device, std::string dbName)
     case DeviceConnectX4LX:
     case DeviceConnectX5:
     case DeviceBlueField:
+    case DeviceConnectX6:
         isFifthGen = true;
         break;
 

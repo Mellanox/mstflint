@@ -190,6 +190,15 @@ static struct device_info g_devs_info[] = {
         DM_HCA                  //dev_type
     },
     {
+        DeviceConnectX6,        //dm_id
+        0x20f,                  //hw_dev_i
+        -1,                     //hw_rev_i
+        -1,                     //sw_dev_i
+        "ConnectX6",            //name
+        2,                      //port_num
+        DM_HCA                  //dev_type
+    },
+    {
         DeviceBlueField,        //dm_id
         0x211,                  //hw_dev_i
         -1,                     //hw_rev_i
@@ -263,7 +272,7 @@ static struct device_info g_devs_info[] = {
     },
     {
         DeviceSpectrum2,        //dm_id
-        0x24f,                  //hw_dev_i
+        0x24e,                  //hw_dev_i
         -1,                     //hw_rev_i
         -1,                     //sw_dev_i
         "Spectrum2",            //name
@@ -510,6 +519,7 @@ int dm_is_fpp_supported(dm_dev_id_t type)
         dp->dm_id == DeviceConnectX4   ||
         dp->dm_id == DeviceConnectX4LX ||
         dp->dm_id == DeviceConnectX5   ||
+        dp->dm_id == DeviceConnectX6   ||
         dp->dm_id == DeviceBlueField) {
         return 1;
     } else {

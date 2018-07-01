@@ -71,6 +71,7 @@ if CMDIF:
             self.getLastErrFunc.restype = c_char_p
             self.errStrFunc = CMDIF.gcif_err_str
             self.errStrFunc.restype = c_char_p
+            self.setItraceFunc = CMDIF.gcif_set_itrace
             self.getFwInfoFunc = CMDIF.gcif_get_fw_info
             self.multiHostSyncFunc = CMDIF.gcif_mh_sync
             self.multiHostSyncStatusFunc = CMDIF.gcif_mh_sync_status
@@ -88,6 +89,16 @@ if CMDIF:
         ##########################
         def sendCmd(self, opcode, data, skipWrite):
             self.mstDev.icmdSendCmd(opcode, data, skipWrite)
+        
+        ##########################
+        def setItrace(self, mask, level):
+            class ITRACE_ST(Structure):
+                _fields_ = [("unit_mask", c_uint32), ("log_level", c_uint8)]
+                
+            setItraceStruct = pointer(ITRACE_ST(mask, level))
+            rc = self.setItraceFunc(self.mstDev.mf, setItraceStruct)
+            if rc:
+                raise CmdIfException("Failed to set itrace mask: %s (%d)" % (self.errStrFunc(rc), rc))
             
         ##########################
         def getFwInfo(self):
@@ -139,7 +150,12 @@ if CMDIF:
 
         ##########################
         class QUERY_CAP_ST(Structure):
-            _fields_ = [("fw_ctrl_update_icmd",                    c_uint8),
+            _fields_ = [("virtual_link_down",                      c_uint8),
+                        ("icmd_exmb",                              c_uint8),
+                        ("capi",                                   c_uint8),
+                        ("qcam_reg",                               c_uint8),
+                        ("mcam_reg",                               c_uint8),
+                        ("pcam_reg",                               c_uint8),
                         ("mh_sync",                                c_uint8),
                         ("allow_icmd_access_reg_on_all_registers", c_uint8),
                         ("fw_info_psid",                           c_uint8),

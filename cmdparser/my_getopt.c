@@ -346,7 +346,7 @@ char **argv;
             }
             /* Exclude the moved bottom segment from further swapping.  */
             top -= len;
-        } else     {
+        } else {
             /* Top segment is the short one.  */
             int len = top - middle;
             register int i;
@@ -396,10 +396,10 @@ const char *optstring;
     if (optstring[0] == '-') {
         ordering = RETURN_IN_ORDER;
         ++optstring;
-    } else if (optstring[0] == '+')     {
+    } else if (optstring[0] == '+') {
         ordering = REQUIRE_ORDER;
         ++optstring;
-    } else if (posixly_correct != NULL)     {
+    } else if (posixly_correct != NULL) {
         ordering = REQUIRE_ORDER;
     } else {
         ordering = PERMUTE;
@@ -429,7 +429,7 @@ const char *optstring;
             }
         }
         nonoption_flags_len = nonoption_flags_max_len;
-    } else     {
+    } else {
         nonoption_flags_len = 0;
     }
  #endif
@@ -642,11 +642,11 @@ int long_only;
                     indfound = option_index;
                     exact = 1;
                     break;
-                } else if (pfound == NULL)     {
+                } else if (pfound == NULL) {
                     /* First nonexact match found.  */
                     pfound = p;
                     indfound = option_index;
-                } else     {
+                } else {
                     /* Second or later nonexact match found.  */
                     ambig = 1;
                 }
@@ -671,7 +671,7 @@ int long_only;
                    allow it to be used on enums.  */
                 if (pfound->has_arg) {
                     tools_optarg = nameend + 1;
-                } else     {
+                } else {
                     if (tools_opterr) {
                         if (argv[tools_optind - 1][1] == '-') {
                             /* --option */
@@ -690,7 +690,7 @@ int long_only;
                     tools_optopt = pfound->val;
                     return '?';
                 }
-            } else if (pfound->has_arg == 1)     {
+            } else if (pfound->has_arg == 1) {
                 if (tools_optind < argc) {
                     tools_optarg = argv[tools_optind++];
                 } else {
@@ -780,7 +780,7 @@ int long_only;
                 /* If we end this ARGV-element by taking the rest as an arg,
                    we must advance to the next element now.  */
                 tools_optind++;
-            } else if (tools_optind == argc)     {
+            } else if (tools_optind == argc) {
                 if (tools_opterr) {
                     /* 1003.2 specifies the format of this message.  */
                     fprintf(stderr, _("%s: option requires an argument -- %c\n"),
@@ -793,7 +793,7 @@ int long_only;
                     c = '?';
                 }
                 return c;
-            } else     {
+            } else {
                 /* We already incremented `tools_optind' once;
                    increment it again when taking next ARGV-elt as argument.  */
                 tools_optarg = argv[tools_optind++];
@@ -815,11 +815,11 @@ int long_only;
                         indfound = option_index;
                         exact = 1;
                         break;
-                    } else if (pfound == NULL)     {
+                    } else if (pfound == NULL) {
                         /* First nonexact match found.  */
                         pfound = p;
                         indfound = option_index;
-                    } else     {
+                    } else {
                         /* Second or later nonexact match found.  */
                         ambig = 1;
                     }
@@ -850,7 +850,7 @@ int long_only;
                         nextchar += strlen(nextchar);
                         return '?';
                     }
-                } else if (pfound->has_arg == 1)     {
+                } else if (pfound->has_arg == 1) {
                     if (tools_optind < argc) {
                         tools_optarg = argv[tools_optind++];
                     } else {
@@ -882,18 +882,18 @@ int long_only;
                 if (*nextchar != '\0') {
                     tools_optarg = nextchar;
                     tools_optind++;
-                } else     {
+                } else {
                     tools_optarg = NULL;
                 }
                 nextchar = NULL;
-            } else     {
+            } else {
                 /* This is an option that requires an argument.  */
                 if (*nextchar != '\0') {
                     tools_optarg = nextchar;
                     /* If we end this ARGV-element by taking the rest as an arg,
                        we must advance to the next element now.  */
                     tools_optind++;
-                } else if (tools_optind == argc)     {
+                } else if (tools_optind == argc) {
                     if (tools_opterr) {
                         /* 1003.2 specifies the format of this message.  */
                         fprintf(stderr,
@@ -906,7 +906,7 @@ int long_only;
                     } else {
                         c = '?';
                     }
-                } else     {
+                } else {
                     /* We already incremented `tools_optind' once;
                        increment it again when taking next ARGV-elt as argument.  */
                     tools_optarg = argv[tools_optind++];
