@@ -787,6 +787,8 @@ mfile* mopen_int(const char *name, u_int32_t adv_opt)
                 return 0;
             }
         }
+#else
+        (void)port;
 #endif
         return mf;
     } else {
@@ -1084,43 +1086,43 @@ int mwrite4_block(mfile *mf, unsigned int offset, u_int32_t *data, int byte_len)
 
 int msw_reset(mfile *mf)
 {
-    mf = NULL; /* Warning */
+    (void)mf;
     return -1;
 }
 
 int mhca_reset(mfile *mf)
 {
-    mf = NULL; /* Warning */
+    (void)mf;
     return -1;
 }
 
 int mi2c_detect(mfile *mf, u_int8_t slv_arr[SLV_ADDRS_NUM])
 {
-    mf = NULL;
-    slv_arr = NULL;
+    (void)mf;
+    (void)slv_arr;
     return 1;
 }
 int mread_i2cblock(mfile *mf, unsigned char i2c_slave, u_int8_t addr_width,
                    unsigned int offset, void *data, int length)
 {
-    mf = NULL;
-    i2c_slave = 1;
-    addr_width = 1;
-    offset = 1;
-    data = NULL;
-    length = 1;
+    (void)mf;
+    (void)i2c_slave;
+    (void)addr_width;
+    (void)offset;
+    (void)data;
+    (void)length;
     return 0;
 }
 
 int mwrite_i2cblock(mfile *mf, unsigned char i2c_slave, u_int8_t addr_width,
                     unsigned int offset, void *data, int length)
 {
-    mf = NULL;
-    i2c_slave = 1;
-    addr_width = 1;
-    offset = 1;
-    data = NULL;
-    length = 1;
+    (void)mf;
+    (void)i2c_slave;
+    (void)addr_width;
+    (void)offset;
+    (void)data;
+    (void)length;
     return 0;
 }
 
@@ -1292,6 +1294,7 @@ int mdevices_v(char *buf, int len, int mask, int verbosity)
         /* Read the output one line at a time */
         while (fgets(dev_line, sizeof(dev_line) - 1, fp) != NULL) {
             tmp = sscanf(dev_line, "pci%d:%d:%d:%d\n", &s, &b, &d, &f);
+            (void)tmp; // TODO: check sscanf ret value
             if (!verbosity && f != 0) {
                 continue;
             }

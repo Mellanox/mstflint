@@ -54,6 +54,7 @@
 #include <sstream>
 #include <mlxsign_lib/mlxsign_lib.h>
 #include <tools_crypto/tools_md5.h>
+#include <tools_dev_types.h>
 #endif
 
 #if !defined(UEFI_BUILD) && !defined(NO_CS_CMD)
