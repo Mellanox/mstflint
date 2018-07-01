@@ -133,6 +133,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 
 %changelog
+* Mon Jul 01 2018 Dan Goldberg <dang@dev.mellanox.co.il>
+   MFT 4.10.0 Updates
+
 * Mon Jul 17 2017 Adham Masarwah <adham@dev.mellanox.co.il>
    Adding mlxfwreset to mstflint
    
