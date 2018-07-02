@@ -69,3 +69,9 @@ int gcif_mh_sync_status(mfile *mf, struct connectx4_icmd_mh_sync *mh_sync_out)
     memset(mh_sync_out, 0x0, sizeof(*mh_sync_out));
     SEND_ICMD_FLOW(mf, MH_SYNC_STATUS_OPCODE, connectx4_icmd_mh_sync, mh_sync_out, 1, 0);
 }
+
+int gcif_set_itrace(mfile *mf, struct connectib_itrace *itrace)
+{
+    SEND_ICMD_FLOW(mf, SET_ITRACE, connectib_itrace, itrace, 1, 0);
+}
+

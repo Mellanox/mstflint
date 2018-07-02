@@ -206,6 +206,63 @@ rted. */
      u_int8_t fpga;
 };
 
+struct connectib_itrace_ctrl {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+        /* Description - threashhold of logging to print from:
+0 - LOG_DEBUG
+1 - LOG_INFO
+2 - LOG_WARNING
+3 - LOG_ERROR */
+        /* 0x0.0 - 0x0.7 */
+         u_int8_t log_level;
+        /* Description - added delay (usec) to prevent log event lost */
+        /* 0x0.16 - 0x0.31 */
+         u_int16_t log_delay;
+};
+
+struct connectib_itrace {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+        /* Description - bit numbers:
+0=DEBUG_INIT
+1=INIT
+2=ICM
+3=ICM_FREE_LIST
+4=LOG_MOD_HOST_MNG
+5=CMD_IF
+6=PHY_IB
+7=PHY_RX_ADAP
+8=PHY_EYE_OPN
+9=PHY_GENERAL
+10=PHY_MANAGER
+11=PWR
+12=FLR
+13=ICM_ACCESS
+14=MAD
+15=RXT_CHECKS
+16=I2C
+17=TRANSPORT
+18=FW_LL
+19=RX_ERRORS
+20=CMDIF_DRIVER
+21=PROFILING
+22=MANAGEMENT
+23=FLASH
+24=STEERING
+25=IFARM
+26=ICMD
+27=PCI
+28=DC_CLEANUP
+29=PHY_ETH
+30=VIRT */
+        /* 0x0.0 - 0x4.31 */
+         u_int32_t unit_mask;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+        /* Description -  */
+        /* 0x4.0 - 0x8.31 */
+         struct connectib_itrace_ctrl ctrl;
+};
+
+
 /* FW_VERSION */
 void connectib_FW_VERSION_pack(const struct connectib_FW_VERSION *ptr_struct, u_int8_t* ptr_buff);
 void connectib_FW_VERSION_unpack(struct connectib_FW_VERSION *ptr_struct, const u_int8_t* ptr_buff);
@@ -220,6 +277,20 @@ void connectib_icmd_get_fw_info_print(const struct connectib_icmd_get_fw_info *p
 int connectib_icmd_get_fw_info_size(void);
 #define CONNECTIB_ICMD_GET_FW_INFO_SIZE    (0x24)
 void connectib_icmd_get_fw_info_dump(const struct connectib_icmd_get_fw_info *ptr_struct, FILE* file);
+/* itrace */
+void connectib_itrace_pack(const struct connectib_itrace *ptr_struct, u_int8_t* ptr_buff);
+void connectib_itrace_unpack(struct connectib_itrace *ptr_struct, const u_int8_t* ptr_buff);
+void connectib_itrace_print(const struct connectib_itrace *ptr_struct, FILE* file, int indent_level);
+int connectib_itrace_size(void);
+#define CONNECTIB_ITRACE_SIZE    (0x10)
+void connectib_itrace_dump(const struct connectib_itrace *ptr_struct, FILE* file);
+/* itrace_ctrl */
+void connectib_itrace_ctrl_pack(const struct connectib_itrace_ctrl *ptr_struct, u_int8_t* ptr_buff);
+void connectib_itrace_ctrl_unpack(struct connectib_itrace_ctrl *ptr_struct, const u_int8_t* ptr_buff);
+void connectib_itrace_ctrl_print(const struct connectib_itrace_ctrl *ptr_struct, FILE* file, int indent_level);
+int connectib_itrace_ctrl_size(void);
+#define CONNECTIB_ITRACE_CTRL_SIZE    (0x4)
+void connectib_itrace_ctrl_dump(const struct connectib_itrace_ctrl *ptr_struct, FILE* file);
 /* icmd_mh_sync */
 void connectx4_icmd_mh_sync_pack(const struct connectx4_icmd_mh_sync *ptr_struct, u_int8_t* ptr_buff);
 void connectx4_icmd_mh_sync_unpack(struct connectx4_icmd_mh_sync *ptr_struct, const u_int8_t* ptr_buff);

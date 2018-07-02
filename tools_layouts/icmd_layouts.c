@@ -234,6 +234,131 @@ void connectib_icmd_get_fw_info_dump(const struct connectib_icmd_get_fw_info *pt
     connectib_icmd_get_fw_info_print(ptr_struct, file, 0);
 }
 
+void connectib_itrace_ctrl_pack(const struct connectib_itrace_ctrl *ptr_struct, u_int8_t* ptr_buff)
+{
+        u_int32_t offset;
+        int i = 0;
+        (void)offset;
+        (void)i;
+        (void)ptr_struct;
+        (void)ptr_buff;
+
+        offset = 24;
+        adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->log_level);
+
+        offset = 0;
+        adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->log_delay);
+
+}
+
+void connectib_itrace_ctrl_unpack(struct connectib_itrace_ctrl *ptr_struct, const u_int8_t* ptr_buff)
+{
+        u_int32_t offset;
+        int i = 0;
+        (void)offset;
+        (void)i;
+        (void)ptr_struct;
+        (void)ptr_buff;
+
+        offset = 24;
+        ptr_struct->log_level = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+
+        offset = 0;
+        ptr_struct->log_delay = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+
+}
+
+void connectib_itrace_ctrl_print(const struct connectib_itrace_ctrl *ptr_struct, FILE* file, int indent_level)
+{
+        adb2c_add_indentation(file, indent_level);
+        fprintf(file, "======== connectib_itrace_ctrl ========\n");
+        int i = 0;
+        (void)i;
+        (void)ptr_struct;
+        (void)file;
+        (void)indent_level;
+
+        adb2c_add_indentation(file, indent_level);
+        fprintf(file, "log_level            : " UH_FMT "\n", ptr_struct->log_level);
+
+        adb2c_add_indentation(file, indent_level);
+        fprintf(file, "log_delay            : " UH_FMT "\n", ptr_struct->log_delay);
+
+}
+
+int connectib_itrace_ctrl_size(void)
+{
+         return 4;
+}
+
+void connectib_itrace_ctrl_dump(const struct connectib_itrace_ctrl *ptr_struct, FILE* file)
+{
+        connectib_itrace_ctrl_print(ptr_struct, file, 0);
+}
+
+void connectib_itrace_pack(const struct connectib_itrace *ptr_struct, u_int8_t* ptr_buff)
+{
+        u_int32_t offset;
+        int i = 0;
+        (void)offset;
+        (void)i;
+        (void)ptr_struct;
+        (void)ptr_buff;
+
+        offset = 0;
+        adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->unit_mask);
+
+        offset = 32;
+        connectib_itrace_ctrl_pack(&(ptr_struct->ctrl), ptr_buff + offset/8);
+
+}
+
+void connectib_itrace_unpack(struct connectib_itrace *ptr_struct, const u_int8_t* ptr_buff)
+{
+        u_int32_t offset;
+        int i = 0;
+        (void)offset;
+        (void)i;
+        (void)ptr_struct;
+        (void)ptr_buff;
+
+        offset = 0;
+        ptr_struct->unit_mask = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+
+        offset = 32;
+        connectib_itrace_ctrl_unpack(&(ptr_struct->ctrl), ptr_buff + offset/8);
+
+}
+
+void connectib_itrace_print(const struct connectib_itrace *ptr_struct, FILE* file, int indent_level)
+{
+        adb2c_add_indentation(file, indent_level);
+        fprintf(file, "======== connectib_itrace ========\n");
+        int i = 0;
+        (void)i;
+        (void)ptr_struct;
+        (void)file;
+        (void)indent_level;
+
+        adb2c_add_indentation(file, indent_level);
+        fprintf(file, "unit_mask            : " U32H_FMT "\n", ptr_struct->unit_mask);
+
+        adb2c_add_indentation(file, indent_level);
+        fprintf(file, "ctrl:\n");
+        connectib_itrace_ctrl_print(&(ptr_struct->ctrl), file, indent_level + 1);
+
+}
+
+int connectib_itrace_size(void)
+{
+         return 16;
+}
+
+void connectib_itrace_dump(const struct connectib_itrace *ptr_struct, FILE* file)
+{
+        connectib_itrace_print(ptr_struct, file, 0);
+}
+
 
 void connectx4_icmd_mh_sync_pack(const struct connectx4_icmd_mh_sync *ptr_struct, u_int8_t* ptr_buff)
 {

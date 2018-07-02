@@ -39,7 +39,11 @@ extern "C" {
 
 #include <mtcr.h>
 #include <common/compatibility.h>
+#ifdef MST_UL
 #include <tools_layouts/icmd_layouts.h>
+#else
+#include <tools_layouts/connectib_layouts.h>
+#endif
 #include "icmd_cif_common.h"
 
 #ifndef IN
@@ -49,9 +53,10 @@ extern "C" {
 #endif
 
 enum {
-    GET_FW_INFO             = 0x8007,
-    GET_ICMD_QUERY_CAP      = 0x8400,
-    FLASH_REG_ACCESS        = 0x9001,
+    GET_FW_INFO = 0x8007,
+    GET_ICMD_QUERY_CAP = 0x8400,
+    FLASH_REG_ACCESS = 0x9001,
+    SET_ITRACE = 0xf003,
 };
 
 int gcif_get_fw_info(mfile *mf,

@@ -31,7 +31,7 @@
  */
 
 #include "reg_access.h"
-
+#define REG_ID_PCNR  0x5050
 #define REG_ID_MFPA  0x9010
 #define REG_ID_MFBA  0x9011
 #define REG_ID_MFBE  0x9012
@@ -67,17 +67,17 @@
 // End of WA
 
 // for debug:
-//#define _ENABLE_DEBUG_
+
 #ifdef _ENABLE_DEBUG_
-# define DEBUG_PRINT_SEND(data_struct, struct_name, method, prefix) \
+# define DEBUG_PRINT_SEND(data_struct, struct_name, method, print_func) \
     printf("-I- Data Sent (Method: %s):\n", method == REG_ACCESS_METHOD_SET ? "SET" : "GET"); \
-    prefix##_##struct_name##_print(data_struct, stdout, 1)
-# define DEBUG_PRINT_RECEIVE(data_struct, struct_name, method, prefix) \
+    print_func(data_struct, stdout, 1)
+# define DEBUG_PRINT_RECIEVE(data_struct, struct_name, method, print_func) \
     printf("-I- Data Received (Mehtod: %s):\n", method == REG_ACCESS_METHOD_SET ? "SET" : "GET"); \
-    prefix##_##struct_name##_print(data_struct, stdout, 1)
+    print_func(data_struct, stdout, 1)
 #else
-# define DEBUG_PRINT_SEND(data_struct, struct_name, method, prefix)
-# define DEBUG_PRINT_RECEIVE(data_struct, struct_name, method, prefix)
+# define DEBUG_PRINT_SEND(data_struct, struct_name, method, print_func)
+# define DEBUG_PRINT_RECIEVE(data_struct, struct_name, method, print_func)
 #endif
 
 /***************************************************/
@@ -87,7 +87,7 @@
 #define REG_ACCESS_GEN_DATA_WITH_STATUS(mf, method, reg_id, data_struct, struct_name, prefix, reg_size, r_reg_size, w_reg_size \
                                         , size_func, data_p_name, data_size_name) \
     u_int32_t reg_size = data_struct->data_size_name + size_func(); \
-    void *t_data = data_struct->data_p_name; \
+    u_int32_t *t_data = data_struct->data_p_name; \
     u_int32_t t_offset = size_func(); \
     u_int32_t r_size_reg = reg_size; \
     u_int32_t w_size_reg = reg_size; \
@@ -105,7 +105,13 @@
     if (!data) { return ME_MEM_ERROR;} \
     memset(data, 0, max_data_size); \
     prefix##_##struct_name##_pack(data_struct, data); \
-    memcpy(&data[t_offset], t_data, data_struct->data_size_name); \
+    if (t_data) {\
+        if ((int)t_offset + data_struct->data_size_name > max_data_size) {\
+            free(data);\
+            return ME_REG_ACCESS_SIZE_EXCCEEDS_LIMIT;\
+        }\
+        memcpy(&data[t_offset], t_data, data_struct->data_size_name); \
+    }\
     rc = (int)maccess_reg(mf, reg_id, (maccess_reg_method_t)method, data, reg_size, r_size_reg, w_size_reg, &status); \
     prefix##_##struct_name##_unpack(data_struct, data); \
     if (rc || status) { \
@@ -120,7 +126,6 @@
     return ME_OK; \
 
 // register access for variable size registers (like mfba)
-
 #define REG_ACCESS_GENERIC_VAR_WITH_STATUS(mf, method, reg_id, data_struct, struct_name, reg_size, r_reg_size, w_reg_size, pack_func, \
                                            unpack_func, size_func, print_func, status) \
     int rc; \
@@ -137,7 +142,7 @@
     rc = maccess_reg(mf, reg_id, (maccess_reg_method_t)method, data, reg_size, r_reg_size, w_reg_size, status); \
     unpack_func(data_struct, data); \
     free(data); \
-    DEBUG_PRINT_RECEIVE(data_struct, struct_name, method, print_func);
+    DEBUG_PRINT_RECIEVE(data_struct, struct_name, method, print_func);
 
 #define REG_ACCESS_GENERIC_VAR(mf, method, reg_id, data_struct, struct_name, reg_size, r_reg_size, w_reg_size, pack_func, \
                                unpack_func, size_func, print_func) \
@@ -158,6 +163,16 @@
 #define REG_ACCCESS(mf, method, reg_id, data_struct, struct_name, prefix) \
     int data_size = prefix##_##struct_name##_size(); \
     REG_ACCCESS_VAR(mf, method, reg_id, data_struct, struct_name, data_size, data_size, data_size, prefix)
+
+
+/************************************
+ * Function: reg_access_pcnr
+ ************************************/
+reg_access_status_t reg_access_pcnr(mfile *mf, reg_access_method_t method, struct reg_access_hca_pcnr_reg *pcnr)
+{
+    REG_ACCCESS(mf, method, REG_ID_PCNR, pcnr, pcnr_reg, reg_access_hca);
+
+}
 
 /************************************
 * Function: reg_access_mfba
@@ -433,8 +448,8 @@ reg_access_status_t reg_access_mqis(mfile *mf, reg_access_method_t method, struc
 /************************************
 * Function: reg_access_err2str
 ************************************/
-
 const char* reg_access_err2str(reg_access_status_t status)
 {
     return m_err2str(status);
 }
+
