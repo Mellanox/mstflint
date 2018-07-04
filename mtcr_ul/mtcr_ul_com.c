@@ -930,6 +930,9 @@ end:
         mf->vsec_supp = (int)dev_params.vendor_specific_cap;
         if (dev_params.vendor_specific_cap) {
             mf->address_space = CR_SPACE_DOMAIN;
+            mf->vsec_cap_mask |= ((1 << VCC_INITIALIZED) | (1 << VCC_SEMAPHORE_SPACE_SUPPORTED) |
+                                  (1 << VCC_CRSPACE_SPACE_SUPPORTED) | (1 << VCC_ICMD_SPACE_SUPPORTED) |
+                                  (1 << VCC_ICMD_EXT_SPACE_SUPPORTED));
         }
         mf->tp = MST_PCICONF;
         ctx->mread4        = mtcr_driver_mread4;
