@@ -36,10 +36,11 @@
 * $Authors      : Roei Yitzhak (roei@mellanox.com)
 """
 
+from __future__ import print_function
 import platform
 import re
-from pci_device import PciDevice
-from mlxfwreset_utils import cmdExec
+from .pci_device import PciDevice
+from .mlxfwreset_utils import cmdExec
 
 class MlnxPeripheralComponents(object):
 
@@ -157,17 +158,17 @@ if __name__ == '__main__':
 
     peripherals = MlnxPeripheralComponents()
     for pci_device in  peripherals.pci_devices:
-        print pci_device
+        print(pci_device)
 
     user_pci_device = peripherals.get_pci_device(device)
 
-    print 'user pci_device: {0}'.format(user_pci_device)
+    print('user pci_device: {0}'.format(user_pci_device))
 
     res = peripherals.get_socket_direct_pci_devices(user_pci_device)
 
-    print "Socket direct discovery:"
+    print("Socket direct discovery:")
     if len(res):
         for pci_device in res:
-            print pci_device
+            print(pci_device)
     else:
-        print "device is not part of socket direct"
+        print("device is not part of socket direct")

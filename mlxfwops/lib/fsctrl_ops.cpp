@@ -171,8 +171,8 @@ bool FsCtrlOperations::FsIntQuery()
         extractFwVersion(_fwImgInfo.ext_info.roms_info.rom_info[i].exp_rom_ver, fwQery.roms[i].version);
     }
 
-    strncpy(_fsCtrlImgInfo.name, fwQery.name, NAME_LEN - 1);
-    strncpy(_fsCtrlImgInfo.description, fwQery.description, DESCRIPTION_LEN - 1);
+    strncpy(_fsCtrlImgInfo.name, fwQery.name, NAME_LEN);
+    strncpy(_fsCtrlImgInfo.description, fwQery.description, DESCRIPTION_LEN);
 
     return true;
 }

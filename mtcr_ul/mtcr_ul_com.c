@@ -2556,7 +2556,7 @@ int mclose_ul(mfile *mf)
 
 #define IBDR_MAX_NAME_SIZE 128
 #define BDF_NAME_SIZE 12
-#define DEV_DIR_MAX_SIZE 128
+#define DEV_DIR_MAX_SIZE 256
 static
 int get_inband_dev_from_pci(char *inband_dev, char *pci_dev)
 {

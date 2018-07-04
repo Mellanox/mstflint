@@ -1443,11 +1443,11 @@ bool Fs4Operations::FsBurnAux(FwOperations *imgops, ExtBurnParams& burnParams)
                 struct tools_open_image_info tools_image_info;
                 tools_open_image_info_unpack(&tools_image_info, &imageInfoSect[0]);
                 strncpy(tools_image_info.psid, _fwImgInfo.ext_info.psid,
-                        PSID_LEN - 1);
+                        PSID_LEN + 1);
                 strncpy(tools_image_info.name, _fs3ImgInfo.ext_info.name,
-                        NAME_LEN - 1);
+                        NAME_LEN);
                 strncpy(tools_image_info.description,
-                        _fs3ImgInfo.ext_info.description, DESCRIPTION_LEN - 1);
+                        _fs3ImgInfo.ext_info.description, DESCRIPTION_LEN);
                 tools_open_image_info_pack(&tools_image_info, &imageInfoSect[0]);
             }
 

@@ -31,7 +31,7 @@
 # SOFTWARE.
 #--
 
-from __future__ import print_function
+
 
 """
 * $Id           : mlxfwreset.py 2014-06-25
@@ -39,6 +39,7 @@ from __future__ import print_function
 * $Tool         : Main file.
 """
 
+from __future__ import print_function
 __version__ = '1.0'
 
 # Python Imports ######################
@@ -66,7 +67,11 @@ try:
     from mlxfwresetlib.logger import LoggerFactory
 
     from mlxfwresetlib.mlnx_peripheral_components import MlnxPeripheralComponents
-    import Queue
+    if (sys.version_info > (3, 0)):
+        import queue
+        from builtins import input as raw_input
+    else:
+        import Queue as queue
 except Exception as e:
     print("-E- could not import : %s" % str(e))
     sys.exit(1)
@@ -452,7 +457,7 @@ class MlnxPciOpLinux(MlnxPciOp):
     def getAllPciDevices(self, devAddr):
         devices = []
         pciPath = "/sys/bus/pci/devices/%s" % devAddr
-        q = Queue.Queue()
+        q = queue.Queue()
         q.put(pciPath)
         devices.append(devAddr)
         while not q.empty():
@@ -1611,7 +1616,7 @@ def main():
     options_group.add_argument('--level',
                         '-l',
                         type=int,
-                        choices=range(0, 6),
+                        choices=list(range(0, 6)),
                         help='Run reset with the specified reset level.')
     options_group.add_argument('--yes',
                         '-y',

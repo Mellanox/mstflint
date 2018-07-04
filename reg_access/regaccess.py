@@ -30,6 +30,7 @@
 # SOFTWARE.
 #--
 
+from __future__ import print_function
 import os
 import sys
 import platform
@@ -63,7 +64,7 @@ try:
             REG_ACCESS = CDLL("rreg_access.so")
         except:
             REG_ACCESS = CDLL(os.path.join(os.path.dirname(os.path.realpath(__file__)), "rreg_access.so"))
-except Exception, exp:
+except Exception as exp:
     raise RegAccException("Failed to load shared library rreg_access.so/libreg_access-1.dll: %s" % exp)
 
 if REG_ACCESS:
@@ -239,18 +240,18 @@ if __name__ == "__main__":
     pci_devices = ['81:00.0', '02:00.0', '82:00.0']
     for pci_device in pci_devices:
 
-        print "pci device {0}".format(pci_device)
+        print("pci device {0}".format(pci_device))
         mstdev = mtcr.MstDevice(pci_device)
         regAc = RegAccess(mstdev)
 
         reset_level = regAc.sendMFRL(0, REG_ACCESS_METHOD_GET)
-        print "reset level is 0x{0:x}".format(reset_level)
+        print("reset level is 0x{0:x}".format(reset_level))
 
         uptime = regAc.getFWUptime()
-        print "uptime is {0}".format(uptime)
+        print("uptime is {0}".format(uptime))
 
         manufacturing_base_mac = regAc.getManufacturingBaseMac()
-        print 'manufacturing_base_mac : 0x{0:x}'.format(manufacturing_base_mac)
+        print('manufacturing_base_mac : 0x{0:x}'.format(manufacturing_base_mac))
 
         secure_fw = RegAccess(pci_device=pci_device).getSecureFWStatus()
-        print 'secure_fw : {0}'.format(secure_fw)
+        print('secure_fw : {0}'.format(secure_fw))

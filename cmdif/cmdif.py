@@ -30,6 +30,7 @@
 # SOFTWARE.
 #--
 
+from __future__ import print_function
 import os
 import sys
 import platform
@@ -59,7 +60,7 @@ try:
             CMDIF = CDLL("ccmdif.so")
         except:
             CMDIF = CDLL(os.path.join(os.path.dirname(os.path.realpath(__file__)), "ccmdif.so"))
-except Exception, exp:
+except Exception as exp:
     raise CmdIfException("Failed to load shared library ccmdif.so/libcmdif-1.dll: %s" % exp)
 
 if CMDIF:

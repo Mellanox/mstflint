@@ -36,6 +36,7 @@
 * $Authors      : Ahmad Soboh (ahmads@mellanox.com)
 """
 
+from __future__ import print_function
 import subprocess
 import platform
 import re
@@ -157,4 +158,4 @@ def getDevDBDF(device,logger=None):
 if __name__ == '__main__':
     #device = '/dev/mst/mt4119_pciconf1.1'
     device = '0:136:0:0'
-    print getDevDBDF(device,None)
+    print(getDevDBDF(device,None))

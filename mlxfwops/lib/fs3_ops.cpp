@@ -234,7 +234,7 @@ bool Fs3Operations::GetMfgInfo(u_int8_t *buff)
         struct tools_open_mfg_info tools_mfg_info;
         memset(&tools_mfg_info, 0, sizeof(tools_mfg_info));
         tools_open_mfg_info_unpack(&tools_mfg_info, buff);
-        strncpy(_fs3ImgInfo.ext_info.orig_prs_name, tools_mfg_info.orig_prs_name, FS3_PRS_NAME_LEN - 1);
+        strncpy(_fs3ImgInfo.ext_info.orig_prs_name, tools_mfg_info.orig_prs_name, FS3_PRS_NAME_LEN);
     }
     return true;
 
@@ -311,9 +311,9 @@ bool Fs3Operations::GetImageInfo(u_int8_t *buff)
         struct tools_open_image_info tools_image_info;
         memset(&tools_image_info, 0, sizeof(tools_image_info));
         tools_open_image_info_unpack(&tools_image_info, buff);
-        strncpy(_fs3ImgInfo.ext_info.name, tools_image_info.name, NAME_LEN - 1);
-        strncpy(_fs3ImgInfo.ext_info.description, tools_image_info.description, DESCRIPTION_LEN - 1);
-        strncpy(_fs3ImgInfo.ext_info.prs_name, tools_image_info.prs_name, FS3_PRS_NAME_LEN - 1);
+        strncpy(_fs3ImgInfo.ext_info.name, tools_image_info.name, NAME_LEN);
+        strncpy(_fs3ImgInfo.ext_info.description, tools_image_info.description, DESCRIPTION_LEN);
+        strncpy(_fs3ImgInfo.ext_info.prs_name, tools_image_info.prs_name, FS3_PRS_NAME_LEN);
     }
     _fs3ImgInfo.ext_info.mcc_en = image_info.mcc_en;
     _fs3ImgInfo.ext_info.security_mode = (_fs3ImgInfo.ext_info.security_mode          |
@@ -1191,9 +1191,9 @@ bool Fs3Operations::FsBurnAux(FwOperations *imgops, ExtBurnParams& burnParams)
                 // update PSID, name and description in image info
                 struct tools_open_image_info tools_image_info;
                 tools_open_image_info_unpack(&tools_image_info, &imageInfoSect[0]);
-                strncpy(tools_image_info.psid, _fwImgInfo.ext_info.psid, PSID_LEN - 1);
-                strncpy(tools_image_info.name, _fs3ImgInfo.ext_info.name, NAME_LEN - 1);
-                strncpy(tools_image_info.description, _fs3ImgInfo.ext_info.description, DESCRIPTION_LEN - 1);
+                strncpy(tools_image_info.psid, _fwImgInfo.ext_info.psid, PSID_LEN + 1);
+                strncpy(tools_image_info.name, _fs3ImgInfo.ext_info.name, NAME_LEN);
+                strncpy(tools_image_info.description, _fs3ImgInfo.ext_info.description, DESCRIPTION_LEN);
                 tools_open_image_info_pack(&tools_image_info, &imageInfoSect[0]);
             }
             // re-insert it into the image:

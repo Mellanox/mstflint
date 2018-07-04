@@ -36,11 +36,13 @@
 * $Authors      : Ahmad Soboh (ahmads@mellanox.com)
 """
 
+from __future__ import print_function
 import abc
 import os
 import platform
-import mlxfwreset_utils
-from mlxfwreset_utils import cmdExec
+from . import mlxfwreset_utils
+from .mlxfwreset_utils import cmdExec
+from functools import reduce
 
 
 ######################################################################
@@ -210,7 +212,7 @@ class MlnxDriverFreeBSD(MlnxDriver):
         if rc != 0:
             raise DriverUnknownMode("Can not run the command: %s" % cmd)
         # the voodoo below checks if we had at least one kernel object loaded
-        return (MlnxDriver.DRIVER_IGNORE, MlnxDriver.DRIVER_LOADED)[reduce(lambda x, y: x or y, map(lambda x: x[1], self._knownModules))]
+        return (MlnxDriver.DRIVER_IGNORE, MlnxDriver.DRIVER_LOADED)[reduce(lambda x, y: x or y, [x[1] for x in self._knownModules])]
 
 
 class MlnxDriverWindows(MlnxDriver):
