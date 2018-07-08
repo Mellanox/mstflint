@@ -46,7 +46,7 @@
 #include "mtcr_ib_res_mgt.h"
 #endif
 
-#if !defined(__WIN__) && !defined(DISABLE_OFED) && !defined(__FreeBSD__) && !defined(NO_INBAND)
+#if !defined(__WIN__) && !defined(DISABLE_OFED) && !defined(__FreeBSD__) && !defined(NO_INBAND) && !defined(MST_UL)
 #include <dlfcn.h>
 #include <infiniband/verbs.h>
 #endif
@@ -101,7 +101,7 @@
 
 struct dma_lib_hdl_t {
     void *lib_handle;
-#if !defined(__WIN__) && !defined(DISABLE_OFED) && !defined(__FreeBSD__) && !defined(NO_INBAND)
+#if !defined(__WIN__) && !defined(DISABLE_OFED) && !defined(__FreeBSD__) && !defined(NO_INBAND) && !defined(MST_UL)
     struct ibv_device** (*ibv_get_device_list)(int *num_devices);
     const char*        (*ibv_get_device_name)(struct ibv_device *device);
     void (*ibv_free_device_list)(struct ibv_device **list);
@@ -675,7 +675,7 @@ static int icmd_init_cr(mfile *mf)
     return ME_OK;
 }
 
-#if !defined(__WIN__) && !defined(DISABLE_OFED) && !defined(__FreeBSD__) && !defined(NO_INBAND)
+#if !defined(__WIN__) && !defined(DISABLE_OFED) && !defined(__FreeBSD__) && !defined(NO_INBAND) && !defined(MST_UL)
 char *libs[] = {"libibverbs.so.1"};
 
 #define MY_DLSYM(lib_ctx, func_name) do { \
@@ -717,7 +717,7 @@ static int init_lib_hdl(mfile *mf)
 static int mailbox_alloc(mfile *mf)
 {
     TOOLS_UNUSED(mf);
-#if !defined(__WIN__) && !defined(DISABLE_OFED) && !defined(__FreeBSD__) && !defined(NO_INBAND)
+#if !defined(__WIN__) && !defined(DISABLE_OFED) && !defined(__FreeBSD__) && !defined(NO_INBAND) && !defined(MST_UL)
     size_t i;
     int num_devices = 0;
     int mr_flags = IBV_ACCESS_LOCAL_WRITE;
@@ -815,7 +815,7 @@ static int mailbox_alloc(mfile *mf)
 static void mailbox_dealloc(mfile *mf)
 {
     TOOLS_UNUSED(mf);
-#if !defined(__WIN__) && !defined(DISABLE_OFED) && !defined(__FreeBSD__) && !defined(NO_INBAND)
+#if !defined(__WIN__) && !defined(DISABLE_OFED) && !defined(__FreeBSD__) && !defined(NO_INBAND) && !defined(MST_UL)
     if (mf->icmd.dma_lib_ctx->dev_list && mf->icmd.dma_lib_ctx->ibv_free_device_list) {
         mf->icmd.dma_lib_ctx->ibv_free_device_list(mf->icmd.dma_lib_ctx->dev_list);
     }
