@@ -787,10 +787,6 @@ static int driver_mwrite4_block(mfile *mf, unsigned int offset, u_int32_t *data,
             towrite = (left_size >= PCICONF_MAX_BUFFER_SIZE) ? PCICONF_MAX_BUFFER_SIZE : left_size;
             struct mst_write4_buffer_st write4_buf;
             memset(&write4_buf, 0, sizeof(write4_buf));
-            if (length > (int)sizeof(write4_buf.data)) {
-                errno = ENOMEM;
-                return -1;
-            }
             write4_buf.address_space = (unsigned int)mf->address_space;
             write4_buf.offset = offset;
             write4_buf.size = towrite;
@@ -819,10 +815,6 @@ static int driver_mread4_block(mfile *mf, unsigned int offset, u_int32_t *data, 
 
             struct mst_read4_buffer_st read4_buf;
             memset(&read4_buf, 0, sizeof(read4_buf));
-            if (length > (int)sizeof(read4_buf.data)) {
-                errno = ENOMEM;
-                return -1;
-            }
             read4_buf.address_space = (unsigned int)mf->address_space;
             read4_buf.offset = offset;
             read4_buf.size = toread;
