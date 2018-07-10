@@ -34,46 +34,50 @@
 #include "mlxfwmanager_common.h"
 
 #if defined(__WIN__)
-const char* SafeGetEnv(const char* var)
+const char* SafeGetEnv(const char *var)
 {
-        char* val = getenv(var);
-            if (val == NULL) {
-                        return "."; //Local dir
-                            }
-                return val;
+    char *val = getenv(var);
+    if (val == NULL) {
+        return ".";                 //Local dir
+    }
+    return val;
 }
-#endif 
+#endif
 
-int mapRetValue(int rc, mlxFWMSetupType::T setupType) {
+int mapRetValue(int rc, mlxFWMSetupType::T setupType)
+{
     map<int, int> lvim;
     lvim[ERR_CODE_NO_DEVICES_FOUND] = 171;
 
     map<int, int> dl;
     dl[ERR_CODE_NO_DEVICES_FOUND] = 0;
-    switch(setupType) {
-        case mlxFWMSetupType::lvim:
-            if ( lvim.find(rc) != lvim.end() ) {
-                return lvim[rc];
-            }
-            break;
-        case mlxFWMSetupType::dl:
-            if ( dl.find(rc) != dl.end() ) {
-                return dl[rc];
-            }
-            break;
-        default:
-            return rc;
+    switch (setupType) {
+    case mlxFWMSetupType::lvim:
+        if (lvim.find(rc) != lvim.end() ) {
+            return lvim[rc];
+        }
+        break;
+
+    case mlxFWMSetupType::dl:
+        if (dl.find(rc) != dl.end() ) {
+            return dl[rc];
+        }
+        break;
+
+    default:
+        return rc;
     }
     return rc;
 }
-string beautify_device_name(string family) {
+string beautify_device_name(string family)
+{
     if (family == "connectx") {
         return "ConnectX";
     } else if (family == "connect-ib") {
         return "Connect-IB";
     } else if (family == "connectx-4") {
         return "ConnectX-4";
-    }else {
+    } else {
         return family;
     }
 }
@@ -88,37 +92,37 @@ int CreateTempDir(string tempDir, string& tempBaseDir)
 
 
     #ifdef __WIN__
-        int size;
-        int pid;
-        templ = tempDir;
+    int size;
+    int pid;
+    templ = tempDir;
 
-        size = sizeof(tmpstr);
-        if (!GetUserName((LPTSTR)tmpstr, (LPDWORD)&size)) {
-            fprintf(stderr, "-E- Failed to get username\n");
-            return -1;
-        }
-        templ += tmpstr;
+    size = sizeof(tmpstr);
+    if (!GetUserName((LPTSTR)tmpstr, (LPDWORD)&size)) {
+        fprintf(stderr, "-E- Failed to get username\n");
+        return -1;
+    }
+    templ += tmpstr;
 
-        pid = _getpid();
-        sprintf(tmpstr, "_%d", pid);
-        templ += tmpstr;
+    pid = _getpid();
+    sprintf(tmpstr, "_%d", pid);
+    templ += tmpstr;
 
-        FixPath(templ);
-        rc = ForceMkDir(templ);
-        if (rc != 0) {
-            fprintf(stderr, "-E- Failed to create temporary directory %s: %s\n", templ.c_str(), strerror(rc));
-            return -1;
-        }
+    FixPath(templ);
+    rc = ForceMkDir(templ);
+    if (rc != 0) {
+        fprintf(stderr, "-E- Failed to create temporary directory %s: %s\n", templ.c_str(), strerror(rc));
+        return -1;
+    }
     #else
-        char* temp;
-        tempDir += "XXXXXX";
-        strncpy(tmpstr, tempDir.c_str(), len -1);
-        temp = mkdtemp(tmpstr);
-        if (temp == NULL) {
-            fprintf(stderr, "-E- Failed to create temporary directory\n");
-            return -1;
-        }
-        templ = tmpstr;
+    char *temp;
+    tempDir += "XXXXXX";
+    strncpy(tmpstr, tempDir.c_str(), len - 1);
+    temp = mkdtemp(tmpstr);
+    if (temp == NULL) {
+        fprintf(stderr, "-E- Failed to create temporary directory\n");
+        return -1;
+    }
+    templ = tmpstr;
     #endif
 
     tempBaseDir = templ;
@@ -130,15 +134,15 @@ int RemoveDir(const string &dir)
     string rmdirCmd;
 
     #ifdef __WIN__
-        rmdirCmd = "rd /s /q \"";
-        rmdirCmd += dir;
-        rmdirCmd += "\"";
+    rmdirCmd = "rd /s /q \"";
+    rmdirCmd += dir;
+    rmdirCmd += "\"";
     #else
-        if ((dir == "/") || (dir == "")) {
-            return 0;
-        }
-        rmdirCmd = "rm -rf ";
-        rmdirCmd += dir;
+    if ((dir == "/") || (dir == "")) {
+        return 0;
+    }
+    rmdirCmd = "rm -rf ";
+    rmdirCmd += dir;
     #endif
     return system(rmdirCmd.c_str());
 }
@@ -147,9 +151,9 @@ int MkDir(const string dir)
 {
     int rc;
     #ifdef __WIN__
-        rc = mkdir(dir.c_str());
+    rc = mkdir(dir.c_str());
     #else
-        rc = mkdir(dir.c_str(), 0777);
+    rc = mkdir(dir.c_str(), 0777);
     #endif
     if (rc) {
         rc = errno;
@@ -162,10 +166,10 @@ int MkDir(const string dir)
 void FixPath(string &s)
 {
     #ifdef __WIN__
-        size_t pos;
-        while ((pos = s.find('/')) != string::npos) {
-            s.replace( pos, 1, "\\");
-        }
+    size_t pos;
+    while ((pos = s.find('/')) != string::npos) {
+        s.replace( pos, 1, "\\");
+    }
     #else
     (void)s;
     #endif
@@ -185,38 +189,40 @@ int ForceMkDir(const string dir)
     return rc;
 }
 
-int mlxfw_replace(char *st, char *orig, char *repl) {
+int mlxfw_replace(char *st, char *orig, char *repl)
+{
     char buffer[1024];
     char *ch;
 
     if (!(ch = strstr(st, orig))) {
         return 0;
     }
-    strncpy(buffer, st, ch-st);
-    buffer[ch-st] = 0;
-    sprintf(buffer+(ch-st), "%s%s", repl, ch+strlen(orig));
+    strncpy(buffer, st, ch - st);
+    buffer[ch - st] = 0;
+    sprintf(buffer + (ch - st), "%s%s", repl, ch + strlen(orig));
     strcpy(st, buffer);
 
     return 0;
 }
 
-int mlxfw_get_exec_name_from_path(char *str, char *exec_name) {
+int mlxfw_get_exec_name_from_path(char *str, char *exec_name)
+{
     char tmp_str[strlen(str) + 1];
-    char * pch;
+    char *pch;
     strcpy(tmp_str, str);
-    pch = strtok (tmp_str,"\\");
+    pch = strtok(tmp_str, "\\");
     while (pch != NULL) {
         strcpy(exec_name, pch);
-        pch = strtok (NULL, "\\");
+        pch = strtok(NULL, "\\");
     }
     return 0;
 }
 
-#endif 
+#endif
 
-bool unzipDataFile (std::vector<u_int8_t> data,
-                             std::vector<u_int8_t> &newData,
-                             const char *sectionName)
+bool unzipDataFile(std::vector<u_int8_t> data,
+                   std::vector<u_int8_t> &newData,
+                   const char *sectionName)
 {
 #ifndef NO_ZLIB
     int rc;
@@ -224,7 +230,7 @@ bool unzipDataFile (std::vector<u_int8_t> data,
         return false;
     }
     // restore endianess.
-    TOCPUn(&(data[0]), data.size()/4);
+    TOCPUn(&(data[0]), data.size() / 4);
 
     // uncompress:
     uLongf destLen = data.size();
@@ -232,8 +238,8 @@ bool unzipDataFile (std::vector<u_int8_t> data,
     vector<u_int8_t> dest(destLen);
 
     for (int i = 0; i < 32; i++) {
-        rc = uncompress((Bytef *)&(dest[0]), &destLen,
-                            (const Bytef *)&(data[0]), data.size());
+        rc = uncompress((Bytef*)&(dest[0]), &destLen,
+                        (const Bytef*)&(data[0]), data.size());
         if (rc != Z_BUF_ERROR) {
             break;
         }
@@ -261,38 +267,37 @@ bool unzipDataFile (std::vector<u_int8_t> data,
 }
 
 #ifdef __WIN__
-int my_chmod(const char * path, mode_t mode)
+int my_chmod(const char *path, mode_t mode)
 {
 
     int result = _chmod(path, (mode & MS_MODE_MASK));
 
-    if (result != 0)
-    {
+    if (result != 0) {
         result = errno;
     }
     return (result);
 }
 #else
-int my_chmod(const char * path, mode_t mode)
+int my_chmod(const char *path, mode_t mode)
 {
     int result = chmod(path, mode);
 
-    if (result != 0)
-    {
+    if (result != 0) {
         result = errno;
     }
     return (result);
 }
 #endif
 
-string getErrStr(int rc) {
+string getErrStr(int rc)
+{
     map<int, string> err_msg;
     err_msg[MLX_FWM_SUCCESS] =  "";
     err_msg[ERR_CODE_QUERY_FAILED] = ERR_MSG_QUERY_FAILED;
     err_msg[ERR_CODE_PROG_FAILED] = ERR_MSG_PROG_FAILED;
     err_msg[ERR_CODE_BAD_CMD_ARGS] = ERR_MSG_BAD_CMD_ARGS;
     err_msg[ERR_CODE_CREATE_LOG_FAIL] = ERR_MSG_CREATE_LOG_FAIL;
-    err_msg[ERR_CODE_FETCH_LOCAL_DEVICES_FAIL] =ERR_MSG_FETCH_LOCAL_DEVICES_FAIL;
+    err_msg[ERR_CODE_FETCH_LOCAL_DEVICES_FAIL] = ERR_MSG_FETCH_LOCAL_DEVICES_FAIL;
     err_msg[ERR_CODE_SERVER_DOWNLOAD_FAILED] = ERR_MSG_SERVER_DOWNLOAD_FAILED;
     err_msg[ERR_CODE_MEM_ALLOC_FAIL] = ERR_MSG_MEM_ALLOC_FAIL;
     err_msg[ERR_CODE_INTERNAL_ERR] = ERR_MSG_INTERNAL_ERR;

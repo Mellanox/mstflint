@@ -37,8 +37,10 @@
 #include <syslog.h>
 #include "mvpd.h"
 
-#if defined(__MINGW32__) || defined(__MINGW64__)              /* Windows MINGW */
+#if defined(__MINGW32__) || defined(__MINGW64__) || defined(_MSC_VER)    /* Windows */
 #define syslog(lvl, format, ...)
+#else
+#include <syslog.h>
 #endif
 
 enum {
@@ -66,24 +68,31 @@ enum {
 
 #define CONVERT(r) (r == VPD_RO ? VPD_TAG_R : VPD_TAG_W)
 
+#if defined(_MSC_VER)
+#define PACK( __declaration__ ) __pragma( pack(push, 1) ) __declaration__ __pragma( pack(pop) )
+#else
+#define PACK( __declaration__ ) __declaration__ __attribute__((__packed__))
+#endif
+
+PACK(
 struct vpd_field {
     unsigned char keyword[2];
     unsigned char length;
     unsigned char data[0];
-}__attribute__((packed));
+}); 
 
 
-int my_vpd_read(mfile*    mf,
-                u_int8_t* raw_vpd,
-                int       raw_vpd_size,
-                u_int8_t* buf,
-                unsigned  offset,
-                int       size)
+int my_vpd_read(mfile *mf,
+                u_int8_t *raw_vpd,
+                int raw_vpd_size,
+                u_int8_t *buf,
+                unsigned offset,
+                int size)
 {
     unsigned i;
     int ret;
     if (mf != NULL) {
-        for (i = 0; i < (unsigned)size; i += 0x4) {
+        for (i = 0; (int)i < size; i += 0x4) {
             u_int8_t value[4] = {0};
             ret = mvpd_read4(mf, offset + i, value);
             if (ret) {
@@ -111,9 +120,9 @@ int mvpd_get_raw_vpd(mfile *mf, u_int8_t *raw_data_buf, int size)
     return my_vpd_read(mf, NULL, 0, raw_data_buf, 0, size);
 }
 
-int allocate_result(vpd_result_t**  result)
+int allocate_result(vpd_result_t **result)
 {
-    vpd_result_t* res;
+    vpd_result_t *res;
     res = (vpd_result_t*) malloc(sizeof(vpd_result_t));
     if (res == NULL) {
         return MVPD_MEM_ERR;
@@ -123,9 +132,9 @@ int allocate_result(vpd_result_t**  result)
     return MVPD_OK;
 }
 
-int fill_id(vpd_result_t* result,
-            u_int8_t*     data,
-            unsigned      offset
+int fill_id(vpd_result_t *result,
+            u_int8_t *data,
+            unsigned offset
             )
 {
     vpd_tag_t id_tag;
@@ -143,18 +152,18 @@ int fill_id(vpd_result_t* result,
     return MVPD_OK;
 }
 
-int fill_fields(vpd_result_t* result,
-                u_int8_t*     data,
-                unsigned      offset,
-                int           read_type,
-                unsigned*     checksum_offset,
-                int           strict)
+int fill_fields(vpd_result_t *result,
+                u_int8_t *data,
+                unsigned offset,
+                int read_type,
+                unsigned *checksum_offset,
+                int strict)
 {
     int i;
     int fields_num = 0;
     int fields_idx = 0;
     vpd_tag_t id_tag;
-    vpd_tag_t* fields_list;
+    vpd_tag_t *fields_list;
     struct vpd_field *field = NULL;
     if (read_type == VPD_TAG_R) {
         if (result->ro_fields_size != 0) {
@@ -168,11 +177,11 @@ int fill_fields(vpd_result_t* result,
         }
     }
     for (i = 0; i < VPD_TAG_LENGTH(data); i += 0x3 + field->length) {
-        field = (struct vpd_field *) (VPD_TAG_DATA(data) + i);
+        field = (struct vpd_field*) (VPD_TAG_DATA(data) + i);
         if (strict) {
             if (i + 0x3 > VPD_TAG_LENGTH(data) ||  i + 0x3 + field->length > VPD_TAG_LENGTH(data)) {
                 fprintf(stderr, "-E- In tag %s offset 0x%x+0x%x there is an invalid field (keyword: 0x%x).\n",
-                    VPD_TAG_NAME(data) == VPD_TAG_R ? "VPD_R" : "VPD_W", offset, i, field->keyword[0]);
+                        VPD_TAG_NAME(data) == VPD_TAG_R ? "VPD_R" : "VPD_W", offset, i, field->keyword[0]);
                 return MVPD_FORMAT_ERR;
             }
         }
@@ -183,7 +192,7 @@ int fill_fields(vpd_result_t* result,
         return MVPD_MEM_ERR;
     }
     for (i = 0; i < VPD_TAG_LENGTH(data); i += 0x3 + field->length) {
-        field = (struct vpd_field *) (VPD_TAG_DATA(data) + i);
+        field = (struct vpd_field*) (VPD_TAG_DATA(data) + i);
         id_tag.id[0] = field->keyword[0];
         id_tag.id[1] = field->keyword[1];
         id_tag.id[2] = '\0';
@@ -212,10 +221,10 @@ int fill_fields(vpd_result_t* result,
     return MVPD_OK;
 }
 
-int check_checksum(u_int8_t* id_data,
-               int       id_size,
-               u_int8_t* ro_data,
-               unsigned  rv_offset)
+int check_checksum(u_int8_t *id_data,
+                   int id_size,
+                   u_int8_t *ro_data,
+                   unsigned rv_offset)
 {
 
     int i;
@@ -236,14 +245,14 @@ int check_checksum(u_int8_t* id_data,
     return MVPD_OK;
 }
 
-#define CHECK_RC(rc) do {if (rc) goto error;} while(0)
-#define CHECK_NULL(ptr) do {if (NULL == ptr) goto error;} while(0)
+#define CHECK_RC(rc) do {if (rc) {goto error;}} while (0)
+#define CHECK_NULL(ptr) do {if (NULL == ptr) {goto error;}} while (0)
 
 
-int mvpd_read_or_parse(mfile*          mf,
-                       u_int8_t*       raw_vpd,
-                       int             raw_vpd_size,
-                       vpd_result_t**  result,
+int mvpd_read_or_parse(mfile *mf,
+                       u_int8_t *raw_vpd,
+                       int raw_vpd_size,
+                       vpd_result_t **result,
                        vpd_tags_type_t read_type,
                        int strict,
                        int checksum_verify)
@@ -260,9 +269,9 @@ int mvpd_read_or_parse(mfile*          mf,
     u_int8_t buff[4] = {0};
     unsigned offset = 0;
     unsigned checksum_offset = 0;
-    u_int8_t* id_data = NULL;
-    u_int8_t* ro_data = NULL;
-    u_int8_t* rw_data = NULL;
+    u_int8_t *id_data = NULL;
+    u_int8_t *ro_data = NULL;
+    u_int8_t *rw_data = NULL;
     int checksum_res = -1;
     int rc = MVPD_MEM_ERR;
     unsigned actual_size = 1 << 15; /*MAX SIZE OF VPD */
@@ -318,7 +327,7 @@ int mvpd_read_or_parse(mfile*          mf,
         /* TAKE THE RO FIELDS */
         read_size = (ro_len + 3) & ~3;
         alocated_read_size = read_size * sizeof(u_int8_t);
-        offset = vpd_tags_info.ro_tag_offset ;
+        offset = vpd_tags_info.ro_tag_offset;
         ro_data = (u_int8_t*) malloc(alocated_read_size);
         CHECK_NULL(ro_data);
         memset(ro_data, 0, alocated_read_size);
@@ -368,17 +377,17 @@ error:
 
 }
 
-int mvpd_read(mfile*          mf,
-              vpd_result_t**  result,
+int mvpd_read(mfile *mf,
+              vpd_result_t **result,
               vpd_tags_type_t read_type)
 {
     return mvpd_read_adv(mf, result, read_type, 0);
 }
 
-int mvpd_read_adv(mfile* mf,
-        vpd_result_t** result,
-        vpd_tags_type_t read_type,
-        int strict)
+int mvpd_read_adv(mfile *mf,
+                  vpd_result_t **result,
+                  vpd_tags_type_t read_type,
+                  int strict)
 {
     if (mf == NULL || result == NULL) {
         return MVPD_BAD_PARAMS;
@@ -386,17 +395,17 @@ int mvpd_read_adv(mfile* mf,
     return mvpd_read_or_parse(mf, NULL, -1, result, read_type, strict, 0);
 }
 
-int mvpd_parse(u_int8_t*         raw_vpd,
-               int                 size,
-               vpd_result_t**     result,
-               vpd_tags_type_t     read_type)
+int mvpd_parse(u_int8_t *raw_vpd,
+               int size,
+               vpd_result_t **result,
+               vpd_tags_type_t read_type)
 {
     return mvpd_parse_adv(raw_vpd, size, result, read_type, 0, 0);
 }
 
-int mvpd_parse_adv(u_int8_t* raw_vpd,
+int mvpd_parse_adv(u_int8_t *raw_vpd,
                    int size,
-                   vpd_result_t** result,
+                   vpd_result_t **result,
                    vpd_tags_type_t read_type,
                    int strict,
                    int checksum_ver)
@@ -407,8 +416,8 @@ int mvpd_parse_adv(u_int8_t* raw_vpd,
     return mvpd_read_or_parse(NULL, raw_vpd, size, result, read_type, strict, checksum_ver);
 }
 
-void free_fields(vpd_tag_t* fields_list,
-                 int        len)
+void free_fields(vpd_tag_t *fields_list,
+                 int len)
 {
     int i;
     for (i = 0; i < len; i++) {
@@ -417,7 +426,7 @@ void free_fields(vpd_tag_t* fields_list,
     free(fields_list);
 }
 
-int mvpd_result_free(vpd_result_t* result)
+int mvpd_result_free(vpd_result_t *result)
 {
     if (result == NULL) {
         return 1;
@@ -451,7 +460,7 @@ int mvpd_get_vpd_size(mfile *mf, int *size)
         if (VPD_TAG_NAME(buff) == VPD_TAG_END) {
             break;
         }
-        if (VPD_TAG_NAME(buff) != VPD_TAG_ID && VPD_TAG_NAME(buff) != VPD_TAG_R && VPD_TAG_NAME(buff) != VPD_TAG_W){
+        if (VPD_TAG_NAME(buff) != VPD_TAG_ID && VPD_TAG_NAME(buff) != VPD_TAG_R && VPD_TAG_NAME(buff) != VPD_TAG_W) {
             syslog(3, "LIBMVPD: Unknown TAG %x in offset: %x !", VPD_TAG_NAME(buff), mvpd_len);
             return MVPD_FORMAT_ERR;
         }

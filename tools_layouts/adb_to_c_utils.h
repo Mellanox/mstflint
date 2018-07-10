@@ -31,10 +31,8 @@
  */
 
 /***
-         *** This file was generated at "2016-09-24 01:49:33"
-         *** by:
-         ***    > /mswg/release/eat_me/last_release/adabe_plugins/adb2c/adb2pack.py --input adb/register_access/register_access_sib.adb --file-prefix register_access_sib --prefix register_access_sib_
-         ***/
+*** This file was generated at "2016-10-19 23:52:08"
+***/
 
 #ifndef ADABE_TO_C_UTILS
 #define ADABE_TO_C_UTILS
@@ -45,7 +43,7 @@
 
 //for htonl etc...
 #if defined(_WIN32) || defined(_WIN64)
-    #include<Winsock2.h>
+    #include<winsock2.h>
 #else   /* Linux */
     #include<arpa/inet.h>
 #endif  /* Windows */
@@ -124,19 +122,21 @@ extern "C" {
 
 
 /* define macros to the architecture of the CPU */
-#if defined(__linux) || defined(__FreeBSD__)             /* __linux || __FreeBSD__ */
+#if defined(__linux__) || defined(__FreeBSD__)             /* __linux || __FreeBSD__ */
 #   if defined(__i386__)
 #       define ARCH_x86
 #   elif defined(__x86_64__)
 #       define ARCH_x86_64
 #   elif defined(__ia64__)
 #       define ARCH_ia64
-#   elif defined(__PPC64__)
+#   elif defined(__PPC64__) || defined(__s390x__)
 #       define ARCH_ppc64
 #   elif defined(__PPC__)
 #       define ARCH_ppc
 #   elif defined(__aarch64__)
 #       define ARCH_arm64
+#   elif defined(__arm__)
+#       define ARCH_arm6l
 #   else
 #       error Unknown CPU architecture using the linux OS
 #   endif
@@ -169,7 +169,7 @@ extern "C" {
 #define U16H_FMT    "0x%04x"
 #define U8H_FMT     "0x%02x"
 
-#if defined(ARCH_x86) || defined(ARCH_ppc) || defined(UEFI_BUILD)
+#if defined(ARCH_x86) || defined(ARCH_ppc) || defined(UEFI_BUILD) || defined(ARCH_arm6l)
 #   if defined(__MINGW32__) || defined(__MINGW64__)
 #       include <inttypes.h>
 #       define U64D_FMT    "0x%" PRId64
@@ -191,7 +191,7 @@ extern "C" {
 
 #if !defined(_WIN32) && !defined(_WIN64)    		/* Linux */
     #include <sys/types.h>
-#elif defined(__MINGW32__) || defined(__MINGW64__) 	/* windows - mingw */
+#elif defined(__MINGW32__) || defined(__MINGW64__) || defined (_MSC_VER) 	/* windows - mingw */
     #include <stdint.h>                                                                                                                                           
     #ifndef   MFT_TOOLS_VARS                                                                                                                                      
 		#define MFT_TOOLS_VARS                                                                                                                                    

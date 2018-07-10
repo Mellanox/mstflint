@@ -42,8 +42,8 @@
 #include "flint.h"
 
 //Globals:
-Flint* gFlint = NULL;
-extern FILE* flint_log_fh;
+Flint *gFlint = NULL;
+extern FILE *flint_log_fh;
 //signal handler section
 
 #define BURN_INTERRUPTED 0x1234
@@ -55,23 +55,23 @@ void TerminationHandler(int signum);
 
 static BOOL CtrlHandler( DWORD fdwCtrlType )
 {
-    switch( fdwCtrlType )
+    switch (fdwCtrlType)
     {
-      // Handle the CTRL-C signal.
-      case CTRL_C_EVENT:
-      // CTRL-CLOSE: confirm that the user wants to exit.
-      case CTRL_CLOSE_EVENT:
-      // Pass other signals to the next handler.
-      case CTRL_BREAK_EVENT:
-      case CTRL_LOGOFF_EVENT:
-      case CTRL_SHUTDOWN_EVENT:
-    	  TerminationHandler(SIGINT);
-          return TRUE;
+    // Handle the CTRL-C signal.
+    case CTRL_C_EVENT:
+    // CTRL-CLOSE: confirm that the user wants to exit.
+    case CTRL_CLOSE_EVENT:
+    // Pass other signals to the next handler.
+    case CTRL_BREAK_EVENT:
+    case CTRL_LOGOFF_EVENT:
+    case CTRL_SHUTDOWN_EVENT:
+        TerminationHandler(SIGINT);
+        return TRUE;
 
-      default:
+    default:
         return FALSE;
     }
- }
+}
 
 #endif
 
@@ -81,11 +81,10 @@ void TerminationHandler(int signum)
     static volatile sig_atomic_t fatal_error_in_progress = 0;
 
     if (fatal_error_in_progress) {
-        raise (signum);
+        raise(signum);
     }
     fatal_error_in_progress = 1;
 
-    signal (signum, SIG_DFL);
     write_result_to_log(BURN_INTERRUPTED, "");
     close_log();
     if (gFlint != NULL) {
@@ -96,6 +95,7 @@ void TerminationHandler(int signum)
         gFlint = NULL;
         printf(" Done.\n");
     }
+    signal(signum, SIG_DFL);
     raise(signum);
 }
 
@@ -112,9 +112,9 @@ void initHandler()
 #endif
 
     //set the signal handler
-    for (int i=0; i < SIGNAL_NUM ; i++) {
+    for (int i = 0; i < SIGNAL_NUM; i++) {
         void (*prevFunc)(int);
-        prevFunc = signal(signalList[i],TerminationHandler);
+        prevFunc = signal(signalList[i], TerminationHandler);
         if (prevFunc == SIG_ERR) {
             printf("-E- failed to set signal Handler.");
             exit(FLINT_FAILED);
@@ -176,11 +176,11 @@ void Flint::deInitSubcommandMap(map_sub_cmd_t_to_subcommand cmdMap)
 }
 
 
-Flint::Flint():
-        CommandLineRequester(FLINT_DISPLAY_NAME" [OPTIONS] <command> [Parameters]"),
-        _flintParams(),
-        _cmdParser(FLINT_DISPLAY_NAME" - Flash Interface"),
-        _subcommands(initSubcommandMap())
+Flint::Flint() :
+    CommandLineRequester(FLINT_DISPLAY_NAME " [OPTIONS] <command> [Parameters]"),
+    _flintParams(),
+    _cmdParser(FLINT_DISPLAY_NAME " - Flash Interface"),
+    _subcommands(initSubcommandMap())
 {
     initCmdParser();
 }
@@ -193,7 +193,7 @@ Flint::~Flint()
     }
 }
 
-FlintStatus Flint::run(int argc, char* argv[])
+FlintStatus Flint::run(int argc, char *argv[])
 {
     //Step1 parse input
     //There are some memory allocations parseCmdLine
@@ -213,8 +213,7 @@ FlintStatus Flint::run(int argc, char* argv[])
         return FLINT_FAILED;
     }
 
-    if (_flintParams.cmd == SC_No_Cmd && !_flintParams.clear_semaphore)
-    {
+    if (_flintParams.cmd == SC_No_Cmd && !_flintParams.clear_semaphore) {
         cout << FLINT_NO_COMMAND_ERROR << endl;
         return FLINT_FAILED;
     }
@@ -233,7 +232,7 @@ FlintStatus Flint::run(int argc, char* argv[])
     }
 
     // Step 2 save argv as a single cmd string in flint params for the log functionallity
-    for(int i=0; i<argc; i++) {
+    for (int i = 0; i < argc; i++) {
         _flintParams.fullCmd = _flintParams.fullCmd + argv[i] + " ";
     }
     //TODO: Step 3 check flintParams for contradictions?
@@ -248,22 +247,22 @@ FlintStatus Flint::run(int argc, char* argv[])
 }
 
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
     initHandler();
     try
     {
-    gFlint = new Flint();
-    FlintStatus rc = gFlint->run(argc, argv);
-    if (gFlint) {
-        delete gFlint;
-        gFlint = NULL;
-       }
-    return rc;
+        gFlint = new Flint();
+        FlintStatus rc = gFlint->run(argc, argv);
+        if (gFlint) {
+            delete gFlint;
+            gFlint = NULL;
+        }
+        return rc;
     }
     catch (std::exception& e)
     {
-        cout<<"-E- "<<e.what()<<endl;
+        cout << "-E- " << e.what() << endl;
         return FLINT_FAILED;
     }
 }

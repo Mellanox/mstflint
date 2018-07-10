@@ -49,7 +49,7 @@ typedef enum {
     FLINT_FAILED = 1,
     FLINT_QUERY_ERROR = 2,
     FLINT_BURN_ABORTED = 7
-}FlintStatus;
+} FlintStatus;
 
 /***********************
  * Flint Error Messages
@@ -130,6 +130,7 @@ typedef enum {
 #define FLINT_FLAG_WITH_FLAG_ERROR            "\"%s\" flag must be specified with \"%s\" flag.\n"
 #define FLINT_INVALID_PASSWORD                "Invalid Password.\n"
 #define FLINT_NO_GUID_MAC_FLAGS_ERROR         "Can not set GUIDs/MACs: please run with -uid/-guid/-mac flag.\n"
+#define FLINT_NOT_SUPP_UID_FLAG_ERROR         "Can not set GUIDs/MACs: %s flag is not supported for this device.\nPlease run with -uid/-guid/-mac flag.\n"
 #define FLINT_NO_UID_FLAG_ERROR               "Can not set GUIDs/MACs: uid is not specified, please run with -uid flag.\n"
 #define FLINT_CHECKSUM_ERROR                  "Failed to calculate checksum on %s: %s\n"
 #define FLINT_CHECKSUM_MISMATCH_ERROR         "Given checksum: %s does not match the checksum calculated on device FW: %s.\n"

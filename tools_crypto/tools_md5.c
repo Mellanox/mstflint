@@ -28,12 +28,13 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
 
 #include <openssl/md5.h>
 #include "tools_md5.h"
 
-u_int8_t *tools_md5(const u_int8_t* src, u_int32_t src_len, u_int8_t dst[16])
+u_int8_t* tools_md5(const u_int8_t *src, u_int32_t src_len, u_int8_t dst[16])
 {
     return MD5((const unsigned char*)src, src_len, (unsigned char*)dst);
 }

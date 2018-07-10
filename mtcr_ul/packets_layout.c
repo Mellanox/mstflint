@@ -31,7 +31,7 @@
  *
  *  End of legal section ......................................................
  *
-*/
+ */
 /***
  *** This file was generated at "Mon May 30 15:06:41 2011"
  *** by:
@@ -49,7 +49,8 @@
  * Description:  */
 
 
-u_int32_t OperationTlv_pack(struct OperationTlv *data_to_pack, u_int8_t *packed_buffer) {
+u_int32_t OperationTlv_pack(struct OperationTlv *data_to_pack, u_int8_t *packed_buffer)
+{
     push_to_buff(packed_buffer, 24, 8, data_to_pack->reserved0);
     push_to_buff(packed_buffer, 17, 7, data_to_pack->status);
     push_to_buff(packed_buffer, 16, 1, data_to_pack->dr);
@@ -63,7 +64,8 @@ u_int32_t OperationTlv_pack(struct OperationTlv *data_to_pack, u_int8_t *packed_
     return 16;
 }
 
-void OperationTlv_unpack(struct OperationTlv *unpacked_data, u_int8_t *buffer_to_unpack) {
+void OperationTlv_unpack(struct OperationTlv *unpacked_data, u_int8_t *buffer_to_unpack)
+{
     unpacked_data->reserved0 = pop_from_buff(buffer_to_unpack, 24, 8);
     unpacked_data->status = pop_from_buff(buffer_to_unpack, 17, 7);
     unpacked_data->dr = pop_from_buff(buffer_to_unpack, 16, 1);
@@ -76,17 +78,18 @@ void OperationTlv_unpack(struct OperationTlv *unpacked_data, u_int8_t *buffer_to
     unpacked_data->tid = pop_from_buff_64(buffer_to_unpack, 64);
 }
 
-void OperationTlv_dump(struct OperationTlv *data_to_print, FILE *out_port) {
-    fprintf(out_port, "OperationTlv::reserved0: "U32D_FMT"\n", data_to_print->reserved0);
-    fprintf(out_port, "OperationTlv::status: "U32D_FMT"\n", data_to_print->status);
-    fprintf(out_port, "OperationTlv::dr: "U32D_FMT"\n", data_to_print->dr);
-    fprintf(out_port, "OperationTlv::len: "U32D_FMT"\n", data_to_print->len);
-    fprintf(out_port, "OperationTlv::Type: "U32D_FMT"\n", data_to_print->Type);
-    fprintf(out_port, "OperationTlv::class: "U32D_FMT"\n", data_to_print->class);
-    fprintf(out_port, "OperationTlv::method: "U32D_FMT"\n", data_to_print->method);
-    fprintf(out_port, "OperationTlv::r: "U32D_FMT"\n", data_to_print->r);
-    fprintf(out_port, "OperationTlv::register_id: "U32D_FMT"\n", data_to_print->register_id);
-    fprintf(out_port, "OperationTlv::tid: "U64D_FMT"\n", data_to_print->tid);
+void OperationTlv_dump(struct OperationTlv *data_to_print, FILE *out_port)
+{
+    fprintf(out_port, "OperationTlv::reserved0: "U32D_FMT "\n", data_to_print->reserved0);
+    fprintf(out_port, "OperationTlv::status: "U32D_FMT "\n", data_to_print->status);
+    fprintf(out_port, "OperationTlv::dr: "U32D_FMT "\n", data_to_print->dr);
+    fprintf(out_port, "OperationTlv::len: "U32D_FMT "\n", data_to_print->len);
+    fprintf(out_port, "OperationTlv::Type: "U32D_FMT "\n", data_to_print->Type);
+    fprintf(out_port, "OperationTlv::class: "U32D_FMT "\n", data_to_print->class);
+    fprintf(out_port, "OperationTlv::method: "U32D_FMT "\n", data_to_print->method);
+    fprintf(out_port, "OperationTlv::r: "U32D_FMT "\n", data_to_print->r);
+    fprintf(out_port, "OperationTlv::register_id: "U32D_FMT "\n", data_to_print->register_id);
+    fprintf(out_port, "OperationTlv::tid: "U64D_FMT "\n", data_to_print->tid);
 }
 
 /*************************************/
@@ -95,21 +98,24 @@ void OperationTlv_dump(struct OperationTlv *data_to_print, FILE *out_port) {
  * Description: reg_tlv */
 
 
-u_int32_t reg_tlv_pack(struct reg_tlv *data_to_pack, u_int8_t *packed_buffer) {
+u_int32_t reg_tlv_pack(struct reg_tlv *data_to_pack, u_int8_t *packed_buffer)
+{
     push_to_buff(packed_buffer, 16, 16, data_to_pack->reserved0);
     push_to_buff(packed_buffer, 5, 11, data_to_pack->len);
     push_to_buff(packed_buffer, 0, 5, data_to_pack->Type);
     return 4;
 }
 
-void reg_tlv_unpack(struct reg_tlv *unpacked_data, u_int8_t *buffer_to_unpack) {
+void reg_tlv_unpack(struct reg_tlv *unpacked_data, u_int8_t *buffer_to_unpack)
+{
     unpacked_data->reserved0 = pop_from_buff(buffer_to_unpack, 16, 16);
     unpacked_data->len = pop_from_buff(buffer_to_unpack, 5, 11);
     unpacked_data->Type = pop_from_buff(buffer_to_unpack, 0, 5);
 }
 
-void reg_tlv_dump(struct reg_tlv *data_to_print, FILE *out_port) {
-    fprintf(out_port, "reg_tlv::reserved0: "U32D_FMT"\n", data_to_print->reserved0);
-    fprintf(out_port, "reg_tlv::len: "U32D_FMT"\n", data_to_print->len);
-    fprintf(out_port, "reg_tlv::Type: "U32D_FMT"\n", data_to_print->Type);
+void reg_tlv_dump(struct reg_tlv *data_to_print, FILE *out_port)
+{
+    fprintf(out_port, "reg_tlv::reserved0: "U32D_FMT "\n", data_to_print->reserved0);
+    fprintf(out_port, "reg_tlv::len: "U32D_FMT "\n", data_to_print->len);
+    fprintf(out_port, "reg_tlv::Type: "U32D_FMT "\n", data_to_print->Type);
 }

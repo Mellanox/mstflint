@@ -50,12 +50,12 @@ int mwrite4(mfile *mf, unsigned int offset, u_int32_t value)
     return mwrite4_ul(mf, offset, value);
 }
 
-int mread4_block(mfile *mf, unsigned int offset, u_int32_t* data, int byte_len)
+int mread4_block(mfile *mf, unsigned int offset, u_int32_t *data, int byte_len)
 {
     return mread4_block_ul(mf, offset, data, byte_len);
 }
 
-int mwrite4_block(mfile *mf, unsigned int offset, u_int32_t* data, int byte_len)
+int mwrite4_block(mfile *mf, unsigned int offset, u_int32_t *data, int byte_len)
 {
     return mwrite4_block_ul(mf, offset, data, byte_len);
 }
@@ -64,11 +64,12 @@ int msw_reset(mfile *mf)
 {
 #ifndef NO_INBAND
     switch (mf->tp) {
-        case MST_IB:
-            return mib_swreset(mf);
-        default:
-            errno = EPERM;
-            return -1;
+    case MST_IB:
+        return mib_swreset(mf);
+
+    default:
+        errno = EPERM;
+        return -1;
     }
 #else
     (void)mf;
@@ -89,17 +90,17 @@ int mdevices(char *buf, int len, int mask)
 }
 
 
-dev_info* mdevices_info(int mask, int* len)
+dev_info* mdevices_info(int mask, int *len)
 {
     return mdevices_info_ul(mask, len);
 }
 
-dev_info* mdevices_info_v(int mask, int* len, int verbosity)
+dev_info* mdevices_info_v(int mask, int *len, int verbosity)
 {
     return mdevices_info_v_ul(mask, len, verbosity);
 }
 
-void mdevices_info_destroy(dev_info* dev_info, int len)
+void mdevices_info_destroy(dev_info *dev_info, int len)
 {
     int i, j;
     if (dev_info) {
@@ -128,14 +129,14 @@ void mdevices_info_destroy(dev_info* dev_info, int len)
     }
 }
 
-mfile *mopen(const char *name)
+mfile* mopen(const char *name)
 {
     return mopen_ul(name);
 }
 
-mfile *mopend(const char *name, int type)
+mfile* mopend(const char *name, DType dtype)
 {
-    if (type != 1) {
+    if (dtype != 1) {
         return NULL;
     }
     return mopen(name);
@@ -146,9 +147,9 @@ int mclose(mfile *mf)
     return mclose_ul(mf);
 }
 
-mfile *mopen_adv(const char *name, MType mtype)
+mfile* mopen_adv(const char *name, MType mtype)
 {
-    mfile* mf = mopend(name, MST_TAVOR);
+    mfile *mf = mopend(name, MST_TAVOR);
     if (mf) {
         if (mf->tp & mtype) {
             return mf;
@@ -161,7 +162,7 @@ mfile *mopen_adv(const char *name, MType mtype)
     return mf;
 }
 
-mfile *mopen_fw_ctx(void* fw_cmd_context, void* fw_cmd_func, void* extra_data)
+mfile* mopen_fw_ctx(void *fw_cmd_context, void *fw_cmd_func, void *extra_data)
 {
     // not implemented
     TOOLS_UNUSED(fw_cmd_context);
@@ -205,18 +206,18 @@ int maccess_reg_cmdif(mfile *mf, reg_access_t reg_access, void *reg_data, u_int3
     return ME_NOT_IMPLEMENTED;
 }
 
-int mread_buffer(mfile *mf, unsigned int offset, u_int8_t* data, int byte_len)
+int mread_buffer(mfile *mf, unsigned int offset, u_int8_t *data, int byte_len)
 {
     return mread_buffer_ul(mf, offset, data, byte_len);
 }
 
-int mwrite_buffer(mfile *mf, unsigned int offset, u_int8_t* data, int byte_len)
+int mwrite_buffer(mfile *mf, unsigned int offset, u_int8_t *data, int byte_len)
 {
     return mwrite_buffer_ul(mf, offset, data, byte_len);
 }
 
-int maccess_reg(mfile *mf, u_int16_t reg_id, maccess_reg_method_t reg_method, void* reg_data, u_int32_t reg_size,
-        u_int32_t r_size_reg, u_int32_t w_size_reg, int *reg_status)
+int maccess_reg(mfile *mf, u_int16_t reg_id, maccess_reg_method_t reg_method, void *reg_data, u_int32_t reg_size,
+                u_int32_t r_size_reg, u_int32_t w_size_reg, int *reg_status)
 {
     return maccess_reg_ul(mf, reg_id, reg_method, reg_data, reg_size, r_size_reg, w_size_reg, reg_status);
 }
@@ -226,27 +227,26 @@ int mget_max_reg_size(mfile *mf)
     return mget_max_reg_size_ul(mf);
 }
 
-int mget_vsec_supp(mfile* mf)
+int mget_vsec_supp(mfile *mf)
 {
     return mf->vsec_supp;
 }
 
-MTCR_API int mget_addr_space(mfile* mf)
+MTCR_API int mget_addr_space(mfile *mf)
 {
     return mf->address_space;
 }
-MTCR_API int mset_addr_space(mfile* mf, int space)
+
+MTCR_API int mset_addr_space(mfile *mf, int space)
 {
-    switch (space) {
-        case AS_CR_SPACE:
-        case AS_ICMD:
-        case AS_SEMAPHORE:
-            break;
-        default:
-            return -1;
-    }
-    mf->address_space = space;
-    return 0;
+    if (space < 0 || space >= AS_END) {
+         return -1;
+     }
+    if (VSEC_SUPPORTED_UL(mf) && (mf->vsec_cap_mask & (1 << space_to_cap_offset(space)))) {
+         mf->address_space = space;
+         return 0;
+     }
+     return -1;
 }
 
 int mget_mdevs_flags(mfile *mf, u_int32_t *devs_flags)
@@ -271,7 +271,7 @@ int mget_mdevs_type(mfile *mf, u_int32_t *mtype)
     return 0;
 }
 
-int mclear_pci_semaphore(const char* name)
+int mclear_pci_semaphore(const char *name)
 {
     return mclear_pci_semaphore_ul(name);
 }

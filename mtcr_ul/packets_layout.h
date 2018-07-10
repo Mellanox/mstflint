@@ -31,7 +31,7 @@
  *
  *  End of legal section ......................................................
  *
-*/
+ */
 /***
  *** This file was generated at "Mon May 30 15:06:41 2011"
  *** by:
@@ -52,9 +52,9 @@
  * Description: reg_tlv */
 
 struct reg_tlv {
-    u_int16_t   reserved0;    /* bit_offset:0 */    /* element_size: 16 */
-    u_int16_t   len;    /* bit_offset:16 */    /* element_size: 11 */
-    u_int8_t    Type;    /* bit_offset:27 */    /* element_size: 5 */    /* TX - 0, RX - ignore */
+    u_int16_t reserved0;      /* bit_offset:0 */    /* element_size: 16 */
+    u_int16_t len;      /* bit_offset:16 */    /* element_size: 11 */
+    u_int8_t Type;       /* bit_offset:27 */    /* element_size: 5 */    /* TX - 0, RX - ignore */
 };
 
 /*************************************/
@@ -63,16 +63,16 @@ struct reg_tlv {
  * Description:  */
 
 struct OperationTlv {
-    u_int8_t	reserved0;    /* bit_offset:0 */    /* element_size: 8 */
-    u_int8_t	status;    /* bit_offset:8 */    /* element_size: 7 */
-    u_int8_t	dr;    /* bit_offset:15 */    /* element_size: 1 */
-    u_int16_t	len;    /* bit_offset:16 */    /* element_size: 11 */
-    u_int8_t	Type;    /* bit_offset:27 */    /* element_size: 5 */    /* TX - 0, RX - ignore */
-    u_int8_t	class;    /* bit_offset:32 */    /* element_size: 8 */
-    u_int8_t	method;    /* bit_offset:40 */    /* element_size: 7 */
-    u_int8_t	r;    /* bit_offset:47 */    /* element_size: 1 */
-    u_int16_t	register_id;    /* bit_offset:48 */    /* element_size: 16 */
-    u_int64_t	tid;    /* bit_offset:64 */    /* element_size: 64 */
+    u_int8_t reserved0;       /* bit_offset:0 */    /* element_size: 8 */
+    u_int8_t status;       /* bit_offset:8 */    /* element_size: 7 */
+    u_int8_t dr;       /* bit_offset:15 */    /* element_size: 1 */
+    u_int16_t len;      /* bit_offset:16 */    /* element_size: 11 */
+    u_int8_t Type;       /* bit_offset:27 */    /* element_size: 5 */    /* TX - 0, RX - ignore */
+    u_int8_t class;       /* bit_offset:32 */    /* element_size: 8 */
+    u_int8_t method;       /* bit_offset:40 */    /* element_size: 7 */
+    u_int8_t r;       /* bit_offset:47 */    /* element_size: 1 */
+    u_int16_t register_id;      /* bit_offset:48 */    /* element_size: 16 */
+    u_int64_t tid;      /* bit_offset:64 */    /* element_size: 64 */
 };
 
 /*************************************/

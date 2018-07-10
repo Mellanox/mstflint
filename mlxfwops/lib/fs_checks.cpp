@@ -1,25 +1,25 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
- * 
+ *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
  * General Public License (GPL) Version 2, available from the file
  * COPYING in the main directory of this source tree, or the
  * OpenIB.org BSD license below:
- * 
+ *
  *     Redistribution and use in source and binary forms, with or
  *     without modification, are permitted provided that the following
  *     conditions are met:
- * 
+ *
  *      - Redistributions of source code must retain the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer.
- * 
+ *
  *      - Redistributions in binary form must reproduce the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer in the documentation and/or other materials
  *        provided with the distribution.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -34,15 +34,15 @@
 #include <iostream>
 #include <sstream>
 
-const char* FsChecks::AlignmentUserMessage = "An update is needed for the flash layout.\n"
-                                        "The Operation is not failsafe and terminating the process is not allowed.\n";
+const char*FsChecks::AlignmentUserMessage = "An update is needed for the flash layout.\n"
+                                            "The Operation is not failsafe and terminating the process is not allowed.\n";
 
-const char* FsChecks::ShiftingUserMessage = "Shifting between different image partition sizes requires current image "
-                                        "to be re-programmed on the flash.\n"
-                                        "Once the operation is done, "
-                                        "reload FW and run the command again.\n";
+const char*FsChecks::ShiftingUserMessage = "Shifting between different image partition sizes requires current image "
+                                           "to be re-programmed on the flash.\n"
+                                           "Once the operation is done, "
+                                           "reload FW and run the command again.\n";
 
-bool FsChecks::ExecuteChecks(FwOperations** devFwOps, FwOperations::ExtBurnParams& burnParams, fw_info_t& devInfo)
+bool FsChecks::ExecuteChecks(FwOperations **devFwOps, FwOperations::ExtBurnParams& burnParams, fw_info_t& devInfo)
 {
     bool isFsCtrlOperations = false;
     u_int8_t fwType = _devFwOps->FwType();
@@ -55,7 +55,7 @@ bool FsChecks::ExecuteChecks(FwOperations** devFwOps, FwOperations::ExtBurnParam
         return true;
     }
 
-    FwOperations* tempDevFwOps = _devFwOps;
+    FwOperations *tempDevFwOps = _devFwOps;
 
     if (tempDevFwOps->IsFsCtrlOperations()) {
         //Reopen fwops with no fw ctrl
@@ -99,7 +99,7 @@ bool FsChecks::ExecuteChecks(FwOperations** devFwOps, FwOperations::ExtBurnParam
         if (isFsCtrlOperations) {
             _isFallBackToRegularFlowNeeded = true;
         }
-        _burnParams.shift8MB = true;
+        _burnParams.shift8MBIfNeeded = true;
         _isTimeConsumingFixesNeeded = true;
     }
 
@@ -125,7 +125,7 @@ bool FsChecks::ExecuteChecks(FwOperations** devFwOps, FwOperations::ExtBurnParam
     return true;
 }
 
-void FsChecks::UpdateContext(FwOperations** devFwOps, FwOperations::ExtBurnParams& burnParams, fw_info_t& devInfo)
+void FsChecks::UpdateContext(FwOperations **devFwOps, FwOperations::ExtBurnParams& burnParams, fw_info_t& devInfo)
 {
     if (_isFallBackToRegularFlowNeeded) {
         (*devFwOps)->FwCleanUp();
@@ -144,7 +144,7 @@ string AddIdentToString(const string& ident, const string& s)
     std::stringstream ss(s);
     vector<string> lines;
 
-    while(ss.good()) {
+    while (ss.good()) {
         string line;
         getline(ss, line, '\n');
         lines.push_back(line);
@@ -155,7 +155,7 @@ string AddIdentToString(const string& ident, const string& s)
     }
 
     string newS = "";
-    for(size_t i = 0; i < lines.size(); i++) {
+    for (size_t i = 0; i < lines.size(); i++) {
         newS += ident + lines[i] + "\n";
     }
 

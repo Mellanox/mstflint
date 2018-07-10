@@ -41,8 +41,8 @@
 #include "mlarge_buffer.h"
 
 
-#define MFT_MIN(x,y) ((x) < (y) ? (x) : (y))
-#define MFT_MAX(x,y) ((x) > (y) ? (x) : (y))
+#define MFT_MIN(x, y) ((x) < (y) ? (x) : (y))
+#define MFT_MAX(x, y) ((x) > (y) ? (x) : (y))
 
 #ifdef _DEBUG_MODE
 #define DBG_PRINTF(...) fprintf(stderr, __VA_ARGS__)
@@ -108,7 +108,7 @@ void MlargeBuffer::add(const std::vector<u_int8_t>& data, u_int32_t offset)
             } else {
                 break; // done :)
             }
-        }else if (bufferUnit.offset() + bufferUnit.size() <_bData[idx].offset()) {// check if we can insert before
+        } else if (bufferUnit.offset() + bufferUnit.size() < _bData[idx].offset()) {  // check if we can insert before
             _bData.insert(_bData.begin() + idx, bufferUnit);
             unitInserted = true;
             break;
@@ -133,13 +133,13 @@ void MlargeBuffer::add(const std::vector<u_int8_t>& data, u_int32_t offset)
     }
 #endif
 }
-void MlargeBuffer::add(const u_int8_t* data, u_int32_t offset, u_int32_t size)
+void MlargeBuffer::add(const u_int8_t *data, u_int32_t offset, u_int32_t size)
 {
-    std::vector<u_int8_t> dataVec(data, data+size);
+    std::vector<u_int8_t> dataVec(data, data + size);
     return add(dataVec, offset);
 }
 
-u_int8_t MlargeBuffer::operator[] (const u_int32_t offset)
+u_int8_t MlargeBuffer::operator[](const u_int32_t offset)
 {
     u_int8_t data;
     get(&data, offset, 1);
@@ -153,14 +153,14 @@ void MlargeBuffer::get(std::vector<u_int8_t>& data, u_int32_t offset, u_int32_t 
     return get(&data[0], offset, size);
 }
 
-void MlargeBuffer::get(u_int8_t* data, u_int32_t offset, u_int32_t size)
+void MlargeBuffer::get(u_int8_t *data, u_int32_t offset, u_int32_t size)
 {
     DBG_PRINTF("-D- get request on offset: 0x%08x with size 0x%x\n", offset, size);
     if (!data || size == 0) {
         return;
     }
     memset(data, _defaultValue, size);
-    u_int8_t* ptr = data;
+    u_int8_t *ptr = data;
     for (std::vector<MBufferUnit>::iterator it = _bData.begin(); it != _bData.end(); it++) {
         if (offset < (it->offset() + it->size()) && (offset + size) > it->offset()) {
             // intersects with current MBufferUnit
@@ -169,7 +169,7 @@ void MlargeBuffer::get(u_int8_t* data, u_int32_t offset, u_int32_t size)
             u_int32_t offsetInData = ((long int)offset - (long int)it->offset()) < 0 ? 0 : offset - it->offset();
             DBG_PRINTF("-D- getting from chunk at offset 0x%08x , size: 0x%x\n",  it->offset(), (unsigned)it->size() );
             DBG_PRINTF("-D- integrating at buffer offset : 0x%08x size: 0x%x, offset in data: 0x%08x\n", offsetInBuffer, copySize, offsetInData);
-            memcpy(ptr + offsetInBuffer, &(it->data())[0] + offsetInData , copySize);
+            memcpy(ptr + offsetInBuffer, &(it->data())[0] + offsetInData, copySize);
         }
     }
     return;

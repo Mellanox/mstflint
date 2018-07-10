@@ -56,12 +56,12 @@ enum dm_dev_type {
 };
 
 struct device_info {
-    dm_dev_id_t      dm_id;
-    u_int16_t        hw_dev_id;
-    int              hw_rev_id;  /* -1 means all revisions match this record */
-    int              sw_dev_id;  /* -1 means all hw ids  match this record */
-    const char*      name;
-    int              port_num;
+    dm_dev_id_t dm_id;
+    u_int16_t hw_dev_id;
+    int hw_rev_id;               /* -1 means all revisions match this record */
+    int sw_dev_id;               /* -1 means all hw ids  match this record */
+    const char *name;
+    int port_num;
     enum dm_dev_type dev_type;
 };
 
@@ -71,17 +71,20 @@ struct device_info {
 #define SFP_51_PAGING_ADDR                  64
 
 #ifdef CABLES_SUPP
-enum dm_dev_type getCableType(u_int8_t id) {
+enum dm_dev_type getCableType(u_int8_t id)
+{
     switch (id) {
-        case 0xd:
-        case 0x11:
-        case 0xe:
-        case 0xc:
-            return DM_QSFP_CABLE;
-        case 0x3:
-            return DM_SFP_CABLE;
-        default:
-            return DM_UNKNOWN;
+    case 0xd:
+    case 0x11:
+    case 0xe:
+    case 0xc:
+        return DM_QSFP_CABLE;
+
+    case 0x3:
+        return DM_SFP_CABLE;
+
+    default:
+        return DM_UNKNOWN;
     }
 }
 #endif
@@ -105,7 +108,7 @@ static struct device_info g_devs_info[] = {
         64,                     //port_num
         DM_SWITCH               //dev_type
     },
-    { 
+    {
         DeviceConnectX2,        //dm_id
         0x190,                  //hw_dev_i
         0xb0,                   //hw_rev_i
@@ -114,7 +117,7 @@ static struct device_info g_devs_info[] = {
         2,                      //port_num
         DM_HCA                  //dev_type
     },
-    {       
+    {
         DeviceConnectX3,        //dm_id
         0x1f5,                  //hw_dev_i
         -1,                     //hw_rev_i
@@ -187,6 +190,15 @@ static struct device_info g_devs_info[] = {
         DM_HCA                  //dev_type
     },
     {
+        DeviceConnectX6,        //dm_id
+        0x20f,                  //hw_dev_i
+        -1,                     //hw_rev_i
+        -1,                     //sw_dev_i
+        "ConnectX6",            //name
+        2,                      //port_num
+        DM_HCA                  //dev_type
+    },
+    {
         DeviceBlueField,        //dm_id
         0x211,                  //hw_dev_i
         -1,                     //hw_rev_i
@@ -212,8 +224,8 @@ static struct device_info g_devs_info[] = {
         "SwitchIB2",            //name
         36,                     //port_num
         DM_SWITCH               //dev_type
-    },      
-    {       
+    },
+    {
         DeviceCableQSFP,        //dm_id
         0x0d,                   //hw_dev_i
         0,                      //hw_rev_i
@@ -260,7 +272,7 @@ static struct device_info g_devs_info[] = {
     },
     {
         DeviceSpectrum2,        //dm_id
-        0x24f,                  //hw_dev_i
+        0x24e,                  //hw_dev_i
         -1,                     //hw_rev_i
         -1,                     //sw_dev_i
         "Spectrum2",            //name
@@ -275,8 +287,8 @@ static struct device_info g_devs_info[] = {
         "DummyDevice",          //name
         2,                      //port_num
         DM_HCA                  //dev_type
-    },          
-    {           
+    },
+    {
         DeviceQuantum,          //dm_id
         0x24d,                  //hw_dev_i
         -1,                     //hw_rev_i
@@ -298,7 +310,7 @@ static struct device_info g_devs_info[] = {
 
 static const struct device_info* get_entry(dm_dev_id_t type)
 {
-    const struct device_info* p = g_devs_info;
+    const struct device_info *p = g_devs_info;
     while (p->dm_id != DeviceUnknown) {
         if (type == p->dm_id) {
             break;
@@ -310,7 +322,7 @@ static const struct device_info* get_entry(dm_dev_id_t type)
 
 static const struct device_info* get_entry_by_dev_rev_id(u_int32_t hw_dev_id, u_int32_t hw_rev_id)
 {
-    const struct device_info* p = g_devs_info;
+    const struct device_info *p = g_devs_info;
     while (p->dm_id != DeviceUnknown) {
         if (hw_dev_id == p->hw_dev_id) {
             if ((p->hw_rev_id == -1) ||  ((int)hw_rev_id == p->hw_rev_id)) {
@@ -325,10 +337,10 @@ static const struct device_info* get_entry_by_dev_rev_id(u_int32_t hw_dev_id, u_
 /**
  * Returns 0 on success and 1 on failure.
  */
-int dm_get_device_id(mfile* mf,
-                    dm_dev_id_t* ptr_dm_dev_id,
-                    u_int32_t*   ptr_hw_dev_id,
-                    u_int32_t*   ptr_hw_rev)
+int dm_get_device_id(mfile *mf,
+                     dm_dev_id_t *ptr_dm_dev_id,
+                     u_int32_t *ptr_hw_dev_id,
+                     u_int32_t *ptr_hw_rev)
 {
     u_int32_t dword = 0;
     int rc;
@@ -337,16 +349,15 @@ int dm_get_device_id(mfile* mf,
     //Special case: FPGA device:
 #ifndef MST_UL
     if (mf->tp == MST_FPGA_ICMD || mf->tp == MST_FPGA_DRIVER) {
-       *ptr_dm_dev_id = DeviceFPGANewton;
-       *ptr_hw_dev_id = 0xfff;
-       return 0;
+        *ptr_dm_dev_id = DeviceFPGANewton;
+        *ptr_hw_dev_id = 0xfff;
+        return 0;
     }
 #endif
 #ifdef CABLES_SUPP
     if (mf->tp == MST_CABLE) {
         //printf("-D- Getting cable ID\n");
-        if (mread4(mf, CABLEID_ADDR, &dword) != 4)
-        {
+        if (mread4(mf, CABLEID_ADDR, &dword) != 4) {
             //printf("FATAL - crspace read (0x%x) failed: %s\n", DEVID_ADDR, strerror(errno));
             return 1;
         }
@@ -365,18 +376,16 @@ int dm_get_device_id(mfile* mf,
             }
         } else if (cbl_type == DM_SFP_CABLE) {
             *ptr_dm_dev_id = DeviceCableSFP;
-            if (mread4(mf, SFP_51_ADDR, &dword) != 4)
-            {
-               //printf("FATAL - crspace read (0x%x) failed: %s\n", DEVID_ADDR, strerror(errno));
-               return 1;
+            if (mread4(mf, SFP_51_ADDR, &dword) != 4) {
+                //printf("FATAL - crspace read (0x%x) failed: %s\n", DEVID_ADDR, strerror(errno));
+                return 1;
             }
             u_int8_t byte = EXTRACT(dword, 6, 1); //Byte 92 bit 6
             if (byte) {
                 *ptr_dm_dev_id = DeviceCableSFP51;
-                if (mread4(mf, SFP_51_PAGING_ADDR, &dword) != 4)
-                {
-                   //printf("FATAL - crspace read (0x%x) failed: %s\n", DEVID_ADDR, strerror(errno));
-                   return 1;
+                if (mread4(mf, SFP_51_PAGING_ADDR, &dword) != 4) {
+                    //printf("FATAL - crspace read (0x%x) failed: %s\n", DEVID_ADDR, strerror(errno));
+                    return 1;
                 }
                 byte = EXTRACT(dword, 4, 1); //Byte 64 bit 4
                 if (byte) {
@@ -419,8 +428,7 @@ int dm_get_device_id(mfile* mf,
             }
         }
     } else {
-        if (mread4(mf, DEVID_ADDR, &dword) != 4)
-        {
+        if (mread4(mf, DEVID_ADDR, &dword) != 4) {
             //printf("FATAL - crspace read (0x%x) failed: %s\n", DEVID_ADDR, strerror(errno));
             return 1;
         }
@@ -442,7 +450,7 @@ int dm_get_device_id(mfile* mf,
 
 int dm_get_device_id_offline(u_int32_t devid,
                              u_int32_t chip_rev,
-                             dm_dev_id_t* ptr_dev_type)
+                             dm_dev_id_t *ptr_dev_type)
 {
     *ptr_dev_type = get_entry_by_dev_rev_id(devid, chip_rev)->dm_id;
     return *ptr_dev_type == DeviceUnknown;
@@ -453,14 +461,14 @@ const char* dm_dev_type2str(dm_dev_id_t type)
     return get_entry(type)->name;
 }
 
-dm_dev_id_t dm_dev_str2type(const char* str)
+dm_dev_id_t dm_dev_str2type(const char *str)
 {
-    const struct device_info* p = g_devs_info;
+    const struct device_info *p = g_devs_info;
     if (!str) {
         return DeviceUnknown;
     }
     while (p->dm_id != DeviceUnknown) {
-        if (strcmp(str,p->name) == 0) {
+        if (strcmp(str, p->name) == 0) {
             return p->dm_id;
         }
         p++;
@@ -473,7 +481,8 @@ int dm_get_hw_ports_num(dm_dev_id_t type)
     return get_entry(type)->port_num;
 }
 
-int dm_dev_is_hca(dm_dev_id_t type) {
+int dm_dev_is_hca(dm_dev_id_t type)
+{
     return get_entry(type)->dev_type == DM_HCA;
 }
 
@@ -504,13 +513,14 @@ u_int32_t dm_get_hw_rev_id(dm_dev_id_t type)
 
 int dm_is_fpp_supported(dm_dev_id_t type)
 {
-    const struct device_info* dp = get_entry(type);
+    const struct device_info *dp = get_entry(type);
     if (
         dp->dm_id == DeviceConnectIB   ||
         dp->dm_id == DeviceConnectX4   ||
         dp->dm_id == DeviceConnectX4LX ||
         dp->dm_id == DeviceConnectX5   ||
-        dp->dm_id == DeviceBlueField     ) {
+        dp->dm_id == DeviceConnectX6   ||
+        dp->dm_id == DeviceBlueField) {
         return 1;
     } else {
         return 0;
@@ -522,9 +532,9 @@ int dm_is_device_supported(dm_dev_id_t type)
     return get_entry(type)->dm_id != DeviceUnknown;
 }
 
-int dm_is_livefish_mode(mfile* mf)
+int dm_is_livefish_mode(mfile *mf)
 {
-    if(!mf || !mf->dinfo) {
+    if (!mf || !mf->dinfo) {
         return 0;
     }
     dm_dev_id_t devid_t = DeviceUnknown;
@@ -540,7 +550,7 @@ int dm_is_livefish_mode(mfile* mf)
     if (devid_t == DeviceConnectX2    ||
         devid_t == DeviceConnectX3    ||
         devid_t == DeviceConnectX3Pro ||
-        devid_t == DeviceSwitchX        ) {
+        devid_t == DeviceSwitchX) {
         return (devid == swid - 1);
     } else {
         return (devid == swid);

@@ -14,12 +14,12 @@
  *      - Redistributions of source code must retain the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer.
- * 
+ *
  *      - Redistributions in binary form must reproduce the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer in the documentation and/or other materials
  *        provided with the distribution.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -63,9 +63,10 @@
 #define U32_TO_U64(dword1, dword2) ((((u_int64_t)(dword1)) << 32) | (((u_int64_t)(dword2)) & 0xffffffff))
 
 
-#define TOOLS_MAX(a,b) ((a) > (b) ? (a) : (b))
-#define TOOLS_MIN(a,b) ((a) < (b) ? (a) : (b))
-#define TOOLS_ARR_SZ(arr) (sizeof((arr))/sizeof((arr)[0]))
+#define TOOLS_MAX(a, b) ((a) > (b) ? (a) : (b))
+#define TOOLS_MIN(a, b) ((a) < (b) ? (a) : (b))
+
+#define TOOLS_ARR_SZ(arr) (sizeof((arr)) / sizeof((arr)[0]))
 
 /**
  * Suppress compiler warning about unused variable.

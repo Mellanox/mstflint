@@ -28,8 +28,13 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
+ * errmsg.h - base class that provides the returning of error messages for classes that inherit it.
+ *
+ *  Created on: May 7, 2014
+ *      Author: adrianc
+ *
  */
-
 
 #ifndef ERRMSG_H_
 #define ERRMSG_H_
@@ -50,12 +55,12 @@ public:
 
     virtual ~ErrMsg()                { err_clear();}
 
-    const char* err() const  { return _err;}
+    const char* err() const { return _err;}
     void updateErrCodes(std::map<int, std::string>& errCodeMap) {_errMap = errCodeMap; return;}
 
     const char* getFormatErr(const char *prefix, ...)
 #ifdef __GNUC__
-    __attribute__ ((format (printf, 2, 3)))
+    __attribute__ ((format(printf, 2, 3)))
 #endif
     ;
 
@@ -70,13 +75,13 @@ protected:
 
     int errmsg(const char *format, ...)
 #ifdef __GNUC__
-    __attribute__ ((format (printf, 2, 3)))
+    __attribute__ ((format(printf, 2, 3)))
 #endif
     ;
 
     int errmsg(int errCode, const char *format, ...)
 #ifdef __GNUC__
-    __attribute__ ((format (printf, 3, 4)))
+    __attribute__ ((format(printf, 3, 4)))
 #endif
     ;
 
@@ -85,13 +90,13 @@ protected:
 
     int errmsgConcatMsg(int errCode, const ErrMsg& errMsgObj, const char *format, ...)
 #ifdef __GNUC__
-    __attribute__ ((format (printf, 4, 5)))
+    __attribute__ ((format(printf, 4, 5)))
 #endif
     ;
 
     int errmsgConcatMsg(const ErrMsg& errMsgObj, const char *format, ...)
 #ifdef __GNUC__
-    __attribute__ ((format (printf, 3, 4)))
+    __attribute__ ((format(printf, 3, 4)))
 #endif
     ;
 
@@ -102,7 +107,7 @@ protected:
 
     int errmsgConcatErrCd(int errCode, const ErrMsg& errMsgObj, const char *format, ...)
 #ifdef __GNUC__
-    __attribute__ ((format (printf, 4, 5)))
+    __attribute__ ((format(printf, 4, 5)))
 #endif
     ;
 
@@ -111,12 +116,12 @@ protected:
     int errmsgConcatErrCd(const ErrMsg& errMsgObj);
 
 private:
-    void errmsgConcatCom(const char* format, va_list args, const char* suffix);
+    void errmsgConcatCom(const char *format, va_list args, const char *suffix);
 
     std::map<int, std::string> _errMap;
-    char*       _err;
-    char*       _formatErr;
-    int         _lastErrCode;
+    char *_err;
+    char *_formatErr;
+    int _lastErrCode;
 };
 
 #endif /* ERRMSG_H_ */

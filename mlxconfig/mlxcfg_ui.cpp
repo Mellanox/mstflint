@@ -51,16 +51,13 @@
 #define DEFAULT_CURRENT_NOT_SUPPORTED_PREFIX "Device Firmware does not support reading "
 #define TLV_NAME_MAX_LENGTH 256
 #define EXIT_IF_RC_NOT_OK(rc) \
-    if (rc != MLX_CFG_OK) {\
-        return rc;\
+    if (rc != MLX_CFG_OK) { \
+        return rc; \
     }
 
 #define PRINT_SYNTAX_ERROR_AND_EXIT \
-    printf("-E- Syntax error in: %s\n", line->c_str());\
+    printf("-E- Syntax error in: %s\n", line->c_str()); \
     return MLX_CFG_ERROR;
-
-typedef struct reg_access_hca_mqis_reg mqisReg;
-#define MAX_REG_DATA 128
 
 // Signal handler section
 void TerminationHandler(int signum);
@@ -70,23 +67,23 @@ void TerminationHandler(int signum);
 
 static BOOL CtrlHandler( DWORD fdwCtrlType )
 {
-    switch( fdwCtrlType )
+    switch (fdwCtrlType)
     {
-      // Handle the CTRL-C signal.
-      case CTRL_C_EVENT:
-      // CTRL-CLOSE: confirm that the user wants to exit.
-      case CTRL_CLOSE_EVENT:
-      // Pass other signals to the next handler.
-      case CTRL_BREAK_EVENT:
-      case CTRL_LOGOFF_EVENT:
-      case CTRL_SHUTDOWN_EVENT:
-          TerminationHandler(SIGINT);
-          return TRUE;
+    // Handle the CTRL-C signal.
+    case CTRL_C_EVENT:
+    // CTRL-CLOSE: confirm that the user wants to exit.
+    case CTRL_CLOSE_EVENT:
+    // Pass other signals to the next handler.
+    case CTRL_BREAK_EVENT:
+    case CTRL_LOGOFF_EVENT:
+    case CTRL_SHUTDOWN_EVENT:
+        TerminationHandler(SIGINT);
+        return TRUE;
 
-      default:
+    default:
         return FALSE;
     }
- }
+}
 
 #endif
 
@@ -95,11 +92,11 @@ void TerminationHandler(int signum)
     static volatile sig_atomic_t fatal_error_in_progress = 0;
 
     if (fatal_error_in_progress) {
-        raise (signum);
+        raise(signum);
     }
     fatal_error_in_progress = 1;
 
-    signal (signum, SIG_DFL);
+    signal(signum, SIG_DFL);
     printf("\n Received signal %d.\n", signum);
     fflush(stdout);
     raise(signum);
@@ -118,9 +115,9 @@ void initHandler()
 #endif
 
     //set the signal handler
-    for (int i=0; i < SIGNAL_NUM ; i++) {
+    for (int i = 0; i < SIGNAL_NUM; i++) {
         void (*prevFunc)(int);
-        prevFunc = signal(signalList[i],TerminationHandler);
+        prevFunc = signal(signalList[i], TerminationHandler);
         if (prevFunc == SIG_ERR) {
             printf("-E- failed to set signal Handler.");
             exit(MLX_CFG_ERROR);
@@ -154,7 +151,7 @@ typedef struct QueryOutputItem {
     string strSetVal;
 } QueryOutputItem;
 
-inline void copyVal(QueryOutputItem&o , const ParamView& p, QueryType qT)
+inline void copyVal(QueryOutputItem&o, const ParamView& p, QueryType qT)
 {
     if (qT == QueryDefault) {
         o.defVal = p.val;
@@ -168,72 +165,72 @@ inline void copyVal(QueryOutputItem&o , const ParamView& p, QueryType qT)
     }
 }
 
-inline void copySet(QueryOutputItem&o , const ParamView& p)
+inline void copySet(QueryOutputItem&o, const ParamView& p)
 {
     o.setVal = p.val;
     o.strSetVal = p.strVal;
 }
 
-mlxCfgStatus MlxCfg::err(bool report, const char* fmt, ...)
+mlxCfgStatus MlxCfg::err(bool report, const char *fmt, ...)
 {
-     va_list  args;
-     va_start(args, fmt);
-     char errBuff[MAX_ERR_STR_LEN] = {0};
+    va_list args;
+    va_start(args, fmt);
+    char errBuff[MAX_ERR_STR_LEN] = {0};
 
-     if (vsnprintf(errBuff, MAX_ERR_STR_LEN, fmt, args) >= MAX_ERR_STR_LEN) {
-         strcpy(&errBuff[MAX_ERR_STR_LEN - 5], "...");
+    if (vsnprintf(errBuff, MAX_ERR_STR_LEN, fmt, args) >= MAX_ERR_STR_LEN) {
+        strcpy(&errBuff[MAX_ERR_STR_LEN - 5], "...");
     }
-     _errStr = errBuff;
-     if (report) {
-         fprintf(stdout,PRE_ERR_MSG" %s\n", _errStr.c_str());
-     }
-     va_end(args);
-     return MLX_CFG_ERROR;
+    _errStr = errBuff;
+    if (report) {
+        fprintf(stdout, PRE_ERR_MSG " %s\n", _errStr.c_str());
+    }
+    va_end(args);
+    return MLX_CFG_ERROR;
 }
 
 void MlxCfg::printErr()
 {
-    fprintf(stdout,PRE_ERR_MSG" %s\n", _errStr.c_str());
+    fprintf(stdout, PRE_ERR_MSG " %s\n", _errStr.c_str());
 }
 
 
-bool MlxCfg::askUser(const char* question)
+bool MlxCfg::askUser(const char *question)
 {
-if (question == NULL) {
-     printf("\n Do you want to continue ? (y/n) [n] : ");
- } else {
-     printf("\n %s ? (y/n) [n] : ", question);
- }
+    if (question == NULL) {
+        printf("\n Do you want to continue ? (y/n) [n] : ");
+    } else {
+        printf("\n %s ? (y/n) [n] : ", question);
+    }
 
- if (_mlxParams.yes)
-     printf("y\n");
- else {
-     fflush(stdout);
-     std::string answer;
-     std::getline(std::cin, answer);
+    if (_mlxParams.yes) {
+        printf("y\n");
+    } else {
+        fflush(stdout);
+        std::string answer;
+        std::getline(std::cin, answer);
 
-     if (  strcasecmp(answer.c_str(), "y") &&
-           strcasecmp(answer.c_str(), "yes"))  {
+        if (strcasecmp(answer.c_str(), "y") &&
+            strcasecmp(answer.c_str(), "yes")) {
 
-         err(false, "Aborted by user.");
-         return false;
-     }
- }
- return true;
+            err(false, "Aborted by user.");
+            return false;
+        }
+    }
+    return true;
 }
 
 mlxCfgStatus MlxCfg::queryDevsCfg()
 {
-    bool shouldFail= false;
+    bool shouldFail = false;
     if (_mlxParams.device.length()) {
 
         if (queryDevCfg(_mlxParams.device.c_str())) {
             printErr();
-            shouldFail= true;
+            shouldFail = true;
         }
     } else {
-        int  numOfDev;
-        dev_info* dev = mdevices_info(MDEVS_TAVOR_CR, &numOfDev);
+        int numOfDev;
+        dev_info *dev = mdevices_info(MDEVS_TAVOR_CR, &numOfDev);
 
         if (dev == NULL) {
             return err(true, "Failed to get devices.");
@@ -244,17 +241,17 @@ mlxCfgStatus MlxCfg::queryDevsCfg()
         }
         //printf("-D- num of dev: %d , 1st dev : %s\n", numOfDev, buf);
         dev_info  *devPtr = dev;
-        char pcibuf[32]= {0};
+        char pcibuf[32] = {0};
 
-        for(int i=0 ; i < numOfDev ; i++) {
+        for (int i = 0; i < numOfDev; i++) {
 #ifdef __FREEBSD__
-            const char* device_name_ptrn = "pci%d:%d:%d:%d";
+            const char *device_name_ptrn = "pci%d:%d:%d:%d";
 #else
-            const char* device_name_ptrn = "%04x:%02x:%02x.%x";
+            const char *device_name_ptrn = "%04x:%02x:%02x.%x";
 #endif
-            snprintf(pcibuf,32, device_name_ptrn, devPtr->pci.domain, devPtr->pci.bus,\
-                    devPtr->pci.dev, devPtr->pci.func);
-            if (queryDevCfg(devPtr->pci.conf_dev, pcibuf, i+1)){
+            snprintf(pcibuf, 32, device_name_ptrn, devPtr->pci.domain, devPtr->pci.bus, \
+                     devPtr->pci.dev, devPtr->pci.func);
+            if (queryDevCfg(devPtr->pci.conf_dev, pcibuf, i + 1)) {
                 printErr();
                 shouldFail = true;
             }
@@ -262,14 +259,14 @@ mlxCfgStatus MlxCfg::queryDevsCfg()
         }
         mdevices_info_destroy(dev, numOfDev);
     }
-    return shouldFail? MLX_CFG_ERROR : MLX_CFG_OK;
+    return shouldFail ? MLX_CFG_ERROR : MLX_CFG_OK;
 }
 
 static void printValue(string strVal, u_int32_t val)
 {
     string s = numToStr(val);
     u_int32_t n;
-    if(strVal == "" || strVal == s || (strToNum(strVal, n) && n == val)) {
+    if (strVal == "" || strVal == s || (strToNum(strVal, n) && n == val)) {
         printf("%-16u", val);
     } else {
         if (strVal.find("Array") == string::npos) {
@@ -282,21 +279,21 @@ static void printValue(string strVal, u_int32_t val)
 static void printParam(string param, u_int32_t val)
 {
     if (val == MLXCFG_UNKNOWN) {
-            printf("%-16s", "N/A");
-        } else {
-            printValue(param, val); 
-        }
+        printf("%-16s", "N/A");
+    } else {
+        printValue(param, val);
+    }
     return;
 }
 
-static void printOneParam(const char* name, QueryOutputItem o,
-        u_int8_t verbose, bool printNewCfg)
+static void printOneParam(const char *name, QueryOutputItem o,
+                          u_int8_t verbose, bool printNewCfg)
 {
     bool showDefault = QUERY_DEFAULT_MASK & verbose;
     bool showCurrent = QUERY_CURRENT_MASK & verbose;
 
     if ((showDefault && o.nextVal != o.defVal) ||
-            (showCurrent && o.nextVal != o.currVal)) {
+        (showCurrent && o.nextVal != o.currVal)) {
         printf("*        %-36s", name);
     } else {
         printf("         %-36s", name);
@@ -321,12 +318,11 @@ static void printOneParam(const char* name, QueryOutputItem o,
 
 }
 
-const char* MlxCfg::getDeviceName(const char* dev)
+const char* MlxCfg::getDeviceName(const char *dev)
 {
-    mfile* mf;
+    mfile *mf;
     u_int32_t chip_rev;
     u_int32_t _dev_id;
-    _devType = DeviceUnknown;
 
     mf = mopen(dev);
     if (!mf) {
@@ -340,80 +336,22 @@ const char* MlxCfg::getDeviceName(const char* dev)
     return dm_dev_type2str(_devType);
 }
 
-bool MlxCfg::getDeviceDescription(const char* dev, MlxCfg::deviceDescription op, vector<char>& infoString)
-{
-    mqisReg mqisRegister;
-    mfile* mf;
-    mf = mopen(dev);
-    if (!mf) {
-       return false;
-    }
-    reg_access_status_t rc;
-    int maxDataSize = mget_max_reg_size(mf) - sizeof(mqisRegister);
-    if (maxDataSize > MAX_REG_DATA) {
-        maxDataSize = sizeof(mqisRegister);
-    }
-    std::vector<u_int32_t> dataVector(maxDataSize / 4, 0);
-
-    memset(&mqisRegister, 0, sizeof(mqisReg));
-    if (op == Device_Name){
-       mqisRegister.info_type = 0x1;
-    } else if (op == Device_Description_info) {
-       mqisRegister.info_type = 0x2;
-    }
-    mqisRegister.read_length = maxDataSize;
-    mqisRegister.info_string = dataVector.data();
-
-    rc = reg_access_mqis(mf, REG_ACCESS_METHOD_GET, &mqisRegister);
-    if (rc) {
-       mclose(mf);
-       return false;
-    }
-    int infoSize = mqisRegister.info_length;
-    infoString.resize(infoSize+1, 0);
-    if (mqisRegister.info_length > maxDataSize) {
-        dataVector.resize((infoSize + 3) / 4);
-        int leftSize = infoSize - maxDataSize;
-        while (leftSize > 0) {
-            mqisRegister.read_offset = infoSize - leftSize;
-            mqisRegister.read_length = leftSize > maxDataSize ? maxDataSize : leftSize;
-            mqisRegister.info_string = dataVector.data() + (mqisRegister.read_offset / 4);
-
-            rc = reg_access_mqis(mf, REG_ACCESS_METHOD_GET, &mqisRegister);
-            if (rc) {
-               mclose(mf);
-               return false;
-            }
-            leftSize = leftSize - maxDataSize;
-        }
-    }
-
-    memcpy(infoString.data(), dataVector.data(), infoSize);
-    mclose(mf);
-    string str = string (infoString.data());
-    if (str.length() == 0) {
-        return false;
-    }
-    return true;
-}
-
-void MlxCfg::printOpening(const char* dev, int devIndex)
+void MlxCfg::printOpening(const char *dev, int devIndex)
 {
     printf("\nDevice #%d:\n", devIndex);
     printf("----------\n\n");
-    const char * devType = getDeviceName(dev);
+    const char *devType = getDeviceName(dev);
     printf("%-16s%-16s\n", "Device type:", devType);
-    if ((_devType != DeviceConnectX3 && _devType != DeviceConnectX3Pro && _devType != DeviceConnectX2))
-    {
+    if ((_devType != DeviceConnectX3 && _devType != DeviceConnectX3Pro && _devType != DeviceConnectX2)) {
         std::vector<char> info;
         info.reserve(16);
-        if (! getDeviceDescription(dev, Device_Name, info)) {
+        if (!getDeviceInformationString(dev, Device_Name, info)) {
             printf("%-16s%-16s\n", "Name:", "N/A");
         } else {
             printf("%-16s%-16s\n", "Name:", info.data());
         }
         info.clear();
-        if (! getDeviceDescription(dev, Device_Description_info, info)) {
+        if (!getDeviceInformationString(dev, Device_Description, info)) {
             printf("%-16s%-16s\n", "Description:", "N/A");
         } else {
             printf("%-16s%-16s\n", "Description:", info.data());
@@ -427,16 +365,16 @@ void MlxCfg::printConfHeader(bool showDefualt, bool showNew, bool showCurrent)
     //print configuration Header
     if (showDefualt) {
         if (showCurrent) {
-            printf("%-16s%36s%16s%18s","Configurations:","Default","Current",
-                    NEXT_STR);
+            printf("%-16s%36s%16s%18s", "Configurations:", "Default", "Current",
+                   NEXT_STR);
         } else {
-            printf("%-16s%36s%18s","Configurations:","Default", NEXT_STR);
+            printf("%-16s%36s%18s", "Configurations:", "Default", NEXT_STR);
         }
     } else {
         if (showCurrent) {
-            printf("%-16s%36s%18s","Configurations:","Current", NEXT_STR);
+            printf("%-16s%36s%18s", "Configurations:", "Current", NEXT_STR);
         } else {
-            printf("%-16s%38s","Configurations:", NEXT_STR);
+            printf("%-16s%38s", "Configurations:", NEXT_STR);
         }
     }
     if (showNew) {
@@ -445,7 +383,7 @@ void MlxCfg::printConfHeader(bool showDefualt, bool showNew, bool showCurrent)
 }
 
 void prepareSetInput(vector<QueryOutputItem>& output,
-        vector<ParamView>& params)
+                     vector<ParamView>& params)
 {
     VECTOR_ITERATOR(ParamView, params, p) {
         QueryOutputItem o;
@@ -459,7 +397,7 @@ void prepareSetInput(vector<QueryOutputItem>& output,
 }
 
 void prepareQueryOutput(vector<QueryOutputItem>& output,
-        vector<ParamView>& params, QueryType qT)
+                        vector<ParamView>& params, QueryType qT)
 {
     VECTOR_ITERATOR(ParamView, params, p) {
         bool found = false;
@@ -470,7 +408,7 @@ void prepareQueryOutput(vector<QueryOutputItem>& output,
                 break;
             }
         }
-        if(!found) {
+        if (!found) {
             QueryOutputItem o;
             o.mlxconfigName = p->mlxconfigName;
             o.defVal = MLXCFG_UNKNOWN;
@@ -483,19 +421,32 @@ void prepareQueryOutput(vector<QueryOutputItem>& output,
     }
 }
 
-void queryAux(Commander* commander, vector<ParamView>& params,
-        vector<ParamView>& paramsToQuery, QueryType qT)
+void queryAux(Commander *commander, vector<ParamView>& params,
+              vector<ParamView>& paramsToQuery, vector<string>& failedTLVs, QueryType qT)
 {
     if (paramsToQuery.size() != 0) {
         params = paramsToQuery;
         commander->queryParamViews(params, qT);
     } else {
-        commander->queryAll(params, qT);
+        commander->queryAll(params, failedTLVs, qT);
     }
 }
 
-mlxCfgStatus MlxCfg::queryDevCfg(Commander* commander, const char* dev,const char* pci,
-        int devIndex, bool printNewCfg)
+string checkFailedTLVsVector(const vector<string>& failedTLVs, string queryType)
+{
+    string failedTLVsErrorMessage = "";
+    if (failedTLVs.size() != 0) {
+        failedTLVsErrorMessage += "    Failed to query the " + queryType + " values of the following TLVs:\n    ";
+        CONST_VECTOR_ITERATOR(string, failedTLVs, it) {
+            failedTLVsErrorMessage += (*it) + " ";
+        }
+        failedTLVsErrorMessage += "\n";
+    }
+    return failedTLVsErrorMessage;
+}
+
+mlxCfgStatus MlxCfg::queryDevCfg(Commander *commander, const char *dev, const char *pci,
+                                 int devIndex, bool printNewCfg)
 {
     (void) pci;
     std::vector<QueryOutputItem> output;
@@ -506,6 +457,8 @@ mlxCfgStatus MlxCfg::queryDevCfg(Commander* commander, const char* dev,const cha
 
     printOpening(dev, devIndex);
     printf("\n");
+
+    vector<string> defaultFailedTLVs, currentFailedTLVs, nextFailedTLVs;
 
     try {
 
@@ -532,12 +485,12 @@ mlxCfgStatus MlxCfg::queryDevCfg(Commander* commander, const char* dev,const cha
         }
 
         if (showDefault) {
-            queryAux(commander, defaultParams, _mlxParams.setParams, QueryDefault);
+            queryAux(commander, defaultParams, _mlxParams.setParams, defaultFailedTLVs, QueryDefault);
         }
         if (showCurrent) {
-            queryAux(commander, currentParams, _mlxParams.setParams, QueryCurrent);
+            queryAux(commander, currentParams, _mlxParams.setParams, currentFailedTLVs, QueryCurrent);
         }
-        queryAux(commander, params, _mlxParams.setParams, QueryNext);
+        queryAux(commander, params, _mlxParams.setParams, nextFailedTLVs, QueryNext);
     } catch (MlxcfgException& e) {
         err(false, "%s", e._err.c_str());
         return MLX_CFG_ERROR_EXIT;
@@ -550,34 +503,39 @@ mlxCfgStatus MlxCfg::queryDevCfg(Commander* commander, const char* dev,const cha
         prepareQueryOutput(output, currentParams, QueryCurrent);
     }
     prepareQueryOutput(output, params, QueryNext);
-    
+
     //print output table:
     VECTOR_ITERATOR(QueryOutputItem, output, o) {
         printOneParam(o->mlxconfigName.c_str(),
-                *o,
-                QUERY_NEXT_MASK |
-                    (showDefault ? QUERY_DEFAULT_MASK :0) |
-                    (showCurrent ? QUERY_CURRENT_MASK : 0),
-                printNewCfg);
+                      *o,
+                      QUERY_NEXT_MASK |
+                      (showDefault ? QUERY_DEFAULT_MASK : 0) |
+                      (showCurrent ? QUERY_CURRENT_MASK : 0),
+                      printNewCfg);
         isParamsDiffer |= (showDefault && (o->nextVal != o->defVal))
-                || (showCurrent && (o->nextVal != o->currVal));
+                          || (showCurrent && (o->nextVal != o->currVal));
     }
+
+    string failedTLVsErrorMessage = "Failed to query some of the TLVs:\n";
+    failedTLVsErrorMessage += checkFailedTLVsVector(defaultFailedTLVs, "default");
+    failedTLVsErrorMessage += checkFailedTLVsVector(currentFailedTLVs, "current");
+    failedTLVsErrorMessage += checkFailedTLVsVector(nextFailedTLVs, "next");
 
     if (isParamsDiffer) {
         printf("The '*' shows parameters with next value different "
-                "from default/current value.\n");
+               "from default/current value.\n");
     }
 
     if (_mlxParams.enableVerbosity) {
         if (!defaultSupported && !currentSupported) {
             printf(DEFAULT_CURRENT_NOT_SUPPORTED_PREFIX
-                    "default and current configurations\n");
+                   "default and current configurations\n");
         } else if (!defaultSupported) {
             printf(DEFAULT_CURRENT_NOT_SUPPORTED_PREFIX
-                    "default configurations\n");
+                   "default configurations\n");
         } else if (!currentSupported) {
             printf(DEFAULT_CURRENT_NOT_SUPPORTED_PREFIX
-                    "current configurations\n");
+                   "current configurations\n");
         }
     }
 
@@ -586,14 +544,20 @@ mlxCfgStatus MlxCfg::queryDevCfg(Commander* commander, const char* dev,const cha
         return MLX_CFG_ERROR_EXIT;
     }
 
+    if (defaultFailedTLVs.size() != 0 ||
+        currentFailedTLVs.size() != 0 || nextFailedTLVs.size() != 0) {
+        err(false, "%s", failedTLVsErrorMessage.c_str());
+        return MLX_CFG_ERROR;
+    }
+
     return failedToGetCfg ? MLX_CFG_ERROR : MLX_CFG_OK;
 }
 
-mlxCfgStatus MlxCfg::queryDevCfg(const char* dev,const char* pci,
-        int devIndex, bool printNewCfg)
+mlxCfgStatus MlxCfg::queryDevCfg(const char *dev, const char *pci,
+                                 int devIndex, bool printNewCfg)
 {
     mlxCfgStatus rc;
-    Commander* commander = NULL;
+    Commander *commander = NULL;
     try {
         commander = Commander::create(string(dev), _mlxParams.dbName);
     } catch (MlxcfgException& e) {
@@ -608,11 +572,11 @@ mlxCfgStatus MlxCfg::queryDevCfg(const char* dev,const char* pci,
 
 mlxCfgStatus MlxCfg::setDevCfg()
 {
-    Commander* commander = NULL;
+    Commander *commander = NULL;
 
     try {
         commander = Commander::create(string(_mlxParams.device),
-                _mlxParams.dbName);
+                                      _mlxParams.dbName);
     } catch (MlxcfgException& e) {
         delete commander;
         err(false, "%s", e._err.c_str());
@@ -621,7 +585,7 @@ mlxCfgStatus MlxCfg::setDevCfg()
     }
 
     if (queryDevCfg(commander, _mlxParams.device.c_str(), NULL, 1, true)
-            == MLX_CFG_ERROR_EXIT){
+        == MLX_CFG_ERROR_EXIT) {
         delete commander;
         printErr();
         return MLX_CFG_ERROR;
@@ -635,7 +599,7 @@ mlxCfgStatus MlxCfg::setDevCfg()
         printf("-W- Incorrect configuration might yield unexpected results. running in this mode is not recommended.");
     }
     // ask user
-    if(!askUser("Apply new Configuration?")) {
+    if (!askUser("Apply new Configuration?")) {
         delete commander;
         printErr();
         return MLX_CFG_ABORTED;
@@ -645,7 +609,7 @@ mlxCfgStatus MlxCfg::setDevCfg()
         printf("Applying... ");
         commander->setCfg(_mlxParams.setParams, _mlxParams.force);
         printf("Done!\n");
-        const char* resetStr = commander->loadConfigurationGetStr();
+        const char *resetStr = commander->loadConfigurationGetStr();
         printf("-I- %s\n", resetStr);
         delete commander;
         return MLX_CFG_OK;
@@ -662,8 +626,8 @@ mlxCfgStatus MlxCfg::resetDevsCfg()
     // check if a single device was specified and apply reset for this device only
     if (_mlxParams.device.length()) {
         char buff[256] = {0};
-        snprintf(buff,256,"Reset configuration for device %s? ", _mlxParams.device.c_str());
-        if (!askUser(buff)){
+        snprintf(buff, 256, "Reset configuration for device %s? ", _mlxParams.device.c_str());
+        if (!askUser(buff)) {
             printErr();
             return MLX_CFG_ABORTED;
         }
@@ -676,8 +640,8 @@ mlxCfgStatus MlxCfg::resetDevsCfg()
         }
     } else {
         // reset all devices.
-        int  numOfDev;
-        dev_info* dev = mdevices_info(MDEVS_TAVOR_CR, &numOfDev);
+        int numOfDev;
+        dev_info *dev = mdevices_info(MDEVS_TAVOR_CR, &numOfDev);
 
         if (dev == NULL) {
             return err(true, "Failed to get devices.");
@@ -686,7 +650,7 @@ mlxCfgStatus MlxCfg::resetDevsCfg()
             mdevices_info_destroy(dev, numOfDev);
             return err(true, NO_DEV_ERR);
         }
-        if (!askUser("Reset configuration for all devices? ")){
+        if (!askUser("Reset configuration for all devices? ")) {
             printErr();
             mdevices_info_destroy(dev, numOfDev);
             return MLX_CFG_ABORTED;
@@ -694,10 +658,10 @@ mlxCfgStatus MlxCfg::resetDevsCfg()
         printf("Applying... ");
 
         dev_info *devPtr = dev;
-        bool shouldFail= false;
+        bool shouldFail = false;
 
-        for(int i=0 ; i < numOfDev ; i++) {
-            if (resetDevCfg(devPtr->pci.conf_dev)){
+        for (int i = 0; i < numOfDev; i++) {
+            if (resetDevCfg(devPtr->pci.conf_dev)) {
                 shouldFail = true;
             }
             devPtr++;
@@ -718,23 +682,23 @@ mlxCfgStatus MlxCfg::resetDevsCfg()
 
 mlxCfgStatus MlxCfg::clrDevSem()
 {
-    Commander* commander = NULL;
+    Commander *commander = NULL;
     mlxCfgStatus rc = MLX_CFG_OK;
 
     printf("-W- Forcefully clearing device Semaphore...\n");
     try {
         commander = Commander::create(_mlxParams.device, _mlxParams.dbName);
         commander->clearSemaphore();
-    } catch(MlxcfgException& e){
+    } catch (MlxcfgException& e) {
         printf("-E- %s\n", e._err.c_str());
         rc = MLX_CFG_ERROR;
     }
 
-    if(commander != NULL) {
+    if (commander != NULL) {
         delete commander;
     }
 
-    if(rc == MLX_CFG_OK) {
+    if (rc == MLX_CFG_OK) {
         printf(" Done!\n");
     } else {
         printf(" Failed!\n");
@@ -745,7 +709,7 @@ mlxCfgStatus MlxCfg::clrDevSem()
 
 mlxCfgStatus MlxCfg::setDevRawCfg()
 {
-    Commander* commander = NULL;
+    Commander *commander = NULL;
     try {
         commander = Commander::create(_mlxParams.device, _mlxParams.dbName);
         // open file
@@ -785,7 +749,7 @@ mlxCfgStatus MlxCfg::setDevRawCfg()
             printf("Raw TLV #%d Info:\n%s\n", tlvIdx, dumpStr.c_str());
         }
         // ask user
-        if(!askUser("Operation intended for advanced users.\n Are you sure you want to apply raw TLV file?")) {
+        if (!askUser("Operation intended for advanced users.\n Are you sure you want to apply raw TLV file?")) {
             printErr();
             delete commander;
             return MLX_CFG_ABORTED;
@@ -796,7 +760,7 @@ mlxCfgStatus MlxCfg::setDevRawCfg()
         for (std::vector<std::vector<u_int32_t> >::iterator it = rawTlvsAsDw.begin(); it != rawTlvsAsDw.end(); it++, tlvIdx++) {
             commander->setRawCfg(*it);
         }
-    } catch(MlxcfgException& e) {
+    } catch (MlxcfgException& e) {
         delete commander;
         return err(true, "Failed to run set_raw command: %s", e._err.c_str());
     }
@@ -811,8 +775,8 @@ mlxCfgStatus MlxCfg::setDevRawCfg()
 
 mlxCfgStatus MlxCfg::backupCfg()
 {
-    FILE * file;
-    Commander* commander = NULL;
+    FILE *file;
+    Commander *commander = NULL;
     vector<BackupView> views;
 
     try {
@@ -820,9 +784,9 @@ mlxCfgStatus MlxCfg::backupCfg()
         printf("Collecting...\n");
         commander->backupCfgs(views);
         delete commander;
-    } catch(MlxcfgException& e) {
+    } catch (MlxcfgException& e) {
         printf(" Failed!\n");
-        if(commander) {
+        if (commander) {
             delete commander;
         }
         return err(true, "Failed to backup the configurations: %s", e._err.c_str());
@@ -841,8 +805,8 @@ mlxCfgStatus MlxCfg::backupCfg()
 
         fprintf(file, "%s\n", MLNX_RAW_TLV_FILE_SIG);
 
-        for(std::vector<BackupView>::iterator it = views.begin();
-                it != views.end(); it++) {
+        for (std::vector<BackupView>::iterator it = views.begin();
+             it != views.end(); it++) {
             fprintf(file, "%% TLV Type: 0x%08x, Writer ID: %s(0x%02x)"
                     ", Writer Host ID: 0x%02x\n",
                     it->type,
@@ -850,7 +814,7 @@ mlxCfgStatus MlxCfg::backupCfg()
                     it->writerId,
                     it->writerHostId);
             vector<u_int8_t> v = it->tlvBin;
-            for(size_t i = 0; i < v.size() / 4; i++) {
+            for (size_t i = 0; i < v.size() / 4; i++) {
                 fprintf(file, "0x%08x ", __cpu_to_be32(((u_int32_t*)v.data())[i]));
             }
             fprintf(file, "\n");
@@ -863,11 +827,12 @@ mlxCfgStatus MlxCfg::backupCfg()
     return MLX_CFG_OK;
 }
 
-mlxCfgStatus MlxCfg::tlvLine2DwVec(const std::string& tlvStringLine, std::vector<u_int32_t>& tlvVec) {
+mlxCfgStatus MlxCfg::tlvLine2DwVec(const std::string& tlvStringLine, std::vector<u_int32_t>& tlvVec)
+{
     tlvVec.resize(0);
     std::string dwStr;
     u_int32_t dw;
-    char* p = NULL;
+    char *p = NULL;
     std::istringstream isstm(tlvStringLine);
     while (isstm >> dwStr) {
         dw = strtoul(dwStr.c_str(), &p, 0);
@@ -879,9 +844,9 @@ mlxCfgStatus MlxCfg::tlvLine2DwVec(const std::string& tlvStringLine, std::vector
     return MLX_CFG_OK;
 }
 
-mlxCfgStatus MlxCfg::resetDevCfg(const char* dev)
+mlxCfgStatus MlxCfg::resetDevCfg(const char *dev)
 {
-    Commander* commander = NULL;
+    Commander *commander = NULL;
     mlxCfgStatus rc = MLX_CFG_OK;
 
     try {
@@ -893,7 +858,7 @@ mlxCfgStatus MlxCfg::resetDevCfg(const char* dev)
         rc = MLX_CFG_ERROR;
     }
 
-    if(commander) {
+    if (commander) {
         delete commander;
     }
 
@@ -902,7 +867,7 @@ mlxCfgStatus MlxCfg::resetDevCfg(const char* dev)
 
 mlxCfgStatus MlxCfg::showDevConfs()
 {
-    Commander* commander = NULL;
+    Commander *commander = NULL;
     mlxCfgStatus rc = MLX_CFG_OK;
 
     try {
@@ -914,7 +879,7 @@ mlxCfgStatus MlxCfg::showDevConfs()
         rc = MLX_CFG_ERROR;
     }
 
-    if(commander) {
+    if (commander) {
         delete commander;
     }
 
@@ -926,12 +891,12 @@ mlxCfgStatus MlxCfg::readBinFile(string fileName, vector<u_int32_t>& buff)
     streampos size;
 
     std::ifstream ifs(fileName.c_str(),
-            ios::in|ios::binary|ios::ate);
+                      ios::in | ios::binary | ios::ate);
     if (ifs.fail()) {
         return err(true, "Failed to open file: %s", fileName.c_str());
     }
     size = ifs.tellg();
-    if (size%4 != 0) {
+    if (size % 4 != 0) {
         return err(true, "File %s is not DW aligned", fileName.c_str());
     }
     buff.resize((size_t)size / 4);
@@ -951,7 +916,7 @@ mlxCfgStatus MlxCfg::readNVInputFile(vector<string>& lines)
     std::ifstream ifs(_mlxParams.NVInputFile.c_str());
     if (ifs.fail()) {
         return err(true, "Failed to open file: %s",
-                _mlxParams.NVInputFile.c_str());
+                   _mlxParams.NVInputFile.c_str());
     }
     for (std::string line; std::getline(ifs, line);) {
         lines.push_back(line);
@@ -976,15 +941,15 @@ mlxCfgStatus MlxCfg::readNVInputFile(string& content)
 
 mlxCfgStatus MlxCfg::writeNVOutputFile(vector<u_int32_t> content)
 {
-    FILE* file = fopen(_mlxParams.NVOutputFile.c_str(), "wb");
+    FILE *file = fopen(_mlxParams.NVOutputFile.c_str(), "wb");
     if (!file) {
         return err(true, "Failed to open file: %s",
-                _mlxParams.NVOutputFile.c_str());
+                   _mlxParams.NVOutputFile.c_str());
     }
-    for (u_int32_t i = 0 ; i < content.size() * 4; i += 4) {
-        size_t cnt = fwrite(((u_int8_t*)content.data()) + i ,1 , 4 , file);
-        (void)cnt; // avoid annoying unused return code/ unused variable in certain compilers
-        if (ferror(file)) {
+    for (u_int32_t i = 0; i < content.size() * 4; i += 4) {
+        const size_t count = 4;
+        size_t writtenCount = fwrite(((u_int8_t*)content.data()) + i, 1, count, file);
+        if (writtenCount != count || ferror(file)) {
             fclose(file);
             return err(true, "Write failed: %s.", strerror(errno));
         }
@@ -995,10 +960,10 @@ mlxCfgStatus MlxCfg::writeNVOutputFile(vector<u_int32_t> content)
 
 mlxCfgStatus MlxCfg::writeNVOutputFile(string content)
 {
-    FILE* file = fopen(_mlxParams.NVOutputFile.c_str(), "w");
+    FILE *file = fopen(_mlxParams.NVOutputFile.c_str(), "w");
     if (!file) {
         return err(true, "Failed to open file: %s",
-                _mlxParams.NVOutputFile.c_str());
+                   _mlxParams.NVOutputFile.c_str());
     }
     fprintf(file, "%s", content.c_str());
     fclose(file);
@@ -1027,7 +992,7 @@ mlxCfgStatus MlxCfg::genTLVsFile()
             sprintf(buff, "%-50s0\n", it->c_str());
             (*it) = buff;
         }
-    } catch(MlxcfgException& e) {
+    } catch (MlxcfgException& e) {
         printf("-E- %s\n", e._err.c_str());
         rc = MLX_CFG_ERROR;
     }
@@ -1055,16 +1020,18 @@ mlxCfgStatus MlxCfg::genXMLTemplate()
     VECTOR_ITERATOR(string, lines, line) {
         string tlvName;
         string tLine = mlxcfg_trim(*line);
-        for(unsigned i = 0; i < tLine.size(); i++) {
+        for (unsigned i = 0; i < tLine.size(); i++) {
             if (tLine[i] != ' ' && tLine[i] != '\t') {
                 tlvName += tLine[i];
             } else {
                 while ((tLine[i] == ' ' || tLine[i] == '\t')
-                        && (++i < tLine.size())) { };
+                       && (++i < tLine.size())) {
+                }
+                ;
                 if ((i == tLine.size()) ||
-                        (tLine[i] != '0' && tLine[i] != '1') ||
-                        (i != tLine.size() - 1) ||
-                        tlvName.empty()) {
+                    (tLine[i] != '0' && tLine[i] != '1') ||
+                    (i != tLine.size() - 1) ||
+                    tlvName.empty()) {
                     PRINT_SYNTAX_ERROR_AND_EXIT
                 }
                 if (tLine[i] == '1') {
@@ -1086,7 +1053,7 @@ mlxCfgStatus MlxCfg::genXMLTemplate()
     try {
         GenericCommander commander(NULL, _mlxParams.dbName);
         commander.genXMLTemplate(tlvs, xmlTemplate, _mlxParams.allAttrs);
-    } catch(MlxcfgException& e) {
+    } catch (MlxcfgException& e) {
         printf("-E- %s\n", e._err.c_str());
         rc = MLX_CFG_ERROR;
     }
@@ -1129,7 +1096,7 @@ mlxCfgStatus MlxCfg::raw2XMLAux(bool isBin)
                 commander.raw2XML(lines, xmlTemplate);
             }
         }
-    } catch(MlxcfgException& e) {
+    } catch (MlxcfgException& e) {
         printf("-E- %s\n", e._err.c_str());
         rc = MLX_CFG_ERROR;
     }
@@ -1166,7 +1133,7 @@ mlxCfgStatus MlxCfg::XML2RawAux(bool isBin)
         } else {
             commander.XML2Raw(xml, raw);
         }
-    } catch(MlxcfgException& e) {
+    } catch (MlxcfgException& e) {
         printf("-E- %s\n", e._err.c_str());
         rc = MLX_CFG_ERROR;
     }
@@ -1198,6 +1165,10 @@ mlxCfgStatus MlxCfg::XML2Bin()
 
 mlxCfgStatus MlxCfg::createConf()
 {
+#if defined(NO_OPEN_SSL)
+    printf("-E- Not Implemented");
+    return MLX_CFG_ERROR_EXIT;
+#else
     string xml;
     vector<u_int32_t> buff;
     mlxCfgStatus rc = MLX_CFG_OK;
@@ -1213,7 +1184,7 @@ mlxCfgStatus MlxCfg::createConf()
         } else {
             commander.sign(buff);
         }
-    } catch(MlxcfgException& e) {
+    } catch (MlxcfgException& e) {
         printf("-E- %s\n", e._err.c_str());
         rc = MLX_CFG_ERROR;
     }
@@ -1227,13 +1198,14 @@ mlxCfgStatus MlxCfg::createConf()
     }
 
     return rc;
+#endif
 }
 
 mlxCfgStatus MlxCfg::apply()
 {
     vector<u_int32_t> buff;
     vector<u_int8_t> bytesBuff;
-    Commander* commander = NULL;
+    Commander *commander = NULL;
     mlxCfgStatus rc = MLX_CFG_OK;
 
     rc = readNVInputFile(buff);
@@ -1245,7 +1217,7 @@ mlxCfgStatus MlxCfg::apply()
         commander = Commander::create(_mlxParams.device, _mlxParams.dbName);
         printf("Applying...\n");
         ((GenericCommander*)commander)->apply(bytesBuff);
-    } catch(MlxcfgException& e) {
+    } catch (MlxcfgException& e) {
         printf("-E- %s\n", e._err.c_str());
         rc = MLX_CFG_ERROR;
     }
@@ -1261,7 +1233,7 @@ mlxCfgStatus MlxCfg::apply()
     return rc;
 }
 
-mlxCfgStatus MlxCfg::execute(int argc, char* argv[])
+mlxCfgStatus MlxCfg::execute(int argc, char *argv[])
 {
     mlxCfgStatus rc = parseArgs(argc, argv);
     if (rc) {
@@ -1278,36 +1250,47 @@ mlxCfgStatus MlxCfg::execute(int argc, char* argv[])
     case Mc_ShowConfs:
         ret = showDevConfs();
         break;
+
     case Mc_Query:
         ret = queryDevsCfg();
         break;
+
     case Mc_Set:
         ret = setDevCfg();
         break;
+
     case Mc_Reset:
         ret = resetDevsCfg();
         break;
+
     case Mc_Clr_Sem:
         ret = clrDevSem();
         break;
+
     case Mc_Set_Raw:
         ret = setDevRawCfg();
         break;
+
     case Mc_Backup:
         ret = backupCfg();
         break;
+
     case Mc_GenTLVsFile:
         ret = genTLVsFile();
         break;
+
     case Mc_GenXMLTemplate:
         ret = genXMLTemplate();
         break;
+
     case Mc_Raw2XML:
         ret = raw2XML();
         break;
+
     case Mc_XML2Raw:
         ret = XML2Raw();
         break;
+
     case Mc_XML2Bin:
         ret = XML2Bin();
         break;
@@ -1317,6 +1300,7 @@ mlxCfgStatus MlxCfg::execute(int argc, char* argv[])
     case Mc_Apply:
         ret = apply();
         break;
+
     default:
         // should not reach here.
         return err(true, "invalid command.");
@@ -1324,13 +1308,13 @@ mlxCfgStatus MlxCfg::execute(int argc, char* argv[])
     return ret;
 }
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
     try
     {
-    initHandler();
-    MlxCfg mc;
-    return mc.execute(argc, argv);
+        initHandler();
+        MlxCfg mc;
+        return mc.execute(argc, argv);
     }
     catch (std::exception& e)
     {

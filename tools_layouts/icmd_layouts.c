@@ -234,6 +234,131 @@ void connectib_icmd_get_fw_info_dump(const struct connectib_icmd_get_fw_info *pt
     connectib_icmd_get_fw_info_print(ptr_struct, file, 0);
 }
 
+void connectib_itrace_ctrl_pack(const struct connectib_itrace_ctrl *ptr_struct, u_int8_t* ptr_buff)
+{
+        u_int32_t offset;
+        int i = 0;
+        (void)offset;
+        (void)i;
+        (void)ptr_struct;
+        (void)ptr_buff;
+
+        offset = 24;
+        adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->log_level);
+
+        offset = 0;
+        adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->log_delay);
+
+}
+
+void connectib_itrace_ctrl_unpack(struct connectib_itrace_ctrl *ptr_struct, const u_int8_t* ptr_buff)
+{
+        u_int32_t offset;
+        int i = 0;
+        (void)offset;
+        (void)i;
+        (void)ptr_struct;
+        (void)ptr_buff;
+
+        offset = 24;
+        ptr_struct->log_level = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+
+        offset = 0;
+        ptr_struct->log_delay = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+
+}
+
+void connectib_itrace_ctrl_print(const struct connectib_itrace_ctrl *ptr_struct, FILE* file, int indent_level)
+{
+        adb2c_add_indentation(file, indent_level);
+        fprintf(file, "======== connectib_itrace_ctrl ========\n");
+        int i = 0;
+        (void)i;
+        (void)ptr_struct;
+        (void)file;
+        (void)indent_level;
+
+        adb2c_add_indentation(file, indent_level);
+        fprintf(file, "log_level            : " UH_FMT "\n", ptr_struct->log_level);
+
+        adb2c_add_indentation(file, indent_level);
+        fprintf(file, "log_delay            : " UH_FMT "\n", ptr_struct->log_delay);
+
+}
+
+int connectib_itrace_ctrl_size(void)
+{
+         return 4;
+}
+
+void connectib_itrace_ctrl_dump(const struct connectib_itrace_ctrl *ptr_struct, FILE* file)
+{
+        connectib_itrace_ctrl_print(ptr_struct, file, 0);
+}
+
+void connectib_itrace_pack(const struct connectib_itrace *ptr_struct, u_int8_t* ptr_buff)
+{
+        u_int32_t offset;
+        int i = 0;
+        (void)offset;
+        (void)i;
+        (void)ptr_struct;
+        (void)ptr_buff;
+
+        offset = 0;
+        adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->unit_mask);
+
+        offset = 32;
+        connectib_itrace_ctrl_pack(&(ptr_struct->ctrl), ptr_buff + offset/8);
+
+}
+
+void connectib_itrace_unpack(struct connectib_itrace *ptr_struct, const u_int8_t* ptr_buff)
+{
+        u_int32_t offset;
+        int i = 0;
+        (void)offset;
+        (void)i;
+        (void)ptr_struct;
+        (void)ptr_buff;
+
+        offset = 0;
+        ptr_struct->unit_mask = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+
+        offset = 32;
+        connectib_itrace_ctrl_unpack(&(ptr_struct->ctrl), ptr_buff + offset/8);
+
+}
+
+void connectib_itrace_print(const struct connectib_itrace *ptr_struct, FILE* file, int indent_level)
+{
+        adb2c_add_indentation(file, indent_level);
+        fprintf(file, "======== connectib_itrace ========\n");
+        int i = 0;
+        (void)i;
+        (void)ptr_struct;
+        (void)file;
+        (void)indent_level;
+
+        adb2c_add_indentation(file, indent_level);
+        fprintf(file, "unit_mask            : " U32H_FMT "\n", ptr_struct->unit_mask);
+
+        adb2c_add_indentation(file, indent_level);
+        fprintf(file, "ctrl:\n");
+        connectib_itrace_ctrl_print(&(ptr_struct->ctrl), file, indent_level + 1);
+
+}
+
+int connectib_itrace_size(void)
+{
+         return 16;
+}
+
+void connectib_itrace_dump(const struct connectib_itrace *ptr_struct, FILE* file)
+{
+        connectib_itrace_print(ptr_struct, file, 0);
+}
+
 
 void connectx4_icmd_mh_sync_pack(const struct connectx4_icmd_mh_sync *ptr_struct, u_int8_t* ptr_buff)
 {
@@ -351,190 +476,152 @@ void connectx4_icmd_mh_sync_dump(const struct connectx4_icmd_mh_sync *ptr_struct
     connectx4_icmd_mh_sync_print(ptr_struct, file, 0);
 }
 
-void connectx4_icmd_query_cap_general_pack(const struct connectx4_icmd_query_cap_general *ptr_struct, u_int8_t* ptr_buff)
+void connectx4_icmd_query_cap_general_pack(const struct connectx4_icmd_query_cap_general *ptr_struct, u_int8_t *ptr_buff)
 {
     u_int32_t offset;
-    int i = 0;
-    (void)offset;
-    (void)i;
-    (void)ptr_struct;
-    (void)ptr_buff;
 
+    offset = 9;
+    adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->virtual_link_down);
+    offset = 8;
+    adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->icmd_exmb);
+    offset = 7;
+    adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->capi);
+    offset = 6;
+    adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->qcam_reg);
     offset = 5;
-    adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->fw_ctrl_update_icmd);
-
+    adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->mcam_reg);
     offset = 4;
-    adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->kdnet_ctrl);
-
+    adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->pcam_reg);
     offset = 3;
     adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->mh_sync);
-
     offset = 2;
     adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->allow_icmd_access_reg_on_all_registers);
-
     offset = 1;
     adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->fw_info_psid);
-
     offset = 0;
     adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->nv_access);
-
     offset = 63;
     adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->wol_p);
-
     offset = 62;
     adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->wol_u);
-
     offset = 61;
     adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->wol_m);
-
     offset = 60;
     adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->wol_b);
-
     offset = 59;
     adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->wol_a);
-
     offset = 58;
     adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->wol_g);
-
     offset = 57;
     adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->wol_s);
-
     offset = 55;
     adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->rol_g);
-
     offset = 54;
     adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->rol_s);
-
     offset = 53;
     adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->fpga);
-
 }
 
-void connectx4_icmd_query_cap_general_unpack(struct connectx4_icmd_query_cap_general *ptr_struct, const u_int8_t* ptr_buff)
+void connectx4_icmd_query_cap_general_unpack(struct connectx4_icmd_query_cap_general *ptr_struct, const u_int8_t *ptr_buff)
 {
     u_int32_t offset;
-    int i = 0;
-    (void)offset;
-    (void)i;
-    (void)ptr_struct;
-    (void)ptr_buff;
 
+    offset = 9;
+    ptr_struct->virtual_link_down = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+    offset = 8;
+    ptr_struct->icmd_exmb = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+    offset = 7;
+    ptr_struct->capi = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+    offset = 6;
+    ptr_struct->qcam_reg = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
     offset = 5;
-    ptr_struct->fw_ctrl_update_icmd = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
-
+    ptr_struct->mcam_reg = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
     offset = 4;
-    ptr_struct->kdnet_ctrl = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
-
+    ptr_struct->pcam_reg = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
     offset = 3;
     ptr_struct->mh_sync = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
-
     offset = 2;
     ptr_struct->allow_icmd_access_reg_on_all_registers = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
-
     offset = 1;
     ptr_struct->fw_info_psid = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
-
     offset = 0;
     ptr_struct->nv_access = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
-
     offset = 63;
     ptr_struct->wol_p = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
-
     offset = 62;
     ptr_struct->wol_u = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
-
     offset = 61;
     ptr_struct->wol_m = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
-
     offset = 60;
     ptr_struct->wol_b = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
-
     offset = 59;
     ptr_struct->wol_a = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
-
     offset = 58;
     ptr_struct->wol_g = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
-
     offset = 57;
     ptr_struct->wol_s = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
-
     offset = 55;
     ptr_struct->rol_g = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
-
     offset = 54;
     ptr_struct->rol_s = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
-
     offset = 53;
     ptr_struct->fpga = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
-
 }
 
-void connectx4_icmd_query_cap_general_print(const struct connectx4_icmd_query_cap_general *ptr_struct, FILE* file, int indent_level)
+void connectx4_icmd_query_cap_general_print(const struct connectx4_icmd_query_cap_general *ptr_struct, FILE *fd, int indent_level)
 {
-    adb2c_add_indentation(file, indent_level);
-    fprintf(file, "======== connectx4_icmd_query_cap_general ========\n");
-    int i = 0;
-    (void)i;
-    (void)ptr_struct;
-    (void)file;
-    (void)indent_level;
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "======== connectx4_icmd_query_cap_general ========\n");
 
-    adb2c_add_indentation(file, indent_level);
-    fprintf(file, "fw_ctrl_update_icmd  : " UH_FMT "\n", ptr_struct->fw_ctrl_update_icmd);
-
-    adb2c_add_indentation(file, indent_level);
-    fprintf(file, "kdnet_ctrl           : " UH_FMT "\n", ptr_struct->kdnet_ctrl);
-
-    adb2c_add_indentation(file, indent_level);
-    fprintf(file, "mh_sync              : " UH_FMT "\n", ptr_struct->mh_sync);
-
-    adb2c_add_indentation(file, indent_level);
-    fprintf(file, "allow_icmd_access_reg_on_all_registers : " UH_FMT "\n", ptr_struct->allow_icmd_access_reg_on_all_registers);
-
-    adb2c_add_indentation(file, indent_level);
-    fprintf(file, "fw_info_psid         : " UH_FMT "\n", ptr_struct->fw_info_psid);
-
-    adb2c_add_indentation(file, indent_level);
-    fprintf(file, "nv_access            : " UH_FMT "\n", ptr_struct->nv_access);
-
-    adb2c_add_indentation(file, indent_level);
-    fprintf(file, "wol_p                : " UH_FMT "\n", ptr_struct->wol_p);
-
-    adb2c_add_indentation(file, indent_level);
-    fprintf(file, "wol_u                : " UH_FMT "\n", ptr_struct->wol_u);
-
-    adb2c_add_indentation(file, indent_level);
-    fprintf(file, "wol_m                : " UH_FMT "\n", ptr_struct->wol_m);
-
-    adb2c_add_indentation(file, indent_level);
-    fprintf(file, "wol_b                : " UH_FMT "\n", ptr_struct->wol_b);
-
-    adb2c_add_indentation(file, indent_level);
-    fprintf(file, "wol_a                : " UH_FMT "\n", ptr_struct->wol_a);
-
-    adb2c_add_indentation(file, indent_level);
-    fprintf(file, "wol_g                : " UH_FMT "\n", ptr_struct->wol_g);
-
-    adb2c_add_indentation(file, indent_level);
-    fprintf(file, "wol_s                : " UH_FMT "\n", ptr_struct->wol_s);
-
-    adb2c_add_indentation(file, indent_level);
-    fprintf(file, "rol_g                : " UH_FMT "\n", ptr_struct->rol_g);
-
-    adb2c_add_indentation(file, indent_level);
-    fprintf(file, "rol_s                : " UH_FMT "\n", ptr_struct->rol_s);
-
-    adb2c_add_indentation(file, indent_level);
-    fprintf(file, "fpga                 : " UH_FMT "\n", ptr_struct->fpga);
-
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "virtual_link_down    : " UH_FMT "\n", ptr_struct->virtual_link_down);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "icmd_exmb            : " UH_FMT "\n", ptr_struct->icmd_exmb);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "capi                 : " UH_FMT "\n", ptr_struct->capi);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "qcam_reg             : " UH_FMT "\n", ptr_struct->qcam_reg);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "mcam_reg             : " UH_FMT "\n", ptr_struct->mcam_reg);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "pcam_reg             : " UH_FMT "\n", ptr_struct->pcam_reg);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "mh_sync              : " UH_FMT "\n", ptr_struct->mh_sync);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "allow_icmd_access_reg_on_all_registers : " UH_FMT "\n", ptr_struct->allow_icmd_access_reg_on_all_registers);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "fw_info_psid         : " UH_FMT "\n", ptr_struct->fw_info_psid);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "nv_access            : " UH_FMT "\n", ptr_struct->nv_access);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "wol_p                : " UH_FMT "\n", ptr_struct->wol_p);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "wol_u                : " UH_FMT "\n", ptr_struct->wol_u);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "wol_m                : " UH_FMT "\n", ptr_struct->wol_m);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "wol_b                : " UH_FMT "\n", ptr_struct->wol_b);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "wol_a                : " UH_FMT "\n", ptr_struct->wol_a);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "wol_g                : " UH_FMT "\n", ptr_struct->wol_g);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "wol_s                : " UH_FMT "\n", ptr_struct->wol_s);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "rol_g                : " UH_FMT "\n", ptr_struct->rol_g);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "rol_s                : " UH_FMT "\n", ptr_struct->rol_s);
+    adb2c_add_indentation(fd, indent_level);
+    fprintf(fd, "fpga                 : " UH_FMT "\n", ptr_struct->fpga);
 }
 
-int connectx4_icmd_query_cap_general_size(void)
+unsigned int connectx4_icmd_query_cap_general_size(void)
 {
-     return 8;
+        return CONNECTX4_ICMD_QUERY_CAP_GENERAL_SIZE;
 }
 
-void connectx4_icmd_query_cap_general_dump(const struct connectx4_icmd_query_cap_general *ptr_struct, FILE* file)
+void connectx4_icmd_query_cap_general_dump(const struct connectx4_icmd_query_cap_general *ptr_struct, FILE *fd)
 {
-    connectx4_icmd_query_cap_general_print(ptr_struct, file, 0);
+    connectx4_icmd_query_cap_general_print(ptr_struct, fd, 0);
 }
+

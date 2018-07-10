@@ -29,18 +29,20 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-#--
+# --
 
 """
 * $Id           : mlnxdriver.py 2017-11-28
 * $Authors      : Ahmad Soboh (ahmads@mellanox.com)
 """
 
+from __future__ import print_function
 import abc
 import os
 import platform
-import mlxfwreset_utils
-from mlxfwreset_utils import cmdExec
+from . import mlxfwreset_utils
+from .mlxfwreset_utils import cmdExec
+from functools import reduce
 
 
 ######################################################################
@@ -71,7 +73,7 @@ class MlnxDriver(object):
     DRIVER_IGNORE = 0
     DRIVER_LOADED = 1
 
-    def __init__(self, logger,driverStatus):
+    def __init__(self, logger, driverStatus):
         self.logger = logger
         self.driverStatus = driverStatus
 
@@ -86,121 +88,88 @@ class MlnxDriver(object):
 
 
 class MlnxDriverLinux(MlnxDriver):
-    __metaclass__ = abc.ABCMeta
 
-    blacklist_file_path = '/etc/modprobe.d/mlxfwreset.conf'
+    # blacklist_file_path = '/etc/modprobe.d/mlxfwreset.conf'
+    PCI_DRIVERS_PATH = '/sys/bus/pci/drivers'
+    mlnx_drivers = ['mlx5_core','rshim_pcie']
 
-    def __init__(self,logger,driverStatus):
-        super(MlnxDriverLinux, self).__init__(logger,driverStatus)
+    def __init__(self,devices,logger,skip): # devices : 1 physical function per card
 
-    def disableAutoLoad(self):
-        with open(MlnxDriverLinux.blacklist_file_path,'w') as blacklist_file:
-            blacklist_file.write('blacklist mlx4_core\n')
-            blacklist_file.write('blacklist mlx5_core\n')
-            blacklist_file.write('blacklist mlx4_ib\n')
-            blacklist_file.write('blacklist mlx5_ib\n')
-            blacklist_file.write('blacklist mlx4_en\n')
+        self.drivers_dbdf = [] # A List of tuples (<dbdf>,<driver-name>)
 
+        if not skip:
+            if not os.path.exists(MlnxDriverLinux.PCI_DRIVERS_PATH):
+                raise RuntimeError("path {0} doesn't exist!".format(MlnxDriverLinux.PCI_DRIVERS_PATH))
 
-    def enableAutoLoad(self):
-        if os.path.exists(MlnxDriverLinux.blacklist_file_path):
-            os.remove(MlnxDriverLinux.blacklist_file_path)
+            # Check if opensm is running in the background
+            (rc, _, _) = cmdExec("pgrep opensm")
+            if rc == 0:
+                raise RuntimeError('Please stop "opensm" manually and resume operation!')
 
-class MlnxOfedDriverLinux(MlnxDriverLinux):
+            for device in devices:
 
-    KNOWN_DRIVER_SCRIPTS = ["/etc/init.d/mlnx-en.d", "/etc/init.d/openibd"]
+                dbdf = mlxfwreset_utils.getDevDBDF(device,logger)
+                dbd = dbdf.split('.')[0]
 
-    def __init__(self, logger, driverStatus):
-        logger.info('MlnxOfedDriverLinux object created')
-        self._driverScript = None
-        for driverScript in MlnxOfedDriverLinux.KNOWN_DRIVER_SCRIPTS:
-            if os.path.exists(driverScript):
-                self._driverScript = driverScript
-        super(MlnxOfedDriverLinux, self).__init__(logger, driverStatus)
+                # Reset virtual functions (reset pf1 is speculative - only if exists)
+                for pf_num in range(2):
+                    num_vfs_file_path = '/sys/bus/pci/devices/{0}.{1}/sriov_numvfs'.format(dbd,pf_num)
+                    cmd = "echo 0 > {0} ".format(num_vfs_file_path)
+                    logger.info('{0}'.format(cmd))
+                    (rc, out, _) = cmdExec(cmd)
+                    if rc!=0:
+                        logger.info('Reset virtual functions failed : {0}'.format(out))
 
-    def driverStart(self):
-        self.logger.info('MlnxOfedDriverLinux driverStart()')
-        if self._driverScript == None:
-            raise NoDriver("No Driver found.")
-        cmd = self._driverScript + " start"
-        self.logger.info('cmd {0}'.format(cmd))
-        (rc, _, _) = cmdExec(cmd)
-        if rc:
-            raise RuntimeError("Failed to Start Driver, please start driver manually to load FW")
-        return
+                # insert all the instances of the driver that need unbind/bind
+                cmd = "find {0} | grep {1}".format(MlnxDriverLinux.PCI_DRIVERS_PATH,dbd)
+                logger.info('{0}'.format(cmd))
+                (_, out, _) = cmdExec(cmd)
+                for line in out.split('\n')[:-1]:
+                    line = line.split('/')
+                    driver_name,dbdf = line[-2],line[-1]
+                    if driver_name not in MlnxDriverLinux.mlnx_drivers:
+                        raise RuntimeError("mlxfwreset doesn't support 3rd party driver ({0})!\nPlease, stop the driver manually and resume operation with --skip_driver".format(driver_name))
+                    self.drivers_dbdf.append((dbdf,driver_name))
 
-    def driverStop(self):
-        self.logger.info('MlnxOfedDriverLinux driverStop()')
-        if self._driverScript == None:
-            raise NoDriver("No Driver found.")
-        cmd = self._driverScript + " stop"
-        self.logger.info('cmd {0}'.format(cmd))
-        (rc, _, _) = cmdExec(cmd)
-        if rc:
-            raise RuntimeError("Failed to Stop Driver, please stop driver manually and resume Operation")
-        return
+        logger.info('{0}'.format(self.drivers_dbdf))
 
+        driverStatus = MlnxDriver.DRIVER_IGNORE if skip or not self.drivers_dbdf else MlnxDriver.DRIVER_LOADED
+        super(MlnxDriverLinux, self).__init__(logger, driverStatus)
 
-
-
-class MlnxInboxDriverLinux(MlnxDriverLinux):
-    def isModuleLoaded(self, m):
-        cmd = "lsmod"
-        (rc, out, _) = cmdExec(cmd)
-        if rc:
-            raise RuntimeError("Failed to run lsmod")
-        return m in out
-
-    def __init__(self, logger, driverStatus):
-        logger.info('MlnxInboxDriverLinux object created')
-        self.isCoreLoaded = self.isModuleLoaded("mlx5_core")
-        self.isIBLoaded = self.isModuleLoaded("mlx5_ib")
-        self.isAccellToolsLoaded = self.isModuleLoaded(
-            "mlx_accel_tools")  # Only for temporary backward comp. Should be removed in the future
-        self.isAccellCoreLoaded = self.isModuleLoaded(
-            "mlx_accel_core")  # Only for temporary backward comp. Should be removed in the future
-        self.isFpgaToolsLoaded = self.isModuleLoaded("mlx5_fpga_tools")
-        super(MlnxInboxDriverLinux, self).__init__(logger, driverStatus)
-
-    def loadViaModeProbe(self, moduleName):
-        cmd = "modprobe " + moduleName
-        (rc, _, _) = cmdExec(cmd)
-        if rc:
-            raise RuntimeError("Failed to Start Driver(" + cmd + "), please start driver manually to load FW")
-        return
-
-    def stopViaModeProbe(self, moduleName):
-        cmd = "modprobe -r " + moduleName
-        (rc, _, _) = cmdExec(cmd)
-        if rc:
-            raise RuntimeError("Failed to Stop Driver(" + cmd + "), please stop driver manually and resume Operation")
-        return
+    # def disableAutoLoad(self):
+    #     with open(MlnxDriverLinux.blacklist_file_path,'w') as blacklist_file:
+    #         blacklist_file.write('blacklist mlx5_core\n')
+    #         blacklist_file.write('blacklist mlx5_ib\n')
+    #         blacklist_file.write('blacklist mlx5_fpga_tools\n')
+    #
+    # def enableAutoLoad(self):
+    #     if os.path.exists(MlnxDriverLinux.blacklist_file_path):
+    #         os.remove(MlnxDriverLinux.blacklist_file_path)
 
     def driverStart(self):
-        self.logger.info('MlnxInboxDriverLinux driverStart()')
-        if self.isCoreLoaded:
-            self.loadViaModeProbe("mlx5_core")
-        if self.isIBLoaded:
-            self.loadViaModeProbe("mlx5_ib")
-        if self.isAccellToolsLoaded or self.isAccellCoreLoaded:
-            self.loadViaModeProbe("mlx_accel_tools")  # accel_core is loaded by accel_tools
-        if self.isFpgaToolsLoaded:
-            self.loadViaModeProbe("mlx5_fpga_tools")
-        return
+        self.logger.info('MlnxDriverLinux driverStart()')
+        for dbdf,driver_name in self.drivers_dbdf:
+            driver_path = '{0}/{1}'.format(MlnxDriverLinux.PCI_DRIVERS_PATH,driver_name)
+            assert os.path.exists(driver_path)
+            # Bind if not binded (in HotPlug, 'rescan' will bind automatically)
+            if not os.path.exists('/sys/bus/pci/devices/{0}/driver'.format(dbdf)):
+                cmd = 'echo "{0}" > {1}/bind'.format(dbdf, driver_path)
+                self.logger.info('{0}'.format(cmd))
+                (rc, _, _) = cmdExec(cmd)
+                if rc!=0:
+                    raise RuntimeError("Failed to start driver! please start driver manually to load FW")
+
 
     def driverStop(self):
-        self.logger.info('MlnxInboxDriverLinux driverStop()')
-        if self.isFpgaToolsLoaded and self.isModuleLoaded("mlx5_fpga_tools"):
-            self.stopViaModeProbe("mlx5_fpga_tools")
-        if self.isAccellToolsLoaded and self.isModuleLoaded("mlx_accel_tools"):
-            self.stopViaModeProbe("mlx_accel_tools")
-        if self.isAccellCoreLoaded and self.isModuleLoaded("mlx_accel_core"):
-            self.stopViaModeProbe("mlx_accel_core")
-        if self.isIBLoaded and self.isModuleLoaded("mlx5_ib"):
-            self.stopViaModeProbe("mlx5_ib")
-        if self.isCoreLoaded and self.isModuleLoaded("mlx5_core"):
-            self.stopViaModeProbe("mlx5_core")
-        return
+        self.logger.info('MlnxDriverLinux driverStop()')
+        for dbdf,driver_name in self.drivers_dbdf:
+            driver_path = '{0}/{1}'.format(MlnxDriverLinux.PCI_DRIVERS_PATH,driver_name)
+            assert os.path.exists(driver_path)
+            cmd = 'echo "{0}" > {1}/unbind'.format(dbdf, driver_path)
+            self.logger.info('{0}'.format(cmd))
+            (rc, _, _) = cmdExec(cmd)
+            if rc != 0:
+                raise RuntimeError("Failed to stop driver! please stop driver manually and resume Operation")
 
 
 class MlnxDriverFreeBSD(MlnxDriver):
@@ -243,46 +212,78 @@ class MlnxDriverFreeBSD(MlnxDriver):
         if rc != 0:
             raise DriverUnknownMode("Can not run the command: %s" % cmd)
         # the voodoo below checks if we had at least one kernel object loaded
-        return (MlnxDriver.DRIVER_IGNORE, MlnxDriver.DRIVER_LOADED)[reduce(lambda x, y: x or y, map(lambda x: x[1], self._knownModules))]
+        return (MlnxDriver.DRIVER_IGNORE, MlnxDriver.DRIVER_LOADED)[reduce(lambda x, y: x or y, [x[1] for x in self._knownModules])]
 
 
 class MlnxDriverWindows(MlnxDriver):
-    def __init__(self, logger, skip, device):
-        logger.info('MlnxDriverWindows object created')
-        if skip == True:
-            super(MlnxDriverWindows, self).__init__(MlnxDriver.DRIVER_IGNORE)
-            return
 
-        deviceBus = int((mlxfwreset_utils.getDevDBDF(device,logger)).split(":")[0], 16)
+    def get_device_drivers(self, logger, bus_num, device_num):
 
-        self.targetedAdapters = []
-        targetedAdaptersTemp = []
-        cmd = 'powershell.exe "Get-NetAdapterHardwareInfo | Format-List -Property Bus,Name'
+        def read_3_lines(txt):
+            'Generator to read 3 non-empty lines'
+
+            lines = [line.strip() for line in txt.split('\n') if line.strip()]  # remove empty lines and convert to list
+            assert len(lines) % 3 == 0
+
+            lines = iter(lines)
+            while True:
+                yield (next(lines), next(lines), next(lines))
+
+        cmd = 'powershell.exe "Get-NetAdapterHardwareInfo | Format-List -Property Bus,Device,Name'
+        logger.debug(cmd)
         (rc, out, _) = cmdExec(cmd)
         if rc != 0:
             raise RuntimeError("Failed to get Adapters Hardware Information")
-        lines = out.split('\n')
-        for idx, line in enumerate(lines):
-            if "Bus" in line:
-                if (int(line.split(':')[1]) == deviceBus):
-                    targetedAdaptersTemp.append(lines[idx + 1].split(':')[1].strip())
+        logger.debug(out)
 
-        # check status of the adapter
+        drivers_names = []
+        for bus_line, device_line, name_line in read_3_lines(out):
+            bus_num_ii = int(bus_line.split(':')[1])
+            device_num_ii = int(device_line.split(':')[1])
+            name_ii = name_line.split(':')[1].strip()
+
+            if bus_num_ii == bus_num and device_num_ii == device_num:
+                drivers_names.append(name_ii)
+
+        return drivers_names
+
+    def __init__(self, logger, skip, devices):
+
+        logger.info('MlnxDriverWindows object created')
+        if skip == True:
+            super(MlnxDriverWindows, self).__init__(logger, MlnxDriver.DRIVER_IGNORE)
+            return
+
+        # TODO : devices is for socket-direct, but for now SD is not supported anyway
+
+        # Extract bus and device from the device_name
+        bus_device = mlxfwreset_utils.getDevDBDF(devices[0],logger).split('.')[0]
+        bus_num, device_num = int(bus_device.split(':')[0],16), int(bus_device.split(':')[1],16)
+
+        # Find the network adapters for the dus:device
+        targetedAdaptersTemp = self.get_device_drivers(logger, bus_num, device_num)
+        logger.debug(targetedAdaptersTemp)
+
+        # Filter the network adapter thar are disabled
+        self.targetedAdapters = []
         for targetedAdapter in targetedAdaptersTemp:
             cmd = 'powershell.exe "Get-NetAdapter \'%s\' | Format-List -Property Status' % targetedAdapter
+            logger.debug(cmd)
             (rc, out, _) = cmdExec(cmd)
             if rc != 0:
                 raise RuntimeError("Failed to get Adapter '%s' Information" % targetedAdapter)
             if ("Disabled" not in out):
                 self.targetedAdapters.append(targetedAdapter)
+        logger.debug(self.targetedAdapters)
+
         driverStatus = MlnxDriver.DRIVER_LOADED if (len(self.targetedAdapters) > 0) else MlnxDriver.DRIVER_IGNORE
         super(MlnxDriverWindows, self).__init__(logger, driverStatus)
-        return
 
     def driverStart(self):
         self.logger.info('MlnxDriverWindows driverStart()')
         for targetedAdapter in self.targetedAdapters:
             cmd = "powershell.exe Enable-NetAdapter '%s' " % targetedAdapter
+            self.logger.info(cmd)
             (rc, stdout, _) = cmdExec(cmd)
             if rc != 0:
                 raise RuntimeError("Failed to Start Driver, please start driver manually to load FW")
@@ -292,35 +293,20 @@ class MlnxDriverWindows(MlnxDriver):
         self.logger.info('MlnxDriverWindows driverStop()')
         for targetedAdapter in self.targetedAdapters:
             cmd = "powershell.exe Disable-NetAdapter '%s' -confirm:$false" % targetedAdapter
+            self.logger.info(cmd)
             (rc, stdout, _) = cmdExec(cmd)
             if rc != 0:
                 raise RuntimeError("Failed to Stop Driver, please stop driver manually and resume Operation")
         return
 
 class MlnxDriverFactory(object):
-    def getDriverObj(self,logger, skip, device):
+    def getDriverObj(self,logger, skip, devices):
         operatingSystem = platform.system()
         if operatingSystem == "Linux":
-            if skip:
-                return MlnxInboxDriverLinux(logger, MlnxDriver.DRIVER_IGNORE)
-            else:
-                cmd = "lsmod"
-                (rc, out, _) = cmdExec(cmd)
-                if rc != 0:
-                    raise DriverUnknownMode("Can not run the command: %s" % cmd)
-                if "mlx5_core" not in out: # driver is not loaded (driver stopped)
-                    return MlnxInboxDriverLinux(logger, MlnxDriver.DRIVER_IGNORE)
-                cmd = "modinfo mlx5_core 2>/dev/null | grep \"filename\" | cut -d ':' -f 2` 2>/dev/null`"
-                (rc, out, _) = cmdExec(cmd)
-                if rc != 0:
-                    raise DriverUnknownMode("Can not run the command: %s" % cmd )
-                if (("extra" in out) or ("updates" in out)) and (os.path.exists("/etc/init.d/openibd") or os.path.exists("/etc/init.d/mlnx-en.d")):
-                    return MlnxOfedDriverLinux(logger, MlnxDriver.DRIVER_LOADED)
-                else:
-                    return MlnxInboxDriverLinux(logger, MlnxDriver.DRIVER_LOADED)
+            return MlnxDriverLinux(devices,logger,skip)
         elif operatingSystem == "FreeBSD":
             return MlnxDriverFreeBSD(logger, skip)
         elif operatingSystem == "Windows":
-            return MlnxDriverWindows(logger, skip, device)
+            return MlnxDriverWindows(logger, skip, devices)
         else:
             raise RuntimeError("Unsupported OS: %s" % operatingSystem)

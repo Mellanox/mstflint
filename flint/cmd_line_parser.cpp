@@ -55,15 +55,15 @@
 using namespace std;
 
 /******************************
- * Data structures containing
- * Meta data about subcommands
- * and flags
- ******************************/
+* Data structures containing
+* Meta data about subcommands
+* and flags
+******************************/
 class SubCmdMetaData {
 private:
     class SubCmd {
-    public:
-        SubCmd(string s, string l, sub_cmd_t n):  shortf(s), longf(l), cmdNum(n) {}
+public:
+        SubCmd(string s, string l, sub_cmd_t n) :  shortf(s), longf(l), cmdNum(n) {}
         ~SubCmd(){}
         string shortf;
         string longf;
@@ -76,7 +76,8 @@ public:
     sub_cmd_t getCmdNum(string flag);
 };
 
-SubCmdMetaData::SubCmdMetaData() {
+SubCmdMetaData::SubCmdMetaData()
+{
     _sCmds.push_back(new SubCmd("b", "burn", SC_Burn));
     _sCmds.push_back(new SubCmd("q", "query", SC_Query));
     _sCmds.push_back(new SubCmd("v", "verify", SC_Verify));
@@ -117,17 +118,16 @@ SubCmdMetaData::SubCmdMetaData() {
     _sCmds.push_back(new SubCmd("", "set_forbidden_versions", SC_Set_Forbidden_Versions));
 }
 
-SubCmdMetaData::~SubCmdMetaData() {
-    for (vector<class SubCmd*>::iterator it= _sCmds.begin(); it != _sCmds.end(); ++it )
-    {
+SubCmdMetaData::~SubCmdMetaData()
+{
+    for (vector<class SubCmd*>::iterator it = _sCmds.begin(); it != _sCmds.end(); ++it) {
         delete *it;
     }
 }
 
 sub_cmd_t SubCmdMetaData::getCmdNum(string flag)
 {
-    for (vector<class SubCmd*>::iterator it= _sCmds.begin(); it != _sCmds.end(); ++it )
-    {
+    for (vector<class SubCmd*>::iterator it = _sCmds.begin(); it != _sCmds.end(); ++it) {
         if (((*it)->shortf == flag) || ((*it)->longf == flag)) {
             return (*it)->cmdNum;
         }
@@ -139,8 +139,8 @@ sub_cmd_t SubCmdMetaData::getCmdNum(string flag)
 class FlagMetaData {
 private:
     class Flag {
-    public:
-        Flag(string s, string l, int n):  shortf(s), longf(l), argNum(n) {}
+public:
+        Flag(string s, string l, int n) :  shortf(s), longf(l), argNum(n) {}
         ~Flag(){}
         string shortf;
         string longf;
@@ -153,7 +153,8 @@ public:
     int getNumOfArgs(string flag);
 };
 
-FlagMetaData::FlagMetaData() {
+FlagMetaData::FlagMetaData()
+{
     _flags.push_back(new Flag("d", "device", 1));
     _flags.push_back(new Flag("", "guid", 1));
     _flags.push_back(new Flag("", "guids", GUIDS));
@@ -198,17 +199,16 @@ FlagMetaData::FlagMetaData() {
     _flags.push_back(new Flag("", "no_fw_ctrl", 0));
 }
 
-FlagMetaData::~FlagMetaData() {
-    for (vector<class Flag*>::iterator it= _flags.begin(); it != _flags.end(); ++it )
-    {
+FlagMetaData::~FlagMetaData()
+{
+    for (vector<class Flag*>::iterator it = _flags.begin(); it != _flags.end(); ++it) {
         delete *it;
     }
 }
 
 int FlagMetaData::getNumOfArgs(string flag)
 {
-    for (vector<class Flag*>::iterator it= _flags.begin(); it != _flags.end(); ++it )
-    {
+    for (vector<class Flag*>::iterator it = _flags.begin(); it != _flags.end(); ++it) {
         if (((*it)->shortf == flag) || ((*it)->longf == flag)) {
             return (*it)->argNum;
         }
@@ -221,48 +221,54 @@ int FlagMetaData::getNumOfArgs(string flag)
  *******************/
 
 // NOTE : number of parameters extracted in the container should be checked.
-static void splitByDelimiters(std::vector<string>& container, string str, const char* delimiters )
+static void splitByDelimiters(std::vector<string>& container, string str, const char *delimiters )
 {
-	if (str.size() == 0 ) {
-		return;
-	}
-	char* cStr = strcpy(new char[str.size()+1], str.c_str());
-	char* ptr;
-	ptr = strtok(cStr, delimiters);
+    if (str.size() == 0) {
+        return;
+    }
+    char *cStr = strcpy(new char[str.size() + 1], str.c_str());
+    char *ptr;
+    ptr = strtok(cStr, delimiters);
 
-	while (ptr != NULL) {
-		container.push_back(ptr);
-		ptr = strtok(NULL, delimiters);
-	}
-	delete[] cStr;
-	return;
+    while (ptr != NULL) {
+        container.push_back(ptr);
+        ptr = strtok(NULL, delimiters);
+    }
+    delete[] cStr;
+    return;
 }
 
-char* stripFlag(char* flag) {
-    char* strippedFlagStart = NULL;
+char* stripFlag(char *flag)
+{
+    char *strippedFlagStart = NULL;
     if (flag[0] != '-') { // not a flag
         return flag;
-    };
-    if ((flag[0] == '-') && (flag[1] == '-'))
+    }
+    ;
+    if ((flag[0] == '-') && (flag[1] == '-')) {
         strippedFlagStart = &flag[2];
-    else {
+    } else {
         strippedFlagStart = &flag[1];
     }
     return strippedFlagStart;
 }
 
-int countArgs(string args) {
-    if (args.size() == 0)
+int countArgs(string args)
+{
+    if (args.size() == 0) {
         return 0;
+    }
     int count = 1;
     for (string::iterator it = args.begin(); it < args.end(); ++it) {
-        if (*it == ',')
+        if (*it == ',') {
             count++;
+        }
     }
     return count;
 }
 
-bool verifyNumOfArgs(string name, string value) {
+bool verifyNumOfArgs(string name, string value)
+{
     //HACK : we don't check device numOfArgs because image device format might contain ","
     if ((name == "device") || (name == "d") ) {
         return true;
@@ -283,11 +289,12 @@ bool verifyNumOfArgs(string name, string value) {
     //HACK : flash_params is 3 argument but given with comma separated instead of spaces like the rest
     // so flag_arg_num gives a wrong value
 
-    if (name == "flash_params")
+    if (name == "flash_params") {
         expected = 3;
+    }
     int actual = countArgs(value);
     if (actual < expected) {
-        printf(FLINT_TOO_FEW_ARGS_ERROR,expected, actual);
+        printf(FLINT_TOO_FEW_ARGS_ERROR, expected, actual);
         return false;
     } else if (actual > expected) {
         printf(FLINT_TOO_MANY_ARGS_ERROR, expected, actual);
@@ -296,10 +303,10 @@ bool verifyNumOfArgs(string name, string value) {
     return true;
 }
 
-bool strToNum(string str, u_int64_t& num, int base=0)
+bool strToNum(string str, u_int64_t& num, int base = 0)
 {
     char *endp;
-    char* numStr = strcpy(new char[str.size() + 1],str.c_str());
+    char *numStr = strcpy(new char[str.size() + 1], str.c_str());
     num = strtoul(numStr, &endp, base);
     if (*endp) {
         delete[] numStr;
@@ -310,9 +317,9 @@ bool strToNum(string str, u_int64_t& num, int base=0)
 }
 
 //this function is used in extracting both guids and macs from user
-bool getGUIDFromStr(string str, guid_t& guid, string prefixErr="")
+bool getGUIDFromStr(string str, guid_t& guid, string prefixErr = "")
 {
-    char* endp;
+    char *endp;
     u_int64_t g;
     g = strtoull(str.c_str(), &endp, 16);
     if (*endp || (g == 0xffffffffffffffffULL && errno == ERANGE)) {
@@ -356,7 +363,7 @@ bool parseFlashParams(string params, flash_params_t& fp)
         return false;
     }
     // Step 2 extract params
-    fp.type_name = strcpy(new char[paramVec[0].length()+1], paramVec[0].c_str());
+    fp.type_name = strcpy(new char[paramVec[0].length() + 1], paramVec[0].c_str());
     if (!fp.type_name) {
         return false;
     }
@@ -375,13 +382,14 @@ bool parseFlashParams(string params, flash_params_t& fp)
 }
 
 /************************************
- *Implementation of the Command line
- *Parsing part of the Flint class
- ************************************/
+* Implementation of the Command line
+* Parsing part of the Flint class
+************************************/
 
 #define FLASH_LIST_SZ 256
 
-void Flint::initCmdParser() {
+void Flint::initCmdParser()
+{
     bool isExternal = false;
 #ifdef EXTERNAL
     isExternal = true;
@@ -390,312 +398,310 @@ void Flint::initCmdParser() {
                    "Ethernet NIC cards, and switch devices.");
 
     AddOptions("device",
-                'd',
-                "<device>",
-                "Device flash is connected to.\n"
-                "Commands affected: all");
+               'd',
+               "<device>",
+               "Device flash is connected to.\n"
+               "Commands affected: all");
 
     AddOptions("image",
                'i',
-                "<image>",
-                "Binary image file.\n"
-                "Commands affected: burn, verify");
+               "<image>",
+               "Binary image file.\n"
+               "Commands affected: burn, verify");
 
     AddOptions("help",
                'h',
-                "",
-                "Prints this message and exits");
+               "",
+               "Prints this message and exits");
 
     AddOptions("hh",
                ' ',
-                "",
-                "Prints extended command help");
+               "",
+               "Prints extended command help");
 
     AddOptions("yes",
                'y',
-                "",
-                "Non interactive mode - assume answer \"yes\" to all questions.\n"
-                "Commands affected: all");
+               "",
+               "Non interactive mode - assume answer \"yes\" to all questions.\n"
+               "Commands affected: all");
 
     AddOptions("no",
                ' ',
-                "",
-                "Non interactive mode - assume answer \"no\" to all questions.\n"
-                "Commands affected: all");
+               "",
+               "Non interactive mode - assume answer \"no\" to all questions.\n"
+               "Commands affected: all");
 
     AddOptions("guid",
                ' ',
-                "<GUID>",
-                "GUID base value. 4 GUIDs are automatically assigned to the following values:\n\n"
-                "guid   -> node GUID\n"
-                "guid+1 -> port1\n"
-                "guid+2 -> port2\n"
-                "guid+3 -> system image GUID.\n\n"
-                "Note: port2 guid will be assigned even for a single port HCA - The HCA ignores this value.\n\n"
-                "Commands affected: burn, sg");
+               "<GUID>",
+               "GUID base value. 4 GUIDs are automatically assigned to the following values:\n\n"
+               "guid   -> node GUID\n"
+               "guid+1 -> port1\n"
+               "guid+2 -> port2\n"
+               "guid+3 -> system image GUID.\n\n"
+               "Note: port2 guid will be assigned even for a single port HCA - The HCA ignores this value.\n\n"
+               "Commands affected: burn, sg");
 
     AddOptions("guids",
                ' ',
-                "<GUIDS...>",
-                "4 GUIDs must be specified here.\n"
-                "The specified GUIDs are assigned to the following fields, respectively:\n"
-                "node, port1, port2 and system image GUID.\n\n"
-                "Note: port2 guid must be specified even for a single port HCA - The HCA ignores this value.\n"
-                "It can be set to 0x0.\n\n"
-                "Commands affected: burn, sg");
+               "<GUIDS...>",
+               "4 GUIDs must be specified here.\n"
+               "The specified GUIDs are assigned to the following fields, respectively:\n"
+               "node, port1, port2 and system image GUID.\n\n"
+               "Note: port2 guid must be specified even for a single port HCA - The HCA ignores this value.\n"
+               "It can be set to 0x0.\n\n"
+               "Commands affected: burn, sg");
 
     AddOptions("mac",
                ' ',
-                "<MAC>",
-                "MAC address base value. 2 MACs are automatically assigned to the following values:\n\n"
-                "mac    -> port1\n"
-                "mac+1  -> port2\n\n"
-                "Commands affected: burn, sg");
+               "<MAC>",
+               "MAC address base value. 2 MACs are automatically assigned to the following values:\n\n"
+               "mac    -> port1\n"
+               "mac+1  -> port2\n\n"
+               "Commands affected: burn, sg");
 
     AddOptions("macs",
                ' ',
-                "<MACs...>",
-                "2 MACs must be specified here.\n"
-                "The specified MACs are assigned to port1, port2, respectively.\n"
-                "Commands affected: burn, sg\n\n"
-                "Note: -mac/-macs flags are applicable only for Mellanox\n"
-                "\tTechnologies ethernet products.");
+               "<MACs...>",
+               "2 MACs must be specified here.\n"
+               "The specified MACs are assigned to port1, port2, respectively.\n"
+               "Commands affected: burn, sg\n\n"
+               "Note: -mac/-macs flags are applicable only for Mellanox\n"
+               "\tTechnologies ethernet products.");
 
     AddOptions("uid",
                ' ',
-                "<UID>",
-                "ConnectIB/SwitchIB only. Derive and set the device UIDs (GUIDs, MACs, WWNs).\n"
-                "UIDs are derived from the given base UID according to Mellanox Methodology\n"
-                "Commands affected: burn, sg");
+               "<UID>",
+               "ConnectIB/SwitchIB only. Derive and set the device UIDs (GUIDs, MACs, WWNs).\n"
+               "UIDs are derived from the given base UID according to Mellanox Methodology\n"
+               "Commands affected: burn, sg");
 
     AddOptions("blank_guids",
                ' ',
-                "",
-                "Burn the image with blank GUIDs and MACs (where applicable). These values can be set later using the"
-                " \"sg\" command (see details below).\n\n"
-                "Commands affected: burn");
+               "",
+               "Burn the image with blank GUIDs and MACs (where applicable). These values can be set later using the"
+               " \"sg\" command (see details below).\n\n"
+               "Commands affected: burn");
 
     AddOptions("clear_semaphore",
                ' ',
-                "",
-                "Force clear the flash semaphore on the device.\n"
-                "No command is allowed when this flag is used.\n"
-                "NOTE: May result in system instability or flash corruption if the device or another application is"
-                " currently using the flash.\n"
-                "Exercise caution.\n");
+               "",
+               "Force clear the flash semaphore on the device.\n"
+               "No command is allowed when this flag is used.\n"
+               "NOTE: May result in system instability or flash corruption if the device or another application is"
+               " currently using the flash.\n"
+               "Exercise caution.\n");
 
     AddOptions("qq",
                ' ',
-                "",
-                "Run a quick query. When specified, flint will not perform full image integrity checks during the query"
-                " operation. This may shorten execution time when running over slow interfaces (e.g., I2C, MTUSB-1).\n"
-                "Commands affected: query");
+               "",
+               "Run a quick query. When specified, flint will not perform full image integrity checks during the query"
+               " operation. This may shorten execution time when running over slow interfaces (e.g., I2C, MTUSB-1).\n"
+               "Commands affected: query");
 
     AddOptions("nofs",
                ' ',
-                "",
-                "Burn image in a non failsafe manner.");
+               "",
+               "Burn image in a non failsafe manner.");
 
     AddOptions("allow_psid_change",
                ' ',
-                "",
-                "Allow burning a FW image with a different PSID (Parameter Set ID)than the one currently on flash. Note"
-                " that changing a PSID may cause the device to malfunction. Use only if you know what you are doing", isExternal);
+               "",
+               "Allow burning a FW image with a different PSID (Parameter Set ID)than the one currently on flash. Note"
+               " that changing a PSID may cause the device to malfunction. Use only if you know what you are doing", isExternal);
 
     AddOptions("allow_rom_change",
                ' ',
-                "",
-                "Allow burning/removing a ROM to/from FW image when product version is present.\n"
-                "Use only if you know what you are doing");
+               "",
+               "Allow burning/removing a ROM to/from FW image when product version is present.\n"
+               "Use only if you know what you are doing");
 
     AddOptions("override_cache_replacement",
                ' ',
-                "",
-                "On SwitchX/ConnectIB devices:\n"
-                "Allow accessing the flash even if the cache replacement mode is enabled.\n"
-                "NOTE: This flag is intended for advanced users only.\n"
-                "Running in this mode may cause the firmware to hang.\n");
+               "",
+               "On SwitchX/ConnectIB devices:\n"
+               "Allow accessing the flash even if the cache replacement mode is enabled.\n"
+               "NOTE: This flag is intended for advanced users only.\n"
+               "Running in this mode may cause the firmware to hang.\n");
 
     AddOptions("no_flash_verify",
                ' ',
-                "",
-                "Do not verify each write on the flash.");
+               "",
+               "Do not verify each write on the flash.");
 
     AddOptions("use_fw",
                ' ',
-                "",
-                "Flash access will be done using FW (ConnectX-3/ConnectX-3Pro only).");
+               "",
+               "Flash access will be done using FW (ConnectX-3/ConnectX-3Pro only).");
 
     AddOptions("silent",
                's',
-                "",
-                "Do not print burn progress flyer.\n"
-                "Commands affected: burn");
+               "",
+               "Do not print burn progress flyer.\n"
+               "Commands affected: burn");
 
     AddOptions("vsd",
                ' ',
-                "<string>",
-                "Write this string, of up to 208 characters, to VSD when burn.");
+               "<string>",
+               "Write this string, of up to 208 characters, to VSD when burn.");
 
     AddOptions("use_image_ps",
                ' ',
-                "",
-                "Burn vsd as appears in the given image - do not keep existing VSD on flash.\n"
-                "Commands affected: burn");
+               "",
+               "Burn vsd as appears in the given image - do not keep existing VSD on flash.\n"
+               "Commands affected: burn");
 
     AddOptions("use_image_guids",
                ' ',
-                "",
-                "Burn (guids/macs) as appears in the given image.\n"
-                "Commands affected: burn");
+               "",
+               "Burn (guids/macs) as appears in the given image.\n"
+               "Commands affected: burn");
 
     AddOptions("use_image_rom",
                ' ',
-                "",
-                "Do not save the ROM which exists in the device.\n"
-                "Commands affected: burn");
+               "",
+               "Do not save the ROM which exists in the device.\n"
+               "Commands affected: burn");
 
     AddOptions("use_dev_rom",
                ' ',
-                "",
-                "Save the ROM which exists in the device.\n"
-                "Commands affected: burn");
+               "",
+               "Save the ROM which exists in the device.\n"
+               "Commands affected: burn");
 
     AddOptions("ignore_dev_data",
                ' ',
-                "",
-                "Do not attempt to take device data sections from device(sections will be taken from the image. FS3"
-                " Only).\n"
-                "Commands affected: burn");
+               "",
+               "Do not attempt to take device data sections from device(sections will be taken from the image. FS3"
+               " Only).\n"
+               "Commands affected: burn");
 
     AddOptions("no_fw_ctrl",
                ' ',
-                "",
-                "Do not attempt to work with the FW Ctrl update commands");
+               "",
+               "Do not attempt to work with the FW Ctrl update commands");
 
     AddOptions("use_dev_img_info",
                ' ',
-                "",
-                "preserve select image info fields from the device upon FW update (FS3 Only).\n"
-                "Commands affected: burn",
-                true);
+               "",
+               "preserve select image info fields from the device upon FW update (FS3 Only).\n"
+               "Commands affected: burn",
+               true);
 
     AddOptions("dual_image",
                ' ',
-                "",
-                "Make the burn process burn two images on flash (previously default algorithm). Current default"
-                " failsafe burn process burns a single image (in alternating locations).\n"
-                "Commands affected: burn");
+               "",
+               "Make the burn process burn two images on flash (previously default algorithm). Current default"
+               " failsafe burn process burns a single image (in alternating locations).\n"
+               "Commands affected: burn");
 
     AddOptions("striped_image",
                ' ',
-                "",
-                "Use this flag to indicate that the given image file is in a \"striped image\" format.\n"
-                "Commands affected: query verify");
+               "",
+               "Use this flag to indicate that the given image file is in a \"striped image\" format.\n"
+               "Commands affected: query verify");
 
     AddOptions("banks",
                ' ',
-                "<bank>",
-                "Set the number of attached flash devices (banks)");
+               "<bank>",
+               "Set the number of attached flash devices (banks)");
 
     AddOptions("log",
                ' ',
-                "<log_file>",
-                "Print the burning status to the specified log file");
+               "<log_file>",
+               "Print the burning status to the specified log file");
 
     char flashList[FLASH_LIST_SZ];
-    char flashParDesc[FLASH_LIST_SZ*2];
+    char flashParDesc[FLASH_LIST_SZ * 2];
     Flash::get_flash_list(flashList);
-    snprintf(flashParDesc, FLASH_LIST_SZ*2,"Use the given parameters to access the flash instead of reading them from "
-                                           "the flash.\n"\
-            							   "Supported parameters:\n"\
-            							   "Type: The type of the flash, such as:%s.\n"\
-            							   "log2size: The log2 of the flash size."\
-            							   "num_of_flashes: the number of the flashes connected to the device.",
-                                            flashList);
+    snprintf(flashParDesc, FLASH_LIST_SZ * 2, "Use the given parameters to access the flash instead of reading them from "
+             "the flash.\n" \
+             "Supported parameters:\n" \
+             "Type: The type of the flash, such as:%s.\n" \
+             "log2size: The log2 of the flash size." \
+             "num_of_flashes: the number of the flashes connected to the device.",
+             flashList);
 
 
     AddOptions("flash_params",
                ' ',
-                "<type, log2size, num_of_flashes>", flashParDesc);
+               "<type, log2size, num_of_flashes>", flashParDesc);
 
     AddOptions("version",
                'v',
-                "",
-                "Version info.");
+               "",
+               "Version info.");
 
     AddOptions("no_devid_check",
                ' ',
-                "",
-                "ignore device_id checks", true);
+               "",
+               "ignore device_id checks", true);
 
     AddOptions("skip_ci_req",
                ' ',
-                "",
-                "skip sending cache image request to driver(windows)", true);
+               "",
+               "skip sending cache image request to driver(windows)", true);
 
     AddOptions("ocr",
                ' ',
-                "",
-                "another flag for override cache replacement", true);
+               "",
+               "another flag for override cache replacement", true);
     AddOptions("private_key",
                ' ',
-                "<key_file>",
-                "path to PEM formatted private key to be used by the sign command");
+               "<key_file>",
+               "path to PEM formatted private key to be used by the sign command");
 
     AddOptions("key_uuid",
                ' ',
-                "<uuid_file>",
-                "UUID matching the given private key to be used by the sign command");
+               "<uuid_file>",
+               "UUID matching the given private key to be used by the sign command");
     AddOptions("private_key2",
                ' ',
-                "<key_file>",
-                "path to PEM formatted private key to be used by the sign command");
+               "<key_file>",
+               "path to PEM formatted private key to be used by the sign command");
 
     AddOptions("key_uuid2",
                ' ',
-                "<uuid_file>",
-                "UUID matching the given private key to be used by the sign command");
+               "<uuid_file>",
+               "UUID matching the given private key to be used by the sign command");
 
-    for (map_sub_cmd_t_to_subcommand::iterator it=_subcommands.begin(); it != _subcommands.end(); it++)
-        {
-            if (it->first == SC_ResetCfg) {
-                // hidden command so "forget" mentioning it
-                continue;
-            }
-            string str1 = it->second->getFlagL()+((it->second->getFlagS() == "") ? ("  ") :
-                          ("|"))+it->second->getFlagS()\
-                    +" "+it->second->getParam();
-            string str2 = it->second->getDesc();
-
-            AddOptionalSectionData("COMMANDS SUMMARY", str1, str2);
+    for (map_sub_cmd_t_to_subcommand::iterator it = _subcommands.begin(); it != _subcommands.end(); it++) {
+        if (it->first == SC_ResetCfg) {
+            // hidden command so "forget" mentioning it
+            continue;
         }
-    
+        string str1 = it->second->getFlagL() + ((it->second->getFlagS() == "") ? ("  ") :
+                                                                                 ("|")) + it->second->getFlagS() \
+                      + " " + it->second->getParam();
+        string str2 = it->second->getDesc();
+
+        AddOptionalSectionData("COMMANDS SUMMARY", str1, str2);
+    }
+
     AddOptionalSectionData("RETURN VALUES", "0", "Successful completion.");
     AddOptionalSectionData("RETURN VALUES", "1", "An error has occurred.");
     AddOptionalSectionData("RETURN VALUES", "7", "For burn command - FW already updated - burn was aborted.");
 
 
-    for (map_sub_cmd_t_to_subcommand::iterator it=_subcommands.begin(); it != _subcommands.end(); it++)
-        {
-            if (it->first == SC_ResetCfg) {
-                // hidden command so "forget" mentioning it
-                continue;
-            }
-            string str =   "Name:\n"
-                         "\t" + it->second->getName() + "\n"
-                         + "Description:\n"
-                         "\t" + it->second->getExtDesc() + "\n"
-                         + "Command:\n"
-                         "\t" + it->second->getFlagL() +
-                         ((it->second->getFlagS() == "") ? ("  ") : ("|"))+it->second->getFlagS()
-                         + " " + it->second->getParam() + "\n"
-                         + "Parameters:\n" 
-                         "\t" + it->second->getParamExp() + "\n"
-                         + "Examples:\n"
-                         "\t" + it->second->getExample() + "\n\n\n";
-            AddOptionalSectionData("COMMANDS DESCRIPTION", str);
+    for (map_sub_cmd_t_to_subcommand::iterator it = _subcommands.begin(); it != _subcommands.end(); it++) {
+        if (it->first == SC_ResetCfg) {
+            // hidden command so "forget" mentioning it
+            continue;
         }
+        string str =   "Name:\n"
+                     "\t" + it->second->getName() + "\n"
+                     + "Description:\n"
+                     "\t" + it->second->getExtDesc() + "\n"
+                     + "Command:\n"
+                     "\t" + it->second->getFlagL() +
+                     ((it->second->getFlagS() == "") ? ("  ") : ("|")) + it->second->getFlagS()
+                     + " " + it->second->getParam() + "\n"
+                     + "Parameters:\n"
+                     "\t" + it->second->getParamExp() + "\n"
+                     + "Examples:\n"
+                     "\t" + it->second->getExample() + "\n\n\n";
+        AddOptionalSectionData("COMMANDS DESCRIPTION", str);
+    }
 
 
     _cmdParser.AddRequester(this);
@@ -705,89 +711,80 @@ ParseStatus Flint::HandleOption(string name, string value)
 {
     //TODO: consider verifying num of args inside each if statements that needs its arg num verified
     //      thus we will be able to get rid of the hacks inside the function in the expense of a longer code.
-    if (!(verifyNumOfArgs(name, value)))
-                return PARSE_ERROR;
+    if (!(verifyNumOfArgs(name, value))) {
+        return PARSE_ERROR;
+    }
 
-    if (name == "device" || name == "d" )
-    {
+    if (name == "device" || name == "d") {
         _flintParams.device_specified = true;
         _flintParams.device = value;
-    }
-    else if (name == "help" || name == "h")
-    {
+    } else if (name == "help" || name == "h") {
         vector<string> excluded_sections;
         excluded_sections.push_back("COMMANDS DESCRIPTION");
-        cout<< _cmdParser.GetUsage(false, excluded_sections);
+        cout << _cmdParser.GetUsage(false, excluded_sections);
         return PARSE_OK_WITH_EXIT;
-    }
-    else if (name == "version" || name == "v")
-    {
+    } else if (name == "version" || name == "v") {
 #ifdef EXTERNAL
-            print_version_string(FLINT_NAME, "");
+        print_version_string(FLINT_NAME, "");
 #else
-            print_version_string(FLINT_NAME"(oem)", "");
+        print_version_string(FLINT_NAME "(oem)", "");
 #endif
-            return PARSE_OK_WITH_EXIT;
-    }
-    else if (name == "hh")
-    {
+        return PARSE_OK_WITH_EXIT;
+    } else if (name == "hh") {
         cout << _cmdParser.GetUsage();
         return PARSE_OK_WITH_EXIT;
-    }
-    else if (name == "no_devid_check") {
-            _flintParams.no_devid_check = true;
-    }
-    else if (name == "skip_ci_req") {
-            _flintParams.skip_ci_req = true;
-    }
-    else if (name == "guid") {
+    } else if (name == "no_devid_check") {
+        _flintParams.no_devid_check = true;
+    } else if (name == "skip_ci_req") {
+        _flintParams.skip_ci_req = true;
+    } else if (name == "guid") {
         _flintParams.guid_specified = true;
         guid_t g;
         if (!getGUIDFromStr(value, g)) {
             return PARSE_ERROR;
         }
-        for (int i=0; i<GUIDS ; i++){
-            _flintParams.user_guids.push_back(incrGuid(g,i));
+        for (int i = 0; i < GUIDS; i++) {
+            _flintParams.user_guids.push_back(incrGuid(g, i));
         }
-       // for (std::vector<guid_t>::iterator it=_flintParams.user_guids.begin();it != _flintParams.user_guids.end(); it++){
-       //     printf("%8.8x%8.8x\n",it->h,it->l);
-       // }
+        // for (std::vector<guid_t>::iterator it=_flintParams.user_guids.begin();it != _flintParams.user_guids.end(); it++){
+        //     printf("%8.8x%8.8x\n",it->h,it->l);
+        // }
     } else if (name == "guids") {
         _flintParams.guids_specified = true;
         std::vector<std::string> strs;
-        splitByDelimiters(strs, value,",");
+        splitByDelimiters(strs, value, ",");
         if (strs.size() != GUIDS) {
-        	return PARSE_ERROR;
+            return PARSE_ERROR;
         }
-        for (int i=0; i<GUIDS; i++) {
+        for (int i = 0; i < GUIDS; i++) {
             guid_t g;
-            if (!getGUIDFromStr(strs[i], g)){
+            if (!getGUIDFromStr(strs[i], g)) {
                 return PARSE_ERROR;
-            }else{
+            } else {
                 _flintParams.user_guids.push_back(g);
             }
         }
     } else if (name == "mac") {
         _flintParams.mac_specified = true;
         guid_t m;
-        if (!getGUIDFromStr(value, m)){
+        if (!getGUIDFromStr(value, m)) {
             return PARSE_ERROR;
         }
-        for (int i=0; i<MACS ; i++){
-            _flintParams.user_macs.push_back(incrGuid(m,i));
+        for (int i = 0; i < MACS; i++) {
+            _flintParams.user_macs.push_back(incrGuid(m, i));
         }
     } else if (name == "macs") {
         _flintParams.macs_specified = true;
         std::vector<std::string> strs;
-        splitByDelimiters(strs, value,",");
+        splitByDelimiters(strs, value, ",");
         if (strs.size() != MACS) {
-        	return PARSE_ERROR;
+            return PARSE_ERROR;
         }
-        for (int i=0; i<MACS; i++) {
+        for (int i = 0; i < MACS; i++) {
             guid_t m;
-            if (!getGUIDFromStr(strs[i], m)){
+            if (!getGUIDFromStr(strs[i], m)) {
                 return PARSE_ERROR;
-            }else{
+            } else {
                 _flintParams.user_macs.push_back(m);
             }
         }
@@ -843,9 +840,9 @@ ParseStatus Flint::HandleOption(string name, string value)
         _flintParams.dual_image = true;
     } else if (name == "striped_image") {
         _flintParams.striped_image = true;
-    }else if (name == "use_dev_img_info") {
+    } else if (name == "use_dev_img_info") {
         _flintParams.use_dev_img_info = true;
-    }else if (name == "banks") {
+    } else if (name == "banks") {
         _flintParams.banks_specified = true;
         u_int64_t banksNum;
         if (!strToNum(value, banksNum)) {
@@ -875,7 +872,7 @@ ParseStatus Flint::HandleOption(string name, string value)
         _flintParams.privkey2_uuid = value;
     } else {
         cout << "Unknown Flag: " << name;
-        cout<< _cmdParser.GetSynopsis();
+        cout << _cmdParser.GetSynopsis();
         return PARSE_ERROR;
     }
     return PARSE_OK;
@@ -883,7 +880,8 @@ ParseStatus Flint::HandleOption(string name, string value)
 
 #define IS_NUM(cha) (((cha) >= '0') && ((cha) <= '9'))
 
-ParseStatus Flint::parseCmdLine(int argc, char* argv[]) {
+ParseStatus Flint::parseCmdLine(int argc, char *argv[])
+{
     //Step1 separate between option section and cmd section
     SubCmdMetaData subCmds;
     FlagMetaData flags;
@@ -892,7 +890,7 @@ ParseStatus Flint::parseCmdLine(int argc, char* argv[]) {
     int argcCmd = 0, argcOpt = 0;
     bool foundOptionWhenLookingForCmd = false;
     ParseStatus rc;
-    char** newArgv = NULL;
+    char **newArgv = NULL;
     int newArgc = 0;
     int i = 1, j = 1, argStart = 1, argEnd = 1;
 
@@ -923,14 +921,12 @@ ParseStatus Flint::parseCmdLine(int argc, char* argv[]) {
     //first arg is the flint command we can copy as is
     newArgv[0] = strcpy(new char[strlen(argvOpt[0]) + 1], argvOpt[0]);
     while (i < argcOpt) {
-        if (argvOpt[i][0] == '-' && !IS_NUM(argvOpt[i][1])) //its a flag (and not a number) so we copy to new_argv as is
-        {
+        if (argvOpt[i][0] == '-' && !IS_NUM(argvOpt[i][1])) { //its a flag (and not a number) so we copy to new_argv as is
             newArgv[j] = strcpy(new char[strlen(argvOpt[i]) + 1],
-                    argvOpt[i]);
+                                argvOpt[i]);
             i++;
             j++;
-        } else //its an argument
-        {
+        } else { //its an argument
             //find next flag if exsists
             argStart = i;
             argEnd = i;
@@ -964,14 +960,14 @@ ParseStatus Flint::parseCmdLine(int argc, char* argv[]) {
         for (int i = 1; i < argcCmd; ++i) {
             this->_flintParams.cmd_params.push_back(string(argvCmd[i]));
         }
-    } else //no command found deal with either missing/invalid command
-    {
+    } else { //no command found deal with either missing/invalid command
         //find last flag
         int lastFlagPos;
-        char* strippedFlag;
+        char *strippedFlag;
         for (lastFlagPos = argc - 1; lastFlagPos > 0; lastFlagPos--) {
-            if (argv[lastFlagPos][0] == '-' && !IS_NUM(argv[lastFlagPos][1]))
+            if (argv[lastFlagPos][0] == '-' && !IS_NUM(argv[lastFlagPos][1])) {
                 break;
+            }
         }
         if (lastFlagPos == 0) {
             cout << FLINT_NO_OPTIONS_FOUND_ERROR << endl;
@@ -991,7 +987,7 @@ ParseStatus Flint::parseCmdLine(int argc, char* argv[]) {
     //Step5 parse option section using _cmdParser
     rc = this->_cmdParser.ParseOptions(newArgc, newArgv);
     // Step 6 Delete allocated memory
-    clean_up: for (int i = 0; i < newArgc; i++) {
+clean_up: for (int i = 0; i < newArgc; i++) {
         delete[] newArgv[i];
     }
     delete[] newArgv;

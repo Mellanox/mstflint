@@ -52,7 +52,7 @@ private:
     int csv2vector(string str, vector<string> &explode);
 
     class PsidLookupInfo {
-    public:
+public:
         string pn;
         string prodDesc;
         string psid;

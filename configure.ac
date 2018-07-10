@@ -1,11 +1,11 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(mstflint, 4.9.0, adrianc@mellanox.co.il)
+AC_INIT(mstflint, 4.10.0, adrianc@mellanox.co.il)
 
 AC_DEFINE_UNQUOTED([PROJECT], ["mstflint"], [Define the project name.])
 AC_SUBST([PROJECT])
 
-AC_DEFINE_UNQUOTED([VERSION], ["4.9.0"], [Define the project version.])
+AC_DEFINE_UNQUOTED([VERSION], ["4.10.0"], [Define the project version.])
 AC_SUBST([VERSION])
 
 AC_CONFIG_AUX_DIR(config)
@@ -168,12 +168,18 @@ CXXFLAGS="$CXXFLAGS -Werror -DMST_UL"
 
 AC_CONFIG_FILES( mstflint.spec )
 
-#Check for new ignore flags needed for GCC >= 7
-AX_CHECK_COMPILE_FLAG([-Wno-implicit-fallthrough], [CXXFLAGS="$CXXFLAGS -Wno-implicit-fallthrough"], [], [])
+# C related ignores
 AX_CHECK_COMPILE_FLAG([-Wno-format-overflow], [CFLAGS="$CFLAGS -Wno-format-overflow"], [], [])
 AX_CHECK_COMPILE_FLAG([-Wno-implicit-fallthrough], [CFLAGS="$CFLAGS -Wno-implicit-fallthrough"], [], [])
-AX_CHECK_COMPILE_FLAG([-Wno-format-overflow], [CXXFLAGS="$CXXFLAGS -Wno-format-overflow"], [], [])
+AX_CHECK_COMPILE_FLAG([-Wno-cast-function-type], [CFLAGS="$CFLAGS -Wno-cast-function-type"], [], [])
 
+# C++ related ignores
+AC_LANG_PUSH([C++])
+AX_CHECK_COMPILE_FLAG([-Wno-implicit-fallthrough], [CXXFLAGS="$CXXFLAGS -Wno-implicit-fallthrough"], [], [])
+AX_CHECK_COMPILE_FLAG([-Wno-format-overflow], [CXXFLAGS="$CXXFLAGS -Wno-format-overflow"], [], [])
+AX_CHECK_COMPILE_FLAG([-Wno-cast-function-type], [CXXFLAGS="$CXXFLAGS -Wno-cast-function-type"], [], [])
+AX_CHECK_COMPILE_FLAG([-Wno-class-memaccess], [CXXFLAGS="$CXXFLAGS -Wno-class-memaccess"], [], [])
+AC_LANG_POP([C++])
 
 TOOLS_BUILD_TIME=`date  +"%b %d %Y\, %H:%M:%S"`
 AC_SUBST(TOOLS_BUILD_TIME)

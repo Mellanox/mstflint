@@ -31,14 +31,15 @@
 #--
 
 
+from __future__ import print_function
 import mtcr
 
 device = "/dev/mst/l-apps08:23108,@dev@mst@mt26448_pci_cr0"
 device = "/dev/mst/mt26448_pciconf0"
 device = "mlx4_core0@pci0:0:5:0"
 mf = mtcr.MstDevice(device)
-print "0x%x" % mf.read4(0xf0014)
+print(("0x%x" % mf.read4(0xf0014)))
 for d in mf.read4Block(0xf0014, 8):
-    print "[0x%08x]" % d
+    print(("[0x%08x]" % d))
 
 mf.write4Block(0xf0014, [0, 0, 0, 0, 0, 0, 0, 0])

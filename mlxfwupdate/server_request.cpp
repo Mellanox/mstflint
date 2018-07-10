@@ -49,10 +49,10 @@ using namespace std;
 
 extern int abort_request;
 
-ServerRequest::ServerRequest(const char* url, const char* proxy,
+ServerRequest::ServerRequest(const char *url, const char *proxy,
                              int compare_ffv, bool show_progress,
                              string key, string certificate,
-                             unsigned int numberOfRetrials):_LastErrorNo(0)
+                             unsigned int numberOfRetrials) : _LastErrorNo(0)
 {
     _UseProxy      = 0;
     _Url           = url;
@@ -86,9 +86,8 @@ int ServerRequest::parseQueryResponse(string jsonTxt,
     string fileTag;
     Json::Value root;
     Json::Reader reader;
-    bool  rc = reader.parse(jsonTxt, root);
-    if (!rc)
-    {
+    bool rc = reader.parse(jsonTxt, root);
+    if (!rc) {
         setError(rc, "-E- Failed To parse server response\n");
         return -1;
     }
@@ -101,7 +100,7 @@ int ServerRequest::parseQueryResponse(string jsonTxt,
         ri.pns = "";
         ri.isFailSafe = true; // will be used for future!
         ri.release_note = "";
-        if(!root[j].isObject()) {
+        if (!root[j].isObject()) {
             setError(-1, "-E- Failed To parse server response\n");
             return -1;
         }
@@ -132,16 +131,16 @@ int ServerRequest::parseQueryResponse(string jsonTxt,
                 } else if (!profileNames[i].compare("Ver")) {
                     const Json::Value versions = root[j]["Ver"];
                     if (versions.empty()) {
-                       continue;
+                        continue;
                     }
                     Json::Value::Members ROMS = versions.getMemberNames();
 
                     for (unsigned x = 0; x < ROMS.size(); x++) {
                         string rom_type = ROMS[x];
                         string rom_ver = versions.get(ROMS[x], Json::nullValue).asString();
-                        int m, n ,s;
+                        int m, n, s;
                         u_int16_t fwVer[4];
-                        int       len;
+                        int len;
                         if (sscanf(rom_ver.c_str(), "%d.%d.%d", &m, &n, &s)) {
                             if (!_compare_ffv or rom_type != "FW") {
                                 fwVer[0] = m;
@@ -165,12 +164,12 @@ int ServerRequest::parseQueryResponse(string jsonTxt,
                     ri.url = genertDownloadUrl(ri.url);
                 }
             }
-        } catch (runtime_error &e){
+        } catch (runtime_error &e) {
             setError(-1, (string)"-E-" + e.what() + "\n");
             return -1;
         }
         result.push_back(ri);
-        if(!ri.found) {
+        if (!ri.found) {
             setError(0, "-W- No online newer fw found for psid : " + ri.psid + "\n");
         }
     }
@@ -178,7 +177,8 @@ int ServerRequest::parseQueryResponse(string jsonTxt,
     return 0;
 }
 
-void ServerRequest::setError(int error_num, string error_msg) {
+void ServerRequest::setError(int error_num, string error_msg)
+{
     _LastErrorStr += error_msg;
     _LastErrorNo  = error_num;
 }
@@ -189,8 +189,9 @@ void ServerRequest::getError(int &error_num, string &error_msg)
     error_msg     = _LastErrorStr;
 }
 
-int ServerRequest::DownloadFilesRequest (vector <DownloadedFileProperties> &files,
-                                         string os, string devs, string type) {
+int ServerRequest::DownloadFilesRequest(vector <DownloadedFileProperties> &files,
+                                        string os, string devs, string type)
+{
 
     int res          = 0;
 #ifdef USE_CURL
@@ -218,21 +219,21 @@ int ServerRequest::DownloadFilesRequest (vector <DownloadedFileProperties> &file
     return res;
 }
 
-int  ServerRequest::parseDownloadFilesResponse(string jsonTxt, vector <DownloadedFileProperties> &files) {
+int ServerRequest::parseDownloadFilesResponse(string jsonTxt, vector <DownloadedFileProperties> &files)
+{
 
 #ifdef USE_CURL
-    Json::Value  root;
+    Json::Value root;
     Json::Reader reader;
     string url;
     //printf("response = %s\n", jsonTxt.c_str());
-    bool  rc = reader.parse(jsonTxt, root);
-    if (!rc)
-    {
+    bool rc = reader.parse(jsonTxt, root);
+    if (!rc) {
         setError(rc, "-E- Failed To parse server response\n");
         return -1;
     }
     for (unsigned j = 0; j < root.size(); j++) {
-        if(!root[j].isObject()) {
+        if (!root[j].isObject()) {
             setError(-1, "-E- Failed To parse server response\n");
             return -1;
         }
@@ -263,7 +264,7 @@ int  ServerRequest::parseDownloadFilesResponse(string jsonTxt, vector <Downloade
                     release_note = root[j].get(profileNames[i], Json::nullValue).asString();
                 }
             }
-        } catch (runtime_error &e){
+        } catch (runtime_error &e) {
             setError(-1, (string)"-E-" + e.what() + "\n");
             return -1;
         }
@@ -284,81 +285,82 @@ int  ServerRequest::parseDownloadFilesResponse(string jsonTxt, vector <Downloade
     return 0;
 }
 
-int ServerRequest::queryPsids(string psids, vector<PsidQueryItem> &results) {
+int ServerRequest::queryPsids(string psids, vector<PsidQueryItem> &results)
+{
 
     int res = 0;
 
  #ifdef USE_CURL
 
-     Json::Value root;
-     Json::StyledWriter writer;
-     string response  = "";
-     root["psids"]    = psids;
-     root["mode"]     = 3;  // 0 query
-     root["key"]      = _key;
-     string data = writer.write( root );
-     //printf("request : %s\n", data.c_str());
-     res = curl_request_str(_WebService.c_str(), data.c_str(), response);
-     if (res) {
-         return res;
-     }
+    Json::Value root;
+    Json::StyledWriter writer;
+    string response  = "";
+    root["psids"]    = psids;
+    root["mode"]     = 3;   // 0 query
+    root["key"]      = _key;
+    string data = writer.write( root );
+    //printf("request : %s\n", data.c_str());
+    res = curl_request_str(_WebService.c_str(), data.c_str(), response);
+    if (res) {
+        return res;
+    }
 
-     //printf("Response : %s\n", response.c_str());
-     res = parseQueryResponse(response, results, false);
-     if (res) {
-         return res;
-     }
+    //printf("Response : %s\n", response.c_str());
+    res = parseQueryResponse(response, results, false);
+    if (res) {
+        return res;
+    }
 
 #endif
-     return res;
+    return res;
 }
 
 int ServerRequest::updateMFAsRequest(vector<string> &psid_list,
-                         vector<dm_dev_id_t> &dev_types_list,
-                         vector<string> &fw_version_list,
-                         vector<PsidQueryItem> &results)
+                                     vector<dm_dev_id_t> &dev_types_list,
+                                     vector<string> &fw_version_list,
+                                     vector<PsidQueryItem> &results)
 {
     int res = 0;
     (void) dev_types_list;
  #ifdef USE_CURL
 
-     Json::Value root;
-     Json::StyledWriter writer;
-     string psids     = "";
-     string devices   = "";
-     string response  = "";
-     string versions  = "";
-     string tmp;
-     for (unsigned i = 0; i < psid_list.size(); i++) {
-         if (i > 0) {
-             psids   += ",";
-             devices += ",";
-             versions+= ",";
-         }
-         psids    += psid_list[i];
-         versions += fw_version_list[i];
-     }
+    Json::Value root;
+    Json::StyledWriter writer;
+    string psids     = "";
+    string devices   = "";
+    string response  = "";
+    string versions  = "";
+    string tmp;
+    for (unsigned i = 0; i < psid_list.size(); i++) {
+        if (i > 0) {
+            psids   += ",";
+            devices += ",";
+            versions += ",";
+        }
+        psids    += psid_list[i];
+        versions += fw_version_list[i];
+    }
 
-     root["psids"]    = psids;
-     root["devs"]     = devices;
-     root["mode"]     = 0;  // 0 update
-     root["versions"] = versions;
-     root["key"]      = _key;
-     string data = writer.write( root );
-     //printf("request : %s\n", data.c_str());
-     res = curl_request_str(_WebService.c_str(), data.c_str(), response);
-     if (res) {
-         return res;
-     }
+    root["psids"]    = psids;
+    root["devs"]     = devices;
+    root["mode"]     = 0;   // 0 update
+    root["versions"] = versions;
+    root["key"]      = _key;
+    string data = writer.write( root );
+    //printf("request : %s\n", data.c_str());
+    res = curl_request_str(_WebService.c_str(), data.c_str(), response);
+    if (res) {
+        return res;
+    }
 
-     //printf("Response : %s\n", response.c_str());
-     res = parseQueryResponse(response, results);
-     if (res) {
-         return res;
-     }
+    //printf("Response : %s\n", response.c_str());
+    res = parseQueryResponse(response, results);
+    if (res) {
+        return res;
+    }
 
 #endif
-     return res;
+    return res;
 }
 
 string ServerRequest::genertDownloadUrl(string file_url)
@@ -394,14 +396,14 @@ int ServerRequest::queryAllMFAs(vector<string> &mfa_list)
 }
 
 
-int  ServerRequest::parseQueryAllMFAsRespone(string jsonTxt, vector <string> &result) {
+int ServerRequest::parseQueryAllMFAsRespone(string jsonTxt, vector <string> &result)
+{
 
-    Json::Value  root;
+    Json::Value root;
     Json::Reader reader;
     string url;
-    bool  rc = reader.parse(jsonTxt, root);
-    if (!rc)
-    {
+    bool rc = reader.parse(jsonTxt, root);
+    if (!rc) {
         setError(rc, "-E- Failed To parse server response\n");
         //To be removed
         return rc;
@@ -436,33 +438,34 @@ int ServerRequest::download(string url, string dest_path)
 
 
 #ifdef USE_CURL
-static size_t write_data(void *ptr, size_t size, size_t nmemb, FILE *stream) {
+static size_t write_data(void *ptr, size_t size, size_t nmemb, FILE *stream)
+{
     size_t written = fwrite(ptr, size, nmemb, stream);
     return written;
 }
 #endif
 
 
-int ServerRequest::curl_request(const char* url,
-                                const char* data,
-                                const char* dest_file,
+int ServerRequest::curl_request(const char *url,
+                                const char *data,
+                                const char *dest_file,
                                 int numOfRet)
 {
     int res = 0;
 #ifdef USE_CURL
     CURLcode rc;
-    FILE* fp;
-    CURL*  _curl = curl_easy_init();
-    if(_curl == NULL) {
+    FILE *fp;
+    CURL *_curl = curl_easy_init();
+    if (_curl == NULL) {
         _LastErrorNo = ERR_SRVREQ_ACCESS_INIT;
         setError(-1, "-E- Server access error\n");
         return -1;
     }
     _LastErrorStr = "";
-    fp = fopen(dest_file,"wb");
+    fp = fopen(dest_file, "wb");
     if (fp == NULL && errno == EACCES) {
         unlink(dest_file);
-        fp = fopen(dest_file,"wb");
+        fp = fopen(dest_file, "wb");
     }
     if (fp == NULL) {
         setError(-1, "Failed to Open file for writing " + (string) strerror(errno) + "\n");
@@ -493,12 +496,12 @@ int ServerRequest::curl_request(const char* url,
     // Perform the request, res will get the return code
     rc = curl_easy_perform(_curl);
     // Check for errors
-    if(rc == CURLE_OPERATION_TIMEDOUT && numOfRet > 0) {
-        if (curl_request(url, data, dest_file, numOfRet -1) == 0) {
+    if (rc == CURLE_OPERATION_TIMEDOUT && numOfRet > 0) {
+        if (curl_request(url, data, dest_file, numOfRet - 1) == 0) {
             rc = CURLE_OK;
         }
     }
-    if(rc != CURLE_OK) {
+    if (rc != CURLE_OK) {
         if ((rc == CURLE_OPERATION_TIMEDOUT && numOfRet == 0) ||
             (rc != CURLE_OPERATION_TIMEDOUT)) {
             setError(-1, (string)curl_easy_strerror(rc));
@@ -531,9 +534,10 @@ clean_up:
 
 #ifdef USE_CURL
 static
-size_t writebuf_data(void *ptr, size_t size, size_t nmemb, string* strm) {
+size_t writebuf_data(void *ptr, size_t size, size_t nmemb, string *strm)
+{
     size_t written = size * nmemb;
-    char* str = new char[written + 1];
+    char *str = new char[written + 1];
     if (str == NULL) {
         return 0;
     }
@@ -546,13 +550,13 @@ size_t writebuf_data(void *ptr, size_t size, size_t nmemb, string* strm) {
 #endif
 
 
-int ServerRequest::curl_request_str(const char* url, const char* data, string& response)
+int ServerRequest::curl_request_str(const char *url, const char *data, string& response)
 {
     int res = 0;
 #ifdef USE_CURL
 
-    CURL* _curl = curl_easy_init();
-    if(_curl == NULL) {
+    CURL *_curl = curl_easy_init();
+    if (_curl == NULL) {
         _LastErrorNo = ERR_SRVREQ_ACCESS_INIT;
         setError(-1, "-E- Server access error\n");
         return -1;
@@ -578,7 +582,7 @@ int ServerRequest::curl_request_str(const char* url, const char* data, string& r
     rc = curl_easy_perform(_curl);
     //fprintf(stderr, "Response : %s\n", response.c_str());
     // Check for errors
-    if(rc != CURLE_OK) {
+    if (rc != CURLE_OK) {
         setError(-1, "-E- " + (string)curl_easy_strerror(rc) + "\n");
         res = -1;
         goto clean_up;
@@ -594,8 +598,8 @@ clean_up:
 }
 
 
-int progress_func(void* ptr, double totalToDownload, double nowDownloaded,
-                    double totalToUpload, double nowUploaded)
+int progress_func(void *ptr, double totalToDownload, double nowDownloaded,
+                  double totalToUpload, double nowUploaded)
 {
     (void) ptr;
     (void) totalToUpload;

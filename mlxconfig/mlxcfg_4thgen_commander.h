@@ -64,18 +64,18 @@ typedef enum {
 class MlxCfgParamParser
 {
 public:
-    MlxCfgParamParser(): _param(Mcp_Last), _name(), _desc(){}
+    MlxCfgParamParser() : _param(Mcp_Last), _name(), _desc(){}
     MlxCfgParamParser(mlxCfgParam param, string name, string desc, map<string, u_int32_t> strMap)
         : _param(param), _name(name), _desc(desc), _strMap(strMap){}
     MlxCfgParamParser(mlxCfgParam param, string name, string desc, string allowedValues) : _param(param),
-            _name(name), _desc(desc), _allowedValues(allowedValues){}
+        _name(name), _desc(desc), _allowedValues(allowedValues){}
 
     ~MlxCfgParamParser() {}
 
     mlxCfgStatus parseUserInput(string input, u_int32_t& val);
 
     void printShortDesc();
-    void printLongDesc(FILE* f);
+    void printLongDesc(FILE *f);
 
     string getName() {return _name;}
     mlxCfgParam getParam() {return _param;}
@@ -94,7 +94,7 @@ private:
 
     void printShortDescAux();
     string getShortDescStrAux();
-    void splitAndPrintDesc(FILE* f, string desc);
+    void splitAndPrintDesc(FILE *f, string desc);
 
 };
 
@@ -107,7 +107,7 @@ public:
     ~MlxCfgInfo() {}
 
     void printShortDesc();
-    void printLongDesc(FILE* f);
+    void printLongDesc(FILE *f);
 
     mlxCfgStatus getParamParser(mlxCfgParam, MlxCfgParamParser&);
     mlxCfgStatus getParamParser(string, MlxCfgParamParser&);
@@ -128,7 +128,7 @@ public:
     ~MlxCfgAllInfo() {}
 
     void printShortDesc();
-    void printLongDesc(FILE* f);
+    void printLongDesc(FILE *f);
 
     mlxCfgStatus parseParam(string tag, string strval, u_int32_t& val, mlxCfgParam& param);
     mlxCfgStatus getParamParser(mlxCfgParam p, MlxCfgParamParser& paramParser);
@@ -168,14 +168,14 @@ private:
     mlxCfgType cfgParam2Type(mlxCfgParam param);
     void freeCfgList();
 public:
-    FourthGenCommander(mfile* mf, std::string dev);
+    FourthGenCommander(mfile *mf, std::string dev);
     ~FourthGenCommander();
-    void printLongDesc(FILE* f) {_allInfo.printLongDesc(f);}
+    void printLongDesc(FILE *f) {_allInfo.printLongDesc(f);}
     bool isDefaultSupported() {return true;}
     bool isCurrentSupported() {return false;}
     void queryAux(std::vector<ParamView>&, QueryType, bool);
     void queryParamViews(std::vector<ParamView>& paramsToQuery, QueryType qt = QueryNext);
-    void queryAll(std::vector<ParamView>& params, QueryType qt = QueryNext);
+    void queryAll(std::vector<ParamView>& params, vector<string>& failedTLVs, QueryType qt = QueryNext);
     void clearSemaphore();
     void invalidateCfgs();
     const char* loadConfigurationGetStr();

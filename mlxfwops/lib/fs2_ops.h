@@ -1,25 +1,25 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
- * 
+ *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
  * General Public License (GPL) Version 2, available from the file
  * COPYING in the main directory of this source tree, or the
  * OpenIB.org BSD license below:
- * 
+ *
  *     Redistribution and use in source and binary forms, with or
  *     without modification, are permitted provided that the following
  *     conditions are met:
- * 
+ *
  *      - Redistributions of source code must retain the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer.
- * 
+ *
  *      - Redistributions in binary form must reproduce the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer in the documentation and/or other materials
  *        provided with the distribution.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -48,33 +48,33 @@ public:
     virtual bool FwQuery(fw_info_t *fwInfo, bool readRom = true, bool isStripedImage = false);
     virtual bool FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedImage = false, bool showItoc = false, bool ignoreDToc = false);
 
-    virtual bool FwBurn(FwOperations *imageOps, u_int8_t forceVersion, ProgressCallBack progressFunc=(ProgressCallBack)NULL);
+    virtual bool FwBurn(FwOperations *imageOps, u_int8_t forceVersion, ProgressCallBack progressFunc = (ProgressCallBack)NULL);
     virtual bool FwBurnAdvanced(FwOperations *imageOps, ExtBurnParams& burnParams);
-    virtual bool FwBurnBlock(FwOperations* imageOps, ProgressCallBack progressFunc);
+    virtual bool FwBurnBlock(FwOperations *imageOps, ProgressCallBack progressFunc);
 
-    virtual bool FwBurnRom(FImage* romImg, bool ignoreProdIdCheck = false, bool ignoreDevidCheck = false,
-            ProgressCallBack progressFunc=(ProgressCallBack)NULL);
-    virtual bool FwDeleteRom(bool ignoreProdIdCheck, ProgressCallBack progressFunc=(ProgressCallBack)NULL);
+    virtual bool FwBurnRom(FImage *romImg, bool ignoreProdIdCheck = false, bool ignoreDevidCheck = false,
+                           ProgressCallBack progressFunc = (ProgressCallBack)NULL);
+    virtual bool FwDeleteRom(bool ignoreProdIdCheck, ProgressCallBack progressFunc = (ProgressCallBack)NULL);
 
     // virtual bool FwSetGuids(std::vector<guid_t>& userGuids, std::vector<guid_t>& userMacs, bool updateCrc=true, PrintCallBack callBackFunc=(PrintCallBack)NULL);
-    virtual bool FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc=(PrintCallBack)NULL, ProgressCallBack progressFunc=(ProgressCallBack)NULL);
+    virtual bool FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc = (PrintCallBack)NULL, ProgressCallBack progressFunc = (ProgressCallBack)NULL);
 
-    virtual bool FwSetMFG(fs3_uid_t baseGuid, PrintCallBack callBackFunc=(PrintCallBack)NULL);
-    virtual bool FwSetMFG(guid_t baseGuid, PrintCallBack callBackFunc=(PrintCallBack)NULL);
-    virtual bool FwSetVSD(char* vsdStr, ProgressCallBack progressFunc=(ProgressCallBack)NULL, PrintCallBack printFunc=(PrintCallBack)NULL);
-    virtual bool FwSetVPD(char* vpdFileStr, PrintCallBack callBackFunc=(PrintCallBack)NULL);
-    virtual bool FwSetAccessKey(hw_key_t userKey, ProgressCallBack progressFunc=(ProgressCallBack)NULL);
-    virtual bool FwShiftDevData(PrintCallBack progressFunc=(PrintCallBack)NULL);
+    virtual bool FwSetMFG(fs3_uid_t baseGuid, PrintCallBack callBackFunc = (PrintCallBack)NULL);
+    virtual bool FwSetMFG(guid_t baseGuid, PrintCallBack callBackFunc = (PrintCallBack)NULL);
+    virtual bool FwSetVSD(char *vsdStr, ProgressCallBack progressFunc = (ProgressCallBack)NULL, PrintCallBack printFunc = (PrintCallBack)NULL);
+    virtual bool FwSetVPD(char *vpdFileStr, PrintCallBack callBackFunc = (PrintCallBack)NULL);
+    virtual bool FwSetAccessKey(hw_key_t userKey, ProgressCallBack progressFunc = (ProgressCallBack)NULL);
+    virtual bool FwShiftDevData(PrintCallBack progressFunc = (PrintCallBack)NULL);
     virtual bool FwResetNvData();
     virtual const char*  FwGetResetRecommandationStr();
 
-    virtual bool FwGetSection (u_int32_t sectType, std::vector<u_int8_t>& sectInfo, bool stripedImage=false);
+    virtual bool FwGetSection(u_int32_t sectType, std::vector<u_int8_t>& sectInfo, bool stripedImage = false);
 
 
 
     virtual u_int8_t FwType();
     virtual bool FwInit();
-    virtual bool FwReadData(void* image, u_int32_t* image_size);
+    virtual bool FwReadData(void *image, u_int32_t *image_size);
     virtual bool FwReadRom(std::vector<u_int8_t>& romSect);
     virtual bool FwCalcMD5(u_int8_t md5sum[16]);
 
@@ -109,8 +109,8 @@ private:
     };
     struct Fs2ImgInfo {
         fs2_info_t ext_info;
-        u_int32_t  infoOffs[II_Last];
-        bool       psOk;
+        u_int32_t infoOffs[II_Last];
+        bool psOk;
         // Configuraqtion info
         std::vector<u_int8_t> profListSectZipped;
         std::vector<u_int8_t> TlvFormatSectZipped;
@@ -120,55 +120,55 @@ private:
         u_int32_t configAddr1;
         u_int32_t configAddr2;
         u_int32_t configSize;
-        bool      isConfigurable;
-        u_int32_t    infoSectPtr;
-        u_int32_t    guidPtr;
-        u_int32_t   fw_sector_size;
+        bool isConfigurable;
+        u_int32_t infoSectPtr;
+        u_int32_t guidPtr;
+        u_int32_t fw_sector_size;
 
     };
 
 
     bool Fs2Verify(VerifyCallBack verifyCallBackFunc = (VerifyCallBack)NULL, bool is_striped_image = false, bool both_images = false,
-            bool only_get_start = false, bool ignore_full_image_crc = false, bool force_no_striped_image = false);
-    bool Fs2Query ();
+                   bool only_get_start = false, bool ignore_full_image_crc = false, bool force_no_striped_image = false);
+    bool Fs2Query();
     bool Fs2Burn(Fs2Operations &imageOps, ExtBurnParams& burnParams);
 
 
     bool CntxGetFsData(u_int32_t fs_info_word, bool& fs_en, u_int32_t& log2chunk_size);
     bool checkList(u_int32_t offs, u_int32_t fw_start, const char *pref, VerifyCallBack verifyCallBackFunc = (VerifyCallBack)NULL);
-    bool checkGen(u_int32_t beg,u_int32_t offs, u_int32_t& next, const char *pref, VerifyCallBack verifyCallBackFunc = (VerifyCallBack)NULL);
-    bool ParseInfoSect(u_int8_t* buff, u_int32_t byteSize);
-    bool Fs2IntQuery(bool readRom = true, bool isStripedImage=false);
+    bool checkGen(u_int32_t beg, u_int32_t offs, u_int32_t& next, const char *pref, VerifyCallBack verifyCallBackFunc = (VerifyCallBack)NULL);
+    bool ParseInfoSect(u_int8_t *buff, u_int32_t byteSize);
+    bool Fs2IntQuery(bool readRom = true, bool isStripedImage = false);
     u_int32_t getDefaultSectorSz();
     bool GetMaxImageSize(u_int32_t flash_size, bool image_is_fs, u_int32_t imgConfigSectors, u_int32_t imgFwSectorSz, u_int32_t &max_image_size);
-    bool UpdateFullImageCRC(u_int32_t* buff, u_int32_t size, bool blank_guids);
+    bool UpdateFullImageCRC(u_int32_t *buff, u_int32_t size, bool blank_guids);
     bool Fs2FailSafeBurn(Fs2Operations &imageOps,  ExtBurnParams& burnParams);
-    bool ModifyGuidSection(guid_t *user_guids, ProgressCallBack progressFunc=(ProgressCallBack)NULL);
+    bool ModifyGuidSection(guid_t *user_guids, ProgressCallBack progressFunc = (ProgressCallBack)NULL);
     bool preFS2PatchGUIDs(bool patch_macs, bool user_guids, bool user_macs,
-            guid_t new_guids[MAX_GUIDS], guid_t old_guids[MAX_GUIDS], guid_t **used_guids_p, u_int32_t num_of_old_guids);
-    bool patchGUIDs (Fs2Operations& imageOps, bool patch_macs, bool user_guids, bool user_macs,
-                                 guid_t new_guids[MAX_GUIDS], guid_t old_guids[MAX_GUIDS], u_int32_t num_of_old_guids);
+                          guid_t new_guids[MAX_GUIDS], guid_t old_guids[MAX_GUIDS], guid_t **used_guids_p, u_int32_t num_of_old_guids);
+    bool patchGUIDs(Fs2Operations& imageOps, bool patch_macs, bool user_guids, bool user_macs,
+                    guid_t new_guids[MAX_GUIDS], guid_t old_guids[MAX_GUIDS], u_int32_t num_of_old_guids);
     void patchGUIDsSection(u_int32_t *buf, u_int32_t ind, guid_t guids[MAX_GUIDS], int nguids);
-    bool patchImageVsd(Fs2Operations &imgFwOps, const char* userVsd=(char*)NULL);
-    void PatchInfoSect(u_int8_t* rawSect, u_int32_t vsdOffs, const char* vsd);
+    bool patchImageVsd(Fs2Operations &imgFwOps, const char *userVsd = (char*)NULL);
+    void PatchInfoSect(u_int8_t *rawSect, u_int32_t vsdOffs, const char *vsd);
     void initSectToRead(int imp_index);
     //needed for fs2burn
     bool IntegrateDevRomInImage(Fs2Operations &imgFwOps);
-    bool UpdateRomInImage(u_int8_t* new_image, u_int8_t* old_image, u_int8_t* rom_data, int rom_size,
-                          int* new_image_size);
-    bool AddNewSect(u_int8_t* &new_image_p, u_int8_t* data, GPH gph, u_int32_t* last_next);
+    bool UpdateRomInImage(u_int8_t *new_image, u_int8_t *old_image, u_int8_t *rom_data, int rom_size,
+                          int *new_image_size);
+    bool AddNewSect(u_int8_t* &new_image_p, u_int8_t *data, GPH gph, u_int32_t *last_next);
     bool CopyBoot2(u_int8_t* &new_image_p, u_int8_t* &old_image_p);
     bool CopyData(u_int8_t* &new_image, u_int8_t* &old_image, int copy_size);
 
-    bool ModifyKeySection(guid_t access_key, ProgressCallBack callBackFunc=(ProgressCallBack)NULL);
-    void PatchKeySect(u_int32_t* buff, u_int32_t keyOff, guid_t hw_key);
+    bool ModifyKeySection(guid_t access_key, ProgressCallBack callBackFunc = (ProgressCallBack)NULL);
+    void PatchKeySect(u_int32_t *buff, u_int32_t keyOff, guid_t hw_key);
     bool Fs2IsMacAvailable();
 
-    bool ModifyVSDSection(const char *vsd, ProgressCallBack callBackFunc=(ProgressCallBack)NULL);
-    bool ReburnNewImage(u_int8_t *data, const char *feature_name, ProgressCallBack callBackFunc=(ProgressCallBack)NULL);
+    bool ModifyVSDSection(const char *vsd, ProgressCallBack callBackFunc = (ProgressCallBack)NULL);
+    bool ReburnNewImage(u_int8_t *data, const char *feature_name, ProgressCallBack callBackFunc = (ProgressCallBack)NULL);
     bool packStripedImageData(u_int8_t *striped_data, u_int8_t *normal_data, u_int32_t length, u_int32_t &striped_length,
                               bool needs_repack, u_int32_t cntxLog2ChunkSize);
-    bool Fs2SetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc=(PrintCallBack)NULL, ProgressCallBack progressFunc=(ProgressCallBack)NULL);
+    bool Fs2SetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc = (PrintCallBack)NULL, ProgressCallBack progressFunc = (ProgressCallBack)NULL);
     bool Fs2SetGuidsForBlank(sg_params_t& sgParam);
     bool getRunningFwVer();
 

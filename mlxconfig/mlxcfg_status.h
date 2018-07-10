@@ -73,7 +73,7 @@ typedef enum {
     MCE_PCI,
     MCE_GET_DEFAULT_PARAMS,
     MCE_UNKNOWN_ERR
-}McStatus;
+} McStatus;
 
 
 #endif /* MLXCFG_STATUS_H_ */

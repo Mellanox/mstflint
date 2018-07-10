@@ -1,25 +1,25 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
- * 
+ *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
  * General Public License (GPL) Version 2, available from the file
  * COPYING in the main directory of this source tree, or the
  * OpenIB.org BSD license below:
- * 
+ *
  *     Redistribution and use in source and binary forms, with or
  *     without modification, are permitted provided that the following
  *     conditions are met:
- * 
+ *
  *      - Redistributions of source code must retain the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer.
- * 
+ *
  *      - Redistributions in binary form must reproduce the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer in the documentation and/or other materials
  *        provided with the distribution.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -63,11 +63,11 @@
 
     #define SOCKET_BACKLOG           1
     #define COMP_CLOSE               close
-    #define COMP_READ(s,b,l)         read(s, b, l)
-    #define COMP_WRITE(s,b,l)        write(s, b, l)
+    #define COMP_READ(s, b, l)         read(s, b, l)
+    #define COMP_WRITE(s, b, l)        write(s, b, l)
     #define GET_CHILD_PID(child_pid) child_pid = fork()
-    #define EXEC_SIGNAL() if (signal(SIGCHLD, SIG_IGN) == SIG_ERR) return -1;
-    #define EXEC_FOR() for(;;)
+    #define EXEC_SIGNAL() if (signal(SIGCHLD, SIG_IGN) == SIG_ERR) {return -1;}
+    #define EXEC_FOR() for (;;)
     #define RET_ZERO_IN_WIN()
     #define WIN_INIT()
 #else
@@ -78,8 +78,8 @@
 
     #define SOCKET_BACKLOG           5
     #define COMP_CLOSE               closesocket
-    #define COMP_READ(s,b,l)         recv(s, b, l, 0)
-    #define COMP_WRITE(s,b,l)        send(s, b, l, 0)
+    #define COMP_READ(s, b, l)         recv(s, b, l, 0)
+    #define COMP_WRITE(s, b, l)        send(s, b, l, 0)
     #define GET_CHILD_PID(child_pid) child_pid = 0
     #define EXEC_SIGNAL()
     #define EXEC_FOR()
@@ -88,28 +88,28 @@
     #define WIN_INIT() {                          \
         int rc;                                   \
         WSADATA wsaData;                          \
-        rc = WSAStartup(MAKEWORD(2, 2), &wsaData);\
+        rc = WSAStartup(MAKEWORD(2, 2), &wsaData); \
         if (rc != 0) {                            \
             return -1;                            \
         }                                         \
-    }
+}
 #endif
 
 /* ----------------------------------------------------- */
 /* ------------------------------ Log all socket traffic */
 /* ----------------------------------------------------- */
 /* ////////////////////////////////////////////////////////////////////// */
-static int log_ena=0;
+static int log_ena = 0;
 INSIDE_MTCR void logset(const int ena) { log_ena = ena;}
 INSIDE_MTCR int  plog(const char *fmt, ...)
 {
     va_list ap;
-    int     rc=0;
+    int rc = 0;
 
     if (log_ena) {
-        va_start (ap, fmt);
-        rc = vprintf (fmt, ap);
-        va_end (ap);
+        va_start(ap, fmt);
+        rc = vprintf(fmt, ap);
+        va_end(ap);
     }
     return rc;
 }
@@ -129,8 +129,8 @@ INSIDE_MTCR int  plog(const char *fmt, ...)
 */
 INSIDE_MTCR int readn(int fd, void *vptr, int nbytes)
 {
-    int     nleft, nread;
-    char    *ptr = (char *)vptr;
+    int nleft, nread;
+    char    *ptr = (char*)vptr;
 
     nleft = nbytes;
     while (nleft > 0) {
@@ -138,11 +138,12 @@ INSIDE_MTCR int readn(int fd, void *vptr, int nbytes)
             nread = COMP_READ(fd, ptr, nleft);
         while (nread < 0 && errno == EINTR);
 
-        if (nread < 0)
+        if (nread < 0) {
             return -1;              /*  error, return -1 */
-        else if (nread == 0)
+        } else if (nread == 0)                                                              {
             break;                  /*  EOF */
 
+        }
         nleft -= nread;
         ptr   += nread;
     }
@@ -155,8 +156,8 @@ INSIDE_MTCR int readn(int fd, void *vptr, int nbytes)
 */
 INSIDE_MTCR int reads(int fd, char *ptr, int maxlen)
 {
-    int     n, done=0, rc;
-    char    c;
+    int n, done = 0, rc;
+    char c;
     for (n = 0; n <= maxlen && !done; n++) {
         do
             rc = COMP_READ(fd, &c, 1);
@@ -165,17 +166,20 @@ INSIDE_MTCR int reads(int fd, char *ptr, int maxlen)
         switch (rc) {
         case 1:
             *ptr++ = c;
-            if (c == '\0')
-                done=1;
+            if (c == '\0') {
+                done = 1;
+            }
             break;
+
         case 0:
-            done=1;
+            done = 1;
             break;
+
         default:
             return -1;     /*  error */
         }
     }
-    return n-1;
+    return n - 1;
 }
 
 /* ////////////////////////////////////////////////////////////////////// */
@@ -184,10 +188,10 @@ INSIDE_MTCR int reads(int fd, char *ptr, int maxlen)
 */
 INSIDE_MTCR int readnl(int fd, char *ptr, int maxlen)
 {
-    int     n, done=0, rc;
-    char    c;
+    int n, done = 0, rc;
+    char c;
 
-    for (n = 0; n <= maxlen-1 && !done; n++) {
+    for (n = 0; n <= maxlen - 1 && !done; n++) {
         do {
             rc = COMP_READ(fd, &c, 1);
         }
@@ -198,17 +202,19 @@ INSIDE_MTCR int readnl(int fd, char *ptr, int maxlen)
             *ptr++ = c;
             if (c == '\n') {
                 *ptr = '\0';
-                done=1;
+                done = 1;
             }
             break;
+
         case 0:
-            done=1;
+            done = 1;
             break;
+
         default:
             return -1;     /*  error */
         }
     }
-    return n-1;
+    return n - 1;
 }
 
 /* ////////////////////////////////////////////////////////////////////// */
@@ -221,8 +227,8 @@ INSIDE_MTCR int readnl(int fd, char *ptr, int maxlen)
 */
 INSIDE_MTCR int writen(int fd, void *vptr, int nbytes)
 {
-    int     nleft, nwritten;
-    char    *ptr = (char *)vptr;
+    int nleft, nwritten;
+    char    *ptr = (char*)vptr;
 
     nleft = nbytes;
     while (nleft > 0) {
@@ -230,8 +236,9 @@ INSIDE_MTCR int writen(int fd, void *vptr, int nbytes)
             nwritten = COMP_WRITE(fd, ptr, nleft);
         while (nwritten < 0 && errno == EINTR);
 
-        if (nwritten < 0)
+        if (nwritten < 0) {
             return -1;
+        }
 
         nleft -= nwritten;
         ptr   += nwritten;
@@ -245,7 +252,7 @@ INSIDE_MTCR int writen(int fd, void *vptr, int nbytes)
 */
 INSIDE_MTCR int writes(int fd, char *ptr)
 {
-    return writen(fd, ptr, strlen(ptr)+1);
+    return writen(fd, ptr, strlen(ptr) + 1);
 }
 
 /* ////////////////////////////////////////////////////////////////////// */
@@ -255,8 +262,9 @@ INSIDE_MTCR int writes(int fd, char *ptr)
 INSIDE_MTCR int writenl(int fd, char *ptr)
 {
     char *last = strchr(ptr, '\n');
-    if (last)
+    if (last) {
         return writen(fd, ptr, last - ptr + 1);
+    }
     return 0;
 }
 
@@ -266,8 +274,8 @@ INSIDE_MTCR int writenl(int fd, char *ptr)
 */
 INSIDE_MTCR int open_cli_connection(const char *host, const int port)
 {
-    int                 SockFD;
-    struct sockaddr_in  serv_addr;
+    int SockFD;
+    struct sockaddr_in serv_addr;
     struct hostent      *hent;
 
     plog("open_connection(%s, %d)\n", host, port);
@@ -284,19 +292,21 @@ INSIDE_MTCR int open_cli_connection(const char *host, const int port)
      * Fill in the structure "serv_addr" with the address of the
      * server that we want to connect with.
      */
-    memset((char *) &serv_addr, 0, sizeof(serv_addr));
+    memset((char*) &serv_addr, 0, sizeof(serv_addr));
     serv_addr.sin_family      = AF_INET;
     memcpy(&serv_addr.sin_addr, (*(hent->h_addr_list)), sizeof(struct in_addr));
     serv_addr.sin_port        = (short)htons((short)port);
 
     /*  Open a TCP socket (an Internet stream socket). */
-    if ( (SockFD = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    if ( (SockFD = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         return -1;
+    }
     /*
      * Connect to the server.
      */
-    if (connect(SockFD, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
+    if (connect(SockFD, (struct sockaddr*) &serv_addr, sizeof(serv_addr)) < 0) {
         return -1;
+    }
 
     /*  All OK */
     return SockFD;
@@ -311,21 +321,22 @@ INSIDE_MTCR int open_serv_connection(const int port)
     struct hostent     *hent;
     struct sockaddr_in serv_addr;
     struct sockaddr_in cli_inet_addr;
-    int                SockFD, newsockfd;
-    int                clilen = sizeof(cli_inet_addr);
-    int                childpid;
+    int SockFD, newsockfd;
+    int clilen = sizeof(cli_inet_addr);
+    int childpid;
 
     EXEC_SIGNAL()
 
-    if ((SockFD = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    if ((SockFD = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         return -1;
+    }
 
     /*  Bind our local address so that the client can send to us. */
-    memset((char *) &serv_addr, 0, sizeof(serv_addr));
+    memset((char*) &serv_addr, 0, sizeof(serv_addr));
     serv_addr.sin_family      = AF_INET;
     serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     serv_addr.sin_port        = (short)(htons((short)port));
-    if (bind(SockFD, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
+    if (bind(SockFD, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
         COMP_CLOSE(SockFD);
         return -1;
     }
@@ -341,8 +352,8 @@ INSIDE_MTCR int open_serv_connection(const int port)
     {
         plog("Waiting for connection on port %d\n", port);
 
-        while ((newsockfd = accept(SockFD, (struct sockaddr *)&cli_inet_addr,
-                                   (socklen_t *)&clilen)) < 0) {
+        while ((newsockfd = accept(SockFD, (struct sockaddr*)&cli_inet_addr,
+                                   (socklen_t*)&clilen)) < 0) {
             if (errno != EINTR) {
                 COMP_CLOSE(SockFD);
                 return -1;
@@ -351,8 +362,9 @@ INSIDE_MTCR int open_serv_connection(const int port)
 
         GET_CHILD_PID(childpid);
 
-        if (childpid < 0)
+        if (childpid < 0) {
             return -1;
+        }
 
         if (childpid) {
             /*  We are parent */
@@ -364,7 +376,7 @@ INSIDE_MTCR int open_serv_connection(const int port)
             COMP_CLOSE(SockFD);
 
             /*  Determine the client host name */
-            hent = gethostbyaddr((char *)&cli_inet_addr.sin_addr,
+            hent = gethostbyaddr((char*)&cli_inet_addr.sin_addr,
                                  sizeof(cli_inet_addr.sin_addr), AF_INET);
             plog("Accepted connection from host \"%s\" ",
                  hent ? hent->h_name : "????");

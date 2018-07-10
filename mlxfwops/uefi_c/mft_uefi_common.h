@@ -42,19 +42,19 @@
 
 typedef struct _MLX4_DEV uefi_Dev_t;
 
-typedef int (*f_fw_cmd) (uefi_Dev_t* dev, void* buffer, int* w_size, int* r_size);
+typedef int (*f_fw_cmd) (uefi_Dev_t *dev, void *buffer, int *w_size, int *r_size);
 
 typedef struct uefi_dev_info {
-	u_int32_t hw_dev_id;
-	u_int32_t rev_id;
-	u_int32_t max_buffer_size;
-	u_int8_t  no_fw_ctrl;
+    u_int32_t hw_dev_id;
+    u_int32_t rev_id;
+    u_int32_t max_buffer_size;
+    u_int8_t no_fw_ctrl;
 } uefi_dev_info_t;
 
-typedef struct uefi_dev_extra{
+typedef struct uefi_dev_extra {
     f_fw_cmd fw_cmd_func;
-    uefi_dev_info_t* dev_info;
-}uefi_dev_extra_t;
+    uefi_dev_info_t *dev_info;
+} uefi_dev_extra_t;
 
 
 #endif /* MFT_MLXFWOPS_UEFI_C_MFT_UEFI_COMMON_H_ */

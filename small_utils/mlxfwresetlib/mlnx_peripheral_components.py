@@ -36,14 +36,15 @@
 * $Authors      : Roei Yitzhak (roei@mellanox.com)
 """
 
+from __future__ import print_function
 import platform
 import re
-from pci_device import PciDevice
-from mlxfwreset_utils import cmdExec
+from .pci_device import PciDevice
+from .mlxfwreset_utils import cmdExec
 
 class MlnxPeripheralComponents(object):
 
-    SD_SUPPORTED_DID = [0x20d]  # Connectx5
+    SD_SUPPORTED_DID = [0x20d,0x209,0x20b]  # Connectx5 (SD device) ,Connectx4/Connectx4Lx (MH device connected as SD)
 
     def __init__(self):
         self.pci_devices = []
@@ -121,27 +122,30 @@ class MlnxPeripheralComponents(object):
 
             usr_manufacturing_base_mac = usr_pci_device.get_manufacturing_base_mac()
 
-            for pci_device in self.pci_devices:
+            if usr_manufacturing_base_mac == 0:
+                raise RuntimeError('Base MAC is N/A')
+            else:
+                for pci_device in self.pci_devices:
 
-                # Skip if the current pci-device is the same as user's pci-device
-                if pci_device.domain == usr_pci_device.domain \
-                        and pci_device.bus == usr_pci_device.bus \
-                        and pci_device.device == usr_pci_device.device:
-                    continue
+                    # Skip if the current pci-device is the same as user's pci-device
+                    if pci_device.domain == usr_pci_device.domain \
+                            and pci_device.bus == usr_pci_device.bus \
+                            and pci_device.device == usr_pci_device.device:
+                        continue
 
-                # Skip if the current pci-device is not supported for Socket-Direct
-                if pci_device.get_cfg_did() not in MlnxPeripheralComponents.SD_SUPPORTED_DID:
-                    continue
+                    # Skip if the current pci-device is not supported for Socket-Direct
+                    if pci_device.get_cfg_did() not in MlnxPeripheralComponents.SD_SUPPORTED_DID:
+                        continue
 
-                # Check only function 0 (skip otherwise)
-                if pci_device.fn != 0:
-                    continue
+                    # Check only function 0 (skip otherwise)
+                    if pci_device.fn != 0:
+                        continue
 
-                # Skip if device in livefish mode
-                if pci_device.is_livefish_mode(): continue
+                    # Skip if device in livefish mode
+                    if pci_device.is_livefish_mode(): continue
 
-                if usr_manufacturing_base_mac == pci_device.get_manufacturing_base_mac():
-                    sd_pci_devices.append(pci_device)
+                    if usr_manufacturing_base_mac == pci_device.get_manufacturing_base_mac():
+                        sd_pci_devices.append(pci_device)
 
         return sd_pci_devices
 
@@ -154,17 +158,17 @@ if __name__ == '__main__':
 
     peripherals = MlnxPeripheralComponents()
     for pci_device in  peripherals.pci_devices:
-        print pci_device
+        print(pci_device)
 
     user_pci_device = peripherals.get_pci_device(device)
 
-    print 'user pci_device: {0}'.format(user_pci_device)
+    print('user pci_device: {0}'.format(user_pci_device))
 
     res = peripherals.get_socket_direct_pci_devices(user_pci_device)
 
-    print "Socket direct discovery:"
+    print("Socket direct discovery:")
     if len(res):
         for pci_device in res:
-            print pci_device
+            print(pci_device)
     else:
-        print "device is not part of socket direct"
+        print("device is not part of socket direct")

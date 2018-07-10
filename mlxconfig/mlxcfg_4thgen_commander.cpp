@@ -60,48 +60,49 @@ using namespace std;
 
 #define TOOL_CAP_BITS_ADDR 0xc0
 
-#define CHECK_RC(rc)\
-    if (rc) return rc;
+#define CHECK_RC(rc) \
+    if (rc) {return rc;}
 
 #define HW_ID_ADDR 0xf0014
 #define CX3_HW_ID 501
 #define CX3_PRO_HW_ID 503
 
-string FourthGenCommander::param2str[Mcp_Last]= {"SRIOV_EN", "NUM_OF_VFS",
-        "WOL_MAGIC_EN_P1", "WOL_MAGIC_EN_P2",
-        "LINK_TYPE_P1", "PHY_TYPE_P1", "XFI_MODE_P1", "FORCE_MODE_P1",
-        "LINK_TYPE_P2", "PHY_TYPE_P2", "XFI_MODE_P2", "FORCE_MODE_P2",
-        "LOG_BAR_SIZE",
-        "INT_LOG_MAX_PAYLOAD_SIZE",
-        "BOOT_PKEY_P1", "BOOT_PKEY_P2",
-        "LOG_DCR_HASH_TABLE_SIZE", "DCR_LIFO_SIZE",
-         "ROCE_NEXT_PROTOCOL",
-         "ROCE_CC_ALGORITHM_P1", "ROCE_CC_PRIO_MASK_P1", "ROCE_CC_ALGORITHM_P2", "ROCE_CC_PRIO_MASK_P2",
-         "CLAMP_TGT_RATE_P1", "CLAMP_TGT_RATE_AFTER_TIME_INC_P1", "RPG_TIME_RESET_P1",
-         "RPG_BYTE_RESET_P1", "RPG_THRESHOLD_P1", "RPG_MAX_RATE_P1", "RPG_AI_RATE_P1",
-         "RPG_HAI_RATE_P1", "RPG_GD_P1", "RPG_MIN_DEC_FAC_P1", "RPG_MIN_RATE_P1",
-         "RATE_TO_SET_ON_FIRST_CNP_P1", "DCE_TCP_G_P1", "DCE_TCP_RTT_P1",
-         "RATE_REDUCE_MONITOR_PERIOD_P1", "INITIAL_ALPHA_VALUE_P1", "MIN_TIME_BETWEEN_CNPS_P1",
-         "CNP_DSCP_P1", "CNP_802P_PRIO_P1",
-         "CLAMP_TGT_RATE_P2", "CLAMP_TGT_RATE_AFTER_TIME_INC_P2", "RPG_TIME_RESET_P2",
-         "RPG_BYTE_RESET_P2", "RPG_THRESHOLD_P2", "RPG_MAX_RATE_P2", "RPG_AI_RATE_P2",
-         "RPG_HAI_RATE_P2", "RPG_GD_P2", "RPG_MIN_DEC_FAC_P2", "RPG_MIN_RATE_P2",
-         "RATE_TO_SET_ON_FIRST_CNP_P2", "DCE_TCP_G_P2", "DCE_TCP_RTT_P2", "RATE_REDUCE_MONITOR_PERIOD_P2",
-         "INITIAL_ALPHA_VALUE_P2", "MIN_TIME_BETWEEN_CNPS_P2", "CNP_DSCP_P2", "CNP_802P_PRIO_P2",
-         "BOOT_OPTION_ROM_EN_P1", "BOOT_VLAN_EN_P1", "BOOT_RETRY_CNT_P1", "LEGACY_BOOT_PROTOCOL_P1", "BOOT_VLAN_P1",
-         "BOOT_OPTION_ROM_EN_P2", "BOOT_VLAN_EN_P2", "BOOT_RETRY_CNT_P2", "LEGACY_BOOT_PROTOCOL_P2", "BOOT_VLAN_P2",
-         "PORT_OWNER", "ALLOW_RD_COUNTERS", "IP_VER", "IP_VER_P1", "IP_VER_P2", "CQ_TIMESTAMP", "STEER_FORCE_VLAN",
-          };
+string FourthGenCommander::param2str[Mcp_Last] = {"SRIOV_EN", "NUM_OF_VFS",
+                                                  "WOL_MAGIC_EN_P1", "WOL_MAGIC_EN_P2",
+                                                  "LINK_TYPE_P1", "PHY_TYPE_P1", "XFI_MODE_P1", "FORCE_MODE_P1",
+                                                  "LINK_TYPE_P2", "PHY_TYPE_P2", "XFI_MODE_P2", "FORCE_MODE_P2",
+                                                  "LOG_BAR_SIZE",
+                                                  "INT_LOG_MAX_PAYLOAD_SIZE",
+                                                  "BOOT_PKEY_P1", "BOOT_PKEY_P2",
+                                                  "LOG_DCR_HASH_TABLE_SIZE", "DCR_LIFO_SIZE",
+                                                  "ROCE_NEXT_PROTOCOL",
+                                                  "ROCE_CC_ALGORITHM_P1", "ROCE_CC_PRIO_MASK_P1", "ROCE_CC_ALGORITHM_P2", "ROCE_CC_PRIO_MASK_P2",
+                                                  "CLAMP_TGT_RATE_P1", "CLAMP_TGT_RATE_AFTER_TIME_INC_P1", "RPG_TIME_RESET_P1",
+                                                  "RPG_BYTE_RESET_P1", "RPG_THRESHOLD_P1", "RPG_MAX_RATE_P1", "RPG_AI_RATE_P1",
+                                                  "RPG_HAI_RATE_P1", "RPG_GD_P1", "RPG_MIN_DEC_FAC_P1", "RPG_MIN_RATE_P1",
+                                                  "RATE_TO_SET_ON_FIRST_CNP_P1", "DCE_TCP_G_P1", "DCE_TCP_RTT_P1",
+                                                  "RATE_REDUCE_MONITOR_PERIOD_P1", "INITIAL_ALPHA_VALUE_P1", "MIN_TIME_BETWEEN_CNPS_P1",
+                                                  "CNP_DSCP_P1", "CNP_802P_PRIO_P1",
+                                                  "CLAMP_TGT_RATE_P2", "CLAMP_TGT_RATE_AFTER_TIME_INC_P2", "RPG_TIME_RESET_P2",
+                                                  "RPG_BYTE_RESET_P2", "RPG_THRESHOLD_P2", "RPG_MAX_RATE_P2", "RPG_AI_RATE_P2",
+                                                  "RPG_HAI_RATE_P2", "RPG_GD_P2", "RPG_MIN_DEC_FAC_P2", "RPG_MIN_RATE_P2",
+                                                  "RATE_TO_SET_ON_FIRST_CNP_P2", "DCE_TCP_G_P2", "DCE_TCP_RTT_P2", "RATE_REDUCE_MONITOR_PERIOD_P2",
+                                                  "INITIAL_ALPHA_VALUE_P2", "MIN_TIME_BETWEEN_CNPS_P2", "CNP_DSCP_P2", "CNP_802P_PRIO_P2",
+                                                  "BOOT_OPTION_ROM_EN_P1", "BOOT_VLAN_EN_P1", "BOOT_RETRY_CNT_P1", "LEGACY_BOOT_PROTOCOL_P1", "BOOT_VLAN_P1",
+                                                  "BOOT_OPTION_ROM_EN_P2", "BOOT_VLAN_EN_P2", "BOOT_RETRY_CNT_P2", "LEGACY_BOOT_PROTOCOL_P2", "BOOT_VLAN_P2",
+                                                  "PORT_OWNER", "ALLOW_RD_COUNTERS", "IP_VER", "IP_VER_P1", "IP_VER_P2", "CQ_TIMESTAMP", "STEER_FORCE_VLAN",
+};
 
 void FourthGenCommander::freeCfgList()
 {
-    for(map<mlxCfgType, CfgParams*>::iterator it = _cfgList.begin(); it != _cfgList.end(); it++) {
+    for (map<mlxCfgType, CfgParams*>::iterator it = _cfgList.begin(); it != _cfgList.end(); it++) {
         delete it->second;
     }
 }
 
-FourthGenCommander::FourthGenCommander(mfile* mf, string dev) : Commander(mf), _dev(dev),
-        _allInfo() {
+FourthGenCommander::FourthGenCommander(mfile *mf, string dev) : Commander(mf), _dev(dev),
+    _allInfo()
+{
 
     // init the ErrMsg Class
     std::map<int, std::string> errmap;
@@ -196,7 +197,7 @@ FourthGenCommander::FourthGenCommander(mfile* mf, string dev) : Commander(mf), _
     if (openComChk()) {
         freeCfgList();
         throw MlxcfgException("Failed to open device: %s. %s",
-                _dev.c_str(), err());
+                              _dev.c_str(), err());
     }
 }
 
@@ -206,9 +207,10 @@ FourthGenCommander::~FourthGenCommander()
     return;
 }
 
-void FourthGenCommander::clearSemaphore() {
+void FourthGenCommander::clearSemaphore()
+{
     int rc = tools_cmdif_unlock_semaphore(_mf);
-    if(rc) {
+    if (rc) {
         throw MlxcfgException("Failed to unlock semaphore, %s.", m_err2str((MError)rc));
     }
 }
@@ -224,37 +226,41 @@ int FourthGenCommander::supportsToolsHCR()
         return MCE_CR_ERROR;
     }
     switch (devId & 0xffff) { // check hw device id
-         case CX3_HW_ID : //Cx3
-         case CX3_PRO_HW_ID : // Cx3-pro
-             // check if device is accessed via pci (thats the only supported method atm)
-            rc = mget_mdevs_type(_mf, &type);
+    case CX3_HW_ID:       //Cx3
+    case CX3_PRO_HW_ID:       // Cx3-pro
+        // check if device is accessed via pci (thats the only supported method atm)
+        rc = mget_mdevs_type(_mf, &type);
         #ifndef MST_UL
-            if (type != MST_PCICONF && type != MST_PCI) {
-                return errmsg(MCE_PCI);
-            }
+        if (type != MST_PCICONF && type != MST_PCI) {
+            return errmsg(MCE_PCI);
+        }
         #else
-            if (type != MTCR_ACCESS_CONFIG && type != MTCR_ACCESS_MEMORY) {
-                return errmsg(MCE_PCI);
-            }
+        if (type != MTCR_ACCESS_CONFIG && type != MTCR_ACCESS_MEMORY) {
+            return errmsg(MCE_PCI);
+        }
         #endif
-            // check if we support tools_hcr
-             rc = tcif_query_dev_cap(_mf, TOOL_CAP_BITS_ADDR, &_suppVec);
-             switch (rc) {
-             case ME_OK:
-                 return MCE_SUCCESS;
-             case ME_CMDIF_BAD_SYS:
-                 return errmsg(MCE_DRIVER_DOWN);
-             case ME_CMDIF_BAD_OP:
-             case ME_CMDIF_TOUT:
-             case ME_CMDIF_BUSY:
-                 return errmsg(MCE_TOOLS_HCR_NOT_SUPP);
-             default:
-                 return errmsg("general Error, %s", m_err2str((MError)rc));
-             }
-             break;
-         default:
-             break;
-         }
+        // check if we support tools_hcr
+        rc = tcif_query_dev_cap(_mf, TOOL_CAP_BITS_ADDR, &_suppVec);
+        switch (rc) {
+        case ME_OK:
+            return MCE_SUCCESS;
+
+        case ME_CMDIF_BAD_SYS:
+            return errmsg(MCE_DRIVER_DOWN);
+
+        case ME_CMDIF_BAD_OP:
+        case ME_CMDIF_TOUT:
+        case ME_CMDIF_BUSY:
+            return errmsg(MCE_TOOLS_HCR_NOT_SUPP);
+
+        default:
+            return errmsg("general Error, %s", m_err2str((MError)rc));
+        }
+        break;
+
+    default:
+        break;
+    }
     return errmsg(MCE_UNSUPPORTED_DEVICE);
 }
 
@@ -298,18 +304,21 @@ bool FourthGenCommander::isLegal(mlxCfgType cfg)
     return false;
 }
 
-void FourthGenCommander::setRawCfg(std::vector<u_int32_t> rawTlvVec) {
+void FourthGenCommander::setRawCfg(std::vector<u_int32_t> rawTlvVec)
+{
     (void)rawTlvVec;
     throw MlxcfgException("set_raw command is not supported for this device\n");
 }
 
-void FourthGenCommander::dumpRawCfg(std::vector<u_int32_t> rawTlvVec, std::string& tlvDump) {
+void FourthGenCommander::dumpRawCfg(std::vector<u_int32_t> rawTlvVec, std::string& tlvDump)
+{
     (void)rawTlvVec;
     (void)tlvDump;
     throw MlxcfgException("set_raw command is not supported for this device\n");
 }
 
-void FourthGenCommander::backupCfgs(vector<BackupView>& views) {
+void FourthGenCommander::backupCfgs(vector<BackupView>& views)
+{
     (void)views;
     throw MlxcfgException("backup command is not supported for this device\n");
 }
@@ -336,7 +345,7 @@ int FourthGenCommander::openComChk()
         paramIt->second->setDevCapVec(_suppVec);
         if (paramIt->second->cfgSupported(_mf)) {
             ret = paramIt->second->getDefaultParams(_mf);
-            if (ret && ret!= MCE_GET_DEFAULT_PARAMS && ret != MCE_NOT_IMPLEMENTED) {
+            if (ret && ret != MCE_GET_DEFAULT_PARAMS && ret != MCE_NOT_IMPLEMENTED) {
                 return ret;
             }
         }
@@ -366,33 +375,33 @@ bool FourthGenCommander::supportsParam(mlxCfgParam param)
 
 void FourthGenCommander::getCfg(ParamView& cfgParam, QueryType qt)
 {
-    for (int p = (int)Mcp_Sriov_En ; p < (int)Mcp_Last; ++p) {
+    for (int p = (int)Mcp_Sriov_En; p < (int)Mcp_Last; ++p) {
         if (cfgParam.mlxconfigName == param2str[p].c_str()) {
             bool isDefault = (qt == QueryDefault);
             if (!supportsParam((mlxCfgParam)p)) {
                 throw MlxcfgException("Device doesn't support %s configuration",
-                        param2str[p].c_str());
+                                      param2str[p].c_str());
             }
-            u_int32_t val = MLXCFG_UNKNOWN ;
+            u_int32_t val = MLXCFG_UNKNOWN;
             if (getCfgAux((mlxCfgParam)p, val, isDefault)) {
                 throw MlxcfgException("Failed to query device %s configuration",
-                        (isDefault ? "default" : "current"));
+                                      (isDefault ? "default" : "current"));
             }
             MlxCfgParamParser paramParser;
-            if(_allInfo.getParamParser((mlxCfgParam)p, paramParser) == MLX_CFG_OK){
-               string strVal = paramParser.getStrVal(val);
-               cfgParam.mlxconfigName = param2str[p].c_str();
-               cfgParam.strVal = strVal;
-               cfgParam.val = val;
-               cfgParam.textualVals = paramParser.getStrMap();
+            if (_allInfo.getParamParser((mlxCfgParam)p, paramParser) == MLX_CFG_OK) {
+                string strVal = paramParser.getStrVal(val);
+                cfgParam.mlxconfigName = param2str[p].c_str();
+                cfgParam.strVal = strVal;
+                cfgParam.val = val;
+                cfgParam.textualVals = paramParser.getStrMap();
             } else {
-               throw MlxcfgException("Cannot parse parameter %s",
-                       param2str[p].c_str());
+                throw MlxcfgException("Cannot parse parameter %s",
+                                      param2str[p].c_str());
             }
         }
     }
     throw MlxcfgException("Parameter %s was not found",
-            cfgParam.mlxconfigName.c_str());
+                          cfgParam.mlxconfigName.c_str());
 }
 
 int FourthGenCommander::getCfgAux(mlxCfgParam cfgParam, u_int32_t& val, bool getDefault)
@@ -411,7 +420,7 @@ int FourthGenCommander::getCfgAux(mlxCfgParam cfgParam, u_int32_t& val, bool get
         int rc;
         rc = _cfgList[cfgParam2Type(cfgParam)]->getFromDev(_mf);
         if (rc) {
-            return errmsgConcatMsg(rc,*_cfgList[cfgParam2Type(cfgParam)]);
+            return errmsgConcatMsg(rc, *_cfgList[cfgParam2Type(cfgParam)]);
         }
         val = (_cfgList[cfgParam2Type(cfgParam)])->getParam(cfgParam);
     }
@@ -420,8 +429,8 @@ int FourthGenCommander::getCfgAux(mlxCfgParam cfgParam, u_int32_t& val, bool get
 
 int FourthGenCommander::getCfgAux(std::vector<cfgInfo>& infoVec)
 {
-    for (std::vector<cfgInfo>::iterator it = infoVec.begin() ; it != infoVec.end(); it++) {
-        int rc = getCfgAux(it->first,it->second);
+    for (std::vector<cfgInfo>::iterator it = infoVec.begin(); it != infoVec.end(); it++) {
+        int rc = getCfgAux(it->first, it->second);
         if (rc) {
             return rc;
         }
@@ -456,14 +465,14 @@ void FourthGenCommander::queryParamViews(std::vector<ParamView>& paramsToQuery, 
 {
     VECTOR_ITERATOR(ParamView, paramsToQuery, param) {
         bool found = false;
-        for (int i = (int)Mcp_Sriov_En ; i < (int)Mcp_Last ; i++) {
+        for (int i = (int)Mcp_Sriov_En; i < (int)Mcp_Last; i++) {
             if (param->mlxconfigName == param2str[i]) {
                 found = true;
             }
         }
         if (!found) {
             throw MlxcfgException("Unknown Parameter: %s",
-                                   param->mlxconfigName.c_str());
+                                  param->mlxconfigName.c_str());
         }
     }
     queryAux(paramsToQuery, qt, true);
@@ -477,7 +486,7 @@ void FourthGenCommander::setCfg(std::vector<ParamView>& params, bool force)
 
     VECTOR_ITERATOR(ParamView, params, pv) {
         int i;
-        for (i = (int)Mcp_Sriov_En ; i < (int)Mcp_Last ; i++) {
+        for (i = (int)Mcp_Sriov_En; i < (int)Mcp_Last; i++) {
             if (pv->mlxconfigName == param2str[i]) {
                 infoVec.push_back(cfgInfo((mlxCfgParam)i, pv->val));
                 break;
@@ -488,26 +497,26 @@ void FourthGenCommander::setCfg(std::vector<ParamView>& params, bool force)
     setIgnoreSoftLimits(force);
 
     int rc = setCfgAux(infoVec, failedParam);
-    if(rc) {
-        if(rc == MCE_UNSUPPORTED_CFG && failedParam != Mcp_Last) {
+    if (rc) {
+        if (rc == MCE_UNSUPPORTED_CFG && failedParam != Mcp_Last) {
             throw MlxcfgException("Unsupported Configuration: %s",
-                    param2str[failedParam].c_str());
+                                  param2str[failedParam].c_str());
         } else {
             throw MlxcfgException("Failed to set configuration: %s",
-                    err());
+                                  err());
         }
     }
 }
 
 
 int FourthGenCommander::setCfgAux(const std::vector<cfgInfo>& infoVec,
-        mlxCfgParam& failedParam)
+                                  mlxCfgParam& failedParam)
 {
     // set params
     std::set<CfgParams*> CfgToSet;
     int rc;
 
-    for (std::vector<cfgInfo>::const_iterator it = infoVec.begin() ; it != infoVec.end(); it++) {
+    for (std::vector<cfgInfo>::const_iterator it = infoVec.begin(); it != infoVec.end(); it++) {
         if (!isLegal(it->first)) {
             return MCE_BAD_PARAMS;
         }
@@ -524,7 +533,7 @@ int FourthGenCommander::setCfgAux(const std::vector<cfgInfo>& infoVec,
         CfgToSet.insert(_cfgList[cfgParam2Type(it->first)]);
     }
     //set on device exit on first failure
-    for (std::set<CfgParams*>::iterator it = CfgToSet.begin() ; it != CfgToSet.end(); it++) {
+    for (std::set<CfgParams*>::iterator it = CfgToSet.begin(); it != CfgToSet.end(); it++) {
         rc = (*it)->setOnDev(_mf);
         if (rc) {
             return errmsgConcatMsg(rc, (**it));
@@ -535,7 +544,7 @@ int FourthGenCommander::setCfgAux(const std::vector<cfgInfo>& infoVec,
 
 void FourthGenCommander::setIgnoreSoftLimits(bool val)
 {
-    for(std::map<mlxCfgType, CfgParams*>::iterator it = _cfgList.begin(); it != _cfgList.end(); it++) {
+    for (std::map<mlxCfgType, CfgParams*>::iterator it = _cfgList.begin(); it != _cfgList.end(); it++) {
         it->second->setIgnoreSoftLimits(val);
     }
     return;
@@ -543,20 +552,21 @@ void FourthGenCommander::setIgnoreSoftLimits(bool val)
 
 void FourthGenCommander::setIgnoreHardLimits(bool val)
 {
-    for(std::map<mlxCfgType, CfgParams*>::iterator it = _cfgList.begin(); it != _cfgList.end(); it++) {
+    for (std::map<mlxCfgType, CfgParams*>::iterator it = _cfgList.begin(); it != _cfgList.end(); it++) {
         it->second->setIgnoreHardLimits(val);
     }
     return;
 }
 
 void FourthGenCommander::queryAux(vector<ParamView>& params, QueryType qt,
-        bool isSetCmd) {
+                                  bool isSetCmd)
+{
     int rc;
 
-    for (int p = (int)Mcp_Sriov_En ; p < (int)Mcp_Last; ++p) {
+    for (int p = (int)Mcp_Sriov_En; p < (int)Mcp_Last; ++p) {
         ParamView pV;
-        ParamView* pVP = &pV;
-        if(isSetCmd) {
+        ParamView *pVP = &pV;
+        if (isSetCmd) {
             bool found = false;
             VECTOR_ITERATOR(ParamView, params, k) {
                 if (k->mlxconfigName == param2str[p].c_str()) {
@@ -565,26 +575,26 @@ void FourthGenCommander::queryAux(vector<ParamView>& params, QueryType qt,
                     break;
                 }
             }
-            if(!found) {
+            if (!found) {
                 continue;
             }
         }
         bool isDefault = (qt == QueryDefault);
         if (!supportsParam((mlxCfgParam)p)) {
-            if(isSetCmd) {
+            if (isSetCmd) {
                 throw MlxcfgException("Device doesn't support %s configuration",
-                        param2str[p].c_str());
+                                      param2str[p].c_str());
             }
             continue;
         }
-        u_int32_t val = MLXCFG_UNKNOWN ;
+        u_int32_t val = MLXCFG_UNKNOWN;
         rc = getCfgAux((mlxCfgParam)p, val, isDefault);
         if (rc) {
             throw MlxcfgException("Failed to query device %s configuration",
-                    (isDefault ? "default" : "current"));
+                                  (isDefault ? "default" : "current"));
         } else {
             MlxCfgParamParser paramParser;
-            if(_allInfo.getParamParser((mlxCfgParam)p, paramParser) == MLX_CFG_OK){
+            if (_allInfo.getParamParser((mlxCfgParam)p, paramParser) == MLX_CFG_OK) {
                 string strVal = paramParser.getStrVal(val);
                 pVP->mlxconfigName = param2str[p].c_str();
                 pVP->strVal = strVal;
@@ -595,14 +605,15 @@ void FourthGenCommander::queryAux(vector<ParamView>& params, QueryType qt,
                 }
             } else {
                 throw MlxcfgException("Cannot parse parameter %s",
-                        param2str[p].c_str());
+                                      param2str[p].c_str());
             }
         }
     }
 
 }
 
-void FourthGenCommander::queryAll(std::vector<ParamView>& params, QueryType qt) {
+void FourthGenCommander::queryAll(std::vector<ParamView>& params, vector<string>& /*failedTLVs*/, QueryType qt)
+{
     queryAux(params, qt, false);
 }
 
@@ -610,22 +621,22 @@ void FourthGenCommander::updateParamViewValue(ParamView& p, std::string v)
 {
     mlxCfgParam param = Mcp_Last;
 
-    if(_allInfo.parseParam(p.mlxconfigName, v, p.val, param)) {
-        if(param == Mcp_Last) {
+    if (_allInfo.parseParam(p.mlxconfigName, v, p.val, param)) {
+        if (param == Mcp_Last) {
             throw MlxcfgException("Unknown Parameter: %s",
-                    p.mlxconfigName.c_str());
+                                  p.mlxconfigName.c_str());
         } else {
             throw MlxcfgException("Failed to parse %s=%s",
-                    p.mlxconfigName.c_str(), v.c_str());
+                                  p.mlxconfigName.c_str(), v.c_str());
         }
     }
     //find string val
     MlxCfgParamParser paramParser;
-    if(_allInfo.getParamParser((mlxCfgParam)param, paramParser) == MLX_CFG_OK){
+    if (_allInfo.getParamParser((mlxCfgParam)param, paramParser) == MLX_CFG_OK) {
         p.strVal = paramParser.getStrVal(p.val);
     } else {
         throw MlxcfgException("Cannot parse parameter %s",
-                param2str[param].c_str());
+                              param2str[param].c_str());
     }
 
 
@@ -635,8 +646,8 @@ mlxCfgStatus MlxCfgParamParser::parseUserInput(string input, u_int32_t& val)
 {
     std::map<string, u_int32_t>::iterator it;
     //first check if it is a numeric value
-    if(strToNum(input, val, 0)) {
-        if(val == MLXCFG_UNKNOWN) {
+    if (strToNum(input, val, 0)) {
+        if (val == MLXCFG_UNKNOWN) {
             return MLX_CFG_ERROR;
         }
         return MLX_CFG_OK;
@@ -657,15 +668,14 @@ string MlxCfgParamParser::getShortDescStrAux()
 
     s = _name + "=<";
 
-    if(_strMap.size() == 0) {
+    if (_strMap.size() == 0) {
         s += _allowedValues;
     } else {
         //printf first str
         it = _strMap.begin();
         s += it->first;
         it++;
-        for(; it != _strMap.end(); it++)
-        {
+        for (; it != _strMap.end(); it++) {
             s += "|";
             s += it->first;
         }
@@ -677,48 +687,49 @@ string MlxCfgParamParser::getShortDescStrAux()
 
 void MlxCfgParamParser::printShortDesc()
 {
-    printf(IDENT4"%s\n", getShortDescStrAux().c_str());
+    printf(IDENT4 "%s\n", getShortDescStrAux().c_str());
 }
 
-void MlxCfgParamParser::splitAndPrintDesc(FILE* f, string desc)
+void MlxCfgParamParser::splitAndPrintDesc(FILE *f, string desc)
 {
-    if(desc.length() > 129) {
+    if (desc.length() > 129) {
         //find index of last space in first 129 chars and split there
         int i = desc.substr(0, 129).find_last_of(' ');
         string desc2 = desc.substr(i, (desc.length() - i));
-        fprintf(f, IDENT4"%-46s   %s\n", "", desc.substr(0, i).c_str());
+        fprintf(f, IDENT4 "%-46s   %s\n", "", desc.substr(0, i).c_str());
         splitAndPrintDesc(f, desc2);
     } else {
-        fprintf(f, IDENT4"%-46s   %s\n", "", desc.c_str());
+        fprintf(f, IDENT4 "%-46s   %s\n", "", desc.c_str());
     }
 }
 
-void MlxCfgParamParser::printLongDesc(FILE* f)
+void MlxCfgParamParser::printLongDesc(FILE *f)
 {
     string shortDesc = getShortDescStrAux();
-    if(_desc.length() > 129) {
+    if (_desc.length() > 129) {
         //find index of last space in first 129 chars and split there
         int i = _desc.substr(0, 129).find_last_of(' ');
         string desc2 = _desc.substr(i, (_desc.length() - i));
-        fprintf(f, IDENT4"%-46s : %s\n", shortDesc.c_str(), _desc.substr(0, i).c_str());
+        fprintf(f, IDENT4 "%-46s : %s\n", shortDesc.c_str(), _desc.substr(0, i).c_str());
         splitAndPrintDesc(f, desc2);
     } else {
-        fprintf(f, IDENT4"%-46s : %s\n", shortDesc.c_str(), _desc.c_str());
+        fprintf(f, IDENT4 "%-46s : %s\n", shortDesc.c_str(), _desc.c_str());
     }
 }
 
-string MlxCfgParamParser::getStrVal(u_int32_t val){
+string MlxCfgParamParser::getStrVal(u_int32_t val)
+{
     std::map<string, u_int32_t>::iterator it;
-    if(val == MLXCFG_UNKNOWN) {
+    if (val == MLXCFG_UNKNOWN) {
         return "MLXCFG_UNKNOWN";
     }
-    if(_strMap.size() == 0) {
+    if (_strMap.size() == 0) {
         ostringstream ss;
         ss << val;
         return ss.str();
     } else {
-        for(it = _strMap.begin(); it != _strMap.end(); it++){
-            if(val == it->second){
+        for (it = _strMap.begin(); it != _strMap.end(); it++) {
+            if (val == it->second) {
                 return it->first;
             }
         }
@@ -736,8 +747,7 @@ vector<MlxCfgParamParser> MlxCfgInfo::getParamsMapValues()
 {
     vector<MlxCfgParamParser> vals;
     std::map<mlxCfgParam, MlxCfgParamParser>::iterator it;
-    for(it = _params.begin(); it != _params.end(); it++)
-    {
+    for (it = _params.begin(); it != _params.end(); it++) {
         vals.push_back(it->second);
     }
     return vals;
@@ -746,27 +756,25 @@ vector<MlxCfgParamParser> MlxCfgInfo::getParamsMapValues()
 void MlxCfgInfo::printShortDesc()
 {
     printf("\n");
-    printf(IDENT2"%s: %s\n",_name.c_str(), _title.c_str());
+    printf(IDENT2 "%s: %s\n", _name.c_str(), _title.c_str());
 
     vector<MlxCfgParamParser> vals = getParamsMapValues();
     std::sort(vals.begin(), vals.end(), mlxCfgParamParserCompare);
 
-    for(unsigned int i = 0; i < vals.size(); i++)
-    {
+    for (unsigned int i = 0; i < vals.size(); i++) {
         vals[i].printShortDesc();
     }
 }
 
-void MlxCfgInfo::printLongDesc(FILE* f)
+void MlxCfgInfo::printLongDesc(FILE *f)
 {
     fprintf(f, "\n");
-    fprintf(f, IDENT2"%s: %s\n",_name.c_str(), _title.c_str());
+    fprintf(f, IDENT2 "%s: %s\n", _name.c_str(), _title.c_str());
 
     vector<MlxCfgParamParser> vals = getParamsMapValues();
     std::sort(vals.begin(), vals.end(), mlxCfgParamParserCompare);
 
-    for(unsigned int i = 0; i < vals.size(); i++)
-    {
+    for (unsigned int i = 0; i < vals.size(); i++) {
         vals[i].printLongDesc(f);
     }
 }
@@ -774,7 +782,7 @@ void MlxCfgInfo::printLongDesc(FILE* f)
 mlxCfgStatus MlxCfgInfo::getParamParser(mlxCfgParam p, MlxCfgParamParser& paramParser)
 {
     std::map<mlxCfgParam, MlxCfgParamParser>::iterator it = _params.find(p);
-    if(it == _params.end()) {
+    if (it == _params.end()) {
         return MLX_CFG_ERROR;
     }
     paramParser = it->second;
@@ -784,9 +792,8 @@ mlxCfgStatus MlxCfgInfo::getParamParser(mlxCfgParam p, MlxCfgParamParser& paramP
 mlxCfgStatus MlxCfgInfo::getParamParser(string name, MlxCfgParamParser& paramParser)
 {
     std::map<mlxCfgParam, MlxCfgParamParser>::iterator it;
-    for(it = _params.begin(); it != _params.end(); it++)
-    {
-        if(name == it->second.getName()) {
+    for (it = _params.begin(); it != _params.end(); it++) {
+        if (name == it->second.getName()) {
             paramParser = it->second;
             return MLX_CFG_OK;
         }
@@ -800,7 +807,7 @@ MlxCfgInfo MlxCfgAllInfo::createPciSettings()
     map<mlxCfgParam, MlxCfgParamParser> params;
     paramMap["True"] = 1;
     paramMap["False"] = 0;
-    params[Mcp_Log_Bar_Size] = MlxCfgParamParser(Mcp_Log_Bar_Size, "LOG_BAR_SIZE", "example: for 8Mb bar size set LOG_BAR_SIZE=3 (only "  FOURTH_GENERATION_LIST")", "base_2_log_in_mb");
+    params[Mcp_Log_Bar_Size] = MlxCfgParamParser(Mcp_Log_Bar_Size, "LOG_BAR_SIZE", "example: for 8Mb bar size set LOG_BAR_SIZE=3 (only "  FOURTH_GENERATION_LIST ")", "base_2_log_in_mb");
     params[Mcp_Sriov_En] = MlxCfgParamParser(Mcp_Sriov_En, "SRIOV_EN", "Enable SR-IOV", paramMap);
     params[Mcp_Num_Of_Vfs] = MlxCfgParamParser(Mcp_Num_Of_Vfs, "NUM_OF_VFS", "desired amount of virtual functions", "NUM");
     return MlxCfgInfo("PCI Settings", "", params);
@@ -834,7 +841,7 @@ MlxCfgInfo MlxCfgAllInfo::createInternalSettings()
     //Internal Settings
     paramMap["Auto"] = 0;
     paramMap["4KB"] = 12;
-    params[Mcp_Log_Tpt_Size] = MlxCfgParamParser(Mcp_Log_Tpt_Size, "INT_LOG_MAX_PAYLOAD_SIZE", """Burst length", paramMap);
+    params[Mcp_Log_Tpt_Size] = MlxCfgParamParser(Mcp_Log_Tpt_Size, "INT_LOG_MAX_PAYLOAD_SIZE", "" "Burst length", paramMap);
     return MlxCfgInfo("Internal Settings", "", params);
 }
 
@@ -869,95 +876,95 @@ MlxCfgInfo MlxCfgAllInfo::createRoCECongestionControlECN()
     map<mlxCfgParam, MlxCfgParamParser> params;
 
     //RoCE Congestion Control ECN
-    params[Mcp_Clamp_Tgt_Rate_P1] = MlxCfgParamParser(Mcp_Clamp_Tgt_Rate_P1, "CLAMP_TGT_RATE_P1","If set, whenever a CNP is processed,"
-                  " the target rate is updated to be the current rate. Default=1"
-              ,"0|1");
-    params[Mcp_Clamp_Tgt_Rate_P2] = MlxCfgParamParser(Mcp_Clamp_Tgt_Rate_P2, "CLAMP_TGT_RATE_P2","","0|1");
+    params[Mcp_Clamp_Tgt_Rate_P1] = MlxCfgParamParser(Mcp_Clamp_Tgt_Rate_P1, "CLAMP_TGT_RATE_P1", "If set, whenever a CNP is processed,"
+                                                      " the target rate is updated to be the current rate. Default=1"
+                                                      , "0|1");
+    params[Mcp_Clamp_Tgt_Rate_P2] = MlxCfgParamParser(Mcp_Clamp_Tgt_Rate_P2, "CLAMP_TGT_RATE_P2", "", "0|1");
     params[Mcp_Clamp_Tgt_Rate_After_Time_Inc_P1] = MlxCfgParamParser(Mcp_Clamp_Tgt_Rate_After_Time_Inc_P1, "CLAMP_TGT_RATE_AFTER_TIME_INC_P1",
-                "When receiving an CNP, the target rate should"
-                    " be updated if the transmission rate was increased"
-                    " due to the timer, and not only due to the byte counter"". Default=1"
-                ,"0|1");
-    params[Mcp_Clamp_Tgt_Rate_After_Time_Inc_P2] = MlxCfgParamParser(Mcp_Clamp_Tgt_Rate_After_Time_Inc_P2, "CLAMP_TGT_RATE_AFTER_TIME_INC_P2","","0|1");
+                                                                     "When receiving an CNP, the target rate should"
+                                                                     " be updated if the transmission rate was increased"
+                                                                     " due to the timer, and not only due to the byte counter" ". Default=1"
+                                                                     , "0|1");
+    params[Mcp_Clamp_Tgt_Rate_After_Time_Inc_P2] = MlxCfgParamParser(Mcp_Clamp_Tgt_Rate_After_Time_Inc_P2, "CLAMP_TGT_RATE_AFTER_TIME_INC_P2", "", "0|1");
     params[Mcp_Rpg_Time_Reset_P1] = MlxCfgParamParser(Mcp_Rpg_Time_Reset_P1, "RPG_TIME_RESET_P1"
-              ,"Time between rate increases if no CNPs are received. Given in u-seconds. Default=2"
-              ,"USEC");
-    params[Mcp_Rpg_Time_Reset_P2] = MlxCfgParamParser(Mcp_Rpg_Time_Reset_P2, "RPG_TIME_RESET_P2","","USEC");
+                                                      , "Time between rate increases if no CNPs are received. Given in u-seconds. Default=2"
+                                                      , "USEC");
+    params[Mcp_Rpg_Time_Reset_P2] = MlxCfgParamParser(Mcp_Rpg_Time_Reset_P2, "RPG_TIME_RESET_P2", "", "USEC");
     params[Mcp_Rpg_Byte_Reset_P1] = MlxCfgParamParser(Mcp_Rpg_Byte_Reset_P1, "RPG_BYTE_RESET_P1"
-              ,"Transmitted data between rate increases if no CNPs are received. Given in Bytes. "
-               "Disabled=0, Default=150"
-              ,"BYTE_NUM");
-    params[Mcp_Rpg_Byte_Reset_P2] = MlxCfgParamParser(Mcp_Rpg_Byte_Reset_P2, "RPG_BYTE_RESET_P2","","BYTE_NUM");
+                                                      , "Transmitted data between rate increases if no CNPs are received. Given in Bytes. "
+                                                      "Disabled=0, Default=150"
+                                                      , "BYTE_NUM");
+    params[Mcp_Rpg_Byte_Reset_P2] = MlxCfgParamParser(Mcp_Rpg_Byte_Reset_P2, "RPG_BYTE_RESET_P2", "", "BYTE_NUM");
     params[Mcp_Rpg_Threshold_P1] = MlxCfgParamParser(Mcp_Rpg_Threshold_P1, "RPG_THRESHOLD_P1"
-             ,"The number of times rpByteStage or rpTimeStage can count before the RP rate control "
-              "state machine advances states. Default=5"
-             ,"0..31");
-    params[Mcp_Rpg_Threshold_P2] = MlxCfgParamParser(Mcp_Rpg_Threshold_P2, "RPG_THRESHOLD_P2","","0..31");
+                                                     , "The number of times rpByteStage or rpTimeStage can count before the RP rate control "
+                                                     "state machine advances states. Default=5"
+                                                     , "0..31");
+    params[Mcp_Rpg_Threshold_P2] = MlxCfgParamParser(Mcp_Rpg_Threshold_P2, "RPG_THRESHOLD_P2", "", "0..31");
     params[Mcp_Rpg_Max_Rate_P1] = MlxCfgParamParser(Mcp_Rpg_Max_Rate_P1, "RPG_MAX_RATE_P1"
-            ,"The maximum rate, in Mbits per second, at which an RP can transmit. "
-             "Once this limit is reached, the RP rate limited is released and "
-             "the flow is not rate limited any more. Default=0 (Full port speed)."
-            ,"RATE_IN_MBIT");
-    params[Mcp_Rpg_Max_Rate_P2] = MlxCfgParamParser(Mcp_Rpg_Max_Rate_P2, "RPG_MAX_RATE_P2","","RATE_IN_MBIT");
-    params[Mcp_Rpg_Ai_Rate_P1] = MlxCfgParamParser(Mcp_Rpg_Ai_Rate_P1, "RPG_AI_RATE_P1","The rate, in Mbits per second,"
-            " used to increase rpTargetRate in the RPR_ACTIVE_INCREASE state."
-            " Default=10."
-           ,"RATE_IN_MBIT");
-    params[Mcp_Rpg_Ai_Rate_P2] = MlxCfgParamParser(Mcp_Rpg_Ai_Rate_P2, "RPG_AI_RATE_P2","","RATE_IN_MBIT");
+                                                    , "The maximum rate, in Mbits per second, at which an RP can transmit. "
+                                                    "Once this limit is reached, the RP rate limited is released and "
+                                                    "the flow is not rate limited any more. Default=0 (Full port speed)."
+                                                    , "RATE_IN_MBIT");
+    params[Mcp_Rpg_Max_Rate_P2] = MlxCfgParamParser(Mcp_Rpg_Max_Rate_P2, "RPG_MAX_RATE_P2", "", "RATE_IN_MBIT");
+    params[Mcp_Rpg_Ai_Rate_P1] = MlxCfgParamParser(Mcp_Rpg_Ai_Rate_P1, "RPG_AI_RATE_P1", "The rate, in Mbits per second,"
+                                                   " used to increase rpTargetRate in the RPR_ACTIVE_INCREASE state."
+                                                   " Default=10."
+                                                   , "RATE_IN_MBIT");
+    params[Mcp_Rpg_Ai_Rate_P2] = MlxCfgParamParser(Mcp_Rpg_Ai_Rate_P2, "RPG_AI_RATE_P2", "", "RATE_IN_MBIT");
     params[Mcp_Rpg_Hai_Rate_P1] = MlxCfgParamParser(Mcp_Rpg_Hai_Rate_P1, "RPG_HAI_RATE_P1"
-            ,"The rate, in Mbits per second, used to increase rpTargetRate in the RPR_HYPER_INCREASE state."
-             " Default=50"
-            ,"RATE_IN_MBIT");
-    params[Mcp_Rpg_Hai_Rate_P2] = MlxCfgParamParser(Mcp_Rpg_Hai_Rate_P2, "RPG_HAI_RATE_P2","","RATE_IN_MBIT");
+                                                    , "The rate, in Mbits per second, used to increase rpTargetRate in the RPR_HYPER_INCREASE state."
+                                                    " Default=50"
+                                                    , "RATE_IN_MBIT");
+    params[Mcp_Rpg_Hai_Rate_P2] = MlxCfgParamParser(Mcp_Rpg_Hai_Rate_P2, "RPG_HAI_RATE_P2", "", "RATE_IN_MBIT");
     params[Mcp_Rpg_Gd_P1] = MlxCfgParamParser(Mcp_Rpg_Gd_P1, "RPG_GD_P1"
-            ,"If a CNP is received, the flow rate is reduced at the beginning of the next rate_reduce_monitor_period interval to,"
-             "(1-Alpha/Gd)*CurrentRate. RPG_GD is given as log2(Gd), where Gd may only be powers of 2. Default=7."
-            ,"0..15");
-    params[Mcp_Rpg_Gd_P2] = MlxCfgParamParser(Mcp_Rpg_Gd_P2, "RPG_GD_P2","","0..15");
+                                              , "If a CNP is received, the flow rate is reduced at the beginning of the next rate_reduce_monitor_period interval to,"
+                                              "(1-Alpha/Gd)*CurrentRate. RPG_GD is given as log2(Gd), where Gd may only be powers of 2. Default=7."
+                                              , "0..15");
+    params[Mcp_Rpg_Gd_P2] = MlxCfgParamParser(Mcp_Rpg_Gd_P2, "RPG_GD_P2", "", "0..15");
     params[Mcp_Rpg_Min_Dec_Fac_P1] = MlxCfgParamParser(Mcp_Rpg_Min_Dec_Fac_P1, "RPG_MIN_DEC_FAC_P1"
-            ,"The minimum factor by which the current transmit rate can be changed when processing a CNP."
-             "Value is given as a percentage (1-100). Default=50."
-            ,"1..100");
-    params[Mcp_Rpg_Min_Dec_Fac_P2] = MlxCfgParamParser(Mcp_Rpg_Min_Dec_Fac_P2, "RPG_MIN_DEC_FAC_P2","","1..100");
+                                                       , "The minimum factor by which the current transmit rate can be changed when processing a CNP."
+                                                       "Value is given as a percentage (1-100). Default=50."
+                                                       , "1..100");
+    params[Mcp_Rpg_Min_Dec_Fac_P2] = MlxCfgParamParser(Mcp_Rpg_Min_Dec_Fac_P2, "RPG_MIN_DEC_FAC_P2", "", "1..100");
     params[Mcp_Rpg_Min_Rate_P1] = MlxCfgParamParser(Mcp_Rpg_Min_Rate_P1, "RPG_MIN_RATE_P1"
-            ,"The minimum value, in Mb per second, for rate to limit. Default=2000"
-            ,"RATE_IN_MBIT");
-    params[Mcp_Rpg_Min_Rate_P2] = MlxCfgParamParser(Mcp_Rpg_Min_Rate_P2, "RPG_MIN_RATE_P2","","RATE_IN_MBIT");
+                                                    , "The minimum value, in Mb per second, for rate to limit. Default=2000"
+                                                    , "RATE_IN_MBIT");
+    params[Mcp_Rpg_Min_Rate_P2] = MlxCfgParamParser(Mcp_Rpg_Min_Rate_P2, "RPG_MIN_RATE_P2", "", "RATE_IN_MBIT");
     params[Mcp_Rate_To_Set_On_First_Cnp_P1] = MlxCfgParamParser(Mcp_Rate_To_Set_On_First_Cnp_P1, "RATE_TO_SET_ON_FIRST_CNP_P1"
-            ,"The rate that is set for the flow when a rate limiter is allocated to it upon first CNP received, in Mbps. "
-             "Default=0"
-            ,"RATE_IN_MBIT");
-    params[Mcp_Rate_To_Set_On_First_Cnp_P2] = MlxCfgParamParser(Mcp_Rate_To_Set_On_First_Cnp_P2, "RATE_TO_SET_ON_FIRST_CNP_P2","","RATE_IN_MBIT");
+                                                                , "The rate that is set for the flow when a rate limiter is allocated to it upon first CNP received, in Mbps. "
+                                                                "Default=0"
+                                                                , "RATE_IN_MBIT");
+    params[Mcp_Rate_To_Set_On_First_Cnp_P2] = MlxCfgParamParser(Mcp_Rate_To_Set_On_First_Cnp_P2, "RATE_TO_SET_ON_FIRST_CNP_P2", "", "RATE_IN_MBIT");
     params[Mcp_Dce_Tcp_G_P1] = MlxCfgParamParser(Mcp_Dce_Tcp_G_P1, "DCE_TCP_G_P1"
-            ,"Used to update the congestion estimator (alpha) once every dce_tcp_rtt microseconds. Default=64"
-            ,"NUM");
-    params[Mcp_Dce_Tcp_G_P2] = MlxCfgParamParser(Mcp_Dce_Tcp_G_P2, "DCE_TCP_G_P2","","NUM");
+                                                 , "Used to update the congestion estimator (alpha) once every dce_tcp_rtt microseconds. Default=64"
+                                                 , "NUM");
+    params[Mcp_Dce_Tcp_G_P2] = MlxCfgParamParser(Mcp_Dce_Tcp_G_P2, "DCE_TCP_G_P2", "", "NUM");
     params[Mcp_Dce_Tcp_Rtt_P1] = MlxCfgParamParser(Mcp_Dce_Tcp_Rtt_P1, "DCE_TCP_RTT_P1"
-            ,"The time between updates of the alpha value, in microseconds. Default=2"
-            ,"USEC");
-    params[Mcp_Dce_Tcp_Rtt_P2] = MlxCfgParamParser(Mcp_Dce_Tcp_Rtt_P2, "DCE_TCP_RTT_P2","","USEC");
+                                                   , "The time between updates of the alpha value, in microseconds. Default=2"
+                                                   , "USEC");
+    params[Mcp_Dce_Tcp_Rtt_P2] = MlxCfgParamParser(Mcp_Dce_Tcp_Rtt_P2, "DCE_TCP_RTT_P2", "", "USEC");
     params[Mcp_Rate_Reduce_Monitor_Period_P1] = MlxCfgParamParser(Mcp_Rate_Reduce_Monitor_Period_P1, "RATE_REDUCE_MONITOR_PERIOD_P1"
-            ,"The minimum time between 2 consecutive rate reductions for a single flow. "
-             "Rate reduction will occur only if a CNP is received during the relevant time interval. Default=2."
-            ,"USEC");
-    params[Mcp_Rate_Reduce_Monitor_Period_P2] = MlxCfgParamParser(Mcp_Rate_Reduce_Monitor_Period_P2, "RATE_REDUCE_MONITOR_PERIOD_P2","","USEC");
+                                                                  , "The minimum time between 2 consecutive rate reductions for a single flow. "
+                                                                  "Rate reduction will occur only if a CNP is received during the relevant time interval. Default=2."
+                                                                  , "USEC");
+    params[Mcp_Rate_Reduce_Monitor_Period_P2] = MlxCfgParamParser(Mcp_Rate_Reduce_Monitor_Period_P2, "RATE_REDUCE_MONITOR_PERIOD_P2", "", "USEC");
     params[Mcp_Initial_Alpha_Value_P1] = MlxCfgParamParser(Mcp_Initial_Alpha_Value_P1, "INITIAL_ALPHA_VALUE_P1"
-            ,"The initial value of alpha to use when receiving the first CNP for a flow. "
-             "Expressed in a fixed point fraction of 2^10."
-            ,"NUM");
-    params[Mcp_Initial_Alpha_Value_P2] = MlxCfgParamParser(Mcp_Initial_Alpha_Value_P2, "INITIAL_ALPHA_VALUE_P2","","NUM");
+                                                           , "The initial value of alpha to use when receiving the first CNP for a flow. "
+                                                           "Expressed in a fixed point fraction of 2^10."
+                                                           , "NUM");
+    params[Mcp_Initial_Alpha_Value_P2] = MlxCfgParamParser(Mcp_Initial_Alpha_Value_P2, "INITIAL_ALPHA_VALUE_P2", "", "NUM");
     params[Mcp_Min_Time_Between_Cnps_P1] = MlxCfgParamParser(Mcp_Min_Time_Between_Cnps_P1, "MIN_TIME_BETWEEN_CNPS_P1"
-            ,"Minimum time between sending cnps from the port, in microseconds. Default=0"
-            ,"USEC");
-    params[Mcp_Min_Time_Between_Cnps_P2] = MlxCfgParamParser(Mcp_Min_Time_Between_Cnps_P2, "MIN_TIME_BETWEEN_CNPS_P2","","USEC");
+                                                             , "Minimum time between sending cnps from the port, in microseconds. Default=0"
+                                                             , "USEC");
+    params[Mcp_Min_Time_Between_Cnps_P2] = MlxCfgParamParser(Mcp_Min_Time_Between_Cnps_P2, "MIN_TIME_BETWEEN_CNPS_P2", "", "USEC");
     params[Mcp_Cnp_Dscp_P1] = MlxCfgParamParser(Mcp_Cnp_Dscp_P1, "CNP_DSCP_P1"
-            ,"The DiffServ Code Point of the generated CNP for this port. Default=0"
-            ,"0..7");
-    params[Mcp_Cnp_Dscp_P2] = MlxCfgParamParser(Mcp_Cnp_Dscp_P2, "CNP_DSCP_P2","","0..7");
+                                                , "The DiffServ Code Point of the generated CNP for this port. Default=0"
+                                                , "0..7");
+    params[Mcp_Cnp_Dscp_P2] = MlxCfgParamParser(Mcp_Cnp_Dscp_P2, "CNP_DSCP_P2", "", "0..7");
     params[Mcp_Cnp_802p_Prio_P1] = MlxCfgParamParser(Mcp_Cnp_802p_Prio_P1, "CNP_802P_PRIO_P1"
-            ,"The 802.1p priority value of the generated CNP for this port. Default=7"
-            ,"NUM");
-    params[Mcp_Cnp_802p_Prio_P2] = MlxCfgParamParser(Mcp_Cnp_802p_Prio_P2, "CNP_802P_PRIO_P2","","NUM");
+                                                     , "The 802.1p priority value of the generated CNP for this port. Default=7"
+                                                     , "NUM");
+    params[Mcp_Cnp_802p_Prio_P2] = MlxCfgParamParser(Mcp_Cnp_802p_Prio_P2, "CNP_802P_PRIO_P2", "", "NUM");
     return MlxCfgInfo("RoCE Congestion Control ECN", "", params);
 }
 
@@ -967,7 +974,7 @@ MlxCfgInfo MlxCfgAllInfo::createRoCEV1_5NextProtocol()
 
     //RoCE V1.5 next protocol
     params[Mcp_RoCE_Next_Protocol] = MlxCfgParamParser(Mcp_RoCE_Next_Protocol, "ROCE_NEXT_PROTOCOL",
-            "The next protocol value set in the IPv4/IPv6 packets for RoCE v1.5. The default is 0xFE.", "0..255");
+                                                       "The next protocol value set in the IPv4/IPv6 packets for RoCE v1.5. The default is 0xFE.", "0..255");
 
     return MlxCfgInfo("RoCE V1.5 next protocol", "", params);
 }
@@ -1058,10 +1065,10 @@ MlxCfgInfo MlxCfgAllInfo::createCX3GlobalConf()
     paramMap["True"] = 1;
     paramMap["False"] = 0;
     params[Mcp_CQ_Timestamp] = MlxCfgParamParser(Mcp_CQ_Timestamp, "CQ_TIMESTAMP",
-                                                     "When set, IEE1588 (PTP) HW timestamping capability is"
-                                                     " reported to the device driver.", paramMap);
+                                                 "When set, IEE1588 (PTP) HW timestamping capability is"
+                                                 " reported to the device driver.", paramMap);
     params[Mcp_Steer_ForceVlan] = MlxCfgParamParser(Mcp_Steer_ForceVlan, "STEER_FORCE_VLAN",
-                                                  "Force VLAN steering configuration", paramMap);
+                                                    "Force VLAN steering configuration", paramMap);
 
     return MlxCfgInfo("CX3 Global", "", params);
 }
@@ -1094,22 +1101,22 @@ MlxCfgAllInfo::MlxCfgAllInfo()
 
 void MlxCfgAllInfo::printShortDesc()
 {
-    for(u_int32_t i = 0; i < _allInfo.size(); i++){
+    for (u_int32_t i = 0; i < _allInfo.size(); i++) {
         _allInfo[i].printShortDesc();
     }
 }
 
-void MlxCfgAllInfo::printLongDesc(FILE* f)
+void MlxCfgAllInfo::printLongDesc(FILE *f)
 {
-    for(u_int32_t i = 0; i < _allInfo.size(); i++){
+    for (u_int32_t i = 0; i < _allInfo.size(); i++) {
         _allInfo[i].printLongDesc(f);
     }
 }
 
 mlxCfgStatus MlxCfgAllInfo::getParamParser(mlxCfgParam p, MlxCfgParamParser& paramParser)
 {
-    for(u_int32_t j = 0; j < _allInfo.size(); j++){
-        if(_allInfo[j].getParamParser(p, paramParser) == MLX_CFG_OK) {
+    for (u_int32_t j = 0; j < _allInfo.size(); j++) {
+        if (_allInfo[j].getParamParser(p, paramParser) == MLX_CFG_OK) {
             return MLX_CFG_OK;
         }
     }
@@ -1119,12 +1126,12 @@ mlxCfgStatus MlxCfgAllInfo::getParamParser(mlxCfgParam p, MlxCfgParamParser& par
 mlxCfgStatus MlxCfgAllInfo::parseParam(string tag, string strVal, u_int32_t& val, mlxCfgParam& param)
 {
     MlxCfgParamParser paramParser;
-    for(u_int32_t j = 0; j < _allInfo.size(); j++){
-        if(_allInfo[j].getParamParser(tag, paramParser) == MLX_CFG_OK) {
+    for (u_int32_t j = 0; j < _allInfo.size(); j++) {
+        if (_allInfo[j].getParamParser(tag, paramParser) == MLX_CFG_OK) {
             param = paramParser.getParam();
             return (paramParser.parseUserInput(strVal, val)) ?
-                    MLX_CFG_ERROR :
-                    MLX_CFG_OK;
+                   MLX_CFG_ERROR :
+                   MLX_CFG_OK;
         }
     }
     return MLX_CFG_ERROR;

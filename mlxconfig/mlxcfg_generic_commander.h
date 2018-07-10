@@ -52,22 +52,22 @@ private:
     MlxcfgDBManager *_dbManager;
 
     void supportsNVData();
-    void printEnums(ParamView p, string& s);
-    bool checkDependency(TLVConf* cTLV, string dStr);
-    void filterByDependency(TLVConf* cTLV, const vector<pair<ParamView, string> >& dependencyTable, vector<ParamView>& result);
-    void queryTLV(TLVConf* conf, std::vector<ParamView>& paramsConf, QueryType qt);
+    void printEnums(const ParamView& p, string& s);
+    bool checkDependency(TLVConf *cTLV, string dStr);
+    void filterByDependency(TLVConf *cTLV, const vector<pair<ParamView, string> >& dependencyTable, vector<ParamView>& result);
+    void queryTLV(TLVConf *conf, std::vector<ParamView>& paramsConf, QueryType qt);
     void getAllConfigurations(std::vector<TLVConfView>& confs);
     void excludeDuplicatedTLVs(vector<TLVConfView>& s, vector<TLVConfView>& d);
-    void printTLVConfViews(FILE* f, vector<TLVConfView>& v);
-    void printParamViews(FILE* f, vector<ParamView>& v);
+    void printTLVConfViews(FILE *f, vector<TLVConfView>& v);
+    void printParamViews(FILE *f, vector<ParamView>& v);
     void genXMLTemplateAux(vector<string> tlvs, string& xmlTemplate,
-            bool allAttrs, bool withVal, bool defaultAttrVal);
+                           bool allAttrs, bool withVal, bool defaultAttrVal);
 public:
-    GenericCommander(mfile* mf, string dbName);
+    GenericCommander(mfile *mf, string dbName);
     ~GenericCommander();
     void printLongDesc(FILE*);
     void queryParamViews(std::vector<ParamView>& paramsToQuery, QueryType qt = QueryNext);
-    void queryAll(std::vector<ParamView>& params, QueryType qt = QueryNext);
+    void queryAll(std::vector<ParamView>& params, vector<string>& failedTLVs, QueryType qt = QueryNext);
     void getCfg(ParamView& cfgParam, QueryType qt = QueryNext);
     void setCfg(std::vector<ParamView>& params, bool force);
     bool isDefaultSupported();
@@ -80,8 +80,8 @@ public:
     void dumpRawCfg(std::vector<u_int32_t> rawTlvVec, std::string& tlvDump);
     void backupCfgs(vector<BackupView>& view);
     void updateParamViewValue(ParamView&, std::string);
-    void queryConfigViews(std::vector<TLVConfView> & confs, const std::string & configName="", QueryType qt=QueryNext);
-    void getConfigViews(std::vector<TLVConfView> & confs, const std::string & configName="");
+    void queryConfigViews(std::vector<TLVConfView> & confs, const std::string & configName = "", QueryType qt = QueryNext);
+    void getConfigViews(std::vector<TLVConfView> & confs, const std::string & configName = "");
 
     void genTLVsList(vector<string>& tlvs);
     void genXMLTemplate(vector<string> tlvs, string& xml, bool allAttrs);
@@ -107,7 +107,7 @@ public:
     RawCfgParams5thGen();
     ~RawCfgParams5thGen() {}
     int setRawData(const std::vector<u_int32_t>& tlvBuff);
-    int setOnDev(mfile* mf);
+    int setOnDev(mfile *mf);
     std::string dumpTlv();
 private:
     int verifyTlv();

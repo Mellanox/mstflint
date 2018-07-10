@@ -49,8 +49,9 @@
 #include "mad_ifc/mad_ifc.h"
 #else
 // no signal handling.
-static void mft_signal_set_handling(int isOn) {
-        return;
+static void mft_signal_set_handling(int isOn)
+{
+    return;
 }
 #endif
 
@@ -81,10 +82,10 @@ typedef struct reg_access_hca_mcda_reg mcdaReg;
  */
 
 bool FwCompsMgr::runNVDA(std::vector<u_int8_t>& buff,
-                            u_int16_t len,
-                            u_int32_t tlvType,
-                            reg_access_method_t method,
-                            bool queryDefault)
+                         u_int16_t len,
+                         u_int32_t tlvType,
+                         reg_access_method_t method,
+                         bool queryDefault)
 {
     struct tools_open_nvda nvdaTlv;
     memset(&nvdaTlv, 0, sizeof(struct tools_open_nvda));
@@ -114,16 +115,17 @@ bool FwCompsMgr::runNVDA(std::vector<u_int8_t>& buff,
     return true;
 }
 
-bool FwCompsMgr::accessComponent(u_int32_t   offset,
-                                  u_int32_t   size,
-                                  u_int32_t   data[],
-                                  access_type_t access,
-                                  ProgressCallBackAdvSt* progressFuncAdv)
+bool FwCompsMgr::accessComponent(u_int32_t offset,
+                                 u_int32_t size,
+                                 u_int32_t data[],
+                                 access_type_t access,
+                                 ProgressCallBackAdvSt *progressFuncAdv)
 {
     int leftSize = (int)size;
     u_int32_t i = 0;
     mcdaReg accessData;
     char stage[MAX_MSG_SIZE] = {0};
+    int progressPercentage = -1;
     if (progressFuncAdv && progressFuncAdv->func) {
         snprintf(stage, MAX_MSG_SIZE, "%s %s component", (access == MCDA_READ_COMP) ? "Reading" : "Writing", _currComponentStr);
     }
@@ -148,12 +150,12 @@ bool FwCompsMgr::accessComponent(u_int32_t   offset,
                 return false;
             }
             for (i = 0; i < accessData.size / 4; i++) {
-                data[(size - leftSize)/4 + i] = ___my_swab32(accessData.data[i]);
+                data[(size - leftSize) / 4 + i] = ___my_swab32(accessData.data[i]);
             }
             //printf("data[%#02x]: %#08x\n", (i-1)*4, data[(size - leftSize)/4 + i-1]);
         } else {
             for (i = 0; i < accessData.size / 4; i++) {
-                accessData.data[i] = ___my_swab32(data[(size - leftSize)/4 + i]);
+                accessData.data[i] = ___my_swab32(data[(size - leftSize) / 4 + i]);
             }
             reg_access_status_t rc = reg_access_mcda(_mf, REG_ACCESS_METHOD_SET, &accessData);
             deal_with_signal();
@@ -162,9 +164,12 @@ bool FwCompsMgr::accessComponent(u_int32_t   offset,
                 return false;
             }
         }
-        if (progressFuncAdv && progressFuncAdv->func) {
-            if (progressFuncAdv->func((((size - leftSize) * 100)/size), stage,
-                                    PROG_WITH_PRECENTAGE, progressFuncAdv->opaque)) {
+        int newPercentage = (((size - leftSize) * 100) / size);
+        if (newPercentage > progressPercentage &&
+            progressFuncAdv && progressFuncAdv->func) {
+            progressPercentage = newPercentage;
+            if (progressFuncAdv->func(progressPercentage, stage,
+                                      PROG_WITH_PRECENTAGE, progressFuncAdv->opaque)) {
                 _lastError = FWCOMPS_ABORTED;
                 return false;
             }
@@ -173,7 +178,7 @@ bool FwCompsMgr::accessComponent(u_int32_t   offset,
     }
     if (progressFuncAdv && progressFuncAdv->func) {
         if (progressFuncAdv->func(0, stage,
-                        PROG_OK, progressFuncAdv->opaque))  {
+                                  PROG_OK, progressFuncAdv->opaque)) {
             _lastError = FWCOMPS_ABORTED;
             return false;
         }
@@ -182,7 +187,7 @@ bool FwCompsMgr::accessComponent(u_int32_t   offset,
 }
 
 bool FwCompsMgr::queryComponentStaus(u_int32_t componentIndex,
-                                       comp_status_st* query)
+                                     comp_status_st *query)
 {
     mft_signal_set_handling(1);
     query->component_index = componentIndex;
@@ -200,6 +205,7 @@ const char* FwCompsMgr::stateToStr(fsm_state_t st)
     switch (st) {
     case FSMST_INITIALIZE:
         return "Initializing image partition";
+
     default:
         return "Progress";
     }
@@ -210,18 +216,20 @@ const char* FwCompsMgr::commandToStr(fsm_command_t cmd)
     switch (cmd) {
     case FSM_CMD_VERIFY_COMPONENT:
         return "Verifying component";
+
     case FSM_CMD_UPDATE_COMPONENT:
         return "Updating component";
+
     default:
         return "Unknown Command";
     }
 }
 
 bool FwCompsMgr::controlFsm(fsm_command_t command,
-                             fsm_state_t   expStatus,
-                             u_int32_t     size,
-                             fsm_state_t   currState,
-                             ProgressCallBackAdvSt* progressFuncAdv)
+                            fsm_state_t expStatus,
+                            u_int32_t size,
+                            fsm_state_t currState,
+                            ProgressCallBackAdvSt *progressFuncAdv)
 {
     reg_access_status_t rc = ME_OK;
     int count = 0;
@@ -262,7 +270,7 @@ bool FwCompsMgr::controlFsm(fsm_command_t command,
             msleep(sleep_time);
         }
         if (progressFuncAdv && progressFuncAdv->func) {
-            if (progressFuncAdv->func(0, stateToStr(currState), PROG_WITHOUT_PRECENTAGE, progressFuncAdv->opaque))  {
+            if (progressFuncAdv->func(0, stateToStr(currState), PROG_WITHOUT_PRECENTAGE, progressFuncAdv->opaque)) {
                 _lastError = FWCOMPS_ABORTED;
                 return false;
             }
@@ -290,18 +298,18 @@ bool FwCompsMgr::controlFsm(fsm_command_t command,
     return true;
 }
 
-bool FwCompsMgr::runMCQI(u_int32_t  componentIndex,
-                        u_int8_t   readPending,
-                        u_int32_t  infoType,
-                        u_int32_t  dataSize,
-                        u_int32_t  offset,
-                        u_int32_t* data)
+bool FwCompsMgr::runMCQI(u_int32_t componentIndex,
+                         u_int8_t readPending,
+                         u_int32_t infoType,
+                         u_int32_t dataSize,
+                         u_int32_t offset,
+                         u_int32_t *data)
 {
     u_int32_t i = 0;
     bool ret = true;
     std::vector<u_int32_t> dataInfo;
     mft_signal_set_handling(1);
-    memset(&_currCompInfo, 0, sizeof (_currCompInfo));
+    memset(&_currCompInfo, 0, sizeof(_currCompInfo));
     _currCompInfo.read_pending_component = readPending;
     _currCompInfo.info_type = infoType;
     _currCompInfo.offset = offset;
@@ -331,11 +339,68 @@ cleanup:
     return ret;
 }
 
+bool FwCompsMgr::getDeviceHWInfo(FwCompsMgr::deviceDescription op, vector<u_int8_t>& infoString)
+{
+    mqisReg mqisRegister;
+    mfile *mf;
+    mf = getMfileObj();
+    if (!mf) {
+        return false;
+    }
+    reg_access_status_t rc;
+    int maxDataSize = mget_max_reg_size(mf) - sizeof(mqisRegister);
+    if (maxDataSize > MAX_REG_DATA) {
+        maxDataSize = sizeof(mqisRegister);
+    }
+    std::vector<u_int32_t> dataVector(maxDataSize / 4, 0);
+
+    memset(&mqisRegister, 0, sizeof(mqisReg));
+    if (op == DEVICE_NAME) {
+        mqisRegister.info_type = 0x1;
+    } else if (op == DEVICE_DESCRIPTION_INFO) {
+        mqisRegister.info_type = 0x2;
+    }
+    mqisRegister.read_length = maxDataSize;
+    mqisRegister.info_string = dataVector.data();
+    mft_signal_set_handling(1);
+
+    rc = reg_access_mqis(mf, REG_ACCESS_METHOD_GET, &mqisRegister);
+    deal_with_signal();
+    if (rc) {
+       return false;
+    }
+    int infoSize = mqisRegister.info_length;
+    if (infoSize == 0) {
+        return false;
+    }
+    infoString.resize(infoSize + 1, 0);
+    if (mqisRegister.info_length > maxDataSize) {
+        dataVector.resize((infoSize + 3) / 4);
+        int leftSize = infoSize - maxDataSize;
+        while (leftSize > 0) {
+            mqisRegister.read_offset = infoSize - leftSize;
+            mqisRegister.read_length = leftSize > maxDataSize ? maxDataSize : leftSize;
+            mqisRegister.info_string = dataVector.data() + (mqisRegister.read_offset / 4);
+            mft_signal_set_handling(1);
+
+            rc = reg_access_mqis(mf, REG_ACCESS_METHOD_GET, &mqisRegister);
+            deal_with_signal();
+            if (rc) {
+                return false;
+            }
+            leftSize = leftSize - maxDataSize;
+        }
+    }
+
+    memcpy(infoString.data(), dataVector.data(), infoSize);
+    return true;
+}
+
 bool FwCompsMgr::queryComponentInfo(u_int32_t componentIndex,
-                                      u_int8_t   readPending,
-                                      u_int32_t  infoType,
-                                      u_int32_t  dataSize,
-                                      u_int32_t* data)
+                                    u_int8_t readPending,
+                                    u_int32_t infoType,
+                                    u_int32_t dataSize,
+                                    u_int32_t *data)
 {
     u_int32_t maxDataSize = mget_max_reg_size(_mf) - sizeof(_currCompInfo);
     if (maxDataSize > MAX_REG_DATA) {
@@ -362,7 +427,7 @@ bool FwCompsMgr::queryComponentInfo(u_int32_t componentIndex,
     return true;
 }
 
-reg_access_status_t FwCompsMgr::getGI(mfile* mf, struct tools_open_mgir* gi)
+reg_access_status_t FwCompsMgr::getGI(mfile *mf, struct tools_open_mgir *gi)
 {
     reg_access_status_t rc = ME_REG_ACCESS_OK;
     u_int32_t tp = 0;
@@ -370,15 +435,23 @@ reg_access_status_t FwCompsMgr::getGI(mfile* mf, struct tools_open_mgir* gi)
     mft_signal_set_handling(1);
 #if !defined(UEFI_BUILD) && !defined(NO_INBAND)
     if (tp == MST_IB) {
-        rc = (reg_access_status_t)mad_ifc_general_info_hw(mf, &gi->hw_info); if (rc) { goto cleanup;}
-        rc = (reg_access_status_t)mad_ifc_general_info_fw(mf, &gi->fw_info); if (rc) { goto cleanup;}
+        rc = (reg_access_status_t)mad_ifc_general_info_hw(mf, &gi->hw_info);
+        if (rc) {
+            goto cleanup;
+        }
+        rc = (reg_access_status_t)mad_ifc_general_info_fw(mf, &gi->fw_info);
+        if (rc) {
+            goto cleanup;
+        }
         rc = (reg_access_status_t)mad_ifc_general_info_sw(mf, &gi->sw_info);
-    } else
-#endif
-    {
+    } else {
         rc = reg_access_mgir(mf, REG_ACCESS_METHOD_GET, gi);
         goto cleanup;
     }
+#else
+    rc = reg_access_mgir(mf, REG_ACCESS_METHOD_GET, gi);
+    goto cleanup;
+#endif
 cleanup:
     deal_with_signal();
     return rc;
@@ -386,9 +459,9 @@ cleanup:
 }
 
 bool FwComponent::init(const std::vector<u_int8_t>&  buff,
-                        u_int32_t   size,
-                        comps_ids_t type,
-                        u_int32_t   idx)
+                       u_int32_t size,
+                       comps_ids_t type,
+                       u_int32_t idx)
 {
     if (_initialized) {
         return false;
@@ -401,7 +474,7 @@ bool FwComponent::init(const std::vector<u_int8_t>&  buff,
     return true;
 }
 
-void FwCompsMgr::initialize(mfile* mf)
+void FwCompsMgr::initialize(mfile *mf)
 {
     _mf = mf;
     memset(&_lastFsmCtrl, 0, sizeof(fsm_control_st));
@@ -415,7 +488,7 @@ void FwCompsMgr::initialize(mfile* mf)
     _refreshed = false;
 }
 
-FwCompsMgr::FwCompsMgr(mfile* mf)
+FwCompsMgr::FwCompsMgr(mfile *mf)
 {
     _clearSetEnv = false;
     _openedMfile = false;
@@ -423,7 +496,7 @@ FwCompsMgr::FwCompsMgr(mfile* mf)
     initialize(mf);
 }
 
-FwCompsMgr::FwCompsMgr(const char* devname)
+FwCompsMgr::FwCompsMgr(const char *devname)
 {
     _mf = NULL;
     _openedMfile = false;
@@ -440,7 +513,7 @@ FwCompsMgr::FwCompsMgr(const char* devname)
 #endif
     _hwDevId = 0;
     _lastError = FWCOMPS_SUCCESS;
-    mfile* mf = mopen(devname);
+    mfile *mf = mopen(devname);
     if (!mf) {
         _lastError = FWCOMPS_BAD_PARAM;
         return;
@@ -449,15 +522,15 @@ FwCompsMgr::FwCompsMgr(const char* devname)
     initialize(mf);
 }
 
-FwCompsMgr::FwCompsMgr(uefi_Dev_t *uefi_dev, uefi_dev_extra_t* uefi_extra)
+FwCompsMgr::FwCompsMgr(uefi_Dev_t *uefi_dev, uefi_dev_extra_t *uefi_extra)
 {
     _mf = NULL;
     _openedMfile = false;
     _clearSetEnv = false;
 
-    mfile* mf = mopen_fw_ctx((void*)uefi_dev, (void*)uefi_extra->fw_cmd_func,\
-                    (void*)uefi_extra->dev_info);
-    if(!mf) {
+    mfile *mf = mopen_fw_ctx((void *)uefi_dev, (void *)uefi_extra->fw_cmd_func, \
+                             (void *)uefi_extra->dev_info);
+    if (!mf) {
         _lastError = FWCOMPS_MEM_ALLOC_FAILED;
         return;
     }
@@ -473,7 +546,7 @@ FwCompsMgr::~FwCompsMgr()
 #ifndef UEFI_BUILD
     if (_clearSetEnv) {
 #if defined(_WIN32) || defined(_WIN64) || defined(__MINGW64__) || defined(__MINGW32__)
-        putenv(MTCR_IB_TIMEOUT_VAR"=");
+        putenv(MTCR_IB_TIMEOUT_VAR "=");
 #else
         unsetenv(MTCR_IB_TIMEOUT_VAR);
 #endif
@@ -517,7 +590,7 @@ bool FwCompsMgr::refreshComponentsStatus()
     }
     _compsQueryMap.resize((unsigned)(FwComponent::COMPID_UNKNOWN));
     while (!last_index_flag) {
-        memset(&compStatus, 0 , sizeof(comp_query_st));
+        memset(&compStatus, 0, sizeof(comp_query_st));
         if (queryComponentStaus(compIdx, &(compStatus.comp_status))) {
             compStatus.comp_status.component_index = compIdx;
             /* */
@@ -528,7 +601,7 @@ bool FwCompsMgr::refreshComponentsStatus()
                     return false;
                 }
             }
-            reg_access_hca_mcqi_cap_unpack(&compStatus.comp_cap, (const u_int8_t*)capSt);
+            reg_access_hca_mcqi_cap_unpack(&compStatus.comp_cap, (const u_int8_t *)capSt);
             compStatus.valid = 1;
             //reg_access_hca_mcqi_cap_print(&(compStatus.comp_cap), stdout, 3);
             memcpy(&(_compsQueryMap[compStatus.comp_status.identifier]), &compStatus, sizeof(compStatus));
@@ -547,7 +620,7 @@ bool FwCompsMgr::refreshComponentsStatus()
 //TODO: Check all the rc ..
 
 bool FwCompsMgr::readComponent(FwComponent::comps_ids_t compType, FwComponent& fwComp, bool readPending,
-                                ProgressCallBackAdvSt* progressFuncAdv)
+                               ProgressCallBackAdvSt *progressFuncAdv)
 {
     if (!refreshComponentsStatus()) {
         return false;
@@ -566,7 +639,7 @@ bool FwCompsMgr::readComponent(FwComponent::comps_ids_t compType, FwComponent& f
             return false;
         }
         _currComponentStr = FwComponent::getCompIdStr(compType);
-        if (!accessComponent(0, compSize, (u_int32_t*)(data.data()), MCDA_READ_COMP, progressFuncAdv)) {
+        if (!accessComponent(0, compSize, (u_int32_t *)(data.data()), MCDA_READ_COMP, progressFuncAdv)) {
             //_lastError = FWCOMPS_READ_COMP_FAILED;
             return false;
         }
@@ -592,14 +665,14 @@ bool FwCompsMgr::readComponentInfo(FwComponent::comps_ids_t compType,
     }
     _currCompQuery = &(_compsQueryMap[compType]);
     _componentIndex = _currCompQuery->comp_status.component_index;
-    if (!queryComponentInfo(_componentIndex, readPending==true, infoType, 0, 0)) {
+    if (!queryComponentInfo(_componentIndex, readPending == true, infoType, 0, 0)) {
         return false;
     }
 
-    if ( _currCompQuery->comp_cap.supported_info_bitmask & (1 << infoType)) {
+    if (_currCompQuery->comp_cap.supported_info_bitmask & (1 << infoType)) {
         u_int32_t size = _currCompInfo.info_size;
         retData.resize(size);
-        queryComponentInfo(_componentIndex, readPending==true, infoType, size, (u_int32_t*)(retData.data()));
+        queryComponentInfo(_componentIndex, readPending == true, infoType, size, (u_int32_t *)(retData.data()));
         return true;
     } else {
         _lastError = FWCOMPS_INFO_TYPE_NOT_SUPPORTED;
@@ -608,8 +681,8 @@ bool FwCompsMgr::readComponentInfo(FwComponent::comps_ids_t compType,
 }
 
 
-bool FwCompsMgr::burnComponents (std::vector<FwComponent>& comps,
-                                ProgressCallBackAdvSt* progressFuncAdv)
+bool FwCompsMgr::burnComponents(std::vector<FwComponent>& comps,
+                                ProgressCallBackAdvSt *progressFuncAdv)
 {
     unsigned i = 0;
     if (!refreshComponentsStatus()) {
@@ -629,7 +702,7 @@ bool FwCompsMgr::burnComponents (std::vector<FwComponent>& comps,
             return false;
         }
         _currComponentStr = FwComponent::getCompIdStr(comps[i].getType());
-        if (!accessComponent(0, comps[i].getSize(), (u_int32_t*)(comps[i].getData().data()), MCDA_WRITE_COMP, progressFuncAdv)) {
+        if (!accessComponent(0, comps[i].getSize(), (u_int32_t *)(comps[i].getData().data()), MCDA_WRITE_COMP, progressFuncAdv)) {
             //_lastError = FWCOMPS_DOWNLOAD_FAILED;
             return false;
         }
@@ -654,11 +727,12 @@ bool FwCompsMgr::getFwComponents(std::vector<FwComponent>& compsMap, bool readEn
         return false;
     }
     for (std::vector<comp_query_st>::iterator it = _compsQueryMap.begin();
-            it != _compsQueryMap.end(); it++) {
+         it != _compsQueryMap.end(); it++) {
         if (!it->valid) {
             continue;
         }
-        FwComponent fwCmp((FwComponent::comps_ids_t)it->comp_status.identifier);
+        FwComponent fwCmp((FwComponent::comps_ids_t)it->comp_status.identifier,
+                          (FwComponent::comps_status_t)it->comp_status.component_status);
         if (readEn && !readComponent((FwComponent::comps_ids_t)it->comp_status.identifier, fwCmp, 0)) {
             return false;
         } else {
@@ -672,36 +746,42 @@ bool FwCompsMgr::getFwComponents(std::vector<FwComponent>& compsMap, bool readEn
 const char* FwComponent::getCompIdStr(comps_ids_t compId)
 {
     switch (compId) {
-        case COMPID_BOOT_IMG:
-            return "Boot image";
-            break;
-        case COMPID_RUNTIME_IMG:
-            return "RUNTIME_IMAGE";
-            break;
-        case COMPID_CS_TOKEN:
-            return "CS_TOKEN";
-            break;
-        case COMPID_MLNX_NVCONFIG:
-            return "MLNX_NVCONFIG";
-            break;
-        case COMPID_OEM_NVCONFIG:
-            return "OEM_NVCONFIG";
-            break;
-        case COMPID_DBG_TOKEN:
-            return "DBG_TOKEN";
-            break;
-        default:
-            return "UNKNOW_COMPONENT";
-            break;
+    case COMPID_BOOT_IMG:
+        return "Boot image";
+        break;
+
+    case COMPID_RUNTIME_IMG:
+        return "RUNTIME_IMAGE";
+        break;
+
+    case COMPID_CS_TOKEN:
+        return "CS_TOKEN";
+        break;
+
+    case COMPID_MLNX_NVCONFIG:
+        return "MLNX_NVCONFIG";
+        break;
+
+    case COMPID_OEM_NVCONFIG:
+        return "OEM_NVCONFIG";
+        break;
+
+    case COMPID_DBG_TOKEN:
+        return "DBG_TOKEN";
+        break;
+
+    default:
+        return "UNKNOW_COMPONENT";
+        break;
     }
 }
 
 void FwCompsMgr::getInfoAsVersion(std::vector<u_int32_t>& infoData,
-                               component_version_st* cmpVer)
+                                  component_version_st *cmpVer)
 {
-    u_int8_t* data = (u_int8_t*)(infoData.data());
+    u_int8_t *data = (u_int8_t *)(infoData.data());
     reg_access_hca_mcqi_version_unpack(cmpVer, data);
-    cmpVer->version_string = (u_int32_t*)(data + reg_access_hca_mcqi_version_size());
+    cmpVer->version_string = (u_int32_t *)(data + reg_access_hca_mcqi_version_size());
     //reg_access_hca_mcqi_version_print(cmpVer, stdout, 4);
 }
 
@@ -730,7 +810,7 @@ u_int32_t FwCompsMgr::getFwSupport()
         devid == CX3_DEVID    ||
         devid == CX3PRO_DEVID ||
         devid == SX_DEVID     ||
-        devid == IS4_DEVID       ) {
+        devid == IS4_DEVID) {
         _lastError = FWCOMPS_UNSUPPORTED_DEVICE;
         return 0;
     }
@@ -757,7 +837,7 @@ u_int32_t FwCompsMgr::getFwSupport()
 
 #define UID_EXTRACT(INT64, INT32ARR) INT64 = ((u_int64_t)INT32ARR[0] << 32) | INT32ARR[1];
 
-bool FwCompsMgr::extractMacsGuids(fwInfoT* fwQuery)
+bool FwCompsMgr::extractMacsGuids(fwInfoT *fwQuery)
 {
     std::vector<u_int8_t> nvBaseMacGuidData;
     std::vector<u_int8_t> nvBaseMacGuidDataOrig;
@@ -822,18 +902,21 @@ bool FwCompsMgr::setMacsGuids(mac_guid_t macGuid)
 u_int8_t transRomType(u_int8_t mgirRomType)
 {
     switch (mgirRomType) {
-        case 0x1:
-            return 0x10;
-        case 0x2:
-            return 0x11;
-        case 0x3:
-            return 0x12;
-        default:
-            return mgirRomType;
+    case 0x1:
+        return 0x10;
+
+    case 0x2:
+        return 0x11;
+
+    case 0x3:
+        return 0x12;
+
+    default:
+        return mgirRomType;
     }
 }
 
-void FwCompsMgr::extractRomInfo(tools_open_mgir* mgir, fwInfoT* fwQuery)
+void FwCompsMgr::extractRomInfo(tools_open_mgir *mgir, fwInfoT *fwQuery)
 {
     if (!fwQuery || !mgir) {
         return;
@@ -865,7 +948,7 @@ void FwCompsMgr::extractRomInfo(tools_open_mgir* mgir, fwInfoT* fwQuery)
     }
 }
 
-bool FwCompsMgr::queryFwInfo(fwInfoT* query)
+bool FwCompsMgr::queryFwInfo(fwInfoT *query)
 {
     if (!query) {
         _lastError = FWCOMPS_BAD_PARAM;
@@ -881,7 +964,7 @@ bool FwCompsMgr::queryFwInfo(fwInfoT* query)
 
     if (query->running_fw_version.version_string_length &&
         query->running_fw_version.version_string_length <= PRODUCT_VER_LEN) {
-        strcpy(query->product_ver, (char*)_productVerStr.data());
+        strcpy(query->product_ver, (char *)_productVerStr.data());
     }
 
     /*
@@ -914,100 +997,135 @@ bool FwCompsMgr::queryFwInfo(fwInfoT* query)
     }
 
     extractRomInfo(&mgir, query);
+
+    /*
+     * MQIS
+     */
+    vector<u_int8_t> nameInfoString;
+    vector<u_int8_t> descriptionInfoString;
+    if (getDeviceHWInfo(FwCompsMgr::DEVICE_NAME, nameInfoString)) {
+        strncpy(query->name, (char *)nameInfoString.data(), NAME_LEN-1);
+    }
+    if (getDeviceHWInfo(FwCompsMgr::DEVICE_DESCRIPTION_INFO, descriptionInfoString)) {
+        strncpy(query->description, (char *)descriptionInfoString.data(), DESCRIPTION_LEN-1);
+    }
+
     return true;
 }
 
 const char*  FwCompsMgr::getLastErrMsg()
 {
     switch (_lastError) {
-        case FWCOMPS_ABORTED:
-            return "Aborting ... received interrupt signal";
-            break;
-        case FWCOMPS_MCC_ERR_REJECTED_DIGEST_ERR:
-            return "The Digest in the signature is wrong";
-            break;
-        case FWCOMPS_MCC_ERR_REJECTED_UNSIGNED:
-            return "The component is not signed";
-            break;
-        case FWCOMPS_MCC_ERR_BLOCKED_PENDING_RESET:
-            return "The firmware image was already updated on flash, pending reset.";
-            break;
-        case FWCOMPS_MCC_ERR_REJECTED_NOT_APPLICABLE:
-            return "Component is not applicable";
-            break;
-        case FWCOMPS_MCC_ERR_REJECTED_AUTH_FAILED:
-            return "Rejected authentication";
-            break;
-        case FWCOMPS_MCC_ERR_REJECTED_KEY_NOT_APPLICABLE:
-            return "The key is not applicable";
-            break;
-        case FWCOMPS_READ_COMP_NOT_SUPPORTED:
-            return "Reading component is not supported";
-            break;
-        case FWCOMPS_COMP_NOT_SUPPORTED:
-            return "Component not supported";
-            break;
-        case FWCOMPS_CR_ERR:
-            return "Failed to access CR-Space";
-            break;
-        case FWCOMPS_MCC_REJECTED_NOT_A_SECURED_FW:
-            return "The firmware image is not secured";
-            break;
-        case FWCOMPS_MCC_REJECTED_MFG_BASE_MAC_NOT_LISTED:
-            return "The manufacturing base MAC was not listed";
-            break;
-        case FWCOMPS_MCC_REJECTED_NO_DEBUG_TOKEN:
-            return "There is no Debug Token installed";
-            break;
-        case FWCOMPS_MCC_REJECTED_VERSION_NUM_MISMATCH:
-            return "Firmware version mismatch";
-            break;
-        case FWCOMPS_MCC_REJECTED_USER_TIMESTAMP_MISMATCH:
-            return "User timestamp mismatch";
-            break;
-        case FWCOMPS_MCC_REJECTED_FORBIDDEN_VERSION:
-            return "Forbidden version rejected";
-            break;
-        case FWCOMPS_MCC_FLASH_ERASE_ERROR:
-            return "Error while erasing the flash";
-            break;
-        case FWCOMPS_MCC_UNEXPECTED_STATE:
-            return "Unexpected state";
-            break;
-        case FWCOMPS_MCC_TOUT:
-            return "Time-out reached while waiting for the FSM to be updated";
-            break;
-        case FWCOMPS_MCC_REJECTED_IMAGE_CAN_NOT_BOOT_FROM_PARTITION:
-            return "Image cannot boot from partition.";
-            break;
-        case FWCOMPS_UNSUPPORTED_DEVICE:
-            return "Unsupported device";
-            break;
-        case FWCOMPS_REG_ACCESS_BAD_STATUS_ERR:
-        case FWCOMPS_REG_ACCESS_BAD_METHOD:
-        case FWCOMPS_REG_ACCESS_NOT_SUPPORTED:
-        case FWCOMPS_REG_ACCESS_DEV_BUSY:
-        case FWCOMPS_REG_ACCESS_VER_NOT_SUPP:
-        case FWCOMPS_REG_ACCESS_UNKNOWN_TLV:
-        case FWCOMPS_REG_ACCESS_REG_NOT_SUPP:
-        case FWCOMPS_REG_ACCESS_CLASS_NOT_SUPP:
-        case FWCOMPS_REG_ACCESS_METHOD_NOT_SUPP:
-        case FWCOMPS_REG_ACCESS_BAD_PARAM:
-        case FWCOMPS_REG_ACCESS_RES_NOT_AVLBL:
-        case FWCOMPS_REG_ACCESS_MSG_RECPT_ACK:
-        case FWCOMPS_REG_ACCESS_UNKNOWN_ERR:
-        case FWCOMPS_REG_ACCESS_SIZE_EXCCEEDS_LIMIT:
-        case FWCOMPS_REG_ACCESS_CONF_CORRUPT:
-        case FWCOMPS_REG_ACCESS_LEN_TOO_SMALL:
-        case FWCOMPS_REG_ACCESS_BAD_CONFIG:
-        case FWCOMPS_REG_ACCESS_ERASE_EXEEDED:
-        case FWCOMPS_REG_ACCESS_INTERNAL_ERROR:
+    case FWCOMPS_ABORTED:
+        return "Aborting ... received interrupt signal";
+        break;
+
+    case FWCOMPS_MCC_ERR_REJECTED_DIGEST_ERR:
+        return "The Digest in the signature is wrong";
+        break;
+
+    case FWCOMPS_MCC_ERR_REJECTED_UNSIGNED:
+        return "The component is not signed";
+        break;
+
+    case FWCOMPS_MCC_ERR_BLOCKED_PENDING_RESET:
+        return "The firmware image was already updated on flash, pending reset.";
+        break;
+
+    case FWCOMPS_MCC_ERR_REJECTED_NOT_APPLICABLE:
+        return "Component is not applicable";
+        break;
+
+    case FWCOMPS_MCC_ERR_REJECTED_AUTH_FAILED:
+        return "Rejected authentication";
+        break;
+
+    case FWCOMPS_MCC_ERR_REJECTED_KEY_NOT_APPLICABLE:
+        return "The key is not applicable";
+        break;
+
+    case FWCOMPS_READ_COMP_NOT_SUPPORTED:
+        return "Reading component is not supported";
+        break;
+
+    case FWCOMPS_COMP_NOT_SUPPORTED:
+        return "Component not supported";
+        break;
+
+    case FWCOMPS_CR_ERR:
+        return "Failed to access CR-Space";
+        break;
+
+    case FWCOMPS_MCC_REJECTED_NOT_A_SECURED_FW:
+        return "The firmware image is not secured";
+        break;
+
+    case FWCOMPS_MCC_REJECTED_MFG_BASE_MAC_NOT_LISTED:
+        return "The manufacturing base MAC was not listed";
+        break;
+
+    case FWCOMPS_MCC_REJECTED_NO_DEBUG_TOKEN:
+        return "There is no Debug Token installed";
+        break;
+
+    case FWCOMPS_MCC_REJECTED_VERSION_NUM_MISMATCH:
+        return "Firmware version mismatch";
+        break;
+
+    case FWCOMPS_MCC_REJECTED_USER_TIMESTAMP_MISMATCH:
+        return "User timestamp mismatch";
+        break;
+
+    case FWCOMPS_MCC_REJECTED_FORBIDDEN_VERSION:
+        return "Forbidden version rejected";
+        break;
+
+    case FWCOMPS_MCC_FLASH_ERASE_ERROR:
+        return "Error while erasing the flash";
+        break;
+
+    case FWCOMPS_MCC_UNEXPECTED_STATE:
+        return "Unexpected state";
+        break;
+
+    case FWCOMPS_MCC_TOUT:
+        return "Time-out reached while waiting for the FSM to be updated";
+        break;
+
+    case FWCOMPS_MCC_REJECTED_IMAGE_CAN_NOT_BOOT_FROM_PARTITION:
+        return "Image cannot boot from partition.";
+        break;
+
+    case FWCOMPS_UNSUPPORTED_DEVICE:
+        return "Unsupported device";
+        break;
+
+    case FWCOMPS_REG_ACCESS_BAD_STATUS_ERR:
+    case FWCOMPS_REG_ACCESS_BAD_METHOD:
+    case FWCOMPS_REG_ACCESS_NOT_SUPPORTED:
+    case FWCOMPS_REG_ACCESS_DEV_BUSY:
+    case FWCOMPS_REG_ACCESS_VER_NOT_SUPP:
+    case FWCOMPS_REG_ACCESS_UNKNOWN_TLV:
+    case FWCOMPS_REG_ACCESS_REG_NOT_SUPP:
+    case FWCOMPS_REG_ACCESS_CLASS_NOT_SUPP:
+    case FWCOMPS_REG_ACCESS_METHOD_NOT_SUPP:
+    case FWCOMPS_REG_ACCESS_BAD_PARAM:
+    case FWCOMPS_REG_ACCESS_RES_NOT_AVLBL:
+    case FWCOMPS_REG_ACCESS_MSG_RECPT_ACK:
+    case FWCOMPS_REG_ACCESS_UNKNOWN_ERR:
+    case FWCOMPS_REG_ACCESS_SIZE_EXCCEEDS_LIMIT:
+    case FWCOMPS_REG_ACCESS_CONF_CORRUPT:
+    case FWCOMPS_REG_ACCESS_LEN_TOO_SMALL:
+    case FWCOMPS_REG_ACCESS_BAD_CONFIG:
+    case FWCOMPS_REG_ACCESS_ERASE_EXEEDED:
+    case FWCOMPS_REG_ACCESS_INTERNAL_ERROR:
+        return reg_access_err2str(_lastRegAccessStatus);
+
+    default:
+        if (_lastRegAccessStatus) {
             return reg_access_err2str(_lastRegAccessStatus);
-        default:
-            if (_lastRegAccessStatus) {
-                return reg_access_err2str(_lastRegAccessStatus);
-            }
-            return "GENERAL ERROR";
+        }
+        return "GENERAL ERROR";
     }
 }
 
@@ -1032,7 +1150,7 @@ void FwCompsMgr::deal_with_signal()
 
 bool FwCompsMgr::getComponentVersion(FwComponent::comps_ids_t compType,
                                      bool pending,
-                                     component_version_st* cmpVer)
+                                     component_version_st *cmpVer)
 {
     std::vector<u_int32_t> imageInfoData;
     if (!cmpVer) {
@@ -1080,7 +1198,7 @@ bool FwCompsMgr::readBlockFromComponent(FwComponent::comps_ids_t compId,
                 return false;
             }
         }
-        if (!accessComponent(offset, size, (u_int32_t*)(data.data()), MCDA_READ_COMP)) {
+        if (!accessComponent(offset, size, (u_int32_t *)(data.data()), MCDA_READ_COMP)) {
             return false;
         }
         if (!controlFsm(FSM_CMD_RELEASE_UPDATE_HANDLE)) {
@@ -1097,48 +1215,68 @@ fw_comps_error_t FwCompsMgr::regErrTrans(reg_access_status_t err)
 {
     _lastRegAccessStatus = err;
     switch (err) {
-        case ME_REG_ACCESS_OK:
-            return FWCOMPS_REG_ACCESS_OK;
-        case ME_REG_ACCESS_BAD_STATUS_ERR:
-            return FWCOMPS_REG_ACCESS_BAD_STATUS_ERR;
-        case ME_REG_ACCESS_BAD_METHOD:
-            return FWCOMPS_REG_ACCESS_BAD_STATUS_ERR;
-        case ME_REG_ACCESS_NOT_SUPPORTED:
-            return FWCOMPS_REG_ACCESS_NOT_SUPPORTED;
-        case ME_REG_ACCESS_DEV_BUSY:
-            return FWCOMPS_REG_ACCESS_DEV_BUSY;
-        case ME_REG_ACCESS_VER_NOT_SUPP:
-            return FWCOMPS_REG_ACCESS_VER_NOT_SUPP;
-        case ME_REG_ACCESS_UNKNOWN_TLV:
-            return FWCOMPS_REG_ACCESS_UNKNOWN_TLV;
-        case ME_REG_ACCESS_REG_NOT_SUPP:
-            return FWCOMPS_REG_ACCESS_REG_NOT_SUPP;
-        case ME_REG_ACCESS_CLASS_NOT_SUPP:
-            return FWCOMPS_REG_ACCESS_CLASS_NOT_SUPP;
-        case ME_REG_ACCESS_METHOD_NOT_SUPP:
-            return FWCOMPS_REG_ACCESS_METHOD_NOT_SUPP;
-        case ME_REG_ACCESS_BAD_PARAM:
-            return FWCOMPS_REG_ACCESS_BAD_PARAM;
-        case ME_REG_ACCESS_RES_NOT_AVLBL:
-            return FWCOMPS_REG_ACCESS_RES_NOT_AVLBL;
-        case ME_REG_ACCESS_MSG_RECPT_ACK:
-            return FWCOMPS_REG_ACCESS_MSG_RECPT_ACK;
-        case ME_REG_ACCESS_UNKNOWN_ERR:
-            return FWCOMPS_REG_ACCESS_UNKNOWN_ERR;
-        case ME_REG_ACCESS_SIZE_EXCCEEDS_LIMIT:
-            return FWCOMPS_REG_ACCESS_SIZE_EXCCEEDS_LIMIT;
-        case ME_REG_ACCESS_CONF_CORRUPT:
-            return FWCOMPS_REG_ACCESS_CONF_CORRUPT;
-        case ME_REG_ACCESS_LEN_TOO_SMALL:
-            return FWCOMPS_REG_ACCESS_CONF_CORRUPT;
-        case ME_REG_ACCESS_BAD_CONFIG:
-            return FWCOMPS_REG_ACCESS_BAD_CONFIG;
-        case ME_REG_ACCESS_ERASE_EXEEDED:
-            return FWCOMPS_REG_ACCESS_ERASE_EXEEDED;
-        case ME_REG_ACCESS_INTERNAL_ERROR:
-            return FWCOMPS_REG_ACCESS_INTERNAL_ERROR;
-        default:
-            return FWCOMPS_GENERAL_ERR;
+    case ME_REG_ACCESS_OK:
+        return FWCOMPS_REG_ACCESS_OK;
+
+    case ME_REG_ACCESS_BAD_STATUS_ERR:
+        return FWCOMPS_REG_ACCESS_BAD_STATUS_ERR;
+
+    case ME_REG_ACCESS_BAD_METHOD:
+        return FWCOMPS_REG_ACCESS_BAD_STATUS_ERR;
+
+    case ME_REG_ACCESS_NOT_SUPPORTED:
+        return FWCOMPS_REG_ACCESS_NOT_SUPPORTED;
+
+    case ME_REG_ACCESS_DEV_BUSY:
+        return FWCOMPS_REG_ACCESS_DEV_BUSY;
+
+    case ME_REG_ACCESS_VER_NOT_SUPP:
+        return FWCOMPS_REG_ACCESS_VER_NOT_SUPP;
+
+    case ME_REG_ACCESS_UNKNOWN_TLV:
+        return FWCOMPS_REG_ACCESS_UNKNOWN_TLV;
+
+    case ME_REG_ACCESS_REG_NOT_SUPP:
+        return FWCOMPS_REG_ACCESS_REG_NOT_SUPP;
+
+    case ME_REG_ACCESS_CLASS_NOT_SUPP:
+        return FWCOMPS_REG_ACCESS_CLASS_NOT_SUPP;
+
+    case ME_REG_ACCESS_METHOD_NOT_SUPP:
+        return FWCOMPS_REG_ACCESS_METHOD_NOT_SUPP;
+
+    case ME_REG_ACCESS_BAD_PARAM:
+        return FWCOMPS_REG_ACCESS_BAD_PARAM;
+
+    case ME_REG_ACCESS_RES_NOT_AVLBL:
+        return FWCOMPS_REG_ACCESS_RES_NOT_AVLBL;
+
+    case ME_REG_ACCESS_MSG_RECPT_ACK:
+        return FWCOMPS_REG_ACCESS_MSG_RECPT_ACK;
+
+    case ME_REG_ACCESS_UNKNOWN_ERR:
+        return FWCOMPS_REG_ACCESS_UNKNOWN_ERR;
+
+    case ME_REG_ACCESS_SIZE_EXCCEEDS_LIMIT:
+        return FWCOMPS_REG_ACCESS_SIZE_EXCCEEDS_LIMIT;
+
+    case ME_REG_ACCESS_CONF_CORRUPT:
+        return FWCOMPS_REG_ACCESS_CONF_CORRUPT;
+
+    case ME_REG_ACCESS_LEN_TOO_SMALL:
+        return FWCOMPS_REG_ACCESS_CONF_CORRUPT;
+
+    case ME_REG_ACCESS_BAD_CONFIG:
+        return FWCOMPS_REG_ACCESS_BAD_CONFIG;
+
+    case ME_REG_ACCESS_ERASE_EXEEDED:
+        return FWCOMPS_REG_ACCESS_ERASE_EXEEDED;
+
+    case ME_REG_ACCESS_INTERNAL_ERROR:
+        return FWCOMPS_REG_ACCESS_INTERNAL_ERROR;
+
+    default:
+        return FWCOMPS_GENERAL_ERR;
     }
 }
 
@@ -1146,44 +1284,62 @@ fw_comps_error_t FwCompsMgr::regErrTrans(reg_access_status_t err)
 fw_comps_error_t FwCompsMgr::mccErrTrans(u_int8_t err)
 {
     switch (err) {
-        case MCC_ERRCODE_OK:
-            return FWCOMPS_SUCCESS;
-        case MCC_ERRCODE_ERROR:
-            return FWCOMPS_MCC_ERR_ERROR;
-        case MCC_ERRCODE_REJECTED_DIGEST_ERR:
-            return FWCOMPS_MCC_ERR_REJECTED_DIGEST_ERR;
-        case MCC_ERRCODE_REJECTED_NOT_APPLICABLE:
-            return FWCOMPS_MCC_ERR_REJECTED_NOT_APPLICABLE;
-        case MCC_ERRCODE_REJECTED_UNKNOWN_KEY:
-            return FWCOMPS_MCC_ERR_REJECTED_UNKNOWN_KEY;
-        case MCC_ERRCODE_REJECTED_AUTH_FAILED:
-            return FWCOMPS_MCC_ERR_REJECTED_AUTH_FAILED;
-        case MCC_ERRCODE_REJECTED_UNSIGNED:
-            return FWCOMPS_MCC_ERR_REJECTED_UNSIGNED;
-        case MCC_ERRCODE_REJECTED_KEY_NOT_APPLICABLE:
-            return FWCOMPS_MCC_ERR_REJECTED_KEY_NOT_APPLICABLE;
-        case MCC_ERRCODE_REJECTED_BAD_FORMAT:
-            return FWCOMPS_MCC_ERR_REJECTED_BAD_FORMAT;
-        case MCC_ERRCODE_BLOCKED_PENDING_RESET:
-            return FWCOMPS_MCC_ERR_BLOCKED_PENDING_RESET;
-        case MCC_ERRCODE_REJECTED_NOT_A_SECURED_FW:
-            return FWCOMPS_MCC_REJECTED_NOT_A_SECURED_FW;
-        case MCC_ERRCODE_REJECTED_MFG_BASE_MAC_NOT_LISTED:
-            return FWCOMPS_MCC_REJECTED_MFG_BASE_MAC_NOT_LISTED;
-        case MCC_ERRCODE_REJECTED_NO_DEBUG_TOKEN:
-            return FWCOMPS_MCC_REJECTED_NO_DEBUG_TOKEN;
-        case MCC_ERRCODE_REJECTED_VERSION_NUM_MISMATCH:
-            return FWCOMPS_MCC_REJECTED_VERSION_NUM_MISMATCH;
-        case MCC_ERRCODE_REJECTED_USER_TIMESTAMP_MISMATCH:
-            return FWCOMPS_MCC_REJECTED_USER_TIMESTAMP_MISMATCH;
-        case MCC_ERRCODE_REJECTED_FORBIDDEN_VERSION:
-            return FWCOMPS_MCC_REJECTED_FORBIDDEN_VERSION;
-        case MCC_ERRCODE_FLASH_ERASE_ERROR:
-            return FWCOMPS_MCC_FLASH_ERASE_ERROR;
-        case MCC_ERRCODE_REJECTED_IMAGE_CAN_NOT_BOOT_FROM_PARTITION:
-            return FWCOMPS_MCC_REJECTED_IMAGE_CAN_NOT_BOOT_FROM_PARTITION;
-        default:
+    case MCC_ERRCODE_OK:
+        return FWCOMPS_SUCCESS;
+
+    case MCC_ERRCODE_ERROR:
+        return FWCOMPS_MCC_ERR_ERROR;
+
+    case MCC_ERRCODE_REJECTED_DIGEST_ERR:
+        return FWCOMPS_MCC_ERR_REJECTED_DIGEST_ERR;
+
+    case MCC_ERRCODE_REJECTED_NOT_APPLICABLE:
+        return FWCOMPS_MCC_ERR_REJECTED_NOT_APPLICABLE;
+
+    case MCC_ERRCODE_REJECTED_UNKNOWN_KEY:
+        return FWCOMPS_MCC_ERR_REJECTED_UNKNOWN_KEY;
+
+    case MCC_ERRCODE_REJECTED_AUTH_FAILED:
+        return FWCOMPS_MCC_ERR_REJECTED_AUTH_FAILED;
+
+    case MCC_ERRCODE_REJECTED_UNSIGNED:
+        return FWCOMPS_MCC_ERR_REJECTED_UNSIGNED;
+
+    case MCC_ERRCODE_REJECTED_KEY_NOT_APPLICABLE:
+        return FWCOMPS_MCC_ERR_REJECTED_KEY_NOT_APPLICABLE;
+
+    case MCC_ERRCODE_REJECTED_BAD_FORMAT:
+        return FWCOMPS_MCC_ERR_REJECTED_BAD_FORMAT;
+
+    case MCC_ERRCODE_BLOCKED_PENDING_RESET:
+        return FWCOMPS_MCC_ERR_BLOCKED_PENDING_RESET;
+
+    case MCC_ERRCODE_REJECTED_NOT_A_SECURED_FW:
+        return FWCOMPS_MCC_REJECTED_NOT_A_SECURED_FW;
+
+    case MCC_ERRCODE_REJECTED_MFG_BASE_MAC_NOT_LISTED:
+        return FWCOMPS_MCC_REJECTED_MFG_BASE_MAC_NOT_LISTED;
+
+    case MCC_ERRCODE_REJECTED_NO_DEBUG_TOKEN:
+        return FWCOMPS_MCC_REJECTED_NO_DEBUG_TOKEN;
+
+    case MCC_ERRCODE_REJECTED_VERSION_NUM_MISMATCH:
+        return FWCOMPS_MCC_REJECTED_VERSION_NUM_MISMATCH;
+
+    case MCC_ERRCODE_REJECTED_USER_TIMESTAMP_MISMATCH:
+        return FWCOMPS_MCC_REJECTED_USER_TIMESTAMP_MISMATCH;
+
+    case MCC_ERRCODE_REJECTED_FORBIDDEN_VERSION:
+        return FWCOMPS_MCC_REJECTED_FORBIDDEN_VERSION;
+
+    case MCC_ERRCODE_FLASH_ERASE_ERROR:
+        return FWCOMPS_MCC_FLASH_ERASE_ERROR;
+
+    case MCC_ERRCODE_REJECTED_IMAGE_CAN_NOT_BOOT_FROM_PARTITION:
+        return FWCOMPS_MCC_REJECTED_IMAGE_CAN_NOT_BOOT_FROM_PARTITION;
+
+    default:
 //            printf("MCC ERROR: %#x\n", err);
-            return FWCOMPS_GENERAL_ERR;
+        return FWCOMPS_GENERAL_ERR;
     }
 }

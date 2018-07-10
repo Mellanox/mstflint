@@ -50,13 +50,13 @@ using namespace std;
 
 class MlnxDev {
 public:
-    MlnxDev(dev_info* devinfo, int compare_ffv);
-    MlnxDev(const char* devname, int compare_ffv);
+    MlnxDev(dev_info *devinfo, int compare_ffv);
+    MlnxDev(const char *devname, int compare_ffv);
     ~MlnxDev();
 
     int    query();
     int    preBurn(string mfa_file, f_prog_func prog_cb, bool burnFailsafe, bool& isTimeConsumingFixesNeeded,
-                   vector<string>& questions, f_prog_func_adv stage_prog=(f_prog_func_adv)NULL);
+                   vector<string>& questions, f_prog_func_adv stage_prog = (f_prog_func_adv)NULL);
     int    burn(bool&);
     bool   clearSemaphore();
     int    isBurnSuccess();
@@ -79,14 +79,14 @@ public:
     void   setDevToNeedUpdate();
     bool   doesDevNeedUpdate();
     void   setNoFwCtrl();
-    void   setMccSupport(bool val=true) {_mccSupport = val;};
+    void   setMccSupport(bool val = true) {_mccSupport = val;};
     vector<ImgVersion> _imageVers;
     inline bool isAlignmentNeeded();
-    inline void setShifting8MBInBurnParams(bool v) {_burnParams.shift8MB = v;}
+    inline void setShifting8MBInBurnParams(bool v) {_burnParams.shift8MBIfNeeded = v;}
 
     bool checkExistence(vector<MlnxDev*>& devs);
     string getUniqueId() {return _uniqueId;};
-public :
+public:
     string guidPortOne;
     string guidPortTwo;
     string macPortOne;
@@ -96,9 +96,9 @@ public :
         PORT_IB,
         PORT_ETH
     } port_type_t;
-    port_type_t   portOneType;
-    port_type_t   portTwoType;
-    bool   isOnlyBase;
+    port_type_t portOneType;
+    port_type_t portTwoType;
+    bool isOnlyBase;
 private:
     bool InitDevFWParams(FwOperations::fw_ops_params_t& devFwParams);
     void setDeviceType(void);
@@ -107,22 +107,22 @@ private:
     int  getImageIndex(string type);
     int  queryFwops();
     bool OpenDev();
-    bool openImg(u_int32_t * fileBuffer, u_int32_t bufferSize);
+    bool openImg(u_int32_t *fileBuffer, u_int32_t bufferSize);
     port_type_t findPortType(int port);
     void initUniqueId();
-    bool equals(MlnxDev* dev);
+    bool equals(MlnxDev *dev);
 
-private :
+private:
     typedef enum    {
         INIT_DEVINFO,
         INIT_DEVNAME
     } init_type_t;
 
     init_type_t _init_type;
-    dev_info* _devinfo;
+    dev_info *_devinfo;
     string _devname;
-    int    _querySuccess;
-    int    _burnSuccess;
+    int _querySuccess;
+    int _burnSuccess;
     string _psid;
     string _productVer;
 
@@ -130,19 +130,19 @@ private :
     string _errMsg;
     string _boardTypeId;
     string _uniqueId;
-    FwOperations* _devFwOps;
-    FwOperations* _imgFwOps;
+    FwOperations *_devFwOps;
+    FwOperations *_imgFwOps;
     FwOperations::fw_ops_params_t _devFwParams;
     FwOperations::fw_ops_params_t _imgFwParams;
-    FwOperations::ExtBurnParams   _burnParams;
+    FwOperations::ExtBurnParams _burnParams;
 
-    Commander* _commander;
-    char   _errBuff[MLNX_ERR_BUFF_SIZE];
-    int    _compareFFV;
-    int    _ExpRomExists;
-    bool   _needsUpdate;
-    bool   _noFwCtrl;
-    bool   _mccSupport;
+    Commander *_commander;
+    char _errBuff[MLNX_ERR_BUFF_SIZE];
+    int _compareFFV;
+    int _ExpRomExists;
+    bool _needsUpdate;
+    bool _noFwCtrl;
+    bool _mccSupport;
     string _description;
     string _partNumber;
     string _deviceTypeStr;

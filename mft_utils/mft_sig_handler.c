@@ -36,21 +36,21 @@
 #include <tools_utils.h>
 
 static int s_is_fired = 0;
-static char* s_interrupt_message = NULL;
+static char *s_interrupt_message = NULL;
 
 //siganls to handle
 #ifdef __WIN__
-    static int signals_array[] =
-    {SIGINT};
+static int signals_array[] =
+{SIGINT};
 #else
-    static int signals_array[] = {SIGINT, SIGQUIT, SIGTERM, SIGUSR1};
+static int signals_array[] = {SIGINT, SIGQUIT, SIGTERM, SIGUSR1};
 #endif
 
-static void (*prev_handlers[sizeof(signals_array)/sizeof(signals_array[0])])(int sig);
+static void (*prev_handlers[sizeof(signals_array) / sizeof (signals_array[0])])(int sig);
 
 
 
-static void my_termination_handler(int sig)
+             static void my_termination_handler(int sig)
 {
     s_is_fired = sig; // assuming signals received are always different then zero
     if (s_interrupt_message) {
@@ -59,28 +59,28 @@ static void my_termination_handler(int sig)
 }
 
 #ifdef __WIN__
-static BOOL CtrlHandler( DWORD fdwCtrlType )
+             static BOOL CtrlHandler( DWORD fdwCtrlType )
 {
-    switch( fdwCtrlType )
+    switch (fdwCtrlType)
     {
-      // Handle the CTRL-C signal.
-      case CTRL_C_EVENT:
-      // CTRL-CLOSE: confirm that the user wants to exit.
-      case CTRL_CLOSE_EVENT:
-      // Pass other signals to the next handler.
-      case CTRL_BREAK_EVENT:
-      case CTRL_LOGOFF_EVENT:
-      case CTRL_SHUTDOWN_EVENT:
-          my_termination_handler(SIGINT);
-          return TRUE;
+    // Handle the CTRL-C signal.
+    case CTRL_C_EVENT:
+    // CTRL-CLOSE: confirm that the user wants to exit.
+    case CTRL_CLOSE_EVENT:
+    // Pass other signals to the next handler.
+    case CTRL_BREAK_EVENT:
+    case CTRL_LOGOFF_EVENT:
+    case CTRL_SHUTDOWN_EVENT:
+        my_termination_handler(SIGINT);
+        return TRUE;
 
-      default:
+    default:
         return FALSE;
     }
- }
+}
 #endif
 
-int  mft_signal_set_handling(int is_on)
+             int  mft_signal_set_handling(int is_on)
 {
     unsigned int i;
 
@@ -91,20 +91,19 @@ int  mft_signal_set_handling(int is_on)
     static int is_on_counter = 0;
 
     if (is_on_counter == 0 && is_on == 0) {
-    	//if we reach here it means previous handler is already set so there is no need to restore it once more.
+        //if we reach here it means previous handler is already set so there is no need to restore it once more.
         return 0;
     }
     // incr/decr counter
     if (is_on) {
-    	is_on_counter += 1;
-    }else {
-    	is_on_counter = is_on_counter > 0 ? is_on_counter -1 : is_on_counter;
+        is_on_counter += 1;
+    } else {
+        is_on_counter = is_on_counter > 0 ? is_on_counter - 1 : is_on_counter;
     }
 
     if (is_on == 1 && first_on == 0) {
         /* first time we turned thin handler on so we save previous handlers in prev_handlers array */
-        for (i = 0; i < sizeof(signals_array)/sizeof(signals_array[0]); i++)
-        {
+        for (i = 0; i < sizeof(signals_array) / sizeof(signals_array[0]); i++) {
             prev_handlers[i] = signal(signals_array[i], my_termination_handler);
             if (prev_handlers[i] == SIG_ERR) {
                 return -1;
@@ -117,32 +116,32 @@ int  mft_signal_set_handling(int is_on)
     /* register term/kill signal handler */
     /* we need to call signal routine only when is_on_counter == 0 or 1 (more precisely when it goes from zero to one or visa versa )*/
     if ((is_on_counter == 0 && is_on == 0) || (is_on_counter == 1 && is_on == 1 )) {
-    	for (i = 0; i < sizeof(signals_array)/sizeof(signals_array[0]); i++)
-    	{
-    		if (signal(signals_array[i], is_on_counter > 0 ? my_termination_handler : prev_handlers[i]) == SIG_ERR) {
-    			return -1;
-    		}
-    	}
+        for (i = 0; i < sizeof(signals_array) / sizeof(signals_array[0]); i++) {
+            if (signal(signals_array[i], is_on_counter > 0 ? my_termination_handler : prev_handlers[i]) == SIG_ERR) {
+                return -1;
+            }
+        }
     }
 
     return 0;
 }
 
-int  mft_signal_is_fired() {
+             int  mft_signal_is_fired()
+{
     return s_is_fired;
 }
 
-void mft_signal_set_fired(int is_fired)
+             void mft_signal_set_fired(int is_fired)
 {
     s_is_fired = is_fired;
 }
 
-void mft_signal_set_msg(char* msg)
+             void mft_signal_set_msg(char *msg)
 {
     s_interrupt_message = msg;
 }
 
-void mft_restore_and_raise()
+             void mft_restore_and_raise()
 {
     int sig;
     sig = mft_signal_is_fired();

@@ -31,7 +31,7 @@
 # SOFTWARE.
 #--
 
-from __future__ import print_function
+
 
 """
 * $Id           : mlxfwreset.py 2014-06-25
@@ -39,6 +39,7 @@ from __future__ import print_function
 * $Tool         : Main file.
 """
 
+from __future__ import print_function
 __version__ = '1.0'
 
 # Python Imports ######################
@@ -66,23 +67,27 @@ try:
     from mlxfwresetlib.logger import LoggerFactory
 
     from mlxfwresetlib.mlnx_peripheral_components import MlnxPeripheralComponents
-    import Queue
+    if (sys.version_info > (3, 0)):
+        import queue
+        from builtins import input as raw_input
+    else:
+        import Queue as queue
 except Exception as e:
     print("-E- could not import : %s" % str(e))
     sys.exit(1)
 
 # Constants ###########################
 MLNX_DEVICES = [
-               dict(name="ConnectX2", devid=0x190, revid=0xb0),
-               dict(name="ConnectX3Pro", devid=0x1f7, revid=None),
-               dict(name="ConnectIB", devid=0x1ff, revid=None),
-               dict(name="ConnectX4", devid=0x209, revid=None),
-               dict(name="ConnectX4LX", devid=0x20b, revid=None),
-               dict(name="ConnectX5", devid=0x20d, revid=None),
-               dict(name="BlueField", devid=0x211, revid=None),
-               dict(name="ConnectX3", devid=0x1f5, revid=None),
-               dict(name="SwitchX", devid=0x245, revid=None),
-               dict(name="IS4", devid=0x1b3, revid=None),
+               dict(name="ConnectX2", devid=0x190),
+               dict(name="ConnectX3Pro", devid=0x1f7),
+               dict(name="ConnectIB", devid=0x1ff, status_config_not_done=(0xb0004, 31)),
+               dict(name="ConnectX4", devid=0x209, status_config_not_done=(0xb0004, 31)),
+               dict(name="ConnectX4LX", devid=0x20b, status_config_not_done=(0xb0004, 31)),
+               dict(name="ConnectX5", devid=0x20d, status_config_not_done=(0xb5e04, 31)),
+               dict(name="BlueField", devid=0x211, status_config_not_done=(0xb5e04, 31)),
+               dict(name="ConnectX3", devid=0x1f5),
+               dict(name="SwitchX", devid=0x245),
+               dict(name="IS4", devid=0x1b3),
                ]
 
 # Supported devices.
@@ -100,7 +105,7 @@ Reset levels:
 
 Supported Devices:''') + "\n    " + ", ".join(SUPP_DEVICES) + ".\n"
 
-IS_MSTFLINT = True 
+IS_MSTFLINT = True
 # TODO latter remove mcra to the new class
 MCRA = 'mcra'
 if IS_MSTFLINT:
@@ -119,7 +124,6 @@ DESCRIPTION = textwrap.dedent('''\
 ''' % PROG)
 # Adresses    [Base    offset  length]
 DEVID_ADDR = [0xf0014, 0     , 16   ]
-REVID_ADDR = [0xf0014, 16    , 8    ]
 
 COMMAND_ADDR = 0x4
 
@@ -149,6 +153,7 @@ SYNC_STATE_DONE      = 0x3
 
 # reg access Object
 RegAccessObj = None
+RegAccessObjsSD = []
 # mst device object
 MstDevObj = None
 MstDevObjsSD = []
@@ -186,6 +191,50 @@ class NoError(Exception):
     pass
 
 ######################################################################
+# Description:  is_fw_ready
+# OS Support :  Linux/FreeBSD/Windows.
+######################################################################
+def is_fw_ready(device):
+    'Check if FW is ready to get icmd'
+
+    try:
+        address, offset = None, None
+
+        devid = getDevidFromDevice(device)
+
+        for mlnx_device in MLNX_DEVICES:
+            if mlnx_device['devid'] == devid:
+                address, offset = mlnx_device['status_config_not_done']
+
+        status_config_not_done = mcraRead(device, address, offset, 1)
+        return False if status_config_not_done == 1 else True
+
+    except:
+        raise RuntimeError("Failed to check if fw is ready to get ICMD")
+
+######################################################################
+# Description:  wait_for_fw_ready
+# OS Support :  Linux/FreeBSD/Windows.
+######################################################################
+def wait_for_fw_ready(device):
+    'Wait for FW to be ready to get icmd'
+
+    MAX_POLL_CNTR = 1000
+    POLL_SLEEP_INTERVAL = 0.001
+
+    for ii in range(MAX_POLL_CNTR):
+        if is_fw_ready(device) == True:
+            break
+        else:
+            time.sleep(POLL_SLEEP_INTERVAL)
+            if ii % 100 == 0: logger.debug("FW isn't ready ii={0}".format(ii))
+    else:
+        logger.debug("Exit polling before FW is ready!!!!")
+
+
+
+
+######################################################################
 # Description:  reset_fsm_register
 # OS Support :  Linux/FreeBSD/Windows.
 ######################################################################
@@ -204,15 +253,21 @@ def reset_fsm_register():
 ######################################################################
 
 def sigHndl(signal, frame):
-
-    # Remove blacklist file - required to prevent driver auto-load in case of hotswap PCI (flow with old kernel)
-    if platform.system() == "Linux" and os.path.exists(MlnxDriverLinux.blacklist_file_path):
-        os.remove(MlnxDriverLinux.blacklist_file_path)
-
     reset_fsm_register()
 
     print("\nSignal %d Recieved, Exiting..." % signal)
     sys.exit(1)
+
+def set_signal_handler():
+    "Call sigHndl() when the user exit the process by typing ctrl+c or kill the process"
+    signal.signal(signal.SIGINT, sigHndl)
+    signal.signal(signal.SIGTERM, sigHndl)
+
+def ignore_signals():
+    "Disable the option to cancel operation with ctrl+c or kill"
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+    signal.signal(signal.SIGTERM, signal.SIG_IGN)
+
 
 ######################################################################
 # Description:  Check if the given module is loaded
@@ -310,12 +365,20 @@ class MlnxPciOp(object):
         raise NotImplementedError("getPciBridgeAddr() is not implemented")
     def getPcieCapAddr(self, bridgeDev):
         raise NotImplementedError("getPcieCapAddr() is not implemented")
-    def getMFDeviceList(self, mstDev, devAddr):
+    def getMFDeviceList(self, devAddr):
         raise NotImplementedError("getMFDeviceList() is not implemented")
     def savePCIConfigurationSpace(self, devAddr):
         raise NotImplementedError("savePCIConfigurationSpace() is not implemented")
-    def loadPCIConfigurationSpace(self, devAddr):
+    def loadPCIConfigurationSpace(self, devAddr,full=True):
         raise NotImplementedError("loadPCIConfigurationSpace() is not implemented")
+    def waitForDevice(self,devAddr):
+        pass # TODO need to implement for FreeBSD
+    def getAllBuses(self,devices):
+        raise NotImplementedError("getAllBuses() is not implemented")
+    def removeDevice(self,devAddr):
+        raise NotImplementedError("removeDevice() is not implemented")
+    def rescan(self):
+        raise NotImplementedError("rescan() is not implemented")
     def setPciBridgeAddr(self, bridgeAddr):
         self.bridgeAddr = bridgeAddr
 
@@ -324,10 +387,29 @@ class MlnxPciOpLinux(MlnxPciOp):
     def __init__(self):
         super(MlnxPciOpLinux, self).__init__()
         self.pciConfSpaceMap = {}
+        self.device_control_register_old = {} # key is dbdf, value is configuration of "device_control_register"
+
+    def savePciConfOptimalValues(self,devAddr):
+
+        # Save the BIOS values of "device control register" (need to restore in case of OS 'remove'/'rescan')
+        assert devAddr not in self.device_control_register_old, 'savePCIConfigurationSpace - {0} is already in dictionary'.format(devAddr)
+        self.device_control_register_old[devAddr] = self.read(devAddr, 0x68, 'w') # Reading "Device Control Register" (BIOS values)
+
+    def loadPciConfOptimalValues(self,devAddr):
+
+        # bits 5-7 max_payload_size ; bits 12-14 max_read_request_size in "Device Control Register"
+        MASK = 0b0111000011100000
+        MASK__ = 0b1000111100011111
+
+        assert devAddr in self.device_control_register_old, 'loadPciConfOptimalValues: {0} is not in dictionay'.format(devAddr)
+        device_control_register_new = self.read(devAddr, 0x68,'w')  # Reading "Device Control Register" (after pci 'rescan')
+        device_control_register_updated = (device_control_register_new & MASK__) | (self.device_control_register_old[devAddr] & MASK)
+        self.write(devAddr, 0x68, device_control_register_updated, 'w')  # Overwriting "Device Control Register"
 
     def read(self, devAddr, addr, width = "L"):
         cmd = "setpci -s %s 0x%x.%s" % (devAddr, addr, width)
         (rc, out, _) = cmdExec(cmd)
+        logger.debug('read : cmd={0} rc={1} out={2}'.format(cmd,rc,out))
         if rc != 0 or not out:
             raise RuntimeError("Failed to read address 0x%x from device %s " % (addr, devAddr))
         return int(out, 16)
@@ -335,6 +417,7 @@ class MlnxPciOpLinux(MlnxPciOp):
     def write(self, devAddr, addr, val, width = "L"):
         cmd = "setpci -s %s 0x%x.%s=0x%x" % (devAddr, addr, width, val)
         (rc, out, _) = cmdExec(cmd)
+        logger.debug('write : cmd={0} rc={1} out={2}'.format(cmd,rc,out))
         if rc != 0:
             raise RuntimeError("Failed to write 0x%x to address 0x%x to device %s " % (val, addr, devAddr))
         return
@@ -360,7 +443,7 @@ class MlnxPciOpLinux(MlnxPciOp):
         bridgeDev = out.strip()
         result = re.match(r'^[0-9A-Fa-f]{4}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}\.[0-9A-Fa-f]$',bridgeDev)
         if rc != 0 or result is None:
-            raise RuntimeError("failed to get Bridge Device for the given PCI device")
+            raise RuntimeError("Failed to get Bridge Device for the given PCI device! You might be running on a Virtual Machine!")
 
         return bridgeDev
 
@@ -374,20 +457,20 @@ class MlnxPciOpLinux(MlnxPciOp):
     def getAllPciDevices(self, devAddr):
         devices = []
         pciPath = "/sys/bus/pci/devices/%s" % devAddr
-        q = Queue.Queue()
+        q = queue.Queue()
         q.put(pciPath)
         devices.append(devAddr)
         while not q.empty():
             i = q.get()
             files = os.listdir(i)
             for file in files:
-                if file.startswith("0000"):
+                if re.match(r'^[0-9A-Fa-f]{4}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}\.[0-9A-Fa-f]$',file) is not None:
                     if self.getVendorId(file) in SUPPORTED_DEVICES_WITH_SWITCHES:
                         q.put(i + "/" + file)
                         devices.append(file)
         return devices
 
-    def getMFDeviceList(self, mstDev, devAddr):
+    def getMFDeviceList(self,devAddr):
         MFDevices = []
         #Check if the device has a switch
         if not "ppc64" in platform.machine():
@@ -406,14 +489,19 @@ class MlnxPciOpLinux(MlnxPciOp):
         return MFDevices
 
     def savePCIConfigurationSpace(self, devAddr):
+
+        self.savePciConfOptimalValues(devAddr)
+
         if self.isMellanoxDevice(devAddr):
             if devAddr.startswith("0000:"):
                 devAddr = mlxfwreset_utils.removeDomainFromAddress(devAddr)
+            logger.debug('mst save {0}'.format(devAddr))
             cmd = "mst save %s" %devAddr
             (rc, out, _) = cmdExec(cmd)
             if rc != 0 :
                 raise RuntimeError("failed to execute: %s" %cmd)
             return
+        logger.debug('updating pciConfSpaceMap...')
         confSpaceList = []
         for addr in range(0, 0xfff, 4):
             val = self.read(devAddr, addr)
@@ -421,31 +509,38 @@ class MlnxPciOpLinux(MlnxPciOp):
         self.pciConfSpaceMap[devAddr] = confSpaceList
         return
 
-    def loadPCIConfigurationSpace(self, devAddr):
-        logger.info('loadPCIConfigurationSpace() called. Input is {0}'.format(devAddr))
-        if self.isMellanoxDevice(devAddr):
-            if devAddr.startswith("0000:"):
-                devAddr = mlxfwreset_utils.removeDomainFromAddress(devAddr)
-            cmd = "mst load %s" %devAddr
-            (rc, out, _) = cmdExec(cmd)
-            if rc != 0 :
-                raise RuntimeError("failed to execute: %s" %cmd)
-            return
-        pciConfSpaceList = []
-        try:
-            pciConfSpaceList = self.pciConfSpaceMap[devAddr]
-        except KeyError as ke:
-            raise RuntimeError("PCI configuration space for device %s was not saved please reboot server" % devAddr)
-        if len(pciConfSpaceList) != 0x400:
-            raise RuntimeError("PCI configuration space for device %s was not saved properly please reboot server" % devAddr)
-        for i in range(0, 0x400):
-            addr = i * 4
-            self.write(devAddr, addr, pciConfSpaceList[i])
-        return
+    def loadPCIConfigurationSpace(self, devAddr,full=True):
+
+        if full == True:
+            logger.info('loadPCIConfigurationSpace() called. Input is {0}'.format(devAddr))
+            if self.isMellanoxDevice(devAddr):
+                if devAddr.startswith("0000:"):
+                    devAddr = mlxfwreset_utils.removeDomainFromAddress(devAddr)
+                cmd = "mst load %s" %devAddr
+                (rc, out, _) = cmdExec(cmd)
+                logger.debug('cmd={0},rc={1},out={2}'.format(cmd,rc,out))
+                if rc != 0 :
+                    raise RuntimeError("failed to execute: %s" %cmd)
+                return
+            pciConfSpaceList = []
+            try:
+                pciConfSpaceList = self.pciConfSpaceMap[devAddr]
+            except KeyError as ke:
+                raise RuntimeError("PCI configuration space for device %s was not saved please reboot server" % devAddr)
+            if len(pciConfSpaceList) != 0x400:
+                raise RuntimeError("PCI configuration space for device %s was not saved properly please reboot server" % devAddr)
+            for i in range(0, 0x400):
+                addr = i * 4
+                self.write(devAddr, addr, pciConfSpaceList[i])
+        else: # OS 'remove'/'rescan' -> need to restore optimal value in "device control register" for old kernel module
+            if getLinuxKernelVersion() < 4.2:
+                logger.info('old kernel')
+                self.loadPciConfOptimalValues(devAddr)
+
 
     def waitForDevice(self,devAddr):
         logger.info('waitForDevice() called. Input is {0}'.format(devAddr))
-        path = '/sys/bus/pci/devices/{0}'.format(devAddr)
+        path = '/sys/bus/pci/devices/{0}/config'.format(devAddr)
         TIMEOUT = 10
         for _ in range(TIMEOUT):
             if os.path.exists(path):
@@ -470,15 +565,48 @@ class MlnxPciOpLinux(MlnxPciOp):
         if rc != 0:
            raise RuntimeError("failed to execute: %s" % cmd)
 
+    def getAllBuses(self,devices):         
+        buses =[]
+        for dev in devices:
+            busId =  mlxfwreset_utils.getDevDBDF(dev)            
+            buses += self.getMFDeviceList(busId)
+        return buses
 
-    def isHotPlugSlot(self,devAddr):
-        # TODO check if you can do it with setpci instead of grep
-        logger.info('isHotPlugSlot() is called')
-        pciBridgeAddr = self.getPciBridgeAddr(devAddr)
-        cmd = 'lspci -s {0} -vvv | grep "HotPlug+"'.format(pciBridgeAddr)
-        (rc, _, _) = cmdExec(cmd)
-        return True if rc == 0 else False
+class MlnxPciOpLinuxUl(MlnxPciOpLinux): # Copied from old commit - TODO need to use the same logic of mst load/save
+    def __init__(self):
+        super(MlnxPciOpLinuxUl, self).__init__()
 
+    def savePCIConfigurationSpace(self, devAddr):
+
+        self.savePciConfOptimalValues(devAddr)
+
+        confSpaceList = []
+        for addr in range(0, 0xff, 4):
+            if (addr == 0x58 or addr == 0x5c):
+                confSpaceList.append(0)
+                continue
+            val = self.read(devAddr, addr)
+            confSpaceList.append(val)
+        self.pciConfSpaceMap[devAddr] = confSpaceList
+        return
+
+    def loadPCIConfigurationSpace(self, devAddr,full=True):
+        if full==True:
+            try:
+                pciConfSpaceList = self.pciConfSpaceMap[devAddr]
+            except KeyError as ke:
+                raise RuntimeError("PCI configuration space for device %s was not saved please reboot server" % devAddr)
+            if len(pciConfSpaceList) != 64:
+                raise RuntimeError("PCI configuration space for device %s was not saved properly please reboot server" % devAddr)
+            for i in range(0, 64):
+                addr = i * 4
+                if (addr == 0x58 or addr == 0x5c):
+                    continue
+                self.write(devAddr, addr, pciConfSpaceList[i])
+        else:  # OS 'remove'/'rescan' -> need to restore optimal value in "device control register" for old kernel module
+            if getLinuxKernelVersion() < 4.2:
+                logger.info('old kernel')
+                self.loadPciConfOptimalValues(devAddr)
 
 class MlnxPciOpLinuxUl(MlnxPciOpLinux): # Copied from old commit - TODO need to use the same logic of mst load/save
     def __init__(self):
@@ -554,7 +682,7 @@ class MlnxPciOpFreeBSD(MlnxPciOp):
         cmd = "sysctl -a | grep \"secbus: %s\"" % busNum
         (rc, out, _) = cmdExec(cmd)
         if rc != 0:
-            raise RuntimeError("Failed to execute the command: %s" %cmd)
+            raise RuntimeError("Failed to get Bridge Device for the given PCI device! You might be running on a Virtual Machine!")
         linesCount = len(out.splitlines())
         if(linesCount == 0):
             raise RuntimeError("There is no secbus with the value: %s" %busNum)
@@ -575,7 +703,7 @@ class MlnxPciOpFreeBSD(MlnxPciOp):
             raise RuntimeError("Failed to find PCI bridge Pci Express Capability")
         return int(capAddr, 16)
     
-    def getMFDeviceList(self, mstDev,devAddr):
+    def getMFDeviceList(self, devAddr):
         MFDevices = []
         domainBus = ":".join(devAddr.split(":")[:-2])
         domainBus = "pci" + domainBus
@@ -587,32 +715,32 @@ class MlnxPciOpFreeBSD(MlnxPciOp):
         for dev in out:
             MFDevices.append(dev[:-1])
         return MFDevices
-    
-    def savePCIConfigurationSpace(self, devAddr):
-        confSpaceList = []
-        for addr in range(0, 0xff, 4):
-            if (addr == 0x58 or addr == 0x5c):
-                confSpaceList.append(0)
-                continue
-            val = self.read(devAddr, addr)
-            confSpaceList.append(val)
-        self.pciConfSpaceMap[devAddr] = confSpaceList
-        return
 
-    def loadPCIConfigurationSpace(self, devAddr):
-        pciConfSpaceList = []
-        try:
-            pciConfSpaceList = self.pciConfSpaceMap[devAddr]
-        except KeyError as ke:
-            raise RuntimeError("PCI configuration space for device %s was not saved please reboot server" % devAddr)
-        if len(pciConfSpaceList) != 64:
-            raise RuntimeError("PCI configuration space for device %s was not saved properly please reboot server" % devAddr)
-        for i in range(0, 64):
-            addr = i * 4
-            if (addr == 0x58 or addr == 0x5c):
-                continue
-            self.write(devAddr, addr, pciConfSpaceList[i])
-        return
+    # Generator to read 4KB pci configuration - read resolution is Long (4B)
+    def readPciConf(self, devAddr):
+        if not(devAddr.startswith("pci")):
+            devAddr = "pci" + devAddr
+        cmd = "pciconf -r {0} 0x0:0xfff".format(devAddr)
+        (rc, out, _) = cmdExec(cmd)
+        if rc != 0:
+            raise RuntimeError("Failed to read PCI configuration (4KB)")
+        for ii,data_str in enumerate(out.split()):
+            addr = ii*4
+            data = int(data_str,16)
+            yield (addr,data)
+
+    def savePCIConfigurationSpace(self, devAddr):
+        self.pciConfSpaceMap[devAddr] = {}
+        for addr,data in self.readPciConf(devAddr):
+            self.pciConfSpaceMap[devAddr][addr] = data
+
+    def loadPCIConfigurationSpace(self, devAddr,full=True):
+        # Overwrite only if the configuration changed
+        for addr,data in self.readPciConf(devAddr):
+            old_data = self.pciConfSpaceMap[devAddr][addr]
+            if addr != 0x58 and addr != 0x5c and data != old_data:
+                self.write(devAddr, addr, old_data)
+
 
 class MlnxPciOpWindows(MlnxPciOp):
 
@@ -636,7 +764,6 @@ class MlnxPciOpWindows(MlnxPciOp):
         return
 
     def getPciBridgeAddr(self, devAddr):
-        # cmd = self.lspciPath + " -tv"
         raise NotImplementedError("getPciBridgeAddr() not implemented for windows")
 
     def getPciECapAddr(self, bridgeDev):
@@ -645,15 +772,20 @@ class MlnxPciOpWindows(MlnxPciOp):
     def savePCIConfigurationSpace(self, devAddr):
         raise NotImplementedError("savePCIConfigurationSpace() not implemented for windows")
     
-    def loadPCIConfigurationSpace(self, devAddr):
+    def loadPCIConfigurationSpace(self, devAddr, full=True):
         raise NotImplementedError("loadPCIConfigurationSpace() not implemented for windows")
 
 
 class MlnxPciOpFactory(object):
-    def getPciOpObj(self):
+    def getPciOpObj(self,dbdf):
         operatingSystem = platform.system()
         if operatingSystem == "Linux":
-            return MlnxPciOpLinuxUl() if IS_MSTFLINT else MlnxPciOpLinux()
+
+            if IS_MSTFLINT:
+                return MlnxPciOpLinuxUl()
+            else:
+                return MlnxPciOpLinux()
+
         elif operatingSystem == "FreeBSD":
             return MlnxPciOpFreeBSD()
         elif operatingSystem == "Windows":
@@ -702,14 +834,14 @@ def mstRestart(busId):
     if foundBus == False:
         raise RuntimeError("The device is not appearing in lspci output!")
 
-    signal.signal(signal.SIGINT,signal.SIG_IGN) # Disable the option to cancel operation with ctrl+c (mst restart might be destructive)
+    ignore_signals()
     cmd = "/etc/init.d/mst restart %s" % MstFlags
     logger.debug('Execute {0}'.format(cmd))
     (rc, stdout, stderr) = cmdExec(cmd)
     if rc != 0:
         logger.debug('stdout:\n{0}\nstderr:\n{1}'.format(stdout,stderr))
         raise NoError("Failed to restart MST (RC=%d), please restart MST manually" % rc)
-    signal.signal(signal.SIGINT,sigHndl) # Enable the option to cancel operation with ctrl+C
+    set_signal_handler()
     return 0
 
 ######################################################################
@@ -779,8 +911,9 @@ def getPciModulePath():
 # OS Support: Linux
 #####################################################################
 
-def runPPCPciResetModule(path, busId):
-    cmd = "insmod %s pci_dev=%s" % (path, busId)
+def runPPCPciResetModule(path, busIds):
+    busIdStr = ",".join(busIds)
+    cmd = "insmod %s pci_dev=%s" % (path, busIdStr)
     (rc, out, err) = cmdExec(cmd)
     if rc != 0 :
         #check if failure is related to SELinux
@@ -799,53 +932,51 @@ def runPPCPciResetModule(path, busId):
 # OS Support : Linux
 ######################################################################
 
-def resetPciAddrPPC(busId):
-    global pciModuleName
-    global FWResetStatusChecker
+def resetPciAddrPPC(busIds):
+
+    logger.debug('resetPciAddrPPC() called. input is {0}'.format(busIds))
+
     # check supported system
     if platform.system() != "Linux":
-        raise RuntimeError("Unsupported OS(%s) for PPC reset flow" % (platform.system()) )
+        raise RuntimeError("Unsupported OS(%s) for PPC reset flow" % (platform.system()))
+
+    logger.debug('Unload the module "mst_ppc_pci_reset"')
     if isModuleLoaded("mst_ppc_pci_reset") == True:
         cmd = "rmmod mst_ppc_pci_reset"
         (rc, out, _) = cmdExec(cmd)
     if isModuleLoaded("mst_ppc_pci_reset") == True:
         raise RuntimeError("Failed to unload mst_ppc_pci_reset module. please unload it manually and try again.")
 
+    logger.debug('Load the module "mst_ppc_pci_reset"')
     (foundModule, path) = getPciModulePath()
     if foundModule == True:
-        (res, err) = runPPCPciResetModule(path, busId)
+        (res, err) = runPPCPciResetModule(path, busIds)
         if res == False:
             raise RuntimeError("Failed to load pci reset module, make sure kernel-mft is installed properly: %s" % err)
     else:
         foundWorkingModule = False
         for p in path:
-            (res, err) = runPPCPciResetModule(path, busId)
+            (res, err) = runPPCPciResetModule(path, busIds)
             if res == True:
                 foundWorkingModule = True
                 break
         if foundWorkingModule == False:
             raise RuntimeError("Can not find the module: %s" % pciModuleName)
 
+    logger.debug('Unload the module "mst_ppc_pci_reset"')
     cmd = "rmmod mst_ppc_pci_reset"
     (rc, out, err) = cmdExec(cmd)
     if rc != 0 :
         raise RuntimeError("Failed to unload pci reset module: %s please unload the module manually" % err)
-    #sleep to be on the safe side
-    time.sleep(1)
 
-    # Wait for the pci-device to back if it was removed from the pci tree
-    PciOpsObj.waitForDevice(busId)
-
-    return
 
 ######################################################################
 # Description:  reset PCI of a certain device for Windows setup (special flow)
 # OS Support : Windows
 ######################################################################
 
-def resetPciAddrWindows(busId):
+def resetPciAddrWindows():
     global MstDevObj
-    global FWResetStatusChecker
     MstDevObj.mHcaReset()
     return
 
@@ -867,10 +998,9 @@ def disablePci(busId):
     width = "L"
     oldCapDw = PciOpsObj.read(bridgeDev, disableAddr, width)
     # turn on Link Disable bit
-    logger.debug('Disable PCI address {0}'.format(busId))
+    logger.debug('Disable PCI address {0}; bridge address {1}'.format(busId,bridgeDev))
     newCapDw = oldCapDw | 0x10
     PciOpsObj.write(bridgeDev, disableAddr, newCapDw, width)
-    time.sleep(1.25)
 
     return (bridgeDev, disableAddr, oldCapDw, width)
 
@@ -878,9 +1008,6 @@ def disablePci(busId):
 def enablePci(bridgeDev, disableAddr, oldCapDw, width):
     logger.debug('enablePci() called')
     PciOpsObj.write(bridgeDev, disableAddr, oldCapDw, width)
-    time.sleep(0.25)
-
-
 
 
 ######################################################################
@@ -888,16 +1015,25 @@ def enablePci(bridgeDev, disableAddr, oldCapDw, width):
 # OS Support : Linux, FreeBSD, Windows
 ######################################################################
 
-def resetPciAddr(device,devicesSD,driverObj):
+def resetPciAddr(device,devicesSD,driverObj, cmdLineArgs):
 
     isPPC = "ppc64" in platform.machine()
     isWindows = platform.system() == "Windows"
 
     # save pci conf space
-    global DevDBDF
     busId = DevDBDF
 
-    if isWindows is False: # relevant for ppc(p7)
+    # Determine the pci-device to poll (first mellanox device in the pci tree)
+    if isConnectedToMellanoxSwitchDevice():
+        pci_device_bridge = PciOpsObj.getPciBridgeAddr(DevDBDF)
+        pci_device_to_poll = PciOpsObj.getPciBridgeAddr(pci_device_bridge)
+    else:
+        pci_device_to_poll = DevDBDF
+
+    logger.debug('device_to_poll={}'.format(pci_device_to_poll))
+
+
+    if isWindows is False: # relevant for ppc(p7) TODO check power8/9 shouldn't use mst-save/load
         devList = savePciConfSpace(device,busId)
 
         # Socket Direct - save all buses and PCI configuration for all "other" devices in SD
@@ -912,16 +1048,6 @@ def resetPciAddr(device,devicesSD,driverObj):
     #update FWResetStatusChecker
     FWResetStatusChecker.UpdateUptimeBeforeReset()
 
-    isLinuxOldKernel = None
-    if platform.system() == "Linux"  and isPPC is False and PciOpsObj.isHotPlugSlot(devList[0]) is True:
-        isLinuxAndHotPlugSlot = True
-        isLinuxOldKernel = getLinuxKernelVersion() < 4.2 # A bug exist in old linux kerenel - OS rescan doesn't restore all the PCI configuration
-    else:
-        isLinuxAndHotPlugSlot = False
-
-    if isLinuxAndHotPlugSlot is True:
-        driverObj.disableAutoLoad()
-
     # Close the mst device because the file handler is about to be removed
     # In windows we use the mstdevice to execute the reset pci
     if isWindows is False:
@@ -929,41 +1055,57 @@ def resetPciAddr(device,devicesSD,driverObj):
         for MstDevObjSD in MstDevObjsSD:
             MstDevObjSD.close()
 
-    signal.signal(signal.SIGINT,signal.SIG_IGN) # Disable the option to cancel operation with ctrl+c (reset pci stage is destructive)
+    ignore_signals()
     try:
         if isWindows:
-            resetPciAddrWindows(busId)
-        elif isPPC:
-            resetPciAddrPPC(busId)
+            resetPciAddrWindows()
+        elif isPPC:            
+            busIdsSD.append(busId)            
+            pfs = PciOpsObj.getAllBuses(busIdsSD)
+            resetPciAddrPPC(pfs)
         else:
             info = []
-            info.append(disablePci(busId))
 
+            # Disable
+            info.append(disablePci(busId))
             for busIdSD in busIdsSD:
                 info.append(disablePci(busIdSD))
 
+            # Sleep
+            logger.debug('sleeping... ({0} sec)'.format(cmdLineArgs.pci_link_downtime))
+            time.sleep(cmdLineArgs.pci_link_downtime)
+
+            # Enable
             for info_ii in info:
                 enablePci(*info_ii)
+
     except Exception as e:
-        if isLinuxAndHotPlugSlot:
-            driverObj.enableAutoLoad()
         raise RuntimeError("Failed To reset PCI(Driver starting will be skipped). %s" % str(e))
 
 
-    # wait for FW to re-boot
-    time.sleep(1)
-
     if isWindows is False:
-        # restore pci conf space
-        loadPciConfSpace(devList,isLinuxAndHotPlugSlot,isLinuxOldKernel)
-        # Socket Direct - Load PCI configuration for all other devices in case of SD
-        for devListSD in devListsSD:
-            time.sleep(1) # TODO check why it's required
-            loadPciConfSpace(devListSD,isLinuxAndHotPlugSlot,isLinuxOldKernel)
 
-    if isLinuxAndHotPlugSlot:
-        logger.debug('Cleanup for hotplug flow')
-        driverObj.enableAutoLoad()
+        logger.debug('WaitForDevice: in case of OS remove/rescan -> wait for pci-device to be part of pci-tree')
+        for pciDevList in [devList]+devListsSD:
+            for pciDev in pciDevList:
+                PciOpsObj.waitForDevice(pciDev)
+
+
+        # Wait for FW (Iron) - Read devid
+        MAX_WAIT_TIME = 2 # sec
+        for cntr in range(1000*MAX_WAIT_TIME):
+            if PciOpsObj.read(pci_device_to_poll, 0) != 0xffffffff:
+                logger.debug('IRON is ready after {0} msec'.format(cntr))
+                break
+            time.sleep(0.001)
+        else:
+            print("-W- FW is not ready after {0} sec".format(MAX_WAIT_TIME))
+
+
+        # Restore PCI configuration (including socket direct devices)
+        for devListSD in [devList]+devListsSD:
+            loadPciConfSpace(devListSD)
+
 
     # Need to re-open the file handler because PCI tree is updated (OS remove/rescan)
     if isWindows is False:
@@ -973,7 +1115,7 @@ def resetPciAddr(device,devicesSD,driverObj):
 
     logger.debug('UpdateUptimeAfterReset')
     FWResetStatusChecker.UpdateUptimeAfterReset()
-    signal.signal(signal.SIGINT,sigHndl) # Enable the option to cancel operation with ctrl+C
+    set_signal_handler()
 
     return
 
@@ -994,7 +1136,6 @@ def isConnectedToMellanoxSwitchDevice():
     if (platform.system() == "Windows") or ("ppc64" in platform.machine()):
         return False
     global PciOpsObj
-    global DevDBDF
     busId = DevDBDF
     bridgeAddr = PciOpsObj.getPciBridgeAddr(busId)
     return isMellanoxSwitchDevice(PciOpsObj, bridgeAddr)
@@ -1009,11 +1150,13 @@ def savePciConfSpace(mstDev,devAddr):
     if platform.system() == "Windows": # being Done in mHcaReset
         return None
     global PciOpsObj
-    devList = PciOpsObj.getMFDeviceList(mstDev,devAddr)
+    devList = PciOpsObj.getMFDeviceList(devAddr) # Get all devices that you want to save/load pci configuration
+    logger.debug('devList is {0}'.format(devList))
     # perform mcra read of 0xf0014 to avoid locking semaphores in vsec
     mcraRead(mstDev, 0xf0014, 0, 32)
     # for each PF/VF save its configuration space
     for pciDev in devList:
+        logger.debug('Save PCI configuration for pci device {0}'.format(pciDev))
         PciOpsObj.savePCIConfigurationSpace(pciDev)
     return devList
 
@@ -1022,40 +1165,18 @@ def savePciConfSpace(mstDev,devAddr):
 # OS Support : Linux, FreeBSD
 ######################################################################
 
-def loadPciConfSpace(devList,isLinuxAndHotPlugSlot,isLinuxOldKernel):
-    logger.info('loadPciConfSpace() called. Inputs are devList={0} , isLinuxAndHotPlugSlot={1}'.format(devList,isLinuxAndHotPlugSlot))
+def loadPciConfSpace(devList):
+    logger.info('loadPciConfSpace() called. Inputs are devList={0}'.format(devList))
     if platform.system() == "Windows": # being Done in mHcaReset
         return
-    global PciOpsObj
 
-    if isLinuxAndHotPlugSlot:
-
-        logger.debug('loadPciConfSpace: wait for PCI devices after OS remove/rescan')
-        for pciDev in devList:
-            PciOpsObj.waitForDevice(pciDev)  # OS remove the pci device and then rescan
-
-        if isLinuxOldKernel is True: # Old Linux kernel has a bug - OS doesn't restore all the PCI configuration
-
-            time.sleep(0.5) # Avoid stuck of 'mst load' (happen in rare situations)
-            logger.debug('loadPciConfSpace: mst-load')
-            for pciDev in devList:
-                PciOpsObj.loadPCIConfigurationSpace(pciDev)
-
-            logger.debug('loadPciConfSpace: remove bridge device')
-            pciBridgeAddr = PciOpsObj.getPciBridgeAddr(devList[0])
-            PciOpsObj.removeDevice(pciBridgeAddr)
-
-            logger.debug('loadPciConfSpace: rescan')
-            PciOpsObj.rescan()
-
-    else: # Not 'Linux and hotplug' (regular/old flow) - the MSE bit check still here becasue we are not sure what its origin (hotplug or not)
-        for pciDev in devList:
-            command_reg = PciOpsObj.read(pciDev, COMMAND_ADDR, "W")
-            logger.debug('command_reg is {0:x}.'.format(command_reg))
-            # Added becasue OS rescan on IBM with PPC - Yoni Galezer can't recall if it's related to hotplug
-            # Why it was added also for Linux? Check if it was implemented in the PPC module
-            if (command_reg & 0x2) == 0:
-                PciOpsObj.loadPCIConfigurationSpace(pciDev)
+    for pciDev in devList:
+        command_reg = PciOpsObj.read(pciDev, COMMAND_ADDR, "W")
+        logger.debug('command_reg is {0:x}.'.format(command_reg))
+        if (command_reg & 0x2) == 0: # command_reg[MSE] - Indication for re-enumeration (OS rescan)
+            PciOpsObj.loadPCIConfigurationSpace(pciDev,full=True)
+        else:
+            PciOpsObj.loadPCIConfigurationSpace(pciDev,full=False)
 
 ######################################################################
 # Description: get minimum reset level required for device
@@ -1153,11 +1274,18 @@ def sendResetToFWSync(device, level, force):
         # Socket Direct - send SYNC_STATE_GET_READY for all other devices in SD
         for CmdifObjSD in CmdifObjsSD:
             CmdifObjSD.multiHostSync(SYNC_STATE_GET_READY, SYNC_TYPE_FW_RESET)
-            logger.info('send SYNC_STATE_GET_READY command')
+            logger.info('send SYNC_STATE_GET_READY command (SD)')
 
     elif status.fsm_state == SYNC_STATE_GET_READY: # TODO (update after GA) and status.fsm_sync_type == SYNC_TYPE_FW_RESET
         CmdifObj.multiHostSync(SYNC_STATE_GET_READY, SYNC_TYPE_FW_RESET)
         logger.info('send SYNC_STATE_GET_READY command')
+
+        # Socket Direct - send SYNC_STATE_GET_READY for all other devices in SD - to support MH device that connected as socket direct (4 'devices' on 2 servers)
+        for CmdifObjSD in CmdifObjsSD:
+            CmdifObjSD.multiHostSync(SYNC_STATE_GET_READY, SYNC_TYPE_FW_RESET)
+            logger.info('send SYNC_STATE_GET_READY command')
+
+
     # TODO (update after GA) else: reset_fsm_register
 
 
@@ -1181,7 +1309,6 @@ def stopDriver(driverObj):
 ######################################################################
 def stopDriverSync(driverObj):
 
-    # Roei
     def reloadDriver(driverObj):
         if driverObj.getDriverStatus() == MlnxDriver.DRIVER_LOADED:
             try:
@@ -1190,6 +1317,8 @@ def stopDriverSync(driverObj):
             except Exception as e:
                 msg = " (driver failed to reload: %s)" % str(e)
             return msg
+        else:
+            return ""
 
     status = CmdifObj.multiHostSyncStatus()
     timestamp = time.time()
@@ -1207,7 +1336,6 @@ def stopDriverSync(driverObj):
 
     if status.fsm_state != SYNC_STATE_GO or status.fsm_sync_type != SYNC_TYPE_FW_RESET:
         raise RuntimeError("Operation failed, the fsm register state or type is not as expected")
-
     stopDriver(driverObj)
 
     CmdifObj.multiHostSync(SYNC_STATE_GO, SYNC_TYPE_FW_RESET)
@@ -1222,7 +1350,6 @@ def stopDriverSync(driverObj):
     while status.fsm_host_ready != 0x0:
         status = CmdifObj.multiHostSyncStatus()
         if status.fsm_sync_type != SYNC_TYPE_FW_RESET or status.fsm_state != SYNC_STATE_GO:
-            # Roei
             errmsg = "Operation failed, the fsm register state or type is not as expected"
             msg = reloadDriver(driverObj)
             raise RuntimeError(errmsg+msg)
@@ -1248,24 +1375,43 @@ def stopDriverSync(driverObj):
 # Description: Driver restart (link/managment up/down flow) w/wo PCI RESET
 # OS Support : Linux
 ######################################################################
-def resetFlow(device,devicesSD, level, force=False):
+
+def sendPcnr(regAccess,port_num):
+    try:
+        regAccess.sendPcnr(1, port_num)
+    except Exception as e:
+        logger.debug('Failed to send pcnr. {0}'.format(e))  # port doesn't exist / old FW version, burn FW with allow_pcnr (ini file)
+
+def resetFlow(device,devicesSD, level, cmdLineArgs):
+    global PciOpsObj
     logger.info('resetFlow() called')
 
-    try:
+    all_devices = [device] + devicesSD
+    driverObj = MlnxDriverFactory().getDriverObj(logger, skipDriver, all_devices)
 
+    try:
+        isPpc64 = ("ppc64" in platform.machine())
         if isConnectedToMellanoxSwitchDevice() and \
-               ((platform.system() != "Linux") or
-                ("ppc64" in platform.machine())):
+               ((platform.system() != "Linux") or isPpc64):
             raise RuntimeError("-E- Resetting Device that contains a switch is supported only in Linux/x86")
 
         if SkipMultihostSync or not CmdifObj.isMultiHostSyncSupported():
-            sendResetToFW(device, level, force)
+            sendResetToFW(device, level, cmdLineArgs.force)
         else:
-            sendResetToFWSync(device, level, force) # Roei added support for Socket Direct to send GET_READY for all "other" devices
+            sendResetToFWSync(device, level, cmdLineArgs.force)
+
+        #PCNR - Reduce link up time (from ~4 sec to ~1.5 sec)
+        sendPcnr(RegAccessObj, 0) # port #0 (will fail if pcnr isn't supported by FW)
+        sendPcnr(RegAccessObj, 1) # port #1 (will fail if HW has only one port)
+
+        # Socket direct
+        for RegAccessSD in RegAccessObjsSD:
+            sendPcnr(RegAccessSD, 0)  # port #0 (will fail if pcnr isn't supported by FW)
+            sendPcnr(RegAccessSD, 1)  # port #1 (will fail if HW has only one port)
+            
 
         # stop driver
         try:
-            driverObj = MlnxDriverFactory().getDriverObj(logger, skipDriver, device)
             driverStat = driverObj.getDriverStatus()
         except DriverUnknownMode as e:
             print("-E- Failed to get the driver status: %s" % str(e))
@@ -1275,13 +1421,16 @@ def resetFlow(device,devicesSD, level, force=False):
         if SkipMultihostSync or not CmdifObj.isMultiHostSyncSupported():
             stopDriver(driverObj)
         else:
-            stopDriverSync(driverObj) # Roei added support for Socket Direct to send GO for all "other" devices
+            stopDriverSync(driverObj)
 
         if level == RL_PCI_RESET:
             # reset PCI
             printAndFlush("-I- %-40s-" % ("Resetting PCI"), endChar="")
-            resetPciAddr(device,devicesSD,driverObj) # Roei added support to save PCI conf , reset and load PCI conf for all "other"devices
+            resetPciAddr(device,devicesSD,driverObj, cmdLineArgs)
             printAndFlush("Done")
+
+        # Wait for FW to be ready to get ICMD
+        wait_for_fw_ready(device)
 
         if driverStat == MlnxDriver.DRIVER_LOADED:
             printAndFlush("-I- %-40s-" % ("Starting Driver"), endChar="")
@@ -1294,8 +1443,6 @@ def resetFlow(device,devicesSD, level, force=False):
             MstDevObjSD.close()
 
 
-        global SkipMstRestart
-        global DevDBDF
         if SkipMstRestart == False and platform.system() == "Linux":
             printAndFlush("-I- %-40s-" % ("Restarting MST"), endChar="")
             if mstRestart(DevDBDF) == 0:
@@ -1361,16 +1508,16 @@ def coldRebootMachine(device=None, level=None, force=False):
 # OS Support : Linux
 ######################################################################
 
-def execResLvl(device,devicesSD, level, force=False):
+def execResLvl(device,devicesSD, level, cmdLineArgs):
 
     if level == RL_ISFU:
-        fullISFU(device,level,force)
+        fullISFU(device,level, cmdLineArgs.force)
     elif level in [RL_DR_LNK_UP,RL_DR_LNK_DN,RL_PCI_RESET]:
-        resetFlow(device,devicesSD,level,force)
+        resetFlow(device,devicesSD,level, cmdLineArgs)
     elif level == RL_WARM_REBOOT:
-        rebootMachine(device,level,force)
+        rebootMachine(device,level, cmdLineArgs.force)
     elif level == RL_COLD_REBOOT:
-        coldRebootMachine(device,level,force)
+        coldRebootMachine(device,level, cmdLineArgs.force)
     else:
         raise RuntimeError("Unknown reset level")
 
@@ -1501,7 +1648,7 @@ def main():
     options_group.add_argument('--level',
                         '-l',
                         type=int,
-                        choices=range(0, 6),
+                        choices=list(range(0, 6)),
                         help='Run reset with the specified reset level.')
     options_group.add_argument('--yes',
                         '-y',
@@ -1550,8 +1697,25 @@ def main():
                                help=argparse.SUPPRESS)
     # log level
     options_group.add_argument('--log',
-                               choices=['info','debug','error','fatal'],
+                               choices=['critical','error','warning','info','debug'],
                                help=argparse.SUPPRESS)
+
+    def check_positive_float(val):
+        try:
+            val = float(val)
+            assert val>=0
+        except:
+            raise argparse.ArgumentTypeError("{0} is an invalid positive float value".format(val))
+
+        return val
+
+
+    # configuration of sleep-time (sec) between 'disable-pci' to 'enable-pci'
+    options_group.add_argument('--pci_link_downtime',
+                               type=check_positive_float,
+                               default=1.25,
+                               help=argparse.SUPPRESS)
+
 
     # command arguments
     command_group = parser.add_argument_group('Commands')
@@ -1602,7 +1766,7 @@ def main():
             device = map2DevPath(device)
 
     # Insert Flow here
-    isDevSupp(device)
+    isDevSupp(device) # function takes ~330msec - TODO remove it if you need performace
 
     DevDBDF = mlxfwreset_utils.getDevDBDF(device,logger)
     logger.info('device domain:bus:dev.fn (DBDF) is {0}'.format(DevDBDF))
@@ -1617,7 +1781,7 @@ def main():
     MstDevObj = mtcr.MstDevice(device)
     RegAccessObj = regaccess.RegAccess(MstDevObj)
     CmdifObj = cmdif.CmdIf(MstDevObj)
-    PciOpsObj = MlnxPciOpFactory().getPciOpObj()
+    PciOpsObj = MlnxPciOpFactory().getPciOpObj(DevDBDF)
 
     logger.info('Check if device is livefish')
     DevMgtObj = dev_mgt.DevMgt(MstDevObj) # check if device is in livefish
@@ -1628,6 +1792,7 @@ def main():
     # Socket Direct - Create a list of command i/f for all "other" devices
     global CmdifObjsSD
     global MstDevObjsSD
+    global RegAccessObjsSD
 
     # Roei
     devicesSD = []
@@ -1642,21 +1807,22 @@ def main():
 
             for deviceSD in devicesSD:
                 MstDevObjsSD.append(mtcr.MstDevice(deviceSD))
+                RegAccessObjsSD.append(regaccess.RegAccess(MstDevObjsSD[-1]))
                 CmdifObjsSD.append(cmdif.CmdIf(MstDevObjsSD[-1]))
         except:
-            #print("-I- Failed to check if device is Socket Direct. Continue...") TODO remove if from the GA
+            logger.warning("Failed to check if device is Socket Direct!")
             devicesSD = []
             for MstDevObjSD in MstDevObjsSD:
                 MstDevObjSD.close()
             MstDevObjsSD = []
             CmdifObjsSD = []
+            RegAccessObjsSD = []
 
 
         if len(devicesSD)>0:
             if platform.system() == "Windows":
                 raise RuntimeError("mlxfwreset doesn't support socket direct on windows!")
-            if "ppc64" in platform.machine():
-                raise RuntimeError("mlxfwreset doesn't support socket direct on ppc!")
+
 
 
     MstFlags = "" if (args.mst_flags == None) else args.mst_flags   
@@ -1693,7 +1859,7 @@ def main():
         if level != None:
             checkResetLevel(device, level)
         AskUser("Continue with reset", yes)
-        execResLvl(device,devicesSD, level, args.force)
+        execResLvl(device,devicesSD, level, args)
         if level != RL_COLD_REBOOT and level != RL_WARM_REBOOT:
             if FWResetStatusChecker.GetStatus() == FirmwareResetStatusChecker.FirmwareResetStatusFailed:
                 reset_fsm_register()
@@ -1709,7 +1875,7 @@ def main():
 if __name__ == '__main__':
     rc = 0
     try:
-        signal.signal(signal.SIGINT, sigHndl)
+        set_signal_handler()
         rc = main()
     except NoError as e:
         print("-I- %s." % str(e))

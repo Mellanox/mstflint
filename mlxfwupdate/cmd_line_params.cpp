@@ -57,7 +57,7 @@ CmdLineParams::CmdLineParams()
     log_on_update   = false;
     calc_crc        = false;
     query_device    = false;
-    query_device_xml= false;
+    query_device_xml = false;
     clear_semaphore = false;
     extract_all     = false;
     no_fw_ctrl      = false;
@@ -69,7 +69,7 @@ CmdLineParams::CmdLineParams()
 
     update_online   = false;
     download        = false;
-    download_default= false;
+    download_default = false;
     get_download_opt = "";
     download_os     = "";  // will be changed to enum
     download_type   = "";
@@ -77,29 +77,29 @@ CmdLineParams::CmdLineParams()
     download_key    = "last_release";
     psid = "";
     burnFailsafe    = true;
-    onlineQueryPsids= "";
+    onlineQueryPsids = "";
     queryFormat     = "text";
     download_dir    = ".";
     extract_dir     = ".";
     lvim            = false;
     dl              = false;
     no_extract_list = false;
-    numberOfRetrials= 5;
+    numberOfRetrials = 5;
 
 #ifdef __WIN__
     char execName[1024];
     char certificatPath[1024];
     GetModuleFileName(GetModuleHandle(mlxfw_MTCR_DLL_NAME), certificatPath, 1024);
     mlxfw_get_exec_name_from_path(certificatPath, execName);
-    mlxfw_replace(certificatPath, execName, (char *)"ca-bundle.crt");
+    mlxfw_replace(certificatPath, execName, (char*)"ca-bundle.crt");
 
     certificate = string(certificatPath);
 
 #else
     #ifdef MSTFLINT
-        certificate = (string)ROOT_PATH + "etc/mstflint/ca-bundle.crt";
+    certificate = (string)ROOT_PATH + "etc/mstflint/ca-bundle.crt";
     #else
-        certificate = (string)ROOT_PATH + "etc/mft/ca-bundle.crt";
+    certificate = (string)ROOT_PATH + "etc/mft/ca-bundle.crt";
     #endif
 #endif
 }

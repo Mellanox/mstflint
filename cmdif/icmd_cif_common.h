@@ -37,6 +37,19 @@
 extern "C" {
 #endif
 
+#ifndef IN
+#define IN
+#endif
+
+#ifndef OUT
+#define OUT
+#endif
+
+#ifndef INOUT
+#define INOUT
+#endif
+
+
 /* --------- Typedefs & Constants ---------------------------------- */
 
 /**
@@ -47,11 +60,11 @@ extern "C" {
  **/
 enum {
     GCIF_STATUS_SUCCESS = 0,
-    GCIF_STATUS_INVALID_OPCODE ,
+    GCIF_STATUS_INVALID_OPCODE,
     GCIF_STATUS_INVALID_CMD,
     GCIF_STATUS_OPERATIONAL_ERROR,
     GCIF_STATUS_BAD_PARAM,
-    GCIF_STATUS_CR_FAIL ,       // cr-space access failure
+    GCIF_STATUS_CR_FAIL,        // cr-space access failure
     GCIF_STATUS_BAD_OPCODE,                 // unsupported opcode was used
     GCIF_STATUS_SEMAPHORE_TO,               // timed out while trying to take semaphore
     GCIF_STATUS_EXECUTE_TO,                 // timed out while waiting for command to execute
@@ -78,13 +91,13 @@ enum {
 /* --------- Functional API ---------------------------------------- */
 
 /**
-  * Returns the last error message recorded by the library
-  **/
+ * Returns the last error message recorded by the library
+ **/
 char* gcif_get_last_err();
 
 /**
-  * Returns the error message associated with the provided return code
-  **/
+ * Returns the error message associated with the provided return code
+ **/
 char* gcif_err_str(int rc);
 
 #ifdef __cplusplus

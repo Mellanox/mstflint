@@ -47,41 +47,41 @@
 #define MXZ_ERR_DECODER_INIT 2
 
 typedef struct {
-    struct xz_dec* s;
+    struct xz_dec *s;
     struct xz_buf b;
 } xz_env;
 
 static uint8_t xz_has_init = 0;
 
 struct xzhandle_t {
-    const u_int8_t* buf;
-    ssize_t   size;
-    ssize_t   pos;
-    xz_env*   envptr;
+    const u_int8_t *buf;
+    ssize_t size;
+    ssize_t pos;
+    xz_env *envptr;
 };
 
 
 void xz_init()
 {
-	if (xz_has_init) {
-		return;
-	}
+    if (xz_has_init) {
+        return;
+    }
     xz_crc32_init();
-	xz_has_init = 1;
+    xz_has_init = 1;
 }
 
 
 uint32_t xz_io_crc32(const uint8_t *buf, size_t size, uint32_t crc)
 {
-	xz_init();
+    xz_init();
     return xz_crc32(buf, size, crc);
 }
 
 
 static xz_env* xz_decoder_init(int *status_code)
 {
-    xz_env* env;
-    struct xz_dec* s;
+    xz_env *env;
+    struct xz_dec *s;
     *status_code = 0;
     struct xz_buf b;
 
@@ -117,18 +117,21 @@ err_clean_up:
 
 static size_t decode_xz_num(const u_int8_t buf[], size_t size_max, u_int64_t *num)
 {
-    if (size_max == 0)
+    if (size_max == 0) {
         return 0;
+    }
 
-    if (size_max > 9)
+    if (size_max > 9) {
         size_max = 9;
+    }
 
     *num = buf[0] & 0x7F;
     size_t i = 0;
 
     while (buf[i++] & 0x80) {
-        if (i >= size_max || buf[i] == 0x00)
+        if (i >= size_max || buf[i] == 0x00) {
             return 0;
+        }
 
         *num |= (u_int64_t)(buf[i] & 0x7F) << (i * 7);
     }
@@ -137,17 +140,17 @@ static size_t decode_xz_num(const u_int8_t buf[], size_t size_max, u_int64_t *nu
 }
 
 
-ssize_t xz_stream_len(u_int8_t* buffer, ssize_t len)
+ssize_t xz_stream_len(u_int8_t *buffer, ssize_t len)
 {
     //long sz = 0;
     ssize_t pos = len - 1;
     unsigned i;
 
-    while (buffer[pos] == 0 ) {
+    while (buffer[pos] == 0) {
         pos--;
     }
 
-    if ((buffer[pos] != 'Z') || (buffer[pos-1] != 'Y')) {
+    if ((buffer[pos] != 'Z') || (buffer[pos - 1] != 'Y')) {
         return -1;
     }
 
@@ -186,10 +189,10 @@ ssize_t xz_stream_len(u_int8_t* buffer, ssize_t len)
 
 xzhandle_t* xz_open_buf(const u_int8_t *buf, size_t size)
 {
-    xzhandle_t* xzh;
+    xzhandle_t *xzh;
     int res;
 
-    xz_env* env = xz_decoder_init(&res);
+    xz_env *env = xz_decoder_init(&res);
     if (env == NULL) {
         return NULL;
     }
@@ -212,7 +215,7 @@ xzhandle_t* xz_open_buf(const u_int8_t *buf, size_t size)
 }
 
 
-void xz_close(xzhandle_t* xzh)
+void xz_close(xzhandle_t *xzh)
 {
     xz_env *e = xzh->envptr;
     xz_dec_end(e->s);
@@ -221,7 +224,7 @@ void xz_close(xzhandle_t* xzh)
 }
 
 
-int xz_read(xzhandle_t* xzh, u_int8_t* buf, size_t len)
+int xz_read(xzhandle_t *xzh, u_int8_t *buf, size_t len)
 {
     xz_env *e;
     enum xz_ret ret;
@@ -249,6 +252,7 @@ int xz_read(xzhandle_t* xzh, u_int8_t* buf, size_t len)
     switch (ret) {
     case XZ_STREAM_END:
         return e->b.out_pos;
+
     case XZ_MEM_ERROR:
         //This can occur only in multi-call mode. XZ decompressor ran out of memory
         break;

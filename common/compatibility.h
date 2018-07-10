@@ -48,7 +48,7 @@
 
 
 /* define macros to the architecture of the CPU */
-#if defined(__linux) || defined(__FreeBSD__)             /* __linux || __FreeBSD__ */
+#if defined(__linux__) || defined(__FreeBSD__)
 #   if defined(__i386__)
 #       define ARCH_x86
 #   elif defined(__x86_64__)
@@ -109,7 +109,7 @@
 #       define U48H_FMT     "0x%012llx"
 #       define U64D_FMT_GEN "llu"
 #   endif
-#elif defined (ARCH_ia64) || defined(ARCH_x86_64) || defined(ARCH_ppc64) || defined(ARCH_arm64)
+#elif defined(ARCH_ia64) || defined(ARCH_x86_64) || defined(ARCH_ppc64) || defined(ARCH_arm64)
 #    define U64D_FMT     "%lu"
 #    define U64H_FMT     "0x%016lx"
 #    define U48H_FMT     "0x%012lx"
@@ -123,37 +123,37 @@
  * Only for architectures which can't do swab by themselves
  */
 #define ___my_swab16(x) \
-((u_int16_t)( \
-        (((u_int16_t)(x) & (u_int16_t)0x00ffU) << 8) | \
-        (((u_int16_t)(x) & (u_int16_t)0xff00U) >> 8) ))
+    ((u_int16_t)( \
+         (((u_int16_t)(x) & (u_int16_t)0x00ffU) << 8) | \
+         (((u_int16_t)(x) & (u_int16_t)0xff00U) >> 8) ))
 #define ___my_swab32(x) \
-((u_int32_t)( \
-        (((u_int32_t)(x) & (u_int32_t)0x000000ffUL) << 24) | \
-        (((u_int32_t)(x) & (u_int32_t)0x0000ff00UL) <<  8) | \
-        (((u_int32_t)(x) & (u_int32_t)0x00ff0000UL) >>  8) | \
-        (((u_int32_t)(x) & (u_int32_t)0xff000000UL) >> 24) ))
+    ((u_int32_t)( \
+         (((u_int32_t)(x) & (u_int32_t)0x000000ffUL) << 24) | \
+         (((u_int32_t)(x) & (u_int32_t)0x0000ff00UL) <<  8) | \
+         (((u_int32_t)(x) & (u_int32_t)0x00ff0000UL) >>  8) | \
+         (((u_int32_t)(x) & (u_int32_t)0xff000000UL) >> 24) ))
 #define ___my_swab64(x) \
-((u_int64_t)( \
-        (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x00000000000000ffULL) << 56) | \
-        (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x000000000000ff00ULL) << 40) | \
-        (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x0000000000ff0000ULL) << 24) | \
-        (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x00000000ff000000ULL) <<  8) | \
-        (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x000000ff00000000ULL) >>  8) | \
-        (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x0000ff0000000000ULL) >> 24) | \
-        (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x00ff000000000000ULL) >> 40) | \
-        (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0xff00000000000000ULL) >> 56) ))
+    ((u_int64_t)( \
+         (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x00000000000000ffULL) << 56) | \
+         (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x000000000000ff00ULL) << 40) | \
+         (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x0000000000ff0000ULL) << 24) | \
+         (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x00000000ff000000ULL) <<  8) | \
+         (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x000000ff00000000ULL) >>  8) | \
+         (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x0000ff0000000000ULL) >> 24) | \
+         (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0x00ff000000000000ULL) >> 40) | \
+         (u_int64_t)(((u_int64_t)(x) & (u_int64_t)0xff00000000000000ULL) >> 56) ))
 
 /*
  * Linux
  */
-#if defined(__linux) || defined(__FreeBSD__)
+#if defined(__linux__) || defined(__FreeBSD__)
 // #include <asm/byteorder.h>
     #include <unistd.h>
     #include <sys/types.h>
 
-    #if defined (__FreeBSD__)
+    #if defined(__FreeBSD__)
     #include <sys/endian.h>
-    // WA: on FBSD the BYTE ORDER AND ENDIANESS names are different
+// WA: on FBSD the BYTE ORDER AND ENDIANESS names are different
     #ifndef __BYTE_ORDER
         #define __BYTE_ORDER _BYTE_ORDER
     #endif
@@ -240,7 +240,6 @@
  * Windows (DDK)
  */
 #if defined(__WIN__)
-    #include <Winsock2.h>
     #include <winsock2.h>
     #include <windows.h>
     #include <io.h>
@@ -268,28 +267,28 @@
         #include <stdint.h>
         #ifndef   MFT_TOOLS_VARS
             #define MFT_TOOLS_VARS
-            typedef uint8_t  u_int8_t;
-            typedef uint16_t u_int16_t;
-            typedef uint32_t u_int32_t;
-            typedef uint64_t u_int64_t;
+typedef uint8_t u_int8_t;
+typedef uint16_t u_int16_t;
+typedef uint32_t u_int32_t;
+typedef uint64_t u_int64_t;
         #endif
         #include <string.h>      // Get a define for strcasecmp
         #if defined(_MSC_VER)
-            typedef size_t ssize_t;
+typedef size_t ssize_t;
 
             #define strcasecmp  _stricmp
             #define strncasecmp _strnicmp
         #endif
 
     #else
-        typedef unsigned __int8  u_int8_t;
-        typedef __int8           int8_t;
-        typedef unsigned __int16 u_int16_t;
-        typedef __int16          int16_t;
-        typedef unsigned __int32 u_int32_t;
-        typedef __int32          int32_t;
-        typedef unsigned __int64 u_int64_t;
-        typedef __int64          int64_t;
+typedef unsigned __int8 u_int8_t;
+typedef __int8 int8_t;
+typedef unsigned __int16 u_int16_t;
+typedef __int16 int16_t;
+typedef unsigned __int32 u_int32_t;
+typedef __int32 int32_t;
+typedef unsigned __int64 u_int64_t;
+typedef __int64 int64_t;
 
         #define strcasecmp    _stricmp
         #define strtoll       _strtoi64
@@ -312,19 +311,19 @@ inline
         #define close _close
     #endif
 
-typedef struct _stat  Stat;
+typedef struct _stat Stat;
 
     #define PRIx64 "I64x"
     #define PRIu64 "I64u"
 /*
-    #ifdef __cplusplus
-static inline int pread(int fd, void *buf, int count, u_int64_t offset) {return -1;}
-static inline int pwrite(int fd, const void *buf, int count, u_int64_t offset) {return -1;}
-    #else
-static inline int pread(int fd, void *buf, int count, u_int64_t offset) {return -1;}
-static inline int pwrite(int fd, const void *buf, int count, u_int64_t offset) {return -1;}
-    #endif
-*/
+ #ifdef __cplusplus
+   static inline int pread(int fd, void *buf, int count, u_int64_t offset) {return -1;}
+   static inline int pwrite(int fd, const void *buf, int count, u_int64_t offset) {return -1;}
+ #else
+   static inline int pread(int fd, void *buf, int count, u_int64_t offset) {return -1;}
+   static inline int pwrite(int fd, const void *buf, int count, u_int64_t offset) {return -1;}
+ #endif
+ */
 #else
 
     #define COMP_CDECL
@@ -333,7 +332,7 @@ static inline int pwrite(int fd, const void *buf, int count, u_int64_t offset) {
     #define COMP_READ     ::read
     #define COMP_FSTAT    ::fstat
 
-typedef struct stat  Stat;
+typedef struct stat Stat;
 
     #include <sys/time.h>
     #include <strings.h>
@@ -395,7 +394,7 @@ typedef struct stat  Stat;
 typedef uint64_t u_int64_t;
 typedef uint32_t u_int32_t;
 typedef uint16_t u_int16_t;
-typedef uint8_t  u_int8_t;
+typedef uint8_t u_int8_t;
 
 #endif
 
@@ -403,19 +402,19 @@ typedef uint8_t  u_int8_t;
 #if defined(_WIN32) || defined(_WIN64) || defined(__MINGW32__) || defined(__MINGW64__)
     #define msleep(x)   Sleep(x)
 #else
-    #define msleep(x)   usleep(((unsigned long)x)*1000)
+    #define msleep(x)   usleep(((unsigned long)x) * 1000)
 #endif
 
 // Convert BYTES - DWORDS with MEMCPY BE
-#define BYTES_TO_DWORD_BE(dw_dest, byte_src) do {   u_int32_t tmp;\
-                                                    memcpy(&tmp, byte_src, 4);\
-                                                    *(dw_dest) = __be32_to_cpu(tmp);\
-                                                } while (0)
+#define BYTES_TO_DWORD_BE(dw_dest, byte_src) do {   u_int32_t tmp; \
+                                                    memcpy(&tmp, byte_src, 4); \
+                                                    *(dw_dest) = __be32_to_cpu(tmp); \
+} while (0)
 
-#define DWORD_TO_BYTES_BE(bytes_dest, dw_src) do { u_int32_t tmp;\
-                                                   tmp = __cpu_to_be32(*(dw_src));\
-                                                   memcpy(bytes_dest, &tmp, 4);\
-                                                 } while (0)
+#define DWORD_TO_BYTES_BE(bytes_dest, dw_src) do { u_int32_t tmp; \
+                                                   tmp = __cpu_to_be32(*(dw_src)); \
+                                                   memcpy(bytes_dest, &tmp, 4); \
+} while (0)
 
 /*
  * Old GCC

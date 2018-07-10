@@ -45,8 +45,8 @@
 
 
 tbuf_t* xzopen_frontend(char *pathname, int oflags, int mode);
-int     xzread(tbuf_t* tbuf, void* buf, size_t len);
-int     xzwrite(tbuf_t* tbuf, const void* buf, size_t len);
+int     xzread(tbuf_t *tbuf, void *buf, size_t len);
+int     xzwrite(tbuf_t *tbuf, const void *buf, size_t len);
 
 
 void xz_init()
@@ -62,7 +62,7 @@ uint32_t xz_io_crc32(const uint8_t *buf, size_t size, uint32_t crc)
 
 void* xz_decoder_init(int *status_code)
 {
-    lzma_stream* strm;
+    lzma_stream *strm;
     lzma_stream tmp = LZMA_STREAM_INIT;
     *status_code = 0;
 
@@ -90,7 +90,7 @@ err_clean_up:
 }
 
 
-void xz_close(void* strm)
+void xz_close(void *strm)
 {
     lzma_end((lzma_stream*)strm);
 }
@@ -99,10 +99,11 @@ void xz_close(void* strm)
 int init_decoder(lzma_stream *strm)
 {
     lzma_ret ret = lzma_stream_decoder(
-            strm, UINT64_MAX, LZMA_CONCATENATED);
+        strm, UINT64_MAX, LZMA_CONCATENATED);
 
-    if (ret == LZMA_OK)
+    if (ret == LZMA_OK) {
         return 0;
+    }
 
     const char *msg;
     switch (ret) {
@@ -115,7 +116,7 @@ int init_decoder(lzma_stream *strm)
         break;
 
     default:
-           msg = "Unknown error, possibly a bug";
+        msg = "Unknown error, possibly a bug";
         break;
     }
 
@@ -128,9 +129,9 @@ int init_decoder(lzma_stream *strm)
 int lzma_code_ret(lzma_ret ret);
 
 
-int xzread(tbuf_t* tbuf, void* buf, size_t len)
+int xzread(tbuf_t *tbuf, void *buf, size_t len)
 {
-    lzma_stream* strm;
+    lzma_stream *strm;
     lzma_action action = LZMA_RUN;
 
     strm = (lzma_stream*)tbuf->envptr;
@@ -154,8 +155,9 @@ int xzread(tbuf_t* tbuf, void* buf, size_t len)
             // will be coming. As said before, this isn't required
             // if the LZMA_CONATENATED flag isn't used when
             // initializing the decoder.
-            if (!strm->avail_in)
+            if (!strm->avail_in) {
                 action = LZMA_FINISH;
+            }
         }
 
         lzma_ret ret = lzma_code(strm, action);
@@ -182,7 +184,7 @@ tbuf_t* xzopen_frontend(char *pathname, int oflags, int mode)
 }
 
 
-int xzclose(tbuf_t* tbuf)
+int xzclose(tbuf_t *tbuf)
 {
     if (tbuf) { //omits compiler warnings
         return 0;
@@ -191,7 +193,7 @@ int xzclose(tbuf_t* tbuf)
 }
 
 
-int xzwrite(tbuf_t* tbuf, const void* buf, size_t len)
+int xzwrite(tbuf_t *tbuf, const void *buf, size_t len)
 {
     if (tbuf || buf || len) { //omits compiler warnings
         return 0;
@@ -211,8 +213,9 @@ int lzma_code_ret(lzma_ret ret)
         // everything has gone well or that when you aren't
         // getting more output it must have successfully
         // decoded everything.
-        if (ret == LZMA_STREAM_END)
+        if (ret == LZMA_STREAM_END) {
             return 0;
+        }
 
         // It's not LZMA_OK nor LZMA_STREAM_END,
         // so it must be an error code. See lzma/base.h
@@ -264,7 +267,7 @@ int lzma_code_ret(lzma_ret ret)
             // If you prefer, you can use the same error
             // message for this as for LZMA_DATA_ERROR.
             msg = "Compressed file is truncated or "
-                    "otherwise corrupt";
+                  "otherwise corrupt";
             break;
 
         default:

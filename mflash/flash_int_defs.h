@@ -30,68 +30,43 @@
  * SOFTWARE.
  */
 
-
 #ifndef USER_MFLASH_FLASH_INT_DEFS_H_
 #define USER_MFLASH_FLASH_INT_DEFS_H_
-
-////////////////////////////////////////
-//
-// ST SPI functions - common for InfiniHostIIILx and ConnectX
-//
-////////////////////////////////////////
-enum StFlashCommand {
-    SFC_SE    = 0xD8,
-    SFC_SSE   = 0x20,
-    SFC_PP    = 0x02,
-    SFC_RDSR  = 0x05,
-    SFC_WRSR2 = 0x31,
-    SFC_RDSR2 = 0x35,
-    SFC_WREN  = 0x06,
-    SFC_READ  = 0x03,
-    SFC_FAST_READ  = 0x3B,
-    SFC_QUAD_READ  = 0x3B,
-    SFC_RES   = 0xAB,
-    SFC_JEDEC = 0x9F,
-    SFC_RDNVR = 0xB5,
-    SFC_RDCR  = 0x15,
-    SFC_WRNVR = 0xB1,
-    SFC_WRSR  = 0x01,
-    SFC_RDFR  = 0x48,
-    SFC_WRFR  = 0x42
-};
 
 #define SST_FLASH_NAME   "SST25VFxx"
 #define WINBOND_NAME     "W25QxxBV"
 #define WINBOND_W25X     "W25Xxx"
-#define WINBOND_3V_NAME  "W25QxxxJV"
+#define WINBOND_3V_128  "W25Q128JV"
+#define WINBOND_3V_256  "W25Q256JV"
 #define ATMEL_NAME       "AT25DFxxx"
 #define S25FLXXXP_NAME   "S25FLXXXP"
 #define S25FL116K_NAME   "S25FL11xx"
 #define MACRONIX_NAME    "MX25L16xxx"
 #define MACRONIX_3V_NAME "MX25Lxxx45G"
-#define CYPRESS_3V_NAME  "S25FLxxxL"
+#define CYPRESS_3V_128  "S25FL128L"
+#define CYPRESS_3V_256  "S25FL256L"
 #define ISSI_3V_NAME     "IS25LPxxx"
 
 typedef enum flash_vendor {
-    FV_ST      = 0x20,
-    FV_SST     = 0xbf,
+    FV_ST = 0x20,
+    FV_SST = 0xbf,
     FV_WINBOND = 0xef,
-    FV_ATMEL   = 0x1f,
+    FV_ATMEL = 0x1f,
     FV_S25FLXXXX = 0x01,
     FV_MX25K16XXX = 0xc2,
     FV_IS25LPXXX = 0x9d
 } flash_vendor_t;
 
 typedef enum flash_memory_type {
-    FMT_ST_M25P  = 0x20,
+    FMT_ST_M25P = 0x20,
     FMT_MX25K16XXX = 0x20,
     FMT_ST_M25PX = 0x71,
-    FMT_SST_25   = 0x25,
-    FMT_WINBOND  = 0x40,
+    FMT_SST_25 = 0x25,
+    FMT_WINBOND = 0x40,
     FMT_WINBOND_W25X = 0x30,
     FMT_WINBOND_3V = 0x70,
-    FMT_ATMEL    = 0x2,
-    FMT_N25QXXX  = 0xba,
+    FMT_ATMEL = 0x2,
+    FMT_N25QXXX = 0xba,
     FMT_S25FLXXXP = 0x02,
     FMT_S25FL116K = 0x40,
     FMT_S25FLXXXL = 0x60,
@@ -99,5 +74,8 @@ typedef enum flash_memory_type {
     FMT_IS25LPXXX = 0x60
 } flash_memory_type_t;
 
+typedef enum flash_densities {
+    FD_8 = 0x14, FD_16 = 0x15, FD_32 = 0x16, FD_64 = 0x17, FD_128 = 0x18, FD_256 = 0x19, FD_512 = 0x1a
+} flash_densities_t;
 
 #endif /* USER_MFLASH_FLASH_INT_DEFS_H_ */

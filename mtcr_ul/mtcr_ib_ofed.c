@@ -80,17 +80,17 @@
     #define LIB_IBMAD  "libibmad"
 
     #define MY_GetPointerAddress(ivm, func_name, f_type) do { \
-                  ivm->func_name = (f_type)GetProcAddress(ivm->dl_handle, #func_name); \
-                  if (ivm->func_name == NULL) { \
-                      IBERROR(("Failed to find %s function on ibal.dll file.\n", #func_name));\
-                      errno = ENOSYS;\
-                      return -1;\
-                  }\
-    } while(0)
+        ivm->func_name = (f_type)GetProcAddress(ivm->dl_handle, #func_name); \
+        if (ivm->func_name == NULL) { \
+            IBERROR(("Failed to find %s function on ibal.dll file.\n", #func_name)); \
+            errno = ENOSYS; \
+            return -1; \
+        } \
+} while (0)
 
     #define MY_GetProcAddress(ivm, func_name)  MY_GetPointerAddress(ivm, func_name, f_##func_name)
     #define MY_GetProcAddressIgnoreFail(ivm, func_name) \
-            ivm->func_name = (f_##func_name)GetProcAddress(ivm->dl_handle, #func_name)
+    ivm->func_name = (f_##func_name)GetProcAddress(ivm->dl_handle, #func_name)
     #define MY_GetVarAddress(ivm, var_name)    MY_GetPointerAddress(ivm, var_name, void*)
 
     #define DLL_HANDLE HINSTANCE
@@ -107,16 +107,16 @@
     #define DLL_HANDLE void*
     #define BAD_RET_VAL ~0llu
     #define MY_DLSYM(mf, func_name) do { \
-                      const char* dl_error; \
-                      mf->func_name = dlsym(mf->dl_handle, #func_name); \
-                      if ((dl_error = dlerror()) != NULL)  {\
-                          IBERROR(("%s", dl_error));\
-                          return -1;\
-                      } \
-    } while(0)
+        const char *dl_error; \
+        mf->func_name = dlsym(mf->dl_handle, #func_name); \
+        if ((dl_error = dlerror()) != NULL)  { \
+            IBERROR(("%s", dl_error)); \
+            return -1; \
+        } \
+} while (0)
 
     #define MY_DLSYM_IGNORE_FAIL(mf, func_name) \
-                          mf->func_name = dlsym(mf->dl_handle, #func_name)
+    mf->func_name = dlsym(mf->dl_handle, #func_name)
 
     #define OP_NOT_SUPPORTED EOPNOTSUPP
     #define IBMAD_CALL_CONV
@@ -134,28 +134,28 @@
 // #define DEBUG(fmt, args...)  if (verbose) iberror(0, __FUNCTION__, fmt, ## args)
 // #define IBERROR(fmt, args...)   iberror(1, __FUNCTION__, fmt, ## args)
 
-#define IBERROR(args) do {               printf("-E- ibvsmad : ");\
-                                         printf args;\
-                                         printf("\n");\
-                                         errno = EINVAL;\
-                                         } while(0)
-#define DEBUG(args) do {   if (verbose) {\
-                                         printf("-D- ibvsmad : ");\
-                                         printf args;\
-                                         printf("\n");\
-                                         errno = EINVAL;\
-                                        }\
-                       } while(0)
+#define IBERROR(args) do {               printf("-E- ibvsmad : "); \
+                                         printf args; \
+                                         printf("\n"); \
+                                         errno = EINVAL; \
+} while (0)
+#define DEBUG(args) do {   if (verbose) { \
+                               printf("-D- ibvsmad : "); \
+                               printf args; \
+                               printf("\n"); \
+                               errno = EINVAL; \
+                           } \
+} while (0)
 
 // BIT Slicing macros
-#define ONES32(size)                    ((size)?(0xffffffff>>(32-(size))):0)
-#define MASK32(offset,size)             (ONES32(size)<<(offset))
+#define ONES32(size)                    ((size) ? (0xffffffff >> (32 - (size))) : 0)
+#define MASK32(offset, size)             (ONES32(size) << (offset))
 
-#define EXTRACT_C(source,offset,size)   ((((unsigned)(source))>>(offset)) & ONES32(size))
-#define EXTRACT(src,start,len)          (((len)==32)?(src):EXTRACT_C(src,start,len))
+#define EXTRACT_C(source, offset, size)   ((((unsigned)(source)) >> (offset)) & ONES32(size))
+#define EXTRACT(src, start, len)          (((len) == 32) ? (src) : EXTRACT_C(src, start, len))
 
-#define MERGE_C(rsrc1,rsrc2,start,len)  ((((rsrc2)<<(start)) & (MASK32((start),(len)))) | ((rsrc1) & (~MASK32((start),(len)))))
-#define MERGE(rsrc1,rsrc2,start,len)    (((len)==32)?(rsrc2):MERGE_C(rsrc1,rsrc2,start,len))
+#define MERGE_C(rsrc1, rsrc2, start, len)  ((((rsrc2) << (start)) & (MASK32((start), (len)))) | ((rsrc1) & (~MASK32((start), (len)))))
+#define MERGE(rsrc1, rsrc2, start, len)    (((len) == 32) ? (rsrc2) : MERGE_C(rsrc1, rsrc2, start, len))
 
 #define SWAPL(l) bswap_32(l)
 
@@ -181,39 +181,39 @@
 #define DEVID_ADDRESS     0xf0014
 
 // Convert BYTES - DWORDS with MEMCPY BE
-#define BYTES_TO_DWORD_BE(dw_dest, byte_src) do {   u_int32_t tmp;\
-                                                    memcpy(&tmp, byte_src, 4);\
-                                                    *(dw_dest) = __be32_to_cpu(tmp);\
-                                                } while (0)
+#define BYTES_TO_DWORD_BE(dw_dest, byte_src) do {   u_int32_t tmp; \
+                                                    memcpy(&tmp, byte_src, 4); \
+                                                    *(dw_dest) = __be32_to_cpu(tmp); \
+} while (0)
 
-#define DWORD_TO_BYTES_BE(bytes_dest, dw_src) do { u_int32_t tmp;\
-                                                   tmp = __cpu_to_be32(*(dw_src));\
-                                                   memcpy(bytes_dest, &tmp, 4);\
-                                                 } while (0)
+#define DWORD_TO_BYTES_BE(bytes_dest, dw_src) do { u_int32_t tmp; \
+                                                   tmp = __cpu_to_be32(*(dw_src)); \
+                                                   memcpy(bytes_dest, &tmp, 4); \
+} while (0)
 
 
-typedef struct ibmad_port* IBMAD_CALL_CONV (*f_mad_rpc_open_port)(char *dev_name, int dev_port,
-                                                int *mgmt_classes,
-                                                int num_classes);
-typedef void     IBMAD_CALL_CONV (*f_mad_rpc_close_port)(struct ibmad_port *srcport);
-typedef int      IBMAD_CALL_CONV (*f_ib_resolve_portid_str_via)(ib_portid_t * portid, char *addr_str,
-                                                int dest, ib_portid_t * sm_id, const struct ibmad_port *srcport);
-typedef uint8_t* IBMAD_CALL_CONV (*f_ib_vendor_call_via)(void *data, ib_portid_t *portid, ib_vendor_call_t *call,
-                                         const struct ibmad_port *srcport);
-typedef uint8_t* IBMAD_CALL_CONV (*f_smp_query_via)(void *buf, ib_portid_t *id, unsigned attrid, unsigned mod,
-                                    unsigned timeout, const struct ibmad_port *srcport);
-typedef uint8_t* IBMAD_CALL_CONV (*f_smp_query_status_via)(void *buf, ib_portid_t *id, unsigned attrid, unsigned mod,
-                                    unsigned timeout, int *rstatus, const struct ibmad_port *srcport);
-typedef uint8_t* IBMAD_CALL_CONV (*f_smp_set_via)(void *buf, ib_portid_t *id, unsigned attrid, unsigned mod,
-                                  unsigned timeout, const struct ibmad_port *srcport );
-typedef uint8_t* IBMAD_CALL_CONV (*f_smp_set_status_via)(void *buf, ib_portid_t *id, unsigned attrid, unsigned mod,
-                                  unsigned timeout, int *rstatus, const struct ibmad_port *srcport );
+typedef struct ibmad_port*IBMAD_CALL_CONV (*f_mad_rpc_open_port)(char *dev_name, int dev_port,
+                                                                 int *mgmt_classes,
+                                                                 int num_classes);
+typedef void IBMAD_CALL_CONV (*f_mad_rpc_close_port)(struct ibmad_port *srcport);
+typedef int IBMAD_CALL_CONV (*f_ib_resolve_portid_str_via)(ib_portid_t *portid, char *addr_str,
+                                                           int dest, ib_portid_t *sm_id, const struct ibmad_port *srcport);
+typedef uint8_t*IBMAD_CALL_CONV (*f_ib_vendor_call_via)(void *data, ib_portid_t *portid, ib_vendor_call_t *call,
+                                                        const struct ibmad_port *srcport);
+typedef uint8_t*IBMAD_CALL_CONV (*f_smp_query_via)(void *buf, ib_portid_t *id, unsigned attrid, unsigned mod,
+                                                   unsigned timeout, const struct ibmad_port *srcport);
+typedef uint8_t*IBMAD_CALL_CONV (*f_smp_query_status_via)(void *buf, ib_portid_t *id, unsigned attrid, unsigned mod,
+                                                          unsigned timeout, int *rstatus, const struct ibmad_port *srcport);
+typedef uint8_t*IBMAD_CALL_CONV (*f_smp_set_via)(void *buf, ib_portid_t *id, unsigned attrid, unsigned mod,
+                                                 unsigned timeout, const struct ibmad_port *srcport );
+typedef uint8_t*IBMAD_CALL_CONV (*f_smp_set_status_via)(void *buf, ib_portid_t *id, unsigned attrid, unsigned mod,
+                                                        unsigned timeout, int *rstatus, const struct ibmad_port *srcport );
 
 typedef void IBMAD_CALL_CONV (*f_mad_rpc_set_retries)(struct ibmad_port *port, int retries);
 typedef void IBMAD_CALL_CONV (*f_mad_rpc_set_timeout)(struct ibmad_port *port, int timeout);
-typedef uint32_t  IBMAD_CALL_CONV (*f_mad_get_field)(void *buf, int base_offs,enum MAD_FIELDS field);
+typedef uint32_t IBMAD_CALL_CONV (*f_mad_get_field)(void *buf, int base_offs, enum MAD_FIELDS field);
 
-typedef char*    IBMAD_CALL_CONV (*f_portid2str)(ib_portid_t *portid);
+typedef char*IBMAD_CALL_CONV (*f_portid2str)(ib_portid_t *portid);
 
 
 struct __ibvsmad_hndl_t
@@ -232,20 +232,20 @@ struct __ibvsmad_hndl_t
 
     DLL_HANDLE dl_handle;
 
-    f_mad_rpc_open_port         mad_rpc_open_port;
-    f_mad_rpc_close_port        mad_rpc_close_port;
-    f_ib_vendor_call_via        ib_vendor_call_via;
+    f_mad_rpc_open_port mad_rpc_open_port;
+    f_mad_rpc_close_port mad_rpc_close_port;
+    f_ib_vendor_call_via ib_vendor_call_via;
     f_ib_resolve_portid_str_via ib_resolve_portid_str_via;
-    f_smp_query_via             smp_query_via;
-    f_smp_query_status_via      smp_query_status_via;
-    f_smp_set_via               smp_set_via;
-    f_smp_set_status_via        smp_set_status_via;
-    f_mad_rpc_set_retries       mad_rpc_set_retries;
-    f_mad_rpc_set_timeout       mad_rpc_set_timeout;
-    f_mad_get_field             mad_get_field;
-    f_portid2str            portid2str;
+    f_smp_query_via smp_query_via;
+    f_smp_query_status_via smp_query_status_via;
+    f_smp_set_via smp_set_via;
+    f_smp_set_status_via smp_set_status_via;
+    f_mad_rpc_set_retries mad_rpc_set_retries;
+    f_mad_rpc_set_timeout mad_rpc_set_timeout;
+    f_mad_get_field mad_get_field;
+    f_portid2str portid2str;
 
-    void*                   ibdebug;
+    void *ibdebug;
 };
 
 typedef struct __ibvsmad_hndl_t ibvs_mad;
@@ -264,13 +264,12 @@ static int verbose = 0;
 #define MAX_IB_SMP_DATA_SIZE    (IB_SMP_DATA_SIZE - IB_DATA_INDEX)
 #define MAX_IB_SMP_DATA_DW_NUM  MAX_IB_SMP_DATA_SIZE / 4
 
-static uint64_t
-ibvsmad_craccess_rw_smp(ibvs_mad *h, u_int32_t memory_address, int method, u_int8_t num_of_dwords, u_int32_t *data)
+static uint64_t ibvsmad_craccess_rw_smp(ibvs_mad *h, u_int32_t memory_address, int method, u_int8_t num_of_dwords, u_int32_t *data)
 {
     u_int8_t mad_data[IB_SMP_DATA_SIZE] = {0};
     int i;
     u_int32_t att_mod = 0;
-    u_int8_t* p;
+    u_int8_t *p;
     u_int64_t vkey;
 
     if (num_of_dwords > MAX_IB_SMP_DATA_DW_NUM) {
@@ -318,13 +317,12 @@ ibvsmad_craccess_rw_smp(ibvs_mad *h, u_int32_t memory_address, int method, u_int
 #define  MAX_VS_DATA_SIZE (IB_VENDOR_RANGE1_DATA_SIZE -  IB_DATA_INDEX)
 #define  MAX_IB_VS_DATA_DW_NUM  MAX_VS_DATA_SIZE / 4
 
-static uint64_t
-ibvsmad_craccess_rw_vs(ibvs_mad *h, u_int32_t memory_address, int method, u_int8_t num_of_dwords, u_int32_t *data)
+static uint64_t ibvsmad_craccess_rw_vs(ibvs_mad *h, u_int32_t memory_address, int method, u_int8_t num_of_dwords, u_int32_t *data)
 {
     u_int8_t vsmad_data[IB_VENDOR_RANGE1_DATA_SIZE] = {0};
     ib_vendor_call_t call;
     int i;
-    u_int8_t* p;
+    u_int8_t *p;
     u_int64_t vkey;
 
     call.method     = method;
@@ -342,9 +340,9 @@ ibvsmad_craccess_rw_vs(ibvs_mad *h, u_int32_t memory_address, int method, u_int8
     }
 
     // TODO: Add the dword.
-    call.mod        = ( (EXTRACT(memory_address,0,16)<<00)&0x0000ffff ) |
-                      ( (num_of_dwords<<16)&0x00ff0000 ) |
-                      ( (EXTRACT(memory_address,16,8)<<24) & 0xff000000 );
+    call.mod        = ( (EXTRACT(memory_address, 0, 16) << 00) & 0x0000ffff ) |
+                      ( (num_of_dwords << 16) & 0x00ff0000 ) |
+                      ( (EXTRACT(memory_address, 16, 8) << 24) & 0xff000000 );
 
     DEBUG(("attrmod = %08x\n", call.mod));
 
@@ -362,7 +360,7 @@ ibvsmad_craccess_rw_vs(ibvs_mad *h, u_int32_t memory_address, int method, u_int8
     vkey = __cpu_to_be64(h->vkey);
     memcpy(vsmad_data, &vkey, 8);
 
-    if (method == IB_MAD_METHOD_SET)  {
+    if (method == IB_MAD_METHOD_SET) {
         for (i = 0; i < num_of_dwords; i++) {
             DWORD_TO_BYTES_BE(vsmad_data + IB_DATA_INDEX + i * 4, data + i);
         }
@@ -380,13 +378,12 @@ ibvsmad_craccess_rw_vs(ibvs_mad *h, u_int32_t memory_address, int method, u_int8
     return 0;
 }
 
-static uint64_t
-ibvsmad_craccess_rw(ibvs_mad *h, u_int32_t memory_address, int method, u_int8_t num_of_dwords, u_int32_t *data)
+static uint64_t ibvsmad_craccess_rw(ibvs_mad *h, u_int32_t memory_address, int method, u_int8_t num_of_dwords, u_int32_t *data)
 {
     if (h->use_smp) {
-        return ibvsmad_craccess_rw_smp(h,memory_address, method, num_of_dwords, data);
+        return ibvsmad_craccess_rw_smp(h, memory_address, method, num_of_dwords, data);
     } else {
-        return ibvsmad_craccess_rw_vs (h,memory_address, method, num_of_dwords, data);
+        return ibvsmad_craccess_rw_vs(h, memory_address, method, num_of_dwords, data);
     }
     return 0;
 }
@@ -399,8 +396,7 @@ int process_dynamic_linking(ibvs_mad *ivm, int mad_init)
 
     ivm->dl_handle = LoadLibrary(TEXT(LIB_IBMAD));
 
-    if (ivm->dl_handle != NULL )
-    {
+    if (ivm->dl_handle != NULL) {
         MY_GetProcAddress(ivm, mad_rpc_open_port        );
         MY_GetProcAddress(ivm, mad_rpc_close_port       );
         MY_GetProcAddress(ivm, ib_vendor_call_via       );
@@ -417,14 +413,15 @@ int process_dynamic_linking(ibvs_mad *ivm, int mad_init)
 
     } else {
 
-        IBERROR(("Failed to load "LIB_IBMAD".dll library %#x", (unsigned int)GetLastError()));
+        IBERROR(("Failed to load "LIB_IBMAD ".dll library %#x", (unsigned int)GetLastError()));
         errno = ENOENT;
         return -1;
     }
     return 0;
 }
 
-int free_dll_handle(mfile *mf) {
+int free_dll_handle(mfile *mf)
+{
     return FreeLibrary(((ibvs_mad*)(mf->ctx))->dl_handle);
 }
 
@@ -433,18 +430,18 @@ int free_dll_handle(mfile *mf) {
 int process_dynamic_linking(ibvs_mad *ivm, int mad_init)
 {
 
-    char* libs[] = {"libibmad.so.5"};
+    char *libs[] = {"libibmad.so.5"};
 
     u_int32_t i;
     (void)mad_init;
-    for (i = 0; i < sizeof(libs)/sizeof(libs[0]) ; i++) {
-        ivm->dl_handle = dlopen (libs[i], RTLD_LAZY);
+    for (i = 0; i < sizeof(libs) / sizeof(libs[0]); i++) {
+        ivm->dl_handle = dlopen(libs[i], RTLD_LAZY);
         if (ivm->dl_handle) {
             break;
         }
     }
     if (!ivm->dl_handle) {
-        const char* errstr=dlerror();
+        const char *errstr = dlerror();
         IBERROR(("%s", errstr));
         //free(ivm);
         return -1;
@@ -470,13 +467,14 @@ int process_dynamic_linking(ibvs_mad *ivm, int mad_init)
 }
 
 
-int free_dll_handle(mfile *mf) {
+int free_dll_handle(mfile *mf)
+{
     return dlclose(((ibvs_mad*)(mf->ctx))->dl_handle);
 }
 
 #endif
 
-char* my_strdup(const char* name)
+char* my_strdup(const char *name)
 {
     int len;
     char *buf;
@@ -500,8 +498,9 @@ char* my_strdup(const char* name)
 #define MTCR_IB_VKEY        "MTCR_IB_VKEY"
 #define MTCR_IBMAD_DEBUG "MTCR_IBMAD_DEBUG"
 
-int get_env_var(char *env_name, int *env_var) {
-    char* env_val;
+int get_env_var(char *env_name, int *env_var)
+{
+    char *env_val;
     env_val = getenv(env_name);
     if (env_val) {
         *env_var = atol(env_val);
@@ -510,7 +509,7 @@ int get_env_var(char *env_name, int *env_var) {
 }
 int get_64_env_var(char *env_name, u_int64_t *env_var)
 {
-    char* env_val, *endp = NULL;
+    char *env_val, *endp = NULL;
     env_val = getenv(env_name);
     if (env_val) {
         *env_var = strtoull(env_val, &endp, 0);
@@ -528,25 +527,25 @@ int get_env_vars(ibvs_mad *ivm)
 
 
 
-int is_vs_crspace_supported(ibvs_mad* h)
+int is_vs_crspace_supported(ibvs_mad *h)
 {
-    u_int8_t* p;
+    u_int8_t *p;
     u_int8_t mad_data[IB_SMP_DATA_SIZE] = {0};
     u_int32_t dev_id;
     u_int32_t data = 0;
     int i = 0;
     u_int32_t unsupported_devs[UNSUPP_DEVS_NUM] = {
-            0x6746, /* MT26438 [ConnectX-2 VPI w/ Virtualization+]"*/
-            0x6764, /* MT26468 [Mountain top]"                     */
-            0xbd34, /* IS4 IB SDR"                                 */
-            0xbd35, /* IS4 IB DDR"                                 */
-            0xbd36, /* IS4 IB QDR"                                 */
-            0xfa66, /* BridgeX VPI up, E/FC down"                  */
-            0xfa7a, /* BridgeX EN up, E/FC down"                   */
-            0x1001, /* ConnectX-2 VF"                              */
-            0x1003, /* MT27500 [ConnectX-3]"                       */
-            0x1005, /* MT27510 Family"                             */
-            0x1007, /* MT27520 ConnectX-3 Pro Family"              */
+        0x6746,     /* MT26438 [ConnectX-2 VPI w/ Virtualization+]"*/
+        0x6764,     /* MT26468 [Mountain top]"                     */
+        0xbd34,     /* IS4 IB SDR"                                 */
+        0xbd35,     /* IS4 IB DDR"                                 */
+        0xbd36,     /* IS4 IB QDR"                                 */
+        0xfa66,     /* BridgeX VPI up, E/FC down"                  */
+        0xfa7a,     /* BridgeX EN up, E/FC down"                   */
+        0x1001,     /* ConnectX-2 VF"                              */
+        0x1003,     /* MT27500 [ConnectX-3]"                       */
+        0x1005,     /* MT27510 Family"                             */
+        0x1007,     /* MT27520 ConnectX-3 Pro Family"              */
 
     };
     uint64_t ret = ibvsmad_craccess_rw_vs(h, DEVID_ADDRESS, IB_MAD_METHOD_GET, 1, &data);
@@ -581,30 +580,29 @@ int is_vs_crspace_supported(ibvs_mad* h)
 int mib_open(const char *name, mfile *mf, int mad_init)
 {
     char        *ca              = 0;
-    int          mgmt_classes[4] = {IB_SMI_CLASS,
-                                    IB_SMI_DIRECT_CLASS,
-                                    IB_VENDOR_SPECIFIC_CLASS_0xA,
-                                    IB_VENDOR_SPECIFIC_CLASS_0x9};
+    int mgmt_classes[4] = {IB_SMI_CLASS,
+                           IB_SMI_DIRECT_CLASS,
+                           IB_VENDOR_SPECIFIC_CLASS_0xA,
+                           IB_VENDOR_SPECIFIC_CLASS_0x9};
     ib_portid_t *sm_id           = 0;
-    int          ca_port         = 0;
-    int          dest_type       = IB_DEST_LID;
+    int ca_port         = 0;
+    int dest_type       = IB_DEST_LID;
     ibvs_mad    *ivm             = NULL;
     char        *nbuf            = NULL;
     char        *path_str, *p;
-    int          rc              = -1;
-    int         lid_provided = 0;
+    int rc              = -1;
+    int lid_provided = 0;
     char        *sl_str;
 
-    char* first_comma;
-    char* second_comma;
+    char *first_comma;
+    char *second_comma;
     //ibdebug = 1;
     if (!mf || !name) {
         IBERROR(("Bad(null) device argument for inband access"));
         errno = EINVAL;
         goto end;
     }
-    if (!(ivm=(ibvs_mad*)malloc(sizeof(ibvs_mad))))
-    {
+    if (!(ivm = (ibvs_mad*)malloc(sizeof(ibvs_mad)))) {
         IBERROR(("can't allocate ibvsmad_mfile"));
         errno = ENOMEM;
         goto end;
@@ -649,13 +647,13 @@ int mib_open(const char *name, mfile *mf, int mad_init)
 
         second_comma = strstr(ca, ",");
         if (second_comma) {
-            char* ep;
+            char *ep;
             *second_comma = '\0';
 
             ca_port = strtol(second_comma + 1, &ep, 0);
 
             if (*ep != '\0') {
-                IBERROR(("Bad port number format (%s)", second_comma+1));
+                IBERROR(("Bad port number format (%s)", second_comma + 1));
                 errno = EINVAL;
                 goto end;
             }
@@ -670,8 +668,8 @@ int mib_open(const char *name, mfile *mf, int mad_init)
     // The DR in the device name is a '.' separated list.
     // Change it to a ',' separated list like ibmad likes.
     if (dest_type == IB_DEST_DRPATH) {
-        char* c;
-        for (c = path_str; *c ; c++) {
+        char *c;
+        for (c = path_str; *c; c++) {
             if (*c == '.') {
                 *c = ',';
             }
@@ -691,7 +689,7 @@ int mib_open(const char *name, mfile *mf, int mad_init)
     ivm->mad_get_field             = mad_get_field;
     ivm->portid2str                = portid2str;
 #else
-    if (process_dynamic_linking(ivm, mad_init) == -1 ) {
+    if (process_dynamic_linking(ivm, mad_init) == -1) {
         goto end;
     }
 #endif
@@ -707,8 +705,7 @@ int mib_open(const char *name, mfile *mf, int mad_init)
 
     rc = ivm->ib_resolve_portid_str_via(&ivm->portid, (char*)path_str,
                                         dest_type, sm_id, ivm->srcport);
-    if (rc != 0)
-    {
+    if (rc != 0) {
         IBERROR(("can't resolve destination port %s", path_str));
         goto end;
     }
@@ -731,7 +728,7 @@ int mib_open(const char *name, mfile *mf, int mad_init)
     if (!ivm->use_smp) {
         sl_str = getenv(MTCR_IBSL_ENV);
         if (sl_str) {
-            char* ep;
+            char *ep;
             u_int32_t sl = strtoul(sl_str, &ep, 0);
             if (*ep) {
                 fprintf(stderr, "-E- Failed to parse env var %s (%s). Ignorring\n", MTCR_IBSL_ENV, sl_str);
@@ -770,13 +767,12 @@ end:
 *    Free resources
 *
 */
-int
-mib_close(mfile *mf)
+int mib_close(mfile *mf)
 {
     if (mf) {
         if (mf->ctx) {
-        // TODO: free the ddl handlers
-            ibvs_mad* h = (ibvs_mad*)(mf->ctx);
+            // TODO: free the ddl handlers
+            ibvs_mad *h = (ibvs_mad*)(mf->ctx);
             h->mad_rpc_close_port(h->srcport);
     #ifndef IBVSMAD_DLOPEN
             free_dll_handle(mf);
@@ -789,10 +785,10 @@ mib_close(mfile *mf)
 }
 
 #define CHECK_ALIGN(length) { \
-    if (length % 4) {                                       \
-        IBERROR(("Size must be 4 aligned, got %d", length));\
-        return -1;                                          \
-    }                                                       \
+        if (length % 4) {                                       \
+            IBERROR(("Size must be 4 aligned, got %d", length)); \
+            return -1;                                          \
+        }                                                       \
 }
 
 
@@ -802,7 +798,7 @@ int mib_get_chunk_size(mfile *mf)
         IBERROR(("get chunk size failed. Null Param."));
         return -1;
     }
-    ibvs_mad* h = (ibvs_mad*)(mf->ctx);
+    ibvs_mad *h = (ibvs_mad*)(mf->ctx);
     if (h->use_smp) {
         return MAX_IB_SMP_DATA_SIZE;
     }
@@ -814,14 +810,13 @@ int mib_get_chunk_size(mfile *mf)
 *    Read an IS3 CR-Space 32 bit register
 *
 */
-int
-mib_read4(mfile *mf, u_int32_t memory_address, u_int32_t *data)
+int mib_read4(mfile *mf, u_int32_t memory_address, u_int32_t *data)
 {
     if (!mf || !mf->ctx || !data) {
         IBERROR(("cr access read failed. Null Param."));
         return -1;
     }
-    ibvs_mad* h = (ibvs_mad*)(mf->ctx);
+    ibvs_mad *h = (ibvs_mad*)(mf->ctx);
 
     DEBUG(("mread4 of 0x%08x", memory_address));
     if (ibvsmad_craccess_rw(h, memory_address, IB_MAD_METHOD_GET, 1, data) == ~0ull) {
@@ -836,14 +831,13 @@ mib_read4(mfile *mf, u_int32_t memory_address, u_int32_t *data)
 *    Write an IS3 CR-Space 32 bit register
 *
 */
-int
-mib_write4(mfile *mf, u_int32_t memory_address, u_int32_t _data)
+int mib_write4(mfile *mf, u_int32_t memory_address, u_int32_t _data)
 {
     if (!mf || !mf->ctx) {
         IBERROR(("cr access write failed. Null Param."));
         return -1;
     }
-    ibvs_mad* h = (ibvs_mad*)(mf->ctx);
+    ibvs_mad *h = (ibvs_mad*)(mf->ctx);
 
     u_int32_t data = _data;
     DEBUG(("mwrite4 of 0x%08x\n", memory_address));
@@ -866,7 +860,7 @@ int mib_block_op(mfile *mf, unsigned int offset, u_int32_t *data, int length, in
         IBERROR(("cr access read failed. Null Param."));
         return -1;
     }
-    ibvs_mad* h = (ibvs_mad*)(mf->ctx);
+    ibvs_mad *h = (ibvs_mad*)(mf->ctx);
     int method = IB_MAD_METHOD_GET;
     if (op == BLOCKOP_WRITE) {
         method = IB_MAD_METHOD_SET;
@@ -877,9 +871,9 @@ int mib_block_op(mfile *mf, unsigned int offset, u_int32_t *data, int length, in
     while (t_offset < length) {
         int left_size = length - t_offset;
         int to_op = left_size > chunk_size ? chunk_size : left_size;
-        if (ibvsmad_craccess_rw(h, offset + t_offset, method, (to_op / 4), data + t_offset/4) == ~0ull) {
+        if (ibvsmad_craccess_rw(h, offset + t_offset, method, (to_op / 4), data + t_offset / 4) == ~0ull) {
             IBERROR(("cr access %s to %s failed", op == BLOCKOP_READ ? "read" : "write",
-                    h->portid2str(&h->portid)));
+                     h->portid2str(&h->portid)));
             return -1;
         }
         t_offset += chunk_size;
@@ -896,9 +890,9 @@ MTCR_API int mib_writeblock(mfile *mf, unsigned int offset, u_int32_t *data, int
     return mib_block_op(mf, offset, data, length, BLOCKOP_WRITE);
 }
 
-int is_node_managed(ibvs_mad* h)
+int is_node_managed(ibvs_mad *h)
 {
-    u_int8_t* p;
+    u_int8_t *p;
     u_int8_t mad_data[IB_SMP_DATA_SIZE] = {0};
     u_int8_t enhanced_port;
 
@@ -919,8 +913,7 @@ int is_node_managed(ibvs_mad* h)
 
 */
 #define MTCR_SWRESET_ENV "MTCR_SWRESET_TIMER"
-int
-mib_swreset(mfile *mf)
+int mib_swreset(mfile *mf)
 {
     if (!mf || !mf->ctx) {
         errno = EINVAL;
@@ -929,26 +922,26 @@ mib_swreset(mfile *mf)
     }
 
     u_int32_t swreset_timer = 15;
-    char* ep;
-    char* swreset_env;
-    ibvs_mad* h = (ibvs_mad*)(mf->ctx);
-    u_int8_t* p;
+    char *ep;
+    char *swreset_env;
+    ibvs_mad *h = (ibvs_mad*)(mf->ctx);
+    u_int8_t *p;
     u_int8_t vsmad_data[IB_VENDOR_RANGE1_DATA_SIZE] = {0};
     ib_vendor_call_t call;
 
     swreset_env = getenv(MTCR_SWRESET_ENV);
     if (swreset_env) {
 
-         u_int32_t new_timer = strtol(swreset_env, &ep, 0);
-         if (*ep != '\0') {
-             fprintf(stderr, "-W- Bad %s env var format. Ignoring\n", MTCR_SWRESET_ENV);
-         } else if (new_timer > 255) {
-                     fprintf(stderr, "-W- Bad %s env var value ( > 255). Ignoring\n", MTCR_SWRESET_ENV);
-         } else {
+        u_int32_t new_timer = strtol(swreset_env, &ep, 0);
+        if (*ep != '\0') {
+            fprintf(stderr, "-W- Bad %s env var format. Ignoring\n", MTCR_SWRESET_ENV);
+        } else if (new_timer > 255) {
+            fprintf(stderr, "-W- Bad %s env var value ( > 255). Ignoring\n", MTCR_SWRESET_ENV);
+        } else {
             /* All OK */
             fprintf(stderr, "-I- Set reset timer to %d seconds\n", new_timer);
             swreset_timer = new_timer;
-         }
+        }
     }
 
     if (is_node_managed(h)) {
@@ -965,8 +958,9 @@ mib_swreset(mfile *mf)
     memset(&call.rmpp, 0, sizeof call.rmpp);
 
     p = h->ib_vendor_call_via(vsmad_data, &h->portid, &call, h->srcport);
-    if (!p)
+    if (!p) {
         return -1;
+    }
 
     return 0;
 }
@@ -978,18 +972,22 @@ static int mib_status_translate(int status)
     switch ((status >> 2) & 0x7) {
     case 1:
         return ME_MAD_BAD_VER;
+
     case 2:
         return ME_MAD_METHOD_NOT_SUPP;
+
     case 3:
         return ME_MAD_METHOD_ATTR_COMB_NOT_SUPP;
+
     case 7:
         return ME_MAD_BAD_DATA;
     }
 
-    if (status & 0x1)
+    if (status & 0x1) {
         return ME_MAD_BUSY;
-    else if ((status >> 1) & 0x1)
+    } else if ((status >> 1) & 0x1) {
         return ME_MAD_REDIRECT;
+    }
 
     return ME_MAD_GENERAL_ERR;
 }
@@ -1000,8 +998,8 @@ int mib_acces_reg_mad(mfile *mf, u_int8_t *data)
         IBERROR(("mib_acces_reg_mad failed. Null Param."));
         return ME_BAD_PARAMS;
     }
-    u_int8_t* p;
-    ibvs_mad* h = (ibvs_mad*)(mf->ctx);
+    u_int8_t *p;
+    ibvs_mad *h = (ibvs_mad*)(mf->ctx);
     int status = -1;
 
     // Call smp set function
@@ -1021,15 +1019,15 @@ int mib_acces_reg_mad(mfile *mf, u_int8_t *data)
     return ME_OK;
 }
 
-int mib_smp_set(mfile* mf, u_int8_t* data, u_int16_t attr_id, u_int32_t attr_mod)
+int mib_smp_set(mfile *mf, u_int8_t *data, u_int16_t attr_id, u_int32_t attr_mod)
 {
     if (!mf || !mf->ctx || !data) {
         IBERROR(("mib_smp_set failed. Null Param."));
         return ME_BAD_PARAMS;
     }
-    u_int8_t* p;
+    u_int8_t *p;
     int status = -1;
-    ibvs_mad* h = (ibvs_mad*)(mf->ctx);
+    ibvs_mad *h = (ibvs_mad*)(mf->ctx);
     // Call smp set function
     if (h->smp_set_status_via) {
         p = h->smp_set_status_via(data, &(h->portid), attr_id, attr_mod, 0, &status, h->srcport);
@@ -1047,15 +1045,15 @@ int mib_smp_set(mfile* mf, u_int8_t* data, u_int16_t attr_id, u_int32_t attr_mod
     return ME_OK;
 }
 
-int mib_smp_get(mfile* mf, u_int8_t* data, u_int16_t attr_id, u_int32_t attr_mod)
+int mib_smp_get(mfile *mf, u_int8_t *data, u_int16_t attr_id, u_int32_t attr_mod)
 {
     if (!mf || !mf->ctx || !data) {
         IBERROR(("mib_smp_get failed. Null Param."));
         return ME_BAD_PARAMS;
     }
-    u_int8_t* p;
+    u_int8_t *p;
     int status = -1;
-    ibvs_mad* h = (ibvs_mad*)(mf->ctx);
+    ibvs_mad *h = (ibvs_mad*)(mf->ctx);
 
     // Call smp set function
     if (h->smp_query_status_via) {

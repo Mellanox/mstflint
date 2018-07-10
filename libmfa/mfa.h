@@ -50,18 +50,18 @@ enum mfa_image_types {
 typedef struct mfa_desc mfa_desc;
 
 void        mfa_init(); //Must be called before any MFA function to perform one time initializations
-int         mfa_open_buf(mfa_desc**, u_int8_t* arbuf, int size);
-int         mfa_open_file(mfa_desc**, char* fname);
-int         mfa_close(mfa_desc* mfa_d);
-ssize_t     mfa_get_image(mfa_desc* mfa_d, char* board_type_id, u_int8_t type, char* selector_tag, u_int8_t **buffer);
-char*       mfa_get_board_metadata(mfa_desc* mfa_d, char* board_type_id, char* key);
-void        mfa_release_image(u_int8_t* buffer);
-const char* mfa_get_last_error(mfa_desc* mfa_d);
-int         mfa_get_crc32(u_int8_t* arbuf, long sz, u_int32_t *ar_crc, u_int32_t *calc_crc);
-char*       mfa_get_map_entry_metadata(map_entry_hdr* map_entry, char* key);
-map_entry_hdr*   mfa_get_next_mentry(mfa_desc* mfa_d, map_entry_hdr* curr_me);
-map_image_entry* mfa_get_map_image(map_entry_hdr* me, int image_index);
-toc_entry*       mfa_get_image_toc(mfa_desc* mfa_d, map_image_entry* img_e);
+int         mfa_open_buf(mfa_desc**, u_int8_t *arbuf, int size);
+int         mfa_open_file(mfa_desc**, char *fname);
+int         mfa_close(mfa_desc *mfa_d);
+ssize_t     mfa_get_image(mfa_desc *mfa_d, char *board_type_id, u_int8_t type, char *selector_tag, u_int8_t **buffer);
+char*       mfa_get_board_metadata(mfa_desc *mfa_d, char *board_type_id, char *key);
+void        mfa_release_image(u_int8_t *buffer);
+const char* mfa_get_last_error(mfa_desc *mfa_d);
+int         mfa_get_crc32(u_int8_t *arbuf, long sz, u_int32_t *ar_crc, u_int32_t *calc_crc);
+char*       mfa_get_map_entry_metadata(map_entry_hdr *map_entry, char *key);
+map_entry_hdr*   mfa_get_next_mentry(mfa_desc *mfa_d, map_entry_hdr *curr_me);
+map_image_entry* mfa_get_map_image(map_entry_hdr *me, int image_index);
+toc_entry*       mfa_get_image_toc(mfa_desc *mfa_d, map_image_entry *img_e);
 
 #ifdef __cplusplus
 }

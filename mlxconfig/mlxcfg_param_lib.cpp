@@ -55,7 +55,7 @@
 enum {
     SRIOV_MASK = 0x1,
     WOL_P1_MASK = 0x2,
-    WOL_P2_MASK = 0x4 ,
+    WOL_P2_MASK = 0x4,
     VPI_P1_MASK = 0x8,
     VPI_P2_MASK = 0x10,
     BAR_SZ_MASK = 0x20
@@ -88,119 +88,131 @@ enum {
  */
 
 #define SET_ON_DEV_5TH_GEN(mf, ignoreCheck, tlvStructName, tlvNameStr) \
-        MError __mRc;\
-        if (!(ignoreCheck) && !checkCfg()) {\
-            return MCE_BAD_PARAMS;\
-        }\
-        int __tlvBuffSize = tlvStructName##_size();\
-        u_int8_t __tlvBuff[__tlvBuffSize];\
-        memset(__tlvBuff, 0, __tlvBuffSize);\
-        struct tlvStructName __tlvStruct;\
-        memset(&__tlvStruct, 0, sizeof(__tlvStruct));\
-        __mRc = mnvaCom5thGen(mf, __tlvBuff, __tlvBuffSize, getTlvTypeBe(), REG_ACCESS_METHOD_GET);\
-        if (__mRc && __mRc != ME_REG_ACCESS_RES_NOT_AVLBL) {\
-            return errmsg("failed to set %s settings: %s", tlvNameStr, m_err2str(__mRc));\
-        }\
-        tlvStructName##_unpack(&__tlvStruct, __tlvBuff);\
-        updateTlvFromClassAttr((void*)&__tlvStruct);\
-        tlvStructName##_pack(&__tlvStruct, __tlvBuff);\
-        __mRc = mnvaCom5thGen(mf, __tlvBuff, __tlvBuffSize, getTlvTypeBe(), REG_ACCESS_METHOD_SET);\
-        if (__mRc) {\
-            return errmsg("failed to set %s settings: %s", tlvNameStr, m_err2str(__mRc));\
-        }\
-        _updated = false;\
-        return MCE_SUCCESS
+    MError __mRc; \
+    if (!(ignoreCheck) && !checkCfg()) { \
+        return MCE_BAD_PARAMS; \
+    } \
+    int __tlvBuffSize = tlvStructName##_size(); \
+    u_int8_t *__tlvBuff = new u_int8_t[__tlvBuffSize];\
+    memset(__tlvBuff, 0, __tlvBuffSize); \
+    struct tlvStructName __tlvStruct; \
+    memset(&__tlvStruct, 0, sizeof(__tlvStruct)); \
+    __mRc = mnvaCom5thGen(mf, __tlvBuff, __tlvBuffSize, getTlvTypeBe(), REG_ACCESS_METHOD_GET); \
+    if (__mRc && __mRc != ME_REG_ACCESS_RES_NOT_AVLBL) { \
+        delete[] __tlvBuff; \
+        return errmsg("failed to set %s settings: %s", tlvNameStr, m_err2str(__mRc)); \
+    } \
+    tlvStructName##_unpack(&__tlvStruct, __tlvBuff); \
+    updateTlvFromClassAttr((void*)&__tlvStruct); \
+    tlvStructName##_pack(&__tlvStruct, __tlvBuff); \
+    __mRc = mnvaCom5thGen(mf, __tlvBuff, __tlvBuffSize, getTlvTypeBe(), REG_ACCESS_METHOD_SET); \
+    delete[] __tlvBuff; \
+    if (__mRc) { \
+        return errmsg("failed to set %s settings: %s", tlvNameStr, m_err2str(__mRc)); \
+    } \
+    _updated = false; \
+    return MCE_SUCCESS
 
 #define GET_DEFAULT_5TH_GEN(mf, tlvStructName, tlvNameStr) \
-        MError __mRc;\
-        int __tlvBuffSize = tlvStructName##_size();\
-        u_int8_t __tlvBuff[__tlvBuffSize];\
-        memset(__tlvBuff, 0, __tlvBuffSize);\
-        struct tlvStructName __tlvStruct;\
-        memset(&__tlvStruct, 0, sizeof(__tlvStruct));\
-        __mRc = mnvaCom5thGen(mf, &__tlvBuff[0], __tlvBuffSize, getTlvTypeBe(), REG_ACCESS_METHOD_GET, true);\
-        if (__mRc) {\
-            if (__mRc == ME_REG_ACCESS_RES_NOT_AVLBL) {\
-                return MCE_SUCCESS;\
-            }\
-            return errmsg("Failed to get %s settings: %s", tlvNameStr, m_err2str(__mRc));\
-        }\
-        tlvStructName##_unpack(&__tlvStruct, &__tlvBuff[0]);\
-        updateClassDefaultAttrFromTlv((void*)&__tlvStruct);\
-        updateClassAttrFromDefaultParams();\
-       return MCE_SUCCESS
+    MError __mRc; \
+    int __tlvBuffSize = tlvStructName##_size(); \
+    u_int8_t *__tlvBuff = new u_int8_t[__tlvBuffSize]; \
+    memset(__tlvBuff, 0, __tlvBuffSize); \
+    struct tlvStructName __tlvStruct; \
+    memset(&__tlvStruct, 0, sizeof(__tlvStruct)); \
+    __mRc = mnvaCom5thGen(mf, &__tlvBuff[0], __tlvBuffSize, getTlvTypeBe(), REG_ACCESS_METHOD_GET, true); \
+    if (__mRc) { \
+        delete[] __tlvBuff; \
+        if (__mRc == ME_REG_ACCESS_RES_NOT_AVLBL) { \
+            return MCE_SUCCESS; \
+        } \
+        return errmsg("Failed to get %s settings: %s", tlvNameStr, m_err2str(__mRc)); \
+    } \
+    tlvStructName##_unpack(&__tlvStruct, &__tlvBuff[0]); \
+    updateClassDefaultAttrFromTlv((void*)&__tlvStruct); \
+    updateClassAttrFromDefaultParams(); \
+    delete[] __tlvBuff; \
+    return MCE_SUCCESS
 
 #define GET_FROM_DEV_5TH_GEN(mf, tlvStructName, tlvNameStr) \
-        MError __mRc;\
-        int __tlvBuffSize = tlvStructName##_size();\
-        u_int8_t __tlvBuff[__tlvBuffSize];\
-        memset(__tlvBuff, 0, __tlvBuffSize);\
-        struct tlvStructName __tlvStruct;\
-        memset(&__tlvStruct, 0, sizeof(__tlvStruct));\
-        if (_updated) {\
-            return MCE_SUCCESS;\
-        }\
-        __mRc = mnvaCom5thGen(mf, &__tlvBuff[0], __tlvBuffSize, getTlvTypeBe(), REG_ACCESS_METHOD_GET);\
-        if (__mRc) {\
-            if (__mRc == ME_REG_ACCESS_RES_NOT_AVLBL) {\
-                return MCE_SUCCESS;\
-            }\
-            return errmsg("Failed to get %s settings: %s", tlvNameStr, m_err2str(__mRc));\
-        }\
-        tlvStructName##_unpack(&__tlvStruct, &__tlvBuff[0]);\
-        updateClassAttrFromTlv((void*)&__tlvStruct);\
-        _updated = true;\
-       return MCE_SUCCESS
+    MError __mRc; \
+    int __tlvBuffSize = tlvStructName##_size(); \
+    u_int8_t *__tlvBuff = new u_int8_t[__tlvBuffSize]; \
+    memset(__tlvBuff, 0, __tlvBuffSize); \
+    struct tlvStructName __tlvStruct; \
+    memset(&__tlvStruct, 0, sizeof(__tlvStruct)); \
+    if (_updated) { \
+        delete[] __tlvBuff; \
+        return MCE_SUCCESS; \
+    } \
+    __mRc = mnvaCom5thGen(mf, &__tlvBuff[0], __tlvBuffSize, getTlvTypeBe(), REG_ACCESS_METHOD_GET); \
+    if (__mRc) { \
+        delete[] __tlvBuff; \
+        if (__mRc == ME_REG_ACCESS_RES_NOT_AVLBL) { \
+            return MCE_SUCCESS; \
+        } \
+        return errmsg("Failed to get %s settings: %s", tlvNameStr, m_err2str(__mRc)); \
+    } \
+    tlvStructName##_unpack(&__tlvStruct, &__tlvBuff[0]); \
+    updateClassAttrFromTlv((void*)&__tlvStruct); \
+    _updated = true; \
+    delete[] __tlvBuff; \
+    return MCE_SUCCESS
 
 #define SET_ON_DEV_4TH_GEN(mf, ignoreCheck, tlvStructName, tlvNameStr, typeMod) \
-        MError __mRc;\
-        if (!(ignoreCheck) && !checkCfg()) {\
-            return MCE_BAD_PARAMS;\
-        }\
-        int __tlvBuffSize = tlvStructName##_size();\
-        u_int8_t __tlvBuff[__tlvBuffSize];\
-        memset(__tlvBuff, 0, __tlvBuffSize);\
-        struct tlvStructName __tlvStruct;\
-        memset(&__tlvStruct, 0, sizeof(__tlvStruct));\
-        __mRc = mnvaCom4thGen(mf, __tlvBuff, __tlvBuffSize, tlvTypeIdx, REG_ACCESS_METHOD_GET, typeMod);\
-        if (__mRc && __mRc != ME_REG_ACCESS_RES_NOT_AVLBL) {\
-            return errmsg("failed to set %s settings: %s", tlvNameStr, m_err2str(__mRc));\
-        }\
-        tlvStructName##_unpack(&__tlvStruct, __tlvBuff);\
-        updateTlvFromClassAttr((void*)&__tlvStruct);\
-        tlvStructName##_pack(&__tlvStruct, __tlvBuff);\
-        __mRc = mnvaCom4thGen(mf, __tlvBuff, __tlvBuffSize, tlvTypeIdx, REG_ACCESS_METHOD_SET, typeMod);\
-        if (__mRc) {\
-            return errmsg("failed to set %s settings: %s", tlvNameStr, m_err2str(__mRc));\
-        }\
-        _updated = false;\
-        return MCE_SUCCESS
+    MError __mRc; \
+    if (!(ignoreCheck) && !checkCfg()) { \
+        return MCE_BAD_PARAMS; \
+    } \
+    int __tlvBuffSize = tlvStructName##_size(); \
+    u_int8_t *__tlvBuff = new u_int8_t[__tlvBuffSize]; \
+    memset(__tlvBuff, 0, __tlvBuffSize); \
+    struct tlvStructName __tlvStruct; \
+    memset(&__tlvStruct, 0, sizeof(__tlvStruct)); \
+    __mRc = mnvaCom4thGen(mf, __tlvBuff, __tlvBuffSize, tlvTypeIdx, REG_ACCESS_METHOD_GET, typeMod); \
+    if (__mRc && __mRc != ME_REG_ACCESS_RES_NOT_AVLBL) { \
+        delete[] __tlvBuff; \
+        return errmsg("failed to set %s settings: %s", tlvNameStr, m_err2str(__mRc)); \
+    } \
+    tlvStructName##_unpack(&__tlvStruct, __tlvBuff); \
+    updateTlvFromClassAttr((void*)&__tlvStruct); \
+    tlvStructName##_pack(&__tlvStruct, __tlvBuff); \
+    __mRc = mnvaCom4thGen(mf, __tlvBuff, __tlvBuffSize, tlvTypeIdx, REG_ACCESS_METHOD_SET, typeMod); \
+    delete[] __tlvBuff; \
+    if (__mRc) { \
+        return errmsg("failed to set %s settings: %s", tlvNameStr, m_err2str(__mRc)); \
+    } \
+    _updated = false; \
+    return MCE_SUCCESS
 
 #define GET_FROM_DEV_4TH_GEN(mf, tlvStructName, tlvNameStr, typeMod) \
-        MError __mRc;\
-        int __tlvBuffSize = tlvStructName##_size();\
-        u_int8_t __tlvBuff[__tlvBuffSize];\
-        memset(__tlvBuff, 0, __tlvBuffSize);\
-        struct tlvStructName __tlvStruct;\
-        memset(&__tlvStruct, 0, sizeof(__tlvStruct));\
-        if (_updated) {\
-            return MCE_SUCCESS;\
-        }\
-        __mRc = mnvaCom4thGen(mf, &__tlvBuff[0], __tlvBuffSize, tlvTypeIdx, REG_ACCESS_METHOD_GET, typeMod);\
-        if (__mRc) {\
-            if (__mRc == ME_REG_ACCESS_RES_NOT_AVLBL) {\
-                return MCE_SUCCESS;\
-            }\
-            return errmsg("Failed to get %s settings: %s", tlvNameStr, m_err2str(__mRc));\
-        }\
-        tlvStructName##_unpack(&__tlvStruct, &__tlvBuff[0]);\
-        updateClassAttrFromTlv((void*)&__tlvStruct);\
-        _updated = true;\
-       return MCE_SUCCESS
+    MError __mRc; \
+    int __tlvBuffSize = tlvStructName##_size(); \
+    u_int8_t *__tlvBuff = new u_int8_t[__tlvBuffSize]; \
+    memset(__tlvBuff, 0, __tlvBuffSize); \
+    struct tlvStructName __tlvStruct; \
+    memset(&__tlvStruct, 0, sizeof(__tlvStruct)); \
+    if (_updated) { \
+        delete[] __tlvBuff; \
+        return MCE_SUCCESS; \
+    } \
+    __mRc = mnvaCom4thGen(mf, &__tlvBuff[0], __tlvBuffSize, tlvTypeIdx, REG_ACCESS_METHOD_GET, typeMod); \
+    if (__mRc) { \
+        delete[] __tlvBuff; \
+        if (__mRc == ME_REG_ACCESS_RES_NOT_AVLBL) { \
+            return MCE_SUCCESS; \
+        } \
+        return errmsg("Failed to get %s settings: %s", tlvNameStr, m_err2str(__mRc)); \
+    } \
+    tlvStructName##_unpack(&__tlvStruct, &__tlvBuff[0]); \
+    updateClassAttrFromTlv((void*)&__tlvStruct); \
+    _updated = true; \
+    delete[] __tlvBuff; \
+    return MCE_SUCCESS
 
 
 /*static void dealWithSignal()
-{
+   {
     int sig;
     sig = mft_signal_is_fired();
     if (sig) {
@@ -213,14 +225,14 @@ enum {
     }
     mft_signal_set_handling(0);
     return;
-}*/
+   }*/
 
 /*
  * Adrianc: TODO: create a SetTlv class and two child classess , for 4th/5th gen.
  *          each param class will have an instance of SetTlv class
  */
 
-MError mnvaCom4thGen(mfile* mf, u_int8_t* buff, u_int16_t len, u_int16_t tlvTypeIdx, reg_access_method_t method, u_int16_t typeMod)
+MError mnvaCom4thGen(mfile *mf, u_int8_t *buff, u_int16_t len, u_int16_t tlvTypeIdx, reg_access_method_t method, u_int16_t typeMod)
 {
     struct tools_open_mnva mnvaTlv;
     memset(&mnvaTlv, 0, sizeof(struct tools_open_mnva));
@@ -242,7 +254,7 @@ MError mnvaCom4thGen(mfile* mf, u_int8_t* buff, u_int16_t len, u_int16_t tlvType
 }
 
 /*MError mnvaCom5thGen(mfile* mf, u_int8_t* buff, u_int16_t len, u_int32_t tlvType, reg_access_method_t method, bool getDefault=false)
-{
+   {
     struct tools_open_nvda mnvaTlv;
     memset(&mnvaTlv, 0, sizeof(struct tools_open_nvda));
 
@@ -267,10 +279,10 @@ MError mnvaCom4thGen(mfile* mf, u_int8_t* buff, u_int16_t len, u_int16_t tlvType
     }
     memcpy(buff, mnvaTlv.data, len);
     return ME_OK;
-}
+   }
 
-MError nvqcCom5thGen(mfile* mf, u_int32_t tlvType, bool& suppRead, bool& suppWrite)
-{
+   MError nvqcCom5thGen(mfile* mf, u_int32_t tlvType, bool& suppRead, bool& suppWrite)
+   {
     struct tools_open_nvqc nvqcTlv;
     memset(&nvqcTlv, 0, sizeof(struct tools_open_nvqc));
 
@@ -287,17 +299,18 @@ MError nvqcCom5thGen(mfile* mf, u_int32_t tlvType, bool& suppRead, bool& suppWri
     suppRead = nvqcTlv.support_rd;
     suppWrite = nvqcTlv.support_wr;
     return ME_OK;
-}*/
+   }*/
 
 /***************************
- * Class implementations :
- ***************************/
+* Class implementations :
+***************************/
 
 /*
  * CfgParams Class implementation :
  */
 
-CfgParams::CfgParams(mlxCfgType t, u_int32_t tlvT) {
+CfgParams::CfgParams(mlxCfgType t, u_int32_t tlvT)
+{
     // init the ErrMsg Class
     std::map<int, std::string> errmap;
     errmap[MCE_SUCCESS] = "Success";
@@ -316,7 +329,7 @@ CfgParams::CfgParams(mlxCfgType t, u_int32_t tlvT) {
     _devCapVec = 0;
 }
 
-int CfgParams::getDefaultParams4thGen(mfile* mf, struct tools_open_query_def_params_global* global_params)
+int CfgParams::getDefaultParams4thGen(mfile *mf, struct tools_open_query_def_params_global *global_params)
 {
     mft_signal_set_handling(1);
     MError rc  = tcif_query_global_def_params(mf, global_params);
@@ -327,7 +340,7 @@ int CfgParams::getDefaultParams4thGen(mfile* mf, struct tools_open_query_def_par
     return MCE_SUCCESS;
 }
 
-int CfgParams::getDefaultParams4thGen(mfile* mf, int port, struct tools_open_query_def_params_per_port* port_params)
+int CfgParams::getDefaultParams4thGen(mfile *mf, int port, struct tools_open_query_def_params_per_port *port_params)
 {
     mft_signal_set_handling(1);
     MError rc  = tcif_query_per_port_def_params(mf, port, port_params);
@@ -338,7 +351,7 @@ int CfgParams::getDefaultParams4thGen(mfile* mf, int port, struct tools_open_que
     return MCE_SUCCESS;
 }
 
-int CfgParams::getDefaultAndFromDev(mfile* mf)
+int CfgParams::getDefaultAndFromDev(mfile *mf)
 {
     int rc;
     rc = getDefaultParams(mf); CHECK_RC(rc);
@@ -346,7 +359,7 @@ int CfgParams::getDefaultAndFromDev(mfile* mf)
     return MCE_SUCCESS;
 }
 
-bool CfgParams::checkCfg(mfile* mf)
+bool CfgParams::checkCfg(mfile *mf)
 {
     if (!_ignoreHardLimits && !hardLimitCheck()) {
         return false;
@@ -357,7 +370,7 @@ bool CfgParams::checkCfg(mfile* mf)
     return true;
 }
 
-bool CfgParams::softLimitCheck(mfile* mf)
+bool CfgParams::softLimitCheck(mfile *mf)
 {
     // by default not implemented
     (void)mf;
@@ -378,7 +391,7 @@ void CfgParams::setIgnoreHardLimits(bool val)
  */
 bool BootSettingsExtParams::hardLimitCheck()
 {
-    if(_ipVer > 3) {
+    if (_ipVer > 3) {
         errmsg("illegal IP Ver parameter value. can be 0..3");
         return false;
     }
@@ -397,7 +410,7 @@ void BootSettingsExtParams::setParams(u_int32_t ipVer)
 u_int32_t BootSettingsExtParams4thGen::getDefaultParam(mlxCfgParam paramType)
 {
     if (paramType == Mcp_Boot_Settings_Ext_IP_Ver_P1 ||
-            paramType == Mcp_Boot_Settings_Ext_IP_Ver_P2) {
+        paramType == Mcp_Boot_Settings_Ext_IP_Ver_P2) {
         return _ipVerDefault;
     }
     return MLXCFG_UNKNOWN;
@@ -406,7 +419,7 @@ u_int32_t BootSettingsExtParams4thGen::getDefaultParam(mlxCfgParam paramType)
 void BootSettingsExtParams4thGen::setParam(mlxCfgParam paramType, u_int32_t val)
 {
     if (paramType == Mcp_Boot_Settings_Ext_IP_Ver_P1 ||
-            paramType == Mcp_Boot_Settings_Ext_IP_Ver_P2) {
+        paramType == Mcp_Boot_Settings_Ext_IP_Ver_P2) {
         _ipVer = val;
     }
 }
@@ -414,13 +427,13 @@ void BootSettingsExtParams4thGen::setParam(mlxCfgParam paramType, u_int32_t val)
 u_int32_t BootSettingsExtParams4thGen::getParam(mlxCfgParam paramType)
 {
     if (paramType == Mcp_Boot_Settings_Ext_IP_Ver_P1 ||
-            paramType == Mcp_Boot_Settings_Ext_IP_Ver_P2) {
+        paramType == Mcp_Boot_Settings_Ext_IP_Ver_P2) {
         return _ipVer;
     }
     return MLXCFG_UNKNOWN;
 }
 
-bool BootSettingsExtParams4thGen::cfgSupported(mfile* mf, mlxCfgParam param)
+bool BootSettingsExtParams4thGen::cfgSupported(mfile *mf, mlxCfgParam param)
 {
     (void)param;
     struct tools_open_query_def_params_global params;
@@ -432,7 +445,7 @@ bool BootSettingsExtParams4thGen::cfgSupported(mfile* mf, mlxCfgParam param)
     return params.boot_ip_ver;
 }
 
-int BootSettingsExtParams4thGen::getDefaultParams(mfile* mf)
+int BootSettingsExtParams4thGen::getDefaultParams(mfile *mf)
 {
     struct tools_open_query_def_params_per_port params;
     int rc;
@@ -445,14 +458,14 @@ int BootSettingsExtParams4thGen::getDefaultParams(mfile* mf)
     return MCE_SUCCESS;
 }
 
-int BootSettingsExtParams4thGen::getFromDev(mfile* mf)
+int BootSettingsExtParams4thGen::getFromDev(mfile *mf)
 {
     if (_updated) {
         return MCE_SUCCESS;
     }
     MError rc;
     // prep tlv
-    u_int8_t buff[tools_open_sriov_size()];
+    u_int8_t buff[TOOLS_OPEN_SRIOV_SIZE];
     struct tools_open_boot_settings_ext bootSettingsExtTlv;
     memset(buff, 0, tools_open_boot_settings_ext_size());
     memset(&bootSettingsExtTlv, 0, sizeof(struct tools_open_boot_settings_ext));
@@ -478,7 +491,7 @@ int BootSettingsExtParams4thGen::getFromDev(mfile* mf)
     return MCE_SUCCESS;
 }
 
-int BootSettingsExtParams4thGen::setOnDev(mfile* mf, bool ignoreCheck)
+int BootSettingsExtParams4thGen::setOnDev(mfile *mf, bool ignoreCheck)
 {
     if (_ipVer == MLXCFG_UNKNOWN) {
         return errmsg("%s please specify all parameters for Boot Settings Extras.", err() ? err() : "");
@@ -489,7 +502,7 @@ int BootSettingsExtParams4thGen::setOnDev(mfile* mf, bool ignoreCheck)
 
     // prep tlv
     MError ret;
-    u_int8_t buff[tools_open_boot_settings_ext_size()];
+    u_int8_t buff[TOOLS_OPEN_BOOT_SETTINGS_EXT_SIZE];
     struct tools_open_boot_settings_ext bootSettingsExtTlv;
 
     memset(buff, 0, tools_open_boot_settings_ext_size());
@@ -501,7 +514,7 @@ int BootSettingsExtParams4thGen::setOnDev(mfile* mf, bool ignoreCheck)
     ret = mnvaCom4thGen(mf, buff, tools_open_boot_settings_ext_size(), tlvTypeIdx, REG_ACCESS_METHOD_SET, _port);
     // check rc
     if (ret) {
-        return errmsg("failed to set Boot Settings Extras params: %s",m_err2str(ret));
+        return errmsg("failed to set Boot Settings Extras params: %s", m_err2str(ret));
     }
     _updated = false;
     return MCE_SUCCESS;
@@ -558,14 +571,14 @@ bool SriovParams4thGen::hardLimitCheck()
  * SriovParam4thGen Class implementation
  */
 
-bool SriovParams4thGen::cfgSupported(mfile* mf, mlxCfgParam param)
+bool SriovParams4thGen::cfgSupported(mfile *mf, mlxCfgParam param)
 {
     (void)mf;
     (void)param;
     return _devCapVec & SRIOV_MASK;
 }
 
-int SriovParams4thGen::getDefaultParams(mfile* mf)
+int SriovParams4thGen::getDefaultParams(mfile *mf)
 {
     struct tools_open_query_def_params_global global_params;
     int rc;
@@ -587,14 +600,14 @@ void SriovParams4thGen::setParams(u_int32_t sriovEn, u_int32_t numOfVfs)
     _numOfVfs = numOfVfs;
 }
 
-int SriovParams4thGen::getFromDev(mfile* mf)
+int SriovParams4thGen::getFromDev(mfile *mf)
 {
     if (_updated) {
         return MCE_SUCCESS;
     }
     MError rc;
     // prep tlv
-    u_int8_t buff[tools_open_sriov_size()];
+    u_int8_t buff[TOOLS_OPEN_SRIOV_SIZE];
     struct tools_open_sriov sriovTlv;
     memset(buff, 0, tools_open_sriov_size());
     memset(&sriovTlv, 0, sizeof(struct tools_open_sriov));
@@ -620,7 +633,7 @@ int SriovParams4thGen::getFromDev(mfile* mf)
     return MCE_SUCCESS;
 }
 
-int SriovParams4thGen::setOnDev(mfile* mf, bool ignoreCheck)
+int SriovParams4thGen::setOnDev(mfile *mf, bool ignoreCheck)
 {
     if (_sriovEn == MLXCFG_UNKNOWN || _numOfVfs == MLXCFG_UNKNOWN) {
         return errmsg("%s please specify all parameters for SRIOV.", err() ? err() : "");
@@ -631,7 +644,7 @@ int SriovParams4thGen::setOnDev(mfile* mf, bool ignoreCheck)
 
     // prep tlv
     MError ret;
-    u_int8_t buff[tools_open_sriov_size()];
+    u_int8_t buff[TOOLS_OPEN_SRIOV_SIZE];
     struct tools_open_sriov sriovTlv;
 
     memset(buff, 0, tools_open_sriov_size());
@@ -645,13 +658,13 @@ int SriovParams4thGen::setOnDev(mfile* mf, bool ignoreCheck)
     ret = mnvaCom4thGen(mf, buff, tools_open_sriov_size(), tlvTypeIdx, REG_ACCESS_METHOD_SET, 0);
     // check rc
     if (ret) {
-        return errmsg("failed to set SRIOV params: %s",m_err2str(ret));
+        return errmsg("failed to set SRIOV params: %s", m_err2str(ret));
     }
     _updated = false;
     return MCE_SUCCESS;
 }
 
-int SriovParams4thGen::updateMaxVfs(mfile* mf)
+int SriovParams4thGen::updateMaxVfs(mfile *mf)
 {
     u_int64_t data = 0;
     int rc = tcif_query_dev_cap(mf, MAX_VFS_ADDR, &data);
@@ -666,7 +679,7 @@ int SriovParams4thGen::updateMaxVfs(mfile* mf)
     return MCE_SUCCESS;
 }
 
-bool SriovParams4thGen::softLimitCheck(mfile* mf)
+bool SriovParams4thGen::softLimitCheck(mfile *mf)
 {
     u_int32_t barSz = 0;
     BarSzParams4thGen barParams;
@@ -689,10 +702,10 @@ bool SriovParams4thGen::softLimitCheck(mfile* mf)
         return errmsg("Failed to get the bar size from device");
     }
     // this is the default log2 bar size , we require (numOfVfs+1)*(2^log_uar_bar) <= 512 or else the node might not boot
-    double TotalMem = (_numOfVfs + 1)*(1 << barSz); // 1 for physical func
+    double TotalMem = (_numOfVfs + 1) * (1 << barSz); // 1 for physical func
 
-    if ((TotalMem > 512)){
-        unsigned int maxAlowedVfs =static_cast<unsigned int>(512/(1 << barSz)) - 1;
+    if ((TotalMem > 512)) {
+        unsigned int maxAlowedVfs = static_cast<unsigned int>(512 / (1 << barSz)) - 1;
         errmsg("illegal SRIOV parameter value. Maximal number of VFs: %d", maxAlowedVfs < _maxVfs ? maxAlowedVfs : _maxVfs);
         return false;
     }
@@ -704,7 +717,7 @@ bool SriovParams4thGen::softLimitCheck(mfile* mf)
  * CX3GlobalConfParams Class implementation:
  */
 
-bool CX3GlobalConfParams::cfgSupported(mfile* mf, mlxCfgParam param)
+bool CX3GlobalConfParams::cfgSupported(mfile *mf, mlxCfgParam param)
 {
     (void)param;
     struct tools_open_query_def_params_global params;
@@ -714,7 +727,7 @@ bool CX3GlobalConfParams::cfgSupported(mfile* mf, mlxCfgParam param)
     if (rc) {
         return false;
     }
-    return (param == Mcp_CQ_Timestamp && params.nv_cq_timestamp_supported) 
+    return (param == Mcp_CQ_Timestamp && params.nv_cq_timestamp_supported)
            || (param == Mcp_Steer_ForceVlan && params.nv_steer_force_vlan_supported)
            || (param == Mcp_Last &&
                (params.nv_cq_timestamp_supported || params.nv_steer_force_vlan_supported));
@@ -757,14 +770,14 @@ u_int32_t CX3GlobalConfParams::getDefaultParam(mlxCfgParam paramType)
     return MLXCFG_UNKNOWN;
 }
 
-int CX3GlobalConfParams::getFromDev(mfile* mf)
+int CX3GlobalConfParams::getFromDev(mfile *mf)
 {
     if (_updated) {
         return MCE_SUCCESS;
     }
     MError rc;
     // prep tlv
-    u_int8_t buff[tools_open_nv_cx3_global_conf_size()];
+    u_int8_t buff[TOOLS_OPEN_NV_CX3_GLOBAL_CONF_SIZE];
     struct tools_open_nv_cx3_global_conf globalConfTlv;
     memset(buff, 0, tools_open_nv_cx3_global_conf_size());
     memset(&globalConfTlv, 0, sizeof(struct tools_open_nv_cx3_global_conf));
@@ -790,7 +803,7 @@ int CX3GlobalConfParams::getFromDev(mfile* mf)
     return MCE_SUCCESS;
 }
 
-int CX3GlobalConfParams::setOnDev(mfile* mf, bool ignoreCheck)
+int CX3GlobalConfParams::setOnDev(mfile *mf, bool ignoreCheck)
 {
     if (_timestamp == MLXCFG_UNKNOWN) {
         return errmsg("%s please specify all parameters for CX3_GLOBAL_CONF.", err() ? err() : "");
@@ -805,7 +818,7 @@ int CX3GlobalConfParams::setOnDev(mfile* mf, bool ignoreCheck)
 
     // prep tlv
     MError ret;
-    u_int8_t buff[tools_open_nv_cx3_global_conf_size()];
+    u_int8_t buff[TOOLS_OPEN_NV_CX3_GLOBAL_CONF_SIZE];
     struct tools_open_nv_cx3_global_conf globalConfTlv;
     memset(buff, 0, tools_open_nv_cx3_global_conf_size());
     memset(&globalConfTlv, 0, sizeof(struct tools_open_nv_cx3_global_conf));
@@ -817,7 +830,7 @@ int CX3GlobalConfParams::setOnDev(mfile* mf, bool ignoreCheck)
     ret = mnvaCom4thGen(mf, buff, tools_open_nv_cx3_global_conf_size(), tlvTypeIdx, REG_ACCESS_METHOD_SET, 0);
     // check rc
     if (ret) {
-        return errmsg("failed to set CX3_GLOBAL_CONF params: %s",m_err2str(ret));
+        return errmsg("failed to set CX3_GLOBAL_CONF params: %s", m_err2str(ret));
     }
     _updated = false;
     return MCE_SUCCESS;
@@ -867,7 +880,7 @@ void CX3GlobalConfParams::setParams(u_int32_t timestamp, u_int32_t steer_force_v
 
 bool WolParams::hardLimitCheck()
 {
-    if (_wolMagicEn == 0 || _wolMagicEn == 1 ) {
+    if (_wolMagicEn == 0 || _wolMagicEn == 1) {
         return true;
     }
     errmsg("illegal WOL parameter value. can be either 0 or 1.");
@@ -906,17 +919,17 @@ u_int32_t WolParams4thGen::getDefaultParam(mlxCfgParam paramType)
     return MLXCFG_UNKNOWN;
 }
 
-bool WolParams4thGen::cfgSupported(mfile* mf, mlxCfgParam param)
+bool WolParams4thGen::cfgSupported(mfile *mf, mlxCfgParam param)
 {
     (void)mf;
     (void)param;
     return ((_devCapVec & WOL_P1_MASK) && _port == 1) || ((_devCapVec & WOL_P2_MASK) && _port == 2 );
 }
 
-int WolParams4thGen::getDefaultParams(mfile* mf)
+int WolParams4thGen::getDefaultParams(mfile *mf)
 {
     struct tools_open_query_def_params_per_port port_params;
-    int rc = getDefaultParams4thGen(mf, _port , &port_params);
+    int rc = getDefaultParams4thGen(mf, _port, &port_params);
     if (rc == MCE_SUCCESS) {
         _wolMagicEnDefault = port_params.default_en_wol_magic;
         setParams(_wolMagicEnDefault);
@@ -926,14 +939,14 @@ int WolParams4thGen::getDefaultParams(mfile* mf)
     return rc;
 }
 
-int WolParams4thGen::getFromDev(mfile* mf)
+int WolParams4thGen::getFromDev(mfile *mf)
 {
     if (_updated) {
         return MCE_SUCCESS;
     }
     MError rc;
     // prep tlv
-    u_int8_t buff[tools_open_wol_size()];
+    u_int8_t buff[TOOLS_OPEN_WOL_SIZE];
     struct tools_open_wol wolTlv;
     memset(buff, 0, tools_open_wol_size());
     memset(&wolTlv, 0, sizeof(struct tools_open_wol));
@@ -956,23 +969,23 @@ int WolParams4thGen::getFromDev(mfile* mf)
     return MCE_SUCCESS;
 }
 
-int WolParams4thGen::setOnDev(mfile* mf, bool ignoreCheck)
+int WolParams4thGen::setOnDev(mfile *mf, bool ignoreCheck)
 {
     if (_wolMagicEn == MLXCFG_UNKNOWN) {
-        return errmsg("%s please specify all the parameters for WOL.", err()? err() : "");
+        return errmsg("%s please specify all the parameters for WOL.", err() ? err() : "");
     }
     if (!ignoreCheck && !checkCfg()) {
         return MCE_BAD_PARAMS;
     }
     // prep tlv
     MError ret;
-    u_int8_t buff[tools_open_wol_size()];
+    u_int8_t buff[TOOLS_OPEN_WOL_SIZE];
     struct tools_open_wol wolTlv;
 
     memset(buff, 0, tools_open_wol_size());
     memset(&wolTlv, 0, sizeof(struct tools_open_wol));
 
-    wolTlv.en_wol_magic= _wolMagicEn;
+    wolTlv.en_wol_magic = _wolMagicEn;
     // pack it
     tools_open_wol_pack(&wolTlv, buff);
     // send it
@@ -1015,7 +1028,7 @@ u_int32_t BarSzParams::getDefaultParam(mlxCfgParam paramType)
 
 bool BarSzParams::hardLimitCheck()
 {
-    if (_logBarSz > _maxLogBarSz ) {
+    if (_logBarSz > _maxLogBarSz) {
         errmsg("given bar size is too large, max allowed log2 bar size: 0x%x", _maxLogBarSz);
         return false;
     }
@@ -1030,14 +1043,14 @@ void BarSzParams::setParams(u_int32_t logBarSz)
  * BarSzParams4thGen Class implementation :
  */
 
-bool BarSzParams4thGen::cfgSupported(mfile* mf, mlxCfgParam param)
+bool BarSzParams4thGen::cfgSupported(mfile *mf, mlxCfgParam param)
 {
     (void)mf;
     (void)param;
-    return _devCapVec & BAR_SZ_MASK ;
+    return _devCapVec & BAR_SZ_MASK;
 }
 
-int BarSzParams4thGen::getDefaultParams(mfile* mf)
+int BarSzParams4thGen::getDefaultParams(mfile *mf)
 {
     struct tools_open_query_def_params_global global_params;
     int rc = getDefaultParams4thGen(mf, &global_params);
@@ -1052,19 +1065,19 @@ int BarSzParams4thGen::getDefaultParams(mfile* mf)
     return rc;
 }
 
-int BarSzParams4thGen::getDefaultBarSz(mfile* mf)
+int BarSzParams4thGen::getDefaultBarSz(mfile *mf)
 {
     u_int64_t data = 0;
     MError rc = tcif_query_dev_cap(mf, MAX_BAR_SZ_ADDR, &data);
     if (rc) {
-        return errmsg(MCE_BAD_STATUS,"Failed to query device capabilities. %s", tcif_err2str(rc));
+        return errmsg(MCE_BAD_STATUS, "Failed to query device capabilities. %s", tcif_err2str(rc));
     }
 
     _maxLogBarSz = EXTRACT64(data, 3, 6);
 
     rc = tcif_query_dev_cap(mf, DEFAULT_BAR_SZ_ADDR, &data);
     if (rc) {
-        return errmsg(MCE_BAD_STATUS,"Failed to query device capabilities. %s", tcif_err2str(rc));
+        return errmsg(MCE_BAD_STATUS, "Failed to query device capabilities. %s", tcif_err2str(rc));
     }
 
     _logBarSzDefault = EXTRACT64(data, 16, 6) + 1; //adrianc: this field reports only half of the bar size (i.e without the blue flame)
@@ -1072,14 +1085,14 @@ int BarSzParams4thGen::getDefaultBarSz(mfile* mf)
     return MCE_SUCCESS;
 }
 
-int BarSzParams4thGen::getFromDev(mfile* mf)
+int BarSzParams4thGen::getFromDev(mfile *mf)
 {
     if (_updated) {
         return MCE_SUCCESS;
     }
     MError rc;
     // prep tlv
-    u_int8_t buff[tools_open_bar_size_size()];
+    u_int8_t buff[TOOLS_OPEN_BAR_SIZE_SIZE];
     struct tools_open_bar_size barSzTlv;
     memset(buff, 0, tools_open_bar_size_size());
     memset(&barSzTlv, 0, sizeof(struct tools_open_bar_size));
@@ -1102,7 +1115,7 @@ int BarSzParams4thGen::getFromDev(mfile* mf)
     return MCE_SUCCESS;
 }
 
-int BarSzParams4thGen::setOnDev(mfile* mf, bool ignoreCheck)
+int BarSzParams4thGen::setOnDev(mfile *mf, bool ignoreCheck)
 {
     if (_logBarSz == MLXCFG_UNKNOWN) {
         return errmsg("%s please specify all the parameters for BAR size.", err() ? err() : "");
@@ -1114,26 +1127,26 @@ int BarSzParams4thGen::setOnDev(mfile* mf, bool ignoreCheck)
 
     // prep tlv
     MError ret;
-    u_int8_t buff[tools_open_bar_size_size()];
+    u_int8_t buff[TOOLS_OPEN_BAR_SIZE_SIZE];
     struct tools_open_bar_size barSzTlv;
 
     memset(buff, 0, tools_open_bar_size_size());
     memset(&barSzTlv, 0, sizeof(struct tools_open_bar_size));
 
-    barSzTlv.log_uar_bar_size= _logBarSz;
+    barSzTlv.log_uar_bar_size = _logBarSz;
     // pack it
     tools_open_bar_size_pack(&barSzTlv, buff);
     // send it
     ret = mnvaCom4thGen(mf, buff, tools_open_bar_size_size(), tlvTypeIdx, REG_ACCESS_METHOD_SET, 0);
     // check rc
     if (ret) {
-        return errmsg("failed to set BAR size params: %s",m_err2str(ret));
+        return errmsg("failed to set BAR size params: %s", m_err2str(ret));
     }
     _updated = false;
     return MCE_SUCCESS;
 }
 
-bool BarSzParams4thGen::softLimitCheck(mfile* mf)
+bool BarSzParams4thGen::softLimitCheck(mfile *mf)
 {
     u_int32_t numOfVfs = 0;
     int sriovEn;
@@ -1151,7 +1164,7 @@ bool BarSzParams4thGen::softLimitCheck(mfile* mf)
     numOfVfs = sriovParams.getParam(Mcp_Num_Of_Vfs);
     sriovEn = sriovParams.getParam(Mcp_Sriov_En);
 
-    if (numOfVfs== MLXCFG_UNKNOWN || numOfVfs == MLXCFG_UNKNOWN) {
+    if (numOfVfs == MLXCFG_UNKNOWN || numOfVfs == MLXCFG_UNKNOWN) {
         errmsg("Illegal SRIOV parameters values");
         return false;
     }
@@ -1160,12 +1173,12 @@ bool BarSzParams4thGen::softLimitCheck(mfile* mf)
         return true;
     }
     // this is the default log2 bar size , we require numOfVfs*(2^log_uar_bar) <= 512 or else the node might not boot
-    double TotalMem = (numOfVfs+1)*(1 << _logBarSz);
+    double TotalMem = (numOfVfs + 1) * (1 << _logBarSz);
     //printf("-D- num_of_vfs*2^(bar_sz+1) = %d*2^%ld = %d\n", _numOfVfs, data, (int)(_numOfVfs*(std::pow((double)2, (int)data))));
     //printf("-D- maxVfs(default set by fw) : %d\n", _maxVfs);
 
-    if (TotalMem > 512){
-        unsigned int maxAlowedLogBarSz =static_cast<unsigned int>(log2((512/(numOfVfs + 1 ))));
+    if (TotalMem > 512) {
+        unsigned int maxAlowedLogBarSz = static_cast<unsigned int>(log2((512 / (numOfVfs + 1 ))));
         errmsg("illegal Bar Size parameter value. Maximal allowed bar size: %d", maxAlowedLogBarSz < _maxLogBarSz ? maxAlowedLogBarSz : _maxLogBarSz);
         return false;
     }
@@ -1191,22 +1204,23 @@ int VpiParams::getFromDevComPre()
 int VpiParams::getFromDevComPost(MError mnvaComRC)
 {
     if (mnvaComRC) {
-         if (mnvaComRC == ME_REG_ACCESS_RES_NOT_AVLBL) {
-             return MCE_SUCCESS;
-         }
-         return errmsg("Failed to get VPI port%d configuration: %s", _port, m_err2str(mnvaComRC));
-     }
-     // unpack and update
-     tools_open_vpi_settings_unpack(&_vpiTlv, &_tlvBuff[0]);
-     setParams(_vpiTlv.network_link_type, _vpiTlv.default_link_type,
-               _vpiTlv.phy_type, _vpiTlv.xfi_mode, _vpiTlv.force_mode);
-     _updated = true;
-     return MCE_SUCCESS;
+        if (mnvaComRC == ME_REG_ACCESS_RES_NOT_AVLBL) {
+            return MCE_SUCCESS;
+        }
+        return errmsg("Failed to get VPI port%d configuration: %s", _port, m_err2str(mnvaComRC));
+    }
+    // unpack and update
+    tools_open_vpi_settings_unpack(&_vpiTlv, &_tlvBuff[0]);
+    setParams(_vpiTlv.network_link_type, _vpiTlv.default_link_type,
+              _vpiTlv.phy_type, _vpiTlv.xfi_mode, _vpiTlv.force_mode);
+    _updated = true;
+    return MCE_SUCCESS;
 
 }
 
 void VpiParams::setParams(u_int32_t linkType, u_int32_t defaultLinkType,
-                   u_int32_t phyType, u_int32_t xfiMode, u_int32_t forceMode){
+                          u_int32_t phyType, u_int32_t xfiMode, u_int32_t forceMode)
+{
     _linkType = linkType;
     _defaultLinkType = defaultLinkType;
     _phyType = phyType;
@@ -1226,15 +1240,15 @@ int VpiParams::setOnDevComPre(bool ignoreCheck)
         return MCE_BAD_PARAMS;
     }
     _tlvBuff.resize(TOOLS_OPEN_VPI_SETTINGS_SIZE);
-     memset(&_tlvBuff[0], 0, _tlvBuff.size());
-     memset(&_vpiTlv, 0, sizeof(struct tools_open_vpi_settings));
-     _vpiTlv.network_link_type = _linkType;
-     _vpiTlv.default_link_type = _defaultLinkType;
-     _vpiTlv.phy_type = _phyType;
-     _vpiTlv.xfi_mode = _xfiMode;
-     _vpiTlv.force_mode = _forceMode;
-     // pack it
-     tools_open_vpi_settings_pack(&_vpiTlv, &_tlvBuff[0]);
+    memset(&_tlvBuff[0], 0, _tlvBuff.size());
+    memset(&_vpiTlv, 0, sizeof(struct tools_open_vpi_settings));
+    _vpiTlv.network_link_type = _linkType;
+    _vpiTlv.default_link_type = _defaultLinkType;
+    _vpiTlv.phy_type = _phyType;
+    _vpiTlv.xfi_mode = _xfiMode;
+    _vpiTlv.force_mode = _forceMode;
+    // pack it
+    tools_open_vpi_settings_pack(&_vpiTlv, &_tlvBuff[0]);
     return MCE_SUCCESS;
 }
 
@@ -1291,12 +1305,12 @@ u_int32_t VpiParams4thGen::getDefaultParam(mlxCfgParam paramType)
     return MLXCFG_UNKNOWN;
 }
 
-int VpiParams4thGen::getDefaultParamsAux(mfile* mf)
+int VpiParams4thGen::getDefaultParamsAux(mfile *mf)
 {
     struct tools_open_query_def_params_per_port port_params;
     memset(&port_params, 0, sizeof(port_params));
     _defaultLinkTypeDefault = 0; // not used for 4th gen devices , we give it a default value
-    int rc = getDefaultParams4thGen(mf, _port , &port_params);
+    int rc = getDefaultParams4thGen(mf, _port, &port_params);
     if (rc) {
         return MCE_GET_DEFAULT_PARAMS;
     }
@@ -1311,7 +1325,7 @@ int VpiParams4thGen::getDefaultParamsAux(mfile* mf)
     return MCE_SUCCESS;
 }
 
-bool VpiParams4thGen::cfgSupported(mfile* mf, mlxCfgParam param)
+bool VpiParams4thGen::cfgSupported(mfile *mf, mlxCfgParam param)
 {
     (void)mf;
     (void)param;
@@ -1335,7 +1349,7 @@ bool VpiParams4thGen::cfgSupported(mfile* mf, mlxCfgParam param)
     return _isVPISupported;
 }
 
-int VpiParams4thGen::getDefaultParams(mfile* mf)
+int VpiParams4thGen::getDefaultParams(mfile *mf)
 {
 
     int rc = getDefaultParamsAux(mf);
@@ -1352,7 +1366,7 @@ int VpiParams4thGen::getDefaultParams(mfile* mf)
     return MCE_SUCCESS;
 }
 
-int VpiParams4thGen::getFromDev(mfile* mf)
+int VpiParams4thGen::getFromDev(mfile *mf)
 {
     MError mRc;
     int rc;
@@ -1360,14 +1374,14 @@ int VpiParams4thGen::getFromDev(mfile* mf)
     if (_updated) {
         return MCE_SUCCESS;
     }
-    if((rc = getFromDevComPre())) {
+    if ((rc = getFromDevComPre())) {
         return rc;
     }
     mRc = mnvaCom4thGen(mf, &_tlvBuff[0], TOOLS_OPEN_VPI_SETTINGS_SIZE, tlvTypeIdx, REG_ACCESS_METHOD_GET, _port);
     return getFromDevComPost(mRc);
 }
 
-int VpiParams4thGen::setOnDev(mfile* mf, bool ignoreCheck)
+int VpiParams4thGen::setOnDev(mfile *mf, bool ignoreCheck)
 {
     MError mRc;
     int rc;
@@ -1390,19 +1404,19 @@ bool VpiParams4thGen::hardLimitCheck()
     }
 
     if (_isForceModeSupported) {
-         if (_phyType < 1 || _phyType > 3) {
-             errmsg("illegal Phy Type value (shold be 1|2|3)");
-             return false;
-         }
+        if (_phyType < 1 || _phyType > 3) {
+            errmsg("illegal Phy Type value (shold be 1|2|3)");
+            return false;
+        }
 
-         if (_xfiMode > 2) {
-             errmsg("illegal Xfi Mode value (should be 0|1|2)");
-             return false;
-         }
+        if (_xfiMode > 2) {
+            errmsg("illegal Xfi Mode value (should be 0|1|2)");
+            return false;
+        }
 
-         if (_forceMode > 1) {
-             errmsg("illegal Force Mode value (should be 0|1)");
-             return false;
+        if (_forceMode > 1) {
+            errmsg("illegal Force Mode value (should be 0|1)");
+            return false;
         }
     }
 
@@ -1413,7 +1427,7 @@ bool VpiParams4thGen::hardLimitCheck()
  * InfinibandBootSettingsParams4thGen Class implementation:
  */
 
-bool InfinibandBootSettingsParams4thGen::cfgSupported(mfile* mf, mlxCfgParam param)
+bool InfinibandBootSettingsParams4thGen::cfgSupported(mfile *mf, mlxCfgParam param)
 {
     (void)param;
     struct tools_open_query_def_params_per_port portParams;
@@ -1449,7 +1463,7 @@ u_int32_t InfinibandBootSettingsParams4thGen::getDefaultParam(mlxCfgParam paramT
 }
 
 
-int InfinibandBootSettingsParams4thGen::getFromDev(mfile* mf)
+int InfinibandBootSettingsParams4thGen::getFromDev(mfile *mf)
 {
     MError mRc;
     u_int8_t tlvBuff[TOOLS_OPEN_INFINIBAND_BOOT_SETTINGS_SIZE] = {0};
@@ -1473,9 +1487,9 @@ int InfinibandBootSettingsParams4thGen::getFromDev(mfile* mf)
     _bootPkey = bootSettingsTlv.boot_pkey;
     _updated = true;
 
-   return MCE_SUCCESS;
+    return MCE_SUCCESS;
 }
-int InfinibandBootSettingsParams4thGen::setOnDev(mfile* mf, bool ignoreCheck)
+int InfinibandBootSettingsParams4thGen::setOnDev(mfile *mf, bool ignoreCheck)
 {
     MError mRc;
 
@@ -1502,7 +1516,7 @@ int InfinibandBootSettingsParams4thGen::setOnDev(mfile* mf, bool ignoreCheck)
     return MCE_SUCCESS;
 }
 
-int InfinibandBootSettingsParams4thGen::getDefaultParams(mfile* mf)
+int InfinibandBootSettingsParams4thGen::getDefaultParams(mfile *mf)
 {
     struct tools_open_query_def_params_per_port portParams;
     int rc;
@@ -1534,7 +1548,7 @@ bool InfinibandBootSettingsParams4thGen::hardLimitCheck()
  * PrebootBootSettingsParams4thGen Class implementation:
  */
 
-bool PrebootBootSettingsParams4thGen::cfgSupported(mfile* mf, mlxCfgParam param)
+bool PrebootBootSettingsParams4thGen::cfgSupported(mfile *mf, mlxCfgParam param)
 {
     (void)param;
     struct tools_open_query_def_params_per_port portParams;
@@ -1620,7 +1634,7 @@ u_int32_t PrebootBootSettingsParams4thGen::getDefaultParam(mlxCfgParam paramType
 }
 
 void PrebootBootSettingsParams4thGen::setParams(u_int32_t bootOptionRomEn, u_int32_t bootVlanEn, u_int32_t bootRetryCnt,
-            u_int32_t legacyBootProtocol, u_int32_t bootVlan)
+                                                u_int32_t legacyBootProtocol, u_int32_t bootVlan)
 {
     _bootOptionRomEn = bootOptionRomEn;
     _bootVlanEn = bootVlanEn;
@@ -1632,23 +1646,23 @@ void PrebootBootSettingsParams4thGen::setParams(u_int32_t bootOptionRomEn, u_int
 void PrebootBootSettingsParams4thGen::updateClassAttrFromDefaultParams()
 {
     setParams(_bootOptionRomEnDefault, _bootVlanEnDefault, _bootRetryCntDefault,
-            _legacyBootProtocolDefault, _bootVlanDefault);
+              _legacyBootProtocolDefault, _bootVlanDefault);
 }
 
-int PrebootBootSettingsParams4thGen::getFromDev(mfile* mf)
+int PrebootBootSettingsParams4thGen::getFromDev(mfile *mf)
 {
     GET_FROM_DEV_4TH_GEN(mf, tools_open_preboot_boot_settings, "Preboot Boot Settings", _port);
 }
 
-int PrebootBootSettingsParams4thGen::setOnDev(mfile* mf, bool ignoreCheck)
+int PrebootBootSettingsParams4thGen::setOnDev(mfile *mf, bool ignoreCheck)
 {
     SET_ON_DEV_4TH_GEN(mf, ignoreCheck, tools_open_preboot_boot_settings, "Preboot Boot Settings", _port);
 }
 
-void PrebootBootSettingsParams4thGen::updateTlvFromClassAttr(void* tlv)
+void PrebootBootSettingsParams4thGen::updateTlvFromClassAttr(void *tlv)
 {
 
-    struct tools_open_preboot_boot_settings* prebootTlv = (struct tools_open_preboot_boot_settings*)tlv;
+    struct tools_open_preboot_boot_settings *prebootTlv = (struct tools_open_preboot_boot_settings*)tlv;
     prebootTlv->boot_option_rom_en = _bootOptionRomEn;
     prebootTlv->boot_vlan_en = _bootVlanEn;
     prebootTlv->boot_retry_count = _bootRetryCnt;
@@ -1657,9 +1671,9 @@ void PrebootBootSettingsParams4thGen::updateTlvFromClassAttr(void* tlv)
 
 }
 
-void PrebootBootSettingsParams4thGen::updateClassAttrFromTlv(void* tlv)
+void PrebootBootSettingsParams4thGen::updateClassAttrFromTlv(void *tlv)
 {
-    struct tools_open_preboot_boot_settings* prebootTlv = (struct tools_open_preboot_boot_settings*)tlv;
+    struct tools_open_preboot_boot_settings *prebootTlv = (struct tools_open_preboot_boot_settings*)tlv;
     _bootOptionRomEn = prebootTlv->boot_option_rom_en;
     _bootVlanEn = prebootTlv->boot_vlan_en;
     _bootRetryCnt = prebootTlv->boot_retry_count;
@@ -1667,9 +1681,9 @@ void PrebootBootSettingsParams4thGen::updateClassAttrFromTlv(void* tlv)
     _bootVlan = prebootTlv->boot_vlan;
 }
 
-void PrebootBootSettingsParams4thGen::updateClassDefaultAttrFromTlv(void* tlv)
+void PrebootBootSettingsParams4thGen::updateClassDefaultAttrFromTlv(void *tlv)
 {
-    struct tools_open_preboot_boot_settings* prebootTlv = (struct tools_open_preboot_boot_settings*)tlv;
+    struct tools_open_preboot_boot_settings *prebootTlv = (struct tools_open_preboot_boot_settings*)tlv;
     _bootOptionRomEnDefault = prebootTlv->boot_option_rom_en;
     _bootVlanEnDefault = prebootTlv->boot_vlan_en;
     _bootRetryCntDefault = prebootTlv->boot_retry_count;
@@ -1677,7 +1691,7 @@ void PrebootBootSettingsParams4thGen::updateClassDefaultAttrFromTlv(void* tlv)
     _bootVlanDefault = prebootTlv->boot_vlan;
 }
 
-int PrebootBootSettingsParams4thGen::getDefaultParams(mfile* mf)
+int PrebootBootSettingsParams4thGen::getDefaultParams(mfile *mf)
 {
     struct tools_open_query_def_params_per_port portParams;
     int rc;

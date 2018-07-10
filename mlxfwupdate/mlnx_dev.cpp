@@ -59,19 +59,19 @@
 
 
 struct ethtool_drvinfo {
-        __u32   cmd;
-        char    driver[32];     /* driver short name, "tulip", "eepro100" */
-        char    version[32];    /* driver version string */
-        char    fw_version[ETHTOOL_FWVERS_LEN]; /* firmware version string */
-        char    bus_info[ETHTOOL_BUSINFO_LEN];  /* Bus info for this IF. */
-                                /* For PCI devices, use pci_name(pci_dev). */
-        char    reserved1[32];
-        char    reserved2[12];
-        __u32   n_priv_flags;   /* number of flags valid in ETHTOOL_GPFLAGS */
-        __u32   n_stats;        /* number of u64's from ETHTOOL_GSTATS */
-        __u32   testinfo_len;
-        __u32   eedump_len;     /* Size of data from ETHTOOL_GEEPROM (bytes) */
-        __u32   regdump_len;    /* Size of data from ETHTOOL_GREGS (bytes) */
+    __u32 cmd;
+    char driver[32];            /* driver short name, "tulip", "eepro100" */
+    char version[32];           /* driver version string */
+    char fw_version[ETHTOOL_FWVERS_LEN];        /* firmware version string */
+    char bus_info[ETHTOOL_BUSINFO_LEN];         /* Bus info for this IF. */
+    /* For PCI devices, use pci_name(pci_dev). */
+    char reserved1[32];
+    char reserved2[12];
+    __u32 n_priv_flags;         /* number of flags valid in ETHTOOL_GPFLAGS */
+    __u32 n_stats;              /* number of u64's from ETHTOOL_GSTATS */
+    __u32 testinfo_len;
+    __u32 eedump_len;           /* Size of data from ETHTOOL_GEEPROM (bytes) */
+    __u32 regdump_len;          /* Size of data from ETHTOOL_GREGS (bytes) */
 };
 #endif
 
@@ -80,11 +80,11 @@ using namespace std;
 
 void MlnxDev::initUniqueId()
 {
-    mfile* mf = mopen(getDevName().c_str());
+    mfile *mf = mopen(getDevName().c_str());
     if (!mf) {
         return;
     }
-    vpd_result_t* vpdP = NULL;
+    vpd_result_t *vpdP = NULL;
     if (mvpd_read(mf, &vpdP, VPD_RO) == 0 && vpdP != NULL) {
         int i = 0;
         string pn;
@@ -118,7 +118,7 @@ void MlnxDev::_MlnxDevInit(int compare_ffv)
     guidPortTwo  = "N/A";
     macPortOne   = "N/A";
     macPortTwo   = "N/A";
-    _deviceTypeStr= "N/A";
+    _deviceTypeStr = "N/A";
     _deviceType   = DeviceUnknown;
     memset(&_devFwParams, 0, sizeof(_devFwParams));
     memset(&_imgFwParams, 0, sizeof(_imgFwParams));
@@ -137,7 +137,7 @@ void MlnxDev::_MlnxDevInit(int compare_ffv)
 }
 
 
-MlnxDev::MlnxDev(dev_info* devinfo, int compare_ffv)
+MlnxDev::MlnxDev(dev_info *devinfo, int compare_ffv)
 {
     _init_type = INIT_DEVINFO;
     _devinfo = devinfo;
@@ -146,7 +146,7 @@ MlnxDev::MlnxDev(dev_info* devinfo, int compare_ffv)
 }
 
 
-MlnxDev::MlnxDev(const char* devname, int compare_ffv)
+MlnxDev::MlnxDev(const char *devname, int compare_ffv)
 {
     _devinfo = NULL;
     _init_type = INIT_DEVNAME;
@@ -155,7 +155,8 @@ MlnxDev::MlnxDev(const char* devname, int compare_ffv)
 
 }
 
-void MlnxDev::setGuidMac(fw_info_t &fw_query) {
+void MlnxDev::setGuidMac(fw_info_t &fw_query)
+{
     bool isFs2  = (fw_query.fw_type == FIT_FS2) ? true : false;
     char buff[512] = {0};
     string mac_format   = "%4.4x%8.8x";
@@ -170,25 +171,25 @@ void MlnxDev::setGuidMac(fw_info_t &fw_query) {
         if (fw_query.fs2_info.guid_num < 6) {
             if (fw_query.fs2_info.guids[1].h || fw_query.fs2_info.guids[1].l) {
                 snprintf(buff, sizeof(buff) - 1, guild_format.c_str(),
-                        fw_query.fs2_info.guids[1].h, fw_query.fs2_info.guids[1].l);
+                         fw_query.fs2_info.guids[1].h, fw_query.fs2_info.guids[1].l);
                 guidPortOne = (string)buff;
             }
             if (fw_query.fs2_info.guids[2].h || fw_query.fs2_info.guids[2].l) {
                 snprintf(buff, sizeof(buff) - 1, guild_format.c_str(),
-                        fw_query.fs2_info.guids[2].h, fw_query.fs2_info.guids[2].l);
+                         fw_query.fs2_info.guids[2].h, fw_query.fs2_info.guids[2].l);
                 guidPortTwo = (string)buff;
             }
         } else {
             if (portOneType == PORT_ETH) {
                 if (fw_query.fs2_info.guids[4].h || fw_query.fs2_info.guids[4].l) {
                     snprintf(buff, sizeof(buff) - 1, mac_format.c_str(),
-                                        fw_query.fs2_info.guids[4].h, fw_query.fs2_info.guids[4].l);
+                             fw_query.fs2_info.guids[4].h, fw_query.fs2_info.guids[4].l);
                     macPortOne = (string)buff;
                 }
             } else if (portOneType == PORT_IB) {
                 if (fw_query.fs2_info.guids[1].h || fw_query.fs2_info.guids[1].l) {
                     snprintf(buff, sizeof(buff) - 1, guild_format.c_str(),
-                            fw_query.fs2_info.guids[1].h, fw_query.fs2_info.guids[1].l);
+                             fw_query.fs2_info.guids[1].h, fw_query.fs2_info.guids[1].l);
                     guidPortOne = (string)buff;
                 }
             }
@@ -196,13 +197,13 @@ void MlnxDev::setGuidMac(fw_info_t &fw_query) {
             if (portTwoType == PORT_ETH) {
                 if (fw_query.fs2_info.guids[5].h || fw_query.fs2_info.guids[5].l) {
                     snprintf(buff, sizeof(buff) - 1, mac_format.c_str(),
-                                        fw_query.fs2_info.guids[5].h, fw_query.fs2_info.guids[5].l);
+                             fw_query.fs2_info.guids[5].h, fw_query.fs2_info.guids[5].l);
                     macPortTwo = (string)buff;
                 }
             } else if (portTwoType == PORT_IB) {
                 if (fw_query.fs2_info.guids[2].h || fw_query.fs2_info.guids[2].l) {
                     snprintf(buff, sizeof(buff) - 1, guild_format.c_str(),
-                            fw_query.fs2_info.guids[2].h, fw_query.fs2_info.guids[2].l);
+                             fw_query.fs2_info.guids[2].h, fw_query.fs2_info.guids[2].l);
                     guidPortTwo = (string)buff;
                 }
             }
@@ -210,29 +211,29 @@ void MlnxDev::setGuidMac(fw_info_t &fw_query) {
     } else {
         if (fw_query.fs3_info.fs3_uids_info.valid_field) {
             snprintf(buff, sizeof(buff) - 1, "%016" U64H_FMT_GEN,
-                            fw_query.fs3_info.fs3_uids_info.cx4_uids.base_guid.uid);
+                     fw_query.fs3_info.fs3_uids_info.cx4_uids.base_guid.uid);
 
         } else {
             snprintf(buff, sizeof(buff) - 1, "%016" U64H_FMT_GEN,
-                            fw_query.fs3_info.fs3_uids_info.cib_uids.guids[0].uid);
+                     fw_query.fs3_info.fs3_uids_info.cib_uids.guids[0].uid);
         }
         if (fw_query.fs3_info.fs3_uids_info.cib_uids.guids[0].uid ||
-            fw_query.fs3_info.fs3_uids_info.cx4_uids.base_guid.uid  ) {
+            fw_query.fs3_info.fs3_uids_info.cx4_uids.base_guid.uid) {
             guidPortOne = (string)buff;
         }
         if (fw_query.fs3_info.fs3_uids_info.valid_field) {
             snprintf(buff, sizeof(buff) - 1, "%012" U64H_FMT_GEN,
-                                        fw_query.fs3_info.fs3_uids_info.cx4_uids.base_mac.uid);
+                     fw_query.fs3_info.fs3_uids_info.cx4_uids.base_mac.uid);
             if (fw_query.fs3_info.fs3_uids_info.cx4_uids.base_mac.uid) {
                 macPortOne = (string)buff;
             }
             sprintf(buff, " ");
         } else {
             snprintf(buff, sizeof(buff) - 1, "%016" U64H_FMT_GEN,
-                    fw_query.fs3_info.fs3_uids_info.cib_uids.guids[1].uid);
+                     fw_query.fs3_info.fs3_uids_info.cib_uids.guids[1].uid);
         }
         if (fw_query.fs3_info.fs3_uids_info.cx4_uids.base_mac.uid ||
-            fw_query.fs3_info.fs3_uids_info.cib_uids.guids[1].uid   ) {
+            fw_query.fs3_info.fs3_uids_info.cib_uids.guids[1].uid) {
             guidPortTwo = (string)buff;
         }
     }
@@ -247,14 +248,14 @@ bool MlnxDev::clearSemaphore()
     bool clearSemaphore = true;
     bool overRideCacheReplacement = false;
     int numberOfBanks = -1;
-    FBase* io = new Flash;
-    if(io == NULL) {
+    FBase *io = new Flash;
+    if (io == NULL) {
         _errMsg  = "could not allocate io flash";
         _log    += _errMsg;
         return false;
     }
     if (!((Flash*)io)->open(getDevDisplayName().c_str(), clearSemaphore, false, numberOfBanks,
-            NULL, overRideCacheReplacement)) {
+                            NULL, overRideCacheReplacement)) {
         // if we have Hw_Access command we dont fail straght away
 
         _errMsg = (io)->err();
@@ -316,8 +317,8 @@ MlnxDev::port_type_t MlnxDev::findPortType(int port)
 void MlnxDev::setDeviceType(void)
 {
     dm_dev_id_t ptr_dm_dev_id = DeviceUnknown;
-    u_int32_t   ptr_hw_dev_id = 0;
-    u_int32_t   ptr_hw_rev    = 0;
+    u_int32_t ptr_hw_dev_id = 0;
+    u_int32_t ptr_hw_rev    = 0;
     mfile       *mf = NULL;
 
     mf = mopen(getDevName().c_str());
@@ -325,65 +326,71 @@ void MlnxDev::setDeviceType(void)
         return;
     }
 
-    if(dm_get_device_id(mf, &ptr_dm_dev_id, &ptr_hw_dev_id, &ptr_hw_rev)) {
+    if (dm_get_device_id(mf, &ptr_dm_dev_id, &ptr_hw_dev_id, &ptr_hw_rev)) {
         mclose(mf);
         return;
     }
 
 
-    switch(ptr_dm_dev_id) {
-        case DeviceSpectrum:
-        case DeviceSpectrum2:
-            portOneType = PORT_ETH;
-            portTwoType = PORT_ETH;
-            isOnlyBase = true;
-            break;
-        case DeviceConnectIB:
-            portOneType = PORT_IB;
-            portTwoType = PORT_IB;
-            break;
-        case DeviceConnectX2:
-        case DeviceConnectX3:
-        case DeviceConnectX3Pro:
-            u_int32_t mac;
-            if ((mread4(mf, 0x1f148, &mac)) == 4) { // port1
-                portOneType = EXT(mac, 30, 29) != 1 ? PORT_ETH : PORT_IB;
-            }
-            if ((mread4(mf, 0x1f164, &mac)) == 4) { // port2
-                portTwoType = EXT(mac, 30, 29) != 1 ? PORT_ETH : PORT_IB;
-            }
-            break;
-        case DeviceSwitchIB:
-        case DeviceSwitchIB2:
-        case DeviceQuantum:
-            portOneType = PORT_IB;
-            portTwoType = PORT_IB;
-            isOnlyBase = true;
-            break;
-        case DeviceConnectX4LX:
-            portOneType = PORT_ETH;
-            portTwoType = PORT_ETH;
-            isOnlyBase   = true;
-            break;
-        case DeviceConnectX4:
-        case DeviceConnectX5:
-        case DeviceBlueField:
-            try {
-                _commander = Commander::create(mf, getDevName(), "");
-            } catch(MlxcfgException& e) {
-                _commander = NULL;
-            }
-            isOnlyBase = true;
-            portOneType = findPortType(1);
-            portTwoType = findPortType(2);
-            if (_commander) {
-                delete _commander;
-            }
+    switch (ptr_dm_dev_id) {
+    case DeviceSpectrum:
+    case DeviceSpectrum2:
+        portOneType = PORT_ETH;
+        portTwoType = PORT_ETH;
+        isOnlyBase = true;
+        break;
+
+    case DeviceConnectIB:
+        portOneType = PORT_IB;
+        portTwoType = PORT_IB;
+        break;
+
+    case DeviceConnectX2:
+    case DeviceConnectX3:
+    case DeviceConnectX3Pro:
+        u_int32_t mac;
+        if ((mread4(mf, 0x1f148, &mac)) == 4) {     // port1
+            portOneType = EXT(mac, 30, 29) != 1 ? PORT_ETH : PORT_IB;
+        }
+        if ((mread4(mf, 0x1f164, &mac)) == 4) {     // port2
+            portTwoType = EXT(mac, 30, 29) != 1 ? PORT_ETH : PORT_IB;
+        }
+        break;
+
+    case DeviceSwitchIB:
+    case DeviceSwitchIB2:
+    case DeviceQuantum:
+        portOneType = PORT_IB;
+        portTwoType = PORT_IB;
+        isOnlyBase = true;
+        break;
+
+    case DeviceConnectX4LX:
+        portOneType = PORT_ETH;
+        portTwoType = PORT_ETH;
+        isOnlyBase   = true;
+        break;
+
+    case DeviceConnectX4:
+    case DeviceConnectX5:
+    case DeviceBlueField:
+        try {
+            _commander = Commander::create(mf, getDevName(), "");
+        } catch (MlxcfgException& e) {
             _commander = NULL;
-            break;
-        default :
-            portOneType = PORT_NA;
-            portTwoType = PORT_NA;
+        }
+        isOnlyBase = true;
+        portOneType = findPortType(1);
+        portTwoType = findPortType(2);
+        if (_commander) {
+            delete _commander;
+        }
+        _commander = NULL;
+        break;
+
+    default:
+        portOneType = PORT_NA;
+        portTwoType = PORT_NA;
     }
     if (mf) {
         mclose(mf);
@@ -398,7 +405,7 @@ void MlnxDev::setDevToNeedUpdate()
     _needsUpdate = true;
 }
 
-void   MlnxDev::setNoFwCtrl()
+void MlnxDev::setNoFwCtrl()
 {
     _noFwCtrl = true;
 }
@@ -457,7 +464,7 @@ int MlnxDev::isQuerySuccess()
 }
 
 
-bool MlnxDev::openImg(u_int32_t * fileBuffer, u_int32_t bufferSize)
+bool MlnxDev::openImg(u_int32_t *fileBuffer, u_int32_t bufferSize)
 {
     memset(_errBuff, 0, sizeof(_errBuff));
     _imgFwParams.errBuff      = _errBuff;
@@ -477,7 +484,7 @@ bool MlnxDev::openImg(u_int32_t * fileBuffer, u_int32_t bufferSize)
 }
 
 int MlnxDev::preBurn(string mfa_file, f_prog_func prog_cb, bool burnFailsafe,
-        bool& isTimeConsumingFixesNeeded, vector<string>& questions, f_prog_func_adv stage_prog)
+                     bool& isTimeConsumingFixesNeeded, vector<string>& questions, f_prog_func_adv stage_prog)
 {
     string cmd;
     int rc;
@@ -496,12 +503,12 @@ int MlnxDev::preBurn(string mfa_file, f_prog_func prog_cb, bool burnFailsafe,
         return -1;
     }
 
-    if (!openImg((u_int32_t *)filebuf, (u_int32_t)sza)) {
+    if (!openImg((u_int32_t*)filebuf, (u_int32_t)sza)) {
         goto clean_up_on_error;
     }
 
     rc = _imgFwOps->FwQuery(&img_fw_query);
-    if(!rc) {
+    if (!rc) {
         _errMsg  = "Failed to query the image, " +  (string)_imgFwOps->err();
         _log += _errMsg;
         goto clean_up_on_error;
@@ -510,14 +517,14 @@ int MlnxDev::preBurn(string mfa_file, f_prog_func prog_cb, bool burnFailsafe,
     if (img_fw_query.fs3_info.security_mode == SM_NONE) {
         setNoFwCtrl();
     }
-    if(!OpenDev()) {
+    if (!OpenDev()) {
         goto clean_up_on_error;
     }
 
     _burnParams.burnFailsafe = burnFailsafe;
     if (_burnParams.burnFailsafe) {
         rc = _devFwOps->FwQuery(&dev_fw_query);
-        if(!rc) {
+        if (!rc) {
             _errMsg  = "Failed to query the device, " +  (string)_devFwOps->err();
             _log += _errMsg;
             goto clean_up_on_error;
@@ -528,11 +535,11 @@ int MlnxDev::preBurn(string mfa_file, f_prog_func prog_cb, bool burnFailsafe,
             } else {
                 char err[512] = {0};
                 snprintf(err, sizeof(err) - 1,
-                            "Failsafe burn failed: FW image in the %s is non failsafe.\n"
-                            "    you cannot burn a%s failsafe image over a%s failsafe image in a failsafe mode.\n"
-                            "    If you want to burn in non failsafe mode, use the \"--nofs\" switch along with \"-d device\".\n",
-                            img_fw_query.fw_info.is_failsafe ? "flash" : "given file",  img_fw_query.fw_info.is_failsafe? "" : " non",\
-                            dev_fw_query.fw_info.is_failsafe ? "" : " non");
+                         "Failsafe burn failed: FW image in the %s is non failsafe.\n"
+                         "    you cannot burn a%s failsafe image over a%s failsafe image in a failsafe mode.\n"
+                         "    If you want to burn in non failsafe mode, use the \"--nofs\" switch along with \"-d device\".\n",
+                         img_fw_query.fw_info.is_failsafe ? "flash" : "given file",  img_fw_query.fw_info.is_failsafe ? "" : " non", \
+                         dev_fw_query.fw_info.is_failsafe ? "" : " non");
                 _errMsg = err;
                 _log += _errMsg;
                 goto clean_up_on_error;
@@ -621,13 +628,13 @@ bool MlnxDev::InitDevFWParams(FwOperations::fw_ops_params_t& devFwParams)
 {
     string devName = getDevName();
     memset(_errBuff, 0, sizeof(_errBuff));
-    char * tmp = (char *) malloc((devName.length() + 1) * sizeof(char));
+    char *tmp = (char*) malloc((devName.length() + 1) * sizeof(char));
     if (tmp == NULL) {
         _errMsg  = "Failed to allocate Memory";
         _log    += _errMsg;
         return false;
     }
-     memset(tmp, 0, (devName.length() + 1) * sizeof(char));
+    memset(tmp, 0, (devName.length() + 1) * sizeof(char));
     devFwParams.errBuff = _errBuff;
     devFwParams.errBuffSize = MLNX_ERR_BUFF_SIZE;
     devFwParams.hndlType = FHT_MST_DEV;
@@ -638,7 +645,7 @@ bool MlnxDev::InitDevFWParams(FwOperations::fw_ops_params_t& devFwParams)
     devFwParams.flashParams = (flash_params_t*)NULL;
     devFwParams.ignoreCacheRep = 0;
     devFwParams.noFlashVerify = false;
-    devFwParams.psid = (char *)_psid.c_str();
+    devFwParams.psid = (char*)_psid.c_str();
     devFwParams.shortErrors = true;
     devFwParams.noFwCtrl = _noFwCtrl;
     devFwParams.mccUnsupported = !(_mccSupport);
@@ -674,12 +681,12 @@ int MlnxDev::queryFwops()
 
     int versionFields = 3;/*TODO: set variable length*/
 
-    if(!OpenDev()) {
+    if (!OpenDev()) {
         return -1;
     }
 
     memset(&fw_query, 0, sizeof(fw_info_t));
-    if(!_devFwOps->FwQuery(&fw_query, true)) {
+    if (!_devFwOps->FwQuery(&fw_query, true)) {
         if (_devFwOps->err() != NULL) {
             _errMsg  = "Failed to query " +  (string)_devFwOps->err();
         } else {
@@ -691,7 +698,7 @@ int MlnxDev::queryFwops()
     setGuidMac(fw_query);
 
     // attempt to take some fields from image info
-    if (fw_query.fw_type == FIT_FS3 ) {
+    if (fw_query.fw_type == FIT_FS3) {
         if (strlen(fw_query.fs3_info.description)) {
             _description = fw_query.fs3_info.description;
         }
@@ -700,11 +707,11 @@ int MlnxDev::queryFwops()
         }
     }
 
-    if ( !_description.size() || !_partNumber.size()) { // take missing from ini
+    if (!_description.size() || !_partNumber.size()) {  // take missing from ini
         setMccSupport(false);
         _devFwOps->FwCleanUp();
         delete _devFwOps;
-        if(!OpenDev()) {
+        if (!OpenDev()) {
             return -1;
         }
         setMccSupport(true);
@@ -714,9 +721,9 @@ int MlnxDev::queryFwops()
                 char *ptr;
                 int counter;
                 if (!_partNumber.size()) {
-                    ptr = strstr ((char *)&dest[0],"Name =");
+                    ptr = strstr((char*)&dest[0], "Name =");
                     counter = 7;
-                    while(ptr and *ptr != '\n' and *ptr != '\r') {
+                    while (ptr and * ptr != '\n' and * ptr != '\r') {
                         if (counter-- > 0) {
                             ptr++;
                             continue;
@@ -726,9 +733,9 @@ int MlnxDev::queryFwops()
                     }
                 }
                 if (!_description.size()) {
-                    ptr = strstr ((char *)&dest[0],"Description =");
+                    ptr = strstr((char*)&dest[0], "Description =");
                     counter = 14;
-                    while(ptr and *ptr != '\n' and *ptr != '\r') {
+                    while (ptr and * ptr != '\n' and * ptr != '\r') {
                         if (counter-- > 0) {
                             ptr++;
                             continue;
@@ -760,9 +767,9 @@ int MlnxDev::queryFwops()
     _imageVers.push_back(imgv);
 
     if ((fw_query.fw_info.running_fw_ver[0] || fw_query.fw_info.running_fw_ver[1] || fw_query.fw_info.running_fw_ver[2]) && \
-            (fw_query.fw_info.running_fw_ver[0] != fw_query.fw_info.fw_ver[0] || \
-                    fw_query.fw_info.running_fw_ver[1] != fw_query.fw_info.fw_ver[1] || \
-                    fw_query.fw_info.running_fw_ver[2] != fw_query.fw_info.fw_ver[2])) {
+        (fw_query.fw_info.running_fw_ver[0] != fw_query.fw_info.fw_ver[0] || \
+         fw_query.fw_info.running_fw_ver[1] != fw_query.fw_info.fw_ver[1] || \
+         fw_query.fw_info.running_fw_ver[2] != fw_query.fw_info.fw_ver[2])) {
         ImgVersion imgrv;
         imgrv.setVersion("FW (Running)", versionFields + _compareFFV, runningfwVer);
         _imageVers.push_back(imgrv);
@@ -770,9 +777,9 @@ int MlnxDev::queryFwops()
 
     for (i = 0; i < fw_query.fw_info.roms_info.num_of_exp_rom; i++) {
         ImgVersion imgVer;
-        const char* tpc = _devFwOps->expRomType2Str(fw_query.fw_info.roms_info.rom_info[i].exp_rom_product_id);
+        const char *tpc = _devFwOps->expRomType2Str(fw_query.fw_info.roms_info.rom_info[i].exp_rom_product_id);
         if (tpc == NULL) {
-	    //imgVer.setExpansionRomtoUnknown();
+            //imgVer.setExpansionRomtoUnknown();
             tpc = "UNKNOWN_ROM";
         }
         int sz = fw_query.fw_info.roms_info.rom_info[i].exp_rom_num_ver_fields;
@@ -796,12 +803,12 @@ clean_up:
 
 
 #if !defined(__WIN__) && !defined(__FreeBSD__)
-static int readSysFs(dev_info* devinfo, fw_info_t *fw_query)
+static int readSysFs(dev_info *devinfo, fw_info_t *fw_query)
 {
     int res = -1;
     char path[256] = {0};
     char buf [40] = {0};
-    DIR* d;
+    DIR *d;
     struct dirent *dir;
     int v0, v1, v2, v20, v21;
 
@@ -822,12 +829,14 @@ static int readSysFs(dev_info* devinfo, fw_info_t *fw_query)
         fpath += "/";
         string file = fpath;
         file += "fw_ver";
-        FILE* f = fopen(file.c_str(), "r");
+        FILE *f = fopen(file.c_str(), "r");
         if (f == NULL) {
             continue;
         }
         if (fgets(buf, 32, f)) {
-            if (buf[strlen(buf)-1] == '\n') buf[strlen(buf)-1] = 0;
+            if (buf[strlen(buf) - 1] == '\n') {
+                buf[strlen(buf) - 1] = 0;
+            }
             int tmp = sscanf(buf, "%d.%d.%d", &v0, &v1, &v2);
             fw_query->fw_info.fw_ver[0] = v0;
             fw_query->fw_info.fw_ver[1] = v1;
@@ -847,7 +856,9 @@ static int readSysFs(dev_info* devinfo, fw_info_t *fw_query)
             continue;
         }
         if (fgets(buf, 32, f)) {
-            if (buf[strlen(buf)-1] == '\n') buf[strlen(buf)-1] = 0;
+            if (buf[strlen(buf) - 1] == '\n') {
+                buf[strlen(buf) - 1] = 0;
+            }
             strcpy(fw_query->fw_info.psid, buf);
         }
         fclose(f);
@@ -860,7 +871,7 @@ static int readSysFs(dev_info* devinfo, fw_info_t *fw_query)
 }
 
 
-static int getEthtoolInfo(dev_info* devinfo, fw_info_t *fw_query)
+static int getEthtoolInfo(dev_info *devinfo, fw_info_t *fw_query)
 {
     int sock;
     struct ifreq ifr;
@@ -868,7 +879,7 @@ static int getEthtoolInfo(dev_info* devinfo, fw_info_t *fw_query)
     int rc;
     int res = -1;
     char path[256] = {0};
-    DIR* d;
+    DIR *d;
     struct dirent *dir;
     int v0, v1, v2, v20, v21;
 
@@ -890,7 +901,7 @@ static int getEthtoolInfo(dev_info* devinfo, fw_info_t *fw_query)
             continue;
         }
 
-        strncpy(ifr.ifr_name, fl.c_str(), sizeof(ifr.ifr_name) -1);//the rest of dest will be filled with zeros
+        strncpy(ifr.ifr_name, fl.c_str(), sizeof(ifr.ifr_name) - 1);//the rest of dest will be filled with zeros
         ifr.ifr_name[sizeof(ifr.ifr_name) - 1] = '\0';
 
         ifr.ifr_data = &edata;
@@ -902,11 +913,11 @@ static int getEthtoolInfo(dev_info* devinfo, fw_info_t *fw_query)
         }
 
         int tmp = sscanf(edata.fw_version, "%d.%d.%d", &v0, &v1, &v2);
-            fw_query->fw_info.fw_ver[0] = v0;
-            fw_query->fw_info.fw_ver[1] = v1;
-            fw_query->fw_info.fw_ver[2] = v2;
-            v20 = v2 / 100;
-            v21 = v2 % 100;
+        fw_query->fw_info.fw_ver[0] = v0;
+        fw_query->fw_info.fw_ver[1] = v1;
+        fw_query->fw_info.fw_ver[2] = v2;
+        v20 = v2 / 100;
+        v21 = v2 % 100;
         (void) tmp;
         snprintf(fw_query->fw_info.product_ver, sizeof(fw_query->fw_info.product_ver) - 1, "%02d.%02d.%02d.%02d", v0 % 100, v1 % 100, v20 % 100, v21 % 100);
 
@@ -955,7 +966,7 @@ int MlnxDev::query()
             _boardTypeId = buf;
         }
         #else
-            goto clean_up;
+        goto clean_up;
         #endif
     } else {
         return rc;
@@ -997,13 +1008,13 @@ int MlnxDev::query()
 
 string MlnxDev::getDevDisplayName(bool pci_if_possible)
 {
-  char tmpb[20] = {0};
+    char tmpb[20] = {0};
     string devname = "";
 
     if (_init_type == INIT_DEVINFO) {
         if (_devinfo->type == MDEVS_TAVOR_CR) {
             snprintf(tmpb, sizeof(tmpb) - 1, "%04x:%02x:%02x.%x", _devinfo->pci.domain,
-                    _devinfo->pci.bus, _devinfo->pci.dev, _devinfo->pci.func);
+                     _devinfo->pci.bus, _devinfo->pci.dev, _devinfo->pci.func);
             devname = tmpb;
             //_devinfo->pci.conf_dev;
         } else {
@@ -1013,12 +1024,12 @@ string MlnxDev::getDevDisplayName(bool pci_if_possible)
             return devname;
         }
         #ifndef ONLY_PCI_FORMAT
-           devname = _devinfo->dev_name;
+        devname = _devinfo->dev_name;
         #endif
     } else if (_init_type == INIT_DEVNAME) {
         devname = _devname;
     } else {
-       fprintf(stderr, "-E- mlnx_dev.cpp: unexpected value for _init_type: %d\n", _init_type) ;
+        fprintf(stderr, "-E- mlnx_dev.cpp: unexpected value for _init_type: %d\n", _init_type);
     }
     return devname;
 }
@@ -1028,7 +1039,8 @@ string MlnxDev::getDeviceTypeStr()
     return _deviceTypeStr;
 }
 
-dm_dev_id_t MlnxDev::getDeviceType() {
+dm_dev_id_t MlnxDev::getDeviceType()
+{
     return _deviceType;
 }
 
@@ -1122,7 +1134,7 @@ bool MlnxDev::checkExistence(vector<MlnxDev*>& devs)
 }
 
 
-bool MlnxDev::equals(MlnxDev* dev)
+bool MlnxDev::equals(MlnxDev *dev)
 {
     string devUinqueId = dev->getUniqueId();
     if (_uniqueId != "NA" && devUinqueId != "NA") {

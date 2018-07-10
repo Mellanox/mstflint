@@ -36,10 +36,6 @@
 
 int convert_rc(int rc);
 
-#define IN
-#define OUT
-#define INOUT
-
 #ifdef _DEBUG_MODE
 #define DBG_PRINTF(...) fprintf(stderr, __VA_ARGS__)
 #else
@@ -53,47 +49,47 @@ int convert_rc(int rc);
  * TODO: Adrianc- if needed separate struct_name to prefix+name in case we need to separate between different
  * 5th gen icmd structures i.e connectib/switchib/connectx4 (use ## to paste them together in the macro)
  */
-#define SEND_ICMD_FLOW_GENERIC(mf, op, struct_name, cmd_struct, should_pack, skip_write, pack_func, unpack_func)\
-    int _rc;\
-    int _cmd_size = struct_name##_size();\
-    u_int8_t *_data = (u_int8_t *)malloc(sizeof(u_int8_t) * _cmd_size);\
-    if (!_data) {\
-        return GCIF_STATUS_NO_MEM;\
-    }\
-    memset(_data, 0, sizeof(u_int8_t) * _cmd_size);\
-    if (should_pack) {\
-        pack_func(cmd_struct, _data);\
-    }\
-    _rc = icmd_send_command(mf, op, _data, _cmd_size, skip_write);\
-    if (_rc) {\
-        free(_data);\
-        return convert_rc(_rc);\
-    }\
-    unpack_func(cmd_struct, _data);\
-    free(_data);\
+#define SEND_ICMD_FLOW_GENERIC(mf, op, struct_name, cmd_struct, should_pack, skip_write, pack_func, unpack_func) \
+    int _rc; \
+    int _cmd_size = struct_name##_size(); \
+    u_int8_t *_data = (u_int8_t*)malloc(sizeof(u_int8_t) * _cmd_size); \
+    if (!_data) { \
+        return GCIF_STATUS_NO_MEM; \
+    } \
+    memset(_data, 0, sizeof(u_int8_t) * _cmd_size); \
+    if (should_pack) { \
+        pack_func(cmd_struct, _data); \
+    } \
+    _rc = icmd_send_command(mf, op, _data, _cmd_size, skip_write); \
+    if (_rc) { \
+        free(_data); \
+        return convert_rc(_rc); \
+    } \
+    unpack_func(cmd_struct, _data); \
+    free(_data); \
     return GCIF_STATUS_SUCCESS
 
-#define SEND_ICMD_FLOW(mf, op, struct_name, cmd_struct, should_pack, skip_write)\
+#define SEND_ICMD_FLOW(mf, op, struct_name, cmd_struct, should_pack, skip_write) \
     SEND_ICMD_FLOW_GENERIC(mf, op, struct_name, cmd_struct, should_pack, skip_write, struct_name##_pack, struct_name##_unpack)
 
-#define SEND_UNION_ICMD_FLOW(mf, op, struct_name, cmd_struct, should_pack, skip_write)\
-    int _rc;\
-    int _cmd_size = struct_name##_size();\
-    u_int8_t *_data = (u_int8_t *)malloc(sizeof(u_int8_t) * _cmd_size);\
-    if (!_data) {\
-        return GCIF_STATUS_NO_MEM;\
-    }\
-    memset(_data, 0, sizeof(u_int8_t) * _cmd_size);\
-    if (should_pack) {\
-        struct_name##_in_pack(&(cmd_struct->in), _data);\
-    }\
-    _rc = icmd_send_command(mf, op, _data, _cmd_size, skip_write);\
-    if (_rc) {\
-        free(_data);\
-        return convert_rc(_rc);\
-    }\
-    struct_name##_unpack(cmd_struct, _data);\
-    free(_data);\
+#define SEND_UNION_ICMD_FLOW(mf, op, struct_name, cmd_struct, should_pack, skip_write) \
+    int _rc; \
+    int _cmd_size = struct_name##_size(); \
+    u_int8_t *_data = (u_int8_t*)malloc(sizeof(u_int8_t) * _cmd_size); \
+    if (!_data) { \
+        return GCIF_STATUS_NO_MEM; \
+    } \
+    memset(_data, 0, sizeof(u_int8_t) * _cmd_size); \
+    if (should_pack) { \
+        struct_name##_in_pack(&(cmd_struct->in), _data); \
+    } \
+    _rc = icmd_send_command(mf, op, _data, _cmd_size, skip_write); \
+    if (_rc) { \
+        free(_data); \
+        return convert_rc(_rc); \
+    } \
+    struct_name##_unpack(cmd_struct, _data); \
+    free(_data); \
     return GCIF_STATUS_SUCCESS
 
 

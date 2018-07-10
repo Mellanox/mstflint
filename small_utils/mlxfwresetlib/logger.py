@@ -37,13 +37,18 @@ class LoggerFactory(object):
     def get(self, name, level):
 
         if level is None:
-            log_level = logging.FATAL
-        if level == 'info':
-            log_level = logging.FATAL
+            log_level = logging.CRITICAL
+        elif level == 'critical':
+            log_level = logging.CRITICAL
+        elif level == 'error':
+            log_level = logging.ERROR
+        elif level == 'warning':
+            log_level = logging.WARNING
+        elif level == 'info':
+            log_level = logging.INFO
         elif level == 'debug':
             log_level = logging.DEBUG
-        elif level == 'fatal':
-            log_level = logging.FATAL
+
 
         #import logging
         logging.basicConfig(level=log_level)

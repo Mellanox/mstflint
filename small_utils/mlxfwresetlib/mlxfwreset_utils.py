@@ -36,9 +36,11 @@
 * $Authors      : Ahmad Soboh (ahmads@mellanox.com)
 """
 
+from __future__ import print_function
 import subprocess
 import platform
 import re
+import time
 
 
 ######################################################################
@@ -56,6 +58,19 @@ def cmdExec(cmd):
     output = p.communicate()
     stat = p.wait()
     return (stat, output[0], output[1])  # RC, Stdout, Stderr
+
+######################################################################
+# Description:  Run cmd in loops
+# OS Support :  N/A
+######################################################################
+def cmdExecLoop( cmd, sleep_time, max_retries):
+    retries_num = 0
+    rc = 1
+    while rc and retries_num <  max_retries:
+        (rc, stdout , stderr ) = cmdExec(cmd)
+        retries_num += 1
+        time.sleep(sleep_time)
+    return (rc, stdout, stderr)
 
 ######################################################################
 # Description:  DBDF string manipulation
@@ -95,7 +110,7 @@ def isDevBDFFormat(dev):
 # OS Support :  Linux/Windows.
 ######################################################################
 
-def getDevDBDF(device,logger):
+def getDevDBDF(device,logger=None):
     if isDevDBDFFormat(device):
         return device
     if isDevBDFFormat(device):
@@ -138,7 +153,9 @@ def getDevDBDF(device,logger):
         raise RuntimeError("Unsupported OS")
 
 
+
+
 if __name__ == '__main__':
     #device = '/dev/mst/mt4119_pciconf1.1'
     device = '0:136:0:0'
-    print getDevDBDF(device,None)
+    print(getDevDBDF(device,None))

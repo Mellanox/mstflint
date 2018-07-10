@@ -1,25 +1,25 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
- * 
+ *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
  * General Public License (GPL) Version 2, available from the file
  * COPYING in the main directory of this source tree, or the
  * OpenIB.org BSD license below:
- * 
+ *
  *     Redistribution and use in source and binary forms, with or
  *     without modification, are permitted provided that the following
  *     conditions are met:
- * 
+ *
  *      - Redistributions of source code must retain the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer.
- * 
+ *
  *      - Redistributions in binary form must reproduce the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer in the documentation and/or other materials
  *        provided with the distribution.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -55,7 +55,7 @@ typedef enum
 
 typedef struct option_ifc {
     string option_name;             //must be valid
-    char   option_short_name;       //can be used as short option, if space than no short flag
+    char option_short_name;         //can be used as short option, if space than no short flag
     string option_value;            //if "" has no argument
     string description;             //will be display in usage
     bool hidden;                    //if hidden than will not be diaplayed in regular usage
@@ -92,19 +92,22 @@ public:
     // methods
     CommandLineRequester(string req_name) : name(req_name) {}
     virtual ~CommandLineRequester() {}
-    inline void setToolName(string req_name) {
+    inline void setToolName(string req_name)
+    {
         name = req_name;
     }
-    inline void AddOptions(option_ifc_t options[], int arr_size) {
+    inline void AddOptions(option_ifc_t options[], int arr_size)
+    {
         for (int i = 0; i < arr_size; ++i)
             this->options.push_back(options[i]);
     }
     inline void AddOptions(string option_name,
-        char option_short_name,
-        string option_value,
-        string description,
-        bool hidden = false,
-        bool is_mandatory = false) {
+                           char option_short_name,
+                           string option_value,
+                           string description,
+                           bool hidden = false,
+                           bool is_mandatory = false)
+    {
         option_ifc_t opt;
         opt.option_name = option_name;
         opt.option_short_name = option_short_name;
@@ -114,7 +117,8 @@ public:
         opt.is_mandatory = is_mandatory;
         this->options.push_back(opt);
     }
-    inline void AddDescription(string desc) {
+    inline void AddDescription(string desc)
+    {
         this->description = desc;
     }
 
@@ -135,9 +139,9 @@ public:
 
 
 /******************************************************/
-typedef list < CommandLineRequester * > list_p_command_line_req;
+typedef list < CommandLineRequester* > list_p_command_line_req;
 typedef map < char, string > map_char_str;
-typedef map < string, CommandLineRequester * > map_str_p_command_line_req;
+typedef map < string, CommandLineRequester* > map_str_p_command_line_req;
 
 
 class CommandLineParser {
@@ -159,16 +163,17 @@ public:
         name(parser_name), last_error(""), last_unknown_options("") {}
     ~CommandLineParser() {}
 
-    inline const char * GetErrDesc() { return this->last_error.c_str(); }
-    inline const char * GetUnknownOptions() { return this->last_unknown_options.c_str(); }
-    inline void setParserName(string parser_name) {
+    inline const char* GetErrDesc() { return this->last_error.c_str(); }
+    inline const char* GetUnknownOptions() { return this->last_unknown_options.c_str(); }
+    inline void setParserName(string parser_name)
+    {
         name = parser_name;
     }
     int AddRequester(CommandLineRequester *p_req);      //if multiple option than fail
 
     ParseStatus ParseOptions(int argc, char **argv,
-            bool to_ignore_unknown_options = false,
-            list_p_command_line_req *p_ignored_requesters_list = NULL);
+                             bool to_ignore_unknown_options = false,
+                             list_p_command_line_req *p_ignored_requesters_list = NULL);
 
     string GetSynopsis(bool hidden_options = false);
     string GetUsage(bool hidden_options = false, vector<string> excluded_sections = vector<string>());

@@ -46,19 +46,19 @@
 #ifndef UEFI_BUILD
 #include <tools_res_mgmt.h>
 #else
-typedef void* trm_ctx;
+typedef void*trm_ctx;
 #endif
 
-// TODO: use: (int)log2((float)num)  
-#define NEAREST_POW2(num)\
-	(num) < (256) ? ((num) < (128) ? ((num) < (64) ? ((num) < (32) ? ((num) < (16) ? ((num) < (8) ? (4) : (8)): (16)): (32)): (64)): (128)): (256)
+// TODO: use: (int)log2((float)num)
+#define NEAREST_POW2(num) \
+    (num) < (256) ? ((num) < (128) ? ((num) < (64) ? ((num) < (32) ? ((num) < (16) ? ((num) < (8) ? (4) : (8)) : (16)) : (32)) : (64)) : (128)) : (256)
 
 #ifndef CHECK_RC
-    #define CHECK_RC(rc) do {if (rc) return rc;} while(0)
+#define CHECK_RC(rc) do {if (rc) {return rc;}} while (0)
 #endif
 
 #ifndef ARR_SIZE
-    #define ARR_SIZE(arr) sizeof(arr)/sizeof(arr[0])
+#define ARR_SIZE(arr) sizeof(arr) / sizeof(arr[0])
 #endif
 
 #ifndef IRISC
@@ -66,28 +66,28 @@ typedef void* trm_ctx;
 #else
 #define MFLASH_ERR_STR_SIZE    4
 #endif
-typedef int (*f_mf_lock)      (mflash* mfl, int lock_state);
+typedef int (*f_mf_lock)(mflash *mfl, int lock_state);
 
-typedef int (*f_mf_set_bank)  (mflash* mfl, u_int32_t bank);
-typedef int (*f_mf_read)      (mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data);
-typedef int (*f_mf_write)     (mflash* mfl, u_int32_t addr, u_int32_t len, u_int8_t* data);
-typedef int (*f_mf_erase_sect)(mflash* mfl, u_int32_t addr);
-typedef int (*f_mf_reset)     (mflash* mfl);
+typedef int (*f_mf_set_bank)(mflash *mfl, u_int32_t bank);
+typedef int (*f_mf_read)(mflash *mfl, u_int32_t addr, u_int32_t len, u_int8_t *data);
+typedef int (*f_mf_write)(mflash *mfl, u_int32_t addr, u_int32_t len, u_int8_t *data);
+typedef int (*f_mf_erase_sect)(mflash *mfl, u_int32_t addr);
+typedef int (*f_mf_reset)(mflash *mfl);
 
-typedef int (*f_st_spi_status)(mflash* mfl, u_int8_t op_type, u_int8_t* status);
-typedef int (*f_mf_get_info)  (mflash* mfl, flash_info_t *f_info, int *log2size, u_int8_t *no_flash);
+typedef int (*f_st_spi_status)(mflash *mfl, u_int8_t op_type, u_int8_t *status);
+typedef int (*f_mf_get_info)(mflash *mfl, flash_info_t *f_info, int *log2size, u_int8_t *no_flash);
 
 /*
  * flash parameters methods get/set
  */
-typedef int     (*f_mf_get_quad_en)    (mflash *mfl, u_int8_t *quad_en);
-typedef int     (*f_mf_set_quad_en)    (mflash *mfl, u_int8_t quad_en);
+typedef int (*f_mf_get_quad_en)(mflash *mfl, u_int8_t *quad_en);
+typedef int (*f_mf_set_quad_en)(mflash *mfl, u_int8_t quad_en);
 
-typedef int     (*f_mf_get_write_protect)    (mflash *mfl, u_int8_t bank_num, write_protect_info_t *protect_info);
-typedef int     (*f_mf_set_write_protect)    (mflash *mfl, u_int8_t bank_num, write_protect_info_t *protect_info);
+typedef int (*f_mf_get_write_protect)(mflash *mfl, u_int8_t bank_num, write_protect_info_t *protect_info);
+typedef int (*f_mf_set_write_protect)(mflash *mfl, u_int8_t bank_num, write_protect_info_t *protect_info);
 
-typedef int     (*f_mf_get_dummy_cycles)    (mflash *mfl, u_int8_t *num_of_cycles);
-typedef int     (*f_mf_set_dummy_cycles)    (mflash *mfl, u_int8_t num_of_cycles);
+typedef int (*f_mf_get_dummy_cycles)(mflash *mfl, u_int8_t *num_of_cycles);
+typedef int (*f_mf_set_dummy_cycles)(mflash *mfl, u_int8_t num_of_cycles);
 
 /////////////////////////////////////////////
 //
@@ -96,46 +96,46 @@ typedef int     (*f_mf_set_dummy_cycles)    (mflash *mfl, u_int8_t num_of_cycles
 /////////////////////////////////////////////
 struct mflash {
 #ifndef IRISC
-	mfile*      mf;
+    mfile *mf;
 #endif
 
-	// Functions:
-	f_mf_lock       f_lock;
+    // Functions:
+    f_mf_lock f_lock;
 
-	f_mf_set_bank   f_set_bank;
-	f_mf_get_info   f_get_info;
+    f_mf_set_bank f_set_bank;
+    f_mf_get_info f_get_info;
 
-	f_mf_read       f_read;
-	f_mf_write      f_write;
-	f_mf_write      f_write_blk;   // write and write_block have the same signateure, but theyr'e not the same func !
-	f_mf_read       f_read_blk;    // read  and read_block have the same signateure, but theyr'e not the same func !
-	f_mf_erase_sect f_erase_sect;
-	f_mf_reset      f_reset;
+    f_mf_read f_read;
+    f_mf_write f_write;
+    f_mf_write f_write_blk;   // write and write_block have the same signateure, but theyr'e not the same func !
+    f_mf_read f_read_blk;    // read  and read_block have the same signateure, but theyr'e not the same func !
+    f_mf_erase_sect f_erase_sect;
+    f_mf_reset f_reset;
 
-    f_mf_get_quad_en                f_get_quad_en;
-	f_mf_set_quad_en                f_set_quad_en;
-    f_mf_get_write_protect         f_get_write_protect;
-	f_mf_set_write_protect         f_set_write_protect;
-    f_mf_get_dummy_cycles      f_get_dummy_cycles;
-	f_mf_set_dummy_cycles     f_set_dummy_cycles;
+    f_mf_get_quad_en f_get_quad_en;
+    f_mf_set_quad_en f_set_quad_en;
+    f_mf_get_write_protect f_get_write_protect;
+    f_mf_set_write_protect f_set_write_protect;
+    f_mf_get_dummy_cycles f_get_dummy_cycles;
+    f_mf_set_dummy_cycles f_set_dummy_cycles;
 
-	// Relevant for SPI flash (InfiniHostIIILx, ConnectX) only
-	f_st_spi_status f_spi_status;
-	// when set(1) we support modification of the flash status register
-	u_int8_t supp_sr_mod;
+    // Relevant for SPI flash (InfiniHostIIILx, ConnectX) only
+    f_st_spi_status f_spi_status;
+    // when set(1) we support modification of the flash status register
+    u_int8_t supp_sr_mod;
 
-	int             curr_bank;
-	int             is_locked;
-	// if writer_lock is set, semaphore should be freed only in mf_close()/disable_hw_access()
-	int             writer_lock;
+    int curr_bank;
+    int is_locked;
+    // if writer_lock is set, semaphore should be freed only in mf_close()/disable_hw_access()
+    int writer_lock;
 
-	flash_attr      attr;
+    flash_attr attr;
 
-	int             opts[MFO_LAST];
-	char            last_err_str[MFLASH_ERR_STR_SIZE];
+    int opts[MFO_LAST];
+    char last_err_str[MFLASH_ERR_STR_SIZE];
 
-	u_int8_t   access_type; //0 = mfile , 1 = uefi
-	trm_ctx trm;
+    u_int8_t access_type; //0 = mfile , 1 = uefi
+    trm_ctx trm;
 
 };
 
@@ -152,97 +152,90 @@ typedef struct mfpa_command_args {
     u_int8_t supp_dummy_cycles;             //OUT
 } mfpa_command_args;
 
-enum AccessTypeByMfile{
-    ATBM_NO = 0,
-    ATBM_INBAND,
-    ATBM_MLNXOS_CMDIF,
-    ATBM_ICMD,
-    ATBM_TOOLS_CMDIF,
+enum AccessTypeByMfile {
+    ATBM_NO = 0, ATBM_INBAND, ATBM_MLNXOS_CMDIF, ATBM_ICMD, ATBM_TOOLS_CMDIF,
 };
 
 /*
-#ifndef __WIN__
+ #ifndef __WIN__
 
-#ifdef __FreeBSD__
-#define SWAPL(l) ntohl(l)
-#include <sys/endian.h>
-#else // Linux
-#include <byteswap.h>
-#include <endian.h>
+ #ifdef __FreeBSD__
+ #define SWAPL(l) ntohl(l)
+ #include <sys/endian.h>
+ #else // Linux
+ #include <byteswap.h>
+ #include <endian.h>
 
-#define SWAPL(l) bswap_32(l)
-#endif
+ #define SWAPL(l) bswap_32(l)
+ #endif
 
-#else
+ #else
 
-#include <io.h>
-#include <winsock2.h>
-#define SWAPL(l) ntohl(l)
-#define __BYTE_ORDER __LITTLE_ENDIAN
-*/
+ #include <io.h>
+ #include <winsock2.h>
+ #define SWAPL(l) ntohl(l)
+ #define __BYTE_ORDER __LITTLE_ENDIAN
+ */
 
 /*
-#define __cpu_to_be32(val) SWAPL(val) // Win is only run on LE CPUS
-#define inline __inline
-#define __cpu_to_be32(val) SWAPL(val) // Win is only run on LE CPUS
-*/
+ #define __cpu_to_be32(val) SWAPL(val) // Win is only run on LE CPUS
+ #define inline __inline
+ #define __cpu_to_be32(val) SWAPL(val) // Win is only run on LE CPUS
+ */
 //#endif
-
 /*
-#ifndef __cpu_to_le32
+ #ifndef __cpu_to_le32
 
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-    #define __cpu_to_le32(x) (x)
-#elif __BYTE_ORDER == __BIG_ENDIAN
-    #define __cpu_to_le32(x) SWAPL(x)
-#endif // __BYTE_ORDER
+ #if __BYTE_ORDER == __LITTLE_ENDIAN
+ #define __cpu_to_le32(x) (x)
+ #elif __BYTE_ORDER == __BIG_ENDIAN
+ #define __cpu_to_le32(x) SWAPL(x)
+ #endif // __BYTE_ORDER
 
-#endif
+ #endif
 
-#ifndef __le32_to_cpu
-    #define __le32_to_cpu(x) __cpu_to_le32(x)
-#endif
-*/
+ #ifndef __le32_to_cpu
+ #define __le32_to_cpu(x) __cpu_to_le32(x)
+ #endif
+ */
 
-#define WRITE_CHECK_ALIGN(addr, block_write, size) {\
-    if (addr & ((u_int32_t)block_write - 1)) {\
-        return MFE_BAD_ALIGN;\
-    }\
-    if (size & ((u_int32_t)block_write - 1)) {\
-         return MFE_BAD_ALIGN;\
-    }\
+#define WRITE_CHECK_ALIGN(addr, block_write, size) { \
+        if (addr & ((u_int32_t)block_write - 1)) { \
+            return MFE_BAD_ALIGN; \
+        } \
+        if (size & ((u_int32_t)block_write - 1)) { \
+            return MFE_BAD_ALIGN; \
+        } \
 }
 
-#define COM_CHECK_ALIGN(flash_addr, size) {\
-    if (flash_addr & (size - 1 )) {\
-        return MFE_BAD_ALIGN;\
-    }\
+#define COM_CHECK_ALIGN(flash_addr, size) { \
+        if (flash_addr & (size - 1 )) { \
+            return MFE_BAD_ALIGN; \
+        } \
 }
 
 //////////////////////////////////// SX FLASH functions ////////////////////////////////////
 
-typedef u_int32_t (*f_reg_pack)   (void *data_to_pack,  u_int8_t *packed_buffer);
-typedef void      (*f_reg_unpack) (void *unpacked_data, u_int8_t *buffer_to_unpack);
-typedef void      (*f_reg_dump)   (void *data_to_print, FILE *out_port);
+typedef u_int32_t (*f_reg_pack)(void *data_to_pack, u_int8_t *packed_buffer);
+typedef void (*f_reg_unpack)(void *unpacked_data, u_int8_t *buffer_to_unpack);
+typedef void (*f_reg_dump)(void *data_to_print, FILE *out_port);
 
-int sx_st_block_access(mfile *mf, u_int32_t flash_addr, u_int8_t bank, u_int32_t size, u_int8_t* data,\
-		u_int8_t method);
-
+int sx_st_block_access(mfile *mf, u_int32_t flash_addr, u_int8_t bank, u_int32_t size, u_int8_t *data, u_int8_t method);
 
 int common_erase_sector(mfile *mf, u_int32_t addr, u_int8_t flash_bank, u_int32_t erase_size);
 
-int run_mfpa_command(mfile *mf, u_int8_t access_cmd, mfpa_command_args* mfpa_args);
+int run_mfpa_command(mfile *mf, u_int8_t access_cmd, mfpa_command_args *mfpa_args);
 
-int com_get_jedec(mfile *mf, mfpa_command_args* mfpa_args);
+int com_get_jedec(mfile *mf, mfpa_command_args *mfpa_args);
 int get_num_of_banks(mfile *mf);
-int get_info_from_jededc_id(u_int32_t jededc_id, u_int8_t *vendor, u_int8_t* type, u_int8_t* capacity);
-int get_type_index_by_vendor_and_type(u_int8_t vendor, u_int8_t type, unsigned *type_index);
-int get_log2size_by_capcity(unsigned type_index, u_int8_t capacity, int *log2size);
+int get_info_from_jededc_id(u_int32_t jededc_id, u_int8_t *vendor, u_int8_t *type, u_int8_t *capacity);
+int get_type_index_by_vendor_type_density(u_int8_t vendor, u_int8_t type, u_int8_t density, unsigned *type_index);
+int get_log2size_by_vendor_type_density(u_int8_t vendor, u_int8_t type, u_int8_t capacity, int *log2size);
 int get_max_reg_size(mfile *mf);
 
-int set_bank(mflash* mfl, u_int32_t addr);
-int set_bank_int(mflash* mfl, int bank_num);
-int get_bank_int(mflash* mfl);
+int set_bank(mflash *mfl, u_int32_t addr);
+int set_bank_int(mflash *mfl, int bank_num);
+int get_bank_int(mflash *mfl);
 int get_flash_offset(u_int32_t addr, int log2_bank_size, u_int32_t *flash_addr_p);
 int mfl_get_bank_info(mflash *mfl, u_int32_t addr, u_int32_t *flash_off_p, int *bank_p);
 MfError MError2MfError(MError rc);

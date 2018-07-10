@@ -1,25 +1,25 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
- * 
+ *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
  * General Public License (GPL) Version 2, available from the file
  * COPYING in the main directory of this source tree, or the
  * OpenIB.org BSD license below:
- * 
+ *
  *     Redistribution and use in source and binary forms, with or
  *     without modification, are permitted provided that the following
  *     conditions are met:
- * 
+ *
  *      - Redistributions of source code must retain the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer.
- * 
+ *
  *      - Redistributions in binary form must reproduce the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer in the documentation and/or other materials
  *        provided with the distribution.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -83,7 +83,7 @@ string CommandLineRequester::BuildOptStr(option_ifc_t &opt)
 }
 
 string CommandLineRequester::FormatUsageStr(string str, int str_type_len, int ident_size,
-                                                   int is_not_description, bool is_left_side)
+                                            int is_not_description, bool is_left_side)
 {
     string ident = CreateIndentFromInt(ident_size);
     string newline_and_ident = "\n" + ident;
@@ -96,7 +96,7 @@ string CommandLineRequester::FormatUsageStr(string str, int str_type_len, int id
     int local_space_size = is_not_description * ident_size;
     int new_line_pos = 0;
     int space_not_exists_count = 0;
-    
+
     //iterate while the remained text is longer then a valid line length
     while (residual >= str_type_len + local_space_size) {
         //search for a user defined new line.
@@ -110,24 +110,24 @@ string CommandLineRequester::FormatUsageStr(string str, int str_type_len, int id
             goto next_iteration;
         }
         //if not found, break the line in a middle of a spaceless word.
-        space_not_exists_count++; 
-        new_line_pos = local_space_size + str_type_len + product_length; 
-        str.insert(new_line_pos, newline_and_ident); 
+        space_not_exists_count++;
+        new_line_pos = local_space_size + str_type_len + product_length;
+        str.insert(new_line_pos, newline_and_ident);
 next_iteration:
-        //update iteration variables 
-        local_space_size = ident_size; 
-        initial_residual += ident_size; 
-        residual = initial_residual - new_line_pos - 1 + space_not_exists_count; 
-        product_length = new_line_pos; 
+        //update iteration variables
+        local_space_size = ident_size;
+        initial_residual += ident_size;
+        residual = initial_residual - new_line_pos - 1 + space_not_exists_count;
+        product_length = new_line_pos;
     }
     //handle the last line remained. if it is the left string - add aligned colon.
-    if (is_left_side) { 
-        while (residual < str_type_len + ident_size) { 
-            str += " "; 
-            residual++; 
-        } 
-        str += ": "; 
-    } 
+    if (is_left_side) {
+        while (residual < str_type_len + ident_size) {
+            str += " ";
+            residual++;
+        }
+        str += ": ";
+    }
     //Add user defined new lines in last line remained.
     FindAndReplace(str, product_length + local_space_size + 1, "\n", newline_and_ident);
     return str;
@@ -137,14 +137,15 @@ next_iteration:
 
 // Add the data str1 and/or str2 to the optional help section "section_name".
 // If "section_name" does not exist, don't worry, it would be created."
-void CommandLineRequester::AddOptionalSectionData(string section_name, string str1, string str2) { 
+void CommandLineRequester::AddOptionalSectionData(string section_name, string str1, string str2)
+{
     int pos;
     optional_sec_data_t sec_data;
     sec_data.name = section_name;
     sec_data.str1 = str1;
     sec_data.str2 = str2;
 
-    for (optional_sections_t::iterator it = this->optional_sections_vec.begin(); 
+    for (optional_sections_t::iterator it = this->optional_sections_vec.begin();
          it != this->optional_sections_vec.end(); ++it) {
         if (it->first == section_name) {
             pos = distance(optional_sections_vec.begin(), it);
@@ -153,7 +154,7 @@ void CommandLineRequester::AddOptionalSectionData(string section_name, string st
         }
     }
     this->optional_sections_vec.push_back(pair < string, vector<struct optional_help_section_data > >
-                                          (section_name, vector < struct optional_help_section_data >()));
+                                              (section_name, vector < struct optional_help_section_data >()));
     pos = optional_sections_vec.size() - 1;
     this->optional_sections_vec[pos].second.push_back(sec_data);
 }
@@ -262,8 +263,8 @@ string CommandLineRequester::GetUsageOptions(bool hidden_options)
         opt_str += this->BuildOptStr(*it);
         opt_str = FormatUsageStr(opt_str, LEFT_STR_MAX_LEN, PREFIX_SPACE_SIZE, 1, true);
         str += opt_str;
-        desc_str = FormatUsageStr((*it).description, RIGHT_STR_MAX_LEN, LEFT_STR_MAX_LEN + PREFIX_SPACE_SIZE + 
-                        COLON_AND_SPACE_SIZE, 0, false);
+        desc_str = FormatUsageStr((*it).description, RIGHT_STR_MAX_LEN, LEFT_STR_MAX_LEN + PREFIX_SPACE_SIZE +
+                                  COLON_AND_SPACE_SIZE, 0, false);
         str += desc_str;
         str += "\n";
     }
@@ -277,18 +278,14 @@ string CommandLineRequester::GetUsageOptions(bool hidden_options)
 string CommandLineRequester::GetUsageOptionalSections(vector<string> excluded_sections)
 {
     string res = "";
-    int i;
-    optional_sections_t::iterator sec_it;
 
-    for (i=0, sec_it = this->optional_sections_vec.begin(); sec_it != this->optional_sections_vec.end(); 
-         ++i, ++sec_it) {
-        if (find(excluded_sections.begin(), excluded_sections.end(), this->optional_sections_vec[i].first) !=
+    for (unsigned i = 0; i < optional_sections_vec.size(); ++i) {
+        if (find(excluded_sections.begin(), excluded_sections.end(), optional_sections_vec[i].first) !=
             excluded_sections.end()) {
             continue;
         }
-        res += this->optional_sections_vec[i].first;
-        res += "\n";
-        res += this->GetUsageOptionalSection(sec_it->second) + "\n";
+        res += optional_sections_vec[i].first + "\n";
+        res += GetUsageOptionalSection(optional_sections_vec[i].second) + "\n";
     }
     return res;
 }
@@ -307,7 +304,7 @@ string CommandLineRequester::GetUsageOptional2Str(vector<struct optional_help_se
 {
     string data_string("");
     string prefix_space = CreateIndentFromInt(PREFIX_SPACE_SIZE);
-    data_string += FormatUsageStr(prefix_space + it->str1, LEFT_STR_MAX_LEN , PREFIX_SPACE_SIZE, 1, true);
+    data_string += FormatUsageStr(prefix_space + it->str1, LEFT_STR_MAX_LEN, PREFIX_SPACE_SIZE, 1, true);
     data_string += FormatUsageStr(it->str2, RIGHT_STR_MAX_LEN,
                                   LEFT_STR_MAX_LEN  + PREFIX_SPACE_SIZE + COLON_AND_SPACE_SIZE, 0, false);
     data_string += "\n";
@@ -354,36 +351,36 @@ void CommandLineParser::SetLastError(const char *fmt, ...)
 int CommandLineParser::AddRequester(CommandLineRequester *p_req)
 {
     for (vec_option_t::iterator it = p_req->GetOptions().begin();
-            it != p_req->GetOptions().end(); ++it) {
+         it != p_req->GetOptions().end(); ++it) {
         //long option must be valid
         if ((*it).option_name == "") {
             this->SetLastError("Requester \"%s\" has long option empty",
-                    p_req->GetName().c_str());
+                               p_req->GetName().c_str());
             return 1;
         }
 
         //check if long option already exists
         map_str_p_command_line_req::iterator it2 =
-                this->long_opt_to_req_map.find((*it).option_name);
+            this->long_opt_to_req_map.find((*it).option_name);
         if (it2 != this->long_opt_to_req_map.end()) {
             this->SetLastError("Option \"%s\" from requester \"%s\" "   \
-                    "already exists in requester \"%s\"",
-                    (*it).option_name.c_str(),
-                    p_req->GetName().c_str(),
-                    (*it2).second->GetName().c_str());
+                               "already exists in requester \"%s\"",
+                               (*it).option_name.c_str(),
+                               p_req->GetName().c_str(),
+                               (*it2).second->GetName().c_str());
             return 1;
         }
 
         //check if short option already exists
         if ((*it).option_short_name != ' ') {   //if space than no short option
             map_char_str::iterator it2 =
-                    this->short_opt_to_long_opt.find((*it).option_short_name);
+                this->short_opt_to_long_opt.find((*it).option_short_name);
             if (it2 != this->short_opt_to_long_opt.end()) {
                 this->SetLastError("Option \'%c\' from requester \"%s\" "   \
-                        "already exists in requester \"%s\"",
-                        (*it).option_short_name,
-                        p_req->GetName().c_str(),
-                        this->long_opt_to_req_map[(*it2).second]->GetName().c_str());
+                                   "already exists in requester \"%s\"",
+                                   (*it).option_short_name,
+                                   p_req->GetName().c_str(),
+                                   this->long_opt_to_req_map[(*it2).second]->GetName().c_str());
                 return 1;
             }
         }
@@ -391,10 +388,11 @@ int CommandLineParser::AddRequester(CommandLineRequester *p_req)
 
     //finally add the requester
     for (vec_option_t::iterator it = p_req->GetOptions().begin();
-            it != p_req->GetOptions().end(); ++it) {
+         it != p_req->GetOptions().end(); ++it) {
         this->long_opt_to_req_map[(*it).option_name] = p_req;
-        if ((*it).option_short_name != ' ') //if space than no short option
+        if ((*it).option_short_name != ' ') { //if space than no short option
             this->short_opt_to_long_opt[(*it).option_short_name] = (*it).option_name;
+        }
     }
     this->p_requesters_list.push_back(p_req);
     return 0;
@@ -414,7 +412,7 @@ string CommandLineParser::GetSynopsis(bool hidden_options)
     //synopsis
     res += "SYNOPSIS\n";
     for (list_p_command_line_req::iterator it = this->p_requesters_list.begin();
-            it != this->p_requesters_list.end(); ++it) {
+         it != this->p_requesters_list.end(); ++it) {
         res += (*it)->GetUsageSynopsis(hidden_options);
     }
     res += "\n";
@@ -425,7 +423,7 @@ string CommandLineParser::GetSynopsis(bool hidden_options)
 string CommandLineParser::GetUsage(bool hidden_options, vector<string> excluded_sections)
 {
     string res;
-    
+
     //synopsis
     res = GetSynopsis(hidden_options);
 
@@ -433,7 +431,7 @@ string CommandLineParser::GetUsage(bool hidden_options, vector<string> excluded_
     if (hidden_options == false) {
         res += "DESCRIPTION\n";
         for (list_p_command_line_req::iterator it = this->p_requesters_list.begin();
-                it != this->p_requesters_list.end(); ++it) {
+             it != this->p_requesters_list.end(); ++it) {
             res += (*it)->GetUsageDescription() + "\n";
         }
     }
@@ -441,7 +439,7 @@ string CommandLineParser::GetUsage(bool hidden_options, vector<string> excluded_
     //options
     res += "OPTIONS\n";
     for (list_p_command_line_req::iterator it = this->p_requesters_list.begin();
-            it != this->p_requesters_list.end(); ++it) {
+         it != this->p_requesters_list.end(); ++it) {
         res += (*it)->GetUsageOptions(hidden_options) + "\n";
     }
 
@@ -455,7 +453,7 @@ string CommandLineParser::GetUsage(bool hidden_options, vector<string> excluded_
 
 
 ParseStatus CommandLineParser::ParseOptions(int argc, char **argv,
-        bool to_ignore_unknown_options, list_p_command_line_req *p_ignored_requesters_list)
+                                            bool to_ignore_unknown_options, list_p_command_line_req *p_ignored_requesters_list)
 {
     char **internal_argv;
     struct option *options_arr = NULL;
@@ -468,13 +466,13 @@ ParseStatus CommandLineParser::ParseOptions(int argc, char **argv,
     unsigned i = 0;
 
     //allocate internal_argv
-    internal_argv = new char *[argc];
+    internal_argv = new char*[argc];
     if (!internal_argv) {
         this->SetLastError("Fail to allocate internal argv for parsing");
         return PARSE_ERROR;
     }
     for (int j = 0; j < argc; ++j) {
-         internal_argv[j] = NULL;
+        internal_argv[j] = NULL;
     }
     for (int j = 0; j < argc; ++j) {
         internal_argv[j] = new char[strlen(argv[j]) + 1];
@@ -494,7 +492,7 @@ ParseStatus CommandLineParser::ParseOptions(int argc, char **argv,
         rc = PARSE_ERROR;
         goto parse_exit;
     }
-    memset(options_arr, 0, sizeof(struct option)*(num_options + 1));
+    memset(options_arr, 0, sizeof(struct option) * (num_options + 1));
 
     /*
      * fill options array and options string with
@@ -504,11 +502,11 @@ ParseStatus CommandLineParser::ParseOptions(int argc, char **argv,
      */
     i = 0;
     for (list_p_command_line_req::iterator it = this->p_requesters_list.begin();
-            it != this->p_requesters_list.end(); ++it) {
+         it != this->p_requesters_list.end(); ++it) {
         for (vec_option_t::iterator it2 = (*it)->GetOptions().begin();
-                it2 != (*it)->GetOptions().end(); ++it2) {
+             it2 != (*it)->GetOptions().end(); ++it2) {
             options_str += (*it2).option_short_name;
-            options_arr[i].name = (char *)(*it2).option_name.c_str();
+            options_arr[i].name = (char*)(*it2).option_name.c_str();
             if ((*it2).option_value != "") {
                 options_arr[i].has_arg = 1;
                 options_str += ":";
@@ -522,9 +520,10 @@ ParseStatus CommandLineParser::ParseOptions(int argc, char **argv,
                 options_arr[i].val = 0;
             }
 
-            if (returned_option_types_vec.empty() || (returned_option_types_vec.size() < (unsigned int)options_arr[i].val + 1))
-                    for (unsigned j = returned_option_types_vec.size(); j < (unsigned int)options_arr[i].val + 1; ++j)
-                        returned_option_types_vec.push_back(false);
+            if (returned_option_types_vec.empty() || (returned_option_types_vec.size() < (unsigned int)options_arr[i].val + 1)) {
+                for (unsigned j = returned_option_types_vec.size(); j < (unsigned int)options_arr[i].val + 1; ++j)
+                    returned_option_types_vec.push_back(false);
+            }
             returned_option_types_vec[options_arr[i].val] = true;
             //printf("%c %d ", options_arr[i].val, options_arr[i].val);
             ++i;
@@ -532,15 +531,16 @@ ParseStatus CommandLineParser::ParseOptions(int argc, char **argv,
     }
 
     //finally parse all options
-    if (to_ignore_unknown_options == true)
+    if (to_ignore_unknown_options == true) {
         tools_opterr = 0;
-    else
+    } else {
         tools_opterr = 1;
+    }
     tools_optind = 0;
 
     ParseStatus curr_result;
     while ((option_type = tools_getopt_long_only(argc, internal_argv, options_str.c_str(),
-            options_arr, &option_index)) != -1) {
+                                                 options_arr, &option_index)) != -1) {
         //printf("option_type=\'%c\'\n", option_type);
 
         string long_opt_name;
@@ -548,10 +548,12 @@ ParseStatus CommandLineParser::ParseOptions(int argc, char **argv,
             long_opt_name = options_arr[option_index].name;
             goto do_handle_option;
         } else if (option_type == '?') {
-            if (to_ignore_unknown_options == true)
+            if (to_ignore_unknown_options == true) {
                 continue;
+            }
             this->SetLastError("Bad input parameter");
-            goto parse_exit;
+            rc = PARSE_ERROR_SHOW_USAGE;
+            goto argv_err_exit;
         } else if (returned_option_types_vec[option_type] == true) {
             long_opt_name = this->short_opt_to_long_opt[option_type];
             goto do_handle_option;
@@ -561,11 +563,11 @@ ParseStatus CommandLineParser::ParseOptions(int argc, char **argv,
         }
 
 do_handle_option:
-        CommandLineRequester *p_req = this->long_opt_to_req_map[long_opt_name];
+        CommandLineRequester * p_req = this->long_opt_to_req_map[long_opt_name];
         bool ignore_this_req = false;
         if (p_ignored_requesters_list) {
             for (list_p_command_line_req::iterator it = p_ignored_requesters_list->begin();
-                    it != p_ignored_requesters_list->end(); ++it) {
+                 it != p_ignored_requesters_list->end(); ++it) {
                 if (p_req == (*it)) {
                     ignore_this_req = true;
                     break;
@@ -633,7 +635,7 @@ static string CreateIndentFromInt(int ident_size)
 
 static void FindAndReplace(string& source, string::size_type pos, string const& find, string const& replace)
 {
-    for(string::size_type i = pos; (i = source.find(find, i)) != string::npos;) {
+    for (string::size_type i = pos; (i = source.find(find, i)) != string::npos;) {
         source.replace(i, find.length(), replace);
         i += replace.length();
     }
@@ -648,7 +650,7 @@ static bool FindAndHandleNewLinePos(string& str, int& product_length, int& local
         new_line_pos = str.substr(product_length + local_space_size, str_type_len).find("\n");
     } else {
         new_line_pos = str.substr(product_length + local_space_size + 1, str.npos).
-                               find_last_of(" ", str_type_len - 1);
+                       find_last_of(" ", str_type_len - 1);
     }
     if ((size_t)new_line_pos != str.npos) {
         new_line_pos += local_space_size + product_length + plus_one_for_space;

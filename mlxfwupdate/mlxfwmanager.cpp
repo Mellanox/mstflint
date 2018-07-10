@@ -35,7 +35,7 @@
 
 #include "mlxfwmanager.h"
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
     try {
         return mainEntry(argc, argv);
@@ -44,7 +44,7 @@ int main(int argc, char* argv[])
         return ERR_CODE_SERVER_RETRIEVE_FAIL;
     }
 }
-int mainEntry(int argc, char* argv[])
+int mainEntry(int argc, char *argv[])
 {
     int res = 0;
     config_t config;
@@ -69,7 +69,7 @@ int mainEntry(int argc, char* argv[])
     string mpath;
     int err_continue = 0;
     int devs_num = 0;
-    dev_info* devsinfo = NULL;
+    dev_info *devsinfo = NULL;
     string strbuf;
     OutputFmts outfmts;
     PsidLookupDB psidLookupDB;
@@ -78,8 +78,8 @@ int mainEntry(int argc, char* argv[])
     string xml_query;
     string errorMsg = "";
     string logDir;
-    int    (*progressCB)(int);
-    int    (*advProgressCB)(int, const char*, prog_t, void*);
+    int (*progressCB)(int);
+    int (*advProgressCB)(int, const char*, prog_t, void*);
     ServerRequest *srq = NULL;
     initHandler();
     CmdLineParser cmdParser(&cmd_params, argv, argc);
@@ -107,7 +107,7 @@ int mainEntry(int argc, char* argv[])
     }
 
     if (cmd_params.calc_crc) {
-        if(config.mfa_path == ".") {
+        if (config.mfa_path == ".") {
             fprintf(stderr, "-E- Bad command line arguments, image file is mandatory\n");
             return ERR_CODE_BAD_CMD_ARGS;
         }
@@ -116,9 +116,9 @@ int mainEntry(int argc, char* argv[])
 
     if (isServerRequestorRequired(cmd_params)) {
         srq = new ServerRequest(cmd_params.server_url.c_str(),
-                cmd_params.proxy.c_str(), cmd_params.compare_ffv,
-                cmd_params.show_progress, cmd_params.download_key,
-                cmd_params.certificate, cmd_params.numberOfRetrials);
+                                cmd_params.proxy.c_str(), cmd_params.compare_ffv,
+                                cmd_params.show_progress, cmd_params.download_key,
+                                cmd_params.certificate, cmd_params.numberOfRetrials);
         if (srq == NULL) {
             res = ERR_CODE_MEM_ALLOC_FAIL;
             return res;
@@ -128,7 +128,7 @@ int mainEntry(int argc, char* argv[])
         cmd_params.update_fw = 0;
     }
 
-    if(cmd_params.query_device_xml) {
+    if (cmd_params.query_device_xml) {
         cmd_params.write_xml = true;
     }
 
@@ -139,7 +139,7 @@ int mainEntry(int argc, char* argv[])
     advProgressCB = NULL;
     if (cmd_params.show_progress) {
         progressCB = progressCB_display;
-        advProgressCB = (f_prog_func_adv)&advProgressFunc_display;
+        advProgressCB = (f_prog_func_adv) & advProgressFunc_display;
     }
 
     formatted_output = cmd_params.write_xml;
@@ -160,8 +160,7 @@ int mainEntry(int argc, char* argv[])
             goto early_err_clean_up;
         }
     }
-    if (cmd_params.onlineQueryPsids.length())
-    {
+    if (cmd_params.onlineQueryPsids.length()) {
         if (cmd_params.queryFormat == "text") {
             res = handleOnlinePsidsQuery(srq, cmd_params, config);
         } else {
@@ -209,13 +208,13 @@ int mainEntry(int argc, char* argv[])
     }
 
     if ((cmd_params.device_names.size() == 0 || cmd_params.device_names.size() > 1) &&
-         cmd_params.clear_semaphore) {
+        cmd_params.clear_semaphore) {
         print_err("-E- Please specify a device to clear semaphore for.\n");
         res = ERR_CODE_CLEAR_SEMAPORE;
         goto clean_up;
     }
     if ((cmd_params.device_names.size() == 0 || cmd_params.device_names.size() > 1) &&
-         !cmd_params.burnFailsafe) {
+        !cmd_params.burnFailsafe) {
         print_err("-E- Please specify a device to burn in non failsafe mode.\n");
         res = ERR_CODE_CLEAR_SEMAPORE;
         goto clean_up;
@@ -236,11 +235,11 @@ int mainEntry(int argc, char* argv[])
             goto early_err_clean_up;
         }
         //Print the command line to the log file
-        fprintf(FLog , "CMD: %s ", toolName.c_str());
+        fprintf(FLog, "CMD: %s ", toolName.c_str());
         for (int i = 1; i < argc; i++) {
-            fprintf(FLog , "%s ", argv[i]);
+            fprintf(FLog, "%s ", argv[i]);
         }
-        fprintf(FLog , "\n");
+        fprintf(FLog, "\n");
     }
 
     //Create Dev list
@@ -265,8 +264,7 @@ int mainEntry(int argc, char* argv[])
                 #endif
             }
             goto clean_up;
-        }
-        else if (devs_num < 0) {
+        } else if (devs_num < 0) {
             print_err("-E- Failed to retrieve device(s) names\n");
             res = ERR_CODE_FETCH_LOCAL_DEVICES_FAIL;
             goto clean_up;
@@ -281,11 +279,11 @@ int mainEntry(int argc, char* argv[])
     //Query all Devs
     print_out("Querying Mellanox devices firmware ...\n");
     for (int i = 0; i < devs_num; i++) {
-        MlnxDev* dev;
+        MlnxDev *dev;
         if (cmd_params.device_names.size()) {
             dev = new MlnxDev(cmd_params.device_names[i].c_str(), cmd_params.compare_ffv);
-            if(cmd_params.clear_semaphore) {
-                if(!dev->clearSemaphore()) {
+            if (cmd_params.clear_semaphore) {
+                if (!dev->clearSemaphore()) {
                     print_err("-E- Failed to clear semaphore : %s\n", dev->getLastErrMsg().c_str());
                     res = ERR_CODE_CLEAR_SEMAPORE;
                 } else {
@@ -306,8 +304,7 @@ int mainEntry(int argc, char* argv[])
             res = ERR_CODE_QUERY_FAILED;
         } else {
             dev->patchPsidInfo(psidLookupDB.getPsid(dev->getBoardTypeId()));
-            if (cmd_params.use_lookup_file && !psidLookupDB.isPsidExist(dev->getPsid()))
-            {
+            if (cmd_params.use_lookup_file && !psidLookupDB.isPsidExist(dev->getPsid())) {
                 delete dev;
                 continue;
             }
@@ -318,7 +315,7 @@ int mainEntry(int argc, char* argv[])
         }
         devs.push_back(dev);
     }
-    if (!devs.size()){
+    if (!devs.size()) {
         print_out("-W- No devices found that match lookup file\n");
     }
     //Get unique PSID list
@@ -334,8 +331,7 @@ int mainEntry(int argc, char* argv[])
                 goto early_err_clean_up;
             }
             mpath = config.mfa_path;
-        }
-        else if(cmd_params.use_mfa_file) {
+        } else if (cmd_params.use_mfa_file) {
             mpath = adjustRelPath(cmd_params.mfa_file, config.adjuster_path);
         }
         rc = queryMFAs(srq, mpath, psid_list, dev_types_list, psidUpdateInfo, cmd_params.update_online, errorMsg, fw_version_list);
@@ -349,16 +345,16 @@ int mainEntry(int argc, char* argv[])
     }
 
     rc = checkAndDisplayDeviceQuery1D(devs,
-                                        psidUpdateInfo,
-                                        psidLookupDB,
-                                        cmd_params.update_fw,
-                                        (cmd_params.use_mfa_dir || cmd_params.use_mfa_file) ,
-                                        cmd_params.force_update,
-                                        cmd_params.query_device,
-                                        cmd_params.query_device_xml,
-                                        xml_query,
-                                        errorMsg,
-                                        cmd_params);
+                                      psidUpdateInfo,
+                                      psidLookupDB,
+                                      cmd_params.update_fw,
+                                      (cmd_params.use_mfa_dir || cmd_params.use_mfa_file),
+                                      cmd_params.force_update,
+                                      cmd_params.query_device,
+                                      cmd_params.query_device_xml,
+                                      xml_query,
+                                      errorMsg,
+                                      cmd_params);
 
 
     //Error codes returned from checkAndDisplay...
@@ -373,7 +369,7 @@ int mainEntry(int argc, char* argv[])
 
 
     if (!cmd_params.update_fw || (cmd_params.update_fw && cmd_params.write_xml &&
-                                 (cmd_params.query_device || cmd_params.yes_no_ != 1))) {
+                                  (cmd_params.query_device || cmd_params.yes_no_ != 1))) {
         if (!res) {
             res = rc;
         }
@@ -445,10 +441,10 @@ int mainEntry(int argc, char* argv[])
     }
     for (int i = 0; i < (int)devs.size(); i++) {
         if (status_strings[i].size() != 0) {
-            print_out("Device #%d: %s\n", (i+1), status_strings[i].c_str());
+            print_out("Device #%d: %s\n", (i + 1), status_strings[i].c_str());
             continue;
         } else {
-            print_out("Device #%d: %s", (i+1), "Updating FW ...     \n");
+            print_out("Device #%d: %s", (i + 1), "Updating FW ...     \n");
         }
         burn_cnt++;
         string mfa_file = config.mfa_path;
@@ -467,7 +463,7 @@ int mainEntry(int argc, char* argv[])
         vector<string> questions;
         bool isTimeConsumingFixesNeeded = false;
         rc0 = devs[i]->preBurn(mfa_file, progressCB, cmd_params.burnFailsafe,
-                isTimeConsumingFixesNeeded, questions, advProgressCB);
+                               isTimeConsumingFixesNeeded, questions, advProgressCB);
         if (rc0) {
             if (abort_request) {
                 print_out("\b\b\b\bInterrupted\n");
@@ -478,7 +474,7 @@ int mainEntry(int argc, char* argv[])
                 print_out("\b\b\b\bFail : %s \n", devs[i]->getLastErrMsg().c_str());
             }
         } else {
-            for(unsigned int questionIndex = 0; questionIndex < questions.size(); questionIndex++) {
+            for (unsigned int questionIndex = 0; questionIndex < questions.size(); questionIndex++) {
                 print_out("%s", questions[questionIndex].c_str());
                 int answer = prompt("Perform update? [y/N]: ", cmd_params.yes_no_);
                 if (!answer) {
@@ -596,7 +592,7 @@ int extract_all(CmdLineParams &cmd_params, config_t &config, ServerRequest *srq)
         return -1;
     }
     print_out("-I- Please wait while extracting images ...\n");
-    for(unsigned int i = 0; i < items.size(); i++) {
+    for (unsigned int i = 0; i < items.size(); i++) {
         cmd_params.psid = items[i].psid;
         rc = extract_image(cmd_params, config, srq, true);
         if (rc) {
@@ -616,7 +612,7 @@ int extract_image(CmdLineParams &cmd_params, config_t &config, ServerRequest *sr
     string errorMsg = "";
     int res = 0;
     int rc;
-    u_int8_t* filebuf = NULL;
+    u_int8_t *filebuf = NULL;
     ImageAccess imgacc(CompareFFV);
 
     if (cmd_params.psid == "") {
@@ -628,7 +624,7 @@ int extract_image(CmdLineParams &cmd_params, config_t &config, ServerRequest *sr
     psid_list.push_back(cmd_params.psid);
     mpath = config.mfa_path;
 
-    if(cmd_params.use_mfa_file) {
+    if (cmd_params.use_mfa_file) {
         mpath = adjustRelPath(cmd_params.mfa_file, config.adjuster_path);
     }
 
@@ -657,7 +653,7 @@ int extract_image(CmdLineParams &cmd_params, config_t &config, ServerRequest *sr
             }
             targetFile = adjustRelPath(targetFile, config.adjuster_path);
             print_out("Extracting image for psid: %s to %s  ...\n", cmd_params.psid.c_str(), targetFile.c_str());
-            FILE* f = fopen(targetFile.c_str(), "wb");
+            FILE *f = fopen(targetFile.c_str(), "wb");
             int sz = 0;
             if (f != NULL) {
                 sz = fwrite(filebuf, 1, sza, f);
@@ -683,8 +679,8 @@ int extract_image(CmdLineParams &cmd_params, config_t &config, ServerRequest *sr
         res = ERR_CODE_IMG_NOT_FOUND;
     }
 
-clean_up :
-    if(filebuf) {
+clean_up:
+    if (filebuf) {
         free(filebuf);
     }
     return res;
@@ -703,7 +699,7 @@ bool checkCmdParams(CmdLineParams &cmd_params, config_t &config)
     if ((cmd_params.download_os.length() ||
          cmd_params.download_type.length() ||
          cmd_params.download_dev.length()) ||
-         cmd_params.download_default) {
+        cmd_params.download_default) {
         cmd_params.download = true;
     }
 
@@ -716,15 +712,15 @@ bool checkCmdParams(CmdLineParams &cmd_params, config_t &config)
     }
 
     if (!cmd_params.download && (cmd_params.download_os.length() ||
-                                  cmd_params.download_type.length() ||
-                                  cmd_params.download_dev.length())) {
+                                 cmd_params.download_type.length() ||
+                                 cmd_params.download_dev.length())) {
         fprintf(stderr, "-E- Please specify download Directory\n");
         return false;
     }
 
     if (cmd_params.download_os.length() &&
-            cmd_params.download_type.length() &&
-            cmd_params.download_dev.length()) {
+        cmd_params.download_type.length() &&
+        cmd_params.download_dev.length()) {
         cmd_params.download_default = true;
     }
 
@@ -764,8 +760,8 @@ string adjustRelPath(string path, string adjuster)
         return path;
     }
 
-#if defined (__WIN__)
-    if(path.find("\\") == std::string::npos) {
+#if defined(__WIN__)
+    if (path.find("\\") == std::string::npos) {
         ;
     } else if (path[0] == '.') {
         ;
@@ -780,14 +776,14 @@ string adjustRelPath(string path, string adjuster)
     tmp = adjuster;
     tmp += path;
 
-#if defined (__WIN__)
+#if defined(__WIN__)
     char result[1024] = {0};
     GetFullPathName(tmp.c_str(), 1024, result, NULL);
     tmp = result;
     return tmp;
 #else
-    char * result ;
-    if((result = realpath(tmp.c_str(), NULL)) == NULL) {
+    char *result;
+    if ((result = realpath(tmp.c_str(), NULL)) == NULL) {
         return tmp;
     } else {
         tmp.assign(result);
@@ -800,9 +796,9 @@ string adjustRelPath(string path, string adjuster)
 bool isServerRequestorRequired(CmdLineParams& cmd_params)
 {
     return ( cmd_params.download ||
-                  cmd_params.onlineQueryPsids.length() ||
-                  cmd_params.update_online ||
-                  cmd_params.get_download_opt.length() );
+             cmd_params.onlineQueryPsids.length() ||
+             cmd_params.update_online ||
+             cmd_params.get_download_opt.length() );
 }
 
 int download(ServerRequest *srq, vector<string> &url,
@@ -854,7 +850,7 @@ int download(ServerRequest *srq, vector<string> &url,
         }
     }
     print_out("\n");
-    if(!show_location) {
+    if (!show_location) {
         IS_OKAY_To_INTERRUPT = false;
     }
 
@@ -865,7 +861,7 @@ int download(ServerRequest *srq, vector<string> &url,
 }
 
 
-int prompt(const char* str, int yes_no_)
+int prompt(const char *str, int yes_no_)
 {
     int a;
     int res = 0;
@@ -883,7 +879,7 @@ int prompt(const char* str, int yes_no_)
             a = 'n';
         }
     } else {
-        a = (yes_no_)? 'y': 'n';
+        a = (yes_no_) ? 'y' : 'n';
     }
 
     if (a == 'y' || a == 'Y') {
@@ -893,7 +889,7 @@ int prompt(const char* str, int yes_no_)
 }
 
 
-int getLocalDevices(dev_info** devs)
+int getLocalDevices(dev_info **devs)
 {
     int len = 0;
 
@@ -945,19 +941,18 @@ int checkAndDisplayDeviceQuery1D(vector<MlnxDev*> &devs,
         string pn = "--";
         string ver = "--";
         string availVer = "";
-        bool   devQuerySuccess = false;
-        bool   imgFound = false;
-        bool   multiple_images_found = false;
+        bool devQuerySuccess = false;
+        bool imgFound = false;
+        bool multiple_images_found = false;
         string statusStr;
-        bool   device_has_unknown_expansionRom = false;
-        bool   image_has_unknown_expansionRom  = false;
+        bool device_has_unknown_expansionRom = false;
+        bool image_has_unknown_expansionRom  = false;
         if (devs[i]->isQuerySuccess()) {
             devQuerySuccess = true;
             pn = devs[i]->getPartNumber();
             if (pn.length()) {
                 ;;
-            }
-            else if (psidLookupDB.getPN(devs[i]->getBoardTypeId()) != "") {
+            } else if (psidLookupDB.getPN(devs[i]->getBoardTypeId()) != "") {
                 pn = psidLookupDB.getPN(devs[i]->getBoardTypeId());
             } else {
                 if (psidUpdateInfo.find(devs[i]->getPsid()) != psidUpdateInfo.end()) {
@@ -983,7 +978,7 @@ int checkAndDisplayDeviceQuery1D(vector<MlnxDev*> &devs,
                 }
                 if (psidUpdateInfo[devs[i]->getPsid()].found) {
                     imgFound = true;
-                    vector<ImgVersion>* imgVers = &psidUpdateInfo[devs[i]->getPsid()].imgVers;
+                    vector<ImgVersion> *imgVers = &psidUpdateInfo[devs[i]->getPsid()].imgVers;
                     for (unsigned int j = 0; j < imgVers->size(); j++) {
                         expRomTypes[(*imgVers)[j].getTypeStr()] = true;
                         availRomTypeIndex[(*imgVers)[j].getTypeStr()] = j;
@@ -992,7 +987,7 @@ int checkAndDisplayDeviceQuery1D(vector<MlnxDev*> &devs,
                         }
                     }
 
-                    ImgVersion* fwImgVer = (ImgVersion*)psidUpdateInfo[devs[i]->getPsid()].findImageVersion("FW");
+                    ImgVersion *fwImgVer = (ImgVersion*)psidUpdateInfo[devs[i]->getPsid()].findImageVersion("FW");
                     if (fwImgVer != NULL) {
                         availVer = fwImgVer->getPrintableVersion(CompareFFV, false);
                     }
@@ -1009,19 +1004,19 @@ int checkAndDisplayDeviceQuery1D(vector<MlnxDev*> &devs,
         int nUpdateReasons = 0;
 
         //Check versions of FW components on device against available images for update
-        for(map<string,bool>::iterator iter = expRomTypes.begin(); iter != expRomTypes.end(); ++iter) {
+        for (map<string, bool>::iterator iter = expRomTypes.begin(); iter != expRomTypes.end(); ++iter) {
             string k =  iter->first;
             if (k != "FW") {
                 continue;
             }
             /*
-            if (devRomTypeIndex[k] != -1 && devs[i]->_imageVers[devRomTypeIndex[k]].isExpansionRomUnknown()) {
+               if (devRomTypeIndex[k] != -1 && devs[i]->_imageVers[devRomTypeIndex[k]].isExpansionRomUnknown()) {
                 device_has_unknown_expansionRom = true;
-            }
+               }
 
-            if (availRomTypeIndex[k] != -1 && psidUpdateInfo[devs[i]->getPsid()].imgVers[availRomTypeIndex[k]].isExpansionRomUnknown()) {
+               if (availRomTypeIndex[k] != -1 && psidUpdateInfo[devs[i]->getPsid()].imgVers[availRomTypeIndex[k]].isExpansionRomUnknown()) {
                 image_has_unknown_expansionRom = true;
-            }*/
+               }*/
             if ((devRomTypeIndex[k] != -1) && (availRomTypeIndex[k] == -1)) {
                 nKeepReasons++;
             }
@@ -1080,30 +1075,29 @@ int checkAndDisplayDeviceQuery1D(vector<MlnxDev*> &devs,
         }
 
         pn = (pn == "") ? "N/A" : pn;
-        if(!is_query_xml) {
+        if (!is_query_xml) {
             #if 0
             if (!is_query) {
                 printDeviceInfo(i, devname, deviceType, pn, description,
-                        statusStr, devs, ver, availVer, expRomTypes, devRomTypeIndex,
-                        availRomTypeIndex, psidUpdateInfo, multiple_images_found);
-            }
-            else {
+                                statusStr, devs, ver, availVer, expRomTypes, devRomTypeIndex,
+                                availRomTypeIndex, psidUpdateInfo, multiple_images_found);
+            } else {
                 printDeviceInfoQuery(i, devname, deviceType, pn, description,
-                        statusStr, devs, ver, availVer, expRomTypes, devRomTypeIndex,
-                        availRomTypeIndex, psidUpdateInfo, multiple_images_found);
+                                     statusStr, devs, ver, availVer, expRomTypes, devRomTypeIndex,
+                                     availRomTypeIndex, psidUpdateInfo, multiple_images_found);
             }
             #endif
             printDeviceInfoQuery(i, devname, deviceType, pn, description,
-                        statusStr, devs, ver, availVer, expRomTypes, devRomTypeIndex,
-                        availRomTypeIndex, psidUpdateInfo, multiple_images_found);
+                                 statusStr, devs, ver, availVer, expRomTypes, devRomTypeIndex,
+                                 availRomTypeIndex, psidUpdateInfo, multiple_images_found);
 
         } else {
             if (xml_query.length()) {
                 xml_query += "\n";
             }
             xml_query += generateQueryXML(i, devname, deviceType, pn, description,
-                    statusStr, devs, ver, availVer, expRomTypes, devRomTypeIndex,
-                    availRomTypeIndex, psidUpdateInfo, multiple_images_found);
+                                          statusStr, devs, ver, availVer, expRomTypes, devRomTypeIndex,
+                                          availRomTypeIndex, psidUpdateInfo, multiple_images_found);
         }
     }
 
@@ -1132,7 +1126,7 @@ int checkAndDisplayDeviceQuery1D(vector<MlnxDev*> &devs,
             res = ERR_CODE_UNKNOWN_EXPANSION_ROM;
         }
         if (mixed_versions_cnt > 0) {
-            tmpstr = "-E- Found mixed component image versions for "+ int_to_string(mixed_versions_cnt) +" device(s).\n";
+            tmpstr = "-E- Found mixed component image versions for " + int_to_string(mixed_versions_cnt) + " device(s).\n";
             print_err_str += tmpstr;
             res = ERR_CODE_MIXED_VERSIONS_FOUND;
         }
@@ -1302,7 +1296,7 @@ int  getMFAListFromPSIDs(string mfa_path, vector<string> &psid_list, vector<Psid
             //print_err("Error querying files for PSID: %s\n",psid_list[i].c_str());
             return -1;
         } else if (rc < -1) {
-            errorMsg += "-E- There are multiple image sources for device with PSID=" + psid_list[i]+ " found in files:\n";
+            errorMsg += "-E- There are multiple image sources for device with PSID=" + psid_list[i] + " found in files:\n";
             for (unsigned j = 0; j < riv.size(); j++) {
                 errorMsg += riv[j].url + "\n";
             }
@@ -1364,11 +1358,11 @@ FILE* createOutFile(string &fileName, bool fileSpecified)
     string logDir = getLogDir(toolName);
     if (!fileSpecified) {
         #if defined(__WIN__)
-            pid = (unsigned)GetCurrentProcessId();
-            rc = mkdir(logDir.c_str());
+        pid = (unsigned)GetCurrentProcessId();
+        rc = mkdir(logDir.c_str());
         #else
-            pid = (unsigned)getpid();
-            rc = mkdir(logDir.c_str(), 0777);
+        pid = (unsigned)getpid();
+        rc = mkdir(logDir.c_str(), 0777);
         #endif
         if (rc) {
             if (errno != EEXIST) {
@@ -1381,7 +1375,7 @@ FILE* createOutFile(string &fileName, bool fileSpecified)
         if (ltm == NULL) {
             return NULL;
         }
-        sprintf(name, "%s-%d%02d%02d_%02d%02d%02d_%u.log",toolName.c_str(),
+        sprintf(name, "%s-%d%02d%02d_%02d%02d%02d_%u.log", toolName.c_str(),
                 ltm->tm_year + 1900, ltm->tm_mon + 1, ltm->tm_mday,
                 ltm->tm_hour, ltm->tm_min, ltm->tm_sec, pid);
 
@@ -1394,7 +1388,7 @@ FILE* createOutFile(string &fileName, bool fileSpecified)
         fileName += name;
     }
 
-    FILE* f = fopen(fileName.c_str(), "w");
+    FILE *f = fopen(fileName.c_str(), "w");
 
     return f;
 }
@@ -1403,32 +1397,33 @@ FILE* createOutFile(string &fileName, bool fileSpecified)
 int progressCB_display(int completion)
 {
     print_out("\b\b\b\b%3d%%", completion);
-    fflush(stdout);
     return abort_request;
 }
 
-int advProgressFunc_display(int completion, const char* stage, prog_t type, int* unknownProgress)
+int advProgressFunc_display(int completion, const char *stage, prog_t type, int *unknownProgress)
 {
     switch (type) {
     case PROG_WITH_PRECENTAGE:
         print_out("\r%s - %3d%%", stage, completion);
         break;
+
     case PROG_OK:
         print_out("\r%s -   OK          \n", stage);
         break;
+
     case PROG_STRING_ONLY:
         print_out("%s\n", stage);
         break;
+
     case PROG_WITHOUT_PRECENTAGE:
         if (unknownProgress) {
-            static const char* progStr[] = { "[.    ]", "[..   ]", "[...  ]", "[.... ]", "[.....]", "[ ....]", "[  ...]", "[   ..]", "[    .]", "[     ]" };
+            static const char *progStr[] = { "[.    ]", "[..   ]", "[...  ]", "[.... ]", "[.....]", "[ ....]", "[  ...]", "[   ..]", "[    .]", "[     ]" };
             int size = sizeof(progStr) / sizeof(progStr[0]);
             print_out("\r%s - %s", stage, progStr[(*unknownProgress) % size]);
-            (*unknownProgress) ++;
+            (*unknownProgress)++;
         }
         break;
     }
-    fflush(stdout);
     return abort_request;
 }
 
@@ -1440,7 +1435,7 @@ int progressCB_nodisplay(int completion)
 }
 
 
-void  getExePath(char* argv[], string &exe_path)
+void  getExePath(char *argv[], string &exe_path)
 {
     exe_path = argv[0];
     size_t pos = exe_path.rfind("/");
@@ -1464,7 +1459,7 @@ bool getIniParams(config_t &config)
     if (!isFile(file)) { //If file does not exist then ignore
         return true;
     }
-    dictionary* ini_dict = iniparser_load(file.c_str());
+    dictionary *ini_dict = iniparser_load(file.c_str());
     if (!ini_dict) {
         print_err("-E- Failed to load ini file %s: %s\n", file.c_str(), strerror(errno));
         return false;
@@ -1480,20 +1475,19 @@ bool getIniParams(config_t &config)
 }
 
 
-bool initConfig(config_t &config, char* argv[], CmdLineParams &cmd_params)
+bool initConfig(config_t &config, char *argv[], CmdLineParams &cmd_params)
 {
     config.display_file_names = false;
     config.path_is_file = false;
     config.adjuster_path = "";
     if (cmd_params.lvim) {
         config.setupType = mlxFWMSetupType::lvim;
-    } else if (cmd_params.dl){
+    } else if (cmd_params.dl) {
         config.setupType = mlxFWMSetupType::dl;
     } else {
         config.setupType = mlxFWMSetupType::normal;
     }
-    if(cmd_params.current_dir.length())
-    {
+    if (cmd_params.current_dir.length()) {
         config.exe_path = cmd_params.current_dir;
         cmd_params.use_exe_rel_paths = 1;
     } else {
@@ -1501,7 +1495,7 @@ bool initConfig(config_t &config, char* argv[], CmdLineParams &cmd_params)
 #ifdef __WIN__
         DWORD rc = GetCurrDir(1024, tmpPath);
 #else
-        char* rc = GetCurrDir(1024, tmpPath);
+        char *rc = GetCurrDir(1024, tmpPath);
 #endif
         (void)rc; //Adrianc: avoiding warrnings the Owner should deal with the return code.
         config.adjuster_path = tmpPath;
@@ -1549,7 +1543,7 @@ bool initConfig(config_t &config, char* argv[], CmdLineParams &cmd_params)
 int list_files_content(config_t &config)
 {
     string fname;
-    DIR* d;
+    DIR *d;
     struct dirent *dir;
     int rc;
     int res = 0;
@@ -1583,11 +1577,11 @@ int list_files_content(config_t &config)
         string fpath = config.mfa_path;
         if (fpath.length() > 0) {
             #if defined(__WIN__)
-            if (fpath[fpath.length()-1] != '\\') {
+            if (fpath[fpath.length() - 1] != '\\') {
                 fpath += "\\";
             }
             #else
-            if (fpath[fpath.length()-1] != '/') {
+            if (fpath[fpath.length() - 1] != '/') {
                 fpath += "/";
             }
             #endif
@@ -1642,7 +1636,7 @@ void display_file_listing(vector<PsidQueryItem> &items, string psid, bool show_t
     int max_pn_length = 25;
     int tmpLen = 0;
     bool breakFlag = false;
-    for (unsigned i = 0 ; i < items.size(); i++) { // to make all fields aligned
+    for (unsigned i = 0; i < items.size(); i++) {  // to make all fields aligned
         tmpLen = items[i].pns.length();
         if (tmpLen > max_pn_length) {
             max_pn_length = tmpLen;
@@ -1665,15 +1659,15 @@ void display_file_listing(vector<PsidQueryItem> &items, string psid, bool show_t
         }
         print_out("\n");
     }
-    for (unsigned i = 0 ; i < items.size(); i++) {
-        if (psid.length()){
+    for (unsigned i = 0; i < items.size(); i++) {
+        if (psid.length()) {
             if (psid.compare(items[i].psid)) {
                 continue;
             }
             breakFlag = true;
         }
 
-        ImgVersion* imv;
+        ImgVersion *imv;
 
         display_field_str(items[i].pns, max_pn_length, "N/A");
         print_out(" ");
@@ -1711,10 +1705,10 @@ void display_file_listing(vector<PsidQueryItem> &items, string psid, bool show_t
     }
 }
 
-int CalcFileCrc(char* fileName)
+int CalcFileCrc(char *fileName)
 {
-    FILE* fp;
-    u_int8_t* buf = NULL;
+    FILE *fp;
+    u_int8_t *buf = NULL;
     long fsize;
     int total = 0;
     int sz;
@@ -1729,7 +1723,7 @@ int CalcFileCrc(char* fileName)
         goto err_clean_up;
     }
 
-    if((fsize = ftell(fp)) == -1) {
+    if ((fsize = ftell(fp)) == -1) {
         printf("Failed to ftell file : '%s'\n", fileName);
         goto err_clean_up;
     }
@@ -1758,7 +1752,7 @@ int CalcFileCrc(char* fileName)
     calc_crc = mfasec_crc32(buf, total, 0);
     printf("CRC32 = %08x\n",  calc_crc);
 
-    err_clean_up:
+err_clean_up:
     if (buf != NULL) {
         free(buf);
     }
@@ -1788,23 +1782,23 @@ void TerminationHandler(int signum)
 
 static BOOL CtrlHandler( DWORD fdwCtrlType )
 {
-    switch( fdwCtrlType )
+    switch (fdwCtrlType)
     {
-      // Handle the CTRL-C signal.
-      case CTRL_C_EVENT:
-      // CTRL-CLOSE: confirm that the user wants to exit.
-      case CTRL_CLOSE_EVENT:
-      // Pass other signals to the next handler.
-      case CTRL_BREAK_EVENT:
-      case CTRL_LOGOFF_EVENT:
-      case CTRL_SHUTDOWN_EVENT:
-          TerminationHandler(SIGINT);
-          return TRUE;
+    // Handle the CTRL-C signal.
+    case CTRL_C_EVENT:
+    // CTRL-CLOSE: confirm that the user wants to exit.
+    case CTRL_CLOSE_EVENT:
+    // Pass other signals to the next handler.
+    case CTRL_BREAK_EVENT:
+    case CTRL_LOGOFF_EVENT:
+    case CTRL_SHUTDOWN_EVENT:
+        TerminationHandler(SIGINT);
+        return TRUE;
 
-      default:
+    default:
         return FALSE;
     }
- }
+}
 
 #endif
 
@@ -1821,7 +1815,7 @@ void initHandler()
 #endif
 
     //set the signal handler
-    for (int i=0; i < SIGNAL_NUM ; i++) {
+    for (int i = 0; i < SIGNAL_NUM; i++) {
         void (*prevFunc)(int);
         prevFunc = signal(signalList[i], TerminationHandler);
         if (prevFunc == SIG_ERR) {
@@ -1832,14 +1826,14 @@ void initHandler()
 }
 
 string generateQueryXML(int dev_index, string devname, string deviceType, string pn, string description,
-        string statusStr, vector<MlnxDev*> &devs, string ver, string availVer, map<string, bool> expRomTypes,
-        map<string, int> devRomTypeIndex, map<string, int> availRomTypeIndex, map<string, PsidQueryItem> &psidUpdateInfo, bool multiple_images_found)
+                        string statusStr, vector<MlnxDev*> &devs, string ver, string availVer, map<string, bool> expRomTypes,
+                        map<string, int> devRomTypeIndex, map<string, int> availRomTypeIndex, map<string, PsidQueryItem> &psidUpdateInfo, bool multiple_images_found)
 {
     string output = "";
     output += "    <Device pciName=\"" + devname + "\" type=\"" + deviceType + "\" psid=\"" + devs[dev_index]->getPsid().c_str() + "\" partNumber=\"" + pn + "\">\n";
     output += "      <Versions>\n";
     output += "        <FW current=\"" + ver + "\" available=\"" + availVer + "\"/>\n";
-    for(map<string,bool>::iterator iter = expRomTypes.begin(); iter != expRomTypes.end(); ++iter) {
+    for (map<string, bool>::iterator iter = expRomTypes.begin(); iter != expRomTypes.end(); ++iter) {
         string k =  iter->first;
         string dver = "N/A";
         string aver = "N/A";
@@ -1855,7 +1849,7 @@ string generateQueryXML(int dev_index, string devname, string deviceType, string
             aver = psidUpdateInfo[devs[dev_index]->getPsid()].imgVers[availRomTypeIndex[k]].getPrintableVersion(0, false);
         }
         fixXmlKey(fwType);
-        if(multiple_images_found) {
+        if (multiple_images_found) {
             output += "        <" + fwType + " current=\"" + dver + "\" available=\"N/A\"/>\n";
         } else {
             output += "        <" + fwType + " current=\"" + dver + "\" available=\"" + aver + "\"/>\n";
@@ -1866,7 +1860,7 @@ string generateQueryXML(int dev_index, string devname, string deviceType, string
     if (devs[dev_index]->isOnlyBase) {
         if (devs[dev_index]->portOneType == MlnxDev::PORT_ETH) {
             output += "      <MACs Base_Mac=\"" + devs[dev_index]->macPortOne + "\" />\n";
-        } else if (devs[dev_index]->portOneType == MlnxDev::PORT_IB){
+        } else if (devs[dev_index]->portOneType == MlnxDev::PORT_IB) {
             output += "      <GUIDs Base_Guid=\"" + devs[dev_index]->guidPortOne + "\" />\n";
         } else {
             output += "      <MACs Base_Mac=\"" + devs[dev_index]->macPortOne + "\" />\n";
@@ -1905,10 +1899,10 @@ string generateQueryXML(int dev_index, string devname, string deviceType, string
 }
 
 void printDeviceInfoQuery(int dev_index, string devname, string deviceType, string pn, string description,
-        string statusStr, vector<MlnxDev*> &devs, string ver, string availVer, map<string, bool> expRomTypes,
-        map<string, int> devRomTypeIndex, map<string, int> availRomTypeIndex, map<string, PsidQueryItem> &psidUpdateInfo, bool multiple_images_found)
+                          string statusStr, vector<MlnxDev*> &devs, string ver, string availVer, map<string, bool> expRomTypes,
+                          map<string, int> devRomTypeIndex, map<string, int> availRomTypeIndex, map<string, PsidQueryItem> &psidUpdateInfo, bool multiple_images_found)
 {
-    print_out("Device #%d:\n", dev_index+1);
+    print_out("Device #%d:\n", dev_index + 1);
     print_out("----------\n\n");
     print_out("  Device Type:      %s\n", deviceType.c_str());
     print_out("  Part Number:      %s\n", pn.c_str());
@@ -1921,7 +1915,7 @@ void printDeviceInfoQuery(int dev_index, string devname, string deviceType, stri
             if (devs[dev_index]->portTwoType == MlnxDev::PORT_IB) {
                 print_out("  Base GUID:        %s\n", devs[dev_index]->guidPortOne.c_str());
             }
-        } else if (devs[dev_index]->portOneType == MlnxDev::PORT_IB){
+        } else if (devs[dev_index]->portOneType == MlnxDev::PORT_IB) {
             print_out("  Base GUID:        %s\n", devs[dev_index]->guidPortOne.c_str());
             if (devs[dev_index]->portTwoType == MlnxDev::PORT_ETH) {
                 print_out("  Base MAC:         %s\n", devs[dev_index]->macPortOne.c_str());
@@ -1930,10 +1924,10 @@ void printDeviceInfoQuery(int dev_index, string devname, string deviceType, stri
             print_out("  Base GUID:        %s\n", devs[dev_index]->guidPortOne.c_str());
             print_out("  Base MAC:         %s\n", devs[dev_index]->macPortOne.c_str());
         }
-    }else {
+    } else {
         if (devs[dev_index]->portOneType  == MlnxDev::PORT_ETH) {
             print_out("  Port1 MAC:        %s\n", devs[dev_index]->macPortOne.c_str());
-        } else if (devs[dev_index]->portOneType  == MlnxDev::PORT_IB){
+        } else if (devs[dev_index]->portOneType  == MlnxDev::PORT_IB) {
             print_out("  Port1 GUID:       %s\n", devs[dev_index]->guidPortOne.c_str());
         } else {
             print_out("  Port1 MAC:        %s\n", devs[dev_index]->macPortOne.c_str());
@@ -1951,7 +1945,7 @@ void printDeviceInfoQuery(int dev_index, string devname, string deviceType, stri
     print_out("  Versions:         %-14s %-14s\n", "Current", "Available");
     print_out("     FW             %-14s %-14s\n", ver.c_str(), availVer.c_str());
 
-    for(map<string,bool>::iterator iter = expRomTypes.begin(); iter != expRomTypes.end(); ++iter) {
+    for (map<string, bool>::iterator iter = expRomTypes.begin(); iter != expRomTypes.end(); ++iter) {
         string k =  iter->first;
         string dver = "N/A";
         string aver = "N/A";
@@ -1965,7 +1959,7 @@ void printDeviceInfoQuery(int dev_index, string devname, string deviceType, stri
             aver = psidUpdateInfo[devs[dev_index]->getPsid()].imgVers[availRomTypeIndex[k]].getPrintableVersion(0, false);
         }
 
-        print_out("     %-12s   %-14s %-14s\n", k.c_str(), dver.c_str(), (multiple_images_found)?"--":aver.c_str());
+        print_out("     %-12s   %-14s %-14s\n", k.c_str(), dver.c_str(), (multiple_images_found) ? "--" : aver.c_str());
     }
     print_out("\n  Status:           %s\n\n", statusStr.c_str());
     if (devs[dev_index]->doesDevNeedUpdate()) {
@@ -1973,7 +1967,8 @@ void printDeviceInfoQuery(int dev_index, string devname, string deviceType, stri
     }
 }
 
-void fixXmlString(string & stringToFix) {
+void fixXmlString(string & stringToFix)
+{
     string rep[5] = {"\"", "&", "'", ">", "<"};
     for (int i = 0; i < 5; i++) {
         replaceStringInPlace(stringToFix, rep[i], "");
@@ -1985,18 +1980,20 @@ void replaceStringInPlace(string& subject, const string& search,
 {
     int pos = 0;
     while ((pos = subject.find(search, pos)) != (int)std::string::npos) {
-         subject.replace(pos, search.length(), replace);
-         pos += replace.length();
+        subject.replace(pos, search.length(), replace);
+        pos += replace.length();
     }
 }
 
-string getline() {
-  std::string str;
-  std::getline(std::cin, str);
-  return str;
+string getline()
+{
+    std::string str;
+    std::getline(std::cin, str);
+    return str;
 }
 
-int handleOnlinePsidsQueryXml(ServerRequest *srq, CmdLineParams &cmd_params, config_t config) {
+int handleOnlinePsidsQueryXml(ServerRequest *srq, CmdLineParams &cmd_params, config_t config)
+{
     int res = 0;
     (void) config;
     vector <PsidQueryItem> psidUpdateInfo;
@@ -2008,57 +2005,58 @@ int handleOnlinePsidsQueryXml(ServerRequest *srq, CmdLineParams &cmd_params, con
 
     PsidQueryItem ri;
     string output = "<Psids>\n";
-    for(unsigned int i = 0; i < psidUpdateInfo.size(); i++) {
-            ri = psidUpdateInfo[i];
-            string status;
-            string ver = "N/A";
-            string mfa = "N/A";
-            string release_note = "";
-            if (ri.found) {
-                status = "Found";
-                ImgVersion *img = (ImgVersion *)ri.findImageVersion("FW");
-                if (img) {
-                    ver = img->getPrintableVersion(cmd_params.compare_ffv, false);
-                }
-                mfa = ri.name;
-                release_note = ri.release_note.length() ? "\n" + ri.release_note : "";
-            } else {
-                status = "Not Found";
-                res = 1 ;
+    for (unsigned int i = 0; i < psidUpdateInfo.size(); i++) {
+        ri = psidUpdateInfo[i];
+        string status;
+        string ver = "N/A";
+        string mfa = "N/A";
+        string release_note = "";
+        if (ri.found) {
+            status = "Found";
+            ImgVersion *img = (ImgVersion*)ri.findImageVersion("FW");
+            if (img) {
+                ver = img->getPrintableVersion(cmd_params.compare_ffv, false);
             }
-            output += "    <Psid psid=\"" + ri.psid + "\" MFA=\"" + mfa + "\" partNumber=\"" + ri.pns + "\">\n";
-            output += "      <Versions>\n";
-            output += "        <FW available=\"" + ver + "\"/>\n";
-            if (ri.found) {
-                for (unsigned int j = 0; j< ri.imgVers.size(); j++) {
-                    string type = ri.imgVers[j].getTypeStr();
-                    if (type == "FW") {
-                        continue;
-                    }
-                    output += "        <" + type+ " available=\"" + ri.imgVers[j].getPrintableVersion(cmd_params.compare_ffv, false) + "\"/>\n";
-                }
-            }
-            output += "      </Versions>\n";
-            if (release_note.length()) {
-                std::istringstream stream(release_note);
-                string line;
-                getline(stream, line);
-                release_note = line;
-                while(!stream.eof()) {
-                    getline(stream, line);
-                    release_note += "\\n" + line;
-                }
-                output += "      <ReleaseNotes>" + release_note + "</ReleaseNotes>\n";
-            }
-
-            output += "      <Status>" + status + "</Status>\n";
-            output += "    </Psid>\n";
+            mfa = ri.name;
+            release_note = ri.release_note.length() ? "\n" + ri.release_note : "";
+        } else {
+            status = "Not Found";
+            res = 1;
         }
-        output += "</Psids>\n";
-        printf("%s\n", output.c_str());
-        return res;
+        output += "    <Psid psid=\"" + ri.psid + "\" MFA=\"" + mfa + "\" partNumber=\"" + ri.pns + "\">\n";
+        output += "      <Versions>\n";
+        output += "        <FW available=\"" + ver + "\"/>\n";
+        if (ri.found) {
+            for (unsigned int j = 0; j < ri.imgVers.size(); j++) {
+                string type = ri.imgVers[j].getTypeStr();
+                if (type == "FW") {
+                    continue;
+                }
+                output += "        <" + type + " available=\"" + ri.imgVers[j].getPrintableVersion(cmd_params.compare_ffv, false) + "\"/>\n";
+            }
+        }
+        output += "      </Versions>\n";
+        if (release_note.length()) {
+            std::istringstream stream(release_note);
+            string line;
+            getline(stream, line);
+            release_note = line;
+            while (!stream.eof()) {
+                getline(stream, line);
+                release_note += "\\n" + line;
+            }
+            output += "      <ReleaseNotes>" + release_note + "</ReleaseNotes>\n";
+        }
+
+        output += "      <Status>" + status + "</Status>\n";
+        output += "    </Psid>\n";
+    }
+    output += "</Psids>\n";
+    printf("%s\n", output.c_str());
+    return res;
 }
-int handleOnlinePsidsQuery(ServerRequest *srq, CmdLineParams &cmd_params, config_t config) {
+int handleOnlinePsidsQuery(ServerRequest *srq, CmdLineParams &cmd_params, config_t config)
+{
     int res = 0;
     (void) config;
     vector <PsidQueryItem> psidUpdateInfo;
@@ -2072,7 +2070,7 @@ int handleOnlinePsidsQuery(ServerRequest *srq, CmdLineParams &cmd_params, config
     }
 
     PsidQueryItem ri;
-    for(unsigned int i = 0; i < psidUpdateInfo.size(); i++) {
+    for (unsigned int i = 0; i < psidUpdateInfo.size(); i++) {
         ri = psidUpdateInfo[i];
         string status;
         string ver = "N/A";
@@ -2080,7 +2078,7 @@ int handleOnlinePsidsQuery(ServerRequest *srq, CmdLineParams &cmd_params, config
         string release_note = "N/A";
         if (ri.found) {
             status = "Found";
-            ImgVersion *img = (ImgVersion *)ri.findImageVersion("FW");
+            ImgVersion *img = (ImgVersion*)ri.findImageVersion("FW");
             if (img) {
                 ver = img->getPrintableVersion(cmd_params.compare_ffv, false);
             }
@@ -2088,7 +2086,7 @@ int handleOnlinePsidsQuery(ServerRequest *srq, CmdLineParams &cmd_params, config
             release_note = ri.release_note.length() ? "\n" + ri.release_note : "N/A";
         } else {
             status = "Not Found";
-            res = 1 ;
+            res = 1;
         }
         print_out("PSID #%d:\n", i + 1);
         print_out("----------\n\n");
@@ -2098,7 +2096,7 @@ int handleOnlinePsidsQuery(ServerRequest *srq, CmdLineParams &cmd_params, config
         print_out("  Versions:         %-14s\n", "Available");
         print_out("     FW             %-14s\n", ver.c_str());
         if (ri.found) {
-            for (unsigned int j = 0; j< ri.imgVers.size(); j++) {
+            for (unsigned int j = 0; j < ri.imgVers.size(); j++) {
                 string type = ri.imgVers[j].getTypeStr();
                 if (type == "FW") {
                     continue;
@@ -2112,7 +2110,7 @@ int handleOnlinePsidsQuery(ServerRequest *srq, CmdLineParams &cmd_params, config
         string line;
         getline(stream, line);
         print_out("  Release Notes:     %-14s\n", line.c_str());
-        while(!stream.eof()) {
+        while (!stream.eof()) {
             getline(stream, line);
             print_out("                    %-14s\n", line.c_str());
         }
@@ -2123,7 +2121,7 @@ int handleOnlinePsidsQuery(ServerRequest *srq, CmdLineParams &cmd_params, config
 }
 
 
-static int getFileProperties(ServerRequest *srq, vector<DownloadedFileProperties>& filePropVec, string osFilter="", string devFilter="", string fileTypeFilter="")
+static int getFileProperties(ServerRequest *srq, vector<DownloadedFileProperties>& filePropVec, string osFilter = "", string devFilter = "", string fileTypeFilter = "")
 {
     if (!srq) {
         return ERR_CODE_INTERNAL_ERR;
@@ -2166,7 +2164,8 @@ int handleGetDownloadOptionsRequest(ServerRequest *srq, CmdLineParams &cmd_param
 }
 
 
-int handleDownloadRequest(ServerRequest *srq, CmdLineParams &cmd_params, config_t config) {
+int handleDownloadRequest(ServerRequest *srq, CmdLineParams &cmd_params, config_t config)
+{
     int res = 0;
     (void) config;
     vector <DownloadedFileProperties> files;
@@ -2174,7 +2173,7 @@ int handleDownloadRequest(ServerRequest *srq, CmdLineParams &cmd_params, config_
 
     //print_out("\n");
     if (getFileProperties(srq, files, cmd_params.download_os, cmd_params.download_dev,
-                                 cmd_params.download_type)) {
+                          cmd_params.download_type)) {
         if (cmd_params.download_key != "last_release") {
             print_err("-E- Failed to download files from server, might be invalid key?\n");
         } else {
@@ -2191,7 +2190,7 @@ int handleDownloadRequest(ServerRequest *srq, CmdLineParams &cmd_params, config_
         filterOPtions.files.swap(files);
         BaseMenu *currentMenu = new FileTypeMenu;
 
-        while(currentMenu != NULL) {
+        while (currentMenu != NULL) {
             bool isPrev = false;
             bool isExit = false;
             int choice = 0;
@@ -2201,15 +2200,15 @@ int handleDownloadRequest(ServerRequest *srq, CmdLineParams &cmd_params, config_
             if (currentMenu->isValid(cmd_params, filterOPtions)) {
                 std::istringstream iss(getline());
                 iss >> choice >> std::ws;
-                if(!iss.eof()) {
+                if (!iss.eof()) {
                     sleep(1);
                     invalid = true;
                 }
                 #if !defined(__FreeBSD__)
-                    if(iss.fail()) {
-                        sleep(1);
-                        invalid = true;
-                    }
+                if (iss.fail()) {
+                    sleep(1);
+                    invalid = true;
+                }
                 #endif
                 print_out("\n");
             } else {
@@ -2246,7 +2245,7 @@ int handleDownloadRequest(ServerRequest *srq, CmdLineParams &cmd_params, config_
         }
 
         filterOPtions.filtered.clear();
-        for (unsigned int i = 0; i< filterOPtions.files.size(); i++) {
+        for (unsigned int i = 0; i < filterOPtions.files.size(); i++) {
             if (filterOPtions.files[i].file_type != filterOPtions.file_type && filterOPtions.file_type != "all") {
                 continue;
             } else if (filterOPtions.files[i].family != filterOPtions.family && filterOPtions.family != "all") {
@@ -2257,7 +2256,7 @@ int handleDownloadRequest(ServerRequest *srq, CmdLineParams &cmd_params, config_
             filterOPtions.filtered.push_back(filterOPtions.files[i]);
         }
 
-        for (unsigned int i = 0; i< filterOPtions.filtered.size(); i++) {
+        for (unsigned int i = 0; i < filterOPtions.filtered.size(); i++) {
             filterOPtions.urls.push_back(filterOPtions.filtered[i].url);
             filterOPtions.names.push_back(filterOPtions.filtered[i].name);
             filterOPtions.osDirName.push_back(filterOPtions.filtered[i].os);
@@ -2291,7 +2290,8 @@ int handleDownloadRequest(ServerRequest *srq, CmdLineParams &cmd_params, config_
     return res;
 }
 
-int generateProductionName(string &targetFile, PsidQueryItem ri) {
+int generateProductionName(string &targetFile, PsidQueryItem ri)
+{
     int res = 0;
 
     if (targetFile.length()) {
@@ -2305,18 +2305,20 @@ int generateProductionName(string &targetFile, PsidQueryItem ri) {
         IC_code_name = "X";
     } else {
         switch (devType) {
-            case DeviceInfiniScaleIV:
-                IC_code_name = "IS4";
-                break;
-            case DeviceSwitchX:
-                IC_code_name = "SX";
-                break;
-            default :
-                IC_code_name = dm_dev_type2str(devType);
+        case DeviceInfiniScaleIV:
+            IC_code_name = "IS4";
+            break;
+
+        case DeviceSwitchX:
+            IC_code_name = "SX";
+            break;
+
+        default:
+            IC_code_name = dm_dev_type2str(devType);
         }
     }
 
-    ImgVersion* fwImgVer = (ImgVersion*)ri.findImageVersion("FW");
+    ImgVersion *fwImgVer = (ImgVersion*)ri.findImageVersion("FW");
     if (fwImgVer == NULL) {
         print_err("-E- UnExpected error getting version\n");
         return 1;
@@ -2344,30 +2346,32 @@ int generateProductionName(string &targetFile, PsidQueryItem ri) {
     return res;
 }
 
-void displayReleaseNoteMFAs(map<string, PsidQueryItem> psidUpdateInfo, vector<MlnxDev*> devs, int deviceIndex) {
-    if(psidUpdateInfo[devs[deviceIndex]->getPsid()].release_note.length()) {
+void displayReleaseNoteMFAs(map<string, PsidQueryItem> psidUpdateInfo, vector<MlnxDev*> devs, int deviceIndex)
+{
+    if (psidUpdateInfo[devs[deviceIndex]->getPsid()].release_note.length()) {
         print_out("Release notes for the available Firmware:\n");
         print_out("-----------------------------------------\n\n");
-        print_out("  %s\n",psidUpdateInfo[devs[deviceIndex]->getPsid()].release_note.c_str());
+        print_out("  %s\n", psidUpdateInfo[devs[deviceIndex]->getPsid()].release_note.c_str());
     }
 }
 
 /*
-void displayFilesToBeDownloaded(filesOPtions filterOPtions, CmdLineParams cmd_params) {
+   void displayFilesToBeDownloaded(filesOPtions filterOPtions, CmdLineParams cmd_params) {
     print_out("------ Files To Be Downloaded ------\n\n");
     for (int i = 0; i < filterOPtions.filtered.size(); i++){
         print_out("%d - %s\n", i, filterOPtions.filtered[i].name.c_str());
     }
     print_out("\n");
-}*/
+   }*/
 
-int displayReleaseNoteFiles(const filesOPtions& filterOPtions, const CmdLineParams &cmd_params) {
+int displayReleaseNoteFiles(const filesOPtions& filterOPtions, const CmdLineParams &cmd_params)
+{
 
     map<std::string, std::string> releaseNote;
     map<std::string, vector <string> > os;
     map<std::string, vector <string> > files;
     string tmp = "";
-    for (unsigned int i = 0; i < filterOPtions.filtered.size(); i++){
+    for (unsigned int i = 0; i < filterOPtions.filtered.size(); i++) {
         files[filterOPtions.filtered[i].family].push_back(filterOPtions.filtered[i].name);
         os[filterOPtions.filtered[i].family].push_back(filterOPtions.filtered[i].os);
         if (filterOPtions.filtered[i].release_note.length()) {
@@ -2376,7 +2380,7 @@ int displayReleaseNoteFiles(const filesOPtions& filterOPtions, const CmdLinePara
     }
 
     print_out("------ Files To Be Downloaded ------\n\n");
-    for (map<std::string, vector <string> >::iterator p = files.begin(); p!=files.end(); ++p){
+    for (map<std::string, vector <string> >::iterator p = files.begin(); p != files.end(); ++p) {
         print_out("\n%s :\n", beautify_device_name(p->first).c_str());
         print_out("%.*s\n\n", p->first.length() + 2 < 40 ?  (int)p->first.length() + 2 : 39, "----------------------------------------");
         print_out("<Files>:\n");

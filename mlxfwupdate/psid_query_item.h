@@ -53,8 +53,8 @@ public:
     string selector_tag;
     string description;
     string name;
-    int    devId;
-    int    revId;
+    int devId;
+    int revId;
     string iniName;
     string release_note;
     int found;

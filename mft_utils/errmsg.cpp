@@ -28,6 +28,12 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
+ * errmsg.cpp - ErrMsg class implementation.
+ *
+ *  Created on: May 7, 2014
+ *      Author: adrianc
+ *
  */
 
 #include <stdio.h>
@@ -41,7 +47,8 @@ enum {
     FAILURE = 1
 };
 
-ErrMsg::ErrMsg() {
+ErrMsg::ErrMsg()
+{
     _errMap[SUCCESS] = "SUCCESS";
     _errMap[FAILURE] = "FAILURE";
     _err = NULL;
@@ -49,18 +56,20 @@ ErrMsg::ErrMsg() {
     _lastErrCode = SUCCESS;
 }
 
-ErrMsg::ErrMsg(std::map<int, std::string>& errCodeMap) {
+ErrMsg::ErrMsg(std::map<int, std::string>& errCodeMap)
+{
     _errMap = errCodeMap;
     _err = NULL;
     _formatErr = NULL;
     _lastErrCode = SUCCESS;
 }
 
-const char* ErrMsg::getFormatErr(const char *prefix, ...) {
+const char* ErrMsg::getFormatErr(const char *prefix, ...)
+{
     va_list args;
-    char* prevFormatErr = _formatErr;
+    char *prevFormatErr = _formatErr;
     va_start(args, prefix);
-    char* preStr = vprint(prefix, args);
+    char *preStr = vprint(prefix, args);
     int formatErrSz = strlen(_err) + strlen(preStr) + 10;
     _formatErr = new char[formatErrSz];
     snprintf(_formatErr, formatErrSz, "-E- %s. %s", preStr, _err);
@@ -70,35 +79,38 @@ const char* ErrMsg::getFormatErr(const char *prefix, ...) {
     return _formatErr;
 }
 
-const char* ErrMsg::err2Str(int errCode) const {
+const char* ErrMsg::err2Str(int errCode) const
+{
     std::map<int, std::string>::const_iterator it;
-    if ( (it=_errMap.find(errCode)) == _errMap.end()) {
+    if ( (it = _errMap.find(errCode)) == _errMap.end()) {
         return "Unknown Error Code";
     }
     return it->second.c_str();
 }
 
-char* ErrMsg::vprint(const char *format, va_list args) {
-        const int INIT_VAL = 1024;
-        int       max_str, max_buf = INIT_VAL;
-        char      *out_buf;
+char* ErrMsg::vprint(const char *format, va_list args)
+{
+    const int INIT_VAL = 1024;
+    int max_str, max_buf = INIT_VAL;
+    char      *out_buf;
 
-        while (1) {
-            out_buf = new char[max_buf];
-            max_str = max_buf - 1;
+    while (1) {
+        out_buf = new char[max_buf];
+        max_str = max_buf - 1;
 
-            if (vsnprintf(out_buf, max_str, format, args) < max_str) {
-                return out_buf;
-            }
-            delete [] out_buf;
-            max_buf *= 2;
+        if (vsnprintf(out_buf, max_str, format, args) < max_str) {
+            return out_buf;
         }
+        delete [] out_buf;
+        max_buf *= 2;
+    }
 }
 
-int ErrMsg::errmsg(const char *format, ...) {
-    va_list   args;
+int ErrMsg::errmsg(const char *format, ...)
+{
+    va_list args;
 
-    char* prev_err = _err;
+    char *prev_err = _err;
 
     va_start(args, format);
     _err = vprint(format, args);
@@ -109,9 +121,10 @@ int ErrMsg::errmsg(const char *format, ...) {
     return FAILURE;
 }
 
-int ErrMsg::errmsg(int errCode, const char *format, ...) {
-    va_list   args;
-    char* prev_err = _err;
+int ErrMsg::errmsg(int errCode, const char *format, ...)
+{
+    va_list args;
+    char *prev_err = _err;
 
     va_start(args, format);
     _err = vprint(format, args);
@@ -122,10 +135,11 @@ int ErrMsg::errmsg(int errCode, const char *format, ...) {
     return errCode;
 }
 
-int ErrMsg::errmsg(int errCode) {
-    char* prevErr = _err;
+int ErrMsg::errmsg(int errCode)
+{
+    char *prevErr = _err;
     int errSz = strlen(err2Str(errCode)) + 1;
-    char* newError = new char[errSz];
+    char *newError = new char[errSz];
     snprintf(newError, errSz, "%s", err2Str(errCode));
     _err = newError;
     delete[] prevErr;
@@ -133,18 +147,19 @@ int ErrMsg::errmsg(int errCode) {
     return errCode;
 
 }
-void ErrMsg::errmsgConcatCom(const char* format, va_list args, const char* suffix) {
-    char* prevErr = _err;
-    char* currError = vprint(format, args);
+void ErrMsg::errmsgConcatCom(const char *format, va_list args, const char *suffix)
+{
+    char *prevErr = _err;
+    char *currError = vprint(format, args);
     int errSz = strlen(currError) + strlen(suffix) + 10;
-    char* newError = new char[errSz];
+    char *newError = new char[errSz];
     if (strlen(currError) == 0) {
-        snprintf(newError,errSz, "%s", suffix);
+        snprintf(newError, errSz, "%s", suffix);
     } else {
         if (strlen(suffix) == 0) {
-            snprintf(newError,errSz, "%s", currError);
+            snprintf(newError, errSz, "%s", currError);
         } else {
-            snprintf(newError,errSz, "%s. %s", currError, suffix);
+            snprintf(newError, errSz, "%s. %s", currError, suffix);
         }
     }
     _err = newError;
@@ -153,8 +168,9 @@ void ErrMsg::errmsgConcatCom(const char* format, va_list args, const char* suffi
     delete[] currError;
 }
 
-int ErrMsg::errmsgConcatMsg(int errCode, const ErrMsg& errMsgObj, const char *format, ...) {
-    va_list   args;
+int ErrMsg::errmsgConcatMsg(int errCode, const ErrMsg& errMsgObj, const char *format, ...)
+{
+    va_list args;
     va_start(args, format);
     errmsgConcatCom(format, args, errMsgObj.err());
     va_end(args);
@@ -162,25 +178,29 @@ int ErrMsg::errmsgConcatMsg(int errCode, const ErrMsg& errMsgObj, const char *fo
     return errCode;
 }
 
-int ErrMsg::errmsgConcatMsg(const ErrMsg& errMsgObj, const char *format, ...) {
-        va_list   args;
-        va_start(args, format);
-        errmsgConcatCom(format, args, errMsgObj.err());
-        va_end(args);
-        _lastErrCode = FAILURE;
-        return FAILURE;
+int ErrMsg::errmsgConcatMsg(const ErrMsg& errMsgObj, const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    errmsgConcatCom(format, args, errMsgObj.err());
+    va_end(args);
+    _lastErrCode = FAILURE;
+    return FAILURE;
 }
 
-int ErrMsg::errmsgConcatMsg(int errCode, const ErrMsg& errMsgObj) {
+int ErrMsg::errmsgConcatMsg(int errCode, const ErrMsg& errMsgObj)
+{
     return errmsg(errCode, "%s", errMsgObj.err());
 }
 
-int ErrMsg::errmsgConcatMsg(const ErrMsg& errMsgObj) {
+int ErrMsg::errmsgConcatMsg(const ErrMsg& errMsgObj)
+{
     return errmsg("%s", errMsgObj.err());
 }
 
-int ErrMsg::errmsgConcatErrCd(int errCode, const ErrMsg& errMsgObj, const char *format, ...) {
-    va_list   args;
+int ErrMsg::errmsgConcatErrCd(int errCode, const ErrMsg& errMsgObj, const char *format, ...)
+{
+    va_list args;
     va_start(args, format);
     errMsgObj.getLastErrCode();
     errmsgConcatCom(format, args, errMsgObj.err2Str(errMsgObj.getLastErrCode()));
@@ -189,15 +209,18 @@ int ErrMsg::errmsgConcatErrCd(int errCode, const ErrMsg& errMsgObj, const char *
     return errCode;
 }
 
-int ErrMsg::errmsgConcatErrCd(int errCode, const ErrMsg& errMsgObj) {
+int ErrMsg::errmsgConcatErrCd(int errCode, const ErrMsg& errMsgObj)
+{
     return errmsg(errCode, "%s", errMsgObj.err2Str(errMsgObj.getLastErrCode()));
 }
 
-int ErrMsg::errmsgConcatErrCd(const ErrMsg& errMsgObj) {
+int ErrMsg::errmsgConcatErrCd(const ErrMsg& errMsgObj)
+{
     return errmsg("%s", errMsgObj.err2Str(errMsgObj.getLastErrCode()));
 }
 
-void ErrMsg::err_clear(){
+void ErrMsg::err_clear()
+{
     delete [] _err;
     delete [] _formatErr;
     _err = NULL;

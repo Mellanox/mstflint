@@ -66,38 +66,38 @@ enum QueryType {
 #define QUERY_DEFAULT_MASK (1 << QueryDefault)
 
 enum WriterId {
-    WRITER_ID_UNSPECIFIED=0x0,
-    WRITER_ID_CHASSIS_BMC=0x1,
-    WRITER_ID_MAD=0x2,
-    WRITER_ID_BMC=0x3,
-    WRITER_ID_CMD_IF=0x4,
-    WRITER_ID_ICMD=0x5,
-    WRITER_ID_ICMD_UEFI_HII=0x6,
-    WRITER_ID_ICMD_UEFI_CLP=0x7,
-    WRITER_ID_ICMD_FLEXBOOT=0x8,
-    WRITER_ID_ICMD_MLXCONFIG=0x9,
-    WRITER_ID_ICMD_USER1=0xa,
-    WRITER_ID_ICMD_USER2=0xb,
-    WRITER_ID_ICMD_MLXCONFIG_SET_RAW=0xc,
-    WRITER_ID_OTHER=0x1f,
-    WRITER_ID_LAST=0x20
+    WRITER_ID_UNSPECIFIED = 0x0,
+    WRITER_ID_CHASSIS_BMC = 0x1,
+    WRITER_ID_MAD = 0x2,
+    WRITER_ID_BMC = 0x3,
+    WRITER_ID_CMD_IF = 0x4,
+    WRITER_ID_ICMD = 0x5,
+    WRITER_ID_ICMD_UEFI_HII = 0x6,
+    WRITER_ID_ICMD_UEFI_CLP = 0x7,
+    WRITER_ID_ICMD_FLEXBOOT = 0x8,
+    WRITER_ID_ICMD_MLXCONFIG = 0x9,
+    WRITER_ID_ICMD_USER1 = 0xa,
+    WRITER_ID_ICMD_USER2 = 0xb,
+    WRITER_ID_ICMD_MLXCONFIG_SET_RAW = 0xc,
+    WRITER_ID_OTHER = 0x1f,
+    WRITER_ID_LAST = 0x20
 };
 
 #define VECTOR_ITERATOR(t, v, i) \
-    for(vector<t>::iterator i = v.begin() ; i != v.end(); ++i)
+    for (vector<t>::iterator i = v.begin(); i != v.end(); ++i)
 
-#define CONST_VECTOR_ITERATOR(t, v, i)\
-    for(vector<t>::const_iterator i = v.begin() ; i != v.end(); ++i)
+#define CONST_VECTOR_ITERATOR(t, v, i) \
+    for (vector<t>::const_iterator i = v.begin(); i != v.end(); ++i)
 
 #define SET_ITERATOR(t, v, i) \
-    for(std::set<t>::iterator i = v.begin() ; i != v.end(); ++i)
+    for (std::set<t>::iterator i = v.begin(); i != v.end(); ++i)
 
 #define MAP_ITERATOR(t1, t2, m, i) \
-    for(std::map<t1,t2>::iterator i = m.begin() ; i != m.end(); ++i)
+    for (std::map<t1, t2>::iterator i = m.begin(); i != m.end(); ++i)
 
 #define VECTOR_BE32_TO_CPU(buff) \
-    for (unsigned int i = 0; i < buff.size(); i++) {\
-        buff[i] = __be32_to_cpu(buff[i]);\
+    for (unsigned int i = 0; i < buff.size(); i++) { \
+        buff[i] = __be32_to_cpu(buff[i]); \
     }
 
 /*
@@ -105,32 +105,37 @@ enum WriterId {
  */
 //#define _ENABLE_DEBUG_
 #ifdef _ENABLE_DEBUG_
-# define DEBUG_PRINT_SEND(data_struct, struct_name)\
-    printf("-I- Data Sent:\n");\
+# define DEBUG_PRINT_SEND(data_struct, struct_name) \
+    printf("-I- Data Sent:\n"); \
     tools_open_##struct_name##_print(data_struct, stdout, 1)
-# define DEBUG_PRINT_RECEIVE(data_struct, struct_name)\
-    printf("-I- Data Received:\n");\
+# define DEBUG_PRINT_RECEIVE(data_struct, struct_name) \
+    printf("-I- Data Received:\n"); \
     tools_open_##struct_name##_print(data_struct, stdout, 1)
 #else
 # define DEBUG_PRINT_SEND(data_struct, struct_name)
 # define DEBUG_PRINT_RECEIVE(data_struct, struct_name)
 #endif
 
-#define CHECK_RC(rc)\
-    if (rc) return rc;
+#define CHECK_RC(rc) \
+    if (rc) {return rc;}
 
 #define MLXCFG_UNKNOWN 0xffffffff
 
+typedef enum {
+    Device_Name,
+    Device_Description
+} info_type_t;
+
 void dealWithSignal();
 
-MError mnvaCom5thGen(mfile* mf, u_int8_t* buff, u_int16_t len, u_int32_t tlvType, reg_access_method_t method, QueryType qT = QueryNext);
+MError mnvaCom5thGen(mfile *mf, u_int8_t *buff, u_int16_t len, u_int32_t tlvType, reg_access_method_t method, QueryType qT = QueryNext);
 
-MError nvqcCom5thGen(mfile* mf, u_int32_t tlvType, bool& suppRead,
-                         bool& suppWrite, u_int32_t& version);
+MError nvqcCom5thGen(mfile *mf, u_int32_t tlvType, bool& suppRead,
+                     bool& suppWrite, u_int32_t& version);
 
-MError nvdiCom5thGen(mfile* mf, u_int32_t tlvType);
+MError nvdiCom5thGen(mfile *mf, u_int32_t tlvType);
 
-bool strToNum(std::string str, u_int32_t& num, int base=0);
+bool strToNum(std::string str, u_int32_t& num, int base = 0);
 
 std::string numToStr(u_int32_t num, bool isHex = false);
 
@@ -156,10 +161,12 @@ void extractIndexes(const string& indexesStr, vector<u_int32_t>& indexes);
 
 bool isIndexedMlxconfigName(const string& mlxconfigName);
 
+bool getDeviceInformationString(const char* dev, info_type_t op, vector<char>& infoString);
+
 class MlxcfgException {
 public:
     std::string _err;
-    MlxcfgException(const char* fmt, ...);
+    MlxcfgException(const char *fmt, ...);
     ~MlxcfgException() {};
 };
 

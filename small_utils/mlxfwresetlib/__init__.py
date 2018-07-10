@@ -29,10 +29,10 @@
 # SOFTWARE.
 #--
 
-from mlxfwreset_mlnxdriver import *
-from mlxfwreset_status_checker import *
-from mlxfwreset_utils import *
-from logger import *
-from mcra import *
-from mlnx_peripheral_components import *
-from pci_device import *
+from .mlxfwreset_mlnxdriver import *
+from .mlxfwreset_status_checker import *
+from .mlxfwreset_utils import *
+from .logger import *
+from .mcra import *
+from .mlnx_peripheral_components import *
+from .pci_device import *

@@ -36,8 +36,9 @@
 * $Authors      : Roei Yitzhak (roei@mellanox.com)
 """
 
+from __future__ import print_function
 import platform
-from mlxfwreset_utils import cmdExec
+from .mlxfwreset_utils import cmdExec
 
 class Mcra(object):
 

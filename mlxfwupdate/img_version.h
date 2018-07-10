@@ -43,7 +43,7 @@ using namespace std;
 class ImgVersion {
 public:
     ImgVersion();
-    void   setVersion(const char* imgType, u_int8_t verSz, const u_int16_t* ver);
+    void   setVersion(const char *imgType, u_int8_t verSz, const u_int16_t *ver);
     int    compare(const ImgVersion &imv) const;
     string getPrintableVersion(int ffv,  bool show_type = true);
     string getTypeStr();
@@ -51,9 +51,9 @@ public:
     u_int8_t  getVerNumFields();
     const u_int16_t* getVerArray();
     /*
-    void   setExpansionRomtoUnknown();
-    bool   isExpansionRomUnknown();
-    */
+       void   setExpansionRomtoUnknown();
+       bool   isExpansionRomUnknown();
+     */
 private:
     int compareFw(const ImgVersion &imv) const;
 

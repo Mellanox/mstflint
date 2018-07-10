@@ -64,8 +64,9 @@ ImageAccess::~ImageAccess()
     }
 }
 
-bool ImageAccess::hasMFAs(string directory) {
-    DIR* d;
+bool ImageAccess::hasMFAs(string directory)
+{
+    DIR *d;
     struct dirent *dir;
     int rc;
     d = opendir(directory.c_str());
@@ -93,7 +94,7 @@ bool ImageAccess::hasMFAs(string directory) {
 int ImageAccess::queryDirPsid(string &path, string &psid, string &selector_tag, int image_type, vector<PsidQueryItem> &riv)
 {
     int res = 0;
-    DIR* d;
+    DIR *d;
     struct dirent *dir;
     int found = 0;
     int rc;
@@ -135,7 +136,8 @@ clean_up:
     return res;
 }
 
-bool ImageAccess::openImg(fw_hndl_type_t hndlType, char *psid, char * fileHndl) {
+bool ImageAccess::openImg(fw_hndl_type_t hndlType, char *psid, char *fileHndl)
+{
 
     memset(_errBuff, 0, sizeof(_errBuff));
     _imgFwParams.errBuff      = _errBuff;
@@ -164,13 +166,13 @@ int ImageAccess::queryPsid(const string &fname, const string &psid,
                            PsidQueryItem &ri)
 {
     int res = 0;
-    mfa_desc* mfa_d = NULL;
+    mfa_desc *mfa_d = NULL;
     fw_info_t img_query;
-    string    iniName = "";
+    string iniName = "";
     vector<u_int8_t> sect; // to get fw configuration.
     vector<u_int8_t> dest;
 
-    if(!openImg(FHT_FW_FILE, (char*)psid.c_str(), (char*)fname.c_str())) {
+    if (!openImg(FHT_FW_FILE, (char*)psid.c_str(), (char*)fname.c_str())) {
         return 0;
     }
 
@@ -178,7 +180,7 @@ int ImageAccess::queryPsid(const string &fname, const string &psid,
     ri.found = 0;
 
     memset(&img_query, 0, sizeof(img_query));
-    if(!_imgFwOps->FwQuery(&img_query, true)) {
+    if (!_imgFwOps->FwQuery(&img_query, true)) {
         _errMsg  = "Failed to query " +  (string)_imgFwOps->err();
         _log += _errMsg;
         goto clean_up;
@@ -197,26 +199,26 @@ int ImageAccess::queryPsid(const string &fname, const string &psid,
         ri.isFailSafe = img_query.fw_info.is_failsafe;
         if (_imgFwOps->FwGetSection(H_FW_CONF, sect)) {
             if (unzipDataFile(sect, dest, "Fw Configuration")) {
-                 char * ptr = strstr ((char *)&dest[0],"Name =");
-                 int counter = 7;
-                 while(ptr and *ptr != '\n' and *ptr != '\r') {
-                     if (counter-- > 0) {
-                         ptr++;
-                         continue;
-                     }
-                     iniName += *ptr;
-                     ptr++;
-                 }
-             }
+                char *ptr = strstr((char*)&dest[0], "Name =");
+                int counter = 7;
+                while (ptr and * ptr != '\n' and * ptr != '\r') {
+                    if (counter-- > 0) {
+                        ptr++;
+                        continue;
+                    }
+                    iniName += *ptr;
+                    ptr++;
+                }
+            }
         }
         ri.iniName = iniName;
         if (!mfa_open_file(&mfa_d, (char*)fname.c_str())) {
-            char* pn =  mfa_get_board_metadata(mfa_d, (char*)psid.c_str(), (char*)"PN");
+            char *pn =  mfa_get_board_metadata(mfa_d, (char*)psid.c_str(), (char*)"PN");
             if (pn != NULL) {
                 ri.pns = pn;
                 free(pn);
             }
-            char* desc =  mfa_get_board_metadata(mfa_d, (char*)psid.c_str(), (char*)"DESCRIPTION");//TODO: Make more efficient
+            char *desc =  mfa_get_board_metadata(mfa_d, (char*)psid.c_str(), (char*)"DESCRIPTION");//TODO: Make more efficient
             if (desc != NULL) {
                 ri.description = desc;
                 free(desc);
@@ -239,9 +241,9 @@ int ImageAccess::queryPsid(const string &fname, const string &psid,
         }
         for (int i = 0; i < img_query.fw_info.roms_info.num_of_exp_rom; i++) {
             ImgVersion imgVer;
-            const char* tpc = _imgFwOps->expRomType2Str(img_query.fw_info.roms_info.rom_info[i].exp_rom_product_id);
+            const char *tpc = _imgFwOps->expRomType2Str(img_query.fw_info.roms_info.rom_info[i].exp_rom_product_id);
             if (tpc == NULL) {
-	        //imgVer.setExpansionRomtoUnknown();
+                //imgVer.setExpansionRomtoUnknown();
                 tpc = "UNKNOWN_ROM";
             }
             int sz = img_query.fw_info.roms_info.rom_info[i].exp_rom_num_ver_fields;
@@ -268,7 +270,7 @@ int ImageAccess::getImage(const string &fname, const string &psid, string &selec
     int type = getFileSignature(fname);
 
     if (type == IMG_SIG_TYPE_MFA) {
-        mfa_desc* mfa_d;
+        mfa_desc *mfa_d;
         int rc = mfa_open_file(&mfa_d, (char*)fname.c_str());
         if (!rc) {
             res = mfa_get_image(mfa_d, (char*)psid.c_str(), image_type, (char*)selector_tag.c_str(), filebuf);
@@ -276,7 +278,7 @@ int ImageAccess::getImage(const string &fname, const string &psid, string &selec
         } else {
             res = -1;
         }
-    } else if (type == IMG_SIG_TYPE_BIN){
+    } else if (type == IMG_SIG_TYPE_BIN) {
         res = getImage(fname, filebuf);
     }
     //else type is unknown and res = -1
@@ -288,8 +290,8 @@ int ImageAccess::getImage(const string &fname, const string &psid, string &selec
 int ImageAccess::getImage(const string &fname, u_int8_t **filebuf)
 {
     int res = -1;
-    FILE* fp;
-    u_int8_t* buf = NULL;
+    FILE *fp;
+    u_int8_t *buf = NULL;
     long int fsize;
     long int sz;
 
@@ -306,7 +308,7 @@ int ImageAccess::getImage(const string &fname, u_int8_t **filebuf)
     }
 
     fsize = ftell(fp);
-    if(fsize <= 0) {
+    if (fsize <= 0) {
         _errMsg = "Ftell failed on file : " + (string)fname.c_str();
         _log    += _errMsg;
         goto clean_up;
@@ -344,7 +346,7 @@ clean_up:
 
 int ImageAccess::getFileSignature(string fname)
 {
-    FILE* fin;
+    FILE *fin;
     char tmpb[16];
     int res = -2;
 
@@ -368,7 +370,7 @@ clean_up:
 }
 
 
-int ImageAccess::getBufferSignature(u_int8_t* buf, u_int32_t size)
+int ImageAccess::getBufferSignature(u_int8_t *buf, u_int32_t size)
 {
     int res = 0;
 
@@ -393,17 +395,17 @@ int ImageAccess::get_bin_content(string fname, vector<PsidQueryItem> &riv)
     PsidQueryItem item;
     ImgVersion imgv;
 
-    if(_imgFwOps != NULL) {
+    if (_imgFwOps != NULL) {
         _errMsg  = "_imgFwOPs should be null";
         _log += _errMsg;
         return -1;
     }
-    if(!openImg(FHT_FW_FILE, NULL, (char*)fname.c_str())) {
+    if (!openImg(FHT_FW_FILE, NULL, (char*)fname.c_str())) {
         return -1;
     }
 
     memset(&img_query, 0, sizeof(img_query));
-    if(!_imgFwOps->FwQuery(&img_query, true)) {
+    if (!_imgFwOps->FwQuery(&img_query, true)) {
         _errMsg  = "Failed to query " +  (string)_imgFwOps->err();
         _log += _errMsg;
         res = -1;
@@ -420,9 +422,9 @@ int ImageAccess::get_bin_content(string fname, vector<PsidQueryItem> &riv)
     item.imgVers.push_back(imgv);
     for (int i = 0; i < img_query.fw_info.roms_info.num_of_exp_rom; i++) {
         ImgVersion imgVer;
-        const char* tpc = _imgFwOps->expRomType2Str(img_query.fw_info.roms_info.rom_info[i].exp_rom_product_id);
+        const char *tpc = _imgFwOps->expRomType2Str(img_query.fw_info.roms_info.rom_info[i].exp_rom_product_id);
         if (tpc == NULL) {
-	    //imgVer.setExpansionRomtoUnknown();
+            //imgVer.setExpansionRomtoUnknown();
             tpc = "UNKNOWN_ROM";
         }
         int sz = img_query.fw_info.roms_info.rom_info[i].exp_rom_num_ver_fields;
@@ -445,20 +447,20 @@ clean_up:
 
 int ImageAccess::get_mfa_content(string fname, vector<PsidQueryItem> &riv)
 {
-    mfa_desc* mfa_d;
-    map_entry_hdr* me = NULL;
+    mfa_desc *mfa_d;
+    map_entry_hdr *me = NULL;
     char psid[33];
 
     if (mfa_open_file(&mfa_d, (char*)fname.c_str())) {
         return -1;
     }
     me = NULL;
-    while((me = mfa_get_next_mentry(mfa_d, me))) {
+    while ((me = mfa_get_next_mentry(mfa_d, me))) {
         PsidQueryItem item;
         strncpy(psid, me->board_type_id, 32);
         psid[32] = 0;
         item.psid = psid;
-        char* val = mfa_get_map_entry_metadata(me, (char*)"PN");
+        char *val = mfa_get_map_entry_metadata(me, (char*)"PN");
         if (val == NULL) {
             item.pns = "";
         } else {
@@ -480,13 +482,13 @@ int ImageAccess::get_mfa_content(string fname, vector<PsidQueryItem> &riv)
             free(val);
         }
 
-        map_image_entry* imge;
+        map_image_entry *imge;
         for (int i = 0; i < me->nimages; i++) {
             imge = mfa_get_map_image(me, i);
             if (imge == NULL) {
                 continue;
             }
-            toc_entry* toc = mfa_get_image_toc(mfa_d, imge);
+            toc_entry *toc = mfa_get_image_toc(mfa_d, imge);
             if (toc == NULL) {
                 continue;
             }
@@ -496,7 +498,7 @@ int ImageAccess::get_mfa_content(string fname, vector<PsidQueryItem> &riv)
                 strncpy(select_tag, imge->select_tag, 32);
                 select_tag[32] = 0;
                 item.selector_tag = select_tag;
-                char* subImgType;
+                char *subImgType;
                 if ((subImgType = mfasec_get_sub_image_type_str(toc->subimage_type)) != NULL) {
                     ImgVersion imgv;
                     if (subImgType[0] != '\0') { //Not a padding section
@@ -521,7 +523,7 @@ int ImageAccess::get_file_content(string fname, vector<PsidQueryItem> &riv)
         return get_bin_content(fname, riv);
     } else if (type == IMG_SIG_TYPE_MFA) {
         return get_mfa_content(fname, riv);
-    } else  {
+    } else {
         return -1;
     }
 }
@@ -531,7 +533,8 @@ string ImageAccess::getLastErrMsg()
     return _errMsg;
 }
 
-string ImageAccess::getlastWarning() {
+string ImageAccess::getlastWarning()
+{
     return _warning;
 }
 

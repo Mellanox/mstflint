@@ -60,79 +60,80 @@
 enum TLVTarget {
     NIC,
     EXP_ROM,
-    NIC_INTERNAL
+    NIC_INTERNAL,
+    SWITCH
 };
 
 class TLVConf {
 
-    private:
-        bool _isNameFound, _isIdFound, _isSizeFound, _isCapFound, _isTargetFound,
-             _isClassFound, _isVersion, _isDescriptionFound, _isMlxconfigNameFound,
-             _isPortFound;
-        Param* getParamByName(std::string n);
-        void pack(u_int8_t* buff);
-        u_int32_t getGlobalTypeBe();
-        u_int32_t getPhysicalPortTypeBe();
-        u_int32_t getPerHostFunctionTypeBe();
-        u_int32_t getPerHostTypeBe();
-        u_int32_t getTlvTypeBe();
-        void mnva(mfile* mf, u_int8_t* buff, u_int16_t len, u_int32_t type,
-                reg_access_method_t method, QueryType qT = QueryNext);
-        static TLVTarget str2TLVTarget(char *s);
-        static TLVClass str2TLVClass(char *s);
+private:
+    bool _isNameFound, _isIdFound, _isSizeFound, _isCapFound, _isTargetFound,
+         _isClassFound, _isVersion, _isDescriptionFound, _isMlxconfigNameFound,
+         _isPortFound;
+    Param* getParamByName(std::string n);
+    void pack(u_int8_t *buff);
+    u_int32_t getGlobalTypeBe();
+    u_int32_t getPhysicalPortTypeBe();
+    u_int32_t getPerHostFunctionTypeBe();
+    u_int32_t getPerHostTypeBe();
+    u_int32_t getTlvTypeBe();
+    void mnva(mfile *mf, u_int8_t *buff, u_int16_t len, u_int32_t type,
+              reg_access_method_t method, QueryType qT = QueryNext);
+    static TLVTarget str2TLVTarget(char *s);
+    static TLVClass str2TLVClass(char *s);
 
-    public:
-        std::string _name;
-        u_int32_t _id;
-        u_int16_t _size;
-        bool _cap;
-        TLVTarget _target;
-        TLVClass _tlvClass;
-        u_int32_t _version;
-        std::string _description;
-        std::vector<Param*> _params;
-        std::string _mlxconfigName;
-        u_int8_t _port;
-        bool _alreadyQueried;
-        map<string,string> _attrs;
-        vector<u_int8_t> _buff;
-        u_int32_t _maxTlvVersionSuppByFw;
+public:
+    std::string _name;
+    u_int32_t _id;
+    u_int16_t _size;
+    bool _cap;
+    TLVTarget _target;
+    TLVClass _tlvClass;
+    u_int32_t _version;
+    std::string _description;
+    std::vector<Param*> _params;
+    std::string _mlxconfigName;
+    u_int8_t _port;
+    bool _alreadyQueried;
+    map<string, string> _attrs;
+    vector<u_int8_t> _buff;
+    u_int32_t _maxTlvVersionSuppByFw;
 
-        TLVConf(int columnsCount, char **dataRow, char **headerRow);
+    TLVConf(int columnsCount, char **dataRow, char **headerRow);
 
-        bool isMlxconfigSupported();
-        void getView(TLVConfView& tlvConfView);
-        bool isFWSupported(mfile* mf, bool read_write);
-        Param* getValidBitParam(std::string n);
-        bool checkParamValidBit(Param* p);
-        std::vector<std::pair<ParamView, std::string> > query(mfile* mf, QueryType qT);
-        void updateParamByMlxconfigName(std::string param, std::string val);
-        void updateParamByMlxconfigName(std::string param, std::string val, u_int32_t index);
-        void updateParamByName(string param, string val);
-        void updateParamByName(string paramName, vector<string> vals);
-        u_int32_t getParamValueByName(std::string n);
-        Param* findParamByMlxconfigName(std::string n);
-        Param* findParamByName(std::string n);
-        void getExprVarsValues(std::vector<std::string>&, std::vector<TLVConf*>,
-                std::map<std::string, u_int32_t>&, std::string);
-        void evalTempVars(Param*, std::vector<TLVConf*>,
-                std::map<std::string, u_int32_t>&);
-        u_int32_t evalRule(Param*, std::string, std::vector<TLVConf*>&,
-                std::map<std::string, u_int32_t>&);
-        void checkRules(std::vector<TLVConf*> ruleTLVs);
-        void setOnDevice(mfile* mf);
-        void getRuleTLVs(std::set<std::string>& result);
-        void parseParamValue(std::string, std::string, u_int32_t&, std::string&);
-        void unpack(u_int8_t* buff);
-        void genXMLTemplate(string& xmlTemplate, bool allAttrs, bool withVal,
-                bool defaultAttrVal);
-        void genRaw(string& raw);
-        void genBin(vector<u_int32_t>& buff, bool withHeader = true);
-        bool isAStringParam(string paramName);
-        void setAttr(string attr, string val);
-        void invalidate(mfile * mf);
-        static void unpackTLVType(TLVClass tlvClass,
-                tools_open_tlv_type& type, u_int32_t& id);
+    bool isMlxconfigSupported();
+    void getView(TLVConfView& tlvConfView);
+    bool isFWSupported(mfile *mf, bool read_write);
+    Param* getValidBitParam(std::string n);
+    bool checkParamValidBit(Param *p);
+    std::vector<std::pair<ParamView, std::string> > query(mfile *mf, QueryType qT);
+    void updateParamByMlxconfigName(std::string param, std::string val);
+    void updateParamByMlxconfigName(std::string param, std::string val, u_int32_t index);
+    void updateParamByName(string param, string val);
+    void updateParamByName(string paramName, vector<string> vals);
+    u_int32_t getParamValueByName(std::string n);
+    Param* findParamByMlxconfigName(std::string n);
+    Param* findParamByName(std::string n);
+    void getExprVarsValues(std::vector<std::string>&, std::vector<TLVConf*>,
+                           std::map<std::string, u_int32_t>&, std::string);
+    void evalTempVars(Param*, std::vector<TLVConf*>,
+                      std::map<std::string, u_int32_t>&);
+    u_int32_t evalRule(Param*, std::string, std::vector<TLVConf*>&,
+                       std::map<std::string, u_int32_t>&);
+    void checkRules(std::vector<TLVConf*> ruleTLVs);
+    void setOnDevice(mfile *mf);
+    void getRuleTLVs(std::set<std::string>& result);
+    void parseParamValue(std::string, std::string, u_int32_t&, std::string&);
+    void unpack(u_int8_t *buff);
+    void genXMLTemplate(string& xmlTemplate, bool allAttrs, bool withVal,
+                        bool defaultAttrVal);
+    void genRaw(string& raw);
+    void genBin(vector<u_int32_t>& buff, bool withHeader = true);
+    bool isAStringParam(string paramName);
+    void setAttr(string attr, string val);
+    void invalidate(mfile *mf);
+    static void unpackTLVType(TLVClass tlvClass,
+                              tools_open_tlv_type& type, u_int32_t& id);
 };
 
 #endif /* MLXCFG_TLV_H_ */

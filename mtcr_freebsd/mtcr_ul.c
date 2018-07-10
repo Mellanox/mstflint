@@ -1,42 +1,24 @@
 /*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ *                 - Mellanox Confidential and Proprietary -
  *
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
- * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
- * OpenIB.org BSD license below:
+ * Copyright (C) Jan 2013, Mellanox Technologies Ltd.  ALL RIGHTS RESERVED.
  *
- *     Redistribution and use in source and binary forms, with or
- *     without modification, are permitted provided that the following
- *     conditions are met:
- *
- *      - Redistributions of source code must retain the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer.
- *
- *      - Redistributions in binary form must reproduce the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- *
+ * Except as specifically permitted herein, no portion of the information,
+ * including but not limited to object code and source code, may be reproduced,
+ * modified, distributed, republished or otherwise exploited in any form or by
+ * any means for any purpose without the prior written permission of Mellanox
+ * Technologies Ltd. Use of software subject to the terms and conditions
+ * detailed in the file "LICENSE.txt".
  */
 
 #include <sys/types.h>
 
 #include <err.h>
+#define _WITH_GETLINE
 #include <stdio.h>
 #include <sys/agpio.h>
 #include <sys/pciio.h>
+#include <sys/stat.h>
 
 #include <dev/agp/agpreg.h>
 #include <dev/pci/pcireg.h>
@@ -63,11 +45,11 @@
 #include <unistd.h>
 #include <sys/queue.h>
 #endif
-
 #include "packets_common.h"
 #include "packets_layout.h"
 #include <dlfcn.h>
 #include <dirent.h>
+#include <sys/file.h>
 
 
 #define MST_VPD_DFLT_TIMEOUT   2000
@@ -75,82 +57,90 @@
 #define PCI_CAP_ID_VPD 0x3
 #define PCI_VPD_DATA   0x4
 
-
-
-
-#ifdef MST_UL
-#define u64     uint64_t
-#define u32     uint32_t
-#define u16     uint16_t
-#define u8      uint8_t
-
-#define __be64  uint64_t
-#define __be32  uint32_t
-#define __be16  uint16_t
-
-#define BITS_PER_LONG __LONG_BIT
-
-//#ifndef __be32_to_cpu
-//#define __be32_to_cpu(x) ntohl(x)
-//#endif
-//#ifndef __cpu_to_be32
-//#define __cpu_to_be32(x) htonl(x)
-//#endif
-
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-#ifndef __cpu_to_le32
-#define  __cpu_to_le32(x) (x)
-#endif
-#ifndef __le32_to_cpu
-#define  __le32_to_cpu(x) (x)
-#endif
-#elif __BYTE_ORDER == __BIG_ENDIAN
-#ifndef __cpu_to_le32
-#define  __cpu_to_le32(x) bswap_32(x)
-#endif
-#ifndef __le32_to_cpu
-#define  __le32_to_cpu(x) bswap_32(x)
-#endif
-#else
-#ifndef __cpu_to_le32
-#define  __cpu_to_le32(x) bswap_32(__cpu_to_be32(x))
-#endif
-#ifndef __le32_to_cpu
-#define  __le32_to_cpu(x) __be32_to_cpu(bswap_32(x))
-#endif
-#endif
-
-
-/*
- * Byteswapping
- */
-#define cpu_to_be16(x) htobe16(x)
-#define cpu_to_be32(x) htobe32(x)
-#define cpu_to_be64(x) htobe64(x)
-#define be16_to_cpu(x) be16toh(x)
-#define be32_to_cpu(x) be32toh(x)
-#define be64_to_cpu(x) be64toh(x)
-
-#define _PATH_DEVPCI    "/dev/pci"
+#define _PATH_DEVPCI "/dev/pci"
 #define SLV_ADDRS_NUM 128
-#endif //MST_UL
-
-
-
-
 
 typedef enum {
     Clear_Vsec_Semaphore = 0x1
 } adv_opt_t;
 
-void mtcr_connectx_flush(void *ptr)
+
+#define LOCK_FILE_DIR "/tmp/mft_lockfiles"
+#define LOCK_FILE_FORMAT "/tmp/mft_lockfiles/%s"
+
+#define CHECK_LOCK(rc) \
+    if (rc) { \
+        return rc; \
+    }
+
+#define MAX_RETRY_CNT 8192
+static int _flock_int(int fdlock, int operation)
+{
+    int cnt = 0;
+    if (fdlock == 0) {
+        // in case we failed to create the lock file we ignore the locking mechanism
+        return 0;
+    }
+    do {
+        if (flock(fdlock, operation | LOCK_NB) == 0) {
+            return 0;
+        } else if (errno != EWOULDBLOCK) {
+            break; // BAD! lock/free failed
+        }
+        usleep(10);
+        cnt++;
+    } while (cnt < MAX_RETRY_CNT);
+    perror("failed to perform lock operation.");
+    return -1;
+
+}
+
+static int _create_lock(mfile *mf, char* devname)
+{
+    char fname[64] = { 0 };
+    int rc;
+    int fd = 0;
+
+    snprintf(fname, sizeof(fname) - 1, LOCK_FILE_FORMAT, devname);
+    rc = mkdir("/tmp", 0777);
+    if (rc && errno != EEXIST) {
+        goto cl_clean_up;
+    }
+    rc = mkdir(LOCK_FILE_DIR, 0777);
+    if (rc && errno != EEXIST) {
+        goto cl_clean_up;
+    }
+
+    fd = open(fname, O_RDONLY | O_CREAT, 0777);
+    if (fd < 0) {
+        goto cl_clean_up;
+    }
+
+    mf->fdlock = fd;
+    return 0;
+
+cl_clean_up:
+    fprintf(stderr, "Warrning: Failed to create lockfile: %s (parallel access not supported)\n", fname);
+    return 0;
+}
+/*End of Lock file section */
+
+void mtcr_connectx_flush(void *ptr, int fdlock)
 {
     u_int32_t value;
+    int rc = _flock_int(fdlock, LOCK_EX);
+    if (rc) {
+        return;
+    }
     *((u_int32_t *) ((char *) ptr + 0xf0380)) = 0x0;
     do {
-        asm volatile ("":::"memory");
+        asm volatile ("" ::: "memory");
         value = __be32_to_cpu(*((u_int32_t *) ((char *) ptr + 0xf0380)));
     } while (value);
+    rc = _flock_int(fdlock, LOCK_UN);
+    if (rc) {
+        return;
+    }
 }
 
 int mtcr_check_signature(mfile *mf)
@@ -159,29 +149,74 @@ int mtcr_check_signature(mfile *mf)
     int rc;
     rc = mread4(mf, 0xF0014, &signature);
     if (rc != 4) {
-        if (!errno)
+        if (!errno) {
             errno = EIO;
+        }
         return -1;
     }
 
     switch (signature & 0xffff) {
-        case 0x190: /* Fallthrough 400 */
-            if (signature == 0xa00190 && mf->ptr) {
-                mf->connectx_flush = 1;
-                mtcr_connectx_flush(mf->ptr);
-            }
-	    return 0;
+    case 0x190:     /* 400 */
+        if (signature == 0xa00190 && mf->ptr) {
+            mf->connectx_flush = 1;
+            mtcr_connectx_flush(mf->ptr, mf->fdlock);
+        }
 
-        case 0x5a44: /* 23108 */
-        case 0x6278: /* 25208 */
-        case 0x5e8c: /* 24204 */
-        case 0x6274: /* 25204 */
-            return 0;
-        default:
-            errno = ENOTTY;
-            return -1;
+    case 0x5a44:     /* 23108 */
+    case 0x6278:     /* 25208 */
+    case 0x5e8c:     /* 24204 */
+    case 0x6274:     /* 25204 */
+        return 0;
+
+    default:
+        errno = ENOTTY;
+        return -1;
     }
 }
+
+
+
+#define READ4_PCI(mf, val_ptr, pci_offs, err_prefix, action_on_fail)    \
+    do {                                                                \
+        int rc;                                                         \
+        int lock_rc;                                                    \
+        lock_rc = _flock_int(mf->fdlock, LOCK_EX);                      \
+        if (lock_rc) {                                                  \
+            perror(err_prefix);                                         \
+            action_on_fail;                                             \
+        }                                                               \
+        rc = read_config(mf, pci_offs, val_ptr, 4);                 \
+        lock_rc = _flock_int(mf->fdlock, LOCK_UN);                      \
+        if (lock_rc) {                                                  \
+            perror(err_prefix);                                         \
+            action_on_fail;                                             \
+        }                                                               \
+        if (rc) {                                                       \
+            return rc;                                                  \
+        }                                                               \
+    } while (0)
+
+#define WRITE4_PCI(mf, val, pci_offs, err_prefix, action_on_fail)           \
+    do {                                                                \
+        int rc;                                                         \
+        int lock_rc;                                                    \
+        lock_rc = _flock_int(mf->fdlock, LOCK_EX);                      \
+        if (lock_rc) {                                                  \
+            perror(err_prefix);                                         \
+            action_on_fail;                                             \
+        }                                                               \
+        rc = write_config(mf, pci_offs, val, 4);                        \
+        lock_rc = _flock_int(mf->fdlock, LOCK_UN);                      \
+        if (lock_rc) {                                                  \
+            perror(err_prefix);                                         \
+            action_on_fail;                                             \
+        }                                                               \
+        if (rc) {                                                       \
+            return rc;                                                  \
+        }                                                               \
+    } while (0)
+
+
 
 #define PCI_CONF_ADDR   (0x00000058)
 #define PCI_CONF_DATA   (0x0000005c)
@@ -218,39 +253,38 @@ enum {
     READ_OP = 0, WRITE_OP = 1,
 };
 
-int read_config(int fd, struct pcisel *sel, unsigned int reg, uint32_t* data,
-        int width)
+int read_config(mfile *mf, unsigned int reg, uint32_t *data, int width)
 {
     struct pci_io pi;
-
-    pi.pi_sel = *sel;
+    pi.pi_sel = mf->sel;
     pi.pi_reg = reg;
     pi.pi_width = width;
 
-    if (ioctl(fd, PCIOCREAD, &pi) < 0) {
+    if (ioctl(mf->fd, PCIOCREAD, &pi) < 0) {
         errno = EIO;
         return -1;
     }
+
     //printf("%s:  dev:%d reg=%x width=%d data=%x\n", __FUNCTION__, pi.pi_sel.pc_dev, reg, width, pi.pi_data);
     *data = (pi.pi_data);
+
     return 0;
 }
 
-int write_config(int fd, struct pcisel *sel, unsigned int reg, uint32_t data,
-        int width)
+int write_config(mfile *mf, unsigned int reg, uint32_t data, int width)
 {
     struct pci_io pi;
-
-    pi.pi_sel = *sel;
+    pi.pi_sel = mf->sel;
     pi.pi_reg = reg;
     pi.pi_width = width;
     pi.pi_data = data;
 
     //printf("%s: dev:%d reg:%x width:%d data:%x\n", __FUNCTION__, pi.pi_sel.pc_dev, pi.pi_reg, pi.pi_width, pi.pi_data);
-    if (ioctl(fd, PCIOCWRITE, &pi) < 0) {
+    if (ioctl(mf->fd, PCIOCWRITE, &pi) < 0) {
         errno = EIO;
         return -1;
     }
+
     return 0;
 }
 
@@ -261,23 +295,34 @@ int write_config(int fd, struct pcisel *sel, unsigned int reg, uint32_t data,
 #define PCICONF_ADDR_OFF 0x58
 #define PCICONF_DATA_OFF 0x5c
 
-static int is_wo_pciconf_gw(mfile* mf)
+static int is_wo_pciconf_gw(mfile *mf)
 {
     unsigned offset = DEVID_OFFSET;
     u_int32_t data = 0;
-    int rc = write_config(mf->fd, &mf->sel, PCI_CONF_ADDR, (unsigned long) offset, 4);
-    if (rc < 0) {
+    int lock_rc;
+    lock_rc = _flock_int(mf->fdlock, LOCK_EX);
+    if (lock_rc) {
         return 0;
     }
-    rc = read_config(mf->fd, &mf->sel, PCI_CONF_ADDR, &data, 4);
+    int rc = write_config(mf, PCI_CONF_ADDR, (unsigned long) offset, 4);
     if (rc < 0) {
-        return 0;
+        goto cleanup;
+    }
+    rc = read_config(mf, PCI_CONF_ADDR, &data, 4);
+    if (rc < 0) {
+        rc = 0;
+        goto cleanup;
     }
     //printf("-D- Data: %#x\n", data);
-    if ( data == WO_REG_ADDR_DATA) {
-        return 1;
+    if (data == WO_REG_ADDR_DATA) {
+        rc = 1;
     }
-    return 0;
+    cleanup:
+    lock_rc = _flock_int(mf->fdlock, LOCK_UN);
+    if (lock_rc) {
+       return rc;
+    }
+    return rc;
 }
 
 /*Find PCI Capability*/
@@ -287,7 +332,7 @@ static int is_wo_pciconf_gw(mfile* mf)
 /*set addr space*/
 
 /* Read Write new functions (4Bytes, Block)*/
-int pci_find_capability(mfile* mf, int cap_id)
+int pci_find_capability(mfile *mf, int cap_id)
 {
     unsigned offset;
     unsigned char visited[256] = { 0 }; /* Prevent infinite loops */
@@ -295,139 +340,122 @@ int pci_find_capability(mfile* mf, int cap_id)
     int ret;
     int curr_cap;
 
-    ret = read_config(mf->fd, &mf->sel, PCI_CAP_PTR, &reg, 4);
-
-    if (ret) {
+    int lock_rc;
+    lock_rc = _flock_int(mf->fdlock, LOCK_EX);
+    if (lock_rc) {
         return 0;
     }
+    ret = read_config(mf, PCI_CAP_PTR, &reg, 4);
 
-    offset = ((unsigned char*) &reg)[0];
+    if (ret) {
+        ret = 0;
+        goto cleanup;
+    }
+
+    offset = ((unsigned char *) &reg)[0];
     while (1) {
         if (offset < PCI_HDR_SIZE || offset > PCI_EXT_SPACE_ADDR) {
-            return 0;
+            ret = 0;
+            goto cleanup;
         }
-
-        ret = read_config(mf->fd, &mf->sel, offset, &reg, 4);
-
+        ret = read_config(mf, offset, &reg, 4);
         if (ret) {
-
-            return 0;
+            ret = 0;
+            goto cleanup;
         }
 
         visited[offset] = 1;
-        curr_cap = ((unsigned char*) &reg)[0];
+        curr_cap = ((unsigned char *) &reg)[0];
         if (curr_cap == cap_id) {
-            return offset;
+            ret = offset;
+            goto cleanup;
         }
 
-        offset = ((unsigned char*) &reg)[1];
+        offset = ((unsigned char *) &reg)[1];
         if (visited[offset]) {
-            return 0;
+            ret = 0;
+            goto cleanup;
         }
     }
-    return 0;
+cleanup:
+    lock_rc = _flock_int(mf->fdlock, LOCK_UN);
+    if (lock_rc) {
+       return ret;
+    }
+    return ret;
 }
 
-static int _vendor_specific_sem(mfile* mf, int state)
+static int _vendor_specific_sem(mfile *mf, int state)
 {
     uint32_t lock_val;
     uint32_t counter = 0;
     int retries = 0;
-    int ret;
-    if (!state) { // unlock
-        ret = write_config(mf->fd, &mf->sel,
-                mf->vsec_addr + PCI_SEMAPHORE_OFFSET, 0, 4);
-        if (ret)
-            return ret;
-    } else { // lock
+    if (!state) {
+        // unlock
+        WRITE4_PCI(mf, 0, mf->vsec_addr + PCI_SEMAPHORE_OFFSET, "unlock semaphore", return -1);
+    } else {
+        // lock
         do {
             if (retries > SEM_MAX_RETRIES) {
                 return -1;
             }
             // read semaphore untill 0x0
-            ret = read_config(mf->fd, &mf->sel,
-                    mf->vsec_addr + PCI_SEMAPHORE_OFFSET, &lock_val, 4);
-            if (ret)
-                return ret;
-
-            if (lock_val) { //semaphore is taken
+            READ4_PCI(mf, &lock_val, mf->vsec_addr + PCI_SEMAPHORE_OFFSET, "read counter", return -1);
+            if (lock_val) {
+                //semaphore is taken
                 retries++;
                 msleep(1); // wait for current op to end
                 continue;
             }
             //read ticket
-            ret = read_config(mf->fd, &mf->sel,
-                    mf->vsec_addr + PCI_COUNTER_OFFSET, &counter, 4);
-            if (ret)
-                return ret;
+            READ4_PCI(mf, &counter, mf->vsec_addr + PCI_COUNTER_OFFSET, "read counter", return -1);
             //write ticket to semaphore dword
-            ret = write_config(mf->fd, &mf->sel,
-                    mf->vsec_addr + PCI_SEMAPHORE_OFFSET, counter, 4);
-            if (ret)
-                return ret;
+            WRITE4_PCI(mf, counter, mf->vsec_addr + PCI_SEMAPHORE_OFFSET, "write counter to semaphore", return -1);
             // read back semaphore make sure ticket == semaphore else repeat
-            ret = read_config(mf->fd, &mf->sel,
-                    mf->vsec_addr + PCI_SEMAPHORE_OFFSET, &lock_val, 4);
-            if (ret)
-                return ret;
+            READ4_PCI(mf, &lock_val, mf->vsec_addr + PCI_SEMAPHORE_OFFSET, "read counter", return -1);
             retries++;
         } while (counter != lock_val);
     }
     return 0;
 }
 
-static int _wait_on_flag(mfile* mf, u8 expected_val)
+static int _wait_on_flag(mfile *mf, u_int8_t expected_val)
 {
     int retries = 0;
-    int ret;
     uint32_t flag;
     do {
         if (retries > IFC_MAX_RETRIES) {
             return -1;
         }
 
-        ret = read_config(mf->fd, &mf->sel, mf->vsec_addr + PCI_ADDR_OFFSET,
-                &flag, 4);
-        if (ret)
-            return ret;
+        READ4_PCI(mf, &flag, mf->vsec_addr + PCI_ADDR_OFFSET, "read flag", return -1);
 
         flag = EXTRACT(flag, PCI_FLAG_BIT_OFFS, 1);
         retries++;
-        if ((retries & 0xf) == 0) { // dont sleep always
+        if ((retries & 0xf) == 0) {
+            // dont sleep always
             //usleep_range(1,5);
         }
     } while (flag != expected_val);
     return 0;
 }
 
-static int _set_addr_space(mfile* mf, u16 space)
+static int _set_addr_space(mfile *mf, u_int16_t space)
 {
     // read modify write
     uint32_t val;
-    int ret;
-    ret = read_config(mf->fd, &mf->sel, mf->vsec_addr + PCI_CTRL_OFFSET, &val,
-            4);
-    if (ret)
-        return ret;
+    READ4_PCI(mf, &val, mf->vsec_addr + PCI_CTRL_OFFSET, "read domain", return -1);
     val = MERGE(val, space, PCI_SPACE_BIT_OFFS, PCI_SPACE_BIT_LEN);
-    ret = write_config(mf->fd, &mf->sel, mf->vsec_addr + PCI_CTRL_OFFSET, val,
-            4);
-    if (ret)
-        return ret;
+    WRITE4_PCI(mf, val, mf->vsec_addr + PCI_CTRL_OFFSET, "write domain", return -1);
     // read status and make sure space is supported
-    ret = read_config(mf->fd, &mf->sel, mf->vsec_addr + PCI_CTRL_OFFSET, &val,
-            4);
-    if (ret)
-        return ret;
-
+    READ4_PCI(mf, &val, mf->vsec_addr + PCI_CTRL_OFFSET, "read status", return -1);
     if (EXTRACT(val, PCI_STATUS_BIT_OFFS, PCI_STATUS_BIT_LEN) == 0) {
-
         return -1;
     }
     return 0;
 }
 
-static int _pciconf_rw(mfile* mf, unsigned int offset, uint32_t* data, int rw)
+static int _pciconf_rw(mfile *mf, unsigned int offset, uint32_t *data, int rw)
 {
     int ret = 0;
     uint32_t address = offset;
@@ -440,36 +468,24 @@ static int _pciconf_rw(mfile* mf, unsigned int offset, uint32_t* data, int rw)
     address = MERGE(address, (rw ? 1 : 0), PCI_FLAG_BIT_OFFS, 1);
     if (rw == WRITE_OP) {
         // write data
-        ret = write_config(mf->fd, &mf->sel, mf->vsec_addr + PCI_DATA_OFFSET,
-                *data, 4);
-        if (ret)
-            return ret;
+        WRITE4_PCI(mf, *data, mf->vsec_addr + PCI_DATA_OFFSET, "write value", return -1);
         // write address
-        ret = write_config(mf->fd, &mf->sel, mf->vsec_addr + PCI_ADDR_OFFSET,
-                address, 4);
-        if (ret)
-            return ret;
+        WRITE4_PCI(mf, address, mf->vsec_addr + PCI_ADDR_OFFSET, "write offset", return -1);
         // wait on flag
         ret = _wait_on_flag(mf, 0);
     } else {
         // write address
-        ret = write_config(mf->fd, &mf->sel, mf->vsec_addr + PCI_ADDR_OFFSET,
-                address, 4);
-        if (ret)
-            return ret;
+        WRITE4_PCI(mf, address, mf->vsec_addr + PCI_ADDR_OFFSET, "write offset", return -1);
         // wait on flag
         ret = _wait_on_flag(mf, 1);
         // read data
-        ret = read_config(mf->fd, &mf->sel, mf->vsec_addr + PCI_DATA_OFFSET,
-                data, 4);
-        if (ret)
-            return ret;
+        READ4_PCI(mf, data, mf->vsec_addr + PCI_DATA_OFFSET, "read value", return -1);
     }
     return ret;
 }
 
-static int _send_pci_cmd_int(mfile* mf, int space, unsigned int offset,
-        uint32_t* data, int rw)
+static int _send_pci_cmd_int(mfile *mf, int space, unsigned int offset,
+                             uint32_t *data, int rw)
 {
     int ret = 0;
 
@@ -487,14 +503,14 @@ static int _send_pci_cmd_int(mfile* mf, int space, unsigned int offset,
     }
     // read/write the data
     ret = _pciconf_rw(mf, offset, data, rw);
-    cleanup:
+cleanup:
     // clear semaphore
     _vendor_specific_sem(mf, 0);
     return ret;
 }
 
-static int _block_op(mfile* mf, int space, unsigned int offset, int size,
-        uint32_t* data, int rw)
+static int _block_op(mfile *mf, int space, unsigned int offset, int size,
+                     uint32_t *data, int rw)
 {
     int i;
     int ret = 0;
@@ -519,11 +535,11 @@ static int _block_op(mfile* mf, int space, unsigned int offset, int size,
             goto cleanup;
         }
     }
-    cleanup: _vendor_specific_sem(mf, 0);
+cleanup: _vendor_specific_sem(mf, 0);
     return wrote_or_read;
 }
 
-static int mwrite4_new(mfile* mf, unsigned int offset, uint32_t data)
+static int mwrite4_new(mfile *mf, unsigned int offset, uint32_t data)
 {
     int ret;
 
@@ -534,7 +550,7 @@ static int mwrite4_new(mfile* mf, unsigned int offset, uint32_t data)
     return 4;
 }
 
-static int mread4_new(mfile* mf, unsigned int offset, uint32_t* data)
+static int mread4_new(mfile *mf, unsigned int offset, uint32_t *data)
 {
     int ret;
 
@@ -545,19 +561,19 @@ static int mread4_new(mfile* mf, unsigned int offset, uint32_t* data)
     return 4;
 }
 
-static int mwrite4_block_new(mfile* mf, unsigned int offset, int size,
-        uint32_t* data)
+static int mwrite4_block_new(mfile *mf, unsigned int offset, int size,
+                             uint32_t *data)
 {
     return _block_op(mf, mf->address_space, offset, size, data, WRITE_OP);
 }
 
-static int mread4_block_new(mfile* mf, unsigned int offset, int size,
-        uint32_t* data)
+static int mread4_block_new(mfile *mf, unsigned int offset, int size,
+                            uint32_t *data)
 {
     return _block_op(mf, mf->address_space, offset, size, data, READ_OP);
 }
 
-static int vsec_spaces_supported(mfile* mf)
+static int vsec_spaces_supported(mfile *mf)
 {
     // take semaphore
     int supported = 1;
@@ -566,7 +582,7 @@ static int vsec_spaces_supported(mfile* mf)
         return supported;
     }
     if (_set_addr_space(mf, AS_CR_SPACE) || _set_addr_space(mf, AS_ICMD)
-            || _set_addr_space(mf, AS_SEMAPHORE)) {
+        || _set_addr_space(mf, AS_SEMAPHORE)) {
         supported = 0;
     }
     // clear semaphore
@@ -584,28 +600,140 @@ static int vsec_spaces_supported(mfile* mf)
  * Return valid mfile ptr or 0 on failure
  */
 
-int device_exists(const char* devname);
-int mtcr_open_config(mfile *mf, const char *name);
+int device_exists(const char *devname);
 
-
-mfile *mopen_int(const char *name, u_int32_t adv_opt)
+#if __FreeBSD_version > 700000
+int getsel(const char *str, struct pcisel *selout)
 {
-    char* real_name = (char*)name;
-#ifndef MST_UL
-    int port;
-    char* p_cable;
-    char tmp_name[512] = {0};
+    char *ep = strchr(str, '@');
+    char *epbase;
+    struct pcisel sel;
+    unsigned long selarr[4];
+    int i;
+    //printf("__FreeBSD_version > 700000 detected.\n");
+
+    if (ep == NULL) {
+        ep = (char *)str;
+    } else {
+        ep++;
+    }
+
+    epbase = ep;
+
+    if (strncmp(ep, "pci", 3) == 0) {
+        ep += 3;
+        i = 0;
+        do {
+            selarr[i++] = strtoul(ep, &ep, 10);
+        } while ((*ep == ':' || *ep == '.') && *++ep != '\0' && i < 4);
+
+        if (i > 2) {
+            sel.pc_func = selarr[--i];
+        } else {
+            sel.pc_func = 0;
+        }
+        sel.pc_dev = selarr[--i];
+        sel.pc_bus = selarr[--i];
+        if (i > 0) {
+            sel.pc_domain = selarr[--i];
+        } else {
+            sel.pc_domain = 0;
+        }
+    }
+    if (*ep != '\x0' || ep == epbase) {
+        return 1;
+        //errx(1, "cannot parse selector %s ep:'%s' epbase:%s, %d", str, ep, epbase, *ep);
+    }
+
+    *selout = sel;
+
+    return 0;
+}
+#else
+int getsel(const char *str, struct pcisel *selout)
+{
+    char *ep = strchr(str, '@');
+    char *epbase;
+    struct pcisel sel;
+
+    //printf("__FreeBSD_version < 700000 detected: %d\n", __FreeBSD_version);
+
+    if (ep == NULL) {
+        ep = (char *) str;
+    } else {
+        ep++;
+    }
+
+    epbase = ep;
+
+    if (strncmp(ep, "pci", 3) == 0) {
+        ep += 3;
+        sel.pc_bus = strtoul(ep, &ep, 0);
+        if (!ep || *ep++ != ':') {
+            errno = EINVAL;
+            return 1;
+            //errx(1, "cannot parse selector %s", str);
+        }
+        sel.pc_dev = strtoul(ep, &ep, 0);
+        if (!ep || *ep != ':') {
+            sel.pc_func = 0;
+        } else {
+            ep++;
+            sel.pc_func = strtoul(ep, &ep, 0);
+        }
+        if (*ep == ':') {
+            ep++;
+        }
+    }
+    if (*ep != '\x0' || ep == epbase) {
+        return 1;
+        //errx(1, "cannot parse selector %s", str);
+    }
+
+    *selout = sel;
+
+    return 0;
+}
 #endif
+
+int mtcr_open_config(mfile *mf, const char *name)
+{
+    //printf("open_config %s %s mf:%p\n", name, _PATH_DEVPCI, mf);
+
+    if (!mf) {
+        printf("Internal: Uninitialized mfile\n");
+        exit(1);
+    }
+
+    mf->fd = open(_PATH_DEVPCI, O_RDWR, 0);
+    if (mf->fd < 0) {
+        printf("err opening: %s", _PATH_DEVPCI);
+        return -1;
+    }
+
+    //printf("open_config name:%s fd:%d\n", name, mf->fd);
+    int ret = getsel(name, &mf->sel);
+    //printf("open_config getsel done %d\n", mf->sel.pc_dev);
+    mf->tp = MST_PCICONF;
+
+    return ret;
+}
+
+mfile* mopen_int(const char *name, u_int32_t adv_opt)
+{
+    char *real_name = (char *)name;
+    int port;
     int is_cable = 0;
     if (getuid() != 0) {
         errno = EACCES;
         return NULL;
     }
     //printf("%s: open %s\n", __FUNCTION__, name);
-#ifndef MST_UL
-    if ((p_cable = strstr(name, "_cable")) != 0) {
-        strncpy (tmp_name, name, 512);
-        tmp_name[p_cable-name] = 0;
+    char tmp_name[512] = {0};
+    char *p_cable = strstr(name, "_cable");
+    if (p_cable != 0) {
+        strncpy(tmp_name, name, 512);
+        tmp_name[p_cable - name] = 0;
         is_cable = 1;
         real_name = tmp_name;
 
@@ -622,7 +750,6 @@ mfile *mopen_int(const char *name, u_int32_t adv_opt)
             port = 0;
         }
     }
-#endif
     if (!device_exists(real_name)) {
         errno = ENOENT;
         return NULL;
@@ -635,6 +762,7 @@ mfile *mopen_int(const char *name, u_int32_t adv_opt)
 
     mf->flags = MDEVS_TAVOR_CR;
     if (!mtcr_open_config(mf, real_name)) {
+        _create_lock(mf, real_name);
         mf->wo_addr = is_wo_pciconf_gw(mf);
         //printf("-D- is_wo_pciconf_gw: %d\n", mf->wo_addr);
         mf->vsec_addr = pci_find_capability(mf, MLNX_VENDOR_SPECIFIC_CAP_ID);
@@ -653,12 +781,14 @@ mfile *mopen_int(const char *name, u_int32_t adv_opt)
         if (mf->is_cable) {
             mf->flags = MDEVS_CABLE;
             mf->dl_context = mtcr_utils_load_dl_ctx(DL_CABLES);
-            dl_handle_t* hdl = (dl_handle_t*)mf->dl_context;
+            dl_handle_t *hdl = (dl_handle_t *)mf->dl_context;
             if (!hdl || !hdl->mcables.mcables_open || hdl->mcables.mcables_open(mf, port)) {
                 mclose(mf);
                 return 0;
             }
         }
+#else
+        (void)port;
 #endif
         return mf;
     } else {
@@ -669,20 +799,19 @@ mfile *mopen_int(const char *name, u_int32_t adv_opt)
     }
 }
 
-mfile *mopen(const char *name)
+mfile* mopen(const char *name)
 {
     return mopen_adv(name, MST_DEFAULT);
 }
-mfile *mopend(const char *name, int dtype)
+mfile* mopend(char const *name, DType dtype)
 {
     (void)dtype;
-
     return mopen_int(name, 0);
 }
 
-mfile *mopen_adv(const char *name, MType mtype)
+mfile* mopen_adv(const char *name, MType mtype)
 {
-    mfile* mf = mopend(name, MST_TAVOR);
+    mfile *mf = mopend(name, MST_TAVOR);
     if (mf) {
         if (mf->tp & mtype) {
             return mf;
@@ -695,13 +824,12 @@ mfile *mopen_adv(const char *name, MType mtype)
     return mf;
 }
 
-mfile* mopen_fw_ctx(void* fw_cmd_context, void* fw_cmd_func, void* extra_data)
+mfile* mopen_fw_ctx(void *fw_cmd_context, void *fw_cmd_func, void *extra_data)
 {
+    // not relevant for freebsd
     (void)fw_cmd_context;
     (void)fw_cmd_func;
     (void)extra_data;
-
-    // not relevant for freebsd
     return NULL;
 }
 
@@ -725,127 +853,13 @@ int mclose(mfile *mf)
 #endif
     //printf("closing\n");
     close(mf->fd);
+    if (mf->fdlock) {
+        close(mf->fdlock);
+    }
     //printf("freeing\n");
     free(mf);
     return 0;
 }
-
-#if __FreeBSD_version > 700000
-int
-getsel(const char *str, struct pcisel *selout)
-{
-    char *ep = strchr(str, '@');
-    char *epbase;
-    struct pcisel sel;
-    unsigned long selarr[4];
-    int i;
-    //printf("__FreeBSD_version > 700000 detected.\n");
-
-    if (ep == NULL)
-    ep = (char *)str;
-    else
-    ep++;
-
-    epbase = ep;
-
-    if (strncmp(ep, "pci", 3) == 0) {
-        ep += 3;
-        i = 0;
-        do {
-            selarr[i++] = strtoul(ep, &ep, 10);
-        }while ((*ep == ':' || *ep == '.') && *++ep != '\0' && i < 4);
-
-        if (i > 2)
-        sel.pc_func = selarr[--i];
-        else
-        sel.pc_func = 0;
-        sel.pc_dev = selarr[--i];
-        sel.pc_bus = selarr[--i];
-        if (i > 0)
-        sel.pc_domain = selarr[--i];
-        else
-        sel.pc_domain = 0;
-    }
-    if (*ep != '\x0' || ep == epbase) {
-        return 1;
-        //errx(1, "cannot parse selector %s ep:'%s' epbase:%s, %d", str, ep, epbase, *ep);
-    }
-
-    *selout = sel;
-
-    return 0;
-}
-#else
-int getsel(const char *str, struct pcisel *selout)
-{
-    char *ep = strchr(str, '@');
-    char *epbase;
-    struct pcisel sel;
-
-    //printf("__FreeBSD_version < 700000 detected: %d\n", __FreeBSD_version);
-
-    if (ep == NULL)
-        ep = (char *) str;
-    else
-        ep++;
-
-    epbase = ep;
-
-    if (strncmp(ep, "pci", 3) == 0) {
-        ep += 3;
-        sel.pc_bus = strtoul(ep, &ep, 0);
-        if (!ep || *ep++ != ':') {
-            errno = EINVAL;
-            return 1;
-            //errx(1, "cannot parse selector %s", str);
-        }
-        sel.pc_dev = strtoul(ep, &ep, 0);
-        if (!ep || *ep != ':') {
-            sel.pc_func = 0;
-        } else {
-            ep++;
-            sel.pc_func = strtoul(ep, &ep, 0);
-        }
-        if (*ep == ':')
-            ep++;
-    }
-    if (*ep != '\x0' || ep == epbase) {
-        return 1;
-        //errx(1, "cannot parse selector %s", str);
-    }
-
-    *selout = sel;
-
-    return 0;
-}
-#endif
-
-int mtcr_open_config(mfile *mf, const char *name)
-{
-    //char tmp[256];
-    //memcpy(&tmp, name, strlen(name)+1);
-
-    //printf("open_config %s %s mf:%p\n", name, _PATH_DEVPCI, mf);
-
-    if (!mf) {
-        printf("Internal: Uninitialized mfile\n");
-        exit(1);
-    }
-
-    mf->fd = open(_PATH_DEVPCI, O_RDWR, 0);
-    if (mf->fd < 0) {
-        printf("err opening: %s", _PATH_DEVPCI);
-        return -1;
-    }
-
-    //printf("open_config name:%s fd:%d\n", name, mf->fd);
-    int ret = getsel(name, &mf->sel);
-    //printf("open_config getsel done %d\n", mf->sel.pc_dev);
-    mf->tp = MST_PCICONF;
-
-    return ret;
-}
-
 
 #define MY_DELAY 20
 
@@ -859,19 +873,29 @@ int mread4_old(mfile *mf, unsigned int offset, u_int32_t *value)
     if (mf->wo_addr) {
         offset |= 0x1;
     }
-    rc = write_config(mf->fd, &mf->sel, PCI_CONF_ADDR, (unsigned long) offset,
-            4);
+
+    int lock_rc;
+    lock_rc = _flock_int(mf->fdlock, LOCK_EX);
+    if (lock_rc) {
+        return 0;
+    }
+    rc = write_config(mf, PCI_CONF_ADDR, (unsigned long) offset, 4);
     if (rc) {
-        return rc;
+        goto cleanup;
     }
 
-    rc = read_config(mf->fd, &mf->sel, PCI_CONF_DATA, value, 4);
+    rc = read_config(mf, PCI_CONF_DATA, value, 4);
 
     if (rc) {
-        return rc;
+        goto cleanup;
     }
 
     *value = __le32_to_cpu(*value);
+cleanup:
+    lock_rc = _flock_int(mf->fdlock, LOCK_UN);
+    if (lock_rc || rc) {
+        return 0;
+    }
     return 4;
 }
 
@@ -903,7 +927,6 @@ int mread64(mfile *mf, unsigned int offset, void *data, int length)
     (void)offset;
     (void)data;
     (void)length;
-
     return -1;
 }
 
@@ -916,7 +939,6 @@ int mwrite64(mfile *mf, unsigned int offset, void *data, int length)
     (void)offset;
     (void)data;
     (void)length;
-
     return -1;
 }
 
@@ -932,33 +954,45 @@ int mwrite4_old(mfile *mf, unsigned int offset, u_int32_t value)
 
     offset = __cpu_to_le32(offset);
     value = __cpu_to_le32(value);
+
+    int lock_rc;
+    lock_rc = _flock_int(mf->fdlock, LOCK_EX);
+    if (lock_rc) {
+        return 0;
+    }
     if (mf->wo_addr) {
-        rc = write_config(mf->fd, &mf->sel, PCI_CONF_DATA, (unsigned long) value, 4);
+        rc = write_config(mf, PCI_CONF_DATA, (unsigned long) value, 4);
         if (rc) {
-            return rc;
+            goto cleanup;
         }
-        rc = write_config(mf->fd, &mf->sel, PCI_CONF_ADDR, (unsigned long) offset, 4);
+        rc = write_config(mf, PCI_CONF_ADDR, (unsigned long) offset, 4);
         if (rc) {
-            return rc;
+            goto cleanup;
         }
     } else {
-        rc = write_config(mf->fd, &mf->sel, PCI_CONF_ADDR, (unsigned long) offset, 4);
+        rc = write_config(mf, PCI_CONF_ADDR, (unsigned long) offset, 4);
         if (rc) {
-            return rc;
+            goto cleanup;
         }
-        rc = write_config(mf->fd, &mf->sel, PCI_CONF_DATA, (unsigned long) value, 4);
+        rc = write_config(mf, PCI_CONF_DATA, (unsigned long) value, 4);
         if (rc) {
-            return rc;
+            goto cleanup;
         }
     }
 
+cleanup:
+    lock_rc = _flock_int(mf->fdlock, LOCK_UN);
+    if (lock_rc || rc) {
+        return 0;
+    }
     return 4;
 }
 
 int mwrite4(mfile *mf, unsigned int offset, u_int32_t value)
 {
 #ifndef MST_UL
-    if (mf->tp == MST_CABLE) {int rc = 0;
+    if (mf->tp == MST_CABLE) {
+        int rc = 0;
         CALL_DL_FUNC(mcables, mcables_write4, rc, mf, offset, value);
         if (!rc) {
             return 4;
@@ -975,32 +1009,32 @@ int mwrite4(mfile *mf, unsigned int offset, u_int32_t value)
 //////////// NEW   ////////////////////
 
 static int mread_chunk_as_multi_mread4(mfile *mf, unsigned int offset,
-        void *data, int length)
+                                       void *data, int length)
 {
     int i;
     if (length % 4) {
-        return EINVAL;
+        return -EINVAL;
     }
     for (i = 0; i < length; i += 4) {
         u_int32_t value;
         if (mread4(mf, offset + i, &value) != 4) {
             return -1;
         }
-        memcpy((char*) data + i, &value, 4);
+        memcpy((char *) data + i, &value, 4);
     }
     return length;
 }
 
 static int mwrite_chunk_as_multi_mwrite4(mfile *mf, unsigned int offset,
-        void *data, int length)
+                                         void *data, int length)
 {
     int i;
     if (length % 4) {
-        return EINVAL;
+        return -EINVAL;
     }
     for (i = 0; i < length; i += 4) {
         u_int32_t value;
-        memcpy(&value, (char*) data + i, 4);
+        memcpy(&value, (char *) data + i, 4);
         if (mwrite4(mf, offset + i, value) != 4) {
             return -1;
         }
@@ -1008,15 +1042,14 @@ static int mwrite_chunk_as_multi_mwrite4(mfile *mf, unsigned int offset,
     return length;
 }
 
-int mread4_block(mfile *mf, unsigned int offset, u_int32_t* data, int byte_len)
+int mread4_block(mfile *mf, unsigned int offset, u_int32_t *data, int byte_len)
 {
-#ifndef MST_UL
     int rc = byte_len;
-
+#ifndef MST_UL
     if (mf->tp == MST_CABLE) {
         int ret = 0;
         CALL_DL_FUNC(mcables, mcables_read4_block, ret, mf, offset, data, byte_len);
-        if ( ret != 0 ) {
+        if (ret != 0) {
             rc -= ret; // Return less than byte_len to ensure error in reading
         }
         return rc;
@@ -1027,18 +1060,18 @@ int mread4_block(mfile *mf, unsigned int offset, u_int32_t* data, int byte_len)
         //printf("-D- MREAD BLOCK LEN: %d, RC: %d\n", byte_len, rc);
         return rc;
     }
-    return mread_chunk_as_multi_mread4(mf, offset, data, byte_len);
+    rc = mread_chunk_as_multi_mread4(mf, offset, data, byte_len);
+    return rc;
 }
 
-int mwrite4_block(mfile *mf, unsigned int offset, u_int32_t* data, int byte_len)
+int mwrite4_block(mfile *mf, unsigned int offset, u_int32_t *data, int byte_len)
 {
-#ifndef MST_UL
     int rc = byte_len;
-
+#ifndef MST_UL
     if (mf->tp == MST_CABLE) {
         int ret = 0;
         CALL_DL_FUNC(mcables, mcables_write4_block, ret, mf, offset, data, byte_len);
-        if ( ret != 0 ) {
+        if (ret != 0) {
             rc -= ret; // Return less than byte_len to ensure error in reading
         }
         return rc;
@@ -1047,20 +1080,19 @@ int mwrite4_block(mfile *mf, unsigned int offset, u_int32_t* data, int byte_len)
     if (mf->vsec_supp) {
         return mwrite4_block_new(mf, offset, byte_len, data);
     }
-    return mwrite_chunk_as_multi_mwrite4(mf, offset, data, byte_len);
+    rc = mwrite_chunk_as_multi_mwrite4(mf, offset, data, byte_len);
+    return rc;
 }
 
 int msw_reset(mfile *mf)
 {
     (void)mf;
-
     return -1;
 }
 
 int mhca_reset(mfile *mf)
 {
     (void)mf;
-
     return -1;
 }
 
@@ -1068,11 +1100,10 @@ int mi2c_detect(mfile *mf, u_int8_t slv_arr[SLV_ADDRS_NUM])
 {
     (void)mf;
     (void)slv_arr;
-
     return 1;
 }
 int mread_i2cblock(mfile *mf, unsigned char i2c_slave, u_int8_t addr_width,
-        unsigned int offset, void *data, int length)
+                   unsigned int offset, void *data, int length)
 {
     (void)mf;
     (void)i2c_slave;
@@ -1080,12 +1111,11 @@ int mread_i2cblock(mfile *mf, unsigned char i2c_slave, u_int8_t addr_width,
     (void)offset;
     (void)data;
     (void)length;
-
     return 0;
 }
 
 int mwrite_i2cblock(mfile *mf, unsigned char i2c_slave, u_int8_t addr_width,
-        unsigned int offset, void *data, int length)
+                    unsigned int offset, void *data, int length)
 {
     (void)mf;
     (void)i2c_slave;
@@ -1093,7 +1123,6 @@ int mwrite_i2cblock(mfile *mf, unsigned char i2c_slave, u_int8_t addr_width,
     (void)offset;
     (void)data;
     (void)length;
-
     return 0;
 }
 
@@ -1108,25 +1137,25 @@ static void fix_endianness(u_int32_t *buf, int len)
     }
 }
 
-int mread_buffer(mfile *mf, unsigned int offset, u_int8_t* data, int byte_len)
+int mread_buffer(mfile *mf, unsigned int offset, u_int8_t *data, int byte_len)
 {
     int rc;
-    rc = mread4_block(mf, offset, (u_int32_t*) data, byte_len);
-    fix_endianness((u_int32_t*) data, byte_len);
+    rc = mread4_block(mf, offset, (u_int32_t *) data, byte_len);
+    fix_endianness((u_int32_t *) data, byte_len);
     return rc;
 
 }
 
-int mwrite_buffer(mfile *mf, unsigned int offset, u_int8_t* data, int byte_len)
+int mwrite_buffer(mfile *mf, unsigned int offset, u_int8_t *data, int byte_len)
 {
-    fix_endianness((u_int32_t*) data, byte_len);
-    return mwrite4_block(mf, offset, (u_int32_t*) data, byte_len);
+    fix_endianness((u_int32_t *) data, byte_len);
+    return mwrite4_block(mf, offset, (u_int32_t *) data, byte_len);
 }
 
 int mget_mdevs_flags(mfile *mf, u_int32_t *devs_flags)
 {
     if (mf == NULL || devs_flags == NULL) {
-        errno = EINVAL;
+        errno = -EINVAL;
         return 1;
     }
 
@@ -1137,7 +1166,7 @@ int mget_mdevs_flags(mfile *mf, u_int32_t *devs_flags)
 int mget_mdevs_type(mfile *mf, u_int32_t *mtype)
 {
     if (mf == NULL || mtype == NULL) {
-        errno = EINVAL;
+        errno = -EINVAL;
         return 1;
     }
 
@@ -1151,8 +1180,9 @@ unsigned char mset_i2c_slave(mfile *mf, unsigned char new_i2c_slave)
     if (mf) {
         ret = mf->i2c_slave;
         mf->i2c_slave = new_i2c_slave;
-    } else
+    } else {
         ret = 0xff;
+    }
     return ret;
 }
 
@@ -1168,26 +1198,31 @@ int mget_i2c_slave(mfile *mf, unsigned char *new_i2c_slave_p)
 #define MLX_DEV_PREFIX1 "mlx4_core"
 #define MLX_DEV_PREFIX2 "mlx5_core"
 
-static int get_device_ids(const char* dev_name, dev_info* dinfo)
+static int get_device_ids(const char *dev_name, dev_info *dinfo)
 {
-    mfile* mf = mopen(dev_name);
+    mfile *mf = mopen(dev_name);
     int rc = 0;
     u_int32_t buf = 0;
     if (!mf) {
         return 1;
     }
-    rc = read_config(mf->fd, &mf->sel, PCI_HEADER_OFFS,&buf, 4);
+
+    int lock_rc = _flock_int(mf->fdlock, LOCK_EX);
+    if (lock_rc) {
+        return 1;
+    }
+    rc = read_config(mf, PCI_HEADER_OFFS, &buf, 4);
     if (rc) {
         goto exit;
     }
     dinfo->pci.vend_id = EXTRACT(buf, 0, 16);
     dinfo->pci.dev_id = EXTRACT(buf, 16, 16);
-    rc = read_config(mf->fd, &mf->sel, PCI_CLASS_OFFS, &buf, 4);
+    rc = read_config(mf, PCI_CLASS_OFFS, &buf, 4);
     if (rc) {
         goto exit;
     }
     dinfo->pci.class_id = EXTRACT(buf, 8, 24);
-    rc = read_config(mf->fd, &mf->sel, PCI_SUBSYS_OFFS, &buf, 4);
+    rc = read_config(mf, PCI_SUBSYS_OFFS, &buf, 4);
     if (rc) {
         goto exit;
     }
@@ -1195,13 +1230,17 @@ static int get_device_ids(const char* dev_name, dev_info* dinfo)
     dinfo->pci.subsys_id = EXTRACT(buf, 16, 16);
 
 exit:
+    lock_rc = _flock_int(mf->fdlock, LOCK_UN);
     mclose(mf);
+    if (lock_rc) {
+        return 1;
+    }
     return rc;
 }
-static int get_dev_dbdf(const char* dev_name, unsigned int * domain,
-        unsigned int * bus, unsigned int * dev, unsigned int * func)
+static int get_dev_dbdf(const char *dev_name, unsigned int *domain,
+                        unsigned int *bus, unsigned int *dev, unsigned int *func)
 {
-    char* dbdf_str = strstr(dev_name, "pci");
+    char *dbdf_str = strstr(dev_name, "pci");
     int rc = 0;
     if (!dbdf_str) {
         return 1;
@@ -1215,10 +1254,9 @@ static int get_dev_dbdf(const char* dev_name, unsigned int * domain,
 
 int get_device_flags(const char *name)
 {
-    int mask=0;
-
+    int mask = 0;
     mask = MDEVS_TAVOR_CR;
-    if ( strstr(name, "cable") ) {
+    if (strstr(name, "cable")) {
         mask = MDEVS_CABLE;
     }
     return mask;
@@ -1226,18 +1264,18 @@ int get_device_flags(const char *name)
 
 #define CABLES_DIR   "/etc/mft/cables"
 #define PUTC(c) do {     \
-    *p++ = (c);        \
-     if (++cnt >= len) { \
-         closedir(dir);  \
-         return -1;      \
-     } } while(0)
-#define PUTS(s) do { for(i=0; (s)[i]; i++) PUTC((s)[i]); } while (0)
+        *p++ = (c);        \
+        if (++cnt >= len) { \
+            closedir(dir);  \
+            return -1;      \
+        } } while (0)
+#define PUTS(s) do { for (i = 0; (s)[i]; i++) { PUTC((s)[i]); } } while (0)
 
 
 int mdevices_v(char *buf, int len, int mask, int verbosity)
 {
     int i;
-    int s, b, d, f;
+    int s, b, d, f, tmp;
     int rc = 0;
     int cnt = 0;
     FILE *fp;
@@ -1246,16 +1284,17 @@ int mdevices_v(char *buf, int len, int mask, int verbosity)
     if (mask & MDEVS_TAVOR_CR) {
         /* Get all Mellanox devices - this cmd will return the needed devices one in every line */
         fp =
-                popen(
-                        "pciconf -lv | grep -B 1 Mellanox | grep pci | cut -f1 | cut -f2 -d \"@\" | cut -f1-4 -d \":\"",
-                        "r");
+            popen(
+                "pciconf -lv | grep -B 1 Mellanox | grep pci | cut -f1 | cut -f2 -d \"@\" | cut -f1-4 -d \":\"",
+                "r");
         if (fp == NULL) {
             return -1;
         }
 
         /* Read the output one line at a time */
         while (fgets(dev_line, sizeof(dev_line) - 1, fp) != NULL) {
-            sscanf(dev_line, "pci%d:%d:%d:%d\n", &s, &b, &d, &f);
+            tmp = sscanf(dev_line, "pci%d:%d:%d:%d\n", &s, &b, &d, &f);
+            (void)tmp; // TODO: check sscanf ret value
             if (!verbosity && f != 0) {
                 continue;
             }
@@ -1276,20 +1315,21 @@ int mdevices_v(char *buf, int len, int mask, int verbosity)
         /*
          * Get cables
          */
-        DIR           *dir;
+        DIR           *dir = opendir(CABLES_DIR);
         struct dirent *dirent;
-        if ((dir = opendir(CABLES_DIR)) != NULL) {
-
-           while ((dirent = readdir(dir)) != NULL) {
-               char *name = dirent->d_name;
-               /* According to mask */
-               if (get_device_flags(name) & MDEVS_CABLE) {
-                   PUTS(name);
-                   PUTC('\0');
-                   rc++;
-               }
-           }
-           closedir(dir);
+        if (dir != NULL) {
+            dirent = readdir(dir);
+            while (dirent != NULL) {
+                char *name = dirent->d_name;
+                /* According to mask */
+                if (get_device_flags(name) & MDEVS_CABLE) {
+                    PUTS(name);
+                    PUTC('\0');
+                    rc++;
+                }
+                dirent = readdir(dir);
+            }
+            closedir(dir);
         }
     }
     return rc;
@@ -1299,10 +1339,415 @@ int mdevices(char *buf, int len, int mask)
 {
     return mdevices_v(buf, len, mask, 0);
 }
-dev_info* mdevices_info(int mask, int* len)
+
+
+
+static void remove_newline_chars(char *str)
 {
-    char* devs = 0;
-    char* dev_name;
+    int i;
+    for (i = strlen(str) - 1; i >= 0 && (str[i] == '\n' || str[i] == '\r'); i--) {
+        str[i] = '\0';
+    }
+}
+
+// replace with a new string
+// free the old one
+static char *manipulate_ib_dev_line(char *line)
+{
+    if (!line) {
+        return NULL;
+    }
+    char *old_str = line;
+    char *new_str = NULL;
+
+    while (*line != '.') {
+        if (!(*line)) {
+            goto cleanup;
+        }
+        line++;
+    }
+    line++;
+
+    char *end = line;
+    char *num = NULL;
+    int count_dots = 0;
+    while (1) {
+        if (!(*end)) {
+            goto cleanup;
+        } else if (*end == '.') {
+            if (count_dots) {
+                *end = '\0';
+                break;
+            } else {
+                count_dots++;
+                if (*(end+1)) {
+                    num = end + 1;
+                } else {
+                    goto cleanup;
+                }
+            }
+        } else if (*end == '_') {
+            *(end+1) = '\0';
+        }
+        end++;
+    }
+    line = strcat(line, num);
+    new_str = (char *)malloc(strlen(line) + 1);
+    if (!new_str) {
+        errno = ENOMEM;
+        goto cleanup;
+    }
+    strcpy(new_str, line);
+cleanup:
+    free(old_str);
+
+    return new_str;
+}
+
+// number_of_first_entries_to_skip should be 0 for regular array destruction
+static void destroy_str_arr(char **arr, int number_of_first_entries_to_skip)
+{
+    if (!arr) {
+        return;
+    }
+    int i;
+    for (i = number_of_first_entries_to_skip; arr[i]; i++) {
+        free(arr[i]);
+        arr[i] = NULL;
+    }
+    free(arr);
+    arr = NULL;
+}
+
+// copying file lines into a an array of char*, while manipulating each line with a special function (if supplied)
+// caller should destroy the array
+static char **file2array(FILE *fp, char *(*string_mainpulation_func_ptr)(char *))
+{
+    char *line = NULL;
+    size_t len = 0;
+    int lines_allocated = 8; //can realloc later
+    int error = 0;
+    int i = 0;
+
+    char **arr = (char **)malloc((lines_allocated + 1) * sizeof(char *));
+    if (!arr) {
+        errno = ENOMEM;
+        error = 1;
+        goto cleanup;
+    }
+    memset(arr, 0, (lines_allocated + 1) * sizeof(char *));
+
+    while (getline(&line, &len, fp) != -1) {
+        arr[i] = (char *)malloc(len * sizeof(char));
+        if (!arr[i]) {
+            errno = ENOMEM;
+            error = 1;
+            goto cleanup;
+        }
+        strcpy(arr[i], line);
+        free(line);
+        line = NULL;
+        len = 0;
+
+        remove_newline_chars(arr[i]);
+        if (string_mainpulation_func_ptr) {
+            arr[i] = (*string_mainpulation_func_ptr)(arr[i]);
+        }
+        if (!arr[i]) {
+            continue;
+        }
+        i++;
+        if (i >= lines_allocated) {
+            lines_allocated *= 2;
+            char **tmp = realloc(arr, (lines_allocated + 1) * sizeof(char *));
+            if (!tmp) {
+                errno = ENOMEM;
+                error = 1;
+                goto cleanup;
+            }
+            arr = tmp;
+        }
+    }
+cleanup:
+    // This is done so the caller can free all the array cells without knowing its size
+    // Iterate until NULL termination
+    if(arr) {
+        arr[i] = NULL;
+    }
+    if (line) {
+        free(line);
+    }
+    if (error || i == 0) {
+        destroy_str_arr(arr, 0);
+        return NULL;
+    }
+
+    return arr;
+}
+
+// Execute cmd and get output in a strings array, after desired output manipulation
+// via a speacial manipulation function (if supplied)
+// if there is relevant input to the special function pass it as well.
+static char **exec_cmd_get_output(char *cmd, char *(*string_mainpulation_func_ptr)(char *))
+{
+    char *wrapped_cmd = (char *)malloc(strlen(cmd) + strlen(" 2>/dev/null") + 2);
+    if (!wrapped_cmd) {
+        return NULL;
+    }
+    sprintf(wrapped_cmd, "%s %s", cmd, " 2>/dev/null");
+    FILE *fp = popen(wrapped_cmd, "r");
+    free(wrapped_cmd);
+    if (!fp) {
+        return NULL;
+    }
+    char **output = file2array(fp, string_mainpulation_func_ptr);
+    pclose(fp);
+    return output;
+}
+
+static char *exec_cmd_get_output_first_line(char *cmd, char *(*string_mainpulation_func_ptr)(char *))
+{
+    char **res = exec_cmd_get_output(cmd, string_mainpulation_func_ptr);
+    char *out = res[0];
+    destroy_str_arr(res, 1);
+    return out;
+}
+
+static char **get_ports(char *ib_dev)
+{
+    char *cmd = (char *)malloc(strlen("sysctl sys.class.infiniband..ports | awk -F. '{print $6}' | uniq | sort") +
+            strlen(ib_dev) + 1);
+    if (!cmd) {
+        return NULL;
+    }
+    sprintf(cmd, "sysctl sys.class.infiniband.%s.ports | awk -F. '{print $6}' | uniq | sort", ib_dev);
+    char **out = exec_cmd_get_output(cmd, NULL);
+    free(cmd);
+    return out;
+}
+
+static char *get_link_layer(char *ib_dev, char *port)
+{
+    char *cmd = (char *)malloc(strlen("sysctl -n sys.class.infiniband..ports..link_layer") +
+            strlen(ib_dev) + strlen(port) + 1);
+    if (!cmd) {
+        return NULL;
+    }
+    sprintf(cmd, "sysctl -n sys.class.infiniband.%s.ports.%s.link_layer", ib_dev, port);
+    char *out = exec_cmd_get_output_first_line(cmd, NULL);
+    free(cmd);
+    return out;
+}
+
+static char *get_eth_net_dev(char *ib_dev, char *port)
+{
+    char *cmd = (char *)malloc(strlen("sysctl -n sysctl sys.class.infiniband..ports..gid_attrs.ndevs.0") +
+            strlen(ib_dev) + strlen(port) + 1);
+    if (!cmd) {
+        return NULL;
+    }
+    sprintf(cmd, "sysctl -n sysctl sys.class.infiniband.%s.ports.%s.gid_attrs.ndevs.0", ib_dev, port);
+    char *out = exec_cmd_get_output_first_line(cmd, NULL);
+    free(cmd);
+    return out;
+}
+
+static char **get_ifcs()
+{
+    return exec_cmd_get_output("ifconfig -l | tr \" \" \"\\n\"", NULL);
+}
+
+static char *get_gid(char *ib_dev, char *port)
+{
+    char *cmd = (char *)malloc(strlen("sysctl -n sys.class.infiniband..ports..gids.0 |"
+            " cut -b 21- | sed -e 's/://g'") + strlen(ib_dev) + strlen(port) + 1);
+    if (!cmd) {
+        return NULL;
+    }
+    sprintf(cmd, "sysctl -n sys.class.infiniband.%s.ports.%s.gids.0 | cut -b 21- | sed -e 's/://g'", ib_dev, port);
+    char *out = exec_cmd_get_output_first_line(cmd, NULL);
+    free(cmd);
+    return out;
+}
+
+static char *lladdr_to_gid_format(char *lladdr)
+{
+    if (!lladdr) {
+        return NULL;
+    }
+
+    int end = strlen(lladdr) - 1;
+    int i;
+    int dot_count = 0;
+    for (i = end; i >= 0; i--) {
+        if (lladdr[i] == '.') {
+            dot_count++;
+        }
+        if (dot_count == 8) {
+            lladdr = &lladdr[i];
+            break;
+        }
+        if (i == 0) {
+            return NULL;
+        }
+    }
+    if (*(lladdr+1) && *(lladdr+2) && *(lladdr+2) != '.') {
+        lladdr++;
+    }
+    char *curptr = lladdr;
+    while (*curptr) {
+        if (*curptr == '.') {
+            if (*(curptr+1) && ((*(curptr+2) == '.') || !(*(curptr+2)))) {
+                *curptr = '0';
+                curptr++;
+            } else {
+                *curptr = '\0';
+                if (*(curptr+1)) {
+                    lladdr = strcat(lladdr, curptr+1);
+                }
+            }
+        } else {
+            curptr++;
+        }
+    }
+    return lladdr;
+}
+
+static char *get_lladdr(char *ifc)
+{
+    char *cmd = (char *)malloc(strlen("ifconfig  | grep lladdr | awk '{print $2}'") + strlen(ifc) + 1);
+    if (!cmd) {
+        return NULL;
+    }
+    sprintf(cmd, "ifconfig %s | grep lladdr | awk '{print $2}'", ifc);
+    char *lladdr = exec_cmd_get_output_first_line(cmd, NULL);
+    free(cmd);
+    return lladdr_to_gid_format(lladdr);
+}
+
+static char *get_inband_net_dev(char *ib_dev, char *port, char **ifcs)
+{
+    char *gid = get_gid(ib_dev, port);
+    if (!gid) {
+        return NULL;
+    }
+    int i;
+    for (i = 0; ifcs[i]; i++) {
+        if (strstr(ifcs[i], "ib") == ifcs[i]) {
+            char *lladdr = get_lladdr(ifcs[i]);
+            if (!strcmp(lladdr, gid)) {
+                free(lladdr);
+                free(gid);
+                char *netdev = (char *)malloc(strlen(ifcs[i]) + 1);
+                if (!netdev) {
+                    errno = ENOMEM;
+                    return NULL;
+                }
+                strcpy(netdev, ifcs[i]);
+                return netdev;
+            }
+            free(lladdr);
+        }
+    }
+    free(gid);
+    return NULL;
+}
+
+static char **get_net_devs(char **ib_devs)
+{
+    if (!ib_devs) {
+        return NULL;
+    }
+    char **ifcs = get_ifcs();
+    if (!ifcs) {
+        return NULL;
+    }
+    char **ports = NULL;
+    char *link_layer = NULL;
+    int i;
+    int error = 0;
+    int lines_allocated = 8; //can realloc later
+
+    char **net_devs = (char **)malloc((lines_allocated + 1) * sizeof(char *));
+    if (!net_devs) {
+        errno = ENOMEM;
+        error = 1;
+        goto cleanup;
+    }
+    memset(net_devs, 0, (lines_allocated + 1) * sizeof(char *));
+    int k = 0;
+    for (i = 0; ib_devs[i]; i++) {
+        ports = get_ports(ib_devs[i]);
+        if (!ports) {
+            error = 1;
+            goto cleanup;
+        }
+        int j;
+        for (j = 0; ports[j]; j++) {
+            link_layer = get_link_layer(ib_devs[i], ports[j]);
+            if (!link_layer) {
+                error = 1;
+                goto cleanup;
+            }
+            char *netdev;
+            if (!strcmp(link_layer, "Ethernet")) {
+                netdev = get_eth_net_dev(ib_devs[i], ports[j]);
+            } else if (!strcmp(link_layer, "InfiniBand")) {
+                netdev = get_inband_net_dev(ib_devs[i], ports[j], ifcs);
+            } else {
+                error = 1;
+                goto cleanup;
+            }
+            if (netdev) {
+                net_devs[k] = netdev;
+                k++;
+                if (k > lines_allocated) {
+                    lines_allocated *= 2;
+                    char **tmp = realloc(net_devs, (lines_allocated + 1) * sizeof(char *));
+                    if (!tmp) {
+                        errno = ENOMEM;
+                        error = 1;
+                        goto cleanup;
+                    }
+                    net_devs = tmp;
+                }
+            }
+        }
+    }
+    net_devs[k] = NULL;
+cleanup:
+    if (error) {
+        destroy_str_arr(net_devs, 0);
+        net_devs = NULL;
+    }
+    destroy_str_arr(ifcs, 0);
+    destroy_str_arr(net_devs, 0);
+    destroy_str_arr(ports, 0);
+    free(link_layer);
+    return net_devs;
+}
+
+static char **get_ib_devs(char conf_dev[512])
+{
+    char *cmd = (char *)malloc(strlen("sysctl -a | grep mlx | grep pci | grep ") + strlen(conf_dev) + 1);
+    if (!cmd) {
+        return NULL;
+    }
+    sprintf(cmd, "sysctl -a | grep mlx | grep pci | grep %s", conf_dev);
+    char **ib_devs = exec_cmd_get_output(cmd, manipulate_ib_dev_line);
+    free(cmd);
+    return ib_devs;
+}
+
+dev_info* mdevices_info(int mask, int *len)
+{
+    return mdevices_info_v(mask, len, 0);
+}
+
+dev_info* mdevices_info_v(int mask, int *len, int verbosity)
+{
+    char *devs = 0;
+    char *dev_name;
     int size = 2048;
     int rc;
     int i;
@@ -1318,10 +1763,10 @@ dev_info* mdevices_info(int mask, int* len)
             errno = ENOMEM;
             return NULL;
         }
-        rc = mdevices(devs, size, mask);
+        rc = mdevices_v(devs, size, mask, verbosity);
     } while (rc == -1);
     *len = rc;
-    dev_info* dev_info_arr = malloc(sizeof(dev_info) * rc);
+    dev_info *dev_info_arr = malloc(sizeof(dev_info) * rc);
     if (!dev_info_arr) {
         errno = ENOMEM;
         free(devs);
@@ -1349,19 +1794,32 @@ dev_info* mdevices_info(int mask, int* len)
                 goto next;
             }
         }
-        next:
-            dev_name += strlen(dev_name) + 1;
+        if (verbosity) {
+            dev_info_arr[i].pci.ib_devs = get_ib_devs(dev_info_arr[i].pci.conf_dev);
+            dev_info_arr[i].pci.net_devs = get_net_devs(dev_info_arr[i].pci.ib_devs);
+        }
+next:
+        dev_name += strlen(dev_name) + 1;
     }
     free(devs);
     return dev_info_arr;
 }
 
-void mdevices_info_destroy(dev_info* dev_info, int len)
+void mdevices_info_destroy(dev_info *dev_info, int len)
 {
-    (void)len;
+    int i;
 
-    if (dev_info) {
+    if (dev_info){
+        for (i = 0; i < len; i++) {
+            if (dev_info[i].pci.ib_devs) {
+                destroy_str_arr(dev_info[i].pci.ib_devs, 0);
+            }
+            if (dev_info[i].pci.net_devs) {
+                destroy_str_arr(dev_info[i].pci.net_devs, 0);
+            }
+        }
         free(dev_info);
+        dev_info = NULL;
     }
 }
 
@@ -1382,15 +1840,15 @@ enum {
 #define FWCTX_MAX_REG_SIZE 16
 #define TOOLS_HCR_MAX_REG_SIZE (TOOLS_HCR_MAX_MBOX - REGISTER_HEADERS_SIZE)
 
-static int supports_icmd(mfile* mf);
-static int supports_tools_cmdif_reg(mfile* mf);
+static int supports_icmd(mfile *mf);
+static int supports_tools_cmdif_reg(mfile *mf);
 static int init_operation_tlv(struct OperationTlv *operation_tlv,
-        u_int16_t reg_id, u_int8_t method);
-static int mreg_send_wrapper(mfile* mf, u_int8_t *data, int r_icmd_size,
-        int w_icmd_size);
+                              u_int16_t reg_id, u_int8_t method);
+static int mreg_send_wrapper(mfile *mf, u_int8_t *data, int r_icmd_size,
+                             int w_icmd_size);
 static int mreg_send_raw(mfile *mf, u_int16_t reg_id,
-        maccess_reg_method_t method, void *reg_data, u_int32_t reg_size,
-        u_int32_t r_size_reg, u_int32_t w_size_reg, int *reg_status);
+                         maccess_reg_method_t method, void *reg_data, u_int32_t reg_size,
+                         u_int32_t r_size_reg, u_int32_t w_size_reg, int *reg_status);
 int mget_max_reg_size(mfile *mf);
 
 // maccess_reg: Do a reg_access for the mf device.
@@ -1399,66 +1857,77 @@ int mget_max_reg_size(mfile *mf);
 //       a specific
 
 int maccess_reg(mfile *mf, u_int16_t reg_id, maccess_reg_method_t reg_method,
-        void* reg_data, u_int32_t reg_size, u_int32_t r_size_reg,
-        u_int32_t w_size_reg, int *reg_status)
+                void *reg_data, u_int32_t reg_size, u_int32_t r_size_reg,
+                u_int32_t w_size_reg, int *reg_status)
 {
     int rc;
     if (mf == NULL || reg_data == NULL || reg_status == NULL || reg_size <= 0) {
         return ME_BAD_PARAMS;
     }
     // check register size
-    int max_size = mget_max_reg_size(mf);
-    if (max_size < 0 ) {
-        return ME_ERROR;
-    }
-    if (reg_size > (unsigned)max_size) {
+    u_int32_t max_size = (u_int32_t)mget_max_reg_size(mf);
+    if (reg_size > max_size) {
         //reg too big
         return ME_REG_ACCESS_SIZE_EXCCEEDS_LIMIT;
     }
     rc = mreg_send_raw(mf, reg_id, reg_method, reg_data, reg_size, r_size_reg,
-            w_size_reg, reg_status);
+                       w_size_reg, reg_status);
 
     if (rc) {
         return rc;
     } else if (*reg_status) {
         switch (*reg_status) {
-            case 1:
-                return ME_REG_ACCESS_DEV_BUSY;
-            case 2:
-                return ME_REG_ACCESS_VER_NOT_SUPP;
-            case 3:
-                return ME_REG_ACCESS_UNKNOWN_TLV;
-            case 4:
-                return ME_REG_ACCESS_REG_NOT_SUPP;
-            case 5:
-                return ME_REG_ACCESS_CLASS_NOT_SUPP;
-            case 6:
-                return ME_REG_ACCESS_METHOD_NOT_SUPP;
-            case 7:
-                return ME_REG_ACCESS_BAD_PARAM;
-            case 8:
-                return ME_REG_ACCESS_RES_NOT_AVLBL;
-            case 9:
-                return ME_REG_ACCESS_MSG_RECPT_ACK;
-            case 0x22:
-                return ME_REG_ACCESS_CONF_CORRUPT;
-            case 0x24:
-                return ME_REG_ACCESS_LEN_TOO_SMALL;
-            case 0x20:
-                return ME_REG_ACCESS_BAD_CONFIG;
-            case 0x21:
-                return ME_REG_ACCESS_ERASE_EXEEDED;
-            case 0x70:
-                return ME_REG_ACCESS_INTERNAL_ERROR;
-            default:
-                return ME_REG_ACCESS_UNKNOWN_ERR;
+        case 1:
+            return ME_REG_ACCESS_DEV_BUSY;
+
+        case 2:
+            return ME_REG_ACCESS_VER_NOT_SUPP;
+
+        case 3:
+            return ME_REG_ACCESS_UNKNOWN_TLV;
+
+        case 4:
+            return ME_REG_ACCESS_REG_NOT_SUPP;
+
+        case 5:
+            return ME_REG_ACCESS_CLASS_NOT_SUPP;
+
+        case 6:
+            return ME_REG_ACCESS_METHOD_NOT_SUPP;
+
+        case 7:
+            return ME_REG_ACCESS_BAD_PARAM;
+
+        case 8:
+            return ME_REG_ACCESS_RES_NOT_AVLBL;
+
+        case 9:
+            return ME_REG_ACCESS_MSG_RECPT_ACK;
+
+        case 0x22:
+            return ME_REG_ACCESS_CONF_CORRUPT;
+
+        case 0x24:
+            return ME_REG_ACCESS_LEN_TOO_SMALL;
+
+        case 0x20:
+            return ME_REG_ACCESS_BAD_CONFIG;
+
+        case 0x21:
+            return ME_REG_ACCESS_ERASE_EXEEDED;
+
+        case 0x70:
+            return ME_REG_ACCESS_INTERNAL_ERROR;
+
+        default:
+            return ME_REG_ACCESS_UNKNOWN_ERR;
         }
     }
     return ME_OK;
 }
 
 static int init_operation_tlv(struct OperationTlv *operation_tlv,
-        u_int16_t reg_id, u_int8_t method)
+                              u_int16_t reg_id, u_int8_t method)
 {
     memset(operation_tlv, 0, sizeof(*operation_tlv));
 
@@ -1472,13 +1941,13 @@ static int init_operation_tlv(struct OperationTlv *operation_tlv,
 
 ///////////////////  Function that sends the register via the correct interface ///////////////////////////
 
-static int mreg_send_wrapper(mfile* mf, u_int8_t *data, int r_icmd_size,
-        int w_icmd_size)
+static int mreg_send_wrapper(mfile *mf, u_int8_t *data, int r_icmd_size,
+                             int w_icmd_size)
 {
     int rc;
     if (supports_icmd(mf)) {
         rc = icmd_send_command_int(mf, FLASH_REG_ACCESS, data, w_icmd_size,
-                r_icmd_size, 0);
+                                   r_icmd_size, 0);
         if (rc) {
             return rc;
         }
@@ -1494,10 +1963,10 @@ static int mreg_send_wrapper(mfile* mf, u_int8_t *data, int r_icmd_size,
 }
 
 static int mreg_send_raw(mfile *mf, u_int16_t reg_id,
-        maccess_reg_method_t method, void *reg_data, u_int32_t reg_size,
-        u_int32_t r_size_reg, u_int32_t w_size_reg, int *reg_status)
+                         maccess_reg_method_t method, void *reg_data, u_int32_t reg_size,
+                         u_int32_t r_size_reg, u_int32_t w_size_reg, int *reg_status)
 {
-    //printf("-D- reg_id = %d, reg_size = %d, r_size_reg = %d , w_size_reg = %d \n",reg_id,reg_size,r_size_reg,w_size_reg);
+    //printf("-D- reg_id = %d, reg_size = %d, r_size_reg = %d , w_size_reg = %d\n",reg_id,reg_size,r_size_reg,w_size_reg);
     int mad_rc, cmdif_size = 0;
     struct OperationTlv tlv;
     struct reg_tlv tlv_info;
@@ -1527,7 +1996,7 @@ static int mreg_send_raw(mfile *mf, u_int16_t reg_id,
     // update r/w_size_reg with the size of op tlv and reg tlv as we need to read/write them as well
     r_size_reg += OP_TLV_SIZE + REG_TLV_HEADER_LEN;
     w_size_reg += OP_TLV_SIZE + REG_TLV_HEADER_LEN;
-    //printf("-D- reg_size = %d, r_size_reg = %d , w_size_reg = %d \n",reg_size,r_size_reg,w_size_reg);
+    //printf("-D- reg_size = %d, r_size_reg = %d , w_size_reg = %d\n",reg_size,r_size_reg,w_size_reg);
 
     mad_rc = mreg_send_wrapper(mf, buffer, r_size_reg, w_size_reg);
     // Unpack the mad
@@ -1560,25 +2029,28 @@ static int mreg_send_raw(mfile *mf, u_int16_t reg_id,
 #define SWITCHX_HW_ID 0x245
 #define INFINISCALE4_HW_ID 0x1b3
 
-static int supports_icmd(mfile* mf) {
+static int supports_icmd(mfile *mf)
+{
     u_int32_t dev_id;
 
-    if (mread4(mf,HW_ID_ADDR, &dev_id) != 4) { // cr might be locked and retured 0xbad0cafe but we dont care we search for device that supports icmd
+    if (mread4(mf, HW_ID_ADDR, &dev_id) != 4) {
+        // cr might be locked and retured 0xbad0cafe but we dont care we search for device that supports icmd
         return 0;
     }
     switch (dev_id & 0xffff) { // that the hw device id
-        case INFINISCALE4_HW_ID :
-        case CONNECTX3_HW_ID :
-        case CONNECTX3_PRO_HW_ID :
-        case SWITCHX_HW_ID :
-            return 0;
-        default:
-            break;
+    case INFINISCALE4_HW_ID:
+    case CONNECTX3_HW_ID:
+    case CONNECTX3_PRO_HW_ID:
+    case SWITCHX_HW_ID:
+        return 0;
+
+    default:
+        break;
     }
     return 1;
 }
 
-static int supports_tools_cmdif_reg(mfile* mf)
+static int supports_tools_cmdif_reg(mfile *mf)
 {
     u_int32_t dev_id;
 
@@ -1586,14 +2058,15 @@ static int supports_tools_cmdif_reg(mfile* mf)
         return 0;
     }
     switch (dev_id & 0xffff) { // that the hw device id
-        case CONNECTX3_HW_ID: //Cx3
-        case CONNECTX3_PRO_HW_ID: // Cx3-pro
-            if (tools_cmdif_is_supported(mf) == ME_OK) {
-                return 1;
-            }
-            return 0;
-        default:
-            return 0;
+    case CONNECTX3_HW_ID:     //Cx3
+    case CONNECTX3_PRO_HW_ID:     // Cx3-pro
+        if (tools_cmdif_is_supported(mf) == ME_OK) {
+            return 1;
+        }
+        return 0;
+
+    default:
+        return 0;
     }
 
 }
@@ -1602,7 +2075,8 @@ int mget_max_reg_size(mfile *mf)
 {
     if (mf->acc_reg_params.max_reg_size) {
         return mf->acc_reg_params.max_reg_size;
-    } else if (supports_icmd(mf)) { // we support icmd and we dont use IB interface -> we use icmd for reg access
+    } else if (supports_icmd(mf)) {
+        // we support icmd and we dont use IB interface -> we use icmd for reg access
         //TOOD: get size dynamically from icmd_params once we have support by fw for mfba with size field greater than 8 bits
         mf->acc_reg_params.max_reg_size = ICMD_MAX_REG_SIZE;
     } else if (supports_tools_cmdif_reg(mf)) {
@@ -1612,197 +2086,244 @@ int mget_max_reg_size(mfile *mf)
 }
 
 /************************************
- * Function: m_err2str
- ************************************/
+* Function: m_err2str
+************************************/
 const char* m_err2str(MError status)
 {
     switch (status) {
-        case ME_OK:
-            return "ME_OK";
-        case ME_ERROR:
-            return "General error";
-        case ME_BAD_PARAMS:
-            return "ME_BAD_PARAMS";
-        case ME_CR_ERROR:
-            return "ME_CR_ERROR";
-        case ME_NOT_IMPLEMENTED:
-            return "ME_NOT_IMPLEMENTED";
-        case ME_SEM_LOCKED:
-            return "Semaphore locked";
-        case ME_MEM_ERROR:
-            return "ME_MEM_ERROR";
-        case ME_UNSUPPORTED_OPERATION:
-            return "ME_UNSUPPORTED_OPERATION";
+    case ME_OK:
+        return "ME_OK";
 
-        case ME_MAD_SEND_FAILED:
-            return "ME_MAD_SEND_FAILED";
-        case ME_UNKOWN_ACCESS_TYPE:
-            return "ME_UNKOWN_ACCESS_TYPE";
-        case ME_UNSUPPORTED_ACCESS_TYPE:
-            return "ME_UNSUPPORTED_ACCESS_TYPE";
-        case ME_UNSUPPORTED_DEVICE:
-            return "ME_UNSUPPORTED_DEVICE";
+    case ME_ERROR:
+        return "General error";
 
-        // Reg access errors
-        case ME_REG_ACCESS_BAD_STATUS_ERR:
-            return "ME_REG_ACCESS_BAD_STATUS_ERR";
-        case ME_REG_ACCESS_BAD_METHOD:
-            return "Bad method";
-        case ME_REG_ACCESS_NOT_SUPPORTED:
-            return "The Register access is not supported by the device";
-        case ME_REG_ACCESS_DEV_BUSY:
-            return "Device is busy";
-        case ME_REG_ACCESS_VER_NOT_SUPP:
-            return "Version not supported";
-        case ME_REG_ACCESS_UNKNOWN_TLV:
-            return "Unknown TLV";
-        case ME_REG_ACCESS_REG_NOT_SUPP:
-            return "Register not supported";
-        case ME_REG_ACCESS_CLASS_NOT_SUPP:
-            return "Class not supported";
-        case ME_REG_ACCESS_METHOD_NOT_SUPP:
-            return "Method not supported";
-        case ME_REG_ACCESS_BAD_PARAM:
-            return "Bad parameter";
-        case ME_REG_ACCESS_RES_NOT_AVLBL:
-            return "Resource unavailable";
-        case ME_REG_ACCESS_MSG_RECPT_ACK:
-            return "Message receipt ack";
-        case ME_REG_ACCESS_UNKNOWN_ERR:
-            return "Unknown register error";
-        case ME_REG_ACCESS_SIZE_EXCCEEDS_LIMIT:
-            return "Register is too large";
-        case ME_REG_ACCESS_CONF_CORRUPT:
-            return "Config Section Corrupted";
-        case ME_REG_ACCESS_LEN_TOO_SMALL:
-            return "The given Register length is too small for the Tlv";
-        case ME_REG_ACCESS_BAD_CONFIG:
-            return "The configuration is rejected";
-        case ME_REG_ACCESS_ERASE_EXEEDED:
-            return   "The erase count exceeds its limit";
-        case ME_REG_ACCESS_INTERNAL_ERROR:
-            return "Firmware internal error";
+    case ME_BAD_PARAMS:
+        return "ME_BAD_PARAMS";
 
-            // ICMD access errors
-        case ME_ICMD_STATUS_CR_FAIL:
-            return "ME_ICMD_STATUS_CR_FAIL";
-        case ME_ICMD_STATUS_SEMAPHORE_TO:
-            return "ME_ICMD_STATUS_SEMAPHORE_TO";
-        case ME_ICMD_STATUS_EXECUTE_TO:
-            return "ME_ICMD_STATUS_EXECUTE_TO";
-        case ME_ICMD_STATUS_IFC_BUSY:
-            return "ME_ICMD_STATUS_IFC_BUSY";
-        case ME_ICMD_STATUS_ICMD_NOT_READY:
-            return "ME_ICMD_STATUS_ICMD_NOT_READY";
-        case ME_ICMD_UNSUPPORTED_ICMD_VERSION:
-            return "ME_ICMD_UNSUPPORTED_ICMD_VERSION";
-        case ME_ICMD_NOT_SUPPORTED:
-            return "ME_REG_ACCESS_ICMD_NOT_SUPPORTED";
-        case ME_ICMD_INVALID_OPCODE:
-            return "ME_ICMD_INVALID_OPCODE";
-        case ME_ICMD_INVALID_CMD:
-            return "ME_ICMD_INVALID_CMD";
-        case ME_ICMD_OPERATIONAL_ERROR:
-            return "ME_ICMD_OPERATIONAL_ERROR";
-        case ME_ICMD_BAD_PARAM:
-            return "ME_ICMD_BAD_PARAM";
-        case ME_ICMD_BUSY:
-            return "ME_ICMD_BUSY";
-        case ME_ICMD_ICM_NOT_AVAIL:
-            return "ME_ICMD_ICM_NOT_AVAIL";
-        case ME_ICMD_WRITE_PROTECT:
-            return "ME_ICMD_WRITE_PROTECT";
-        case ME_ICMD_UNKNOWN_STATUS:
-            return "ME_ICMD_UNKNOWN_STATUS";
-        case ME_ICMD_SIZE_EXCEEDS_LIMIT:
-            return "ME_ICMD_SIZE_EXCEEDS_LIMIT";
+    case ME_CR_ERROR:
+        return "ME_CR_ERROR";
 
-            // MAD IFC errors
-        case ME_MAD_BUSY:
-            return "Temporarily busy. MAD discarded. This is not an error";
-        case ME_MAD_REDIRECT:
-            return "Redirection. This is not an error";
-        case ME_MAD_BAD_VER:
-            return "Bad version";
-        case ME_MAD_METHOD_NOT_SUPP:
-            return "Method not supported";
-        case ME_MAD_METHOD_ATTR_COMB_NOT_SUPP:
-            return "Method and attribute combination isn't supported";
-        case ME_MAD_BAD_DATA:
-            return "Bad attribute modifer or field";
-        case ME_MAD_GENERAL_ERR:
-            return "Unknown MAD error";
+    case ME_NOT_IMPLEMENTED:
+        return "ME_NOT_IMPLEMENTED";
 
-        default:
-            return "Unknown error code";
+    case ME_SEM_LOCKED:
+        return "Semaphore locked";
+
+    case ME_MEM_ERROR:
+        return "ME_MEM_ERROR";
+
+    case ME_UNSUPPORTED_OPERATION:
+        return "ME_UNSUPPORTED_OPERATION";
+
+    case ME_MAD_SEND_FAILED:
+        return "ME_MAD_SEND_FAILED";
+
+    case ME_UNKOWN_ACCESS_TYPE:
+        return "ME_UNKOWN_ACCESS_TYPE";
+
+    case ME_UNSUPPORTED_ACCESS_TYPE:
+        return "ME_UNSUPPORTED_ACCESS_TYPE";
+
+    case ME_UNSUPPORTED_DEVICE:
+        return "ME_UNSUPPORTED_DEVICE";
+
+    // Reg access errors
+    case ME_REG_ACCESS_BAD_STATUS_ERR:
+        return "ME_REG_ACCESS_BAD_STATUS_ERR";
+
+    case ME_REG_ACCESS_BAD_METHOD:
+        return "Bad method";
+
+    case ME_REG_ACCESS_NOT_SUPPORTED:
+        return "The Register access is not supported by the device";
+
+    case ME_REG_ACCESS_DEV_BUSY:
+        return "Device is busy";
+
+    case ME_REG_ACCESS_VER_NOT_SUPP:
+        return "Version not supported";
+
+    case ME_REG_ACCESS_UNKNOWN_TLV:
+        return "Unknown TLV";
+
+    case ME_REG_ACCESS_REG_NOT_SUPP:
+        return "Register not supported";
+
+    case ME_REG_ACCESS_CLASS_NOT_SUPP:
+        return "Class not supported";
+
+    case ME_REG_ACCESS_METHOD_NOT_SUPP:
+        return "Method not supported";
+
+    case ME_REG_ACCESS_BAD_PARAM:
+        return "Bad parameter";
+
+    case ME_REG_ACCESS_RES_NOT_AVLBL:
+        return "Resource unavailable";
+
+    case ME_REG_ACCESS_MSG_RECPT_ACK:
+        return "Message receipt ack";
+
+    case ME_REG_ACCESS_UNKNOWN_ERR:
+        return "Unknown register error";
+
+    case ME_REG_ACCESS_SIZE_EXCCEEDS_LIMIT:
+        return "Register is too large";
+
+    case ME_REG_ACCESS_CONF_CORRUPT:
+        return "Config Section Corrupted";
+
+    case ME_REG_ACCESS_LEN_TOO_SMALL:
+        return "The given Register length is too small for the Tlv";
+
+    case ME_REG_ACCESS_BAD_CONFIG:
+        return "The configuration is rejected";
+
+    case ME_REG_ACCESS_ERASE_EXEEDED:
+        return "The erase count exceeds its limit";
+
+    case ME_REG_ACCESS_INTERNAL_ERROR:
+        return "Firmware internal error";
+
+    // ICMD access errors
+    case ME_ICMD_STATUS_CR_FAIL:
+        return "ME_ICMD_STATUS_CR_FAIL";
+
+    case ME_ICMD_STATUS_SEMAPHORE_TO:
+        return "ME_ICMD_STATUS_SEMAPHORE_TO";
+
+    case ME_ICMD_STATUS_EXECUTE_TO:
+        return "ME_ICMD_STATUS_EXECUTE_TO";
+
+    case ME_ICMD_STATUS_IFC_BUSY:
+        return "ME_ICMD_STATUS_IFC_BUSY";
+
+    case ME_ICMD_STATUS_ICMD_NOT_READY:
+        return "ME_ICMD_STATUS_ICMD_NOT_READY";
+
+    case ME_ICMD_UNSUPPORTED_ICMD_VERSION:
+        return "ME_ICMD_UNSUPPORTED_ICMD_VERSION";
+
+    case ME_ICMD_NOT_SUPPORTED:
+        return "ME_REG_ACCESS_ICMD_NOT_SUPPORTED";
+
+    case ME_ICMD_INVALID_OPCODE:
+        return "ME_ICMD_INVALID_OPCODE";
+
+    case ME_ICMD_INVALID_CMD:
+        return "ME_ICMD_INVALID_CMD";
+
+    case ME_ICMD_OPERATIONAL_ERROR:
+        return "ME_ICMD_OPERATIONAL_ERROR";
+
+    case ME_ICMD_BAD_PARAM:
+        return "ME_ICMD_BAD_PARAM";
+
+    case ME_ICMD_BUSY:
+        return "ME_ICMD_BUSY";
+
+    case ME_ICMD_ICM_NOT_AVAIL:
+        return "ME_ICMD_ICM_NOT_AVAIL";
+
+    case ME_ICMD_WRITE_PROTECT:
+        return "ME_ICMD_WRITE_PROTECT";
+
+    case ME_ICMD_UNKNOWN_STATUS:
+        return "ME_ICMD_UNKNOWN_STATUS";
+
+    case ME_ICMD_SIZE_EXCEEDS_LIMIT:
+        return "ME_ICMD_SIZE_EXCEEDS_LIMIT";
+
+    // MAD IFC errors
+    case ME_MAD_BUSY:
+        return "Temporarily busy. MAD discarded. This is not an error";
+
+    case ME_MAD_REDIRECT:
+        return "Redirection. This is not an error";
+
+    case ME_MAD_BAD_VER:
+        return "Bad version";
+
+    case ME_MAD_METHOD_NOT_SUPP:
+        return "Method not supported";
+
+    case ME_MAD_METHOD_ATTR_COMB_NOT_SUPP:
+        return "Method and attribute combination isn't supported";
+
+    case ME_MAD_BAD_DATA:
+        return "Bad attribute modifer or field";
+
+    case ME_MAD_GENERAL_ERR:
+        return "Unknown MAD error";
+
+    default:
+        return "Unknown error code";
     }
 }
 
-void mpci_change(mfile* mf)
+void mpci_change(mfile *mf)
 {
     (void) mf;
 }
 
-int mib_smp_get(mfile* mf, u_int8_t* data, u_int16_t attr_id,
-        u_int32_t attr_mod)
+int mib_smp_get(mfile *mf, u_int8_t *data, u_int16_t attr_id,
+                u_int32_t attr_mod)
 {
     (void)mf;
     (void)data;
     (void)attr_id;
     (void)attr_mod;
-
     errno = ENOSYS;
     return -1;
 }
 
-int mib_smp_set(mfile* mf, u_int8_t* data, u_int16_t attr_id,
-        u_int32_t attr_mod)
+int mib_smp_set(mfile *mf, u_int8_t *data, u_int16_t attr_id,
+                u_int32_t attr_mod)
 {
     (void)mf;
     (void)data;
     (void)attr_id;
     (void)attr_mod;
-
     errno = ENOSYS;
     return -1;
 }
 
-int mset_cr_access(mfile* mf, int access)
+int mset_cr_access(mfile *mf, int access)
 {
     (void)mf;
     (void)access;
-
     errno = ENOSYS;
     return -1;
 }
 
-int mget_vsec_supp(mfile* mf)
+int mget_vsec_supp(mfile *mf)
 {
     return mf->vsec_supp;
 }
 
-int mget_addr_space(mfile* mf)
+int mget_addr_space(mfile *mf)
 {
     return mf->address_space;
 }
-int mset_addr_space(mfile* mf, int space)
+int mset_addr_space(mfile *mf, int space)
 {
     switch (space) {
-        case AS_CR_SPACE:
-        case AS_ICMD:
-        case AS_SEMAPHORE:
-            break;
-        default:
-            return -1;
+    case AS_CR_SPACE:
+    case AS_ICMD:
+    case AS_SEMAPHORE:
+        break;
+
+    default:
+        return -1;
     }
     mf->address_space = space;
     return 0;
 }
 
-int device_exists(const char* devname)
+int device_exists(const char *devname)
 {
-    char* devs = NULL;
-    char* pdevs;
+    char *devs = NULL;
+    char *pdevs;
     int size = 512;
     int rc = 0;
     int i = 0;
@@ -1827,7 +2348,7 @@ int device_exists(const char* devname)
             goto cleanup;
         }
         pdevs += strlen(pdevs) + 1;
-        i ++;
+        i++;
     }
 cleanup:
     if (devs) {
@@ -1836,9 +2357,9 @@ cleanup:
     return res;
 }
 
-int mclear_pci_semaphore(const char* name)
+int mclear_pci_semaphore(const char *name)
 {
-    mfile* mf;
+    mfile *mf;
     int rc = ME_OK;
     mf = mopen_int(name, Clear_Vsec_Semaphore);
     if (!mf) {
@@ -1859,26 +2380,32 @@ int mvpd_read4_int(mfile *mf, unsigned int offset, u_int8_t value[4])
     int res;
     int count_to_timeout;
     int done = 0;
-	
+
     if (!mf || !value) {
         return ME_BAD_PARAMS;
     }
     if (!vpd_cap) {
         return ME_UNSUPPORTED_OPERATION;
     }
-
+    int lock_rc = _flock_int(mf->fdlock, LOCK_EX);
+    if (lock_rc) {
+        perror("READ VPD");
+        return ME_ERROR;
+    }
     /* sets F bit to zero and write VPD addr */
     write_addr = (0x7fff & offset);
-    res = write_config(mf->fd, &mf->sel, vpd_cap + PCI_VPD_ADDR, write_addr, 2);
+    res = write_config(mf, vpd_cap + PCI_VPD_ADDR, write_addr, 2);
     if (res) {
-        return res;
+        res = ME_CR_ERROR;
+        goto cleanup;
     }
 
     /* wait for data until F bit is set with one */
     for (count_to_timeout = 0; count_to_timeout < MST_VPD_DFLT_TIMEOUT; count_to_timeout++) {
-        res = read_config(mf->fd, &mf->sel, vpd_cap + PCI_VPD_ADDR, &read_addr, 2);
+        res = read_config(mf, vpd_cap + PCI_VPD_ADDR, &read_addr, 2);
         if (res) {
-            return res;
+            res = ME_CR_ERROR;
+            goto cleanup;
         }
         if (read_addr & 0x8000) {
             done = 1;
@@ -1887,10 +2414,20 @@ int mvpd_read4_int(mfile *mf, unsigned int offset, u_int8_t value[4])
         sched_yield();
     }
     if (done) {
-        return read_config(mf->fd, &mf->sel, vpd_cap + PCI_VPD_DATA, (uint32_t *)value, 4);
+        res = read_config(mf, vpd_cap + PCI_VPD_DATA, (uint32_t *)value, 4);
+        if (res) {
+            res = ME_CR_ERROR;
+        }
     } else {
-        return ME_TIMEOUT;
+        res = ME_TIMEOUT;
     }
+cleanup:
+    lock_rc = _flock_int(mf->fdlock, LOCK_UN);
+    if (lock_rc) {
+        perror("READ VPD");
+        return ME_ERROR;
+    }
+    return res;
 }
 
 int mvpd_read4(mfile *mf, unsigned int offset, u_int8_t value[4])
@@ -1917,6 +2454,6 @@ int mvpd_write4(mfile *mf, unsigned int offset, u_int8_t value[4])
     (void)mf;
     (void)offset;
     (void)value;
-    return 0;
+    return ME_UNSUPPORTED_OPERATION;
 }
 

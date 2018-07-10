@@ -131,80 +131,168 @@ struct connectx4_icmd_mh_sync {
 /* Description -   */
 /* Size in bytes - 8 */
 struct connectx4_icmd_query_cap_general {
-/*---------------- DWORD[0] (Offset 0x0) ----------------*/
-    /* Description - When set, device supports FW components updated through ICMD interface.
-See
-"Firmware Components Update" on page 428
- */
+    /*---------------- DWORD[0] (Offset 0x0) ----------------*/
+    /* Description - When set, the device supports emulating link down for all the associ
+    ated functions
+
+    using
+    "
+    ICMD_SET_VIRTUAL_
+    PARAMETERS
+    -
+    Set Device
+    Virtual Parameters
+    " */
+    /* 0x0.22 - 0x0.22 */
+    u_int8_t virtual_link_down;
+    /* Description - When set, the device supports using a memory buffer as a mailbox for
+    the ICMD, instead of the normal ICMD Mailbox. */
+    /* 0x0.23 - 0x0.23 */
+    u_int8_t icmd_exmb;
+    /* Description - If set, CAPI is supported. */
+    /* 0x0.24 - 0x0.24 */
+    u_int8_t capi;
+    /* Description - If set, QCAM register is supported.
+    See Table  612, "
+    QCAM - QoS Capa
+    bilities Mask Register Layout
+    ," on page  816
+    . */
+    /* 0x0.25 - 0x0.25 */
+    u_int8_t qcam_reg;
+    /* Description - If set, MCAM register is supported.
+    See Table  1053, "
+    MCAM - Manage
+    ment Capabilities Mask Register Layout
+    ," on page  1180
+    . */
     /* 0x0.26 - 0x0.26 */
-     u_int8_t fw_ctrl_update_icmd;
-    /* Description - When set, the
-"
-ICMD_KDNET_CTRL - Control KDNET PF
-"
- com
-mand is supported. */
+    u_int8_t mcam_reg;
+    /* Description - If set, PCAM register is supported.
+    See Table  696, "
+    PCAM - Ports Capa
+    bilities Mask Register Layout
+    ," on page  905 */
     /* 0x0.27 - 0x0.27 */
-     u_int8_t kdnet_ctrl;
+    u_int8_t pcam_reg;
     /* Description - When set, multi-host synchronization through the device is supported.
- See
-Section 25.4.3, "
-ICMD_MH_SYNC - Multi-Host Synchronization
-," on
-page 772
-. */
+
+    See Section  25.4.3, "
+    ICMD_MH_SYNC - Multi-Host Synchronization
+    ," on
+    page  1190
+    . */
     /* 0x0.28 - 0x0.28 */
-     u_int8_t mh_sync;
-    /* Description - If set, ICMD_ACCESS_REGISTER supports every register. (in the past it sup
-ported some of them). */
+    u_int8_t mh_sync;
+    /* Description - If set, ICMD_ACCESS_REGISTER supports every register. (in the
+    past it supported some of them). */
     /* 0x0.29 - 0x0.29 */
-     u_int8_t allow_icmd_access_reg_on_all_registers;
+    u_int8_t allow_icmd_access_reg_on_all_registers;
     /* Description - When set, ICMD_QUERY_FW_INFO returns the
-psid
- field. */
+    psid
+    field. */
     /* 0x0.30 - 0x0.30 */
-     u_int8_t fw_info_psid;
-    /* Description - When set, ICMD_ACCESS_REGISTER supports the following registers:
-NVDA
-NVDI
-NVIA
-NVQC */
+    u_int8_t fw_info_psid;
+    /* Description - When set, ICMD_ACCESS_REGISTER supports the following regis
+    ters:
+    NVDA
+    NVDI
+    NVIA
+    NVQC */
     /* 0x0.31 - 0x0.31 */
-     u_int8_t nv_access;
-/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+    u_int8_t nv_access;
+    /*---------------- DWORD[1] (Offset 0x4) ----------------*/
     /* Description - If set, wake on phy activity is supported. */
     /* 0x4.0 - 0x4.0 */
-     u_int8_t wol_p;
+    u_int8_t wol_p;
     /* Description - If set, wake on unicast packet is supported. */
     /* 0x4.1 - 0x4.1 */
-     u_int8_t wol_u;
+    u_int8_t wol_u;
     /* Description - If set, wake on multicast packet is supported. */
     /* 0x4.2 - 0x4.2 */
-     u_int8_t wol_m;
+    u_int8_t wol_m;
     /* Description - If set, wake on broadcast packet is supported. */
     /* 0x4.3 - 0x4.3 */
-     u_int8_t wol_b;
+    u_int8_t wol_b;
     /* Description - If set, wake on ARP is supported. */
     /* 0x4.4 - 0x4.4 */
-     u_int8_t wol_a;
+    u_int8_t wol_a;
     /* Description - If set, wake on magic packet is supported. */
     /* 0x4.5 - 0x4.5 */
-     u_int8_t wol_g;
+    u_int8_t wol_g;
     /* Description - If set, wake on secured magic packet is supported. */
     /* 0x4.6 - 0x4.6 */
-     u_int8_t wol_s;
+    u_int8_t wol_s;
     /* Description - If set, reset on magic packet is supported. */
     /* 0x4.8 - 0x4.8 */
-     u_int8_t rol_g;
-    /* Description - If set, reset on secured magic packet is supp
-o
-rted. */
+    u_int8_t rol_g;
+    /* Description - If set, reset on secured magic packet is supported. */
     /* 0x4.9 - 0x4.9 */
-     u_int8_t rol_s;
+    u_int8_t rol_s;
     /* Description - If set, FPGA device is supported by the device. See TBD */
     /* 0x4.10 - 0x4.10 */
-     u_int8_t fpga;
+    u_int8_t fpga;
 };
+
+
+
+
+struct connectib_itrace_ctrl {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+        /* Description - threashhold of logging to print from:
+0 - LOG_DEBUG
+1 - LOG_INFO
+2 - LOG_WARNING
+3 - LOG_ERROR */
+        /* 0x0.0 - 0x0.7 */
+         u_int8_t log_level;
+        /* Description - added delay (usec) to prevent log event lost */
+        /* 0x0.16 - 0x0.31 */
+         u_int16_t log_delay;
+};
+
+struct connectib_itrace {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+        /* Description - bit numbers:
+0=DEBUG_INIT
+1=INIT
+2=ICM
+3=ICM_FREE_LIST
+4=LOG_MOD_HOST_MNG
+5=CMD_IF
+6=PHY_IB
+7=PHY_RX_ADAP
+8=PHY_EYE_OPN
+9=PHY_GENERAL
+10=PHY_MANAGER
+11=PWR
+12=FLR
+13=ICM_ACCESS
+14=MAD
+15=RXT_CHECKS
+16=I2C
+17=TRANSPORT
+18=FW_LL
+19=RX_ERRORS
+20=CMDIF_DRIVER
+21=PROFILING
+22=MANAGEMENT
+23=FLASH
+24=STEERING
+25=IFARM
+26=ICMD
+27=PCI
+28=DC_CLEANUP
+29=PHY_ETH
+30=VIRT */
+        /* 0x0.0 - 0x4.31 */
+         u_int32_t unit_mask;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+        /* Description -  */
+        /* 0x4.0 - 0x8.31 */
+         struct connectib_itrace_ctrl ctrl;
+};
+
 
 /* FW_VERSION */
 void connectib_FW_VERSION_pack(const struct connectib_FW_VERSION *ptr_struct, u_int8_t* ptr_buff);
@@ -220,6 +308,20 @@ void connectib_icmd_get_fw_info_print(const struct connectib_icmd_get_fw_info *p
 int connectib_icmd_get_fw_info_size(void);
 #define CONNECTIB_ICMD_GET_FW_INFO_SIZE    (0x24)
 void connectib_icmd_get_fw_info_dump(const struct connectib_icmd_get_fw_info *ptr_struct, FILE* file);
+/* itrace */
+void connectib_itrace_pack(const struct connectib_itrace *ptr_struct, u_int8_t* ptr_buff);
+void connectib_itrace_unpack(struct connectib_itrace *ptr_struct, const u_int8_t* ptr_buff);
+void connectib_itrace_print(const struct connectib_itrace *ptr_struct, FILE* file, int indent_level);
+int connectib_itrace_size(void);
+#define CONNECTIB_ITRACE_SIZE    (0x10)
+void connectib_itrace_dump(const struct connectib_itrace *ptr_struct, FILE* file);
+/* itrace_ctrl */
+void connectib_itrace_ctrl_pack(const struct connectib_itrace_ctrl *ptr_struct, u_int8_t* ptr_buff);
+void connectib_itrace_ctrl_unpack(struct connectib_itrace_ctrl *ptr_struct, const u_int8_t* ptr_buff);
+void connectib_itrace_ctrl_print(const struct connectib_itrace_ctrl *ptr_struct, FILE* file, int indent_level);
+int connectib_itrace_ctrl_size(void);
+#define CONNECTIB_ITRACE_CTRL_SIZE    (0x4)
+void connectib_itrace_ctrl_dump(const struct connectib_itrace_ctrl *ptr_struct, FILE* file);
 /* icmd_mh_sync */
 void connectx4_icmd_mh_sync_pack(const struct connectx4_icmd_mh_sync *ptr_struct, u_int8_t* ptr_buff);
 void connectx4_icmd_mh_sync_unpack(struct connectx4_icmd_mh_sync *ptr_struct, const u_int8_t* ptr_buff);
@@ -228,12 +330,12 @@ int connectx4_icmd_mh_sync_size(void);
 #define CONNECTX4_ICMD_MH_SYNC_SIZE    (0x10)
 void connectx4_icmd_mh_sync_dump(const struct connectx4_icmd_mh_sync *ptr_struct, FILE* file);
 /* icmd_query_cap_general */
-void connectx4_icmd_query_cap_general_pack(const struct connectx4_icmd_query_cap_general *ptr_struct, u_int8_t* ptr_buff);
-void connectx4_icmd_query_cap_general_unpack(struct connectx4_icmd_query_cap_general *ptr_struct, const u_int8_t* ptr_buff);
-void connectx4_icmd_query_cap_general_print(const struct connectx4_icmd_query_cap_general *ptr_struct, FILE* file, int indent_level);
-int connectx4_icmd_query_cap_general_size(void);
+void connectx4_icmd_query_cap_general_pack(const struct connectx4_icmd_query_cap_general *ptr_struct, u_int8_t *ptr_buff);
+void connectx4_icmd_query_cap_general_unpack(struct connectx4_icmd_query_cap_general *ptr_struct, const u_int8_t *ptr_buff);
+void connectx4_icmd_query_cap_general_print(const struct connectx4_icmd_query_cap_general *ptr_struct, FILE *fd, int indent_level);
+unsigned int connectx4_icmd_query_cap_general_size(void);
 #define CONNECTX4_ICMD_QUERY_CAP_GENERAL_SIZE    (0x8)
-void connectx4_icmd_query_cap_general_dump(const struct connectx4_icmd_query_cap_general *ptr_struct, FILE* file);
+void connectx4_icmd_query_cap_general_dump(const struct connectx4_icmd_query_cap_general *ptr_struct, FILE *fd);
 
 
 #ifdef __cplusplus

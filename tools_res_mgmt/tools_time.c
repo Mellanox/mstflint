@@ -39,7 +39,7 @@
 
 
 
-void tt_get_time(tt_ctx_t* tt)
+void tt_get_time(tt_ctx_t *tt)
 {
     if (!tt) {
         return;

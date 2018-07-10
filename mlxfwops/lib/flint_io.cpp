@@ -43,12 +43,13 @@
 extern bool _no_erase;
 extern bool _no_burn;
 
-extern const char* g_sectNames[];
+extern const char *g_sectNames[];
 
 #ifdef UEFI_BUILD
 // no signal handling.
-void mft_signal_set_handling(int isOn) {
-	return;
+void mft_signal_set_handling(int isOn)
+{
+    return;
 }
 #endif
 
@@ -62,7 +63,7 @@ bool FImage::open(const char *fname, bool read_only, bool advErr)
 {
 
 #ifndef UEFI_BUILD
-    int                fsize;
+    int fsize;
     FILE              *fh;
 
     (void)read_only;  // FImage can be opened only for read so we ignore compiler warnings
@@ -126,9 +127,9 @@ u_int32_t* FImage::getBuf()
 {
     if (_isFile) {
         // Read the entire file on demand
-        FILE* fh = fopen(_fname, "rb");
+        FILE *fh = fopen(_fname, "rb");
         int r_cnt;
-        u_int32_t* retBuf;
+        u_int32_t *retBuf;
         if (!fh) {
             errmsg("Can not open file \"%s\" - %s", _fname, strerror(errno));
             return (u_int32_t*)NULL;
@@ -136,19 +137,19 @@ u_int32_t* FImage::getBuf()
         _buf.resize(_len);
         if ((r_cnt = fread(_buf.data(), 1, _len, fh)) != (int)_len) {
             if (r_cnt < 0) {
-                errmsg("Read error on file \"%s\" - %s",_fname, strerror(errno));
+                errmsg("Read error on file \"%s\" - %s", _fname, strerror(errno));
                 retBuf = (u_int32_t*)NULL;
                 goto cleanup;
             } else {
                 errmsg("Read error on file \"%s\" - read only %d bytes (from %ld)",
-                        _fname, r_cnt, (unsigned long)_len);
+                       _fname, r_cnt, (unsigned long)_len);
                 retBuf = (u_int32_t*)NULL;
                 goto cleanup;
             }
         }
         _isFile = false;
         retBuf = (u_int32_t*)_buf.data();
-    cleanup:
+cleanup:
         fclose(fh);
         return retBuf;
     } else {
@@ -163,7 +164,7 @@ bool FImage::read(u_int32_t addr, u_int32_t *data)
 } // FImage::read
 
 ////////////////////////////////////////////////////////////////////////
-bool FImage::read(u_int32_t addr, void *data, int len, bool verbose, const char* message)
+bool FImage::read(u_int32_t addr, void *data, int len, bool verbose, const char *message)
 {
     (void)verbose;
     (void) message;
@@ -187,11 +188,11 @@ bool FImage::read(u_int32_t addr, void *data, int len, bool verbose, const char*
     u_int32_t chunk_addr;
     u_int32_t chunk_size;
     Aligner align(_log2_chunk_size);
-    align.Init (addr, len);
+    align.Init(addr, len);
     while (align.GetNextChunk(chunk_addr, chunk_size)) {
         u_int32_t phys_addr = cont2phys(chunk_addr);
         if (_isFile) {
-            FILE* fh = fopen(_fname, "rb");
+            FILE *fh = fopen(_fname, "rb");
             if (!fh) {
                 return errmsg("Can not open file \"%s\" - %s", _fname, strerror(errno));
             }
@@ -206,8 +207,8 @@ bool FImage::read(u_int32_t addr, void *data, int len, bool verbose, const char*
             fclose(fh);
         } else {
             memcpy((u_int8_t*)data + (chunk_addr - addr),
-               _buf.data() +  phys_addr,
-               chunk_size);
+                   _buf.data() +  phys_addr,
+                   chunk_size);
         }
     }
 
@@ -243,14 +244,14 @@ u_int32_t FImage::get_sector_size()
 bool FImage::readFileGetBuffer(std::vector<u_int8_t>& dataBuf)
 {
     int fileSize;
-    FILE* fh;
+    FILE *fh;
 
     if (!getFileSize(fileSize)) {
         return false;
     }
     dataBuf.resize(fileSize);
     if ((fh = fopen(_fname, "rb")) == NULL) {
-        return errmsg("Can not open %s: %s\n",_fname, strerror(errno));
+        return errmsg("Can not open %s: %s\n", _fname, strerror(errno));
     }
 
     if (fread(dataBuf.data(), 1, fileSize, fh) != (size_t)fileSize) {
@@ -263,9 +264,9 @@ bool FImage::readFileGetBuffer(std::vector<u_int8_t>& dataBuf)
 }
 bool FImage::writeEntireFile(std::vector<u_int8_t>& fileContent)
 {
-    FILE* fh;
+    FILE *fh;
     if ((fh = fopen(_fname, "wb")) == (FILE*)NULL) {
-        return errmsg("Can not open %s: %s\n",_fname, strerror(errno));
+        return errmsg("Can not open %s: %s\n", _fname, strerror(errno));
     }
 
     if (fwrite(fileContent.data(), 1, fileContent.size(), fh) != fileContent.size()) {
@@ -278,9 +279,9 @@ bool FImage::writeEntireFile(std::vector<u_int8_t>& fileContent)
 
 bool FImage::getFileSize(int& fileSize)
 {
-    FILE* fh;
+    FILE *fh;
     if ((fh = fopen(_fname, "rb")) == NULL) {
-        return errmsg("Can not open %s: %s\n",_fname, strerror(errno));
+        return errmsg("Can not open %s: %s\n", _fname, strerror(errno));
     }
 
     if (fseek(fh, 0, SEEK_END) < 0) {
@@ -295,9 +296,9 @@ bool FImage::getFileSize(int& fileSize)
     return true;
 }
 
-bool FImage::write(u_int32_t addr, void* data, int cnt)
+bool FImage::write(u_int32_t addr, void *data, int cnt)
 {
-    if ( !_isFile ) {
+    if (!_isFile) {
         if (_buf.size() < addr + cnt) {
             _buf.resize(addr + cnt);
         }
@@ -365,7 +366,7 @@ bool Flash::open_com_checks(const char *device, int rc, bool force_lock)
     }
     _curr_sector_size = _attr.sector_size;
 
-    rc = mf_set_opt(_mfl, MFO_NO_VERIFY, _no_flash_verify? 1: 0);
+    rc = mf_set_opt(_mfl, MFO_NO_VERIFY, _no_flash_verify ? 1 : 0);
     if (rc != MFE_OK) {
         return errmsg("Failed setting no flash verify on device: %s", mf_err2str(rc));
     }
@@ -379,13 +380,14 @@ bool Flash::open_com_checks(const char *device, int rc, bool force_lock)
     return true;
 }
 
-bool Flash::set_no_flash_verify(bool val) {
+bool Flash::set_no_flash_verify(bool val)
+{
     int rc;
     if (_mfl) {
-        rc = mf_set_opt(_mfl, MFO_NO_VERIFY, val? 1: 0);
+        rc = mf_set_opt(_mfl, MFO_NO_VERIFY, val ? 1 : 0);
         if (rc != MFE_OK) {
             return errmsg("Failed setting no flash verify on device: %s", mf_err2str(rc));
-            }
+        }
     }
     _no_flash_verify = val;
     return true;
@@ -396,7 +398,7 @@ bool Flash::set_no_flash_verify(bool val) {
 
 ////////////////////////////////////////////////////////////////////////
 bool Flash::open(const char *device, bool force_lock, bool read_only, int num_of_banks, flash_params_t *flash_params,
-        int ignore_cashe_replacement, bool advErr, int cx3_fw_access)
+                 int ignore_cashe_replacement, bool advErr, int cx3_fw_access)
 {
     // Open device
     int rc;
@@ -410,7 +412,7 @@ bool Flash::open(const char *device, bool force_lock, bool read_only, int num_of
 }
 
 ////////////////////////////////////////////////////////////////////////
-bool Flash::open(uefi_Dev_t *uefi_dev, uefi_dev_extra_t* uefi_extra, bool force_lock, bool advErr)
+bool Flash::open(uefi_Dev_t *uefi_dev, uefi_dev_extra_t *uefi_extra, bool force_lock, bool advErr)
 {
     int rc;
     _advErrors = advErr;
@@ -422,15 +424,17 @@ bool Flash::open(uefi_Dev_t *uefi_dev, uefi_dev_extra_t* uefi_extra, bool force_
 ////////////////////////////////////////////////////////////////////////
 void Flash::close()
 {
-    if (!_mfl)
+    if (!_mfl) {
         return;
+    }
 
     mf_close(_mfl);
     _mfl = 0;
 } // Flash::close
 
 bool Flash::read(u_int32_t addr,
-                 u_int32_t *data) {
+                 u_int32_t *data)
+{
     int rc;
 
     u_int32_t phys_addr = cont2phys(addr);
@@ -450,7 +454,7 @@ bool Flash::read(u_int32_t addr,
 }
 
 ////////////////////////////////////////////////////////////////////////
-bool Flash::read(u_int32_t addr, void *data, int len, bool verbose, const char* message)
+bool Flash::read(u_int32_t addr, void *data, int len, bool verbose, const char *message)
 {
     int rc;
     if (!readWriteCommCheck(addr, len)) {
@@ -465,7 +469,7 @@ bool Flash::read(u_int32_t addr, void *data, int len, bool verbose, const char* 
         u_int32_t chunk_size;
 
         Aligner align(_log2_chunk_size);
-        align.Init (addr, len);
+        align.Init(addr, len);
         while (align.GetNextChunk(chunk_addr, chunk_size)) {
             u_int32_t phys_addr = cont2phys(chunk_addr);
             // printf("-D- write: addr = %#x, phys_addr = %#x\n", chunk_addr, phys_addr);
@@ -480,13 +484,13 @@ bool Flash::read(u_int32_t addr, void *data, int len, bool verbose, const char* 
             }
         }
 
-    }
-    else {
-        u_int32_t  perc = 0xffffffff;
-        u_int32_t *p = (u_int32_t *)data;
-        for (int i=0; i<len/4; i++) {
-            if (!read(addr, p++))
+    } else {
+        u_int32_t perc = 0xffffffff;
+        u_int32_t *p = (u_int32_t*)data;
+        for (int i = 0; i < len / 4; i++) {
+            if (!read(addr, p++)) {
                 return false;
+            }
 
             addr += 4;
 
@@ -511,26 +515,26 @@ bool Flash::read(u_int32_t addr, void *data, int len, bool verbose, const char* 
 
     return true;
 } // Flash::read
-#define DISABLE_CONVERTOR(log2_chunk_size_bak, is_image_in_odd_chunks_bak) {\
-    log2_chunk_size_bak = _log2_chunk_size;\
-    is_image_in_odd_chunks_bak = _is_image_in_odd_chunks;\
-    set_address_convertor(0, 0);\
+#define DISABLE_CONVERTOR(log2_chunk_size_bak, is_image_in_odd_chunks_bak) { \
+        log2_chunk_size_bak = _log2_chunk_size; \
+        is_image_in_odd_chunks_bak = _is_image_in_odd_chunks; \
+        set_address_convertor(0, 0); \
 }
 
-#define NATIVE_PHY_ADDR_FUNC(func, arg) {\
-	bool ret = true;\
-	u_int32_t log2_chunk_size_bak, is_image_in_odd_chunks_bak;\
-	DISABLE_CONVERTOR(log2_chunk_size_bak, is_image_in_odd_chunks_bak);\
-	ret = func arg;\
-	set_address_convertor(log2_chunk_size_bak, is_image_in_odd_chunks_bak);\
-	return ret;\
+#define NATIVE_PHY_ADDR_FUNC(func, arg) { \
+        bool ret = true; \
+        u_int32_t log2_chunk_size_bak, is_image_in_odd_chunks_bak; \
+        DISABLE_CONVERTOR(log2_chunk_size_bak, is_image_in_odd_chunks_bak); \
+        ret = func arg; \
+        set_address_convertor(log2_chunk_size_bak, is_image_in_odd_chunks_bak); \
+        return ret; \
 }
-bool FBase::read_phy (u_int32_t phy_addr, u_int32_t* data)
+bool FBase::read_phy(u_int32_t phy_addr, u_int32_t *data)
 {
     NATIVE_PHY_ADDR_FUNC(read, (phy_addr, data));
 }
 
-bool FBase::read_phy (u_int32_t phy_addr, void* data, int len)
+bool FBase::read_phy(u_int32_t phy_addr, void *data, int len)
 {
     NATIVE_PHY_ADDR_FUNC(read, (phy_addr, data, len));
 }
@@ -540,38 +544,38 @@ bool Flash::write_phy(u_int32_t phy_addr, u_int32_t data)
     NATIVE_PHY_ADDR_FUNC(write, (phy_addr, data));
 }
 
-bool Flash::write_phy(u_int32_t phy_addr, void* data, int cnt, bool noerase)
+bool Flash::write_phy(u_int32_t phy_addr, void *data, int cnt, bool noerase)
 {
     // Avoid warning
     (void)noerase;
     NATIVE_PHY_ADDR_FUNC(write, (phy_addr, data, cnt));
 }
 
-bool Flash::read_modify_write_phy(u_int32_t phy_addr, void* data, int cnt, bool noerase)
+bool Flash::read_modify_write_phy(u_int32_t phy_addr, void *data, int cnt, bool noerase)
 {
     // Avoid warning
     (void)noerase;
     NATIVE_PHY_ADDR_FUNC(write_with_erase, (phy_addr, data, cnt));
 }
 
-bool Flash::read_modify_write(u_int32_t phy_addr, void* data, int cnt, bool noerase)
+bool Flash::read_modify_write(u_int32_t phy_addr, void *data, int cnt, bool noerase)
 {
     // Avoid warning
     (void)noerase;
     return write_with_erase(phy_addr, data, cnt);
 }
 
-bool Flash::erase_sector_phy  (u_int32_t phy_addr)
+bool Flash::erase_sector_phy(u_int32_t phy_addr)
 {
     NATIVE_PHY_ADDR_FUNC(erase_sector, (phy_addr));
 }
 
 
 ////////////////////////////////////////////////////////////////////////
-bool Flash::write  (u_int32_t addr,
-                    void*     data,
-                    int       cnt,
-                    bool      noerase)
+bool Flash::write(u_int32_t addr,
+                  void *data,
+                  int cnt,
+                  bool noerase)
 {
     // FIX:
     noerase = _no_erase || noerase;
@@ -586,24 +590,24 @@ bool Flash::write  (u_int32_t addr,
 
     if (cont2phys(addr + cnt) > get_size()) {
         return errmsg(
-                     "Trying to write %d bytes to address 0x%x, which exceeds max image size (0x%x - half of total flash size).",
-                     cnt,
-                     addr,
-                     get_size() / 2);
+            "Trying to write %d bytes to address 0x%x, which exceeds max image size (0x%x - half of total flash size).",
+            cnt,
+            addr,
+            get_size() / 2);
     }
 
-    u_int8_t         *p = (u_int8_t *)data;
+    u_int8_t         *p = (u_int8_t*)data;
     u_int32_t sect_size = get_current_sector_size();
 
     u_int32_t chunk_addr;
     u_int32_t chunk_size;
 
     u_int32_t first_set;
-    for (first_set = 0; ((sect_size >> first_set) & 1) == 0; first_set++ )
+    for (first_set = 0; ((sect_size >> first_set) & 1) == 0; first_set++)
         ;
 
     Aligner align(first_set);
-    align.Init (addr, cnt);
+    align.Init(addr, cnt);
     while (align.GetNextChunk(chunk_addr, chunk_size)) {
         // Write / Erase in sector_size aligned chunks
         int rc;
@@ -619,8 +623,9 @@ bool Flash::write  (u_int32_t addr,
             }
         }
 
-        if (_no_burn)
+        if (_no_burn) {
             continue;
+        }
 
         // Actual write:
         u_int32_t phys_addr = cont2phys(chunk_addr);
@@ -632,19 +637,19 @@ bool Flash::write  (u_int32_t addr,
         if (rc != MFE_OK) {
             if (rc == MFE_ICMD_BAD_PARAM || rc == MFE_REG_ACCESS_BAD_PARAM) {
                 return errmsg("Flash write of %d bytes to address %s0x%x failed: %s\n"
-                          "    This may indicate that a FW image was already updated on flash, but not loaded by the device.\n"
-                          "    Please load FW on the device (reset device or reboot machine) before burning a new FW.",
-                          chunk_size,
-                          _log2_chunk_size ? "physical " : "",
-                          chunk_addr,
-                          mf_err2str(rc));
+                              "    This may indicate that a FW image was already updated on flash, but not loaded by the device.\n"
+                              "    Please load FW on the device (reset device or reboot machine) before burning a new FW.",
+                              chunk_size,
+                              _log2_chunk_size ? "physical " : "",
+                              chunk_addr,
+                              mf_err2str(rc));
 
             } else {
                 return errmsg("Flash write of %d bytes to address %s0x%x failed: %s",
-                          chunk_size,
-                          _log2_chunk_size ? "physical " : "",
-                          chunk_addr,
-                          mf_err2str(rc));
+                              chunk_size,
+                              _log2_chunk_size ? "physical " : "",
+                              chunk_addr,
+                              mf_err2str(rc));
             }
         }
 
@@ -689,12 +694,12 @@ bool Flash::write_sector_with_erase(u_int32_t addr, void *data, int cnt)
         return errmsg("data exceeds current sector");
     }
 
-    vector<u_int32_t> buff(sector_size/sizeof(u_int32_t));
-    if (!read(sector, &buff[0] , sector_size)) {
+    vector<u_int32_t> buff(sector_size / sizeof(u_int32_t));
+    if (!read(sector, &buff[0], sector_size)) {
         return false;
     }
     if (!erase_sector(sector)) {
-            return false;
+        return false;
     }
 
     memcpy(&buff[word_in_sector], data, cnt);
@@ -724,7 +729,8 @@ bool Flash::write_with_erase(u_int32_t addr, void *data, int cnt)
     return true;
 }
 
-bool Flash::erase_sector  (u_int32_t addr) {
+bool Flash::erase_sector(u_int32_t addr)
+{
     int rc;
     u_int32_t phys_addr = cont2phys(addr);
     mft_signal_set_handling(1);
@@ -794,7 +800,8 @@ bool Flash::disable_hw_access(u_int64_t key)
 
 }
 
-bool Flash::sw_reset() {
+bool Flash::sw_reset()
+{
     int rc = mf_sw_reset(_mfl);
     if (rc != MFE_OK) {
         if (rc == MFE_UNSUPPORTED_DEVICE) {
@@ -806,13 +813,14 @@ bool Flash::sw_reset() {
 }
 
 
-bool Flash::get_attr(ext_flash_attr_t& attr) {
+bool Flash::get_attr(ext_flash_attr_t& attr)
+{
     attr.banks_num = _attr.banks_num;
     attr.hw_dev_id = _attr.hw_dev_id;
     attr.rev_id = _attr.rev_id;
     if (_attr.type_str != NULL) {
         // we don't print the flash type in old devices
-        attr.type_str = strcpy(new char[strlen(_attr.type_str)+1], _attr.type_str);
+        attr.type_str = strcpy(new char[strlen(_attr.type_str) + 1], _attr.type_str);
     }
     attr.size = _attr.size;
     attr.sector_size = _attr.sector_size;
@@ -826,7 +834,7 @@ bool Flash::get_attr(ext_flash_attr_t& attr) {
     }
     // Dummy Cycles query
     if (_attr.dummy_cycles_support) {
-    	attr.mf_get_dummy_cycles_rc = (MfError)mf_get_dummy_cycles(_mfl, &attr.dummy_cycles);
+        attr.mf_get_dummy_cycles_rc = (MfError)mf_get_dummy_cycles(_mfl, &attr.dummy_cycles);
     }
 
     // Flash write protected info query
@@ -840,28 +848,29 @@ bool Flash::get_attr(ext_flash_attr_t& attr) {
     return true;
 }
 
-const char* Flash::getFlashType() {
+const char* Flash::getFlashType()
+{
     if (_attr.type_str != NULL) {
-    	return _attr.type_str;
+        return _attr.type_str;
     }
     return (const char*)NULL;
 }
 
-#define GET_IN_PARAM(param_in, out, first_op, second_op) {\
-    if (!strcmp(param_in, first_op)) {\
-        out = 1;\
-    } else if (!strcmp(param_in, second_op)) {\
-        out = 0;\
-    } else {\
-        return errmsg("bad argument (%s) it can be " first_op " or " second_op "", param_in);\
-    }\
+#define GET_IN_PARAM(param_in, out, first_op, second_op) { \
+        if (!strcmp(param_in, first_op)) { \
+            out = 1; \
+        } else if (!strcmp(param_in, second_op)) { \
+            out = 0; \
+        } else { \
+            return errmsg("bad argument (%s) it can be " first_op " or " second_op "", param_in); \
+        } \
 }
-bool  Flash::set_attr(char *param_name, char *param_val_str)
+bool Flash::set_attr(char *param_name, char *param_val_str)
 {
     int rc;
     //TODO: make generic function that sets params
     if (!strcmp(param_name, QUAD_EN_PARAM)) {
-        char* endp;
+        char *endp;
         u_int8_t quad_en_val;
         quad_en_val = strtoul(param_val_str, &endp, 0);
         if (*endp != '\0' || quad_en_val > 1) {
@@ -872,11 +881,11 @@ bool  Flash::set_attr(char *param_name, char *param_val_str)
             return errmsg("Setting " QUAD_EN_PARAM " failed: (%s)", mf_err2str(rc));
         }
     } else if (!strcmp(param_name, DUMMY_CYCLES_PARAM)) {
-        char* endp;
+        char *endp;
         u_int8_t dummy_cycles_val;
         dummy_cycles_val = strtoul(param_val_str, &endp, 0);
         if (*endp != '\0' || dummy_cycles_val < 1 || dummy_cycles_val > 15) {
-        	// value is actually [0.15] but val=0 and val=15 indicate default state (thus they are the same so no need for both values to be accepted)
+            // value is actually [0.15] but val=0 and val=15 indicate default state (thus they are the same so no need for both values to be accepted)
             return errmsg("Bad " DUMMY_CYCLES_PARAM " value (%s), it can be [1..15]\n", param_val_str);
         }
         rc = mf_set_dummy_cycles(_mfl, dummy_cycles_val);
@@ -915,7 +924,7 @@ bool  Flash::set_attr(char *param_name, char *param_val_str)
                 if (!protect_info.sectors_num) {
                     return errmsg("Invalid sectors number, Use \"Disabled\" instead.");
                 }
-           }
+            }
             rc = mf_set_write_protect(_mfl, bank_num, &protect_info);
             if (rc != MFE_OK) {
                 return errmsg("Setting " WRITE_PROTECT " failed: (%s)", mf_err2str(rc));
@@ -948,7 +957,7 @@ bool Flash::is_flash_write_protected()
                     return true;
                 }
             }
-       }
+        }
     }
     return false;
 }
@@ -979,7 +988,7 @@ bool Flash::set_flash_working_mode(int mode)
     }
     // Verification Hook
     if (_attr.support_sub_and_sector) {
-        char* flint_io_env = getenv(FLINT_ERASE_SIZE_HOOK);
+        char *flint_io_env = getenv(FLINT_ERASE_SIZE_HOOK);
         if (flint_io_env) {
             int num =  strtoul(flint_io_env, (char**)NULL, 0);
             if (num == 0x1000 || num == 0x10000) {
