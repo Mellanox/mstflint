@@ -1367,7 +1367,7 @@ static struct mst_dev_data *mst_device_create(enum dev_type type,
     if (alloc_chrdev_region(&dev->my_dev, 0, 1, dev->name)) {
 	mst_err("failed to allocate chrdev_region\n");
     }
-    dev->cl = class_create(THIS_MODULE, dev->name)
+    dev->cl = class_create(THIS_MODULE, dev->name);
     if (dev->cl == NULL) {
 	printk(KERN_ALERT "Class creation failed\n");
 	unregister_chrdev_region(dev->my_dev, 1);
