@@ -3263,12 +3263,12 @@ bool Fs3Operations::CalcHMAC(const vector<u_int8_t>& key, vector<u_int8_t>& dige
     mlxSignHMAC << data;
     mlxSignHMAC.getDigest(digest);
 
-    return true;
 #else
     (void)key;
     (void)digest;
-    return errmsg("HMAC calculation is not implemented\n");
 #endif
+
+    return true;
 }
 
 bool Fs3Operations::AddHMACIfNeeded(Fs3Operations* imageOps, Flash *f)
