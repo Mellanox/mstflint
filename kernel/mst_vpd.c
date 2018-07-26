@@ -1,33 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0 OR Linux-OpenIB
 /*
- * Copyright (c) 2011-2014 Mellanox Technologies, Inc. All rights reserved.
- *
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
- * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
- * OpenIB.org BSD license below:
- *
- *     Redistribution and use in source and binary forms, with or
- *     without modification, are permitted provided that the following
- *     conditions are met:
- *
- *      - Redistributions of source code must retain the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer.
- *
- *      - Redistributions in binary form must reproduce the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * Copyright (c) 2018, Mellanox Technologies inc.  All rights reserved.
  */
 
 #include <linux/highmem.h>
@@ -37,7 +10,7 @@
 
 /****************************************************/
 int pci_read4_vpd(struct mst_dev_data *dev, unsigned int timeout,
-		unsigned offset, u32 *buf)
+		unsigned int offset, u32 *buf)
 {
 	struct pci_dev *pci_dev = dev->pci_dev;
 	int vpd_cap = dev->vpd_cap_addr;
@@ -51,9 +24,8 @@ int pci_read4_vpd(struct mst_dev_data *dev, unsigned int timeout,
 		return -ENODEV;
 	}
 
-	if (!timeout) {
+	if (!timeout)
 		timeout = MST_VPD_DEFAULT_TOUT;
-	}
 
 	/* sets F bit to zero and write VPD addr */
 	addr = (0x7fff & offset);
@@ -83,9 +55,8 @@ int pci_read4_vpd(struct mst_dev_data *dev, unsigned int timeout,
 		cond_resched();
 	}
 
-	if (!done) {
+	if (!done)
 		return -ETIMEDOUT;
-	}
 
 	/* read data */
 	res = pci_read_config_dword(pci_dev, vpd_cap + PCI_VPD_DATA, buf);
@@ -99,7 +70,7 @@ int pci_read4_vpd(struct mst_dev_data *dev, unsigned int timeout,
 EXPORT_SYMBOL(pci_read4_vpd);
 
 int pci_write4_vpd(struct mst_dev_data *dev, unsigned int timeout,
-		unsigned offset, u32 buf)
+		unsigned int offset, u32 buf)
 {
 	struct pci_dev *pci_dev = dev->pci_dev;
 	int vpd_cap = dev->vpd_cap_addr;
@@ -113,9 +84,8 @@ int pci_write4_vpd(struct mst_dev_data *dev, unsigned int timeout,
 		return -ENODEV;
 	}
 
-	if (!timeout) {
+	if (!timeout)
 		timeout = MST_VPD_DEFAULT_TOUT;
-	}
 
 	/* write data */
 	res = pci_write_config_dword(pci_dev, vpd_cap + PCI_VPD_DATA, buf);
@@ -152,9 +122,8 @@ int pci_write4_vpd(struct mst_dev_data *dev, unsigned int timeout,
 		cond_resched();
 	}
 
-	if (!done) {
+	if (!done)
 		return -ETIMEDOUT;
-	}
 
 	return res;
 }

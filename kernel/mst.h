@@ -1,33 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0 OR Linux-OpenIB */
 /*
- * Copyright (c) 2011-2014 Mellanox Technologies, Inc. All rights reserved.
- *
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
- * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
- * OpenIB.org BSD license below:
- *
- *     Redistribution and use in source and binary forms, with or
- *     without modification, are permitted provided that the following
- *     conditions are met:
- *
- *      - Redistributions of source code must retain the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer.
- *
- *      - Redistributions in binary form must reproduce the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * Copyright (c) 2018 Mellanox Technologies. All rights reserved.
  */
 
 #ifndef _MST_H_
@@ -61,10 +34,10 @@ struct mst_params {
 	unsigned int func;
 	unsigned int bar;
 	unsigned int device;
-    unsigned int vendor;
+	unsigned int vendor;
 	unsigned int subsystem_device;
-    unsigned int subsystem_vendor;
-    unsigned int vendor_specific_cap;
+	unsigned int subsystem_vendor;
+	unsigned int vendor_specific_cap;
 };
 
 typedef uint32_t u32;
@@ -74,18 +47,18 @@ typedef uint32_t u32;
 #define MST_READ4 _IOR(MST_BYTE_ACCESS_MAGIC, 1, struct mst_read4_st)
 
 struct mst_read4_st {
-        unsigned int address_space;
-        unsigned int offset;
-        unsigned int data; /*OUT*/
+	unsigned int address_space;
+	unsigned int offset;
+	unsigned int data; /*OUT*/
 };
 
 
 #define MST_WRITE4 _IOW(MST_BYTE_ACCESS_MAGIC, 2, struct mst_write4_st)
 
 struct mst_write4_st {
-        unsigned int address_space;
-        unsigned int offset;
-        unsigned int data;
+	unsigned int address_space;
+	unsigned int offset;
+	unsigned int data;
 };
 
 
@@ -115,20 +88,20 @@ struct mst_write_block_st {
 };
 
 
-#define PCICONF_READ4_BUFFER  _IOR (MST_BLOCK_ACCESS_MAGIC, 3, struct mst_read4_st)
+#define PCICONF_READ4_BUFFER  _IOR(MST_BLOCK_ACCESS_MAGIC, 3, struct mst_read4_st)
 struct mst_read4_buffer_st {
-        unsigned int address_space;
-        unsigned int offset;
-        int size;
-        unsigned int data[PCICONF_MAX_BUFFER_SIZE/4]; /*OUT*/
+	unsigned int address_space;
+	unsigned int offset;
+	int size;
+	unsigned int data[PCICONF_MAX_BUFFER_SIZE/4]; /*OUT*/
 };
 
-#define PCICONF_WRITE4_BUFFER _IOW (MST_BLOCK_ACCESS_MAGIC, 4, struct mst_write4_buffer_st)
+#define PCICONF_WRITE4_BUFFER _IOW(MST_BLOCK_ACCESS_MAGIC, 4, struct mst_write4_buffer_st)
 struct mst_write4_buffer_st {
-        unsigned int address_space;
-        unsigned int offset;
-        int size;
-        unsigned int data[PCICONF_MAX_BUFFER_SIZE/4]; /*IN*/
+	unsigned int address_space;
+	unsigned int offset;
+	int size;
+	unsigned int data[PCICONF_MAX_BUFFER_SIZE/4]; /*IN*/
 };
 /****************************************************/
 /*
