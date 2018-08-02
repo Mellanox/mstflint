@@ -998,7 +998,7 @@ def resetPciAddr(device,devicesSD,driverObj, cmdLineArgs):
     else:
         pci_device_to_poll = DevDBDF
 
-    logger.debug('device_to_poll={}'.format(pci_device_to_poll))
+    logger.debug('device_to_poll={0}'.format(pci_device_to_poll))
 
 
     if isWindows is False: # relevant for ppc(p7) TODO check power8/9 shouldn't use mst-save/load
