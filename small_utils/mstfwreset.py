@@ -608,38 +608,6 @@ class MlnxPciOpLinuxUl(MlnxPciOpLinux): # Copied from old commit - TODO need to 
                 logger.info('old kernel')
                 self.loadPciConfOptimalValues(devAddr)
 
-class MlnxPciOpLinuxUl(MlnxPciOpLinux): # Copied from old commit - TODO need to use the same logic of mst load/save
-    def __init__(self):
-        super(MlnxPciOpLinuxUl, self).__init__()
-        self.pciConfSpaceMap = {}
-
-    def savePCIConfigurationSpace(self, devAddr):
-        confSpaceList = []
-        for addr in range(0, 0xff, 4):
-            if (addr == 0x58 or addr == 0x5c):
-                confSpaceList.append(0)
-                continue
-            val = self.read(devAddr, addr)
-            confSpaceList.append(val)
-        self.pciConfSpaceMap[devAddr] = confSpaceList
-        return
-
-    def loadPCIConfigurationSpace(self, devAddr):
-        pciConfSpaceList = []
-        try:
-            pciConfSpaceList = self.pciConfSpaceMap[devAddr]
-        except KeyError as ke:
-            raise RuntimeError("PCI configuration space for device %s was not saved please reboot server" % devAddr)
-        if len(pciConfSpaceList) != 64:
-            raise RuntimeError("PCI configuration space for device %s was not saved properly please reboot server" % devAddr)
-        for i in range(0, 64):
-            addr = i * 4
-            if (addr == 0x58 or addr == 0x5c):
-                continue
-            self.write(devAddr, addr, pciConfSpaceList[i])
-        return
-
-
 class MlnxPciOpFreeBSD(MlnxPciOp):
 
     def __init__(self):
@@ -1030,7 +998,7 @@ def resetPciAddr(device,devicesSD,driverObj, cmdLineArgs):
     else:
         pci_device_to_poll = DevDBDF
 
-    logger.debug('device_to_poll={}'.format(pci_device_to_poll))
+    logger.debug('device_to_poll={0}'.format(pci_device_to_poll))
 
 
     if isWindows is False: # relevant for ppc(p7) TODO check power8/9 shouldn't use mst-save/load
