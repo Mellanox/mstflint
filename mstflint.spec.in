@@ -105,6 +105,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/mstmcra
 %{_bindir}/mstconfig
 %{_bindir}/mstfwreset
+%{_bindir}/mstcongestion
 %if %{enablefwmgr}
  %{_bindir}/mstfwmanager
 %{CONF_DIR}/ca-bundle.crt
