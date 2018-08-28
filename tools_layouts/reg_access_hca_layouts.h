@@ -1,37 +1,20 @@
-/*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+
+/*                  - Mellanox Confidential and Proprietary -
  *
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
- * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
- * OpenIB.org BSD license below:
+ *  Copyright (C) 2010-2011, Mellanox Technologies Ltd.  ALL RIGHTS RESERVED.
  *
- *     Redistribution and use in source and binary forms, with or
- *     without modification, are permitted provided that the following
- *     conditions are met:
+ *  Except as specifically permitted herein, no portion of the information,
+ *  including but not limited to object code and source code, may be reproduced,
+ *  modified, distributed, republished or otherwise exploited in any form or by
+ *  any means for any purpose without the prior written permission of Mellanox
+ *  Technologies Ltd. Use of software subject to the terms and conditions
+ *  detailed in the file "LICENSE.txt".
  *
- *      - Redistributions of source code must retain the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer.
- *
- *      - Redistributions in binary form must reproduce the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
  */
-  
+ 
+
 /***
-         *** This file was generated at "2018-06-04 12:03:02"
+         *** This file was generated at "2018-09-12 08:13:00"
          *** by:
          ***    > /mswg/release/tools/a-me/last_stable/adabe_plugins/adb2c/adb2pack.py --input adb/prm/hca/int/reg_access_hca.adb --file-prefix reg_access_hca --prefix reg_access_hca_
          ***/
@@ -140,6 +123,21 @@ union reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto {
 
 /* Description -   */
 /* Size in bytes - 32 */
+struct reg_access_hca_irisc_hang_mini_flow_modifier {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Bit per Irisc. When set, IRISC will hang (The miniflow does not 
+release the Irisc when done) */
+	/* 0x0.0 - 0x0.31 */
+	u_int32_t irisc_hang_mask;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - Bit per Irisc. When set, the device supports causing the respective 
+Irisc to hang using this miniflow. */
+	/* 0x4.0 - 0x4.31 */
+	u_int32_t irisc_hang_cap_mask;
+};
+
+/* Description -   */
+/* Size in bytes - 32 */
 struct reg_access_hca_lock_source_stop_toggle_modifier {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Resource type category
@@ -154,47 +152,37 @@ Other values are reserved */
 category
  field
 For GENERAL_SEMAPHORE 
- See Table  694, "
+ See Table  711, "
 GENERAL_SEMA
 PHORE Category Layout
-," on page  905
+," on page  925
 For ICM_RESOURCE 
- See Table  696, "
+ See Table  713, "
 ICM_RESOURCE Category 
 Layout
-," on page  906
+," on page  925
 For UAPP_RESOURCE 
- See Table  698, "
+ See Table  715, "
 UAPP_RESOURCE Category 
 Layout
-," on page  906 */
+," on page  926 */
 	/* 0x4.0 - 0x1c.31 */
 	union reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto category_modifier;
 };
 
 /* Description -   */
 /* Size in bytes - 32 */
-struct reg_access_hca_mini_flow_irisc_hang_modifier {
+struct reg_access_hca_packet_drop_mini_flow_modifier {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - mask of IRISCs to hang */
-	/* 0x0.0 - 0x0.31 */
-	u_int32_t irisc_hang_mask;
-/*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - mask of supported IRISCs */
-	/* 0x4.0 - 0x4.31 */
-	u_int32_t irisc_cap_mask;
-};
-
-/* Description -   */
-/* Size in bytes - 32 */
-struct reg_access_hca_mini_flow_packet_drop_modifier {
-/*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Number of packets to drop */
+	/* Description - The number of dropped packets when the Miniflow is activated */
 	/* 0x0.0 - 0x0.3 */
-	u_int8_t num_of_packets;
-	/* Description - Port_number */
+	u_int8_t num_packets;
+	/* Description - Physical Port Number
+1: port_number1
+2: port_number2
+Other values are reserved */
 	/* 0x0.24 - 0x0.31 */
-	u_int8_t port_num;
+	u_int8_t port_number;
 };
 
 /* Description -   */
@@ -214,7 +202,22 @@ bit 15: VL_TC_15
 Other bits are reserved */
 	/* 0x0.0 - 0x0.15 */
 	u_int16_t vl_tc_mask;
-	/* Description - Physical Port Number */
+	/* Description - Physical Port Number
+1: port_number1
+2: port_number2
+Other values are reserved */
+	/* 0x0.24 - 0x0.31 */
+	u_int8_t port_number;
+};
+
+/* Description -   */
+/* Size in bytes - 32 */
+struct reg_access_hca_sxp_hang_stop_toggle_modifier {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Physical Port Number
+1: port_number1
+2: port_number2
+Other values are reserved */
 	/* 0x0.24 - 0x0.31 */
 	u_int8_t port_number;
 };
@@ -268,14 +271,11 @@ Bit 1: Sandbox_qp - Sandbox QP supported */
 
 /* Description -   */
 /* Size in bytes - 32 */
-union reg_access_hca_mini_flow_per_type_modifier_auto {
+struct reg_access_hca_smbus_failed_fault_inject_modifier {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description -  */
-	/* 0x0.0 - 0x1c.31 */
-	struct reg_access_hca_mini_flow_packet_drop_modifier packet_drop;
-	/* Description -  */
-	/* 0x0.0 - 0x1c.31 */
-	struct reg_access_hca_mini_flow_irisc_hang_modifier irisc_hang;
+	/* Description - SMBUS GW identifier */
+	/* 0x0.0 - 0x0.7 */
+	u_int8_t smbus_gw;
 };
 
 /* Description -   */
@@ -294,6 +294,18 @@ data base, given in bytes. */
 
 /* Description -   */
 /* Size in bytes - 32 */
+union reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0x0.0 - 0x1c.31 */
+	struct reg_access_hca_irisc_hang_mini_flow_modifier irisc_hang_mini_flow_modifier;
+	/* Description -  */
+	/* 0x0.0 - 0x1c.31 */
+	struct reg_access_hca_packet_drop_mini_flow_modifier packet_drop_mini_flow_modifier;
+};
+
+/* Description -   */
+/* Size in bytes - 32 */
 union reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
@@ -302,6 +314,9 @@ union reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto {
 	/* Description -  */
 	/* 0x0.0 - 0x1c.31 */
 	struct reg_access_hca_lock_source_stop_toggle_modifier lock_source_stop_toggle_modifier;
+	/* Description -  */
+	/* 0x0.0 - 0x1c.31 */
+	struct reg_access_hca_sxp_hang_stop_toggle_modifier sxp_hang_stop_toggle_modifier;
 };
 
 /* Description -   */
@@ -359,10 +374,10 @@ FPGA_CTRL are supported. */
 	/* 0x8.30 - 0x8.30 */
 	u_int8_t flash_gw_lock;
 	/* Description - If set, SW is allowed to modify FPGA_CTRL register. See
- Table  680, 
+ Table  695, 
 "
 FPGA_CTRL Register Layout
-," on page  897 */
+," on page  916 */
 	/* 0x8.31 - 0x8.31 */
 	u_int8_t fpga_ctrl_modify;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
@@ -411,10 +426,10 @@ For Mellanox sandbox products
 /*---------------- DWORD[30] (Offset 0x78) ----------------*/
 	/* Description - Sandbox basic capabilities per sandbox product ID.
 For Mellanox sandbox products, see
- Table  637, "
+ Table  650, "
 IPsec_Basic_Capabili
 ties Structure Layout
-," on page  850
+," on page  869
 . */
 	/* 0x78.0 - 0x78.31 */
 	u_int32_t sandbox_basic_caps;
@@ -426,10 +441,10 @@ when such capability is not present). */
 /*---------------- DWORD[32] (Offset 0x80) ----------------*/
 	/* Description - Extended capabilities address.
 For Mellanox sandbox products, see
- Table  639, "
+ Table  652, "
 IPsec_Extended_Capa
 bilities Structure Layout
-," on page  850
+," on page  869
 . */
 	/* 0x80.0 - 0x84.31 */
 	u_int64_t sandbox_extended_caps_addr;
@@ -466,10 +481,10 @@ Valid only for query operation. */
 	u_int8_t status;
 	/* Description - Indicates the control operation to be performed. Allowed only when 
 FPGA_CAP.fpga_ctrl_modify==1. 
- See Table  676, "
+ See Table  691, "
 FPGA_CAP Regis
 ter Layout
-," on page  893
+," on page  912
 .
 0x1: LOAD - when set, the FPGA will be forced to reload the image 
 from flash according to 
@@ -557,7 +572,8 @@ NENT instructions. Otherwise, this field is reserved. */
 See 
 "
 Update Handle
-" on page 548 */
+" on page 557
+. */
 	/* 0x8.0 - 0x8.23 */
 	u_int32_t update_handle;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
@@ -565,7 +581,7 @@ Update Handle
 , See 
 "
 FSM States
-" on page 551
+" on page 560
 0x0: IDLE
 0x1: LOCKED
 0x2: INITIALIZE
@@ -585,7 +601,7 @@ the reason it failed.
 See 
 "
 Error Handling
-" on page 550
+" on page 559
 0x0: OK
 0x1: ERROR
 0x2: REJECTED_DIGEST_ERR
@@ -633,8 +649,8 @@ Other values are reserved. */
 	u_int8_t handle_owner_type;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - Component size in bytes. 
-Valid for UPDATE_COMPONENT instruction. Specifying 
-the size may shorten the update time.
+Valid for UPDATE_COMPONENT instruction. Specify
+ing the size may shorten the update time.
 Value 0x0 means that size is unspecified. */
 	/* 0x10.0 - 0x10.31 */
 	u_int32_t component_size;
@@ -652,10 +668,10 @@ struct reg_access_hca_mcda_reg {
 Accesses must be in accordance to 
 log_mcda_word_size
  in 
-Table 1058, "
+Table 1113, "
 MCQI CAPABILITIES Info Layout
 ," on 
-page 1188 */
+page 1246 */
 	/* 0x4.0 - 0x4.31 */
 	u_int32_t offset;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
@@ -764,7 +780,8 @@ nent update. */
 "
 Read Flow
 " 
-on page 550 */
+on page 559
+. */
 	/* 0x10.31 - 0x10.31 */
 	u_int8_t rd_en;
 };
@@ -815,20 +832,20 @@ padded. */
 info_type
 .
 CAPABILITIES - See 
-Table 1058, "
-MCQI CAPABILI
-TIES Info Layout
-," on page 1188
+Table 1113, "
+MCQI CAPABILITIES 
+Info Layout
+," on page 1246
 VERSION - See 
-Table 1060, "
+Table 1115, "
 MCQI VERSION Info Lay
 out
-," on page 1189
+," on page 1248
 ACTIVATION_METHOD - See 
-Table 1064, "
+Table 1119, "
 MCQI 
 ACTIVATION_METHOD Info Layout
-," on page 1191 */
+," on page 1250 */
 	/* 0x18.0 - 0x18.31 */
 	u_int32_t *data;
 };
@@ -855,12 +872,13 @@ build_time */
 	u_int32_t version;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - Time of component creation. Valid only if 
-build_time_valid
- 
-is set. See 
-Table 1062, "
+build_
+time_valid
+ is set. See 
+Table 1117, "
 Date-Time Layout
-," on page 1190 */
+," on 
+page 1249 */
 	/* 0x8.0 - 0xc.31 */
 	u_int64_t build_time;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
@@ -868,10 +886,10 @@ Date-Time Layout
 only if 
 user_defined_time_valid
  is set. See 
-Table 1062, 
+Table 1117, 
 "
 Date-Time Layout
-," on page 1190 */
+," on page 1249 */
 	/* 0x10.0 - 0x14.31 */
 	u_int64_t user_defined_time;
 /*---------------- DWORD[6] (Offset 0x18) ----------------*/
@@ -916,7 +934,7 @@ see
 "
 Component Update 
 State
-" on page 547
+" on page 556
 :
 0x0: IDLE
 0x1: IN_PROGRESS
@@ -962,35 +980,123 @@ Other values are reserved */
 };
 
 /* Description -   */
-/* Size in bytes - 128 */
+/* Size in bytes - 160 */
 struct reg_access_hca_mgir {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Hardware Information, see 
-Table 971, "
+Table 1010, "
 Hardware Info Layout
 ," 
-on page 1132 */
+on page 1179 */
 	/* 0x0.0 - 0x1c.31 */
 	u_int32_t hw_info[8];
 /*---------------- DWORD[8] (Offset 0x20) ----------------*/
 	/* Description - Firmware Information, see 
-Table 973, "
+Table 1012, "
 Firmware Info Layout
 ," 
-on page 1134 */
+on page 1181 */
 	/* 0x20.0 - 0x5c.31 */
 	u_int32_t fw_info[16];
 /*---------------- DWORD[24] (Offset 0x60) ----------------*/
 	/* Description - Software Information, see 
-Table 975, "
+Table 1014, "
 Software Info Layout
-," on 
-page 1136
+," 
+on page 1183
 This field indicates 
 the oldest software version compatible 
 with the current firmware */
 	/* 0x60.0 - 0x7c.31 */
 	u_int32_t sw_info[8];
+/*---------------- DWORD[32] (Offset 0x80) ----------------*/
+	/* Description - [Internal]: Development Information, see 
+Table 1018, "
+Develop
+ment Info Layout
+," on page 1185 */
+	/* 0x80.0 - 0x98.31 */
+	u_int32_t dev_info[7];
+};
+
+/* Description -   */
+/* Size in bytes - 44 */
+struct reg_access_hca_mpegc_reg {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - the node within each depth. */
+	/* 0x0.8 - 0x0.15 */
+	u_int8_t node;
+	/* Description - PCI
+e
+ index number (
+Internal domain index)
+Reserved when access is from the host */
+	/* 0x0.16 - 0x0.23 */
+	u_int8_t pcie_index;
+	/* Description - depth level of the DUT of some hierarchy */
+	/* 0x0.24 - 0x0.29 */
+	u_int8_t depth;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - Field select indicated which writable fields to modify.
+Bit 0: 
+tx_lossy_overflow_oper
+Bit 1 : 
+outbound_stalled_reads_th
+Bit 2 :
+outbound_stalled_writes_th
+Bit 3 : tx_overflow_sense
+Bit 4 : mark_tx_action_cqe
+Bit 5 : mark_tx_action_cnp */
+	/* 0x4.0 - 0x4.15 */
+	u_int16_t field_select;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - When overflow encountered for lossy packets, it will be dropped or 
+marked and will be counted in "
+tx_overflow_buffer_
+dropped_
+pkt
+" or "tx_overflow_buffer_marked_pkt" counter.
+00 - Disabled
+01 - drop - overflow traffic will be dropped. 
+ 
+10 - mark - overflow traffic will be marked in the CE field in the 
+CqE. 
+ Supported only when MCAM.mark_tx_action_cqe or 
+MCAM.mark_tx_action_cnp are '1'. */
+	/* 0x8.0 - 0x8.1 */
+	u_int8_t tx_lossy_overflow_oper;
+	/* Description -  */
+	/* 0x8.8 - 0x8.9 */
+	u_int8_t tx_lossless_overflow_oper;
+	/* Description - When this bit is set, the marking action will be generating a CNP for 
+RoCE traffic. Supported only when MCAM.mark_tx_action_cnp is 
+'1'. */
+	/* 0x8.29 - 0x8.29 */
+	u_int8_t mark_cnp;
+	/* Description - When this bit is set, the marking action will be set in the CqE for 
+TCP traffic. Supported only when MCAM.mark_tx_action_cqe is 
+'1'. */
+	/* 0x8.30 - 0x8.30 */
+	u_int8_t mark_cqe;
+	/* Description - Set the sensibility level of the tx overflow mechanism. 
+0 - Aggressive 
+1 - Dynamic adjustment. When tx_lossy_over
+flow_oper is disabled, tx_overflow_sense must be disabled. 
+Sup
+ported only when MCAM.dynamic_tx_oveflow is '1'. */
+	/* 0x8.31 - 0x8.31 */
+	u_int8_t tx_overflow_sense;
+/*---------------- DWORD[3] (Offset 0xc) ----------------*/
+	/* Description - Each time that the counter outbound_stalled_writes will exceed this 
+threshold, will be counted in the counter out
+bound_stalled_writes_events - range 0   100. */
+	/* 0xc.0 - 0xc.6 */
+	u_int8_t outbound_stalled_writes_th;
+	/* Description - Each time that the counter outbound_stalled_reads will exceed this 
+threshold, will be counted in the counter out
+bound_stalled_reads_events - range 0   100. */
+	/* 0xc.8 - 0xc.14 */
+	u_int8_t outbound_stalled_reads_th;
 };
 
 /* Description -   */
@@ -998,8 +1104,8 @@ with the current firmware */
 struct reg_access_hca_mqis_reg {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Type of information string to be queried:
-0x0: VPD - Read the PCI Vital Product Data capability con
-tent.
+0x0: VPD - Read the PCI Vital Product Data capability 
+content.
 0x1: MODEL_NAME
 0x2: MODEL_DESCRIPTION
 other values are reserved. */
@@ -1040,7 +1146,7 @@ struct reg_access_hca_mtrc_cap_reg {
 See, 
 "
 Timestamp Event Traces
-" on page 873
+" on page 892
 0x0: VER_0
 0x1: VER_1
 other values are reserved */
@@ -1089,10 +1195,7 @@ admin_status
  = UP)
 Cleared by FW once PAOS.admin_status = UP command is set.
 The register can be set only when port operational status is UP 
-(PAOS.
-oper_status
-=
-0x1) 
+(PAOS.oper_status=0x1) 
 NOTE: if physical environment was changed (i.e. replacement of 
 module, temp change, etc) there is a possibility that link won't be 
 established or will be established with high BER */
@@ -1155,8 +1258,9 @@ checking SXD fences done
 0x8: GENERAL_FENCE_BUSY - cause FW to return busy when 
 checking other fences done
 0x9: 
-FAULT_INJECT_SMBUS_FAILED - cause FW to indicate 
-failure upon initiating SMBus transaction
+S
+MBUS_FAILED - cause FW to indicate failure upon initiating 
+SMBus transaction
 Other values are reserved */
 	/* 0x4.0 - 0x4.7 */
 	u_int8_t type;
@@ -1186,6 +1290,20 @@ num_repeat
  indicates the Fault will not be injected. */
 	/* 0xc.0 - 0xc.15 */
 	u_int16_t num_repeat;
+/*---------------- DWORD[4] (Offset 0x10) ----------------*/
+	/* Description - stressor Modifier according to 
+type
+ field.
+For 
+SMBUS_FAILED
+,
+ See Table  719, "
+SMBUS_FAILED Fault Inject 
+M
+odifier Layout
+," on page  929 */
+	/* 0x10.0 - 0x2c.31 */
+	struct reg_access_hca_smbus_failed_fault_inject_modifier per_type_modifier;
 };
 
 /* Description -   */
@@ -1220,6 +1338,8 @@ machine read
 0xC: INVALIDATE_GUID_CACHE
 0xD: INVALIDATE_PORT_INFO_CACHE
 0xE: INVALIDATE_QP_CACHE
+0xF: IRISC_HANG
+0x10: PACKET_DROP
 Other values are reserved */
 	/* 0x4.0 - 0x4.7 */
 	u_int8_t type;
@@ -1246,9 +1366,24 @@ freq
 	/* 0xc.0 - 0xc.15 */
 	u_int16_t num_repeat;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
-	/* Description - Parsed according to specific type */
+	/* Description - stressor Modifier according to 
+type
+ field
+.
+For IRISC_HANG 
+ See Table  723, "
+IRISC_HANG Mini-Flow M
+odifier 
+Layout
+," on page  930
+For PACKET_DROP 
+ See Table  725, "
+PACKET_DROP Mini-Flow 
+M
+odifier Layout
+," on page  931 */
 	/* 0x10.0 - 0x2c.31 */
-	union reg_access_hca_mini_flow_per_type_modifier_auto per_type_modifier;
+	union reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto per_type_modifier;
 };
 
 /* Description -   */
@@ -1297,8 +1432,10 @@ struct reg_access_hca_strs_stop_toggle_reg {
 ets on DC LIFO empty
 0x1: RXT_CHECKS - stop FW machine which handles RX trans
 port check traps
-0x2: TIMOUT - stop FW machine which handles QP transport time
-out events
+0x2: TIM
+E
+OUT - stop FW machine which handles QP transport tim
+eout events
 0x3: SX_ERROR - stop FW machine which handles SX WQE or 
 data gather errors
 0x4: RX_ERROR - stop FW machine which handles all RX errors 
@@ -1352,15 +1489,21 @@ The Stressor will have the opposite behavior when it is not active. */
 type
  field.
 For RXB_HANG 
- See Table  690, "
+ See Table  705, "
 RXB_HANG Stop Toggle Modifier 
 Layout
-," on page  904
+," on page  923
 For LOCK_RESOURCE 
- See Table  692, "
+ See Table  709, "
 LOCK_RESOURCE Stop 
 Toggle Modifier Layout
-," on page  904 */
+," on page  924
+For SXP_HANG 
+ See Table  707, "
+SXP_
+HANG Stop Toggle Modifier 
+Layout
+," on page  924 */
 	/* 0x10.0 - 0x2c.31 */
 	union reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto per_type_modifier;
 };
@@ -1391,11 +1534,14 @@ union reg_access_hca_reg_access_hca_Nodes {
 	/* 0x0.0 - 0x80.31 */
 	struct reg_access_hca_mtrc_cap_reg mtrc_cap_reg;
 	/* Description -  */
-	/* 0x0.0 - 0x7c.31 */
+	/* 0x0.0 - 0x9c.31 */
 	struct reg_access_hca_mgir mgir;
 	/* Description -  */
 	/* 0x0.0 - 0x0.31 */
 	struct reg_access_hca_mcqi_activation_method mcqi_activation_method;
+	/* Description -  */
+	/* 0x0.0 - 0x28.31 */
+	struct reg_access_hca_mpegc_reg mpegc_reg;
 	/* Description -  */
 	/* 0x0.0 - 0x3c.31 */
 	struct reg_access_hca_strs_fault_inject_reg strs_fault_inject_reg;
@@ -1452,6 +1598,13 @@ void reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto_prin
 unsigned int reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto_size(void);
 #define REG_ACCESS_HCA_LOCK_SOURCE_STOP_TOGGLE_MODIFIER_CATEGORY_MODIFIER_AUTO_SIZE    (0x1c)
 void reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto_dump(const union reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto *ptr_struct, FILE *fd);
+/* irisc_hang_mini_flow_modifier */
+void reg_access_hca_irisc_hang_mini_flow_modifier_pack(const struct reg_access_hca_irisc_hang_mini_flow_modifier *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_hca_irisc_hang_mini_flow_modifier_unpack(struct reg_access_hca_irisc_hang_mini_flow_modifier *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_hca_irisc_hang_mini_flow_modifier_print(const struct reg_access_hca_irisc_hang_mini_flow_modifier *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_hca_irisc_hang_mini_flow_modifier_size(void);
+#define REG_ACCESS_HCA_IRISC_HANG_MINI_FLOW_MODIFIER_SIZE    (0x20)
+void reg_access_hca_irisc_hang_mini_flow_modifier_dump(const struct reg_access_hca_irisc_hang_mini_flow_modifier *ptr_struct, FILE *fd);
 /* lock_source_stop_toggle_modifier */
 void reg_access_hca_lock_source_stop_toggle_modifier_pack(const struct reg_access_hca_lock_source_stop_toggle_modifier *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_hca_lock_source_stop_toggle_modifier_unpack(struct reg_access_hca_lock_source_stop_toggle_modifier *ptr_struct, const u_int8_t *ptr_buff);
@@ -1459,20 +1612,13 @@ void reg_access_hca_lock_source_stop_toggle_modifier_print(const struct reg_acce
 unsigned int reg_access_hca_lock_source_stop_toggle_modifier_size(void);
 #define REG_ACCESS_HCA_LOCK_SOURCE_STOP_TOGGLE_MODIFIER_SIZE    (0x20)
 void reg_access_hca_lock_source_stop_toggle_modifier_dump(const struct reg_access_hca_lock_source_stop_toggle_modifier *ptr_struct, FILE *fd);
-/* mini_flow_irisc_hang_modifier */
-void reg_access_hca_mini_flow_irisc_hang_modifier_pack(const struct reg_access_hca_mini_flow_irisc_hang_modifier *ptr_struct, u_int8_t *ptr_buff);
-void reg_access_hca_mini_flow_irisc_hang_modifier_unpack(struct reg_access_hca_mini_flow_irisc_hang_modifier *ptr_struct, const u_int8_t *ptr_buff);
-void reg_access_hca_mini_flow_irisc_hang_modifier_print(const struct reg_access_hca_mini_flow_irisc_hang_modifier *ptr_struct, FILE *fd, int indent_level);
-unsigned int reg_access_hca_mini_flow_irisc_hang_modifier_size(void);
-#define REG_ACCESS_HCA_MINI_FLOW_IRISC_HANG_MODIFIER_SIZE    (0x20)
-void reg_access_hca_mini_flow_irisc_hang_modifier_dump(const struct reg_access_hca_mini_flow_irisc_hang_modifier *ptr_struct, FILE *fd);
-/* mini_flow_packet_drop_modifier */
-void reg_access_hca_mini_flow_packet_drop_modifier_pack(const struct reg_access_hca_mini_flow_packet_drop_modifier *ptr_struct, u_int8_t *ptr_buff);
-void reg_access_hca_mini_flow_packet_drop_modifier_unpack(struct reg_access_hca_mini_flow_packet_drop_modifier *ptr_struct, const u_int8_t *ptr_buff);
-void reg_access_hca_mini_flow_packet_drop_modifier_print(const struct reg_access_hca_mini_flow_packet_drop_modifier *ptr_struct, FILE *fd, int indent_level);
-unsigned int reg_access_hca_mini_flow_packet_drop_modifier_size(void);
-#define REG_ACCESS_HCA_MINI_FLOW_PACKET_DROP_MODIFIER_SIZE    (0x20)
-void reg_access_hca_mini_flow_packet_drop_modifier_dump(const struct reg_access_hca_mini_flow_packet_drop_modifier *ptr_struct, FILE *fd);
+/* packet_drop_mini_flow_modifier */
+void reg_access_hca_packet_drop_mini_flow_modifier_pack(const struct reg_access_hca_packet_drop_mini_flow_modifier *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_hca_packet_drop_mini_flow_modifier_unpack(struct reg_access_hca_packet_drop_mini_flow_modifier *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_hca_packet_drop_mini_flow_modifier_print(const struct reg_access_hca_packet_drop_mini_flow_modifier *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_hca_packet_drop_mini_flow_modifier_size(void);
+#define REG_ACCESS_HCA_PACKET_DROP_MINI_FLOW_MODIFIER_SIZE    (0x20)
+void reg_access_hca_packet_drop_mini_flow_modifier_dump(const struct reg_access_hca_packet_drop_mini_flow_modifier *ptr_struct, FILE *fd);
 /* rxb_hang_stop_toggle_modifier */
 void reg_access_hca_rxb_hang_stop_toggle_modifier_pack(const struct reg_access_hca_rxb_hang_stop_toggle_modifier *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_hca_rxb_hang_stop_toggle_modifier_unpack(struct reg_access_hca_rxb_hang_stop_toggle_modifier *ptr_struct, const u_int8_t *ptr_buff);
@@ -1480,6 +1626,13 @@ void reg_access_hca_rxb_hang_stop_toggle_modifier_print(const struct reg_access_
 unsigned int reg_access_hca_rxb_hang_stop_toggle_modifier_size(void);
 #define REG_ACCESS_HCA_RXB_HANG_STOP_TOGGLE_MODIFIER_SIZE    (0x20)
 void reg_access_hca_rxb_hang_stop_toggle_modifier_dump(const struct reg_access_hca_rxb_hang_stop_toggle_modifier *ptr_struct, FILE *fd);
+/* sxp_hang_stop_toggle_modifier */
+void reg_access_hca_sxp_hang_stop_toggle_modifier_pack(const struct reg_access_hca_sxp_hang_stop_toggle_modifier *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_hca_sxp_hang_stop_toggle_modifier_unpack(struct reg_access_hca_sxp_hang_stop_toggle_modifier *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_hca_sxp_hang_stop_toggle_modifier_print(const struct reg_access_hca_sxp_hang_stop_toggle_modifier *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_hca_sxp_hang_stop_toggle_modifier_size(void);
+#define REG_ACCESS_HCA_SXP_HANG_STOP_TOGGLE_MODIFIER_SIZE    (0x20)
+void reg_access_hca_sxp_hang_stop_toggle_modifier_dump(const struct reg_access_hca_sxp_hang_stop_toggle_modifier *ptr_struct, FILE *fd);
 /* fpga_shell_caps */
 void reg_access_hca_fpga_shell_caps_pack(const struct reg_access_hca_fpga_shell_caps *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_hca_fpga_shell_caps_unpack(struct reg_access_hca_fpga_shell_caps *ptr_struct, const u_int8_t *ptr_buff);
@@ -1487,13 +1640,13 @@ void reg_access_hca_fpga_shell_caps_print(const struct reg_access_hca_fpga_shell
 unsigned int reg_access_hca_fpga_shell_caps_size(void);
 #define REG_ACCESS_HCA_FPGA_SHELL_CAPS_SIZE    (0x40)
 void reg_access_hca_fpga_shell_caps_dump(const struct reg_access_hca_fpga_shell_caps *ptr_struct, FILE *fd);
-/* mini_flow_per_type_modifier_auto */
-void reg_access_hca_mini_flow_per_type_modifier_auto_pack(const union reg_access_hca_mini_flow_per_type_modifier_auto *ptr_struct, u_int8_t *ptr_buff);
-void reg_access_hca_mini_flow_per_type_modifier_auto_unpack(union reg_access_hca_mini_flow_per_type_modifier_auto *ptr_struct, const u_int8_t *ptr_buff);
-void reg_access_hca_mini_flow_per_type_modifier_auto_print(const union reg_access_hca_mini_flow_per_type_modifier_auto *ptr_struct, FILE *fd, int indent_level);
-unsigned int reg_access_hca_mini_flow_per_type_modifier_auto_size(void);
-#define REG_ACCESS_HCA_MINI_FLOW_PER_TYPE_MODIFIER_AUTO_SIZE    (0x20)
-void reg_access_hca_mini_flow_per_type_modifier_auto_dump(const union reg_access_hca_mini_flow_per_type_modifier_auto *ptr_struct, FILE *fd);
+/* smbus_failed_fault_inject_modifier */
+void reg_access_hca_smbus_failed_fault_inject_modifier_pack(const struct reg_access_hca_smbus_failed_fault_inject_modifier *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_hca_smbus_failed_fault_inject_modifier_unpack(struct reg_access_hca_smbus_failed_fault_inject_modifier *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_hca_smbus_failed_fault_inject_modifier_print(const struct reg_access_hca_smbus_failed_fault_inject_modifier *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_hca_smbus_failed_fault_inject_modifier_size(void);
+#define REG_ACCESS_HCA_SMBUS_FAILED_FAULT_INJECT_MODIFIER_SIZE    (0x20)
+void reg_access_hca_smbus_failed_fault_inject_modifier_dump(const struct reg_access_hca_smbus_failed_fault_inject_modifier *ptr_struct, FILE *fd);
 /* string_db_parameters */
 void reg_access_hca_string_db_parameters_pack(const struct reg_access_hca_string_db_parameters *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_hca_string_db_parameters_unpack(struct reg_access_hca_string_db_parameters *ptr_struct, const u_int8_t *ptr_buff);
@@ -1501,6 +1654,13 @@ void reg_access_hca_string_db_parameters_print(const struct reg_access_hca_strin
 unsigned int reg_access_hca_string_db_parameters_size(void);
 #define REG_ACCESS_HCA_STRING_DB_PARAMETERS_SIZE    (0x8)
 void reg_access_hca_string_db_parameters_dump(const struct reg_access_hca_string_db_parameters *ptr_struct, FILE *fd);
+/* strs_mini_flow_reg_per_type_modifier_auto */
+void reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto_pack(const union reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto_unpack(union reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto_print(const union reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto_size(void);
+#define REG_ACCESS_HCA_STRS_MINI_FLOW_REG_PER_TYPE_MODIFIER_AUTO_SIZE    (0x20)
+void reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto_dump(const union reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto *ptr_struct, FILE *fd);
 /* strs_stop_toggle_reg_per_type_modifier_auto */
 void reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto_pack(const union reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto_unpack(union reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto *ptr_struct, const u_int8_t *ptr_buff);
@@ -1583,8 +1743,15 @@ void reg_access_hca_mgir_pack(const struct reg_access_hca_mgir *ptr_struct, u_in
 void reg_access_hca_mgir_unpack(struct reg_access_hca_mgir *ptr_struct, const u_int8_t *ptr_buff);
 void reg_access_hca_mgir_print(const struct reg_access_hca_mgir *ptr_struct, FILE *fd, int indent_level);
 unsigned int reg_access_hca_mgir_size(void);
-#define REG_ACCESS_HCA_MGIR_SIZE    (0x80)
+#define REG_ACCESS_HCA_MGIR_SIZE    (0xa0)
 void reg_access_hca_mgir_dump(const struct reg_access_hca_mgir *ptr_struct, FILE *fd);
+/* mpegc_reg */
+void reg_access_hca_mpegc_reg_pack(const struct reg_access_hca_mpegc_reg *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_hca_mpegc_reg_unpack(struct reg_access_hca_mpegc_reg *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_hca_mpegc_reg_print(const struct reg_access_hca_mpegc_reg *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_hca_mpegc_reg_size(void);
+#define REG_ACCESS_HCA_MPEGC_REG_SIZE    (0x2c)
+void reg_access_hca_mpegc_reg_dump(const struct reg_access_hca_mpegc_reg *ptr_struct, FILE *fd);
 /* mqis_reg */
 void reg_access_hca_mqis_reg_pack(const struct reg_access_hca_mqis_reg *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_hca_mqis_reg_unpack(struct reg_access_hca_mqis_reg *ptr_struct, const u_int8_t *ptr_buff);

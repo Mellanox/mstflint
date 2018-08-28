@@ -41,7 +41,8 @@ bin_PROGRAMS = mstmread \
 					mstmwrite \
 					mstmcra \
 					mstmtserver \
-					mstvpd
+					mstvpd \
+					mstcongestion
 					
 bin_SCRIPTS = mstfwreset
 
@@ -51,6 +52,13 @@ mstmwrite_SOURCES = mwrite.c
 
 mstvpd_SOURCES = vpd.c
 mstvpd_LDADD = $(top_srcdir)/mvpd/libmvpd.a $(top_srcdir)/${MTCR_CONF_DIR}/libmtcr_ul.a ${LDL}
+
+mstcongestion_SOURCES = congestion.cpp
+mstcongestion_LDADD = $(top_srcdir)/cmdif/libcmdif.a \
+                      $(top_srcdir)/reg_access/libreg_access.a \
+                      $(top_srcdir)/tools_layouts/libtools_layouts.a \
+                      $(top_srcdir)/cmdparser/libcmdparser.a \
+                      $(top_srcdir)/${MTCR_CONF_DIR}/libmtcr_ul.a ${LDL}
 
 mstmcra_SOURCES  = mcra.c
 

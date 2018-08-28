@@ -1,38 +1,20 @@
-/*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+
+/*                  - Mellanox Confidential and Proprietary -
  *
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
- * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
- * OpenIB.org BSD license below:
+ *  Copyright (C) 2010-2011, Mellanox Technologies Ltd.  ALL RIGHTS RESERVED.
  *
- *     Redistribution and use in source and binary forms, with or
- *     without modification, are permitted provided that the following
- *     conditions are met:
+ *  Except as specifically permitted herein, no portion of the information,
+ *  including but not limited to object code and source code, may be reproduced,
+ *  modified, distributed, republished or otherwise exploited in any form or by
+ *  any means for any purpose without the prior written permission of Mellanox
+ *  Technologies Ltd. Use of software subject to the terms and conditions
+ *  detailed in the file "LICENSE.txt".
  *
- *      - Redistributions of source code must retain the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer.
- *
- *      - Redistributions in binary form must reproduce the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
  */
  
 
 /***
-         *** This file was generated at "2018-06-04 12:03:02"
+         *** This file was generated at "2018-09-12 08:13:00"
          *** by:
          ***    > /mswg/release/tools/a-me/last_stable/adabe_plugins/adb2c/adb2pack.py --input adb/prm/hca/int/reg_access_hca.adb --file-prefix reg_access_hca --prefix reg_access_hca_
          ***/
@@ -221,6 +203,47 @@ void reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto_dump
 	reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto_print(ptr_struct, fd, 0);
 }
 
+void reg_access_hca_irisc_hang_mini_flow_modifier_pack(const struct reg_access_hca_irisc_hang_mini_flow_modifier *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 0;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->irisc_hang_mask);
+	offset = 32;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->irisc_hang_cap_mask);
+}
+
+void reg_access_hca_irisc_hang_mini_flow_modifier_unpack(struct reg_access_hca_irisc_hang_mini_flow_modifier *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 0;
+	ptr_struct->irisc_hang_mask = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	offset = 32;
+	ptr_struct->irisc_hang_cap_mask = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+}
+
+void reg_access_hca_irisc_hang_mini_flow_modifier_print(const struct reg_access_hca_irisc_hang_mini_flow_modifier *ptr_struct, FILE *fd, int indent_level)
+{
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== reg_access_hca_irisc_hang_mini_flow_modifier ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "irisc_hang_mask      : " U32H_FMT "\n", ptr_struct->irisc_hang_mask);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "irisc_hang_cap_mask  : " U32H_FMT "\n", ptr_struct->irisc_hang_cap_mask);
+}
+
+unsigned int reg_access_hca_irisc_hang_mini_flow_modifier_size(void)
+{
+	return REG_ACCESS_HCA_IRISC_HANG_MINI_FLOW_MODIFIER_SIZE;
+}
+
+void reg_access_hca_irisc_hang_mini_flow_modifier_dump(const struct reg_access_hca_irisc_hang_mini_flow_modifier *ptr_struct, FILE *fd)
+{
+	reg_access_hca_irisc_hang_mini_flow_modifier_print(ptr_struct, fd, 0);
+}
+
 void reg_access_hca_lock_source_stop_toggle_modifier_pack(const struct reg_access_hca_lock_source_stop_toggle_modifier *ptr_struct, u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
@@ -263,86 +286,45 @@ void reg_access_hca_lock_source_stop_toggle_modifier_dump(const struct reg_acces
 	reg_access_hca_lock_source_stop_toggle_modifier_print(ptr_struct, fd, 0);
 }
 
-void reg_access_hca_mini_flow_irisc_hang_modifier_pack(const struct reg_access_hca_mini_flow_irisc_hang_modifier *ptr_struct, u_int8_t *ptr_buff)
-{
-	u_int32_t offset;
-
-	offset = 0;
-	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->irisc_hang_mask);
-	offset = 32;
-	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->irisc_cap_mask);
-}
-
-void reg_access_hca_mini_flow_irisc_hang_modifier_unpack(struct reg_access_hca_mini_flow_irisc_hang_modifier *ptr_struct, const u_int8_t *ptr_buff)
-{
-	u_int32_t offset;
-
-	offset = 0;
-	ptr_struct->irisc_hang_mask = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
-	offset = 32;
-	ptr_struct->irisc_cap_mask = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
-}
-
-void reg_access_hca_mini_flow_irisc_hang_modifier_print(const struct reg_access_hca_mini_flow_irisc_hang_modifier *ptr_struct, FILE *fd, int indent_level)
-{
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "======== reg_access_hca_mini_flow_irisc_hang_modifier ========\n");
-
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "irisc_hang_mask      : " U32H_FMT "\n", ptr_struct->irisc_hang_mask);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "irisc_cap_mask       : " U32H_FMT "\n", ptr_struct->irisc_cap_mask);
-}
-
-unsigned int reg_access_hca_mini_flow_irisc_hang_modifier_size(void)
-{
-	return REG_ACCESS_HCA_MINI_FLOW_IRISC_HANG_MODIFIER_SIZE;
-}
-
-void reg_access_hca_mini_flow_irisc_hang_modifier_dump(const struct reg_access_hca_mini_flow_irisc_hang_modifier *ptr_struct, FILE *fd)
-{
-	reg_access_hca_mini_flow_irisc_hang_modifier_print(ptr_struct, fd, 0);
-}
-
-void reg_access_hca_mini_flow_packet_drop_modifier_pack(const struct reg_access_hca_mini_flow_packet_drop_modifier *ptr_struct, u_int8_t *ptr_buff)
+void reg_access_hca_packet_drop_mini_flow_modifier_pack(const struct reg_access_hca_packet_drop_mini_flow_modifier *ptr_struct, u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
 
 	offset = 28;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->num_of_packets);
+	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->num_packets);
 	offset = 0;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->port_num);
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->port_number);
 }
 
-void reg_access_hca_mini_flow_packet_drop_modifier_unpack(struct reg_access_hca_mini_flow_packet_drop_modifier *ptr_struct, const u_int8_t *ptr_buff)
+void reg_access_hca_packet_drop_mini_flow_modifier_unpack(struct reg_access_hca_packet_drop_mini_flow_modifier *ptr_struct, const u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
 
 	offset = 28;
-	ptr_struct->num_of_packets = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
+	ptr_struct->num_packets = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
 	offset = 0;
-	ptr_struct->port_num = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	ptr_struct->port_number = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 }
 
-void reg_access_hca_mini_flow_packet_drop_modifier_print(const struct reg_access_hca_mini_flow_packet_drop_modifier *ptr_struct, FILE *fd, int indent_level)
+void reg_access_hca_packet_drop_mini_flow_modifier_print(const struct reg_access_hca_packet_drop_mini_flow_modifier *ptr_struct, FILE *fd, int indent_level)
 {
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "======== reg_access_hca_mini_flow_packet_drop_modifier ========\n");
+	fprintf(fd, "======== reg_access_hca_packet_drop_mini_flow_modifier ========\n");
 
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "num_of_packets       : " UH_FMT "\n", ptr_struct->num_of_packets);
+	fprintf(fd, "num_packets          : " UH_FMT "\n", ptr_struct->num_packets);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "port_num             : " UH_FMT "\n", ptr_struct->port_num);
+	fprintf(fd, "port_number          : %s (" UH_FMT ")\n", (ptr_struct->port_number == 1 ? ("port_number1") : ((ptr_struct->port_number == 2 ? ("port_number2") : ("unknown")))), ptr_struct->port_number);
 }
 
-unsigned int reg_access_hca_mini_flow_packet_drop_modifier_size(void)
+unsigned int reg_access_hca_packet_drop_mini_flow_modifier_size(void)
 {
-	return REG_ACCESS_HCA_MINI_FLOW_PACKET_DROP_MODIFIER_SIZE;
+	return REG_ACCESS_HCA_PACKET_DROP_MINI_FLOW_MODIFIER_SIZE;
 }
 
-void reg_access_hca_mini_flow_packet_drop_modifier_dump(const struct reg_access_hca_mini_flow_packet_drop_modifier *ptr_struct, FILE *fd)
+void reg_access_hca_packet_drop_mini_flow_modifier_dump(const struct reg_access_hca_packet_drop_mini_flow_modifier *ptr_struct, FILE *fd)
 {
-	reg_access_hca_mini_flow_packet_drop_modifier_print(ptr_struct, fd, 0);
+	reg_access_hca_packet_drop_mini_flow_modifier_print(ptr_struct, fd, 0);
 }
 
 void reg_access_hca_rxb_hang_stop_toggle_modifier_pack(const struct reg_access_hca_rxb_hang_stop_toggle_modifier *ptr_struct, u_int8_t *ptr_buff)
@@ -373,7 +355,7 @@ void reg_access_hca_rxb_hang_stop_toggle_modifier_print(const struct reg_access_
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "vl_tc_mask           : %s (" UH_FMT ")\n", (ptr_struct->vl_tc_mask == 1 ? ("VL_TC_0") : ((ptr_struct->vl_tc_mask == 2 ? ("VL_TC_1") : ((ptr_struct->vl_tc_mask == 4 ? ("VL_TC_2") : ((ptr_struct->vl_tc_mask == 8 ? ("VL_TC_3") : ((ptr_struct->vl_tc_mask == 16 ? ("VL_TC_4") : ((ptr_struct->vl_tc_mask == 32 ? ("VL_TC_5") : ((ptr_struct->vl_tc_mask == 64 ? ("VL_TC_6") : ((ptr_struct->vl_tc_mask == 128 ? ("VL_TC_7") : ((ptr_struct->vl_tc_mask == 32768 ? ("VL_TC_15") : ("unknown")))))))))))))))))), ptr_struct->vl_tc_mask);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "port_number          : " UH_FMT "\n", ptr_struct->port_number);
+	fprintf(fd, "port_number          : %s (" UH_FMT ")\n", (ptr_struct->port_number == 1 ? ("port_number1") : ((ptr_struct->port_number == 2 ? ("port_number2") : ("unknown")))), ptr_struct->port_number);
 }
 
 unsigned int reg_access_hca_rxb_hang_stop_toggle_modifier_size(void)
@@ -384,6 +366,41 @@ unsigned int reg_access_hca_rxb_hang_stop_toggle_modifier_size(void)
 void reg_access_hca_rxb_hang_stop_toggle_modifier_dump(const struct reg_access_hca_rxb_hang_stop_toggle_modifier *ptr_struct, FILE *fd)
 {
 	reg_access_hca_rxb_hang_stop_toggle_modifier_print(ptr_struct, fd, 0);
+}
+
+void reg_access_hca_sxp_hang_stop_toggle_modifier_pack(const struct reg_access_hca_sxp_hang_stop_toggle_modifier *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 0;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->port_number);
+}
+
+void reg_access_hca_sxp_hang_stop_toggle_modifier_unpack(struct reg_access_hca_sxp_hang_stop_toggle_modifier *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 0;
+	ptr_struct->port_number = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+}
+
+void reg_access_hca_sxp_hang_stop_toggle_modifier_print(const struct reg_access_hca_sxp_hang_stop_toggle_modifier *ptr_struct, FILE *fd, int indent_level)
+{
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== reg_access_hca_sxp_hang_stop_toggle_modifier ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "port_number          : %s (" UH_FMT ")\n", (ptr_struct->port_number == 1 ? ("port_number1") : ((ptr_struct->port_number == 2 ? ("port_number2") : ("unknown")))), ptr_struct->port_number);
+}
+
+unsigned int reg_access_hca_sxp_hang_stop_toggle_modifier_size(void)
+{
+	return REG_ACCESS_HCA_SXP_HANG_STOP_TOGGLE_MODIFIER_SIZE;
+}
+
+void reg_access_hca_sxp_hang_stop_toggle_modifier_dump(const struct reg_access_hca_sxp_hang_stop_toggle_modifier *ptr_struct, FILE *fd)
+{
+	reg_access_hca_sxp_hang_stop_toggle_modifier_print(ptr_struct, fd, 0);
 }
 
 void reg_access_hca_fpga_shell_caps_pack(const struct reg_access_hca_fpga_shell_caps *ptr_struct, u_int8_t *ptr_buff)
@@ -487,37 +504,39 @@ void reg_access_hca_fpga_shell_caps_dump(const struct reg_access_hca_fpga_shell_
 	reg_access_hca_fpga_shell_caps_print(ptr_struct, fd, 0);
 }
 
-void reg_access_hca_mini_flow_per_type_modifier_auto_pack(const union reg_access_hca_mini_flow_per_type_modifier_auto *ptr_struct, u_int8_t *ptr_buff)
+void reg_access_hca_smbus_failed_fault_inject_modifier_pack(const struct reg_access_hca_smbus_failed_fault_inject_modifier *ptr_struct, u_int8_t *ptr_buff)
 {
-	reg_access_hca_mini_flow_irisc_hang_modifier_pack(&(ptr_struct->irisc_hang), ptr_buff);
+	u_int32_t offset;
+
+	offset = 24;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->smbus_gw);
 }
 
-void reg_access_hca_mini_flow_per_type_modifier_auto_unpack(union reg_access_hca_mini_flow_per_type_modifier_auto *ptr_struct, const u_int8_t *ptr_buff)
+void reg_access_hca_smbus_failed_fault_inject_modifier_unpack(struct reg_access_hca_smbus_failed_fault_inject_modifier *ptr_struct, const u_int8_t *ptr_buff)
 {
-	reg_access_hca_mini_flow_irisc_hang_modifier_unpack(&(ptr_struct->irisc_hang), ptr_buff);
+	u_int32_t offset;
+
+	offset = 24;
+	ptr_struct->smbus_gw = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 }
 
-void reg_access_hca_mini_flow_per_type_modifier_auto_print(const union reg_access_hca_mini_flow_per_type_modifier_auto *ptr_struct, FILE *fd, int indent_level)
+void reg_access_hca_smbus_failed_fault_inject_modifier_print(const struct reg_access_hca_smbus_failed_fault_inject_modifier *ptr_struct, FILE *fd, int indent_level)
 {
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "======== reg_access_hca_mini_flow_per_type_modifier_auto ========\n");
+	fprintf(fd, "======== reg_access_hca_smbus_failed_fault_inject_modifier ========\n");
 
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "packet_drop:\n");
-	reg_access_hca_mini_flow_packet_drop_modifier_print(&(ptr_struct->packet_drop), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "irisc_hang:\n");
-	reg_access_hca_mini_flow_irisc_hang_modifier_print(&(ptr_struct->irisc_hang), fd, indent_level + 1);
+	fprintf(fd, "smbus_gw             : " UH_FMT "\n", ptr_struct->smbus_gw);
 }
 
-unsigned int reg_access_hca_mini_flow_per_type_modifier_auto_size(void)
+unsigned int reg_access_hca_smbus_failed_fault_inject_modifier_size(void)
 {
-	return REG_ACCESS_HCA_MINI_FLOW_PER_TYPE_MODIFIER_AUTO_SIZE;
+	return REG_ACCESS_HCA_SMBUS_FAILED_FAULT_INJECT_MODIFIER_SIZE;
 }
 
-void reg_access_hca_mini_flow_per_type_modifier_auto_dump(const union reg_access_hca_mini_flow_per_type_modifier_auto *ptr_struct, FILE *fd)
+void reg_access_hca_smbus_failed_fault_inject_modifier_dump(const struct reg_access_hca_smbus_failed_fault_inject_modifier *ptr_struct, FILE *fd)
 {
-	reg_access_hca_mini_flow_per_type_modifier_auto_print(ptr_struct, fd, 0);
+	reg_access_hca_smbus_failed_fault_inject_modifier_print(ptr_struct, fd, 0);
 }
 
 void reg_access_hca_string_db_parameters_pack(const struct reg_access_hca_string_db_parameters *ptr_struct, u_int8_t *ptr_buff)
@@ -561,14 +580,47 @@ void reg_access_hca_string_db_parameters_dump(const struct reg_access_hca_string
 	reg_access_hca_string_db_parameters_print(ptr_struct, fd, 0);
 }
 
+void reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto_pack(const union reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto *ptr_struct, u_int8_t *ptr_buff)
+{
+	reg_access_hca_packet_drop_mini_flow_modifier_pack(&(ptr_struct->packet_drop_mini_flow_modifier), ptr_buff);
+}
+
+void reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto_unpack(union reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto *ptr_struct, const u_int8_t *ptr_buff)
+{
+	reg_access_hca_packet_drop_mini_flow_modifier_unpack(&(ptr_struct->packet_drop_mini_flow_modifier), ptr_buff);
+}
+
+void reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto_print(const union reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto *ptr_struct, FILE *fd, int indent_level)
+{
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "irisc_hang_mini_flow_modifier:\n");
+	reg_access_hca_irisc_hang_mini_flow_modifier_print(&(ptr_struct->irisc_hang_mini_flow_modifier), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "packet_drop_mini_flow_modifier:\n");
+	reg_access_hca_packet_drop_mini_flow_modifier_print(&(ptr_struct->packet_drop_mini_flow_modifier), fd, indent_level + 1);
+}
+
+unsigned int reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto_size(void)
+{
+	return REG_ACCESS_HCA_STRS_MINI_FLOW_REG_PER_TYPE_MODIFIER_AUTO_SIZE;
+}
+
+void reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto_dump(const union reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto *ptr_struct, FILE *fd)
+{
+	reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto_print(ptr_struct, fd, 0);
+}
+
 void reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto_pack(const union reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto *ptr_struct, u_int8_t *ptr_buff)
 {
-	reg_access_hca_lock_source_stop_toggle_modifier_pack(&(ptr_struct->lock_source_stop_toggle_modifier), ptr_buff);
+	reg_access_hca_sxp_hang_stop_toggle_modifier_pack(&(ptr_struct->sxp_hang_stop_toggle_modifier), ptr_buff);
 }
 
 void reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto_unpack(union reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto *ptr_struct, const u_int8_t *ptr_buff)
 {
-	reg_access_hca_lock_source_stop_toggle_modifier_unpack(&(ptr_struct->lock_source_stop_toggle_modifier), ptr_buff);
+	reg_access_hca_sxp_hang_stop_toggle_modifier_unpack(&(ptr_struct->sxp_hang_stop_toggle_modifier), ptr_buff);
 }
 
 void reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto_print(const union reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto *ptr_struct, FILE *fd, int indent_level)
@@ -582,6 +634,9 @@ void reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto_print(const unio
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "lock_source_stop_toggle_modifier:\n");
 	reg_access_hca_lock_source_stop_toggle_modifier_print(&(ptr_struct->lock_source_stop_toggle_modifier), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "sxp_hang_stop_toggle_modifier:\n");
+	reg_access_hca_sxp_hang_stop_toggle_modifier_print(&(ptr_struct->sxp_hang_stop_toggle_modifier), fd, indent_level + 1);
 }
 
 unsigned int reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto_size(void)
@@ -1365,16 +1420,20 @@ void reg_access_hca_mgir_pack(const struct reg_access_hca_mgir *ptr_struct, u_in
 	int i;
 
 	for (i = 0; i < 8; ++i) {
-		offset = adb2c_calc_array_field_address(0, 32, i, 1024, 1);
+		offset = adb2c_calc_array_field_address(0, 32, i, 1280, 1);
 		adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->hw_info[i]);
 	}
 	for (i = 0; i < 16; ++i) {
-		offset = adb2c_calc_array_field_address(256, 32, i, 1024, 1);
+		offset = adb2c_calc_array_field_address(256, 32, i, 1280, 1);
 		adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->fw_info[i]);
 	}
 	for (i = 0; i < 8; ++i) {
-		offset = adb2c_calc_array_field_address(768, 32, i, 1024, 1);
+		offset = adb2c_calc_array_field_address(768, 32, i, 1280, 1);
 		adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->sw_info[i]);
+	}
+	for (i = 0; i < 7; ++i) {
+		offset = adb2c_calc_array_field_address(1024, 32, i, 1280, 1);
+		adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->dev_info[i]);
 	}
 }
 
@@ -1384,16 +1443,20 @@ void reg_access_hca_mgir_unpack(struct reg_access_hca_mgir *ptr_struct, const u_
 	int i;
 
 	for (i = 0; i < 8; ++i) {
-		offset = adb2c_calc_array_field_address(0, 32, i, 1024, 1);
+		offset = adb2c_calc_array_field_address(0, 32, i, 1280, 1);
 		ptr_struct->hw_info[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
 	}
 	for (i = 0; i < 16; ++i) {
-		offset = adb2c_calc_array_field_address(256, 32, i, 1024, 1);
+		offset = adb2c_calc_array_field_address(256, 32, i, 1280, 1);
 		ptr_struct->fw_info[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
 	}
 	for (i = 0; i < 8; ++i) {
-		offset = adb2c_calc_array_field_address(768, 32, i, 1024, 1);
+		offset = adb2c_calc_array_field_address(768, 32, i, 1280, 1);
 		ptr_struct->sw_info[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	}
+	for (i = 0; i < 7; ++i) {
+		offset = adb2c_calc_array_field_address(1024, 32, i, 1280, 1);
+		ptr_struct->dev_info[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
 	}
 }
 
@@ -1416,6 +1479,10 @@ void reg_access_hca_mgir_print(const struct reg_access_hca_mgir *ptr_struct, FIL
 		adb2c_add_indentation(fd, indent_level);
 		fprintf(fd, "sw_info_%03d         : " U32H_FMT "\n", i, ptr_struct->sw_info[i]);
 	}
+	for (i = 0; i < 7; ++i) {
+		adb2c_add_indentation(fd, indent_level);
+		fprintf(fd, "dev_info_%03d        : " U32H_FMT "\n", i, ptr_struct->dev_info[i]);
+	}
 }
 
 unsigned int reg_access_hca_mgir_size(void)
@@ -1426,6 +1493,101 @@ unsigned int reg_access_hca_mgir_size(void)
 void reg_access_hca_mgir_dump(const struct reg_access_hca_mgir *ptr_struct, FILE *fd)
 {
 	reg_access_hca_mgir_print(ptr_struct, fd, 0);
+}
+
+void reg_access_hca_mpegc_reg_pack(const struct reg_access_hca_mpegc_reg *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 16;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->node);
+	offset = 8;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->pcie_index);
+	offset = 2;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 6, (u_int32_t)ptr_struct->depth);
+	offset = 48;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->field_select);
+	offset = 94;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 2, (u_int32_t)ptr_struct->tx_lossy_overflow_oper);
+	offset = 86;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 2, (u_int32_t)ptr_struct->tx_lossless_overflow_oper);
+	offset = 66;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->mark_cnp);
+	offset = 65;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->mark_cqe);
+	offset = 64;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->tx_overflow_sense);
+	offset = 121;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 7, (u_int32_t)ptr_struct->outbound_stalled_writes_th);
+	offset = 113;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 7, (u_int32_t)ptr_struct->outbound_stalled_reads_th);
+}
+
+void reg_access_hca_mpegc_reg_unpack(struct reg_access_hca_mpegc_reg *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 16;
+	ptr_struct->node = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 8;
+	ptr_struct->pcie_index = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 2;
+	ptr_struct->depth = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 6);
+	offset = 48;
+	ptr_struct->field_select = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 94;
+	ptr_struct->tx_lossy_overflow_oper = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 2);
+	offset = 86;
+	ptr_struct->tx_lossless_overflow_oper = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 2);
+	offset = 66;
+	ptr_struct->mark_cnp = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 65;
+	ptr_struct->mark_cqe = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 64;
+	ptr_struct->tx_overflow_sense = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 121;
+	ptr_struct->outbound_stalled_writes_th = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 7);
+	offset = 113;
+	ptr_struct->outbound_stalled_reads_th = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 7);
+}
+
+void reg_access_hca_mpegc_reg_print(const struct reg_access_hca_mpegc_reg *ptr_struct, FILE *fd, int indent_level)
+{
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== reg_access_hca_mpegc_reg ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "node                 : " UH_FMT "\n", ptr_struct->node);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "pcie_index           : " UH_FMT "\n", ptr_struct->pcie_index);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "depth                : " UH_FMT "\n", ptr_struct->depth);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "field_select         : " UH_FMT "\n", ptr_struct->field_select);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "tx_lossy_overflow_oper : " UH_FMT "\n", ptr_struct->tx_lossy_overflow_oper);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "tx_lossless_overflow_oper : " UH_FMT "\n", ptr_struct->tx_lossless_overflow_oper);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "mark_cnp             : " UH_FMT "\n", ptr_struct->mark_cnp);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "mark_cqe             : " UH_FMT "\n", ptr_struct->mark_cqe);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "tx_overflow_sense    : " UH_FMT "\n", ptr_struct->tx_overflow_sense);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "outbound_stalled_writes_th : " UH_FMT "\n", ptr_struct->outbound_stalled_writes_th);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "outbound_stalled_reads_th : " UH_FMT "\n", ptr_struct->outbound_stalled_reads_th);
+}
+
+unsigned int reg_access_hca_mpegc_reg_size(void)
+{
+	return REG_ACCESS_HCA_MPEGC_REG_SIZE;
+}
+
+void reg_access_hca_mpegc_reg_dump(const struct reg_access_hca_mpegc_reg *ptr_struct, FILE *fd)
+{
+	reg_access_hca_mpegc_reg_print(ptr_struct, fd, 0);
 }
 
 void reg_access_hca_mqis_reg_pack(const struct reg_access_hca_mqis_reg *ptr_struct, u_int8_t *ptr_buff)
@@ -1634,6 +1796,8 @@ void reg_access_hca_strs_fault_inject_reg_pack(const struct reg_access_hca_strs_
 	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->num_skip);
 	offset = 112;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->num_repeat);
+	offset = 128;
+	reg_access_hca_smbus_failed_fault_inject_modifier_pack(&(ptr_struct->per_type_modifier), ptr_buff + offset / 8);
 }
 
 void reg_access_hca_strs_fault_inject_reg_unpack(struct reg_access_hca_strs_fault_inject_reg *ptr_struct, const u_int8_t *ptr_buff)
@@ -1652,6 +1816,8 @@ void reg_access_hca_strs_fault_inject_reg_unpack(struct reg_access_hca_strs_faul
 	ptr_struct->num_skip = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
 	offset = 112;
 	ptr_struct->num_repeat = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 128;
+	reg_access_hca_smbus_failed_fault_inject_modifier_unpack(&(ptr_struct->per_type_modifier), ptr_buff + offset / 8);
 }
 
 void reg_access_hca_strs_fault_inject_reg_print(const struct reg_access_hca_strs_fault_inject_reg *ptr_struct, FILE *fd, int indent_level)
@@ -1666,11 +1832,14 @@ void reg_access_hca_strs_fault_inject_reg_print(const struct reg_access_hca_strs
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "supported            : " UH_FMT "\n", ptr_struct->supported);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "type                 : %s (" UH_FMT ")\n", (ptr_struct->type == 0 ? ("ICM_ALLOC_REFUSE") : ((ptr_struct->type == 1 ? ("ICM_ALLOC_BUSY") : ((ptr_struct->type == 2 ? ("EQE_GW_BUSY") : ((ptr_struct->type == 3 ? ("CQE_GW_BUSY") : ((ptr_struct->type == 4 ? ("RX_FENCE_BUSY") : ((ptr_struct->type == 5 ? ("SX_FENCE_BUSY") : ((ptr_struct->type == 6 ? ("RXT_SLICE_FENCE_BUSY") : ((ptr_struct->type == 7 ? ("SXD_SLICE_FENCE_BUSY") : ((ptr_struct->type == 8 ? ("GENERAL_FENCE_BUSY") : ((ptr_struct->type == 9 ? ("FAULT_INJECT_SMBUS_FAILED") : ("unknown")))))))))))))))))))), ptr_struct->type);
+	fprintf(fd, "type                 : %s (" UH_FMT ")\n", (ptr_struct->type == 0 ? ("ICM_ALLOC_REFUSE") : ((ptr_struct->type == 1 ? ("ICM_ALLOC_BUSY") : ((ptr_struct->type == 2 ? ("EQE_GW_BUSY") : ((ptr_struct->type == 3 ? ("CQE_GW_BUSY") : ((ptr_struct->type == 4 ? ("RX_FENCE_BUSY") : ((ptr_struct->type == 5 ? ("SX_FENCE_BUSY") : ((ptr_struct->type == 6 ? ("RXT_SLICE_FENCE_BUSY") : ((ptr_struct->type == 7 ? ("SXD_SLICE_FENCE_BUSY") : ((ptr_struct->type == 8 ? ("GENERAL_FENCE_BUSY") : ((ptr_struct->type == 9 ? ("SMBUS_FAILED") : ("unknown")))))))))))))))))))), ptr_struct->type);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "num_skip             : " UH_FMT "\n", ptr_struct->num_skip);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "num_repeat           : " UH_FMT "\n", ptr_struct->num_repeat);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "per_type_modifier:\n");
+	reg_access_hca_smbus_failed_fault_inject_modifier_print(&(ptr_struct->per_type_modifier), fd, indent_level + 1);
 }
 
 unsigned int reg_access_hca_strs_fault_inject_reg_size(void)
@@ -1700,7 +1869,7 @@ void reg_access_hca_strs_mini_flow_reg_pack(const struct reg_access_hca_strs_min
 	offset = 112;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->num_repeat);
 	offset = 128;
-	reg_access_hca_mini_flow_per_type_modifier_auto_pack(&(ptr_struct->per_type_modifier), ptr_buff + offset / 8);
+	reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto_pack(&(ptr_struct->per_type_modifier), ptr_buff + offset / 8);
 }
 
 void reg_access_hca_strs_mini_flow_reg_unpack(struct reg_access_hca_strs_mini_flow_reg *ptr_struct, const u_int8_t *ptr_buff)
@@ -1720,7 +1889,7 @@ void reg_access_hca_strs_mini_flow_reg_unpack(struct reg_access_hca_strs_mini_fl
 	offset = 112;
 	ptr_struct->num_repeat = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
 	offset = 128;
-	reg_access_hca_mini_flow_per_type_modifier_auto_unpack(&(ptr_struct->per_type_modifier), ptr_buff + offset / 8);
+	reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto_unpack(&(ptr_struct->per_type_modifier), ptr_buff + offset / 8);
 }
 
 void reg_access_hca_strs_mini_flow_reg_print(const struct reg_access_hca_strs_mini_flow_reg *ptr_struct, FILE *fd, int indent_level)
@@ -1735,14 +1904,14 @@ void reg_access_hca_strs_mini_flow_reg_print(const struct reg_access_hca_strs_mi
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "supported            : " UH_FMT "\n", ptr_struct->supported);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "type                 : %s (" UH_FMT ")\n", (ptr_struct->type == 0 ? ("SX_FLICK_THROTTLE") : ((ptr_struct->type == 1 ? ("INVALIDATE_STEERING_CACHE") : ((ptr_struct->type == 2 ? ("INVALIDATE_RXT_QP_L0_CACHE") : ((ptr_struct->type == 3 ? ("INVALIDATE_DCT_L0_CACHE") : ((ptr_struct->type == 4 ? ("INVALIDATE_LDB_REQSL_CACHE") : ((ptr_struct->type == 5 ? ("INVALIDATE_RXC_CACHE") : ((ptr_struct->type == 6 ? ("INVALIDATE_SXDC_CACHE") : ((ptr_struct->type == 7 ? ("RECONSTRUCT_STEERING_BYPASS") : ((ptr_struct->type == 8 ? ("INVALIDATE_LDB_CACHE") : ((ptr_struct->type == 9 ? ("PCI_READ_ERROR") : ((ptr_struct->type == 10 ? ("INVALIDATE_ALL_RO_CACHES") : ((ptr_struct->type == 11 ? ("INVALIDATE_PKEY_CACHE") : ((ptr_struct->type == 12 ? ("INVALIDATE_GUID_CACHE") : ((ptr_struct->type == 13 ? ("INVALIDATE_PORT_INFO_CACHE") : ((ptr_struct->type == 14 ? ("INVALIDATE_QP_CACHE") : ("unknown")))))))))))))))))))))))))))))), ptr_struct->type);
+	fprintf(fd, "type                 : %s (" UH_FMT ")\n", (ptr_struct->type == 0 ? ("SX_FLICK_THROTTLE") : ((ptr_struct->type == 1 ? ("INVALIDATE_STEERING_CACHE") : ((ptr_struct->type == 2 ? ("INVALIDATE_RXT_QP_L0_CACHE") : ((ptr_struct->type == 3 ? ("INVALIDATE_DCT_L0_CACHE") : ((ptr_struct->type == 4 ? ("INVALIDATE_LDB_REQSL_CACHE") : ((ptr_struct->type == 5 ? ("INVALIDATE_RXC_CACHE") : ((ptr_struct->type == 6 ? ("INVALIDATE_SXDC_CACHE") : ((ptr_struct->type == 7 ? ("RECONSTRUCT_STEERING_BYPASS") : ((ptr_struct->type == 8 ? ("INVALIDATE_LDB_CACHE") : ((ptr_struct->type == 9 ? ("PCI_READ_ERROR") : ((ptr_struct->type == 10 ? ("INVALIDATE_ALL_RO_CACHES") : ((ptr_struct->type == 11 ? ("INVALIDATE_PKEY_CACHE") : ((ptr_struct->type == 12 ? ("INVALIDATE_GUID_CACHE") : ((ptr_struct->type == 13 ? ("INVALIDATE_PORT_INFO_CACHE") : ((ptr_struct->type == 14 ? ("INVALIDATE_QP_CACHE") : ((ptr_struct->type == 15 ? ("IRISC_HANG") : ((ptr_struct->type == 16 ? ("PACKET_DROP") : ("unknown")))))))))))))))))))))))))))))))))), ptr_struct->type);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "freq                 : " UH_FMT "\n", ptr_struct->freq);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "num_repeat           : " UH_FMT "\n", ptr_struct->num_repeat);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "per_type_modifier:\n");
-	reg_access_hca_mini_flow_per_type_modifier_auto_print(&(ptr_struct->per_type_modifier), fd, indent_level + 1);
+	reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto_print(&(ptr_struct->per_type_modifier), fd, indent_level + 1);
 }
 
 unsigned int reg_access_hca_strs_mini_flow_reg_size(void)
@@ -1870,7 +2039,7 @@ void reg_access_hca_strs_stop_toggle_reg_print(const struct reg_access_hca_strs_
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "supported            : " UH_FMT "\n", ptr_struct->supported);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "type                 : %s (" UH_FMT ")\n", (ptr_struct->type == 0 ? ("DC_CNAK") : ((ptr_struct->type == 1 ? ("RXT_CHECKS") : ((ptr_struct->type == 2 ? ("TIMOUT") : ((ptr_struct->type == 3 ? ("SX_ERROR") : ((ptr_struct->type == 4 ? ("RX_ERROR") : ((ptr_struct->type == 5 ? ("MX_ERROR") : ((ptr_struct->type == 6 ? ("MAD_TRAP") : ((ptr_struct->type == 7 ? ("RXT_SLICE") : ((ptr_struct->type == 8 ? ("QOS_ARBITER") : ((ptr_struct->type == 9 ? ("RXB_HANG") : ((ptr_struct->type == 10 ? ("FW_SCHED_Q") : ((ptr_struct->type == 11 ? ("LOCK_RESOURCE") : ((ptr_struct->type == 12 ? ("IRISC_HANG") : ((ptr_struct->type == 13 ? ("SXW_SLICE") : ((ptr_struct->type == 14 ? ("RXC_CQE") : ((ptr_struct->type == 15 ? ("RXC_EQE") : ((ptr_struct->type == 16 ? ("SXP_HANG") : ((ptr_struct->type == 17 ? ("SX_EXT_DB") : ((ptr_struct->type == 18 ? ("SX_INT_DB") : ((ptr_struct->type == 19 ? ("QPC_SLICE") : ("unknown")))))))))))))))))))))))))))))))))))))))), ptr_struct->type);
+	fprintf(fd, "type                 : %s (" UH_FMT ")\n", (ptr_struct->type == 0 ? ("DC_CNAK") : ((ptr_struct->type == 1 ? ("RXT_CHECKS") : ((ptr_struct->type == 2 ? ("TIMEOUT") : ((ptr_struct->type == 3 ? ("SX_ERROR") : ((ptr_struct->type == 4 ? ("RX_ERROR") : ((ptr_struct->type == 5 ? ("MX_ERROR") : ((ptr_struct->type == 6 ? ("MAD_TRAP") : ((ptr_struct->type == 7 ? ("RXT_SLICE") : ((ptr_struct->type == 8 ? ("QOS_ARBITER") : ((ptr_struct->type == 9 ? ("RXB_HANG") : ((ptr_struct->type == 10 ? ("FW_SCHED_Q") : ((ptr_struct->type == 11 ? ("LOCK_RESOURCE") : ((ptr_struct->type == 12 ? ("IRISC_HANG") : ((ptr_struct->type == 13 ? ("SXW_SLICE") : ((ptr_struct->type == 14 ? ("RXC_CQE") : ((ptr_struct->type == 15 ? ("RXC_EQE") : ((ptr_struct->type == 16 ? ("SXP_HANG") : ((ptr_struct->type == 17 ? ("SX_EXT_DB") : ((ptr_struct->type == 18 ? ("SX_INT_DB") : ((ptr_struct->type == 19 ? ("QPC_SLICE") : ("unknown")))))))))))))))))))))))))))))))))))))))), ptr_struct->type);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "log_stressor         : " UH_FMT "\n", ptr_struct->log_stressor);
 	adb2c_add_indentation(fd, indent_level);
@@ -1934,6 +2103,9 @@ void reg_access_hca_reg_access_hca_Nodes_print(const union reg_access_hca_reg_ac
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "mcqi_activation_method:\n");
 	reg_access_hca_mcqi_activation_method_print(&(ptr_struct->mcqi_activation_method), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "mpegc_reg:\n");
+	reg_access_hca_mpegc_reg_print(&(ptr_struct->mpegc_reg), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "strs_fault_inject_reg:\n");
 	reg_access_hca_strs_fault_inject_reg_print(&(ptr_struct->strs_fault_inject_reg), fd, indent_level + 1);

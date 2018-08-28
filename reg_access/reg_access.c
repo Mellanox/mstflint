@@ -49,6 +49,7 @@
 #define REG_ID_MNVGN 0x9035
 #define REG_ID_MLCOK 0x402D
 
+#define REG_ID_MPEGC 0x9056
 
 #define REG_ID_MCDA  0x9063
 #define REG_ID_MCQS  0x9060
@@ -56,6 +57,7 @@
 #define REG_ID_MCQI  0x9061
 #define REG_ID_MCAM  0x907f
 #define REG_ID_MQIS  0x9064
+
 
 // TODO: get correct register ID for mfrl mfai
 #define REG_ID_MFRL 0x9028
@@ -445,6 +447,13 @@ reg_access_status_t reg_access_mqis(mfile *mf, reg_access_method_t method, struc
                                     reg_access_hca, reg_size, r_size_reg, w_size_reg, reg_access_hca_mqis_reg_size, info_string, read_length);
 }
 
+
+
+reg_access_status_t reg_access_mpegc(mfile *mf, reg_access_method_t method, struct reg_access_hca_mpegc_reg *mpegc)
+{
+//    reg_access_hca_mpegc_reg_dump(mpegc, stdout)s;
+    REG_ACCCESS(mf, method, REG_ID_MPEGC, mpegc, mpegc_reg, reg_access_hca);
+}
 /************************************
 * Function: reg_access_err2str
 ************************************/
