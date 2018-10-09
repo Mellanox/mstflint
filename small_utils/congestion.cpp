@@ -93,7 +93,7 @@ void CongestionUI::initCmdParser()
     AddOptions("query", 'q', "", "Query congestion");
     AddOptions("help", 'h', "", "Show help message and exit");
     AddOptions("version", 'v', "", "Show version and exit");
-    AddDescription("mstcongestion is a tool to set Congestion mode and action.");
+    AddDescription("mstcongestion is a utility for configuring Mellanox device's receive congestion handling.");
     _cmdParser.AddRequester(this);
 }
 
