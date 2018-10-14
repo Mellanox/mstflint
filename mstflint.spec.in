@@ -1,6 +1,6 @@
 %{!?ibmadlib: %define ibmadlib libibmad-devel}
 %{!?name: %define name mstflint}
-%{!?version: %define version 4.10.0}
+%{!?version: %define version 4.11.0}
 %{!?release: %define release 1}
 %{!?buildtype: %define buildtype "native"}
 %{!?noinband: %define noinband 0}
@@ -36,6 +36,8 @@ for network adapters based on Mellanox Technologies chips.
 %setup -q
 
 %build
+
+MSTFLINT_VERSION_STR="%{name} %{version}-%{release}"
 
 %if %{nodc}
     config_flags="$config_flags --disable-dc"
@@ -73,7 +75,7 @@ for network adapters based on Mellanox Technologies chips.
     config_flags="$config_flags --host arm"
 %endif
 
-%configure ${config_flags}
+%configure ${config_flags} MSTFLINT_VERSION_STR="${MSTFLINT_VERSION_STR}"
 
 make
 

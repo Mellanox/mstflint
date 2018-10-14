@@ -1,11 +1,12 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(mstflint, 4.10.0, adrianc@mellanox.co.il)
+AC_INIT(mstflint, 4.11.0, adrianc@mellanox.co.il)
 
+AC_CONFIG_MACRO_DIR([m4])
 AC_DEFINE_UNQUOTED([PROJECT], ["mstflint"], [Define the project name.])
 AC_SUBST([PROJECT])
 
-AC_DEFINE_UNQUOTED([VERSION], ["4.10.0"], [Define the project version.])
+AC_DEFINE_UNQUOTED([VERSION], ["4.11.0"], [Define the project version.])
 AC_SUBST([VERSION])
 
 AC_CONFIG_AUX_DIR(config)
@@ -185,17 +186,23 @@ AC_LANG_POP([C++])
 TOOLS_BUILD_TIME=`date  +"%b %d %Y\, %H:%M:%S"`
 AC_SUBST(TOOLS_BUILD_TIME)
 
-AC_ARG_VAR(MFT_VERSION_STR, The MSTFLINT version)
-if test x"$MFT_VERSION_STR" == x; then
-    MFT_VERSION_STR="$PACKAGE_STRING"
+AC_ARG_VAR(MSTFLINT_VERSION_STR, The MSTFLINT version)
+if test x"$MSTFLINT_VERSION_STR" == x; then
+    MSTFLINT_VERSION_STR="$PACKAGE_STRING"
 fi
-AC_SUBST(MFT_VERSION_STR)
+
+AC_SUBST(MSTFLINT_VERSION_STR)
+AC_DEFINE([MSTFLINT_VERSION_STR], [], [The MSTFLINT version])
+AC_DEFINE_UNQUOTED(MSTFLINT_VERSION_STR, "$MSTFLINT_VERSION_STR")
+
 
 AC_ARG_VAR(TOOLS_GIT_SHA, The MSTFLINT tree git sha hash version)
 if test x"$TOOLS_GIT_SHA" == x; then
     TOOLS_GIT_SHA="N/A"
 fi
 AC_SUBST(TOOLS_GIT_SHA)
+AC_DEFINE([TOOLS_GIT_SHA], [], [The MSTFLINT tree git sha hash version])
+AC_DEFINE_UNQUOTED(TOOLS_GIT_SHA, "$TOOLS_GIT_SHA")
 
 AS_IF([test "x$enable_cs" = "xyes" || test "x$enable_openssl" = "xyes"], [
         AC_CONFIG_FILES(tools_crypto/Makefile)
