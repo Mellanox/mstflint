@@ -52,7 +52,7 @@ libmlxconfig_4th_gen_regsiters_a_LIBADD = $(libmlxconfig_4th_gen_regsiters_la_DE
 RREG_ACCESS_SO = rreg_access.so
 reg_access_pylibdir = $(libdir)/mstflint/python_tools/
 
-reg_access_pylib_DATA = ${RREG_ACCESS_SO} regaccess.py regaccess_structs.py
+reg_access_pylib_DATA = ${RREG_ACCESS_SO}
 dist_reg_access_pylib_DATA = regaccess.py regaccess_structs.py
 
 ${RREG_ACCESS_SO}: libreg_access.a
