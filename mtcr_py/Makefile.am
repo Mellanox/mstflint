@@ -37,7 +37,7 @@ mtcr_pylibdir = $(libdir)/mstflint/python_tools/
 USER_DIR = ..
 MTCR_DIR = $(USER_DIR)/${MTCR_CONF_DIR}
 
-mtcr_pylib_DATA = cmtcr.so mtcr.py
+mtcr_pylib_DATA = cmtcr.so
 dist_mtcr_pylib_DATA = mtcr.py
 cmtcr.so:
 	$(CC) -g -Wall -pthread -shared ${CFLAGS} $(MTCR_DIR)/*.o -o cmtcr.so $(MFT_CORE_LIB_LINK)
