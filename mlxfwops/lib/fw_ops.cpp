@@ -814,9 +814,15 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
             } else if (fwParams.hndlType == FHT_UEFI_DEV) {
                 fwCompsAccess = new FwCompsMgr(fwParams.uefiHndl, fwParams.uefiExtra);
             }
-            if (fwCompsAccess->getLastError() != FWCOMPS_SUCCESS) {
+            fw_comps_error_t fwCompsErr = fwCompsAccess->getLastError();
+            if (fwCompsErr != FWCOMPS_SUCCESS) {
                 delete fwCompsAccess;
                 fwCompsAccess = (FwCompsMgr*) NULL;
+                if (fwCompsErr == FWCOMPS_MTCR_OPEN_DEVICE_ERROR) {
+                    // mtcr lib failed to open the provided device.
+                    WriteToErrBuff(fwParams.errBuff, "Failed to open device", fwParams.errBuffSize);
+                    return (FwOperations*)NULL;
+                }
             } else {
                 fwInfoT fwInfo;
                 if (fwParams.forceLock) {

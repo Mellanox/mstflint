@@ -515,7 +515,7 @@ FwCompsMgr::FwCompsMgr(const char *devname)
     _lastError = FWCOMPS_SUCCESS;
     mfile *mf = mopen(devname);
     if (!mf) {
-        _lastError = FWCOMPS_BAD_PARAM;
+        _lastError = FWCOMPS_MTCR_OPEN_DEVICE_ERROR;
         return;
     }
     _openedMfile = true;
@@ -1098,6 +1098,9 @@ const char*  FwCompsMgr::getLastErrMsg()
 
     case FWCOMPS_UNSUPPORTED_DEVICE:
         return "Unsupported device";
+        break;
+    case FWCOMPS_MTCR_OPEN_DEVICE_ERROR:
+        return "Failed to open device.";
         break;
 
     case FWCOMPS_REG_ACCESS_BAD_STATUS_ERR:
