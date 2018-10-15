@@ -1100,7 +1100,7 @@ const char*  FwCompsMgr::getLastErrMsg()
         return "Unsupported device";
         break;
     case FWCOMPS_MTCR_OPEN_DEVICE_ERROR:
-        return "Failed to open device.";
+        return "Failed to open device";
         break;
 
     case FWCOMPS_REG_ACCESS_BAD_STATUS_ERR:
