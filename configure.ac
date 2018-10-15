@@ -2,7 +2,6 @@ dnl Process this file with autoconf to produce a configure script.
 
 AC_INIT(mstflint, 4.11.0, adrianc@mellanox.co.il)
 
-AC_CONFIG_MACRO_DIR([m4])
 AC_DEFINE_UNQUOTED([PROJECT], ["mstflint"], [Define the project name.])
 AC_SUBST([PROJECT])
 
