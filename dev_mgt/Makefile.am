@@ -46,7 +46,7 @@ libdev_mgt_a_SOURCES = \
 
 dev_mgt_pylibdir = $(libdir)/mstflint/python_tools/
 
-dev_mgt_pylib_DATA = c_dev_mgt.so dev_mgt.py
+dev_mgt_pylib_DATA = c_dev_mgt.so
 dist_dev_mgt_pylib_DATA = dev_mgt.py
 
 c_dev_mgt.so: libdev_mgt.a
