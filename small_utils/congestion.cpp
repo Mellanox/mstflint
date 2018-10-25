@@ -58,9 +58,11 @@ int main(int argc, char **argv)
     case CongestionUI::EXIT_STATUS_ERROR:
         congestObject.printError();
         rc = 1;
+        break;
     case CongestionUI::EXIT_STATUS_USAGE:
         congestObject.printUsage();
         rc = 1;
+        break;
     }
     return rc;
 }
@@ -230,6 +232,10 @@ bool CongestionUI::setAction(cong_action_t action)
         if (_markCnpSupp) {
             mpegc.field_select |= BIT_MARK_TX_CNP;
             mpegc.mark_cnp = 1;
+        }
+        if(!mpegc.mark_cnp && !mpegc.mark_cqe) {
+            _errorMsg = "Mark action is not supported!";
+            return false;
         }
     }
     reg_access_status_t status = reg_access_mpegc(_mf, REG_ACCESS_METHOD_SET, &mpegc);
