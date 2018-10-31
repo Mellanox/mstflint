@@ -61,7 +61,7 @@ int MlxSignSHA::getDigest(std::string& digest)
         return rc;
     }
     // transform to string
-    for (int i = 0; i < digestVec.size(); i++) {
+    for (u_int64_t i = 0; i < digestVec.size(); i++) {
         snprintf(digestStr + i * 2, 3, "%02x", digestVec[i]);
     }
     digest = digestStr;
@@ -236,7 +236,7 @@ int MlxSignRSA::encrypt(const std::vector<u_int8_t>& msg, std::vector<u_int8_t>&
     }
     // size check
     maxMsgSize = RSA_size((RSA*)_privCtx);
-    if (msg.size() > maxMsgSize) {
+    if (static_cast<int>(msg.size()) > maxMsgSize) {
         return MLX_SIGN_RSA_MESSAGE_TOO_LONG_ERROR;
     }
     // do the job
@@ -256,7 +256,7 @@ int MlxSignRSA::decrypt(const std::vector<u_int8_t>& encryptedMsg, std::vector<u
     }
     // size check
     maxMsgSize = RSA_size((RSA*)_pubCtx);
-    if (encryptedMsg.size() > maxMsgSize) {
+    if (static_cast<int>(encryptedMsg.size()) > maxMsgSize) {
         return MLX_SIGN_RSA_MESSAGE_TOO_LONG_ERROR;
     }
     // do the job
@@ -294,7 +294,7 @@ std::string MlxSignRSA::str(const std::vector<u_int8_t>& msg)
         return "";
     }
 
-    for (int i = 0; i < msg.size(); i++) {
+    for (u_int64_t i = 0; i < msg.size(); i++) {
         snprintf(digestStr + i * 2, 3, "%02x", msg[i]);
     }
     std::string result = digestStr;
