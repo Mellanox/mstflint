@@ -46,15 +46,29 @@
 
 using namespace std;
 
-class DBOffset {
+namespace DB {
+
+class ByteBitString {
 public:
-    explicit DBOffset(const string& offset);
-    u_int32_t getOffsetInBE(u_int32_t sizeInBits,
-                            u_int32_t withBitsPart = true);
-    u_int32_t getBytesPart() { return _bytesPart;}
-private:
+    explicit ByteBitString(const string& str);
+    u_int32_t getBytesPart() const { return _bytesPart;}
+protected:
     u_int32_t _bytesPart;     //describes the bytes part of the offset string ("0x51.3", the bytes part is 0x51)
     u_int32_t _bitsPart;     //describes the bits part of the offset string ("0x51.3", the bits part is 3)
 };
 
+class Offset : public ByteBitString {
+public:
+    explicit Offset(const string& offset) : ByteBitString(offset) {};
+    u_int32_t toBigEndian(u_int32_t sizeInBits,
+                            u_int32_t withBitsPart = true) const;
+};
+
+class Size : public ByteBitString {
+public:
+    explicit Size(const string& size) : ByteBitString(size) {};
+    unsigned int toBits() const { return _bytesPart * 8 + _bitsPart;};
+};
+
+};
 #endif

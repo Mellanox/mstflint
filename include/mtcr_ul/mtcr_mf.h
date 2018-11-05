@@ -33,51 +33,10 @@
 
 #ifndef __MTCR_MF__
 #define __MTCR_MF__
-
-
+#include "mtcr_com_defs.h"
 #ifdef __FreeBSD__
-#include <sys/types.h>
 #include <sys/pciio.h>
 #endif
-
-typedef struct dma_lib_hdl_t dma_lib_hdl;
-
-typedef struct icmd_params_t {
-    int icmd_opened;
-    int took_semaphore;
-    int ctrl_addr;
-    int cmd_addr;
-    u_int32_t max_cmd_size;
-    int semaphore_addr;
-    int static_cfg_not_done_addr;
-    int static_cfg_not_done_offs;
-    u_int32_t lock_key;
-    int ib_semaphore_lock_supported;
-    void *dma_mbox;
-    u_int32_t mbox_mkey;
-    dma_lib_hdl *dma_lib_ctx;
-    int dma_icmd;
-} icmd_params;
-
-typedef struct ctx_params_t {
-    void *fw_cmd_context;
-    void *fw_cmd_func;
-} ctx_params;
-
-typedef struct io_region_t {
-    unsigned int start;
-    unsigned int end;
-} io_region;
-
-typedef struct tools_hcr_params_t {
-    int supp_cr_mbox;     // 1: mbox supported , -1: mbox not supported
-} tools_hcr_params;
-
-typedef struct access_reg_params_t {
-    int max_reg_size;
-} access_reg_params;
-
-typedef void (*f_mpci_change)        (mfile *mf);
 
 /*  All fields in follow structure are not supposed to be used */
 /*  or modified by user programs. Except i2c_slave that may be */
@@ -127,8 +86,10 @@ struct mfile_t {
     icmd_params icmd;
     // for UEFI
     ctx_params context;
-    // for new pci capability
+    // for mst driver compatibility
     int old_mst;
+    unsigned short mst_version_major;
+    unsigned int mst_version_minor;
     int vsec_supp;
     unsigned int vsec_addr;
     u_int32_t vsec_cap_mask;
@@ -154,6 +115,8 @@ struct mfile_t {
     int fdlock;
 #endif
 
+    // For dma purpose
+    void* dma_props;
 };
 
 #endif

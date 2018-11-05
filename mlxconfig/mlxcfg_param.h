@@ -46,6 +46,7 @@
 #include "mlxcfg_db_items.h"
 
 using namespace std;
+using namespace DB;
 
 class ParamValue {
 public:
@@ -187,7 +188,7 @@ private:
 public:
     string _name;
     string _tlvName;
-    DBOffset *_offset;
+    Offset *_offset;
     string _size;
     enum ParamType _type;
     string _description;

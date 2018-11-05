@@ -36,16 +36,15 @@
 #define SST_FLASH_NAME   "SST25VFxx"
 #define WINBOND_NAME     "W25QxxBV"
 #define WINBOND_W25X     "W25Xxx"
-#define WINBOND_3V_128  "W25Q128JV"
-#define WINBOND_3V_256  "W25Q256JV"
+#define WINBOND_3V_NAME  "W25Qxxx"
 #define ATMEL_NAME       "AT25DFxxx"
 #define S25FLXXXP_NAME   "S25FLXXXP"
 #define S25FL116K_NAME   "S25FL11xx"
 #define MACRONIX_NAME    "MX25L16xxx"
-#define MACRONIX_3V_NAME "MX25Lxxx45G"
-#define CYPRESS_3V_128  "S25FL128L"
-#define CYPRESS_3V_256  "S25FL256L"
+#define MACRONIX_3V_NAME "MX25Lxxx"
+#define CYPRESS_3V_NAME  "S25FLxxx"
 #define ISSI_3V_NAME     "IS25LPxxx"
+#define MICRON_3V_NAME   "MT25QLxxx"
 
 typedef enum flash_vendor {
     FV_ST = 0x20,

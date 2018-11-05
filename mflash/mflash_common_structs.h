@@ -33,6 +33,8 @@
 #ifndef MFLASH_COMMON_STRUCTS_H
 #define MFLASH_COMMON_STRUCTS_H
 
+#include <compatibility.h>
+
 typedef struct mflash mflash;
 
 typedef enum MfOpt {

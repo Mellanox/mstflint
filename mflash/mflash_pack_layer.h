@@ -42,6 +42,9 @@
 
 #include "mflash_types.h"
 #include "mflash_common_structs.h"
+#include "reg_access.h"
+
+#include "dev_mgt/tools_dev_types.h"
 
 #ifndef UEFI_BUILD
 #include <tools_res_mgmt.h>
@@ -126,6 +129,8 @@ struct mflash {
 
     int curr_bank;
     int is_locked;
+    int flash_prog_locked;
+    int unlock_flash_prog_allowed;
     // if writer_lock is set, semaphore should be freed only in mf_close()/disable_hw_access()
     int writer_lock;
 
@@ -136,6 +141,7 @@ struct mflash {
 
     u_int8_t access_type; //0 = mfile , 1 = uefi
     trm_ctx trm;
+    dm_dev_id_t dm_dev_id;
 
 };
 
@@ -220,7 +226,7 @@ typedef u_int32_t (*f_reg_pack)(void *data_to_pack, u_int8_t *packed_buffer);
 typedef void (*f_reg_unpack)(void *unpacked_data, u_int8_t *buffer_to_unpack);
 typedef void (*f_reg_dump)(void *data_to_print, FILE *out_port);
 
-int sx_st_block_access(mfile *mf, u_int32_t flash_addr, u_int8_t bank, u_int32_t size, u_int8_t *data, u_int8_t method);
+int sx_st_block_access(mfile *mf, u_int32_t flash_addr, u_int8_t bank, u_int32_t size, u_int8_t *data, reg_access_method_t method);
 
 int common_erase_sector(mfile *mf, u_int32_t addr, u_int8_t flash_bank, u_int32_t erase_size);
 

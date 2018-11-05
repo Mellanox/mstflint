@@ -136,7 +136,7 @@ mfile* mopen(const char *name)
 
 mfile* mopend(const char *name, DType dtype)
 {
-    if (dtype != 1) {
+    if (dtype != MST_TAVOR) {
         return NULL;
     }
     return mopen(name);
@@ -222,9 +222,14 @@ int maccess_reg(mfile *mf, u_int16_t reg_id, maccess_reg_method_t reg_method, vo
     return maccess_reg_ul(mf, reg_id, reg_method, reg_data, reg_size, r_size_reg, w_size_reg, reg_status);
 }
 
-int mget_max_reg_size(mfile *mf)
+int mget_max_reg_size(mfile *mf, maccess_reg_method_t reg_method)
 {
-    return mget_max_reg_size_ul(mf);
+    return mget_max_reg_size_ul(mf, reg_method);
+}
+
+int supports_reg_access_gmp(mfile *mf, maccess_reg_method_t reg_method)
+{
+    return supports_reg_access_gmp_ul(mf, reg_method);
 }
 
 int mget_vsec_supp(mfile *mf)

@@ -1619,10 +1619,13 @@ static long supported_dev_ids[] = {
     0x1015,     //Connect-X4Lx
     0x1017,     //Connect-X5
     0x1019,     //Connect-X5Ex
+    0x101b,     //Connect-X6
     0xc738,     //SwitchX
     0xcb20,     //Switch-IB
     0xcb84,     //Spectrum
     0xcf08,     //Switch-IB2
+    0xd2f0,     //Quantum
+    0xcf6c,     //Spectrum2
     0xa2d2,     //MT416842 Family BlueField integrated ConnectX-5 network controller
     -1
 };
@@ -1632,6 +1635,8 @@ static long live_fish_id_database[] = {
     0x246,
     0x249,
     0x24b,
+    0x24d,
+    0x24e,
     0x1F6,
     0x1F8,
     0x1FF,
@@ -1639,6 +1644,7 @@ static long live_fish_id_database[] = {
     0x209,
     0x20b,
     0x20d,
+    0x20f,
     0x211,
     -1
 };
@@ -2686,6 +2692,9 @@ enum {
 
 #define REGISTER_HEADERS_SIZE 12
 #define INBAND_MAX_REG_SIZE 44
+#define INBAND_MAX_GMP_DWORDS_NUM 55
+#define INBAND_MAX_GMP_BLOCKS 16
+#define INBAND_MAX_GMP_REG_SIZE INBAND_MAX_GMP_BLOCKS * INBAND_MAX_GMP_DWORDS_NUM * 4
 #define ICMD_MAX_REG_SIZE (ICMD_MAX_CMD_SIZE - REGISTER_HEADERS_SIZE)
 #define TOOLS_HCR_MAX_REG_SIZE (TOOLS_HCR_MAX_MBOX - REGISTER_HEADERS_SIZE)
 
@@ -2716,13 +2725,16 @@ int maccess_reg_ul(mfile *mf,
         return ME_BAD_PARAMS;
     }
     // check register size
-    unsigned int max_size = (unsigned int) mget_max_reg_size_ul(mf);
+    unsigned int max_size = (unsigned int) mget_max_reg_size_ul(mf, reg_method);
     if (reg_size > (unsigned int) max_size) {
         //reg too big
         return ME_REG_ACCESS_SIZE_EXCCEEDS_LIMIT;
     }
 #ifndef MST_UL
     // TODO: add specific checks for each FW access method where needed
+    if (supports_reg_access_gmp_ul(mf, reg_method)) {
+        return mib_send_gmp_access_reg_mad(mf, (u_int32_t *)reg_data, reg_size, reg_id, reg_method);
+    }
     if (mf->flags & MDEVS_MLNX_OS) {
         rc = mos_reg_access_raw(mf, reg_id, reg_method, reg_data, reg_size, reg_status);
     } else if ((mf->flags & (MDEVS_IB | MDEVS_FWCTX)) ||
@@ -2791,6 +2803,11 @@ int maccess_reg_ul(mfile *mf,
     }
 
     return ME_OK;
+}
+
+int supports_reg_access_gmp_ul(mfile *mf, maccess_reg_method_t reg_method)
+{
+    return mib_supports_reg_access_gmp(mf, reg_method);
 }
 
 static int init_operation_tlv(struct OperationTlv *operation_tlv, u_int16_t reg_id, u_int8_t method)
@@ -2955,23 +2972,25 @@ static int supports_tools_cmdif_reg(mfile *mf)
     return 0;
 }
 
-int mget_max_reg_size_ul(mfile *mf)
+int mget_max_reg_size_ul(mfile *mf, maccess_reg_method_t reg_method)
 {
-    if (mf->acc_reg_params.max_reg_size) {
-        return mf->acc_reg_params.max_reg_size;
+    if (mf->acc_reg_params.max_reg_size[reg_method]) {
+        return mf->acc_reg_params.max_reg_size[reg_method];
+    } else if (supports_reg_access_gmp(mf, reg_method)) {
+        mf->acc_reg_params.max_reg_size[reg_method] = INBAND_MAX_GMP_REG_SIZE;
     } else if (mf->tp == MST_IB) {
-        mf->acc_reg_params.max_reg_size = INBAND_MAX_REG_SIZE;
+        mf->acc_reg_params.max_reg_size[reg_method] = INBAND_MAX_REG_SIZE;
     } else if (supports_icmd(mf)) { // we support icmd and we dont use IB interface -> we use icmd for reg access
         if (mf->vsec_supp) {
-            mf->acc_reg_params.max_reg_size = ICMD_MAX_REG_SIZE;
+            mf->acc_reg_params.max_reg_size[reg_method] = ICMD_MAX_REG_SIZE;
         } else {
             // we send via inband
-            mf->acc_reg_params.max_reg_size = INBAND_MAX_REG_SIZE;
+            mf->acc_reg_params.max_reg_size[reg_method] = INBAND_MAX_REG_SIZE;
         }
     } else if (supports_tools_cmdif_reg(mf)) {
-        mf->acc_reg_params.max_reg_size = TOOLS_HCR_MAX_REG_SIZE;
+        mf->acc_reg_params.max_reg_size[reg_method] = TOOLS_HCR_MAX_REG_SIZE;
     }
-    return mf->acc_reg_params.max_reg_size;
+    return mf->acc_reg_params.max_reg_size[reg_method];
 }
 
 int mclear_pci_semaphore_ul(const char *name)
@@ -3078,6 +3097,10 @@ const char* m_err2str(MError status)
 
     case ME_UNSUPPORTED_OPERATION:
         return "ME_UNSUPPORTED_OPERATION";
+
+    case ME_GMP_MAD_UNSUPPORTED_OPERATION:
+        return "Sending GMP MAD supports only Get() method, and you are trying to send Set() method\n"
+               "to a register which is not small enough to send with SMP MAD.";
 
     case ME_MAD_SEND_FAILED:
         return "ME_MAD_SEND_FAILED";

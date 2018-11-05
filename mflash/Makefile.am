@@ -39,6 +39,7 @@ AM_CFLAGS = -MD -pipe -Wall -W -DMST_UL -g ${MFLASH_INBAND_FLAG}
 noinst_LTLIBRARIES = libmflash.a
 
 libmflash_a_SOURCES =  mflash.c mflash.h\
+			mflash_dev_capability.c mflash_dev_capability.h \
 			mflash_pack_layer.c mflash_pack_layer.h mflash_access_layer.c mflash_access_layer.h\
 			mflash_types.h mlash_common_structs.h
 

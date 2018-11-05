@@ -39,17 +39,18 @@
 #include <unistd.h>
 #endif
 #include <bit_slice.h>
-#include <common/tools_utils.h>
+//#include <common/tools_utils.h>
 #include "mtcr_icmd_cif.h"
-
+#include "packets_common.h"
 #ifndef __FreeBSD__
 #include "mtcr_ib_res_mgt.h"
 #endif
 
-#if !defined(__WIN__) && !defined(DISABLE_OFED) && !defined(__FreeBSD__) && !defined(NO_INBAND) && !defined(MST_UL)
-#include <dlfcn.h>
-#include <infiniband/verbs.h>
-#endif
+#include "mtcr_mem_ops.h"
+
+#define ICMD_QUERY_CAP_CMD_ID 0x8400
+#define ICMD_QUERY_CAP_CMD_SZ 0x8
+#define ICMD_QUERY_CAP_EXMB_ICMD_OFF 0x8
 
 // _DEBUG_MODE   // un-comment this to enable debug prints
 
@@ -97,27 +98,7 @@
 #define VCR_CMD_ADDR        0x100000 // mailbox addr
 #define VCR_CMD_SIZE_ADDR   0x1000 // mailbox size
 
-#define EXT_MBOX_MKEY_OFF   0x8
-
-struct dma_lib_hdl_t {
-    void *lib_handle;
-#if !defined(__WIN__) && !defined(DISABLE_OFED) && !defined(__FreeBSD__) && !defined(NO_INBAND) && !defined(MST_UL)
-    struct ibv_device** (*ibv_get_device_list)(int *num_devices);
-    const char*        (*ibv_get_device_name)(struct ibv_device *device);
-    void (*ibv_free_device_list)(struct ibv_device **list);
-    struct ibv_context* (*ibv_open_device)(struct ibv_device *device);
-    int (*ibv_close_device)(struct ibv_context *context);
-    struct ibv_pd*      (*ibv_alloc_pd)(struct ibv_context *context);
-    int (*ibv_dealloc_pd)(struct ibv_pd *pd);
-    struct ibv_mr*      (*ibv_reg_mr)(struct ibv_pd *pd, void *addr, size_t length, int access);
-    int (*ibv_dereg_mr)(struct ibv_mr *mr);
-
-    struct ibv_device       **dev_list;
-    struct ibv_context      *ib_ctx;
-    struct ibv_pd           *pd;
-    struct ibv_mr           *mr;
-#endif
-};
+#define EXT_MBOX_DMA_OFF    0x8
 
 /*
  * General Macros
@@ -179,32 +160,24 @@ struct dma_lib_hdl_t {
 
 #define MWRITE_BUF_ICMD(mf, offset, data, byte_len, action_on_fail) \
     do { \
-        if (mf->icmd.dma_mbox) { \
-            memcpy(mf->icmd.dma_mbox, data, byte_len); \
-        } else { \
-            SET_SPACE_FOR_ICMD_ACCESS(mf); \
-            DBG_PRINTF("-D- MWRITE_BUF_ICMD: off: %x, addr_space: %x\n", offset, mf->address_space); \
-            if ((unsigned)mwrite_buffer(mf, offset, data, byte_len) != (unsigned)byte_len) { \
-                RESTORE_SPACE(mf); \
-                action_on_fail; \
-            } \
+        DBG_PRINTF("-D- MWRITE_BUF_ICMD: off: %x, addr_space: %x\n", offset, mf->address_space); \
+        SET_SPACE_FOR_ICMD_ACCESS(mf); \
+        if ((unsigned)mwrite_buffer(mf, offset, data, byte_len) != (unsigned)byte_len) { \
             RESTORE_SPACE(mf); \
+            action_on_fail; \
         } \
+        RESTORE_SPACE(mf); \
     } while (0)
 
 #define MREAD_BUF_ICMD(mf, offset, data, byte_len, action_on_fail) \
     do { \
-        if (mf->icmd.dma_mbox) { \
-            memcpy(data, mf->icmd.dma_mbox, byte_len); \
-        } else { \
-            SET_SPACE_FOR_ICMD_ACCESS(mf); \
-            DBG_PRINTF("-D- MREAD_BUF_ICMD: off: %x, addr_space: %x\n", offset, mf->address_space); \
-            if ((unsigned)mread_buffer(mf, offset, data, byte_len) != (unsigned)byte_len) { \
-                RESTORE_SPACE(mf); \
-                action_on_fail; \
-            } \
+        DBG_PRINTF("-D- MREAD_BUF_ICMD: off: %x, addr_space: %x\n", offset, mf->address_space); \
+        SET_SPACE_FOR_ICMD_ACCESS(mf); \
+        if ((unsigned)mread_buffer(mf, offset, data, byte_len) != (unsigned)byte_len) { \
             RESTORE_SPACE(mf); \
+            action_on_fail; \
         } \
+        RESTORE_SPACE(mf); \
     } while (0)
 
 /*
@@ -295,6 +268,15 @@ static int go(mfile *mf)
     MWRITE4_ICMD(mf, mf->icmd.ctrl_addr, reg, return ME_ICMD_STATUS_CR_FAIL);
 
     DBG_PRINTF("Busy-bit raised. Waiting for command to exec...\n");
+    char *icmd_sleep_env = getenv("MFT_CMD_SLEEP");
+    int icmd_sleep = -1;
+    if (icmd_sleep_env) {
+        char *endptr;
+        icmd_sleep = strtol(icmd_sleep_env, &endptr, 10);
+        if (*endptr != '\0') {
+            icmd_sleep = -1;
+        }
+    }
 
     // wait for command to execute
     i = 0; wait = 1;
@@ -306,19 +288,28 @@ static int go(mfile *mf)
         }
 
         DBG_PRINTF("Waiting for busy-bit to clear (iteration #%d)...\n", i);
-
-        if (i > 5) {
-            // after some iteration put sleeps bwtween busy-wait
-            msleep(wait);  // don't hog the cpu with busy-wait
-            if (wait < 8) {
-                wait *= 2;              // exponential backoff - up-to 8ms between polls
+        if (icmd_sleep > 0) {
+            if (i == 3) {
+                msleep(icmd_sleep);
+            } else if (i > 3) {
+                msleep(wait);
+                if (wait < 8) {
+                    wait *= 2;              // exponential backoff - up-to 8ms between polls
+                }
+            }
+        } else {
+            if (i > 5) {
+                // after some iteration put sleeps bwtween busy-wait
+                msleep(wait);  // don't hog the cpu with busy-wait
+                if (wait < 8) {
+                    wait *= 2;              // exponential backoff - up-to 8ms between polls
+                }
             }
         }
         MREAD4_ICMD(mf, mf->icmd.ctrl_addr, &reg, return ME_ICMD_STATUS_CR_FAIL);
         busy = EXTRACT(reg, BUSY_BITOFF, BUSY_BITLEN);
 
     } while (busy);
-
     DBG_PRINTF("Command completed!\n");
 
     return ME_OK;
@@ -330,7 +321,7 @@ static int go(mfile *mf)
 static int set_opcode(mfile *mf, u_int16_t opcode)
 {
     u_int32_t reg = 0x0;
-    u_int8_t exmb = (mf->icmd.dma_mbox != NULL) ? 1 : 0;
+    u_int8_t exmb = mf->icmd.dma_icmd;
     MREAD4_ICMD(mf, mf->icmd.ctrl_addr, &reg, return ME_ICMD_STATUS_CR_FAIL);
     reg = MERGE(reg, opcode, OPCODE_BITOFF, OPCODE_BITLEN);
     reg = MERGE(reg, exmb, EXMB_BITOFF, EXMB_BITLEN);
@@ -551,11 +542,19 @@ int icmd_send_command_int(mfile    *mf,
 
     if (!skip_write) {
         DBG_PRINTF("-D- Writing command to mailbox");
-        MWRITE_BUF_ICMD(mf, mf->icmd.cmd_addr, data, write_data_size, ret = ME_ICMD_STATUS_CR_FAIL; goto cleanup;);
+        if (mf->icmd.dma_icmd) {
+            if (mtcr_memaccess(mf, 0, read_data_size, data, 1, MEM_ICMD)) {
+                ret = ME_ICMD_STATUS_CR_FAIL;
+                goto cleanup;
+            }
+        } else {
+            MWRITE_BUF_ICMD(mf, mf->icmd.cmd_addr, data, write_data_size, ret = ME_ICMD_STATUS_CR_FAIL; goto cleanup;);
+        }
     }
 
     if (mf->icmd.dma_icmd) {
-        MWRITE4_ICMD(mf, mf->icmd.ctrl_addr + EXT_MBOX_MKEY_OFF, mf->icmd.mbox_mkey, return ME_ICMD_STATUS_CR_FAIL;);
+        MWRITE4_ICMD(mf, mf->icmd.ctrl_addr + EXT_MBOX_DMA_OFF, EXTRACT64(mf->icmd.dma_pa, 32, 32), return ME_ICMD_STATUS_CR_FAIL;);
+        MWRITE4_ICMD(mf, mf->icmd.ctrl_addr + EXT_MBOX_DMA_OFF + 4, EXTRACT64(mf->icmd.dma_pa, 0, 32), return ME_ICMD_STATUS_CR_FAIL;);
     }
 
     ret = go(mf);
@@ -565,7 +564,15 @@ int icmd_send_command_int(mfile    *mf,
     CHECK_RC_GO_TO(ret, cleanup);
 
     DBG_PRINTF("-D- Reading command from mailbox");
-    MREAD_BUF_ICMD(mf, mf->icmd.cmd_addr, data, read_data_size, ret = ME_ICMD_STATUS_CR_FAIL; goto cleanup;);
+
+    if (mf->icmd.dma_icmd) {
+        if (mtcr_memaccess(mf, 0, read_data_size, data, 0, MEM_ICMD)) {
+            ret = ME_ICMD_STATUS_CR_FAIL;
+            goto cleanup;
+        }
+    } else {
+        MREAD_BUF_ICMD(mf, mf->icmd.cmd_addr, data, read_data_size, ret = ME_ICMD_STATUS_CR_FAIL; goto cleanup;);
+    }
 
     ret = ME_OK;
 cleanup:
@@ -675,167 +682,6 @@ static int icmd_init_cr(mfile *mf)
     return ME_OK;
 }
 
-#if !defined(__WIN__) && !defined(DISABLE_OFED) && !defined(__FreeBSD__) && !defined(NO_INBAND) && !defined(MST_UL)
-char *libs[] = {"libibverbs.so.1"};
-
-#define MY_DLSYM(lib_ctx, func_name) do { \
-        const char *dl_error; \
-        lib_ctx->func_name = dlsym(lib_ctx->lib_handle, #func_name); \
-        dl_error = dlerror(); \
-        if (dl_error != NULL)  { \
-            DBG_PRINTF("-E- %s", dl_error); \
-            return ME_ERROR; \
-        } \
-} while (0)
-
-static int init_lib_hdl(mfile *mf)
-{
-    unsigned i = 0;
-    for (i = 0; i < sizeof(libs) / sizeof(libs[0]); i++) {
-        mf->icmd.dma_lib_ctx->lib_handle = dlopen(libs[i], RTLD_LAZY);
-        if (mf->icmd.dma_lib_ctx->lib_handle) {
-            break;
-        }
-    }
-    if (!mf->icmd.dma_lib_ctx->lib_handle) {
-        DBG_PRINTF("-E- Ib verbs lib open failure: %s", dlerror());
-        return ME_ERROR;
-    }
-    MY_DLSYM(mf->icmd.dma_lib_ctx, ibv_get_device_list);
-    MY_DLSYM(mf->icmd.dma_lib_ctx, ibv_get_device_name);
-    MY_DLSYM(mf->icmd.dma_lib_ctx, ibv_free_device_list);
-    MY_DLSYM(mf->icmd.dma_lib_ctx, ibv_open_device);
-    MY_DLSYM(mf->icmd.dma_lib_ctx, ibv_close_device);
-    MY_DLSYM(mf->icmd.dma_lib_ctx, ibv_alloc_pd);
-    MY_DLSYM(mf->icmd.dma_lib_ctx, ibv_dealloc_pd);
-    MY_DLSYM(mf->icmd.dma_lib_ctx, ibv_reg_mr);
-    MY_DLSYM(mf->icmd.dma_lib_ctx, ibv_dereg_mr);
-    return ME_OK;
-}
-#endif
-
-static int mailbox_alloc(mfile *mf)
-{
-    TOOLS_UNUSED(mf);
-#if !defined(__WIN__) && !defined(DISABLE_OFED) && !defined(__FreeBSD__) && !defined(NO_INBAND) && !defined(MST_UL)
-    size_t i;
-    int num_devices = 0;
-    int mr_flags = IBV_ACCESS_LOCAL_WRITE;
-    struct ibv_device *ib_dev = 0;
-    char ibdev_name[16] = {0};
-
-    if (mf->dinfo->pci.ib_devs == NULL) {
-        return ME_ERROR;
-    }
-    strncpy(ibdev_name, mf->dinfo->pci.ib_devs[0], sizeof(ibdev_name) / sizeof(ibdev_name[0]) - 1);
-    if (posix_memalign((void **)&(mf->icmd.dma_mbox), 0x1000, VCR_CMD_SIZE_ADDR)) {
-        DBG_PRINTF("-E- Failed to align memory\n");
-        return ME_MEM_ERROR;
-    }
-    if (!mf->icmd.dma_mbox) {
-        DBG_PRINTF("-E- Failed to allocate mailbox\n");
-        return ME_MEM_ERROR;
-    }
-    memset(mf->icmd.dma_mbox, 0, VCR_CMD_SIZE_ADDR);
-    mf->icmd.dma_lib_ctx = malloc(sizeof(dma_lib_hdl));
-    if (!mf->icmd.dma_lib_ctx) {
-        free(mf->icmd.dma_mbox);
-        DBG_PRINTF("-E- Failed to allocate lib hdl struct\n");
-        return ME_MEM_ERROR;
-    }
-    memset(mf->icmd.dma_lib_ctx, 0, sizeof(dma_lib_hdl));
-    if (init_lib_hdl(mf)) {
-        free(mf->icmd.dma_lib_ctx);
-        free(mf->icmd.dma_mbox);
-        DBG_PRINTF("-E- Failed to initialize DMA functions\n");
-        return ME_ERROR;
-    }
-    mf->icmd.dma_lib_ctx->dev_list = mf->icmd.dma_lib_ctx->ibv_get_device_list(&num_devices);
-    if (!mf->icmd.dma_lib_ctx->dev_list) {
-        DBG_PRINTF("-E- failed to get IB devices list\n");
-        free(mf->icmd.dma_lib_ctx);
-        free(mf->icmd.dma_mbox);
-        return ME_ERROR;
-    }
-
-    /* if there isn't any IB device in host */
-    if (!num_devices) {
-        DBG_PRINTF("-E- found %d ib device(s)\n", num_devices);
-        free(mf->icmd.dma_lib_ctx);
-        free(mf->icmd.dma_mbox);
-        return ME_ERROR;
-    }
-
-    for (i = 0; i < (size_t)num_devices; i++) {
-        if (!strcmp(mf->icmd.dma_lib_ctx->ibv_get_device_name(mf->icmd.dma_lib_ctx->dev_list[i]), ibdev_name)) {
-            ib_dev = mf->icmd.dma_lib_ctx->dev_list[i];
-            break;
-        }
-    }
-
-    if (!ib_dev) {
-        DBG_PRINTF("-E- IB device %s wasn't found\n", ibdev_name);
-        free(mf->icmd.dma_lib_ctx);
-        free(mf->icmd.dma_mbox);
-        return ME_ERROR;
-    }
-
-    mf->icmd.dma_lib_ctx->ib_ctx = mf->icmd.dma_lib_ctx->ibv_open_device(ib_dev);
-    if (!mf->icmd.dma_lib_ctx->ib_ctx) {
-        DBG_PRINTF("-E- failed to open IB device %s\n", ibdev_name);
-        free(mf->icmd.dma_lib_ctx);
-        free(mf->icmd.dma_mbox);
-        return ME_ERROR;
-    }
-
-    mf->icmd.dma_lib_ctx->pd = mf->icmd.dma_lib_ctx->ibv_alloc_pd(mf->icmd.dma_lib_ctx->ib_ctx);
-    if (!mf->icmd.dma_lib_ctx->pd) {
-        DBG_PRINTF("-E- ibv_alloc_pd failed\n");
-        free(mf->icmd.dma_lib_ctx);
-        free(mf->icmd.dma_mbox);
-        return ME_ERROR;
-    }
-
-    mf->icmd.dma_lib_ctx->mr = mf->icmd.dma_lib_ctx->ibv_reg_mr(mf->icmd.dma_lib_ctx->pd, mf->icmd.dma_mbox,
-                                                                VCR_CMD_SIZE_ADDR, mr_flags);
-    if (!mf->icmd.dma_lib_ctx->mr) {
-        DBG_PRINTF("-E- ibv_reg_mr failed with mr_flags=0x%x\n", mr_flags);
-        free(mf->icmd.dma_lib_ctx);
-        free(mf->icmd.dma_mbox);
-        return ME_ERROR;
-    }
-
-    mf->icmd.mbox_mkey = mf->icmd.dma_lib_ctx->mr->lkey;
-    return ME_OK;
-#else
-    return ME_NOT_IMPLEMENTED;
-#endif
-}
-
-static void mailbox_dealloc(mfile *mf)
-{
-    TOOLS_UNUSED(mf);
-#if !defined(__WIN__) && !defined(DISABLE_OFED) && !defined(__FreeBSD__) && !defined(NO_INBAND) && !defined(MST_UL)
-    if (mf->icmd.dma_lib_ctx->dev_list && mf->icmd.dma_lib_ctx->ibv_free_device_list) {
-        mf->icmd.dma_lib_ctx->ibv_free_device_list(mf->icmd.dma_lib_ctx->dev_list);
-    }
-    if (mf->icmd.dma_lib_ctx->mr && mf->icmd.dma_lib_ctx->ibv_dereg_mr) {
-        mf->icmd.dma_lib_ctx->ibv_dereg_mr(mf->icmd.dma_lib_ctx->mr);
-    }
-    if (mf->icmd.dma_lib_ctx->pd && mf->icmd.dma_lib_ctx->ibv_dealloc_pd) {
-        mf->icmd.dma_lib_ctx->ibv_dealloc_pd(mf->icmd.dma_lib_ctx->pd);
-    }
-    if (mf->icmd.dma_lib_ctx->ib_ctx && mf->icmd.dma_lib_ctx->ibv_close_device) {
-        mf->icmd.dma_lib_ctx->ibv_close_device(mf->icmd.dma_lib_ctx->ib_ctx);
-    }
-    if (mf->icmd.dma_lib_ctx->lib_handle) {
-        dlclose(mf->icmd.dma_lib_ctx->lib_handle);
-    }
-    free(mf->icmd.dma_lib_ctx);
-    free(mf->icmd.dma_mbox);
-#endif
-}
-
 static int icmd_init_vcr_crspace_addr(mfile* mf)
 {
     u_int32_t hw_id = 0x0;
@@ -906,16 +752,31 @@ static int icmd_init_vcr(mfile *mf)
     DBG_PRINTF("-D- iCMD semaphore addr(semaphore space): 0x%x\n", mf->icmd.semaphore_addr);
     DBG_PRINTF("-D- iCMD max mailbox size: 0x%x\n", mf->icmd.max_cmd_size);
     DBG_PRINTF("-D- iCMD stat_cfg_not_done addr: 0x%x:%d\n", mf->icmd.static_cfg_not_done_addr, mf->icmd.static_cfg_not_done_offs);
-    if (mf->icmd.dma_icmd) {
-        if (mailbox_alloc(mf)) {
-            mf->icmd.dma_icmd = 0;
-            mf->icmd.dma_mbox = NULL;
-            DBG_PRINTF("-W- Failed to allocate DMA mailbox\n");
-        }
-    }
     return ME_OK;
 }
 
+void icmd_get_dma_support(mfile *mf)
+{
+    mf->icmd.dma_icmd = 0;
+    mem_props_t mem_p;
+    if (get_mem_props(mf, MEM_ICMD, &mem_p)) {
+        return;
+    }
+    mf->icmd.dma_pa = mem_p.dma_pa;
+    mf->icmd.dma_size = mem_p.mem_size;
+    if (getenv("ENABLE_DMA_ICMD") == NULL) {
+        return;
+    }
+    if (!mf->icmd.dma_pa) {
+        return;
+    }
+    u_int8_t dev_cap_data[ICMD_QUERY_CAP_CMD_SZ] = {0};
+    int rc = icmd_send_command(mf, ICMD_QUERY_CAP_CMD_ID, dev_cap_data, ICMD_QUERY_CAP_CMD_SZ, 0);
+    if (!rc) {
+        mf->icmd.dma_icmd = pop_from_buff(dev_cap_data, ICMD_QUERY_CAP_EXMB_ICMD_OFF, 1);
+    }
+
+}
 
 int icmd_open(mfile *mf)
 {
@@ -925,10 +786,6 @@ int icmd_open(mfile *mf)
 
     mf->icmd.took_semaphore = 0;
     mf->icmd.ib_semaphore_lock_supported = 0;
-    mf->icmd.dma_icmd = 0;
-    if (getenv("ENABLE_DMA_ICMD")) {
-        mf->icmd.dma_icmd = 1;
-    }
     // attempt to open via CR-Space
 #if defined(MST_UL) && !defined(MST_UL_ICMD)
     if (mf->vsec_supp) {
@@ -941,7 +798,11 @@ int icmd_open(mfile *mf)
     return ME_ICMD_NOT_SUPPORTED;
 #else
     if (mf->vsec_supp) {
-        return icmd_init_vcr(mf);
+        int rc = icmd_init_vcr(mf);
+        if (rc == ME_OK) {
+            icmd_get_dma_support(mf);
+        }
+        return rc;
     } else {
         return icmd_init_cr(mf);
     }
@@ -960,9 +821,6 @@ void icmd_close(mfile *mf)
             }
         }
         mf->icmd.icmd_opened = 0;
-        if (mf->icmd.dma_lib_ctx) {
-            mailbox_dealloc(mf);
-        }
     }
 }
 

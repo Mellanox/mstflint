@@ -54,27 +54,36 @@
 #endif
 
 /***************************************************/
-
-// register access for variable size registers (like mfba)
-#define MAD_IFC_ACCESS(mf, method, attr_id, attr_mod, data_struct, struct_name) \
-    int status = 0; \
-    u_int8_t data[MAX_DATA_SIZE] = {0}; \
-    tools_open_##struct_name##_pack(data_struct, data); \
-    if (method != MAD_IFC_METHOD_GET && method != MAD_IFC_METHOD_SET) { \
-        return ME_ERROR; \
-    } \
-    DEBUG_PRINT_SEND(data_struct, struct_name, method); \
-    if (method == MAD_IFC_METHOD_GET) { \
-        status = mib_smp_get(mf, data, attr_id, attr_mod); \
-    } else { \
-        status = mib_smp_set(mf, data, attr_id, attr_mod); \
-    } \
-    tools_open_##struct_name##_unpack(data_struct, data); \
-    DEBUG_PRINT_RECIEVE(data_struct, struct_name, method); \
-    if (status) { \
-        return (mad_ifc_status_t)status; \
-    } \
-    return ME_OK
+#if !defined(DISABLE_OFED)
+    // register access for variable size registers (like mfba)
+    #define MAD_IFC_ACCESS(mf, method, attr_id, attr_mod, data_struct, struct_name) \
+        int status = 0; \
+        u_int8_t data[MAX_DATA_SIZE] = {0}; \
+        tools_open_##struct_name##_pack(data_struct, data); \
+        if (method != MAD_IFC_METHOD_GET && method != MAD_IFC_METHOD_SET) { \
+            return ME_ERROR; \
+        } \
+        DEBUG_PRINT_SEND(data_struct, struct_name, method); \
+        if (method == MAD_IFC_METHOD_GET) { \
+            status = mib_smp_get(mf, data, attr_id, attr_mod); \
+        } else { \
+            status = mib_smp_set(mf, data, attr_id, attr_mod); \
+        } \
+        tools_open_##struct_name##_unpack(data_struct, data); \
+        DEBUG_PRINT_RECIEVE(data_struct, struct_name, method); \
+        if (status) { \
+            return (mad_ifc_status_t)status; \
+        } \
+        return ME_OK
+#else
+    #define MAD_IFC_ACCESS(mf, method, attr_id, attr_mod, data_struct, struct_name) \
+        (void) mf; \
+        (void) method; \
+        (void) attr_id; \
+        (void) attr_mod; \
+        (void) data_struct; \
+        return ME_NOT_IMPLEMENTED
+#endif
 
 /************************************
 * Function: mad_ifc_port_info

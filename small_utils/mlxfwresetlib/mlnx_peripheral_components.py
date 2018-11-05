@@ -44,7 +44,7 @@ from .mlxfwreset_utils import cmdExec
 
 class MlnxPeripheralComponents(object):
 
-    SD_SUPPORTED_DID = [0x20d,0x209,0x20b]  # Connectx5 (SD device) ,Connectx4/Connectx4Lx (MH device connected as SD)
+    SD_SUPPORTED_DID = [0x20f,0x20d,0x209,0x20b]  # Connectx6,Connectx5 (SD device) ,Connectx4/Connectx4Lx (MH device connected as SD)
 
     def __init__(self):
         self.pci_devices = []

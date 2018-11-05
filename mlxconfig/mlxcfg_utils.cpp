@@ -77,7 +77,7 @@ MError mnvaCom5thGen(mfile *mf, u_int8_t *buff, u_int16_t len, u_int32_t tlvType
     struct tools_open_nvda mnvaTlv;
     memset(&mnvaTlv, 0, sizeof(struct tools_open_nvda));
 
-    if (method == REG_ACCESS_METHOD_GET) {
+    if (method == REG_ACCESS_METHOD_GET && mf->tp != MST_IB) {
         mnvaTlv.nv_hdr.length = sizeof(mnvaTlv.data);
     } else {
         mnvaTlv.nv_hdr.length = len;
@@ -361,7 +361,7 @@ bool getDeviceInformationString(const char* dev, info_type_t op, vector<char>& i
        return false;
     }
     reg_access_status_t rc;
-    int maxDataSize = mget_max_reg_size(mf) - sizeof(mqisRegister);
+    int maxDataSize = mget_max_reg_size(mf, MACCESS_REG_METHOD_GET) - sizeof(mqisRegister);
     if (maxDataSize > MAX_REG_DATA) {
         maxDataSize = sizeof(mqisRegister);
     }

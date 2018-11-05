@@ -68,11 +68,12 @@ public:
     void setExtResourceType(bool extT) { _extResource = extT; }
     static string getDefaultDBName(bool isSwitch);
     mfile* mf() { return _mf;}
-    Commander(mfile *mf) : _mf(mf), _extResource(true) {};
+    Commander(mfile *mf) : _mf(mf), _extResource(true), _isSwitch(false) {};
     virtual ~Commander();
 
 protected:
     mfile *_mf;
     bool _extResource;
+    bool _isSwitch;
 };
 #endif /* MLXCFG_COMMANDER_H_ */

@@ -14,7 +14,7 @@
  
 
 /***
-         *** This file was generated at "2018-09-12 08:13:00"
+         *** This file was generated at "2018-11-04 18:13:57"
          *** by:
          ***    > /mswg/release/tools/a-me/last_stable/adabe_plugins/adb2c/adb2pack.py --input adb/prm/hca/int/reg_access_hca.adb --file-prefix reg_access_hca --prefix reg_access_hca_
          ***/

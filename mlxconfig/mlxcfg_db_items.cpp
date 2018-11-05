@@ -40,20 +40,21 @@
 #include "mlxcfg_db_items.h"
 
 using namespace std;
+using namespace DB;
 
-DBOffset::DBOffset(const string& offset)
+ByteBitString::ByteBitString(const string& str)
 {
-    size_t pos = offset.find('.');
+    size_t pos = str.find('.');
     if (pos == string::npos) { //No bits part in this case (e.g. 0x0)
         _bitsPart = 0x0;
-        _bytesPart = strtol(offset.c_str(), NULL, 0);
+        _bytesPart = strtol(str.c_str(), NULL, 0);
     } else {
-        _bitsPart = atoi(offset.substr(pos + 1).c_str());
-        _bytesPart = strtol(offset.substr(0, pos).c_str(), NULL, 0);
+        _bitsPart = atoi(str.substr(pos + 1).c_str());
+        _bytesPart = strtol(str.substr(0, pos).c_str(), NULL, 0);
     }
 }
 
-u_int32_t DBOffset::getOffsetInBE(u_int32_t sizeInBits, u_int32_t withBitsPart)
+u_int32_t Offset::toBigEndian(u_int32_t sizeInBits, u_int32_t withBitsPart) const
 {
     if (!withBitsPart) {
         return 8 * _bytesPart;

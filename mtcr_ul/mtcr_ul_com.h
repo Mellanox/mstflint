@@ -131,7 +131,8 @@ int tools_cmdif_send_mbox_command_ul(mfile *mf, u_int32_t input_modifier, u_int1
 int tools_cmdif_unlock_semaphore_ul(mfile *mf);
 
 
-int mget_max_reg_size_ul(mfile *mf);
+int mget_max_reg_size_ul(mfile *mf, maccess_reg_method_t reg_method);
+int supports_reg_access_gmp_ul(mfile *mf, maccess_reg_method_t reg_method);
 
 int mread_buffer_ul(mfile *mf, unsigned int offset, u_int8_t *data, int byte_len);
 int mwrite_buffer_ul(mfile *mf, unsigned int offset, u_int8_t *data, int byte_len);

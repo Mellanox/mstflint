@@ -168,7 +168,7 @@ mfile* mf_get_mfile(mflash *mfl);
 //
 const char* mf_err2str(int err_code);
 
-void mf_flash_list(char *flash_list);
+void mf_flash_list(char *flash_list, int flash_arr_size);
 
 EXTERN_C_END
 

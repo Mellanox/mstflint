@@ -35,6 +35,7 @@
 #include <algorithm>
 #include <vector>
 
+#include <cstring>
 #include <tools_utils.h>
 #include <bit_slice.h>
 #include <mtcr.h>
@@ -49,9 +50,17 @@
 #endif
 #endif
 
-#if !defined(UEFI_BUILD) && !defined(NO_CS_CMD)
+#if !defined(UEFI_BUILD)
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#if !defined(NO_CS_CMD)
 #include <tools_crypto/tools_md5.h>
-#endif
+#endif //NO_CS_CMD
+#if !defined(NO_OPEN_SSL)
+#include <mlxsign_lib/mlxsign_lib.h>
+#endif //NO_OPEN_SSL
+#endif //UEFI_BUILD
 
 #include "fs4_ops.h"
 #include "fs3_ops.h"
@@ -174,6 +183,55 @@ bool Fs4Operations::getHWPtrs(VerifyCallBack verifyCallBackFunc)
     return true;
 }
 
+bool Fs4Operations::getExtendedHWPtrs(VerifyCallBack verifyCallBackFunc)
+{
+
+    //TODO
+    //printf("1=0x%x 2=0x%x\n", _fwImgInfo.supportedHwId[0], CX6_HW_ID);
+    /*if (_fwImgInfo.supportedHwId[0] != CX6_HW_ID) {
+        return errmsg("Extended HW pointers are only for ConnectX-6\n");
+    }*/
+
+    const unsigned int s = CX6FW_HW_POINTERS_SIZE / 4;
+    u_int32_t buff[s];
+    struct cx6fw_hw_pointers hw_pointers;
+    u_int32_t physAddr = _fwImgInfo.imgStart + FS4_HW_PTR_START;
+
+    READBUF((*_ioAccess),
+            physAddr,
+            buff,
+            CX6FW_HW_POINTERS_SIZE,
+            "HW Pointers");
+    cx6fw_hw_pointers_unpack(&hw_pointers, (u_int8_t *)buff);
+
+    //- Check CRC of each pointers (always check CRC before you call ToCPU
+    for (unsigned int k = 0; k < s; k += 2) {
+        u_int32_t *tempBuff = (u_int32_t *) buff;
+        //Calculate HW CRC:
+        u_int32_t calcPtrCRC = calc_hw_crc((u_int8_t *)((u_int32_t *)tempBuff + k), 6);
+        u_int32_t ptrCRC = tempBuff[k + 1];
+        u_int32_t ptr = tempBuff[k];
+        TOCPUn(&ptr, 1);
+        TOCPUn(&ptrCRC, 1);
+        if (!DumpFs3CRCCheck(FS4_HW_PTR, physAddr + 4 * k, CX6FW_HW_POINTER_ENTRY_SIZE, calcPtrCRC,
+                             ptrCRC, false, verifyCallBackFunc)) {
+            return false;
+        }
+    }
+
+    //CodeView: generate tools_layout
+    _boot2_ptr = hw_pointers.boot2_ptr.ptr;
+    _itoc_ptr = hw_pointers.toc_ptr.ptr;
+    _tools_ptr = hw_pointers.tools_ptr.ptr;
+
+    _authentication_start_ptr = hw_pointers.authentication_start_ptr.ptr;
+    _authentication_end_ptr = hw_pointers.authentication_end_ptr.ptr;
+    _digest_mdk_ptr = hw_pointers.digest_mdk_ptr.ptr;
+    _digest_recovery_key_ptr = hw_pointers.digest_recovery_key_ptr.ptr;
+
+    return true;
+}
+
 bool Fs4Operations::verifyToolsArea(VerifyCallBack verifyCallBackFunc)
 {
 
@@ -289,7 +347,6 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isD
     }
 
     do {
-
         // Read toc entry
         entryAddr = tocAddr + TOC_HEADER_SIZE + section_index *  TOC_ENTRY_SIZE;
         READBUF((*_ioAccess), entryAddr, entryBuffer, TOC_ENTRY_SIZE, "TOC Entry");
@@ -449,7 +506,6 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isD
 bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_itoc,
                                 struct QueryOptions queryOptions, bool ignoreDToc)
 {
-
     u_int32_t dtocPtr;
     u_int8_t *buff;
     u_int32_t log2_chunk_size;
@@ -1288,7 +1344,17 @@ bool Fs4Operations::BurnFs4Image(Fs4Operations &imageOps,
     // Write new signature
     data8 = new u_int8_t[FS3_FW_SIGNATURE_SIZE];
     imageOps._imageCache.get(data8, 0, FS3_FW_SIGNATURE_SIZE);
-    if (!f->write(0, data8, FS3_FW_SIGNATURE_SIZE, true)) {
+    if (!writeImageEx(
+            burnParams.progressFuncEx,
+            burnParams.progressUserData,
+            burnParams.progressFunc,
+            new_image_start,
+                data8,
+                FS3_FW_SIGNATURE_SIZE,
+                true,
+                true,
+                total_img_size,
+                alreadyWrittenSz)) {
         delete[] data8;
         return false;
     }
@@ -1927,11 +1993,24 @@ bool Fs4Operations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, bo
         type_msg = "SIGNATURE";
         newSection.resize(CX4FW_IMAGE_SIGNATURE_256_SIZE);
         memcpy(newSection.data(), sig.data(), CX4FW_IMAGE_SIGNATURE_256_SIZE);
+        //Check if padding is needed, by comparing with the real size in the itoc entry:
+        u_int32_t sizeInItocEntry = curr_toc->toc_entry.size << 2;
+        if (sizeInItocEntry > CX4FW_IMAGE_SIGNATURE_256_SIZE) {
+            for (unsigned int l = 0; l < sizeInItocEntry - CX4FW_IMAGE_SIGNATURE_256_SIZE; l++) {
+                newSection.push_back(0x0);
+            }
+        }
     } else if (sect_type == FS3_IMAGE_SIGNATURE_512 && cmd_type == CMD_SET_SIGNATURE) {
         vector<u_int8_t> sig((u_int8_t *)new_info, (u_int8_t *)new_info + CX4FW_IMAGE_SIGNATURE_512_SIZE);
         type_msg = "SIGNATURE";
         newSection.resize(CX4FW_IMAGE_SIGNATURE_512_SIZE);
         memcpy(newSection.data(), sig.data(), CX4FW_IMAGE_SIGNATURE_512_SIZE);
+        u_int32_t sizeInItocEntry = curr_toc->toc_entry.size << 2;
+        if (sizeInItocEntry > CX4FW_IMAGE_SIGNATURE_256_SIZE) {
+            for (unsigned int l = 0; l < sizeInItocEntry - CX4FW_IMAGE_SIGNATURE_256_SIZE; l++) {
+                newSection.push_back(0x0);
+            }
+        }
     } else if (sect_type == FS3_PUBLIC_KEYS_2048 && cmd_type == CMD_SET_PUBLIC_KEYS) {
         char *publickeys_file = (char *)new_info;
         type_msg = "PUBLIC KEYS";
@@ -2169,6 +2248,145 @@ bool Fs4Operations::GetSectionSizeAndOffset(fs3_section_t sectType, u_int32_t& s
     }
 
     return false;
+}
+
+#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
+bool validateHmacKey(string key_str, unsigned int correct_key_len)
+{
+    // The keyFile should contain 128 chars, each 2 of them represent 1 byte of key (hex)
+    bool res = true;
+    key_str.erase(std::remove_if(key_str.begin(), key_str.end(), ::isspace), key_str.end());
+    if(key_str.size() != correct_key_len * 2) {
+        res = false;
+    }
+    else if(key_str.find_first_not_of("0123456789abcdefABCDEF") != std::string::npos) {
+        res =  false;
+    }
+    return res;
+}
+#endif
+
+bool Fs4Operations::FwSignWithHmac(const char *keyFile)
+{
+#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
+    vector<u_int8_t> critical, non_critical, bin_data, digest;
+    u_int32_t physAddr = _authentication_start_ptr;
+    if (_ioAccess->is_flash()) {
+        return errmsg( "Adding HMAC not allowed for devices");
+    }
+    if (!getExtendedHWPtrs((VerifyCallBack)NULL)) {
+        return false;
+    }
+    const unsigned int s = _authentication_end_ptr - _authentication_start_ptr + 1;
+
+    bin_data.resize(s);
+    READBUF((*_ioAccess),
+            physAddr,
+            bin_data.data(),
+            s,
+            "Reading data pointed by HW Pointers");
+
+    const int key_len = 64;
+    std::ifstream f(keyFile);
+    std::stringstream buf;
+    buf << f.rdbuf();
+    std::string fileContents = buf.str();
+    if(!validateHmacKey(fileContents, key_len))
+        return errmsg("Key must be of length of 64 bytes, each byte represented with two chars (hex)");
+    unsigned char key_buf[key_len + 1];
+    std::string num_str = "";
+    size_t file_content_size = fileContents.size();
+    for (size_t i = 0; i < file_content_size; i++) {
+        if (i % 2 != 0) {
+            num_str += fileContents[i];
+            key_buf[i / 2] = strtol(num_str.c_str(), NULL, 16);
+        }
+        else {
+            num_str = fileContents[i];
+        }
+    }
+    vector<u_int8_t> key(key_buf, key_buf + key_len);
+
+    PrepItocSectionsForHmac(critical, non_critical);
+    if (!CalcHMAC(key, bin_data, digest)) {
+        return false;
+    }
+
+    if (!writeImageEx((ProgressCallBackEx)NULL, NULL, (ProgressCallBack)NULL, _digest_recovery_key_ptr, digest.data(),
+                      digest.size(), true, true, 0, 0)) {
+        return false;
+    }
+
+    digest.resize(0x0);
+    if (!CalcHMAC(key, critical, digest)) {
+        return false;
+    }
+
+    if (!writeImageEx((ProgressCallBackEx)NULL, NULL, (ProgressCallBack)NULL, _digest_recovery_key_ptr + digest.size(), digest.data(),
+                      digest.size(), true, true, 0, 0)) {
+        return false;
+    }
+
+    digest.resize(0);
+    if (!CalcHMAC(key, non_critical, digest)) {
+        return false;
+    }
+
+    if (!writeImageEx((ProgressCallBackEx)NULL, NULL, (ProgressCallBack)NULL, _digest_recovery_key_ptr + 2 * digest.size(), digest.data(),
+                      digest.size(), true, true, 0, 0)) {
+        return false;
+    }
+
+    return true;
+#else
+    (void)keyFile;
+    return errmsg("FwSignWithHmac is not suppported.");
+#endif
+}
+
+bool Fs4Operations::PrepItocSectionsForHmac(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical)
+{
+    if (!FsIntQueryAux(true, false)) {
+        return false;
+    }
+
+    for (int i = 0; i < this->_fs4ImgInfo.itocArr.numOfTocs; i++) {
+        struct fs4_toc_info *itoc_info_p = &this->_fs4ImgInfo.itocArr.tocArr[i];
+        struct cx5fw_itoc_entry *toc_entry = &(itoc_info_p->toc_entry);
+        if (IsCriticalSection(toc_entry->type))
+        {
+            critical.reserve(critical.size() + itoc_info_p->section_data.size());
+            critical.insert(critical.end(), itoc_info_p->section_data.begin(), itoc_info_p->section_data.end());
+        }
+        else
+        {
+            non_critical.reserve(non_critical.size() + itoc_info_p->section_data.size());
+            non_critical.insert(non_critical.end(), itoc_info_p->section_data.begin(), itoc_info_p->section_data.end());
+        }
+    }
+    return true;
+}
+
+bool Fs4Operations::IsCriticalSection(u_int8_t sect_type)
+{
+    if (sect_type != FS3_PCIE_LINK_CODE && sect_type != FS3_PHY_UC_CMD && sect_type != FS3_HW_BOOT_CFG)
+        return false;
+    return true;
+}
+
+bool Fs4Operations::CalcHMAC(const vector<u_int8_t>& key, const vector<u_int8_t>& data, vector<u_int8_t>& digest)
+{
+#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
+    MlxSignHMAC mlxSignHMAC;
+    mlxSignHMAC.setKey(key);
+    mlxSignHMAC << data;
+    mlxSignHMAC.getDigest(digest);
+    return true;
+#else
+    (void)key;
+    (void)digest;
+    return errmsg("HMAC calculation is not implemented\n");
+#endif
 }
 
 bool Fs4Operations::TocComp::operator()(fs4_toc_info *elem1, fs4_toc_info *elem2)

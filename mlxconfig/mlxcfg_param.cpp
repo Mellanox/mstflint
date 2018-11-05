@@ -38,6 +38,7 @@
 
 
 #include <sstream>
+#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -106,7 +107,7 @@ Param::Param(int columnsCount, char **dataRow, char **headerRow) :
     _isRegexFound(false), _isPortFound(false), _supportedFromVersion(0),
     _arrayLength(0)
 {
-    _offset = (DBOffset*)NULL;
+    _offset = (Offset*)NULL;
     for (int i = 0; i < columnsCount; i++) {
         if (strcmp(headerRow[i], PARAM_NAME_HEADER) == 0) {
             CHECKFIELD(dataRow[i], headerRow[i])
@@ -124,7 +125,7 @@ Param::Param(int columnsCount, char **dataRow, char **headerRow) :
             if (_offset) {
                 delete _offset;
             }
-            _offset = new DBOffset(dataRow[i]);
+            _offset = new Offset(dataRow[i]);
             _isOffsetFound = true;
         } else if (strcmp(headerRow[i], PARAM_SIZE_HEADER) == 0) {
             CHECKFIELD(dataRow[i], headerRow[i])
@@ -258,12 +259,12 @@ Param::~Param()
 
 void Param::pack(u_int8_t *buff)
 {
-    _value->pack(buff, _offset->getOffsetInBE(getSizeInBits(_size), _arrayLength == 0));
+    _value->pack(buff, _offset->toBigEndian(getSizeInBits(_size), _arrayLength == 0));
 }
 
 void Param::unpack(u_int8_t *buff)
 {
-    _value->unpack(buff, _offset->getOffsetInBE(getSizeInBits(_size), _arrayLength == 0));
+    _value->unpack(buff, _offset->toBigEndian(getSizeInBits(_size), _arrayLength == 0));
 }
 
 void Param::setVal(string val)
@@ -826,7 +827,7 @@ ArrayParamValue::ArrayParamValue(string size, u_int32_t count, enum ParamType pa
     if (_elementSizeInBits != 32 &&
         _elementSizeInBits != 16 &&
         _elementSizeInBits != 8) {
-        throw MlxcfgException("The size of the elements of array values must be 1, 2 or 4 bytes!");
+        throw MlxcfgException("The size of the elements of array values must be 1, 2 or 4 bytes.");
     }
     if (paramType == ENUM) {
         return;

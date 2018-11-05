@@ -43,6 +43,8 @@ extern "C" {
 #include <tools_layouts/icmd_layouts.h>
 #else
 #include <tools_layouts/connectib_layouts.h>
+#include <tools_layouts/connectx4_layouts.h>
+#include "cib_cif.h"
 #endif
 #include "icmd_cif_common.h"
 
@@ -54,10 +56,16 @@ extern "C" {
 
 enum {
     GET_FW_INFO = 0x8007,
-    GET_ICMD_QUERY_CAP = 0x8400,
     FLASH_REG_ACCESS = 0x9001,
+};
+
+#ifdef MST_UL
+// instead of cib_cif.h in mstflint
+enum {
+    GET_ICMD_QUERY_CAP = 0x8400,
     SET_ITRACE = 0xf003,
 };
+#endif
 
 int gcif_get_fw_info(mfile *mf,
                      OUT struct connectib_icmd_get_fw_info *fw_info);

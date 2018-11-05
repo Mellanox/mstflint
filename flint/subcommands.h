@@ -224,7 +224,15 @@ public:
     FlintStatus executeCommand();
 };
 
-
+class AddHmacSubCommand : public SubCommand
+{
+private:
+public:
+    AddHmacSubCommand();
+    ~AddHmacSubCommand();
+    FlintStatus executeCommand();
+    bool verifyParams();
+};
 class SignSubCommand : public SubCommand
 {
 private:

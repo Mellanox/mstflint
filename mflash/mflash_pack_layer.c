@@ -37,17 +37,16 @@
 #include "compatibility.h"
 #include "bit_slice.h"
 #include "mtcr.h"
-#include "reg_access.h"
 
 #include "mflash_types.h"
 #include "mflash_pack_layer.h"
 
 int sx_st_block_access(mfile *mf, u_int32_t flash_addr, u_int8_t bank, u_int32_t size, u_int8_t *data,
-                       u_int8_t method)
+        reg_access_method_t method)
 {
     struct register_access_mfba mfba;
     int rc;
-    int max_size = mget_max_reg_size(mf);
+    int max_size = mget_max_reg_size(mf, (maccess_reg_method_t)method);
     if (!max_size) {
         return MFE_BAD_PARAMS;
     }
@@ -71,7 +70,7 @@ int sx_st_block_access(mfile *mf, u_int32_t flash_addr, u_int8_t bank, u_int32_t
             mfba.data[i] = __le32_to_cpu(*((u_int32_t*)&(data[4 * i])));
         }
     }
-    rc = reg_access_mfba(mf, (reg_access_method_t) method, &mfba); CHECK_RC(MError2MfError((MError)rc));
+    rc = reg_access_mfba(mf, method, &mfba); CHECK_RC(MError2MfError((MError)rc));
 
     // Get data from mfba
     if (method == REG_ACCESS_METHOD_GET) {

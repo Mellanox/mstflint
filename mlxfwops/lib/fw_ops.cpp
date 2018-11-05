@@ -407,7 +407,8 @@ const u_int32_t FwOperations::_cntx_image_start_pos[FwOperations::CNTX_START_POS
     0x100000,
     0x200000,
     0x400000,
-    0x800000
+    0x800000,
+    0x1000000
 };
 
 bool FwOperations::FindMagicPattern(FBase *ioAccess, u_int32_t addr,
@@ -1076,9 +1077,12 @@ const FwOperations::HwDevData FwOperations::hwDevData[] = {
     { "ConnectX-5",       CX5_HW_ID,        CT_CONNECTX5,    CFT_HCA,     0, {4119, 4121, 0}, {{CX5_LOW_BIN, {4119, 0}},
                                                                                                {CX5_HIGH_BIN, {4119, 4121, 0}},
                                                                                                {UNKNOWN_BIN, {0}}}},
+    { "ConnectX-6",       CX6_HW_ID,        CT_CONNECTX6,    CFT_HCA,     0, {4123, 0}, {{UNKNOWN_BIN, {0}}}},
     { "BlueField",        BF_HW_ID,         CT_BLUEFIELD,    CFT_HCA,     0, {41680, 41681, 41682, 0}, {{UNKNOWN_BIN, {0}}}},
     { "Spectrum",         SPECTRUM_HW_ID,   CT_SPECTRUM,     CFT_SWITCH,  0, {52100, 0}, {{UNKNOWN_BIN, {0}}}},
     { "Switch_IB2",       SWITCH_IB2_HW_ID, CT_SWITCH_IB2,   CFT_SWITCH,  0, {53000, 0}, {{UNKNOWN_BIN, {0}}}},
+    { "Quantum",          QUANTUM_HW_ID,    CT_QUANTUM,      CFT_SWITCH,  0, {54000, 0}, {{UNKNOWN_BIN, {0}}}},
+    { "Spectrum2",        SPECTRUM2_HW_ID,  CT_SPECTRUM2,    CFT_SWITCH,  0, {53100, 0}, {{UNKNOWN_BIN, {0}}}},
     { (char*)NULL,       0,                CT_UNKNOWN,      CFT_UNKNOWN, 0, {0}, {{UNKNOWN_BIN, {0}}}},// zero devid terminator
 };
 
@@ -1091,6 +1095,7 @@ const FwOperations::HwDev2Str FwOperations::hwDev2Str[] = {
     {"ConnectX-4",        CX4_HW_ID,        0x00},
     {"ConnectX-4LX",      CX4LX_HW_ID,      0x00},
     {"ConnectX-5",        CX5_HW_ID,        0x00},
+    {"ConnectX-6",        CX6_HW_ID,        0x00},
     {"BlueField",         BF_HW_ID,         0x00},
     {"SwitchX A0",        SWITCHX_HW_ID,    0x00},
     {"SwitchX A1",        SWITCHX_HW_ID,    0x01},
@@ -1099,7 +1104,9 @@ const FwOperations::HwDev2Str FwOperations::hwDev2Str[] = {
     {"SwitchIB A0",       SWITCH_IB_HW_ID,  0x00},
     {"Spectrum A0",       SPECTRUM_HW_ID,   0x00},
     {"SwitchIB2 A0",      SWITCH_IB2_HW_ID, 0x00},
+    {"Quantum A0",        QUANTUM_HW_ID,    0x00},
     {"Spectrum A1",       SPECTRUM_HW_ID,   0x01},
+    {"Spectrum2 A0",      SPECTRUM2_HW_ID,  0x00},
     { (char*)NULL,       (u_int32_t)0, (u_int8_t)0x00},      // zero device ID terminator
 };
 
@@ -1906,6 +1913,33 @@ bool FwOperations::FwSignWithOneRSAKey(const char*, const char*, PrintCallBack)
 bool FwOperations::FwSignWithTwoRSAKeys(const char*, const char*, const char*, const char*, PrintCallBack)
 {
     return errmsg("FwSignWithTwoRSAKeys not supported");
+}
+
+bool FwOperations::FwSignWithHmac(const char*)
+{
+    return errmsg("FwSignWithHmac not supported");
+}
+
+bool FwOperations::PrepItocSectionsForHmac(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical)
+{
+    (void)critical;
+    (void)non_critical;
+    return errmsg("PrepItocSectionsForHmac not supported");
+}
+
+bool FwOperations::IsCriticalSection(u_int8_t sect_type)
+{
+    (void)sect_type;
+    return errmsg("IsCriticalSection not supported");
+}
+
+
+bool FwOperations::CalcHMAC(const vector<u_int8_t>& key, const vector<u_int8_t>& data, vector<u_int8_t>& digest)
+{
+    (void)key;
+    (void)data;
+    (void)digest;
+    return errmsg("CalcHMAC not supported");
 }
 
 bool FwOperations::FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatternAndDevToc)

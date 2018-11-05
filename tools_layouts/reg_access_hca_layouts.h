@@ -14,7 +14,7 @@
  
 
 /***
-         *** This file was generated at "2018-09-12 08:13:00"
+         *** This file was generated at "2018-11-04 18:13:57"
          *** by:
          ***    > /mswg/release/tools/a-me/last_stable/adabe_plugins/adb2c/adb2pack.py --input adb/prm/hca/int/reg_access_hca.adb --file-prefix reg_access_hca --prefix reg_access_hca_
          ***/
@@ -152,20 +152,20 @@ Other values are reserved */
 category
  field
 For GENERAL_SEMAPHORE 
- See Table  711, "
+ See Table  614, "
 GENERAL_SEMA
 PHORE Category Layout
-," on page  925
+," on page  850
 For ICM_RESOURCE 
- See Table  713, "
+ See Table  616, "
 ICM_RESOURCE Category 
 Layout
-," on page  925
+," on page  850
 For UAPP_RESOURCE 
- See Table  715, "
+ See Table  618, "
 UAPP_RESOURCE Category 
 Layout
-," on page  926 */
+," on page  851 */
 	/* 0x4.0 - 0x1c.31 */
 	union reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto category_modifier;
 };
@@ -374,10 +374,8 @@ FPGA_CTRL are supported. */
 	/* 0x8.30 - 0x8.30 */
 	u_int8_t flash_gw_lock;
 	/* Description - If set, SW is allowed to modify FPGA_CTRL register. See
- Table  695, 
-"
-FPGA_CTRL Register Layout
-," on page  916 */
+ Table  708, 
+"FPGA_CTRL Register Layout," on page  919 */
 	/* 0x8.31 - 0x8.31 */
 	u_int8_t fpga_ctrl_modify;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
@@ -426,10 +424,8 @@ For Mellanox sandbox products
 /*---------------- DWORD[30] (Offset 0x78) ----------------*/
 	/* Description - Sandbox basic capabilities per sandbox product ID.
 For Mellanox sandbox products, see
- Table  650, "
-IPsec_Basic_Capabili
-ties Structure Layout
-," on page  869
+ Table  661, "IPsec_Basic_Capabili
+ties Structure Layout," on page  871
 . */
 	/* 0x78.0 - 0x78.31 */
 	u_int32_t sandbox_basic_caps;
@@ -441,10 +437,8 @@ when such capability is not present). */
 /*---------------- DWORD[32] (Offset 0x80) ----------------*/
 	/* Description - Extended capabilities address.
 For Mellanox sandbox products, see
- Table  652, "
-IPsec_Extended_Capa
-bilities Structure Layout
-," on page  869
+ Table  663, "IPsec_Extended_Capa
+bilities Structure Layout," on page  871
 . */
 	/* 0x80.0 - 0x84.31 */
 	u_int64_t sandbox_extended_caps_addr;
@@ -481,10 +475,8 @@ Valid only for query operation. */
 	u_int8_t status;
 	/* Description - Indicates the control operation to be performed. Allowed only when 
 FPGA_CAP.fpga_ctrl_modify==1. 
- See Table  691, "
-FPGA_CAP Regis
-ter Layout
-," on page  912
+ See Table  704, "FPGA_CAP Regis
+ter Layout," on page  915
 .
 0x1: LOAD - when set, the FPGA will be forced to reload the image 
 from flash according to 
@@ -668,10 +660,10 @@ struct reg_access_hca_mcda_reg {
 Accesses must be in accordance to 
 log_mcda_word_size
  in 
-Table 1113, "
+Table 924, "
 MCQI CAPABILITIES Info Layout
 ," on 
-page 1246 */
+page 1190 */
 	/* 0x4.0 - 0x4.31 */
 	u_int32_t offset;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
@@ -832,20 +824,20 @@ padded. */
 info_type
 .
 CAPABILITIES - See 
-Table 1113, "
+Table 924, "
 MCQI CAPABILITIES 
 Info Layout
-," on page 1246
+," on page 1190
 VERSION - See 
-Table 1115, "
+Table 926, "
 MCQI VERSION Info Lay
 out
-," on page 1248
+," on page 1191
 ACTIVATION_METHOD - See 
-Table 1119, "
-MCQI 
-ACTIVATION_METHOD Info Layout
-," on page 1250 */
+Table 930, "
+MCQI ACTI
+VATION_METHOD Info Layout
+," on page 1193 */
 	/* 0x18.0 - 0x18.31 */
 	u_int32_t *data;
 };
@@ -875,10 +867,10 @@ build_time */
 build_
 time_valid
  is set. See 
-Table 1117, "
+Table 928, "
 Date-Time Layout
 ," on 
-page 1249 */
+page 1192 */
 	/* 0x8.0 - 0xc.31 */
 	u_int64_t build_time;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
@@ -886,10 +878,10 @@ page 1249 */
 only if 
 user_defined_time_valid
  is set. See 
-Table 1117, 
+Table 928, 
 "
 Date-Time Layout
-," on page 1249 */
+," on page 1192 */
 	/* 0x10.0 - 0x14.31 */
 	u_int64_t user_defined_time;
 /*---------------- DWORD[6] (Offset 0x18) ----------------*/
@@ -933,8 +925,7 @@ Other values are reserved */
 see 
 "
 Component Update 
-State
-" on page 556
+State" on page 556
 :
 0x0: IDLE
 0x1: IN_PROGRESS
@@ -984,26 +975,26 @@ Other values are reserved */
 struct reg_access_hca_mgir {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Hardware Information, see 
-Table 1010, "
+Table 843, "
 Hardware Info Layout
 ," 
-on page 1179 */
+on page 1141 */
 	/* 0x0.0 - 0x1c.31 */
 	u_int32_t hw_info[8];
 /*---------------- DWORD[8] (Offset 0x20) ----------------*/
 	/* Description - Firmware Information, see 
-Table 1012, "
+Table 845, "
 Firmware Info Layout
 ," 
-on page 1181 */
+on page 1143 */
 	/* 0x20.0 - 0x5c.31 */
 	u_int32_t fw_info[16];
 /*---------------- DWORD[24] (Offset 0x60) ----------------*/
 	/* Description - Software Information, see 
-Table 1014, "
+Table 847, "
 Software Info Layout
-," 
-on page 1183
+," on 
+page 1145
 This field indicates 
 the oldest software version compatible 
 with the current firmware */
@@ -1011,10 +1002,10 @@ with the current firmware */
 	u_int32_t sw_info[8];
 /*---------------- DWORD[32] (Offset 0x80) ----------------*/
 	/* Description - [Internal]: Development Information, see 
-Table 1018, "
+Table 851, "
 Develop
 ment Info Layout
-," on page 1185 */
+," on page 1147 */
 	/* 0x80.0 - 0x98.31 */
 	u_int32_t dev_info[7];
 };
@@ -1195,7 +1186,10 @@ admin_status
  = UP)
 Cleared by FW once PAOS.admin_status = UP command is set.
 The register can be set only when port operational status is UP 
-(PAOS.oper_status=0x1) 
+(PAOS.
+oper_status
+=
+0x1) 
 NOTE: if physical environment was changed (i.e. replacement of 
 module, temp change, etc) there is a possibility that link won't be 
 established or will be established with high BER */
@@ -1297,11 +1291,11 @@ type
 For 
 SMBUS_FAILED
 ,
- See Table  719, "
+ See Table  622, "
 SMBUS_FAILED Fault Inject 
 M
 odifier Layout
-," on page  929 */
+," on page  854 */
 	/* 0x10.0 - 0x2c.31 */
 	struct reg_access_hca_smbus_failed_fault_inject_modifier per_type_modifier;
 };
@@ -1371,17 +1365,17 @@ type
  field
 .
 For IRISC_HANG 
- See Table  723, "
+ See Table  626, "
 IRISC_HANG Mini-Flow M
 odifier 
 Layout
-," on page  930
+," on page  855
 For PACKET_DROP 
- See Table  725, "
+ See Table  628, "
 PACKET_DROP Mini-Flow 
 M
 odifier Layout
-," on page  931 */
+," on page  856 */
 	/* 0x10.0 - 0x2c.31 */
 	union reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto per_type_modifier;
 };
@@ -1489,21 +1483,21 @@ The Stressor will have the opposite behavior when it is not active. */
 type
  field.
 For RXB_HANG 
- See Table  705, "
+ See Table  608, "
 RXB_HANG Stop Toggle Modifier 
 Layout
-," on page  923
+," on page  848
 For LOCK_RESOURCE 
- See Table  709, "
+ See Table  612, "
 LOCK_RESOURCE Stop 
 Toggle Modifier Layout
-," on page  924
+," on page  849
 For SXP_HANG 
- See Table  707, "
+ See Table  610, "
 SXP_
 HANG Stop Toggle Modifier 
 Layout
-," on page  924 */
+," on page  848 */
 	/* 0x10.0 - 0x2c.31 */
 	union reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto per_type_modifier;
 };

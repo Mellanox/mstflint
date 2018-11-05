@@ -68,7 +68,7 @@ Commander* Commander::create(std::string device, std::string dbName)
 Commander* Commander::create(mfile *mf, std::string device, std::string dbName)
 {
 
-    bool isFifthGen, isSwitch = false;
+    bool isFifthGen, _isSwitch = false;
     dm_dev_id_t deviceId = DeviceUnknown;
     u_int32_t hwDevId, hwRevId;
     Commander *commander = NULL;
@@ -97,7 +97,7 @@ Commander* Commander::create(mfile *mf, std::string device, std::string dbName)
     case DeviceSwitchIB2:
     case DeviceQuantum:
     case DeviceSpectrum2:
-        isSwitch = true;
+        _isSwitch = true;
         isFifthGen = true;
         break;
 
@@ -111,7 +111,7 @@ Commander* Commander::create(mfile *mf, std::string device, std::string dbName)
 
     if (isFifthGen) {
         if (dbName.empty()) {//take internal db file
-            dbName = getDefaultDBName(isSwitch);
+            dbName = getDefaultDBName(_isSwitch);
         }
         commander = new GenericCommander(mf, dbName);
     } else {

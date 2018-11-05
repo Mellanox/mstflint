@@ -106,6 +106,10 @@ public:
     virtual bool FwSignWithOneRSAKey(const char *privPemFile, const char *uuid, PrintCallBack printFunc = (PrintCallBack)NULL);
     virtual bool FwSignWithTwoRSAKeys(const char *privPemFile1, const char *uuid1,
                                       const char *privPemFile2, const char *uuid2, PrintCallBack printFunc = (PrintCallBack)NULL);
+    virtual bool FwSignWithHmac(const char *key_file);
+    virtual bool PrepItocSectionsForHmac(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
+    virtual bool IsCriticalSection(u_int8_t sect_type);
+    virtual bool CalcHMAC(const vector<u_int8_t>& key, const vector<u_int8_t>& data, vector<u_int8_t>& digest);
     virtual bool FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatternAndDevToc);
     virtual bool FwSetPublicKeys(char *fname, PrintCallBack callBackFunc = (PrintCallBack)NULL);
     virtual bool FwSetForbiddenVersions(char *fname, PrintCallBack callBackFunc = (PrintCallBack)NULL);
@@ -331,7 +335,7 @@ protected:
     };
     enum {
         OLD_CNTX_START_POS_SIZE = 6,
-        CNTX_START_POS_SIZE = 9
+        CNTX_START_POS_SIZE = 10
     };
     enum {
         MAX_SW_DEVICES_PER_HW = 32

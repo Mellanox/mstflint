@@ -127,9 +127,12 @@ void GenericCommander::supportsNVData()
     if (rc == ME_REG_ACCESS_BAD_PARAM || rc == ME_REG_ACCESS_INTERNAL_ERROR) {
         throw MlxcfgException("FW does not support NV access registers");
     }
+    if (rc == ME_REG_ACCESS_REG_NOT_SUPP) {
+        throw MlxcfgException("NVQC access register is not supported."
+                " Try a different type of access to the device.");
+    }
     if (rc) {
-        throw MlxcfgException(
-                  "Error when trying to check if NV access registers are supported");
+        throw MlxcfgException("Error when trying to check if NV access registers are supported");
     }
     return;
 }
@@ -145,16 +148,9 @@ GenericCommander::GenericCommander(mfile *mf, string dbName)
         if (rc) {
             throw MlxcfgException("Failed to get device type");
         }
-    #ifndef MST_UL
-        if (type != MST_PCICONF && type != MST_PCI) {
-            throw MlxcfgException(PCI_ACCESS_ONLY);
+        if (type & (MST_USB | MST_USB_DIMAX)) {
+            throw MlxcfgException("MTUSB device is not supported.");
         }
-    #else
-        if (type != MTCR_ACCESS_CONFIG && type != MTCR_ACCESS_MEMORY) {
-            throw MlxcfgException(PCI_ACCESS_ONLY);
-        }
-    #endif
-
         supportsNVData();
     }
 
