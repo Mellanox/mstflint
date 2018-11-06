@@ -31,7 +31,7 @@
 #--
 # Makefile.am -- Process this file with automake to produce Makefile.in
 
-AM_CFLAGS = -W -Werror -fno-strict-aliasing -Wno-implicit-fallthrough -Wno-unused-parameter -g -MP -MD -DSQLITE_THREADSAFE=0 ${COMPILER_FPIC}
+AM_CFLAGS = -W -Werror -fno-strict-aliasing -Wno-unused-parameter -g -MP -MD -DSQLITE_THREADSAFE=0 ${COMPILER_FPIC}
 
 noinst_LIBRARIES = libsqlite3.a
 noinst_HEADERS = sqlite3.h
