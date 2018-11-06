@@ -45,6 +45,8 @@ MLXSIGN_DIR = $(USER_DIR)/mlxsign_lib
 MLXSIGN_LIB = $(MLXSIGN_DIR)/libmlxsign.a
 COMPS_MGR_DIR = $(USER_DIR)/fw_comps_mgr
 
+PYTHON_WRAPPER_SCRIPT = ../common/python_wrapper
+
 SUBDIRS = mlxconfig_dbs
 
 AM_CPPFLAGS = -I. -I$(USER_DIR) -I$(top_srcdir)/include/mtcr_ul -I$(MTCR_DIR) -I$(COMMON_DIR) $(WIN64_INC)\
@@ -53,6 +55,14 @@ AM_CPPFLAGS = -I. -I$(USER_DIR) -I$(top_srcdir)/include/mtcr_ul -I$(MTCR_DIR) -I
 
 AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe  -Wno-deprecated-declarations  $(COMPILER_FPIC) -DDATA_PATH=\"$(pkgdatadir)\"
 bin_PROGRAMS = mstconfig
+MLXPRIVOWNER_PYTHON_WRAPPER=mstprivowner
+bin_SCRIPTS = ${MLXPRIVOWNER_PYTHON_WRAPPER}
+${MLXPRIVOWNER_PYTHON_WRAPPER}: $(PYTHON_WRAPPER_SCRIPT)
+	cp $(PYTHON_WRAPPER_SCRIPT) $@
+
+mlxprivownerlibdir=$(libdir)/mft/python_tools/$(MLXPRIVOWNER_PYTHON_WRAPPER)
+mlxprivownerlib_DATA = $(MLXPRIVOWNER_PYTHON_WRAPPER).py
+
 noinst_LTLIBRARIES = libmlxcfg.a
 
 libmlxcfg_a_SOURCES =  mlxcfg_status.h mlxcfg_utils.h mlxcfg_utils.cpp mlxcfg_view.h\
