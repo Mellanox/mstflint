@@ -3316,12 +3316,12 @@ bool Fs3Operations::AddHMACIfNeeded(Fs3Operations* imageOps, Flash *f)
         }
     }
 
-    return true;
 #else
     (void)imageOps;
     (void)f;
-    return errmsg("HMAC calculation is not implemented\n");
+    //ignore
 #endif
+    return true;
 }
 
 bool Fs3Operations::DoAfterBurnJobs(const u_int32_t magic_patter[],
