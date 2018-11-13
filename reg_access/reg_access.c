@@ -57,7 +57,7 @@
 #define REG_ID_MCQI  0x9061
 #define REG_ID_MCAM  0x907f
 #define REG_ID_MQIS  0x9064
-
+#define REG_ID_MTRC_CAP 0x9040
 
 // TODO: get correct register ID for mfrl mfai
 #define REG_ID_MFRL 0x9028
@@ -445,6 +445,14 @@ reg_access_status_t reg_access_mqis(mfile *mf, reg_access_method_t method, struc
 {
     REG_ACCESS_GEN_DATA_WITH_STATUS(mf, method, REG_ID_MQIS, mqis, mqis_reg,
                                     reg_access_hca, reg_size, r_size_reg, w_size_reg, reg_access_hca_mqis_reg_size, info_string, read_length);
+}
+
+/************************************
+* Function: reg_access_mtrc_cap
+************************************/
+reg_access_status_t reg_access_mtrc_cap(mfile *mf, reg_access_method_t method, struct reg_access_hca_mtrc_cap_reg *mtrc_cap)
+{
+    REG_ACCCESS(mf, method, REG_ID_MTRC_CAP, mtrc_cap, mtrc_cap_reg, reg_access_hca);
 }
 
 
