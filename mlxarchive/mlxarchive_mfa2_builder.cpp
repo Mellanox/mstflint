@@ -15,6 +15,9 @@
  *      Author: Ahmad Soboh
  */
 
+#include <json/writer.h>
+#include <json/reader.h>
+
 #include "mlxfwops/lib/mlxfwops_com.h"
 #include "mlxfwops/lib/fw_ops.h"
 #include "mlxarchive_mfa2_builder.h"
@@ -65,8 +68,7 @@ PackageDescriptor MFA2JSONBuilder::getPackageDescriptor() const
     if (!_root.isMember(CREATION_TIME_STR)) {
         //TODO throw exception
     }
-    VersionExtension versionExtension(_root[VERSION_STR].asString(),
-            _root[CREATION_TIME_STR].asString());
+    VersionExtension versionExtension(_root[VERSION_STR].asString());
 
     printf("_deviceDescriptorsJSON.size()=%d\n", _deviceDescriptorsJSON.size());
     PackageDescriptor packageDescriptor(_deviceDescriptorsJSON.size(),
@@ -147,8 +149,7 @@ vector<Component> MFA2JSONBuilder::getComponents() const
             exit(1);
         }
 
-        VersionExtension version(componentJSON[VERSION_STR].asString(),
-                componentJSON[CREATION_TIME_STR].asString());
+        VersionExtension version(componentJSON[VERSION_STR].asString());
 
         if (!componentJSON.isMember(SOURCE_STR)) {
             //TODO throw exception
@@ -175,9 +176,8 @@ vector<Component> MFA2JSONBuilder::getComponents() const
 
 /* Class FWDirectoryBuilder */
 
-FWDirectoryBuilder::FWDirectoryBuilder(const string& version, const string& time,
-        string directory) :
-                _version(VersionExtension(version, time)), _directory(directory)
+FWDirectoryBuilder::FWDirectoryBuilder(const string& version, string directory) :
+                _version(VersionExtension(version)), _directory(directory)
 {
     string fileExtension = ".bin";
     vector<string> files;
@@ -217,8 +217,7 @@ FWDirectoryBuilder::FWDirectoryBuilder(const string& version, const string& time
         DeviceDescriptor deviceDescriptor(componentPointers, PSID);
         _deviceDescriptors.push_back(deviceDescriptor);
 
-        VersionExtension version(fwQueryResult.fw_info.fw_ver,
-                fwQueryResult.fw_info.fw_rel_date);
+        VersionExtension version(fwQueryResult.fw_info.fw_ver);
         vector<u_int8_t> data;
         if (!ops->FwExtract4MBImage(data, true)) {
             printf("Can't Extract FW data from the image file %s:%s\n",

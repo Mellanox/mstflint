@@ -36,13 +36,13 @@ public:
     MFA2PackageGen() {};
 
     void generateBinFromJSON(const string& jsonFile, vector<u_int8_t>& buff) const;
-    void generateBinFromFWDirectory(const string& directory, const string& version, const string& date, vector<u_int8_t>& buff) const;
+    void generateBinFromFWDirectory(const string& directory, const string& version, vector<u_int8_t>& buff) const;
     //void generateBinFromDir     (vector<u_int8_t>& buff);
     //void generateJSONFromDir    (const string& output);
     //void generateJSONFromBin    (const string& output);
 
     //static void generateEmptyJSON(const string& output);
-    
+
 };
 
 #endif

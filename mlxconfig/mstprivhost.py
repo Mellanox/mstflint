@@ -8,7 +8,7 @@ import tempfile
 
 import tools_version
 
-PROG = 'mlxprivowner'
+PROG = 'mstprivhost'
 TOOL_VERSION = "1.0.0"
 
 CMD_HELP = """\
@@ -41,7 +41,7 @@ def error(msg, *args, **kw):
 
 
 class PrivilegeMgr(object):
-    CMD_LINE = "mlxconfig -d %s -f %s --yes set_raw"
+    CMD_LINE = "mstconfig -d %s -f %s --yes set_raw"
     TITLE = "MLNX_RAW_TLV_FILE\n"
     RESTRICT_BYTES = "0x03000204 0x07000083 0x00000000 0x1000000f"
     PRIVILEGE_BYTES = "0x03000204 0x07000083 0x00000000 0x00000000"

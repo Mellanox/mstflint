@@ -38,10 +38,10 @@ void MFA2PackageGen::generateBinFromJSON(const string& jsonFile,
     //mfa2.patch(buff);
 }
 
-void MFA2PackageGen::generateBinFromFWDirectory(const string& directory, const string& version, const string& date,
+void MFA2PackageGen::generateBinFromFWDirectory(const string& directory, const string& version,
         vector<u_int8_t>& buff) const
 {
-    FWDirectoryBuilder builder(version, date, directory);
+    FWDirectoryBuilder builder(version, directory);
     MFA2 mfa2(builder.getPackageDescriptor(),
             builder.getDeviceDescriptors(),
             builder.getComponents());

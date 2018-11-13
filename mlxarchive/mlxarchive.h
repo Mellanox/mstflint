@@ -31,9 +31,9 @@ private:
     void printHelp();
     void paramValidate();
     CommandLineParser _cmdParser;
-    string _binsDir;
-    string _outFile;
-    string _date;
-    string _version;
+    std::string _binsDir;
+    std::string _outFile;
+    std::string _date;
+    std::string _version;
 };
 }

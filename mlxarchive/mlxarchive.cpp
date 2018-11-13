@@ -18,6 +18,7 @@
 #include <string>
 #include <vector>
 #include<iostream>
+#include <boost/regex.hpp>
 #include <compatibility.h>
 #include "mlxarchive_mfa2_package_gen.h"
 #include <cmdparser/cmdparser.h>
@@ -55,7 +56,6 @@ Mlxarchive::Mlxarchive() :
     initCmdParser();
     _binsDir  = "";
     _outFile  = "";
-    _date     = "";
     _version  = "";
 }
 
@@ -66,10 +66,47 @@ void Mlxarchive::initCmdParser()
 {
     AddOptions(HELP_FLAG,         HELP_FLAG_SHORT,     "", "Show help message and exit");
     AddOptions(VERSION_FLAG,      VERSION_FLAG_SHORT,  "version", "MFA2 version in the following format: x.x.x");
-    AddOptions(DATE_FLAG,         DATE_FLAG_SHORT,     "date", "Date in the following format: dd.MM.yyyy");
-    AddOptions(OUT_FILE_FLAG,     OUT_FILE_FLAG_SHORT,  "out_file", "Output file");
+    AddOptions(OUT_FILE_FLAG,     OUT_FILE_FLAG_SHORT, "out_file", "Output file");
     AddOptions(BINS_DIR_FLAG,     BINS_DIR_FLAG_SHORT, "bins_dir", "Directory with the binaries files");
     _cmdParser.AddRequester(this);
+}
+
+void Mlxarchive::paramValidate()
+{
+    std::string err = "Missing mandatory parameter: %s\n";
+    std::string err_regex = "Bad format in: %s(%s), the format should be like: %s\n";
+    boost::smatch match;
+    bool status_match;
+    bool success = true;
+    if(_binsDir.empty()) {
+        fprintf(stderr, err.c_str(), "bins_dir");
+        success = false;
+    }
+    if(_outFile.empty()) {
+        fprintf(stderr, err.c_str(), "out_file");
+        success = false;
+    }
+    else {
+        if(fexists(_outFile)) {
+            fprintf(stderr, "Output file: %s already exists\n", _outFile.c_str());
+            success = false;
+        }
+    }
+    if(_version.empty()) {
+        fprintf(stderr, err.c_str(), "version");
+        success = false;
+    }
+    else {
+        boost::regex version_expression("^[0-9]..{3}$");
+        status_match = boost::regex_match(_version, match, version_expression);
+        if(!status_match) {
+            fprintf(stderr, err_regex.c_str(), "version", _version.c_str(), "x.x.x");
+            success = false;
+        }
+    }
+    if(!success) {
+        exit(1);
+    }
 }
 
 ParseStatus Mlxarchive::HandleOption(string name, string value)
@@ -79,9 +116,6 @@ ParseStatus Mlxarchive::HandleOption(string name, string value)
         return PARSE_OK_WITH_EXIT;
     } else if (name == VERSION_FLAG) {
         _version = value;
-        return PARSE_OK;
-    } else if (name == DATE_FLAG) {
-        _date = value;
         return PARSE_OK;
     } else if (name == OUT_FILE_FLAG) {
         _outFile = value;
@@ -110,16 +144,16 @@ void Mlxarchive::run(int argc, char **argv)
         //throw MlxRegException("failed to parse arguments. %s", _cmdParser.GetErrDesc());
         return;
     }
+    paramValidate();
     string outputFile = _outFile;
     string content = "";
     vector<u_int8_t> buff;
     MFA2PackageGen mfa2PackageGen;
     string dir = _binsDir;
     string version = _version;
-    string date = _date;
 
     buff.clear();
-    mfa2PackageGen.generateBinFromFWDirectory(dir, version, date, buff);
+    mfa2PackageGen.generateBinFromFWDirectory(dir, version, buff);
     //Save output to a file
     if (!writeToFile(outputFile, buff)) {
         fprintf(stderr, "-E- Cannot write to the file %s\n",   outputFile.c_str());

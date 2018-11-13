@@ -24,7 +24,6 @@
 
 #include <json/writer.h>
 #include <json/reader.h>
-#include <json/value.h>
 #include <compatibility.h>
 
 #include "mlxarchive_mfa2_descriptor.h"
@@ -78,8 +77,7 @@ private:
     };
     map<string, FwOperations*> _imgsFwOps;*/
 public:
-    FWDirectoryBuilder(const string& version, const string& time,
-            string directory);
+    FWDirectoryBuilder(const string& version, string directory);
     PackageDescriptor           getPackageDescriptor()  const;
     vector<DeviceDescriptor>    getDeviceDescriptors()  const;
     vector<Component>           getComponents()         const;

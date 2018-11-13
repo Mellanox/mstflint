@@ -18,17 +18,14 @@ MTCR_DIR = $(USER_DIR)/${MTCR_CONF_DIR}
 RES_MGMT_DIR = $(USER_DIR)/tools_res_mgmt
 DEV_MGT_DIR = $(USER_DIR)/dev_mgt
 TOOLS_CRYPTO_DIR = $(USER_DIR)/tools_crypto
-UTILS_LIB = $(USER_DIR)/mft_utils
 CMDIF_DIR = $(USER_DIR)/cmdif
 
 CURL_LIBS = -lcurl  -lssl -lcrypto -lrt
 
 INCLUDES = -isystem $(USER_DIR)/ext_libs/json -I. -I$(USER_DIR) -I$(USER_DIR)/libmfa \
            -I$(MTCR_DIR) -I$(USER_DIR)/include/mtcr_ul -I$(USER_DIR)/mflash -I$(USER_DIR)/common \
-           -I$(MFT_EXT_LIBS_INC_DIR) -I $(LAYOUTS_DIR) $(ZLIB_INC) \
-           -isystem $(MFT_EXT_LIBS_INC_DIR)/zlib -I $(UTILS_LIB) \
-           -I$(USER_DIR)/mlxfwops/lib -I$(USER_DIR)/mft_utils -I$(USER_DIR)/dev_mgt \
-           -I$(USER_DIR)/tools_layouts
+           -I$(MFT_EXT_LIBS_INC_DIR) -I$(UTILS_DIR) -I$(USER_DIR)/mlxfwops/lib \
+           -I$(USER_DIR)/dev_mgt -I$(USER_DIR)/tools_layouts
 
 lib_LTLIBRARIES = libmstarchive.a
 
@@ -56,13 +53,14 @@ mstarchive_LDADD = libmstarchive.a\
                    $(RES_MGMT_DIR)/libtools_res_mgmt.a\
                    $(DEV_MGT_DIR)/libdev_mgt.a\
                    $(CMDIF_DIR)/libcmdif.a\
-                   $(UTILS_LIB)/libmftutils.a\
+                   $(UTILS_DIR)/libmftutils.a\
                    $(USER_DIR)/ext_libs/json/libjson.a\
                    $(USER_DIR)/cmdparser/libcmdparser.a\
                    $(USER_DIR)/reg_access/libreg_access.a\
                    $(USER_DIR)/tools_layouts/libtools_layouts.a\
                    $(USER_DIR)/xz_utils/libxz_utils.a\
                    $(CURL_LIBS)\
+                   -lboost_regex -lboost_filesystem -lboost_system \
                    -llzma -lm $(LIBSTD_CPP) ${LDL}
 
 if ENABLE_OPENSSL

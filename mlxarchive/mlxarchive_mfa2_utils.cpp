@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <dirent.h>
 #include <sys/types.h>
+#include <boost/filesystem.hpp>
 
 #include "mlxarchive_mfa2_utils.h"
 
@@ -84,16 +85,35 @@ unsigned int getFileSize(const string& file)
     return 0; //TODO throw exception
 }
 
+bool fexists(const std::string& filename) {
+    struct stat buffer;
+    return (stat (filename.c_str(), &buffer) == 0);
+}
+
 void listDir(const char *path, vector<string>& files)
 {
     struct dirent *entry;
     DIR *dir = opendir(path);
     if (dir == NULL) {
-        return;
+        fprintf(stderr, "Failed to open directory: %s\n", path);
+        exit(1);
     }
 
     while ((entry = readdir(dir)) != NULL) {
-        files.push_back(entry->d_name);
+        string file_extension  = boost::filesystem::extension(entry->d_name);
+        if(file_extension == ".bin") {
+            files.push_back(entry->d_name);
+        }
+        else {
+            // skipping hidden files
+            if(entry->d_name[0] != '.') {
+                fprintf(stderr, "Skipping file: %s, not a binary...\n", entry->d_name);
+            }
+        }
+    }
+    if(files.empty()) {
+        fprintf(stderr, "No binray files found in the given directory: %s\n", path);
+        exit(1);
     }
 
     closedir(dir);

@@ -66,15 +66,19 @@ private:
     u_int8_t _major;
     u_int8_t _subMinor;
     u_int16_t _minor;
+    u_int8_t _seconds;
+    u_int8_t _minutes;
+    u_int8_t _hours;
     u_int8_t _day;
     u_int8_t _month;
     u_int16_t _year;
 public:
     const static u_int8_t  ELEMENT_VERSION = 0x0;
     const static u_int32_t LENGTH  = TOOLS_OPEN_VERSION_SIZE;
+    void fillTimeAndDate();
 
-    VersionExtension(const string& version, const string& date);
-    VersionExtension(const u_int16_t* version, const u_int16_t* date);
+    VersionExtension(const string& version);
+    VersionExtension(const u_int16_t* version);
     void pack(vector<u_int8_t>& buff) const;
 };
 

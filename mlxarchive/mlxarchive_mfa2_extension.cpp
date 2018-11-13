@@ -16,8 +16,22 @@
  */
 
 #include "mlxarchive_mfa2_extension.h"
+#include <ctime>
 
 using namespace mfa2;
+
+void VersionExtension::fillTimeAndDate()
+{
+    time_t tt;
+    time(&tt);
+    tm TM = *localtime(&tt);
+    _seconds = TM.tm_sec;
+    _minutes = TM.tm_min;
+    _hours = TM.tm_hour;
+    _day = TM.tm_mday;
+    _month = TM.tm_mon;
+    _year = 1900 + TM.tm_year;
+}
 
 MFA2Type Extension::extensionTypeToMFA2Type(ExtensionType type)
 {
@@ -44,8 +58,7 @@ Extension::Extension(u_int8_t version, ExtensionType type, u_int32_t length) :
 {
 }
 
-VersionExtension::VersionExtension(const u_int16_t* version,
-        const u_int16_t* date) :
+VersionExtension::VersionExtension(const u_int16_t* version) :
         Extension(ELEMENT_VERSION, VersionExtensionType, LENGTH)
 {
     /*printf("version = %d.%d.%d", version[0], version[1], version[2]);
@@ -53,12 +66,10 @@ VersionExtension::VersionExtension(const u_int16_t* version,
     _major = version[0];
     _subMinor = version[1];
     _minor = version[2];
-    _day = date[0];
-    _month = date[1];
-    _year = date[2];
+    fillTimeAndDate();
 }
 
-VersionExtension::VersionExtension(const string& version, const string& date) :
+VersionExtension::VersionExtension(const string& version) :
         Extension(ELEMENT_VERSION, VersionExtensionType, LENGTH)
 {
     int a, b, c;
@@ -66,11 +77,7 @@ VersionExtension::VersionExtension(const string& version, const string& date) :
     _major = a;
     _subMinor = b;
     _minor = c;
-    sscanf(date.c_str(), "%x.%x.%x", &a, &b, &c);
-    _day = a;
-    _month = b;
-    _year = c;
-    //sscanf(time.c_str(), "%x.%x.%x", &_day, &_month, &_year);
+    fillTimeAndDate();
 }
 
 void VersionExtension::pack(vector<u_int8_t>& buff) const
@@ -90,6 +97,10 @@ void VersionExtension::pack(vector<u_int8_t>& buff) const
     version.day = _day;
     version.month = _month;
     version.year = _year;
+    version.seconds = _seconds;
+    version.minutes = _minutes;
+    version.hour = _hours;
+ 
     tools_open_version_pack(&version, tmpBuff.data());
     buff.insert(buff.end(), tmpBuff.begin(), tmpBuff.end());
 }
