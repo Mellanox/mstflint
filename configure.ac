@@ -12,7 +12,6 @@ AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_SRCDIR([README])
 AM_INIT_AUTOMAKE([foreign])
 
-
 dnl Checks for programs
 AC_PROG_CC
 AC_PROG_CXX
@@ -29,6 +28,8 @@ if test "x$OS" = "xFreeBSD"; then
     AC_MSG_NOTICE(FreeBSD Build)
     MTCR_CONF_DIR="mtcr_freebsd"
     default_en_inband="no"
+    CXXFLAGS="${CXXFLAGS} -isystem /usr/local/include"
+    LDFLAGS="${LDFLAGS} -L/usr/local/lib"
 else
     MTCR_CONF_DIR="mtcr_ul"
     LDL="-ldl"
@@ -164,23 +165,35 @@ AS_IF([test "x$enable_dynamic_ld" = "xyes"], [
   LDFLAGS="$LDFLAGS -Wl,--dynamic-linker=/lib64/ld64.so.2"
 ])
 
-CFLAGS="$CFLAGS -Wall -Werror -DMST_UL"
-CXXFLAGS="$CXXFLAGS -Wall -Werror -DMST_UL"
+CFLAGS="$CFLAGS -DMST_UL"
+CXXFLAGS="$CXXFLAGS -DMST_UL"
+
+AM_CFLAGS="-Wall -Werror"
+AM_CXXFLAGS="-Wall -Werror"
 
 AC_CONFIG_FILES( mstflint.spec )
 
+# We save and restore CFLAGS, after adding Wall and Werror
+# because AX_CHECK_COMPILE_FLAG doesn't work properly without it
+
 # C related ignores
+OLD_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS -Wall -Werror"
 AX_CHECK_COMPILE_FLAG([-Wno-format-overflow], [CFLAGS="$CFLAGS -Wno-format-overflow"], [], [])
 AX_CHECK_COMPILE_FLAG([-Wno-implicit-fallthrough], [CFLAGS="$CFLAGS -Wno-implicit-fallthrough"], [], [])
 AX_CHECK_COMPILE_FLAG([-Wno-cast-function-type], [CFLAGS="$CFLAGS -Wno-cast-function-type"], [], [])
+CFLAGS="$OLD_CFLAGS"
 
 # C++ related ignores
+OLD_CXXFLAGS="$CXXFLAGS"
+CXXFLAGS="$CXXFLAGS -Wall -Werror"
 AC_LANG_PUSH([C++])
 AX_CHECK_COMPILE_FLAG([-Wno-implicit-fallthrough], [CXXFLAGS="$CXXFLAGS -Wno-implicit-fallthrough"], [], [])
 AX_CHECK_COMPILE_FLAG([-Wno-format-overflow], [CXXFLAGS="$CXXFLAGS -Wno-format-overflow"], [], [])
 AX_CHECK_COMPILE_FLAG([-Wno-cast-function-type], [CXXFLAGS="$CXXFLAGS -Wno-cast-function-type"], [], [])
 AX_CHECK_COMPILE_FLAG([-Wno-class-memaccess], [CXXFLAGS="$CXXFLAGS -Wno-class-memaccess"], [], [])
 AC_LANG_POP([C++])
+CXXFLAGS="$OLD_CXXFLAGS"
 
 TOOLS_BUILD_TIME=`date  +"%b %d %Y\, %H:%M:%S"`
 AC_SUBST(TOOLS_BUILD_TIME)
