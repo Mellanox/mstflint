@@ -2384,6 +2384,7 @@ bool Fs4Operations::CalcHMAC(const vector<u_int8_t>& key, const vector<u_int8_t>
     return true;
 #else
     (void)key;
+    (void)data;
     (void)digest;
     return errmsg("HMAC calculation is not implemented\n");
 #endif

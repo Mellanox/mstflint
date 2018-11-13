@@ -134,7 +134,7 @@ fi
 AC_MSG_CHECKING(--disable-openssl argument)
 AC_ARG_ENABLE(openssl,
             [  --disable-openssl       Disable all openssl features, dependant of openssl library],
-            [enable_openssl="no"],
+            [enable_openssl=$enableval],
             [enable_openssl="yes"])
 AC_MSG_RESULT($enable_openssl)
 if test "x$enable_openssl" = "xyes"; then

@@ -2807,7 +2807,13 @@ int maccess_reg_ul(mfile *mf,
 
 int supports_reg_access_gmp_ul(mfile *mf, maccess_reg_method_t reg_method)
 {
+#ifndef MST_UL
     return mib_supports_reg_access_gmp(mf, reg_method);
+#else
+    (void)mf;
+    (void)reg_method;
+    return 0;
+#endif
 }
 
 static int init_operation_tlv(struct OperationTlv *operation_tlv, u_int16_t reg_id, u_int8_t method)

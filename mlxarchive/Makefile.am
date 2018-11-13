@@ -22,9 +22,11 @@ CMDIF_DIR = $(USER_DIR)/cmdif
 
 CURL_LIBS = -lcurl  -lssl -lcrypto -lrt
 
-INCLUDES = -isystem $(USER_DIR)/ext_libs/json -I. -I$(USER_DIR) -I$(USER_DIR)/libmfa \
-           -I$(MTCR_DIR) -I$(USER_DIR)/include/mtcr_ul -I$(USER_DIR)/mflash -I$(USER_DIR)/common \
-           -I$(MFT_EXT_LIBS_INC_DIR) -I$(UTILS_DIR) -I$(USER_DIR)/mlxfwops/lib \
+INCLUDES = -isystem $(USER_DIR)/ext_libs/json -I. \
+           -I$(USER_DIR) -I$(USER_DIR)/libmfa \
+           -I$(MTCR_DIR) -I$(USER_DIR)/include/mtcr_ul \
+           -I$(USER_DIR)/mflash -I$(USER_DIR)/common \
+           -I$(UTILS_DIR) -I$(USER_DIR)/mlxfwops/lib \
            -I$(USER_DIR)/dev_mgt -I$(USER_DIR)/tools_layouts
 
 lib_LTLIBRARIES = libmstarchive.a
@@ -59,6 +61,7 @@ mstarchive_LDADD = libmstarchive.a\
                    $(USER_DIR)/reg_access/libreg_access.a\
                    $(USER_DIR)/tools_layouts/libtools_layouts.a\
                    $(USER_DIR)/xz_utils/libxz_utils.a\
+                   $(USER_DIR)/ext_libs/minixz/libminixz.a\
                    $(CURL_LIBS)\
                    -lboost_regex -lboost_filesystem -lboost_system \
                    -llzma -lm $(LIBSTD_CPP) ${LDL}
