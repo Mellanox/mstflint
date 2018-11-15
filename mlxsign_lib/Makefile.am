@@ -33,8 +33,8 @@
 # Makefile.am -- Process this file with automake to produce Makefile.in
 USER_DIR = ..
 INCLUDES = -I$(USER_DIR) -I$(USER_DIR)/common
-AM_CFLAGS = -Wall -W -Werror -g -MP -MD -pipe $(COMPILER_FPIC)
-AM_CFLAGS += -DTOOLS_CRYPTO_KEY='$(TOOLS_CRYPTO_KEY)' -DTOOLS_CRYPTO_IV='$(TOOLS_CRYPTO_IV)'
+AM_CXXFLAGS = -Wall -W -Werror -g -MP -MD -pipe $(COMPILER_FPIC)
+AM_CXXFLAGS += -DTOOLS_CRYPTO_KEY='$(TOOLS_CRYPTO_KEY)' -DTOOLS_CRYPTO_IV='$(TOOLS_CRYPTO_IV)'
 
 noinst_LIBRARIES = libmlxsign.a
 libmlxsign_a_SOURCES = mlxsign_lib.cpp mlxsign_lib.h

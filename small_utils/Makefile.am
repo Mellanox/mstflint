@@ -32,8 +32,8 @@
 
 PYTHON_WRAPPER_SCRIPT = ../common/python_wrapper
 
-AM_CPPFLAGS= -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common -I$(top_srcdir)/mvpd
-AM_CFLAGS= -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common -I$(top_srcdir)/mvpd
+AM_CPPFLAGS= -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common -I$(top_srcdir)/mvpd $(COMPILER_FPIC)
+AM_CFLAGS= -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common -I$(top_srcdir)/mvpd $(COMPILER_FPIC)
 
 LDADD= $(top_srcdir)/${MTCR_CONF_DIR}/libmtcr_ul.a ${LDL}
 

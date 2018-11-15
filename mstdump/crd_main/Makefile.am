@@ -31,8 +31,8 @@
 #--
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
-AM_CPPFLAGS = -I$(top_srcdir) -I$(srcdir)/../crd_lib -I$(top_srcdir)/include/mtcr_ul
-AM_CFLAGS = -MD -pipe -g -Wall -W
+AM_CPPFLAGS = -I$(top_srcdir) -I$(srcdir)/../crd_lib -I$(top_srcdir)/include/mtcr_ul $(COMPILER_FPIC)
+AM_CFLAGS = -MD -pipe -g -Wall -W $(COMPILER_FPIC)
 
 bin_PROGRAMS = mstregdump
 
