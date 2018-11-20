@@ -801,6 +801,10 @@ mlxCfgStatus MlxCfg::setDevRawCfg()
         for (std::vector<std::vector<u_int32_t> >::iterator it = rawTlvsAsDw.begin(); it != rawTlvsAsDw.end(); it++, tlvIdx++) {
             commander->setRawCfg(*it);
         }
+        //send mfrl command to fw
+        //this command indicate to the fw that next time perst signal go down
+        //[reboot] fw need to perform reset )
+        commander->loadConfigurationGetStr();
     } catch (MlxcfgException& e) {
         delete commander;
         return err(true, "Failed to run set_raw command: %s", e._err.c_str());

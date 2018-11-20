@@ -2838,7 +2838,6 @@ int mf_open_int(mflash **pmfl, const char *dev, int num_of_banks, flash_params_t
     }
 
     rc = mf_opend_int(pmfl, (struct mfile_t*) mf, num_of_banks, flash_params, ignore_cache_rep_guard, MFAT_MFILE, NULL, cx3_fw_access);
-
     if ((*pmfl)) {
         (*pmfl)->opts[MFO_CLOSE_MF_ON_EXIT] = 1;
     }
@@ -3644,6 +3643,7 @@ int mf_disable_hw_access(mflash *mfl)
 #ifndef UEFI_BUILD
     int rc = 0;
     // We need to release the semaphore because we will not have any access to semaphore after disabling the HW access
+    mfl->unlock_flash_prog_allowed = 1;
     rc = release_semaphore(mfl, 1);
     CHECK_RC(rc);
 

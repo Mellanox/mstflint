@@ -120,7 +120,7 @@ void Mlxarchive::paramValidate()
         success = false;
     }
     else {
-        boost::regex version_expression("^[0-9]..{3}$");
+        boost::regex version_expression("^[0-9].[0-9].[0-9]$");
         status_match = boost::regex_match(_version, match, version_expression);
         if(!status_match) {
             fprintf(stderr, err_regex.c_str(), "version", _version.c_str(), "x.x.x");

@@ -204,9 +204,22 @@ FWDirectoryBuilder::FWDirectoryBuilder(const string& version, string directory) 
 {
     string fileExtension = ".bin";
     vector<string> files;
-
     int index = 0;
-    listDir(directory.c_str(), files);
+    try
+    {
+        listDir(directory.c_str(), files);
+    }
+    catch(std::exception& e)
+    {
+        std::string err_str = "locale::facet::_S_create_c_locale name not valid";
+        if(!err_str.compare(e.what()))
+        {
+            fprintf(stderr, "Exception: '%s' was catched.\nPlease try to add the following line into your /etc/profile file and retry:\nexport LC_ALL=C; unset LANGUAGE\n"
+            "Please note, you need to reload the .profile file, after editing. \nsource /etc/profile might help.\n", e.what());
+            exit(1);
+        }
+        throw e;
+    }
     VECTOR_ITERATOR(string, files, file) {
       if ((*file).rfind(fileExtension) == ((*file).size() - fileExtension.size())) {
         string fullPath = directory + "/" + (*file);
@@ -239,7 +252,6 @@ FWDirectoryBuilder::FWDirectoryBuilder(const string& version, string directory) 
         componentPointers.push_back(componentPointer);
         DeviceDescriptor deviceDescriptor(componentPointers, PSID);
         _deviceDescriptors.push_back(deviceDescriptor);
-
         VersionExtension version(fwQueryResult.fw_info.fw_ver);
         vector<u_int8_t> data;
         if (!ops->FwExtract4MBImage(data, true)) {

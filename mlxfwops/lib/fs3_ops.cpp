@@ -3315,11 +3315,10 @@ bool Fs3Operations::AddHMACIfNeeded(Fs3Operations* imageOps, Flash *f)
             return errmsg(MLXFW_FLASH_WRITE_ERR, "Failed to burn HMAC digest: %s", f->err());
         }
     }
-
 #else
     (void)imageOps;
     (void)f;
-    //ignore
+    //ignore for UEFI
 #endif
     return true;
 }

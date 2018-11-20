@@ -299,6 +299,15 @@ static struct device_info g_devs_info[] = {
         DM_SWITCH               //dev_type
     },
     {
+        DeviceSecureHost,       //dm_id
+        0xcafe,                 //hw_dev_i
+        0xd0,                   //hw_rev_i
+        0,                      //sw_dev_i
+        "Unknown Device",       //name
+        -1,                     //port_num
+        DM_UNKNOWN              //dev_type
+    },
+    {
         DeviceUnknown,          //dm_id
         0,                      //hw_dev_i
         0,                      //hw_rev_i

@@ -1094,12 +1094,64 @@ int mib_send_gmp_access_reg_mad(mfile *mf, u_int32_t *data, u_int32_t reg_size, 
     return ME_OK;
 }
 
+int mib_get_gmp(mfile *mf, unsigned attr_id, unsigned mod, u_int32_t *vsmad_data, size_t vsmad_data_len)
+{
+    if (!mf || !mf->ctx || !vsmad_data || vsmad_data_len != IB_VENDOR_RANGE1_DATA_SIZE/4) {
+        return ME_BAD_PARAMS;
+    }
+
+    ib_vendor_call_t call;
+    ibvs_mad *vs_mad = (ibvs_mad*)(mf->ctx);
+    u_int8_t *call_result;
+
+    call.method     = IB_MAD_METHOD_GET;
+    call.mgmt_class = IB_VENDOR_SPECIFIC_CLASS_0xA;
+    call.attrid     = attr_id;
+    call.mod        = mod;
+    call.oui        = IB_OPENIB_OUI;
+    call.timeout    = 0;
+    memset(&call.rmpp, 0, sizeof (call.rmpp));
+
+    call_result = vs_mad->ib_vendor_call_via(vsmad_data, &vs_mad->portid, &call, vs_mad->srcport);
+    if (!call_result) {
+        return -1;
+    }
+
+    int i;
+    for (i = 0; i < IB_VENDOR_RANGE1_DATA_SIZE/4; i++) {
+        vsmad_data[i] = __be32_to_cpu(vsmad_data[i]);
+    }
+    return ME_OK;
+}
+
+int mib_get_general_info_gmp(mfile *mf, u_int32_t *vsmad_data, size_t vsmad_data_len)
+{
+    return mib_get_gmp(mf, IB_VS_ATTR_GENERAL_INFO, 0, vsmad_data, vsmad_data_len);
+}
+
 int mib_supports_reg_access_gmp(mfile *mf, maccess_reg_method_t reg_method)
 {
     if (!mf || !mf->ctx) {
         return 0;
     }
-    return (mf->flags & MDEVS_IB) && (((ibvs_mad *)(mf->ctx))->dest_type == IB_DEST_LID) && (reg_method == MACCESS_REG_METHOD_GET);
+
+    if (!((mf->flags & MDEVS_IB) && (((ibvs_mad *)(mf->ctx))->dest_type == IB_DEST_LID) &&
+            (reg_method == MACCESS_REG_METHOD_GET))) {
+        return 0;
+    }
+
+    u_int32_t vsmad_data[IB_VENDOR_RANGE1_DATA_SIZE/4] = {0};
+    if (mib_get_general_info_gmp(mf, vsmad_data, IB_VENDOR_RANGE1_DATA_SIZE/4)) {
+        return 0;
+    }
+
+    // vend_key 0x8 bytes, which present in any vendor specific MAD return in vsmad_data.
+    // We want to skip them when relating GeneralInfo MAD fields in specific.
+    // The capability_mask offset which is 0x80, is calculated from the beginning of GeneralInfo MAD fields.
+    // So overall we have an offset of 0x8+0x80 bytes.
+    const int capability_mask_byte_offset = 0x8+0x80;
+    const int is_access_register_supported_bit_offset = 20;
+    return EXTRACT(vsmad_data[capability_mask_byte_offset/4], is_access_register_supported_bit_offset, 1);
 }
 
 int mib_acces_reg_mad(mfile *mf, u_int8_t *data)

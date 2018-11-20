@@ -1082,7 +1082,6 @@ const FwOperations::HwDevData FwOperations::hwDevData[] = {
     { "Spectrum",         SPECTRUM_HW_ID,   CT_SPECTRUM,     CFT_SWITCH,  0, {52100, 0}, {{UNKNOWN_BIN, {0}}}},
     { "Switch_IB2",       SWITCH_IB2_HW_ID, CT_SWITCH_IB2,   CFT_SWITCH,  0, {53000, 0}, {{UNKNOWN_BIN, {0}}}},
     { "Quantum",          QUANTUM_HW_ID,    CT_QUANTUM,      CFT_SWITCH,  0, {54000, 0}, {{UNKNOWN_BIN, {0}}}},
-    { "Spectrum2",        SPECTRUM2_HW_ID,  CT_SPECTRUM2,    CFT_SWITCH,  0, {53100, 0}, {{UNKNOWN_BIN, {0}}}},
     { (char*)NULL,       0,                CT_UNKNOWN,      CFT_UNKNOWN, 0, {0}, {{UNKNOWN_BIN, {0}}}},// zero devid terminator
 };
 
@@ -1106,7 +1105,6 @@ const FwOperations::HwDev2Str FwOperations::hwDev2Str[] = {
     {"SwitchIB2 A0",      SWITCH_IB2_HW_ID, 0x00},
     {"Quantum A0",        QUANTUM_HW_ID,    0x00},
     {"Spectrum A1",       SPECTRUM_HW_ID,   0x01},
-    {"Spectrum2 A0",      SPECTRUM2_HW_ID,  0x00},
     { (char*)NULL,       (u_int32_t)0, (u_int8_t)0x00},      // zero device ID terminator
 };
 
@@ -1676,7 +1674,7 @@ void FwOperations::SetDevFlags(chip_type_t chipType, u_int32_t devType, fw_img_t
         ibDev  = (fwType == FIT_FS3 && chipType != CT_SPECTRUM) || (chipType == CT_CONNECTX && !CntxEthOnly(devType));
         ethDev = (chipType == CT_CONNECTX) || (chipType == CT_SPECTRUM) || (chipType == CT_CONNECTX4) || \
                  (chipType == CT_CONNECTX4_LX) || (chipType == CT_CONNECTX5) || (chipType == CT_BLUEFIELD) || \
-                 (chipType == CT_SPECTRUM2) || (chipType == CT_CONNECTX6);
+                 (chipType == CT_CONNECTX6);
     }
 
     if ((!ibDev && !ethDev) || chipType == CT_UNKNOWN) {
@@ -1993,9 +1991,8 @@ u_int8_t FwOperations::GetFwFormatFromHwDevID(u_int32_t hwDevId)
         return FS_FS3_GEN;
     } else if (hwDevId == CX5_HW_ID ||
                hwDevId == CX6_HW_ID ||
-               hwDevId == BF_HW_ID      ||
-               hwDevId == QUANTUM_HW_ID ||
-               hwDevId == SPECTRUM2_HW_ID) {
+               hwDevId == BF_HW_ID  ||
+               hwDevId == QUANTUM_HW_ID)  {
         return FS_FS4_GEN;
     }
     return FS_UNKNOWN_IMG;
