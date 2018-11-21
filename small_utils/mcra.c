@@ -60,7 +60,7 @@
 void usage(int with_exit)
 {
     printf("  Mellanox Configuration Registers Access tool\n");
-    printf("  Usage: mcra [-s <i2c-slave>] [-a <adb dump>] [-v] [-h] [-c] <device>\n");
+    printf("  Usage: mstmcra [-s <i2c-slave>] [-a <adb dump>] [-v] [-h] [-c] <device>\n");
     printf("         <addr[.<bit offset>:<bit size>]|[,<bytes number>]> [data]\n");
     printf("         If data is given, operation is write. Otherwise it is read.\n");
     printf("         If a bit range is given in the address (E.G.: 0xf0014.16:8):\n");
