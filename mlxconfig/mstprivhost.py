@@ -62,8 +62,14 @@ def error(msg, *args, **kw):
     _log("-E-", msg, *args, **kw)
 
 
+class PrivilegeException(Exception):
+    pass
+
+
 class PrivilegeMgr(object):
-    CMD_LINE = "mstconfig -d %s -f %s --yes set_raw"
+    CONFIG_CMD_LINE = "mlxconfig -d %s -f %s --yes set_raw"
+    MCRA_CMD_LINE = "mcra %s 0xf0014.0:16"
+    BLUE_FIELD_DEV_ID = 0x211
     TITLE = "MLNX_RAW_TLV_FILE\n"
     RAW_BYTES = "0x03000204 0x07000083 0x00000000"
 
@@ -120,7 +126,7 @@ class PrivilegeMgr(object):
 
     def configure(self):
         info("configuring device...", end='')
-        cmd = self.CMD_LINE % (self._device, self._file_name)
+        cmd = self.CONFIG_CMD_LINE % (self._device, self._file_name)
         exit_code, stdout, stderr = self._exec_cmd(cmd)
 
         if exit_code != 0:
@@ -134,6 +140,18 @@ class PrivilegeMgr(object):
         self._file_p.close()
         if os.path.isfile(self._file_name):
             os.remove(self._file_name)
+
+    def validate(self):
+        # get device ID
+        cmd_line = self.MCRA_CMD_LINE % self._device
+        exit_code, stdout, _ = self._exec_cmd(cmd_line)
+        if exit_code != 0:
+            raise PrivilegeException("Unknow device '%s'!" % self._device)
+        dev_id = int(stdout, 16)
+        if dev_id != self.BLUE_FIELD_DEV_ID:
+            raise PrivilegeException(
+                "Device '%s' is not supported, "
+                "only BlueField devices are supported!" % self._device)
 
 
 def parse_args():
@@ -157,13 +175,13 @@ def parse_args():
         choices=["r", "restrict", "p", "privilege"],
         help=CMD_HELP)
     options_group.add_argument('--disable_rshim', action="store_true",
-                             help=DISABLE_RSHIM_HELP)
+                               help=DISABLE_RSHIM_HELP)
     options_group.add_argument('--disable_tracer', action="store_true",
-                             help=DISABLE_TRACER_HELP)
+                               help=DISABLE_TRACER_HELP)
     options_group.add_argument('--disable_counter_rd', action="store_true",
-                             help=DISABLE_COUNTER_RD_HELP)
+                               help=DISABLE_COUNTER_RD_HELP)
     options_group.add_argument('--disable_port_owner', action="store_true",
-                             help=DISABLE_PORT_OWNER_HELP)
+                               help=DISABLE_PORT_OWNER_HELP)
     args = parser.parse_args()
     if args.command[0] in ("p", "privilege"):
         if args.disable_rshim or args.disable_tracer or \
@@ -174,13 +192,7 @@ def parse_args():
 
 def main():
     args = parse_args()
-    disable_rshim = args.disable_rshim
-    disable_tracer = args.disable_tracer
-    disable_counter_rd = args.disable_counter_rd
-    disable_port_owner = args.disable_port_owner
-
     device = args.device
-
     command = args.command[0]
     if command in ("p", "privilege"):
         privilege = True
@@ -191,9 +203,12 @@ def main():
                        args.disable_tracer, args.disable_counter_rd,
                        args.disable_port_owner)
     try:
+        mgr.validate()
         mgr.prepare()
         retcode = mgr.configure()
-
+    except PrivilegeException as exc:
+        error(str(exc))
+        retcode = 1
     except Exception as exc:
         error("got an error: %s", str(exc))
         retcode = 1
