@@ -136,6 +136,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 
 %changelog
+* Wed Nov 21 2018 Dan Goldberg <dang@dev.mellanox.co.il>
+   MFT 4.11.0 Updates. Added new tools: mlxarchive and mstprivhost.
+
 * Sun Jul 01 2018 Dan Goldberg <dang@dev.mellanox.co.il>
    MFT 4.10.0 Updates
 
