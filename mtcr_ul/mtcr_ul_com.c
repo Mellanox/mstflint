@@ -2730,7 +2730,7 @@ int maccess_reg_ul(mfile *mf,
     }
 #ifndef MST_UL
     // TODO: add specific checks for each FW access method where needed
-    if (supports_reg_access_gmp_ul(mf, reg_method)) {
+    if ((reg_size > INBAND_MAX_REG_SIZE) && supports_reg_access_gmp_ul(mf, reg_method)) {
         return mib_send_gmp_access_reg_mad(mf, (u_int32_t *)reg_data, reg_size, reg_id, reg_method);
     }
     if (mf->flags & MDEVS_MLNX_OS) {
