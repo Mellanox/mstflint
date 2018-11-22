@@ -1,4 +1,4 @@
-mstflint (4.10.0-1) unstable; urgency=low
+mstflint (4.11.0-1) unstable; urgency=low
 
   * Updated from MFT-4.11.0. Added new tools: mlxarchive and mstprivhost.
 
