@@ -6,7 +6,7 @@
 %{!?noinband: %define noinband 0}
 %{!?nodc: %define nodc 0}
 %{!?enablecs: %define enablecs 0}
-%{!?nopenssl: %define nopenssl 0}
+%{!?nopenssl: %define nopenssl 1}
 %{!?enablefwmgr: %define enablefwmgr 0}
 %{!?CONF_DIR: %define CONF_DIR /etc/mstflint}
 
