@@ -132,11 +132,11 @@ if test "x$enable_cs" = "xyes"; then
   TOOLS_CRYPTO="tools_crypto"
 fi
 
-AC_MSG_CHECKING(--disable-openssl argument)
+AC_MSG_CHECKING(--enable-openssl argument)
 AC_ARG_ENABLE(openssl,
-            [  --disable-openssl       Disable all openssl features, dependant of openssl library],
-            [enable_openssl=$enableval],
-            [enable_openssl="yes"])
+            [  --enable-openssl       Enable all openssl features, dependant of openssl library],
+            [enable_openssl="yes"],
+            [enable_openssl="no"])
 AC_MSG_RESULT($enable_openssl)
 if test "x$enable_openssl" = "xyes"; then
   AC_CHECK_HEADER(openssl/sha.h,,AC_MSG_ERROR([cannot find openssl/sha.h . remove --enable-openssl to remove this dependaency or install openssl]))
