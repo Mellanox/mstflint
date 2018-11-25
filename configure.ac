@@ -41,10 +41,10 @@ AC_SUBST(default_en_inband)
 
 dnl Checks for headers
 AC_CHECK_HEADER(termios.h,[CXXFLAGS="${CXXFLAGS} -DHAVE_TERMIOS_H"])
-AC_CHECK_HEADER(lzma.h,,AC_MSG_ERROR([Cannot find lzma.h.]))
 TOOLS_CRYPTO=""
 MAD_IFC=""
 MLXFWUPDATE=""
+MLXARCHIVE=""
 
 COMPILER_FPIC="-fPIC"
 AC_SUBST(COMPILER_FPIC)
@@ -71,6 +71,7 @@ if test "x$enable_fw_mgr" = "xyes"; then
     AC_CHECK_HEADER(curl/curl.h,,AC_MSG_ERROR([cannot find curl/curl.h . this header is needed for compiling fw manager tool]))
     AC_CHECK_HEADER(zlib.h,,AC_MSG_ERROR([cannot find zlib.h . this header is needed for compiling fw manager tool]))
     AC_CHECK_LIB(z, uncompress,, AC_MSG_ERROR([cannot find zlib uncompress() function.]))
+    AC_CHECK_HEADER(lzma.h,,AC_MSG_ERROR([Cannot find lzma.h.]))
     AC_CHECK_LIB(boost_regex, regcompA,, AC_MSG_ERROR([cannot find boost_regex regcompA() function. Try re-installing the library...]))
     CURL_INC_DIR=/usr/include/curl/
 fi
@@ -227,12 +228,13 @@ AS_IF([test "x$enable_openssl" = "xyes"], [
 AS_IF([test "x$enable_fw_mgr" = "xyes"], [
         AC_CONFIG_FILES(mlxfwupdate/Makefile)
         AC_CONFIG_FILES(ext_libs/iniParser/Makefile)
+        AC_CONFIG_FILES(mlxarchive/Makefile)
         MLXFWUPDATE="mlxfwupdate"
+        MLXARCHIVE="mlxarchive"
     ])
     
 AC_SUBST(MLXFWUPDATE)
-
-
+AC_SUBST(MLXARCHIVE)
 
 if test "x$OS" = "xFreeBSD"; then
     AC_MSG_NOTICE(FreeBSD MTCR)
@@ -245,5 +247,5 @@ fi
 AC_OUTPUT( Makefile common/Makefile mft_utils/Makefile mtcr_py/Makefile ext_libs/Makefile ext_libs/sqlite/Makefile ext_libs/muparser/Makefile ext_libs/json/Makefile ext_libs/minixz/Makefile dev_mgt/Makefile xz_utils/Makefile \
         tools_layouts/Makefile reg_access/Makefile cmdif/Makefile libmfa/Makefile tools_res_mgmt/Makefile mlxconfig/Makefile mlxconfig/mlxconfig_dbs/Makefile mflash/Makefile mlxfwops/Makefile mlxfwops/lib/Makefile cmdparser/Makefile flint/Makefile \
         small_utils/Makefile small_utils/mlxfwresetlib/Makefile mstdump/Makefile mstdump/crd_lib/Makefile mstdump/crd_main/Makefile mstdump/mstdump_dbs/Makefile mvpd/Makefile \
-        fw_comps_mgr/Makefile mad_ifc/Makefile mlxarchive/Makefile )
+        fw_comps_mgr/Makefile mad_ifc/Makefile )
 
