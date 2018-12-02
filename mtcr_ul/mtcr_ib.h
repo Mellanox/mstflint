@@ -56,5 +56,8 @@ int mib_acces_reg_mad(mfile *mf, u_int8_t *data);
 
 int mib_smp_set(mfile *mf, u_int8_t *data, u_int16_t attr_id, u_int32_t attr_mod);
 int mib_smp_get(mfile *mf, u_int8_t *data, u_int16_t attr_id, u_int32_t attr_mod);
+int mib_get_gmp(mfile *mf, unsigned attr_id, unsigned mod, u_int32_t *vsmad_data, size_t vsmad_data_len);
+int mib_supports_reg_access_gmp(mfile *mf, maccess_reg_method_t reg_method);
+int mib_send_gmp_access_reg_mad(mfile *mf, u_int32_t *data, u_int32_t reg_size, u_int32_t reg_id, maccess_reg_method_t reg_method);
 
 #endif

@@ -28,6 +28,7 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
 
 #include <stdio.h>
@@ -38,7 +39,11 @@
 #include <common/tools_utils.h>
 
 #include "mtcr_tools_cif.h"
-#include "mtcr_mf.h"
+
+#ifdef MST_UL
+#include <mtcr_int_defs.h>
+#include <mtcr_mf.h>
+#endif
 
 #define TOOLS_HCR_ADDR      0x80780
 #define CR_MBOX_ADDR        0xe0000

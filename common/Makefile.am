@@ -38,7 +38,7 @@ update_prefix = sed -e 's,[@]MST_LIB_DIR[@]${CONF_DISABLE_PATH_UPDATE},$(libdir)
                     -e 's,[@]MST_BIN_DIR[@]${CONF_DISABLE_PATH_UPDATE},$(bindir),g'\
                     -e 's,[@]MFTCONF_PREFIX[@],$(prefix),g'
                     
-update_tools_version = sed -e 's,[@]MFT_VERSION_STR[@],${MFT_VERSION_STR},g' \
+update_tools_version = sed -e 's,[@]MSTFLINT_VERSION_STR[@],${MSTFLINT_VERSION_STR},g' \
      	          	-e 's,[@]TOOLS_BUILD_TIME[@],${TOOLS_BUILD_TIME},g' \
                     -e 's,[@]TOOLS_GIT_SHA[@],${TOOLS_GIT_SHA},g'
 

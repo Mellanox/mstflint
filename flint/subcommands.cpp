@@ -1302,6 +1302,60 @@ FlintStatus Extract4MBImageSubCommand::executeCommand()
 }
 
 /***********************
+ * * Class: AddHmacSubCommand
+ * ***********************/
+AddHmacSubCommand:: AddHmacSubCommand()
+{
+    _name = "sign_with_hmac";
+    _desc = "Sign image with HMAC";
+    _extendedDesc = "Sign image with HMAC";
+    _flagLong = "sign_with_hmac";
+    _flagShort = "";
+    _paramExp = "None";
+    _example = FLINT_NAME " -i fw_image.bin --hmac_key hmac_key_file sign_with_hmac";
+    _v = Wtv_Img;
+    _maxCmdParamNum = 0;
+    _cmdType = SC_Add_Hmac;
+}
+
+AddHmacSubCommand:: ~AddHmacSubCommand()
+{
+
+}
+
+FlintStatus AddHmacSubCommand::executeCommand()
+{
+    if (preFwOps() == FLINT_FAILED) {
+        return FLINT_FAILED;
+    }
+    if (_imgOps->FwType() != FIT_FS4) {
+        reportErr(true, "Signing with HMAC is applicable only for FS4 FW.\n");
+        return FLINT_FAILED;
+    }
+
+    if (!_imgOps->FwSignWithHmac(_flintParams.key.c_str())) {
+                reportErr(true, FLINT_HMAC_ERROR, _imgOps->err());
+                return FLINT_FAILED;
+            }
+    return FLINT_SUCCESS;
+}
+
+bool AddHmacSubCommand::verifyParams()
+{
+    if (!_flintParams.key_specified) {
+        reportErr(true, "To sign with HMAC, you must provide a key \n");
+        return false;
+    }
+
+    if (_flintParams.cmd_params.size() > 0) {
+        reportErr(true, FLINT_CMD_ARGS_ERROR, _name.c_str(), 1,
+                  (int)_flintParams.cmd_params.size());
+        return false;
+    }
+    return true;
+}
+
+/***********************
 * Class: SignSubCommand
 ***********************/
 SignSubCommand:: SignSubCommand()
@@ -2449,9 +2503,9 @@ FlintStatus VerifySubCommand::executeCommand()
 SwResetSubCommand:: SwResetSubCommand()
 {
     _name = "swreset";
-    _desc = "SW reset the target un-managed switch device."
+    _desc = "SW reset the target switch device."
             "This command is supported only in the In-Band access method.";
-    _extendedDesc = "SW reset the target un-managed switch device. This command is supported only in the In-Band"
+    _extendedDesc = "SW reset the target switch device. This command is supported only in the In-Band"
                     " access method.";
     _flagLong = "swreset";
     _flagShort = "";
@@ -2483,11 +2537,12 @@ FlintStatus SwResetSubCommand::executeCommand()
     if (preFwOps() == FLINT_FAILED) {
         return FLINT_FAILED;
     }
-    printf("-I- Resetting device %s ...\n", _flintParams.device.c_str());
+    printf("-I- Sending reset command to device %s ...\n", _flintParams.device.c_str());
     if (!_fwOps->FwSwReset()) {
         reportErr(true, FLINT_SWRESET_ERROR, _fwOps->err());
         return FLINT_FAILED;
     }
+    printf("-I- Reset command accepted by the device.\n");
     return FLINT_SUCCESS;
 }
 
@@ -2729,6 +2784,10 @@ bool BbSubCommand:: verifyParams()
 {
     if (_flintParams.cmd_params.size() != 0) {
         reportErr(true, FLINT_CMD_ARGS_ERROR, _name.c_str(), 0, (int)(_flintParams.cmd_params.size()));
+        return false;
+    }
+    printf("\n    Note: This option is only recommended for advanced users. Press Yes to continue");
+    if (!askUser()) {
         return false;
     }
     return true;

@@ -87,6 +87,14 @@ typedef long long int64_t;
 
 #endif
 
+/*
+ * MST <--> MTCR API defines
+ */
+#define MST_HEADER_VERSION 1
+#define MST_META_DATA_MAJOR 1
+#define MST_META_DATA_MINOR 0
+#define MTCR_SUPP_MST_API_MAJOR_VERSION 1
+
 //#ifndef USE_IB_MGT
 typedef struct mib_private_t {
     int dummy;
@@ -117,6 +125,7 @@ typedef enum MError {
 
     ME_UNSUPPORTED_OPERATION,
     ME_UNSUPPORTED_ACCESS_TYPE,
+    ME_GMP_MAD_UNSUPPORTED_OPERATION,
 
     // errors regarding REG_ACCESS
     ME_REG_ACCESS_OK = 0,
@@ -204,7 +213,7 @@ typedef enum MType_t {
 #ifdef ENABLE_MST_DEV_I2C
     MST_DEV_I2C = 0x1000,
 #endif
-    // 0x2000 reserved
+    MST_CALBR = 0x2000,
     MST_FPGA_ICMD = 0x4000,
     MST_CABLE = 0x8000,
     MST_FPGA_DRIVER = 0x10000,
@@ -243,7 +252,8 @@ typedef enum Mdevs_t {
 
 typedef enum {
     MACCESS_REG_METHOD_GET = 1,
-    MACCESS_REG_METHOD_SET = 2
+    MACCESS_REG_METHOD_SET = 2,
+    MACCESS_LAST_REG_METHOD = 3
 } maccess_reg_method_t;
 
 typedef enum {
@@ -331,8 +341,48 @@ typedef enum {
     RA_MFBA = 0x9011,
     RA_MFBE = 0x9012,
 } reg_access_t;
+typedef struct dma_lib_hdl_t dma_lib_hdl;
+
+typedef struct icmd_params_t {
+    int icmd_opened;
+    int took_semaphore;
+    int ctrl_addr;
+    int cmd_addr;
+    u_int32_t max_cmd_size;
+    int semaphore_addr;
+    int static_cfg_not_done_addr;
+    int static_cfg_not_done_offs;
+    u_int32_t lock_key;
+    int ib_semaphore_lock_supported;
+    u_int64_t dma_pa;
+    u_int32_t dma_size;
+    int dma_icmd;
+} icmd_params;
+
+typedef struct ctx_params_t {
+    void *fw_cmd_context;
+    void *fw_cmd_func;
+} ctx_params;
+
+typedef struct io_region_t {
+    unsigned int start;
+    unsigned int end;
+} io_region;
+
+typedef struct tools_hcr_params_t {
+    int supp_cr_mbox;     // 1: mbox supported , -1: mbox not supported
+} tools_hcr_params;
+
+// max_reg_size depends on the desired method operated on the register.
+// max_reg_size[<method_enum_value>] will give the relevant max_reg_size.
+// For example max_reg_size[MACCESS_REG_METHOD_GET] will give max_reg_size for Get() method.
+typedef struct access_reg_params_t {
+    int max_reg_size[MACCESS_LAST_REG_METHOD];
+} access_reg_params;
 
 typedef struct mfile_t mfile;
+
+typedef void (*f_mpci_change)        (mfile *mf);
 
 #define VSEC_MIN_SUPPORT_UL(mf) (((mf)->vsec_cap_mask & (1 << VCC_INITIALIZED)) && \
                                  ((mf)->vsec_cap_mask & (1 << VCC_CRSPACE_SPACE_SUPPORTED)) && \

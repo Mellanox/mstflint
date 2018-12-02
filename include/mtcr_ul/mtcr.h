@@ -42,6 +42,11 @@ extern "C" {
 
 #include "mtcr_com_defs.h"
 #include "mtcr_mf.h"
+#if defined(MTCR_UL) && !defined(NO_INBAND)
+#include <mtcr_ul/mtcr_ib.h>
+#endif
+
+#define SLV_ADDRS_NUM 128
 
 typedef enum mtcr_access_method {
     MTCR_ACCESS_ERROR  = MST_ERROR,
@@ -149,7 +154,8 @@ int tools_cmdif_send_mbox_command(mfile *mf, u_int32_t input_modifier, u_int16_t
 int tools_cmdif_unlock_semaphore(mfile *mf);
 
 
-int mget_max_reg_size(mfile *mf);
+int mget_max_reg_size(mfile *mf, maccess_reg_method_t reg_method);
+int supports_reg_access_gmp(mfile *mf, maccess_reg_method_t reg_method);
 
 const char* m_err2str(MError status);
 
@@ -165,10 +171,7 @@ int mclear_pci_semaphore(const char *name);
 
 int mvpd_read4(mfile *mf, unsigned int offset, u_int8_t value[4]);
 
-#ifndef NO_INBAND
-int mib_smp_set(mfile *mf, u_int8_t *data, u_int16_t attr_id, u_int32_t attr_mod);
-int mib_smp_get(mfile *mf, u_int8_t *data, u_int16_t attr_id, u_int32_t attr_mod);
-#endif
+int mvpd_write4(mfile *mf, unsigned int offset, u_int8_t value[4]);
 
 #ifdef __cplusplus
 }

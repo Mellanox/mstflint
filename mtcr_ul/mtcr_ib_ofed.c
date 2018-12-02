@@ -163,9 +163,11 @@
 #define IB_VENDOR_SPECIFIC_CLASS_0xA    0x0A
 #define IB_VENDOR_SPECIFIC_CLASS_0x9    0x09
 
-#define IB_VS_ATTR_SW_RESET         0x12
-#define IB_VS_ATTR_EXT_PORT_INFO    0x13
-#define IB_VS_ATTR_CR_ACCESS        0x50
+#define IB_VS_ATTR_SW_RESET             0x12
+#define IB_VS_ATTR_EXT_PORT_INFO        0x13
+#define IB_VS_ATTR_CR_ACCESS            0x50
+#define IB_VS_ATTR_GENERAL_INFO         0x17
+#define IB_VS_ATTR_ACCESS_REGISTER_GMP  0x51
 
 #define IB_VS_ATTRMOD_CR            0x00008000
 #define IB_VS_ATTR_EPI_ATTRMOD_I2C1 0x02
@@ -229,6 +231,7 @@ struct __ibvsmad_hndl_t
     int timeout;
     int retries_num;
     u_int64_t vkey;
+    enum MAD_DEST dest_type;
 
     DLL_HANDLE dl_handle;
 
@@ -586,7 +589,6 @@ int mib_open(const char *name, mfile *mf, int mad_init)
                            IB_VENDOR_SPECIFIC_CLASS_0x9};
     ib_portid_t *sm_id           = 0;
     int ca_port         = 0;
-    int dest_type       = IB_DEST_LID;
     ibvs_mad    *ivm             = NULL;
     char        *nbuf            = NULL;
     char        *path_str, *p;
@@ -617,20 +619,20 @@ int mib_open(const char *name, mfile *mf, int mad_init)
 
     if (strncmp("ibdr-", nbuf, 5) == 0) {
         ivm->use_smp = 1;
-        dest_type = IB_DEST_DRPATH;
+        ivm->dest_type = IB_DEST_DRPATH;
         path_str  = nbuf + 5;
     } else if (strncmp("iblid-", nbuf, 6) == 0) {
         ivm->use_smp = 1;
-        dest_type = IB_DEST_LID;
+        ivm->dest_type = IB_DEST_LID;
         path_str  = nbuf + 6;
     } else if ((p = strstr(nbuf, "lid-")) != 0) {
         lid_provided = 1;
-        dest_type = IB_DEST_LID;
+        ivm->dest_type = IB_DEST_LID;
         path_str  = p + 4;
 
     } else if ((p = strstr(nbuf, "lid_noinit-")) != 0) {
         lid_provided = 1;
-        dest_type = IB_DEST_LID;
+        ivm->dest_type = IB_DEST_LID;
         path_str  = p + 11;
         mad_init = 0;
 
@@ -667,7 +669,7 @@ int mib_open(const char *name, mfile *mf, int mad_init)
     get_env_vars(ivm);
     // The DR in the device name is a '.' separated list.
     // Change it to a ',' separated list like ibmad likes.
-    if (dest_type == IB_DEST_DRPATH) {
+    if (ivm->dest_type == IB_DEST_DRPATH) {
         char *c;
         for (c = path_str; *c; c++) {
             if (*c == '.') {
@@ -704,7 +706,7 @@ int mib_open(const char *name, mfile *mf, int mad_init)
     ivm->mad_rpc_set_timeout(ivm->srcport, ivm->timeout);
 
     rc = ivm->ib_resolve_portid_str_via(&ivm->portid, (char*)path_str,
-                                        dest_type, sm_id, ivm->srcport);
+            ivm->dest_type, sm_id, ivm->srcport);
     if (rc != 0) {
         IBERROR(("can't resolve destination port %s", path_str));
         goto end;
@@ -890,6 +892,43 @@ MTCR_API int mib_writeblock(mfile *mf, unsigned int offset, u_int32_t *data, int
     return mib_block_op(mf, offset, data, length, BLOCKOP_WRITE);
 }
 
+int is_managed_node_supports_swreset(mfile *mf)
+{
+    ib_vendor_call_t call;
+    ibvs_mad *h = (ibvs_mad*)(mf->ctx);
+    u_int8_t *p;
+    u_int32_t vsmad_data[IB_VENDOR_RANGE1_DATA_SIZE/4] = {0};
+
+    call.method     = IB_MAD_METHOD_GET;
+    call.mgmt_class = IB_VENDOR_SPECIFIC_CLASS_0xA;
+    call.attrid     = IB_VS_ATTR_GENERAL_INFO;
+    call.mod        = 0;
+    call.oui        = IB_OPENIB_OUI;
+    call.timeout    = 0;
+    memset(&call.rmpp, 0, sizeof (call.rmpp));
+
+    p = h->ib_vendor_call_via(vsmad_data, &h->portid, &call, h->srcport);
+    if (!p) {
+        fprintf(stderr, "-E- ib mad method call failed.\n");
+        return 0;
+    }
+
+    int i;
+    for (i = 0; i < IB_VENDOR_RANGE1_DATA_SIZE/4; i++) {
+        vsmad_data[i] = __be32_to_cpu(vsmad_data[i]);
+    }
+
+    // vend_key 0x8 bytes, which present in any vendor specific MAD return in vsmad_data.
+    // We want to skip them when relating GeneralInfo MAD fields in specific.
+    // The capability_mask offset which is 0x80, is calculated from the beginning of GeneralInfo MAD fields.
+    // So overall we have an offset of 0x8+0x80 bytes.
+    const int capability_mask_byte_offset = 0x8+0x80;
+    const int is_enh_port0_device_reset_supported_bit_offset = 25;
+    return EXTRACT(vsmad_data[capability_mask_byte_offset/4],
+                   is_enh_port0_device_reset_supported_bit_offset,
+                   1);
+}
+
 int is_node_managed(ibvs_mad *h)
 {
     u_int8_t *p;
@@ -944,7 +983,7 @@ int mib_swreset(mfile *mf)
         }
     }
 
-    if (is_node_managed(h)) {
+    if (is_node_managed(h) && !is_managed_node_supports_swreset(mf)) {
         errno = OP_NOT_SUPPORTED;
         return -1;
     }
@@ -990,6 +1029,129 @@ static int mib_status_translate(int status)
     }
 
     return ME_MAD_GENERAL_ERR;
+}
+
+int mib_send_gmp_access_reg_mad(mfile *mf, u_int32_t *data, u_int32_t reg_size, u_int32_t reg_id, maccess_reg_method_t reg_method)
+{
+    // The buffer should contain:
+    // 2 dwords for the vkey,
+    // 1 dword for a configuration dword,
+    // 55 dwords for data.
+    // All sizes and offsets are in dword unit.
+    const int vkey_offset = 0;
+    const int vkey_size = 2;
+    const int config_offset = 2;
+    const int config_size = 1;
+    const int data_offset = 3;
+    const int data_size = 55;
+    const int buffer_size = vkey_size + config_size + data_size; // == 58
+    u_int32_t vsmad_data[buffer_size];
+    u_int32_t orig_vsmad_data[buffer_size];
+
+    if (!mf || !mf->ctx || !data) {
+        IBERROR(("mib_send_gmp_access_reg_mad failed. Null Param."));
+        return ME_BAD_PARAMS;
+    }
+    if (!mib_supports_reg_access_gmp(mf, reg_method)) {
+        return ME_GMP_MAD_UNSUPPORTED_OPERATION;
+    }
+
+    memset(vsmad_data, 0x0, buffer_size);
+    memset(orig_vsmad_data, 0x0, buffer_size);
+
+    ibvs_mad *vsmad = (ibvs_mad*)(mf->ctx);
+    u_int64_t vkey = __cpu_to_be64(vsmad->vkey);
+    memcpy(&vsmad_data[vkey_offset], &vkey, vkey_size * 4);
+    memcpy(&vsmad_data[data_offset], data, data_size * 4);
+    memcpy(&orig_vsmad_data[0], vsmad_data, buffer_size * 4);
+
+    ib_vendor_call_t call;
+    u_int8_t *call_result;
+    call.method     = reg_method;
+    call.mgmt_class = IB_VENDOR_SPECIFIC_CLASS_0xA;
+    call.attrid     = IB_VS_ATTR_ACCESS_REGISTER_GMP;
+    call.mod        = reg_id;
+    call.oui        = IB_OPENIB_OUI;
+    call.timeout    = 0;
+    memset(&call.rmpp, 0, sizeof(call.rmpp));
+
+    int num_of_blocks = (reg_size / (data_size * 4)) + ((reg_size % (data_size * 4)) ? 1 : 0);
+    int block_num;
+    u_int32_t block_dword;
+
+    for (block_num = 0; block_num < num_of_blocks; block_num++) {
+        block_dword = __cpu_to_be32(((u_int32_t)block_num) << 16); //block offset in the config dword, see PRM for details
+        memcpy(&vsmad_data[config_offset], &block_dword, config_size * 4);
+        call_result = vsmad->ib_vendor_call_via(vsmad_data, &vsmad->portid, &call, vsmad->srcport);
+        if (!call_result) {
+            return -1;
+        }
+        int num_of_bytes = (block_num == num_of_blocks - 1) ? ((int)reg_size % (data_size * 4)) : (data_size * 4);
+        memcpy(&data[(block_num * data_size)], &vsmad_data[data_offset], num_of_bytes);
+
+        memcpy(vsmad_data, orig_vsmad_data, buffer_size * 4);
+    }
+    return ME_OK;
+}
+
+int mib_get_gmp(mfile *mf, unsigned attr_id, unsigned mod, u_int32_t *vsmad_data, size_t vsmad_data_len)
+{
+    if (!mf || !mf->ctx || !vsmad_data || vsmad_data_len != IB_VENDOR_RANGE1_DATA_SIZE/4) {
+        return ME_BAD_PARAMS;
+    }
+
+    ib_vendor_call_t call;
+    ibvs_mad *vs_mad = (ibvs_mad*)(mf->ctx);
+    u_int8_t *call_result;
+
+    call.method     = IB_MAD_METHOD_GET;
+    call.mgmt_class = IB_VENDOR_SPECIFIC_CLASS_0xA;
+    call.attrid     = attr_id;
+    call.mod        = mod;
+    call.oui        = IB_OPENIB_OUI;
+    call.timeout    = 0;
+    memset(&call.rmpp, 0, sizeof (call.rmpp));
+
+    call_result = vs_mad->ib_vendor_call_via(vsmad_data, &vs_mad->portid, &call, vs_mad->srcport);
+    if (!call_result) {
+        return -1;
+    }
+
+    int i;
+    for (i = 0; i < IB_VENDOR_RANGE1_DATA_SIZE/4; i++) {
+        vsmad_data[i] = __be32_to_cpu(vsmad_data[i]);
+    }
+    return ME_OK;
+}
+
+int mib_get_general_info_gmp(mfile *mf, u_int32_t *vsmad_data, size_t vsmad_data_len)
+{
+    return mib_get_gmp(mf, IB_VS_ATTR_GENERAL_INFO, 0, vsmad_data, vsmad_data_len);
+}
+
+int mib_supports_reg_access_gmp(mfile *mf, maccess_reg_method_t reg_method)
+{
+    if (!mf || !mf->ctx) {
+        return 0;
+    }
+
+    if (!((mf->flags & MDEVS_IB) && (((ibvs_mad *)(mf->ctx))->dest_type == IB_DEST_LID) &&
+            (reg_method == MACCESS_REG_METHOD_GET))) {
+        return 0;
+    }
+
+    u_int32_t vsmad_data[IB_VENDOR_RANGE1_DATA_SIZE/4] = {0};
+    if (mib_get_general_info_gmp(mf, vsmad_data, IB_VENDOR_RANGE1_DATA_SIZE/4)) {
+        return 0;
+    }
+
+    // vend_key 0x8 bytes, which present in any vendor specific MAD return in vsmad_data.
+    // We want to skip them when relating GeneralInfo MAD fields in specific.
+    // The capability_mask offset which is 0x80, is calculated from the beginning of GeneralInfo MAD fields.
+    // So overall we have an offset of 0x8+0x80 bytes.
+    const int capability_mask_byte_offset = 0x8+0x80;
+    const int is_access_register_supported_bit_offset = 20;
+    return EXTRACT(vsmad_data[capability_mask_byte_offset/4], is_access_register_supported_bit_offset, 1);
 }
 
 int mib_acces_reg_mad(mfile *mf, u_int8_t *data)

@@ -136,7 +136,7 @@ def getDevDBDF(device,logger=None):
             raise RuntimeError("Failed to get device PCI Address")
         return addDomainToAddress(bdf)
     elif (operatingSys == "Windows"):
-        cmd = "mdevices status -v"
+        cmd = "mdevices status -vv"
         (rc, out, _) = cmdExec(cmd)
         if rc != 0 :
             raise RuntimeError("Failed to get device PCI address")
@@ -144,7 +144,7 @@ def getDevDBDF(device,logger=None):
         bdf = None
         for line in out.split('\n'):
             l = line.split()
-            if (len(l) > 1) and (device in l[0]) and ("bus:dev.fn" in l[1]):
+            if (len(l) > 1) and (device in l[0]) and ("seg:bus:dev.fn" in l[1]):
                 bdf = line.split('=')[1]
         if not bdf:
             raise RuntimeError("Failed to get device PCI Address")

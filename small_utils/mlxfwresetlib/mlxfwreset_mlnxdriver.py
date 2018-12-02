@@ -97,14 +97,14 @@ class MlnxDriverLinux(MlnxDriver):
 
         self.drivers_dbdf = [] # A List of tuples (<dbdf>,<driver-name>)
 
+        # Check if opensm is running in the background
+        (rc, _, _) = cmdExec("pgrep opensm")
+        if rc == 0:
+            raise RuntimeError('Please stop "opensm" manually and resume operation!')
+
         if not skip:
             if not os.path.exists(MlnxDriverLinux.PCI_DRIVERS_PATH):
                 raise RuntimeError("path {0} doesn't exist!".format(MlnxDriverLinux.PCI_DRIVERS_PATH))
-
-            # Check if opensm is running in the background
-            (rc, _, _) = cmdExec("pgrep opensm")
-            if rc == 0:
-                raise RuntimeError('Please stop "opensm" manually and resume operation!')
 
             for device in devices:
 
@@ -114,11 +114,17 @@ class MlnxDriverLinux(MlnxDriver):
                 # Reset virtual functions (reset pf1 is speculative - only if exists)
                 for pf_num in range(2):
                     num_vfs_file_path = '/sys/bus/pci/devices/{0}.{1}/sriov_numvfs'.format(dbd,pf_num)
-                    cmd = "echo 0 > {0} ".format(num_vfs_file_path)
-                    logger.info('{0}'.format(cmd))
-                    (rc, out, _) = cmdExec(cmd)
-                    if rc!=0:
-                        logger.info('Reset virtual functions failed : {0}'.format(out))
+                    if os.path.exists(num_vfs_file_path):
+                        cmd = "echo 0 > {0} ".format(num_vfs_file_path)
+                        logger.info('{0}'.format(cmd))
+                        (rc, out, _) = cmdExec(cmd)
+                        if rc!=0:
+                            logger.info('Reset virtual functions failed : {0}'.format(out))
+
+                        # Verify the reset of the VFs
+                        with open(num_vfs_file_path) as file:
+                            if int(file.read())!=0:
+                                raise RuntimeError('Reset virtual functions failed! Please reset virtual functions manually and resume operation')
 
                 # insert all the instances of the driver that need unbind/bind
                 cmd = "find {0} | grep {1}".format(MlnxDriverLinux.PCI_DRIVERS_PATH,dbd)
@@ -130,6 +136,8 @@ class MlnxDriverLinux(MlnxDriver):
                     if driver_name not in MlnxDriverLinux.mlnx_drivers:
                         raise RuntimeError("mlxfwreset doesn't support 3rd party driver ({0})!\nPlease, stop the driver manually and resume operation with --skip_driver".format(driver_name))
                     self.drivers_dbdf.append((dbdf,driver_name))
+
+            self.drivers_dbdf.sort()
 
         logger.info('{0}'.format(self.drivers_dbdf))
 
@@ -212,7 +220,7 @@ class MlnxDriverFreeBSD(MlnxDriver):
         if rc != 0:
             raise DriverUnknownMode("Can not run the command: %s" % cmd)
         # the voodoo below checks if we had at least one kernel object loaded
-        return (MlnxDriver.DRIVER_IGNORE, MlnxDriver.DRIVER_LOADED)[reduce(lambda x, y: x or y, [x[1] for x in self._knownModules])]
+        return (MlnxDriver.DRIVER_IGNORE, MlnxDriver.DRIVER_LOADED)[reduce(lambda x, y: x or y, map(lambda x: x[1], self._knownModules))]
 
 
 class MlnxDriverWindows(MlnxDriver):

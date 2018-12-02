@@ -39,7 +39,14 @@
 #ifndef INSIDE_MTCR
 #define INSIDE_MTCR
 #include "tcp.h"
+#else
+// HACK: We redefine it here also because when including from mtcr.c tcp.h is not included
+typedef enum proto_type {
+    PT_TCP = 0,
+    PT_UDP,
+} proto_type_t;
 #endif
+
 
 #include <errno.h>
 #include <fcntl.h>
@@ -49,6 +56,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#define UDP_RECV_FLAGS 0
 
 #ifndef __WIN__
     #include <unistd.h>
@@ -62,24 +71,41 @@
     #include <arpa/inet.h>
 
     #define SOCKET_BACKLOG           1
+    #undef COMP_CLOSE
     #define COMP_CLOSE               close
-    #define COMP_READ(s, b, l)         read(s, b, l)
-    #define COMP_WRITE(s, b, l)        write(s, b, l)
+    #define TCP_COMP_READ(s, b, l)         read(s, b, l)
+    #define TCP_COMP_WRITE(s, b, l)        write(s, b, l)
+
+    #define UDP_COMP_READ(s, b, l)         recv(s, b, l, UDP_RECV_FLAGS)
+    #define UDP_COMP_WRITE(s, b, l)        send(s, b, l, UDP_RECV_FLAGS)
+
     #define GET_CHILD_PID(child_pid) child_pid = fork()
     #define EXEC_SIGNAL() if (signal(SIGCHLD, SIG_IGN) == SIG_ERR) {return -1;}
     #define EXEC_FOR() for (;;)
     #define RET_ZERO_IN_WIN()
     #define WIN_INIT()
 #else
-    #include <Winsock2.h>
+    #include <winsock2.h>
     #include <io.h>
 
     #define socklen_t int
 
     #define SOCKET_BACKLOG           5
+
+#ifdef   COMP_CLOSE
+    #undef  COMP_CLOSE
+    #undef  COMP_READ
+    #undef  COMP_WRITE
+#endif
     #define COMP_CLOSE               closesocket
-    #define COMP_READ(s, b, l)         recv(s, b, l, 0)
-    #define COMP_WRITE(s, b, l)        send(s, b, l, 0)
+
+    #define TCP_COMP_READ(s, b, l)         recv(s, b, l, 0)
+    #define TCP_COMP_WRITE(s, b, l)        send(s, b, l, 0)
+
+    #define UDP_COMP_READ(s, b, l)         recv(s, b, l, UDP_RECV_FLAGS)
+    #define UDP_COMP_WRITE(s, b, l)        send(s, b, l, UDP_RECV_FLAGS)
+
+
     #define GET_CHILD_PID(child_pid) child_pid = 0
     #define EXEC_SIGNAL()
     #define EXEC_FOR()
@@ -94,6 +120,23 @@
         }                                         \
 }
 #endif
+
+#undef  COMP_READ
+
+#define COMP_ACCESS(s, b, l, p, f1, f2) (p == PT_UDP) ? f1(s, b, l) : f2(s, b, l);
+
+#define COMP_READ(s, b, l, p) COMP_ACCESS(s, b, l, p, UDP_COMP_READ, TCP_COMP_READ)
+
+#define COMP_WRITE(s, b, l, p) COMP_ACCESS(s, b, l, p, UDP_COMP_WRITE, TCP_COMP_WRITE)
+
+
+#define EXEC_PROTO_FUNC(proto, tcp_func, udp_func, args) { \
+        if (proto == PT_UDP) { \
+            return udp_func args; \
+        } \
+        return tcp_func args; \
+}
+
 
 /* ----------------------------------------------------- */
 /* ------------------------------ Log all socket traffic */
@@ -127,40 +170,38 @@ INSIDE_MTCR int  plog(const char *fmt, ...)
 ** Will read less than the specified count *only* if the peer sends
 ** EOF
 */
-INSIDE_MTCR int readn(int fd, void *vptr, int nbytes)
-{
-    int nleft, nread;
-    char    *ptr = (char*)vptr;
-
+/*
+   INSIDE_MTCR int readn(int fd, void *vptr, int nbytes, proto_type_t proto)
+   {
+    int     nleft, nread;
+    char    *ptr = (char *)vptr;
     nleft = nbytes;
     while (nleft > 0) {
-        do
-            nread = COMP_READ(fd, ptr, nleft);
+        do {
+            nread = COMP_READ(fd, ptr, nleft, proto);
+        }
         while (nread < 0 && errno == EINTR);
 
-        if (nread < 0) {
-            return -1;              /*  error, return -1 */
-        } else if (nread == 0)                                                              {
-            break;                  /*  EOF */
+        if (nread < 0)
+            return -1;              // error, return -1
+        else if (nread == 0)
+            break;                  //  EOF
 
-        }
         nleft -= nread;
         ptr   += nread;
     }
-    return(nbytes - nleft);         /*  return >= 0 */
-}
+    return(nbytes - nleft);         //  return >= 0
+   }
+ */
 
-/* ////////////////////////////////////////////////////////////////////// */
-/*
-** reads - reads string (till \0)  from the socket "fd"
-*/
-INSIDE_MTCR int reads(int fd, char *ptr, int maxlen)
+INSIDE_MTCR int tcp_reads(int fd, char *ptr, int maxlen)
 {
     int n, done = 0, rc;
     char c;
-    for (n = 0; n <= maxlen && !done; n++) {
-        do
-            rc = COMP_READ(fd, &c, 1);
+    for (n = 0; (n < maxlen - 1) && !done; n++) {
+        do {
+            rc = COMP_READ(fd, &c, 1, PT_TCP);
+        }
         while (rc < 0 && errno == EINTR);
 
         switch (rc) {
@@ -179,43 +220,70 @@ INSIDE_MTCR int reads(int fd, char *ptr, int maxlen)
             return -1;     /*  error */
         }
     }
+    *ptr = '\0';
     return n - 1;
+}
+
+INSIDE_MTCR int udp_reads(int fd, char *ptr, int maxlen)
+{
+    int rc = 0;
+    char *tmp_ptr = ptr;
+    do {
+        rc = COMP_READ(fd, tmp_ptr, maxlen - 1, PT_UDP);
+    } while (rc < 0 && errno == EINTR);
+    if (rc > 0) {
+        tmp_ptr[rc] = '\0';
+    } else {
+        *tmp_ptr = '\0';
+    }
+    return rc - 1;
+}
+
+/* ////////////////////////////////////////////////////////////////////// */
+/*
+** reads - reads string (till \0)  from the socket "fd"
+*/
+INSIDE_MTCR int reads(int fd, char *ptr, int maxlen, proto_type_t proto)
+{
+    if (proto == PT_UDP) {
+        return udp_reads(fd, ptr, maxlen);
+    }
+    return tcp_reads(fd, ptr, maxlen);
 }
 
 /* ////////////////////////////////////////////////////////////////////// */
 /*
 ** readnl - reads till till newline  from the socket "fd"
 */
-INSIDE_MTCR int readnl(int fd, char *ptr, int maxlen)
-{
-    int n, done = 0, rc;
-    char c;
-
-    for (n = 0; n <= maxlen - 1 && !done; n++) {
+/*
+   INSIDE_MTCR int readnl(int fd, char *ptr, int maxlen, proto_type_t proto)
+   {
+    int     n, done=0, rc;
+    char    c;
+    for (n = 0; n <= maxlen-1 && !done; n++) {
         do {
-            rc = COMP_READ(fd, &c, 1);
+            rc = COMP_READ(fd, &c, 1, proto);
         }
         while (rc < 0 && errno == EINTR);
 
         switch (rc) {
         case 1:
-            *ptr++ = c;
+ * ptr++ = c;
             if (c == '\n') {
-                *ptr = '\0';
-                done = 1;
+ * ptr = '\0';
+                done=1;
             }
             break;
-
         case 0:
-            done = 1;
+            done=1;
             break;
-
         default:
-            return -1;     /*  error */
+            return -1;     //  error
         }
     }
-    return n - 1;
-}
+    return n-1;
+   }
+ */
 
 /* ////////////////////////////////////////////////////////////////////// */
 /*
@@ -225,16 +293,16 @@ INSIDE_MTCR int readnl(int fd, char *ptr, int maxlen)
 ** Returns number of bytes written, or -1 if an error occurs.
 ** Return value will always be either -1 or "nbytes"
 */
-INSIDE_MTCR int writen(int fd, void *vptr, int nbytes)
+INSIDE_MTCR int writen(int fd, void *vptr, int nbytes, proto_type_t proto)
 {
     int nleft, nwritten;
     char    *ptr = (char*)vptr;
 
     nleft = nbytes;
     while (nleft > 0) {
-        do
-            nwritten = COMP_WRITE(fd, ptr, nleft);
-        while (nwritten < 0 && errno == EINTR);
+        do {
+            nwritten = COMP_WRITE(fd, ptr, nleft, proto);
+        } while (nwritten < 0 && errno == EINTR);
 
         if (nwritten < 0) {
             return -1;
@@ -250,33 +318,42 @@ INSIDE_MTCR int writen(int fd, void *vptr, int nbytes)
 /*
 ** writes - write string (null ternminated buffer) to the socket "fd"
 */
-INSIDE_MTCR int writes(int fd, char *ptr)
+INSIDE_MTCR int writes(int fd, char *ptr, proto_type_t proto)
 {
-    return writen(fd, ptr, strlen(ptr) + 1);
+    return writen(fd, ptr, strlen(ptr) + 1, proto);
 }
 
 /* ////////////////////////////////////////////////////////////////////// */
 /*
 ** writenl - write newline ternminated buffer to the socket "fd"
 */
-INSIDE_MTCR int writenl(int fd, char *ptr)
-{
+/*
+   INSIDE_MTCR int writenl(int fd, char *ptr, proto_type_t proto)
+   {
     char *last = strchr(ptr, '\n');
-    if (last) {
-        return writen(fd, ptr, last - ptr + 1);
-    }
+    if (last)
+        return writen(fd, ptr, last - ptr + 1, proto);
     return 0;
-}
+   }
+ */
 
 /* ////////////////////////////////////////////////////////////////////// */
 /*
 ** open_cli_connection - open client TCP connection and return socket fd
 */
-INSIDE_MTCR int open_cli_connection(const char *host, const int port)
+INSIDE_MTCR int open_cli_connection(const char *host, const int port, proto_type_t proto)
 {
     int SockFD;
     struct sockaddr_in serv_addr;
     struct hostent      *hent;
+    int needs_bind = 0;
+    int type = SOCK_STREAM, domain = AF_INET;
+
+    if (proto == PT_UDP) {
+        needs_bind = 1;
+        type = SOCK_DGRAM;
+        domain = PF_INET;
+    }
 
     plog("open_connection(%s, %d)\n", host, port);
 
@@ -285,6 +362,7 @@ INSIDE_MTCR int open_cli_connection(const char *host, const int port)
 
     /*  Try to determinate server IP address */
     if ((hent = gethostbyname(host)) == NULL) {
+        errno = EINVAL;
         return -1;
     }
 
@@ -298,13 +376,32 @@ INSIDE_MTCR int open_cli_connection(const char *host, const int port)
     serv_addr.sin_port        = (short)htons((short)port);
 
     /*  Open a TCP socket (an Internet stream socket). */
-    if ( (SockFD = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+    if ( (SockFD = socket(domain, type, 0)) < 0) {
         return -1;
     }
+
+
+    if (needs_bind) {
+        struct sockaddr_in my_addr;
+        /*  Bind our local address so that the client can send to us. */
+        memset((char*) &my_addr, 0, sizeof(my_addr));
+        my_addr.sin_family      = AF_INET;
+        my_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+        my_addr.sin_port        = (short)(htons((short)port));
+
+        /*  Bind our local address so that the client can send to us. */
+        if (bind(SockFD, (struct sockaddr*)&my_addr, sizeof(my_addr)) < 0) {
+            COMP_CLOSE(SockFD);
+            perror("bind failed\n");
+            return -1;
+        }
+    }
+
     /*
      * Connect to the server.
      */
     if (connect(SockFD, (struct sockaddr*) &serv_addr, sizeof(serv_addr)) < 0) {
+        COMP_CLOSE(SockFD);
         return -1;
     }
 
@@ -337,6 +434,9 @@ INSIDE_MTCR int open_serv_connection(const int port)
     serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     serv_addr.sin_port        = (short)(htons((short)port));
     if (bind(SockFD, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
+        #ifdef __WIN__
+        errno = WSAGetLastError();
+        #endif
         COMP_CLOSE(SockFD);
         return -1;
     }
@@ -363,9 +463,10 @@ INSIDE_MTCR int open_serv_connection(const int port)
         GET_CHILD_PID(childpid);
 
         if (childpid < 0) {
+            COMP_CLOSE(newsockfd);
+            COMP_CLOSE(SockFD);
             return -1;
         }
-
         if (childpid) {
             /*  We are parent */
             COMP_CLOSE(newsockfd);
@@ -390,3 +491,4 @@ INSIDE_MTCR int open_serv_connection(const int port)
     }
 
 }
+

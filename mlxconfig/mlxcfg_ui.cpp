@@ -47,6 +47,16 @@
 #include "mlxcfg_utils.h"
 #include "mlxcfg_generic_commander.h"
 
+#define DISABLE_SLOT_POWER_LIMITER  "DISABLE_SLOT_POWER_LIMITER"
+#define DISABLE_SLOT_POWER_LIMITER_WARN \
+    "\nWARNING: YOU ARE ABOUT TO RE-ENABLE ONE OR MORE NETWORK PORTS THAT HAVE BEEN SHUT DOWN DUE TO INSUFFICIENT POWER ON THE PCIE SLOT."\
+    "\nYOUR ACTION MAY RISK PROPER FUNCTIONAL OR PHYSICAL OPERATION OF THE CARD OR OF THE SERVER."\
+    "\nMELLANOX TECHNOLOGIES HEREBY DISCLAIMS ANY AND ALL LIABILITY RELATED TO ANY DAMAGE CAUSED AS A RESULT OF THIS RE-ENABLEMENT."\
+    "\nBY PROCEEDING WITH THIS RE-ENABLEMENT YOU WILL INVALIDATE ANY WARRANTY PROVIDED BY MELLANOX TECHNOLOGIES RELATED TO THIS CARD."\
+    "\nIT IS ADVISED TO CHECK THE CARD\'S USER MANUAL FOR POWER SPECIFICATIONS OR TO CONTACT MELLANOX SUPPORT BEFORE PERFORMING THIS ACTION."\
+    "\nARE YOU SURE YOU WANT TO CONTINUE? [Y/N] [N]: "
+
+
 #define NEXT_STR "Next Boot"
 #define DEFAULT_CURRENT_NOT_SUPPORTED_PREFIX "Device Firmware does not support reading "
 #define TLV_NAME_MAX_LENGTH 256
@@ -194,13 +204,21 @@ void MlxCfg::printErr()
 }
 
 
-bool MlxCfg::askUser(const char *question)
+bool MlxCfg::askUser(const char *question, bool add_prefix, bool add_suffix)
 {
-    if (question == NULL) {
-        printf("\n Do you want to continue ? (y/n) [n] : ");
-    } else {
-        printf("\n %s ? (y/n) [n] : ", question);
+    const char * prefix = "";
+    if(add_prefix){
+        prefix = "\n ";
     }
+
+    const char * suffix = "";
+    if(add_suffix) {
+        suffix = " (y/n) [n] : ";
+    }
+    if (question == NULL) {
+        question = "Do you want to continue?";
+    }
+    printf("%s%s%s", prefix, question, suffix);
 
     if (_mlxParams.yes) {
         printf("y\n");
@@ -570,6 +588,17 @@ mlxCfgStatus MlxCfg::queryDevCfg(const char *dev, const char *pci,
     return rc;
 }
 
+const char * MlxCfg::getConfigWarning(const string & mlx_config_name,
+        const string & set_val)
+{
+    if(mlx_config_name == DISABLE_SLOT_POWER_LIMITER) {
+        if(set_val == "1" || strcasecmp(set_val.c_str(), "true") == 0) {
+            return DISABLE_SLOT_POWER_LIMITER_WARN;
+        }
+    }
+    return NULL;
+}
+
 mlxCfgStatus MlxCfg::setDevCfg()
 {
     Commander *commander = NULL;
@@ -582,6 +611,18 @@ mlxCfgStatus MlxCfg::setDevCfg()
         err(false, "%s", e._err.c_str());
         printErr();
         return MLX_CFG_ERROR;
+    }
+    // check if there is a set of DISABLE_SLOT_POWER
+    //for mlx_config_name
+    VECTOR_ITERATOR(ParamView, _mlxParams.setParams, p) {
+        const char * warning_msg = getConfigWarning(p->mlxconfigName, p->setVal);
+        if(warning_msg){
+            if(!askUser(warning_msg, false, false)) {
+                delete commander;
+                printErr();
+                return MLX_CFG_ABORTED;
+            }
+        }
     }
 
     if (queryDevCfg(commander, _mlxParams.device.c_str(), NULL, 1, true)
@@ -626,7 +667,7 @@ mlxCfgStatus MlxCfg::resetDevsCfg()
     // check if a single device was specified and apply reset for this device only
     if (_mlxParams.device.length()) {
         char buff[256] = {0};
-        snprintf(buff, 256, "Reset configuration for device %s? ", _mlxParams.device.c_str());
+        snprintf(buff, 256, "Reset configuration for device %s?", _mlxParams.device.c_str());
         if (!askUser(buff)) {
             printErr();
             return MLX_CFG_ABORTED;
@@ -650,7 +691,7 @@ mlxCfgStatus MlxCfg::resetDevsCfg()
             mdevices_info_destroy(dev, numOfDev);
             return err(true, NO_DEV_ERR);
         }
-        if (!askUser("Reset configuration for all devices? ")) {
+        if (!askUser("Reset configuration for all devices?")) {
             printErr();
             mdevices_info_destroy(dev, numOfDev);
             return MLX_CFG_ABORTED;
@@ -760,6 +801,10 @@ mlxCfgStatus MlxCfg::setDevRawCfg()
         for (std::vector<std::vector<u_int32_t> >::iterator it = rawTlvsAsDw.begin(); it != rawTlvsAsDw.end(); it++, tlvIdx++) {
             commander->setRawCfg(*it);
         }
+        //send mfrl command to fw
+        //this command indicate to the fw that next time perst signal go down
+        //[reboot] fw need to perform reset )
+        commander->loadConfigurationGetStr();
     } catch (MlxcfgException& e) {
         delete commander;
         return err(true, "Failed to run set_raw command: %s", e._err.c_str());

@@ -316,7 +316,7 @@ public:
     bool sw_reset();
 
     bool set_no_flash_verify(bool val);
-    static void get_flash_list(char *flash_list) {return mf_flash_list(flash_list);}
+    static void get_flash_list(char *flash_list, int buffer_size) {return mf_flash_list(flash_list, buffer_size);}
 
     // Write and Erase functions are performed by the Command Set
 

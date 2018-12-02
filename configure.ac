@@ -1,11 +1,11 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(mstflint, 4.10.0, adrianc@mellanox.co.il)
+AC_INIT(mstflint, 4.11.0, adrianc@mellanox.co.il)
 
 AC_DEFINE_UNQUOTED([PROJECT], ["mstflint"], [Define the project name.])
 AC_SUBST([PROJECT])
 
-AC_DEFINE_UNQUOTED([VERSION], ["4.10.0"], [Define the project version.])
+AC_DEFINE_UNQUOTED([VERSION], ["4.11.0"], [Define the project version.])
 AC_SUBST([VERSION])
 
 AC_CONFIG_AUX_DIR(config)
@@ -28,6 +28,8 @@ if test "x$OS" = "xFreeBSD"; then
     AC_MSG_NOTICE(FreeBSD Build)
     MTCR_CONF_DIR="mtcr_freebsd"
     default_en_inband="no"
+    CXXFLAGS="${CXXFLAGS} -isystem /usr/local/include"
+    LDFLAGS="${LDFLAGS} -L/usr/local/lib"
 else
     MTCR_CONF_DIR="mtcr_ul"
     LDL="-ldl"
@@ -41,7 +43,7 @@ dnl Checks for headers
 AC_CHECK_HEADER(termios.h,[CXXFLAGS="${CXXFLAGS} -DHAVE_TERMIOS_H"])
 TOOLS_CRYPTO=""
 MAD_IFC=""
-MLXFWUPDATE=""
+FW_MGR_TOOLS=""
 
 COMPILER_FPIC="-fPIC"
 AC_SUBST(COMPILER_FPIC)
@@ -67,8 +69,8 @@ AC_MSG_RESULT($enable_fw_mgr)
 if test "x$enable_fw_mgr" = "xyes"; then
     AC_CHECK_HEADER(curl/curl.h,,AC_MSG_ERROR([cannot find curl/curl.h . this header is needed for compiling fw manager tool]))
     AC_CHECK_HEADER(zlib.h,,AC_MSG_ERROR([cannot find zlib.h . this header is needed for compiling fw manager tool]))
-    AC_CHECK_HEADER(lzma.h,,AC_MSG_ERROR([cannot find lzma.h . this header is needed for compiling fw manager tool]))
     AC_CHECK_LIB(z, uncompress,, AC_MSG_ERROR([cannot find zlib uncompress() function.]))
+    AC_CHECK_HEADER(lzma.h,,AC_MSG_ERROR([Cannot find lzma.h.]))
     AC_CHECK_LIB(boost_regex, regcompA,, AC_MSG_ERROR([cannot find boost_regex regcompA() function. Try re-installing the library...]))
     CURL_INC_DIR=/usr/include/curl/
 fi
@@ -130,11 +132,11 @@ if test "x$enable_cs" = "xyes"; then
   TOOLS_CRYPTO="tools_crypto"
 fi
 
-AC_MSG_CHECKING(--enable-openssl argument)
+AC_MSG_CHECKING(--disable-openssl argument)
 AC_ARG_ENABLE(openssl,
-            [  --enable-openssl       Enable all openssl features, dependant of openssl library],
-            [enable_openssl="yes"],
-            [enable_openssl="no"])
+            [  --disable-openssl       Disable all openssl features, dependant of openssl library],
+            [enable_openssl=$enableval],
+            [enable_openssl="yes"])
 AC_MSG_RESULT($enable_openssl)
 if test "x$enable_openssl" = "xyes"; then
   AC_CHECK_HEADER(openssl/sha.h,,AC_MSG_ERROR([cannot find openssl/sha.h . remove --enable-openssl to remove this dependaency or install openssl]))
@@ -163,38 +165,56 @@ AS_IF([test "x$enable_dynamic_ld" = "xyes"], [
   LDFLAGS="$LDFLAGS -Wl,--dynamic-linker=/lib64/ld64.so.2"
 ])
 
-CFLAGS="$CFLAGS -Werror -DMST_UL"
-CXXFLAGS="$CXXFLAGS -Werror -DMST_UL"
+CFLAGS="$CFLAGS -DMST_UL"
+CXXFLAGS="$CXXFLAGS -DMST_UL"
+
+AM_CFLAGS="-Wall -Werror"
+AM_CXXFLAGS="-Wall -Werror"
 
 AC_CONFIG_FILES( mstflint.spec )
 
+# We save and restore CFLAGS, after adding Wall and Werror
+# because AX_CHECK_COMPILE_FLAG doesn't work properly without it
+
 # C related ignores
+OLD_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS -Wall -Werror"
 AX_CHECK_COMPILE_FLAG([-Wno-format-overflow], [CFLAGS="$CFLAGS -Wno-format-overflow"], [], [])
 AX_CHECK_COMPILE_FLAG([-Wno-implicit-fallthrough], [CFLAGS="$CFLAGS -Wno-implicit-fallthrough"], [], [])
 AX_CHECK_COMPILE_FLAG([-Wno-cast-function-type], [CFLAGS="$CFLAGS -Wno-cast-function-type"], [], [])
+CFLAGS="$OLD_CFLAGS"
 
 # C++ related ignores
+OLD_CXXFLAGS="$CXXFLAGS"
+CXXFLAGS="$CXXFLAGS -Wall -Werror"
 AC_LANG_PUSH([C++])
 AX_CHECK_COMPILE_FLAG([-Wno-implicit-fallthrough], [CXXFLAGS="$CXXFLAGS -Wno-implicit-fallthrough"], [], [])
 AX_CHECK_COMPILE_FLAG([-Wno-format-overflow], [CXXFLAGS="$CXXFLAGS -Wno-format-overflow"], [], [])
 AX_CHECK_COMPILE_FLAG([-Wno-cast-function-type], [CXXFLAGS="$CXXFLAGS -Wno-cast-function-type"], [], [])
 AX_CHECK_COMPILE_FLAG([-Wno-class-memaccess], [CXXFLAGS="$CXXFLAGS -Wno-class-memaccess"], [], [])
 AC_LANG_POP([C++])
+CXXFLAGS="$OLD_CXXFLAGS"
 
 TOOLS_BUILD_TIME=`date  +"%b %d %Y\, %H:%M:%S"`
 AC_SUBST(TOOLS_BUILD_TIME)
 
-AC_ARG_VAR(MFT_VERSION_STR, The MSTFLINT version)
-if test x"$MFT_VERSION_STR" == x; then
-    MFT_VERSION_STR="$PACKAGE_STRING"
+AC_ARG_VAR(MSTFLINT_VERSION_STR, The MSTFLINT version)
+if test x"$MSTFLINT_VERSION_STR" == x; then
+    MSTFLINT_VERSION_STR="$PACKAGE_STRING"
 fi
-AC_SUBST(MFT_VERSION_STR)
+
+AC_SUBST(MSTFLINT_VERSION_STR)
+AC_DEFINE([MSTFLINT_VERSION_STR], [], [The MSTFLINT version])
+AC_DEFINE_UNQUOTED(MSTFLINT_VERSION_STR, "$MSTFLINT_VERSION_STR")
+
 
 AC_ARG_VAR(TOOLS_GIT_SHA, The MSTFLINT tree git sha hash version)
 if test x"$TOOLS_GIT_SHA" == x; then
     TOOLS_GIT_SHA="N/A"
 fi
 AC_SUBST(TOOLS_GIT_SHA)
+AC_DEFINE([TOOLS_GIT_SHA], [], [The MSTFLINT tree git sha hash version])
+AC_DEFINE_UNQUOTED(TOOLS_GIT_SHA, "$TOOLS_GIT_SHA")
 
 AS_IF([test "x$enable_cs" = "xyes" || test "x$enable_openssl" = "xyes"], [
         AC_CONFIG_FILES(tools_crypto/Makefile)
@@ -205,18 +225,14 @@ AS_IF([test "x$enable_openssl" = "xyes"], [
     ])
 
 AS_IF([test "x$enable_fw_mgr" = "xyes"], [
-        AC_CONFIG_FILES(mlxfwupdate/Makefile)
-        AC_CONFIG_FILES(libmfa/Makefile)
         AC_CONFIG_FILES(xz_utils/Makefile)
+        AC_CONFIG_FILES(mlxfwupdate/Makefile)
         AC_CONFIG_FILES(ext_libs/iniParser/Makefile)
-        AC_CONFIG_FILES(ext_libs/json/Makefile)
-        AC_CONFIG_FILES(ext_libs/minixz/Makefile)
-        MLXFWUPDATE="libmfa xz_utils mlxfwupdate"
+        AC_CONFIG_FILES(mlxarchive/Makefile)
+        FW_MGR_TOOLS="xz_utils mlxfwupdate mlxarchive"
     ])
     
-AC_SUBST(MLXFWUPDATE)
-
-
+AC_SUBST(FW_MGR_TOOLS)
 
 if test "x$OS" = "xFreeBSD"; then
     AC_MSG_NOTICE(FreeBSD MTCR)
@@ -226,8 +242,8 @@ else
     AC_CONFIG_FILES(mtcr_ul/Makefile)
 fi
 
-AC_OUTPUT( Makefile common/Makefile mft_utils/Makefile mtcr_py/Makefile ext_libs/Makefile ext_libs/sqlite/Makefile ext_libs/muparser/Makefile dev_mgt/Makefile tools_layouts/Makefile reg_access/Makefile \
-        cmdif/Makefile tools_res_mgmt/Makefile mlxconfig/Makefile mlxconfig/mlxconfig_dbs/Makefile mflash/Makefile mlxfwops/Makefile mlxfwops/lib/Makefile cmdparser/Makefile flint/Makefile \
- 		small_utils/Makefile small_utils/mlxfwresetlib/Makefile mstdump/Makefile mstdump/crd_lib/Makefile mstdump/crd_main/Makefile mstdump/mstdump_dbs/Makefile mvpd/Makefile \
- 		 fw_comps_mgr/Makefile mad_ifc/Makefile )
+AC_OUTPUT( Makefile common/Makefile mft_utils/Makefile mtcr_py/Makefile ext_libs/Makefile ext_libs/sqlite/Makefile ext_libs/muparser/Makefile ext_libs/json/Makefile ext_libs/minixz/Makefile dev_mgt/Makefile \
+        tools_layouts/Makefile reg_access/Makefile cmdif/Makefile libmfa/Makefile tools_res_mgmt/Makefile mlxconfig/Makefile mlxconfig/mlxconfig_dbs/Makefile mflash/Makefile mlxfwops/Makefile mlxfwops/lib/Makefile cmdparser/Makefile flint/Makefile \
+        small_utils/Makefile small_utils/mlxfwresetlib/Makefile mstdump/Makefile mstdump/crd_lib/Makefile mstdump/crd_main/Makefile mstdump/mstdump_dbs/Makefile mvpd/Makefile \
+        fw_comps_mgr/Makefile mad_ifc/Makefile )
 

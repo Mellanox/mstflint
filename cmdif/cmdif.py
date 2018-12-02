@@ -92,11 +92,11 @@ if CMDIF:
             self.mstDev.icmdSendCmd(opcode, data, skipWrite)
         
         ##########################
-        def setItrace(self, mask, level):
+        def setItrace(self, mask, level, log_delay=0):
             class ITRACE_ST(Structure):
-                _fields_ = [("unit_mask", c_uint32), ("log_level", c_uint8)]
+                _fields_ = [("unit_mask", c_uint32), ("log_level", c_uint8), ("log_delay", c_uint16)]
                 
-            setItraceStruct = pointer(ITRACE_ST(mask, level))
+            setItraceStruct = pointer(ITRACE_ST(mask, level, log_delay))
             rc = self.setItraceFunc(self.mstDev.mf, setItraceStruct)
             if rc:
                 raise CmdIfException("Failed to set itrace mask: %s (%d)" % (self.errStrFunc(rc), rc))

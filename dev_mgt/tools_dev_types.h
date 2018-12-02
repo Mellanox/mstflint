@@ -90,6 +90,7 @@ enum dm_dev_id
     DeviceCableSFP51Paging,
     DeviceSpectrum2,
     DeviceDummy,
+    DeviceSecureHost,
 
     DeviceEndMarker           // Dummy Device - Marker for indicating end of devices when iterating
 };

@@ -35,6 +35,7 @@
 #define FS4_OPS_
 
 #include <cibfw_layouts.h>
+#include <cx6fw_layouts.h>
 #include <cx5fw_layouts.h>
 #include <cx4fw_layouts.h>
 #include "fw_ops.h"
@@ -72,6 +73,10 @@ public:
     bool FwQueryTimeStamp(struct tools_open_ts_entry& timestamp,
                           struct tools_open_fw_version& fwVer, bool queryRunning = false);
     bool FwResetTimeStamp();
+    bool FwSignWithHmac(const char *key_file);
+    bool PrepItocSectionsForHmac(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
+    bool IsCriticalSection(u_int8_t sect_type);
+    bool CalcHMAC(const vector<u_int8_t>& key, const vector<u_int8_t>& data, vector<u_int8_t>& digest);
     bool CheckIfAlignmentIsNeeded(FwOperations *imgops);
 
 
@@ -176,6 +181,7 @@ public:
     u_int32_t getAbsAddr(fs4_toc_info *toc, u_int32_t imgStart);
     bool getImgStart();
     bool getHWPtrs(VerifyCallBack verifyCallBackFunc);
+    bool getExtendedHWPtrs(VerifyCallBack verifyCallBackFunc);
     bool verifyToolsArea(VerifyCallBack verifyCallBackFunc);
     bool verifyTocHeader(u_int32_t tocAddr, bool isDtoc, VerifyCallBack verifyCallBackFunc);
     bool verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isDtoc,
@@ -201,6 +207,11 @@ public:
     u_int32_t _boot2_ptr;
     u_int32_t _itoc_ptr;
     u_int32_t _tools_ptr;
+
+    u_int32_t _authentication_start_ptr;
+    u_int32_t _authentication_end_ptr;
+    u_int32_t _digest_mdk_ptr;
+    u_int32_t _digest_recovery_key_ptr;
 
     //This class is for sorting the itoc array by ascending absolute flash_addr used in FwShiftDevData
     class TocComp {

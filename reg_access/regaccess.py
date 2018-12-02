@@ -69,11 +69,35 @@ except Exception as exp:
 
 if REG_ACCESS:
 
+    class ownershipEnum:
+        REG_ACCESS_OWNERSHIP_TAKEN_SUCCESSFULLY = 0
+        REG_ACCESS_FAILED_TO_AQUIRE_OWNERSHIP   = 1
+        REG_ACCESS_NO_OWNERSHIP_REQUIRED        = 2
+
     class PCNR_ST(Structure):
         _fields_ = [
             ("tuning_override",c_uint8),
             ("local_port",c_uint8)
         ]
+
+
+    class MCAM_REG_ST(Structure):
+        _fields_ = [("access_reg_group", c_uint8),
+                     ("feature_group", c_uint8),
+                     ("mng_access_reg_cap_mask", c_uint8 * 16),
+                     ("mng_feature_cap_mask", c_uint8 * 16)]
+
+
+    class MTRC_CAP_REG_ST(Structure):
+        _fields_ = [("num_string_db", c_uint8),
+                    ("trc_ver", c_uint8),
+                    ("trace_to_memory", c_uint8),
+                    ("trace_owner", c_uint8),
+                    ("num_string_trace", c_uint8),
+                    ("first_string_trace", c_uint8),
+                    ("log_max_trace_buffer_size", c_uint8),
+                    ("reg_access_hca_string_db_parameters", c_uint8 * 64)]
+
 
     class MFRL_ST(Structure):
         _fields_ = [("reset_level", c_uint8)]
@@ -135,6 +159,8 @@ if REG_ACCESS:
             self._sendMFRL = REG_ACCESS.reg_access_mfrl
             self._mgir = REG_ACCESS.reg_access_mgir
             self._reg_access_pcnr = REG_ACCESS.reg_access_pcnr
+            self._reg_access_mcam = REG_ACCESS.reg_access_mcam
+            self._reg_access_mtrc_cap = REG_ACCESS.reg_access_mtrc_cap
 
         ##########################
         def close(self):
@@ -145,6 +171,34 @@ if REG_ACCESS:
             if self._mstDev:
                 self.close()
 
+        def sendMtrcCapTakeOwnership(self):
+            
+            mcamRegP = pointer(MCAM_REG_ST())
+            rc = self._reg_access_mcam(self._mstDev.mf, c_uint(REG_ACCESS_METHOD_GET), mcamRegP)
+            if rc:
+                # in case of failure to get capability assume taking ownership is not required, same as in mlxtrace.
+                return ownershipEnum.REG_ACCESS_NO_OWNERSHIP_REQUIRED
+            mtcrCapSupported = extractField(mcamRegP.contents.mng_access_reg_cap_mask[7], 0, 1)
+            if mtcrCapSupported == 0:
+                return ownershipEnum.REG_ACCESS_NO_OWNERSHIP_REQUIRED
+
+            maxIterations = 30
+            mtrcaCapRegisterP = pointer(MTRC_CAP_REG_ST())
+
+            iter = 0
+            while iter < maxIterations:
+                mtrcaCapRegisterP.contents.trace_owner = c_uint8(1)
+                rc = self._reg_access_mtrc_cap(self._mstDev.mf, c_uint(REG_ACCESS_METHOD_SET), mtrcaCapRegisterP)
+                if rc:
+                    raise RegAccException("Failed to send Register: %s (%d)" % (self._err2str(rc), rc))
+                mtrcaCapRegisterP.contents.trace_owner = c_uint8(0)
+                mtrcaCapRegisterPquery = pointer(MTRC_CAP_REG_ST())
+                rc = self._reg_access_mtrc_cap(self._mstDev.mf, c_uint(REG_ACCESS_METHOD_GET), mtrcaCapRegisterPquery)
+                if rc:
+                    raise RegAccException("Failed to send Register: %s (%d)" % (self._err2str(rc), rc))
+                if mtrcaCapRegisterPquery.contents.trace_owner == 1:
+                    return 0
+                iter += 1
 
         def sendPcnr(self, tuning_override, local_port): # Requirments : new FW version + burn with allow_pcnr
 
@@ -235,23 +289,29 @@ if __name__ == "__main__":
     # manufacturing_base_mac = regAc.getManufacturingBaseMac()
     # print 'manufacturing_base_mac : 0x{0:x}'.format(manufacturing_base_mac)
 
-    pci_devices = ['0e:00.1', '08:00.1', '0e:00.0', '08:00.0']
+    pci_devices = ['0e:00.1', '08:00.1', '0e:00.0', '08:00.0', '0000:05:00.0']
 
     pci_devices = ['81:00.0', '02:00.0', '82:00.0']
+    
+    pci_devices = ['05:00.0']
     for pci_device in pci_devices:
 
         print("pci device {0}".format(pci_device))
         mstdev = mtcr.MstDevice(pci_device)
         regAc = RegAccess(mstdev)
 
+        regAc.sendMtrcCapTakeOwnership()
+ 
         reset_level = regAc.sendMFRL(0, REG_ACCESS_METHOD_GET)
         print("reset level is 0x{0:x}".format(reset_level))
-
+        if mstdev != None:
+            mstdev.close()
+ 
         uptime = regAc.getFWUptime()
         print("uptime is {0}".format(uptime))
-
+ 
         manufacturing_base_mac = regAc.getManufacturingBaseMac()
         print('manufacturing_base_mac : 0x{0:x}'.format(manufacturing_base_mac))
-
+ 
         secure_fw = RegAccess(pci_device=pci_device).getSecureFWStatus()
         print('secure_fw : {0}'.format(secure_fw))

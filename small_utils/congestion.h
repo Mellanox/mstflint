@@ -39,11 +39,20 @@ using namespace std;
 
 class CongestionUI : public CommandLineRequester {
 public:
+    typedef enum {
+        EXIT_STATUS_OK = 0,
+        EXIT_STATUS_ERROR = 1,
+        EXIT_STATUS_USAGE = 2,
+    } exit_status_t;
     CongestionUI();
     ~CongestionUI();
     ParseStatus HandleOption(string name, string value);
 
-    bool run(int argc, char **argv);
+    exit_status_t run(int argc, char **argv);
+
+    void printUsage();
+    void printError();
+    void printSuccess();
     string getError() { return _errorMsg; };
     string getSuccess() { return _successMsg; };
 

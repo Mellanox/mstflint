@@ -197,6 +197,8 @@ static struct device_sem_info g_dev_sem_info_db[] = {
 };
 
 #define MAX_SEMAPHORE_ADDRES 8
+#define FLASH_SEM_SLEEP      500
+
 
 struct mad_lock_info {
     u_int32_t lock_key;
@@ -214,7 +216,7 @@ struct trm_t {
 /************************************
 * Function: lock_hw_semaphore
 ************************************/
-static trm_sts lock_hw_semaphore(mfile *mf, u_int32_t addr, unsigned int max_retries)
+static trm_sts lock_hw_semaphore(mfile *mf, u_int32_t addr, unsigned int max_retries, int sleep_t)
 {
     u_int32_t val = 0;
     unsigned int cnt = 0;
@@ -222,7 +224,8 @@ static trm_sts lock_hw_semaphore(mfile *mf, u_int32_t addr, unsigned int max_ret
 
     while (((rc = mread4(mf, addr, &val)) == 4) && val == 1 && cnt < max_retries) {
         cnt++;
-        msleep(((rand() % 5) + 1));
+        int sleep_time = sleep_t != 0 ? sleep_t : ((rand() % 5) + 1);
+        msleep(sleep_time);
     }
 
     if (rc != 4) {
@@ -461,7 +464,6 @@ trm_sts trm_lock(trm_ctx trm, trm_resourse res, unsigned int max_retries)
     if (mget_mdevs_flags(trm->mf, &dev_type)) {
         return TRM_STS_DEV_NOT_SUPPORTED;
     }
-
     // lock resource on appropriate ifc if supported
     switch ((int)res) {
     case TRM_RES_ICMD:
@@ -472,7 +474,7 @@ trm_sts trm_lock(trm_ctx trm, trm_resourse res, unsigned int max_retries)
             return lock_vs_mad_semaphore(trm, TRM_RES_ICMD, max_retries);
 #endif
         } else if (trm->dev_sem_info->hw_sem_addr[TRM_RES_MAIN_SEM & HW_SEM_ADDR_MASK]) { // lock hw semaphore
-            return lock_hw_semaphore(trm->mf, trm->dev_sem_info->hw_sem_addr[TRM_RES_MAIN_SEM & HW_SEM_ADDR_MASK], max_retries);
+            return lock_hw_semaphore(trm->mf, trm->dev_sem_info->hw_sem_addr[TRM_RES_MAIN_SEM & HW_SEM_ADDR_MASK], max_retries, 0);
         }
         break;
 
@@ -488,13 +490,13 @@ trm_sts trm_lock(trm_ctx trm, trm_resourse res, unsigned int max_retries)
 
     case TRM_RES_HCR_FLASH_PROGRAMING:
         if (trm->dev_sem_info->hw_sem_addr[TRM_RES_HCR_FLASH_PROGRAMING & HW_SEM_ADDR_MASK]) { // lock hw semaphore
-            return lock_hw_semaphore(trm->mf, trm->dev_sem_info->hw_sem_addr[TRM_RES_HCR_FLASH_PROGRAMING & HW_SEM_ADDR_MASK], max_retries);
+            return lock_hw_semaphore(trm->mf, trm->dev_sem_info->hw_sem_addr[TRM_RES_HCR_FLASH_PROGRAMING & HW_SEM_ADDR_MASK], max_retries, FLASH_SEM_SLEEP);
         }
         break;
 
     case TRM_RES_HW_TRACER:
         if (trm->dev_sem_info->hw_sem_addr[TRM_RES_HW_TRACER & HW_SEM_ADDR_MASK]) { // lock hw semaphore
-            return lock_hw_semaphore(trm->mf, trm->dev_sem_info->hw_sem_addr[TRM_RES_HW_TRACER & HW_SEM_ADDR_MASK], max_retries);
+            return lock_hw_semaphore(trm->mf, trm->dev_sem_info->hw_sem_addr[TRM_RES_HW_TRACER & HW_SEM_ADDR_MASK], max_retries, 0);
         }
         break;
 

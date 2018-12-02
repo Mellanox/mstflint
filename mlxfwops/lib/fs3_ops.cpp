@@ -1059,15 +1059,16 @@ bool Fs3Operations::BurnFs3Image(Fs3Operations &imageOps,
 
 bool Fs3Operations::CheckAndDealWithChunkSizes(u_int32_t cntxLog2ChunkSize, u_int32_t imageCntxLog2ChunkSize)
 {
-    if (cntxLog2ChunkSize > 0x17) {
+    if (cntxLog2ChunkSize > 0x18) {
         return errmsg("Unsupported Device partition size 0x%x", cntxLog2ChunkSize);
     }
-    if (imageCntxLog2ChunkSize > 0x17) {
+    if (imageCntxLog2ChunkSize > 0x18) {
         return errmsg("Unsupported Image partition size 0x%x", imageCntxLog2ChunkSize);
     }
     if (cntxLog2ChunkSize != imageCntxLog2ChunkSize) {
         if (((cntxLog2ChunkSize != 0x16) && (cntxLog2ChunkSize != 0x17)) ||
-            ((imageCntxLog2ChunkSize != 0x16) && (imageCntxLog2ChunkSize != 0x17))) {
+            ((imageCntxLog2ChunkSize != 0x16) && (imageCntxLog2ChunkSize != 0x17)) ||
+            (imageCntxLog2ChunkSize == 0x18 || cntxLog2ChunkSize == 0x18)) {
             return errmsg("Device and Image partition size differ(0x%x/0x%x), use non failsafe burn flow.",
                           cntxLog2ChunkSize, imageCntxLog2ChunkSize);
         }
@@ -2971,15 +2972,16 @@ bool Fs3Operations::CheckItocArray()
 
 const char* Fs3Operations::FwGetResetRecommandationStr()
 {
-#if defined(_WIN_) || defined(MST_UL)
-    // mlxfwreset tool not supported for windows yet
-    return (const char *)NULL;
-#endif
 
+#if defined( __VMKERNEL_UW_VMKLINUX__) || defined(__VMKERNEL_UW_NATIVE__)
+    // mlxfwreset is not supported in VMWare ATM
+    return REBOOT_REQUIRED_STR;
+#else
     if (!_isfuSupported) {
-        return (const char *)NULL;
+        return REBOOT_REQUIRED_STR;
     }
-    return "To load new FW run mlxfwreset or reboot machine.";
+    return REBOOT_OR_FWRESET_REQUIRED_STR;
+#endif
 }
 
 
@@ -3263,12 +3265,12 @@ bool Fs3Operations::CalcHMAC(const vector<u_int8_t>& key, vector<u_int8_t>& dige
     mlxSignHMAC << data;
     mlxSignHMAC.getDigest(digest);
 
+    return true;
 #else
     (void)key;
     (void)digest;
+    return errmsg("HMAC calculation is not implemented\n");
 #endif
-
-    return true;
 }
 
 bool Fs3Operations::AddHMACIfNeeded(Fs3Operations* imageOps, Flash *f)
@@ -3313,10 +3315,10 @@ bool Fs3Operations::AddHMACIfNeeded(Fs3Operations* imageOps, Flash *f)
             return errmsg(MLXFW_FLASH_WRITE_ERR, "Failed to burn HMAC digest: %s", f->err());
         }
     }
-
 #else
     (void)imageOps;
     (void)f;
+    //ignore for UEFI
 #endif
     return true;
 }

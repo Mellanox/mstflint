@@ -45,6 +45,7 @@
 #include <errno.h>
 #include <reg_access/reg_access.h>
 #include "tools_dev_types.h"
+#include "mflash/mflash_types.h"
 
 enum dm_dev_type {
     DM_UNKNOWN = -1,
@@ -65,10 +66,10 @@ struct device_info {
     enum dm_dev_type dev_type;
 };
 
-#define DEVID_ADDR                          0xf0014
-#define CABLEID_ADDR                        0x0
-#define SFP_51_ADDR                         92
-#define SFP_51_PAGING_ADDR                  64
+#define DEVID_ADDR                                             0xf0014
+#define CABLEID_ADDR                                           0x0
+#define SFP_DIGITAL_DIAGNOSTIC_MONITORING_IMPLEMENTED_ADDR     92
+#define SFP_PAGING_IMPLEMENTED_INDICATOR_ADDR                  64
 
 #ifdef CABLES_SUPP
 enum dm_dev_type getCableType(u_int8_t id)
@@ -276,7 +277,7 @@ static struct device_info g_devs_info[] = {
         -1,                     //hw_rev_i
         -1,                     //sw_dev_i
         "Spectrum2",            //name
-        64,                     //port_num
+        128,                    //port_num
         DM_SWITCH               //dev_type
     },
     {
@@ -296,6 +297,15 @@ static struct device_info g_devs_info[] = {
         "Quantum",              //name
         80,                     //port_num
         DM_SWITCH               //dev_type
+    },
+    {
+        DeviceSecureHost,       //dm_id
+        0xcafe,                 //hw_dev_i
+        0xd0,                   //hw_rev_i
+        0,                      //sw_dev_i
+        "Unknown Device",       //name
+        -1,                     //port_num
+        DM_UNKNOWN              //dev_type
     },
     {
         DeviceUnknown,          //dm_id
@@ -366,7 +376,7 @@ int dm_get_device_id(mfile *mf,
         u_int8_t id = EXTRACT(dword, 0, 8);
         enum dm_dev_type cbl_type = getCableType(id);
         if (cbl_type == DM_QSFP_CABLE) {
-            // Get Byte 2 bit 2 ~ bit 18
+            // Get Byte 2 bit 2 ~ bit 18 (flat_mem : upper memory flat or paged. 0=paging, 1=page 0 only)
             u_int8_t paging = EXTRACT(dword, 18, 1);
             //printf("DWORD: %#x, paging: %d\n", dword, paging);
             if (paging == 0) {
@@ -376,18 +386,18 @@ int dm_get_device_id(mfile *mf,
             }
         } else if (cbl_type == DM_SFP_CABLE) {
             *ptr_dm_dev_id = DeviceCableSFP;
-            if (mread4(mf, SFP_51_ADDR, &dword) != 4) {
+            if (mread4(mf, SFP_DIGITAL_DIAGNOSTIC_MONITORING_IMPLEMENTED_ADDR, &dword) != 4) {
                 //printf("FATAL - crspace read (0x%x) failed: %s\n", DEVID_ADDR, strerror(errno));
                 return 1;
             }
-            u_int8_t byte = EXTRACT(dword, 6, 1); //Byte 92 bit 6
+            u_int8_t byte = EXTRACT(dword, 6, 1); //Byte 92 bit 6 (digital diagnostic monitoring implemented)
             if (byte) {
                 *ptr_dm_dev_id = DeviceCableSFP51;
-                if (mread4(mf, SFP_51_PAGING_ADDR, &dword) != 4) {
+                if (mread4(mf, SFP_PAGING_IMPLEMENTED_INDICATOR_ADDR, &dword) != 4) {
                     //printf("FATAL - crspace read (0x%x) failed: %s\n", DEVID_ADDR, strerror(errno));
                     return 1;
                 }
-                byte = EXTRACT(dword, 4, 1); //Byte 64 bit 4
+                byte = EXTRACT(dword, 4, 1); //Byte 64 bit 4 (paging implemented indicator)
                 if (byte) {
                     *ptr_dm_dev_id = DeviceCableSFP51Paging;
                 }
@@ -429,7 +439,7 @@ int dm_get_device_id(mfile *mf,
         }
     } else {
         if (mread4(mf, DEVID_ADDR, &dword) != 4) {
-            //printf("FATAL - crspace read (0x%x) failed: %s\n", DEVID_ADDR, strerror(errno));
+            printf("FATAL - crspace read (0x%x) failed: %s\n", DEVID_ADDR, strerror(errno));
             return 1;
         }
 
@@ -442,8 +452,8 @@ int dm_get_device_id(mfile *mf,
     if (*ptr_dm_dev_id == DeviceUnknown) {
 
         /* Dev id not matched in array */
-        //printf("FATAL - Can't find devid id\n");
-        return 1; // TODO - fix return vals.
+        printf("FATAL - Can't find device id.\n");
+        return MFE_UNSUPPORTED_DEVICE;
     }
     return 0;
 }
@@ -453,7 +463,7 @@ int dm_get_device_id_offline(u_int32_t devid,
                              dm_dev_id_t *ptr_dev_type)
 {
     *ptr_dev_type = get_entry_by_dev_rev_id(devid, chip_rev)->dm_id;
-    return *ptr_dev_type == DeviceUnknown;
+    return *ptr_dev_type == DeviceUnknown ? MFE_UNSUPPORTED_DEVICE: MFE_OK;
 }
 
 const char* dm_dev_type2str(dm_dev_id_t type)

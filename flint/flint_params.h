@@ -81,6 +81,7 @@ typedef enum {
     SC_Time_Stamp,
     SC_Cache_Image,
     SC_Sign,
+    SC_Add_Hmac,
     SC_Extract_4MB_Image,
     SC_Set_Public_Keys,
     SC_Set_Forbidden_Versions
@@ -145,6 +146,8 @@ public:
     bool uuid_specified;
     string privkey_uuid;
     bool privkey2_specified;
+    bool key_specified;
+    string key;
     string privkey2_file;
     bool uuid2_specified;
     string privkey2_uuid;

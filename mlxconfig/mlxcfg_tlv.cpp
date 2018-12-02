@@ -510,7 +510,6 @@ TLVClass TLVConf::str2TLVClass(char *s)
 {
     int i = atoi(s);
     switch (i) {
-    case 8:
     case 0:
         return Global;
 
@@ -528,6 +527,10 @@ TLVClass TLVConf::str2TLVClass(char *s)
 
     case 7:
         return Per_Host;
+
+    case 8:
+        return Switch_Global;
+
     }
     throw MlxcfgException("Unknown TLV class %d", i);
 }

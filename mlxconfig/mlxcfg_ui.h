@@ -113,6 +113,9 @@ private:
     mlxCfgStatus extractSetCfgArgs(int argc, char *argv[]);
     mlxCfgStatus extractQueryCfgArgs(int argc, char *argv[]);
 
+    const char * getConfigWarning(const string & mlx_config_name,
+            const string & set_val);
+
     bool tagExsists(string tag);
     const char* getDeviceName(const char *dev);
 
@@ -152,7 +155,7 @@ private:
     mlxCfgStatus createConf();
     mlxCfgStatus apply();
 
-    bool askUser(const char *question);
+    bool askUser(const char *question, bool add_prefix=true, bool add_suffix=true);
     mlxCfgStatus err(bool report, const char *errMsg, ...);
     void printErr();
     // data members

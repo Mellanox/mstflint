@@ -407,7 +407,8 @@ const u_int32_t FwOperations::_cntx_image_start_pos[FwOperations::CNTX_START_POS
     0x100000,
     0x200000,
     0x400000,
-    0x800000
+    0x800000,
+    0x1000000
 };
 
 bool FwOperations::FindMagicPattern(FBase *ioAccess, u_int32_t addr,
@@ -814,9 +815,15 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
             } else if (fwParams.hndlType == FHT_UEFI_DEV) {
                 fwCompsAccess = new FwCompsMgr(fwParams.uefiHndl, fwParams.uefiExtra);
             }
-            if (fwCompsAccess->getLastError() != FWCOMPS_SUCCESS) {
+            fw_comps_error_t fwCompsErr = fwCompsAccess->getLastError();
+            if (fwCompsErr != FWCOMPS_SUCCESS) {
                 delete fwCompsAccess;
                 fwCompsAccess = (FwCompsMgr*) NULL;
+                if (fwCompsErr == FWCOMPS_MTCR_OPEN_DEVICE_ERROR) {
+                    // mtcr lib failed to open the provided device.
+                    WriteToErrBuff(fwParams.errBuff, "Failed to open device", fwParams.errBuffSize);
+                    return (FwOperations*)NULL;
+                }
             } else {
                 fwInfoT fwInfo;
                 if (fwParams.forceLock) {
@@ -1070,9 +1077,11 @@ const FwOperations::HwDevData FwOperations::hwDevData[] = {
     { "ConnectX-5",       CX5_HW_ID,        CT_CONNECTX5,    CFT_HCA,     0, {4119, 4121, 0}, {{CX5_LOW_BIN, {4119, 0}},
                                                                                                {CX5_HIGH_BIN, {4119, 4121, 0}},
                                                                                                {UNKNOWN_BIN, {0}}}},
+    { "ConnectX-6",       CX6_HW_ID,        CT_CONNECTX6,    CFT_HCA,     0, {4123, 0}, {{UNKNOWN_BIN, {0}}}},
     { "BlueField",        BF_HW_ID,         CT_BLUEFIELD,    CFT_HCA,     0, {41680, 41681, 41682, 0}, {{UNKNOWN_BIN, {0}}}},
     { "Spectrum",         SPECTRUM_HW_ID,   CT_SPECTRUM,     CFT_SWITCH,  0, {52100, 0}, {{UNKNOWN_BIN, {0}}}},
     { "Switch_IB2",       SWITCH_IB2_HW_ID, CT_SWITCH_IB2,   CFT_SWITCH,  0, {53000, 0}, {{UNKNOWN_BIN, {0}}}},
+    { "Quantum",          QUANTUM_HW_ID,    CT_QUANTUM,      CFT_SWITCH,  0, {54000, 0}, {{UNKNOWN_BIN, {0}}}},
     { (char*)NULL,       0,                CT_UNKNOWN,      CFT_UNKNOWN, 0, {0}, {{UNKNOWN_BIN, {0}}}},// zero devid terminator
 };
 
@@ -1085,6 +1094,7 @@ const FwOperations::HwDev2Str FwOperations::hwDev2Str[] = {
     {"ConnectX-4",        CX4_HW_ID,        0x00},
     {"ConnectX-4LX",      CX4LX_HW_ID,      0x00},
     {"ConnectX-5",        CX5_HW_ID,        0x00},
+    {"ConnectX-6",        CX6_HW_ID,        0x00},
     {"BlueField",         BF_HW_ID,         0x00},
     {"SwitchX A0",        SWITCHX_HW_ID,    0x00},
     {"SwitchX A1",        SWITCHX_HW_ID,    0x01},
@@ -1093,6 +1103,7 @@ const FwOperations::HwDev2Str FwOperations::hwDev2Str[] = {
     {"SwitchIB A0",       SWITCH_IB_HW_ID,  0x00},
     {"Spectrum A0",       SPECTRUM_HW_ID,   0x00},
     {"SwitchIB2 A0",      SWITCH_IB2_HW_ID, 0x00},
+    {"Quantum A0",        QUANTUM_HW_ID,    0x00},
     {"Spectrum A1",       SPECTRUM_HW_ID,   0x01},
     { (char*)NULL,       (u_int32_t)0, (u_int8_t)0x00},      // zero device ID terminator
 };
@@ -1663,7 +1674,7 @@ void FwOperations::SetDevFlags(chip_type_t chipType, u_int32_t devType, fw_img_t
         ibDev  = (fwType == FIT_FS3 && chipType != CT_SPECTRUM) || (chipType == CT_CONNECTX && !CntxEthOnly(devType));
         ethDev = (chipType == CT_CONNECTX) || (chipType == CT_SPECTRUM) || (chipType == CT_CONNECTX4) || \
                  (chipType == CT_CONNECTX4_LX) || (chipType == CT_CONNECTX5) || (chipType == CT_BLUEFIELD) || \
-                 (chipType == CT_SPECTRUM2) || (chipType == CT_CONNECTX6);
+                 (chipType == CT_CONNECTX6);
     }
 
     if ((!ibDev && !ethDev) || chipType == CT_UNKNOWN) {
@@ -1902,6 +1913,33 @@ bool FwOperations::FwSignWithTwoRSAKeys(const char*, const char*, const char*, c
     return errmsg("FwSignWithTwoRSAKeys not supported");
 }
 
+bool FwOperations::FwSignWithHmac(const char*)
+{
+    return errmsg("FwSignWithHmac not supported");
+}
+
+bool FwOperations::PrepItocSectionsForHmac(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical)
+{
+    (void)critical;
+    (void)non_critical;
+    return errmsg("PrepItocSectionsForHmac not supported");
+}
+
+bool FwOperations::IsCriticalSection(u_int8_t sect_type)
+{
+    (void)sect_type;
+    return errmsg("IsCriticalSection not supported");
+}
+
+
+bool FwOperations::CalcHMAC(const vector<u_int8_t>& key, const vector<u_int8_t>& data, vector<u_int8_t>& digest)
+{
+    (void)key;
+    (void)data;
+    (void)digest;
+    return errmsg("CalcHMAC not supported");
+}
+
 bool FwOperations::FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatternAndDevToc)
 {
     (void)img;
@@ -1953,9 +1991,8 @@ u_int8_t FwOperations::GetFwFormatFromHwDevID(u_int32_t hwDevId)
         return FS_FS3_GEN;
     } else if (hwDevId == CX5_HW_ID ||
                hwDevId == CX6_HW_ID ||
-               hwDevId == BF_HW_ID      ||
-               hwDevId == QUANTUM_HW_ID ||
-               hwDevId == SPECTRUM2_HW_ID) {
+               hwDevId == BF_HW_ID  ||
+               hwDevId == QUANTUM_HW_ID)  {
         return FS_FS4_GEN;
     }
     return FS_UNKNOWN_IMG;

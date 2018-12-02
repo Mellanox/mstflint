@@ -1,12 +1,12 @@
 %{!?ibmadlib: %define ibmadlib libibmad-devel}
 %{!?name: %define name mstflint}
-%{!?version: %define version 4.10.0}
-%{!?release: %define release 2}
+%{!?version: %define version 4.11.0}
+%{!?release: %define release 1}
 %{!?buildtype: %define buildtype "native"}
 %{!?noinband: %define noinband 0}
 %{!?nodc: %define nodc 0}
 %{!?enablecs: %define enablecs 0}
-%{!?nopenssl: %define nopenssl 1}
+%{!?nopenssl: %define nopenssl 0}
 %{!?enablefwmgr: %define enablefwmgr 0}
 %{!?CONF_DIR: %define CONF_DIR /etc/mstflint}
 
@@ -36,6 +36,8 @@ for network adapters based on Mellanox Technologies chips.
 %setup -q
 
 %build
+
+MSTFLINT_VERSION_STR="%{name} %{version}-%{release}"
 
 %if %{nodc}
     config_flags="$config_flags --disable-dc"
@@ -73,7 +75,7 @@ for network adapters based on Mellanox Technologies chips.
     config_flags="$config_flags --host arm"
 %endif
 
-%configure ${config_flags}
+%configure ${config_flags} MSTFLINT_VERSION_STR="${MSTFLINT_VERSION_STR}"
 
 make
 
@@ -134,6 +136,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 
 %changelog
+* Wed Nov 21 2018 Dan Goldberg <dang@dev.mellanox.co.il>
+   MFT 4.11.0 Updates. Added new tools: mlxarchive and mstprivhost.
+
 * Sun Jul 01 2018 Dan Goldberg <dang@dev.mellanox.co.il>
    MFT 4.10.0 Updates
 

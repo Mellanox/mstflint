@@ -85,13 +85,14 @@ MLNX_DEVICES = [
                dict(name="ConnectX4LX", devid=0x20b, status_config_not_done=(0xb0004, 31)),
                dict(name="ConnectX5", devid=0x20d, status_config_not_done=(0xb5e04, 31)),
                dict(name="BlueField", devid=0x211, status_config_not_done=(0xb5e04, 31)),
+               dict(name="ConnectX6", devid=0x20f, status_config_not_done=(0xb5f04, 31)),
                dict(name="ConnectX3", devid=0x1f5),
                dict(name="SwitchX", devid=0x245),
                dict(name="IS4", devid=0x1b3),
                ]
 
 # Supported devices.
-SUPP_DEVICES = ["ConnectIB", "ConnectX4", "ConnectX4LX", "ConnectX5", "BlueField"]
+SUPP_DEVICES = ["ConnectIB", "ConnectX4", "ConnectX4LX", "ConnectX5", "BlueField", "ConnectX6"]
 SUPP_OS = ["FreeBSD", "Linux", "Windows"]
 
 EPILOG = textwrap.dedent('''\
@@ -882,6 +883,7 @@ def getPciModulePath():
 def runPPCPciResetModule(path, busIds):
     busIdStr = ",".join(busIds)
     cmd = "insmod %s pci_dev=%s" % (path, busIdStr)
+    logger.debug(cmd)
     (rc, out, err) = cmdExec(cmd)
     if rc != 0 :
         #check if failure is related to SELinux
@@ -908,9 +910,10 @@ def resetPciAddrPPC(busIds):
     if platform.system() != "Linux":
         raise RuntimeError("Unsupported OS(%s) for PPC reset flow" % (platform.system()))
 
-    logger.debug('Unload the module "mst_ppc_pci_reset"')
     if isModuleLoaded("mst_ppc_pci_reset") == True:
+        logger.debug('Unload the module "mst_ppc_pci_reset"')
         cmd = "rmmod mst_ppc_pci_reset"
+        logger.debug(cmd)
         (rc, out, _) = cmdExec(cmd)
     if isModuleLoaded("mst_ppc_pci_reset") == True:
         raise RuntimeError("Failed to unload mst_ppc_pci_reset module. please unload it manually and try again.")
@@ -933,6 +936,7 @@ def resetPciAddrPPC(busIds):
 
     logger.debug('Unload the module "mst_ppc_pci_reset"')
     cmd = "rmmod mst_ppc_pci_reset"
+    logger.debug(cmd)
     (rc, out, err) = cmdExec(cmd)
     if rc != 0 :
         raise RuntimeError("Failed to unload pci reset module: %s please unload the module manually" % err)
@@ -1092,22 +1096,23 @@ def resetPciAddr(device,devicesSD,driverObj, cmdLineArgs):
 ######################################################################
 
 def isMellanoxSwitchDevice(PciOpsObj, devAddr):
-    if (platform.system() == "Windows") or ("ppc64" in platform.machine()):
+    try:
+        return PciOpsObj.isMellanoxDevice(devAddr)
+    except NotImplementedError: # Windows
         return False
-    return PciOpsObj.isMellanoxDevice(devAddr)
 
 ########################################################################
 # Description: is Given PCI device address connected to a switch device
 ########################################################################
 
 def isConnectedToMellanoxSwitchDevice():
-    if (platform.system() == "Windows") or ("ppc64" in platform.machine()):
+    try:
+        busId = DevDBDF
+        bridgeAddr = PciOpsObj.getPciBridgeAddr(busId) # Windows (NotImplementedError) and Linux (PPC might return RuntimeError)
+        return isMellanoxSwitchDevice(PciOpsObj, bridgeAddr)
+    except Exception as e:
         return False
-    global PciOpsObj
-    busId = DevDBDF
-    bridgeAddr = PciOpsObj.getPciBridgeAddr(busId)
-    return isMellanoxSwitchDevice(PciOpsObj, bridgeAddr)
-
+    
 ######################################################################
 # Description: Save PCI configuration space for an MST device
 # OS Support : Linux, FreeBSD
@@ -1361,7 +1366,7 @@ def resetFlow(device,devicesSD, level, cmdLineArgs):
         isPpc64 = ("ppc64" in platform.machine())
         if isConnectedToMellanoxSwitchDevice() and \
                ((platform.system() != "Linux") or isPpc64):
-            raise RuntimeError("-E- Resetting Device that contains a switch is supported only in Linux/x86")
+            raise RuntimeError("Resetting Device that contains a switch is supported only in Linux/x86")
 
         if SkipMultihostSync or not CmdifObj.isMultiHostSyncSupported():
             sendResetToFW(device, level, cmdLineArgs.force)
@@ -1411,7 +1416,7 @@ def resetFlow(device,devicesSD, level, cmdLineArgs):
             MstDevObjSD.close()
 
 
-        if SkipMstRestart == False and platform.system() == "Linux":
+        if SkipMstRestart == False and platform.system() == "Linux" and not IS_MSTFLINT:
             printAndFlush("-I- %-40s-" % ("Restarting MST"), endChar="")
             if mstRestart(DevDBDF) == 0:
                 printAndFlush("Done")
@@ -1586,20 +1591,6 @@ def main():
     if IS_MSTFLINT and "ppc64" in platform.machine():
         print("-E- Mstfwreset is not supported on PPC64 platforms")
         return 1
-    # Workaround python "--version" argparse bug:
-    verFlag = ""
-    helpFlag = ""
-    if ("--version" in sys.argv):
-        verFlag = "--version"
-    if ("-v" in sys.argv):
-        verFlag = "-v"
-    if ("--help" in sys.argv):
-        helpFlag = "--help"
-    if ("-h" in sys.argv):
-        helpFlag = "-h"
-    if (verFlag != "") and ((helpFlag == "") or (sys.argv.index(helpFlag) > sys.argv.index(verFlag))):
-        tools_version.PrintVersionString(PROG, TOOL_VERSION)
-        sys.exit(0)
 
     parser = argparse.ArgumentParser(description=DESCRIPTION,
                                      formatter_class=argparse.RawDescriptionHelpFormatter,

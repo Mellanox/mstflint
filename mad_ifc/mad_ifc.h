@@ -37,6 +37,9 @@ extern "C" {
 #endif
 
 #include <mtcr.h>
+#ifndef NO_INBAND
+#include "mtcr_ib.h"
+#endif
 #include <tools_layouts/tools_open_layouts.h>
 
 typedef enum {

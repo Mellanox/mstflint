@@ -1,3 +1,9 @@
+mstflint (4.11.0-1) unstable; urgency=low
+
+  * Updated from MFT-4.11.0. Added new tools: mlxarchive and mstprivhost.
+
+ -- Dan Goldberg <dang@unknown>  Wed, 21 Nov 2018 16:00:00 +0200
+
 mstflint (4.10.0-1) unstable; urgency=low
 
   * Updated from MFT-4.10.0

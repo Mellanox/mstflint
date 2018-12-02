@@ -34,7 +34,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <ctype.h>
+#ifdef MST_UL
 #include <syslog.h>
+#endif
 #include "mvpd.h"
 
 #if defined(__MINGW32__) || defined(__MINGW64__) || defined(_MSC_VER)    /* Windows */
@@ -196,6 +199,13 @@ int fill_fields(vpd_result_t *result,
         id_tag.id[0] = field->keyword[0];
         id_tag.id[1] = field->keyword[1];
         id_tag.id[2] = '\0';
+        if (strict && ( strlen(id_tag.id) == 0 ||
+                      !isprint(field->keyword[0]) ||
+                      !isprint(field->keyword[1]))) {
+            // fail if keywords are non printable/empty if strict==1 (indicates corrupt VPD)
+            free(fields_list);
+            return MVPD_FORMAT_ERR;
+        }
         id_tag.len = field->length;
         id_tag.data = (char*) malloc(id_tag.len + 1);
         if (id_tag.data == NULL) {

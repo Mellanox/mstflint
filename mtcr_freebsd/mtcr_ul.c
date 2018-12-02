@@ -77,8 +77,8 @@
 #define PCI_CAP_ID_VPD 0x3
 #define PCI_VPD_DATA   0x4
 
-#define _PATH_DEVPCI "/dev/pci"
-#define SLV_ADDRS_NUM 128
+#define	_PATH_DEVPCI	"/dev/pci"
+
 
 typedef enum {
     Clear_Vsec_Semaphore = 0x1
@@ -742,13 +742,16 @@ int mtcr_open_config(mfile *mf, const char *name)
 mfile* mopen_int(const char *name, u_int32_t adv_opt)
 {
     char *real_name = (char *)name;
-    int port;
     int is_cable = 0;
+#ifndef MST_UL
+    int port = 0;
+#endif
     if (getuid() != 0) {
         errno = EACCES;
         return NULL;
     }
     //printf("%s: open %s\n", __FUNCTION__, name);
+#ifndef MST_UL
     char tmp_name[512] = {0};
     char *p_cable = strstr(name, "_cable");
     if (p_cable != 0) {
@@ -760,16 +763,12 @@ mfile* mopen_int(const char *name, u_int32_t adv_opt)
         //printf("-D- splitting name: %s\n", real_name);
         if (strstr(p_cable + 1, "_") != NULL) {
             p_cable += 7;
-            if (*p_cable == '\0') {
-                port = 0;
-            } else {
-                //printf("-D- splitting port: %s\n", p_cable);
+            if (*p_cable != '\0') {
                 port = atoi(p_cable);
             }
-        } else {
-            port = 0;
         }
     }
+#endif
     if (!device_exists(real_name)) {
         errno = ENOENT;
         return NULL;
@@ -807,8 +806,6 @@ mfile* mopen_int(const char *name, u_int32_t adv_opt)
                 return 0;
             }
         }
-#else
-        (void)port;
 #endif
         return mf;
     } else {
@@ -1869,7 +1866,7 @@ static int mreg_send_wrapper(mfile *mf, u_int8_t *data, int r_icmd_size,
 static int mreg_send_raw(mfile *mf, u_int16_t reg_id,
                          maccess_reg_method_t method, void *reg_data, u_int32_t reg_size,
                          u_int32_t r_size_reg, u_int32_t w_size_reg, int *reg_status);
-int mget_max_reg_size(mfile *mf);
+int mget_max_reg_size(mfile *mf, maccess_reg_method_t reg_method);
 
 // maccess_reg: Do a reg_access for the mf device.
 // - reg_data is both in and out
@@ -1885,7 +1882,7 @@ int maccess_reg(mfile *mf, u_int16_t reg_id, maccess_reg_method_t reg_method,
         return ME_BAD_PARAMS;
     }
     // check register size
-    u_int32_t max_size = (u_int32_t)mget_max_reg_size(mf);
+    u_int32_t max_size = (u_int32_t)mget_max_reg_size(mf, reg_method);
     if (reg_size > max_size) {
         //reg too big
         return ME_REG_ACCESS_SIZE_EXCCEEDS_LIMIT;
@@ -2091,18 +2088,18 @@ static int supports_tools_cmdif_reg(mfile *mf)
 
 }
 
-int mget_max_reg_size(mfile *mf)
+int mget_max_reg_size(mfile *mf, maccess_reg_method_t reg_method)
 {
-    if (mf->acc_reg_params.max_reg_size) {
-        return mf->acc_reg_params.max_reg_size;
+    if (mf->acc_reg_params.max_reg_size[reg_method]) {
+        return mf->acc_reg_params.max_reg_size[reg_method];
     } else if (supports_icmd(mf)) {
         // we support icmd and we dont use IB interface -> we use icmd for reg access
         //TOOD: get size dynamically from icmd_params once we have support by fw for mfba with size field greater than 8 bits
-        mf->acc_reg_params.max_reg_size = ICMD_MAX_REG_SIZE;
+        mf->acc_reg_params.max_reg_size[reg_method] = ICMD_MAX_REG_SIZE;
     } else if (supports_tools_cmdif_reg(mf)) {
-        mf->acc_reg_params.max_reg_size = TOOLS_HCR_MAX_REG_SIZE;
+        mf->acc_reg_params.max_reg_size[reg_method] = TOOLS_HCR_MAX_REG_SIZE;
     }
-    return mf->acc_reg_params.max_reg_size;
+    return mf->acc_reg_params.max_reg_size[reg_method];
 }
 
 /************************************
@@ -2476,4 +2473,13 @@ int mvpd_write4(mfile *mf, unsigned int offset, u_int8_t value[4])
     (void)value;
     return ME_UNSUPPORTED_OPERATION;
 }
+
+int supports_reg_access_gmp(mfile *mf, maccess_reg_method_t reg_method)
+{
+    (void)mf;
+    (void)reg_method;
+
+    return 0;
+}
+
 

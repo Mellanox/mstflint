@@ -512,7 +512,11 @@ bool FsCtrlOperations::FwShiftDevData(PrintCallBack progressFunc)
 
 const char* FsCtrlOperations::FwGetResetRecommandationStr()
 {
-    return "To load new FW run mlxfwreset or reboot machine.";
+#if defined( __VMKERNEL_UW_VMKLINUX__) || defined(__VMKERNEL_UW_NATIVE__)
+    return REBOOT_REQUIRED_STR;
+#else
+    return REBOOT_OR_FWRESET_REQUIRED_STR;
+#endif
 }
 
 bool FsCtrlOperations::FwCalcMD5(u_int8_t md5sum[16])

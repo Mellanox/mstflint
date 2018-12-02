@@ -80,11 +80,11 @@ void print_bin_field(char *key, char *val)
     free(valTmp);
 }
 
-int is_printable(char *value)
+int is_printable(const char *value)
 {
     int i = 0;
     while (value[i] != '\0') {
-        if (isprint(value[i])) {
+        if (isprint((int)value[i])) {
             i++;
             continue;
         } else {
@@ -94,7 +94,16 @@ int is_printable(char *value)
     return 1;
 }
 
+static int is_keyword_valid(const char* kw)
+{
+    if (!kw || strlen(kw) == 0 || !is_printable(kw)) {
+        return 0;
+    }
+    return 1;
+}
+
 //If you want to print all, pass NULL keyword
+//TODO adrianc: use common func - there is alot of duplicate code here.
 void find_and_print_vpd_data(vpd_result_t *vpd_data, vpd_tags_type_t vpd_type, const char *keyword)
 {
     if (vpd_type & VPD_RO) {
@@ -107,7 +116,10 @@ void find_and_print_vpd_data(vpd_result_t *vpd_data, vpd_tags_type_t vpd_type, c
         }
         for (i = 0; i < vpd_data->ro_fields_size; i++) {
             if (!keyword || strcmp(vpd_data->ro_fields[i].id, keyword) == 0) {
-                print_field(vpd_data->ro_fields[i].id, vpd_data->ro_fields[i].data);
+                if (is_keyword_valid(vpd_data->ro_fields[i].id)) {
+                    // skip empty/non-printable keywords
+                    print_field(vpd_data->ro_fields[i].id, vpd_data->ro_fields[i].data);
+                }
                 if (keyword) {
                     return;
                 }
@@ -118,10 +130,13 @@ void find_and_print_vpd_data(vpd_result_t *vpd_data, vpd_tags_type_t vpd_type, c
         int i;
         for (i = 0; i < vpd_data->rw_fields_size; i++) {
             if (!keyword || strcmp(vpd_data->rw_fields[i].id, keyword) == 0) {
-                if (is_printable(vpd_data->rw_fields[i].data) == 1) {
-                    print_field(vpd_data->rw_fields[i].id, vpd_data->rw_fields[i].data);
-                } else {
-                    print_bin_field(vpd_data->rw_fields[i].id, vpd_data->rw_fields[i].data);
+                if (is_keyword_valid(vpd_data->rw_fields[i].id)) {
+                    // skip empty/non-printable keywords
+                    if (is_printable(vpd_data->rw_fields[i].data) == 1) {
+                        print_field(vpd_data->rw_fields[i].id, vpd_data->rw_fields[i].data);
+                    } else {
+                        print_bin_field(vpd_data->rw_fields[i].id, vpd_data->rw_fields[i].data);
+                    }
                 }
                 if (keyword) {
                     return;

@@ -113,6 +113,7 @@ SubCmdMetaData::SubCmdMetaData()
     _sCmds.push_back(new SubCmd("ts", "timestamp", SC_Time_Stamp));
     _sCmds.push_back(new SubCmd("ci", "cache_image", SC_Cache_Image));
     _sCmds.push_back(new SubCmd("", "sign", SC_Sign));
+    _sCmds.push_back(new SubCmd("", "sign_with_hmac", SC_Add_Hmac));
     _sCmds.push_back(new SubCmd("", "extract_fw_data", SC_Extract_4MB_Image));
     _sCmds.push_back(new SubCmd("", "set_public_keys", SC_Set_Public_Keys));
     _sCmds.push_back(new SubCmd("", "set_forbidden_versions", SC_Set_Forbidden_Versions));
@@ -195,6 +196,7 @@ FlagMetaData::FlagMetaData()
     _flags.push_back(new Flag("", "private_key", 1));
     _flags.push_back(new Flag("", "key_uuid", 1));
     _flags.push_back(new Flag("", "private_key2", 1));
+    _flags.push_back(new Flag("", "hmac_key", 1));
     _flags.push_back(new Flag("", "key_uuid2", 1));
     _flags.push_back(new Flag("", "no_fw_ctrl", 0));
 }
@@ -611,9 +613,9 @@ void Flint::initCmdParser()
                "<log_file>",
                "Print the burning status to the specified log file");
 
-    char flashList[FLASH_LIST_SZ];
+    char flashList[FLASH_LIST_SZ] = {0};
     char flashParDesc[FLASH_LIST_SZ * 2];
-    Flash::get_flash_list(flashList);
+    Flash::get_flash_list(flashList, FLASH_LIST_SZ);
     snprintf(flashParDesc, FLASH_LIST_SZ * 2, "Use the given parameters to access the flash instead of reading them from "
              "the flash.\n" \
              "Supported parameters:\n" \
@@ -659,6 +661,10 @@ void Flint::initCmdParser()
                ' ',
                "<key_file>",
                "path to PEM formatted private key to be used by the sign command");
+    AddOptions("hmac_key",
+               ' ',
+               "<hmac_key>",
+               "path to file containing key (For FS4 image only).");
 
     AddOptions("key_uuid2",
                ' ',
@@ -864,6 +870,9 @@ ParseStatus Flint::HandleOption(string name, string value)
     } else if (name == "key_uuid") {
         _flintParams.uuid_specified = true;
         _flintParams.privkey_uuid = value;
+    } else if (name == "hmac_key") {
+        _flintParams.key_specified = true;
+        _flintParams.key = value;
     } else if (name == "private_key2") {
         _flintParams.privkey2_specified = true;
         _flintParams.privkey2_file = value;

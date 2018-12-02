@@ -164,6 +164,7 @@ map_sub_cmd_t_to_subcommand Flint::initSubcommandMap()
     cmdMap[SC_Time_Stamp] = new TimeStampSubCommand();
     cmdMap[SC_Cache_Image] = new CacheImageSubCommand();
     cmdMap[SC_Sign] = new SignSubCommand();
+    cmdMap[SC_Add_Hmac] = new AddHmacSubCommand();
     cmdMap[SC_Set_Public_Keys] = new SetPublicKeysSubCommand();
     cmdMap[SC_Set_Forbidden_Versions] = new SetForbiddenVersionsSubCommand();
     return cmdMap;

@@ -129,7 +129,8 @@ bool FwCompsMgr::accessComponent(u_int32_t offset,
     if (progressFuncAdv && progressFuncAdv->func) {
         snprintf(stage, MAX_MSG_SIZE, "%s %s component", (access == MCDA_READ_COMP) ? "Reading" : "Writing", _currComponentStr);
     }
-    int maxDataSize = mget_max_reg_size(_mf) - sizeof(accessData);
+    int maxDataSize = mget_max_reg_size(_mf, (access == MCDA_READ_COMP) ? MACCESS_REG_METHOD_GET : MACCESS_REG_METHOD_SET)
+        - sizeof(accessData);
     if (maxDataSize > MAX_REG_DATA) {
         maxDataSize = MAX_REG_DATA;
     }
@@ -348,7 +349,7 @@ bool FwCompsMgr::getDeviceHWInfo(FwCompsMgr::deviceDescription op, vector<u_int8
         return false;
     }
     reg_access_status_t rc;
-    int maxDataSize = mget_max_reg_size(mf) - sizeof(mqisRegister);
+    int maxDataSize = mget_max_reg_size(mf, MACCESS_REG_METHOD_GET) - sizeof(mqisRegister);
     if (maxDataSize > MAX_REG_DATA) {
         maxDataSize = sizeof(mqisRegister);
     }
@@ -402,7 +403,7 @@ bool FwCompsMgr::queryComponentInfo(u_int32_t componentIndex,
                                     u_int32_t dataSize,
                                     u_int32_t *data)
 {
-    u_int32_t maxDataSize = mget_max_reg_size(_mf) - sizeof(_currCompInfo);
+    u_int32_t maxDataSize = mget_max_reg_size(_mf, MACCESS_REG_METHOD_GET) - sizeof(_currCompInfo);
     if (maxDataSize > MAX_REG_DATA) {
         maxDataSize = MAX_REG_DATA;
     }
@@ -1099,6 +1100,9 @@ const char*  FwCompsMgr::getLastErrMsg()
     case FWCOMPS_UNSUPPORTED_DEVICE:
         return "Unsupported device";
         break;
+
+    case FWCOMPS_MTCR_OPEN_DEVICE_ERROR:
+        return "Failed to open device";
 
     case FWCOMPS_REG_ACCESS_BAD_STATUS_ERR:
     case FWCOMPS_REG_ACCESS_BAD_METHOD:

@@ -49,15 +49,22 @@ enum {
 int main(int argc, char **argv)
 {
     CongestionUI congestObject;
-    if (!congestObject.run(argc, argv)) {
-        cout << "-E- Failed to perform the operation: " << congestObject.getError() << endl;
-        return 1;
-    } else {
-        if (congestObject.getSuccess() != "") {
-            cout << "-I- " << congestObject.getSuccess() << endl;
-        }
+    CongestionUI::exit_status_t exit_code = congestObject.run(argc, argv);
+    int rc = 0;
+    switch(exit_code) {
+    case CongestionUI::EXIT_STATUS_OK:
+        congestObject.printSuccess();
+        break;
+    case CongestionUI::EXIT_STATUS_ERROR:
+        congestObject.printError();
+        rc = 1;
+        break;
+    case CongestionUI::EXIT_STATUS_USAGE:
+        congestObject.printUsage();
+        rc = 1;
+        break;
     }
-    return 0;
+    return rc;
 }
 
 
@@ -65,6 +72,7 @@ CongestionUI::CongestionUI() :
             CommandLineRequester("mstcongestion [OPTIONS]"),
             _cmdParser("mstcongestion")
 {
+    _devname = "";
     _mf = NULL;
     _action = ACTION_NA;
     _mode = MODE_NA;
@@ -87,13 +95,13 @@ CongestionUI::~CongestionUI()
 void CongestionUI::initCmdParser()
 {
 
-    AddOptions("device", 'd', "<PCI DEVICE>", "Mellanox PCI device address");
+    AddOptions("device", 'd', "<PCI DEVICE>", "Mellanox PCI device address", false, true);
     AddOptions("mode", ' ', "<MODE>", "Set Mode, options are: [aggressive | dynamic]");
     AddOptions("action", ' ', "<ACTION>", "Set Action, options are: [disabled | drop | mark]");
     AddOptions("query", 'q', "", "Query congestion");
     AddOptions("help", 'h', "", "Show help message and exit");
     AddOptions("version", 'v', "", "Show version and exit");
-    AddDescription("mstcongestion is a tool to set Congestion mode and action.");
+    AddDescription("mstcongestion is a utility for configuring Mellanox device's receive congestion handling.");
     _cmdParser.AddRequester(this);
 }
 
@@ -124,7 +132,7 @@ ParseStatus CongestionUI::HandleOption(string name, string value)
             return PARSE_ERROR;
         }
     } else if (name == "help") {
-        cout << _cmdParser.GetUsage() << endl;
+        printUsage();
         return PARSE_OK_WITH_EXIT;
     } else if (name == "version") {
         print_version_string("mstcongestion", NULL);
@@ -139,33 +147,36 @@ ParseStatus CongestionUI::HandleOption(string name, string value)
     return PARSE_OK;
 }
 
-bool CongestionUI::run(int argc, char** argv)
+CongestionUI::exit_status_t CongestionUI::run(int argc, char** argv)
 {
     ParseStatus rc = _cmdParser.ParseOptions(argc, argv);
+    if (rc == PARSE_OK && _devname == "") {
+        _errorMsg = "Missing device.";
+        rc = PARSE_ERROR;
+    }
+
     if (rc == PARSE_OK_WITH_EXIT) {
-        return true;
+        return EXIT_STATUS_OK;
     } else if (rc == PARSE_ERROR) {
         if (_errorMsg == "") {
             _errorMsg = "Failed while parsing the arguments.";
         }
-        return false;
+        return EXIT_STATUS_USAGE;
+    } else if (rc == PARSE_ERROR_SHOW_USAGE) {
+        return EXIT_STATUS_USAGE;
     }
 
-    if (_devname == "") {
-        _errorMsg = "Missing device.";
-        return false;
-    }
     _mf = mopen(_devname.c_str());
     if (!_mf) {
         _errorMsg = "Failed to open device: " + _devname;
-        return false;
+        return EXIT_STATUS_ERROR;
     }
     struct tools_open_mcam mcam;
     memset(&mcam, 0, sizeof(mcam));
     reg_access_status_t status = reg_access_mcam(_mf, REG_ACCESS_METHOD_GET, &mcam);
     if (status) {
         _errorMsg = "Failed to get device capabilities!";
-        return false;
+        return EXIT_STATUS_ERROR;
     }
     u_int8_t caps = mcam.mng_feature_cap_mask[14];
     _dynamicSupp = caps & 0x2;
@@ -173,16 +184,17 @@ bool CongestionUI::run(int argc, char** argv)
     _markCnpSupp = caps & 0x8;
     if (_ops != 1) {
         _errorMsg = "Please choose one operation.";
-        return false;
+        return EXIT_STATUS_ERROR;
     }
+    bool op_ret = true;
     if (_mode != MODE_NA) {
-        return setMode(_mode);
+        op_ret = setMode(_mode);
     } else if (_action != ACTION_NA) {
-        return setAction(_action);
+        op_ret = setAction(_action);
     } else if (_query) {
-        return query();
+        op_ret = query();
     }
-    return true;
+    return op_ret? EXIT_STATUS_OK : EXIT_STATUS_ERROR;
 }
 
 
@@ -220,6 +232,10 @@ bool CongestionUI::setAction(cong_action_t action)
         if (_markCnpSupp) {
             mpegc.field_select |= BIT_MARK_TX_CNP;
             mpegc.mark_cnp = 1;
+        }
+        if(!mpegc.mark_cnp && !mpegc.mark_cqe) {
+            _errorMsg = "Mark action is not supported!";
+            return false;
         }
     }
     reg_access_status_t status = reg_access_mpegc(_mf, REG_ACCESS_METHOD_SET, &mpegc);
@@ -268,5 +284,25 @@ string CongestionUI::getActionString(cong_action_t action)
         return "Mark";
     default:
         return "N/A";
+    }
+}
+
+void CongestionUI::printUsage()
+{
+    if(getError() != "") {
+        cout << "-E- Usage error: " << getError() << endl;
+    }
+    cout << _cmdParser.GetUsage() << endl;
+}
+
+void CongestionUI::printError()
+{
+    cout << "-E- Failed to perform the operation: " << getError() << endl;
+}
+
+void CongestionUI::printSuccess()
+{
+    if (getSuccess() != "") {
+        cout << "-I- " << getSuccess() << endl;
     }
 }

@@ -39,6 +39,7 @@ libmtcr_ul_a_SOURCES = mtcr_ul.c mtcr_ib.h  mtcr_int_defs.h\
 			mtcr_ib_res_mgt.h mtcr_ib_res_mgt.c\
 			mtcr_tools_cif.c mtcr_tools_cif.h\
 			mtcr_ul_icmd_cif.c mtcr_icmd_cif.h\
+			mtcr_mem_ops.c mtcr_mem_ops.h\
 			mtcr_ul_com_defs.h mtcr_mf.h\
 			mtcr_ul_com.h mtcr_ul_com.c\
 			packets_common.c packets_common.h\
