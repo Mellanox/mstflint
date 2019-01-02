@@ -35,6 +35,7 @@
 * $Id           : mlnx_peripheral_components.py 2017-11-28
 * $Authors      : Roei Yitzhak (roei@mellanox.com)
 """
+from __future__ import print_function
 
 from __future__ import print_function
 import platform
@@ -70,7 +71,7 @@ class MlnxPeripheralComponents(object):
             raise RuntimeError("Failed to get device PCI address")
 
         for line in out.split('\n'):
-            #  print line
+            #  print(line)
             try:
                 result = re.match(pattern, line)
                 if result:

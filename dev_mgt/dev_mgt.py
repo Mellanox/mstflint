@@ -75,10 +75,3 @@ if DEV_MGT:
             return not (rc == 0)
 else:
     raise DevMgtException("Failed to load c_dev_mgt.so/libdev_mgt.dll") 
-
-
-if __name__ == "__main__":
-    mstdev = "/dev/mst/mt523_pciconf0"
-    #mstdev = "/dev/mst/mt4113_pciconf0"
-    devMgt = DevMgt(mstdev)
-    print(devMgt.isLivefishMode())

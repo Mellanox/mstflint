@@ -1753,7 +1753,7 @@ def main():
     global MstDevObjsSD
     global RegAccessObjsSD
 
-    # Roei
+
     devicesSD = []
     if command == "reset" and not args.skip_socket_direct:
 
