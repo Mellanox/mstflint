@@ -108,6 +108,7 @@ public:
     bool blank_guids;
     bool clear_semaphore;
     bool quick_query;
+    bool low_cpu;
     bool skip_rom_query;
     bool image_specified;
     string image;
