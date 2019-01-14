@@ -48,8 +48,6 @@ extern "C" {
 
 #define SLV_ADDRS_NUM 128
 
-extern int increase_poll_time;
-
 typedef enum mtcr_access_method {
     MTCR_ACCESS_ERROR  = MST_ERROR,
     MTCR_ACCESS_MEMORY = MST_PCI,
