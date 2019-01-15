@@ -360,8 +360,12 @@ int MlxSignRSA::createRSAFromPEMKeyString(const std::string& pemKey,  bool isPri
 
 MlxSignHMAC::MlxSignHMAC()
 {
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
     ctx = malloc(sizeof(HMAC_CTX));
     HMAC_CTX_init((HMAC_CTX*)ctx);
+#else
+    ctx = HMAC_CTX_new();
+#endif
 }
 
 int MlxSignHMAC::setKey(const std::vector<u_int8_t>& key)
@@ -415,8 +419,12 @@ int MlxSignHMAC::getDigest(std::vector<u_int8_t>& digest)
 
 MlxSignHMAC::~MlxSignHMAC()
 {
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
     HMAC_CTX_cleanup((HMAC_CTX*)ctx);
     free(ctx);
+#else
+    HMAC_CTX_free((HMAC_CTX*)ctx);
+#endif
 }
 
 #endif //ENABLE_OPENSSL
