@@ -19,11 +19,11 @@ export MSTFLINT_LIB_DIR=$mlibdir
 export LD_LIBRARY_PATH=$mlibdir
 export MSTFLINT_BIN_DIR=$mbindir
 EXEC_NAME=`basename $(readlink -f $0)`
-which python3 &> /dev/null
+which python3 >/dev/null 2>&1
 if test $? -eq 0 ; then
    PYTHON_EXEC='/usr/bin/env python3'
 else
-    which python2 &> /dev/null
+    which python2 >/dev/null 2>&1
     if test $? -eq 0 ; then
        PYTHON_EXEC='/usr/bin/env python2'
     fi
