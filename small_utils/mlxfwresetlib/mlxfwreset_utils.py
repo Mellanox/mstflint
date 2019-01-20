@@ -57,7 +57,7 @@ def cmdExec(cmd):
                          shell=True)
     output = p.communicate()
     stat = p.wait()
-    return (stat, output[0], output[1])  # RC, Stdout, Stderr
+    return (stat, output[0].decode('utf-8'), output[1].decode('utf-8'))  # RC, Stdout, Stderr
 
 ######################################################################
 # Description:  Run cmd in loops
@@ -153,9 +153,3 @@ def getDevDBDF(device,logger=None):
         raise RuntimeError("Unsupported OS")
 
 
-
-
-if __name__ == '__main__':
-    #device = '/dev/mst/mt4119_pciconf1.1'
-    device = '0:136:0:0'
-    print(getDevDBDF(device,None))

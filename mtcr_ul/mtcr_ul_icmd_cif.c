@@ -233,6 +233,10 @@ enum {
 #define QUANTUM_HW_ID   589
 #define SPECTRUM2_HW_ID 590
 
+/***** GLOBALS *****/
+int increase_poll_time = 0;
+/***** GLOBALS *****/
+
 /*************************************************************************************/
 /*
  * get_version
@@ -268,7 +272,13 @@ static int go(mfile *mf)
     MWRITE4_ICMD(mf, mf->icmd.ctrl_addr, reg, return ME_ICMD_STATUS_CR_FAIL);
 
     DBG_PRINTF("Busy-bit raised. Waiting for command to exec...\n");
-    char *icmd_sleep_env = getenv("MFT_CMD_SLEEP");
+    char *icmd_sleep_env;
+    if (increase_poll_time) {
+        icmd_sleep_env = "70\0";
+    }
+    else {
+        icmd_sleep_env = getenv("MFT_CMD_SLEEP");
+    }
     int icmd_sleep = -1;
     if (icmd_sleep_env) {
         char *endptr;

@@ -65,7 +65,7 @@ if CMTCR:
     class MstDevice:
         ##########################
         def __init__(self, dev):
-            self.mdev = dev
+            self.mdev = dev.encode('ascii')
             self.mf = 0
             self.mopenFunc = CMTCR.mopen
             self.mopenFunc.restype = c_void_p

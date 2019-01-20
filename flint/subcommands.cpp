@@ -2393,6 +2393,9 @@ QuerySubCommand:: ~QuerySubCommand()
 
 FlintStatus QuerySubCommand::executeCommand()
 {
+    if (_flintParams.low_cpu) {
+        increase_poll_time = 1;
+    }
     if (preFwOps() == FLINT_FAILED) {
         return FLINT_FAILED;
     }
