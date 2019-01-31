@@ -166,6 +166,34 @@ AS_IF([test "x$enable_dynamic_ld" = "xyes"], [
   LDFLAGS="$LDFLAGS -Wl,--dynamic-linker=/lib64/ld64.so.2"
 ])
 
+AC_SEARCH_LIBS([iniparser_load], [iniparser], [INIPARSER_SYSTEM_AVAILABLE="yes"],[
+    INIPARSER_SYSTEM_AVAILABLE="no"
+    INIPARSER_CFLAGS='-I$(top_srcdir)/ext_libs/iniParser'
+    INIPARSER_LIBS='$(top_builddir)/ext_libs/iniParser/libiniparser.la'
+])
+AM_CONDITIONAL([USE_LOCAL_INIPARSER], [test "$INIPARSER_SYSTEM_AVAILABLE" = no])
+
+PKG_CHECK_MODULES([JSON], [json-c], [JSON_SYSTEM_AVAILABLE="yes"],[
+    JSON_SYSTEM_AVAILABLE="no"
+    JSON_CFLAGS='-I$(top_srcdir)/ext_libs/json'
+    JSON_LIBS='$(top_builddir)/ext_libs/json/libjson.la'
+])
+AM_CONDITIONAL([USE_LOCAL_JSON], [test "$JSON_SYSTEM_AVAILABLE" = no])
+
+PKG_CHECK_MODULES([MUPARSER], [muparser], [MUPARSER_SYSTEM_AVAILABLE="yes"],[
+    MUPARSER_SYSTEM_AVAILABLE="no"
+    MUPARSER_CFLAGS='-I$(top_srcdir)/ext_libs/muparser'
+    MUPARSER_LIBS='$(top_builddir)/ext_libs/muparser/libmuparser.la'
+])
+AM_CONDITIONAL([USE_LOCAL_MUPARSER], [test "$MUPARSER_SYSTEM_AVAILABLE" = no])
+
+PKG_CHECK_MODULES([SQLITE], [sqlite3], [SQLITE_SYSTEM_AVAILABLE="yes"],[
+    SQLITE_SYSTEM_AVAILABLE="no"
+    SQLITE_CFLAGS='-I$(top_srcdir)/ext_libs/sqlite'
+    SQLITE_LIBS='$(top_builddir)/ext_libs/sqlite/libsqlite3.la'
+])
+AM_CONDITIONAL([USE_LOCAL_SQLITE], [test "$SQLITE_SYSTEM_AVAILABLE" = no])
+
 CFLAGS="$CFLAGS -DMST_UL"
 CXXFLAGS="$CXXFLAGS -DMST_UL"
 
