@@ -22,7 +22,7 @@ CMDIF_DIR = $(USER_DIR)/cmdif
 
 CURL_LIBS = -lcurl  -lssl -lcrypto -lrt
 
-INCLUDES = -isystem $(USER_DIR)/ext_libs/json -I. \
+INCLUDES = $(JSON_CFLAGS) -I. \
            -I$(USER_DIR) -I$(USER_DIR)/libmfa \
            -I$(MTCR_DIR) -I$(USER_DIR)/include/mtcr_ul \
            -I$(USER_DIR)/mflash -I$(USER_DIR)/common \
@@ -56,7 +56,7 @@ mstarchive_LDADD = libmstarchive.a\
                    $(DEV_MGT_DIR)/libdev_mgt.a\
                    $(CMDIF_DIR)/libcmdif.a\
                    $(UTILS_DIR)/libmftutils.a\
-                   $(USER_DIR)/ext_libs/json/libjson.a\
+                   $(JSON_LIBS)\
                    $(USER_DIR)/cmdparser/libcmdparser.a\
                    $(USER_DIR)/reg_access/libreg_access.a\
                    $(USER_DIR)/tools_layouts/libtools_layouts.a\

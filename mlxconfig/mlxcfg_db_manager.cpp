@@ -42,7 +42,7 @@
 //#define NDEBUG //uncomment in order to enable asserts
 #include <assert.h>
 
-#include <ext_libs/sqlite/sqlite3.h>
+#include <sqlite3.h>
 #include "mlxcfg_db_manager.h"
 #include "mlxcfg_utils.h"
 

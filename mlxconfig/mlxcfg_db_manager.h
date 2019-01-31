@@ -44,7 +44,7 @@
 
 #include "mlxcfg_tlv.h"
 #include "mlxcfg_param.h"
-#include <ext_libs/sqlite/sqlite3.h>
+#include <sqlite3.h>
 
 class MlxcfgDBManager {
 
