@@ -20,7 +20,7 @@ privilege: Set host 1 (ARM) privileged, host 0 (x86_64) privileged
 DESCRIPTION = """\
 restrict or privilege host
 Note: New configurations takes effect immediately.
-Note: priviliged host - host has all supported privileges.
+Note: privileged host - host has all supported privileges.
       restricted host - host is not allowed to modify global
       per port/parameters or access other hosts parametersis.
 
