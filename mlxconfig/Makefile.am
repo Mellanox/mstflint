@@ -40,7 +40,6 @@ DEV_MGT_DIR = $(top_srcdir)/dev_mgt
 LAYOUTS_LIB = $(LAYOUTS_DIR)/libtools_layouts.a
 UTILS_LIB = $(USER_DIR)/mft_utils/libmftutils.a
 CMDIF_DIR = $(USER_DIR)/cmdif
-EXT_LIB_DIR = $(USER_DIR)/ext_libs
 MLXSIGN_DIR = $(USER_DIR)/mlxsign_lib
 MLXSIGN_LIB = $(MLXSIGN_DIR)/libmlxsign.a
 COMPS_MGR_DIR = $(USER_DIR)/fw_comps_mgr
@@ -50,7 +49,7 @@ PYTHON_WRAPPER_SCRIPT = ../common/python_wrapper
 SUBDIRS = mlxconfig_dbs
 
 AM_CPPFLAGS = -I. -I$(USER_DIR) -I$(top_srcdir)/include/mtcr_ul -I$(MTCR_DIR) -I$(COMMON_DIR) $(WIN64_INC)\
-           -I$(LAYOUTS_DIR) -I$(UTILS_DIR) -I$(DEV_MGT_DIR) -I$(CMDIF_DIR) -I$(EXT_LIB_DIR)/muparser $(COMPILER_FPIC)
+           -I$(LAYOUTS_DIR) -I$(UTILS_DIR) -I$(DEV_MGT_DIR) -I$(CMDIF_DIR) $(MUPARSER_CFLAGS) $(COMPILER_FPIC)
 
 
 AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe  -Wno-deprecated-declarations  $(COMPILER_FPIC) -DDATA_PATH=\"$(pkgdatadir)\"
@@ -72,11 +71,11 @@ mlxcfg_db_items.h mlxcfg_db_items.cpp\
         mlxcfg_commander.h mlxcfg_commander.cpp mlxcfg_generic_commander.h mlxcfg_generic_commander.cpp\
         mlxcfg_param_lib.h mlxcfg_param_lib.cpp mlxcfg_4thgen_commander.h mlxcfg_4thgen_commander.cpp
 
-libmlxcfg_a_LIBADD = $(UTILS_LIB) $(EXT_LIB_DIR)/sqlite/libsqlite3.a $(EXT_LIB_DIR)/muparser/libmuparser.a\
+libmlxcfg_a_LIBADD = $(UTILS_LIB) $(MUPARSER_LIBS) $(SQLITE_LIBS)\
 				$(CMDIF_DIR)/libcmdif.a ../reg_access/libreg_access.a $(LAYOUTS_LIB) $(MTCR_DIR)/libmtcr_ul.a\
 				$(DEV_MGT_DIR)/libdev_mgt.a $(COMPS_MGR_DIR)/libfw_comps_mgr.a $(MLNXOS_PPC_LIBS) $(LIBSTD_CPP) ${LDL}
 
-mstconfig_LDADD = libmlxcfg.a $(UTILS_LIB) $(EXT_LIB_DIR)/sqlite/libsqlite3.a $(EXT_LIB_DIR)/muparser/libmuparser.a\
+mstconfig_LDADD = libmlxcfg.a $(UTILS_LIB) $(MUPARSER_LIBS) $(SQLITE_LIBS)\
 				$(CMDIF_DIR)/libcmdif.a ../reg_access/libreg_access.a $(LAYOUTS_LIB) $(MTCR_DIR)/libmtcr_ul.a\
 				$(DEV_MGT_DIR)/libdev_mgt.a $(COMPS_MGR_DIR)/libfw_comps_mgr.a $(MLNXOS_PPC_LIBS) $(LIBSTD_CPP) ${LDL}
 
