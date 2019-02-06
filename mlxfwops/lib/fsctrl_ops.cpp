@@ -97,7 +97,7 @@ static void extractFwBuildTime(u_int16_t *fwRelDate, u_int32_t buildTime)
 bool FsCtrlOperations::FsIntQuery()
 {
     fwInfoT fwQery;
-    if (!_fwCompsAccess->queryFwInfo(&fwQery)) {
+    if (!_fwCompsAccess->queryFwInfo(&fwQery, nextBootFwVer)) {
         return errmsg(FwCompsErrToFwOpsErr(_fwCompsAccess->getLastError()), "Failed to query the FW - Err[%d] - %s", _fwCompsAccess->getLastError(), _fwCompsAccess->getLastErrMsg());
     }
     if (fwQery.pending_fw_valid) {
@@ -106,6 +106,9 @@ bool FsCtrlOperations::FsIntQuery()
     } else {
         extractFwVersion(_fwImgInfo.ext_info.fw_ver, fwQery.running_fw_version.version);
         extractFwBuildTime(_fwImgInfo.ext_info.fw_rel_date, fwQery.running_fw_version.build_time);
+    }
+    if (nextBootFwVer) {
+         return true;
     }
     extractFwVersion(_fwImgInfo.ext_info.running_fw_ver, fwQery.running_fw_version.version);
     if (fwQery.running_fw_version.version_string_length) {

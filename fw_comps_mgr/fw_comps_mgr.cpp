@@ -949,7 +949,7 @@ void FwCompsMgr::extractRomInfo(tools_open_mgir *mgir, fwInfoT *fwQuery)
     }
 }
 
-bool FwCompsMgr::queryFwInfo(fwInfoT *query)
+bool FwCompsMgr::queryFwInfo(fwInfoT *query, bool next_boot_fw_ver)
 {
     if (!query) {
         _lastError = FWCOMPS_BAD_PARAM;
@@ -958,6 +958,9 @@ bool FwCompsMgr::queryFwInfo(fwInfoT *query)
     memset(query, 0, sizeof(fwInfoT));
     if (getComponentVersion(FwComponent::COMPID_BOOT_IMG, true, &query->pending_fw_version)) {
         query->pending_fw_valid = 1;
+    }
+    if (next_boot_fw_ver) {
+        return true;
     }
     if (!getComponentVersion(FwComponent::COMPID_BOOT_IMG, false, &query->running_fw_version)) {
         return false;

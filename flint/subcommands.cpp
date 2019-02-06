@@ -2237,6 +2237,9 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
         snprintf(versionStr, 64, VERSION_FORMAT(fwInfo.fw_info.fw_ver[1]), fwInfo.fw_info.fw_ver[0], fwInfo.fw_info.fw_ver[1],
                  fwInfo.fw_info.fw_ver[2]);
         printf("FW Version:            %s\n", versionStr);
+        if (nextBootFwVer) {
+            return FLINT_SUCCESS;
+        }
         if ((fwInfo.fw_info.running_fw_ver[0] || fwInfo.fw_info.running_fw_ver[1] || fwInfo.fw_info.running_fw_ver[2]) && \
             (fwInfo.fw_info.running_fw_ver[0] != fwInfo.fw_info.fw_ver[0] || \
              fwInfo.fw_info.running_fw_ver[1] != fwInfo.fw_info.fw_ver[1] || \
@@ -2245,6 +2248,12 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
                      fwInfo.fw_info.running_fw_ver[2]);
             printf("FW Version(Running):   %s\n", versionStr);
         }
+    }
+    else if (nextBootFwVer) {
+        printf("No next boot fw version\n");
+    }
+    if (nextBootFwVer) {
+        return FLINT_SUCCESS;
     }
 
     if (fwInfo.fw_info.fw_rel_date[0] || fwInfo.fw_info.fw_rel_date[1] || fwInfo.fw_info.fw_rel_date[2]) {
@@ -2395,6 +2404,9 @@ FlintStatus QuerySubCommand::executeCommand()
 {
     if (_flintParams.low_cpu) {
         increase_poll_time = 1;
+    }
+    if (_flintParams.next_boot_fw_ver) {
+        nextBootFwVer = true;
     }
     if (preFwOps() == FLINT_FAILED) {
         return FLINT_FAILED;

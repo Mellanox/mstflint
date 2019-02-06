@@ -297,7 +297,7 @@ public:
                                          bool pending,
                                          component_version_st *cmpVer);
 
-    bool             queryFwInfo(fwInfoT *query);
+    bool    queryFwInfo(fwInfoT *query, bool next_boot_fw_ver = false);
 
     bool             forceRelease();
     fw_comps_error_t getLastError() { return _lastError;};

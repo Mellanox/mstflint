@@ -109,6 +109,7 @@ public:
     bool clear_semaphore;
     bool quick_query;
     bool low_cpu;
+    bool next_boot_fw_ver;
     bool skip_rom_query;
     bool image_specified;
     string image;
