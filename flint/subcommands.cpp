@@ -2250,7 +2250,7 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
         }
     }
     else if (nextBootFwVer) {
-        printf("No next boot fw version\n");
+        printf("Next boot FW version is the same as the running FW\n");
     }
     if (nextBootFwVer) {
         return FLINT_SUCCESS;
