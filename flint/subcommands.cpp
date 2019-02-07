@@ -2250,7 +2250,12 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
         }
     }
     else if (nextBootFwVer) {
-        printf("Next boot FW version is the same as the running FW\n");
+        char versionStr[64] = {0};
+        if (!fwInfo.fw_info.fw_ver[0] || fwInfo.fw_info.fw_ver[1] || fwInfo.fw_info.fw_ver[2]) {
+            snprintf(versionStr, 64, VERSION_FORMAT(fwInfo.fw_info.running_fw_ver[1]), fwInfo.fw_info.running_fw_ver[0], fwInfo.fw_info.running_fw_ver[1],
+                 fwInfo.fw_info.running_fw_ver[2]);
+            printf("FW Version:            %s\n", versionStr);
+        }
     }
     if (nextBootFwVer) {
         return FLINT_SUCCESS;

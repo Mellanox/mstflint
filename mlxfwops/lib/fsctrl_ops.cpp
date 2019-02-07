@@ -107,12 +107,12 @@ bool FsCtrlOperations::FsIntQuery()
         extractFwVersion(_fwImgInfo.ext_info.fw_ver, fwQery.running_fw_version.version);
         extractFwBuildTime(_fwImgInfo.ext_info.fw_rel_date, fwQery.running_fw_version.build_time);
     }
-    if (nextBootFwVer) {
-         return true;
-    }
     extractFwVersion(_fwImgInfo.ext_info.running_fw_ver, fwQery.running_fw_version.version);
     if (fwQery.running_fw_version.version_string_length) {
         strcpy(_fwImgInfo.ext_info.product_ver, fwQery.product_ver);
+    }
+    if (nextBootFwVer) {
+         return true;
     }
 
     _fsCtrlImgInfo.fs3_uids_info.cx4_uids.base_mac.uid = fwQery.base_mac.uid;
