@@ -525,7 +525,7 @@ bool Fs3Operations::VerifyTOC(u_int32_t dtoc_addr, bool &bad_signature, VerifyCa
                     }
                     // Only when we have full verify or the info of this section should be collected for query
                     std::vector<u_int8_t> buffv(entry_size_in_bytes);
-                    u_int8_t *buff = (u_int8_t *)(&(buffv[0]));
+                    u_int8_t *buff = (u_int8_t *)(buffv.size() ? (&(buffv[0])) : NULL);
                     if (show_itoc) {
                         cibfw_itoc_entry_dump(&toc_entry, stdout);
                         if (!DumpFs3CRCCheck(toc_entry.type, phys_addr, entry_size_in_bytes, 0, 0, true, verifyCallBackFunc)) {
