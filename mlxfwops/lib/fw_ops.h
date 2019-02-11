@@ -52,6 +52,8 @@ typedef fw_ver_info_t FwVerInfo;
 
 typedef int (*PrintCallBackAdv) (int completion, char *str);
 
+extern bool nextBootFwVer;
+
 class MLXFWOP_API FwOperations : public FlintErrMsg {
 
 

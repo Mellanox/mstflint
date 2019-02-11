@@ -348,6 +348,9 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isD
 
     do {
         // Read toc entry
+        if (nextBootFwVer) {
+            section_index = 8;
+        }
         entryAddr = tocAddr + TOC_HEADER_SIZE + section_index *  TOC_ENTRY_SIZE;
         READBUF((*_ioAccess), entryAddr, entryBuffer, TOC_ENTRY_SIZE, "TOC Entry");
         Fs3UpdateImgCache(entryBuffer, entryAddr, TOC_ENTRY_SIZE);
@@ -473,7 +476,9 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isD
                    entryBuffer, CX5FW_ITOC_ENTRY_SIZE);
 
         }
-
+        if (nextBootFwVer) {
+            break;
+        }
         section_index++;
     } while (tocEntry.type != FS3_END);
 
@@ -522,38 +527,42 @@ bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_ito
     if (!getHWPtrs(verifyCallBackFunc)) {
         return false;
     }
-
-    if (!verifyToolsArea(verifyCallBackFunc)) {
-        return false;
-    }
+    if (!nextBootFwVer) {
+        if (!verifyToolsArea(verifyCallBackFunc)) {
+            return false;
+        }
 
     // Update image cache till before boot2 header:
-    READALLOCBUF((*_ioAccess), _fwImgInfo.imgStart, buff, _boot2_ptr, "All Before Boot2");
-    Fs3UpdateImgCache(buff, 0, _boot2_ptr);
-    free(buff);
+        READALLOCBUF((*_ioAccess), _fwImgInfo.imgStart, buff, _boot2_ptr, "All Before Boot2");
+        Fs3UpdateImgCache(buff, 0, _boot2_ptr);
+        free(buff);
 
-    _ioAccess->set_address_convertor(_fwImgInfo.cntxLog2ChunkSize, _fwImgInfo.imgStart != 0);
+        _ioAccess->set_address_convertor(_fwImgInfo.cntxLog2ChunkSize, _fwImgInfo.imgStart != 0);
 
     // Get BOOT2 -Get Only bootSize if quickQuery == true else read and check CRC of boot2 section as well
-    FS3_CHECKB2(0, _boot2_ptr, !queryOptions.quickQuery, PRE_CRC_OUTPUT, verifyCallBackFunc);
+        FS3_CHECKB2(0, _boot2_ptr, !queryOptions.quickQuery, PRE_CRC_OUTPUT, verifyCallBackFunc);
 
-    _fs4ImgInfo.firstItocArrayIsEmpty = false;
-    _fs4ImgInfo.itocArr.tocArrayAddr = _itoc_ptr;
+        _fs4ImgInfo.firstItocArrayIsEmpty = false;
+        _fs4ImgInfo.itocArr.tocArrayAddr = _itoc_ptr;
 
     /*printf("\n-D-_ioAccess size=0x%x\n", _ioAccess->get_size());
        printf("\n-D-dtoc_ptr=0x%x\n", dtoc_ptr);*/
 
-    if (!verifyTocHeader(_itoc_ptr, false, verifyCallBackFunc)) {
-        _itoc_ptr += FS4_DEFAULT_SECTOR_SIZE;
-        _fs4ImgInfo.itocArr.tocArrayAddr = _itoc_ptr;
-        _fs4ImgInfo.firstItocArrayIsEmpty = true;
         if (!verifyTocHeader(_itoc_ptr, false, verifyCallBackFunc)) {
-            return errmsg(MLXFW_NO_VALID_ITOC_ERR, "No valid ITOC Header was found.");
+            _itoc_ptr += FS4_DEFAULT_SECTOR_SIZE;
+            _fs4ImgInfo.itocArr.tocArrayAddr = _itoc_ptr;
+            _fs4ImgInfo.firstItocArrayIsEmpty = true;
+            if (!verifyTocHeader(_itoc_ptr, false, verifyCallBackFunc)) {
+                return errmsg(MLXFW_NO_VALID_ITOC_ERR, "No valid ITOC Header was found.");
+            }
         }
     }
     if (!verifyTocEntries(_itoc_ptr, show_itoc, false,
                           queryOptions, verifyCallBackFunc)) {
         return false;
+    }
+    if (nextBootFwVer) {
+        return true;
     }
     if (ignoreDToc) {
         return true;

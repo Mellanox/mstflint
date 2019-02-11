@@ -169,6 +169,7 @@ FlagMetaData::FlagMetaData()
     _flags.push_back(new Flag("i", "image", 1));
     _flags.push_back(new Flag("", "qq", 0));
     _flags.push_back(new Flag("", "low_cpu", 0));
+    _flags.push_back(new Flag("", "next_boot_fw_ver", 0));
     _flags.push_back(new Flag("", "nofs", 0));
     _flags.push_back(new Flag("", "allow_psid_change", 0));
     _flags.push_back(new Flag("", "allow_rom_change", 0));
@@ -508,6 +509,12 @@ void Flint::initCmdParser()
                "When specified, cpu usage will be reduced. Run time might be increased\n"
                "Commands affected: query");
 
+    AddOptions("next_boot_fw_ver",
+               ' ',
+               "",
+               "When specified, only next boot fw version is fetched\n"
+               "Commands affected: query");
+
     AddOptions("nofs",
                ' ',
                "",
@@ -818,6 +825,8 @@ ParseStatus Flint::HandleOption(string name, string value)
         _flintParams.skip_rom_query = true;
     } else if (name == "low_cpu") {
         _flintParams.low_cpu = true;
+    } else if (name == "next_boot_fw_ver") {
+        _flintParams.next_boot_fw_ver = true;
     } else if (name == "nofs") {
         _flintParams.nofs = true;
     } else if (name == "allow_psid_change") {

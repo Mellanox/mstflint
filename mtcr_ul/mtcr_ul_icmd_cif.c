@@ -274,7 +274,7 @@ static int go(mfile *mf)
     DBG_PRINTF("Busy-bit raised. Waiting for command to exec...\n");
     char *icmd_sleep_env;
     if (increase_poll_time) {
-        icmd_sleep_env = "70\0";
+        icmd_sleep_env = "10\0";
     }
     else {
         icmd_sleep_env = getenv("MFT_CMD_SLEEP");
@@ -306,6 +306,9 @@ static int go(mfile *mf)
                 if (wait < 8) {
                     wait *= 2;              // exponential backoff - up-to 8ms between polls
                 }
+            }
+            if(increase_poll_time) {
+                msleep(10);
             }
         } else {
             if (i > 5) {
