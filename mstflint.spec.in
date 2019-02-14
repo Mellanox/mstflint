@@ -108,6 +108,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/mstconfig
 %{_bindir}/mstfwreset
 %{_bindir}/mstcongestion
+%{_bindir}/mstprivhost
 %if %{enablefwmgr}
  %{_bindir}/mstfwmanager
 %{CONF_DIR}/ca-bundle.crt
@@ -131,6 +132,7 @@ rm -rf $RPM_BUILD_ROOT
 %{mstflint_python_tools}/rreg_access.so
 %{mstflint_python_tools}/dev_mgt.py
 %{mstflint_python_tools}/c_dev_mgt.so
+%{mstflint_python_tools}/mstprivhost/mstprivhost.py
 
 %{_datadir}/mstflint
 %{_mandir}/man1/*
