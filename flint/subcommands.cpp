@@ -2311,6 +2311,9 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
     if (fwInfo.fw_info.roms_info.exp_rom_found) {
         displayExpRomInfo(fwInfo.fw_info.roms_info, "Rom Info:              ");
     }
+    else {
+        printf("Rom Info:              N/A\n");
+    }
 
     if (isFs2) {
         printf("Device ID:             %d\n", fwInfo.fw_info.dev_type);
