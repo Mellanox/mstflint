@@ -8,7 +8,7 @@ AC_SUBST([PROJECT])
 AC_DEFINE_UNQUOTED([VERSION], ["4.11.0"], [Define the project version.])
 AC_SUBST([VERSION])
 
-AC_CONFIG_MACRO_DIRS([m4])
+AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_SRCDIR([README])
 AM_INIT_AUTOMAKE([foreign])
@@ -25,12 +25,13 @@ OS=$(uname -s)
 MTCR_CONF_DIR=""
 LDL=""
 default_en_inband=""
+
+LDFLAGS="${LDFLAGS} -L/usr/lib64 -L/usr/local/lib -L/usr/local/lib64"
+CXXFLAGS="${CXXFLAGS} -isystem /usr/local/include"
 if test "x$OS" = "xFreeBSD"; then
     AC_MSG_NOTICE(FreeBSD Build)
     MTCR_CONF_DIR="mtcr_freebsd"
     default_en_inband="no"
-    CXXFLAGS="${CXXFLAGS} -isystem /usr/local/include"
-    LDFLAGS="${LDFLAGS} -L/usr/local/lib"
 else
     MTCR_CONF_DIR="mtcr_ul"
     LDL="-ldl"
@@ -169,28 +170,36 @@ AS_IF([test "x$enable_dynamic_ld" = "xyes"], [
 AC_SEARCH_LIBS([iniparser_load], [iniparser], [INIPARSER_SYSTEM_AVAILABLE="yes"],[
     INIPARSER_SYSTEM_AVAILABLE="no"
     INIPARSER_CFLAGS='-I$(top_srcdir)/ext_libs/iniParser'
+    AC_SUBST(INIPARSER_CFLAGS)
     INIPARSER_LIBS='$(top_builddir)/ext_libs/iniParser/libiniparser.a'
+    AC_SUBST(INIPARSER_LIBS)
 ])
 AM_CONDITIONAL([USE_LOCAL_INIPARSER], [test "$INIPARSER_SYSTEM_AVAILABLE" = no])
 
-PKG_CHECK_MODULES([JSON], [json-c], [JSON_SYSTEM_AVAILABLE="yes"],[
+AC_SEARCH_LIBS([json_object_get], [json-c jason], [JSON_SYSTEM_AVAILABLE="yes"],[
     JSON_SYSTEM_AVAILABLE="no"
     JSON_CFLAGS='-I$(top_srcdir)/ext_libs/json'
+    AC_SUBST(JSON_CFLAGS)
     JSON_LIBS='$(top_builddir)/ext_libs/json/libjson.a'
+    AC_SUBST(JSON_LIBS)
 ])
 AM_CONDITIONAL([USE_LOCAL_JSON], [test "$JSON_SYSTEM_AVAILABLE" = no])
 
-PKG_CHECK_MODULES([MUPARSER], [muparser], [MUPARSER_SYSTEM_AVAILABLE="yes"],[
+AC_SEARCH_LIBS([mupCreateVar], [muparser], [MUPARSER_SYSTEM_AVAILABLE="yes"],[
     MUPARSER_SYSTEM_AVAILABLE="no"
     MUPARSER_CFLAGS='-I$(top_srcdir)/ext_libs/muparser'
+    AC_SUBST(MUPARSER_CFLAGS)
     MUPARSER_LIBS='$(top_builddir)/ext_libs/muparser/libmuparser.a'
+    AC_SUBST(MUPARSER_LIBS)
 ])
 AM_CONDITIONAL([USE_LOCAL_MUPARSER], [test "$MUPARSER_SYSTEM_AVAILABLE" = no])
 
-PKG_CHECK_MODULES([SQLITE], [sqlite3], [SQLITE_SYSTEM_AVAILABLE="yes"],[
+AC_SEARCH_LIBS([sqlite3_initialize], [sqlite3], [SQLITE_SYSTEM_AVAILABLE="yes"],[
     SQLITE_SYSTEM_AVAILABLE="no"
     SQLITE_CFLAGS='-I$(top_srcdir)/ext_libs/sqlite'
+    AC_SUBST(SQLITE_CFLAGS)
     SQLITE_LIBS='$(top_builddir)/ext_libs/sqlite/libsqlite3.a'
+    AC_SUBST(SQLITE_LIBS)
 ])
 AM_CONDITIONAL([USE_LOCAL_SQLITE], [test "$SQLITE_SYSTEM_AVAILABLE" = no])
 
