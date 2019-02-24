@@ -2312,7 +2312,8 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
         displayExpRomInfo(fwInfo.fw_info.roms_info, "Rom Info:              ");
     }
     else {
-        printf("Rom Info:              N/A\n");
+        printf("Rom Info:              type=UEFI version=skipped cpu=skipped\n");
+        printf("                       type=PXE version=skipped cpu=skipped\n");
     }
 
     if (isFs2) {
