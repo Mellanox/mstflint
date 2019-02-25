@@ -373,7 +373,8 @@ private:
                               fsm_state_t expStatus = FSMST_NA,
                               u_int32_t size = 0,
                               fsm_state_t currState = FSMST_NA,
-                              ProgressCallBackAdvSt *progressFuncAdv = (ProgressCallBackAdvSt *)NULL);
+                              ProgressCallBackAdvSt *progressFuncAdv = (ProgressCallBackAdvSt *)NULL,
+                              u_int32_t reg_access_timeout = 0);
 
     bool           queryComponentInfo(u_int32_t componentIndex,
                                       u_int8_t readPending,

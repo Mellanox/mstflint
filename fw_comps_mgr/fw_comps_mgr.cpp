@@ -57,6 +57,7 @@ static void mft_signal_set_handling(int isOn)
 
 #define DEFAULT_SIZE 64
 #define MAX_TOUT 1000
+#define REG_ACCESS_TOUT 100
 #define SLEEP_TIME 80
 #define INIT_PARTITION_SLEEP_TIME 240
 #define MAX_MSG_SIZE 128
@@ -230,10 +231,14 @@ bool FwCompsMgr::controlFsm(fsm_command_t command,
                             fsm_state_t expStatus,
                             u_int32_t size,
                             fsm_state_t currState,
-                            ProgressCallBackAdvSt *progressFuncAdv)
+                            ProgressCallBackAdvSt *progressFuncAdv,
+                            u_int32_t reg_access_timeout)
 {
     reg_access_status_t rc = ME_OK;
-    int count = 0;
+    if(!reg_access_timeout) {
+        reg_access_timeout = MAX_TOUT;
+    }
+    unsigned int count = 0;
     do {
         if (count) {
             msleep(SLEEP_TIME);
@@ -251,7 +256,7 @@ bool FwCompsMgr::controlFsm(fsm_command_t command,
         rc = reg_access_mcc(_mf, method, &_lastFsmCtrl);
 
         deal_with_signal();
-    } while (rc == ME_REG_ACCESS_RES_NOT_AVLBL && count++ < MAX_TOUT);
+    } while (rc == ME_REG_ACCESS_RES_NOT_AVLBL && count++ < reg_access_timeout);
     if (rc) {
         if (_lastFsmCtrl.error_code) {
             _lastError = mccErrTrans(_lastFsmCtrl.error_code);
@@ -571,7 +576,7 @@ bool FwCompsMgr::forceRelease()
 
 void FwCompsMgr::generateHandle()
 {
-    if (!controlFsm(FSM_QUERY)) {
+    if (!controlFsm(FSM_QUERY, FSMST_NA, 0, FSMST_NA, NULL, REG_ACCESS_TOUT)) {
         _updateHandle = 0;
         return;
     }

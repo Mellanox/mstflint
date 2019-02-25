@@ -34,6 +34,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <string>
 
 #include "flint_base.h"
 #include "flint_io.h"
@@ -817,11 +818,16 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
             }
             fw_comps_error_t fwCompsErr = fwCompsAccess->getLastError();
             if (fwCompsErr != FWCOMPS_SUCCESS) {
+                std::string err_msg = fwCompsAccess->getLastErrMsg();
                 delete fwCompsAccess;
                 fwCompsAccess = (FwCompsMgr*) NULL;
                 if (fwCompsErr == FWCOMPS_MTCR_OPEN_DEVICE_ERROR) {
                     // mtcr lib failed to open the provided device.
                     WriteToErrBuff(fwParams.errBuff, "Failed to open device", fwParams.errBuffSize);
+                    return (FwOperations*)NULL;
+                }
+                else if(fwCompsErr == FWCOMPS_REG_ACCESS_RES_NOT_AVLBL) {
+                    WriteToErrBuff(fwParams.errBuff, err_msg.c_str(), fwParams.errBuffSize);
                     return (FwOperations*)NULL;
                 }
             } else {
