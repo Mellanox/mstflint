@@ -157,8 +157,10 @@ class PrivilegeMgr(object):
 def parse_args():
     parser = argparse.ArgumentParser(
         prog=PROG, description=DESCRIPTION,
-        formatter_class=argparse.RawTextHelpFormatter,
-        version=tools_version.GetVersionString(PROG, TOOL_VERSION))
+        formatter_class=argparse.RawTextHelpFormatter)
+    version = tools_version.GetVersionString(PROG, TOOL_VERSION)
+    parser.add_argument("--version", action="version",
+                        version=version, help="Display tool version")
     # options arguments
     options_group = parser.add_argument_group('Options')
     options_group.add_argument(
