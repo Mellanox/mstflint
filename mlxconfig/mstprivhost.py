@@ -67,8 +67,8 @@ class PrivilegeException(Exception):
 
 
 class PrivilegeMgr(object):
-    CONFIG_CMD_LINE = "mlxconfig -d %s -f %s --yes set_raw"
-    MCRA_CMD_LINE = "mcra %s 0xf0014.0:16"
+    CONFIG_CMD_LINE = "mstconfig -d %s -f %s --yes set_raw"
+    MCRA_CMD_LINE = "mstmcra %s 0xf0014.0:16"
     BLUE_FIELD_DEV_ID = 0x211
     TITLE = "MLNX_RAW_TLV_FILE\n"
     RAW_BYTES = "0x03000204 0x07000083 0x00000000"
@@ -103,11 +103,11 @@ class PrivilegeMgr(object):
 
     def prepare(self):
         info("preparing configuration file...", end='')
-        self._file_p.write(self.TITLE)
+        self._file_p.write(self.TITLE.encode())
 
         nv_host_priv_conf_str = '0x%08x' % self._nv_host_priv_conf
         conf_bytes = " ".join((self.RAW_BYTES, nv_host_priv_conf_str))
-        self._file_p.write(conf_bytes)
+        self._file_p.write(conf_bytes.encode())
         self._file_p.flush()
         print("Done!")
 
@@ -146,7 +146,7 @@ class PrivilegeMgr(object):
         cmd_line = self.MCRA_CMD_LINE % self._device
         exit_code, stdout, _ = self._exec_cmd(cmd_line)
         if exit_code != 0:
-            raise PrivilegeException("Unknow device '%s'!" % self._device)
+            raise PrivilegeException("Unknown device '%s'!" % self._device)
         dev_id = int(stdout, 16)
         if dev_id != self.BLUE_FIELD_DEV_ID:
             raise PrivilegeException(
@@ -159,8 +159,8 @@ def parse_args():
         prog=PROG, description=DESCRIPTION,
         formatter_class=argparse.RawTextHelpFormatter)
     version = tools_version.GetVersionString(PROG, TOOL_VERSION)
-    parser.add_argument("--version", action="version",
-                        version=version, help="Display tool version")
+    parser.add_argument("-v", "--version", action="version", version=version,
+                        help="show program's version number and exit")
     # options arguments
     options_group = parser.add_argument_group('Options')
     options_group.add_argument(
