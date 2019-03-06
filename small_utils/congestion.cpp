@@ -39,6 +39,11 @@
 
 using namespace std;
 
+#define CX4_HW_ID        0x209
+#define CX4LX_HW_ID      0x20b
+#define CX5_HW_ID        0x20d
+#define CX6_HW_ID        0x20f
+
 enum {
     BIT_TX_LOSSY_OPER = 1,
     BIT_TX_SENSE = 1 << 3,
@@ -61,6 +66,10 @@ int main(int argc, char **argv)
         break;
     case CongestionUI::EXIT_STATUS_USAGE:
         congestObject.printUsage();
+        rc = 1;
+        break;
+    case CongestionUI::EXIT_STATUS_DEV_ID_ERR:
+        congestObject.printErrorNotSupported();
         rc = 1;
         break;
     }
@@ -103,6 +112,17 @@ void CongestionUI::initCmdParser()
     AddOptions("version", 'v', "", "Show version and exit");
     AddDescription("mstcongestion is a utility for configuring Mellanox device's receive congestion handling.");
     _cmdParser.AddRequester(this);
+}
+bool CongestionUI::isDeviceSupported(u_int32_t devid)
+{ // Supported devices are CX4+
+    bool is_dev_supported = false;
+    if (devid == CX4_HW_ID   ||
+        devid == CX4LX_HW_ID || 
+        devid == CX5_HW_ID   ||
+        devid == CX6_HW_ID)
+            is_dev_supported = true;
+    return is_dev_supported;
+
 }
 
 ParseStatus CongestionUI::HandleOption(string name, string value)
@@ -171,6 +191,21 @@ CongestionUI::exit_status_t CongestionUI::run(int argc, char** argv)
         _errorMsg = "Failed to open device: " + _devname;
         return EXIT_STATUS_ERROR;
     }
+    // Check supported device 
+    u_int32_t devid = 0;
+    if (mread4(_mf, 0xf0014, &devid) != 4) {
+        /*
+         * Best effort to check MCAM
+         */
+        devid = 0;
+    }
+    if (!isDeviceSupported(devid))
+    {
+    _errorMsg = "mstcobgestion is supported for CX4+ devices.";
+    return EXIT_STATUS_DEV_ID_ERR;
+    }
+
+    // 
     struct tools_open_mcam mcam;
     memset(&mcam, 0, sizeof(mcam));
     reg_access_status_t status = reg_access_mcam(_mf, REG_ACCESS_METHOD_GET, &mcam);
@@ -298,6 +333,11 @@ void CongestionUI::printUsage()
 void CongestionUI::printError()
 {
     cout << "-E- Failed to perform the operation: " << getError() << endl;
+}
+
+void CongestionUI::printErrorNotSupported()
+{
+    cout << "-E- Not supported device: " << getError() << endl;
 }
 
 void CongestionUI::printSuccess()

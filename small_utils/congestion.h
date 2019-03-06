@@ -43,6 +43,7 @@ public:
         EXIT_STATUS_OK = 0,
         EXIT_STATUS_ERROR = 1,
         EXIT_STATUS_USAGE = 2,
+        EXIT_STATUS_DEV_ID_ERR = 3
     } exit_status_t;
     CongestionUI();
     ~CongestionUI();
@@ -53,6 +54,7 @@ public:
     void printUsage();
     void printError();
     void printSuccess();
+    void printErrorNotSupported();
     string getError() { return _errorMsg; };
     string getSuccess() { return _successMsg; };
 
@@ -75,6 +77,7 @@ private:
     bool setAction(cong_action_t action);
     bool query();
     void initCmdParser();
+    bool isDeviceSupported(u_int32_t dev_id);
     string getModeString(cong_mode_t mode);
     string getActionString(cong_action_t action);
 
