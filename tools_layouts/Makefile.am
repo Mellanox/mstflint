@@ -31,15 +31,12 @@
 #--
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
-USER_DIR = ..
-AM_CPPFLAGS = -I$(USER_DIR) -I$(top_srcdir)/${MTCR_CONFIG_DIR} -I$(top_srcdir)/common
-AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC) -DDATA_PATH=\"$(pkgdatadir)\" 
+AM_CPPFLAGS = -I$(top_srcdir)/${MTCR_CONFIG_DIR} -I$(top_srcdir)/common
+AM_CFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC)
 
 noinst_LTLIBRARIES = libtools_layouts.a
 
-libtools_layouts_a_SOURCES = prm_adb_db.cpp prm_adb_db.h \
-				adb_to_c_utils.c adb_to_c_utils.h \
-				icmd_layouts.c icmd_layouts.h \
+libtools_layouts_a_SOURCES = adb_to_c_utils.c adb_to_c_utils.h \
 				cibfw_layouts.c cibfw_layouts.h \
 				register_access_open_layouts.h register_access_open_layouts.c \
 				tools_open_layouts.c tools_open_layouts.h\
@@ -47,5 +44,5 @@ libtools_layouts_a_SOURCES = prm_adb_db.cpp prm_adb_db.h \
 				cx4fw_layouts.c cx4fw_layouts.h\
 				cx5fw_layouts.c cx5fw_layouts.h\
 				cx6fw_layouts.c cx6fw_layouts.h\
+				icmd_layouts.c icmd_layouts.h\
                 reg_access_hca_layouts.c reg_access_hca_layouts.h
-EXTRA_DIST = adb/prm/hca/ext/*.adb adb/prm/switch/ext/*.adb
