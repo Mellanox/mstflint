@@ -55,6 +55,8 @@ common_INCLUDES =  -I$(USER_DIR)/common\
             -I$(USER_DIR)/mflash\
             -I$(USER_DIR)/cmdparser\
             -I$(USER_DIR)/libmfa\
+            -I$(USER_DIR)/ext_libs/iniParser\
+            -I$(USER_DIR)/ext_libs/json\
             -I$(INIPARSER_CFLAGS)\
             -I$(JSON_CFLAGS)\
             -I$(USER_DIR)/mlxfwops/lib\
@@ -86,6 +88,8 @@ common_LDADD  = $(USER_DIR)/dev_mgt/libdev_mgt.a\
                         $(USER_DIR)/mlxconfig/libmlxcfg.a\
                         $(USER_DIR)/libmfa/libmfa.a\
                         $(USER_DIR)/ext_libs/minixz/libminixz.a\
+                        $(USER_DIR)/ext_libs/iniParser/libiniparser.a\
+                        $(USER_DIR)/ext_libs/json/libjson.a\
                         $(USER_DIR)/cmdparser/libcmdparser.a\
                         $(USER_DIR)/mflash/libmflash.a\
                         $(USER_DIR)/tools_res_mgmt/libtools_res_mgmt.a\
