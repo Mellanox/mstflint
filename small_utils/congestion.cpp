@@ -33,16 +33,12 @@
 
 #include "congestion.h"
 #include "reg_access/reg_access.h"
-#include "common/tools_version.h"
+#include <dev_mgt/tools_dev_types.h>
+#include <common/tools_version.h>
 #include <stdlib.h>
 #include <iostream>
 
 using namespace std;
-
-#define CX4_HW_ID        0x209
-#define CX4LX_HW_ID      0x20b
-#define CX5_HW_ID        0x20d
-#define CX6_HW_ID        0x20f
 
 enum {
     BIT_TX_LOSSY_OPER = 1,
@@ -113,16 +109,13 @@ void CongestionUI::initCmdParser()
     AddDescription("mstcongestion is a utility for configuring Mellanox device's receive congestion handling.");
     _cmdParser.AddRequester(this);
 }
-bool CongestionUI::isDeviceSupported(u_int32_t devid)
+
+bool CongestionUI::isDeviceSupported(dm_dev_id_t devid)
 { // Supported devices are CX4+
     bool is_dev_supported = false;
-    if (devid == CX4_HW_ID   ||
-        devid == CX4LX_HW_ID || 
-        devid == CX5_HW_ID   ||
-        devid == CX6_HW_ID)
-            is_dev_supported = true;
+    if (dm_is_5th_gen_hca(devid) && !dm_is_connectib(devid))
+        is_dev_supported = true;
     return is_dev_supported;
-
 }
 
 ParseStatus CongestionUI::HandleOption(string name, string value)
@@ -192,20 +185,16 @@ CongestionUI::exit_status_t CongestionUI::run(int argc, char** argv)
         return EXIT_STATUS_ERROR;
     }
     // Check supported device 
-    u_int32_t devid = 0;
-    if (mread4(_mf, 0xf0014, &devid) != 4) {
-        /*
-         * Best effort to check MCAM
-         */
-        devid = 0;
-    }
-    if (!isDeviceSupported(devid))
+    dm_dev_id_t devID = DeviceUnknown;
+    u_int32_t hwDevID = 0;
+    u_int32_t hwChipRev = 0;
+    dm_get_device_id(_mf, &devID, &hwDevID, &hwChipRev);
+    if (!isDeviceSupported(devID))
     {
     _errorMsg = "mstcobgestion is supported for CX4+ devices.";
     return EXIT_STATUS_DEV_ID_ERR;
     }
 
-    // 
     struct tools_open_mcam mcam;
     memset(&mcam, 0, sizeof(mcam));
     reg_access_status_t status = reg_access_mcam(_mf, REG_ACCESS_METHOD_GET, &mcam);

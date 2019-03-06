@@ -32,6 +32,7 @@
  */
 
 #include "cmdparser/cmdparser.h"
+#include <dev_mgt/tools_dev_types.h>
 #include <mtcr.h>
 #include <string.h>
 
@@ -77,7 +78,7 @@ private:
     bool setAction(cong_action_t action);
     bool query();
     void initCmdParser();
-    bool isDeviceSupported(u_int32_t dev_id);
+    bool isDeviceSupported(dm_dev_id_t dev_id);
     string getModeString(cong_mode_t mode);
     string getActionString(cong_action_t action);
 

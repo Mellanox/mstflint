@@ -200,6 +200,15 @@ static struct device_info g_devs_info[] = {
         DM_HCA                  //dev_type
     },
     {
+        DeviceConnectX6DX,      //dm_id
+        0x212,                  //hw_dev_i
+        -1,                     //hw_rev_i
+        -1,                     //sw_dev_i
+        "ConnectX6DX",          //name
+        2,                      //port_num
+        DM_HCA                  //dev_type
+    },
+    {
         DeviceBlueField,        //dm_id
         0x211,                  //hw_dev_i
         -1,                     //hw_rev_i
@@ -523,18 +532,9 @@ u_int32_t dm_get_hw_rev_id(dm_dev_id_t type)
 
 int dm_is_fpp_supported(dm_dev_id_t type)
 {
+    // Function per port is supported only in HCAs that arrived after CX3
     const struct device_info *dp = get_entry(type);
-    if (
-        dp->dm_id == DeviceConnectIB   ||
-        dp->dm_id == DeviceConnectX4   ||
-        dp->dm_id == DeviceConnectX4LX ||
-        dp->dm_id == DeviceConnectX5   ||
-        dp->dm_id == DeviceConnectX6   ||
-        dp->dm_id == DeviceBlueField) {
-        return 1;
-    } else {
-        return 0;
-    }
+    return (dm_is_5th_gen_hca(dp->dev_type) || dm_is_newton(dp->dm_id));
 }
 
 int dm_is_device_supported(dm_dev_id_t type)
@@ -557,15 +557,44 @@ int dm_is_livefish_mode(mfile *mf)
     }
     u_int32_t swid = mf->dinfo->pci.dev_id;
     //printf("-D- swid: %#x, devid: %#x\n", swid, devid);
-    if (devid_t == DeviceConnectX2    ||
-        devid_t == DeviceConnectX3    ||
-        devid_t == DeviceConnectX3Pro ||
-        devid_t == DeviceSwitchX) {
+    if (dm_is_4th_gen(devid_t) || dm_is_switchx(devid_t)) {
         return (devid == swid - 1);
     } else {
         return (devid == swid);
     }
 
     return 0;
+}
+
+int dm_is_4th_gen(dm_dev_id_t type)
+{
+    return (type == DeviceConnectX2 ||
+            type == DeviceConnectX3 ||
+            type == DeviceConnectX3Pro);
+}
+
+int dm_is_5th_gen_hca(dm_dev_id_t type)
+{
+    return (dm_dev_is_hca(type) && !dm_is_4th_gen(type));
+}
+
+int dm_is_newton(dm_dev_id_t type)
+{
+    return (type == DeviceFPGANewton);
+}
+
+int dm_is_connectib(dm_dev_id_t type)
+{
+    return (type == DeviceConnectIB);
+}
+
+int dm_is_switchx(dm_dev_id_t type)
+{
+    return (type == DeviceSwitchX);
+}
+
+int dm_is_new_gen_switch(dm_dev_id_t type)
+{
+    return (dm_dev_is_switch(type) && !dm_is_switchx(type));
 }
 

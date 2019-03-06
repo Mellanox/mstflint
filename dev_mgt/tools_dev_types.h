@@ -91,6 +91,7 @@ enum dm_dev_id
     DeviceSpectrum2,
     DeviceDummy,
     DeviceSecureHost,
+    DeviceConnectX6DX,
 
     DeviceEndMarker           // Dummy Device - Marker for indicating end of devices when iterating
 };
@@ -169,6 +170,18 @@ u_int32_t dm_get_hw_rev_id(dm_dev_id_t type);
  * A predicate returning if the device supports Function Per Port
  */
 int dm_is_fpp_supported(dm_dev_id_t type);
+
+int dm_is_4th_gen(dm_dev_id_t type);
+
+int dm_is_5th_gen_hca(dm_dev_id_t type);
+
+int dm_is_newton(dm_dev_id_t type);
+
+int dm_is_connectib(dm_dev_id_t type);
+
+int dm_is_switchx(dm_dev_id_t type);
+
+int dm_is_new_gen_switch(dm_dev_id_t type);
 
 /*
  * A predicate returning if the device is in LiveFish mode
