@@ -277,11 +277,10 @@ AS_IF([test "x$enable_openssl" = "xyes"], [
     ])
 
 AS_IF([test "x$enable_fw_mgr" = "xyes"], [
-        AC_CONFIG_FILES(xz_utils/Makefile)
         AC_CONFIG_FILES(mlxfwupdate/Makefile)
         AC_CONFIG_FILES(ext_libs/iniParser/Makefile)
         AC_CONFIG_FILES(mlxarchive/Makefile)
-        FW_MGR_TOOLS="xz_utils mlxfwupdate mlxarchive"
+        FW_MGR_TOOLS="mlxfwupdate mlxarchive"
     ])
     
 AC_SUBST(FW_MGR_TOOLS)
@@ -294,8 +293,9 @@ else
     AC_CONFIG_FILES(mtcr_ul/Makefile)
 fi
 
-AC_OUTPUT( Makefile common/Makefile mft_utils/Makefile mtcr_py/Makefile ext_libs/Makefile ext_libs/sqlite/Makefile ext_libs/muparser/Makefile ext_libs/json/Makefile ext_libs/minixz/Makefile dev_mgt/Makefile \
-        tools_layouts/Makefile reg_access/Makefile cmdif/Makefile libmfa/Makefile tools_res_mgmt/Makefile mlxconfig/Makefile mlxconfig/mlxconfig_dbs/Makefile mflash/Makefile mlxfwops/Makefile mlxfwops/lib/Makefile cmdparser/Makefile flint/Makefile \
+AC_OUTPUT( Makefile common/Makefile mft_utils/Makefile mtcr_py/Makefile ext_libs/Makefile ext_libs/sqlite/Makefile ext_libs/muparser/Makefile ext_libs/json/Makefile ext_libs/minixz/Makefile adb_parser/Makefile xz_utils/Makefile dev_mgt/Makefile \
+        tools_layouts/Makefile tools_layouts/adb/Makefile tools_layouts/adb/prm/Makefile tools_layouts/adb/prm/hca/Makefile tools_layouts/adb/prm/hca/ext/Makefile tools_layouts/adb/prm/switch/Makefile tools_layouts/adb/prm/switch/ext/Makefile \
+        reg_access/Makefile cmdif/Makefile libmfa/Makefile tools_res_mgmt/Makefile mlxconfig/Makefile mlxconfig/mlxconfig_dbs/Makefile mflash/Makefile mlxfwops/Makefile mlxfwops/lib/Makefile cmdparser/Makefile flint/Makefile \
         small_utils/Makefile small_utils/mlxfwresetlib/Makefile mstdump/Makefile mstdump/crd_lib/Makefile mstdump/crd_main/Makefile mstdump/mstdump_dbs/Makefile mvpd/Makefile \
-        fw_comps_mgr/Makefile mad_ifc/Makefile )
+        fw_comps_mgr/Makefile mad_ifc/Makefile mlxreg/Makefile )
 
