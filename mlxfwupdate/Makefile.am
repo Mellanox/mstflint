@@ -60,6 +60,7 @@ common_INCLUDES =  -I$(USER_DIR)/common\
             -I$(INIPARSER_CFLAGS)\
             -I$(JSON_CFLAGS)\
             -I$(USER_DIR)/mlxfwops/lib\
+            -I$(USER_DIR)/pldmlib\
             -I$(CURL_INC_DIR)\
             -I$(XML2_INC_DIR)\
             -I$(USER_DIR)/mft_utils\
@@ -85,6 +86,7 @@ common_SOURCEES =  mlxfwmanager_common.cpp mlxfwmanager_common.h\
 common_LDADD  = $(USER_DIR)/dev_mgt/libdev_mgt.a\
                         $(USER_DIR)/mvpd/libmvpd.a\
                         $(USER_DIR)/mlxfwops/lib/libmlxfwops.a\
+                        $(USER_DIR)/pldmlib/libpldm.a\
                         $(USER_DIR)/mlxconfig/libmlxcfg.a\
                         $(USER_DIR)/libmfa/libmfa.a\
                         $(USER_DIR)/ext_libs/minixz/libminixz.a\
