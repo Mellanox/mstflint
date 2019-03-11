@@ -369,7 +369,7 @@ bool Fs2Operations::checkGen(u_int32_t beg, u_int32_t offs, u_int32_t& next, con
         // CRC
         Crc16 crc;
         std::vector<u_int8_t> buffv(size);
-        u_int32_t *buff = (u_int32_t*)(&(buffv[0]));
+        u_int32_t *buff = (u_int32_t *)(buffv.size() ? (&(buffv[0])) : NULL);
 
         readBufAux((*_ioAccess), offs + sizeof(gph), buff, size, pr);
 
