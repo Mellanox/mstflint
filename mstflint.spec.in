@@ -47,8 +47,8 @@ MSTFLINT_VERSION_STR="%{name} %{version}-%{release}"
     config_flags="$config_flags --disable-inband"
 %endif
 
-%if ! %{nopenssl}
-    config_flags="$config_flags --enable-openssl"
+%if %{nopenssl}
+    config_flags="$config_flags --disable-openssl"
 %endif
 
 %if %{enablecs}

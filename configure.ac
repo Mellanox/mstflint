@@ -134,7 +134,7 @@ if test "x$enable_cs" = "xyes"; then
   TOOLS_CRYPTO="tools_crypto"
 fi
 
-AC_MSG_CHECKING(--disable-openssl argument)
+AC_MSG_CHECKING(openssl argument)
 AC_ARG_ENABLE(openssl,
             [  --disable-openssl       Disable all openssl features, dependant of openssl library],
             [enable_openssl=$enableval],
