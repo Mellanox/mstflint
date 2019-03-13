@@ -18,6 +18,7 @@
 #ifndef _PLDM_BUFF_H_
 #define _PLDM_BUFF_H_
 #include <string>
+#include <compatibility.h>
 
 class PldmBuffer {
 public:

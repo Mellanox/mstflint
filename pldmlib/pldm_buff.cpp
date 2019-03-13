@@ -108,8 +108,10 @@ int PldmBuffer::seek(long offset, int whence) {
         break;
     case SEEK_CUR:
         new_pos = m_pos + offset;
+        break;
     case SEEK_END:
         new_pos = m_size + offset;
+        break;
     }
 
     if(new_pos < 0 || new_pos > m_size) {

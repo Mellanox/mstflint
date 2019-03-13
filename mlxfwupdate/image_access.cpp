@@ -559,8 +559,8 @@ bool ImageAccess::extract_pldm_image_info(const u_int8_t * buff, u_int32_t size,
                 static const int FW_VER_SIZE = 3;
                 u_int16_t fw_ver[FW_VER_SIZE];
                 fw_ver[0] = image_info.FW_VERSION.MAJOR;
-                fw_ver[1] = image_info.FW_VERSION.SUBMINOR;
-                fw_ver[2] = image_info.FW_VERSION.MINOR;
+                fw_ver[1] = image_info.FW_VERSION.MINOR;
+                fw_ver[2] = image_info.FW_VERSION.SUBMINOR;
                 ImgVersion imgv;
                 imgv.setVersion("FW", FW_VER_SIZE, fw_ver);
                 query_item.imgVers.push_back(imgv);
