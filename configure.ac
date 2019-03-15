@@ -134,6 +134,14 @@ if test "x$enable_cs" = "xyes"; then
   TOOLS_CRYPTO="tools_crypto"
 fi
 
+AC_MSG_CHECKING(--enable-all-static argument)
+AC_ARG_ENABLE([all_static],
+    AS_HELP_STRING([--enable-all-static], [Enable creating none dynamic executables]))
+
+AS_IF([test "x$enable_all_static" = "xyes"], [
+  LDFLAGS="$LDFLAGS -all-static"
+])
+
 AC_MSG_CHECKING(openssl argument)
 AC_ARG_ENABLE(openssl,
             [  --disable-openssl       Disable all openssl features, dependant of openssl library],
