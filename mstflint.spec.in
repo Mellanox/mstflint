@@ -114,11 +114,8 @@ rm -rf $RPM_BUILD_ROOT
 %{CONF_DIR}/ca-bundle.crt
 %endif
 
-%{_includedir}/mstflint/mtcr.h
-%{_includedir}/mstflint/mtcr_com_defs.h
 %{_includedir}/mtcr_ul/mtcr.h
 %{_includedir}/mtcr_ul/mtcr_com_defs.h
-%{_libdir}/mstflint/libmtcr_ul.a
 %{_libdir}/libmtcr_ul.a
 
 %{mstflint_python_tools}/tools_version.py
