@@ -111,6 +111,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/mstprivhost
 %if %{enablefwmgr}
  %{_bindir}/mstfwmanager
+ %{_bindir}/mstarchive
 %{CONF_DIR}/ca-bundle.crt
 %endif
 
