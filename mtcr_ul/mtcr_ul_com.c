@@ -810,7 +810,7 @@ static int driver_mread4_block(mfile *mf, unsigned int offset, u_int32_t *data, 
     if (mf->tp == MST_PCICONF && mf->vsec_supp) {
         int left_size = 0;
         u_int32_t *dest_ptr = data;
-        for (left_size = length; left_size > 0; left_size -= PCICONF_MAX_BUFFER_SIZE) {
+        for (left_size = length; left_size > 0; left_size -= PCICONF_MAX_BUFFER_SIZE * sizeof(u_int32_t)) {
             int toread = (left_size >= PCICONF_MAX_BUFFER_SIZE) ? PCICONF_MAX_BUFFER_SIZE : left_size;
 
             struct mst_read4_buffer_st read4_buf;
