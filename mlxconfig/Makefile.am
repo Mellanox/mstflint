@@ -60,7 +60,7 @@ ${MLXPRIVHOST_PYTHON_WRAPPER}: $(PYTHON_WRAPPER_SCRIPT)
 	cp $(PYTHON_WRAPPER_SCRIPT) $@
 
 mlxprivhostlibdir=$(libdir)/mstflint/python_tools/$(MLXPRIVHOST_PYTHON_WRAPPER)
-mlxprivhostlib_DATA = $(MLXPRIVHOST_PYTHON_WRAPPER).py
+mlxprivhostlib_SCRIPTS = $(MLXPRIVHOST_PYTHON_WRAPPER).py
 
 noinst_LTLIBRARIES = libmlxcfg.a
 
