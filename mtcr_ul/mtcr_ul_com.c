@@ -795,8 +795,8 @@ static int driver_mwrite4_block(mfile *mf, unsigned int offset, u_int32_t *data,
             if (ret < 0) {
                 return -1;
             }
-            offset += towrite;
-            dest_ptr += towrite;
+            offset += towrite / sizeof(u_int32_t);
+            dest_ptr += towrite / sizeof(u_int32_t);
         }
         return length;
     } else {
@@ -823,8 +823,8 @@ static int driver_mread4_block(mfile *mf, unsigned int offset, u_int32_t *data, 
                 return -1;
             }
             memcpy(dest_ptr, read4_buf.data, toread);
-            offset += toread;
-            dest_ptr += toread;
+            offset += toread / sizeof(u_int32_t);
+            dest_ptr += toread / sizeof(u_int32_t);
         }
         return length;
     } else {

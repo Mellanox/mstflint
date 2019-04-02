@@ -134,7 +134,7 @@ if test "x$enable_cs" = "xyes"; then
   TOOLS_CRYPTO="tools_crypto"
 fi
 
-AC_MSG_CHECKING(--disable-openssl argument)
+AC_MSG_CHECKING(openssl argument)
 AC_ARG_ENABLE(openssl,
             [  --disable-openssl       Disable all openssl features, dependant of openssl library],
             [enable_openssl=$enableval],
@@ -148,6 +148,20 @@ if test "x$enable_openssl" = "xyes"; then
   AC_CHECK_HEADER(openssl/md5.h,,AC_MSG_ERROR([cannot find openssl/md5.h . remove --enable-openssl to remove this dependaency or install openssl]))
   TOOLS_CRYPTO="tools_crypto mlxsign_lib"
 fi
+
+AC_MSG_CHECKING(--enable-all-static argument)
+AC_ARG_ENABLE([all_static],
+    AS_HELP_STRING([--enable-all-static], [Enable creating none dynamic executables]))
+
+AS_IF([test "x$enable_all_static" = "xyes"], [
+  if test "x$enable_dc" = "xyes"; then
+    AC_MSG_ERROR([cannot enable all static with enable dc . add --disable-dc to remove dependaency with dynamic zlib])
+  fi
+  if test "x$enable_openssl" = "xyes"; then
+    AC_MSG_ERROR([cannot enable all static with enable openssl . add --disable-openssl to remove dependaency with dynamic openssl])
+  fi
+  LDFLAGS="$LDFLAGS -all-static"
+])
 
 AC_SUBST(TOOLS_CRYPTO)
 AM_CONDITIONAL(ENABLE_OPENSSL, [test "x$enable_openssl" = "xyes" ])
