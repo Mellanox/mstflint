@@ -394,7 +394,11 @@ struct BOARD_ID {
 #define TLV_FORMAT_SECT    "TLVs format section"
 #define TRACER_HASH_SECT   "Tracer Hash section"
 #define REBOOT_REQUIRED_STR "To load new FW run reboot machine."
+#ifndef MST_UL
 #define REBOOT_OR_FWRESET_REQUIRED_STR "To load new FW run mlxfwreset or reboot machine."
+#else
+#define REBOOT_OR_FWRESET_REQUIRED_STR "To load new FW run mstfwreset or reboot machine."
+#endif
 #define numbel(x) (sizeof(x) / sizeof((x)[0]))
 
 void report(const char *format, ...);
