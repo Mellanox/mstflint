@@ -1,25 +1,26 @@
 #--
-# Copyright (c) 2004-2010 Mellanox Technologies LTD. All rights reserved.
-#
+# 
+# Copyright (C) Jan 2019 Mellanox Technologies Ltd. All rights reserved.
+# 
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
 # General Public License (GPL) Version 2, available from the file
 # COPYING in the main directory of this source tree, or the
 # OpenIB.org BSD license below:
-#
+# 
 #     Redistribution and use in source and binary forms, with or
 #     without modification, are permitted provided that the following
 #     conditions are met:
-#
+# 
 #      - Redistributions of source code must retain the above
 #        copyright notice, this list of conditions and the following
 #        disclaimer.
-#
+# 
 #      - Redistributions in binary form must reproduce the above
 #        copyright notice, this list of conditions and the following
 #        disclaimer in the documentation and/or other materials
 #        provided with the distribution.
-#
+# 
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 # EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 # MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -28,26 +29,16 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
 #--
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
-AM_CPPFLAGS = -I$(top_srcdir)/${MTCR_CONFIG_DIR} -I$(top_srcdir)/common
-AM_CFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC)
-AM_CXXFLAGS =  -DDATA_PATH=\"$(pkgdatadir)\" 
 
-SUBDIRS = adb
+DIST_SUBDIRS = .
 
-noinst_LTLIBRARIES = libtools_layouts.a
+USER_DIR = ..
+INCLUDES = -I$(USER_DIR) -I$(USER_DIR)/common
+AM_CXXFLAGS = -Wall -W -g -MP -MD -Werror -pipe $(COMPILER_FPIC)
 
-libtools_layouts_a_SOURCES = prm_adb_db.cpp prm_adb_db.h \
-				adb_to_c_utils.c adb_to_c_utils.h\
-				cibfw_layouts.c cibfw_layouts.h \
-				register_access_open_layouts.h register_access_open_layouts.c \
-				tools_open_layouts.c tools_open_layouts.h\
-				register_access_sib_layouts.h register_access_sib_layouts.c \
-				cx4fw_layouts.c cx4fw_layouts.h\
-				cx5fw_layouts.c cx5fw_layouts.h\
-				cx6fw_layouts.c cx6fw_layouts.h\
-				icmd_layouts.c icmd_layouts.h\
-                reg_access_hca_layouts.c reg_access_hca_layouts.h
-EXTRA_DIST = adb/prm/hca/ext/*.adb adb/prm/switch/ext/*.adb
+lib_LTLIBRARIES = libadb_parser.a
+libadb_parser_a_SOURCES = adb_parser.h adb_parser.cpp buf_ops.h buf_ops.cpp expr.h expr.cpp adb_expr.h adb_expr.cpp adb_db.h adb_db.cpp

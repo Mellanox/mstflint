@@ -106,6 +106,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/mstvpd
 %{_bindir}/mstmcra
 %{_bindir}/mstconfig
+%{_bindir}/mstreg
 %{_bindir}/mstfwreset
 %{_bindir}/mstcongestion
 %{_bindir}/mstprivhost
