@@ -297,5 +297,5 @@ AC_OUTPUT( Makefile common/Makefile mft_utils/Makefile mtcr_py/Makefile ext_libs
         tools_layouts/Makefile tools_layouts/adb/Makefile tools_layouts/adb/prm/Makefile tools_layouts/adb/prm/hca/Makefile tools_layouts/adb/prm/hca/ext/Makefile tools_layouts/adb/prm/switch/Makefile tools_layouts/adb/prm/switch/ext/Makefile \
         reg_access/Makefile cmdif/Makefile libmfa/Makefile tools_res_mgmt/Makefile mlxconfig/Makefile mlxconfig/mlxconfig_dbs/Makefile mflash/Makefile mlxfwops/Makefile mlxfwops/lib/Makefile cmdparser/Makefile flint/Makefile \
         small_utils/Makefile small_utils/mlxfwresetlib/Makefile mstdump/Makefile mstdump/crd_lib/Makefile mstdump/crd_main/Makefile mstdump/mstdump_dbs/Makefile mvpd/Makefile \
-        fw_comps_mgr/Makefile mad_ifc/Makefile mlxreg/Makefile )
+        fw_comps_mgr/Makefile mad_ifc/Makefile mlxreg/Makefile tracers/Makefile tracers/fwtrace/Makefile )
 
