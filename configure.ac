@@ -170,7 +170,7 @@ AM_CONDITIONAL(ENABLE_CS, [test  "x$enable_cs" = "xyes" || test "x$enable_openss
 AC_ARG_ENABLE([static_libstdcpp],
     AS_HELP_STRING([--enable-static-libstdcpp], [Enable link static to libstdc++]))
 
-AS_IF([test "x$enable_static_libstdcpp" = "xyes"], [
+AS_IF([test "x$enable_static_libstdcpp" = "xyes" -o "x$enable_all_static" = "xyes" ], [
   CXXFLAGS="$CXXFLAGS -static-libstdc++ -static-libgcc"
 ])
 
@@ -298,4 +298,3 @@ AC_OUTPUT( Makefile common/Makefile mft_utils/Makefile mtcr_py/Makefile ext_libs
         reg_access/Makefile cmdif/Makefile libmfa/Makefile tools_res_mgmt/Makefile mlxconfig/Makefile mlxconfig/mlxconfig_dbs/Makefile mflash/Makefile mlxfwops/Makefile mlxfwops/lib/Makefile cmdparser/Makefile flint/Makefile \
         small_utils/Makefile small_utils/mlxfwresetlib/Makefile mstdump/Makefile mstdump/crd_lib/Makefile mstdump/crd_main/Makefile mstdump/mstdump_dbs/Makefile mvpd/Makefile \
         fw_comps_mgr/Makefile mad_ifc/Makefile mlxreg/Makefile tracers/Makefile tracers/fwtrace/Makefile )
-
