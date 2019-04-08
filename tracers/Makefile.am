@@ -1,5 +1,6 @@
 #--
-# Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+# 
+# Copyright (C) 2019 Mellanox Technologies Ltd. All rights reserved.
 # 
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,18 +29,10 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
 #--
 
-SUBDIRS = common mft_utils ext_libs $(TOOLS_CRYPTO) adb_parser tools_layouts ${MTCR_CONF_DIR} mtcr_py $(MAD_IFC) reg_access cmdif xz_utils dev_mgt tools_res_mgmt mvpd mflash fw_comps_mgr libmfa mlxconfig mlxfwops cmdparser $(FW_MGR_TOOLS) flint small_utils mstdump mlxreg tracers
+# Makefile.am -- Process this file with automake to produce Makefile.in
 
-DIST_SUBDIRS = tracers
-
-man_MANS = man/mstflint.1 man/mstconfig.1 man/mstmcra.1 man/mstmread.1 man/mstmwrite.1 man/mstmtserver.1 man/mstregdump.1 man/mstvpd.1 man/mstprivhost.1 man/mstarchive.1
-
-EXTRA_DIST = \
-	mstflint.spec \
-	small_utils/hca_self_test.ofed \
-	common/gitversion.h \
-	debian \
-	$(man_MANS)
+SUBDIRS = fwtrace
 
