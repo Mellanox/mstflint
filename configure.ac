@@ -170,7 +170,7 @@ AM_CONDITIONAL(ENABLE_CS, [test  "x$enable_cs" = "xyes" || test "x$enable_openss
 AC_ARG_ENABLE([static_libstdcpp],
     AS_HELP_STRING([--enable-static-libstdcpp], [Enable link static to libstdc++]))
 
-AS_IF([test "x$enable_static_libstdcpp" = "xyes"  -o "x$enable_all_static" = "xyes" ], [
+AS_IF([test "x$enable_static_libstdcpp" = "xyes" -o "x$enable_all_static" = "xyes" ], [
   CXXFLAGS="$CXXFLAGS -static-libstdc++ -static-libgcc"
 ])
 
