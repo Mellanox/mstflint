@@ -37,10 +37,7 @@
 # Python imports
 import sys
 import os
-import string
-import getopt
 import signal
-import struct
 import argparse
 from secure_fw_trace import SecureFwTrace
 from fw_trace_utilities import FwTraceUtilities
@@ -53,7 +50,7 @@ sys.path.append(os.path.join("..", "..", "cmdif"))
 import mtcr  # noqa
 import cmdif  # noqa
 
-sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
+sys.stdout = os.fdopen(sys.stdout.fileno(), 'w')
 EXEC_NAME = "mstfwtrace"
 proc = None
 
@@ -281,7 +278,7 @@ def get_epilog():
 
             classes_info = "%s\n    Trace classes:" % classes_info
             for i in range(0, len(trace_levels), 5):
-                classes_info = "%s\n         %s" % (classes_info, string.join(trace_levels[i: i + 5], ", "))
+                classes_info = "%s\n         %s" % (classes_info, ", ".join(trace_levels[i: i + 5]))
     return classes_info
 
 
@@ -369,7 +366,7 @@ def start_tracer():
 
 
 def signal_handler(signal, frame):
-    print "\nInterrupted, exiting ..."
+    print("\nInterrupted, exiting ...")
     global proc
     if proc is not None:
         proc.terminate()
