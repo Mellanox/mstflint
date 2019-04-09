@@ -37,8 +37,9 @@
 DIST_SUBDIRS = .
 
 USER_DIR = ..
-INCLUDES = -I$(USER_DIR) -I$(USER_DIR)/common
-AM_CXXFLAGS = -Wall -W -g -MP -MD -Werror -pipe $(COMPILER_FPIC)
+EXPAT_PATH = $(USER_DIR)/ext_libs/expat
+INCLUDES = -I$(USER_DIR) -I$(USER_DIR)/common -isystem $(EXPAT_PATH)
+AM_CXXFLAGS = -Wall -W -g -MP -MD -Werror -pipe $(COMPILER_FPIC) -Wno-catch-value
 
 lib_LTLIBRARIES = libadb_parser.a
 libadb_parser_a_SOURCES = adb_parser.h adb_parser.cpp buf_ops.h buf_ops.cpp expr.h expr.cpp adb_expr.h adb_expr.cpp adb_db.h adb_db.cpp

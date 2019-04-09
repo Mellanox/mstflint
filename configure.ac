@@ -293,6 +293,21 @@ else
     AC_CONFIG_FILES(mtcr_ul/Makefile)
 fi
 
+# MLXREG
+AC_CHECK_LIB([expat], XML_ParserCreate_MM,
+		[AC_CHECK_HEADERS(expat.h, have_expat=true, have_expat=false)],
+		have_expat=false)
+
+if ! $have_expat; then
+AC_MSG_ERROR([Expat library is missing, please install expat xml parser to continue: expat-devel.]
+		[http://expat.sourceforge.net/])
+fi
+
+AC_LANG_PUSH([C++])
+AC_CHECK_HEADERS([boost/foreach.hpp], [],
+    [AC_MSG_ERROR([Boost libraries are missing, please install boost to continue.])])
+AC_LANG_POP([C++])
+
 AC_OUTPUT( Makefile common/Makefile mft_utils/Makefile mtcr_py/Makefile ext_libs/Makefile ext_libs/sqlite/Makefile ext_libs/muparser/Makefile ext_libs/json/Makefile ext_libs/minixz/Makefile adb_parser/Makefile xz_utils/Makefile dev_mgt/Makefile \
         tools_layouts/Makefile tools_layouts/adb/Makefile tools_layouts/adb/prm/Makefile tools_layouts/adb/prm/hca/Makefile tools_layouts/adb/prm/hca/ext/Makefile tools_layouts/adb/prm/switch/Makefile tools_layouts/adb/prm/switch/ext/Makefile \
         reg_access/Makefile cmdif/Makefile libmfa/Makefile tools_res_mgmt/Makefile mlxconfig/Makefile mlxconfig/mlxconfig_dbs/Makefile mflash/Makefile mlxfwops/Makefile mlxfwops/lib/Makefile cmdparser/Makefile flint/Makefile \
