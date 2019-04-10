@@ -27,7 +27,7 @@ LDL=""
 default_en_inband=""
 
 LDFLAGS="${LDFLAGS} -L/usr/lib64 -L/usr/local/lib -L/usr/local/lib64"
-CXXFLAGS="${CXXFLAGS} -isystem /usr/local/include"
+CXXFLAGS="${CXXFLAGS} -isystem /usr/local/include" 
 if test "x$OS" = "xFreeBSD"; then
     AC_MSG_NOTICE(FreeBSD Build)
     MTCR_CONF_DIR="mtcr_freebsd"
@@ -46,9 +46,9 @@ AC_CHECK_HEADER(termios.h,[CXXFLAGS="${CXXFLAGS} -DHAVE_TERMIOS_H"])
 TOOLS_CRYPTO=""
 MAD_IFC=""
 FW_MGR_TOOLS=""
-MST_REG_TOOLS=""
-MST_REG_DBS=""
-MST_REG_DBS_EXTRA_DIST=""
+PRM_TOOLS=""
+PRM_DBS=""
+PRM_DBS_EXTRA_DIST=""
 
 COMPILER_FPIC="-fPIC"
 AC_SUBST(COMPILER_FPIC)
@@ -80,14 +80,14 @@ if test "x$enable_fw_mgr" = "xyes"; then
     CURL_INC_DIR=/usr/include/curl/
 fi
 
-# MLXREG
-AC_MSG_CHECKING(--enable-mst-reg argument)
-AC_ARG_ENABLE(mst-reg,
-             [  --enable-mst-reg        Enable compiling mstreg tool and its features],
-             [enable_mst_reg="yes"],
-             [enable_mst_reg="no"])
-AC_MSG_RESULT($enable_mst_reg)
-if test "x$enable_mst_reg" = "xyes"; then
+# PRM
+AC_MSG_CHECKING(--enable-prm-genaric-tools argument)
+AC_ARG_ENABLE(prm-genaric-tools,
+             [  --enable-prm-genaric-tools        Enable compiling tools depends on PRM, i.e. mstreg],
+             [enable_prm_genaric_tools="yes"],
+             [enable_prm_genaric_tools="no"])
+AC_MSG_RESULT($enable_prm_genaric_tools)
+if test "x$enable_prm_genaric_tools" = "xyes"; then
     AC_CHECK_LIB([expat], XML_ParserCreate_MM,
             [AC_CHECK_HEADERS(expat.h, have_expat=true, have_expat=false)],
             have_expat=false)
@@ -309,7 +309,7 @@ AS_IF([test "x$enable_fw_mgr" = "xyes"], [
     
 AC_SUBST(FW_MGR_TOOLS)
 
-AS_IF([test "x$enable_mst_reg" = "xyes"], [
+AS_IF([test "x$enable_prm_genaric_tools" = "xyes"], [
         AC_OUTPUT(adb_parser/Makefile)
         AC_OUTPUT(tools_layouts/adb/Makefile)
         AC_OUTPUT(tools_layouts/adb/prm/Makefile)
@@ -318,14 +318,14 @@ AS_IF([test "x$enable_mst_reg" = "xyes"], [
         AC_OUTPUT(tools_layouts/adb/prm/switch/Makefile)
         AC_OUTPUT(tools_layouts/adb/prm/switch/ext/Makefile)
         AC_OUTPUT(mlxreg/Makefile)
-        MST_REG_TOOLS="adb_parser mlxreg"
-        MST_REG_DBS="adb"
-        MST_REG_DBS_EXTRA_DIST="adb/prm/hca/ext/*.adb adb/prm/switch/ext/*.adb"
+        PRM_TOOLS="adb_parser mlxreg"
+        PRM_DBS="adb"
+        PRM_DBS_EXTRA_DIST="adb/prm/hca/ext/*.adb adb/prm/switch/ext/*.adb"
     ])
 
-AC_SUBST(MST_REG_TOOLS)
-AC_SUBST(MST_REG_DBS)
-AC_SUBST(MST_REG_DBS_EXTRA_DIST)
+AC_SUBST(PRM_TOOLS)
+AC_SUBST(PRM_DBS)
+AC_SUBST(PRM_DBS_EXTRA_DIST)
 
 if test "x$OS" = "xFreeBSD"; then
     AC_MSG_NOTICE(FreeBSD MTCR)
