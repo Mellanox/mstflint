@@ -37,8 +37,7 @@
 DIST_SUBDIRS = .
 
 USER_DIR = ..
-EXPAT_PATH=/usr/include
-INCLUDES = -I$(USER_DIR) -I$(USER_DIR)/common -I$(EXPAT_PATH)
+INCLUDES = -I$(USER_DIR) -I$(USER_DIR)/common
 AM_CXXFLAGS = -Wall -W -g -MP -MD -Werror -pipe $(COMPILER_FPIC) -Wno-catch-value
 
 lib_LTLIBRARIES = libadb_parser.a
