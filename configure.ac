@@ -46,6 +46,9 @@ AC_CHECK_HEADER(termios.h,[CXXFLAGS="${CXXFLAGS} -DHAVE_TERMIOS_H"])
 TOOLS_CRYPTO=""
 MAD_IFC=""
 FW_MGR_TOOLS=""
+MST_REG_TOOLS=""
+MST_REG_DBS=""
+MST_REG_DBS_EXTRA_DIST=""
 
 COMPILER_FPIC="-fPIC"
 AC_SUBST(COMPILER_FPIC)
@@ -75,6 +78,27 @@ if test "x$enable_fw_mgr" = "xyes"; then
     AC_CHECK_HEADER(lzma.h,,AC_MSG_ERROR([Cannot find lzma.h.]))
     AC_CHECK_LIB(boost_regex, regcompA,, AC_MSG_ERROR([cannot find boost_regex regcompA() function. Try re-installing the library...]))
     CURL_INC_DIR=/usr/include/curl/
+fi
+
+# MLXREG
+AC_MSG_CHECKING(--enable-mst-reg argument)
+AC_ARG_ENABLE(mst-reg,
+             [  --enable-mst-reg        Enable compiling mstreg tool and its features],
+             [enable_mst_reg="yes"],
+             [enable_mst_reg="no"])
+AC_MSG_RESULT($enable_mst_reg)
+if test "x$enable_mst_reg" = "xyes"; then
+    AC_CHECK_LIB([expat], XML_ParserCreate_MM,
+            [AC_CHECK_HEADERS(expat.h, have_expat=true, have_expat=false)],
+            have_expat=false)
+    if ! $have_expat; then
+    AC_MSG_ERROR([Expat library is missing, please install expat xml parser to continue: expat-devel.]
+            [http://expat.sourceforge.net/])
+    fi
+    AC_LANG_PUSH([C++])
+    AC_CHECK_HEADERS([boost/foreach.hpp], [],
+        [AC_MSG_ERROR([Boost libraries are missing, please install boost to continue.])])
+    AC_LANG_POP([C++])
 fi
 
 AC_SUBST(CURL_INC_DIR)
@@ -285,6 +309,24 @@ AS_IF([test "x$enable_fw_mgr" = "xyes"], [
     
 AC_SUBST(FW_MGR_TOOLS)
 
+AS_IF([test "x$enable_mst_reg" = "xyes"], [
+        AC_OUTPUT(adb_parser/Makefile)
+        AC_OUTPUT(tools_layouts/adb/Makefile)
+        AC_OUTPUT(tools_layouts/adb/prm/Makefile)
+        AC_OUTPUT(tools_layouts/adb/prm/hca/Makefile)
+        AC_OUTPUT(tools_layouts/adb/prm/hca/ext/Makefile)
+        AC_OUTPUT(tools_layouts/adb/prm/switch/Makefile)
+        AC_OUTPUT(tools_layouts/adb/prm/switch/ext/Makefile)
+        AC_OUTPUT(mlxreg/Makefile)
+        MST_REG_TOOLS="adb_parser mlxreg"
+        MST_REG_DBS="adb"
+        MST_REG_DBS_EXTRA_DIST="adb/prm/hca/ext/*.adb adb/prm/switch/ext/*.adb"
+    ])
+
+AC_SUBST(MST_REG_TOOLS)
+AC_SUBST(MST_REG_DBS)
+AC_SUBST(MST_REG_DBS_EXTRA_DIST)
+
 if test "x$OS" = "xFreeBSD"; then
     AC_MSG_NOTICE(FreeBSD MTCR)
     AC_CONFIG_FILES(mtcr_freebsd/Makefile)
@@ -293,24 +335,8 @@ else
     AC_CONFIG_FILES(mtcr_ul/Makefile)
 fi
 
-# MLXREG
-AC_CHECK_LIB([expat], XML_ParserCreate_MM,
-		[AC_CHECK_HEADERS(expat.h, have_expat=true, have_expat=false)],
-		have_expat=false)
-
-if ! $have_expat; then
-AC_MSG_ERROR([Expat library is missing, please install expat xml parser to continue: expat-devel.]
-		[http://expat.sourceforge.net/])
-fi
-
-AC_LANG_PUSH([C++])
-AC_CHECK_HEADERS([boost/foreach.hpp], [],
-    [AC_MSG_ERROR([Boost libraries are missing, please install boost to continue.])])
-AC_LANG_POP([C++])
-
-AC_OUTPUT( Makefile common/Makefile mft_utils/Makefile mtcr_py/Makefile ext_libs/Makefile ext_libs/sqlite/Makefile ext_libs/muparser/Makefile ext_libs/json/Makefile ext_libs/minixz/Makefile adb_parser/Makefile xz_utils/Makefile dev_mgt/Makefile \
-        tools_layouts/Makefile tools_layouts/adb/Makefile tools_layouts/adb/prm/Makefile tools_layouts/adb/prm/hca/Makefile tools_layouts/adb/prm/hca/ext/Makefile tools_layouts/adb/prm/switch/Makefile tools_layouts/adb/prm/switch/ext/Makefile \
-        reg_access/Makefile cmdif/Makefile libmfa/Makefile tools_res_mgmt/Makefile mlxconfig/Makefile mlxconfig/mlxconfig_dbs/Makefile mflash/Makefile mlxfwops/Makefile mlxfwops/lib/Makefile cmdparser/Makefile flint/Makefile \
-        small_utils/Makefile small_utils/mlxfwresetlib/Makefile mstdump/Makefile mstdump/crd_lib/Makefile mstdump/crd_main/Makefile mstdump/mstdump_dbs/Makefile mvpd/Makefile \
-        fw_comps_mgr/Makefile mad_ifc/Makefile mlxreg/Makefile tracers/Makefile tracers/fwtrace/Makefile )
+AC_OUTPUT( Makefile common/Makefile mft_utils/Makefile mtcr_py/Makefile ext_libs/Makefile ext_libs/sqlite/Makefile ext_libs/muparser/Makefile ext_libs/json/Makefile ext_libs/minixz/Makefile xz_utils/Makefile dev_mgt/Makefile \
+        tools_layouts/Makefile reg_access/Makefile cmdif/Makefile libmfa/Makefile tools_res_mgmt/Makefile mlxconfig/Makefile mlxconfig/mlxconfig_dbs/Makefile mflash/Makefile mlxfwops/Makefile mlxfwops/lib/Makefile cmdparser/Makefile \
+        flint/Makefile small_utils/Makefile small_utils/mlxfwresetlib/Makefile mstdump/Makefile mstdump/crd_lib/Makefile mstdump/crd_main/Makefile mstdump/mstdump_dbs/Makefile mvpd/Makefile \
+        fw_comps_mgr/Makefile mad_ifc/Makefile tracers/Makefile tracers/fwtrace/Makefile )
 
