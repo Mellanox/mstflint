@@ -35,7 +35,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/${MTCR_CONFIG_DIR} -I$(top_srcdir)/common
 AM_CFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC)
 AM_CXXFLAGS =  -DDATA_PATH=\"$(pkgdatadir)\" 
 
-SUBDIRS = adb
+SUBDIRS = ${MST_REG_DBS}
 
 noinst_LTLIBRARIES = libtools_layouts.a
 
@@ -50,4 +50,4 @@ libtools_layouts_a_SOURCES = prm_adb_db.cpp prm_adb_db.h \
 				cx6fw_layouts.c cx6fw_layouts.h\
 				icmd_layouts.c icmd_layouts.h\
                 reg_access_hca_layouts.c reg_access_hca_layouts.h
-EXTRA_DIST = adb/prm/hca/ext/*.adb adb/prm/switch/ext/*.adb
+EXTRA_DIST = ${MST_REG_DBS_EXTRA_DIST}
