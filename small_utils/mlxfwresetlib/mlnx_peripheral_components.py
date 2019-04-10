@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 # Copyright (c) 2004-2010 Mellanox Technologies LTD. All rights reserved.
 #
 # This software is available to you under a choice of one of two

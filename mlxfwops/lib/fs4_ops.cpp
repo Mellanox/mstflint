@@ -403,7 +403,7 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isD
 
                 // Only when we have full verify or the info of this section should be collected for query
                 std::vector<u_int8_t> buffv(entrySizeInBytes);
-                u_int8_t *buff = (u_int8_t *)(&(buffv[0]));
+                u_int8_t *buff = (u_int8_t *)(buffv.size() ? (&(buffv[0])) : NULL);
 
                 if (show_itoc) {
                     cx5fw_itoc_entry_dump(&tocEntry, stdout);
