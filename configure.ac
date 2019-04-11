@@ -300,6 +300,11 @@ AS_IF([test "x$enable_openssl" = "xyes"], [
         AC_CONFIG_FILES(mlxsign_lib/Makefile)
     ])
 
+if [ test "x$enable_openssl" = "xno" ] && \
+    [ test "x$enable_fw_mgr" = "xyes" ] ; then
+    AC_MSG_ERROR([Cannot compile mlxarchive without openssl, dont use --disabled-openssl.])
+fi
+
 AS_IF([test "x$enable_fw_mgr" = "xyes"], [
         AC_CONFIG_FILES(mlxfwupdate/Makefile)
         AC_CONFIG_FILES(ext_libs/iniParser/Makefile)
