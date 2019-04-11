@@ -302,7 +302,7 @@ AS_IF([test "x$enable_openssl" = "xyes"], [
 
 if [ test "x$enable_openssl" = "xno" ] && \
     [ test "x$enable_fw_mgr" = "xyes" ] ; then
-    AC_MSG_ERROR([Cannot compile mlxarchive without openssl, dont use --disabled-openssl.])
+    AC_MSG_ERROR([--enable-fw-mgr cannot be used with --disabled-openssl.])
 fi
 
 AS_IF([test "x$enable_fw_mgr" = "xyes"], [
