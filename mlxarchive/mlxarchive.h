@@ -44,7 +44,7 @@ public:
     Mlxarchive();
     ~Mlxarchive();
     ParseStatus HandleOption(string name, string value);
-    void run(int agc, char **argv);
+    int run(int agc, char **argv);
 
 private:
     void initCmdParser();

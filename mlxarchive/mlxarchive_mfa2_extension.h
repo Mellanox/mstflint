@@ -87,8 +87,8 @@ public:
 class VersionExtension : Extension {
 private:
     u_int8_t _major;
-    u_int8_t _subMinor;
-    u_int16_t _minor;
+    u_int16_t _subMinor;
+    u_int8_t _minor;
     u_int8_t _seconds;
     u_int8_t _minutes;
     u_int8_t _hours;
