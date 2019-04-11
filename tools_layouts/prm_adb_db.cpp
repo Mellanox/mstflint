@@ -38,10 +38,39 @@
 
 #include <stdio.h>
 #include <stdarg.h>
-#include <boost/algorithm/string.hpp>
 #include "prm_adb_db.h"
 #include "compatibility.h"
 using namespace std;
+
+string PrmAdbDB::prm_adb_db_ltrim(string s)
+{
+    const char *cs = s.c_str();
+    while (isspace(*cs)) {
+        cs++;
+    }
+    return string(cs);
+}
+
+string PrmAdbDB::prm_adb_db_rtrim(string s)
+{
+    //todo rewrite it
+    unsigned int i = s.size();
+    if (i == 0) {
+        return s;
+    }
+    while (--i > 0 && isspace(s[i])) {
+        ;
+    }
+    if (i == 0 && isspace(s[i])) {
+        return "";
+    }
+    return s.substr(0, i + 1);
+}
+
+string PrmAdbDB::prm_adb_db_trim(string s)
+{
+    return prm_adb_db_rtrim(prm_adb_db_ltrim(s));
+}
 
 string PrmAdbDB::getDefaultDBName(bool isSwitch)
 {
@@ -71,13 +100,13 @@ string PrmAdbDB::getDefaultDBName(bool isSwitch)
             size_t eqPos = l.find("=");
             if (eqPos != string::npos) {
                 dataPath = l.substr(eqPos + 1);
-                boost::algorithm::trim(dataPath);
+                dataPath = prm_adb_db_trim(dataPath);
             }
         } else if (l.find("mft_prefix_location") != string::npos) {
             size_t eqPos = l.find("=");
             if (eqPos != string::npos) {
                 prefix = l.substr(eqPos + 1);
-                boost::algorithm::trim(prefix);
+                prefix = prm_adb_db_trim(prefix);
             }
         }
     }
