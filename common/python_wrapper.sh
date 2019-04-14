@@ -19,6 +19,7 @@ export MSTFLINT_LIB_DIR=$mlibdir
 export LD_LIBRARY_PATH=$mlibdir
 export MSTFLINT_BIN_DIR=$mbindir
 EXEC_NAME=`basename $(readlink -f $0)`
+PYTHON_EXEC=`find /usr/bin /bin/ /usr/local/bin -iname 'python*' 2>&1 | grep --regexp='python[0-9,.]*$' | sort -d | head -n 1`
 which python3 >/dev/null 2>&1
 if test $? -eq 0 ; then
    PYTHON_EXEC='/usr/bin/env python3'
