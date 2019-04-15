@@ -46,9 +46,9 @@ AC_CHECK_HEADER(termios.h,[CXXFLAGS="${CXXFLAGS} -DHAVE_TERMIOS_H"])
 TOOLS_CRYPTO=""
 MAD_IFC=""
 FW_MGR_TOOLS=""
-PRM_TOOLS=""
-PRM_DBS=""
-PRM_DBS_EXTRA_DIST=""
+ADABE_TOOLS=""
+ADABE_DBS=""
+ADABE_DBS_EXTRA_DIST=""
 
 COMPILER_FPIC="-fPIC"
 AC_SUBST(COMPILER_FPIC)
@@ -80,14 +80,14 @@ if test "x$enable_fw_mgr" = "xyes"; then
     CURL_INC_DIR=/usr/include/curl/
 fi
 
-# PRM
-AC_MSG_CHECKING(--enable-prm-genaric-tools argument)
-AC_ARG_ENABLE(prm-genaric-tools,
-             [  --enable-prm-genaric-tools        Enable compiling tools depends on PRM, i.e. mstreg],
-             [enable_prm_genaric_tools="yes"],
-             [enable_prm_genaric_tools="no"])
-AC_MSG_RESULT($enable_prm_genaric_tools)
-if test "x$enable_prm_genaric_tools" = "xyes"; then
+# Adabe
+AC_MSG_CHECKING(--enable-adb-genaric-tools argument)
+AC_ARG_ENABLE(adb-genaric-tools,
+             [  --enable-adb-genaric-tools        Enable compiling tools depends on ADABE, i.e. mstreg],
+             [enable_adb_genaric_tools="yes"],
+             [enable_adb_genaric_tools="no"])
+AC_MSG_RESULT($enable_adb_genaric_tools)
+if test "x$enable_adb_genaric_tools" = "xyes"; then
     AC_CHECK_LIB([expat], XML_ParserCreate_MM,
             [AC_CHECK_HEADERS(expat.h, have_expat=true, have_expat=false)],
             have_expat=false)
@@ -314,7 +314,7 @@ AS_IF([test "x$enable_fw_mgr" = "xyes"], [
     
 AC_SUBST(FW_MGR_TOOLS)
 
-AS_IF([test "x$enable_prm_genaric_tools" = "xyes"], [
+AS_IF([test "x$enable_adb_genaric_tools" = "xyes"], [
         AC_OUTPUT(adb_parser/Makefile)
         AC_OUTPUT(tools_layouts/adb/Makefile)
         AC_OUTPUT(tools_layouts/adb/prm/Makefile)
@@ -323,14 +323,14 @@ AS_IF([test "x$enable_prm_genaric_tools" = "xyes"], [
         AC_OUTPUT(tools_layouts/adb/prm/switch/Makefile)
         AC_OUTPUT(tools_layouts/adb/prm/switch/ext/Makefile)
         AC_OUTPUT(mlxreg/Makefile)
-        PRM_TOOLS="adb_parser mlxreg"
-        PRM_DBS="adb"
-        PRM_DBS_EXTRA_DIST="adb/prm/hca/ext/*.adb adb/prm/switch/ext/*.adb"
+        ADABE_TOOLS="adb_parser mlxreg"
+        ADABE_DBS="adb"
+        ADABE_DBS_EXTRA_DIST="adb/prm/hca/ext/*.adb adb/prm/switch/ext/*.adb"
     ])
 
-AC_SUBST(PRM_TOOLS)
-AC_SUBST(PRM_DBS)
-AC_SUBST(PRM_DBS_EXTRA_DIST)
+AC_SUBST(ADABE_TOOLS)
+AC_SUBST(ADABE_DBS)
+AC_SUBST(ADABE_DBS_EXTRA_DIST)
 
 if test "x$OS" = "xFreeBSD"; then
     AC_MSG_NOTICE(FreeBSD MTCR)
