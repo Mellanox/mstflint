@@ -27,7 +27,7 @@ LDL=""
 default_en_inband=""
 
 LDFLAGS="${LDFLAGS} -L/usr/lib64 -L/usr/local/lib -L/usr/local/lib64"
-CXXFLAGS="${CXXFLAGS} -isystem /usr/local/include"
+CXXFLAGS="${CXXFLAGS} -isystem /usr/local/include" 
 if test "x$OS" = "xFreeBSD"; then
     AC_MSG_NOTICE(FreeBSD Build)
     MTCR_CONF_DIR="mtcr_freebsd"
@@ -46,6 +46,9 @@ AC_CHECK_HEADER(termios.h,[CXXFLAGS="${CXXFLAGS} -DHAVE_TERMIOS_H"])
 TOOLS_CRYPTO=""
 MAD_IFC=""
 FW_MGR_TOOLS=""
+PRM_TOOLS=""
+PRM_DBS=""
+PRM_DBS_EXTRA_DIST=""
 
 COMPILER_FPIC="-fPIC"
 AC_SUBST(COMPILER_FPIC)
@@ -75,6 +78,27 @@ if test "x$enable_fw_mgr" = "xyes"; then
     AC_CHECK_HEADER(lzma.h,,AC_MSG_ERROR([Cannot find lzma.h.]))
     AC_CHECK_LIB(boost_regex, regcompA,, AC_MSG_ERROR([cannot find boost_regex regcompA() function. Try re-installing the library...]))
     CURL_INC_DIR=/usr/include/curl/
+fi
+
+# PRM
+AC_MSG_CHECKING(--enable-prm-genaric-tools argument)
+AC_ARG_ENABLE(prm-genaric-tools,
+             [  --enable-prm-genaric-tools        Enable compiling tools depends on PRM, i.e. mstreg],
+             [enable_prm_genaric_tools="yes"],
+             [enable_prm_genaric_tools="no"])
+AC_MSG_RESULT($enable_prm_genaric_tools)
+if test "x$enable_prm_genaric_tools" = "xyes"; then
+    AC_CHECK_LIB([expat], XML_ParserCreate_MM,
+            [AC_CHECK_HEADERS(expat.h, have_expat=true, have_expat=false)],
+            have_expat=false)
+    if ! $have_expat; then
+    AC_MSG_ERROR([Expat library is missing, please install expat xml parser to continue: expat-devel.]
+            [http://expat.sourceforge.net/])
+    fi
+    AC_LANG_PUSH([C++])
+    AC_CHECK_HEADERS([boost/foreach.hpp], [],
+        [AC_MSG_ERROR([Boost libraries are missing, please install boost to continue.])])
+    AC_LANG_POP([C++])
 fi
 
 AC_SUBST(CURL_INC_DIR)
@@ -276,6 +300,11 @@ AS_IF([test "x$enable_openssl" = "xyes"], [
         AC_CONFIG_FILES(mlxsign_lib/Makefile)
     ])
 
+if [ test "x$enable_openssl" = "xno" ] && \
+    [ test "x$enable_fw_mgr" = "xyes" ] ; then
+    AC_MSG_ERROR([--enable-fw-mgr cannot be used with --disabled-openssl.])
+fi
+
 AS_IF([test "x$enable_fw_mgr" = "xyes"], [
         AC_CONFIG_FILES(mlxfwupdate/Makefile)
         AC_CONFIG_FILES(ext_libs/iniParser/Makefile)
@@ -285,6 +314,24 @@ AS_IF([test "x$enable_fw_mgr" = "xyes"], [
     
 AC_SUBST(FW_MGR_TOOLS)
 
+AS_IF([test "x$enable_prm_genaric_tools" = "xyes"], [
+        AC_OUTPUT(adb_parser/Makefile)
+        AC_OUTPUT(tools_layouts/adb/Makefile)
+        AC_OUTPUT(tools_layouts/adb/prm/Makefile)
+        AC_OUTPUT(tools_layouts/adb/prm/hca/Makefile)
+        AC_OUTPUT(tools_layouts/adb/prm/hca/ext/Makefile)
+        AC_OUTPUT(tools_layouts/adb/prm/switch/Makefile)
+        AC_OUTPUT(tools_layouts/adb/prm/switch/ext/Makefile)
+        AC_OUTPUT(mlxreg/Makefile)
+        PRM_TOOLS="adb_parser mlxreg"
+        PRM_DBS="adb"
+        PRM_DBS_EXTRA_DIST="adb/prm/hca/ext/*.adb adb/prm/switch/ext/*.adb"
+    ])
+
+AC_SUBST(PRM_TOOLS)
+AC_SUBST(PRM_DBS)
+AC_SUBST(PRM_DBS_EXTRA_DIST)
+
 if test "x$OS" = "xFreeBSD"; then
     AC_MSG_NOTICE(FreeBSD MTCR)
     AC_CONFIG_FILES(mtcr_freebsd/Makefile)
@@ -293,9 +340,8 @@ else
     AC_CONFIG_FILES(mtcr_ul/Makefile)
 fi
 
-AC_OUTPUT( Makefile common/Makefile mft_utils/Makefile mtcr_py/Makefile ext_libs/Makefile ext_libs/sqlite/Makefile ext_libs/muparser/Makefile ext_libs/json/Makefile ext_libs/minixz/Makefile adb_parser/Makefile xz_utils/Makefile dev_mgt/Makefile \
-        tools_layouts/Makefile tools_layouts/adb/Makefile tools_layouts/adb/prm/Makefile tools_layouts/adb/prm/hca/Makefile tools_layouts/adb/prm/hca/ext/Makefile tools_layouts/adb/prm/switch/Makefile tools_layouts/adb/prm/switch/ext/Makefile \
-        reg_access/Makefile cmdif/Makefile libmfa/Makefile pldmlib/Makefile tools_res_mgmt/Makefile mlxconfig/Makefile mlxconfig/mlxconfig_dbs/Makefile mflash/Makefile mlxfwops/Makefile mlxfwops/lib/Makefile cmdparser/Makefile flint/Makefile \
-        small_utils/Makefile small_utils/mlxfwresetlib/Makefile mstdump/Makefile mstdump/crd_lib/Makefile mstdump/crd_main/Makefile mstdump/mstdump_dbs/Makefile mvpd/Makefile \
-        fw_comps_mgr/Makefile mad_ifc/Makefile mlxreg/Makefile tracers/Makefile tracers/fwtrace/Makefile )
+AC_OUTPUT( Makefile common/Makefile mft_utils/Makefile mtcr_py/Makefile ext_libs/Makefile ext_libs/sqlite/Makefile ext_libs/muparser/Makefile ext_libs/json/Makefile ext_libs/minixz/Makefile xz_utils/Makefile dev_mgt/Makefile \
+        tools_layouts/Makefile reg_access/Makefile cmdif/Makefile libmfa/Makefile pldmlib/Makefile tools_res_mgmt/Makefile mlxconfig/Makefile mlxconfig/mlxconfig_dbs/Makefile mflash/Makefile mlxfwops/Makefile mlxfwops/lib/Makefile cmdparser/Makefile \
+        flint/Makefile small_utils/Makefile small_utils/mlxfwresetlib/Makefile mstdump/Makefile mstdump/crd_lib/Makefile mstdump/crd_main/Makefile mstdump/mstdump_dbs/Makefile mvpd/Makefile \
+        fw_comps_mgr/Makefile mad_ifc/Makefile tracers/Makefile tracers/fwtrace/Makefile )
 

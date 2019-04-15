@@ -37,10 +37,7 @@
 # Python imports
 import sys
 import os
-import string
-import getopt
 import signal
-import struct
 import argparse
 from secure_fw_trace import SecureFwTrace
 from fw_trace_utilities import FwTraceUtilities
@@ -53,7 +50,7 @@ sys.path.append(os.path.join("..", "..", "cmdif"))
 import mtcr  # noqa
 import cmdif  # noqa
 
-sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
+sys.stdout = os.fdopen(sys.stdout.fileno(), 'w')
 EXEC_NAME = "mstfwtrace"
 proc = None
 
@@ -83,6 +80,7 @@ DEV_INFO_DB = [
         "dev_id": [0x1ff],
         "chip_rev":-1,
         "maskable": True,
+        "mask_addr": None,
         # list of (trace type name, start_bit)
         "mask_classes": list(HCA_MASK_CLASSES),
     },
@@ -91,6 +89,7 @@ DEV_INFO_DB = [
         "dev_id": [0x247],
         "chip_rev":-1,
         "maskable": True,
+        "mask_addr": None,
         # list of (trace type name, start_bit)
         "mask_classes": [("class1", 0), ("class2", 1)],
     },
@@ -99,6 +98,7 @@ DEV_INFO_DB = [
         "dev_id": [0x209],
         "chip_rev":-1,
         "maskable": True,
+        "mask_addr": None,
         # list of (trace type name, start_bit)
         "mask_classes": list(HCA_MASK_CLASSES),
     },
@@ -107,6 +107,7 @@ DEV_INFO_DB = [
         "dev_id": [0x20d],
         "chip_rev":-1,
         "maskable": True,
+        "mask_addr": None,
         # list of (trace type name, start_bit)
         "mask_classes": list(HCA_MASK_CLASSES),
     },
@@ -115,6 +116,7 @@ DEV_INFO_DB = [
         "dev_id": [0x211],
         "chip_rev":-1,
         "maskable": True,
+        "mask_addr": None,
         # list of (trace type name, start_bit)
         "mask_classes": list(HCA_MASK_CLASSES),
     },
@@ -123,6 +125,7 @@ DEV_INFO_DB = [
         "dev_id": [0x20f],
         "chip_rev":-1,
         "maskable": True,
+        "mask_addr": None,
         # list of (trace type name, start_bit)
         "mask_classes": list(HCA_MASK_CLASSES),
     },
@@ -131,6 +134,7 @@ DEV_INFO_DB = [
         "dev_id": [0x212],
         "chip_rev":-1,
         "maskable": True,
+        "mask_addr": None,
         # list of (trace type name, start_bit)
         "mask_classes": list(HCA_MASK_CLASSES),
     },
@@ -139,6 +143,7 @@ DEV_INFO_DB = [
         "dev_id": [0x249],
         "chip_rev":-1,
         "maskable": True,
+        "mask_addr": None,
         # list of (trace type name, start_bit)
         "mask_classes": [("class1", 0), ("class2", 1)],
     },
@@ -147,6 +152,7 @@ DEV_INFO_DB = [
         "dev_id": [0x20b],
         "chip_rev":-1,
         "maskable": True,
+        "mask_addr": None,
         # list of (trace type name, start_bit)
         "mask_classes": list(HCA_MASK_CLASSES),
     },
@@ -155,6 +161,7 @@ DEV_INFO_DB = [
         "dev_id": [0x24B],
         "chip_rev":-1,
         "maskable": True,
+        "mask_addr": None,
         # list of (trace type name, start_bit)
         "mask_classes": [("class1", 0), ("class2", 1)],
     },
@@ -163,6 +170,7 @@ DEV_INFO_DB = [
         "dev_id": [0x24D],
         "chip_rev":-1,
         "maskable": True,
+        "mask_addr": None,
         # list of (trace type name, start_bit)
         "mask_classes": [("class1", 0), ("class2", 1)],
     },
@@ -171,6 +179,7 @@ DEV_INFO_DB = [
         "dev_id": [0x24E],
         "chip_rev":-1,
         "maskable": True,
+        "mask_addr": None,
         # list of (trace type name, start_bit)
         "mask_classes": [("class1", 0), ("class2", 1)],
     }
@@ -197,7 +206,7 @@ def add_args():
                                      usage="%s -d|--device DEVICE [options]" % EXEC_NAME)
     parser.add_argument("-v", "--version", '-v', help='Print tool version.', action="version", version=tools_version.GetVersionString(EXEC_NAME, None))
     options_group = parser.add_argument_group('Options')
-    options_group.add_argument("-d", "--device", dest="device", help="mst device name", default=None)
+    options_group.add_argument("-d", "--device", dest="device", help="PCI device name", default=None)
     options_group.add_argument("--tracer_mode", dest="tracer_mode", help="Tracer mode [MEM]", default="MEM")
     options_group.add_argument("--real_ts", action="store_true", dest="real_ts", help="Print real timestamps in [hh:mm:ss:nsec]", default=False)
     options_group.add_argument("--ignore_old_events", action="store_true", dest="ignore_old_events", help="Ignore collecting old events", default=False)
@@ -231,9 +240,9 @@ def parse_cmd_line_args():
     IGNORE_OLD_EVENTS = args.ignore_old_events
 
     if IRISC_NAME != "all":
-        raise TracerException("Only all is compatible with secure fw")
+        raise TracerException("Only 'all' irisc is compatible with secure fw")
     if TRACER_MODE != "MEM":
-        raise TracerException("Only MEM mode is compatible with secure fw")
+        raise TracerException("Only 'MEM' tracer mode is compatible with secure fw")
 
 
 def check_secure_fw_args(devInfo):
@@ -281,7 +290,7 @@ def get_epilog():
 
             classes_info = "%s\n    Trace classes:" % classes_info
             for i in range(0, len(trace_levels), 5):
-                classes_info = "%s\n         %s" % (classes_info, string.join(trace_levels[i: i + 5], ", "))
+                classes_info = "%s\n         %s" % (classes_info, ", ".join(trace_levels[i: i + 5]))
     return classes_info
 
 
@@ -369,7 +378,7 @@ def start_tracer():
 
 
 def signal_handler(signal, frame):
-    print "\nInterrupted, exiting ..."
+    print("\nInterrupted, exiting ...")
     global proc
     if proc is not None:
         proc.terminate()

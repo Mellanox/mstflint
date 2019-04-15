@@ -43,9 +43,9 @@ COMMON_DIR  = $(top_srcdir)/common
 LAYOUTS_DIR = $(top_srcdir)/tools_layouts
 MFT_UTILS_DIR = $(top_srcdir)/mft_utils
 
-INCLUDES = -I. -I$(USER_DIR) -I$(MTCR_DIR) -I$(MFT_EXT_LIBS_INC_DIR) -I$(UTILS_DIR)
+INCLUDES = -I. -I$(USER_DIR) -I$(MTCR_DIR) -I$(MFT_EXT_LIBS_INC_DIR) -I$(UTILS_DIR) -I$(MTCR_INC_DIR)
 
-AM_CXXFLAGS = -Wall -W -DMST_UL -g -MP -MD -pipe -Werror
+AM_CXXFLAGS = -Wall -W -DMST_UL -g -MP -MD -pipe -Werror -Wno-catch-value
 
 lib_LTLIBRARIES = libmstreg_lib.a
 
@@ -72,5 +72,5 @@ mstreg_LDADD = libmstreg_lib.a \
                 $(USER_DIR)/tools_crypto/libtools_crypto.a \
                 $(USER_DIR)/xz_utils/libxz_utils.a \
                 $(USER_DIR)/ext_libs/minixz/libminixz.a \
-                -lexpat -lboost_regex -lboost_filesystem -lboost_system \
-                -llzma $(LIBSTD_CPP) ${LDL}
+                -lboost_regex -lboost_filesystem -lboost_system \
+                -llzma $(LIBSTD_CPP) ${LDL} -lexpat
