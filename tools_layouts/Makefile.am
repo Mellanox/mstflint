@@ -37,7 +37,11 @@ AM_CXXFLAGS =  -DDATA_PATH=\"$(pkgdatadir)\"
 
 SUBDIRS = ${PRM_DBS}
 
-noinst_LTLIBRARIES = libtools_layouts.a
+lib_LTLIBRARIES = libtools_layouts.a
+
+toolslayoutsincludedir = $(includedir)/mstflint/tools_layouts/
+
+toolslayoutsinclude_HEADERS = icmd_layouts.h adb_to_c_utils.h
 
 libtools_layouts_a_SOURCES = prm_adb_db.cpp prm_adb_db.h \
 				adb_to_c_utils.c adb_to_c_utils.h\
