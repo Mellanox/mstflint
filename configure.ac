@@ -81,23 +81,23 @@ if test "x$enable_fw_mgr" = "xyes"; then
 fi
 
 # Adabe
-AC_MSG_CHECKING(--enable-adb-genaric-tools argument)
-AC_ARG_ENABLE(adb-genaric-tools,
-             [  --enable-adb-genaric-tools        Enable compiling tools depends on ADABE, i.e. mstreg],
-             [enable_adb_genaric_tools="yes"],
-             [enable_adb_genaric_tools="no"])
-AC_MSG_RESULT($enable_adb_genaric_tools)
-if test "x$enable_adb_genaric_tools" = "xyes"; then
-    AC_CHECK_LIB([expat], XML_ParserCreate_MM,
-            [AC_CHECK_HEADERS(expat.h, have_expat=true, have_expat=false)],
-            have_expat=false)
-    if ! $have_expat; then
-    AC_MSG_ERROR([Expat library is missing, please install expat xml parser to continue: expat-devel.]
-            [http://expat.sourceforge.net/])
-    fi
+AC_MSG_CHECKING(--enable-adb-generic-tools argument)
+AC_ARG_ENABLE(adb-generic-tools,
+             [  --enable-adb-generic-tools        Enable compiling tools depends on ADABE, i.e. mstreg],
+             [enable_adb_generic_tools="yes"],
+             [enable_adb_generic_tools="no"])
+AC_MSG_RESULT($enable_adb_generic_tools)
+if test "x$enable_adb_generic_tools" = "xyes"; then
     AC_LANG_PUSH([C++])
-    AC_CHECK_HEADERS([boost/foreach.hpp], [],
-        [AC_MSG_ERROR([Boost libraries are missing, please install boost to continue.])])
+        AC_CHECK_LIB([expat], XML_ParserCreate_MM,
+                [AC_CHECK_HEADERS(expat.h, have_expat=true, have_expat=false)],
+                have_expat=false)
+        if ! $have_expat; then
+        AC_MSG_ERROR([Expat library is missing, please install expat xml parser to continue: expat-devel.]
+                [http://expat.sourceforge.net/])
+        fi
+        AC_CHECK_HEADERS([boost/foreach.hpp], [],
+            [AC_MSG_ERROR([Boost libraries are missing, please install boost to continue.])])
     AC_LANG_POP([C++])
 fi
 
@@ -314,7 +314,7 @@ AS_IF([test "x$enable_fw_mgr" = "xyes"], [
     
 AC_SUBST(FW_MGR_TOOLS)
 
-AS_IF([test "x$enable_adb_genaric_tools" = "xyes"], [
+AS_IF([test "x$enable_adb_generic_tools" = "xyes"], [
         AC_OUTPUT(adb_parser/Makefile)
         AC_OUTPUT(tools_layouts/adb/Makefile)
         AC_OUTPUT(tools_layouts/adb/prm/Makefile)

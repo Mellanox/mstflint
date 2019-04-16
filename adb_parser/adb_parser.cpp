@@ -2158,7 +2158,7 @@ bool AdbParser::load() {
             free(data);
             return false;
         }
-    } catch (std::runtime_error e) {
+    } catch (std::runtime_error& e) {
         _lastError = CHECK_RUNTIME_ERROR(e);
         if (allowMultipleExceptions) {
             xmlStatus = false;
@@ -2214,7 +2214,7 @@ bool AdbParser::loadFromString(const char *adbString) {
                 + (_adbCtxt->bigEndianArr ? "Big" : "Little")
                 + " Endian Arrays\"";
         return false;
-    } catch (std::runtime_error e) {
+    } catch (std::runtime_error& e) {
         _lastError = CHECK_RUNTIME_ERROR(e);
         return false;
     } catch (...) {
