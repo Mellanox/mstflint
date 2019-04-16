@@ -221,7 +221,7 @@ LogFile::~LogFile() {
 
 void LogFile::appendLogFile(string str) {
     if (_logFile) {
-        fprintf(_logFile, str.c_str());
+        fprintf(_logFile, "%s", str.c_str());
     }
 }
 
