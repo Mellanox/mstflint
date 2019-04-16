@@ -480,7 +480,7 @@ void MlxRegUi::run(int argc, char **argv)
     if (_ignoreCapCheck == false) {
         try {
             MlxRegLib::isAccessRegisterSupported(_mf);
-        } catch (MlxRegException exp) {
+        } catch (MlxRegException& exp) {
 #if defined(EXTERNAL) || defined(MST_UL)
             throw exp;
 #else
