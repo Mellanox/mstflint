@@ -63,7 +63,7 @@ class FwTraceUtilities(object):
         retrieve the BDF according to the device name
         """ 
         if FwTraceUtilities._is_dev_dbdf_format(device_name):
-            return device
+            return device_name
         if FwTraceUtilities._is_dev_bdf_format(device_name):
             return FwTraceUtilities._add_domain_to_address(device_name)
 
