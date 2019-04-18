@@ -43,7 +43,11 @@
 #include <signal.h>
 #include <errno.h>
 #include <string.h>
+#ifdef HAVE_INI_PARSER
+#include <iniparser/iniparser.h>
+#else
 #include <iniparser.h>
+#endif
 #include <mft_sig_handler.h>
 #include <fcntl.h>
 #include <dirent.h>
