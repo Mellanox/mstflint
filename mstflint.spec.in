@@ -8,6 +8,7 @@
 %{!?enablecs: %define enablecs 0}
 %{!?nopenssl: %define nopenssl 0}
 %{!?enablefwmgr: %define enablefwmgr 0}
+%{!?enableadbgenerictools: %define enableadbgenerictools 0}
 %{!?CONF_DIR: %define CONF_DIR /etc/mstflint}
 
 %define mstflint_python_tools %{_libdir}/mstflint/python_tools
@@ -57,6 +58,10 @@ MSTFLINT_VERSION_STR="%{name} %{version}-%{release}"
 
 %if %{enablefwmgr}
     config_flags="$config_flags --enable-fw-mgr"
+%endif
+
+%if %{enableadbgenerictools}
+    config_flags="$config_flags --enable-adb-generic-tools"
 %endif
 
 %if %{buildtype} == "ppc"
@@ -114,6 +119,9 @@ rm -rf $RPM_BUILD_ROOT
  %{_bindir}/mstfwmanager
  %{_bindir}/mstarchive
 %{CONF_DIR}/ca-bundle.crt
+%endif
+%if %{enableadbgenerictools}
+ %{_bindir}/mstreg
 %endif
 
 %{_includedir}/mstflint/mtcr.h
