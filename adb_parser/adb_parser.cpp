@@ -68,8 +68,14 @@ using namespace boost;
 #endif
 
 #define PROGRESS_NODE_CNT   100 // each 100 parsed node call progress callback
+
+#ifndef MIN
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
+#endif
+#ifndef MAX
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
+#endif
+
 #define CHECK_RUNTIME_ERROR(e) ((strstr(e.what(), "locale::facet::_S_create_c_locale") != NULL) ? \
                                 string("Encoding error, please set locale encoding to C") + LC_ALL_HINT + "." : \
                                 string("runtime_error: ") + e.what())
