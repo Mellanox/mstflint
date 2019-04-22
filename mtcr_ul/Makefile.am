@@ -53,5 +53,5 @@ libmtcr_ul_a_CFLAGS += -DNO_INBAND
 endif
 
 libraryincludedir=$(includedir)/mstflint
-libraryinclude_HEADERS = $(top_srcdir)/include/mtcr_ul/mtcr.h  $(top_srcdir)/include/mtcr_ul/mtcr_com_defs.h
+libraryinclude_HEADERS = $(top_srcdir)/include/mtcr_ul/mtcr.h  $(top_srcdir)/include/mtcr_ul/mtcr_com_defs.h  $(top_srcdir)/include/mtcr_ul/mtcr_mf.h
 

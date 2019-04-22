@@ -35,7 +35,7 @@ USER_DIR = ..
 AM_CPPFLAGS = -I$(srcdir) -I$(top_srcdir) -I$(top_srcdir)/common  -I$(top_srcdir)/include/mtcr_ul
 
 AM_CFLAGS = -W -Wall -g -MP -MD -Wswitch-enum $(COMPILER_FPIC) -DMTCR_EXPORT
-noinst_LIBRARIES = libdev_mgt.a
+lib_LTLIBRARIES = libdev_mgt.a
 
 libdev_mgt_a_SOURCES = \
 						tools_dev_types.c \
