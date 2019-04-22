@@ -116,7 +116,8 @@ class FwTraceUtilities(object):
             # future capability - windows
             pass
         else:
-            if os.path.exists("/sys/kernel/debug/tracing/events/mlx5/fw_tracer/"):
+            if os.path.exists("/sys/kernel/debug/tracing/events/mlx5/fw_tracer/") or \
+               os.path.exists("/sys/kernel/debug/tracing/events/mlx5/mlx5_fw/"):
                 is_supported = True
 
         return is_supported
