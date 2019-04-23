@@ -340,6 +340,7 @@ AS_IF([test "x$enable_fw_mgr" = "xyes" || test "x$enable_adb_generic_tools" = "x
 AC_SUBST(ADABE_TOOLS)
 AC_SUBST(ADABE_DBS)
 AC_SUBST(ADABE_DBS_EXTRA_DIST)
+AC_SUBST(XZ_UTILS_DIR)
 
 if test "x$OS" = "xFreeBSD"; then
     AC_MSG_NOTICE(FreeBSD MTCR)
