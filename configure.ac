@@ -172,6 +172,10 @@ if test "x$enable_openssl" = "xyes"; then
   AC_CHECK_HEADER(openssl/bio.h,,AC_MSG_ERROR([cannot find openssl/bio.h . remove --enable-openssl to remove this dependaency or install openssl]))
   AC_CHECK_HEADER(openssl/md5.h,,AC_MSG_ERROR([cannot find openssl/md5.h . remove --enable-openssl to remove this dependaency or install openssl]))
   TOOLS_CRYPTO="tools_crypto mlxsign_lib"
+else
+    if test "x$enable_adb_generic_tools" = "xyes"; then
+        AC_MSG_ERROR([Running --enable-adb-gerneric-tools with --disable-openssl is not allowed, Adabe generic tools depend on openssl.])
+    fi
 fi
 
 AC_MSG_CHECKING(--enable-all-static argument)
