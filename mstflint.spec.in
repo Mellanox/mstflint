@@ -7,6 +7,7 @@
 %{!?nodc: %define nodc 0}
 %{!?enablecs: %define enablecs 0}
 %{!?nopenssl: %define nopenssl 0}
+%{!?enablexml2: %define enablexml2 0}
 %{!?enablefwmgr: %define enablefwmgr 0}
 %{!?enableadbgenerictools: %define enableadbgenerictools 0}
 %{!?CONF_DIR: %define CONF_DIR /etc/mstflint}
@@ -54,6 +55,10 @@ MSTFLINT_VERSION_STR="%{name} %{version}-%{release}"
 
 %if %{enablecs}
     config_flags="$config_flags --enable-cs"
+%endif
+
+%if %{enablexml2}
+    config_flags="$config_flags --enable-xml2"
 %endif
 
 %if %{enablefwmgr}
