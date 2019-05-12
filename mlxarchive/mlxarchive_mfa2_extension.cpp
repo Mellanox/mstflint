@@ -87,8 +87,8 @@ VersionExtension::VersionExtension(const u_int16_t* version) :
     /*printf("version = %d.%d.%d", version[0], version[1], version[2]);
     printf("date = %d.%d.%d", date[0], date[1], date[2]);*/
     _major = version[0];
-    _subMinor = version[1];
-    _minor = version[2];
+    _subMinor = version[2];
+    _minor = version[1];
     fillTimeAndDate();
 }
 
@@ -98,8 +98,8 @@ VersionExtension::VersionExtension(const string& version) :
     int a, b, c;
     sscanf(version.c_str(), "%d.%d.%d", &a, &b, &c);
     _major = a;
-    _subMinor = b;
-    _minor = c;
+    _subMinor = c;
+    _minor = b;
     fillTimeAndDate();
 }
 

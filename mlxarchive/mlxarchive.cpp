@@ -153,19 +153,19 @@ ParseStatus Mlxarchive::HandleOption(string name, string value)
  return PARSE_ERROR;
 }
 
-void Mlxarchive::run(int argc, char **argv)
+int Mlxarchive::run(int argc, char **argv)
 {
     ParseStatus rc = _cmdParser.ParseOptions(argc, argv);
     if (rc == PARSE_OK_WITH_EXIT) {
-        return;
+        return 0;
     } else if (rc == PARSE_ERROR) {
         cout << _cmdParser.GetUsage();
         //throw MlxRegException("failed to parse arguments. %s", _cmdParser.GetErrDesc());
-        return;
+        return 1;
     } else if (rc == PARSE_ERROR_SHOW_USAGE) {
         cout << _cmdParser.GetUsage();
         //throw MlxRegException("failed to parse arguments. %s", _cmdParser.GetErrDesc());
-        return;
+        return 1;
     }
     paramValidate();
     string outputFile = _outFile;
@@ -182,6 +182,8 @@ void Mlxarchive::run(int argc, char **argv)
         fprintf(stderr, "-E- Cannot write to the file %s\n",   outputFile.c_str());
         exit(1);
     }
+
+    return 0;
 }
 
 Mlxarchive::~Mlxarchive() {};
@@ -208,5 +210,5 @@ bool writeToFile(const string& fname, const vector<u_int8_t>& data)
 int main(int argc, char* argv[])
 {
     Mlxarchive mlxarch;
-    mlxarch.run(argc, argv);
+    return mlxarch.run(argc, argv);
 }

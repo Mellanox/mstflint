@@ -433,7 +433,7 @@ int free_dll_handle(mfile *mf)
 int process_dynamic_linking(ibvs_mad *ivm, int mad_init)
 {
 
-    char *libs[] = {"libibmad.so.5"};
+    char *libs[] = {"libibmad.so.5", "libibmad.so.12"};
 
     u_int32_t i;
     (void)mad_init;

@@ -7,7 +7,9 @@
 %{!?nodc: %define nodc 0}
 %{!?enablecs: %define enablecs 0}
 %{!?nopenssl: %define nopenssl 0}
+%{!?enablexml2: %define enablexml2 0}
 %{!?enablefwmgr: %define enablefwmgr 0}
+%{!?enableadbgenerictools: %define enableadbgenerictools 0}
 %{!?CONF_DIR: %define CONF_DIR /etc/mstflint}
 
 %define mstflint_python_tools %{_libdir}/mstflint/python_tools
@@ -55,8 +57,16 @@ MSTFLINT_VERSION_STR="%{name} %{version}-%{release}"
     config_flags="$config_flags --enable-cs"
 %endif
 
+%if %{enablexml2}
+    config_flags="$config_flags --enable-xml2"
+%endif
+
 %if %{enablefwmgr}
     config_flags="$config_flags --enable-fw-mgr"
+%endif
+
+%if %{enableadbgenerictools}
+    config_flags="$config_flags --enable-adb-generic-tools"
 %endif
 
 %if %{buildtype} == "ppc"
@@ -88,10 +98,10 @@ rm -f $RPM_BUILD_ROOT%{_libdir}/*.la
 # create softlinks to old mtcr header and lib locations
 # link mtcr_ul to old location
 mkdir -p %{buildroot}/%{_includedir}/mtcr_ul
-ln -s %{_includedir}/mtcr_ul/mtcr.h %{buildroot}/%{_includedir}/mtcr_ul/mtcr.h
-ln -s %{_includedir}/mtcr_ul/mtcr_com_defs.h %{buildroot}/%{_includedir}/mtcr_ul/mtcr_com_defs.h
+ln -s %{_includedir}/mstflint/mtcr.h %{buildroot}/%{_includedir}/mtcr_ul/mtcr.h
+ln -s %{_includedir}/mstflint/mtcr_com_defs.h %{buildroot}/%{_includedir}/mtcr_ul/mtcr_com_defs.h
 # link mtcr_ul to old lib path
-ln -s %{_libdir}/libmtcr_ul.a %{buildroot}/%{_libdir}/libmtcr_ul.a 
+ln -s %{_libdir}/mstflint/libmtcr_ul.a %{buildroot}/%{_libdir}/libmtcr_ul.a 
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -114,12 +124,19 @@ rm -rf $RPM_BUILD_ROOT
  %{_bindir}/mstarchive
 %{CONF_DIR}/ca-bundle.crt
 %endif
+%if %{enableadbgenerictools}
+ %{_bindir}/mstreg
+%endif
 
+%{_includedir}/mstflint/mtcr.h
+%{_includedir}/mstflint/mtcr_com_defs.h
 %{_includedir}/mtcr_ul/mtcr.h
 %{_includedir}/mtcr_ul/mtcr_com_defs.h
+%{_libdir}/mstflint/libmtcr_ul.a
 %{_libdir}/libmtcr_ul.a
 
 %{mstflint_python_tools}/tools_version.py
+%{mstflint_python_tools}/mstfwtrace/*.py
 %{mstflint_python_tools}/mstfwreset/mstfwreset.py
 %{mstflint_python_tools}/mstfwreset/mlxfwresetlib/*.py
 %{mstflint_python_tools}/mtcr.py

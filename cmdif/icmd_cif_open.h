@@ -62,8 +62,9 @@ enum {
 #ifdef MST_UL
 // instead of cib_cif.h in mstflint
 enum {
-    GET_ICMD_QUERY_CAP = 0x8400,
-    SET_ITRACE = 0xf003,
+    GET_ICMD_QUERY_CAP  = 0x8400,
+    SET_ITRACE          = 0xf003,
+    SET_PORT_SNIFFER    = 0xc002,
 };
 #endif
 
@@ -75,6 +76,8 @@ int get_icmd_query_cap(mfile *mf, struct connectx4_icmd_query_cap_general *icmd_
 int gcif_mh_sync(mfile *mf, struct connectx4_icmd_mh_sync *mh_sync);
 
 int gcif_mh_sync_status(mfile *mf, struct connectx4_icmd_mh_sync *mh_sync);
+
+int gcif_set_port_sniffer(mfile *mf, struct connectib_icmd_set_port_sniffer *set_port_sniffer);
 
 
 #ifdef __cplusplus
