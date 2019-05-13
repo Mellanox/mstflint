@@ -625,3 +625,60 @@ void connectx4_icmd_query_cap_general_dump(const struct connectx4_icmd_query_cap
     connectx4_icmd_query_cap_general_print(ptr_struct, fd, 0);
 }
 
+int connectib_icmd_set_port_sniffer_size(void)
+{
+	 return 16;
+}
+
+void connectib_icmd_set_port_sniffer_pack(const struct connectib_icmd_set_port_sniffer *ptr_struct, u_int8_t* ptr_buff)
+{
+	u_int32_t offset;
+	int i = 0;
+	(void)offset;
+	(void)i;
+	(void)ptr_struct;
+	(void)ptr_buff;
+
+	offset = 16;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->gvmi);
+
+	offset = 63;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->sx_rx_);
+
+	offset = 47;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->attach_detach_);
+
+	offset = 64;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->port);
+
+	offset = 104;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 24, (u_int32_t)ptr_struct->sniffer_qpn);
+
+}
+
+void connectib_icmd_set_port_sniffer_unpack(struct connectib_icmd_set_port_sniffer *ptr_struct, const u_int8_t* ptr_buff)
+{
+	u_int32_t offset;
+	int i = 0;
+	(void)offset;
+	(void)i;
+	(void)ptr_struct;
+	(void)ptr_buff;
+
+	offset = 16;
+	ptr_struct->gvmi = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+
+	offset = 63;
+	ptr_struct->sx_rx_ = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset = 47;
+	ptr_struct->attach_detach_ = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+
+	offset = 64;
+	ptr_struct->port = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+
+	offset = 104;
+	ptr_struct->sniffer_qpn = (u_int32_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 24);
+
+}
+

@@ -63,7 +63,7 @@ class FwTraceUtilities(object):
         retrieve the BDF according to the device name
         """ 
         if FwTraceUtilities._is_dev_dbdf_format(device_name):
-            return device
+            return device_name
         if FwTraceUtilities._is_dev_bdf_format(device_name):
             return FwTraceUtilities._add_domain_to_address(device_name)
 
@@ -116,7 +116,8 @@ class FwTraceUtilities(object):
             # future capability - windows
             pass
         else:
-            if os.path.exists("/sys/kernel/debug/tracing/events/mlx5/fw_tracer/"):
+            if os.path.exists("/sys/kernel/debug/tracing/events/mlx5/fw_tracer/") or \
+               os.path.exists("/sys/kernel/debug/tracing/events/mlx5/mlx5_fw/"):
                 is_supported = True
 
         return is_supported

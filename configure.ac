@@ -46,9 +46,10 @@ AC_CHECK_HEADER(termios.h,[CXXFLAGS="${CXXFLAGS} -DHAVE_TERMIOS_H"])
 TOOLS_CRYPTO=""
 MAD_IFC=""
 FW_MGR_TOOLS=""
-PRM_TOOLS=""
-PRM_DBS=""
-PRM_DBS_EXTRA_DIST=""
+XZ_UTILS_DIR=""
+ADABE_TOOLS=""
+ADABE_DBS=""
+ADABE_DBS_EXTRA_DIST=""
 
 COMPILER_FPIC="-fPIC"
 AC_SUBST(COMPILER_FPIC)
@@ -80,24 +81,24 @@ if test "x$enable_fw_mgr" = "xyes"; then
     CURL_INC_DIR=/usr/include/curl/
 fi
 
-# PRM
-AC_MSG_CHECKING(--enable-prm-genaric-tools argument)
-AC_ARG_ENABLE(prm-genaric-tools,
-             [  --enable-prm-genaric-tools        Enable compiling tools depends on PRM, i.e. mstreg],
-             [enable_prm_genaric_tools="yes"],
-             [enable_prm_genaric_tools="no"])
-AC_MSG_RESULT($enable_prm_genaric_tools)
-if test "x$enable_prm_genaric_tools" = "xyes"; then
-    AC_CHECK_LIB([expat], XML_ParserCreate_MM,
-            [AC_CHECK_HEADERS(expat.h, have_expat=true, have_expat=false)],
-            have_expat=false)
-    if ! $have_expat; then
-    AC_MSG_ERROR([Expat library is missing, please install expat xml parser to continue: expat-devel.]
-            [http://expat.sourceforge.net/])
-    fi
+# Adabe
+AC_MSG_CHECKING(--enable-adb-generic-tools argument)
+AC_ARG_ENABLE(adb-generic-tools,
+             [  --enable-adb-generic-tools        Enable compiling tools depends on ADABE, i.e. mstreg],
+             [enable_adb_generic_tools="yes"],
+             [enable_adb_generic_tools="no"])
+AC_MSG_RESULT($enable_adb_generic_tools)
+if test "x$enable_adb_generic_tools" = "xyes"; then
     AC_LANG_PUSH([C++])
-    AC_CHECK_HEADERS([boost/foreach.hpp], [],
-        [AC_MSG_ERROR([Boost libraries are missing, please install boost to continue.])])
+        AC_CHECK_LIB([expat], XML_ParserCreate_MM,
+                [AC_CHECK_HEADERS(expat.h, have_expat=true, have_expat=false)],
+                have_expat=false)
+        if ! $have_expat; then
+        AC_MSG_ERROR([Expat library is missing, please install expat xml parser to continue: expat-devel.]
+                [http://expat.sourceforge.net/])
+        fi
+        AC_CHECK_HEADERS([boost/foreach.hpp], [],
+            [AC_MSG_ERROR([Boost libraries are missing, please install boost to continue.])])
     AC_LANG_POP([C++])
 fi
 
@@ -171,6 +172,10 @@ if test "x$enable_openssl" = "xyes"; then
   AC_CHECK_HEADER(openssl/bio.h,,AC_MSG_ERROR([cannot find openssl/bio.h . remove --enable-openssl to remove this dependaency or install openssl]))
   AC_CHECK_HEADER(openssl/md5.h,,AC_MSG_ERROR([cannot find openssl/md5.h . remove --enable-openssl to remove this dependaency or install openssl]))
   TOOLS_CRYPTO="tools_crypto mlxsign_lib"
+else
+    if test "x$enable_adb_generic_tools" = "xyes"; then
+        AC_MSG_ERROR([Running --enable-adb-gerneric-tools with --disable-openssl is not allowed, Adabe generic tools depend on openssl.])
+    fi
 fi
 
 AC_MSG_CHECKING(--enable-all-static argument)
@@ -213,6 +218,9 @@ AC_SEARCH_LIBS([iniparser_load], [iniparser], [INIPARSER_SYSTEM_AVAILABLE="yes"]
     AC_SUBST(INIPARSER_LIBS)
 ])
 AM_CONDITIONAL([USE_LOCAL_INIPARSER], [test "$INIPARSER_SYSTEM_AVAILABLE" = no])
+AS_IF([test "x$INIPARSER_SYSTEM_AVAILABLE" = "xyes" ], [
+    CXXFLAGS="$CXXFLAGS -DHAVE_INI_PARSER"
+])
 
 AC_SEARCH_LIBS([json_object_get], [json-c jason], [JSON_SYSTEM_AVAILABLE="yes"],[
     JSON_SYSTEM_AVAILABLE="no"
@@ -314,23 +322,29 @@ AS_IF([test "x$enable_fw_mgr" = "xyes"], [
     
 AC_SUBST(FW_MGR_TOOLS)
 
-AS_IF([test "x$enable_prm_genaric_tools" = "xyes"], [
-        AC_OUTPUT(adb_parser/Makefile)
-        AC_OUTPUT(tools_layouts/adb/Makefile)
-        AC_OUTPUT(tools_layouts/adb/prm/Makefile)
-        AC_OUTPUT(tools_layouts/adb/prm/hca/Makefile)
-        AC_OUTPUT(tools_layouts/adb/prm/hca/ext/Makefile)
-        AC_OUTPUT(tools_layouts/adb/prm/switch/Makefile)
-        AC_OUTPUT(tools_layouts/adb/prm/switch/ext/Makefile)
-        AC_OUTPUT(mlxreg/Makefile)
-        PRM_TOOLS="adb_parser mlxreg"
-        PRM_DBS="adb"
-        PRM_DBS_EXTRA_DIST="adb/prm/hca/ext/*.adb adb/prm/switch/ext/*.adb"
+AS_IF([test "x$enable_adb_generic_tools" = "xyes"], [
+        AC_CONFIG_FILES(adb_parser/Makefile)
+        AC_CONFIG_FILES(tools_layouts/adb/Makefile)
+        AC_CONFIG_FILES(tools_layouts/adb/prm/Makefile)
+        AC_CONFIG_FILES(tools_layouts/adb/prm/hca/Makefile)
+        AC_CONFIG_FILES(tools_layouts/adb/prm/hca/ext/Makefile)
+        AC_CONFIG_FILES(tools_layouts/adb/prm/switch/Makefile)
+        AC_CONFIG_FILES(tools_layouts/adb/prm/switch/ext/Makefile)
+        AC_CONFIG_FILES(mlxreg/Makefile)
+        ADABE_TOOLS="adb_parser mlxreg"
+        ADABE_DBS="adb"
+        ADABE_DBS_EXTRA_DIST="adb/prm/hca/ext/*.adb adb/prm/switch/ext/*.adb"
     ])
 
-AC_SUBST(PRM_TOOLS)
-AC_SUBST(PRM_DBS)
-AC_SUBST(PRM_DBS_EXTRA_DIST)
+AS_IF([test "x$enable_fw_mgr" = "xyes" || test "x$enable_adb_generic_tools" = "xyes"], [
+        AC_CONFIG_FILES(xz_utils/Makefile)
+        XZ_UTILS_DIR="xz_utils"
+    ])
+
+AC_SUBST(ADABE_TOOLS)
+AC_SUBST(ADABE_DBS)
+AC_SUBST(ADABE_DBS_EXTRA_DIST)
+AC_SUBST(XZ_UTILS_DIR)
 
 if test "x$OS" = "xFreeBSD"; then
     AC_MSG_NOTICE(FreeBSD MTCR)
@@ -340,7 +354,8 @@ else
     AC_CONFIG_FILES(mtcr_ul/Makefile)
 fi
 
-AC_OUTPUT( Makefile common/Makefile mft_utils/Makefile mtcr_py/Makefile ext_libs/Makefile ext_libs/sqlite/Makefile ext_libs/muparser/Makefile ext_libs/json/Makefile ext_libs/minixz/Makefile xz_utils/Makefile dev_mgt/Makefile \
+
+AC_OUTPUT( Makefile common/Makefile mft_utils/Makefile mtcr_py/Makefile ext_libs/Makefile ext_libs/sqlite/Makefile ext_libs/muparser/Makefile ext_libs/json/Makefile ext_libs/minixz/Makefile dev_mgt/Makefile \
         tools_layouts/Makefile reg_access/Makefile cmdif/Makefile libmfa/Makefile pldmlib/Makefile tools_res_mgmt/Makefile mlxconfig/Makefile mlxconfig/mlxconfig_dbs/Makefile mflash/Makefile mlxfwops/Makefile mlxfwops/lib/Makefile cmdparser/Makefile \
         flint/Makefile small_utils/Makefile small_utils/mlxfwresetlib/Makefile mstdump/Makefile mstdump/crd_lib/Makefile mstdump/crd_main/Makefile mstdump/mstdump_dbs/Makefile mvpd/Makefile \
         fw_comps_mgr/Makefile mad_ifc/Makefile tracers/Makefile tracers/fwtrace/Makefile )

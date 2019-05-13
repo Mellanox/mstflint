@@ -68,8 +68,14 @@ using namespace boost;
 #endif
 
 #define PROGRESS_NODE_CNT   100 // each 100 parsed node call progress callback
+
+#ifndef MIN
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
+#endif
+#ifndef MAX
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
+#endif
+
 #define CHECK_RUNTIME_ERROR(e) ((strstr(e.what(), "locale::facet::_S_create_c_locale") != NULL) ? \
                                 string("Encoding error, please set locale encoding to C") + LC_ALL_HINT + "." : \
                                 string("runtime_error: ") + e.what())
@@ -221,7 +227,7 @@ LogFile::~LogFile() {
 
 void LogFile::appendLogFile(string str) {
     if (_logFile) {
-        fprintf(_logFile, str.c_str());
+        fprintf(_logFile, "%s", str.c_str());
     }
 }
 
@@ -2158,7 +2164,7 @@ bool AdbParser::load() {
             free(data);
             return false;
         }
-    } catch (std::runtime_error e) {
+    } catch (std::runtime_error& e) {
         _lastError = CHECK_RUNTIME_ERROR(e);
         if (allowMultipleExceptions) {
             xmlStatus = false;
@@ -2214,7 +2220,7 @@ bool AdbParser::loadFromString(const char *adbString) {
                 + (_adbCtxt->bigEndianArr ? "Big" : "Little")
                 + " Endian Arrays\"";
         return false;
-    } catch (std::runtime_error e) {
+    } catch (std::runtime_error& e) {
         _lastError = CHECK_RUNTIME_ERROR(e);
         return false;
     } catch (...) {
