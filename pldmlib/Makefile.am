@@ -31,28 +31,17 @@
 #--
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
-AM_CPPFLAGS = -I$(top_srcdir)/${MTCR_CONFIG_DIR} -I$(top_srcdir)/common
-AM_CFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC)
-AM_CXXFLAGS =  -DDATA_PATH=\"$(pkgdatadir)\" 
+USER_DIR = $(top_srcdir)
+INCLUDES = -I. -I$(USER_DIR)/common
 
-SUBDIRS = ${ADABE_DBS}
+AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe -Werror $(COMPILER_FPIC) -DPLDMLIB_EXPORT
 
-lib_LTLIBRARIES = libtools_layouts.a
+noinst_LTLIBRARIES = libpldm.a
 
-toolslayoutsincludedir = $(includedir)/mstflint/tools_layouts/
-
-toolslayoutsinclude_HEADERS = icmd_layouts.h adb_to_c_utils.h
-
-libtools_layouts_a_SOURCES = prm_adb_db.cpp prm_adb_db.h \
-				adb_to_c_utils.c adb_to_c_utils.h\
-				cibfw_layouts.c cibfw_layouts.h \
-				register_access_open_layouts.h register_access_open_layouts.c \
-				tools_open_layouts.c tools_open_layouts.h\
-				register_access_sib_layouts.h register_access_sib_layouts.c \
-				cx4fw_layouts.c cx4fw_layouts.h\
-				cx5fw_layouts.c cx5fw_layouts.h\
-				cx6fw_layouts.c cx6fw_layouts.h\
-				icmd_layouts.c icmd_layouts.h\
-				reg_access_hca_layouts.c reg_access_hca_layouts.h\
-				image_info_layouts.c image_info_layouts.h
-EXTRA_DIST = ${ADABE_DBS_EXTRA_DIST}
+libpldm_a_SOURCES = \
+    pldm_buff.cpp pldm_buff.h\
+    pldm_record_descriptor.cpp pldm_record_descriptor.h\
+    pldm_dev_id_record.cpp pldm_dev_id_record.h\
+    pldm_component_image.cpp pldm_component_image.h\
+    pldm_pkg_hdr.cpp pldm_pkg_hdr.h\
+    pldm_pkg.cpp pldm_pkg.h
