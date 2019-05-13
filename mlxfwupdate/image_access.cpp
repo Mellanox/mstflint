@@ -42,7 +42,10 @@
 #include <iostream>
 #include <mfa.h>
 #include <mlxfwops.h>
-
+#include <pldm_pkg.h>
+#include <pldm_dev_id_record.h>
+#include <pldm_component_image.h>
+#include <tools_layouts/image_info_layouts.h>
 
 using namespace std;
 
@@ -344,50 +347,48 @@ clean_up:
 }
 
 
-int ImageAccess::getFileSignature(string fname)
+int ImageAccess::getFileSignature(const string & fname)
 {
+    static const int header_size = 16;
     FILE *fin;
-    char tmpb[16];
+    char tmpb[header_size];
     int res = -2;
+    do {
+        if (!(fin = fopen(fname.c_str(), "r"))) {
+            break;
+        }
 
-    if (!(fin = fopen(fname.c_str(), "r"))) {
-        return res;
+        if (1 > fread(tmpb, header_size, 1, fin)) {
+            break;
+        }
+        res = getBufferSignature((u_int8_t*)tmpb, 4);
+    }while(0);
+
+    if(fin) {
+        fclose(fin);
     }
-    if (!fgets(tmpb, sizeof(tmpb), fin)) {
-        goto clean_up;
-    }
-
-    tmpb[15] = 0;
-    if (strlen(tmpb) < 4) {
-        goto clean_up;
-    }
-
-    res = getBufferSignature((u_int8_t*)tmpb, 4);
-
-clean_up:
-    fclose(fin);
     return res;
 }
 
 
 int ImageAccess::getBufferSignature(u_int8_t *buf, u_int32_t size)
 {
-    int res = 0;
+    int res = IMG_SIG_TYPE_UNKNOWN;
 
-    if (size < 4) {
-        return 0;
-    }
-    if (!strncmp((char*)buf, "MTFW", 4)) {
+    if (0 == memcmp(buf, "MTFW", 4)) {
         res = IMG_SIG_TYPE_BIN;
     }
-    if (!strncmp((char*)buf, "MFAR", 4)) {
+    else if (0 == memcmp(buf, "MFAR", 4)) {
         res = IMG_SIG_TYPE_MFA;
+    }
+    else if(0 == memcmp(buf, PldmPkg::UUID, size)) {
+        res = IMG_SIG_TYPE_PLDM;
     }
 
     return res;
 }
 
-int ImageAccess::get_bin_content(string fname, vector<PsidQueryItem> &riv)
+int ImageAccess::get_bin_content(const string & fname, vector<PsidQueryItem> &riv)
 {
     fw_info_t img_query;
     int res = 0;
@@ -445,7 +446,7 @@ clean_up:
 }
 
 
-int ImageAccess::get_mfa_content(string fname, vector<PsidQueryItem> &riv)
+int ImageAccess::get_mfa_content(const string & fname, vector<PsidQueryItem> &riv)
 {
     mfa_desc *mfa_d;
     map_entry_hdr *me = NULL;
@@ -513,19 +514,109 @@ int ImageAccess::get_mfa_content(string fname, vector<PsidQueryItem> &riv)
     mfa_close(mfa_d);
     return 0;
 }
+#define ITOC_ASCII 0x49544f43
+#define TOC_HEADER_SIZE 0x20
+#define TOC_ENTRY_SIZE  0x20
+#define FS3_DEFAULT_SECTOR_SIZE 0x1000
+
+bool ImageAccess::extract_pldm_image_info(const u_int8_t * buff, u_int32_t size, PsidQueryItem &query_item) {
+    FImage * fimage = new FImage;
+    if (!fimage->open((u_int32_t*)buff, size)) {
+        return false;
+    }
+    static const u_int32_t sector_size = FS3_DEFAULT_SECTOR_SIZE;
+    u_int32_t offset = 0;
+    offset = (offset % sector_size == 0) ? offset : (offset + sector_size - offset % 0x1000);
+    u_int8_t buffer[TOC_HEADER_SIZE], entry_buffer[TOC_ENTRY_SIZE];
+    struct connectx4_itoc_header itoc_header;
+    while (offset < fimage->get_size()) {
+        //read ITOC header
+        fimage->read(offset, buffer, TOC_HEADER_SIZE);
+        connectx4_itoc_header_unpack(&itoc_header, buffer);
+        if (itoc_header.signature0 != ITOC_ASCII) {
+            offset += sector_size;
+            continue;
+        }
+        int section_index = 0;
+        struct connectx4_itoc_entry toc_entry;
+        do {
+            //read ITOC entry
+            u_int32_t entry_addr = offset + TOC_HEADER_SIZE + section_index *  TOC_ENTRY_SIZE;
+            fimage->read(entry_addr, entry_buffer, TOC_ENTRY_SIZE);
+
+            connectx4_itoc_entry_unpack(&toc_entry, entry_buffer);
+            if (toc_entry.type == FS3_IMAGE_INFO) {
+                u_int32_t flash_addr = toc_entry.flash_addr << 2;
+                u_int32_t entry_size_in_bytes = toc_entry.size * 4;
+                u_int8_t *buff = new u_int8_t[entry_size_in_bytes];
+                fimage->read(flash_addr, buff, entry_size_in_bytes);
+                //read image info
+                struct connectx4_image_info image_info;
+                connectx4_image_info_unpack(&image_info, buff);
+                query_item.name = image_info.name;
+                query_item.pns = query_item.name;
+                query_item.description = image_info.description;
+                static const int FW_VER_SIZE = 3;
+                u_int16_t fw_ver[FW_VER_SIZE];
+                fw_ver[0] = image_info.FW_VERSION.MAJOR;
+                fw_ver[1] = image_info.FW_VERSION.MINOR;
+                fw_ver[2] = image_info.FW_VERSION.SUBMINOR;
+                ImgVersion imgv;
+                imgv.setVersion("FW", FW_VER_SIZE, fw_ver);
+                query_item.imgVers.push_back(imgv);
+
+                delete [] buff;
+                break;
+            }
+
+            section_index++;
+        } while (toc_entry.type != FS3_END);
+        break;
+    }
+
+    return 0;
+}
+
+int ImageAccess::get_pldm_content(const string & fname,
+        vector<PsidQueryItem> &riv) {
+    PldmBuffer pldm_buff;
+    pldm_buff.loadFile(fname);
+    PldmPkg pldm;
+    pldm.unpack(pldm_buff);
+
+    u_int8_t dev_count = pldm.getDeviceIDRecordCount();
+    for(u_int8_t i=0; i<dev_count; i++) {
+        PldmDevIdRecord * rec = pldm.getDeviceIDRecord(i);
+        PsidQueryItem item;
+        item.psid = rec->getDevicePsid();
+        item.description = rec->getDescription();
+        int image_index = rec->getComponentImageIndex();
+        PldmComponenetImage * image_obj = pldm.getComponentImage(image_index);
+        extract_pldm_image_info(image_obj->getComponentData(),
+                image_obj->getComponentSize(), item);
+        riv.push_back(item);
+    }
+
+    return 0;
+}
 
 
-int ImageAccess::get_file_content(string fname, vector<PsidQueryItem> &riv)
+int ImageAccess::get_file_content(const string & fname, vector<PsidQueryItem> &riv)
 {
     int type = getFileSignature(fname);
-
-    if (type == IMG_SIG_TYPE_BIN) {
-        return get_bin_content(fname, riv);
-    } else if (type == IMG_SIG_TYPE_MFA) {
-        return get_mfa_content(fname, riv);
-    } else {
-        return -1;
+    int res = -1;
+    switch(type) {
+    case IMG_SIG_TYPE_BIN:
+        res = get_bin_content(fname, riv);
+        break;
+    case IMG_SIG_TYPE_MFA:
+        res = get_mfa_content(fname, riv);
+        break;
+    case IMG_SIG_TYPE_PLDM:
+        res = get_pldm_content(fname, riv);
+        break;
     }
+    return res;
 }
 
 string ImageAccess::getLastErrMsg()
