@@ -44,7 +44,9 @@
 #include <errno.h>
 #include <string.h>
 #ifdef HAVE_INI_PARSER
-#include <iniparser/iniparser.h>
+extern "C" {
+#include <iniparser.h>
+}
 #else
 #include <iniparser.h>
 #endif
