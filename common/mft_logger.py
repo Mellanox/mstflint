@@ -1,4 +1,3 @@
-#--
 # Copyright (c) 2004-2010 Mellanox Technologies LTD. All rights reserved.
 #
 # This software is available to you under a choice of one of two
@@ -30,36 +29,26 @@
 # SOFTWARE.
 #--
 
-# Makefile.am -- Process this file with automake to produce Makefile.in
+import logging
 
-noinst_HEADERS=compatibility.h bit_slice.h tools_utils.h tools_utils.h tools_version.h
 
-commonincludedir = $(includedir)/mstflint/common/
+class LoggerFactory(object):
+    def __init__(self):
+        self._levels = {"critical": logging.CRITICAL,
+                        "error": logging.ERROR,
+                        "warning": logging.WARNING,
+                        "info": logging.INFO,
+                        "debug": logging.DEBUG
+                        }
 
-commoninclude_HEADERS = compatibility.h
+    def get(self, name, level):
 
-update_prefix = sed -e 's,[@]MST_LIB_DIR[@]${CONF_DISABLE_PATH_UPDATE},$(libdir),g'\
-                    -e 's,[@]MST_BIN_DIR[@]${CONF_DISABLE_PATH_UPDATE},$(bindir),g'\
-                    -e 's,[@]MFTCONF_PREFIX[@],$(prefix),g'
-                    
-update_tools_version = sed -e 's,[@]MSTFLINT_VERSION_STR[@],${MSTFLINT_VERSION_STR},g' \
-     	          	-e 's,[@]TOOLS_BUILD_TIME[@],${TOOLS_BUILD_TIME},g' \
-                    -e 's,[@]TOOLS_GIT_SHA[@],${TOOLS_GIT_SHA},g'
+        if level not in self._levels:
+            log_level = logging.CRITICAL
+        else:
+            log_level = self._levels[level]
 
-all: python_wrapper.sh tools_version.py  mft_logger.py
-	$(update_prefix) < $(srcdir)/python_wrapper.sh > python_wrapper
-	chmod +x python_wrapper
-	
-tools_version.py:
-	$(update_tools_version) < $(srcdir)/tools_version.py.in > tools_version.py
 
-tools_version_pylibdir=$(libdir)/mstflint/python_tools/
-tools_version_pylib_DATA = tools_version.py
-
-mft_logger_pylibdir=$(libdir)/mstflint/python_tools/
-mft_logger_pylib_DATA = mft_logger.py
-
-EXTRA_DIST = tools_version.py.in python_wrapper.sh
-
-CLEANFILES = python_wrapper tools_version.py
-
+        logging.basicConfig(level=log_level, format='%(asctime)s - %(name)s - %(levelname)s - {%(pathname)s:%(lineno)d} - %(message)s')
+        logger = logging.getLogger(name)
+        return logger
