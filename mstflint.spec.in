@@ -137,7 +137,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %{mstflint_python_tools}/tools_version.py
 %{mstflint_python_tools}/mft_logger.py
-%{mstflint_python_tools}/mlxpci/mlxpci_lib.py
+%{mstflint_python_tools}/mlxpci/*.py
 %{mstflint_python_tools}/mstfwtrace/*.py
 %{mstflint_python_tools}/mstfwreset/mstfwreset.py
 %{mstflint_python_tools}/mstfwreset/mlxfwresetlib/*.py
