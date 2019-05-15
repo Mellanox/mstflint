@@ -42,7 +42,7 @@ CMDIF_DIR   = $(top_srcdir)/cmdif
 MAD_IFC_DIR   = $(top_srcdir)/mad_ifc
 
 AM_CPPFLAGS = -I$(top_srcdir) -I$(srcdir) -I$(MTCR_DIR) -I$(MFLASH_DIR) -I$(COMMON_DIR) \
-           -I$(LAYOUTS_DIR) -I$(MFT_UTILS_DIR) -I$(MTCR_INC_DIR) -I$(MAD_IFC_DIR) -I$(MTCR_UL_DIR)
+           -I$(LAYOUTS_DIR) -I$(MFT_UTILS_DIR) -I$(MTCR_INC_DIR) -I$(MTCR_UL_DIR)
 
 mstflint_CXXFLAGS = -Wall -W -g -MP -MD -pipe -DEXTERNAL $(COMPILER_FPIC)
 bin_PROGRAMS = mstflint
@@ -61,7 +61,6 @@ mstflint_LDADD =  ../mlxfwops/lib/libmlxfwops.a  \
           ../tools_layouts/libtools_layouts.a \
           ../fw_comps_mgr/libfw_comps_mgr.a \
 		  ../mft_utils/libmftutils.a\
-		  $(MAD_IFC_DIR)/libmad_ifc.a\
 		  $(MTCR_UL_DIR)/libmtcr_ul.a\
 		  ${LDL}
 
@@ -78,7 +77,7 @@ else
 endif
 
 if ENABLE_INBAND
-mstflint_LDADD += $(top_srcdir)/mad_ifc/libmad_ifc.a
+mstflint_LDADD += $(MAD_IFC_DIR)/libmad_ifc.a
 else
 endif
 
