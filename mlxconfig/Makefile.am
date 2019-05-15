@@ -43,13 +43,14 @@ CMDIF_DIR = $(USER_DIR)/cmdif
 MLXSIGN_DIR = $(USER_DIR)/mlxsign_lib
 MLXSIGN_LIB = $(MLXSIGN_DIR)/libmlxsign.a
 COMPS_MGR_DIR = $(USER_DIR)/fw_comps_mgr
+TOOLS_RES_MGMT_DIR = $(USER_DIR)/tools_res_mgmt
 
 PYTHON_WRAPPER_SCRIPT = ../common/python_wrapper
 
 SUBDIRS = mlxconfig_dbs
 
 AM_CPPFLAGS = -I. -I$(USER_DIR) -I$(top_srcdir)/include/mtcr_ul -I$(MTCR_DIR) -I$(COMMON_DIR) $(WIN64_INC)\
-           -I$(LAYOUTS_DIR) -I$(UTILS_DIR) -I$(DEV_MGT_DIR) -I$(CMDIF_DIR) $(MUPARSER_CFLAGS) $(SQLITE_CFLAGS) $(COMPILER_FPIC)
+           -I$(LAYOUTS_DIR) -I$(UTILS_DIR) -I$(DEV_MGT_DIR) -I$(CMDIF_DIR) -I$(TOOLS_RES_MGMT_DIR) $(MUPARSER_CFLAGS) $(SQLITE_CFLAGS) $(COMPILER_FPIC)
 
 
 AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe  -Wno-deprecated-declarations  $(COMPILER_FPIC) -DDATA_PATH=\"$(pkgdatadir)\"
@@ -73,11 +74,11 @@ mlxcfg_db_items.h mlxcfg_db_items.cpp\
 
 libmlxcfg_a_LIBADD = $(UTILS_LIB) $(MUPARSER_LIBS) $(SQLITE_LIBS)\
 				$(CMDIF_DIR)/libcmdif.a ../reg_access/libreg_access.a $(LAYOUTS_LIB) $(MTCR_DIR)/libmtcr_ul.a\
-				$(DEV_MGT_DIR)/libdev_mgt.a $(COMPS_MGR_DIR)/libfw_comps_mgr.a $(MLNXOS_PPC_LIBS) $(LIBSTD_CPP) ${LDL}
+				$(DEV_MGT_DIR)/libdev_mgt.a $(COMPS_MGR_DIR)/libfw_comps_mgr.a $(TOOLS_RES_MGMT_DIR)/libtools_res_mgmt.a -lboost_regex $(MLNXOS_PPC_LIBS) $(LIBSTD_CPP) ${LDL}
 
 mstconfig_LDADD = libmlxcfg.a $(UTILS_LIB) $(MUPARSER_LIBS) $(SQLITE_LIBS)\
 				$(CMDIF_DIR)/libcmdif.a ../reg_access/libreg_access.a $(LAYOUTS_LIB) $(MTCR_DIR)/libmtcr_ul.a\
-				$(DEV_MGT_DIR)/libdev_mgt.a $(COMPS_MGR_DIR)/libfw_comps_mgr.a $(MLNXOS_PPC_LIBS) $(LIBSTD_CPP) ${LDL}
+				$(DEV_MGT_DIR)/libdev_mgt.a $(COMPS_MGR_DIR)/libfw_comps_mgr.a $(TOOLS_RES_MGMT_DIR)/libtools_res_mgmt.a -lboost_regex $(MLNXOS_PPC_LIBS) $(LIBSTD_CPP) ${LDL}
 
 if DISABLE_XML2
 AM_CXXFLAGS += -DDISABLE_XML2

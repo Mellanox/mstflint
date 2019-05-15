@@ -77,6 +77,7 @@ if CMDIF:
             self.multiHostSyncFunc = CMDIF.gcif_mh_sync
             self.multiHostSyncStatusFunc = CMDIF.gcif_mh_sync_status
             self.getIcmdQueryCap = CMDIF.get_icmd_query_cap
+            self.gearboxMdioTest = CMDIF.gcif_gearbox_mdio_test
 
         ##########################
         def close(self):
@@ -180,6 +181,39 @@ if CMDIF:
             if rc:
                 raise CmdIfException("Failed to run query cap icmd: %s (%d)" % (self.errStrFunc(rc), rc))
             return (queryCapStruct.mh_sync == 0x1)
+        
+        ##########################
+        
+        GEARBOX_DIE_READ  = 1
+        GEARBOX_DIE_WRITE = 2
+        
+        class GEARBOX_MDIO_TEST(Structure):
+            _fields_ = [("busy", c_uint8),
+                    ("status", c_uint8),
+                    ("opcode", c_uint8),
+                    ("die", c_uint16),
+                    ("address", c_uint32),
+                    ("data", c_uint32)]
+        
+        # returns (status, busy, data) - Data in case of read operation
+        def readWriteGearboxDie(self, op, die, address, data=0):
+            gearboxMdioTestStruct = self.GEARBOX_MDIO_TEST()
+            gearboxMdioTestStruct.die = die
+            gearboxMdioTestStruct.address = address
+            if op == self.GEARBOX_DIE_READ:
+                gearboxMdioTestStruct.opcode = 0xC
+            elif op == self.GEARBOX_DIE_WRITE:
+                gearboxMdioTestStruct.data = data
+                gearboxMdioTestStruct.opcode = 0xD
+            else:
+                raise CmdIfException("readWriteGearboxDie: Unsupported operation (%d)" % op)
+            gearboxMdioTestStructPtr = pointer(gearboxMdioTestStruct)
+            rc = self.gearboxMdioTest(self.mstDev.mf, gearboxMdioTestStructPtr)
+            if rc:
+                raise CmdIfException("Failed to read/write to Gearbox: %s,." % (self.errStrFunc(rc)))
+            return (gearboxMdioTestStruct.status, gearboxMdioTestStruct.busy, gearboxMdioTestStruct.data)
+            
+        
 
 else:
     raise CmdIfException("Failed to load cmdif.so/cmdif.dll")

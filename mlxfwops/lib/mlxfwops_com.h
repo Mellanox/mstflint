@@ -72,6 +72,7 @@ typedef int (*f_prog_func_str)(char *str);
 typedef struct {
     f_prog_func_adv func;
     void *opaque;
+    f_prog_func uefi_func;
 } f_prog_func_adv_st;
 
 #define VSD_LEN  208
@@ -228,6 +229,7 @@ typedef enum chip_type {
     CT_BLUEFIELD,
     CT_QUANTUM,
     CT_SPECTRUM2,
+    CT_CONNECTX6DX
 } chip_type_t;
 
 typedef enum chip_family_type {
@@ -315,6 +317,7 @@ typedef struct fs3_info_ext {
     char description[DESCRIPTION_LEN];
     u_int32_t security_mode;
     u_int8_t mcc_en;
+    char deviceVsd[VSD_LEN + 1];
 } fs3_info_t;
 
 typedef struct fs3_info_ext fs4_info_t;
@@ -361,6 +364,7 @@ typedef struct fw_info_com {
     u_int16_t min_fit_ver[4];
     u_int16_t mic_ver[3];
     u_int32_t image_size;
+    u_int16_t isfu_major;
     u_int16_t dev_type;
     u_int8_t dev_rev;
     u_int16_t vsd_vendor_id;

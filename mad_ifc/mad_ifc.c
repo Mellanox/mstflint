@@ -54,7 +54,7 @@
 #endif
 
 /***************************************************/
-#if !defined(DISABLE_OFED)
+#if !defined(DISABLE_OFED) && !defined(NO_INBAND)
     // register access for variable size registers (like mfba)
     #define MAD_IFC_ACCESS(mf, method, attr_id, attr_mod, data_struct, struct_name) \
         int status = 0; \

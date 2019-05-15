@@ -68,6 +68,7 @@ public:
     ~MlxcfgDBManager();
     std::string _callBackErr;
     bool _isAllFetched;
+    bool isParamMlxconfigNameExist(std::string n);
     Param *_paramSqlResult;
     std::vector<TLVConf*> fetchedTLVs;
     std::vector<Param*> fetchedParams;
@@ -76,7 +77,7 @@ public:
     TLVConf* getTLVByIndexAndClassAux(u_int32_t id, TLVClass c);
     TLVConf* getTLVByName(std::string n, u_int8_t port);
     TLVConf* getAndCreateTLVByName(std::string n, u_int8_t port);
-    TLVConf* getTLVByParamMlxconfigName(std::string n);
+    TLVConf* getTLVByParamMlxconfigName(std::string n, u_int32_t index);
     TLVConf* getTLVByIndexAndClass(u_int32_t id, TLVClass c);
     void execSQL(sqlite3_callback f, void *obj, const char *stat, ...);
 

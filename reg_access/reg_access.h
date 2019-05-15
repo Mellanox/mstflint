@@ -57,29 +57,32 @@ typedef enum {
 // we use the same error messages as mtcr
 typedef MError reg_access_status_t;
 
-
-const char* reg_access_err2str(reg_access_status_t status);
-reg_access_status_t reg_access_mfba(mfile *mf, reg_access_method_t method, struct register_access_mfba *mfba);
-reg_access_status_t reg_access_mfbe(mfile *mf, reg_access_method_t method, struct register_access_mfbe *mfbe);
-reg_access_status_t reg_access_mfpa(mfile *mf, reg_access_method_t method, struct register_access_mfpa *mfpa);
-reg_access_status_t reg_access_mfpa_new(mfile *mf, reg_access_method_t method, struct tools_open_mfpa *mfpa);
-reg_access_status_t reg_access_mfmc(mfile *mf, reg_access_method_t method, struct tools_open_mfmc *mfmc);
 reg_access_status_t reg_access_mnva(mfile *mf, reg_access_method_t method, struct tools_open_mnva *mnva);
 reg_access_status_t reg_access_mnvi(mfile *mf, reg_access_method_t method, struct tools_open_mnvi *mnvi);
 reg_access_status_t reg_access_mnvia(mfile *mf, reg_access_method_t method, struct tools_open_mnvia *mnvia);
+reg_access_status_t reg_access_nvqgc(mfile *mf, reg_access_method_t method, struct tools_open_nvqgc *nvqgc);
+reg_access_status_t reg_access_nvdi(mfile *mf, reg_access_method_t method, struct tools_open_nvdi *nvdi);
+reg_access_status_t reg_access_nvqc(mfile *mf, reg_access_method_t method, struct tools_open_nvqc *nvqc);
+reg_access_status_t reg_access_mnvgn(mfile *mf, reg_access_method_t method, struct tools_open_mnvgn *mnvgn, int *status);
 reg_access_status_t reg_access_pcnr(mfile *mf, reg_access_method_t method, struct reg_access_hca_pcnr_reg *pcnr);
+reg_access_status_t reg_access_strs_stop_toggle_reg(mfile *mf, reg_access_method_t method, struct reg_access_hca_strs_stop_toggle_reg *streg);
+reg_access_status_t reg_access_strs_fault_injector_reg(mfile *mf, reg_access_method_t method, struct reg_access_hca_strs_fault_inject_reg *strs_fault_inject_reg);
+reg_access_status_t reg_access_strs_mini_flow_reg(mfile *mf, reg_access_method_t method, struct reg_access_hca_strs_mini_flow_reg *strs_mini_flow_reg);
+reg_access_status_t reg_access_strs_resource_reg(mfile *mf, reg_access_method_t method, struct reg_access_hca_strs_resource_reg *strs_resource_reg);
+
+const char* reg_access_err2str(reg_access_status_t status);
+reg_access_status_t reg_access_nvda(mfile *mf, reg_access_method_t method, struct tools_open_nvda *nvda);
+reg_access_status_t reg_access_mfba(mfile *mf, reg_access_method_t method, struct register_access_mfba *mfba);
+reg_access_status_t reg_access_mfbe(mfile *mf, reg_access_method_t method, struct register_access_mfbe *mfbe);
+reg_access_status_t reg_access_mfpa(mfile *mf, reg_access_method_t method, struct register_access_mfpa *mfpa);
+reg_access_status_t reg_access_mfmc(mfile *mf, reg_access_method_t method, struct tools_open_mfmc *mfmc);
 reg_access_status_t reg_access_mfrl(mfile *mf, reg_access_method_t method, struct cibfw_register_mfrl *mfrl);
 reg_access_status_t reg_access_mfai(mfile *mf, reg_access_method_t method, struct cibfw_register_mfai *mfai);
-reg_access_status_t reg_access_nvda(mfile *mf, reg_access_method_t method, struct tools_open_nvda *nvda);
-reg_access_status_t reg_access_nvdi(mfile *mf, reg_access_method_t method, struct tools_open_nvdi *nvdi);
 reg_access_status_t reg_access_nvia(mfile *mf, reg_access_method_t method, struct tools_open_nvia *nvdia);
-reg_access_status_t reg_access_nvqc(mfile *mf, reg_access_method_t method, struct tools_open_nvqc *nvqc);
-reg_access_status_t reg_access_nvqgc(mfile *mf, reg_access_method_t method, struct tools_open_nvqgc *nvqgc);
 reg_access_status_t reg_access_mvts(mfile *mf, reg_access_method_t method, struct tools_open_mvts *mvts);
-reg_access_status_t reg_access_mnvgn(mfile *mf, reg_access_method_t method, struct tools_open_mnvgn *mnvgn, int *status);
 reg_access_status_t reg_access_mfmc(mfile *mf, reg_access_method_t method, struct tools_open_mfmc *mfmc);
 reg_access_status_t reg_access_mpegc(mfile *mf, reg_access_method_t method, struct reg_access_hca_mpegc_reg *mpegc);
-
+reg_access_status_t reg_access_mfpa_new(mfile *mf, reg_access_method_t method, struct tools_open_mfpa *mfpa);
 reg_access_status_t reg_access_mcam(mfile *mf, reg_access_method_t method, struct tools_open_mcam *mcam);
 reg_access_status_t reg_access_secure_host(mfile *mf, reg_access_method_t method, struct tools_open_mlock *mlock);
 /*
@@ -92,7 +95,7 @@ reg_access_status_t reg_access_mcqs(mfile *mf, reg_access_method_t method, struc
 reg_access_status_t reg_access_mcqi(mfile *mf, reg_access_method_t method, struct reg_access_hca_mcqi_reg *mcqi);
 reg_access_status_t reg_access_mgir(mfile *mf, reg_access_method_t method, struct tools_open_mgir *mgir);
 reg_access_status_t reg_access_mtrc_cap(mfile *mf, reg_access_method_t method, struct reg_access_hca_mtrc_cap_reg *mtrc_cap);
-
+reg_access_status_t reg_access_mcdd(mfile *mf, reg_access_method_t method, struct tools_open_mcdd_reg *mcdd);
 const char* reg_access_err2str(reg_access_status_t status);
 
 #ifdef __cplusplus

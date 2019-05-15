@@ -520,8 +520,8 @@ int ImageAccess::get_mfa_content(const string & fname, vector<PsidQueryItem> &ri
 #define FS3_DEFAULT_SECTOR_SIZE 0x1000
 
 bool ImageAccess::extract_pldm_image_info(const u_int8_t * buff, u_int32_t size, PsidQueryItem &query_item) {
-    FImage * fimage = new FImage;
-    if (!fimage->open((u_int32_t*)buff, size)) {
+    FImage fimage;
+    if (!fimage.open((u_int32_t*)buff, size)) {
         return false;
     }
     static const u_int32_t sector_size = FS3_DEFAULT_SECTOR_SIZE;
@@ -529,9 +529,9 @@ bool ImageAccess::extract_pldm_image_info(const u_int8_t * buff, u_int32_t size,
     offset = (offset % sector_size == 0) ? offset : (offset + sector_size - offset % 0x1000);
     u_int8_t buffer[TOC_HEADER_SIZE], entry_buffer[TOC_ENTRY_SIZE];
     struct connectx4_itoc_header itoc_header;
-    while (offset < fimage->get_size()) {
+    while (offset < fimage.get_size()) {
         //read ITOC header
-        fimage->read(offset, buffer, TOC_HEADER_SIZE);
+        fimage.read(offset, buffer, TOC_HEADER_SIZE);
         connectx4_itoc_header_unpack(&itoc_header, buffer);
         if (itoc_header.signature0 != ITOC_ASCII) {
             offset += sector_size;
@@ -542,14 +542,14 @@ bool ImageAccess::extract_pldm_image_info(const u_int8_t * buff, u_int32_t size,
         do {
             //read ITOC entry
             u_int32_t entry_addr = offset + TOC_HEADER_SIZE + section_index *  TOC_ENTRY_SIZE;
-            fimage->read(entry_addr, entry_buffer, TOC_ENTRY_SIZE);
+            fimage.read(entry_addr, entry_buffer, TOC_ENTRY_SIZE);
 
             connectx4_itoc_entry_unpack(&toc_entry, entry_buffer);
             if (toc_entry.type == FS3_IMAGE_INFO) {
                 u_int32_t flash_addr = toc_entry.flash_addr << 2;
                 u_int32_t entry_size_in_bytes = toc_entry.size * 4;
                 u_int8_t *buff = new u_int8_t[entry_size_in_bytes];
-                fimage->read(flash_addr, buff, entry_size_in_bytes);
+                fimage.read(flash_addr, buff, entry_size_in_bytes);
                 //read image info
                 struct connectx4_image_info image_info;
                 connectx4_image_info_unpack(&image_info, buff);
@@ -573,7 +573,7 @@ bool ImageAccess::extract_pldm_image_info(const u_int8_t * buff, u_int32_t size,
         } while (toc_entry.type != FS3_END);
         break;
     }
-
+    fimage.close();
     return 0;
 }
 

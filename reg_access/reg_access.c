@@ -37,6 +37,7 @@
 #define REG_ID_MFBE  0x9012
 #define REG_ID_MFMC  0x9013
 #define REG_ID_PMDIO 0x9017
+#define REG_ID_MJTAG 0x901F
 #define REG_ID_MGIR  0x9020
 #define REG_ID_PMDIC 0x9021
 #define REG_ID_MNVA  0x9024
@@ -47,18 +48,25 @@
 #define REG_ID_NVIA  0x9033 // 5th gen
 #define REG_ID_NVQGC 0x9034
 #define REG_ID_MNVGN 0x9035
+
+#define REG_ID_MGNLE 0x9036
 #define REG_ID_MLCOK 0x402D
+#define REG_ID_PLIB  0x500a
+#define REG_ID_STRS_STOP_TOGGLE   0x4027
+#define REG_ID_STRS_FAULT_INJECT  0x4028
+#define REG_ID_STRS_MINI_FLOW     0x4029
+#define REG_ID_STRS_RESOURCE      0x402A
 
+#define REG_ID_MTRC_CAP 0x9040
 #define REG_ID_MPEGC 0x9056
+#define REG_ID_MCDD  0x905C
 
-#define REG_ID_MCDA  0x9063
 #define REG_ID_MCQS  0x9060
 #define REG_ID_MCC   0x9062
 #define REG_ID_MCQI  0x9061
-#define REG_ID_MCAM  0x907f
+#define REG_ID_MCDA  0x9063
 #define REG_ID_MQIS  0x9064
-#define REG_ID_MTRC_CAP 0x9040
-
+#define REG_ID_MCAM  0x907f
 // TODO: get correct register ID for mfrl mfai
 #define REG_ID_MFRL 0x9028
 #define REG_ID_MFAI 0x9029
@@ -85,7 +93,8 @@
 /***************************************************/
 
 // register access for infinite size of arrays with specific size
-
+// r_reg_size is how much we want to read from the struct struct_name (fw request), w_reg_size is how much we want to write to the struct that we are sending for the fw.
+// note that the params data_p_name, data_size_name are the pointer to the array the fw should read\write to, and the size of it.
 #define REG_ACCESS_GEN_DATA_WITH_STATUS(mf, method, reg_id, data_struct, struct_name, prefix, reg_size, r_reg_size, w_reg_size \
                                         , size_func, data_p_name, data_size_name) \
     u_int32_t reg_size = data_struct->data_size_name + size_func(); \
@@ -156,6 +165,7 @@
     } \
     return ME_OK
 
+// reg access with changing length of read\write in the register struct
 #define REG_ACCCESS_VAR(mf, method, reg_id, data_struct, struct_name, reg_size, r_reg_size, w_reg_size, prefix) \
     REG_ACCESS_GENERIC_VAR(mf, method, reg_id, data_struct, struct_name, reg_size, r_reg_size, w_reg_size, \
                            prefix##_##struct_name##_pack, prefix##_##struct_name##_unpack, prefix##_##struct_name##_size, \
@@ -174,6 +184,55 @@ reg_access_status_t reg_access_pcnr(mfile *mf, reg_access_method_t method, struc
 {
     REG_ACCCESS(mf, method, REG_ID_PCNR, pcnr, pcnr_reg, reg_access_hca);
 
+}
+
+/************************************
+* Function: reg_access_strs_stop_toggle_reg
+************************************/
+void reg_access_hca_strs_stop_toggle_reg_special_pack(const struct reg_access_hca_strs_stop_toggle_reg *ptr_struct, u_int8_t *ptr_buff)
+{
+    u_int8_t rxb_hang = 0x9;
+    u_int8_t union_offset = 0x10;
+    reg_access_hca_strs_stop_toggle_reg_pack(ptr_struct, ptr_buff);
+    if (ptr_struct->type == rxb_hang) {
+        reg_access_hca_rxb_hang_stop_toggle_modifier_pack((const struct reg_access_hca_rxb_hang_stop_toggle_modifier*)&(ptr_struct->per_type_modifier), ptr_buff + union_offset);
+    } else {
+        reg_access_hca_lock_source_stop_toggle_modifier_pack((const struct reg_access_hca_lock_source_stop_toggle_modifier*)&(ptr_struct->per_type_modifier), ptr_buff + union_offset);
+    }
+
+}
+
+reg_access_status_t reg_access_strs_stop_toggle_reg(mfile *mf, reg_access_method_t method, struct reg_access_hca_strs_stop_toggle_reg *streg)
+{
+    int data_size = reg_access_hca_strs_stop_toggle_reg_size();
+    REG_ACCESS_GENERIC_VAR(mf, method, REG_ID_STRS_STOP_TOGGLE, streg, reg_access_hca_strs_stop_toggle_reg, data_size, data_size, data_size, reg_access_hca_strs_stop_toggle_reg_special_pack, \
+                           reg_access_hca_strs_stop_toggle_reg_unpack, reg_access_hca_strs_stop_toggle_reg_size, reg_access_hca_strs_stop_toggle_reg_print);
+}
+
+
+
+/************************************
+* Function: reg_access_strs_fault_injector_reg
+************************************/
+reg_access_status_t reg_access_strs_fault_injector_reg(mfile *mf, reg_access_method_t method, struct reg_access_hca_strs_fault_inject_reg *strs_fault_inject_reg)
+{
+    REG_ACCCESS(mf, method, REG_ID_STRS_FAULT_INJECT, strs_fault_inject_reg, strs_fault_inject_reg, reg_access_hca);
+}
+
+/************************************
+* Function: reg_access_strs_mini_flow_reg
+************************************/
+reg_access_status_t reg_access_strs_mini_flow_reg(mfile *mf, reg_access_method_t method, struct reg_access_hca_strs_mini_flow_reg *strs_mini_flow_reg)
+{
+    REG_ACCCESS(mf, method, REG_ID_STRS_MINI_FLOW, strs_mini_flow_reg, strs_mini_flow_reg, reg_access_hca);
+}
+
+/************************************
+* Function: reg_access_strs_resource_reg
+************************************/
+reg_access_status_t reg_access_strs_resource_reg(mfile *mf, reg_access_method_t method, struct reg_access_hca_strs_resource_reg *strs_resource_reg)
+{
+    REG_ACCCESS(mf, method, REG_ID_STRS_RESOURCE, strs_resource_reg, strs_resource_reg, reg_access_hca);
 }
 
 /************************************
@@ -453,6 +512,14 @@ reg_access_status_t reg_access_mqis(mfile *mf, reg_access_method_t method, struc
 reg_access_status_t reg_access_mtrc_cap(mfile *mf, reg_access_method_t method, struct reg_access_hca_mtrc_cap_reg *mtrc_cap)
 {
     REG_ACCCESS(mf, method, REG_ID_MTRC_CAP, mtrc_cap, mtrc_cap_reg, reg_access_hca);
+}
+
+/************************************
+* Function: reg_access_mcdd
+************************************/
+reg_access_status_t reg_access_mcdd(mfile *mf, reg_access_method_t method, struct tools_open_mcdd_reg *mcdd)
+{
+    REG_ACCCESS(mf, method, REG_ID_MCDD, mcdd, mcdd_reg, tools_open);
 }
 
 

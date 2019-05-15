@@ -50,10 +50,21 @@ using namespace std;
 Commander* Commander::create(std::string device, std::string dbName)
 {
     mfile *mf;
+    int rc;
+    u_int32_t type = 0;
+
     mf = mopen(device.c_str());
     if (mf == NULL) {
         throw MlxcfgException("Failed to open the device");
     }
+    rc = mget_mdevs_type(mf, &type);
+    if (rc) {
+        throw MlxcfgException("Failed to get device type");
+    }
+    if (type & (MST_USB | MST_USB_DIMAX)) {
+        throw MlxcfgException("MTUSB device is not supported.");
+    }
+
     Commander *cmdr = NULL;
     try {
         cmdr = create(mf, device, dbName);
@@ -89,6 +100,7 @@ Commander* Commander::create(mfile *mf, std::string device, std::string dbName)
     case DeviceConnectX5:
     case DeviceBlueField:
     case DeviceConnectX6:
+    case DeviceConnectX6DX:
         isFifthGen = true;
         break;
 

@@ -140,17 +140,7 @@ void GenericCommander::supportsNVData()
 GenericCommander::GenericCommander(mfile *mf, string dbName)
     : Commander(mf), _dbManager(NULL)
 {
-    int rc;
-    u_int32_t type = 0;
-
     if (_mf != NULL) {
-        rc = mget_mdevs_type(mf, &type);
-        if (rc) {
-            throw MlxcfgException("Failed to get device type");
-        }
-        if (type & (MST_USB | MST_USB_DIMAX)) {
-            throw MlxcfgException("MTUSB device is not supported.");
-        }
         supportsNVData();
     }
 
@@ -490,15 +480,32 @@ void GenericCommander::queryParamViews(vector<ParamView>& params, QueryType qt)
 {
     vector<ParamView> pc;
     std::set<TLVConf*> uniqueTLVs;
+    map<string, string>  arrayStrs;
 
     VECTOR_ITERATOR(ParamView, params, p){
+        unsigned int index = 0;
+        bool isIndexed = false;
+        bool isStartFromOneSupported = false;
         string mlxconfigName = (*p).mlxconfigName;
         if (isIndexedMlxconfigName(mlxconfigName)) {
-            unsigned int index = 0;
             parseIndexedMlxconfigName(mlxconfigName, mlxconfigName, index);
+            isIndexed = true;
         }
-        TLVConf *tlv = _dbManager->getTLVByParamMlxconfigName(mlxconfigName);
+        isStartFromOneSupported = isIndexedStartFromOneSupported(mlxconfigName);
+        TLVConf *tlv = _dbManager->getTLVByParamMlxconfigName(mlxconfigName, index);    
         uniqueTLVs.insert(tlv);
+        // if not indexed and has suffix (its continuance array) need to get next tlv and change the array length (for query)
+        if (!isIndexed && getArraySuffix(tlv->_name).size() > 0 && getArraySuffix(mlxconfigName).size() == 0 ) {
+            while ( _dbManager->isParamMlxconfigNameExist( mlxconfigName + getArraySuffixByInterval( ((++index) * MAX_ARRAY_SIZE)) ) ) {
+            } 
+            if (isStartFromOneSupported) {
+                arrayStrs[mlxconfigName] = "Array[1.." + numToStr((index * MAX_ARRAY_SIZE)) + "]";
+            }
+            else {
+                arrayStrs[mlxconfigName] = "Array[0.." + numToStr((index * MAX_ARRAY_SIZE) - 1) + "]";
+            }
+            index = 0;
+        }
     }
 
     SET_ITERATOR(TLVConf*, uniqueTLVs, it) {
@@ -517,17 +524,20 @@ void GenericCommander::queryParamViews(vector<ParamView>& params, QueryType qt)
             }
 
             string mlxconfigNameJ = (*j).mlxconfigName;
-            if (mlxconfigNameI == mlxconfigNameJ) {
+            if (mlxconfigNameI == mlxconfigNameJ || (mlxconfigNameI + getArraySuffixByInterval(iIndex)) == mlxconfigNameJ) {
                 if (isIIndexed) {
-                    if (iIndex >= j->arrayVal.size()) {
+                    if (iIndex >= j->arrayVal.size() && (mlxconfigNameI + getArraySuffixByInterval(iIndex)) != mlxconfigNameJ) {
                         throw MlxcfgException("Index %d of the parameter %s is out of range. Maximal index is %zu",
                                               iIndex, mlxconfigNameI.c_str(), j->arrayVal.size() - 1);
                     }
-                    i->val = j->arrayVal[iIndex];
-                    i->strVal = j->strArrayVal[iIndex];
+                    i->val = j->arrayVal[iIndex % MAX_ARRAY_SIZE];
+                    i->strVal = j->strArrayVal[iIndex % MAX_ARRAY_SIZE];
                 } else {
                     i->val = j->val;
                     i->strVal = j->strVal;
+                    if (!arrayStrs[mlxconfigNameI].empty()) {
+                        i->strVal = arrayStrs[mlxconfigNameI];
+                    }
                 }
                 found = true;
                 break;
@@ -558,7 +568,7 @@ void GenericCommander::getCfg(ParamView& pv, QueryType qt)
 {
     vector<ParamView> pc;
 
-    TLVConf *tlv = _dbManager->getTLVByParamMlxconfigName(pv.mlxconfigName);
+    TLVConf *tlv = _dbManager->getTLVByParamMlxconfigName(pv.mlxconfigName, 0);
     queryTLV(tlv, pc, qt);
 
     VECTOR_ITERATOR(ParamView, pc, j){
@@ -576,25 +586,22 @@ void GenericCommander::setCfg(vector<ParamView>& params, bool force)
     std::set<TLVConf*> uniqueTLVs;
     map<string, TLVConf*> tlvMap;
 
-    VECTOR_ITERATOR(ParamView, params, p){
+    VECTOR_ITERATOR(ParamView, params, p) {
+        unsigned int index = 0;
         string mlxconfigName = (*p).mlxconfigName;
+        bool isIndexed = false;
         if (isIndexedMlxconfigName(mlxconfigName)) {
-            unsigned int index = 0;
             parseIndexedMlxconfigName(mlxconfigName, mlxconfigName, index);
+            isIndexed = true;
         }
-        TLVConf *tlv = _dbManager->getTLVByParamMlxconfigName(mlxconfigName);
+        TLVConf *tlv = _dbManager->getTLVByParamMlxconfigName(mlxconfigName, index);
         tlvMap[mlxconfigName] = tlv;
         uniqueTLVs.insert(tlv);
-    }
 
-    //set user values
-    VECTOR_ITERATOR(ParamView, params, p){
-        string mlxconfigName = (*p).mlxconfigName;
-        if (isIndexedMlxconfigName(mlxconfigName)) {
-            unsigned int index = 0;
-            parseIndexedMlxconfigName(mlxconfigName, mlxconfigName, index);
+        if (isIndexed) {
             tlvMap[mlxconfigName]->updateParamByMlxconfigName(mlxconfigName, (*p).strVal, index);
-        } else {
+        }
+        else {
             tlvMap[(*p).mlxconfigName]->updateParamByMlxconfigName(mlxconfigName, (*p).strVal);
         }
 
@@ -734,7 +741,8 @@ const char* GenericCommander::loadConfigurationGetStr()
         deviceId == DeviceConnectX4LX ||
         deviceId == DeviceConnectX5   ||
         deviceId == DeviceBlueField ||
-        deviceId == DeviceConnectX6) {
+        deviceId == DeviceConnectX6 ||
+        deviceId == DeviceConnectX6DX) {
         // send warm boot (bit 6)
         mfrl.reset_level = 1 << 6;
         mft_signal_set_handling(1);
@@ -814,12 +822,13 @@ void GenericCommander::backupCfgs(vector<BackupView>& views)
 void GenericCommander::updateParamViewValue(ParamView& p, string v)
 {
     string mlxconfigName = p.mlxconfigName;
+    unsigned int index = 0;
     if (isIndexedMlxconfigName(mlxconfigName)) {
-        unsigned int index = 0;
+        
         parseIndexedMlxconfigName(mlxconfigName, mlxconfigName, index);
     }
-    TLVConf *tlv = _dbManager->getTLVByParamMlxconfigName(mlxconfigName);
-    tlv->parseParamValue(mlxconfigName, v, p.val, p.strVal);
+    TLVConf *tlv = _dbManager->getTLVByParamMlxconfigName(mlxconfigName, index);
+    tlv->parseParamValue(mlxconfigName, v, p.val, p.strVal, index);
 }
 
 void GenericCommander::genTLVsList(vector<string>& tlvs)

@@ -43,6 +43,7 @@
 #include <compatibility.h>
 
 #include "mflash_common_structs.h"
+#define MAX_FLASH_PROG_SEM_RETRY_CNT 40
 
 int sx_get_flash_info_by_type(mflash *mfl, flash_info_t *type_index, int *log2size, u_int8_t *no_flash);
 int sx_block_read_by_type(mflash *mfl, u_int32_t blk_addr, u_int32_t blk_size, u_int8_t *data);

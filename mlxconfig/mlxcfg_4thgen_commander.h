@@ -58,7 +58,8 @@ typedef enum {
     MLX_CFG_OK_EXIT,
     MLX_CFG_ABORTED,
     MLX_CFG_ERROR,
-    MLX_CFG_ERROR_EXIT
+    MLX_CFG_ERROR_EXIT,
+    MLX_CFG_ERROR_NO_USAGE
 } mlxCfgStatus;
 
 class MlxCfgParamParser

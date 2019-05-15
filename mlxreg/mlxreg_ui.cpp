@@ -382,7 +382,7 @@ ParseStatus MlxRegUi::HandleOption(string name, string value)
         RegAccessParser::strToUint32((char*)value.c_str(), _dataLen);
         return PARSE_OK;
     }
-#if defined(EXTERNAL) || defined(MST_UL)
+#if !defined(EXTERNAL) && !defined(MST_UL)
     else if (name == IGNORE_CAP_CHECK_FLAG) {
         _ignoreCapCheck = true;
         return PARSE_OK;
@@ -480,7 +480,7 @@ void MlxRegUi::run(int argc, char **argv)
     if (_ignoreCapCheck == false) {
         try {
             MlxRegLib::isAccessRegisterSupported(_mf);
-        } catch (MlxRegException& exp) {
+        } catch (MlxRegException exp) {
 #if defined(EXTERNAL) || defined(MST_UL)
             throw exp;
 #else

@@ -89,6 +89,14 @@ typedef struct ext_flash_attr {
 // Common base class for Flash and for FImage
 class MLXFWOP_API FBase : public FlintErrMsg {
 public:
+
+    enum {
+        Fwm_Default = 0,
+        Fwm_4KB = 1,
+        Fwm_64KB = 2
+    };
+
+
     FBase(bool is_flash) :
         _is_image_in_odd_chunks(false),
         _log2_chunk_size(0),
@@ -96,18 +104,46 @@ public:
         _advErrors(true) {}
     virtual ~FBase()  {}
 
-    virtual bool open(const char*, bool, bool)                  {return false;}
+    virtual bool open(uefi_Dev_t *uefi_dev,
+        uefi_dev_extra_t *uefi_extra,
+        bool force_lock = false,
+        bool advErr = true) = 0;
+
+    virtual bool open(const char*, bool, bool) = 0;
+
+    virtual bool open(const char *device, bool, bool, int, flash_params_t*, int, bool, int) = 0;
+
+
     virtual void close()                                   = 0;
     virtual bool read(u_int32_t addr, u_int32_t *data)     = 0;
     virtual bool read(u_int32_t addr, void *data, int len,
                       bool verbose = false,
                       const char *message = "")            = 0;
+    virtual bool read_modify_write(u_int32_t phy_addr, void *data, int cnt, bool noerase = false) = 0;
+
+    virtual bool read_modify_write_phy(u_int32_t phy_addr, void *data, int cnt, bool noerase = false) = 0;
+
+    virtual bool write(u_int32_t addr, void *data, int cnt, bool noerase = false) = 0;
+
+    virtual bool write_phy(u_int32_t phy_addr, void *data, int cnt, bool noerase = false) = 0;
+
+    virtual bool write(u_int32_t addr, u_int32_t data) = 0;
+    virtual bool set_flash_working_mode(int mode = FBase::Fwm_Default) = 0;
+
+    virtual int get_flash_working_mode() = 0;
+
+    virtual bool sw_reset() = 0;
+    virtual bool set_no_flash_verify(bool) = 0;
 
     virtual u_int32_t get_sector_size()                    = 0;
     virtual u_int32_t get_size()                           = 0;
 
     virtual u_int32_t get_dev_id()                         = 0;
     virtual u_int32_t get_rev_id()                         = 0;
+
+    virtual mfile* getMfileObj() = 0;
+    virtual mflash* getMflashObj() = 0;
+    virtual bool erase_sector(u_int32_t addr) = 0;
     virtual BinIdT    get_bin_id() { return UNKNOWN_BIN;};
     Crc16&            get_image_crc() {return _image_crc;};
     bool              is_flash() {return _is_flash;};
@@ -158,7 +194,8 @@ protected:
             result  = (cont_addr       & (0xffffffff >> (32 - _log2_chunk_size))) |
                       (_is_image_in_odd_chunks << _log2_chunk_size)         |
                       ((cont_addr << 1) & (0xffffffff << (_log2_chunk_size + 1)));
-        } else {
+        }
+        else {
             result = cont_addr;
         }
         return result;
@@ -170,7 +207,8 @@ protected:
         if (_log2_chunk_size) {
             result =  (phys_addr       & (0xffffffff >> (32 - _log2_chunk_size)))  |
                      ((phys_addr >> 1) & (0xffffffff << (     _log2_chunk_size)));
-        } else {
+        }
+        else {
             result = phys_addr;
         }
         return result;
@@ -185,6 +223,15 @@ protected:
             return errmsg("Length should be 4-bytes aligned.");
         }
         return true;
+    }
+
+    void check_uefi_build()
+    {
+#ifndef UEFI_BUILD
+        throw;
+#else
+        return;
+#endif
     }
 
     bool _is_image_in_odd_chunks;
@@ -219,12 +266,79 @@ public:
     virtual bool read(u_int32_t addr, u_int32_t *data);
     virtual bool read(u_int32_t addr, void *data, int len, bool verbose = false, const char *message = "");
     virtual bool write(u_int32_t addr, void *data, int cnt);
-
-
+    virtual bool write(u_int32_t, void *, int, bool)
+    {
+        check_uefi_build();
+        return false;
+    }
+    virtual bool write(u_int32_t, u_int32_t)
+    {
+        check_uefi_build();
+        return false;
+    }
+    virtual bool erase_sector(u_int32_t)
+    {
+        check_uefi_build();
+        return false;
+    }
+    virtual bool open(uefi_Dev_t *, uefi_dev_extra_t *, bool, bool)
+    {
+        check_uefi_build();
+        return false;
+    }
+    virtual bool open(const char*, bool, bool, int, flash_params_t*, int, bool, int) {
+        check_uefi_build();
+        return false;
+    }
+    virtual bool read_modify_write_phy(u_int32_t, void *, int, bool)
+    {
+        check_uefi_build();
+        return false;
+    }
+    virtual bool read_modify_write(u_int32_t, void *, int, bool = false)
+    {
+        check_uefi_build();
+        return false;
+    }
+    virtual bool set_flash_working_mode(int)
+    {
+        check_uefi_build();
+        return false;
+    }
+    virtual bool write_phy(u_int32_t, void*, int, bool)
+    {
+        check_uefi_build();
+        return false;
+    }
+    virtual bool sw_reset()
+    {
+        check_uefi_build();
+        return false;
+    }
+    virtual bool set_no_flash_verify(bool)
+    {
+        check_uefi_build();
+        return false;
+    }
+    virtual int get_flash_working_mode()
+    {
+        check_uefi_build();
+        return -1;
+    }
     virtual u_int32_t get_sector_size();
     virtual u_int32_t get_size()     { return getBufLength();}
     virtual u_int32_t get_dev_id()   { return 0;}
     virtual u_int32_t get_rev_id()   { return 0;}
+    virtual mfile* getMfileObj()
+    {
+        check_uefi_build();
+        return (mfile*)NULL;
+    }
+    virtual mflash* getMflashObj()
+    {
+        check_uefi_build();
+        return (mflash*)NULL;
+    }
 private:
     bool readFileGetBuffer(std::vector<u_int8_t>& dataBuf);
     bool writeEntireFile(std::vector<u_int8_t>& fileContent);
@@ -257,7 +371,7 @@ public:
         _curr_sector_size(0),
         _port_num(0),
         _cr_space_locked(0),
-        _flash_working_mode(Flash::Fwm_Default)
+        _flash_working_mode(FBase::Fwm_Default)
     {
         memset(&_attr, 0, sizeof(_attr));
     }
@@ -276,10 +390,20 @@ public:
                       int cx3_fw_access = 0);
     using FBase::open;
 
-    bool open(uefi_Dev_t *uefi_dev,
+    virtual bool open(uefi_Dev_t *uefi_dev,
               uefi_dev_extra_t *uefi_extra,
               bool force_lock = false,
               bool advErr = true);
+
+
+    virtual bool open(const char*, bool, bool)
+    {
+#ifndef UEFI_BUILD
+        throw;
+#else
+        return false;
+#endif
+    }
 
     virtual void close();
 
@@ -291,31 +415,33 @@ public:
                       int len,
                       bool verbose = false,
                       const char *message = "");
-    bool write_phy(u_int32_t phy_addr, void *data, int cnt, bool noerase = false); // read modify write
-    bool read_modify_write_phy(u_int32_t phy_addr, void *data, int cnt, bool noerase = false); // read modify write
+    virtual bool write_phy(u_int32_t phy_addr, void *data, int cnt, bool noerase = false); // read modify write
+    virtual bool read_modify_write_phy(u_int32_t phy_addr, void *data, int cnt, bool noerase = false); // read modify write
     bool write_phy(u_int32_t phy_addr, u_int32_t data); // read modify write
     bool erase_sector_phy(u_int32_t phy_addr);
 
     bool         update_boot_addr(u_int32_t boot_addr)
-    {return mf_update_boot_addr(_mfl, boot_addr) == MFE_OK;}
+    {
+        return mf_update_boot_addr(_mfl, boot_addr) == MFE_OK;
+    }
     //
     // Flash Interface
     //
 
     u_int32_t get_current_sector_size()  {return _curr_sector_size;}
     u_int32_t get_sector_size()          {return _attr.sector_size;}
-    u_int32_t get_size()  {return _attr.size;}
+    virtual u_int32_t get_size() { return _attr.size; }
 
-    u_int32_t get_dev_id()  {return _attr.hw_dev_id; }
+    virtual u_int32_t get_dev_id() { return _attr.hw_dev_id; }
     u_int32_t get_rev_id()  {return _attr.rev_id; }
     BinIdT    get_bin_id()  {return _attr.bin_id;};
     u_int32_t get_port_num()  {return _port_num;}
     u_int8_t  get_cr_space_locked()  {return _cr_space_locked;}
     bool  get_ignore_cache_replacment()  {return _ignore_cache_replacement;}
 
-    bool sw_reset();
+    virtual bool sw_reset();
 
-    bool set_no_flash_verify(bool val);
+    virtual bool set_no_flash_verify(bool val);
     static void get_flash_list(char *flash_list, int buffer_size) {return mf_flash_list(flash_list, buffer_size);}
 
     // Write and Erase functions are performed by the Command Set
@@ -327,7 +453,7 @@ public:
                        int cnt,
                        bool noerase = false);
 
-    bool read_modify_write(u_int32_t phy_addr, void *data, int cnt, bool noerase = false);
+    virtual bool read_modify_write(u_int32_t phy_addr, void *data, int cnt, bool noerase = false);
 
     virtual bool write(u_int32_t addr,
                        u_int32_t data);
@@ -346,8 +472,8 @@ public:
                           char *param_val_str);
 
     bool flash_working_mode_supported() {return _attr.support_sub_and_sector;}
-    int get_flash_working_mode() {return _flash_working_mode;}
-    bool set_flash_working_mode(int mode = Flash::Fwm_Default);
+    virtual int get_flash_working_mode() { return _flash_working_mode; }
+    virtual bool set_flash_working_mode(int mode = FBase::Fwm_Default);
 
     bool is_flash_write_protected();
     static void  deal_with_signal();
@@ -359,11 +485,7 @@ public:
         TRANS = 4096
     };
 
-    enum {
-        Fwm_Default = 0,
-        Fwm_4KB = 1,
-        Fwm_64KB = 2
-    };
+
 
     bool open_com_checks(const char *device,
                          int rc,

@@ -42,7 +42,7 @@ AM_CFLAGS = -W -Wall -g -MP -MD $(COMPILER_FPIC)
 
 noinst_LIBRARIES = libmad_ifc.a
 
-libmad_ifc_a_SOURCES = mad_ifc.c
+libmad_ifc_a_SOURCES = mad_ifc.c mad_ifc.h
 libmad_ifc_a_DEPENDENCIES = $(USER_DIR)/tools_layouts/libtools_layouts.a
 libmad_ifc_a_LIBADD = $(libmad_ifc_a_DEPENDENCIES)
 

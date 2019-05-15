@@ -223,19 +223,19 @@ class MlnxDriverFreeBSD(MlnxDriver):
 
 class MlnxDriverWindows(MlnxDriver):
 
-    def get_device_drivers(self, logger, bus_num, device_num):
+    def get_device_drivers(self, logger, seg_num, bus_num, device_num):
 
-        def read_3_lines(txt):
-            'Generator to read 3 non-empty lines'
+        def read_4_lines(txt):
+            'Generator to read 4 non-empty lines'
 
             lines = [line.strip() for line in txt.split('\n') if line.strip()]  # remove empty lines and convert to list
-            assert len(lines) % 3 == 0
+            assert len(lines) % 4 == 0
 
             lines = iter(lines)
             while True:
-                yield (next(lines), next(lines), next(lines))
+                yield (next(lines), next(lines), next(lines), next(lines))
 
-        cmd = 'powershell.exe "Get-NetAdapterHardwareInfo | Format-List -Property Bus,Device,Name'
+        cmd = 'powershell.exe "Get-NetAdapterHardwareInfo | Format-List -Property Segment,Bus,Device,Name'
         logger.debug(cmd)
         (rc, out, _) = cmdExec(cmd)
         if rc != 0:
@@ -243,12 +243,13 @@ class MlnxDriverWindows(MlnxDriver):
         logger.debug(out)
 
         drivers_names = []
-        for bus_line, device_line, name_line in read_3_lines(out):
+        for seg_line, bus_line, device_line, name_line in read_4_lines(out):
+            seg_num_ii = int(seg_line.split(':')[1])
             bus_num_ii = int(bus_line.split(':')[1])
             device_num_ii = int(device_line.split(':')[1])
             name_ii = name_line.split(':')[1].strip()
 
-            if bus_num_ii == bus_num and device_num_ii == device_num:
+            if seg_num_ii == seg_num and bus_num_ii == bus_num and device_num_ii == device_num:
                 drivers_names.append(name_ii)
 
         return drivers_names
@@ -263,11 +264,11 @@ class MlnxDriverWindows(MlnxDriver):
         # TODO : devices is for socket-direct, but for now SD is not supported anyway
 
         # Extract bus and device from the device_name
-        bus_device = mlxfwreset_utils.getDevDBDF(devices[0],logger).split('.')[0]
-        bus_num, device_num = int(bus_device.split(':')[0],16), int(bus_device.split(':')[1],16)
+        seg_bus_device = mlxfwreset_utils.getDevDBDF(devices[0],logger).split('.')[0]
+        seg_num, bus_num, device_num = int(seg_bus_device.split(':')[0],16), int(seg_bus_device.split(':')[1],16), int(seg_bus_device.split(':')[2],16)
 
         # Find the network adapters for the dus:device
-        targetedAdaptersTemp = self.get_device_drivers(logger, bus_num, device_num)
+        targetedAdaptersTemp = self.get_device_drivers(logger, seg_num, bus_num, device_num)
         logger.debug(targetedAdaptersTemp)
 
         # Filter the network adapter thar are disabled
