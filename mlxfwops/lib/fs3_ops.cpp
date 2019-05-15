@@ -49,18 +49,19 @@
 #endif
 #endif
 
-#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
-#include <ctype.h>
-#include <sstream>
-#include <mlxsign_lib/mlxsign_lib.h>
-#include <tools_crypto/tools_md5.h>
-#include <tools_dev_types.h>
-#endif
+#if !defined(UEFI_BUILD)
+    #include "mad_ifc/mad_ifc.h"
+   #include <ctype.h>
+   #include <sstream>
+    #if !defined(NO_OPEN_SSL)
+   #include <mlxsign_lib/mlxsign_lib.h>
+   #include <tools_crypto/tools_md5.h>
+   #include <tools_dev_types.h>
+    #endif
+    #if !defined(NO_CS_CMD)
 
-#if !defined(UEFI_BUILD) && !defined(NO_CS_CMD)
-#include <ctype.h>
-#include <sstream>
-#include <tools_crypto/tools_md5.h>
+   #include <tools_crypto/tools_md5.h>
+    #endif
 #endif
 
 #include "fs3_ops.h"
@@ -647,10 +648,7 @@ bool Fs3Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_ito
     if (cntx_image_num == 0) {
         return errmsg(MLXFW_NO_VALID_IMAGE_ERR, "No valid FS3 image found");
     }
-    if (cntx_image_num > 1) {
-        // ATM we support only one valid image
-        return errmsg(MLXFW_MULTIPLE_VALID_IMAGES_ERR, "More than one FS3 image found on %s", this->_ioAccess->is_flash() ? "Device" : "image");
-    }
+
     u_int32_t image_start = cntx_image_start[0];
     offset = 0;
     // Read BOOT
@@ -766,6 +764,48 @@ bool Fs3Operations::getRunningFwVersion()
     return true;
 }
 
+void Fs3Operations::deal_with_signal()
+{
+#ifndef UEFI_BUILD
+    int sig;
+    sig = mft_signal_is_fired();
+    if (sig) {
+        mft_signal_set_fired(0);
+        mft_signal_set_handling(0);
+        raise(sig);
+    }
+    mft_signal_set_handling(0);
+#endif
+    return;
+}
+
+reg_access_status_t Fs3Operations::getGI(mfile *mf, struct tools_open_mgir *gi)
+{
+    reg_access_status_t rc = ME_REG_ACCESS_OK;
+    u_int32_t tp = 0;
+    mget_mdevs_type(mf, &tp);
+#if !defined(UEFI_BUILD) && !defined(NO_INBAND)
+    mft_signal_set_handling(1);
+    if (tp == MST_IB) {
+        rc = (reg_access_status_t)mad_ifc_general_info_hw(mf, &gi->hw_info);
+        if (!rc) {
+            rc = (reg_access_status_t)mad_ifc_general_info_fw(mf, &gi->fw_info);
+            if (!rc) {
+                rc = (reg_access_status_t)mad_ifc_general_info_sw(mf, &gi->sw_info);
+            }
+        }
+    } else {
+        rc = reg_access_mgir(mf, REG_ACCESS_METHOD_GET, gi);
+    }
+    deal_with_signal();
+#else
+    rc = reg_access_mgir(mf, REG_ACCESS_METHOD_GET, gi);
+#endif
+    return rc;
+
+}
+
+
 bool Fs3Operations::FwQuery(fw_info_t *fwInfo, bool readRom, bool isStripedImage)
 {
     //isStripedImage flag is not needed in FS3 image format
@@ -774,7 +814,18 @@ bool Fs3Operations::FwQuery(fw_info_t *fwInfo, bool readRom, bool isStripedImage
     if (!FsIntQueryAux(readRom)) {
         return false;
     }
-
+    if (_ioAccess->is_flash() && _fwParams.ignoreCacheRep == 0) {
+        /*
+        * * MGIR
+        * */
+        reg_access_status_t rc;
+        struct tools_open_mgir mgir;
+        memset(&mgir, 0, sizeof(mgir));
+        rc = getGI(((Flash *)_ioAccess)->getMfileObj(), &mgir);
+        if (!rc) {
+            _fwImgInfo.ext_info.isfu_major = mgir.fw_info.isfu_major;
+        }
+    }
     memcpy(&(fwInfo->fw_info),  &(_fwImgInfo.ext_info),  sizeof(fw_info_com_t));
     memcpy(&(fwInfo->fs3_info), &(_fs3ImgInfo.ext_info), sizeof(fs3_info_t));
     fwInfo->fw_type = FwType();
@@ -902,7 +953,7 @@ bool Fs3Operations::CheckFs3ImgSize(Fs3Operations& imageOps, bool useImageDevDat
 }
 
 #define SUPPORTS_ISFU(chip_type) \
-    (chip_type == CT_CONNECT_IB || chip_type == CT_CONNECTX4 || chip_type == CT_CONNECTX4_LX || chip_type == CT_CONNECTX5 || chip_type == CT_CONNECTX6 || chip_type == CT_BLUEFIELD)
+    (chip_type == CT_CONNECT_IB || chip_type == CT_CONNECTX4 || chip_type == CT_CONNECTX4_LX || chip_type == CT_CONNECTX5 || chip_type == CT_CONNECTX6  || chip_type == CT_CONNECTX6DX || chip_type == CT_BLUEFIELD)
 
 u_int32_t Fs3Operations::getNewImageStartAddress(Fs3Operations &imageOps, bool isBurnFailSafe)
 {
@@ -1459,11 +1510,24 @@ bool Fs3Operations::FwCheckIfWeCanBurnWithFwControl(FwOperations *imageOps)
      *  - New 4MB/7MB FW running from 0x0 or 0x400,000 and we try to burn old FW => Do FallBack
      *  - Old 4MB -> Burn 7MB => Do FallBack
      *
+     * when handle type is UEFI we need to do fallback to regular flow:
+     *  - if the runnig fw is signed and the fw we are going to burn is not signed 
      */
+
+    fw_info_t dev_info_img;
+
+    if (_fwParams.hndlType == FHT_UEFI_DEV) {
+        memset(&dev_info_img, 0, sizeof(dev_info_img));
+        if (!((Fs3Operations *)imageOps)->FwQuery(&dev_info_img)) {
+            return false;
+        }
+    }
 
     bool result = ((_fs3ImgInfo.runFromAny && (_fwImgInfo.imgStart == 0x0 || _fwImgInfo.imgStart == 0x400000)) &&
                    isOld4MBImage(imageOps)) ||
-                  (!_fs3ImgInfo.runFromAny && ((Fs3Operations *)imageOps)->_fwImgInfo.cntxLog2ChunkSize == 0x17);
+                  (!_fs3ImgInfo.runFromAny && ((Fs3Operations *)imageOps)->_fwImgInfo.cntxLog2ChunkSize == 0x17) ||
+                  (_fwParams.hndlType == FHT_UEFI_DEV && (!(dev_info_img.fs3_info.security_mode & SMM_SIGNED_FW)) &&
+                  (_fs3ImgInfo.ext_info.security_mode & SMM_SIGNED_FW ));
     //printf("-D- result=%d\n", result);
     return result;
 }
@@ -3009,15 +3073,14 @@ bool Fs3Operations::Fs3IsfuActivateImage(u_int32_t newImageStart)
     mfai.address = newImageStart;
     mfai.use_address = 1;
     rc = reg_access_mfai(mf, REG_ACCESS_METHOD_SET, &mfai);
-    if (rc) {
-        goto cleanup;
-    }
+    if (!rc) {
     // send warm boot (bit 6)
     mfrl.reset_level = 1 << 6;
     rc = reg_access_mfrl(mf, REG_ACCESS_METHOD_SET, &mfrl);
     // ignore ME_REG_ACCESS_BAD_PARAM error for old FW
     rc = (rc == ME_REG_ACCESS_BAD_PARAM) ? ME_OK : rc;
-cleanup:
+    }
+
     if (rc) {
         return errmsg("Failed to activate image. %s", m_err2str((MError)rc));
     }
@@ -3276,7 +3339,7 @@ bool Fs3Operations::CalcHMAC(const vector<u_int8_t>& key, vector<u_int8_t>& dige
 bool Fs3Operations::AddHMACIfNeeded(Fs3Operations* imageOps, Flash *f)
 {
 #if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
-    mfile* mf = ((Flash*)_ioAccess)->getMfileObj();
+    mfile* mf = _ioAccess->getMfileObj();
     dm_dev_id_t deviceId = DeviceUnknown;
     u_int32_t hwDevId = 0x0, hwRevId = 0x0;
 

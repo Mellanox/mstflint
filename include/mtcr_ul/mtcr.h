@@ -159,6 +159,10 @@ int supports_reg_access_gmp(mfile *mf, maccess_reg_method_t reg_method);
 
 const char* m_err2str(MError status);
 
+int mvpd_read4(mfile *mf, unsigned int offset, u_int8_t value[4]);
+
+int mvpd_write4(mfile *mf, unsigned int offset, u_int8_t value[4]);
+
 int mread_buffer(mfile *mf, unsigned int offset, u_int8_t *data, int byte_len);
 int mwrite_buffer(mfile *mf, unsigned int offset, u_int8_t *data, int byte_len);
 
@@ -169,10 +173,11 @@ int mset_addr_space(mfile *mf, int space);
 
 int mclear_pci_semaphore(const char *name);
 
-int mvpd_read4(mfile *mf, unsigned int offset, u_int8_t value[4]);
 
-int mvpd_write4(mfile *mf, unsigned int offset, u_int8_t value[4]);
 
+int MWRITE4_SEMAPHORE(mfile* mf, int offset, int value);
+
+int MREAD4_SEMAPHORE(mfile* mf, int offset, u_int32_t* ptr);
 #ifdef __cplusplus
 }
 #endif

@@ -33,14 +33,16 @@
 # Makefile.am -- Process this file with automake to produce Makefile.in
 MTCR_DIR    = $(top_srcdir)/${MTCR_CONF_DIR}
 MTCR_INC_DIR = $(top_srcdir)/include/mtcr_ul
+MTCR_UL_DIR = $(top_srcdir)/mtcr_ul
 MFLASH_DIR  = $(top_srcdir)/mflash
 COMMON_DIR  = $(top_srcdir)/common
 LAYOUTS_DIR = $(top_srcdir)/tools_layouts
 MFT_UTILS_DIR = $(top_srcdir)/mft_utils
 CMDIF_DIR   = $(top_srcdir)/cmdif
+MAD_IFC_DIR   = $(top_srcdir)/mad_ifc
 
 AM_CPPFLAGS = -I$(top_srcdir) -I$(srcdir) -I$(MTCR_DIR) -I$(MFLASH_DIR) -I$(COMMON_DIR) \
-           -I$(LAYOUTS_DIR) -I$(MFT_UTILS_DIR) -I$(MTCR_INC_DIR)
+           -I$(LAYOUTS_DIR) -I$(MFT_UTILS_DIR) -I$(MTCR_INC_DIR) -I$(MTCR_UL_DIR)
 
 mstflint_CXXFLAGS = -Wall -W -g -MP -MD -pipe -DEXTERNAL $(COMPILER_FPIC)
 bin_PROGRAMS = mstflint
@@ -59,6 +61,7 @@ mstflint_LDADD =  ../mlxfwops/lib/libmlxfwops.a  \
           ../tools_layouts/libtools_layouts.a \
           ../fw_comps_mgr/libfw_comps_mgr.a \
 		  ../mft_utils/libmftutils.a\
+		  $(MTCR_UL_DIR)/libmtcr_ul.a\
 		  ${LDL}
 
 
@@ -74,7 +77,7 @@ else
 endif
 
 if ENABLE_INBAND
-mstflint_LDADD += $(top_srcdir)/mad_ifc/libmad_ifc.a
+mstflint_LDADD += $(MAD_IFC_DIR)/libmad_ifc.a
 else
 endif
 

@@ -32,7 +32,7 @@
  
 
 /***
-         *** This file was generated at "2018-09-17 12:04:24"
+         *** This file was generated at "2019-03-06 16:23:05"
          *** by:
          ***    > /mswg/release/tools/a-me/last_stable/adabe_plugins/adb2c/adb2pack.py --input adb/tools_open/tools_open.adb --file-prefix tools_open --prefix tools_open_
          ***/
@@ -420,6 +420,10 @@ For example 17:43 will be coded as 0x1743 */
 	/* Description - FW version's SubMinor field in extended (32b) format. */
 	/* 0x2c.0 - 0x2c.31 */
 	u_int32_t extended_sub_minor;
+/*---------------- DWORD[12] (Offset 0x30) ----------------*/
+	/* Description - isfu_major. */
+	/* 0x30.0 - 0x30.15 */
+	u_int16_t isfu_major;
 };
 
 /* Description -   */
@@ -495,7 +499,7 @@ struct tools_open_nv_hdr {
 	/* Description - Shadow: i.e if set the Fw will not update the tlv immediately but wait for a command */
 	/* 0x4.24 - 0x4.24 */
 	u_int8_t shadow;
-	/* Description - Pad count: for non dword aligned tlvs */
+	/* Description - Pad count: for non dword alligned tlvs */
 	/* 0x4.25 - 0x4.26 */
 	u_int8_t pad_cnt;
 	/* Description - Data version can be set by caller or left as 0. */
@@ -997,7 +1001,7 @@ struct tools_open_mfpa {
 	u_int16_t sector_size;
 	/* Description -  */
 	/* 0x18.16 - 0x18.23 */
-	u_int8_t block_alignment;
+	u_int8_t block_allignment;
 	/* Description -  */
 	/* 0x18.24 - 0x18.31 */
 	u_int8_t block_size;
@@ -2650,6 +2654,96 @@ union tools_open_hcr_cmds {
 	struct tools_open_query_def_params_per_port query_def_params_per_port;
 };
 
+/* Description -   */
+/* Size in bytes - 36 */
+struct tools_open_mcdd_descriptor {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Update handle registered when the FSM was activated. */
+	/* 0x0.0 - 0x0.23 */
+	u_int32_t update_handle;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - Offset of accessed address relative to component start. */
+	/* 0x4.0 - 0x4.31 */
+	u_int32_t offset;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - Size of the data accessed, given in bytes */
+	/* 0x8.0 - 0x8.15 */
+	u_int16_t size;
+	/* Description - Reserved */
+	/* 0x8.16 - 0x8.31 */
+	u_int16_t reserved1;
+/*---------------- DWORD[3] (Offset 0xc) ----------------*/
+	/* Description - Reserved */
+	/* 0xc.0 - 0xc.31 */
+	u_int32_t reserved2;
+/*---------------- DWORD[4] (Offset 0x10) ----------------*/
+	/* Description - Physical address of the FW component data page */
+	/* 0x10.0 - 0x10.31 */
+	u_int32_t data_page_phys_addr_msb;
+/*---------------- DWORD[5] (Offset 0x14) ----------------*/
+	/* Description - Physical address of the FW component data page */
+	/* 0x14.0 - 0x14.31 */
+	u_int32_t data_page_phys_addr_lsb;
+/*---------------- DWORD[6] (Offset 0x18) ----------------*/
+	/* Description - Physical address of the FW component data page */
+	/* 0x18.0 - 0x18.31 */
+	u_int32_t mailbox_page_phys_addr_msb;
+/*---------------- DWORD[7] (Offset 0x1c) ----------------*/
+	/* Description - Physical address of the FW component data page */
+	/* 0x1c.0 - 0x1c.31 */
+	u_int32_t mailbox_page_phys_addr_lsb;
+/*---------------- DWORD[8] (Offset 0x20) ----------------*/
+	/* Description - Status of current operation that FW sends to host. */
+	/* 0x20.0 - 0x20.7 */
+	u_int8_t status;
+	/* Description - Last error index, if occured. */
+	/* 0x20.8 - 0x20.15 */
+	u_int8_t error;
+	/* Description - Reserved. */
+	/* 0x20.16 - 0x20.31 */
+	u_int16_t reserved3;
+};
+
+/* Description -   */
+/* Size in bytes - 32 */
+struct tools_open_mcdd_reg {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Update handle registered when the FSM was activated. */
+	/* 0x0.0 - 0x0.23 */
+	u_int32_t update_handle;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - Offset of accessed address relative to component start. */
+	/* 0x4.0 - 0x4.31 */
+	u_int32_t offset;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - Size of the data accessed, given in bytes */
+	/* 0x8.0 - 0x8.15 */
+	u_int16_t size;
+	/* Description - Reserved */
+	/* 0x8.16 - 0x8.31 */
+	u_int16_t reserved1;
+/*---------------- DWORD[3] (Offset 0xc) ----------------*/
+	/* Description - Reserved */
+	/* 0xc.0 - 0xc.31 */
+	u_int32_t reserved2;
+/*---------------- DWORD[4] (Offset 0x10) ----------------*/
+	/* Description - Physical address of the FW component data page */
+	/* 0x10.0 - 0x10.31 */
+	u_int32_t data_page_phys_addr_msb;
+/*---------------- DWORD[5] (Offset 0x14) ----------------*/
+	/* Description - Physical address of the FW component data page */
+	/* 0x14.0 - 0x14.31 */
+	u_int32_t data_page_phys_addr_lsb;
+/*---------------- DWORD[6] (Offset 0x18) ----------------*/
+	/* Description - Physical address of the FW component data page */
+	/* 0x18.0 - 0x18.31 */
+	u_int32_t mailbox_page_phys_addr_msb;
+/*---------------- DWORD[7] (Offset 0x1c) ----------------*/
+	/* Description - Physical address of the FW component data page */
+	/* 0x1c.0 - 0x1c.31 */
+	u_int32_t mailbox_page_phys_addr_lsb;
+};
+
 /* Description -  Mellanox Firmware Archiver 2 */
 /* Size in bytes - 32 */
 union tools_open_mfa2 {
@@ -2810,6 +2904,12 @@ union tools_open_tools_open {
 	/* Description -  */
 	/* 0x0.0 - 0x1c.31 */
 	union tools_open_mfa2 mfa2;
+	/* Description -  */
+	/* 0x0.0 - 0x1c.31 */
+	struct tools_open_mcdd_reg mcdd_reg;
+	/* Description -  */
+	/* 0x0.0 - 0x20.31 */
+	struct tools_open_mcdd_descriptor mcdd_descriptor;
 };
 
 
@@ -3465,6 +3565,20 @@ void tools_open_hcr_cmds_print(const union tools_open_hcr_cmds *ptr_struct, FILE
 unsigned int tools_open_hcr_cmds_size(void);
 #define TOOLS_OPEN_HCR_CMDS_SIZE    (0x108)
 void tools_open_hcr_cmds_dump(const union tools_open_hcr_cmds *ptr_struct, FILE *fd);
+/* mcdd_descriptor */
+void tools_open_mcdd_descriptor_pack(const struct tools_open_mcdd_descriptor *ptr_struct, u_int8_t *ptr_buff);
+void tools_open_mcdd_descriptor_unpack(struct tools_open_mcdd_descriptor *ptr_struct, const u_int8_t *ptr_buff);
+void tools_open_mcdd_descriptor_print(const struct tools_open_mcdd_descriptor *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_mcdd_descriptor_size(void);
+#define TOOLS_OPEN_MCDD_DESCRIPTOR_SIZE    (0x24)
+void tools_open_mcdd_descriptor_dump(const struct tools_open_mcdd_descriptor *ptr_struct, FILE *fd);
+/* mcdd_reg */
+void tools_open_mcdd_reg_pack(const struct tools_open_mcdd_reg *ptr_struct, u_int8_t *ptr_buff);
+void tools_open_mcdd_reg_unpack(struct tools_open_mcdd_reg *ptr_struct, const u_int8_t *ptr_buff);
+void tools_open_mcdd_reg_print(const struct tools_open_mcdd_reg *ptr_struct, FILE *fd, int indent_level);
+unsigned int tools_open_mcdd_reg_size(void);
+#define TOOLS_OPEN_MCDD_REG_SIZE    (0x20)
+void tools_open_mcdd_reg_dump(const struct tools_open_mcdd_reg *ptr_struct, FILE *fd);
 /* mfa2 */
 void tools_open_mfa2_pack(const union tools_open_mfa2 *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_mfa2_unpack(union tools_open_mfa2 *ptr_struct, const u_int8_t *ptr_buff);

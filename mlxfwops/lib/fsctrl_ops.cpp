@@ -111,6 +111,7 @@ bool FsCtrlOperations::FsIntQuery()
     if (fwQery.running_fw_version.version_string_length) {
         strcpy(_fwImgInfo.ext_info.product_ver, fwQery.product_ver);
     }
+    // if nextBootFwVer, only fw version is needed, return.
     if (nextBootFwVer) {
          return true;
     }
@@ -176,7 +177,8 @@ bool FsCtrlOperations::FsIntQuery()
 
     strncpy(_fsCtrlImgInfo.name, fwQery.name, NAME_LEN);
     strncpy(_fsCtrlImgInfo.description, fwQery.description, DESCRIPTION_LEN);
-
+    strncpy(_fsCtrlImgInfo.deviceVsd, fwQery.deviceVsd, VSD_LEN);
+    strncpy(_fsCtrlImgInfo.image_vsd, fwQery.imageVsd, VSD_LEN);
     return true;
 }
 
@@ -378,13 +380,23 @@ bool FsCtrlOperations::FwBurnAdvanced(FwOperations *imageOps, ExtBurnParams &bur
     if (!imageOps->FwExtract4MBImage(imageOps4MData, true)) {
         return errmsg(imageOps->getErrorCode(), "Failed to Extract 4MB from the image");
     }
+
+#ifdef UEFI_BUILD
+    burnParams.ProgressFuncAdv.uefi_func =  burnParams.progressFunc;
+#else
     burnParams.progressFunc = (ProgressCallBack) NULL;
+#endif
+
     bootImageComponent.init(imageOps4MData, imageOps4MData.size(), FwComponent::COMPID_BOOT_IMG);
     compsToBurn.push_back(bootImageComponent);
-    if (!_fwCompsAccess->burnComponents(compsToBurn, &burnParams.ProgressFuncAdv)) {
+    if (!_fwCompsAccess->lock_flash_semaphore()) {
         return errmsg(FwCompsErrToFwOpsErr(_fwCompsAccess->getLastError()), "%s", _fwCompsAccess->getLastErrMsg());
     }
-
+    if (!_fwCompsAccess->burnComponents(compsToBurn, &burnParams.ProgressFuncAdv)) {
+        _fwCompsAccess->unlock_flash_semaphore();
+        return errmsg(FwCompsErrToFwOpsErr(_fwCompsAccess->getLastError()), "%s", _fwCompsAccess->getLastErrMsg());
+    }
+    _fwCompsAccess->unlock_flash_semaphore();
     return true;
 }
 

@@ -799,7 +799,7 @@ bool Fs2Operations::getRunningFwVer()
     u_int8_t buff[CIBFW_FW_VERSION_SIZE] = {0};
     memset(&fwVer, 0, sizeof(fwVer));
     // make sure its not mellanox OS
-    if (mget_mdevs_flags(((Flash*)_ioAccess)->getMfileObj(), &mflags)) {
+    if (mget_mdevs_flags(_ioAccess->getMfileObj(), &mflags)) {
         return errmsg("Failed to get device access type");
     }
     if (mflags & MDEVS_MLNX_OS) {
@@ -818,7 +818,7 @@ bool Fs2Operations::getRunningFwVer()
         return errmsg("Unsupported chip type.");
     }
 
-    if (mread_buffer(((Flash*)_ioAccess)->getMfileObj(), fwVerBaseAddr, buff, CIBFW_FW_VERSION_SIZE) != CIBFW_FW_VERSION_SIZE) {
+    if (mread_buffer(_ioAccess->getMfileObj(), fwVerBaseAddr, buff, CIBFW_FW_VERSION_SIZE) != CIBFW_FW_VERSION_SIZE) {
         return errmsg("Failed to extract FW version from device. CR_ERROR\n");
     }
     cibfw_FW_VERSION_unpack(&fwVer, buff);
@@ -1044,8 +1044,8 @@ bool Fs2Operations::Fs2FailSafeBurn(Fs2Operations &imageOps,
 #ifdef __WIN__
     if (!burnParams.skipCiReq) {
         int rc;
-        mf_release_semaphore(((Flash*)_ioAccess)->getMflashObj());
-        rc = wdcif_send_image_cache_request(((Flash*)_ioAccess)->getMfileObj());
+        mf_release_semaphore(_ioAccess->getMflashObj());
+        rc = wdcif_send_image_cache_request(_ioAccess->getMfileObj());
         switch (rc) {
         case WDCIF_STATUS_SUCCESS:
             burnParams.burnStatus.imageCachedSuccessfully = true;
@@ -1768,7 +1768,7 @@ bool Fs2Operations::Fs2SetGuidsForBlank(sg_params_t& sgParam)
         //  patchGUIDsSection(u_int32_t *buf, u_int32_t ind, guid_t guids[MAX_GUIDS], int nguids)
         patchGUIDsSection(guid_sect, 16, &sgParam.userGuids[0], _fs2ImgInfo.ext_info.guid_num);
 
-        if (!((Flash*)_ioAccess)->write(guid_sect_addr[i], guid_sect + 4, _fs2ImgInfo.ext_info.guid_num * 8 + 4, true)) {
+        if (!_ioAccess->write(guid_sect_addr[i], guid_sect + 4, _fs2ImgInfo.ext_info.guid_num * 8 + 4, true)) {
             return errmsg("flash write error (%s)\n", _ioAccess->err());
         }
     }
@@ -1787,7 +1787,7 @@ bool Fs2Operations::Fs2SetGuidsForBlank(sg_params_t& sgParam)
         old_dw.range(15, 0) =  crc;
         u_int32_t new_crc_dw = CPUTO1(old_dw);
 
-        if (!((Flash*)_ioAccess)->write(IMG_CRC_OFF, &new_crc_dw, 4, true)) {
+        if (!_ioAccess->write(IMG_CRC_OFF, &new_crc_dw, 4, true)) {
             return errmsg(MLXFW_FLASH_WRITE_ERR, "flash write error (%s).", _ioAccess->err());
         }
     }
@@ -1858,7 +1858,7 @@ bool Fs2Operations::FwBurnRom(FImage *romImg, bool ignoreProdIdCheck, bool ignor
     u_int32_t cntx_image_num;
     FindAllImageStart(romImg, cntx_image_start, &cntx_image_num, _cntx_magic_pattern);
     if (cntx_image_num != 0) {
-        return errmsg("Expecting an expansion ROM image, Received Mellanox FW image.");
+        return errmsg("Expecting an expansion ROM image, Recieved Mellanox FW image.");
     }
 
     if (!Fs2IntQuery()) {
@@ -2089,21 +2089,21 @@ bool Fs2Operations::FwResetNvData()
     //_fs2ImgInfo.ext_info.config_sectors, _fs2ImgInfo.ext_info.config_pad, fwSectorSz,configBaseAddr, availFlashSize);
 
     //erase addresses : [configBaseAddr..AvailFlashSize]
-    ((Flash*)_ioAccess)->set_flash_working_mode(Flash::Fwm_Default);
+    _ioAccess->set_flash_working_mode(Flash::Fwm_Default);
     u_int32_t sectorSize = _ioAccess->get_sector_size();
     u_int32_t configEndAddr = availFlashSize - (_fs2ImgInfo.ext_info.config_pad * fwSectorSz);
     for (u_int32_t eraseAddr = configBaseAddr; eraseAddr < configEndAddr; eraseAddr += sectorSize) {
-        if (!((Flash*)_ioAccess)->erase_sector(eraseAddr)) {
+        if (!_ioAccess->erase_sector(eraseAddr)) {
             return errmsg("failed to erase configuration address: 0x%x. %s", eraseAddr, _ioAccess->err());
         }
         if (_fwImgInfo.actuallyFailsafe) { // erase config sectors on the other half aswell
-            ((Flash*)_ioAccess)->set_address_convertor(_fwImgInfo.cntxLog2ChunkSize, !(_fwImgInfo.imgStart != 0));
-            if (!((Flash*)_ioAccess)->erase_sector(eraseAddr)) {
-                ((Flash*)_ioAccess)->set_address_convertor(_fwImgInfo.cntxLog2ChunkSize, (_fwImgInfo.imgStart != 0));;
+            _ioAccess->set_address_convertor(_fwImgInfo.cntxLog2ChunkSize, !(_fwImgInfo.imgStart != 0));
+            if (!_ioAccess->erase_sector(eraseAddr)) {
+                _ioAccess->set_address_convertor(_fwImgInfo.cntxLog2ChunkSize, (_fwImgInfo.imgStart != 0));;
                 return errmsg("failed to erase configuration address: 0x%x. %s", eraseAddr, _ioAccess->err());
             }
             // restore address converter
-            ((Flash*)_ioAccess)->set_address_convertor(_fwImgInfo.cntxLog2ChunkSize, (_fwImgInfo.imgStart != 0));
+            _ioAccess->set_address_convertor(_fwImgInfo.cntxLog2ChunkSize, (_fwImgInfo.imgStart != 0));
         }
     }
     return true;

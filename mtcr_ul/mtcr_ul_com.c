@@ -1625,6 +1625,7 @@ static long supported_dev_ids[] = {
     0xcb84,     //Spectrum
     0xcf08,     //Switch-IB2
     0xd2f0,     //Quantum
+    0xcf6c,     //Spectrum2
     0xa2d2,     //MT416842 Family BlueField integrated ConnectX-5 network controller
     -1
 };
@@ -1635,6 +1636,7 @@ static long live_fish_id_database[] = {
     0x249,
     0x24b,
     0x24d,
+    0x24e,
     0x1F6,
     0x1F8,
     0x1FF,
@@ -3275,4 +3277,11 @@ const char* m_err2str(MError status)
     default:
         return "Unknown error code";
     }
+}
+
+int allocate_kernel_memory_page(mfile* f, mtcr_alloc_page* page)
+{
+    (void)f;
+    (void)page;
+    return -1;//unsupported
 }

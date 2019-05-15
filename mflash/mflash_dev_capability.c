@@ -29,6 +29,7 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
 
 /*
@@ -63,6 +64,7 @@ int is_four_byte_address_needed(mflash *mfl, MfError *status)
         return 0;
     case DeviceQuantum:
     case DeviceConnectX6:
+    case DeviceConnectX6DX:
     case DeviceSpectrum2:
         return 1;
     default:
@@ -94,6 +96,7 @@ int is_flash_enable_needed(mflash *mfl, MfError *status)
     case DeviceBlueField:
     case DeviceQuantum:
     case DeviceConnectX6:
+    case DeviceConnectX6DX:
     case DeviceSpectrum2:
     case DeviceSecureHost:
         return 0;
@@ -128,6 +131,7 @@ int is_icmdif_supported(mflash *mfl, MfError *status)
     case DeviceQuantum:
     case DeviceSpectrum2:
     case DeviceConnectX6:
+    case DeviceConnectX6DX:
         return 1;
     default:
         *status = MFE_UNSUPPORTED_DEVICE;
@@ -158,6 +162,7 @@ int is_supports_sw_reset(mflash *mfl, MfError *status)
     case DeviceConnectX5:
     case DeviceBlueField:
     case DeviceConnectX6:
+    case DeviceConnectX6DX:
     case DeviceSpectrum2:
     case DeviceSecureHost:
         return 0;

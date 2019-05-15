@@ -285,7 +285,7 @@ public:
         u_int32_t buffSize;
         // FHT_UEFI_DEV
         uefi_Dev_t *uefiHndl;
-        uefi_dev_extra_t *uefiExtra;
+        uefi_dev_extra_t uefiExtra;
         // FHT_MST_DEV
         char *mstHndl;
         bool forceLock;

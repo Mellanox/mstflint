@@ -384,6 +384,11 @@ typedef struct access_reg_params_t {
 
 typedef struct mfile_t mfile;
 
+typedef struct mtcr_alloc_page_t {
+    u_int64_t pa;
+    u_int64_t va;
+} mtcr_alloc_page;
+
 typedef void (*f_mpci_change)        (mfile *mf);
 
 #define VSEC_MIN_SUPPORT_UL(mf) (((mf)->vsec_cap_mask & (1 << VCC_INITIALIZED)) && \
