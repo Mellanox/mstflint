@@ -72,7 +72,7 @@ ${MSTFWRESET_PYTHON_WRAPPER}: $(PYTHON_WRAPPER_SCRIPT)
 	cp $(PYTHON_WRAPPER_SCRIPT) $@
 mstfwresetlibdir=$(libdir)/mstflint/python_tools/$(MSTFWRESET_PYTHON_WRAPPER)
 
-mlxpcilibdir=$(libdir)/mft/python_tools/mlxpci
+mlxpcilibdir=$(libdir)/mstflint/python_tools/mlxpci
 mlxpcilib_DATA = binary_file.py mlxpci_lib.py
 
 mstfwresetlib_SCRIPTS = $(MSTFWRESET_PYTHON_WRAPPER).py
