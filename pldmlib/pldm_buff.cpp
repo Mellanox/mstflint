@@ -63,10 +63,10 @@ bool PldmBuffer::loadFile(const std::string& fname)
     }
 
     //Read file contents into buffer
-    fread(m_buff, m_size, 1, fp);
+    size_t read_size = fread(m_buff, m_size, 1, fp);
     fclose(fp);
 
-    return true;
+    return (read_size == (size_t)m_size);
 }
 
 
