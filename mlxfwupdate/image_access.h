@@ -48,7 +48,8 @@ using namespace std;
 enum {
     IMG_SIG_TYPE_UNKNOWN = 0,
     IMG_SIG_TYPE_BIN = 1,
-    IMG_SIG_TYPE_MFA = 2
+    IMG_SIG_TYPE_MFA = 2,
+    IMG_SIG_TYPE_PLDM = 3
 };
 
 class ImageAccess {
@@ -59,8 +60,8 @@ public:
     int queryPsid(const string &fname, const string &psid, string &selector_tag, int image_type, PsidQueryItem &ri);
     int getImage(const string &fname, u_int8_t **filebuf);
     int getImage(const string &fname, const string &psid, string &selector_tag, int image_type, u_int8_t **filebuf);
-    int get_file_content(string fname, vector<PsidQueryItem> &riv);
-    static int getFileSignature(string fname);
+    int get_file_content(const string & fname, vector<PsidQueryItem> &riv);
+    static int getFileSignature(const string & fname);
     static bool hasMFAs(string dir);
     string getLastErrMsg();
     string getlastWarning();
@@ -73,8 +74,10 @@ private:
     int getImageMfa(const string &fname, const string &psid, string &selector_tag, int image_type, u_int8_t **filebuf);
     int checkImgSignature(const char *fname);
 
-    int get_mfa_content(string fpath, vector<PsidQueryItem> &riv);
-    int get_bin_content(string fpath, vector<PsidQueryItem> &riv);
+    int get_mfa_content(const string & fname, vector<PsidQueryItem> &riv);
+    int get_pldm_content(const string & fname, vector<PsidQueryItem> &riv);
+    int get_bin_content(const string & fname, vector<PsidQueryItem> &riv);
+    bool extract_pldm_image_info(const u_int8_t * buff, u_int32_t size, PsidQueryItem &ri);
     static int getBufferSignature(u_int8_t *buf, u_int32_t size);
     bool openImg(fw_hndl_type_t hndlType, char *psid, char *fileHndl);
     char _errBuff[MLNX_ERR_BUFF_SIZE];

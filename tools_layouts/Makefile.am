@@ -53,5 +53,6 @@ libtools_layouts_a_SOURCES = prm_adb_db.cpp prm_adb_db.h \
 				cx5fw_layouts.c cx5fw_layouts.h\
 				cx6fw_layouts.c cx6fw_layouts.h\
 				icmd_layouts.c icmd_layouts.h\
-                reg_access_hca_layouts.c reg_access_hca_layouts.h
+				reg_access_hca_layouts.c reg_access_hca_layouts.h\
+				image_info_layouts.c image_info_layouts.h
 EXTRA_DIST = ${ADABE_DBS_EXTRA_DIST}

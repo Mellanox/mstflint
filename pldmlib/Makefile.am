@@ -1,25 +1,25 @@
 #--
-# Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
-# 
+# Copyright (c) 2004-2010 Mellanox Technologies LTD. All rights reserved.
+#
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
 # General Public License (GPL) Version 2, available from the file
 # COPYING in the main directory of this source tree, or the
 # OpenIB.org BSD license below:
-# 
+#
 #     Redistribution and use in source and binary forms, with or
 #     without modification, are permitted provided that the following
 #     conditions are met:
-# 
+#
 #      - Redistributions of source code must retain the above
 #        copyright notice, this list of conditions and the following
 #        disclaimer.
-# 
+#
 #      - Redistributions in binary form must reproduce the above
 #        copyright notice, this list of conditions and the following
 #        disclaimer in the documentation and/or other materials
 #        provided with the distribution.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 # EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 # MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -30,16 +30,18 @@
 # SOFTWARE.
 #--
 
-SUBDIRS = common mft_utils ext_libs $(TOOLS_CRYPTO) tools_layouts ${MTCR_CONF_DIR} mtcr_py $(MAD_IFC) reg_access cmdif $(XZ_UTILS_DIR) dev_mgt tools_res_mgmt mvpd mflash fw_comps_mgr libmfa pldmlib mlxconfig mlxfwops cmdparser $(FW_MGR_TOOLS) flint small_utils mstdump ${ADABE_TOOLS} tracers
+# Makefile.am -- Process this file with automake to produce Makefile.in
+USER_DIR = $(top_srcdir)
+INCLUDES = -I. -I$(USER_DIR)/common
 
-DIST_SUBDIRS = tracers
+AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe -Werror $(COMPILER_FPIC) -DPLDMLIB_EXPORT
 
-man_MANS = man/mstflint.1 man/mstconfig.1 man/mstmcra.1 man/mstmread.1 man/mstmwrite.1 man/mstmtserver.1 man/mstregdump.1 man/mstvpd.1 man/mstprivhost.1 man/mstarchive.1
+noinst_LTLIBRARIES = libpldm.a
 
-EXTRA_DIST = \
-	mstflint.spec \
-	small_utils/hca_self_test.ofed \
-	common/gitversion.h \
-	debian \
-	$(man_MANS)
-
+libpldm_a_SOURCES = \
+    pldm_buff.cpp pldm_buff.h\
+    pldm_record_descriptor.cpp pldm_record_descriptor.h\
+    pldm_dev_id_record.cpp pldm_dev_id_record.h\
+    pldm_component_image.cpp pldm_component_image.h\
+    pldm_pkg_hdr.cpp pldm_pkg_hdr.h\
+    pldm_pkg.cpp pldm_pkg.h
