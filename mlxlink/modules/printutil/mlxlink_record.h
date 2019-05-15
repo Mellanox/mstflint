@@ -246,7 +246,6 @@ public:
     std::string val;
     std::string color;
     bool visible;
-
     static std::string state2Color(u_int32_t state);
     static std::string supported2Color(const std::string &supported);
     static void changeColorOS(const std::string &color, bool newLine = false);
@@ -259,7 +258,6 @@ public:
     static void printErr(const std::string &err);
     static void printWar(const std::string &war);
 };
-
 std::ostream & operator << (std::ostream &out, const MlxlinkRecord &mlxlinkRecord);
 
 #endif /* MLXLINKRECORD_H */

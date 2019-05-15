@@ -1431,8 +1431,7 @@ void MlxlinkCommander::showEye()
 
             genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
 
-            physicalGrades.push_back(
-                MlxlinkRecord::addSpaceForSlrg(
+            physicalGrades.push_back(MlxlinkRecord::addSpaceForSlrg(
                     to_string((getFieldValue("grade", _buffer)))));
             int version = getVersion(getFieldValue("version", _buffer));
             string height_eo_pos("height_eo_pos");
