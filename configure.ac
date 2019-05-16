@@ -210,6 +210,9 @@ else
     if test "x$enable_adb_generic_tools" = "xyes"; then
         AC_MSG_ERROR([Running --enable-adb-gerneric-tools with --disable-openssl is not allowed, Adabe generic tools depend on openssl.])
     fi
+
+  CXXFLAGS="$CXXFLAGS -DNO_OPENSSL"
+  CFLAGS="$CFLAGS -DNO_OPENSSL"
 fi
 
 AC_MSG_CHECKING(--enable-all-static argument)
@@ -352,11 +355,6 @@ AS_IF([test "x$enable_cs" = "xyes" || test "x$enable_openssl" = "xyes"], [
 AS_IF([test "x$enable_openssl" = "xyes"], [
         AC_CONFIG_FILES(mlxsign_lib/Makefile)
     ])
-
-if [ test "x$enable_openssl" = "xno" ] && \
-    [ test "x$enable_fw_mgr" = "xyes" ] ; then
-    AC_MSG_ERROR([--enable-fw-mgr cannot be used with --disabled-openssl.])
-fi
 
 AS_IF([test "x$enable_fw_mgr" = "xyes"], [
         AC_CONFIG_FILES(mlxfwupdate/Makefile)

@@ -77,6 +77,16 @@ void MFA2::packDescriptors(vector<u_int8_t>& buff) const
     }
 }
 
+#ifdef NO_OPENSSL
+void MFA2::pack(vector<u_int8_t>& buff)
+{
+    //TODO throw exception
+    printf("-E- Openssl is disabled, pack function depends the openssl library \n");
+    exit(1);
+}
+
+#else // NO_OPENSSL
+
 void MFA2::pack(vector<u_int8_t>& buff)
 {
     //find size of components block:
@@ -138,6 +148,7 @@ void MFA2::pack(vector<u_int8_t>& buff)
     _packageDescriptor.setSHA256(digest);
 
 }
+#endif // NO_OPENSSL
 
 /*void MFA2::update(vector<u_int8_t>& buff)
 {
