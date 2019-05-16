@@ -1250,16 +1250,17 @@ bool FwCompsMgr::readBlockFromComponent(FwComponent::comps_ids_t compId,
 bool FwCompsMgr::fwReactivateImage()
 {
     tools_open_mirc_reg mirc;
-    mirc.status_code = 0xff;
+    mirc.status_code = 0;
     int currentIteration = 0;
     int sleepTimeMs = 50;
     int maxWaitingTime = 30000;//30 sec is enough time
     int maxNumOfIterations = maxWaitingTime / sleepTimeMs;//600 iterations
-    if (_mircCaps == false) {
-        _lastError = FWCOMPS_IMAGE_REACTIVATION_FW_NOT_SUPPORTED;
-        return false;
-    }
-    reg_access_status_t rc = reg_access_mirc(_mf, REG_ACCESS_METHOD_SET, &mirc);//send trigger to FW
+    //if (_mircCaps == false) {
+      //  _lastError = FWCOMPS_IMAGE_REACTIVATION_FW_NOT_SUPPORTED;
+        //return false;
+    //}
+    reg_access_status_t rc;
+    rc = reg_access_mirc(_mf, REG_ACCESS_METHOD_SET, &mirc);//send trigger to FW
     deal_with_signal();
     if (rc) {
         DPRINTF(("1 reg_access_mirc failed rc = %d\n", rc));
@@ -1267,6 +1268,8 @@ bool FwCompsMgr::fwReactivateImage()
         return false;
     }
     else {
+        memset(&mirc, 0, sizeof(mirc));
+        rc = reg_access_mirc(_mf, REG_ACCESS_METHOD_GET, &mirc);
         DPRINTF(("1 mirc.status_code = %d\n", mirc.status_code));
         while (mirc.status_code == IMAGE_REACTIVATION_BUSY) {
             msleep(sleepTimeMs);
@@ -1285,6 +1288,7 @@ bool FwCompsMgr::fwReactivateImage()
         } 
     }
     if (mirc.status_code == IMAGE_REACTIVATION_SUCCESS) {
+        DPRINTF(("Success\n"));
         return true;
     }
     else if (mirc.status_code == IMAGE_REACTIVATION_PROHIBITED_FW_VER_ERR) {
@@ -1314,6 +1318,7 @@ bool FwCompsMgr::fwReactivateImage()
     else {
         _lastError = FWCOMPS_IMAGE_REACTIVATION_UNKNOWN_ERROR;
     }
+    DPRINTF(("3 reg_access_mirc failed _lastError = %d\n", _lastError));
     return false;
 }
 

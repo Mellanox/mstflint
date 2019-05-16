@@ -2481,6 +2481,7 @@ FlintStatus ImageReactivationSubCommand::executeCommand()
         reportErr(true, FLINT_FAILED_IMAGE_REACTIVATION_ERROR, _flintParams.device.c_str(), ops->err());
         return FLINT_FAILED;
     }
+    printf("\n-I- FW Image Reactivation succeeded.\n\n");
     return FLINT_SUCCESS;
 }
 /***********************
