@@ -657,7 +657,7 @@ int MlxlinkUi::run(int argc, char **argv)
 
     bool onlyKnownRegs = false;
     _mlxlinkCommander->_mlxLinkLib = new MlxRegLib(_mlxlinkCommander->_mf,
-            _mlxlinkCommander->_extAdbFile, onlyKnownRegs, false);
+            _mlxlinkCommander->_extAdbFile, onlyKnownRegs, true);
     if (_mlxlinkCommander->_mlxLinkLib->isIBDevice() &&
             !_mlxlinkCommander->_mlxLinkLib->isAccessRegisterGMPSupported(
                     MACCESS_REG_METHOD_GET)) {

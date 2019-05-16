@@ -820,30 +820,21 @@ void MlxlinkCommander::showModuleInfo()
         bool passive = (cableType == PASSIVE);
         u_int32_t cableIdentifier = getFieldValue("cable_identifier", _buffer);
         string cableAttenuation = "N/A";
-        string moduleFWVersion = "N/A";
         if (cableIdentifier != IDENTIFIER_SFP) {
             if (passive) {
                 cableAttenuation = getFieldStr("cable_attenuation_5g") + ","
                         + getFieldStr("cable_attenuation_7g") + ","
                         + getFieldStr("cable_attenuation_12g");
-                } else {
-                u_int32_t moduleFWVer = getFieldValue("fw_version", _buffer);
-                u_int32_t moduleFWVerChip = (moduleFWVer & 0xFF000000) >> 24;
-                u_int32_t moduleFWVerQtr  = (moduleFWVer & 0x00FF0000) >> 16;
-                u_int32_t moduleFWVerFree = (moduleFWVer & 0x0000FFFF);
-                moduleFWVersion =  to_string(moduleFWVerChip) + "." + to_string(moduleFWVerQtr) + "." + to_string(moduleFWVerFree);
-            }
+                }
         } else {
             cableAttenuation = "Reserved for SFP";
         }
-
         for (u_int32_t lane = 0; lane < _numOfLanes; lane++) {
             string laneStr = to_string(lane);
             rxPowerLane.push_back(getPower(getFieldValue("rx_power_lane" + laneStr, _buffer)));
             txPowerLane.push_back(getPower(getFieldValue("tx_power_lane" + laneStr, _buffer)));
             biasCurrentLane.push_back(getFieldValue("tx_bias_lane" + laneStr, _buffer) / 500.0);
         }
-
         biasLowTH = getFieldValue("tx_bias_low_th", _buffer) / 500.0;
         biasHighTH = getFieldValue("tx_bias_high_th", _buffer) / 500.0;
         bool DDMI = (_numOfLanes
@@ -883,8 +874,6 @@ void MlxlinkCommander::showModuleInfo()
                 getVendorRev("vendor_rev"), ANSI_COLOR_RESET, true, Identified && plugged);
         setPrintVal(_moduleInfoCmd,MODULE_INFO_ATTENUATION_5G_7G_12G_DB , "Attenuation (5g,7g,12g) [dB]",
                 cableAttenuation, ANSI_COLOR_RESET, true, Identified && plugged);
-        setPrintVal(_moduleInfoCmd,MODULE_INFO_FW_VERSION , "FW Version",
-                moduleFWVersion, ANSI_COLOR_RESET, true, Identified && plugged);
         setPrintVal(_moduleInfoCmd,MODULE_INFO_WAVELENGTH_NM , "Wavelength [nm]",
                 passive ? "N/A" : to_string(getFieldValue("wavelength", _buffer)),
                         ANSI_COLOR_RESET, true, Identified && plugged);
@@ -1053,8 +1042,7 @@ void MlxlinkCommander::showPddr()
             _activeSpeed = getFieldValue("link_speed_active", _buffer);
             _protoCapability = getFieldValue("cable_proto_cap", _buffer);
             _protoAdmin = (phyMngrFsmState != 0) ?
-                    getFieldValue("core_to_phy_link_proto_enabled", _buffer) :
-                    getFieldValue("phy_manager_link_proto_enabled", _buffer);
+                    getFieldValue("core_to_phy_link_proto_enabled", _buffer):0;
         }
         getPtys();
         getActualNumOfLanes(_activeSpeed);
@@ -1314,27 +1302,15 @@ void MlxlinkCommander::showBer()
                 getFieldValue("time_since_last_clear_high", _buffer),
                 getFieldValue("time_since_last_clear_low", _buffer))/60000.0;
         sprintf(buff, "%.01f", val);
-        setPrintVal(_berInfoCmd,BER_TIME_SINCE_LAST_CLEAR ,"Time Since Last Clear [Min]",
-                buff);
+
+        setPrintVal(_berInfoCmd,BER_TIME_SINCE_LAST_CLEAR ,"Time Since Last Clear [Min]", buff, ANSI_COLOR_RESET,true,_linkUP);
         setPrintVal(_berInfoCmd,BER_EFFECTIVE_PHYSICAL_ERRORS, "Effective Physical Errors",
                 to_string(add32BitTo64(getFieldValue("phy_symbol_errors_high", _buffer),
-                        getFieldValue("phy_symbol_errors_low", _buffer))));
-
-        std::vector<string> rawErrorsPerLane;
-        string phy_raw_err = "";
-        for (u_int32_t lane = 0; lane < _numOfLanes; lane++) {
-            string laneStr = to_string(lane);
-            phy_raw_err = to_string(add32BitTo64(getFieldValue("phy_raw_errors_lane" + laneStr + "_high", _buffer),
-                                                 getFieldValue("phy_raw_errors_lane" + laneStr + "_low", _buffer)));
-            rawErrorsPerLane.push_back(phy_raw_err);
-        }
-        setPrintVal(_berInfoCmd,BER_RAW_PHYSICAL_ERRORS_PER_LANE , "Raw Physical Errors Per Lane",
-                getStringFromVector(rawErrorsPerLane));
+                        getFieldValue("phy_symbol_errors_low", _buffer))),ANSI_COLOR_RESET,true,_linkUP);
         setPrintVal(_berInfoCmd,BER_EFFECTIVE_PHYSICAL_BER ,"Effective Physical BER",
-                getFieldStr("effective_ber_coef") + "E-" + getFieldStr("effective_ber_magnitude"));
+                getFieldStr("effective_ber_coef") + "E-" + getFieldStr("effective_ber_magnitude"),ANSI_COLOR_RESET,true,_linkUP);
         setPrintVal(_berInfoCmd,BER_RAW_PHYSICAL_BER , "Raw Physical BER",
-                getFieldStr("raw_ber_coef") + "E-" + getFieldStr("raw_ber_magnitude"));
-
+                getFieldStr("raw_ber_coef") + "E-" + getFieldStr("raw_ber_magnitude"),ANSI_COLOR_RESET,true,_linkUP);
         cout << _berInfoCmd;
     } catch (const std::exception &exc) {
         _allUnhandledErrors += string("Showing BER via PPCNT raised the following exception: ") + string(exc.what()) + string("\n");
@@ -1404,10 +1380,6 @@ void MlxlinkCommander::showMpcntPerformance()
             "RX Errors",getFieldStr("rx_errors"));
     setPrintVal(_mpcntPerfInfCmd,MPCNT_TX_ERRORS ,
             "TX Errors",getFieldStr("tx_errors"));
-    setPrintVal(_mpcntPerfInfCmd,MPCNT_CRC_ERROR_DLLP ,
-            "CRC Error dllp",getFieldStr("crc_error_dllp"));
-    setPrintVal(_mpcntPerfInfCmd,MPCNT_CRC_ERROR_TLP ,
-            "CRC Error tlp",getFieldStr("crc_error_tlp"));
 
     cout << _mpcntPerfInfCmd;
 }
@@ -1462,11 +1434,14 @@ void MlxlinkCommander::showEye()
 
         setPrintTitle(_eyeOpeningInfoCmd, showEyeTitle, EYE_OPENING_INFO_LAST);
         setPrintVal(_eyeOpeningInfoCmd, EYE_PHYSICAL_GRADE,
-                "Physical Grade", getStringFromVector(physicalGrades));
+                "Physical Grade", getStringFromVector(physicalGrades),
+                ANSI_COLOR_RESET,true,_linkUP);
         setPrintVal(_eyeOpeningInfoCmd, EYE_HEIGHT_EYE_OPENING,
-                "Height Eye Opening [mV]", getStringFromVector(heightLengths));
+                "Height Eye Opening [mV]", getStringFromVector(heightLengths),
+                ANSI_COLOR_RESET,true,_linkUP);
         setPrintVal(_eyeOpeningInfoCmd, EYE_PHASE_EYE_OPENING,
-                "Phase  Eye Opening [psec]", getStringFromVector(phaseWidths));
+                "Phase  Eye Opening [psec]", getStringFromVector(phaseWidths),
+                ANSI_COLOR_RESET,true,_linkUP);
 
         cout << _eyeOpeningInfoCmd;
 
@@ -1766,9 +1741,6 @@ void MlxlinkCommander::showPcieState()
     setPrintVal(_pcieInfoCmd, LINK_WIDTH_ACTIVE_ENABLED,
             "Link Width Active (Enabled)",
             to_string(_numOfLanesPcie) + "X" + linkWidthEnabled);
-
-    setPrintVal(_pcieInfoCmd, DEVICE_STATUS, "Device Status",
-            pcieDeviceStatusStr(getFieldValue("device_status", _buffer)));
     cout << _pcieInfoCmd;
 }
 
