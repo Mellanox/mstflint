@@ -488,7 +488,7 @@ void MlxlinkCommander::labelToIBLocalPort()
         updateField("local_port", localPort);
         try {
             genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
-        } catch (MlxRegException) {
+        } catch (MlxRegException & exp) {
             continue; // no reason to fail when one of the ports is not supported, such as in split mode.
         }
         if (getFieldValue("ib_port", _buffer) == labelPort) {
@@ -512,7 +512,7 @@ bool MlxlinkCommander::isIBSplitReady() {
         updateField("local_port", localPort);
         try {
             genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
-        } catch (MlxRegException) {
+        } catch (MlxRegException & exp) {
             continue; // no reason to fail when one of the ports is not supported, such as in split mode.
         }
         if (getFieldValue("ib_port", _buffer) == max_port/2) {
