@@ -6,7 +6,6 @@ import re
 import platform
 import regaccess
 import time
-from mhlib import isnumeric
 
 
 class FwTraceUtilities(object):    
