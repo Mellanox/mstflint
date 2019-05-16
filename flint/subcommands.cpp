@@ -2448,6 +2448,52 @@ FlintStatus QuerySubCommand::executeCommand()
     return printInfo(fwInfo, fullQuery);
 }
 
+
+/***********************
+* Class: ImageReactivationSubCommand
+***********************/
+ImageReactivationSubCommand::ImageReactivationSubCommand()
+{
+    _name = "image_reactivation";
+    _desc = "Reactivate previous flash image. For FW controlled devices only.";
+    _extendedDesc = "Reactivate previous flash image by moving the magic pattern.";
+    _flagLong = "image_reactivate";
+    _flagShort = "ir";
+    _example = FLINT_NAME " -d " MST_DEV_EXAMPLE1 " image_reactivate";
+    _v = Wtv_Dev;
+    _maxCmdParamNum = 0;
+    _cmdType = SC_Image_Reactivation;
+    _mccSupported = true;
+}
+bool ImageReactivationSubCommand::verifyParams()
+{
+    if (_flintParams.cmd_params.size() != 0) {
+        reportErr(true, FLINT_CMD_ARGS_ERROR, _name.c_str(), 0, (int)_flintParams.cmd_params.size());
+        return false;
+    }
+    return true;
+}
+ImageReactivationSubCommand::~ImageReactivationSubCommand() 
+{
+}
+FlintStatus ImageReactivationSubCommand::executeCommand()
+{
+    if (preFwOps() == FLINT_FAILED) {
+        return FLINT_FAILED;
+    }
+    fw_info_t fwInfo;
+    FwOperations* ops = _fwOps;
+    if (!ops->FwQuery(&fwInfo)) {
+        reportErr(true, FLINT_FAILED_QUERY_ERROR, "Device", _flintParams.device.c_str(), ops->err());
+        return FLINT_FAILED;
+    }
+    if (!_fwOps->FwReactivateImage()) {
+        reportErr(true, FLINT_FAILED_IMAGE_REACTIVATION_ERROR, _flintParams.device.c_str(), ops->err());
+        return FLINT_FAILED;
+    }
+    printf("\n-I- FW Image Reactivation succeeded.\n\n");
+    return FLINT_SUCCESS;
+}
 /***********************
 * Class: VerifySubCommand
 ***********************/
