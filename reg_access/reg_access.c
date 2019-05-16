@@ -32,6 +32,7 @@
 
 #include "reg_access.h"
 #define REG_ID_PCNR  0x5050
+#define REG_ID_MIRC  0x9162
 #define REG_ID_MFPA  0x9010
 #define REG_ID_MFBA  0x9011
 #define REG_ID_MFBE  0x9012
@@ -428,6 +429,14 @@ reg_access_status_t reg_access_mfmc(mfile *mf, reg_access_method_t method, struc
 reg_access_status_t reg_access_mfpa_new(mfile *mf, reg_access_method_t method, struct tools_open_mfpa *mfpa)
 {
     REG_ACCCESS(mf, method, REG_ID_MFPA, mfpa, mfpa, tools_open);
+}
+
+/************************************
+* Function: reg_access_mirc
+************************************/
+reg_access_status_t reg_access_mirc(mfile *mf, reg_access_method_t method, struct tools_open_mirc_reg *mirc)
+{
+    REG_ACCCESS(mf, method, REG_ID_MIRC, mirc, mirc_reg, tools_open);
 }
 
 /************************************
