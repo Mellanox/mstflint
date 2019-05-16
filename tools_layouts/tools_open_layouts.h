@@ -2674,19 +2674,6 @@ union tools_open_mfa2 {
 	struct tools_open_component_ptr component_ptr;
 };
 
-/* Description -  MIRC register */
-/* Size in bytes - 8 */
-struct tools_open_mirc_reg {
-/*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Statuses: 0 – success, 1 – busy, etc.  */
-	/* 0x0.0 - 0x0.7 */
-	u_int8_t status_code;
-/*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description -  */
-	/* 0x4.0 - 0x4.31 */
-	u_int32_t reserved;
-};
-
 /* Description -   */
 /* Size in bytes - 1024 */
 union tools_open_misc_structs {
@@ -2823,7 +2810,6 @@ union tools_open_tools_open {
 	/* Description -  */
 	/* 0x0.0 - 0x1c.31 */
 	union tools_open_mfa2 mfa2;
-	struct tools_open_mirc_reg mirc_reg;
 };
 
 
@@ -3486,12 +3472,6 @@ void tools_open_mfa2_print(const union tools_open_mfa2 *ptr_struct, FILE *fd, in
 unsigned int tools_open_mfa2_size(void);
 #define TOOLS_OPEN_MFA2_SIZE    (0x20)
 void tools_open_mfa2_dump(const union tools_open_mfa2 *ptr_struct, FILE *fd);
-void tools_open_mirc_reg_pack(const struct tools_open_mirc_reg *ptr_struct, u_int8_t *ptr_buff);
-void tools_open_mirc_reg_unpack(struct tools_open_mirc_reg *ptr_struct, const u_int8_t *ptr_buff);
-void tools_open_mirc_reg_print(const struct tools_open_mirc_reg *ptr_struct, FILE *fd, int indent_level);
-unsigned int tools_open_mirc_reg_size(void);
-#define TOOLS_OPEN_MIRC_REG_SIZE    (0x8)
-void tools_open_mirc_reg_dump(const struct tools_open_mirc_reg *ptr_struct, FILE *fd);
 /* misc_structs */
 void tools_open_misc_structs_pack(const union tools_open_misc_structs *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_misc_structs_unpack(union tools_open_misc_structs *ptr_struct, const u_int8_t *ptr_buff);

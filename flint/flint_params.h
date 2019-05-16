@@ -84,8 +84,7 @@ typedef enum {
     SC_Add_Hmac,
     SC_Extract_4MB_Image,
     SC_Set_Public_Keys,
-    SC_Set_Forbidden_Versions,
-    SC_Image_Reactivation
+    SC_Set_Forbidden_Versions
 } sub_cmd_t;
 
 class FlintParams {
@@ -155,7 +154,6 @@ public:
     bool uuid2_specified;
     string privkey2_uuid;
     bool no_fw_ctrl;
-    bool image_reactivation;
 };
 
 #endif
