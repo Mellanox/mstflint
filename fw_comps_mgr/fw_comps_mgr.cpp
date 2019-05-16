@@ -740,10 +740,6 @@ const char* FwComponent::getCompIdStr(comps_ids_t compId)
         return "DBG_TOKEN";
         break;
 
-    case COMPID_GEARBOX:
-        return "GEARBOX";
-        break;
-
     default:
         return "UNKNOWN_COMPONENT";
         break;
@@ -1151,9 +1147,11 @@ bool FwCompsMgr::lock_flash_semaphore()
 void FwCompsMgr::unlock_flash_semaphore()
 {
 #ifndef UEFI_BUILD
-    trm_unlock(_trm, TRM_RES_FLASH_PROGRAMING);
-    trm_destroy(_trm);
-    _trm = NULL;
+    if (_trm != NULL) {
+        trm_unlock(_trm, TRM_RES_FLASH_PROGRAMING);
+        trm_destroy(_trm);
+        _trm = NULL;
+    }
 #endif
 }
 

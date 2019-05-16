@@ -191,7 +191,7 @@ CongestionUI::exit_status_t CongestionUI::run(int argc, char** argv)
     dm_get_device_id(_mf, &devID, &hwDevID, &hwChipRev);
     if (!isDeviceSupported(devID))
     {
-    _errorMsg = "mstcobgestion is supported for CX4+ devices.";
+    _errorMsg = "mstcongestion is supported for CX4+ devices.";
     return EXIT_STATUS_DEV_ID_ERR;
     }
 
