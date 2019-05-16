@@ -167,7 +167,6 @@ map_sub_cmd_t_to_subcommand Flint::initSubcommandMap()
     cmdMap[SC_Add_Hmac] = new AddHmacSubCommand();
     cmdMap[SC_Set_Public_Keys] = new SetPublicKeysSubCommand();
     cmdMap[SC_Set_Forbidden_Versions] = new SetForbiddenVersionsSubCommand();
-    cmdMap[SC_Image_Reactivation] = new ImageReactivationSubCommand();
     return cmdMap;
 }
 
@@ -201,7 +200,7 @@ FlintStatus Flint::run(int argc, char *argv[])
     //There are some memory allocations parseCmdLine
     ParseStatus status;
     try {
-        status = this->parseCmdLine(argc, argv);
+        status = this->parseCmdLine(argc, argv);;
     } catch (exception& e) {
         cout << "-E- " << e.what() << endl;
         return FLINT_FAILED;

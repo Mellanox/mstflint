@@ -142,7 +142,6 @@ typedef enum {
 #define FLINT_SET_FORBIDDEN_VERSIONS_ERROR    "Failed to set the forbidden versions: %s\n"
 #define FLINT_SIGN_ERROR                      "Failed to sign the image: %s\n"
 #define FLINT_HMAC_ERROR                      "Failed to add HMAC: %s\n"
-#define FLINT_FAILED_IMAGE_REACTIVATION_ERROR "Failed to execute image reactivation on device %s. Error is %s.\n"
 
 /**************************
  * Flint Warning Messages

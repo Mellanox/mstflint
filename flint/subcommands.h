@@ -272,14 +272,6 @@ public:
     bool verifyParams();
 };
 
-class ImageReactivationSubCommand : public SubCommand
-{
-public:
-    ImageReactivationSubCommand();
-    virtual ~ImageReactivationSubCommand();
-    FlintStatus executeCommand();
-    bool verifyParams();
-};
 class SwResetSubCommand : public SubCommand
 {
 private:
