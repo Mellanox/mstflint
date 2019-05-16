@@ -6094,6 +6094,48 @@ void tools_open_mfa2_dump(const union tools_open_mfa2 *ptr_struct, FILE *fd)
 	tools_open_mfa2_print(ptr_struct, fd, 0);
 }
 
+void tools_open_mirc_reg_pack(const struct tools_open_mirc_reg *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 24;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->status_code);
+	offset = 32;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->reserved);
+}
+
+void tools_open_mirc_reg_unpack(struct tools_open_mirc_reg *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 24;
+	ptr_struct->status_code = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 32;
+	ptr_struct->reserved = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+}
+
+void tools_open_mirc_reg_print(const struct tools_open_mirc_reg *ptr_struct, FILE *fd, int indent_level)
+{
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== tools_open_mirc_reg ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "status_code          : " UH_FMT "\n", ptr_struct->status_code);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "reserved             : " U32H_FMT "\n", ptr_struct->reserved);
+}
+
+unsigned int tools_open_mirc_reg_size(void)
+{
+	return TOOLS_OPEN_MIRC_REG_SIZE;
+}
+
+void tools_open_mirc_reg_dump(const struct tools_open_mirc_reg *ptr_struct, FILE *fd)
+{
+	tools_open_mirc_reg_print(ptr_struct, fd, 0);
+}
+
+
 void tools_open_misc_structs_pack(const union tools_open_misc_structs *ptr_struct, u_int8_t *ptr_buff)
 {
 	tools_open_mfg_info_pack(&(ptr_struct->mfg_info), ptr_buff);

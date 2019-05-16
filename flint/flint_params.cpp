@@ -91,6 +91,7 @@ FlintParams::FlintParams()
     uuid_specified = false;
     uuid2_specified = false;
     no_fw_ctrl = false;
+    image_reactivation = false;
 }
 
 FlintParams::~FlintParams()

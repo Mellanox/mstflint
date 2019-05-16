@@ -88,6 +88,7 @@ public:
     virtual bool FwSetTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer);
     virtual bool FwQueryTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer, bool queryRunning = false);
     virtual bool FwResetTimeStamp();
+    bool FwReactivateImage();
     Tlv_Status_t GetTsObj(TimeStampIFC **tsObj);
 
     bool IsFsCtrlOperations()
