@@ -214,7 +214,10 @@ fi
 
 AC_MSG_CHECKING(--enable-all-static argument)
 AC_ARG_ENABLE([all_static],
-    AS_HELP_STRING([--enable-all-static], [Enable creating none dynamic executables]))
+    AS_HELP_STRING([--enable-all-static], [Enable creating none dynamic executables]),
+    [enable_all_static="yes"],
+    [enable_all_static="no"])
+AC_MSG_RESULT($enable_all_static)
 
 AS_IF([test "x$enable_all_static" = "xyes"], [
   if test "x$enable_dc" = "xyes"; then
@@ -244,13 +247,21 @@ AS_IF([test "x$enable_dynamic_ld" = "xyes"], [
   LDFLAGS="$LDFLAGS -Wl,--dynamic-linker=/lib64/ld64.so.2"
 ])
 
-AC_SEARCH_LIBS([iniparser_load], [iniparser], [INIPARSER_SYSTEM_AVAILABLE="yes"],[
+AC_CHECK_HEADERS(iniparser.h, INIPARSER_SYSTEM_AVAILABLE="yes", INIPARSER_SYSTEM_AVAILABLE="no")
+
+if test "$INIPARSER_SYSTEM_AVAILABLE" = "yes"; then
+  AC_SEARCH_LIBS([iniparser_load], [iniparser], [INIPARSER_SYSTEM_AVAILABLE="yes"],[
     INIPARSER_SYSTEM_AVAILABLE="no"
+  ])
+fi
+
+if test "$INIPARSER_SYSTEM_AVAILABLE" = "no"; then
     INIPARSER_CFLAGS='-I$(top_srcdir)/ext_libs/iniParser'
     AC_SUBST(INIPARSER_CFLAGS)
     INIPARSER_LIBS='$(top_builddir)/ext_libs/iniParser/libiniparser.a'
     AC_SUBST(INIPARSER_LIBS)
-])
+fi
+
 AM_CONDITIONAL([USE_LOCAL_INIPARSER], [test "$INIPARSER_SYSTEM_AVAILABLE" = no])
 AS_IF([test "x$INIPARSER_SYSTEM_AVAILABLE" = "xyes" ], [
     CXXFLAGS="$CXXFLAGS -DHAVE_INI_PARSER"
@@ -365,7 +376,10 @@ AS_IF([test "x$enable_adb_generic_tools" = "xyes"], [
         AC_CONFIG_FILES(tools_layouts/adb/prm/switch/Makefile)
         AC_CONFIG_FILES(tools_layouts/adb/prm/switch/ext/Makefile)
         AC_CONFIG_FILES(mlxreg/Makefile)
-        ADABE_TOOLS="adb_parser mlxreg"
+        AC_CONFIG_FILES(mlxlink/Makefile)
+        AC_CONFIG_FILES(mlxlink/modules/Makefile)
+        AC_CONFIG_FILES(mlxlink/modules/printutil/Makefile)
+        ADABE_TOOLS="adb_parser mlxreg mlxlink"
         ADABE_DBS="adb"
         ADABE_DBS_EXTRA_DIST="adb/prm/hca/ext/*.adb adb/prm/switch/ext/*.adb"
     ])
