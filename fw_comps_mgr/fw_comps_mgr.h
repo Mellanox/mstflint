@@ -256,6 +256,19 @@ typedef enum {
     FWCOMPS_REG_ACCESS_ERASE_EXEEDED,
     FWCOMPS_REG_ACCESS_INTERNAL_ERROR,
 
+    FWCOMPS_IMAGE_REACTIVATION_SUCCESS = 0x300,
+    FWCOMPS_IMAGE_REACTIVATION_BUSY,
+    FWCOMPS_IMAGE_REACTIVATION_PROHIBITED_FW_VER_ERR,
+    FWCOMPS_IMAGE_REACTIVATION_FIRST_PAGE_COPY_FAILED,
+    FWCOMPS_IMAGE_REACTIVATION_FIRST_PAGE_ERASE_FAILED,
+    FWCOMPS_IMAGE_REACTIVATION_FIRST_PAGE_RESTORE_FAILED,
+    FWCOMPS_IMAGE_REACTIVATION_FW_DEACTIVATION_FAILED,
+    FWCOMPS_IMAGE_REACTIVATION_FW_ALREADY_ACTIVATED,
+    FWCOMPS_IMAGE_REACTIVATION_ERROR_DEVICE_RESET_REQUIRED,
+    FWCOMPS_IMAGE_REACTIVATION_FW_PROGRAMMING_NEEDED,
+    FWCOMPS_IMAGE_REACTIVATION_FW_NOT_SUPPORTED,
+    FWCOMPS_IMAGE_REACTIVATION_UNKNOWN_ERROR,
+    FWCOMPS_IMAGE_REACTIVATION_WAITING_TIME_EXPIRED
 } fw_comps_error_t;
 
 
@@ -317,7 +330,7 @@ public:
 
     u_int32_t        getFwSupport();
     mfile*           getMfileObj() {return _mf;};
-
+    bool    fwReactivateImage();
     bool             burnComponents(std::vector<FwComponent>& comps,
                                     ProgressCallBackAdvSt *progressFuncAdv = (ProgressCallBackAdvSt *)NULL);
     bool             getFwComponents(std::vector<FwComponent>& comps, bool readEn = false);
@@ -386,6 +399,18 @@ private:
         MCC_ERRCODE_FLASH_ERASE_ERROR,
         MCC_ERRCODE_REJECTED_IMAGE_CAN_NOT_BOOT_FROM_PARTITION,
     } mcc_command_error_t;
+    typedef enum {
+        IMAGE_REACTIVATION_SUCCESS = 0,
+        IMAGE_REACTIVATION_BUSY = 1,
+        IMAGE_REACTIVATION_PROHIBITED_FW_VER_ERR = 2,
+        IMAGE_REACTIVATION_FIRST_PAGE_COPY_FAILED = 3,
+        IMAGE_REACTIVATION_FIRST_PAGE_ERASE_FAILED = 4,
+        IMAGE_REACTIVATION_FIRST_PAGE_RESTORE_FAILED = 5,
+        IMAGE_REACTIVATION_FW_DEACTIVATION_FAILED = 6,
+        IMAGE_REACTIVATION_FW_ALREADY_ACTIVATED = 7,
+        IMAGE_REACTIVATION_ERROR_DEVICE_RESET_REQUIRED = 8,
+        IMAGE_REACTIVATION_FW_PROGRAMMING_NEEDED = 9
+    }image_reactivation_command_error_t;
 
     const char* stateToStr(fsm_state_t);
     const char* commandToStr(fsm_command_t cmd);
@@ -459,7 +484,7 @@ private:
     u_int32_t _hwDevId;
     mfile *_mf;
     const char *_currComponentStr;
-
+    u_int8_t _mircCaps;
     std::vector<u_int8_t> _productVerStr;
     bool isDmaSupported;
     AbstractComponentAccess* _accessObj;
