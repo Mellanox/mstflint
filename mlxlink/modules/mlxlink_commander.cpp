@@ -1435,13 +1435,13 @@ void MlxlinkCommander::showEye()
         setPrintTitle(_eyeOpeningInfoCmd, showEyeTitle, EYE_OPENING_INFO_LAST);
         setPrintVal(_eyeOpeningInfoCmd, EYE_PHYSICAL_GRADE,
                 "Physical Grade", getStringFromVector(physicalGrades),
-                ANSI_COLOR_RESET,true,_linkUP);
+                ANSI_COLOR_RESET,true,_linkUP || _prbsTestMode || _numOfLanesPcie);
         setPrintVal(_eyeOpeningInfoCmd, EYE_HEIGHT_EYE_OPENING,
                 "Height Eye Opening [mV]", getStringFromVector(heightLengths),
-                ANSI_COLOR_RESET,true,_linkUP);
+                ANSI_COLOR_RESET,true,_linkUP || _prbsTestMode || _numOfLanesPcie);
         setPrintVal(_eyeOpeningInfoCmd, EYE_PHASE_EYE_OPENING,
                 "Phase  Eye Opening [psec]", getStringFromVector(phaseWidths),
-                ANSI_COLOR_RESET,true,_linkUP);
+                ANSI_COLOR_RESET,true,_linkUP || _prbsTestMode || _numOfLanesPcie);
 
         cout << _eyeOpeningInfoCmd;
 
@@ -1786,10 +1786,7 @@ void MlxlinkCommander::collectBER()
                 << _cableLen << ','
                 << _cableAtten12G << ','
                 << errorsVector["time_since_last_clear_sec"] / 60 << ','
-                << errorsVector["phy_corrected_bits_lane0"] << ','
-                << errorsVector["phy_corrected_bits_lane1"] << ','
-                << errorsVector["phy_corrected_bits_lane2"] << ','
-                << errorsVector["phy_corrected_bits_lane3"] << ',' << linkDown
+                << linkDown
                 << ',' << errorsVector["raw_ber"] << ',' << rawBerLimit << ','
                 << errorsVector["eff_errors_counter"] << ','
                 << errorsVector["eff_ber"] << ',' << result << ','
@@ -1898,18 +1895,6 @@ std::map<string, float> MlxlinkCommander::getRawEffectiveErrors()
     genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
 
     std::map<string, float> errorsVector;
-    errorsVector["phy_corrected_bits_lane0"] = add32BitTo64(getFieldValue(
-                                                                "phy_raw_errors_lane0_high", _buffer),
-                                                            getFieldValue("phy_raw_errors_lane0_low", _buffer));
-    errorsVector["phy_corrected_bits_lane1"] = add32BitTo64(getFieldValue(
-                                                                "phy_raw_errors_lane1_high", _buffer),
-                                                            getFieldValue("phy_raw_errors_lane1_low", _buffer));
-    errorsVector["phy_corrected_bits_lane2"] = add32BitTo64(getFieldValue(
-                                                                "phy_raw_errors_lane2_high", _buffer),
-                                                            getFieldValue("phy_raw_errors_lane2_low", _buffer));
-    errorsVector["phy_corrected_bits_lane3"] = add32BitTo64(getFieldValue(
-                                                                "phy_raw_errors_lane3_high", _buffer),
-                                                            getFieldValue("phy_raw_errors_lane3_low", _buffer));
     errorsVector["time_since_last_clear_sec"] = (add32BitTo64(getFieldValue(
                                                                   "time_since_last_clear_high", _buffer),
                                                               getFieldValue("time_since_last_clear_low", _buffer))) / 1000;
