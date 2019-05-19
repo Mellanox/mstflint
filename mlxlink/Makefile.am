@@ -55,6 +55,7 @@ mstlink_CXXFLAGS = -DEXTERNAL
 mstlink_SOURCES = mlxlink_main.cpp
 
 mstlink_DEPENDENCIES = modules/libmodules_lib.la \
+                       modules/printutil/libprint_util_lib.la \
                       $(USER_DIR)/mlxreg/libmstreg_lib.a \
                       $(USER_DIR)/cmdparser/libcmdparser.a \
                       $(UTILS_DIR)/libmftutils.a \
