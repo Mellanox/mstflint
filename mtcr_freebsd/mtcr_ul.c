@@ -2482,4 +2482,10 @@ int supports_reg_access_gmp(mfile *mf, maccess_reg_method_t reg_method)
     return 0;
 }
 
+int allocate_kernel_memory_page(mfile* f, mtcr_alloc_page* page)
+{
+    (void)f;
+    (void)page;
+    return -1;//unsupported
+}
 

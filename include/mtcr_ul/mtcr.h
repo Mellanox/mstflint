@@ -173,6 +173,7 @@ int mset_addr_space(mfile *mf, int space);
 
 int mclear_pci_semaphore(const char *name);
 
+int allocate_kernel_memory_page(mfile* f, mtcr_alloc_page* page);
 
 
 int MWRITE4_SEMAPHORE(mfile* mf, int offset, int value);
