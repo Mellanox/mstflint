@@ -1435,13 +1435,13 @@ void MlxlinkCommander::showEye()
         setPrintTitle(_eyeOpeningInfoCmd, showEyeTitle, EYE_OPENING_INFO_LAST);
         setPrintVal(_eyeOpeningInfoCmd, EYE_PHYSICAL_GRADE,
                 "Physical Grade", getStringFromVector(physicalGrades),
-                ANSI_COLOR_RESET,true,_linkUP);
+                ANSI_COLOR_RESET,true,_linkUP || _prbsTestMode || _numOfLanesPcie);
         setPrintVal(_eyeOpeningInfoCmd, EYE_HEIGHT_EYE_OPENING,
                 "Height Eye Opening [mV]", getStringFromVector(heightLengths),
-                ANSI_COLOR_RESET,true,_linkUP);
+                ANSI_COLOR_RESET,true,_linkUP || _prbsTestMode || _numOfLanesPcie);
         setPrintVal(_eyeOpeningInfoCmd, EYE_PHASE_EYE_OPENING,
                 "Phase  Eye Opening [psec]", getStringFromVector(phaseWidths),
-                ANSI_COLOR_RESET,true,_linkUP);
+                ANSI_COLOR_RESET,true,_linkUP || _prbsTestMode || _numOfLanesPcie);
 
         cout << _eyeOpeningInfoCmd;
 
