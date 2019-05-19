@@ -42,7 +42,7 @@
 #include "compatibility.h"
 using namespace std;
 
-string PrmAdbDB::prm_adb_db_ltrim(string s)
+string PrmAdbDB::prm_adb_db_ltrim(const string& s)
 {
     const char *cs = s.c_str();
     while (isspace(*cs)) {
@@ -51,7 +51,7 @@ string PrmAdbDB::prm_adb_db_ltrim(string s)
     return string(cs);
 }
 
-string PrmAdbDB::prm_adb_db_rtrim(string s)
+string PrmAdbDB::prm_adb_db_rtrim(const string& s)
 {
     //todo rewrite it
     unsigned int i = s.size();
@@ -67,7 +67,7 @@ string PrmAdbDB::prm_adb_db_rtrim(string s)
     return s.substr(0, i + 1);
 }
 
-string PrmAdbDB::prm_adb_db_trim(string s)
+string PrmAdbDB::prm_adb_db_trim(const string& s)
 {
     return prm_adb_db_rtrim(prm_adb_db_ltrim(s));
 }
