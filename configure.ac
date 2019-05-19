@@ -226,7 +226,11 @@ AS_IF([test "x$enable_all_static" = "xyes"], [
   if test "x$enable_openssl" = "xyes"; then
     AC_MSG_ERROR([cannot enable all static with enable openssl . add --disable-openssl to remove dependaency with dynamic openssl])
   fi
+  if test "x$enable_inband" = "xyes"; then
+    AC_MSG_ERROR([cannot enable all static with enable inband . add --disable-inband to remove dependaency with dynamic inband])
+  fi
   LDFLAGS="$LDFLAGS -all-static"
+  CFLAGS="$CFLAGS -DSQLITE_OMIT_LOAD_EXTENSION=0 -DIBVSMAD_DLOPEN"
 ])
 
 AC_SUBST(TOOLS_CRYPTO)

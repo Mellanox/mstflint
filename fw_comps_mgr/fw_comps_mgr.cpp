@@ -73,6 +73,14 @@ static void mft_signal_set_handling(int isOn)
 #define IS4_DEVID       0x1b3
 
 
+#ifndef UEFI_BUILD
+#define DPRINTF(args)        do { char *reacDebug = getenv("REACTIVATION_DEBUG"); \
+                                  if (reacDebug != NULL) { \
+                                      printf("[REACTIVATION_DEBUG]: -D- "); printf args;} } while (0)
+#else
+#define DPRINTF(...)
+#endif
+typedef struct reg_access_hca_mcda_reg mcdaReg;
 /*
  * Wrapper to call the MCDA command
  */
@@ -456,6 +464,7 @@ FwCompsMgr::FwCompsMgr(const char *devname, DeviceTypeT devType, int deviceIndex
     }
 #endif
     _hwDevId = 0;
+    _mircCaps = false;
     _lastError = FWCOMPS_SUCCESS;
     mfile *mf = mopen(devname);
     if (!mf) {
@@ -472,7 +481,7 @@ FwCompsMgr::FwCompsMgr(uefi_Dev_t *uefi_dev, uefi_dev_extra_t *uefi_extra)
     _accessObj = NULL;
     _openedMfile = false;
     _clearSetEnv = false;
-
+    _mircCaps = false;
     mfile *mf = mopen_fw_ctx((void *)uefi_dev, (void *)uefi_extra->fw_cmd_func, \
         (void *)&uefi_extra->dev_info);
     if (!mf) {
@@ -804,6 +813,15 @@ u_int32_t FwCompsMgr::getFwSupport()
     u_int8_t mgirCaps = EXTRACT(mcam.mng_access_reg_cap_mask[11], 0, 1);
     if (mcddCaps == 1)
         isDmaSupported = true;
+    memset(&mcam, 0, sizeof(mcam));
+    mcam.access_reg_group = 2;//for MIRC register
+    rc = reg_access_mcam(_mf, REG_ACCESS_METHOD_GET, &mcam);
+    if (rc) {
+        _lastError = FWCOMPS_UNSUPPORTED_DEVICE;
+        return 0;
+    }
+    _mircCaps = EXTRACT(mcam.mng_access_reg_cap_mask[3], 2, 1);//MIRC is 0x9162
+    DPRINTF(("getFwSupport _mircCaps = %d\n", _mircCaps));
     if (mcdaCaps == 0x1f && mgirCaps) {
         return 1;
     }
@@ -1238,6 +1256,83 @@ bool FwCompsMgr::readBlockFromComponent(FwComponent::comps_ids_t compId,
     }
     return true;
 }
+
+bool FwCompsMgr::fwReactivateImage()
+{
+    tools_open_mirc_reg mirc;
+    mirc.status_code = 0;
+    int currentIteration = 0;
+    int sleepTimeMs = 50;
+    int maxWaitingTime = 30000;//30 sec is enough time
+    int maxNumOfIterations = maxWaitingTime / sleepTimeMs;//600 iterations
+    //if (_mircCaps == false) {
+      //  _lastError = FWCOMPS_IMAGE_REACTIVATION_FW_NOT_SUPPORTED;
+        //return false;
+    //}
+    reg_access_status_t rc;
+    rc = reg_access_mirc(_mf, REG_ACCESS_METHOD_SET, &mirc);//send trigger to FW
+    deal_with_signal();
+    if (rc) {
+        DPRINTF(("1 reg_access_mirc failed rc = %d\n", rc));
+        _lastError = regErrTrans(rc);
+        return false;
+    }
+    else {
+        memset(&mirc, 0, sizeof(mirc));
+        rc = reg_access_mirc(_mf, REG_ACCESS_METHOD_GET, &mirc);
+        DPRINTF(("1 mirc.status_code = %d\n", mirc.status_code));
+        while (mirc.status_code == IMAGE_REACTIVATION_BUSY) {
+            msleep(sleepTimeMs);
+            rc = reg_access_mirc(_mf, REG_ACCESS_METHOD_GET, &mirc);
+            deal_with_signal();
+            if (rc) {
+                _lastError = regErrTrans(rc);
+                DPRINTF(("2 reg_access_mirc failed rc = %d\n", rc));
+                return false;
+            }
+            DPRINTF(("2 iteration %d mirc.status_code = %d\n", currentIteration++,  mirc.status_code));
+            if (currentIteration >= maxNumOfIterations) {
+                _lastError = FWCOMPS_IMAGE_REACTIVATION_WAITING_TIME_EXPIRED;
+                return false;
+            }
+        } 
+    }
+    if (mirc.status_code == IMAGE_REACTIVATION_SUCCESS) {
+        DPRINTF(("Success\n"));
+        return true;
+    }
+    else if (mirc.status_code == IMAGE_REACTIVATION_PROHIBITED_FW_VER_ERR) {
+        _lastError = FWCOMPS_IMAGE_REACTIVATION_PROHIBITED_FW_VER_ERR;
+    }
+    else if (mirc.status_code == IMAGE_REACTIVATION_FIRST_PAGE_COPY_FAILED) {
+        _lastError = FWCOMPS_IMAGE_REACTIVATION_FIRST_PAGE_COPY_FAILED;
+    }
+    else if (mirc.status_code == IMAGE_REACTIVATION_FIRST_PAGE_ERASE_FAILED) {
+        _lastError = FWCOMPS_IMAGE_REACTIVATION_FIRST_PAGE_ERASE_FAILED;
+    }
+    else if (mirc.status_code == IMAGE_REACTIVATION_FIRST_PAGE_RESTORE_FAILED) {
+        _lastError = FWCOMPS_IMAGE_REACTIVATION_FIRST_PAGE_RESTORE_FAILED;
+    }
+    else if (mirc.status_code == IMAGE_REACTIVATION_FW_DEACTIVATION_FAILED) {
+        _lastError = FWCOMPS_IMAGE_REACTIVATION_FW_DEACTIVATION_FAILED;
+    }
+    else if (mirc.status_code == IMAGE_REACTIVATION_FW_ALREADY_ACTIVATED) {
+        _lastError = FWCOMPS_IMAGE_REACTIVATION_FW_ALREADY_ACTIVATED;
+    }
+    else if (mirc.status_code == IMAGE_REACTIVATION_ERROR_DEVICE_RESET_REQUIRED) {
+        _lastError = FWCOMPS_IMAGE_REACTIVATION_ERROR_DEVICE_RESET_REQUIRED;
+    }
+    else if (mirc.status_code == IMAGE_REACTIVATION_FW_PROGRAMMING_NEEDED) {
+        _lastError = FWCOMPS_IMAGE_REACTIVATION_FW_PROGRAMMING_NEEDED;
+    }
+    else {
+        _lastError = FWCOMPS_IMAGE_REACTIVATION_UNKNOWN_ERROR;
+    }
+    DPRINTF(("3 reg_access_mirc failed _lastError = %d\n", _lastError));
+    return false;
+}
+
+
 
 void FwCompsMgr::setLastFirmwareError(fw_comps_error_t fw_error)
 {
