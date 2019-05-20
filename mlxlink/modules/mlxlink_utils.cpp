@@ -93,7 +93,7 @@ string status2Color(u_int32_t status)
     return (status == 0 || status == 1023) ? ANSI_COLOR_GREEN : ANSI_COLOR_RED;
 }
 
-string getLoopbackColor(u_int32_t loopbackMode)
+string getLoopbackColor(int loopbackMode)
 {
     switch (loopbackMode) {
     case DISABLED_LOOPBACK:

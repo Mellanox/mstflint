@@ -54,7 +54,7 @@ string getStringFromVector(std::vector<std::string> values);
 string getStringFromVector(std::vector<float> values);
 u_int64_t add32BitTo64(u_int32_t value1, u_int32_t value2);
 string status2Color(u_int32_t status);
-string getLoopbackColor(u_int32_t loopbackMode);
+string getLoopbackColor(int loopbackMode);
 string getAnDisableColor(u_int32_t anDisable);
 string IBSupportedSpeeds2Str(u_int32_t mask);
 string EthSupportedSpeeds2Str(u_int32_t int_mask);
