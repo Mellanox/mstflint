@@ -379,9 +379,14 @@ void TLVConf::mnva(mfile *mf, u_int8_t *buff, u_int16_t len, u_int32_t type,
 }
 
 void TLVConf::parseParamValue(string paramMlxconfigName, string valToParse, u_int32_t& val,
-                              string& strVal)
+                              string& strVal, u_int32_t index)
 {
     Param *p = findParamByMlxconfigName(paramMlxconfigName);
+    
+    if (!p) {
+        p = findParamByMlxconfigName(paramMlxconfigName + getArraySuffixByInterval(index));
+    }
+
     if (!p) {
         throw MlxcfgException("Unknown Parameter %s",
                               paramMlxconfigName.c_str());
@@ -437,11 +442,16 @@ void TLVConf::updateParamByMlxconfigName(string paramMlxconfigName, string val)
 void TLVConf::updateParamByMlxconfigName(string paramMlxconfigName, string val, u_int32_t index)
 {
     Param *p = findParamByMlxconfigName(paramMlxconfigName);
+
+    if (!p) {
+        p = findParamByMlxconfigName(paramMlxconfigName + getArraySuffixByInterval(index));
+    }
+
     if (!p) {
         throw MlxcfgException("Unknown parameter: %s",
                               paramMlxconfigName.c_str());
     }
-    p->setVal(val, index);
+    p->setVal(val, index % MAX_ARRAY_SIZE);
 }
 
 void TLVConf::updateParamByName(string paramName, string val)

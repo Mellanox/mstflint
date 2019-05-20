@@ -40,18 +40,23 @@
 #ifndef USER_MLXFWOPS_LIB_FW_COMPS_MGR_H_
 #define USER_MLXFWOPS_LIB_FW_COMPS_MGR_H_
 
-#include "mtcr.h"
 #include <vector>
 #include "reg_access/reg_access.h"
+#include "mtcr_ul/mtcr_ul_com.h"
 
 #include "mlxfwops/uefi_c/mft_uefi_common.h"
 #include "mlxfwops/lib/mlxfwops_com.h"
+#ifndef UEFI_BUILD
+#include "tools_res_mgmt/tools_res_mgmt.h"
+#endif
 
 using namespace std;
 
 #define PSID_LEN 16
 #define MAX_ROM_NUM 4
 #define PRODUCT_VER_LEN 16
+#define MAX_MSG_SIZE 128
+#define MAX_REG_DATA 128
 
 typedef struct reg_access_hca_mqis_reg mqisReg;
 typedef struct reg_access_hca_mcqs_reg comp_status_st;
@@ -61,7 +66,7 @@ typedef struct reg_access_hca_mcqi_cap comp_cap_st;
 
 typedef struct reg_access_hca_mcqi_version component_version_st;
 
-typedef int (*ProgressFunc) (int completion);
+typedef int(*ProgressFunc) (int completion);
 
 typedef f_prog_func_adv_st ProgressCallBackAdvSt;
 
@@ -102,6 +107,8 @@ typedef struct {
     int nRoms;
     char name[NAME_LEN];
     char description[DESCRIPTION_LEN];
+    char deviceVsd[VSD_LEN + 1];
+    char imageVsd[VSD_LEN + 1];
 } fwInfoT;
 
 typedef struct {
@@ -133,15 +140,15 @@ class FwComponent {
 public:
 
     typedef enum {
-        COMPID_BOOT_IMG        = 0x1,
-        COMPID_RUNTIME_IMG     = 0x2,
-        COMPID_USER_NVCONFIG   = 0x3,
-        COMPID_OEM_NVCONFIG    = 0x4,
-        COMPID_MLNX_NVCONFIG   = 0x5,
-        COMPID_CS_TOKEN        = 0x6,
-        COMPID_DBG_TOKEN       = 0x7,
-        COMPID_DEV_INFO        = 0x8,
-        COMPID_UNKNOWN         = 0xff,
+        COMPID_BOOT_IMG = 0x1,
+        COMPID_RUNTIME_IMG = 0x2,
+        COMPID_USER_NVCONFIG = 0x3,
+        COMPID_OEM_NVCONFIG = 0x4,
+        COMPID_MLNX_NVCONFIG = 0x5,
+        COMPID_CS_TOKEN = 0x6,
+        COMPID_DBG_TOKEN = 0x7,
+        COMPID_DEV_INFO = 0x8,
+        COMPID_UNKNOWN = 0xff,
     } comps_ids_t;
 
     typedef enum {
@@ -203,6 +210,8 @@ typedef enum {
     FWCOMPS_READ_OUTSIDE_IMAGE_RANGE,
     FWCOMPS_UNSUPPORTED_DEVICE,
     FWCOMPS_MTCR_OPEN_DEVICE_ERROR,
+    FWCOMPS_FAIL_TO_CREATE_TRM_CONTEXT,
+    FWCOMPS_FAIL_TO_LOCK_FLASH_SEMAPHORE,
 
     //MCC Return codes
     FWCOMPS_MCC_ERR_CODES = 0x100,
@@ -247,6 +256,19 @@ typedef enum {
     FWCOMPS_REG_ACCESS_ERASE_EXEEDED,
     FWCOMPS_REG_ACCESS_INTERNAL_ERROR,
 
+    FWCOMPS_IMAGE_REACTIVATION_SUCCESS = 0x300,
+    FWCOMPS_IMAGE_REACTIVATION_BUSY,
+    FWCOMPS_IMAGE_REACTIVATION_PROHIBITED_FW_VER_ERR,
+    FWCOMPS_IMAGE_REACTIVATION_FIRST_PAGE_COPY_FAILED,
+    FWCOMPS_IMAGE_REACTIVATION_FIRST_PAGE_ERASE_FAILED,
+    FWCOMPS_IMAGE_REACTIVATION_FIRST_PAGE_RESTORE_FAILED,
+    FWCOMPS_IMAGE_REACTIVATION_FW_DEACTIVATION_FAILED,
+    FWCOMPS_IMAGE_REACTIVATION_FW_ALREADY_ACTIVATED,
+    FWCOMPS_IMAGE_REACTIVATION_ERROR_DEVICE_RESET_REQUIRED,
+    FWCOMPS_IMAGE_REACTIVATION_FW_PROGRAMMING_NEEDED,
+    FWCOMPS_IMAGE_REACTIVATION_FW_NOT_SUPPORTED,
+    FWCOMPS_IMAGE_REACTIVATION_UNKNOWN_ERROR,
+    FWCOMPS_IMAGE_REACTIVATION_WAITING_TIME_EXPIRED
 } fw_comps_error_t;
 
 
@@ -266,24 +288,49 @@ typedef enum {
     FSM_CMD_UNDEFINED              = 0xFF,
 } fsm_command_t;
 
+typedef enum
+{
+    FMPT_FIRST_PAGE = 0,
+    FMPT_SECOND_PAGE,
+    FMPT_MAILBOX_PAGE,
+    FMPT_ALLOCATED_LIST_LENGTH
+}fsm_memory_page_index_t;
 
+typedef enum
+{
+    FFS_FW_UNKNOWN = 0,
+    FFS_FW_BUSY = 1,
+    FFS_FW_OK,
+    FFS_FW_ERROR
+}fsm_fw_status_t;
+
+class AbstractComponentAccess;
 class FwCompsMgr {
 public:
 
     typedef enum {
-        DEVICE_NAME,
-        DEVICE_DESCRIPTION_INFO
-    } deviceDescription;
+        MQIS_REGISTER_FIRST_VALUE = 1,
+        MQIS_REGISTER_DEVICE_NAME = MQIS_REGISTER_FIRST_VALUE,
+        MQIS_REGISTER_DEVICE_DESCRIPTION_INFO = 2,
+        MQIS_REGISTER_IMAGE_VSD = 3,
+        MQIS_REGISTER_DEVICE_VSD = 4,
+        MQIS_REGISTER_ROM_INFO = 5,
+        MQIS_REGISTER_LAST_VALUE = MQIS_REGISTER_ROM_INFO
+    } MQISDeviceDescriptionT;
 
-    FwCompsMgr(const char *devname);
-    FwCompsMgr(mfile *mf);
+    typedef enum {
+        DEVICE_HCA_SWITCH = 0,
+    } DeviceTypeT;
+
+    FwCompsMgr(const char *devname, DeviceTypeT devType = DEVICE_HCA_SWITCH, int deviceIndex = 0);
+    FwCompsMgr(mfile *mf, DeviceTypeT devType = DEVICE_HCA_SWITCH, int deviceIndex = 0);
     FwCompsMgr(uefi_Dev_t *uefi_dev, uefi_dev_extra_t *uefi_extra);
 
     virtual ~FwCompsMgr();
 
     u_int32_t        getFwSupport();
     mfile*           getMfileObj() {return _mf;};
-
+    bool    fwReactivateImage();
     bool             burnComponents(std::vector<FwComponent>& comps,
                                     ProgressCallBackAdvSt *progressFuncAdv = (ProgressCallBackAdvSt *)NULL);
     bool             getFwComponents(std::vector<FwComponent>& comps, bool readEn = false);
@@ -300,7 +347,7 @@ public:
     bool    queryFwInfo(fwInfoT *query, bool next_boot_fw_ver = false);
 
     bool             forceRelease();
-    fw_comps_error_t getLastError() { return _lastError;};
+    fw_comps_error_t getLastError() { return _lastError; };
     const char*      getLastErrMsg();
 
     bool             readBlockFromComponent(FwComponent::comps_ids_t compId,
@@ -308,11 +355,15 @@ public:
                                             u_int32_t size,
                                             std::vector<u_int8_t>& data);
     bool             setMacsGuids(mac_guid_t macGuid);
-
-
-    bool             getDeviceHWInfo(FwCompsMgr::deviceDescription op,
+    bool    getDeviceHWInfo(FwCompsMgr::MQISDeviceDescriptionT op,
                                      vector<u_int8_t>& infoString);
-
+    void    deal_with_signal();
+    void   setLastFirmwareError(fw_comps_error_t fw_error);
+    void   setLastRegisterAccessStatus(reg_access_status_t err);
+    fw_comps_error_t mccErrTrans(u_int8_t err);
+    fw_comps_error_t regErrTrans(reg_access_status_t err);
+    bool lock_flash_semaphore();
+    void unlock_flash_semaphore();
 private:
 
     typedef enum {
@@ -328,7 +379,7 @@ private:
         FSMST_NA             = 0xFF,
     } fsm_state_t;
 
-    enum {
+    typedef enum {
         MCC_ERRCODE_OK = 0x0,
         MCC_ERRCODE_ERROR,
         MCC_ERRCODE_REJECTED_DIGEST_ERR,
@@ -347,18 +398,26 @@ private:
         MCC_ERRCODE_REJECTED_FORBIDDEN_VERSION,
         MCC_ERRCODE_FLASH_ERASE_ERROR,
         MCC_ERRCODE_REJECTED_IMAGE_CAN_NOT_BOOT_FROM_PARTITION,
-    };
+    } mcc_command_error_t;
+    typedef enum {
+        IMAGE_REACTIVATION_SUCCESS = 0,
+        IMAGE_REACTIVATION_BUSY = 1,
+        IMAGE_REACTIVATION_PROHIBITED_FW_VER_ERR = 2,
+        IMAGE_REACTIVATION_FIRST_PAGE_COPY_FAILED = 3,
+        IMAGE_REACTIVATION_FIRST_PAGE_ERASE_FAILED = 4,
+        IMAGE_REACTIVATION_FIRST_PAGE_RESTORE_FAILED = 5,
+        IMAGE_REACTIVATION_FW_DEACTIVATION_FAILED = 6,
+        IMAGE_REACTIVATION_FW_ALREADY_ACTIVATED = 7,
+        IMAGE_REACTIVATION_ERROR_DEVICE_RESET_REQUIRED = 8,
+        IMAGE_REACTIVATION_FW_PROGRAMMING_NEEDED = 9
+    }image_reactivation_command_error_t;
 
-    const char*stateToStr(fsm_state_t);
+    const char* stateToStr(fsm_state_t);
     const char* commandToStr(fsm_command_t cmd);
 
     void          initialize(mfile *mf);
 
     void          generateHandle();
-
-    fsm_command_t getStateMachine();
-
-    bool          updateStateMachine(fsm_command_t newStatus);
 
     bool          accessComponent(u_int32_t offset,
                                   u_int32_t size,
@@ -366,7 +425,7 @@ private:
                                   access_type_t access,
                                   ProgressCallBackAdvSt *progressFuncAdv = (ProgressCallBackAdvSt *)NULL);
 
-    bool           queryComponentStaus(u_int32_t componentIndex,
+    bool           queryComponentStatus(u_int32_t componentIndex,
                                        comp_status_st *query);
 
     bool           controlFsm(fsm_command_t command,
@@ -404,13 +463,9 @@ private:
                                     component_version_st *cmpVer);
 
     reg_access_status_t getGI(mfile *mf, struct tools_open_mgir *gi);
-    fw_comps_error_t regErrTrans(reg_access_status_t err);
-    fw_comps_error_t mccErrTrans(u_int8_t err);
-
     bool           extractMacsGuids(fwInfoT *fwQuery);
     void           extractRomInfo(tools_open_mgir *mgir, fwInfoT *fwQuery);
     bool           refreshComponentsStatus();
-    static void    deal_with_signal();
 
     std::vector<comp_query_st> _compsQueryMap;
 
@@ -422,13 +477,20 @@ private:
     u_int32_t _updateHandle;
     fsm_control_st _lastFsmCtrl;
     u_int32_t _componentIndex;
+    u_int32_t _deviceIndex;
+    u_int8_t _deviceType;
     fw_comps_error_t _lastError;
     reg_access_status_t _lastRegAccessStatus;
     u_int32_t _hwDevId;
     mfile *_mf;
     const char *_currComponentStr;
-
+    u_int8_t _mircCaps;
     std::vector<u_int8_t> _productVerStr;
+    bool isDmaSupported;
+    AbstractComponentAccess* _accessObj;
+#ifndef UEFI_BUILD
+    trm_ctx _trm;
+#endif
 };
 
 #endif /* USER_MLXFWOPS_LIB_FW_COMPS_MGR_H_ */

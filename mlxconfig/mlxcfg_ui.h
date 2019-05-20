@@ -64,6 +64,19 @@ typedef enum {
     Mc_UnknownCmd
 } mlxCfgCmd;
 
+
+typedef struct QueryOutputItem {
+    string mlxconfigName;
+    u_int32_t nextVal;
+    string strNextVal;
+    u_int32_t currVal;
+    string strCurrVal;
+    u_int32_t defVal;
+    string strDefVal;
+    u_int32_t setVal;
+    string strSetVal;
+} QueryOutputItem;
+
 using namespace std;
 
 class MlxCfgParams
@@ -113,6 +126,9 @@ private:
     mlxCfgStatus extractSetCfgArgs(int argc, char *argv[]);
     mlxCfgStatus extractQueryCfgArgs(int argc, char *argv[]);
 
+    void removeContinuanceArray(std::vector<QueryOutputItem>& OutputItemOut, std::vector<QueryOutputItem>& OutputItemIn);
+    void editAndPushItem(std::vector<QueryOutputItem>& queryOutputItemVector, QueryOutputItem& item, u_int32_t arrayIndex);
+
     const char * getConfigWarning(const string & mlx_config_name,
             const string & set_val);
 
@@ -154,6 +170,13 @@ private:
     mlxCfgStatus XML2Bin();
     mlxCfgStatus createConf();
     mlxCfgStatus apply();
+
+    // static print functions
+    static int printParam(string param, u_int32_t val);
+    static int printValue(string strVal, u_int32_t val);
+    static void printSingleParam(const char *name,
+            QueryOutputItem & queryOutItem, u_int8_t verbose, bool printNewCfg);
+
 
     bool askUser(const char *question, bool add_prefix=true, bool add_suffix=true);
     mlxCfgStatus err(bool report, const char *errMsg, ...);

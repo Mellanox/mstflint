@@ -38,6 +38,7 @@ COMMON_DIR  = $(top_srcdir)/common
 LAYOUTS_DIR = $(top_srcdir)/tools_layouts
 MFT_UTILS_DIR = $(top_srcdir)/mft_utils
 CMDIF_DIR   = $(top_srcdir)/cmdif
+MAD_IFC_DIR   = $(top_srcdir)/mad_ifc
 
 AM_CPPFLAGS = -I$(top_srcdir) -I$(srcdir) -I$(MTCR_DIR) -I$(MFLASH_DIR) -I$(COMMON_DIR) \
            -I$(LAYOUTS_DIR) -I$(MFT_UTILS_DIR) -I$(MTCR_INC_DIR)
@@ -74,7 +75,7 @@ else
 endif
 
 if ENABLE_INBAND
-mstflint_LDADD += $(top_srcdir)/mad_ifc/libmad_ifc.a
+mstflint_LDADD += $(MAD_IFC_DIR)/libmad_ifc.a
 else
 endif
 

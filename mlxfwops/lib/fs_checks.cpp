@@ -31,8 +31,10 @@
  */
 
 #include "fs_checks.h"
-#include <iostream>
-#include <sstream>
+#ifndef UEFI_BUILD
+   #include <iostream>
+   #include <sstream>
+#endif
 
 const char*FsChecks::AlignmentUserMessage = "An update is needed for the flash layout.\n"
                                             "The Operation is not failsafe and terminating the process is not allowed.\n";
@@ -62,6 +64,7 @@ bool FsChecks::ExecuteChecks(FwOperations **devFwOps, FwOperations::ExtBurnParam
         isFsCtrlOperations = true;
         _isItWasFwControlFlow = true;
         _fwParams.noFwCtrl = true;
+        _fwParams.uefiExtra.dev_info.no_fw_ctrl = true;
         tempDevFwOps = FwOperations::FwOperationsCreate(_fwParams);
         if (!tempDevFwOps) {
             return true;
@@ -89,7 +92,8 @@ bool FsChecks::ExecuteChecks(FwOperations **devFwOps, FwOperations::ExtBurnParam
     }
 
     //Check if we can burn with mcc:
-    if (isFsCtrlOperations && tempDevFwOps->FwCheckIfWeCanBurnWithFwControl(_imageFwOps)) {
+    if (isFsCtrlOperations && (tempDevFwOps->FwCheckIfWeCanBurnWithFwControl(_imageFwOps) ||
+                              (_fwParams.hndlType == FHT_UEFI_DEV && _burnParams.allowPsidChange))) {
         _isFallBackToRegularFlowNeeded = true;
     }
 

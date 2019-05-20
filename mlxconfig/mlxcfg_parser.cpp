@@ -204,6 +204,7 @@ mlxCfgStatus MlxCfg::extractQueryCfgArgs(int argc, char *argv[])
         if (isIndexedMlxconfigName(mlxconfigName)) {
             string indexStr = parseIndexStr(mlxconfigName);
             vector<u_int32_t> indexes;
+            bool isStartFromOneSupported = false;
             extractIndexes(indexStr, indexes);
             if (indexes.size() > 1) {
                 size_t p = mlxconfigName.find('[');
@@ -211,14 +212,38 @@ mlxCfgStatus MlxCfg::extractQueryCfgArgs(int argc, char *argv[])
                     return err(true, "Expected a parameter with index");
                 }
                 mlxconfigName = mlxconfigName.substr(0, p);
+                isStartFromOneSupported = isIndexedStartFromOneSupported(mlxconfigName);
+
                 VECTOR_ITERATOR(u_int32_t, indexes, it) {
                     ParamView paramView;
+                    if (isStartFromOneSupported) {
+                        if ((int32_t)*it <= 0) {
+                            printf("-E- Index is out of range.Minimal index is 1\n");
+                            return MLX_CFG_ERROR_NO_USAGE;
+                        }
+                        else {
+                            (*it)--;
+                        }
+                    }
                     paramView.mlxconfigName = mlxconfigName + "[" + numToStr(*it) + "]";
                     _mlxParams.setParams.push_back(paramView);
                 }
                 continue;
             } else {
+                
+                size_t p = mlxconfigName.find('[');
+                string subStr = mlxconfigName.substr(0, p);
+                if (isIndexedStartFromOneSupported(subStr)) {
+                    if ((int32_t)indexes[0] <= 0) {
+                        printf("-E- Index is out of range.Minimal index is 1\n");
+                        return MLX_CFG_ERROR_NO_USAGE;
+                    }
+                    pv.mlxconfigName = subStr + "[" + numToStr(indexes[0] - 1) + "]";
+                    
+                }
+                else {
                 pv.mlxconfigName = mlxconfigName;
+            }
             }
         } else {
             pv.mlxconfigName = mlxconfigName;
@@ -262,21 +287,46 @@ mlxCfgStatus MlxCfg::extractSetCfgArgs(int argc, char *argv[])
             string indexStr = parseIndexStr(tag);
             vector<u_int32_t> indexes;
             extractIndexes(indexStr, indexes);
+            bool isStartFromOneSupported = false;
             if (indexes.size() > 1) {
                 size_t p = tag.find('[');
                 if (p == std::string::npos) {
                     return err(true, "Expected a parameter with index");
                 }
                 string mlxconfigName = tag.substr(0, p);
+                isStartFromOneSupported = isIndexedStartFromOneSupported(mlxconfigName);
                 VECTOR_ITERATOR(u_int32_t, indexes, it) {
                     ParamView paramView;
                     paramView.setVal = strVal;
+
+                    if (isStartFromOneSupported) {
+                        if (*it == 0) {
+                            printf("-E- Index 0 is out of range.Minimal index is 1\n");
+                            return MLX_CFG_ERROR_NO_USAGE;
+                        }
+                        else {
+                            (*it)--;
+                        }
+                    }
+
                     paramView.mlxconfigName = mlxconfigName + "[" + numToStr(*it) + "]";
                     _mlxParams.setParams.push_back(paramView);
                 }
                 continue;
             } else {
+                size_t p = tag.find('[');
+                string subStr = tag.substr(0, p);
+                if (isIndexedStartFromOneSupported(subStr)) {
+                    if (indexes[0] == 0) {
+                        printf("-E- Index 0 is out of range.Minimal index is 1\n");
+                        return MLX_CFG_ERROR_NO_USAGE;
+                    }
+                    pv.mlxconfigName = subStr + "[" + numToStr(indexes[0] - 1) + "]";
+
+                }
+                else {
                 pv.mlxconfigName = tag;
+                }
             }
         } else {
             pv.mlxconfigName = tag;

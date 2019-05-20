@@ -373,6 +373,8 @@ void MlnxDev::setDeviceType(void)
 
     case DeviceConnectX4:
     case DeviceConnectX5:
+    case DeviceConnectX6:
+    case DeviceConnectX6DX:
     case DeviceBlueField:
         try {
             _commander = Commander::create(mf, getDevName(), "");
@@ -698,7 +700,7 @@ int MlnxDev::queryFwops()
     setGuidMac(fw_query);
 
     // attempt to take some fields from image info
-    if (fw_query.fw_type == FIT_FS3) {
+    if (fw_query.fw_type == FIT_FS3 || fw_query.fw_type == FIT_FS4) {
         if (strlen(fw_query.fs3_info.description)) {
             _description = fw_query.fs3_info.description;
         }

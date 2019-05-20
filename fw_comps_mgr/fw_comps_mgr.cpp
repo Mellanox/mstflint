@@ -38,12 +38,11 @@
  */
 
 #include "fw_comps_mgr.h"
-#include "compatibility.h"
+#include "fw_comps_mgr_abstract_access.h"
 #include "bit_slice.h"
-#include <time.h>
-#include <stdlib.h>
 #include <signal.h>
 
+#include "mflash/mflash_access_layer.h"
 #ifndef UEFI_BUILD
 #include <mft_sig_handler.h>
 #include "mad_ifc/mad_ifc.h"
@@ -60,9 +59,6 @@ static void mft_signal_set_handling(int isOn)
 #define REG_ACCESS_TOUT 100
 #define SLEEP_TIME 80
 #define INIT_PARTITION_SLEEP_TIME 240
-#define MAX_MSG_SIZE 128
-
-#define MAX_REG_DATA 128
 
 #define MTCR_IB_TIMEOUT_VAR "MTCR_IB_TIMEOUT"
 #define MTCR_IB_TIMEOUT_VAL "30000"
@@ -77,6 +73,13 @@ static void mft_signal_set_handling(int isOn)
 #define IS4_DEVID       0x1b3
 
 
+#ifndef UEFI_BUILD
+#define DPRINTF(args)        do { char *reacDebug = getenv("REACTIVATION_DEBUG"); \
+                                  if (reacDebug != NULL) { \
+                                      printf("[REACTIVATION_DEBUG]: -D- "); printf args;} } while (0)
+#else
+#define DPRINTF(...)
+#endif
 typedef struct reg_access_hca_mcda_reg mcdaReg;
 /*
  * Wrapper to call the MCDA command
@@ -96,7 +99,7 @@ bool FwCompsMgr::runNVDA(std::vector<u_int8_t>& buff,
         nvdaTlv.nv_hdr.default_ = 1;
     }
     // tlvType should be in the correct endianess
-    nvdaTlv.nv_hdr.type.tlv_type_dw.tlv_type_dw =  tlvType;
+    nvdaTlv.nv_hdr.type.tlv_type_dw.tlv_type_dw = tlvType;
     if (method == REG_ACCESS_METHOD_SET) {
         memcpy(nvdaTlv.data, buff.data(), len);
     }
@@ -107,6 +110,7 @@ bool FwCompsMgr::runNVDA(std::vector<u_int8_t>& buff,
     deal_with_signal();
     if (rc) {
         _lastError = regErrTrans(rc);
+        setLastRegisterAccessStatus(rc);
         return false;
     }
     if (buff.size() < nvdaTlv.nv_hdr.length) {
@@ -117,89 +121,15 @@ bool FwCompsMgr::runNVDA(std::vector<u_int8_t>& buff,
 }
 
 bool FwCompsMgr::accessComponent(u_int32_t offset,
-                                 u_int32_t size,
-                                 u_int32_t data[],
-                                 access_type_t access,
-                                 ProgressCallBackAdvSt *progressFuncAdv)
+    u_int32_t size,
+    u_int32_t data[],
+    access_type_t access,
+    ProgressCallBackAdvSt *progressFuncAdv)
 {
-    int leftSize = (int)size;
-    u_int32_t i = 0;
-    mcdaReg accessData;
-    char stage[MAX_MSG_SIZE] = {0};
-    int progressPercentage = -1;
-    if (progressFuncAdv && progressFuncAdv->func) {
-        snprintf(stage, MAX_MSG_SIZE, "%s %s component", (access == MCDA_READ_COMP) ? "Reading" : "Writing", _currComponentStr);
-    }
-    int maxDataSize = mget_max_reg_size(_mf, (access == MCDA_READ_COMP) ? MACCESS_REG_METHOD_GET : MACCESS_REG_METHOD_SET)
-        - sizeof(accessData);
-    if (maxDataSize > MAX_REG_DATA) {
-        maxDataSize = MAX_REG_DATA;
-    }
-    std::vector<u_int32_t> dataToRW(maxDataSize, 0);
-    while (leftSize > 0) {
-        memset(&accessData, 0, sizeof(mcdaReg));
-        accessData.data = dataToRW.data();
-        accessData.update_handle = _updateHandle;
-        accessData.offset = offset + (size - leftSize);
-        accessData.size   = leftSize > maxDataSize ? maxDataSize : leftSize;
-        mft_signal_set_handling(1);
-
-        if (access == MCDA_READ_COMP) {
-            reg_access_status_t rc = reg_access_mcda(_mf, REG_ACCESS_METHOD_GET, &accessData);
-            deal_with_signal();
-            if (rc) {
-                _lastError = regErrTrans(rc);
-                return false;
-            }
-            for (i = 0; i < accessData.size / 4; i++) {
-                data[(size - leftSize) / 4 + i] = ___my_swab32(accessData.data[i]);
-            }
-            //printf("data[%#02x]: %#08x\n", (i-1)*4, data[(size - leftSize)/4 + i-1]);
-        } else {
-            for (i = 0; i < accessData.size / 4; i++) {
-                accessData.data[i] = ___my_swab32(data[(size - leftSize) / 4 + i]);
-            }
-            reg_access_status_t rc = reg_access_mcda(_mf, REG_ACCESS_METHOD_SET, &accessData);
-            deal_with_signal();
-            if (rc) {
-                _lastError = regErrTrans(rc);
-                return false;
-            }
-        }
-        int newPercentage = (((size - leftSize) * 100) / size);
-        if (newPercentage > progressPercentage &&
-            progressFuncAdv && progressFuncAdv->func) {
-            progressPercentage = newPercentage;
-            if (progressFuncAdv->func(progressPercentage, stage,
-                                      PROG_WITH_PRECENTAGE, progressFuncAdv->opaque)) {
-                _lastError = FWCOMPS_ABORTED;
-                return false;
-            }
-        }
-        leftSize -= maxDataSize;
-    }
-    if (progressFuncAdv && progressFuncAdv->func) {
-        if (progressFuncAdv->func(0, stage,
-                                  PROG_OK, progressFuncAdv->opaque)) {
-            _lastError = FWCOMPS_ABORTED;
-            return false;
-        }
-    }
-    return true;
-}
-
-bool FwCompsMgr::queryComponentStaus(u_int32_t componentIndex,
-                                     comp_status_st *query)
-{
-    mft_signal_set_handling(1);
-    query->component_index = componentIndex;
-    reg_access_status_t rc = reg_access_mcqs(_mf, REG_ACCESS_METHOD_GET, query);
-    deal_with_signal();
-    if (rc) {
-        _lastError = regErrTrans(rc);
-        return false;
-    }
-    return true;
+    bool bRes = _accessObj->accessComponent(_updateHandle, offset, size, data, access, _currComponentStr, progressFuncAdv);
+    setLastFirmwareError(_accessObj->getLastFirmwareError());
+    setLastRegisterAccessStatus(_accessObj->getLastRegisterAccessStatus());
+    return bRes;
 }
 
 const char* FwCompsMgr::stateToStr(fsm_state_t st)
@@ -235,7 +165,8 @@ bool FwCompsMgr::controlFsm(fsm_command_t command,
                             u_int32_t reg_access_timeout)
 {
     reg_access_status_t rc = ME_OK;
-    if(!reg_access_timeout) {
+    reg_access_method_t method = REG_ACCESS_METHOD_SET;
+    if (!reg_access_timeout) {
         reg_access_timeout = MAX_TOUT;
     }
     unsigned int count = 0;
@@ -243,13 +174,15 @@ bool FwCompsMgr::controlFsm(fsm_command_t command,
         if (count) {
             msleep(SLEEP_TIME);
         }
-        reg_access_method_t method = REG_ACCESS_METHOD_SET;
+        method = REG_ACCESS_METHOD_SET;
         if (command == FSM_QUERY) {
             method = REG_ACCESS_METHOD_GET;
         }
         mft_signal_set_handling(1);
         memset(&_lastFsmCtrl, 0, sizeof(_lastFsmCtrl));
         _lastFsmCtrl.instruction = command;
+        _lastFsmCtrl.device_index = _deviceIndex;
+        _lastFsmCtrl.device_type = _deviceType;
         _lastFsmCtrl.component_index = _componentIndex;
         _lastFsmCtrl.component_size = size;
         _lastFsmCtrl.update_handle = _updateHandle;
@@ -260,8 +193,10 @@ bool FwCompsMgr::controlFsm(fsm_command_t command,
     if (rc) {
         if (_lastFsmCtrl.error_code) {
             _lastError = mccErrTrans(_lastFsmCtrl.error_code);
-        } else {
+        }
+        else {
             _lastError = regErrTrans(rc);
+            setLastRegisterAccessStatus(rc);
         }
         return false;
     }
@@ -321,15 +256,18 @@ bool FwCompsMgr::runMCQI(u_int32_t componentIndex,
     _currCompInfo.offset = offset;
     _currCompInfo.data_size = dataSize;
     _currCompInfo.component_index = componentIndex;
+    _currCompInfo.device_index = _deviceIndex;
+    _currCompInfo.device_type = _deviceType;
 
     if (dataSize) {
         dataInfo.resize(dataSize, 0);
-        _currCompInfo.data =  dataInfo.data();
+        _currCompInfo.data = dataInfo.data();
     }
     reg_access_status_t rc = reg_access_mcqi(_mf, REG_ACCESS_METHOD_GET, &_currCompInfo);
     deal_with_signal();
     if (rc) {
         _lastError = regErrTrans(rc);
+        setLastRegisterAccessStatus(rc);
         ret = false;
         goto cleanup;
     }
@@ -345,7 +283,7 @@ cleanup:
     return ret;
 }
 
-bool FwCompsMgr::getDeviceHWInfo(FwCompsMgr::deviceDescription op, vector<u_int8_t>& infoString)
+bool FwCompsMgr::getDeviceHWInfo(FwCompsMgr::MQISDeviceDescriptionT op, vector<u_int8_t>& infoString)
 {
     mqisReg mqisRegister;
     mfile *mf;
@@ -361,11 +299,10 @@ bool FwCompsMgr::getDeviceHWInfo(FwCompsMgr::deviceDescription op, vector<u_int8
     std::vector<u_int32_t> dataVector(maxDataSize / 4, 0);
 
     memset(&mqisRegister, 0, sizeof(mqisReg));
-    if (op == DEVICE_NAME) {
-        mqisRegister.info_type = 0x1;
-    } else if (op == DEVICE_DESCRIPTION_INFO) {
-        mqisRegister.info_type = 0x2;
-    }
+    if (op < MQIS_REGISTER_FIRST_VALUE || op > MQIS_REGISTER_LAST_VALUE)
+        return false;
+
+    mqisRegister.info_type = (u_int8_t)op;
     mqisRegister.read_length = maxDataSize;
     mqisRegister.info_string = dataVector.data();
     mft_signal_set_handling(1);
@@ -373,7 +310,7 @@ bool FwCompsMgr::getDeviceHWInfo(FwCompsMgr::deviceDescription op, vector<u_int8
     rc = reg_access_mqis(mf, REG_ACCESS_METHOD_GET, &mqisRegister);
     deal_with_signal();
     if (rc) {
-       return false;
+        return false;
     }
     int infoSize = mqisRegister.info_length;
     if (infoSize == 0) {
@@ -450,7 +387,8 @@ reg_access_status_t FwCompsMgr::getGI(mfile *mf, struct tools_open_mgir *gi)
             goto cleanup;
         }
         rc = (reg_access_status_t)mad_ifc_general_info_sw(mf, &gi->sw_info);
-    } else {
+    }
+    else {
         rc = reg_access_mgir(mf, REG_ACCESS_METHOD_GET, gi);
         goto cleanup;
     }
@@ -491,22 +429,30 @@ void FwCompsMgr::initialize(mfile *mf)
     if (getFwSupport()) {
         generateHandle();
     }
+    ComponentAccessFactory* factory = ComponentAccessFactory::GetInstance();
+    _accessObj = factory->createDataAccessObject(this, mf, isDmaSupported);
     _refreshed = false;
 }
 
-FwCompsMgr::FwCompsMgr(mfile *mf)
+FwCompsMgr::FwCompsMgr(mfile *mf, DeviceTypeT devType, int deviceIndex)
 {
     _clearSetEnv = false;
     _openedMfile = false;
     _hwDevId = 0;
+    _deviceType = devType;
+    _deviceIndex = deviceIndex;
+    _accessObj = NULL;
     initialize(mf);
 }
 
-FwCompsMgr::FwCompsMgr(const char *devname)
+FwCompsMgr::FwCompsMgr(const char *devname, DeviceTypeT devType, int deviceIndex)
 {
     _mf = NULL;
     _openedMfile = false;
     _clearSetEnv = false;
+    _accessObj = NULL;
+    _deviceType = devType;
+    _deviceIndex = deviceIndex;
 #ifndef UEFI_BUILD
     if (getenv(MTCR_IB_TIMEOUT_VAR) == NULL) {
         _clearSetEnv = true;
@@ -518,6 +464,7 @@ FwCompsMgr::FwCompsMgr(const char *devname)
     }
 #endif
     _hwDevId = 0;
+    _mircCaps = false;
     _lastError = FWCOMPS_SUCCESS;
     mfile *mf = mopen(devname);
     if (!mf) {
@@ -531,17 +478,18 @@ FwCompsMgr::FwCompsMgr(const char *devname)
 FwCompsMgr::FwCompsMgr(uefi_Dev_t *uefi_dev, uefi_dev_extra_t *uefi_extra)
 {
     _mf = NULL;
+    _accessObj = NULL;
     _openedMfile = false;
     _clearSetEnv = false;
-
+    _mircCaps = false;
     mfile *mf = mopen_fw_ctx((void *)uefi_dev, (void *)uefi_extra->fw_cmd_func, \
-                             (void *)uefi_extra->dev_info);
+        (void *)&uefi_extra->dev_info);
     if (!mf) {
         _lastError = FWCOMPS_MEM_ALLOC_FAILED;
         return;
     }
-    if (uefi_extra->dev_info != NULL) {
-        _hwDevId = uefi_extra->dev_info->hw_dev_id;
+    if (&uefi_extra->dev_info != NULL) {
+        _hwDevId = uefi_extra->dev_info.hw_dev_id;
     }
     _openedMfile = true;
     initialize(mf);
@@ -566,6 +514,10 @@ FwCompsMgr::~FwCompsMgr()
         if (_mf) {
             mclose(_mf);
         }
+    }
+    if (_accessObj != NULL) {
+        delete _accessObj;
+        _accessObj = NULL;
     }
 }
 
@@ -597,10 +549,10 @@ bool FwCompsMgr::refreshComponentsStatus()
     _compsQueryMap.resize((unsigned)(FwComponent::COMPID_UNKNOWN));
     while (!last_index_flag) {
         memset(&compStatus, 0, sizeof(comp_query_st));
-        if (queryComponentStaus(compIdx, &(compStatus.comp_status))) {
+        if (queryComponentStatus(compIdx, &(compStatus.comp_status))) {
             compStatus.comp_status.component_index = compIdx;
             /* */
-            u_int32_t capSt[DEFAULT_SIZE] = {0};
+            u_int32_t capSt[DEFAULT_SIZE] = { 0 };
             if (queryComponentInfo(_componentIndex, 1, COMPINFO_CAPABILITIES, DEFAULT_SIZE, capSt) == false) {
                 if (queryComponentInfo(_componentIndex, 0, COMPINFO_CAPABILITIES, DEFAULT_SIZE, capSt) == false) {
                     //_lastError = FWCOMPS_REG_FAILED;
@@ -613,8 +565,9 @@ bool FwCompsMgr::refreshComponentsStatus()
             memcpy(&(_compsQueryMap[compStatus.comp_status.identifier]), &compStatus, sizeof(compStatus));
             //printf("-D- Found component: %#x\n", compStatus.comp_status.identifier);
             last_index_flag = compStatus.comp_status.last_index_flag;
-        } else {
-            //printf("-D- queryComponentStaus failed !!\n");
+        }
+        else {
+            //printf("-D- queryComponentStatus failed !!\n");
             return false;
         }
         compIdx++;
@@ -652,7 +605,8 @@ bool FwCompsMgr::readComponent(FwComponent::comps_ids_t compType, FwComponent& f
         if (!controlFsm(FSM_CMD_RELEASE_UPDATE_HANDLE)) {
             return false;
         }
-    } else {
+    }
+    else {
         _lastError = FWCOMPS_READ_COMP_NOT_SUPPORTED;
         return false;
     }
@@ -680,12 +634,29 @@ bool FwCompsMgr::readComponentInfo(FwComponent::comps_ids_t compType,
         retData.resize(size);
         queryComponentInfo(_componentIndex, readPending == true, infoType, size, (u_int32_t *)(retData.data()));
         return true;
-    } else {
+    }
+    else {
         _lastError = FWCOMPS_INFO_TYPE_NOT_SUPPORTED;
         return false;
     }
 }
 
+bool FwCompsMgr::queryComponentStatus(u_int32_t componentIndex,
+    comp_status_st *query)
+{
+    mft_signal_set_handling(1);
+    query->component_index = componentIndex;
+    query->device_index = _deviceIndex;
+    query->device_type = _deviceType;
+    reg_access_status_t rc = reg_access_mcqs(_mf, REG_ACCESS_METHOD_GET, query);
+    deal_with_signal();
+    if (rc) {
+        _lastError = regErrTrans(rc);
+        setLastRegisterAccessStatus(rc);
+        return false;
+    }
+    return true;
+}
 
 bool FwCompsMgr::burnComponents(std::vector<FwComponent>& comps,
                                 ProgressCallBackAdvSt *progressFuncAdv)
@@ -695,6 +666,7 @@ bool FwCompsMgr::burnComponents(std::vector<FwComponent>& comps,
         return false;
     }
     if (!controlFsm(FSM_CMD_LOCK_UPDATE_HANDLE, FSMST_LOCKED)) {
+        forceRelease();
         return false;
     }
     for (i = 0; i < comps.size(); i++) {
@@ -733,7 +705,7 @@ bool FwCompsMgr::getFwComponents(std::vector<FwComponent>& compsMap, bool readEn
         return false;
     }
     for (std::vector<comp_query_st>::iterator it = _compsQueryMap.begin();
-         it != _compsQueryMap.end(); it++) {
+        it != _compsQueryMap.end(); it++) {
         if (!it->valid) {
             continue;
         }
@@ -741,7 +713,8 @@ bool FwCompsMgr::getFwComponents(std::vector<FwComponent>& compsMap, bool readEn
                           (FwComponent::comps_status_t)it->comp_status.component_status);
         if (readEn && !readComponent((FwComponent::comps_ids_t)it->comp_status.identifier, fwCmp, 0)) {
             return false;
-        } else {
+        }
+        else {
             fwCmp.setSize(it->comp_cap.component_size);
         }
         compsMap.push_back(fwCmp);
@@ -777,7 +750,7 @@ const char* FwComponent::getCompIdStr(comps_ids_t compId)
         break;
 
     default:
-        return "UNKNOW_COMPONENT";
+        return "UNKNOWN_COMPONENT";
         break;
     }
 }
@@ -795,6 +768,8 @@ void FwCompsMgr::getInfoAsVersion(std::vector<u_int32_t>& infoData,
 u_int32_t FwCompsMgr::getFwSupport()
 {
     u_int32_t devid = 0;
+    isDmaSupported = false;
+
 #ifndef UEFI_BUILD
     if (getenv("FW_CTRL") != NULL) {
         return 1;
@@ -829,11 +804,24 @@ u_int32_t FwCompsMgr::getFwSupport()
     }
     /*
      * MCDA bit are in offsets 0x60-0x64
+     * MCDD in bit 0x5C
      * MGIR in bit 0x20
      * The bytes are in reverse order
      */
     u_int8_t mcdaCaps = EXTRACT(mcam.mng_access_reg_cap_mask[3], 0, 5);
+    u_int8_t mcddCaps = EXTRACT(mcam.mng_access_reg_cap_mask[4], 4, 1);//##EDDY: need check ! register 5c
     u_int8_t mgirCaps = EXTRACT(mcam.mng_access_reg_cap_mask[11], 0, 1);
+    if (mcddCaps == 1)
+        isDmaSupported = true;
+    memset(&mcam, 0, sizeof(mcam));
+    mcam.access_reg_group = 2;//for MIRC register
+    rc = reg_access_mcam(_mf, REG_ACCESS_METHOD_GET, &mcam);
+    if (rc) {
+        _lastError = FWCOMPS_UNSUPPORTED_DEVICE;
+        return 0;
+    }
+    _mircCaps = EXTRACT(mcam.mng_access_reg_cap_mask[3], 2, 1);//MIRC is 0x9162
+    DPRINTF(("getFwSupport _mircCaps = %d\n", _mircCaps));
     if (mcdaCaps == 0x1f && mgirCaps) {
         return 1;
     }
@@ -968,6 +956,7 @@ bool FwCompsMgr::queryFwInfo(fwInfoT *query, bool next_boot_fw_ver)
         return false;
     }
     if (next_boot_fw_ver) {
+        // query next_boot_fw_ver only. enough to query pending & running versions.
         return true;
     }
 
@@ -994,8 +983,8 @@ bool FwCompsMgr::queryFwInfo(fwInfoT *query, bool next_boot_fw_ver)
     query->rev_id = mgir.hw_info.device_hw_revision;
     query->security_type.secure_fw = mgir.fw_info.secure_fw;
     query->security_type.signed_fw = mgir.fw_info.signed_fw;
-    query->security_type.debug_fw  = mgir.fw_info.debug_fw;
-    query->security_type.dev_fw    = mgir.fw_info.dev_fw;
+    query->security_type.debug_fw = mgir.fw_info.debug_fw;
+    query->security_type.dev_fw = mgir.fw_info.dev_fw;
     query->signed_fw = _compsQueryMap[FwComponent::COMPID_BOOT_IMG].comp_cap.signed_updates_only;
 
     query->base_mac_orig.uid = ((u_int64_t)mgir.hw_info.manufacturing_base_mac_47_32 << 32 | mgir.hw_info.manufacturing_base_mac_31_0);
@@ -1012,11 +1001,19 @@ bool FwCompsMgr::queryFwInfo(fwInfoT *query, bool next_boot_fw_ver)
      */
     vector<u_int8_t> nameInfoString;
     vector<u_int8_t> descriptionInfoString;
-    if (getDeviceHWInfo(FwCompsMgr::DEVICE_NAME, nameInfoString)) {
-        strncpy(query->name, (char *)nameInfoString.data(), NAME_LEN-1);
+    vector<u_int8_t> imageVsd;
+    vector<u_int8_t> deviceVsd;
+    if (getDeviceHWInfo(FwCompsMgr::MQIS_REGISTER_DEVICE_NAME, nameInfoString)) {
+        strncpy(query->name, (char *)nameInfoString.data(), NAME_LEN - 1);
     }
-    if (getDeviceHWInfo(FwCompsMgr::DEVICE_DESCRIPTION_INFO, descriptionInfoString)) {
-        strncpy(query->description, (char *)descriptionInfoString.data(), DESCRIPTION_LEN-1);
+    if (getDeviceHWInfo(FwCompsMgr::MQIS_REGISTER_DEVICE_DESCRIPTION_INFO, descriptionInfoString)) {
+        strncpy(query->description, (char *)descriptionInfoString.data(), DESCRIPTION_LEN - 1);
+    }
+    if (getDeviceHWInfo(FwCompsMgr::MQIS_REGISTER_IMAGE_VSD, imageVsd)) {
+        strncpy(query->imageVsd, (char *)imageVsd.data(), VSD_LEN);
+    }
+    if (getDeviceHWInfo(FwCompsMgr::MQIS_REGISTER_DEVICE_VSD, deviceVsd)) {
+        strncpy(query->deviceVsd, (char *)deviceVsd.data(), VSD_LEN);
     }
 
     return true;
@@ -1112,6 +1109,12 @@ const char*  FwCompsMgr::getLastErrMsg()
     case FWCOMPS_MTCR_OPEN_DEVICE_ERROR:
         return "Failed to open device";
 
+    case FWCOMPS_FAIL_TO_LOCK_FLASH_SEMAPHORE:
+        return "Failed to lock flash semaphore";
+
+    case FWCOMPS_FAIL_TO_CREATE_TRM_CONTEXT:
+        return "Failed to create TRM context";
+
     case FWCOMPS_REG_ACCESS_BAD_STATUS_ERR:
     case FWCOMPS_REG_ACCESS_BAD_METHOD:
     case FWCOMPS_REG_ACCESS_NOT_SUPPORTED:
@@ -1141,6 +1144,35 @@ const char*  FwCompsMgr::getLastErrMsg()
     }
 }
 
+bool FwCompsMgr::lock_flash_semaphore()
+{
+#ifndef UEFI_BUILD
+    int rc = 0;
+    trm_sts trm_rc = trm_create(&_trm, _mf);
+    if (trm_rc) {
+        _lastError = FWCOMPS_FAIL_TO_CREATE_TRM_CONTEXT;
+        return false;
+    }
+    rc = trm_lock(_trm, TRM_RES_FLASH_PROGRAMING, MAX_FLASH_PROG_SEM_RETRY_CNT);
+    if (rc) {
+        _lastError = FWCOMPS_FAIL_TO_LOCK_FLASH_SEMAPHORE;
+        return false;
+    }
+#endif
+    return true;
+}
+
+void FwCompsMgr::unlock_flash_semaphore()
+{
+#ifndef UEFI_BUILD
+    if (_trm != NULL) {
+        trm_unlock(_trm, TRM_RES_FLASH_PROGRAMING);
+        trm_destroy(_trm);
+        _trm = NULL;
+    }
+#endif
+}
+
 
 void FwCompsMgr::deal_with_signal()
 {
@@ -1148,7 +1180,8 @@ void FwCompsMgr::deal_with_signal()
     int sig;
     sig = mft_signal_is_fired();
     if (sig) {
-        // reset received signal
+        unlock_flash_semaphore();
+        // reset recieved signal
         mft_signal_set_fired(0);
         // retore prev handler
         mft_signal_set_handling(0);
@@ -1216,16 +1249,103 @@ bool FwCompsMgr::readBlockFromComponent(FwComponent::comps_ids_t compId,
         if (!controlFsm(FSM_CMD_RELEASE_UPDATE_HANDLE)) {
             return false;
         }
-    } else {
+    }
+    else {
         _lastError = FWCOMPS_READ_COMP_NOT_SUPPORTED;
         return false;
     }
     return true;
 }
 
-fw_comps_error_t FwCompsMgr::regErrTrans(reg_access_status_t err)
+bool FwCompsMgr::fwReactivateImage()
+{
+    tools_open_mirc_reg mirc;
+    mirc.status_code = 0;
+    int currentIteration = 0;
+    int sleepTimeMs = 50;
+    int maxWaitingTime = 30000;//30 sec is enough time
+    int maxNumOfIterations = maxWaitingTime / sleepTimeMs;//600 iterations
+    //if (_mircCaps == false) {
+      //  _lastError = FWCOMPS_IMAGE_REACTIVATION_FW_NOT_SUPPORTED;
+        //return false;
+    //}
+    reg_access_status_t rc;
+    rc = reg_access_mirc(_mf, REG_ACCESS_METHOD_SET, &mirc);//send trigger to FW
+    deal_with_signal();
+    if (rc) {
+        DPRINTF(("1 reg_access_mirc failed rc = %d\n", rc));
+        _lastError = regErrTrans(rc);
+        return false;
+    }
+    else {
+        memset(&mirc, 0, sizeof(mirc));
+        rc = reg_access_mirc(_mf, REG_ACCESS_METHOD_GET, &mirc);
+        DPRINTF(("1 mirc.status_code = %d\n", mirc.status_code));
+        while (mirc.status_code == IMAGE_REACTIVATION_BUSY) {
+            msleep(sleepTimeMs);
+            rc = reg_access_mirc(_mf, REG_ACCESS_METHOD_GET, &mirc);
+            deal_with_signal();
+            if (rc) {
+                _lastError = regErrTrans(rc);
+                DPRINTF(("2 reg_access_mirc failed rc = %d\n", rc));
+                return false;
+            }
+            DPRINTF(("2 iteration %d mirc.status_code = %d\n", currentIteration++,  mirc.status_code));
+            if (currentIteration >= maxNumOfIterations) {
+                _lastError = FWCOMPS_IMAGE_REACTIVATION_WAITING_TIME_EXPIRED;
+                return false;
+            }
+        } 
+    }
+    if (mirc.status_code == IMAGE_REACTIVATION_SUCCESS) {
+        DPRINTF(("Success\n"));
+        return true;
+    }
+    else if (mirc.status_code == IMAGE_REACTIVATION_PROHIBITED_FW_VER_ERR) {
+        _lastError = FWCOMPS_IMAGE_REACTIVATION_PROHIBITED_FW_VER_ERR;
+    }
+    else if (mirc.status_code == IMAGE_REACTIVATION_FIRST_PAGE_COPY_FAILED) {
+        _lastError = FWCOMPS_IMAGE_REACTIVATION_FIRST_PAGE_COPY_FAILED;
+    }
+    else if (mirc.status_code == IMAGE_REACTIVATION_FIRST_PAGE_ERASE_FAILED) {
+        _lastError = FWCOMPS_IMAGE_REACTIVATION_FIRST_PAGE_ERASE_FAILED;
+    }
+    else if (mirc.status_code == IMAGE_REACTIVATION_FIRST_PAGE_RESTORE_FAILED) {
+        _lastError = FWCOMPS_IMAGE_REACTIVATION_FIRST_PAGE_RESTORE_FAILED;
+    }
+    else if (mirc.status_code == IMAGE_REACTIVATION_FW_DEACTIVATION_FAILED) {
+        _lastError = FWCOMPS_IMAGE_REACTIVATION_FW_DEACTIVATION_FAILED;
+    }
+    else if (mirc.status_code == IMAGE_REACTIVATION_FW_ALREADY_ACTIVATED) {
+        _lastError = FWCOMPS_IMAGE_REACTIVATION_FW_ALREADY_ACTIVATED;
+    }
+    else if (mirc.status_code == IMAGE_REACTIVATION_ERROR_DEVICE_RESET_REQUIRED) {
+        _lastError = FWCOMPS_IMAGE_REACTIVATION_ERROR_DEVICE_RESET_REQUIRED;
+    }
+    else if (mirc.status_code == IMAGE_REACTIVATION_FW_PROGRAMMING_NEEDED) {
+        _lastError = FWCOMPS_IMAGE_REACTIVATION_FW_PROGRAMMING_NEEDED;
+    }
+    else {
+        _lastError = FWCOMPS_IMAGE_REACTIVATION_UNKNOWN_ERROR;
+    }
+    DPRINTF(("3 reg_access_mirc failed _lastError = %d\n", _lastError));
+    return false;
+}
+
+
+
+void FwCompsMgr::setLastFirmwareError(fw_comps_error_t fw_error)
+{
+    _lastError = fw_error;
+}
+
+void FwCompsMgr::setLastRegisterAccessStatus(reg_access_status_t err)
 {
     _lastRegAccessStatus = err;
+}
+
+fw_comps_error_t FwCompsMgr::regErrTrans(reg_access_status_t err)
+{
     switch (err) {
     case ME_REG_ACCESS_OK:
         return FWCOMPS_REG_ACCESS_OK;
@@ -1351,7 +1471,7 @@ fw_comps_error_t FwCompsMgr::mccErrTrans(u_int8_t err)
         return FWCOMPS_MCC_REJECTED_IMAGE_CAN_NOT_BOOT_FROM_PARTITION;
 
     default:
-//            printf("MCC ERROR: %#x\n", err);
+        //            printf("MCC ERROR: %#x\n", err);
         return FWCOMPS_GENERAL_ERR;
     }
 }

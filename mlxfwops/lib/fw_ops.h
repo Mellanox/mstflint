@@ -103,7 +103,10 @@ public:
     //on call of FwReadData with Null image we get image_size
     virtual bool FwReadData(void *image, u_int32_t *image_size) = 0;
     virtual bool FwReadBlock(u_int32_t addr, u_int32_t size, std::vector<u_int8_t>& dataVec);
-
+    virtual bool FwReactivateImage() 
+    { 
+        return errmsg("Operation not supported."); 
+    }
     virtual bool FwInsertSHA256(PrintCallBack printFunc = (PrintCallBack)NULL);
     virtual bool FwSignWithOneRSAKey(const char *privPemFile, const char *uuid, PrintCallBack printFunc = (PrintCallBack)NULL);
     virtual bool FwSignWithTwoRSAKeys(const char *privPemFile1, const char *uuid1,
@@ -285,7 +288,7 @@ public:
         u_int32_t buffSize;
         // FHT_UEFI_DEV
         uefi_Dev_t *uefiHndl;
-        uefi_dev_extra_t *uefiExtra;
+        uefi_dev_extra_t uefiExtra;
         // FHT_MST_DEV
         char *mstHndl;
         bool forceLock;

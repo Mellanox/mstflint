@@ -50,6 +50,13 @@
 #include "../tools_layouts/tools_open_layouts.h"
 #include "mlxcfg_utils.h"
 
+#if __cplusplus >= 201402L
+#include <regex>
+#else
+#include <boost/regex.hpp>
+using namespace boost;
+#endif
+
 using namespace std;
 
 typedef struct reg_access_hca_mqis_reg mqisReg;
@@ -147,7 +154,7 @@ MError nvdiCom5thGen(mfile *mf, u_int32_t tlvType)
     mft_signal_set_handling(1);
     // DEBUG_PRINT_SEND(&nvdiTlv, nvdi);
     rc = reg_access_nvdi(mf, REG_ACCESS_METHOD_SET, &nvdiTlv);
-    // DEBUG_PRINT_RECEIVE(&nvdiTlv, nvdi);
+    // DEBUG_PRINT_RECIEVE(&nvdiTlv, nvdi);
     dealWithSignal();
     if (rc) {
         return rc;
@@ -301,6 +308,30 @@ string parseIndexStr(const string& indexedMlxconfigName)
                                        pr - pl - 1);
 }
 
+string increaseIndexIfNeeded(const string& name)
+{
+    string increasedName = name;
+
+    if (isIndexedMlxconfigName(name)) {
+        size_t pl = name.find('[');
+        size_t pr = name.find(']');
+        if (isIndexedStartFromOneSupported(name.substr(0,pl))) {
+            u_int32_t increasedIndex = 0;
+            if (strToNum(name.substr(pl + 1, pr - pl - 1), increasedIndex)) {
+                increasedIndex++;
+                increasedName = name.substr(0, pl) + "[" + numToStr(increasedIndex) + "]";
+            }
+        }
+    }
+
+    return increasedName;
+}
+
+bool isIndexedStartFromOneSupported(const string& mlxconfigName)
+{
+    return mlxconfigName == "SPLIT_PORT";
+}
+
 void parseIndexedMlxconfigName(const string& indexedMlxconfigName, string& mlxconfigName, u_int32_t& index)
 {
     string indexStr = parseIndexStr(indexedMlxconfigName);
@@ -351,6 +382,39 @@ bool isIndexedMlxconfigName(const string& mlxconfigName)
 {
     return (mlxconfigName.find("[") != string::npos);
 }
+
+string getArraySuffix(const string& mlxconfigName)
+{
+    static const regex EXP_PATTERN(    "(_[0-9]{2}_[0-9]+)");
+    string suffix = "";
+    smatch match;
+
+    if (regex_search(mlxconfigName, match, EXP_PATTERN)) {
+        suffix = match.str();
+    }
+    
+    return suffix;
+}
+
+string getArrayPrefix(const string& mlxconfigName)
+{
+    string prefix = mlxconfigName;
+
+    return prefix.substr(0, mlxconfigName.size() - getArraySuffix(mlxconfigName).size());
+}
+
+string getArraySuffixByInterval(u_int32_t interval)
+{
+    string suffix = "_";
+    u_int32_t low_bound = ((interval / MAX_ARRAY_SIZE) * MAX_ARRAY_SIZE) + 1;
+    u_int32_t upper_bound = low_bound + MAX_ARRAY_SIZE - 1;
+    
+    suffix += numToStr(upper_bound) + "_" + numToStr(low_bound);
+
+    return suffix;
+}
+
+
 
 bool getDeviceInformationString(const char* dev, info_type_t op, vector<char>& infoString)
 {

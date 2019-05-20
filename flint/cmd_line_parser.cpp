@@ -117,6 +117,7 @@ SubCmdMetaData::SubCmdMetaData()
     _sCmds.push_back(new SubCmd("", "extract_fw_data", SC_Extract_4MB_Image));
     _sCmds.push_back(new SubCmd("", "set_public_keys", SC_Set_Public_Keys));
     _sCmds.push_back(new SubCmd("", "set_forbidden_versions", SC_Set_Forbidden_Versions));
+    _sCmds.push_back(new SubCmd("ir", "image_reactivation", SC_Image_Reactivation));
 }
 
 SubCmdMetaData::~SubCmdMetaData()
@@ -874,7 +875,10 @@ ParseStatus Flint::HandleOption(string name, string value)
         _flintParams.striped_image = true;
     } else if (name == "use_dev_img_info") {
         _flintParams.use_dev_img_info = true;
-    } else if (name == "banks") {
+    } else if (name == "image_reactivation") {
+        _flintParams.image_reactivation = true;
+    }
+    else if (name == "banks") {
         _flintParams.banks_specified = true;
         u_int64_t banksNum;
         if (!strToNum(value, banksNum)) {

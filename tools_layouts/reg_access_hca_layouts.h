@@ -33,7 +33,7 @@
  
 
 /***
-         *** This file was generated at "2018-11-04 18:13:57"
+         *** This file was generated at "2019-02-17 20:38:48"
          *** by:
          ***    > /mswg/release/tools/a-me/last_stable/adabe_plugins/adb2c/adb2pack.py --input adb/prm/hca/int/reg_access_hca.adb --file-prefix reg_access_hca --prefix reg_access_hca_
          ***/
@@ -171,20 +171,20 @@ Other values are reserved */
 category
  field
 For GENERAL_SEMAPHORE 
- See Table  614, "
+ See Table  727, "
 GENERAL_SEMA
 PHORE Category Layout
-," on page  850
+," on page  871
 For ICM_RESOURCE 
- See Table  616, "
+ See Table  729, "
 ICM_RESOURCE Category 
 Layout
-," on page  850
+," on page  871
 For UAPP_RESOURCE 
- See Table  618, "
+ See Table  731, "
 UAPP_RESOURCE Category 
 Layout
-," on page  851 */
+," on page  872 */
 	/* 0x4.0 - 0x1c.31 */
 	union reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto category_modifier;
 };
@@ -393,8 +393,10 @@ FPGA_CTRL are supported. */
 	/* 0x8.30 - 0x8.30 */
 	u_int8_t flash_gw_lock;
 	/* Description - If set, SW is allowed to modify FPGA_CTRL register. See
- Table  708, 
-"FPGA_CTRL Register Layout," on page  919 */
+ Table  711, 
+"
+FPGA_CTRL Register Layout
+," on page  862 */
 	/* 0x8.31 - 0x8.31 */
 	u_int8_t fpga_ctrl_modify;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
@@ -443,8 +445,10 @@ For Mellanox sandbox products
 /*---------------- DWORD[30] (Offset 0x78) ----------------*/
 	/* Description - Sandbox basic capabilities per sandbox product ID.
 For Mellanox sandbox products, see
- Table  661, "IPsec_Basic_Capabili
-ties Structure Layout," on page  871
+ Table  662, "
+IPsec_Basic_Capabili
+ties Structure Layout
+," on page  812
 . */
 	/* 0x78.0 - 0x78.31 */
 	u_int32_t sandbox_basic_caps;
@@ -456,8 +460,10 @@ when such capability is not present). */
 /*---------------- DWORD[32] (Offset 0x80) ----------------*/
 	/* Description - Extended capabilities address.
 For Mellanox sandbox products, see
- Table  663, "IPsec_Extended_Capa
-bilities Structure Layout," on page  871
+ Table  664, "
+IPsec_Extended_Capa
+bilities Structure Layout
+," on page  812
 . */
 	/* 0x80.0 - 0x84.31 */
 	u_int64_t sandbox_extended_caps_addr;
@@ -494,8 +500,10 @@ Valid only for query operation. */
 	u_int8_t status;
 	/* Description - Indicates the control operation to be performed. Allowed only when 
 FPGA_CAP.fpga_ctrl_modify==1. 
- See Table  704, "FPGA_CAP Regis
-ter Layout," on page  915
+ See Table  707, "
+FPGA_CAP Regis
+ter Layout
+," on page  857
 .
 0x1: LOAD - when set, the FPGA will be forced to reload the image 
 from flash according to 
@@ -581,18 +589,13 @@ NENT instructions. Otherwise, this field is reserved. */
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - Token representing the current flow executed by the FSM.
 See 
-"
-Update Handle
-" on page 557
-. */
+"Update Handle" on page 429 */
 	/* 0x8.0 - 0x8.23 */
 	u_int32_t update_handle;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
-	/* Description - Current Update FSM state
-, See 
-"
-FSM States
-" on page 560
+	/* Description - Current Update FSM state, See 
+"FSM States" on page 
+431
 0x0: IDLE
 0x1: LOCKED
 0x2: INITIALIZE
@@ -608,11 +611,8 @@ Other values are reserved */
 	/* Description - Indicates the successful completion of the 
 instruction
 , or 
-the reason it failed. 
-See 
-"
-Error Handling
-" on page 559
+the reason it failed. See 
+"Error Handling" on page 431
 0x0: OK
 0x1: ERROR
 0x2: REJECTED_DIGEST_ERR
@@ -623,14 +623,6 @@ Error Handling
 0x7: REJECTED_KEY_NOT_APPLICABLE
 0x8: REJECTED_BAD_FORMAT
 0x9: BLOCKED_PENDING_RESET
-0xA: REJECTED_NOT_A_SECURED_FW
-0xB: REJECTED_MFG_BASE_MAC_NOT_LISTED
-0xC: REJECTED_NO_DEBUG_TOKEN
-0xD: REJECTED_VERSION_NUM_MISMATCH
-0xE: REJECTED_USER_TIMESTAMP_MISMATCH
-0xF: REJECTED_FORBIDDEN_VERSION
-0x10: FLASH_ERASE_ERROR
-0x11: REJECTED_REBURN_RUNNING_AND_RETRY
 Other values should be treated as an unknown error. */
 	/* 0xc.8 - 0xc.15 */
 	u_int8_t error_code;
@@ -660,11 +652,21 @@ Other values are reserved. */
 	u_int8_t handle_owner_type;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - Component size in bytes. 
-Valid for UPDATE_COMPONENT instruction. Specify
-ing the size may shorten the update time.
+Valid for UPDATE_COMPONENT instruction. Specifying 
+the size may shorten the update time.
 Value 0x0 means that size is unspecified. */
 	/* 0x10.0 - 0x10.31 */
 	u_int32_t component_size;
+/*---------------- DWORD[5] (Offset 0x14) ----------------*/
+	/* Description - Peripheral device type:
+0: Switch / NIC
+1: Gearbox */
+	/* 0x14.0 - 0x14.7 */
+	u_int8_t device_type;
+	/* Description - Device number.
+For gearboxes, the index represents the gearbox die. */
+	/* 0x14.16 - 0x14.27 */
+	u_int16_t device_index;
 };
 
 /* Description -   */
@@ -679,10 +681,10 @@ struct reg_access_hca_mcda_reg {
 Accesses must be in accordance to 
 log_mcda_word_size
  in 
-Table 924, "
+Table 1159, "
 MCQI CAPABILITIES Info Layout
 ," on 
-page 1190 */
+page 1229 */
 	/* 0x4.0 - 0x4.31 */
 	u_int32_t offset;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
@@ -788,9 +790,7 @@ nent update. */
 	u_int8_t signed_updates_only;
 	/* Description - When set, this components may be read
 , see 
-"
-Read Flow
-" 
+"Read Flow" 
 on page 559
 . */
 	/* 0x10.31 - 0x10.31 */
@@ -802,16 +802,26 @@ on page 559
 struct reg_access_hca_mcqi_reg {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Component index gathered by 
-"
+quot;
 MCQS - Management 
 Component Query Status
 " */
 	/* 0x0.0 - 0x0.15 */
 	u_int16_t component_index;
-	/* Description - When set, the register will return information about the 
+	/* Description - Device number.
+For gearboxes, the index represents the gearbox die. */
+	/* 0x0.16 - 0x0.27 */
+	u_int16_t device_index;
+	/* Description - When set, the register will ret     urn information about the 
 pending component (if available) */
 	/* 0x0.31 - 0x0.31 */
 	u_int8_t read_pending_component;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - Peripheral device type:
+0: Switch / NIC
+1: Gearbox */
+	/* 0x4.0 - 0x4.7 */
+	u_int8_t device_type;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - Component properties set.
 0x0: CAPABILITIES
@@ -821,7 +831,7 @@ Other values are reserved */
 	/* 0x8.0 - 0x8.4 */
 	u_int8_t info_type;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
-	/* Description - Properties set structure size, given in bytes. */
+	/* Description - Properties set structure size, giv     en in bytes. */
 	/* 0xc.0 - 0xc.31 */
 	u_int32_t info_size;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
@@ -843,20 +853,20 @@ padded. */
 info_type
 .
 CAPABILITIES - See 
-Table 924, "
+Table 809, "
 MCQI CAPABILITIES 
-Info Layout
-," on page 1190
+Info L     ayout
+," on page 936
 VERSION - See 
-Table 926, "
+Table 811, "
 MCQI VERSION Info Lay
 out
-," on page 1191
-ACTIVATION_METHOD - See 
-Table 930, "
+," on page 938
+ACTIVATION     _METHOD - See 
+Table 815, "
 MCQI ACTI
 VATION_METHOD Info Layout
-," on page 1193 */
+," on page 939 */
 	/* 0x18.0 - 0x18.31 */
 	u_int32_t *data;
 };
@@ -886,10 +896,10 @@ build_time */
 build_
 time_valid
  is set. See 
-Table 928, "
+Table 1163, "
 Date-Time Layout
 ," on 
-page 1192 */
+page 1232 */
 	/* 0x8.0 - 0xc.31 */
 	u_int64_t build_time;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
@@ -897,10 +907,10 @@ page 1192 */
 only if 
 user_defined_time_valid
  is set. See 
-Table 928, 
+Table 1163, 
 "
 Date-Time Layout
-," on page 1192 */
+," on page 1232 */
 	/* 0x10.0 - 0x14.31 */
 	u_int64_t user_defined_time;
 /*---------------- DWORD[6] (Offset 0x18) ----------------*/
@@ -924,6 +934,10 @@ last_index_flag
 . */
 	/* 0x0.0 - 0x0.15 */
 	u_int16_t component_index;
+	/* Description - Device number.
+For gearboxes, the index represents the gearbox die. */
+	/* 0x0.16 - 0x0.27 */
+	u_int16_t device_index;
 	/* Description - When set, this component is the last component (highest 
 component_index
 ). */
@@ -931,20 +945,22 @@ component_index
 	u_int8_t last_index_flag;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - This field uniquely identifies a specific component type. 
-0x1: BOOT_IMG
+0x1: BOOT_IMG_CX4
+0x2: RUNTIME_IMG_CX4
+0x3: USER_NVCONFIG
 0x4: OEM_NVCONFIG
 0x5: MLNX_NVCONFIG
 0x6: CS_TOKEN
 0x7: DBG_TOKEN
+0x8: DEV_INFO
+0x9: PACKAGE_INFO
 Other values are reserved */
 	/* 0x4.0 - 0x4.15 */
 	u_int16_t identifier;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description - Component statue in update flow, 
-see 
-"
-Component Update 
-State" on page 556
+	/* Description - Component statue in update flow, see 
+"Component update 
+state" on page 428
 :
 0x0: IDLE
 0x1: IN_PROGRESS
@@ -967,6 +983,11 @@ Other values are reserved */
 	/* 0x8.4 - 0x8.8 */
 	u_int8_t component_status;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
+	/* Description - Peripheral device type:
+0: Switch / NIC
+1: Gearbox */
+	/* 0xc.0 - 0xc.7 */
+	u_int8_t device_type;
 	/* Description - For 
 last_update_state_changer_type
  BMC, command-
@@ -994,26 +1015,26 @@ Other values are reserved */
 struct reg_access_hca_mgir {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Hardware Information, see 
-Table 843, "
+Table 1056, "
 Hardware Info Layout
 ," 
-on page 1141 */
+on page 1162 */
 	/* 0x0.0 - 0x1c.31 */
 	u_int32_t hw_info[8];
 /*---------------- DWORD[8] (Offset 0x20) ----------------*/
 	/* Description - Firmware Information, see 
-Table 845, "
+Table 1058, "
 Firmware Info Layout
 ," 
-on page 1143 */
+on page 1163 */
 	/* 0x20.0 - 0x5c.31 */
 	u_int32_t fw_info[16];
 /*---------------- DWORD[24] (Offset 0x60) ----------------*/
 	/* Description - Software Information, see 
-Table 847, "
+Table 1060, "
 Software Info Layout
-," on 
-page 1145
+," 
+on page 1166
 This field indicates 
 the oldest software version compatible 
 with the current firmware */
@@ -1021,10 +1042,10 @@ with the current firmware */
 	u_int32_t sw_info[8];
 /*---------------- DWORD[32] (Offset 0x80) ----------------*/
 	/* Description - [Internal]: Development Information, see 
-Table 851, "
+Table 1064, "
 Develop
 ment Info Layout
-," on page 1147 */
+," on page 1168 */
 	/* 0x80.0 - 0x98.31 */
 	u_int32_t dev_info[7];
 };
@@ -1310,11 +1331,11 @@ type
 For 
 SMBUS_FAILED
 ,
- See Table  622, "
+ See Table  735, "
 SMBUS_FAILED Fault Inject 
 M
 odifier Layout
-," on page  854 */
+," on page  875 */
 	/* 0x10.0 - 0x2c.31 */
 	struct reg_access_hca_smbus_failed_fault_inject_modifier per_type_modifier;
 };
@@ -1384,17 +1405,17 @@ type
  field
 .
 For IRISC_HANG 
- See Table  626, "
+ See Table  739, "
 IRISC_HANG Mini-Flow M
 odifier 
 Layout
-," on page  855
+," on page  876
 For PACKET_DROP 
- See Table  628, "
+ See Table  741, "
 PACKET_DROP Mini-Flow 
 M
 odifier Layout
-," on page  856 */
+," on page  877 */
 	/* 0x10.0 - 0x2c.31 */
 	union reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto per_type_modifier;
 };
@@ -1502,21 +1523,21 @@ The Stressor will have the opposite behavior when it is not active. */
 type
  field.
 For RXB_HANG 
- See Table  608, "
+ See Table  721, "
 RXB_HANG Stop Toggle Modifier 
 Layout
-," on page  848
+," on page  869
 For LOCK_RESOURCE 
- See Table  612, "
+ See Table  725, "
 LOCK_RESOURCE Stop 
 Toggle Modifier Layout
-," on page  849
+," on page  870
 For SXP_HANG 
- See Table  610, "
+ See Table  723, "
 SXP_
 HANG Stop Toggle Modifier 
 Layout
-," on page  848 */
+," on page  870 */
 	/* 0x10.0 - 0x2c.31 */
 	union reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto per_type_modifier;
 };

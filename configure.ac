@@ -1,11 +1,42 @@
+# Copyright (c) 2004-2010 Mellanox Technologies LTD. All rights reserved.
+# 
+# This software is available to you under a choice of one of two
+# licenses.  You may choose to be licensed under the terms of the GNU
+# General Public License (GPL) Version 2, available from the file
+# COPYING in the main directory of this source tree, or the
+# OpenIB.org BSD license below:
+#
+#     Redistribution and use in source and binary forms, with or
+#     without modification, are permitted provided that the following
+#     conditions are met:
+#
+#      - Redistributions of source code must retain the above
+#        copyright notice, this list of conditions and the following
+#        disclaimer.
+#
+#      - Redistributions in binary form must reproduce the above
+#        copyright notice, this list of conditions and the following
+#        disclaimer in the documentation and/or other materials
+#        provided with the distribution.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+# BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+# ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+#--
+
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(mstflint, 4.11.0, adrianc@mellanox.co.il)
+AC_INIT(mstflint, 4.12.0, eranj@mellanox.co.il)
 
 AC_DEFINE_UNQUOTED([PROJECT], ["mstflint"], [Define the project name.])
 AC_SUBST([PROJECT])
 
-AC_DEFINE_UNQUOTED([VERSION], ["4.11.0"], [Define the project version.])
+AC_DEFINE_UNQUOTED([VERSION], ["4.12.0"], [Define the project version.])
 AC_SUBST([VERSION])
 
 AC_CONFIG_MACRO_DIR([m4])
@@ -143,6 +174,9 @@ AC_MSG_RESULT($enable_inband)
 if test "x$enable_inband" = "xyes"; then
   AC_CHECK_HEADER(infiniband/mad.h,,AC_MSG_ERROR([cannot find infiniband/mad.h . Use --disable-inband to remove this dependaency]))
   MAD_IFC="mad_ifc"
+else
+  CXXFLAGS="$CXXFLAGS -DNO_INBAND"
+  CFLAGS="$CFLAGS -DNO_INBAND"
 fi
 AC_SUBST(MAD_IFC)
 
@@ -180,7 +214,10 @@ fi
 
 AC_MSG_CHECKING(--enable-all-static argument)
 AC_ARG_ENABLE([all_static],
-    AS_HELP_STRING([--enable-all-static], [Enable creating none dynamic executables]))
+    AS_HELP_STRING([--enable-all-static], [Enable creating none dynamic executables]),
+    [enable_all_static="yes"],
+    [enable_all_static="no"])
+AC_MSG_RESULT($enable_all_static)
 
 AS_IF([test "x$enable_all_static" = "xyes"], [
   if test "x$enable_dc" = "xyes"; then
@@ -189,7 +226,11 @@ AS_IF([test "x$enable_all_static" = "xyes"], [
   if test "x$enable_openssl" = "xyes"; then
     AC_MSG_ERROR([cannot enable all static with enable openssl . add --disable-openssl to remove dependaency with dynamic openssl])
   fi
+  if test "x$enable_inband" = "xyes"; then
+    AC_MSG_ERROR([cannot enable all static with enable inband . add --disable-inband to remove dependaency with dynamic inband])
+  fi
   LDFLAGS="$LDFLAGS -all-static"
+  CFLAGS="$CFLAGS -DSQLITE_OMIT_LOAD_EXTENSION=0 -DIBVSMAD_DLOPEN"
 ])
 
 AC_SUBST(TOOLS_CRYPTO)
@@ -210,13 +251,21 @@ AS_IF([test "x$enable_dynamic_ld" = "xyes"], [
   LDFLAGS="$LDFLAGS -Wl,--dynamic-linker=/lib64/ld64.so.2"
 ])
 
-AC_SEARCH_LIBS([iniparser_load], [iniparser], [INIPARSER_SYSTEM_AVAILABLE="yes"],[
+AC_CHECK_HEADERS(iniparser.h, INIPARSER_SYSTEM_AVAILABLE="yes", INIPARSER_SYSTEM_AVAILABLE="no")
+
+if test "$INIPARSER_SYSTEM_AVAILABLE" = "yes"; then
+  AC_SEARCH_LIBS([iniparser_load], [iniparser], [INIPARSER_SYSTEM_AVAILABLE="yes"],[
     INIPARSER_SYSTEM_AVAILABLE="no"
+  ])
+fi
+
+if test "$INIPARSER_SYSTEM_AVAILABLE" = "no"; then
     INIPARSER_CFLAGS='-I$(top_srcdir)/ext_libs/iniParser'
     AC_SUBST(INIPARSER_CFLAGS)
     INIPARSER_LIBS='$(top_builddir)/ext_libs/iniParser/libiniparser.a'
     AC_SUBST(INIPARSER_LIBS)
-])
+fi
+
 AM_CONDITIONAL([USE_LOCAL_INIPARSER], [test "$INIPARSER_SYSTEM_AVAILABLE" = no])
 AS_IF([test "x$INIPARSER_SYSTEM_AVAILABLE" = "xyes" ], [
     CXXFLAGS="$CXXFLAGS -DHAVE_INI_PARSER"
@@ -331,7 +380,10 @@ AS_IF([test "x$enable_adb_generic_tools" = "xyes"], [
         AC_CONFIG_FILES(tools_layouts/adb/prm/switch/Makefile)
         AC_CONFIG_FILES(tools_layouts/adb/prm/switch/ext/Makefile)
         AC_CONFIG_FILES(mlxreg/Makefile)
-        ADABE_TOOLS="adb_parser mlxreg"
+        AC_CONFIG_FILES(mlxlink/Makefile)
+        AC_CONFIG_FILES(mlxlink/modules/Makefile)
+        AC_CONFIG_FILES(mlxlink/modules/printutil/Makefile)
+        ADABE_TOOLS="adb_parser mlxreg mlxlink"
         ADABE_DBS="adb"
         ADABE_DBS_EXTRA_DIST="adb/prm/hca/ext/*.adb adb/prm/switch/ext/*.adb"
     ])

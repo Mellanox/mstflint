@@ -122,7 +122,7 @@ MLXFWOP_API int MLXFWOPCALL mlxfw_open_uefi(mlxfwops_t **mlxfwops_p, uefi_Dev_t 
     uefi_dev_extra_t dev_extra;
     memset(&dev_extra, 0, sizeof(dev_extra));
     dev_extra.fw_cmd_func = fw_cmd_func;
-    dev_extra.dev_info = dev_info;
+    dev_extra.dev_info = (uefi_dev_info_t)*dev_info;
     return mlxfw_open_int(mlxfwops_p, dev, (void*)&dev_extra, (char*)NULL, FHT_UEFI_DEV, (char*)NULL, 0);
 }
 
@@ -249,15 +249,6 @@ MLXFWOP_API int MLXFWOPCALL mlxfw_burn(mlxfwops_t *dev_mlxfwops, mlxfwops_t *img
 MLXFWOP_API int MLXFWOPCALL mlxfw_fs_check_and_update(fw_info_t *fw_info, mlxfwops_t **dev_mlxfwops_p, mlxfwops_t *img_mlxfwops,
         u_int8_t force_version, f_prog_func prog_func, int allow_psid_change/*, mlxfwparams_t* fwParams*/)
 {
-#ifdef UEFI_BUILD
-    (void) fw_info;
-    (void) dev_mlxfwops_p;
-    (void) img_mlxfwops;
-    (void) force_version;
-    (void) prog_func;
-    (void) allow_psid_change;
-    return MLXFW_ERR;
-#else
     if (dev_mlxfwops_p == NULL || *dev_mlxfwops_p == NULL || img_mlxfwops == NULL) {
         return MLXFW_BAD_PARAM_ERR;
     }
@@ -276,7 +267,6 @@ MLXFWOP_API int MLXFWOPCALL mlxfw_fs_check_and_update(fw_info_t *fw_info, mlxfwo
     }
 
     return MLXFW_OK;
-#endif
 }
 
 MLXFWOP_API int MLXFWOPCALL mlxfw_query(mlxfwops_t *mlxfwops, fw_info_t *fw_info)

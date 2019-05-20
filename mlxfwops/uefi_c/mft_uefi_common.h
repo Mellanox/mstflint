@@ -53,7 +53,7 @@ typedef struct uefi_dev_info {
 
 typedef struct uefi_dev_extra {
     f_fw_cmd fw_cmd_func;
-    uefi_dev_info_t *dev_info;
+    uefi_dev_info_t dev_info;
 } uefi_dev_extra_t;
 
 

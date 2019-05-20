@@ -156,7 +156,7 @@ int sx_block_write_by_type(mflash *mfl, u_int32_t addr, u_int32_t size, u_int8_t
     return MFE_OK;
 }
 
-#define MAX_FLASH_PROG_SEM_RETRY_CNT 40
+
 static int lock_flash_programing_sem(mflash *mfl)
 {
 #ifndef UEFI_BUILD
