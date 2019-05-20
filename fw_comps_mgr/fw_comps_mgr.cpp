@@ -1265,10 +1265,10 @@ bool FwCompsMgr::fwReactivateImage()
     int sleepTimeMs = 50;
     int maxWaitingTime = 30000;//30 sec is enough time
     int maxNumOfIterations = maxWaitingTime / sleepTimeMs;//600 iterations
-    //if (_mircCaps == false) {
-      //  _lastError = FWCOMPS_IMAGE_REACTIVATION_FW_NOT_SUPPORTED;
-        //return false;
-    //}
+    if (_mircCaps == false) {
+        _lastError = FWCOMPS_IMAGE_REACTIVATION_FW_NOT_SUPPORTED;
+        return false;
+    }
     reg_access_status_t rc;
     rc = reg_access_mirc(_mf, REG_ACCESS_METHOD_SET, &mirc);//send trigger to FW
     deal_with_signal();
@@ -1280,6 +1280,11 @@ bool FwCompsMgr::fwReactivateImage()
     else {
         memset(&mirc, 0, sizeof(mirc));
         rc = reg_access_mirc(_mf, REG_ACCESS_METHOD_GET, &mirc);
+        if (rc) {
+            DPRINTF(("2 reg_access_mirc failed rc = %d\n", rc));
+            _lastError = regErrTrans(rc);
+            return false;
+        }
         DPRINTF(("1 mirc.status_code = %d\n", mirc.status_code));
         while (mirc.status_code == IMAGE_REACTIVATION_BUSY) {
             msleep(sleepTimeMs);
@@ -1287,7 +1292,7 @@ bool FwCompsMgr::fwReactivateImage()
             deal_with_signal();
             if (rc) {
                 _lastError = regErrTrans(rc);
-                DPRINTF(("2 reg_access_mirc failed rc = %d\n", rc));
+                DPRINTF(("3 reg_access_mirc failed rc = %d\n", rc));
                 return false;
             }
             DPRINTF(("2 iteration %d mirc.status_code = %d\n", currentIteration++,  mirc.status_code));
