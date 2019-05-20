@@ -46,16 +46,15 @@
     #ifndef MSTFLINT_VERSION_STR
         #define MSTFLINT_VERSION_STR PACKAGE_STRING
     #endif
-
-    #ifndef TOOLS_GIT_SHA
-        #define TOOLS_GIT_SHA "6469M"
-    #endif
 #else
-// To be replaced by an external script:
-#include "gitversion.h"
+	// To be replaced by an external script:
+	#ifdef MST_UL
+		#include "gitversion.h"
+	#endif
+#endif
+
 #ifndef TOOLS_GIT_SHA
     #define TOOLS_GIT_SHA "6469M"
-#endif
 #endif
 
 #ifndef MSTFLINT_VERSION_STR

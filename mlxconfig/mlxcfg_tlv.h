@@ -123,7 +123,7 @@ public:
     void checkRules(std::vector<TLVConf*> ruleTLVs);
     void setOnDevice(mfile *mf);
     void getRuleTLVs(std::set<std::string>& result);
-    void parseParamValue(std::string, std::string, u_int32_t&, std::string&);
+    void parseParamValue(std::string, std::string, u_int32_t&, std::string&, u_int32_t index);
     void unpack(u_int8_t *buff);
     void genXMLTemplate(string& xmlTemplate, bool allAttrs, bool withVal,
                         bool defaultAttrVal);

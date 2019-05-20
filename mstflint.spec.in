@@ -126,6 +126,7 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 %if %{enableadbgenerictools}
  %{_bindir}/mstreg
+ %{_bindir}/mstlink
 %endif
 
 %{_includedir}/mstflint/mtcr.h
@@ -136,6 +137,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libmtcr_ul.a
 
 %{mstflint_python_tools}/tools_version.py
+%{mstflint_python_tools}/mft_logger.py
+%{mstflint_python_tools}/mlxpci/*.py
 %{mstflint_python_tools}/mstfwtrace/*.py
 %{mstflint_python_tools}/mstfwreset/mstfwreset.py
 %{mstflint_python_tools}/mstfwreset/mlxfwresetlib/*.py

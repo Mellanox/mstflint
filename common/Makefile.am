@@ -46,7 +46,7 @@ update_tools_version = sed -e 's,[@]MSTFLINT_VERSION_STR[@],${MSTFLINT_VERSION_S
      	          	-e 's,[@]TOOLS_BUILD_TIME[@],${TOOLS_BUILD_TIME},g' \
                     -e 's,[@]TOOLS_GIT_SHA[@],${TOOLS_GIT_SHA},g'
 
-all: python_wrapper.sh tools_version.py
+all: python_wrapper.sh tools_version.py  mft_logger.py
 	$(update_prefix) < $(srcdir)/python_wrapper.sh > python_wrapper
 	chmod +x python_wrapper
 	
@@ -55,6 +55,9 @@ tools_version.py:
 
 tools_version_pylibdir=$(libdir)/mstflint/python_tools/
 tools_version_pylib_DATA = tools_version.py
+
+mft_logger_pylibdir=$(libdir)/mstflint/python_tools/
+mft_logger_pylib_DATA = mft_logger.py
 
 EXTRA_DIST = tools_version.py.in python_wrapper.sh
 

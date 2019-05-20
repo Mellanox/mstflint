@@ -362,26 +362,49 @@ TLVConf* MlxcfgDBManager::getTLVByIndexAndClassAux(u_int32_t id, TLVClass c)
     return NULL;
 }
 
-TLVConf* MlxcfgDBManager::getTLVByParamMlxconfigName(std::string n)
+bool MlxcfgDBManager::isParamMlxconfigNameExist(std::string n)
+{
+    execSQL(selectParamByMlxconfigNameCallBack, this,
+        SQL_SELECT_PARAM_BY_MLXCONFIG_NAME, n.c_str());
+
+    return (n == _paramSqlResult->_mlxconfigName);
+}
+
+TLVConf* MlxcfgDBManager::getTLVByParamMlxconfigName(std::string n, u_int32_t index)
 {
     u_int32_t port;
     string tlvName;
 
     VECTOR_ITERATOR(TLVConf*, fetchedTLVs, it) {
-        if ((*it)->findParamByMlxconfigName(n)) {
+        if ((*it)->findParamByMlxconfigName(n) || (*it)->findParamByMlxconfigName(n + getArraySuffixByInterval(index))) {
             return (*it);
         }
     }
 
-    //printf("-D- Try to find it in DB\n");
-    //Try to find it in DB:
+    //Try to find it in DB:dd
     execSQL(selectParamByMlxconfigNameCallBack, this,
             SQL_SELECT_PARAM_BY_MLXCONFIG_NAME, n.c_str());
 
+    // if not found try to find it with continuance array suffix
     if (!_paramSqlResult) {
+        string newName = n + getArraySuffixByInterval(index);
+
+        execSQL(selectParamByMlxconfigNameCallBack, this,
+            SQL_SELECT_PARAM_BY_MLXCONFIG_NAME, newName.c_str());
+    }
+
+    if (!_paramSqlResult) {
+        string suffix = "";
+        if (index > 0) {
+            if (isIndexedStartFromOneSupported(n)) {
+                index++;
+            }
+            suffix = "[" + numToStr(index) + "]";
+        }
+
         throw MlxcfgException(
                   "Unknown Parameter: %s",
-                  n.c_str());
+            (n + suffix).c_str());
     }
 
     port = _paramSqlResult->_port;
