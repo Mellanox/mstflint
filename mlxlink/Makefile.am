@@ -73,7 +73,3 @@ mstlink_DEPENDENCIES = modules/libmodules_lib.a \
 
 mstlink_LDADD = $(mstlink_DEPENDENCIES)
 
-update_prefix = sed -e 's,[@]MST_BIN_DIR[@]${CONF_DISABLE_PATH_UPDATE},$(bindir),g' -e 's,[@]TOOL_NAME[@],mstlink,g'
-mlxlink: $(COMMON_DIR)/com_wrapper Makefile
-	$(update_prefix) < $(COMMON_DIR)/com_wrapper > mstlink
-	chmod +x mstlink
