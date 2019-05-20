@@ -126,6 +126,7 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 %if %{enableadbgenerictools}
  %{_bindir}/mstreg
+ %{_bindir}/mstlink
 %endif
 
 %{_includedir}/mstflint/mtcr.h
