@@ -37,12 +37,6 @@
 
 #include "mlxlink_commander.h"
 
-#ifdef MST_UL
-#define MLXLINK_EXEC "mstlink"
-#else
-#define MLXLINK_EXEC "mlxlink"
-#endif
-
 class MlxlinkUi : public CommandLineRequester {
 public:
     MlxlinkUi();
