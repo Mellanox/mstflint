@@ -47,6 +47,12 @@
 #include <mtcr.h>
 #include "mlxlink_utils.h"
 
+#ifdef MST_UL
+#define MLXLINK_EXEC "mstlink"
+#else
+#define MLXLINK_EXEC "mlxlink"
+#endif
+
 //------------------------------------------------------------
 //        Mlxlink OPTIONS Flags
 
@@ -380,7 +386,7 @@ public:
     std::map<std::string, float>  getRawEffectiveErrorsinTestMode();
     string getPrbsModeRX();
     u_int32_t getPrbsRateRX();
-    u_int32_t getLoopbackMode();
+    u_int32_t getLoopbackMode(const string &lb);
     int getLinkDown();
     float getRawBERLimit();
     bool getResult(std::map<std::string, float>  errors_vector,

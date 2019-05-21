@@ -92,7 +92,6 @@ string speedToStr(const string &speed);
 PAOS_CMD paos_to_int(const string &cmd);
 int pepc_force_mode_to_int(const string &forceMode);
 int pepc_an_mode_to_int(const string &anMode);
-int loopbackEN(const string &lb);
 bool endsWith(const std::string &value, const std::string &ending);
 void findAndReplace(string& source, const string &find, const string &replace);
 string getCableIdentifier(u_int32_t identifier);
