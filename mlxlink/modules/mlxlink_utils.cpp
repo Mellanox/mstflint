@@ -93,15 +93,11 @@ string status2Color(u_int32_t status)
     return (status == 0 || status == 1023) ? ANSI_COLOR_GREEN : ANSI_COLOR_RED;
 }
 
-string getLoopbackColor(int loopbackMode)
+string getLoopbackColor(u_int32_t loopbackMode)
 {
     switch (loopbackMode) {
-    case DISABLED_LOOPBACK:
-        return ANSI_COLOR_RED;
-        break;
-
     case NO_LOOPBACK:
-        return ANSI_COLOR_GREEN;
+        return ANSI_COLOR_RED;
         break;
 
     case PHY_REMOTE_LOOPBACK:
@@ -945,20 +941,6 @@ int pepc_an_mode_to_int(const string &anMode)
         return 2;
     }
     return 0;
-}
-
-int loopbackEN(const string &lb)
-{
-    if (lb == "NO") {
-        return NO_LOOPBACK_EN;
-    }
-    if (lb == "PH") {
-        return PHY_LOOPBACK_EN;
-    }
-    if (lb == "EX") {
-        return EXTERNAL_LOOPBACK_EN;
-    }
-    return NO_LOOPBACK_EN;
 }
 
 bool endsWith(std::string const & value, std::string const & ending)

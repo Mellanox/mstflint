@@ -1036,7 +1036,10 @@ void MlxlinkCommander::showPddr()
         _protoActive = getFieldValue("proto_active", _buffer);
         _fecActive = getFieldValue("fec_mode_active", _buffer);
         u_int32_t phyMngrFsmState = getFieldValue("phy_mngr_fsm_state", _buffer);
-        int loopbackMode = (phyMngrFsmState != PHY_MNGR_DISABLED) ? getFieldValue("loopback_mode", _buffer) : -1;
+        u_int32_t loopbackMode = NO_LOOPBACK;
+        if (phyMngrFsmState != PHY_MNGR_DISABLED) {
+            loopbackMode = getFieldValue("loopback_mode", _buffer);
+        }
         _linkUP = (phyMngrFsmState == PHY_MNGR_ACTIVE_LINKUP || phyMngrFsmState == PHY_MNGR_PHYSICAL_LINKUP);
         if(_protoActive == IB) {
             _activeSpeed = getFieldValue("link_speed_active", _buffer);
@@ -2564,6 +2567,19 @@ void MlxlinkCommander::sendSltp()
     }
 }
 
+u_int32_t MlxlinkCommander::getLoopbackMode(const string &lb)
+{
+    if (lb == "PH") {
+        return PHY_LOCAL_LOOPBACK;
+    }
+    if (lb == "EX") {
+        return EXTERNAL_LOCAL_LOOPBACK;
+    }
+    throw MlxRegException(
+            "Invalid loopback option: %s, see tool usage \"%s --help\"",
+            lb.c_str(), MLXLINK_EXEC);
+}
+
 void MlxlinkCommander::sendPplr()
 {
     try {
@@ -2572,7 +2588,7 @@ void MlxlinkCommander::sendPplr()
         resetParser(regName);
 
         updateField("local_port", _localPort);
-        updateField("lb_en", loopbackEN(_userInput._pplrLB));
+        updateField("lb_en", getLoopbackMode(_userInput._pplrLB));
 
         genBuffSendRegister(regName, MACCESS_REG_METHOD_SET);
     } catch (const std::exception &exc) {

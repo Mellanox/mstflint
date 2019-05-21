@@ -97,7 +97,7 @@ void MlxlinkUi::printSynopsis()
     MlxlinkRecord::printFlagLine(PTYS_LINK_MODE_FORCE_FLAG_SHORT, PTYS_LINK_MODE_FORCE_FLAG, "",
                   "Configure Link Mode Force (Disable AN)");
     MlxlinkRecord::printFlagLine(PPLR_FLAG_SHORT, PPLR_FLAG, "loopback",
-                  "Configure Loopback Mode [NO(No Loopback)/PH(phy loopback)/EX(external loopback)]");
+                  "Configure Loopback Mode [PH(phy loopback)/EX(external loopback)]");
     MlxlinkRecord::printFlagLine(PPLM_FLAG_SHORT, PPLM_FLAG, "fec_override",
                   "Configure FEC [AU(Auto)/NF(No-FEC)/FC(FireCode FEC)/RS(RS-FEC)]");
     printf(IDENT);
@@ -232,7 +232,7 @@ void MlxlinkUi::paramValidate()
     }
     if (_sendRegFuncMap[SEND_PPLR] && !checkPplrCmd(_mlxlinkCommander->_userInput._pplrLB)) {
         throw MlxRegException(
-                  "Please provide a valid loopback mode [NO(no loopback)/PH(phy loopback)/EX(external loopback)]");
+                  "Please provide a valid loopback mode [PH(phy loopback)/EX(external loopback)]");
     }
     if (_sendRegFuncMap[SEND_SLTP]) {
         if (_mlxlinkCommander->_userInput._sltpLane && _mlxlinkCommander->_userInput._db) {
