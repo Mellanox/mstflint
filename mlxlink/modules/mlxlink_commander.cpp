@@ -1067,7 +1067,7 @@ void MlxlinkCommander::showPddr()
         string physical_state =
                 _mlxlinkMaps->_ethANFsmState[getFieldValue("eth_an_fsm_state", _buffer)];
         setPrintVal(_operatingInfoCmd,PDDR_PHYSICAL_STATE , "Physical state",
-                physical_state, color, print,_linkUP);
+                physical_state, color, print);
         setPrintVal(_operatingInfoCmd,PDDR_SPEED,"Speed", _speedStrG, color,
                 print,_linkUP);
         setPrintVal(_operatingInfoCmd,PDDR_WIDTH ,"Width",
@@ -1102,7 +1102,7 @@ void MlxlinkCommander::showPddr()
             title += " (Ext.)";
         }
         setPrintVal(_supportedInfoCmd,PDDR_ENABLED_LINK_SPEED, title,
-                value.str(),color, true, print);
+                speeds_mask?value.str():"N/A",color, true, print);
 
         speeds_mask = _protoCapabilityEx ? _protoCapabilityEx: _protoCapability;
         supported_speeds = SupportedSpeeds2Str(_protoActive, speeds_mask,
