@@ -278,7 +278,7 @@ enum PAOS_ADMIN {
 enum PRODUCT_TECHNOLOGY {
     PRODUCT_40NM = 0,
     PRODUCT_28NM = 1,
-    PRODUCT_16NM = 3
+    PRODUCT_16NM = 2
 };
 
 #define PRINT_LOG(mlxlinklogger, title)\
