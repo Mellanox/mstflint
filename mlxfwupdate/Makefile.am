@@ -40,7 +40,7 @@ docdir=$(INSTALL_BASEDIR)/etc/mstflint
 dist_doc_DATA=certificate/ca-bundle.crt
 
 MTCR_UL_DIR = $(USER_DIR)/${MTCR_CONF_DIR}
-MTCR_UL_LIB = -L$(MTCR_UL_DIR) -lmtcr_ul
+MTCR_UL_LIB = $(MTCR_UL_DIR)/libmtcr_ul.a
 
 XML_FLAGS = -DUSE_XML -DLIBXML_STATIC
 XML_LIBS = -lxml2 $(ZLIB_LIB)
