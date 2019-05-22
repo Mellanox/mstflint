@@ -207,19 +207,22 @@ void MlxlinkUi::paramValidate()
     if (_mlxlinkCommander->_uniqueCmds > 1) {
         throw MlxRegException("Commands are mutually exclusive!");
     }
-    if (_sendRegFuncMap[SEND_PAOS] && !checkPaosCmd(_mlxlinkCommander->_userInput._paosCmd)) {
+    if (_sendRegFuncMap[SEND_PAOS] == SEND_PAOS &&
+            !checkPaosCmd(_mlxlinkCommander->_userInput._paosCmd)) {
         throw MlxRegException(
                   "Please provide a valid paos command [UP(up)/DN(down)/TG(toggle)]");
     }
-    if (_sendRegFuncMap[SEND_PPLM] && !checkPplmCmd(_mlxlinkCommander->_userInput._pplmFec)) {
+    if (_sendRegFuncMap[SEND_PPLM] == SEND_PPLM &&
+            !checkPplmCmd(_mlxlinkCommander->_userInput._pplmFec)) {
         throw MlxRegException(
                   "Please provide a valid FEC [AU(Auto)/NF(No-Fec)/FC(FireCode FEC)/RS(RS FEC)]");
     }
-    if (!_sendRegFuncMap[SEND_PPLM] && _mlxlinkCommander->_userInput._speedFec != "") {
+    if (!(_sendRegFuncMap[SEND_PPLM] == SEND_PPLM) &&
+            _mlxlinkCommander->_userInput._speedFec != "") {
         throw MlxRegException(
                   "The --fec_speed flag is valid only with --fec flag");
     }
-    if (_sendRegFuncMap[SEND_PPLM]) {
+    if (_sendRegFuncMap[SEND_PPLM] == SEND_PPLM) {
         if (_mlxlinkCommander->_userInput._speedFec != "" &&
                 _mlxlinkCommander->_userInput._speedFec != "100G" &&
                 _mlxlinkCommander->_userInput._speedFec != "56G" &&
@@ -230,11 +233,12 @@ void MlxlinkUi::paramValidate()
             throw MlxRegException("Please Provide a Valid Speed to Configure FEC (100G/56G/50G/40G/25G/10G)");
         }
     }
-    if (_sendRegFuncMap[SEND_PPLR] && !checkPplrCmd(_mlxlinkCommander->_userInput._pplrLB)) {
+    if (_sendRegFuncMap[SEND_PPLR] == SEND_PPLR
+            && !checkPplrCmd(_mlxlinkCommander->_userInput._pplrLB)) {
         throw MlxRegException(
                   "Please provide a valid loopback mode [PH(phy loopback)/EX(external loopback)]");
     }
-    if (_sendRegFuncMap[SEND_SLTP]) {
+    if (_sendRegFuncMap[SEND_SLTP] == SEND_SLTP) {
         if (_mlxlinkCommander->_userInput._sltpLane && _mlxlinkCommander->_userInput._db) {
             throw MlxRegException(
                       "Lane and Database flags are mutually exclusive");
@@ -244,7 +248,7 @@ void MlxlinkUi::paramValidate()
                   "Transmitter Lane or DataBase flags are valid only with Configure Transmitter Parameters flag (--st_set)");
     }
 
-    if (_sendRegFuncMap[SEND_PRBS]) {
+    if (_sendRegFuncMap[SEND_PRBS] == SEND_PRBS) {
         if (!checkPrbsCmd(_mlxlinkCommander->_userInput._prbsMode)) {
             throw MlxRegException(
                       "you must provide a valid PRBS test mode [DS/EN/TU]");
@@ -286,7 +290,7 @@ void MlxlinkUi::paramValidate()
         throw MlxRegException(
                   "PRBS parameters flags valid only with PRBS Enable flag (--test_mode EN)");
     }
-    if (_sendRegFuncMap[SEND_BER_COLLECT]) {
+    if (_sendRegFuncMap[SEND_BER_COLLECT] == SEND_BER_COLLECT) {
         if (!endsWith(_mlxlinkCommander->_userInput._csvBer, ".csv")) {
             throw MlxRegException("you must provide a valid .csv file");
         }
@@ -298,7 +302,7 @@ void MlxlinkUi::paramValidate()
         throw MlxRegException(
                   "BER Limit Criteria flag is valid only with Port Information Collection flag (--bc)");
     }
-    if (_sendRegFuncMap[SEND_PEPC]) {
+    if (_sendRegFuncMap[SEND_PEPC] == SEND_PEPC) {
         if (!_mlxlinkCommander->_userInput._sendPepcForceMode) {
             throw MlxRegException(
                       "Please provide --twisted_pair_force_mode");
