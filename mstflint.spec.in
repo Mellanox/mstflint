@@ -157,7 +157,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %changelog
 * Wed May 22 2019 Eran Jakoby <eranj@dev.mellanox.co.il>
-   MFT 4.12.0 Updates. Added new tools: mstlink.
+   MFT 4.12.0 Updates. Added new tools: mstreg, fwtrace and mstlink.
 
 * Wed Nov 21 2018 Dan Goldberg <dang@dev.mellanox.co.il>
    MFT 4.11.0 Updates. Added new tools: mlxarchive and mstprivhost.
