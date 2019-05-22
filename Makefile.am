@@ -34,7 +34,7 @@ SUBDIRS = common mft_utils ext_libs $(TOOLS_CRYPTO) tools_layouts ${MTCR_CONF_DI
 
 DIST_SUBDIRS = tracers
 
-man_MANS = man/mstflint.1 man/mstconfig.1 man/mstmcra.1 man/mstmread.1 man/mstmwrite.1 man/mstmtserver.1 man/mstregdump.1 man/mstvpd.1 man/mstprivhost.1 man/mstarchive.1
+man_MANS = man/mstflint.1 man/mstconfig.1 man/mstmcra.1 man/mstmread.1 man/mstmwrite.1 man/mstmtserver.1 man/mstregdump.1 man/mstvpd.1 man/mstprivhost.1 man/mstarchive.1 man/mstreg.1 man/fwtrace.1 man/mstlink.1
 
 EXTRA_DIST = \
 	mstflint.spec \

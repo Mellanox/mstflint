@@ -115,7 +115,7 @@ fi
 # Adabe
 AC_MSG_CHECKING(--enable-adb-generic-tools argument)
 AC_ARG_ENABLE(adb-generic-tools,
-             [  --enable-adb-generic-tools        Enable compiling tools depends on ADABE, i.e. mstreg],
+             [  --enable-adb-generic-tools        Enable compiling the following tools which depends on ADABE: mstreg and mstlink],
              [enable_adb_generic_tools="yes"],
              [enable_adb_generic_tools="no"])
 AC_MSG_RESULT($enable_adb_generic_tools)
