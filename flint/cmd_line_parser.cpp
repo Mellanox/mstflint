@@ -203,6 +203,7 @@ FlagMetaData::FlagMetaData()
     _flags.push_back(new Flag("", "hmac_key", 1));
     _flags.push_back(new Flag("", "key_uuid2", 1));
     _flags.push_back(new Flag("", "no_fw_ctrl", 0));
+    _flags.push_back(new Flag("image_reactivation", "ir", 0));
 }
 
 FlagMetaData::~FlagMetaData()
@@ -415,6 +416,14 @@ void Flint::initCmdParser()
                "Binary image file.\n"
                "Commands affected: burn, verify");
 
+    AddOptions("ir",
+        ' ',
+        "",
+        "Commands affected: burn");
+    AddOptions("image_reactivation",
+        ' ',
+        "",
+        "Commands affected: burn");
     AddOptions("help",
                'h',
                "",
@@ -875,7 +884,7 @@ ParseStatus Flint::HandleOption(string name, string value)
         _flintParams.striped_image = true;
     } else if (name == "use_dev_img_info") {
         _flintParams.use_dev_img_info = true;
-    } else if (name == "image_reactivation") {
+    } else if (name == "ir" || name == "image_reactivation") {
         _flintParams.image_reactivation = true;
     }
     else if (name == "banks") {

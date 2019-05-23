@@ -80,7 +80,7 @@ static void mft_signal_set_handling(int isOn)
 #else
 #define DPRINTF(...)
 #endif
-typedef struct reg_access_hca_mcda_reg mcdaReg;
+
 /*
  * Wrapper to call the MCDA command
  */
@@ -442,6 +442,7 @@ FwCompsMgr::FwCompsMgr(mfile *mf, DeviceTypeT devType, int deviceIndex)
     _deviceType = devType;
     _deviceIndex = deviceIndex;
     _accessObj = NULL;
+    _mircCaps = false;
     initialize(mf);
 }
 
@@ -1279,6 +1280,7 @@ bool FwCompsMgr::fwReactivateImage()
     }
     else {
         memset(&mirc, 0, sizeof(mirc));
+        msleep(sleepTimeMs);
         rc = reg_access_mirc(_mf, REG_ACCESS_METHOD_GET, &mirc);
         if (rc) {
             DPRINTF(("2 reg_access_mirc failed rc = %d\n", rc));
@@ -1303,7 +1305,7 @@ bool FwCompsMgr::fwReactivateImage()
         } 
     }
     if (mirc.status_code == IMAGE_REACTIVATION_SUCCESS) {
-        DPRINTF(("Success\n"));
+        
         return true;
     }
     else if (mirc.status_code == IMAGE_REACTIVATION_PROHIBITED_FW_VER_ERR) {
@@ -1333,7 +1335,7 @@ bool FwCompsMgr::fwReactivateImage()
     else {
         _lastError = FWCOMPS_IMAGE_REACTIVATION_UNKNOWN_ERROR;
     }
-    DPRINTF(("3 reg_access_mirc failed _lastError = %d\n", _lastError));
+    
     return false;
 }
 
