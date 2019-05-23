@@ -479,12 +479,12 @@ private:
     u_int32_t _componentIndex;
     u_int32_t _deviceIndex;
     u_int8_t _deviceType;
+    u_int8_t _mircCaps;
     fw_comps_error_t _lastError;
     reg_access_status_t _lastRegAccessStatus;
     u_int32_t _hwDevId;
     mfile *_mf;
     const char *_currComponentStr;
-    u_int8_t _mircCaps;
     std::vector<u_int8_t> _productVerStr;
     bool isDmaSupported;
     AbstractComponentAccess* _accessObj;

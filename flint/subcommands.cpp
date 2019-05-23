@@ -1450,17 +1450,17 @@ bool SignSubCommand::verifyParams()
 BurnSubCommand::BurnSubCommand()
 {
     _name = "burn";
-    _desc = "Burn flash";
+    _desc = "Burn flash. Use \"-ir burn\" flag to perform image reactivation prior burning.";
     _extendedDesc = "Burn flash \n"
                     "Performs failsafe FW update from a raw binary image.";
     _flagLong = "burn";
     _flagShort = "b";
-    _param = "";
-    _paramExp = "None";
-    _example = FLINT_NAME " -d " MST_DEV_EXAMPLE1 " -i image1.bin burn\n"
+    _param = "-ir";
+    _paramExp = "If supplied, perform image reactivation before burning.";
+    _example = FLINT_NAME " -d " MST_DEV_EXAMPLE1 " -i image1.bin -ir burn\n"
                FLINT_NAME " -d " MST_DEV_EXAMPLE2 " -guid 0x2c9000100d050 -i image1.bin b";
     _v = Wtv_Dev_And_Img;
-    _maxCmdParamNum = 0;
+    _maxCmdParamNum = 1;
     _cmdType = SC_Burn;
     _fwType = 0;
     _devQueryRes = 0;
@@ -2020,7 +2020,13 @@ FlintStatus BurnSubCommand::executeCommand()
     }
     //updateBurnParams with input given by user
     updateBurnParams();
-
+    if (_flintParams.image_reactivation) {
+        if (!_fwOps->FwReactivateImage()) {
+            reportErr(true, FLINT_FAILED_IMAGE_REACTIVATION_ERROR, _flintParams.device.c_str(), _fwOps->err());
+            return FLINT_FAILED;
+        }
+        printf("\n-I- FW Image Reactivation succeeded.\n\n");
+    }
     if (_fwType == FIT_FS3 || _fwType == FIT_FS4 || _fwType == FIT_FSCTRL) {
         return burnFs3();
     } else if (_fwType == FIT_FS2) {

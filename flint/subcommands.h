@@ -91,6 +91,7 @@ protected:
     char _errBuff[FLINT_ERR_LEN];
     sub_cmd_t _cmdType;
     bool _mccSupported;
+    bool _imageReactivation;
 
     //Methods that are commonly used in the various subcommands:
     //TODO: add middle classes and segregate as much of these common methods between these classes
@@ -155,7 +156,7 @@ protected:
 
 
 public:
-    SubCommand() : _fwOps(NULL), _imgOps(NULL), _io(NULL), _v(Wtv_Uninitilized), _maxCmdParamNum(-1),  _minCmdParamNum(-1), _mccSupported(false)
+    SubCommand() : _fwOps(NULL), _imgOps(NULL), _io(NULL), _v(Wtv_Uninitilized), _maxCmdParamNum(-1),  _minCmdParamNum(-1), _mccSupported(false), _imageReactivation(false)
     {
         _cmdType = SC_No_Cmd;
         memset(_errBuff, 0, sizeof(_errBuff));
