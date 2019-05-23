@@ -203,6 +203,7 @@ FlagMetaData::FlagMetaData()
     _flags.push_back(new Flag("", "hmac_key", 1));
     _flags.push_back(new Flag("", "key_uuid2", 1));
     _flags.push_back(new Flag("", "no_fw_ctrl", 0));
+    _flags.push_back(new Flag("image_reactivation", "ir", 0));
 }
 
 FlagMetaData::~FlagMetaData()
@@ -415,6 +416,16 @@ void Flint::initCmdParser()
                "Binary image file.\n"
                "Commands affected: burn, verify");
 
+    AddOptions("ir",
+        ' ',
+        "",
+        "Commands affected: burn");
+
+    AddOptions("image_reactivation",
+        ' ',
+        "",
+        "Commands affected: burn");
+
     AddOptions("help",
                'h',
                "",
@@ -504,7 +515,6 @@ void Flint::initCmdParser()
                "Run a quick query. When specified, flint will not perform full image integrity checks during the query"
                " operation. This may shorten execution time when running over slow interfaces (e.g., I2C, MTUSB-1).\n"
                "Commands affected: query");
-
     AddOptions("low_cpu",
                ' ',
                "",
@@ -635,6 +645,8 @@ void Flint::initCmdParser()
                ' ',
                "<log_file>",
                "Print the burning status to the specified log file");
+    
+    
 
     char flashList[FLASH_LIST_SZ] = {0};
     char flashParDesc[FLASH_LIST_SZ * 2];
@@ -875,7 +887,7 @@ ParseStatus Flint::HandleOption(string name, string value)
         _flintParams.striped_image = true;
     } else if (name == "use_dev_img_info") {
         _flintParams.use_dev_img_info = true;
-    } else if (name == "image_reactivation") {
+    } else if (name == "ir" || name == "image_reactivation") {
         _flintParams.image_reactivation = true;
     }
     else if (name == "banks") {
