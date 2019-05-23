@@ -2172,7 +2172,7 @@ void MlxlinkCommander::sendPaosDown()
     if (!checkPaosDown()) {
         if (dm_dev_is_hca(_devID)) {
             string protocol = (_protoActive == IB) ? "IB" : "ETH";
-            throw MlxRegException("Port is not Down, please run mlxconfig -d " + _device + " set KEEP_" + protocol + "_LINK_UP_P<port_number>=0.\nIn case of multi-host please verify all hosts are not holding the port up.");
+            throw MlxRegException("Port is not Down, please run mstconfig -d " + _device + " set KEEP_" + protocol + "_LINK_UP_P<port_number>=0.\nIn case of multi-host please verify all hosts are not holding the port up.");
         } else {
             throw MlxRegException("Port is not Down, Aborting...");
         }
@@ -2416,7 +2416,8 @@ void MlxlinkCommander::sendPplm()
         resetParser(regName);
 
         updateField("local_port", _localPort);
-        string speedStrG = (_linkUP && _userInput._speedFec == "") ? speedToStr(_speedStrG) : deleteLastComma(_userInput._speedFec) + "g";
+        string speedStrG = (_linkUP && _userInput._speedFec == "") ?
+                speedToStr(_speedStrG) : _userInput._speedFec + "g";
         if (speedStrG != "100g") {
             updateField("fec_override_admin_100g", 0);
         }
