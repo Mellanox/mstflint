@@ -1524,6 +1524,14 @@ bool BurnSubCommand::verifyParams()
         // attempt to fallback to legacy flow (direct flash access via FW)
         _mccSupported = false;
     }
+    if (_flintParams.image_reactivation && _flintParams.no_fw_ctrl) {
+        reportErr(true, FLINT_INVALID_FLAG_WITH_FLAG_ERROR, "-image_reactivation", "-no_fw_ctrl");
+        return false;
+    }
+    if (_flintParams.image_reactivation && _flintParams.override_cache_replacement) {
+        reportErr(true, FLINT_INVALID_FLAG_WITH_FLAG_ERROR, "-image_reactivation", "-ocr");
+        return false;
+    }
     return true;
 }
 
@@ -2025,6 +2033,8 @@ FlintStatus BurnSubCommand::executeCommand()
             reportErr(true, FLINT_FAILED_IMAGE_REACTIVATION_ERROR, _flintParams.device.c_str(), _fwOps->err());
             return FLINT_FAILED;
         }
+        _fwType = _fwOps->FwType();
+        _devQueryRes = _fwOps->FwQuery(&_devInfo);//make query once more to refresh running FW version
         printf("\n-I- FW Image Reactivation succeeded.\n\n");
     }
     if (_fwType == FIT_FS3 || _fwType == FIT_FS4 || _fwType == FIT_FSCTRL) {
@@ -2475,6 +2485,14 @@ bool ImageReactivationSubCommand::verifyParams()
 {
     if (_flintParams.cmd_params.size() != 0) {
         reportErr(true, FLINT_CMD_ARGS_ERROR, _name.c_str(), 0, (int)_flintParams.cmd_params.size());
+        return false;
+    }
+    if (_flintParams.no_fw_ctrl) {
+        reportErr(true, FLINT_INVALID_FLAG_WITH_CMD_ERROR, "-no_fw_ctrl", "image_reactivation");
+        return false;
+    }
+    if (_flintParams.override_cache_replacement) {
+        reportErr(true, FLINT_INVALID_FLAG_WITH_CMD_ERROR, "-ocr", "image_reactivation");
         return false;
     }
     return true;
