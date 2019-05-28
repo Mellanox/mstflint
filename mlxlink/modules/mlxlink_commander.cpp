@@ -1036,7 +1036,7 @@ void MlxlinkCommander::showPddr()
         _protoActive = getFieldValue("proto_active", _buffer);
         _fecActive = getFieldValue("fec_mode_active", _buffer);
         u_int32_t phyMngrFsmState = getFieldValue("phy_mngr_fsm_state", _buffer);
-        u_int32_t loopbackMode = NO_LOOPBACK;
+        u_int32_t loopbackMode = PHY_NO_LOOPBACK;
         if (phyMngrFsmState != PHY_MNGR_DISABLED) {
             loopbackMode = getFieldValue("loopback_mode", _buffer);
         }
@@ -2570,6 +2570,9 @@ void MlxlinkCommander::sendSltp()
 
 u_int32_t MlxlinkCommander::getLoopbackMode(const string &lb)
 {
+    if (lb == "NO") {
+        return PHY_NO_LOOPBACK;
+    }
     if (lb == "PH") {
         return PHY_LOCAL_LOOPBACK;
     }
