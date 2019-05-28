@@ -96,7 +96,7 @@ MlxlinkMaps::MlxlinkMaps() {
     _fecModeActive[FEC_MODE_STANDARD_RS_FEC_544_514] =
             "Standard RS-FEC (544,514)";
 
-    _loopbackModeList[NO_LOOPBACK] = "N/A";
+    _loopbackModeList[PHY_NO_LOOPBACK] = "No loopback";
     _loopbackModeList[PHY_REMOTE_LOOPBACK] = "PHY Remote Loopback";
     _loopbackModeList[PHY_LOCAL_LOOPBACK] = "PHY Local Loopback";
     _loopbackModeList[EXTERNAL_LOCAL_LOOPBACK] =

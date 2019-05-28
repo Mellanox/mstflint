@@ -96,8 +96,8 @@ string status2Color(u_int32_t status)
 string getLoopbackColor(u_int32_t loopbackMode)
 {
     switch (loopbackMode) {
-    case NO_LOOPBACK:
-        return ANSI_COLOR_RED;
+    case PHY_NO_LOOPBACK:
+        return ANSI_COLOR_GREEN;
         break;
 
     case PHY_REMOTE_LOOPBACK:
