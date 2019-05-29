@@ -376,6 +376,7 @@ public:
     void showTestMode();
     void showTestModeBer();
     void showMpcntPerformance();
+    void showMpcntTimers();
     void showMpcntLane();
     void showPcieState();
 
