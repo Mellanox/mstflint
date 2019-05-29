@@ -1275,8 +1275,29 @@ std::map<std::string, std::string> MlxlinkCommander::getPptt()
     return ppttMap;
 }
 
+void MlxlinkCommander::showMpcntTimers()
+{
+    string regName = "MPCNT";
+    resetParser(regName);
+
+    updateField("pcie_index", _localPort);
+    updateField("grp", MPCNT_TIMERS_GROUPS);
+
+    genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
+
+    setPrintTitle(_mpcntTimerInfCmd, "Management PCIe Timers Counters Info",
+            MPCNT_TIMER_INFO_LAST);
+    setPrintVal(_mpcntTimerInfCmd, MPCNT_DL_DOWN ,"dl down",
+            getFieldStr("dl_down"));
+
+    cout << _mpcntTimerInfCmd;
+}
+
 void MlxlinkCommander::showBer()
 {
+    if (_userInput._pcie) {
+        showMpcntTimers();
+    }
     try {
         if (_prbsTestMode) {
             showTestModeBer();
@@ -1305,15 +1326,27 @@ void MlxlinkCommander::showBer()
                 getFieldValue("time_since_last_clear_high", _buffer),
                 getFieldValue("time_since_last_clear_low", _buffer))/60000.0;
         sprintf(buff, "%.01f", val);
-
-        setPrintVal(_berInfoCmd,BER_TIME_SINCE_LAST_CLEAR ,"Time Since Last Clear [Min]", buff, ANSI_COLOR_RESET,true,_linkUP);
+        setPrintVal(_berInfoCmd,BER_TIME_SINCE_LAST_CLEAR ,"Time Since Last Clear [Min]",
+                buff, ANSI_COLOR_RESET,true,_linkUP);
         setPrintVal(_berInfoCmd,BER_EFFECTIVE_PHYSICAL_ERRORS, "Effective Physical Errors",
                 to_string(add32BitTo64(getFieldValue("phy_symbol_errors_high", _buffer),
-                        getFieldValue("phy_symbol_errors_low", _buffer))),ANSI_COLOR_RESET,true,_linkUP);
+                        getFieldValue("phy_symbol_errors_low", _buffer))), ANSI_COLOR_RESET,true,_linkUP);
+
+        std::vector<string> rawErrorsPerLane;
+        string phy_raw_err = "";
+        for (u_int32_t lane = 0; lane < _numOfLanes; lane++) {
+            string laneStr = to_string(lane);
+            phy_raw_err = to_string(add32BitTo64(getFieldValue("phy_raw_errors_lane" + laneStr + "_high", _buffer),
+                                                 getFieldValue("phy_raw_errors_lane" + laneStr + "_low", _buffer)));
+            rawErrorsPerLane.push_back(phy_raw_err);
+        }
+        setPrintVal(_berInfoCmd,BER_RAW_PHYSICAL_ERRORS_PER_LANE , "Raw Physical Errors Per Lane",
+                getStringFromVector(rawErrorsPerLane), ANSI_COLOR_RESET,true,_linkUP);
         setPrintVal(_berInfoCmd,BER_EFFECTIVE_PHYSICAL_BER ,"Effective Physical BER",
-                getFieldStr("effective_ber_coef") + "E-" + getFieldStr("effective_ber_magnitude"),ANSI_COLOR_RESET,true,_linkUP);
+                getFieldStr("effective_ber_coef") + "E-" + getFieldStr("effective_ber_magnitude"), ANSI_COLOR_RESET,true,_linkUP);
         setPrintVal(_berInfoCmd,BER_RAW_PHYSICAL_BER , "Raw Physical BER",
-                getFieldStr("raw_ber_coef") + "E-" + getFieldStr("raw_ber_magnitude"),ANSI_COLOR_RESET,true,_linkUP);
+                getFieldStr("raw_ber_coef") + "E-" + getFieldStr("raw_ber_magnitude"), ANSI_COLOR_RESET,true,_linkUP);
+
         cout << _berInfoCmd;
     } catch (const std::exception &exc) {
         _allUnhandledErrors += string("Showing BER via PPCNT raised the following exception: ") + string(exc.what()) + string("\n");
@@ -1328,7 +1361,7 @@ void MlxlinkCommander::showTestModeBer()
     updateField("local_port", _localPort);
     updateField("swid", SWID);
     updateField("pnat", PNAT_LOCAL);
-    updateField("grp", PPCNT_PHY_GROUP);
+    updateField("grp", PPCNT_STATISTICAL_GROUP);
     updateField("clr", 0);
     updateField("prio_tc", 0);
 
@@ -1336,19 +1369,10 @@ void MlxlinkCommander::showTestModeBer()
 
     std::vector<string> errors;
     for (u_int32_t lane = 0; lane < _numOfLanes; lane++) {
-        errors.push_back(to_string(add32BitTo64(getFieldValue("edpl_bip_errors_lane" + to_string(lane) + "_high", _buffer),
-                                                getFieldValue("edpl_bip_errors_lane" + to_string(lane) + "_low", _buffer))));
+        errors.push_back(to_string(add32BitTo64(getFieldValue("phy_raw_errors_lane" + to_string(lane) + "_high", _buffer),
+                                                getFieldValue("phy_raw_errors_lane" + to_string(lane) + "_low", _buffer))));
     }
 
-    resetParser(regName);
-    updateField("local_port", _localPort);
-    updateField("swid", SWID);
-    updateField("pnat", PNAT_LOCAL);
-    updateField("grp", PPCNT_STATISTICAL_GROUP);
-    updateField("clr", 0);
-    updateField("prio_tc", 0);
-
-    genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
     char buff[64];
     float val = (float)add32BitTo64(
             getFieldValue("time_since_last_clear_high", _buffer),
@@ -1383,6 +1407,10 @@ void MlxlinkCommander::showMpcntPerformance()
             "RX Errors",getFieldStr("rx_errors"));
     setPrintVal(_mpcntPerfInfCmd,MPCNT_TX_ERRORS ,
             "TX Errors",getFieldStr("tx_errors"));
+    setPrintVal(_mpcntPerfInfCmd,MPCNT_CRC_ERROR_DLLP ,
+            "CRC Error dllp",getFieldStr("crc_error_dllp"));
+    setPrintVal(_mpcntPerfInfCmd,MPCNT_CRC_ERROR_TLP ,
+            "CRC Error tlp",getFieldStr("crc_error_tlp"));
 
     cout << _mpcntPerfInfCmd;
 }
@@ -1740,10 +1768,12 @@ void MlxlinkCommander::showPcieState()
     setPrintVal(_pcieInfoCmd, PCIE_LINK_SPEED_ACTIVE_ENABLED,
             "Link Speed Active (Enabled)",
             pcieSpeedStr(getFieldValue("link_speed_active", _buffer))+ linkSpeedEnabled);
-
     setPrintVal(_pcieInfoCmd, LINK_WIDTH_ACTIVE_ENABLED,
             "Link Width Active (Enabled)",
             to_string(_numOfLanesPcie) + "X" + linkWidthEnabled);
+    setPrintVal(_pcieInfoCmd, DEVICE_STATUS, "Device Status",
+            getFieldValue("device_status", _buffer)?pcieDeviceStatusStr(getFieldValue("device_status", _buffer)):"N/A");
+
     cout << _pcieInfoCmd;
 }
 
