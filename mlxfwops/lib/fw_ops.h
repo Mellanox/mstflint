@@ -156,6 +156,7 @@ public:
 
     void FwCleanUp();
     virtual bool FwInit() = 0;
+    virtual bool FsIntQuery() { return true; }
     bool FwSetPrint(PrintCallBack PrintFunc);
 
     //needed for flint low level operations
@@ -169,7 +170,7 @@ public:
     static FwOperations* FwOperationsCreate(fw_ops_params_t& fwParams);
 
     static bool          imageDevOperationsCreate(fw_ops_params_t& devParams, fw_ops_params_t& imgParams,
-                                                  FwOperations **devFwOps, FwOperations **imgFwOps);
+                                                  FwOperations **devFwOps, FwOperations **imgFwOps, bool ignoreSecurityAttributes = false);
 
     virtual bool IsFsCtrlOperations();
 
