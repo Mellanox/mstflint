@@ -99,9 +99,9 @@ protected:
     virtual bool verifyParams() {return true;};
     bool basicVerifyParams();
     void initDeviceFwParams(char *errBuff, FwOperations::fw_ops_params_t& fwParams);
-    FlintStatus openOps();
+    FlintStatus openOps(bool ignoreSecurityAttributes = false);
     FlintStatus openIo();
-    virtual FlintStatus preFwOps();
+    virtual FlintStatus preFwOps(bool ignoreSecurityAttributes = false);
     virtual FlintStatus preFwAccess();
 
     bool getRomsInfo(FBase *io, roms_info_t& romsInfo);

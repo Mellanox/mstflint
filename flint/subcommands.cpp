@@ -434,7 +434,7 @@ void SubCommand::initDeviceFwParams(char *errBuff, FwOperations::fw_ops_params_t
     fwParams.mccUnsupported = !_mccSupported;
 }
 
-FlintStatus SubCommand::openOps()
+FlintStatus SubCommand::openOps(bool ignoreSecurityAttributes)
 {
     char errBuff[ERR_BUFF_SIZE] = {0};
     if (_flintParams.device_specified) {
@@ -450,7 +450,7 @@ FlintStatus SubCommand::openOps()
             imgFwParams.errBuffSize = 1024;
             imgFwParams.shortErrors = true;
             imgFwParams.fileHndl = (char*)_flintParams.image.c_str();
-            if (!FwOperations::imageDevOperationsCreate(fwParams, imgFwParams, &_fwOps, &_imgOps)) {
+            if (!FwOperations::imageDevOperationsCreate(fwParams, imgFwParams, &_fwOps, &_imgOps, ignoreSecurityAttributes)) {
                 /*
                  * Error are being handled after
                  */
@@ -604,7 +604,7 @@ bool SubCommand::basicVerifyParams()
     return true;
 }
 
-FlintStatus SubCommand::preFwOps()
+FlintStatus SubCommand::preFwOps(bool ignoreSecurityAttributes)
 {
     if (!basicVerifyParams()) {
         return FLINT_FAILED;
@@ -612,7 +612,7 @@ FlintStatus SubCommand::preFwOps()
     if (!verifyParams()) {
         return FLINT_FAILED;
     }
-    return openOps();
+    return openOps(ignoreSecurityAttributes);
 }
 
 FlintStatus SubCommand::preFwAccess()
@@ -2015,9 +2015,24 @@ bool BurnSubCommand::checkMatchingExpRomDevId(const fw_info_t& info)
 
 FlintStatus BurnSubCommand::executeCommand()
 {
+    if (_flintParams.image_reactivation) {
+        if (preFwOps(true) == FLINT_FAILED) {
+            return FLINT_FAILED;
+        }
+        if (!_fwOps->FwReactivateImage()) {
+            reportErr(true, FLINT_FAILED_IMAGE_REACTIVATION_ERROR, _flintParams.device.c_str(), _fwOps->err());
+            return FLINT_FAILED;
+        }
+        memset(&_devInfo, 0, sizeof(_devInfo));
+        _fwOps->FsIntQuery();
+        _devQueryRes = _fwOps->FwQuery(&_devInfo);//make query once more to refresh running FW version
+        printf("\n-I- FW Image Reactivation succeeded.\n\n");
+    }
+
     if (preFwOps() == FLINT_FAILED) {
         return FLINT_FAILED;
     }
+    
     //set fw type
     _fwType = _fwOps->FwType();
     // query both image and device (deviceQuery can fail but we save rc)
@@ -2028,15 +2043,6 @@ FlintStatus BurnSubCommand::executeCommand()
     }
     //updateBurnParams with input given by user
     updateBurnParams();
-    if (_flintParams.image_reactivation) {
-        if (!_fwOps->FwReactivateImage()) {
-            reportErr(true, FLINT_FAILED_IMAGE_REACTIVATION_ERROR, _flintParams.device.c_str(), _fwOps->err());
-            return FLINT_FAILED;
-        }
-        _fwType = _fwOps->FwType();
-        _devQueryRes = _fwOps->FwQuery(&_devInfo);//make query once more to refresh running FW version
-        printf("\n-I- FW Image Reactivation succeeded.\n\n");
-    }
     if (_fwType == FIT_FS3 || _fwType == FIT_FS4 || _fwType == FIT_FSCTRL) {
         return burnFs3();
     } else if (_fwType == FIT_FS2) {
