@@ -40,7 +40,7 @@ AM_CPPFLAGS = -I. -I$(USER_DIR) -I$(srcdir) -I$(LAYOUTS_DIR) -I$(USER_DIR)/inclu
 
 AM_CFLAGS = -W -Wall -g -MP -MD $(COMPILER_FPIC)
 
-noinst_LTLIBRARIES = libreg_access.a
+lib_LTLIBRARIES = libreg_access.a
 
 libreg_access_a_SOURCES = reg_access.c reg_access.h
 libreg_access_a_DEPENDENCIES = $(USER_DIR)/tools_layouts/libtools_layouts.a

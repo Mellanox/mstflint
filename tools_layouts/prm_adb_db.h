@@ -43,10 +43,10 @@
 
 class PrmAdbDB {
 public:
+    static std::string prm_adb_db_trim(const std::string& s);
+    static std::string prm_adb_db_rtrim(const std::string& s);
+    static std::string prm_adb_db_ltrim(const std::string& s);
     static std::string getDefaultDBName(bool isSwitch);
-    std::string prm_adb_db_trim(std::string s);
-    std::string prm_adb_db_rtrim(std::string s);
-    std::string prm_adb_db_ltrim(std::string s);
 };
 
 class PrmDBException: public std::exception {

@@ -1,12 +1,13 @@
 %{!?ibmadlib: %define ibmadlib libibmad-devel}
 %{!?name: %define name mstflint}
-%{!?version: %define version 4.11.0}
+%{!?version: %define version 4.12.0}
 %{!?release: %define release 1}
 %{!?buildtype: %define buildtype "native"}
 %{!?noinband: %define noinband 0}
 %{!?nodc: %define nodc 0}
 %{!?enablecs: %define enablecs 0}
 %{!?nopenssl: %define nopenssl 0}
+%{!?enablexml2: %define enablexml2 0}
 %{!?enablefwmgr: %define enablefwmgr 0}
 %{!?enableadbgenerictools: %define enableadbgenerictools 0}
 %{!?CONF_DIR: %define CONF_DIR /etc/mstflint}
@@ -54,6 +55,10 @@ MSTFLINT_VERSION_STR="%{name} %{version}-%{release}"
 
 %if %{enablecs}
     config_flags="$config_flags --enable-cs"
+%endif
+
+%if %{enablexml2}
+    config_flags="$config_flags --enable-xml2"
 %endif
 
 %if %{enablefwmgr}
@@ -121,6 +126,7 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 %if %{enableadbgenerictools}
  %{_bindir}/mstreg
+ %{_bindir}/mstlink
 %endif
 
 %{_includedir}/mstflint/mtcr.h
@@ -131,6 +137,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libmtcr_ul.a
 
 %{mstflint_python_tools}/tools_version.py
+%{mstflint_python_tools}/mft_logger.py
+%{mstflint_python_tools}/mlxpci/*.py
 %{mstflint_python_tools}/mstfwtrace/*.py
 %{mstflint_python_tools}/mstfwreset/mstfwreset.py
 %{mstflint_python_tools}/mstfwreset/mlxfwresetlib/*.py
@@ -148,6 +156,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 
 %changelog
+* Wed May 22 2019 Eran Jakoby <eranj@dev.mellanox.co.il>
+   MFT 4.12.0 Updates. Added new tools: mstreg, mstfwtrace and mstlink.
+
 * Wed Nov 21 2018 Dan Goldberg <dang@dev.mellanox.co.il>
    MFT 4.11.0 Updates. Added new tools: mlxarchive and mstprivhost.
 

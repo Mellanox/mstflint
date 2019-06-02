@@ -35,7 +35,7 @@
 <config  field_attr="capability" type="ascii" />
 <config  field_attr="target" type="ascii" />
 <config  field_attr="version" type="ascii" />
-<info source_doc_name="Mellanox &lt;Doc Name&gt;" source_doc_version="Rev 0.48" />
+<info source_doc_name="Mellanox &lt;Doc Name&gt;" source_doc_version="Rev 0.49" />
 <node name="IB_portcntrs_attribute_grp_data_ext" descr="" size="0xf8.0" >
 	<field name="link_downed_counter" descr="For counter description please refer to the InfiniBand specification" access="RO" offset="0x0.0" size="0x0.8" />
 	<field name="link_error_recovery_counter" descr="For counter description please refer to the InfiniBand specification" access="RO" offset="0x0.8" size="0x0.8" />
@@ -57,15 +57,11 @@
 </node>
 
 <node name="access_reg_summary_ctrl_ext" descr="" attr_is_union="1" size="0x4.0" >
-	<field name="id" descr="" subnode="enum_entry" enum="UNIT_PERF_COUNTERS_=0x100,MISC_COUNTERS=0x104,Loopback_Control_Register=0x700,DB_TRESHOLD=0x701,DCBX_PARAM=0x4020,DCBX_APPLICATION=0x4021,QCAP=0x4001,QPTS=0x4002,QDPM=0x4003,QPDPM=0x4013,QEPM=0x4014,QPCR=0x4004,QPBR=0x400c,QETCR=0x4005,QEGCS=0x4006,QEEC=0x400d,QPDP=0x4007,QPDPC=0x4017,QPRT=0x4008,QSPTC=0x4009,QTCT=0x400a,QTCTM=0x401a,QSTCT=0x400b,QSPIP=0x400e,QSPCP=0x401e,QRWE=0x400f,QPEM=0x4010,QPDSM=0x4011,QPPM=0x4012,QSLL=0x4015,QHLL=0x4016,QCAM=0x4019,PCAM=0x507f,PCAP=0x5001,PMLP=0x5002,PMTU=0x5003,PTYS=0x5004,PPAD=0x5005,PAOS=0x5006,PPAOS=0x5040,PMAOS=0x5012,PFCC=0x5007,PPCNT=0x5008,PUDE=0x5009,PMPE=0x5024,PMPC=0x501f,PLIB=0x500a,PFSC=0x5043,PMMP=0x5044,PMCR=0x5045,PPTB=0x500b,PBMC=0x500c,PBSR=0x5038,PSPA=0x500d,PVLC=0x500f,PPSC=0x5011,PLBF=0x5015,PIFR=0x5016,PIPG=0x5017,PPLR=0x5018,PMPR=0x5013,PEIR=0x5019,PPLM=0x5023,SLTP=0x5027,SLRG=0x5028,PHBR=0x5034,PHRR=0x5035,PPTT=0x5036,PPRT=0x5037,PCMR=0x5041,PDDR=0x5031,PPBMP=0x5051,PPBMC=0x5052,PPBME=0x5053,PTER=0x5055,PEPC=0x5056,SET_NODE=0x6001,POWER_SETTINGS=0x7001,FP_SL_MAP=0x7002,HOST_ENDIANNESS=0x7004,MFCR=0x9001,MFSC=0x9002,MFSM=0x9003,MFSL=0x9004,FORE=0x9007,MFNR=0x903b,MTCAP=0x9009,MTMP=0x900a,MTWE=0x900b,MVCAP=0x902e,MVCR=0x900c,MSPS=0x900d,MCPP=0x900e,MTBR=0x900f,MFPA=0x9010,MFBA=0x9011,MFBE=0x9012,MFMC=0x9013,MCIA=0x9014,MCION=0x9052,MMIA=0x9016,MPGR=0x9019,MFM=0x901d,MHSR=0x901e,MJTAG=0x901f,MSGI=0x9021,MSCI=0x902a,MPCIR=0x905a,MRTC=0x902d,MGIR=0x9020,MPFM=0x9022,MRSR=0x9023,MPGO=0x9052,MNVDA=0x9024,MNVDI=0x9025,MNVQC=0x9030,MNVIA=0x9033,MNVGC=0x9034,MNVGN=0x9035,MGNLE=0x9036,MTRC_CAP=0x9040,MTRC_CONF=0x9041,MTRC_STDB=0x9042,MTRC_CTRL=0x9043,MMHI=0x904a,MLCR=0x902b,MGCR=0x903a,MPEIN=0x9050,MPCNT=0x9051,MPIR=0x9059,MPECS=0x905b,MCQS=0x9060,MCQI=0x9061,MCC=0x9062,MCDA=0x9063,MQIS=0x9064,MFRL=0x9028" offset="0x0.0" size="0x4.0" />
+	<field name="id" descr="" subnode="enum_entry" enum="DCBX_PARAM=0x4020,DCBX_APPLICATION=0x4021,QCAP=0x4001,QPTS=0x4002,QDPM=0x4003,QPDPM=0x4013,QEPM=0x4014,QPCR=0x4004,QPBR=0x400c,QETCR=0x4005,QEGCS=0x4006,QEEC=0x400d,QPDP=0x4007,QPDPC=0x4017,QPRT=0x4008,QSPTC=0x4009,QTCT=0x400a,QTCTM=0x401a,QSTCT=0x400b,QSPIP=0x400e,QSPCP=0x401e,QRWE=0x400f,QPEM=0x4010,QPDSM=0x4011,QPPM=0x4012,QSLL=0x4015,QHLL=0x4016,QCAM=0x4019,ROCE_ACCL=0x402c,PCAM=0x507f,PCAP=0x5001,PMLP=0x5002,PMTU=0x5003,PTYS=0x5004,PPAD=0x5005,PAOS=0x5006,PPAOS=0x5040,PMAOS=0x5012,PFCC=0x5007,PPCNT=0x5008,PMMP=0x5044,PMCR=0x5045,PPTB=0x500b,PBMC=0x500c,PVLC=0x500f,PPLR=0x5018,PPLM=0x5023,SLTP=0x5027,SLRG=0x5028,PPTT=0x5036,PPRT=0x5037,PCMR=0x5041,PDDR=0x5031,PTER=0x5055,PGUID=0x5066,SET_NODE=0x6001,POWER_SETTINGS=0x7001,HOST_ENDIANNESS=0x7004,MFCR=0x9001,MFSC=0x9002,MFSM=0x9003,MFSL=0x9004,FORE=0x9007,MFNR=0x903b,MTCAP=0x9009,MTECR=0x9109,MTMP=0x900a,MTWE=0x900b,MTEWE=0x910b,MVCAP=0x902e,MVCR=0x900c,MSPS=0x900d,MCPP=0x900e,MTBR=0x900f,MFPA=0x9010,MFBA=0x9011,MFBE=0x9012,MFMC=0x9013,MCIA=0x9014,MCION=0x9052,MMIA=0x9016,MPGR=0x9019,MFM=0x901d,MHSR=0x901e,MJTAG=0x901f,MSGI=0x9021,MSCI=0x902a,MPCIR=0x905a,MRTC=0x902d,MGIR=0x9020,MGPIR=0x9100,MPFM=0x9022,MRSR=0x9023,MPGO=0x9052,MNVDA=0x9024,MNVDI=0x9025,MNVQC=0x9030,MNVIA=0x9033,MNVGC=0x9034,MNVGN=0x9035,MGNLE=0x9036,MTRC_CAP=0x9040,MTRC_CONF=0x9041,MTRC_STDB=0x9042,MTRC_CTRL=0x9043,MLCR=0x902b,MGCR=0x903a,MERR=0x903c,MPEIN=0x9050,MPCNT=0x9051,MPIR=0x9059,MPECS=0x905b,MCQS=0x9060,MCQI=0x9061,MCC=0x9062,MCDA=0x9063,MQIS=0x9064,MIRC=0x9162,MCDD=0x905c,MFSCR=0x9110,MDFCR=0x9101,MDRCR=0x9102,MFRL=0x9028" offset="0x0.0" size="0x4.0" />
 </node>
 
-<node name="access_reg_summary_ext" descr="" attr_is_union="1" size="0x104" >
-	<field name="register_unti_perf_global_ctrl" descr="" subnode="register_unti_perf_global_ctrl_ext" capability="0" offset="0x0.0" selected_by="UNIT_PERF_COUNTERS_" size="0x10" />
-	<field name="register_misc_counters" descr="" subnode="register_misc_counters_ext" capability="0" offset="0x0.0" selected_by="MISC_COUNTERS" size="0x20" />
-	<field name="register_loopback_control" descr="" subnode="register_loopback_control_ext" capability="0" offset="0x0.0" selected_by="Loopback_Control_Register" size="0x10" />
-	<field name="db_threshold_register_layout" descr="" subnode="db_threshold_register_layout_ext" capability="0" offset="0x0.0" selected_by="DB_TRESHOLD" size="0x10" />
-	<field name="dcbx_param_reg" descr="" subnode="dcbx_param_reg_ext" capability="0" offset="0x0.0" selected_by="DCBX_PARAM" size="0x14" />
+<node name="access_reg_summary_ext" descr="" attr_is_union="1" size="0x110" >
+	<field name="dcbx_param_reg" descr="" subnode="dcbx_param_reg_ext" capability="0" offset="0x0.0" selected_by="DCBX_PARAM" size="0x40" />
 	<field name="dcbx_app_reg" descr="" subnode="dcbx_app_reg_ext" capability="0" offset="0x0.0" selected_by="DCBX_APPLICATION" size="0x14" />
 	<field name="qcap" descr="" subnode="qcap_ext" capability="0" offset="0x0.0" selected_by="QCAP" size="0x14" />
 	<field name="qpts" descr="" subnode="qpts_ext" capability="0" offset="0x0.0" selected_by="QPTS" size="0x8" />
@@ -73,9 +69,9 @@
 	<field name="qpdpm" descr="" subnode="qpdpm_ext" capability="0" offset="0x0.0" selected_by="QPDPM" size="0x84" />
 	<field name="qepm" descr="" subnode="qepm_ext" capability="0" offset="0x0.0" selected_by="QEPM" size="0x14" />
 	<field name="qpcr" descr="" subnode="qpcr_ext" capability="0" offset="0x0.0" selected_by="QPCR" size="0x28" />
-	<field name="qpbr" descr="" subnode="qpbr_ext" capability="0" offset="0x0.0" selected_by="QPBR" size="0x8" />
+	<field name="qpbr" descr="" subnode="qpbr_ext" capability="0" offset="0x0.0" selected_by="QPBR" size="0x10" />
 	<field name="qetcr" descr="" subnode="qetcr_ext" capability="0" offset="0x0.0" selected_by="QETCR" size="0x50" />
-	<field name="qegcs" descr="" subnode="qegcs_ext" capability="0" offset="0x0.0" selected_by="QEGCS" size="0x8" />
+	<field name="qegcs" descr="" subnode="qegcs_ext" capability="0" offset="0x0.0" selected_by="QEGCS" size="0x10" />
 	<field name="qeec" descr="" subnode="qeec_ext" capability="0" offset="0x0.0" selected_by="QEEC" size="0x20" />
 	<field name="qpdp" descr="" subnode="qpdp_ext" capability="0" offset="0x0.0" selected_by="QPDP" size="0x8" />
 	<field name="qpdpc" descr="" subnode="qpdpc_ext" capability="0" offset="0x0.0" selected_by="QPDPC" size="0x8" />
@@ -83,7 +79,7 @@
 	<field name="qsptc" descr="" subnode="qsptc_ext" capability="0" offset="0x0.0" selected_by="QSPTC" size="0x8" />
 	<field name="qtct" descr="" subnode="qtct_ext" capability="0" offset="0x0.0" selected_by="QTCT" size="0x8" />
 	<field name="qtctm" descr="" subnode="qtctm_ext" capability="0" offset="0x0.0" selected_by="QTCTM" size="0x8" />
-	<field name="qstct" descr="" subnode="qstct_ext" capability="0" offset="0x0.0" selected_by="QSTCT" size="0xc" />
+	<field name="qstct" descr="" subnode="qstct_ext" capability="0" offset="0x0.0" selected_by="QSTCT" size="0x10" />
 	<field name="qspip" descr="" subnode="qspip_ext" capability="0" offset="0x0.0" selected_by="QSPIP" size="0x8" />
 	<field name="qspcp" descr="" subnode="qspcp_ext" capability="0" offset="0x0.0" selected_by="QSPCP" size="0xc" />
 	<field name="qrwe" descr="" subnode="qrwe_ext" capability="0" offset="0x0.0" selected_by="QRWE" size="0x8" />
@@ -92,123 +88,113 @@
 	<field name="qppm" descr="" subnode="qppm_ext" capability="0" offset="0x0.0" selected_by="QPPM" size="0x44" />
 	<field name="qsll" descr="" subnode="qsll_ext" capability="0" offset="0x0.0" selected_by="QSLL" size="0x8" />
 	<field name="qhll" descr="" subnode="qhll_ext" capability="0" offset="0x0.0" selected_by="QHLL" size="0xc" />
-	<field name="qcam" descr="" subnode="qcam_ext" capability="0" offset="0x0.0" selected_by="QCAM" size="0x38" />
-	<field name="pcam_reg" descr="" subnode="pcam_reg_ext" capability="0" offset="0x0.0" selected_by="PCAM" size="0x38" />
+	<field name="qcam" descr="" subnode="qcam_ext" capability="0" offset="0x0.0" selected_by="QCAM" size="0x48" />
+	<field name="roce_accl_reg" descr="" subnode="roce_accl_reg_ext" capability="0" offset="0x0.0" selected_by="ROCE_ACCL" size="0x40" />
+	<field name="pcam_reg" descr="" subnode="pcam_reg_ext" capability="0" offset="0x0.0" selected_by="PCAM" size="0x50" />
 	<field name="pcap_reg" descr="" subnode="pcap_reg_ext" capability="0" offset="0x0.0" selected_by="PCAP" size="0x14" />
-	<field name="pmlp_reg" descr="" subnode="pmlp_reg_ext" capability="0" offset="0x0.0" selected_by="PMLP" size="0x14" />
+	<field name="pmlp_reg" descr="" subnode="pmlp_reg_ext" capability="0" offset="0x0.0" selected_by="PMLP" size="0x40" />
 	<field name="pmtu_reg" descr="" subnode="pmtu_reg_ext" capability="0" offset="0x0.0" selected_by="PMTU" size="0x10" />
-	<field name="ptys_reg" descr="" subnode="ptys_reg_ext" capability="0" offset="0x0.0" selected_by="PTYS" size="0x34" />
-	<field name="ppad_reg" descr="" subnode="ppad_reg_ext" capability="0" offset="0x0.0" selected_by="PPAD" size="0x8" />
-	<field name="paos_reg" descr="" subnode="paos_reg_ext" capability="0" offset="0x0.0" selected_by="PAOS" size="0x8" />
-	<field name="ppaos_reg" descr="" subnode="ppaos_reg_ext" capability="0" offset="0x0.0" selected_by="PPAOS" size="0x4" />
-	<field name="pmaos_reg" descr="" subnode="pmaos_reg_ext" capability="0" offset="0x0.0" selected_by="PMAOS" size="0x8" />
-	<field name="pfcc_reg" descr="" subnode="pfcc_reg_ext" capability="0" offset="0x0.0" selected_by="PFCC" size="0x14" />
+	<field name="ptys_reg" descr="" subnode="ptys_reg_ext" capability="0" offset="0x0.0" selected_by="PTYS" size="0x40" />
+	<field name="ppad_reg" descr="" subnode="ppad_reg_ext" capability="0" offset="0x0.0" selected_by="PPAD" size="0x10" />
+	<field name="paos_reg" descr="" subnode="paos_reg_ext" capability="0" offset="0x0.0" selected_by="PAOS" size="0x10" />
+	<field name="ppaos_reg" descr="" subnode="ppaos_reg_ext" capability="0" offset="0x0.0" selected_by="PPAOS" size="0x10" />
+	<field name="pmaos_reg" descr="" subnode="pmaos_reg_ext" capability="0" offset="0x0.0" selected_by="PMAOS" size="0x10" />
+	<field name="pfcc_reg" descr="" subnode="pfcc_reg_ext" capability="0" offset="0x0.0" selected_by="PFCC" size="0x20" />
 	<field name="ppcnt_reg" descr="" subnode="ppcnt_reg_ext" capability="0" offset="0x0.0" selected_by="PPCNT" size="0x100" />
-	<field name="pude_reg" descr="" subnode="pude_reg_ext" capability="0" offset="0x0.0" selected_by="PUDE" size="0x4" />
-	<field name="pmpe_reg" descr="" subnode="pmpe_reg_ext" capability="0" offset="0x0.0" selected_by="PMPE" size="0x8" />
-	<field name="pmpc_reg" descr="" subnode="pmpc_reg_ext" capability="0" offset="0x0.0" selected_by="PMPC" size="0x20" />
-	<field name="plib_reg" descr="" subnode="plib_reg_ext" capability="0" offset="0x0.0" selected_by="PLIB" size="0x8" />
-	<field name="pfsc_reg" descr="" subnode="pfsc_reg_ext" capability="0" offset="0x0.0" selected_by="PFSC" size="0xc" />
 	<field name="pmmp_reg" descr="" subnode="pmmp_reg_ext" capability="0" offset="0x0.0" selected_by="PMMP" size="0x28" />
-	<field name="pmcr_reg" descr="" subnode="pmcr_reg_ext" capability="0" offset="0x0.0" selected_by="PMCR" size="0x14" />
+	<field name="pmcr_reg" descr="" subnode="pmcr_reg_ext" capability="0" offset="0x0.0" selected_by="PMCR" size="0x1c" />
 	<field name="pptb_reg" descr="" subnode="pptb_reg_ext" capability="0" offset="0x0.0" selected_by="PPTB" size="0xc" />
-	<field name="pbmc_reg" descr="" subnode="pbmc_reg_ext" capability="0" offset="0x0.0" selected_by="PBMC" size="0x5c" />
-	<field name="pbsr_reg" descr="" subnode="pbsr_reg_ext" capability="0" offset="0x0.0" selected_by="PBSR" size="0x5c" />
-	<field name="pspa_reg" descr="" subnode="pspa_reg_ext" capability="0" offset="0x0.0" selected_by="PSPA" size="0x4" />
+	<field name="pbmc_reg" descr="" subnode="pbmc_reg_ext" capability="0" offset="0x0.0" selected_by="PBMC" size="0x64" />
 	<field name="pvlc_reg" descr="" subnode="pvlc_reg_ext" capability="0" offset="0x0.0" selected_by="PVLC" size="0x10" />
-	<field name="ppsc_reg" descr="" subnode="ppsc_reg_ext" capability="0" offset="0x0.0" selected_by="PPSC" size="0x24" />
-	<field name="plbf_reg" descr="" subnode="plbf_reg_ext" capability="0" offset="0x0.0" selected_by="PLBF" size="0x4" />
-	<field name="pifr_reg" descr="" subnode="pifr_reg_ext" capability="0" offset="0x0.0" selected_by="PIFR" size="0x60" />
-	<field name="pipg_reg" descr="" subnode="pipg_reg_ext" capability="0" offset="0x0.0" selected_by="PIPG" size="0x8" />
 	<field name="pplr_reg" descr="" subnode="pplr_reg_ext" capability="0" offset="0x0.0" selected_by="PPLR" size="0x8" />
-	<field name="pmpr_reg" descr="" subnode="pmpr_reg_ext" capability="0" offset="0x0.0" selected_by="PMPR" size="0x10" />
-	<field name="peir_reg" descr="" subnode="peir_reg_ext" capability="0" offset="0x0.0" selected_by="PEIR" size="0xc" />
-	<field name="pplm_reg" descr="" subnode="pplm_reg_ext" capability="0" offset="0x0.0" selected_by="PPLM" size="0x18" />
+	<field name="pplm_reg" descr="" subnode="pplm_reg_ext" capability="0" offset="0x0.0" selected_by="PPLM" size="0x40" />
 	<field name="sltp_reg" descr="" subnode="sltp_reg_ext" capability="0" offset="0x0.0" selected_by="SLTP" size="0x1c" />
 	<field name="slrg_reg" descr="" subnode="slrg_reg_ext" capability="0" offset="0x0.0" selected_by="SLRG" size="0x28" />
-	<field name="phbr_binding_reg" descr="" subnode="phbr_binding_reg_ext" capability="0" offset="0x0.0" selected_by="PHBR" size="0x1c" />
-	<field name="phrr_reg" descr="" subnode="phrr_reg_ext" capability="0" offset="0x0.0" selected_by="PHRR" size="0x60" />
-	<field name="pptt_reg" descr="" subnode="pptt_reg_ext" capability="0" offset="0x0.0" selected_by="PPTT" size="0x14" />
-	<field name="pprt_reg" descr="" subnode="pprt_reg_ext" capability="0" offset="0x0.0" selected_by="PPRT" size="0x18" />
+	<field name="pptt_reg" descr="" subnode="pptt_reg_ext" capability="0" offset="0x0.0" selected_by="PPTT" size="0x1c" />
+	<field name="pprt_reg" descr="" subnode="pprt_reg_ext" capability="0" offset="0x0.0" selected_by="PPRT" size="0x20" />
 	<field name="pcmr_reg" descr="" subnode="pcmr_reg_ext" capability="0" offset="0x0.0" selected_by="PCMR" size="0xc" />
 	<field name="pddr_reg" descr="" subnode="pddr_reg_ext" capability="0" offset="0x0.0" selected_by="PDDR" size="0x100" />
-	<field name="ppbmp_reg" descr="" subnode="ppbmp_reg_ext" capability="0" offset="0x0.0" selected_by="PPBMP" size="0xc" />
-	<field name="ppbmc_reg" descr="" subnode="ppbmc_reg_ext" capability="0" offset="0x0.0" selected_by="PPBMC" size="0x8" />
-	<field name="ppbme_reg" descr="" subnode="ppbme_reg_ext" capability="0" offset="0x0.0" selected_by="PPBME" size="0x8" />
-	<field name="pter_reg" descr="" subnode="pter_reg_ext" capability="0" offset="0x0.0" selected_by="PTER" size="0xc" />
-	<field name="pepc_reg" descr="" subnode="pepc_reg_ext" capability="0" offset="0x0.0" selected_by="PEPC" size="0x8" />
+	<field name="pter_reg" descr="" subnode="pter_reg_ext" capability="0" offset="0x0.0" selected_by="PTER" size="0x20" />
+	<field name="pguid_reg" descr="" subnode="pguid_reg_ext" capability="0" offset="0x0.0" selected_by="PGUID" size="0x40" />
 	<field name="set_node_in" descr="" subnode="set_node_in_ext" capability="0" offset="0x0.0" selected_by="SET_NODE" size="0x40" />
-	<field name="register_power_settings" descr="" subnode="register_power_settings_ext" capability="0" offset="0x0.0" selected_by="POWER_SETTINGS" size="0x4" />
-	<field name="fp_sl_map_arg" descr="" subnode="fp_sl_map_arg_ext" capability="0" offset="0x0.0" selected_by="FP_SL_MAP" size="0x4" />
-	<field name="register_host_endianness" descr="" subnode="register_host_endianness_ext" capability="0" offset="0x0.0" selected_by="HOST_ENDIANNESS" size="0x4" />
+	<field name="register_power_settings" descr="" subnode="register_power_settings_ext" capability="0" offset="0x0.0" selected_by="POWER_SETTINGS" size="0x10" />
+	<field name="register_host_endianness" descr="" subnode="register_host_endianness_ext" capability="0" offset="0x0.0" selected_by="HOST_ENDIANNESS" size="0x10" />
 	<field name="mfcr" descr="" subnode="mfcr_ext" capability="0" offset="0x0.0" selected_by="MFCR" size="0x8" />
 	<field name="mfsc" descr="" subnode="mfsc_ext" capability="0" offset="0x0.0" selected_by="MFSC" size="0x8" />
 	<field name="mfsm" descr="" subnode="mfsm_ext" capability="0" offset="0x0.0" selected_by="MFSM" size="0x8" />
 	<field name="mfsl" descr="" subnode="mfsl_ext" capability="0" offset="0x0.0" selected_by="MFSL" size="0xc" />
-	<field name="fore" descr="" subnode="fore_ext" capability="0" offset="0x0.0" selected_by="FORE" size="0x8" />
+	<field name="fore" descr="" subnode="fore_ext" capability="0" offset="0x0.0" selected_by="FORE" size="0xc" />
 	<field name="mfnr" descr="" subnode="mfnr_ext" capability="0" offset="0x0.0" selected_by="MFNR" size="0x30" />
 	<field name="mtcap" descr="" subnode="mtcap_ext" capability="0" offset="0x0.0" selected_by="MTCAP" size="0x10" />
+	<field name="mtecr" descr="" subnode="mtecr_ext" capability="0" offset="0x0.0" selected_by="MTECR" size="0x60" />
 	<field name="mtmp" descr="" subnode="mtmp_ext" capability="0" offset="0x0.0" selected_by="MTMP" size="0x20" />
 	<field name="mtwe" descr="" subnode="mtwe_ext" capability="0" offset="0x0.0" selected_by="MTWE" size="0x10" />
-	<field name="mvcap_reg" descr="" subnode="mvcap_reg_ext" capability="0" offset="0x0.0" selected_by="MVCAP" size="0x8" />
+	<field name="mtewe" descr="" subnode="mtewe_ext" capability="0" offset="0x0.0" selected_by="MTEWE" size="0x5c" />
+	<field name="mvcap_reg" descr="" subnode="mvcap_reg_ext" capability="0" offset="0x0.0" selected_by="MVCAP" size="0x10" />
 	<field name="mvcr" descr="" subnode="mvcr_ext" capability="0" offset="0x0.0" selected_by="MVCR" size="0x18" />
 	<field name="msps" descr="" subnode="msps_ext" capability="0" offset="0x0.0" selected_by="MSPS" size="0xa0" />
 	<field name="mcpp_reg" descr="" subnode="mcpp_reg_ext" capability="0" offset="0x0.0" selected_by="MCPP" size="0x10" />
-	<field name="mtbr_reg" descr="" subnode="mtbr_reg_ext" capability="0" offset="0x0.0" selected_by="MTBR" size="0x14" />
+	<field name="mtbr_reg" descr="" subnode="mtbr_reg_ext" capability="0" offset="0x0.0" selected_by="MTBR" size="0x18" />
 	<field name="mfpa_reg" descr="" subnode="mfpa_reg_ext" capability="0" offset="0x0.0" selected_by="MFPA" size="0x20" />
-	<field name="mfba_reg" descr="" subnode="mfba_reg_ext" capability="0" offset="0x0.0" selected_by="MFBA" size="0x10" />
+	<field name="mfba_reg" descr="" subnode="mfba_reg_ext" capability="0" offset="0x0.0" selected_by="MFBA" size="0x30" />
 	<field name="mfbe_reg" descr="" subnode="mfbe_reg_ext" capability="0" offset="0x0.0" selected_by="MFBE" size="0xc" />
 	<field name="mfmc_reg" descr="" subnode="mfmc_reg_ext" capability="0" offset="0x0.0" selected_by="MFMC" size="0x1c" />
 	<field name="mcia" descr="" subnode="mcia_ext" capability="0" offset="0x0.0" selected_by="MCIA" size="0x40" />
-	<field name="mcion" descr="" subnode="mcion_ext" capability="0" offset="0x0.0" selected_by="MCION" size="0x8" />
+	<field name="mcion" descr="" subnode="mcion_ext" capability="0" offset="0x0.0" selected_by="MCION" size="0xc" />
 	<field name="mmia" descr="" subnode="mmia_ext" capability="0" offset="0x0.0" selected_by="MMIA" size="0xc" />
-	<field name="mpgr" descr="" subnode="mpgr_ext" capability="0" offset="0x0.0" selected_by="MPGR" size="0x18" />
+	<field name="mpgr" descr="" subnode="mpgr_ext" capability="0" offset="0x0.0" selected_by="MPGR" size="0x20" />
 	<field name="mfm" descr="" subnode="mfm_ext" capability="0" offset="0x0.0" selected_by="MFM" size="0x18" />
-	<field name="mhsr" descr="" subnode="mhsr_ext" capability="0" offset="0x0.0" selected_by="MHSR" size="0x4" />
-	<field name="mjtag" descr="" subnode="mjtag_ext" capability="0" offset="0x0.0" selected_by="MJTAG" size="0x8" />
+	<field name="mhsr" descr="" subnode="mhsr_ext" capability="0" offset="0x0.0" selected_by="MHSR" size="0x8" />
+	<field name="mjtag" descr="" subnode="mjtag_ext" capability="0" offset="0x0.0" selected_by="MJTAG" size="0x30" />
 	<field name="msgi" descr="" subnode="msgi_ext" capability="0" offset="0x0.0" selected_by="MSGI" size="0x80" />
-	<field name="msci" descr="" subnode="msci_ext" capability="0" offset="0x0.0" selected_by="MSCI" size="0x8" />
+	<field name="msci" descr="" subnode="msci_ext" capability="0" offset="0x0.0" selected_by="MSCI" size="0xc" />
 	<field name="mpcir" descr="" subnode="mpcir_ext" capability="0" offset="0x0.0" selected_by="MPCIR" size="0x10" />
 	<field name="mrtc_reg" descr="" subnode="mrtc_reg_ext" capability="0" offset="0x0.0" selected_by="MRTC" size="0x10" />
-	<field name="mgir" descr="" subnode="mgir_ext" capability="0" offset="0x0.0" selected_by="MGIR" size="0x9c" />
-	<field name="mpfm" descr="" subnode="mpfm_ext" capability="0" offset="0x0.0" selected_by="MPFM" size="0x4" />
-	<field name="mrsr" descr="" subnode="mrsr_ext" capability="0" offset="0x0.0" selected_by="MRSR" size="0x4" />
+	<field name="mgir" descr="" subnode="mgir_ext" capability="0" offset="0x0.0" selected_by="MGIR" size="0xa0" />
+	<field name="mgpir" descr="" subnode="mgpir_ext" capability="0" offset="0x0.0" selected_by="MGPIR" size="0xa0" />
+	<field name="mpfm" descr="" subnode="mpfm_ext" capability="0" offset="0x0.0" selected_by="MPFM" size="0x8" />
+	<field name="mrsr" descr="" subnode="mrsr_ext" capability="0" offset="0x0.0" selected_by="MRSR" size="0x8" />
 	<field name="mpgo_reg" descr="" subnode="mpgo_reg_ext" capability="0" offset="0x0.0" selected_by="MPGO" size="0x14" />
 	<field name="mnvda_reg" descr="" subnode="mnvda_reg_ext" capability="0" offset="0x0.0" selected_by="MNVDA" size="0x10" />
 	<field name="mnvdi_reg" descr="" subnode="mnvdi_reg_ext" capability="0" offset="0x0.0" selected_by="MNVDI" size="0xc" />
 	<field name="mnvqc_reg" descr="" subnode="mnvqc_reg_ext" capability="0" offset="0x0.0" selected_by="MNVQC" size="0x8" />
-	<field name="mnvia_reg" descr="" subnode="mnvia_reg_ext" capability="0" offset="0x0.0" selected_by="MNVIA" size="0x4" />
-	<field name="mnvgc_reg" descr="" subnode="mnvgc_reg_ext" capability="0" offset="0x0.0" selected_by="MNVGC" size="0x4" />
+	<field name="mnvia_reg" descr="" subnode="mnvia_reg_ext" capability="0" offset="0x0.0" selected_by="MNVIA" size="0x8" />
+	<field name="mnvgc_reg" descr="" subnode="mnvgc_reg_ext" capability="0" offset="0x0.0" selected_by="MNVGC" size="0x10" />
 	<field name="mnvgn_reg" descr="" subnode="mnvgn_reg_ext" capability="0" offset="0x0.0" selected_by="MNVGN" size="0x20" />
 	<field name="mgnle_reg" descr="" subnode="mgnle_reg_ext" capability="0" offset="0x0.0" selected_by="MGNLE" size="0x20" />
-	<field name="mtrc_cap_reg" descr="" subnode="mtrc_cap_reg_ext" capability="0" offset="0x0.0" selected_by="MTRC_CAP" size="0x50" />
-	<field name="mtrc_conf_reg" descr="" subnode="mtrc_conf_reg_ext" capability="0" offset="0x0.0" selected_by="MTRC_CONF" size="0xc" />
+	<field name="mtrc_cap_reg" descr="" subnode="mtrc_cap_reg_ext" capability="0" offset="0x0.0" selected_by="MTRC_CAP" size="0x84" />
+	<field name="mtrc_conf_reg" descr="" subnode="mtrc_conf_reg_ext" capability="0" offset="0x0.0" selected_by="MTRC_CONF" size="0x80" />
 	<field name="mtrc_stdb_reg" descr="" subnode="mtrc_stdb_reg_ext" capability="0" offset="0x0.0" selected_by="MTRC_STDB" size="0xc" />
-	<field name="mtrc_ctrl_reg" descr="" subnode="mtrc_ctrl_reg_ext" capability="0" offset="0x0.0" selected_by="MTRC_CTRL" size="0x10" />
-	<field name="mmhi_reg" descr="" subnode="mmhi_reg_ext" capability="0" offset="0x0.0" selected_by="MMHI" size="0x8" />
+	<field name="mtrc_ctrl_reg" descr="" subnode="mtrc_ctrl_reg_ext" capability="0" offset="0x0.0" selected_by="MTRC_CTRL" size="0x40" />
 	<field name="mlcr" descr="" subnode="mlcr_ext" capability="0" offset="0x0.0" selected_by="MLCR" size="0xc" />
 	<field name="mgcr_reg" descr="" subnode="mgcr_reg_ext" capability="0" offset="0x0.0" selected_by="MGCR" size="0x20" />
-	<field name="mpein_reg" descr="" subnode="mpein_reg_ext" capability="0" offset="0x0.0" selected_by="MPEIN" size="0x1c" />
+	<field name="merr" descr="" subnode="merr_ext" capability="0" offset="0x0.0" selected_by="MERR" size="0x14" />
+	<field name="mpein_reg" descr="" subnode="mpein_reg_ext" capability="0" offset="0x0.0" selected_by="MPEIN" size="0x30" />
 	<field name="mpcnt_reg" descr="" subnode="mpcnt_reg_ext" capability="0" offset="0x0.0" selected_by="MPCNT" size="0x100" />
 	<field name="mpir" descr="" subnode="mpir_ext" capability="0" offset="0x0.0" selected_by="MPIR" size="0x10" />
-	<field name="mpecs_reg" descr="" subnode="mpecs_reg_ext" capability="0" offset="0x0.0" selected_by="MPECS" size="0x18" />
+	<field name="mpecs_reg" descr="" subnode="mpecs_reg_ext" capability="0" offset="0x0.0" selected_by="MPECS" size="0x20" />
 	<field name="mcqs_reg" descr="" subnode="mcqs_reg_ext" capability="0" offset="0x0.0" selected_by="MCQS" size="0x10" />
-	<field name="mcqi_reg" descr="" subnode="mcqi_reg_ext" capability="0" offset="0x0.0" selected_by="MCQI" size="0x1c" />
-	<field name="mcc_reg" descr="" subnode="mcc_reg_ext" capability="0" offset="0x0.0" selected_by="MCC" size="0x14" />
-	<field name="mcda_reg" descr="" subnode="mcda_reg_ext" capability="0" offset="0x0.0" selected_by="MCDA" size="0x14" />
-	<field name="mqis_reg" descr="" subnode="mqis_reg_ext" capability="0" offset="0x0.0" selected_by="MQIS" size="0x14" />
+	<field name="mcqi_reg" descr="" subnode="mcqi_reg_ext" capability="0" offset="0x0.0" selected_by="MCQI" size="0x94" />
+	<field name="mcc_reg" descr="" subnode="mcc_reg_ext" capability="0" offset="0x0.0" selected_by="MCC" size="0x20" />
+	<field name="mcda_reg" descr="" subnode="mcda_reg_ext" capability="0" offset="0x0.0" selected_by="MCDA" size="0x110" />
+	<field name="mqis_reg" descr="" subnode="mqis_reg_ext" capability="0" offset="0x0.0" selected_by="MQIS" size="0x18" />
+	<field name="mirc_reg" descr="" subnode="mirc_reg_ext" capability="0" offset="0x0.0" selected_by="MIRC" size="0x8" />
+	<field name="mcdd_reg" descr="" subnode="mcdd_reg_ext" capability="0" offset="0x0.0" selected_by="MCDD" size="0x20" />
+	<field name="mfscr_reg" descr="" subnode="mfscr_reg_ext" capability="0" offset="0x0.0" selected_by="MFSCR" size="0x4" />
+	<field name="mdfcr" descr="" subnode="mdfcr_ext" capability="0" offset="0x0.0" selected_by="MDFCR" size="0x60" />
+	<field name="mdrcr" descr="" subnode="mdrcr_ext" capability="0" offset="0x0.0" selected_by="MDRCR" size="0x30" />
 	<field name="mfrl_reg" descr="" subnode="mfrl_reg_ext" capability="0" offset="0x0.0" selected_by="MFRL" size="0x8" />
 </node>
 
-<node name="access_reg_summary_selector_ext" descr="" attr_is_union="1" size="0x104" >
-	<field name="access_reg_summary" descr="" subnode="access_reg_summary_ext" offset="0x0.0" size="0x104" union_selector="$(parent).ctrl.id" />
+<node name="access_reg_summary_selector_ext" descr="" attr_is_union="1" size="0x110" >
+	<field name="access_reg_summary" descr="" subnode="access_reg_summary_ext" offset="0x0.0" size="0x110" union_selector="$(parent).ctrl.id" />
 	<field name="ctrl" descr="" subnode="access_reg_summary_ctrl_ext" offset="0x0.0" size="0x4.0" />
 </node>
 
 <node name="application_prio_entry" descr="" size="0x4.0" >
 	<field name="protocol_id" descr="According to 802.1Q application priority TLV" access="RO" offset="0x0.0" size="0x0.16" />
 	<field name="sel" descr="According to 802.1Q application priority TLV" access="RO" offset="0x0.16" size="0x0.3" />
-	<field name="priority" descr="This field is reserved when \;HCA_CAP\;.num_ports ==1. \; See \;Table  1248, &quot;QUERY_HCA_CAP Input Structure Layout,&quot; on page  1349\;. \;According to 802.1Q application priority TLV" access="RO" offset="0x0.21" size="0x0.3" />
+	<field name="priority" descr="This field is reserved when HCA_CAP.num_ports ==1. \; See \;Table  1291, &quot;\;QUERY_HCA_CAP Input Structure Layout\;,&quot; on page  1347\;. \;According to 802.1Q application priority TLV" access="RO" offset="0x0.21" size="0x0.3" />
 </node>
 
 <node name="bufferx_reg" descr="" size="0x8.0" >
@@ -224,28 +210,23 @@
 	<field name="writer_host_id" descr="This field identify the host that configured this TLV. The \;field is not relevant for the following writer_ids: \;unspeci\;fied, chassis BMC and MAD." access="RO" offset="0x0.9" size="0x0.3" />
 	<field name="version" descr="Configuration item version - defines the data structure fol\;lowing the header (together with the \;type\; field)." access="RW" offset="0x0.12" size="0x0.4" />
 	<field name="writer_id" descr="The entity which configured this parameter\;0x0: UNSPECIFIED\;0x1: CHASSIS_BMC \;0x2: MAD \;0x3: BMC\;0x4: COMMAND_INTERFACE\;0x5: ICMD - with unspecified source\;0x6: ICMD_UEFI_HII - configured by the NIC&quot;s UEFI \;expansion ROM&quot;s HII menu.\;0x7: ICMD_UEFI_CLP - configured by the NIC&quot;s expan\;sion ROM&quot;s CLP.\;0x8: ICMD_Flexboot - configured by the NIC&quot;s legacy \;expansion ROM.\;0x9: ICMD_mlxconfig - configured by Mellanox mlxconfig \;tool\;0xA: ICMD_USER1 - value available for customer created \;tools that uses the ICMD interface for writing TLVs.\;0xB: ICMD_USER2 - value available for customer created \;tools that uses the ICMD interface for writing TLVs.\;0xC: ICMD_MLXCONFIG_SET_RAW - configures by\;mlxconfig set raw operation.\;0xD: ICMD_FLEXBOOT_CLP - configured by Legacy \;Expansion ROM CLP\;0x10: BMC_APP1 - Configuration was done over the BMC \;by application #1 (application name is OEM specific)\;0x11: BMC_APP2 - Configuration was done over the BMC \;by application #2 (application name is OEM specific)\;0x12: BMP_APP3 - Configuration was done over the BMC \;by application #3 (application name is OEM specific)\;0x1F: OTHER - the parameter was written by the NIC due \;to other reasons. \;Note - This field is writeable only when using the ICMD \;interface. The only value that are valid for writes are 0x6-\;0xB. Other values will be replaced by 0x5ICMD." access="RO" enum="UNSPECIFIED=0x0,CHASSIS_BMC=0x1,MAD=0x2,BMC=0x3,COMMAND_INTERFACE=0x4,ICMD=0x5,ICMD_UEFI_HII=0x6,ICMD_UEFI_CLP=0x7,ICMD_Flexboot=0x8,ICMD_mlxconfig=0x9,ICMD_USER1=0xa,ICMD_USER2=0xb,ICMD_MLXCONFIG_SET_RAW=0xc,ICMD_FLEXBOOT_CLP=0xd,BMC_APP1=0x10,BMC_APP2=0x11,BMP_APP3=0x12,OTHER=0x1f" offset="0x0.16" size="0x0.5" />
-	<field name="access_mode" descr="Defines which value of the Configuration Item will be \;accessed.\;0x0: NEXT - Next value to be applied \;0x1: CURRENT - Currently set values (only valid for Query \;operation) \;Supported only if NVGC.nvda_read_\;current\;_set\;tings==1.\;0x2: FACTORY - Default factory values (only valid for \;Query operation). \;Supported only if NVGC.nvda_read_fac\;tory_settings==1." access="INDEX" offset="0x0.22" size="0x0.2" />
-	<field name="header_type" descr="[internal] Encodes the storage element Header Format\;0x0\;:\; \;header_only - \;Only Header is protected by CRC\;0x1\;:\; \;header_and_date - \;Header &amp; Data are protected by \;CRC\;other values are reserved" access="RW" enum="header_only=0x0,header_and_date=0x1" offset="0x0.26" size="0x0.2" />
+	<field name="access_mode" descr="Defines which value of the Configuration Item will be \;accessed.\;0x0: NEXT - Next value to be applied \;0x1: CURRENT - Currently set values (only valid for Query \;operation) Supported only if NVGC.nvda_read_current_set\;tings==1.\;0x2: FACTORY - Default factory values (only valid for \;Query operation). Supported only if NVGC.nvda_read_fac\;tory_settings==1." access="INDEX" enum="NEXT=0x0,CURRENT=0x1,FACTORY=0x2" offset="0x0.22" size="0x0.2" />
+	<field name="header_type" descr="[internal] Encodes the storage element Header Format\;0x0: header_only - Only Header is protected by CRC\;0x1: header_and_date - Header &amp; Data are protected by \;CRC\;other values are reserved" access="RW" enum="header_only=0x0,header_and_date=0x1" offset="0x0.26" size="0x0.2" />
 	<field name="valid" descr="[Internal] Encodes the data element validity\;0x0: invalid_data- should be skipped\;0x1: illegal- treated as Invalidated data element\;0x2: valid_data\;0x3: free- (no data exists)" access="RW" enum="invalid_data=0x0,illegal=0x1,valid_data=0x2,free=0x3" offset="0x0.30" size="0x0.2" />
-	<field name="type_index" descr="Configuration item \;index according to its type_class\;. \;Table 871, &quot;\;Configuration Item Type Class Global Layout\;,&quot; \;on page 1160\;Table 873, &quot;\;Configuration Item Type Class Physical Port \;Layout\;,&quot; on page 1160\;Table 875, &quot;\;Configuration Item Type Class Per Host-PF \;Layout\;,&quot; on page 1161\;Table 877, &quot;\;Configuration Item Type Class Log Layout\;,&quot; on \;page 1161\;Table 892, &quot;Configuration Item Type Layout, Class Switch \;Global,&quot; on page 959" access="INDEX" offset="0x4.0" size="0x0.24" />
-	<field name="type_class" descr="Type Class.\;0x0: Global\;0x:1: Port\;0x3: Host_PF\;0x5 Log" access="INDEX" offset="0x4.24" size="0x0.8" />
+	<field name="type_index" descr="Configuration item index according to its type_class. \;Table 1103, &quot;\;Configuration Item Type Class Global Lay\;out\;,&quot; on page 1216\;Table 1105, &quot;\;Configuration Item Type Class Physical Port \;Layout\;,&quot; on page 1216\;Table 1107, &quot;\;Configuration Item Type Class Per Host-PF \;Layout\;,&quot; on page 1217\;Table 1109, &quot;\;Configuration Item Type Class Log Layout\;,&quot; \;on page 1217" access="INDEX" offset="0x4.0" size="0x0.24" />
+	<field name="type_class" descr="Type Class.\;0x0: Global\;0x1: Port\;0x3: Host_PF\;0x5 Log" access="INDEX" enum="Global=0x0,Port=0x1,Host_PF=0x3" offset="0x4.24" size="0x0.8" />
 	<field name="crc16" descr="[Internal] Encodes the data integrity check of the data ele\;ment. \;Note: In some elements, only encodes the header into the \;CRC16, as defined in the header type field." access="RW" offset="0x8.0" size="0x0.16" />
 </node>
 
-<node name="db_threshold_register_layout_ext" descr="" size="0x10.0" >
-	<field name="threshold" descr="Required upper watermark.\;When FIFO/buffer reaches this size- an event will be sent" access="RW" offset="0x0.0" size="0x0.16" />
-	<field name="size" descr="Current FIFO/buffer size" access="RO" offset="0x4.0" size="0x0.16" />
-</node>
-
 <node name="dcbx_app_reg_ext" descr="" size="0x14.0" >
-	<field name="port_number" descr="Physical port number.\;This field is reserved when \;HCA_CAP\;.num_ports ==1. \; See \;Table  1248, &quot;QUERY_HCA_CAP Input Structure Layout,&quot; on page  1349" access="INDEX" offset="0x0.16" size="0x0.8" />
+	<field name="port_number" descr="Physical port number.\;This field is reserved when HCA_CAP.num_ports ==1. \; See \;Table  1291, &quot;\;QUERY_HCA_CAP Input Structure Layout\;,&quot; on page  1347" access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="num_app_prio" descr="" access="RO" offset="0x4.0" size="0x0.6" />
 	<field name="app_prio" descr="Application priority entry." subnode="application_prio_entry" access="RO" high_bound="VARIABLE" low_bound="0" offset="0x10.0" size="0x4.0" />
 </node>
 
-<node name="dcbx_param_reg_ext" descr="" size="0x14.0" >
+<node name="dcbx_param_reg_ext" descr="" size="0x40.0" >
 	<field name="max_application_table_size" descr="The maximum size of DCBX application table." access="RO" offset="0x0.0" size="0x0.6" />
-	<field name="port_number" descr="Physical port number.\;This field is reserved when \;HCA_CAP\;.num_ports ==1. \; See \;Table  1248, &quot;QUERY_HCA_CAP Input Structure Layout,&quot; on page  1349" access="INDEX" offset="0x0.16" size="0x0.8" />
+	<field name="port_number" descr="Physical port number.\;This field is reserved when HCA_CAP.num_ports ==1. \; See \;Table  1291, &quot;\;QUERY_HCA_CAP Input Structure Layout\;,&quot; on page  1347" access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="dcbx_standby_cap" descr="If set, device supports DCBX on standby mode (aux power)." access="RO" offset="0x0.29" size="0x0.1" />
 	<field name="dcbx_ieee_cap" descr="If set, DCBX IEEE version is supported." access="RO" offset="0x0.30" size="0x0.1" />
 	<field name="dcbx_cee_cap" descr="If set, DCBX CEE version is supported." access="RO" offset="0x0.31" size="0x0.1" />
@@ -263,9 +244,9 @@
 </node>
 
 <node name="ecn" descr="" size="0x4.0" >
-	<field name="color2" descr="The EXP mapping for color \;k\;, where k=0..2, see \;Table 554, \;&quot;\;color&lt;k&gt;Layout\;,&quot; on page 804" access="RW" offset="0x0.8" size="0x0.8" />
-	<field name="color1" descr="The EXP mapping for color \;k\;, where k=0..2, see \;Table 554, \;&quot;\;color&lt;k&gt;Layout\;,&quot; on page 804" access="RW" offset="0x0.16" size="0x0.8" />
-	<field name="color0" descr="The EXP mapping for color \;k\;, where k=0..2, see \;Table 554, \;&quot;\;color&lt;k&gt;Layout\;,&quot; on page 804" access="RW" offset="0x0.24" size="0x0.8" />
+	<field name="color2" descr="The EXP mapping for color \;k\;, where k=0..2, see \;Table 642, \;&quot;\;color&lt;k&gt;Layout\;,&quot; on page 808" access="RW" offset="0x0.8" size="0x0.8" />
+	<field name="color1" descr="The EXP mapping for color \;k\;, where k=0..2, see \;Table 642, \;&quot;\;color&lt;k&gt;Layout\;,&quot; on page 808" access="RW" offset="0x0.16" size="0x0.8" />
+	<field name="color0" descr="The EXP mapping for color \;k\;, where k=0..2, see \;Table 642, \;&quot;\;color&lt;k&gt;Layout\;,&quot; on page 808" access="RW" offset="0x0.24" size="0x0.8" />
 </node>
 
 <node name="enum_entry" descr="" size="0x4.0" >
@@ -448,8 +429,10 @@
 	<field name="egress_stp_filter_low" descr="Egress spanning tree filter" access="RO" offset="0x64.0" size="0x4.0" />
 	<field name="egress_hoq_stall_high" descr="Number of sequential packets dropped, due to Head-Of-Queue \;Lifetime Limit, that causes the port to enter the Stall state \;Reserved for Switches" access="RO" offset="0x68.0" size="0x4.0" />
 	<field name="egress_hoq_stall_low" descr="Number of sequential packets dropped, due to Head-Of-Queue \;Lifetime Limit, that causes the port to enter the Stall state \;Reserved for Switches" access="RO" offset="0x6C.0" size="0x4.0" />
-	<field name="egress_sll_high" descr="Number of \;p\;ackets dropped, \;because the Switch L\;ifetime Limit \;was exceeded. \;Applies for switches only. R\;eserved for HCAs" access="RO" offset="0x70.0" size="0x4.0" />
-	<field name="egress_sll_low" descr="Number of \;p\;ackets dropped, \;because the Switch L\;ifetime Limit \;was exceeded. \;Applies for switches only. R\;eserved for HCAs" access="RO" offset="0x74.0" size="0x4.0" />
+	<field name="egress_sll_high" descr="Number of packets dropped, because the Switch Lifetime Limit \;was exceeded. \;Applies for switches only. Reserved for HCAs" access="RO" offset="0x70.0" size="0x4.0" />
+	<field name="egress_sll_low" descr="Number of packets dropped, because the Switch Lifetime Limit \;was exceeded. \;Applies for switches only. Reserved for HCAs" access="RO" offset="0x74.0" size="0x4.0" />
+	<field name="ingress_discard_all_high" descr="Number of packets dropped, because of any reason.\; Note: see description in the description area for limitations of \;this counter.\;Applies for switches only. Reserved for HCAs" access="RO" offset="0x78.0" size="0x4.0" />
+	<field name="ingress_discard_all_low" descr="Number of packets dropped, because of any reason.\; Note: see description in the description area for limitations of \;this counter.\;Applies for switches only. Reserved for HCAs" access="RO" offset="0x7C.0" size="0x4.0" />
 </node>
 
 <node name="eth_extended_cntrs_grp_data_layout_ext" descr="" size="0xf8.0" >
@@ -546,13 +529,9 @@
 	<field name="max_bw_units" descr="The maximal bandwidth allowed for the use for the port\;Encoding of \;max_bw_units\;:\;0x0: DISABLED - rate limiter disabled\;0x3: HUNDREDS_MBPS - \;max_bw_value\; is in 100 Mbps units\;0x4: GBPS - \;max_bw_value\; is in 1 Gbps units\;Note - Query response will return value in units that allow the \;most accurate number, not in the units configured using Set()." access="RW" enum="DISABLED=0x0,HUNDREDS_MBPS=0x3,GBPS=0x4" offset="0x4.16" size="0x0.4" />
 </node>
 
-<node name="fore_ext" descr="" size="0x8.0" >
+<node name="fore_ext" descr="" size="0xc.0" >
 	<field name="fan_under_limit" descr="Fan speed is below the low limit defined in MFSL register. Each \;bit relates to a single tachometer and indicates the specific tachom\;eter reading is below the threshold." access="RO" offset="0x0.16" size="0x0.10" />
 	<field name="fan_over_limit" descr="Fan speed is above the high limit defined in MFSL register. Each \;bit relates to a single tachometer and indicates the specific tachom\;eter reading is above the threshold." access="RO" offset="0x4.16" size="0x0.10" />
-</node>
-
-<node name="fp_sl_map_arg_ext" descr="" size="0x4.0" >
-	<field name="port" descr="0x0 - reserved\;0x1-0x2 - port number\;0x3-0xff - reserved" access="RW" offset="0x0.0" size="0x0.8" />
 </node>
 
 <node name="link_level_retrans_cntr_grp_data_ext" descr="" size="0xf8.0" >
@@ -570,28 +549,38 @@
 	<field name="llr_tx_ret_events_low" descr="The total number of retransmission events." access="RO" offset="0x2C.0" size="0x4.0" />
 </node>
 
-<node name="mcc_reg_ext" descr="" size="0x14.0" >
-	<field name="instruction" descr="Command to be executed by the FSM\;0x1: LOCK_UPDATE_HANDLE\;0x2: RELEASE_UPDATE_HANDLE \;0x3: UPDATE_COMPONENT\;0x4: VERIFY_COMPONENT\;0x5: ACTIVATE_COMPONENET \;0x6: ACTIVATE\;0x7: READ_COMPONENT\;0x8: CANCEL\;0x9: CHECK_UPDATE_HANDLE\;0xA: FORCE_HANDLE_RELEASE\;0xB: READ_PENDING_COMPONENT\;Other values are reserved. Applicable for write operation \;only." access="RW" offset="0x0.0" size="0x0.8" />
+<node name="mcc_reg_ext" descr="" size="0x20.0" >
+	<field name="instruction" descr="Command to be executed by the FSM\;0x1: LOCK_UPDATE_HANDLE\;0x2: RELEASE_UPDATE_HANDLE \;0x3: UPDATE_COMPONENT\;0x4: VERIFY_COMPONENT\;0x5: ACTIVATE_COMPONENET \;0x6: ACTIVATE\;0x7: READ_COMPONENT\;0x8: CANCEL\;0x9: CHECK_UPDATE_HANDLE\;0xA: FORCE_HANDLE_RELEASE\;0xB: READ_PENDING_COMPONENT\;Other values are reserved. Applicable for write operation \;only." access="RW" enum="LOCK_UPDATE_HANDLE=0x1,RELEASE_UPDATE_HANDLE=0x2,UPDATE_COMPONENT=0x3,VERIFY_COMPONENT=0x4,ACTIVATE_COMPONENET=0x5,ACTIVATE=0x6,READ_COMPONENT=0x7,CANCEL=0x8,CHECK_UPDATE_HANDLE=0x9,FORCE_HANDLE_RELEASE=0xa,READ_PENDING_COMPONENT=0xb" offset="0x0.0" size="0x0.8" />
 	<field name="time_elapsed_since_last_cmd" descr="The number of seconds elapsed since the update_handle \;owner last issued a command. The time saturates at 0xFFF." access="RO" offset="0x0.16" size="0x0.12" />
 	<field name="component_index" descr="Index of the accessed component. Valid for \;UPDATE_COMPONENT, ACTIVATE_COMPONENET, \;READ_COMPONENT and READ_PENDING_COMPO\;NENT instructions. Otherwise, this field is reserved." access="INDEX" offset="0x4.0" size="0x0.16" />
-	<field name="update_handle" descr="Token representing the current flow executed by the FSM.\;See \;&quot;\;Update Handle\;&quot; on page 557\;." access="WO" offset="0x8.0" size="0x0.24" />
-	<field name="control_state" descr="Current Update FSM state\;, See \;&quot;\;FSM States\;&quot; on page 560\;0x0: IDLE\;0x1: LOCKED\;0x2: INITIALIZE\;0x3: DOWNLOAD\;0x4: VERIFY\;0x5: APPLY\;0x6: ACTIVATE\;0x7: UPLOAD\;0x8: UPLOAD_PENDING\;Other values are reserved" access="RO" offset="0xC.0" size="0x0.4" />
-	<field name="error_code" descr="Indicates the successful completion of the \;instruction\;, or \;the reason it failed. \;See \;&quot;\;Error Handling\;&quot; on page 559\;0x0: OK\;0x1: ERROR\;0x2: REJECTED_DIGEST_ERR\;0x3: REJECTED_NOT_APPLICABLE\;0x4: REJECTED_UNKNOWN_KEY\;0x5: REJECTED_AUTH_FAILED\;0x6: REJECTED_UNSIGNED\;0x7: REJECTED_KEY_NOT_APPLICABLE\;0x8: REJECTED_BAD_FORMAT\;0x9: BLOCKED_PENDING_RESET\;0xA: REJECTED_NOT_A_SECURED_FW\;0xB: REJECTED_MFG_BASE_MAC_NOT_LISTED\;0xC: REJECTED_NO_DEBUG_TOKEN\;0xD: REJECTED_VERSION_NUM_MISMATCH\;0xE: REJECTED_USER_TIMESTAMP_MISMATCH\;0xF: REJECTED_FORBIDDEN_VERSION\;0x10: FLASH_ERASE_ERROR\;0x11: REJECTED_REBURN_RUNNING_AND_RETRY\;Other values should be treated as an unknown error." access="RO" offset="0xC.8" size="0x0.8" />
+	<field name="update_handle" descr="Token representing the current flow executed by the FSM.\;See \;&quot;\;Update Handle\;&quot; on page 520\;." access="RW" offset="0x8.0" size="0x0.24" />
+	<field name="control_state" descr="Current Update FSM state\;, See \;&quot;\;FSM States\;&quot; on page 523\;0x0: IDLE\;0x1: LOCKED\;0x2: INITIALIZE\;0x3: DOWNLOAD\;0x4: VERIFY\;0x5: APPLY\;0x6: ACTIVATE\;0x7: UPLOAD\;0x8: UPLOAD_PENDING\;Other values are reserved" access="RO" offset="0xC.0" size="0x0.4" />
+	<field name="error_code" descr="Indicates the successful completion of the \;instruction\;, or \;the reason it failed. \;See \;&quot;\;Error Handling\;&quot; on page 522\;0x0: OK\;0x1: ERROR\;0x2: REJECTED_DIGEST_ERR\;0x3: REJECTED_NOT_APPLICABLE\;0x4: REJECTED_UNKNOWN_KEY\;0x5: REJECTED_AUTH_FAILED\;0x6: REJECTED_UNSIGNED\;0x7: REJECTED_KEY_NOT_APPLICABLE\;0x8: REJECTED_BAD_FORMAT\;0x9: BLOCKED_PENDING_RESET\;0xA: REJECTED_NOT_A_SECURED_FW\;0xB: REJECTED_MFG_BASE_MAC_NOT_LISTED\;0xC: REJECTED_NO_DEBUG_TOKEN\;0xD: REJECTED_VERSION_NUM_MISMATCH\;0xE: REJECTED_USER_TIMESTAMP_MISMATCH\;0xF: REJECTED_FORBIDDEN_VERSION\;0x10: FLASH_ERASE_ERROR\;0x11: REJECTED_REBURN_RUNNING_AND_RETRY\;Other values should be treated as an unknown error." access="RO" offset="0xC.8" size="0x0.8" />
 	<field name="control_progress" descr="Indicates the estimated progress status of the current opera\;tion executed by the FSM. Valid values are 0..100.\;101 indicates that progress reporting is not supported for \;this update state." access="RO" offset="0xC.16" size="0x0.7" />
 	<field name="handle_owner_host_id" descr="For \;handle_owner_type\; BMC, command-interface and \;ICMD, indicates the identifier of the host of the handle \;owner.\;Otherwise reserved" access="RO" offset="0xC.24" size="0x0.4" />
 	<field name="handle_owner_type" descr="Type of entity holding the update handle:\;0x0: unspecified\;0x1: Chassis BMC\;0x2: MAD\;0x3: BMC\;0x4: command interface\;0x5: ICMD \;Other values are reserved." access="RO" offset="0xC.28" size="0x0.4" />
-	<field name="component_size" descr="Component size in bytes. \;Valid for UPDATE_COMPONENT instruction. Specify\;ing the size may shorten the update time.\;Value 0x0 means that size is unspecified." access="WO" offset="0x10.0" size="0x4.0" />
+	<field name="component_size" descr="Component size in bytes. \;Valid for UPDATE_COMPONENT instruction. Specifying \;the size may shorten the update time.\;Value 0x0 means that size is unspecified." access="WO" offset="0x10.0" size="0x4.0" />
 </node>
 
-<node name="mcda_reg_ext" descr="" size="0x14.0" >
+<node name="mcda_reg_ext" descr="" size="0x110.0" >
 	<field name="update_handle" descr="Update handle registered when the FSM was activated." access="RW" offset="0x0.0" size="0x0.24" />
-	<field name="offset" descr="Offset of accessed address relative to component start. \;Accesses must be in accordance to \;log_mcda_word_size\; in \;Table 924, &quot;\;MCQI CAPABILITIES Info Layout\;,&quot; on \;page 1190" access="RW" offset="0x4.0" size="0x4.0" />
+	<field name="offset" descr="Offset of accessed address relative to component start. \;Accesses must be in accordance to \;log_mcda_word_size\; in \;Table 1168, &quot;\;MCQI CAPABILITIES Info Layout\;,&quot; on \;page 1259" access="RW" offset="0x4.0" size="0x4.0" />
 	<field name="size" descr="Size of the data accessed, given in bytes" access="RW" offset="0x8.0" size="0x0.16" />
-	<field name="data" descr="Data block accessed" access="RW" high_bound="VARIABLE" low_bound="0" offset="0x10.0" size="0x4.0" />
+	<field name="data" descr="Data block accessed" access="RW" high_bound="63" low_bound="0" offset="0x10.0" size="0x100.0" />
+</node>
+
+<node name="mcdd_reg_ext" descr="" size="0x20.0" >
+	<field name="update_handle" descr="Update handle registered when the FSM was activated." access="RW" offset="0x0.0" size="0x0.24" />
+	<field name="offset" descr="Offset of accessed address relative to component start." access="RW" offset="0x4.0" size="0x4.0" />
+	<field name="size" descr="Size of the data accessed, given in bytes" access="RW" offset="0x8.0" size="0x0.16" />
+	<field name="data_page_phys_addr_msb" descr="Physical address of the FW component data page." access="RW" offset="0x10.0" size="0x4.0" />
+	<field name="data_page_phys_addr_lsb" descr="Physical address of the FW component data page." access="RW" offset="0x14.0" size="0x4.0" />
+	<field name="mailbox_page_phys_addr_msb" descr="Physical address of the mailbox page." access="RW" offset="0x18.0" size="0x4.0" />
+	<field name="mailbox_page_phys_addr_lsb" descr="Physical address of the mailbox page." access="RW" offset="0x1C.0" size="0x4.0" />
 </node>
 
 <node name="mcia_ext" descr="" size="0x40.0" >
-	<field name="status" descr="Module Status\;0h - GOOD\;1h - NO_EEPROM_MODULE. No response from module&apos;s \;EPROM.\;2h - MODULE_NOT_SUPPORTED. Module type not supported \;by the device. \;3h - MODULE_NOT_CONNECTED. No module present indica\;tion. \;9h - I\;2\;C_ERROR. Error occurred while trying to access the mod\;ule&apos;s EPROM using I\;2\;C.\;10h - MODULE_DISABLED - module is disabled \;[\;[Internal] 11h - Page Access Failed - page not supported or try\;ing to access a protected page with bad password." access="RO" offset="0x0.0" size="0x0.8" />
+	<field name="status" descr="Module Status\;0h - GOOD\;1h - NO_EEPROM_MODULE. No response from module&apos;s \;EPROM.\;2h - MODULE_NOT_SUPPORTED. Module type not supported \;by the device. \;3h - MODULE_NOT_CONNECTED. No module present indica\;tion. \;9h - I\;2\;C_ERROR. Error occurred while trying to access the mod\;ule&apos;s EPROM using I\;2\;C.\;10h - MODULE_DISABLED - module is disabled \;[Internal] 11h - Page Access Failed - page not supported or trying \;to access a protected page with bad password." access="RO" offset="0x0.0" size="0x0.8" />
 	<field name="module" descr="Module number" access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="l" descr="Lock bit. Setting this bit will lock the access to the specific cable.\;Used for updating a full page in a cable EPROM. Any access \;other then subsequence writes will fail while the port is locked." access="RW" offset="0x0.31" size="0x0.1" />
 	<field name="device_address" descr="Device address" access="RW" offset="0x4.0" size="0x0.16" />
@@ -601,9 +590,9 @@
 	<field name="dword" descr="Bytes to read/write" access="RW" high_bound="11" low_bound="0" offset="0x10.0" size="0x30.0" />
 </node>
 
-<node name="mcion_ext" descr="" size="0x8.0" >
+<node name="mcion_ext" descr="" size="0xc.0" >
 	<field name="module" descr="Module number." access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="module_status_bits" descr="Module IO status, \;as defined by SFF:\;Bit 0 - Present\;Bit 1 - RX_LOS\;Bit 2 - TX_Fault\;[Internal] Bit 8 - Low Power Mode Status" access="RO" offset="0x4.0" size="0x0.16" />
+	<field name="module_status_bits" descr="Module IO status, as defined by SFF:\;Bit 0 - Present\;Bit 1 - RX_LOS\;Bit 2 - TX_Fault" access="RO" offset="0x4.0" size="0x0.16" />
 </node>
 
 <node name="mcpp_reg_ext" descr="" size="0x10.0" >
@@ -613,48 +602,118 @@
 	<field name="warning_temperature" descr="Above this temperature the Temperature Event is set\;. \;Units are \;Celsius\;Default 105\;Reserved when \;ent\; = 0" access="RW" offset="0x4.16" size="0x0.8" />
 	<field name="wsoc" descr="Warning State due to Over Current Event:\;0 - Yellow_State\;1 - Red_State (default)" access="RW" offset="0x8.30" size="0x0.1" />
 	<field name="wst" descr="Warning State due to Temperature Event:\;0 - Yellow_State (default)\;1 - Red_State" access="RW" offset="0x8.31" size="0x0.1" />
-	<field name="yellow_state_rate" descr="Port rate at Yellow_State. Units are percentage from \;Green_State port rate\;Default 50" access="RW" offset="0xC.0" size="0x0.8" />
-	<field name="red_state_rate" descr="Port rate at Red_State. Units are percentage from Green_State \;port rate\;red\;_state_rate\; must be lower or equal to \;yellow\;_state_rate\;Default 0" access="RW" offset="0xC.16" size="0x0.8" />
+	<field name="yellow_state_rate" descr="Port rate at Yellow_State. Units are percentage from Green_State \;port rate\;Default 50" access="RW" offset="0xC.0" size="0x0.8" />
+	<field name="red_state_rate" descr="Port rate at Red_State. Units are percentage from Green_State \;port rate\;red_state_rate\; must be lower or equal to \;yellow_state_rate\;Default 0" access="RW" offset="0xC.16" size="0x0.8" />
 </node>
 
-<node name="mcqi_reg_ext" descr="" size="0x1c.0" >
+<node name="mcqi_activation_method_ext" descr="" size="0x4.0" >
+	<field name="device_hw_reset" descr="This component goes to ACTIVE_PENDING_RESET after \;activation.\;A HW reset will move it to ACTIVE state." access="RO" offset="0x0.25" size="0x0.1" />
+	<field name="all_hosts_sync" descr="When set, the operation needed to move the component \;form ACTIVE_PENDING_RESET to ACTIVE should \;happen simultaneously on all hosts." access="RO" offset="0x0.26" size="0x0.1" />
+	<field name="auto_activate" descr="This component will be ACTIVE or ACTIVE_PEND\;ING_RESET after the APPLY state." access="RO" offset="0x0.27" size="0x0.1" />
+	<field name="pending_fw_reset" descr="This component goes to ACTIVE_PENDING_RESET after \;activation.\;A FW reset will move it to ACTIVE state." access="RO" offset="0x0.28" size="0x0.1" />
+	<field name="pending_server_reboot" descr="This component goes to ACTIVE_PENDING_RESET state \;after activation.\;A server reset (PCIe PERST#), will move it ACTIVE state." access="RO" offset="0x0.29" size="0x0.1" />
+	<field name="pending_server_dc_power_cycle" descr="This component goes to ACTIVE_PENDING_RESET state \;after activation.\;DC power cycle (power cycle of PCI power rails), will \;move it ACTIVE state." access="RO" offset="0x0.30" size="0x0.1" />
+	<field name="pending_server_ac_power_cycle" descr="This component goes to ACTIVE_PENDING_RESET state \;after activation.\;AC power cycle (power cycle for both PCI power rails and \;AUX power), will move it ACTIVE state." access="RO" offset="0x0.31" size="0x0.1" />
+</node>
+
+<node name="mcqi_cap_ext" descr="" size="0x14.0" >
+	<field name="supported_info_bitmask" descr="Bitmask indicating which info_type(s) are supported for \;this component. Set bit indicates the property set is sup\;ported\;bit 1: VERSION\;bit 5: ACTIVATION_METHOD\;Other bits are reserved. CAPABILITIES set is always sup\;ported." access="RO" offset="0x0.0" size="0x4.0" />
+	<field name="component_size" descr="The size of the component given in bytes. Value 0x0 indi\;cates that the size in unknown.\;For some components, size may only be available in the \;READ_COMPONENT state." access="RO" offset="0x4.0" size="0x4.0" />
+	<field name="max_component_size" descr="Maximum size for this component, given in bytes." access="RO" offset="0x8.0" size="0x4.0" />
+	<field name="mcda_max_write_size" descr="Maximal write size for MCDA" access="RO" offset="0xC.0" size="0x0.16" />
+	<field name="log_mcda_word_size" descr="Log 2 of the access word size in bytes.\;Read and write access must be aligned to the word size. \;Write access must be done for an integer number of words." access="RO" offset="0xC.28" size="0x0.4" />
+	<field name="match_base_guid_mac" descr="The device only accepts updates for this component that \;explicitly lists its base MAC and/or base GUID" access="RW" offset="0x10.26" size="0x0.1" />
+	<field name="check_user_timestamp" descr="A user defined timestamp (MVTS) is active for this compo\;nent." access="RW" offset="0x10.27" size="0x0.1" />
+	<field name="match_psid" descr="PSID is validated for this component update." access="RW" offset="0x10.28" size="0x0.1" />
+	<field name="match_chip_id" descr="Chip ID (\;device_hw_revision\;) is validated for this compo\;nent update." access="RW" offset="0x10.29" size="0x0.1" />
+	<field name="rd_en" descr="When set, this components may be read\;, see \;&quot;\;Read Flow\;&quot; \;on page 522\;." access="RO" offset="0x10.31" size="0x0.1" />
+</node>
+
+<node name="mcqi_reg_data_auto_ext" descr="" attr_is_union="1" size="0x7c.0" >
+	<field name="mcqi_cap_ext" descr="" subnode="mcqi_cap_ext" offset="0x0.0" selected_by="CAPABILITIES" size="0x14.0" />
+	<field name="mcqi_version_ext" descr="" subnode="mcqi_version_ext" offset="0x0.0" selected_by="VERSION" size="0x7c.0" />
+	<field name="mcqi_activation_method_ext" descr="" subnode="mcqi_activation_method_ext" offset="0x0.0" selected_by="ACTIVATION_METHOD" size="0x4.0" />
+</node>
+
+<node name="mcqi_reg_ext" descr="" size="0x94.0" >
 	<field name="component_index" descr="Component index gathered by \;&quot;\;MCQS - Management \;Component Query Status\;&quot;" access="INDEX" offset="0x0.0" size="0x0.16" />
+	<field name="fw_device" descr="Selects the FW device (HW component)\;0: Switch / NIC \;1 - N: External devices" access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="read_pending_component" descr="When set, the register will return information about the \;pending component (if available)" access="INDEX" offset="0x0.31" size="0x0.1" />
-	<field name="info_type" descr="Component properties set.\;0x0: CAPABILITIES\;0x1: VERSION\;0x5: ACTIVATION_METHOD\;Other values are reserved" access="RW" offset="0x8.0" size="0x0.5" />
+	<field name="info_type" descr="Component properties set.\;0x0: CAPABILITIES\;0x1: VERSION\;0x5: ACTIVATION_METHOD\;Other values are reserved" access="RW" enum="CAPABILITIES=0x0,VERSION=0x1,ACTIVATION_METHOD=0x5" offset="0x8.0" size="0x0.5" />
 	<field name="info_size" descr="Properties set structure size, given in bytes." access="RO" offset="0xC.0" size="0x4.0" />
 	<field name="offset" descr="The requested/returned data offset from the section start, \;given in bytes.\;Must be DWORD aligned." access="RW" offset="0x10.0" size="0x4.0" />
-	<field name="data_size" descr="The requested/returned data size, given in bytes. \;If \;data_size\; is not DWORD aligned, the last bytes are zero \;padded." access="RW" offset="0x14.0" size="0x0.16" />
-	<field name="data" descr="Properties set structure according to \;info_type\;.\;CAPABILITIES - See \;Table 924, &quot;\;MCQI CAPABILITIES \;Info Layout\;,&quot; on page 1190\;VERSION - See \;Table 926, &quot;\;MCQI VERSION Info Lay\;out\;,&quot; on page 1191\;ACTIVATION_METHOD - See \;Table 930, &quot;\;MCQI ACTI\;VATION_METHOD Info Layout\;,&quot; on page 1193" access="RO" high_bound="VARIABLE" low_bound="0" offset="0x18.0" size="0x4.0" />
+	<field name="data_size" descr="The requested/returned data size, given in bytes.\;If \;data_size\; is not DWORD aligned, the last bytes are zero \;padded." access="RW" offset="0x14.0" size="0x0.16" />
+	<field name="data" descr="Properties set structure according to \;info_type\;.\;CAPABILITIES - See \;Table 1168, &quot;\;MCQI CAPABILITIES \;Info Layout\;,&quot; on page 1259\;VERSION - See \;Table 1170, &quot;\;MCQI VERSION Info Lay\;out\;,&quot; on page 1261\;ACTIVATION_METHOD - See \;Table 1174, &quot;\;MCQI \;ACTIVATION_METHOD Info Layout\;,&quot; on page 1262" subnode="mcqi_reg_data_auto_ext" access="RO" offset="0x18.0" size="0x7c.0" union_selector="$(parent).info_type" />
+</node>
+
+<node name="mcqi_version_ext" descr="" size="0x7c.0" >
+	<field name="version_string_length" descr="" access="RW" offset="0x0.0" size="0x0.8" />
+	<field name="user_defined_time_valid" descr="When set, the component has a valid user-defined version \;time-stamp in \;user_defined_time" access="RW" offset="0x0.28" size="0x0.1" />
+	<field name="build_time_valid" descr="When set, the component has a valid creation time-stamp in \;build_time" access="RW" offset="0x0.29" size="0x0.1" />
+	<field name="version" descr="Version number" access="RW" offset="0x4.0" size="0x4.0" />
+	<field name="build_time" descr="Time of component creation. Valid only if \;build_time_valid\; \;is set. See \;Table 1172, &quot;\;Date-Time Layout\;,&quot; on page 1262" subnode="uint64" access="RW" offset="0x8.0" size="0x8.0" />
+	<field name="user_defined_time" descr="User-defined time assigned to the component version. Valid \;only if \;user_defined_time_valid\; is set. See \;Table 1172, \;&quot;\;Date-Time Layout\;,&quot; on page 1262" subnode="uint64" access="RW" offset="0x10.0" size="0x8.0" />
+	<field name="build_tool_version" descr="Build tool version number.\;Valid only when not equal to 0" access="RW" offset="0x18.0" size="0x4.0" />
+	<field name="version_string" descr="NULL terminated string representing the version." access="RW" high_bound="91" low_bound="0" offset="0x20.24" size="0x5c.0" />
 </node>
 
 <node name="mcqs_reg_ext" descr="" size="0x10.0" >
 	<field name="component_index" descr="Component Index. Values range from 1 to the last compo\;nent indicated by \;last_index_flag\;." access="INDEX" offset="0x0.0" size="0x0.16" />
+	<field name="fw_device" descr="Selects the FW device (HW component)\;0: Switch / NIC \;1 - N: External devices" access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="last_index_flag" descr="When set, this component is the last component (highest \;component_index\;)." access="RO" offset="0x0.31" size="0x0.1" />
-	<field name="identifier" descr="This field uniquely identifies a specific component type. \;0x1: BOOT_IMG\;0x4: OEM_NVCONFIG\;0x5: MLNX_NVCONFIG\;0x6: CS_TOKEN\;0x7: DBG_TOKEN\;Other values are reserved" access="RO" offset="0x4.0" size="0x0.16" />
-	<field name="component_update_state" descr="Component statue in update flow, \;see \;&quot;\;Component Update \;State&quot; on page 556\;:\;0x0: IDLE\;0x1: IN_PROGRESS\;0x2: APPLIED\;0x3: ACTIVE \;0x4: ACTIVE_PENDING_RESET\;0x5: FAILED\;0x6: CANCELED\;0x7: BUSY\;Other values are reserved" access="RO" offset="0x8.0" size="0x0.4" />
+	<field name="identifier" descr="This field uniquely identifies a specific component type. \;0x1: BOOT_IMG\;0x4: OEM_NVCONFIG\;0x5: MLNX_NVCONFIG\;0x6: CS_TOKEN\;0x7: DBG_TOKEN\;0xA Gearbox\;Other values are reserved" access="RO" offset="0x4.0" size="0x0.16" />
+	<field name="component_update_state" descr="Component statue in update flow, \;see \;&quot;\;Component Update \;State\;&quot; on page 519\;:\;0x0: IDLE\;0x1: IN_PROGRESS\;0x2: APPLIED\;0x3: ACTIVE \;0x4: ACTIVE_PENDING_RESET\;0x5: FAILED\;0x6: CANCELED\;0x7: BUSY\;Other values are reserved" access="RO" offset="0x8.0" size="0x0.4" />
 	<field name="component_status" descr="The status of the component:\;0x0: NOT_PRESENT - The component is supported by the \;device but, currently not present\;0x1: PRESENT - This component is present.\;0x2: IN_USE - The component is present and currently in \;use.\;Other values are reserved" access="RO" offset="0x8.4" size="0x0.5" />
 	<field name="last_update_state_changer_host_id" descr="For \;last_update_state_changer_type\; BMC, command-\;interface and ICMD, indicates the identifier of the host of \;the handle owner. Otherwise reserved." access="RO" offset="0xC.24" size="0x0.4" />
 	<field name="last_update_state_changer_type" descr="Indicates which entity was the last to change the \;compo\;nent_update_state\; of this component.\;0x0: unspecified\;0x1: Chassis BMC\;0x2: MAD\;0x3: BMC\;0x4: command interface\;0x5: ICMD\;Other values are reserved" access="RO" offset="0xC.28" size="0x0.4" />
 </node>
 
-<node name="mfba_reg_ext" descr="" size="0x10.0" >
+<node name="mdfcr_ext" descr="" size="0x60.0" >
+	<field name="device_type" descr="Peripheral device type\;1: Vega Gearbox" access="INDEX" offset="0x0.0" size="0x0.8" />
+	<field name="device_index" descr="Device number \;For gearboxes, the index represents the gearbox die." access="INDEX" offset="0x4.0" size="0x0.12" />
+	<field name="all" descr="All devices are selected and \;device_index\; is ignored\;When set to &apos;1&apos;, the \;fw_status\; should represent the worst case of \;any of the devices. \;fw_version\;, \;build_id\;, \;major\; and \;minor\; should \;be of device number 0." access="INDEX" offset="0x4.31" size="0x0.1" />
+	<field name="first_fw_status_device" descr="The first device representing the \;fw_status" access="RO" offset="0xC.0" size="0x0.12" />
+	<field name="fw_status" descr="FW load status.\;0: No errors, FW has loaded successfully. \;1: Flash error. \;2: FW load error. \;15: Not ready yet for displaying the status." access="RO" offset="0xC.20" size="0x0.4" />
+	<field name="expected_fw_version" descr="Expected FW version" access="RO" offset="0x10.0" size="0x4.0" />
+	<field name="fw_version" descr="FW version" access="RO" offset="0x14.0" size="0x4.0" />
+	<field name="build_id" descr="FW build ID" access="RO" offset="0x18.0" size="0x0.16" />
+	<field name="major" descr="FW major version" access="RO" offset="0x1C.0" size="0x0.8" />
+	<field name="minor" descr="FW minor version" access="RO" offset="0x20.0" size="0x0.8" />
+	<field name="error_id" descr="FW burning status error.\;1: no errors\;2: error in total size\;3: error in iRAM size read\;4: error in DRAM size read\;5: SPI read from EEPROM time-out\;6: CRC on downloaded EEPROM content\;7: Download process is on-going\;8: SPI reset time-out\;9: memory protection\;10: unknown parameter was received by bootloader \;11: invalid message was received by bootloader\;12: message was aborted by host\;13-32: Reserved" access="RO" offset="0x24.11" size="0x0.5" />
+</node>
+
+<node name="mdrcr_ext" descr="" size="0x30.0" >
+	<field name="device_type" descr="Peripheral device type\;1: Gearbox" access="INDEX" offset="0x0.0" size="0x0.8" />
+	<field name="device_index" descr="Device number \;For gearboxes, the index represents the gearbox die." access="INDEX" offset="0x4.0" size="0x0.12" />
+	<field name="all" descr="All devices are selected and \;device_index\; is ignored\;When set to &apos;1&apos;, the \;rst_status\; should represent the worst case of \;any of the devices." access="INDEX" offset="0x4.31" size="0x0.1" />
+	<field name="rst_op" descr="Reset Operation.\;0: Query of the reset status which is displayed through \;rst_status\;.\;1: Full Reset of the selected device(s).\;2-8: Reserved." access="RW" offset="0xC.0" size="0x0.3" />
+	<field name="rst_status" descr="Reset status.\;0: Reset completed successfully. \;1: Reset operation has not finished \;yet." access="RO" offset="0xC.16" size="0x0.4" />
+</node>
+
+<node name="merr_ext" descr="" size="0x14.0" >
+	<field name="ent_type" descr="Entity type.\;0: Reserved\;1: QSFP Module (the relevant signals are: present, reset, interrupt, \;power enable, low power mode, power good, modsel, QSFP \;LEDs)" access="INDEX" offset="0x0.0" size="0x0.4" />
+	<field name="current_index" descr="Current entity index" access="INDEX" offset="0x0.16" size="0x0.8" />
+	<field name="target_index" descr="Entity number to be mapped to." access="RW" offset="0x4.0" size="0x0.8" />
+</node>
+
+<node name="mfba_reg_ext" descr="" size="0x30.0" >
 	<field name="fs" descr="Flash select - selects the flash device.\;Only zero is supported for NICs with a single flash device \;Range between 0 .. \;MFPA.flash_num \;-1" access="INDEX" offset="0x0.4" size="0x0.2" />
-	<field name="add_cap_32b" descr="Capability bit - \;If set to &apos;1&apos;, \;address \;field is 32 bit length." access="RO" offset="0x0.31" size="0x0.1" />
+	<field name="add_cap_32b" descr="Capability bit - If set to &apos;1&apos;, \;address \;field is 32 bit length." access="RO" offset="0x0.31" size="0x0.1" />
 	<field name="size" descr="The size of the data to be written or read in bytes\;Should comply with \;block_size\; and \;block_alignment\; fields in \;MFPA." access="WO" offset="0x4.0" size="0x0.9" />
 	<field name="address" descr="The start address of this read or write access in bytes. Should comply \;with \;block_size\; and \;block_alignment\; fields in MFPA." access="INDEX" offset="0x8.0" size="0x4.0" />
-	<field name="data" descr="The data to be written or read data." access="RW" high_bound="VARIABLE" low_bound="0" offset="0xC.0" size="0x4.0" />
+	<field name="data" descr="The data to be written or read data." access="RW" high_bound="8" low_bound="0" offset="0xC.0" size="0x24.0" />
 </node>
 
 <node name="mfbe_reg_ext" descr="" size="0xc.0" >
 	<field name="fs" descr="Flash select - selects the flash device.\;Only zero is supported for NICs with a single flash device. \;Range between 0 .. \;MFPA.flash_num \;-1" access="INDEX" offset="0x0.4" size="0x0.2" />
 	<field name="bulk_64kb_erase" descr="Erase a 64KB flash area in one bulk operation." access="WO" offset="0x0.29" size="0x0.1" />
 	<field name="bulk_32kb_erase" descr="Erase a 32KB flash area in one bulk operation." access="WO" offset="0x0.30" size="0x0.1" />
-	<field name="add_cap_32b" descr="Capability bit - \;If set to &apos;1&apos;, \;address \;field is 32 bit length." access="RO" offset="0x0.31" size="0x0.1" />
+	<field name="add_cap_32b" descr="Capability bit - If set to &apos;1&apos;, \;address \;field is 32 bit length." access="RO" offset="0x0.31" size="0x0.1" />
 	<field name="address" descr="The start address (in bytes) of this erase operation. Must be aligned \;with the selected erase size (sector, 32KB or 64KB)." access="INDEX" offset="0x8.0" size="0x4.0" />
 </node>
 
 <node name="mfcr_ext" descr="" size="0x8.0" >
-	<field name="pwm_frequency" descr="Controls the frequency of the PWM signal.\;Supported frequencies are:\;0x0: 11Hz \;0x1: 14.7Hz\;0x2: 22.1Hz\;0x3 - 0111111: Reserved\;0x40: 1.4KHz\;0x41: 5KHz\;0x42: 20KHz\;0x43: 22.5KHz\;0x44: 25KHz\;0x4\;5\; - 0x7F: Reserved" access="RW" offset="0x0.0" size="0x0.7" />
+	<field name="pwm_frequency" descr="Controls the frequency of the PWM signal.\;Supported frequencies are:\;0x0: 11Hz \;0x1: 14.7Hz\;0x2: 22.1Hz\;0x3 - 0111111: Reserved\;0x40: 1.4KHz\;0x41: 5KHz\;0x42: 20KHz\;0x43: 22.5KHz\;0x44: 25KHz\;0x45 - 0x7F: Reserved" access="RW" offset="0x0.0" size="0x0.7" />
 	<field name="pwm_active" descr="Indicates which of the PWM control is active (bit per PWM)" access="RO" offset="0x4.0" size="0x0.5" />
 	<field name="tacho_active" descr="Indicates which of the tachometer is active (bit per tachometer)" access="RO" offset="0x4.16" size="0x0.10" />
 </node>
@@ -680,20 +739,20 @@
 
 <node name="mfnr_ext" descr="" size="0x30.0" >
 	<field name="fan_index" descr="Fan tachometer index." access="INDEX" offset="0x0.0" size="0x0.5" />
-	<field name="serial_number" descr="Fan serial number (ASCII string)\;Value of &apos;0&apos;: Some error (Fan not present, disconnected\; \;etc.)" access="RO" high_bound="5" low_bound="0" offset="0x4.0" size="0x18.0" />
+	<field name="serial_number" descr="Fan serial number (ASCII string)\;Value of &apos;0&apos;: Some error (Fan not present, disconnected etc.)" access="RO" high_bound="5" low_bound="0" offset="0x4.0" size="0x18.0" />
 	<field name="part_number" descr="Fan part number (ASCII string)\;Value of &apos;0&apos;: Some error (Fan not present, disconnected etc.)" access="RO" high_bound="4" low_bound="0" offset="0x1C.0" size="0x14.0" />
 </node>
 
 <node name="mfpa_reg_ext" descr="" size="0x20.0" >
 	<field name="fs" descr="Flash select - selects the flash device.\;Only zero is supported for NICs with a single flash device.\;Range between 0 .. \;flash_num \;-1" access="INDEX" offset="0x0.4" size="0x0.2" />
-	<field name="add_cap_32b" descr="Capability bit - \;If set to &apos;1&apos;, \;boot_address \;field is 32 bit length." access="RO" offset="0x0.31" size="0x0.1" />
-	<field name="boot_address" descr="The\; flash address from which the firmware will boot in the next reset \;(warm start)." access="RW" offset="0x4.0" size="0x4.0" />
-	<field name="flash_num" descr="The number of flash devices\;1: there is \;1\; flash device, etc." access="RO" offset="0x10.0" size="0x0.4" />
+	<field name="add_cap_32b" descr="Capability bit - If set to &apos;1&apos;, \;boot_address \;field is 32 bit length." access="RO" offset="0x0.31" size="0x0.1" />
+	<field name="boot_address" descr="The flash address from which the firmware will boot in the next reset \;(warm start)." access="RW" offset="0x4.0" size="0x4.0" />
+	<field name="flash_num" descr="The number of flash devices\;1: there is 1 flash device, etc." access="RO" offset="0x10.0" size="0x0.4" />
 	<field name="sub_sector_wrp_en" descr="If set, MFMC register supports setting write protect with sub-sector- \;blocks\;Sub-sector block size is available in MFMC.\;sub_sector_protect_size" access="RO" offset="0x10.16" size="0x0.1" />
 	<field name="sector_wrp_en" descr="If set, MFMC register supports setting write protect with sector \;blocks.\;Sector block size is available in MFMC.\;sector_protect_size" access="RO" offset="0x10.17" size="0x0.1" />
 	<field name="bulk_64kb_erase_en" descr="If set, MFBE register supports 64KB bulk erase operation." access="RO" offset="0x10.29" size="0x0.1" />
 	<field name="bulk_32kb_erase_en" descr="If set, MFBE register supports 32KB bulk erase operation." access="RO" offset="0x10.30" size="0x0.1" />
-	<field name="wip" descr="Work In Progress. \;I\;ndicates that the flash is currently busy." access="RO" offset="0x10.31" size="0x0.1" />
+	<field name="wip" descr="Work In Progress. Indicates that the flash is currently busy." access="RO" offset="0x10.31" size="0x0.1" />
 	<field name="jedec_id" descr="Return the flash JEDEC ID value returned by the standard Read \;JEDEC ID command that is available in most flash devices." access="RO" offset="0x14.0" size="0x0.24" />
 	<field name="sector_size" descr="The minimal unit that can be erased with and MFBE command (in \;bytes)." access="RO" offset="0x18.0" size="0x0.10" />
 	<field name="block_alignment" descr="Log 2 of the requested write alignment in bytes. Write access to the \;flash\;must not cross this alignment.\;Read and write access must be aligned to this value." access="RO" offset="0x18.16" size="0x0.8" />
@@ -702,7 +761,7 @@
 </node>
 
 <node name="mfrl_reg_ext" descr="" size="0x8.0" >
-	<field name="reset_level" descr="The firmware reset level. See \;&quot;\;MFRL -\; Management \;Firmware \;Reset Level\;&quot; on page 1202\;Only a single bit may be set.\;Bit 3: LEVEL3\;Bit 6: LEVEL6\;Other bits are reserved." access="RW" offset="0x4.0" size="0x0.8" />
+	<field name="reset_level" descr="The firmware reset level. See \;&quot;\;MFRL - Management Firmware \;Reset Level\;&quot; on page 1277\;Only a single bit may be set.\;Bit 3: LEVEL3\;Bit 6: LEVEL6\;Other bits are reserved." access="RW" offset="0x4.0" size="0x0.8" />
 </node>
 
 <node name="mfsc_ext" descr="" size="0x8.0" >
@@ -710,9 +769,14 @@
 	<field name="pwm_duty_cycle" descr="Controls the duty cycle of the PWM. Value range from 0..255 to \;represent duty cycle of 0%...100%" access="RW" offset="0x4.0" size="0x0.8" />
 </node>
 
+<node name="mfscr_reg_ext" descr="" size="0x4.0" >
+	<field name="status" descr="0: OK - operation completed successfully\;1: FW is already signed. The command did not modify the \;existing signature.\;2: Unsupported command\;3: Bad RSA signature - FW cannot be authenticated prior to \;signing\;4: Non-secured FW - FW is not RSA signed and cannot be \;used for secure boot\;Other - reserved" access="RO" offset="0x0.0" size="0x0.8" />
+	<field name="operand" descr="Bit 0: Go bit. 0: reserved. 1: perform the signing operation" access="WO" offset="0x0.8" size="0x0.8" />
+</node>
+
 <node name="mfsl_ext" descr="" size="0xc.0" >
 	<field name="ie" descr="Interrupt Enable. If the ie bit is set and the Tachometer reading is out \;of range as defined by tach_min and tach_max, the FERR# will be \;asserted." access="RW" offset="0x0.0" size="0x0.1" />
-	<field name="ee" descr="Event Enable.\;0 - Do not generate event\;1 - Generate Event \;2 - Generate single event\;For Fan Error Evet details refer to \;Section  21.6.5, &quot;\;FORE - Fan Out \;of Range Event\;&quot;\;." access="RW" offset="0x0.2" size="0x0.2" />
+	<field name="ee" descr="Event Enable.\;0 - Do not generate event\;1 - Generate Event \;2 - Generate single event\;For Fan Error Evet details refer to \;Section  28.11.5, &quot;\;FORE - Fan Out \;of Range Event\;&quot;\;." access="RW" offset="0x0.2" size="0x0.2" />
 	<field name="tacho" descr="Fan tachometer index" access="INDEX" offset="0x0.24" size="0x0.4" />
 	<field name="tach_min" descr="Tachometer minimum value (minimum RPM)." access="RW" offset="0x4.0" size="0x0.16" />
 	<field name="tach_max" descr="Tachometer maximum value (maximum RPM)." access="RW" offset="0x8.0" size="0x0.16" />
@@ -727,20 +791,69 @@
 <node name="mgcr_reg_ext" descr="" size="0x20.0" >
 	<field name="segment" descr="The GPIO segment which the command&apos;s parameters apply" access="RW" offset="0x0.0" size="0x0.8" />
 	<field name="segments_count" descr="Ceiling function of total number of GPIOs / 32 in the system." access="RO" offset="0x0.8" size="0x0.8" />
-	<field name="GPIO_data_in" descr="Input value of accessible GPIO[i] signals.\;When \;GPIO_access_en[i]\; = 0, \;GPIO_data_in[i] \;always\; returns \;0" access="RO" offset="0x4.0" size="0x4.0" />
-	<field name="GPIO_data_out" descr="Output value of accessible GPIO signals.\;When \;GPIO_access_en[i]\; = 0, \;GPIO_data_out[i] \;always\; returns \;0" access="RO" offset="0x8.0" size="0x4.0" />
-	<field name="GPIO_set" descr="These 2 fields are used together to control GPIO signals in the fol\;lowing\; \;manner:\;GPIO_set[i]\;=0, \;GPIO_clear[i]\;=0 : \;GPIO_data_out[i]\; = No \;Change\;GPIO_set[i]\;=0, \;GPIO_clear[i]\;=1 : \;GPIO_data_out[i]\; = 0\;GPIO_set[i]\;=1, \;GPIO_clear[i]\;=0 : \;GPIO_data_out[i]\; = 1\;GPIO_set[i]\;=1, \;GPIO_clear[i]\;=1 : \;GPIO_data_out[i]\; = not(\;GPI\;O_data_out[i]\;)\;Ignored for non-controllable GPIO signals." access="WO" offset="0xC.0" size="0x4.0" />
-	<field name="GPIO_clear" descr="These 2 fields are used together to control GPIO signals in the fol\;lowing\; \;manner:\;GPIO_set[i]\;=0, \;GPIO_clear[i]\;=0 : \;GPIO_data_out[i]\; = No \;Change\;GPIO_set[i]\;=0, \;GPIO_clear[i]\;=1 : \;GPIO_data_out[i]\; = 0\;GPIO_set[i]\;=1, \;GPIO_clear[i]\;=0 : \;GPIO_data_out[i]\; = 1\;GPIO_set[i]\;=1, \;GPIO_clear[i]\;=1 : \;GPIO_data_out[i]\; = not(\;GPI\;O_data_out[i]\;)\;Ignored for non-controllable GPIO signals." access="WO" offset="0x10.0" size="0x4.0" />
+	<field name="GPIO_data_in" descr="Input value of accessible GPIO[i] signals.\;When \;GPIO_access_en[i]\; = 0, \;GPIO_data_in[i] \;always returns 0" access="RO" offset="0x4.0" size="0x4.0" />
+	<field name="GPIO_data_out" descr="Output value of accessible GPIO signals.\;When \;GPIO_access_en[i]\; = 0, \;GPIO_data_out[i] \;always returns \;0" access="RO" offset="0x8.0" size="0x4.0" />
+	<field name="GPIO_set" descr="These 2 fields are used together to control GPIO signals in the fol\;lowing manner:\;GPIO_set[i]\;=0, \;GPIO_clear[i]\;=0 : \;GPIO_data_out[i]\; = No \;Change\;GPIO_set[i]\;=0, \;GPIO_clear[i]\;=1 : \;GPIO_data_out[i]\; = 0\;GPIO_set[i]\;=1, \;GPIO_clear[i]\;=0 : \;GPIO_data_out[i]\; = 1\;GPIO_set[i]\;=1, \;GPIO_clear[i]\;=1 : \;GPIO_data_out[i]\; = not(\;GPI\;O_data_out[i]\;)\;Ignored for non-controllable GPIO signals." access="WO" offset="0xC.0" size="0x4.0" />
+	<field name="GPIO_clear" descr="These 2 fields are used together to control GPIO signals in the fol\;lowing manner:\;GPIO_set[i]\;=0, \;GPIO_clear[i]\;=0 : \;GPIO_data_out[i]\; = No \;Change\;GPIO_set[i]\;=0, \;GPIO_clear[i]\;=1 : \;GPIO_data_out[i]\; = 0\;GPIO_set[i]\;=1, \;GPIO_clear[i]\;=0 : \;GPIO_data_out[i]\; = 1\;GPIO_set[i]\;=1, \;GPIO_clear[i]\;=1 : \;GPIO_data_out[i]\; = not(\;GPI\;O_data_out[i]\;)\;Ignored for non-controllable GPIO signals." access="WO" offset="0x10.0" size="0x4.0" />
 	<field name="GPIO_access_en" descr="Access allowance to the corresponding GPIO signal.\;0: GPIO[i] is not observable / controllable by the host SW.\;1: GPIO[i] is observable / controllable by the host SW." access="RO" offset="0x14.0" size="0x4.0" />
 	<field name="direction" descr="0: GPIO[i] is an input only signal\;1: GPIO[i] is an output signal. Data out can be updates by the host \;SW and data in can be queried by the host SW.\;For non-accessible GPIOs, the corresponding value is 0." access="RO" offset="0x18.0" size="0x4.0" />
-	<field name="drive_type" descr="0: GPIO[i] is an open drain output.\; \;The device can only drive the\; \;GPIO[i] output pin low when \;GPIO_data_out[i]\; is 0. When \;GPI\;O_data_out[i]\; is 1, GPIO[i] is in HighZ. \;1: GPIO[i] is a full-drive output pin\;When \;GPIO_access_en[i]\; =0, \;direction[i] \;and \;drive_type[i] \;are \;always read as 0." access="RO" offset="0x1C.0" size="0x4.0" />
+	<field name="drive_type" descr="0: GPIO[i] is an open drain output. The device can only drive the \;GPIO[i] output pin low when \;GPIO_data_out[i]\; is 0. When \;GPI\;O_data_out[i]\; is 1, GPIO[i] is in HighZ. \;1: GPIO[i] is a full-drive output pin\;When \;GPIO_access_en[i]\; =0, \;direction[i] \;and \;drive_type[i] \;are \;always read as 0." access="RO" offset="0x1C.0" size="0x4.0" />
 </node>
 
-<node name="mgir_ext" descr="" size="0x9c.0" >
-	<field name="hw_info" descr="Hardware Information, see \;Table 843, &quot;\;Hardware Info Layout\;,&quot; \;on page 1141" access="RW" high_bound="7" low_bound="0" offset="0x0.0" size="0x20.0" />
-	<field name="fw_info" descr="Firmware Information, see \;Table 845, &quot;\;Firmware Info Layout\;,&quot; \;on page 1143" access="RW" high_bound="15" low_bound="0" offset="0x20.0" size="0x40.0" />
-	<field name="sw_info" descr="Software Information, see \;Table 847, &quot;\;Software Info Layout\;,&quot; on \;page 1145\;This field indicates \;the oldest software version compatible \;with the current firmware" access="RW" high_bound="7" low_bound="0" offset="0x60.0" size="0x20.0" />
-	<field name="dev_info" descr="[Internal]: Development Information, see \;Table 851, &quot;\;Develop\;ment Info Layout\;,&quot; on page 1147" access="RW" high_bound="6" low_bound="0" offset="0x80.0" size="0x1c.0" />
+<node name="mgir_ext" descr="" size="0xa0.0" >
+	<field name="hw_info" descr="Hardware Information, see \;Table 1070, &quot;\;Hardware Info Layout\;,&quot; \;on page 1196" subnode="mgir_hardware_info" access="RW" offset="0x0.0" size="0x20.0" />
+	<field name="fw_info" descr="Firmware Information, see \;Table 1072, &quot;\;Firmware Info Layout\;,&quot; \;on page 1197" subnode="mgir_fw_info" access="RW" offset="0x20.0" size="0x40.0" />
+	<field name="sw_info" descr="Software Information, see \;Table 1074, &quot;\;Software Info Layout\;,&quot; \;on page 1199\;This field indicates \;the oldest software version compatible \;with the current firmware" subnode="mgir_sw_info" access="RW" offset="0x60.0" size="0x20.0" />
+</node>
+
+<node name="mgir_fw_info" descr="" size="0x40.0" >
+	<field name="sub_minor" descr="Sub-minor firmware version number.\;Deprecated and returns &apos;0&apos;. \;Refer to extended_sub_minor." access="RO" offset="0x0.0" size="0x0.8" />
+	<field name="minor" descr="Minor firmware version number.\;Deprecated and returns &apos;0&apos;. \;Refer to extended_minor." access="RO" offset="0x0.8" size="0x0.8" />
+	<field name="major" descr="Major firmware version number.\;Deprecated and returns &apos;0&apos;. \;Refer to extended_major." access="RO" offset="0x0.16" size="0x0.8" />
+	<field name="secured" descr="When set, the device is running firmware with secure-\;firmware updates capabilities." access="RO" offset="0x0.24" size="0x0.1" />
+	<field name="signed_fw" descr="When set the device is running a signed FW binaries." access="RO" offset="0x0.25" size="0x0.1" />
+	<field name="debug" descr="When set, the device is running a debug firmware. \;&apos;debug&apos; binary can only be installed on specific devices \;(identified by their &apos;Factory base MAC&apos;), which currently \;run a specific firmware version. These restrictions are \;expressed by a signed &apos;debug&apos; token that must be loaded \;to the device before installing the debug binary." access="RO" offset="0x0.26" size="0x0.1" />
+	<field name="dev" descr="When set, the device is running a development firmware \;version." access="RO" offset="0x0.27" size="0x0.1" />
+	<field name="build_id" descr="Firmware Build ID. Optional. \;." access="RO" offset="0x4.0" size="0x4.0" />
+	<field name="year" descr="Firmware installation date. \;For example: 3 May 2004 will be coded as Month= 0x05, \;Day= 0x03, and Year= 0x04" access="RO" offset="0x8.0" size="0x0.16" />
+	<field name="day" descr="Firmware installation date. \;For example: 3 May 2004 will be coded as Month= 0x05, \;Day= 0x03, and Year= 0x04" access="RO" offset="0x8.16" size="0x0.8" />
+	<field name="month" descr="Firmware installation date. \;For example: 3 May 2004 will be coded as Month= 0x05, \;Day= 0x03, and Year= 0x04" access="RO" offset="0x8.24" size="0x0.8" />
+	<field name="hour" descr="Firmware installation hour.\;For example 17:43 will be coded as 0x1743" access="RO" offset="0xC.0" size="0x0.16" />
+	<field name="psid" descr="To be defined later." access="RO" high_bound="3" low_bound="0" offset="0x10.0" size="0x10.0" />
+	<field name="ini_file_version" descr="User-configured version number of the current INI file." access="RO" offset="0x20.0" size="0x4.0" />
+	<field name="extended_major" descr="FW version&apos;s Major field in extended (32b) format." access="RO" offset="0x24.0" size="0x4.0" />
+	<field name="extended_minor" descr="FW version&apos;s Minor field in extended (32b) format." access="RO" offset="0x28.0" size="0x4.0" />
+	<field name="extended_sub_minor" descr="FW version&apos;s SubMinor field in extended (32b) format." access="RO" offset="0x2C.0" size="0x4.0" />
+	<field name="isfu_major" descr="" access="RO" offset="0x30.0" size="0x0.16" />
+</node>
+
+<node name="mgir_hardware_info" descr="" size="0x20.0" >
+	<field name="device_id" descr="PCI device ID" access="RO" offset="0x0.0" size="0x0.16" />
+	<field name="device_hw_revision" descr="SwitchX Devices:\;0x00A0: Device step A0, FCC package\;0x00A1: Device step A1, FCC package\;0x00A2: Device step A2, FCC package\;Switch-IB Devices:\;0x00A0: Switch-IB device step A0, FCC package\;0x0000 is a valid value for some devices not included in \;PRM." access="RO" offset="0x0.16" size="0x0.16" />
+	<field name="pvs" descr="Process Voltage Scaling\;Maximum supported V_CODE voltage (in 50mV incre\;ments) for the device." access="RO" offset="0x4.0" size="0x0.5" />
+	<field name="num_ports" descr="Number of physical port the device supports." access="RO" offset="0x4.16" size="0x0.8" />
+	<field name="hw_dev_id" descr="The PCI device-ID of the NIC/HCA in recovery (Live\;fish) mode." access="RO" offset="0x8.0" size="0x0.16" />
+	<field name="manufacturing_base_mac_47_32" descr="MSB of the &quot;base&quot; MAC address of the NIC that was allo\;cate during manufacturing. The NIC derives the MAC \;addresses for the different PCI PFs from this MAC \;address. This parameter can be used as a canonical unique \;identifier of the NIC.\;manufacturing_base_mac of value \;0 means field is not sup\;ported." access="RO" offset="0x10.0" size="0x0.16" />
+	<field name="manufacturing_base_mac_31_0" descr="LSB of the &quot;base&quot; MAC address of the NIC that was allo\;cate during manufacturing. The NIC derives the MAC \;addresses for the different PCI PFs from this MAC \;address. This parameter can be used as a canonical unique \;identifier of the NIC.\;manufacturing_base_mac of value \;0 means field is not sup\;ported." access="RO" offset="0x14.0" size="0x4.0" />
+	<field name="uptime" descr="Time (in secs.) since last reset0" access="RO" offset="0x1C.0" size="0x4.0" />
+</node>
+
+<node name="mgir_sw_info" descr="" size="0x20.0" >
+	<field name="sub_minor" descr="Sub-minor Driver version number." access="RO" offset="0x0.0" size="0x0.8" />
+	<field name="minor" descr="Minor Driver version number." access="RO" offset="0x0.8" size="0x0.8" />
+	<field name="major" descr="Major Driver version number." access="RO" offset="0x0.16" size="0x0.8" />
+	<field name="rom3_type" descr="ROM 3 type:\;0x0: none\;0x1: Flexboot\;0x2: UEFI\;0x3: UEFI-CLP" access="RO" offset="0x4.0" size="0x0.4" />
+	<field name="rom3_arch" descr="Arch type of ROM 3:\;0x0: unspecified\;0x1: AMD64 - x86 64bit architecture\;0x2: AARCH64 - ARM Architecture 64 bits\;0x3: AMD64_AARCH64 - ROM code supporting \;both AMD64 and AARCH64 architectures\;0x4: IA32 - Intel Architecture 32 bits" access="RO" offset="0x4.4" size="0x0.4" />
+	<field name="rom2_type" descr="ROM 2type:\;0x0: none\;0x1: Flexboot\;0x2: UEFI\;0x3: UEFI-CLP" access="RO" offset="0x4.8" size="0x0.4" />
+	<field name="rom2_arch" descr="Arch type of ROM 2:\;0x0: unspecified\;0x1: AMD64 - x86 64bit architecture\;0x2: AARCH64 - ARM Architecture 64 bits\;0x3: AMD64_AARCH64 - ROM code supporting \;both AMD64 and AARCH64 architectures\;0x4: IA32 - Intel Architecture 32 bits" access="RO" offset="0x4.12" size="0x0.4" />
+	<field name="rom1_type" descr="ROM 1type:\;0x0: none\;0x1: Flexboot\;0x2: UEFI\;0x3: UEFI-CLP" access="RO" offset="0x4.16" size="0x0.4" />
+	<field name="rom1_arch" descr="Arch type of ROM 1:\;0x0: unspecified\;0x1: AMD64 - x86 64bit architecture\;0x2: AARCH64 - ARM Architecture 64 bits\;0x3: AMD64_AARCH64 - ROM code supporting \;both AMD64 and AARCH64 architectures\;0x4: IA32 - Intel Architecture 32 bits" access="RO" offset="0x4.20" size="0x0.4" />
+	<field name="rom0_type" descr="ROM 0 type:\;0x0: none\;0x1: Flexboot\;0x2: UEFI\;0x3: UEFI-CLP" access="RO" offset="0x4.24" size="0x0.4" />
+	<field name="rom0_arch" descr="Arch type of ROM 0:\;0x0: unspecified\;0x1: AMD64 - x86 64bit architecture\;0x2: AARCH64 - ARM Architecture 64 bits\;0x3: AMD64_AARCH64 - ROM code supporting \;both AMD64 and AARCH64 architectures\;0x4: IA32 - Intel Architecture 32 bits" access="RO" offset="0x4.28" size="0x0.4" />
+	<field name="rom0_version" descr="ROM 0 version." subnode="rom_version" access="RO" offset="0x8.0" size="0x4.0" />
+	<field name="rom1_version" descr="ROM 1 version." subnode="rom_version" access="RO" offset="0xC.0" size="0x4.0" />
+	<field name="rom2_version" descr="ROM 2version." subnode="rom_version" access="RO" offset="0x10.0" size="0x4.0" />
+	<field name="rom3_version" descr="ROM 3 version." subnode="rom_version" access="RO" offset="0x14.0" size="0x4.0" />
 </node>
 
 <node name="mgnle_reg_ext" descr="" size="0x20.0" >
@@ -753,30 +866,39 @@
 	<field name="log_data" descr="The logged data. Format is  different per the according to the \;log type." access="RO" offset="0x1C.0" size="0x4.0" />
 </node>
 
-<node name="mhsr_ext" descr="" size="0x4.0" >
+<node name="mgpir_ext" descr="" size="0xa0.0" >
+	<field name="hw_info" descr="Hardware Information, see \;Table 1081, &quot;\;Hardware Info Layout\;,&quot; \;on page 1202" subnode="mgpir_hw_info" access="RW" offset="0x0.0" size="0x20.0" />
+</node>
+
+<node name="mgpir_hw_info" descr="" size="0x20.0" >
+	<field name="num_of_devices" descr="Number of devices of \;device_type\;." access="RO" offset="0x0.0" size="0x0.8" />
+	<field name="devices_per_flash" descr="Number of devices of \;device_type\; per flash." access="RO" offset="0x0.16" size="0x0.8" />
+	<field name="device_type" descr="Device type.\;0: No devices on system of that type.\;1: Vega gearbox dice" access="RO" offset="0x0.24" size="0x0.4" />
+</node>
+
+<node name="mhsr_ext" descr="" size="0x8.0" >
 	<field name="health" descr="Software health state:\;0 - Failure\;1 - Reserved\;2 - Normal Operation\;3 - Boot / Init (default state)\;Else - Reserved" access="WO" offset="0x0.0" size="0x0.4" />
 </node>
 
-<node name="mjtag_ext" descr="" size="0x8.0" >
+<node name="mirc_reg_ext" descr="" size="0x8.0" >
+	<field name="status_code" descr="Indicates the successful completion of the instruction, or the \;reason it failed. \;See \;&quot;\;Error Handling\;&quot; on page 522\;0x0: OK\;0x1: BUSY\;0x\;2:\; \;PROHIBITED_FW_VER_ERR\;0x3: FIRST_PAGE_COPY_FAILED\;0x4: FIRST_PAGE_ERASE_FAILED\;0x5: FIRST_PAGE_RESTORE_FAILED\;0x6: CANDIDATE_FW_DEACTIVATION_FAILED\;0x7: FW_ALREADY_ACTIVATED\;0x8: ERROR_DEVICE_RESET_REQUIRED\;0x9: ERROR_FW_PROGRAMMING_NEEDED\;Other values should be treated as an unknown error." access="RO" offset="0x0.0" size="0x0.8" />
+</node>
+
+<node name="mjtag_ext" descr="" size="0x30.0" >
 	<field name="size" descr="Size of operation - relevant for JTAG interface access com\;mands only, indicating the number of transaction bytes to exe\;cute. Maximum size supported is 40.\;Note:\; when size=0, no operation is performed (clock is not tog\;gled). The \;tdo\; is sampled and provided in the response at \;jtag_transaction_set_0\;." access="WO" offset="0x0.0" size="0x0.8" />
 	<field name="sequence_number" descr="Command sequence number - to prevent re-execution of the \;same command due to command retransmission, this command \;includes a sequence number.\;The enable and disable commands MUST be issues with \;sequence_number\; = 0 while any JTAG access command must \;increase the \;sequence_number\; by 1 (the first JTAG access com\;mand should start at \;sequence_number\; = 1)." access="WO" offset="0x0.24" size="0x0.4" />
 	<field name="cmd" descr="Command\;0 - JTAG interface disable - JTAG interface is disabled\;1 - JTAG interface enable - enabling JTAG interface\;2 - JTAG interface access" access="RW" offset="0x0.30" size="0x0.2" />
-	<field name="jtag_transaction_set" descr="See \;Table 833, &quot;\;JTAG Transaction Set Byte Layout\;,&quot; on \;page 1135" access="RW" high_bound="VARIABLE" low_bound="0" offset="0x4.24" size="0x0.8" />
+	<field name="jtag_transaction_set" descr="See \;Table 1060, &quot;\;JTAG Transaction Set Byte Layout\;,&quot; on \;page 1189" access="RW" high_bound="43" low_bound="0" offset="0x4.24" size="0x2c.0" />
 </node>
 
 <node name="mlcr_ext" descr="" size="0xc.0" >
-	<field name="led_type" descr="Led type (only supported when cap_local_or_uid_only==1.)\;0: LOCALP_AND_UID - local port and uid\;1: UID \;2: LOCALP - local port" access="RW" offset="0x0.0" size="0x0.4" />
+	<field name="led_type" descr="Led type (only supported when cap_local_or_uid_only==1.)\;0: LOCALP_AND_UID - local port and uid\;1: UID\;2: LOCALP - local port" access="RW" enum="LOCALP_AND_UID=0x0,UID=0x1,LOCALP=0x2" offset="0x0.0" size="0x0.4" />
 	<field name="cap_local_or_uid_only" descr="If set, led_type of type UID and LOCAL Port only are supported." access="RO" offset="0x0.4" size="0x0.1" />
 	<field name="operation_cap" descr="If set to &apos;1&apos;, operation field is supported." access="RO" offset="0x0.5" size="0x0.1" />
 	<field name="operation" descr="0: Controlled by HW / Beacon\;1: LED on - if bi-color, apply amber.\;2: LED off\;Others: Reserved" access="RW" offset="0x0.12" size="0x0.4" />
 	<field name="local_port" descr="Local port number\;Not supported for CPU port\;(only supported when cap_local_or_uid_only==1.)" access="RW" offset="0x0.16" size="0x0.8" />
 	<field name="beacon_duration" descr="Duration of the beacon to be active, units of seconds\;The value of 0x0 will turn off the beacon\;The value of 0xffff will set the beacon to infinity" access="RW" offset="0x4.0" size="0x0.16" />
 	<field name="beacon_remain" descr="Remaining duration of the beacon, units of seconds\;The value of 0xffff means infinity" access="RO" offset="0x8.0" size="0x0.16" />
-</node>
-
-<node name="mmhi_reg_ext" descr="" size="0x8.0" >
-	<field name="host_en" descr="Bit per Host indicating this host is valid in the current \;Multi-Host configuration" access="RO" offset="0x0.0" size="0x0.16" />
-	<field name="host_number" descr="Identifier for the host used to access the register" access="RO" offset="0x4.0" size="0x0.8" />
 </node>
 
 <node name="mmia_ext" descr="" size="0xc.0" >
@@ -793,10 +915,10 @@
 	<field name="configuration_item_header" descr="" subnode="config_item" access="RW" offset="0x0.0" size="0xc.0" />
 </node>
 
-<node name="mnvgc_reg_ext" descr="" size="0x4.0" >
+<node name="mnvgc_reg_ext" descr="" size="0x10.0" >
 	<field name="nvda_read_factory_settings" descr="\;NVDA Read factory settings. Indicates if reading the fac\;tory settings by NVDA is supported.\;0:unsupported\;1: supported" access="RO" offset="0x0.0" size="0x0.1" />
 	<field name="nvda_read_current_settings" descr="NVDA Read current settings. Indicates if reading the cur\;rent settings by NVDA is supported.\;0: unsupported\;1: supported" access="RO" offset="0x0.1" size="0x0.1" />
-	<field name="priv_nv_other_host" descr="When set, \;TLVs of other hosts may be modified." access="RO" offset="0x0.2" size="0x0.1" />
+	<field name="priv_nv_other_host" descr="When set, TLVs of other hosts may be modified." access="RO" offset="0x0.2" size="0x0.1" />
 </node>
 
 <node name="mnvgn_reg_ext" descr="" size="0x20.0" >
@@ -805,38 +927,38 @@
 	<field name="configuration_item_data" descr="" access="RO" offset="0x1C.0" size="0x4.0" />
 </node>
 
-<node name="mnvia_reg_ext" descr="" size="0x4.0" >
+<node name="mnvia_reg_ext" descr="" size="0x8.0" >
 	<field name="target" descr="Information targeted for invalidation\;0: ALL - all NVRAM parameters.\; \;All other values are reserved." access="WO" offset="0x0.0" size="0x0.3" />
-	<field name="writer_id" descr="The entity which perform the invalidate.\;The encoding same as writer_id in Configuration Item reg\;ister (See \;Table 869, &quot;\;Configuration Item Layout\;,&quot; on \;page 1157\;)." access="RW" offset="0x0.4" size="0x0.5" />
+	<field name="writer_id" descr="The entity which perform the invalidate.\;The encoding same as writer_id in Configuration Item reg\;ister (See \;Table 1101, &quot;\;Configuration Item Layout\;,&quot; on \;page 1213\;)." access="RW" offset="0x0.4" size="0x0.5" />
 </node>
 
 <node name="mnvqc_reg_ext" descr="" size="0x8.0" >
-	<field name="type" descr="Configuration item type. \;Table 871, &quot;\;Configuration Item Type Class Global Lay\;out\;,&quot; on page 1160\;Table 873, &quot;\;Configuration Item Type Class Physical Port \;Layout\;,&quot; on page 1160\;Table 875, &quot;\;Configuration Item Type Class Per Host-PF \;Layout\;,&quot; on page 1161" access="INDEX" offset="0x0.0" size="0x4.0" />
+	<field name="type" descr="Configuration item type. \;Table 1103, &quot;\;Configuration Item Type Class Global Lay\;out\;,&quot; on page 1216\;Table 1105, &quot;\;Configuration Item Type Class Physical \;Port Layout\;,&quot; on page 1216\;Table 1107, &quot;\;Configuration Item Type Class Per Host-PF \;Layout\;,&quot; on page 1217" access="INDEX" offset="0x0.0" size="0x4.0" />
 	<field name="support_rd" descr="The configuration item is supported and can be read" access="RO" offset="0x4.0" size="0x0.1" />
 	<field name="support_wr" descr="The configuration item is supported and can be updated" access="RO" offset="0x4.1" size="0x0.1" />
 	<field name="version" descr="The maximal version of the configuration item supported \;by the device" access="RO" offset="0x4.4" size="0x0.4" />
 </node>
 
 <node name="mpcir_ext" descr="" size="0x10.0" >
-	<field name="all" descr="If set to &apos;01&apos;, activates the flow of preparation for FW ISSU, on all\; \;services. The values in\; \;op-codes for &quot;per-service&quot; are ignored.\;If set to &apos;10&apos;, returns to operational state on all services. The val\;ues in op-codes for &quot;per-service&quot; are ignored.\;11 - Reserved" access="OP" offset="0x0.30" size="0x0.2" />
-	<field name="ports" descr="For each of the services, the following operations are available:\;0: N/A (no action)\;1: start preparation flow for FW ISSU \;2: return to operational service (end of FW ISSU flow)\;3: get status\;When set to &apos;3&apos;, the current status will appear\; \;in\; \;corresponding \;_stat \;fields." access="OP" offset="0x4.0" size="0x0.2" />
-	<field name="cpld" descr="For each of the services, the following operations are available:\;0: N/A (no action)\;1: start preparation flow for FW ISSU \;2: return to operational service (end of FW ISSU flow)\;3: get status\;When set to &apos;3&apos;, the current status will appear\; \;in\; \;corresponding \;_stat \;fields." access="OP" offset="0x4.2" size="0x0.2" />
-	<field name="module_mng" descr="For each of the services, the following operations are available:\;0: N/A (no action)\;1: start preparation flow for FW ISSU \;2: return to operational service (end of FW ISSU flow)\;3: get status\;When set to &apos;3&apos;, the current status will appear\; \;in\; \;corresponding \;_stat \;fields." access="OP" offset="0x4.4" size="0x0.2" />
-	<field name="thermal" descr="For each of the services, the following operations are available:\;0: N/A (no action)\;1: start preparation flow for FW ISSU \;2: return to operational service (end of FW ISSU flow)\;3: get status\;When set to &apos;3&apos;, the current status will appear\; \;in\; \;corresponding \;_stat \;fields." access="OP" offset="0x4.6" size="0x0.2" />
-	<field name="fans" descr="For each of the services, the following operations are available:\;0: N/A (no action)\;1: start preparation flow for FW ISSU \;2: return to operational service (end of FW ISSU flow)\;3: get status\;When set to &apos;3&apos;, the current status will appear\; \;in\; \;corresponding \;_stat \;fields." access="OP" offset="0x4.8" size="0x0.2" />
-	<field name="power" descr="For each of the services, the following operations are available:\;0: N/A (no action)\;1: start preparation flow for FW ISSU \;2: return to operational service (end of FW ISSU flow)\;3: get status\;When set to &apos;3&apos;, the current status will appear\; \;in\; \;corresponding \;_stat \;fields." access="OP" offset="0x4.10" size="0x0.2" />
-	<field name="voltage_current" descr="For each of the services, the following operations are available:\;0: N/A (no action)\;1: start preparation flow for FW ISSU \;2: return to operational service (end of FW ISSU flow)\;3: get status\;When set to &apos;3&apos;, the current status will appear\; \;in\; \;corresponding \;_stat \;fields." access="OP" offset="0x4.12" size="0x0.2" />
-	<field name="leds" descr="For each of the services, the following operations are available:\;0: N/A (no action)\;1: start preparation flow for FW ISSU \;2: return to operational service (end of FW ISSU flow)\;3: get status\;When set to &apos;3&apos;, the current status will appear\; \;in\; \;corresponding \;_stat \;fields." access="OP" offset="0x4.14" size="0x0.2" />
-	<field name="gearbox" descr="For each of the services, the following operations are available:\;0: N/A (no action)\;1: start preparation flow for FW ISSU \;2: return to operational service (end of FW ISSU flow)\;3: get status\;When set to &apos;3&apos;, the current status will appear\; \;in\; \;corresponding \;_stat \;fields." access="OP" offset="0x4.16" size="0x0.2" />
-	<field name="ports_stat" descr="Status\; \;for each of the services. \;0: not in FW ISSU flow state (FW ISSU flow is not initiated) \;1: done with preparations for FW ISSU flow\;2: Preparation for FW ISSU flow started but FW still not done ser\;vice handling\; [Internal]: busy with some other critical flow)\;.\;For not implemented services on a particular system, the status \;should be &apos;1&apos;." access="RO" offset="0xC.0" size="0x0.2" />
-	<field name="cpld_stat" descr="Status\; \;for each of the services. \;0: not in FW ISSU flow state (FW ISSU flow is not initiated) \;1: done with preparations for FW ISSU flow\;2: Preparation for FW ISSU flow started but FW still not done ser\;vice handling\; [Internal]: busy with some other critical flow)\;.\;For not implemented services on a particular system, the status \;should be &apos;1&apos;." access="RO" offset="0xC.2" size="0x0.2" />
-	<field name="module_mng_stat" descr="Status\; \;for each of the services. \;0: not in FW ISSU flow state (FW ISSU flow is not initiated) \;1: done with preparations for FW ISSU flow\;2: Preparation for FW ISSU flow started but FW still not done ser\;vice handling\; [Internal]: busy with some other critical flow)\;.\;For not implemented services on a particular system, the status \;should be &apos;1&apos;." access="RO" offset="0xC.4" size="0x0.2" />
-	<field name="thermal_stat" descr="Status\; \;for each of the services. \;0: not in FW ISSU flow state (FW ISSU flow is not initiated) \;1: done with preparations for FW ISSU flow\;2: Preparation for FW ISSU flow started but FW still not done ser\;vice handling\; [Internal]: busy with some other critical flow)\;.\;For not implemented services on a particular system, the status \;should be &apos;1&apos;." access="RO" offset="0xC.6" size="0x0.2" />
-	<field name="fans_stat" descr="Status\; \;for each of the services. \;0: not in FW ISSU flow state (FW ISSU flow is not initiated) \;1: done with preparations for FW ISSU flow\;2: Preparation for FW ISSU flow started but FW still not done ser\;vice handling\; [Internal]: busy with some other critical flow)\;.\;For not implemented services on a particular system, the status \;should be &apos;1&apos;." access="RO" offset="0xC.8" size="0x0.2" />
-	<field name="power_stat" descr="Status\; \;for each of the services. \;0: not in FW ISSU flow state (FW ISSU flow is not initiated) \;1: done with preparations for FW ISSU flow\;2: Preparation for FW ISSU flow started but FW still not done ser\;vice handling\; [Internal]: busy with some other critical flow)\;.\;For not implemented services on a particular system, the status \;should be &apos;1&apos;." access="RO" offset="0xC.10" size="0x0.2" />
-	<field name="voltage_current_stat" descr="Status\; \;for each of the services. \;0: not in FW ISSU flow state (FW ISSU flow is not initiated) \;1: done with preparations for FW ISSU flow\;2: Preparation for FW ISSU flow started but FW still not done ser\;vice handling\; [Internal]: busy with some other critical flow)\;.\;For not implemented services on a particular system, the status \;should be &apos;1&apos;." access="RO" offset="0xC.12" size="0x0.2" />
-	<field name="leds_stat" descr="Status\; \;for each of the services. \;0: not in FW ISSU flow state (FW ISSU flow is not initiated) \;1: done with preparations for FW ISSU flow\;2: Preparation for FW ISSU flow started but FW still not done ser\;vice handling\; [Internal]: busy with some other critical flow)\;.\;For not implemented services on a particular system, the status \;should be &apos;1&apos;." access="RO" offset="0xC.14" size="0x0.2" />
-	<field name="gearbox_stat" descr="Status\; \;for each of the services. \;0: not in FW ISSU flow state (FW ISSU flow is not initiated) \;1: done with preparations for FW ISSU flow\;2: Preparation for FW ISSU flow started but FW still not done ser\;vice handling\; [Internal]: busy with some other critical flow)\;.\;For not implemented services on a particular system, the status \;should be &apos;1&apos;." access="RO" offset="0xC.16" size="0x0.2" />
+	<field name="all" descr="If set to &apos;01&apos;, activates the flow of preparation for FW ISSU, on all \;services. The values in op-codes for &quot;per-service&quot; are ignored.\;If set to &apos;10&apos;, returns to operational state on all services. The val\;ues in op-codes for &quot;per-service&quot; are ignored.\;11 - Reserved" access="OP" offset="0x0.30" size="0x0.2" />
+	<field name="ports" descr="For each of the services, the following operations are available:\;0: N/A (no action)\;1: start preparation flow for FW ISSU \;2: return to operational service (end of FW ISSU flow)\;3: get status\;When set to &apos;3&apos;, the current status will appear in corresponding \;_stat \;fields." access="OP" offset="0x4.0" size="0x0.2" />
+	<field name="cpld" descr="For each of the services, the following operations are available:\;0: N/A (no action)\;1: start preparation flow for FW ISSU \;2: return to operational service (end of FW ISSU flow)\;3: get status\;When set to &apos;3&apos;, the current status will appear in corresponding \;_stat \;fields." access="OP" offset="0x4.2" size="0x0.2" />
+	<field name="module_mng" descr="For each of the services, the following operations are available:\;0: N/A (no action)\;1: start preparation flow for FW ISSU \;2: return to operational service (end of FW ISSU flow)\;3: get status\;When set to &apos;3&apos;, the current status will appear in corresponding \;_stat \;fields." access="OP" offset="0x4.4" size="0x0.2" />
+	<field name="thermal" descr="For each of the services, the following operations are available:\;0: N/A (no action)\;1: start preparation flow for FW ISSU \;2: return to operational service (end of FW ISSU flow)\;3: get status\;When set to &apos;3&apos;, the current status will appear in corresponding \;_stat \;fields." access="OP" offset="0x4.6" size="0x0.2" />
+	<field name="fans" descr="For each of the services, the following operations are available:\;0: N/A (no action)\;1: start preparation flow for FW ISSU \;2: return to operational service (end of FW ISSU flow)\;3: get status\;When set to &apos;3&apos;, the current status will appear in corresponding \;_stat \;fields." access="OP" offset="0x4.8" size="0x0.2" />
+	<field name="power" descr="For each of the services, the following operations are available:\;0: N/A (no action)\;1: start preparation flow for FW ISSU \;2: return to operational service (end of FW ISSU flow)\;3: get status\;When set to &apos;3&apos;, the current status will appear in corresponding \;_stat \;fields." access="OP" offset="0x4.10" size="0x0.2" />
+	<field name="voltage_current" descr="For each of the services, the following operations are available:\;0: N/A (no action)\;1: start preparation flow for FW ISSU \;2: return to operational service (end of FW ISSU flow)\;3: get status\;When set to &apos;3&apos;, the current status will appear in corresponding \;_stat \;fields." access="OP" offset="0x4.12" size="0x0.2" />
+	<field name="leds" descr="For each of the services, the following operations are available:\;0: N/A (no action)\;1: start preparation flow for FW ISSU \;2: return to operational service (end of FW ISSU flow)\;3: get status\;When set to &apos;3&apos;, the current status will appear in corresponding \;_stat \;fields." access="OP" offset="0x4.14" size="0x0.2" />
+	<field name="gearbox" descr="For each of the services, the following operations are available:\;0: N/A (no action)\;1: start preparation flow for FW ISSU \;2: return to operational service (end of FW ISSU flow)\;3: get status\;When set to &apos;3&apos;, the current status will appear in corresponding \;_stat \;fields." access="OP" offset="0x4.16" size="0x0.2" />
+	<field name="ports_stat" descr="Status for each of the services. \;0: not in FW ISSU flow state (FW ISSU flow is not initiated) \;1: done with preparations for FW ISSU flow\;2: Preparation for FW ISSU flow started but FW still not done ser\;vice handling\; [Internal]: busy with some other critical flow)\;.\;For not implemented services on a particular system, the status \;should be &apos;1&apos;." access="RO" offset="0xC.0" size="0x0.2" />
+	<field name="cpld_stat" descr="Status for each of the services. \;0: not in FW ISSU flow state (FW ISSU flow is not initiated) \;1: done with preparations for FW ISSU flow\;2: Preparation for FW ISSU flow started but FW still not done ser\;vice handling\; [Internal]: busy with some other critical flow)\;.\;For not implemented services on a particular system, the status \;should be &apos;1&apos;." access="RO" offset="0xC.2" size="0x0.2" />
+	<field name="module_mng_stat" descr="Status for each of the services. \;0: not in FW ISSU flow state (FW ISSU flow is not initiated) \;1: done with preparations for FW ISSU flow\;2: Preparation for FW ISSU flow started but FW still not done ser\;vice handling\; [Internal]: busy with some other critical flow)\;.\;For not implemented services on a particular system, the status \;should be &apos;1&apos;." access="RO" offset="0xC.4" size="0x0.2" />
+	<field name="thermal_stat" descr="Status for each of the services. \;0: not in FW ISSU flow state (FW ISSU flow is not initiated) \;1: done with preparations for FW ISSU flow\;2: Preparation for FW ISSU flow started but FW still not done ser\;vice handling\; [Internal]: busy with some other critical flow)\;.\;For not implemented services on a particular system, the status \;should be &apos;1&apos;." access="RO" offset="0xC.6" size="0x0.2" />
+	<field name="fans_stat" descr="Status for each of the services. \;0: not in FW ISSU flow state (FW ISSU flow is not initiated) \;1: done with preparations for FW ISSU flow\;2: Preparation for FW ISSU flow started but FW still not done ser\;vice handling\; [Internal]: busy with some other critical flow)\;.\;For not implemented services on a particular system, the status \;should be &apos;1&apos;." access="RO" offset="0xC.8" size="0x0.2" />
+	<field name="power_stat" descr="Status for each of the services. \;0: not in FW ISSU flow state (FW ISSU flow is not initiated) \;1: done with preparations for FW ISSU flow\;2: Preparation for FW ISSU flow started but FW still not done ser\;vice handling\; [Internal]: busy with some other critical flow)\;.\;For not implemented services on a particular system, the status \;should be &apos;1&apos;." access="RO" offset="0xC.10" size="0x0.2" />
+	<field name="voltage_current_stat" descr="Status for each of the services. \;0: not in FW ISSU flow state (FW ISSU flow is not initiated) \;1: done with preparations for FW ISSU flow\;2: Preparation for FW ISSU flow started but FW still not done ser\;vice handling\; [Internal]: busy with some other critical flow)\;.\;For not implemented services on a particular system, the status \;should be &apos;1&apos;." access="RO" offset="0xC.12" size="0x0.2" />
+	<field name="leds_stat" descr="Status for each of the services. \;0: not in FW ISSU flow state (FW ISSU flow is not initiated) \;1: done with preparations for FW ISSU flow\;2: Preparation for FW ISSU flow started but FW still not done ser\;vice handling\; [Internal]: busy with some other critical flow)\;.\;For not implemented services on a particular system, the status \;should be &apos;1&apos;." access="RO" offset="0xC.14" size="0x0.2" />
+	<field name="gearbox_stat" descr="Status for each of the services. \;0: not in FW ISSU flow state (FW ISSU flow is not initiated) \;1: done with preparations for FW ISSU flow\;2: Preparation for FW ISSU flow started but FW still not done ser\;vice handling\; [Internal]: busy with some other critical flow)\;.\;For not implemented services on a particular system, the status \;should be &apos;1&apos;." access="RO" offset="0xC.16" size="0x0.2" />
 </node>
 
 <node name="mpcnt_reg_counter_set_auto_ext" descr="" attr_is_union="1" size="0xf8.0" >
@@ -846,30 +968,30 @@
 </node>
 
 <node name="mpcnt_reg_ext" descr="" size="0x100.0" >
-	<field name="grp" descr="Performance counter group.\;0: PCIE performance counters\;" access="INDEX" offset="0x0.0" size="0x0.6" />
+	<field name="grp" descr="Performance counter group.\;0: PCIE_performance_counters\;1: PCIE_lane_counters \;2: PCIE_timers_and_states \;" access="INDEX" enum="PCIE_performance_counters=0x0,PCIE_lane_counters=0x1,PCIE_timers_and_states=0x2" offset="0x0.0" size="0x0.6" />
 	<field name="node" descr="the node within each depth." access="INDEX" offset="0x0.8" size="0x0.8" />
-	<field name="pcie_index" descr="PCI\;e\; index number (\;Internal domain index)\;Reserved when access is from the host" access="INDEX" offset="0x0.16" size="0x0.8" />
+	<field name="pcie_index" descr="PCIe index number (Internal domain index)\;Reserved when access is from the host" access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="depth" descr="depth level of the DUT of some hierarchy" access="INDEX" offset="0x0.24" size="0x0.6" />
 	<field name="clr" descr="Clear counters. Setting the \;clr\; bit will reset the counter value for all \;counters in the counter group. This bit can be set for both Set() and \;Get() operation." access="WO" offset="0x4.31" size="0x0.1" />
-	<field name="counter_set" descr="Counter set as described in\;Table 912, &quot;\;PCIe Performance Counters Data Layout\;,&quot; on \;page 1178\;[Internal] \;Table 1134, &quot;PCIE lanes counters Data Layout,&quot; on \;page 1263\;[Internal] \;Table 1132, &quot;PCIE timers and states Data Layout,&quot; on \;page 1261" subnode="mpcnt_reg_counter_set_auto_ext" access="RO" offset="0x8.0" size="0xf8.0" />
+	<field name="counter_set" descr="Counter set as described in\;Table 1144, &quot;\;PCIe Performance Counters Data Layout\;,&quot; on \;page 1236\;[Internal] \;Table 1148, &quot;\;PCIE lanes counters Data Layout\;,&quot; on \;page 1240\;[Internal] \;Table 1146, &quot;\;PCIE timers and states Data Layout\;,&quot; on \;page 1238" subnode="mpcnt_reg_counter_set_auto_ext" access="RO" offset="0x8.0" size="0xf8.0" />
 </node>
 
-<node name="mpecs_reg_ext" descr="" size="0x18.0" >
+<node name="mpecs_reg_ext" descr="" size="0x20.0" >
 	<field name="node" descr="the node within each depth." access="INDEX" offset="0x0.8" size="0x0.8" />
 	<field name="pcie_index" descr="PCIE index number\;Reserved when access is from the host" access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="depth" descr="depth level of the DUT of some hierarchy" access="INDEX" offset="0x0.24" size="0x0.6" />
 	<field name="capability_id" descr="capability ID as defined in PCIE spec" access="INDEX" offset="0x4.0" size="0x0.16" />
 	<field name="reg_num" descr="Register number\;Byte offset from the beginning of the capability ID" access="INDEX" offset="0x8.0" size="0x0.16" />
-	<field name="byte_enable" descr="Enable bit per byte\;bit 0 - byte 0 (bits 7:0)\;bit 1 - byte 1 (bits 15:8)\;bit 2\; \;- byte 2 (bits 23:16)\;bit 3\; \;- byte 3 (bits 31:24)\;Reserved for \;r\;ead operation." access="WO" offset="0xC.0" size="0x0.4" />
+	<field name="byte_enable" descr="Enable bit per byte\;bit 0 - byte 0 (bits 7:0)\;bit 1 - byte 1 (bits 15:8)\;bit 2\; \;- byte 2 (bits 23:16)\;bit 3\; \;- byte 3 (bits 31:24)\;Reserved for read operation." access="WO" offset="0xC.0" size="0x0.4" />
 	<field name="status" descr="PCIE configuration space access status: \;0x0: SUCCESS - successful access\;0x1: FUNC_NUM_FAILURE - accessing unsupported configura\;tion space function number\;0x2: CAP_ID_FAILURE - accessing unsupported configuration \;space capability ID number\;0x3: REG_NUM_FAILURE - accessing unsupported configuration \;space register number\;0x4: WRITE_FAILURE - write access to read-only configuration \;space\;0x5: PROTECTED_FAILURE - protected configuration" access="RO" offset="0xC.8" size="0x0.8" />
 	<field name="func_num" descr="Function number\;physical function index - see PCIE spec" access="INDEX" offset="0xC.16" size="0x0.8" />
-	<field name="ext" descr="Extended or regular configuration space, as \;defined in PCIE spec:\;0 - Regular\;1 - Extended" access="INDEX" offset="0x10.0" size="0x0.2" />
+	<field name="ext" descr="Extended or regular configuration space, as defined in PCIE spec:\;0 - Regular\;1 - Extended" access="INDEX" offset="0x10.0" size="0x0.2" />
 	<field name="data" descr="" access="RW" offset="0x14.0" size="0x4.0" />
 </node>
 
-<node name="mpein_reg_ext" descr="" size="0x1c.0" >
+<node name="mpein_reg_ext" descr="" size="0x30.0" >
 	<field name="node" descr="the node within each depth." access="INDEX" offset="0x0.8" size="0x0.8" />
-	<field name="pcie_index" descr="PCI\;e\; index number (\;Internal domain index)\;Reserved when access is from the host" access="INDEX" offset="0x0.16" size="0x0.8" />
+	<field name="pcie_index" descr="PCIe index number (Internal domain index)\;Reserved when access is from the host, but can be used when oper\;ating in Socket-Direct mode." access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="depth" descr="depth level of the DUT of some hierarchy" access="INDEX" offset="0x0.24" size="0x0.6" />
 	<field name="link_speed_enabled" descr="Max Link Speed:\;Bit 0 - 2.5G (Gen1)\;Bit 1 - 5G (Gen2)\;Bit 2 - 8G (Gen3)\;Bit 4- 16G (Gen4)" access="RO" offset="0x8.0" size="0x0.16" />
 	<field name="link_width_enabled" descr="Maximum Link Width enabled:\;0 - 1x\;1 - 2x\;2 - 4x\;3 - 8x\;4 - 16x" access="RO" offset="0x8.16" size="0x0.8" />
@@ -881,21 +1003,24 @@
 	<field name="bdf0" descr="Bus Device Function - only for function0" access="RO" offset="0x14.16" size="0x0.16" />
 	<field name="lane_reversal" descr="Reversal mode of the link:\;0 - straight \;1 - reversal\;Note: together with \;lane0_physical_position\; provide the physical \;lane." access="RO" offset="0x18.0" size="0x0.1" />
 	<field name="port_type" descr="Indicates the specific type of this PCI Express Function. Note that \;different Functions in a multi-Function device can generally be of \;different types.\;0 - \;PCI Express Endpoint port\;4 - Root Port of \;PCI Express Root Complex\;5 - PCI \;Express \;Upstream port\;6 - PCI \;Express \;Downstream port" access="RO" offset="0x18.12" size="0x0.4" />
+	<field name="pwr_status" descr="Indicates the status of PCI power consumption limitations.\;0: PCI power report could not be read.\;1: Sufficient power reported.\;2: Insufficient power reported.\;3-7: Reserved" access="RO" offset="0x18.16" size="0x0.3" />
 	<field name="max_payload_size" descr="Max payload size in bytes:\;0 - 128B\;1 - 256B\;2 - 512B\;3 - 1024B\;4 - 2048B\;5 - 4096B" access="RO" offset="0x18.24" size="0x0.4" />
 	<field name="max_read_request_size" descr="Max read request size in bytes:\;0 - 128B\;1 - 256B\;2 - 512B\;3 - 1024B\;4 - 2048B\;5 - 4096B" access="RO" offset="0x18.28" size="0x0.4" />
+	<field name="pci_power" descr="Power reported by the PCI device. The units are in Watts.\;0: Power is unknown." access="RO" offset="0x1C.0" size="0x0.12" />
+	<field name="device_status" offset="0x24.16" size="0x0.16" access="RO" descr="device_status bit mask:\;Bit 0 - Correctable error\;Bit 1 - Non-Fatal Error detection \;Bit 2 - Fatal Error detected\;Bit 3 - Unsupported request detected\;Bit 4 - AUX power \;Bit 5 - Transaction Pending"/>
 </node>
 
-<node name="mpfm_ext" descr="" size="0x4.0" >
+<node name="mpfm_ext" descr="" size="0x8.0" >
 	<field name="mode" descr="PCIe Failure Mode.\;0 - normal. PCIe failure causes SwitchX reset.\;1 - independent. PCIe failure does not cause SwitchX reset." access="RW" offset="0x0.0" size="0x0.4" />
 </node>
 
 <node name="mpgo_reg_ext" descr="" size="0x14.0" >
 	<field name="set_pd" descr="Set pulse duration" access="WO" offset="0x0.0" size="0x0.1" />
-	<field name="next_pulse_time_stamp" descr="Next Pulse Time Stamp\;Start time of next trigger\;Units are d\;evice time units" subnode="uint64" access="RW" offset="0x8.0" size="0x8.0" />
+	<field name="next_pulse_time_stamp" descr="Next Pulse Time Stamp\;Start time of next trigger\;Units are device time units" subnode="uint64" access="RW" offset="0x8.0" size="0x8.0" />
 	<field name="pulse_duration" descr="Pulse Duration\;Units are mSec\;Default is 100\;Set only when \;set_pd\; = &apos;1&apos;" access="RW" offset="0x10.0" size="0x0.10" />
 </node>
 
-<node name="mpgr_ext" descr="" size="0x18.0" >
+<node name="mpgr_ext" descr="" size="0x20.0" >
 	<field name="fsps_admin" descr="Frequency Scaling Power Save Admin state:\;0 - Disable Frequency Scaling - Force device to highest frequency \;supported\;1 - Force Frequency Scaling - Force device to highest frequency sup\;ported\;2 - Auto - Automatic Frequency Scaling (based on port&apos;s speed)." access="RW" offset="0x0.0" size="0x0.4" />
 	<field name="fsps_status" descr="Actual Frequency\;0 - High Frequency\;1 - Low Frequency" access="RO" offset="0x4.0" size="0x0.4" />
 	<field name="vsps_admin" descr="Voltage Scaling Power Save Admin state:\;0 - Disable Voltage Scaling - Force device to high voltage\;1 - Force Voltage Scaling - Force device to low voltage\;2 - Auto - Automatic Voltage Scaling (based on device active fre\;quency)." access="RW" offset="0x10.0" size="0x0.4" />
@@ -903,9 +1028,11 @@
 </node>
 
 <node name="mpir_ext" descr="" size="0x10.0" >
+	<field name="host_buses" descr="Number of PCIe buses available for the host to connect ot the \;device.\;&apos;0&apos; when operating in non-Socket-Direct mode." access="RO" offset="0x0.0" size="0x0.4" />
 	<field name="node" descr="the node within each depth." access="INDEX" offset="0x0.8" size="0x0.8" />
 	<field name="pcie_index" descr="Internal domain index" access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="depth" descr="depth level of the DUT of some hierarchy" access="INDEX" offset="0x0.24" size="0x0.6" />
+	<field name="sdm" descr="Socket-Direct mode indication.\;0: non-Socket-Direct mode (single host or multi-host)\;1: Socket-Direct mode, for querying host" access="RO" offset="0x0.31" size="0x0.1" />
 	<field name="subordinate_bus" descr="sunbordinate bus - the highest bus number that subordinates to \;switch.\;Default value of &apos;0&apos; in case it is not a switch port." access="RO" offset="0x4.0" size="0x0.8" />
 	<field name="secondary_bus" descr="secondary bus - the internal logic bus in the switch. \;Default value of &apos;0&apos; in case it is not a switch port." access="RO" offset="0x4.8" size="0x0.8" />
 	<field name="device" descr="PCIe device number." access="RO" offset="0x8.3" size="0x0.5" />
@@ -915,16 +1042,16 @@
 	<field name="slot_cap" descr="If set to &apos;1&apos;, \;slot_number\; field is supported." access="RO" offset="0xC.31" size="0x0.1" />
 </node>
 
-<node name="mqis_reg_ext" descr="" size="0x14.0" >
-	<field name="info_type" descr="Type of information string to be queried:\;0x0: VPD - Read the PCI Vital Product Data capability \;content.\;0x1: MODEL_NAME\;0x2: MODEL_DESCRIPTION\;other values are reserved." access="INDEX" offset="0x0.0" size="0x0.8" />
+<node name="mqis_reg_ext" descr="" size="0x18.0" >
+	<field name="info_type" descr="Type of information string to be queried:\;0x0: VPD - Read the PCI Vital Product Data capability con\;tent.\;0x1: MODEL_NAME\;0x2: MODEL_DESCRIPTION\;0x3: IMAGE_VSD\;0x4: DEVICE_VSD\;0x5: ROM_INFO\;other values are reserved." access="INDEX" offset="0x0.0" size="0x0.8" />
 	<field name="info_length" descr="Total size of the information string, according to \;info_type\;. \;Value given in bytes." access="RO" offset="0x4.0" size="0x0.16" />
 	<field name="read_length" descr="Number of bytes requested. The device returns the number \;of bytes actually read." access="RW" offset="0x8.0" size="0x0.16" />
 	<field name="read_offset" descr="Offset in bytes of the first byte requested to read." access="INDEX" offset="0x8.16" size="0x0.16" />
-	<field name="info_string" descr="Information string accessed, according to \;info_type\;. If the \;information is not available, a NULL string is returned." access="RO" high_bound="VARIABLE" low_bound="0" offset="0x10.0" size="0x4.0" />
+	<field name="info_string" descr="Information string accessed, according to \;info_type\;. If the \;information is not available, a NULL string is returned." access="RO" high_bound="1" low_bound="0" offset="0x10.0" size="0x8.0" />
 </node>
 
-<node name="mrsr_ext" descr="" size="0x4.0" >
-	<field name="command" descr="Reset/shutdown command\;0 - do nothing\;1 - software reset\;2 - hardware reset\;3 - enclosure reset (requires system support)\;4 - shutdown (requires system support)" access="WO" offset="0x0.0" size="0x0.4" />
+<node name="mrsr_ext" descr="" size="0x8.0" >
+	<field name="command" descr="Reset/shutdown command\;0 - do nothing\;1 - software reset\;3 - enclosure reset (requires system support)\;4 - shutdown (requires system support)" access="WO" offset="0x0.0" size="0x0.4" />
 </node>
 
 <node name="mrtc_reg_ext" descr="" size="0x10.0" >
@@ -933,9 +1060,8 @@
 	<field name="time_l" descr="LSB of timestemp depnding on \;time_synced" access="RW" offset="0xC.0" size="0x4.0" />
 </node>
 
-<node name="msci_ext" descr="" size="0x8.0" >
+<node name="msci_ext" descr="" size="0xc.0" >
 	<field name="index" descr="CPLD index" access="INDEX" offset="0x0.0" size="0x0.4" />
-	<field name="map_cap" descr="" access="RO" offset="0x0.31" size="0x0.1" />
 	<field name="version" descr="CPLD version" access="RO" offset="0x4.0" size="0x4.0" />
 </node>
 
@@ -951,19 +1077,36 @@
 	<field name="psu1" descr="System Power Supply 1 Status" access="RO" high_bound="19" low_bound="0" offset="0x50.0" size="0x50.0" />
 </node>
 
-<node name="mtbr_reg_ext" descr="" size="0x14.0" >
-	<field name="base_sensor_index" descr="Base sensor index\;Sensors are read starting from \;base_sensor_index\;Sensor 0 is the ASIC sensor, sensors 1-63 are ambient sensors and \;sensors 64-127 are mapped to the SFP+/QSFP modules sequen\;tially (module 0 is mapped to sensor 64, module 1 to sensor 65 \;and so on)" access="INDEX" offset="0x0.0" size="0x0.7" />
+<node name="mtbr_reg_ext" descr="" size="0x18.0" >
+	<field name="base_sensor_index" descr="Base sensor index\;Sensors are read starting from \;base_sensor_index\;Sensor 0 is the ASIC sensor, sensors 1-63 are ambient sensors and \;sensors 64-127 are mapped to the SFP+/QSFP modules sequen\;tially (module 0 is mapped to sensor 64, module 1 to sensor 65 \;and so on)\;. Gearbox sensors starts from 256 index." access="INDEX" offset="0x0.0" size="0x0.12" />
 	<field name="num_rec" descr="Number of records to read\;Range 1..255" access="OP" offset="0x4.0" size="0x0.8" />
-	<field name="temperature_record" descr="Temperature record\;See \;Table 799, &quot;\;MTBR - Temperature Record Layout\;,&quot; on \;page 1115" access="RO" high_bound="VARIABLE" low_bound="0" offset="0x10.0" size="0x4.0" />
+	<field name="temperature_record" descr="Temperature record\;See \;Table 1024, &quot;\;MTBR - Temperature Record Layout\;,&quot; on \;page 1168" subnode="mtbr_temp_record" access="RO" high_bound="1" low_bound="0" offset="0x10.0" size="0x8.0" />
+</node>
+
+<node name="mtbr_temp_record" descr="" size="0x4.0" >
+	<field name="temperature" descr="Temperature reading from the sensor. Units of 0.125 Celsius \;degrees.\;If no ambient sensor is present then the value is &apos;0&apos;. Also for a \;passive copper\; case.\;0x8000:NO_CONN- No cable is connected.\;0x8001: NO_TEMP_SENS - In case a cable is connected but the \;temperature sensing is not supported.\;0x8002: INDX_NA- No such cable index. Bigger than the number \;of modules.\;0x8003: INCORRECT_SENS_INFO - Sensor information is \;incorrect." access="RO" offset="0x0.0" size="0x0.16" />
+	<field name="max_temperature" descr="The highest measured temperature from the sensor.\;When the bit relevant MTMP.\;mte\; is cleared, the field \;max_tem\;perature\; is reserved.\;The value will be &apos;0&apos; for any of the\; &apos;800X&apos; temperature values and \;for &apos;0&apos; value." access="RO" offset="0x0.16" size="0x0.16" />
 </node>
 
 <node name="mtcap_ext" descr="" size="0x10.0" >
 	<field name="sensor_count" descr="Number of sensors supported by the device\;This includes the ASIC and the ambient sensors. QSFP module sen\;sors are not included." access="RO" offset="0x0.0" size="0x0.7" />
-	<field name="sensor_map" descr="Mapping of system sensors supported by the device.\; Only ASIC and \;ambient sensors are supported. \;Each bit represents a sensor.\;0: Not connected or not supported\;1: Supports\; \;temperature measurements" subnode="uint64" access="RO" offset="0x8.0" size="0x8.0" />
+	<field name="sensor_map" descr="Mapping of system sensors supported by the device. Only ASIC and \;ambient sensors are supported. Each bit represents a sensor.\;0: Not connected or not supported\;1: Supports temperature measurements" subnode="uint64" access="RO" offset="0x8.0" size="0x8.0" />
+</node>
+
+<node name="mtecr_ext" descr="" size="0x60.0" >
+	<field name="sensor_count" descr="Number of sensors supported by the device\;This includes the ASIC\;, am\;bient sensors\;, Gearboxes etc.\; QSFP \;module sensors are not included." access="RO" offset="0x0.0" size="0x0.12" />
+	<field name="last_sensor" descr="Last sensor index that is available in the system to read from." access="RO" offset="0x0.16" size="0x0.12" />
+	<field name="sensor_map_0" descr="Mapping of system sensors supported by the device.\; \;Each bit rep\;resents a sensor.\;This field is size variable based on the \;last_sensor\; \;field and in gran\;ularity of 32bits.\;0: Not connected or not supported\;1: Supports\; \;temperature measurements" access="RO" offset="0x8.0" size="0x4.0" />
+</node>
+
+<node name="mtewe_ext" descr="" size="0x5c.0" >
+	<field name="sensor_count" descr="Number of sensors supported by the device\;This includes the ASIC\;, am\;bient sensors\;, Gearboxes etc.\; QSFP \;module sensors are not included." access="RO" offset="0x0.0" size="0x0.12" />
+	<field name="last_sensor" descr="Last sensor index that is available in the system to read from." access="RO" offset="0x0.16" size="0x0.12" />
+	<field name="sensor_warning_0" descr="Bit vector indicating which of the sensor reading is above thresh\;old\;.\;This field is size dependent and based on \;last_sensor\; field and in \;granularity of 32bits.." access="RO" offset="0x4.0" size="0x4.0" />
 </node>
 
 <node name="mtmp_ext" descr="" size="0x20.0" >
-	<field name="sensor_index" descr="Sensors index to access.\;64-127 of \;sensor_index\; are mapped to the SFP+/QSFP modules \;sequentially (module 0 is mapped to \;sensor_index\; 64, module 1 \;to \;sensor_index\; 65 and so on)." access="INDEX" offset="0x0.0" size="0x0.7" />
+	<field name="sensor_index" descr="Sensors index to access.\;64-127 of \;sensor_index\; are mapped to the SFP+/QSFP modules \;sequentially (module 0 is mapped to \;sensor_index\; 64, module 1 \;to \;sensor_index\; 65 and so on).\; Gearbox sensors are from index \;256." access="INDEX" offset="0x0.0" size="0x0.12" />
 	<field name="temperature" descr="Temperature reading from the sensor. Reading is in 0.125 Cel\;sius degrees units.\;For negative values 2&apos;s complement is used (for example: -3.25 \;Celsius will read as 0xFFE6)" access="RO" offset="0x4.0" size="0x0.16" />
 	<field name="max_temperature" descr="The highest measured temperature from the sensor.\;When the bit \;mte\; is cleared, the field \;max_temperature\; is \;reserved." access="RO" offset="0x8.0" size="0x0.16" />
 	<field name="mtr" descr="Max Temperature Reset - clears the value of the max tempera\;ture register" access="OP" offset="0x8.30" size="0x0.1" />
@@ -975,9 +1118,9 @@
 	<field name="sensor_name_lo" descr="Sensor Name\;8 character long sensor name" access="RO" offset="0x1C.0" size="0x4.0" />
 </node>
 
-<node name="mtrc_cap_reg_ext" descr="" size="0x50.0" >
+<node name="mtrc_cap_reg_ext" descr="" size="0x84.0" >
 	<field name="num_string_db" descr="Number of different string sections building the database" access="RO" offset="0x0.0" size="0x0.4" />
-	<field name="trc_ver" descr="Indicates the version of the tracing mechanism.\;See, \;&quot;\;Timestamp Event Traces\;&quot; on page 892\;0x0: VER_0\;0x1: VER_1\;other values are reserved" access="RO" offset="0x0.24" size="0x0.2" />
+	<field name="trc_ver" descr="Indicates the version of the tracing mechanism.\;See, \;&quot;\;Timestamp Event Traces\;&quot; on page 862\;0x0: VER_0\;0x1: VER_1\;other values are reserved" access="RO" offset="0x0.24" size="0x0.2" />
 	<field name="trace_to_memory" descr="When set the device supports logging traces to memory" access="RO" offset="0x0.30" size="0x0.1" />
 	<field name="trace_owner" descr="Write 0x1 to register for tracer ownership, write 0x0 to de-regis\;ter.\;Read value 0x1 indicates tracer ownership is granted" access="RW" offset="0x0.31" size="0x0.1" />
 	<field name="num_string_trace" descr="The number of consecutive \;event_id\; that should be interpreted as \;a string trace" access="RO" offset="0x4.16" size="0x0.8" />
@@ -986,16 +1129,16 @@
 	<field name="string_db_param" descr="String DB section parameters." subnode="string_db_parameters" access="RO" high_bound="7" low_bound="0" offset="0x10.0" size="0x40.0" />
 </node>
 
-<node name="mtrc_conf_reg_ext" descr="" size="0xc.0" >
-	<field name="trace_mode" descr="Tracing mode\;0x1: \;TRACE_\;TO_MEMORY\;Other values are reserved." access="RW" offset="0x0.0" size="0x0.4" />
+<node name="mtrc_conf_reg_ext" descr="" size="0x80.0" >
+	<field name="trace_mode" descr="Tracing mode\;0x1: TRACE_TO_MEMORY\;Other values are reserved." access="RW" offset="0x0.0" size="0x0.4" />
 	<field name="log_trace_buffer_size" descr="Log 2 of the Size of the trace buffer, given in units of 4KB.\;Value should not exceed log_max_trace_buffer_size.\;Valid only for trace_mode TRACE_TO_MEMORY.\;Modifying this parameter after the tracer was active may cause \;loss of sync regarding the location of the next trace." access="RW" offset="0x4.0" size="0x0.8" />
-	<field name="trace_mkey" descr="MKey registered for the trace buffer access.\;Valid only for \;trace_mode\; \;TRACE_\;TO_MEMORY.\;Modifying this parameter after the tracer was active may cause \;loss of sync regarding the location of the next trace." access="RW" offset="0x8.0" size="0x4.0" />
+	<field name="trace_mkey" descr="MKey registered for the trace buffer access.\;Valid only for \;trace_mode\; TRACE_TO_MEMORY.\;Modifying this parameter after the tracer was active may cause \;loss of sync regarding the location of the next trace." access="RW" offset="0x8.0" size="0x4.0" />
 </node>
 
-<node name="mtrc_ctrl_reg_ext" descr="" size="0x10.0" >
+<node name="mtrc_ctrl_reg_ext" descr="" size="0x40.0" >
 	<field name="modify_field_select" descr="Field select indicated which writable fields to modify\;bit 0: trace_status\;Other bits are reserved." access="WO" offset="0x0.0" size="0x0.16" />
 	<field name="arm_event" descr="When set, an event will be generated if \;new Tracer events were \;logged since last event." access="WO" offset="0x0.27" size="0x0.1" />
-	<field name="trace_status" descr="Current status of the tracer\;0x\;0:\; DISABLED - logging traces is stopped\;0x\;1:\; ACTIVE - logging traces is active" access="RW" offset="0x0.30" size="0x0.2" />
+	<field name="trace_status" descr="Current status of the tracer\;0x0: DISABLED - logging traces is stopped\;0x1: ACTIVE - logging traces is active" access="RW" offset="0x0.30" size="0x0.2" />
 	<field name="current_timestamp_52_32" descr="MSB of the current timesatmp counter" access="RO" offset="0x8.0" size="0x0.21" />
 	<field name="current_timestamp_31_0" descr="LSB of the current timesatmp counter" access="RO" offset="0xC.0" size="0x4.0" />
 </node>
@@ -1011,8 +1154,8 @@
 	<field name="sensor_warning" descr="Bit vector indicating which of the sensor reading is above thresh\;old.\;Address 00h bit31 is sensor_warning[127]\;Address 0Ch bit0 is sensor_warning[0]" access="RO" high_bound="3" low_bound="0" offset="0x0.0" size="0x10.0" />
 </node>
 
-<node name="mvcap_reg_ext" descr="" size="0x8.0" >
-	<field name="sensor_map" descr="Mapping of system sensors supported by the device.\; \;Each bit rep\;resents a sensor.\;0: Not connected or not supported\;1: Supports\; \;voltage and current measurements" subnode="uint64" access="RO" offset="0x0.0" size="0x8.0" />
+<node name="mvcap_reg_ext" descr="" size="0x10.0" >
+	<field name="sensor_map" descr="Mapping of system sensors supported by the device. Each bit rep\;resents a sensor.\;0: Not connected or not supported\;1: Supports voltage and current measurements" subnode="uint64" access="RO" offset="0x0.0" size="0x8.0" />
 </node>
 
 <node name="mvcr_ext" descr="" size="0x18.0" >
@@ -1022,17 +1165,17 @@
 	<field name="sensor_name" descr="Sensor Name\;8 character long sensor name" subnode="uint64" access="RO" offset="0x10.0" size="0x8.0" />
 </node>
 
-<node name="paos_reg_ext" descr="" size="0x8.0" >
+<node name="paos_reg_ext" descr="" size="0x10.0" >
 	<field name="oper_status" descr="Port operational state:\;1 - up\;2 - down\;4 - down by port failure (transitioned by the hardware)" access="RO" offset="0x0.0" size="0x0.4" />
 	<field name="admin_status" descr="Port administrative state (the desired state of the interface):\;1 - up\;2 - down by configuration\;3 - up once - if the port goes up and then down, the operational \;status should go to &quot;down by port failure&quot; and can only go back \;up upon explicit command\;4 - disabled by system - this mode cannot be set by the software, \;only by the hardware.\;[Internal] Default should come from ini. Up for unmanaged sys\;tems and Down for managed\;[Internal] For InfiniBand ports, this holds the local admin status. \;SM status does not overide this one and should be held in a tem\;porary register.\;[Internal] if ext_down_admin is in test_mode \;admin_status \;must \;remain down." access="RW" offset="0x0.8" size="0x0.4" />
 	<field name="local_port" descr="Local port number." access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="swid" descr="For HCA: must always be 0.\;Switch partition ID with which to associate the port.\;Switch partitions are numbered from 0 to 7 inclusively.\;The \;swid\; field is only valid when the \;local_port\; is the router port. \;In this case, the \;swid\; indicates which of the router ports to config\;ure/query." access="INDEX" offset="0x0.24" size="0x0.8" />
-	<field name="e" descr="Event generation on operational state change:\;0\; - Do not generate event\;1\; - Generate Event \;2\; - Generate Single Event\;Not Supported for HCA." access="RW" offset="0x4.0" size="0x0.2" />
+	<field name="e" descr="Event generation on operational state change:\;0 - Do not generate event\;1 - Generate Event \;2 - Generate Single Event\;Not Supported for HCA." access="RW" offset="0x4.0" size="0x0.2" />
 	<field name="ee" descr="Event update enable. If this bit is set, event generation will be \;updated based on the \;e\; field. Only relevant on Set operations.\;Not Supported for HCA." access="WO" offset="0x4.30" size="0x0.1" />
 	<field name="ase" descr="Admin state update enable. If this bit is set, admin state will be \;updated based on \;admin_state\; field. Only relevant on Set() opera\;tions." access="WO" offset="0x4.31" size="0x0.1" />
 </node>
 
-<node name="pbmc_reg_ext" descr="" size="0x5c.0" >
+<node name="pbmc_reg_ext" descr="" size="0x64.0" >
 	<field name="local_port" descr="Local port number." access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="xoff_refresh" descr="The time before a new pause frame should be sent to refresh the pause \;state. Using the same units as xoff_timer_value above." access="RW" offset="0x4.0" size="0x0.16" />
 	<field name="xoff_timer_value" descr="When device generates a pause frame, it uses this value as the pause \;timer.\;The pause timer is measured in units of pause &quot;quanta&quot;, where each unit \;is equal to 512 bit times." access="RW" offset="0x4.16" size="0x0.16" />
@@ -1041,24 +1184,17 @@
 	<field name="buffer" descr="Configuring per-buffer parameters. i=0..9" subnode="bufferx_reg" access="RW" high_bound="9" low_bound="0" offset="0xC.0" size="0x50.0" />
 </node>
 
-<node name="pbsr_reg_ext" descr="" size="0x5c.0" >
-	<field name="local_port" descr="Local port number." access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="used_shared_headroom_buffer" descr="Number of currently used shared headroom buffer lines." access="RO" offset="0x8.0" size="0x0.16" />
-	<field name="clear_wm" descr="Clear watermarks for all PGs" access="OP" offset="0x8.31" size="0x0.1" />
-	<field name="stat_buffer" descr="status per-buffer parameters. i=0..9" subnode="stat_bufferx_reg" access="RW" high_bound="9" low_bound="0" offset="0xC.0" size="0x50.0" />
-</node>
-
-<node name="pcam_reg_ext" descr="" size="0x38.0" >
+<node name="pcam_reg_ext" descr="" size="0x50.0" >
 	<field name="access_reg_group" descr="Access Register ID groups\;0 - RegID 0x5000 - 0x507F\;1-255 - Reserved" access="INDEX" offset="0x0.0" size="0x0.8" />
 	<field name="feature_group" descr="Feature list mask index: \;0 - enhanced features \;1-255 - Reserved" access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="port_access_reg_cap_mask" descr="Supported port&apos;s access register bitmaks. Based on \;access_reg_group \;index.\;When bit is set , The register is supported in the device. \;When \;access_reg_group == 0\; :\;Bit 0 - 0x5000 \;Bit 1 - 0x5001 (\;PCAP)\;Bit 2 - 0x5002 (PMLP)\;Bit 3 - 0x5003 (PMTU)\;Bit 4 - 0x5004 (PTYS)\;.\;,\;Bit 127- 0x507F (PCAM)" access="RO" high_bound="3" low_bound="0" offset="0x8.0" size="0x10.0" />
-	<field name="feature_cap_mask" descr="Supported port&apos;s enhanced features. Based on \;feature_group\; \;index.\;When bit is set , The feature is supported in the device: \;Bit 0 - PPCNT counter group: Phy statistical counter group \;Bit 1 - PPCNT counter group: Discard counter group\;Bit 9 - PFCC , support of stall mask and global rx,tx mask. \;Bit 10\; \;- PMCR , support of tx_disable override.\;Bit 11 - PPCNT counter group : IB \;Extended\; port counter group\;Bit 12 - PPCNT Extended Ethernet group - tx packet size histograms\;Bit 14 - PMAOS reset toggle support\;Bit 15 - Set Module low power supported \;Bit 16 - Module power optimization is supported in PPSC\;Bit 17 - Support of IB force state machine in PTYS (an_disable)\;Bit 18 - PPCNT Extended Ethernet group - icrc counter\;Bit 19 - cm2_en is supported in PCAP.\;Bit 20 - time_tolink_up is supported in PDDR\;Bit 20:127 - Reserved" access="RO" high_bound="3" low_bound="0" offset="0x28.0" size="0x10.0" />
+	<field name="feature_cap_mask" descr="Supported port&apos;s enhanced features. Based on \;feature_group\; \;index.\;When bit is set , The feature is supported in the device: \;Bit 0 - PPCNT counter group: Phy statistical counter group \;Bit 1 - PPCNT counter group: Discard counter group\;Bit 9 - PFCC , support of stall mask and global rx,tx mask. \;Bit 10 - PMCR , support of tx_disable override.\;Bit 11 - PPCNT counter group : IB Extended port counter group\;Bit 12 - PPCNT Extended Ethernet group - tx packet size histograms\;Bit 14 - PMAOS reset toggle support\;Bit 15 - Set Module low power supported \;Bit 16 - Module power optimization is supported in PPSC\;Bit 17 - Support of IB force state machine in PTYS (an_disable)\;Bit 18 - PPCNT Extended Ethernet group - icrc counter\;Bit 19 - cm2_en is supported in PCAP.\;Bit 20 - time_tolink_up is supported in PDDR\;Bit 21 - \;gearbox_die_num field is supported in PMDR\;Bit 22 - force_entropy, entropy_calc, entropy_gre_calc (and capability bits) \;are supported in PCMR\;Bit 23 - FEC override support for 50G per lane is supported in PPLM\;Bit 24:127 - Reserved" access="RO" high_bound="3" low_bound="0" offset="0x28.0" size="0x10.0" />
 </node>
 
 <node name="pcap_reg_ext" descr="" size="0x14.0" >
 	<field name="local_port" descr="Local port number" access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="cm2_en" descr="port_capability_mask[95:80] is supported if set to &apos;1&apos;." access="RW" offset="0x0.31" size="0x0.1" />
-	<field name="port_capability_mask" descr="Sets the PortInfoCapabilityMask:\;Specifies the supported capabilities of this node. A bit set to 1 for affirma\;tion of supported capability.\;port_capability_mask[127:96] is mapped to CapabilityMask\; in PortInfo \;MAD.\;port_capability_mask[95:80] is mapped to CapabilityMask2\; in PortInfo \;MAD." access="RW" high_bound="3" low_bound="0" offset="0x4.0" size="0x10.0" />
+	<field name="port_capability_mask" descr="Sets the PortInfoCapabilityMask:\;Specifies the supported capabilities of this node. A bit set to 1 for affirma\;tion of supported capability.\;port_capability_mask[127:96] is mapped to CapabilityMask in PortInfo \;MAD.\;port_capability_mask[95:80] is mapped to CapabilityMask2 in PortInfo \;MAD." access="RW" high_bound="3" low_bound="0" offset="0x4.0" size="0x10.0" />
 </node>
 
 <node name="pcie_lanes_counters_ext" descr="" size="0xf8.0" >
@@ -1083,6 +1219,8 @@
 <node name="pcie_perf_counters_ext" descr="" size="0xf8.0" >
 	<field name="rx_errors" descr="Number of transitions to recovery due to Framing \;errors and CRC (dlp and tlp) errors." access="RO" offset="0x8.0" size="0x4.0" />
 	<field name="tx_errors" descr="Number of transitions to recovery due to EIEOS \;and TS errors." access="RO" offset="0xC.0" size="0x4.0" />
+	<field name="crc_error_dllp"                                                                  offset="0x20.0"          size="0x4.0"     access="RO" descr="Number of transitions to recovery due to identify\;ing CRC DLLP errors"/>
+	<field name="crc_error_tlp"                                                                   offset="0x24.0"          size="0x4.0"     access="RO" descr="Number of transitions to recovery due to identify\;ing CRC TLP errors"/>
 	<field name="tx_overflow_buffer_pkt" descr="The number of packets dropped due to lack of \;PCIe buffers or receive path from NIC port toward \;the hosts." subnode="uint64" access="RO" offset="0x28.0" size="0x8.0" />
 	<field name="outbound_stalled_reads" descr="The percentage of time within the last second that \;the NIC had outbound non-posted read requests \;but could not perform the operation due to insuffi\;cient non-posted credits.\;Supported only when MCAM.pcie_out\;bound_stalled ==1." access="RO" offset="0x30.0" size="0x4.0" />
 	<field name="outbound_stalled_writes" descr="The percentage of time within the last second that \;the NIC had outbound posted writes requests but \;could not perform the operation due to insufficient \;posted credits.\;Supported only when MCAM.pcie_out\;bound_stalled ==1." access="RO" offset="0x34.0" size="0x4.0" />
@@ -1121,14 +1259,20 @@
 	<field name="rx_fcs_drop_cap" descr="Specifies the ingress drop enable/disable capabilities of the local port. A bit \;set to 1 for affirmation of supported enable/disable capability:" access="RO" offset="0x4.14" size="0x0.1" />
 	<field name="tx_fcs_recalc_cap" descr="Specifies the egress drop enable/disable capabilities of the local port. A bit \;set to 1 for affirmation of supported enable/disable capability:" access="RO" offset="0x4.15" size="0x0.1" />
 	<field name="tx_ts_over_crc_cap" descr="Specifies the egress timestamps enable/disable capabilities of the local port. \;A bit set to 1 for affirmation of supported enable/disable capability:" access="RW" offset="0x4.16" size="0x0.1" />
+	<field name="entropy_gre_calc_cap" descr="Specifies the egress GRE tunnel protocol entropy calculation enable/disable \;capabilities of the local port. \;A bit set to 1 for affirmation of supported enable/disable capability:" access="RO" offset="0x4.29" size="0x0.1" />
+	<field name="entropy_calc_cap" descr="Specifies the egress tunnel protocol entropy calculation enable/disable \;capabilities of the local port. \;A bit set to 1 for affirmation of supported enable/disable capability:" access="RO" offset="0x4.30" size="0x0.1" />
+	<field name="force_entropy_cap" descr="Specifies the egress tunnel protocol entropy calculation force capabilities of \;the local port. \;A bit set to 1 for affirmation of supported enable/disable capability:" access="RO" offset="0x4.31" size="0x0.1" />
 	<field name="fcs_chk" descr="FCS check\;Values:\;0: disable check. \;1: perform check\;Note: when disabling a check, it will also affects the relevant counters." access="RW" offset="0x8.1" size="0x0.1" />
 	<field name="rx_fcs_drop" descr="RX FCS drop control:\;0: ingress port will drop a packet with bad FCS (Default)\;1: ingress port will not drop a packet with bad FCS\;NOTE: All FCS counters (PPCNT) are valid for both drop modes.\;NOTE: Reserved when \;PCMR.fcs_cap=1 &amp; PCMR.fcs_chk=0" access="RW" offset="0x8.14" size="0x0.1" />
 	<field name="tx_fcs_recalc" descr="TX FCS drop control:\;0: egress port will recalculate and overwrite FCS value (Default) \;1: egress port will not overwrite FCS value \;NOTE: when this bit is set, any modification of the packet will \;result in a bad FCS." access="RW" offset="0x8.15" size="0x0.1" />
-	<field name="tx_ts_over_crc" descr="TX Time\;S\;tamp over FCS\;0: no TS over FCS\;1: TS over FCS\;Reserved when \;tx_fcs_recalc\; is set" access="RW" offset="0x8.16" size="0x0.1" />
+	<field name="tx_ts_over_crc" descr="TX TimeStamp over FCS\;0: no TS over FCS\;1: TS over FCS\;Reserved when \;tx_fcs_recalc\; is set" access="RW" offset="0x8.16" size="0x0.1" />
+	<field name="entropy_gre_calc" descr="0x0: DISABLE - entropy calculation is disabled for GRE tunneling \;protocol.\;0x1: ENABLE - entropy calculation is enabled for GRE tunneling \;protocol, if \;entropy_calc\; is enabled as well. valid only if \;force_en\;tropy\; is activated." access="RW" offset="0x8.29" size="0x0.1" />
+	<field name="entropy_calc" descr="0x0: DISABLE - entropy calculation is disabled for all supported \;tunneling protocols.\;0x1: ENABLE - entropy calculation is enabled for all supported tun\;neling protocols. GRE also depends on the \;entropy_gre_calc\; valid \;only if \;force_entropy\; is activated." access="RW" offset="0x8.30" size="0x0.1" />
+	<field name="force_entropy" descr="0x0: DEFAULT - use device defaults for tunnel entropy calculation. \;This mode should be used if entropy calculation requirement is \;unknown.\;0x1: FORCE - force the entropy calculation according to \;entropy_\;calc\; and \;entropy_gre_calc\;." access="RW" offset="0x8.31" size="0x0.1" />
 </node>
 
 <node name="pddr_advanced_opcode_ext" descr="" size="0x4.0" >
-	<field name="advanced_opcode" descr="Status opcode: \;PHY FW indication (0 - 1023):\;0 - No issue observed\;1 - Port is close by command (see PAOS).\;2 - AN no partner detected.\;3 - AN ack not received. \;4 - AN next-page exchange failed. \;5 - KR frame lock not acquired.\;6 - KR link inhibit timeout \;7 - KR Link partner didn&apos;t set receiver ready\;8 - KR tuning didn&apos;t completed \;9 - PCS didn&apos;t acquire block lock. \;10 - PCS didn&apos;t acquire AM lock (NO FEC) \;11 - PCS didn&apos;t get align_status.\;12 - FC FEC isn&apos;t locked\;13 - RS FEC isn&apos;t locked\;14 - Remote fault received\;15 - Bad Signal integrity \;16 - Compliance code mismatch (protocol mismatch between cable and port)\;17 - Large number of physical errors (high BER). \;18 - Port is disabled by Ekey\;19- Phase EO failure\;20- stamping of Non Mellanox Cables/Modules\;21 - Down by PortInfo MAD\;22 - Disabled by Verification\;23 - Calibration failure\;24 - EDR speed is not allowed due to cable stamping: EDR stamping\;25 - FDR10 speed is not allowed due to cable stamping: FDR10 stamping\;26 - Port is closed due to cable stamping: Ethernet_compliace_code_zero\;27 - Port is closed due to cable stamping: 56GE stamping\;28 - Port is closed due to cable stamping: non-Mellanox QSFP28\;29 - Port is closed due to cable stamping: non-Mellanox SFP28\;30 - Port is closed, no backplane enabled speed over backplane channel\;31 - Port is closed, no passive protocol enabled over passive copper channel\;32 - Port is closed, no active protocol enabled over active channel\;33 - Port width is doesn&apos;t match the port speed enabled\;34 - Local speed degradation\;35 - Remote speed degradation\;36 - No Partner detected during force mode. \;37 - Partial link indication during force mode. \;38 - AN Failure - FEC mismatch during override \;39 - AN Failure - No HCD\;40 - VPI protocol don&apos;t match\;41 - Port is closed, module can&apos;t be set to the enabled rate\;42 - Bad SI, cable is configured to non optimal rate \;1023- Info not available\;MNG FW issues (1024 - 2047):\;1024 - Cable is unplugged/powered off\;1025 - \;Long Range for non MLNX cable/module .\;1026 - \;Bus stuck (I2C Data or clock shorted) \;1027 - \;bad/unsupported EEPROM \;1028 - \;part number list\;1029 - \;unsupported cable.\;1030 - module temperature shutdown\;1031 - Shorted cable\;1032 - \;Power Budget Exceeded\;1033 - Management force down the port\;1034 - Module is disabled by command\;1035 - \;System Power is Exceeded therefore the module is powered off. \;Core/Driver (2048 - 3072):" access="RW" offset="0x0.0" size="0x0.16" />
+	<field name="advanced_opcode" descr="Status opcode: \;PHY FW indication (0 - 1023):\;0 - No issue observed\;1 - Port is close by command (see PAOS).\;2 - AN no partner detected.\;3 - AN ack not received. \;4 - AN next-page exchange failed. \;5 - KR frame lock not acquired.\;6 - KR link inhibit timeout \;7 - KR Link partner didn&apos;t set receiver ready\;8 - KR tuning didn&apos;t completed \;9 - PCS didn&apos;t acquire block lock. \;10 - PCS didn&apos;t acquire AM lock (NO FEC) \;11 - PCS didn&apos;t get align_status.\;12 - FC FEC isn&apos;t locked\;13 - RS FEC isn&apos;t locked\;14 - Remote fault received\;15 - Bad Signal integrity \;16 - Compliance code mismatch (protocol mismatch between cable and port)\;17 - Large number of physical errors (high BER). \;18 - Port is disabled by Ekey\;19- Phase EO failure\;20- stamping of Non Mellanox Cables/Modules\;21 - Down by PortInfo MAD\;22 - Disabled by Verification\;23 - Calibration failure\;24 - EDR speed is not allowed due to cable stamping: EDR stamping\;25 - FDR10 speed is not allowed due to cable stamping: FDR10 stamping\;26 - Port is closed due to cable stamping: Ethernet_compliace_code_zero\;27 - Port is closed due to cable stamping: 56GE stamping\;28 - Port is closed due to cable stamping: non-Mellanox QSFP28\;29 - Port is closed due to cable stamping: non-Mellanox SFP28\;30 - Port is closed, no backplane enabled speed over backplane channel\;31 - Port is closed, no passive protocol enabled over passive copper channel\;32 - Port is closed, no active protocol enabled over active channel\;33 - Port width is doesn&apos;t match the port speed enabled\;34 - Local speed degradation\;35 - Remote speed degradation\;36 - No Partner detected during force mode. \;37 - Partial link indication during force mode. \;38 - AN Failure - FEC mismatch during override \;39 - AN Failure - No HCD\;40 - VPI protocol don&apos;t match\;41 - Port is closed, module can&apos;t be set to the enabled rate\;42 - Bad SI, cable is configured to non optimal rate \;1023- Info not available\;MNG FW issues (1024 - 2047):\;1024 - Cable is unplugged/powered off\;1025 - \;Long Range for non MLNX cable/module .\;1026 - \;Bus stuck (I2C Data or clock shorted) \;1027 - \;bad/unsupported EEPROM \;1028 - \;part number list\;1029 - \;unsupported cable.\;1030 - module temperature shutdown\;1031 - Shorted cable\;1032 - \;Power Budget Exceeded\;1033 - Management force down the port\;1034 - Module is disabled by command\;1035 - System Power is Exceeded therefore the module is powered off. \;Core/Driver (2048 - 3072):" access="RW" offset="0x0.0" size="0x0.16" />
 </node>
 
 <node name="pddr_device_events_page_ext" descr="" size="0xf8.0" >
@@ -1242,7 +1386,7 @@
 </node>
 
 <node name="pddr_monitor_opcode_ext" descr="" size="0x4.0" >
-	<field name="monitor_opcode" descr="Status opcode: \;PHY FW indication (0 - 1023):\;0 - No issue observed\;1 - Port is close by command (see PAOS).\;2,3,4,38,39 - AN failure \;5,6,7,8 - Link training failure. \;9,10,11,12,13 - Logical mismatch between link partners\;14 - Remote fault received\;15\;,42\; - Bad signal integrity \;16,24-32 - Cable compliance code mismatch (protocol mismatch \;between cable and port) \;23,22,19,18,17- Internal error\;34,35 - Speed degradation\;1023- Info not available\;MNG FW issues (1024 - 2047):\;1024 - Cable is unplugged\;1025 - \;Long Range for non Mellanox cable/module .\;1026 - \;Bus stuck (I2C Data or clock shorted) \;1027 - \;Bad/unsupported EEPROM \;1028 - \;Part number list\;1029 - \;Unsupported cable.\;1030 - Module temperature shutdown\;1031 - Shorted cable\;1032 - \;Power budget exceeded\;1033 - Management forced down the port\;1034 - Module is disabled by command\;Core/Driver (2048 - 3071):" access="RW" offset="0x0.0" size="0x0.16" />
+	<field name="monitor_opcode" descr="Status opcode: \;PHY FW indication (0 - 1023):\;0 - No issue observed\;1 - Port is close by command (see PAOS).\;2,3,4,38,39 - AN failure \;5,6,7,8 - Link training failure. \;9,10,11,12,13 - Logical mismatch between link partners\;14 - Remote fault received\;15,42 - Bad signal integrity \;16,24-32 - Cable compliance code mismatch (protocol mismatch \;between cable and port) \;23,22,19,18,17- Internal error\;34,35 - Speed degradation\;1023- Info not available\;MNG FW issues (1024 - 2047):\;1024 - Cable is unplugged\;1025 - \;Long Range for non Mellanox cable/module .\;1026 - \;Bus stuck (I2C Data or clock shorted) \;1027 - \;Bad/unsupported EEPROM \;1028 - \;Part number list\;1029 - \;Unsupported cable.\;1030 - Module temperature shutdown\;1031 - Shorted cable\;1032 - \;Power budget exceeded\;1033 - Management forced down the port\;1034 - Module is disabled by command\;Core/Driver (2048 - 3071):" access="RW" offset="0x0.0" size="0x0.16" />
 </node>
 
 <node name="pddr_operation_info_page_ext" descr="" size="0xf8.0" >
@@ -1252,10 +1396,10 @@
 	<field name="phy_mngr_fsm_state" descr="FW Phy Manager FSM state:\;0 - Disabled \;1 - Open port\;2 - Polling\;3 - Active / Linkup\;4 - Close port" access="RO" offset="0x4.24" size="0x0.8" />
 	<field name="core_to_phy_link_proto_enabled" descr="IB ports : \;ib link width enabled bits 31:16\;Bit 0 - 1x\;Bit 1 - 2x\;Bit 2 - 4x\;Bit 3 - 8x\;Other - reserved\;ib link speed enabled bits 15:0\;Bit 0 - SDR\;Bit 1 - DDR\;Bit 2 - QDR\;Bit 3 - FDR10\;Bit 4 - FDR\;Bit 5 - EDR\;[Internal]Bit 6 - HDR\;[Internal]Bit 7 - NDR\;Ethernet ports:\;Ethernet protocols admin state: see PTYS.eth_proto_admin" access="RO" offset="0xC.0" size="0x0.16" />
 	<field name="core_to_phy_link_width_enabled" descr="IB ports : \;ib link width enabled bits 31:16\;Bit 0 - 1x\;Bit 1 - 2x\;Bit 2 - 4x\;Bit 3 - 8x\;Other - reserved\;ib link speed enabled bits 15:0\;Bit 0 - SDR\;Bit 1 - DDR\;Bit 2 - QDR\;Bit 3 - FDR10\;Bit 4 - FDR\;Bit 5 - EDR\;[Internal]Bit 6 - HDR\;[Internal]Bit 7 - NDR\;Ethernet ports:\;Ethernet protocols admin state: see PTYS.eth_proto_admin" access="RO" offset="0xC.16" size="0x0.16" />
-	<field name="cable_proto_cap" descr="IB ports : \;Cable IB speeds support \;See ib_link_speed_enabled encoding\; \;(bits 31:16 width, bits 15:0 \;speed).\;Ethernet ports:\;Link partner advertised Ethernet protocols active state: see encod\;ing PTYS.eth_proto_admin" access="RO" offset="0x10.0" size="0x4.0" />
+	<field name="cable_proto_cap" descr="IB ports : \;Cable IB speeds support \;See ib_link_speed_enabled encoding\; (bits 31:16 width, bits 15:0 \;speed).\;Ethernet ports:\;Link partner advertised Ethernet protocols active state: see encod\;ing PTYS.eth_proto_admin" access="RO" offset="0x10.0" size="0x4.0" />
 	<field name="link_speed_active" descr="IB ports : \;ib link speed / width active\;See ib_link_width_enabled, ib_link_speed_enabled encoding.\;Ethernet ports:\;Ethernet protocols active state: see PTYS.eth_proto_active\;?" access="RO" offset="0x14.0" size="0x0.16" />
 	<field name="link_width_active" descr="IB ports : \;ib link speed / width active\;See ib_link_width_enabled, ib_link_speed_enabled encoding.\;Ethernet ports:\;Ethernet protocols active state: see PTYS.eth_proto_active\;?" access="RO" offset="0x14.16" size="0x0.16" />
-	<field name="loopback_mode" descr="0 - Phy remote loopback \;2 - Phy local loopback. When set the port&apos;s egress traffic is looped back to \;the receiver and the port transmitter is disabled. \;4 - External local loopback. Enables the port&apos;s transmitter to link with the \;port&apos;s receiver using an external loopback connector. Bits 3-7 are reserved." access="RO" offset="0x18.0" size="0x0.4" />
+	<field name="loopback_mode" descr="0 - No loopback \;1 - Phy remote loopback \;2 - Phy local loopback. When set the port&apos;s egress traffic is looped back to \;the receiver and the port transmitter is disabled. \;4 - External local loopback. Enables the port&apos;s transmitter to link with the \;port&apos;s receiver using an external loopback connector. Bits 3-7 are reserved." access="RO" offset="0x18.0" size="0x0.4" />
 	<field name="fec_mode_request" descr="FEC mode request\;See fec_mode_active\;for supported retransmission mode see \;PPLM.\;fec_mode_capability" access="RO" offset="0x1C.0" size="0x0.16" />
 	<field name="fec_mode_active" descr="FEC mode active\;0 - No FEC\;1 - Firecode FEC\;2 - Standard RS-FEC - RS(528,514)\;3 - Standard LL RS-FEC - RS(271,257)\;[Internal] 4 - Mellanox Strong RS-FEC - RS(277,257)\;[Internal] 5 - Mellanox LL RS-FEC - RS(163,155)\;[Internal] 6 - Reserved\;Bit 7 - Standard RS-FEC (544,514)\;[Internal] Bit 8 - Zero Latency FEC\;[Internal] Bit 12 - RS-FEC (544,514) + PLR\;[Internal] Bit 13 - LL-FEC (271,257) + PLR\;for supported retransmission mode see \;PPLM.\;fec_mode_capability" access="RO" offset="0x1C.16" size="0x0.16" />
 	<field name="eth_100g_fec_support" descr="FEC 100G (25Gb/s per lane) supported FEC include override \;masking , should reflect current phy configuration\;Bit 0 - No FEC\;Bit 2 - Standard RS-FEC - RS(528,514)" access="RO" offset="0x20.0" size="0x0.4" />
@@ -1313,10 +1457,10 @@
 </node>
 
 <node name="pddr_reg_ext" descr="" size="0x100.0" >
-	<field name="pnat" descr="Port number access type. determines the way \;local_port\; \;is inter\;preted:\;0 - Local port number\;1 - IB / label port number\;[Internal] 3 - Out of band / PCI" access="INDEX" offset="0x0.14" size="0x0.2" />
+	<field name="pnat" descr="Port number access type. determines the way \;local_port\; \;is inter\;preted:\;0 - Local port number\;1 - IB / label port number" access="INDEX" offset="0x0.14" size="0x0.2" />
 	<field name="local_port" descr="Local port number." access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="page_select" descr="page select index:\;0 - Operational info page\;1 - Troubleshooting info page\;[Internal] 2 - Phy info page\;3 - Module info page\;internal] 4 - port events page\;[internal] 5 - device events page\;[internal] 6 - link down info\;[internal] 7 - link down events\;[Internal] 8 - Link up info" access="INDEX" offset="0x4.0" size="0x0.8" />
-	<field name="page_data" descr="See Table  880, &quot;\;Operation Info Page Layout\;,&quot; on page  1022\;See Table  882, &quot;\;Phy info page layout\;,&quot; on page  1026\;See Table  890, &quot;\;Troubleshooting info Page layout\;,&quot; on page  1042\;See Table  888, &quot;\;Module Info Page Layout\;,&quot; on page  1036\;See Table  898, \;&quot;\;Device events Page Layout\;,&quot; on page  1048\;See Table  896, &quot;\;Port events Page Layout\;,&quot; on page  1046\;See Table  884, &quot;\;Link down info page layout\;,&quot; on page  1033\;See Table  886, &quot;\;Link down events page layout\;,&quot; on page  1035\;See Table  900, &quot;\;Link Up Info Page Layout\;,&quot; on page  1051" subnode="pddr_reg_page_data_auto_ext" access="RO" offset="0x8.0" size="0xf8.0" />
+	<field name="page_select" descr="page select index:\;0 - Operational info page\;1 - Troubleshooting info page\;[Internal] 2 - Phy info page\;3 - Module info page\;internal] 4 - port events page\;[internal] 5 - device events page\;[EMC only] 6 - link down info\;[internal] 7 - link down events\;[Internal] 8 - Link up info" access="INDEX" offset="0x4.0" size="0x0.8" />
+	<field name="page_data" descr="See Table  724, &quot;\;Operation Info Page Layout\;,&quot; on page  744\;See Table  726, &quot;\;Phy info page layout\;,&quot; on page  748\;See Table  734, &quot;\;Troubleshooting info Page layout\;,&quot; on page  764\;See Table  732, &quot;Module Info Page Layout,&quot; on page  758\;See Table  742, \;&quot;Device events Page Layout,&quot; on page  770\;See Table  740, &quot;\;Port events Page Layout\;,&quot; on page  768\;See Table  728, &quot;\;Link down info page layout\;,&quot; on page  755\;See Table  730, &quot;\;Link down events page layout\;,&quot; on page  757\;See Table  744, &quot;\;Link Up Info Page Layout\;,&quot; on page  773" subnode="pddr_reg_page_data_auto_ext" access="RO" offset="0x8.0" size="0xf8.0" />
 </node>
 
 <node name="pddr_reg_page_data_auto_ext" descr="" attr_is_union="1" size="0xf8.0" >
@@ -1333,7 +1477,7 @@
 
 <node name="pddr_troubleshooting_page_ext" descr="" size="0xf8.0" >
 	<field name="group_opcode" descr="0 - Monitor opcodes\;[Internal] 1 - Advanced debug opcodes" access="INDEX" offset="0x0.0" size="0x0.16" />
-	<field name="status_opcode" descr="Status opcode described in:\;See Table  892, &quot;\;PDDR - Monitor opcodes layout\;,&quot; on page  1043\;[Internal] \;See Table  894, &quot;\;PDDR - Advanced opcodes layout\;,&quot; on \;page  1044" subnode="pddr_troubleshooting_page_status_opcode_auto_ext" access="RO" offset="0x4.0" size="0x4.0" />
+	<field name="status_opcode" descr="Status opcode described in:\;See Table  736, &quot;\;PDDR - Monitor opcodes layout\;,&quot; on page  765\;[Internal] \;See Table  738, &quot;\;PDDR - Advanced opcodes layout\;,&quot; on \;page  766" subnode="pddr_troubleshooting_page_status_opcode_auto_ext" access="RO" offset="0x4.0" size="0x4.0" />
 	<field name="status_message" descr="ASCII code message\;All Messages are terminated by a Null character &apos;\0&apos;" access="RO" high_bound="58" low_bound="0" offset="0xC.0" size="0xec.0" />
 </node>
 
@@ -1342,25 +1486,12 @@
 	<field name="pddr_advanced_opcode_ext" descr="" subnode="pddr_advanced_opcode_ext" offset="0x0.0" size="0x4.0" />
 </node>
 
-<node name="peir_reg_ext" descr="" size="0xc.0" >
-	<field name="local_port" descr="Local port number" access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="error_count" descr="Error Count\;Number of times the port will generate the configured error.\;0 indicates not to generate error.\;Reading \;error_count\; will return the number of left errors to inject. When \;0, all requested errors has been injected." access="RW" offset="0x4.16" size="0x0.4" />
-	<field name="error_type" descr="Error Type to generate\;0 - No Error\;---- Physical Errors ----\;1 - 8/10 Symbol Error (per lane)\;2 - 8/10 Disparity Error (per lane)\;3:7 - Reserved\;8 - 64/66 Sync Header (per lane, with block count)\;9 - 64/66 Alignment Marker (per lane, with block count)\;10 - 64/66 Block Type (per lane, with block count)\;[Internal] EDR only\;12 - EDR FEC correctable symbol error\;13 - EDR FEC un-correctable symbol error\;---- Packet Errors ----\;16 - EBP marking (with packet count)\;17 - Corrupt data packet ICRC\;18 - Corrupt data packet VCRC\;19 - Corrupt credit packet LPCRC" access="RW" offset="0x8.0" size="0x0.8" />
-	<field name="lane" descr="Bit vector for lane (bit 0, lane 0)\;Only relevant for specific errors at physical layer" access="RW" offset="0x8.16" size="0x0.4" />
-</node>
-
-<node name="pepc_reg_ext" descr="" size="0x8.0" >
-	<field name="local_port" descr="Local port number." access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="twisted_pair_an_mode" descr="twisted_pair operational mode in case of AN enabled: \;0x0 - auto Master/Slave mode for AN links.\;0x1 - Master mode\;0x2 - Slave mode" access="RW" offset="0x4.0" size="0x0.2" />
-	<field name="twisted_pair_force_mode" descr="twisted_pair operational mode in case of AN disabled: \;0x0 - Master mode\;0x1 - Slave mode" access="RW" offset="0x4.8" size="0x0.1" />
-</node>
-
-<node name="pfcc_reg_ext" descr="" size="0x14.0" >
-	<field name="shl_opr" descr="S\;end to higher layers operation:\;0 - Pause and PFC are handled by the port (default)\;1 - Pause and PFC are handled by the port and are also been send to \;higher layers.\;Only valid if \;shl_cap\; = 1." access="RW" offset="0x0.0" size="0x0.1" />
-	<field name="shl_cap" descr="S\;end to higher layers capabilities:\;0 - No capability of sending Pause and PFC to higher layers\;1 - Device has capability of send Pause and PFC to higher layers\;NOTE: This relates to IEEE 802.3 PAUSE and IEEE 802.3 PFC." access="RO" offset="0x0.1" size="0x0.1" />
+<node name="pfcc_reg_ext" descr="" size="0x20.0" >
+	<field name="shl_opr" descr="Send to higher layers operation:\;0 - Pause and PFC are handled by the port (default)\;1 - Pause and PFC are handled by the port and are also been send to \;higher layers.\;Only valid if \;shl_cap\; = 1." access="RW" offset="0x0.0" size="0x0.1" />
+	<field name="shl_cap" descr="Send to higher layers capabilities:\;0 - No capability of sending Pause and PFC to higher layers\;1 - Device has capability of send Pause and PFC to higher layers\;NOTE: This relates to IEEE 802.3 PAUSE and IEEE 802.3 PFC." access="RO" offset="0x0.1" size="0x0.1" />
 	<field name="critical_stall_mask" descr="Valid only on HCAs.\;Mask bit indicating if \;device_stall_critical_watermark\; should be \;updated\;.\;If set to &quot;1&quot;, \;device_stall_critical_watermark\; will be updated" access="WO" offset="0x0.2" size="0x0.1" />
 	<field name="minor_stall_mask" descr="Valid only on HCAs.\;Mask bit indicating if \;device_stall_minor_watermark\; should be \;updated\;.\;If set to &quot;1&quot;, \;device_stall_minor_watermark\; will be updated" access="WO" offset="0x0.3" size="0x0.1" />
-	<field name="ppan_mask_n" descr="Valid only on HCAs.\;Mask bit\; \;(negative polarity) indicating if \;ppan\; should be updated\;.\;If set to &quot;0&quot;, \;ppan\; will be updated" access="WO" offset="0x0.4" size="0x0.1" />
+	<field name="ppan_mask_n" descr="Valid only on HCAs.\;Mask bit (negative polarity) indicating if \;ppan\; should be updated\;.\;If set to &quot;0&quot;, \;ppan\; will be updated" access="WO" offset="0x0.4" size="0x0.1" />
 	<field name="pnat" descr="Port number access type. determines the way \;local_port\; \;is interpreted:\;0 - Local port number\;1 - IB / label port number\;[Internal] 3 - Out of band / PCI\;" access="INDEX" offset="0x0.14" size="0x0.2" />
 	<field name="local_port" descr="Local port number." access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="cap_remote_admin" descr="Indicates if operation of remote admin parameters (\;dcxb_operation_\;type\; 0x2) is supported." access="RO" offset="0x0.28" size="0x0.1" />
@@ -1371,41 +1502,23 @@
 	<field name="ppan" descr="Pause policy auto negotiation\;0: disabled - generate and ignore pause frames based on pptx, pprx\;1: enabled - when auto-negotiation is performed, set the pause policy \;based on the auto-negotiation resolution.\;Note - The auto-negotiation advertisement is set according to pptx, \;pprx.\;Note - When PFC is set on the TX / RX ppan must be set to 0." access="RW" enum="disabled=0x0,enabled=0x1" offset="0x4.28" size="0x0.4" />
 	<field name="fctx_disabled" descr="Valid only on HCAs.\;The bit is set if the device has passed the \;device_stall_critical_water\;mark \;( for global flow control or any priority when using priority flow \;control)\; \;and has become stalled. \;When \;fctx_disabled\; is set, the device will not send flow control and \;priority flow control (PFC) packets." access="RO" offset="0x8.8" size="0x0.1" />
 	<field name="pfctx" descr="Priority based flow control policy on TX[7:0]. Per priority bit mask:\;0 - never generate pause frames on the specified priority (default)\;1 - generate pause frames according to RX buffer threshold on the \;specified priority\;pfctx\;, \;pptx\; must be mutually exclusive (for example, only one of them \;at most can be set)." access="RW" offset="0x8.16" size="0x0.8" />
-	<field name="pptx_mask_n" descr="Valid only on HCAs.\;Mask bit\; \;(negative polarity) indicating if \;pptx\; should be updated\;.\;If set to &quot;0&quot;, \;pptx\; will be updated" access="WO" offset="0x8.29" size="0x0.1" />
+	<field name="pptx_mask_n" descr="Valid only on HCAs.\;Mask bit (negative polarity) indicating if \;pptx\; should be updated\;.\;If set to &quot;0&quot;, \;pptx\; will be updated" access="WO" offset="0x8.29" size="0x0.1" />
 	<field name="aptx" descr="Active (operational) pause policy on TX\;0 - do not generate pause frames\;1 - generate pause frames according to RX buffer threshold" access="RO" offset="0x8.30" size="0x0.1" />
 	<field name="pptx" descr="Admin pause policy on TX (see also \;pfctx\;):\;0 - never generate pause frames (default)\;1 - generate pause frames according to RX buffer threshold" access="RW" offset="0x8.31" size="0x0.1" />
 	<field name="pfcrx" descr="Priority based flow control policy on RX[7:0]. Per priority bit mask:\;0 - ignore incoming pause frames on the specified priority (default)\;1 - respect incoming pause frames on the specified priority" access="RW" offset="0xC.16" size="0x0.8" />
-	<field name="pprx_mask_n" descr="Valid only on HCAs.\;Mask bit\; \;(negative polarity) indicating if \;pprx\; should be updated\;.\;If set to &quot;0&quot;, \;pprx\; will be updated" access="WO" offset="0xC.29" size="0x0.1" />
+	<field name="pprx_mask_n" descr="Valid only on HCAs.\;Mask bit (negative polarity) indicating if \;pprx\; should be updated\;.\;If set to &quot;0&quot;, \;pprx\; will be updated" access="WO" offset="0xC.29" size="0x0.1" />
 	<field name="aprx" descr="Active (operational) pause policy on RX\;0 - ignore received pause frames\;1 - respect received pause frames" access="RO" offset="0xC.30" size="0x0.1" />
 	<field name="pprx" descr="Admin pause policy on RX (see also \;pfcrx\;):\;0 - ignore received pause frames (default)\;1 - respect received pause frames" access="RW" offset="0xC.31" size="0x0.1" />
-	<field name="device_stall_critical_watermark" descr="Valid only on HCAs (When \;health_mon_rx_activity\; \;is set).\;The maximum period for a single received packet processing, if the \;packet was not processed during this time, the device will be declared \;as stalled and will increase the \;device_stall_critical_watermark_cnt \;(PPCNT) \;counter. Value given in mSec, The maximum period is 8 \;sec. \;The special value of 0, indicates that the \;device_stall_critical_water\;mark\; is inactive.\;Range: 0x0050 - 0x1F40 \;see also \;critical_stall_mask" access="RW" offset="0x10.0" size="0x0.16" />
-	<field name="device_stall_minor_watermark" descr="Valid only on HCAs (When \;health_mon_rx_activity\; \;is set).\;The maximum period for a single received packet processing, if the \;packet was not processed during this time, the device will increase the \;device_stall_minor_watermark_cnt (PPCNT)\;. Value given in mSec, \;The maximum period is 8 sec. \;The special value of 0, indicates that the \;device_stall_minor_water\;mark\; is inactive.\;Range: 0x0050 - 0x1F40 \;see also \;critical_stall_mask" access="RW" offset="0x10.16" size="0x0.16" />
+	<field name="device_stall_critical_watermark" descr="Valid only on HCAs (When \;health_mon_rx_activity \;is set).\;The maximum period for a single received packet processing, if the \;packet was not processed during this time, the device will be declared \;as stalled and will increase the \;device_stall_critical_watermark_cnt \;(PPCNT) \;counter. Value given in mSec, The maximum period is 8 \;sec. \;The special value of 0, indicates that the \;device_stall_critical_water\;mark\; is inactive.\;Range: 0x0050 - 0x1F40 \;see also \;critical_stall_mask" access="RW" offset="0x10.0" size="0x0.16" />
+	<field name="device_stall_minor_watermark" descr="Valid only on HCAs (When \;health_mon_rx_activity \;is set).\;The maximum period for a single received packet processing, if the \;packet was not processed during this time, the device will increase the \;device_stall_minor_watermark_cnt (PPCNT)\;. Value given in mSec, \;The maximum period is 8 sec. \;The special value of 0, indicates that the \;device_stall_minor_water\;mark\; is inactive.\;Range: 0x0050 - 0x1F40 \;see also \;critical_stall_mask" access="RW" offset="0x10.16" size="0x0.16" />
 </node>
 
-<node name="pfsc_reg_ext" descr="" size="0xc.0" >
-	<field name="local_port" descr="Local port number." access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="fwd_admin" descr="Administratively configured of \;Forward switching for Egress:\;0 - Allow cut-through forwarding\;1 - Always Store and Forward" access="RW" offset="0x4.0" size="0x0.4" />
-	<field name="fwd_oper" descr="Operational Egress \;Forward switching:\;0 - Cut-Through forwarding operation is\; \;allowed\;1 - Only Store and Forward operation" access="RO" offset="0x8.0" size="0x0.4" />
-</node>
-
-<node name="phbr_binding_reg_ext" descr="" size="0x1c.0" >
-	<field name="pnat" descr="Port number access type:\;0 - Local port number\;1 - IB port number" access="INDEX" offset="0x0.14" size="0x0.2" />
-	<field name="local_port" descr="local_port" access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="opcode" descr="Opcode:\;0 - Bind a \;local_port,, hist_id\;1 - Unbind a \;local_port, hist_id" access="RW" offset="0x0.28" size="0x0.4" />
-	<field name="hist_id" descr="Histogram id to bind\;from 0 to \;cap_max_hist_id - 1" access="INDEX" offset="0x4.0" size="0x0.8" />
-	<field name="hist_type" descr="0x0020: PortRcvData\;0x0021: PortRcvData_Prio\;0x0040: PortXmitData\;0x0041: PortXmitData_Prio\;0x0042: PortXmitWait" access="RW" offset="0x8.0" size="0x0.16" />
-	<field name="hist_parameters" descr="According to \;hist_type" access="RW" offset="0xC.0" size="0x4.0" />
-	<field name="hist_min_value" descr="Min value for histogram main range\;Units according to the units of the \;hist_type\;must be greater than zero." access="RW" offset="0x10.0" size="0x4.0" />
-	<field name="hist_max_value" descr="Max value for histogram main range\;NOTE: for Spectrum device the following rules must be met:\;1. hist_max_value\; = \;hist_min_value\; + 2^n, n &gt;= 3\;2. hist_max_value\; &lt; 2^29\;Units according to the units of the \;hist_type" access="RW" offset="0x14.0" size="0x4.0" />
-	<field name="sample_time" descr="Sample time interval. \;Allowed range for Switch-IB and Spectrum:\;time = 2^\;sample_time\; * 128nSec\;sample_time\; range is 0..\;cap_max_sample_time\;-1" access="RW" offset="0x18.0" size="0x0.6" />
-</node>
-
-<node name="phrr_reg_ext" descr="" size="0x60.0" >
-	<field name="pnat" descr="Port number access type:\;0 - Local port number\;1 - IB port number" access="INDEX" offset="0x0.14" size="0x0.2" />
-	<field name="local_port" descr="local_port" access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="clr" descr="Clear:\;1 - Clear the data in the histogram agent" access="RW" offset="0x0.31" size="0x0.1" />
-	<field name="hist_id" descr="see \;PHBR" access="INDEX" offset="0x4.0" size="0x0.8" />
-	<field name="bin" descr="Value of bin \;Units according to the units of the \;hist_type\; which is used for the \;hist_id\;Max bins is according to \;cap_hist_num_bins" subnode="uint64" access="RO" high_bound="9" low_bound="0" offset="0x10.0" size="0x50.0" />
+<node name="pguid_reg_ext" descr="" size="0x40.0" >
+	<field name="pnat" descr="Port number access type. determines the way \;local_port\; \;is inter\;preted:\;0 - Local port number\;1 - IB port number" access="INDEX" offset="0x0.14" size="0x0.2" />
+	<field name="local_port" descr="local_port number" access="INDEX" offset="0x0.16" size="0x0.8" />
+	<field name="sys_guid" descr="System GUID" access="RO" high_bound="3" low_bound="0" offset="0x4.0" size="0x10.0" />
+	<field name="node_guid" descr="Node GUID" access="RO" high_bound="3" low_bound="0" offset="0x14.0" size="0x10.0" />
+	<field name="port_guid" descr="Port GUID" access="RO" high_bound="3" low_bound="0" offset="0x24.0" size="0x10.0" />
 </node>
 
 <node name="phys_layer_cntrs_ext" descr="" size="0xf8.0" >
@@ -1468,47 +1581,32 @@
 	<field name="phy_symbol_errors_low" descr="This counter provides information on error\; bits that were \;not corrected by FEC correction algorithm or that FEC is \;not active." access="RO" offset="0x14.0" size="0x4.0" />
 	<field name="phy_corrected_bits_high" descr="Corrected bits by FEC engine." access="RO" offset="0x18.0" size="0x4.0" />
 	<field name="phy_corrected_bits_low" descr="Corrected bits by FEC engine." access="RO" offset="0x1C.0" size="0x4.0" />
+	<field name="phy_raw_errors_lane0_high"                                                       offset="0x20.0"          size="0x4.0"     access="RO" descr="This counter provides information on error bits that were \;identified on lane 0. \;When FEC is enabled this induction corresponds to cor\;rected errors. \;[Internal] \;RS-FEC : corrected_symbols_lane0\;FC-FEC : correcte_blocks_lane0 \;NO-FEC : Bip errors lane 0"/>
+	<field name="phy_raw_errors_lane0_low"                                                        offset="0x24.0"          size="0x4.0"     access="RO" descr="This counter provides information on error bits that were \;identified on lane 0. \;When FEC is enabled this induction corresponds to cor\;rected errors. \;[Internal] \;RS-FEC : corrected_symbols_lane0\;FC-FEC : correcte_blocks_lane0 \;NO-FEC : Bip errors lane 0"/>
+	<field name="phy_raw_errors_lane1_high"                                                       offset="0x28.0"          size="0x4.0"     access="RO" descr="This counter provides information on error bits that were \;identified on lane 1. \;When FEC is enabled this induction corresponds to cor\;rected errors. \;[Internal] \;RS-FEC : corrected_symbols_lane1\;FC-FEC : correcte_blocks_lane1 \;NO-FEC : Bip errors lane 1"/>
+	<field name="phy_raw_errors_lane1_low"                                                        offset="0x2C.0"          size="0x4.0"     access="RO" descr="This counter provides information on error bits that were \;identified on lane 1. \;When FEC is enabled this induction corresponds to cor\;rected errors. \;[Internal] \;RS-FEC : corrected_symbols_lane1\;FC-FEC : correcte_blocks_lane1 \;NO-FEC : Bip errors lane 1"/>
+	<field name="phy_raw_errors_lane2_high"                                                       offset="0x30.0"          size="0x4.0"     access="RO" descr="This counter provides information on error bits that were \;identified on lane 2. \;When FEC is enabled this induction corresponds to cor\;rected errors. \;[Internal] \;RS-FEC : corrected_symbols_lane2\;FC-FEC : correcte_blocks_lane2 \;NO-FEC : Bip errors lane 2"/>
+	<field name="phy_raw_errors_lane2_low"                                                        offset="0x34.0"          size="0x4.0"     access="RO" descr="This counter provides information on error bits that were \;identified on lane 2. \;When FEC is enabled this induction corresponds to cor\;rected errors. \;[Internal] \;RS-FEC : corrected_symbols_lane2\;FC-FEC : correcte_blocks_lane2 \;NO-FEC : Bip errors lane 2"/>
+	<field name="phy_raw_errors_lane3_high"                                                       offset="0x38.0"          size="0x4.0"     access="RO" descr="This counter provides information on error bits that were \;identified on lane 3. \;When FEC is enabled this induction corresponds to cor\;rected errors. \;[Internal] \;RS-FEC : corrected_symbols_lane3\;FC-FEC : correcte_blocks_lane3 \;NO-FEC : Bip errors lane 3"/>
+	<field name="phy_raw_errors_lane3_low"                                                        offset="0x3C.0"          size="0x4.0"     access="RO" descr="This counter provides information on error bits that were \;identified on lane 3. \;When FEC is enabled this induction corresponds to cor\;rected errors. \;[Internal] \;RS-FEC : corrected_symbols_lane3\;FC-FEC : correcte_blocks_lane3 \;NO-FEC : Bip errors lane 3"/>
 	<field name="raw_ber_coef" descr="Raw_BER = \;raw_ber_coef*\;10^(-\;raw_ber_magnitude)" access="RO" offset="0x60.0" size="0x0.4" />
 	<field name="raw_ber_magnitude" descr="Raw_BER = \;raw_ber_coef*\;10^(-\;raw_ber_magnitude)" access="RO" offset="0x60.8" size="0x0.8" />
 	<field name="effective_ber_coef" descr="Effective_BER = \;effective_ber_coef*\;10^(-\;effective_ber_magnitude)" access="RO" offset="0x64.0" size="0x0.4" />
 	<field name="effective_ber_magnitude" descr="Effective_BER = \;effective_ber_coef*\;10^(-\;effective_ber_magnitude)" access="RO" offset="0x64.8" size="0x0.8" />
 </node>
 
-<node name="pifr_reg_ext" descr="" size="0x60.0" >
-	<field name="local_port" descr="Local port number.\;Note:\; Port isolation is not supported to \ from port 0 (i.e CPU port)." access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="port_filter" descr="Port filter bitmask\;1 - Filter - Packets coming from \;port_filter&lt;i&gt;\; will not be transmitted to \;port \;local_port\;. \;0 - Do not filter (default value for all \;local_port\;).\;All LAG ports must share the same configuration.\;Refer to the relevant section for port numbering scheme." access="RW" high_bound="7" low_bound="0" offset="0x20.0" size="0x20.0" />
-	<field name="port_filter_update_en" descr="port_filter_update_en bitmask, see port_filter\;When \;port_filter_update_en&lt;i&gt;\; set, the filter value for local port i is \;updated according to \;port_filter&lt;i&gt;\;.\;When \;port_filter_update_en&lt;i&gt;\; is cleared, the filter value for local port i \;maintains its current value." access="WO" high_bound="7" low_bound="0" offset="0x40.0" size="0x20.0" />
-</node>
-
-<node name="pipg_reg_ext" descr="" size="0x8.0" >
-	<field name="local_port" descr="Local port number." access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="ipg" descr="Inter Packet Gap. Sets the Inter Packet Gap value for the ports, in 4 bytes \;granularity. Default value of this field is 3 (indicating 12 bytes IPG)." access="RW" offset="0x4.2" size="0x0.4" />
-	<field name="dic" descr="Deficit Idle Count. When set, the dic bit is set, the Deficit Idle Count mech\;anism is enabled, else it is disabled.\;This bit is set by default." access="RW" offset="0x4.31" size="0x0.1" />
-</node>
-
-<node name="plbf_reg_ext" descr="" size="0x4.0" >
-	<field name="lbf_mode" descr="Loop-back filter mode:\;0 - Do not update loop-back filter mode\;1 - Disable loop-back filtering\;2 - Enable loop-back filtering \;By default, loop-back filter is enabled for ALL ports" access="RW" offset="0x0.0" size="0x0.3" />
-	<field name="local_port" descr="Local port number." access="INDEX" offset="0x0.16" size="0x0.8" />
-</node>
-
-<node name="plib_reg_ext" descr="" size="0x8.0" >
-	<field name="ib_port" descr="In IB port: InfiniBand port remapping for local_port\;Note: \;ib_port\; number can only be updated when a port admin state is DIS\;ABLED." access="RW" offset="0x0.0" size="0x0.8" />
-	<field name="local_port" descr="Local port number." access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="split_num" descr="Valid only for Ethernet Switches. \;Label split mapping for local_port" access="RW" offset="0x4.0" size="0x0.4" />
-</node>
-
-<node name="pmaos_reg_ext" descr="" size="0x8.0" >
+<node name="pmaos_reg_ext" descr="" size="0x10.0" >
 	<field name="oper_status" descr="Module state (reserved while \;admin_status\; is disabled):\;0 - initializing\;1 - plugged, enabled\;2 - unplugged\;3 - module plugged, error (details in \;error_type\;).\;4 - plugged, disabled" access="RO" offset="0x0.0" size="0x0.4" />
-	<field name="admin_status" descr="Module administrative state (the desired state of the module):\;1- enabled\;2- disabled by configuration\;3- enabled once - if the module is active and then unplugged \;or \;module was experienced an error \;event\;, \;the operational status \;should go to &quot;disabled&quot; and can only be enabled up upon explicit \;enable command.\;Note: To disable a module, all ports associated with the port must \;be disabled first." access="RW" offset="0x0.8" size="0x0.4" />
+	<field name="admin_status" descr="Module administrative state (the desired state of the module):\;1- enabled\;2- disabled by configuration\;3- enabled once - if the module is active and then unplugged or \;module was experienced an error event, the operational status \;should go to &quot;disabled&quot; and can only be enabled up upon explicit \;enable command.\;Note: To disable a module, all ports associated with the port must \;be disabled first." access="RW" offset="0x0.8" size="0x0.4" />
 	<field name="module" descr="Module number." access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="rst" descr="Module Reset toggle\;NOTE: setting reset while module is plugged-in will result in \;tran\;sition\; of \;oper_status\; to initialization." access="OP" offset="0x0.31" size="0x0.1" />
+	<field name="rst" descr="Module Reset toggle\;NOTE: setting reset while module is plugged-in will result in tran\;sition of \;oper_status\; to initialization." access="OP" offset="0x0.31" size="0x0.1" />
 	<field name="e" descr="Event Generation on operational state change:\;00 - Do not generate event\;01 - Generate Event \;10 - Generate Single Event" access="RW" offset="0x4.0" size="0x0.2" />
 	<field name="error_type" descr="Module error details:\;0x0 - Power Budget Exceeded\;0x1 - Long Range for non MLNX cable/module\;0x2 - Bus stuck (I2C Data or clock shorted)\;0x3 - bad/ unsupported EEPROM\;0x4 - Enforce part number list. \;0x5 - unsupported cable\;0x6 - High Temperature\;0x7 - bad cable (Module/Cable is shorted)\;Valid only when \;oper_status \;= 4&apos;b0011." access="RO" offset="0x4.8" size="0x0.4" />
 	<field name="ee" descr="Event update enable. If this bit is set, event generation will be \;updated based on the \;e\; field. Only relevant on Set operations." access="WO" offset="0x4.30" size="0x0.1" />
 	<field name="ase" descr="Admin state update enable. If this bit is set, admin state will be \;updated based on \;admin_state\; field. Only relevant on Set() opera\;tions." access="WO" offset="0x4.31" size="0x0.1" />
 </node>
 
-<node name="pmcr_reg_ext" descr="" size="0x14.0" >
+<node name="pmcr_reg_ext" descr="" size="0x1c.0" >
 	<field name="local_port" descr="Local port number." access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="cdr_override_cntl" descr="Module CDR override control:\;0 - Auto (default)\;1 - Keep the module configuration\;2 - Override" access="RW" offset="0x4.0" size="0x0.2" />
 	<field name="cdr_override_value" descr="Valid only in case CDR is configured to override mode by \;cdr_over\;ride_cntl\;: \;0 - RX OFF, TX OFF\;1 - RX ON , TX OFF\;2 - RX OFF, TX ON\;3 - RX ON, TX ON" access="RW" offset="0x4.8" size="0x0.4" />
@@ -1522,7 +1620,7 @@
 	<field name="tx_equ_override_value" descr="Valid only in case TX equalization is configured to override mode by \;tx_equ_override_cntl" access="RW" offset="0x10.8" size="0x0.4" />
 </node>
 
-<node name="pmlp_reg_ext" descr="" size="0x14.0" >
+<node name="pmlp_reg_ext" descr="" size="0x40.0" >
 	<field name="width" descr="0 - unmap local port\;1 - x1 (lane 0 is used)\;2 - x2 (lanes 0,1 are used)\;4 - x4 (lanes 0,1,2 and 3 are used)\;Other - reserved" access="RW" offset="0x0.0" size="0x0.8" />
 	<field name="local_port" descr="Local port number." access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="rxtx" descr="Use different configuration for RX and TX.\;If this bit is cleared, the TX value is used for both RX and TX. When set, \;the RX configuration is taken from the separate field. This is to enable \;backward compatible implementation." access="RW" offset="0x0.31" size="0x0.1" />
@@ -1542,13 +1640,13 @@
 <node name="pmmp_reg_ext" descr="" size="0x28.0" >
 	<field name="module" descr="Module number." access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="eeprom_override" descr="Override/ignore EEPROM advertisement properties bitmask: \;Bit 0 - Override cable protocols and technology for QSFP\;Bit 1 - Override cable protocols and technology for SFP\;Bit 2- Ignore Power Class (set high power)\;Bit 3- Override Cable Length \;Bit 4- Override Attenuation\;Bit 8 - Set Module to Low Power" access="RW" offset="0x4.0" size="0x0.16" />
-	<field name="eeprom_override_mask" descr="Write Mask bit (negative polarity):\;0 - allow\; write\;1 - ignore write\;On write commands, indicates which of the bits from \;eeprom_override\; \;field\; a\;re updated.\;Reserved on read operations." access="WO" offset="0x4.16" size="0x0.16" />
-	<field name="qsfp_cable_protocol_technology" descr="Valid only when\; the protocols and technology is overridden as indicated by \;eeprom_override\;See Table  779, &quot;\;PMMP - QSFP Protocol Bytes Override Layout\;,&quot; on \;page  936" subnode="pmmp_reg_qsfp_cable_protocol_technology_auto_ext" access="RW" offset="0x8.0" size="0xc.0" />
-	<field name="sfp_cable_protocol_technology" descr="Valid only when\; the protocols and technology is overridden as indicated by \;eeprom_override\;See Table  781, &quot;\;PMMP - SFP Protocol Bytes Override Layout\;,&quot; on \;page  938" subnode="pmmp_reg_sfp_cable_protocol_technology_auto_ext" access="RW" offset="0x14.0" size="0xc.0" />
-	<field name="cable_length" descr="Length of cable assembly, units of 1 m.\;Valid only when\; the cable length is overridden as indicated by \;eeprom_override." access="RW" offset="0x20.0" size="0x0.8" />
-	<field name="attenuation_5g" descr="Valid only when\; the attenuation is overridden as indicated by \;eeprom_override.\;Attenuation - total channel attenuation @ 5GHz in db." access="RW" offset="0x24.0" size="0x0.8" />
-	<field name="attenuation_7g" descr="Valid only when\; the attenuation is overridden as indicated by \;eeprom_override.\;Attenuation - total channel attenuation @ 7GHz in db." access="RW" offset="0x24.8" size="0x0.8" />
-	<field name="attenuation_12g" descr="Valid only when\; the attenuation is overridden as indicated by \;eeprom_override.\;Attenuation - total channel attenuation @ 12GHz in db." access="RW" offset="0x24.16" size="0x0.8" />
+	<field name="eeprom_override_mask" descr="Write Mask bit (negative polarity):\;0 - allow write\;1 - ignore write\;On write commands, indicates which of the bits from \;eeprom_override\; \;field are updated.\;Reserved on read operations." access="WO" offset="0x4.16" size="0x0.16" />
+	<field name="qsfp_cable_protocol_technology" descr="Valid only when the protocols and technology is overridden as indicated by \;eeprom_override\;See Table  609, &quot;\;PMMP - QSFP Protocol Bytes Override Layout\;,&quot; on \;page  643" subnode="pmmp_reg_qsfp_cable_protocol_technology_auto_ext" access="RW" offset="0x8.0" size="0xc.0" />
+	<field name="sfp_cable_protocol_technology" descr="Valid only when the protocols and technology is overridden as indicated by \;eeprom_override\;See Table  611, &quot;\;PMMP - SFP Protocol Bytes Override Layout\;,&quot; on \;page  645" subnode="pmmp_reg_sfp_cable_protocol_technology_auto_ext" access="RW" offset="0x14.0" size="0xc.0" />
+	<field name="cable_length" descr="Length of cable assembly, units of 1 m.\;Valid only when the cable length is overridden as indicated by \;eeprom_override." access="RW" offset="0x20.0" size="0x0.8" />
+	<field name="attenuation_5g" descr="Valid only when the attenuation is overridden as indicated by \;eeprom_override.\;Attenuation - total channel attenuation @ 5GHz in db." access="RW" offset="0x24.0" size="0x0.8" />
+	<field name="attenuation_7g" descr="Valid only when the attenuation is overridden as indicated by \;eeprom_override.\;Attenuation - total channel attenuation @ 7GHz in db." access="RW" offset="0x24.8" size="0x0.8" />
+	<field name="attenuation_12g" descr="Valid only when the attenuation is overridden as indicated by \;eeprom_override.\;Attenuation - total channel attenuation @ 12GHz in db." access="RW" offset="0x24.16" size="0x0.8" />
 </node>
 
 <node name="pmmp_reg_qsfp_cable_protocol_technology_auto_ext" descr="" attr_is_union="1" size="0xc.0" >
@@ -1567,23 +1665,6 @@
 	<field name="ext_ethernet_compliance_code" descr="Extended Specification Compliance Codes (25GE) \;Override byte36 per SFF-8472:\;0 - Unspecified\;1 - 100G AOC (Active Optical Cable) or 25GAUI C2M AOC \;with FEC\;2 - 100GBASE-SR4 or 25GBASE-SR\;3 - 100GBASE-LR4 or 25GBASE-LR\;4 - 100GBASE-ER4 or 25GBASE-ER\;5 - 100GBASE-SR10\;6 - 100G CWDM4\;7 - 100G PSM4 Parallel SMF\;8 - 100G ACC (Active Copper Cable) or 25GAUI C2M ACC. \;with FEC\;11 - 100GBASE-CR4 or 25GBASE-CR CA-L\;12 - 25GBASE-CR CA-S\;13 - 25GBASE-CR CA-N\;16 - 40GBASE-ER4\;17 - 4 x 10GBASE-SR\;18 - 40G PSM4 Parallel SMF\;19 - G959.1 profile P1I1-2D1 (10709 MBd, 2km, 1310nm SM)\;20 - G959.1 profile P1S1-2D2 (10709 MBd, 40km, 1550nm SM)\;21 - G959.1 profile P1L1-2D2 (10709 MBd, 80km, 1550nm SM)\;22 - 10GBASE-T with SFI electrical interface\;23 - 100G CLR4\;24 - 100G AOC or 25GAUI C2M AOC. No FEC\;25 - 100G ACC or 25GAUI C2M ACC. No FEC" access="RW" offset="0x4.8" size="0x0.8" />
 </node>
 
-<node name="pmpc_reg_ext" descr="" size="0x20.0" >
-	<field name="module_state_updated" descr="On read operation:\;A bit vector where each bit represents a module (bit 0 represents module 0 \;etc). A set bit indicates one or more changes in the module state (plugged/\;unplugged) has happened since the last time the bit was cleared. The \;default is 1 in all relevant bits.\;On write operation:\;U\;sed to clear the module_status_updated bits. Writing a set bit clears the \;relevant bit in the module_status_updated vector. Cleared bits in this field \;preserve the value of the relevant bit in the bit vector. The software cannot \;set a bit in the module_status_updated vector.\;Note: \;To prevent a case where an update is missed by the software, it is \;recommended to use the flow below:\;Read the module_status_updated vector\;Find a bit(s) relevant to a module(s) the software would like to handle\;Clear the relevant bit(s)\;Handle the module (e.g. read the module parameters using MCIA reg\;ister)\;Read module_status_updated again to make sure the status did not change \;after reading the cable information." access="RW" high_bound="7" low_bound="0" offset="0x0.0" size="0x20.0" />
-</node>
-
-<node name="pmpe_reg_ext" descr="" size="0x8.0" >
-	<field name="module_status" descr="Port operational state:1- plugged, enabled\;2- unplugged\;3- module plugged, error (details in \;error_type) \;4- plugged, disabled" access="RO" offset="0x0.0" size="0x0.4" />
-	<field name="module" descr="Module number." access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="error_type" descr="Module error details:\;0x0 - Power Budget Exceeded\;0x1 - Long Range for non MLNX cable/module\;0x2 - Bus stuck (I2C Data or clock shorted)\;0x3 - bad/unsupported EEPROM\;0x4 - Enforce part number list. \;0x5 - unsupported cable \;0x6 - High Temperature\;0x7 - bad cable (Module/Cable is shorted)\;Valid only when (\;oper_status \;= \;0x3\;)." access="RO" offset="0x4.8" size="0x0.4" />
-</node>
-
-<node name="pmpr_reg_ext" descr="" size="0x10.0" >
-	<field name="module" descr="Module number." access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="attenuation_5g" descr="Attenuation - total channel attenuation @ 5GHz in db." access="RW" offset="0x4.0" size="0x0.8" />
-	<field name="attenuation_7g" descr="Attenuation - total channel attenuation @ 7GHz in db. \;A 0 value implies that \;attenuation_5g\; is used also for 7GHz" access="RW" offset="0x8.0" size="0x0.8" />
-	<field name="attenuation_12g" descr="Attenuation - total channel attenuation @ 12GHz in db.\;A 0 value implies that \;attenuation_5g\; is used also for 12GHz" access="RW" offset="0xC.0" size="0x0.8" />
-</node>
-
 <node name="pmtu_reg_ext" descr="" size="0x10.0" >
 	<field name="local_port" descr="Local port number." access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="max_mtu" descr="Maximum MTU supported on the port (Read Only).\;MTU depends on the port type. When port type (Eth/IB/FC) is configured, \;the relevant MTU is reported. When the port type is not configured, the \;minimum between the \;max_mtu\; for the different types (Eth/IB/FC) is \;reported." access="RO" offset="0x4.16" size="0x0.16" />
@@ -1591,44 +1672,18 @@
 	<field name="oper_mtu" descr="Operational MTU. This is the actual MTU configured on the ports. Packets \;exceeding this size will be dropped.\;Note: In Ethernet or FC, \;oper_mtu\; is equal to \;admin_mtu\;. In InfiniBand, \;the actual operational MTU is reported which may be smaller than \;admin\;_mtu\;." access="RO" offset="0xC.16" size="0x0.16" />
 </node>
 
-<node name="ppad_reg_ext" descr="" size="0x8.0" >
+<node name="ppad_reg_ext" descr="" size="0x10.0" >
 	<field name="mac_47_32" descr="If \;single_base_mac\; = 0 - base MAC address, mac[7:0] is \;reserved.\;If \;single_base_mac\; = 1 - the per port MAC address" access="RW" offset="0x0.0" size="0x0.16" />
 	<field name="local_port" descr="Port number\;Reserved when \;single_base_mac\; = 0" access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="single_base_mac" descr="0 - base_mac, \;local_port \;should be 0 and mac[7:0] is \;reserved.HW will set incremental \;1 - single_mac - mac of the \;local_port\;Reserved for \;SwitchX/-2." access="OP" offset="0x0.28" size="0x0.1" />
 	<field name="mac_31_0" descr="If \;single_base_mac\; = 0 - base MAC address, mac[7:0] is \;reserved.\;If \;single_base_mac\; = 1 - the per port MAC address" access="RW" offset="0x4.0" size="0x4.0" />
 </node>
 
-<node name="ppaos_reg_ext" descr="" size="0x4.0" >
-	<field name="phy_test_mode_status" descr="Port extended down status:\;0 - regular operation (port down/up according to PAOS) \;1 \;- phy test mode\;phy test mode\; can be valid \;only when \;PAOS.\;admin_status\;=2\; and \;PAOS.\;oper_status\;=2 (i.e port is down)." access="RO" offset="0x0.0" size="0x0.4" />
-	<field name="phy_test_mode_admin" descr="Port extended \;administrative \;down status:\;0 - regular operation (port down/up according to PAOS) \;1\; - phy test mode \;The phy test mode (1) can be set only when \;PAOS.\;admin_sta\;tus\;=2 (i.e port configuration is down)." access="RW" offset="0x0.8" size="0x0.4" />
+<node name="ppaos_reg_ext" descr="" size="0x10.0" >
+	<field name="phy_test_mode_status" descr="Port extended down status:\;0 - regular operation (port down/up according to PAOS) \;1 - phy test mode\;phy test mode\; can be valid only when \;PAOS.admin_status\;=2 and \;PAOS.oper_status\;=2 (i.e port is down)." access="RO" offset="0x0.0" size="0x0.4" />
+	<field name="phy_test_mode_admin" descr="Port extended administrative down status:\;0 - regular operation (port down/up according to PAOS) \;1 - phy test mode \;The phy test mode (1) can be set only when \;PAOS.admin_sta\;tus\;=2 (i.e port configuration is down)." access="RW" offset="0x0.8" size="0x0.4" />
 	<field name="local_port" descr="Local port number." access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="swid" descr="For HCA: must always be 0.\;Switch partition ID with which to associate the port.\;Switch partitions are numbered from 0 to 7 inclusively.\;The \;swid\; field is only valid when the \;local_port\; is the router port. \;In this case, the \;swid\; indicates which of the router ports to config\;ure/query." access="INDEX" offset="0x0.24" size="0x0.8" />
-</node>
-
-<node name="ppbmc_reg_ext" descr="" size="0x8.0" >
-	<field name="monitor_type" descr="Monitor type based on \;monitor_cntl \;setting and the operational \;mode of the link:\;0 - Post FEC / No FEC BER monitoring\;1 - Pre FEC BER monitoring" access="RO" offset="0x0.8" size="0x0.4" />
-	<field name="pnat" descr="Port number access type. determines the way \;local_port\; \;is inter\;preted:\;0 - Local port number\;1 - IB / label port number\;[Internal] 3 - Out of band / PCI" access="INDEX" offset="0x0.14" size="0x0.2" />
-	<field name="local_port" descr="local_port" access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="monitor_state" descr="The monitor state of the port:\;0 - No BER Monitor support\;1 - Normal\;2 - Warning\;3 - Alarm\;* The init monitor state for each port upon link up is normal" access="RO" offset="0x4.0" size="0x0.8" />
-	<field name="monitor_cntl" descr="Bitmask - monitor options:\;Bit 0 - Pre FEC monitor: \;When set, a link with FEC active will monitor Pre-FEC BER.\;When cleared, link with FEC active will monitor Post-FEC (effec\;tive) BER.\;When FEC is not active, will monitor only effective BER." access="RW" offset="0x4.16" size="0x0.4" />
-	<field name="event_ctrl" descr="Bitmask - \;event generation on operational state change:\;Bit 0 - Normal state\;Bit 1 - Warning state\;Bit 2 - Alarm state\;Bit 3 - Reserved\;Note: Normal state events can be generated only if either Alarm \;and/or Warning events are enabled." access="RW" offset="0x4.24" size="0x0.4" />
-	<field name="ievent" descr="Invoke event\;0: Read only\;1: Does both reading and invoke an event of type PPBME_TRAP\;Note: setting this field invokes an event, regardless to \;e \;and\; \;event_ctl \;fields, it has no effect on the event state." access="OP" offset="0x4.29" size="0x0.1" />
-	<field name="e" descr="Event generation on operational state change:\;0\; - Do not generate event\;1\; - Generate Event \;2\; - Generate Single Event\;Not Supported for HCA." access="RW" offset="0x4.30" size="0x0.2" />
-</node>
-
-<node name="ppbme_reg_ext" descr="" size="0x8.0" >
-	<field name="monitor_type" descr="Monitor type based on \;monitor_options \;setting and the operational \;mode of the link:\;0 - Post FEC / No-FEC BER monitoring\;1 - Pre FEC BER monitoring" access="RO" offset="0x0.8" size="0x0.4" />
-	<field name="pnat" descr="Port number access type. determines the way \;local_port\; \;is inter\;preted:\;0 - L\;s\;ocal port number\;1 - IB / label port number\;[Internal] 3 - Out of band / PCI" access="INDEX" offset="0x0.14" size="0x0.2" />
-	<field name="local_port" descr="local_port" access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="monitor_state" descr="The monitor state of the port:\;0 - No BER Monitor on the port\;1 - Normal\;2 - Warning\;3 - Alarm" access="RO" offset="0x4.0" size="0x0.8" />
-	<field name="ievent" descr="Invoke event\;0: Read only\;1: Does both reading and invoke an event of type PPBME_TRAP\;Note: setting this field invokes an event, regardless to \;e \;and\; \;event_ctl \;fields, it has no effect on the event state." access="OP" offset="0x4.29" size="0x0.1" />
-</node>
-
-<node name="ppbmp_reg_ext" descr="" size="0xc.0" >
-	<field name="monitor_group" descr="Monitor Parameters Group\;0x0: Pre-FEC BER monitor parameters for RS-FEC links\;0x1: Pre-FEC BER monitor parameters for FC-FEC links\;0x2: Effective BER (post FEC/NO-FEC) monitor parameters" access="INDEX" offset="0x0.0" size="0x0.4" />
-	<field name="pnat" descr="Port number access type. determines the way \;local_port\; \;is inter\;preted:\;0 - Local port number\;1 - IB / label port number\;[Internal] 3 - Out of band / PCI" access="INDEX" offset="0x0.14" size="0x0.2" />
-	<field name="local_port" descr="local_port" access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="monitor_parameters" descr="See \;Table 904, &quot;\;PPBMP - Monitor Parameters Layout\;,&quot; on \;page 1053" subnode="uint64" access="RW" offset="0x4.0" size="0x8.0" />
 </node>
 
 <node name="ppcnt_plr_counters_ext" descr="" size="0xf8.0" >
@@ -1669,20 +1724,20 @@
 </node>
 
 <node name="ppcnt_reg_ext" descr="" size="0x100.0" >
-	<field name="grp" descr="Performance counter group.\;Group 63 indicates all groups (include all per priority/TC/Receive Buffer \;counters). Only valid on Set() operation with \;clr\; bit set.\;0x0: IEEE 802.3 Counters\;0x1: RFC 2863 Counters\;0x2: RFC 2819 Counters\;0x3: RFC 3635 Counters\;0x5: Ethernet Extended Counters\;0x6: Ethernet Discard Counters \;[Internal] 0x8: Link Level Retransmission Counters\;0x10: Per Priority Counters\; \;0x11: Per Traffic Class Counters\;. \;0x12: Physical Layer Counters\;0x13: Per Traffic Class Congestion Counters\;[Internal] 0x15: Per Receive Buffer counter\;0x16: Physical Layer Statistical Counters\;0x20: InfiniBand PortCounters\;0x21: InfiniBand Extended PortCounters\;[Internal] 0x22: PLR counters group\;[Internal] 0x23: RS-FEC Histogram group" access="INDEX" offset="0x0.0" size="0x0.6" />
+	<field name="grp" descr="Performance counter group.\;Group 63 indicates all groups (include all per priority/TC/Receive Buffer \;counters). Only valid on Set() operation with \;clr\; bit set.\;0x0: IEEE 802.3 Counters\;0x1: RFC 2863 Counters\;0x2: RFC 2819 Counters\;0x3: RFC 3635 Counters\;0x5: Ethernet Extended Counters\;0x6: Ethernet Discard Counters \;[Internal] 0x8: Link Level Retransmission Counters\;0x10: Per Priority Counters \;0x11: Per Traffic Class Counters. \;0x12: Physical Layer Counters\;0x13: Per Traffic Class Congestion Counters\;[Internal] 0x15: Per Receive Buffer counter\;0x16: Physical Layer Statistical Counters\;0x20: InfiniBand PortCounters\;0x21: InfiniBand Extended PortCounters\;[Internal] 0x22: PLR counters group\;[Internal] 0x23: RS-FEC Histogram group" access="INDEX" offset="0x0.0" size="0x0.6" />
 	<field name="pnat" descr="Port number access type:\;0 - Local port number\;1 - IB port number" access="INDEX" offset="0x0.14" size="0x0.2" />
 	<field name="local_port" descr="Local port number. \;255 indicates all ports on the device, and is only allowed for Set() operation." access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="swid" descr="For HCA: must be always 0.\;Switch partition ID to associate port with.\;Switch partitions are numbered from 0 to 7 inclusively.\;Switch partition 254 indicates stacking ports.\;Switch partition 255 indicates all switch partitions.\;Only valid on Set() operation with local_port=255." access="INDEX" offset="0x0.24" size="0x0.8" />
 	<field name="prio_tc" descr="Priority index for per priority counter sets, valid values: 0-7\;Traffic class index for per traffic class counter set, valid values: \;For Switches, valid values: 0 .. \;cap_max_tclass_data\;-1 \;For HCA, valid values: 0.. \;HCA_CAP.max_tc\;Receive Buffer index for per receive buffer counter set\;For Switches only, valid values: 0 .. \;cap_max_pg_buffers \;-1\;Otherwise must be 0." access="INDEX" offset="0x4.0" size="0x0.5" />
 	<field name="clr" descr="Clear counters. Setting the \;clr\; bit will reset the counter value for all counters \;in the counter group. This bit can be set for both Set() and Get() operation." access="OP" offset="0x4.31" size="0x0.1" />
-	<field name="counter_set" descr="Counter set as described in\;See Table  735, &quot;\;Ethernet IEEE 802.3 Counters Group Data Layout\;,&quot; on \;page  890\;See Table  737, &quot;\;Ethernet RFC 2863 Counter Group Data Layout\;,&quot; on \;page  894\;See Table  739, &quot;\;Ethernet RFC 2819 Counter Group Data Layout\;,&quot; on \;page  896\;See Table  741, &quot;\;Ethernet RFC 3635 Counter Group Data Layout\;,&quot; on \;page  900\;See Table  743, &quot;\;Ethernet Extended Counter Group Data Layout\;,&quot; on \;page  903\;See Table  746, &quot;\;Ethernet Discard Counter Group Fields\;,&quot; on page  908\;See Table  747, &quot;\;Ethernet Per Priority Group Data Layout\;,&quot; on page  909\;See Table  749, &quot;\;Ethernet Per Traffic Class Group data layout\;,&quot; on page  912\;See Table  751, &quot;\;Ethernet Per Traffic Class \;Congestion \;Group data layout\;,&quot; \;on page  913\;See Table  753, &quot;\;Link Level Retransmission Counter Group Data Layout\;,&quot; \;on page  913\;See Table  755, &quot;\;InfiniBand PortCounters Attribute Group Data Layout\;,&quot; on \;page  914\;See Table  759, &quot;\;Physical Layer Counters Data Layout\;,&quot; on page  919\;See Table  761, &quot;\;Physical Layer Statistical Counters Data Layout\;,&quot; on \;page  923\; \;[Internal] \;See Table  763, &quot;\;PLR Counters Data Layout\;,&quot; on page  926\;[Internal] \;See Table  765, &quot;\;RS-Histograms Data Layout\;,&quot; on page  927" subnode="ppcnt_reg_counter_set_auto_ext" access="RO" offset="0x8.0" size="0xf8.0" />
+	<field name="counter_set" descr="Counter set as described in\;See Table  565, &quot;\;Ethernet IEEE 802.3 Counters Group Data Layout\;,&quot; on \;page  597\;See Table  567, &quot;\;Ethernet RFC 2863 Counter Group Data Layout\;,&quot; on \;page  601\;See Table  569, &quot;\;Ethernet RFC 2819 Counter Group Data Layout\;,&quot; on \;page  603\;See Table  571, &quot;\;Ethernet RFC 3635 Counter Group Data Layout\;,&quot; on \;page  607\;See Table  573, &quot;\;Ethernet Extended Counter Group Data Layout\;,&quot; on \;page  610\;See Table  576, &quot;\;Ethernet Discard Counter Group Fields\;,&quot; on page  615\;See Table  577, &quot;\;Ethernet Per Priority Group Data Layout\;,&quot; on page  616\;See Table  579, &quot;\;Ethernet Per Traffic Class Group data layout\;,&quot; on page  619\;See Table  581, &quot;\;Ethernet Per Traffic Class \;Congestion \;Group data layout\;,&quot; \;on page  620\;See Table  583, &quot;\;Link Level Retransmission Counter Group Data Layout\;,&quot; \;on page  621\;See Table  585, &quot;\;InfiniBand PortCounters Attribute Group Data Layout\;,&quot; on \;page  622\;See Table  589, &quot;\;Physical Layer Counters Data Layout\;,&quot; on page  626\;See Table  591, &quot;Physical Layer Statistical Counters Data Layout,&quot; on \;page  630\; \;[Internal] \;See Table  593, &quot;PLR Counters Data Layout,&quot; on page  633\;[Internal] \;See Table  595, &quot;\;RS-Histograms Data Layout\;,&quot; on page  634" subnode="ppcnt_reg_counter_set_auto_ext" access="RO" offset="0x8.0" size="0xf8.0" />
 </node>
 
 <node name="ppcnt_rs_fec_histograms_counters_ext" descr="" size="0xf8.0" >
 	<field name="hist" descr="Value of RS-hist" subnode="uint64" access="RO" high_bound="15" low_bound="0" offset="0x0.0" size="0x80.0" />
 </node>
 
-<node name="pplm_reg_ext" descr="" size="0x18.0" >
+<node name="pplm_reg_ext" descr="" size="0x40.0" >
 	<field name="local_port" descr="Local port number" access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="fec_mode_active" descr="Active FEC (bitmask)\;Bit 0 - No FEC\;Bit 1 - Firecode FEC\;Bit 2 - Standard RS-FEC - RS(528,514)\;Bit 3 - Standard LL RS-FEC - RS(271,257)\;[Internal] Bit 4 - Mellanox Strong RS-FEC - RS(277,257)\;[Internal] Bit 5 - Mellanox LL RS-FEC - RS(163,155)\;[Internal] Bit 6- Correct On Demand (COD)" access="RO" offset="0xC.0" size="0x0.24" />
 	<field name="fec_override_cap_10g_40g" descr="10GE/40GE Ethernet FEC override capability bitmask:\;Bit 0 - No-FEC\;Bit 1- Firecode FEC\;Bit 2- Reserved\;Bit 3- Reserved" access="RO" offset="0x10.0" size="0x0.4" />
@@ -1697,6 +1752,22 @@
 	<field name="fec_override_admin_100g" descr="100GE Ethernet FEC override admin, see 100g_fec_override_cap.\;0 - Auto, no override\;1 - No FEC\;4 - RS-FEC" access="RW" offset="0x14.12" size="0x0.4" />
 	<field name="fec_override_admin_56g" descr="56GE Ethernet FEC override admin, see 56g_fec_override_cap.\;0 - Auto, no override\;1 - No FEC\;2 - Firecode FEC" access="RW" offset="0x14.16" size="0x0.4" />
 	<field name="rs_fec_correction_bypass_admin" descr="RS-FEC correction bypass override admin:\;0 - Auto, no override \;1 - NO correction bypass\;2 - RS-FEC correction bypass" access="RW" offset="0x14.28" size="0x0.4" />
+	<field name="fec_override_cap_200g_4x" descr="200GE FEC override capability bitmask:\;Bit 0 - Reserved \;Bit 1- Reserved \;Bit 2- Reserved \;Bit 3- Reserved \;Bit 4- Reserved\;Bit 5- Reserved\;Bit 6- Reserved\;Bit 7 - RS-FEC (544,514)\;[Internal] Bit 8 - Zero Latency FEC\;Bit 9- 50G Ethernet Consortium LL RS-FEC (272,257+1)\;[Internal] Bit 12 - RS-FEC (544,514) + PLR\;[Internal] Bit 13 - LL-FEC (271,257) + PLR\;[Internal] Bit 14 - ELL (272,257+1) + PLR" access="RO" offset="0x18.0" size="0x0.16" />
+	<field name="fec_override_cap_400g_8x" descr="400GE FEC override capability bitmask:\;Bit 0 - Reserved \;Bit 1- Reserved \;Bit 2- Reserved \;Bit 3- Reserved\;Bit 4- Reserved\;Bit 5- Reserved\;Bit 6- Reserved\;Bit 7 - RS-FEC (544,514)\;[Internal] Bit 8 - Zero Latency FEC\;Bit 9- 50G Ethernet Consortium LL RS-FEC (272,257+1)\;[Internal] Bit 12 - RS-FEC (544,514) + PLR\;[Internal] Bit 13 - LL-FEC (271,257) + PLR\;[Internal] Bit 14 - ELL (272,257+1) + PLR" access="RO" offset="0x18.16" size="0x0.16" />
+	<field name="fec_override_cap_50g_1x" descr="50GE single lane override capability bitmask:\;Bit 0 - No-FEC\;Bit 1- Firecode FEC\;Bit 2- RS-FEC (528,514)\;Bit 3- Reserved \;Bit 4- Reserved\;Bit 5- Reserved\;Bit 6- Reserved\;Bit 7 - RS-FEC (544,514)\;[Internal] Bit 8 - Zero Latency FEC\;Bit 9- 50G Ethernet Consortium LL RS-FEC (272,257+1)\;[Internal] Bit 12 - RS-FEC (544,514) + PLR\;[Internal] Bit 13 - LL-FEC (271,257) + PLR\;[Internal] Bit 14 - ELL (272,257+1) + PLR" access="RO" offset="0x1C.0" size="0x0.16" />
+	<field name="fec_override_cap_100g_2x" descr="100GE over 2 lanes, FEC override capability bitmask:\;Bit 0 - No-FEC\;Bit 1- Reserved \;Bit 2- RS-FEC (528,514)\;Bit 3- Reserved \;Bit 4- Reserved\;Bit 5- Reserved\;Bit 6- Reserved\;Bit 7 - RS-FEC (544,514)\;[Internal] Bit 8 - Zero Latency FEC\;Bit 9- 50G Ethernet Consortium LL RS-FEC (272,257+1)\;[Internal] Bit 12 - RS-FEC (544,514) + PLR\;[Internal] Bit 13 - LL-FEC (271,257) + PLR\;[Internal] Bit 14 - ELL (272,257+1) + PLR" access="RO" offset="0x1C.16" size="0x0.16" />
+	<field name="fec_override_admin_200g_4x" descr="200GE FEC override admin bitmask:\;0 - Auto mode\;Bit 7 is set- RS-FEC (544,514)\;[Internal] Bit 8 is set - Zero Latency FEC \;Bit 9 is set - RS-FEC (272,257+1)\;[Internal] Bit 12 is set - RS-FEC (544,514) + PLR\;[Internal] Bit 13 is set -\; \;LL-FEC (271,257) + PLR \;[Internal] Bit 14 is set -\; \;LL-FEC (272,257+1) + PLR" access="RW" offset="0x20.0" size="0x0.16" />
+	<field name="fec_override_admin_400g_8x" descr="400GE FEC override admin bitmask:\;0 - Auto mode\;Bit 7 is set- RS-FEC (544,514)\;[Internal] Bit 8 is set - Zero Latency FEC \;Bit 9 is set - RS-FEC (272,257+1)\;[Internal] Bit 12 is set - RS-FEC (544,514) + PLR\;[Internal] Bit 13 is set -\; \;LL-FEC (271,257) + PLR \;[Internal] Bit 14 is set -\; \;LL-FEC (272,257+1) + PLR" access="RW" offset="0x20.16" size="0x0.16" />
+	<field name="fec_override_admin_50g_1x" descr="50GE, 1lanes FEC override admin bitmask:\;0 - Auto mode\;Bit 0 is set - NO-FEC \;Bit 1 is set - FC-FEC\;Bit 2 is set - RS-FEC (528,514)\;Bit 7 is set- RS-FEC (544,514)\;[Internal] Bit 8 is set - Zero Latency FEC \;Bit 9 is set - RS-FEC (272,257+1)\;[Internal] Bit 12 is set - RS-FEC (544,514) + PLR\;[Internal] Bit 13 is set -\; \;LL-FEC (271,257) + PLR \;[Internal] Bit 14 is set -\; \;LL-FEC (272,257+1) + PLR" access="RW" offset="0x24.0" size="0x0.16" />
+	<field name="fec_override_admin_100g_2x" descr="100GE, 2 lanes FEC override admin bitmask:\;0 - Auto mode\;Bit 0 is set - NO-FEC \;Bit 2 is set - RS-FEC (528,514)\;Bit 7 is set- RS-FEC (544,514)\;[Internal] Bit 8 is set - Zero Latency FEC \;Bit 9 is set - RS-FEC (272,257+1)\;[Internal] Bit 12 is set - RS-FEC (544,514) + PLR\;[Internal] Bit 13 is set -\; \;LL-FEC (271,257) + PLR \;[Internal] Bit 14 is set -\; \;LL-FEC (272,257+1) + PLR" access="RW" offset="0x24.16" size="0x0.16" />
+	<field name="ib_fec_override_cap_edr" descr="EDR FEC override capability bitmask:\;Bit 0 - No-FEC \;Bit 1- Reserved\;Bit 2- RS-FEC (528,514)\;Bit 3- LL-FEC (271,257)\;Bit 4- Reserved\;Bit 5- Reserved\;Bit 6- Reserved\;Bit 7 - RS-FEC (544,514)\;[Internal] Bit 8 - Zero Latency FEC\;[Internal] Bit 12 - RS-FEC (544,514) + PLR\;[Internal] Bit 13 - LL-FEC (271,257) + PLR" access="RO" offset="0x30.0" size="0x0.16" />
+	<field name="ib_fec_override_cap_hdr" descr="HDR FEC override capability bitmask:\;Bit 0 - No-FEC \;Bit 1- Reserved \;Bit 2- Reserved \;Bit 3- LL-FEC (271,257)\;Bit 4- Reserved\;Bit 5- Reserved\;Bit 6- Reserved\;Bit 7 - RS-FEC (544,514)\;[Internal] Bit 8 - Zero Latency FEC\;[Internal] Bit 12 - RS-FEC (544,514) + PLR\;[Internal] Bit 13 - LL-FEC (271,257) + PLR" access="RO" offset="0x30.16" size="0x0.16" />
+	<field name="ib_fec_override_cap_fdr10" descr="FDR FEC10 override capability bitmask:\;Bit 0 - No-FEC\;Bit 1- Firecode FEC\;Bit 2-15 : Reserved" access="RO" offset="0x34.0" size="0x0.16" />
+	<field name="ib_fec_override_cap_fdr" descr="FDR FEC override capability bitmask:\;Bit 0 - No-FEC\;Bit 1- Firecode FEC\;Bit 2-15 : Reserved" access="RO" offset="0x34.16" size="0x0.16" />
+	<field name="ib_fec_override_admin_edr" descr="EDR FEC override admin bitmask:\;0 - Auto mode\;Bit 0 is set - No FEC\;Bit 4 is set- LL-FEC (271,257)\;Bit 7 is set- RS-FEC (544,514)\;[Internal] Bit 8 is set - Zero Latency FEC \;[Internal] Bit 12 is set - RS-FEC (544,514) + PLR\;[Internal] Bit 13 is set -\; \;LL-FEC (271,257) + PLR" access="RW" offset="0x38.0" size="0x0.16" />
+	<field name="ib_fec_override_admin_hdr" descr="HDR FEC override admin bitmask:\;0 - Auto mode\;Bit 0 is set - No FEC\;Bit 4 is set- LL-FEC (271,257)\;Bit 7 is set- RS-FEC (544,514)\;[Internal] Bit 8 is set - Zero Latency FEC \;[Internal] Bit 12 is set - RS-FEC (544,514) + PLR\;[Internal] Bit 13 is set -\; \;LL-FEC (271,257) + PLR" access="RW" offset="0x38.16" size="0x0.16" />
+	<field name="ib_fec_override_admin_fdr10" descr="FDR FEC override admin bitmask:\;0 - Auto mode\;1 - No FEC\;2- Firecode FEC" access="RW" offset="0x3C.0" size="0x0.16" />
+	<field name="ib_fec_override_admin_fdr" descr="FDR FEC override admin bitmask:\;0 - Auto mode\;1 - No FEC\;2- Firecode FEC" access="RW" offset="0x3C.16" size="0x0.16" />
 </node>
 
 <node name="pplr_reg_ext" descr="" size="0x8.0" >
@@ -1705,7 +1776,7 @@
 	<field name="lb_cap" descr="Loopback capability - bitmask\;[Internal] Bit 0 - Phy remote loopback\;Bit 1 - Phy local loopback. When set the port&apos;s egress traffic is looped back \;to the receiver and the port transmitter is disabled.\;Bit 2 - External local loopback. Enables the port&apos;s transmitter to link with \;the port&apos;s receiver using an external loopback connector.\;Bits 3-7 are reserved." access="RO" offset="0x4.16" size="0x0.8" />
 </node>
 
-<node name="pprt_reg_ext" descr="" size="0x18.0" >
+<node name="pprt_reg_ext" descr="" size="0x20.0" >
 	<field name="le" descr="Per Lane configuration enable (can be set only if \;ls = 1)\;:\;0 - No per lane configuration\;1 - Per lane configurations\;When \;le \;is cleared, \;lane \;index is reserved and all PPRT configu\;rations are taking place on all lanes.\;When \;le \;is set, configurations are taking place per lane based on \;lane \;index" access="OP" offset="0x0.0" size="0x0.1" />
 	<field name="ls" descr="Per Lane configuration support: \;0 - No support of per lane configuration\;1 - Support of per lane configuration" access="RO" offset="0x0.1" size="0x0.1" />
 	<field name="lane" descr="Reserved when (\;le=0 \;or\; ls = 0)\;Physical lane number" access="INDEX" offset="0x0.8" size="0x0.4" />
@@ -1718,21 +1789,9 @@
 	<field name="modulation" descr="Reserved for speeds below 53.125Gb/s (\;lane_rate_admin \;&lt; 13):\;0 - NRZ test pattern\;1 - PAM4 encoding \;2 - PAM4 with precoding\;3 - PAM4 without gray no precoding" access="RW" offset="0x8.0" size="0x0.4" />
 	<field name="prbs_mode_admin" descr="See \;prbs_mode_cap: \;0x0 - PRBS31 (x^31 + x^28 + 1)\;0x1 - PRBS23A (x^23 + x^18 + 1)\;0x2 - PRBS23B (x^23 + x^18 + x^12+ x^6 + 1)\;0x3 - PRBS23C (x^23 + x^22 + x^19+ x^18 + 1)\;0x4 - PRBS23D (x^23 + x^19 + x^18+ x^11 + 1)\;0x5 - PRBS7 (x^7 + x^6 + 1)\;0x6 - PRBS11 (x^11 + x^9 + 1)\;0x7 - PRBS11A (x^11 + x^10 + x^6+ x^5 + 1)\;0x8 - PRBS11B (x^11 + x^9 + x^6+ x^5 + 1)\;0x9 - PRBS11C (x^11 + x^8 + x^6+ x^4 + 1)\;0xA - PRBS11D (x^11 + x^7 + x^6+ x^4 + 1)\;0xB - PRBS9 (x^9 + x^5 + 1)\;0xC - IDLEs using scramble58 (x^58+ x^39 + 1)\;0xD - Square_wave : Non error based tune \;0x11 - PRBS13A (x^13 + x^12 + x^2+ x + 1)\;0x12 - PRBS13B (x^13 + x^7 + x^3+ x^2 + 1)\;0x13 - PRBS13C (x^13 + x^8 + x^4+ x^2 + 1)\;0x14 - PRBS13D (x^13 + x^9 + x^5+ x^2 + 1)\;0x15 - SSPR\;0x16 - SSPRQ" access="RW" offset="0x8.24" size="0x0.8" />
 	<field name="lane_rate_cap" descr="Per lane rate capability (bitmask)\;Bit 0 - 1GE (1.25 Gb/s)\;Bit 1 - SDR (2.5 Gb/s) \;Bit 2 - XAUI/2.5GE (3.125 Gb/s)\;Bit 3- DDR (5 Gb/s) \;Bit 4- QDR (10 Gb/s) \;Bit 5- FDR10 / 10GE/40GE (10.3125 Gb/s) \;Bit 6- FDR (14.0625 Gb/s) \;Bit 7- EDR / 25GE / 50GE / 100GE (25.78125 Gb/s) \;Bit 8 - 50GE-KR4 (12.89 Gb/s) \;Bit 9 - HDR /50GE / 100GE / 200GE / 400GE (26.5625Gbd / \;53.125Gb/s)" access="RO" offset="0xC.16" size="0x0.16" />
-	<field name="lane_rate_oper" descr="Lane rate be used in PRBS, see \;lane_rate_cap:\;0 - \;SDR (2.5 Gb/s)\;1 - \;DDR (5 Gb/s) \;2 - \;QDR (10 Gb/s)\;3 - \;FDR10 / 10GE/4 0GE (10.3125 Gb/s)\;4 - \;FDR (14.0625 Gb/s) \;5 - \;EDR / 25GE / 50GE / 100GE (25.78125 Gb/s)\;6 - HDR /50GE / 100GE / 200GE / 400GE (26.5625Gbd / \;53.125Gb/s\;7\; - 9 - reserved\;10 - \;1GE (1.25 Gb/s)\;11 - \;XAUI/2.5GE (3.125 Gb/s)\;12 - \;50GE-KR4 (12.89 Gb/s) \;Note: All lanes must be set to the same rate" access="RW" offset="0x10.16" size="0x0.16" />
+	<field name="lane_rate_oper" descr="Lane rate be used in PRBS, see \;lane_rate_cap:\;0 - \;SDR (2.5 Gb/s)\;1 - \;DDR (5 Gb/s) \;2 - \;QDR (10 Gb/s)\;3 - \;FDR10 / 10GE/4 0GE (10.3125 Gb/s)\;4 - \;FDR (14.0625 Gb/s) \;5 - \;EDR / 25GE / 50GE / 100GE (25.78125 Gb/s)\;6 - HDR /50GE / 100GE / 200GE / 400GE (26.5625Gbd / \;53.125Gb/s\;7 - 9 - reserved\;10 - \;1GE (1.25 Gb/s)\;11 - \;XAUI/2.5GE (3.125 Gb/s)\;12 - \;50GE-KR4 (12.89 Gb/s) \;Note: All lanes must be set to the same rate" access="RW" offset="0x10.16" size="0x0.16" />
 	<field name="prbs_lock_status" descr="PRBS lock on PRBS pattern status: \;0 - Not locked\;1 - Locked\;Note: Once exiting prbs test mode the \;prbs_rx_tuning_status\; \;will return to 0 (Not locked)" access="RO" offset="0x14.24" size="0x0.4" />
 	<field name="prbs_rx_tuning_status" descr="Tuning status: \;0 - PRBS mode tuning was not performed.\;1 - Performing PRBS mode tuning.\;2 - PRBS mode tuning completed.\;Note: Once exiting prbs test mode the \;prbs_rx_tuning_status\; \;will return to 0." access="RO" offset="0x14.28" size="0x0.4" />
-</node>
-
-<node name="ppsc_reg_ext" descr="" size="0x24.0" >
-	<field name="local_port" descr="Local port number." access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="mod_pwr_opt" descr="See \;PCAM.feature_cap_mask bit\; 16 for support indication: \;Transceiver power optimization:\;0 - Disable\;1 - Enable" access="RW" offset="0x4.0" size="0x0.1" />
-	<field name="wrps_admin" descr="Width reduction power save admin state:\;0000: Disable Width Reduction - Force link to full width (Default)\;0001: Force Width Reduction - Force link to single lane\;0010: Auto - Automatic Width Reduction (based on traffic)." access="RW" offset="0x10.0" size="0x0.4" />
-	<field name="wrps_status" descr="Link actual width:\;0000: Full width\;0001: Single lane\;1111: In transition" access="RO" offset="0x14.0" size="0x0.4" />
-	<field name="down_threshold" descr="Link width down threshold, Values: 1%-100%\;The BW (In percent) before the link width is moved to single lane" access="RW" offset="0x18.0" size="0x0.8" />
-	<field name="up_threshold" descr="Link width up threshold, Values: 1-5 (default 3)\;how aggressive/smoothed in response to high BW.\;1 - means aggressive response to every BW increase\;5 - means smoothened response to every BW increase" access="RW" offset="0x18.16" size="0x0.8" />
-	<field name="down_th_vld" descr="Valid bit to update the down threshold\;if &apos;1&apos; update \;down_threshold" access="WO" offset="0x18.30" size="0x0.1" />
-	<field name="up_th_vld" descr="Valid bit to update the up threshold\;if &apos;1&apos; update \;up_threshold" access="WO" offset="0x18.31" size="0x0.1" />
-	<field name="srps_admin" descr="Speed reduction power save admin state:\;0000: Disable Speed Reduction - force link to full speed (Default)\;0001: Force Speed Reduction - force link to low speed" access="RW" offset="0x20.0" size="0x0.4" />
 </node>
 
 <node name="pptb_reg_ext" descr="" size="0xc.0" >
@@ -1754,7 +1813,7 @@
 	<field name="pm_msb" descr="prioX_buff mask - enables update of the prioX_buff field.\;Bit \;i\; is a flag for updating the mapping for switch priority \;i+8\;.\;Reserved for HCA device" access="WO" offset="0x8.24" size="0x0.8" />
 </node>
 
-<node name="pptt_reg_ext" descr="" size="0x14.0" >
+<node name="pptt_reg_ext" descr="" size="0x1c.0" >
 	<field name="le" descr="Per Lane configuration enable (can be set only if \;ls = 1)\;:\;0 - No per lane configuration\;1 - Per lane configurations\;When \;le \;is cleared, \;lane \;index is reserved and all PPTT configu\;rations are taking place on all lanes.\;When \;le \;is set, configurations are taking place per lane based on \;lane \;index" access="OP" offset="0x0.0" size="0x0.1" />
 	<field name="ls" descr="Per Lane configuration support/capability: \;0 - No support of per lane configuration\;1 - Support of per lane configuration" access="RO" offset="0x0.1" size="0x0.1" />
 	<field name="lane" descr="Reserved when (\;le=0 \;or\; ls = 0)\;Physical lane number" access="INDEX" offset="0x0.8" size="0x0.4" />
@@ -1765,42 +1824,36 @@
 	<field name="modulation" descr="Reserved for speeds below 53.125Gb/s (\;lane_rate_admin \;&lt; 13):\;0 - NRZ test pattern\;1 - PAM4 encoding \;2 - PAM4 with precoding" access="RW" offset="0x8.0" size="0x0.4" />
 	<field name="prbs_mode_admin" descr="See \;prbs_mode_cap\;: \;0x0 - PRBS31 (x^31 + x^28 + 1)\;0x1 - PRBS23A (x^23 + x^18 + 1)\;0x2 - PRBS23B (x^23 + x^18 + x^12+ x^6 + 1)\;0x3 - PRBS23C (x^23 + x^22 + x^19+ x^18 + 1)\;0x4 - PRBS23D (x^23 + x^19 + x^18+ x^11 + 1)\;0x5 - PRBS7 (x^7 + x^6 + 1)\;0x6 - PRBS11 (x^11 + x^9 + 1)\;0x7 - PRBS11A (x^11 + x^10 + x^6+ x^5 + 1)\;0x8 - PRBS11B (x^11 + x^9 + x^6+ x^5 + 1)\;0x9 - PRBS11C (x^11 + x^8 + x^6+ x^4 + 1)\;0xA - PRBS11D (x^11 + x^7 + x^6+ x^4 + 1)\;0xB - PRBS9 (x^9 + x^5 + 1)\;0xC - IDLEs using scramble58 (x^58+ x^39 + 1)\;0xD - Square_waveA (8 ones , 8 zeros)\;0xE - Square_waveB (4 ones , 4zeros)\;0xF - Square_waveC (2 ones , 2zeros)\;0x10 - Square_waveD (one , zero)\;0x11 - PRBS13A (x^13 + x^12 + x^2+ x + 1)\;0x12 - PRBS13B (x^13 + x^7 + x^3+ x^2 + 1)\;0x13 - PRBS13C (x^13 + x^8 + x^4+ x^2 + 1)\;0x14 - PRBS13D (x^13 + x^9 + x^5+ x^2 + 1)\;0x15 - SSPR\;0x16 - SSPRQ" access="RW" offset="0x8.24" size="0x0.8" />
 	<field name="lane_rate_cap" descr="Per lane rate capability (bitmask)\;Bit 0 - 1GE (1.25 Gb/s)\;Bit 1 - SDR (2.5 Gb/s) \;Bit 2 - XAUI/2.5GE (3.125 Gb/s)\;Bit 3- DDR (5 Gb/s) \;Bit 4- QDR (10 Gb/s) \;Bit 5- FDR10 / 10GE/40GE (10.3125 Gb/s) \;Bit 6- FDR (14.0625 Gb/s) \;Bit 7- EDR / 25GE / 50GE / 100GE (25.78125 Gb/s) \;Bit 8 - 50GE-KR4 (12.89 Gb/s) \;Bit 9 - HDR /50GE / 100GE / 200GE / 400GE (26.5625Gbd / \;53.125Gb/s)" access="RO" offset="0xC.16" size="0x0.16" />
-	<field name="lane_rate_admin" descr="Lane rate be used in PRBS, see \;lane_rate_cap\;:\;0 - \;SDR (2.5 Gb/s)\;1 - \;DDR (5 Gb/s) \;2 - \;QDR (10 Gb/s)\;3 - \;FDR10 / 10GE/40GE (10.3125 Gb/s)\;4 - \;FDR (14.0625 Gb/s) \;5 - \;EDR / 25GE / 50GE / 100GE (25.78125 Gb/s)\;6 \;- HDR /50GE / 100GE / 200GE / 400GE (26.5625Gbd / \;53.125Gb/s)\;7\;- 9 - reserved\;10 - \;1GE (1.25 Gb/s)\;11 - \;XAUI/2.5GE (3.125 Gb/s)\;12 - \;50GE-KR4 (12.89 Gb/s)\;Note: All lanes must be set to the same rate" access="RW" offset="0x10.16" size="0x0.16" />
+	<field name="lane_rate_admin" descr="Lane rate be used in PRBS, see \;lane_rate_cap\;:\;0 - \;SDR (2.5 Gb/s)\;1 - \;DDR (5 Gb/s) \;2 - \;QDR (10 Gb/s)\;3 - \;FDR10 / 10GE/40GE (10.3125 Gb/s)\;4 - \;FDR (14.0625 Gb/s) \;5 - \;EDR / 25GE / 50GE / 100GE (25.78125 Gb/s)\;6 - HDR /50GE / 100GE / 200GE / 400GE (26.5625Gbd / \;53.125Gb/s)\;7- 9 - reserved\;10 - \;1GE (1.25 Gb/s)\;11 - \;XAUI/2.5GE (3.125 Gb/s)\;12 - \;50GE-KR4 (12.89 Gb/s)\;Note: All lanes must be set to the same rate" access="RW" offset="0x10.16" size="0x0.16" />
 </node>
 
 <node name="prio_j" descr="" size="0x4.0" >
-	<field name="color2" descr="The DSCP mapping for color \;k\;, where k=0..2, see \;Table 560, \;&quot;\;color&lt;k&gt;Layout\;&quot;" access="RW" offset="0x0.8" size="0x0.8" />
-	<field name="color1" descr="The DSCP mapping for color \;k\;, where k=0..2, see \;Table 560, \;&quot;\;color&lt;k&gt;Layout\;&quot;" access="RW" offset="0x0.16" size="0x0.8" />
-	<field name="color0" descr="The DSCP mapping for color \;k\;, where k=0..2, see \;Table 560, \;&quot;\;color&lt;k&gt;Layout\;&quot;" access="RW" offset="0x0.24" size="0x0.8" />
+	<field name="color2" descr="The DSCP mapping for color \;k\;, where k=0..2, see \;Table 648, \;&quot;\;color&lt;k&gt;Layout\;&quot;" access="RW" offset="0x0.8" size="0x0.8" />
+	<field name="color1" descr="The DSCP mapping for color \;k\;, where k=0..2, see \;Table 648, \;&quot;\;color&lt;k&gt;Layout\;&quot;" access="RW" offset="0x0.16" size="0x0.8" />
+	<field name="color0" descr="The DSCP mapping for color \;k\;, where k=0..2, see \;Table 648, \;&quot;\;color&lt;k&gt;Layout\;&quot;" access="RW" offset="0x0.24" size="0x0.8" />
 </node>
 
-<node name="pspa_reg_ext" descr="" size="0x4.0" >
-	<field name="sub_port" descr="Reserved for Spectrum/Switch-IB/2.\;Virtual port within the physical port. \;0 - when virtual ports are not enabled on the port." access="INDEX" offset="0x0.8" size="0x0.8" />
-	<field name="local_port" descr="Local port number." access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="swid" descr="Switch partition ID with which to associate {port, sub_port}.\;Switch partitions are numbered from 0 to 7 inclusively.\;Switch partition 254 indicates stacking port.\;Switch partition 255 indicates a disabled port." access="RW" offset="0x0.24" size="0x0.8" />
-</node>
-
-<node name="pter_reg_ext" descr="" size="0xc.0" >
+<node name="pter_reg_ext" descr="" size="0x20.0" >
 	<field name="status" descr="Error injection status: \;0x0 -Good status\;0x2 - No available sources for Error injection\;0x3 - Error injection configuration when port is in non operational state \;(port is neither in UP or TEST MODE)\;0x4 - out of range BER setting" access="RO" offset="0x0.0" size="0x0.4" />
 	<field name="pnat" descr="Port number access type. determines the way \;local_port\; \;is interpreted:\;0 - Local port number\;1 - IB / label port number" access="INDEX" offset="0x0.14" size="0x0.2" />
 	<field name="local_port" descr="Local port number" access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="error_type_admin" descr="Error Type to generate\;0 - No Error\;---- Physical Errors ----\;1 - Raw BER\;2 - Effective BER" access="RW" offset="0x4.0" size="0x0.8" />
 	<field name="error_type_cap" descr="Error injection capabilities \;Bit 0 - Raw BER\;Bit 1 - Effective BER" access="RO" offset="0x4.8" size="0x0.8" />
-	<field name="error_type_oper" descr="Error injection \;opertional status\;0x0 - No error injection\;0x1 - Performing error injection" access="RO" offset="0x4.24" size="0x0.4" />
-	<field name="ber_exp" descr="BER for\; injection.\;BER \;= \;ber_mantissa\; * 10^(-\;ber_exp\;)" access="RW" offset="0x8.0" size="0x0.8" />
-	<field name="ber_mantissa" descr="BER for\; injection.\;BER \;= \;ber_mantissa\; * 10^(-\;ber_exp\;)" access="RW" offset="0x8.8" size="0x0.4" />
-	<field name="error_injection_time" descr="Duration\; in 10 msec \;the port will generate errors.\;Reading\; \;this field will return the time left for errors to inject in msec\;error_type = 3 \;OR \;error_type = 4 (RS-FEC symbols)\;error_injection_time \;represent the number of times to produce the \;rs_er\;rors_interval.\;Reading\; \;this field will return the number of \;rs_errors_inter\;val \;rounds left for errors to inject. \;0x0000 indicates no generation of errors.\;When set to 0xFFFF - No decremental operation, meaning the errors will \;be injected continuously\; without stop condition." access="RW" offset="0x8.12" size="0x0.16" />
+	<field name="error_type_oper" descr="Error injection opertional status\;0x0 - No error injection\;0x1 - Performing error injection" access="RO" offset="0x4.24" size="0x0.4" />
+	<field name="ber_exp" descr="BER for injection.\;BER \;= \;ber_mantissa\; * 10^(-\;ber_exp\;)" access="RW" offset="0x8.0" size="0x0.8" />
+	<field name="ber_mantissa" descr="BER for injection.\;BER \;= \;ber_mantissa\; * 10^(-\;ber_exp\;)" access="RW" offset="0x8.8" size="0x0.4" />
+	<field name="error_injection_time" descr="Duration in 10 msec the port will generate errors.\;Reading\; \;this field will return the time left for errors to inject in msec\;0x0000 indicates no generation of errors.\;When set to 0xFFFF - No decremental operation, meaning the errors will \;be injected continuously without stop condition." access="RW" offset="0x8.12" size="0x0.16" />
 </node>
 
-<node name="ptys_reg_ext" descr="" size="0x34.0" >
+<node name="ptys_reg_ext" descr="" size="0x40.0" >
 	<field name="proto_mask" descr="Protocol Mask. Indicates which of the protocol data is valid\;Bit 0: InfiniBand\;Bit 1: FC\;Bit 2: Ethernet" access="INDEX" enum="InfiniBand=0x1,FC=0x2,Ethernet=0x4" offset="0x0.0" size="0x0.3" />
 	<field name="local_port" descr="Local port number" access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="an_disable_cap" descr="Auto Negotiation disable capability:\;0 - Device does\; not \;support AN disable\;1 - Device Supports  AN disable" access="RO" offset="0x0.29" size="0x0.1" />
-	<field name="an_disable_admin" descr="Auto Negotiation disable:\;0 - Normal operation \;1 - Disable AN.\;Note: In Ethernet\; port, \;when Disabling AN, the &quot;\;eth_proto_admin\;&quot; bit \;mask must comply to single speed\; rate set.\;In IB\; port, \;when Disabling AN, the &quot;\;ib_proto_admin\;&quot; bit mask must \;comply to single speed\; rate set.\;It&apos;s recommended to validate the FEC override bits in PPLM when operat\;ing with AN. \;" access="RW" offset="0x0.30" size="0x0.1" />
+	<field name="an_disable_cap" descr="Auto Negotiation disable capability:\;0 - Device does not support AN disable\;1 - Device Supports  AN disable" access="RO" offset="0x0.29" size="0x0.1" />
+	<field name="an_disable_admin" descr="Auto Negotiation disable:\;0 - Normal operation \;1 - Disable AN.\;Note: In Ethernet port, when Disabling AN, the &quot;\;eth_proto_admin\;&quot; bit \;mask must comply to single speed rate set.\;In IB port, when Disabling AN, the &quot;\;ib_proto_admin\;&quot; bit mask must \;comply to single speed rate set.\;It&apos;s recommended to validate the FEC override bits in PPLM when operat\;ing with AN. \;" access="RW" offset="0x0.30" size="0x0.1" />
 	<field name="reserved_high" descr="THIS BIT MUST BE TIED TO \;1\;!\;This is old capability bit that address AN_DISABLE capability with only \;one enabled protocol." access="RO" offset="0x0.31" size="0x0.1" />
 	<field name="data_rate_oper" descr="Port data rate in resolution of 100 Mb/s (\;data_rate\;_oper * 100 Mb/s)\;Value 0x0 indicates this field is not supported." access="RO" offset="0x4.0" size="0x0.16" />
 	<field name="an_status" descr="Auto Negotiation status: \;0 - Status is unavailable\;1 - AN completed successfully \;2 - AN performed but failed\;3 - AN was not performed, link is up \;4 - AN was not performed, link is down" access="RO" offset="0x4.28" size="0x0.4" />
-	<field name="ext_eth_proto_capability" descr="For HCA: See also \;PCAM.\;feature_cap_mask\; bit 13 for Extended Ether\;net protocol support.\;Extended Ethernet port speed/protocols supported (bitmask):\;Bit 0 - SGMII_100M\;Bit 1 - 1000BASE-X / SGMII\;Bit 3 - 5GBASE-R\;Bit 4 - XFI / XAUI-1 // 10G\;Bit 5 - XLAUI-4/XLPPI-4 // 40G \;Bit 6 - 25GAUI-1/ 25GBASE-CR / KR \;Bit 7 - 50GAUI-2 / LAUI-2/ 50GBASE-CR2/KR2 \;Bit 8 - 50GAUI-1 / LAUI-1/ 50GBASE-CR / KR\;Bit 9 - CAUI-4 / 100GBASE-CR4 / KR4\;Bit 10 - 100GAUI-2 / 100GBASE-CR2 / KR2 \;Bit 11 - Reserved \;Bit 12 - 200GAUI-4 / 200GBASE-CR4/KR4\;Bit 13 - Reserved \;Bit 14 - Reserved\;Bit 15 - 400GAUI-8\;Other - Reserved" access="RO" offset="0x8.0" size="0x4.0" />
+	<field name="ext_eth_proto_capability" descr="For HCA: See also \;PCAM.feature_cap_mask\; bit 13 for Extended Ether\;net protocol support.\;Extended Ethernet port speed/protocols supported (bitmask):\;Bit 0 - SGMII_100M\;Bit 1 - 1000BASE-X / SGMII\;Bit 3 - 5GBASE-R\;Bit 4 - XFI / XAUI-1 // 10G\;Bit 5 - XLAUI-4/XLPPI-4 // 40G \;Bit 6 - 25GAUI-1/ 25GBASE-CR / KR \;Bit 7 - 50GAUI-2 / LAUI-2/ 50GBASE-CR2/KR2 \;Bit 8 - 50GAUI-1 / LAUI-1/ 50GBASE-CR / KR\;Bit 9 - CAUI-4 / 100GBASE-CR4 / KR4\;Bit 10 - 100GAUI-2 / 100GBASE-CR2 / KR2 \;Bit 11 - Reserved \;Bit 12 - 200GAUI-4 / 200GBASE-CR4/KR4\;Bit 13 - Reserved \;Bit 14 - Reserved\;Bit 15 - 400GAUI-8\;Other - Reserved" access="RO" offset="0x8.0" size="0x4.0" />
 	<field name="eth_proto_capability" descr="Ethernet port speed/protocols supported (bitmask)\;Bit 31 - 50GBase-KR2\;Bit 30 - 50GBase-CR2\;Bit 29 - 25GBase-SR\;Bit 28 - 25GBase-KR\;Bit 27 - 25GBase-CR\;[Internal] Bit 26 - 10GBase-T \;[Internal] Bit 25 - 1000Base-T\;[Internal] Bit 24 - 100Base-TX\;[Internal] Bit 23 - 100GBase LR4/ER4\;Bit 22 - 100GBase KR4\;Bit 21 - 100GBase SR4\;Bit 20 - 100GBase CR4\;Bit 19 - 50GBase-KR4\;Bit 18 - 50GBase-SR2\;Bit 16 - 40GBase LR4/ER4\;Bit 15 - 40GBase SR4\;Bit 14 - 10GBase ER/LR\;Bit 13 - 10GBase SR\;Bit 12 - 10GBase CR\;Bit 9 - SGMII_100Base\;[Internal] Bit 8 - 56GBase *R4\;Bit 7 - 40GBase KR4\;Bit 6 - 40GBase CR4\;[internal] Bit 5 - 20GBase-KR2\;Bit 4 - 10GBase KR\;Bit 3 - 10GBase KX4\;Bit 2 - 10GBase-CX4\;Bit 1 - 1000Base KX\;Bit 0 - SGMII" access="RO" offset="0xC.0" size="0x4.0" />
 	<field name="ib_proto_capability" descr="InfiniBand port speed supported (bitmask)\;ib_link_speed &lt;= ib_proto_capability[7:0]\;Bit 0 - SDR\;Bit 1 - DDR\;Bit 2 - QDR\;Bit 3 - FDR10\;Bit 4 - FDR\;Bit 5 - EDR\;Bit 6 - HDR\;[Internal]Bit 7 - NDR" access="RO" offset="0x10.0" size="0x0.16" />
 	<field name="ib_link_width_capability" descr="ib_link_width &lt;= ib_proto_capability\;Bit 0 - 1x\;Bit 1 - 2x\;Bit 2 - 4x\;Bit 3 - 8x\;Bit 4 - 12x" access="RO" offset="0x10.16" size="0x0.16" />
@@ -1812,14 +1865,8 @@
 	<field name="eth_proto_oper" descr="Ethernet port speed/protocols bitmask" access="RO" offset="0x24.0" size="0x4.0" />
 	<field name="ib_proto_oper" descr="InfiniBand port speed bitmask" access="RO" offset="0x28.0" size="0x0.16" />
 	<field name="ib_link_width_oper" descr="InfiniBand port link width bitmask" access="RO" offset="0x28.16" size="0x0.16" />
+	<field name="connector_type" descr="Connector type indication\;0: No_connector_or_unknown \;1: PORT_NONE - None\;2: PORT_TP - Twisted Pair\;3: PORT_AUI - AUI\;4: PORT_BNC - BNC\;5: PORT_MII - MII\;6: PORT_FIBRE - FIBRE\;7: PORT_DA - Direct Attach Copper\;8: PORT_OTHER - Other" access="RO" enum="No_connector_or_unknown=0x0,PORT_NONE=0x1,PORT_TP=0x2,PORT_AUI=0x3,PORT_BNC=0x4,PORT_MII=0x5,PORT_FIBRE=0x6,PORT_DA=0x7,PORT_OTHER=0x8" offset="0x2C.0" size="0x0.4" />
 	<field name="eth_proto_lp_advertise" descr="Ethernet port&apos;s link partner advertised protocols. Returns the protocols \;that were advertised by the link partner during auto-negotiation." access="RO" offset="0x30.0" size="0x4.0" />
-</node>
-
-<node name="pude_reg_ext" descr="" size="0x4.0" >
-	<field name="oper_status" descr="Port operational state:\;0001 - up\;0010 - down\;0100 - down by port failure (transitioned by the hardware)" access="RO" offset="0x0.0" size="0x0.4" />
-	<field name="admin_status" descr="Port administrative state (the desired state of the interface):\;0001 - up\;0010 - down by configuration\;0011 - up once - if the port goes up and then down, the operational sta\;tus should go to &quot;down by port failure&quot; and can only go back up upon \;explicit command\;0100 - disabled by system" access="RO" offset="0x0.8" size="0x0.4" />
-	<field name="local_port" descr="Local port number." access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="swid" descr="For HCA: must \; always be 0.\;Switch partition ID with which to associate the port.\;Switch partitions are numbered from 0 to 7 inclusively.\;Switch partition 254 indicates stacking ports.\;Switch partition 255 indicates all switch partitions.\;Note\;: \;W\;hile external ports uses unique local port numbers (and thus swid is \;redundant), router ports use the same local port number where swid is the \;only indication for the relevant port." access="INDEX" offset="0x0.24" size="0x0.8" />
 </node>
 
 <node name="pvlc_reg_ext" descr="" size="0x10.0" >
@@ -1829,9 +1876,9 @@
 	<field name="vl_operational" descr="Operational VLs as configured by the SM on this port:\;0: No change; valid only on Set()\;1: VL0\;2: VL0, VL1\;4: VL0 - VL3\;8: VL0 - VL7\;15: VL0 - VL14\;Changing \;vl_operational\; in certain PortStates may cause in flow control \;update errors which may initiate Link/PHY retraining.\;vl_operational\; value is valid only when link state is UP." access="RO" offset="0xC.0" size="0x0.4" />
 </node>
 
-<node name="qcam_ext" descr="" size="0x38.0" >
-	<field name="access_reg_group" descr="Access Register ID groups \;0: First 128 REG_ID" access="INDEX" offset="0x0.0" size="0x0.8" />
-	<field name="feature_group" descr="Feature list mask index\;0: Enhanced features" access="INDEX" offset="0x0.16" size="0x0.8" />
+<node name="qcam_ext" descr="" size="0x48.0" >
+	<field name="access_reg_group" descr="Access Register ID groups \;0: First_128_REG_ID" access="INDEX" enum="First_128_REG_ID=0x0" offset="0x0.0" size="0x0.8" />
+	<field name="feature_group" descr="Feature list mask index\;0: Enhanced_features" access="INDEX" enum="Enhanced_features=0x0" offset="0x0.16" size="0x0.8" />
 	<field name="qos_access_reg_cap_mask" descr="Supported QoS access register bitmasks. \;Based on \;access_reg_group \;index.\; \;When bit is set, the register is supported in the device. \;For example:\;Bit 1: QCAP (0x4001)\;Bit 2: QPTS (0x4002)\;Bit 3: QDPM (0x4003)" access="RO" high_bound="3" low_bound="0" offset="0x8.0" size="0x10.0" />
 	<field name="qos_feature_cap_mask" descr="Supported QoS enhanced features b\;ased on \;feature_group\; \;index.\;When bit is set, the feature is supported in the device\;Bit 0: QPTS_TRUST_BOTH - trust_both is supported in QPTS \;register" access="RO" high_bound="3" low_bound="0" offset="0x28.0" size="0x10.0" />
 </node>
@@ -1843,7 +1890,7 @@
 </node>
 
 <node name="qdpm_ext" descr="" size="0x40.0" >
-	<field name="dscp" descr="DSCP entry is the DSCP to Switch Priority mapping. For more \;details refer to \;Table 504\;." access="RW" high_bound="63" low_bound="0" offset="0x0.24" size="0x40.0" />
+	<field name="dscp" descr="DSCP entry is the DSCP to Switch Priority mapping. For more \;details refer to \;Table 592\;." access="RW" high_bound="63" low_bound="0" offset="0x0.24" size="0x40.0" />
 </node>
 
 <node name="qeec_ext" descr="" size="0x20.0" >
@@ -1866,7 +1913,7 @@
 	<field name="min_shaper_bs" descr="Min shaper Burst size\;Burst size is 2^\;min_shaper_bs\; * \;512 [bits]\;Range is: n..25 (from 2KB..2GB)\;Value of 0 is configured as n\;For Spectrum\;: n=5\;Reserved when \;ptps\; = 1" access="RW" offset="0x1C.16" size="0x0.6" />
 </node>
 
-<node name="qegcs_ext" descr="" size="0x8.0" >
+<node name="qegcs_ext" descr="" size="0x10.0" >
 	<field name="local_port" descr="Local port number" access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="abr_glob_sp" descr="Arbitration across groups:\;0: DWRR \;1: Strict Priority (default)" access="RW" offset="0x4.0" size="0x0.1" />
 	<field name="grp15_arb_sp" descr="Arbitration inside group 15:\;0: DWRR\;1: Strict Priority (default)\;Note that if \;grp07_arb_sp\; is configured to Strict Priority \;then\;grp15_arb_sp\; must be configured as Strict Priority as well" access="RW" offset="0x4.1" size="0x0.1" />
@@ -1875,16 +1922,16 @@
 
 <node name="qepm_ext" descr="" size="0x14.0" >
 	<field name="local_port" descr="Local port.\;Supported for data packets from CPU port." access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="exp" descr="EXP entry is the EXP to Switch Priority mapping. For more \;details refer to \;Table 512, &quot;\;exp&lt;i&gt; Layout\;,&quot; on page 775" access="RW" high_bound="7" low_bound="0" offset="0x4.16" size="0x10.0" />
+	<field name="exp" descr="EXP entry is the EXP to Switch Priority mapping. For more \;details refer to \;Table 600, &quot;\;exp&lt;i&gt; Layout\;,&quot; on page 779" access="RW" high_bound="7" low_bound="0" offset="0x4.16" size="0x10.0" />
 </node>
 
 <node name="qetcr_ext" descr="" size="0x50.0" >
 	<field name="local_port" descr="Local port number" access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="cap_remote_admin" descr="Indicates if \;operation_type\;==remote_admin_parameters is \;supported\;NIC only, Reserved for Switches" access="RO" offset="0x0.28" size="0x0.1" />
 	<field name="cap_local_admin" descr="Indicates if \;operation_type\;==local_admin_parameters is sup\;ported\;NIC only, Reserved for Switches" access="RO" offset="0x0.29" size="0x0.1" />
-	<field name="operation_type" descr="Operation type.\;0x0: local operative parameters.\;0x1: local admin parameters. Supported only when \;cap_lo\;cal_admin\;==1.\;0x2: remote admin parameters. Supported only when \;cap_re\;mote_admin\;==1.\; \;NIC only, Reserved for Switches" access="INDEX" offset="0x0.30" size="0x0.2" />
-	<field name="tc_configuration" descr="Per-tclass configuration. For details, refer to \;Table 520, &quot;\;ETS \;tcN Configuration Register Layout\;&quot;\;." subnode="ets" access="RW" high_bound="7" low_bound="0" offset="0x8.0" size="0x40.0" />
-	<field name="global_configuration" descr="Global configuration. For details, refer to \;Table 522, &quot;\;ETS \;Global Configuration Register Layout\;&quot;\;.\;Reserved for NICs" subnode="ets_global" access="RW" offset="0x48.0" size="0x8.0" />
+	<field name="operation_type" descr="Operation type.\;0x0: local_operative_parameters\;0x1: local_admin_parameters\; - \;supported only when \;cap_lo\;cal_admin\;==1.\;0x2: remote_admin_parameters\; - \;supported only when \;cap_re\;mote_admin\;==1.\; \;NIC only, Reserved for Switches" access="INDEX" enum="local_operative_parameters=0x0,local_admin_parameters=0x1,remote_admin_parameters=0x2" offset="0x0.30" size="0x0.2" />
+	<field name="tc_configuration" descr="Per-tclass configuration. For details, refer to \;Table 608, &quot;\;ETS \;tcN Configuration Register Layout\;&quot;\;." subnode="ets" access="RW" high_bound="7" low_bound="0" offset="0x8.0" size="0x40.0" />
+	<field name="global_configuration" descr="Global configuration. For details, refer to \;Table 610, &quot;\;ETS \;Global Configuration Register Layout\;&quot;\;.\;Reserved for NICs" subnode="ets_global" access="RW" offset="0x48.0" size="0x8.0" />
 </node>
 
 <node name="qhll_ext" descr="" size="0xc.0" >
@@ -1894,7 +1941,7 @@
 	<field name="stall_en" descr="Stall enable\;0: Stall disabled\;1: Stall enabled (default)" access="RW" offset="0x8.31" size="0x0.1" />
 </node>
 
-<node name="qpbr_ext" descr="" size="0x8.0" >
+<node name="qpbr_ext" descr="" size="0x10.0" >
 	<field name="pid" descr="Policer ID.\;Global policers are numbered from 0 to \;cap_max_polic\;ers_per_port\;-1.\;Per port policers are numbered from 0 to \;cap_max_policers_\;global\;-1. \;Storm Control policers are numbered from 0 to \;cap_max_polic\;ers_storm_control\;-1" access="RW" offset="0x0.0" size="0x0.14" />
 	<field name="g" descr="0: port policer and Storm Control policer configuration\;1: global policer configuration\;Reserved when Spectrum" access="RW" offset="0x0.15" size="0x0.1" />
 	<field name="local_port" descr="local_port number. The policer is assigned to traffic coming from \;the port. \;SwitchX/-2: Note that one can bind a global policer to a port, and \;use the same global policer to more than a single port.\;Spectrum: Note that one can bind a Storm Control policer to a \;port.type, and use the same Storm Control policer to more than a \;single port.\;CPU port is not supported." access="INDEX" offset="0x0.16" size="0x0.8" />
@@ -1941,22 +1988,22 @@
 
 <node name="qpdpm_ext" descr="" size="0x84.0" >
 	<field name="local_port" descr="Local Port.\;Supported for data packets from CPU port." access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="dscp" descr="DSCP entry is the DSCP to Switch Priority mapping. For more \;details refer to \;Table 508" access="RW" high_bound="63" low_bound="0" offset="0x4.16" size="0x80.0" />
+	<field name="dscp" descr="DSCP entry is the DSCP to Switch Priority mapping. For more \;details refer to \;Table 596" access="RW" high_bound="63" low_bound="0" offset="0x4.16" size="0x80.0" />
 </node>
 
 <node name="qpdsm_ext" descr="" size="0x44.0" >
 	<field name="local_port" descr="Local port.\;No support for CPU port." access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="switch_prio" descr="The DSCP mapping for Switch Priority \;i, \;See \;Table 558, \;&quot;\;switch_prio&lt;j&gt; Layout\;&quot;\;Switch Prio range is from 0 to \;cap_max_switch_priorities\;-\;1" subnode="prio_j" access="RW" high_bound="15" low_bound="0" offset="0x4.0" size="0x40.0" />
+	<field name="switch_prio" descr="The DSCP mapping for Switch Priority \;i, \;See \;Table 646, \;&quot;\;switch_prio&lt;j&gt; Layout\;&quot;\;Switch Prio range is from 0 to \;cap_max_switch_priorities\;-\;1" subnode="prio_j" access="RW" high_bound="15" low_bound="0" offset="0x4.0" size="0x40.0" />
 </node>
 
 <node name="qpem_ext" descr="" size="0x104.0" >
 	<field name="local_port" descr="Local port.\;No support for CPU port.\;No support for router port." access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="switch_prio" descr="The EXP mapping for Switch Priority \;i, \;See \;Table 550, \;&quot;\;switch_prio&lt;i&gt; Layout\;&quot;\;Switch Prio range is from 0 to \;cap_max_switch_priori\;ties\;-1" subnode="switch_prio" access="RW" high_bound="15" low_bound="0" offset="0x4.0" size="0x100.0" />
+	<field name="switch_prio" descr="The EXP mapping for Switch Priority \;i, \;See \;Table 638, \;&quot;\;switch_prio&lt;i&gt; Layout\;&quot;\;Switch Prio range is from 0 to \;cap_max_switch_priori\;ties\;-1" subnode="switch_prio" access="RW" high_bound="15" low_bound="0" offset="0x4.0" size="0x100.0" />
 </node>
 
 <node name="qppm_ext" descr="" size="0x44.0" >
 	<field name="local_port" descr="Local port.\;No support for CPU port." access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="switch_prio" descr="The PCP mapping for Switch Priority \;i, \;See \;Table 564, \;&quot;\;switch_prio&lt;j&gt; Layout\;&quot;\;Switch Prio range is from 0 to \;cap_max_switch_priorities\;-\;1" subnode="switch_prio_j" access="RW" high_bound="15" low_bound="0" offset="0x4.0" size="0x40.0" />
+	<field name="switch_prio" descr="The PCP mapping for Switch Priority \;i, \;See \;Table 652, \;&quot;\;switch_prio&lt;j&gt; Layout\;&quot;\;Switch Prio range is from 0 to \;cap_max_switch_priorities\;-\;1" subnode="switch_prio_j" access="RW" high_bound="15" low_bound="0" offset="0x4.0" size="0x40.0" />
 </node>
 
 <node name="qprt_ext" descr="" size="0x8.0" >
@@ -2002,7 +2049,7 @@
 	<field name="tclass" descr="Regenerated stacking TClass for received packets on stacking port \;with TClass \;The default value for the Stacking Port TClass Regeneration Table \;is tclass[itclass=i]=i." access="RW" offset="0x4.0" size="0x0.3" />
 </node>
 
-<node name="qstct_ext" descr="" size="0xc.0" >
+<node name="qstct_ext" descr="" size="0x10.0" >
 	<field name="switch_prio" descr="Ingress Switch Priority" access="INDEX" offset="0x0.8" size="0x0.4" />
 	<field name="swid" descr="Switch partition ID" access="INDEX" offset="0x0.24" size="0x0.8" />
 	<field name="utclass" descr="Stacking TClass used for unicast packets with priority \;switch_prio.\;Default values are: \;- utclass[switch_prio=0]=1, \;- utclass[switch_prio=1]=0, \;- utclass[switch_prio=&lt;i&gt;]=i (for i&gt;1)." access="RW" offset="0x4.0" size="0x0.3" />
@@ -2023,27 +2070,27 @@
 	<field name="mc" descr="Multicast Mode\;0: Switch Priority to Traffic Class mapping is not based on Multi\;cast packet indication (default)\;1: Switch Priority to Traffic Class mapping is based on Multicast \;packet indication" access="RW" offset="0x4.0" size="0x0.1" />
 </node>
 
-<node name="register_host_endianness_ext" descr="" size="0x4.0" >
+<node name="register_host_endianness_ext" descr="" size="0x10.0" >
 	<field name="he" descr="0: LITTLE_ENDIAN\;1: BIG_ENDIAN" access="RW" enum="LITTLE_ENDIAN=0x0,BIG_ENDIAN=0x1" offset="0x0.31" size="0x0.1" />
 </node>
 
-<node name="register_loopback_control_ext" descr="" size="0x10.0" >
-	<field name="port" descr="1 - port 1\;2 - port 2\;255 - both ports\;otherwise - reserved" offset="0x0.16" size="0x0.8" />
-	<field name="no_lb" descr="When set, the HCA will always send packets meant for the same port to wire, \;rather than perform internal loopback" offset="0x0.31" size="0x0.1" />
-</node>
-
-<node name="register_misc_counters_ext" descr="" size="0x20.0" >
-	<field name="counter_select" descr="When performing a WRITE operation - , the counter select bitmask deter\;mines which registers are set:\;Bit 0 - ECC\;Bit 1 - LDB silent drop" offset="0x4.0" size="0x4.0" />
-	<field name="ecc" descr="Counts number of arrays which encountered a bit error" offset="0xC.0" size="0x4.0" />
-	<field name="ldb_silent_drop" descr="Counts number of packets silently dropped due to LDB error" offset="0x10.0" size="0x4.0" />
-</node>
-
-<node name="register_power_settings_ext" descr="" size="0x4.0" >
+<node name="register_power_settings_ext" descr="" size="0x10.0" >
 	<field name="power_settings_level" descr="0x0 - minimum power (maximum latency penalty)\;0x1-0xfe - reserved\;0xff - maximum power (minimum latency penalty)" access="RW" offset="0x0.0" size="0x0.8" />
 </node>
 
-<node name="register_unti_perf_global_ctrl_ext" descr="" size="0x10.0" >
-	<field name="cmd" descr="0x0 - stop counting in all performance counters\;0x1 - start counting in all performance counters \;Otherwise - reserved" access="WO" offset="0x0.0" size="0x0.8" />
+<node name="roce_accl_reg_ext" descr="" size="0x40.0" >
+	<field name="roce_adp_retrans_field_select" descr="In Query, indicates if \;roce_tx_windo\; mode is supported.\;I\;n\; set, indicates \;roce_tx_window_en \;field \;is valid.\;Supported only when hca_cap. \;roce_adp_retrans\; == 1" access="RW" offset="0x0.0" size="0x0.1" />
+	<field name="roce_tx_window_field_select" descr="In Query, indicates if \;roce_tx_window\; mode is supported.\;I\;f\; set, indicates\;roce_\;tx_window_en\;field\; is valid.\;Supported only when hca_cap. \;roce_tx_window\; == 1" access="RW" offset="0x0.1" size="0x0.1" />
+	<field name="roce_slow_restart_field_select" descr="In Query, indicates if \;roce_slow_restart\; mode is sup\;ported.\;I\;n\; set, indicates \;roce_slow_restart_en \;field \;is valid.\;Supported only when hca_cap. \;roce_slow_restart\; == 1" access="RW" offset="0x0.2" size="0x0.1" />
+	<field name="roce_adp_retrans_en" descr="When set, the adaptive retransmission window functional\;ity is enabled.\;Valid only when \;roce_adp_retrans_mask\; == 1." access="RW" offset="0x4.0" size="0x0.1" />
+	<field name="roce_tx_window_en" descr="When set, the \;Transmission window\; functionality is \;enabled. \;Valid only when \;roce_tx_window_mask\; == 1." access="RW" offset="0x4.1" size="0x0.1" />
+	<field name="roce_slow_restart_en" descr="When set, the \;Slow restart\; functionality is enabled. \;Valid only when \;roce_slow_restart_mask\; == 1." access="RW" offset="0x4.2" size="0x0.1" />
+</node>
+
+<node name="rom_version" descr="" size="0x4.0" >
+	<field name="build" descr="Build version" access="RO" offset="0x0.0" size="0x0.16" />
+	<field name="minor" descr="Minor version" access="RO" offset="0x0.16" size="0x0.8" />
+	<field name="major" descr="Major version" access="RO" offset="0x0.24" size="0x0.8" />
 </node>
 
 <node name="set_node_in_ext" descr="" size="0x40.0" >
@@ -2051,25 +2098,25 @@
 </node>
 
 <node name="slrg_16nm_ext" descr="" size="0x1c.0" >
-	<field name="grade_lane_speed" descr="The lane speed on which the grade was measured:\;0 - SDR\;1 - DDR\;2 - QDR\;3 - FDR10 (10GE / 40GE)\;4 - FDR (56GE)\;5 - EDR (25GE / 50GE / 100GE)\;6 - HDR (50GE / 200GE / 400GE)\;7-\; 9 - reserved\;10 - 1GE\;11 - 2.5GE (XAUI)\;12 - 50GE-KR4\;1\;3\; - 15 - reserved" access="RO" offset="0x0.0" size="0x0.4" />
-	<field name="grade" descr="The grade that the lane received based on a specific configuration.\;upper_grade, mid_grade, lower_grade" access="RO" offset="0x4.0" size="0x0.24" />
+	<field name="grade_lane_speed" descr="The lane speed on which the grade was measured:\;0 - SDR / PCIe Gen 1\;1 - DDR / PCIe Gen 2\;2 - QDR / PCIe Gen 3\;3 - FDR10 (10GE / 40GE)\;4 - FDR (56GE) / PCIe Gen 4\;5 - EDR (25GE / 50GE / 100GE) / PCIe Gen 5\;6 - HDR (50GE / 200GE / 400GE)\;7- 9 - reserved\;10 - 1GE\;11 - 2.5GE (XAUI)\;12 - 50GE-KR4\;13 - 15 - reserved" access="RO" offset="0x0.0" size="0x0.4" />
+	<field name="grade" descr="The grade that the lane received based on a specific configuration." access="RO" offset="0x4.0" size="0x0.24" />
 	<field name="grade_version" descr="" access="RO" offset="0x4.24" size="0x0.8" />
-	<field name="height_eo_neg_up" descr="Voltage offset from eye center to the negative side of the upper eye." access="RO" offset="0x8.0" size="0x0.16" />
-	<field name="height_eo_pos_up" descr="Voltage offset from eye center to the positive side of the upper eye." access="RO" offset="0x8.16" size="0x0.16" />
+	<field name="height_eo_neg_up" descr="Voltage offset from eye center to the negative side of the upper eye. \;Only applicable for PAM4 signal." access="RO" offset="0x8.0" size="0x0.16" />
+	<field name="height_eo_pos_up" descr="Voltage offset from eye center to the positive side of the upper eye.\;Only applicable for PAM4 signal." access="RO" offset="0x8.16" size="0x0.16" />
 	<field name="height_eo_pos_mid" descr="Voltage offset from eye center to the positive side of the middle \;eye." access="RO" offset="0xC.0" size="0x0.16" />
-	<field name="phase_eo_neg_up" descr="The offset from the eye center to the negative (left) side of the \;upper eye." access="RO" offset="0xC.16" size="0x0.8" />
-	<field name="phase_eo_pos_up" descr="The offset from the eye center to the positive (right) side of the \;upper eye." access="RO" offset="0xC.24" size="0x0.8" />
+	<field name="phase_eo_neg_up" descr="The offset from the eye center to the negative (left) side of the \;upper eye. Only applicable for PAM4 signal." access="RO" offset="0xC.16" size="0x0.8" />
+	<field name="phase_eo_pos_up" descr="The offset from the eye center to the positive (right) side of the \;upper eye. Only applicable for PAM4 signal." access="RO" offset="0xC.24" size="0x0.8" />
 	<field name="phase_eo_neg_mid" descr="The offset from the eye center to the negative (left) side of the mid\;dle eye." access="RO" offset="0x10.0" size="0x0.8" />
 	<field name="phase_eo_pos_mid" descr="The offset from the eye center to the positive (right) side of the \;middle eye." access="RO" offset="0x10.8" size="0x0.8" />
 	<field name="height_eo_neg_mid" descr="Voltage offset from eye center to the negative side of the middle \;eye." access="RO" offset="0x10.16" size="0x0.16" />
-	<field name="height_eo_neg_low" descr="Voltage offset from eye center to the negative side of the lower eye." access="RO" offset="0x14.0" size="0x0.16" />
-	<field name="height_eo_pos_low" descr="Voltage offset from eye center to the positive side of the lower eye." access="RO" offset="0x14.16" size="0x0.16" />
-	<field name="phase_eo_neg_low" descr="The offset from the eye center to the negative (left) side of the \;lower eye." access="RO" offset="0x18.16" size="0x0.8" />
-	<field name="phase_eo_pos_low" descr="The offset from the eye center to the positive (right) side of the \;lower eye." access="RO" offset="0x18.24" size="0x0.8" />
+	<field name="height_eo_neg_low" descr="Voltage offset from eye center to the negative side of the lower eye. \;Only applicable for PAM4 signal." access="RO" offset="0x14.0" size="0x0.16" />
+	<field name="height_eo_pos_low" descr="Voltage offset from eye center to the positive side of the lower eye. \;Only applicable for PAM4 signal." access="RO" offset="0x14.16" size="0x0.16" />
+	<field name="phase_eo_neg_low" descr="The offset from the eye center to the negative (left) side of the \;lower eye. Only applicable for PAM4 signal." access="RO" offset="0x18.16" size="0x0.8" />
+	<field name="phase_eo_pos_low" descr="The offset from the eye center to the positive (right) side of the \;lower eye. Only applicable for PAM4 signal." access="RO" offset="0x18.24" size="0x0.8" />
 </node>
 
 <node name="slrg_40nm_28nm_ext" descr="" size="0x24.0" >
-	<field name="grade_lane_speed" descr="The lane speed on which the grade was measured:\;0 - SDR\;1 - DDR\;2 - QDR\;3 - FDR10 (10GE / 40GE)\;4 - FDR (56GE)\;5 - EDR (25GE / 50GE / 100GE)\;6 - 9 - reserved\;10 - 1GE\;11 - 2.5GE (XAUI)\;12 - 50GE-KR4\;1\;3\; - 15 - reserved" access="RO" offset="0x0.0" size="0x0.4" />
+	<field name="grade_lane_speed" descr="The lane speed on which the grade was measured:\;0 - SDR\;1 - DDR\;2 - QDR\;3 - FDR10 (10GE / 40GE)\;4 - FDR (56GE)\;5 - EDR (25GE / 50GE / 100GE)\;6 - 9 - reserved\;10 - 1GE\;11 - 2.5GE (XAUI)\;12 - 50GE-KR4\;13 - 15 - reserved" access="RO" offset="0x0.0" size="0x0.4" />
 	<field name="grade" descr="" access="RO" offset="0x4.0" size="0x0.24" />
 	<field name="grade_version" descr="" access="RO" offset="0x4.24" size="0x0.8" />
 	<field name="height_eo_neg" descr="Voltage offset from eye center to the negative side." access="RO" offset="0x14.0" size="0x0.16" />
@@ -2084,7 +2131,7 @@
 	<field name="local_port" descr="Local port number." access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="version" descr="0 - 40nm products\;1 - 28nm products\;3 - 16nm products" access="RO" offset="0x0.24" size="0x0.4" />
 	<field name="status" descr="0 - Invalid\;1 - Valid" access="RO" offset="0x0.28" size="0x0.4" />
-	<field name="page_data" descr="See Table  845, &quot;\;SLRG - Serdes Lane Receive Grade Register Layout for \;40nm and 28nm\;,&quot; on page  990\;See Table  847, &quot;\;SLRG - Serdes Lane Receive Grade Register Layout for \;16nm\;,&quot; on page  992" subnode="slrg_reg_page_data_auto_ext" access="RO" offset="0x4.0" size="0x24.0" />
+	<field name="page_data" descr="See Table  681, &quot;\;SLRG - Serdes Lane Receive Grade Register Layout for \;40nm and 28nm\;,&quot; on page  706\;See Table  683, &quot;\;SLRG - Serdes Lane Receive Grade Register Layout for \;16nm\;,&quot; on page  708" subnode="slrg_reg_page_data_auto_ext" access="RO" offset="0x4.0" size="0x24.0" />
 </node>
 
 <node name="slrg_reg_page_data_auto_ext" descr="" attr_is_union="1" size="0x24.0" >
@@ -2093,24 +2140,14 @@
 </node>
 
 <node name="sltp_16nm_ext" descr="" size="0x18.0" >
-	<field name="ws" descr="[Internal]: Write speed parameters enable - If set to &apos;1&apos;, the follow\;ing field are written (otherwise, neglected):\;obplev, obnlev, regn_bfm1p, regp_bfm1n, blev." access="RW" offset="0x0.0" size="0x0.1" />
-	<field name="tx_mode" descr="[Internal] TX modes that may be chosen are:\;0: All 4 taps\; \;- pre_2_tap, pre_tap, main_tap, post_tap. Supported \;for HDR, EDR, PCIe Gen4 and Gen5.\;1: All 4 taps. Supported for\; \;HDR, EDR, PCIe Gen4 and Gen5. \;The difference between &apos;0&apos; and &apos;1&apos; is tap0_pol (0 for &apos;0&apos; and 1 for \;&apos;1&apos;).\;2: 3 taps - pre_tap, main_tap, post_tap. Supported for FDR, QDR, \;DDR and PCIe Gen3 and Gen2.\;3: 2 taps - pre_tap\; \;and main_tap. Supported for\; \;SDR and PCIe \;Gen1.\;4: 2 taps -\; \;main_tap and post_tap. Supported for SDR and PCIe \;Gen1." access="RO" offset="0x0.28" size="0x0.3" />
 	<field name="post_tap" descr="\; \;The total sum of all taps should be exactly 96." access="RW" offset="0x4.0" size="0x0.8" />
 	<field name="main_tap" descr="\; \;The total sum of all taps should be exactly 96." access="RW" offset="0x4.8" size="0x0.8" />
 	<field name="pre_tap" descr="\; \;The total sum of all taps should be exactly 96." access="RW" offset="0x4.16" size="0x0.8" />
 	<field name="pre_2_tap" descr="\; \;The total sum of all taps should be exactly 96." access="RW" offset="0x4.24" size="0x0.8" />
-	<field name="ob_alev_out" descr="[Internal]: Output common mode. Values can be set in the range \;of (0-30)" access="RW" offset="0x8.0" size="0x0.5" />
-	<field name="ob_amp" descr="[Internal]: Output amplitude. Values can be set in the range of (20-\;120)" access="RW" offset="0x8.8" size="0x0.7" />
-	<field name="ob_m2lp" descr="[Internal]: MSB to LSB proportion. Values can be set in the range \;of (0-70). MSB emphasis achieved\;" access="RW" offset="0x8.25" size="0x0.7" />
+	<field name="ob_alev_out" descr="" access="RW" offset="0x8.0" size="0x0.5" />
+	<field name="ob_amp" descr="" access="RW" offset="0x8.8" size="0x0.7" />
+	<field name="ob_m2lp" descr="" access="RW" offset="0x8.25" size="0x0.7" />
 	<field name="ob_bad_stat" descr="Bitmask for bad &apos;set&apos; status:\;Bit 0 - Illegal ob_m2lp\;Bit 1 - Illegal ob_amp\;Bit 2 - Illegal ob_alev_out\;Bit 3 - Illegal taps" access="RO" offset="0xC.28" size="0x0.4" />
-	<field name="regp_bfm1n" descr="[Internal]:Values can be set in the range of (0-200)." access="RW" offset="0x10.0" size="0x0.8" />
-	<field name="regn_bfm1p" descr="[Internal]:Values can be set in the range of (0-200)." access="RW" offset="0x10.8" size="0x0.8" />
-	<field name="obnlev" descr="[Internal]:Values can be set in the range of (0-200)." access="RW" offset="0x10.16" size="0x0.8" />
-	<field name="obplev" descr="[Internal]:Values can be set in the range of (0-200)." access="RW" offset="0x10.24" size="0x0.8" />
-	<field name="alev_minus_bfm2" descr="[Internal]:Values can be set in the range of (0-28)." access="RO" offset="0x14.0" size="0x0.5" />
-	<field name="alev_plus_bfm2" descr="[Internal]:Values can be set in the range of (0-28)." access="RO" offset="0x14.5" size="0x0.5" />
-	<field name="tx_alev" descr="" access="RO" offset="0x14.10" size="0x0.5" />
-	<field name="blev" descr="" access="RW" offset="0x14.25" size="0x0.7" />
 </node>
 
 <node name="sltp_28nm_40nm_ext" descr="" size="0x10.0" >
@@ -2122,29 +2159,34 @@
 	<field name="ob_reg" descr="(ref_txcml100_reg)" access="RW" offset="0x8.8" size="0x0.8" />
 	<field name="ob_preemp_mode" descr="Concatenation of taps polarity + preemp_sel" access="RW" offset="0x8.16" size="0x0.4" />
 	<field name="ob_leva" descr="" access="RW" offset="0x8.20" size="0x0.4" />
-	<field name="ob_bad_stat" descr="Bitmask for bad SET status:\;Bit 0 - Illegal ob_bais value\;Bit 1 - Illegal\; ob taps polarity (distance between taps)" access="RO" offset="0xC.29" size="0x0.2" />
+	<field name="ob_bad_stat" descr="Bitmask for bad SET status:\;Bit 0 - Illegal ob_bais value\;Bit 1 - Illegal ob taps polarity (distance between taps)" access="RO" offset="0xC.29" size="0x0.2" />
 	<field name="ob_norm" descr="OB Normalization status:\;0 - No Normalization was done\;1 - Normalization performed" access="RO" offset="0xC.31" size="0x0.1" />
+</node>
+
+<node name="sltp_gearbox_ext" descr="" size="0x18.0" >
+	<field name="pre_tap" descr="" access="RW" offset="0x0.0" size="0x0.16" />
+	<field name="main_tap" descr="" access="RW" offset="0x0.16" size="0x0.16" />
+	<field name="post_tap" descr="" access="RW" offset="0x4.0" size="0x0.16" />
+	<field name="inner_eye_1" descr="" access="RW" offset="0x8.0" size="0x0.16" />
+	<field name="inner_eye_2" descr="" access="RW" offset="0x8.16" size="0x0.16" />
+	<field name="tx_swing" descr="" access="RW" offset="0xC.0" size="0x0.4" />
 </node>
 
 <node name="sltp_reg_ext" descr="" size="0x1c.0" >
 	<field name="c_db" descr="copy \;transmitter parameters\; \;to Data Base." access="OP" offset="0x0.0" size="0x0.1" />
-	<field name="lane_speed" descr="Reserved for PCIe.\;The lane speed for TX settings:\;0 - SDR\; / Gen1 (PCIe)\;1 - DDR\; / Gen2 (PCIe)\;2 - QDR\; / Gen3 (PCIe)\;3 - FDR10 (10GE / 40GE)\;4 - FDR (56GE)\; / Gen4 (PCIe)\;5 - EDR (25GE / 50GE / 100GE)\; / Gen5 (PCIe)\;6 - HDR\; \;(50GE / 200GE / 400GE)\;7-9 - Reserved\;10 - 1GE\;11 - 2.5GE (XAUI)\;12 - 50GE-KR4\;13-15 - Reserved" access="RW" offset="0x0.4" size="0x0.4" />
+	<field name="lane_speed" descr="Reserved for PCIe.\;The lane speed for TX settings:\;0 - SDR / Gen1 (PCIe)\;1 - DDR / Gen2 (PCIe)\;2 - QDR / Gen3 (PCIe)\;3 - FDR10 (10GE / 40GE)\;4 - FDR (56GE) / Gen4 (PCIe)\;5 - EDR (25GE / 50GE / 100GE) / Gen5 (PCIe)\;6 - HDR (50GE / 200GE / 400GE)\;7-9 - Reserved\;10 - 1GE\;11 - 2.5GE (XAUI)\;12 - 50GE-KR4\;13-15 - Reserved" access="RW" offset="0x0.4" size="0x0.4" />
 	<field name="lane" descr="Physical lane number" access="INDEX" offset="0x0.8" size="0x0.4" />
 	<field name="pnat" descr="Port number access type. determines the way \;local_port\; \;is inter\;preted:\;0 - Local port number\;1 - IB / label port number" access="INDEX" offset="0x0.14" size="0x0.2" />
 	<field name="local_port" descr="Local port number." access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="version" descr="0 - 40nm products\;1 - 28nm products\;3 - 16nm products" access="RO" offset="0x0.24" size="0x0.4" />
 	<field name="status" descr="0 - Invalid\;1 - Valid" access="RO" offset="0x0.28" size="0x0.4" />
-	<field name="page_data" descr="See Table  839, &quot;\;SLTP - Serdes Lane Transmit Parameters Register Layout \;for 28nm and 40nm\;,&quot; on page  986\;See Table  841, &quot;\;SLTP -\; \;Serdes Lane Transmit Parameters Register L\;ayout \;for 16nm\;,&quot; on page  987" subnode="sltp_reg_page_data_auto_ext" access="RO" offset="0x4.0" size="0x18.0" />
+	<field name="page_data" descr="See Table  673, &quot;\;SLTP - Serdes Lane Transmit Parameters Register Layout \;for 28nm and 40nm\;,&quot; on page  703\;See Table  675, &quot;\;SLTP - Serdes Lane Transmit Parameters Register Layout \;for 16nm\;,&quot; on page  704\;See Table  677, &quot;\;[Internal] Serdes Lane Transmit Parameters Register Lay\;out For Gearbox\;,&quot; on page  704" subnode="sltp_reg_page_data_auto_ext" access="RO" offset="0x4.0" size="0x18.0" />
 </node>
 
 <node name="sltp_reg_page_data_auto_ext" descr="" attr_is_union="1" size="0x18.0" >
 	<field name="sltp_28nm_40nm_ext" descr="" subnode="sltp_28nm_40nm_ext" offset="0x0.0" size="0x10.0" />
 	<field name="sltp_16nm_ext" descr="" subnode="sltp_16nm_ext" offset="0x0.0" size="0x18.0" />
-</node>
-
-<node name="stat_bufferx_reg" descr="" size="0x8.0" >
-	<field name="watermark" descr="Watermark (max buffer usage since last clear)" access="RO" offset="0x0.0" size="0x0.16" />
-	<field name="used_buffer" descr="Number of used buffer lines." access="RO" offset="0x4.0" size="0x0.16" />
+	<field name="sltp_gearbox_ext" descr="" subnode="sltp_gearbox_ext" offset="0x0.0" size="0x18.0" />
 </node>
 
 <node name="string_db_parameters" descr="" size="0x8.0" >
@@ -2153,13 +2195,13 @@
 </node>
 
 <node name="switch_prio" descr="" size="0x10.0" >
-	<field name="ecn" descr="The EXP mapping for ECN \;j\;, see \;Table 552, &quot;\;ecn&lt;j&gt; Layout\;&quot;" subnode="ecn" access="RW" high_bound="3" low_bound="0" offset="0x0.0" size="0x10.0" />
+	<field name="ecn" descr="The EXP mapping for ECN \;j\;, see \;Table 640, &quot;\;ecn&lt;j&gt; Layout\;&quot;" subnode="ecn" access="RW" high_bound="3" low_bound="0" offset="0x0.0" size="0x10.0" />
 </node>
 
 <node name="switch_prio_j" descr="" size="0x4.0" >
-	<field name="color2" descr="The PCP and DEI mapping for color \;k\;, where k=0..2, see \;Table 566, &quot;\;color&lt;k&gt;Layout\;&quot;" access="RW" offset="0x0.8" size="0x0.8" />
-	<field name="color1" descr="The PCP and DEI mapping for color \;k\;, where k=0..2, see \;Table 566, &quot;\;color&lt;k&gt;Layout\;&quot;" access="RW" offset="0x0.16" size="0x0.8" />
-	<field name="color0" descr="The PCP and DEI mapping for color \;k\;, where k=0..2, see \;Table 566, &quot;\;color&lt;k&gt;Layout\;&quot;" access="RW" offset="0x0.24" size="0x0.8" />
+	<field name="color2" descr="The PCP and DEI mapping for color \;k\;, where k=0..2, see \;Table 654, &quot;\;color&lt;k&gt;Layout\;&quot;" access="RW" offset="0x0.8" size="0x0.8" />
+	<field name="color1" descr="The PCP and DEI mapping for color \;k\;, where k=0..2, see \;Table 654, &quot;\;color&lt;k&gt;Layout\;&quot;" access="RW" offset="0x0.16" size="0x0.8" />
+	<field name="color0" descr="The PCP and DEI mapping for color \;k\;, where k=0..2, see \;Table 654, &quot;\;color&lt;k&gt;Layout\;&quot;" access="RW" offset="0x0.24" size="0x0.8" />
 </node>
 
 <node name="uint64" descr="" size="0x8.0" >
@@ -2167,11 +2209,11 @@
 	<field name="lo" descr="" offset="0x4.0" size="0x4.0" />
 </node>
 
-<node name="root" size="0x104.0" descr="" >
-	<field name="register_access_table_hca_ext_Nodes" offset="0x0.0" size="0x104.0" subnode="register_access_table_hca_ext_Nodes" descr="" />
+<node name="root" size="0x110.0" descr="" >
+	<field name="register_access_table_hca_ext_Nodes" offset="0x0.0" size="0x110.0" subnode="register_access_table_hca_ext_Nodes" descr="" />
 </node>
 
-<node name="register_access_table_hca_ext_Nodes" size="0x104.0" attr_is_union="1" descr="" >
-	<field name="access_reg_summary_selector_ext" offset="0x0.0" size="0x104.0" subnode="access_reg_summary_selector_ext" descr="" />
+<node name="register_access_table_hca_ext_Nodes" size="0x110.0" attr_is_union="1" descr="" >
+	<field name="access_reg_summary_selector_ext" offset="0x0.0" size="0x110.0" subnode="access_reg_summary_selector_ext" descr="" />
 </node>
 </NodesDefinition>

@@ -100,6 +100,9 @@ enum WriterId {
         buff[i] = __be32_to_cpu(buff[i]); \
     }
 
+#define MAX_ARRAY_SIZE 32
+
+
 /*
  * Debug print MACRO of the NV Tlvs:
  */
@@ -159,7 +162,17 @@ void parseIndexedMlxconfigName(const string& indexedMlxconfigName, string& mlxco
 
 void extractIndexes(const string& indexesStr, vector<u_int32_t>& indexes);
 
+bool isIndexedStartFromOneSupported(const string& mlxconfigName);
+
+string increaseIndexIfNeeded(const string& name);
+
 bool isIndexedMlxconfigName(const string& mlxconfigName);
+
+string getArraySuffixByInterval(u_int32_t interval);
+
+string getArraySuffix(const string& mlxconfigName);
+
+string getArrayPrefix(const string& mlxconfigName);
 
 bool getDeviceInformationString(const char* dev, info_type_t op, vector<char>& infoString);
 

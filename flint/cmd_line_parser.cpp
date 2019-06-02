@@ -117,6 +117,7 @@ SubCmdMetaData::SubCmdMetaData()
     _sCmds.push_back(new SubCmd("", "extract_fw_data", SC_Extract_4MB_Image));
     _sCmds.push_back(new SubCmd("", "set_public_keys", SC_Set_Public_Keys));
     _sCmds.push_back(new SubCmd("", "set_forbidden_versions", SC_Set_Forbidden_Versions));
+    _sCmds.push_back(new SubCmd("ir", "image_reactivation", SC_Image_Reactivation));
 }
 
 SubCmdMetaData::~SubCmdMetaData()
@@ -202,6 +203,7 @@ FlagMetaData::FlagMetaData()
     _flags.push_back(new Flag("", "hmac_key", 1));
     _flags.push_back(new Flag("", "key_uuid2", 1));
     _flags.push_back(new Flag("", "no_fw_ctrl", 0));
+    _flags.push_back(new Flag("image_reactivation", "ir", 0));
 }
 
 FlagMetaData::~FlagMetaData()
@@ -414,6 +416,14 @@ void Flint::initCmdParser()
                "Binary image file.\n"
                "Commands affected: burn, verify");
 
+    AddOptions("ir",
+        ' ',
+        "",
+        "Commands affected: burn");
+    AddOptions("image_reactivation",
+        ' ',
+        "",
+        "Commands affected: burn");
     AddOptions("help",
                'h',
                "",
@@ -874,7 +884,10 @@ ParseStatus Flint::HandleOption(string name, string value)
         _flintParams.striped_image = true;
     } else if (name == "use_dev_img_info") {
         _flintParams.use_dev_img_info = true;
-    } else if (name == "banks") {
+    } else if (name == "ir" || name == "image_reactivation") {
+        _flintParams.image_reactivation = true;
+    }
+    else if (name == "banks") {
         _flintParams.banks_specified = true;
         u_int64_t banksNum;
         if (!strToNum(value, banksNum)) {

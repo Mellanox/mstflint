@@ -34,7 +34,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <string>
 
 #include "flint_base.h"
 #include "flint_io.h"
@@ -445,8 +444,8 @@ bool FwOperations::FindAllImageStart(FBase *ioAccess,
     needed_pos_num = CNTX_START_POS_SIZE;
 
     if (ioAccess->is_flash()) {
-        if ( (((Flash*)ioAccess)->get_dev_id() == CX2_HW_ID) ||
-             (((Flash*)ioAccess)->get_dev_id() == IS4_HW_ID)) {
+        if ( (ioAccess->get_dev_id() == CX2_HW_ID) ||
+             (ioAccess->get_dev_id() == IS4_HW_ID)) {
             needed_pos_num = OLD_CNTX_START_POS_SIZE;
         }
     }
@@ -455,7 +454,7 @@ bool FwOperations::FindAllImageStart(FBase *ioAccess,
      *     valid image to be found. as a WA we dont check at 0x400000. basic flash operations
      *     are affected when attempting to access addressess greater than 0x3fffff.
      */
-    if (((Flash*)ioAccess)->get_dev_id() == SWITCH_IB_HW_ID) {
+    if (ioAccess->get_dev_id() == SWITCH_IB_HW_ID) {
         needed_pos_num -= 1;
     }
 
@@ -570,14 +569,14 @@ bool FwOperations::FwAccessCreate(fw_ops_params_t& fwParams, FBase **ioAccessP)
 #endif
     } else if (fwParams.hndlType == FHT_UEFI_DEV) {
         *ioAccessP = new Flash;
-        if (!((Flash*)*ioAccessP)->open(fwParams.uefiHndl, fwParams.uefiExtra, false, !fwParams.shortErrors)) {
+        if (!(*ioAccessP)->open(fwParams.uefiHndl, &fwParams.uefiExtra, false, !fwParams.shortErrors)) {
             WriteToErrBuff(fwParams.errBuff, (*ioAccessP)->err(), fwParams.errBuffSize);
             delete *ioAccessP;
             return false;
         }
     } else if (fwParams.hndlType == FHT_MST_DEV) {
         *ioAccessP = new Flash;
-        if (!((Flash*)*ioAccessP)->open(fwParams.mstHndl, fwParams.forceLock, fwParams.readOnly, fwParams.numOfBanks, \
+        if (!(*ioAccessP)->open(fwParams.mstHndl, fwParams.forceLock, fwParams.readOnly, fwParams.numOfBanks, \
                                         fwParams.flashParams, fwParams.ignoreCacheRep, !fwParams.shortErrors, fwParams.cx3FwAccess)) {
             // TODO: release memory here ?
             WriteToErrBuff(fwParams.errBuff, (*ioAccessP)->err(), fwParams.errBuffSize);
@@ -585,9 +584,9 @@ bool FwOperations::FwAccessCreate(fw_ops_params_t& fwParams, FBase **ioAccessP)
             return false;
         }
         //set no flash verify if needed (default =false)
-        ((Flash*)*ioAccessP)->set_no_flash_verify(fwParams.noFlashVerify);
+        (*ioAccessP)->set_no_flash_verify(fwParams.noFlashVerify);
         // work with 64KB sector size if possible to increase performace in full fw burn
-        (((Flash*)*ioAccessP)->set_flash_working_mode(Flash::Fwm_64KB));
+        ((*ioAccessP)->set_flash_working_mode(Flash::Fwm_64KB));
     } else {
         WriteToErrBuff(fwParams.errBuff, "Unknown Handle Type.", fwParams.errBuffSize);
         return false;
@@ -654,7 +653,7 @@ u_int8_t FwOperations::CheckFwFormat(FBase& f, bool getFwFormatFromImg)
     u_int32_t found_images = 0;
 
     if (f.is_flash() && !getFwFormatFromImg) {
-        return GetFwFormatFromHwDevID(((Flash*)&f)->get_dev_id());
+        return GetFwFormatFromHwDevID(f.get_dev_id());
     } else {
         v = IsCableImage(f);
         if (v != FS_UNKNOWN_IMG) {
@@ -715,7 +714,7 @@ FwOperations* FwOperations::FwOperationsCreate(void *fwHndl, void *info, char *p
         fwParams.buffSize = *((u_int32_t*)info);
     } else if (hndlType == FHT_UEFI_DEV) {
         fwParams.uefiHndl = (uefi_Dev_t*)fwHndl;
-        fwParams.uefiExtra = (uefi_dev_extra_t*)info;
+        fwParams.uefiExtra = *(uefi_dev_extra_t*)info;
     } else if (hndlType == FHT_MST_DEV) {
         fwParams.mstHndl = (char*)fwHndl;
         fwParams.forceLock = false;
@@ -731,7 +730,7 @@ FwOperations* FwOperations::FwOperationsCreate(void *fwHndl, void *info, char *p
     return FwOperationsCreate(fwParams);
 }
 
-bool FwOperations::imageDevOperationsCreate(fw_ops_params_t& devParams, fw_ops_params_t& imgParams, FwOperations **devFwOps, FwOperations **imgFwOps)
+bool FwOperations::imageDevOperationsCreate(fw_ops_params_t& devParams, fw_ops_params_t& imgParams, FwOperations **devFwOps, FwOperations **imgFwOps, bool ignoreSecurityAttributes)
 {
     *imgFwOps = FwOperationsCreate(imgParams);
     if (!(*imgFwOps)) {
@@ -751,7 +750,7 @@ bool FwOperations::imageDevOperationsCreate(fw_ops_params_t& devParams, fw_ops_p
     if (!(*imgFwOps)->FwQuery(&imgQuery)) {
         return false;
     }
-    if (imgQuery.fs3_info.security_mode == SM_NONE) {
+    if (imgQuery.fs3_info.security_mode == SM_NONE && ignoreSecurityAttributes == false) {
         devParams.noFwCtrl = true;
     }
     *devFwOps = FwOperationsCreate(devParams);
@@ -808,26 +807,27 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
     {
         if ((!fwParams.ignoreCacheRep && !fwParams.noFwCtrl && fwParams.hndlType == FHT_MST_DEV) ||
             (fwParams.hndlType == FHT_UEFI_DEV     &&
-             fwParams.uefiExtra != NULL           &&
-             fwParams.uefiExtra->dev_info != NULL &&
-             !fwParams.uefiExtra->dev_info->no_fw_ctrl)) {
+             !fwParams.uefiExtra.dev_info.no_fw_ctrl)) {
             if (fwParams.hndlType == FHT_MST_DEV) {
                 fwCompsAccess = new FwCompsMgr(fwParams.mstHndl);
             } else if (fwParams.hndlType == FHT_UEFI_DEV) {
-                fwCompsAccess = new FwCompsMgr(fwParams.uefiHndl, fwParams.uefiExtra);
+                fwCompsAccess = new FwCompsMgr(fwParams.uefiHndl, &fwParams.uefiExtra);
             }
             fw_comps_error_t fwCompsErr = fwCompsAccess->getLastError();
             if (fwCompsErr != FWCOMPS_SUCCESS) {
-                std::string err_msg = fwCompsAccess->getLastErrMsg();
-                delete fwCompsAccess;
-                fwCompsAccess = (FwCompsMgr*) NULL;
+                bool exitOnError = false;
                 if (fwCompsErr == FWCOMPS_MTCR_OPEN_DEVICE_ERROR) {
                     // mtcr lib failed to open the provided device.
                     WriteToErrBuff(fwParams.errBuff, "Failed to open device", fwParams.errBuffSize);
-                    return (FwOperations*)NULL;
+                    exitOnError = true;
                 }
                 else if(fwCompsErr == FWCOMPS_REG_ACCESS_RES_NOT_AVLBL) {
-                    WriteToErrBuff(fwParams.errBuff, err_msg.c_str(), fwParams.errBuffSize);
+                    WriteToErrBuff(fwParams.errBuff, fwCompsAccess->getLastErrMsg(), fwParams.errBuffSize);
+                    exitOnError = true;
+                }
+                delete fwCompsAccess;
+                fwCompsAccess = (FwCompsMgr*) NULL;
+                if (exitOnError) {
                     return (FwOperations*)NULL;
                 }
             } else {
@@ -858,11 +858,12 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
         fwFormat = CheckFwFormat(*ioAccess, getFwFormatFromImg);
 init_fwops:
         switch (fwFormat) {
+#if !defined(UEFI_BUILD)
         case FS_FS2_GEN: {
                 fwops = new Fs2Operations(ioAccess);
                 break;
             }
-
+#endif
         case FS_FS3_GEN: {
                 fwops = new Fs3Operations(ioAccess);
                 break;
@@ -924,6 +925,7 @@ bool FwOperations::writeImageEx(ProgressCallBackEx progressFuncEx, void *progres
     u_int8_t   *p = (u_int8_t*)data;
     u_int32_t curr_addr = addr;
     u_int32_t towrite = cnt;
+    u_int32_t last_percent = 0xff;
     totalSz = totalSz == -1 ? cnt : totalSz;
     int origFlashWorkingMode = Flash::Fwm_Default;
     bool rc;
@@ -933,26 +935,26 @@ bool FwOperations::writeImageEx(ProgressCallBackEx progressFuncEx, void *progres
         if (_ioAccess->is_flash()) {
             if (readModifyWrite) {
                 // perform write with the smallest supported sector size
-                origFlashWorkingMode = ((Flash*)_ioAccess)->get_flash_working_mode();
-                ((Flash*)_ioAccess)->set_flash_working_mode(Flash::Fwm_Default);
+                origFlashWorkingMode = _ioAccess->get_flash_working_mode();
+                _ioAccess->set_flash_working_mode(Flash::Fwm_Default);
             }
             trans = (towrite > (int)Flash::TRANS) ? (int)Flash::TRANS : towrite;
             if (isPhysAddr) {
                 if (readModifyWrite) {
-                    rc = ((Flash*)_ioAccess)->read_modify_write_phy(curr_addr, p, trans);
+                    rc = _ioAccess->read_modify_write_phy(curr_addr, p, trans);
                 } else {
-                    rc = ((Flash*)_ioAccess)->write_phy(curr_addr, p, trans);
+                    rc = _ioAccess->write_phy(curr_addr, p, trans);
                 }
             } else {
                 if (readModifyWrite) {
-                    rc = ((Flash*)_ioAccess)->read_modify_write(curr_addr, p, trans);
+                    rc = _ioAccess->read_modify_write(curr_addr, p, trans);
                 } else {
-                    rc = ((Flash*)_ioAccess)->write(curr_addr, p, trans);
+                    rc = _ioAccess->write(curr_addr, p, trans);
                 }
             }
             if (readModifyWrite) {
                 // restore erase sector size
-                ((Flash*)_ioAccess)->set_flash_working_mode(origFlashWorkingMode);
+                _ioAccess->set_flash_working_mode(origFlashWorkingMode);
             }
             if (!rc) {
                 return errmsg(MLXFW_FLASH_WRITE_ERR, "Flash write failed: %s", _ioAccess->err());
@@ -969,14 +971,17 @@ bool FwOperations::writeImageEx(ProgressCallBackEx progressFuncEx, void *progres
 
         // Report
         if (progressFunc != NULL || progressFuncEx != NULL) {
-            u_int32_t new_perc = ((cnt - towrite + alreadyWrittenSz) * 100) / totalSz;
-            if (progressFunc != NULL && progressFunc((int)new_perc)) {
+            u_int32_t curr_percent = ((cnt - towrite + alreadyWrittenSz) * 100) / totalSz;
+            if(last_percent != curr_percent) {
+                last_percent = curr_percent;
+                if (progressFunc != NULL && progressFunc((int)curr_percent)) {
                 return errmsg("Aborting... received interrupt signal");
             }
-            if (progressFuncEx != NULL && progressFuncEx((int)new_perc, progressUserData)) {
+                if (progressFuncEx != NULL && progressFuncEx((int)curr_percent, progressUserData)) {
                 return errmsg("Aborting... received interrupt signal");
             }
         }
+    }
     }
     return true;
 } //  Flash::WriteImage
@@ -1088,6 +1093,7 @@ const FwOperations::HwDevData FwOperations::hwDevData[] = {
     { "Spectrum",         SPECTRUM_HW_ID,   CT_SPECTRUM,     CFT_SWITCH,  0, {52100, 0}, {{UNKNOWN_BIN, {0}}}},
     { "Switch_IB2",       SWITCH_IB2_HW_ID, CT_SWITCH_IB2,   CFT_SWITCH,  0, {53000, 0}, {{UNKNOWN_BIN, {0}}}},
     { "Quantum",          QUANTUM_HW_ID,    CT_QUANTUM,      CFT_SWITCH,  0, {54000, 0}, {{UNKNOWN_BIN, {0}}}},
+    { "Spectrum2",        SPECTRUM2_HW_ID,  CT_SPECTRUM2,    CFT_SWITCH,  0, {53100, 0}, {{UNKNOWN_BIN, {0}}}},
     { (char*)NULL,       0,                CT_UNKNOWN,      CFT_UNKNOWN, 0, {0}, {{UNKNOWN_BIN, {0}}}},// zero devid terminator
 };
 
@@ -1111,6 +1117,7 @@ const FwOperations::HwDev2Str FwOperations::hwDev2Str[] = {
     {"SwitchIB2 A0",      SWITCH_IB2_HW_ID, 0x00},
     {"Quantum A0",        QUANTUM_HW_ID,    0x00},
     {"Spectrum A1",       SPECTRUM_HW_ID,   0x01},
+    {"Spectrum2 A0",      SPECTRUM2_HW_ID,  0x00},
     { (char*)NULL,       (u_int32_t)0, (u_int8_t)0x00},      // zero device ID terminator
 };
 
@@ -1296,7 +1303,7 @@ bool FwOperations::FwSwReset()
     if (!_ioAccess->is_flash()) {
         return errmsg("operation supported only for switch devices: InfiniScaleIV SwitchX and SwitchIB over an IB interface");
     }
-    if (!((Flash*)_ioAccess)->sw_reset()) {
+    if (!_ioAccess->sw_reset()) {
         return errmsg("%s",  _ioAccess->err());
     }
     return true;
@@ -1680,7 +1687,7 @@ void FwOperations::SetDevFlags(chip_type_t chipType, u_int32_t devType, fw_img_t
         ibDev  = (fwType == FIT_FS3 && chipType != CT_SPECTRUM) || (chipType == CT_CONNECTX && !CntxEthOnly(devType));
         ethDev = (chipType == CT_CONNECTX) || (chipType == CT_SPECTRUM) || (chipType == CT_CONNECTX4) || \
                  (chipType == CT_CONNECTX4_LX) || (chipType == CT_CONNECTX5) || (chipType == CT_BLUEFIELD) || \
-                 (chipType == CT_CONNECTX6);
+                 (chipType == CT_SPECTRUM2) || (chipType == CT_CONNECTX6);
     }
 
     if ((!ibDev && !ethDev) || chipType == CT_UNKNOWN) {
@@ -1741,7 +1748,7 @@ bool FwOperations::FwWriteBlock(u_int32_t addr, std::vector<u_int8_t> dataVec, P
     }
 
     //check if flash is big enough
-    if ((addr + dataVec.size()) > ((Flash*)_ioAccess)->get_size()) {
+    if ((addr + dataVec.size()) > _ioAccess->get_size()) {
         return errmsg("Writing %#x bytes from address %#x is out of flash limits (%#x bytes)\n",
                       (unsigned int)(dataVec.size()), (unsigned int)addr, (unsigned int)_ioAccess->get_size());
     }
@@ -1998,7 +2005,8 @@ u_int8_t FwOperations::GetFwFormatFromHwDevID(u_int32_t hwDevId)
     } else if (hwDevId == CX5_HW_ID ||
                hwDevId == CX6_HW_ID ||
                hwDevId == BF_HW_ID  ||
-               hwDevId == QUANTUM_HW_ID)  {
+               hwDevId == QUANTUM_HW_ID ||
+               hwDevId == SPECTRUM2_HW_ID) {
         return FS_FS4_GEN;
     }
     return FS_UNKNOWN_IMG;

@@ -53,44 +53,6 @@
 
 #define VSEC_SEM_NUM 10
 #define HW_SEM_NUM VSEC_SEM_NUM
-
-/*
- * Macros:
- */
-
-/*
- * VSEC semaphore space macros
- */
-
-#define SET_SPACE_FOR_SEMAPHORE_ACCESS(mf)   \
-    if (mget_vsec_supp(mf)) {               \
-        mset_addr_space(mf, AS_SEMAPHORE);   \
-    }
-
-#define RESTORE_SPACE(mf) mset_addr_space(mf, AS_CR_SPACE)
-
-#define MWRITE4_SEMAPHORE(mf, offset, value, action_on_fail) \
-    do { \
-        SET_SPACE_FOR_SEMAPHORE_ACCESS(mf); \
-        if (mwrite4(mf, offset, value) != 4) { \
-            RESTORE_SPACE(mf); \
-            action_on_fail; \
-        } \
-        RESTORE_SPACE(mf); \
-    } while (0)
-
-#define MREAD4_SEMAPHORE(mf, offset, ptr, action_on_fail) \
-    do { \
-        SET_SPACE_FOR_SEMAPHORE_ACCESS(mf); \
-        if (mread4(mf, offset, ptr) != 4) { \
-            RESTORE_SPACE(mf); \
-            action_on_fail; \
-        } \
-        RESTORE_SPACE(mf); \
-    } while (0)
-
-/***********************/
-
 static const char *status_to_str[] =
 {
     "Ok",
@@ -194,6 +156,11 @@ static struct device_sem_info g_dev_sem_info_db[] = {
         {0xe74e0},               // hw_sem_addr
         1,                       // vsec_sem_supported
     },
+    {
+        DeviceConnectX6DX,       // dev_id
+        {0xe74e0},               // hw_sem_addr
+        1,                       // vsec_sem_supported
+    },
 };
 
 #define MAX_SEMAPHORE_ADDRES 8
@@ -249,9 +216,9 @@ static trm_sts unlock_hw_semaphore(mfile *mf, u_int32_t addr)
 }
 
 /************************************
-* Function: lock_vsec_semaphore()
+* Function: lock_icommand_gateway_semaphore()
 ************************************/
-static trm_sts lock_vsec_semaphore(mfile *mf, u_int32_t addr, unsigned int max_retries)
+static trm_sts lock_icommand_gateway_semaphore(mfile *mf, u_int32_t addr, unsigned int max_retries)
 {
     static u_int32_t pid = 0;
     u_int32_t read_val = 0;
@@ -265,9 +232,13 @@ static trm_sts lock_vsec_semaphore(mfile *mf, u_int32_t addr, unsigned int max_r
             return TRM_STS_RES_BUSY;
         }
         //write pid to semaphore
-        MWRITE4_SEMAPHORE(mf, addr, pid, return TRM_STS_CR_ACCESS_ERR);
+        if(MWRITE4_SEMAPHORE(mf, addr, pid)) {
+            return TRM_STS_CR_ACCESS_ERR;
+        }
         // Read back
-        MREAD4_SEMAPHORE(mf, addr, &read_val, return TRM_STS_CR_ACCESS_ERR);
+        if(MREAD4_SEMAPHORE(mf, addr, &read_val)) {
+            return TRM_STS_CR_ACCESS_ERR;
+        }
         if (read_val == pid) {
             break;
         }
@@ -277,11 +248,13 @@ static trm_sts lock_vsec_semaphore(mfile *mf, u_int32_t addr, unsigned int max_r
 }
 
 /************************************
-* Function: unlock_vsec_semaphore()
+* Function: unlock_icommand_gateway_semaphore()
 ************************************/
-static trm_sts unlock_vsec_semaphore(mfile *mf, u_int32_t addr)
+static trm_sts unlock_icommand_gateway_semaphore(mfile *mf, u_int32_t addr)
 {
-    MWRITE4_SEMAPHORE(mf, addr, 0, return TRM_STS_CR_ACCESS_ERR);
+    if(MWRITE4_SEMAPHORE(mf, addr, 0)) {
+        return TRM_STS_CR_ACCESS_ERR;
+    }
     return TRM_STS_OK;
 }
 
@@ -468,7 +441,7 @@ trm_sts trm_lock(trm_ctx trm, trm_resourse res, unsigned int max_retries)
     switch ((int)res) {
     case TRM_RES_ICMD:
         if (trm->dev_sem_info->vsec_sem_supported && mget_vsec_supp(trm->mf)) {
-            return lock_vsec_semaphore(trm->mf, g_vsec_sem_addr[TRM_RES_ICMD], max_retries);
+            return lock_icommand_gateway_semaphore(trm->mf, g_vsec_sem_addr[TRM_RES_ICMD], max_retries);
 #if !defined(__FreeBSD__) && !defined(UEFI_BUILD)
         } else if (trm->dev_sem_info->vsec_sem_supported && (dev_type & MDEVS_IB)) {
             return lock_vs_mad_semaphore(trm, TRM_RES_ICMD, max_retries);
@@ -480,7 +453,7 @@ trm_sts trm_lock(trm_ctx trm, trm_resourse res, unsigned int max_retries)
 
     case TRM_RES_FLASH_PROGRAMING:
         if (trm->dev_sem_info->vsec_sem_supported && mget_vsec_supp(trm->mf)) {
-            return lock_vsec_semaphore(trm->mf, g_vsec_sem_addr[TRM_RES_FLASH_PROGRAMING], max_retries);
+            return lock_icommand_gateway_semaphore(trm->mf, g_vsec_sem_addr[TRM_RES_FLASH_PROGRAMING], max_retries);
 #if !defined(__FreeBSD__) && !defined(UEFI_BUILD)
         } else if (trm->dev_sem_info->vsec_sem_supported && (dev_type & MDEVS_IB)) {
             return lock_vs_mad_semaphore(trm, TRM_RES_FLASH_PROGRAMING, max_retries);
@@ -528,7 +501,7 @@ trm_sts trm_unlock(trm_ctx trm, trm_resourse res)
     switch ((int)res) {
     case TRM_RES_ICMD:
         if (trm->dev_sem_info->vsec_sem_supported && mget_vsec_supp(trm->mf)) {
-            return unlock_vsec_semaphore(trm->mf, g_vsec_sem_addr[TRM_RES_ICMD]);
+            return unlock_icommand_gateway_semaphore(trm->mf, g_vsec_sem_addr[TRM_RES_ICMD]);
 #if !defined(__FreeBSD__) && !defined(UEFI_BUILD)
         } else if (trm->dev_sem_info->vsec_sem_supported && (dev_type & MDEVS_IB)) {
             return release_vs_mad_semaphore(trm, TRM_RES_ICMD);
@@ -540,7 +513,7 @@ trm_sts trm_unlock(trm_ctx trm, trm_resourse res)
 
     case TRM_RES_FLASH_PROGRAMING:
         if (trm->dev_sem_info->vsec_sem_supported && mget_vsec_supp(trm->mf)) {
-            return unlock_vsec_semaphore(trm->mf, g_vsec_sem_addr[TRM_RES_FLASH_PROGRAMING]);
+            return unlock_icommand_gateway_semaphore(trm->mf, g_vsec_sem_addr[TRM_RES_FLASH_PROGRAMING]);
 #if !defined(__FreeBSD__) && !defined(UEFI_BUILD)
         } else if (trm->dev_sem_info->vsec_sem_supported && (dev_type & MDEVS_IB)) {
             return release_vs_mad_semaphore(trm, TRM_RES_FLASH_PROGRAMING);

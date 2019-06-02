@@ -149,17 +149,6 @@ void initHandler()
     #define NO_DEV_ERR "No devices found, mst might be stopped. You may need to run 'mst start' to load MST modules. "
 #endif
 
-typedef struct QueryOutputItem {
-    string mlxconfigName;
-    u_int32_t nextVal;
-    string strNextVal;
-    u_int32_t currVal;
-    string strCurrVal;
-    u_int32_t defVal;
-    string strDefVal;
-    u_int32_t setVal;
-    string strSetVal;
-} QueryOutputItem;
 
 inline void copyVal(QueryOutputItem&o, const ParamView& p, QueryType qT)
 {
@@ -280,55 +269,62 @@ mlxCfgStatus MlxCfg::queryDevsCfg()
     return shouldFail ? MLX_CFG_ERROR : MLX_CFG_OK;
 }
 
-static void printValue(string strVal, u_int32_t val)
+int MlxCfg::printValue(string strVal, u_int32_t val)
 {
     string s = numToStr(val);
     u_int32_t n;
     if (strVal == "" || strVal == s || (strToNum(strVal, n) && n == val)) {
-        printf("%-16u", val);
-    } else {
+        return printf("%-16u", val);
+    }
         if (strVal.find("Array") == string::npos) {
             strVal += "(" + s + ")";
         }
-        printf("%-16s", strVal.c_str());
-    }
+    return printf("%-16s", strVal.c_str());
 }
 
-static void printParam(string param, u_int32_t val)
+int MlxCfg::printParam(string param, u_int32_t val)
 {
     if (val == MLXCFG_UNKNOWN) {
-        printf("%-16s", "N/A");
-    } else {
-        printValue(param, val);
+        return printf("%-16s", "N/A");
     }
-    return;
+    return printValue(param, val);
 }
 
-static void printOneParam(const char *name, QueryOutputItem o,
-                          u_int8_t verbose, bool printNewCfg)
+#define PRINT_SPACE_IF_NEEDED(width) \
+    if(width > 16) {\
+        printf(" ");\
+    }
+
+void MlxCfg::printSingleParam(const char *name,
+        QueryOutputItem & queryOutItem, u_int8_t verbose, bool printNewCfg)
 {
     bool showDefault = QUERY_DEFAULT_MASK & verbose;
     bool showCurrent = QUERY_CURRENT_MASK & verbose;
+    int width = 0;
+    string fieldName = increaseIndexIfNeeded(name);
 
-    if ((showDefault && o.nextVal != o.defVal) ||
-        (showCurrent && o.nextVal != o.currVal)) {
-        printf("*        %-36s", name);
+    if ((showDefault && queryOutItem.nextVal != queryOutItem.defVal) ||
+        (showCurrent && queryOutItem.nextVal != queryOutItem.currVal)) {
+        printf("*        %-36s", fieldName.c_str());
     } else {
-        printf("         %-36s", name);
+        printf("         %-36s", fieldName.c_str());
     }
     if (showDefault) {
-        printParam(o.strDefVal, o.defVal);
+        width = printParam(queryOutItem.strDefVal, queryOutItem.defVal);
     }
     if (showCurrent) {
-        printParam(o.strCurrVal, o.currVal);
+        PRINT_SPACE_IF_NEEDED(width)
+        width = printParam(queryOutItem.strCurrVal, queryOutItem.currVal);
     }
-    printParam(o.strNextVal, o.nextVal);
+    PRINT_SPACE_IF_NEEDED(width)
+    width = printParam(queryOutItem.strNextVal, queryOutItem.nextVal);
 
     if (printNewCfg) {
-        if (o.setVal == MLXCFG_UNKNOWN) {
-            printParam(o.strNextVal, o.nextVal);
+        PRINT_SPACE_IF_NEEDED(width)
+        if (queryOutItem.setVal == MLXCFG_UNKNOWN) {
+            printParam(queryOutItem.strNextVal, queryOutItem.nextVal);
         } else {
-            printValue(o.strSetVal, o.setVal);
+            printValue(queryOutItem.strSetVal, queryOutItem.setVal);
         }
     }
     printf("\n");
@@ -463,11 +459,65 @@ string checkFailedTLVsVector(const vector<string>& failedTLVs, string queryType)
     return failedTLVsErrorMessage;
 }
 
+void MlxCfg::editAndPushItem(std::vector<QueryOutputItem>& queryOutputItemVector, QueryOutputItem& item, u_int32_t arrayIndex)
+{
+    if (isIndexedStartFromOneSupported(getArrayPrefix(item.mlxconfigName))) {
+        item.strNextVal = "Array[1.." + numToStr((arrayIndex * MAX_ARRAY_SIZE)) + "]";
+    }
+    else {
+        item.strNextVal = "Array[0.." + numToStr((arrayIndex * MAX_ARRAY_SIZE) -1) + "]";
+    }
+    
+    item.strCurrVal = item.strNextVal;
+    item.strDefVal = item.strNextVal;
+    if (arrayIndex > 1) {
+        item.mlxconfigName = getArrayPrefix(item.mlxconfigName);
+    }
+    queryOutputItemVector.push_back(item);
+}
+
+void MlxCfg::removeContinuanceArray(std::vector<QueryOutputItem>& OutputItemOut, std::vector<QueryOutputItem>& OutputItemIn)
+{
+    QueryOutputItem* queryItem = NULL;;
+    u_int32_t arrayCounter = 0;
+
+    VECTOR_ITERATOR(QueryOutputItem, OutputItemIn, o) {
+
+        if (getArraySuffix(o->mlxconfigName) == getArraySuffixByInterval(arrayCounter * MAX_ARRAY_SIZE)
+            && !isIndexedMlxconfigName(o->mlxconfigName)) {
+            arrayCounter++;
+            queryItem = &*o;
+            continue;
+        }
+        // in case that we have another continuance array right after end of a continuance array
+        else if (getArraySuffix(o->mlxconfigName) == getArraySuffixByInterval(0) && queryItem != NULL
+            && !isIndexedMlxconfigName(o->mlxconfigName)) {
+            editAndPushItem(OutputItemOut, *queryItem, arrayCounter);
+            arrayCounter = 1;
+            queryItem = &*o;
+            continue;
+        }
+
+        if (queryItem != NULL) {
+            editAndPushItem(OutputItemOut, *queryItem, arrayCounter);
+        }
+
+        queryItem = NULL;
+        arrayCounter = 0;
+        OutputItemOut.push_back(*o);
+    }
+    // if item is not null (we have last member that need push)
+    if (queryItem != NULL) {
+        editAndPushItem(OutputItemOut, *queryItem, arrayCounter);
+    }
+}
+
 mlxCfgStatus MlxCfg::queryDevCfg(Commander *commander, const char *dev, const char *pci,
                                  int devIndex, bool printNewCfg)
 {
     (void) pci;
     std::vector<QueryOutputItem> output;
+    std::vector<QueryOutputItem> newoutput;
     std::vector<ParamView> params, defaultParams, currentParams;
     bool failedToGetCfg = false, isParamsDiffer = false;
     bool defaultSupported = false, currentSupported = false;
@@ -522,9 +572,11 @@ mlxCfgStatus MlxCfg::queryDevCfg(Commander *commander, const char *dev, const ch
     }
     prepareQueryOutput(output, params, QueryNext);
 
+    removeContinuanceArray(newoutput, output);
+
     //print output table:
-    VECTOR_ITERATOR(QueryOutputItem, output, o) {
-        printOneParam(o->mlxconfigName.c_str(),
+    VECTOR_ITERATOR(QueryOutputItem, newoutput, o) {
+        printSingleParam(o->mlxconfigName.c_str(),
                       *o,
                       QUERY_NEXT_MASK |
                       (showDefault ? QUERY_DEFAULT_MASK : 0) |
@@ -1284,12 +1336,12 @@ mlxCfgStatus MlxCfg::execute(int argc, char *argv[])
     if (rc) {
         if (rc == MLX_CFG_OK_EXIT) {
             rc = MLX_CFG_OK;
-        } else {
+        } else if (rc != MLX_CFG_ERROR_NO_USAGE) {
             printUsage();
         }
         return rc;
     }
-    //return test(_mlxParams.device.c_str());
+
     mlxCfgStatus ret;
     switch (_mlxParams.cmd) {
     case Mc_ShowConfs:

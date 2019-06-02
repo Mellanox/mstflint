@@ -77,6 +77,31 @@ struct connectib_FW_VERSION {
 
 
 /* Description -   */
+/* Size in bytes - 16 */
+struct connectib_icmd_set_port_sniffer {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0x0.0 - 0x0.15 */
+	 u_int16_t gvmi;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description -  */
+	/* 0x4.0 - 0x4.0 */
+	 u_int8_t sx_rx_;
+	/* Description -  */
+	/* 0x4.16 - 0x4.16 */
+	 u_int8_t attach_detach_;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description -  */
+	/* 0x8.24 - 0x8.31 */
+	 u_int8_t port;
+/*---------------- DWORD[3] (Offset 0xc) ----------------*/
+	/* Description -  */
+	/* 0xc.0 - 0xc.23 */
+	 u_int32_t sniffer_qpn;
+};
+
+
+/* Description -   */
 /* Size in bytes - 36 */
 struct connectib_icmd_get_fw_info {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
@@ -334,6 +359,9 @@ void connectx4_icmd_query_cap_general_pack(const struct connectx4_icmd_query_cap
 void connectx4_icmd_query_cap_general_unpack(struct connectx4_icmd_query_cap_general *ptr_struct, const u_int8_t *ptr_buff);
 void connectx4_icmd_query_cap_general_print(const struct connectx4_icmd_query_cap_general *ptr_struct, FILE *fd, int indent_level);
 unsigned int connectx4_icmd_query_cap_general_size(void);
+int connectib_icmd_set_port_sniffer_size(void);
+void connectib_icmd_set_port_sniffer_unpack(struct connectib_icmd_set_port_sniffer *ptr_struct, const u_int8_t* ptr_buff);
+void connectib_icmd_set_port_sniffer_pack(const struct connectib_icmd_set_port_sniffer *ptr_struct, u_int8_t* ptr_buff);
 #define CONNECTX4_ICMD_QUERY_CAP_GENERAL_SIZE    (0x8)
 void connectx4_icmd_query_cap_general_dump(const struct connectx4_icmd_query_cap_general *ptr_struct, FILE *fd);
 

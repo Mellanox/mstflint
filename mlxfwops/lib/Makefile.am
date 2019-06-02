@@ -33,6 +33,7 @@
 # Makefile.am -- Process this file with automake to produce Makefile.in
 MTCR_DIR = $(top_srcdir)/${MTCR_CONF_DIR}
 MTCR_INC_DIR = $(top_srcdir)/include/mtcr_ul
+MTCR_UL_DIR = $(top_srcdir)/mtcr_ul
 MFLASH_DIR = $(top_srcdir)/mflash
 MINIXZ_DIR = $(top_srcdir)/ext_libs/minixz
 COMMON_DIR = $(top_srcdir)/common
@@ -42,7 +43,7 @@ UEFI_COMMON_DIR = $(top_srcdir)/mlxfwops/uefi_c
 DEV_MGT_DIR = $(top_srcdir)/dev_mgt
 
 AM_CPPFLAGS = -I$(srcdir) -I$(MTCR_INC_DIR) -I$(MFLASH_DIR) $(JSON_CFLAGS) -I$(MINIXZ_DIR)\
-           -I$(COMMON_DIR) -I$(LAYOUTS_DIR) -I$(top_srcdir)/common -I$(UTILS_LIB) -I$(UEFI_COMMON_DIR) -I$(DEV_MGT_DIR)
+           -I$(COMMON_DIR) -I$(LAYOUTS_DIR) -I$(top_srcdir)/common -I$(UTILS_LIB) -I$(UEFI_COMMON_DIR) -I$(DEV_MGT_DIR) -I$(MTCR_UL_DIR)
 
 MLXFWOPS_VERSION = 1
 

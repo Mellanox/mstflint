@@ -349,6 +349,8 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isD
     do {
         // Read toc entry
         if (nextBootFwVer) {
+            // if nextBootFwVer is true, read only fw version (FS3_IMAGE_INFO section)
+            // section index should be 8 for this case
             section_index = 8;
         }
         entryAddr = tocAddr + TOC_HEADER_SIZE + section_index *  TOC_ENTRY_SIZE;
@@ -477,6 +479,7 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isD
 
         }
         if (nextBootFwVer) {
+            // if nextBootFwVer, return after reading fw version
             break;
         }
         section_index++;
@@ -527,6 +530,7 @@ bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_ito
     if (!getHWPtrs(verifyCallBackFunc)) {
         return false;
     }
+    // if nextBootFwVer is true, no need to get all the information, just the fw version is enough - therefore skip everything else
     if (!nextBootFwVer) {
         if (!verifyToolsArea(verifyCallBackFunc)) {
             return false;
@@ -2393,7 +2397,6 @@ bool Fs4Operations::CalcHMAC(const vector<u_int8_t>& key, const vector<u_int8_t>
     return true;
 #else
     (void)key;
-    (void)data;
     (void)digest;
     return errmsg("HMAC calculation is not implemented\n");
 #endif
