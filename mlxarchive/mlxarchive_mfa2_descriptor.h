@@ -104,9 +104,9 @@ private:
     SHA256Extension             _SHA256Extension;
     SHA256Extension             _descriptorsSHA256Extension;
 
-    //u_int32_t                   _packageDescriptorStructOffset;
-    //u_int32_t                   _SHA256ExtensionOffset;
-    //u_int32_t                   _descriptorsSHA256ExtensionOffset;
+    u_int32_t                   _packageDescriptorStructOffset;
+    u_int32_t                   _SHA256ExtensionOffset;
+    u_int32_t                   _descriptorsSHA256ExtensionOffset;
 public:
     const static u_int8_t  ELEMENT_VERSION = 0x0;
     const static u_int32_t LENGTH  = TOOLS_OPEN_PACKAGE_DESCRIPTOR_SIZE;

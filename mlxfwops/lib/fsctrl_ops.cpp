@@ -111,6 +111,7 @@ bool FsCtrlOperations::FsIntQuery()
     if (fwQery.running_fw_version.version_string_length) {
         strcpy(_fwImgInfo.ext_info.product_ver, fwQery.product_ver);
     }
+    // if nextBootFwVer, only fw version is needed, return.
     if (nextBootFwVer) {
          return true;
     }
@@ -176,7 +177,43 @@ bool FsCtrlOperations::FsIntQuery()
 
     strncpy(_fsCtrlImgInfo.name, fwQery.name, NAME_LEN);
     strncpy(_fsCtrlImgInfo.description, fwQery.description, DESCRIPTION_LEN);
+    strncpy(_fsCtrlImgInfo.deviceVsd, fwQery.deviceVsd, VSD_LEN);
+    strncpy(_fsCtrlImgInfo.image_vsd, fwQery.imageVsd, VSD_LEN);
+    return true;
+}
 
+
+bool FsCtrlOperations::FwReactivateImage()
+{
+    if (!_fwCompsAccess->fwReactivateImage()) {
+        fw_comps_error_t errCode = _fwCompsAccess->getLastError();
+        switch (errCode) {
+        case FWCOMPS_IMAGE_REACTIVATION_PROHIBITED_FW_VER_ERR:
+            return errmsg(MLXFW_IMAGE_REACTIVATION_PROHIBITED_FW_VER_ERR, "Prohibited by current FW version\n");
+        case FWCOMPS_IMAGE_REACTIVATION_FIRST_PAGE_COPY_FAILED:
+            return errmsg(MLXFW_IMAGE_RACTIVATION_FIRST_PAGE_COPY_FAILED, "First page copy failed\n");
+        case FWCOMPS_IMAGE_REACTIVATION_FIRST_PAGE_ERASE_FAILED:
+            return errmsg(MLXFW_IMAGE_REACTIVATION_FIRST_PAGE_ERASE_FAILED, "First page erase failed\n");
+        case FWCOMPS_IMAGE_REACTIVATION_FIRST_PAGE_RESTORE_FAILED:
+            return errmsg(MLXFW_IMAGE_REACTIVATION_FIRST_PAGE_RESTORE_FAILED, "First page restore failed\n");
+        case FWCOMPS_IMAGE_REACTIVATION_FW_DEACTIVATION_FAILED:
+            return errmsg(MLXFW_IMAGE_REACTIVATION_FW_DEACTIVATION_FAILED, "FW deactivation failed\n");
+        case FWCOMPS_IMAGE_REACTIVATION_FW_ALREADY_ACTIVATED:
+            return errmsg(MLXFW_IMAGE_REACTIVATION_FW_ALREADY_ACTIVATED, "FW already reactivated\n");
+        case FWCOMPS_IMAGE_REACTIVATION_ERROR_DEVICE_RESET_REQUIRED:
+            return errmsg(MLXFW_IMAGE_REACTIVATION_ERROR_DEVICE_RESET_REQUIRED, "FW reset required\n");
+        case FWCOMPS_IMAGE_REACTIVATION_FW_PROGRAMMING_NEEDED:
+            return errmsg(MLXFW_IMAGE_REACTIVATION_FW_PROGRAMMING_NEEDED, "FW programming needed\n");
+        case FWCOMPS_GENERAL_ERR:
+            return errmsg(MLXFW_ERR, "FW ICMD related error");
+        case FWCOMPS_IMAGE_REACTIVATION_WAITING_TIME_EXPIRED:
+            return errmsg(MLXFW_ERR, "Image reactivation - timeout expired.\n");
+        case FWCOMPS_IMAGE_REACTIVATION_FW_NOT_SUPPORTED:
+            return errmsg(MLXFW_ERR, "Image reactivation - FW doesn't support this operation.\n");
+        default:
+            return errmsg(MLXFW_IMAGE_REACTIVATION_UNKNOWN_ERROR, "Unknown error occured\n");
+        }
+    }
     return true;
 }
 
@@ -378,13 +415,23 @@ bool FsCtrlOperations::FwBurnAdvanced(FwOperations *imageOps, ExtBurnParams &bur
     if (!imageOps->FwExtract4MBImage(imageOps4MData, true)) {
         return errmsg(imageOps->getErrorCode(), "Failed to Extract 4MB from the image");
     }
+
+#ifdef UEFI_BUILD
+    burnParams.ProgressFuncAdv.uefi_func =  burnParams.progressFunc;
+#else
     burnParams.progressFunc = (ProgressCallBack) NULL;
+#endif
+
     bootImageComponent.init(imageOps4MData, imageOps4MData.size(), FwComponent::COMPID_BOOT_IMG);
     compsToBurn.push_back(bootImageComponent);
-    if (!_fwCompsAccess->burnComponents(compsToBurn, &burnParams.ProgressFuncAdv)) {
+    if (!_fwCompsAccess->lock_flash_semaphore()) {
         return errmsg(FwCompsErrToFwOpsErr(_fwCompsAccess->getLastError()), "%s", _fwCompsAccess->getLastErrMsg());
     }
-
+    if (!_fwCompsAccess->burnComponents(compsToBurn, &burnParams.ProgressFuncAdv)) {
+        _fwCompsAccess->unlock_flash_semaphore();
+        return errmsg(FwCompsErrToFwOpsErr(_fwCompsAccess->getLastError()), "%s", _fwCompsAccess->getLastErrMsg());
+    }
+    _fwCompsAccess->unlock_flash_semaphore();
     return true;
 }
 

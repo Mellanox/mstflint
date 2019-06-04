@@ -50,6 +50,7 @@ using namespace mlxreg;
  *             Supported Register Access                  *
  *********************************************************/
 const u_int64_t MlxRegLib::_gSupportedRegisters[] = {
+    0x402c,         //ROCE_ACCL
     0x5008,         //PPCNT
     0x5006,         //PAOS
     0x5004,         //PTYS

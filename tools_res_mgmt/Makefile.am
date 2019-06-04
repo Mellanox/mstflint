@@ -38,9 +38,5 @@ AM_CPPFLAGS = -I. -I../common -I$(MTCR_DIR) -I.. -I$(USER_DIR)/${MTCR_CONF_DIR}
 AM_CFLAGS = -W -Wall -g -MP -MD $(COMPILER_FPIC)
 noinst_LIBRARIES = libtools_res_mgmt.a
 
-libtools_res_mgmt_a_SOURCES = tools_res_mgmt.c tools_time.c
+libtools_res_mgmt_a_SOURCES = tools_res_mgmt.c tools_res_mgmt.h tools_time.c tools_time.h
 
-if ENABLE_INBAND
-else
-AM_CFLAGS += -DNO_INBAND
-endif

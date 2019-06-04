@@ -51,7 +51,7 @@ class LoggerFactory(object):
 
 
         #import logging
-        logging.basicConfig(level=log_level)
+        logging.basicConfig(level=log_level, format='%(asctime)s - %(name)s - %(levelname)s - {%(pathname)s:%(lineno)d} - %(message)s')
         logger = logging.getLogger(name)
 
         #logger = logging.getLogger(name)

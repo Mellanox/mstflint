@@ -380,7 +380,7 @@ int dm_get_device_id(mfile *mf,
             //printf("FATAL - crspace read (0x%x) failed: %s\n", DEVID_ADDR, strerror(errno));
             return 1;
         }
-        dword = __cpu_to_le32(dword); // Cable pages are in LE
+        //dword = __cpu_to_le32(dword); // Cable pages are read in LE, no need to swap
         *ptr_hw_dev_id = 0xffff;
         u_int8_t id = EXTRACT(dword, 0, 8);
         enum dm_dev_type cbl_type = getCableType(id);
@@ -534,7 +534,7 @@ int dm_is_fpp_supported(dm_dev_id_t type)
 {
     // Function per port is supported only in HCAs that arrived after CX3
     const struct device_info *dp = get_entry(type);
-    return (dm_is_5th_gen_hca(dp->dev_type) || dm_is_newton(dp->dm_id));
+    return (dm_is_5th_gen_hca(dp->dm_id) || dm_is_newton(dp->dm_id));
 }
 
 int dm_is_device_supported(dm_dev_id_t type)

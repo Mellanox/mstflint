@@ -103,7 +103,10 @@ public:
     //on call of FwReadData with Null image we get image_size
     virtual bool FwReadData(void *image, u_int32_t *image_size) = 0;
     virtual bool FwReadBlock(u_int32_t addr, u_int32_t size, std::vector<u_int8_t>& dataVec);
-
+    virtual bool FwReactivateImage() 
+    { 
+        return errmsg("Operation not supported."); 
+    }
     virtual bool FwInsertSHA256(PrintCallBack printFunc = (PrintCallBack)NULL);
     virtual bool FwSignWithOneRSAKey(const char *privPemFile, const char *uuid, PrintCallBack printFunc = (PrintCallBack)NULL);
     virtual bool FwSignWithTwoRSAKeys(const char *privPemFile1, const char *uuid1,
@@ -153,6 +156,7 @@ public:
 
     void FwCleanUp();
     virtual bool FwInit() = 0;
+    virtual bool FsIntQuery() { return true; }
     bool FwSetPrint(PrintCallBack PrintFunc);
 
     //needed for flint low level operations
@@ -166,7 +170,7 @@ public:
     static FwOperations* FwOperationsCreate(fw_ops_params_t& fwParams);
 
     static bool          imageDevOperationsCreate(fw_ops_params_t& devParams, fw_ops_params_t& imgParams,
-                                                  FwOperations **devFwOps, FwOperations **imgFwOps);
+                                                  FwOperations **devFwOps, FwOperations **imgFwOps, bool ignoreSecurityAttributes = false);
 
     virtual bool IsFsCtrlOperations();
 
@@ -285,7 +289,7 @@ public:
         u_int32_t buffSize;
         // FHT_UEFI_DEV
         uefi_Dev_t *uefiHndl;
-        uefi_dev_extra_t *uefiExtra;
+        uefi_dev_extra_t uefiExtra;
         // FHT_MST_DEV
         char *mstHndl;
         bool forceLock;

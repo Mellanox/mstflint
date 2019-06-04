@@ -34,6 +34,8 @@
 #ifndef FS3_OPS_
 #define FS3_OPS_
 
+
+#include "reg_access/reg_access.h"
 #include <cibfw_layouts.h>
 #include <cx4fw_layouts.h>
 #include <mlarge_buffer.h>
@@ -81,6 +83,7 @@ public:
     virtual u_int8_t FwType();
     virtual bool FwInit();
     virtual bool FwReadData(void *image, u_int32_t *image_size);
+    static void    deal_with_signal();
 
     virtual bool FwReadRom(std::vector<u_int8_t>& romSect);
     virtual bool FwBurnRom(FImage *romImg, bool ignoreProdIdCheck = false, bool ignoreDevidCheck = false, ProgressCallBack progressFunc = (ProgressCallBack)NULL);
@@ -219,7 +222,7 @@ private:
     #define FS3_DEFAULT_SECTOR_SIZE 0x1000
     #define FS3_LOG2_CHUNK_SIZE_DW_OFFSET 0x9
 
-
+    reg_access_status_t getGI(mfile *mf, struct tools_open_mgir *gi);
     bool VerifyTOC(u_int32_t dtoc_addr, bool& bad_signature, VerifyCallBack verifyCallBackFunc, bool show_itoc,
                    struct QueryOptions queryOptions, bool ignoreDToc = false);
     bool checkPreboot(u_int32_t *prebootBuff, u_int32_t size, VerifyCallBack verifyCallBackFunc);

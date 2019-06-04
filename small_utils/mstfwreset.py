@@ -20,7 +20,7 @@
 #        provided with the distribution.
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE OF
 # MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
 # NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
 # BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
@@ -29,7 +29,7 @@
 # SOFTWARE.
 #--
 
-
+from __future__ import print_function
 
 """
 * $Id           : mlxfwreset.py 2014-06-25
@@ -37,7 +37,6 @@
 * $Tool         : Main file.
 """
 
-from __future__ import print_function
 __version__ = '1.0'
 
 # Python Imports ######################
@@ -47,6 +46,7 @@ try:
     import textwrap
     import os
     import platform
+    import struct
     import re
     import time
     import signal
@@ -63,7 +63,10 @@ try:
     from mlxfwresetlib.mlxfwreset_mlnxdriver import MlnxDriverFactory,MlnxDriverLinux
     from mlxfwresetlib.mlxfwreset_status_checker import FirmwareResetStatusChecker
     from mlxfwresetlib.logger import LoggerFactory
-
+    if os.name != 'nt':
+        if not getattr(sys, 'frozen', False):
+            sys.path.append(os.sep.join((os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "mlxpci")))
+        from mlxpci_lib import PCIDeviceFactory
     from mlxfwresetlib.mlnx_peripheral_components import MlnxPeripheralComponents
     if (sys.version_info > (3, 0)):
         import queue
@@ -254,7 +257,7 @@ def reset_fsm_register():
 def sigHndl(signal, frame):
     reset_fsm_register()
 
-    print("\nSignal %d received, exiting..." % signal)
+    print("\nSignal %d Recieved, Exiting..." % signal)
     sys.exit(1)
 
 def set_signal_handler():
@@ -292,7 +295,7 @@ def printAndFlush(str, endChar='\n'):
     sys.stdout.flush()
 
 ######################################################################
-# Description:  ask user Y/N question if N/n/No/no was received raise
+# Description:  ask user Y/N question if N/n/No/no was recieved raise
 #                RuntimeError.
 # OS Support :  Linux/Windows.
 ######################################################################
@@ -346,6 +349,152 @@ def getLinuxKernelVersion():
 
 
 ######################################################################
+# Description:  PciCaps
+# OS Support :  All
+######################################################################
+class PciConfigSpace:
+    def __init__(self, PciOpObj):
+        self.pciOp = PciOpObj
+
+    def SavePciConfigSpace(self, DevAddr):
+        dataBuf = bytearray(PciConfigSpace.PCI_CONFIG_SPACE_SIZE)
+        mv = memoryview(dataBuf)
+        sysFsFD = self.pciOp.openPciSysFs(DevAddr, False)
+        self.SaveRestorePciCaps(sysFsFD, mv, PciConfigSpace.PCI_CAP_TYPE_REG, False)
+        self.SaveRestorePciCaps(sysFsFD, mv, PciConfigSpace.PCI_CAP_TYPE_EXT, False)
+        sysFsFD.close()
+        return dataBuf
+
+    def RestorePciConfigSpace(self, DevAddr, DataBuf):
+        mv = memoryview(DataBuf)
+        sysFsFD = self.pciOp.openPciSysFs(DevAddr, True)
+        self.SaveRestorePciCaps(sysFsFD, mv, PciConfigSpace.PCI_CAP_TYPE_REG, True)
+        self.SaveRestorePciCaps(sysFsFD, mv, PciConfigSpace.PCI_CAP_TYPE_EXT, True)
+        sysFsFD.close()
+
+    ################## Private #################
+    def GetCapInfo(self, CapID, CapType):
+        caps = self.regularCapsTable if CapType == PciConfigSpace.PCI_CAP_TYPE_REG else self.extendedCapsTable
+
+        for cap in caps:
+            if cap.id == CapID:
+                return cap
+
+        return None
+
+    ##################
+    def GetCapHeader(self, SysFsFD, DataBuf, Offset, CapType):
+        dataLength = 2 if CapType == PciConfigSpace.PCI_CAP_TYPE_REG else 4
+        if SysFsFD:
+            self.pciOp.pciSysFsReadBuf(SysFsFD, DataBuf[Offset:Offset+dataLength], Offset, dataLength)
+
+        if CapType == PciConfigSpace.PCI_CAP_TYPE_REG:
+            return self.PciCapHeader(struct.unpack_from("B", DataBuf, Offset)[0],\
+                                     struct.unpack_from("B", DataBuf, Offset + 1)[0])
+        else:
+            return self.PciCapHeader(struct.unpack_from("<H", DataBuf, Offset)[0],\
+                                    (struct.unpack_from("<H", DataBuf, Offset+2)[0]>>6) << 2)
+
+    ##################
+    def ReadWritePciBuf(self, SysFsFD, DataBuf, Offset, Size, IsWrite):
+        if IsWrite:
+            self.pciOp.pciSysFsWriteBuf(SysFsFD, DataBuf[Offset:Offset+Size], Offset, Size)
+        else:
+            self.pciOp.pciSysFsReadBuf(SysFsFD, DataBuf[Offset:Offset+Size], Offset, Size)
+
+    ##################
+    def SaveRestorePciCaps(self, SysFsFD, DataBuf, CapType, IsRestore):
+        nextCapOffset = 0
+        if CapType == PciConfigSpace.PCI_CAP_TYPE_REG:
+            #  the header (first 0x40 bytes) will be saved/loaded only within the regular capabilities
+            self.ReadWritePciBuf(SysFsFD, DataBuf, 0, PciConfigSpace.PCI_HEADER_SIZE, IsRestore)
+            nextCapOffset = struct.unpack_from("B", DataBuf, PciConfigSpace.PCI_CAP_PTR_OFFSET)[0]
+        else:
+            nextCapOffset = PciConfigSpace.PCI_EXT_HEADERS_OFFSET
+
+        readCount = 0
+        while nextCapOffset:
+            readCount += 1
+            if readCount > PciConfigSpace.PCI_CONFIG_SPACE_SIZE:
+                raise RuntimeError("Looks like PCI config space is corrupted, inifinte capability list")
+
+            capHeader = self.GetCapHeader(None if IsRestore else SysFsFD, DataBuf, nextCapOffset, CapType)
+            capInfo = self.GetCapInfo(capHeader.id, CapType)
+            curCapOffset = nextCapOffset
+            nextCapOffset = capHeader.next
+            if capInfo == None or not capInfo.isSaveRestore:
+                continue
+
+            #save/restore the cap data
+            self.ReadWritePciBuf(SysFsFD, DataBuf, curCapOffset, capInfo.size, IsRestore)
+
+    ##################
+    class PciCapInfo:
+        def __init__(self, CapID, CapSize, IsSaveRestore):
+            self.id = CapID
+            self.size = CapSize
+            self.isSaveRestore = IsSaveRestore
+            
+        def __str__(self):
+            return "id={0}, size={1:#x}, save/resotre={2}".format(self.id, self.size, self.isSaveRestore)
+
+    ##################
+    class PciCapHeader:
+        def __init__(self, CapID, NextOffset):
+            self.id = CapID
+            self.next = NextOffset
+            
+        def __str__(self):
+            return "id={0}, next-offset={1:#x}".format(self.id,self.next)
+
+    PCI_HEADER_SIZE = 0x40
+    PCI_CAP_PTR_OFFSET = 0x34
+    PCI_EXT_HEADERS_OFFSET = 0x100
+    PCI_CONFIG_SPACE_SIZE = 0x1000
+
+    # Pci capability types
+    PCI_CAP_TYPE_REG = 0
+    PCI_CAP_TYPE_EXT = 1
+
+    # Pci capability IDs
+    PCI_CAP_ID_PM   = 0x01 # Power management
+    PCI_CAP_ID_VPD  = 0x03 # Viral product data
+    PCI_CAP_ID_MSI  = 0x05
+    PCI_CAP_ID_VSC  = 0x09 # Vendor specific
+    PCI_CAP_ID_PCIE = 0x10 # PCI Express
+    PCI_CAP_ID_MSIX = 0x11 # MSI-X
+
+    # Pci extended capability IDs
+    PCI_CAP_EXT_ID_AER   = 0x01 # Advanced error reporting
+    PCI_CAP_EXT_ID_ACS   = 0x0d # Access control services
+    PCI_CAP_EXT_ID_ARI   = 0x0e # Alternative routing ID
+    PCI_CAP_EXT_ID_SRIOV = 0x10 # Single root IO virtualization
+    PCI_CAP_EXT_ID_PCIE  = 0x19 # Secondary PCI express
+    PCI_CAP_EXT_ID_DPC   = 0x1d # Downstream port containment
+    PCI_CAP_EXT_ID_PLG4  = 0x26 # Physical layer Gen-4
+    PCI_CAP_EXT_ID_LM    = 0x27 # Lane margining
+
+    regularCapsTable = [\
+            PciCapInfo(PCI_CAP_ID_PM,  0x08, True),
+            PciCapInfo(PCI_CAP_ID_PCIE, 0x3c, True),
+            PciCapInfo(PCI_CAP_ID_MSI, 0x10, True),
+            PciCapInfo(PCI_CAP_ID_MSIX,0x08, True),
+            PciCapInfo(PCI_CAP_ID_VPD, 0x04, False),
+            PciCapInfo(PCI_CAP_ID_VSC, 0x18, False)
+        ]
+
+    extendedCapsTable =[ \
+        PciCapInfo(PCI_CAP_EXT_ID_AER, 0x48, True),
+        PciCapInfo(PCI_CAP_EXT_ID_ARI, 0x8, False),
+        PciCapInfo(PCI_CAP_EXT_ID_SRIOV, 0x40, True),
+        PciCapInfo(PCI_CAP_EXT_ID_PCIE, 0x10, True),
+        PciCapInfo(PCI_CAP_EXT_ID_LM, 0x48, True),
+        PciCapInfo(PCI_CAP_EXT_ID_PLG4, 0x40, True),
+        PciCapInfo(PCI_CAP_EXT_ID_DPC, 0x40, True),
+        PciCapInfo(PCI_CAP_EXT_ID_ACS, 0x10, False)
+        ]
+
+######################################################################
 # Description:  MlnxPciOperation class
 # OS Support :  Linux/FreeBSD.
 ######################################################################
@@ -358,6 +507,12 @@ class MlnxPciOp(object):
         raise NotImplementedError("read() is not implemented")
     def write(self, devAddr, addr, val, width = "L"):
         raise NotImplementedError("write() is not implemented")
+    def openPciSysFs(self, devAddr, isWrite):
+        raise NotImplementedError("openPciSysFs() is not implemented")
+    def pciSysFsReadBuf(self, fd, buf, offset, size):
+        raise NotImplementedError("pciSysFsReadBuf() is not implemented")
+    def pciSysFsWriteBuf(self, fd, buf, offset, size):
+        raise NotImplementedError("pciSysFsWriteBuf() is not implemented")
     def isMellanoxDevice(self, devAddr):
         raise NotImplementedError("isMellanoxDevice() is not implemented")
     def getPciBridgeAddr(self, devAddr):
@@ -366,9 +521,9 @@ class MlnxPciOp(object):
         raise NotImplementedError("getPcieCapAddr() is not implemented")
     def getMFDeviceList(self, devAddr):
         raise NotImplementedError("getMFDeviceList() is not implemented")
-    def savePCIConfigurationSpace(self, devAddr):
+    def savePCIConfigurationSpace(self, devAddr, pci_device):
         raise NotImplementedError("savePCIConfigurationSpace() is not implemented")
-    def loadPCIConfigurationSpace(self, devAddr,full=True):
+    def loadPCIConfigurationSpace(self, devAddr, pci_device, full=True):
         raise NotImplementedError("loadPCIConfigurationSpace() is not implemented")
     def waitForDevice(self,devAddr):
         pass # TODO need to implement for FreeBSD
@@ -381,21 +536,33 @@ class MlnxPciOp(object):
     def setPciBridgeAddr(self, bridgeAddr):
         self.bridgeAddr = bridgeAddr
 
+def printBuf(buf):
+    bytes = buf.tolist()
+    for i in range(len(bytes)):
+        if i % 16 == 0:
+            print("")
+        print("%02x " % bytes[i], end=''),
+    print("")
+
+
 class MlnxPciOpLinux(MlnxPciOp):
-    
+    pciWidthToStructSize = {'Q': 'Q', 'L': 'I', 'W': 'H', 'B': 'B'}
+    pciWidthToByteCount = {'Q': 8, 'L': 4, 'W': 2, 'B': 1}
+
     def __init__(self):
         super(MlnxPciOpLinux, self).__init__()
         self.pciConfSpaceMap = {}
         self.device_control_register_old = {} # key is dbdf, value is configuration of "device_control_register"
 
     def savePciConfOptimalValues(self,devAddr):
-
+        logger.debug("Saving device control register for device: %s" % devAddr)
         # Save the BIOS values of "device control register" (need to restore in case of OS 'remove'/'rescan')
         assert devAddr not in self.device_control_register_old, 'savePCIConfigurationSpace - {0} is already in dictionary'.format(devAddr)
         self.device_control_register_old[devAddr] = self.read(devAddr, 0x68, 'w') # Reading "Device Control Register" (BIOS values)
+        logger.debug("Saving device control register for device: %s - DONE" % devAddr)
 
     def loadPciConfOptimalValues(self,devAddr):
-
+        logger.debug("Restoring device control register for device: %s" % devAddr)
         # bits 5-7 max_payload_size ; bits 12-14 max_read_request_size in "Device Control Register"
         MASK = 0b0111000011100000
         MASK__ = 0b1000111100011111
@@ -404,8 +571,37 @@ class MlnxPciOpLinux(MlnxPciOp):
         device_control_register_new = self.read(devAddr, 0x68,'w')  # Reading "Device Control Register" (after pci 'rescan')
         device_control_register_updated = (device_control_register_new & MASK__) | (self.device_control_register_old[devAddr] & MASK)
         self.write(devAddr, 0x68, device_control_register_updated, 'w')  # Overwriting "Device Control Register"
+        logger.debug("Restoring device control register for device: %s - Done" % devAddr)
+
+    def openPciSysFs(self, devAddr, isWrite):
+        path = "/sys/bus/pci/devices/" + devAddr + "/config"
+        if not os.path.exists(path):
+            raise RuntimeError("SysFS path (%s) doesn't exist" % path)
+
+        fd = open(path, "wb" if isWrite else "rb")
+        return fd
+
+    def pciSysFsReadBuf(self, fd, buf, addr, size):
+        fd.seek(addr, 0)
+        buf[0:size] = fd.read(size)
+
+    def pciSysFsWriteBuf(self, fd, buf, addr, size):
+        fd.seek(addr, 0)
+        fd.write(buf)
 
     def read(self, devAddr, addr, width = "L"):
+        try:
+            width = width.upper()
+            buf = bytearray(8)
+            mv = memoryview(buf)
+            fd = self.openPciSysFs(devAddr, False)
+            self.pciSysFsReadBuf(fd, mv, addr, MlnxPciOpLinux.pciWidthToByteCount[width])
+            fd.close()
+            return struct.unpack_from("<" + MlnxPciOpLinux.pciWidthToStructSize[width], buf)[0]
+        except Exception as e:
+            logger.warn("Failed to read from pci config space via SysFS for device %s, falling back to legacy flow: %s" % (devAddr, str(e)))
+            pass
+
         cmd = "setpci -s %s 0x%x.%s" % (devAddr, addr, width)
         (rc, out, _) = cmdExec(cmd)
         logger.debug('read : cmd={0} rc={1} out={2}'.format(cmd,rc,out))
@@ -414,6 +610,19 @@ class MlnxPciOpLinux(MlnxPciOp):
         return int(out, 16)
 
     def write(self, devAddr, addr, val, width = "L"):
+        try:
+            width = width.upper()
+            buf = bytearray(8)
+            mv = memoryview(buf)
+            fd = self.openPciSysFs(devAddr, True)
+            struct.pack_into("<" + MlnxPciOpLinux.pciWidthToStructSize[width], buf, 0, val)
+            self.pciSysFsWriteBuf(fd, mv, addr, MlnxPciOpLinux.pciWidthToByteCount[width])
+            fd.close()
+            return
+        except Exception as e:
+            logger.warn("Failed to write to pci config space via SysFS for device %s, falling back to legacy flow: %s" % (devAddr, str(e)))
+            pass
+
         cmd = "setpci -s %s 0x%x.%s=0x%x" % (devAddr, addr, width, val)
         (rc, out, _) = cmdExec(cmd)
         logger.debug('write : cmd={0} rc={1} out={2}'.format(cmd,rc,out))
@@ -470,67 +679,40 @@ class MlnxPciOpLinux(MlnxPciOp):
         return devices
 
     def getMFDeviceList(self,devAddr):
+        """
+        Return the device and the sibling devices (in case of Innova also cousins devices)
+        """
         MFDevices = []
-        #Check if the device has a switch
-        if not "ppc64" in platform.machine():
+        domainBus = ":".join(devAddr.split(":")[:2])
+
+        if "ppc64" in platform.machine():
+            cmd = "lspci -d 15b3: -s {0}: -D".format(domainBus)
+            (rc, out, _) = cmdExec(cmd)
+            if rc != 0:
+                raise RuntimeError("failed to execute: {0}".format(cmd))
+            for line in out.splitlines():
+                MFDevices.append(line.split()[0])
+        else: # Support NVME, Innova
             bridgeDev = self.getPciBridgeAddr(devAddr)
             if isMellanoxSwitchDevice(self, bridgeDev):
                 bridgeOfBridge = self.getPciBridgeAddr(bridgeDev)
                 return self.getAllPciDevices(bridgeOfBridge)
-        domainBus = ":".join(devAddr.split(":")[:2])
-        cmd = "lspci -d 15b3: -D | grep %s | cut -d' ' -f1" %domainBus
-        (rc, out, _) = cmdExec(cmd)
-        if rc != 0 :
-            raise RuntimeError("failed to execute: %s" %cmd)
-        out = out.strip().split('\n')
-        for dev in out:
-            MFDevices.append(dev)
+            cmd = "lspci -s {0}: -D".format(domainBus)
+            (rc, out, _) = cmdExec(cmd)
+            if rc != 0:
+                raise RuntimeError("failed to execute: {0}".format(cmd))
+            for line in out.splitlines():
+                MFDevices.append(line.split()[0])
+
         return MFDevices
 
-    def savePCIConfigurationSpace(self, devAddr):
-
+    def savePCIConfigurationSpace(self, devAddr, pci_device):
         self.savePciConfOptimalValues(devAddr)
+        pci_device.save_configuration_space()
 
-        if self.isMellanoxDevice(devAddr):
-            if devAddr.startswith("0000:"):
-                devAddr = mlxfwreset_utils.removeDomainFromAddress(devAddr)
-            logger.debug('mst save {0}'.format(devAddr))
-            cmd = "mst save %s" %devAddr
-            (rc, out, _) = cmdExec(cmd)
-            if rc != 0 :
-                raise RuntimeError("failed to execute: %s" %cmd)
-            return
-        logger.debug('updating pciConfSpaceMap...')
-        confSpaceList = []
-        for addr in range(0, 0xfff, 4):
-            val = self.read(devAddr, addr)
-            confSpaceList.append(val)
-        self.pciConfSpaceMap[devAddr] = confSpaceList
-        return
-
-    def loadPCIConfigurationSpace(self, devAddr,full=True):
-
+    def loadPCIConfigurationSpace(self, devAddr, pci_device, full=True):
         if full == True:
-            logger.info('loadPCIConfigurationSpace() called. Input is {0}'.format(devAddr))
-            if self.isMellanoxDevice(devAddr):
-                if devAddr.startswith("0000:"):
-                    devAddr = mlxfwreset_utils.removeDomainFromAddress(devAddr)
-                cmd = "mst load %s" %devAddr
-                (rc, out, _) = cmdExec(cmd)
-                logger.debug('cmd={0},rc={1},out={2}'.format(cmd,rc,out))
-                if rc != 0 :
-                    raise RuntimeError("failed to execute: %s" %cmd)
-                return
-            pciConfSpaceList = []
-            try:
-                pciConfSpaceList = self.pciConfSpaceMap[devAddr]
-            except KeyError as ke:
-                raise RuntimeError("PCI configuration space for device %s was not saved please reboot server" % devAddr)
-            if len(pciConfSpaceList) != 0x400:
-                raise RuntimeError("PCI configuration space for device %s was not saved properly please reboot server" % devAddr)
-            for i in range(0, 0x400):
-                addr = i * 4
-                self.write(devAddr, addr, pciConfSpaceList[i])
+            pci_device.restore_configuration_space()
         else: # OS 'remove'/'rescan' -> need to restore optimal value in "device control register" for old kernel module
             if getLinuxKernelVersion() < 4.2:
                 logger.info('old kernel')
@@ -545,7 +727,7 @@ class MlnxPciOpLinux(MlnxPciOp):
             if os.path.exists(path):
                 return
             else:
-                time.sleep(1)
+                time.sleep(0.1)
 
         raise RuntimeError('Failed to find device in {0}'.format(path))
 
@@ -570,42 +752,6 @@ class MlnxPciOpLinux(MlnxPciOp):
             busId =  mlxfwreset_utils.getDevDBDF(dev)            
             buses += self.getMFDeviceList(busId)
         return buses
-
-class MlnxPciOpLinuxUl(MlnxPciOpLinux): # Copied from old commit - TODO need to use the same logic of mst load/save
-    def __init__(self):
-        super(MlnxPciOpLinuxUl, self).__init__()
-
-    def savePCIConfigurationSpace(self, devAddr):
-
-        self.savePciConfOptimalValues(devAddr)
-
-        confSpaceList = []
-        for addr in range(0, 0xff, 4):
-            if (addr == 0x58 or addr == 0x5c):
-                confSpaceList.append(0)
-                continue
-            val = self.read(devAddr, addr)
-            confSpaceList.append(val)
-        self.pciConfSpaceMap[devAddr] = confSpaceList
-        return
-
-    def loadPCIConfigurationSpace(self, devAddr,full=True):
-        if full==True:
-            try:
-                pciConfSpaceList = self.pciConfSpaceMap[devAddr]
-            except KeyError as ke:
-                raise RuntimeError("PCI configuration space for device %s was not saved please reboot server" % devAddr)
-            if len(pciConfSpaceList) != 64:
-                raise RuntimeError("PCI configuration space for device %s was not saved properly please reboot server" % devAddr)
-            for i in range(0, 64):
-                addr = i * 4
-                if (addr == 0x58 or addr == 0x5c):
-                    continue
-                self.write(devAddr, addr, pciConfSpaceList[i])
-        else:  # OS 'remove'/'rescan' -> need to restore optimal value in "device control register" for old kernel module
-            if getLinuxKernelVersion() < 4.2:
-                logger.info('old kernel')
-                self.loadPciConfOptimalValues(devAddr)
 
 class MlnxPciOpFreeBSD(MlnxPciOp):
 
@@ -683,30 +829,12 @@ class MlnxPciOpFreeBSD(MlnxPciOp):
             MFDevices.append(dev[:-1])
         return MFDevices
 
-    # Generator to read 4KB pci configuration - read resolution is Long (4B)
-    def readPciConf(self, devAddr):
-        if not(devAddr.startswith("pci")):
-            devAddr = "pci" + devAddr
-        cmd = "pciconf -r {0} 0x0:0xfff".format(devAddr)
-        (rc, out, _) = cmdExec(cmd)
-        if rc != 0:
-            raise RuntimeError("Failed to read PCI configuration (4KB)")
-        for ii,data_str in enumerate(out.split()):
-            addr = ii*4
-            data = int(data_str,16)
-            yield (addr,data)
-
-    def savePCIConfigurationSpace(self, devAddr):
+    def savePCIConfigurationSpace(self, devAddr, pci_device):
         self.pciConfSpaceMap[devAddr] = {}
-        for addr,data in self.readPciConf(devAddr):
-            self.pciConfSpaceMap[devAddr][addr] = data
+        pci_device.save_configuration_space()
 
-    def loadPCIConfigurationSpace(self, devAddr,full=True):
-        # Overwrite only if the configuration changed
-        for addr,data in self.readPciConf(devAddr):
-            old_data = self.pciConfSpaceMap[devAddr][addr]
-            if addr != 0x58 and addr != 0x5c and data != old_data:
-                self.write(devAddr, addr, old_data)
+    def loadPCIConfigurationSpace(self, devAddr, pci_device, full=True):
+        pci_device.restore_configuration_space()
 
 
 class MlnxPciOpWindows(MlnxPciOp):
@@ -736,10 +864,10 @@ class MlnxPciOpWindows(MlnxPciOp):
     def getPciECapAddr(self, bridgeDev):
         raise NotImplementedError("getPciECapAddr() not implemented for windows")
 
-    def savePCIConfigurationSpace(self, devAddr):
+    def savePCIConfigurationSpace(self, devAddr, pci_device):
         raise NotImplementedError("savePCIConfigurationSpace() not implemented for windows")
     
-    def loadPCIConfigurationSpace(self, devAddr, full=True):
+    def loadPCIConfigurationSpace(self, devAddr, pci_device,full=True):
         raise NotImplementedError("loadPCIConfigurationSpace() not implemented for windows")
 
 
@@ -747,11 +875,7 @@ class MlnxPciOpFactory(object):
     def getPciOpObj(self,dbdf):
         operatingSystem = platform.system()
         if operatingSystem == "Linux":
-
-            if IS_MSTFLINT:
-                return MlnxPciOpLinuxUl()
-            else:
-                return MlnxPciOpLinux()
+            return MlnxPciOpLinux()
 
         elif operatingSystem == "FreeBSD":
             return MlnxPciOpFreeBSD()
@@ -955,20 +1079,22 @@ def resetPciAddrWindows():
 # OS Support : Linux, FreeBSD
 ######################################################################
 
-def disablePci(busId):
+def disablePci(bridgeDev, capAddr):
     logger.debug('disablePci() called')
-    global PciOpsObj
-    bridgeDev = PciOpsObj.getPciBridgeAddr(busId)
-    if isMellanoxSwitchDevice(PciOpsObj, bridgeDev):
-        bridgeDev = PciOpsObj.getPciBridgeAddr(bridgeDev)
-        bridgeDev = PciOpsObj.getPciBridgeAddr(bridgeDev) # Bridge of bridge
+#     global PciOpsObj
+#     bridgeDev = PciOpsObj.getPciBridgeAddr(busId)
+#     if isMellanoxSwitchDevice(PciOpsObj, bridgeDev):
+#         bridgeDev = PciOpsObj.getPciBridgeAddr(bridgeDev)
+#         bridgeDev = PciOpsObj.getPciBridgeAddr(bridgeDev) # Bridge of bridge
+        
     # Link Control Register : PCI_EXPRESS_CAP_OFFS + 0x10
-    capAddr = PciOpsObj.getPciECapAddr(bridgeDev)
+    #capAddr = PciOpsObj.getPciECapAddr(bridgeDev)
+    
     disableAddr = capAddr + 0x10
     width = "L"
     oldCapDw = PciOpsObj.read(bridgeDev, disableAddr, width)
     # turn on Link Disable bit
-    logger.debug('Disable PCI address {0}; bridge address {1}'.format(busId,bridgeDev))
+    logger.debug('Disable PCI bridge address {0}'.format(bridgeDev))
     newCapDw = oldCapDw | 0x10
     PciOpsObj.write(bridgeDev, disableAddr, newCapDw, width)
 
@@ -989,41 +1115,89 @@ def resetPciAddr(device,devicesSD,driverObj, cmdLineArgs):
 
     isPPC = "ppc64" in platform.machine()
     isWindows = platform.system() == "Windows"
-
+    isFBSD = platform.system() == "FreeBSD"
     # save pci conf space
     busId = DevDBDF
 
-    # Determine the pci-device to poll (first mellanox device in the pci tree)
-    if isConnectedToMellanoxSwitchDevice():
-        pci_device_bridge = PciOpsObj.getPciBridgeAddr(DevDBDF)
-        pci_device_to_poll = PciOpsObj.getPciBridgeAddr(pci_device_bridge)
-    else:
-        pci_device_to_poll = DevDBDF
+    # Determine the pci-device to poll (first Mellanox device in the pci tree)
+    if isWindows is False:
+        if isConnectedToMellanoxSwitchDevice():
+            pci_device_bridge = PciOpsObj.getPciBridgeAddr(DevDBDF)
+            pci_device_to_poll_devid = PciOpsObj.getPciBridgeAddr(pci_device_bridge)
+            pci_device_to_poll_dll_link_active = PCIDeviceFactory().get(pci_device_to_poll_devid, "debug")
+        elif isPPC:
+            pci_device_to_poll_devid = DevDBDF
+        else:
+            pci_device_to_poll_devid = DevDBDF
+            pci_device_to_poll_dll_link_active = PCIDeviceFactory().get(PciOpsObj.getPciBridgeAddr(DevDBDF), "debug")
 
-    logger.debug('device_to_poll={0}'.format(pci_device_to_poll))
+
+        logger.debug('pci_device_to_poll_devid={0}'.format(pci_device_to_poll_devid))
+        if not isPPC:
+            logger.debug('pci_device_to_poll_dll_link_active={0}'.format(pci_device_to_poll_dll_link_active))
 
 
     if isWindows is False: # relevant for ppc(p7) TODO check power8/9 shouldn't use mst-save/load
-        devList = savePciConfSpace(device,busId)
-
+        logger.info('Save PCI Configuration space ...')
+       
+        devList = PciOpsObj.getMFDeviceList(busId) # Get all devices that you want to save/load pci configuration
+        logger.debug('devList is {0}'.format(devList))
+        # for each PF/VF save its configuration space
+        pci_device_dict = {}
+        for pciDev in devList:
+            pci_device_object = PCIDeviceFactory().get(pciDev, "debug")
+            pci_device_dict[pciDev] = pci_device_object
+            PciOpsObj.savePCIConfigurationSpace(pciDev, pci_device_object)
         # Socket Direct - save all buses and PCI configuration for all "other" devices in SD
         busIdsSD = []
         devListsSD = []
         for deviceSD in devicesSD:
             busIdSD = mlxfwreset_utils.getDevDBDF(deviceSD, logger)
             busIdsSD.append(busIdSD)
-            devListsSD.append(savePciConfSpace(deviceSD,busIdSD))
-
+            busIdSD_list = PciOpsObj.getMFDeviceList(busIdSD)
+            logger.debug('Socket Direct List is {0}'.format(devList))
+            logger.debug("Saving socket direct list ...")
+            for pciDev in busIdSD_list:
+                pci_device_object = PCIDeviceFactory().get(pciDev, "debug")
+                pci_device_dict[pciDev] = pci_device_object
+                PciOpsObj.savePCIConfigurationSpace(pciDev, pci_device_object)
+            devListsSD += busIdSD_list
 
     #update FWResetStatusChecker
     FWResetStatusChecker.UpdateUptimeBeforeReset()
+     
+    # calculate bridge devices to reset and capaddr - we do it before the critical time
+    if not isWindows and not isPPC:
+        bridgeDevs = []
+        for busId in [busId] + busIdsSD:
+            bridgeDev = PciOpsObj.getPciBridgeAddr(busId)
+            if isMellanoxSwitchDevice(PciOpsObj, bridgeDev):
+                bridgeDev = PciOpsObj.getPciBridgeAddr(bridgeDev)
+                bridgeDev = PciOpsObj.getPciBridgeAddr(bridgeDev) # Bridge of bridge
+                 
+            # Link Control Register : PCI_EXPRESS_CAP_OFFS + 0x10
+            capAddr = PciOpsObj.getPciECapAddr(bridgeDev)
+                      
+            bridgeDevs.append((bridgeDev,capAddr))
+     
+     
+    if SkipMultihostSync or not CmdifObj.isMultiHostSyncSupported():
+        stopDriver(driverObj)
+    else:
+        stopDriverSync(driverObj)
 
+    logger.debug('start critical time (driver is unloaded)')
+    
     # Close the mst device because the file handler is about to be removed
     # In windows we use the mstdevice to execute the reset pci
     if isWindows is False:
         MstDevObj.close()
         for MstDevObjSD in MstDevObjsSD:
             MstDevObjSD.close()
+        logger.debug('finished to close mst device')
+
+    
+    printAndFlush("-I- %-40s-" % ("Resetting PCI"), endChar="")
 
     ignore_signals()
     try:
@@ -1035,11 +1209,13 @@ def resetPciAddr(device,devicesSD,driverObj, cmdLineArgs):
             resetPciAddrPPC(pfs)
         else:
             info = []
-
+ 
             # Disable
-            info.append(disablePci(busId))
-            for busIdSD in busIdsSD:
-                info.append(disablePci(busIdSD))
+            for bridgeDev,capAddr in bridgeDevs:
+                info.append(disablePci(bridgeDev,capAddr))
+#             info.append(disablePci(busId))
+#             for busIdSD in busIdsSD:
+#                 info.append(disablePci(busIdSD))
 
             # Sleep
             logger.debug('sleeping... ({0} sec)'.format(cmdLineArgs.pci_link_downtime))
@@ -1056,26 +1232,45 @@ def resetPciAddr(device,devicesSD,driverObj, cmdLineArgs):
     if isWindows is False:
 
         logger.debug('WaitForDevice: in case of OS remove/rescan -> wait for pci-device to be part of pci-tree')
-        for pciDevList in [devList]+devListsSD:
+        for pciDevList in [devList]+[devListsSD]:
             for pciDev in pciDevList:
                 PciOpsObj.waitForDevice(pciDev)
 
+        # Poll DLL Link Active (required to support AMD - RM #1599465)
+        if not isPPC and pci_device_to_poll_dll_link_active.dll_link_active_reporting_capable:
+            MAX_WAIT_TIME = 2  # sec
+            poll_start_time = time.time()
+            for counter in range(1000*MAX_WAIT_TIME):
+                if pci_device_to_poll_dll_link_active.dll_link_active == 1:
+                    poll_end_time = (time.time() - poll_start_time) * 1000
+                    logger.debug('DLL link active is ready after {0} msec'.format(poll_end_time))
+                    break
+                time.sleep(0.001)
+            else:
+                print("-W- DLL link is not active after {0} sec (PCI device {1})".format(
+                    MAX_WAIT_TIME,pci_device_to_poll_dll_link_active.dbdf))
 
         # Wait for FW (Iron) - Read devid
         MAX_WAIT_TIME = 2 # sec
+        poll_start_time = time.time()
         for cntr in range(1000*MAX_WAIT_TIME):
-            if PciOpsObj.read(pci_device_to_poll, 0) != 0xffffffff:
-                logger.debug('IRON is ready after {0} msec'.format(cntr))
+            if PciOpsObj.read(pci_device_to_poll_devid, 0) != 0xffffffff:
+                iron_end_time = (time.time() - poll_start_time) * 1000
+                logger.debug('IRON is ready after {0} msec'.format(iron_end_time))
                 break
             time.sleep(0.001)
         else:
             print("-W- FW is not ready after {0} sec".format(MAX_WAIT_TIME))
 
-
         # Restore PCI configuration (including socket direct devices)
-        for devListSD in [devList]+devListsSD:
-            loadPciConfSpace(devListSD)
-
+        for pciDev in devList+devListsSD:
+            pci_device_object = pci_device_dict[pciDev]
+            command_reg = PciOpsObj.read(pciDev, COMMAND_ADDR, "W")
+            logger.debug('command_reg for [{0}]is {1:x}.'.format(pciDev, command_reg))
+            if (command_reg & 0x2) == 0: # command_reg[MSE] - Indication for re-enumeration (OS rescan)
+                PciOpsObj.loadPCIConfigurationSpace(pciDev, pci_device_object, full=True)
+            else:
+                PciOpsObj.loadPCIConfigurationSpace(pciDev, pci_device_object, full=False)
 
     # Need to re-open the file handler because PCI tree is updated (OS remove/rescan)
     if isWindows is False:
@@ -1083,11 +1278,10 @@ def resetPciAddr(device,devicesSD,driverObj, cmdLineArgs):
         for MstDevObjSD in MstDevObjsSD:
             MstDevObjSD.open()
 
-    logger.debug('UpdateUptimeAfterReset')
-    FWResetStatusChecker.UpdateUptimeAfterReset()
+
     set_signal_handler()
 
-    return
+    printAndFlush("Done")
 
 ######################################################################
 # Description: is Given PCI device address a switch device
@@ -1110,44 +1304,6 @@ def isConnectedToMellanoxSwitchDevice():
         return isMellanoxSwitchDevice(PciOpsObj, bridgeAddr)
     except Exception as e:
         return False
-    
-######################################################################
-# Description: Save PCI configuration space for an MST device
-# OS Support : Linux, FreeBSD
-######################################################################
-
-def savePciConfSpace(mstDev,devAddr):
-    logger.info('SavePciConfSpace() called')
-    if platform.system() == "Windows": # being Done in mHcaReset
-        return None
-    global PciOpsObj
-    devList = PciOpsObj.getMFDeviceList(devAddr) # Get all devices that you want to save/load pci configuration
-    logger.debug('devList is {0}'.format(devList))
-    # perform mcra read of 0xf0014 to avoid locking semaphores in vsec
-    mcraRead(mstDev, 0xf0014, 0, 32)
-    # for each PF/VF save its configuration space
-    for pciDev in devList:
-        logger.debug('Save PCI configuration for pci device {0}'.format(pciDev))
-        PciOpsObj.savePCIConfigurationSpace(pciDev)
-    return devList
-
-######################################################################
-# Description: Load PCI configuration space for an MST device
-# OS Support : Linux, FreeBSD
-######################################################################
-
-def loadPciConfSpace(devList):
-    logger.info('loadPciConfSpace() called. Inputs are devList={0}'.format(devList))
-    if platform.system() == "Windows": # being Done in mHcaReset
-        return
-
-    for pciDev in devList:
-        command_reg = PciOpsObj.read(pciDev, COMMAND_ADDR, "W")
-        logger.debug('command_reg is {0:x}.'.format(command_reg))
-        if (command_reg & 0x2) == 0: # command_reg[MSE] - Indication for re-enumeration (OS rescan)
-            PciOpsObj.loadPCIConfigurationSpace(pciDev,full=True)
-        else:
-            PciOpsObj.loadPCIConfigurationSpace(pciDev,full=False)
 
 ######################################################################
 # Description: get minimum reset level required for device
@@ -1162,7 +1318,7 @@ def getResetLevel(device):
     try:
         actualLevel = RegAccessObj.sendMFRL(0, regaccess.REG_ACCESS_METHOD_GET)
         if actualLevel == 0:
-            raise RuntimeError("Bad reset level Value received from FW. please reboot machine to load new FW.")
+            raise RuntimeError("Bad reset level Value recieved from FW. please reboot machine to load new FW.")
     except Exception as e:
         if "(265)" in str(e):
             raise NoError("Failed to get Reset level from device. this might indicate that FW was already loaded")
@@ -1182,6 +1338,7 @@ def getResetLevel(device):
 ######################################################################
 
 def setResetLevel(device, level):
+    logger.debug("Seting SET MFRL to device :%s ..." % device);
     # send mfrl register get
     levelmsk = 1 << level
     if (level == 4 or level == 5):
@@ -1190,6 +1347,8 @@ def setResetLevel(device, level):
         RegAccessObj.sendMFRL(levelmsk, regaccess.REG_ACCESS_METHOD_SET)
     except Exception as e:
         raise RuntimeError("Failed to set Reset level(%d) on device. %s" % (level, str(e)))
+
+    logger.debug("Seting SET MFRL to device :%s - DONE" % device);
     return
 
 ######################################################################
@@ -1217,7 +1376,7 @@ def sendResetToFW(device, level, force):
         printAndFlush("Done")
     except Exception as e:
         if force :
-            printAndFlush("Failed (force flag received)")
+            printAndFlush("Failed (force flag recieved)")
         else:
             raise e
 
@@ -1349,7 +1508,9 @@ def stopDriverSync(driverObj):
 
 def sendPcnr(regAccess,port_num):
     try:
+        logger.debug("Sending PCNR...")
         regAccess.sendPcnr(1, port_num)
+        logger.debug("Sending PCNR - Done")
     except Exception as e:
         logger.debug('Failed to send pcnr. {0}'.format(e))  # port doesn't exist / old FW version, burn FW with allow_pcnr (ini file)
 
@@ -1379,9 +1540,7 @@ def resetFlow(device,devicesSD, level, cmdLineArgs):
         for RegAccessSD in RegAccessObjsSD:
             sendPcnr(RegAccessSD, 0)  # port #0 (will fail if pcnr isn't supported by FW)
             sendPcnr(RegAccessSD, 1)  # port #1 (will fail if HW has only one port)
-            
 
-        # stop driver
         try:
             driverStat = driverObj.getDriverStatus()
         except DriverUnknownMode as e:
@@ -1389,25 +1548,23 @@ def resetFlow(device,devicesSD, level, cmdLineArgs):
             print("-E- Please make sure the driver is down, and re-run the tool with --skip_driver")
             raise e
 
-        if SkipMultihostSync or not CmdifObj.isMultiHostSyncSupported():
-            stopDriver(driverObj)
-        else:
-            stopDriverSync(driverObj)
-
         if level == RL_PCI_RESET:
             # reset PCI
-            printAndFlush("-I- %-40s-" % ("Resetting PCI"), endChar="")
             resetPciAddr(device,devicesSD,driverObj, cmdLineArgs)
-            printAndFlush("Done")
 
         # Wait for FW to be ready to get ICMD
         wait_for_fw_ready(device)
+        
+        logger.debug('end critical time (start to load driver)')
 
         if driverStat == MlnxDriver.DRIVER_LOADED:
             printAndFlush("-I- %-40s-" % ("Starting Driver"), endChar="")
             driverObj.driverStart()
             printAndFlush("Done")
 
+        logger.debug('UpdateUptimeAfterReset')
+        FWResetStatusChecker.UpdateUptimeAfterReset()
+    
         # we close MstDevObj to allow a clean operation of mst restart
         MstDevObj.close()
         for MstDevObjSD in MstDevObjsSD:    #Roei close mst devices for all "other" devices
@@ -1440,7 +1597,7 @@ def rebootComFlow(device, level, force):
         if "(265)" in str(e):  # we ignore bad params here in case of old fw that those reset levels are not supported
             printAndFlush("Done")
         elif force :
-            printAndFlush("Failed (force flag received)")
+            printAndFlush("Failed (force flag recieved)")
         else:
             printAndFlush("Failed")
             raise e
@@ -1579,7 +1736,6 @@ def map2DevPath(device):
 def main():
     global logger
     global IS_MSTFLINT
-
     if platform.system() not in SUPP_OS:
         print("-E- Unsupported OS.")
         return 1
@@ -1673,7 +1829,6 @@ def main():
                                default=1.25,
                                help=argparse.SUPPRESS)
 
-
     # command arguments
     command_group = parser.add_argument_group('Commands')
     command_group.add_argument('command',
@@ -1681,6 +1836,7 @@ def main():
                         choices=["q", "query", "r", "reset", "reset_fsm_register"],
                         help='query: Query reset Level.\n reset: Execute reset.\n reset_fsm_register: Reset the fsm register.')
     args = parser.parse_args()
+
     device = args.device
     global device_global
     device_global = args.device # required for reset_fsm_register when exiting with ctrl+c/exception (latter think how to move the global)

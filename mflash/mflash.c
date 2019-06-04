@@ -216,6 +216,7 @@ int mf_secure_host_op(mflash *mfl, u_int64_t key, int op);
 #define CX4LX_HW_ID      0x20b
 #define CX5_HW_ID        0x20d
 #define CX6_HW_ID        0x20f
+#define CX6DX_HW_ID      0x212
 #define BLUEFIELD_HW_ID  0x211
 #define CONNECT_IB_HW_ID 0x1FF
 #define SWITCH_IB_HW_ID  0x247
@@ -251,6 +252,8 @@ int mf_secure_host_op(mflash *mfl, u_int64_t key, int op);
     ((dev_id) == CX5_HW_ID)
 #define IS_CONNECTX6(dev_id) \
     ((dev_id) == CX6_HW_ID)
+#define IS_CONNECTX6DX(dev_id) \
+    ((dev_id) == CX6DX_HW_ID)
 #define IS_BLUEFIELD(dev_id) \
     ((dev_id) == BLUEFIELD_HW_ID)
 #define IS_QUANTUM(dev_id) \
@@ -2791,13 +2794,13 @@ int mf_opend_int(mflash **pmfl, void *access_dev, int num_of_banks, flash_params
         CHECK_RC(rc);
     } else if (access_type == MFAT_UEFI) {
         // open mfile as uefi
-        if (!((*pmfl)->mf = mopen_fw_ctx(access_dev, ((uefi_dev_extra_t*) dev_extra)->fw_cmd_func, ((uefi_dev_extra_t*) dev_extra)->dev_info))) {
+        if (!((*pmfl)->mf = mopen_fw_ctx(access_dev, ((uefi_dev_extra_t*) dev_extra)->fw_cmd_func, &((uefi_dev_extra_t*) dev_extra)->dev_info))) {
             return MFE_NOMEM;
         }
         // fill some device information
-        if (((uefi_dev_extra_t*) dev_extra)->dev_info) {
-            (*pmfl)->attr.hw_dev_id = ((uefi_dev_extra_t*) dev_extra)->dev_info->hw_dev_id;
-            (*pmfl)->attr.rev_id = ((uefi_dev_extra_t*) dev_extra)->dev_info->rev_id;
+        if (&((uefi_dev_extra_t*) dev_extra)->dev_info) {
+            (*pmfl)->attr.hw_dev_id = ((uefi_dev_extra_t*) dev_extra)->dev_info.hw_dev_id;
+            (*pmfl)->attr.rev_id = ((uefi_dev_extra_t*) dev_extra)->dev_info.rev_id;
             rc = dm_get_device_id_offline((*pmfl)->attr.hw_dev_id, (*pmfl)->attr.rev_id, &((*pmfl)->dm_dev_id));
             CHECK_RC(rc);
         } else {
@@ -3209,6 +3212,7 @@ int mf_set_reset_flash_on_warm_reboot(mflash *mfl)
         set_reset_bit_offset = 1;
         break;
     case DeviceConnectX6:
+    case DeviceConnectX6DX:
     case DeviceSpectrum2:
         set_reset_bit_dword_addr = 0xf0c28;
         set_reset_bit_offset = 2;
@@ -3250,6 +3254,7 @@ int mf_update_boot_addr(mflash *mfl, u_int32_t boot_addr)
         offset_in_address = 0;
         break;
     case DeviceConnectX6:
+    case DeviceConnectX6DX:
     case DeviceQuantum:
     case DeviceSpectrum2:
         boot_cr_space_address = 0xf0080;

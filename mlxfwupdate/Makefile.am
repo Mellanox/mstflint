@@ -40,7 +40,7 @@ docdir=$(INSTALL_BASEDIR)/etc/mstflint
 dist_doc_DATA=certificate/ca-bundle.crt
 
 MTCR_UL_DIR = $(USER_DIR)/${MTCR_CONF_DIR}
-MTCR_UL_LIB = -L$(MTCR_UL_DIR) -lmtcr_ul
+MTCR_UL_LIB = $(MTCR_UL_DIR)/libmtcr_ul.a
 
 XML_FLAGS = -DUSE_XML -DLIBXML_STATIC
 XML_LIBS = -lxml2 $(ZLIB_LIB)
@@ -58,6 +58,7 @@ common_INCLUDES =  -I$(USER_DIR)/common\
             $(INIPARSER_CFLAGS)\
             $(JSON_CFLAGS)\
             -I$(USER_DIR)/mlxfwops/lib\
+            -I$(USER_DIR)/pldmlib\
             -I$(CURL_INC_DIR)\
             -I$(XML2_INC_DIR)\
             -I$(USER_DIR)/mft_utils\
@@ -83,6 +84,7 @@ common_SOURCEES =  mlxfwmanager_common.cpp mlxfwmanager_common.h\
 common_LDADD  = $(USER_DIR)/dev_mgt/libdev_mgt.a\
                         $(USER_DIR)/mvpd/libmvpd.a\
                         $(USER_DIR)/mlxfwops/lib/libmlxfwops.a\
+                        $(USER_DIR)/pldmlib/libpldm.a\
                         $(USER_DIR)/mlxconfig/libmlxcfg.a\
                         $(USER_DIR)/libmfa/libmfa.a\
                         $(USER_DIR)/ext_libs/minixz/libminixz.a\
