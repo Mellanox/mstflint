@@ -65,7 +65,6 @@ mstlink_DEPENDENCIES = modules/libmodules_lib.a \
                       $(USER_DIR)/dev_mgt/libdev_mgt.a \
                       $(USER_DIR)/reg_access/libreg_access.a \
                       $(LAYOUTS_DIR)/libtools_layouts.a \
-                      $(USER_DIR)/tools_crypto/libtools_crypto.a \
                       $(USER_DIR)/xz_utils/libxz_utils.a \
                       $(USER_DIR)/ext_libs/minixz/libminixz.a \
                       -lboost_regex -lboost_filesystem -lboost_system \
