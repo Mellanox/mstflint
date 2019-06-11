@@ -95,7 +95,7 @@ int main(int argc, char *argv[])
             fprintf(stdout, "%s", correct_cmdline);
             exit(0);
         } else if (!strcmp(argv[i], "-v") || !strcmp(argv[i], "-version") || !strcmp(argv[i], "--version"))   {
-            print_version_string("mstdump", "");
+            print_version_string(MSTDUMP_NAME, "");
             exit(0);
         } else if (!strncmp(argv[i], CAUSE_FLAG, strlen(CAUSE_FLAG)))   {
             if (sscanf(argv[i], CAUSE_FLAG "=%i.%d", &cause_addr, &cause_off) != 2) {
