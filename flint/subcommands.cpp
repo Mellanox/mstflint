@@ -434,7 +434,7 @@ void SubCommand::initDeviceFwParams(char *errBuff, FwOperations::fw_ops_params_t
     fwParams.mccUnsupported = !_mccSupported;
 }
 
-FlintStatus SubCommand::openOps()
+FlintStatus SubCommand::openOps(bool ignoreSecurityAttributes)
 {
     char errBuff[ERR_BUFF_SIZE] = {0};
     if (_flintParams.device_specified) {
@@ -450,7 +450,7 @@ FlintStatus SubCommand::openOps()
             imgFwParams.errBuffSize = 1024;
             imgFwParams.shortErrors = true;
             imgFwParams.fileHndl = (char*)_flintParams.image.c_str();
-            if (!FwOperations::imageDevOperationsCreate(fwParams, imgFwParams, &_fwOps, &_imgOps)) {
+            if (!FwOperations::imageDevOperationsCreate(fwParams, imgFwParams, &_fwOps, &_imgOps, ignoreSecurityAttributes)) {
                 /*
                  * Error are being handled after
                  */
@@ -604,7 +604,7 @@ bool SubCommand::basicVerifyParams()
     return true;
 }
 
-FlintStatus SubCommand::preFwOps()
+FlintStatus SubCommand::preFwOps(bool ignoreSecurityAttributes)
 {
     if (!basicVerifyParams()) {
         return FLINT_FAILED;
@@ -612,7 +612,7 @@ FlintStatus SubCommand::preFwOps()
     if (!verifyParams()) {
         return FLINT_FAILED;
     }
-    return openOps();
+    return openOps(ignoreSecurityAttributes);
 }
 
 FlintStatus SubCommand::preFwAccess()
@@ -1450,17 +1450,17 @@ bool SignSubCommand::verifyParams()
 BurnSubCommand::BurnSubCommand()
 {
     _name = "burn";
-    _desc = "Burn flash";
+    _desc = "Burn flash. Use \"-ir burn\" flag to perform image reactivation prior burning.";
     _extendedDesc = "Burn flash \n"
                     "Performs failsafe FW update from a raw binary image.";
     _flagLong = "burn";
     _flagShort = "b";
-    _param = "";
-    _paramExp = "None";
-    _example = FLINT_NAME " -d " MST_DEV_EXAMPLE1 " -i image1.bin burn\n"
+    _param = "-ir";
+    _paramExp = "If supplied, perform image reactivation before burning.";
+    _example = FLINT_NAME " -d " MST_DEV_EXAMPLE1 " -i image1.bin -ir burn\n"
                FLINT_NAME " -d " MST_DEV_EXAMPLE2 " -guid 0x2c9000100d050 -i image1.bin b";
     _v = Wtv_Dev_And_Img;
-    _maxCmdParamNum = 0;
+    _maxCmdParamNum = 1;
     _cmdType = SC_Burn;
     _fwType = 0;
     _devQueryRes = 0;
@@ -1523,6 +1523,14 @@ bool BurnSubCommand::verifyParams()
     if (_flintParams.nofs || _flintParams.allow_psid_change || _flintParams.use_dev_rom) {
         // attempt to fallback to legacy flow (direct flash access via FW)
         _mccSupported = false;
+    }
+    if (_flintParams.image_reactivation && _flintParams.no_fw_ctrl) {
+        reportErr(true, FLINT_INVALID_FLAG_WITH_FLAG_ERROR, "-image_reactivation", "-no_fw_ctrl");
+        return false;
+    }
+    if (_flintParams.image_reactivation && _flintParams.override_cache_replacement) {
+        reportErr(true, FLINT_INVALID_FLAG_WITH_FLAG_ERROR, "-image_reactivation", "-ocr");
+        return false;
     }
     return true;
 }
@@ -2007,9 +2015,24 @@ bool BurnSubCommand::checkMatchingExpRomDevId(const fw_info_t& info)
 
 FlintStatus BurnSubCommand::executeCommand()
 {
+    if (_flintParams.image_reactivation) {
+        if (preFwOps(true) == FLINT_FAILED) {
+            return FLINT_FAILED;
+        }
+        if (!_fwOps->FwReactivateImage()) {
+            reportErr(true, FLINT_FAILED_IMAGE_REACTIVATION_ERROR, _flintParams.device.c_str(), _fwOps->err());
+            return FLINT_FAILED;
+        }
+        memset(&_devInfo, 0, sizeof(_devInfo));
+        _fwOps->FsIntQuery();
+        _devQueryRes = _fwOps->FwQuery(&_devInfo);//make query once more to refresh running FW version
+        printf("\n-I- FW Image Reactivation succeeded.\n\n");
+    }
+
     if (preFwOps() == FLINT_FAILED) {
         return FLINT_FAILED;
     }
+    
     //set fw type
     _fwType = _fwOps->FwType();
     // query both image and device (deviceQuery can fail but we save rc)
@@ -2020,7 +2043,6 @@ FlintStatus BurnSubCommand::executeCommand()
     }
     //updateBurnParams with input given by user
     updateBurnParams();
-
     if (_fwType == FIT_FS3 || _fwType == FIT_FS4 || _fwType == FIT_FSCTRL) {
         return burnFs3();
     } else if (_fwType == FIT_FS2) {
@@ -2469,6 +2491,14 @@ bool ImageReactivationSubCommand::verifyParams()
 {
     if (_flintParams.cmd_params.size() != 0) {
         reportErr(true, FLINT_CMD_ARGS_ERROR, _name.c_str(), 0, (int)_flintParams.cmd_params.size());
+        return false;
+    }
+    if (_flintParams.no_fw_ctrl) {
+        reportErr(true, FLINT_INVALID_FLAG_WITH_CMD_ERROR, "-no_fw_ctrl", "image_reactivation");
+        return false;
+    }
+    if (_flintParams.override_cache_replacement) {
+        reportErr(true, FLINT_INVALID_FLAG_WITH_CMD_ERROR, "-ocr", "image_reactivation");
         return false;
     }
     return true;

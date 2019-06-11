@@ -1,6 +1,6 @@
 %{!?ibmadlib: %define ibmadlib libibmad-devel}
 %{!?name: %define name mstflint}
-%{!?version: %define version 4.11.0}
+%{!?version: %define version 4.12.0}
 %{!?release: %define release 1}
 %{!?buildtype: %define buildtype "native"}
 %{!?noinband: %define noinband 0}
@@ -126,6 +126,7 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 %if %{enableadbgenerictools}
  %{_bindir}/mstreg
+ %{_bindir}/mstlink
 %endif
 
 %{_includedir}/mstflint/mtcr.h
@@ -155,6 +156,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 
 %changelog
+* Wed May 22 2019 Eran Jakoby <eranj@dev.mellanox.co.il>
+   MFT 4.12.0 Updates. Added new tools: mstreg, mstfwtrace and mstlink.
+
 * Wed Nov 21 2018 Dan Goldberg <dang@dev.mellanox.co.il>
    MFT 4.11.0 Updates. Added new tools: mlxarchive and mstprivhost.
 

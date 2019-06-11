@@ -730,7 +730,7 @@ FwOperations* FwOperations::FwOperationsCreate(void *fwHndl, void *info, char *p
     return FwOperationsCreate(fwParams);
 }
 
-bool FwOperations::imageDevOperationsCreate(fw_ops_params_t& devParams, fw_ops_params_t& imgParams, FwOperations **devFwOps, FwOperations **imgFwOps)
+bool FwOperations::imageDevOperationsCreate(fw_ops_params_t& devParams, fw_ops_params_t& imgParams, FwOperations **devFwOps, FwOperations **imgFwOps, bool ignoreSecurityAttributes)
 {
     *imgFwOps = FwOperationsCreate(imgParams);
     if (!(*imgFwOps)) {
@@ -750,7 +750,7 @@ bool FwOperations::imageDevOperationsCreate(fw_ops_params_t& devParams, fw_ops_p
     if (!(*imgFwOps)->FwQuery(&imgQuery)) {
         return false;
     }
-    if (imgQuery.fs3_info.security_mode == SM_NONE) {
+    if (imgQuery.fs3_info.security_mode == SM_NONE && ignoreSecurityAttributes == false) {
         devParams.noFwCtrl = true;
     }
     *devFwOps = FwOperationsCreate(devParams);

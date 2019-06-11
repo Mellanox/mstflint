@@ -1036,7 +1036,10 @@ void MlxlinkCommander::showPddr()
         _protoActive = getFieldValue("proto_active", _buffer);
         _fecActive = getFieldValue("fec_mode_active", _buffer);
         u_int32_t phyMngrFsmState = getFieldValue("phy_mngr_fsm_state", _buffer);
-        int loopbackMode = (phyMngrFsmState != PHY_MNGR_DISABLED) ? getFieldValue("loopback_mode", _buffer) : -1;
+        u_int32_t loopbackMode = PHY_NO_LOOPBACK;
+        if (phyMngrFsmState != PHY_MNGR_DISABLED) {
+            loopbackMode = getFieldValue("loopback_mode", _buffer);
+        }
         _linkUP = (phyMngrFsmState == PHY_MNGR_ACTIVE_LINKUP || phyMngrFsmState == PHY_MNGR_PHYSICAL_LINKUP);
         if(_protoActive == IB) {
             _activeSpeed = getFieldValue("link_speed_active", _buffer);
@@ -1067,7 +1070,7 @@ void MlxlinkCommander::showPddr()
         string physical_state =
                 _mlxlinkMaps->_ethANFsmState[getFieldValue("eth_an_fsm_state", _buffer)];
         setPrintVal(_operatingInfoCmd,PDDR_PHYSICAL_STATE , "Physical state",
-                physical_state, color, print,_linkUP);
+                physical_state, color, print);
         setPrintVal(_operatingInfoCmd,PDDR_SPEED,"Speed", _speedStrG, color,
                 print,_linkUP);
         setPrintVal(_operatingInfoCmd,PDDR_WIDTH ,"Width",
@@ -1102,7 +1105,7 @@ void MlxlinkCommander::showPddr()
             title += " (Ext.)";
         }
         setPrintVal(_supportedInfoCmd,PDDR_ENABLED_LINK_SPEED, title,
-                value.str(),color, true, print);
+                speeds_mask? value.str() : "N/A",color, true, print);
 
         speeds_mask = _protoCapabilityEx ? _protoCapabilityEx: _protoCapability;
         supported_speeds = SupportedSpeeds2Str(_protoActive, speeds_mask,
@@ -1272,8 +1275,29 @@ std::map<std::string, std::string> MlxlinkCommander::getPptt()
     return ppttMap;
 }
 
+void MlxlinkCommander::showMpcntTimers()
+{
+    string regName = "MPCNT";
+    resetParser(regName);
+
+    updateField("pcie_index", _localPort);
+    updateField("grp", MPCNT_TIMERS_GROUPS);
+
+    genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
+
+    setPrintTitle(_mpcntTimerInfCmd, "Management PCIe Timers Counters Info",
+            MPCNT_TIMER_INFO_LAST);
+    setPrintVal(_mpcntTimerInfCmd, MPCNT_DL_DOWN ,"dl down",
+            getFieldStr("dl_down"));
+
+    cout << _mpcntTimerInfCmd;
+}
+
 void MlxlinkCommander::showBer()
 {
+    if (_userInput._pcie) {
+        showMpcntTimers();
+    }
     try {
         if (_prbsTestMode) {
             showTestModeBer();
@@ -1302,15 +1326,27 @@ void MlxlinkCommander::showBer()
                 getFieldValue("time_since_last_clear_high", _buffer),
                 getFieldValue("time_since_last_clear_low", _buffer))/60000.0;
         sprintf(buff, "%.01f", val);
-
-        setPrintVal(_berInfoCmd,BER_TIME_SINCE_LAST_CLEAR ,"Time Since Last Clear [Min]", buff, ANSI_COLOR_RESET,true,_linkUP);
+        setPrintVal(_berInfoCmd,BER_TIME_SINCE_LAST_CLEAR ,"Time Since Last Clear [Min]",
+                buff, ANSI_COLOR_RESET,true,_linkUP);
         setPrintVal(_berInfoCmd,BER_EFFECTIVE_PHYSICAL_ERRORS, "Effective Physical Errors",
                 to_string(add32BitTo64(getFieldValue("phy_symbol_errors_high", _buffer),
-                        getFieldValue("phy_symbol_errors_low", _buffer))),ANSI_COLOR_RESET,true,_linkUP);
+                        getFieldValue("phy_symbol_errors_low", _buffer))), ANSI_COLOR_RESET,true,_linkUP);
+
+        std::vector<string> rawErrorsPerLane;
+        string phy_raw_err = "";
+        for (u_int32_t lane = 0; lane < _numOfLanes; lane++) {
+            string laneStr = to_string(lane);
+            phy_raw_err = to_string(add32BitTo64(getFieldValue("phy_raw_errors_lane" + laneStr + "_high", _buffer),
+                                                 getFieldValue("phy_raw_errors_lane" + laneStr + "_low", _buffer)));
+            rawErrorsPerLane.push_back(phy_raw_err);
+        }
+        setPrintVal(_berInfoCmd,BER_RAW_PHYSICAL_ERRORS_PER_LANE , "Raw Physical Errors Per Lane",
+                getStringFromVector(rawErrorsPerLane), ANSI_COLOR_RESET,true,_linkUP);
         setPrintVal(_berInfoCmd,BER_EFFECTIVE_PHYSICAL_BER ,"Effective Physical BER",
-                getFieldStr("effective_ber_coef") + "E-" + getFieldStr("effective_ber_magnitude"),ANSI_COLOR_RESET,true,_linkUP);
+                getFieldStr("effective_ber_coef") + "E-" + getFieldStr("effective_ber_magnitude"), ANSI_COLOR_RESET,true,_linkUP);
         setPrintVal(_berInfoCmd,BER_RAW_PHYSICAL_BER , "Raw Physical BER",
-                getFieldStr("raw_ber_coef") + "E-" + getFieldStr("raw_ber_magnitude"),ANSI_COLOR_RESET,true,_linkUP);
+                getFieldStr("raw_ber_coef") + "E-" + getFieldStr("raw_ber_magnitude"), ANSI_COLOR_RESET,true,_linkUP);
+
         cout << _berInfoCmd;
     } catch (const std::exception &exc) {
         _allUnhandledErrors += string("Showing BER via PPCNT raised the following exception: ") + string(exc.what()) + string("\n");
@@ -1325,7 +1361,7 @@ void MlxlinkCommander::showTestModeBer()
     updateField("local_port", _localPort);
     updateField("swid", SWID);
     updateField("pnat", PNAT_LOCAL);
-    updateField("grp", PPCNT_PHY_GROUP);
+    updateField("grp", PPCNT_STATISTICAL_GROUP);
     updateField("clr", 0);
     updateField("prio_tc", 0);
 
@@ -1333,19 +1369,10 @@ void MlxlinkCommander::showTestModeBer()
 
     std::vector<string> errors;
     for (u_int32_t lane = 0; lane < _numOfLanes; lane++) {
-        errors.push_back(to_string(add32BitTo64(getFieldValue("edpl_bip_errors_lane" + to_string(lane) + "_high", _buffer),
-                                                getFieldValue("edpl_bip_errors_lane" + to_string(lane) + "_low", _buffer))));
+        errors.push_back(to_string(add32BitTo64(getFieldValue("phy_raw_errors_lane" + to_string(lane) + "_high", _buffer),
+                                                getFieldValue("phy_raw_errors_lane" + to_string(lane) + "_low", _buffer))));
     }
 
-    resetParser(regName);
-    updateField("local_port", _localPort);
-    updateField("swid", SWID);
-    updateField("pnat", PNAT_LOCAL);
-    updateField("grp", PPCNT_STATISTICAL_GROUP);
-    updateField("clr", 0);
-    updateField("prio_tc", 0);
-
-    genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
     char buff[64];
     float val = (float)add32BitTo64(
             getFieldValue("time_since_last_clear_high", _buffer),
@@ -1380,6 +1407,10 @@ void MlxlinkCommander::showMpcntPerformance()
             "RX Errors",getFieldStr("rx_errors"));
     setPrintVal(_mpcntPerfInfCmd,MPCNT_TX_ERRORS ,
             "TX Errors",getFieldStr("tx_errors"));
+    setPrintVal(_mpcntPerfInfCmd,MPCNT_CRC_ERROR_DLLP ,
+            "CRC Error dllp",getFieldStr("crc_error_dllp"));
+    setPrintVal(_mpcntPerfInfCmd,MPCNT_CRC_ERROR_TLP ,
+            "CRC Error tlp",getFieldStr("crc_error_tlp"));
 
     cout << _mpcntPerfInfCmd;
 }
@@ -1737,10 +1768,12 @@ void MlxlinkCommander::showPcieState()
     setPrintVal(_pcieInfoCmd, PCIE_LINK_SPEED_ACTIVE_ENABLED,
             "Link Speed Active (Enabled)",
             pcieSpeedStr(getFieldValue("link_speed_active", _buffer))+ linkSpeedEnabled);
-
     setPrintVal(_pcieInfoCmd, LINK_WIDTH_ACTIVE_ENABLED,
             "Link Width Active (Enabled)",
             to_string(_numOfLanesPcie) + "X" + linkWidthEnabled);
+    setPrintVal(_pcieInfoCmd, DEVICE_STATUS, "Device Status",
+            getFieldValue("device_status", _buffer)?pcieDeviceStatusStr(getFieldValue("device_status", _buffer)):"N/A");
+
     cout << _pcieInfoCmd;
 }
 
@@ -2169,7 +2202,7 @@ void MlxlinkCommander::sendPaosDown()
     if (!checkPaosDown()) {
         if (dm_dev_is_hca(_devID)) {
             string protocol = (_protoActive == IB) ? "IB" : "ETH";
-            throw MlxRegException("Port is not Down, please run mlxconfig -d " + _device + " set KEEP_" + protocol + "_LINK_UP_P<port_number>=0.\nIn case of multi-host please verify all hosts are not holding the port up.");
+            throw MlxRegException("Port is not Down, please run mstconfig -d " + _device + " set KEEP_" + protocol + "_LINK_UP_P<port_number>=0.\nIn case of multi-host please verify all hosts are not holding the port up.");
         } else {
             throw MlxRegException("Port is not Down, Aborting...");
         }
@@ -2413,7 +2446,8 @@ void MlxlinkCommander::sendPplm()
         resetParser(regName);
 
         updateField("local_port", _localPort);
-        string speedStrG = (_linkUP && _userInput._speedFec == "") ? speedToStr(_speedStrG) : deleteLastComma(_userInput._speedFec) + "g";
+        string speedStrG = (_linkUP && _userInput._speedFec == "") ?
+                speedToStr(_speedStrG) : _userInput._speedFec + "g";
         if (speedStrG != "100g") {
             updateField("fec_override_admin_100g", 0);
         }
@@ -2564,6 +2598,22 @@ void MlxlinkCommander::sendSltp()
     }
 }
 
+u_int32_t MlxlinkCommander::getLoopbackMode(const string &lb)
+{
+    if (lb == "NO") {
+        return PHY_NO_LOOPBACK;
+    }
+    if (lb == "PH") {
+        return PHY_LOCAL_LOOPBACK;
+    }
+    if (lb == "EX") {
+        return EXTERNAL_LOCAL_LOOPBACK;
+    }
+    throw MlxRegException(
+            "Invalid loopback option: %s, see tool usage \"%s --help\"",
+            lb.c_str(), MLXLINK_EXEC);
+}
+
 void MlxlinkCommander::sendPplr()
 {
     try {
@@ -2572,7 +2622,7 @@ void MlxlinkCommander::sendPplr()
         resetParser(regName);
 
         updateField("local_port", _localPort);
-        updateField("lb_en", loopbackEN(_userInput._pplrLB));
+        updateField("lb_en", getLoopbackMode(_userInput._pplrLB));
 
         genBuffSendRegister(regName, MACCESS_REG_METHOD_SET);
     } catch (const std::exception &exc) {
