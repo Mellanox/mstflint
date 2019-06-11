@@ -53,8 +53,11 @@ class SecureFwTrace(object):
         store the max time stamp and sending the event for printing if needed
         """  
         # check if the event line belong to the fw trace and contain the bdf address
-        if ("fw_tracer: " in line) and (bdf in line):
-            tracer_str = line.split("fw_tracer: ")[1]
+        if (("fw_tracer: " in line) or ("mlx5_fw: " in line)) and (bdf in line):
+            if "fw_tracer: " in line:
+                tracer_str = line.split("fw_tracer: ")[1]
+            else:
+                tracer_str = line.split("mlx5_fw: ")[1]
             tracer_str = tracer_str.split("\n")[0]
             tracer_str = tracer_str[len(bdf + " "):]
             
