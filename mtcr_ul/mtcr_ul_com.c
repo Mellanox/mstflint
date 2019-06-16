@@ -1647,7 +1647,7 @@ static long live_fish_id_database[] = {
     0x20d,
     0x20f,
     0x211,
-	0x212,
+    0x212,
     -1
 };
 
