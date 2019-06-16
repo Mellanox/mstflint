@@ -1089,6 +1089,7 @@ const FwOperations::HwDevData FwOperations::hwDevData[] = {
                                                                                                {CX5_HIGH_BIN, {4119, 4121, 0}},
                                                                                                {UNKNOWN_BIN, {0}}}},
     { "ConnectX-6",       CX6_HW_ID,        CT_CONNECTX6,    CFT_HCA,     0, {4123, 0}, {{UNKNOWN_BIN, {0}}}},
+    { "ConnectX-6DX",     CX6DX_HW_ID,      CT_CONNECTX6DX,  CFT_HCA,     0, {4125, 0}, {{UNKNOWN_BIN, {0}}}},
     { "BlueField",        BF_HW_ID,         CT_BLUEFIELD,    CFT_HCA,     0, {41680, 41681, 41682, 0}, {{UNKNOWN_BIN, {0}}}},
     { "Spectrum",         SPECTRUM_HW_ID,   CT_SPECTRUM,     CFT_SWITCH,  0, {52100, 0}, {{UNKNOWN_BIN, {0}}}},
     { "Switch_IB2",       SWITCH_IB2_HW_ID, CT_SWITCH_IB2,   CFT_SWITCH,  0, {53000, 0}, {{UNKNOWN_BIN, {0}}}},
@@ -1107,6 +1108,7 @@ const FwOperations::HwDev2Str FwOperations::hwDev2Str[] = {
     {"ConnectX-4LX",      CX4LX_HW_ID,      0x00},
     {"ConnectX-5",        CX5_HW_ID,        0x00},
     {"ConnectX-6",        CX6_HW_ID,        0x00},
+    {"ConnectX-6DX",      CX6DX_HW_ID,      0x00},
     {"BlueField",         BF_HW_ID,         0x00},
     {"SwitchX A0",        SWITCHX_HW_ID,    0x00},
     {"SwitchX A1",        SWITCHX_HW_ID,    0x01},
@@ -1687,7 +1689,7 @@ void FwOperations::SetDevFlags(chip_type_t chipType, u_int32_t devType, fw_img_t
         ibDev  = (fwType == FIT_FS3 && chipType != CT_SPECTRUM) || (chipType == CT_CONNECTX && !CntxEthOnly(devType));
         ethDev = (chipType == CT_CONNECTX) || (chipType == CT_SPECTRUM) || (chipType == CT_CONNECTX4) || \
                  (chipType == CT_CONNECTX4_LX) || (chipType == CT_CONNECTX5) || (chipType == CT_BLUEFIELD) || \
-                 (chipType == CT_SPECTRUM2) || (chipType == CT_CONNECTX6);
+                 (chipType == CT_SPECTRUM2) || (chipType == CT_CONNECTX6)  || (chipType == CT_CONNECTX6DX);
     }
 
     if ((!ibDev && !ethDev) || chipType == CT_UNKNOWN) {
@@ -2004,6 +2006,7 @@ u_int8_t FwOperations::GetFwFormatFromHwDevID(u_int32_t hwDevId)
         return FS_FS3_GEN;
     } else if (hwDevId == CX5_HW_ID ||
                hwDevId == CX6_HW_ID ||
+               hwDevId == CX6DX_HW_ID ||
                hwDevId == BF_HW_ID  ||
                hwDevId == QUANTUM_HW_ID ||
                hwDevId == SPECTRUM2_HW_ID) {

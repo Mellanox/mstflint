@@ -87,13 +87,14 @@ MLNX_DEVICES = [
                dict(name="ConnectX5", devid=0x20d, status_config_not_done=(0xb5e04, 31)),
                dict(name="BlueField", devid=0x211, status_config_not_done=(0xb5e04, 31)),
                dict(name="ConnectX6", devid=0x20f, status_config_not_done=(0xb5f04, 31)),
+               dict(name="ConnectX6DX", devid=0x212, status_config_not_done=(0xb5f04, 31)),
                dict(name="ConnectX3", devid=0x1f5),
                dict(name="SwitchX", devid=0x245),
                dict(name="IS4", devid=0x1b3),
                ]
 
 # Supported devices.
-SUPP_DEVICES = ["ConnectIB", "ConnectX4", "ConnectX4LX", "ConnectX5", "BlueField", "ConnectX6"]
+SUPP_DEVICES = ["ConnectIB", "ConnectX4", "ConnectX4LX", "ConnectX5", "BlueField", "ConnectX6", "ConnectX6DX"]
 SUPP_OS = ["FreeBSD", "Linux", "Windows"]
 
 EPILOG = textwrap.dedent('''\
