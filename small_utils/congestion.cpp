@@ -112,10 +112,9 @@ void CongestionUI::initCmdParser()
 
 bool CongestionUI::isDeviceSupported(dm_dev_id_t devid)
 { // Supported devices are CX4+
-    bool is_dev_supported = false;
-    if (dm_is_5th_gen_hca(devid) && !dm_is_connectib(devid))
-        is_dev_supported = true;
-    return is_dev_supported;
+    struct tools_open_mcam mcam;
+    memset(&mcam, 0, sizeof(mcam));
+    return !reg_access_mcam(_mf, REG_ACCESS_METHOD_GET, &mcam);
 }
 
 ParseStatus CongestionUI::HandleOption(string name, string value)
@@ -191,7 +190,7 @@ CongestionUI::exit_status_t CongestionUI::run(int argc, char** argv)
     dm_get_device_id(_mf, &devID, &hwDevID, &hwChipRev);
     if (!isDeviceSupported(devID))
     {
-    _errorMsg = "mstcongestion is supported for CX4+ devices.";
+    _errorMsg = "mstcongestion is not supported on this device.(Failed to get MCAM capability)";
     return EXIT_STATUS_DEV_ID_ERR;
     }
 
