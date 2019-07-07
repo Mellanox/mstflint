@@ -1347,29 +1347,17 @@ static void mst_device_destroy(struct mst_dev_data *dev)
 /****************************************************/
 static int __init mst_init(void)
 {
-	int device_exists			= 0;
 	struct pci_dev  *pdev		= NULL;
 	struct mst_dev_data *dev	= NULL;
-	struct mst_dev_data *cur	= NULL;
 
 	mst_info("%s - version %s\n", mst_driver_string, mst_driver_version);
 
 	while ((pdev = pci_get_device(MST_MELLANOX_PCI_VENDOR, PCI_ANY_ID, pdev)) != NULL) {
 		if (!pci_match_id(supported_pci_devices, pdev) && !pci_match_id(mst_livefish_pci_table, pdev))
 			continue;
-		device_exists = 0;
-		list_for_each_entry(cur, &mst_devices, list) {
-			if (cur->pci_dev->bus->number == pdev->bus->number) {
-				device_exists = 1;	/* device already exists */
-				break;
-			}
-		}
-		if (device_exists)
-			continue;
-
-		/* skip virtual fucntion */
-		if (PCI_FUNC(pdev->devfn))
-			continue;
+    
+		if (pdev->is_virtfn)
+		    continue;
 
 		/* found new device */
 		mst_info(
