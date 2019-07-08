@@ -38,6 +38,8 @@ static struct pci_device_id mst_livefish_pci_table[] = { { PCI_DEVICE(
 		{ PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, 0x0209) }, /* MT27520 [ConnectX-4 Flash Recovery] */
 		{ PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, 0x020b) }, /* MT27520 [ConnectX-4Lx Flash Recovery] */
 		{ PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, 0x020d) }, /* MT27520 [ConnectX-5 Flash Recovery] */
+		{ PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, 0x020f) }, /* MT27520 [ConnectX-6 Flash Recovery] */
+		{ PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, 0x0212) }, /* MT27520 [ConnectX-6DX Flash Recovery] */
 		{ PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, 0x0211) }, /* MT27520 [BlueField Flash Recovery] */
 		{ 0, } };
 
@@ -54,6 +56,8 @@ static struct pci_device_id supported_pci_devices[] = { { PCI_DEVICE(
 		{ PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, 4117) }, /* MT27600 [ConnectX-4Lx] */
 		{ PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, 4119) }, /* MT27600 [ConnectX-5] */
 		{ PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, 4121) }, /* MT27600 [ConnectX-5EX] */
+		{ PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, 4123) }, /* MT27600 [ConnectX-6] */
+		{ PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, 4125) }, /* MT27600 [ConnectX-6DX] */
 		{ PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, 41682) }, /* MT27600 [BlueField] */
 		{ 0, } };
 
