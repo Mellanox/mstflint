@@ -68,6 +68,10 @@ int main(int argc, char **argv)
         congestObject.printErrorNotSupported();
         rc = 1;
         break;
+    case CongestionUI::EXIT_STATUS_CAP_ERR:
+        congestObject.printErrorNotSupported();
+        rc = 1;
+        break;
     }
     return rc;
 }
@@ -112,10 +116,7 @@ void CongestionUI::initCmdParser()
 
 bool CongestionUI::isDeviceSupported(dm_dev_id_t devid)
 { // Supported devices are CX4+
-    bool is_dev_supported = false;
-    if (dm_is_5th_gen_hca(devid) && !dm_is_connectib(devid))
-        is_dev_supported = true;
-    return is_dev_supported;
+    return (dm_is_5th_gen_hca(devid) && !dm_is_connectib(devid));
 }
 
 ParseStatus CongestionUI::HandleOption(string name, string value)
@@ -191,16 +192,16 @@ CongestionUI::exit_status_t CongestionUI::run(int argc, char** argv)
     dm_get_device_id(_mf, &devID, &hwDevID, &hwChipRev);
     if (!isDeviceSupported(devID))
     {
-    _errorMsg = "mstcongestion is supported for CX4+ devices.";
-    return EXIT_STATUS_DEV_ID_ERR;
+        _errorMsg = "mstcongestion is supported for CX4+ devices.";
+        return EXIT_STATUS_DEV_ID_ERR;
     }
 
     struct tools_open_mcam mcam;
     memset(&mcam, 0, sizeof(mcam));
     reg_access_status_t status = reg_access_mcam(_mf, REG_ACCESS_METHOD_GET, &mcam);
     if (status) {
-        _errorMsg = "Failed to get device capabilities!";
-        return EXIT_STATUS_ERROR;
+        _errorMsg = "mstcongestion is not supported on this device (Failed to get device capabilities).";
+        return EXIT_STATUS_CAP_ERR;
     }
     u_int8_t caps = mcam.mng_feature_cap_mask[14];
     _dynamicSupp = caps & 0x2;
