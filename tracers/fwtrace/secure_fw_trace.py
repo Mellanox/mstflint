@@ -5,6 +5,10 @@ import string
 import time
 from fw_trace_utilities import FwTraceUtilities
 
+def print_flush(*args, **kw):
+    print(*args, **kw)
+    sys.stdout.flush()
+
 
 class SecureFwTrace(object):
     OPEN_CLOSE_FILE_DELAY_SEC = 1
@@ -45,7 +49,7 @@ class SecureFwTrace(object):
             event_prefix = FwTraceUtilities.ts_to_real_ts(self._MAX_TIME_STAMP, self._device_freq)
             event = "[{0}]{1}".format(event_prefix, event_suffix)
 
-        print(event)
+        print_flush(event)
                    
     def _parse_driver_mem_line_to_event(self, line, bdf = "", print_event = True):
         """
@@ -101,7 +105,7 @@ class SecureFwTrace(object):
                         second_run = False
                         print("Read new events:")
                     
-                    fd = open(self._TRACER_FILE, "rb")        
+                    fd = open(self._TRACER_FILE, "rt")
                     # go over all the file lines on each iteration
                     # in order to overcome a case that the file has some
                     # corruptions while being written

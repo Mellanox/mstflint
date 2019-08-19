@@ -50,7 +50,7 @@ sys.path.append(os.path.join("..", "..", "cmdif"))
 import mtcr  # noqa
 import cmdif  # noqa
 
-sys.stdout = os.fdopen(sys.stdout.fileno(), 'wb', 0)
+sys.stdout = os.fdopen(sys.stdout.fileno(), 'w')
 
 EXEC_NAME = "mstfwtrace"
 proc = None
