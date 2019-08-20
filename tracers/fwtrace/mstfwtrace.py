@@ -241,9 +241,9 @@ def parse_cmd_line_args():
     IGNORE_OLD_EVENTS = args.ignore_old_events
 
     if IRISC_NAME != "all":
-        raise TracerException("Only 'all' irisc is compatible with secure fw")
+        raise TracerException("Only 'all' irisc is compatible with this tracer version")
     if TRACER_MODE != "MEM":
-        raise TracerException("Only 'MEM' tracer mode is compatible with secure fw")
+        raise TracerException("Only 'MEM' tracer mode is compatible with this tracer version")
 
 
 def check_secure_fw_args(devInfo):
