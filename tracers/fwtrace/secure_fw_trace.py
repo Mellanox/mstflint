@@ -5,10 +5,6 @@ import string
 import time
 from fw_trace_utilities import FwTraceUtilities
 
-def print_flush(*args, **kw):
-    print(*args, **kw)
-    sys.stdout.flush()
-
 
 class SecureFwTrace(object):
     OPEN_CLOSE_FILE_DELAY_SEC = 1
@@ -49,7 +45,7 @@ class SecureFwTrace(object):
             event_prefix = FwTraceUtilities.ts_to_real_ts(self._MAX_TIME_STAMP, self._device_freq)
             event = "[{0}]{1}".format(event_prefix, event_suffix)
 
-        print_flush(event)
+        print(event)
                    
     def _parse_driver_mem_line_to_event(self, line, bdf = "", print_event = True):
         """
