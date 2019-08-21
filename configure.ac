@@ -148,7 +148,7 @@ AC_ARG_ENABLE(xml2,
 AC_MSG_RESULT($enable_xml2)
 if test [ "x$enable_xml2" = "xyes" ] || [ test "x$enable_fw_mgr" = "xyes" ]; then
     # XML2 checks
-    if test ! -f /usr/include/libxml2/libxml/xpath.h; then
+    if test ! -f /usr/include/libxml2/libxml/xpath.h && test ! -f /usr/local/include/libxml2/libxml/xpath.h; then
         AC_MSG_NOTICE([checking for libxml2... no])
         AC_MSG_ERROR([libxml2: xpath.h is not found in the system PATH. make sure libxml2 headres are installed.])
     else
