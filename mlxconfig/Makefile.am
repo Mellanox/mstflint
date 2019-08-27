@@ -83,7 +83,6 @@ mstconfig_LDADD = libmlxcfg.a $(UTILS_LIB) $(MUPARSER_LIBS) $(SQLITE_LIBS)\
 if DISABLE_XML2
 AM_CXXFLAGS += -DDISABLE_XML2
 else
-AM_CPPFLAGS += -I$(XML2_INC_DIR)
 mstconfig_LDADD += -lxml2
 libmlxcfg_a_LIBADD += -lxml2
 endif
