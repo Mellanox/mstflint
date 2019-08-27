@@ -90,6 +90,7 @@ bool readFromFile(const string& fname, string& content);
 unsigned int getFileSize(const string& file);
 
 bool fexists(const string& filename);
+bool isFile(const string& filename);
 
 void listDir(const char *path, vector<string>& files);
 
