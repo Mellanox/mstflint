@@ -50,7 +50,22 @@ sys.path.append(os.path.join("..", "..", "cmdif"))
 import mtcr  # noqa
 import cmdif  # noqa
 
-sys.stdout = os.fdopen(sys.stdout.fileno(), 'w')
+
+class UnbufferedStream(object):
+   def __init__(self, stream):
+       self.stream = stream
+   def write(self, data):
+       self.stream.write(data)
+       self.stream.flush()
+   def writelines(self, datas):
+       self.stream.writelines(datas)
+       self.stream.flush()
+   def __getattr__(self, attr):
+       return getattr(self.stream, attr)
+
+
+sys.stdout = UnbufferedStream(sys.stdout)
+
 
 EXEC_NAME = "mstfwtrace"
 proc = None
