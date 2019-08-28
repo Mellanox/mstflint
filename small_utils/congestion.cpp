@@ -290,9 +290,9 @@ string CongestionUI::getModeString(cong_mode_t mode)
 {
     switch (mode) {
     case MODE_AGGRESSIVE:
-        return "Aggressive";
+        return "aggressive";
     case MODE_DYNAMIC:
-        return "Dynamic";
+        return "dynamic";
     default:
         return "N/A";
     }
@@ -302,11 +302,11 @@ string CongestionUI::getActionString(cong_action_t action)
 {
     switch (action) {
     case ACTION_DISABLED:
-        return "Disabled";
+        return "disabled";
     case ACTION_DROP:
-        return "Drop";
+        return "drop";
     case ACTION_MARK:
-        return "Mark";
+        return "mark";
     default:
         return "N/A";
     }
