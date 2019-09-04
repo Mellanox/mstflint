@@ -33,7 +33,19 @@ ExclusiveArch: i386 i486 i586 i686 x86_64 ia64 ppc ppc64 ppc64le arm64 aarch64
 BuildRequires: openssl-devel
 %endif
 
+%if "%{enableadbgenerictools}" == "1"
+BuildRequires: boost-devel
+BuildRequires: expat-devel
+BuildRequires: xz-devel
+%endif
+
 BuildRequires: zlib-devel %{ibmadlib}
+
+%if "%{enableadbgenerictools}" == "1"
+Requires: boost-filesystem
+Requires: boost-regex
+%endif
+
 
 %description
 This package contains firmware update tool, vpd dump and register dump tools
