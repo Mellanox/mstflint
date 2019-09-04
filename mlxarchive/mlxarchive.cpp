@@ -110,12 +110,13 @@ void Mlxarchive::paramValidate()
         success = false;
     }
     else {
-        if(!isFile(_outFile)) {
-            fprintf(stderr, "Output file: %s is expected to be a file\n", _outFile.c_str());
-            success = false;
-        }
-        else if(fexists(_outFile)) {
-            fprintf(stderr, "Output file: %s already exists\n", _outFile.c_str());
+        if(fexists(_outFile)) {
+            if(!isFile(_outFile)) {
+                fprintf(stderr, "Output file: %s is expected to be a file\n", _outFile.c_str());
+            }
+            else {
+                fprintf(stderr, "Output file: %s already exists\n", _outFile.c_str());
+            }
             success = false;
         }
     }
