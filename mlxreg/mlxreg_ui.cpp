@@ -211,7 +211,11 @@ void MlxRegUi::printHelp()
         IDENT2 MLXREG_EXEC "\n"
         IDENT "SYNOPSIS:\n"
         IDENT2 MLXREG_EXEC " [OPTIONS]\n");
-
+    printf(
+        IDENT "DESCRIPTION:\n"
+        IDENT2 "Exposes supported access registers, and allows users to obtain information regarding\n"
+        IDENT2 "the registers fields and attributes, and to set and get data with specific\n"
+        IDENT2 "register.\n");
     // print options
     printf("\n");
     printf(IDENT "OPTIONS:\n");

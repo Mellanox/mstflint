@@ -70,6 +70,7 @@ void usage(int with_exit)
     printf("              For read  - Will read a block (its size is the given bytes number).\n");
     printf("              For write - User need to give list of dwrods to write, \n"
            "                          number of dwords should be (bytes number/4).\n\n");
+    printf("\nDESCRIPTION:\n\n\tReads/writes a single word from/to a device configuration register space\n\n");
     printf("  -s <i2c-slave> : I2C slave address.\n");
     printf("  -a <dump file> : adb dump file, used for access by path.\n");
     printf("  -c             : clear the device's PCI semaphore.\n");

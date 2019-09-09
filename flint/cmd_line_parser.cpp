@@ -644,6 +644,8 @@ void Flint::initCmdParser()
                ' ',
                "<log_file>",
                "Print the burning status to the specified log file");
+    
+    
 
     char flashList[FLASH_LIST_SZ] = {0};
     char flashParDesc[FLASH_LIST_SZ * 2];

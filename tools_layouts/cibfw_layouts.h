@@ -1,3 +1,4 @@
+
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
  *
@@ -31,7 +32,7 @@
  */ 
 
 /***
-         *** This file was generated at "2018-01-07 08:13:17"
+         *** This file was generated at "2019-08-11 16:47:37"
          *** by:
          ***    > /mswg/release/tools/a-me/last_stable/adabe_plugins/adb2c/adb2pack.py --input adb/cibfw/cibfw.adb --file-prefix cibfw --prefix cibfw_
          ***/
@@ -54,18 +55,16 @@ struct cibfw_uint64 {
 };
 
 /* Description -   */
-/* Size in bytes - 4 */
-struct cibfw_module_version {
+/* Size in bytes - 8 */
+struct cibfw_reset_version {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description -  */
-	/* 0x0.0 - 0x0.7 */
-	 u_int8_t branch;
-	/* Description -  */
-	/* 0x0.8 - 0x0.19 */
-	 u_int16_t minor;
-	/* Description -  */
-	/* 0x0.20 - 0x0.31 */
-	 u_int16_t major;
+	/* Description - Match means upgrade supported, mismatch implies reset not supported */
+	/* 0x0.0 - 0x0.31 */
+	u_int32_t major;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - If Major matches. Match means seamless reset. Greater means reset supported. Less then upgrade not supported */
+	/* 0x4.0 - 0x4.7 */
+	u_int8_t minor;
 };
 
 /* Description -   */
@@ -181,31 +180,54 @@ struct cibfw_image_size {
 
 /* Description -   */
 /* Size in bytes - 64 */
-struct cibfw_module_versions {
+struct cibfw_lfwp_version_vector {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
-	/* 0x0.0 - 0x0.31 */
-	 struct cibfw_module_version core;
-/*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description -  */
-	/* 0x4.0 - 0x4.31 */
-	 struct cibfw_module_version phy;
+	/* 0x0.0 - 0x4.31 */
+	struct cibfw_reset_version scratchpad;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description -  */
-	/* 0x8.0 - 0x8.31 */
-	 struct cibfw_module_version kernel;
-/*---------------- DWORD[3] (Offset 0xc) ----------------*/
-	/* Description -  */
-	/* 0xc.0 - 0xc.31 */
-	 struct cibfw_module_version iron_image;
+	/* 0x8.0 - 0xc.31 */
+	struct cibfw_reset_version icm_context;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description -  */
-	/* 0x10.0 - 0x10.31 */
-	 struct cibfw_module_version host_management;
-/*---------------- DWORD[5] (Offset 0x14) ----------------*/
+	/* 0x10.0 - 0x14.31 */
+	struct cibfw_reset_version pci_code;
+/*---------------- DWORD[6] (Offset 0x18) ----------------*/
 	/* Description -  */
-	/* 0x14.0 - 0x14.31 */
-	 struct cibfw_module_version mad;
+	/* 0x18.0 - 0x1c.31 */
+	struct cibfw_reset_version phy_code;
+/*---------------- DWORD[8] (Offset 0x20) ----------------*/
+	/* Description -  */
+	/* 0x20.0 - 0x24.31 */
+	struct cibfw_reset_version ini;
+/*---------------- DWORD[10] (Offset 0x28) ----------------*/
+	/* Description -  */
+	/* 0x28.0 - 0x2c.31 */
+	struct cibfw_reset_version reserved1;
+/*---------------- DWORD[12] (Offset 0x30) ----------------*/
+	/* Description -  */
+	/* 0x30.0 - 0x34.31 */
+	struct cibfw_reset_version reserved2;
+/*---------------- DWORD[14] (Offset 0x38) ----------------*/
+	/* Description -  */
+	/* 0x38.0 - 0x3c.31 */
+	struct cibfw_reset_version reserved3;
+};
+
+/* Description -   */
+/* Size in bytes - 4 */
+struct cibfw_module_version {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0x0.0 - 0x0.7 */
+	u_int8_t branch;
+	/* Description -  */
+	/* 0x0.8 - 0x0.19 */
+	u_int16_t minor;
+	/* Description -  */
+	/* 0x0.20 - 0x0.31 */
+	u_int16_t major;
 };
 
 /* Description -   */
@@ -269,9 +291,27 @@ struct cibfw_device_info {
 /* Size in bytes - 1024 */
 struct cibfw_image_info {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Indicate that this binary support long keys (up to 4096bits) */
+	/* 0x0.6 - 0x0.6 */
+	u_int8_t long_keys;
+	/* Description - when set, debug-fw tokens are enabled. */
+	/* 0x0.7 - 0x0.7 */
+	u_int8_t debug_fw_tokens_supported;
 	/* Description - The image can be updated using the MCC/MCDA commands */
 	/* 0x0.8 - 0x0.8 */
 	 u_int8_t mcc_en;
+	/* Description - OEM lifecycle NVCONFIG files are signed */
+	/* 0x0.9 - 0x0.9 */
+	u_int8_t signed_vendor_nvconfig_files;
+	/* Description - Mellanox lifecycle NVCONFIG files are signed */
+	/* 0x0.10 - 0x0.10 */
+	u_int8_t signed_mlnx_nvconfig_files;
+	/* Description - Factory re-customizationflow is supported */
+	/* 0x0.11 - 0x0.11 */
+	u_int8_t frc_supported;
+	/* Description - Customer Support Tokens are supported */
+	/* 0x0.12 - 0x0.12 */
+	u_int8_t cs_tokens_supported;
 	/* Description - This is a debug firmware */
 	/* 0x0.13 - 0x0.13 */
 	 u_int8_t debug_fw;
@@ -297,8 +337,18 @@ struct cibfw_image_info {
 	 struct cibfw_TRIPPLE_VERSION mic_version;
 /*---------------- DWORD[7] (Offset 0x1c) ----------------*/
 	/* Description -  */
+	/* 0x1c.0 - 0x1c.15 */
+	u_int16_t pci_vendor_id;
+	/* Description -  */
 	/* 0x1c.16 - 0x1c.31 */
 	 u_int16_t pci_device_id;
+/*---------------- DWORD[8] (Offset 0x20) ----------------*/
+	/* Description -  */
+	/* 0x20.0 - 0x20.15 */
+	u_int16_t pci_sub_vendor_id;
+	/* Description -  */
+	/* 0x20.16 - 0x20.31 */
+	u_int16_t pci_subsystem_id;
 /*---------------- DWORD[9] (Offset 0x24) ----------------*/
 	/* Description -  */
 	/* 0x24.24 - 0x34.23 */
@@ -326,16 +376,32 @@ For Golan A0, first entry should be 0x1ff
 	/* Description -  */
 	/* 0x128.0 - 0x128.31 */
 	 u_int32_t ini_file_num;
+/*---------------- DWORD[76] (Offset 0x130) ----------------*/
+	/* Description -  */
+	/* 0x130.0 - 0x16c.31 */
+	struct cibfw_lfwp_version_vector lfwp_version_vector;
 /*---------------- DWORD[112] (Offset 0x1c0) ----------------*/
 	/* Description - Product Version is the unified version of the FW and expansion ROM.
 Format is defined by the packager.
 When set to a non-empty string the FW update tool burns the image as a monolythic entity and refuses to update rom only or FW only. */
 	/* 0x1c0.24 - 0x1d0.23 */
 	 char prod_ver[17];
-/*---------------- DWORD[192] (Offset 0x300) ----------------*/
+/*---------------- DWORD[116] (Offset 0x1d0) ----------------*/
+	/* Description - Product description */
+	/* 0x1d0.24 - 0x2d0.23 */
+	char description[257];
+/*---------------- DWORD[197] (Offset 0x314) ----------------*/
 	/* Description -  */
-	/* 0x300.0 - 0x33c.31 */
-	 struct cibfw_module_versions module_versions;
+	/* 0x314.0 - 0x314.31 */
+	struct cibfw_module_version isfu;
+/*---------------- DWORD[208] (Offset 0x340) ----------------*/
+	/* Description - Product name */
+	/* 0x340.24 - 0x380.23 */
+	char name[65];
+/*---------------- DWORD[224] (Offset 0x380) ----------------*/
+	/* Description - PRS used to generate the FW binary */
+	/* 0x380.24 - 0x400.23 */
+	char prs_name[129];
 };
 
 /* Description -   */
@@ -538,13 +604,13 @@ void cibfw_uint64_print(const u_int64_t *ptr_struct, FILE *fd, int indent_level)
 unsigned int cibfw_uint64_size(void);
 #define CIBFW_UINT64_SIZE    (0x8)
 void cibfw_uint64_dump(const u_int64_t *ptr_struct, FILE *fd);
-/* module_version */
-void cibfw_module_version_pack(const struct cibfw_module_version *ptr_struct, u_int8_t *ptr_buff);
-void cibfw_module_version_unpack(struct cibfw_module_version *ptr_struct, const u_int8_t *ptr_buff);
-void cibfw_module_version_print(const struct cibfw_module_version *ptr_struct, FILE *fd, int indent_level);
-unsigned int cibfw_module_version_size(void);
-#define CIBFW_MODULE_VERSION_SIZE    (0x4)
-void cibfw_module_version_dump(const struct cibfw_module_version *ptr_struct, FILE *fd);
+/* reset_version */
+void cibfw_reset_version_pack(const struct cibfw_reset_version *ptr_struct, u_int8_t *ptr_buff);
+void cibfw_reset_version_unpack(struct cibfw_reset_version *ptr_struct, const u_int8_t *ptr_buff);
+void cibfw_reset_version_print(const struct cibfw_reset_version *ptr_struct, FILE *fd, int indent_level);
+unsigned int cibfw_reset_version_size(void);
+#define CIBFW_RESET_VERSION_SIZE    (0x8)
+void cibfw_reset_version_dump(const struct cibfw_reset_version *ptr_struct, FILE *fd);
 /* uid_entry */
 void cibfw_uid_entry_pack(const struct cibfw_uid_entry *ptr_struct, u_int8_t *ptr_buff);
 void cibfw_uid_entry_unpack(struct cibfw_uid_entry *ptr_struct, const u_int8_t *ptr_buff);
@@ -580,13 +646,20 @@ void cibfw_image_size_print(const struct cibfw_image_size *ptr_struct, FILE *fd,
 unsigned int cibfw_image_size_size(void);
 #define CIBFW_IMAGE_SIZE_SIZE    (0x8)
 void cibfw_image_size_dump(const struct cibfw_image_size *ptr_struct, FILE *fd);
-/* module_versions */
-void cibfw_module_versions_pack(const struct cibfw_module_versions *ptr_struct, u_int8_t *ptr_buff);
-void cibfw_module_versions_unpack(struct cibfw_module_versions *ptr_struct, const u_int8_t *ptr_buff);
-void cibfw_module_versions_print(const struct cibfw_module_versions *ptr_struct, FILE *fd, int indent_level);
-unsigned int cibfw_module_versions_size(void);
-#define CIBFW_MODULE_VERSIONS_SIZE    (0x40)
-void cibfw_module_versions_dump(const struct cibfw_module_versions *ptr_struct, FILE *fd);
+/* lfwp_version_vector */
+void cibfw_lfwp_version_vector_pack(const struct cibfw_lfwp_version_vector *ptr_struct, u_int8_t *ptr_buff);
+void cibfw_lfwp_version_vector_unpack(struct cibfw_lfwp_version_vector *ptr_struct, const u_int8_t *ptr_buff);
+void cibfw_lfwp_version_vector_print(const struct cibfw_lfwp_version_vector *ptr_struct, FILE *fd, int indent_level);
+unsigned int cibfw_lfwp_version_vector_size(void);
+#define CIBFW_LFWP_VERSION_VECTOR_SIZE    (0x40)
+void cibfw_lfwp_version_vector_dump(const struct cibfw_lfwp_version_vector *ptr_struct, FILE *fd);
+/* module_version */
+void cibfw_module_version_pack(const struct cibfw_module_version *ptr_struct, u_int8_t *ptr_buff);
+void cibfw_module_version_unpack(struct cibfw_module_version *ptr_struct, const u_int8_t *ptr_buff);
+void cibfw_module_version_print(const struct cibfw_module_version *ptr_struct, FILE *fd, int indent_level);
+unsigned int cibfw_module_version_size(void);
+#define CIBFW_MODULE_VERSION_SIZE    (0x4)
+void cibfw_module_version_dump(const struct cibfw_module_version *ptr_struct, FILE *fd);
 /* operation_key */
 void cibfw_operation_key_pack(const struct cibfw_operation_key *ptr_struct, u_int8_t *ptr_buff);
 void cibfw_operation_key_unpack(struct cibfw_operation_key *ptr_struct, const u_int8_t *ptr_buff);

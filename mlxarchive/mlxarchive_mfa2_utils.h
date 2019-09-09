@@ -45,6 +45,10 @@
 #include <vector>
 #include <compatibility.h>
 
+#include "mfa2_buff.h"
+
+#define FINGER_PRINT_SIZE (16)
+
 using namespace std;
 
 #define VECTOR_ITERATOR(t, v, i) \
@@ -101,6 +105,8 @@ public:
     FingerPrint(string fingerPrint) : _fingerPrint(fingerPrint) {};
     void pack(vector<u_int8_t>& buff) const { packString(_fingerPrint, buff); };
     inline u_int32_t getSize() const {return _fingerPrint.length();}
+    bool unpack(Mfa2Buffer & buff) {buff.read(_fingerPrint, FINGER_PRINT_SIZE); return true;}
+    string toString() const {return _fingerPrint;}
 };
 
 #endif

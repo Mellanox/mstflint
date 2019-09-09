@@ -50,6 +50,7 @@
 #include "mlxarchive_mfa2_element.h"
 #include "mlxarchive_mfa2_extension.h"
 #include "mlxarchive_mfa2_utils.h"
+#include "mfa2_buff.h"
 
 using namespace std;
 
@@ -84,7 +85,11 @@ public:
     void addExtension(Extension* extension);
     void packMultiPart(u_int8_t extensionsCount, u_int16_t totalLength,
             vector<u_int8_t>& buff) const;
+    bool unpackMultiPart(u_int8_t &extensionsCount, u_int16_t &totalLength, Mfa2Buffer & buff);
     virtual void pack(vector<u_int8_t>& buff) const = 0;
+    virtual bool unpack(Mfa2Buffer & buff) = 0;
+    u_int16_t getExtensionsCount() const { return _extensions.size(); }
+    Extension * getExtension(int index) { return _extensions[index];}
 };
 
 inline void Descriptor::addExtension(Extension* extension)
@@ -121,6 +126,11 @@ public:
     void setDescriptorsSHA256(const vector<u_int8_t>& digest);
     void setSHA256(const vector<u_int8_t>& digest);
     void pack(vector<u_int8_t>& buff) const;
+    virtual bool unpack(Mfa2Buffer & buff);
+    u_int16_t getDeviceDescriptorsCount() const { return _deviceDescriptorsCount;}
+    u_int16_t getComponentsCount() const { return _componentsCount;}
+    const VersionExtension & getVersionExtension() const {return _version;}
+
 };
 
 inline void PackageDescriptor::setComponentsBlockOffset(u_int64_t offset)
@@ -150,6 +160,11 @@ public:
     DeviceDescriptor(vector<ComponentPointerExtension> componentPointers,
             PSIDExtension PSID);
     void pack(vector<u_int8_t>& buff) const;
+    virtual bool unpack(Mfa2Buffer & buff);
+
+    const PSIDExtension & getPSIDExtension() const { return _PSID;}
+    u_int8_t getComponentPointerExtensionsCount() const { return _componentPointers.size(); }
+    const ComponentPointerExtension & getComponentPointerExtension(int index) { return _componentPointers[index]; }
 };
 
 
@@ -166,6 +181,9 @@ public:
 
     ComponentDescriptor(VersionExtension version, string source);
     ComponentDescriptor(VersionExtension version, vector<u_int8_t> data);
+
+    virtual bool unpack(Mfa2Buffer & buff);
+    const VersionExtension & getVersionExtension() const {return _version;}
 
     //string      getSource               ()                          const;
     void        setComponentBinaryOffset(u_int64_t offset);

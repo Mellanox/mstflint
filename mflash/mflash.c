@@ -1316,7 +1316,7 @@ int cntx_int_spi_get_status_data(mflash *mfl, u_int8_t op_type, u_int32_t *statu
     if (bytes_num > 4) {
         return MFE_BAD_PARAMS;
     }
-    rc = cntx_exec_cmd_get(mfl, gw_cmd, &flash_data, 1, NULL, "Read id");
+    rc = cntx_exec_cmd_get(mfl, gw_cmd, &flash_data, 1, (u_int32_t*) NULL, "Read id");
     CHECK_RC(rc);
 
     // printf("-D- cntx_int_spi_get_status_data: op=%02x status=%08x\n", op_type, flash_data);
@@ -1332,7 +1332,7 @@ int cntx_st_spi_write_enable(mflash *mfl)
     gw_cmd = MERGE(gw_cmd, 1, HBO_CMD_PHASE, 1);
     gw_cmd = MERGE(gw_cmd, SFC_WREN, HBO_CMD, HBS_CMD);
 
-    rc = cntx_exec_cmd_set(mfl, gw_cmd, NULL, 0, NULL, "WREN command");
+    rc = cntx_exec_cmd_set(mfl, gw_cmd, (u_int32_t*) NULL, 0, (u_int32_t*) NULL, "WREN command");
     CHECK_RC(rc);
 
     //gw_cmd =  MERGE(gw_cmd, 1               , HBO_CS_HOLD,    1);
@@ -1441,7 +1441,7 @@ int cntx_spi_write_status_reg(mflash *mfl, u_int32_t status_reg, u_int8_t write_
     if (bytes_num == 2) {
         gw_cmd = MERGE(gw_cmd, 1, HBO_MSIZE, 1);
     }
-    rc = cntx_exec_cmd_set(mfl, gw_cmd, &status_reg, 1, NULL, "Write-Status-Register");
+    rc = cntx_exec_cmd_set(mfl, gw_cmd, &status_reg, 1, (u_int32_t*) NULL, "Write-Status-Register");
     // wait for flash to write the register
     if (mfl->attr.vendor == FV_S25FLXXXX && mfl->attr.type == FMT_S25FLXXXL) { // New CYPRESS
         msleep(WRITE_STATUS_REGISTER_DELAY_CYPRESS);
@@ -1871,7 +1871,7 @@ int cntx_st_spi_erase_sect(mflash *mfl, u_int32_t addr)
 
     // printf("-D- cntx_st_spi_erase_sect: addr = %#x, gw_cmd = %#x.\n", addr, gw_cmd);
 
-    rc = cntx_exec_cmd_set(mfl, gw_cmd, NULL, 0, &gw_addr, "ES");
+    rc = cntx_exec_cmd_set(mfl, gw_cmd, (u_int32_t*) NULL, 0, &gw_addr, "ES");
     CHECK_RC(rc);
 
     // Wait for erase completion
@@ -2606,7 +2606,7 @@ int mf_erase_4k_sector(mflash *mfl, u_int32_t addr)
 int mf_open_ignore_lock(mflash *mfl)
 {
     mfl->opts[MFO_IGNORE_SEM_LOCK] = 1;
-    return mf_open_fw(mfl, NULL, -1);
+    return mf_open_fw(mfl, (flash_params_t*) NULL, -1);
 }
 
 #define CR_LOCK_HW_ID 0xbad0cafe
@@ -2820,7 +2820,7 @@ int mf_opend(mflash **pmfl, struct mfile_t *mf, int num_of_banks, flash_params_t
 int mf_open_uefi(mflash **pmfl, uefi_Dev_t *uefi_dev, uefi_dev_extra_t *uefi_dev_extra)
 {
 
-    return mf_opend_int(pmfl, (void*)uefi_dev, 4, NULL, 0, MFAT_UEFI, (void*)uefi_dev_extra, 0);
+    return mf_opend_int(pmfl, (void*)uefi_dev, 4, (flash_params_t*) NULL, 0, MFAT_UEFI, (void*)uefi_dev_extra, 0);
 }
 
 int mf_open_int(mflash **pmfl, const char *dev, int num_of_banks, flash_params_t *flash_params,

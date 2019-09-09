@@ -76,7 +76,7 @@ bool DirectComponentAccess::accessComponent(u_int32_t updateHandle, u_int32_t of
     while (leftSize > 0)    {
         memset(&accessData, 0, sizeof(mcdaReg));
 
-        accessData.data = dataToRW.data();
+        memcpy(accessData.data, dataToRW.data(), sizeof(accessData.data));
         accessData.update_handle = updateHandle;
         accessData.offset = offset + (size - leftSize);
         accessData.size = leftSize > maxDataSize ? maxDataSize : leftSize;
@@ -91,13 +91,13 @@ bool DirectComponentAccess::accessComponent(u_int32_t updateHandle, u_int32_t of
                 return false;
             }
             for (i = 0; i < accessData.size / 4; i++) {
-                data[(size - leftSize) / 4 + i] = ___my_swab32(accessData.data[i]);
+                data[(size - leftSize) / 4 + i] = __le32_to_cpu(accessData.data[i]);
             }
             //printf("data[%#02x]: %#08x\n", (i-1)*4, data[(size - leftSize)/4 + i-1]);
         }
         else {
             for (i = 0; i < accessData.size / 4; i++) {
-                accessData.data[i] = ___my_swab32(data[(size - leftSize) / 4 + i]);
+                accessData.data[i] = __cpu_to_le32(data[(size - leftSize) / 4 + i]);
             }
             reg_access_status_t rc = reg_access_mcda(_mf, REG_ACCESS_METHOD_SET, &accessData);
             _manager->deal_with_signal();

@@ -1469,6 +1469,53 @@ void reg_access_hca_mcqs_reg_dump(const struct reg_access_hca_mcqs_reg *ptr_stru
 	reg_access_hca_mcqs_reg_print(ptr_struct, fd, 0);
 }
 
+void reg_access_hca_mfrl_reg_ext_pack(const struct reg_access_hca_mfrl_reg_ext *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 56;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->reset_level);
+	offset = 48;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->reset_type);
+	offset = 37;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 3, (u_int32_t)ptr_struct->rst_type_sel);
+}
+
+void reg_access_hca_mfrl_reg_ext_unpack(struct reg_access_hca_mfrl_reg_ext *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 56;
+	ptr_struct->reset_level = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 48;
+	ptr_struct->reset_type = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	offset = 37;
+	ptr_struct->rst_type_sel = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 3);
+}
+
+void reg_access_hca_mfrl_reg_ext_print(const struct reg_access_hca_mfrl_reg_ext *ptr_struct, FILE *fd, int indent_level)
+{
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== reg_access_hca_mfrl_reg_ext ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "reset_level          : %s (" UH_FMT ")\n", (ptr_struct->reset_level == 8 ? ("LEVEL3") : ((ptr_struct->reset_level == 64 ? ("LEVEL6") : ("unknown")))), ptr_struct->reset_level);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "reset_type           : " UH_FMT "\n", ptr_struct->reset_type);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "rst_type_sel         : " UH_FMT "\n", ptr_struct->rst_type_sel);
+}
+
+unsigned int reg_access_hca_mfrl_reg_ext_size(void)
+{
+	return REG_ACCESS_HCA_MFRL_REG_EXT_SIZE;
+}
+
+void reg_access_hca_mfrl_reg_ext_dump(const struct reg_access_hca_mfrl_reg_ext *ptr_struct, FILE *fd)
+{
+	reg_access_hca_mfrl_reg_ext_print(ptr_struct, fd, 0);
+}
+
 void reg_access_hca_mgir_pack(const struct reg_access_hca_mgir *ptr_struct, u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
@@ -1548,6 +1595,53 @@ unsigned int reg_access_hca_mgir_size(void)
 void reg_access_hca_mgir_dump(const struct reg_access_hca_mgir *ptr_struct, FILE *fd)
 {
 	reg_access_hca_mgir_print(ptr_struct, fd, 0);
+}
+
+void reg_access_hca_mpcir_ext_pack(const struct reg_access_hca_mpcir_ext *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 0;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 2, (u_int32_t)ptr_struct->all);
+	offset = 62;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 2, (u_int32_t)ptr_struct->ports);
+	offset = 126;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 2, (u_int32_t)ptr_struct->ports_stat);
+}
+
+void reg_access_hca_mpcir_ext_unpack(struct reg_access_hca_mpcir_ext *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 0;
+	ptr_struct->all = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 2);
+	offset = 62;
+	ptr_struct->ports = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 2);
+	offset = 126;
+	ptr_struct->ports_stat = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 2);
+}
+
+void reg_access_hca_mpcir_ext_print(const struct reg_access_hca_mpcir_ext *ptr_struct, FILE *fd, int indent_level)
+{
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "======== reg_access_hca_mpcir_ext ========\n");
+
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "all                  : " UH_FMT "\n", ptr_struct->all);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "ports                : " UH_FMT "\n", ptr_struct->ports);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "ports_stat           : " UH_FMT "\n", ptr_struct->ports_stat);
+}
+
+unsigned int reg_access_hca_mpcir_ext_size(void)
+{
+	return REG_ACCESS_HCA_MPCIR_EXT_SIZE;
+}
+
+void reg_access_hca_mpcir_ext_dump(const struct reg_access_hca_mpcir_ext *ptr_struct, FILE *fd)
+{
+	reg_access_hca_mpcir_ext_print(ptr_struct, fd, 0);
 }
 
 void reg_access_hca_mpegc_reg_pack(const struct reg_access_hca_mpegc_reg *ptr_struct, u_int8_t *ptr_buff)

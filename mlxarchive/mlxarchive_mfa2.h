@@ -49,9 +49,11 @@
 #include "mlxarchive_mfa2_utils.h"
 #include "mlxarchive_mfa2_descriptor.h"
 #include "mlxarchive_mfa2_component.h"
+#include "mfa2_buff.h"
 
 using namespace std;
 
+#define MFA2_FINGER_PRINT "MLNX.MFA2.XZ.00!"
 namespace mfa2 {
 
 class MFA2 {
@@ -65,16 +67,20 @@ private:
     //void updateSHA256();
     void pack(vector<u_int8_t>& buff);
     void packDescriptors(vector<u_int8_t>& buff) const;
+    bool unpack(Mfa2Buffer & buff);
 public:
     MFA2(PackageDescriptor packageDescriptor,
          vector<DeviceDescriptor> deviceDescriptors,
          vector<Component> components) : 
-             _fingerPrint("MLNX.MFA2.XZ.00!"),
+             _fingerPrint(MFA2_FINGER_PRINT),
              _packageDescriptor(packageDescriptor),
              _deviceDescriptors(deviceDescriptors),
              _components(components) {};
 
+    virtual ~MFA2() {}
+    static MFA2 * LoadMFA2Package(const string & file_name);
     void generateBinary(vector<u_int8_t>& buff);
+    void dump();
 };
 
 }

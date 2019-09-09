@@ -742,6 +742,18 @@ int main(int ac, char *av[])
     logset(1);
     WIN_WHILE() {
         con = open_serv_connection(port);
+        int addrInUseError = 0;
+        if (con < 0) {
+#ifdef __WIN__
+            addrInUseError = WSAEADDRINUSE;
+#else
+            addrInUseError = EADDRINUSE;
+#endif        
+            if (errno == addrInUseError) {
+                printf("Open connection (server side): Address already in use\n");
+                exit(1);
+            }
+        }
         CHK2(con, "Open connection (server side)");
 
         for (;;) {
