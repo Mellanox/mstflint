@@ -79,3 +79,23 @@ void CommonHeader::pack(vector<u_int8_t>& buff) const
     tools_open_common_header_pack(&commonHeader, tmpBuff.data());
     packBytesArray(tmpBuff.data(), tmpBuff.size(), buff);
 }
+
+bool CommonHeader::unpack(Mfa2Buffer & buff) {
+    //align header
+    long pos = buff.tell();
+    if(pos % 4 != 0) {
+        buff.seek(4-(pos%4), SEEK_CUR);
+    }
+    int arr_size = tools_open_common_header_size();
+    u_int8_t * arr = new u_int8_t[arr_size];
+    buff.read(arr, arr_size);
+    struct tools_open_common_header commonHeader;
+    memset(&commonHeader, 0x0, sizeof(commonHeader));
+    tools_open_common_header_unpack(&commonHeader, arr);
+    delete[] arr;
+    arr = NULL;
+    _version = commonHeader.version;
+    _type = (MFA2Type)commonHeader.type;
+    _length = commonHeader.length;
+    return true;
+}

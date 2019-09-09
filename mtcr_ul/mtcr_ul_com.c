@@ -312,7 +312,7 @@ int mtcr_check_signature(mfile *mf)
                 if (mst_driver_connectx_flush(mf)) {
                     return -1;
                 }
-            } else if (mtcr_connectx_flush(mf->ptr, ctx->fdlock)) {
+            } else if (mtcr_connectx_flush(mf->bar_virtual_addr, ctx->fdlock)) {
                 return -1;
             }
         }
@@ -468,8 +468,8 @@ static
 int mtcr_pcicr_mclose(mfile *mf)
 {
     if (mf) {
-        if (mf->ptr) {
-            munmap(mf->ptr, MTCR_MAP_SIZE);
+        if (mf->bar_virtual_addr) {
+            munmap(mf->bar_virtual_addr, MTCR_MAP_SIZE);
         }
         if (mf->fd > 0) {
             close(mf->fd);
@@ -497,9 +497,9 @@ int mtcr_mmap(mfile *mf, const char *name, off_t off, int ioctl_needed)
         return -1;
     }
 
-    mf->ptr = mmap(NULL, MTCR_MAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, mf->fd, off);
+    mf->bar_virtual_addr = mmap(NULL, MTCR_MAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, mf->fd, off);
 
-    if (!mf->ptr || mf->ptr == MAP_FAILED) {
+    if (!mf->bar_virtual_addr || mf->bar_virtual_addr == MAP_FAILED) {
         err = errno;
         close(mf->fd);
         errno = err;
@@ -517,12 +517,12 @@ int mtcr_pcicr_mread4(mfile *mf, unsigned int offset, u_int32_t *value)
         return 0;
     }
     if (ctx->need_flush) {
-        if (mtcr_connectx_flush(mf->ptr, ctx->fdlock)) {
+        if (mtcr_connectx_flush(mf->bar_virtual_addr, ctx->fdlock)) {
             return 0;
         }
         ctx->need_flush = 0;
     }
-    u_int32_t tmp = ((u_int32_t*)mf->ptr)[offset / 4];
+    u_int32_t tmp = ((u_int32_t*)mf->bar_virtual_addr)[offset / 4];
     *value = __be32_to_cpu(tmp);
     return 4;
 }
@@ -535,7 +535,7 @@ int mtcr_pcicr_mwrite4(mfile *mf, unsigned int offset, u_int32_t value)
         errno = EINVAL;
         return 0;
     }
-    *((u_int32_t*) ((char*) mf->ptr + offset)) = __cpu_to_be32(value);
+    *((u_int32_t*) ((char*) mf->bar_virtual_addr + offset)) = __cpu_to_be32(value);
     ctx->need_flush = ctx->connectx_flush;
     return 4;
 }
@@ -554,7 +554,7 @@ int mtcr_pcicr_open(mfile *mf, const char *name, char *conf_name, off_t off, int
     ctx->mwrite4_block = mwrite_chunk_as_multi_mwrite4;
     ctx->mclose = mtcr_pcicr_mclose;
 
-    mf->ptr = NULL;
+    mf->bar_virtual_addr = NULL;
     mf->fd = -1;
     ctx->connectx_flush = 0;
     ctx->need_flush = 0;
@@ -836,8 +836,8 @@ static
 int mtcr_driver_mclose(mfile *mf)
 {
     if (mf) {
-        if (mf->ptr) {
-            munmap(mf->ptr, MTCR_MAP_SIZE);
+        if (mf->bar_virtual_addr) {
+            munmap(mf->bar_virtual_addr, MTCR_MAP_SIZE);
         }
         if (mf->fd > 0) {
             close(mf->fd);
@@ -878,7 +878,7 @@ int mtcr_driver_open(mfile *mf, MType dev_type,
         ctx->mread4_block  = driver_mread4_block;
         ctx->mwrite4_block = driver_mwrite4_block;
         ctx->mclose        = mtcr_driver_mclose;
-        mf->ptr            = NULL;
+        mf->bar_virtual_addr            = NULL;
         unsigned int slot_num;
         rc = ioctl(mf->fd, PCI_CONNECTX_WA, &slot_num);
         if (rc < 0) {

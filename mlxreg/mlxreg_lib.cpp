@@ -71,6 +71,13 @@ const u_int64_t MlxRegLib::_gSupportedRegisters[] = {
     0x500A,         //PLIB
     0x9014,         //MCIA
     0x902b,         //MLCR
+    0xb001,         //SBPR
+    0xb002,         //SBCM
+    0xb003,         //SBPM
+    0xb005,         //SBSR
+    0xb019,         //SBDCR
+    0x2802,         //CWTP
+    0x2803,         //CWTPM
     0x0             //Termination - DO NOT DELETE!
 };
 

@@ -38,6 +38,7 @@
  *      Author: Ahmad Soboh
  */
 
+#include <sstream>
 #include "mlxarchive_mfa2_extension.h"
 #include <ctime>
 
@@ -128,6 +129,52 @@ void VersionExtension::pack(vector<u_int8_t>& buff) const
     buff.insert(buff.end(), tmpBuff.begin(), tmpBuff.end());
 }
 
+bool VersionExtension::unpack(Mfa2Buffer & buff)
+{
+    //unpack common header
+    _commonHeader.unpack(buff);
+
+    struct tools_open_version version;
+    int arr_size = tools_open_version_size();
+    u_int8_t * arr = new u_int8_t[arr_size];
+    buff.read(arr, arr_size);
+    memset(&version, 0x0, arr_size);
+    tools_open_version_unpack(&version, arr);
+    delete[] arr;
+    arr = NULL;
+    //unpack version info
+    _major = version.version_major;
+    _subMinor = version.version_sub_minor;
+    _minor = version.version_minor;
+    _day = version.day;
+    _month = version.month;
+    _year = version.year;
+    _seconds = version.seconds;
+    _minutes = version.minutes;
+    _hours = version.hour;
+    return true;
+}
+
+string VersionExtension::getVersion() const {
+    stringstream ss;
+    string res;
+    ss << (int)_major << '.' << (int)_minor << '.' << (int)_subMinor;
+    ss>>res;
+    return res;
+}
+
+string VersionExtension::getDateAndTime() const {
+    tm tm_obj;
+    tm_obj.tm_sec = _seconds;
+    tm_obj.tm_min = _minutes;
+    tm_obj.tm_hour = _hours;
+    tm_obj.tm_mday = _day;
+    tm_obj.tm_mon = _month;
+    tm_obj.tm_year = _year - 1900;
+    char buffer [64];
+    strftime(buffer,64,"%Y-%m-%d %H:%M:%S", &tm_obj);
+    return string(buffer);
+}
 
 void ComponentPointerExtension::pack(vector<u_int8_t>& buff) const
 {
@@ -145,6 +192,26 @@ void ComponentPointerExtension::pack(vector<u_int8_t>& buff) const
     tools_open_component_ptr_pack(&componentPointer, tmpBuff.data());
     buff.insert(buff.end(), tmpBuff.begin(), tmpBuff.end());
 
+}
+
+bool ComponentPointerExtension::unpack(Mfa2Buffer & buff)
+{
+    //unpack common header
+    _commonHeader.unpack(buff);
+
+    struct tools_open_component_ptr componentPointer;
+    int arr_size = tools_open_component_ptr_size();
+    u_int8_t * arr = new u_int8_t[arr_size];
+    buff.read(arr, arr_size);
+    memset(&componentPointer, 0x0, arr_size);
+    tools_open_component_ptr_unpack(&componentPointer, arr);
+    delete[] arr;
+    arr = NULL;
+    //unpack version info
+    _componentIndex = componentPointer.component_index;
+    _storageId = componentPointer.storage_id;
+    _storageAddress = componentPointer.storage_address;
+    return true;
 }
 
 SHA256Extension::SHA256Extension(enum SHA256Scope scope) :
@@ -179,6 +246,23 @@ void SHA256Extension::pack(vector<u_int8_t>& buff) const
     packBytesArray(_digest.data(), _digest.size(), buff);
 }
 
+bool SHA256Extension::unpack(Mfa2Buffer & buff)
+{
+    //unpack common header
+    _commonHeader.unpack(buff);
+
+    u_int16_t length = _commonHeader.getLength();
+    u_int8_t * arr = new u_int8_t[length];
+    buff.read(arr, length);
+    _digest.resize(length);
+    for(u_int16_t i = 0; i < length; i++) {
+        _digest.push_back(arr[i]);
+    }
+    delete[] arr;
+    arr = NULL;
+    return true;
+}
+
 /*void DescriptorsSHA256Extension::pack(vector<u_int8_t>& buff) const
 {
     u_int8_t sha[0x140] = {0};
@@ -198,6 +282,12 @@ void StringExtension::pack(vector<u_int8_t>& buff) const
     packString(_str, buff);
 }
 
+bool StringExtension::unpack(Mfa2Buffer & buff)
+{
+    //unpack common header
+    _commonHeader.unpack(buff);
 
-
-
+    u_int16_t length = _commonHeader.getLength();
+    buff.read(_str, length);
+    return true;
+}

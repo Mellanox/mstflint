@@ -71,6 +71,9 @@
 // TODO: get correct register ID for mfrl mfai
 #define REG_ID_MFRL 0x9028
 #define REG_ID_MFAI 0x9029
+#define REG_ID_MPCIR                    0x905a
+
+
 
 // WA for MGIR: the reg size is too big so we limit it to INBAND_MAX_REG_SIZE
 #define INBAND_MAX_REG_SIZE 44
@@ -369,9 +372,17 @@ reg_access_status_t reg_access_mgir(mfile *mf, reg_access_method_t method, struc
 /************************************
 * Function: reg_access_mfrl
 ************************************/
-reg_access_status_t reg_access_mfrl(mfile *mf, reg_access_method_t method, struct cibfw_register_mfrl *mfrl)
+reg_access_status_t reg_access_mfrl(mfile *mf, reg_access_method_t method, struct reg_access_hca_mfrl_reg_ext *mfrl)
 {
-    REG_ACCCESS(mf, method, REG_ID_MFRL, mfrl, mfrl, cibfw_register);
+    REG_ACCCESS(mf, method, REG_ID_MFRL, mfrl, mfrl_reg_ext, reg_access_hca);
+}
+
+/************************************
+* Function: reg_access_mpcir
+************************************/
+reg_access_status_t reg_access_mpcir(mfile *mf, reg_access_method_t method, struct reg_access_hca_mpcir_ext *mpcir)
+{
+    REG_ACCCESS(mf, method, REG_ID_MPCIR, mpcir, mpcir_ext, reg_access_hca);
 }
 
 /************************************

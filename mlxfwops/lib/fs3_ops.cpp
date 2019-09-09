@@ -290,6 +290,8 @@ bool Fs3Operations::GetImageInfo(u_int8_t *buff)
     _fwImgInfo.ext_info.fw_ver[1] = image_info.FW_VERSION.MINOR;
     _fwImgInfo.ext_info.fw_ver[2] = image_info.FW_VERSION.SUBMINOR;
 
+    _fwImgInfo.ext_info.isfu_major = image_info.isfu.major;
+
     _fwImgInfo.ext_info.mic_ver[0] = image_info.mic_version.MAJOR;
     _fwImgInfo.ext_info.mic_ver[1] = image_info.mic_version.MINOR;
     _fwImgInfo.ext_info.mic_ver[2] = image_info.mic_version.SUBMINOR;
@@ -3062,7 +3064,7 @@ bool Fs3Operations::Fs3IsfuActivateImage(u_int32_t newImageStart)
     int rc = 0;
     mfile *mf = _ioAccess->is_flash() ? ((Flash *)_ioAccess)->getMfileObj() : (mfile *)NULL;
     struct cibfw_register_mfai mfai;
-    struct cibfw_register_mfrl mfrl;
+    struct reg_access_hca_mfrl_reg_ext mfrl;
     memset(&mfai, 0, sizeof(mfai));
     memset(&mfrl, 0, sizeof(mfrl));
 

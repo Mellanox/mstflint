@@ -47,6 +47,7 @@
 #include <compatibility.h>
 
 #include "mlxarchive_mfa2_utils.h"
+#include "mfa2_buff.h"
 
 using namespace std;
 
@@ -64,6 +65,8 @@ public:
 
     //inline void setLength(u_int16_t length) { _length = length; }
     void pack(vector<u_int8_t>& buff) const;
+    bool unpack(Mfa2Buffer & buff);
+    const u_int16_t & getLength() const {return _length;}
 };
 
 }

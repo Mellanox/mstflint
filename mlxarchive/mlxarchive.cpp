@@ -40,7 +40,7 @@
 
 #include <string>
 #include <vector>
-#include<iostream>
+#include <iostream>
 #include <boost/regex.hpp>
 #include <compatibility.h>
 #include "mlxarchive_mfa2_package_gen.h"
@@ -65,6 +65,8 @@
 #define DATE_FLAG_SHORT             'd'
 #define VERSION_FLAG                "version"
 #define VERSION_FLAG_SHORT          'v'
+#define MFA2_FILE_FLAG              "mfa2-file"
+#define MFA2_FILE_FLAG_SHORT        'm'
 
 using namespace mlxarchive;
 bool writeToFile(const string&, const vector<u_int8_t>&);
@@ -80,6 +82,7 @@ Mlxarchive::Mlxarchive() :
     _binsDir  = "";
     _outFile  = "";
     _version  = "";
+    _mfa2file = "";
 }
 
 /************************************
@@ -87,10 +90,13 @@ Mlxarchive::Mlxarchive() :
  * ************************************/
 void Mlxarchive::initCmdParser()
 {
+    AddDescription("Allows the user to create a file with the MFA2 extension. The new file contains several "
+                    "binary files of a given firmware for different adapter cards.");
     AddOptions(HELP_FLAG,         HELP_FLAG_SHORT,     "", "Show help message and exit");
     AddOptions(VERSION_FLAG,      VERSION_FLAG_SHORT,  "version", "MFA2 version in the following format: x.x.x");
     AddOptions(OUT_FILE_FLAG,     OUT_FILE_FLAG_SHORT, "out_file", "Output file");
     AddOptions(BINS_DIR_FLAG,     BINS_DIR_FLAG_SHORT, "bins_dir", "Directory with the binaries files");
+    AddOptions(MFA2_FILE_FLAG,    MFA2_FILE_FLAG_SHORT, "mfa2_file", "Mfa2 file to parse");
     _cmdParser.AddRequester(this);
 }
 
@@ -101,6 +107,14 @@ void Mlxarchive::paramValidate()
     boost::smatch match;
     bool status_match;
     bool success = true;
+    if(!_mfa2file.empty()) {
+        if(!(_binsDir.empty() && _outFile.empty() && _version.empty())) {
+            fprintf(stderr, "cannot use any parameter when using mfa2_file parameter!\n");
+            exit(1);
+        }
+        return;
+    }
+
     if(_binsDir.empty()) {
         fprintf(stderr, err.c_str(), "bins_dir");
         success = false;
@@ -151,6 +165,9 @@ ParseStatus Mlxarchive::HandleOption(string name, string value)
     } else if (name == BINS_DIR_FLAG) {
         _binsDir = value;
         return PARSE_OK;
+    } else if (name == MFA2_FILE_FLAG) {
+        _mfa2file = value;
+        return PARSE_OK;
     }
     else{
         return PARSE_ERROR;
@@ -173,6 +190,7 @@ int Mlxarchive::run(int argc, char **argv)
         return 1;
     }
     paramValidate();
+    if(_mfa2file.empty()) {
     string outputFile = _outFile;
     string content = "";
     vector<u_int8_t> buff;
@@ -186,6 +204,15 @@ int Mlxarchive::run(int argc, char **argv)
     if (!writeToFile(outputFile, buff)) {
         fprintf(stderr, "-E- Cannot write to the file %s\n",   outputFile.c_str());
         exit(1);
+        }
+    } else {
+        MFA2 * mfa2Pkg = MFA2::LoadMFA2Package(_mfa2file);
+        if(!mfa2Pkg) {
+            fprintf(stderr, "-E- Failed to parse mfa2 file %s\n", _mfa2file.c_str());
+            exit(1);
+        }
+        mfa2Pkg->dump();
+        delete mfa2Pkg;
     }
 
     return 0;

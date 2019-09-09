@@ -85,6 +85,22 @@ void Descriptor::packMultiPart(u_int8_t extensionsCount, u_int16_t totalLength,
     packBytesArray(tmpBuff.data(), tmpBuff.size(), buff);
 }
 
+bool Descriptor::unpackMultiPart(u_int8_t &extensionsCount, u_int16_t &totalLength, Mfa2Buffer & buff) {
+    CommonHeader commonHeader(0x0, MFA2Type_MULTI_PART, 0x0);
+    commonHeader.unpack(buff);
+    struct tools_open_multi_part multiPart;
+    int arr_size = tools_open_multi_part_size();
+    u_int8_t * arr = new u_int8_t[arr_size];
+    buff.read(arr, arr_size);
+    memset(&multiPart, 0x0, arr_size);
+    tools_open_multi_part_unpack(&multiPart, arr);
+    delete[] arr;
+    arr = NULL;
+    extensionsCount = multiPart.number_of_extensions;
+    totalLength = multiPart.total_length - ((extensionsCount + 1) * tools_open_common_header_size());
+    return true;
+}
+
 Descriptor::~Descriptor()
 {
     VECTOR_ITERATOR(Extension*, _extensions, it) {
@@ -161,6 +177,55 @@ void PackageDescriptor::pack(vector<u_int8_t>& buff) const
 
 }
 
+bool PackageDescriptor::unpack(Mfa2Buffer & buff) {
+    u_int8_t extensionsCount;
+    u_int16_t totalLength;
+    unpackMultiPart(extensionsCount, totalLength, buff);
+
+    //pack common header
+    _commonHeader.unpack(buff);
+
+    //unpack descriptor
+    struct tools_open_package_descriptor packageDescriptor;
+    int arr_size = tools_open_package_descriptor_size();
+    u_int8_t * arr = new u_int8_t[arr_size];
+    buff.read(arr, arr_size);
+    memset(&packageDescriptor, 0x0, arr_size);
+    tools_open_package_descriptor_unpack(&packageDescriptor, arr);
+    delete[] arr;
+    arr = NULL;
+
+    _deviceDescriptorsCount = packageDescriptor.num_of_devices;
+    _componentsCount = packageDescriptor.num_of_components;
+    _componentsBlockOffset = packageDescriptor.cb_offset;
+    _componentsBlockArchiveSize = packageDescriptor.cb_archive_size;
+    _componentsBlockSize = (u_int64_t)(
+            packageDescriptor.cb_size_l | (u_int64_t)packageDescriptor.cb_size_h << 32);
+
+    u_int8_t extIdx = 0;
+    //pack Version Extension
+    _version.unpack(buff);
+    extIdx++;
+
+    //pack SHA256 Extension
+    //_SHA256ExtensionOffset = buff.size();
+    _SHA256Extension.unpack(buff);
+    extIdx++;
+
+    //pack DescriptorSHA256 Extension
+    _descriptorsSHA256Extension.unpack(buff);
+    extIdx++;;
+
+    //pack optional extensions
+    for(; extIdx < extensionsCount; extIdx++) {
+        CommentExtension* extension = new CommentExtension("");
+        extension->unpack(buff);
+        addExtension(extension);
+        //_extensions.push_back(extension);
+    }
+    return true;
+}
+
 void PackageDescriptor::setDescriptorsSHA256(const vector<u_int8_t>& digest)
 {
     _descriptorsSHA256Extension.setDigest(digest);
@@ -199,6 +264,21 @@ void DeviceDescriptor::pack(vector<u_int8_t>& buff) const
     }
 }
 
+bool DeviceDescriptor::unpack(Mfa2Buffer & buff) {
+    //unpack extensions
+    u_int8_t extensionsCount;
+    u_int16_t totalLength;
+    unpackMultiPart(extensionsCount, totalLength, buff);
+    _commonHeader.unpack(buff);
+
+    //pack PSID
+    _PSID.unpack(buff);
+
+    ComponentPointerExtension compExt(0);
+    compExt.unpack(buff);
+    _componentPointers.push_back(compExt);
+    return true;
+}
 
 /* Class ComponentDescriptor */
 ComponentDescriptor::ComponentDescriptor(VersionExtension version, string source) :
@@ -249,4 +329,30 @@ void ComponentDescriptor::pack(vector<u_int8_t>& buff) const
 
 }
 
+bool ComponentDescriptor::unpack(Mfa2Buffer & buff) {
+    //unpack extensions
+    u_int8_t extensionsCount;
+    u_int16_t totalLength;
+    unpackMultiPart(extensionsCount, totalLength, buff);
 
+    //unpack common header
+    _commonHeader.unpack(buff);
+
+    //unpack descriptor
+    struct tools_open_component_desciptor componentDescriptor;
+    int arr_size = tools_open_component_desciptor_size();
+    u_int8_t * arr = new u_int8_t[arr_size];
+    buff.read(arr, arr_size);
+    memset(&componentDescriptor, 0x0, arr_size);
+    tools_open_component_desciptor_unpack(&componentDescriptor, arr);
+    delete[] arr;
+    arr = NULL;
+    _binarySize = componentDescriptor.size;
+    _componentBlockOffset = (u_int64_t)(
+            componentDescriptor.cb_offset_l | (u_int64_t)componentDescriptor.cb_offset_h << 32);
+
+    //unpack version
+    _version.unpack(buff);
+
+    return true;
+}

@@ -67,13 +67,15 @@ CAP_LANE_MARGINING = 0x27
 CAP_PHYSICAL_LAYER_GEN4 = 0x26
 CAP_DPC= 0x1d
 CAP_ACS = 0xd    
+CAP_ATS = 0xf    
 # Key:ID, value:size
 CAP_EXTENDED_DICT = {CAP_AER: 0x48,
                     CAP_SRIOV: 0x40,
                     CAP_SECONDRY_PCI_EXPRESS: 0x10,
                     CAP_LANE_MARGINING: 0x48,
                     CAP_PHYSICAL_LAYER_GEN4: 0x40,
-                    CAP_DPC: 0x40
+                    CAP_DPC: 0x40,
+                    CAP_ATS: 0x8
                    }
 
 
@@ -137,7 +139,7 @@ class PCIDeviceBase(object):
         self.logger.debug("Reading and saving extended list ...")
         pci_extended_ptr = MAXIMUN_LEGACY_CAP_SIZE
         visited_capabilities = []
-        while pci_extended_ptr and pci_extended_ptr != 0xfff: # Reading PCI Extended Configurations on VM will return 0XFFFF For FBSD
+        while pci_extended_ptr and pci_extended_ptr != 0xfff: # Reading PCI Extended Configurations on VM will return 0XFFF For FBSD
             assert pci_extended_ptr >= MAXIMUN_LEGACY_CAP_SIZE, "Extended pointer (<{0:#x}>) is out of range".format(pci_extended_ptr)
             capability_id = self.read_word(pci_extended_ptr)
             if capability_id is None: # Reading PCI Extended Configurations on VM will return None

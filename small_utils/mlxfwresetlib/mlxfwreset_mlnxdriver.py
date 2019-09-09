@@ -223,7 +223,7 @@ class MlnxDriverFreeBSD(MlnxDriver):
 
 class MlnxDriverWindows(MlnxDriver):
 
-    def get_device_drivers(self, logger, seg_num, bus_num, device_num):
+    def get_device_drivers(self, logger, seg_bus_device_list):
 
         def read_4_lines(txt):
             'Generator to read 4 non-empty lines'
@@ -232,10 +232,13 @@ class MlnxDriverWindows(MlnxDriver):
             assert len(lines) % 4 == 0
 
             lines = iter(lines)
+            try:
             while True:
                 yield (next(lines), next(lines), next(lines), next(lines))
+            except StopIteration:
+                return
 
-        cmd = 'powershell.exe "Get-NetAdapterHardwareInfo | Format-List -Property Segment,Bus,Device,Name'
+        cmd = 'powershell.exe -c "Get-NetAdapterHardwareInfo | Format-List -Property Segment,Bus,Device,Name'
         logger.debug(cmd)
         (rc, out, _) = cmdExec(cmd)
         if rc != 0:
@@ -247,9 +250,10 @@ class MlnxDriverWindows(MlnxDriver):
             seg_num_ii = int(seg_line.split(':')[1])
             bus_num_ii = int(bus_line.split(':')[1])
             device_num_ii = int(device_line.split(':')[1])
+            seg_bus_device_list_ii = (seg_num_ii, bus_num_ii, device_num_ii)
             name_ii = name_line.split(':')[1].strip()
 
-            if seg_num_ii == seg_num and bus_num_ii == bus_num and device_num_ii == device_num:
+            if seg_bus_device_list_ii in seg_bus_device_list:
                 drivers_names.append(name_ii)
 
         return drivers_names
@@ -261,20 +265,23 @@ class MlnxDriverWindows(MlnxDriver):
             super(MlnxDriverWindows, self).__init__(logger, MlnxDriver.DRIVER_IGNORE)
             return
 
-        # TODO : devices is for socket-direct, but for now SD is not supported anyway
-
+        seg_bus_device_list = []
         # Extract bus and device from the device_name
-        seg_bus_device = mlxfwreset_utils.getDevDBDF(devices[0],logger).split('.')[0]
-        seg_num, bus_num, device_num = int(seg_bus_device.split(':')[0],16), int(seg_bus_device.split(':')[1],16), int(seg_bus_device.split(':')[2],16)
+        for device in devices:
+            seg_bus_device = mlxfwreset_utils.getDevDBDF(device,logger).split('.')[0]
+            seg_num = int(seg_bus_device.split(':')[0],16)
+            bus_num = int(seg_bus_device.split(':')[1],16)
+            device_num = int(seg_bus_device.split(':')[2],16)
+            seg_bus_device_list.append((seg_num, bus_num, device_num))
 
         # Find the network adapters for the dus:device
-        targetedAdaptersTemp = self.get_device_drivers(logger, seg_num, bus_num, device_num)
+        targetedAdaptersTemp = self.get_device_drivers(logger, seg_bus_device_list)
         logger.debug(targetedAdaptersTemp)
 
         # Filter the network adapter thar are disabled
         self.targetedAdapters = []
         for targetedAdapter in targetedAdaptersTemp:
-            cmd = 'powershell.exe "Get-NetAdapter \'%s\' | Format-List -Property Status' % targetedAdapter
+            cmd = 'powershell.exe -c "Get-NetAdapter \'%s\' | Format-List -Property Status' % targetedAdapter
             logger.debug(cmd)
             (rc, out, _) = cmdExec(cmd)
             if rc != 0:
@@ -289,7 +296,7 @@ class MlnxDriverWindows(MlnxDriver):
     def driverStart(self):
         self.logger.info('MlnxDriverWindows driverStart()')
         for targetedAdapter in self.targetedAdapters:
-            cmd = "powershell.exe Enable-NetAdapter '%s' " % targetedAdapter
+            cmd = "powershell.exe -c Enable-NetAdapter '%s' " % targetedAdapter
             self.logger.info(cmd)
             (rc, stdout, _) = cmdExec(cmd)
             if rc != 0:
@@ -299,7 +306,7 @@ class MlnxDriverWindows(MlnxDriver):
     def driverStop(self):
         self.logger.info('MlnxDriverWindows driverStop()')
         for targetedAdapter in self.targetedAdapters:
-            cmd = "powershell.exe Disable-NetAdapter '%s' -confirm:$false" % targetedAdapter
+            cmd = "powershell.exe -c Disable-NetAdapter '%s' -confirm:$false" % targetedAdapter
             self.logger.info(cmd)
             (rc, stdout, _) = cmdExec(cmd)
             if rc != 0:

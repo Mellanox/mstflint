@@ -58,8 +58,10 @@ struct mfile_t {
     int fd;
     int res_fd;     /*  Will be used with HCR if need*/
     int sock;     /*  in not -1 - remote interface */
-    void *ptr;
+    void *bar_virtual_addr;
     unsigned int map_size;
+    unsigned int bar0_gw_offset;//for MST_BAR0_GW_PCI devices, offset from BAR0 - gateway - for R/W operations
+    int file_lock_descriptor;//file descriptor to the lock file aka semaphore in order to protect parallel read/write GW operations
     unsigned long long start_idx;
     /************************ FPGA DDR3 *********************************/
     void *ddr3_ptr;

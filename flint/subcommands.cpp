@@ -2339,6 +2339,7 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
     else if (_flintParams.skip_rom_query) {
         printf("Rom Info:              type=UEFI version=skipped cpu=skipped\n");
         printf("                       type=PXE version=skipped devid=skipped cpu=skipped\n");
+        printf("                       type=NVMe version=skipped devid=skipped cpu=skipped\n");
     }
 
     if (isFs2) {
