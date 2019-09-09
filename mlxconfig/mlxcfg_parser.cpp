@@ -79,6 +79,9 @@ void MlxCfg::printHelp()
            IDENT "SYNOPSIS:\n"
            IDENT2 MLXCFG_NAME " [Options] <Commands> [Parameters]\n");
 
+    printf(IDENT "DESCRIPTION:\n"
+          IDENT2 "Allows the user to change some of the device configurations without having to\n"
+          IDENT2 "create and burn a new firmware.");
     // print options
     printf("\n");
     printf(IDENT "OPTIONS:\n");

@@ -222,6 +222,7 @@ typedef enum MType_t {
     MST_SOFTWARE = 0x20000,
     MST_DRIVER_CONF = 0x40000,
     MST_DRIVER_CR = 0x80000,
+    MST_BAR0_GW_PCI = 0x200000,
     MST_DEFAULT = 0xffffffff & ~MST_CABLE & ~MST_FPGA & ~MST_FPGA_ICMD & ~MST_FPGA_DRIVER
 } MType;
 

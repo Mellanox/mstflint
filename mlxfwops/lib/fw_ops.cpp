@@ -1043,8 +1043,9 @@ chip_type_t FwOperations::getChipType()
 bool FwOperations::getInfoFromHwDevid(u_int32_t hwDevId, chip_type_t& chipT, const u_int32_t **swIds)
 {
     int i = 0;
+    u_int32_t localDevId = hwDevId & 0xffff;//remove revison ID, it's not relevant here
     while (hwDevData[i].name != NULL) {
-        if (hwDevData[i].hwDevId == hwDevId) {
+        if (hwDevData[i].hwDevId == localDevId) {
             chipT = hwDevData[i].chipType;
             *swIds = hwDevData[i].swDevIds;
             return true;
@@ -1876,6 +1877,9 @@ const char* FwOperations::expRomType2Str(u_int16_t type)
 
     case 0x12:
         return "CLP";
+
+    case 0x13:
+        return "NVMe";
 
     case 0x21:
         return "FCODE";

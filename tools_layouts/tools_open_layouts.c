@@ -6519,6 +6519,9 @@ void tools_open_tools_open_print(const union tools_open_tools_open *ptr_struct, 
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "mcdd_descriptor:\n");
 	tools_open_mcdd_descriptor_print(&(ptr_struct->mcdd_descriptor), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "mirc_reg:\n");
+	tools_open_mirc_reg_print(&(ptr_struct->mirc_reg), fd, indent_level + 1);
 }
 
 unsigned int tools_open_tools_open_size(void)

@@ -1011,6 +1011,32 @@ Other values are reserved */
 };
 
 /* Description -   */
+/* Size in bytes - 8 */
+struct reg_access_hca_mfrl_reg_ext {
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - The firmware reset level. See 
+"
+MFRL - Management Firmware 
+Reset Level
+" on page 1407
+Only a single bit may be set.
+Bit 3: LEVEL3
+Bit 6: LEVEL6
+Other bits are reserved. */
+	/* 0x4.0 - 0x4.7 */
+	u_int8_t reset_level;
+	/* Description - Each bit represents a chip reset type.
+If set to '1', the reset is supported. 
+Bit 0: Full chip reset
+Bit 1: Port alive */
+	/* 0x4.8 - 0x4.15 */
+	u_int8_t reset_type;
+	/* Description - The requested reset. */
+	/* 0x4.24 - 0x4.26 */
+	u_int8_t rst_type_sel;
+};
+
+/* Description -   */
 /* Size in bytes - 160 */
 struct reg_access_hca_mgir {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
@@ -1048,6 +1074,42 @@ ment Info Layout
 ," on page 1168 */
 	/* 0x80.0 - 0x98.31 */
 	u_int32_t dev_info[7];
+};
+
+/* Description -   */
+/* Size in bytes - 16 */
+struct reg_access_hca_mpcir_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - If set to '01', activates the flow of preparation for FW ISSU, on all 
+services. The values in op-codes for "per-service" are ignored.
+If set to '10', returns to operational state on all services. The val
+ues in op-codes for "per-service" are ignored.
+11 - Reserved */
+	/* 0x0.30 - 0x0.31 */
+	u_int8_t all;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - For each of the services, the following operations are available:
+0: N/A (no action)
+1: start preparation flow for FW ISSU 
+2: return to operational service (end of FW ISSU flow)
+3: get status
+When set to '3', the current status will appear in corresponding 
+_stat 
+fields. */
+	/* 0x4.0 - 0x4.1 */
+	u_int8_t ports;
+/*---------------- DWORD[3] (Offset 0xc) ----------------*/
+	/* Description - Status for each of the services. 
+0: not in FW ISSU flow state (FW ISSU flow is not initiated) 
+1: done with preparations for FW ISSU flow
+2: Preparation for FW ISSU flow started but FW still not done ser
+vice handling
+ [Internal]: busy with some other critical flow)
+.
+For not implemented services on a particular system, the status 
+should be '1'. */
+	/* 0xc.0 - 0xc.1 */
+	u_int8_t ports_stat;
 };
 
 /* Description -   */
@@ -1582,9 +1644,15 @@ union reg_access_hca_reg_access_hca_Nodes {
 	/* Description -  */
 	/* 0x0.0 - 0xfc.31 */
 	struct reg_access_hca_fpga_cap fpga_cap;
+    /* Description -  */
+	/* 0x0.0 - 0x4.31 */
+	struct reg_access_hca_mfrl_reg_ext mfrl_reg_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x10.31 */
 	struct reg_access_hca_mqis_reg mqis_reg;
+    /* Description -  */
+	/* 0x0.0 - 0xc.31 */
+	struct reg_access_hca_mpcir_ext mpcir_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x10.31 */
 	struct reg_access_hca_mcqi_cap mcqi_cap;
@@ -1772,6 +1840,13 @@ void reg_access_hca_mcqs_reg_print(const struct reg_access_hca_mcqs_reg *ptr_str
 unsigned int reg_access_hca_mcqs_reg_size(void);
 #define REG_ACCESS_HCA_MCQS_REG_SIZE    (0x10)
 void reg_access_hca_mcqs_reg_dump(const struct reg_access_hca_mcqs_reg *ptr_struct, FILE *fd);
+/* mfrl_reg_ext */
+void reg_access_hca_mfrl_reg_ext_pack(const struct reg_access_hca_mfrl_reg_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_hca_mfrl_reg_ext_unpack(struct reg_access_hca_mfrl_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_hca_mfrl_reg_ext_print(const struct reg_access_hca_mfrl_reg_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_hca_mfrl_reg_ext_size(void);
+#define REG_ACCESS_HCA_MFRL_REG_EXT_SIZE    (0x8)
+void reg_access_hca_mfrl_reg_ext_dump(const struct reg_access_hca_mfrl_reg_ext *ptr_struct, FILE *fd);
 /* mgir */
 void reg_access_hca_mgir_pack(const struct reg_access_hca_mgir *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_hca_mgir_unpack(struct reg_access_hca_mgir *ptr_struct, const u_int8_t *ptr_buff);
@@ -1779,6 +1854,13 @@ void reg_access_hca_mgir_print(const struct reg_access_hca_mgir *ptr_struct, FIL
 unsigned int reg_access_hca_mgir_size(void);
 #define REG_ACCESS_HCA_MGIR_SIZE    (0xa0)
 void reg_access_hca_mgir_dump(const struct reg_access_hca_mgir *ptr_struct, FILE *fd);
+/* mpcir_ext */
+void reg_access_hca_mpcir_ext_pack(const struct reg_access_hca_mpcir_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_hca_mpcir_ext_unpack(struct reg_access_hca_mpcir_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_hca_mpcir_ext_print(const struct reg_access_hca_mpcir_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_hca_mpcir_ext_size(void);
+#define REG_ACCESS_HCA_MPCIR_EXT_SIZE    (0x10)
+void reg_access_hca_mpcir_ext_dump(const struct reg_access_hca_mpcir_ext *ptr_struct, FILE *fd);
 /* mpegc_reg */
 void reg_access_hca_mpegc_reg_pack(const struct reg_access_hca_mpegc_reg *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_hca_mpegc_reg_unpack(struct reg_access_hca_mpegc_reg *ptr_struct, const u_int8_t *ptr_buff);

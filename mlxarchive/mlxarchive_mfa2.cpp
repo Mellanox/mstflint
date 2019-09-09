@@ -160,3 +160,74 @@ void MFA2::generateBinary(vector<u_int8_t>& buff)
     //compute SHA256
 
 }
+
+MFA2 * MFA2::LoadMFA2Package(const string & file_name) {
+    Mfa2Buffer mfa2buff;
+    if(!mfa2buff.loadFile(file_name)) {
+        fprintf(stderr, "Failed to load mfa2 package: %s\n", file_name.c_str());
+        return NULL;
+    }
+    FingerPrint finger_print("");
+    VersionExtension version("");
+    PackageDescriptor        packageDescriptor(0, 0, version);
+    vector<DeviceDescriptor> deviceDescriptors;
+    vector<Component>        components;
+    MFA2 * mfa2pkg = new MFA2(packageDescriptor, deviceDescriptors, components);
+    if(!mfa2pkg->unpack(mfa2buff)) {
+        delete mfa2pkg;
+        mfa2pkg =  NULL;
+    }
+    return mfa2pkg;
+}
+
+bool MFA2::unpack(Mfa2Buffer & buff) {
+    _fingerPrint.unpack(buff);
+    _packageDescriptor.unpack(buff);
+    u_int16_t devCount = _packageDescriptor.getDeviceDescriptorsCount();
+    u_int16_t compCount = _packageDescriptor.getComponentsCount();
+
+    for(u_int16_t devIdx=0; devIdx<devCount; devIdx++) {
+        vector<ComponentPointerExtension> componentPointers;
+        PSIDExtension psidExt("");
+        DeviceDescriptor devDescriptor(componentPointers, psidExt);
+        devDescriptor.unpack(buff);
+        _deviceDescriptors.push_back(devDescriptor);
+    }
+
+    for(u_int16_t compIdx=0; compIdx<compCount; compIdx++) {
+        VersionExtension version("");
+        ComponentDescriptor compDescriptor(version, "");
+        compDescriptor.unpack(buff);
+        Component comp(compDescriptor);
+        _components.push_back(comp);
+    }
+
+    return true;
+}
+
+void MFA2::dump() {
+    //printf("Finger print    : %s\n", _fingerPrint.toString().c_str());
+    u_int16_t devCount = _packageDescriptor.getDeviceDescriptorsCount();
+    //u_int16_t compCount = _packageDescriptor.getComponentsCount();
+    printf("Package Version : %s\n", _packageDescriptor.getVersionExtension().getVersion().c_str());
+    printf("Creation Time   : %s\n", _packageDescriptor.getVersionExtension().getDateAndTime().c_str());
+    printf("Extensions      : %u\n", _packageDescriptor.getExtensionsCount());
+    printf("Devices         : %u\n", devCount);
+    for(u_int16_t index=0; index < devCount; index++) {
+        DeviceDescriptor & devDescriptor = _deviceDescriptors[index];
+        string psid = devDescriptor.getPSIDExtension().getString();
+        u_int8_t compPtrCount = devDescriptor.getComponentPointerExtensionsCount();
+        printf("    PSID       : %s\n", psid.c_str());
+        printf("    Components : %u\n", compPtrCount);
+        for(u_int8_t comp=0; comp < compPtrCount; comp++) {
+            const ComponentPointerExtension & compPtr = devDescriptor.getComponentPointerExtension(comp);
+            u_int16_t compIndex = compPtr.getComponentIndex();
+            Component compObj = _components[compIndex];
+            const ComponentDescriptor & compDescr = compObj.getComponentDescriptor();
+            printf("        Version : %s\n", compDescr.getVersionExtension().getVersion().c_str());
+            printf("        Date    : %s\n", compDescr.getVersionExtension().getDateAndTime().c_str());
+        }
+
+    }
+//    printf("Components      : %u\n", compCount);
+}

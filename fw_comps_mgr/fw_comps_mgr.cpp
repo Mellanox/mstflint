@@ -74,9 +74,9 @@ static void mft_signal_set_handling(int isOn)
 
 
 #ifndef UEFI_BUILD
-#define DPRINTF(args)        do { char *reacDebug = getenv("REACTIVATION_DEBUG"); \
+#define DPRINTF(args)        do { char *reacDebug = getenv("FW_COMPS_DEBUG"); \
                                   if (reacDebug != NULL) { \
-                                      printf("[REACTIVATION_DEBUG]: -D- "); printf args;} } while (0)
+                                      printf("[FW_COMPS_DEBUG]: -D- "); printf args;} } while (0)
 #else
 #define DPRINTF(...)
 #endif
@@ -292,11 +292,7 @@ bool FwCompsMgr::getDeviceHWInfo(FwCompsMgr::MQISDeviceDescriptionT op, vector<u
         return false;
     }
     reg_access_status_t rc;
-    int maxDataSize = mget_max_reg_size(mf, MACCESS_REG_METHOD_GET) - sizeof(mqisRegister);
-    if (maxDataSize > MAX_REG_DATA) {
-        maxDataSize = sizeof(mqisRegister);
-    }
-    std::vector<u_int32_t> dataVector(maxDataSize / 4, 0);
+    int maxDataSize = sizeof(mqisRegister.info_string);
 
     memset(&mqisRegister, 0, sizeof(mqisReg));
     if (op < MQIS_REGISTER_FIRST_VALUE || op > MQIS_REGISTER_LAST_VALUE)
@@ -304,7 +300,6 @@ bool FwCompsMgr::getDeviceHWInfo(FwCompsMgr::MQISDeviceDescriptionT op, vector<u
 
     mqisRegister.info_type = (u_int8_t)op;
     mqisRegister.read_length = maxDataSize;
-    mqisRegister.info_string = dataVector.data();
     mft_signal_set_handling(1);
 
     rc = reg_access_mqis(mf, REG_ACCESS_METHOD_GET, &mqisRegister);
@@ -316,14 +311,17 @@ bool FwCompsMgr::getDeviceHWInfo(FwCompsMgr::MQISDeviceDescriptionT op, vector<u
     if (infoSize == 0) {
         return false;
     }
-    infoString.resize(infoSize + 1, 0);
-    if (mqisRegister.info_length > maxDataSize) {
-        dataVector.resize((infoSize + 3) / 4);
-        int leftSize = infoSize - maxDataSize;
+    infoString.resize(infoSize + 1, '\0');
+
+    // copy the output
+    memcpy(infoString.data(), mqisRegister.info_string,
+            mqisRegister.read_length);
+
+    if (infoSize > mqisRegister.read_length) {
+        int leftSize = infoSize - mqisRegister.read_length;
         while (leftSize > 0) {
             mqisRegister.read_offset = infoSize - leftSize;
             mqisRegister.read_length = leftSize > maxDataSize ? maxDataSize : leftSize;
-            mqisRegister.info_string = dataVector.data() + (mqisRegister.read_offset / 4);
             mft_signal_set_handling(1);
 
             rc = reg_access_mqis(mf, REG_ACCESS_METHOD_GET, &mqisRegister);
@@ -331,11 +329,11 @@ bool FwCompsMgr::getDeviceHWInfo(FwCompsMgr::MQISDeviceDescriptionT op, vector<u
             if (rc) {
                 return false;
             }
-            leftSize = leftSize - maxDataSize;
+            memcpy(infoString.data() + mqisRegister.read_offset,
+                   (mqisRegister.info_string), mqisRegister.read_length);
+            leftSize -= mqisRegister.read_length;
         }
     }
-
-    memcpy(infoString.data(), dataVector.data(), infoSize);
     return true;
 }
 
@@ -443,6 +441,9 @@ FwCompsMgr::FwCompsMgr(mfile *mf, DeviceTypeT devType, int deviceIndex)
     _deviceIndex = deviceIndex;
     _accessObj = NULL;
     _mircCaps = false;
+#ifndef UEFI_BUILD    
+    _trm = NULL;
+#endif    
     initialize(mf);
 }
 
@@ -466,6 +467,9 @@ FwCompsMgr::FwCompsMgr(const char *devname, DeviceTypeT devType, int deviceIndex
 #endif
     _hwDevId = 0;
     _mircCaps = false;
+#ifndef UEFI_BUILD    
+    _trm = NULL;
+#endif    
     _lastError = FWCOMPS_SUCCESS;
     mfile *mf = mopen(devname);
     if (!mf) {
@@ -686,6 +690,7 @@ bool FwCompsMgr::burnComponents(std::vector<FwComponent>& comps,
             return false;
         }
         if (!controlFsm(FSM_CMD_VERIFY_COMPONENT, FSMST_LOCKED, 0, FSMST_NA, progressFuncAdv)) {
+            DPRINTF(("Verifying component has failed!\n"));
             return false;
         }
     }
@@ -761,7 +766,6 @@ void FwCompsMgr::getInfoAsVersion(std::vector<u_int32_t>& infoData,
 {
     u_int8_t *data = (u_int8_t *)(infoData.data());
     reg_access_hca_mcqi_version_unpack(cmpVer, data);
-    cmpVer->version_string = (u_int32_t *)(data + reg_access_hca_mcqi_version_size());
     //reg_access_hca_mcqi_version_print(cmpVer, stdout, 4);
 }
 
@@ -897,14 +901,17 @@ bool FwCompsMgr::setMacsGuids(mac_guid_t macGuid)
 u_int8_t transRomType(u_int8_t mgirRomType)
 {
     switch (mgirRomType) {
-    case 0x1:
+    case 0x1: //FLEXBOOT
         return 0x10;
 
-    case 0x2:
+    case 0x2: //UEFI
         return 0x11;
 
-    case 0x3:
+    case 0x3: //UEFI_CLP
         return 0x12;
+
+    case 0x4: //NVMe
+        return 0x13;
 
     default:
         return mgirRomType;
@@ -1025,31 +1032,24 @@ const char*  FwCompsMgr::getLastErrMsg()
     switch (_lastError) {
     case FWCOMPS_ABORTED:
         return "Aborting ... received interrupt signal";
-        break;
 
     case FWCOMPS_MCC_ERR_REJECTED_DIGEST_ERR:
         return "The Digest in the signature is wrong";
-        break;
 
     case FWCOMPS_MCC_ERR_REJECTED_UNSIGNED:
         return "The component is not signed";
-        break;
 
     case FWCOMPS_MCC_ERR_BLOCKED_PENDING_RESET:
         return "The firmware image was already updated on flash, pending reset.";
-        break;
 
     case FWCOMPS_MCC_ERR_REJECTED_NOT_APPLICABLE:
         return "Component is not applicable";
-        break;
 
     case FWCOMPS_MCC_ERR_REJECTED_AUTH_FAILED:
         return "Rejected authentication";
-        break;
 
     case FWCOMPS_MCC_ERR_REJECTED_KEY_NOT_APPLICABLE:
         return "The key is not applicable";
-        break;
 
     case FWCOMPS_READ_COMP_NOT_SUPPORTED:
         return "Reading component is not supported";
@@ -1057,55 +1057,45 @@ const char*  FwCompsMgr::getLastErrMsg()
 
     case FWCOMPS_COMP_NOT_SUPPORTED:
         return "Component not supported";
-        break;
+
+    case FWCOMPS_VERIFY_FAILED:
+        return "Firmware verifying failed!";
 
     case FWCOMPS_CR_ERR:
         return "Failed to access CR-Space";
-        break;
 
     case FWCOMPS_MCC_REJECTED_NOT_A_SECURED_FW:
         return "The firmware image is not secured";
-        break;
 
     case FWCOMPS_MCC_REJECTED_MFG_BASE_MAC_NOT_LISTED:
         return "The manufacturing base MAC was not listed";
-        break;
 
     case FWCOMPS_MCC_REJECTED_NO_DEBUG_TOKEN:
         return "There is no Debug Token installed";
-        break;
 
     case FWCOMPS_MCC_REJECTED_VERSION_NUM_MISMATCH:
         return "Firmware version mismatch";
-        break;
 
     case FWCOMPS_MCC_REJECTED_USER_TIMESTAMP_MISMATCH:
         return "User timestamp mismatch";
-        break;
 
     case FWCOMPS_MCC_REJECTED_FORBIDDEN_VERSION:
         return "Forbidden version rejected";
-        break;
 
     case FWCOMPS_MCC_FLASH_ERASE_ERROR:
         return "Error while erasing the flash";
-        break;
 
     case FWCOMPS_MCC_UNEXPECTED_STATE:
         return "Unexpected state";
-        break;
 
     case FWCOMPS_MCC_TOUT:
         return "Time-out reached while waiting for the FSM to be updated";
-        break;
 
     case FWCOMPS_MCC_REJECTED_IMAGE_CAN_NOT_BOOT_FROM_PARTITION:
         return "Image cannot boot from partition.";
-        break;
 
     case FWCOMPS_UNSUPPORTED_DEVICE:
         return "Unsupported device";
-        break;
 
     case FWCOMPS_MTCR_OPEN_DEVICE_ERROR:
         return "Failed to open device";
@@ -1155,7 +1145,7 @@ bool FwCompsMgr::lock_flash_semaphore()
         return false;
     }
     rc = trm_lock(_trm, TRM_RES_FLASH_PROGRAMING, MAX_FLASH_PROG_SEM_RETRY_CNT);
-    if (rc) {
+    if (rc && rc != TRM_STS_RES_NOT_SUPPORTED) {
         _lastError = FWCOMPS_FAIL_TO_LOCK_FLASH_SEMAPHORE;
         return false;
     }
@@ -1211,7 +1201,7 @@ bool FwCompsMgr::getComponentVersion(FwComponent::comps_ids_t compType,
     if (cmpVer->version_string_length) {
         _productVerStr.resize(cmpVer->version_string_length);
         memcpy(_productVerStr.data(), cmpVer->version_string, cmpVer->version_string_length);
-        cmpVer->version_string = NULL;
+        cmpVer->version_string[0] = '\0';
     }
     return true;
 }
@@ -1268,6 +1258,7 @@ bool FwCompsMgr::fwReactivateImage()
     int maxNumOfIterations = maxWaitingTime / sleepTimeMs;//600 iterations
     if (_mircCaps == false) {
         _lastError = FWCOMPS_IMAGE_REACTIVATION_FW_NOT_SUPPORTED;
+        setLastRegisterAccessStatus(ME_REG_ACCESS_NOT_SUPPORTED);
         return false;
     }
     reg_access_status_t rc;
@@ -1276,6 +1267,7 @@ bool FwCompsMgr::fwReactivateImage()
     if (rc) {
         DPRINTF(("1 reg_access_mirc failed rc = %d\n", rc));
         _lastError = regErrTrans(rc);
+        setLastRegisterAccessStatus(rc);
         return false;
     }
     else {
@@ -1294,6 +1286,7 @@ bool FwCompsMgr::fwReactivateImage()
             deal_with_signal();
             if (rc) {
                 _lastError = regErrTrans(rc);
+                setLastRegisterAccessStatus(rc);
                 DPRINTF(("3 reg_access_mirc failed rc = %d\n", rc));
                 return false;
             }
@@ -1305,7 +1298,6 @@ bool FwCompsMgr::fwReactivateImage()
         } 
     }
     if (mirc.status_code == IMAGE_REACTIVATION_SUCCESS) {
-        
         return true;
     }
     else if (mirc.status_code == IMAGE_REACTIVATION_PROHIBITED_FW_VER_ERR) {
@@ -1335,7 +1327,6 @@ bool FwCompsMgr::fwReactivateImage()
     else {
         _lastError = FWCOMPS_IMAGE_REACTIVATION_UNKNOWN_ERROR;
     }
-    
     return false;
 }
 

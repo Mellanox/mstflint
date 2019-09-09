@@ -435,11 +435,7 @@ bool getDeviceInformationString(const char* dev, info_type_t op, vector<char>& i
        return false;
     }
     reg_access_status_t rc;
-    int maxDataSize = mget_max_reg_size(mf, MACCESS_REG_METHOD_GET) - sizeof(mqisRegister);
-    if (maxDataSize > MAX_REG_DATA) {
-        maxDataSize = sizeof(mqisRegister);
-    }
-    std::vector<u_int32_t> dataVector(maxDataSize / 4, 0);
+    int maxDataSize = sizeof(mqisRegister.info_string);
 
     memset(&mqisRegister, 0, sizeof(mqisReg));
     if (op == Device_Name){
@@ -451,7 +447,6 @@ bool getDeviceInformationString(const char* dev, info_type_t op, vector<char>& i
         return false;
     }
     mqisRegister.read_length = maxDataSize;
-    mqisRegister.info_string = dataVector.data();
     mft_signal_set_handling(1);
 
     rc = reg_access_mqis(mf, REG_ACCESS_METHOD_GET, &mqisRegister);
@@ -465,26 +460,29 @@ bool getDeviceInformationString(const char* dev, info_type_t op, vector<char>& i
         return false;
     }
     infoString.resize(infoSize+1, 0);
-    if (mqisRegister.info_length > maxDataSize) {
-        dataVector.resize((infoSize + 3) / 4);
-        int leftSize = infoSize - maxDataSize;
+
+    // copy the output
+    memcpy(infoString.data(), mqisRegister.info_string,
+            mqisRegister.read_length);
+
+    if (infoSize > mqisRegister.read_length) {
+        int leftSize = infoSize - mqisRegister.read_length;
         while (leftSize > 0) {
             mqisRegister.read_offset = infoSize - leftSize;
             mqisRegister.read_length = leftSize > maxDataSize ? maxDataSize : leftSize;
-            mqisRegister.info_string = dataVector.data() + (mqisRegister.read_offset / 4);
             mft_signal_set_handling(1);
 
             rc = reg_access_mqis(mf, REG_ACCESS_METHOD_GET, &mqisRegister);
             dealWithSignal();
             if (rc) {
-               mclose(mf);
                return false;
             }
-            leftSize = leftSize - maxDataSize;
+            memcpy(infoString.data() + mqisRegister.read_offset,
+                   (mqisRegister.info_string), mqisRegister.read_length);
+            leftSize -= mqisRegister.read_length;
         }
     }
 
-    memcpy(infoString.data(), dataVector.data(), infoSize);
     mclose(mf);
     string str = string (infoString.data());
     if (str.length() == 0) {

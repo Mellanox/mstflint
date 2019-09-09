@@ -566,7 +566,7 @@ int icmd_send_command_int(mfile    *mf,
     CHECK_RC_GO_TO(ret, cleanup);
 
     if (!skip_write) {
-        DBG_PRINTF("-D- Writing command to mailbox");
+        DBG_PRINTF("-D- Writing command to mailbox\n");
         if (mf->icmd.dma_icmd) {
             if (mtcr_memaccess(mf, 0, read_data_size, data, 1, MEM_ICMD)) {
                 ret = ME_ICMD_STATUS_CR_FAIL;

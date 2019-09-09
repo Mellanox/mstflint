@@ -729,7 +729,7 @@ const char* GenericCommander::loadConfigurationGetStr()
     int rc;
     dm_dev_id_t deviceId = DeviceUnknown;
     u_int32_t hwDevId, hwRevId;
-    struct cibfw_register_mfrl mfrl;
+    struct reg_access_hca_mfrl_reg_ext mfrl;
 
     if (dm_get_device_id(_mf, &deviceId, &hwDevId, &hwRevId) ) {
         throw MlxcfgException("Failed to identify the device");
