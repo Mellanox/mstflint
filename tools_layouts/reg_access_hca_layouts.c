@@ -1316,6 +1316,7 @@ void reg_access_hca_mcqi_reg_dump(const struct reg_access_hca_mcqi_reg *ptr_stru
 void reg_access_hca_mcqi_version_pack(const struct reg_access_hca_mcqi_version *ptr_struct, u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
+	int i;
 
 	offset = 24;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->version_string_length);
@@ -1331,11 +1332,16 @@ void reg_access_hca_mcqi_version_pack(const struct reg_access_hca_mcqi_version *
 	adb2c_push_integer_to_buff(ptr_buff, offset, 8, ptr_struct->user_defined_time);
 	offset = 192;
 	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->build_tool_version);
+	for (i = 0; i < 92; ++i) {
+		offset = adb2c_calc_array_field_address(280, 8, i, 992, 1);
+		adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->version_string[i]);
+	}
 }
 
 void reg_access_hca_mcqi_version_unpack(struct reg_access_hca_mcqi_version *ptr_struct, const u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
+	int i;
 
 	offset = 24;
 	ptr_struct->version_string_length = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
@@ -1351,10 +1357,16 @@ void reg_access_hca_mcqi_version_unpack(struct reg_access_hca_mcqi_version *ptr_
 	ptr_struct->user_defined_time = adb2c_pop_integer_from_buff(ptr_buff, offset, 8);
 	offset = 192;
 	ptr_struct->build_tool_version = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	for (i = 0; i < 92; ++i) {
+		offset = adb2c_calc_array_field_address(280, 8, i, 992, 1);
+		ptr_struct->version_string[i] = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	}
 }
 
 void reg_access_hca_mcqi_version_print(const struct reg_access_hca_mcqi_version *ptr_struct, FILE *fd, int indent_level)
 {
+	int i;
+
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "======== reg_access_hca_mcqi_version ========\n");
 
@@ -1372,8 +1384,10 @@ void reg_access_hca_mcqi_version_print(const struct reg_access_hca_mcqi_version 
 	fprintf(fd, "user_defined_time    : " U64H_FMT "\n", ptr_struct->user_defined_time);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "build_tool_version   : " U32H_FMT "\n", ptr_struct->build_tool_version);
+	for (i = 0; i < 92; ++i) {
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "unlimited array: (version_string)\n");
+		fprintf(fd, "version_string_%03d  : " UH_FMT "\n", i, ptr_struct->version_string[i]);
+	}
 }
 
 unsigned int reg_access_hca_mcqi_version_size(void)
@@ -1742,6 +1756,7 @@ void reg_access_hca_mpegc_reg_dump(const struct reg_access_hca_mpegc_reg *ptr_st
 void reg_access_hca_mqis_reg_pack(const struct reg_access_hca_mqis_reg *ptr_struct, u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
+	int i;
 
 	offset = 24;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->info_type);
@@ -1751,11 +1766,16 @@ void reg_access_hca_mqis_reg_pack(const struct reg_access_hca_mqis_reg *ptr_stru
 	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->read_length);
 	offset = 64;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->read_offset);
+	for (i = 0; i < 8; ++i) {
+		offset = adb2c_calc_array_field_address(152, 8, i, 192, 1);
+		adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->info_string[i]);
+	}
 }
 
 void reg_access_hca_mqis_reg_unpack(struct reg_access_hca_mqis_reg *ptr_struct, const u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
+	int i;
 
 	offset = 24;
 	ptr_struct->info_type = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
@@ -1765,10 +1785,16 @@ void reg_access_hca_mqis_reg_unpack(struct reg_access_hca_mqis_reg *ptr_struct, 
 	ptr_struct->read_length = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
 	offset = 64;
 	ptr_struct->read_offset = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	for (i = 0; i < 8; ++i) {
+		offset = adb2c_calc_array_field_address(152, 8, i, 192, 1);
+		ptr_struct->info_string[i] = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
+	}
 }
 
 void reg_access_hca_mqis_reg_print(const struct reg_access_hca_mqis_reg *ptr_struct, FILE *fd, int indent_level)
 {
+	int i;
+
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "======== reg_access_hca_mqis_reg ========\n");
 
@@ -1780,8 +1806,10 @@ void reg_access_hca_mqis_reg_print(const struct reg_access_hca_mqis_reg *ptr_str
 	fprintf(fd, "read_length          : " UH_FMT "\n", ptr_struct->read_length);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "read_offset          : " UH_FMT "\n", ptr_struct->read_offset);
+	for (i = 0; i < 8; ++i) {
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "unlimited array: (info_string)\n");
+		fprintf(fd, "info_string_%03d     : " UH_FMT "\n", i, ptr_struct->info_string[i]);
+	}
 }
 
 unsigned int reg_access_hca_mqis_reg_size(void)
