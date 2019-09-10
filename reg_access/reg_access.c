@@ -523,8 +523,7 @@ reg_access_status_t reg_access_secure_host(mfile *mf, reg_access_method_t method
 ************************************/
 reg_access_status_t reg_access_mqis(mfile *mf, reg_access_method_t method, struct reg_access_hca_mqis_reg *mqis)
 {
-    REG_ACCESS_GEN_DATA_WITH_STATUS(mf, method, REG_ID_MQIS, mqis, mqis_reg,
-                                    reg_access_hca, reg_size, r_size_reg, w_size_reg, reg_access_hca_mqis_reg_size, info_string, read_length);
+    REG_ACCCESS(mf, method, REG_ID_MQIS, mqis, mqis_reg, reg_access_hca);
 }
 
 /************************************
