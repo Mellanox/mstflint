@@ -872,7 +872,7 @@ VATION_METHOD Info Layout
 };
 
 /* Description -   */
-/* Size in bytes - 32 */
+/* Size in bytes - 124 */
 struct reg_access_hca_mcqi_version {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
@@ -893,13 +893,12 @@ build_time */
 	u_int32_t version;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - Time of component creation. Valid only if 
-build_
-time_valid
- is set. See 
-Table 1163, "
+build_time_valid
+ 
+is set. See 
+Table 1301, "
 Date-Time Layout
-," on 
-page 1232 */
+," on page 1390 */
 	/* 0x8.0 - 0xc.31 */
 	u_int64_t build_time;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
@@ -907,10 +906,10 @@ page 1232 */
 only if 
 user_defined_time_valid
  is set. See 
-Table 1163, 
+Table 1301, 
 "
 Date-Time Layout
-," on page 1232 */
+," on page 1390 */
 	/* 0x10.0 - 0x14.31 */
 	u_int64_t user_defined_time;
 /*---------------- DWORD[6] (Offset 0x18) ----------------*/
@@ -920,8 +919,8 @@ Valid only when not equal to 0 */
 	u_int32_t build_tool_version;
 /*---------------- DWORD[8] (Offset 0x20) ----------------*/
 	/* Description - NULL terminated string representing the version. */
-	/* 0x20.0 - 0x20.31 */
-	u_int32_t *version_string;
+	/* 0x20.24 - 0x7c.23 */
+	u_int8_t version_string[92];
 };
 
 /* Description -   */
@@ -1193,14 +1192,17 @@ bound_stalled_reads_events - range 0   100. */
 };
 
 /* Description -   */
-/* Size in bytes - 16 */
+/* Size in bytes - 24 */
 struct reg_access_hca_mqis_reg {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Type of information string to be queried:
-0x0: VPD - Read the PCI Vital Product Data capability 
-content.
+0x0: VPD - Read the PCI Vital Product Data capability con
+tent.
 0x1: MODEL_NAME
 0x2: MODEL_DESCRIPTION
+0x3: IMAGE_VSD
+0x4: DEVICE_VSD
+0x5: ROM_INFO
 other values are reserved. */
 	/* 0x0.0 - 0x0.7 */
 	u_int8_t info_type;
@@ -1224,8 +1226,8 @@ of bytes actually read. */
 info_type
 . If the 
 information is not available, a NULL string is returned. */
-	/* 0x10.0 - 0x10.31 */
-	u_int32_t *info_string;
+	/* 0x10.24 - 0x18.23 */
+	u_int8_t info_string[8];
 };
 
 /* Description -   */
@@ -1624,7 +1626,7 @@ union reg_access_hca_reg_access_hca_Nodes {
 	/* 0x0.0 - 0xc.31 */
 	struct reg_access_hca_fpga_ctrl fpga_ctrl;
 	/* Description -  */
-	/* 0x0.0 - 0x20.31 */
+	/* 0x0.0 - 0x78.31 */
 	struct reg_access_hca_mcqi_version mcqi_version;
 	/* Description -  */
 	/* 0x0.0 - 0x80.31 */
@@ -1648,7 +1650,7 @@ union reg_access_hca_reg_access_hca_Nodes {
 	/* 0x0.0 - 0x4.31 */
 	struct reg_access_hca_mfrl_reg_ext mfrl_reg_ext;
 	/* Description -  */
-	/* 0x0.0 - 0x10.31 */
+	/* 0x0.0 - 0x14.31 */
 	struct reg_access_hca_mqis_reg mqis_reg;
     /* Description -  */
 	/* 0x0.0 - 0xc.31 */
@@ -1831,7 +1833,7 @@ void reg_access_hca_mcqi_version_pack(const struct reg_access_hca_mcqi_version *
 void reg_access_hca_mcqi_version_unpack(struct reg_access_hca_mcqi_version *ptr_struct, const u_int8_t *ptr_buff);
 void reg_access_hca_mcqi_version_print(const struct reg_access_hca_mcqi_version *ptr_struct, FILE *fd, int indent_level);
 unsigned int reg_access_hca_mcqi_version_size(void);
-#define REG_ACCESS_HCA_MCQI_VERSION_SIZE    (0x20)
+#define REG_ACCESS_HCA_MCQI_VERSION_SIZE    (0x7c)
 void reg_access_hca_mcqi_version_dump(const struct reg_access_hca_mcqi_version *ptr_struct, FILE *fd);
 /* mcqs_reg */
 void reg_access_hca_mcqs_reg_pack(const struct reg_access_hca_mcqs_reg *ptr_struct, u_int8_t *ptr_buff);
@@ -1873,7 +1875,7 @@ void reg_access_hca_mqis_reg_pack(const struct reg_access_hca_mqis_reg *ptr_stru
 void reg_access_hca_mqis_reg_unpack(struct reg_access_hca_mqis_reg *ptr_struct, const u_int8_t *ptr_buff);
 void reg_access_hca_mqis_reg_print(const struct reg_access_hca_mqis_reg *ptr_struct, FILE *fd, int indent_level);
 unsigned int reg_access_hca_mqis_reg_size(void);
-#define REG_ACCESS_HCA_MQIS_REG_SIZE    (0x10)
+#define REG_ACCESS_HCA_MQIS_REG_SIZE    (0x18)
 void reg_access_hca_mqis_reg_dump(const struct reg_access_hca_mqis_reg *ptr_struct, FILE *fd);
 /* mtrc_cap_reg */
 void reg_access_hca_mtrc_cap_reg_pack(const struct reg_access_hca_mtrc_cap_reg *ptr_struct, u_int8_t *ptr_buff);
