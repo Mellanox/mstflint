@@ -33,23 +33,26 @@
 #include "reg_access.h"
 #define REG_ID_PCNR  0x5050
 #define REG_ID_MIRC  0x9162
+#define REG_ID_MGIR  0x9020
 #define REG_ID_MFPA  0x9010
 #define REG_ID_MFBA  0x9011
 #define REG_ID_MFBE  0x9012
 #define REG_ID_MFMC  0x9013
 #define REG_ID_PMDIO 0x9017
 #define REG_ID_MJTAG 0x901F
-#define REG_ID_MGIR  0x9020
+
 #define REG_ID_PMDIC 0x9021
 #define REG_ID_MNVA  0x9024
 #define REG_ID_MNVI  0x9025
-#define REG_ID_MNVIA 0x9029 // 4th gen
-#define REG_ID_MVTS  0x902c
-#define REG_ID_NVQC  0x9030
-#define REG_ID_NVIA  0x9033 // 5th gen
-#define REG_ID_NVQGC 0x9034
-#define REG_ID_MNVGN 0x9035
 
+#define REG_ID_MVTS  0x902c
+
+
+#define REG_ID_NVQGC 0x9034
+#define REG_ID_MNVIA 0x9029 // 4th gen
+#define REG_ID_NVQC  0x9030
+#define REG_ID_MNVGN 0x9035
+#define REG_ID_NVIA  0x9033 // 5th gen
 #define REG_ID_MGNLE 0x9036
 #define REG_ID_MLCOK 0x402D
 #define REG_ID_PLIB  0x500a
@@ -75,7 +78,7 @@
 
 
 
-// WA for MGIR: the reg size is too big so we limit it to INBAND_MAX_REG_SIZE
+//WA for MGIR: the reg size is too big so we limit it to INBAND_MAX_REG_SIZE
 #define INBAND_MAX_REG_SIZE 44
 #define MGIR_REG_SIZE INBAND_MAX_REG_SIZE
 // End of WA
@@ -239,6 +242,168 @@ reg_access_status_t reg_access_strs_resource_reg(mfile *mf, reg_access_method_t 
     REG_ACCCESS(mf, method, REG_ID_STRS_RESOURCE, strs_resource_reg, strs_resource_reg, reg_access_hca);
 }
 
+
+
+
+
+/************************************
+* Function: reg_access_mnva
+************************************/
+reg_access_status_t reg_access_mnva(mfile *mf, reg_access_method_t method, struct tools_open_mnva *mnva)
+{
+    // reg_size is in bytes
+    u_int32_t reg_size = (mnva->nv_hdr.length << 2) + tools_open_nv_hdr_size();
+    u_int32_t r_size_reg = reg_size;
+    u_int32_t w_size_reg = reg_size;
+    if (method == REG_ACCESS_METHOD_GET) {
+        w_size_reg -= mnva->nv_hdr.length << 2;
+    } else {
+        r_size_reg -= mnva->nv_hdr.length << 2;
+    }
+    REG_ACCCESS_VAR(mf, method, REG_ID_MNVA, mnva, mnva, reg_size, r_size_reg, w_size_reg, tools_open);
+}
+
+/************************************
+* Function: reg_access_mnvi
+************************************/
+reg_access_status_t reg_access_mnvi(mfile *mf, reg_access_method_t method, struct tools_open_mnvi *mnvi)
+{
+    if (method != REG_ACCESS_METHOD_SET) {  // this register supports only set method
+        return ME_REG_ACCESS_BAD_METHOD;
+    }
+    REG_ACCCESS(mf, method, REG_ID_MNVI, mnvi, mnvi, tools_open);
+}
+
+/************************************
+* Function: reg_access_mnvia
+************************************/
+reg_access_status_t reg_access_mnvia(mfile *mf, reg_access_method_t method, struct tools_open_mnvia *mnvia)
+{
+    if (method != REG_ACCESS_METHOD_SET) {  // this register supports only set method
+        return ME_REG_ACCESS_BAD_METHOD;
+    }
+    REG_ACCCESS(mf, method, REG_ID_MNVIA, mnvia, mnvia, tools_open);
+}
+
+/************************************
+* Function: reg_access_nvqgc
+************************************/
+reg_access_status_t reg_access_nvqgc(mfile *mf, reg_access_method_t method, struct tools_open_nvqgc *nvqgc)
+{
+    if (method != REG_ACCESS_METHOD_GET) {  // this register supports only get method
+        return ME_REG_ACCESS_BAD_METHOD;
+    }
+    REG_ACCCESS(mf, method, REG_ID_NVQGC, nvqgc, nvqgc, tools_open);
+}
+
+
+
+
+
+
+
+
+/************************************
+* Function: reg_access_nvdi
+************************************/
+reg_access_status_t reg_access_nvdi(mfile *mf, reg_access_method_t method, struct tools_open_nvdi *nvdi)
+{
+    if (method != REG_ACCESS_METHOD_SET) {  // this register supports only set method
+        return ME_REG_ACCESS_BAD_METHOD;
+    }
+    REG_ACCCESS(mf, method, REG_ID_MNVI, nvdi, nvdi, tools_open);
+}
+
+/************************************
+* Function: reg_access_nvia
+************************************/
+reg_access_status_t reg_access_nvia(mfile *mf, reg_access_method_t method, struct tools_open_nvia *nvia)
+{
+    if (method != REG_ACCESS_METHOD_SET) {  // this register supports only set method
+        return ME_REG_ACCESS_BAD_METHOD;
+    }
+    REG_ACCCESS(mf, method, REG_ID_NVIA, nvia, nvia, tools_open);
+}
+
+/************************************
+* Function: reg_access_nvqc
+************************************/
+reg_access_status_t reg_access_nvqc(mfile *mf, reg_access_method_t method, struct tools_open_nvqc *nvqc)
+{
+    if (method != REG_ACCESS_METHOD_GET) {  // this register supports only get method
+        return ME_REG_ACCESS_BAD_METHOD;
+    }
+    REG_ACCCESS(mf, method, REG_ID_NVQC, nvqc, nvqc, tools_open);
+}
+
+
+
+
+
+/************************************
+* Function: reg_access_mnvgn
+************************************/
+reg_access_status_t reg_access_mnvgn(mfile *mf, reg_access_method_t method, struct tools_open_mnvgn *mnvgn, int *status)
+{
+    int data_size = tools_open_mnvgn_size();
+    if (method != REG_ACCESS_METHOD_GET) {  // this register supports only get method
+        return ME_REG_ACCESS_BAD_METHOD;
+    }
+
+    REG_ACCESS_GENERIC_VAR_WITH_STATUS(mf, method, REG_ID_MNVGN, mnvgn, mnvgn, data_size, data_size, data_size, \
+                                       tools_open_mnvgn_pack, tools_open_mnvgn_unpack, tools_open_mnvgn_size, \
+                                       tools_open_mnvgn_print, status);
+
+    if (rc || *status) { \
+        return (reg_access_status_t)rc; \
+    } \
+    return ME_OK;
+}
+
+
+
+
+
+
+/************************************
+* Function: reg_access_nvda
+************************************/
+reg_access_status_t reg_access_nvda(mfile *mf, reg_access_method_t method, struct tools_open_nvda *nvda)
+{
+    // reg_size is in bytes
+    u_int32_t reg_size = nvda->nv_hdr.length + tools_open_nv_hdr_fifth_gen_size();
+    u_int32_t r_size_reg = reg_size;
+    u_int32_t w_size_reg = reg_size;
+    if (method == REG_ACCESS_METHOD_GET) {
+        w_size_reg -= nvda->nv_hdr.length;
+    } else {
+        r_size_reg -= nvda->nv_hdr.length;
+    }
+    REG_ACCCESS_VAR(mf, method, REG_ID_MNVA, nvda, nvda, reg_size, r_size_reg, w_size_reg, tools_open);
+}
+
+/************************************
+* Function: reg_access_mgir
+************************************/
+reg_access_status_t reg_access_mgir(mfile *mf, reg_access_method_t method, struct tools_open_mgir *mgir)
+{
+    if (mf->tp == MST_IB || mf->tp == MST_MLNXOS) {
+        REG_ACCCESS_VAR(mf, method, REG_ID_MGIR, mgir, mgir, MGIR_REG_SIZE, MGIR_REG_SIZE, MGIR_REG_SIZE, tools_open);
+    } else {
+        REG_ACCCESS(mf, method, REG_ID_MGIR, mgir, mgir, tools_open);
+    }
+}
+
+/************************************
+* Function: reg_access_mirc
+************************************/
+reg_access_status_t reg_access_mirc(mfile *mf, reg_access_method_t method, struct tools_open_mirc_reg *mirc)
+{
+    REG_ACCCESS(mf, method, REG_ID_MIRC, mirc, mirc_reg, tools_open);
+}
+
+
+
 /************************************
 * Function: reg_access_mfba
 ************************************/
@@ -267,14 +432,45 @@ reg_access_status_t reg_access_mcam(mfile *mf, reg_access_method_t method, struc
     REG_ACCCESS(mf, method, REG_ID_MCAM, mcam, mcam, tools_open);
 }
 
+
+
 /************************************
 * Function: reg_access_mcda
 ************************************/
 reg_access_status_t reg_access_mcda(mfile *mf, reg_access_method_t method, struct reg_access_hca_mcda_reg *mcda)
 {
-    REG_ACCESS_GEN_DATA_WITH_STATUS(mf, method, REG_ID_MCDA, mcda, mcda_reg,
-                                    reg_access_hca, reg_size, r_size_reg, w_size_reg, reg_access_hca_mcda_reg_size, data, size);
+    REG_ACCCESS(mf, method, REG_ID_MCDA, mcda, mcda_reg, reg_access_hca);
 }
+
+/************************************
+* Function: reg_access_mqis
+************************************/
+reg_access_status_t reg_access_mqis(mfile *mf, reg_access_method_t method, struct reg_access_hca_mqis_reg *mqis)
+{
+    REG_ACCCESS(mf, method, REG_ID_MQIS, mqis, mqis_reg, reg_access_hca);
+}
+
+/************************************
+* Function: reg_access_mtrc_cap
+************************************/
+reg_access_status_t reg_access_mtrc_cap(mfile *mf, reg_access_method_t method, struct reg_access_hca_mtrc_cap_reg *mtrc_cap)
+{
+    REG_ACCCESS(mf, method, REG_ID_MTRC_CAP, mtrc_cap, mtrc_cap_reg, reg_access_hca);
+}
+
+
+/************************************
+* Function: reg_access_mpegc
+************************************/
+reg_access_status_t reg_access_mpegc(mfile *mf, reg_access_method_t method, struct reg_access_hca_mpegc_reg *mpegc)
+{
+//    reg_access_hca_mpegc_reg_dump(mpegc, stdout)s;
+    REG_ACCCESS(mf, method, REG_ID_MPEGC, mpegc, mpegc_reg, reg_access_hca);
+}
+
+
+
+
 
 /************************************
 * Function: reg_access_mcc
@@ -317,58 +513,7 @@ reg_access_status_t reg_access_mfpa(mfile *mf, reg_access_method_t method, struc
     REG_ACCCESS(mf, method, REG_ID_MFPA, mfpa, mfpa, register_access);
 }
 
-/************************************
-* Function: reg_access_mnva
-************************************/
-reg_access_status_t reg_access_mnva(mfile *mf, reg_access_method_t method, struct tools_open_mnva *mnva)
-{
-    // reg_size is in bytes
-    u_int32_t reg_size = (mnva->nv_hdr.length << 2) + tools_open_nv_hdr_size();
-    u_int32_t r_size_reg = reg_size;
-    u_int32_t w_size_reg = reg_size;
-    if (method == REG_ACCESS_METHOD_GET) {
-        w_size_reg -= mnva->nv_hdr.length << 2;
-    } else {
-        r_size_reg -= mnva->nv_hdr.length << 2;
-    }
-    REG_ACCCESS_VAR(mf, method, REG_ID_MNVA, mnva, mnva, reg_size, r_size_reg, w_size_reg, tools_open);
-}
 
-/************************************
-* Function: reg_access_mnvi
-************************************/
-reg_access_status_t reg_access_mnvi(mfile *mf, reg_access_method_t method, struct tools_open_mnvi *mnvi)
-{
-    if (method != REG_ACCESS_METHOD_SET) {  // this register supports only set method
-        return ME_REG_ACCESS_BAD_METHOD;
-    }
-    REG_ACCCESS(mf, method, REG_ID_MNVI, mnvi, mnvi, tools_open);
-}
-
-/************************************
-* Function: reg_access_mnvia
-************************************/
-reg_access_status_t reg_access_mnvia(mfile *mf, reg_access_method_t method, struct tools_open_mnvia *mnvia)
-{
-    if (method != REG_ACCESS_METHOD_SET) {  // this register supports only set method
-        return ME_REG_ACCESS_BAD_METHOD;
-    }
-    REG_ACCCESS(mf, method, REG_ID_MNVIA, mnvia, mnvia, tools_open);
-}
-
-/************************************
-* Function: reg_access_mgir
-************************************/
-reg_access_status_t reg_access_mgir(mfile *mf, reg_access_method_t method, struct tools_open_mgir *mgir)
-{
-    u_int32_t dev_flags = 0;
-    int rc = mget_mdevs_flags(mf, &dev_flags);
-    if (rc && ((dev_flags & MDEVS_IB) || (dev_flags & MDEVS_MLNX_OS))) {
-        REG_ACCCESS_VAR(mf, method, REG_ID_MGIR, mgir, mgir, MGIR_REG_SIZE, MGIR_REG_SIZE, MGIR_REG_SIZE, tools_open);
-    } else {
-        REG_ACCCESS(mf, method, REG_ID_MGIR, mgir, mgir, tools_open);
-    }
-}
 /************************************
 * Function: reg_access_mfrl
 ************************************/
@@ -376,6 +521,7 @@ reg_access_status_t reg_access_mfrl(mfile *mf, reg_access_method_t method, struc
 {
     REG_ACCCESS(mf, method, REG_ID_MFRL, mfrl, mfrl_reg_ext, reg_access_hca);
 }
+
 
 /************************************
 * Function: reg_access_mpcir
@@ -397,92 +543,11 @@ reg_access_status_t reg_access_mfai(mfile *mf, reg_access_method_t method, struc
 }
 
 /************************************
-* Function: reg_access_nvda
-************************************/
-reg_access_status_t reg_access_nvda(mfile *mf, reg_access_method_t method, struct tools_open_nvda *nvda)
-{
-    // reg_size is in bytes
-    u_int32_t reg_size = nvda->nv_hdr.length + tools_open_nv_hdr_fifth_gen_size();
-    u_int32_t r_size_reg = reg_size;
-    u_int32_t w_size_reg = reg_size;
-    if (method == REG_ACCESS_METHOD_GET) {
-        w_size_reg -= nvda->nv_hdr.length;
-    } else {
-        r_size_reg -= nvda->nv_hdr.length;
-    }
-    REG_ACCCESS_VAR(mf, method, REG_ID_MNVA, nvda, nvda, reg_size, r_size_reg, w_size_reg, tools_open);
-}
-
-/************************************
-* Function: reg_access_nvdi
-************************************/
-reg_access_status_t reg_access_nvdi(mfile *mf, reg_access_method_t method, struct tools_open_nvdi *nvdi)
-{
-    if (method != REG_ACCESS_METHOD_SET) {  // this register supports only set method
-        return ME_REG_ACCESS_BAD_METHOD;
-    }
-    REG_ACCCESS(mf, method, REG_ID_MNVI, nvdi, nvdi, tools_open);
-}
-
-/************************************
-* Function: reg_access_nvia
-************************************/
-reg_access_status_t reg_access_nvia(mfile *mf, reg_access_method_t method, struct tools_open_nvia *nvia)
-{
-    if (method != REG_ACCESS_METHOD_SET) {  // this register supports only set method
-        return ME_REG_ACCESS_BAD_METHOD;
-    }
-    REG_ACCCESS(mf, method, REG_ID_NVIA, nvia, nvia, tools_open);
-}
-
-/************************************
-* Function: reg_access_nvqc
-************************************/
-reg_access_status_t reg_access_nvqc(mfile *mf, reg_access_method_t method, struct tools_open_nvqc *nvqc)
-{
-    if (method != REG_ACCESS_METHOD_GET) {  // this register supports only get method
-        return ME_REG_ACCESS_BAD_METHOD;
-    }
-    REG_ACCCESS(mf, method, REG_ID_NVQC, nvqc, nvqc, tools_open);
-}
-
-/************************************
-* Function: reg_access_nvqgc
-************************************/
-reg_access_status_t reg_access_nvqgc(mfile *mf, reg_access_method_t method, struct tools_open_nvqgc *nvqgc)
-{
-    if (method != REG_ACCESS_METHOD_GET) {  // this register supports only get method
-        return ME_REG_ACCESS_BAD_METHOD;
-    }
-    REG_ACCCESS(mf, method, REG_ID_NVQGC, nvqgc, nvqgc, tools_open);
-}
-
-/************************************
 * Function: reg_access_mvts
 ************************************/
 reg_access_status_t reg_access_mvts(mfile *mf, reg_access_method_t method, struct tools_open_mvts *mvts)
 {
     REG_ACCCESS(mf, method, REG_ID_MVTS, mvts, mvts, tools_open);
-}
-
-/************************************
-* Function: reg_access_mnvgn
-************************************/
-reg_access_status_t reg_access_mnvgn(mfile *mf, reg_access_method_t method, struct tools_open_mnvgn *mnvgn, int *status)
-{
-    int data_size = tools_open_mnvgn_size();
-    if (method != REG_ACCESS_METHOD_GET) {  // this register supports only get method
-        return ME_REG_ACCESS_BAD_METHOD;
-    }
-
-    REG_ACCESS_GENERIC_VAR_WITH_STATUS(mf, method, REG_ID_MNVGN, mnvgn, mnvgn, data_size, data_size, data_size, \
-                                       tools_open_mnvgn_pack, tools_open_mnvgn_unpack, tools_open_mnvgn_size, \
-                                       tools_open_mnvgn_print, status);
-
-    if (rc || *status) { \
-        return (reg_access_status_t)rc; \
-    } \
-    return ME_OK;
 }
 
 /************************************
@@ -494,20 +559,18 @@ reg_access_status_t reg_access_mfmc(mfile *mf, reg_access_method_t method, struc
 }
 
 /************************************
+* Function: reg_access_mcdd
+************************************/
+reg_access_status_t reg_access_mcdd(mfile *mf, reg_access_method_t method, struct tools_open_mcdd_reg *mcdd)
+{
+    REG_ACCCESS(mf, method, REG_ID_MCDD, mcdd, mcdd_reg, tools_open);
+}
+/************************************
 * Function: reg_access_mfpa_new
 ************************************/
 reg_access_status_t reg_access_mfpa_new(mfile *mf, reg_access_method_t method, struct tools_open_mfpa *mfpa)
 {
     REG_ACCCESS(mf, method, REG_ID_MFPA, mfpa, mfpa, tools_open);
-}
-
-
-/************************************
-* Function: reg_access_mirc
-************************************/
-reg_access_status_t reg_access_mirc(mfile *mf, reg_access_method_t method, struct tools_open_mirc_reg *mirc)
-{
-    REG_ACCCESS(mf, method, REG_ID_MIRC, mirc, mirc_reg, tools_open);
 }
 
 /************************************
@@ -516,38 +579,6 @@ reg_access_status_t reg_access_mirc(mfile *mf, reg_access_method_t method, struc
 reg_access_status_t reg_access_secure_host(mfile *mf, reg_access_method_t method, struct tools_open_mlock *mlock)
 {
     REG_ACCCESS(mf, method, REG_ID_MLCOK, mlock, mlock, tools_open);
-}
-
-/************************************
-* Function: reg_access_mqis
-************************************/
-reg_access_status_t reg_access_mqis(mfile *mf, reg_access_method_t method, struct reg_access_hca_mqis_reg *mqis)
-{
-    REG_ACCCESS(mf, method, REG_ID_MQIS, mqis, mqis_reg, reg_access_hca);
-}
-
-/************************************
-* Function: reg_access_mtrc_cap
-************************************/
-reg_access_status_t reg_access_mtrc_cap(mfile *mf, reg_access_method_t method, struct reg_access_hca_mtrc_cap_reg *mtrc_cap)
-{
-    REG_ACCCESS(mf, method, REG_ID_MTRC_CAP, mtrc_cap, mtrc_cap_reg, reg_access_hca);
-}
-
-/************************************
-* Function: reg_access_mcdd
-************************************/
-reg_access_status_t reg_access_mcdd(mfile *mf, reg_access_method_t method, struct tools_open_mcdd_reg *mcdd)
-{
-    REG_ACCCESS(mf, method, REG_ID_MCDD, mcdd, mcdd_reg, tools_open);
-}
-
-
-
-reg_access_status_t reg_access_mpegc(mfile *mf, reg_access_method_t method, struct reg_access_hca_mpegc_reg *mpegc)
-{
-//    reg_access_hca_mpegc_reg_dump(mpegc, stdout)s;
-    REG_ACCCESS(mf, method, REG_ID_MPEGC, mpegc, mpegc_reg, reg_access_hca);
 }
 /************************************
 * Function: reg_access_err2str
