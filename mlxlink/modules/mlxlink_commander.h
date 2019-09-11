@@ -76,6 +76,8 @@
 //------------------------------------------------------------
 //        Mlxlink QUERIES Flags
 
+#define PCIE_LINKS_FLAG                 "show_links"
+#define PCIE_LINKS_FLAG_SHORT            ' '
 #define MODULE_INFO_FLAG                "show_module"
 #define MODULE_INFO_FLAG_SHORT          'm'
 #define BER_FLAG                        "show_counters"
@@ -150,8 +152,6 @@
 #define SLTP_SET_ADVANCED_FLAG_SHORT        ' '
 #define GVMI_ADDRESS_FLAG                   "gvmi_address"
 #define GVMI_ADDRESS_FLAG_SHORT             ' '
-#define SLRP_FLAG                           "show_serdes_rx"
-#define SLRP_FLAG_SHORT                     ' '
 #define LOG_FLAG                            "log"
 #define LOG_FLAG_SHORT                      ' '
 
@@ -209,6 +209,7 @@ enum SHOW_FUNCTIONS {
     SEND_SLTP,
     SEND_CLEAR_COUNTERS,
     SEND_PEPC,
+    SHOW_PCIE_LINKS,
     // Any new function's index should be added before SHOW_SEND_LAST in this enum
     FUNCTION_LAST
 };
@@ -226,6 +227,7 @@ enum PDDR_PAGES {
 enum PPCNT_GROUPS {
     PPCNT_PHY_GROUP = 0x12,
     PPCNT_STATISTICAL_GROUP = 0x16,
+    PPCNT_IB_PORT_COUNTERS_GROUP = 0x20,
     PPCNT_ALL_GROUPS = 63
 };
 
@@ -287,6 +289,30 @@ enum PRODUCT_TECHNOLOGY {
     PRODUCT_16NM = 3
 };
 
+enum PCIE_PORT_TYPE {
+    PORT_TYPE_EP = 0,
+    PORT_TYPE_US = 5,
+    PORT_TYPE_DS = 6
+};
+
+struct DPN {
+    DPN()
+    {
+        depth =0;
+        pcieIndex=0;
+        node=0;
+    }
+    DPN(u_int32_t d, u_int32_t p, u_int32_t n)
+    {
+        depth = d;
+        pcieIndex = p;
+        node = n;
+    }
+    u_int32_t depth;
+    u_int32_t pcieIndex;
+    u_int32_t node;
+};
+
 #define PRINT_LOG(mlxlinklogger, title)\
     if (mlxlinklogger) {\
         mlxlinklogger->printHeaderWithUnderLine(title);\
@@ -312,6 +338,7 @@ public:
     u_int32_t getFieldValue(const string &field_name, std::vector<u_int32_t>& buff);
     string getFieldStr(const string &field);
     void checkRegCmd();
+    int getLocalPortFromMPIR(DPN& dpn);
 
     void checkValidFW();
     int getProductTechnology();
@@ -328,9 +355,9 @@ public:
     u_int32_t maxLocalPort();
     string getAscii(const string & name, u_int32_t size = 4);
     string getRxTxCDRState(u_int32_t state);
-    void getActualNumOfLanes(u_int32_t linkSpeedActive);
+    void getActualNumOfLanes(u_int32_t linkSpeedActive, bool extended);
     void getActualNumOfLanesIB();
-    void getActualNumOfLanesETH(u_int32_t linkSpeedActive);
+    void getActualNumOfLanesETH(u_int32_t linkSpeedActive, bool extended);
     u_int32_t activeSpeed2gNum(u_int32_t mask, bool extended);
     string activeSpeed2Str(u_int32_t mask, bool extended);
     void getCableParams();
@@ -349,7 +376,10 @@ public:
 
     //Mlxlink query functions
     void showModuleInfo();
-    void showPddr();
+    virtual void operatingInfoPage();
+    virtual void supportedInfoPage();
+    virtual void troubInfoPage();
+    virtual void showPddr();
     void getPtys();
     virtual void showBer();
     void showEye();
@@ -359,6 +389,7 @@ public:
     void showBerMonitorInfo();
     void showExternalPhy();
     void showPcie();
+    void showPcieLinks();
     void collectBER();
 
     // Query helper functions
@@ -372,13 +403,15 @@ public:
             u_int32_t laneNumber);
     void prepareSltp16nm(std::vector<std::vector<string> > &sltpLanes,
             u_int32_t laneNumber);
+    void initValidDPNList();
 
     void showTestMode();
     void showTestModeBer();
-    void showMpcntPerformance();
-    void showMpcntTimers();
+    void showMpcntPerformance(DPN& dpn);
+    void showMpcntTimers(DPN& dpn);
     void showMpcntLane();
-    void showPcieState();
+    void showPcieState(DPN& dpn);
+    void checkForPcie();
 
     std::map<std::string, std::string>  getPprt();
     std::map<std::string, std::string>  getPptt();
@@ -387,7 +420,7 @@ public:
     std::map<std::string, float>  getRawEffectiveErrorsinTestMode();
     string getPrbsModeRX();
     u_int32_t getPrbsRateRX();
-    u_int32_t getLoopbackMode(const string &lb);
+    virtual u_int32_t getLoopbackMode(const string &lb);
     int getLinkDown();
     float getRawBERLimit();
     bool getResult(std::map<std::string, float>  errors_vector,
@@ -416,6 +449,7 @@ public:
     MlxlinkCmdPrint _showBerMonitorInfo;
     MlxlinkCmdPrint _extPhyInfoCmd;
     MlxlinkCmdPrint _linkBlameInfoCmd;
+    MlxlinkCmdPrint _validPcieLinks;
 
     // Mlxlink config functions
     void clearCounters();
@@ -454,9 +488,7 @@ public:
     MlxlinkLogger *_mlxlinkLogger;
     dm_dev_id_t _devID;
     u_int32_t _localPort;
-    u_int32_t _depth;
-    u_int32_t _pcieIndex;
-    u_int32_t _node;
+    DPN _dpn;
     u_int32_t _numOfLanes;
     u_int32_t _numOfLanesPcie;
     u_int32_t _cableMediaType;
@@ -466,12 +498,12 @@ public:
     u_int32_t _networkCmds;
     u_int32_t _anDisable;
     u_int32_t _speedBerCsv;
+    u_int32_t _cableIdentifier;
     u_int32_t _cableAtten12G;
     u_int32_t _cableLen;
     u_int32_t _activeSpeed;
     u_int32_t _activeSpeedEx;
     u_int32_t _protoCapability;
-    u_int32_t _protoCapabilityEx;
     u_int32_t _protoAdmin;
     u_int32_t _protoAdminEx;
     u_int32_t _productTechnology;
@@ -483,13 +515,17 @@ public:
     string _cablePN;
     string _cableSN;
     string _moduleTemp;
+    bool _protoCapabilityEx;
     bool _writeGvmi;
     bool _splitted;
     bool _linkUP;
     bool _prbsTestMode;
     bool _plugged;
     bool _linkModeForce;
+    bool _useExtAdb;
+    bool _isHCA;
     std::vector<std::string> _ptysSpeeds;
+    std::vector<DPN> _validDpns;
     string _allUnhandledErrors;
 
     MlxlinkMaps* _mlxlinkMaps;

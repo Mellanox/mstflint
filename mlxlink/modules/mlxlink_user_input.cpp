@@ -54,9 +54,15 @@ UserInput::UserInput()
     _pprtTuningTypeFlag = false;
     _toggle = true;
     _pcie = false;
+    _links = false;
+    _showSltp = false;
+    _showSlrp = false;
+    _showCounters = false;
+    _showEyeInfo = false;
     _sendDepth = false;
     _sendPcieIndex = false;
     _sendNode = false;
+    _sendDpn = false;
     _db = false;
     _sltpLane = false;
     _advancedMode = false;
