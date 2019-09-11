@@ -45,6 +45,9 @@ public:
 
 protected:
     virtual ParseStatus HandleOption(string name, string value);
+    virtual void printSynopsisHeader();
+    virtual void printSynopsisQueries();
+    virtual void printSynopsisCommands();
     virtual void printSynopsis();
     virtual void printHelp();
     virtual void initCmdParser();

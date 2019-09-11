@@ -189,7 +189,7 @@ string EthSupportedSpeeds2Str(u_int32_t int_mask)
         maskStr += "1G,";
     }
     if (int_mask & ETH_LINK_SPEED_100_BaseTx) {
-        maskStr += "100";
+        maskStr += "100M,";
     }
 
     return deleteLastComma(maskStr);
@@ -230,7 +230,7 @@ string EthExtSupportedSpeeds2Str(u_int32_t int_mask)
         maskStr += "1G,";
     }
     if (int_mask & ETH_LINK_SPEED_EXT_SGMII_100M) {
-        maskStr += "100";
+        maskStr += "100M,";
     }
 
     return deleteLastComma(maskStr);
@@ -238,11 +238,11 @@ string EthExtSupportedSpeeds2Str(u_int32_t int_mask)
 
 string SupportedSpeeds2Str(u_int32_t proto_active, u_int32_t mask, bool extended)
 {
-    if(extended) {
+    if(extended && proto_active == ETH ) {
         return EthExtSupportedSpeeds2Str(mask);
     }
     return proto_active == IB ?
-           IBSupportedSpeeds2Str(mask) : EthSupportedSpeeds2Str(mask);
+               IBSupportedSpeeds2Str(mask) : EthSupportedSpeeds2Str(mask);
 }
 
 string getOui(u_int32_t oui)
@@ -269,6 +269,24 @@ string getOui(u_int32_t oui)
 
 int ptysSpeedToExtMaskETH(const string & speed)
 {
+    if(speed == "100M")
+        return (ETH_LINK_SPEED_EXT_SGMII_100M);
+    if(speed == "1G")
+        return (ETH_LINK_SPEED_EXT_1000BASE_X);
+    if(speed == "2.5G")
+        return (ETH_LINK_SPEED_EXT_2_5GBASE_X);
+    if(speed == "5G")
+        return (ETH_LINK_SPEED_EXT_5GBASE_R);
+    if(speed == "10G")
+        return (ETH_LINK_SPEED_EXT_XFI);
+    if(speed == "25G")
+        return (ETH_LINK_SPEED_EXT_25GAUI_1);
+    if(speed == "40G")
+        return (ETH_LINK_SPEED_EXT_XLAUI_4);
+    if(speed == "50G")
+        return (ETH_LINK_SPEED_EXT_50GAUI_1 | ETH_LINK_SPEED_EXT_50GAUI_2);
+    if(speed == "100G")
+        return (ETH_LINK_SPEED_EXT_100GAUI_2 | ETH_LINK_SPEED_EXT_CAUI_4);
     if(speed == "200G")
         return ETH_LINK_SPEED_EXT_200GAUI_4;
     if(speed == "400G")
@@ -1177,30 +1195,33 @@ string pcieSpeedStr(u_int32_t linkSpeedActive)
 string pcieDeviceStatusStr(u_int32_t deviceStatus)
 {
     string deviceStatusStr, comma;
-    if ((deviceStatus >> 0) & 0x1){
+    if (!deviceStatus) {
+        return "N/A";
+    }
+    if ((deviceStatus >> 0) & 0x1) {
         deviceStatusStr += "Correctable Error detected";
         comma=", ";
     }
-    if ((deviceStatus >> 1) & 0x1){
+    if ((deviceStatus >> 1) & 0x1) {
         deviceStatusStr += comma + "Non-Fatal Error detected";
         comma=", ";
     }
-    if ((deviceStatus >> 2) & 0x1){
+    if ((deviceStatus >> 2) & 0x1) {
         deviceStatusStr  += comma + "Fatal Error detected" + comma;
         comma=", ";
     }
-    if ((deviceStatus >> 3) & 0x1){
+    if ((deviceStatus >> 3) & 0x1) {
         deviceStatusStr += comma + "Unsupported Request detected";
         comma=", ";
     }
-    if ((deviceStatus >> 4) & 0x1){
+    if ((deviceStatus >> 4) & 0x1) {
         deviceStatusStr += comma + "AUX power";
         comma=", ";
     }
-    if ((deviceStatus >> 5) & 0x1){
+    if ((deviceStatus >> 5) & 0x1) {
         deviceStatusStr += comma + "Transaction Pending";
     }
-    if ("" != deviceStatusStr){
+    if ("" != deviceStatusStr) {
         deviceStatusStr += ".";
     }
     return deviceStatusStr;

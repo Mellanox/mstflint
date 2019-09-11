@@ -52,14 +52,16 @@ void MlxlinkUi::createMlxlinkCommander()
     _mlxlinkCommander = new MlxlinkCommander();
 }
 
-void MlxlinkUi::printSynopsis()
+void MlxlinkUi::printSynopsisHeader()
 {
     printf(
         IDENT "NAME:\n"
-        IDENT2 MLXLINK_EXEC "\n"
+        IDENT2 MLXLINK_EXEC "\n\n"
         IDENT "SYNOPSIS:\n"
-        IDENT2 MLXLINK_EXEC " [OPTIONS]\n");
-
+        IDENT2 MLXLINK_EXEC " [OPTIONS]\n\n"
+        IDENT "DESCRIPTION:\n"
+        IDENT2 "The mlxlink tool is used to check and debug link status and issues related to them.\n"
+        IDENT2 "The tool can be used on different links and cables (passive, active, transceiver and backplane).\n");
     printf("\n");
     printf(IDENT "OPTIONS:\n");
     MlxlinkRecord::printFlagLine(HELP_FLAG_SHORT, HELP_FLAG, "", "Display help message.");
@@ -73,8 +75,13 @@ void MlxlinkUi::printSynopsis()
     MlxlinkRecord::printFlagLine(DEPTH_FLAG_SHORT, DEPTH_FLAG, "depth", "depth level of the DUT of some hierarchy (PCIE only)");
     MlxlinkRecord::printFlagLine(PCIE_INDEX_FLAG_SHORT, PCIE_INDEX_FLAG, "pcie_index", "PCIe index number (Internal domain index) (PCIE only)");
     MlxlinkRecord::printFlagLine(NODE_FLAG_SHORT, NODE_FLAG, "node", "the node within each depth (PCIE only)");
-    printf("\n");
+}
+
+void MlxlinkUi::printSynopsisQueries()
+{
     printf(IDENT "QUERIES:\n");
+    MlxlinkRecord::printFlagLine(PCIE_LINKS_FLAG_SHORT, PCIE_LINKS_FLAG, "",
+                  "Show valid PCIe links (PCIE only)");
     MlxlinkRecord::printFlagLine(MODULE_INFO_FLAG_SHORT, MODULE_INFO_FLAG, "",
                   "Show Module Info");
     MlxlinkRecord::printFlagLine(BER_FLAG_SHORT, BER_FLAG, "",
@@ -85,9 +92,12 @@ void MlxlinkUi::printSynopsis()
     MlxlinkRecord::printFlagLine(SLTP_SHOW_FLAG_SHORT, SLTP_SHOW_FLAG, "", "Show Transmitter Info");
 
     MlxlinkRecord::printFlagLine(DEVICE_DATA_FLAG_SHORT, DEVICE_DATA_FLAG, "", "General Device Info");
-    MlxlinkRecord::printFlagLine(BER_MONITOR_INFO_FLAG_SHORT, BER_MONITOR_INFO_FLAG, "", "Show BER Monitor Info");
+    MlxlinkRecord::printFlagLine(BER_MONITOR_INFO_FLAG_SHORT, BER_MONITOR_INFO_FLAG, "", "Show BER Monitor Info (not supported for HCA)");
     MlxlinkRecord::printFlagLine(PEPC_SHOW_FLAG_SHORT, PEPC_SHOW_FLAG, "", "Show External PHY Info");
-    printf("\n");
+}
+
+void MlxlinkUi::printSynopsisCommands()
+{
     printf(IDENT "COMMANDS:\n");
     MlxlinkRecord::printFlagLine(PAOS_FLAG_SHORT, PAOS_FLAG, "port_state",
                   "Configure Port State [UP(up)/DN(down)/TG(toggle)]");
@@ -135,11 +145,19 @@ void MlxlinkUi::printSynopsis()
     MlxlinkRecord::printFlagLine(PPCNT_CLEAR_FLAG_SHORT, PPCNT_CLEAR_FLAG, "",
                   "Clear Counters");
     MlxlinkRecord::printFlagLine(PEPC_SET_FLAG_SHORT, PEPC_SET_FLAG, "",
-                  "Set External PHY");
+                  "Set External PHY (not supported for HCA)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PEPC_FORCE_MODE_FLAG_SHORT, PEPC_FORCE_MODE_FLAG, "twisted_pair_force_mode",
                   "Twisted Pair Force Mode [MA(Master)/SL(Slave)]");
-    printf(IDENT);
+}
+
+void MlxlinkUi::printSynopsis()
+{
+    printSynopsisHeader();
+    printf("\n");
+    printSynopsisQueries();
+    printf("\n");
+    printSynopsisCommands();
 }
 
 void MlxlinkUi::printHelp()
@@ -186,6 +204,15 @@ void MlxlinkUi::paramValidate()
         throw MlxRegException(
                   "Please provide a valid Port Type [NETWORK(Default)/PCIE]");
     }
+    if (_mlxlinkCommander->_userInput._links &&
+            _mlxlinkCommander->_userInput._portType != "PCIE") {
+        throw MlxRegException("The --" PCIE_LINKS_FLAG " option is valid only with --port_type PCIE");
+    }
+    if (_mlxlinkCommander->_userInput._links &&
+            (_mlxlinkCommander->_userInput._showEyeInfo || _mlxlinkCommander->_userInput._showSltp ||
+                    _mlxlinkCommander->_userInput._showCounters ||  _mlxlinkCommander->_userInput._showSlrp )) {
+        throw MlxRegException("No options allowed to use while querying --" PCIE_LINKS_FLAG);
+    }
     if ((_mlxlinkCommander->_userInput._labelPort == 0) && (_mlxlinkCommander->_userInput._portType != "PCIE")) {
         throw MlxRegException("Please provide a valid port number");
     }
@@ -199,6 +226,24 @@ void MlxlinkUi::paramValidate()
         }
         _sendRegFuncMap[SHOW_PCIE] = SHOW_PCIE;
         _sendRegFuncMap[SHOW_PDDR] = 0;
+        if (_mlxlinkCommander->_userInput._sendNode ||
+                _mlxlinkCommander->_userInput._sendDepth ||
+                _mlxlinkCommander->_userInput._sendPcieIndex) {
+            if (!(_mlxlinkCommander->_userInput._sendNode &&
+                    _mlxlinkCommander->_userInput._sendDepth &&
+                    _mlxlinkCommander->_userInput._sendPcieIndex)) {
+                throw MlxRegException("The --depth, --pcie_index and --node must be specified for PCIE");
+           } else {
+               _mlxlinkCommander->_userInput._sendDpn = true;
+           }
+        }
+        if (_mlxlinkCommander->_userInput._specifiedPort) {
+            if (!(_mlxlinkCommander->_userInput._sendNode &&
+                    _mlxlinkCommander->_userInput._sendDepth &&
+                    _mlxlinkCommander->_userInput._sendPcieIndex)) {
+                throw MlxRegException("For PCIE, the port flag is valid only with depth, pcie_index and node flags");
+           }
+        }
     } else if (_mlxlinkCommander->_userInput._sendNode ||
             _mlxlinkCommander->_userInput._sendDepth ||
             _mlxlinkCommander->_userInput._sendPcieIndex) {
@@ -207,18 +252,15 @@ void MlxlinkUi::paramValidate()
     if (_mlxlinkCommander->_uniqueCmds > 1) {
         throw MlxRegException("Commands are mutually exclusive!");
     }
-    if (_sendRegFuncMap[SEND_PAOS] == SEND_PAOS &&
-            !checkPaosCmd(_mlxlinkCommander->_userInput._paosCmd)) {
+    if (_sendRegFuncMap[SEND_PAOS] == SEND_PAOS && !checkPaosCmd(_mlxlinkCommander->_userInput._paosCmd)) {
         throw MlxRegException(
                   "Please provide a valid paos command [UP(up)/DN(down)/TG(toggle)]");
     }
-    if (_sendRegFuncMap[SEND_PPLM] == SEND_PPLM &&
-            !checkPplmCmd(_mlxlinkCommander->_userInput._pplmFec)) {
+    if (_sendRegFuncMap[SEND_PPLM] == SEND_PPLM && !checkPplmCmd(_mlxlinkCommander->_userInput._pplmFec)) {
         throw MlxRegException(
                   "Please provide a valid FEC [AU(Auto)/NF(No-Fec)/FC(FireCode FEC)/RS(RS FEC)]");
     }
-    if (_sendRegFuncMap[SEND_PPLM] != SEND_PPLM &&
-            _mlxlinkCommander->_userInput._speedFec != "") {
+    if (_sendRegFuncMap[SEND_PPLM] != SEND_PPLM && _mlxlinkCommander->_userInput._speedFec != "") {
         throw MlxRegException(
                   "The --fec_speed flag is valid only with --fec flag");
     }
@@ -232,11 +274,6 @@ void MlxlinkUi::paramValidate()
                 _mlxlinkCommander->_userInput._speedFec != "10G") {
             throw MlxRegException("Please Provide a Valid Speed to Configure FEC (100G/56G/50G/40G/25G/10G)");
         }
-    }
-    if (_sendRegFuncMap[SEND_PPLR] == SEND_PPLR
-            && !checkPplrCmd(_mlxlinkCommander->_userInput._pplrLB)) {
-        throw MlxRegException(
-                  "Please provide a valid loopback mode [NO(no loopback)/PH(phy loopback)/EX(external loopback)]");
     }
     if (_sendRegFuncMap[SEND_SLTP] == SEND_SLTP) {
         if (_mlxlinkCommander->_userInput._sltpLane && _mlxlinkCommander->_userInput._db) {
@@ -339,6 +376,7 @@ void MlxlinkUi::initCmdParser()
     AddOptions(NODE_FLAG, NODE_FLAG_SHORT, "node", "node");
     AddOptions(LABEL_PORT_FLAG, LABEL_PORT_FLAG_SHORT, "LabelPort",
                "Label Port");
+    AddOptions(PCIE_LINKS_FLAG, PCIE_LINKS_FLAG_SHORT, "", "Show valid PCIe links");
     AddOptions(BER_FLAG, BER_FLAG_SHORT, "", "Show BER Info");
     AddOptions(EYE_OPENING_FLAG, EYE_OPENING_FLAG_SHORT, "",
                "Show Eye Opening Info");
@@ -429,6 +467,10 @@ void MlxlinkUi::commandsCaller()
                 PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> showExternalPhy() : \"Show External PHY Info\"");
                 _mlxlinkCommander->showExternalPhy();
                 break;
+            case SHOW_PCIE_LINKS:
+                PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> showPcieLinks() : \"Show Valid PCIe Links\"");
+                _mlxlinkCommander->showPcieLinks();
+                break;
             case SEND_BER_COLLECT:
                 PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> collectBER() :  \"Port Extended Information Collection\"");
                 _mlxlinkCommander->collectBER();
@@ -488,6 +530,7 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         return PARSE_OK;
     } else if (name == BER_FLAG) {
         _sendRegFuncMap[SHOW_BER] = SHOW_BER;
+        _mlxlinkCommander->_userInput._showCounters = true;
         return PARSE_OK;
     } else if (name == PPCNT_CLEAR_FLAG) {
         _sendRegFuncMap[SEND_CLEAR_COUNTERS] = SEND_CLEAR_COUNTERS;
@@ -495,9 +538,11 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         return PARSE_OK;
     } else if (name == EYE_OPENING_FLAG) {
         _sendRegFuncMap[SHOW_EYE] = SHOW_EYE;
+        _mlxlinkCommander->_userInput._showEyeInfo = true;
         return PARSE_OK;
     } else if (name == SLTP_SHOW_FLAG) {
         _sendRegFuncMap[SHOW_SLTP] = SHOW_SLTP;
+        _mlxlinkCommander->_userInput._showSltp = true;
         return PARSE_OK;
     } else if (name == SLTP_SET_FLAG) {
         string sltpParamsLine = toUpperCase(value);
@@ -544,6 +589,10 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     } else if (name == NODE_FLAG) {
         _mlxlinkCommander->strToUint32((char*) value.c_str(), _mlxlinkCommander->_userInput._node);
         _mlxlinkCommander->_userInput._sendNode = true;
+        return PARSE_OK;
+    } else if (name == PCIE_LINKS_FLAG) {
+        _sendRegFuncMap[SHOW_PCIE_LINKS] = SHOW_PCIE_LINKS;
+        _mlxlinkCommander->_userInput._links = true;
         return PARSE_OK;
     } else if (name == DEVICE_DATA_FLAG) {
         _sendRegFuncMap[SHOW_DEVICE] = SHOW_DEVICE;
@@ -661,7 +710,7 @@ int MlxlinkUi::run(int argc, char **argv)
 
     bool onlyKnownRegs = false;
     _mlxlinkCommander->_mlxLinkLib = new MlxRegLib(_mlxlinkCommander->_mf,
-            _mlxlinkCommander->_extAdbFile, onlyKnownRegs, true);
+            _mlxlinkCommander->_extAdbFile, onlyKnownRegs, _mlxlinkCommander->_useExtAdb);
     if (_mlxlinkCommander->_mlxLinkLib->isIBDevice() &&
             !_mlxlinkCommander->_mlxLinkLib->isAccessRegisterGMPSupported(
                     MACCESS_REG_METHOD_GET)) {
@@ -669,13 +718,19 @@ int MlxlinkUi::run(int argc, char **argv)
                  "         mlxlink has limited functionality");
     }
     _mlxlinkCommander->_devID = _mlxlinkCommander->_mlxLinkLib->getDevId();
+    _mlxlinkCommander->_isHCA = dm_dev_is_hca(_mlxlinkCommander->_devID);
     _mlxlinkCommander->labelToLocalPort();
     _mlxlinkCommander->checkValidFW();
-    if(!_mlxlinkCommander->_userInput._pcie){
+    if (!_mlxlinkCommander->_userInput._pcie) {
         _mlxlinkCommander->_prbsTestMode = _mlxlinkCommander->inPrbsTestMode();
         _mlxlinkCommander->getCableParams();
+    } else if (!_mlxlinkCommander->_userInput._sendDpn) {
+        _mlxlinkCommander->initValidDPNList();
     }
-    _mlxlinkCommander->_productTechnology = _mlxlinkCommander->getProductTechnology();
+    if (!(_mlxlinkCommander->_userInput._pcie &&
+            _mlxlinkCommander->_validDpns.size() > 1)) {
+        _mlxlinkCommander->_productTechnology = _mlxlinkCommander->getProductTechnology();
+    }
     if (_mlxlinkCommander->_userInput._logFilePath != "") {
         _mlxlinkCommander->_mlxlinkLogger = new MlxlinkLogger(
                 _mlxlinkCommander->_userInput._logFilePath );
