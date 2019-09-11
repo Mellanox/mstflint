@@ -233,8 +233,8 @@ class MlnxDriverWindows(MlnxDriver):
 
             lines = iter(lines)
             try:
-            while True:
-                yield (next(lines), next(lines), next(lines), next(lines))
+            	while True:
+                    yield (next(lines), next(lines), next(lines), next(lines))
             except StopIteration:
                 return
 
