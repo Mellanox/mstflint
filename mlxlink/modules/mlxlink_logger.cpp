@@ -75,15 +75,14 @@ void MlxlinkLogger::debugLog(const char* format, ...)
 
 void MlxlinkLogger::printHeaderWithUnderLine(const char* title)
 {
-    string line = "";
     if (_logFile) {
-        line = string(_underLine);
-        line += "\n";
-        line += "FUNCTION\t\t" + string(title);
-        line += "\n";
-        line += string(_underLine);
-        line += "\n";
-        fprintf(_logFile,"%s", line.c_str());
+        fprintf(_logFile,_underLine);
+        fprintf(_logFile,"\n");
+        fprintf(_logFile, "FUNCTION\t\t");
+        fprintf(_logFile,title);
+        fprintf(_logFile, "\n");
+        fprintf(_logFile, _underLine);
+        fprintf(_logFile, "\n");
         fflush(_logFile);
     }
 }

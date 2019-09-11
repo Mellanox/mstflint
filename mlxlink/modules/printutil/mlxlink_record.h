@@ -38,6 +38,7 @@
 #include <string>
 #include <iostream>
 #include <iomanip>
+#include <stdlib.h>
 #include <common/compatibility.h>
 
 #define PDDR_LINE_LEN               34
@@ -91,7 +92,7 @@ enum PDDR_TRUOBLESHOOTING_INFO {
     PDDR_STATUS_OPCODE,
     PDDR_GROUP_OPCODE,
     PDDR_RECOMMENDATION,
-
+    PDDR_TIME_TO_LINK_UP,
     // Insert before PDDR_TRUOBLESHOOTING_INFO_LAST
     PDDR_TRUOBLESHOOTING_INFO_LAST
 };
@@ -109,6 +110,7 @@ enum TEST_MODE_INFO {
 };
 
 enum PCIE_INFO {
+    PCIE_LINK_DPN,
     PCIE_LINK_SPEED_ACTIVE_ENABLED,
     LINK_WIDTH_ACTIVE_ENABLED,
     DEVICE_STATUS,
@@ -128,6 +130,7 @@ enum MODULE_INFO {
     MODULE_INFO_VENDOR_SERIAL_NUMBER,
     MODULE_INFO_REV,
     MODULE_INFO_ATTENUATION_5G_7G_12G_DB,
+    MODULE_INFO_FW_VERSION,
     MODULE_INFO_WAVELENGTH_NM,
     MODULE_INFO_TRANSFER_DISTANCE_M,
     MODULE_INFO_DIGITAL_DIAGNOSTIC_MONITORING,
@@ -151,6 +154,8 @@ enum BER_INFO {
     BER_EFFECTIVE_PHYSICAL_BER,
     BER_RAW_PHYSICAL_BER,
     BER_RAW_PHYSICAL_ERRORS_PER_LANE,
+    BER_LINK_DOWNED_COUNTER,
+    BER_LINK_RECOVERY_COUNTER,
 
     // Insert before BER_INFO_LAST
     BER_INFO_LAST
@@ -245,6 +250,7 @@ public:
     std::string val;
     std::string color;
     bool visible;
+
     static std::string state2Color(u_int32_t state);
     static std::string supported2Color(const std::string &supported);
     static void changeColorOS(const std::string &color, bool newLine = false);
@@ -257,6 +263,7 @@ public:
     static void printErr(const std::string &err);
     static void printWar(const std::string &war);
 };
+
 std::ostream & operator << (std::ostream &out, const MlxlinkRecord &mlxlinkRecord);
 
 #endif /* MLXLINKRECORD_H */
