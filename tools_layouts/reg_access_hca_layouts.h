@@ -33,7 +33,7 @@
  
 
 /***
-         *** This file was generated at "2019-09-10 17:28:10"
+         *** This file was generated at "2019-09-11 22:55:45"
          *** by:
          ***    > /mswg/release/tools/a-me/last_stable/adabe_plugins/adb2c/adb2pack.py --input adb/prm/hca/int/reg_access_hca.adb --file-prefix reg_access_hca --prefix reg_access_hca_
          ***/
@@ -1032,7 +1032,7 @@ For gearboxes, the index represents the gearbox die. */
 };
 
 /* Description -   */
-/* Size in bytes - 272 */
+/* Size in bytes - 144 */
 struct reg_access_hca_mcda_reg {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Update handle registered when the FSM was activated. */
@@ -1053,8 +1053,8 @@ page 1446 */
 	u_int16_t size;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - Data block accessed */
-	/* 0x10.0 - 0x10c.31 */
-	u_int32_t data[64];
+	/* 0x10.0 - 0x8c.31 */
+	u_int32_t data[32];
 };
 
 /* Description -   */
@@ -1204,7 +1204,7 @@ Must be DWORD aligned. */
 	/* 0x10.0 - 0x10.31 */
 	u_int32_t offset;
 /*---------------- DWORD[5] (Offset 0x14) ----------------*/
-	/* Description - The requested/returned data size, given in bytes. 
+	/* Description - The requested/returned data size, given in bytes.
 If 
 data_size
  is not DWORD aligned, the last bytes are zero 
@@ -1558,8 +1558,8 @@ of bytes actually read. */
 info_type
 . If the 
 information is not available, a NULL string is returned. */
-	/* 0x10.0 - 0x14.31 */
-	u_int32_t info_string[2];
+	/* 0x10.24 - 0x18.23 */
+	u_int8_t info_string[8];
 };
 
 /* Description -   */
@@ -1991,7 +1991,7 @@ Layout," on page  982 */
 };
 
 /* Description -   */
-/* Size in bytes - 272 */
+/* Size in bytes - 256 */
 union reg_access_hca_reg_access_hca_Nodes {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
@@ -2010,7 +2010,7 @@ union reg_access_hca_reg_access_hca_Nodes {
 	/* 0x0.0 - 0x8.31 */
 	struct reg_access_hca_pcnr_reg pcnr_reg;
 	/* Description -  */
-	/* 0x0.0 - 0x10c.31 */
+	/* 0x0.0 - 0x8c.31 */
 	struct reg_access_hca_mcda_reg mcda_reg;
 	/* Description -  */
 	/* 0x0.0 - 0xc.31 */
@@ -2024,7 +2024,7 @@ union reg_access_hca_reg_access_hca_Nodes {
 	/* Description -  */
 	/* 0x0.0 - 0xfc.31 */
 	struct reg_access_hca_fpga_cap fpga_cap;
-    /* Description -  */
+	/* Description -  */
 	/* 0x0.0 - 0x4.31 */
 	struct reg_access_hca_mfrl_reg_ext mfrl_reg_ext;
 	/* Description -  */
@@ -2042,7 +2042,7 @@ union reg_access_hca_reg_access_hca_Nodes {
 	/* Description -  */
 	/* 0x0.0 - 0x14.31 */
 	struct reg_access_hca_mqis_reg mqis_reg;
-    /* Description -  */
+	/* Description -  */
 	/* 0x0.0 - 0xc.31 */
 	struct reg_access_hca_mpcir_ext mpcir_ext;
 	/* Description -  */
@@ -2244,7 +2244,7 @@ void reg_access_hca_mcda_reg_pack(const struct reg_access_hca_mcda_reg *ptr_stru
 void reg_access_hca_mcda_reg_unpack(struct reg_access_hca_mcda_reg *ptr_struct, const u_int8_t *ptr_buff);
 void reg_access_hca_mcda_reg_print(const struct reg_access_hca_mcda_reg *ptr_struct, FILE *fd, int indent_level);
 unsigned int reg_access_hca_mcda_reg_size(void);
-#define REG_ACCESS_HCA_MCDA_REG_SIZE    (0x110)
+#define REG_ACCESS_HCA_MCDA_REG_SIZE    (0x90)
 void reg_access_hca_mcda_reg_dump(const struct reg_access_hca_mcda_reg *ptr_struct, FILE *fd);
 /* mcqi_activation_method */
 void reg_access_hca_mcqi_activation_method_pack(const struct reg_access_hca_mcqi_activation_method *ptr_struct, u_int8_t *ptr_buff);
@@ -2370,7 +2370,7 @@ void reg_access_hca_reg_access_hca_Nodes_pack(const union reg_access_hca_reg_acc
 void reg_access_hca_reg_access_hca_Nodes_unpack(union reg_access_hca_reg_access_hca_Nodes *ptr_struct, const u_int8_t *ptr_buff);
 void reg_access_hca_reg_access_hca_Nodes_print(const union reg_access_hca_reg_access_hca_Nodes *ptr_struct, FILE *fd, int indent_level);
 unsigned int reg_access_hca_reg_access_hca_Nodes_size(void);
-#define REG_ACCESS_HCA_REG_ACCESS_HCA_NODES_SIZE    (0x110)
+#define REG_ACCESS_HCA_REG_ACCESS_HCA_NODES_SIZE    (0x100)
 void reg_access_hca_reg_access_hca_Nodes_dump(const union reg_access_hca_reg_access_hca_Nodes *ptr_struct, FILE *fd);
 
 
