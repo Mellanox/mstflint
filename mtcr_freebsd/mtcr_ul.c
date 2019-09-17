@@ -177,9 +177,9 @@ int mtcr_check_signature(mfile *mf)
 
     switch (signature & 0xffff) {
     case 0x190:     /* 400 */
-        if (signature == 0xa00190 && mf->ptr) {
+        if (signature == 0xa00190 && mf->bar_virtual_addr) {
             mf->connectx_flush = 1;
-            mtcr_connectx_flush(mf->ptr, mf->fdlock);
+            mtcr_connectx_flush(mf->bar_virtual_addr, mf->fdlock);
         }
 
     case 0x5a44:     /* 23108 */
