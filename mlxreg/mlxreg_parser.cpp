@@ -330,17 +330,28 @@ AdbInstance* RegAccessParser::getField(string name)
     throw MlxRegException("Can't find field name: \"%s\"", name.c_str());
 }
 
+string RegAccessParser::getAccess(const AdbInstance *field)
+{
+    string access = "N/A";
+    if (field->attrs.find("access") != field->attrs.end()) {
+        access = field->attrs.find("access")->second;
+    } else if (field->parent) {
+        access = getAccess(field->parent);
+    }
+    return access;
+}
+
+bool RegAccessParser::checkAccess(const AdbInstance *field, const string accessStr)
+{
+    return getAccess(field) == accessStr;
+}
+
 /************************************
 * Function: isRO
 ************************************/
 bool RegAccessParser::isRO(AdbInstance *field)
 {
-    if (field->attrs.find("access") != field->attrs.end()) {
-        if (field->attrs.find("access")->second == "RO") {
-            return true;
-        }
-    }
-    return false;
+    return checkAccess(field, "RO");
 }
 
 /************************************
@@ -348,12 +359,7 @@ bool RegAccessParser::isRO(AdbInstance *field)
 ************************************/
 bool RegAccessParser::isIndex(AdbInstance *field)
 {
-    if (field->attrs.find("access") != field->attrs.end()) {
-        if (field->attrs.find("access")->second == "INDEX") {
-            return true;
-        }
-    }
-    return false;
+    return checkAccess(field, "INDEX");
 }
 
 /************************************
@@ -362,9 +368,10 @@ bool RegAccessParser::isIndex(AdbInstance *field)
 std::vector<string> RegAccessParser::getAllIndexes(AdbInstance *node)
 {
     std::vector<string> indexes;
-    for (std::vector<AdbInstance*>::size_type i = 0; i != node->subItems.size(); i++) {
-        if (isIndex(node->subItems[i])) {
-            indexes.push_back(node->subItems[i]->name);
+    std::vector<AdbInstance*> subItems = node->getLeafFields();
+    for (std::vector<AdbInstance*>::size_type i = 0; i != subItems.size(); i++) {
+        if (isIndex(subItems[i])) {
+            indexes.push_back(subItems[i]->name);
         }
     }
     return indexes;

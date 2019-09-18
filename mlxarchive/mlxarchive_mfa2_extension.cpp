@@ -155,10 +155,17 @@ bool VersionExtension::unpack(Mfa2Buffer & buff)
     return true;
 }
 
-string VersionExtension::getVersion() const {
+string VersionExtension::getVersion(bool pad_sub_minor) const {
     stringstream ss;
     string res;
+    if (pad_sub_minor){
+        char _sub_minor_str[4];
+        sprintf(_sub_minor_str, "%04d", (int)_subMinor);
+        ss << (int)_major << '.' << (int)_minor << '.' << _sub_minor_str;
+        }
+    else{
     ss << (int)_major << '.' << (int)_minor << '.' << (int)_subMinor;
+    }
     ss>>res;
     return res;
 }
