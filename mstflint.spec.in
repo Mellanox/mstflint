@@ -35,7 +35,7 @@ BuildRequires: openssl-devel
 
 %if "%{enableadbgenerictools}" == "1"
 BuildRequires: boost-devel
-BuildRequires: expat-devel
+#BuildRequires: expat-devel
 BuildRequires: xz-devel
 %endif
 
