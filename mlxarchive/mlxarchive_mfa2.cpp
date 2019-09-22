@@ -209,22 +209,23 @@ void MFA2::dump() {
     //printf("Finger print    : %s\n", _fingerPrint.toString().c_str());
     u_int16_t devCount = _packageDescriptor.getDeviceDescriptorsCount();
     //u_int16_t compCount = _packageDescriptor.getComponentsCount();
-    printf("Package Version : %s\n", _packageDescriptor.getVersionExtension().getVersion().c_str());
+    printf("Package Version : %s\n", _packageDescriptor.getVersionExtension().getVersion(false).c_str());
     printf("Creation Time   : %s\n", _packageDescriptor.getVersionExtension().getDateAndTime().c_str());
-    printf("Extensions      : %u\n", _packageDescriptor.getExtensionsCount());
+    //printf("Extensions      : %u\n", _packageDescriptor.getExtensionsCount());
     printf("Devices         : %u\n", devCount);
     for(u_int16_t index=0; index < devCount; index++) {
         DeviceDescriptor & devDescriptor = _deviceDescriptors[index];
         string psid = devDescriptor.getPSIDExtension().getString();
         u_int8_t compPtrCount = devDescriptor.getComponentPointerExtensionsCount();
         printf("    PSID       : %s\n", psid.c_str());
-        printf("    Components : %u\n", compPtrCount);
+        printf("    Num of Images : %u\n", compPtrCount);
         for(u_int8_t comp=0; comp < compPtrCount; comp++) {
             const ComponentPointerExtension & compPtr = devDescriptor.getComponentPointerExtension(comp);
             u_int16_t compIndex = compPtr.getComponentIndex();
             Component compObj = _components[compIndex];
             const ComponentDescriptor & compDescr = compObj.getComponentDescriptor();
-            printf("        Version : %s\n", compDescr.getVersionExtension().getVersion().c_str());
+            printf("        Index   : %u\n", compIndex);
+            printf("        Version : %s\n", compDescr.getVersionExtension().getVersion(true).c_str());
             printf("        Date    : %s\n", compDescr.getVersionExtension().getDateAndTime().c_str());
         }
 
