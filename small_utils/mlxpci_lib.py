@@ -63,7 +63,6 @@ CAP_AER = 0X1
 CAP_ARI = 0X0e
 CAP_SRIOV = 0x10
 CAP_SECONDRY_PCI_EXPRESS = 0x19
-CAP_LANE_MARGINING = 0x27
 CAP_PHYSICAL_LAYER_GEN4 = 0x26
 CAP_DPC= 0x1d
 CAP_ACS = 0xd    
@@ -72,7 +71,6 @@ CAP_ATS = 0xf
 CAP_EXTENDED_DICT = {CAP_AER: 0x48,
                     CAP_SRIOV: 0x40,
                     CAP_SECONDRY_PCI_EXPRESS: 0x10,
-                    CAP_LANE_MARGINING: 0x48,
                     CAP_PHYSICAL_LAYER_GEN4: 0x40,
                     CAP_DPC: 0x40,
                     CAP_ATS: 0x8

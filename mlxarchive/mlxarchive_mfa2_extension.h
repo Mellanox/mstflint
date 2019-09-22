@@ -106,7 +106,7 @@ public:
     VersionExtension(const u_int16_t* version);
     void pack(vector<u_int8_t>& buff) const;
     bool unpack(Mfa2Buffer & buff);
-    string getVersion() const;
+    string getVersion(bool pad_sub_minor) const;
     string getDateAndTime() const;
 };
 

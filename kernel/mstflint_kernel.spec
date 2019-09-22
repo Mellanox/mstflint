@@ -22,7 +22,7 @@
 %global _name kernel-mstflint
 %endif
 
-%{!?version: %global version 4.11.0}
+%{!?version: %global version 4.13.0}
 %{!?_release: %global _release 1}
 %global _kmp_rel %{_release}%{?_kmp_build_num}%{?_dist}
 
@@ -35,7 +35,7 @@ Group: System Environment/Kernel
 BuildRoot: /var/tmp/%{name}-%{version}-build
 Source: %{name}-%{version}.tar.gz
 Vendor: Mellanox Technologies Ltd.
-Packager: Mahmoud Hasan <mahmodh@mellanox.com>
+Packager: Eran Jakoby <eranj@mellanox.com>
 %description
 mstflint kernel module for secure boot
 
