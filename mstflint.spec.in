@@ -53,10 +53,10 @@ BuildRequires: xz-devel
 
 BuildRequires: zlib-devel %{ibmadlib}
 
-%if "%{enableadbgenerictools}" == "1"
-Requires: %{boost_filesystem_lib}
-Requires: %{boost_regex_lib}
-%endif
+#%if "%{enableadbgenerictools}" == "1"
+#Requires: %{boost_filesystem_lib}
+#Requires: %{boost_regex_lib}
+#%endif
 
 
 %description
