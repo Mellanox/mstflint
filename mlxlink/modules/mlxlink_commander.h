@@ -474,7 +474,7 @@ public:
     void sendPptt();
     u_int32_t ptysSpeedToMask(const string & speed, u_int32_t cap);
     u_int32_t ptysSpeedToExtMask(const string & speed);
-    void checkSupportedSpeed(const string & speed, u_int32_t cap);
+    void checkSupportedSpeed(const string & speed, u_int32_t cap, bool extSpeed = false);
     void checkPplmCap();
     void updateSltp28_40nmFields();
     void updateSltp16nmFields();
