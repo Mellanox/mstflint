@@ -121,7 +121,7 @@ public:
     };
 
     bool CheckSignatures(u_int32_t a[], u_int32_t b[], int n);
-    bool FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_itoc, struct QueryOptions queryOptions, bool ignoreDToc = false);
+    bool FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_itoc, struct QueryOptions queryOptions, bool ignoreDToc = false, bool verbose = false);
     bool CheckTocSignature(struct cx5fw_itoc_header *itoc_header, u_int32_t first_signature);
     bool CheckDevInfoSignature(u_int32_t *buff);
     bool FsBurnAux(FwOperations *imageOps, ExtBurnParams& burnParams);
@@ -152,7 +152,7 @@ public:
     bool reburnITocSection(PrintCallBack callBackFunc, bool isFailSafe);
     bool Fs4UpdateItocInfo(struct fs4_toc_info *curr_toc, u_int32_t NewSectSize,
                            std::vector<u_int8_t>&  newSectionData);
-    bool FwReadData(void *image, u_int32_t *imageSize);
+    bool FwReadData(void *image, u_int32_t *imageSize, bool verbose = false);
 
     bool Fs4RemoveSectionAux(fs3_section_t sectionType);
     bool CreateImageData(vector<u_int8_t>& newImageData);
@@ -185,7 +185,7 @@ public:
     bool verifyToolsArea(VerifyCallBack verifyCallBackFunc);
     bool verifyTocHeader(u_int32_t tocAddr, bool isDtoc, VerifyCallBack verifyCallBackFunc);
     bool verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isDtoc,
-                          struct QueryOptions queryOptions, VerifyCallBack verifyCallBackFunc);
+                          struct QueryOptions queryOptions, VerifyCallBack verifyCallBackFunc, bool verbose = false);
     bool CheckTocArrConsistency(TocArray& tocArr, u_int32_t imageStartAddr);
     bool CheckITocArray();
     bool CheckDTocArray();

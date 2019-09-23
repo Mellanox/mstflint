@@ -1443,6 +1443,109 @@ bool SignSubCommand::verifyParams()
     return true;
 }
 
+BinaryCompareSubCommand::BinaryCompareSubCommand()
+{
+    _name = "Binary compare";
+    _desc = "Binary compare between device firmware and given BIN file. If there is a silent mode, no progress is displayed.";
+    _extendedDesc = _desc;
+    _flagLong = "binary_compare";
+    _flagShort = "bc";
+    _example = FLINT_NAME " -d " MST_DEV_EXAMPLE1 " -i image1.bin  <-silent>/<-s> (optional) bc \n";
+    _v = Wtv_Dev_And_Img;
+    _maxCmdParamNum = 1;
+    _minCmdParamNum = 0;
+    _cmdType = SC_Binary_Compare;
+    _fwType = 0;
+    _devQueryRes = 0;
+    _mccSupported = false;
+    memset(&_devInfo, 0, sizeof(_devInfo));
+    memset(&_imgInfo, 0, sizeof(_imgInfo));
+    _unknownProgress = 0;
+}
+BinaryCompareSubCommand:: ~BinaryCompareSubCommand()
+{
+}
+bool BinaryCompareSubCommand::verifyParams()
+{
+    _flintParams.override_cache_replacement = true;
+    if (_flintParams.num_of_args == 2) {
+        return true;
+    }
+    else if (_flintParams.num_of_args == 3 && _flintParams.silent == true) {
+        return true;
+    }
+    else {
+        fprintf(stdout, "The binary comparation command doesn't accept any flags, except device, image and silent mode.\n");
+        return false;
+    }
+}
+FlintStatus BinaryCompareSubCommand::executeCommand()
+{
+    if (preFwOps() == FLINT_FAILED) {
+        if (_imgOps) {
+            printf("-E- Error occurred while executing flint initialization : %s\n", _imgOps->err());
+        }
+        return FLINT_FAILED;
+    }
+    //if (!_fwOps->IsLiveFishDevice()) {
+    //    printf("Device must be in livefish mode. Exiting...\n");
+    //    return FLINT_FAILED;
+
+    _fwType = _fwOps->FwType();
+    if (!_fwOps->FwQuery(&_devInfo)) {
+        reportErr(true, FLINT_FAILED_QUERY_ERROR, "Device", _flintParams.device.c_str(), _fwOps->err());
+        return FLINT_FAILED;
+    }
+    if (!_imgOps->FwQuery(&_imgInfo)) {
+        reportErr(true, FLINT_FAILED_QUERY_ERROR, "Image", _flintParams.image.c_str(), _imgOps->err());
+        return FLINT_FAILED;
+    }
+    if (strcmp((char*)_imgInfo.fw_info.psid, (char*)_devInfo.fw_info.psid)) {
+        printf("\33[2K\r");//clear the current line
+        printf("Binary comparation failed - PSID mismatch.\n");
+        return FLINT_SUCCESS;
+    }
+    for (int i = 0; i < 3; i++) {
+        if (_imgInfo.fw_info.fw_ver[i] != _devInfo.fw_info.fw_ver[i]) {
+            printf("\33[2K\r");//clear the current line
+            printf("Binary comparation failed - versions mismatch.\n");
+            return FLINT_SUCCESS;
+        }
+    }
+    u_int32_t imgSize;
+    if (!_fwOps->FwReadData(NULL, &imgSize)) {
+        reportErr(true, FLINT_IMAGE_READ_ERROR, _fwOps->err());
+        return FLINT_FAILED;
+    }
+    static u_int8_t* imgBuffOnDevice = NULL;
+    imgBuffOnDevice = new u_int8_t[imgSize];
+    memset(imgBuffOnDevice, 0, imgSize);
+    if (!_fwOps->FwReadData((void*)imgBuffOnDevice, &imgSize, (_flintParams.silent == false))) {
+        reportErr(true, FLINT_IMAGE_READ_ERROR, _fwOps->err());
+        return FLINT_FAILED;
+    }
+    std::vector<u_int8_t> imgBuffInFile;
+    if (!_imgOps->FwExtract4MBImage(imgBuffInFile, false)) {
+        delete[] imgBuffOnDevice; 
+        reportErr(true, FLINT_IMAGE_READ_ERROR, _imgOps->err());
+        return FLINT_FAILED;
+    }
+    for (unsigned int i = 0; i < imgBuffInFile.size(); i++) {
+        if ((imgBuffOnDevice[i] == 0 && imgBuffInFile[i] == 0xff) || ((imgBuffOnDevice[i] == 0xff && imgBuffInFile[i] == 0))) {
+            continue;
+        }
+        if (imgBuffOnDevice[i] != imgBuffInFile[i]) {
+            printf("\33[2K\r");//clear the current line
+            printf("Binary comparation failed - binary mismatch.\n");
+            delete[] imgBuffOnDevice;
+            return FLINT_SUCCESS;
+        }
+    }
+    delete[] imgBuffOnDevice;
+    printf("\33[2K\r");//clear the current line
+    printf("Binary comparation success.\n");
+    return FLINT_SUCCESS;
+}
 /***********************
  * Class: BurnSubCommand
  **********************/

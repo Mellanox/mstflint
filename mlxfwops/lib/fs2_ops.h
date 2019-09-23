@@ -74,7 +74,7 @@ public:
 
     virtual u_int8_t FwType();
     virtual bool FwInit();
-    virtual bool FwReadData(void *image, u_int32_t *image_size);
+    virtual bool FwReadData(void *image, u_int32_t *image_size, bool verbose = false);
     virtual bool FwReadRom(std::vector<u_int8_t>& romSect);
     virtual bool FwCalcMD5(u_int8_t md5sum[16]);
 

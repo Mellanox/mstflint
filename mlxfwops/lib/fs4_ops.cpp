@@ -325,7 +325,7 @@ bool Fs4Operations::verifyTocHeader(u_int32_t tocAddr, bool isDtoc, VerifyCallBa
 }
 
 bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isDtoc,
-                                     struct QueryOptions queryOptions, VerifyCallBack verifyCallBackFunc)
+                                     struct QueryOptions queryOptions, VerifyCallBack verifyCallBackFunc, bool verbose)
 {
 
     struct cx5fw_itoc_entry tocEntry;
@@ -354,7 +354,14 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isD
             section_index = 8;
         }
         entryAddr = tocAddr + TOC_HEADER_SIZE + section_index *  TOC_ENTRY_SIZE;
+        if (!verbose) {
         READBUF((*_ioAccess), entryAddr, entryBuffer, TOC_ENTRY_SIZE, "TOC Entry");
+        }
+        else {
+            if (!(*_ioAccess).read(entryAddr, entryBuffer, TOC_ENTRY_SIZE, true)) {
+                return errmsg("%s - read error (%s)\n", "TOC Entry", (*_ioAccess).err());
+            }
+        }
         Fs3UpdateImgCache(entryBuffer, entryAddr, TOC_ENTRY_SIZE);
         cx5fw_itoc_entry_unpack(&tocEntry, entryBuffer);
 
@@ -414,7 +421,14 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isD
                         retVal = false;
                     }
                 } else {
+                    if (!verbose) {
                     READBUF((*_ioAccess), flash_addr, buff, entrySizeInBytes, "Section");
+                    }
+                    else {
+                        if (!(*_ioAccess).read(flash_addr, buff, entrySizeInBytes, true)) {
+                            return errmsg("%s - read error (%s)\n", "Section", (*_ioAccess).err());
+                        }
+                    }
                     Fs3UpdateImgCache(buff, flash_addr, entrySizeInBytes);
                     u_int32_t sect_act_crc = 0;
                     u_int32_t sect_exp_crc = 0;
@@ -512,7 +526,7 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isD
 
 
 bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_itoc,
-                                struct QueryOptions queryOptions, bool ignoreDToc)
+                                struct QueryOptions queryOptions, bool ignoreDToc, bool verbose)
 {
     u_int32_t dtocPtr;
     u_int8_t *buff;
@@ -562,7 +576,7 @@ bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_ito
         }
     }
     if (!verifyTocEntries(_itoc_ptr, show_itoc, false,
-                          queryOptions, verifyCallBackFunc)) {
+                          queryOptions, verifyCallBackFunc, verbose)) {
         return false;
     }
     if (nextBootFwVer) {
@@ -583,7 +597,7 @@ bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_ito
     _fs4ImgInfo.dtocArr.tocArrayAddr = dtocPtr;
     //-Verify DToC Entries:
     if (!verifyTocEntries(dtocPtr, show_itoc, true,
-                          queryOptions, verifyCallBackFunc)) {
+                          queryOptions, verifyCallBackFunc, verbose)) {
         _ioAccess->set_address_convertor(log2_chunk_size, is_image_in_odd_chunks);
         return false;
     }
@@ -631,7 +645,7 @@ bool Fs4Operations::CheckFs4ImgSize(Fs4Operations& imageOps, bool useImageDevDat
     return true;
 }
 
-bool Fs4Operations::FwReadData(void *image, u_int32_t *imageSize)
+bool Fs4Operations::FwReadData(void *image, u_int32_t *imageSize, bool verbose)
 {
     struct QueryOptions queryOptions;
     if (!imageSize) {
@@ -646,7 +660,7 @@ bool Fs4Operations::FwReadData(void *image, u_int32_t *imageSize)
         queryOptions.quickQuery = true;
     }
     // Avoid Warning
-    if (!FsVerifyAux((VerifyCallBack)NULL, 0, queryOptions)) {
+    if (!FsVerifyAux((VerifyCallBack)NULL, 0, queryOptions, false, verbose)) {
         return false;
     }
 

@@ -273,10 +273,11 @@ bool FsCtrlOperations::FwVerifyAdv(ExtVerifyParams &verifyParams)
     return ret;
 }
 
-bool FsCtrlOperations::FwReadData(void *image, u_int32_t *image_size)
+bool FsCtrlOperations::FwReadData(void *image, u_int32_t *image_size, bool verbose)
 {
     (void) image;
     (void) image_size;
+    (void) verbose;
     return errmsg("Read image is not supported");
 }
 

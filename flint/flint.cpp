@@ -168,6 +168,7 @@ map_sub_cmd_t_to_subcommand Flint::initSubcommandMap()
     cmdMap[SC_Set_Public_Keys] = new SetPublicKeysSubCommand();
     cmdMap[SC_Set_Forbidden_Versions] = new SetForbiddenVersionsSubCommand();
     cmdMap[SC_Image_Reactivation] = new ImageReactivationSubCommand();
+    cmdMap[SC_Binary_Compare] = new  BinaryCompareSubCommand();
     return cmdMap;
 }
 
