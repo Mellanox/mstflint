@@ -2599,8 +2599,9 @@ void MlxlinkCommander::sendPtys()
         u_int32_t ptysExtMask = 0x0;
         string proto = (_protoActive == IB) ? "ib" : "eth";
         for (u_int32_t i = 0; i < _ptysSpeeds.size(); i++) {
-            if (dm_dev_is_200g_speed_supported_hca(_devID) ||
-                    dm_dev_is_200g_speed_supported_switch(_devID)) {
+            if (_protoActive == ETH &&
+                    (dm_dev_is_200g_speed_supported_hca(_devID) ||
+                    dm_dev_is_200g_speed_supported_switch(_devID))) {
                 ptysExtMask |= ptysSpeedToExtMask(_ptysSpeeds[i]);
             } else {
                 ptysMask |= ptysSpeedToMask(_ptysSpeeds[i], protoCap);
@@ -2630,8 +2631,10 @@ void MlxlinkCommander::sendPtys()
 
 u_int32_t MlxlinkCommander::ptysSpeedToExtMask(const string & speed)
 {
+
+    checkSupportedSpeed(speed, _protoCapability, true);
     if(_protoActive == IB)
-        return 0;
+        return ptysSpeedToMask(speed, _protoActive);
     return ptysSpeedToExtMaskETH(speed);
 }
 
@@ -2642,22 +2645,34 @@ u_int32_t MlxlinkCommander::ptysSpeedToMask(const string & speed, u_int32_t prot
            ptysSpeedToMaskIB(speed) : ptysSpeedToMaskETH(speed);
 }
 
-void MlxlinkCommander::checkSupportedSpeed(const string & speed, u_int32_t protoCap)
+void MlxlinkCommander::checkSupportedSpeed(const string & speed, u_int32_t protoCap, bool extSpeed)
 {
-    u_int32_t mask =
-        (_protoActive == IB) ?
-        ptysSpeedToMaskIB(speed) : ptysSpeedToMaskETH(speed);
-    u_int32_t diffProto =
-        (_protoActive == IB) ?
-        ptysSpeedToMaskETH(speed) : ptysSpeedToMaskIB(speed);
+    u_int32_t mask = 0;
+    u_int32_t diffProto = 0;
+    string errStr = "";
+    if (!extSpeed) {
+         mask =
+            (_protoActive == IB) ?
+            ptysSpeedToMaskIB(speed) : ptysSpeedToMaskETH(speed);
+         diffProto =
+            (_protoActive == IB) ?
+            ptysSpeedToMaskETH(speed) : ptysSpeedToMaskIB(speed);
+    } else {
+        mask =
+           (_protoActive == IB) ?
+           ptysSpeedToMaskIB(speed) : ptysSpeedToExtMaskETH(speed);
+        diffProto =
+           (_protoActive == IB) ?
+           ptysSpeedToExtMaskETH(speed) : ptysSpeedToMaskIB(speed);
+    }
     if (diffProto) {
-        string errStr = "Supported Speeds Are: ";
-        errStr += SupportedSpeeds2Str(_protoActive, protoCap);
+        errStr = "Supported Speeds Are: ";
+        errStr += SupportedSpeeds2Str(_protoActive, protoCap, extSpeed);
         throw MlxRegException(speed + " is not supported by Protocol!\n" + errStr);
     }
     if (!(mask & protoCap)) {
         string errStr = "Supported Speeds Are: ";
-        errStr += SupportedSpeeds2Str(_protoActive, protoCap);
+        errStr += SupportedSpeeds2Str(_protoActive, protoCap, extSpeed);
         throw MlxRegException(speed + " is not supported by Device!\n" + errStr);
     }
 }
