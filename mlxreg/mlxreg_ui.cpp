@@ -268,17 +268,13 @@ void MlxRegUi::printRegFields(vector<AdbInstance*> nodeFields)
     printf("%-*s | %-10s | %-8s | %-8s | %-8s\n", largestName, "Field Name", "Address (Bytes)", "Offset (Bits)", "Size (Bits)", "Access");
     PRINT_LINE(58 + largestName);
     for (std::vector<AdbInstance*>::size_type i = 0; i != nodeFields.size(); i++) {
-        string access = "N/A";
-        if (nodeFields[i]->fieldDesc->attrs.find("access") != nodeFields[i]->fieldDesc->attrs.end()) {
-            access = nodeFields[i]->fieldDesc->attrs.find("access")->second;
-        }
         printf("%-*s | 0x%08x      | %-8d      | %-8d    | %-15s\n",
                largestName,
                nodeFields[i]->name.c_str(),
                (nodeFields[i]->offset >> 3) & ~0x3,
                nodeFields[i]->startBit(),
                nodeFields[i]->fieldDesc->eSize(),
-               access.c_str());
+               RegAccessParser::getAccess(nodeFields[i]).c_str());
     }
     PRINT_LINE(58 + largestName);;
 }
