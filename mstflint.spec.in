@@ -186,7 +186,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 
 %changelog
-* Mon Swp 23 2019 Dan Goldberg <dang@dev.mellanox.co.il>
+* Mon Sep 23 2019 Dan Goldberg <dang@dev.mellanox.co.il>
    Added conditional lib name of the dependencies to support both RH and SLES naming conventions.
 
 * Wed May 22 2019 Eran Jakoby <eranj@dev.mellanox.co.il>
