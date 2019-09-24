@@ -756,10 +756,10 @@ ParseStatus Flint::HandleOption(string name, string value)
     if (!(verifyNumOfArgs(name, value))) {
         return PARSE_ERROR;
     }
+    int delta = 1;
     if (name == "device" || name == "d") {
         _flintParams.device_specified = true;
         _flintParams.device = value;
-        _flintParams.num_of_args++;
     } else if (name == "help" || name == "h") {
         vector<string> excluded_sections;
         excluded_sections.push_back("COMMANDS DESCRIPTION");
@@ -777,13 +777,10 @@ ParseStatus Flint::HandleOption(string name, string value)
         return PARSE_OK_WITH_EXIT;
     } else if (name == "no_devid_check") {
         _flintParams.no_devid_check = true;
-        _flintParams.num_of_args++;
     } else if (name == "skip_ci_req") {
         _flintParams.skip_ci_req = true;
-        _flintParams.num_of_args++;
     } else if (name == "guid") {
         _flintParams.guid_specified = true;
-        _flintParams.num_of_args++;
         guid_t g;
         if (!getGUIDFromStr(value, g)) {
             return PARSE_ERROR;
@@ -796,7 +793,6 @@ ParseStatus Flint::HandleOption(string name, string value)
         // }
     } else if (name == "guids") {
         _flintParams.guids_specified = true;
-        _flintParams.num_of_args++;
         std::vector<std::string> strs;
         splitByDelimiters(strs, value, ",");
         if (strs.size() != GUIDS) {
@@ -812,7 +808,6 @@ ParseStatus Flint::HandleOption(string name, string value)
         }
     } else if (name == "mac") {
         _flintParams.mac_specified = true;
-        _flintParams.num_of_args++;
         guid_t m;
         if (!getGUIDFromStr(value, m)) {
             return PARSE_ERROR;
@@ -822,7 +817,6 @@ ParseStatus Flint::HandleOption(string name, string value)
         }
     } else if (name == "macs") {
         _flintParams.macs_specified = true;
-        _flintParams.num_of_args++;
         std::vector<std::string> strs;
         splitByDelimiters(strs, value, ",");
         if (strs.size() != MACS) {
@@ -838,93 +832,67 @@ ParseStatus Flint::HandleOption(string name, string value)
         }
     } else if (name == "uid") {
         _flintParams.uid_specified = true;
-        _flintParams.num_of_args++;
         if (!getGUIDFromStr(value, _flintParams.baseUid)) {
             return PARSE_ERROR;
         }
     } else if (name == "blank_guids") {
         _flintParams.blank_guids = true;
-        _flintParams.num_of_args++;
     } else if (name == "clear_semaphore") {
         _flintParams.clear_semaphore = true;
-        _flintParams.num_of_args++;
     } else if (name == "image" || name == "i") {
         _flintParams.image_specified = true;
-        _flintParams.num_of_args++;
         _flintParams.image = value;
     } else if (name == "qq") {
         _flintParams.quick_query = true;
         _flintParams.skip_rom_query = true;
-        _flintParams.num_of_args+=2;
+        delta = 2;
     } else if (name == "low_cpu") {
         _flintParams.low_cpu = true;
-        _flintParams.num_of_args++;
     } else if (name == "next_boot_fw_ver" || name == "flashed_version") {
         _flintParams.next_boot_fw_ver = true;
-        _flintParams.num_of_args++;
     } else if (name == "nofs") {
         _flintParams.nofs = true;
-        _flintParams.num_of_args++;
     } else if (name == "allow_psid_change") {
-        _flintParams.num_of_args++;
         _flintParams.allow_psid_change = true;
     } else if (name == "allow_rom_change") {
-        _flintParams.num_of_args++;
         _flintParams.allow_rom_change = true;
     } else if (name == "override_cache_replacement" || name == "ocr") {
-        _flintParams.num_of_args++;
         _flintParams.override_cache_replacement = true;
     } else if (name == "use_fw") {
         _flintParams.use_fw = true;
-        _flintParams.num_of_args++;
     } else if (name == "no_flash_verify") {
-        _flintParams.num_of_args++;
         _flintParams.no_flash_verify = true;
     } else if (name == "silent" || name == "s") {
-        _flintParams.num_of_args++;
         _flintParams.silent = true;
     } else if (name == "yes" || name == "y") {
-        _flintParams.num_of_args++;
         _flintParams.yes = true;
     } else if (name == "no") {
-        _flintParams.num_of_args++;
         _flintParams.no = true;
     } else if (name == "vsd") {
         _flintParams.vsd_specified = true;
-        _flintParams.num_of_args++;
         _flintParams.vsd = value;
     } else if (name == "use_image_ps") {
-        _flintParams.num_of_args++;
         _flintParams.use_image_ps = true;
     } else if (name == "use_image_guids") {
-        _flintParams.num_of_args++;
         _flintParams.use_image_guids = true;
     } else if (name == "use_image_rom") {
-        _flintParams.num_of_args++;
         _flintParams.use_image_rom = true;
     } else if (name == "use_dev_rom") {
         _flintParams.use_dev_rom = true;
     } else if (name == "ignore_dev_data") {
-        _flintParams.num_of_args++;
         _flintParams.ignore_dev_data = true;
     } else if (name == "no_fw_ctrl") {
-        _flintParams.num_of_args++;
         _flintParams.no_fw_ctrl = true;
     } else if (name == "dual_image") {
-        _flintParams.num_of_args++;
         _flintParams.dual_image = true;
     } else if (name == "striped_image") {
-        _flintParams.num_of_args++;
         _flintParams.striped_image = true;
     } else if (name == "use_dev_img_info") {
-        _flintParams.num_of_args++;
         _flintParams.use_dev_img_info = true;
     } else if (name == "ir" || name == "image_reactivation") {
-        _flintParams.num_of_args++;
         _flintParams.image_reactivation = true;
     }
     else if (name == "banks") {
-    _flintParams.num_of_args++;
         _flintParams.banks_specified = true;
         u_int64_t banksNum;
         if (!strToNum(value, banksNum)) {
@@ -932,34 +900,27 @@ ParseStatus Flint::HandleOption(string name, string value)
         }
         _flintParams.banks = (int)banksNum;
     } else if (name == "log") {
-        _flintParams.num_of_args++;
         _flintParams.log_specified = true;
         _flintParams.log = value;
     } else if (name == "flash_params") {
-        _flintParams.num_of_args++;
         _flintParams.flash_params_specified = true;
         if (!parseFlashParams(value, _flintParams.flash_params)) {
             return PARSE_ERROR;
         }
         //printf("-D- flashType=%s , log2size = %d , numOfBanks = %d\n", _flintParams.flash_params.type_name, _flintParams.flash_params.log2size, _flintParams.flash_params.num_of_flashes);
     } else if (name == "private_key") {
-        _flintParams.num_of_args++;
         _flintParams.privkey_specified = true;
         _flintParams.privkey_file = value;
     } else if (name == "key_uuid") {
-        _flintParams.num_of_args++;
         _flintParams.uuid_specified = true;
         _flintParams.privkey_uuid = value;
     } else if (name == "hmac_key") {
-        _flintParams.num_of_args++;
         _flintParams.key_specified = true;
         _flintParams.key = value;
     } else if (name == "private_key2") {
-        _flintParams.num_of_args++;
         _flintParams.privkey2_specified = true;
         _flintParams.privkey2_file = value;
     } else if (name == "key_uuid2") {
-        _flintParams.num_of_args++;
         _flintParams.uuid2_specified = true;
         _flintParams.privkey2_uuid = value;
     } else {
@@ -967,6 +928,7 @@ ParseStatus Flint::HandleOption(string name, string value)
         cout << _cmdParser.GetSynopsis();
         return PARSE_ERROR;
     }
+    _flintParams.num_of_args += delta;
     return PARSE_OK;
 }
 

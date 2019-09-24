@@ -1475,7 +1475,7 @@ bool BinaryCompareSubCommand::verifyParams()
         return true;
     }
     else {
-        fprintf(stdout, "The binary comparation command doesn't accept any flags, except device, image and silent mode.\n");
+        fprintf(stdout, "The binary comparison command doesn't accept any flags, except device, image and silent mode.\n");
         return false;
     }
 }
@@ -1502,13 +1502,13 @@ FlintStatus BinaryCompareSubCommand::executeCommand()
     }
     if (strcmp((char*)_imgInfo.fw_info.psid, (char*)_devInfo.fw_info.psid)) {
         printf("\33[2K\r");//clear the current line
-        printf("Binary comparation failed - PSID mismatch.\n");
+        printf("Binary comparison failed - PSID mismatch.\n");
         return FLINT_SUCCESS;
     }
     for (int i = 0; i < 3; i++) {
         if (_imgInfo.fw_info.fw_ver[i] != _devInfo.fw_info.fw_ver[i]) {
             printf("\33[2K\r");//clear the current line
-            printf("Binary comparation failed - versions mismatch.\n");
+            printf("Binary comparison failed - versions mismatch.\n");
             return FLINT_SUCCESS;
         }
     }
@@ -1536,14 +1536,14 @@ FlintStatus BinaryCompareSubCommand::executeCommand()
         }
         if (imgBuffOnDevice[i] != imgBuffInFile[i]) {
             printf("\33[2K\r");//clear the current line
-            printf("Binary comparation failed - binary mismatch.\n");
+            printf("Binary comparison failed - binary mismatch.\n");
             delete[] imgBuffOnDevice;
             return FLINT_SUCCESS;
         }
     }
     delete[] imgBuffOnDevice;
     printf("\33[2K\r");//clear the current line
-    printf("Binary comparation success.\n");
+    printf("Binary comparison success.\n");
     return FLINT_SUCCESS;
 }
 /***********************
