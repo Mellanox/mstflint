@@ -50,6 +50,7 @@
 #ifndef NO_MFA_SUPPORT
 #include <mfa.h>
 #endif
+#include "tools_dev_types.h"
 
 #define BAD_CRC_MSG "Bad CRC."
 extern const char *g_sectNames[];
@@ -2022,6 +2023,20 @@ u_int8_t FwOperations::GetFwFormatFromHwDevID(u_int32_t hwDevId)
 const char*  FwOperations::FwGetReSignMsgStr()
 {
     return (const char*)NULL;
+}
+bool FwOperations::IsLiveFishDevice()
+{
+    if (_ioAccess == NULL) {
+        return false;
+    }
+    if (!_ioAccess->is_flash()) {
+        return false;
+    }
+    mfile* mf = _ioAccess->getMfileObj();
+    if (mf == NULL) {
+        return false;
+    }
+    return (dm_is_livefish_mode(mf) == 1);
 }
 
 

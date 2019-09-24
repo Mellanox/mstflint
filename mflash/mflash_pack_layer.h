@@ -72,7 +72,7 @@ typedef void*trm_ctx;
 typedef int (*f_mf_lock)(mflash *mfl, int lock_state);
 
 typedef int (*f_mf_set_bank)(mflash *mfl, u_int32_t bank);
-typedef int (*f_mf_read)(mflash *mfl, u_int32_t addr, u_int32_t len, u_int8_t *data);
+typedef int (*f_mf_read)(mflash *mfl, u_int32_t addr, u_int32_t len, u_int8_t *data, bool verbose);
 typedef int (*f_mf_write)(mflash *mfl, u_int32_t addr, u_int32_t len, u_int8_t *data);
 typedef int (*f_mf_erase_sect)(mflash *mfl, u_int32_t addr);
 typedef int (*f_mf_reset)(mflash *mfl);

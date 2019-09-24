@@ -637,7 +637,7 @@ bool Fs3Operations::checkPreboot(u_int32_t *prebootBuff, u_int32_t size, VerifyC
     return true;
 }
 
-bool Fs3Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_itoc, struct QueryOptions queryOptions, bool ignoreDToc)
+bool Fs3Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_itoc, struct QueryOptions queryOptions, bool ignoreDToc, bool verbose)
 {
     u_int32_t cntx_image_start[CNTX_START_POS_SIZE] = {0};
     u_int32_t cntx_image_num;
@@ -645,7 +645,7 @@ bool Fs3Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_ito
     u_int32_t offset;
     u_int8_t binVerMajor = 0, binVerMinor = 0;
     bool bad_signature;
-
+    (void)verbose;
     FindAllImageStart(_ioAccess, cntx_image_start, &cntx_image_num, _cntx_magic_pattern);
     if (cntx_image_num == 0) {
         return errmsg(MLXFW_NO_VALID_IMAGE_ERR, "No valid FS3 image found");
@@ -1344,9 +1344,10 @@ bool Fs3Operations::FwBurnBlock(FwOperations *imageOps, ProgressCallBack progres
     return errmsg("FwBurnBlock is not supported anymore in FS3 image.");
 }
 
-bool Fs3Operations::FwReadData(void *image, u_int32_t *imageSize)
+bool Fs3Operations::FwReadData(void *image, u_int32_t *imageSize, bool verbose)
 {
     struct QueryOptions queryOptions;
+    (void)verbose;
     if (!imageSize) {
         return errmsg("bad parameter is given to FwReadData\n");
     }

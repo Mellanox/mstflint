@@ -174,6 +174,21 @@ public:
     inline string& getExample() {return this->_example;}
 };
 
+class BinaryCompareSubCommand : public SubCommand
+{
+private:
+    u_int8_t _fwType;
+    fw_info_t _devInfo;
+    fw_info_t _imgInfo;
+    FwOperations::ExtBurnParams _burnParams;
+    bool _devQueryRes;
+    int _unknownProgress; // used to trace the progress of unknown progress.
+public:
+    BinaryCompareSubCommand();
+    ~BinaryCompareSubCommand();
+    FlintStatus executeCommand();
+    bool verifyParams();
+};
 class BurnSubCommand : public SubCommand
 {
 private:
