@@ -2923,6 +2923,9 @@ union tools_open_tools_open {
 	/* Description -  */
 	/* 0x0.0 - 0x20.31 */
 	struct tools_open_mcdd_descriptor mcdd_descriptor;
+	/* Description -  */
+	/* 0x0.0 - 0x4.31 */
+	struct tools_open_mirc_reg mirc_reg;
 };
 
 
@@ -3599,6 +3602,7 @@ void tools_open_mfa2_print(const union tools_open_mfa2 *ptr_struct, FILE *fd, in
 unsigned int tools_open_mfa2_size(void);
 #define TOOLS_OPEN_MFA2_SIZE    (0x20)
 void tools_open_mfa2_dump(const union tools_open_mfa2 *ptr_struct, FILE *fd);
+/* mirc_reg */
 void tools_open_mirc_reg_pack(const struct tools_open_mirc_reg *ptr_struct, u_int8_t *ptr_buff);
 void tools_open_mirc_reg_unpack(struct tools_open_mirc_reg *ptr_struct, const u_int8_t *ptr_buff);
 void tools_open_mirc_reg_print(const struct tools_open_mirc_reg *ptr_struct, FILE *fd, int indent_level);

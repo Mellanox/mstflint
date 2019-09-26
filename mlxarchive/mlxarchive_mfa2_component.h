@@ -71,6 +71,7 @@ public:
     };
     u_int32_t getComponentBinarySize() const;
     void setComponentBinaryOffset(u_int64_t offset);
+    const ComponentDescriptor & getComponentDescriptor() const { return _descriptor;}
 };
 
 inline u_int32_t Component::getComponentBinarySize() const {

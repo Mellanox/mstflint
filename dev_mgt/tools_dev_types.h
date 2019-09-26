@@ -79,6 +79,7 @@ enum dm_dev_id
     DeviceConnectX5,
     DeviceConnectX6,
     DeviceBlueField,
+    DeviceBlueField2,
     DeviceFPGA,             // UnSupported
     DeviceSwitchIB2,
     DeviceFPGANewton,
@@ -88,11 +89,14 @@ enum dm_dev_id
     DeviceCableSFP,
     DeviceCableSFP51,
     DeviceCableSFP51Paging,
+    DeviceArdbeg,
+    DeviceBaritone,
+    DeviceMenhit,
     DeviceSpectrum2,
     DeviceDummy,
     DeviceSecureHost,
     DeviceConnectX6DX,
-
+    DeviceSpectrum3, //Firebird
     DeviceEndMarker           // Dummy Device - Marker for indicating end of devices when iterating
 };
 
@@ -136,9 +140,19 @@ dm_dev_id_t dm_dev_str2type(const char *str);
 int dm_dev_is_hca(dm_dev_id_t type);
 
 /**
+ * A predicate returning if the hca supports 200G speed and above
+ */
+int dm_dev_is_200g_speed_supported_hca(dm_dev_id_t type);
+
+/**
  * A predicate returning if the device is a switch
  */
 int dm_dev_is_switch(dm_dev_id_t type);
+
+/**
+ * A predicate returning if the switch supports 200G speed and above
+ */
+int dm_dev_is_200g_speed_supported_switch(dm_dev_id_t type);
 
 /**
  * A predicate returning if the device is a bridge

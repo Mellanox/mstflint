@@ -50,7 +50,22 @@ sys.path.append(os.path.join("..", "..", "cmdif"))
 import mtcr  # noqa
 import cmdif  # noqa
 
-sys.stdout = os.fdopen(sys.stdout.fileno(), 'wb', 0)
+
+class UnbufferedStream(object):
+   def __init__(self, stream):
+       self.stream = stream
+   def write(self, data):
+       self.stream.write(data)
+       self.stream.flush()
+   def writelines(self, datas):
+       self.stream.writelines(datas)
+       self.stream.flush()
+   def __getattr__(self, attr):
+       return getattr(self.stream, attr)
+
+
+sys.stdout = UnbufferedStream(sys.stdout)
+
 
 EXEC_NAME = "mstfwtrace"
 proc = None
@@ -241,9 +256,9 @@ def parse_cmd_line_args():
     IGNORE_OLD_EVENTS = args.ignore_old_events
 
     if IRISC_NAME != "all":
-        raise TracerException("Only 'all' irisc is compatible with secure fw")
+        raise TracerException("Only 'all' irisc is compatible with this tracer version")
     if TRACER_MODE != "MEM":
-        raise TracerException("Only 'MEM' tracer mode is compatible with secure fw")
+        raise TracerException("Only 'MEM' tracer mode is compatible with this tracer version")
 
 
 def check_secure_fw_args(devInfo):
@@ -354,23 +369,19 @@ def start_tracer():
         MST_DEVICE = mtcr.MstDevice(DEV_NAME)
         devInfo = get_device_info(MST_DEVICE)
         CMDIFDEV = cmdif.CmdIf(MST_DEVICE)
-
-        if FwTraceUtilities.is_secure_fw(MST_DEVICE):       
-            if FwTraceUtilities.is_driver_mem_mode_supported():
-                try:
-                    check_secure_fw_args(devInfo)                
-                    secure_fw_tracer = SecureFwTrace(MST_DEVICE, DEV_NAME, IGNORE_OLD_EVENTS, REAL_TS)               
-                    open_mst_dev()           
-                    apply_mask(devInfo, MST_DEVICE, CMDIFDEV)
-                    secure_fw_tracer.parse_driver_mem()
-                except Exception as exp:
-                    print("-E- %s" % exp)
-            else:
-                raise TracerException("Driver mem mode is not supported")                   
-
-            return 0
+       
+        if FwTraceUtilities.is_driver_mem_mode_supported():
+            try:
+                check_secure_fw_args(devInfo)                
+                secure_fw_tracer = SecureFwTrace(MST_DEVICE, DEV_NAME, IGNORE_OLD_EVENTS, REAL_TS)               
+                open_mst_dev()           
+                apply_mask(devInfo, MST_DEVICE, CMDIFDEV)
+                secure_fw_tracer.parse_driver_mem()
+            except Exception as exp:
+                print("-E- %s" % exp)
         else:
-            raise TracerException("FW is not secure, %s supports secure FW only" % EXEC_NAME)    
+            raise TracerException("Driver mem mode is not supported")                   
+
     except Exception as exp:
         print("-E- %s" % exp)
         return 1

@@ -55,5 +55,6 @@ private:
     std::string _outFile;
     std::string _date;
     std::string _version;
+    std::string _mfa2file;
 };
 }

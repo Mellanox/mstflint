@@ -60,7 +60,6 @@ common_INCLUDES =  -I$(USER_DIR)/common\
             -I$(USER_DIR)/mlxfwops/lib\
             -I$(USER_DIR)/pldmlib\
             -I$(CURL_INC_DIR)\
-            -I$(XML2_INC_DIR)\
             -I$(USER_DIR)/mft_utils\
             -I$(USER_DIR)/dev_mgt
 

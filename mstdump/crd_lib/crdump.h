@@ -93,7 +93,7 @@ typedef void (*crd_callback_t) (crd_dword_t*);  // call back
 
 /*
 
-   Must be called before others methods to allocat memory and store all needed configuration
+   Must be called before others methods to allocate memory and store all needed configuration
 
  */
 CRD_DLL_EXPORT int crd_init(OUT crd_ctxt_t **context, IN mfile *mf, IN int is_full, IN int cause, IN int cause_off, IN const char *db_path);  // fill device type, and number of dewords according to the is_full

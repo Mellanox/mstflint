@@ -48,6 +48,7 @@
 #include <tools_layouts/tools_open_layouts.h>
 
 #include "mlxarchive_mfa2_element.h"
+#include "mfa2_buff.h"
 
 using namespace std;
 
@@ -80,6 +81,7 @@ public:
     Extension(u_int8_t vesrion, ExtensionType type, u_int32_t length);
 
     virtual void pack(vector<u_int8_t>& buff) const = 0;
+    virtual bool unpack(Mfa2Buffer & buff) = 0;
 
     virtual ~Extension  () {};
 };
@@ -103,6 +105,9 @@ public:
     VersionExtension(const string& version);
     VersionExtension(const u_int16_t* version);
     void pack(vector<u_int8_t>& buff) const;
+    bool unpack(Mfa2Buffer & buff);
+    string getVersion(bool pad_sub_minor) const;
+    string getDateAndTime() const;
 };
 
 /*class SecurityInfoExtension : Extension {
@@ -132,6 +137,8 @@ public:
                 _storageAddress(0x0){};
 
     void pack(vector<u_int8_t>& buff) const;
+    bool unpack(Mfa2Buffer & buff);
+    u_int16_t getComponentIndex() const { return _componentIndex;}
 };
 
 class SHA256Extension : Extension {
@@ -146,6 +153,7 @@ public:
     explicit SHA256Extension(enum SHA256Scope scope);
     void setDigest(vector<u_int8_t> digest);
     void pack(vector<u_int8_t>& buff) const;
+    bool unpack(Mfa2Buffer & buff);
 private:
     vector<u_int8_t> _digest;
 
@@ -171,6 +179,8 @@ public:
         _str(str) {};
     u_int32_t length() const;
     void pack(vector<u_int8_t>& buff) const;
+    bool unpack(Mfa2Buffer & buff);
+    const string & getString() const { return _str;}
 };
 
 inline u_int32_t StringExtension::length() const

@@ -54,6 +54,7 @@ enum dm_dev_type {
     DM_BRIDGE,
     DM_QSFP_CABLE,
     DM_SFP_CABLE,
+    DM_LINKX // linkx chip
 };
 
 struct device_info {
@@ -70,6 +71,13 @@ struct device_info {
 #define CABLEID_ADDR                                           0x0
 #define SFP_DIGITAL_DIAGNOSTIC_MONITORING_IMPLEMENTED_ADDR     92
 #define SFP_PAGING_IMPLEMENTED_INDICATOR_ADDR                  64
+
+#define ARDBEG_DEVID 0x6e
+#define ARDBEG_MIRRORED_DEVID 0x70
+#define BARITONE_DEVID 0x6b
+#define BARITONE_MIRRORED_DEVID 0x71
+#define MENHIT_DEVID 0x6f
+
 
 #ifdef CABLES_SUPP
 enum dm_dev_type getCableType(u_int8_t id)
@@ -218,6 +226,15 @@ static struct device_info g_devs_info[] = {
         DM_HCA                  //dev_type
     },
     {
+        DeviceBlueField2,        //dm_id
+        0x214,                  //hw_dev_i
+        -1,                     //hw_rev_i
+        -1,                     //sw_dev_i
+        "BlueField2",            //name
+        2,                      //port_num
+        DM_HCA                  //dev_type
+    },
+    {
         DeviceFPGANewton,       //dm_id
         0xfff,                  //hw_dev_i - Dummy device ID till we have official one
         -1,                     //hw_rev_i
@@ -308,6 +325,33 @@ static struct device_info g_devs_info[] = {
         DM_SWITCH               //dev_type
     },
     {
+        DeviceArdbeg,           //dm_id
+        0x6e,                   //hw_dev_i (ArdbegMirror 0x70)
+        -1,                     //hw_rev_i
+        -1,                     //sw_dev_i
+        "Ardbeg",               //name
+        -1,                     //port_num
+        DM_LINKX                //dev_type
+    },
+        {
+        DeviceBaritone,         //dm_id
+        0x6b,                   //hw_dev_i (BaritoneMirror 0x71)
+        -1,                     //hw_rev_i
+        -1,                     //sw_dev_i
+        "Baritone",             //name
+        -1,                     //port_num
+        DM_LINKX                //dev_type
+    },
+    {
+        DeviceMenhit,           //dm_id
+        0x6f,                   //hw_dev_i
+        -1,                     //hw_rev_i
+        -1,                     //sw_dev_i
+        "Menhit",               //name
+        -1,                     //port_num
+        DM_LINKX                //dev_type
+    },
+    {
         DeviceSecureHost,       //dm_id
         0xcafe,                 //hw_dev_i
         0xd0,                   //hw_rev_i
@@ -315,6 +359,15 @@ static struct device_info g_devs_info[] = {
         "Unknown Device",       //name
         -1,                     //port_num
         DM_UNKNOWN              //dev_type
+    },
+    {
+        DeviceSpectrum3,        //dm_id
+        0x250,                  //hw_dev_i
+        -1,                     //hw_rev_i
+        -1,                     //sw_dev_i
+        "Spectrum3",            //name
+        128,                    //port_num NEED_CHECK
+        DM_SWITCH               //dev_type
     },
     {
         DeviceUnknown,          //dm_id
@@ -374,6 +427,28 @@ int dm_get_device_id(mfile *mf,
     }
 #endif
 #ifdef CABLES_SUPP
+    if (mf->tp == MST_LINKX_CHIP){
+
+        switch (mf->linkx_chip_devid){
+            case ARDBEG_DEVID:
+            case ARDBEG_MIRRORED_DEVID:
+                *ptr_dm_dev_id = DeviceArdbeg;
+                break;
+            case BARITONE_DEVID:
+            case BARITONE_MIRRORED_DEVID:
+                *ptr_dm_dev_id = DeviceBaritone;
+                break;
+            case MENHIT_DEVID:
+                *ptr_dm_dev_id = DeviceMenhit;
+                break;
+            default:
+                return 1;
+                break;
+        }
+        return 0;
+
+    }
+
     if (mf->tp == MST_CABLE) {
         //printf("-D- Getting cable ID\n");
         if (mread4(mf, CABLEID_ADDR, &dword) != 4) {
@@ -505,9 +580,19 @@ int dm_dev_is_hca(dm_dev_id_t type)
     return get_entry(type)->dev_type == DM_HCA;
 }
 
+int dm_dev_is_200g_speed_supported_hca(dm_dev_id_t type)
+{
+    return (dm_dev_is_hca(type) && (get_entry(type)->hw_dev_id >= get_entry(DeviceConnectX6)->hw_dev_id));
+}
+
 int dm_dev_is_switch(dm_dev_id_t type)
 {
     return get_entry(type)->dev_type == DM_SWITCH;
+}
+
+int dm_dev_is_200g_speed_supported_switch(dm_dev_id_t type)
+{
+    return (dm_dev_is_switch(type) && (get_entry(type)->hw_dev_id >= get_entry(DeviceQuantum)->hw_dev_id));
 }
 
 int dm_dev_is_bridge(dm_dev_id_t type)

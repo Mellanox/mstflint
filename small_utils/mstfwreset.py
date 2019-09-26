@@ -40,8 +40,8 @@ from __future__ import print_function
 __version__ = '1.0'
 
 # Python Imports ######################
+import sys
 try:
-    import sys
     import argparse
     import textwrap
     import os
@@ -63,6 +63,8 @@ try:
     from mlxfwresetlib.mlxfwreset_mlnxdriver import MlnxDriverFactory,MlnxDriverLinux
     from mlxfwresetlib.mlxfwreset_status_checker import FirmwareResetStatusChecker
     from mlxfwresetlib.logger import LoggerFactory
+    from mlxfwresetlib.cmd_reg_mfrl import CmdRegMfrl
+    from mlxfwresetlib.cmd_reg_mpcir import CmdRegMpcir
     if os.name != 'nt':
         if not getattr(sys, 'frozen', False):
             sys.path.append(os.sep.join((os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "mlxpci")))
@@ -86,26 +88,17 @@ MLNX_DEVICES = [
                dict(name="ConnectX4LX", devid=0x20b, status_config_not_done=(0xb0004, 31)),
                dict(name="ConnectX5", devid=0x20d, status_config_not_done=(0xb5e04, 31)),
                dict(name="BlueField", devid=0x211, status_config_not_done=(0xb5e04, 31)),
+               dict(name="BlueField2", devid=0x214, status_config_not_done=(0xb5e04, 31)),
                dict(name="ConnectX6", devid=0x20f, status_config_not_done=(0xb5f04, 31)),
+               dict(name="ConnectX6DX", devid=0x212, status_config_not_done=(0xb5f04, 31)),
                dict(name="ConnectX3", devid=0x1f5),
                dict(name="SwitchX", devid=0x245),
                dict(name="IS4", devid=0x1b3),
                ]
 
 # Supported devices.
-SUPP_DEVICES = ["ConnectIB", "ConnectX4", "ConnectX4LX", "ConnectX5", "BlueField", "ConnectX6"]
+SUPP_DEVICES = ["ConnectIB", "ConnectX4", "ConnectX4LX", "ConnectX5", "BlueField", "ConnectX6", "ConnectX6DX", "BlueField2"]
 SUPP_OS = ["FreeBSD", "Linux", "Windows"]
-
-EPILOG = textwrap.dedent('''\
-Reset levels:
-    0: Full ISFU.
-    1: Driver restart (link/managment will remain up).
-    2: Driver restart (link/managment will be down).
-    3: Driver restart and PCI reset.
-    4: Warm reboot.
-    5: Cold reboot (performed by the user).
-
-Supported Devices:''') + "\n    " + ", ".join(SUPP_DEVICES) + ".\n"
 
 IS_MSTFLINT = True
 # TODO latter remove mcra to the new class
@@ -120,31 +113,14 @@ if IS_MSTFLINT:
 TOOL_VERSION = "1.0.0"
 
 DESCRIPTION = textwrap.dedent('''\
-%s : Tool which provides the following functionality:
-    1. Query device for reset level required in order to load new firmware
-    2. Perform reset operation in order to load new firmware
+%s : The tool provides the following functionality in order to load new firmware:
+    1. Query the device for the supported reset-level and reset-type
+    2. Perform reset operation on the device
 ''' % PROG)
 # Adresses    [Base    offset  length]
 DEVID_ADDR = [0xf0014, 0     , 16   ]
 
 COMMAND_ADDR = 0x4
-
-
-# Reset Level Constants
-RL_ISFU = 0
-RL_DR_LNK_UP = 1
-RL_DR_LNK_DN = 2
-RL_PCI_RESET = 3
-RL_WARM_REBOOT = 4
-RL_COLD_REBOOT = 5
-
-# reset lines as displayed in query. index i has i'th reset level str
-RESET_LINES = ["Full ISFU",
-               "Driver restart (link/management will remain up)",
-               "Driver restart (link/management will be down)",
-               "Driver restart and PCI reset ",
-               "Warm Reboot",
-               "Cold Reboot"]
 
 #sync constants:
 SYNC_TYPE_FW_RESET   = 0x1
@@ -172,7 +148,6 @@ FWResetStatusChecker = None
 
 # Global options
 SkipMstRestart = False
-ResetMultihostReg = False
 SkipMultihostSync = False
 
 logger = None
@@ -181,9 +156,16 @@ device_global = None
 pciModuleName      = "mst_ppc_pci_reset.ko"
 pathToPciModuleDir = "/etc/mft/mlxfwreset"
 
-RESET_MULTIHOST_REGISTER_FLAG = "--reset_fsm_register"
-
 SUPPORTED_DEVICES_WITH_SWITCHES = ["15b3", "10ee"]
+
+
+######################################################################
+# Description:  Pcnr Exception
+# OS Support :  Linux.
+######################################################################
+class PcnrError(Exception):
+    pass
+
 
 ######################################################################
 # Description:  NoError Exception
@@ -1069,9 +1051,9 @@ def resetPciAddrPPC(busIds):
 # OS Support : Windows
 ######################################################################
 
-def resetPciAddrWindows():
+def resetPciAddrWindows(dbdf_list):
     global MstDevObj
-    MstDevObj.mHcaReset()
+    MstDevObj.mHcaReset(dbdf_list)
     return
 
 ######################################################################
@@ -1202,7 +1184,16 @@ def resetPciAddr(device,devicesSD,driverObj, cmdLineArgs):
     ignore_signals()
     try:
         if isWindows:
-            resetPciAddrWindows()
+            dbdf_list= []
+            for deviceSD in devicesSD:
+                dbdf = mlxfwreset_utils.getDevDBDF(deviceSD, logger)
+                dbdf.encode("utf-8")
+                dbdf_list.append(dbdf)
+
+            busId.encode("utf-8")
+            dbdf_list.append(busId)
+
+            resetPciAddrWindows(dbdf_list)
         elif isPPC:            
             busIdsSD.append(busId)            
             pfs = PciOpsObj.getAllBuses(busIdsSD)
@@ -1305,85 +1296,21 @@ def isConnectedToMellanoxSwitchDevice():
     except Exception as e:
         return False
 
-######################################################################
-# Description: get minimum reset level required for device
-# OS Support : Linux
-######################################################################
 
-def getResetLevel(device):
-    logger.info('getResetLevel() called')
-    # send mfrl register get
-    level = 0
-    actualLevel = 0
-    try:
-        actualLevel = RegAccessObj.sendMFRL(0, regaccess.REG_ACCESS_METHOD_GET)
-        if actualLevel == 0:
-            raise RuntimeError("Bad reset level Value recieved from FW. please reboot machine to load new FW.")
-    except Exception as e:
-        if "(265)" in str(e):
-            raise NoError("Failed to get Reset level from device. this might indicate that FW was already loaded")
-        raise RuntimeError("Failed to get Reset level from device. %s" % str(e))
-    # return the first bit that is set (and apply reset level translation according to the reset levels defined above)
-    while (actualLevel % 2 == 0):
-        actualLevel = actualLevel >> 1
-        level += 1
-    
-    if (level == 6 or level == 7):
-        level -= 2
-    return level
-
-######################################################################
-# Description: set reset level for device
-# OS Support : Linux
-######################################################################
-
-def setResetLevel(device, level):
-    logger.debug("Seting SET MFRL to device :%s ..." % device);
-    # send mfrl register get
-    levelmsk = 1 << level
-    if (level == 4 or level == 5):
-        levelmsk = levelmsk << 2  # for warm/cold reboot we need bits 6,7 to be set respectiveley
-    try:
-        RegAccessObj.sendMFRL(levelmsk, regaccess.REG_ACCESS_METHOD_SET)
-    except Exception as e:
-        raise RuntimeError("Failed to set Reset level(%d) on device. %s" % (level, str(e)))
-
-    logger.debug("Seting SET MFRL to device :%s - DONE" % device);
-    return
-
-######################################################################
-# Description: Full ISFU Reset Flow
-# OS Support : Linux
-######################################################################
-
-def fullISFU(device, level=None, force=False):
+def send_reset_cmd_to_fw(mfrl, reset_level, reset_type):
     try:
         printAndFlush("-I- %-40s-" % ("Sending Reset Command To Fw"), endChar="")
-        setResetLevel(device, 0)
+        mfrl.send(reset_level, reset_type)
         printAndFlush("Done")
     except Exception as e:
         printAndFlush("Failed")
         raise e
-    return
 
-######################################################################
-# Description: Send MFRL to FW
-######################################################################
-def sendResetToFW(device, level, force):
-    try:
-        printAndFlush("-I- %-40s-" % ("Sending Reset Command To Fw"), endChar="")
-        setResetLevel(device, level)
-        printAndFlush("Done")
-    except Exception as e:
-        if force :
-            printAndFlush("Failed (force flag recieved)")
-        else:
-            raise e
 
 ######################################################################
 # Description: Send MFRL to FW in Multihost setup
 ######################################################################
-def sendResetToFWSync(device, level, force):
+def sendResetToFWSync(mfrl, reset_level, reset_type):
     status = CmdifObj.multiHostSyncStatus()
     if (status.fsm_state == SYNC_STATE_GET_READY and
                  status.fsm_sync_type != SYNC_TYPE_FW_RESET) or\
@@ -1396,7 +1323,7 @@ def sendResetToFWSync(device, level, force):
         logger.info('send SYNC_STATE_GET_READY command')
 
         try:
-            sendResetToFW(device, level, force)
+            send_reset_cmd_to_fw(mfrl, reset_level, reset_type)
         except Exception as e:
             CmdifObj.multiHostSync(SYNC_STATE_IDLE, SYNC_TYPE_FW_RESET)
             raise e
@@ -1513,8 +1440,9 @@ def sendPcnr(regAccess,port_num):
         logger.debug("Sending PCNR - Done")
     except Exception as e:
         logger.debug('Failed to send pcnr. {0}'.format(e))  # port doesn't exist / old FW version, burn FW with allow_pcnr (ini file)
+        raise PcnrError
 
-def resetFlow(device,devicesSD, level, cmdLineArgs):
+def resetFlow(device, devicesSD, reset_level, reset_type, cmdLineArgs, mfrl):
     global PciOpsObj
     logger.info('resetFlow() called')
 
@@ -1528,18 +1456,25 @@ def resetFlow(device,devicesSD, level, cmdLineArgs):
             raise RuntimeError("Resetting Device that contains a switch is supported only in Linux/x86")
 
         if SkipMultihostSync or not CmdifObj.isMultiHostSyncSupported():
-            sendResetToFW(device, level, cmdLineArgs.force)
+            send_reset_cmd_to_fw(mfrl, reset_level, reset_type)
         else:
-            sendResetToFWSync(device, level, cmdLineArgs.force)
+            sendResetToFWSync(mfrl, reset_level, reset_type)
+        
+        try:
+            #PCNR - Reduce link up time (from ~4 sec to ~1.5 sec)
+            sendPcnr(RegAccessObj, 0) # port #0 (will fail if pcnr isn't supported by FW)
+            sendPcnr(RegAccessObj, 1) # port #1 (will fail if HW has only one port)
+        except PcnrError:
+            pass
 
-        #PCNR - Reduce link up time (from ~4 sec to ~1.5 sec)
-        sendPcnr(RegAccessObj, 0) # port #0 (will fail if pcnr isn't supported by FW)
-        sendPcnr(RegAccessObj, 1) # port #1 (will fail if HW has only one port)
 
-        # Socket direct
-        for RegAccessSD in RegAccessObjsSD:
-            sendPcnr(RegAccessSD, 0)  # port #0 (will fail if pcnr isn't supported by FW)
-            sendPcnr(RegAccessSD, 1)  # port #1 (will fail if HW has only one port)
+        # # Socket direct 
+        # for RegAccessSD in RegAccessObjsSD:
+        #     try:
+        #         sendPcnr(RegAccessSD, 0)  # port #0 (will fail if pcnr isn't supported by FW)
+        #         sendPcnr(RegAccessSD, 1)  # port #1 (will fail if HW has only one port)
+        #     except PcnrError:
+        #         pass
 
         try:
             driverStat = driverObj.getDriverStatus()
@@ -1548,7 +1483,7 @@ def resetFlow(device,devicesSD, level, cmdLineArgs):
             print("-E- Please make sure the driver is down, and re-run the tool with --skip_driver")
             raise e
 
-        if level == RL_PCI_RESET:
+        if reset_level == CmdRegMfrl.PCI_RESET:
             # reset PCI
             resetPciAddr(device,devicesSD,driverObj, cmdLineArgs)
 
@@ -1584,110 +1519,41 @@ def resetFlow(device,devicesSD, level, cmdLineArgs):
     return
 
 ######################################################################
-# Description: reboot common reset flow
-# OS Support : Linux
-######################################################################
-
-def rebootComFlow(device, level, force):
-    try:
-        printAndFlush("-I- %-40s-" % ("Sending Reset Command To Fw"), endChar="")
-        setResetLevel(device, level)
-        printAndFlush("Done")
-    except Exception as e:
-        if "(265)" in str(e):  # we ignore bad params here in case of old fw that those reset levels are not supported
-            printAndFlush("Done")
-        elif force :
-            printAndFlush("Failed (force flag recieved)")
-        else:
-            printAndFlush("Failed")
-            raise e
-######################################################################
 # Description: Warm reboot reset Flow
-# OS Support : Linux
 ######################################################################
-
-def rebootMachine(device=None, level=None, force=False):
-    rebootComFlow(device, level, force)
+def rebootMachine():
     printAndFlush("-I- %-40s-" % ("Sending reboot command to machine"), endChar="")
     if platform.system() == "Windows" or os.name == "nt":
         cmd = "shutdown /r"
     else:
         cmd = "reboot"
-    (rc, _, _) = cmdExec(cmd)
-    if rc != 0:
+    rc, _, _ = cmdExec(cmd)
+    if rc == 0:
+        printAndFlush("Done")
+    else:
         printAndFlush("Failed")
         raise RuntimeError("Failed to reboot machine please reboot machine manually")
-    printAndFlush("Done")
-    return
-
-######################################################################
-# Description: Cold reboot reset flow
-# OS Support : Linux
-######################################################################
-
-def coldRebootMachine(device=None, level=None, force=False):
-    rebootComFlow(device, level, force)
-    print("-I- Cold reboot required. please power cycle machine to load new FW.")
-    return
-
-
+    
 ######################################################################
 # Description:  execute reset level for device
-# OS Support : Linux
 ######################################################################
+def execResLvl(device, devicesSD, reset_level, reset_type, cmdLineArgs, mfrl, mpcir):
+    
+    if mfrl.is_phy_less_reset(reset_type):
+        mpcir.prepare_for_phyless_fw_upgrade()
 
-def execResLvl(device,devicesSD, level, cmdLineArgs):
-
-    if level == RL_ISFU:
-        fullISFU(device,level, cmdLineArgs.force)
-    elif level in [RL_DR_LNK_UP,RL_DR_LNK_DN,RL_PCI_RESET]:
-        resetFlow(device,devicesSD,level, cmdLineArgs)
-    elif level == RL_WARM_REBOOT:
-        rebootMachine(device,level, cmdLineArgs.force)
-    elif level == RL_COLD_REBOOT:
-        coldRebootMachine(device,level, cmdLineArgs.force)
+    if reset_level == mfrl.LIVE_PATCH:
+        send_reset_cmd_to_fw(mfrl, reset_level, reset_type)
+    elif reset_level == mfrl.PCI_RESET:
+        resetFlow(device, devicesSD, reset_level, reset_type, cmdLineArgs, mfrl)
+    elif reset_level == mfrl.WARM_REBOOT:
+        send_reset_cmd_to_fw(mfrl, reset_level, reset_type)
+        rebootMachine()
+    elif reset_level == mfrl.COLD_REBOOT:
+        send_reset_cmd_to_fw(mfrl, mfrl.WARM_REBOOT, reset_type)
+        print("-I- Cold reboot required. please power cycle machine to load new FW.")
     else:
         raise RuntimeError("Unknown reset level")
-
-
-
-######################################################################
-# Description: query reset level
-# OS Support : Linux
-######################################################################
-
-def queryResetLvl(device):
-    def printResLine(line, level, minLevel):
-        print("%d: %-50s-%s" % (level, line, ("Not Supported", "Supported") [level >= minLevel]))
-        return
-
-    minLvl = getResetLevel(device)
-    for i in range(0, 6):
-        printResLine(RESET_LINES[i], i, minLvl)
-    return
-
-######################################################################
-# Description: check if a given level is enough to load FW.
-# OS Support : Linux
-######################################################################
-
-def checkResetLevel(device, reqLevel):
-    # try:
-    #     level = getResetLevel(device)
-    #     if (reqLevel < level):
-    #         print("-W- minimal reset level required to load Fw: %d. given reset level: %d" % (level, reqLevel))
-    # except Exception as e:
-    #     pass
-    # return
-
-    try:
-        level = getResetLevel(device)
-    except:
-        level = None
-
-    if level and reqLevel < level:
-        raise RuntimeError("Minimal reset level required to load Fw: %d. given reset level: %d" % (level, reqLevel))
-
 
 
 ######################################################################
@@ -1700,10 +1566,11 @@ def map2DevPathAux(mstOutput, device):
     for l in mstOutput.split('\n'):
         lineList = l.split()
         if device in lineList:
-            d = lineList[1]
-            if d == "NA":
-                d = lineList[2]
-            return d
+            if len(lineList) > 2:
+                d = lineList[1]
+                if d == "NA":
+                    d = lineList[2]
+                return d
     return None
 
 ######################################################################
@@ -1729,6 +1596,7 @@ def map2DevPath(device):
             return d
     raise RuntimeError("Can not find path of the provided mst device: " + device)
 
+
 ######################################################################
 # Description: Main
 ######################################################################
@@ -1749,44 +1617,48 @@ def main():
     parser = argparse.ArgumentParser(description=DESCRIPTION,
                                      formatter_class=argparse.RawDescriptionHelpFormatter,
                                      prog=PROG,
-                                     epilog=EPILOG,
-                                     usage="%s -d|--device DEVICE [-l|--level {0,1,2,3,4,5}] [--yes] q|query|r|reset\n[--help]\n[--version]" % PROG,
+                                     epilog=CmdRegMfrl.descriptions(),
                                      add_help=False)
+
     # options arguments
     options_group = parser.add_argument_group('Options')
     options_group.add_argument('--device',
                         '-d',
                         required=True,
-                        help='Device to work with.')
+                        help='Device to work with')
     options_group.add_argument('--level',
                         '-l',
                         type=int,
-                        choices=list(range(0, 6)),
-                        help='Run reset with the specified reset level.')
+                        choices=CmdRegMfrl.reset_levels(),
+                        dest='reset_level',
+                        help='Run reset with the specified reset-level')
+    options_group.add_argument('--type',
+                        '-t',
+                        type=int,
+                        choices=CmdRegMfrl.reset_types(),
+                        dest='reset_type',
+                        help='Run reset with the specified reset-type')
     options_group.add_argument('--yes',
                         '-y',
-                        help='answer "yes" on prompt.',
+                        help='answer "yes" on prompt',
                         action="store_true")
     options_group.add_argument('--skip_driver',
                         '-s',
-                        help="Skip driver start/stop stage (driver must be stopped manually).",
+                        help="Skip driver start/stop stage (driver must be stopped manually)",
                         action="store_true")
     options_group.add_argument('--mst_flags',
                         '-m',
                         help="Provide mst flags to be used when invoking mst restart step. For example: --mst_flags=\"--with_fpga\"")
     options_group.add_argument('--version',
                         '-v',
-                        help='Print tool version.',
+                        help='Print tool version',
                         action="version",
                         version=tools_version.GetVersionString(PROG, TOOL_VERSION))
     options_group.add_argument('--help',
                         '-h',
-                        help='show this help message and exit.',
+                        help='show this help message and exit',
                         action="help")
-    # hidden flag for ignoring the success/failure of the sendMFRL method
-    options_group.add_argument('--force',
-                               action="store_true",
-                               help=argparse.SUPPRESS)
+
     # hidden flag for skipping mst restart when performing pci reset
     options_group.add_argument('--no_mst_restart',
                                action="store_true",
@@ -1795,11 +1667,6 @@ def main():
     options_group.add_argument('--pci_bridge',
                                nargs=1,
                                help=argparse.SUPPRESS)
-    # reset the multihost sync register to idle state
-    options_group.add_argument(RESET_MULTIHOST_REGISTER_FLAG,
-                               action="store_true",
-                               help=argparse.SUPPRESS)
-
     options_group.add_argument('--skip_fsm_sync',
                                action="store_true",
                                help="Skip fsm syncing")
@@ -1840,7 +1707,6 @@ def main():
     device = args.device
     global device_global
     device_global = args.device # required for reset_fsm_register when exiting with ctrl+c/exception (latter think how to move the global)
-    level = args.level
     yes = args.yes
 
     command = args.command[0]
@@ -1862,7 +1728,6 @@ def main():
     global skipDriver
     global MstFlags
     global CmdifObj
-    global ResetMultihostReg
     global SkipMultihostSync
     global DevDBDF
     global FWResetStatusChecker
@@ -1885,22 +1750,20 @@ def main():
     logger.info('device domain:bus:dev.fn (DBDF) is {0}'.format(DevDBDF))
     SkipMstRestart = args.no_mst_restart
     skipDriver = args.skip_driver
-    ResetMultihostReg = args.reset_fsm_register
-    #TODO: remove this check for January release
-    if ResetMultihostReg:
-        print("-E- %s flag was deprecated, use reset_fsm_register command instead" % RESET_MULTIHOST_REGISTER_FLAG)
-        return 1
     SkipMultihostSync = args.skip_fsm_sync
     MstDevObj = mtcr.MstDevice(device)
     RegAccessObj = regaccess.RegAccess(MstDevObj)
     CmdifObj = cmdif.CmdIf(MstDevObj)
     PciOpsObj = MlnxPciOpFactory().getPciOpObj(DevDBDF)
 
+
+    mfrl = CmdRegMfrl(RegAccessObj)
+    mpcir = CmdRegMpcir(RegAccessObj)
+
     logger.info('Check if device is livefish')
     DevMgtObj = dev_mgt.DevMgt(MstDevObj) # check if device is in livefish
     if DevMgtObj.isLivefishMode() == 1:
         raise RuntimeError("%s is not supported for device in Flash Recovery mode" % PROG)
-
 
     # Socket Direct - Create a list of command i/f for all "other" devices
     global CmdifObjsSD
@@ -1931,13 +1794,6 @@ def main():
             CmdifObjsSD = []
             RegAccessObjsSD = []
 
-
-        if len(devicesSD)>0:
-            if platform.system() == "Windows":
-                raise RuntimeError("mlxfwreset doesn't support socket direct on windows!")
-
-
-
     MstFlags = "" if (args.mst_flags == None) else args.mst_flags   
 
 
@@ -1956,24 +1812,28 @@ def main():
 
     print("")
     if command == "query":
-        logger.debug('Command is query')
-        print("Supported reset levels for loading FW on device, %s:\n" % device)
-        queryResetLvl(device)
+        print(mfrl.query_text())
     elif command == "reset":
-        logger.debug('Command is reset')
-        if level != None:
-            print("Requested reset level for device, %s:\n" % device)
-        else:
-            level = getResetLevel(device)
-            print("Minimal reset level for device, %s:\n" % device)
-        print("%d: %s" % (level, RESET_LINES[level]))
-        logger.debug('level is {0}'.format(level))
-        # check if user gave us specific reset level and print warning if its < from minimum reset level required.
-        if level != None:
-            checkResetLevel(device, level)
+
+        # print("Reset device {0}:".format(device))
+
+        reset_level = mfrl.default_reset_level() if args.reset_level is None else args.reset_level
+        # print("  * reset-level is '{0}' ({1})".format(reset_level, mfrl.reset_level_description(reset_level)))
+        if mfrl.is_reset_level_supported(reset_level) is False:
+            raise RuntimeError("Reset-level '{0}' is not supported for this device".format(reset_level))
+
+        reset_type = CmdRegMfrl.default_reset_type() if args.reset_type is None else args.reset_type
+        # print("  * reset-type  is '{0}' ({1})".format(reset_type, mfrl.reset_type_description(reset_type)))
+        if mfrl.is_reset_type_supported(reset_type) is False:
+            raise RuntimeError("Reset-type '{0}' is not supported for this device".format(reset_type))
+
+        minimal_or_requested = 'Minimal' if args.reset_level is None else 'Requested'
+        print("{0} reset level for device, {1}:\n".format(minimal_or_requested , device))
+        print("{0}: {1}".format(reset_level,mfrl.reset_level_description(reset_level)))
+
         AskUser("Continue with reset", yes)
-        execResLvl(device,devicesSD, level, args)
-        if level != RL_COLD_REBOOT and level != RL_WARM_REBOOT:
+        execResLvl(device, devicesSD, reset_level, reset_type, args, mfrl, mpcir)
+        if reset_level != CmdRegMfrl.COLD_REBOOT and reset_level != CmdRegMfrl.WARM_REBOOT:
             if FWResetStatusChecker.GetStatus() == FirmwareResetStatusChecker.FirmwareResetStatusFailed:
                 reset_fsm_register()
                 print("-E- Firmware reset failed, retry operation or reboot machine.")

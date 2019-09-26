@@ -43,7 +43,7 @@ from .mlxfwreset_utils import cmdExec
 
 class MlnxPeripheralComponents(object):
 
-    SD_SUPPORTED_DID = [0x20f,0x20d,0x209,0x20b]  # Connectx6,Connectx5 (SD device) ,Connectx4/Connectx4Lx (MH device connected as SD)
+    SD_SUPPORTED_DID = [0x212,0x20f,0x20d,0x209,0x20b]  # Connectx6DX,Connectx6,Connectx5 (SD device) ,Connectx4/Connectx4Lx (MH device connected as SD)
 
     def __init__(self):
         self.pci_devices = []
@@ -60,7 +60,7 @@ class MlnxPeripheralComponents(object):
             pattern = r'.*\s(pci(\d+):(\d+):(\d+):(\d+))\s.*'
         elif self.os == 'Windows':
             cmd = 'mdevices status -v'
-            pattern = r'\s*(\S+)\s+\S*bus:dev.fn=([0-9A-Fa-f]{4})*:*([0-9A-Fa-f]{2}):([0-9A-Fa-f]{2})\.([0-9A-Fa-f]{1}).*'
+            pattern = r'\s*(\S+)\s+\S*bus:dev.fn=(([0-9A-Fa-f]{4})*:*([0-9A-Fa-f]{2}):([0-9A-Fa-f]{2})\.([0-9A-Fa-f]{1})).*'
         else:
             raise RuntimeError("Unsupported OS")
 
@@ -93,11 +93,16 @@ class MlnxPeripheralComponents(object):
                         dev = int(result.group(4))
                         fn = int(result.group(5))
                     elif self.os == 'Windows':
-                        aliases.append(result.group(1))
-                        domain = 0 if result.group(2) is None else int(result.group(2), 16)
-                        bus = int(result.group(3), 16)
-                        dev = int(result.group(4), 16)
-                        fn = int(result.group(5), 16)
+                        aliases.append(result.group(1)) # mt<id>_pciconf<N>
+                        aliases.append(result.group(2)) # dbdf
+                        if result.group(3) is None:     # no domain
+                            domain = 0
+                            aliases.append('0000:'+result.group(2))
+                        else:
+                            domain = int(result.group(3), 16)
+                        bus = int(result.group(4), 16)
+                        dev = int(result.group(5), 16)
+                        fn = int(result.group(6), 16)
                     else:
                         RuntimeError("Unsupported OS")
 

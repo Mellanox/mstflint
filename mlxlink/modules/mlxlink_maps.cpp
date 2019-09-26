@@ -47,7 +47,7 @@ MlxlinkMaps* MlxlinkMaps::getInstance()
 MlxlinkMaps::MlxlinkMaps() {
     _berCollectTitle =
             "Test Mode (Nominal/Corner/Drift),Protocol,Speed [Gb/s],Active FEC,Iteration Number,Device PN,FW Version,Device ID,Port Number,Media,Cable PN,Length [m],Attenuation [dB],"
-                    "Test time [Min],Link Down,Total Raw BER,Raw BER limit,"
+                    "Test time [Min],Raw Errors Lane 0,Raw Errors Lane 1,Raw Errors Lane 2,Raw Errors Lane 3,Link Down,Total Raw BER,Raw BER limit,"
                     "Effective Errors,Effective BER,Result,System Voltage,Chip Start Temp,Chip End Temp,Module Start Temp,Module End Temp,Active RTN,Device SN,Cable SN,RX End BW [Gb/s]";
 
     _pmFsmState[PHY_MNGR_DISABLED] = "Disable";
@@ -87,16 +87,20 @@ MlxlinkMaps::MlxlinkMaps() {
             "Standard RS-FEC - RS(528,514)";
     _fecModeActive[FEC_MODE_STANDARD_LL_FEC_271_257] =
             "Standard LL RS-FEC - RS(271,257)";
+    _fecModeActive[FEC_MODE_STANDARD_RS_FEC_544_514] =
+            "Standard RS-FEC (544,514)";
     _fecModeActive[FEC_MODE_MELLANOX_STRONG_FEC] =
             "Mellanox Strong RS-FEC - RS(277,257)";
     _fecModeActive[FEC_MODE_MELLANOX_LL_FEC] =
             "Mellanox LL RS-FEC - RS(163,155)";
     _fecModeActive[FEC_MODE_ZERO_LATENCY_FEC] =
-            "Zero Latency FEC (ZLF)";
-    _fecModeActive[FEC_MODE_STANDARD_RS_FEC_544_514] =
-            "Standard RS-FEC (544,514)";
+            "Zero Latency FEC";
+    _fecModeActive[FEC_MODE_RS_FEC_544_514_PLR] =
+            "RS-FEC (544,514) + PLR";
+    _fecModeActive[FEC_MODE_RS_FEC_271_257_PLR] =
+            "LL-FEC (271,257) + PLR";
 
-    _loopbackModeList[PHY_NO_LOOPBACK] = "No loopback";
+    _loopbackModeList[PHY_NO_LOOPBACK] = "No Loopback";
     _loopbackModeList[PHY_REMOTE_LOOPBACK] = "PHY Remote Loopback";
     _loopbackModeList[PHY_LOCAL_LOOPBACK] = "PHY Local Loopback";
     _loopbackModeList[EXTERNAL_LOCAL_LOOPBACK] =
@@ -383,6 +387,19 @@ MlxlinkMaps::MlxlinkMaps() {
     _ETHSpeed2Lanes[ETH_LINK_SPEED_100G_KR4] = 4;
     _ETHSpeed2Lanes[ETH_LINK_SPEED_100G_LR4] = 4;
     _ETHSpeed2Lanes[ETH_LINK_SPEED_100G_SR4] = 4;
+
+    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_SGMII_100M] = 1;
+    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_1000BASE_X] = 1;
+    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_2_5GBASE_X] = 1;
+    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_5GBASE_R] = 1;
+    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_XFI] = 1;
+    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_XLAUI_4] = 4;
+    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_25GAUI_1] = 1;
+    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_50GAUI_2] = 2;
+    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_CAUI_4] = 4;
+    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_100GAUI_2] = 2;
+    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_200GAUI_4] = 4;
+    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_400GAUI_8] = 8;
 
     _SLTP16BadSetStatus2Str[SET_STATUS16_INVALID_PARM] =
             "Invalid parameter";

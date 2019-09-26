@@ -113,6 +113,13 @@ bool fexists(const std::string& filename) {
     return (stat (filename.c_str(), &buffer) == 0);
 }
 
+// check if filename points to regular file:
+bool isFile(const std::string& filename) {
+    struct stat buffer;
+    stat(filename.c_str(), &buffer);
+    return S_ISREG(buffer.st_mode); 
+}
+
 void listDir(const char *path, vector<string>& files)
 {
     struct dirent *entry;

@@ -40,7 +40,8 @@ libmstarchive_a_SOURCES = \
               mlxarchive_mfa2_component.h\
               mlxarchive_mfa2.h mlxarchive_mfa2.cpp\
               mlxarchive_mfa2_builder.h mlxarchive_mfa2_builder.cpp\
-              mlxarchive_mfa2_package_gen.h mlxarchive_mfa2_package_gen.cpp
+              mlxarchive_mfa2_package_gen.h mlxarchive_mfa2_package_gen.cpp\
+              mfa2_buff.h mfa2_buff.cpp
 
 AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe $(INCLUDES) $(COMPILER_FPIC)
 bin_PROGRAMS = mstarchive

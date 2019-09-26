@@ -35,18 +35,14 @@
 #ifndef MLXLINK_MAPS_H
 #define MLXLINK_MAPS_H
 
-#include <string>
 #include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <vector>
 #include <cstdio>
 #include <cmath>
 #include <stdexcept>
-#include <iostream>
 #include <fstream>
 #include <sstream>
-#include <iomanip>
+#include <mlxreg/mlxreg_lib.h>
+#include <mlxreg/mlxreg_parser.h>
 #include "mlxlink_user_input.h"
 #include "printutil/mlxlink_cmd_print.h"
 
@@ -158,8 +154,10 @@ enum FECMode {
     FEC_MODE_STANDARD_LL_FEC_271_257 = 3,
     FEC_MODE_MELLANOX_STRONG_FEC = 4,
     FEC_MODE_MELLANOX_LL_FEC = 5,
-    FEC_MODE_ZERO_LATENCY_FEC = 6,
     FEC_MODE_STANDARD_RS_FEC_544_514 = 7,
+    FEC_MODE_ZERO_LATENCY_FEC = 8,
+    FEC_MODE_RS_FEC_544_514_PLR = 12,
+    FEC_MODE_RS_FEC_271_257_PLR = 13,
     //please add enums before this line
     FEC_MODE_END,
 };
@@ -289,7 +287,7 @@ enum LOOPBACK_MODE{
     PHY_NO_LOOPBACK = 0,
     PHY_REMOTE_LOOPBACK = 1,
     PHY_LOCAL_LOOPBACK = 2,
-    EXTERNAL_LOCAL_LOOPBACK = 4,
+    EXTERNAL_LOCAL_LOOPBACK = 4
 };
 
 enum AN_DISABLE {
@@ -387,6 +385,7 @@ public:
     std::map<u_int32_t, string>      _ETHSpeed2Str;
     std::map<u_int32_t, u_int32_t>   _EthExtSpeed2gNum;
     std::map<u_int32_t, u_int32_t>   _ETHSpeed2Lanes;
+    std::map<u_int32_t, u_int32_t>   _ExtETHSpeed2Lanes;
     std::map<u_int32_t, string>      _SLTPBadSetStatus2Str;
     std::map<u_int32_t, string>      _SLTP16BadSetStatus2Str;
     std::map<u_int32_t, std::string> _ethANFsmState;

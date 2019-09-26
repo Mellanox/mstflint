@@ -38,7 +38,7 @@ MlxlinkLogger::MlxlinkLogger(const string &filePath, LOG_LEVEL logLevel)
 {
     _logLevel = logLevel;
     _logFile = fopen (filePath.c_str(),"w");
-    memset(_underLine,LINE_PATTERN,LINE_WIDTH);
+    memset(_underLine, LINE_PATTERN, LINE_WIDTH);
 }
 
 MlxlinkLogger::~MlxlinkLogger()
@@ -75,15 +75,14 @@ void MlxlinkLogger::debugLog(const char* format, ...)
 
 void MlxlinkLogger::printHeaderWithUnderLine(const char* title)
 {
-    string line = "";
     if (_logFile) {
-        line = string(_underLine);
-        line += "\n";
-        line += "FUNCTION\t\t" + string(title);
-        line += "\n";
-        line += string(_underLine);
-        line += "\n";
-        fprintf(_logFile,"%s", line.c_str());
+        fprintf(_logFile, "%s", _underLine);
+        fprintf(_logFile, "\n");
+        fprintf(_logFile, "FUNCTION\t\t");
+        fprintf(_logFile, "%s", title);
+        fprintf(_logFile, "\n");
+        fprintf(_logFile, "%s", _underLine);
+        fprintf(_logFile, "\n");
         fflush(_logFile);
     }
 }

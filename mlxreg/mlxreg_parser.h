@@ -57,6 +57,7 @@ public:
     std::vector<u_int32_t> genBuff();
     u_int32_t getDataLen() {return _len;};
     static void strToUint32(char *str, u_int32_t &uint);
+    static string getAccess(const AdbInstance *field);
 protected:
     string _data;
     string _indexes;
@@ -78,6 +79,8 @@ protected:
     bool isRO(AdbInstance *field);
     bool isIndex(AdbInstance *field);
     std::vector<string> getAllIndexes(AdbInstance *node);
+private:
+    bool checkAccess(const AdbInstance *field, const string accessStr);
 };
 
 }

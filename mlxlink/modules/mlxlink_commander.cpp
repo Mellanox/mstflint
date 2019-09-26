@@ -43,9 +43,6 @@ MlxlinkCommander::MlxlinkCommander() : RegAccessParser("", "", NULL, 0),_userInp
     _mf = NULL;
     _extAdbFile = "";
     _localPort = 0;
-    _depth = 0;
-    _pcieIndex = 0;
-    _node = 0;
     _numOfLanes = 4;
     _numOfLanesPcie = 0;
     _writeGvmi = false;
@@ -54,8 +51,11 @@ MlxlinkCommander::MlxlinkCommander() : RegAccessParser("", "", NULL, 0),_userInp
     _plugged = false;
     _linkModeForce = false;
     _prbsTestMode = false;
+    _useExtAdb = true;
+    _isHCA = false;
     _speedForce = "";
     _anDisable = 0;
+    _cableIdentifier = 0;
     _cableAtten12G = 0;
     _cableLen = 0;
     _cablePN = "N/A";
@@ -69,7 +69,7 @@ MlxlinkCommander::MlxlinkCommander() : RegAccessParser("", "", NULL, 0),_userInp
     _activeSpeed = 0;
     _activeSpeedEx = 0;
     _protoCapability = 0;
-    _protoCapabilityEx = 0;
+    _protoCapabilityEx = false;
     _protoAdmin = 0;
     _protoAdminEx = 0;
     _speedBerCsv = 0;
@@ -234,6 +234,10 @@ int MlxlinkCommander::getProductTechnology()
         int version = getVersion(getFieldValue("version", _buffer));
         return version;
     } catch (MlxRegException &exc) {
+        if (_userInput._pcie) {
+            throw MlxRegException("Unable to get product technology: "
+                    "No valid PCIE links detected!");
+        }
         throw MlxRegException(
                 "Unable to get product technology: %s", exc.what_s().c_str());
     }
@@ -253,6 +257,7 @@ u_int32_t MlxlinkCommander::maxLocalPort()
         return MAX_LOCAL_PORT_QUANTUM;
 
     case DeviceSpectrum2:
+    case DeviceSpectrum3:
         return MAX_LOCAL_PORT_SPECTRUM2;
     default:
         return 0;
@@ -292,7 +297,7 @@ bool MlxlinkCommander::checkPortStatus(u_int32_t localPort)
 
 void MlxlinkCommander::checkAllPortsStatus()
 {
-    if (dm_dev_is_hca(_devID)) {
+    if (_isHCA) {
         checkRegCmd();
     }
     if (_devID == DeviceSpectrum) {
@@ -333,32 +338,55 @@ void MlxlinkCommander::checkAllPortsStatus()
 
 void MlxlinkCommander::labelToLocalPort() {
     if (_userInput._pcie) {
-        _pcieIndex = _userInput._pcieIndex;
-        _depth = _userInput._depth;
-        _node = _userInput._node;
-        _localPort = _pcieIndex;
-        if (_depth > 0) {
-            _localPort = _node + DBN_TO_LOCAL_PORT_BASE;
+        _dpn.depth = _userInput._depth;
+        _dpn.pcieIndex = _userInput._pcieIndex;
+        _dpn.node = _userInput._node;
+        if (_userInput._sendDpn) {
+            _localPort = getLocalPortFromMPIR(_dpn);
+        } else {
+            _localPort = _dpn.pcieIndex;
+            if (_dpn.depth > 0) {
+                _localPort = _dpn.node + DBN_TO_LOCAL_PORT_BASE;
+            }
         }
-        /* TODO:
-         * Once MPIR reg updated (local port field will be added), we have to
-         * add support to find the fields of DPN by local port.
-         */
         return;
     }
-    if (dm_dev_is_hca(_devID)) {
+    if (_isHCA) {
         labelToHCALocalPort();
         return;
     } else if(_userInput._pcie) {
         throw MlxRegException("No PCIE in Switch!");
     }
 
-    if (_devID == DeviceSpectrum || _devID == DeviceSpectrum2) {
+    if (_devID == DeviceSpectrum || _devID == DeviceSpectrum2 || _devID == DeviceSpectrum3) {
         labelToSpectLocalPort();
     } else if (_devID == DeviceSwitchIB || _devID == DeviceSwitchIB2
             || _devID == DeviceQuantum) {
         labelToIBLocalPort();
     }
+}
+
+int MlxlinkCommander::getLocalPortFromMPIR(DPN& dpn)
+{
+    int localPort= -1;
+    if(!_userInput._specifiedPort &&
+            !(dpn.depth == 0 && dpn.node == 0 && dpn.pcieIndex ==0)) {
+        string regName = "MPIR";
+        resetParser(regName);
+        updateField("depth", dpn.depth);
+        updateField("pcie_index", dpn.pcieIndex);
+        updateField("node", dpn.node);
+        try{
+            genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
+            localPort = getFieldValue("local_port", _buffer);
+        } catch(MlxRegException &exc) {
+        }
+    } else if (_userInput._specifiedPort) {
+        localPort = _userInput._labelPort;
+    } else {
+        localPort = 0;
+    }
+    return localPort;
 }
 
 void MlxlinkCommander::labelToHCALocalPort()
@@ -488,7 +516,7 @@ void MlxlinkCommander::labelToIBLocalPort()
         updateField("local_port", localPort);
         try {
             genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
-        } catch (MlxRegException & exp) {
+        } catch (MlxRegException& exp) {
             continue; // no reason to fail when one of the ports is not supported, such as in split mode.
         }
         if (getFieldValue("ib_port", _buffer) == labelPort) {
@@ -512,7 +540,7 @@ bool MlxlinkCommander::isIBSplitReady() {
         updateField("local_port", localPort);
         try {
             genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
-        } catch (MlxRegException & exp) {
+        } catch (MlxRegException& exp) {
             continue; // no reason to fail when one of the ports is not supported, such as in split mode.
         }
         if (getFieldValue("ib_port", _buffer) == max_port/2) {
@@ -552,7 +580,7 @@ string MlxlinkCommander::getAscii(const string & name, u_int32_t size)
     char c;
     u_int32_t name_tmp;
 
-    /*if (dm_dev_is_hca(_devID)) {
+    /*if (_isHCA) {
         for (u_int32_t i = 0; i < size; i++) {
             c = (char) getFieldValue(name + "[" + convertToString(i) + "]", _buffer);
             if ((int)c != 0 && (int)c != 32) {
@@ -605,10 +633,14 @@ void MlxlinkCommander::getActualNumOfLanesIB()
     _numOfLanes = getFieldValue("ib_link_width_oper", _buffer);
 }
 
-void MlxlinkCommander::getActualNumOfLanesETH(u_int32_t linkSpeedActive)
+void MlxlinkCommander::getActualNumOfLanesETH(u_int32_t linkSpeedActive, bool extended)
 {
     if (_linkUP) {
-        _numOfLanes = _mlxlinkMaps->_ETHSpeed2Lanes[linkSpeedActive];
+        if (extended) {
+            _numOfLanes = _mlxlinkMaps->_ExtETHSpeed2Lanes[linkSpeedActive];
+        } else {
+            _numOfLanes = _mlxlinkMaps->_ETHSpeed2Lanes[linkSpeedActive];
+        }
     } else {
         string regName = "PMLP";
         resetParser(regName);
@@ -618,10 +650,10 @@ void MlxlinkCommander::getActualNumOfLanesETH(u_int32_t linkSpeedActive)
     }
 }
 
-void MlxlinkCommander::getActualNumOfLanes(u_int32_t linkSpeedActive)
+void MlxlinkCommander::getActualNumOfLanes(u_int32_t linkSpeedActive, bool extended)
 {
     return (_protoActive == IB) ?
-           getActualNumOfLanesIB() : getActualNumOfLanesETH(linkSpeedActive);
+           getActualNumOfLanesIB() : getActualNumOfLanesETH(linkSpeedActive, extended);
 }
 
 u_int32_t MlxlinkCommander::activeSpeed2gNum(u_int32_t mask, bool extended)
@@ -653,6 +685,7 @@ void MlxlinkCommander::getCableParams()
         genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
 
         _cableMediaType = getFieldValue("cable_type", _buffer);
+        _cableIdentifier = getFieldValue("cable_identifier", _buffer);
         _plugged = (_cableMediaType != UNPLUGGED);
         _cableAtten12G = (_cableMediaType == PASSIVE) ? getFieldValue("cable_attenuation_12g", _buffer) : 0;
         _cableLen = getFieldValue("cable_length", _buffer);
@@ -820,21 +853,30 @@ void MlxlinkCommander::showModuleInfo()
         bool passive = (cableType == PASSIVE);
         u_int32_t cableIdentifier = getFieldValue("cable_identifier", _buffer);
         string cableAttenuation = "N/A";
+        string moduleFWVersion = "N/A";
         if (cableIdentifier != IDENTIFIER_SFP) {
             if (passive) {
                 cableAttenuation = getFieldStr("cable_attenuation_5g") + ","
                         + getFieldStr("cable_attenuation_7g") + ","
                         + getFieldStr("cable_attenuation_12g");
-                }
+                } else {
+                u_int32_t moduleFWVer = getFieldValue("fw_version", _buffer);
+                u_int32_t moduleFWVerChip = (moduleFWVer & 0xFF000000) >> 24;
+                u_int32_t moduleFWVerQtr  = (moduleFWVer & 0x00FF0000) >> 16;
+                u_int32_t moduleFWVerFree = (moduleFWVer & 0x0000FFFF);
+                moduleFWVersion =  to_string(moduleFWVerChip) + "." + to_string(moduleFWVerQtr) + "." + to_string(moduleFWVerFree);
+            }
         } else {
             cableAttenuation = "Reserved for SFP";
         }
+
         for (u_int32_t lane = 0; lane < _numOfLanes; lane++) {
             string laneStr = to_string(lane);
             rxPowerLane.push_back(getPower(getFieldValue("rx_power_lane" + laneStr, _buffer)));
             txPowerLane.push_back(getPower(getFieldValue("tx_power_lane" + laneStr, _buffer)));
             biasCurrentLane.push_back(getFieldValue("tx_bias_lane" + laneStr, _buffer) / 500.0);
         }
+
         biasLowTH = getFieldValue("tx_bias_low_th", _buffer) / 500.0;
         biasHighTH = getFieldValue("tx_bias_high_th", _buffer) / 500.0;
         bool DDMI = (_numOfLanes
@@ -874,6 +916,8 @@ void MlxlinkCommander::showModuleInfo()
                 getVendorRev("vendor_rev"), ANSI_COLOR_RESET, true, Identified && plugged);
         setPrintVal(_moduleInfoCmd,MODULE_INFO_ATTENUATION_5G_7G_12G_DB , "Attenuation (5g,7g,12g) [dB]",
                 cableAttenuation, ANSI_COLOR_RESET, true, Identified && plugged);
+        setPrintVal(_moduleInfoCmd,MODULE_INFO_FW_VERSION , "FW Version",
+                moduleFWVersion, ANSI_COLOR_RESET, true, Identified && plugged);
         setPrintVal(_moduleInfoCmd,MODULE_INFO_WAVELENGTH_NM , "Wavelength [nm]",
                 passive ? "N/A" : to_string(getFieldValue("wavelength", _buffer)),
                         ANSI_COLOR_RESET, true, Identified && plugged);
@@ -975,8 +1019,13 @@ string MlxlinkCommander::getComplianceLabel(u_int32_t compliance,
                         getCompliance(ext_compliance, _mlxlinkMaps->_cableComplianceExt);
             }
         } else if (cable_identifier == IDENTIFIER_SFP) {
-            compliance_label =
-                    getCompliance(compliance, _mlxlinkMaps->_cableComplianceSfp, true);
+            if (compliance) {
+                compliance_label = getCompliance(compliance, _mlxlinkMaps->_cableComplianceSfp, true);
+            }
+            if(ext_compliance) {
+                compliance_label = compliance? compliance_label + ", ":"" +
+                        getCompliance(ext_compliance, _mlxlinkMaps->_cableComplianceExt);
+            }
         }
     }
     return compliance_label;
@@ -1023,10 +1072,9 @@ string MlxlinkCommander::getValueAndThresholdsStr(T value, Q lowTH, Q highTH)
     return out.str();
 }
 
-void MlxlinkCommander::showPddr()
+void MlxlinkCommander::operatingInfoPage()
 {
     try {
-        bool print = !_prbsTestMode;
         string regName = "PDDR";
         resetParser(regName);
         updateField("local_port", _localPort);
@@ -1036,19 +1084,19 @@ void MlxlinkCommander::showPddr()
         _protoActive = getFieldValue("proto_active", _buffer);
         _fecActive = getFieldValue("fec_mode_active", _buffer);
         u_int32_t phyMngrFsmState = getFieldValue("phy_mngr_fsm_state", _buffer);
-        u_int32_t loopbackMode = PHY_NO_LOOPBACK;
-        if (phyMngrFsmState != PHY_MNGR_DISABLED) {
-            loopbackMode = getFieldValue("loopback_mode", _buffer);
-        }
+        int loopbackMode = (phyMngrFsmState != PHY_MNGR_DISABLED) ? getFieldValue("loopback_mode", _buffer) : -1;
         _linkUP = (phyMngrFsmState == PHY_MNGR_ACTIVE_LINKUP || phyMngrFsmState == PHY_MNGR_PHYSICAL_LINKUP);
+        _protoCapability = getFieldValue("cable_proto_cap", _buffer);
         if(_protoActive == IB) {
             _activeSpeed = getFieldValue("link_speed_active", _buffer);
-            _protoCapability = getFieldValue("cable_proto_cap", _buffer);
             _protoAdmin = (phyMngrFsmState != 0) ?
-                    getFieldValue("core_to_phy_link_proto_enabled", _buffer):0;
+                        getFieldValue("core_to_phy_link_proto_enabled", _buffer) :
+                        getFieldValue("phy_manager_link_proto_enabled", _buffer);
         }
         getPtys();
-        getActualNumOfLanes(_activeSpeed);
+        bool extended = (_activeSpeedEx != 0 && _protoAdminEx != 0);
+        u_int32_t speed_val = extended ? _activeSpeedEx :_activeSpeed;
+        getActualNumOfLanes(speed_val, extended);
 
         resetParser(regName);
         updateField("local_port", _localPort);
@@ -1058,45 +1106,48 @@ void MlxlinkCommander::showPddr()
         genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
 
         setPrintTitle(_operatingInfoCmd,"Operational Info",
-                PDDR_OPERATIONAL_INFO_LAST,print);
-        bool extended = (_activeSpeedEx != 0 && _protoAdminEx != 0);
-        u_int32_t speed_val = extended ? _activeSpeedEx :_activeSpeed;
+                PDDR_OPERATIONAL_INFO_LAST,!_prbsTestMode);
 
         _speedBerCsv = activeSpeed2gNum(speed_val, extended);
         _speedStrG = activeSpeed2Str(speed_val, extended);
         string color = MlxlinkRecord::state2Color(phyMngrFsmState);
         setPrintVal(_operatingInfoCmd,PDDR_STATE ,"State",
-                _mlxlinkMaps->_pmFsmState[phyMngrFsmState], color,true,print);
+                _mlxlinkMaps->_pmFsmState[phyMngrFsmState], color,true, !_prbsTestMode);
         string physical_state =
                 _mlxlinkMaps->_ethANFsmState[getFieldValue("eth_an_fsm_state", _buffer)];
         setPrintVal(_operatingInfoCmd,PDDR_PHYSICAL_STATE , "Physical state",
-                physical_state, color, print);
+                physical_state, color, !_prbsTestMode);
         setPrintVal(_operatingInfoCmd,PDDR_SPEED,"Speed", _speedStrG, color,
-                print,_linkUP);
+                !_prbsTestMode,_linkUP);
         setPrintVal(_operatingInfoCmd,PDDR_WIDTH ,"Width",
-                to_string(_numOfLanes) + "x", color, print,_linkUP);
+                to_string(_numOfLanes) + "x", color, !_prbsTestMode, _linkUP);
 
         u_int32_t fec_mode = getFieldValue("fec_mode_active", _buffer);
-        string fec_mode_str = "Unsupported FEC MODE";
-        string msg_color = MlxlinkRecord::state2Color(0);
-        if(fec_mode<FEC_MODE_END) {
-            fec_mode_str = _mlxlinkMaps->_fecModeActive[fec_mode];
-            msg_color = color;
-        }
-        setPrintVal(_operatingInfoCmd,PDDR_FEC , "FEC", fec_mode_str,
-                msg_color,print, _linkUP);
+        string fec_mode_str = _mlxlinkMaps->_fecModeActive[fec_mode];
+        setPrintVal(_operatingInfoCmd,PDDR_FEC , "FEC",
+                fec_mode_str == "" ? "N/A" : fec_mode_str,
+                fec_mode_str == "" ? MlxlinkRecord::state2Color(0) : color, !_prbsTestMode, _linkUP);
+
         setPrintVal(_operatingInfoCmd,PDDR_LOOPBACK_MODE , "Loopback Mode",
                 _mlxlinkMaps->_loopbackModeList[loopbackMode],
-                getLoopbackColor(loopbackMode), true, print);
+                getLoopbackColor(loopbackMode), true, !_prbsTestMode && loopbackMode != -1);
         setPrintVal(_operatingInfoCmd,PDDR_AUTO_NEGOTIATION , "Auto Negotiation",
                 _mlxlinkMaps->_anDisableList[_anDisable] + _speedForce,
-                getAnDisableColor(_anDisable), true, print);
+                getAnDisableColor(_anDisable), true, !_prbsTestMode);
+    } catch (const std::exception &exc) {
+        throw MlxRegException(string(exc.what()));
+    }
+}
+
+void MlxlinkCommander::supportedInfoPage()
+{
+    try {
         setPrintTitle(_supportedInfoCmd,"Supported Info",
-                PDDR_SUPPORTED_INFO_LAST, print);
+                PDDR_SUPPORTED_INFO_LAST, !_prbsTestMode);
         u_int32_t speeds_mask = _protoAdminEx ? _protoAdminEx: _protoAdmin;
         string supported_speeds = SupportedSpeeds2Str(_protoActive, speeds_mask,
                 (bool)_protoAdminEx);
-        color = MlxlinkRecord::supported2Color(supported_speeds);
+        string color = MlxlinkRecord::supported2Color(supported_speeds);
         stringstream value;
         value << "0x" << std::hex << setfill('0') << setw(8) << speeds_mask \
                 << " (" << supported_speeds << ")" << setfill(' ');
@@ -1105,24 +1156,34 @@ void MlxlinkCommander::showPddr()
             title += " (Ext.)";
         }
         setPrintVal(_supportedInfoCmd,PDDR_ENABLED_LINK_SPEED, title,
-                speeds_mask? value.str() : "N/A",color, true, print);
-
-        speeds_mask = _protoCapabilityEx ? _protoCapabilityEx: _protoCapability;
-        supported_speeds = SupportedSpeeds2Str(_protoActive, speeds_mask,
-                (bool)_protoCapabilityEx);
+                value.str(),color, true, !_prbsTestMode);
+        // Supported cable speed
+        if (dm_dev_is_200g_speed_supported_hca(_devID) ||
+                dm_dev_is_200g_speed_supported_switch(_devID)) {
+            _protoCapabilityEx = true;
+        }
+        supported_speeds = SupportedSpeeds2Str(_protoActive, _protoCapability,
+                _protoCapabilityEx);
         color = MlxlinkRecord::supported2Color(supported_speeds);
         value.str("");
         value.clear();
-        value << "0x" << std::hex << setfill('0') << setw(8) << speeds_mask \
+        value << "0x" << std::hex << setfill('0') << setw(8) << _protoCapability \
                 << " (" << supported_speeds << ")" << setfill(' ');
-
         title = "Supported Cable Speed";
-        if(_protoCapabilityEx) {
+        if(_protoCapabilityEx && _protoActive == ETH) {
             title += " (Ext.)";
         }
         setPrintVal(_supportedInfoCmd,PDDR_SUPPORTED_LINK_SPEED, title,
-                value.str(),color, true, print);
+                value.str(),color, true, !_prbsTestMode);
+    } catch (const std::exception &exc) {
+        throw MlxRegException(string(exc.what()));
+    }
+}
 
+void MlxlinkCommander::troubInfoPage()
+{
+    try {
+        string regName = "PDDR";
         updateField("local_port", _localPort);
         updateField("pnat", PNAT_LOCAL);
         updateField("page_select", PDDR_TROUBLESHOOTING_INFO_PAGE);
@@ -1131,18 +1192,18 @@ void MlxlinkCommander::showPddr()
         genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
 
         u_int32_t advancedOpcode = getFieldValue("advanced_opcode", _buffer);
-        color = status2Color(advancedOpcode);
+        string color = status2Color(advancedOpcode);
         setPrintTitle(_troubInfoCmd,"Troubleshooting Info",
-                PDDR_TRUOBLESHOOTING_INFO_LAST, print);
+                PDDR_TRUOBLESHOOTING_INFO_LAST, !_prbsTestMode);
 
         stringstream statusOp;
         statusOp << std::dec << advancedOpcode;
         setPrintVal(_troubInfoCmd,PDDR_STATUS_OPCODE ,"Status Opcode",
-                statusOp.str(),color, true, print);
+                statusOp.str(),color, true, !_prbsTestMode);
 
         string groupOpcode = getGroupStr(advancedOpcode);
         setPrintVal(_troubInfoCmd,PDDR_GROUP_OPCODE ,"Group Opcode",
-                groupOpcode,color, true, print);
+                groupOpcode,color, true, !_prbsTestMode);
 
         string message = "";
         char txt[16], c;
@@ -1157,28 +1218,38 @@ void MlxlinkCommander::showPddr()
             message_buf = getFieldValue(path, _buffer);
             for (int k = 24; k > -1; k -= 8) {
                 c = (char)(message_buf >> k);
-                message.push_back(c);
                 if (c == '\0') {
                     finalize = true;
                     break;
                 }
+                message.push_back(c);
             }
             if (finalize == true) {
                 break;
             }
         }
         setPrintVal(_troubInfoCmd,PDDR_RECOMMENDATION ,"Recommendation",
-                message,color, true, print);
+                message,color, true, !_prbsTestMode);
+    } catch (const std::exception &exc) {
+        throw MlxRegException(string(exc.what()));
+    }
+}
+
+void MlxlinkCommander::showPddr()
+{
+    try {
+        operatingInfoPage();
+        supportedInfoPage();
+        troubInfoPage();
         if (_prbsTestMode) {
             showTestMode();
+        } else {
+            std::cout << _operatingInfoCmd;
+            std::cout << _supportedInfoCmd;
+            std::cout << _troubInfoCmd;
         }
-
-        std::cout << _operatingInfoCmd;
-        std::cout << _supportedInfoCmd;
-        std::cout << _troubInfoCmd;
-
     } catch (const std::exception &exc) {
-        throw MlxRegException(string("Showing PDDR raised the following exception: ") + string(exc.what()));
+        throw MlxRegException(string("Showing PDDR raised the following exception: \n") + string(exc.what()));
     }
 }
 
@@ -1194,10 +1265,12 @@ void MlxlinkCommander::getPtys()
     if(_protoActive == ETH) {
         _activeSpeedEx = getFieldValue("ext_eth_proto_oper", _buffer);
         _activeSpeed = getFieldValue("eth_proto_oper", _buffer);
-        _protoCapabilityEx = getFieldValue("ext_eth_proto_capability", _buffer);
-        _protoCapability = getFieldValue("eth_proto_capability", _buffer);
         _protoAdmin = getFieldValue("eth_proto_admin", _buffer);
         _protoAdminEx = getFieldValue("ext_eth_proto_admin", _buffer);
+        if (!dm_dev_is_200g_speed_supported_hca(_devID) &&
+                !dm_dev_is_200g_speed_supported_switch(_devID)) {
+            _protoCapability = getFieldValue("eth_proto_capability", _buffer);
+        }
     }
 
     _anDisable = getFieldValue("an_disable_admin", _buffer);
@@ -1275,12 +1348,13 @@ std::map<std::string, std::string> MlxlinkCommander::getPptt()
     return ppttMap;
 }
 
-void MlxlinkCommander::showMpcntTimers()
+void MlxlinkCommander::showMpcntTimers(DPN& dpn)
 {
     string regName = "MPCNT";
     resetParser(regName);
-
-    updateField("pcie_index", _localPort);
+    updateField("depth",dpn.depth);
+    updateField("pcie_index", dpn.pcieIndex);
+    updateField("node", dpn.node);
     updateField("grp", MPCNT_TIMERS_GROUPS);
 
     genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
@@ -1295,8 +1369,9 @@ void MlxlinkCommander::showMpcntTimers()
 
 void MlxlinkCommander::showBer()
 {
-    if (_userInput._pcie) {
-        showMpcntTimers();
+    if (_userInput._pcie){
+        checkForPcie();
+        showMpcntTimers(_dpn);
     }
     try {
         if (_prbsTestMode) {
@@ -1304,7 +1379,7 @@ void MlxlinkCommander::showBer()
             return;
         }
         if (_userInput._pcie) {
-            showMpcntPerformance();
+            showMpcntPerformance(_dpn);
             return;
         }
         string regName = "PPCNT";
@@ -1326,26 +1401,48 @@ void MlxlinkCommander::showBer()
                 getFieldValue("time_since_last_clear_high", _buffer),
                 getFieldValue("time_since_last_clear_low", _buffer))/60000.0;
         sprintf(buff, "%.01f", val);
-        setPrintVal(_berInfoCmd,BER_TIME_SINCE_LAST_CLEAR ,"Time Since Last Clear [Min]",
+        setPrintVal(_berInfoCmd,BER_TIME_SINCE_LAST_CLEAR, "Time Since Last Clear [Min]",
                 buff, ANSI_COLOR_RESET,true,_linkUP);
         setPrintVal(_berInfoCmd,BER_EFFECTIVE_PHYSICAL_ERRORS, "Effective Physical Errors",
-                to_string(add32BitTo64(getFieldValue("phy_symbol_errors_high", _buffer),
-                        getFieldValue("phy_symbol_errors_low", _buffer))), ANSI_COLOR_RESET,true,_linkUP);
+                to_string(add32BitTo64(
+                        getFieldValue("phy_symbol_errors_high", _buffer),
+                        getFieldValue("phy_symbol_errors_low", _buffer))),
+                ANSI_COLOR_RESET,true,_linkUP);
 
         std::vector<string> rawErrorsPerLane;
         string phy_raw_err = "";
         for (u_int32_t lane = 0; lane < _numOfLanes; lane++) {
             string laneStr = to_string(lane);
-            phy_raw_err = to_string(add32BitTo64(getFieldValue("phy_raw_errors_lane" + laneStr + "_high", _buffer),
-                                                 getFieldValue("phy_raw_errors_lane" + laneStr + "_low", _buffer)));
+            phy_raw_err = to_string(add32BitTo64(
+                    getFieldValue("phy_raw_errors_lane" + laneStr + "_high", _buffer),
+                    getFieldValue("phy_raw_errors_lane" + laneStr + "_low", _buffer)));
             rawErrorsPerLane.push_back(phy_raw_err);
         }
         setPrintVal(_berInfoCmd,BER_RAW_PHYSICAL_ERRORS_PER_LANE , "Raw Physical Errors Per Lane",
                 getStringFromVector(rawErrorsPerLane), ANSI_COLOR_RESET,true,_linkUP);
         setPrintVal(_berInfoCmd,BER_EFFECTIVE_PHYSICAL_BER ,"Effective Physical BER",
-                getFieldStr("effective_ber_coef") + "E-" + getFieldStr("effective_ber_magnitude"), ANSI_COLOR_RESET,true,_linkUP);
+                getFieldStr("effective_ber_coef") + "E-" + getFieldStr("effective_ber_magnitude"),
+                ANSI_COLOR_RESET,true,_linkUP);
         setPrintVal(_berInfoCmd,BER_RAW_PHYSICAL_BER , "Raw Physical BER",
-                getFieldStr("raw_ber_coef") + "E-" + getFieldStr("raw_ber_magnitude"), ANSI_COLOR_RESET,true,_linkUP);
+                getFieldStr("raw_ber_coef") + "E-" + getFieldStr("raw_ber_magnitude"),
+                ANSI_COLOR_RESET,true,_linkUP);
+
+        if (_protoActive == IB) {
+            resetParser(regName);
+            updateField("local_port", _localPort);
+            updateField("swid", SWID);
+            updateField("pnat", PNAT_LOCAL);
+            updateField("grp", PPCNT_IB_PORT_COUNTERS_GROUP);
+            updateField("clr", 0);
+            updateField("prio_tc", 0);
+            genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
+            setPrintVal(_berInfoCmd,BER_LINK_DOWNED_COUNTER, "Link Down Counter",
+                    getFieldStr("link_downed_counter"),
+                    ANSI_COLOR_RESET,true,_linkUP);
+            setPrintVal(_berInfoCmd,BER_LINK_RECOVERY_COUNTER, "Link Error Recovery Counter",
+                    getFieldStr("link_error_recovery_counter"),
+                    ANSI_COLOR_RESET,true,_linkUP);
+        }
 
         cout << _berInfoCmd;
     } catch (const std::exception &exc) {
@@ -1369,8 +1466,9 @@ void MlxlinkCommander::showTestModeBer()
 
     std::vector<string> errors;
     for (u_int32_t lane = 0; lane < _numOfLanes; lane++) {
-        errors.push_back(to_string(add32BitTo64(getFieldValue("phy_raw_errors_lane" + to_string(lane) + "_high", _buffer),
-                                                getFieldValue("phy_raw_errors_lane" + to_string(lane) + "_low", _buffer))));
+        errors.push_back(to_string(add32BitTo64(
+                getFieldValue("phy_raw_errors_lane" + to_string(lane) + "_high", _buffer),
+                getFieldValue("phy_raw_errors_lane" + to_string(lane) + "_low", _buffer))));
     }
 
     char buff[64];
@@ -1379,8 +1477,8 @@ void MlxlinkCommander::showTestModeBer()
             getFieldValue("time_since_last_clear_low", _buffer))/60000.0;
     sprintf(buff, "%.01f", val);
 
-    setPrintTitle(_testModeBerInfoCmd,
-            "Physical Counters and BER Info (PRBS)", TEST_MODE_BER_INFO_LAST);
+    setPrintTitle(_testModeBerInfoCmd, "Physical Counters and BER Info (PRBS)",
+            TEST_MODE_BER_INFO_LAST);
     setPrintVal(_testModeBerInfoCmd,TEST_MODE_BER_TIME_SINCE_LAST_CLEAR ,
             "Time Since Last Clear [Min]",buff);
     setPrintVal(_testModeBerInfoCmd,TEST_MODE_BER_PRBS_ERRORS ,
@@ -1391,18 +1489,20 @@ void MlxlinkCommander::showTestModeBer()
     cout <<_testModeBerInfoCmd;
 }
 
-void MlxlinkCommander::showMpcntPerformance()
+void MlxlinkCommander::showMpcntPerformance(DPN& dpn)
 {
     string regName = "MPCNT";
     resetParser(regName);
 
-    updateField("pcie_index", _localPort);
+    updateField("depth",dpn.depth);
+    updateField("pcie_index", dpn.pcieIndex);
+    updateField("node", dpn.node);
     updateField("grp", MPCNT_PERFORMANCE_GROUP);
 
     genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
 
-    setPrintTitle(_mpcntPerfInfCmd,
-            "Management PCIe Performance Counters Info", MPCNT_PERFORMANCE_INFO_LAST);
+    setPrintTitle(_mpcntPerfInfCmd, "Management PCIe Performance Counters Info",
+            MPCNT_PERFORMANCE_INFO_LAST);
     setPrintVal(_mpcntPerfInfCmd,MPCNT_RX_ERRORS ,
             "RX Errors",getFieldStr("rx_errors"));
     setPrintVal(_mpcntPerfInfCmd,MPCNT_TX_ERRORS ,
@@ -1415,8 +1515,25 @@ void MlxlinkCommander::showMpcntPerformance()
     cout << _mpcntPerfInfCmd;
 }
 
+void MlxlinkCommander::checkForPcie()
+{
+    if (!_userInput._sendDpn) {
+        if (_validDpns.size() == 0) {
+            throw MlxRegException("No valid depth, node and pcie_index detected!");
+        } else if (_validDpns.size() == 1){
+            _dpn = _validDpns[0];
+            _localPort = getLocalPortFromMPIR(_dpn);
+        } else if (_validDpns.size() > 1){
+            throw MlxRegException("The --depth, --pcie_index and --node must be specified!");
+        }
+    }
+}
+
 void MlxlinkCommander::showEye()
 {
+    if (_userInput._pcie){
+        checkForPcie();
+    }
     try {
         string regName = "SLRG";
         resetParser(regName);
@@ -1434,7 +1551,8 @@ void MlxlinkCommander::showEye()
 
             genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
 
-            physicalGrades.push_back(MlxlinkRecord::addSpaceForSlrg(
+            physicalGrades.push_back(
+                MlxlinkRecord::addSpaceForSlrg(
                     to_string((getFieldValue("grade", _buffer)))));
             int version = getVersion(getFieldValue("version", _buffer));
             string height_eo_pos("height_eo_pos");
@@ -1465,14 +1583,11 @@ void MlxlinkCommander::showEye()
 
         setPrintTitle(_eyeOpeningInfoCmd, showEyeTitle, EYE_OPENING_INFO_LAST);
         setPrintVal(_eyeOpeningInfoCmd, EYE_PHYSICAL_GRADE,
-                "Physical Grade", getStringFromVector(physicalGrades),
-                ANSI_COLOR_RESET,true,_linkUP || _prbsTestMode || _numOfLanesPcie);
+                "Physical Grade", getStringFromVector(physicalGrades));
         setPrintVal(_eyeOpeningInfoCmd, EYE_HEIGHT_EYE_OPENING,
-                "Height Eye Opening [mV]", getStringFromVector(heightLengths),
-                ANSI_COLOR_RESET,true,_linkUP || _prbsTestMode || _numOfLanesPcie);
+                "Height Eye Opening [mV]", getStringFromVector(heightLengths));
         setPrintVal(_eyeOpeningInfoCmd, EYE_PHASE_EYE_OPENING,
-                "Phase  Eye Opening [psec]", getStringFromVector(phaseWidths),
-                ANSI_COLOR_RESET,true,_linkUP || _prbsTestMode || _numOfLanesPcie);
+                "Phase  Eye Opening [psec]", getStringFromVector(phaseWidths));
 
         cout << _eyeOpeningInfoCmd;
 
@@ -1562,6 +1677,9 @@ void MlxlinkCommander::showFEC()
 
 void MlxlinkCommander::showSltp()
 {
+    if (_userInput._pcie){
+        checkForPcie();
+    }
     try {
         string regName = "SLTP";
         resetParser(regName);
@@ -1591,10 +1709,10 @@ void MlxlinkCommander::showSltp()
             }
         }
         if (!_linkUP && !_userInput._pcie && !_prbsTestMode) {
-            setPrintVal(_sltpInfoCmd,0, "", _mlxlinkMaps->_sltpHeader,ANSI_COLOR_RESET, true,false);
+            setPrintVal(_sltpInfoCmd,0, " ", _mlxlinkMaps->_sltpHeader,ANSI_COLOR_RESET, true,false);
             return;
         }
-        setPrintVal(_sltpInfoCmd,0, "", _mlxlinkMaps->_sltpHeader);
+        setPrintVal(_sltpInfoCmd,0, " ", _mlxlinkMaps->_sltpHeader);
         for (u_int32_t i = 0; i < numOfLanesToUse; i++) {
             updateField("local_port", _localPort);
             updateField("pnat", (_userInput._pcie) ? PNAT_PCIE : PNAT_LOCAL);
@@ -1612,7 +1730,6 @@ void MlxlinkCommander::showSltp()
             resetParser(regName);
             setPrintVal(_sltpInfoCmd,(int)i + 1,
                     "Lane " + to_string(i),getStringFromVector(sltpLanes[i]),ANSI_COLOR_RESET, true,valid);
-
         }
         cout << _sltpInfoCmd;
     } catch (const std::exception &exc) {
@@ -1640,7 +1757,7 @@ void MlxlinkCommander::showDeviceData()
 
         cout << _showDeviceInfoCmd;
 
-        if (dm_dev_is_hca(_devID)) {
+        if (_isHCA) {
             MlxlinkRecord::printWar("Note: P/N, Product Name, S/N and Revision are supported only in switches");
         }
 
@@ -1651,11 +1768,10 @@ void MlxlinkCommander::showDeviceData()
 
 void MlxlinkCommander::showBerMonitorInfo()
 {
-
+    if (_isHCA) {
+        throw MlxRegException("\"--" BER_MONITOR_INFO_FLAG "\" option is not supported for HCA");
+    }
     try {
-        if (dm_dev_is_hca(_devID)) {
-            throw MlxRegException("\"--" BER_MONITOR_INFO_FLAG "\" option is not supported for HCA");
-        }
         string regName = "PPBMC";
         string monitor_state = "N/A";
         string monitor_type = "N/A";
@@ -1717,10 +1833,10 @@ void MlxlinkCommander::showBerMonitorInfo()
 
 void MlxlinkCommander::showExternalPhy()
 {
+    if (_isHCA) {
+        throw MlxRegException("\"--" PEPC_SHOW_FLAG "\" option is not supported for HCA");
+    }
     try {
-        if (dm_dev_is_hca(_devID)) {
-                throw MlxRegException("\"--" PEPC_SHOW_FLAG "\" option is not supported for HCA");
-        }
         string regName = "PEPC";
         string twisted_pair_an = "N/A";
         string twisted_pair_force_mode = "N/A";
@@ -1738,23 +1854,119 @@ void MlxlinkCommander::showExternalPhy()
     }
 }
 
+void MlxlinkCommander::initValidDPNList()
+{
+    string regName = "MPEIN";
+    bool valid = false;
+    u_int32_t maxNumOfHost = 4;
+    u_int32_t maxNumOfDsPort = 16;
+    u_int32_t maxDepth = 4;
+    u_int32_t depth, pcie_index, node;
+
+    for (pcie_index = 0; pcie_index < maxNumOfHost; pcie_index++) {
+        resetParser(regName);
+        updateField("pcie_index", pcie_index);
+        updateField("depth", 0);
+        updateField("node", 0);
+        try {
+            genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
+            valid = true;
+        } catch (...) {
+            valid = false;
+        }
+        if (valid && getFieldValue("port_type", _buffer) == PORT_TYPE_EP) {
+            _validDpns.push_back(DPN(0, pcie_index, 0));
+        } else {
+            if (valid && getFieldValue("port_type", _buffer) == PORT_TYPE_US) {
+                _validDpns.push_back(DPN(0, pcie_index, 0));
+            }
+            for (depth = 1; depth < maxDepth; depth++) {
+                resetParser(regName);
+                updateField("pcie_index", pcie_index);
+                updateField("depth", depth);
+                updateField("node", 0);
+                try {
+                    genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
+                    if (getFieldValue("port_type", _buffer) == PORT_TYPE_DS) {
+                        _validDpns.push_back(DPN(depth, pcie_index, 0));
+                        for (node = 1; node < maxNumOfDsPort; node++) {
+                            resetParser(regName);
+                            updateField("pcie_index", pcie_index);
+                            updateField("depth", depth);
+                            updateField("node", node);
+                            try {
+                                genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
+                                _validDpns.push_back(DPN(depth, pcie_index, node));
+                            } catch (...) {
+                                break;
+                            }
+                        }
+                    }
+                } catch (...) {
+                }
+            }
+            break;
+        }
+        //break should be removed after fixing pcie index validity from the fw (for switches only)
+        //bug 1775657
+        if (!_isHCA) {
+            break;
+        }
+    }
+}
+
+void MlxlinkCommander::showPcieLinks()
+{
+    try {
+        if (_validDpns.size() == 0) {
+            throw MlxRegException("No valid DPN's detected!");
+        }
+        setPrintTitle(_validPcieLinks,"Valid PCIe Links", _validDpns.size()+1);
+        setPrintVal(_validPcieLinks, 0," ", "depth, pcie_index, node, port");
+        for(u_int32_t i = 0; i < _validDpns.size(); i++) {
+            char dpnStr [20];
+            int localPort  = getLocalPortFromMPIR(_validDpns[i]);
+            sprintf(dpnStr,"%d, %d, %d, %d", _validDpns[i].depth,
+                    _validDpns[i].pcieIndex, _validDpns[i].node, localPort);
+            setPrintVal(_validPcieLinks, i+1, "Link " + to_string(i+1), dpnStr,
+                    ANSI_COLOR_RESET, localPort >= 0 );
+        }
+        cout << _validPcieLinks;
+    } catch (const std::exception &exc) {
+        _allUnhandledErrors += string("Showing valid PCIe links raised the following exception: ") + string(exc.what()) + string("\n");
+    }
+}
+
 void MlxlinkCommander::showPcie()
 {
     try {
-        showPcieState();
+        if (_userInput._links) {
+            return;
+        }
+        if(!_userInput._sendDpn) {
+            if (_validDpns.size() == 0) {
+                throw MlxRegException("No valid DPN's detected!");
+            }
+            for(u_int32_t i = 0; i < _validDpns.size(); i++) {
+                showPcieState(_validDpns[i]);
+            }
+        } else {
+            showPcieState(_dpn);
+        }
     } catch (const std::exception &exc) {
         _allUnhandledErrors += string("Showing Pcie via MPEIN raised the following exception: ") + string(exc.what()) + string("\n");
     }
 }
 
-void MlxlinkCommander::showPcieState()
+void MlxlinkCommander::showPcieState(DPN& dpn)
 {
     string regName = "MPEIN";
     resetParser(regName);
 
-    updateField("pcie_index", _localPort);
-    updateField("depth", _depth);
-    updateField("node", _node);
+    _pcieInfoCmd = MlxlinkCmdPrint();
+    updateField("pcie_index", dpn.pcieIndex);
+    updateField("depth", dpn.depth);
+    updateField("node", dpn.node);
 
     genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
     string linkSpeedEnabled = " ("
@@ -1764,7 +1976,11 @@ void MlxlinkCommander::showPcieState()
                               + "X)";
     _numOfLanesPcie = getFieldValue("link_width_active", _buffer);
 
-    setPrintTitle(_pcieInfoCmd,"PCIe Operational (Enabled) Info" , PCIE_INFO_LAST);
+    setPrintTitle(_pcieInfoCmd,"PCIe Operational (Enabled) Info", PCIE_INFO_LAST);
+
+    char dpnStr [15];
+    sprintf(dpnStr,"%d, %d, %d", dpn.depth, dpn.pcieIndex, dpn.node);
+    setPrintVal(_pcieInfoCmd, PCIE_LINK_DPN, "Depth, pcie index, node", dpnStr);
     setPrintVal(_pcieInfoCmd, PCIE_LINK_SPEED_ACTIVE_ENABLED,
             "Link Speed Active (Enabled)",
             pcieSpeedStr(getFieldValue("link_speed_active", _buffer))+ linkSpeedEnabled);
@@ -1808,18 +2024,25 @@ void MlxlinkCommander::collectBER()
         string protocol = _prbsTestMode ? getPrbsModeRX() : _speedStrG;
         u_int32_t speed = _prbsTestMode ? getPrbsRateRX() : _speedBerCsv;
         if (_protoActive == IB) {
-            speed *= _numOfLanes / MAX_LANES_NUMBER;
+            speed = (speed * _numOfLanes) / MAX_LANES_NUMBER;
+        }
+        string port = to_string(_userInput._labelPort);
+        if (_splitted) {
+            port += "/"  + to_string(_userInput._splitPort) ;
         }
         berFile << _userInput._testMode << ',' << protocol << ','
                 << speed << ',' << active_fec << ',' << _userInput._iteration << ','
                 << devicePN << ',' << deviceFW << ',' << '1' << ','
-                << _userInput._labelPort << ','
+                << port << ','
                 << getCableMedia(_cableMediaType) << ','
                 << _cablePN << ','
                 << _cableLen << ','
                 << _cableAtten12G << ','
                 << errorsVector["time_since_last_clear_sec"] / 60 << ','
-                << linkDown
+                << errorsVector["phy_corrected_bits_lane0"] << ','
+                << errorsVector["phy_corrected_bits_lane1"] << ','
+                << errorsVector["phy_corrected_bits_lane2"] << ','
+                << errorsVector["phy_corrected_bits_lane3"] << ',' << linkDown
                 << ',' << errorsVector["raw_ber"] << ',' << rawBerLimit << ','
                 << errorsVector["eff_errors_counter"] << ','
                 << errorsVector["eff_ber"] << ',' << result << ','
@@ -1928,6 +2151,18 @@ std::map<string, float> MlxlinkCommander::getRawEffectiveErrors()
     genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
 
     std::map<string, float> errorsVector;
+    errorsVector["phy_corrected_bits_lane0"] = add32BitTo64(getFieldValue(
+                                                                "phy_raw_errors_lane0_high", _buffer),
+                                                            getFieldValue("phy_raw_errors_lane0_low", _buffer));
+    errorsVector["phy_corrected_bits_lane1"] = add32BitTo64(getFieldValue(
+                                                                "phy_raw_errors_lane1_high", _buffer),
+                                                            getFieldValue("phy_raw_errors_lane1_low", _buffer));
+    errorsVector["phy_corrected_bits_lane2"] = add32BitTo64(getFieldValue(
+                                                                "phy_raw_errors_lane2_high", _buffer),
+                                                            getFieldValue("phy_raw_errors_lane2_low", _buffer));
+    errorsVector["phy_corrected_bits_lane3"] = add32BitTo64(getFieldValue(
+                                                                "phy_raw_errors_lane3_high", _buffer),
+                                                            getFieldValue("phy_raw_errors_lane3_low", _buffer));
     errorsVector["time_since_last_clear_sec"] = (add32BitTo64(getFieldValue(
                                                                   "time_since_last_clear_high", _buffer),
                                                               getFieldValue("time_since_last_clear_low", _buffer))) / 1000;
@@ -2200,9 +2435,9 @@ void MlxlinkCommander::sendPaosDown()
     MlxlinkRecord::printCmdLine("Configuring Port State (Down)");
     sendPaosCmd(PAOS_DOWN);
     if (!checkPaosDown()) {
-        if (dm_dev_is_hca(_devID)) {
+        if (_isHCA) {
             string protocol = (_protoActive == IB) ? "IB" : "ETH";
-            throw MlxRegException("Port is not Down, please run mstconfig -d " + _device + " set KEEP_" + protocol + "_LINK_UP_P<port_number>=0.\nIn case of multi-host please verify all hosts are not holding the port up.");
+            throw MlxRegException("Port is not Down, please run mlxconfig -d " + _device + " set KEEP_" + protocol + "_LINK_UP_P<port_number>=0.\nIn case of multi-host please verify all hosts are not holding the port up.");
         } else {
             throw MlxRegException("Port is not Down, Aborting...");
         }
@@ -2225,7 +2460,7 @@ void MlxlinkCommander::handlePrbs()
 {
     try {
         if (_userInput._prbsMode == "EN") {
-            if (!_plugged) {
+            if (!_plugged && _cableIdentifier != IDENTIFIER_BACKPLANE) {
                 throw MlxRegException("Cannot Enter Physical Test Mode when Cable is Unplugged");
             }
             checkPprtCap();
@@ -2364,28 +2599,30 @@ void MlxlinkCommander::sendPtys()
         u_int32_t ptysExtMask = 0x0;
         string proto = (_protoActive == IB) ? "ib" : "eth";
         for (u_int32_t i = 0; i < _ptysSpeeds.size(); i++) {
-            u_int32_t ext_mask = ptysSpeedToExtMask(_ptysSpeeds[i]);
-            if(ext_mask)
-            {
-                ptysExtMask |= ext_mask;
-                continue;
+            if (_protoActive == ETH &&
+                    (dm_dev_is_200g_speed_supported_hca(_devID) ||
+                    dm_dev_is_200g_speed_supported_switch(_devID))) {
+                ptysExtMask |= ptysSpeedToExtMask(_ptysSpeeds[i]);
+            } else {
+                ptysMask |= ptysSpeedToMask(_ptysSpeeds[i], protoCap);
             }
-            ptysMask |= ptysSpeedToMask(_ptysSpeeds[i], protoCap);
+        }
+
+        if (_linkModeForce == true) {
+            updateField("an_disable_admin", 1);
         }
         if (_protoActive == IB) {
             ptysMask |= 0x1;
             updateField("ib_link_width_admin", 7);
-        }
-        else {
-            updateField("ext_eth_proto_admin", ptysExtMask);
-        }
-        if (_linkModeForce == true) {
-            updateField("an_disable_admin", 1);
-            if(ptysExtMask) {
-                updateField("force_tx_aba_param", 0);
+            updateField("ib_proto_admin", ptysMask);
+        } else {
+            if (dm_dev_is_200g_speed_supported_hca(_devID) ||
+                    dm_dev_is_200g_speed_supported_switch(_devID)) {
+                updateField("ext_eth_proto_admin", ptysExtMask);
+            } else {
+                updateField("eth_proto_admin", ptysMask);
             }
         }
-        updateField(proto + "_proto_admin", ptysMask);
         genBuffSendRegister(regName, MACCESS_REG_METHOD_SET);
     } catch (const std::exception &exc) {
         _allUnhandledErrors += string("Sending PTYS (Configuring port speeds) raised the following exception: ") + string(exc.what()) + string("\n");
@@ -2394,8 +2631,10 @@ void MlxlinkCommander::sendPtys()
 
 u_int32_t MlxlinkCommander::ptysSpeedToExtMask(const string & speed)
 {
+
+    checkSupportedSpeed(speed, _protoCapability, true);
     if(_protoActive == IB)
-        return 0;
+        return ptysSpeedToMask(speed, _protoActive);
     return ptysSpeedToExtMaskETH(speed);
 }
 
@@ -2406,22 +2645,34 @@ u_int32_t MlxlinkCommander::ptysSpeedToMask(const string & speed, u_int32_t prot
            ptysSpeedToMaskIB(speed) : ptysSpeedToMaskETH(speed);
 }
 
-void MlxlinkCommander::checkSupportedSpeed(const string & speed, u_int32_t protoCap)
+void MlxlinkCommander::checkSupportedSpeed(const string & speed, u_int32_t protoCap, bool extSpeed)
 {
-    u_int32_t mask =
-        (_protoActive == IB) ?
-        ptysSpeedToMaskIB(speed) : ptysSpeedToMaskETH(speed);
-    u_int32_t diffProto =
-        (_protoActive == IB) ?
-        ptysSpeedToMaskETH(speed) : ptysSpeedToMaskIB(speed);
+    u_int32_t mask = 0;
+    u_int32_t diffProto = 0;
+    string errStr = "";
+    if (!extSpeed) {
+         mask =
+            (_protoActive == IB) ?
+            ptysSpeedToMaskIB(speed) : ptysSpeedToMaskETH(speed);
+         diffProto =
+            (_protoActive == IB) ?
+            ptysSpeedToMaskETH(speed) : ptysSpeedToMaskIB(speed);
+    } else {
+        mask =
+           (_protoActive == IB) ?
+           ptysSpeedToMaskIB(speed) : ptysSpeedToExtMaskETH(speed);
+        diffProto =
+           (_protoActive == IB) ?
+           ptysSpeedToExtMaskETH(speed) : ptysSpeedToMaskIB(speed);
+    }
     if (diffProto) {
-        string errStr = "Supported Speeds Are: ";
-        errStr += SupportedSpeeds2Str(_protoActive, protoCap);
+        errStr = "Supported Speeds Are: ";
+        errStr += SupportedSpeeds2Str(_protoActive, protoCap, extSpeed);
         throw MlxRegException(speed + " is not supported by Protocol!\n" + errStr);
     }
     if (!(mask & protoCap)) {
         string errStr = "Supported Speeds Are: ";
-        errStr += SupportedSpeeds2Str(_protoActive, protoCap);
+        errStr += SupportedSpeeds2Str(_protoActive, protoCap, extSpeed);
         throw MlxRegException(speed + " is not supported by Device!\n" + errStr);
     }
 }
@@ -2446,8 +2697,7 @@ void MlxlinkCommander::sendPplm()
         resetParser(regName);
 
         updateField("local_port", _localPort);
-        string speedStrG = (_linkUP && _userInput._speedFec == "") ?
-                speedToStr(_speedStrG) : _userInput._speedFec + "g";
+        string speedStrG = (_linkUP && _userInput._speedFec == "") ? speedToStr(_speedStrG) : _userInput._speedFec + "g";
         if (speedStrG != "100g") {
             updateField("fec_override_admin_100g", 0);
         }
@@ -2598,22 +2848,6 @@ void MlxlinkCommander::sendSltp()
     }
 }
 
-u_int32_t MlxlinkCommander::getLoopbackMode(const string &lb)
-{
-    if (lb == "NO") {
-        return PHY_NO_LOOPBACK;
-    }
-    if (lb == "PH") {
-        return PHY_LOCAL_LOOPBACK;
-    }
-    if (lb == "EX") {
-        return EXTERNAL_LOCAL_LOOPBACK;
-    }
-    throw MlxRegException(
-            "Invalid loopback option: %s, see tool usage \"%s --help\"",
-            lb.c_str(), MLXLINK_EXEC);
-}
-
 void MlxlinkCommander::sendPplr()
 {
     try {
@@ -2630,8 +2864,27 @@ void MlxlinkCommander::sendPplr()
     }
 }
 
+u_int32_t MlxlinkCommander::getLoopbackMode(const string &lb)
+{
+    if (lb == "NO") {
+            return PHY_NO_LOOPBACK;
+        }
+    if (lb == "PH") {
+        return PHY_LOCAL_LOOPBACK;
+    }
+    if (lb == "EX") {
+        return EXTERNAL_LOCAL_LOOPBACK;
+    }
+    throw MlxRegException(
+            "Invalid loopback option: %s, see tool usage \"%s --help\"",
+            lb.c_str(), MLXLINK_EXEC);
+}
+
 void MlxlinkCommander::sendPepc()
 {
+    if (_isHCA) {
+        throw MlxRegException("\"--" PEPC_SET_FLAG "\" option is not supported for HCA");
+    }
     try {
         MlxlinkRecord::printCmdLine("Configuring External PHY");
         string regName = "PEPC";

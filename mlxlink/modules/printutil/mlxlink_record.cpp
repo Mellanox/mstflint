@@ -177,7 +177,7 @@ void MlxlinkRecord::printWar(const std::string &war)
 
 std::ostream & operator << (std::ostream &out, const MlxlinkRecord &mlxlinkRecord)
 {
-    if (!mlxlinkRecord.visible) {
+    if (!mlxlinkRecord.visible || mlxlinkRecord.key == "") {
         return out;
     }
     out << mlxlinkRecord.key << std::setw(PDDR_LINE_LEN - mlxlinkRecord.key.length()) << ": ";

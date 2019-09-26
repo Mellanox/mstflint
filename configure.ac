@@ -31,12 +31,12 @@
 
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(mstflint, 4.12.0, eranj@mellanox.co.il)
+AC_INIT(mstflint, 4.13.0, eranj@mellanox.co.il)
 
 AC_DEFINE_UNQUOTED([PROJECT], ["mstflint"], [Define the project name.])
 AC_SUBST([PROJECT])
 
-AC_DEFINE_UNQUOTED([VERSION], ["4.12.0"], [Define the project version.])
+AC_DEFINE_UNQUOTED([VERSION], ["4.13.0"], [Define the project version.])
 AC_SUBST([VERSION])
 
 AC_CONFIG_MACRO_DIR([m4])
@@ -142,21 +142,21 @@ AC_SUBST(ENABLE_FWMGR)
 # XML2
 AC_MSG_CHECKING(--enable-xml2 argument)
 AC_ARG_ENABLE(xml2,
-            [  --enable-xml2           Enable mstflint libxml2 dependant features],
+            [  --enable-xml2           Enable mstflint libxml2 dependent features],
             [enable_xml2="yes"],
             [enable_xml2="no"])
 AC_MSG_RESULT($enable_xml2)
 if test [ "x$enable_xml2" = "xyes" ] || [ test "x$enable_fw_mgr" = "xyes" ]; then
     # XML2 checks
-    if test ! -f /usr/include/libxml2/libxml/xpath.h; then
-        AC_MSG_NOTICE([checking for libxml2... no])
-        AC_MSG_ERROR([libxml2: xpath.h is not found in the system PATH. make sure libxml2 headres are installed.])
-    else
-        AC_MSG_NOTICE([checking for libxml2... yes])
-        XML2_INC_DIR=/usr/include/libxml2/
-    fi
-    AC_CHECK_LIB(xml2, xmlDocDumpFormatMemoryEnc,, AC_MSG_ERROR([cannot find xml2 xmlDocDumpFormatMemoryEnc() function. Try re-installing the library...]))
-    AC_SUBST(XML2_INC_DIR)
+    AC_LANG_PUSH([C++])
+        if test "x$OS" = "xFreeBSD"; then
+            CXXFLAGS="${CXXFLAGS} -isystem /usr/local/include/libxml2"
+        else
+            CXXFLAGS="${CXXFLAGS} -isystem /usr/include/libxml2"
+        fi
+        AC_CHECK_HEADER([libxml2/libxml/xpath.h],[],[AC_MSG_ERROR([libxml2: xpath.h is not found in the system PATH. make sure libxml2 headers are installed.])])
+        AC_CHECK_LIB(xml2, xmlDocDumpFormatMemoryEnc,, AC_MSG_ERROR([cannot find xml2 xmlDocDumpFormatMemoryEnc() function. Try re-installing the library...]))
+    AC_LANG_POP([C++])
 fi
 
 AM_CONDITIONAL(DISABLE_XML2, [test  "x$enable_xml2" = "xno"])

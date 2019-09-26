@@ -80,6 +80,19 @@ if REG_ACCESS:
             ("local_port",c_uint8)
         ]
 
+    class MFRL_ST(Structure):
+        _fields_ = [
+            ("reset_level", c_uint8),
+            ("reset_type", c_uint8),
+            ("rst_type_sel", c_uint8)
+        ]
+
+    class MPCIR_ST(Structure):
+        _fields_ = [
+            ("all", c_uint8),
+            ("ports", c_uint8),
+            ("ports_stat", c_uint8)
+        ]
 
     class MCAM_REG_ST(Structure):
         _fields_ = [("access_reg_group", c_uint8),
@@ -99,8 +112,7 @@ if REG_ACCESS:
                     ("reg_access_hca_string_db_parameters", c_uint8 * 64)]
 
 
-    class MFRL_ST(Structure):
-        _fields_ = [("reset_level", c_uint8)]
+
 
 
     class MGIR_ST(Structure):
@@ -131,6 +143,7 @@ if REG_ACCESS:
                     ("extended_major", c_uint32),
                     ("extended_minor", c_uint32),
                     ("extended_sub_minor", c_uint32),
+                    ("isfu_major", c_uint16),
                     ("subminor", c_uint8),
                     ("minor", c_uint8),
                     ("major", c_uint8),
@@ -149,6 +162,9 @@ if REG_ACCESS:
 
     class RegAccess:
 
+        GET = REG_ACCESS_METHOD_GET
+        SET = REG_ACCESS_METHOD_SET
+
         ##########################
         def __init__(self, dev=None, pci_device=None):
             self._mstDev = dev
@@ -156,11 +172,13 @@ if REG_ACCESS:
                 self._mstDev = mtcr.MstDevice(pci_device)
             self._err2str = REG_ACCESS.reg_access_err2str
             self._err2str.restype = c_char_p
-            self._sendMFRL = REG_ACCESS.reg_access_mfrl
-            self._mgir = REG_ACCESS.reg_access_mgir
-            self._reg_access_pcnr = REG_ACCESS.reg_access_pcnr
             self._reg_access_mcam = REG_ACCESS.reg_access_mcam
             self._reg_access_mtrc_cap = REG_ACCESS.reg_access_mtrc_cap
+            self._reg_access_mgir = REG_ACCESS.reg_access_mgir
+            self._reg_access_mfrl = REG_ACCESS.reg_access_mfrl
+            self._reg_access_pcnr = REG_ACCESS.reg_access_pcnr
+            self._reg_access_mpcir = REG_ACCESS.reg_access_mpcir
+
 
         ##########################
         def close(self):
@@ -211,31 +229,57 @@ if REG_ACCESS:
                 raise RegAccException("Failed to send Register: %s (%d)" % (self._err2str(rc), rc))
 
 
+        def sendMpcir(self, command):
+            
+            # 2 operations (both executed with 'set' register):
+            #   (1) Start perperations for FW upgrade
+            #   (2) Query operation #1 (idle/done)
+            CMD_START = 1
+            CMD_GET_STATUS = 3
+
+            if command == "start":
+                command = CMD_START
+            elif command == "status":
+                command = CMD_GET_STATUS
+            else:
+                raise ValueError("command {0} is illegal".format(command))
+
+            mpcirRegisterP = pointer(MPCIR_ST(ports=command))
+            rc = self._reg_access_mpcir(self._mstDev.mf, c_uint(REG_ACCESS_METHOD_SET), mpcirRegisterP)
+            if rc != 0:
+                raise RegAccException("Failed to send Command Register MPCIR")
+            if command == CMD_GET_STATUS:
+                return mpcirRegisterP.contents.ports_stat
+
+
         ##########################
-        def sendMFRL(self, resetLevel, method):
+        def sendMFRL(self, method, resetLevel=None, reset_type=None):
 
             mfrlRegisterP = pointer(MFRL_ST())
             
             if method == REG_ACCESS_METHOD_SET:
+                if resetLevel is None or reset_type is None:
+                    raise RegAccException("Failed to sendMFRL (reset-level or reset-type is None for SET command)")
                 mfrlRegisterP.contents.reset_level = c_uint8(resetLevel)
+                mfrlRegisterP.contents.rst_type_sel = c_uint8(reset_type)
             
             c_method = c_uint(method)
-            rc = self._sendMFRL(self._mstDev.mf, c_method, mfrlRegisterP)
+            rc = self._reg_access_mfrl(self._mstDev.mf, c_method, mfrlRegisterP)
             # FW bug first mfrl register might fail
             if rc:
-                rc = self._sendMFRL(self._mstDev.mf, c_method, mfrlRegisterP)
+                rc = self._reg_access_mfrl(self._mstDev.mf, c_method, mfrlRegisterP)
             if rc:
                 raise RegAccException("Failed to send Register: %s (%d)" % (self._err2str(rc), rc))
 
             if method == REG_ACCESS_METHOD_GET:
-                return mfrlRegisterP.contents.reset_level
+                return mfrlRegisterP.contents.reset_level, mfrlRegisterP.contents.reset_type
 
         ##########################
         def getFWUptime(self):
 
             mgirRegisterP = pointer(MGIR_ST())
 
-            rc = self._mgir(self._mstDev.mf, REG_ACCESS_METHOD_GET, mgirRegisterP)
+            rc = self._reg_access_mgir(self._mstDev.mf, REG_ACCESS_METHOD_GET, mgirRegisterP)
             if rc:
                 raise RegAccException("Failed to send Register: %s (%d)" % (self._err2str(rc), rc))
 
@@ -246,7 +290,7 @@ if REG_ACCESS:
 
             mgirRegisterP = pointer(MGIR_ST())
 
-            rc = self._mgir(self._mstDev.mf, REG_ACCESS_METHOD_GET, mgirRegisterP)
+            rc = self._reg_access_mgir(self._mstDev.mf, REG_ACCESS_METHOD_GET, mgirRegisterP)
 
             if rc:
                 raise RegAccException("Failed to send Register: %s (%d)" % (self._err2str(rc), rc))
@@ -262,7 +306,7 @@ if REG_ACCESS:
             """
             mgirRegisterP = pointer(MGIR_ST())
 
-            rc = self._mgir(self._mstDev.mf, REG_ACCESS_METHOD_GET, mgirRegisterP)
+            rc = self._reg_access_mgir(self._mstDev.mf, REG_ACCESS_METHOD_GET, mgirRegisterP)
             if rc:
                 raise RegAccException("Failed to send Register: %s (%d)" % (self._err2str(rc), rc))
 

@@ -142,8 +142,17 @@ if CMTCR:
             if rc:
                 raise CmdIfException("Failed to send command")
         ##########################
-        def mHcaReset(self):
-            if self.mHcaResetFunc(self.mf) != 0:
+        def mHcaReset(self, dbdf_list):
+                
+            bus_array_size = len(dbdf_list)
+
+            bus_array = (ctypes.c_ulong * bus_array_size)()
+            
+            # Extract the bus value from the dbdf list.
+            for idx,dbdf in enumerate(dbdf_list):
+                bus_array[idx] = int(dbdf[5:7], 16)
+
+            if self.mHcaResetFunc(self.mf, bus_array, bus_array_size) != 0:
                 raise MtcrException("Failed to reset device")
 
 else:
@@ -211,5 +220,5 @@ else:
             raise MtcrException("icmd isn't supported in MCRA mode")
 
         ##########################   
-        def mHcaReset(self):
+        def mHcaReset(self, dbdf_list):
             raise MtcrException("mswReset isn't supported in MCRA mode")

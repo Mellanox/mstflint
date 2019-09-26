@@ -44,7 +44,8 @@ public:
         EXIT_STATUS_OK = 0,
         EXIT_STATUS_ERROR = 1,
         EXIT_STATUS_USAGE = 2,
-        EXIT_STATUS_DEV_ID_ERR = 3
+        EXIT_STATUS_DEV_ID_ERR = 3,
+        EXIT_STATUS_CAP_ERR = 4
     } exit_status_t;
     CongestionUI();
     ~CongestionUI();
