@@ -118,6 +118,7 @@ SubCmdMetaData::SubCmdMetaData()
     _sCmds.push_back(new SubCmd("", "set_public_keys", SC_Set_Public_Keys));
     _sCmds.push_back(new SubCmd("", "set_forbidden_versions", SC_Set_Forbidden_Versions));
     _sCmds.push_back(new SubCmd("ir", "image_reactivation", SC_Image_Reactivation));
+    _sCmds.push_back(new SubCmd("bc", "binary_compare", SC_Binary_Compare));
 }
 
 SubCmdMetaData::~SubCmdMetaData()
@@ -420,10 +421,12 @@ void Flint::initCmdParser()
         ' ',
         "",
         "Commands affected: burn");
+
     AddOptions("image_reactivation",
         ' ',
         "",
         "Commands affected: burn");
+
     AddOptions("help",
                'h',
                "",
@@ -513,7 +516,6 @@ void Flint::initCmdParser()
                "Run a quick query. When specified, flint will not perform full image integrity checks during the query"
                " operation. This may shorten execution time when running over slow interfaces (e.g., I2C, MTUSB-1).\n"
                "Commands affected: query");
-
     AddOptions("low_cpu",
                ' ',
                "",
@@ -754,7 +756,7 @@ ParseStatus Flint::HandleOption(string name, string value)
     if (!(verifyNumOfArgs(name, value))) {
         return PARSE_ERROR;
     }
-
+    int delta = 1;
     if (name == "device" || name == "d") {
         _flintParams.device_specified = true;
         _flintParams.device = value;
@@ -843,6 +845,7 @@ ParseStatus Flint::HandleOption(string name, string value)
     } else if (name == "qq") {
         _flintParams.quick_query = true;
         _flintParams.skip_rom_query = true;
+        delta = 2;
     } else if (name == "low_cpu") {
         _flintParams.low_cpu = true;
     } else if (name == "next_boot_fw_ver" || name == "flashed_version") {
@@ -925,6 +928,7 @@ ParseStatus Flint::HandleOption(string name, string value)
         cout << _cmdParser.GetSynopsis();
         return PARSE_ERROR;
     }
+    _flintParams.num_of_args += delta;
     return PARSE_OK;
 }
 

@@ -113,7 +113,7 @@ void     mf_close(mflash *mfl);
 // Flash access functions:
 // The data buffer should be pre-allocated by caller. The rest is quite self explanatory. .
 //
-int     mf_read(mflash *mfl, u_int32_t addr, u_int32_t len, u_int8_t *data);
+int     mf_read(mflash *mfl, u_int32_t addr, u_int32_t len, u_int8_t *data, bool verbose);
 int     mf_write(mflash *mfl, u_int32_t addr, u_int32_t len, u_int8_t *data);
 // mf_erase performs an erase on the smallest block
 int     mf_erase(mflash *mfl, u_int32_t addr);

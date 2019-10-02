@@ -613,8 +613,9 @@ u_int8_t Fs2Operations::FwType()
     return FIT_FS2;
 }
 
-bool Fs2Operations::FwReadData(void *image, u_int32_t *image_size)
+bool Fs2Operations::FwReadData(void *image, u_int32_t *image_size, bool verbose)
 {
+    (void)verbose;
     if (!Fs2Verify((VerifyCallBack)NULL)) {
         return false;
     }

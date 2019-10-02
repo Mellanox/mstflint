@@ -366,7 +366,7 @@ int cntx_st_spi_block_write_ex(mflash *mfl, u_int32_t blk_addr, u_int32_t blk_si
 int cntx_sst_spi_block_write_ex(mflash *mfl, u_int32_t blk_addr, u_int32_t blk_size, u_int8_t *data);
 
 int cntx_st_spi_block_read_ex(mflash *mfl, u_int32_t blk_addr, u_int32_t blk_size, u_int8_t *data, u_int8_t is_first,
-                              u_int8_t is_last);
+                              u_int8_t is_last, bool verbose);
 
 int cntx_spi_get_type(mflash *mfl, u_int8_t op_type, u_int8_t *vendor, u_int8_t *type, u_int8_t *density);
 
@@ -517,7 +517,7 @@ int write_chunks(mflash *mfl, u_int32_t addr, u_int32_t len, u_int8_t *data)
                 u_int8_t verify_buffer[MAX_WRITE_BUFFER_SIZE];
                 rc = mfl->f_reset(mfl);
                 CHECK_RC(rc);
-                rc = mfl->f_read(mfl, addr, data_size, verify_buffer);
+                rc = mfl->f_read(mfl, addr, data_size, verify_buffer, false);
                 CHECK_RC(rc);
                 // Verify data
                 for (i = 0; i < data_size; i++) {
@@ -989,7 +989,7 @@ int st_spi_wait_wip(mflash *mfl, u_int32_t init_delay_us, u_int32_t retry_delay_
     return MFE_WRITE_TIMEOUT;
 }
 
-int read_chunks(mflash *mfl, u_int32_t addr, u_int32_t len, u_int8_t *data)
+int read_chunks(mflash *mfl, u_int32_t addr, u_int32_t len, u_int8_t *data, bool verbose)
 {
 
     int rc = 0;
@@ -998,7 +998,7 @@ int read_chunks(mflash *mfl, u_int32_t addr, u_int32_t len, u_int8_t *data)
     if (!mfl) {
         return MFE_BAD_PARAMS;
     }
-
+    u_int32_t original_len = len;
     // Note:
     // Assuming read block is the same as write block size.
     // This is true for current Mellanox devices SPI flash access implementation.
@@ -1010,7 +1010,10 @@ int read_chunks(mflash *mfl, u_int32_t addr, u_int32_t len, u_int8_t *data)
     u_int8_t tmp_buff[MAX_WRITE_BUFFER_SIZE];
 
     block_mask = ~(block_size - 1);
-
+    u_int32_t perc = 0xffffffff;
+    if (verbose) {
+        printf("\33[2K\r");//clear the current line
+    }
     while (len) {
         u_int32_t i = 0;
         u_int32_t prefix_pad_size = 0;
@@ -1041,7 +1044,7 @@ int read_chunks(mflash *mfl, u_int32_t addr, u_int32_t len, u_int8_t *data)
             data_size -= prefix_pad_size;
             block_data = tmp_buff;
         }
-        rc = mfl->f_read_blk(mfl, block_addr, block_size, block_data);
+        rc = mfl->f_read_blk(mfl, block_addr, block_size, block_data, false);
         CHECK_RC(rc);
 
         if (suffix_pad_size || prefix_pad_size) {
@@ -1057,6 +1060,14 @@ int read_chunks(mflash *mfl, u_int32_t addr, u_int32_t len, u_int8_t *data)
         addr += data_size;
         p += data_size;
         len -= data_size;
+        if (verbose) {
+            u_int32_t new_perc = 100 - 100*(1.0*len/original_len);
+            if (new_perc != perc) {
+                printf("\r%s%d%c", "Reading flash section: ", new_perc, '%');
+                fflush(stdout);
+                perc = new_perc;
+            }
+        }
     }
 
     return MFE_OK;
@@ -1541,8 +1552,9 @@ int cntx_st_spi_reset(mflash *mfl)
     return MFE_OK;
 }
 
-int cntx_st_spi_page_read(mflash *mfl, u_int32_t addr, u_int32_t size, u_int8_t *data)
+int cntx_st_spi_page_read(mflash *mfl, u_int32_t addr, u_int32_t size, u_int8_t *data, bool verbose)
 {
+    (void)verbose;
     int rc = 0;
 
     u_int32_t last_blk_addr = 0;
@@ -1569,7 +1581,7 @@ int cntx_st_spi_page_read(mflash *mfl, u_int32_t addr, u_int32_t size, u_int8_t 
             is_last = 1;
         }
 
-        rc = cntx_st_spi_block_read_ex(mfl, addr, mfl->attr.block_write, p, is_first, is_last);
+        rc = cntx_st_spi_block_read_ex(mfl, addr, mfl->attr.block_write, p, is_first, is_last, false);
         CHECK_RC(rc);
 
         is_first = 0;
@@ -1589,8 +1601,9 @@ int cntx_st_spi_page_read(mflash *mfl, u_int32_t addr, u_int32_t size, u_int8_t 
  */
 
 int cntx_st_spi_block_read_ex(mflash *mfl, u_int32_t blk_addr, u_int32_t blk_size, u_int8_t *data,
-                              u_int8_t is_first, u_int8_t is_last)
+                              u_int8_t is_first, u_int8_t is_last, bool verbose)
 {
+    (void)verbose;
     int rc = 0;
     u_int32_t i = 0;
     u_int32_t gw_cmd = 0;
@@ -1640,9 +1653,10 @@ int cntx_st_spi_block_read_ex(mflash *mfl, u_int32_t blk_addr, u_int32_t blk_siz
     return MFE_OK;
 }
 
-int cntx_st_spi_block_read(mflash *mfl, u_int32_t blk_addr, u_int32_t blk_size, u_int8_t *data)
+int cntx_st_spi_block_read(mflash *mfl, u_int32_t blk_addr, u_int32_t blk_size, u_int8_t *data, bool verbose)
 {
-    return cntx_st_spi_block_read_ex(mfl, blk_addr, blk_size, data, 1, 1);
+    (void)verbose;
+    return cntx_st_spi_block_read_ex(mfl, blk_addr, blk_size, data, 1, 1, false);
 }
 
 int cntx_st_spi_block_read_old(mflash *mfl, u_int32_t blk_addr, u_int32_t blk_size, u_int8_t *data)
@@ -2281,8 +2295,9 @@ int sx_get_flash_info(mflash *mfl, flash_info_t *f_info, int *log2size, u_int8_t
     return rc;
 }
 
-int sx_block_read(mflash *mfl, u_int32_t blk_addr, u_int32_t blk_size, u_int8_t *data)
+int sx_block_read(mflash *mfl, u_int32_t blk_addr, u_int32_t blk_size, u_int8_t *data, bool verbose)
 {
+    (void)verbose;
     int rc = 0;
     int sem_rc = 0;
     sem_rc = mfl_com_lock(mfl);
@@ -2541,13 +2556,13 @@ int cntx_flash_init(mflash *mfl, flash_params_t *flash_params)
         } \
 }
 
-int mf_read(mflash *mfl, u_int32_t addr, u_int32_t len, u_int8_t *data)
+int mf_read(mflash *mfl, u_int32_t addr, u_int32_t len, u_int8_t *data, bool verbose)
 {
     // printf("mfl->attr.size = %#x, addr = %#x, len = %d\n", mfl->attr.size, addr, len);
 
     CHECK_OUT_OF_RANGE(addr, len, mfl->attr.size);
     //printf("-D- mf_read:  addr: %#x, len: %d\n", addr, len);
-    return mfl->f_read(mfl, addr, len, data);
+    return mfl->f_read(mfl, addr, len, data, verbose);
 }
 
 int mf_write(mflash *mfl, u_int32_t addr, u_int32_t len, u_int8_t *data)

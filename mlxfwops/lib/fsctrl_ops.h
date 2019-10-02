@@ -53,7 +53,7 @@ public:
                           bool ignoreDToc = false); // Add callback print
     virtual bool FwVerifyAdv(ExtVerifyParams &verifyParams);
     //on call of FwReadData with Null image we get image_size
-    virtual bool FwReadData(void *image, u_int32_t *image_size);
+    virtual bool FwReadData(void *image, u_int32_t *image_sizes, bool verbose = false);
     virtual bool FwReadBlock(u_int32_t addr, u_int32_t size, std::vector<u_int8_t> &dataVec);
 
     virtual bool FwReadRom(std::vector<u_int8_t> &romSect);
