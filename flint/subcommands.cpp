@@ -1487,9 +1487,6 @@ FlintStatus BinaryCompareSubCommand::executeCommand()
         }
         return FLINT_FAILED;
     }
-    //if (!_fwOps->IsLiveFishDevice()) {
-    //    printf("Device must be in livefish mode. Exiting...\n");
-    //    return FLINT_FAILED;
 
     _fwType = _fwOps->FwType();
     if (!_fwOps->FwQuery(&_devInfo)) {

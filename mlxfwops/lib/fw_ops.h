@@ -161,7 +161,6 @@ public:
 
     //needed for flint low level operations
     bool FwSwReset();
-    bool IsLiveFishDevice();
     virtual bool CheckCX4Device() {return true; /* deprecated always return true*/ }
     virtual bool FwCalcMD5(u_int8_t md5sum[16]) = 0;
 

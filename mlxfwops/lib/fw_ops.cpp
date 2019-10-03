@@ -2024,21 +2024,6 @@ const char*  FwOperations::FwGetReSignMsgStr()
 {
     return (const char*)NULL;
 }
-bool FwOperations::IsLiveFishDevice()
-{
-    if (_ioAccess == NULL) {
-        return false;
-    }
-    if (!_ioAccess->is_flash()) {
-        return false;
-    }
-    mfile* mf = _ioAccess->getMfileObj();
-    if (mf == NULL) {
-        return false;
-    }
-    return (dm_is_livefish_mode(mf) == 1);
-}
-
 
 bool FwOperations::TestAndSetTimeStamp(FwOperations *imageOps)
 {
