@@ -1483,10 +1483,16 @@ FlintStatus BinaryCompareSubCommand::executeCommand()
 {
     if (preFwOps() == FLINT_FAILED) {
         if (_imgOps) {
-            printf("-E- Error occurred while executing flint initialization : %s\n", _imgOps->err());
+            const char* errMessage = _imgOps->err();
+            if (errMessage != NULL && strlen(errMessage) > 0) {
+                printf("-E- Error occurred while executing flint initialization : %s\n", errMessage);
+            }
         }
         return FLINT_FAILED;
     }
+    //if (!_fwOps->IsLiveFishDevice()) {
+    //    printf("Device must be in livefish mode. Exiting...\n");
+    //    return FLINT_FAILED;
 
     _fwType = _fwOps->FwType();
     if (!_fwOps->FwQuery(&_devInfo)) {
@@ -1528,9 +1534,6 @@ FlintStatus BinaryCompareSubCommand::executeCommand()
         return FLINT_FAILED;
     }
     for (unsigned int i = 0; i < imgBuffInFile.size(); i++) {
-        if ((imgBuffOnDevice[i] == 0 && imgBuffInFile[i] == 0xff) || ((imgBuffOnDevice[i] == 0xff && imgBuffInFile[i] == 0))) {
-            continue;
-        }
         if (imgBuffOnDevice[i] != imgBuffInFile[i]) {
             printf("\33[2K\r");//clear the current line
             printf("Binary comparison failed - binary mismatch.\n");
@@ -2438,7 +2441,7 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
     }
     else if (_flintParams.skip_rom_query) {
         printf("Rom Info:              type=UEFI version=skipped cpu=skipped\n");
-        printf("                       type=PXE version=skipped devid=skipped cpu=skipped\n");
+        printf("                       type=PXE  version=skipped devid=skipped cpu=skipped\n");
         printf("                       type=NVMe version=skipped devid=skipped cpu=skipped\n");
     }
 
