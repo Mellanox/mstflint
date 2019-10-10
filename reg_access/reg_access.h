@@ -86,6 +86,8 @@ reg_access_status_t reg_access_mpegc(mfile *mf, reg_access_method_t method, stru
 reg_access_status_t reg_access_mfpa_new(mfile *mf, reg_access_method_t method, struct tools_open_mfpa *mfpa);
 reg_access_status_t reg_access_mcam(mfile *mf, reg_access_method_t method, struct tools_open_mcam *mcam);
 reg_access_status_t reg_access_secure_host(mfile *mf, reg_access_method_t method, struct tools_open_mlock *mlock);
+reg_access_status_t reg_access_res_dump(mfile *mf, reg_access_method_t method, struct reg_access_hca_resource_dump *res_dump);
+reg_access_status_t reg_access_debug_cap(mfile *mf, reg_access_method_t method, struct reg_access_hca_debug_cap *debug_cap);
 /*
  * MCXX new burn commands
  */

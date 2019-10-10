@@ -77,6 +77,12 @@
 #define REG_ID_MPCIR                    0x905a
 
 
+//==================================
+//RESOURCE DUMP FEATURE
+#define REG_ID_RES_DUMP                 0xC000
+#define REG_ID_DEBUG_CAP                0x8400
+//==================================
+
 
 //WA for MGIR: the reg size is too big so we limit it to INBAND_MAX_REG_SIZE
 #define INBAND_MAX_REG_SIZE 44
@@ -182,6 +188,24 @@
 #define REG_ACCCESS(mf, method, reg_id, data_struct, struct_name, prefix) \
     int data_size = prefix##_##struct_name##_size(); \
     REG_ACCCESS_VAR(mf, method, reg_id, data_struct, struct_name, data_size, data_size, data_size, prefix)
+
+
+
+//=================================================================================================================================
+/************************************
+ * * Function: reg_access_resource_dump
+ * ************************************/
+reg_access_status_t reg_access_res_dump(mfile *mf, reg_access_method_t method, struct reg_access_hca_resource_dump *resource_dump)
+{
+    REG_ACCCESS(mf, method, REG_ID_RES_DUMP, resource_dump, resource_dump, reg_access_hca);
+}
+
+reg_access_status_t reg_access_debug_cap(mfile *mf, reg_access_method_t method, struct reg_access_hca_debug_cap *debug_cap)
+{
+    REG_ACCCESS(mf, method, REG_ID_DEBUG_CAP, debug_cap, debug_cap, reg_access_hca);
+}
+
+//=================================================================================================================================
 
 
 /************************************

@@ -1726,7 +1726,7 @@ Valid when inline_dump==0. */
 	/* Description - Data that is dumped in case of inline mode.
 Valid when inline_dump==1. */
 	/* 0x30.0 - 0x30.31 */
-	u_int32_t *inline_data;
+	u_int32_t inline_data[52];
 };
 
 /* Description -   */
@@ -2335,7 +2335,7 @@ void reg_access_hca_resource_dump_pack(const struct reg_access_hca_resource_dump
 void reg_access_hca_resource_dump_unpack(struct reg_access_hca_resource_dump *ptr_struct, const u_int8_t *ptr_buff);
 void reg_access_hca_resource_dump_print(const struct reg_access_hca_resource_dump *ptr_struct, FILE *fd, int indent_level);
 unsigned int reg_access_hca_resource_dump_size(void);
-#define REG_ACCESS_HCA_RESOURCE_DUMP_SIZE    (0x30)
+#define REG_ACCESS_HCA_RESOURCE_DUMP_SIZE    (0x100)
 void reg_access_hca_resource_dump_dump(const struct reg_access_hca_resource_dump *ptr_struct, FILE *fd);
 /* strs_fault_inject_reg */
 void reg_access_hca_strs_fault_inject_reg_pack(const struct reg_access_hca_strs_fault_inject_reg *ptr_struct, u_int8_t *ptr_buff);
