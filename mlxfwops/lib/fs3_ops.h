@@ -82,7 +82,7 @@ public:
     virtual bool FwQuery(fw_info_t *fwInfo, bool readRom = true, bool isStripedImage = false);
     virtual u_int8_t FwType();
     virtual bool FwInit();
-    virtual bool FwReadData(void *image, u_int32_t *image_size);
+    virtual bool FwReadData(void *image, u_int32_t *image_size, bool verbose = false);
     static void    deal_with_signal();
 
     virtual bool FwReadRom(std::vector<u_int8_t>& romSect);
@@ -144,7 +144,7 @@ protected:
                          bool ignore_crc = false, VerifyCallBack verifyCallBackFunc = (VerifyCallBack)NULL);
     bool Fs3UpdateImgCache(u_int8_t *buff, u_int32_t addr, u_int32_t size);
     virtual bool UpdateImgCache(u_int8_t *buff, u_int32_t addr, u_int32_t size);
-    virtual bool FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_itoc, struct QueryOptions queryOptions, bool ignoreDToc = false);
+    virtual bool FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_itoc, struct QueryOptions queryOptions, bool ignoreDToc = false, bool verbose = false);
     bool FsIntQueryAux(bool readRom = true, bool quickQuery = true);
     const char* GetSectionNameByType(u_int8_t section_type);
     bool GetImageInfoFromSection(u_int8_t *buff, u_int8_t sect_type, u_int32_t sect_size, u_int8_t check_support_only = 0);

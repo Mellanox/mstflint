@@ -441,7 +441,7 @@ bool Flash::read(u_int32_t addr,
     // printf("-D- read1: addr = %#x, phys_addr = %#x\n", addr, phys_addr);
     // here we set a "silent" signal handler and deal with the received signal after the read
     mft_signal_set_handling(1);
-    rc = mf_read(_mfl, phys_addr, 4, (u_int8_t*)data);
+    rc = mf_read(_mfl, phys_addr, 4, (u_int8_t*)data, false);
     deal_with_signal();
     if (rc != MFE_OK) {
         return errmsg("Flash read failed at address %s0x%x : %s",
@@ -460,7 +460,9 @@ bool Flash::read(u_int32_t addr, void *data, int len, bool verbose, const char *
     if (!readWriteCommCheck(addr, len)) {
         return false;
     }
-
+    if (verbose) {
+        printf("\33[2K\r");//clear the current line
+    }
     // Much better perf for read in a single chunk. need to work on progress report though.
     bool read_in_single_chunk = true;
 
@@ -474,7 +476,7 @@ bool Flash::read(u_int32_t addr, void *data, int len, bool verbose, const char *
             u_int32_t phys_addr = cont2phys(chunk_addr);
             // printf("-D- write: addr = %#x, phys_addr = %#x\n", chunk_addr, phys_addr);
             mft_signal_set_handling(1);
-            rc = mf_read(_mfl, phys_addr, chunk_size, ((u_int8_t*)data) + chunk_addr - addr);
+            rc = mf_read(_mfl, phys_addr, chunk_size, ((u_int8_t*)data) + chunk_addr - addr, verbose);
             deal_with_signal();
             if (rc != MFE_OK) {
                 return errmsg("Flash read failed at address %s0x%x : %s",
@@ -498,7 +500,8 @@ bool Flash::read(u_int32_t addr, void *data, int len, bool verbose, const char *
             if (verbose) {
                 u_int32_t new_perc = (i * 100) / len;
                 if (new_perc != perc) {
-                    printf("\r%s%%%03d", message, new_perc);
+                    printf("\33[2K\r");//clear the current line
+                    printf("\r%s%d%c", message, new_perc, '%');
                     fflush(stdout);
 
                     perc = new_perc;
@@ -509,7 +512,8 @@ bool Flash::read(u_int32_t addr, void *data, int len, bool verbose, const char *
 
     // Report
     if (verbose) {
-        printf("\r%s%%100", message);
+        printf("\33[2K\r");//clear the current line
+        printf("Done.");
         fflush(stdout);
     }
 

@@ -85,9 +85,10 @@ typedef enum {
     SC_Extract_4MB_Image,
     SC_Set_Public_Keys,
     SC_Set_Forbidden_Versions,
-    SC_Image_Reactivation
+    SC_Image_Reactivation,
+    SC_Binary_Compare
 } sub_cmd_t;
-
+ 
 class FlintParams {
 public:
     //add more params
@@ -156,6 +157,7 @@ public:
     string privkey2_uuid;
     bool no_fw_ctrl;
     bool image_reactivation;
+    int num_of_args;
 };
 
 #endif

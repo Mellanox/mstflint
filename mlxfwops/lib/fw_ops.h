@@ -101,7 +101,7 @@ public:
     virtual bool FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedImage = false, bool showItoc = false, bool ignoreDToc = false) = 0; // Add callback print
     virtual bool FwVerifyAdv(ExtVerifyParams& verifyParams);
     //on call of FwReadData with Null image we get image_size
-    virtual bool FwReadData(void *image, u_int32_t *image_size) = 0;
+    virtual bool FwReadData(void *image, u_int32_t *image_size, bool verbose = false) = 0;
     virtual bool FwReadBlock(u_int32_t addr, u_int32_t size, std::vector<u_int8_t>& dataVec);
     virtual bool FwReactivateImage() 
     { 

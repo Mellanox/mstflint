@@ -2437,7 +2437,7 @@ void MlxlinkCommander::sendPaosDown()
     if (!checkPaosDown()) {
         if (_isHCA) {
             string protocol = (_protoActive == IB) ? "IB" : "ETH";
-            throw MlxRegException("Port is not Down, please run mlxconfig -d " + _device + " set KEEP_" + protocol + "_LINK_UP_P<port_number>=0.\nIn case of multi-host please verify all hosts are not holding the port up.");
+            throw MlxRegException("Port is not Down, please run mstconfig -d " + _device + " set KEEP_" + protocol + "_LINK_UP_P<port_number>=0.\nIn case of multi-host please verify all hosts are not holding the port up.");
         } else {
             throw MlxRegException("Port is not Down, Aborting...");
         }

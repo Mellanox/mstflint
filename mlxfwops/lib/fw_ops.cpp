@@ -50,6 +50,7 @@
 #ifndef NO_MFA_SUPPORT
 #include <mfa.h>
 #endif
+#include "tools_dev_types.h"
 
 #define BAD_CRC_MSG "Bad CRC."
 extern const char *g_sectNames[];
@@ -2023,7 +2024,6 @@ const char*  FwOperations::FwGetReSignMsgStr()
 {
     return (const char*)NULL;
 }
-
 
 bool FwOperations::TestAndSetTimeStamp(FwOperations *imageOps)
 {
