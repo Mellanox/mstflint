@@ -2533,7 +2533,8 @@ void reg_access_hca_pcnr_reg_dump(const struct reg_access_hca_pcnr_reg *ptr_stru
 void reg_access_hca_resource_dump_pack(const struct reg_access_hca_resource_dump *ptr_struct, u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
-
+    int i;
+	
 	offset = 16;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->segment_type);
 	offset = 12;
@@ -2560,11 +2561,16 @@ void reg_access_hca_resource_dump_pack(const struct reg_access_hca_resource_dump
 	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->size);
 	offset = 320;
 	adb2c_push_integer_to_buff(ptr_buff, offset, 8, ptr_struct->address);
+	for (i = 0; i < 52; ++i) {
+		offset = adb2c_calc_array_field_address(384, 32, i, 2048, 1);
+		adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->inline_data[i]);
+	}
 }
 
 void reg_access_hca_resource_dump_unpack(struct reg_access_hca_resource_dump *ptr_struct, const u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
+	int i;
 
 	offset = 16;
 	ptr_struct->segment_type = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
@@ -2592,10 +2598,16 @@ void reg_access_hca_resource_dump_unpack(struct reg_access_hca_resource_dump *pt
 	ptr_struct->size = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
 	offset = 320;
 	ptr_struct->address = adb2c_pop_integer_from_buff(ptr_buff, offset, 8);
+	for (i = 0; i < 52; ++i) {
+		offset = adb2c_calc_array_field_address(384, 32, i, 2048, 1);
+		ptr_struct->inline_data[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	}
 }
 
 void reg_access_hca_resource_dump_print(const struct reg_access_hca_resource_dump *ptr_struct, FILE *fd, int indent_level)
 {
+	int i;
+
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "======== reg_access_hca_resource_dump ========\n");
 
@@ -2625,8 +2637,10 @@ void reg_access_hca_resource_dump_print(const struct reg_access_hca_resource_dum
 	fprintf(fd, "size                 : " U32H_FMT "\n", ptr_struct->size);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "address              : " U64H_FMT "\n", ptr_struct->address);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "unlimited array: (inline_data)\n");
+	for (i = 0; i < 52; ++i) {
+		adb2c_add_indentation(fd, indent_level);
+		fprintf(fd, "inline_data_%03d     : " U32H_FMT "\n", i, ptr_struct->inline_data[i]);
+	}
 }
 
 unsigned int reg_access_hca_resource_dump_size(void)
