@@ -239,7 +239,7 @@ def reset_fsm_register():
 def sigHndl(signal, frame):
     reset_fsm_register()
 
-    print("\nSignal %d Recieved, Exiting..." % signal)
+    print("\nSignal %d received, exiting..." % signal)
     sys.exit(1)
 
 def set_signal_handler():
@@ -277,7 +277,7 @@ def printAndFlush(str, endChar='\n'):
     sys.stdout.flush()
 
 ######################################################################
-# Description:  ask user Y/N question if N/n/No/no was recieved raise
+# Description:  ask user Y/N question if N/n/No/no was received raise
 #                RuntimeError.
 # OS Support :  Linux/Windows.
 ######################################################################

@@ -1172,7 +1172,7 @@ void FwCompsMgr::deal_with_signal()
     sig = mft_signal_is_fired();
     if (sig) {
         unlock_flash_semaphore();
-        // reset recieved signal
+        // reset received signal
         mft_signal_set_fired(0);
         // retore prev handler
         mft_signal_set_handling(0);

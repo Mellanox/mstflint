@@ -2696,7 +2696,7 @@ struct tools_open_mcdd_descriptor {
 	/* Description - Status of current operation that FW sends to host. */
 	/* 0x20.0 - 0x20.7 */
 	u_int8_t status;
-	/* Description - Last error index, if occured. */
+	/* Description - Last error index, if occurred. */
 	/* 0x20.8 - 0x20.15 */
 	u_int8_t error;
 	/* Description - Reserved. */
