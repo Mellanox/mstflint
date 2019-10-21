@@ -121,7 +121,7 @@ MError tcif_cr_mbox_supported(mfile *dev);
  * tcif_err2str:
  * @param[in]  rc            return code from one of the above functions
 
- * @return     string describing the error occured.
+ * @return     string describing the error occurred.
  **/
 const char* tcif_err2str(MError rc);
 
