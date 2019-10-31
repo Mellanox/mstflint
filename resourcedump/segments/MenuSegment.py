@@ -58,6 +58,16 @@ class MenuSegment(Segment):
         """
         return cs.RESOURCE_DUMP_SEGMENT_TYPE_MENU
 
+    def get_segment_type_by_segment_name(self, segment_type):
+        """get the menu segment type by a given segment name.
+           if not found, method will return the given segment type
+        """
+        for rec in self.records:
+            if MenuRecord.bin_list_to_ascii(rec.segment_name) == segment_type:
+                segment_type = str(hex(int(rec.segment_type, 16)))
+                break
+        return segment_type
+
     def is_supported(self, **kwargs):
         """check if the arguments matches with the menu data.
         """
@@ -71,7 +81,7 @@ class MenuSegment(Segment):
         # Check whether dump type supported
         try:
             for rec in self.records:
-                if rec.segment_type == dump_type:
+                if rec.segment_type == dump_type or MenuRecord.bin_list_to_ascii(rec.segment_name) == dump_type:
                     match_rec = rec
                     break
 
