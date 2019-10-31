@@ -67,7 +67,7 @@ class MenuRecord:
 
     def _make_segment_type_line(self):
         """This method creates a string that represent segment type line to be printed"""
-        line = cs.MENU_SEGMENT_TABLE_SEGMENT_TYPE + self.segment_type + " ({0})".format(self._bin_list_to_ascii
+        line = cs.MENU_SEGMENT_TABLE_SEGMENT_TYPE + self.segment_type + " ({0})".format(self.bin_list_to_ascii
                                                                                         (self.segment_name)) + "\n"
         padding = 0
         if len(line) < cs.MENU_SEGMENT_TABLE_LINE_LEN:
@@ -101,7 +101,7 @@ class MenuRecord:
 
     def _make_index_line(self, index_name, supports, must, table_index_line):
         """This method creates a string that represent indexX line to be printed"""
-        line = table_index_line + " ({0})".format(self._bin_list_to_ascii(index_name))
+        line = table_index_line + " ({0})".format(self.bin_list_to_ascii(index_name))
         padding = cs.MENU_SEGMENT_TABLE_DUMP_PARAMS_LEN - len(line) + cs.MENU_SEGMENT_TABLE_GAP
         line += " " * padding
 
@@ -183,7 +183,7 @@ class MenuRecord:
         return printable
 
     @staticmethod
-    def _bin_list_to_ascii(lst):
+    def bin_list_to_ascii(lst):
         """This method converts list of values to ASCII characters (human readable)"""
         res = ""
         for el in lst:

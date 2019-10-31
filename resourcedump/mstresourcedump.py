@@ -44,7 +44,9 @@ class MlxResDump:
     @staticmethod
     def _decimal_hex_to_str_hex(inp):
         """This method check if the string input is hex or decimal.
-           and convert it to hex number
+           and convert it to hex number.
+           in case that the input is not a number, the method will
+           return the input as is (str).
         """
         try:
             if inp.startswith("0x"):
@@ -53,8 +55,7 @@ class MlxResDump:
                 inp = hex(int(inp))
             return str(inp)
         except Exception as _:
-            msg = "wrong value: {0} is not decimal or hex".format(inp)
-            raise argparse.ArgumentTypeError(msg)
+            return inp
 
     @staticmethod
     def _num_of_objs_check(inp):
