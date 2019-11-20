@@ -27,7 +27,7 @@ class DumpData:
 
         # get the query data
         # need to call query data
-        res = QueryData.get_query(kwargs["device_name"], kwargs[cs.UI_ARG_VHCAID])
+        res = QueryData.get_query(kwargs["device_name"], kwargs["vHCAid"])
 
         # validate that the dump supported by calling ArgToMenuVerifier
         rc = ArgToMenuVerifier.verify(res, **kwargs)
