@@ -25,13 +25,15 @@ RESOURCE_DUMP_SEGMENT_TYPE_REFERENCE = "0xfffd"
 
 
 UI_DASHES = "--"
+UI_DASHES_SHORT = "-"
 UI_ARG_DEVICE = "device"
+UI_ARG_DEVICE_SHORT = "d"
 UI_ARG_SEGMENT = "segment"
-UI_ARG_VHCAID = "vHCAid"
+UI_ARG_VHCAID = "virtual_hca_id"
 UI_ARG_INDEX1 = "index1"
 UI_ARG_INDEX2 = "index2"
-UI_ARG_NUMOFOBJ1 = "numOfObj1"
-UI_ARG_NUMOFOBJ2 = "numOfObj2"
+UI_ARG_NUMOFOBJ1 = "num_of_obj1"
+UI_ARG_NUMOFOBJ2 = "num_of_obj2"
 UI_ARG_DEPTH = "depth"
 UI_ARG_BIN = "bin"
 

@@ -71,11 +71,11 @@ class MenuSegment(Segment):
     def is_supported(self, **kwargs):
         """check if the arguments matches with the menu data.
         """
-        dump_type = kwargs[cs.UI_ARG_SEGMENT]
-        index1 = kwargs[cs.UI_ARG_INDEX1]
-        index2 = kwargs[cs.UI_ARG_INDEX2]
-        num_of_objs_1 = kwargs[cs.UI_ARG_NUMOFOBJ1]
-        num_of_objs_2 = kwargs[cs.UI_ARG_NUMOFOBJ2]
+        dump_type = kwargs["segment"]
+        index1 = kwargs["index1"]
+        index2 = kwargs["index2"]
+        num_of_objs_1 = kwargs["numOfObj1"]
+        num_of_objs_2 = kwargs["numOfObj2"]
         match_rec = None
 
         # Check whether dump type supported
@@ -113,11 +113,11 @@ class MenuSegment(Segment):
                 raise DumpNotSupported(
                     "Dump type: {0} must have numOfObj2 attribute, and it wasn't provided".format(dump_type))
 
-            if num_of_objs_1 and not match_rec.supports_num_of_obj1:
+            if num_of_objs_1 is not None and not match_rec.supports_num_of_obj1:
                 raise DumpNotSupported(
                     "Dump type: {0} does not support numOfObj1 attribute, and it was provided".format(dump_type))
 
-            if num_of_objs_2 and not match_rec.supports_num_of_obj2:
+            if num_of_objs_2 is not None and not match_rec.supports_num_of_obj2:
                 raise DumpNotSupported(
                     "Dump type: {0} does not support numOfObj2 attribute, and it was provided".format(dump_type))
 

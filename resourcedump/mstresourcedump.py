@@ -94,8 +94,9 @@ class MlxResDump:
 
     def run(self):
         # main parser
-        parser = argparse.ArgumentParser()
-        parser.add_argument('-v', '--version', action='version', help='shows tool version',
+        tool_name = os.path.basename(__file__.split('.')[0])
+        parser = argparse.ArgumentParser(epilog="Use '{0} <command> -h' to read about a specific command.".format(tool_name))
+        parser.add_argument('-v', '--version', action='version', help='Shows tool version',
                             version=tools_version.GetVersionString(cs.TOOL_NAME, None))
 
         # commands sub parser
@@ -107,24 +108,24 @@ class MlxResDump:
 
         # required arguments by dump sub parser
         dump_required_args = dump_parser.add_argument_group('required arguments')
-        dump_required_args.add_argument(cs.UI_DASHES + cs.UI_ARG_DEVICE, help='The device name', required=True)
+        dump_required_args.add_argument(cs.UI_DASHES + cs.UI_ARG_DEVICE, cs.UI_DASHES_SHORT + cs.UI_ARG_DEVICE_SHORT,
+                                        help='The device name', required=True)
         dump_required_args.add_argument(cs.UI_DASHES + cs.UI_ARG_SEGMENT, help='The segment to dump', required=True,
                                         type=self._decimal_hex_to_str_hex)
 
-        dump_parser.add_argument(cs.UI_DASHES + cs.UI_ARG_VHCAID, help='The virtual HCA (host channel adapter, NIC) ID')
+        dump_parser.add_argument(cs.UI_DASHES + cs.UI_ARG_VHCAID.replace("_", "-"),
+                                 help='The virtual HCA (host channel adapter, NIC) ID')
         dump_parser.add_argument(cs.UI_DASHES + cs.UI_ARG_INDEX1,
                                  help='The first context index to dump (if supported for this segment)',
                                  type=self._decimal_hex_check)
         dump_parser.add_argument(cs.UI_DASHES + cs.UI_ARG_INDEX2,
                                  help='The second context index to dump (if supported for this segment)',
                                  type=self._decimal_hex_check)
-        dump_parser.add_argument(cs.UI_DASHES + cs.UI_ARG_NUMOFOBJ1,
-                                 help='The number of objects to be dumped (if supported for this segment). accepts: ['
-                                      '"all", "active", number, depends on the capabilities]',
+        dump_parser.add_argument(cs.UI_DASHES + cs.UI_ARG_NUMOFOBJ1.replace("_", "-"),
+                                 help='The number of objects to be dumped (if supported for this segment). accepts: ["all", "active", number, depends on the capabilities]',
                                  type=self._num_of_objs_check)
-        dump_parser.add_argument(cs.UI_DASHES + cs.UI_ARG_NUMOFOBJ2,
-                                 help='The number of objects to be dumped (if supported for this segment). accepts: ['
-                                      '"all", "active", number, depends on the capabilities]',
+        dump_parser.add_argument(cs.UI_DASHES + cs.UI_ARG_NUMOFOBJ2.replace("_", "-"),
+                                 help='The number of objects to be dumped (if supported for this segment). accepts: ["all", "active", number, depends on the capabilities]',
                                  type=self._num_of_objs_check)
         dump_parser.add_argument(cs.UI_DASHES + cs.UI_ARG_DEPTH,
                                  help='The depth of walking through reference segments. 0 stands for flat, '
@@ -137,12 +138,13 @@ class MlxResDump:
         # query sub parser
         query_parser = commands.add_parser(cs.RESOURCE_DUMP_COMMAND_TYPE_QUERY)
         query_parser.set_defaults(parser=cs.RESOURCE_DUMP_COMMAND_TYPE_QUERY)
-        query_parser.add_argument(cs.UI_DASHES + cs.UI_ARG_VHCAID,
+        query_parser.add_argument(cs.UI_DASHES + cs.UI_ARG_VHCAID.replace("_", "-"),
                                   help='The virtual HCA (host channel adapter, NIC) ID')
 
         # required arguments by query sub parser
         query_required_args = query_parser.add_argument_group('required arguments')
-        query_required_args.add_argument(cs.UI_DASHES + cs.UI_ARG_DEVICE, help='The device name', required=True)
+        query_required_args.add_argument(cs.UI_DASHES + cs.UI_ARG_DEVICE, cs.UI_DASHES_SHORT + cs.UI_ARG_DEVICE_SHORT,
+                                         help='The device name', required=True)
 
         # args = parser.parse_args(
         #     'dump -d test --source test2 --vHCAid 15 --index 1 --index2 2 --numOfObj1 10 --numOfObj2 20
