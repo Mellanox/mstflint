@@ -72,7 +72,7 @@ class ResourceDumpFetcher:
                     inner_inline_data.extend(
                         self._retrieve_resource_dump_inline_data(seg.reference_type, index1=seg.index1,
                                                                  index2=seg.index2, numOfObj1=seg.num_of_obj1,
-                                                                 numOfObj2=seg.num_of_obj2, vHCAid=kwargs[cs.UI_ARG_VHCAID]))
+                                                                 numOfObj2=seg.num_of_obj2, vHCAid=kwargs["vHCAid"]))
 
             segments_list_last_position = len(segments_list)
             segments_list.extend(self._create_segments(inner_inline_data))
