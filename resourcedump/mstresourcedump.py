@@ -114,7 +114,7 @@ class MlxResDump:
                                         type=self._decimal_hex_to_str_hex)
 
         dump_parser.add_argument(cs.UI_DASHES + cs.UI_ARG_VHCAID.replace("_", "-"),
-                                 help='The virtual HCA (host channel adapter, NIC) ID')
+                                 help=argparse.SUPPRESS)  # help='The virtual HCA (host channel adapter, NIC) ID')
         dump_parser.add_argument(cs.UI_DASHES + cs.UI_ARG_INDEX1,
                                  help='The first context index to dump (if supported for this segment)',
                                  type=self._decimal_hex_check)
@@ -139,7 +139,7 @@ class MlxResDump:
         query_parser = commands.add_parser(cs.RESOURCE_DUMP_COMMAND_TYPE_QUERY)
         query_parser.set_defaults(parser=cs.RESOURCE_DUMP_COMMAND_TYPE_QUERY)
         query_parser.add_argument(cs.UI_DASHES + cs.UI_ARG_VHCAID.replace("_", "-"),
-                                  help='The virtual HCA (host channel adapter, NIC) ID')
+                                  help=argparse.SUPPRESS)  # help='The virtual HCA (host channel adapter, NIC) ID')
 
         # required arguments by query sub parser
         query_required_args = query_parser.add_argument_group('required arguments')
