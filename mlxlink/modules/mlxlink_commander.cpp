@@ -1148,20 +1148,22 @@ void MlxlinkCommander::supportedInfoPage()
         string supported_speeds = SupportedSpeeds2Str(_protoActive, speeds_mask,
                 (bool)_protoAdminEx);
         string color = MlxlinkRecord::supported2Color(supported_speeds);
-        stringstream value;
-        value << "0x" << std::hex << setfill('0') << setw(8) << speeds_mask \
-                << " (" << supported_speeds << ")" << setfill(' ');
-        string title = "Enabled Link Speed";
-        if(_protoAdminEx) {
-            title += " (Ext.)";
-        }
-        setPrintVal(_supportedInfoCmd,PDDR_ENABLED_LINK_SPEED, title,
-                value.str(),color, true, !_prbsTestMode);
-        // Supported cable speed
         if (dm_dev_is_200g_speed_supported_hca(_devID) ||
                 dm_dev_is_200g_speed_supported_switch(_devID)) {
             _protoCapabilityEx = true;
         }
+        stringstream value;
+        value << "0x" << std::hex << setfill('0') << setw(8) << speeds_mask \
+                << " (" << supported_speeds << ")" << setfill(' ');
+        string extStr = "";
+        if (_protoCapabilityEx && _protoActive == ETH) {
+            extStr = " (Ext.)";
+        }
+        string title = "Enabled Link Speed" + extStr;
+
+        setPrintVal(_supportedInfoCmd,PDDR_ENABLED_LINK_SPEED, title,
+                value.str(),color, true, !_prbsTestMode);
+        // Supported cable speed
         supported_speeds = SupportedSpeeds2Str(_protoActive, _protoCapability,
                 _protoCapabilityEx);
         color = MlxlinkRecord::supported2Color(supported_speeds);
@@ -1169,10 +1171,7 @@ void MlxlinkCommander::supportedInfoPage()
         value.clear();
         value << "0x" << std::hex << setfill('0') << setw(8) << _protoCapability \
                 << " (" << supported_speeds << ")" << setfill(' ');
-        title = "Supported Cable Speed";
-        if(_protoCapabilityEx && _protoActive == ETH) {
-            title += " (Ext.)";
-        }
+        title = "Supported Cable Speed" + extStr;
         setPrintVal(_supportedInfoCmd,PDDR_SUPPORTED_LINK_SPEED, title,
                 value.str(),color, true, !_prbsTestMode);
     } catch (const std::exception &exc) {
