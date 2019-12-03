@@ -2381,7 +2381,7 @@ void MlxlinkCommander::clearCounters()
         updateField("local_port", _localPort);
         updateField("swid", SWID);
         updateField("pnat", PNAT_LOCAL);
-        updateField("grp", PPCNT_STATISTICAL_GROUP);
+        updateField("grp", PPCNT_ALL_GROUPS);
         updateField("prio_tc", 0);
         updateField("clr", 1);
 
