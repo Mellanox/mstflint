@@ -1696,7 +1696,7 @@ void MlxlinkCommander::showSltp()
                !_userInput._advancedMode) {
             throw MlxRegException(
                     "Showing SLTP for 16nm technology is supported only "
-                    "in advanced mode");
+                    "in advanced mode (--" SLTP_SET_ADVANCED_FLAG " flag)");
         }
         if (_productTechnology == PRODUCT_16NM) {
             _mlxlinkMaps->_sltpHeader = "pre2Tap,preTap,mainTap,postTap,m2lp,amp,alevOut";
