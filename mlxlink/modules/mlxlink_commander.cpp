@@ -1621,7 +1621,6 @@ void MlxlinkCommander::showFEC()
            showFecValues.push_back("0x" + convertIntToHexString(_fecModeRequest) + " (" + FECReq2Str(_fecModeRequest, _linkUP) + ")");
            printCmdOutput(_showFecTitle, _showFecLines, showFecValues);*/
         string fecCap100,fecCap50,fecCap40,fecCap25,fecCap10;
-        std::vector<string> showFecValues;
         if (_protoActive == IB || _prbsTestMode) {
             fecCap100 = "0x0 (N/A)";
             fecCap50 = "0x0 (N/A)";
@@ -1637,7 +1636,7 @@ void MlxlinkCommander::showFEC()
                     fecCap100 = "0x5 (No-FEC,RS-FEC(528,514))";
                 }
             } else {
-                showFecValues.push_back("0x0 (N/A)");
+                fecCap100 = "0x0 (N/A)";
             }
             if (supportedSpeeds.find("50G") != string::npos) {
                 fecCap50 = "0x7 (No-FEC,FireCode FEC,RS-FEC(528,514))";
