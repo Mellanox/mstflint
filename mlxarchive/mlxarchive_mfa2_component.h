@@ -49,6 +49,7 @@
 #include "mlxarchive_mfa2_descriptor.h"
 
 using namespace std;
+#define FINGERPRINT_MFA2 "#BIN.COMPONENT!#"
 
 namespace mfa2 {
 
@@ -61,7 +62,7 @@ private:
 public:
 
     explicit Component(ComponentDescriptor descriptor) :
-        _fingerPrint("#BIN.COMPONENT!#"),
+        _fingerPrint(FINGERPRINT_MFA2),
         _descriptor(descriptor) {};
 
     void packDescriptor(vector<u_int8_t>& buff) const { _descriptor.pack(buff); };
@@ -69,7 +70,11 @@ public:
         _fingerPrint.pack(buff);
         _descriptor.packData(buff);
     };
+    void unpackData(vector<u_int8_t>& buff) {
+        _descriptor.unpackData(buff);
+    };
     u_int32_t getComponentBinarySize() const;
+    u_int64_t getBinaryComponentOffset();
     void setComponentBinaryOffset(u_int64_t offset);
     const ComponentDescriptor & getComponentDescriptor() const { return _descriptor;}
 };
@@ -82,5 +87,8 @@ inline void Component::setComponentBinaryOffset(u_int64_t offset) {
     _descriptor.setComponentBinaryOffset(offset);
 }
 
+inline u_int64_t Component::getBinaryComponentOffset() {
+    return _descriptor.getComponentBinaryOffset();
+}
 }
 #endif

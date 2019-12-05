@@ -252,7 +252,7 @@ FWDirectoryBuilder::FWDirectoryBuilder(const string& version, string directory) 
         componentPointers.push_back(componentPointer);
         DeviceDescriptor deviceDescriptor(componentPointers, PSID);
         _deviceDescriptors.push_back(deviceDescriptor);
-        VersionExtension version(fwQueryResult.fw_info.fw_ver);
+        VersionExtension version(fwQueryResult.fw_info.fw_ver, fwQueryResult.fw_info.fw_rel_date);
         vector<u_int8_t> data;
         if (!ops->FwExtract4MBImage(data, true)) {
             printf("Can't Extract FW data from the image file %s:%s\n",

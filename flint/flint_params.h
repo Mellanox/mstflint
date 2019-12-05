@@ -114,6 +114,7 @@ public:
     bool next_boot_fw_ver;
     bool skip_rom_query;
     bool image_specified;
+    bool mfa2_specified;
     string image;
     bool nofs;
     bool allow_psid_change;
@@ -146,7 +147,9 @@ public:
     bool skip_ci_req;
     bool use_dev_rom;
     bool privkey_specified;
+    bool pubkey_specified;
     string privkey_file;
+    string pubkey_file;
     bool uuid_specified;
     string privkey_uuid;
     bool privkey2_specified;
@@ -158,6 +161,7 @@ public:
     bool no_fw_ctrl;
     bool image_reactivation;
     int num_of_args;
+    bool use_latest_fw_version;
 };
 
 #endif

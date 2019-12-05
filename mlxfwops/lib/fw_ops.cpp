@@ -50,7 +50,6 @@
 #ifndef NO_MFA_SUPPORT
 #include <mfa.h>
 #endif
-#include "tools_dev_types.h"
 
 #define BAD_CRC_MSG "Bad CRC."
 extern const char *g_sectNames[];
@@ -135,9 +134,6 @@ int FwOperations::getMfaImgInner(char *fileName, u_int8_t *mfa_buf, int size,
     if (res) {
         res = res < 0 ? res : -1 * res;
         WriteToErrBuff(errBuf, "Failed to open mfa file", errBufSize);
-        if (mfa_d) {
-            mfa_close(mfa_d);
-        }
         return res;
     }
 
@@ -731,7 +727,7 @@ FwOperations* FwOperations::FwOperationsCreate(void *fwHndl, void *info, char *p
     return FwOperationsCreate(fwParams);
 }
 
-bool FwOperations::imageDevOperationsCreate(fw_ops_params_t& devParams, fw_ops_params_t& imgParams, FwOperations **devFwOps, FwOperations **imgFwOps, bool ignoreSecurityAttributes)
+bool FwOperations::imageDevOperationsCreate(fw_ops_params_t& devParams, fw_ops_params_t& imgParams, FwOperations **devFwOps, FwOperations **imgFwOps, bool ignoreSecurityAttributes, bool ignoreDToc)
 {
     *imgFwOps = FwOperationsCreate(imgParams);
     if (!(*imgFwOps)) {
@@ -748,7 +744,7 @@ bool FwOperations::imageDevOperationsCreate(fw_ops_params_t& devParams, fw_ops_p
 
     fw_info_t imgQuery;
     memset(&imgQuery, 0, sizeof(fw_info_t));
-    if (!(*imgFwOps)->FwQuery(&imgQuery)) {
+    if (!(*imgFwOps)->FwQuery(&imgQuery, true, false, true, ignoreDToc)) {
         return false;
     }
     if (imgQuery.fs3_info.security_mode == SM_NONE && ignoreSecurityAttributes == false) {
@@ -906,6 +902,7 @@ init_fwops:
         if (fwParams.hndlType == FHT_MST_DEV) {
             fwops->_devName = strcpy(new char[strlen(fwParams.mstHndl) + 1], fwParams.mstHndl);
         }
+        fwops->CreateSignatureManager();
     }
     return fwops;
 }
@@ -1097,6 +1094,7 @@ const FwOperations::HwDevData FwOperations::hwDevData[] = {
     { "Switch_IB2",       SWITCH_IB2_HW_ID, CT_SWITCH_IB2,   CFT_SWITCH,  0, {53000, 0}, {{UNKNOWN_BIN, {0}}}},
     { "Quantum",          QUANTUM_HW_ID,    CT_QUANTUM,      CFT_SWITCH,  0, {54000, 0}, {{UNKNOWN_BIN, {0}}}},
     { "Spectrum2",        SPECTRUM2_HW_ID,  CT_SPECTRUM2,    CFT_SWITCH,  0, {53100, 0}, {{UNKNOWN_BIN, {0}}}},
+    { "Spectrum3",        SPECTRUM3_HW_ID,  CT_SPECTRUM3,    CFT_SWITCH,  0, {53104, 0}, {{UNKNOWN_BIN, {0}}}},
     { (char*)NULL,       0,                CT_UNKNOWN,      CFT_UNKNOWN, 0, {0}, {{UNKNOWN_BIN, {0}}}},// zero devid terminator
 };
 
@@ -1122,6 +1120,7 @@ const FwOperations::HwDev2Str FwOperations::hwDev2Str[] = {
     {"Quantum A0",        QUANTUM_HW_ID,    0x00},
     {"Spectrum A1",       SPECTRUM_HW_ID,   0x01},
     {"Spectrum2 A0",      SPECTRUM2_HW_ID,  0x00},
+    {"Spectrum3 A0",      SPECTRUM3_HW_ID,  0x00},
     { (char*)NULL,       (u_int32_t)0, (u_int8_t)0x00},      // zero device ID terminator
 };
 
@@ -1903,6 +1902,31 @@ bool FwOperations::FwResetTimeStamp()
     return errmsg("Operation not supported.");
 }
 
+bool FwOperations::FwBurnAdvanced(std::vector <u_int8_t> imageOps4MData, ExtBurnParams& burnParams)
+{
+    (void)imageOps4MData;
+    (void)burnParams;
+    return errmsg("Operation not supported.");
+}
+
+bool FwOperations::PrepItocSectionsForCompare(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical)
+{
+    (void) critical;
+    (void) non_critical;
+    return errmsg("Operation not supported.");
+}
+
+bool FwOperations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, bool is_sect_failsafe, 
+    CommandType cmd_type, PrintCallBack callBackFunc)
+{
+    (void)new_info;
+    (void)sect_type;
+    (void)is_sect_failsafe;
+    (void)cmd_type;
+    (void)callBackFunc;
+    return errmsg("Operation not supported.");
+}
+
 bool FwOperations::FwQueryTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer, bool queryRunning)
 {
     (void)timestamp;
@@ -1960,10 +1984,11 @@ bool FwOperations::CalcHMAC(const vector<u_int8_t>& key, const vector<u_int8_t>&
     return errmsg("CalcHMAC not supported");
 }
 
-bool FwOperations::FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatternAndDevToc)
+bool FwOperations::FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatternAndDevToc, bool verbose)
 {
     (void)img;
     (void)maskMagicPatternAndDevToc;
+    (void)verbose;
     return errmsg("Operation not supported");
 }
 
@@ -2014,7 +2039,8 @@ u_int8_t FwOperations::GetFwFormatFromHwDevID(u_int32_t hwDevId)
                hwDevId == CX6DX_HW_ID ||
                hwDevId == BF_HW_ID  ||
                hwDevId == QUANTUM_HW_ID ||
-               hwDevId == SPECTRUM2_HW_ID) {
+               hwDevId == SPECTRUM2_HW_ID ||
+               hwDevId == SPECTRUM3_HW_ID) {
         return FS_FS4_GEN;
     }
     return FS_UNKNOWN_IMG;

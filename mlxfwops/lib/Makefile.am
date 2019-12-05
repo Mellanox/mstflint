@@ -68,7 +68,7 @@ endif
 
 noinst_LIBRARIES = libmlxfwops.a
 
-libmlxfwops_a_SOURCES = flint_base.cpp \
+libmlxfwops_a_SOURCES = flint_base.cpp  bluefiled_signature_manager.cpp connectx6dx_signature_manager.cpp connectx6_signature_manager.cpp signature_manager.h signature_manager_factory.h  \
                flint_io.cpp \
                fw_ops.cpp \
                fs2_ops.cpp fs2_ops.h \

@@ -204,7 +204,8 @@ FlagMetaData::FlagMetaData()
     _flags.push_back(new Flag("", "hmac_key", 1));
     _flags.push_back(new Flag("", "key_uuid2", 1));
     _flags.push_back(new Flag("", "no_fw_ctrl", 0));
-    _flags.push_back(new Flag("image_reactivation", "ir", 0));
+    _flags.push_back(new Flag("", "ir", 0));
+    _flags.push_back(new Flag("", "latest_fw", 0));
 }
 
 FlagMetaData::~FlagMetaData()
@@ -417,12 +418,12 @@ void Flint::initCmdParser()
                "Binary image file.\n"
                "Commands affected: burn, verify");
 
-    AddOptions("ir",
+    AddOptions("latest_fw",
         ' ',
         "",
         "Commands affected: burn");
 
-    AddOptions("image_reactivation",
+    AddOptions("ir",
         ' ',
         "",
         "Commands affected: burn");
@@ -889,7 +890,7 @@ ParseStatus Flint::HandleOption(string name, string value)
         _flintParams.striped_image = true;
     } else if (name == "use_dev_img_info") {
         _flintParams.use_dev_img_info = true;
-    } else if (name == "ir" || name == "image_reactivation") {
+    } else if (name == "ir") {
         _flintParams.image_reactivation = true;
     }
     else if (name == "banks") {
@@ -923,7 +924,10 @@ ParseStatus Flint::HandleOption(string name, string value)
     } else if (name == "key_uuid2") {
         _flintParams.uuid2_specified = true;
         _flintParams.privkey2_uuid = value;
-    } else {
+    } else if (name == "latest_fw") {
+        _flintParams.use_latest_fw_version = true;
+    }
+    else {
         cout << "Unknown Flag: " << name;
         cout << _cmdParser.GetSynopsis();
         return PARSE_ERROR;

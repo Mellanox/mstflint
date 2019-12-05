@@ -56,6 +56,7 @@ FlintParams::FlintParams()
     low_cpu = false;
     skip_rom_query = false;
     image_specified = false;
+    mfa2_specified = false;
     nofs = false;
     allow_psid_change = false;
     allow_rom_change = false;
@@ -93,6 +94,8 @@ FlintParams::FlintParams()
     no_fw_ctrl = false;
     image_reactivation = false;
     num_of_args = 0;
+    use_latest_fw_version = false;
+
 }
 
 FlintParams::~FlintParams()

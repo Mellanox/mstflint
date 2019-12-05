@@ -176,12 +176,16 @@ MFA2 * MFA2::LoadMFA2Package(const string & file_name) {
     if(!mfa2pkg->unpack(mfa2buff)) {
         delete mfa2pkg;
         mfa2pkg =  NULL;
+        return NULL;
     }
+    mfa2pkg->setBufferAndZipOffset(mfa2buff.getBuffer(), mfa2buff.getSize(), mfa2buff.tell());
     return mfa2pkg;
 }
 
 bool MFA2::unpack(Mfa2Buffer & buff) {
-    _fingerPrint.unpack(buff);
+    if (!_fingerPrint.unpack(buff)) {
+        return false;
+    }
     _packageDescriptor.unpack(buff);
     u_int16_t devCount = _packageDescriptor.getDeviceDescriptorsCount();
     u_int16_t compCount = _packageDescriptor.getComponentsCount();
@@ -226,9 +230,95 @@ void MFA2::dump() {
             const ComponentDescriptor & compDescr = compObj.getComponentDescriptor();
             printf("        Index   : %u\n", compIndex);
             printf("        Version : %s\n", compDescr.getVersionExtension().getVersion(true).c_str());
-            printf("        Date    : %s\n", compDescr.getVersionExtension().getDateAndTime().c_str());
+            char buffer[32] = { 0 };
+            compDescr.getVersionExtension().getDateAndTime(buffer);
+            printf("        Date    : %s\n", buffer);
         }
 
     }
-//    printf("Components      : %u\n", compCount);
+}
+
+bool MFA2::extractComponent(Component* requiredComponent, vector<u_int8_t>& fwBinaryData)
+{
+    PackageDescriptor packageDescriptor = getPackageDescriptor();
+    u_int64_t totalSize = packageDescriptor.getComponentsBlockSize();
+    u_int32_t zipOffset = packageDescriptor.getComponentsBlockOffset();
+
+    vector<u_int8_t> unzippedBlockBuff;
+    unzippedBlockBuff.resize(totalSize);
+    vector<u_int8_t> zippedBuff = getBuffer();
+    u_int8_t* zippedData = (u_int8_t*)zippedBuff.data() + zipOffset;
+    int32_t retVal = xz_decompress_crc32(zippedData, zippedBuff.size() - zipOffset, unzippedBlockBuff.data(), totalSize);
+    if (retVal != (int32_t)totalSize) {
+        printf("Decompress error occurred %s\n", xz_get_error(retVal));
+        return false;
+    }
+    u_int32_t requiredOffset = requiredComponent->getBinaryComponentOffset();
+    u_int32_t componentBinarySize = requiredComponent->getComponentBinarySize() - strlen(FINGERPRINT_MFA2);
+    fwBinaryData.resize(componentBinarySize);
+    for (unsigned int index = 0; index < componentBinarySize; index++) {
+        fwBinaryData[index] = unzippedBlockBuff[requiredOffset + index + strlen(FINGERPRINT_MFA2)];//skip 16 bytes from decompressed file !
+    }
+    return true;
+}
+
+bool MFA2::unzipLatestVersionComponent(map_string_to_component& matchingComponentsMap, vector<u_int8_t>& fwBinaryData)
+{
+    map_string_to_component::iterator itAtKey = matchingComponentsMap.find(_latestComponentKey);
+    if (itAtKey == matchingComponentsMap.end()) {
+        return false;
+    }
+    Component* requiredComponent = &itAtKey->second;
+    return extractComponent(requiredComponent, fwBinaryData);
+}
+
+bool MFA2::unzipComponent(map_string_to_component& matchingComponentsMap, u_int32_t choice, vector<u_int8_t>& fwBinaryData)
+{
+    if (choice >= matchingComponentsMap.size()) {
+        return false;
+    }
+    map_string_to_component::iterator itAtOffset = matchingComponentsMap.begin();
+    std::advance(itAtOffset, choice);
+    Component* requiredComponent = &itAtOffset->second;
+    return extractComponent(requiredComponent, fwBinaryData);
+}
+
+map_string_to_component MFA2::getMatchingComponents(char* device_psid, int deviceMajorVer)
+{
+    map_string_to_component matchingComponentsMap;
+    PackageDescriptor packageDescriptor = getPackageDescriptor();
+    u_int16_t devCount = packageDescriptor.getDeviceDescriptorsCount();
+    Version currentLatestVersion;
+    
+    for (u_int16_t index = 0; index < devCount; index++) {
+        DeviceDescriptor devDescriptor = getDeviceDescriptor(index);
+        string psid = devDescriptor.getPSIDExtension().getString();
+        if (strcmp((char*)psid.c_str(), device_psid)) {
+            continue;
+        }
+        u_int8_t compPtrCount = devDescriptor.getComponentPointerExtensionsCount();
+        for (u_int8_t comp = 0; comp < compPtrCount; comp++) {
+            const ComponentPointerExtension& compPtr = devDescriptor.getComponentPointerExtension(comp);
+            u_int16_t compIndex = compPtr.getComponentIndex();
+            Component compObj = getComponentObject(compIndex);
+            const ComponentDescriptor & compDescr = compObj.getComponentDescriptor();
+            u_int8_t majorVer = compDescr.getVersionExtension().getMajor();
+            if (deviceMajorVer != majorVer) {
+                continue;
+            }
+            char dateTimeBuffer[32] = { 0 };
+            compDescr.getVersionExtension().getDateAndTime(dateTimeBuffer);
+            VersionExtension currentVersion = compDescr.getVersionExtension();
+            string currentVersionString = currentVersion.getVersion(true);
+            string mapKey = currentVersionString + "  " + dateTimeBuffer;
+            matchingComponentsMap.insert(std::pair<string, Component>(mapKey, compObj));
+            Version version(currentVersionString);
+            //find the latest matching FW version
+            if (version > currentLatestVersion) {
+                currentLatestVersion = version;
+                _latestComponentKey = mapKey;
+            }
+        }
+    }
+    return matchingComponentsMap;
 }

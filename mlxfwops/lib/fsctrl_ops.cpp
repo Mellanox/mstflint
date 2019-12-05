@@ -217,10 +217,13 @@ bool FsCtrlOperations::FwReactivateImage()
     return true;
 }
 
-bool FsCtrlOperations::FwQuery(fw_info_t *fwInfo, bool readRom, bool isStripedImage)
+bool FsCtrlOperations::FwQuery(fw_info_t *fwInfo, bool readRom, bool isStripedImage, bool quickQuery, bool ignoreDToc, bool verbose)
 {
     (void) isStripedImage;
     (void) readRom;
+    (void) quickQuery;
+    (void) ignoreDToc;
+    (void) verbose;
     memcpy(&(fwInfo->fw_info), &(_fwImgInfo.ext_info), sizeof(fw_info_com_t));
     memcpy(&(fwInfo->fs3_info), &(_fsCtrlImgInfo), sizeof(fs3_info_t));
     fwInfo->fs3_info.fs3_uids_info.valid_field = 1;
@@ -376,6 +379,10 @@ bool FsCtrlOperations::VerifyAllowedParams(ExtBurnParams &burnParams, bool isSec
     return true;
 }
 
+bool FsCtrlOperations::FwBurnAdvanced(std::vector <u_int8_t> imageOps4MData, ExtBurnParams& burnParams)
+{
+    return _Burn(imageOps4MData, burnParams);
+}
 bool FsCtrlOperations::FwBurnAdvanced(FwOperations *imageOps, ExtBurnParams &burnParams)
 {
     if (imageOps == NULL) {
@@ -385,8 +392,6 @@ bool FsCtrlOperations::FwBurnAdvanced(FwOperations *imageOps, ExtBurnParams &bur
         return false;
     }
     fw_info_t fw_query;
-    std::vector<FwComponent> compsToBurn;
-    FwComponent bootImageComponent;
 
     memset(&fw_query, 0, sizeof(fw_info_t));
     if (!imageOps->FwQuery(&fw_query, true)) {
@@ -416,12 +421,18 @@ bool FsCtrlOperations::FwBurnAdvanced(FwOperations *imageOps, ExtBurnParams &bur
     if (!imageOps->FwExtract4MBImage(imageOps4MData, true)) {
         return errmsg(imageOps->getErrorCode(), "Failed to Extract 4MB from the image");
     }
+    return _Burn(imageOps4MData, burnParams);
+}
 
+bool FsCtrlOperations::_Burn(std::vector <u_int8_t> imageOps4MData, ExtBurnParams& burnParams)
+{
 #ifdef UEFI_BUILD
     burnParams.ProgressFuncAdv.uefi_func =  burnParams.progressFunc;
 #else
     burnParams.progressFunc = (ProgressCallBack) NULL;
 #endif
+    FwComponent bootImageComponent;
+    std::vector<FwComponent> compsToBurn;
 
     bootImageComponent.init(imageOps4MData, imageOps4MData.size(), FwComponent::COMPID_BOOT_IMG);
     compsToBurn.push_back(bootImageComponent);

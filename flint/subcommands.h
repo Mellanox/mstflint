@@ -49,8 +49,10 @@
 #include "mlxfwops/lib/fw_ops.h"
 #include "mlxfwops/lib/fs_checks.h"
 #include "err_msgs.h"
+#include "mlxarchive/mlxarchive_mfa2_package_gen.h"
+#include "mlxarchive/mlxarchive_mfa2_utils.h"
 using namespace std;
-
+using namespace mfa2;
 //we might need to close the log from the main program in case of interrupt
 void close_log();
 void print_time_to_log();
@@ -92,6 +94,7 @@ protected:
     sub_cmd_t _cmdType;
     bool _mccSupported;
     bool _imageReactivation;
+    MFA2* _mfa2Pkg;
 
     //Methods that are commonly used in the various subcommands:
     //TODO: add middle classes and segregate as much of these common methods between these classes
@@ -99,9 +102,9 @@ protected:
     virtual bool verifyParams() {return true;};
     bool basicVerifyParams();
     void initDeviceFwParams(char *errBuff, FwOperations::fw_ops_params_t& fwParams);
-    FlintStatus openOps(bool ignoreSecurityAttributes = false);
+    FlintStatus openOps(bool ignoreSecurityAttributes = false, bool ignoreDToc = false);
     FlintStatus openIo();
-    virtual FlintStatus preFwOps(bool ignoreSecurityAttributes = false);
+    virtual FlintStatus preFwOps(bool ignoreSecurityAttributes = false, bool ignoreDToc = false);
     virtual FlintStatus preFwAccess();
 
     bool getRomsInfo(FBase *io, roms_info_t& romsInfo);
@@ -110,7 +113,7 @@ protected:
     string getExpRomVerStr(const rom_info_t& info);
     string getRomProtocolStr(u_int8_t proto);
     string getRomSuppCpuStr(u_int8_t suppCpu);
-
+    u_int32_t getUserChoice(u_int32_t maximumValue);
     static int verifyCbFunc(char *str);
     static int CbCommon(int completion, char *preStr, char *endStr = NULL);
     static int burnCbFs2Func(int completion);
@@ -156,7 +159,7 @@ protected:
 
 
 public:
-    SubCommand() : _fwOps(NULL), _imgOps(NULL), _io(NULL), _v(Wtv_Uninitilized), _maxCmdParamNum(-1),  _minCmdParamNum(-1), _mccSupported(false), _imageReactivation(false)
+    SubCommand() : _fwOps(NULL), _imgOps(NULL), _io(NULL), _v(Wtv_Uninitilized), _maxCmdParamNum(-1),  _minCmdParamNum(-1), _mccSupported(false), _imageReactivation(false), _mfa2Pkg(NULL)
     {
         _cmdType = SC_No_Cmd;
         memset(_errBuff, 0, sizeof(_errBuff));
@@ -173,6 +176,31 @@ public:
     inline string& getParamExp() {return this->_paramExp;}
     inline string& getExample() {return this->_example;}
 };
+class BurnSubCommand : public SubCommand
+{
+private:
+    u_int8_t _fwType;
+    fw_info_t _devInfo;
+    fw_info_t _imgInfo;
+    FwOperations::ExtBurnParams _burnParams;
+    bool _devQueryRes;
+    int _unknownProgress; // used to trace the progress of unknown progress.
+    FlintStatus burnFs3();
+    FlintStatus burnFs2();
+    bool checkFwVersion();
+    bool checkPSID();
+    void updateBurnParams();
+    bool dealWithExpRom();
+    bool checkMatchingExpRomDevId(const fw_info_t& info);
+    bool dealWithGuids();
+    bool dealWithVSD();
+    FlintStatus burnMFA2();
+public:
+    BurnSubCommand();
+    ~BurnSubCommand();
+    FlintStatus executeCommand();
+    bool verifyParams();
+};
 
 class BinaryCompareSubCommand : public SubCommand
 {
@@ -183,35 +211,11 @@ private:
     FwOperations::ExtBurnParams _burnParams;
     bool _devQueryRes;
     int _unknownProgress; // used to trace the progress of unknown progress.
+    FlintStatus compareMFA2();
 public:
     BinaryCompareSubCommand();
     ~BinaryCompareSubCommand();
-    FlintStatus executeCommand();
-    bool verifyParams();
-};
-class BurnSubCommand : public SubCommand
-{
-private:
-    u_int8_t _fwType;
-    fw_info_t _devInfo;
-    fw_info_t _imgInfo;
-    FwOperations::ExtBurnParams _burnParams;
-    bool _devQueryRes;
-    int _unknownProgress; // used to trace the progress of unknown progress.
 
-    FlintStatus checkFs3Fs4NeededFixes(bool& isFs3Fs4FixesNeeded);
-    FlintStatus burnFs3();
-    FlintStatus burnFs2();
-    bool checkFwVersion();
-    bool checkPSID();
-    void updateBurnParams();
-    bool dealWithExpRom();
-    bool checkMatchingExpRomDevId(const fw_info_t& info);
-    bool dealWithGuids();
-    bool dealWithVSD();
-public:
-    BurnSubCommand();
-    ~BurnSubCommand();
     FlintStatus executeCommand();
     bool verifyParams();
 };

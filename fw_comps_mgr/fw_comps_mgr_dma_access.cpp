@@ -179,6 +179,7 @@ bool DMAComponentAccess::accessComponent(u_int32_t updateHandle, u_int32_t offse
         prepareParameters(updateHandle, &accessData, offset + (data_size - leftSize), data, data_size, access, leftSize, page, mailboxPage);
         int nIteration = 0;
         while (leftSize > 0) {
+            memset((u_int8_t*)mailboxPage.va, 0, TOOLS_OPEN_MCDD_DESCRIPTOR_SIZE);
             memset(&mailboxVirtPtr_1, 0, TOOLS_OPEN_MCDD_DESCRIPTOR_SIZE);//set zero before each transaction
             maxDataSize = leftSize > PAGE_SIZE ? PAGE_SIZE : leftSize;
             mft_signal_set_handling(1);

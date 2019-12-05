@@ -130,12 +130,17 @@ public:
     u_int16_t getDeviceDescriptorsCount() const { return _deviceDescriptorsCount;}
     u_int16_t getComponentsCount() const { return _componentsCount;}
     const VersionExtension & getVersionExtension() const {return _version;}
-
+    u_int64_t getComponentsBlockSize  ();
+    u_int32_t getComponentsBlockOffset  ();
 };
 
 inline void PackageDescriptor::setComponentsBlockOffset(u_int64_t offset)
 {
     _componentsBlockOffset = offset;
+}
+inline u_int32_t PackageDescriptor::getComponentsBlockOffset()
+{
+    return _componentsBlockOffset;
 }
 
 inline void PackageDescriptor::setComponentsBlockArchiveSize(u_int32_t size)
@@ -147,7 +152,10 @@ inline void PackageDescriptor::setComponentsBlockSize(u_int64_t size)
 {
     _componentsBlockSize = size;
 }
-
+inline u_int64_t PackageDescriptor::getComponentsBlockSize() 
+{
+    return _componentsBlockSize;
+}
 
 class DeviceDescriptor : public Descriptor {
 private:
@@ -187,15 +195,20 @@ public:
 
     //string      getSource               ()                          const;
     void        setComponentBinaryOffset(u_int64_t offset);
+    u_int64_t   getComponentBinaryOffset() const; 
     void        pack                    (vector<u_int8_t>& buff)    const;
     u_int32_t   getBinarySize           ()                          const;
     void        packData                (vector<u_int8_t>& buff)    const;
+    void        unpackData(vector<u_int8_t>& buff);
 };
 
 /*inline string ComponentDescriptor::getSource() const
 {
     return _source;
 };*/
+inline u_int64_t ComponentDescriptor::getComponentBinaryOffset() const{
+    return _componentBlockOffset;
+}
 
 inline void ComponentDescriptor::setComponentBinaryOffset(u_int64_t offset)
 {
@@ -207,6 +220,10 @@ inline u_int32_t ComponentDescriptor::getBinarySize() const
     return _binarySize;
 };
 
+inline void ComponentDescriptor::unpackData(vector<u_int8_t>& buff)
+{
+    unpackBytesArray(_data.data(), _data.size(), buff);
+}
 inline void ComponentDescriptor::packData(vector<u_int8_t>& buff) const
 {
     packBytesArray(_data.data(), _data.size(), buff);

@@ -40,14 +40,15 @@
 
 #ifndef MLXARCHIVE_MFA2_UTILS_H_
 #define MLXARCHIVE_MFA2_UTILS_H_
-
+#include <string.h>
 #include <string>
 #include <vector>
 #include <compatibility.h>
 
 #include "mfa2_buff.h"
 
-#define FINGER_PRINT_SIZE (16)
+#define MFA2_FINGER_PRINT "MLNX.MFA2.XZ.00!"
+#define FINGER_PRINT_SIZE (strlen(MFA2_FINGER_PRINT))
 
 using namespace std;
 
@@ -87,6 +88,7 @@ void packString(const string& str, vector<u_int8_t>& buff);
 
 void packBytesArray(const u_int8_t* arr, unsigned int len, vector<u_int8_t>& buff);
 
+void unpackBytesArray(u_int8_t* arr, unsigned int len, vector<u_int8_t>& buff);
 void packBinFile(const string& file, vector<u_int8_t>& buff);
 
 bool readFromFile(const string& fname, string& content);
@@ -105,7 +107,13 @@ public:
     FingerPrint(string fingerPrint) : _fingerPrint(fingerPrint) {};
     void pack(vector<u_int8_t>& buff) const { packString(_fingerPrint, buff); };
     inline u_int32_t getSize() const {return _fingerPrint.length();}
-    bool unpack(Mfa2Buffer & buff) {buff.read(_fingerPrint, FINGER_PRINT_SIZE); return true;}
+    bool unpack(Mfa2Buffer & buff) {
+        buff.read(_fingerPrint, FINGER_PRINT_SIZE); 
+        if (_fingerPrint != MFA2_FINGER_PRINT) {
+            return false;
+        }
+        return true;
+    }
     string toString() const {return _fingerPrint;}
 };
 
