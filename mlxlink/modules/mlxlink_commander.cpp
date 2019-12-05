@@ -418,9 +418,10 @@ void MlxlinkCommander::labelToHCALocalPort()
 
 void MlxlinkCommander::labelToSpectLocalPort()
 {
-    string regName = "MGPIR";
+    string regName;
     u_int32_t spect2WithGearBox = 0;
     if (_devID == DeviceSpectrum2) {
+        regName = "MGPIR";
         resetParser(regName);
         genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
         spect2WithGearBox = getFieldValue("num_of_devices", _buffer);
