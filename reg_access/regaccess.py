@@ -354,7 +354,7 @@ if REG_ACCESS:
                 raise ValueError("command {0} is illegal".format(command))
 
             mpcirRegisterP = pointer(MPCIR_ST(ports=command))
-            rc = self._reg_access_mpcir(self._mstDev.mf, c_uint(REG_ACCESS_METHOD_SET), mpcirRegisterP)
+            rc = self._reg_access_mpcir(self._mstDev.mf, c_uint(REG_ACCESS_METHOD_GET), mpcirRegisterP)
             if rc != 0:
                 raise RegAccException("Failed to send Command Register MPCIR")
             if command == CMD_GET_STATUS:
