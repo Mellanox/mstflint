@@ -83,6 +83,7 @@ UserInput::UserInput()
     _testMode = "Nominal";
     _forceMode = "";
     _anMode = "";
+    _modulation = "";
     _iteration = 0;
     _testTime = 0.05;
     _feedbackIndex = 0;

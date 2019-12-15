@@ -2570,14 +2570,23 @@ void MlxlinkCommander::sendPprt()
 
 void MlxlinkCommander::sendPptt()
 {
+    u_int32_t laneRate = prbsLaneRateToMask(_userInput._ppttRate);
+    string laneRateStr = string(_userInput._ppttRate != ""? _userInput._ppttRate : "EDR/25G");
+    u_int32_t modulation = prbsModulationToVal(_userInput._modulation);
     string regName = "PPTT";
     resetParser(regName);
-
     updateField("local_port", _localPort);
     updateField("pnat", PNAT_LOCAL);
     updateField("e", PPRT_PPTT_ENABLE);
-    updateField("lane_rate_admin", prbsLaneRateToMask(_userInput._ppttRate));
+    updateField("lane_rate_admin", laneRate);
     updateField("prbs_mode_admin", prbsModeToMask(_userInput._ppttMode));
+    if ((modulation > PRBS_NRZ && laneRate != PRBS_HDR) ||
+        (modulation < PRBS_PAM4_ENCODING && laneRate == PRBS_HDR)) {
+        throw MlxRegException("Invalid modulation selected for lane rate " + laneRateStr +
+                              "\nSee help for more information.");
+    } else if(_userInput._modulation != "") {
+        updateField("modulation", modulation);
+    }
     genBuffSendRegister(regName, MACCESS_REG_METHOD_SET);
 }
 
