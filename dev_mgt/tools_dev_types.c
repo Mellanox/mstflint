@@ -72,7 +72,8 @@ struct device_info {
 #define SFP_DIGITAL_DIAGNOSTIC_MONITORING_IMPLEMENTED_ADDR     92
 #define SFP_PAGING_IMPLEMENTED_INDICATOR_ADDR                  64
 
-#define ARDBEG_DEVID 0x6e
+#define ARDBEG_REV0_DEVID 0x6e
+#define ARDBEG_REV1_DEVID 0x7e
 #define ARDBEG_MIRRORED_DEVID 0x70
 #define BARITONE_DEVID 0x6b
 #define BARITONE_MIRRORED_DEVID 0x71
@@ -428,9 +429,10 @@ int dm_get_device_id(mfile *mf,
 #endif
 #ifdef CABLES_SUPP
     if (mf->tp == MST_LINKX_CHIP){
-
+ 
         switch (mf->linkx_chip_devid){
-            case ARDBEG_DEVID:
+            case ARDBEG_REV0_DEVID:
+            case ARDBEG_REV1_DEVID:
             case ARDBEG_MIRRORED_DEVID:
                 *ptr_dm_dev_id = DeviceArdbeg;
                 break;
