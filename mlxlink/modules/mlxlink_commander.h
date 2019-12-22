@@ -128,6 +128,8 @@
 #define PPTT_RATE_FLAG_SHORT               ' '
 #define PPRT_TUNING_TYPE_FLAG              "tuning_type"
 #define PPRT_TUNING_TYPE_FLAG_SHORT        ' '
+#define PRBS_MODULATION_FLAG               "modulation"
+#define PRBS_MODULATION_FLAG_SHORT         ' '
 #define BER_COLLECT_FLAG                   "ber_collect"
 #define BER_COLLECT_FLAG_SHORT             'b'
 #define BER_LIMIT_FLAG                     "ber_limit"

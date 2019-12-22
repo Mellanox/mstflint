@@ -359,6 +359,12 @@ enum IB_LINK_SPEED {
     IB_LINK_SPEED_HDR   = 0x40,
 };
 
+enum PRBS_MODULATION {
+    PRBS_NRZ = 0,
+    PRBS_PAM4_ENCODING = 1,
+    PRBS_PAM4_WITH_PRECODING = 2
+};
+
 class MlxlinkMaps{
 private:
     MlxlinkMaps();
