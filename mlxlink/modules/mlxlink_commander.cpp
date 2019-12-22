@@ -2705,7 +2705,8 @@ void MlxlinkCommander::sendPplm()
         resetParser(regName);
 
         updateField("local_port", _localPort);
-        string speedStrG = (_linkUP && _userInput._speedFec == "") ? speedToStr(_speedStrG) : _userInput._speedFec + "g";
+        string speedStrG = (_linkUP && _userInput._speedFec == "") ? speedToStr(_speedStrG) :
+                            (_userInput._pplmFec == "AU" ? deleteLastComma(_userInput._speedFec) : _userInput._speedFec) + "g";
         if (speedStrG != "100g") {
             updateField("fec_override_admin_100g", 0);
         }
