@@ -687,9 +687,9 @@ void reg_access_hca_mgir_fw_info_pack(const struct reg_access_hca_mgir_fw_info *
 	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->month);
 	offset = 112;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->hour);
-	for (i = 0; i < 4; ++i) {
-		offset = adb2c_calc_array_field_address(128, 32, i, 512, 1);
-		adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->psid[i]);
+	for (i = 0; i < 16; ++i) {
+		offset = adb2c_calc_array_field_address(152, 8, i, 512, 1);
+		adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->psid[i]);
 	}
 	offset = 256;
 	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->ini_file_version);
@@ -734,9 +734,9 @@ void reg_access_hca_mgir_fw_info_unpack(struct reg_access_hca_mgir_fw_info *ptr_
 	ptr_struct->month = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 	offset = 112;
 	ptr_struct->hour = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
-	for (i = 0; i < 4; ++i) {
-		offset = adb2c_calc_array_field_address(128, 32, i, 512, 1);
-		ptr_struct->psid[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	for (i = 0; i < 16; ++i) {
+		offset = adb2c_calc_array_field_address(152, 8, i, 512, 1);
+		ptr_struct->psid[i] = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 	}
 	offset = 256;
 	ptr_struct->ini_file_version = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
@@ -783,9 +783,9 @@ void reg_access_hca_mgir_fw_info_print(const struct reg_access_hca_mgir_fw_info 
 	fprintf(fd, "month                : " UH_FMT "\n", ptr_struct->month);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "hour                 : " UH_FMT "\n", ptr_struct->hour);
-	for (i = 0; i < 4; ++i) {
+	for (i = 0; i < 16; ++i) {
 		adb2c_add_indentation(fd, indent_level);
-		fprintf(fd, "psid_%03d            : " U32H_FMT "\n", i, ptr_struct->psid[i]);
+		fprintf(fd, "psid_%03d            : " UH_FMT "\n", i, ptr_struct->psid[i]);
 	}
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "ini_file_version     : " U32H_FMT "\n", ptr_struct->ini_file_version);
@@ -1581,7 +1581,7 @@ void reg_access_hca_mcc_reg_print(const struct reg_access_hca_mcc_reg *ptr_struc
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "update_handle        : " UH_FMT "\n", ptr_struct->update_handle);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "control_state        : " UH_FMT "\n", ptr_struct->control_state);
+	fprintf(fd, "control_state        : %s (" UH_FMT ")\n", (ptr_struct->control_state == 0 ? ("IDLE") : ((ptr_struct->control_state == 1 ? ("LOCKED") : ((ptr_struct->control_state == 2 ? ("INITIALIZE") : ((ptr_struct->control_state == 3 ? ("DOWNLOAD") : ((ptr_struct->control_state == 4 ? ("VERIFY") : ((ptr_struct->control_state == 5 ? ("APPLY") : ((ptr_struct->control_state == 6 ? ("ACTIVATE") : ((ptr_struct->control_state == 7 ? ("UPLOAD") : ((ptr_struct->control_state == 8 ? ("UPLOAD_PENDING") : ("unknown")))))))))))))))))), ptr_struct->control_state);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "error_code           : " UH_FMT "\n", ptr_struct->error_code);
 	adb2c_add_indentation(fd, indent_level);
@@ -2116,7 +2116,7 @@ void reg_access_hca_mfrl_reg_ext_print(const struct reg_access_hca_mfrl_reg_ext 
 	fprintf(fd, "======== reg_access_hca_mfrl_reg_ext ========\n");
 
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "reset_level          : %s (" UH_FMT ")\n", (ptr_struct->reset_level == 8 ? ("LEVEL3") : ((ptr_struct->reset_level == 64 ? ("LEVEL6") : ("unknown")))), ptr_struct->reset_level);
+	fprintf(fd, "reset_level          : %s (" UH_FMT ")\n", (ptr_struct->reset_level == 1 ? ("LEVEL0") : ((ptr_struct->reset_level == 8 ? ("LEVEL3") : ((ptr_struct->reset_level == 64 ? ("LEVEL6") : ("unknown")))))), ptr_struct->reset_level);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "reset_type           : " UH_FMT "\n", ptr_struct->reset_type);
 	adb2c_add_indentation(fd, indent_level);
@@ -2372,7 +2372,7 @@ void reg_access_hca_mqis_reg_print(const struct reg_access_hca_mqis_reg *ptr_str
 	fprintf(fd, "======== reg_access_hca_mqis_reg ========\n");
 
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "info_type            : " UH_FMT "\n", ptr_struct->info_type);
+	fprintf(fd, "info_type            : %s (" UH_FMT ")\n", (ptr_struct->info_type == 1 ? ("MODEL_NAME") : ((ptr_struct->info_type == 2 ? ("MODEL_DESCRIPTION") : ((ptr_struct->info_type == 3 ? ("IMAGE_VSD") : ((ptr_struct->info_type == 4 ? ("DEVICE_VSD") : ((ptr_struct->info_type == 5 ? ("ROM_INFO") : ("unknown")))))))))), ptr_struct->info_type);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "info_length          : " UH_FMT "\n", ptr_struct->info_length);
 	adb2c_add_indentation(fd, indent_level);
@@ -2546,13 +2546,13 @@ void reg_access_hca_resource_dump_pack(const struct reg_access_hca_resource_dump
 	offset = 48;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->vhca_id);
 	offset = 64;
-	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->index_1);
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->index1);
 	offset = 96;
-	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->index_2);
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->index2);
 	offset = 144;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->num_of_obj_2);
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->num_of_obj2);
 	offset = 128;
-	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->num_of_obj_1);
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->num_of_obj1);
 	offset = 192;
 	adb2c_push_integer_to_buff(ptr_buff, offset, 8, ptr_struct->device_opaque);
 	offset = 256;
@@ -2583,13 +2583,13 @@ void reg_access_hca_resource_dump_unpack(struct reg_access_hca_resource_dump *pt
 	offset = 48;
 	ptr_struct->vhca_id = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
 	offset = 64;
-	ptr_struct->index_1 = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	ptr_struct->index1 = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
 	offset = 96;
-	ptr_struct->index_2 = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	ptr_struct->index2 = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
 	offset = 144;
-	ptr_struct->num_of_obj_2 = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	ptr_struct->num_of_obj2 = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
 	offset = 128;
-	ptr_struct->num_of_obj_1 = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	ptr_struct->num_of_obj1 = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
 	offset = 192;
 	ptr_struct->device_opaque = adb2c_pop_integer_from_buff(ptr_buff, offset, 8);
 	offset = 256;
@@ -2622,13 +2622,13 @@ void reg_access_hca_resource_dump_print(const struct reg_access_hca_resource_dum
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "vhca_id              : " UH_FMT "\n", ptr_struct->vhca_id);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "index_1              : " U32H_FMT "\n", ptr_struct->index_1);
+	fprintf(fd, "index1               : " U32H_FMT "\n", ptr_struct->index1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "index_2              : " U32H_FMT "\n", ptr_struct->index_2);
+	fprintf(fd, "index2               : " U32H_FMT "\n", ptr_struct->index2);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "num_of_obj_2         : " UH_FMT "\n", ptr_struct->num_of_obj_2);
+	fprintf(fd, "num_of_obj2          : " UH_FMT "\n", ptr_struct->num_of_obj2);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "num_of_obj_1         : " UH_FMT "\n", ptr_struct->num_of_obj_1);
+	fprintf(fd, "num_of_obj1          : " UH_FMT "\n", ptr_struct->num_of_obj1);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "device_opaque        : " U64H_FMT "\n", ptr_struct->device_opaque);
 	adb2c_add_indentation(fd, indent_level);
