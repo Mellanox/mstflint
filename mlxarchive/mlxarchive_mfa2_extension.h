@@ -43,7 +43,7 @@
 
 #include <string>
 #include <vector>
-
+#include <iostream>
 #include <compatibility.h>
 #include <tools_layouts/tools_open_layouts.h>
 
@@ -53,6 +53,60 @@
 using namespace std;
 
 namespace mfa2 {
+class Version
+{
+public:
+    Version() 
+    {
+        major = -1;
+        minor = -1;
+        subminor = -1;
+    }
+    Version(std::string version)
+    {
+        sscanf(version.c_str(), "%d.%d.%d", &major, &minor, &subminor);
+    }
+private:
+    int major; 
+    int minor;
+    int subminor;
+public:
+    bool operator < (const Version& other)
+    {
+        if (major < other.major)
+            return true;
+        if (minor < other.minor)
+            return true;
+        if (subminor < other.subminor)
+            return true;
+        return false;
+    }
+    bool operator > (const Version& other)
+    {
+        if (major > other.major)
+            return true;
+        if (minor > other.minor)
+            return true;
+        if (subminor > other.subminor)
+            return true;
+        return false;
+    }
+    bool operator == (const Version& other)
+    {
+        return major == other.major
+            && minor == other.minor
+            && subminor == other.subminor;
+    }
+    friend std::ostream& operator << (std::ostream& stream, const Version& ver)
+    {
+        stream << ver.major;
+        stream << '.';
+        stream << ver.minor;
+        stream << '.';
+        stream << ver.subminor;
+        return stream;
+    }
+};
 class Extension : protected Element{
 protected:
     enum ExtensionType {
@@ -104,10 +158,15 @@ public:
 
     VersionExtension(const string& version);
     VersionExtension(const u_int16_t* version);
+    VersionExtension(const u_int16_t* version, const u_int16_t* fw_rel_date);
     void pack(vector<u_int8_t>& buff) const;
     bool unpack(Mfa2Buffer & buff);
     string getVersion(bool pad_sub_minor) const;
     string getDateAndTime() const;
+    void   getDateAndTime(char* buffer) const;
+    u_int8_t getMajor() const {
+        return _major;
+    }
 };
 
 /*class SecurityInfoExtension : Extension {

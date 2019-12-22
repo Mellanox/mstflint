@@ -63,6 +63,7 @@ mstarchive_LDADD = libmstarchive.a\
                    $(USER_DIR)/tools_layouts/libtools_layouts.a\
                    $(USER_DIR)/xz_utils/libxz_utils.a\
                    $(USER_DIR)/ext_libs/minixz/libminixz.a\
+		   $(USER_DIR)/xz_utils/libxz_utils.a \
                    $(CURL_LIBS)\
                    -lboost_regex -lboost_filesystem -lboost_system \
                    -llzma -lm $(LIBSTD_CPP) ${LDL}

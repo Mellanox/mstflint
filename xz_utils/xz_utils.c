@@ -269,3 +269,28 @@ int32_t xz_decompress(u_int8_t *inbuf, u_int32_t insz, u_int8_t *outbuf, u_int32
     return xpress(1, 0, inbuf, insz, outbuf, outsz, LZMA_CHECK_CRC64);
 }
 
+int32_t xz_decompress_crc32(u_int8_t *inbuf, u_int32_t insz, u_int8_t *outbuf, u_int32_t outsz)
+{
+    return xpress(1, 0, inbuf, insz, outbuf, outsz, LZMA_CHECK_CRC32);
+}
+const char* xz_get_error(int32_t error)
+{
+    if (error == XZ_ERR_MEM_EXCEEDED) {
+        return "XZ_ERR_MEM_EXCEEDED";
+    }
+    else if (error == XZ_ERR_INTERNAL_MEM) {
+        return "XZ_ERR_INTERNAL_MEM";
+    }
+    else if (error == XZ_ERR_PRESET_NO_SUPP) {
+        return "XZ_ERR_PRESET_NO_SUPP";
+    }
+    else if (error == XZ_ERR_INTEGRITY_NOT_SUPP) {
+        return "XZ_ERR_INTEGRITY_NOT_SUPP";
+    }
+    else if (error == XZ_ERR_ENCODE_FAULT) {
+        return "XZ_ERR_ENCODE_FAULT";
+    }
+    else {
+        return "UNKNOWN ERROR";
+    }
+}

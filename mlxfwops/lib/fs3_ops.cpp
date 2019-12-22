@@ -454,7 +454,7 @@ bool Fs3Operations::IsFs3SectionReadable(u_int8_t type, QueryOptions queryOption
 }
 
 bool Fs3Operations::VerifyTOC(u_int32_t dtoc_addr, bool &bad_signature, VerifyCallBack verifyCallBackFunc, bool show_itoc,
-                              struct QueryOptions queryOptions, bool ignoreDToc)
+                              struct QueryOptions queryOptions, bool ignoreDToc, bool verbose)
 {
     u_int8_t buffer[TOC_HEADER_SIZE], entry_buffer[TOC_ENTRY_SIZE];
     struct cibfw_itoc_header itoc_header;
@@ -535,7 +535,14 @@ bool Fs3Operations::VerifyTOC(u_int32_t dtoc_addr, bool &bad_signature, VerifyCa
                             ret_val = false;
                         }
                     } else {
+                        if (!verbose) {
                         READBUF((*_ioAccess), flash_addr, buff, entry_size_in_bytes, "Section");
+                        }
+                        else {
+                            if (!(*_ioAccess).read(flash_addr, buff, entry_size_in_bytes, true, "Section")) {
+                                return errmsg("%s - read error (%s)\n", "Section", (*_ioAccess).err());
+                            }
+                        }
                         Fs3UpdateImgCache(buff, flash_addr, entry_size_in_bytes);
                         u_int32_t sect_crc = CalcImageCRC((u_int32_t *)buff, toc_entry.size);
 
@@ -645,7 +652,6 @@ bool Fs3Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_ito
     u_int32_t offset;
     u_int8_t binVerMajor = 0, binVerMinor = 0;
     bool bad_signature;
-    (void)verbose;
     FindAllImageStart(_ioAccess, cntx_image_start, &cntx_image_num, _cntx_magic_pattern);
     if (cntx_image_num == 0) {
         return errmsg(MLXFW_NO_VALID_IMAGE_ERR, "No valid FS3 image found");
@@ -696,7 +702,7 @@ bool Fs3Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_ito
     offset = (offset % sector_size == 0) ? offset : (offset + sector_size - offset % 0x1000);
     while (offset < _ioAccess->get_size()) {
 
-        if (VerifyTOC(offset, bad_signature, verifyCallBackFunc, show_itoc, queryOptions, ignoreDToc)) {
+        if (VerifyTOC(offset, bad_signature, verifyCallBackFunc, show_itoc, queryOptions, ignoreDToc, verbose)) {
             return true;
         } else {
             if (!bad_signature) {
@@ -711,13 +717,13 @@ bool Fs3Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_ito
 }
 
 
-bool Fs3Operations::FsIntQueryAux(bool readRom, bool quickQuery)
+bool Fs3Operations::FsIntQueryAux(bool readRom, bool quickQuery, bool ignoreDToc, bool verbose)
 {
     struct QueryOptions queryOptions;
     queryOptions.readRom = readRom;
     queryOptions.quickQuery = quickQuery;
 
-    if (!FsVerifyAux((VerifyCallBack)NULL, 0, queryOptions)) {
+    if (!FsVerifyAux((VerifyCallBack)NULL, 0, queryOptions, ignoreDToc, verbose)) {
         return false;
     }
     // get chip type and device sw id, from device/image
@@ -745,6 +751,7 @@ bool Fs3Operations::FsIntQueryAux(bool readRom, bool quickQuery)
     if (_signatureExists == 0 || _publicKeysExists == 0 || _fs3ImgInfo.ext_info.mcc_en == 0) {
         _fs3ImgInfo.ext_info.security_mode = SM_NONE;
     }
+    _internalQueryPerformed = true;
     return true;
 }
 
@@ -808,12 +815,12 @@ reg_access_status_t Fs3Operations::getGI(mfile *mf, struct tools_open_mgir *gi)
 }
 
 
-bool Fs3Operations::FwQuery(fw_info_t *fwInfo, bool readRom, bool isStripedImage)
+bool Fs3Operations::FwQuery(fw_info_t *fwInfo, bool readRom, bool isStripedImage, bool quickQuery, bool ignoreDToc, bool verbose)
 {
     //isStripedImage flag is not needed in FS3 image format
     // Avoid warning - no striped image in FS3
     (void)isStripedImage;
-    if (!FsIntQueryAux(readRom)) {
+    if (!FsIntQueryAux(readRom, quickQuery, ignoreDToc, verbose)) {
         return false;
     }
     if (_ioAccess->is_flash() && _fwParams.ignoreCacheRep == 0) {
@@ -1347,7 +1354,6 @@ bool Fs3Operations::FwBurnBlock(FwOperations *imageOps, ProgressCallBack progres
 bool Fs3Operations::FwReadData(void *image, u_int32_t *imageSize, bool verbose)
 {
     struct QueryOptions queryOptions;
-    (void)verbose;
     if (!imageSize) {
         return errmsg("bad parameter is given to FwReadData\n");
     }
@@ -1360,7 +1366,7 @@ bool Fs3Operations::FwReadData(void *image, u_int32_t *imageSize, bool verbose)
         queryOptions.quickQuery = true;
     }
     // Avoid Warning
-    if (!FsVerifyAux((VerifyCallBack)NULL, 0, queryOptions)) {
+    if (!FsVerifyAux((VerifyCallBack)NULL, 0, queryOptions, false, verbose)) {
         return false;
     }
 
@@ -2806,11 +2812,11 @@ u_int32_t Fs3Operations::getImageSize()
     return _fs3ImgInfo.sizeOfImgData - _fwImgInfo.imgStart;
 }
 
-bool Fs3Operations::FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatternAndDevToc)
+bool Fs3Operations::FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatternAndDevToc, bool verbose)
 {
     u_int32_t size = 0;
 
-    if (!FsIntQueryAux(true, false)) {
+    if (!FsIntQueryAux(true, false, false, verbose)) {
         return false;
     }
 
@@ -3037,6 +3043,48 @@ bool Fs3Operations::CheckItocArray()
     return true;
 }
 
+bool Fs3Operations::IsCriticalSection(u_int8_t sect_type)
+{
+    if (sect_type != FS3_PCIE_LINK_CODE && sect_type != FS3_PHY_UC_CMD && sect_type != FS3_HW_BOOT_CFG)
+        return false;
+    return true;
+}
+
+
+bool Fs3Operations::PrepItocSectionsForCompare(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical)
+{
+    if (_internalQueryPerformed == false) {
+        if (!FsIntQueryAux(true, false, false, true)) {
+            return false;
+        }
+    }
+    for (int i = 0; i < _fs3ImgInfo.numOfItocs; i++) {
+        struct toc_info* itoc_info_p = &(_fs3ImgInfo.tocArr[i]);
+        //struct fs4_toc_info *itoc_info_p = &this->_fs3ImgInfo.itocArr.tocArr[i];
+        struct cibfw_itoc_entry *toc_entry = &(itoc_info_p->toc_entry);
+        if (IsCriticalSection(toc_entry->type))
+        {
+            critical.reserve(critical.size() + itoc_info_p->section_data.size());
+            critical.insert(critical.end(), itoc_info_p->section_data.begin(), itoc_info_p->section_data.end());
+            //printf("-D- addr  0x%.8x toc type : 0x%.8x  size 0x%.8x name %s\n", itoc_info_p->entry_addr, itoc_info_p->toc_entry.type, 
+                //(unsigned int)(itoc_info_p->section_data.size() + padding_size), GetSectionNameByType(itoc_info_p->toc_entry.type));
+        }
+        else
+        {
+            if (itoc_info_p->toc_entry.type == FS3_VPD_R0 || itoc_info_p->toc_entry.type == FS3_MFG_INFO || itoc_info_p->toc_entry.type == FS3_DEV_INFO || 
+                itoc_info_p->toc_entry.type == FS3_NV_DATA1 || itoc_info_p->toc_entry.type == FS3_NV_DATA2 || itoc_info_p->toc_entry.type == FS3_FW_NV_LOG || 
+                itoc_info_p->toc_entry.type == FS3_NV_DATA0) {
+                continue;
+            }
+            //printf("-D- addr  0x%.8x flash addr 0x%.8x toc type : 0x%.8x  size 0x%.8x name %s\n", itoc_info_p->entry_addr, toc_entry->flash_addr << 2, itoc_info_p->toc_entry.type,
+              //  (unsigned int)itoc_info_p->section_data.size(), GetSectionNameByType(itoc_info_p->toc_entry.type));
+            non_critical.reserve(non_critical.size() + itoc_info_p->section_data.size());
+            non_critical.insert(non_critical.end(), itoc_info_p->section_data.begin(), itoc_info_p->section_data.end());
+            //currentItoc++;
+        }
+    }
+    return true;
+}
 const char* Fs3Operations::FwGetResetRecommandationStr()
 {
 

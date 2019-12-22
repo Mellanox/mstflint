@@ -203,6 +203,7 @@ namespace std {}; using namespace std;
 #define SWITCH_IB2_HW_ID 587
 #define QUANTUM_HW_ID    589
 #define SPECTRUM2_HW_ID  590
+#define SPECTRUM3_HW_ID  592
 
 
 #define CX4_HW_ID         521

@@ -35,6 +35,7 @@
 
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdarg.h>
 #include <errno.h>
 #include <time.h>
@@ -61,9 +62,9 @@
 #endif // WIN
 
 #include "subcommands.h"
-
+#include "tools_layouts/cx4fw_layouts.h"
 using namespace std;
-
+using namespace mfa2;
 /***********************************
  *  Log file writing implementation
  ************************************/
@@ -434,7 +435,7 @@ void SubCommand::initDeviceFwParams(char *errBuff, FwOperations::fw_ops_params_t
     fwParams.mccUnsupported = !_mccSupported;
 }
 
-FlintStatus SubCommand::openOps(bool ignoreSecurityAttributes)
+FlintStatus SubCommand::openOps(bool ignoreSecurityAttributes, bool ignoreDToc)
 {
     char errBuff[ERR_BUFF_SIZE] = {0};
     if (_flintParams.device_specified) {
@@ -450,7 +451,7 @@ FlintStatus SubCommand::openOps(bool ignoreSecurityAttributes)
             imgFwParams.errBuffSize = 1024;
             imgFwParams.shortErrors = true;
             imgFwParams.fileHndl = (char*)_flintParams.image.c_str();
-            if (!FwOperations::imageDevOperationsCreate(fwParams, imgFwParams, &_fwOps, &_imgOps, ignoreSecurityAttributes)) {
+            if (!FwOperations::imageDevOperationsCreate(fwParams, imgFwParams, &_fwOps, &_imgOps, ignoreSecurityAttributes, ignoreDToc)) {
                 /*
                  * Error are being handled after
                  */
@@ -604,7 +605,7 @@ bool SubCommand::basicVerifyParams()
     return true;
 }
 
-FlintStatus SubCommand::preFwOps(bool ignoreSecurityAttributes)
+FlintStatus SubCommand::preFwOps(bool ignoreSecurityAttributes, bool ignoreDToc)
 {
     if (!basicVerifyParams()) {
         return FLINT_FAILED;
@@ -612,7 +613,13 @@ FlintStatus SubCommand::preFwOps(bool ignoreSecurityAttributes)
     if (!verifyParams()) {
         return FLINT_FAILED;
     }
-    return openOps(ignoreSecurityAttributes);
+    if (_flintParams.mfa2_specified) {
+        _flintParams.image_specified = false;
+        return openOps(true);
+    }
+    else {
+        return openOps(ignoreSecurityAttributes, ignoreDToc);
+    }
 }
 
 FlintStatus SubCommand::preFwAccess()
@@ -1366,7 +1373,7 @@ SignSubCommand::SignSubCommand()
     _flagLong = "sign";
     _flagShort = "";
     _paramExp = "None";
-    _example = FLINT_NAME " -i fw_image.bin [--private_key file.pem --key_uuid uuid.bin] sign";
+    _example = FLINT_NAME " -i fw_image.bin [--private_key file.pem --key_uuid uuid string] sign";
     _v = Wtv_Img;
     _maxCmdParamNum = 0;
     _cmdType = SC_Sign;
@@ -1464,6 +1471,9 @@ BinaryCompareSubCommand::BinaryCompareSubCommand()
 }
 BinaryCompareSubCommand:: ~BinaryCompareSubCommand()
 {
+    if (_mfa2Pkg != NULL) {
+        delete _mfa2Pkg;
+    }
 }
 bool BinaryCompareSubCommand::verifyParams()
 {
@@ -1479,8 +1489,68 @@ bool BinaryCompareSubCommand::verifyParams()
         return false;
     }
 }
+FlintStatus BinaryCompareSubCommand::compareMFA2()
+{
+    if (preFwOps() == FLINT_FAILED) {
+        return FLINT_FAILED;
+    }
+    if (!_fwOps->FwQuery(&_devInfo, true, false, true, false, (_flintParams.silent == false))) {
+        reportErr(true, FLINT_FAILED_QUERY_ERROR, "Device", _flintParams.device.c_str(), _fwOps->err());
+        return FLINT_FAILED;
+    }
+    vector<u_int8_t> componentBuffer;
+    map_string_to_component matchingComponentsMap = _mfa2Pkg->getMatchingComponents((char*)_devInfo.fw_info.psid, _devInfo.fw_info.fw_ver[0]);
+    u_int32_t matchingSize = matchingComponentsMap.size();
+    if (matchingSize == 0) {
+        printf("\33[2K\r");//clear the current line
+        printf("Binary comparison failed.\n");
+        return FLINT_SUCCESS;
+    }
+    std::vector<u_int8_t> imgBuffInFile;
+    if (!_fwOps->FwExtract4MBImage(imgBuffInFile, true, (_flintParams.silent == false))) {
+        reportErr(true, FLINT_IMAGE_READ_ERROR, _fwOps->err());
+        return FLINT_FAILED;
+    }
+    for (u_int32_t choice = 0; choice < matchingSize; choice++) {
+        if (_mfa2Pkg->unzipComponent(matchingComponentsMap, choice, componentBuffer) == false) {
+            reportErr(true, "-E- compareMFA2:Error occurred while extracting MFA2\n");
+            return FLINT_FAILED;
+        }
+ 
+        unsigned int i = 0;
+        for (; i < imgBuffInFile.size(); i++) {
+            if (componentBuffer[i] != imgBuffInFile[i]) {
+                break;
+            }
+        }
+        if (i == imgBuffInFile.size()) {
+            printf("\33[2K\r");//clear the current line
+            printf("Binary comparison success.\n");
+            return FLINT_SUCCESS;
+        }
+    }
+    printf("\33[2K\r");//clear the current line
+    printf("Binary comparison failed.\n");
+    return FLINT_SUCCESS;
+}
+
+
 FlintStatus BinaryCompareSubCommand::executeCommand()
 {
+    string mfa2file = _flintParams.image;
+    _mfa2Pkg = MFA2::LoadMFA2Package(mfa2file);
+    if (_mfa2Pkg != NULL) {
+        _flintParams.mfa2_specified = true;
+        return compareMFA2();
+    }
+
+
+    vector<u_int8_t> device_critical;
+    vector<u_int8_t> device_non_critical;
+    vector<u_int8_t> image_critical;
+    vector<u_int8_t> image_non_critical;
+
+    _flintParams.override_cache_replacement = true;
     if (preFwOps() == FLINT_FAILED) {
         if (_imgOps) {
             const char* errMessage = _imgOps->err();
@@ -1490,20 +1560,25 @@ FlintStatus BinaryCompareSubCommand::executeCommand()
         }
         return FLINT_FAILED;
     }
+
     _fwType = _fwOps->FwType();
-    if (!_fwOps->FwQuery(&_devInfo)) {
+    // query both image and device
+    if (!_fwOps->FwQuery(&_devInfo, true, false, true, false, (_flintParams.silent == false))) {
         reportErr(true, FLINT_FAILED_QUERY_ERROR, "Device", _flintParams.device.c_str(), _fwOps->err());
         return FLINT_FAILED;
     }
+
     if (!_imgOps->FwQuery(&_imgInfo)) {
         reportErr(true, FLINT_FAILED_QUERY_ERROR, "Image", _flintParams.image.c_str(), _imgOps->err());
         return FLINT_FAILED;
     }
+
     if (strcmp((char*)_imgInfo.fw_info.psid, (char*)_devInfo.fw_info.psid)) {
         printf("\33[2K\r");//clear the current line
         printf("Binary comparison failed - PSID mismatch.\n");
         return FLINT_SUCCESS;
     }
+
     for (int i = 0; i < 3; i++) {
         if (_imgInfo.fw_info.fw_ver[i] != _devInfo.fw_info.fw_ver[i]) {
             printf("\33[2K\r");//clear the current line
@@ -1511,33 +1586,37 @@ FlintStatus BinaryCompareSubCommand::executeCommand()
             return FLINT_SUCCESS;
         }
     }
-    u_int32_t imgSize;
+    
+    u_int32_t imgSize = 0;
+    //on first call we get the image size
     if (!_fwOps->FwReadData(NULL, &imgSize)) {
         reportErr(true, FLINT_IMAGE_READ_ERROR, _fwOps->err());
         return FLINT_FAILED;
     }
-    static u_int8_t* imgBuffOnDevice = NULL;
-    imgBuffOnDevice = new u_int8_t[imgSize];
-    memset(imgBuffOnDevice, 0, imgSize);
-    if (!_fwOps->FwReadData((void*)imgBuffOnDevice, &imgSize, (_flintParams.silent == false))) {
+    std::vector<u_int8_t> imgBuffOnDevice(imgSize);
+    //on second call we fill it
+    if (!_fwOps->FwReadData((void*)(&imgBuffOnDevice[0]), &imgSize, _flintParams.silent == false)) {
         reportErr(true, FLINT_IMAGE_READ_ERROR, _fwOps->err());
         return FLINT_FAILED;
     }
+
     std::vector<u_int8_t> imgBuffInFile;
-    if (!_imgOps->FwExtract4MBImage(imgBuffInFile, false)) {
-        delete[] imgBuffOnDevice; 
+    if (!_imgOps->FwExtract4MBImage(imgBuffInFile, false, (_flintParams.silent == false))) {
         reportErr(true, FLINT_IMAGE_READ_ERROR, _imgOps->err());
         return FLINT_FAILED;
     }
-    for (unsigned int i = 0; i < imgBuffInFile.size(); i++) {
-        if (imgBuffOnDevice[i] != imgBuffInFile[i]) {
-            printf("\33[2K\r");//clear the current line
-            printf("Binary comparison failed - binary mismatch.\n");
-            delete[] imgBuffOnDevice;
-            return FLINT_SUCCESS;
-        }
+    _imgOps->PrepItocSectionsForCompare(image_critical, image_non_critical);
+    _fwOps->PrepItocSectionsForCompare(device_critical, device_non_critical);
+
+    if (image_critical != device_critical) {
+        printf("Binary comparison failed - binary mismatch.\n");
+        return FLINT_SUCCESS;
     }
-    delete[] imgBuffOnDevice;
+    if (image_non_critical != device_non_critical) {
+        printf("Binary comparison failed - binary mismatch.\n");
+        return FLINT_SUCCESS;
+    }
+
     printf("\33[2K\r");//clear the current line
     printf("Binary comparison success.\n");
     return FLINT_SUCCESS;
@@ -1575,61 +1654,77 @@ BurnSubCommand:: ~BurnSubCommand()
     if (_burnParams.userVsd != NULL) {
         delete[] _burnParams.userVsd;
     }
+    if (_mfa2Pkg != NULL) {
+        delete _mfa2Pkg;
+    }
 }
 
 bool BurnSubCommand::verifyParams()
 {
-    if ((_flintParams.guid_specified || _flintParams.guids_specified) && (_flintParams.uid_specified)) {
-        reportErr(true, FLINT_COMMAND_FLAGS_ERROR, _name.c_str(), "either GUIDs / UID (using command line flags -guid(s) / -uid )");
-        return false;
+    if (_flintParams.mfa2_specified) {
+        if (_flintParams.use_latest_fw_version == true && _flintParams.num_of_args != 3) {
+            reportErr(true, FLINT_COMMAND_INCORRECT_FLAGS_ERROR, "Burn MFA2", "incorrect flag combination is supplied");
+            return false;
+        }
+        if (_flintParams.use_latest_fw_version == false && _flintParams.num_of_args != 2) {
+            reportErr(true, FLINT_COMMAND_INCORRECT_FLAGS_ERROR, "Burn MFA2", "incorrect flag combination is supplied");
+            return false;
+        }
+        return true;
     }
-    if ((_flintParams.mac_specified || _flintParams.macs_specified) && (_flintParams.uid_specified)) {
-        reportErr(true, FLINT_COMMAND_FLAGS_ERROR, _name.c_str(), "either MACs / UID (using command line flags -mac(s) / -uid )");
-        return false;
-    }
-    bool GuidsFromUser = _flintParams.guid_specified || _flintParams.guids_specified || \
-                         _flintParams.uid_specified || \
-                         _flintParams.mac_specified || _flintParams.macs_specified;
-    if (GuidsFromUser && _flintParams.use_image_guids) {
-        reportErr(true, FLINT_INVALID_FLAG_WITH_FLAG_ERROR, "GUIDs/UIDs/MACs", "-use_image_guids");
-        return false;
-    }
-    if ((GuidsFromUser || _flintParams.use_image_guids) && _flintParams.blank_guids) {
-        reportErr(true, FLINT_INVALID_FLAG_WITH_FLAG_ERROR, _flintParams.use_image_guids ? \
-                  "-use_image_guids" : "GUIDs/UIDs/MACs", "-blank_guids");
-        return false;
-    }
-    if (_flintParams.guid_specified && _flintParams.guids_specified) {
-        reportErr(true, FLINT_INVALID_FLAG_WITH_FLAG_ERROR, "-guids", "-guid");
-        return false;
-    }
-    if (_flintParams.mac_specified && _flintParams.macs_specified) {
-        reportErr(true, FLINT_INVALID_FLAG_WITH_FLAG_ERROR, "-macs", "-mac");
-        return false;
-    }
-    if (_flintParams.use_image_ps && _flintParams.vsd_specified) {
-        reportErr(true, FLINT_INVALID_FLAG_WITH_FLAG_ERROR, "-use_image_ps", "-vsd");
-        return false;
-    }
-    if (_flintParams.ignore_dev_data && !_flintParams.nofs) {
-        reportErr(true, FLINT_INVALID_FLAG_WITHOUT_FLAG_ERROR, "-nofs", "-ignore_dev_data");
-        return false;
-    }
-    if (_flintParams.use_dev_rom && _flintParams.use_image_rom) {
-        reportErr(true, FLINT_INVALID_FLAG_WITH_FLAG_ERROR, "--use_dev_rom", "--use_image_rom");
-        return false;
-    }
-    if (_flintParams.nofs || _flintParams.allow_psid_change || _flintParams.use_dev_rom) {
-        // attempt to fallback to legacy flow (direct flash access via FW)
-        _mccSupported = false;
-    }
-    if (_flintParams.image_reactivation && _flintParams.no_fw_ctrl) {
-        reportErr(true, FLINT_INVALID_FLAG_WITH_FLAG_ERROR, "-image_reactivation", "-no_fw_ctrl");
-        return false;
-    }
-    if (_flintParams.image_reactivation && _flintParams.override_cache_replacement) {
-        reportErr(true, FLINT_INVALID_FLAG_WITH_FLAG_ERROR, "-image_reactivation", "-ocr");
-        return false;
+    else {
+        if ((_flintParams.guid_specified || _flintParams.guids_specified) && (_flintParams.uid_specified)) {
+            reportErr(true, FLINT_COMMAND_FLAGS_ERROR, _name.c_str(), "either GUIDs / UID (using command line flags -guid(s) / -uid )");
+            return false;
+        }
+        if ((_flintParams.mac_specified || _flintParams.macs_specified) && (_flintParams.uid_specified)) {
+            reportErr(true, FLINT_COMMAND_FLAGS_ERROR, _name.c_str(), "either MACs / UID (using command line flags -mac(s) / -uid )");
+            return false;
+        }
+        bool GuidsFromUser = _flintParams.guid_specified || _flintParams.guids_specified || \
+                             _flintParams.uid_specified || \
+                             _flintParams.mac_specified || _flintParams.macs_specified;
+        if (GuidsFromUser && _flintParams.use_image_guids) {
+            reportErr(true, FLINT_INVALID_FLAG_WITH_FLAG_ERROR, "GUIDs/UIDs/MACs", "-use_image_guids");
+            return false;
+        }
+        if ((GuidsFromUser || _flintParams.use_image_guids) && _flintParams.blank_guids) {
+            reportErr(true, FLINT_INVALID_FLAG_WITH_FLAG_ERROR, _flintParams.use_image_guids ? \
+                      "-use_image_guids" : "GUIDs/UIDs/MACs", "-blank_guids");
+            return false;
+        }
+        if (_flintParams.guid_specified && _flintParams.guids_specified) {
+            reportErr(true, FLINT_INVALID_FLAG_WITH_FLAG_ERROR, "-guids", "-guid");
+            return false;
+        }
+        if (_flintParams.mac_specified && _flintParams.macs_specified) {
+            reportErr(true, FLINT_INVALID_FLAG_WITH_FLAG_ERROR, "-macs", "-mac");
+            return false;
+        }
+        if (_flintParams.use_image_ps && _flintParams.vsd_specified) {
+            reportErr(true, FLINT_INVALID_FLAG_WITH_FLAG_ERROR, "-use_image_ps", "-vsd");
+            return false;
+        }
+        if (_flintParams.ignore_dev_data && !_flintParams.nofs) {
+            reportErr(true, FLINT_INVALID_FLAG_WITHOUT_FLAG_ERROR, "-nofs", "-ignore_dev_data");
+            return false;
+        }
+        if (_flintParams.use_dev_rom && _flintParams.use_image_rom) {
+            reportErr(true, FLINT_INVALID_FLAG_WITH_FLAG_ERROR, "--use_dev_rom", "--use_image_rom");
+            return false;
+        }
+        if (_flintParams.nofs || _flintParams.allow_psid_change || _flintParams.use_dev_rom) {
+            // attempt to fallback to legacy flow (direct flash access via FW)
+            _mccSupported = false;
+        }
+        if (_flintParams.image_reactivation && _flintParams.no_fw_ctrl) {
+            reportErr(true, FLINT_INVALID_FLAG_WITH_FLAG_ERROR, "-image_reactivation", "-no_fw_ctrl");
+            return false;
+        }
+        if (_flintParams.image_reactivation && _flintParams.override_cache_replacement) {
+            reportErr(true, FLINT_INVALID_FLAG_WITH_FLAG_ERROR, "-image_reactivation", "-ocr");
+            return false;
+        }
     }
     return true;
 }
@@ -2114,6 +2209,11 @@ bool BurnSubCommand::checkMatchingExpRomDevId(const fw_info_t& info)
 
 FlintStatus BurnSubCommand::executeCommand()
 {
+    string mfa2file = _flintParams.image;
+    _mfa2Pkg = MFA2::LoadMFA2Package(mfa2file);
+    if (_mfa2Pkg != NULL) {
+        _flintParams.mfa2_specified = true;
+    }
     if (_flintParams.image_reactivation) {
         if (preFwOps(true) == FLINT_FAILED) {
             return FLINT_FAILED;
@@ -2127,21 +2227,42 @@ FlintStatus BurnSubCommand::executeCommand()
         _devQueryRes = _fwOps->FwQuery(&_devInfo);//make query once more to refresh running FW version
         printf("\n-I- FW Image Reactivation succeeded.\n\n");
     }
-
-    if (preFwOps() == FLINT_FAILED) {
-        return FLINT_FAILED;
+    else {
+        if (preFwOps() == FLINT_FAILED) {
+            return FLINT_FAILED;
+        }
     }
-    
     //set fw type
     _fwType = _fwOps->FwType();
     // query both image and device (deviceQuery can fail but we save rc)
-    _devQueryRes = _fwOps->FwQuery(&_devInfo);
-    if (!_imgOps->FwQuery(&_imgInfo)) {
-        reportErr(true, FLINT_FAILED_QUERY_ERROR, "image", _flintParams.image.c_str(), _imgOps->err());
-        return FLINT_FAILED;
+    _devQueryRes = _fwOps->FwQuery(&_devInfo, true, false, true, false, (_flintParams.silent == false));
+    if (_imgOps) {
+        if (!_imgOps->FwQuery(&_imgInfo)) {
+            reportErr(true, FLINT_FAILED_QUERY_ERROR, "image", _flintParams.image.c_str(), _imgOps->err());
+            return FLINT_FAILED;
+        }
     }
     //updateBurnParams with input given by user
     updateBurnParams();
+
+    if (_flintParams.mfa2_specified) {
+        //check if the device is in LiveFish mode. If it is, this mode is unsupported
+        mfile *mf = _fwOps->getMfileObj();
+        int is_livefish_mode = dm_is_livefish_mode(mf);
+        //check if the device is in FW control mode ("mcc flow"). Other flow is unsupported.
+        bool is_fw_ctrl = _fwOps->IsFsCtrlOperations();
+        if (is_livefish_mode) {
+            reportErr(true, "Burning MFA2 is not supported in Livefish mode.\n");
+            return FLINT_FAILED;
+        }
+        else if (!is_fw_ctrl) {
+            reportErr(true, "Burning MFA2 is not supported without FW control.\n");
+            return FLINT_FAILED;
+        }
+        else {
+            return burnMFA2();
+        }
+    }
     if (_fwType == FIT_FS3 || _fwType == FIT_FS4 || _fwType == FIT_FSCTRL) {
         return burnFs3();
     } else if (_fwType == FIT_FS2) {
@@ -2150,6 +2271,83 @@ FlintStatus BurnSubCommand::executeCommand()
     // unknown fw type
     reportErr(true, FLINT_UNKNOWN_FW_TYPE_ERROR);
     return FLINT_FAILED;
+}
+
+u_int32_t SubCommand::getUserChoice(u_int32_t maximumValue)
+{
+    u_int32_t choice = 0xffff;
+    while (true) {
+        int res = scanf("%d", &choice);
+        if (res != 1) {
+            while (getchar() != '\n');
+            printf("Invalid data entered, try again!\n");
+            continue;
+        }
+        if (choice > maximumValue) {
+            printf("Please choose the version or 0 to exit:\n");
+            continue;
+        }
+        break;
+    }
+    if (choice == 0) {
+        exit(0);
+    }
+    return choice;
+}
+
+FlintStatus BurnSubCommand::burnMFA2()
+{
+    vector<u_int8_t> componentBuffer;
+    map_string_to_component matchingComponentsMap;
+    printf("-I- Fetching FW versions from MFA2 image, this operation may take a minute, please wait..\n");
+    matchingComponentsMap = _mfa2Pkg->getMatchingComponents((char*)_devInfo.fw_info.psid, _devInfo.fw_info.fw_ver[0]);
+    u_int32_t matchingSize = matchingComponentsMap.size();
+    if (matchingSize == 0) {
+        reportErr(true, "No matching binaries found for device %s\n", _flintParams.device.c_str());
+        return FLINT_FAILED;
+    }
+    else {
+        //If there is only one matching FW binary, unzip it
+        if (matchingSize == 1) {
+            _mfa2Pkg->unzipComponent(matchingComponentsMap, 0, componentBuffer);
+        }
+        else {
+            //user wants the latest version automatically
+            if (_flintParams.use_latest_fw_version == true) {
+                if (_mfa2Pkg->unzipLatestVersionComponent(matchingComponentsMap, componentBuffer) == false) {
+                    return FLINT_FAILED;
+                }
+            }
+            //otherwise, user must supply required version 
+            else {
+                int i = 1;
+                printf("------FW Version Selection for %s------\n", _flintParams.device.c_str());
+                for (map_string_to_component::iterator it = matchingComponentsMap.begin(); it != matchingComponentsMap.end(); it++) {
+                    printf("%d. %s\n", i++, it->first.c_str());
+                }
+                printf("-I- Please choose the version or 0 to exit:\n");
+                u_int32_t choice = getUserChoice(matchingSize) - 1;
+                if (_mfa2Pkg->unzipComponent(matchingComponentsMap, choice, componentBuffer) == false) {
+                    return FLINT_FAILED;
+                }
+            }
+        }
+    }
+    const char *imgTypeStr = fwImgTypeToStr(_devInfo.fw_type);
+    bool res = _fwOps->FwBurnAdvanced(componentBuffer, _burnParams);
+    if (!res) {
+        reportErr(true, FLINT_FSX_BURN_ERROR, imgTypeStr, _fwOps->err());
+        return FLINT_FAILED;
+    }
+    else {
+        PRINT_PROGRESS(_burnParams.progressFunc, 101);
+        write_result_to_log(FLINT_SUCCESS, "", _flintParams.log_specified);
+        const char *resetRec = _fwOps->FwGetResetRecommandationStr();
+        if (resetRec) {
+            printf("-I- %s\n", resetRec);
+        }
+        return FLINT_SUCCESS;
+    }
 }
 
 /***********************

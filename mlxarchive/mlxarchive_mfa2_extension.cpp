@@ -104,6 +104,19 @@ VersionExtension::VersionExtension(const string& version) :
     fillTimeAndDate();
 }
 
+VersionExtension::VersionExtension(const u_int16_t* version, const u_int16_t* fw_rel_date):
+    Extension(ELEMENT_VERSION, VersionExtensionType, LENGTH)
+{
+    _major = version[0];
+    _subMinor = version[2];
+    _minor = version[1];
+    _seconds = 0;
+    _minutes = 0;
+    _hours = 12;
+    _day = fw_rel_date[0];
+    _month = fw_rel_date[1];
+    _year = fw_rel_date[2];
+}
 void VersionExtension::pack(vector<u_int8_t>& buff) const
 {
     vector<u_int8_t> tmpBuff;
@@ -159,8 +172,8 @@ string VersionExtension::getVersion(bool pad_sub_minor) const {
     stringstream ss;
     string res;
     if (pad_sub_minor){
-        char _sub_minor_str[5] = "";
-        snprintf(_sub_minor_str, 5, "%04d", (int)_subMinor);
+        char _sub_minor_str[5] = {0};
+        snprintf(_sub_minor_str, sizeof(_sub_minor_str), "%04d", (int)_subMinor);
         ss << (int)_major << '.' << (int)_minor << '.' << _sub_minor_str;
     }
     else {
@@ -181,6 +194,9 @@ string VersionExtension::getDateAndTime() const {
     char buffer [64];
     strftime(buffer,64,"%Y-%m-%d %H:%M:%S", &tm_obj);
     return string(buffer);
+}
+void VersionExtension::getDateAndTime(char* buffer) const {
+    sprintf(buffer, "%x.%x.%x", _day, _month, _year);
 }
 
 void ComponentPointerExtension::pack(vector<u_int8_t>& buff) const
