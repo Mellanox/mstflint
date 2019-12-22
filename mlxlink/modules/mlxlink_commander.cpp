@@ -176,9 +176,10 @@ void MlxlinkCommander::checkValidFW()
         struct connectib_icmd_get_fw_info fw_info;
         memset(&fw_info, 0, sizeof(fw_info));
         gcif_get_fw_info(_mf, &fw_info);
-        _fwVersion = to_string(fw_info.fw_version.MAJOR) + "."
-                     + to_string(fw_info.fw_version.MINOR) + "."
-                     + to_string(fw_info.fw_version.SUBMINOR);
+        char fwVersion [32];
+        sprintf(fwVersion, "%02d.%02d.%04d", fw_info.fw_version.MAJOR,
+                fw_info.fw_version.MINOR, fw_info.fw_version.SUBMINOR);
+        _fwVersion = string(fwVersion);
         if(_userInput._pcie){ //PDDR is not relevant to pcie
             return;
         }
@@ -417,7 +418,15 @@ void MlxlinkCommander::labelToHCALocalPort()
 
 void MlxlinkCommander::labelToSpectLocalPort()
 {
-    string regName = "PMLP";
+    string regName;
+    u_int32_t spect2WithGearBox = 0;
+    if (_devID == DeviceSpectrum2) {
+        regName = "MGPIR";
+        resetParser(regName);
+        genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
+        spect2WithGearBox = getFieldValue("num_of_devices", _buffer);
+    }
+    regName = "PMLP";
     string splitStr = to_string(
             (_userInput._splitPort > 0) ?
                     _userInput._splitPort - 1 : _userInput._splitPort);
@@ -434,7 +443,7 @@ void MlxlinkCommander::labelToSpectLocalPort()
             checkWidthSplit(localPort);
             _localPort =
                     (_splitted) ?
-                            (_numOfLanes == 2 && _devID == DeviceSpectrum2) ?
+                            (_numOfLanes == 2 && !spect2WithGearBox) ?
                                 localPort + _userInput._splitPort :
                                 localPort + _userInput._splitPort -1 :
                             localPort;
