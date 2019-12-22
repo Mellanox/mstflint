@@ -1,6 +1,6 @@
 %{!?ibmadlib: %define ibmadlib libibmad-devel}
 %{!?name: %define name mstflint}
-%{!?version: %define version 4.13.0}
+%{!?version: %define version 4.13.3}
 %{!?release: %define release 1}
 %{!?buildtype: %define buildtype "native"}
 %{!?noinband: %define noinband 0}
@@ -195,6 +195,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 
 %changelog
+* Tue Dec 31 2019 Eran Jakoby <eranj@dev.mellanox.co.il>
+   MFT 4.13.3 Updates. Added new tools: mstresourcedump.
+
 * Mon Sep 23 2019 Dan Goldberg <dang@dev.mellanox.co.il>
    Added conditional lib name of the dependencies to support both RH and SLES naming conventions.
 
