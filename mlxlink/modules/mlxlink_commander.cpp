@@ -1842,7 +1842,7 @@ void MlxlinkCommander::showExternalPhy()
 {
     if (_isHCA || _devID == DeviceSwitchIB || _devID == DeviceSwitchIB2
             || _devID == DeviceQuantum) {
-        throw MlxRegException("\"--" PEPC_SET_FLAG "\" option is not supported for HCA and InfiniBand switches");
+        throw MlxRegException("\"--" PEPC_SHOW_FLAG "\" option is not supported for HCA and InfiniBand switches");
     }
     try {
         string regName = "PEPC";
