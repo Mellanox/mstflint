@@ -135,9 +135,6 @@ void MlxlinkUi::printSynopsisCommands()
     MlxlinkRecord::printFlagLine(PPTT_RATE_FLAG_SHORT, PPTT_RATE_FLAG, "tx_lane_rate",
                   "TX Lane Rate [EDR(Default)/25G/10G/...]  (Optional - Default 25G)");
     printf(IDENT);
-    MlxlinkRecord::printFlagLine(PRBS_MODULATION_FLAG_SHORT, PRBS_MODULATION_FLAG, "modulation",
-                  "PRBS modulation [NRZ, PAM4, and PAM4PREC for PAM4 with precoding]  (Optional - Default NRZ)");
-    printf(IDENT);
     MlxlinkRecord::printFlagLine(BER_COLLECT_FLAG_SHORT, BER_COLLECT_FLAG, "csv_file",
                   "Port Extended Information Collection [CSV File]");
     printf(IDENT);
@@ -323,20 +320,10 @@ void MlxlinkUi::paramValidate()
             errStr += "\nDefault PRBS Lane Rate is EDR / 25GE / 50GE / 100GE (25.78125 Gb/s)";
             throw MlxRegException(errStr);
         }
-        if (_mlxlinkCommander->_userInput._modulation != "") {
-            if (!prbsLaneRateCheck(_mlxlinkCommander->_userInput._pprtRate)
-                || !prbsLaneRateCheck(_mlxlinkCommander->_userInput._ppttRate)) {
-                    throw MlxRegException("modulation flag not valid for lanes speed below 53.125Gb/s");
-                }
-            if (!prbsModulationCheck(_mlxlinkCommander->_userInput._modulation)) {
-                throw MlxRegException("Modulation not valid, valid values are [NRZ, PAM4, and PAM4PREC for PAM4 with precoding]");
-            }
-        }
     } else if (_mlxlinkCommander->_userInput._sendPprt ||
             _mlxlinkCommander->_userInput._sendPptt
                || _mlxlinkCommander->_userInput._pprtRate != "" ||
-               _mlxlinkCommander->_userInput._pprtRate != "" ||
-               _mlxlinkCommander->_userInput._modulation != "") {
+               _mlxlinkCommander->_userInput._pprtRate != "") {
         throw MlxRegException(
                   "PRBS parameters flags valid only with PRBS Enable flag (--test_mode EN)");
     }
@@ -421,8 +408,6 @@ void MlxlinkUi::initCmdParser()
                "PPRT Lane Rate");
     AddOptions(PPTT_RATE_FLAG, PPTT_RATE_FLAG_SHORT, "PPTT_RATE",
                "PPTT Lane Rate");
-    AddOptions(PRBS_MODULATION_FLAG, PRBS_MODULATION_FLAG_SHORT, "modulation",
-               "PRBS modulation");
 
     AddOptions(SLTP_SHOW_FLAG, SLTP_SHOW_FLAG_SHORT, "", "get SLTP");
     AddOptions(SLTP_SET_FLAG, SLTP_SET_FLAG_SHORT, "set", "set SLTP");
@@ -657,9 +642,6 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         return PARSE_OK;
     } else if (name == PPTT_RATE_FLAG) {
         _mlxlinkCommander->_userInput._ppttRate = toUpperCase(value);
-        return PARSE_OK;
-    } else if (name == PRBS_MODULATION_FLAG) {
-        _mlxlinkCommander->_userInput._modulation =toUpperCase(value);
         return PARSE_OK;
     } else if (name == BER_COLLECT_FLAG) {
         _sendRegFuncMap[SEND_BER_COLLECT] = SEND_BER_COLLECT;

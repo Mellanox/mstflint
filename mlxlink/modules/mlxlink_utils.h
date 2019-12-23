@@ -79,8 +79,6 @@ string prbsMaskToLaneRate(u_int32_t mask);
 int prbsLaneRateCapToMask(const string &rate);
 u_int32_t prbsMaskToRateNum(u_int32_t mask);
 bool prbsLaneRateCheck(const string &rate);
-bool prbsModulationCheck(const string & modulation);
-u_int32_t prbsModulationToVal(const string & modulation);
 string prbsMaskToTuningStatus(u_int32_t mask);
 string prbsMaskToLockStatus(u_int32_t mask, u_int32_t numOfLanesToUse);
 bool checkPrbsCmd(const string &prbsCmd);
