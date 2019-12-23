@@ -226,7 +226,7 @@ private:
     #define FS3_DEFAULT_SECTOR_SIZE 0x1000
     #define FS3_LOG2_CHUNK_SIZE_DW_OFFSET 0x9
 
-    reg_access_status_t getGI(mfile *mf, struct tools_open_mgir *gi);
+    reg_access_status_t getGI(mfile *mf, struct reg_access_hca_mgir *gi);
     bool VerifyTOC(u_int32_t dtoc_addr, bool& bad_signature, VerifyCallBack verifyCallBackFunc, bool show_itoc,
                    struct QueryOptions queryOptions, bool ignoreDToc = false, bool verbose = false);
     bool checkPreboot(u_int32_t *prebootBuff, u_int32_t size, VerifyCallBack verifyCallBackFunc);

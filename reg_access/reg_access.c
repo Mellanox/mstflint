@@ -409,12 +409,13 @@ reg_access_status_t reg_access_nvda(mfile *mf, reg_access_method_t method, struc
 /************************************
 * Function: reg_access_mgir
 ************************************/
-reg_access_status_t reg_access_mgir(mfile *mf, reg_access_method_t method, struct tools_open_mgir *mgir)
-{
+reg_access_status_t reg_access_mgir(mfile *mf, reg_access_method_t method,
+        struct reg_access_hca_mgir *mgir) {
     if (mf->tp == MST_IB || mf->tp == MST_MLNXOS) {
-        REG_ACCCESS_VAR(mf, method, REG_ID_MGIR, mgir, mgir, MGIR_REG_SIZE, MGIR_REG_SIZE, MGIR_REG_SIZE, tools_open);
+        REG_ACCCESS_VAR(mf, method, REG_ID_MGIR, mgir, mgir, MGIR_REG_SIZE,
+                MGIR_REG_SIZE, MGIR_REG_SIZE, reg_access_hca);
     } else {
-        REG_ACCCESS(mf, method, REG_ID_MGIR, mgir, mgir, tools_open);
+        REG_ACCCESS(mf, method, REG_ID_MGIR, mgir, mgir, reg_access_hca);
     }
 }
 

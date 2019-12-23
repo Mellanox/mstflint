@@ -96,7 +96,8 @@ reg_access_status_t reg_access_mqis(mfile *mf, reg_access_method_t method, struc
 reg_access_status_t reg_access_mcc(mfile *mf, reg_access_method_t method, struct reg_access_hca_mcc_reg *mcc );
 reg_access_status_t reg_access_mcqs(mfile *mf, reg_access_method_t method, struct reg_access_hca_mcqs_reg *mcqs);
 reg_access_status_t reg_access_mcqi(mfile *mf, reg_access_method_t method, struct reg_access_hca_mcqi_reg *mcqi);
-reg_access_status_t reg_access_mgir(mfile *mf, reg_access_method_t method, struct tools_open_mgir *mgir);
+reg_access_status_t reg_access_mgir(mfile *mf, reg_access_method_t method,
+        struct reg_access_hca_mgir *mgir);
 reg_access_status_t reg_access_mtrc_cap(mfile *mf, reg_access_method_t method, struct reg_access_hca_mtrc_cap_reg *mtrc_cap);
 reg_access_status_t reg_access_mcdd(mfile *mf, reg_access_method_t method, struct tools_open_mcdd_reg *mcdd);
 const char* reg_access_err2str(reg_access_status_t status);

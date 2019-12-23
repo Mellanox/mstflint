@@ -84,6 +84,16 @@ static void extractFwVersion(u_int16_t *fwVerArr, u_int32_t fwVersion)
     fwVerArr[2] = EXTRACT(fwVersion, 0, 16);
 }
 
+static void extractFwVersion(u_int16_t *fwVerArr,
+        const reg_access_hca_rom_version fwVersion) {
+    if (!fwVerArr) {
+        return;
+    }
+    fwVerArr[0] = fwVersion.major;
+    fwVerArr[1] = fwVersion.minor;
+    fwVerArr[2] = fwVersion.build;
+}
+
 static void extractFwBuildTime(u_int16_t *fwRelDate, u_int32_t buildTime)
 {
     if (!fwRelDate) {
@@ -96,52 +106,52 @@ static void extractFwBuildTime(u_int16_t *fwRelDate, u_int32_t buildTime)
 
 bool FsCtrlOperations::FsIntQuery()
 {
-    fwInfoT fwQery;
-    if (!_fwCompsAccess->queryFwInfo(&fwQery, nextBootFwVer)) {
+    fwInfoT fwQuery;
+    if (!_fwCompsAccess->queryFwInfo(&fwQuery, nextBootFwVer)) {
         return errmsg(FwCompsErrToFwOpsErr(_fwCompsAccess->getLastError()), "Failed to query the FW - Err[%d] - %s", _fwCompsAccess->getLastError(), _fwCompsAccess->getLastErrMsg());
     }
-    if (fwQery.pending_fw_valid) {
-        extractFwVersion(_fwImgInfo.ext_info.fw_ver, fwQery.pending_fw_version.version);
-        extractFwBuildTime(_fwImgInfo.ext_info.fw_rel_date, fwQery.pending_fw_version.build_time);
+    if (fwQuery.pending_fw_valid) {
+        extractFwVersion(_fwImgInfo.ext_info.fw_ver, fwQuery.pending_fw_version.version);
+        extractFwBuildTime(_fwImgInfo.ext_info.fw_rel_date, fwQuery.pending_fw_version.build_time);
     } else {
-        extractFwVersion(_fwImgInfo.ext_info.fw_ver, fwQery.running_fw_version.version);
-        extractFwBuildTime(_fwImgInfo.ext_info.fw_rel_date, fwQery.running_fw_version.build_time);
+        extractFwVersion(_fwImgInfo.ext_info.fw_ver, fwQuery.running_fw_version.version);
+        extractFwBuildTime(_fwImgInfo.ext_info.fw_rel_date, fwQuery.running_fw_version.build_time);
     }
-    extractFwVersion(_fwImgInfo.ext_info.running_fw_ver, fwQery.running_fw_version.version);
-    if (fwQery.running_fw_version.version_string_length) {
-        strcpy(_fwImgInfo.ext_info.product_ver, fwQery.product_ver);
+    extractFwVersion(_fwImgInfo.ext_info.running_fw_ver, fwQuery.running_fw_version.version);
+    if (fwQuery.running_fw_version.version_string_length) {
+        strcpy(_fwImgInfo.ext_info.product_ver, fwQuery.product_ver);
     }
     // if nextBootFwVer, only fw version is needed, return.
     if (nextBootFwVer) {
          return true;
     }
 
-    _fsCtrlImgInfo.fs3_uids_info.cx4_uids.base_mac.uid = fwQery.base_mac.uid;
-    _fsCtrlImgInfo.fs3_uids_info.cx4_uids.base_mac.num_allocated = fwQery.base_mac.num_allocated;
-    _fsCtrlImgInfo.orig_fs3_uids_info.cx4_uids.base_mac.uid = fwQery.base_mac_orig.uid;
-    _fsCtrlImgInfo.orig_fs3_uids_info.cx4_uids.base_mac.num_allocated = fwQery.base_mac_orig.num_allocated;
+    _fsCtrlImgInfo.fs3_uids_info.cx4_uids.base_mac.uid = fwQuery.base_mac.uid;
+    _fsCtrlImgInfo.fs3_uids_info.cx4_uids.base_mac.num_allocated = fwQuery.base_mac.num_allocated;
+    _fsCtrlImgInfo.orig_fs3_uids_info.cx4_uids.base_mac.uid = fwQuery.base_mac_orig.uid;
+    _fsCtrlImgInfo.orig_fs3_uids_info.cx4_uids.base_mac.num_allocated = fwQuery.base_mac_orig.num_allocated;
 
-    _fsCtrlImgInfo.fs3_uids_info.cx4_uids.base_guid.uid = fwQery.base_guid.uid;
-    _fsCtrlImgInfo.fs3_uids_info.cx4_uids.base_guid.num_allocated = fwQery.base_guid.num_allocated;
-    _fsCtrlImgInfo.orig_fs3_uids_info.cx4_uids.base_guid.uid = fwQery.base_guid_orig.uid;
-    _fsCtrlImgInfo.orig_fs3_uids_info.cx4_uids.base_guid.num_allocated = fwQery.base_guid_orig.num_allocated;
+    _fsCtrlImgInfo.fs3_uids_info.cx4_uids.base_guid.uid = fwQuery.base_guid.uid;
+    _fsCtrlImgInfo.fs3_uids_info.cx4_uids.base_guid.num_allocated = fwQuery.base_guid.num_allocated;
+    _fsCtrlImgInfo.orig_fs3_uids_info.cx4_uids.base_guid.uid = fwQuery.base_guid_orig.uid;
+    _fsCtrlImgInfo.orig_fs3_uids_info.cx4_uids.base_guid.num_allocated = fwQuery.base_guid_orig.num_allocated;
 
-    _fwImgInfo.ext_info.pci_device_id = fwQery.dev_id;
-    _fwImgInfo.ext_info.dev_type = fwQery.dev_id;
-    _hwDevId = fwQery.hw_dev_id;
-    _fwImgInfo.ext_info.dev_rev = fwQery.rev_id;
+    _fwImgInfo.ext_info.pci_device_id = fwQuery.dev_id;
+    _fwImgInfo.ext_info.dev_type = fwQuery.dev_id;
+    _hwDevId = fwQuery.hw_dev_id;
+    _fwImgInfo.ext_info.dev_rev = fwQuery.rev_id;
     _fwImgInfo.ext_info.is_failsafe = true;
     // get chip type and device sw id, from device/image
     const u_int32_t *swId = (u_int32_t*) NULL;
-    if (!getInfoFromHwDevid(fwQery.hw_dev_id, _fwImgInfo.ext_info.chip_type, &swId)) {
+    if (!getInfoFromHwDevid(fwQuery.hw_dev_id, _fwImgInfo.ext_info.chip_type, &swId)) {
         return false;
     }
     _fsCtrlImgInfo.security_mode = (security_mode_t)
                                    (SMM_MCC_EN |
-                                    ((fwQery.security_type.debug_fw  == 1) ? SMM_DEBUG_FW  : 0) |
-                                    ((fwQery.security_type.signed_fw == 1) ? SMM_SIGNED_FW : 0) |
-                                    ((fwQery.security_type.secure_fw == 1) ? SMM_SECURE_FW : 0) |
-                                    ((fwQery.security_type.dev_fw    == 1) ? SMM_DEV_FW    : 0));
+                                    ((fwQuery.security_type.debug_fw  == 1) ? SMM_DEBUG_FW  : 0) |
+                                    ((fwQuery.security_type.signed_fw == 1) ? SMM_SIGNED_FW : 0) |
+                                    ((fwQuery.security_type.secure_fw == 1) ? SMM_SECURE_FW : 0) |
+                                    ((fwQuery.security_type.dev_fw    == 1) ? SMM_DEV_FW    : 0));
 
     std::vector<FwComponent> compsMap;
     if (!_fwCompsAccess->getFwComponents(compsMap, false)) {
@@ -158,27 +168,27 @@ bool FsCtrlOperations::FsIntQuery()
         }
     }
 
-    strcpy(_fwImgInfo.ext_info.psid, fwQery.psid);
-    strcpy(_fsCtrlImgInfo.orig_psid, fwQery.psid);
+    strcpy(_fwImgInfo.ext_info.psid, fwQuery.psid);
+    strcpy(_fsCtrlImgInfo.orig_psid, fwQuery.psid);
 
     /*
      * Fill ROM info
      */
 
-    _fwImgInfo.ext_info.roms_info.num_of_exp_rom = fwQery.nRoms;
-    _fwImgInfo.ext_info.roms_info.exp_rom_found = fwQery.nRoms > 0;
-    for (int i = 0; i < fwQery.nRoms; i++) {
-        _fwImgInfo.ext_info.roms_info.rom_info[i].exp_rom_product_id = fwQery.roms[i].type;
+    _fwImgInfo.ext_info.roms_info.num_of_exp_rom = fwQuery.nRoms;
+    _fwImgInfo.ext_info.roms_info.exp_rom_found = fwQuery.nRoms > 0;
+    for (int i = 0; i < fwQuery.nRoms; i++) {
+        _fwImgInfo.ext_info.roms_info.rom_info[i].exp_rom_product_id = fwQuery.roms[i].type;
         _fwImgInfo.ext_info.roms_info.rom_info[i].exp_rom_proto = 0xff; // NA
-        _fwImgInfo.ext_info.roms_info.rom_info[i].exp_rom_supp_cpu_arch = fwQery.roms[i].arch;
+        _fwImgInfo.ext_info.roms_info.rom_info[i].exp_rom_supp_cpu_arch = fwQuery.roms[i].arch;
         _fwImgInfo.ext_info.roms_info.rom_info[i].exp_rom_num_ver_fields = FwOperations::RomInfo::getNumVerFromProdId(_fwImgInfo.ext_info.roms_info.rom_info[i].exp_rom_product_id);
-        extractFwVersion(_fwImgInfo.ext_info.roms_info.rom_info[i].exp_rom_ver, fwQery.roms[i].version);
+        extractFwVersion(_fwImgInfo.ext_info.roms_info.rom_info[i].exp_rom_ver, fwQuery.roms[i].version);
     }
 
-    strncpy(_fsCtrlImgInfo.name, fwQery.name, NAME_LEN);
-    strncpy(_fsCtrlImgInfo.description, fwQery.description, DESCRIPTION_LEN);
-    strncpy(_fsCtrlImgInfo.deviceVsd, fwQery.deviceVsd, VSD_LEN);
-    strncpy(_fsCtrlImgInfo.image_vsd, fwQery.imageVsd, VSD_LEN);
+    strncpy(_fsCtrlImgInfo.name, fwQuery.name, NAME_LEN);
+    strncpy(_fsCtrlImgInfo.description, fwQuery.description, DESCRIPTION_LEN);
+    strncpy(_fsCtrlImgInfo.deviceVsd, fwQuery.deviceVsd, VSD_LEN);
+    strncpy(_fsCtrlImgInfo.image_vsd, fwQuery.imageVsd, VSD_LEN);
     return true;
 }
 
@@ -417,7 +427,7 @@ bool FsCtrlOperations::FwBurnAdvanced(FwOperations *imageOps, ExtBurnParams &bur
     if (!TestAndSetTimeStamp(imageOps)) {
        return false;
     }
-    std::vector < u_int8_t > imageOps4MData;
+    std::vector <u_int8_t> imageOps4MData;
     if (!imageOps->FwExtract4MBImage(imageOps4MData, true)) {
         return errmsg(imageOps->getErrorCode(), "Failed to Extract 4MB from the image");
     }

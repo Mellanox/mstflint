@@ -168,6 +168,7 @@ if REG_ACCESS:
         _fields_ = [("device_id", c_uint16),
                     ("device_hw_revision", c_uint16),
                     ("pvs", c_uint8),
+                    ("num_ports",c_uint8),                    
                     ("hw_dev_id", c_uint16),
                     ("manufacturing_base_mac_47_32", c_uint16),
                     ("manufacturing_base_mac_31_0", c_uint32),
@@ -179,15 +180,13 @@ if REG_ACCESS:
                     ("signed_fw", c_uint8),
                     ("debug_fw", c_uint8),
                     ("dev_fw", c_uint8),
+                    ("string_tlv", c_uint8),
                     ("build_id", c_uint32),
                     ("year", c_uint16),
                     ("day", c_uint8),
                     ("month", c_uint8),
                     ("hour", c_uint16),
-                    ("psid1", c_uint32),
-                    ("psid2", c_uint32),
-                    ("psid3", c_uint32),
-                    ("psid4", c_uint32),
+                    ("psid", c_uint8 * 16),
                     ("ini_file_version", c_uint32),
                     ("extended_major", c_uint32),
                     ("extended_minor", c_uint32),
@@ -207,7 +206,8 @@ if REG_ACCESS:
                     ("rom0_version", c_uint32),
                     ("rom1_version", c_uint32),
                     ("rom2_version", c_uint32),
-                    ("rom3_version", c_uint32)]
+                    ("rom3_version", c_uint32),
+                    ("dev_branch_tag", c_uint8 * 28)]
 
     class RegAccess:
 
