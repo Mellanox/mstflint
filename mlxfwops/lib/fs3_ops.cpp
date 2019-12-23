@@ -788,8 +788,8 @@ void Fs3Operations::deal_with_signal()
     return;
 }
 
-reg_access_status_t Fs3Operations::getGI(mfile *mf, struct tools_open_mgir *gi)
-{
+reg_access_status_t Fs3Operations::getGI(mfile *mf,
+        struct reg_access_hca_mgir *gi) {
     reg_access_status_t rc = ME_REG_ACCESS_OK;
     u_int32_t tp = 0;
     mget_mdevs_type(mf, &tp);
@@ -828,7 +828,7 @@ bool Fs3Operations::FwQuery(fw_info_t *fwInfo, bool readRom, bool isStripedImage
         * * MGIR
         * */
         reg_access_status_t rc;
-        struct tools_open_mgir mgir;
+        struct reg_access_hca_mgir mgir;
         memset(&mgir, 0, sizeof(mgir));
         rc = getGI(((Flash *)_ioAccess)->getMfileObj(), &mgir);
         if (!rc) {

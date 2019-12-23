@@ -2672,7 +2672,7 @@ int get_dev_info(mflash *mfl)
     if (dev_flags & MDEVS_MLNX_OS) {
 #ifndef UEFI_BUILD
         reg_access_status_t rc;
-        struct tools_open_mgir mgir;
+        struct reg_access_hca_mgir mgir;
         memset(&mgir, 0, sizeof(mgir));
         rc = reg_access_mgir(mfl->mf, REG_ACCESS_METHOD_GET, &mgir);
         //printf("-D- RC[%s] -- REVID: %d -- DEVID: %d hw_dev_id: %d\n", m_err2str(rc), mgir.HWInfo.REVID, mgir.HWInfo.DEVID, mgir.HWInfo.hw_dev_id);
