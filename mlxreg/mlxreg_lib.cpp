@@ -78,6 +78,7 @@ const u_int64_t MlxRegLib::_gSupportedRegisters[] = {
     0xb019,         //SBDCR
     0x2802,         //CWTP
     0x2803,         //CWTPM
+    0xc001,         //NCFG
     0x0             //Termination - DO NOT DELETE!
 };
 
