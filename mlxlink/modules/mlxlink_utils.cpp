@@ -683,28 +683,6 @@ int prbsLaneRateCapToMask(const string &rate)
     return LANE_RATE_EDR_CAP;
 }
 
-bool prbsModulationCheck(const string & modulation)
-{
-    if (modulation == "NRZ" || modulation == "PAM4" || modulation == "PAM4PREC") {
-        return true;
-    }
-    return false;
-}
-
-u_int32_t prbsModulationToVal(const string & modulation)
-{
-    if (modulation == "NRZ") {
-        return PRBS_NRZ;
-    }
-    if (modulation == "PAM4") {
-        return PRBS_PAM4_ENCODING;
-    }
-    if (modulation == "PAM4PREC") {
-        return PRBS_PAM4_WITH_PRECODING;
-    }
-    return PRBS_NRZ;
-}
-
 u_int32_t prbsMaskToRateNum(u_int32_t mask)
 {
     if (mask == PRBS_SDR) {

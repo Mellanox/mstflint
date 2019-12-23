@@ -93,7 +93,6 @@ public:
     string _testMode;
     string _forceMode;
     string _anMode;
-    string _modulation;
     u_int32_t _iteration;
     double _testTime;
     u_int32_t _feedbackIndex;
