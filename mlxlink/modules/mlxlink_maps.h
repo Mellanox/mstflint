@@ -41,6 +41,8 @@
 #include <stdexcept>
 #include <fstream>
 #include <sstream>
+#include <iterator>
+#include <vector>
 #include <mlxreg/mlxreg_lib.h>
 #include <mlxreg/mlxreg_parser.h>
 #include "mlxlink_user_input.h"

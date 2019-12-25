@@ -47,15 +47,55 @@ void MlxlinkCmdPrint::initRecords(int size)
     mlxlinkRecords.insert(mlxlinkRecords.begin(), size, MlxlinkRecord());
 }
 
+void MlxlinkCmdPrint::toJsonFormat(Json::Value& jsonRoot)
+{
+    if (!visible) {
+        return;
+    }
+    Json::Value outputGroup;
+    MlxlinkRecord record;
+    for (u_int32_t i = 0; i < mlxlinkRecords.size(); i++) {
+        record = mlxlinkRecords[i];
+        if (record.visible && record.key != "") {
+            if (record.arrayValue) {
+                Json::Value subObject;
+                subObject[JSON_VALUES_TITLE] = Json::Value(Json::arrayValue);
+                std::string val = record.val;
+                if (title == HEADER_SUPPORTED_INFO ||
+                        title == HEADER_FEC_INFO) {
+                    std::string mask = val.substr(0, val.find("(")-1);
+                    val = val.substr(
+                            val.find("(")+1, val.find_last_of(")")-mask.length()-2);
+                    subObject[JSON_MASK_TITLE] = mask;
+                }
+                if (!val.empty()) {
+                    std::vector<std::string> vals =
+                            MlxlinkRecord::split(val, ',');
+                    for (std::vector<std::string>::iterator it = vals.begin() ;
+                            it != vals.end(); ++it) {
+                        subObject[JSON_VALUES_TITLE].append(*it);
+                    }
+                }
+                outputGroup[record.key] = subObject;
+            } else {
+                outputGroup[record.key] = record.val;
+            }
+        }
+    }
+    jsonRoot[JSON_RESULT_SECTION][JSON_OUTPUT_SECTION][title] = outputGroup;
+}
+
 std::ostream & operator << (std::ostream &out, const MlxlinkCmdPrint &cmdPrint)
 {
-    if (!cmdPrint.visible) {
-        return out;
-    }
-    out << std::endl << cmdPrint.title << std::endl;
-    out << std::string(cmdPrint.title.length(), '-') << std::endl;
-    for (u_int32_t i = 0; i < cmdPrint.mlxlinkRecords.size(); i++) {
-        out <<  cmdPrint.mlxlinkRecords[i];
+    if (!MlxlinkRecord::jsonFormat) {
+        if (!cmdPrint.visible) {
+            return out;
+        }
+        out << std::endl << cmdPrint.title << std::endl;
+        out << std::string(cmdPrint.title.length(), '-') << std::endl;
+        for (u_int32_t i = 0; i < cmdPrint.mlxlinkRecords.size(); i++) {
+            out <<  cmdPrint.mlxlinkRecords[i];
+        }
     }
     return out;
 }
