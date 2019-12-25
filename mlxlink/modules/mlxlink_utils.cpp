@@ -780,7 +780,7 @@ string prbsMaskToLockStatus(u_int32_t mask, u_int32_t numOfLanesToUse)
             res += "Not Locked";
         }
         if (i < numOfLanesToUse - 1) {
-            res += ",    ";
+            res += MlxlinkRecord::jsonFormat? "," : ",    ";
         }
     }
     return res;

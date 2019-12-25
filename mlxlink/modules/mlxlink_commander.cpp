@@ -788,13 +788,15 @@ std::vector<string> MlxlinkCommander::parseParamsFromLine(const string & ParamsL
     return paramVector;
 }
 
-void MlxlinkCommander::setPrintVal(MlxlinkCmdPrint &mlxlinkCmdPrint, int index, string key,
-            string value, string color, bool print, bool valid)
+void MlxlinkCommander::setPrintVal(MlxlinkCmdPrint &mlxlinkCmdPrint,
+        int index, string key, string value, string color, bool print,
+        bool valid, bool arrayValue)
 {
     mlxlinkCmdPrint.mlxlinkRecords[index].key = key;
     mlxlinkCmdPrint.mlxlinkRecords[index].val = valid? value: "N/A";
     mlxlinkCmdPrint.mlxlinkRecords[index].color = color;
     mlxlinkCmdPrint.mlxlinkRecords[index].visible = print;
+    mlxlinkCmdPrint.mlxlinkRecords[index].arrayValue = arrayValue;
 }
 
 void MlxlinkCommander::setPrintTitle(MlxlinkCmdPrint &mlxlinkCmdPrint, string title
@@ -964,7 +966,7 @@ void MlxlinkCommander::showModuleInfo()
         cout << _moduleInfoCmd;
 
         if (oper_status != 1) {
-            MlxlinkRecord::printWar("Warning: Cannot get module EEPROM information, module operation status is not 'plugged and enabled'");
+            MlxlinkRecord::printWar("Warning: Cannot get module EEPROM information, module operation status is not 'plugged and enabled'", _jsonRoot);
         }
     } catch (const std::exception &exc) {
         _allUnhandledErrors += string("Showing Module Info via PDDR raised the following exception: ") + string(exc.what()) + string("\n");
@@ -1151,7 +1153,7 @@ void MlxlinkCommander::operatingInfoPage()
 void MlxlinkCommander::supportedInfoPage()
 {
     try {
-        setPrintTitle(_supportedInfoCmd,"Supported Info",
+        setPrintTitle(_supportedInfoCmd, HEADER_SUPPORTED_INFO,
                 PDDR_SUPPORTED_INFO_LAST, !_prbsTestMode);
         u_int32_t speeds_mask = _protoAdminEx ? _protoAdminEx: _protoAdmin;
         string supported_speeds = SupportedSpeeds2Str(_protoActive, speeds_mask,
@@ -1171,7 +1173,7 @@ void MlxlinkCommander::supportedInfoPage()
         string title = "Enabled Link Speed" + extStr;
 
         setPrintVal(_supportedInfoCmd,PDDR_ENABLED_LINK_SPEED, title,
-                value.str(),color, true, !_prbsTestMode);
+                value.str(),color, true, !_prbsTestMode, true);
         // Supported cable speed
         supported_speeds = SupportedSpeeds2Str(_protoActive, _protoCapability,
                 _protoCapabilityEx);
@@ -1182,7 +1184,7 @@ void MlxlinkCommander::supportedInfoPage()
                 << " (" << supported_speeds << ")" << setfill(' ');
         title = "Supported Cable Speed" + extStr;
         setPrintVal(_supportedInfoCmd,PDDR_SUPPORTED_LINK_SPEED, title,
-                value.str(),color, true, !_prbsTestMode);
+                value.str(),color, true, !_prbsTestMode, true);
     } catch (const std::exception &exc) {
         throw MlxRegException(string(exc.what()));
     }
@@ -1591,11 +1593,11 @@ void MlxlinkCommander::showEye()
 
         setPrintTitle(_eyeOpeningInfoCmd, showEyeTitle, EYE_OPENING_INFO_LAST);
         setPrintVal(_eyeOpeningInfoCmd, EYE_PHYSICAL_GRADE,
-                "Physical Grade", getStringFromVector(physicalGrades));
+                "Physical Grade", getStringFromVector(physicalGrades), ANSI_COLOR_RESET, true,true, true);
         setPrintVal(_eyeOpeningInfoCmd, EYE_HEIGHT_EYE_OPENING,
-                "Height Eye Opening [mV]", getStringFromVector(heightLengths));
+                "Height Eye Opening [mV]", getStringFromVector(heightLengths), ANSI_COLOR_RESET, true,true, true);
         setPrintVal(_eyeOpeningInfoCmd, EYE_PHASE_EYE_OPENING,
-                "Phase  Eye Opening [psec]", getStringFromVector(phaseWidths));
+                "Phase  Eye Opening [psec]", getStringFromVector(phaseWidths), ANSI_COLOR_RESET, true, true, true);
 
         cout << _eyeOpeningInfoCmd;
 
@@ -1668,12 +1670,17 @@ void MlxlinkCommander::showFEC()
             }
         }
 
-        setPrintTitle(_fecCapInfoCmd, "FEC Capability Info", FEC_CAP_INFO_LASE);
-        setPrintVal(_fecCapInfoCmd, FEC_CAP_100G, "FEC Capability 100GbE",fecCap100);
-        setPrintVal(_fecCapInfoCmd, FEC_CAP_50G, "FEC Capability 50GbE", fecCap50);
-        setPrintVal(_fecCapInfoCmd, FEC_CAP_40G, "FEC Capability 40GbE", fecCap40);
-        setPrintVal(_fecCapInfoCmd, FEC_CAP_25G, "FEC Capability 25GbE", fecCap25);
-        setPrintVal(_fecCapInfoCmd, FEC_CAP_10G, "FEC Capability 10GbE", fecCap10);
+        setPrintTitle(_fecCapInfoCmd, HEADER_FEC_INFO, FEC_CAP_INFO_LASE);
+        setPrintVal(_fecCapInfoCmd, FEC_CAP_100G, "FEC Capability 100GbE",
+                fecCap100, ANSI_COLOR_RESET, true, true, true);
+        setPrintVal(_fecCapInfoCmd, FEC_CAP_50G, "FEC Capability 50GbE",
+                fecCap50, ANSI_COLOR_RESET, true, true, true);
+        setPrintVal(_fecCapInfoCmd, FEC_CAP_40G, "FEC Capability 40GbE",
+                fecCap40, ANSI_COLOR_RESET, true, true, true);
+        setPrintVal(_fecCapInfoCmd, FEC_CAP_25G, "FEC Capability 25GbE",
+                fecCap25, ANSI_COLOR_RESET, true, true, true);
+        setPrintVal(_fecCapInfoCmd, FEC_CAP_10G, "FEC Capability 10GbE",
+                fecCap10, ANSI_COLOR_RESET, true, true, true);
 
         cout << _fecCapInfoCmd;
 
@@ -1716,10 +1723,11 @@ void MlxlinkCommander::showSltp()
             }
         }
         if (!_linkUP && !_userInput._pcie && !_prbsTestMode) {
-            setPrintVal(_sltpInfoCmd,0, " ", _mlxlinkMaps->_sltpHeader,ANSI_COLOR_RESET, true,false);
+            setPrintVal(_sltpInfoCmd,0, "Serdes TX parameters", _mlxlinkMaps->_sltpHeader,ANSI_COLOR_RESET, true, false, true);
+            cout << _sltpInfoCmd;
             return;
         }
-        setPrintVal(_sltpInfoCmd,0, " ", _mlxlinkMaps->_sltpHeader);
+        setPrintVal(_sltpInfoCmd,0, "Serdes TX parameters", _mlxlinkMaps->_sltpHeader, ANSI_COLOR_RESET, true,true, true);
         for (u_int32_t i = 0; i < numOfLanesToUse; i++) {
             updateField("local_port", _localPort);
             updateField("pnat", (_userInput._pcie) ? PNAT_PCIE : PNAT_LOCAL);
@@ -1736,7 +1744,7 @@ void MlxlinkCommander::showSltp()
             }
             resetParser(regName);
             setPrintVal(_sltpInfoCmd,(int)i + 1,
-                    "Lane " + to_string(i),getStringFromVector(sltpLanes[i]),ANSI_COLOR_RESET, true,valid);
+                    "Lane " + to_string(i),getStringFromVector(sltpLanes[i]),ANSI_COLOR_RESET, true, valid, true);
         }
         cout << _sltpInfoCmd;
     } catch (const std::exception &exc) {
@@ -1765,7 +1773,7 @@ void MlxlinkCommander::showDeviceData()
         cout << _showDeviceInfoCmd;
 
         if (_isHCA) {
-            MlxlinkRecord::printWar("Note: P/N, Product Name, S/N and Revision are supported only in switches");
+            MlxlinkRecord::printWar("Note: P/N, Product Name, S/N and Revision are supported only in switches", _jsonRoot);
         }
 
     } catch (const std::exception &exc) {
@@ -1840,11 +1848,11 @@ void MlxlinkCommander::showBerMonitorInfo()
 
 void MlxlinkCommander::showExternalPhy()
 {
-    if (_isHCA || _devID == DeviceSwitchIB || _devID == DeviceSwitchIB2
-            || _devID == DeviceQuantum) {
-        throw MlxRegException("\"--" PEPC_SHOW_FLAG "\" option is not supported for HCA and InfiniBand switches");
-    }
     try {
+        if (_isHCA || _devID == DeviceSwitchIB || _devID == DeviceSwitchIB2
+                || _devID == DeviceQuantum) {
+            throw MlxRegException("\"--" PEPC_SHOW_FLAG "\" option is not supported for HCA and InfiniBand switches");
+        }
         string regName = "PEPC";
         string twisted_pair_an = "N/A";
         string twisted_pair_force_mode = "N/A";
@@ -2381,7 +2389,7 @@ string MlxlinkCommander::getVendorRev(const string & name)
 void MlxlinkCommander::clearCounters()
 {
     try {
-        MlxlinkRecord::printCmdLine("Clearing Counters");
+        MlxlinkRecord::printCmdLine("Clearing Counters", _jsonRoot);
 
         string regName = "PPCNT";
         resetParser(regName);
@@ -2440,7 +2448,7 @@ void MlxlinkCommander::sendPaos()
 
 void MlxlinkCommander::sendPaosDown()
 {
-    MlxlinkRecord::printCmdLine("Configuring Port State (Down)");
+    MlxlinkRecord::printCmdLine("Configuring Port State (Down)", _jsonRoot);
     sendPaosCmd(PAOS_DOWN);
     if (!checkPaosDown()) {
         if (_isHCA) {
@@ -2454,7 +2462,7 @@ void MlxlinkCommander::sendPaosDown()
 
 void MlxlinkCommander::sendPaosUP()
 {
-    MlxlinkRecord::printCmdLine("Configuring Port State (Up)");
+    MlxlinkRecord::printCmdLine("Configuring Port State (Up)", _jsonRoot);
     sendPaosCmd(PAOS_UP);
 }
 
@@ -2480,16 +2488,16 @@ void MlxlinkCommander::handlePrbs()
             sendPprt();
             sendPptt();
             sendPrbsPpaos(true);
-            MlxlinkRecord::printCmdLine("Configuring Port to Physical Test Mode");
+            MlxlinkRecord::printCmdLine("Configuring Port to Physical Test Mode", _jsonRoot);
         } else if (_userInput._prbsMode == "DS") {
-            MlxlinkRecord::printCmdLine("Configuring Port to Regular Operation");
+            MlxlinkRecord::printCmdLine("Configuring Port to Regular Operation", _jsonRoot);
             if (_prbsTestMode) {
                 sendPrbsPpaos(false);
             }
             sendPaosToggle();
         } else if (_userInput._prbsMode == "TU") {
             if (_prbsTestMode) {
-                MlxlinkRecord::printCmdLine("Performing Tuning");
+                MlxlinkRecord::printCmdLine("Performing Tuning", _jsonRoot);
                 startTuning();
             } else {
                 throw MlxRegException(
@@ -2596,7 +2604,7 @@ void MlxlinkCommander::sendPtys()
         if (_prbsTestMode) {
             throw MlxRegException("Cannot Configure Port Speeds in Physical Test Mode. Please Disable First");
         }
-        MlxlinkRecord::printCmdLine("Configuring Port Speeds");
+        MlxlinkRecord::printCmdLine("Configuring Port Speeds", _jsonRoot);
         u_int32_t protoCap = getPtysCap();
         string regName = "PTYS";
         resetParser(regName);
@@ -2691,7 +2699,7 @@ void MlxlinkCommander::sendPplm()
         if (_prbsTestMode) {
             throw MlxRegException("Cannot Configure FEC in Physical Test Mode. Please Disable First.");
         }
-        MlxlinkRecord::printCmdLine("Configuring Port FEC");
+        MlxlinkRecord::printCmdLine("Configuring Port FEC", _jsonRoot);
         if (_protoActive == IB) {
             throw MlxRegException("FEC Configuration is Valid for ETHERNET only!");
         }
@@ -2815,7 +2823,7 @@ void MlxlinkCommander::updateSltp16nmFields()
 
 void MlxlinkCommander::sendSltp()
 {
-    MlxlinkRecord::printCmdLine("Configuring Port Transmitter Parameters");
+    MlxlinkRecord::printCmdLine("Configuring Port Transmitter Parameters", _jsonRoot);
     checkSltpParamsSize();
     string regName = "SLTP";
     if (_userInput._sltpLane && _userInput._lane >= _numOfLanes) {
@@ -2860,7 +2868,7 @@ void MlxlinkCommander::sendSltp()
 void MlxlinkCommander::sendPplr()
 {
     try {
-        MlxlinkRecord::printCmdLine("Configuring Port Loopback");
+        MlxlinkRecord::printCmdLine("Configuring Port Loopback", _jsonRoot);
         string regName = "PPLR";
         resetParser(regName);
 
@@ -2891,12 +2899,12 @@ u_int32_t MlxlinkCommander::getLoopbackMode(const string &lb)
 
 void MlxlinkCommander::sendPepc()
 {
-    if (_isHCA || _devID == DeviceSwitchIB || _devID == DeviceSwitchIB2
-            || _devID == DeviceQuantum) {
-        throw MlxRegException("\"--" PEPC_SET_FLAG "\" option is not supported for HCA and InfiniBand switches");
-    }
     try {
-        MlxlinkRecord::printCmdLine("Configuring External PHY");
+        if (_isHCA || _devID == DeviceSwitchIB || _devID == DeviceSwitchIB2
+                || _devID == DeviceQuantum) {
+            throw MlxRegException("\"--" PEPC_SET_FLAG "\" option is not supported for HCA and InfiniBand switches");
+        }
+        MlxlinkRecord::printCmdLine("Configuring External PHY", _jsonRoot);
         string regName = "PEPC";
 
         // Get old values of PEPC fields
@@ -2918,5 +2926,36 @@ void MlxlinkCommander::sendPepc()
         genBuffSendRegister(regName, MACCESS_REG_METHOD_SET);
     } catch (const std::exception &exc) {
         _allUnhandledErrors += string("Sending PEPC (Configuring External PHY parameters) raised the following exception: ") + string(exc.what()) + string("\n");
+    }
+}
+
+void MlxlinkCommander::prepareJsonOut()
+{
+    _operatingInfoCmd.toJsonFormat(_jsonRoot);
+    _supportedInfoCmd.toJsonFormat(_jsonRoot);
+    _troubInfoCmd.toJsonFormat(_jsonRoot);
+    _testModeInfoCmd.toJsonFormat(_jsonRoot);
+    _pcieInfoCmd.toJsonFormat(_jsonRoot);
+    _moduleInfoCmd.toJsonFormat(_jsonRoot);
+    _berInfoCmd.toJsonFormat(_jsonRoot);
+    _testModeBerInfoCmd.toJsonFormat(_jsonRoot);
+    _mpcntPerfInfCmd.toJsonFormat(_jsonRoot);
+    _mpcntTimerInfCmd.toJsonFormat(_jsonRoot);
+    _eyeOpeningInfoCmd.toJsonFormat(_jsonRoot);
+    _fecCapInfoCmd.toJsonFormat(_jsonRoot);
+    _sltpInfoCmd.toJsonFormat(_jsonRoot);
+    _showDeviceInfoCmd.toJsonFormat(_jsonRoot);
+    _showBerMonitorInfo.toJsonFormat(_jsonRoot);
+    _extPhyInfoCmd.toJsonFormat(_jsonRoot);
+    _linkBlameInfoCmd.toJsonFormat(_jsonRoot);
+    _validPcieLinks.toJsonFormat(_jsonRoot);
+
+    bool errorExist = _allUnhandledErrors != "";
+    _jsonRoot[JSON_STATUS_SECTION][JSON_STATUS_CODE] = errorExist? 1 : 0;
+    _jsonRoot[JSON_STATUS_SECTION][JSON_MSG] = errorExist?
+                                    _allUnhandledErrors : "success";
+
+    if (!_jsonRoot[JSON_RESULT_SECTION][JSON_OUTPUT_SECTION]) {
+        _jsonRoot[JSON_RESULT_SECTION][JSON_OUTPUT_SECTION] = "N/A";
     }
 }

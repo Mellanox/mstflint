@@ -75,6 +75,7 @@ void MlxlinkUi::printSynopsisHeader()
     MlxlinkRecord::printFlagLine(DEPTH_FLAG_SHORT, DEPTH_FLAG, "depth", "depth level of the DUT of some hierarchy (PCIE only)");
     MlxlinkRecord::printFlagLine(PCIE_INDEX_FLAG_SHORT, PCIE_INDEX_FLAG, "pcie_index", "PCIe index number (Internal domain index) (PCIE only)");
     MlxlinkRecord::printFlagLine(NODE_FLAG_SHORT, NODE_FLAG, "node", "the node within each depth (PCIE only)");
+    MlxlinkRecord::printFlagLine(PRINT_JSON_OUTPUT_FLAG_SHORT, PRINT_JSON_OUTPUT_FLAG, "", "Print the output in json format");
 }
 
 void MlxlinkUi::printSynopsisQueries()
@@ -94,6 +95,7 @@ void MlxlinkUi::printSynopsisQueries()
     MlxlinkRecord::printFlagLine(DEVICE_DATA_FLAG_SHORT, DEVICE_DATA_FLAG, "", "General Device Info");
     MlxlinkRecord::printFlagLine(BER_MONITOR_INFO_FLAG_SHORT, BER_MONITOR_INFO_FLAG, "", "Show BER Monitor Info (not supported for HCA)");
     MlxlinkRecord::printFlagLine(PEPC_SHOW_FLAG_SHORT, PEPC_SHOW_FLAG, "", "Show External PHY Info");
+
 }
 
 void MlxlinkUi::printSynopsisCommands()
@@ -387,6 +389,7 @@ void MlxlinkUi::initCmdParser()
     AddOptions(DEVICE_DATA_FLAG, DEVICE_DATA_FLAG_SHORT, "", "Device Info");
     AddOptions(BER_MONITOR_INFO_FLAG, BER_MONITOR_INFO_FLAG_SHORT, "", "Show BER Monitor Info");
     AddOptions(PEPC_SHOW_FLAG, PEPC_SHOW_FLAG_SHORT, "", "Show External PHY Info");
+    AddOptions(PRINT_JSON_OUTPUT_FLAG, PRINT_JSON_OUTPUT_FLAG_SHORT, "", "Print the output in json format");
 
     AddOptions(FEC_DATA_FLAG, FEC_DATA_FLAG_SHORT, "", "FEC Data");
     AddOptions(PAOS_FLAG, PAOS_FLAG_SHORT, "PAOS", "Send PAOS");
@@ -515,7 +518,10 @@ void MlxlinkUi::commandsCaller()
 ParseStatus MlxlinkUi::HandleOption(string name, string value)
 {
     _sendRegFuncMap[SHOW_PDDR] = SHOW_PDDR;
-    if (name == HELP_FLAG) {
+    if (name == PRINT_JSON_OUTPUT_FLAG) {
+        MlxlinkRecord::jsonFormat = true;
+        return PARSE_OK;
+    } else if (name == HELP_FLAG) {
         printHelp();
         return PARSE_OK_WITH_EXIT;
     } else if (name == VERSION_FLAG) {
@@ -684,14 +690,13 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
 
 int MlxlinkUi::run(int argc, char **argv)
 {
+    int exit_code = 0;
     createMlxlinkCommander();
     initCmdParser();
     ParseStatus rc = _cmdParser.ParseOptions(argc, argv);
-    int exit_code = 0;
     if (rc == PARSE_OK_WITH_EXIT) {
         return exit_code;
     } else if ((rc == PARSE_ERROR) || (rc == PARSE_ERROR_SHOW_USAGE)) {
-        printSynopsis();
         throw MlxRegException(
                   "failed to parse arguments. "
                   + string(_cmdParser.GetErrDesc()));
@@ -715,7 +720,7 @@ int MlxlinkUi::run(int argc, char **argv)
             !_mlxlinkCommander->_mlxLinkLib->isAccessRegisterGMPSupported(
                     MACCESS_REG_METHOD_GET)) {
         MlxlinkRecord::printWar("Warning: AccessRegisterGMP Get() method is not supported.\n"
-                 "         mlxlink has limited functionality");
+                 "         mlxlink has limited functionality", _mlxlinkCommander->_jsonRoot);
     }
     _mlxlinkCommander->_devID = _mlxlinkCommander->_mlxLinkLib->getDevId();
     _mlxlinkCommander->_isHCA = dm_dev_is_hca(_mlxlinkCommander->_devID);
@@ -737,10 +742,19 @@ int MlxlinkUi::run(int argc, char **argv)
     }
     commandsCaller();
     if (_mlxlinkCommander->_allUnhandledErrors != "") {
-        MlxlinkRecord::printErrorsSection(_mlxlinkCommander->_mlxlinkMaps->_showErrorsTitle,
-                _mlxlinkCommander->_allUnhandledErrors);
         exit_code = 1;
+        if (!MlxlinkRecord::jsonFormat) {
+            MlxlinkRecord::printErrorsSection(
+                    _mlxlinkCommander->_mlxlinkMaps->_showErrorsTitle,
+                    _mlxlinkCommander->_allUnhandledErrors);
+        }
     }
+
+    if (MlxlinkRecord::jsonFormat) {
+        _mlxlinkCommander->prepareJsonOut();
+        cout << _mlxlinkCommander->_jsonRoot.toStyledString();
+    }
+
     cout << endl;
     return exit_code;
 }
