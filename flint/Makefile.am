@@ -85,7 +85,7 @@ else
 endif
 
 if ENABLE_FWMGR
-mstflint_LDADD += $(top_srcdir)/libmfa/libmfa.a $(top_srcdir)/ext_libs/minixz/libminixz.a $(top_srcdir)/mlxarchive/libmstarchive.a $(top_srcdir)/xz_utils/libxz_utils.a 
+mstflint_LDADD += $(top_srcdir)/libmfa/libmfa.a $(top_srcdir)/ext_libs/minixz/libminixz.a $(top_srcdir)/mlxarchive/libmstarchive.a $(top_srcdir)/xz_utils/libxz_utils.a -llzma -lm
 else
 mstflint_CXXFLAGS += -DNO_MSTARCHIVE
 endif
