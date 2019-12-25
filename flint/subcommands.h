@@ -49,10 +49,14 @@
 #include "mlxfwops/lib/fw_ops.h"
 #include "mlxfwops/lib/fs_checks.h"
 #include "err_msgs.h"
+using namespace std;
+
+#ifndef NO_MSTARCHIVE
 #include "mlxarchive/mlxarchive_mfa2_package_gen.h"
 #include "mlxarchive/mlxarchive_mfa2_utils.h"
-using namespace std;
 using namespace mfa2;
+#endif
+
 //we might need to close the log from the main program in case of interrupt
 void close_log();
 void print_time_to_log();
@@ -94,8 +98,9 @@ protected:
     sub_cmd_t _cmdType;
     bool _mccSupported;
     bool _imageReactivation;
+#ifndef NO_MSTARCHIVE
     MFA2* _mfa2Pkg;
-
+#endif
     //Methods that are commonly used in the various subcommands:
     //TODO: add middle classes and segregate as much of these common methods between these classes
 
@@ -159,7 +164,10 @@ protected:
 
 
 public:
-    SubCommand() : _fwOps(NULL), _imgOps(NULL), _io(NULL), _v(Wtv_Uninitilized), _maxCmdParamNum(-1),  _minCmdParamNum(-1), _mccSupported(false), _imageReactivation(false), _mfa2Pkg(NULL)
+    SubCommand() : _fwOps(NULL), _imgOps(NULL), _io(NULL), _v(Wtv_Uninitilized), _maxCmdParamNum(-1),  _minCmdParamNum(-1), _mccSupported(false), _imageReactivation(false)
+#ifndef NO_MSTARCHIVE        
+        , _mfa2Pkg(NULL)
+#endif
     {
         _cmdType = SC_No_Cmd;
         memset(_errBuff, 0, sizeof(_errBuff));

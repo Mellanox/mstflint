@@ -64,7 +64,9 @@
 #include "subcommands.h"
 #include "tools_layouts/cx4fw_layouts.h"
 using namespace std;
+#ifndef NO_MSTARCHIVE
 using namespace mfa2;
+#endif
 /***********************************
  *  Log file writing implementation
  ************************************/
@@ -1471,9 +1473,11 @@ BinaryCompareSubCommand::BinaryCompareSubCommand()
 }
 BinaryCompareSubCommand:: ~BinaryCompareSubCommand()
 {
+#ifndef NO_MSTARCHIVE
     if (_mfa2Pkg != NULL) {
         delete _mfa2Pkg;
     }
+#endif
 }
 bool BinaryCompareSubCommand::verifyParams()
 {
@@ -1491,6 +1495,7 @@ bool BinaryCompareSubCommand::verifyParams()
 }
 FlintStatus BinaryCompareSubCommand::compareMFA2()
 {
+#ifndef NO_MSTARCHIVE
     if (preFwOps() == FLINT_FAILED) {
         return FLINT_FAILED;
     }
@@ -1532,18 +1537,23 @@ FlintStatus BinaryCompareSubCommand::compareMFA2()
     printf("\33[2K\r");//clear the current line
     printf("Binary comparison failed.\n");
     return FLINT_SUCCESS;
+#else
+    printf("MFA2 Binary comparison not supported.\n");
+    return FLINT_FAILED;
+#endif
 }
 
 
 FlintStatus BinaryCompareSubCommand::executeCommand()
 {
+#ifndef NO_MSTARCHIVE
     string mfa2file = _flintParams.image;
     _mfa2Pkg = MFA2::LoadMFA2Package(mfa2file);
     if (_mfa2Pkg != NULL) {
         _flintParams.mfa2_specified = true;
         return compareMFA2();
     }
-
+#endif
 
     vector<u_int8_t> device_critical;
     vector<u_int8_t> device_non_critical;
@@ -1654,9 +1664,11 @@ BurnSubCommand:: ~BurnSubCommand()
     if (_burnParams.userVsd != NULL) {
         delete[] _burnParams.userVsd;
     }
+#ifndef NO_MSTARCHIVE
     if (_mfa2Pkg != NULL) {
         delete _mfa2Pkg;
     }
+#endif
 }
 
 bool BurnSubCommand::verifyParams()
@@ -2209,11 +2221,13 @@ bool BurnSubCommand::checkMatchingExpRomDevId(const fw_info_t& info)
 
 FlintStatus BurnSubCommand::executeCommand()
 {
+#ifndef NO_MSTARCHIVE
     string mfa2file = _flintParams.image;
     _mfa2Pkg = MFA2::LoadMFA2Package(mfa2file);
     if (_mfa2Pkg != NULL) {
         _flintParams.mfa2_specified = true;
     }
+#endif
     if (_flintParams.image_reactivation) {
         if (preFwOps(true) == FLINT_FAILED) {
             return FLINT_FAILED;
@@ -2297,6 +2311,7 @@ u_int32_t SubCommand::getUserChoice(u_int32_t maximumValue)
 
 FlintStatus BurnSubCommand::burnMFA2()
 {
+#ifndef NO_MSTARCHIVE
     vector<u_int8_t> componentBuffer;
     map_string_to_component matchingComponentsMap;
     printf("-I- Fetching FW versions from MFA2 image, this operation may take a minute, please wait..\n");
@@ -2348,6 +2363,9 @@ FlintStatus BurnSubCommand::burnMFA2()
         }
         return FLINT_SUCCESS;
     }
+#else
+    return FLINT_FAILED;
+#endif
 }
 
 /***********************

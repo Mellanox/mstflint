@@ -30,7 +30,7 @@
 # SOFTWARE.
 #--
 
-SUBDIRS = common mft_utils ext_libs $(TOOLS_CRYPTO) tools_layouts ${MTCR_CONF_DIR} mtcr_py $(MAD_IFC) reg_access cmdif $(XZ_UTILS_DIR) dev_mgt tools_res_mgmt mvpd mflash fw_comps_mgr libmfa pldmlib mlxconfig mlxfwops cmdparser mlxarchive $(FW_MGR_TOOLS) flint small_utils mstdump ${ADABE_TOOLS} tracers resourcedump
+SUBDIRS = common mft_utils ext_libs $(TOOLS_CRYPTO) tools_layouts ${MTCR_CONF_DIR} mtcr_py $(MAD_IFC) reg_access cmdif $(XZ_UTILS_DIR) dev_mgt tools_res_mgmt mvpd mflash fw_comps_mgr libmfa pldmlib mlxconfig mlxfwops cmdparser $(FW_MGR_TOOLS) flint small_utils mstdump ${ADABE_TOOLS} tracers resourcedump
 
 DIST_SUBDIRS = tracers
 
