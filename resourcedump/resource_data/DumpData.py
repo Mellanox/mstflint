@@ -37,6 +37,7 @@ class DumpData:
             # segment type can be name, this method will convert the name (if needed) to seg number in hex (str)
             kwargs[cs.UI_ARG_SEGMENT] = res.get_segment_type_by_segment_name(kwargs[cs.UI_ARG_SEGMENT])
             dump_segments = ResourceDumpFetcher(kwargs["device_name"]).fetch_data(**kwargs)
+        else:
+            raise Exception("not supported or missing argument")
 
         return dump_segments
-
