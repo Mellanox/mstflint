@@ -41,7 +41,7 @@ UTILS_DIR = $(top_srcdir)/mft_utils
 MLXREG_DIR = $(top_srcdir)/mlxreg
 JSON_DIR = $(top_srcdir)/ext_libs/json
 
-INCLUDES = -I. -I$(USER_DIR) -I$(MTCR_DIR) -I$(MFT_EXT_LIBS_INC_DIR) -I$(UTILS_DIR) -I$(MLXREG_DIR) -I$(JSON_DIR)
+INCLUDES = -I. -I$(USER_DIR) -I$(MTCR_DIR) -I$(MFT_EXT_LIBS_INC_DIR) -I$(UTILS_DIR) -I$(MLXREG_DIR) -I$(MTCR_INC_DIR) -I$(JSON_DIR)
 
 AM_CFLAGS = -Wall -W -g -MP -MD -pipe -Werror $(COMPILER_FPIC) -DDATA_PATH=\"$(pkgdatadir)\"
 
