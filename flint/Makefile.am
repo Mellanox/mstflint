@@ -60,8 +60,6 @@ mstflint_LDADD =  ../mlxfwops/lib/libmlxfwops.a  \
           ../tools_layouts/libtools_layouts.a \
           ../fw_comps_mgr/libfw_comps_mgr.a \
 		  ../mft_utils/libmftutils.a\
-		  ../mlxarchive/libmstarchive.a \
-		  ../xz_utils/libxz_utils.a \
 		  ${LDL}
 
 
@@ -87,7 +85,9 @@ else
 endif
 
 if ENABLE_FWMGR
-mstflint_LDADD += $(top_srcdir)/libmfa/libmfa.a $(top_srcdir)/ext_libs/minixz/libminixz.a
+mstflint_LDADD += $(top_srcdir)/libmfa/libmfa.a $(top_srcdir)/ext_libs/minixz/libminixz.a $(top_srcdir)/mlxarchive/libmstarchive.a $(top_srcdir)/xz_utils/libxz_utils.a 
+else
+mstflint_CXXFLAGS += -DNO_MSTARCHIVE
 endif
 
 #get mst device examples and tool name from makefile

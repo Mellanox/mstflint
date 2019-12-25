@@ -54,7 +54,6 @@ AC_CONFIG_HEADERS( config.h )
 OS=$(uname -s)
 
 MTCR_CONF_DIR=""
-XZ_UTILS_DIR="xz_utils"
 LDL=""
 default_en_inband=""
 
@@ -78,6 +77,7 @@ AC_CHECK_HEADER(termios.h,[CXXFLAGS="${CXXFLAGS} -DHAVE_TERMIOS_H"])
 TOOLS_CRYPTO=""
 MAD_IFC=""
 FW_MGR_TOOLS=""
+XZ_UTILS_DIR=""
 ADABE_TOOLS=""
 ADABE_DBS=""
 ADABE_DBS_EXTRA_DIST=""
@@ -361,6 +361,7 @@ fi
 AS_IF([test "x$enable_fw_mgr" = "xyes"], [
         AC_CONFIG_FILES(mlxfwupdate/Makefile)
         AC_CONFIG_FILES(ext_libs/iniParser/Makefile)
+        AC_CONFIG_FILES(mlxarchive/Makefile)
         FW_MGR_TOOLS="mlxfwupdate mlxarchive"
     ])
     
@@ -384,6 +385,7 @@ AS_IF([test "x$enable_adb_generic_tools" = "xyes"], [
     ])
 
 AS_IF([test "x$enable_fw_mgr" = "xyes" || test "x$enable_adb_generic_tools" = "xyes"], [
+        AC_CONFIG_FILES(xz_utils/Makefile)
         XZ_UTILS_DIR="xz_utils"
     ])
 
@@ -404,5 +406,5 @@ fi
 AC_OUTPUT( Makefile common/Makefile mft_utils/Makefile mtcr_py/Makefile ext_libs/Makefile ext_libs/sqlite/Makefile ext_libs/muparser/Makefile ext_libs/json/Makefile ext_libs/minixz/Makefile dev_mgt/Makefile \
         tools_layouts/Makefile reg_access/Makefile cmdif/Makefile libmfa/Makefile pldmlib/Makefile tools_res_mgmt/Makefile mlxconfig/Makefile mlxconfig/mlxconfig_dbs/Makefile mflash/Makefile mlxfwops/Makefile mlxfwops/lib/Makefile cmdparser/Makefile \
         flint/Makefile small_utils/Makefile small_utils/mlxfwresetlib/Makefile mstdump/Makefile mstdump/crd_lib/Makefile mstdump/crd_main/Makefile mstdump/mstdump_dbs/Makefile mvpd/Makefile \
-        fw_comps_mgr/Makefile xz_utils/Makefile mlxarchive/Makefile mad_ifc/Makefile tracers/Makefile tracers/fwtrace/Makefile resourcedump/Makefile )
+        fw_comps_mgr/Makefile mad_ifc/Makefile tracers/Makefile tracers/fwtrace/Makefile resourcedump/Makefile )
 
