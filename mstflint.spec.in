@@ -182,6 +182,11 @@ rm -rf $RPM_BUILD_ROOT
 %{mstflint_python_tools}/dev_mgt.py
 %{mstflint_python_tools}/c_dev_mgt.so
 %{mstflint_python_tools}/mstprivhost/mstprivhost.py
+
+# Usually, python2 is the default python on a machine,
+# so we want to ignore python2 erros caused by incompatiblity with python3 syntax
+%define _python_bytecompile_errors_terminate_build 0
+
 %{mstflint_python_tools}/mstresourcedump/*.py
 %{mstflint_python_tools}/mstresourcedump/validation/*.py
 %{mstflint_python_tools}/mstresourcedump/utils/*.py
