@@ -1938,14 +1938,15 @@ void MlxlinkCommander::showPcieLinks()
             throw MlxRegException("No valid DPN's detected!");
         }
         setPrintTitle(_validPcieLinks,"Valid PCIe Links", _validDpns.size()+1);
-        setPrintVal(_validPcieLinks, 0," ", "depth, pcie_index, node, port");
+        setPrintVal(_validPcieLinks, 0, "Legend",
+                "depth, pcie_index, node, port", ANSI_COLOR_RESET, true, true, true);
         for(u_int32_t i = 0; i < _validDpns.size(); i++) {
             char dpnStr [20];
             int localPort  = getLocalPortFromMPIR(_validDpns[i]);
             sprintf(dpnStr,"%d, %d, %d, %d", _validDpns[i].depth,
                     _validDpns[i].pcieIndex, _validDpns[i].node, localPort);
             setPrintVal(_validPcieLinks, i+1, "Link " + to_string(i+1), dpnStr,
-                    ANSI_COLOR_RESET, localPort >= 0 );
+                    ANSI_COLOR_RESET, localPort >= 0, true, true);
         }
         cout << _validPcieLinks;
     } catch (const std::exception &exc) {
