@@ -776,8 +776,11 @@ bool Fs2Operations::Fs2IntQuery(bool readRom, bool isStripedImage)
     return true;
 }
 
-bool Fs2Operations::FwQuery(fw_info_t *fwInfo, bool readRom, bool isStripedImage)
+bool Fs2Operations::FwQuery(fw_info_t *fwInfo, bool readRom, bool isStripedImage, bool quickQuery, bool ignoreDToc, bool verbose)
 {
+    (void)quickQuery;
+    (void)ignoreDToc;
+    (void)verbose;
     if (!Fs2IntQuery(readRom, isStripedImage)) {
         return false;
     }

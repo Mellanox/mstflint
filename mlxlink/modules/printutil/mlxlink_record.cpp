@@ -36,14 +36,35 @@
 
 #define MAX_LEN_OF_GRADE            6
 
+bool MlxlinkRecord::jsonFormat = false;
+
 MlxlinkRecord::MlxlinkRecord() {
     key = "";
     val = "N/A";
     color = ANSI_COLOR_RESET;
     visible = true;
+    arrayValue = false;
 }
 
 MlxlinkRecord::~MlxlinkRecord() {
+}
+
+std::vector<std::string> MlxlinkRecord::split(const std::string& str, char delim)
+{
+    std::vector<std::string> list;
+    std::stringstream ss(str);
+    std::string token;
+    while (std::getline(ss, token, delim)) {
+        MlxlinkRecord::trim(token);
+        list.push_back(token);
+    }
+    return list;
+}
+
+void MlxlinkRecord::trim(std::string& str, const std::string& chars)
+{
+    str.erase(0, str.find_first_not_of(chars));
+    str.erase(str.find_last_not_of(chars) + 1);
 }
 
 std::string MlxlinkRecord::state2Color(u_int32_t state)
@@ -141,6 +162,9 @@ void MlxlinkRecord::printFlagLine(const char flag_s, const std::string &flag_l,
 
 std::string MlxlinkRecord::addSpaceForSlrg(const std::string &str)
 {
+    if (MlxlinkRecord::jsonFormat) {
+        return str;
+    }
     u_int32_t strSize =
         (MAX_LEN_OF_GRADE > str.length()) ?
         MAX_LEN_OF_GRADE - str.length() : 0;
@@ -156,8 +180,12 @@ void MlxlinkRecord::printErrorsSection(const std::string &title, const std::stri
     changeColorOS(ANSI_COLOR_RESET, false);
 }
 
-void MlxlinkRecord::printCmdLine(const std::string &line)
+void MlxlinkRecord::printCmdLine(const std::string &line, Json::Value &jsonRoot)
 {
+    if (MlxlinkRecord::jsonFormat) {
+        jsonRoot[JSON_RESULT_SECTION][JSON_CONFIG_SECTION].append(line);
+        return;
+    }
     std::cout << std::endl << line << "..." << std::endl;
 }
 
@@ -168,8 +196,12 @@ void MlxlinkRecord::printErr(const std::string &err)
     changeColorOS(ANSI_COLOR_RESET, true);
 }
 
-void MlxlinkRecord::printWar(const std::string &war)
+void MlxlinkRecord::printWar(const std::string &war, Json::Value &jsonRoot)
 {
+    if (MlxlinkRecord::jsonFormat) {
+        jsonRoot[JSON_RESULT_SECTION][JSON_WARN_SECTION][JSON_MSG] = war;
+        return;
+    }
     changeColorOS(ANSI_COLOR_YELLOW, true);
     std::cerr << war << std::endl;
     changeColorOS(ANSI_COLOR_RESET, false);
@@ -185,4 +217,5 @@ std::ostream & operator << (std::ostream &out, const MlxlinkRecord &mlxlinkRecor
     out << mlxlinkRecord.val << std::endl;
     MlxlinkRecord::changeColorOS(ANSI_COLOR_RESET);
     return out;
+
 }

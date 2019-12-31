@@ -72,6 +72,8 @@
 #define PCIE_INDEX_FLAG_SHORT        ' '
 #define NODE_FLAG                    "node"
 #define NODE_FLAG_SHORT              ' '
+#define PRINT_JSON_OUTPUT_FLAG       "json"
+#define PRINT_JSON_OUTPUT_FLAG_SHORT ' '
 
 //------------------------------------------------------------
 //        Mlxlink QUERIES Flags
@@ -370,8 +372,8 @@ public:
     void setPrintTitle(MlxlinkCmdPrint &mlxlinkCmdPrint, string title,
             u_int32_t size, bool print = true);
     void setPrintVal(MlxlinkCmdPrint &mlxlinkCmdPrint, int index, string key,
-            string value, string color = ANSI_COLOR_RESET,
-            bool print = true, bool valid = true);
+            string value, string color = ANSI_COLOR_RESET, bool print = true,
+            bool valid = true, bool arrayValue = false);
     void writeGvmi(u_int32_t data);
 
     //Mlxlink query functions
@@ -431,6 +433,8 @@ public:
     string getDeviceRev(bool queryMSGI = false);
     string getDeviceFW();
     string getVendorRev(const string & name);
+
+    void prepareJsonOut();
 
     MlxlinkCmdPrint _operatingInfoCmd;
     MlxlinkCmdPrint _supportedInfoCmd;
@@ -527,7 +531,7 @@ public:
     std::vector<std::string> _ptysSpeeds;
     std::vector<DPN> _validDpns;
     string _allUnhandledErrors;
-
+    Json::Value _jsonRoot;
     MlxlinkMaps* _mlxlinkMaps;
 };
 

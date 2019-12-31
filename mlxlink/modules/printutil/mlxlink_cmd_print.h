@@ -37,13 +37,17 @@
 
 #include <vector>
 #include "mlxlink_record.h"
+#include <json/json.h>
 
 class MlxlinkCmdPrint{
+
 public:
     MlxlinkCmdPrint();
     virtual ~MlxlinkCmdPrint();
     friend std::ostream & operator << (std::ostream &out, const MlxlinkCmdPrint &cmdPrint);
     void initRecords(int size);
+    void toJsonFormat(Json::Value& jsonRoot);
+
     std::string title;
     std::vector<MlxlinkRecord> mlxlinkRecords;
     bool visible;

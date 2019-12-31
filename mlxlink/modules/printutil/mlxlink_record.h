@@ -37,11 +37,32 @@
 
 #include <string>
 #include <iostream>
+#include <sstream>
 #include <iomanip>
 #include <stdlib.h>
 #include <common/compatibility.h>
+#include <json/json.h>
 
 #define PDDR_LINE_LEN               34
+
+/*
+ * Json output objects name
+ */
+#define JSON_WARN_SECTION       "warning"
+#define JSON_MSG                "message"
+#define JSON_STATUS_SECTION     "status"
+#define JSON_STATUS_CODE        "code"
+#define JSON_RESULT_SECTION     "result"
+#define JSON_CONFIG_SECTION     "configurations"
+#define JSON_OUTPUT_SECTION     "output"
+#define JSON_MASK_TITLE         "mask"
+#define JSON_VALUES_TITLE       "values"
+
+/*
+ * Output headers name
+ */
+#define HEADER_SUPPORTED_INFO   "Supported Info"
+#define HEADER_FEC_INFO         "FEC Capability Info"
 
 #define PRINT_UNDER_TITLE(len) \
     for (int i = 0; i < len; i++) { \
@@ -250,6 +271,8 @@ public:
     std::string val;
     std::string color;
     bool visible;
+    bool arrayValue;
+    static bool jsonFormat;
 
     static std::string state2Color(u_int32_t state);
     static std::string supported2Color(const std::string &supported);
@@ -259,9 +282,11 @@ public:
             const std::string &param, const std::string &desc);
     static std::string addSpaceForSlrg(const std::string &str);
     static void printErrorsSection(const std::string &title, const std::string &lines);
-    static void printCmdLine(const std::string &line);
+    static void printCmdLine(const std::string &line, Json::Value &jsonRoot);
     static void printErr(const std::string &err);
-    static void printWar(const std::string &war);
+    static void printWar(const std::string &war, Json::Value &jsonRoot);
+    static std::vector<std::string> split(const std::string& str, char delim = ' ');
+    static void trim(std::string& str, const std::string& chars = "\t\n\v\f\r ");
 };
 
 std::ostream & operator << (std::ostream &out, const MlxlinkRecord &mlxlinkRecord);

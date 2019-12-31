@@ -63,6 +63,7 @@ typedef struct reg_access_hca_mcqs_reg comp_status_st;
 typedef struct reg_access_hca_mcqi_reg comp_info_st;
 typedef struct reg_access_hca_mcc_reg fsm_control_st;
 typedef struct reg_access_hca_mcqi_cap comp_cap_st;
+typedef struct reg_access_hca_mgir mgirReg;
 
 typedef struct reg_access_hca_mcqi_version component_version_st;
 
@@ -78,7 +79,7 @@ struct uid_entry {
 typedef struct {
     u_int8_t type;
     u_int8_t arch;
-    u_int32_t version;
+    reg_access_hca_rom_version version;
 } mgirRomInfo;
 
 typedef struct {
@@ -463,9 +464,9 @@ private:
     void           getInfoAsVersion(std::vector<u_int32_t>& infoData,
                                     component_version_st *cmpVer);
 
-    reg_access_status_t getGI(mfile *mf, struct tools_open_mgir *gi);
+    reg_access_status_t getGI(mfile *mf, mgirReg *gi);
     bool           extractMacsGuids(fwInfoT *fwQuery);
-    void           extractRomInfo(tools_open_mgir *mgir, fwInfoT *fwQuery);
+    void           extractRomInfo(mgirReg *mgir, fwInfoT *fwQuery);
     bool           refreshComponentsStatus();
 
     std::vector<comp_query_st> _compsQueryMap;

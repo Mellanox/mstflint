@@ -42,13 +42,12 @@ public:
     {
         memset(&_fsCtrlImgInfo, 0, sizeof(_fsCtrlImgInfo));
     }
-    ;
 
     virtual ~FsCtrlOperations();
 
     virtual u_int8_t FwType();
 
-    virtual bool FwQuery(fw_info_t *fwInfo, bool readRom = true, bool isStripedImage = false);
+    virtual bool FwQuery(fw_info_t *fwInfo, bool readRom = true, bool isStripedImage = false, bool quickQuery = true, bool ignoreDToc = false, bool verbose = false);
     virtual bool FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedImage = false, bool showItoc = false,
                           bool ignoreDToc = false); // Add callback print
     virtual bool FwVerifyAdv(ExtVerifyParams &verifyParams);
@@ -64,6 +63,7 @@ public:
     virtual bool FwBurn(FwOperations *imageOps, u_int8_t forceVersion,
                         ProgressCallBack progressFunc = (ProgressCallBack) NULL);
     virtual bool FwBurnAdvanced(FwOperations *imageOps, ExtBurnParams &burnParams);
+    virtual bool FwBurnAdvanced(std::vector <u_int8_t> imageOps4MData, ExtBurnParams& burnParams);
     virtual bool FwBurnBlock(FwOperations *imageOps, ProgressCallBack progressFunc); //Add: callback progress, question arr, callback question, configurations
     bool FwWriteBlock(u_int32_t addr, std::vector<u_int8_t> dataVec,
                       ProgressCallBack progressFunc = (ProgressCallBack) NULL);
@@ -88,12 +88,16 @@ public:
     virtual bool FwSetTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer);
     virtual bool FwQueryTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer, bool queryRunning = false);
     virtual bool FwResetTimeStamp();
+    virtual u_int32_t GetHwDevId() { return _hwDevId; }
     bool FwReactivateImage();
     Tlv_Status_t GetTsObj(TimeStampIFC **tsObj);
 
-    bool IsFsCtrlOperations()
+    virtual bool IsFsCtrlOperations()
     {
         return true;
+    }
+    virtual mfile* getMfileObj() {
+        return _fwCompsAccess->getMfileObj();
     }
 
 protected:
@@ -106,7 +110,7 @@ protected:
     int FwCompsErrToFwOpsErr(fw_comps_error_t err);
     virtual bool VerifyAllowedParams(ExtBurnParams &burnParams, bool isSecure);
     bool BadParamErrMsg(const char *unSupportedOperation, bool isSecure);
-
+    bool _Burn(std::vector <u_int8_t> imageOps4MData, ExtBurnParams& burnParams);
     fs3_info_t _fsCtrlImgInfo;
     FwCompsMgr *_fwCompsAccess;
     bool _isSecured;

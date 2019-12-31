@@ -240,7 +240,8 @@ typedef enum chip_type {
     CT_BLUEFIELD,
     CT_QUANTUM,
     CT_SPECTRUM2,
-    CT_CONNECTX6DX
+    CT_CONNECTX6DX,
+    CT_SPECTRUM3
 } chip_type_t;
 
 typedef enum chip_family_type {

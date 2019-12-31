@@ -37,13 +37,12 @@
  *  Created on: March 23, 2017
  *      Author: Ahmad Soboh
  */
-
+#include <stdlib.h>
 #include <sys/stat.h>
 #include <fstream>
 #include <stdio.h>
 #include <dirent.h>
 #include <sys/types.h>
-#include <boost/filesystem.hpp>
 
 #include "mlxarchive_mfa2_utils.h"
 
@@ -61,6 +60,12 @@ void packBytesArray(const u_int8_t* arr, unsigned int len, vector<u_int8_t>& buf
     }
 }
 
+void unpackBytesArray(u_int8_t* arr, unsigned int len, vector<u_int8_t>& buff)
+{
+    for (unsigned int i = 0; i < len; i++) {
+        arr[i] = buff[i];
+    }
+}
 void packBinFile(const string& file, vector<u_int8_t>& buff)
 {
     vector<u_int8_t> fileBuff;
@@ -108,16 +113,22 @@ unsigned int getFileSize(const string& file)
     return 0; //TODO throw exception
 }
 
-bool fexists(const std::string& filename) {
+bool fexists(const std::string& filename)
+{
     struct stat buffer;
     return (stat (filename.c_str(), &buffer) == 0);
 }
 
 // check if filename points to regular file:
-bool isFile(const std::string& filename) {
+bool isFile(const std::string& filename)
+{
     struct stat buffer;
     stat(filename.c_str(), &buffer);
     return S_ISREG(buffer.st_mode); 
+}
+bool endsWith(const std::string& str, const std::string& suffix)
+{
+    return (str.size() >= suffix.size()) && (str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0);
 }
 
 void listDir(const char *path, vector<string>& files)
@@ -130,8 +141,7 @@ void listDir(const char *path, vector<string>& files)
     }
 
     while ((entry = readdir(dir)) != NULL) {
-        string file_extension  = boost::filesystem::extension(entry->d_name);
-        if(file_extension == ".bin") {
+        if(endsWith(entry->d_name, ".bin")) {
             files.push_back(entry->d_name);
         }
         else {

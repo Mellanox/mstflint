@@ -74,6 +74,55 @@ if REG_ACCESS:
         REG_ACCESS_FAILED_TO_AQUIRE_OWNERSHIP   = 1
         REG_ACCESS_NO_OWNERSHIP_REQUIRED        = 2
 
+
+    class RES_DUMP_ST(Structure):
+        _fields_ = [
+            ("segment_type",c_uint16),
+            ("seq_num",c_uint8),
+            ("inline_dump",c_uint8),
+            ("more_dump",c_uint8),
+            ("vhca_id",c_uint16),
+            ("index_1",c_uint32),
+            ("index_2",c_uint32),
+            ("num_of_obj_2",c_uint16),
+            ("num_of_obj_1",c_uint16),
+            ("device_opaque",c_uint64),
+            ("mkey",c_uint32),
+            ("size",c_uint32),
+            ("address",c_uint64),
+            ("inline_data",c_uint32 * 52)
+        ]
+
+
+    class DIAGNOSTIC_CNTR_ST(Structure):
+        _fields_ = [
+            ("counter_id",c_uint16),
+            ("sync",c_uint8)
+        ]
+
+
+    class DIAGNOSTIC_CNTR_ST_ARR(Array):
+        _type_ = DIAGNOSTIC_CNTR_ST
+        _length_ = 10
+
+
+    class DEBUG_CUP_ST(Structure):
+        _fields_ = [
+            ("log_max_samples",c_uint8),
+            ("resource_dump",c_uint8),
+            ("log_cr_dump_to_mem_size",c_uint8),
+            ("core_dump_qp",c_uint8),
+            ("core_dump_general",c_uint8),
+            ("log_min_sample_period",c_uint8),
+            ("diag_counter_tracer_dump",c_uint8),
+            ("health_mon_rx_activity",c_uint8),
+            ("repetitive",c_uint8),
+            ("single",c_uint8),
+            #("diagnostic_counter",POINTER(DIAGNOSTIC_CNTR_ST))
+            ("diagnostic_counter",POINTER(DIAGNOSTIC_CNTR_ST_ARR))
+        ]
+
+
     class PCNR_ST(Structure):
         _fields_ = [
             ("tuning_override",c_uint8),
@@ -119,6 +168,7 @@ if REG_ACCESS:
         _fields_ = [("device_id", c_uint16),
                     ("device_hw_revision", c_uint16),
                     ("pvs", c_uint8),
+                    ("num_ports",c_uint8),                    
                     ("hw_dev_id", c_uint16),
                     ("manufacturing_base_mac_47_32", c_uint16),
                     ("manufacturing_base_mac_31_0", c_uint32),
@@ -130,15 +180,13 @@ if REG_ACCESS:
                     ("signed_fw", c_uint8),
                     ("debug_fw", c_uint8),
                     ("dev_fw", c_uint8),
+                    ("string_tlv", c_uint8),
                     ("build_id", c_uint32),
                     ("year", c_uint16),
                     ("day", c_uint8),
                     ("month", c_uint8),
                     ("hour", c_uint16),
-                    ("psid1", c_uint32),
-                    ("psid2", c_uint32),
-                    ("psid3", c_uint32),
-                    ("psid4", c_uint32),
+                    ("psid", c_uint8 * 16),
                     ("ini_file_version", c_uint32),
                     ("extended_major", c_uint32),
                     ("extended_minor", c_uint32),
@@ -158,7 +206,8 @@ if REG_ACCESS:
                     ("rom0_version", c_uint32),
                     ("rom1_version", c_uint32),
                     ("rom2_version", c_uint32),
-                    ("rom3_version", c_uint32)]
+                    ("rom3_version", c_uint32),
+                    ("dev_branch_tag", c_uint8 * 28)]
 
     class RegAccess:
 
@@ -178,6 +227,8 @@ if REG_ACCESS:
             self._reg_access_mfrl = REG_ACCESS.reg_access_mfrl
             self._reg_access_pcnr = REG_ACCESS.reg_access_pcnr
             self._reg_access_mpcir = REG_ACCESS.reg_access_mpcir
+            self._reg_access_res_dump = REG_ACCESS.reg_access_res_dump
+            self._reg_access_debug_cap = REG_ACCESS.reg_access_debug_cap
 
 
         ##########################
@@ -218,6 +269,64 @@ if REG_ACCESS:
                     return 0
                 iter += 1
 
+
+        def sendResDump(self, segment_type, seq_num, inline_mode, more_dump, vhca_id, index1, index2, num_of_obj2, num_of_obj1, device_opaque, mkey, size, address):
+            resDumpRegP = pointer(RES_DUMP_ST())
+            resDumpRegP.contents.segment_type = c_uint16(segment_type)
+            resDumpRegP.contents.seq_num = c_uint8(seq_num)
+            resDumpRegP.contents.inline_dump = c_uint8(inline_mode)
+            resDumpRegP.contents.more_dump = c_uint8(more_dump)
+            resDumpRegP.contents.vhca_id = c_uint16(vhca_id)
+            resDumpRegP.contents.index_1 = c_uint32(index1)
+            resDumpRegP.contents.index_2 = c_uint32(index2)
+            resDumpRegP.contents.num_of_obj_2 = c_uint16(num_of_obj2)
+            resDumpRegP.contents.num_of_obj_1 = c_uint16(num_of_obj1)
+            resDumpRegP.contents.device_opaque = c_uint64(device_opaque)
+            resDumpRegP.contents.mkey = c_uint32(mkey)
+            resDumpRegP.contents.size = c_uint32(size)
+            resDumpRegP.contents.address = c_uint64(address)
+            rc = self._reg_access_res_dump(self._mstDev.mf, c_uint(REG_ACCESS_METHOD_GET), resDumpRegP)
+            if rc:
+                raise RegAccException("Failed to send Register RESOURCE DUMP with rc: %d" % rc)
+            #return (resDumpRegP.contents.segment_type, resDumpRegP.contents.seq_num, resDumpRegP.contents.inline_data[0])
+            return ({"segment_type": resDumpRegP.contents.segment_type,
+                     "seq_num": resDumpRegP.contents.seq_num,
+                     "inline_dump": resDumpRegP.contents.inline_dump,
+                     "more_dump": resDumpRegP.contents.more_dump,
+                     "vhca_id": resDumpRegP.contents.vhca_id,
+                     "index_1": resDumpRegP.contents.index_1,
+                     "index_2": resDumpRegP.contents.index_2,
+                     "num_of_obj_2": resDumpRegP.contents.num_of_obj_2,
+                     "num_of_obj_1": resDumpRegP.contents.num_of_obj_1,
+                     "device_opaque": resDumpRegP.contents.device_opaque,
+                     "mkey": resDumpRegP.contents.mkey,
+                     "size": resDumpRegP.contents.size,
+                     "address": resDumpRegP.contents.address,
+                     "inline_data": resDumpRegP.contents.inline_data})
+
+
+        def sendDebugCap(self):
+            debugCapRegP = pointer(DEBUG_CUP_ST())
+            debugCapRegP.contents.log_max_samples = c_uint8(0)
+            debugCapRegP.contents.resource_dump = c_uint8(0)
+            debugCapRegP.contents.log_cr_dump_to_mem_size = c_uint8(0)
+            debugCapRegP.contents.core_dump_qp = c_uint8(0)
+            debugCapRegP.contents.core_dump_general = c_uint8(0)
+            debugCapRegP.contents.log_min_sample_period = c_uint8(0)
+            debugCapRegP.contents.diag_counter_tracer_dump = c_uint8(0)
+            debugCapRegP.contents.health_mon_rx_activity = c_uint8(0)
+            debugCapRegP.contents.repetitive = c_uint8(0)
+            debugCapRegP.contents.single = c_uint8(0)
+            tmp = pointer(DIAGNOSTIC_CNTR_ST())
+            tmp.contents.counter_id = c_uint16(0)
+            tmp.contents.sync = c_uint8(0)
+            debugCapRegP.contents.diagnostic_counter = pointer(DIAGNOSTIC_CNTR_ST_ARR())
+            rc = self._reg_access_debug_cap(self._mstDev.mf, c_uint(REG_ACCESS_METHOD_GET), debugCapRegP)
+            if rc:
+                raise RegAccException("Failed to send Register DEBUG CAP with rc: %d" % rc)
+            return debugCapRegP.contents.resource_dump
+
+
         def sendPcnr(self, tuning_override, local_port): # Requirments : new FW version + burn with allow_pcnr
 
             pcnrRegisterP = pointer(PCNR_ST())
@@ -245,7 +354,7 @@ if REG_ACCESS:
                 raise ValueError("command {0} is illegal".format(command))
 
             mpcirRegisterP = pointer(MPCIR_ST(ports=command))
-            rc = self._reg_access_mpcir(self._mstDev.mf, c_uint(REG_ACCESS_METHOD_SET), mpcirRegisterP)
+            rc = self._reg_access_mpcir(self._mstDev.mf, c_uint(REG_ACCESS_METHOD_GET), mpcirRegisterP)
             if rc != 0:
                 raise RegAccException("Failed to send Command Register MPCIR")
             if command == CMD_GET_STATUS:

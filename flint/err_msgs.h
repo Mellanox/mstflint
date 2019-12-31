@@ -57,6 +57,7 @@ typedef enum {
 
 #define FLINT_CLEAR_SEM_CMD_ERROR             "No command is allowed when -clear_semaphore flag is given.\n"
 #define FLINT_COMMAND_FLAGS_ERROR             "For %s command, Please specify %s.\n"
+#define FLINT_COMMAND_INCORRECT_FLAGS_ERROR   "For %s command, %s.\n"
 #define FLINT_PARSE_MEM_ERROR                 "Failed to allocate memory for parsing.\n "
 #define FLINT_NO_OPTIONS_FOUND_ERROR          "No options found. "
 #define FLINT_INVALID_COMMAD_ERROR            "Invalid command: %s\n"

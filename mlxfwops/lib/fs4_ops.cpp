@@ -183,7 +183,7 @@ bool Fs4Operations::getHWPtrs(VerifyCallBack verifyCallBackFunc)
     return true;
 }
 
-bool Fs4Operations::getExtendedHWPtrs(VerifyCallBack verifyCallBackFunc)
+bool Fs4Operations::getExtendedHWPtrs(VerifyCallBack verifyCallBackFunc, FBase* ioAccess, bool IsBurningProcess)
 {
 
     //TODO
@@ -195,9 +195,12 @@ bool Fs4Operations::getExtendedHWPtrs(VerifyCallBack verifyCallBackFunc)
     const unsigned int s = CX6FW_HW_POINTERS_SIZE / 4;
     u_int32_t buff[s];
     struct cx6fw_hw_pointers hw_pointers;
-    u_int32_t physAddr = _fwImgInfo.imgStart + FS4_HW_PTR_START;
+    u_int32_t physAddr = FS4_HW_PTR_START;
+    if (!IsBurningProcess) {
+        physAddr += _fwImgInfo.imgStart;
+    }
 
-    READBUF((*_ioAccess),
+    READBUF((*ioAccess),
             physAddr,
             buff,
             CX6FW_HW_POINTERS_SIZE,
@@ -574,6 +577,21 @@ bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_ito
                 return errmsg(MLXFW_NO_VALID_ITOC_ERR, "No valid ITOC Header was found.");
             }
         }
+    }
+    if (_ioAccess->is_flash() == false && _signatureDataSet == false) {
+        int signature_size = 3 * HMAC_SIGNATURE_LENGTH;
+        uint8_t signature_data[3 * HMAC_SIGNATURE_LENGTH] = { 0 };
+        int signature_offset = _digest_mdk_ptr;
+        if (signature_offset == 0) {
+            signature_offset = _digest_recovery_key_ptr;
+        }
+        READBUF((*_ioAccess),
+            signature_offset,
+            signature_data,
+            signature_size,
+            "Reading data pointed by HW MDK Pointer");
+        Fs3UpdateImgCache(signature_data, signature_offset, signature_size);
+        _signatureDataSet = true;
     }
     if (!verifyTocEntries(_itoc_ptr, show_itoc, false,
                           queryOptions, verifyCallBackFunc, verbose)) {
@@ -1363,11 +1381,26 @@ bool Fs4Operations::BurnFs4Image(Fs4Operations &imageOps,
     if (!f->is_flash()) {
         return true;
     }
-
-    if (!AddHMACIfNeeded(&imageOps, f)) {
+    bool IsUpdateSignatures = true;
+    switch (this->_fwImgInfo.ext_info.chip_type) {
+        case CT_CONNECTX6:
+            getExtendedHWPtrs((VerifyCallBack)NULL, imageOps._ioAccess, true);
+            break;
+        default:
+            IsUpdateSignatures = false;
+            break;
+    }
+    if (IsUpdateSignatures) {
+        u_int32_t imageOffset = _digest_mdk_ptr;
+        if (imageOffset == 0) {
+            imageOffset = _digest_recovery_key_ptr;
+        }
+        if (imageOffset != 0) {
+            if (!_signatureMngr->AddSignature(_ioAccess->getMfileObj(), &imageOps, f, imageOffset)) {
         return false;
     }
-
+        }
+    }
     // Write new signature
     data8 = new u_int8_t[FS3_FW_SIGNATURE_SIZE];
     imageOps._imageCache.get(data8, 0, FS3_FW_SIGNATURE_SIZE);
@@ -1709,7 +1742,7 @@ bool Fs4Operations::Fs4UpdateVpdSection(struct fs4_toc_info *curr_toc, char *vpd
     }
     if (vpd_size % 4) {
         delete[] vpd_data;
-        return errmsg("Size of VPD file: %d is not 4-byte aligned!", vpd_size);
+        return errmsg("Size of VPD file: %d is not 4-byte alligned!", vpd_size);
     }
 
     //check if vpd exceeds the dtoc array
@@ -2301,7 +2334,7 @@ bool Fs4Operations::FwSignWithHmac(const char *keyFile)
     if (_ioAccess->is_flash()) {
         return errmsg( "Adding HMAC not allowed for devices");
     }
-    if (!getExtendedHWPtrs((VerifyCallBack)NULL)) {
+    if (!getExtendedHWPtrs((VerifyCallBack)NULL, _ioAccess)) {
         return false;
     }
     const unsigned int s = _authentication_end_ptr - _authentication_start_ptr + 1;
@@ -2389,6 +2422,31 @@ bool Fs4Operations::PrepItocSectionsForHmac(vector<u_int8_t>& critical, vector<u
         {
             non_critical.reserve(non_critical.size() + itoc_info_p->section_data.size());
             non_critical.insert(non_critical.end(), itoc_info_p->section_data.begin(), itoc_info_p->section_data.end());
+        }
+    }
+    return true;
+}
+bool Fs4Operations::PrepItocSectionsForCompare(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical)
+{
+    for (int i = 0; i < this->_fs4ImgInfo.itocArr.numOfTocs; i++) {
+        struct fs4_toc_info *itoc_info_p = &this->_fs4ImgInfo.itocArr.tocArr[i];
+        struct cx5fw_itoc_entry *toc_entry = &(itoc_info_p->toc_entry);
+        if (IsCriticalSection(toc_entry->type))
+        {
+            critical.reserve(critical.size() + itoc_info_p->section_data.size());
+            critical.insert(critical.end(), itoc_info_p->section_data.begin(), itoc_info_p->section_data.end());
+            //printf("-D- addr  0x%.8x toc type : 0x%.8x  size 0x%.8x name %s\n", itoc_info_p->entry_addr, itoc_info_p->toc_entry.type, 
+                //(unsigned int)(itoc_info_p->section_data.size() + padding_size), GetSectionNameByType(itoc_info_p->toc_entry.type));
+        }
+        else
+        {
+            if (itoc_info_p->toc_entry.type == FS3_IMAGE_SIGNATURE_512 || itoc_info_p->toc_entry.type == FS3_IMAGE_SIGNATURE_256) {
+                continue;
+            }
+            //printf("-D- addr  0x%.8x toc type : 0x%.8x  size 0x%.8x name %s\n", itoc_info_p->entry_addr, itoc_info_p->toc_entry.type, (unsigned int)itoc_info_p->section_data.size(), GetSectionNameByType(itoc_info_p->toc_entry.type));
+            non_critical.reserve(non_critical.size() + itoc_info_p->section_data.size());
+            non_critical.insert(non_critical.end(), itoc_info_p->section_data.begin(), itoc_info_p->section_data.end());
+            //currentItoc++;
         }
     }
     return true;

@@ -180,18 +180,18 @@ class FwTraceUtilities(object):
         if freq <= 0:
             raise RuntimeError("device frequency is not above Zero - can't calc real time stamp")
         
-        nano_seconds = (1000 / freq) * ts
+        nano_seconds = int(1000 / freq) * ts
         # calc hours
-        time_in_seconds = nano_seconds / 1000000000
-        hours = time_in_seconds / 3600
+        time_in_seconds = int(nano_seconds / 1000000000)
+        hours = int(time_in_seconds / 3600)
         # calc minutes
         time_in_seconds = time_in_seconds - (hours * 3600)
-        minutes = time_in_seconds / 60
+        minutes = int(time_in_seconds / 60)
         # calc seconds
         time_in_seconds = time_in_seconds - (minutes * 60)
         seconds = time_in_seconds        
         # calc the reminder in nano seconds
-        nsecs = nano_seconds - (nano_seconds / 1000000000) * 1000000000
+        nsecs = nano_seconds - int(nano_seconds / 1000000000) * 1000000000
         
         return "{:02d}:{:02d}:{:02d}:{:09d}".format(hours, minutes, seconds, nsecs)
 

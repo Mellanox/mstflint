@@ -38,6 +38,7 @@
 #include "flint_io.h"
 #include "aux_tlv_ops.h"
 #include "mlxfwops_com.h"
+#include "signature_manager_factory.h"
 
 #ifdef CABLES_SUPP
 #include <cable_access/cable_access.h>
@@ -53,7 +54,7 @@ typedef fw_ver_info_t FwVerInfo;
 typedef int (*PrintCallBackAdv) (int completion, char *str);
 
 extern bool nextBootFwVer;
-
+#define GLOBAL_ALIGNMENT 0x80
 class MLXFWOP_API FwOperations : public FlintErrMsg {
 
 
@@ -72,7 +73,7 @@ public:
         _ioAccess(ioAccess), _isCached(false), _wasVerified(false),
         _quickQuery(false), _printFunc((PrintCallBack)NULL), _fname((const char*)NULL), \
         _devName((const char*)NULL), _advErrors(true), _minBinMinorVer(0), _minBinMajorVer(0),
-        _maxBinMajorVer(0)
+        _maxBinMajorVer(0), _signatureMngr((ISignatureManager*)NULL), _internalQueryPerformed(false)
     {
         memset(_sectionsToRead, 0, sizeof(_sectionsToRead));
         memset(&_fwImgInfo, 0, sizeof(_fwImgInfo));
@@ -80,13 +81,27 @@ public:
     };
 
 
+    void CreateSignatureManager() {
+        if (_ioAccess != NULL && _ioAccess->is_flash() == false) {//NOT RELEVANT FOR IMAGE OBJECT
+            return;
+        }
+        u_int32_t hwDevId = GetHwDevId();
+        _signatureMngr = SignatureManagerFactory::GetInstance()->CreateSignatureManager(hwDevId, _fwImgInfo.ext_info.dev_rev);
+    }
     virtual ~FwOperations()
     {
         if (_ioAccess) {
             delete _ioAccess;
         }
+        if (_signatureMngr) {
+            delete _signatureMngr;
+        }
     };
     //virtual void print_type() {};
+    virtual mfile* getMfileObj() {
+        mfile *mf = _ioAccess->is_flash() ? ((Flash *)_ioAccess)->getMfileObj() : (mfile *)NULL;
+        return mf;
+    }
     virtual u_int8_t FwType() = 0;
     static FwVerInfo FwVerLessThan(u_int16_t r1[3], u_int16_t r2[3]);
     static bool IsFwSupportingRomModify(u_int16_t fw_ver[3]);
@@ -97,7 +112,7 @@ public:
     static const char* expRomType2Str(u_int16_t type);
 
     bool readBufAux(FBase& f, u_int32_t o, void *d, int l, const char *p);
-    virtual bool FwQuery(fw_info_t *fwInfo, bool readRom = true, bool isStripedImage = false) = 0;
+    virtual bool FwQuery(fw_info_t *fwInfo, bool readRom = true, bool isStripedImage = false, bool quickQuery = true, bool ignoreDToc = false, bool verbose = false) = 0;
     virtual bool FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedImage = false, bool showItoc = false, bool ignoreDToc = false) = 0; // Add callback print
     virtual bool FwVerifyAdv(ExtVerifyParams& verifyParams);
     //on call of FwReadData with Null image we get image_size
@@ -114,17 +129,18 @@ public:
     virtual bool FwSignWithHmac(const char *key_file);
     virtual bool PrepItocSectionsForHmac(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
     virtual bool IsCriticalSection(u_int8_t sect_type);
-    virtual bool CalcHMAC(const vector<u_int8_t>& key, const vector<u_int8_t>& data, vector<u_int8_t>& digest);
-    virtual bool FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatternAndDevToc);
+
+    virtual bool FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatternAndDevToc, bool verbose = false);
     virtual bool FwSetPublicKeys(char *fname, PrintCallBack callBackFunc = (PrintCallBack)NULL);
     virtual bool FwSetForbiddenVersions(char *fname, PrintCallBack callBackFunc = (PrintCallBack)NULL);
-
+    virtual bool CalcHMAC(const vector<u_int8_t>& key, const vector<u_int8_t>& data, vector<u_int8_t>& digest);
     virtual bool FwReadRom(std::vector<u_int8_t>& romSect) = 0;
     virtual bool FwBurnRom(FImage *romImg, bool ignoreProdIdCheck = false, bool ignoreDevidCheck = false, ProgressCallBack progressFunc = (ProgressCallBack)NULL) = 0; // can also read the rom from flint and give a vector of u_int8_t
     virtual bool FwDeleteRom(bool ignoreProdIdCheck, ProgressCallBack progressFunc = (ProgressCallBack)NULL) = 0;
 
     virtual bool FwBurn(FwOperations *imageOps, u_int8_t forceVersion, ProgressCallBack progressFunc = (ProgressCallBack)NULL) = 0;
     virtual bool FwBurnAdvanced(FwOperations *imageOps, ExtBurnParams& burnParams) = 0;
+    virtual bool FwBurnAdvanced(std::vector <u_int8_t> imageOps4MData, ExtBurnParams& burnParams);
     virtual bool FwBurnBlock(FwOperations *imageOps, ProgressCallBack progressFunc) = 0; //Add: callback progress, question arr, callback question, configurations
     virtual bool FwWriteBlock(u_int32_t addr, std::vector<u_int8_t> dataVec, ProgressCallBack progressFunc = (ProgressCallBack)NULL);
 
@@ -159,20 +175,30 @@ public:
     virtual bool FsIntQuery() { return true; }
     bool FwSetPrint(PrintCallBack PrintFunc);
 
+    virtual bool Fs3UpdateSection(void *new_info, fs3_section_t sect_type = FS3_DEV_INFO, bool is_sect_failsafe = true, CommandType cmd_type = CMD_UNKNOWN, PrintCallBack callBackFunc = (PrintCallBack)NULL);
     //needed for flint low level operations
     bool FwSwReset();
     virtual bool CheckCX4Device() {return true; /* deprecated always return true*/ }
     virtual bool FwCalcMD5(u_int8_t md5sum[16]) = 0;
-
-
+    virtual u_int32_t GetHwDevId() 
+    { 
+        mfile* mf = _ioAccess->getMfileObj();
+        dm_dev_id_t deviceId = DeviceUnknown;
+        u_int32_t hwDevId = 0x0, hwRevId = 0x0;
+        if (dm_get_device_id(mf, &deviceId, &hwDevId, &hwRevId)) {
+            return 0xffff;
+        }
+        return hwDevId;
+    }
     //virtual bool FwBurnBlock(FwOperations &FwImageAccess); // Add call back
     static FwOperations* FwOperationsCreate(void *fwHndl, void *info, char *psid, fw_hndl_type_t hndlType, char *errBuff = (char*)NULL, int buffSize = 0);
     static FwOperations* FwOperationsCreate(fw_ops_params_t& fwParams);
 
     static bool          imageDevOperationsCreate(fw_ops_params_t& devParams, fw_ops_params_t& imgParams,
-                                                  FwOperations **devFwOps, FwOperations **imgFwOps, bool ignoreSecurityAttributes = false);
+                                                  FwOperations **devFwOps, FwOperations **imgFwOps, bool ignoreSecurityAttributes = false, bool ignoreDToc = false);
 
     virtual bool IsFsCtrlOperations();
+    virtual bool PrepItocSectionsForCompare(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
 
     void GetFwParams(fw_ops_params_t&);
 
@@ -483,6 +509,8 @@ public:
     u_int8_t _minBinMinorVer;
     u_int8_t _minBinMajorVer;
     u_int8_t _maxBinMajorVer;
+    ISignatureManager* _signatureMngr;
+    bool _internalQueryPerformed;
 
 private:
 

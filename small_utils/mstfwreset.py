@@ -704,7 +704,7 @@ class MlnxPciOpLinux(MlnxPciOp):
     def waitForDevice(self,devAddr):
         logger.info('waitForDevice() called. Input is {0}'.format(devAddr))
         path = '/sys/bus/pci/devices/{0}/config'.format(devAddr)
-        TIMEOUT = 10
+        TIMEOUT = 100
         for _ in range(TIMEOUT):
             if os.path.exists(path):
                 return

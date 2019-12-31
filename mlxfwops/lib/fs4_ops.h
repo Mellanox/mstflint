@@ -45,13 +45,14 @@
 #define FS4_MAX_BIN_VER_MAJOR 1
 #define FS4_MIN_BIN_VER_MAJOR 1
 #define FS4_MIN_BIN_VER_MINOR 0
+#define HMAC_SIGNATURE_LENGTH 64
 
 class Fs4Operations : public Fs3Operations {
 public:
 
 
     Fs4Operations(FBase *ioAccess) :
-        Fs3Operations(ioAccess), _boot2_ptr(0), _itoc_ptr(0), _tools_ptr(0)
+        Fs3Operations(ioAccess), _boot2_ptr(0), _itoc_ptr(0), _tools_ptr(0), _digest_mdk_ptr(0), _digest_recovery_key_ptr(0), _public_key_ptr(0), _signatureDataSet(false)
     {
         _minBinMinorVer = FS4_MIN_BIN_VER_MINOR;
         _minBinMajorVer = FS4_MIN_BIN_VER_MAJOR;
@@ -78,7 +79,7 @@ public:
     bool IsCriticalSection(u_int8_t sect_type);
     bool CalcHMAC(const vector<u_int8_t>& key, const vector<u_int8_t>& data, vector<u_int8_t>& digest);
     bool CheckIfAlignmentIsNeeded(FwOperations *imgops);
-
+    virtual bool PrepItocSectionsForCompare(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
 
 protected:
     struct fs4_toc_info {
@@ -181,7 +182,7 @@ public:
     u_int32_t getAbsAddr(fs4_toc_info *toc, u_int32_t imgStart);
     bool getImgStart();
     bool getHWPtrs(VerifyCallBack verifyCallBackFunc);
-    bool getExtendedHWPtrs(VerifyCallBack verifyCallBackFunc);
+    bool getExtendedHWPtrs(VerifyCallBack verifyCallBackFunc, FBase* ioAccess, bool IsBurningProcess = false);
     bool verifyToolsArea(VerifyCallBack verifyCallBackFunc);
     bool verifyTocHeader(u_int32_t tocAddr, bool isDtoc, VerifyCallBack verifyCallBackFunc);
     bool verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isDtoc,
@@ -212,6 +213,8 @@ public:
     u_int32_t _authentication_end_ptr;
     u_int32_t _digest_mdk_ptr;
     u_int32_t _digest_recovery_key_ptr;
+    u_int32_t _public_key_ptr;
+    bool      _signatureDataSet;
 
     //This class is for sorting the itoc array by ascending absolute flash_addr used in FwShiftDevData
     class TocComp {

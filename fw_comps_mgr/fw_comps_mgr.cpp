@@ -368,7 +368,7 @@ bool FwCompsMgr::queryComponentInfo(u_int32_t componentIndex,
     return true;
 }
 
-reg_access_status_t FwCompsMgr::getGI(mfile *mf, struct tools_open_mgir *gi)
+reg_access_status_t FwCompsMgr::getGI(mfile *mf, mgirReg *gi)
 {
     reg_access_status_t rc = ME_REG_ACCESS_OK;
     u_int32_t tp = 0;
@@ -918,7 +918,7 @@ u_int8_t transRomType(u_int8_t mgirRomType)
     }
 }
 
-void FwCompsMgr::extractRomInfo(tools_open_mgir *mgir, fwInfoT *fwQuery)
+void FwCompsMgr::extractRomInfo(mgirReg *mgir, fwInfoT *fwQuery)
 {
     if (!fwQuery || !mgir) {
         return;
@@ -977,7 +977,7 @@ bool FwCompsMgr::queryFwInfo(fwInfoT *query, bool next_boot_fw_ver)
      * MGIR
      */
     reg_access_status_t rc;
-    struct tools_open_mgir mgir;
+    mgirReg mgir;
     memset(&mgir, 0, sizeof(mgir));
     rc = getGI(_mf, &mgir);
     if (rc) {
@@ -989,10 +989,10 @@ bool FwCompsMgr::queryFwInfo(fwInfoT *query, bool next_boot_fw_ver)
     query->hw_dev_id = mgir.hw_info.hw_dev_id;
     query->dev_id = mgir.hw_info.device_id;
     query->rev_id = mgir.hw_info.device_hw_revision;
-    query->security_type.secure_fw = mgir.fw_info.secure_fw;
+    query->security_type.secure_fw = mgir.fw_info.secured;
     query->security_type.signed_fw = mgir.fw_info.signed_fw;
-    query->security_type.debug_fw = mgir.fw_info.debug_fw;
-    query->security_type.dev_fw = mgir.fw_info.dev_fw;
+    query->security_type.debug_fw = mgir.fw_info.debug;
+    query->security_type.dev_fw = mgir.fw_info.dev;
     query->signed_fw = _compsQueryMap[FwComponent::COMPID_BOOT_IMG].comp_cap.signed_updates_only;
 
     query->base_mac_orig.uid = ((u_int64_t)mgir.hw_info.manufacturing_base_mac_47_32 << 32 | mgir.hw_info.manufacturing_base_mac_31_0);

@@ -36,7 +36,13 @@ public:
     int seek(long offset, int whence);
     long tell();
     void rewind();
+    u_int8_t* getBuffer() const {
+        return m_buff;
+    }
 
+    long getSize() const {
+        return m_size;
+    }
 private:
     u_int8_t * m_buff;
     long m_pos;

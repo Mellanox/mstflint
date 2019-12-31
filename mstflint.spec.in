@@ -1,6 +1,6 @@
 %{!?ibmadlib: %define ibmadlib libibmad-devel}
 %{!?name: %define name mstflint}
-%{!?version: %define version 4.13.0}
+%{!?version: %define version 4.13.3}
 %{!?release: %define release 1}
 %{!?buildtype: %define buildtype "native"}
 %{!?noinband: %define noinband 0}
@@ -149,6 +149,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/mstcongestion
 %{_bindir}/mstprivhost
 %{_bindir}/mstfwtrace
+%{_bindir}/mstresourcedump
 %if %{enablefwmgr}
  %{_bindir}/mstfwmanager
  %{_bindir}/mstarchive
@@ -182,10 +183,26 @@ rm -rf $RPM_BUILD_ROOT
 %{mstflint_python_tools}/c_dev_mgt.so
 %{mstflint_python_tools}/mstprivhost/mstprivhost.py
 
+# Usually, python2 is the default python on a machine,
+# so we want to ignore python2 erros caused by incompatiblity with python3 syntax
+%define _python_bytecompile_errors_terminate_build 0
+
+%{mstflint_python_tools}/mstresourcedump/*.py
+%{mstflint_python_tools}/mstresourcedump/validation/*.py
+%{mstflint_python_tools}/mstresourcedump/utils/*.py
+%{mstflint_python_tools}/mstresourcedump/segments/*.py
+%{mstflint_python_tools}/mstresourcedump/resource_data/*.py
+%{mstflint_python_tools}/mstresourcedump/filters/*.py
+%{mstflint_python_tools}/mstresourcedump/fetchers/*.py
+%{mstflint_python_tools}/mstresourcedump/commands/*.py
+
 %{_datadir}/mstflint
 %{_mandir}/man1/*
 
 %changelog
+* Tue Dec 31 2019 Eran Jakoby <eranj@dev.mellanox.co.il>
+   MFT 4.13.3 Updates. Added new tools: mstresourcedump.
+
 * Mon Sep 23 2019 Dan Goldberg <dang@dev.mellanox.co.il>
    Added conditional lib name of the dependencies to support both RH and SLES naming conventions.
 

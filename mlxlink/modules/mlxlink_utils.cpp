@@ -780,7 +780,7 @@ string prbsMaskToLockStatus(u_int32_t mask, u_int32_t numOfLanesToUse)
             res += "Not Locked";
         }
         if (i < numOfLanesToUse - 1) {
-            res += ",    ";
+            res += MlxlinkRecord::jsonFormat? "," : ",    ";
         }
     }
     return res;
@@ -898,22 +898,22 @@ int fecToBit(const string &fec)
 
 string speedToStr(const string &speed)
 {
-    if (speed == "200GbE" || speed == "IB-HDR") {
+    if (speed == "200GbE" || speed == "200G" || speed == "IB-HDR") {
         return "200g";
     }
-    if (speed == "100GbE" || speed == "IB-EDR") {
+    if (speed == "100GbE" || speed == "100G" || speed == "IB-EDR") {
         return "100g";
     }
-    if (speed == "50GbE") {
+    if (speed == "50GbE" || speed == "50G") {
         return "50g";
     }
-    if (speed == "25GbE") {
+    if (speed == "25GbE" || speed == "25G") {
         return "25g";
     }
-    if (speed == "40GbE" || speed == "IB-FDR10") {
+    if (speed == "40GbE" || speed == "40G" || speed == "IB-FDR10") {
         return "10g_40g";
     }
-    if (speed == "10GbE" || speed == "IB-QDR") {
+    if (speed == "10GbE" || speed == "10G" || speed == "IB-QDR") {
         return "10g_40g";
     }
     if (speed == "IB-FDR") {
