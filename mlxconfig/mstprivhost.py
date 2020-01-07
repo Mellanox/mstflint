@@ -131,7 +131,11 @@ class PrivilegeMgr(object):
 
         if exit_code != 0:
             print("Failed")
-            print(stdout + stderr)
+            if (self._privilege):
+                error(
+                    "Removing the restriction only effective on the ARM side")
+            else:
+                error("The host is already restricted!")
         else:
             print("Done!")
         return exit_code
