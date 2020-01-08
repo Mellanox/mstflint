@@ -160,12 +160,22 @@ rm -rf $RPM_BUILD_ROOT
  %{_bindir}/mstlink
 %endif
 
+%{_includedir}/mstflint/cmdif/icmd_cif_common.h
+%{_includedir}/mstflint/cmdif/icmd_cif_open.h
+%{_includedir}/mstflint/common/compatibility.h
 %{_includedir}/mstflint/mtcr.h
 %{_includedir}/mstflint/mtcr_com_defs.h
+%{_includedir}/mstflint/mtcr_mf.h
+%{_includedir}/mstflint/tools_layouts/adb_to_c_utils.h
+%{_includedir}/mstflint/tools_layouts/icmd_layouts.h
 %{_includedir}/mtcr_ul/mtcr.h
 %{_includedir}/mtcr_ul/mtcr_com_defs.h
 %{_libdir}/mstflint/libmtcr_ul.a
 %{_libdir}/libmtcr_ul.a
+%{_libdir}/libcmdif.a
+%{_libdir}/libdev_mgt.a
+%{_libdir}/libreg_access.a
+%{_libdir}/libtools_layouts.a
 
 %{mstflint_python_tools}/tools_version.py
 %{mstflint_python_tools}/mft_logger.py
