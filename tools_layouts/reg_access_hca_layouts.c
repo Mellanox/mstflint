@@ -2539,6 +2539,8 @@ void reg_access_hca_resource_dump_pack(const struct reg_access_hca_resource_dump
 	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->segment_type);
 	offset = 12;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->seq_num);
+	offset = 2;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->vhca_id_valid);
 	offset = 1;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->inline_dump);
 	offset = 0;
@@ -2576,6 +2578,8 @@ void reg_access_hca_resource_dump_unpack(struct reg_access_hca_resource_dump *pt
 	ptr_struct->segment_type = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
 	offset = 12;
 	ptr_struct->seq_num = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
+	offset = 2;
+	ptr_struct->vhca_id_valid = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 	offset = 1;
 	ptr_struct->inline_dump = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 	offset = 0;
@@ -2615,6 +2619,8 @@ void reg_access_hca_resource_dump_print(const struct reg_access_hca_resource_dum
 	fprintf(fd, "segment_type         : " UH_FMT "\n", ptr_struct->segment_type);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "seq_num              : " UH_FMT "\n", ptr_struct->seq_num);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "vhca_id_valid        : " UH_FMT "\n", ptr_struct->vhca_id_valid);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "inline_dump          : " UH_FMT "\n", ptr_struct->inline_dump);
 	adb2c_add_indentation(fd, indent_level);

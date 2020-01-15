@@ -105,6 +105,7 @@ class ResourceDumpFetcher:
         seg_number = self._start_seq_number
         more_dump = 0
         vhca_id = int(kwargs["vHCAid"]) if kwargs["vHCAid"] else 0
+        vhca_id_valid = 0
         index1 = int(kwargs["index1"]) if kwargs["index1"] else 0
         index2 = int(kwargs["index2"]) if kwargs["index2"] else 0
         num_of_obj_1 = int(kwargs["numOfObj1"]) if kwargs["numOfObj1"] else 0
@@ -113,12 +114,16 @@ class ResourceDumpFetcher:
         inline_data = []
         call_res_dump = True
 
+        if vhca_id != 0:
+            vhca_id_valid = 1
+
         while call_res_dump:
             results = self.reg_access_obj.sendResDump(segment,  # "segment_type"
                                                       seg_number,  # "seq_num"  * need check
                                                       1,  # "inline_dump"
                                                       more_dump,  # "more_dump" *
                                                       vhca_id,  # "vHCAid"
+                                                      vhca_id_valid,  # "vHCAid_valid"
                                                       index1,  # "index_1" *
                                                       index2,  # "index_2" *
                                                       num_of_obj_2,  # "num_of_obj_2" *

@@ -1686,6 +1686,10 @@ Resource Dump
 on each more dump. */
 	/* 0x0.16 - 0x0.19 */
 	u_int8_t seq_num;
+	/* Description - If set, then vhca_id field is valid. Otherwise dump 
+resources on my vhca_id. */
+	/* 0x0.29 - 0x0.29 */
+	u_int8_t vhca_id_valid;
 	/* Description - If set, data is dumped in the register in inline_data field. 
 otherwise dump to mkey. */
 	/* 0x0.30 - 0x0.30 */
