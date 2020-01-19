@@ -95,10 +95,11 @@ class MlxResDump:
     def run(self):
         # main parser
         tool_name = os.path.basename(__file__.split('.')[0])
-        parser = argparse.ArgumentParser(epilog="Use '{0} <command> -h' to read about a specific command.".format(tool_name),
+        parser = argparse.ArgumentParser(prog=tool_name,
+                                         epilog="Use '{0} <command> -h' to read about a specific command.".format(tool_name),
                                          formatter_class=argparse.RawTextHelpFormatter)
         parser.add_argument('-v', '--version', action='version', help='Shows tool version',
-                            version=tools_version.GetVersionString(cs.TOOL_NAME, None))
+                            version=tools_version.GetVersionString(tool_name, None))
 
         # commands sub parser
         commands = parser.add_subparsers(title='commands')
