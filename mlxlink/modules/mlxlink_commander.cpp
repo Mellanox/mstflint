@@ -91,6 +91,9 @@ MlxlinkCommander::~MlxlinkCommander()
     if (_mlxLinkLib) {
         delete _mlxLinkLib;
     }
+    if (_mlxlinkMaps) {
+        delete _mlxlinkMaps;
+    }
 }
 
 u_int32_t MlxlinkCommander::getFieldValue(const string &field_name, std::vector<u_int32_t>& buff)
