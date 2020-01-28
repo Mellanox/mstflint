@@ -97,11 +97,11 @@ class MenuSegment(Segment):
                 raise DumpNotSupported(
                     "Dump type: {0} must have index2 attribute, and it wasn't provided".format(dump_type))
 
-            if index1 and not match_rec.supports_index1:
+            if index1 is not None and not match_rec.supports_index1:
                 raise DumpNotSupported(
                     "Dump type: {0} does not support index1 attribute, and it was provided".format(dump_type))
 
-            if index2 and not match_rec.supports_index2:
+            if index2 is not None and not match_rec.supports_index2:
                 raise DumpNotSupported(
                     "Dump type: {0} does not support index2 attribute, and it was provided".format(dump_type))
 
