@@ -28,9 +28,6 @@ class QueryCommand(ResDumpCommand):
         self.vHCAid = kwargs[cs.UI_ARG_VHCAID]
         self.data = None
 
-        if not self.vHCAid:
-            self.vHCAid = 0
-
     def get_data(self):
         """call the QueryData for getting the menu data.
         """
