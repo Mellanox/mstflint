@@ -197,6 +197,7 @@ int dm_is_switchx(dm_dev_id_t type);
 
 int dm_is_new_gen_switch(dm_dev_id_t type);
 
+int dm_dev_is_raven_family_switch(dm_dev_id_t type);
 /*
  * A predicate returning if the device is in LiveFish mode
  */
