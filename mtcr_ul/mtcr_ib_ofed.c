@@ -733,7 +733,7 @@ int mib_open(const char *name, mfile *mf, int mad_init)
             char *ep;
             u_int32_t sl = strtoul(sl_str, &ep, 0);
             if (*ep) {
-                fprintf(stderr, "-E- Failed to parse env var %s (%s). Ignorring\n", MTCR_IBSL_ENV, sl_str);
+                fprintf(stderr, "-E- Failed to parse env var %s (%s). Ignoring\n", MTCR_IBSL_ENV, sl_str);
             } else {
                 ivm->portid.sl = (u_int8_t)sl;
             }

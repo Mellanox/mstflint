@@ -499,7 +499,7 @@ struct tools_open_nv_hdr {
 	/* Description - Shadow: i.e if set the Fw will not update the tlv immediately but wait for a command */
 	/* 0x4.24 - 0x4.24 */
 	u_int8_t shadow;
-	/* Description - Pad count: for non dword alligned tlvs */
+	/* Description - Pad count: for non dword aligned tlvs */
 	/* 0x4.25 - 0x4.26 */
 	u_int8_t pad_cnt;
 	/* Description - Data version can be set by caller or left as 0. */
@@ -2696,7 +2696,7 @@ struct tools_open_mcdd_descriptor {
 	/* Description - Status of current operation that FW sends to host. */
 	/* 0x20.0 - 0x20.7 */
 	u_int8_t status;
-	/* Description - Last error index, if occured. */
+	/* Description - Last error index, if occurred. */
 	/* 0x20.8 - 0x20.15 */
 	u_int8_t error;
 	/* Description - Reserved. */
