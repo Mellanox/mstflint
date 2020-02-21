@@ -1847,6 +1847,10 @@ bool FwOperations::FwResetTimeStamp()
     return errmsg("Operation not supported.");
 }
 
+bool FwOperations::GetSecureBootInfo()
+{
+    return errmsg("Operation not supported.");
+}
 bool FwOperations::FwBurnAdvanced(std::vector <u_int8_t> imageOps4MData, ExtBurnParams& burnParams)
 {
     (void)imageOps4MData;

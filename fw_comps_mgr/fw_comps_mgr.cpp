@@ -733,31 +733,25 @@ const char* FwComponent::getCompIdStr(comps_ids_t compId)
     switch (compId) {
     case COMPID_BOOT_IMG:
         return "Boot image";
-        break;
 
     case COMPID_RUNTIME_IMG:
         return "RUNTIME_IMAGE";
-        break;
 
     case COMPID_CS_TOKEN:
         return "CS_TOKEN";
-        break;
 
     case COMPID_MLNX_NVCONFIG:
         return "MLNX_NVCONFIG";
-        break;
 
     case COMPID_OEM_NVCONFIG:
         return "OEM_NVCONFIG";
-        break;
 
     case COMPID_DBG_TOKEN:
         return "DBG_TOKEN";
-        break;
+
 
     default:
         return "UNKNOWN_COMPONENT";
-        break;
     }
 }
 
@@ -993,6 +987,8 @@ bool FwCompsMgr::queryFwInfo(fwInfoT *query, bool next_boot_fw_ver)
     query->security_type.signed_fw = mgir.fw_info.signed_fw;
     query->security_type.debug_fw = mgir.fw_info.debug;
     query->security_type.dev_fw = mgir.fw_info.dev;
+    query->life_cycle = (life_cycle_t)mgir.fw_info.life_cycle;
+    query->sec_boot = mgir.fw_info.sec_boot;
     query->signed_fw = _compsQueryMap[FwComponent::COMPID_BOOT_IMG].comp_cap.signed_updates_only;
 
     query->base_mac_orig.uid = ((u_int64_t)mgir.hw_info.manufacturing_base_mac_47_32 << 32 | mgir.hw_info.manufacturing_base_mac_31_0);

@@ -153,6 +153,8 @@ bool FsCtrlOperations::FsIntQuery()
                                     ((fwQuery.security_type.secure_fw == 1) ? SMM_SECURE_FW : 0) |
                                     ((fwQuery.security_type.dev_fw    == 1) ? SMM_DEV_FW    : 0));
 
+    _fsCtrlImgInfo.sec_boot = fwQuery.sec_boot;
+    _fsCtrlImgInfo.life_cycle = fwQuery.life_cycle;
     std::vector<FwComponent> compsMap;
     if (!_fwCompsAccess->getFwComponents(compsMap, false)) {
         return errmsg(FwCompsErrToFwOpsErr(_fwCompsAccess->getLastError()), "Failed to get the FW Components MAP, err[%d]", _fwCompsAccess->getLastError());
@@ -199,29 +201,29 @@ bool FsCtrlOperations::FwReactivateImage()
         fw_comps_error_t errCode = _fwCompsAccess->getLastError();
         switch (errCode) {
         case FWCOMPS_IMAGE_REACTIVATION_PROHIBITED_FW_VER_ERR:
-            return errmsg(MLXFW_IMAGE_REACTIVATION_PROHIBITED_FW_VER_ERR, "Prohibited by current FW version\n");
+            return errmsg(MLXFW_IMAGE_REACTIVATION_PROHIBITED_FW_VER_ERR, "Prohibited by current FW version");
         case FWCOMPS_IMAGE_REACTIVATION_FIRST_PAGE_COPY_FAILED:
-            return errmsg(MLXFW_IMAGE_RACTIVATION_FIRST_PAGE_COPY_FAILED, "First page copy failed\n");
+            return errmsg(MLXFW_IMAGE_RACTIVATION_FIRST_PAGE_COPY_FAILED, "First page copy failed");
         case FWCOMPS_IMAGE_REACTIVATION_FIRST_PAGE_ERASE_FAILED:
-            return errmsg(MLXFW_IMAGE_REACTIVATION_FIRST_PAGE_ERASE_FAILED, "First page erase failed\n");
+            return errmsg(MLXFW_IMAGE_REACTIVATION_FIRST_PAGE_ERASE_FAILED, "First page erase failed");
         case FWCOMPS_IMAGE_REACTIVATION_FIRST_PAGE_RESTORE_FAILED:
-            return errmsg(MLXFW_IMAGE_REACTIVATION_FIRST_PAGE_RESTORE_FAILED, "First page restore failed\n");
+            return errmsg(MLXFW_IMAGE_REACTIVATION_FIRST_PAGE_RESTORE_FAILED, "First page restore failed");
         case FWCOMPS_IMAGE_REACTIVATION_FW_DEACTIVATION_FAILED:
-            return errmsg(MLXFW_IMAGE_REACTIVATION_FW_DEACTIVATION_FAILED, "FW deactivation failed\n");
+            return errmsg(MLXFW_IMAGE_REACTIVATION_FW_DEACTIVATION_FAILED, "FW deactivation failed");
         case FWCOMPS_IMAGE_REACTIVATION_FW_ALREADY_ACTIVATED:
-            return errmsg(MLXFW_IMAGE_REACTIVATION_FW_ALREADY_ACTIVATED, "FW already reactivated\n");
+            return errmsg(MLXFW_IMAGE_REACTIVATION_FW_ALREADY_ACTIVATED, "FW already reactivated");
         case FWCOMPS_IMAGE_REACTIVATION_ERROR_DEVICE_RESET_REQUIRED:
-            return errmsg(MLXFW_IMAGE_REACTIVATION_ERROR_DEVICE_RESET_REQUIRED, "FW reset required\n");
+            return errmsg(MLXFW_IMAGE_REACTIVATION_ERROR_DEVICE_RESET_REQUIRED, "FW reset required");
         case FWCOMPS_IMAGE_REACTIVATION_FW_PROGRAMMING_NEEDED:
-            return errmsg(MLXFW_IMAGE_REACTIVATION_FW_PROGRAMMING_NEEDED, "FW programming needed\n");
+            return errmsg(MLXFW_IMAGE_REACTIVATION_FW_PROGRAMMING_NEEDED, "FW programming needed");
         case FWCOMPS_GENERAL_ERR:
             return errmsg(MLXFW_ERR, "FW ICMD related error");
         case FWCOMPS_IMAGE_REACTIVATION_WAITING_TIME_EXPIRED:
-            return errmsg(MLXFW_ERR, "Image reactivation - timeout expired.\n");
+            return errmsg(MLXFW_ERR, "Image reactivation - timeout expired");
         case FWCOMPS_IMAGE_REACTIVATION_FW_NOT_SUPPORTED:
-            return errmsg(MLXFW_ERR, "Image reactivation - FW doesn't support this operation.\n");
+            return errmsg(MLXFW_ERR, "Image reactivation - FW doesn't support this operation");
         default:
-            return errmsg(MLXFW_IMAGE_REACTIVATION_UNKNOWN_ERROR, "Unknown error occurred\n");
+            return errmsg(MLXFW_IMAGE_REACTIVATION_UNKNOWN_ERROR, "Unknown error occured");
         }
     }
     return true;
@@ -758,4 +760,8 @@ bool FsCtrlOperations::FwQueryTimeStamp(struct tools_open_ts_entry& timestamp, s
     }
     delete tsObj;
     return rc ? false : true;
+}
+bool FsCtrlOperations::GetSecureBootInfo()
+{
+    return _signatureMngr->GetSecureBootInfo();
 }

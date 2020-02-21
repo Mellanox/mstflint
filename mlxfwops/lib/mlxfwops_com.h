@@ -64,6 +64,14 @@ typedef enum {
     PROG_OK
 } prog_t;
 
+typedef enum
+{
+    PRODUCTION = 0,
+    GA_SECURED = 1,
+    GA_NON_SECURED = 2,
+    RMA = 3,
+    NUM_OF_LIFE_CYCLES = 4
+}life_cycle_t;
 typedef int EFIAPI (*f_prog_func)(int completion);
 typedef int EFIAPI (*f_prog_func_ex)(int completion, void *opaque);
 typedef int EFIAPI (*f_prog_func_adv)(int completion, const char *str, prog_t, void *opaque);
@@ -337,6 +345,8 @@ typedef struct fs3_info_ext {
     u_int32_t security_mode;
     u_int8_t mcc_en;
     char deviceVsd[VSD_LEN + 1];
+    bool sec_boot;
+    life_cycle_t life_cycle;
 } fs3_info_t;
 
 typedef struct fs3_info_ext fs4_info_t;

@@ -206,7 +206,7 @@ public:
 
     virtual bool IsFsCtrlOperations();
     virtual bool PrepItocSectionsForCompare(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
-
+    virtual bool GetSecureBootInfo();
     void GetFwParams(fw_ops_params_t&);
 
     //bool GetExpRomVersionWrapper();
