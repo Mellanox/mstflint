@@ -42,6 +42,7 @@
 #include <string.h>
 #include <errno.h>
 #include <getopt.h>
+#include <limits.h>
 #include "mtcr.h"
 #include "tools_version.h"
 
@@ -95,6 +96,8 @@ int main(int argc, char *argv[])
     char *path = NULL;
     int rc = 0;
     unsigned int addr = 0, val = 0;
+    // Temp variable for using strtoul and then check if it's greater than UINT_MAX before assigning it to addr
+    unsigned long int parsed_addr = 0;
     mfile         *mf;
     unsigned int i2c_slave = 0;
     int c;
@@ -181,7 +184,12 @@ int main(int argc, char *argv[])
         fprintf(stderr, "-E- Missing address argument\n");
         exit(1);
     } else {
-        addr = strtoul(argv[optind], &endp, 0);
+        parsed_addr = strtoul(argv[optind], &endp, 0);
+        if (parsed_addr > UINT_MAX) {
+            fprintf(stderr, "-E- Address is out of the range\n");
+            exit(1);
+        }
+        addr = (unsigned int)parsed_addr;
         if (*endp != '\0' && *endp != '.' && *endp != ',') {
             //fprintf(stderr, "-E- Bad address given (%s). Unparsed string: \"%s\"\n", av[ap] ,endp);
             //exit(1);

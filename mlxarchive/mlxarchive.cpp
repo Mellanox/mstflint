@@ -50,7 +50,12 @@
 #define IDENT            "    "
 #define IDENT2           IDENT IDENT
 #define IDENT3           "\t\t"
+
+#ifdef MST_UL
+#define MLXARCHIVE_EXEC  "mstarchive"
+#else
 #define MLXARCHIVE_EXEC  "mlxarchive"
+#endif
 
 /************************************
  * * FLAGS Constants
@@ -75,8 +80,8 @@ bool writeToFile(const string&, const vector<u_int8_t>&);
  * * Function: Mlxarchive
  * ************************************/
 Mlxarchive::Mlxarchive() :
-    CommandLineRequester("mlxarchive OPTIONS"),
-    _cmdParser("mlxarchive")
+    CommandLineRequester(MLXARCHIVE_EXEC " OPTIONS"),
+    _cmdParser(MLXARCHIVE_EXEC)
 {
     initCmdParser();
     _binsDir  = "";

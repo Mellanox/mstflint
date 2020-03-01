@@ -91,6 +91,9 @@ MlxlinkCommander::~MlxlinkCommander()
     if (_mlxLinkLib) {
         delete _mlxLinkLib;
     }
+    if (_mlxlinkMaps) {
+        delete _mlxlinkMaps;
+    }
 }
 
 u_int32_t MlxlinkCommander::getFieldValue(const string &field_name, std::vector<u_int32_t>& buff)
@@ -154,9 +157,6 @@ void MlxlinkCommander::setParseMethod()
 
 void MlxlinkCommander::checkRegCmd()
 {
-    if(_userInput._pcie){
-        return;
-    }
     string regName = "PAOS";
     resetParser(regName);
 
@@ -173,6 +173,7 @@ void MlxlinkCommander::checkRegCmd()
 void MlxlinkCommander::checkValidFW()
 {
     try {
+        u_int32_t tmpLocalPort = _localPort;
         struct connectib_icmd_get_fw_info fw_info;
         memset(&fw_info, 0, sizeof(fw_info));
         gcif_get_fw_info(_mf, &fw_info);
@@ -180,8 +181,8 @@ void MlxlinkCommander::checkValidFW()
         sprintf(fwVersion, "%02d.%02d.%04d", fw_info.fw_version.MAJOR,
                 fw_info.fw_version.MINOR, fw_info.fw_version.SUBMINOR);
         _fwVersion = string(fwVersion);
-        if(_userInput._pcie){ //PDDR is not relevant to pcie
-            return;
+        if(_userInput._pcie){ // Fw validity should be checked, so set the local port to 1.
+            _localPort = 1;
         }
         string regName = "PDDR";
         resetParser(regName);
@@ -216,6 +217,7 @@ void MlxlinkCommander::checkValidFW()
         if (phyMngrFsmState == 0 && statusOpcode == 0) {
             checkAllPortsStatus();
         }
+        _localPort = tmpLocalPort;
     } catch (const std::exception &exc) {
         throw MlxRegException(string(
                 "Checking valid firmware raised the following exception: ") +

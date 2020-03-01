@@ -220,8 +220,6 @@ if REG_ACCESS:
             self._mstDev = dev
             if pci_device is not None:
                 self._mstDev = mtcr.MstDevice(pci_device)
-            self._err2str = REG_ACCESS.reg_access_err2str
-            self._err2str.restype = c_char_p
             self._reg_access_mcam = REG_ACCESS.reg_access_mcam
             self._reg_access_mtrc_cap = REG_ACCESS.reg_access_mtrc_cap
             self._reg_access_mgir = REG_ACCESS.reg_access_mgir
@@ -231,6 +229,10 @@ if REG_ACCESS:
             self._reg_access_res_dump = REG_ACCESS.reg_access_res_dump
             self._reg_access_debug_cap = REG_ACCESS.reg_access_debug_cap
 
+        def _err2str(self, rc):
+            err2str = REG_ACCESS.reg_access_err2str
+            err2str.restype = c_char_p
+            return err2str(rc).decode("utf-8")
 
         ##########################
         def close(self):
