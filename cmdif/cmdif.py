@@ -70,13 +70,16 @@ if CMDIF:
             self.mstDev = dev
             self.getLastErrFunc = CMDIF.gcif_get_last_err
             self.getLastErrFunc.restype = c_char_p
-            self.errStrFunc = CMDIF.gcif_err_str
-            self.errStrFunc.restype = c_char_p
             self.setItraceFunc = CMDIF.gcif_set_itrace
             self.getFwInfoFunc = CMDIF.gcif_get_fw_info
             self.multiHostSyncFunc = CMDIF.gcif_mh_sync
             self.multiHostSyncStatusFunc = CMDIF.gcif_mh_sync_status
             self.getIcmdQueryCap = CMDIF.get_icmd_query_cap
+
+        def errStrFunc(self, rc):
+            errStrFunc_ = CMDIF.gcif_err_str
+            errStrFunc_.restype = c_char_p
+            return errStrFunc_(rc).decode("utf-8")
 
         ##########################
         def close(self):
