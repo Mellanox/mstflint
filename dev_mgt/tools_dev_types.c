@@ -447,6 +447,7 @@ int dm_get_device_id(mfile *mf,
                 return 1;
                 break;
         }
+        *ptr_hw_dev_id = (u_int32_t)mf->linkx_chip_devid;
         return 0;
 
     }
