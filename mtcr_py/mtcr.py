@@ -51,6 +51,7 @@ class MtcrException(Exception):
 CMTCR = None
 try:
     from ctypes import *
+    ctypes.CDLL._func_restype_ = ctypes.c_ulonglong
     if platform.system() == "Windows" or os.name == "nt":
         CMTCR = CDLL("libmtcr-1.dll", use_errno=True)
     else:
