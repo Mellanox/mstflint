@@ -169,12 +169,26 @@ class CmdRegMfrl():
         else:
             return False   
 
+    def is_reset_level_support_reset_type(self, reset_level):
+        'Check if the input reset-level can be executed with reset_type (different than the default)'
+        for reset_level_ii in self._reset_levels:
+            if reset_level_ii['level'] == reset_level:
+                return reset_level_ii['support_reset_type']
+        else:
+            return False
+
+
     def default_reset_level(self):
         'Return the default reset-level (minimal supported reset-level)'
         for reset_level_ii in CmdRegMfrl.reset_levels():
             if self.is_reset_level_supported(reset_level_ii) is True:
                 return reset_level_ii
         raise Exception("There is no supported reset-level")
+
+    
+    def is_default_reset_type(self, reset_type):
+        return reset_type == self.default_reset_type()
+
 
     def send(self, reset_level=None, reset_type=None):
         'send MFRL Set command'

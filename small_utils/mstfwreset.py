@@ -239,7 +239,7 @@ def reset_fsm_register():
 def sigHndl(signal, frame):
     reset_fsm_register()
 
-    print("\nSignal %d received, exiting..." % signal)
+    print("\nSignal %d Recieved, Exiting..." % signal)
     sys.exit(1)
 
 def set_signal_handler():
@@ -277,7 +277,7 @@ def printAndFlush(str, endChar='\n'):
     sys.stdout.flush()
 
 ######################################################################
-# Description:  ask user Y/N question if N/n/No/no was received raise
+# Description:  ask user Y/N question if N/n/No/no was recieved raise
 #                RuntimeError.
 # OS Support :  Linux/Windows.
 ######################################################################
@@ -668,7 +668,7 @@ class MlnxPciOpLinux(MlnxPciOp):
         domainBus = ":".join(devAddr.split(":")[:2])
 
         if "ppc64" in platform.machine():
-            cmd = "lspci -d 15b3: -s {0}: -D".format(domainBus)
+            cmd = "lspci -d 15b3: -s {0}: -D | grep -v DMA".format(domainBus) # list without NVME emulation (on bluefield)
             (rc, out, _) = cmdExec(cmd)
             if rc != 0:
                 raise RuntimeError("failed to execute: {0}".format(cmd))
@@ -802,7 +802,7 @@ class MlnxPciOpFreeBSD(MlnxPciOp):
         MFDevices = []
         domainBus = ":".join(devAddr.split(":")[:-2])
         domainBus = "pci" + domainBus
-        cmd = "pciconf -l | grep 'chip=0x[0-9,a-f]\{4\}15b3 ' | grep %s | cut -f1 | cut -d@ -f2" %domainBus
+        cmd = "pciconf -l | grep 'chip=0x[0-9,a-f]\{4\}15b3 \|vendor=0x15b3' | grep %s | cut -f1 | cut -d@ -f2" %domainBus
         (rc, out, _) = cmdExec(cmd)
         if rc != 0 :
             raise RuntimeError("failed to get execure: %s" %cmd)
@@ -1498,7 +1498,11 @@ def resetFlow(device, devicesSD, reset_level, reset_type, cmdLineArgs, mfrl):
             resetPciAddr(device,devicesSD,driverObj, cmdLineArgs)
 
         # Wait for FW to be ready to get ICMD
-        wait_for_fw_ready(device)
+        try:
+            wait_for_fw_ready(device)
+        except: # bug 1980064 ('mst driver' is non-operational after PCI reset)
+            logger.warning("wait_for_fw_ready failed. Waiting 1 sec and continue")
+            time.sleep(1)
         
         logger.debug('end critical time (start to load driver)')
 
@@ -1838,6 +1842,9 @@ def main():
         # print("  * reset-type  is '{0}' ({1})".format(reset_type, mfrl.reset_type_description(reset_type)))
         if mfrl.is_reset_type_supported(reset_type) is False:
             raise RuntimeError("Reset-type '{0}' is not supported for this device".format(reset_type))
+
+        if mfrl.is_default_reset_type(reset_type) is False and mfrl.is_reset_level_support_reset_type(reset_level) is False:
+            raise RuntimeError("Reset-level '{0}' is not supported with reset-type '{1}'".format(reset_level, reset_type))
 
         minimal_or_requested = 'Minimal' if args.reset_level is None else 'Requested'
         print("{0} reset level for device, {1}:\n".format(minimal_or_requested , device))

@@ -264,7 +264,7 @@ class MlnxDriverWindows(MlnxDriver):
         if skip == True:
             super(MlnxDriverWindows, self).__init__(logger, MlnxDriver.DRIVER_IGNORE)
             return
-
+        
         seg_bus_device_list = []
         # Extract bus and device from the device_name
         for device in devices:
@@ -273,11 +273,11 @@ class MlnxDriverWindows(MlnxDriver):
             bus_num = int(seg_bus_device.split(':')[1],16)
             device_num = int(seg_bus_device.split(':')[2],16)
             seg_bus_device_list.append((seg_num, bus_num, device_num))
-
+        
         # Find the network adapters for the dus:device
         targetedAdaptersTemp = self.get_device_drivers(logger, seg_bus_device_list)
         logger.debug(targetedAdaptersTemp)
-
+     
         # Filter the network adapter thar are disabled
         self.targetedAdapters = []
         for targetedAdapter in targetedAdaptersTemp:
