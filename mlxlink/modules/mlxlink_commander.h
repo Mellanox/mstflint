@@ -340,6 +340,7 @@ public:
     u_int32_t getFieldValue(const string &field_name, std::vector<u_int32_t>& buff);
     string getFieldStr(const string &field);
     void checkRegCmd();
+    void checkLocalPortDPNMapping(u_int32_t localPort);
     int getLocalPortFromMPIR(DPN& dpn);
 
     void checkValidFW();

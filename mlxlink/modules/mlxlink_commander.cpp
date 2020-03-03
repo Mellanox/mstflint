@@ -346,6 +346,9 @@ void MlxlinkCommander::labelToLocalPort() {
         _dpn.node = _userInput._node;
         if (_userInput._sendDpn) {
             _localPort = getLocalPortFromMPIR(_dpn);
+        } else if (_userInput._specifiedPort){
+            checkLocalPortDPNMapping(_userInput._labelPort);
+            _localPort = _userInput._labelPort;
         } else {
             _localPort = _dpn.pcieIndex;
             if (_dpn.depth > 0) {
@@ -367,6 +370,24 @@ void MlxlinkCommander::labelToLocalPort() {
             || _devID == DeviceQuantum) {
         labelToIBLocalPort();
     }
+}
+
+void MlxlinkCommander::checkLocalPortDPNMapping(u_int32_t localPort)
+{
+    initValidDPNList();
+    string regName = "MPIR";
+    for (u_int32_t i = 0 ; i < _validDpns.size(); i++) {
+        resetParser(regName);
+        updateField("depth", _validDpns[i].depth);
+        updateField("pcie_index", _validDpns[i].pcieIndex);
+        updateField("node", _validDpns[i].node);
+        genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
+        if (getFieldValue("local_port", _buffer) == localPort) {
+            _dpn = _validDpns[i];
+            return;
+        }
+    }
+    throw MlxRegException("Invalid PCIE label port mapping %d", localPort);
 }
 
 int MlxlinkCommander::getLocalPortFromMPIR(DPN& dpn)
@@ -443,12 +464,15 @@ void MlxlinkCommander::labelToSpectLocalPort()
         if ((getFieldValue("lane0_module_mapping", _buffer) & 0xFF) + 1
                 == _userInput._labelPort) {
             checkWidthSplit(localPort);
-            _localPort =
-                    (_splitted) ?
-                            (_numOfLanes == 2 && !spect2WithGearBox) ?
-                                localPort + _userInput._splitPort :
-                                localPort + _userInput._splitPort -1 :
-                            localPort;
+            if (_splitted) {
+                if (_devID != DeviceSpectrum && _numOfLanes == 2 && !spect2WithGearBox) {
+                    _localPort = localPort + _userInput._splitPort;
+                } else {
+                    _localPort = localPort + _userInput._splitPort -1;
+                }
+            } else {
+                _localPort = localPort;
+            }
             updateField("local_port", _localPort);
             genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
             if ((getFieldValue("lane0_module_mapping", _buffer) & 0xFF) + 1
@@ -1173,7 +1197,6 @@ void MlxlinkCommander::supportedInfoPage()
             extStr = " (Ext.)";
         }
         string title = "Enabled Link Speed" + extStr;
-
         setPrintVal(_supportedInfoCmd,PDDR_ENABLED_LINK_SPEED, title,
                 value.str(),color, true, !_prbsTestMode, true);
         // Supported cable speed
@@ -1535,7 +1558,7 @@ void MlxlinkCommander::checkForPcie()
         } else if (_validDpns.size() == 1){
             _dpn = _validDpns[0];
             _localPort = getLocalPortFromMPIR(_dpn);
-        } else if (_validDpns.size() > 1){
+        } else if (_validDpns.size() > 1 && !_userInput._specifiedPort){
             throw MlxRegException("The --depth, --pcie_index and --node must be specified!");
         }
     }
@@ -1645,28 +1668,28 @@ void MlxlinkCommander::showFEC()
                 if (_devID == DeviceConnectX4) {
                     fecCap100 = "0x4 (RS-FEC(528,514))";
                 } else {
-                    fecCap100 = "0x5 (No-FEC,RS-FEC(528,514))";
+                    fecCap100 = "0x5 (No-FEC, RS-FEC(528,514))";
                 }
             } else {
                 fecCap100 = "0x0 (N/A)";
             }
             if (supportedSpeeds.find("50G") != string::npos) {
-                fecCap50 = "0x7 (No-FEC,FireCode FEC,RS-FEC(528,514))";
+                fecCap50 = "0x7 (No-FEC, FireCode FEC, RS-FEC(528,514))";
             } else {
                 fecCap50 = "0x0 (N/A)";
             }
             if (supportedSpeeds.find("40G") != string::npos) {
-                fecCap40 = "0x3 (No-FEC,FireCode FEC)";
+                fecCap40 = "0x3 (No-FEC, FireCode FEC)";
             } else {
                 fecCap40 = "0x0 (N/A)";
             }
             if (supportedSpeeds.find("25G") != string::npos) {
-                fecCap25 = "0x7 (No-FEC,FireCode FEC,RS-FEC(528,514))";
+                fecCap25 = "0x7 (No-FEC, FireCode FEC, RS-FEC(528,514))";
             } else {
                 fecCap25 = "0x0 (N/A)";
             }
             if (supportedSpeeds.find("10G") != string::npos) {
-                fecCap10 = "0x3 (No-FEC,FireCode FEC)";
+                fecCap10 = "0x3 (No-FEC, FireCode FEC)";
             } else {
                 fecCap10 = "0x0 (N/A)";
             }
@@ -1746,7 +1769,7 @@ void MlxlinkCommander::showSltp()
             }
             resetParser(regName);
             setPrintVal(_sltpInfoCmd,(int)i + 1,
-                    "Lane " + to_string(i),getStringFromVector(sltpLanes[i]),ANSI_COLOR_RESET, true, valid, true);
+                    "Lane " + to_string(i),getStringFromVector(sltpLanes[i]),ANSI_COLOR_RESET, true,valid, true);
         }
         cout << _sltpInfoCmd;
     } catch (const std::exception &exc) {
@@ -1874,6 +1897,9 @@ void MlxlinkCommander::showExternalPhy()
 
 void MlxlinkCommander::initValidDPNList()
 {
+    if (!_validDpns.empty()) {
+        return;
+    }
     string regName = "MPEIN";
     bool valid = false;
     u_int32_t maxNumOfHost = 4;
@@ -1962,7 +1988,7 @@ void MlxlinkCommander::showPcie()
         if (_userInput._links) {
             return;
         }
-        if(!_userInput._sendDpn) {
+        if(!_userInput._sendDpn && !_userInput._specifiedPort) {
             if (_validDpns.size() == 0) {
                 throw MlxRegException("No valid DPN's detected!");
             }
@@ -2026,8 +2052,8 @@ void MlxlinkCommander::collectBER()
             berFile.open(fileName, std::ofstream::app);
         }
 
-        cout << endl << "Collecting BER and producing report to "
-             << _userInput._csvBer << " ..." << endl;
+        MlxlinkRecord::printCmdLine("Collecting BER and producing report to " +
+                _userInput._csvBer , _jsonRoot);
 
         string active_fec = _prbsTestMode ? "N/A" : _mlxlinkMaps->_fecModeActive[_fecActive];
         findAndReplace(active_fec, ",", " ");
@@ -2456,7 +2482,12 @@ void MlxlinkCommander::sendPaosDown()
     if (!checkPaosDown()) {
         if (_isHCA) {
             string protocol = (_protoActive == IB) ? "IB" : "ETH";
-            throw MlxRegException("Port is not Down, please run mstconfig -d " + _device + " set KEEP_" + protocol + "_LINK_UP_P<port_number>=0.\nIn case of multi-host please verify all hosts are not holding the port up.");
+            string message = "port is not Down, for some reasons:\n";
+            message += "1- The link is configured to be up, run this command if KEEP_ETH_LINK_UP_Px is True:\n";
+            message += "   mlxconfig -d " + _device + " set KEEP_" + protocol + "_LINK_UP_P<port_number>=0\n";
+            message += "2- Port management is enabled (management protocol requiring the link to remain up, PAOS won't manage to disable the port)\n";
+            message += "3- In case of multi-host please verify all hosts are not holding the port up";
+            throw MlxRegException(message);
         } else {
             throw MlxRegException("Port is not Down, Aborting...");
         }
@@ -2578,13 +2609,15 @@ void MlxlinkCommander::sendPprt()
 {
     string regName = "PPRT";
     resetParser(regName);
-
+    u_int32_t laneRate = prbsLaneRateToMask(_userInput._pprtRate);
     updateField("local_port", _localPort);
     updateField("pnat", PNAT_LOCAL);
     updateField("e", PPRT_PPTT_ENABLE);
-    updateField("lane_rate_oper", prbsLaneRateToMask(_userInput._pprtRate));
+    updateField("lane_rate_oper", laneRate);
     updateField("prbs_mode_admin", prbsModeToMask(_userInput._pprtMode));
-
+    if(laneRate == PRBS_HDR) {
+        updateField("modulation", PRBS_PAM4_ENCODING);
+    }
     genBuffSendRegister(regName, MACCESS_REG_METHOD_SET);
 }
 
@@ -2592,12 +2625,15 @@ void MlxlinkCommander::sendPptt()
 {
     string regName = "PPTT";
     resetParser(regName);
-
+    u_int32_t laneRate = prbsLaneRateToMask(_userInput._ppttRate);
     updateField("local_port", _localPort);
     updateField("pnat", PNAT_LOCAL);
     updateField("e", PPRT_PPTT_ENABLE);
-    updateField("lane_rate_admin", prbsLaneRateToMask(_userInput._ppttRate));
+    updateField("lane_rate_admin", laneRate);
     updateField("prbs_mode_admin", prbsModeToMask(_userInput._ppttMode));
+    if(laneRate == PRBS_HDR) {
+        updateField("modulation", PRBS_PAM4_ENCODING);
+    }
     genBuffSendRegister(regName, MACCESS_REG_METHOD_SET);
 }
 
