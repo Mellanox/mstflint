@@ -33,7 +33,7 @@
  
 
 /***
-         *** This file was generated at "2019-09-11 22:55:45"
+         *** This file was generated at "2020-01-14 20:30:54"
          *** by:
          ***    > /mswg/release/tools/a-me/last_stable/adabe_plugins/adb2c/adb2pack.py --input adb/prm/hca/int/reg_access_hca.adb --file-prefix reg_access_hca --prefix reg_access_hca_
          ***/
@@ -171,20 +171,20 @@ Other values are reserved */
 category
  field
 For GENERAL_SEMAPHORE 
- See Table  827, "
+ See Table  726, "
 GENERAL_SEMA
 PHORE Category Layout
-," on page  1117
+," on page  830
 For ICM_RESOURCE 
- See Table  829, "
+ See Table  728, "
 ICM_RESOURCE Category 
 Layout
-," on page  1118
+," on page  830
 For UAPP_RESOURCE 
- See Table  831, "
+ See Table  730, "
 UAPP_RESOURCE Category 
 Layout
-," on page  1118 */
+," on page  831 */
 	/* 0x4.0 - 0x1c.31 */
 	union reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto category_modifier;
 };
@@ -418,13 +418,27 @@ For example 17:43 will be coded as 0x1743 */
 	/* Description -  */
 	/* 0x30.0 - 0x30.15 */
 	u_int16_t isfu_major;
+/*---------------- DWORD[13] (Offset 0x34) ----------------*/
+	/* Description - 0: Production
+1: GA Secured
+2: GA Non-Secured
+3: RMA */
+	/* 0x34.0 - 0x34.1 */
+	u_int8_t life_cycle;
+	/* Description - 0: Disable
+1: Enable */
+	/* 0x34.2 - 0x34.2 */
+	u_int8_t sec_boot;
 };
 
 /* Description -   */
 /* Size in bytes - 32 */
 struct reg_access_hca_mgir_hardware_info {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - PCI device ID */
+	/* Description - PCI device ID. 
+For specific device IDs, see 
+Table 12, 
+"Switch Supported PCI Device IDs," on page 177 */
 	/* 0x0.0 - 0x0.15 */
 	u_int16_t device_id;
 	/* Description - SwitchX Devices:
@@ -644,22 +658,22 @@ unit (i.e. 100 will represent the ability to store 100 samples of
 single counter, 50 samples of 2 counters, etc). */
 	/* 0x0.0 - 0x0.7 */
 	u_int8_t log_max_samples;
+	/* Description - Log(base 2) of the the recommended minimal size of eq to han
+dle the resource_dump_event */
+	/* 0x0.16 - 0x0.20 */
+	u_int8_t log_min_resource_dump_eq;
 	/* Description - If set, Resource_dump register is supported.
 See 
- See Table  845, "
-RESOURCE_DUMP Register Layout
-," on 
-page  1126 */
+ See Table  748, "RESOURCE_DUMP Register Layout," on 
+page  840 */
 	/* 0x0.22 - 0x0.22 */
 	u_int8_t resource_dump;
 	/* Description - Log(base 2) of the size in granularity of 4KB to be allocated by 
 host in order to accommodate cr_dump.
 0 means feature is not supported.
 See 
-Table 843, "
-CORE_DUMP Register Layout
-," on 
-page 1124 */
+Table 746, "CORE_DUMP Register Layout," on 
+page 838 */
 	/* 0x0.23 - 0x0.27 */
 	u_int8_t log_cr_dump_to_mem_size;
 	/* Description - If set, Core dump of type of specific QP is supported. */
@@ -743,10 +757,10 @@ FPGA_CTRL are supported. */
 	/* 0x8.30 - 0x8.30 */
 	u_int8_t flash_gw_lock;
 	/* Description - If set, SW is allowed to modify FPGA_CTRL register. See
- Table  809, 
+ Table  708, 
 "
 FPGA_CTRL Register Layout
-," on page  1106 */
+," on page  819 */
 	/* 0x8.31 - 0x8.31 */
 	u_int8_t fpga_ctrl_modify;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
@@ -795,10 +809,10 @@ For Mellanox sandbox products
 /*---------------- DWORD[30] (Offset 0x78) ----------------*/
 	/* Description - Sandbox basic capabilities per sandbox product ID.
 For Mellanox sandbox products, see
- Table  732, "
+ Table  763, "
 IPsec_Basic_Capabili
 ties Structure Layout
-," on page  1026
+," on page  953
 . */
 	/* 0x78.0 - 0x78.31 */
 	u_int32_t sandbox_basic_caps;
@@ -810,10 +824,10 @@ when such capability is not present). */
 /*---------------- DWORD[32] (Offset 0x80) ----------------*/
 	/* Description - Extended capabilities address.
 For Mellanox sandbox products, see
- Table  734, "
-IPsec_Extended_Ca
-pabilities Structure Layout
-," on page  1026
+ Table  765, "
+IPsec_Extended_Capa
+bilities Structure Layout
+," on page  953
 . */
 	/* 0x80.0 - 0x84.31 */
 	u_int64_t sandbox_extended_caps_addr;
@@ -850,10 +864,10 @@ Valid only for query operation. */
 	u_int8_t status;
 	/* Description - Indicates the control operation to be performed. Allowed only when 
 FPGA_CAP.fpga_ctrl_modify==1. 
- See Table  805, "
-FPGA_CAP Reg
-ister Layout
-," on page  1102
+ See Table  704, "
+FPGA_CAP Regis
+ter Layout
+," on page  815
 .
 0x1: LOAD - when set, the FPGA will be forced to reload the image 
 from flash according to 
@@ -1025,8 +1039,8 @@ Other values are reserved. */
 	u_int8_t handle_owner_type;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - Component size in bytes. 
-Valid for UPDATE_COMPONENT instruction. Specify
-ing the size may shorten the update time.
+Valid for UPDATE_COMPONENT instruction. Specifying 
+the size may shorten the update time.
 Value 0x0 means that size is unspecified. */
 	/* 0x10.0 - 0x10.31 */
 	u_int32_t component_size;
@@ -1054,10 +1068,10 @@ struct reg_access_hca_mcda_reg {
 Accesses must be in accordance to 
 log_mcda_word_size
  in 
-Table 1376, "
+Table 1110, "
 MCQI CAPABILITIES Info Layout
 ," on 
-page 1576 */
+page 1132 */
 	/* 0x4.0 - 0x4.31 */
 	u_int32_t offset;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
@@ -1265,13 +1279,12 @@ build_time */
 	u_int32_t version;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - Time of component creation. Valid only if 
-build_
-time_valid
- is set. See 
-Table 1380, "
+build_time_valid
+ 
+is set. See 
+Table 1114, "
 Date-Time Layout
-," on 
-page 1579 */
+," on page 1135 */
 	/* 0x8.0 - 0xc.31 */
 	u_int64_t build_time;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
@@ -1279,10 +1292,10 @@ page 1579 */
 only if 
 user_defined_time_valid
  is set. See 
-Table 1380, 
+Table 1114, 
 "
 Date-Time Layout
-," on page 1579 */
+," on page 1135 */
 	/* 0x10.0 - 0x14.31 */
 	u_int64_t user_defined_time;
 /*---------------- DWORD[6] (Offset 0x18) ----------------*/
@@ -1388,7 +1401,7 @@ struct reg_access_hca_mfrl_reg_ext {
 "
 MFRL - Management Firmware 
 Reset Level
-" on page 1593
+" on page 1152
 Only a single bit may be set.
 Bit 0: LEVEL0
 Bit 3: LEVEL3
@@ -1412,26 +1425,26 @@ Bit 1: Port alive */
 struct reg_access_hca_mgir {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Hardware Information, see 
-Table 1275, "
+Table 1019, "
 Hardware Info Layout
 ," 
-on page 1509 */
+on page 1078 */
 	/* 0x0.0 - 0x1c.31 */
 	struct reg_access_hca_mgir_hardware_info hw_info;
 /*---------------- DWORD[8] (Offset 0x20) ----------------*/
 	/* Description - Firmware Information, see 
-Table 1277, "
+Table 1021, "
 Firmware Info Layout
 ," 
-on page 1510 */
+on page 1079 */
 	/* 0x20.0 - 0x5c.31 */
 	struct reg_access_hca_mgir_fw_info fw_info;
 /*---------------- DWORD[24] (Offset 0x60) ----------------*/
 	/* Description - Software Information, see 
-Table 1279, "
+Table 1023, "
 Software Info Layout
 ," 
-on page 1513
+on page 1081
 This field indicates 
 the oldest software version compatible 
 with the current firmware */
@@ -1556,8 +1569,8 @@ bound_stalled_reads_events - range 0   100. */
 struct reg_access_hca_mqis_reg {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Type of information string to be queried:
-0x0: VPD - Read the PCI Vital Product Data capability 
-content.
+0x0: VPD - Read the PCI Vital Product Data capability con
+tent.
 0x1: MODEL_NAME
 0x2: MODEL_DESCRIPTION
 0x3: IMAGE_VSD
@@ -1676,9 +1689,9 @@ established or will be established with high BER */
 struct reg_access_hca_resource_dump {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - See 
-Section 27.8, "
+Section 21.8, "
 Resource Dump
-," on page 1073
+," on page 804
 . */
 	/* 0x0.0 - 0x0.15 */
 	u_int16_t segment_type;
@@ -1699,9 +1712,7 @@ been dumped yet. */
 	/* 0x0.31 - 0x0.31 */
 	u_int8_t more_dump;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - vhca_id where the 
-resource is a
-llocated. */
+	/* Description - vhca_id where the resource is allocated. */
 	/* 0x4.0 - 0x4.15 */
 	u_int16_t vhca_id;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
@@ -1736,8 +1747,7 @@ special value of 0x0 represents 0x1. */
 	/* 0x10.16 - 0x10.31 */
 	u_int16_t num_of_obj1;
 /*---------------- DWORD[6] (Offset 0x18) ----------------*/
-	/* Description - An
- opaque provided by the device. SW shall read the 
+	/* Description - An opaque provided by the device. SW shall read the 
 device_opaque upon command done and shall provide it 
 on the next call in case dump_more==1. On first call, 
 device_opaque shall be 0. */
@@ -1838,10 +1848,10 @@ num_repeat
 type
  field.
 For SMBUS_FAILED,
- See Table  835, "
+ See Table  734, "
 SMBUS_FAILED Fault Inject 
 Modifier Layout
-," on page  1121 */
+," on page  833 */
 	/* 0x10.0 - 0x2c.31 */
 	struct reg_access_hca_smbus_failed_fault_inject_modifier per_type_modifier;
 };
@@ -1910,15 +1920,15 @@ freq
 type
  field.
 For IRISC_HANG 
- See Table  839, "
+ See Table  738, "
 IRISC_HANG Mini-Flow Modifier 
 Layout
-," on page  1122
+," on page  835
 For PACKET_DROP 
- See Table  841, "
+ See Table  740, "
 PACKET_DROP Mini-Flow 
 Modifier Layout
-," on page  1123 */
+," on page  836 */
 	/* 0x10.0 - 0x2c.31 */
 	union reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto per_type_modifier;
 };
@@ -2028,20 +2038,20 @@ The Stressor will have the opposite behavior when it is not active. */
 type
  field.
 For RXB_HANG 
- See Table  819, "
+ See Table  718, "
 RXB_HANG Stop Toggle Modifier 
 Layout
-," on page  1114
+," on page  827
 For LOCK_RESOURCE 
- See Table  825, "
+ See Table  724, "
 LOCK_RESOURCE Stop 
 Toggle Modifier Layout
-," on page  1116
+," on page  829
 For SXP_HANG 
- See Table  821, "
+ See Table  720, "
 SXP_HANG Stop Toggle Modifier 
 Layout
-," on page  1115 */
+," on page  828 */
 	/* 0x10.0 - 0x2c.31 */
 	union reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto per_type_modifier;
 };
