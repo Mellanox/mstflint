@@ -45,6 +45,8 @@ CONFIG_SPACE_PTR_OFFSET = 0X34
 MAXIMUN_LEGACY_CAP_SIZE = 0x100
 MAX_PCI_OFFSET = 0xfff
 MELLANOX_PCI_SKIP_LIST = [0x58, 0x5c] # it is harmful for the device to read offset 0x58 and 0x5c for example
+VENDOR_ID_ADDR = 0X0
+DEVICE_ID_ADDR = 0x2
 # Legacy Capabilities
 CAP_PCI_EXPRESS= 0x10
 CAP_MSI = 0x05
@@ -76,6 +78,8 @@ CAP_EXTENDED_DICT = {CAP_AER: 0x48,
                     CAP_ATS: 0x8
                    }
 
+class NotSupportedDeviceException(Exception):
+    pass
 
 class PCIDeviceBase(object):
     """
@@ -215,6 +219,15 @@ class PCIDeviceBase(object):
         """
         return (offset + size <= 0xfffe)
 
+    def _is_valid_device(self):
+        """
+        Checks if the device is valid or not
+        """
+        self._vendor_id = self.read_word(VENDOR_ID_ADDR)
+        self._dev_id = self.read_word(DEVICE_ID_ADDR)
+        if self._vendor_id == 0xffff and self._dev_id == 0xffff:
+            return False
+        return True
     
     def _get_pci_express_offset(self):
         """
@@ -297,6 +310,9 @@ class LinuxPCIDevice(PCIDeviceBase):
         super(LinuxPCIDevice, self).__init__(dbdf, debug_level)
         self._pci_conf_file = "{0}/{1}/config".format(LinuxPCIDevice.PCI_CONF_FILE_BASE_PATH, self.dbdf)
         self._bin_file = BinaryFile(self._pci_conf_file)
+        if self._is_valid_device() == False:
+            self.logger.debug("Device is not supported to save/load pci configurations")
+            raise NotSupportedDeviceException("Device is not supported to save/load pci configurations")
         self._pci_express_offset = self._get_pci_express_offset()
 
     def read(self, offset, size, skip_offset_list=None):
@@ -329,6 +345,9 @@ class FreeBSDPCIDevice(PCIDeviceBase):
     """ 
     def __init__(self, dbdf, debug_level="debug"):
         super(FreeBSDPCIDevice, self).__init__(dbdf, debug_level)
+        if self._is_valid_device() == False:
+            self.logger.debug("Device is not supported to save/load pci configurations")
+            raise NotSupportedDeviceException("Device is not supported to save/load pci configurations")
         self._pci_express_offset = self._get_pci_express_offset()
 
     def read(self, offset, size, skip_offset_list=None):
