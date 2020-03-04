@@ -167,6 +167,12 @@ public:
     u_int8_t getMajor() const {
         return _major;
     }
+    u_int8_t getMinor() const {
+        return _minor;
+    }
+    u_int16_t getSubMinor() const {
+        return _subMinor;
+    }
 };
 
 /*class SecurityInfoExtension : Extension {

@@ -45,7 +45,7 @@
 #include <pldm_pkg.h>
 #include <pldm_dev_id_record.h>
 #include <pldm_component_image.h>
-#include <tools_layouts/connectx4_layouts.h>
+#include <tools_layouts/image_info_layouts.h>
 
 using namespace std;
 
