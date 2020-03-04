@@ -323,64 +323,6 @@ bool FwOperations::CheckAndPrintCrcRes(char *pr, bool blank_crc, u_int32_t off, 
     return true;
 }
 
-#define CIB_MAJOR 10
-#define OLD_FORMAT_MAX_MINOR_CIB 10
-#define SIB_MAJOR 11
-#define OLD_FORMAT_MAX_MINOR_SIB 1
-
-/*
- * currently we have 3 FW version format
- * 0: MM.mm.ssss
- * 1: MM.mmbb.ssss
- * 2: MM.mm.bsss / MM.mm.bbss for branch !=0
- * Where:
- * M: major digit
- * m: minor digit
- * b: branch digit
- * s: subminor digit
- */
-int FwOperations::GetFwVerFormat(u_int16_t fwVer[3])
-{
-    if (fwVer[1] > 99) {
-        return 1;
-    }
-
-    if ((fwVer[0] == CIB_MAJOR && fwVer[1] <= OLD_FORMAT_MAX_MINOR_CIB) ||
-        (fwVer[0] == SIB_MAJOR && fwVer[1] <= OLD_FORMAT_MAX_MINOR_SIB)) {
-        return 0;
-    }
-
-    return 2;
-}
-
-FwVerInfo FwOperations::FwVerLessThan(u_int16_t r1[3], u_int16_t r2[3])
-{
-    // copy version arrays to local variables
-    u_int16_t fwVer1[3];
-    u_int16_t fwVer2[3];
-    u_int16_t fwVersionFormatR1 = 0;
-    u_int16_t fwVersionFormatR2 = 0;
-    memcpy(fwVer1, r1, sizeof(fwVer1));
-    memcpy(fwVer2, r2, sizeof(fwVer2));
-
-    fwVersionFormatR1 = GetFwVerFormat(fwVer1);
-    fwVersionFormatR2 = GetFwVerFormat(fwVer2);
-    // try to decide according to format
-    if (fwVersionFormatR1 > fwVersionFormatR2) {
-        return FVI_GREATER;
-    } else if (fwVersionFormatR1 < fwVersionFormatR2) {
-        return FVI_SMALLER;
-    }
-    // same format compare each field
-    for (int i = 0; i < 3; i++) {
-        if (fwVer1[i] < fwVer2[i]) {
-            return FVI_SMALLER;
-        } else if (fwVer1[i] > fwVer2[i]) {
-            return FVI_GREATER;
-        }
-    }
-    return FVI_EQUAL; // equal versions
-}
 const u_int32_t FwOperations::_cntx_magic_pattern[4] = {
     0x4D544657,   // Ascii of "MTFW"
     0x8CDFD000,   // Random data
@@ -1090,6 +1032,7 @@ const FwOperations::HwDevData FwOperations::hwDevData[] = {
     { "ConnectX-6",       CX6_HW_ID,        CT_CONNECTX6,    CFT_HCA,     0, {4123, 0}, {{UNKNOWN_BIN, {0}}}},
     { "ConnectX-6DX",     CX6DX_HW_ID,      CT_CONNECTX6DX,  CFT_HCA,     0, {4125, 0}, {{UNKNOWN_BIN, {0}}}},
     { "BlueField",        BF_HW_ID,         CT_BLUEFIELD,    CFT_HCA,     0, {41680, 41681, 41682, 0}, {{UNKNOWN_BIN, {0}}}},
+    { "BlueField2",       BF2_HW_ID,        CT_BLUEFIELD2,   CFT_HCA,     0, {41684, 41685, 41686, 0}, {{UNKNOWN_BIN, {0}}}},
     { "Spectrum",         SPECTRUM_HW_ID,   CT_SPECTRUM,     CFT_SWITCH,  0, {52100, 0}, {{UNKNOWN_BIN, {0}}}},
     { "Switch_IB2",       SWITCH_IB2_HW_ID, CT_SWITCH_IB2,   CFT_SWITCH,  0, {53000, 0}, {{UNKNOWN_BIN, {0}}}},
     { "Quantum",          QUANTUM_HW_ID,    CT_QUANTUM,      CFT_SWITCH,  0, {54000, 0}, {{UNKNOWN_BIN, {0}}}},
@@ -1110,6 +1053,7 @@ const FwOperations::HwDev2Str FwOperations::hwDev2Str[] = {
     {"ConnectX-6",        CX6_HW_ID,        0x00},
     {"ConnectX-6DX",      CX6DX_HW_ID,      0x00},
     {"BlueField",         BF_HW_ID,         0x00},
+    {"BlueField2",        BF2_HW_ID,        0x00},
     {"SwitchX A0",        SWITCHX_HW_ID,    0x00},
     {"SwitchX A1",        SWITCHX_HW_ID,    0x01},
     {"InfiniScale IV A0", IS4_HW_ID,        0xA0},
@@ -1289,13 +1233,16 @@ bool FwOperations::CheckPSID(FwOperations &imageOps, u_int8_t allow_psid_change)
     return true;
 }
 
-bool FwOperations::CheckFwVersion(FwOperations &imageOps, u_int8_t forceVersion)
-{
-    FwVerInfo updateRequired;
+bool FwOperations::CheckFwVersion(FwOperations &imageOps,
+        u_int8_t forceVersion) {
     if (!forceVersion) {
-        updateRequired = FwVerLessThan(_fwImgInfo.ext_info.fw_ver, imageOps._fwImgInfo.ext_info.fw_ver);
-        if (updateRequired != FVI_SMALLER) {
-            return errmsg(MLXFW_FW_ALREADY_UPDATED_ERR, "FW is already updated.");
+        FwVersion current(createFwVersion(&_fwImgInfo.ext_info)), image(
+                createFwVersion(&imageOps._fwImgInfo.ext_info));
+        if (current.are_same_branch(image)) {
+            if (current >= image) {
+                return errmsg(MLXFW_FW_ALREADY_UPDATED_ERR,
+                        "FW is already updated.");
+            }
         }
     }
     return true;
@@ -1690,7 +1637,7 @@ void FwOperations::SetDevFlags(chip_type_t chipType, u_int32_t devType, fw_img_t
         ibDev  = (fwType == FIT_FS3 && chipType != CT_SPECTRUM) || (chipType == CT_CONNECTX && !CntxEthOnly(devType));
         ethDev = (chipType == CT_CONNECTX) || (chipType == CT_SPECTRUM) || (chipType == CT_CONNECTX4) || \
                  (chipType == CT_CONNECTX4_LX) || (chipType == CT_CONNECTX5) || (chipType == CT_BLUEFIELD) || \
-                 (chipType == CT_SPECTRUM2) || (chipType == CT_CONNECTX6)  || (chipType == CT_CONNECTX6DX);
+                 (chipType == CT_SPECTRUM2) || (chipType == CT_CONNECTX6)  || (chipType == CT_CONNECTX6DX) || (chipType == CT_BLUEFIELD2);
     }
 
     if ((!ibDev && !ethDev) || chipType == CT_UNKNOWN) {
@@ -1706,12 +1653,10 @@ void FwOperations::SetDevFlags(chip_type_t chipType, u_int32_t devType, fw_img_t
     }
 }
 
-bool FwOperations::IsFwSupportingRomModify(u_int16_t fw_ver[3])
-{
-    u_int16_t supported_fw[3] = {MAJOR_MOD_ROM_FW,  MINOR_MOD_ROM_FW, SUBMINOR_MOD_ROM_FW};
+bool FwOperations::IsFwSupportingRomModify(const FwVersion& fw_ver) {
+    FwVersion mod(MAJOR_MOD_ROM_FW, MINOR_MOD_ROM_FW, SUBMINOR_MOD_ROM_FW);
     // only used in connectx (FS2)
-    FwVerInfo verInfo = FwVerLessThan(fw_ver, supported_fw);
-    return ((verInfo == FVI_EQUAL) || (verInfo == FVI_GREATER));
+    return fw_ver.compare_master_version(mod) >= 0;
 }
 
 bool FwOperations::checkMatchingExpRomDevId(const fw_info_t& info)
@@ -1992,6 +1937,17 @@ bool FwOperations::FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatter
     return errmsg("Operation not supported");
 }
 
+bool FwOperations::RestoreDevToc(vector<u_int8_t>& img, char* psid, dm_dev_id_t devid_t, const cx4fw_uid_entry& base_guid, const cx4fw_uid_entry& base_mac)
+{
+    (void)img;
+    (void)psid;
+    (void)devid_t;
+    (void)base_guid;
+    (void)base_mac;
+    return errmsg("Operation not supported");
+}
+
+
 bool FwOperations::FwSetPublicKeys(char *fname, PrintCallBack callBackFunc)
 {
     (void) fname;
@@ -2038,6 +1994,7 @@ u_int8_t FwOperations::GetFwFormatFromHwDevID(u_int32_t hwDevId)
                hwDevId == CX6_HW_ID ||
                hwDevId == CX6DX_HW_ID ||
                hwDevId == BF_HW_ID  ||
+               hwDevId == BF2_HW_ID      ||
                hwDevId == QUANTUM_HW_ID ||
                hwDevId == SPECTRUM2_HW_ID ||
                hwDevId == SPECTRUM3_HW_ID) {
@@ -2156,4 +2113,16 @@ cleanup:
     delete imgTsObj;
     delete devTsObj;
     return retRc;
+}
+FwVersion FwOperations::createFwVersion(u_int16_t fw_ver0, u_int16_t fw_ver1, u_int16_t fw_ver2) {
+    return FwVersion(fw_ver0, fw_ver1, fw_ver2);
+}
+FwVersion FwOperations::createFwVersion(const fw_info_com_t* fwInfo) {
+    return FwVersion(fwInfo->fw_ver[0], fwInfo->fw_ver[1], fwInfo->fw_ver[2],
+            fwInfo->branch_ver);
+}
+
+FwVersion FwOperations::createRunningFwVersion(const fw_info_com_t* fwInfo) {
+    return FwVersion(fwInfo->running_fw_ver[0], fwInfo->running_fw_ver[1],
+            fwInfo->running_fw_ver[2], fwInfo->running_branch_ver);
 }

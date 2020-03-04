@@ -77,6 +77,7 @@ typedef enum {
 #define FLINT_CMD_ARGS_ERROR5                 "Command \"%s\" does not require arguments\n"
 #define FLINT_INVALID_OPTION_ERROR            "Unknown option \"%s\" for the \"%s\" command. you can use %s.\n"
 #define FLINT_INVALID_FLAG_ERROR              "Invalid switch \"%s\" is specified.\n"
+#define FLINT_INVALID_FLAG_ERROR_5TH_GEN      "Invalid switch \"%s\" is specified for 5th gen device.\n"
 #define FLINT_INVALID_FLAG_WITH_FLAG_ERROR    "Cannot specify \"%s\" flag with \"%s\" flag.\n"
 #define FLINT_INVALID_FLAG_WITHOUT_FLAG_ERROR "\"%s\" flag must be specified with \"%s\" flag.\n"
 #define FLINT_INVALID_FLAG_WITH_CMD_ERROR     "Cannot specify flag: %s with Command: %s\n"
@@ -144,6 +145,7 @@ typedef enum {
 #define FLINT_SIGN_ERROR                      "Failed to sign the image: %s\n"
 #define FLINT_HMAC_ERROR                      "Failed to add HMAC: %s\n"
 #define FLINT_FAILED_IMAGE_REACTIVATION_ERROR "Failed to execute image reactivation on device %s. Error: %s.\n"
+#define FLINT_NO_MFA2                         "MFA2 funcionality is not supported"
 
 /**************************
  * Flint Warning Messages

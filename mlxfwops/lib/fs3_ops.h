@@ -129,6 +129,7 @@ public:
     MlargeBuffer GetImageCache() { return  _imageCache; }
     virtual bool Fs3UpdateSection(void *new_info, fs3_section_t sect_type = FS3_DEV_INFO, bool is_sect_failsafe = true, CommandType cmd_type = CMD_UNKNOWN, PrintCallBack callBackFunc = (PrintCallBack)NULL);
     virtual bool PrepItocSectionsForCompare(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
+    virtual bool RestoreDevToc(vector<u_int8_t>& img, char* psid, dm_dev_id_t devid_t, const cx4fw_uid_entry& base_guid, const cx4fw_uid_entry& base_mac);
     bool IsCriticalSection(u_int8_t sect_type);
 protected:
     #define ITOC_ASCII 0x49544f43
@@ -163,7 +164,8 @@ protected:
     bool DoAfterBurnJobs(const u_int32_t magic_patter[], Fs3Operations &imageOps,
                          ExtBurnParams& burnParams, Flash *f,
                          u_int32_t new_image_start, u_int8_t is_curr_image_in_odd_chunks);
-
+    bool CreateDtoc(vector<u_int8_t>& img, u_int8_t* SectionData, u_int32_t section_size, u_int32_t flash_data_addr,
+        fs3_section_t section, u_int32_t tocEntryAddr, bool IsCRC);
     virtual bool getRunningFwVersion();
     virtual bool Fs3IsfuActivateImage(u_int32_t newImageStart);
     bool Fs3ReburnItocSection(u_int32_t newSectionAddr, u_int32_t newSectionSize, std::vector<u_int8_t>  newSectionData, const char *msg, PrintCallBack callBackFunc = (PrintCallBack)NULL);
@@ -173,22 +175,22 @@ protected:
     bool RomCommonCheck(bool ignoreProdIdCheck, bool checkIfRomEmpty);
     bool extractUUIDFromString(const char *uuid, std::vector<u_int32_t>& uuidData);
 
-    bool Fs3UpdatePublicKeysSection(unsigned int size, char *publicKeys,
-                                    std::vector<u_int8_t>  &newSectionData);
+    bool Fs3UpdatePublicKeysSection(unsigned int size, const char *publicKeys,
+                                    std::vector<u_int8_t>  &newSectionData, bool silent = false);
     bool Fs3UpdateForbiddenVersionsSection(unsigned int size, char *publicKeys,
                                            std::vector<u_int8_t>  &newSectionData);
 
     bool CheckAndDealWithChunkSizes(u_int32_t cntxLog2ChunkSize, u_int32_t imageCntxLog2ChunkSize);
     bool ReBurnCurrentImage(ProgressCallBack progressFunc);
-
+    bool RemoveWriteProtection();
     bool Fs3MemSetSignature(fs3_section_t sectType, u_int32_t size, PrintCallBack printFunc = (PrintCallBack)NULL);
     virtual bool IsSectionExists(fs3_section_t sectType);
 
     bool isOld4MBImage(FwOperations *imageOps);
-
+    bool VerifyBranchFormat(const char* vsdString);
 
     bool AddHMACIfNeeded(Fs3Operations* imageOps, Flash *f);
-
+    bool CheckPublicKeysFile(const char *fname, fs3_section_t& sectionType, bool silent = false);
     struct toc_info {
         u_int32_t entry_addr;
         struct cibfw_itoc_entry toc_entry;
@@ -280,7 +282,7 @@ private:
     virtual void maskIToCSection(u_int32_t itocType, vector<u_int8_t>& img);
     bool FwCalcSHA(SHATYPE shaType, vector<u_int8_t>& sha256);
 
-    bool CheckPublicKeysFile(char *fname, fs3_section_t& sectionType);
+    
 
     // this class is for sorting the itoc array by ascending absolute flash_addr used in FwShiftDevData
     class TocComp {

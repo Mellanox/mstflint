@@ -1874,7 +1874,9 @@ bool Fs2Operations::FwBurnRom(FImage *romImg, bool ignoreProdIdCheck, bool ignor
         return errmsg("Unsupported device type %d", _fwImgInfo.ext_info.dev_type);
     }
 
-    if (_romSect.empty() && !IsFwSupportingRomModify(_fwImgInfo.ext_info.fw_ver)) {
+    if (_romSect.empty()
+            && !IsFwSupportingRomModify(
+                    FwVersion(createFwVersion(&_fwImgInfo.ext_info)))) {
         return errmsg("It is not allowed to burn ROM on device which has fw: %d.%d.%d that doesn't contain ROM.", _fwImgInfo.ext_info.fw_ver[0],
                       _fwImgInfo.ext_info.fw_ver[1], _fwImgInfo.ext_info.fw_ver[2]);
     }
@@ -1955,7 +1957,7 @@ bool Fs2Operations::FwDeleteRom(bool ignoreProdIdCheck, ProgressCallBack progres
         return errmsg("The FW does not contain a ROM section.");
     }
 
-    if (!IsFwSupportingRomModify(_fwImgInfo.ext_info.fw_ver)) {
+    if (!IsFwSupportingRomModify(FwVersion(createFwVersion(&_fwImgInfo.ext_info)))) {
         return errmsg("Unsupported Fw version (%d.%d.%d).", _fwImgInfo.ext_info.fw_ver[0],
                       _fwImgInfo.ext_info.fw_ver[1], _fwImgInfo.ext_info.fw_ver[2]);
     }

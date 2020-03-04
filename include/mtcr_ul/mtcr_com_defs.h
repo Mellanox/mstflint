@@ -87,7 +87,7 @@ typedef long long int64_t;
 
 #endif
 
-extern int increase_poll_time;
+extern void set_increase_poll_time(int);
 
 /*
  * MST <--> MTCR API defines

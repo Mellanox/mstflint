@@ -114,6 +114,7 @@ public:
     virtual bool open(const char *device, bool, bool, int, flash_params_t*, int, bool, int) = 0;
 
 
+    virtual bool is_fifth_gen() = 0;
     virtual void close()                                   = 0;
     virtual bool read(u_int32_t addr, u_int32_t *data)     = 0;
     virtual bool read(u_int32_t addr, void *data, int len,
@@ -339,6 +340,7 @@ public:
         check_uefi_build();
         return (mflash*)NULL;
     }
+    virtual bool is_fifth_gen() { return false; }
 private:
     bool readFileGetBuffer(std::vector<u_int8_t>& dataBuf);
     bool writeEntireFile(std::vector<u_int8_t>& fileContent);
@@ -463,7 +465,7 @@ public:
     virtual bool disable_hw_access();
 
     bool         disable_hw_access(u_int64_t key);
-    bool         is_fifth_gen();
+    virtual bool         is_fifth_gen();
     const char* getFlashType();
 
     bool         get_attr(ext_flash_attr_t& attr);
