@@ -94,8 +94,7 @@ void MlxlinkUi::printSynopsisQueries()
 
     MlxlinkRecord::printFlagLine(DEVICE_DATA_FLAG_SHORT, DEVICE_DATA_FLAG, "", "General Device Info");
     MlxlinkRecord::printFlagLine(BER_MONITOR_INFO_FLAG_SHORT, BER_MONITOR_INFO_FLAG, "", "Show BER Monitor Info (not supported for HCA)");
-    MlxlinkRecord::printFlagLine(PEPC_SHOW_FLAG_SHORT, PEPC_SHOW_FLAG, "", "Show External PHY Info");
-
+    MlxlinkRecord::printFlagLine(PEPC_SHOW_FLAG_SHORT, PEPC_SHOW_FLAG, "", "Show External PHY Info (for Ethernet switches only)");
 }
 
 void MlxlinkUi::printSynopsisCommands()
@@ -147,7 +146,7 @@ void MlxlinkUi::printSynopsisCommands()
     MlxlinkRecord::printFlagLine(PPCNT_CLEAR_FLAG_SHORT, PPCNT_CLEAR_FLAG, "",
                   "Clear Counters");
     MlxlinkRecord::printFlagLine(PEPC_SET_FLAG_SHORT, PEPC_SET_FLAG, "",
-                  "Set External PHY (not supported for HCA)");
+                  "Set External PHY (for Ethernet switches only)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PEPC_FORCE_MODE_FLAG_SHORT, PEPC_FORCE_MODE_FLAG, "twisted_pair_force_mode",
                   "Twisted Pair Force Mode [MA(Master)/SL(Slave)]");
@@ -240,10 +239,10 @@ void MlxlinkUi::paramValidate()
            }
         }
         if (_mlxlinkCommander->_userInput._specifiedPort) {
-            if (!(_mlxlinkCommander->_userInput._sendNode &&
-                    _mlxlinkCommander->_userInput._sendDepth &&
-                    _mlxlinkCommander->_userInput._sendPcieIndex)) {
-                throw MlxRegException("For PCIE, the port flag is valid only with depth, pcie_index and node flags");
+            if (_mlxlinkCommander->_userInput._sendNode ||
+                    _mlxlinkCommander->_userInput._sendDepth ||
+                    _mlxlinkCommander->_userInput._sendPcieIndex) {
+                throw MlxRegException("For PCIE port, either port flag or depth, pcie_index and node flags should be specified");
            }
         }
     } else if (_mlxlinkCommander->_userInput._sendNode ||
@@ -712,10 +711,8 @@ int MlxlinkUi::run(int argc, char **argv)
         throw MlxRegException("Device is not supported");
     }
     MlxRegLib::isAccessRegisterSupported(_mlxlinkCommander->_mf);
-
-    bool onlyKnownRegs = false;
     _mlxlinkCommander->_mlxLinkLib = new MlxRegLib(_mlxlinkCommander->_mf,
-            _mlxlinkCommander->_extAdbFile, onlyKnownRegs, _mlxlinkCommander->_useExtAdb);
+            _mlxlinkCommander->_extAdbFile, _mlxlinkCommander->_useExtAdb);
     if (_mlxlinkCommander->_mlxLinkLib->isIBDevice() &&
             !_mlxlinkCommander->_mlxLinkLib->isAccessRegisterGMPSupported(
                     MACCESS_REG_METHOD_GET)) {

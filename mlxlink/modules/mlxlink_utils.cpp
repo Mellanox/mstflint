@@ -205,11 +205,17 @@ string EthExtSupportedSpeeds2Str(u_int32_t int_mask)
     if (int_mask & ETH_LINK_SPEED_EXT_200GAUI_4) {
         maskStr += "200G,";
     }
-    if ((int_mask & ETH_LINK_SPEED_EXT_100GAUI_2) || (int_mask & ETH_LINK_SPEED_EXT_CAUI_4)) {
-        maskStr += "100G,";
+    if (int_mask & ETH_LINK_SPEED_EXT_100GAUI_2) {
+        maskStr += "100G_2X,";
     }
-    if ((int_mask & ETH_LINK_SPEED_EXT_50GAUI_1) || (int_mask & ETH_LINK_SPEED_EXT_50GAUI_2)) {
-        maskStr += "50G,";
+    if (int_mask & ETH_LINK_SPEED_EXT_CAUI_4) {
+        maskStr += "100G_4X,";
+    }
+    if (int_mask & ETH_LINK_SPEED_EXT_50GAUI_1) {
+        maskStr += "50G_1X,";
+    }
+    if (int_mask & ETH_LINK_SPEED_EXT_50GAUI_2) {
+        maskStr += "50G_2X,";
     }
     if (int_mask & ETH_LINK_SPEED_EXT_XLAUI_4) {
         maskStr += "40G,";
@@ -269,28 +275,45 @@ string getOui(u_int32_t oui)
 
 int ptysSpeedToExtMaskETH(const string & speed)
 {
-    if(speed == "100M")
+    if (speed == "100M") {
         return (ETH_LINK_SPEED_EXT_SGMII_100M);
-    if(speed == "1G")
+    }
+    if (speed == "1G") {
         return (ETH_LINK_SPEED_EXT_1000BASE_X);
-    if(speed == "2.5G")
+    }
+    if (speed == "2.5G") {
         return (ETH_LINK_SPEED_EXT_2_5GBASE_X);
-    if(speed == "5G")
+    }
+    if (speed == "5G") {
         return (ETH_LINK_SPEED_EXT_5GBASE_R);
-    if(speed == "10G")
+    }
+    if (speed == "10G") {
         return (ETH_LINK_SPEED_EXT_XFI);
-    if(speed == "25G")
+    }
+    if (speed == "25G") {
         return (ETH_LINK_SPEED_EXT_25GAUI_1);
-    if(speed == "40G")
+    }
+    if (speed == "40G") {
         return (ETH_LINK_SPEED_EXT_XLAUI_4);
-    if(speed == "50G")
-        return (ETH_LINK_SPEED_EXT_50GAUI_1 | ETH_LINK_SPEED_EXT_50GAUI_2);
-    if(speed == "100G")
-        return (ETH_LINK_SPEED_EXT_100GAUI_2 | ETH_LINK_SPEED_EXT_CAUI_4);
-    if(speed == "200G")
+    }
+    if (speed == "50G_2X") {
+        return (ETH_LINK_SPEED_EXT_50GAUI_2);
+    }
+    if (speed == "50G_1X") {
+        return (ETH_LINK_SPEED_EXT_50GAUI_1);
+    }
+    if (speed =="100G_4X") {
+        return (ETH_LINK_SPEED_EXT_CAUI_4);
+    }
+    if (speed =="100G_2X") {
+        return (ETH_LINK_SPEED_EXT_100GAUI_2);
+    }
+    if (speed == "200G") {
         return ETH_LINK_SPEED_EXT_200GAUI_4;
-    if(speed == "400G")
+    }
+    if (speed == "400G") {
         return ETH_LINK_SPEED_EXT_400GAUI_8;
+    }
     return 0x0;
 }
 
@@ -595,10 +618,14 @@ int prbsLaneRateToMask(const string &rate)
     if (rate == "IB-FDR" || rate == "FDR" || rate == "14G" || rate == "14GbE") {
         return PRBS_FDR;
     }
-    if (rate == "IB-EDR" || rate == "EDR" || rate == "25G" || rate == "25GbE" || rate == "50G" || rate == "50GbE" || rate == "100G" || rate == "100GbE") {
+    if (rate == "IB-EDR" || rate == "EDR" || rate == "25G" || rate == "25GbE"
+            || rate == "50G" || rate == "50GbE" || rate == "100G" || rate == "100GbE"
+            || rate == "50G_2X" || rate == "50GbE_2X" || rate == "100G_4X" || rate == "100GbE_4X") {
         return PRBS_EDR;
     }
-    if (rate == "IB-HDR" || rate == "HDR" || rate == "200GbE" || rate == "200G" || rate == "400G" || rate == "400GbE") {
+    if (rate == "IB-HDR" || rate == "HDR" || rate == "200GbE" || rate == "200G"
+            || rate == "50G_1X" || rate == "50GbE_1X" || rate == "100G_2X"
+            || rate == "100GbE_2X" || rate == "400G" || rate == "400GbE") {
         return PRBS_HDR;
     }
     if (rate == "1G" || rate == "1GbE") {
@@ -665,10 +692,14 @@ int prbsLaneRateCapToMask(const string &rate)
     if (rate == "IB-FDR" || rate == "FDR" || rate == "14G" || rate == "14GbE") {
         return LANE_RATE_FDR_CAP;
     }
-    if (rate == "IB-EDR" || rate == "EDR" || rate == "25G" || rate == "25GbE" || rate == "50G" || rate == "50GbE" || rate == "100G" || rate == "100GbE") {
+    if (rate == "IB-EDR" || rate == "EDR" || rate == "25G" || rate == "25GbE"
+            || rate == "50G" || rate == "50GbE" || rate == "100G" || rate == "100GbE"
+            || rate == "50G_2X" || rate == "50GbE_2X" || rate == "100G_4X" || rate == "100GbE_4X") {
         return LANE_RATE_EDR_CAP;
     }
-    if (rate == "IB-HDR" || rate == "HDR" || rate == "200G" || rate == "200GbE" || rate == "400G" || rate == "400GbE") {
+    if (rate == "IB-HDR" || rate == "HDR" || rate == "200GbE" || rate == "200G"
+            || rate == "50G_1X" || rate == "50GbE_1X" || rate == "100G_2X"
+            || rate == "100GbE_2X" || rate == "400G" || rate == "400GbE") {
         return LANE_RATE_HDR_CAP;
     }
     if (rate == "1G" || rate == "1GbE") {
@@ -735,10 +766,12 @@ bool prbsLaneRateCheck(const string &rate)
     if (rate == "FDR" || rate == "IB-FDR" || rate == "14G") {
         return true;
     }
-    if (rate == "EDR" || rate == "IB-EDR" || rate == "25G" || rate == "50G" || rate == "100G") {
+    if (rate == "EDR" || rate == "IB-EDR" || rate == "25G" || rate == "50G"
+            || rate == "100G"|| rate == "50G_2X" || rate == "100G_4X") {
         return true;
     }
-    if (rate == "HDR" || rate == "IB-HDR" || rate == "200G") {
+    if (rate == "HDR" || rate == "IB-HDR" || rate == "200G"
+            || rate == "50G_1X" || rate == "100G_2X") {
         return true;
     }
     if (rate == "1G") {

@@ -49,15 +49,23 @@ MlxlinkRecord::MlxlinkRecord() {
 MlxlinkRecord::~MlxlinkRecord() {
 }
 
-std::vector<std::string> MlxlinkRecord::split(const std::string& str, char delim)
+
+std::vector<std::string> MlxlinkRecord::split(const std::string& str, const std::string &delim)
 {
     std::vector<std::string> list;
-    std::stringstream ss(str);
+    std::string tmp = str;
     std::string token;
-    while (std::getline(ss, token, delim)) {
-        MlxlinkRecord::trim(token);
-        list.push_back(token);
+    std::size_t found = tmp.find(delim);
+    while (found != std::string::npos) {
+        token = tmp.substr(0, found);
+        if (!token.empty()) {
+            MlxlinkRecord::trim(token);
+            list.push_back(token);
+        }
+        tmp = tmp.substr(found + delim.length());
+        found = tmp.find(delim);
     }
+    list.push_back(tmp);
     return list;
 }
 
