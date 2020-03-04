@@ -42,11 +42,13 @@ using namespace mlxreg;
 /************************************
 * Function: RegParser
 ************************************/
-RegAccessParser::RegAccessParser(string data, string indexes, AdbInstance *regNode, std::vector<u_int32_t> buffer)
+RegAccessParser::RegAccessParser(string data, string indexes, AdbInstance *regNode, std::vector<u_int32_t> buffer, bool ignore_ro)
 {
     _data      = data;
     _indexes   = indexes;
     _regNode   = regNode;
+    _ignore_ro = ignore_ro;
+    output_file = "";
     if (!regNode) {
         _parseMode = Pm_Unknown;
     } else {
@@ -66,11 +68,13 @@ RegAccessParser::RegAccessParser(string data, string indexes, AdbInstance *regNo
 /************************************
 * Function: RegParser
 ************************************/
-RegAccessParser::RegAccessParser(string data, string indexes, AdbInstance *regNode, u_int32_t len)
+RegAccessParser::RegAccessParser(string data, string indexes, AdbInstance *regNode, u_int32_t len, bool ignore_ro)
 {
     _data      = data;
     _indexes   = indexes;
     _regNode   = regNode;
+    _ignore_ro = ignore_ro;
+    output_file = "";
     _len       = len;
     // Set parsing method
     if (!regNode) {
@@ -332,11 +336,12 @@ AdbInstance* RegAccessParser::getField(string name)
 
 string RegAccessParser::getAccess(const AdbInstance *field)
 {
-    string access = "N/A";
-    if (field->attrs.find("access") != field->attrs.end()) {
-        access = field->attrs.find("access")->second;
-    } else if (field->parent) {
+    string access = field->getInstanceAttr("access");
+    if (access.empty()) {
+        access = "N/A";
+        if (field->parent) {
         access = getAccess(field->parent);
+        }
     }
     return access;
 }
@@ -351,6 +356,9 @@ bool RegAccessParser::checkAccess(const AdbInstance *field, const string accessS
 ************************************/
 bool RegAccessParser::isRO(AdbInstance *field)
 {
+    if (_ignore_ro) {
+        return false;
+    }
     return checkAccess(field, "RO");
 }
 

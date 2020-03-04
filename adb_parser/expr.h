@@ -97,6 +97,7 @@
 
 #include <stdarg.h>
 #include <sys/types.h>
+#include <string>
 
 #include <common/compatibility.h>
 
@@ -154,19 +155,14 @@ private:
     int     valid_digit(char ch, int radix);
     int     valid_name(char ch);
 
-    void    ErrorReport(const char *format, ...)
-#if defined(__GNUC__) && !defined(__MINGW32__) && !defined(__MINGW64__)
-    __attribute__ ((format(printf, 2, 3)))
-#endif
-    ;
-    char*   vprint(const char *format, va_list args);
+    void    ErrorReport(const std::string& msg);
 
 
     /*
      * Pure virtual methods. You must define them to use expr.
      */
     virtual int  ResolveName(char *name, u_int64_t *val) = 0;
-    virtual void Error(char *message) = 0;
+    virtual void Error(const std::string& msg) = 0;
 };
 
 #endif

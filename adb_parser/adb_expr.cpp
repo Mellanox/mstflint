@@ -106,7 +106,7 @@ int AdbExpr::ResolveName(char *name, u_int64_t *val)
 /**
  * Function: AdbExpr::Error
  **/
-void AdbExpr::Error(char *message)
+void AdbExpr::Error(const std::string& message)
 {
     throw AdbException(string("Expression evaluation error: ") + message);
 }
