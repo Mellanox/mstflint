@@ -78,7 +78,9 @@ common_SOURCEES =  mlxfwmanager_common.cpp mlxfwmanager_common.h\
                         output_fmts.cpp output_fmts.h\
                         psid_lookup_db.cpp psid_lookup_db.h\
                         img_version.cpp img_version.h\
-                        err_msgs.h
+                        err_msgs.h\
+						fw_version_old_clp.cpp fw_version_old_clp.h\
+                        fw_version_with_sub_build.cpp fw_version_with_sub_build.h
                         
 common_LDADD  = $(USER_DIR)/dev_mgt/libdev_mgt.a\
                         $(USER_DIR)/mvpd/libmvpd.a\

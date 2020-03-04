@@ -64,8 +64,10 @@
     #endif
 #endif
 
+#ifndef CONNECTX4LX_NV_DATA_SIZE
+    #define CONNECTX4LX_NV_DATA_SIZE    (0x10000)
+#endif
 #include "fs3_ops.h"
-#include "connectx4lx_layouts.h"
 #define FS3_FLASH_SIZE 0x400000
 #define FS3_LOG_CHUNK_SIZE 21
 
