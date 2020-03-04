@@ -33,13 +33,10 @@
  */
 
 #include <stdio.h>
-#include <string.h>
 #include <ctype.h>
+#include <string.h>
 #include "expr.h"
 
-#ifdef __WIN__
-#define vsnprintf _vsnprintf
-#endif
 
 char*Expr::str;
 char*Expr::initial_arg;
@@ -587,11 +584,9 @@ void Expr::GetToken(token *pt)
                 /* error, right parentheses expected. */
                 pt->type = ERR_RPAR_EXP;
                 if (*str) {
-                    ErrorReport("Instead of \"%s\" right parentheses expected.\n",
-                                str);
+                    ErrorReport("Instead of\"" + std::string(str) + "\" right parentheses expected.\n");
                 } else {
-                    ErrorReport("Unexpected end in expression \"%s\" - \
-right parentheses expected.\n", initial_arg);
+                    ErrorReport("Unexpected end in expression \"" + std::string(initial_arg) + "\" - right parentheses expected.\n");
                 }
                 str = old_str;
                 return;
@@ -600,11 +595,9 @@ right parentheses expected.\n", initial_arg);
             /* error, number or name or unary operation expected. */
             pt->type = ERR_VALUE_EXP;
             if (*str) {
-                ErrorReport("Instead of \"%s\" value or unary operation expected.\n",
-                            str);
+                ErrorReport("Instead of \"" + std::string(str) + "\" value or unary operation expected.\n");
             } else {
-                ErrorReport("Unexpected end in expression \"%s\" - \
-value or unary operation expected.\n", initial_arg);
+                ErrorReport("Unexpected end in expression \"" + std::string(initial_arg) + "\" - value or unary operation expected.\n");
             }
             return;
         }
@@ -692,7 +685,7 @@ int Expr::GetNumb(u_int64_t *val)
     }
 
     if (!valid_digit(*str, radix)) {
-        ErrorReport("\"%s\" -- bad constant syntax.\n", str);
+        ErrorReport("\"" + std::string(str) + "\" -- bad constant syntax.\n");
         return ERR_BAD_NUMBER;
     }
 
@@ -759,7 +752,7 @@ int Expr::GetName(u_int64_t *val)
     if (ResolveName(name, val) == 0) {
         return EXPR_OK;
     } else {
-        ErrorReport("Symbolic name \"%s\" not resolved.\n", name);
+        ErrorReport("Symbolic name \"" +  std::string(name) + "\" not resolved.\n");
         return ERR_BAD_NAME;
     }
 }
@@ -827,48 +820,9 @@ int Expr::valid_digit(char ch, int radix)
 *     like printf
 *
 ********************************************************/
-void Expr::ErrorReport(const char *format, ...)
+void Expr::ErrorReport(const std::string& msg)
 {
-    char     *msg;
-    va_list args;
 
-    va_start(args, format);
-    msg = vprint(format, args);
-    va_end(args);
     Error(msg);
-    delete [] msg;
 }
 
-/********************************************************
-* routine:     vprint
-*
-* description:
-*     Error reporting
-*
-* arguments:
-*     like vprintf
-*
-* return code:
-*     Formatted error string
-*
-* Note:
-*     don't forget to delete[] char* ptr returned from this!!!
-*
-********************************************************/
-char* Expr::vprint(const char *format, va_list args)
-{
-    const int INIT_VAL = 1024;
-    int max_str, max_buf = INIT_VAL;
-    char      *out_buf;
-
-    while (1) {
-        out_buf = new char[max_buf];
-        max_str = max_buf - 1;
-
-        if (vsnprintf(out_buf, max_str, format, args) < max_str) {
-            return out_buf;
-        }
-        delete [] out_buf;
-        max_buf *= 2;
-    }
-}

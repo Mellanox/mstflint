@@ -1,34 +1,13 @@
-/* 
- * Copyright (C) Jan 2019 Mellanox Technologies Ltd. All rights reserved.
- * 
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
- * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
- * OpenIB.org BSD license below:
- * 
- *     Redistribution and use in source and binary forms, with or
- *     without modification, are permitted provided that the following
- *     conditions are met:
- * 
- *      - Redistributions of source code must retain the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer.
- * 
- *      - Redistributions in binary form must reproduce the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
-
+/*                  - Mellanox Confidential and Proprietary -
+ *
+ *  Copyright (C) Jan 2013, Mellanox Technologies Ltd.  ALL RIGHTS RESERVED.
+ *
+ *  Except as specifically permitted herein, no portion of the information,
+ *  including but not limited to object code and source code, may be reproduced,
+ *  modified, distributed, republished or otherwise exploited in any form or by
+ *  any means for any purpose without the prior written permission of Mellanox
+ *  Technologies Ltd. Use of software subject to the terms and conditions
+ *  detailed in the file "LICENSE.txt".
  *
  */
 
@@ -258,14 +237,20 @@ public:
 private:
     // METHODS
     string findFile(string fileName);
-    static bool is_relative(const string path);
-    static void includeFile(AdbParser *adbParser, string fileName,
-            int lineNumber = -1);
-    static void startElement(void *adbParser, const XML_Char *name,
-            const XML_Char **atts);
+    static void includeFile(AdbParser *adbParser, string fileName, int lineNumber = -1);
+    static void startElement(void *adbParser, const XML_Char *name, const XML_Char **atts);
+
+    static void startNodesDefElement(const XML_Char **atts, AdbParser *adbParser);
+    static void startEnumElement(const XML_Char **atts, AdbParser *adbParser, const int lineNumber);
+    static void startConfigElement(const XML_Char **atts, AdbParser *adbParser, const int lineNumber);
+    static void startInfoElement(const XML_Char **atts, AdbParser *adbParser);
+    static void startIncludeElement(const XML_Char **atts, AdbParser *adbParser, const int lineNumber);
+    static void startInstOpAttrReplaceElement(const XML_Char **atts, AdbParser *adbParser, const int lineNumber);
+    static void startNodeElement(const XML_Char **atts, AdbParser *adbParser, const int lineNumber);
+    static void startFieldElement(const XML_Char **atts, AdbParser *adbParser, const int lineNumber);
+
     static void endElement(void *adbParser, const XML_Char *name);
-    static void addReserved(vector<AdbField*> &reserveds, u_int32_t offset,
-            u_int32_t size);
+    static void addReserved(vector<AdbField*> &reserveds, u_int32_t offset, u_int32_t size);
     static int attrCount(const XML_Char **atts);
     static string attrValue(const XML_Char **atts, const XML_Char *attrName);
     static string attrName(const XML_Char **atts, int i);
@@ -273,6 +258,8 @@ private:
     static u_int32_t addr2int(string& s);
     static u_int32_t dword(u_int32_t offset);
     static u_int32_t startBit(u_int32_t offset);
+    static bool raiseException(bool allowMultipleExceptions, string exceptionTxt, 
+                              string addedMsg, const string expType);
 
 private:
     // MEMBERS
@@ -723,28 +710,106 @@ vector<AdbInstance*> AdbInstance::findChild(const string& childName,
 /**
  * Function: AdbInstance::getAttr
  **/
-string AdbInstance::getAttr(const string &attrName) {
-    AttrsMap::iterator it = attrs.find(attrName);
-
-    if (it == attrs.end()) {
-        return string();
+string AdbInstance::getInstanceAttr(const string &attrName) const
+{
+    AttrsMap::const_iterator it = instAttrsMap.find(attrName);
+    if (it == instAttrsMap.end()) {
+        if (fieldDesc) {
+            it = fieldDesc->attrs.find(attrName);
+            if (it == fieldDesc->attrs.end()) {
+                return string();
+            }
+        }
+        else{
+            return string();
+        }
     }
-
     return it->second;
 }
 
+
 /**
- * Function: AdbInstance::setAttr
+ * Function: AdbInstance::getInstanceAttrIterator
  **/
-void AdbInstance::setAttr(const string &attrName, const string &attrValue) {
-    attrs[attrName] = attrValue;
+AttrsMap::iterator AdbInstance::getInstanceAttrIterator(const string &attrName, bool &found) 
+{
+    AttrsMap::iterator it = instAttrsMap.find(attrName);
+    found = false;
+    if (it != instAttrsMap.end()) {
+        found = true;
+    } 
+    else if (fieldDesc){
+        it = fieldDesc->attrs.find(attrName);
+        if (it != fieldDesc->attrs.end()) {
+            found =true;
+        }
+    }
+    return it;
+}
+
+
+/**
+ * Function: AdbInstance::setInstanceAttr
+ **/
+void AdbInstance::setInstanceAttr(const string &attrName, const string &attrValue)
+{
+    instAttrsMap[attrName] = attrValue;
+}
+
+/*
+ * Function: AdbInstance::copyAllInstanceAttr - copies all attrs from attributes structure
+ **/
+void AdbInstance::copyAllInstanceAttr(AttrsMap &attsToCopy) 
+{
+    instAttrsMap = attsToCopy;
+}
+
+/**
+ * Function: AdbInstance::getFullInstanceAttrsMapCopy - returns the instance attr map by val
+ **/
+AttrsMap AdbInstance::getFullInstanceAttrsMapCopy()
+{
+    AttrsMap tmpCopy;
+    // copy first the fields attr map 
+    for (AttrsMap::iterator it = fieldDesc->attrs.begin(); it != fieldDesc->attrs.end(); it++){
+        tmpCopy[it->first] = it->second;
+    }
+    // copy the overriden variables - in instAttrsMap
+    for (AttrsMap::iterator it = instAttrsMap.begin(); it != instAttrsMap.end(); it++){
+        tmpCopy[it->first] = it->second;
+    }
+    return tmpCopy;
+}
+
+/**
+ * Function: AdbInstance::setVarsMap - set an item in vars map 
+ **/
+void AdbInstance::setVarsMap(const string &attrName, const string &attrValue)
+{
+    varsMap[attrName] = attrValue;
+}
+
+/**
+ * Function: AdbInstance::setVarsMap - set an item in vars map 
+ **/
+void AdbInstance::setVarsMap(const AttrsMap &AttrsMap)
+{
+    varsMap = AttrsMap;
+}
+
+/**
+ * Function: AdbInstance::setVarsMap - returns a copy of vars map 
+ **/
+AttrsMap AdbInstance::getVarsMap()
+{
+    return varsMap;
 }
 
 /**
  * Function: AdbInstance::isEnumExists
  **/
 bool AdbInstance::isEnumExists() {
-    return !getAttr("enum").empty();
+    return !getInstanceAttr("enum").empty();
 }
 
 /**
@@ -752,7 +817,7 @@ bool AdbInstance::isEnumExists() {
  **/
 bool AdbInstance::enumToInt(const string &name, u_int64_t &val) {
     vector < string > enumValues;
-    string enums = getAttr("enum");
+    string enums = getInstanceAttr("enum");
     boost::algorithm::split(enumValues, enums, boost::is_any_of(string(",")));
 
     for (size_t i = 0; i < enumValues.size(); i++) {
@@ -784,7 +849,7 @@ bool AdbInstance::enumToInt(const string &name, u_int64_t &val) {
  **/
 bool AdbInstance::intToEnum(u_int64_t val, string &valName) {
     vector < string > enumValues;
-    string enums = getAttr("enum");
+    string enums = getInstanceAttr("enum");
     boost::algorithm::split(enumValues, enums, boost::is_any_of(string(",")));
 
     for (size_t i = 0; i < enumValues.size(); i++) {
@@ -819,7 +884,7 @@ bool AdbInstance::intToEnum(u_int64_t val, string &valName) {
 map<string, u_int64_t> AdbInstance::getEnumMap() {
     map < string, u_int64_t > enumMap;
     vector < string > enumValues;
-    string enums = getAttr("enum");
+    string enums = getInstanceAttr("enum");
     boost::algorithm::split(enumValues, enums, boost::is_any_of(string(",")));
 
     for (size_t i = 0; i < enumValues.size(); i++) {
@@ -854,7 +919,7 @@ map<string, u_int64_t> AdbInstance::getEnumMap() {
 vector<u_int64_t> AdbInstance::getEnumValues() {
     vector < u_int64_t > values;
     vector < string > enumValues;
-    string enums = getAttr("enum");
+    string enums = getInstanceAttr("enum");
     boost::algorithm::split(enumValues, enums, boost::is_any_of(string(",")));
 
     for (size_t i = 0; i < enumValues.size(); i++) {
@@ -885,8 +950,7 @@ vector<u_int64_t> AdbInstance::getEnumValues() {
 AdbInstance* AdbInstance::getUnionSelectedNodeName(const u_int64_t& selectorVal) {
     if (!isUnion()) {
         throw AdbException(
-                "This is not union node (%s), can't get selected node name",
-                fullName().c_str());
+                "This is not union node (%s), can't get selected node name", fullName().c_str());
     }
 
     if (!unionSelector) {
@@ -894,19 +958,18 @@ AdbInstance* AdbInstance::getUnionSelectedNodeName(const u_int64_t& selectorVal)
     }
 
     map < string, u_int64_t > selectorValMap = unionSelector->getEnumMap();
-    for (map<string, u_int64_t>::iterator it = selectorValMap.begin(); it
-            != selectorValMap.end(); it++) {
+    for (map<string, u_int64_t>::iterator it = selectorValMap.begin(); 
+         it != selectorValMap.end(); it++) {
         if (it->second == selectorVal) {
             const string& selectorEnum = it->first;
             // search for the sub instance with the "selected_by" attribute == selectorEnum
             for (size_t i = 0; i < subItems.size(); i++) {
-                if (subItems[i]->attrs["selected_by"] == selectorEnum) {
+                if (subItems[i]->getInstanceAttr("selected_by") == selectorEnum) {
                     return subItems[i];
                 }
-            }
 
-            throw AdbException(
-                    "Found selector value (" + selectorEnum
+            }
+            throw AdbException("Found selector value (" + selectorEnum
                             + ") is defined for selector field ("
                             + unionSelector->name
                             + ") but no appropriate subfield of this union was found");
@@ -925,8 +988,7 @@ AdbInstance* AdbInstance::getUnionSelectedNodeName(const u_int64_t& selectorVal)
 AdbInstance* AdbInstance::getUnionSelectedNodeName(const string& selectorEnum) {
     if (!isUnion()) {
         throw AdbException(
-                "This is not union node (%s), can't get selected node name",
-                fullName().c_str());
+                "This is not union node (%s), can't get selected node name", fullName().c_str());
     }
 
     if (!unionSelector) {
@@ -934,15 +996,13 @@ AdbInstance* AdbInstance::getUnionSelectedNodeName(const string& selectorEnum) {
     }
 
     for (size_t i = 0; i < subItems.size(); i++) {
-        if (subItems[i]->attrs["selected_by"] == selectorEnum) {
+        if (subItems[i]->getInstanceAttr("selected_by") == selectorEnum) {
             return subItems[i];
         }
     }
 
-    throw AdbException(
-            "Union selector field (" + unionSelector->name
-                    + ") doesn't define a selector value (" + selectorEnum
-                    + ")");
+    throw AdbException("Union selector field (" + unionSelector->name
+                    + ") doesn't define a selector value (" + selectorEnum + ")");
 }
 
 /**
@@ -951,10 +1011,7 @@ AdbInstance* AdbInstance::getUnionSelectedNodeName(const string& selectorEnum) {
  **/
 bool AdbInstance::isConditionalNode() {
     if (isNode()) {
-        AttrsMap::iterator it = attrs.find("is_conditional");
-        if (it != attrs.end()) {
-            return (it->second == "1");
-        }
+        return (getInstanceAttr("is_conditional") == "1");
     }
     return false;
 }
@@ -1071,10 +1128,22 @@ Adb::~Adb() {
 }
 
 /**
+ * Function: Adb::raiseException
+ **/
+void Adb::raiseException(bool allowMultipleExceptions, string exceptionTxt, const string expType)
+{
+    if (allowMultipleExceptions) {
+        ExceptionHolder::insertNewException(expType, exceptionTxt);
+    } else {
+        throw AdbException(exceptionTxt);
+    }
+    return;
+}
+
+/**
  * Function: Adb::getAdbExceptionsMap
  * This function return the adb exception map
  **/
-
 void Adb::fetchAdbExceptionsMap(ExceptionsMap otherMap) {
     vector < string > fatals = otherMap[ExceptionHolder::FATAL_EXCEPTION];
     for (vector < string >::iterator it = fatals.begin(); it != fatals.end(); ++it) {
@@ -1337,23 +1406,30 @@ AdbInstance* Adb::addMissingNodes(int depth, bool allowMultipleExceptions) {
 }
 
 /**
+ * Function: Adb::cleaninstAttrs
+ **/
+void Adb::cleanInstAttrs()
+{
+    for (InstanceAttrs::iterator it = instAttrs.begin(); it!= instAttrs.end(); it++){
+        it->second.clear();
+    }
+    instAttrs.clear();
+}
+
+/**
  * Function: Adb::createLayout
  **/
 AdbInstance* Adb::createLayout(string rootNodeName, bool isExprEval,
         AdbProgress *progressObj, int depth, bool ignoreMissingNodes,
         bool allowMultipleExceptions) {
     try {
+        //find root in nodes map
         NodesMap::iterator it;
         it = nodesMap.find(rootNodeName);
         if (it == nodesMap.end()) {
-            string exceptionTxt = "Can't find definition for node \""
-                    + rootNodeName + "\"";
-            if (allowMultipleExceptions) {
-                insertNewException(ExceptionHolder::FATAL_EXCEPTION, exceptionTxt);
-                return NULL;
-            } else {
-                throw AdbException(exceptionTxt);
-            }
+            raiseException(allowMultipleExceptions, 
+                          "Can't find definition for node \"" + rootNodeName + "\"",
+                          ExceptionHolder::FATAL_EXCEPTION);
         }
 
         AdbNode *nodeDesc = it->second;
@@ -1364,7 +1440,7 @@ AdbInstance* Adb::createLayout(string rootNodeName, bool isExprEval,
         rootItem->name = nodeDesc->name;
         rootItem->offset = 0;
         rootItem->size = nodeDesc->size;
-        rootItem->attrs = nodeDesc->attrs;
+        rootItem->copyAllInstanceAttr(nodeDesc->attrs);
 
         map < string, string > emptyVars;
         _unionSelectorEvalDeffered.clear();
@@ -1384,42 +1460,35 @@ AdbInstance* Adb::createLayout(string rootNodeName, bool isExprEval,
 
         // Now set the instance attributes (override field attrs), only if this is root node instantiation
         if (rootNodeName == rootNode && depth == -1) {
-            for (InstanceAttrs::iterator it = instAttrs.begin(); it
-                    != instAttrs.end(); it++) {
+            for (InstanceAttrs::iterator it = instAttrs.begin(); it!= instAttrs.end(); it++) {
                 size_t idx = it->first.find(".");
                 string path = idx == string::npos ? string()
                         : it->first.substr(idx + 1);
 
                 AdbInstance *inst = rootItem->getChildByPath(path);
                 if (!inst) {
-                    string exceptionTxt = "Can't find instance path ("
-                            + it->first + ") defined in <instance_ops> section";
-                    if (allowMultipleExceptions) {
-                        insertNewException(ExceptionHolder::ERROR_EXCEPTION, exceptionTxt);
-                    } else {
-                        throw AdbException(exceptionTxt);
-                    }
+                    raiseException(allowMultipleExceptions, 
+                                  "Can't find instance path (" + it->first + ") defined in <instance_ops> section",
+                                  ExceptionHolder::ERROR_EXCEPTION);
                 }
 
-                for (AttrsMap::iterator it2 = it->second.begin(); it2
-                        != it->second.end(); it2++) {
+                for (AttrsMap::iterator it2 = it->second.begin(); it2 != it->second.end(); it2++) {
                     if (allowMultipleExceptions && !inst) {
                         break;
                     }
-                    inst->attrs[it2->first] = it2->second;
+                    inst->setInstanceAttr(it2->first, it2->second);
                 }
             }
         }
 
         /* Evaluate unions selector fields*/
-        for (list<AdbInstance*>::iterator it =
-                _unionSelectorEvalDeffered.begin(); it
-                != _unionSelectorEvalDeffered.end(); it++) {
+        for (list<AdbInstance*>::iterator it = _unionSelectorEvalDeffered.begin(); 
+             it != _unionSelectorEvalDeffered.end(); it++) {
             vector < string > path;
             AdbInstance *inst = *it;
             AdbInstance *curInst = inst;
-            boost::algorithm::split(path, inst->attrs["union_selector"],
-                    boost::is_any_of(string(".")));
+            const string splitVal = inst->getInstanceAttr("union_selector");
+            boost::algorithm::split(path, splitVal, boost::is_any_of(string(".")));
             for (size_t i = 0; i < path.size(); i++) {
                 if (path[i] == "#(parent)" || path[i] == "$(parent)") {
                     curInst = curInst->parent;
@@ -1436,17 +1505,9 @@ AdbInstance* Adb::createLayout(string rootNodeName, bool isExprEval,
 
                     if (j == curInst->subItems.size() && !inPath) {
                         if (rootNodeName == rootNode) { // give this warning only if this root instantiation
-                            string exceptionTxt =
-                                    "Failed to find union selector for union ("
-                                            + inst->fullName()
-                                            + ") Can't find field (" + path[i]
-                                            + ") under (" + curInst->fullName()
-                                            + ")";
-                            if (allowMultipleExceptions) {
-                                insertNewException(ExceptionHolder::ERROR_EXCEPTION, exceptionTxt);
-                            } else {
-                                throw AdbException(exceptionTxt);
-                            }
+                            raiseException(allowMultipleExceptions, 
+                                          "Failed to find union selector for union (" + inst->fullName() + ") Can't find field (" + path[i] + ") under (" + curInst->fullName() + ")",
+                                          ExceptionHolder::ERROR_EXCEPTION);
                         }
                     }
                 }
@@ -1460,18 +1521,12 @@ AdbInstance* Adb::createLayout(string rootNodeName, bool isExprEval,
                 }
 
                 // make sure all union subnodes define "selected_by" attribute
-                AttrsMap::iterator selectorValIt =
-                        inst->subItems[i]->attrs.find("selected_by");
-                if (selectorValIt == inst->subItems[i]->attrs.end()) {
-                    string exceptionTxt = "In union (" + inst->fullName()
-                            + ") the union subnode (" + inst->subItems[i]->name
-                            + ") doesn't define selection value";
-                    if (allowMultipleExceptions) {
-                        insertNewException(ExceptionHolder::ERROR_EXCEPTION, exceptionTxt);
-                        continue;
-                    } else {
-                        throw AdbException(exceptionTxt);
-                    }
+                bool found = false;
+                AttrsMap::iterator selectorValIt = inst->subItems[i]->getInstanceAttrIterator("selected_by", found);
+                if (!found) {
+                    raiseException(allowMultipleExceptions, 
+                                  "In union (" + inst->fullName() + ") the union subnode (" + inst->subItems[i]->name + ") doesn't define selection value",
+                                  ExceptionHolder::ERROR_EXCEPTION);
                 }
 
                 // make sure that all union subnodes selector values are defined in the selector field enum
@@ -1488,6 +1543,7 @@ AdbInstance* Adb::createLayout(string rootNodeName, bool isExprEval,
                     }
                 }
 
+                //if not found in map throw exeption
                 if (it == selectorValMap.end()) {
                     string exceptionTxt = "In union (" + inst->fullName()
                             + ") the union subnode (" + inst->subItems[i]->name
@@ -1495,11 +1551,9 @@ AdbInstance* Adb::createLayout(string rootNodeName, bool isExprEval,
                             + selectorValIt->second
                             + ") which isn't defined in the selector field ("
                             + inst->unionSelector->fullName() + ")";
-                    if (allowMultipleExceptions) {
-                        insertNewException(ExceptionHolder::ERROR_EXCEPTION, exceptionTxt);
-                    } else {
-                        throw AdbException(exceptionTxt);
-                    }
+                    raiseException(allowMultipleExceptions, 
+                                  exceptionTxt,
+                                  ExceptionHolder::ERROR_EXCEPTION);
                 }
             }
         }
@@ -1545,7 +1599,7 @@ vector<string> Adb::getNodeDeps(string nodeName) {
 /**
  * Function: Adb::createInstance
  **/
-vector<AdbInstance*> Adb::createInstance(AdbField *fieldDesc,
+vector<AdbInstance*> Adb::createInstance(AdbField *field,
         AdbInstance *parent, map<string, string> vars, bool isExprEval,
         AdbProgress *progressObj, int depth, bool ignoreMissingNodes,
         bool allowMultipleExceptions) {
@@ -1555,44 +1609,39 @@ vector<AdbInstance*> Adb::createInstance(AdbField *fieldDesc,
         progressObj->progress();
     }
 
+    // if array create instance for each item. else - create 1
     vector<AdbInstance*> instList;
-    for (u_int32_t i = 0; i < fieldDesc->arrayLen(); i++) {
+    for (u_int32_t i = 0; i < field->arrayLen(); i++) {
         AdbInstance *inst = new AdbInstance;
-        inst->fieldDesc = fieldDesc;
-        if (fieldDesc->isStruct()) {
-            NodesMap::iterator it = nodesMap.find(fieldDesc->subNode);
+        inst->fieldDesc = field;
+
+        // if field is struct - find field->subNode in nodes map and addto instance not desc
+        if (field->isStruct()) {
+            NodesMap::iterator it = nodesMap.find(field->subNode);
             if (it == nodesMap.end()) {
                 delete inst;
-                string exceptionTxt =
-                        "Can't find the definition for subnode: "
-                                + fieldDesc->subNode + " of field: "
-                                + fieldDesc->name;
-                if (allowMultipleExceptions) {
-                    insertNewException(ExceptionHolder::ERROR_EXCEPTION, exceptionTxt);
-                    continue;
-                } else {
-                    throw AdbException(exceptionTxt);
-                }
+                raiseException(allowMultipleExceptions, 
+                              "Can't find the definition for subnode: " + field->subNode + " of field: " + field->name,
+                              ExceptionHolder::ERROR_EXCEPTION);                
             } else {
                 inst->nodeDesc = it->second;
             }
         }
-        inst->name = fieldDesc->name;
-        inst->size = fieldDesc->eSize();
-        inst->parent = parent;
+        inst->name = field->name;
         inst->arrIdx = 0;
+        inst->size = field->eSize();
+        inst->parent = parent;
 
-        if (fieldDesc->offset == 0xffffffff) {
+        if (field->offset == 0xffffffff) {
             if (parent->subItems.size() > 0) {
-                fieldDesc->offset = parent->subItems.back()->offset;
+                field->offset = parent->subItems.back()->offset;
             } else {
-                fieldDesc->offset = parent->offset;
+                field->offset = parent->offset;
             }
         }
-        inst->offset = calcArrOffset(fieldDesc, parent, i);
-        if (fieldDesc->isArray()) {
-            inst->name += "[" + boost::lexical_cast<string>(
-                    i + fieldDesc->lowBound) + "]";
+        inst->offset = calcArrOffset(field, parent, i);
+        if (field->isArray()) {
+            inst->name += "[" + boost::lexical_cast<string>(i + field->lowBound) + "]";
             inst->arrIdx = i;
         }
         //printf("field: %s, offset: %s (%d)\n", inst->name.c_str(),formatAddr(inst->offset, inst->size).c_str(), inst->offset);
@@ -1609,9 +1658,8 @@ vector<AdbInstance*> Adb::createInstance(AdbField *fieldDesc,
                 vars["parent"] = "#(parent)"; // special internal name
 
                 // Get variables attribute value
-                AttrsMap::iterator it = fieldDesc->attrs.find("variables");
-                string varStr = (it == fieldDesc->attrs.end() ? string()
-                        : it->second);
+                AttrsMap::iterator it = field->attrs.find("variables");
+                string varStr = (it == field->attrs.end() ? string() : it->second);
                 boost::algorithm::trim(varStr);
 
                 // build var_name->value map from varAttrStr
@@ -1626,7 +1674,7 @@ vector<AdbInstance*> Adb::createInstance(AdbField *fieldDesc,
                         string exp(what[2].first, what[2].second);
 #if 0
                         printf("%s) %s <=> %s\n", inst->fullName().c_str(), var.c_str(), exp.c_str());
-                        printf("Variable Attr: %s\n", inst->fieldDesc->attrs["variables"].c_str());
+                        printf("Variable Attr: %s\n", inst->field->attrs["variables"].c_str());
 #endif
                         start = what[0].second;
                         curVars[var] = exp;
@@ -1652,15 +1700,14 @@ vector<AdbInstance*> Adb::createInstance(AdbField *fieldDesc,
 #endif
 
                 // evaluate other attrs
-                for (AttrsMap::iterator it = fieldDesc->attrs.begin(); it
-                        != fieldDesc->attrs.end(); it++) {
+                for (AttrsMap::iterator it = field->attrs.begin(); it != field->attrs.end(); it++) {
                     if (it->first == "variables") {
                         continue;
                     }
 
-                    inst->attrs[it->first] = evalExpr(it->second, &vars);
+                    inst->setInstanceAttr(it->first, evalExpr(it->second, &vars));
                 }
-                inst->vars = vars;
+                inst->setVarsMap(vars);
             } catch (AdbException &exp) {
                 string exceptionTxt =
                         "Failed to evaluate expression for field ("
@@ -1671,29 +1718,21 @@ vector<AdbInstance*> Adb::createInstance(AdbField *fieldDesc,
                     throw AdbException(exceptionTxt);
                 }
             }
-        } else {
-            inst->attrs = fieldDesc->attrs;
-        }
+        } 
+        // else {
+        //     inst->copyAllInstanceAttr(field->attrs);
+        // }
 
         /* if union and uses selecotr field add it to _unionSelectorEvalDeffered in order to defferred evaluation */
-        if (inst->isUnion() && inst->attrs.find("union_selector")
-                != inst->attrs.end()) {
+        bool found = false;
+        inst->getInstanceAttrIterator("union_selector", found);
+        if (inst->isUnion() && found) {
             _unionSelectorEvalDeffered.push_back(inst);
         }
 
-        if (inst->offset + inst->size > parent->offset + parent->size) {
-            string exceptionTxt = "Field (" + inst->name + ") " + formatAddr(
-                    inst->offset, inst->size) + " crosses its parent node ("
-                    + parent->name + ") " + formatAddr(parent->offset,
-                    parent->size) + " boundaries";
-            if (allowMultipleExceptions) {
-                insertNewException(ExceptionHolder::ERROR_EXCEPTION, exceptionTxt);
-            } else {
-                throw AdbException(exceptionTxt);
-            }
-        }
+        checkInstanceOffsetValidity(inst, parent, allowMultipleExceptions);
 
-        if (fieldDesc->isStruct() && !inst->nodeDesc->fields.empty() && (depth
+        if (field->isStruct() && !inst->nodeDesc->fields.empty() && (depth
                 == -1 || depth > 0)) {
             // validation 2
             if (inst->size != inst->nodeDesc->size) {
@@ -1716,16 +1755,13 @@ vector<AdbInstance*> Adb::createInstance(AdbField *fieldDesc,
 
             if (!inst->isUnion()) {
                 stable_sort(inst->subItems.begin(), inst->subItems.end(),
-                        compareFieldsPtr<AdbInstance> );
-            }
+                            compareFieldsPtr<AdbInstance> );
 
-            if (!inst->isUnion()) {
                 for (size_t j = 0; j < inst->subItems.size() - 1; j++) {
                     //printf("field: %s, offset: %s\n", inst->subItems[j+1]->name.c_str(),formatAddr(inst->subItems[j+1]->offset, inst->subItems[j+1]->size).c_str());
                     //printf("field: %s, offset: %s\n", inst->subItems[j]->name.c_str(),formatAddr(inst->subItems[j]->offset, inst->subItems[j]->size).c_str());
                     if (inst->subItems[j + 1]->offset
-                            < inst->subItems[j]->offset
-                                    + inst->subItems[j]->size) {
+                        < inst->subItems[j]->offset + inst->subItems[j]->size) {
                         string exceptionTxt = "Field ("
                                 + inst->subItems[j + 1]->name + ") ("
                                 + formatAddr(inst->subItems[j + 1]->offset,
@@ -1733,11 +1769,9 @@ vector<AdbInstance*> Adb::createInstance(AdbField *fieldDesc,
                                 + ") overlaps with (" + inst->subItems[j]->name
                                 + ") (" + formatAddr(inst->subItems[j]->offset,
                                 inst->subItems[j]->size).c_str() + ")";
-                        if (allowMultipleExceptions) {
-                            insertNewException(ExceptionHolder::ERROR_EXCEPTION, exceptionTxt);
-                        } else {
-                            throw AdbException(exceptionTxt);
-                        }
+                        raiseException(allowMultipleExceptions, 
+                              exceptionTxt,
+                              ExceptionHolder::ERROR_EXCEPTION);  
                     }
                 }
             }
@@ -1751,6 +1785,24 @@ vector<AdbInstance*> Adb::createInstance(AdbField *fieldDesc,
 }
 
 /**
+ * Function: Adb::checkInstanceOffsetValidity
+ **/
+void Adb::checkInstanceOffsetValidity(AdbInstance *inst, AdbInstance *parent, bool allowMultipleExceptions)
+{
+    if (inst->offset + inst->size > parent->offset + parent->size) {
+        string exceptionTxt = "Field (" + inst->name + ") " + formatAddr(
+                inst->offset, inst->size) + " crosses its parent node ("
+                + parent->name + ") " + formatAddr(parent->offset,
+                parent->size) + " boundaries";
+        if (allowMultipleExceptions) {
+            insertNewException(ExceptionHolder::ERROR_EXCEPTION, exceptionTxt);
+        } else {
+            throw AdbException(exceptionTxt);
+        }
+    }
+}
+
+/**
  * Function: Adb::calcArrOffset
  **/
 u_int32_t Adb::calcArrOffset(AdbField *fieldDesc, AdbInstance *parent,
@@ -1761,8 +1813,7 @@ u_int32_t Adb::calcArrOffset(AdbField *fieldDesc, AdbInstance *parent,
         // Make sure this is dword aligned
         if (fieldDesc->eSize() % 32 || parent->offset % 32 || fieldDesc->offset
                 % 32) {
-            throw AdbException(
-                    "Field " + fieldDesc->name + " isn't dword aligned");
+            throw AdbException("Field " + fieldDesc->name + " isn't dword aligned");
         }
         offs = parent->offset + fieldDesc->offset + fieldDesc->eSize() * arrIdx;
     } else {
@@ -1770,15 +1821,8 @@ u_int32_t Adb::calcArrOffset(AdbField *fieldDesc, AdbInstance *parent,
             offs = (int) parent->offset + (int) fieldDesc->offset
                     - (int) fieldDesc->eSize() * arrIdx;
 
-            int dwordDelta = abs(
-                    (dword(parent->offset + fieldDesc->offset) - dword(offs)))
-                    / 4;
-            /*printf("idx = %d, parent_offs = %s, desc_offs = %s, offs = %d, delta: %d\n",
-             arrIdx,
-             formatAddr(parent->offset, parent->size).c_str(),
-             formatAddr(fieldDesc->offset, fieldDesc->size).c_str(),
-             offs,
-             dwordDelta);*/
+            int dwordDelta = abs((dword(parent->offset + fieldDesc->offset) - dword(offs)))/ 4;
+
             if (dwordDelta) {
                 offs += 32 * 2 * dwordDelta;
             }
@@ -1991,16 +2035,6 @@ string AdbException::what_s() const {
     return _msg;
 }
 
-/**
- * Function: AdbParser::is_relative
- **/
-bool AdbParser::is_relative(const string path) {
-    if (path[0] == '/') {
-        return false;
-    }
-    return true;
-}
-
 /*************************** AdbParser Implementation ***************************/
 /**
  * Function: AdbParser::AdbParser
@@ -2027,7 +2061,7 @@ AdbParser::AdbParser(string fileName, Adb *adbCtxt, bool addReserved,
 
         for (StringVector::iterator it = adbCtxt->includePaths.begin(); it
                 != adbCtxt->includePaths.end(); it++) {
-            if (AdbParser::is_relative(*it)) {
+            if (boost::filesystem::path(*it).is_relative()) {
                 relatives.push_back(projPath + OS_PATH_SEP + *it);
             }
         }
@@ -2395,7 +2429,7 @@ void AdbParser::includeFile(AdbParser *adbParser, string fileName,
     string filePath;
     FILE *probeFile = NULL;
 
-    if (!AdbParser::is_relative(fileName)) {
+    if (!boost::filesystem::path(fileName).is_relative()) {
         probeFile = fopen(fileName.c_str(), "r");
     }
 
@@ -2411,7 +2445,7 @@ void AdbParser::includeFile(AdbParser *adbParser, string fileName,
 
     // Update filename to be only base name with extension to prevent duplications
     boost::filesystem::path boostPath(filePath);
-    fileName = string(boostPath.filename().c_str());
+    fileName = boostPath.filename().string();
 
     if (!adbParser->_adbCtxt->includedFiles.count(fileName)) {
         IncludeFileInfo info = { filePath, adbParser->_fileName, lineNumber };
@@ -2500,828 +2534,579 @@ bool AdbParser::checkBigger32(string num) {
     return false;
 }
 
+void AdbParser::startNodesDefElement(const XML_Char **atts, AdbParser *adbParser) 
+{
+    if (adbParser->_adbCtxt->version == "") {
+        if ((attrCount(atts) == 1) && (attrName(atts, 0) == "version")) {
+            string adbVersion = attrValue(atts, 0);
+            if (adbVersion != "1" && adbVersion != "1.0" && adbVersion != "2") {
+                throw AdbException("Requested Adb Version (%s) is not supported. Supporting only version 1 or 2", adbVersion.c_str());
+            }
+            if (adbVersion == "1.0") {
+                adbParser->_adbCtxt->version = "1";
+            } else {
+                adbParser->_adbCtxt->version = adbVersion;
+            }
+        } else if (attrCount(atts) == 0 ) {
+            adbParser->_adbCtxt->version = "1";
+        } else {
+            throw AdbException("\"NodesDefinition\" tag can only have \"version\" attribute and only once");
+        }
+    }
+}
+
+
+void AdbParser::startEnumElement(const XML_Char **atts, AdbParser *adbParser, const int lineNumber) 
+{
+    bool expFound = false;
+    if (!adbParser->_currentConfig || 
+        !adbParser->_currentConfig->attrs.count("type") || 
+        TAG_ATTR_ENUM.compare(adbParser->_currentConfig->attrs["type"])) {
+        expFound = raiseException(allowMultipleExceptions,
+                    "\"enum\" tag must be inside relevant \"config\" tag" , 
+                    ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber), 
+                    ExceptionHolder::ERROR_EXCEPTION);
+    }
+
+    string tagName = attrValue(atts, "name");
+    string value = attrValue(atts, "value");
+    if (adbParser->_enforceExtraChecks) {
+        if (!AdbParser::checkSpecialChars(tagName)) {
+            expFound = raiseException(allowMultipleExceptions, 
+                        "Invalid character in enum name, in enum: \"" + tagName + "\"",
+                        ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                        ExceptionHolder::WARN_EXCEPTION);    
+        }
+    }
+    if (tagName.empty() || value.empty()) {
+        expFound = raiseException(allowMultipleExceptions, 
+                    "Both \"name\" and \"value\" attributes must be specified",
+                    ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                    ExceptionHolder::ERROR_EXCEPTION);  
+    }
+    if (!expFound) {
+        adbParser->_currentConfig->enums.insert( pair<string, string> (tagName, value));
+    }
+}
+
+void AdbParser::startConfigElement(const XML_Char **atts, AdbParser *adbParser, const int lineNumber) 
+{
+    bool expFound = false;
+    if (adbParser->_currentConfig) {
+        expFound = raiseException(allowMultipleExceptions, 
+                            "config tag can't appear within other config",
+                            ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                            ExceptionHolder::FATAL_EXCEPTION);
+    }
+
+    adbParser->_currentConfig = new AdbConfig;
+    for (int i = 0; i < attrCount(atts); i++) {
+        // First add this config to context
+        string aName = attrName(atts, i);
+        string aValue = attrValue(atts, i);
+        adbParser->_currentConfig->attrs.insert(
+                pair<string, string> (aName, aValue));
+
+        // Parse attrs that affect the parser itself
+        if (!TAG_ATTR_BIG_ENDIAN.compare(aName)) {
+            try {
+                int val = boost::lexical_cast<int>(aValue);
+                adbParser->_adbCtxt->bigEndianArr = val != 0;
+            } catch (std::exception&) {
+                expFound = raiseException(allowMultipleExceptions, 
+                                        string("Filed to parse the \"") + aName + "\" attribute value: \"" + aValue + "\"",
+                                        ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                                        ExceptionHolder::ERROR_EXCEPTION);
+            }
+        }
+
+        if (!TAG_ATTR_SINGLE_ENTRY_ARR.compare(aName)) {
+            try {
+                int val = boost::lexical_cast<int>(aValue);
+                adbParser->_adbCtxt->singleEntryArrSupp = val != 0;
+            } catch (std::exception&) {
+                expFound = raiseException(allowMultipleExceptions, 
+                                         string("Filed to parse the \"") + aName + "\" attribute value: \"" + aValue + "\"",
+                                         ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                                         ExceptionHolder::ERROR_EXCEPTION);                                        
+            }
+        }
+
+        if (!expFound && !TAG_ATTR_INCLUDE_PATH.compare(aName)) {
+            vector < string > paths;
+            boost::algorithm::split(paths, aValue, boost::is_any_of(string(";")));
+            adbParser->_adbCtxt->includePaths.insert(adbParser->_adbCtxt->includePaths.end(), 
+                                                     paths.begin(), paths.end());
+
+            StringVector relatives;
+            string
+                    projPath = boost::filesystem::path(
+                                    adbParser->_adbCtxt->mainFileName).parent_path().string();
+
+            for (StringVector::iterator it =
+                    adbParser->_adbCtxt->includePaths.begin(); it
+                    != adbParser->_adbCtxt->includePaths.end(); it++) {
+                if (boost::filesystem::path(*it).is_relative()) {
+                    relatives.push_back(projPath + OS_PATH_SEP + *it);
+                }
+            }
+
+            adbParser->_adbCtxt->includePaths.insert(
+                    adbParser->_adbCtxt->includePaths.end(),
+                    relatives.begin(), relatives.end());
+        }
+    }
+}
+
+void AdbParser::startInfoElement(const XML_Char **atts, AdbParser *adbParser) 
+{
+    string docName = attrValue(atts, "source_doc_name");
+    string docVer = attrValue(atts, "source_doc_version");
+    adbParser->_adbCtxt->srcDocName = docName;
+    adbParser->_adbCtxt->srcDocVer = docVer;
+}
+
+void AdbParser::startIncludeElement(const XML_Char **atts, AdbParser *adbParser, const int lineNumber)
+{
+    string includeAttr = attrName(atts, 0);
+    boost::algorithm::trim(includeAttr);
+
+    bool expFound = false;
+    if (includeAttr == "file") {
+        string fname = attrValue(atts, "file");
+        boost::algorithm::trim(fname);
+        if (fname.empty()) {
+            expFound = raiseException(allowMultipleExceptions,
+                    string() + "File attribute isn't given within " + TAG_INCLUDE + " tag",
+                    ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                    ExceptionHolder::FATAL_EXCEPTION);
+        }
+        if (!expFound)
+            includeFile(adbParser, fname, lineNumber);
+    } 
+    else if (includeAttr == "dir") {
+        string includeAllDirPath = attrValue(atts, "dir");
+        boost::algorithm::trim(includeAllDirPath);
+        if (includeAllDirPath.empty()) {
+            expFound = raiseException(allowMultipleExceptions,
+                        string() + "Directory to include isn't given within " + TAG_INCLUDE + " tag",
+                        ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                        ExceptionHolder::FATAL_EXCEPTION);
+        }
+
+        if (!expFound)
+            includeAllFilesInDir(adbParser, includeAllDirPath, lineNumber);
+    } else {
+        expFound = raiseException(allowMultipleExceptions,
+                        string() + "Include is called without file or dir attribute.",
+                        ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                        ExceptionHolder::ERROR_EXCEPTION);
+    }
+}
+
+void AdbParser::startInstOpAttrReplaceElement(const XML_Char **atts, AdbParser *adbParser, const int lineNumber)
+{
+    bool expFound = false;
+    if (!adbParser->_instanceOps) {
+        expFound = raiseException(allowMultipleExceptions,
+                        "Operation attr_replace must be defined within <instance_ops> element only.",
+                        ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                        ExceptionHolder::FATAL_EXCEPTION);
+    }
+
+    string path = attrValue(atts, "path");
+    if (path.empty()) {
+        expFound = raiseException(allowMultipleExceptions,
+                        "path attribute is missing in attr_replace operation",
+                        ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                        ExceptionHolder::ERROR_EXCEPTION);
+
+    }
+
+    if (!expFound) {
+        adbParser->_adbCtxt->instAttrs[path] = AttrsMap();
+        for (int i = 0; i < attrCount(atts); i++) {
+            string attrN = attrName(atts, i);
+            if (attrN == "path") {
+                continue;
+            }
+
+            string attrV = attrValue(atts, i);
+            adbParser->_adbCtxt->instAttrs[path][attrN] = attrV;
+        }
+    }
+}
+
+void AdbParser::startNodeElement(const XML_Char **atts, AdbParser *adbParser, const int lineNumber)
+{
+    if (adbParser->_currentNode) {
+        raiseException(allowMultipleExceptions,
+                    "Nested nodes are not allowed",
+                    ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                    ExceptionHolder::FATAL_EXCEPTION);
+    }
+
+    string nodeName = attrValue(atts, "name");
+    boost::algorithm::trim(nodeName);
+    string size = attrValue(atts, "size");
+
+    if (adbParser->_enforceExtraChecks) {
+        if (!AdbParser::checkSpecialChars(nodeName)) {
+            raiseException(allowMultipleExceptions,
+                    "Invalid character in node name, in Node: \"" + nodeName + "\"",
+                    ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                    ExceptionHolder::WARN_EXCEPTION);
+        }
+        if (AdbParser::checkBigger32(size)) { // the second part of the size after the . max to be 32 0x0.0
+            raiseException(allowMultipleExceptions,
+                    "Invalid size format, valid format 0x0.0 not allowed to be more than 0x0.31",
+                    ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                    ExceptionHolder::WARN_EXCEPTION);
+        }
+        if (addr2int(size) == 0) {
+            raiseException(allowMultipleExceptions,
+                    "Node Size is not allowed to be 0, in Node: \"" + nodeName + "\"",
+                    ", in file: \""  + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                    ExceptionHolder::ERROR_EXCEPTION);
+        }
+    }
+    string desc = descXmlToNative(attrValue(atts, "descr"));
+
+    // Check for mandatory attrs
+    if (nodeName.empty()) {
+        raiseException(allowMultipleExceptions,
+                   "Missing node name",
+                   ", in file: \""  + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                   ExceptionHolder::FATAL_EXCEPTION);
+        
+    }
+    if (size.empty()) {
+        raiseException(allowMultipleExceptions,
+                   "Missing node size",
+                   ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                   ExceptionHolder::FATAL_EXCEPTION);
+    }
+
+    // Check for duplications
+    if (adbParser->_adbCtxt->nodesMap.count(nodeName)) {
+        raiseException(allowMultipleExceptions,
+                    "node \"" + nodeName  + "\" is already defined in file: \"" + adbParser->_adbCtxt->nodesMap[nodeName]->fileName + "\" line: " + boost::lexical_cast<string>(adbParser->_adbCtxt->nodesMap[nodeName]->lineNumber),
+                    ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                    ExceptionHolder::FATAL_EXCEPTION);
+    }
+
+    adbParser->_currentNode = new AdbNode;
+    adbParser->_currentNode->name = nodeName;
+    adbParser->_currentNode->size = addr2int(size);
+    adbParser->_currentNode->desc = desc;
+    string unionAttrVal = attrValue(atts, "attr_is_union");
+    adbParser->_currentNode->isUnion = !unionAttrVal.empty()
+            && boost::lexical_cast<int>(unionAttrVal) != 0;
+    adbParser->_currentNode->fileName = adbParser->_fileName;
+    adbParser->_currentNode->lineNumber = lineNumber;
+
+    if (adbParser->_strict && adbParser->_currentNode->isUnion
+            && adbParser->_currentNode->size % 32) {
+        //throw AdbException("union must be dword aligned");
+    }
+
+    // Add all node attributes
+    for (int i = 0; i < attrCount(atts); i++) {
+        if (attrValue(atts, i) == "") {
+            continue;
+        }
+        adbParser->_currentNode->attrs[attrName(atts, i)] = attrValue(atts, i);
+    }
+}
+
+void AdbParser::startFieldElement(const XML_Char **atts, AdbParser *adbParser, const int lineNumber)
+{
+    bool expFound = false;
+    if (!adbParser->_currentNode) {
+        expFound = raiseException(allowMultipleExceptions,
+                    "Field definition outside of node",
+                    ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                    ExceptionHolder::FATAL_EXCEPTION);
+    }
+
+    if (adbParser->_currentField) {
+        expFound = raiseException(allowMultipleExceptions,
+                    "Nested fields are not allowed",
+                    ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                    ExceptionHolder::FATAL_EXCEPTION);
+    }
+
+    string fieldName = attrValue(atts, "name");
+    boost::algorithm::trim(fieldName);
+    string offset = attrValue(atts, "offset");
+    string size = attrValue(atts, "size");
+
+    if (adbParser->_enforceExtraChecks) {
+        if (addr2int(size) % 32 == 0 && !AdbParser::checkHEXFormat(size)) 
+        {
+            expFound = raiseException(allowMultipleExceptions,
+                    "Invalid size format",
+                    ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                    ExceptionHolder::WARN_EXCEPTION);
+        }
+        if (!AdbParser::checkHEXFormat(offset)) 
+        {
+            expFound = raiseException(allowMultipleExceptions,
+                    "Invalid offset format",
+                    ", in file: \""  + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                    ExceptionHolder::WARN_EXCEPTION);
+        }
+        if (!AdbParser::checkSpecialChars(fieldName)) 
+        {
+            expFound = raiseException(allowMultipleExceptions,
+                    "Invalid character in field name, in Field: \"" + fieldName + "\"",
+                    ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                    ExceptionHolder::WARN_EXCEPTION);
+        }
+        if (!expFound && adbParser->_currentNode->isUnion  && addr2int(offset) != 0) 
+        {
+            expFound = raiseException(allowMultipleExceptions,
+                    "Offset must be 0x0.0 in Union fields",
+                    ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                    ExceptionHolder::WARN_EXCEPTION);
+        }
+        if (AdbParser::checkBigger32(size)) 
+        { // the second part of the size after the . max to be 32 0x0.0
+            expFound = raiseException(allowMultipleExceptions,
+                    "Invalid size format, valid format 0x0.0 not allowed to be more than 0x0.31",
+                    ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                    ExceptionHolder::WARN_EXCEPTION);
+        }
+        if (AdbParser::checkBigger32(offset)) 
+        { // the second part of the size after the . max to be 32 0x0.0
+            expFound = raiseException(allowMultipleExceptions,
+                    "Invalid offset format, valid format 0x0.0 not allowed to be more than 0x0.31",
+                    ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                    ExceptionHolder::WARN_EXCEPTION);
+        }
+        if (addr2int(size) == 0) 
+        {
+            expFound = raiseException(allowMultipleExceptions,
+                    "Field Size is not allowed to be 0, in Field: \"" + fieldName + "\"",
+                    ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                    ExceptionHolder::WARN_EXCEPTION);
+        }
+    }
+
+    string desc = descXmlToNative(attrValue(atts, "descr"));
+    string lowBound = attrValue(atts, "low_bound");
+    string highBound = attrValue(atts, "high_bound");
+
+    if (lowBound != "" && highBound != "") {
+        int low = atoi(lowBound.c_str());
+        int high = 0;
+        if (highBound != "VARIABLE") {
+            high = atoi(highBound.c_str());
+        }
+        int isize = addr2int(size);
+        int entrySize = isize / (high - low + 1);
+        if (entrySize % 8 != 0 && entrySize > 8) 
+        {
+            expFound = raiseException(allowMultipleExceptions,
+                   "Invalid size of array entries",
+                   ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                   ExceptionHolder::ERROR_EXCEPTION);
+        }
+        if (entrySize < 8 && entrySize != 4 && entrySize != 2 && entrySize
+                != 1 && ((isize > 32 && highBound != "VARIABLE")
+                || highBound == "VARIABLE")) 
+        {
+            expFound = raiseException(allowMultipleExceptions,
+                    "Array with entry size 3, 5, 6 or 7 bits and array size is larger than 32bit",
+                    ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                    ExceptionHolder::ERROR_EXCEPTION);
+        }
+    }
+
+    string subNode = attrValue(atts, "subnode");
+
+    // Check for mandatory attrs
+    if (fieldName.empty()){
+        expFound = raiseException(allowMultipleExceptions,
+                    "Missing field name",
+                    ", in file: \""  + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                    ExceptionHolder::FATAL_EXCEPTION);
+    }
+
+    if (size.empty()) {
+        expFound = raiseException(allowMultipleExceptions,
+                    "Missing field size",
+                    ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                    ExceptionHolder::FATAL_EXCEPTION);
+    }
+
+    // Create new fields
+    adbParser->_currentField = new AdbField;
+
+    // Fill the new fields
+    adbParser->_currentField->name = fieldName;
+    adbParser->_currentField->desc = desc;
+    adbParser->_currentField->size = addr2int(size);
+    if (adbParser->_adbCtxt->singleEntryArrSupp) {
+        int low = -1;
+        int high = -1;
+        if (!lowBound.empty()) {
+            low = atoi(lowBound.c_str());
+        }
+        if (!highBound.empty()) {
+            high = atoi(highBound.c_str());
+        }
+        adbParser->_currentField->definedAsArr = (low == high)
+                && (low >= 0);
+    } else {
+        adbParser->_currentField->definedAsArr = false;
+    }
+
+    adbParser->_currentField->lowBound = lowBound.empty() ? 0
+            : boost::lexical_cast<u_int32_t>(lowBound);
+    if (highBound == "VARIABLE") {
+        adbParser->_currentField->highBound = 0;
+        adbParser->_currentField->unlimitedArr = true;
+    } else {
+        adbParser->_currentField->highBound = highBound.empty() ? 0
+                : boost::lexical_cast<u_int32_t>(highBound);
+    }
+    adbParser->_currentField->subNode = subNode;
+
+    // Check array element size
+    if (adbParser->_currentField->isArray()
+            && !adbParser->_currentField->isUnlimitedArr()
+            && adbParser->_currentField->size
+                    % (adbParser->_currentField->arrayLen())) {
+        char exceptionTxt[1000];
+        sprintf(exceptionTxt,
+                "In field \"%s\" invalid array element size\"%0.2f\" in file: \"%s\" line: %d",
+                fieldName.c_str(),
+                ((double) adbParser->_currentField->size
+                        / (adbParser->_currentField->arrayLen())),
+                adbParser->_fileName.c_str(), lineNumber);
+    
+        expFound = raiseException(allowMultipleExceptions,
+                    exceptionTxt,
+                    "",
+                    ExceptionHolder::FATAL_EXCEPTION);
+    }
+    if (offset.empty()) {
+        if (adbParser->_currentNode->fields.empty()) {
+            adbParser->_currentField->offset = 0;
+        } else {
+            AdbField *lastField = adbParser->_currentNode->fields.back();
+            adbParser->_currentField->offset = lastField->offset
+                    + lastField->size;
+        }
+    } else {
+        adbParser->_currentField->offset = addr2int(offset);
+    }
+
+    // Very tricky but works well for big endian arrays support - on endElement we will fix the address again
+    if (!expFound && adbParser->_adbCtxt->bigEndianArr) {
+        u_int32_t offset = adbParser->_currentField->offset;
+        u_int32_t size = adbParser->_currentField->eSize();
+
+        adbParser->_currentField->offset = ((offset >> 5) << 5)
+                + ((MIN(32, adbParser->_currentNode->size) - ((offset
+                        + size) % 32)) % 32);
+    }
+
+    if (!expFound && adbParser->_strict
+            && adbParser->_currentNode->isUnion
+            && adbParser->_currentField->isLeaf()) 
+    {
+        expFound = raiseException(allowMultipleExceptions,
+                    "Fields are not allowed in unions (only subnodes)",
+                    ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                    ExceptionHolder::FATAL_EXCEPTION);
+    }
+
+    if (!expFound && adbParser->_strict
+            && adbParser->_currentNode->isUnion
+            && adbParser->_currentField->size % 32) 
+    {
+        expFound = raiseException(allowMultipleExceptions,
+                    "Union is allowed to contains only dword aligned subnodes",
+                    ", in file: \""  + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                    ExceptionHolder::FATAL_EXCEPTION);
+    }
+
+    if (!expFound && adbParser->_currentNode->isUnion
+            && adbParser->_currentField->size
+                    > adbParser->_currentNode->size) 
+    {
+        expFound = raiseException(allowMultipleExceptions,
+                    "Field size is greater than the parent node size",
+                    ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                    ExceptionHolder::FATAL_EXCEPTION);
+    }
+
+    if (!expFound && adbParser->_strict
+            && !adbParser->_currentField->isArray()
+            && adbParser->_currentField->isLeaf()
+            && adbParser->_currentField->size > 32) 
+    {
+        expFound = raiseException(allowMultipleExceptions,
+                    "Leaf fields can't be > 32 bits",
+                    ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
+                    ExceptionHolder::FATAL_EXCEPTION);
+    }
+    // Add all field attributes
+    if (!expFound) {
+        for (int i = 0; i < attrCount(atts); i++) {
+            adbParser->_currentField->attrs[attrName(atts, i)] = attrValue(
+                    atts, i);
+        }
+    }
+}
+
 /**
  * Function: AdbParser::startElement
  **/
-void AdbParser::startElement(void *_adbParser, const XML_Char *name,
-        const XML_Char **atts) {
+void AdbParser::startElement(void *_adbParser, const XML_Char *name, const XML_Char **atts) 
+{
     AdbParser *adbParser = static_cast<AdbParser*> (_adbParser);
 
     int lineNumber = XML_GetCurrentLineNumber(adbParser->_xmlParser);
     adbParser->_currentTagValue = "";
 
-    //printf("Start Element() - name=%s, lineno=%d\n", name, lineNumber);
-    /*
-     * NodesDefinition
-     * ----
-     */
     if (TAG_NODES_DEFINITION == name) {
-        if (adbParser->_adbCtxt->version == "") {
-            if ((attrCount(atts) == 1) && (attrName(atts, 0) == "version")) {
-                string adbVersion = attrValue(atts, 0);
-                if (adbVersion != "1" && adbVersion != "1.0" && adbVersion != "2") {
-                    throw AdbException("Requested Adb Version (%s) is not supported. Supporting only version 1 or 2", adbVersion.c_str());
-                }
-                if (adbVersion == "1.0") {
-                    adbParser->_adbCtxt->version = "1";
-                } else {
-                    adbParser->_adbCtxt->version = adbVersion;
-                }
-            } else if (attrCount(atts) == 0 ) {
-                adbParser->_adbCtxt->version = "1";
-            } else {
-                throw AdbException("\"NodesDefinition\" tag can only have \"version\" attribute and only once");
-            }
-        }
+        startNodesDefElement(atts, adbParser);
     }
-    /*
-     * Enum
-     * ----
-     */
     else if (TAG_ENUM == name) {
-        bool noExceptionsFound = true;
-        if (!adbParser->_currentConfig
-                || !adbParser->_currentConfig->attrs.count("type")
-                || TAG_ATTR_ENUM.compare(
-                        adbParser->_currentConfig->attrs["type"])) {
-            string exceptionTxt =
-                    "\"enum\" tag must be inside relevant \"config\" tag";
-            if (allowMultipleExceptions) {
-                noExceptionsFound = false;
-                exceptionTxt = exceptionTxt + ", in file: \""
-                        + adbParser->_fileName + "\" line: "
-                        + boost::lexical_cast<string>(lineNumber);
-                ExceptionHolder::insertNewException(ExceptionHolder::ERROR_EXCEPTION, exceptionTxt);
-            } else {
-                throw AdbException(exceptionTxt);
-            }
-        }
-
-        string tagName = attrValue(atts, "name");
-        string value = attrValue(atts, "value");
-        if (adbParser->_enforceExtraChecks) {
-            if (!AdbParser::checkSpecialChars(tagName)) {
-                string exceptionTxt =
-                        "Invalid character in enum name, in enum: \"" + tagName
-                                + "\"";
-                if (allowMultipleExceptions) {
-                    noExceptionsFound = false;
-                    exceptionTxt = exceptionTxt + ", in file: \""
-                            + adbParser->_fileName + "\" line: "
-                            + boost::lexical_cast<string>(lineNumber);
-                    ExceptionHolder::insertNewException(ExceptionHolder::WARN_EXCEPTION, exceptionTxt);
-                } else {
-                    throw AdbException(exceptionTxt);
-                }
-            }
-        }
-        if (tagName.empty() || value.empty()) {
-            string exceptionTxt =
-                    "Both \"name\" and \"value\" attributes must be specified";
-            if (allowMultipleExceptions) {
-                noExceptionsFound = false;
-                exceptionTxt = exceptionTxt + ", in file: \""
-                        + adbParser->_fileName + "\" line: "
-                        + boost::lexical_cast<string>(lineNumber);
-                ExceptionHolder::insertNewException(ExceptionHolder::ERROR_EXCEPTION, exceptionTxt);
-            } else {
-                throw AdbException(exceptionTxt);
-            }
-        }
-        if (noExceptionsFound) {
-            adbParser->_currentConfig->enums.insert(
-                    pair<string, string> (tagName, value));
-        }
+        startEnumElement(atts, adbParser, lineNumber);
     }
-    /*
-     * Config
-     * ----
-     */
     else if (TAG_CONFIG == name) {
-        bool noExceptionsFound = true;
-        if (adbParser->_currentConfig) {
-            string exceptionTxt = "config tag can't appear within other config";
-            if (allowMultipleExceptions) {
-                noExceptionsFound = false;
-                exceptionTxt = exceptionTxt + ", in file: \""
-                        + adbParser->_fileName + "\" line: "
-                        + boost::lexical_cast<string>(lineNumber);
-                ExceptionHolder::insertNewException(ExceptionHolder::FATAL_EXCEPTION, exceptionTxt);
-                return;
-            } else {
-                throw AdbException(exceptionTxt);
-            }
-        }
-
-        adbParser->_currentConfig = new AdbConfig;
-        for (int i = 0; i < attrCount(atts); i++) {
-            // First add this config to context
-            string aName = attrName(atts, i);
-            string aValue = attrValue(atts, i);
-            adbParser->_currentConfig->attrs.insert(
-                    pair<string, string> (aName, aValue));
-
-            // Parse attrs that affect the parser itself
-            if (!TAG_ATTR_BIG_ENDIAN.compare(aName)) {
-                try {
-                    int val = boost::lexical_cast<int>(aValue);
-                    adbParser->_adbCtxt->bigEndianArr = val != 0;
-                } catch (std::exception&) {
-                    string exceptionTxt = string("Filed to parse the \"")
-                            + aName + "\" attribute value: \"" + aValue + "\"";
-                    if (allowMultipleExceptions) {
-                        noExceptionsFound = false;
-                        exceptionTxt = exceptionTxt + ", in file: \""
-                                + adbParser->_fileName + "\" line: "
-                                + boost::lexical_cast<string>(lineNumber);
-                        ExceptionHolder::insertNewException(ExceptionHolder::ERROR_EXCEPTION, exceptionTxt);
-                    } else {
-                        throw AdbException(exceptionTxt);
-                    }
-                }
-            }
-
-            if (!TAG_ATTR_SINGLE_ENTRY_ARR.compare(aName)) {
-                try {
-                    int val = boost::lexical_cast<int>(aValue);
-                    adbParser->_adbCtxt->singleEntryArrSupp = val != 0;
-                } catch (std::exception&) {
-                    string exceptionTxt = string("Filed to parse the \"")
-                            + aName + "\" attribute value: \"" + aValue + "\"";
-                    if (allowMultipleExceptions) {
-                        noExceptionsFound = false;
-                        exceptionTxt = exceptionTxt + ", in file: \""
-                                + adbParser->_fileName + "\" line: "
-                                + boost::lexical_cast<string>(lineNumber);
-                        ExceptionHolder::insertNewException(ExceptionHolder::ERROR_EXCEPTION, exceptionTxt);
-                    } else {
-                        throw AdbException(exceptionTxt);
-                    }
-                }
-            }
-
-            if (noExceptionsFound && !TAG_ATTR_INCLUDE_PATH.compare(aName)) {
-                vector < string > paths;
-                boost::algorithm::split(paths, aValue,
-                        boost::is_any_of(string(";")));
-                adbParser->_adbCtxt->includePaths.insert(
-                        adbParser->_adbCtxt->includePaths.end(), paths.begin(),
-                        paths.end());
-
-                StringVector relatives;
-                string
-                        projPath =
-                                boost::filesystem::path(
-                                        adbParser->_adbCtxt->mainFileName).parent_path().string();
-
-                for (StringVector::iterator it =
-                        adbParser->_adbCtxt->includePaths.begin(); it
-                        != adbParser->_adbCtxt->includePaths.end(); it++) {
-                    if (AdbParser::is_relative(*it)) {
-                        relatives.push_back(projPath + OS_PATH_SEP + *it);
-                    }
-                }
-
-                adbParser->_adbCtxt->includePaths.insert(
-                        adbParser->_adbCtxt->includePaths.end(),
-                        relatives.begin(), relatives.end());
-            }
-        }
+        startConfigElement(atts, adbParser, lineNumber); 
     }
-    /*
-     * Info
-     * ----
-     */
     else if (TAG_INFO == name) {
-        string docName = attrValue(atts, "source_doc_name");
-        string docVer = attrValue(atts, "source_doc_version");
-        adbParser->_adbCtxt->srcDocName = docName;
-        adbParser->_adbCtxt->srcDocVer = docVer;
+        startInfoElement(atts, adbParser); 
     }
-    /*
-     * Include
-     * ----
-     */
     else if (TAG_INCLUDE == name) {
-        string includeAttr = attrName(atts, 0);
-        boost::algorithm::trim(includeAttr);
-
-        bool noExceptionsFound = true;
-        if (includeAttr == "file") {
-            string fname = attrValue(atts, "file");
-            boost::algorithm::trim(fname);
-            if (fname.empty()) {
-                string exceptionTxt = string()
-                        + "File attribute isn't given within " + TAG_INCLUDE
-                        + " tag";
-                if (allowMultipleExceptions) {
-                    noExceptionsFound = false;
-                    exceptionTxt = exceptionTxt + ", in file: \""
-                            + adbParser->_fileName + "\" line: "
-                            + boost::lexical_cast<string>(lineNumber);
-                    ExceptionHolder::insertNewException(ExceptionHolder::FATAL_EXCEPTION, exceptionTxt);
-                    return;
-                } else {
-                    throw AdbException(exceptionTxt);
-                }
-            }
-
-            if (noExceptionsFound)
-                includeFile(adbParser, fname, lineNumber);
-        } else if (includeAttr == "dir") {
-            string includeAllDirPath = attrValue(atts, "dir");
-            boost::algorithm::trim(includeAllDirPath);
-            if (includeAllDirPath.empty()) {
-                string exceptionTxt = string()
-                        + "Directory to include isn't given within "
-                        + TAG_INCLUDE + " tag";
-                if (allowMultipleExceptions) {
-                    noExceptionsFound = false;
-                    exceptionTxt = exceptionTxt + ", in file: \""
-                            + adbParser->_fileName + "\" line: "
-                            + boost::lexical_cast<string>(lineNumber);
-                    ExceptionHolder::insertNewException(ExceptionHolder::FATAL_EXCEPTION, exceptionTxt);
-                    return;
-                } else {
-                    throw AdbException(exceptionTxt);
-                }
-            }
-
-            if (noExceptionsFound)
-                includeAllFilesInDir(adbParser, includeAllDirPath, lineNumber);
-        } else {
-            string exceptionTxt = string()
-                    + "Include is called without file or dir attribute.";
-            if (allowMultipleExceptions) {
-                noExceptionsFound = false;
-                exceptionTxt = exceptionTxt + ", in file: \""
-                        + adbParser->_fileName + "\" line: "
-                        + boost::lexical_cast<string>(lineNumber);
-                ExceptionHolder::insertNewException(ExceptionHolder::ERROR_EXCEPTION, exceptionTxt);
-            } else {
-                throw AdbException(exceptionTxt);
-            }
-        }
+        startIncludeElement(atts, adbParser, lineNumber); 
     }
-    /*
-     * Instance Operations
-     * ----
-     */
     else if (TAG_INSTANCE_OPS == name) {
         adbParser->_instanceOps = true;
     }
-    /*
-     * Instance Operations
-     * ----
-     */
     else if (TAG_INSTANCE_OP_ATTR_REPLACE == name) {
-        bool noExceptionsFound = true;
-        if (!adbParser->_instanceOps) {
-            string exceptionTxt =
-                    "Operation attr_replace must be defined within <instance_ops> element only.";
-            if (allowMultipleExceptions) {
-                noExceptionsFound = false;
-                exceptionTxt = exceptionTxt + ", in file: \""
-                        + adbParser->_fileName + "\" line: "
-                        + boost::lexical_cast<string>(lineNumber);
-                ExceptionHolder::insertNewException(ExceptionHolder::FATAL_EXCEPTION, exceptionTxt);
-                return;
-            } else {
-                throw AdbException(exceptionTxt);
-            }
-        }
-
-        string path = attrValue(atts, "path");
-        if (path.empty()) {
-            string exceptionTxt =
-                    "path attribute is missing in attr_replace operation";
-            if (allowMultipleExceptions) {
-                noExceptionsFound = false;
-                exceptionTxt = exceptionTxt + ", in file: \""
-                        + adbParser->_fileName + "\" line: "
-                        + boost::lexical_cast<string>(lineNumber);
-                ExceptionHolder::insertNewException(ExceptionHolder::ERROR_EXCEPTION, exceptionTxt);
-            } else {
-                throw AdbException(exceptionTxt);
-            }
-        }
-
-        if (noExceptionsFound) {
-            adbParser->_adbCtxt->instAttrs[path] = AttrsMap();
-            for (int i = 0; i < attrCount(atts); i++) {
-                string attrN = attrName(atts, i);
-                if (attrN == "path") {
-                    continue;
-                }
-
-                string attrV = attrValue(atts, i);
-                adbParser->_adbCtxt->instAttrs[path][attrN] = attrV;
-            }
-        }
+        startInstOpAttrReplaceElement(atts, adbParser, lineNumber);
     }
-    /*
-     * Node
-     * ----
-     */
     else if (TAG_NODE == name) {
-        if (adbParser->_currentNode) {
-            string exceptionTxt = "Nested nodes are not allowed";
-            if (allowMultipleExceptions) {
-                exceptionTxt = exceptionTxt + ", in file: \""
-                        + adbParser->_fileName + "\" line: "
-                        + boost::lexical_cast<string>(lineNumber);
-                ExceptionHolder::insertNewException(ExceptionHolder::FATAL_EXCEPTION, exceptionTxt);
-                return;
-            } else {
-                throw AdbException(exceptionTxt);
-            }
-        }
-
-        //
-        string nodeName = attrValue(atts, "name");
-        boost::algorithm::trim(nodeName);
-        string size = attrValue(atts, "size");
-
-        if (adbParser->_enforceExtraChecks) {
-            if (!AdbParser::checkSpecialChars(nodeName)) {
-                string exceptionTxt =
-                        "Invalid character in node name, in Node: \""
-                                + nodeName + "\"";
-                if (allowMultipleExceptions) {
-                    exceptionTxt = exceptionTxt + ", in file: \""
-                            + adbParser->_fileName + "\" line: "
-                            + boost::lexical_cast<string>(lineNumber);
-                    ExceptionHolder::insertNewException(ExceptionHolder::WARN_EXCEPTION, exceptionTxt);
-                } else {
-                    throw AdbException(exceptionTxt);
-                }
-            }
-            if (AdbParser::checkBigger32(size)) { // the second part of the size after the . max to be 32 0x0.0
-                string
-                        exceptionTxt =
-                                string(
-                                        "Invalid size format, valid format 0x0.0 not allowed to be more than 0x0.31");
-                if (allowMultipleExceptions) {
-                    exceptionTxt = exceptionTxt + ", in file: \""
-                            + adbParser->_fileName + "\" line: "
-                            + boost::lexical_cast<string>(lineNumber);
-                    ExceptionHolder::insertNewException(ExceptionHolder::WARN_EXCEPTION, exceptionTxt);
-                } else {
-                    throw AdbException(exceptionTxt);
-                }
-            }
-            if (addr2int(size) == 0) {
-                string exceptionTxt =
-                        "Node Size is not allowed to be 0, in Node: \""
-                                + nodeName + "\"";
-                if (allowMultipleExceptions) {
-                    exceptionTxt = exceptionTxt + ", in file: \""
-                            + adbParser->_fileName + "\" line: "
-                            + boost::lexical_cast<string>(lineNumber);
-                    ExceptionHolder::insertNewException(ExceptionHolder::ERROR_EXCEPTION, exceptionTxt);
-                } else {
-                    throw AdbException(exceptionTxt);
-                }
-            }
-        }
-        string desc = descXmlToNative(attrValue(atts, "descr"));
-
-        // Check for mandatory attrs
-        if (nodeName.empty()) {
-            string exceptionTxt = "Missing node name";
-            if (allowMultipleExceptions) {
-                exceptionTxt = exceptionTxt + ", in file: \""
-                        + adbParser->_fileName + "\" line: "
-                        + boost::lexical_cast<string>(lineNumber);
-                ExceptionHolder::insertNewException(ExceptionHolder::FATAL_EXCEPTION, exceptionTxt);
-                return;
-            } else {
-                throw AdbException(exceptionTxt);
-            }
-        }
-        if (size.empty()) {
-            string exceptionTxt = "Missing node size";
-            if (allowMultipleExceptions) {
-                exceptionTxt = exceptionTxt + ", in file: \""
-                        + adbParser->_fileName + "\" line: "
-                        + boost::lexical_cast<string>(lineNumber);
-                ExceptionHolder::insertNewException(ExceptionHolder::FATAL_EXCEPTION, exceptionTxt);
-                return;
-            } else {
-                throw AdbException(exceptionTxt);
-            }
-        }
-
-        // Check for duplications
-        if (adbParser->_adbCtxt->nodesMap.count(nodeName)) {
-            string exceptionTxt = "node \"" + nodeName
-                    + "\" is already defined in file: \""
-                    + adbParser->_adbCtxt->nodesMap[nodeName]->fileName
-                    + "\" line: " + boost::lexical_cast<string>(
-                    adbParser->_adbCtxt->nodesMap[nodeName]->lineNumber);
-            if (allowMultipleExceptions) {
-                exceptionTxt = exceptionTxt + ", in file: \""
-                        + adbParser->_fileName + "\" line: "
-                        + boost::lexical_cast<string>(lineNumber);
-                ExceptionHolder::insertNewException(ExceptionHolder::FATAL_EXCEPTION, exceptionTxt);
-                return;
-            } else {
-                throw AdbException(exceptionTxt);
-            }
-        }
-
-        adbParser->_currentNode = new AdbNode;
-        adbParser->_currentNode->name = nodeName;
-        adbParser->_currentNode->size = addr2int(size);
-        adbParser->_currentNode->desc = desc;
-        string unionAttrVal = attrValue(atts, "attr_is_union");
-        adbParser->_currentNode->isUnion = !unionAttrVal.empty()
-                && boost::lexical_cast<int>(unionAttrVal) != 0;
-        adbParser->_currentNode->fileName = adbParser->_fileName;
-        adbParser->_currentNode->lineNumber = lineNumber;
-
-        if (adbParser->_strict && adbParser->_currentNode->isUnion
-                && adbParser->_currentNode->size % 32) {
-            //throw AdbException("union must be dword aligned");
-        }
-
-        // Add all node attributes
-        for (int i = 0; i < attrCount(atts); i++) {
-            if (attrValue(atts, i) == "") {
-                continue;
-            }
-            adbParser->_currentNode->attrs[attrName(atts, i)] = attrValue(atts,
-                    i);
-        }
+        startNodeElement(atts, adbParser, lineNumber);
     }
-    /*
-     * Field
-     * ----
-     */
     else if (TAG_FIELD == name) {
-        bool noExceptionsFound = true;
-        if (!adbParser->_currentNode) {
-            string exceptionTxt = "Field definition outside of node";
-            if (allowMultipleExceptions) {
-                noExceptionsFound = false;
-                exceptionTxt = exceptionTxt + ", in file: \""
-                        + adbParser->_fileName + "\" line: "
-                        + boost::lexical_cast<string>(lineNumber);
-                ExceptionHolder::insertNewException(ExceptionHolder::FATAL_EXCEPTION, exceptionTxt);
-                return;
-            } else {
-                throw AdbException(exceptionTxt);
-            }
-        }
-
-        if (adbParser->_currentField) {
-            string exceptionTxt = "Nested fields are not allowed";
-            if (allowMultipleExceptions) {
-                noExceptionsFound = false;
-                exceptionTxt = exceptionTxt + ", in file: \""
-                        + adbParser->_fileName + "\" line: "
-                        + boost::lexical_cast<string>(lineNumber);
-                ExceptionHolder::insertNewException(ExceptionHolder::FATAL_EXCEPTION, exceptionTxt);
-                return;
-            } else {
-                throw AdbException(exceptionTxt);
-            }
-        }
-
-        string fieldName = attrValue(atts, "name");
-        boost::algorithm::trim(fieldName);
-        string offset = attrValue(atts, "offset");
-        string size = attrValue(atts, "size");
-
-        if (adbParser->_enforceExtraChecks) {
-            if (addr2int(size) % 32 == 0 && !AdbParser::checkHEXFormat(size)) {
-                string exceptionTxt = "Invalid size format";
-                if (allowMultipleExceptions) {
-                    noExceptionsFound = false;
-                    exceptionTxt = exceptionTxt + ", in file: \""
-                            + adbParser->_fileName + "\" line: "
-                            + boost::lexical_cast<string>(lineNumber);
-                    ExceptionHolder::insertNewException(ExceptionHolder::WARN_EXCEPTION, exceptionTxt);
-                } else {
-                    throw AdbException(exceptionTxt);
-                }
-            }
-            if (!AdbParser::checkHEXFormat(offset)) {
-                string exceptionTxt = "Invalid offset format";
-                if (allowMultipleExceptions) {
-                    noExceptionsFound = false;
-                    exceptionTxt = exceptionTxt + ", in file: \""
-                            + adbParser->_fileName + "\" line: "
-                            + boost::lexical_cast<string>(lineNumber);
-                    ExceptionHolder::insertNewException(ExceptionHolder::WARN_EXCEPTION, exceptionTxt);
-                } else {
-                    throw AdbException(exceptionTxt);
-                }
-            }
-            if (!AdbParser::checkSpecialChars(fieldName)) {
-                string exceptionTxt =
-                        "Invalid character in field name, in Field: \""
-                                + fieldName + "\"";
-                if (allowMultipleExceptions) {
-                    noExceptionsFound = false;
-                    exceptionTxt = exceptionTxt + ", in file: \""
-                            + adbParser->_fileName + "\" line: "
-                            + boost::lexical_cast<string>(lineNumber);
-                    ExceptionHolder::insertNewException(ExceptionHolder::WARN_EXCEPTION, exceptionTxt);
-                } else {
-                    throw AdbException(exceptionTxt);
-                }
-            }
-            if (noExceptionsFound && adbParser->_currentNode->isUnion
-                    && addr2int(offset) != 0) {
-                string exceptionTxt = "Offset must be 0x0.0 in Union fields";
-                if (allowMultipleExceptions) {
-                    noExceptionsFound = false;
-                    exceptionTxt = exceptionTxt + ", in file: \""
-                            + adbParser->_fileName + "\" line: "
-                            + boost::lexical_cast<string>(lineNumber);
-                    ExceptionHolder::insertNewException(ExceptionHolder::WARN_EXCEPTION, exceptionTxt);
-                } else {
-                    throw AdbException(exceptionTxt);
-                }
-            }
-            if (AdbParser::checkBigger32(size)) { // the second part of the size after the . max to be 32 0x0.0
-                string exceptionTxt =
-                        "Invalid size format, valid format 0x0.0 not allowed to be more than 0x0.31";
-                if (allowMultipleExceptions) {
-                    noExceptionsFound = false;
-                    exceptionTxt = exceptionTxt + ", in file: \""
-                            + adbParser->_fileName + "\" line: "
-                            + boost::lexical_cast<string>(lineNumber);
-                    ExceptionHolder::insertNewException(ExceptionHolder::WARN_EXCEPTION, exceptionTxt);
-                } else {
-                    throw AdbException(exceptionTxt);
-                }
-            }
-            if (AdbParser::checkBigger32(offset)) { // the second part of the size after the . max to be 32 0x0.0
-                string exceptionTxt =
-                        "Invalid offset format, valid format 0x0.0 not allowed to be more than 0x0.31";
-                if (allowMultipleExceptions) {
-                    noExceptionsFound = false;
-                    exceptionTxt = exceptionTxt + ", in file: \""
-                            + adbParser->_fileName + "\" line: "
-                            + boost::lexical_cast<string>(lineNumber);
-                    ExceptionHolder::insertNewException(ExceptionHolder::WARN_EXCEPTION, exceptionTxt);
-                } else {
-                    throw AdbException(exceptionTxt);
-                }
-            }
-            if (addr2int(size) == 0) {
-                string exceptionTxt =
-                        "Field Size is not allowed to be 0, in Field: \""
-                                + fieldName + "\"";
-                if (allowMultipleExceptions) {
-                    noExceptionsFound = false;
-                    exceptionTxt = exceptionTxt + ", in file: \""
-                            + adbParser->_fileName + "\" line: "
-                            + boost::lexical_cast<string>(lineNumber);
-                    ExceptionHolder::insertNewException(ExceptionHolder::ERROR_EXCEPTION, exceptionTxt);
-                } else {
-                    throw AdbException(exceptionTxt);
-                }
-            }
-        }
-
-        string desc = descXmlToNative(attrValue(atts, "descr"));
-        string lowBound = attrValue(atts, "low_bound");
-        string highBound = attrValue(atts, "high_bound");
-
-        if (lowBound != "" && highBound != "") {
-            int low = atoi(lowBound.c_str());
-            int high = 0;
-            if (highBound != "VARIABLE") {
-                high = atoi(highBound.c_str());
-            }
-            int isize = addr2int(size);
-            int entrySize = isize / (high - low + 1);
-            if (entrySize % 8 != 0 && entrySize > 8) {
-                string exceptionTxt = "Invalid size of array entries";
-                if (allowMultipleExceptions) {
-                    noExceptionsFound = false;
-                    exceptionTxt = exceptionTxt + ", in file: \""
-                            + adbParser->_fileName + "\" line: "
-                            + boost::lexical_cast<string>(lineNumber);
-                    ExceptionHolder::insertNewException(ExceptionHolder::ERROR_EXCEPTION, exceptionTxt);
-                } else {
-                    throw AdbException(exceptionTxt);
-                }
-            }
-            if (entrySize < 8 && entrySize != 4 && entrySize != 2 && entrySize
-                    != 1 && ((isize > 32 && highBound != "VARIABLE")
-                    || highBound == "VARIABLE")) {
-                string exceptionTxt =
-                        "Array with entry size 3, 5, 6 or 7 bits and array size is larger than 32bit";
-                if (allowMultipleExceptions) {
-                    noExceptionsFound = false;
-                    exceptionTxt = exceptionTxt + ", in file: \""
-                            + adbParser->_fileName + "\" line: "
-                            + boost::lexical_cast<string>(lineNumber);
-                    ExceptionHolder::insertNewException(ExceptionHolder::ERROR_EXCEPTION, exceptionTxt);
-                } else {
-                    throw AdbException(exceptionTxt);
-                }
-            }
-        }
-
-        string subNode = attrValue(atts, "subnode");
-
-        // Check for mandatory attrs
-        if (fieldName.empty()) {
-            string exceptionTxt = "Missing field name";
-            if (allowMultipleExceptions) {
-                noExceptionsFound = false;
-                exceptionTxt = exceptionTxt + ", in file: \""
-                        + adbParser->_fileName + "\" line: "
-                        + boost::lexical_cast<string>(lineNumber);
-                ExceptionHolder::insertNewException(ExceptionHolder::FATAL_EXCEPTION, exceptionTxt);
-                return;
-            } else {
-                throw AdbException(exceptionTxt);
-            }
-        }
-
-        if (size.empty()) {
-            string exceptionTxt = "Missing field size";
-            if (allowMultipleExceptions) {
-                noExceptionsFound = false;
-                exceptionTxt = exceptionTxt + ", in file: \""
-                        + adbParser->_fileName + "\" line: "
-                        + boost::lexical_cast<string>(lineNumber);
-                ExceptionHolder::insertNewException(ExceptionHolder::FATAL_EXCEPTION, exceptionTxt);
-                return;
-            } else {
-                throw AdbException(exceptionTxt);
-            }
-        }
-
-        // Create new fields
-        adbParser->_currentField = new AdbField;
-
-        // Fill the new fields
-        adbParser->_currentField->name = fieldName;
-        adbParser->_currentField->desc = desc;
-        adbParser->_currentField->size = addr2int(size);
-        if (adbParser->_adbCtxt->singleEntryArrSupp) {
-            int low = -1;
-            int high = -1;
-            if (!lowBound.empty()) {
-                low = atoi(lowBound.c_str());
-            }
-            if (!highBound.empty()) {
-                high = atoi(highBound.c_str());
-            }
-            adbParser->_currentField->definedAsArr = (low == high)
-                    && (low >= 0);
-        } else {
-            adbParser->_currentField->definedAsArr = false;
-        }
-
-        adbParser->_currentField->lowBound = lowBound.empty() ? 0
-                : boost::lexical_cast<u_int32_t>(lowBound);
-        if (highBound == "VARIABLE") {
-            adbParser->_currentField->highBound = 0;
-            adbParser->_currentField->unlimitedArr = true;
-        } else {
-            adbParser->_currentField->highBound = highBound.empty() ? 0
-                    : boost::lexical_cast<u_int32_t>(highBound);
-        }
-        adbParser->_currentField->subNode = subNode;
-
-        // Check array element size
-        if (adbParser->_currentField->isArray()
-                && !adbParser->_currentField->isUnlimitedArr()
-                && adbParser->_currentField->size
-                        % (adbParser->_currentField->arrayLen())) {
-            char exceptionTxt[1000];
-            sprintf(exceptionTxt,
-                    "In field \"%s\" invalid array element size\"%0.2f\" in file: \"%s\" line: %d",
-                    fieldName.c_str(),
-                    ((double) adbParser->_currentField->size
-                            / (adbParser->_currentField->arrayLen())),
-                    adbParser->_fileName.c_str(), lineNumber);
-            string exceptionString = string(exceptionTxt);
-            if (allowMultipleExceptions) {
-                noExceptionsFound = false;
-                ExceptionHolder::insertNewException(ExceptionHolder::FATAL_EXCEPTION, exceptionString);
-                return;
-            } else {
-                throw AdbException(string(exceptionTxt));
-            }
-        }
-        if (offset.empty()) {
-            if (adbParser->_currentNode->fields.empty()) {
-                adbParser->_currentField->offset = 0;
-            } else {
-                AdbField *lastField = adbParser->_currentNode->fields.back();
-                adbParser->_currentField->offset = lastField->offset
-                        + lastField->size;
-            }
-        } else {
-            adbParser->_currentField->offset = addr2int(offset);
-        }
-
-        // Very tricky but works well for big endian arrays support - on endElement we will fix the address again
-        if (noExceptionsFound && adbParser->_adbCtxt->bigEndianArr) {
-            u_int32_t offset = adbParser->_currentField->offset;
-            u_int32_t size = adbParser->_currentField->eSize();
-
-            adbParser->_currentField->offset = ((offset >> 5) << 5)
-                    + ((MIN(32, adbParser->_currentNode->size) - ((offset
-                            + size) % 32)) % 32);
-        }
-
-        if (noExceptionsFound && adbParser->_strict
-                && adbParser->_currentNode->isUnion
-                && adbParser->_currentField->isLeaf()) {
-            string exceptionTxt =
-                    "Fields are not allowed in unions (only subnodes)";
-            if (allowMultipleExceptions) {
-                noExceptionsFound = false;
-                exceptionTxt = exceptionTxt + ", in file: \""
-                        + adbParser->_fileName + "\" line: "
-                        + boost::lexical_cast<string>(lineNumber);
-                ExceptionHolder::insertNewException(ExceptionHolder::FATAL_EXCEPTION, exceptionTxt);
-                return;
-            } else {
-                throw AdbException(exceptionTxt);
-            }
-        }
-
-        if (noExceptionsFound && adbParser->_strict
-                && adbParser->_currentNode->isUnion
-                && adbParser->_currentField->size % 32) {
-            string exceptionTxt =
-                    "Union is allowed to contains only dword aligned subnodes";
-            if (allowMultipleExceptions) {
-                noExceptionsFound = false;
-                exceptionTxt = exceptionTxt + ", in file: \""
-                        + adbParser->_fileName + "\" line: "
-                        + boost::lexical_cast<string>(lineNumber);
-                ExceptionHolder::insertNewException(ExceptionHolder::FATAL_EXCEPTION, exceptionTxt);
-                return;
-            } else {
-                throw AdbException(exceptionTxt);
-            }
-        }
-
-        if (noExceptionsFound && adbParser->_currentNode->isUnion
-                && adbParser->_currentField->size
-                        > adbParser->_currentNode->size) {
-            string exceptionTxt =
-                    "Field size is greater than the parent node size";
-            if (allowMultipleExceptions) {
-                noExceptionsFound = false;
-                exceptionTxt = exceptionTxt + ", in file: \""
-                        + adbParser->_fileName + "\" line: "
-                        + boost::lexical_cast<string>(lineNumber);
-                ExceptionHolder::insertNewException(ExceptionHolder::FATAL_EXCEPTION, exceptionTxt);
-                return;
-            } else {
-                throw AdbException(exceptionTxt);
-            }
-        }
-
-        if (noExceptionsFound && adbParser->_strict
-                && !adbParser->_currentField->isArray()
-                && adbParser->_currentField->isLeaf()
-                && adbParser->_currentField->size > 32) {
-            string exceptionTxt = "Leaf fields can't be > 32 bits";
-            if (allowMultipleExceptions) {
-                noExceptionsFound = false;
-                exceptionTxt = exceptionTxt + ", in file: \""
-                        + adbParser->_fileName + "\" line: "
-                        + boost::lexical_cast<string>(lineNumber);
-                ExceptionHolder::insertNewException(ExceptionHolder::FATAL_EXCEPTION, exceptionTxt);
-                return;
-            } else {
-                throw AdbException(exceptionTxt);
-            }
-        }
-        // Add all field attributes
-        if (noExceptionsFound) {
-            for (int i = 0; i < attrCount(atts); i++) {
-                adbParser->_currentField->attrs[attrName(atts, i)] = attrValue(
-                        atts, i);
-            }
-        }
+        startFieldElement(atts, adbParser, lineNumber);
     }
-    /*
-     * RCSheaders
-     * ----
-     */
     else if (TAG_RCS_HEADERS == name) {
         // DO NOTHING
     } else {
         string exceptionTxt = "Unsupported tag: " + string(name);
-        if (allowMultipleExceptions) {
-            exceptionTxt = exceptionTxt + ", in file: \""
-                    + adbParser->_fileName + "\" line: " + boost::lexical_cast<
-                    string>(lineNumber);
+        if (allowMultipleExceptions)
+        {
+            exceptionTxt = exceptionTxt + ", in file: \"" + adbParser->_fileName + "\" line: " 
+                           + boost::lexical_cast<string>(lineNumber);
             ExceptionHolder::insertNewException(ExceptionHolder::FATAL_EXCEPTION, exceptionTxt);
             return;
         } else {
@@ -3661,6 +3446,21 @@ void AdbParser::endElement(void *_adbParser, const XML_Char *name) {
         adbParser->_currentField = 0;
     }
 }
+
+/**
+ * Function: AdbParser::raiseException
+ **/
+bool AdbParser::raiseException(bool allowMultipleExceptions, string exceptionTxt, 
+                              string addedMsg, const string expType)
+{
+    if (allowMultipleExceptions) {
+        ExceptionHolder::insertNewException(expType, exceptionTxt + addedMsg);
+        return false;
+    } else {
+        throw AdbException(exceptionTxt);
+    }
+}
+
 
 #if 0
 void progress(int i, int t)
