@@ -546,6 +546,11 @@ void CmdLineParser::initOptions()
                      "MFA | self_extractor - default All",
                      false);
 
+    this->AddOptions(SERVER_URL_L,
+                     SERVER_URL_S,
+                     "URL",
+                     "Server URL for online operations",
+                     true);
     this->AddOptions(CERTIFICATE_L,
                      CERTIFICATE_S,
                      "Certificate",

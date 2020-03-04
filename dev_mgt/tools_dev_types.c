@@ -77,7 +77,9 @@ struct device_info {
 #define ARDBEG_MIRRORED_DEVID 0x70
 #define BARITONE_DEVID 0x6b
 #define BARITONE_MIRRORED_DEVID 0x71
-#define MENHIT_DEVID 0x6f
+#define MENHIT_DEVID_VER0 0x6f
+#define MENHIT_DEVID_VER1 0x72
+#define MENHIT_DEVID_VER2 0x73
 
 
 #ifdef CABLES_SUPP
@@ -218,6 +220,15 @@ static struct device_info g_devs_info[] = {
         DM_HCA                  //dev_type
     },
     {
+        DeviceConnectX6LX,      //dm_id
+        0x216,                  //hw_dev_i
+        -1,                     //hw_rev_i
+        -1,                     //sw_dev_i
+        "ConnectX6LX",          //name
+        2,                      //port_num
+        DM_HCA                  //dev_type
+    },
+    {
         DeviceBlueField,        //dm_id
         0x211,                  //hw_dev_i
         -1,                     //hw_rev_i
@@ -345,7 +356,7 @@ static struct device_info g_devs_info[] = {
     },
     {
         DeviceMenhit,           //dm_id
-        0x6f,                   //hw_dev_i
+        0x72,                   //hw_dev_i (other versions 0x6f,0x73)
         -1,                     //hw_rev_i
         -1,                     //sw_dev_i
         "Menhit",               //name
@@ -440,7 +451,9 @@ int dm_get_device_id(mfile *mf,
             case BARITONE_MIRRORED_DEVID:
                 *ptr_dm_dev_id = DeviceBaritone;
                 break;
-            case MENHIT_DEVID:
+            case MENHIT_DEVID_VER0:
+            case MENHIT_DEVID_VER1:
+            case MENHIT_DEVID_VER2:
                 *ptr_dm_dev_id = DeviceMenhit;
                 break;
             default:

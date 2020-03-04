@@ -37,7 +37,7 @@
  *  Created on: March 23, 2017
  *      Author: Ahmad Soboh
  */
-#include <stdlib.h>
+#include <cstdlib>
 #include <sys/stat.h>
 #include <fstream>
 #include <stdio.h>

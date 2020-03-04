@@ -206,6 +206,7 @@ FlagMetaData::FlagMetaData()
     _flags.push_back(new Flag("", "no_fw_ctrl", 0));
     _flags.push_back(new Flag("", "ir", 0));
     _flags.push_back(new Flag("", "latest_fw", 0));
+    _flags.push_back(new Flag("", "psid", 1));
 }
 
 FlagMetaData::~FlagMetaData()
@@ -707,6 +708,10 @@ void Flint::initCmdParser()
                ' ',
                "<uuid_file>",
                "UUID matching the given private key to be used by the sign command");
+    AddOptions("psid",
+        ' ',
+        "<PSID>",
+        "Use this PSID while burning livefish device using MFA2 archive");
 
     for (map_sub_cmd_t_to_subcommand::iterator it = _subcommands.begin(); it != _subcommands.end(); it++) {
         if (it->first == SC_ResetCfg) {
@@ -912,7 +917,8 @@ ParseStatus Flint::HandleOption(string name, string value)
     } else if (name == "private_key") {
         _flintParams.privkey_specified = true;
         _flintParams.privkey_file = value;
-    } else if (name == "key_uuid") {
+    }
+     else if (name == "key_uuid") {
         _flintParams.uuid_specified = true;
         _flintParams.privkey_uuid = value;
     } else if (name == "hmac_key") {
@@ -926,8 +932,10 @@ ParseStatus Flint::HandleOption(string name, string value)
         _flintParams.privkey2_uuid = value;
     } else if (name == "latest_fw") {
         _flintParams.use_latest_fw_version = true;
-    }
-    else {
+    } else if (name == "psid") {
+        _flintParams.use_psid = true;
+        _flintParams.psid = value;
+    } else {
         cout << "Unknown Flag: " << name;
         cout << _cmdParser.GetSynopsis();
         return PARSE_ERROR;

@@ -211,7 +211,9 @@ namespace std {}; using namespace std;
 #define CX5_HW_ID         525
 #define CX6_HW_ID         527
 #define CX6DX_HW_ID       530
+#define CX6LX_HW_ID       534
 #define BF_HW_ID          529
+#define BF2_HW_ID         532
 #define CX2_HW_ID         400
 #define CX3_HW_ID         501
 #define CX3_PRO_HW_ID     503
@@ -326,6 +328,8 @@ typedef enum fs3_section {
     FS3_FW_NV_LOG     = 0xe5,
     FS3_NV_DATA0      = 0xe6, // replaces FS3_NV_DATA1
     FS3_CRDUMP_MASK_DATA = 0xe9,
+    FS4_FW_INTERNAL_USAGE = 0xea,
+    FS4_FW_INTERNAL_USAGE1 = 0xeb,
     FS4_HW_PTR        = 0xfb,
     FS4_TOOLS_AREA    = 0xfc,
     FS3_ITOC          = 0xfd,

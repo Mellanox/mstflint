@@ -335,6 +335,7 @@ void MlnxDev::setDeviceType(void)
     switch (ptr_dm_dev_id) {
     case DeviceSpectrum:
     case DeviceSpectrum2:
+    case DeviceSpectrum3:
         portOneType = PORT_ETH;
         portTwoType = PORT_ETH;
         isOnlyBase = true;
@@ -375,7 +376,9 @@ void MlnxDev::setDeviceType(void)
     case DeviceConnectX5:
     case DeviceConnectX6:
     case DeviceConnectX6DX:
+    case DeviceConnectX6LX:
     case DeviceBlueField:
+    case DeviceBlueField2:
         try {
             _commander = Commander::create(mf, getDevName(), "");
         } catch (MlxcfgException& e) {
@@ -441,16 +444,13 @@ string MlnxDev::getLog()
 }
 
 
-int MlnxDev::compareFWVer(const u_int16_t *ver)
-{
+int MlnxDev::compareFWVer(const ImgVersion& ver) {
     int idx = getImageIndex("FW");
     if (idx == -1) {
-        return -1;
+        return 0;
     }
-    ImgVersion fwVer;
-    fwVer.setVersion("FW", _imageVers[idx].getVerNumFields(), ver);
 
-    return _imageVers[idx].compare(fwVer);
+    return _imageVers[idx].compareFw(ver);
 }
 
 
@@ -765,7 +765,8 @@ int MlnxDev::queryFwops()
         runningfwVer[2] = fw_query.fw_info.running_fw_ver[2] / 100;
         runningfwVer[3] = fw_query.fw_info.running_fw_ver[2] % 100;
     }
-    imgv.setVersion("FW", versionFields + _compareFFV, fwVer);
+    imgv.setVersion("FW", versionFields + _compareFFV, fwVer,
+            fw_query.fw_info.branch_ver);
     _imageVers.push_back(imgv);
 
     if ((fw_query.fw_info.running_fw_ver[0] || fw_query.fw_info.running_fw_ver[1] || fw_query.fw_info.running_fw_ver[2]) && \
@@ -773,7 +774,8 @@ int MlnxDev::queryFwops()
          fw_query.fw_info.running_fw_ver[1] != fw_query.fw_info.fw_ver[1] || \
          fw_query.fw_info.running_fw_ver[2] != fw_query.fw_info.fw_ver[2])) {
         ImgVersion imgrv;
-        imgrv.setVersion("FW (Running)", versionFields + _compareFFV, runningfwVer);
+        imgrv.setVersion("FW (Running)", versionFields + _compareFFV,
+                runningfwVer, fw_query.fw_info.running_branch_ver);
         _imageVers.push_back(imgrv);
     }
 
@@ -986,7 +988,8 @@ int MlnxDev::query()
 
     }
 
-    imgv.setVersion("FW", versionFields + _compareFFV, fwVer);
+    imgv.setVersion("FW", versionFields + _compareFFV, fwVer,
+            fw_query.fw_info.branch_ver);
     _imageVers.push_back(imgv);
     _productVer = fw_query.fw_info.product_ver;
     _psid = fw_query.fw_info.psid;
@@ -1098,17 +1101,7 @@ string MlnxDev::getFWVersion(bool show_type, bool use_default_ffv)
 }
 
 
-int MlnxDev::getFWVersion(int index)
-{
-    int v;
-    int idx = getImageIndex("FW");
 
-    if (idx == -1) {
-        return -1;
-    }
-    v = _imageVers[idx].getImgVerField(index);
-    return v;
-}
 
 dev_info* MlnxDev::getDevInfo()
 {

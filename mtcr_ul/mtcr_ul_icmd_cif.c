@@ -235,7 +235,9 @@ enum {
 #define SPECTRUM2_HW_ID 590
 
 /***** GLOBALS *****/
-int increase_poll_time = 0;
+static int increase_poll_time = 0;
+void  set_increase_poll_time(int new_value) { increase_poll_time = new_value; }
+
 /***** GLOBALS *****/
 
 /*************************************************************************************/

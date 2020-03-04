@@ -63,7 +63,7 @@ CmdLineParams::CmdLineParams()
     no_fw_ctrl      = false;
     target_file     = "";
     //server_url      = "http://localhost/";
-    server_url      = "https://www.mellanox.com/";
+    server_url      = "https://www.mellanox.com";
 
     proxy           = "";
 

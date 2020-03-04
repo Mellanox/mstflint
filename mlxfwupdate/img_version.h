@@ -37,30 +37,34 @@
 
 #include <string>
 #include <compatibility.h>
+#include <mlxfwops/lib/fw_version.h>
+#include <stdexcept>
 
 using namespace std;
 
 class ImgVersion {
+    class SetVersionException: public std::runtime_error {
+    public:
+        SetVersionException(const std::string error) :
+                runtime_error(error) {
+        }
+    };
 public:
     ImgVersion();
-    void   setVersion(const char *imgType, u_int8_t verSz, const u_int16_t *ver);
-    int    compare(const ImgVersion &imv) const;
-    string getPrintableVersion(int ffv,  bool show_type = true);
+    ImgVersion(const ImgVersion&);
+    virtual ~ImgVersion();
+    ImgVersion& operator=(const ImgVersion&);
+    void setVersion(const string& imgType, u_int8_t verSz, const u_int16_t* ver,
+            const string& verBranch = "");
+    string getPrintableVersion(int ffv, bool show_type = true);
     string getTypeStr();
-    u_int16_t getImgVerField(int index);
-    u_int8_t  getVerNumFields();
-    const u_int16_t* getVerArray();
-    /*
-       void   setExpansionRomtoUnknown();
-       bool   isExpansionRomUnknown();
-     */
-private:
     int compareFw(const ImgVersion &imv) const;
-
+private:
     string _type;
-    u_int16_t _ver[4];
-    u_int8_t _verNumFields;
-    bool _isExpansionRomUnkown;
+    FwVersion* _fwVer;
+    bool _isExpansionRomUnknown;
+    bool _isOldMinor;
+    bool _isSubBuild;
 };
 
 #endif

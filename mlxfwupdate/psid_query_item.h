@@ -61,6 +61,7 @@ public:
     string type;
     vector<ImgVersion> imgVers;
     bool isFailSafe;
+    string branch;
 };
 
 #endif

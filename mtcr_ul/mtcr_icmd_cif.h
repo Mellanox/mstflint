@@ -98,6 +98,8 @@ int icmd_send_command_int(mfile     *mf,
  **/
 int icmd_take_semaphore(mfile *mf);
 
+void  set_increase_poll_time(int new_value);
+
 #ifdef __cplusplus
 }
 #endif

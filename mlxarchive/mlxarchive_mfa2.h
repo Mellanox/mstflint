@@ -118,6 +118,7 @@ public:
         map_string_to_component getMatchingComponents(char* psid, int majorVer);
         bool unzipComponent(map_string_to_component& matchingComponentsMap, u_int32_t choice, vector<u_int8_t>& fwBinaryData);
         bool unzipLatestVersionComponent(map_string_to_component& matchingComponentsMap, vector<u_int8_t>& fwBinaryData);
+        bool getLatestComponent(vector<u_int8_t>& fwBinaryData, int deviceMajorVer);
 };
 
 }

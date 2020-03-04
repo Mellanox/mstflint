@@ -283,6 +283,16 @@ bool MFA2::unzipComponent(map_string_to_component& matchingComponentsMap, u_int3
     return extractComponent(requiredComponent, fwBinaryData);
 }
 
+bool MFA2::getLatestComponent(vector<u_int8_t>& fwBinaryData, int deviceMajorVer)
+{
+    map_string_to_component matchingComponentsMap = getMatchingComponents(NULL, deviceMajorVer);
+    map_string_to_component::iterator itAtKey = matchingComponentsMap.find(_latestComponentKey);
+    if (itAtKey == matchingComponentsMap.end()) {
+        return false;
+    }
+    Component* requiredComponent = &itAtKey->second;
+    return extractComponent(requiredComponent, fwBinaryData);
+}
 map_string_to_component MFA2::getMatchingComponents(char* device_psid, int deviceMajorVer)
 {
     map_string_to_component matchingComponentsMap;
@@ -293,8 +303,10 @@ map_string_to_component MFA2::getMatchingComponents(char* device_psid, int devic
     for (u_int16_t index = 0; index < devCount; index++) {
         DeviceDescriptor devDescriptor = getDeviceDescriptor(index);
         string psid = devDescriptor.getPSIDExtension().getString();
+        if (device_psid != NULL) {
         if (strcmp((char*)psid.c_str(), device_psid)) {
             continue;
+            }
         }
         u_int8_t compPtrCount = devDescriptor.getComponentPointerExtensionsCount();
         for (u_int8_t comp = 0; comp < compPtrCount; comp++) {
@@ -303,8 +315,10 @@ map_string_to_component MFA2::getMatchingComponents(char* device_psid, int devic
             Component compObj = getComponentObject(compIndex);
             const ComponentDescriptor & compDescr = compObj.getComponentDescriptor();
             u_int8_t majorVer = compDescr.getVersionExtension().getMajor();
+            if (deviceMajorVer != -1) {
             if (deviceMajorVer != majorVer) {
                 continue;
+                }
             }
             char dateTimeBuffer[32] = { 0 };
             compDescr.getVersionExtension().getDateAndTime(dateTimeBuffer);

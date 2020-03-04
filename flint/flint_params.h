@@ -162,6 +162,8 @@ public:
     bool image_reactivation;
     int num_of_args;
     bool use_latest_fw_version;
+    string psid;
+    bool use_psid;
 };
 
 #endif
