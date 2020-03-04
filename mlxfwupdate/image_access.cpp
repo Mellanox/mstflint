@@ -45,7 +45,7 @@
 #include <pldm_pkg.h>
 #include <pldm_dev_id_record.h>
 #include <pldm_component_image.h>
-#include <tools_layouts/image_info_layouts.h>
+#include <tools_layouts/connectx4_layouts.h>
 
 using namespace std;
 
@@ -230,7 +230,8 @@ int ImageAccess::queryPsid(const string &fname, const string &psid,
         }
         if (!_compareFFV) {
             ImgVersion imgv;
-            imgv.setVersion("FW", 3, img_query.fw_info.fw_ver);
+            imgv.setVersion("FW", 3, img_query.fw_info.fw_ver,
+                    img_query.fw_info.branch_ver);
             ri.imgVers.push_back(imgv);
         } else {
             u_int16_t fwVer[4];
@@ -419,7 +420,8 @@ int ImageAccess::get_bin_content(const string & fname, vector<PsidQueryItem> &ri
     item.pns = "";
     item.board_rev = "";
 
-    imgv.setVersion("FW", 3, img_query.fw_info.fw_ver);
+    imgv.setVersion("FW", 3, img_query.fw_info.fw_ver,
+            img_query.fw_info.branch_ver);
     item.imgVers.push_back(imgv);
     for (int i = 0; i < img_query.fw_info.roms_info.num_of_exp_rom; i++) {
         ImgVersion imgVer;
@@ -482,6 +484,13 @@ int ImageAccess::get_mfa_content(const string & fname, vector<PsidQueryItem> &ri
             item.description = val;
             free(val);
         }
+        val = mfa_get_map_entry_metadata(me, (char*) "BRANCH");
+        if (val == NULL) {
+            item.branch = "";
+        } else {
+            item.branch = val;
+            free(val);
+        }
 
         map_image_entry *imge;
         for (int i = 0; i < me->nimages; i++) {
@@ -503,7 +512,8 @@ int ImageAccess::get_mfa_content(const string & fname, vector<PsidQueryItem> &ri
                 if ((subImgType = mfasec_get_sub_image_type_str(toc->subimage_type)) != NULL) {
                     ImgVersion imgv;
                     if (subImgType[0] != '\0') { //Not a padding section
-                        imgv.setVersion(subImgType, toc->num_ver_fields, toc->version);
+                        imgv.setVersion(subImgType, toc->num_ver_fields,
+                                toc->version, item.branch);
                         item.imgVers.push_back(imgv);
                     }
                 }
@@ -558,11 +568,14 @@ bool ImageAccess::extract_pldm_image_info(const u_int8_t * buff, u_int32_t size,
                 query_item.description = image_info.description;
                 static const int FW_VER_SIZE = 3;
                 u_int16_t fw_ver[FW_VER_SIZE];
+                char fw_branch[BRANCH_LEN + 1] = { 0 };
                 fw_ver[0] = image_info.FW_VERSION.MAJOR;
                 fw_ver[1] = image_info.FW_VERSION.MINOR;
                 fw_ver[2] = image_info.FW_VERSION.SUBMINOR;
+                strncpy(fw_branch, image_info.vsd, BRANCH_LEN);
+                fw_branch[BRANCH_LEN] = (char) 0;
                 ImgVersion imgv;
-                imgv.setVersion("FW", FW_VER_SIZE, fw_ver);
+                imgv.setVersion("FW", FW_VER_SIZE, fw_ver, fw_branch);
                 query_item.imgVers.push_back(imgv);
 
                 delete [] buff;

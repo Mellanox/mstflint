@@ -1027,10 +1027,10 @@ int checkAndDisplayDeviceQuery1D(vector<MlnxDev*> &devs,
 
                 //u_int16_t fwVer[3] = {3,4,141};
                 //psidUpdateInfo[devs[i]->getPsid()].imgVers[1].setVersion("PXE", 3, fwVer);
-                if (devImgVer->compare(*fileImgVer) < 0) {
-                    nKeepReasons++;
-                } else if (devImgVer->compare(*fileImgVer) > 0) {
+                if (devImgVer->compareFw(*fileImgVer) < 0) {
                     nUpdateReasons++;
+                } else if (devImgVer->compareFw(*fileImgVer) > 0) {
+                    nKeepReasons++;
                 }
             }
         }
@@ -1220,7 +1220,9 @@ void getUniqueMFAList(vector<MlnxDev*> &devs, map<string, PsidQueryItem> &psidUp
         if (!psidUpdateInfo[devs[i]->getPsid()].found) {
             continue;
         }
-        if (force_update || (devs[i]->compareFWVer(psidUpdateInfo[devs[i]->getPsid()].imgVers[0].getVerArray()) > 0)) {
+        if (force_update
+                || (devs[i]->compareFWVer(
+                        psidUpdateInfo[devs[i]->getPsid()].imgVers[0]) < 0)) {
             if (mfa2download.count(psidUpdateInfo[devs[i]->getPsid()].url) == 0) {
                 mfa_list.push_back(psidUpdateInfo[devs[i]->getPsid()].url);
                 mfa_base_name_list.push_back(psidUpdateInfo[devs[i]->getPsid()].name);
@@ -2006,10 +2008,9 @@ int handleOnlinePsidsQueryXml(ServerRequest *srq, CmdLineParams &cmd_params, con
         return res;
     }
 
-    PsidQueryItem ri;
     string output = "<Psids>\n";
     for (unsigned int i = 0; i < psidUpdateInfo.size(); i++) {
-        ri = psidUpdateInfo[i];
+        PsidQueryItem ri = psidUpdateInfo[i];
         string status;
         string ver = "N/A";
         string mfa = "N/A";
@@ -2072,9 +2073,8 @@ int handleOnlinePsidsQuery(ServerRequest *srq, CmdLineParams &cmd_params, config
         return res;
     }
 
-    PsidQueryItem ri;
     for (unsigned int i = 0; i < psidUpdateInfo.size(); i++) {
-        ri = psidUpdateInfo[i];
+        PsidQueryItem ri = psidUpdateInfo[i];
         string status;
         string ver = "N/A";
         string mfa = "N/A";

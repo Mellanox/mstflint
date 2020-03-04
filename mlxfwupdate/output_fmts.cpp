@@ -190,7 +190,7 @@ int OutputFmts::createBurnXML(vector<MlnxDev*> &devs, map<string, PsidQueryItem>
                 } else {
                     ImgVersion *fwImgVer = (ImgVersion*)psidUpdateInfo[devs[i]->getPsid()].findImageVersion("FW");
                     if (fwImgVer != NULL) {
-                        if ((devs[i]->compareFWVer(fwImgVer->getVerArray()) <= 0) && !_force_mode) {
+                        if ((devs[i]->compareFWVer(*fwImgVer) <= 0) && !_force_mode) {
                             burn_res = MLX_FWM_SUCCESS;
                             msg = "Update success. No update required.";
                         }
