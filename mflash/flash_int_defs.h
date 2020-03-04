@@ -45,6 +45,7 @@
 #define CYPRESS_3V_NAME  "S25FLxxx"
 #define ISSI_3V_NAME     "IS25LPxxx"
 #define MICRON_3V_NAME   "MT25QLxxx"
+#define MACRONIX_1V8_NAME "MX25Uxxx"
 
 typedef enum flash_vendor {
     FV_ST = 0x20,

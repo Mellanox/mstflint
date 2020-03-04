@@ -80,6 +80,7 @@ public:
     bool CalcHMAC(const vector<u_int8_t>& key, const vector<u_int8_t>& data, vector<u_int8_t>& digest);
     bool CheckIfAlignmentIsNeeded(FwOperations *imgops);
     virtual bool PrepItocSectionsForCompare(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
+    virtual bool RestoreDevToc(vector<u_int8_t>& img, char* psid, dm_dev_id_t devid_t, const cx4fw_uid_entry& base_guid, const cx4fw_uid_entry& base_mac);
 
 protected:
     struct fs4_toc_info {
@@ -154,7 +155,8 @@ public:
     bool Fs4UpdateItocInfo(struct fs4_toc_info *curr_toc, u_int32_t NewSectSize,
                            std::vector<u_int8_t>&  newSectionData);
     bool FwReadData(void *image, u_int32_t *imageSize, bool verbose = false);
-
+    bool CreateDtoc(vector<u_int8_t>& img, u_int8_t* SectionData, u_int32_t section_size, u_int32_t flash_data_addr,
+        fs3_section_t section, u_int32_t tocEntryAddr, bool IsCRC);
     bool Fs4RemoveSectionAux(fs3_section_t sectionType);
     bool CreateImageData(vector<u_int8_t>& newImageData);
     bool Fs4RemoveSection(fs3_section_t sectionType,

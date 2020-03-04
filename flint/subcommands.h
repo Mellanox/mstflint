@@ -195,7 +195,7 @@ private:
     int _unknownProgress; // used to trace the progress of unknown progress.
     FlintStatus burnFs3();
     FlintStatus burnFs2();
-    bool checkFwVersion();
+    bool checkFwVersion(bool CreateFromImgInfo = true, u_int16_t fw_ver0 = 0, u_int16_t fw_ver1 = 0, u_int16_t fw_ver2 = 0);
     bool checkPSID();
     void updateBurnParams();
     bool dealWithExpRom();
@@ -203,6 +203,8 @@ private:
     bool dealWithGuids();
     bool dealWithVSD();
     FlintStatus burnMFA2();
+    FlintStatus burnMFA2LiveFish(dm_dev_id_t devid_t);
+    bool verifyMFA2Params(bool IsLiveFish);
 public:
     BurnSubCommand();
     ~BurnSubCommand();

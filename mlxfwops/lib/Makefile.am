@@ -77,6 +77,7 @@ libmlxfwops_a_SOURCES = flint_base.cpp  bluefiled_signature_manager.cpp connectx
                mlxfwops.cpp mlxfwops.h \
                fsctrl_ops.cpp fsctrl_ops.h \
                fs_checks.h fs_checks.cpp \
+               fw_version.cpp \
                mlxfwops_com.h fw_ops.h flint_base.h flint_io.h \
                aux_tlv_ops.h aux_tlv_ops.cpp
 

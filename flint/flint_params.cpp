@@ -95,7 +95,7 @@ FlintParams::FlintParams()
     image_reactivation = false;
     num_of_args = 0;
     use_latest_fw_version = false;
-
+    use_psid = false;
 }
 
 FlintParams::~FlintParams()
