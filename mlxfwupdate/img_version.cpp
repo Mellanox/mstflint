@@ -36,141 +36,105 @@
 #include <fw_ops.h>
 
 #include "img_version.h"
+#include "fw_version_old_clp.h"
+#include "fw_version_with_sub_build.h"
 
-ImgVersion::ImgVersion()
-{
-    _verNumFields = 0;
-    _isExpansionRomUnkown = false;
-    memset(_ver, 0, sizeof(_ver));
+const string MASTER_ARGUMENTS = "Unknown number of master arguments";
+const string SUBMINOR_VALUE = "Invalid subminor value";
+const string NOT_SET = "FW version isn't set";
+const string ALREADY_SET = "Trying to set an already set FW version";
+
+ImgVersion::ImgVersion() :
+        _type(), _fwVer(NULL), _isExpansionRomUnknown(false), _isOldMinor(
+                false), _isSubBuild(false) {
 }
 
-/*
-   void ImgVersion::setExpansionRomtoUnknown()
-   {
-    _isExpansionRomUnkown = true;
-   }
-
-   bool ImgVersion::isExpansionRomUnknown()
-   {
-    return _isExpansionRomUnkown;
-   }
- */
-
-
-u_int16_t ImgVersion::getImgVerField(int index)
-{
-    return _ver[index];
+ImgVersion::ImgVersion(const ImgVersion& rhs) :
+        _type(rhs._type), _isExpansionRomUnknown(rhs._isExpansionRomUnknown), _isOldMinor(
+                rhs._isOldMinor), _isSubBuild(rhs._isSubBuild) {
+    _fwVer = rhs._fwVer->clone();
 }
 
-
-const u_int16_t* ImgVersion::getVerArray()
-{
-    return _ver;
+ImgVersion::~ImgVersion() {
+    if (_fwVer != NULL) {
+        delete _fwVer;
+        _fwVer = NULL;
+    }
 }
 
-
-u_int8_t ImgVersion::getVerNumFields()
-{
-    return _verNumFields;
-}
-
-
-string ImgVersion::getTypeStr()
-{
+string ImgVersion::getTypeStr() {
     return _type;
 }
 
-
-void ImgVersion::setVersion(const char *imgType, u_int8_t verSz, const u_int16_t *ver)
-{
-    _type = imgType;
-    for (int i = 0; i < verSz; i++) {
-        _ver[i] = ver[i];
+ImgVersion& ImgVersion::operator =(const ImgVersion& rhs) {
+    if (this != &rhs) {
+        _type = rhs._type;
+        if (_fwVer != NULL) {
+            throw SetVersionException(ALREADY_SET);
+        }
+        _fwVer = rhs._fwVer->clone();
+        _isExpansionRomUnknown = rhs._isExpansionRomUnknown;
+        _isOldMinor = rhs._isOldMinor;
+        _isSubBuild = rhs._isSubBuild;
     }
-    _verNumFields = verSz;
+    return *this;
 }
 
+void ImgVersion::setVersion(const std::string& imgType, u_int8_t verSz,
+        const u_int16_t* ver, const string& verBranch) {
+    if (_fwVer != NULL) {
+        throw SetVersionException(ALREADY_SET);
+    }
+    switch (verSz) {
+    case 3:
+        _fwVer = new FwVersion(ver[0], ver[1], ver[2], verBranch);
+        _isSubBuild = false;
+        break;
+    case 4:
+        if (ver[2] * 100 + ver[3] > 9999) {
+            throw SetVersionException(SUBMINOR_VALUE);
+        }
+        _fwVer = new FwVersionWithSubBuild(ver[0], ver[1],
+                ver[2] * 100 + ver[3], verBranch);
+        _isSubBuild = true;
+        break;
+    case 1:
+        if (imgType != "CLP") {
+            throw SetVersionException(MASTER_ARGUMENTS);
+        }
+        _fwVer = new FwVersionOldClp(0, ver[0], 0, verBranch);
+        _isSubBuild = false;
+        break;
+    default:
+        throw SetVersionException(MASTER_ARGUMENTS);
+    }
+    _type = imgType;
+    _isOldMinor = (ver[1] <= 99);
+}
 
-string ImgVersion::getPrintableVersion(int ffv, bool show_type)
-{
-    string st;
-    char buf[64];
+string ImgVersion::getPrintableVersion(int ffv, bool show_type) {
+    if (_fwVer == NULL) {
+        throw SetVersionException(NOT_SET);
+    }
+    string prefix = show_type ? (_type + " ") : "", format;
     if (_type.size()) {
         if (!_type.compare("FW") || !_type.compare("Running FW")) {
             if (!ffv) {
-                sprintf(buf, (_ver[1] > 99 ? "%s%d.%04d.%04d" : "%s%d.%d.%04d"), (show_type ? (_type + " ").c_str() : ""), _ver[0], _ver[1], _ver[2]);
+                format = _isOldMinor ? "%d.%d.%04d" : "%d.%04d.%04d";
             } else {
-                sprintf(buf, "%s%02d.%02d.%02d.%02d", (show_type ? (_type + " ").c_str() : ""), _ver[0], _ver[1], _ver[2], _ver[3]);
+                format = "%02d.%02d.%02d.%02d";
             }
-            st = buf;
         } else {
-            if (show_type) {
-                st = _type;
-                st += " ";
-            }
-            for (int i = 0; i < _verNumFields; i++) {
-                if (i > 0) {
-                    st += '.';
-                }
-                if (i == (_verNumFields - 1) && (i != 0)) {
-                    sprintf(buf, "%04d", _ver[i]);
-                } else {
-                    sprintf(buf, "%d", _ver[i]);
-                }
-                st += buf;
-            }
+            format = _isSubBuild ? "%d.%d.%d.%04d" : "%d.%d.%04d";
         }
     }
 
-    return st;
+    return prefix + _fwVer->get_fw_version(format);
 }
 
-
-int ImgVersion::compare(const ImgVersion &imv) const
-{
-    int j;
-    int versionFields = _verNumFields;
-
-    if (_type.size() && !_type.compare("FW")) {
-        return compareFw(imv);
+int ImgVersion::compareFw(const ImgVersion &imv) const {
+    if (_fwVer == NULL) {
+        throw SetVersionException(NOT_SET);
     }
-
-    for (j = 0; j < versionFields; j++) {
-        if (_ver[j] != imv._ver[j]) {
-            break;
-        }
-    }
-
-    if (j < versionFields) {
-        return (imv._ver[j] - _ver[j]);
-    }
-
-    return 0;
-}
-
-
-int ImgVersion::compareFw(const ImgVersion &imv) const
-{
-    int res;
-    int versionFields = _verNumFields;
-    u_int16_t thisFwVer[3] = {0};
-    u_int16_t fwVer[3] = {0};
-    memcpy(thisFwVer, _ver, sizeof(thisFwVer[0]) * 2);
-    thisFwVer[2] = versionFields == 3 ? _ver[2] : _ver[2] * 100 + _ver[3];
-    memcpy(fwVer, imv._ver, sizeof(fwVer[0]) * 2);
-    fwVer[2] = versionFields == 3 ? imv._ver[2] : imv._ver[2] * 100 + imv._ver[3];
-    res = FwOperations::FwVerLessThan(thisFwVer, fwVer);
-    switch (res) {
-    case FVI_SMALLER:
-        return 1;
-
-    case FVI_GREATER:
-        return -1;
-
-    case FVI_EQUAL:
-        return 0;
-
-    default:
-        return -2;
-    }
+    return _fwVer->compare(*imv._fwVer);
 }

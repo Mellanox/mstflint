@@ -365,7 +365,7 @@ int ServerRequest::updateMFAsRequest(vector<string> &psid_list,
 
 string ServerRequest::genertDownloadUrl(string file_url)
 {
-    return _Url + file_url;
+    return _Url + "/" + file_url;
 }
 
 

@@ -61,7 +61,7 @@ public:
     bool   clearSemaphore();
     int    isBurnSuccess();
     int    isQuerySuccess();
-    int    compareFWVer(const u_int16_t *ver);
+    int    compareFWVer(const ImgVersion& ver);
     string getLastErrMsg();
     string getLog();
     string getDevDisplayName(bool pci_if_possible = false);
@@ -72,7 +72,6 @@ public:
     string getPartNumber();
     string getDeviceTypeStr();
     dm_dev_id_t getDeviceType();
-    int    getFWVersion(int index);
     string getBoardTypeId();
     dev_info* getDevInfo();
     void   patchPsidInfo(string psid);
