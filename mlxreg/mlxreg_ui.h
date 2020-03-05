@@ -86,7 +86,6 @@ private:
     string _indexesStr;
     u_int32_t _dataLen;
     bool _ignoreCapCheck;
-    bool _ignoreRegCheck;
     MlxRegOper _op;
     bool _force;
     MlxRegLib *_mlxRegLib;

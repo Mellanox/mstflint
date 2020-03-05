@@ -741,6 +741,7 @@ const char* GenericCommander::loadConfigurationGetStr()
         deviceId == DeviceConnectX4LX ||
         deviceId == DeviceConnectX5   ||
         deviceId == DeviceBlueField ||
+        deviceId == DeviceBlueField2 ||
         deviceId == DeviceConnectX6 ||
         deviceId == DeviceConnectX6DX) {
         // send warm boot (bit 6)
@@ -1294,7 +1295,7 @@ void GenericCommander::checkConfTlvs(const vector<TLVConf*>& tlvs, FwComponent::
     }
 
     if (!dbgCompFound && !csCompFound && !idMlnxCompFound) {
-        throw MlxcfgException("No debug tokens or CS tokens or MLNX ID Components were found");
+        throw MlxcfgException("Unsupported device: No debug tokens or CS tokens or MLNX ID Components were found for this device");
     }
 
     if ((dbgCompFound && csCompFound) ||
