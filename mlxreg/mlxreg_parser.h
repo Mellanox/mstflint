@@ -52,8 +52,8 @@ typedef enum {
 class RegAccessParser
 {
 public:
-    RegAccessParser(string data, string indexes, AdbInstance *regNode, std::vector<u_int32_t> buffer, bool ignore_ro = false);
-    RegAccessParser(string data, string indexes, AdbInstance *regNode, u_int32_t len, bool ignore_ro = false);
+    RegAccessParser(string data, string indexes, AdbInstance *regNode, std::vector<u_int32_t> buffer);
+    RegAccessParser(string data, string indexes, AdbInstance *regNode, u_int32_t len);
     std::vector<u_int32_t> genBuff();
     u_int32_t getDataLen() {return _len;};
     static void strToUint32(char *str, u_int32_t &uint);
@@ -64,9 +64,7 @@ protected:
     u_int32_t _len;
     AdbInstance *_regNode;
     parseMode _parseMode;
-    string output_file;
     std::vector<u_int32_t>    _buffer;
-    bool _ignore_ro;
     std::vector<u_int32_t> genBuffUnknown();
     std::vector<u_int32_t> genBuffKnown();
     void parseIndexes();

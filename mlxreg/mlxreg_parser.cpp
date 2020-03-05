@@ -42,13 +42,11 @@ using namespace mlxreg;
 /************************************
 * Function: RegParser
 ************************************/
-RegAccessParser::RegAccessParser(string data, string indexes, AdbInstance *regNode, std::vector<u_int32_t> buffer, bool ignore_ro)
+RegAccessParser::RegAccessParser(string data, string indexes, AdbInstance *regNode, std::vector<u_int32_t> buffer)
 {
     _data      = data;
     _indexes   = indexes;
     _regNode   = regNode;
-    _ignore_ro = ignore_ro;
-    output_file = "";
     if (!regNode) {
         _parseMode = Pm_Unknown;
     } else {
@@ -68,13 +66,11 @@ RegAccessParser::RegAccessParser(string data, string indexes, AdbInstance *regNo
 /************************************
 * Function: RegParser
 ************************************/
-RegAccessParser::RegAccessParser(string data, string indexes, AdbInstance *regNode, u_int32_t len, bool ignore_ro)
+RegAccessParser::RegAccessParser(string data, string indexes, AdbInstance *regNode, u_int32_t len)
 {
     _data      = data;
     _indexes   = indexes;
     _regNode   = regNode;
-    _ignore_ro = ignore_ro;
-    output_file = "";
     _len       = len;
     // Set parsing method
     if (!regNode) {
@@ -351,20 +347,12 @@ bool RegAccessParser::checkAccess(const AdbInstance *field, const string accessS
     return getAccess(field) == accessStr;
 }
 
-/************************************
-* Function: isRO
-************************************/
+
 bool RegAccessParser::isRO(AdbInstance *field)
 {
-    if (_ignore_ro) {
-        return false;
-    }
     return checkAccess(field, "RO");
 }
 
-/************************************
-* Function: isIndex
-************************************/
 bool RegAccessParser::isIndex(AdbInstance *field)
 {
     return checkAccess(field, "INDEX");

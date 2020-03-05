@@ -46,52 +46,12 @@
 
 using namespace mlxreg;
 
-/**********************************************************
- *             Supported Register Access                  *
- *********************************************************/
-const u_int64_t MlxRegLib::_gSupportedRegisters[] = {
-    0x402c,         //ROCE_ACCL
-    0x5008,         //PPCNT
-    0x5006,         //PAOS
-    0x5004,         //PTYS
-    0x5026,         //SLRP
-    0x5027,         //SLTP
-    0x5028,         //SLRG
-    0x5029,         //PTAS
-    0x5018,         //PPLR
-    0x5023,         //PPLM
-    0x503c,         //PMDR
-    0x9050,         //MPEIN
-    0x9051,         //MPCNT
-    0x5036,         //PPTT
-    0x5037,         //PPRT
-    0x5040,         //PPAOS
-    0x5031,         //PDDR
-    0x5002,         //PMLP
-    0x500A,         //PLIB
-    0x9014,         //MCIA
-    0x902b,         //MLCR
-    0xb001,         //SBPR
-    0xb002,         //SBCM
-    0xb003,         //SBPM
-    0xb005,         //SBSR
-    0xb019,         //SBDCR
-    0x2802,         //CWTP
-    0x2803,         //CWTPM
-    0xc001,         //NCFG
-    0x0             //Termination - DO NOT DELETE!
-};
-
 const int MlxRegLib::RETRIES_COUNT = 3;
 const int MlxRegLib::SLEEP_INTERVAL = 100;
 
-/************************************
-* Function: MlxRegLib
-************************************/
-MlxRegLib::MlxRegLib(mfile *mf, string extAdbFile, bool onlyKnown, bool isExternal)
+MlxRegLib::MlxRegLib(mfile *mf, string extAdbFile, bool isExternal)
 {
     _mf = mf;
-    _onlyKnownRegs = onlyKnown;
     _isExternal = isExternal;
     try {
         if (_isExternal && extAdbFile == "") {
@@ -125,7 +85,6 @@ MlxRegLib::MlxRegLib(mfile *mf, string extAdbFile, bool onlyKnown, bool isExtern
     try
     {
         _regAccessMap = _regAccessUnionNode->unionSelector->getEnumMap();
-        _supportedRegAccessMap = genSuppRegsList(_regAccessMap);
     }
     catch (AdbException& exp)
     {
@@ -190,7 +149,7 @@ void MlxRegLib::initAdb(string extAdbFile)
 ************************************/
 AdbInstance* MlxRegLib::findAdbNode(string name)
 {
-    if (_supportedRegAccessMap.find(name) == _supportedRegAccessMap.end()) {
+    if (_regAccessMap.find(name) == _regAccessMap.end()) {
         throw MlxRegException("Can't find access register name: %s", name.c_str());
     }
     return _regAccessUnionNode->getUnionSelectedNodeName(name);
@@ -210,17 +169,6 @@ MlxRegLibStatus MlxRegLib::showRegister(string regName, std::vector<AdbInstance*
 * Function: showRegisters
 ************************************/
 MlxRegLibStatus MlxRegLib::showRegisters(std::vector<string> &regs)
-{
-    for (std::map<string, u_int64_t>::iterator it = _supportedRegAccessMap.begin(); it != _supportedRegAccessMap.end(); ++it) {
-        regs.push_back(it->first);
-    }
-    return MRLS_SUCCESS;
-}
-
-/************************************
-* Function: showRegisters
-************************************/
-MlxRegLibStatus MlxRegLib::showAllRegisters(std::vector<string> &regs)
 {
     for (std::map<string, u_int64_t>::iterator it = _regAccessMap.begin(); it != _regAccessMap.end(); ++it) {
         regs.push_back(it->first);
@@ -265,7 +213,7 @@ int MlxRegLib::sendMaccessReg(u_int16_t regId, int method, std::vector<u_int32_t
 ************************************/
 MlxRegLibStatus MlxRegLib::sendRegister(string regName, int method, std::vector<u_int32_t> &data)
 {
-    u_int16_t regId = (u_int16_t)_supportedRegAccessMap.find(regName)->second;
+    u_int16_t regId = (u_int16_t)_regAccessMap.find(regName)->second;
     int rc;
     rc = sendMaccessReg(regId, method, data);
     if (rc) {
@@ -304,24 +252,6 @@ string MlxRegLib::getLastErrMsg()
 }
 
 /************************************
-* Function: genSuppRegsList
-************************************/
-std::map<string, u_int64_t> MlxRegLib::genSuppRegsList(std::map<string, u_int64_t> availableRegs)
-{
-    std::map<string, u_int64_t> supportedReg;
-    for (std::map<string, u_int64_t>::iterator it = availableRegs.begin(); it != availableRegs.end(); it++) {
-        if (_onlyKnownRegs) {
-            if (isRegAccessSupported(it->second) && isRegSizeSupported(it->first)) {
-                supportedReg.insert(*it);
-            }
-        } else {
-            supportedReg.insert(*it);
-        }
-    }
-    return supportedReg;
-}
-
-/************************************
 * Function: isRegSizeSupported
 ************************************/
 bool MlxRegLib::isRegSizeSupported(string regName)
@@ -329,21 +259,6 @@ bool MlxRegLib::isRegSizeSupported(string regName)
     AdbInstance *adbNode = _regAccessUnionNode->getUnionSelectedNodeName(regName);
     return (((adbNode->size >> 3) <= (u_int32_t)mget_max_reg_size(_mf, MACCESS_REG_METHOD_SET)) ||
             ((adbNode->size >> 3) <= (u_int32_t)mget_max_reg_size(_mf, MACCESS_REG_METHOD_GET)));
-}
-
-/************************************
-* Function: isRegAccessSupported
-************************************/
-bool MlxRegLib::isRegAccessSupported(u_int64_t regID)
-{
-    u_int64_t *suppRegId = (u_int64_t*)_gSupportedRegisters;
-    while (*suppRegId) {
-        if (*suppRegId == regID) {
-            return true;
-        }
-        suppRegId++;
-    }
-    return false;
 }
 
 /************************************

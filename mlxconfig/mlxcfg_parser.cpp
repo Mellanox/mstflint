@@ -110,9 +110,9 @@ void MlxCfg::printHelp()
     printf(IDENT2 "%-24s : %s\n", "g[en_xml_template]", "Generate XML template. TLVs input file name and XML output file name must be specified. (*)");
     printf(IDENT2 "%-24s : %s\n", "xml2raw", "Generate Raw file from XML file. XML input file name and raw output file name must be specified. (*)");
     printf(IDENT2 "%-24s : %s\n", "raw2xml", "Generate XML file from Raw file. raw input file name and XML output file name must be specified. (*)");
-    printf(IDENT2 "%-24s : %s\n", "xml2bin", "Generate Bin file from XML file. XML input file name and bin output file name must be specified. (*)");
-    printf(IDENT2 "%-24s : %s\n", "create_conf", "Generate Configuration file from XML file. XML input file name and bin output file name must be specified. (*)");
-    printf(IDENT2 "%-24s : %s\n", "apply", "Apply a Configuration file. bin input file name must be specified. (*)");
+    printf(IDENT2 "%-24s : %s\n", "xml2bin", "Generate binary configuration dump file from XML file. XML input file name and bin output file name must be specified. (*)");
+    printf(IDENT2 "%-24s : %s\n", "create_conf", "Generate configuration file from XML file. XML input file name and bin output file name must be specified. (*)");
+    printf(IDENT2 "%-24s : %s\n", "apply", "Apply a configuration file, that was created with create_conf command. bin input file name must be specified. (*)");
 
     // print supported commands
     printf("\n");

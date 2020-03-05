@@ -99,6 +99,7 @@ Commander* Commander::create(mfile *mf, std::string device, std::string dbName)
     case DeviceConnectX4LX:
     case DeviceConnectX5:
     case DeviceBlueField:
+    case DeviceBlueField2:
     case DeviceConnectX6:
     case DeviceConnectX6DX:
         isFifthGen = true;
@@ -109,6 +110,7 @@ Commander* Commander::create(mfile *mf, std::string device, std::string dbName)
     case DeviceSwitchIB2:
     case DeviceQuantum:
     case DeviceSpectrum2:
+    case DeviceSpectrum3:
         _isSwitch = true;
         isFifthGen = true;
         break;
