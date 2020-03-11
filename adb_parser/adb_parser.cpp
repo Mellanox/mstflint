@@ -2478,7 +2478,7 @@ void AdbParser::includeFile(AdbParser *adbParser, string fileName,
 
     // Update filename to be only base name with extension to prevent duplications
     boost::filesystem::path boostPath(filePath);
-    fileName = boostPath.filename().string();
+    fileName = string(boostPath.filename().c_str());
 
     if (!adbParser->_adbCtxt->includedFiles.count(fileName)) {
         IncludeFileInfo info = { filePath, adbParser->_fileName, lineNumber };
