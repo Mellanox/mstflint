@@ -41,8 +41,13 @@
 #include "psid_query_item.h"
 #include "mlxfwmanager_common.h"
 #ifdef USE_CURL
+#ifndef JSON_LIBS
+#include <jsoncpp/json/reader.h>
+#include <jsoncpp/json/writer.h>
+#else
 #include <json/reader.h>
 #include <json/writer.h>
+#endif
 #include <curl/curl.h>
 #include <string.h>
 #endif

@@ -41,7 +41,11 @@
 #include <iomanip>
 #include <stdlib.h>
 #include <common/compatibility.h>
+#ifndef JSON_LIBS
+#include <jsoncpp/json/json.h>
+#else
 #include <json/json.h>
+#endif
 
 #define PDDR_LINE_LEN               34
 

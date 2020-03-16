@@ -37,7 +37,11 @@
 
 #include <vector>
 #include "mlxlink_record.h"
+#ifndef JSON_LIBS
+#include <jsoncpp/json/json.h>
+#else
 #include <json/json.h>
+#endif
 
 class MlxlinkCmdPrint{
 
