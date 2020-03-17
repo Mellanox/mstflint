@@ -86,7 +86,9 @@ void MlxlinkCmdPrint::toJsonFormat(Json::Value& jsonRoot)
             }
         }
     }
-    jsonRoot[JSON_RESULT_SECTION][JSON_OUTPUT_SECTION][title] = outputGroup;
+    if (!outputGroup.isNull()) {
+        jsonRoot[JSON_RESULT_SECTION][JSON_OUTPUT_SECTION][title] = outputGroup;
+    }
 }
 
 std::ostream & operator << (std::ostream &out, const MlxlinkCmdPrint &cmdPrint)
