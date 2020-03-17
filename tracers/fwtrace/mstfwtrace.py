@@ -198,6 +198,15 @@ DEV_INFO_DB = [
         "mask_addr": None,
         # list of (trace type name, start_bit)
         "mask_classes": [("class1", 0), ("class2", 1)],
+    },
+    {
+        "name": "Spectrum3",
+        "dev_id": [0x250],
+        "chip_rev":-1,
+        "maskable": True,
+        "mask_addr": None,
+        # list of (trace type name, start_bit)
+        "mask_classes": [("class1", 0), ("class2", 1)],
     }
 ]
 MST_DEVICE = None

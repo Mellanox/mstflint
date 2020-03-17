@@ -1637,7 +1637,7 @@ void FwOperations::SetDevFlags(chip_type_t chipType, u_int32_t devType, fw_img_t
         ibDev  = (fwType == FIT_FS3 && chipType != CT_SPECTRUM) || (chipType == CT_CONNECTX && !CntxEthOnly(devType));
         ethDev = (chipType == CT_CONNECTX) || (chipType == CT_SPECTRUM) || (chipType == CT_CONNECTX4) || \
                  (chipType == CT_CONNECTX4_LX) || (chipType == CT_CONNECTX5) || (chipType == CT_BLUEFIELD) || \
-                 (chipType == CT_SPECTRUM2) || (chipType == CT_CONNECTX6)  || (chipType == CT_CONNECTX6DX) || (chipType == CT_BLUEFIELD2);
+                 (chipType == CT_SPECTRUM2) || (chipType == CT_SPECTRUM3)|| (chipType == CT_CONNECTX6)  || (chipType == CT_CONNECTX6DX) || (chipType == CT_BLUEFIELD2);
     }
 
     if ((!ibDev && !ethDev) || chipType == CT_UNKNOWN) {
