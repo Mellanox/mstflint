@@ -233,6 +233,7 @@ enum {
 #define SW_IB2_HW_ID    587
 #define QUANTUM_HW_ID   589
 #define SPECTRUM2_HW_ID 590
+#define SPECTRUM3_HW_ID 592
 
 /***** GLOBALS *****/
 static int increase_poll_time = 0;
@@ -661,6 +662,7 @@ static int icmd_init_cr(mfile *mf)
 
     case (QUANTUM_HW_ID):
     case (SPECTRUM2_HW_ID):
+    case (SPECTRUM3_HW_ID):
         cmd_ptr_addr = CMD_PTR_ADDR_QUANTUM;
         hcr_address = HCR_ADDR_QUANTUM;
         mf->icmd.semaphore_addr = SEMAPHORE_ADDR_QUANTUM;
@@ -744,6 +746,7 @@ static int icmd_init_vcr_crspace_addr(mfile* mf)
 
     case (QUANTUM_HW_ID):
     case (SPECTRUM2_HW_ID):
+    case (SPECTRUM3_HW_ID):
         mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_QUANTUM;
         mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_SW_IB;
         break;

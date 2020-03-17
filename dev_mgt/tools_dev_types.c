@@ -686,3 +686,7 @@ int dm_is_new_gen_switch(dm_dev_id_t type)
     return (dm_dev_is_switch(type) && !dm_is_switchx(type));
 }
 
+int dm_dev_is_raven_family_switch(dm_dev_id_t type)
+{
+    return (dm_dev_is_switch(type) && (type == DeviceQuantum || type == DeviceSpectrum2 || type == DeviceSpectrum3));
+}
