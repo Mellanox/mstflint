@@ -110,6 +110,8 @@ typedef struct {
     char description[DESCRIPTION_LEN];
     char deviceVsd[VSD_LEN + 1];
     char imageVsd[VSD_LEN + 1];
+    bool sec_boot;
+    life_cycle_t life_cycle;
 } fwInfoT;
 
 typedef struct {

@@ -92,7 +92,7 @@ public:
     virtual bool AddSignature(mfile* mf, Fs3Operations*, Flash*, u_int32_t);
     virtual bool GetSecureBootInfo()
     {
-        return false;
+        return true;
     }
 };
 

@@ -44,6 +44,7 @@
 #include <string>
 
 #include <common/compatibility.h>
+#include <fw_comps_mgr/fw_comps_mgr.h>
 #include <mlxfwops/lib/fw_version.h>
 
 #ifndef NO_ZLIB
@@ -85,6 +86,12 @@ void close_log()
     }
     return;
 }
+static const char* life_cycle_strings[NUM_OF_LIFE_CYCLES] = {
+    "PRODUCTION",
+    "GA SECURED",
+    "GA NON SECURED",
+    "RMA"
+};
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof(arr[0]))
 
@@ -2816,7 +2823,7 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
     bool isFs3    = (fwInfo.fw_type == FIT_FS3) ? true : false;
     bool isFs4    = (fwInfo.fw_type == FIT_FS4) ? true : false;
     bool isFsCtrl = (fwInfo.fw_type == FIT_FSCTRL) ? true : false;
-
+    FwOperations *ops = (_flintParams.device_specified) ? _fwOps : _imgOps;
     FwVersion image_version = FwOperations::createFwVersion(&fwInfo.fw_info);
     FwVersion running_version = FwOperations::createRunningFwVersion(&fwInfo.fw_info);
 
@@ -2974,6 +2981,19 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
             updateMethod = "fw_ctrl";
         }
         printf("Default Update Method: %s\n", updateMethod.c_str());
+    }
+    if (fullQuery) {
+        bool IsSupported = ops->GetSecureBootInfo();
+        if (IsSupported) {
+            unsigned int index = (unsigned int)fwInfo.fs3_info.life_cycle;
+            if (index >= NUM_OF_LIFE_CYCLES) {
+                reportErr(true, "The life cycle value is out of range: %u", index);
+            }
+            else {
+                printf("Life cycle:            %s\n", life_cycle_strings[index]);
+            }
+            printf("Secure boot:           %s\n", fwInfo.fs3_info.sec_boot == 1 ? "Enabled" : "Disabled");
+        }
     }
     if (isFs2 && fwInfo.fs2_info.blank_guids) {
         //blankGuids only exsists in FS2 image type in mlxfwops why?
