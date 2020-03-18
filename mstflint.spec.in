@@ -16,7 +16,6 @@
 
 %define _unpackaged_files_terminate_build 0
 %define debug_package %{nil}
-%define optflags -g -O2
 
 Summary: Mellanox firmware burning application
 Name: %{name}
