@@ -439,7 +439,7 @@ static int get_space_support_status(struct mst_dev_data *dev)
 
 	if (_set_addr_space(dev, AS_CR_SPACE) || _set_addr_space(dev, AS_ICMD)
 			|| _set_addr_space(dev, AS_SEMAPHORE)) {
-		mst_err("At least one SPACE is not supported\n");
+		mst_info("At least one SPACE is not supported\n");
 		dev->spaces_support_status = SS_NOT_ALL_SPACES_SUPPORTED;
 	} else {
 		dev->spaces_support_status = SS_ALL_SPACES_SUPPORTED;
