@@ -2817,6 +2817,64 @@ string QuerySubCommand::printSecurityAttrInfo(u_int32_t m)
     return attr;
 }
 
+FlintStatus QuerySubCommand::printImageInfo(const fw_info_t& fwInfo)
+{
+    bool isFs4 = (fwInfo.fw_type == FIT_FS4) ? true : false;
+    FwVersion image_version = FwOperations::createFwVersion(&fwInfo.fw_info);
+    printf("Image type:            %s\n", fwImgTypeToStr(fwInfo.fw_type));
+    if (fwInfo.fw_info.isfu_major) {
+        printf("FW ISSU Version:       %d\n", fwInfo.fw_info.isfu_major);
+    }
+    if (image_version.is_set()) {
+        printf("FW Version:            %s\n",
+            image_version.get_fw_version(
+                VERSION_FORMAT(fwInfo.fw_info.fw_ver[1])).c_str());
+    }
+    if (fwInfo.fw_info.fw_rel_date[0] || fwInfo.fw_info.fw_rel_date[1] || fwInfo.fw_info.fw_rel_date[2]) {
+        printf("FW Release Date:       %x.%x.%x\n", fwInfo.fw_info.fw_rel_date[0], fwInfo.fw_info.fw_rel_date[1], \
+            fwInfo.fw_info.fw_rel_date[2]);
+    }
+    if (fwInfo.fw_info.min_fit_ver[0] || fwInfo.fw_info.min_fit_ver[1] \
+        || fwInfo.fw_info.min_fit_ver[2] || fwInfo.fw_info.min_fit_ver[3]) {
+        printf("Min FIT Version:       %d.%d.%d.%d\n", fwInfo.fw_info.min_fit_ver[0], \
+            fwInfo.fw_info.min_fit_ver[1], fwInfo.fw_info.min_fit_ver[2], fwInfo.fw_info.min_fit_ver[3]);
+    }
+    if ((fwInfo.fw_info.mic_ver[0] || fwInfo.fw_info.mic_ver[1] || fwInfo.fw_info.mic_ver[2])) {
+        printf("MIC Version:           %d.%d.%d\n", fwInfo.fw_info.mic_ver[0], \
+            fwInfo.fw_info.mic_ver[1], fwInfo.fw_info.mic_ver[2]);
+    }
+    if (strlen(fwInfo.fw_info.product_ver)) {
+        printf("Product Version:       %s\n", fwInfo.fw_info.product_ver);
+    }
+    if (fwInfo.fw_info.roms_info.exp_rom_found) {
+        displayExpRomInfo(fwInfo.fw_info.roms_info, "Rom Info:              ");
+    }
+    char* imageVSD = (char*)fwInfo.fs3_info.image_vsd;
+    char* deviceVSD = NULL;
+    if (isFs4) {
+        deviceVSD = (char*)fwInfo.fs3_info.deviceVsd;
+    }
+    else {
+        deviceVSD = (char*)fwInfo.fw_info.vsd;
+    }
+    if (strlen(imageVSD) == 0) {
+        if (deviceVSD == NULL || strlen(deviceVSD) == 0) {
+            imageVSD = (char*)NA_STR;
+        }
+        else {
+            imageVSD = deviceVSD;
+        }
+    }
+    printf("Image VSD:             %s\n", imageVSD);
+    printf("PSID:                  %s\n", fwInfo.fw_info.psid);
+    printf("Security Attributes:   %s\n", printSecurityAttrInfo(fwInfo.fs3_info.security_mode).c_str());
+    string updateMethod = "Legacy";
+    if (fwInfo.fs3_info.security_mode & SMM_MCC_EN) {
+        updateMethod = "fw_ctrl";
+    }
+    printf("Default Update Method: %s\n", updateMethod.c_str());
+    return FLINT_SUCCESS;
+}
 FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
 {
     bool isFs2    = (fwInfo.fw_type == FIT_FS2) ? true : false;
@@ -3024,8 +3082,74 @@ QuerySubCommand:: ~QuerySubCommand()
 
 }
 
+FlintStatus QuerySubCommand::queryMFA2()
+{
+#ifndef NO_MSTARCHIVE
+    if (_flintParams.use_psid == false) {
+        reportErr(true, "Must supply \"--psid\" flag while querying MFA2 archive\n");
+        return FLINT_FAILED;
+    }
+    char* psid = (char*)_flintParams.psid.c_str();
+    map_string_to_component matchingComponentsMap = _mfa2Pkg->getMatchingComponents(psid, -1);
+    u_int32_t matchingSize = matchingComponentsMap.size();
+    if (matchingSize == 0) {
+        reportErr(true, "No matching binaries found for MFA2 %s\n", _flintParams.image.c_str());
+        return FLINT_FAILED;
+    }
+    else {
+        int i = 1;
+        u_int8_t fs4_image_signature[] = { 0x4D, 0x54, 0x46, 0x57, 0xAB, 0xCD, 0xEF, 0x00, 0xFA, 0xDE, 0x12, 0x34, 0x56, 0x78, 0xDE, 0xAD };
+        u_int8_t fs3_image_signature[] = { 0x4D, 0x54, 0x46, 0x57, 0x8C, 0xDF, 0xD0, 0x00, 0xDE, 0xAD, 0x92, 0x70, 0x41, 0x54, 0xBE, 0xEF };
+        map_string_to_component::iterator it = matchingComponentsMap.begin();
+        printf("\n*******************************\n");
+        for (u_int32_t index = 0; index < matchingSize && it != matchingComponentsMap.end(); index++, it++) {
+            const ComponentDescriptor & compDescr = it->second.getComponentDescriptor();
+            u_int8_t deviceMajorVer = compDescr.getVersionExtension().getMajor();
+            vector<u_int8_t> componentBuffer;
+            _mfa2Pkg->unzipComponent(matchingComponentsMap, index, componentBuffer);
+            char errBuff[ERR_BUFF_SIZE] = { 0 };
+            string fileName = "/tmp/temp.bin";  // Get temp name
+            if (deviceMajorVer >= 16) {
+                for (u_int8_t i = 0; i < sizeof(fs4_image_signature); i++) {
+                    componentBuffer[i] = fs4_image_signature[i];
+                }
+            }
+            else {
+                for (u_int8_t i = 0; i < sizeof(fs3_image_signature); i++) {
+                    componentBuffer[i] = fs3_image_signature[i];
+                }
+            }
+            writeImageToFile(fileName.c_str(), componentBuffer.data(), componentBuffer.size());
+            _flintParams.image_specified = true;
+            _flintParams.image = fileName;
+            _imgOps = FwOperations::FwOperationsCreate((void*)_flintParams.image.c_str(), NULL, NULL, FHT_FW_FILE, errBuff, ERR_BUFF_SIZE);
+            fw_info_t fwInfo;
+            if (!_imgOps->FwQuery(&fwInfo, true, false, true, true)) {
+                reportErr(true, FLINT_FAILED_QUERY_ERROR, "image", _flintParams.image.c_str(), _imgOps->err());
+                return FLINT_FAILED;
+            }
+            printf("Component %d\n", i++);
+            if (printImageInfo(fwInfo) == FLINT_FAILED) {
+                return FLINT_FAILED;
+            }
+            printf("*******************************\n");
+        }
+    }
+#endif
+    return FLINT_SUCCESS;
+}
 FlintStatus QuerySubCommand::executeCommand()
 {
+    if (_flintParams.image_specified) {
+#ifndef NO_MSTARCHIVE
+        string mfa2file = _flintParams.image;
+        _mfa2Pkg = MFA2::LoadMFA2Package(mfa2file);
+        if (_mfa2Pkg != NULL) {
+            _flintParams.mfa2_specified = true;
+            return queryMFA2();
+        }
+#endif
+    }
     if (_flintParams.low_cpu) {
         set_increase_poll_time(1);
     }

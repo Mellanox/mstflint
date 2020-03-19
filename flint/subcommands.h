@@ -233,11 +233,14 @@ public:
 class QuerySubCommand : public SubCommand
 {
 private:
+    fw_info_t _imgInfo;
+    FlintStatus printImageInfo(const fw_info_t& fwInfo);
     string printSecurityAttrInfo(u_int32_t m);
     FlintStatus printInfo(const fw_info_t& fwInfo, bool fullQuery);
     bool displayFs3Uids(const fw_info_t& fwInfo);
     bool displayFs2Uids(const fw_info_t& fwInfo);
     bool checkMac(u_int64_t mac, string& warrStr);
+    FlintStatus queryMFA2();
 public:
     QuerySubCommand();
     ~QuerySubCommand();
