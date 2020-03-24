@@ -293,8 +293,10 @@ map_string_to_component MFA2::getMatchingComponents(char* device_psid, int devic
     for (u_int16_t index = 0; index < devCount; index++) {
         DeviceDescriptor devDescriptor = getDeviceDescriptor(index);
         string psid = devDescriptor.getPSIDExtension().getString();
-        if (strcmp((char*)psid.c_str(), device_psid)) {
-            continue;
+        if (device_psid != NULL) {
+            if (strcmp((char*)psid.c_str(), device_psid)) {
+                continue;
+            }
         }
         u_int8_t compPtrCount = devDescriptor.getComponentPointerExtensionsCount();
         for (u_int8_t comp = 0; comp < compPtrCount; comp++) {
@@ -303,8 +305,10 @@ map_string_to_component MFA2::getMatchingComponents(char* device_psid, int devic
             Component compObj = getComponentObject(compIndex);
             const ComponentDescriptor & compDescr = compObj.getComponentDescriptor();
             u_int8_t majorVer = compDescr.getVersionExtension().getMajor();
-            if (deviceMajorVer != majorVer) {
-                continue;
+            if (deviceMajorVer != -1) {
+                if (deviceMajorVer != majorVer) {
+                    continue;
+                }
             }
             char dateTimeBuffer[32] = { 0 };
             compDescr.getVersionExtension().getDateAndTime(dateTimeBuffer);
