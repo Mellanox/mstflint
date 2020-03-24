@@ -88,6 +88,7 @@ Mlxarchive::Mlxarchive() :
     _outFile  = "";
     _version  = "";
     _mfa2file = "";
+    _printMiniDump = false;
 }
 
 /************************************
@@ -98,7 +99,7 @@ void Mlxarchive::initCmdParser()
     AddDescription("Allows the user to create a file with the MFA2 extension. The new file contains several "
                     "binary files of a given firmware for different adapter cards.");
     AddOptions(HELP_FLAG,         HELP_FLAG_SHORT,     "", "Show help message and exit");
-    AddOptions(VERSION_FLAG,      VERSION_FLAG_SHORT,  "version", "MFA2 version in the following format: x.x.x");
+    AddOptions(VERSION_FLAG,      VERSION_FLAG_SHORT,  "version", "MFA2 version in the following format: x.x.x, if creating MFA2 file or existing MFA2 file for print its version");
     AddOptions(OUT_FILE_FLAG,     OUT_FILE_FLAG_SHORT, "out_file", "Output file");
     AddOptions(BINS_DIR_FLAG,     BINS_DIR_FLAG_SHORT, "bins_dir", "Directory with the binaries files");
     AddOptions(MFA2_FILE_FLAG,    MFA2_FILE_FLAG_SHORT, "mfa2_file", "Mfa2 file to parse");
@@ -108,18 +109,31 @@ void Mlxarchive::initCmdParser()
 void Mlxarchive::paramValidate()
 {
     std::string err = "Missing mandatory parameter: %s\n";
+    std::string big_err = "Missing mandatory parameters: %s %s %s\n";
     std::string err_regex = "Bad format in: %s(%s), the format should be like: %s\n";
     boost::smatch match;
     bool status_match;
     bool success = true;
     if(!_mfa2file.empty()) {
         if(!(_binsDir.empty() && _outFile.empty() && _version.empty())) {
-            fprintf(stderr, "cannot use any parameter when using mfa2_file parameter!\n");
+            fprintf(stderr, "Cannot use any parameter when using mfa2_file parameter!\n");
             exit(1);
         }
         return;
     }
 
+    if (_binsDir.empty() && _outFile.empty()) {
+        if (!_version.empty()) {
+            _printMiniDump = true;
+            _mfa2file = _version;
+            _version.clear();
+        }
+        else {//all three options are empty!
+            fprintf(stderr, big_err.c_str(), "bins_dir", "out_file", "version");
+            success = false;
+        }
+    }
+    else {
     if(_binsDir.empty()) {
         fprintf(stderr, err.c_str(), "bins_dir");
         success = false;
@@ -149,6 +163,7 @@ void Mlxarchive::paramValidate()
         if(!status_match) {
             fprintf(stderr, err_regex.c_str(), "version", _version.c_str(), "x.x.x");
             success = false;
+            }
         }
     }
     if(!success) {
@@ -162,19 +177,36 @@ ParseStatus Mlxarchive::HandleOption(string name, string value)
         cout << _cmdParser.GetUsage();
         return PARSE_OK_WITH_EXIT;
     } else if (name == VERSION_FLAG) {
+        if (_version.empty() == false) {
+            cout << "Version flag cannot be specified more than once" << endl;
+            return PARSE_ERROR;
+        }
         _version = value;
         return PARSE_OK;
     } else if (name == OUT_FILE_FLAG) {
+        if (_outFile.empty() == false) {
+            cout << "Output file flag cannot be specified more than once" << endl;
+            return PARSE_ERROR;
+        }
         _outFile = value;
         return PARSE_OK;
     } else if (name == BINS_DIR_FLAG) {
+        if (_binsDir.empty() == false) {
+            cout << "Binary directory flag cannot be specified more than once" << endl;
+            return PARSE_ERROR;
+        }
         _binsDir = value;
         return PARSE_OK;
     } else if (name == MFA2_FILE_FLAG) {
+        if (_mfa2file.empty() == false) {
+            cout << "MFA2 file flag cannot be specified more than once" << endl;
+            return PARSE_ERROR;
+        }
         _mfa2file = value;
         return PARSE_OK;
     }
     else{
+        cout << "Unknown flag specified" << endl;
         return PARSE_ERROR;
     }
  return PARSE_ERROR;
@@ -186,12 +218,10 @@ int Mlxarchive::run(int argc, char **argv)
     if (rc == PARSE_OK_WITH_EXIT) {
         return 0;
     } else if (rc == PARSE_ERROR) {
-        cout << _cmdParser.GetUsage();
-        //throw MlxRegException("failed to parse arguments. %s", _cmdParser.GetErrDesc());
+        cerr << "Failed to parse arguments: " <<  _cmdParser.GetErrDesc() << endl;
         return 1;
     } else if (rc == PARSE_ERROR_SHOW_USAGE) {
-        cout << _cmdParser.GetUsage();
-        //throw MlxRegException("failed to parse arguments. %s", _cmdParser.GetErrDesc());
+        cerr << "Failed to parse arguments: " << _cmdParser.GetErrDesc() << endl;
         return 1;
     }
     paramValidate();
@@ -216,7 +246,12 @@ int Mlxarchive::run(int argc, char **argv)
             fprintf(stderr, "-E- Failed to parse mfa2 file %s\n", _mfa2file.c_str());
             exit(1);
         }
+        if (_printMiniDump) {
+            mfa2Pkg->minidump();
+        }
+        else {
         mfa2Pkg->dump();
+        }
         delete mfa2Pkg;
     }
 

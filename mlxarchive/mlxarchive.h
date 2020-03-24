@@ -56,5 +56,6 @@ private:
     std::string _date;
     std::string _version;
     std::string _mfa2file;
+        bool _printMiniDump;
 };
 }
