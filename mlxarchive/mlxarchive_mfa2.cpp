@@ -209,6 +209,9 @@ bool MFA2::unpack(Mfa2Buffer & buff) {
     return true;
 }
 
+void MFA2::minidump() {
+    printf("Package Version : %s\n", _packageDescriptor.getVersionExtension().getVersion(false).c_str());
+}
 void MFA2::dump() {
     //printf("Finger print    : %s\n", _fingerPrint.toString().c_str());
     u_int16_t devCount = _packageDescriptor.getDeviceDescriptorsCount();

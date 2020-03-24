@@ -84,6 +84,7 @@ public:
     static MFA2 * LoadMFA2Package(const string & file_name);
     void generateBinary(vector<u_int8_t>& buff);
     void dump();
+        void minidump();
         PackageDescriptor getPackageDescriptor() const {
             return _packageDescriptor;
         }
