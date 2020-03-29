@@ -239,7 +239,7 @@ def reset_fsm_register():
 def sigHndl(signal, frame):
     reset_fsm_register()
 
-    print("\nSignal %d received, Exiting..." % signal)
+    print("\nSignal %d received, exiting..." % signal)
     sys.exit(1)
 
 def set_signal_handler():

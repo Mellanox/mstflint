@@ -223,7 +223,7 @@ bool FsCtrlOperations::FwReactivateImage()
         case FWCOMPS_IMAGE_REACTIVATION_FW_NOT_SUPPORTED:
             return errmsg(MLXFW_ERR, "Image reactivation - FW doesn't support this operation");
         default:
-            return errmsg(MLXFW_IMAGE_REACTIVATION_UNKNOWN_ERROR, "Unknown error occured");
+            return errmsg(MLXFW_IMAGE_REACTIVATION_UNKNOWN_ERROR, "Unknown error occurred\n");
         }
     }
     return true;
