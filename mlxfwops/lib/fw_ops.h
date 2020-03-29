@@ -39,7 +39,8 @@
 #include "aux_tlv_ops.h"
 #include "mlxfwops_com.h"
 #include "signature_manager_factory.h"
-
+#include "fw_version.h"
+#include "tools_layouts/cx4fw_layouts.h"
 #ifdef CABLES_SUPP
 #include <cable_access/cable_access.h>
 #endif
@@ -80,6 +81,9 @@ public:
         memset(&_fwParams, 0, sizeof(_fwParams));
     };
 
+    bool IsFifthGen() {
+        return (_ioAccess != NULL && _ioAccess->is_flash() && _ioAccess->is_fifth_gen());
+    }
 
     void CreateSignatureManager() {
         if (_ioAccess != NULL && _ioAccess->is_flash() == false) {//NOT RELEVANT FOR IMAGE OBJECT
@@ -103,8 +107,7 @@ public:
         return mf;
     }
     virtual u_int8_t FwType() = 0;
-    static FwVerInfo FwVerLessThan(u_int16_t r1[3], u_int16_t r2[3]);
-    static bool IsFwSupportingRomModify(u_int16_t fw_ver[3]);
+    static bool IsFwSupportingRomModify(const FwVersion&);
     static bool CntxEthOnly(u_int32_t devid);
     static void SetDevFlags(chip_type_t chipType, u_int32_t devType, fw_img_type_t fwType, bool &ibDev, bool &ethDev);
     static bool checkMatchingExpRomDevId(const fw_info_t& info);
@@ -131,6 +134,7 @@ public:
     virtual bool IsCriticalSection(u_int8_t sect_type);
 
     virtual bool FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatternAndDevToc, bool verbose = false);
+    virtual bool RestoreDevToc(vector<u_int8_t>& img, char* psid, dm_dev_id_t devid_t, const cx4fw_uid_entry& base_guid, const cx4fw_uid_entry& base_mac);
     virtual bool FwSetPublicKeys(char *fname, PrintCallBack callBackFunc = (PrintCallBack)NULL);
     virtual bool FwSetForbiddenVersions(char *fname, PrintCallBack callBackFunc = (PrintCallBack)NULL);
     virtual bool CalcHMAC(const vector<u_int8_t>& key, const vector<u_int8_t>& data, vector<u_int8_t>& digest);
@@ -169,7 +173,10 @@ public:
 
     virtual bool CheckIfAlignmentIsNeeded(FwOperations*) { return false; }
     virtual bool AlignDeviceSections(FwOperations*/*imageOps*/) { return errmsg("Align device sections is not supported"); }
-
+    virtual bool RemoveWriteProtection() 
+    { 
+        return true; 
+    }
     void FwCleanUp();
     virtual bool FwInit() = 0;
     virtual bool FsIntQuery() { return true; }
@@ -199,11 +206,14 @@ public:
 
     virtual bool IsFsCtrlOperations();
     virtual bool PrepItocSectionsForCompare(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
-
+    virtual bool GetSecureBootInfo();
     void GetFwParams(fw_ops_params_t&);
 
     //bool GetExpRomVersionWrapper();
     void getSupporteHwId(u_int32_t **supportedHwId, u_int32_t &supportedHwIdNum);
+    static FwVersion createFwVersion(const fw_info_com_t*);
+    static FwVersion createFwVersion(u_int16_t fw_ver0, u_int16_t fw_ver1, u_int16_t fw_ver2);
+    static FwVersion createRunningFwVersion(const fw_info_com_t*);
 
     class MLXFWOP_API RomInfo : FlintErrMsg {
 public:

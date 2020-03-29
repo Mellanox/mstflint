@@ -195,7 +195,7 @@ private:
     int _unknownProgress; // used to trace the progress of unknown progress.
     FlintStatus burnFs3();
     FlintStatus burnFs2();
-    bool checkFwVersion();
+    bool checkFwVersion(bool CreateFromImgInfo = true, u_int16_t fw_ver0 = 0, u_int16_t fw_ver1 = 0, u_int16_t fw_ver2 = 0);
     bool checkPSID();
     void updateBurnParams();
     bool dealWithExpRom();
@@ -203,6 +203,8 @@ private:
     bool dealWithGuids();
     bool dealWithVSD();
     FlintStatus burnMFA2();
+    FlintStatus burnMFA2LiveFish(dm_dev_id_t devid_t);
+    bool verifyMFA2Params(bool IsLiveFish);
 public:
     BurnSubCommand();
     ~BurnSubCommand();
@@ -231,11 +233,14 @@ public:
 class QuerySubCommand : public SubCommand
 {
 private:
+    fw_info_t _imgInfo;
+    FlintStatus printImageInfo(const fw_info_t& fwInfo);
     string printSecurityAttrInfo(u_int32_t m);
     FlintStatus printInfo(const fw_info_t& fwInfo, bool fullQuery);
     bool displayFs3Uids(const fw_info_t& fwInfo);
     bool displayFs2Uids(const fw_info_t& fwInfo);
     bool checkMac(u_int64_t mac, string& warrStr);
+    FlintStatus queryMFA2();
 public:
     QuerySubCommand();
     ~QuerySubCommand();

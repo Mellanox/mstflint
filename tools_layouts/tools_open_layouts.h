@@ -499,7 +499,7 @@ struct tools_open_nv_hdr {
 	/* Description - Shadow: i.e if set the Fw will not update the tlv immediately but wait for a command */
 	/* 0x4.24 - 0x4.24 */
 	u_int8_t shadow;
-	/* Description - Pad count: for non dword alligned tlvs */
+	/* Description - Pad count: for non dword aligned tlvs */
 	/* 0x4.25 - 0x4.26 */
 	u_int8_t pad_cnt;
 	/* Description - Data version can be set by caller or left as 0. */

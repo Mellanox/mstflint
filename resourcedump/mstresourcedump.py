@@ -1,3 +1,35 @@
+#copyright (c) 2004-2020 Mellanox Technologies LTD. All rights reserved.   
+#                                                                           
+# This software is available to you under a choice of one of two            
+# licenses.  You may choose to be licensed under the terms of the GNU       
+# General Public License (GPL) Version 2, available from the file           
+# COPYING in the main directory of this source tree, or the                 
+# OpenIB.org BSD license below:                                             
+#                                                                           
+#     Redistribution and use in source and binary forms, with or            
+#     without modification, are permitted provided that the following       
+#     conditions are met:                                                   
+#                                                                           
+#      - Redistributions of source code must retain the above               
+#        copyright notice, this list of conditions and the following        
+#        disclaimer.                                                        
+#                                                                           
+#      - Redistributions in binary form must reproduce the above            
+#        copyright notice, this list of conditions and the following        
+#        disclaimer in the documentation and/or other materials             
+#        provided with the distribution.                                    
+#                                                                           
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,         
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE OF                   
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND                     
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS       
+# BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN        
+# ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN         
+# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE          
+# SOFTWARE.                                                                 
+#--                                                                         
+
+
 #######################################################
 # 
 # MlxResDump.py
@@ -95,9 +127,11 @@ class MlxResDump:
     def run(self):
         # main parser
         tool_name = os.path.basename(__file__.split('.')[0])
-        parser = argparse.ArgumentParser(epilog="Use '{0} <command> -h' to read about a specific command.".format(tool_name))
+        parser = argparse.ArgumentParser(prog=tool_name,
+                                         epilog="Use '{0} <command> -h' to read about a specific command.".format(tool_name),
+                                         formatter_class=argparse.RawTextHelpFormatter)
         parser.add_argument('-v', '--version', action='version', help='Shows tool version',
-                            version=tools_version.GetVersionString(cs.TOOL_NAME, None))
+                            version=tools_version.GetVersionString(tool_name, None))
 
         # commands sub parser
         commands = parser.add_subparsers(title='commands')
@@ -114,7 +148,7 @@ class MlxResDump:
                                         type=self._decimal_hex_to_str_hex)
 
         dump_parser.add_argument(cs.UI_DASHES + cs.UI_ARG_VHCAID.replace("_", "-"),
-                                 help=argparse.SUPPRESS)  # help='The virtual HCA (host channel adapter, NIC) ID')
+                                 help='The virtual HCA (host channel adapter, NIC) ID')
         dump_parser.add_argument(cs.UI_DASHES + cs.UI_ARG_INDEX1,
                                  help='The first context index to dump (if supported for this segment)',
                                  type=self._decimal_hex_check)
@@ -139,7 +173,7 @@ class MlxResDump:
         query_parser = commands.add_parser(cs.RESOURCE_DUMP_COMMAND_TYPE_QUERY)
         query_parser.set_defaults(parser=cs.RESOURCE_DUMP_COMMAND_TYPE_QUERY)
         query_parser.add_argument(cs.UI_DASHES + cs.UI_ARG_VHCAID.replace("_", "-"),
-                                  help=argparse.SUPPRESS)  # help='The virtual HCA (host channel adapter, NIC) ID')
+                                  help='The virtual HCA (host channel adapter, NIC) ID')
 
         # required arguments by query sub parser
         query_required_args = query_parser.add_argument_group('required arguments')

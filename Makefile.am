@@ -38,7 +38,6 @@ man_MANS = man/mstflint.1 man/mstconfig.1 man/mstmcra.1 man/mstmread.1 man/mstmw
 
 EXTRA_DIST = \
 	mstflint.spec \
-	small_utils/hca_self_test.ofed \
 	common/gitversion.h \
 	debian \
 	$(man_MANS)

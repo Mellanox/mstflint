@@ -52,7 +52,7 @@ typedef enum {
 
 class MlxRegLib : public ErrMsg {
 public:
-    MlxRegLib(mfile *mf, string extAdbFile, bool onlyKnown = true, bool isExternal = true);
+    MlxRegLib(mfile *mf, string extAdbFile, bool isExternal = true);
     ~MlxRegLib(); // Dto'r
     /* * * * * * * * * * * * * *
     * library Getters/Setters *
@@ -63,8 +63,7 @@ public:
     * library API *
     * * * * * * * */
     string getLastErrMsg();
-    MlxRegLibStatus showRegisters(std::vector<string> &regs); // Return all supported register names
-    MlxRegLibStatus showAllRegisters(std::vector<string> &regs); // Return all available register names
+    MlxRegLibStatus showRegisters(std::vector<string> &regs); // Return all available register names
     MlxRegLibStatus showRegister(string regName, std::vector<AdbInstance*> &fields); // Return all fields of given register
     MlxRegLibStatus sendRegister(string regName, int method, std::vector<u_int32_t> &data); // Send register by name
     MlxRegLibStatus sendRegister(u_int16_t regId, int method, std::vector<u_int32_t> &data); // Send register by ID
@@ -76,8 +75,6 @@ public:
     bool isIBDevice();
 protected:
     /* Functions */
-    std::map<string, u_int64_t> genSuppRegsList(std::map<string, u_int64_t> availableRegs);
-    bool isRegAccessSupported(u_int64_t regID);
     bool isRegSizeSupported(string regName);
     int sendMaccessReg(u_int16_t regId, int method, std::vector<u_int32_t> &data);
     void initAdb(string extAdbFile);
@@ -85,15 +82,12 @@ protected:
     /* Data Members */
     mfile *_mf;
     static map<dm_dev_id_t, Adb*> _adbDBs;
-    static const u_int64_t _gSupportedRegisters[];
     static const int RETRIES_COUNT;
     static const int SLEEP_INTERVAL;
     Adb *_adb;
     AdbInstance *_regAccessRootNode;
     AdbInstance *_regAccessUnionNode;
     std::map<string, u_int64_t>   _regAccessMap;
-    std::map<string, u_int64_t>   _supportedRegAccessMap;
-    bool _onlyKnownRegs;
     bool _isExternal;
 };
 

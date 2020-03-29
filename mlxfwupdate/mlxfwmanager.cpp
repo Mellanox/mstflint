@@ -187,9 +187,7 @@ int mainEntry(int argc, char *argv[])
 
     //Listing of binary files content
     if (cmd_params.list_file_contents) {
-        if (list_files_content(config)) {
-            res = ERR_CODE_FILE_PARSE_FAILED;
-        }
+        res = list_files_content(config);
         goto clean_up;
     }
 
@@ -1029,10 +1027,10 @@ int checkAndDisplayDeviceQuery1D(vector<MlnxDev*> &devs,
 
                 //u_int16_t fwVer[3] = {3,4,141};
                 //psidUpdateInfo[devs[i]->getPsid()].imgVers[1].setVersion("PXE", 3, fwVer);
-                if (devImgVer->compare(*fileImgVer) < 0) {
-                    nKeepReasons++;
-                } else if (devImgVer->compare(*fileImgVer) > 0) {
+                if (devImgVer->compareFw(*fileImgVer) < 0) {
                     nUpdateReasons++;
+                } else if (devImgVer->compareFw(*fileImgVer) > 0) {
+                    nKeepReasons++;
                 }
             }
         }
@@ -1222,7 +1220,9 @@ void getUniqueMFAList(vector<MlnxDev*> &devs, map<string, PsidQueryItem> &psidUp
         if (!psidUpdateInfo[devs[i]->getPsid()].found) {
             continue;
         }
-        if (force_update || (devs[i]->compareFWVer(psidUpdateInfo[devs[i]->getPsid()].imgVers[0].getVerArray()) > 0)) {
+        if (force_update
+                || (devs[i]->compareFWVer(
+                        psidUpdateInfo[devs[i]->getPsid()].imgVers[0]) < 0)) {
             if (mfa2download.count(psidUpdateInfo[devs[i]->getPsid()].url) == 0) {
                 mfa_list.push_back(psidUpdateInfo[devs[i]->getPsid()].url);
                 mfa_base_name_list.push_back(psidUpdateInfo[devs[i]->getPsid()].name);
@@ -1546,7 +1546,7 @@ int list_files_content(config_t &config)
     DIR *d;
     struct dirent *dir;
     int rc;
-    int res = 0;
+    int res = MLX_FWM_SUCCESS;
     ImageAccess imgacc(CompareFFV);
     vector<PsidQueryItem> items;
     bool show_titles = true;
@@ -1558,58 +1558,63 @@ int list_files_content(config_t &config)
         rc = imgacc.get_file_content(fpath, items);
         if (rc) {
             print_err("-E- Error parsing file: %s\n", fpath.c_str());
+            res = ERR_CODE_FILE_PARSE_FAILED;
+        }
+        else {
+            display_file_listing(items, config.psid, show_titles);
+        }
+    }
+    else {
+        d = opendir(config.mfa_path.c_str());
+        if (d == NULL) {
             return -1;
         }
-        display_file_listing(items, config.psid, show_titles);
-        return 0;
-    }
 
-    d = opendir(config.mfa_path.c_str());
-    if (d == NULL) {
-        return -1;
-    }
-
-    while ((dir = readdir(d)) != NULL) {
-        string fl = dir->d_name;
-        if (fl == "." || fl == "..") {
-            continue;
-        }
-        string fpath = config.mfa_path;
-        if (fpath.length() > 0) {
-            #if defined(__WIN__)
-            if (fpath[fpath.length() - 1] != '\\') {
-                fpath += "\\";
+        while ((dir = readdir(d)) != NULL) {
+            string fl = dir->d_name;
+            if (fl == "." || fl == "..") {
+                continue;
             }
-            #else
-            if (fpath[fpath.length() - 1] != '/') {
-                fpath += "/";
+            string fpath = config.mfa_path;
+            if (fpath.length() > 0) {
+                #if defined(__WIN__)
+                if (fpath[fpath.length() - 1] != '\\') {
+                    fpath += "\\";
+                }
+                #else
+                if (fpath[fpath.length() - 1] != '/') {
+                    fpath += "/";
+                }
+                #endif
             }
-            #endif
-        }
-        fpath += fl;
+            fpath += fl;
 
-        if (imgacc.getFileSignature(fpath) <= 0) {
-            continue;
+            if (imgacc.getFileSignature(fpath) <= 0) {
+                continue;
+            }
+            items.clear();
+            rc = imgacc.get_file_content(fpath, items);
+            if (rc) {
+                print_err("-E- Error parsing file: %s\n", fpath.c_str());
+                res = ERR_CODE_FILE_PARSE_FAILED;
+                continue;
+            }
+            if (config.display_file_names) {
+                printf("Supported Boards in File: %s\n", fpath.c_str());
+                show_titles = true;
+            }
+            display_file_listing(items, config.psid, show_titles);
+            show_titles = false;
+            displayed_files_cnt++;
         }
-        items.clear();
-        rc = imgacc.get_file_content(fpath, items);
-        if (rc) {
-            print_err("-E- Error parsing file: %s\n", fpath.c_str());
-            res = -1;
-            continue;
-        }
-        if (config.display_file_names) {
-            printf("Supported Boards in File: %s\n", fpath.c_str());
-            show_titles = true;
-        }
-        display_file_listing(items, config.psid, show_titles);
-        show_titles = false;
-        displayed_files_cnt++;
-    }
 
-    closedir(d);
-    if (displayed_files_cnt == 0) {
-        print_out("No image files found\n");
+        closedir(d);
+        if (displayed_files_cnt == 0) {
+            print_out("No image files found\n");
+            if (res != ERR_CODE_FILE_PARSE_FAILED) {
+                res = ERR_CODE_IMG_NOT_FOUND;
+            }
+        }
     }
 
     return res;
@@ -2003,10 +2008,9 @@ int handleOnlinePsidsQueryXml(ServerRequest *srq, CmdLineParams &cmd_params, con
         return res;
     }
 
-    PsidQueryItem ri;
     string output = "<Psids>\n";
     for (unsigned int i = 0; i < psidUpdateInfo.size(); i++) {
-        ri = psidUpdateInfo[i];
+        PsidQueryItem ri = psidUpdateInfo[i];
         string status;
         string ver = "N/A";
         string mfa = "N/A";
@@ -2069,9 +2073,8 @@ int handleOnlinePsidsQuery(ServerRequest *srq, CmdLineParams &cmd_params, config
         return res;
     }
 
-    PsidQueryItem ri;
     for (unsigned int i = 0; i < psidUpdateInfo.size(); i++) {
-        ri = psidUpdateInfo[i];
+        PsidQueryItem ri = psidUpdateInfo[i];
         string status;
         string ver = "N/A";
         string mfa = "N/A";

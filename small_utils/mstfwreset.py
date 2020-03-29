@@ -668,7 +668,7 @@ class MlnxPciOpLinux(MlnxPciOp):
         domainBus = ":".join(devAddr.split(":")[:2])
 
         if "ppc64" in platform.machine():
-            cmd = "lspci -d 15b3: -s {0}: -D".format(domainBus)
+            cmd = "lspci -d 15b3: -s {0}: -D | grep -v DMA".format(domainBus) # list without NVME emulation (on bluefield)
             (rc, out, _) = cmdExec(cmd)
             if rc != 0:
                 raise RuntimeError("failed to execute: {0}".format(cmd))
@@ -802,7 +802,7 @@ class MlnxPciOpFreeBSD(MlnxPciOp):
         MFDevices = []
         domainBus = ":".join(devAddr.split(":")[:-2])
         domainBus = "pci" + domainBus
-        cmd = "pciconf -l | grep 'chip=0x[0-9,a-f]\{4\}15b3 ' | grep %s | cut -f1 | cut -d@ -f2" %domainBus
+        cmd = "pciconf -l | grep 'chip=0x[0-9,a-f]\{4\}15b3 \|vendor=0x15b3' | grep %s | cut -f1 | cut -d@ -f2" %domainBus
         (rc, out, _) = cmdExec(cmd)
         if rc != 0 :
             raise RuntimeError("failed to get execure: %s" %cmd)
@@ -1202,6 +1202,7 @@ def resetPciAddr(device,devicesSD,driverObj, cmdLineArgs):
             info = []
  
             # Disable
+            logger.debug('[Timing Test] PCI Disable') 
             for bridgeDev,capAddr in bridgeDevs:
                 info.append(disablePci(bridgeDev,capAddr))
 #             info.append(disablePci(busId))
@@ -1213,6 +1214,7 @@ def resetPciAddr(device,devicesSD,driverObj, cmdLineArgs):
             time.sleep(cmdLineArgs.pci_link_downtime)
 
             # Enable
+            logger.debug('[Timing Test] PCI Enable')
             for info_ii in info:
                 enablePci(*info_ii)
 
@@ -1300,6 +1302,7 @@ def isConnectedToMellanoxSwitchDevice():
 def send_reset_cmd_to_fw(mfrl, reset_level, reset_type):
     try:
         printAndFlush("-I- %-40s-" % ("Sending Reset Command To Fw"), endChar="")
+        logger.debug('[Timing Test] MFRL')
         mfrl.send(reset_level, reset_type)
         printAndFlush("Done")
     except Exception as e:
@@ -1317,6 +1320,7 @@ def sendResetToFWSync(mfrl, reset_level, reset_type):
             status.fsm_state == SYNC_STATE_GO:
         raise RuntimeError("The fsm register is busy, run \"%s -d <device> reset_fsm_register\" to reset the register." % PROG)
     elif status.fsm_state == SYNC_STATE_IDLE:
+        logger.debug('[Timing Test] MH SYNC send GET_READY (first host)')
         CmdifObj.multiHostSync(SYNC_STATE_GET_READY, SYNC_TYPE_FW_RESET, 0x1)
         #WA: send again because in single host case the firmware will wait for a second call (fw bug ??)
         CmdifObj.multiHostSync(SYNC_STATE_GET_READY, SYNC_TYPE_FW_RESET)
@@ -1334,6 +1338,7 @@ def sendResetToFWSync(mfrl, reset_level, reset_type):
             logger.info('send SYNC_STATE_GET_READY command (SD)')
 
     elif status.fsm_state == SYNC_STATE_GET_READY: # TODO (update after GA) and status.fsm_sync_type == SYNC_TYPE_FW_RESET
+        logger.debug('[Timing Test] MH SYNC send GET_READY')
         CmdifObj.multiHostSync(SYNC_STATE_GET_READY, SYNC_TYPE_FW_RESET)
         logger.info('send SYNC_STATE_GET_READY command')
 
@@ -1355,6 +1360,7 @@ def stopDriver(driverObj):
         printAndFlush("-I- %-40s-" % ("Stopping Driver"), endChar="")
         try:
             driverObj.driverStop()
+            logger.debug('[Timing Test] Driver unbind')
         except Exception as e:
             #try again, that will prevent problems in multihost
             time.sleep(1)
@@ -1391,10 +1397,12 @@ def stopDriverSync(driverObj):
             print_waiting_msg = False
         time.sleep(0.5)
 
+    logger.debug('[Timing Test] MH SYNC state is GO')
     if status.fsm_state != SYNC_STATE_GO or status.fsm_sync_type != SYNC_TYPE_FW_RESET:
         raise RuntimeError("Operation failed, the fsm register state or type is not as expected")
     stopDriver(driverObj)
 
+    logger.debug('[Timing Test] MH SYNC send GO')
     CmdifObj.multiHostSync(SYNC_STATE_GO, SYNC_TYPE_FW_RESET)
     # Socket Direct - send SYNC_STATE_GO for all other devices in SD
     for CmdifObjSD in CmdifObjsSD:
@@ -1420,6 +1428,8 @@ def stopDriverSync(driverObj):
             print("Synchronizing with other hosts...")
             print_waiting_msg = False
         time.sleep(0.5)
+
+    logger.debug('[Timing Test] MH SYNC done')
 
     if status.fsm_sync_type != SYNC_TYPE_FW_RESET or status.fsm_state != SYNC_STATE_GO:
         # Roei
@@ -1488,12 +1498,17 @@ def resetFlow(device, devicesSD, reset_level, reset_type, cmdLineArgs, mfrl):
             resetPciAddr(device,devicesSD,driverObj, cmdLineArgs)
 
         # Wait for FW to be ready to get ICMD
-        wait_for_fw_ready(device)
+        try:
+            wait_for_fw_ready(device)
+        except: # bug 1980064 ('mst driver' is non-operational after PCI reset)
+            logger.warning("wait_for_fw_ready failed. Waiting 1 sec and continue")
+            time.sleep(1)
         
         logger.debug('end critical time (start to load driver)')
 
         if driverStat == MlnxDriver.DRIVER_LOADED:
             printAndFlush("-I- %-40s-" % ("Starting Driver"), endChar="")
+            logger.debug('[Timing Test] Driver Bind')
             driverObj.driverStart()
             printAndFlush("Done")
 
@@ -1540,6 +1555,7 @@ def rebootMachine():
 def execResLvl(device, devicesSD, reset_level, reset_type, cmdLineArgs, mfrl, mpcir):
     
     if mfrl.is_phy_less_reset(reset_type):
+        logger.debug('[Timing Test] MPCIR')
         mpcir.prepare_for_phyless_fw_upgrade()
 
     if reset_level == mfrl.LIVE_PATCH:
@@ -1826,6 +1842,9 @@ def main():
         # print("  * reset-type  is '{0}' ({1})".format(reset_type, mfrl.reset_type_description(reset_type)))
         if mfrl.is_reset_type_supported(reset_type) is False:
             raise RuntimeError("Reset-type '{0}' is not supported for this device".format(reset_type))
+
+        if mfrl.is_default_reset_type(reset_type) is False and mfrl.is_reset_level_support_reset_type(reset_level) is False:
+            raise RuntimeError("Reset-level '{0}' is not supported with reset-type '{1}'".format(reset_level, reset_type))
 
         minimal_or_requested = 'Minimal' if args.reset_level is None else 'Requested'
         print("{0} reset level for device, {1}:\n".format(minimal_or_requested , device))

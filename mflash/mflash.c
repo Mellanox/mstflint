@@ -218,12 +218,14 @@ int mf_secure_host_op(mflash *mfl, u_int64_t key, int op);
 #define CX6_HW_ID        0x20f
 #define CX6DX_HW_ID      0x212
 #define BLUEFIELD_HW_ID  0x211
+#define BLUEFIELD2_HW_ID 0x214
 #define CONNECT_IB_HW_ID 0x1FF
 #define SWITCH_IB_HW_ID  0x247
 #define SPECTRUM_HW_ID   0x249
 #define SWITCH_IB2_HW_ID 0x24b
 #define QUANTUM_HW_ID    0x24d
 #define SPECTRUM2_HW_ID  0x24e
+#define SPECTRUM3_HW_ID  0x250
 
 /*
  * Device IDs Macros:
@@ -254,6 +256,8 @@ int mf_secure_host_op(mflash *mfl, u_int64_t key, int op);
     ((dev_id) == CX6_HW_ID)
 #define IS_CONNECTX6DX(dev_id) \
     ((dev_id) == CX6DX_HW_ID)
+#define IS_SPECTRUM3(dev_id) \
+    ((dev_id) == SPECTRUM3_HW_ID)
 #define IS_BLUEFIELD(dev_id) \
     ((dev_id) == BLUEFIELD_HW_ID)
 #define IS_QUANTUM(dev_id) \
@@ -262,6 +266,8 @@ int mf_secure_host_op(mflash *mfl, u_int64_t key, int op);
     ((dev_id) == SPECTRUM_HW_ID)
 #define IS_BLUEFEILD(dev_id) \
     ((dev_id) == BLUEFIELD_HW_ID)
+#define IS_BLUEFEILD2(dev_id) \
+    ((dev_id) == BLUEFIELD2_HW_ID)
 
 #define HAS_TOOLS_CMDIF(dev_id) \
     ((((dev_id) == CX3_HW_ID) || ((dev_id) == CX3_PRO_HW_ID)))
@@ -567,7 +573,8 @@ flash_info_t g_flash_info_arr[] = { { "M25PXxx", FV_ST, FMT_ST_M25PX, FD_LEGACY,
                                     { MACRONIX_3V_NAME, FV_MX25K16XXX, FMT_MX25K16XXX, (1 << FD_256), MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0 },
                                     { CYPRESS_3V_NAME, FV_S25FLXXXX, FMT_S25FLXXXL, 1 << FD_128, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 1, 0 },
                                     //{ CYPRESS_3V_NAME, FV_S25FLXXXX, FMT_S25FLXXXL, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB,  1, 1, 1, 0, 0 },
-                                    { ISSI_3V_NAME, FV_IS25LPXXX, FMT_IS25LPXXX, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 0, 0 }
+                                    { ISSI_3V_NAME, FV_IS25LPXXX, FMT_IS25LPXXX, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 0, 0 },
+                                    { MACRONIX_1V8_NAME, FV_MX25K16XXX, FMT_SST_25, (1 << FD_256), MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0 },
                                     //{ ISSI_3V_NAME, FV_IS25LPXXX, FMT_IS25LPXXX, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0 }
 };
 
@@ -1086,7 +1093,7 @@ int read_chunks(mflash *mfl, u_int32_t addr, u_int32_t len, u_int8_t *data, bool
 enum CrConstans {
     CR_FLASH_GW = 0xf0400,
     CR_FLASH_ADDR = 0xf0404,
-    CR_FLASH_DATA = 0xf0408,
+    //CR_FLASH_DATA = 0xf0408,
     CR_FLASH_CS = 0xf0418,
     CR_GPIO_LOCK = 0xf00ec,
     BO_READ_OP = 0,
@@ -2133,7 +2140,9 @@ int sx_init_cs_support(mflash *mfl)
 #define CASHE_REP_CMD  0xf040c
 #define CX5_EFUSE_ADDR 0xf0c0c
 
-int check_cache_replacement_gaurd(mflash *mfl, u_int8_t *needs_cache_replacement)
+#define CACHE_REP_OFF_RAVEN  0xf0440
+#define CACHE_REP_CMD_RAVEN  0xf0448
+int check_cache_replacement_guard(mflash *mfl, u_int8_t *needs_cache_replacement)
 {
 
     *needs_cache_replacement = 0;
@@ -2150,13 +2159,27 @@ int check_cache_replacement_gaurd(mflash *mfl, u_int8_t *needs_cache_replacement
 
     if (mfl->opts[MFO_IGNORE_CASHE_REP_GUARD] == 0) {
         u_int32_t off = 0, cmd = 0, data = 0;
-
+        dm_dev_id_t devid_t = DeviceUnknown;
+        u_int32_t devid = 0;
+        u_int32_t revid = 0;
+        int rc = dm_get_device_id(mfl->mf, &devid_t, &devid, &revid);
+        if (rc) {
+            return rc;
+        }
         // Read the Cache replacement offset
+        if (!dm_dev_is_raven_family_switch(devid_t)) {
         MREAD4(CACHE_REP_OFF, &data);
         off = EXTRACT(data, 0, 26);
         // Read the Cache replacement cmd
         MREAD4(CASHE_REP_CMD, &data);
         cmd = EXTRACT(data, 16, 8);
+        }
+        else {//RAVEN switches
+            MREAD4(CACHE_REP_OFF_RAVEN, &data);
+            off = EXTRACT(data, 0, 26);
+            MREAD4(CACHE_REP_CMD_RAVEN, &data);
+            cmd = EXTRACT(data, 16, 8);
+        }
         // Check if the offset and cmd are zero in order to continue burning.
         if (cmd != 0 || off != 0) {
             *needs_cache_replacement = 1;
@@ -2458,7 +2481,7 @@ int sx_flash_init(mflash *mfl, flash_params_t *flash_params)
     int rc = 0;
     u_int8_t needs_cache_replacement = 0;
 
-    rc = check_cache_replacement_gaurd(mfl, &needs_cache_replacement);
+    rc = check_cache_replacement_guard(mfl, &needs_cache_replacement);
     CHECK_RC(rc);
 
     if (needs_cache_replacement) {
@@ -2498,7 +2521,7 @@ int fifth_gen_flash_init(mflash *mfl, flash_params_t *flash_params)
     int rc = 0;
     u_int8_t needs_cache_replacement = 0;
 
-    rc = check_cache_replacement_gaurd(mfl, &needs_cache_replacement);
+    rc = check_cache_replacement_guard(mfl, &needs_cache_replacement);
     CHECK_RC(rc);
 
     if (needs_cache_replacement) {
@@ -3228,7 +3251,9 @@ int mf_set_reset_flash_on_warm_reboot(mflash *mfl)
         break;
     case DeviceConnectX6:
     case DeviceConnectX6DX:
+    case DeviceBlueField2:
     case DeviceSpectrum2:
+    case DeviceSpectrum3:
         set_reset_bit_dword_addr = 0xf0c28;
         set_reset_bit_offset = 2;
         break;
@@ -3271,7 +3296,9 @@ int mf_update_boot_addr(mflash *mfl, u_int32_t boot_addr)
     case DeviceConnectX6:
     case DeviceConnectX6DX:
     case DeviceQuantum:
+    case DeviceBlueField2:
     case DeviceSpectrum2:
+    case DeviceSpectrum3:
         boot_cr_space_address = 0xf0080;
         offset_in_address = 0;
         break;

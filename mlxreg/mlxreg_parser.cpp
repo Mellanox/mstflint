@@ -332,11 +332,12 @@ AdbInstance* RegAccessParser::getField(string name)
 
 string RegAccessParser::getAccess(const AdbInstance *field)
 {
-    string access = "N/A";
-    if (field->attrs.find("access") != field->attrs.end()) {
-        access = field->attrs.find("access")->second;
-    } else if (field->parent) {
+    string access = field->getInstanceAttr("access");
+    if (access.empty()) {
+        access = "N/A";
+        if (field->parent) {
         access = getAccess(field->parent);
+        }
     }
     return access;
 }
@@ -346,17 +347,12 @@ bool RegAccessParser::checkAccess(const AdbInstance *field, const string accessS
     return getAccess(field) == accessStr;
 }
 
-/************************************
-* Function: isRO
-************************************/
+
 bool RegAccessParser::isRO(AdbInstance *field)
 {
     return checkAccess(field, "RO");
 }
 
-/************************************
-* Function: isIndex
-************************************/
 bool RegAccessParser::isIndex(AdbInstance *field)
 {
     return checkAccess(field, "INDEX");

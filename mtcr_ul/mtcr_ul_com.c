@@ -1628,6 +1628,8 @@ static long supported_dev_ids[] = {
     0xd2f0,     //Quantum
     0xcf6c,     //Spectrum2
     0xa2d2,     //MT416842 Family BlueField integrated ConnectX-5 network controller
+    0xa2d6,     //MT416846 Family BlueField2 integrated ConnectX-6DX network controller
+    0xcf70,     //Spectrum3
     -1
 };
 
@@ -1648,6 +1650,8 @@ static long live_fish_id_database[] = {
     0x20f,
     0x211,
     0x212,
+    0x216,
+    0x250, //Spectrum3
     -1
 };
 

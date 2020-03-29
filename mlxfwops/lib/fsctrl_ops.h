@@ -99,7 +99,7 @@ public:
     virtual mfile* getMfileObj() {
         return _fwCompsAccess->getMfileObj();
     }
-
+    virtual bool GetSecureBootInfo();
 protected:
     bool FsIntQuery();
     bool GetImageInfo(u_int8_t *buff);

@@ -49,7 +49,7 @@ public:
 
     static const char* statusStr(int status);
     int  ResolveName(char *name, u_int64_t *val);
-    void Error(char *message);
+    void Error(const std::string& message);
     void setVars(map<string, string> *varsMap);
 
 private:

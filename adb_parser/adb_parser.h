@@ -207,12 +207,18 @@ public:
     * getChildByPath(const string& path, bool isCaseSensitive = true);
     vector<AdbInstance*> findChild(const string& name,
             bool isCaseSensitive = true, bool by_inst_name = false);
-    string getAttr(const string &attrName);
-    void setAttr(const string &attrName, const string &attrValue);
+    string getInstanceAttr(const string &attrName) const;
+    AttrsMap::iterator getInstanceAttrIterator(const string &attrName, bool &isEnd);
+    void setInstanceAttr(const string &attrName, const string &attrValue);
+    void copyAllInstanceAttr(AttrsMap &attsToCopy); 
+    AttrsMap getFullInstanceAttrsMapCopy();
+    void setVarsMap(const string &attrName, const string &attrValue);
+    void setVarsMap(const AttrsMap &AttrsMap);
+    AttrsMap getVarsMap();
     vector<AdbInstance*> getLeafFields(); // Get all leaf fields
     void pushBuf(u_int8_t *buf, u_int64_t value);
     u_int64_t popBuf(u_int8_t *buf);
-
+    int instAttrsMapLen() {return instAttrsMap.size();}
     // FOR DEBUG
     void print(int indent = 0);
 
@@ -225,14 +231,15 @@ public:
     vector<AdbInstance*> subItems;
     u_int32_t offset; // Global offset in bits (Relative to 0)
     u_int32_t size; // in bits
-    AttrsMap attrs; // Attributes after evaluations and array expanding
     u_int32_t arrIdx;
-    AttrsMap vars; // all variables relevant to this item after evaluation
     AdbInstance *unionSelector; // For union instances only
     bool isDiff;
 
     // FOR USER USAGE
     void *userData;
+private:
+    AttrsMap instAttrsMap; // Attributes after evaluations and array expanding
+    AttrsMap varsMap; // all variables relevant to this item after evaluation
 };
 
 /*************************** Adb ***************************/
@@ -252,6 +259,7 @@ public:
     // Methods
     Adb();
     ~Adb();
+    void raiseException(bool allowMultipleExceptions, string exceptionTxt, const string expType);
     // strict union means:
     //   1- dwrod aligned unions
     //   2- contains nodes only
@@ -312,10 +320,13 @@ private:
             u_int32_t arrIdx);
     string evalExpr(string expr, AttrsMap *vars);
     bool checkInstSizeConsistency(bool getAllExceptions = false);
+    void cleanInstAttrs();
 
 private:
     string _lastError;
     AdbExpr _adbExpr;
     std::list<AdbInstance*> _unionSelectorEvalDeffered;
+    void checkInstanceOffsetValidity(AdbInstance *inst, AdbInstance *parent, bool allowMultipleExceptions);
+    void throwExeption(bool allowMultipleExceptions, string exceptionTxt, string addedMsgMultiExp);
 };
 #endif // ADB_PARSER_H

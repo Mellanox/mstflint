@@ -79,6 +79,7 @@ if REG_ACCESS:
         _fields_ = [
             ("segment_type",c_uint16),
             ("seq_num",c_uint8),
+            ("vhca_id_valid",c_uint8),
             ("inline_dump",c_uint8),
             ("more_dump",c_uint8),
             ("vhca_id",c_uint16),
@@ -219,8 +220,6 @@ if REG_ACCESS:
             self._mstDev = dev
             if pci_device is not None:
                 self._mstDev = mtcr.MstDevice(pci_device)
-            self._err2str = REG_ACCESS.reg_access_err2str
-            self._err2str.restype = c_char_p
             self._reg_access_mcam = REG_ACCESS.reg_access_mcam
             self._reg_access_mtrc_cap = REG_ACCESS.reg_access_mtrc_cap
             self._reg_access_mgir = REG_ACCESS.reg_access_mgir
@@ -230,6 +229,10 @@ if REG_ACCESS:
             self._reg_access_res_dump = REG_ACCESS.reg_access_res_dump
             self._reg_access_debug_cap = REG_ACCESS.reg_access_debug_cap
 
+        def _err2str(self, rc):
+            err2str = REG_ACCESS.reg_access_err2str
+            err2str.restype = c_char_p
+            return err2str(rc).decode("utf-8")
 
         ##########################
         def close(self):
@@ -270,13 +273,14 @@ if REG_ACCESS:
                 iter += 1
 
 
-        def sendResDump(self, segment_type, seq_num, inline_mode, more_dump, vhca_id, index1, index2, num_of_obj2, num_of_obj1, device_opaque, mkey, size, address):
+        def sendResDump(self, segment_type, seq_num, inline_mode, more_dump, vhca_id, vhca_id_valid, index1, index2, num_of_obj2, num_of_obj1, device_opaque, mkey, size, address):
             resDumpRegP = pointer(RES_DUMP_ST())
             resDumpRegP.contents.segment_type = c_uint16(segment_type)
             resDumpRegP.contents.seq_num = c_uint8(seq_num)
             resDumpRegP.contents.inline_dump = c_uint8(inline_mode)
             resDumpRegP.contents.more_dump = c_uint8(more_dump)
             resDumpRegP.contents.vhca_id = c_uint16(vhca_id)
+            resDumpRegP.contents.vhca_id_valid = c_uint8(vhca_id_valid)
             resDumpRegP.contents.index_1 = c_uint32(index1)
             resDumpRegP.contents.index_2 = c_uint32(index2)
             resDumpRegP.contents.num_of_obj_2 = c_uint16(num_of_obj2)
@@ -294,6 +298,7 @@ if REG_ACCESS:
                      "inline_dump": resDumpRegP.contents.inline_dump,
                      "more_dump": resDumpRegP.contents.more_dump,
                      "vhca_id": resDumpRegP.contents.vhca_id,
+                     "vhca_id_valid": resDumpRegP.contents.vhca_id_valid,
                      "index_1": resDumpRegP.contents.index_1,
                      "index_2": resDumpRegP.contents.index_2,
                      "num_of_obj_2": resDumpRegP.contents.num_of_obj_2,

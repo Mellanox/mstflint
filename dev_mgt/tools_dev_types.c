@@ -447,6 +447,7 @@ int dm_get_device_id(mfile *mf,
                 return 1;
                 break;
         }
+        *ptr_hw_dev_id = (u_int32_t)mf->linkx_chip_devid;
         return 0;
 
     }
@@ -685,3 +686,7 @@ int dm_is_new_gen_switch(dm_dev_id_t type)
     return (dm_dev_is_switch(type) && !dm_is_switchx(type));
 }
 
+int dm_dev_is_raven_family_switch(dm_dev_id_t type)
+{
+    return (dm_dev_is_switch(type) && (type == DeviceQuantum || type == DeviceSpectrum2 || type == DeviceSpectrum3));
+}

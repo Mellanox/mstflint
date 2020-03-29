@@ -51,6 +51,7 @@ class MtcrException(Exception):
 CMTCR = None
 try:
     from ctypes import *
+    ctypes.CDLL._func_restype_ = ctypes.c_ulonglong
     if platform.system() == "Windows" or os.name == "nt":
         CMTCR = CDLL("libmtcr-1.dll", use_errno=True)
     else:
@@ -69,6 +70,8 @@ if CMTCR:
             self.mf = 0
             self.mopenFunc = CMTCR.mopen
             self.mopenFunc.restype = c_void_p
+            self.mopenFuncAdv = CMTCR.mopen_adv
+            self.mopenFuncAdv.argtypes = [ctypes.c_char_p, ctypes.c_uint]
             self.mcloseFunc = CMTCR.mclose
             self.mread4Func = CMTCR.mread4
             self.mwrite4Func = CMTCR.mwrite4
@@ -85,10 +88,21 @@ if CMTCR:
                 self.mcloseFunc(self.mf)
             self.mf = None
 
+        def is_cable(self):
+            return '_cable' in str(self.mdev)
+        
+        def is_linkx(self):
+            return '_lx' in str(self.mdev)
+
         def open(self):
-            self.mf = ctypes.c_void_p(self.mopenFunc(self.mdev))
+            if self.is_cable() or self.is_linkx():
+                self.mf = ctypes.c_void_p(self.mopenFuncAdv(self.mdev,0xffffffff))
+            else:
+                self.mf = ctypes.c_void_p(self.mopenFunc(self.mdev))
+
             if not self.mf:
-                raise MtcrException("Failed to re-open device (%s): %s" % (self.mdev, os.strerror(ctypes.get_errno())))
+                error = os.strerror(ctypes.get_errno())
+                raise MtcrException("Failed to re-open device (%s): %s" % (self.mdev.decode("utf-8"), error))
 
 
 

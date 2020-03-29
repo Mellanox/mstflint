@@ -133,7 +133,6 @@ MlxRegUi::MlxRegUi() :
     _indexesStr     = "";
     _dataLen        = 0;
     _ignoreCapCheck = false;
-    _ignoreRegCheck = false;
     _op             = CMD_UNKNOWN;
     _mlxRegLib      = NULL;
     _force          = false;
@@ -389,7 +388,9 @@ ParseStatus MlxRegUi::HandleOption(string name, string value)
     }
 #endif
     else if (name == IGNORE_REG_CHECK_FLAG) {
-        _ignoreRegCheck = true;
+        // TODO: remove IGNORE_REG_CHECK_FLAG from UI after 4.14.0 release, it's deprecated
+        cout << endl << "-W- The flag --" << IGNORE_REG_CHECK_FLAG
+             << " is deprecated and will be removed." << endl << endl;
         return PARSE_OK;
     } else if (name == FORCE_FLAG) {
         _force = true;
@@ -490,9 +491,7 @@ void MlxRegUi::run(int argc, char **argv)
         }
     }
 
-    bool onlyKnownRegs = ((_extAdbFile == "") && (!_ignoreRegCheck));
-
-    _mlxRegLib = new MlxRegLib(_mf, _extAdbFile, onlyKnownRegs, _isExternal);
+    _mlxRegLib = new MlxRegLib(_mf, _extAdbFile, _isExternal);
 
     std::vector<AdbInstance*> regFields;
     std::vector<string>       regs;
@@ -511,7 +510,11 @@ void MlxRegUi::run(int argc, char **argv)
         break;
 
     case CMD_SHOW_ALL_REGS:
-        _mlxRegLib->showAllRegisters(regs);
+        // TODO: remove CMD_SHOW_ALL_REGS from UI after 4.14.0 release, it's deprecated
+        cout << endl << "-W- The option --" << OP_SHOW_ALL_REGS_FLAG
+             << " is deprecated and will be removed, please use --"
+             << OP_SHOW_REGS_FLAG << " instead." << endl << endl;
+        _mlxRegLib->showRegisters(regs);
         printRegNames(regs);
         break;
 

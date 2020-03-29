@@ -49,7 +49,7 @@ libtools_layouts_a_SOURCES = prm_adb_db.cpp prm_adb_db.h \
 				register_access_open_layouts.h register_access_open_layouts.c \
 				tools_open_layouts.c tools_open_layouts.h\
 				register_access_sib_layouts.h register_access_sib_layouts.c \
-				cx4fw_layouts.c cx4fw_layouts.h\
+				cx4fw_layouts.c cx4fw_layouts.h \
 				cx5fw_layouts.c cx5fw_layouts.h\
 				cx6fw_layouts.c cx6fw_layouts.h\
 				icmd_layouts.c icmd_layouts.h\

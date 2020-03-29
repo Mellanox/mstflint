@@ -69,8 +69,12 @@ void MlxlinkCmdPrint::toJsonFormat(Json::Value& jsonRoot)
                     subObject[JSON_MASK_TITLE] = mask;
                 }
                 if (!val.empty()) {
-                    std::vector<std::string> vals =
-                            MlxlinkRecord::split(val, ',');
+                    std::vector<std::string> vals;
+                    if (title == HEADER_FEC_INFO) {
+                        vals = MlxlinkRecord::split(val, ", ");
+                    } else {
+                      vals = MlxlinkRecord::split(val, ",");
+                    }
                     for (std::vector<std::string>::iterator it = vals.begin() ;
                             it != vals.end(); ++it) {
                         subObject[JSON_VALUES_TITLE].append(*it);
@@ -82,7 +86,9 @@ void MlxlinkCmdPrint::toJsonFormat(Json::Value& jsonRoot)
             }
         }
     }
-    jsonRoot[JSON_RESULT_SECTION][JSON_OUTPUT_SECTION][title] = outputGroup;
+    if (!outputGroup.isNull()) {
+        jsonRoot[JSON_RESULT_SECTION][JSON_OUTPUT_SECTION][title] = outputGroup;
+    }
 }
 
 std::ostream & operator << (std::ostream &out, const MlxlinkCmdPrint &cmdPrint)

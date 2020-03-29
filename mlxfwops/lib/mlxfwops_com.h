@@ -64,6 +64,14 @@ typedef enum {
     PROG_OK
 } prog_t;
 
+typedef enum
+{
+    PRODUCTION = 0,
+    GA_SECURED = 1,
+    GA_NON_SECURED = 2,
+    RMA = 3,
+    NUM_OF_LIFE_CYCLES = 4
+}life_cycle_t;
 typedef int EFIAPI (*f_prog_func)(int completion);
 typedef int EFIAPI (*f_prog_func_ex)(int completion, void *opaque);
 typedef int EFIAPI (*f_prog_func_adv)(int completion, const char *str, prog_t, void *opaque);
@@ -83,6 +91,8 @@ typedef struct {
 #define FS4_PRS_NAME_LEN 97
 #define NAME_LEN 65
 #define DESCRIPTION_LEN 257
+#define BRANCH_LEN 28
+#define MIN_BRANCH_LEN 5
 
 #define FREE_STR_MAX_LEN    256
 
@@ -241,9 +251,14 @@ typedef enum chip_type {
     CT_QUANTUM,
     CT_SPECTRUM2,
     CT_CONNECTX6DX,
-    CT_SPECTRUM3
+    CT_SPECTRUM3,
+    CT_BLUEFIELD2
 } chip_type_t;
 
+#define IS_HCA(chipType) \
+    (((chipType) == CT_CONNECTX) || ((chipType) == CT_CONNECT_IB) || ((chipType) == CT_CONNECTX4) || ((chipType) == CT_CONNECTX4_LX) || \
+      ((chipType) == CT_CONNECTX5) || ((chipType) == CT_BLUEFIELD) || ((chipType) == CT_CONNECTX6) || \
+        ((chipType) == CT_CONNECTX6DX) || ((chipType) == CT_BLUEFIELD2))
 typedef enum chip_family_type {
     CFT_UNKNOWN = 0,
     CFT_HCA,
@@ -330,6 +345,8 @@ typedef struct fs3_info_ext {
     u_int32_t security_mode;
     u_int8_t mcc_en;
     char deviceVsd[VSD_LEN + 1];
+    bool sec_boot;
+    life_cycle_t life_cycle;
 } fs3_info_t;
 
 typedef struct fs3_info_ext fs4_info_t;
@@ -387,6 +404,8 @@ typedef struct fw_info_com {
     u_int8_t image_info_minor_version;
     u_int8_t image_info_major_version;
     u_int16_t pci_device_id;
+    char branch_ver[BRANCH_LEN + 1];
+    char running_branch_ver[BRANCH_LEN + 1];
 } fw_info_com_t;
 
 typedef struct fw_info_ext {
