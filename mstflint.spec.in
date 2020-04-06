@@ -150,6 +150,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/mstprivhost
 %{_bindir}/mstfwtrace
 %{_bindir}/mstresourcedump
+%{_bindir}/mstresourceparse
 %if %{enablefwmgr}
  %{_bindir}/mstfwmanager
  %{_bindir}/mstarchive
@@ -205,6 +206,11 @@ rm -rf $RPM_BUILD_ROOT
 %{mstflint_python_tools}/mstresourcedump/filters/*.py
 %{mstflint_python_tools}/mstresourcedump/fetchers/*.py
 %{mstflint_python_tools}/mstresourcedump/commands/*.py
+%{mstflint_python_tools}/mstresourceparse/*.py
+%{mstflint_python_tools}/mstresourceparse/parsers/*.py
+%{mstflint_python_tools}/mstresourceparse/utils/*.py
+%{mstflint_python_tools}/mstresourceparse/segments/*.py
+%{mstflint_python_tools}/mstresourceparse/resource_data/*.py
 
 %{_datadir}/mstflint
 %{_mandir}/man1/*
