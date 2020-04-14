@@ -134,20 +134,20 @@ class RawData:
             self._collect_all_data_sections(data_dict)
             return self._segments_raw_data
 
-    def _collect_all_data_sections(self, data_dict):
+    def _collect_all_data_sections(self, json_node):
         """This method read all the data fields recursively.
         """
-        for key in data_dict:
-            if isinstance(data_dict, dict):
-                value = data_dict[key]
-                for element in value:
-                    if element == "data":
-                        for i in range(0, len(value[element]), 4):
-                            dw = self._build_dw_from_bytes(value[element][i], value[element][i + 1],
-                                                           value[element][i + 2], value[element][i + 3])
-                            self._segments_raw_data.append(dw)
-                    else:
-                        self._collect_all_data_sections(element)
+        if isinstance(json_node, dict):
+            for key, value in json_node.items():
+                if key != "data":
+                    self._collect_all_data_sections(value)
+                else:
+                    for i in range(0, len(value), 4):
+                        dw = self._build_dw_from_bytes(value[i], value[i + 1], value[i + 2], value[i + 3])
+                        self._segments_raw_data.append(dw)
+        elif isinstance(json_node, list):
+            for node in json_node:
+                self._collect_all_data_sections(node)
 
     def _retrieve_raw_data_human_readable_file(self):
         """This method go over the human readable text file and collect the raw data.
