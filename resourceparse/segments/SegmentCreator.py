@@ -71,18 +71,19 @@ class SegmentCreator:
         """
         splitted_segments = []
         try:
-            while raw_data:
-                raw_data_len = len(raw_data)
+            end_index = len(raw_data) - 1
+            current_index = 0
+            while current_index <= end_index:
                 # seg size specified in dwords
-                seg_size = '{:0b}'.format(raw_data[cs.SEGMENT_SIZE_DWORD_LOCATION]).zfill(32)[cs.SEGMENT_SIZE_START: cs.
-                                                                                              SEGMENT_SIZE_END]
+                seg_size = '{:032b}'.format(raw_data[cs.SEGMENT_SIZE_DWORD_LOCATION + current_index])[
+                           cs.SEGMENT_SIZE_START: cs.SEGMENT_SIZE_END]
                 seg_size = int(seg_size, 2)
-                seg_data = raw_data[:seg_size]
-                splitted_segments.append(seg_data)
-                raw_data = raw_data[seg_size:]
-                if len(raw_data) == raw_data_len:
-                    raise Exception("Error in segments parsing. raw_data didn't get smaller")
+                if seg_size == 0:
+                    raise Exception("Error in segments splitting. raw_data didn't get smaller - found segment_size = 0")
 
+                seg_data = raw_data[current_index:seg_size + current_index]
+                splitted_segments.append(seg_data)
+                current_index += seg_size
         except Exception as e:
             raise Exception("Failed to split segments with error: {0}".format(e))
 
