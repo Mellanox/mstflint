@@ -50,9 +50,9 @@ class ResourceSegment(Segment):
     def __init__(self, data):
         """initialize the class by setting the class data.
         """
+        super().__init__()
         self.raw_data = data
         self.resource_type = constants.RESOURCE_DUMP_SEGMENT_TYPE_RESOURCE
-        self._parsed_data = {}
 
     def get_data(self):
         """get the general segment data.

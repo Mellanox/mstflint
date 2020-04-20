@@ -50,6 +50,7 @@ class RefSegment(Segment):
     def __init__(self, data):
         """initialize the class by setting the class data.
         """
+        super().__init__()
         self.raw_data = data
         self.type = hex(int('{:0b}'.format(data[cs.MENU_SEGMENT_TYPE_DWORD_LOCATION]).zfill(32)[16:32], 2))
         self.size = int('{:0b}'.format(data[0]).zfill(32)[0:16], 2)
@@ -58,7 +59,6 @@ class RefSegment(Segment):
         self.index2 = int('{:0b}'.format(data[3]).zfill(32)[0:32], 2)
         self.num_of_obj1 = int('{:0b}'.format(data[4]).zfill(32)[0:16], 2)
         self.num_of_obj2 = int('{:0b}'.format(data[4]).zfill(32)[16:32], 2)
-        self._parsed_data = {}
 
     def get_data(self):
         """get the reference segment data.
