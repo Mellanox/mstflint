@@ -40,7 +40,7 @@
 # 
 #######################################################
 from abc import ABC, abstractmethod
-
+from collections import OrderedDict
 
 class Segment(ABC):
     """this class is responsible for holding segment data according to its type.
@@ -49,6 +49,7 @@ class Segment(ABC):
         """initialize the class by setting the class data.
         """
         self.size = 0
+        self._parsed_data = OrderedDict()
 
     def get_size(self):
         return self.size
