@@ -107,7 +107,10 @@ class AdbParser:
         """
         name = item.attrib["name"]
         start_index = int(item.attrib["low_bound"], 10)
-        end_index = int(item.attrib["high_bound"], 10) + 1
+        if item.attrib["high_bound"] == "VARIABLE":
+            end_index = 1
+        else:
+            end_index = int(item.attrib["high_bound"], 10) + 1
 
         offset = self._parse_node_size(item.attrib["offset"])
         size = self._parse_node_size(item.attrib["size"])
