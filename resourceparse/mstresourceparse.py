@@ -41,13 +41,14 @@
 #######################################################
 import sys
 import os
-import argparse
-from utils import constants as cs
-from parsers.Parser import Parser
 
 if sys.version_info[0] < 3:
     print("Error: This tool supports python 3.x only. Exiting...")
     exit(1)
+
+import argparse
+from utils import constants as cs
+from parsers.Parser import Parser
 
 sys.path.append(os.path.join("common"))
 import tools_version
