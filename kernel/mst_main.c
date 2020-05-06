@@ -438,15 +438,15 @@ static int get_space_support_status(struct mst_dev_data *dev)
 	}
 
     if (!_set_addr_space(dev, AS_CR_SPACE)) {
-        capability_support_info_message(dev,CR_SPACE);
+        capability_support_info_message(dev, CR_SPACE);
         dev->spaces_support_status = SS_NOT_ALL_SPACES_SUPPORTED;
     }
     else if (_set_addr_space(dev, AS_ICMD)) {
-        capability_support_info_message(dev,ICMD);
+        capability_support_info_message(dev, ICMD);
         dev->spaces_support_status = SS_NOT_ALL_SPACES_SUPPORTED;
 	}
     else if (_set_addr_space(dev, AS_SEMAPHORE)) {
-        capability_support_info_message(dev,SEMAPHORE);
+        capability_support_info_message(dev, SEMAPHORE);
 		dev->spaces_support_status = SS_NOT_ALL_SPACES_SUPPORTED;
 	} else {
 		dev->spaces_support_status = SS_ALL_SPACES_SUPPORTED;
