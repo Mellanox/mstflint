@@ -823,7 +823,7 @@ static int driver_mread4_block(mfile *mf, unsigned int offset, u_int32_t *data, 
                 return -1;
             }
             memcpy(dest_ptr, read4_buf.data, toread);
-            offset += toread / sizeof(u_int32_t);
+            offset += toread;
             dest_ptr += toread / sizeof(u_int32_t);
         }
         return length;
