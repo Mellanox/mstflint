@@ -795,7 +795,7 @@ static int driver_mwrite4_block(mfile *mf, unsigned int offset, u_int32_t *data,
             if (ret < 0) {
                 return -1;
             }
-            offset += towrite / sizeof(u_int32_t);
+            offset += towrite;
             dest_ptr += towrite / sizeof(u_int32_t);
         }
         return length;
