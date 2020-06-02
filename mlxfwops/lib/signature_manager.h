@@ -105,3 +105,34 @@ public:
     virtual bool AddSignature(mfile* mf, Fs3Operations*, Flash*, u_int32_t);
     virtual bool GetSecureBootInfo();
 };
+
+class ConnectX6LXFwOperationsSignatureManager : public AbstractSignatureManager
+{
+public:
+    ConnectX6LXFwOperationsSignatureManager() : AbstractSignatureManager() {}
+    virtual ~ConnectX6LXFwOperationsSignatureManager() {}
+    virtual bool AddSignature(mfile*, Fs3Operations*, Flash*, u_int32_t)
+    {
+        return true;
+    }
+    virtual bool GetSecureBootInfo()
+    {
+        return true;
+    }
+};
+
+
+class Bluefield2FwOperationsSignatureManager : public AbstractSignatureManager
+{
+public:
+    Bluefield2FwOperationsSignatureManager() : AbstractSignatureManager() {}
+    virtual ~Bluefield2FwOperationsSignatureManager() {}
+    virtual bool AddSignature(mfile*, Fs3Operations*, Flash*, u_int32_t)
+    {
+        return true;
+    }
+    virtual bool GetSecureBootInfo()
+    {
+        return true;
+    }
+};

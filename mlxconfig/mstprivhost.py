@@ -102,6 +102,7 @@ class PrivilegeMgr(object):
     CONFIG_CMD_LINE = "mstconfig -d %s -f %s --yes set_raw"
     MCRA_CMD_LINE = "mstmcra %s 0xf0014.0:16"
     BLUE_FIELD_DEV_ID = 0x211
+    BLUE_FIELD2_DEV_ID = 0x214
     TITLE = "MLNX_RAW_TLV_FILE\n"
     RAW_BYTES = "0x03000204 0x07000083 0x00000000"
 
@@ -184,7 +185,7 @@ class PrivilegeMgr(object):
         if exit_code != 0:
             raise PrivilegeException("Unknown device '%s'!" % self._device)
         dev_id = int(stdout, 16)
-        if dev_id != self.BLUE_FIELD_DEV_ID:
+        if dev_id not in (self.BLUE_FIELD_DEV_ID, self.BLUE_FIELD2_DEV_ID):
             raise PrivilegeException(
                 "Device '%s' is not supported, "
                 "only BlueField devices are supported!" % self._device)

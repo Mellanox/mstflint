@@ -251,6 +251,7 @@ typedef enum chip_type {
     CT_QUANTUM,
     CT_SPECTRUM2,
     CT_CONNECTX6DX,
+    CT_CONNECTX6LX,
     CT_SPECTRUM3,
     CT_BLUEFIELD2
 } chip_type_t;
@@ -258,7 +259,7 @@ typedef enum chip_type {
 #define IS_HCA(chipType) \
     (((chipType) == CT_CONNECTX) || ((chipType) == CT_CONNECT_IB) || ((chipType) == CT_CONNECTX4) || ((chipType) == CT_CONNECTX4_LX) || \
       ((chipType) == CT_CONNECTX5) || ((chipType) == CT_BLUEFIELD) || ((chipType) == CT_CONNECTX6) || \
-        ((chipType) == CT_CONNECTX6DX) || ((chipType) == CT_BLUEFIELD2))
+        ((chipType) == CT_CONNECTX6DX) || ((chipType) == CT_CONNECTX6LX) || ((chipType) == CT_BLUEFIELD2))
 typedef enum chip_family_type {
     CFT_UNKNOWN = 0,
     CFT_HCA,
