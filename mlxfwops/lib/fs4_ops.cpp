@@ -1531,7 +1531,14 @@ bool Fs4Operations::BurnFs4Image(Fs4Operations &imageOps,
     bool IsUpdateSignatures = true;
     switch (this->_fwImgInfo.ext_info.chip_type) {
         case CT_CONNECTX6:
+        case CT_CONNECTX6DX:
             getExtendedHWPtrs((VerifyCallBack)NULL, imageOps._ioAccess, true);
+            break;
+        case CT_BLUEFIELD:
+            if (!_signatureMngr->AddSignature(_ioAccess->getMfileObj(), &imageOps, f, 0)) {
+                return false;
+            }
+            IsUpdateSignatures = false;//already updated right now
             break;
         default:
             IsUpdateSignatures = false;

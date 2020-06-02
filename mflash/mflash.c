@@ -3251,6 +3251,7 @@ int mf_set_reset_flash_on_warm_reboot(mflash *mfl)
         break;
     case DeviceConnectX6:
     case DeviceConnectX6DX:
+    case DeviceConnectX6LX:
     case DeviceBlueField2:
     case DeviceSpectrum2:
     case DeviceSpectrum3:
@@ -3295,6 +3296,7 @@ int mf_update_boot_addr(mflash *mfl, u_int32_t boot_addr)
         break;
     case DeviceConnectX6:
     case DeviceConnectX6DX:
+    case DeviceConnectX6LX:
     case DeviceQuantum:
     case DeviceBlueField2:
     case DeviceSpectrum2:

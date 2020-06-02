@@ -376,6 +376,7 @@ void MlnxDev::setDeviceType(void)
     case DeviceConnectX5:
     case DeviceConnectX6:
     case DeviceConnectX6DX:
+    case DeviceConnectX6LX:
     case DeviceBlueField:
     case DeviceBlueField2:
         try {
