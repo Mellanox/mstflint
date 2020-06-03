@@ -23,7 +23,7 @@
 %endif
 
 %{!?version: %global version 4.14.0}
-%{!?_release: %global _release 1}
+%{!?_release: %global _release 2}
 %global _kmp_rel %{_release}%{?_kmp_build_num}%{?_dist}
 
 Name: %{_name}
