@@ -96,6 +96,7 @@ enum dm_dev_id
     DeviceDummy,
     DeviceSecureHost,
     DeviceConnectX6DX,
+    DeviceConnectX6LX,
     DeviceSpectrum3, //Firebird
     DeviceEndMarker           // Dummy Device - Marker for indicating end of devices when iterating
 };
