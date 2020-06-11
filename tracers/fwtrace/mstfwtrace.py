@@ -137,6 +137,15 @@ DEV_INFO_DB = [
         "mask_classes": list(HCA_MASK_CLASSES),
     },
     {
+        "name": "BlueField2",
+        "dev_id": [0x214],
+        "chip_rev":-1,
+        "maskable": True,
+        "mask_addr": None,
+        # list of (trace type name, start_bit)
+        "mask_classes": list(HCA_MASK_CLASSES),
+    },
+    {
         "name": "ConnectX6",
         "dev_id": [0x20f],
         "chip_rev":-1,

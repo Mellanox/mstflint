@@ -91,13 +91,14 @@ MLNX_DEVICES = [
                dict(name="BlueField2", devid=0x214, status_config_not_done=(0xb5e04, 31)),
                dict(name="ConnectX6", devid=0x20f, status_config_not_done=(0xb5f04, 31)),
                dict(name="ConnectX6DX", devid=0x212, status_config_not_done=(0xb5f04, 31)),
+               dict(name="ConnectX6LX", devid=0x216, status_config_not_done=(0xb5f04, 31)),
                dict(name="ConnectX3", devid=0x1f5),
                dict(name="SwitchX", devid=0x245),
                dict(name="IS4", devid=0x1b3),
                ]
 
 # Supported devices.
-SUPP_DEVICES = ["ConnectIB", "ConnectX4", "ConnectX4LX", "ConnectX5", "BlueField", "ConnectX6", "ConnectX6DX", "BlueField2"]
+SUPP_DEVICES = ["ConnectIB", "ConnectX4", "ConnectX4LX", "ConnectX5", "BlueField", "ConnectX6", "ConnectX6DX", "ConnectX6LX", "BlueField2"]
 SUPP_OS = ["FreeBSD", "Linux", "Windows"]
 
 IS_MSTFLINT = True
@@ -239,7 +240,7 @@ def reset_fsm_register():
 def sigHndl(signal, frame):
     reset_fsm_register()
 
-    print("\nSignal %d received, exiting..." % signal)
+    print("\nSignal %d received, Exiting..." % signal)
     sys.exit(1)
 
 def set_signal_handler():
@@ -1319,7 +1320,7 @@ def sendResetToFWSync(mfrl, reset_level, reset_type):
                  status.fsm_sync_type != SYNC_TYPE_FW_RESET) or\
             status.fsm_state == SYNC_STATE_GO:
         raise RuntimeError("The fsm register is busy, run \"%s -d <device> reset_fsm_register\" to reset the register." % PROG)
-    elif status.fsm_state == SYNC_STATE_IDLE:
+    elif status.fsm_state == SYNC_STATE_IDLE: # First Host arrived 
         logger.debug('[Timing Test] MH SYNC send GET_READY (first host)')
         CmdifObj.multiHostSync(SYNC_STATE_GET_READY, SYNC_TYPE_FW_RESET, 0x1)
         #WA: send again because in single host case the firmware will wait for a second call (fw bug ??)
