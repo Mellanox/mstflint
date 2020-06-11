@@ -40,6 +40,7 @@
 #ifndef MFLASH_ACCESS_LAYER_H_
 #define MFLASH_ACCESS_LAYER_H_
 
+
 #include <compatibility.h>
 
 #include "mflash_common_structs.h"
