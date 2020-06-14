@@ -743,8 +743,7 @@ const char* GenericCommander::loadConfigurationGetStr()
         deviceId == DeviceBlueField ||
         deviceId == DeviceBlueField2 ||
         deviceId == DeviceConnectX6 ||
-        deviceId == DeviceConnectX6DX ||
-        deviceId == DeviceConnectX6LX) {
+        deviceId == DeviceConnectX6DX) {
         // send warm boot (bit 6)
         mfrl.reset_level = 1 << 6;
         mft_signal_set_handling(1);

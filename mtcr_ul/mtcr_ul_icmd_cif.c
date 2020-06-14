@@ -227,9 +227,7 @@ enum {
 #define CX5_HW_ID       525
 #define CX6_HW_ID       527
 #define CX6DX_HW_ID     530
-#define CX6LX_HW_ID     534
 #define BF_HW_ID        529
-#define BF2_HW_ID       532
 #define SW_IB_HW_ID     583
 #define SW_EN_HW_ID     585
 #define SW_IB2_HW_ID    587
@@ -674,8 +672,6 @@ static int icmd_init_cr(mfile *mf)
 
     case (CX6_HW_ID):
     case (CX6DX_HW_ID):
-    case (CX6LX_HW_ID):
-    case (BF2_HW_ID):
         cmd_ptr_addr = CMD_PTR_ADDR_CX5;
         hcr_address = HCR_ADDR_CX5;
         mf->icmd.semaphore_addr = SEMAPHORE_ADDR_CX5;
@@ -757,8 +753,6 @@ static int icmd_init_vcr_crspace_addr(mfile* mf)
 
     case (CX6_HW_ID):
     case (CX6DX_HW_ID):
-    case (CX6LX_HW_ID):
-    case (BF2_HW_ID):
             mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CX6;
             mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CX5; // same bit offset as CX5
             break;
