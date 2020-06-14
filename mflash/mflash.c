@@ -217,7 +217,6 @@ int mf_secure_host_op(mflash *mfl, u_int64_t key, int op);
 #define CX5_HW_ID        0x20d
 #define CX6_HW_ID        0x20f
 #define CX6DX_HW_ID      0x212
-#define CX6LX_HW_ID      0x216
 #define BLUEFIELD_HW_ID  0x211
 #define BLUEFIELD2_HW_ID 0x214
 #define CONNECT_IB_HW_ID 0x1FF
@@ -257,8 +256,6 @@ int mf_secure_host_op(mflash *mfl, u_int64_t key, int op);
     ((dev_id) == CX6_HW_ID)
 #define IS_CONNECTX6DX(dev_id) \
     ((dev_id) == CX6DX_HW_ID)
-#define IS_CONNECTX6LX(dev_id) \
-    ((dev_id) == CX6LX_HW_ID)
 #define IS_SPECTRUM3(dev_id) \
     ((dev_id) == SPECTRUM3_HW_ID)
 #define IS_BLUEFIELD(dev_id) \
@@ -577,7 +574,6 @@ flash_info_t g_flash_info_arr[] = { { "M25PXxx", FV_ST, FMT_ST_M25PX, FD_LEGACY,
                                     { CYPRESS_3V_NAME, FV_S25FLXXXX, FMT_S25FLXXXL, 1 << FD_128, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 1, 0 },
                                     //{ CYPRESS_3V_NAME, FV_S25FLXXXX, FMT_S25FLXXXL, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB,  1, 1, 1, 0, 0 },
                                     { ISSI_3V_NAME, FV_IS25LPXXX, FMT_IS25LPXXX, FD_LEGACY, MCS_STSPI, SFC_SSE, FSS_4KB, 1, 1, 1, 0, 0 },
-
                                     { MACRONIX_1V8_NAME, FV_MX25K16XXX, FMT_SST_25, (1 << FD_256), MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0 },
                                     //{ ISSI_3V_NAME, FV_IS25LPXXX, FMT_IS25LPXXX, 1 << FD_256, MCS_STSPI, SFC_4SSE, FSS_4KB, 1, 1, 1, 0, 0 }
 };
@@ -1071,7 +1067,6 @@ int read_chunks(mflash *mfl, u_int32_t addr, u_int32_t len, u_int8_t *data, bool
         addr += data_size;
         p += data_size;
         len -= data_size;
-
         if (verbose) {
             u_int32_t new_perc = 100 - 100*(1.0*len/original_len);
             if (new_perc != perc) {
@@ -2028,7 +2023,9 @@ int cntx_flash_init_direct_access(mflash *mfl, flash_params_t *flash_params)
     mfl->f_set_dummy_cycles = mf_set_dummy_cycles_direct_access;
     mfl->f_get_write_protect = mf_get_write_protect_direct_access;
     mfl->f_set_write_protect = mf_set_write_protect_direct_access;
+
     rc = mfl->f_reset(mfl);
+
     return MFE_OK;
 }
 
@@ -2169,7 +2166,6 @@ int check_cache_replacement_guard(mflash *mfl, u_int8_t *needs_cache_replacement
         if (rc) {
             return rc;
         }
-        
         // Read the Cache replacement offset
         if (!dm_dev_is_raven_family_switch(devid_t)) {
         MREAD4(CACHE_REP_OFF, &data);
@@ -2834,8 +2830,7 @@ int mf_opend_int(mflash **pmfl, void *access_dev, int num_of_banks, flash_params
         u_int32_t chip_rev;
         rc = dm_get_device_id((*pmfl)->mf, &((*pmfl)->dm_dev_id), &dev_id, &chip_rev);
         CHECK_RC(rc);
-    } 
-    else if (access_type == MFAT_UEFI) {
+    } else if (access_type == MFAT_UEFI) {
         // open mfile as uefi
         if (!((*pmfl)->mf = mopen_fw_ctx(access_dev, ((uefi_dev_extra_t*) dev_extra)->fw_cmd_func, &((uefi_dev_extra_t*) dev_extra)->dev_info))) {
             return MFE_NOMEM;
@@ -2854,11 +2849,11 @@ int mf_opend_int(mflash **pmfl, void *access_dev, int num_of_banks, flash_params
     return rc;
 }
 
-//int mf_opend(mflash **pmfl, struct mfile_t *mf, int num_of_banks, flash_params_t *flash_params,
-//             int ignore_cache_rep_guard)
-//{
-//    return mf_opend_int(pmfl, mf, num_of_banks, flash_params, ignore_cache_rep_guard, MFAT_MFILE, NULL, 0);
-//}
+int mf_opend(mflash **pmfl, struct mfile_t *mf, int num_of_banks, flash_params_t *flash_params,
+             int ignore_cache_rep_guard)
+{
+    return mf_opend_int(pmfl, mf, num_of_banks, flash_params, ignore_cache_rep_guard, MFAT_MFILE, NULL, 0);
+}
 
 int mf_open_uefi(mflash **pmfl, uefi_Dev_t *uefi_dev, uefi_dev_extra_t *uefi_dev_extra)
 {
@@ -3256,7 +3251,6 @@ int mf_set_reset_flash_on_warm_reboot(mflash *mfl)
         break;
     case DeviceConnectX6:
     case DeviceConnectX6DX:
-    case DeviceConnectX6LX:
     case DeviceBlueField2:
     case DeviceSpectrum2:
     case DeviceSpectrum3:
@@ -3301,7 +3295,6 @@ int mf_update_boot_addr(mflash *mfl, u_int32_t boot_addr)
         break;
     case DeviceConnectX6:
     case DeviceConnectX6DX:
-    case DeviceConnectX6LX:
     case DeviceQuantum:
     case DeviceBlueField2:
     case DeviceSpectrum2:

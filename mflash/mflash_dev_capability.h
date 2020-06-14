@@ -1,3 +1,4 @@
+
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
  *
@@ -29,7 +30,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
-*/
+ */
 
 /*
  * mflash_dev_capabillity.h

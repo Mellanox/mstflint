@@ -795,7 +795,7 @@ static int driver_mwrite4_block(mfile *mf, unsigned int offset, u_int32_t *data,
             if (ret < 0) {
                 return -1;
             }
-            offset += towrite;
+            offset += towrite / sizeof(u_int32_t);
             dest_ptr += towrite / sizeof(u_int32_t);
         }
         return length;
@@ -823,7 +823,7 @@ static int driver_mread4_block(mfile *mf, unsigned int offset, u_int32_t *data, 
                 return -1;
             }
             memcpy(dest_ptr, read4_buf.data, toread);
-            offset += toread;
+            offset += toread / sizeof(u_int32_t);
             dest_ptr += toread / sizeof(u_int32_t);
         }
         return length;
@@ -1621,7 +1621,6 @@ static long supported_dev_ids[] = {
     0x1019,     //Connect-X5Ex
     0x101b,     //Connect-X6
     0x101d,     //Connect-X6DX
-    0x101f,     //Connect-X6LX
     0xc738,     //SwitchX
     0xcb20,     //Switch-IB
     0xcb84,     //Spectrum
@@ -1650,8 +1649,8 @@ static long live_fish_id_database[] = {
     0x20d,
     0x20f,
     0x211,
-    0x212, //Connect-X6DX
-    0x216, //Connect-X6LX
+    0x212,
+    0x216,
     0x250, //Spectrum3
     -1
 };
