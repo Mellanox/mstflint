@@ -211,6 +211,7 @@ namespace std {}; using namespace std;
 #define CX5_HW_ID         525
 #define CX6_HW_ID         527
 #define CX6DX_HW_ID       530
+#define CX6LX_HW_ID       534
 #define BF_HW_ID          529
 #define BF2_HW_ID         532
 #define CX2_HW_ID         400

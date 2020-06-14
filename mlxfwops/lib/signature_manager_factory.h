@@ -66,4 +66,19 @@ public:
         }
 
     }
+
+    ISignatureManager* CreateSignatureManager(chip_type_t chip) {
+        if (chip == CT_BLUEFIELD) {
+            return new BluefieldFwOperationsSignatureManager();
+        }
+        else if (chip == CT_CONNECTX6) {
+            return new ConnectX6FwOperationsSignatureManager();
+        }
+        else if (chip == CT_CONNECTX6DX) {
+            return new ConnectX6DXFwOperationsSignatureManager();
+        }
+        else {
+            return new FwOperationsSignatureManager();
+        }
+    }
 };
