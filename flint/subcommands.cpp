@@ -1844,35 +1844,18 @@ bool BurnSubCommand::checkFwVersion(bool CreateFromImgInfo, u_int16_t fw_ver0, u
         new_version = FwOperations::createFwVersion(fw_ver0, fw_ver1, fw_ver2);
     }
 
-    char curr_ver[124], new_ver[124];
-    printf("\n");
-    printf("    Current FW version on flash:  ");
-    snprintf(curr_ver, 124,
-            current.get_fw_version(VERSION_FORMAT(_devInfo.fw_info.fw_ver[1]),
-                    false, "N/A").c_str());
-
-    printf("%s", curr_ver);
-    printf("\n");
-
-    printf("    New FW version:               ");
-    if (CreateFromImgInfo) {
-        snprintf(new_ver, 124,
-                new_version.get_fw_version(
-                        VERSION_FORMAT(_imgInfo.fw_info.fw_ver[1]), false,
-                        "N/A").c_str());
-    }
-    else {
-        snprintf(new_ver, 124,
-                new_version.get_fw_version(VERSION_FORMAT(fw_ver1), false,
-                        "N/A").c_str());
-    }
-    printf("%s", new_ver);
-    printf("\n");
+    const string current_version_str = current.get_fw_version(
+        VERSION_FORMAT(_devInfo.fw_info.fw_ver[1]), false, "N/A");
+    printf("\n    Current FW version on flash:  %s\n", current_version_str.c_str());
+    
+    const string next_version_str = new_version.get_fw_version(
+        VERSION_FORMAT((CreateFromImgInfo ? _imgInfo.fw_info.fw_ver[1] : fw_ver1)), false, "N/A");
+    printf("    New FW version:               %s\n", next_version_str.c_str());
 
     if (_flintParams.log_specified) {
         print_line_to_log(
                 "Current FW version on flash: %s,  New FW version: %s\n",
-                curr_ver, new_ver);
+                current_version_str.c_str(), next_version_str.c_str());
     }
 
     if (current.is_set() && new_version.is_set()) {
