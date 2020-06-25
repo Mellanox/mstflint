@@ -217,7 +217,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %changelog
 * Wed Jun 24 2020 Konstantin Maksatov <kostiantynm@nvidia.com>
-   Added BlueField-2 adapter cards support. Added new tool: resourceparse.
+   Added BlueField-2 adapter cards support.
 
 * Tue Mar 31 2020 Eran Jakoby <eranj@dev.mellanox.co.il>
    MFT 4.14.0 Updates.
