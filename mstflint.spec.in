@@ -1,7 +1,7 @@
 %{!?ibmadlib: %define ibmadlib libibmad-devel}
 %{!?name: %define name mstflint}
 %{!?version: %define version 4.14.0}
-%{!?release: %define release 2}
+%{!?release: %define release 3}
 %{!?buildtype: %define buildtype "native"}
 %{!?noinband: %define noinband 0}
 %{!?nodc: %define nodc 0}
@@ -216,6 +216,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 
 %changelog
+* Wed Jun 24 2020 Konstantin Maksatov <kostiantynm@nvidia.com>
+   Added BlueField-2 adapter cards support.
+
 * Tue Mar 31 2020 Eran Jakoby <eranj@dev.mellanox.co.il>
    MFT 4.14.0 Updates.
 
