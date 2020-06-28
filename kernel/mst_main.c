@@ -437,7 +437,7 @@ static int get_space_support_status(struct mst_dev_data *dev)
 		return 1;
 	}
 
-    if (!_set_addr_space(dev, AS_CR_SPACE)) {
+    if (_set_addr_space(dev, AS_CR_SPACE)) {
         capability_support_info_message(dev, CR_SPACE);
         dev->spaces_support_status = SS_NOT_ALL_SPACES_SUPPORTED;
     }
