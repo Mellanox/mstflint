@@ -1,3 +1,75 @@
+mstflint (4.14.0-3) unstable; urgency=low
+
+  * Fixed format-security warning in flint's checkFwVersion.
+
+ -- Dan Goldberg <dang@unknown>  Thu, 18 Jun 2020 00:00:00 +0200
+
+mstflint (4.14.0-2) unstable; urgency=low
+
+  * Updated from MFT-4.14.0. Added BlueField-2 adapter cards support.
+
+ -- Kostiantyn Maksatov <kostiantynm@unknown>  Thu, 11 Jun 2020 15:55:46 +0200
+
+mstflint (4.14.0-1) unstable; urgency=low
+
+  * Updated from MFT-4.14.0
+
+ -- Matan Eliyahu <matanel@unknown>  Tue, 31 Mar 2020 00:00:00 +0200
+
+mstflint (4.13.3-2) unstable; urgency=low
+
+  * Updated from MFT-4.13.3
+
+ -- Matan Eliyahu <matanel@unknown>  Wed, 08 Jan 2020 00:00:00 +0200
+
+mstflint (4.13.3-1) unstable; urgency=low
+
+  * Updated from MFT-4.13.3. Added new tools: mstresourcedump.
+
+ -- Matan Eliyahu <matanel@unknown>  Tue, 31 Dec 2019 00:00:00 +0200
+
+mstflint (4.13.1-1) unstable; urgency=low
+
+  * Updated from MFT-4.13.0
+
+ -- Matan Eliyahu <matanel@unknown>  Thu, 10 Oct 2019 00:00:00 +0200
+
+mstflint (4.13.0-1) unstable; urgency=low
+
+  * Updated from MFT-4.13.0
+
+ -- Matan Eliyahu <matanel@unknown>  Wed, 02 Oct 2019 00:00:00 +0200
+
+mstflint (4.12.0-1) unstable; urgency=low
+
+  * Updated from MFT-4.12.0
+
+ -- Matan Eliyahu <matanel@unknown>  Thu, 13 Jun 2019 00:00:00 +0200
+
+mstflint (4.11.0-5) unstable; urgency=low
+
+  * Updated from MFT-4.11.1
+
+ -- Dan Goldberg <dang@unknown>  Wed, 01 May 2019 00:00:00 +0200
+
+mstflint (4.11.0-4) unstable; urgency=low
+
+  * Updated from MFT-4.11.1
+
+ -- Dan Goldberg <dang@unknown>  Sun, 07 Apr 2019 00:00:00 +0200
+
+mstflint (4.11.0-3) unstable; urgency=low
+
+  * Updated from MFT-4.11.1
+
+ -- Dan Goldberg <dang@unknown>  Mon, 11 Feb 2019 00:00:00 +0200
+
+mstflint (4.11.0-2) unstable; urgency=low
+
+  * Updated from MFT-4.11.0
+
+ -- Dan Goldberg <dang@unknown>  Thu, 31 Jan 2019 00:00:00 +0200
+
 mstflint (4.11.0-1) unstable; urgency=low
 
   * Updated from MFT-4.11.0. Added new tools: mlxarchive and mstprivhost.

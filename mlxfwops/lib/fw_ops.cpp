@@ -1031,6 +1031,7 @@ const FwOperations::HwDevData FwOperations::hwDevData[] = {
                                                                                                {UNKNOWN_BIN, {0}}}},
     { "ConnectX-6",       CX6_HW_ID,        CT_CONNECTX6,    CFT_HCA,     0, {4123, 0}, {{UNKNOWN_BIN, {0}}}},
     { "ConnectX-6DX",     CX6DX_HW_ID,      CT_CONNECTX6DX,  CFT_HCA,     0, {4125, 0}, {{UNKNOWN_BIN, {0}}}},
+    { "ConnectX-6LX",     CX6LX_HW_ID,      CT_CONNECTX6LX,  CFT_HCA,     0, {4127, 0}, {{UNKNOWN_BIN, {0}}}},
     { "BlueField",        BF_HW_ID,         CT_BLUEFIELD,    CFT_HCA,     0, {41680, 41681, 41682, 0}, {{UNKNOWN_BIN, {0}}}},
     { "BlueField2",       BF2_HW_ID,        CT_BLUEFIELD2,   CFT_HCA,     0, {41684, 41685, 41686, 0}, {{UNKNOWN_BIN, {0}}}},
     { "Spectrum",         SPECTRUM_HW_ID,   CT_SPECTRUM,     CFT_SWITCH,  0, {52100, 0}, {{UNKNOWN_BIN, {0}}}},
@@ -1052,6 +1053,7 @@ const FwOperations::HwDev2Str FwOperations::hwDev2Str[] = {
     {"ConnectX-5",        CX5_HW_ID,        0x00},
     {"ConnectX-6",        CX6_HW_ID,        0x00},
     {"ConnectX-6DX",      CX6DX_HW_ID,      0x00},
+    {"ConnectX-6LX",      CX6LX_HW_ID,      0x00},
     {"BlueField",         BF_HW_ID,         0x00},
     {"BlueField2",        BF2_HW_ID,        0x00},
     {"SwitchX A0",        SWITCHX_HW_ID,    0x00},
@@ -1635,9 +1637,12 @@ void FwOperations::SetDevFlags(chip_type_t chipType, u_int32_t devType, fw_img_t
         ethDev = true;
     } else {
         ibDev  = (fwType == FIT_FS3 && chipType != CT_SPECTRUM) || (chipType == CT_CONNECTX && !CntxEthOnly(devType));
-        ethDev = (chipType == CT_CONNECTX) || (chipType == CT_SPECTRUM) || (chipType == CT_CONNECTX4) || \
-                 (chipType == CT_CONNECTX4_LX) || (chipType == CT_CONNECTX5) || (chipType == CT_BLUEFIELD) || \
-                 (chipType == CT_SPECTRUM2) || (chipType == CT_SPECTRUM3)|| (chipType == CT_CONNECTX6)  || (chipType == CT_CONNECTX6DX) || (chipType == CT_BLUEFIELD2);
+        ethDev = (chipType == CT_CONNECTX) || \
+                 (chipType == CT_CONNECTX4) || (chipType == CT_CONNECTX4_LX) || \
+                 (chipType == CT_CONNECTX5) || \
+                 (chipType == CT_CONNECTX6) || (chipType == CT_CONNECTX6DX) || (chipType == CT_CONNECTX6LX) || \
+                 (chipType == CT_SPECTRUM) || (chipType == CT_SPECTRUM2) || (chipType == CT_SPECTRUM3) || \
+                 (chipType == CT_BLUEFIELD) || (chipType == CT_BLUEFIELD2);
     }
 
     if ((!ibDev && !ethDev) || chipType == CT_UNKNOWN) {
@@ -1997,7 +2002,8 @@ u_int8_t FwOperations::GetFwFormatFromHwDevID(u_int32_t hwDevId)
     } else if (hwDevId == CX5_HW_ID ||
                hwDevId == CX6_HW_ID ||
                hwDevId == CX6DX_HW_ID ||
-               hwDevId == BF_HW_ID  ||
+               hwDevId == CX6LX_HW_ID ||
+               hwDevId == BF_HW_ID      ||
                hwDevId == BF2_HW_ID      ||
                hwDevId == QUANTUM_HW_ID ||
                hwDevId == SPECTRUM2_HW_ID ||

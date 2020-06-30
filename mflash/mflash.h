@@ -99,8 +99,8 @@ struct mfile_t;
 //
 int     mf_open(mflash **pmfl, const char *dev, int num_of_banks, flash_params_t *flash_params,
                 int ignore_cache_rep_guard);
-int     mf_opend(mflash **pmfl, struct mfile_t *mf, int num_of_banks,  flash_params_t *flash_params,
-                 int ignore_cache_rep_guard);
+//int     mf_opend(mflash **pmfl, struct mfile_t *mf, int num_of_banks,  flash_params_t *flash_params,
+  //               int ignore_cache_rep_guard);
 int     mf_open_adv(mflash **pmfl, const char *dev, int num_of_banks, flash_params_t *flash_params,
                     int ignore_cache_rep_guard, int cx3_fw_access);
 
