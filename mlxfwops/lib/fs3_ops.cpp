@@ -353,7 +353,7 @@ bool Fs3Operations::GetImageInfo(u_int8_t *buff)
     if (!IS_HCA(_fwImgInfo.ext_info.chip_type)) {
         if (VerifyBranchFormat(image_info.vsd)) {
         strncpy(_fwImgInfo.ext_info.branch_ver, image_info.vsd, BRANCH_LEN);
-	_fwImgInfo.ext_info.branch_ver[BRANCH_LEN - 1] = '\0';
+        _fwImgInfo.ext_info.branch_ver[BRANCH_LEN - 1] = '\0';
         }
     }
     return true;
