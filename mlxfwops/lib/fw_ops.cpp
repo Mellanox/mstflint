@@ -1102,7 +1102,6 @@ bool FwOperations::CheckMatchingHwDevId(u_int32_t hwDevId, u_int32_t rev_id, u_i
 {
 
     char supp_hw_id_list[MAX_NUM_SUPP_HW_LIST_STR] = {'\0'};
-    char supp_hw_id_list_tmp[MAX_NUM_SUPP_HW_LIST_STR];
     char curr_hw_id_name[MAX_HW_NAME_LEN];
 
     for (u_int32_t i = 0; i < supportedHwIdNum; i++) {
@@ -1135,8 +1134,8 @@ bool FwOperations::CheckMatchingHwDevId(u_int32_t hwDevId, u_int32_t rev_id, u_i
         if (supp_hw_id_list[0] == '\0') {
             sprintf(supp_hw_id_list, "%s", hw_name);
         } else {
-            strcpy(supp_hw_id_list_tmp, supp_hw_id_list);
-            sprintf(supp_hw_id_list, "%s, %s", supp_hw_id_list_tmp, hw_name);
+            strcat(supp_hw_id_list, ", ");
+            strcat(supp_hw_id_list, hw_name);
         }
     }
     // If we get here, this FW cannot be burnt in the current device.

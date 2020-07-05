@@ -353,6 +353,7 @@ bool Fs3Operations::GetImageInfo(u_int8_t *buff)
     if (!IS_HCA(_fwImgInfo.ext_info.chip_type)) {
         if (VerifyBranchFormat(image_info.vsd)) {
         strncpy(_fwImgInfo.ext_info.branch_ver, image_info.vsd, BRANCH_LEN);
+        _fwImgInfo.ext_info.branch_ver[BRANCH_LEN - 1] = '\0';
         }
     }
     return true;
@@ -795,7 +796,7 @@ bool Fs3Operations::getRunningFwVersion()
     if (reg_access_rc == ME_OK) {
         strncpy(_fwImgInfo.ext_info.running_branch_ver,
                 (char*) mgir.dev_info.dev_branch_tag,
-                sizeof(mgir.dev_info.dev_branch_tag));
+                sizeof(_fwImgInfo.ext_info.running_branch_ver));
         _fwImgInfo.ext_info.running_fw_ver[0] = mgir.fw_info.extended_major;
         _fwImgInfo.ext_info.running_fw_ver[1] = mgir.fw_info.extended_minor;
         _fwImgInfo.ext_info.running_fw_ver[2] = mgir.fw_info.extended_sub_minor;

@@ -377,7 +377,9 @@ namespace mu
       switch(a_Callback.GetCode())
       {
       case cmOPRT_POSTFIX: Error(ecINVALID_POSTFIX_IDENT, -1, a_sName);
+        /* fallthrough */ // Not reached
       case cmOPRT_INFIX:   Error(ecINVALID_INFIX_IDENT, -1, a_sName);
+        /* fallthrough */ // Not reached
       default:             Error(ecINVALID_NAME, -1, a_sName);
       }
     }
@@ -1228,7 +1230,7 @@ namespace mu
                   Error(ecUNEXPECTED_ARG_SEP, m_pTokenReader->GetPos());
 
                 ++stArgCount.top();
-                // fallthrough intentional (no break!)
+		/* fallthrough */
 
         case cmEND:
                 ApplyRemainingOprt(stOpt, stVal);
@@ -1286,7 +1288,7 @@ namespace mu
         //case cmXOR:
         case cmIF:
                 m_nIfElseCounter++;
-                // fallthrough intentional (no break!)
+		/* fallthrough */
 
         case cmLAND:
         case cmLOR:
