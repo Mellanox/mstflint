@@ -76,9 +76,9 @@ class InfoSegment(Segment):
         #         int('{:0b}'.format(dw_data[offset]).zfill(32)[8:16], 2)) + "." + str(
         #         int('{:0b}'.format(dw_data[offset]).zfill(32)[16:32], 2))
             offset += 1
-            return "{0}.{1}.{2}".format(str(int('{:0b}'.format(dw_data[offset]).zfill(32)[0:8], 2)),
-                                        str(int('{:0b}'.format(dw_data[offset]).zfill(32)[8:16], 2)),
-                                        str(int('{:0b}'.format(dw_data[offset]).zfill(32)[16:32], 2)))
+            return "{0}.{1}.{2}".format(str(int('{:0b}'.format(dw_data[offset]).zfill(32)[0:8], 2)).rjust(2, '0'),
+                                        str(int('{:0b}'.format(dw_data[offset]).zfill(32)[8:16], 2)).rjust(2, '0'),
+                                        str(int('{:0b}'.format(dw_data[offset]).zfill(32)[16:32], 2)).rjust(4, '0'))
         return ""
 
     def add_parsed_data(self, key, value):
