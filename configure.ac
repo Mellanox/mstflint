@@ -325,9 +325,6 @@ AC_LANG_POP([C++])
 CXXFLAGS="$OLD_CXXFLAGS"
 
 TOOLS_BUILD_TIME=`date  +"%b %d %Y\, %H:%M:%S"`
-if test "x$SOURCE_DATE_EPOCH" != "x"; then
-    TOOLS_BUILD_TIME=`LC_ALL=C date -u -d @$SOURCE_DATE_EPOCH" +"%b %d %Y\, %H:%M:%S"`
-fi
 AC_SUBST(TOOLS_BUILD_TIME)
 
 AC_ARG_VAR(MSTFLINT_VERSION_STR, The MSTFLINT version)
