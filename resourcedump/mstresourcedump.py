@@ -184,6 +184,11 @@ class MlxResDump:
         #     'dump -d test --source test2 --vHCAid 15 --index 1 --index2 2 --numOfObj1 10 --numOfObj2 20
         #           --depth inf --bin tt.txt'.split())
         arguments = parser.parse_args()
+        
+        if len(sys.argv) < 2:
+            parser.print_usage()
+            sys.exit(1)
+
         return arguments
 
 
