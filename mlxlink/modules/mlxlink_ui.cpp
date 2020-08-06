@@ -136,6 +136,8 @@ void MlxlinkUi::printSynopsisCommands()
     MlxlinkRecord::printFlagLine(PPTT_RATE_FLAG_SHORT, PPTT_RATE_FLAG, "tx_lane_rate",
                   "TX Lane Rate [EDR(Default)/25G/10G/...]  (Optional - Default 25G)");
     printf(IDENT);
+    MlxlinkRecord::printFlagLine(PRBS_LANES_FLAG_SHORT, PRBS_LANES_FLAG, "lanes",
+                  "PRBS lanes to set (one or more lane separated by comma)[0,1,2,...] (Optional - Default all lanes)");
     MlxlinkRecord::printFlagLine(BER_COLLECT_FLAG_SHORT, BER_COLLECT_FLAG, "csv_file",
                   "Port Extended Information Collection [CSV File]");
     printf(IDENT);
@@ -196,7 +198,7 @@ void MlxlinkUi::printHelp()
     printf("\n");
 }
 
-void MlxlinkUi::paramValidate()
+void MlxlinkUi::validateMandatoryParams()
 {
     if (_mlxlinkCommander->_device == "") {
         throw MlxRegException("Please provide a device name");
@@ -217,6 +219,10 @@ void MlxlinkUi::paramValidate()
     if ((_mlxlinkCommander->_userInput._labelPort == 0) && (_mlxlinkCommander->_userInput._portType != "PCIE")) {
         throw MlxRegException("Please provide a valid port number");
     }
+}
+
+void MlxlinkUi::validatePCIeParams()
+{
     if (_mlxlinkCommander->_userInput._portType == "PCIE") {
         _mlxlinkCommander->_userInput._pcie = true;
         if (_mlxlinkCommander->_uniqueCmds) {
@@ -250,6 +256,10 @@ void MlxlinkUi::paramValidate()
             _mlxlinkCommander->_userInput._sendPcieIndex) {
         throw MlxRegException("The --depth, --node and --pcie_index flags are valid only with --port_type PCIE");
     }
+}
+
+void MlxlinkUi::validateGeneralCmdsParams()
+{
     if (_mlxlinkCommander->_uniqueCmds > 1) {
         throw MlxRegException("Commands are mutually exclusive!");
     }
@@ -285,7 +295,14 @@ void MlxlinkUi::paramValidate()
         throw MlxRegException(
                   "Transmitter Lane or DataBase flags are valid only with Configure Transmitter Parameters flag (--st_set)");
     }
+}
 
+void MlxlinkUi::validatePRBSParams()
+{
+    bool prbsFlags = _mlxlinkCommander->_userInput._sendPprt ||
+                    _mlxlinkCommander->_userInput._sendPptt ||
+                    _mlxlinkCommander->_userInput._pprtRate != "" ||
+                    _mlxlinkCommander->_userInput._pprtRate != "";
     if (_sendRegFuncMap[SEND_PRBS] == SEND_PRBS) {
         if (!checkPrbsCmd(_mlxlinkCommander->_userInput._prbsMode)) {
             throw MlxRegException(
@@ -293,22 +310,10 @@ void MlxlinkUi::paramValidate()
         }
         if (_mlxlinkCommander->_userInput._prbsMode == "DS" ||
                 _mlxlinkCommander->_userInput._prbsMode == "TU") {
-            if (_mlxlinkCommander->_userInput._sendPprt ||
-                    _mlxlinkCommander->_userInput._sendPptt ||
-                    _mlxlinkCommander->_userInput._pprtRate != "") {
+            if (prbsFlags) {
                 throw MlxRegException(
                           "PRBS parameters flags valid only with PRBS Enable flag (--test_mode EN)");
             }
-        }
-        if ((_mlxlinkCommander->_userInput._sendPprt && !prbsModeCheck(_mlxlinkCommander->_userInput._pprtMode))
-            || (_mlxlinkCommander->_userInput._sendPptt && !prbsModeCheck(_mlxlinkCommander->_userInput._ppttMode))) {
-            string errStr = "Valid PRBS modes Are:";
-            for (u_int32_t i = 0; i < _mlxlinkCommander->_mlxlinkMaps->_prbsModesList.size(); i++) {
-                errStr += _mlxlinkCommander->_mlxlinkMaps->_prbsModesList[i] + ",";
-            }
-            errStr = deleteLastComma(errStr);
-            errStr += "\nDefault PRBS Mode is PRBS31";
-            throw MlxRegException(errStr);
         }
         if (_mlxlinkCommander->_userInput._prbsMode == "EN"
             && (!prbsLaneRateCheck(_mlxlinkCommander->_userInput._pprtRate)
@@ -321,13 +326,14 @@ void MlxlinkUi::paramValidate()
             errStr += "\nDefault PRBS Lane Rate is EDR / 25GE / 50GE / 100GE (25.78125 Gb/s)";
             throw MlxRegException(errStr);
         }
-    } else if (_mlxlinkCommander->_userInput._sendPprt ||
-            _mlxlinkCommander->_userInput._sendPptt
-               || _mlxlinkCommander->_userInput._pprtRate != "" ||
-               _mlxlinkCommander->_userInput._pprtRate != "") {
+    } else if (prbsFlags) { // add check for lanes flag to work with PRBS and eye scan only
         throw MlxRegException(
                   "PRBS parameters flags valid only with PRBS Enable flag (--test_mode EN)");
     }
+}
+
+void MlxlinkUi::validateSpeedAndCSVBerParams()
+{
     if (_sendRegFuncMap[SEND_BER_COLLECT] == SEND_BER_COLLECT) {
         if (!endsWith(_mlxlinkCommander->_userInput._csvBer, ".csv")) {
             throw MlxRegException("you must provide a valid .csv file");
@@ -362,9 +368,18 @@ void MlxlinkUi::paramValidate()
     }
 }
 
+void MlxlinkUi::paramValidate()
+{
+    validateMandatoryParams();
+    validatePCIeParams();
+    validateGeneralCmdsParams();
+    validatePRBSParams();
+    validateSpeedAndCSVBerParams();
+}
+
 void MlxlinkUi::initCmdParser()
 {
-    for (u_int32_t it = SHOW_PDDR; it <= FUNCTION_LAST; it++) {
+    for (u_int32_t it = SHOW_PDDR; it < FUNCTION_LAST; it++) {
         _sendRegFuncMap.push_back(0);
     }
     AddOptions(DEVICE_FLAG, DEVICE_FLAG_SHORT, "MstDevice",
@@ -410,6 +425,8 @@ void MlxlinkUi::initCmdParser()
                "PPRT Lane Rate");
     AddOptions(PPTT_RATE_FLAG, PPTT_RATE_FLAG_SHORT, "PPTT_RATE",
                "PPTT Lane Rate");
+    AddOptions(PRBS_LANES_FLAG, PRBS_LANES_FLAG_SHORT, "lanes",
+               "PRBS lanes to set");
 
     AddOptions(SLTP_SHOW_FLAG, SLTP_SHOW_FLAG_SHORT, "", "get SLTP");
     AddOptions(SLTP_SET_FLAG, SLTP_SET_FLAG_SHORT, "set", "set SLTP");
@@ -647,6 +664,10 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         return PARSE_OK;
     } else if (name == PPTT_RATE_FLAG) {
         _mlxlinkCommander->_userInput._ppttRate = toUpperCase(value);
+        return PARSE_OK;
+    } else if (name == PRBS_LANES_FLAG) {
+        std::vector<string> prbsLanesParams = _mlxlinkCommander->parseParamsFromLine(value);
+        _mlxlinkCommander->getprbsLanesFromParams(prbsLanesParams);
         return PARSE_OK;
     } else if (name == BER_COLLECT_FLAG) {
         _sendRegFuncMap[SEND_BER_COLLECT] = SEND_BER_COLLECT;

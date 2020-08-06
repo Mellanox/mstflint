@@ -32,6 +32,9 @@
  *
  */
 
+#ifndef MLXLINK_UTILS_H
+#define MLXLINK_UTILS_H
+
 #include "mlxlink_logger.h"
 #include "mlxlink_maps.h"
 
@@ -108,3 +111,5 @@ string toUpperCase(string &str);
 string getCableMedia(u_int32_t cableType);
 string pcieSpeedStr(u_int32_t linkSpeedActive);
 string pcieDeviceStatusStr(u_int32_t deviceStatus);
+
+#endif

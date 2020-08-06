@@ -61,7 +61,9 @@ libmodules_lib_a_SOURCES = mlxlink_commander.h \
                             mlxlink_logger.cpp \
                             mlxlink_logger.h \
                             mlxlink_ui.h \
-                            mlxlink_ui.cpp
+                            mlxlink_ui.cpp \
+                            mlxlink_reg_parser.cpp \
+                            mlxlink_reg_parser.h
 
 libmodules_lib_a_LIBADD = printutil/libprint_util_lib.a  $(JSON_DIR)/libjson.a
 libmodules_lib_a_CFLAGS = $(AM_CFLAGS)

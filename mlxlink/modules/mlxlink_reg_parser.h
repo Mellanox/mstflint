@@ -32,75 +32,41 @@
  *
  */
 
-#ifndef MLXLINK_USER_INPUT_H
-#define MLXLINK_USER_INPUT_H
+#ifndef MLXLINK_REG_PARSER_H
+#define MLXLINK_REG_PARSER_H
 
-#include <string>
-#include <string.h>
-#include <stdint.h>
-#include <mlxreg/mlxreg_lib.h>
-#include <mlxreg/mlxreg_parser.h>
+#include "mlxlink_utils.h"
+#include <mtcr.h>
 
-using namespace std;
+using namespace mlxreg;
+#define PRINT_LOG(mlxlinklogger, title)\
+    if (mlxlinklogger) {\
+        mlxlinklogger->printHeaderWithUnderLine(title);\
+    }\
 
-class UserInput {
+#define DEBUG_LOG(mlxlinklogger, format, ...)\
+    if (mlxlinklogger) {\
+        mlxlinklogger->debugLog(format, __VA_ARGS__);\
+    }\
+
+class MlxlinkRegParser :public RegAccessParser{
 public:
-    UserInput();
-    virtual ~UserInput()
-    {
-    }
-    ;
-    u_int32_t _labelPort;
-    u_int32_t _splitPort;
-    u_int32_t _depth;
-    u_int32_t _pcieIndex;
-    u_int32_t _node;
-    bool _sendPrbs;
-    bool _sendPprt;
-    bool _sendPptt;
-    bool _sendPepc;
-    bool _sendPepcForceMode;
-    bool _sendPepcANMode;
-    bool _pprtTuningTypeFlag;
-    bool _toggle;
-    bool _pcie;
-    bool _links;
-    bool _sendDepth;
-    bool _sendPcieIndex;
-    bool _sendNode;
-    bool _sendDpn;
-    bool _db;
-    bool _sltpLane;
-    bool _advancedMode;
-    bool _specifiedPort;
-    bool _showSltp;
-    bool _showSlrp;
-    bool _showCounters;
-    bool _showEyeInfo;
-    string _logFilePath;
-    string _portType;
-    string _paosCmd;
-    string _pplmFec;
-    string _speedFec;
-    string _pplrLB;
-    string _prbsMode;
-    string _pprtMode;
-    string _ppttMode;
-    string _pprtRate;
-    string _ppttRate;
-    string _pprtTuningType;
-    string _csvBer;
-    string _testMode;
-    string _forceMode;
-    string _anMode;
-    u_int32_t _iteration;
-    double _testTime;
-    u_int32_t _feedbackIndex;
-    u_int32_t _feedbackData;
-    std::map<u_int32_t, u_int32_t> _sltpParams;
-    u_int32_t _lane;
+    MlxlinkRegParser();
+    virtual ~MlxlinkRegParser();
+
+    void resetParser(const string &regName);
+    void readMCIA(u_int32_t page, u_int32_t size, u_int32_t offset,
+            u_int8_t * data, u_int32_t i2cAddress);
+    void genBuffSendRegister(const string &regName, maccess_reg_method_t method);
+    void writeGvmi(u_int32_t data);
+    void updateField(string field_name, u_int32_t value);
+    u_int32_t getFieldValue(string field_name);
+    string getFieldStr(const string &field);
+
     u_int32_t _gvmiAddress;
-    std::map<u_int32_t, bool> _prbsLanesToSet;
+    MlxRegLib *_regLib;
+    mfile *_mf;
+    MlxlinkLogger *_mlxlinkLogger;
 };
 
-#endif /* MLXLINK_USER_INPUT_H */
+#endif /* MLXLINK_REG_PARSER_H */

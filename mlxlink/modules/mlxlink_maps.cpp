@@ -139,6 +139,16 @@ MlxlinkMaps::MlxlinkMaps() {
     _prbsModesList[10] = "PRBS11D";
     _prbsModesList[11] = "PRBS9";
     _prbsModesList[12] = "IDLE";
+    _prbsModesList[13] = "SQUARE_WAVEA";
+    _prbsModesList[14] = "SQUARE_WAVEB";
+    _prbsModesList[15] = "SQUARE_WAVEC";
+    _prbsModesList[16] = "SQUARE_WAVED";
+    _prbsModesList[17] = "PRBS13A";
+    _prbsModesList[18] = "PRBS13B";
+    _prbsModesList[19] = "PRBS13C";
+    _prbsModesList[20] = "PRBS13D";
+    _prbsModesList[21] = "SSPR";
+    _prbsModesList[22] = "SSPRQ";
 
     _prbsLaneRateList[0] = "SDR (2.5 Gb/s)";
     _prbsLaneRateList[1] = "DDR/5G (5 Gb/s)";
