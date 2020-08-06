@@ -2413,8 +2413,11 @@ FlintStatus BurnSubCommand::burnMFA2LiveFish(dm_dev_id_t devid_t)
     else if (DeviceConnectX6DX == devid_t) {
         deviceMajorVer = 22;
     }
+    else if (DeviceConnectX6LX == devid_t) {
+        deviceMajorVer = 26;
+    }
     else {
-        reportErr(true, "The MFA2 burning is not supported in livefish for current device");
+        reportErr(true, "The MFA2 burning is not supported in livefish for current device %d", (int)devid_t);
         return FLINT_FAILED;
     }
     
