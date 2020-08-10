@@ -78,6 +78,7 @@ class TracerException(Exception):
 
 # Constants
 
+#######################################################
 HCA_MASK_CLASSES = [
     ("DEBUG_INIT", 0), ("INIT", 1), ("ICM", 2), ("ICM_FREE_LIST", 3),
     ("HOST_MNG", 4), ("CMD_IF", 5), ("PHY_IB", 6), ("PHY_RX_ADAP", 7),
@@ -88,6 +89,7 @@ HCA_MASK_CLASSES = [
     ("MANAGEMENT", 22), ("FLASH", 23), ("STEERING", 24),
     ("IFARM", 25), ("ICMD", 26), ("PCI", 27), ("DC_CLEANUP", 28),
     ("PHY_ETH", 29), ("VIRT", 30)]  # list of (trace type name, start_bit)
+
 DEV_INFO_DB = [
     # we use list instead of dict to keep order,
     # new devices should be at head of the list
@@ -216,6 +218,15 @@ DEV_INFO_DB = [
         "mask_addr": None,
         # list of (trace type name, start_bit)
         "mask_classes": [("class1", 0), ("class2", 1)],
+    },
+    {
+        "name": "ConnectX6LX",
+        "dev_id": [0x216],
+        "chip_rev":-1,
+        "maskable": True,
+        "mask_addr": None,
+        # list of (trace type name, start_bit)
+        "mask_classes": list(HCA_MASK_CLASSES),
     }
 ]
 MST_DEVICE = None
