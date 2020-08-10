@@ -36,14 +36,14 @@
 
 using namespace mlxreg;
 
-MlxlinkCommander::MlxlinkCommander() : RegAccessParser("", "", NULL, 0),_userInput()
+MlxlinkCommander::MlxlinkCommander() : _userInput()
 
 {
     _device = "";
     _mf = NULL;
     _extAdbFile = "";
     _localPort = 0;
-    _numOfLanes = 4;
+    _numOfLanes = MAX_LANES_NUMBER;
     _numOfLanesPcie = 0;
     _writeGvmi = false;
     _linkUP = false;
@@ -814,6 +814,17 @@ std::vector<string> MlxlinkCommander::parseParamsFromLine(const string & ParamsL
     return paramVector;
 }
 
+void MlxlinkCommander::getprbsLanesFromParams(std::vector<string> prbsLanesParams)
+{
+    u_int32_t lane = 0;
+    vector<string>::iterator it = prbsLanesParams.begin();
+    while (it != prbsLanesParams.end()) {
+        strToUint32((char *)(*it).c_str(), lane);
+        _userInput._prbsLanesToSet[lane] = true;
+        it++;
+    }
+}
+
 void MlxlinkCommander::setPrintVal(MlxlinkCmdPrint &mlxlinkCmdPrint,
         int index, string key, string value, string color, bool print,
         bool valid, bool arrayValue)
@@ -1338,6 +1349,34 @@ void MlxlinkCommander::showTestMode()
     cout << _testModeInfoCmd;
 }
 
+int MlxlinkCommander::prbsModeToMask(const string &mode)
+{
+    // SQUARE_WAVE and SQUARE_WAVEA have the same enum
+    string modeToCheck = mode;
+    if (mode == "SQUARE_WAVE") {
+        modeToCheck += "A";
+    }
+    int mask = PRBS31;
+    for (map<u_int32_t, string>::iterator it = _mlxlinkMaps->_prbsModesList.begin();
+            it !=  _mlxlinkMaps->_prbsModesList.end(); it++) {
+        if (modeToCheck == it->second) {
+            mask = it->first;
+            break;
+        }
+    }
+    return mask;
+}
+
+string MlxlinkCommander::prbsMaskToMode(u_int32_t mask, u_int32_t modeSelector)
+{
+    string val = "N/A";
+    val = _mlxlinkMaps->_prbsModesList[mask];
+    if (modeSelector == PRBS_RX && mask == SQUARE_WAVEA) {
+        val = deleteLastComma(val); // return SQUARE_WAVE without A
+    }
+    return val;
+}
+
 std::map<std::string, std::string> MlxlinkCommander::getPprt()
 {
     string regName = "PPRT";
@@ -1351,15 +1390,16 @@ std::map<std::string, std::string> MlxlinkCommander::getPprt()
 
     std::map<string, string> pprtMap;
     pprtMap["pprtPrbsMode"] = prbsMaskToMode(
-        getFieldValue("prbs_mode_admin", _buffer));
+        getFieldValue("prbs_mode_admin"), PRBS_RX);
     pprtMap["pprtLaneRate"] = prbsMaskToLaneRate(
-        getFieldValue("lane_rate_oper", _buffer));
+        getFieldValue("lane_rate_oper"));
     pprtMap["pprtTuningStatus"] = prbsMaskToTuningStatus(
-        getFieldValue("prbs_rx_tuning_status", _buffer));
+        getFieldValue("prbs_rx_tuning_status"));
     bool pcie = _userInput._pcie;
     u_int32_t numOfLanesToUse = (pcie) ? _numOfLanesPcie : _numOfLanes;
-    pprtMap["pprtLockStatus"] = prbsMaskToLockStatus(
-        getFieldValue("prbs_lock_status", _buffer), numOfLanesToUse);
+    u_int32_t statusMask = getFieldValue("prbs_lock_status");
+    statusMask |= (getFieldValue("prbs_lock_status_ext") << 4);
+    pprtMap["pprtLockStatus"] = prbsMaskToLockStatus(statusMask, numOfLanesToUse);
     return pprtMap;
 }
 
@@ -1376,9 +1416,9 @@ std::map<std::string, std::string> MlxlinkCommander::getPptt()
 
     std::map<string, string> ppttMap;
     ppttMap["ppttPrbsMode"] = prbsMaskToMode(
-        getFieldValue("prbs_mode_admin", _buffer));
+        getFieldValue("prbs_mode_admin"), PRBS_TX);
     ppttMap["ppttLaneRate"] = prbsMaskToLaneRate(
-        getFieldValue("lane_rate_admin", _buffer));
+        getFieldValue("lane_rate_admin"));
 
     return ppttMap;
 }
@@ -2234,6 +2274,37 @@ std::map<string, float> MlxlinkCommander::getRawEffectiveErrors()
     return errorsVector;
 }
 
+string MlxlinkCommander::getSupportedPrbsModes(u_int32_t modeSelector)
+{
+    string regName = "PPRT";
+    if (modeSelector == PRBS_TX) {
+        regName = "PPTT";
+    }
+    resetParser(regName);
+    updateField("local_port", _localPort);
+    updateField("pnat", PNAT_LOCAL);
+
+    genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
+    u_int32_t capsMask = getFieldValue("prbs_modes_cap");
+    string modeCapStr = "";
+    // Iterating over the supported modes according to capability mask
+    // And preparing them in one string
+    u_int32_t mask = 0;
+    for (map<u_int32_t, string>::iterator it = _mlxlinkMaps->_prbsModesList.begin();
+            it !=  _mlxlinkMaps->_prbsModesList.end(); it++) {
+        mask = PRBS31_CAP << it->first;
+        if (capsMask & mask) {
+            modeCapStr += it->second;
+            if (modeSelector == PRBS_RX && mask == SQUARE_WAVEA_CAP) {
+                // return SQUARE_WAVE without A for RX pattern
+                modeCapStr = deleteLastComma(modeCapStr);
+            }
+            modeCapStr += ",";
+        }
+    }
+    return deleteLastComma(modeCapStr);
+}
+
 string MlxlinkCommander::getPrbsModeRX()
 {
     string regName = "PPRT";
@@ -2245,7 +2316,7 @@ string MlxlinkCommander::getPrbsModeRX()
 
     genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
 
-    return prbsMaskToMode(getFieldValue("prbs_mode_admin", _buffer));
+    return prbsMaskToMode(getFieldValue("prbs_mode_admin"), PRBS_RX);
 }
 
 u_int32_t MlxlinkCommander::getPrbsRateRX()
@@ -2259,7 +2330,7 @@ u_int32_t MlxlinkCommander::getPrbsRateRX()
 
     genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
 
-    return prbsMaskToRateNum(getFieldValue("lane_rate_oper", _buffer));
+    return prbsMaskToRateNum(getFieldValue("lane_rate_oper"));
 }
 
 float MlxlinkCommander::getRawBERLimit()
@@ -2436,17 +2507,45 @@ void MlxlinkCommander::clearCounters()
     }
 }
 
-void MlxlinkCommander::sendPaosCmd(PAOS_ADMIN adminStatus)
+bool MlxlinkCommander::isForceDownSupported()
 {
-    string regName = "PAOS";
-    resetParser(regName);
+    bool supported = false;
+    if (_isHCA) {
+        //checking force_down cap
+        u_int64_t fdCapMask = PCAM_FORCE_DOWN_CAP_MASK; //feature_cap_mask.Bit 45 (feature_cap_mask[2].bit 13)
+        string regName = "PCAM";
+        resetParser(regName);
 
-    updateField("swid", SWID);
-    updateField("local_port", _localPort);
-    updateField("admin_status", adminStatus);
-    updateField("ase", 1);
+        updateField("feature_group", 0);
+        updateField("access_reg_group", 0);
+        genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
 
-    genBuffSendRegister(regName, MACCESS_REG_METHOD_SET);
+        supported = getFieldValue("feature_cap_mask[2]") & fdCapMask;
+    }
+    return supported;
+}
+
+void MlxlinkCommander::sendPaosCmd(PAOS_ADMIN adminStatus, bool forceDown)
+{
+    try {
+        string regName = "PAOS";
+        resetParser(regName);
+
+        updateField("swid", SWID);
+        updateField("local_port", _localPort);
+        updateField("admin_status", adminStatus);
+        updateField("ase", 1);
+        // Send force down for test mode only
+        if (!_userInput._prbsMode.empty()) {
+            if (forceDown) {
+                updateField("fd", 1);
+            }
+        }
+        genBuffSendRegister(regName, MACCESS_REG_METHOD_SET);
+    } catch (const std::exception &exc) {
+        string portCommand = (adminStatus == PAOS_DOWN)? "down" : "up";
+        throw MlxRegException("Sending port " + portCommand + " command failed");
+    }
 }
 
 void MlxlinkCommander::sendPaos()
@@ -2478,16 +2577,28 @@ void MlxlinkCommander::sendPaos()
 void MlxlinkCommander::sendPaosDown()
 {
     MlxlinkRecord::printCmdLine("Configuring Port State (Down)", _jsonRoot);
-    sendPaosCmd(PAOS_DOWN);
+
+    bool forceDown = isForceDownSupported();
+    // try to force down the port
+    sendPaosCmd(PAOS_DOWN, forceDown);
+    msleep(1000); // wait for 1 sec before checking the status
+    // Verify the link status after down command
     if (!checkPaosDown()) {
         if (_isHCA) {
-            string protocol = (_protoActive == IB) ? "IB" : "ETH";
-            string message = "port is not Down, for some reasons:\n";
-            message += "1- The link is configured to be up, run this command if KEEP_ETH_LINK_UP_Px is True:\n";
-            message += "   mlxconfig -d " + _device + " set KEEP_" + protocol + "_LINK_UP_P<port_number>=0\n";
-            message += "2- Port management is enabled (management protocol requiring the link to remain up, PAOS won't manage to disable the port)\n";
-            message += "3- In case of multi-host please verify all hosts are not holding the port up";
-            throw MlxRegException(message);
+            // in case of using old fw version (older than xx.28.xxxx)
+            if (!forceDown && !_userInput._prbsMode.empty()) {
+                string message = "Enabling PRBS is not supported in the "
+                        "current FW version. Please contact Nvidia networking division support.";
+                throw MlxRegException(message);
+            } else {
+                string protocol = (_protoActive == IB) ? "IB" : "ETH";
+                string message = "port is not Down, for some reasons:\n";
+                message += "1- The link is configured to be up, run this command if KEEP_" + protocol + "_LINK_UP_Px is True:\n";
+                message += "   mlxconfig -d " + _device + " set KEEP_" + protocol + "_LINK_UP_P<port_number>=0\n";
+                message += "2- Port management is enabled (management protocol requiring the link to remain up, PAOS won't manage to disable the port)\n";
+                message += "3- In case of multi-host please verify all hosts are not holding the port up";
+                throw MlxRegException(message);
+            }
         } else {
             throw MlxRegException("Port is not Down, Aborting...");
         }
@@ -2510,24 +2621,25 @@ void MlxlinkCommander::handlePrbs()
 {
     try {
         if (_userInput._prbsMode == "EN") {
-            if (!_plugged && _cableIdentifier != IDENTIFIER_BACKPLANE) {
-                throw MlxRegException("Cannot Enter Physical Test Mode when Cable is Unplugged");
-            }
-            checkPprtCap();
-            checkPpttCap();
+            checkPprtPptt();
             if (_prbsTestMode) {
                 sendPrbsPpaos(false);
             }
             sendPaosDown();
-            sendPprt();
-            sendPptt();
-            sendPrbsPpaos(true);
-            MlxlinkRecord::printCmdLine("Configuring Port to Physical Test Mode", _jsonRoot);
+            if (checkPaosDown()) {
+                MlxlinkRecord::printCmdLine("Configuring Port to Physical Test Mode", _jsonRoot);
+                resetPprtPptt();
+                sendPprtPptt();
+                sendPrbsPpaos(true);
+            } else {
+                throw MlxRegException("Port is not down, unable to enter test mode");
+            }
         } else if (_userInput._prbsMode == "DS") {
             MlxlinkRecord::printCmdLine("Configuring Port to Regular Operation", _jsonRoot);
             if (_prbsTestMode) {
                 sendPrbsPpaos(false);
             }
+            resetPprtPptt();
             sendPaosToggle();
         } else if (_userInput._prbsMode == "TU") {
             if (_prbsTestMode) {
@@ -2543,40 +2655,72 @@ void MlxlinkCommander::handlePrbs()
     }
 }
 
-void MlxlinkCommander::checkPprtCap()
+void MlxlinkCommander::checkPRBSModeCap(u_int32_t modeSelector, u_int32_t capMask)
 {
-    string regName = "PPRT";
-    resetParser(regName);
-
-    updateField("local_port", _localPort);
-    updateField("pnat", PNAT_LOCAL);
-
-    genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
-
-    if (!(prbsLaneRateCapToMask(_userInput._pprtRate) & getFieldValue("lane_rate_cap", _buffer))) {
-        throw MlxRegException("Device does not support lane rate " + _userInput._pprtRate + " in physical test mode.");
+    string modeToCheck = _userInput._pprtMode;
+    string prbsModeStr = "RX";
+    if (modeSelector == PRBS_TX) {
+        modeToCheck = _userInput._ppttMode;
+        prbsModeStr = "TX";
     }
-    if (!(prbsModeCapToMask(_userInput._pprtMode) & getFieldValue("prbs_modes_cap", _buffer))) {
-        throw MlxRegException("Device does not support " + _userInput._pprtMode + " in physical test mode.");
+    // for RX mode: SQUARE_WAVE and SQUARE_WAVEA have the same enum
+    if (modeSelector == PRBS_RX && modeToCheck == "SQUARE_WAVE") {
+        modeToCheck += "A";
+    }
+    // Fetching mode capability from mode list
+    u_int32_t modeCap = 0;
+
+    for (map<u_int32_t, string>::iterator it = _mlxlinkMaps->_prbsModesList.begin();
+            it !=  _mlxlinkMaps->_prbsModesList.end(); it++) {
+        if (modeToCheck == it->second) {
+            modeCap = PRBS31_CAP << it->first;
+            break;
+        }
+    }
+    // checking if the fetched capability supported in cap mask or not
+    if (!(modeCap & capMask)) {
+        string errStr = "Device does not support " + prbsModeStr +
+                        " PRBS pattern \"" + modeToCheck +
+                        "\" in physical test mode.";
+        errStr += "\nValid RX PRBS modes Are: " + getSupportedPrbsModes(PRBS_RX);
+        errStr += "\nValid TX PRBS modes Are: " + getSupportedPrbsModes(PRBS_TX);
+        errStr += "\nDefault PRBS Mode is PRBS31";
+        throw MlxRegException(errStr);
     }
 }
 
-void MlxlinkCommander::checkPpttCap()
+void MlxlinkCommander::checkPrbsRegsCap(const string &prbsReg, const string &laneRate)
 {
-    string regName = "PPTT";
-    resetParser(regName);
-
+    u_int32_t modeSelector = (prbsReg == "PPTT") ? PRBS_TX : PRBS_RX;
+    resetParser(prbsReg);
     updateField("local_port", _localPort);
     updateField("pnat", PNAT_LOCAL);
+    genBuffSendRegister(prbsReg, MACCESS_REG_METHOD_GET);
 
-    genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
+    if (!(prbsLaneRateCapToMask(laneRate) & getFieldValue("lane_rate_cap"))) {
+        throw MlxRegException("Device does not support lane rate " + laneRate + " in physical test mode.");
+    }
+    checkPRBSModeCap(modeSelector, getFieldValue("prbs_modes_cap"));
+    if (!_userInput._prbsLanesToSet.empty()) {
+        if (getFieldValue("ls") != 1) {
+            throw MlxRegException("Device does not support per lane configuration");
+        }
+    }
+}
 
-    if (!(prbsLaneRateCapToMask(_userInput._ppttRate) & getFieldValue("lane_rate_cap", _buffer))) {
-        throw MlxRegException("Device does not support lane rate " + _userInput._ppttRate + " in physical test mode.");
+void MlxlinkCommander::checkPprtPptt()
+{
+    if (!_userInput._prbsLanesToSet.empty()) {
+        u_int32_t maxLaneIndex = _numOfLanes - 1;
+        for (map<u_int32_t, bool>::iterator it = _userInput._prbsLanesToSet.begin();
+                it != _userInput._prbsLanesToSet.end(); it++) {
+            if (it->second && (it->first > maxLaneIndex)) {
+                throw MlxRegException("Invalid lane index: %d", it->first);
+            }
+        }
     }
-    if (!(prbsModeCapToMask(_userInput._ppttMode) & getFieldValue("prbs_modes_cap", _buffer))) {
-        throw MlxRegException("Device does not support " + _userInput._ppttMode + " in physical test mode.");
-    }
+    checkPrbsRegsCap("PPRT", _userInput._pprtRate);
+    checkPrbsRegsCap("PPTT", _userInput._ppttRate);
 }
 
 void MlxlinkCommander::sendPrbsPpaos(bool testMode)
@@ -2605,36 +2749,70 @@ void MlxlinkCommander::startTuning()
     genBuffSendRegister(regName, MACCESS_REG_METHOD_SET);
 }
 
-void MlxlinkCommander::sendPprt()
+void MlxlinkCommander::prbsConfiguration(const string &prbsReg, bool enable,
+        u_int32_t laneRate, u_int32_t prbsMode, bool perLaneConfig)
 {
-    string regName = "PPRT";
-    resetParser(regName);
-    u_int32_t laneRate = prbsLaneRateToMask(_userInput._pprtRate);
-    updateField("local_port", _localPort);
-    updateField("pnat", PNAT_LOCAL);
-    updateField("e", PPRT_PPTT_ENABLE);
-    updateField("lane_rate_oper", laneRate);
-    updateField("prbs_mode_admin", prbsModeToMask(_userInput._pprtMode));
-    if(laneRate == PRBS_HDR) {
-        updateField("modulation", PRBS_PAM4_ENCODING);
+    string rateToUpdate = prbsReg == "PPRT"? "lane_rate_oper" : "lane_rate_admin";
+    if (perLaneConfig) {
+        for (map<u_int32_t, bool>::iterator it = _userInput._prbsLanesToSet.begin();
+                it != _userInput._prbsLanesToSet.end(); it++) {
+            resetParser(prbsReg);
+            updateField("local_port", _localPort);
+            updateField("pnat", PNAT_LOCAL);
+            updateField("e", enable);
+            updateField(rateToUpdate , laneRate);
+            updateField("prbs_mode_admin", prbsMode);
+            updateField("le", perLaneConfig);
+            updateField("lane", it->first);
+            if(laneRate == PRBS_HDR) {
+                updateField("modulation", PRBS_PAM4_ENCODING);
+            }
+            if (prbsReg == "PPRT") {
+                updateField("s", 0);
+            }
+            genBuffSendRegister(prbsReg, MACCESS_REG_METHOD_SET);
+        }
+    } else {
+        resetParser(prbsReg);
+        updateField("local_port", _localPort);
+        updateField("pnat", PNAT_LOCAL);
+        updateField("e", enable);
+        updateField(rateToUpdate, laneRate);
+        updateField("le", 0);
+        updateField("prbs_mode_admin", prbsMode);
+        if(laneRate == PRBS_HDR) {
+            updateField("modulation", PRBS_PAM4_ENCODING);
+        }
+        if (prbsReg == "PPRT") {
+            updateField("s", 0);
+        }
+        genBuffSendRegister(prbsReg, MACCESS_REG_METHOD_SET);
     }
-    genBuffSendRegister(regName, MACCESS_REG_METHOD_SET);
 }
 
-void MlxlinkCommander::sendPptt()
+void MlxlinkCommander::sendPprtPptt()
 {
-    string regName = "PPTT";
-    resetParser(regName);
-    u_int32_t laneRate = prbsLaneRateToMask(_userInput._ppttRate);
-    updateField("local_port", _localPort);
-    updateField("pnat", PNAT_LOCAL);
-    updateField("e", PPRT_PPTT_ENABLE);
-    updateField("lane_rate_admin", laneRate);
-    updateField("prbs_mode_admin", prbsModeToMask(_userInput._ppttMode));
-    if(laneRate == PRBS_HDR) {
-        updateField("modulation", PRBS_PAM4_ENCODING);
+    bool perLaneConfig = (!_userInput._prbsLanesToSet.empty()) &&
+                       ( _userInput._prbsLanesToSet.size() != _numOfLanes);
+    prbsConfiguration("PPRT", true,
+                      prbsLaneRateToMask(_userInput._pprtRate),
+                      prbsModeToMask(_userInput._pprtMode), perLaneConfig);
+    prbsConfiguration("PPTT", true,
+                      prbsLaneRateToMask(_userInput._ppttRate),
+                      prbsModeToMask(_userInput._ppttMode), perLaneConfig);
+}
+
+void MlxlinkCommander::resetPprtPptt()
+{
+    try {
+        if (_prbsTestMode) {
+            prbsConfiguration("PPRT", false, PRBS_EDR, PRBS31, false);
+            prbsConfiguration("PPTT", false, PRBS_EDR, PRBS31, false);
+        }
+    } catch (MlxRegException &exc) {
+        // Not neccesery to handle if clearing PPRT and PPTT failed
+        // They already cleared before enabling the test mode
     }
-    genBuffSendRegister(regName, MACCESS_REG_METHOD_SET);
 }
 
 void MlxlinkCommander::sendPtys()

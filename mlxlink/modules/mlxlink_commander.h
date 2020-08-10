@@ -46,6 +46,7 @@
 #include <cmdparser/cmdparser.h>
 #include <mtcr.h>
 #include "mlxlink_utils.h"
+#include "mlxlink_reg_parser.h"
 
 #ifdef MST_UL
 #define MLXLINK_EXEC "mstlink"
@@ -74,7 +75,6 @@
 #define NODE_FLAG_SHORT              ' '
 #define PRINT_JSON_OUTPUT_FLAG       "json"
 #define PRINT_JSON_OUTPUT_FLAG_SHORT ' '
-
 //------------------------------------------------------------
 //        Mlxlink QUERIES Flags
 
@@ -128,6 +128,8 @@
 #define PPRT_RATE_FLAG_SHORT               ' '
 #define PPTT_RATE_FLAG                     "tx_rate"
 #define PPTT_RATE_FLAG_SHORT               ' '
+#define PRBS_LANES_FLAG                    "lanes"
+#define PRBS_LANES_FLAG_SHORT              ' '
 #define PPRT_TUNING_TYPE_FLAG              "tuning_type"
 #define PPRT_TUNING_TYPE_FLAG_SHORT        ' '
 #define BER_COLLECT_FLAG                   "ber_collect"
@@ -186,6 +188,8 @@
 #define DBN_TO_LOCAL_PORT_BASE      60
 
 #define MAX_LANES_NUMBER            4
+
+#define PCAM_FORCE_DOWN_CAP_MASK    0x2000
 
 //------------------------------------------------------------
 //        Mlxlink enumerations
@@ -327,7 +331,7 @@ struct DPN {
 
 using namespace mlxreg;
 
-class MlxlinkCommander :public RegAccessParser{
+class MlxlinkCommander: public MlxlinkRegParser {
 
 public:
     MlxlinkCommander();
@@ -338,11 +342,11 @@ public:
     void genBuffSendRegister(const string &regName, maccess_reg_method_t method);
     void updateField(const string &field_name, u_int32_t value);
     u_int32_t getFieldValue(const string &field_name, std::vector<u_int32_t>& buff);
+    u_int32_t getFieldValue(string field_name) { return MlxlinkRegParser::getFieldValue(field_name); }
     string getFieldStr(const string &field);
     void checkRegCmd();
     void checkLocalPortDPNMapping(u_int32_t localPort);
     int getLocalPortFromMPIR(DPN& dpn);
-
     void checkValidFW();
     int getProductTechnology();
     bool checkPortStatus(u_int32_t localPort);
@@ -369,6 +373,7 @@ public:
     bool checkPpaosTestMode();
     u_int32_t getPtysCap();
     void getSltpParamsFromVector(std::vector<string> sltpParams);
+    void getprbsLanesFromParams(std::vector<string> prbsLanesParams);
     std::vector<string> parseParamsFromLine(const string & ParamsLine);
     void setPrintTitle(MlxlinkCmdPrint &mlxlinkCmdPrint, string title,
             u_int32_t size, bool print = true);
@@ -421,8 +426,11 @@ public:
 
     std::map<std::string, float>  getRawEffectiveErrors();
     std::map<std::string, float>  getRawEffectiveErrorsinTestMode();
+    int prbsModeToMask(const string &mode);
+    string prbsMaskToMode(u_int32_t mask, u_int32_t modeSelector);
     string getPrbsModeRX();
     u_int32_t getPrbsRateRX();
+    string getSupportedPrbsModes(u_int32_t modeSelector);
     virtual u_int32_t getLoopbackMode(const string &lb);
     int getLinkDown();
     float getRawBERLimit();
@@ -467,16 +475,21 @@ public:
     virtual void sendPepc();
 
     // Config helper functions
-    void sendPaosCmd(PAOS_ADMIN adminStatus);
+    bool isForceDownSupported();
+    void sendPaosCmd(PAOS_ADMIN adminStatus, bool forceDown = false);
     void sendPaosDown();
     void sendPaosUP();
     void sendPaosToggle();
-    void checkPprtCap();
-    void checkPpttCap();
+    void checkPRBSModeCap(u_int32_t modeSelector, u_int32_t capMask);
+    void checkPrbsRegsCap(const string &prbsReg, const string &laneRate);
+    void checkPprtPptt();
+    void checkPplrCap();
     void sendPrbsPpaos(bool);
     void startTuning();
-    void sendPprt();
-    void sendPptt();
+    void prbsConfiguration(const string &prbsReg, bool enable, u_int32_t laneRate,
+            u_int32_t prbsMode, bool perLaneConfig = false);
+    void sendPprtPptt();
+    void resetPprtPptt();
     u_int32_t ptysSpeedToMask(const string & speed, u_int32_t cap);
     u_int32_t ptysSpeedToExtMask(const string & speed);
     void checkSupportedSpeed(const string & speed, u_int32_t cap, bool extSpeed = false);
@@ -500,6 +513,7 @@ public:
     u_int32_t _fecActive;
     u_int32_t _protoActive;
     u_int32_t _uniqueCmds;
+    u_int32_t _uniqueCableCmds;
     u_int32_t _networkCmds;
     u_int32_t _anDisable;
     u_int32_t _speedBerCsv;
@@ -529,6 +543,7 @@ public:
     bool _linkModeForce;
     bool _useExtAdb;
     bool _isHCA;
+    bool _portActive;
     std::vector<std::string> _ptysSpeeds;
     std::vector<DPN> _validDpns;
     string _allUnhandledErrors;
