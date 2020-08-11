@@ -258,11 +258,10 @@ public:
 private:
     // METHODS
     string findFile(string fileName);
-    static bool is_relative(const string path);
-    static void includeFile(AdbParser *adbParser, string fileName,
-        int lineNumber = -1);
-    static void startElement(void *adbParser, const XML_Char *name,
-        const XML_Char **atts);
+    static void addIncludePaths(Adb *adbCtxt, string includePaths);
+    static void includeFile(AdbParser *adbParser, string fileName, int lineNumber = -1);
+    static void startElement(void *adbParser, const XML_Char *name, const XML_Char **atts);
+
     static void startNodesDefElement(const XML_Char **atts, AdbParser *adbParser);
     static void startEnumElement(const XML_Char **atts, AdbParser *adbParser, const int lineNumber);
     static void startConfigElement(const XML_Char **atts, AdbParser *adbParser, const int lineNumber);
@@ -271,9 +270,9 @@ private:
     static void startInstOpAttrReplaceElement(const XML_Char **atts, AdbParser *adbParser, const int lineNumber);
     static void startNodeElement(const XML_Char **atts, AdbParser *adbParser, const int lineNumber);
     static void startFieldElement(const XML_Char **atts, AdbParser *adbParser, const int lineNumber);
+
     static void endElement(void *adbParser, const XML_Char *name);
-    static void addReserved(vector<AdbField*> &reserveds, u_int32_t offset,
-        u_int32_t size);
+    static void addReserved(vector<AdbField*> &reserveds, u_int32_t offset, u_int32_t size);
     static int attrCount(const XML_Char **atts);
     static string attrValue(const XML_Char **atts, const XML_Char *attrName);
     static string attrName(const XML_Char **atts, int i);
@@ -2058,16 +2057,6 @@ string AdbException::what_s() const {
     return _msg;
 }
 
-/**
- * Function: AdbParser::is_relative
- **/
-bool AdbParser::is_relative(const string path) {
-    if (path[0] == '/') {
-        return false;
-    }
-    return true;
-}
-
 /*************************** AdbParser Implementation ***************************/
 /**
  * Function: AdbParser::AdbParser
@@ -2081,26 +2070,7 @@ AdbParser::AdbParser(string fileName, Adb *adbCtxt, bool addReserved,
             _currentConfig(0) {
     _enforceExtraChecks = enforceExtraChecks;
     if (includePath != "") {
-        vector < string > paths;
-        boost::algorithm::split(paths, includePath,
-                boost::is_any_of(string(";")));
-        adbCtxt->includePaths.insert(adbCtxt->includePaths.end(),
-                paths.begin(), paths.end());
-
-        StringVector relatives;
-        string
-                projPath =
-                        boost::filesystem::path(adbCtxt->mainFileName).parent_path().string();
-
-        for (StringVector::iterator it = adbCtxt->includePaths.begin(); it
-                != adbCtxt->includePaths.end(); it++) {
-            if (AdbParser::is_relative(*it)) {
-                relatives.push_back(projPath + OS_PATH_SEP + *it);
-            }
-        }
-
-        adbCtxt->includePaths.insert(adbCtxt->includePaths.end(),
-                relatives.begin(), relatives.end());
+        addIncludePaths(adbCtxt, includePath);
     }
     _xmlParser = XML_ParserCreate(0);
     XML_SetUserData(_xmlParser, this);
@@ -2117,6 +2087,29 @@ AdbParser::AdbParser(string fileName, Adb *adbCtxt, bool addReserved,
         _adbCtxt->includedFiles[path[path.size() - 1]] = info;
     }
     _instanceOps = false;
+}
+
+void AdbParser::addIncludePaths(Adb *adbCtxt, string includePaths) {
+    vector < string > paths;
+        boost::algorithm::split(paths, includePaths,
+                boost::is_any_of(string(";")));
+        adbCtxt->includePaths.insert(adbCtxt->includePaths.end(),
+                paths.begin(), paths.end());
+
+        StringVector relatives;
+        string
+                projPath =
+                        boost::filesystem::path(adbCtxt->mainFileName).parent_path().string();
+
+        for (StringVector::iterator it = adbCtxt->includePaths.begin(); it
+                != adbCtxt->includePaths.end(); it++) {
+            if (projPath != "" && projPath != *it && boost::filesystem::path(*it).is_relative()) {
+                relatives.push_back(projPath + OS_PATH_SEP + *it);
+            }
+        }
+
+        adbCtxt->includePaths.insert(adbCtxt->includePaths.end(),
+                relatives.begin(), relatives.end());
 }
 
 /**
@@ -2362,6 +2355,12 @@ string AdbParser::findFile(string fileName) {
         if (f) {
             fclose(f);
             return filePath;
+        } else if (fileName.find(_adbCtxt->includePaths[i]) != string::npos) { // includePath is part of fileName
+            f = fopen(fileName.c_str(), "r");
+            if (f) {
+                fclose(f);
+                return fileName;
+            }
         }
     }
     return string();
@@ -2462,7 +2461,7 @@ void AdbParser::includeFile(AdbParser *adbParser, string fileName,
     string filePath;
     FILE *probeFile = NULL;
 
-    if (!AdbParser::is_relative(fileName)) {
+    if (!boost::filesystem::path(fileName).is_relative()) {
         probeFile = fopen(fileName.c_str(), "r");
     }
 
@@ -2478,7 +2477,7 @@ void AdbParser::includeFile(AdbParser *adbParser, string fileName,
 
     // Update filename to be only base name with extension to prevent duplications
     boost::filesystem::path boostPath(filePath);
-    fileName = string(boostPath.filename().c_str());
+    fileName = boostPath.filename().string();
 
     if (!adbParser->_adbCtxt->includedFiles.count(fileName)) {
         IncludeFileInfo info = { filePath, adbParser->_fileName, lineNumber };
@@ -2487,7 +2486,7 @@ void AdbParser::includeFile(AdbParser *adbParser, string fileName,
         // parse the included file
         AdbParser p(filePath, adbParser->_adbCtxt, adbParser->_addReserved,
                 adbParser->_progressObj, adbParser->_strict,
-                adbParser->_includePath, adbParser->_enforceExtraChecks);
+                "", adbParser->_enforceExtraChecks);
         if (!p.load()) {
             throw AdbException(p.getError());
         }
@@ -2506,6 +2505,7 @@ void AdbParser::includeAllFilesInDir(AdbParser *adbParser, string dirPath,
         boost::filesystem::path fsPath(*pathIt);
         if (boost::filesystem::exists(fsPath)
                 && boost::filesystem::is_directory(fsPath)) {
+                    addIncludePaths(adbParser->_adbCtxt, *pathIt);
             boost::filesystem::directory_iterator filesIter(fsPath), dirEnd;
             for (; filesIter != dirEnd; ++filesIter) {
                 if (boost::filesystem::is_regular_file(filesIter->status())
@@ -2679,7 +2679,7 @@ void AdbParser::startConfigElement(const XML_Char **atts, AdbParser *adbParser, 
             for (StringVector::iterator it =
                     adbParser->_adbCtxt->includePaths.begin(); it
                     != adbParser->_adbCtxt->includePaths.end(); it++) {
-                if (AdbParser::is_relative(*it)) {
+                if (boost::filesystem::path(*it).is_relative()) {
                     relatives.push_back(projPath + OS_PATH_SEP + *it);
                 }
             }
