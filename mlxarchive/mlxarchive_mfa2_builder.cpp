@@ -256,7 +256,7 @@ FWDirectoryBuilder::FWDirectoryBuilder(const string& version, string directory) 
         vector<u_int8_t> data;
         if (!ops->FwExtract4MBImage(data, true)) {
             printf("Can't Extract FW data from the image file %s:%s\n",
-                    fullPath.c_str(), ops->err());
+                   fullPath.c_str(), ops->err());
             exit(1);
         }
         ComponentDescriptor componentDescriptor(version, data);

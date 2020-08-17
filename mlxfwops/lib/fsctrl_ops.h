@@ -63,7 +63,7 @@ public:
     virtual bool FwBurn(FwOperations *imageOps, u_int8_t forceVersion,
                         ProgressCallBack progressFunc = (ProgressCallBack) NULL);
     virtual bool FwBurnAdvanced(FwOperations *imageOps, ExtBurnParams &burnParams);
-    virtual bool FwBurnAdvanced(std::vector <u_int8_t> imageOps4MData, ExtBurnParams& burnParams);
+    virtual bool FwBurnAdvanced(std::vector <u_int8_t> imageOps4MData, ExtBurnParams& burnParams, FwComponent::comps_ids_t ComponentId = FwComponent::COMPID_BOOT_IMG);
     virtual bool FwBurnBlock(FwOperations *imageOps, ProgressCallBack progressFunc); //Add: callback progress, question arr, callback question, configurations
     bool FwWriteBlock(u_int32_t addr, std::vector<u_int8_t> dataVec,
                       ProgressCallBack progressFunc = (ProgressCallBack) NULL);
@@ -110,7 +110,7 @@ protected:
     int FwCompsErrToFwOpsErr(fw_comps_error_t err);
     virtual bool VerifyAllowedParams(ExtBurnParams &burnParams, bool isSecure);
     bool BadParamErrMsg(const char *unSupportedOperation, bool isSecure);
-    bool _Burn(std::vector <u_int8_t> imageOps4MData, ExtBurnParams& burnParams);
+    bool _Burn(std::vector <u_int8_t> imageOps4MData, ExtBurnParams& burnParams, FwComponent::comps_ids_t ComponentId = FwComponent::COMPID_BOOT_IMG);
     fs3_info_t _fsCtrlImgInfo;
     FwCompsMgr *_fwCompsAccess;
     bool _isSecured;

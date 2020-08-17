@@ -91,6 +91,8 @@ void MlxlinkUi::printSynopsisQueries()
                   "Show Eye Opening Info");
     MlxlinkRecord::printFlagLine(FEC_DATA_FLAG_SHORT, FEC_DATA_FLAG, "", "Show FEC Capabilities");
     MlxlinkRecord::printFlagLine(SLTP_SHOW_FLAG_SHORT, SLTP_SHOW_FLAG, "", "Show Transmitter Info");
+    MlxlinkRecord::printFlagLine(SHOW_TX_GROUP_MAP_FLAG_SHORT, SHOW_TX_GROUP_MAP_FLAG, "group_num",
+                      "Display all label ports mapped to group <group_num> (for Spectrum-2 and Quantum devices)");
 
     MlxlinkRecord::printFlagLine(DEVICE_DATA_FLAG_SHORT, DEVICE_DATA_FLAG, "", "General Device Info");
     MlxlinkRecord::printFlagLine(BER_MONITOR_INFO_FLAG_SHORT, BER_MONITOR_INFO_FLAG, "", "Show BER Monitor Info (not supported for HCA)");
@@ -121,6 +123,11 @@ void MlxlinkUi::printSynopsisCommands()
                   "Transmitter Lane to Set (Optional - Default All Lanes)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(DATABASE_FLAG_SHORT, DATABASE_FLAG, "", "Save Transmitter Configuration for Current Speed Permanently (Optional)");
+    MlxlinkRecord::printFlagLine(SET_TX_GROUP_MAP_FLAG_SHORT, SET_TX_GROUP_MAP_FLAG, "group_num",
+                      "Map ports to group <group_num> (for Spectrum-2 and Quantum devices)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(TX_GROUP_PORTS_FLAG_SHORT, TX_GROUP_PORTS_FLAG, "ports",
+                      "Ports to be mapped [1,2,3,4..]");
     MlxlinkRecord::printFlagLine(PRBS_MODE_FLAG_SHORT, PRBS_MODE_FLAG, "prbs_mode",
                   "Physical Test Mode Configuration [EN(enable)/DS(disable)/TU(perform tuning)]");
     printf(IDENT);
@@ -195,7 +202,9 @@ void MlxlinkUi::printHelp()
         printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Configure Transmitter Parameters (on lane, to database)",
                MLXLINK_EXEC " -d <device> -p <port_number> --serdes_tx <polarity>,<ob_tap0>,<ob_tap1>,<ob_tap2>,<ob_bias>,<ob_preemp_mode> (--serdes_tx_lane <lane number>) (--database)");
     }
-    printf("\n");
+    printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Configure Transmitter Parameters for 16nm devices",
+            MLXLINK_EXEC " -d <device> -p <port_number> --serdes_tx <pre_2_tap>,<pre_tap>,<main_tap>,<post_tap>,<ob_m2lp>,<ob_amp>");
+
 }
 
 void MlxlinkUi::validateMandatoryParams()
@@ -223,6 +232,10 @@ void MlxlinkUi::validateMandatoryParams()
 
 void MlxlinkUi::validatePCIeParams()
 {
+    bool dpnFlags = _mlxlinkCommander->_userInput._sendNode ||
+                _mlxlinkCommander->_userInput._sendDepth ||
+                _mlxlinkCommander->_userInput._sendPcieIndex;
+
     if (_mlxlinkCommander->_userInput._portType == "PCIE") {
         _mlxlinkCommander->_userInput._pcie = true;
         if (_mlxlinkCommander->_uniqueCmds) {
@@ -233,27 +246,21 @@ void MlxlinkUi::validatePCIeParams()
         }
         _sendRegFuncMap[SHOW_PCIE] = SHOW_PCIE;
         _sendRegFuncMap[SHOW_PDDR] = 0;
-        if (_mlxlinkCommander->_userInput._sendNode ||
-                _mlxlinkCommander->_userInput._sendDepth ||
-                _mlxlinkCommander->_userInput._sendPcieIndex) {
+        if (dpnFlags) {
             if (!(_mlxlinkCommander->_userInput._sendNode &&
-                    _mlxlinkCommander->_userInput._sendDepth &&
-                    _mlxlinkCommander->_userInput._sendPcieIndex)) {
+                _mlxlinkCommander->_userInput._sendDepth &&
+                _mlxlinkCommander->_userInput._sendPcieIndex)) {
                 throw MlxRegException("The --depth, --pcie_index and --node must be specified for PCIE");
-           } else {
-               _mlxlinkCommander->_userInput._sendDpn = true;
-           }
+            } else {
+                _mlxlinkCommander->_userInput._sendDpn = true;
+            }
         }
         if (_mlxlinkCommander->_userInput._specifiedPort) {
-            if (_mlxlinkCommander->_userInput._sendNode ||
-                    _mlxlinkCommander->_userInput._sendDepth ||
-                    _mlxlinkCommander->_userInput._sendPcieIndex) {
+            if (dpnFlags) {
                 throw MlxRegException("For PCIE port, either port flag or depth, pcie_index and node flags should be specified");
            }
         }
-    } else if (_mlxlinkCommander->_userInput._sendNode ||
-            _mlxlinkCommander->_userInput._sendDepth ||
-            _mlxlinkCommander->_userInput._sendPcieIndex) {
+    } else if (dpnFlags) {
         throw MlxRegException("The --depth, --node and --pcie_index flags are valid only with --port_type PCIE");
     }
 }
@@ -428,6 +435,10 @@ void MlxlinkUi::initCmdParser()
     AddOptions(PRBS_LANES_FLAG, PRBS_LANES_FLAG_SHORT, "lanes",
                "PRBS lanes to set");
 
+    AddOptions(SHOW_TX_GROUP_MAP_FLAG, SHOW_TX_GROUP_MAP_FLAG_SHORT, "group_num", "Display all label ports mapped to group <group_num>");
+    AddOptions(SET_TX_GROUP_MAP_FLAG, SET_TX_GROUP_MAP_FLAG_SHORT, "group_num", "Map ports to group <group_num>");
+    AddOptions(TX_GROUP_PORTS_FLAG, TX_GROUP_PORTS_FLAG_SHORT, "ports", "Ports to be mapped [1,2,3,4..]");
+
     AddOptions(SLTP_SHOW_FLAG, SLTP_SHOW_FLAG_SHORT, "", "get SLTP");
     AddOptions(SLTP_SET_FLAG, SLTP_SET_FLAG_SHORT, "set", "set SLTP");
     AddOptions(SLTP_SET_ADVANCED_FLAG, SLTP_SET_ADVANCED_FLAG_SHORT, "", "set SLTP");
@@ -592,7 +603,11 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     } else if (name == LABEL_PORT_FLAG) {
         if (endsWith(value.c_str(), "/1") || endsWith(value.c_str(), "/2")
             || endsWith(value.c_str(), "/3")
-            || endsWith(value.c_str(), "/4")) {
+            || endsWith(value.c_str(), "/4")
+            || endsWith(value.c_str(), "/5")
+            || endsWith(value.c_str(), "/6")
+            || endsWith(value.c_str(), "/7")
+            || endsWith(value.c_str(), "/8")) {
             _mlxlinkCommander->_userInput._splitPort = value[value.length() - 1] - '0';
             value.erase(value.size() - 2);
             _mlxlinkCommander->_splitted = true;
@@ -745,6 +760,7 @@ int MlxlinkUi::run(int argc, char **argv)
     _mlxlinkCommander->labelToLocalPort();
     _mlxlinkCommander->checkValidFW();
     if (!_mlxlinkCommander->_userInput._pcie) {
+        _mlxlinkCommander->checkValidFW();
         _mlxlinkCommander->_prbsTestMode = _mlxlinkCommander->inPrbsTestMode();
         _mlxlinkCommander->getCableParams();
     } else if (!_mlxlinkCommander->_userInput._sendDpn) {

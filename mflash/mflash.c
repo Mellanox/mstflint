@@ -55,7 +55,9 @@
 #include "mflash.h"
 #include "flash_int_defs.h"
 #include "mflash_dev_capability.h"
-
+#include "mflash_common_structs.h"
+#include "mflash_gw.h"
+#include "mflash_new_gw.h"
 #define ICMD_MAX_BLOCK_WRITE   128
 #define INBAND_MAX_BLOCK_WRITE 32
 
@@ -85,10 +87,6 @@
 #define usleep(x) Sleep(((x + 999) / 1000))
 
 #endif // __WIN__
-#endif
-
-#ifndef zero
-#define zero 0
 #endif
 
 // Timer definitions (needed when polling flash semaphore in windows)
@@ -133,49 +131,25 @@
         action_on_tout; \
     }
 #endif
-
-//
-// Mellanox Technologies LTD Devices naming/abbreviation convention in this file:
-//
-// ConnectX         cntx
-// ConnectIB        cib
-
-/*
- *  Low level operations
- */
-
 /* Flash Functions: */
-
 // This is an interface function when running in IRISC
 int mf_open_fw(mflash *mfl, flash_params_t *flash_params, int num_of_banks);
-int cntx_int_spi_get_status_data(mflash *mfl, u_int8_t op_type, u_int32_t *status, u_int8_t data_num);
-
+int cntx_flash_init(mflash *mfl, flash_params_t *flash_params);
+int cntx_flash_init_direct_access(mflash *mfl, flash_params_t *flash_params);
+int spi_get_num_of_flashes(int prev_num_of_flashes);
+int cntx_spi_get_type(mflash *mfl, u_int8_t op_type, u_int8_t *vendor, u_int8_t *type, u_int8_t *density);
 // forward decl:
-int mfl_com_lock(mflash *mfl);
-int release_semaphore(mflash *mfl, int ignore_writer_lock);
+
+
 int mf_get_secure_host(mflash *mfl, int *mode);
 int mf_secure_host_op(mflash *mfl, u_int64_t key, int op);
 
 // NOTE: This macro returns ... not nice.
 #define CHECK_RC(rc) do {if (rc) {return rc;}} while (0)
-#define CHECK_RC_REL_SEM(mfl, rc) do {if (rc) {release_semaphore(mfl, 0); return rc;}} while (0)
+
 
 #define ARRSIZE(arr) (sizeof(arr) / sizeof(arr[0]))
 
-#ifdef ESS
-#define MREAD4(offs, val)  do {*val = READ_WORD(offs);} while (0)
-#define MWRITE4(offs, val) do {WRITE_WORD(offs, val);} while (0)
-#else
-#define MREAD4(offs, val)  do { if (mread4(mfl->mf, offs, val) != 4) { \
-/*fprintf(stderr, "-E- Cr read (0x%08x) failed: %s(%d)\n", (u_int32_t)(offs), strerror(errno), (u_int32_t)errno);*/ \
-                                    return 2; } /*printf("-D- %s:%d mread4: offs = %#x, val = %#x\n", __FUNCTION__, __LINE__, offs, val);*/ \
-} while (0)
-
-#define MWRITE4(offs, val) do { if (mwrite4(mfl->mf, offs, val) != 4) { \
-/*fprintf(stderr, "-E- Cr write (0x%08x, 0x%08x) failed: %s(%d)\n", (u_int32_t)(offs), (u_int32_t)(val), strerror(errno), (u_int32_t)errno);*/ \
-                                    return 2; } /*printf("-D- %s:%d mwrite4: offs = %#x, val = %#x\n",   __FUNCTION__, __LINE__, offs, val);*/ \
-} while (0)
-#endif
 
 // Constants:
 
@@ -207,74 +181,6 @@ int mf_secure_host_op(mflash *mfl, u_int64_t key, int op);
 #define CPUMODE_SHIFT  30
 #define CPUMODE        0xf0150
 
-#define IS4_HW_ID        0x1b3
-#define SWITCHX_HW_ID    0x245
-#define CONNECTX_HW_ID   0x190
-#define CX3_PRO_HW_ID    0x1F7
-#define CX3_HW_ID        0x1F5
-#define CX4_HW_ID        0x209
-#define CX4LX_HW_ID      0x20b
-#define CX5_HW_ID        0x20d
-#define CX6_HW_ID        0x20f
-#define CX6DX_HW_ID      0x212
-#define CX6LX_HW_ID      0x216
-#define BLUEFIELD_HW_ID  0x211
-#define BLUEFIELD2_HW_ID 0x214
-#define CONNECT_IB_HW_ID 0x1FF
-#define SWITCH_IB_HW_ID  0x247
-#define SPECTRUM_HW_ID   0x249
-#define SWITCH_IB2_HW_ID 0x24b
-#define QUANTUM_HW_ID    0x24d
-#define SPECTRUM2_HW_ID  0x24e
-#define SPECTRUM3_HW_ID  0x250
-
-/*
- * Device IDs Macros:
- */
-#define IS_CONNECTX_4TH_GEN_FAMILY(dev_id) \
-    (((dev_id) == CONNECTX_HW_ID) || ((dev_id) == CX3_HW_ID) || ((dev_id) == CX3_PRO_HW_ID))
-#define IS_IS4_FAMILY(dev_id) \
-    (((dev_id) == IS4_HW_ID))
-#define IS_SX(dev_id) \
-    ((dev_id) == SWITCHX_HW_ID)
-#define IS_SIB(dev_id) \
-    ((dev_id) == SWITCH_IB_HW_ID)
-#define IS_SIB2(dev_id) \
-    ((dev_id) == SWITCH_IB2_HW_ID)
-#define IS_SEN(dev_id) \
-    ((dev_id) == SPECTRUM_HW_ID)
-#define IS_SPECTRUM2(dev_id) \
-    ((dev_id) == SPECTRUM2_HW_ID)
-#define IS_CONNECT_IB(dev_id) \
-    ((dev_id) == CONNECT_IB_HW_ID)
-#define IS_CONNECTX4(dev_id) \
-    ((dev_id) == CX4_HW_ID)
-#define IS_CONNECTX4LX(dev_id) \
-    ((dev_id) == CX4LX_HW_ID)
-#define IS_CONNECTX5(dev_id) \
-    ((dev_id) == CX5_HW_ID)
-#define IS_CONNECTX6(dev_id) \
-    ((dev_id) == CX6_HW_ID)
-#define IS_CONNECTX6DX(dev_id) \
-    ((dev_id) == CX6DX_HW_ID)
-#define IS_CONNECTX6LX(dev_id) \
-    ((dev_id) == CX6LX_HW_ID)
-#define IS_SPECTRUM3(dev_id) \
-    ((dev_id) == SPECTRUM3_HW_ID)
-#define IS_BLUEFIELD(dev_id) \
-    ((dev_id) == BLUEFIELD_HW_ID)
-#define IS_QUANTUM(dev_id) \
-    ((dev_id) == QUANTUM_HW_ID)
-#define IS_SPECTRUM(dev_id) \
-    ((dev_id) == SPECTRUM_HW_ID)
-#define IS_BLUEFEILD(dev_id) \
-    ((dev_id) == BLUEFIELD_HW_ID)
-#define IS_BLUEFEILD2(dev_id) \
-    ((dev_id) == BLUEFIELD2_HW_ID)
-
-#define HAS_TOOLS_CMDIF(dev_id) \
-    ((((dev_id) == CX3_HW_ID) || ((dev_id) == CX3_PRO_HW_ID)))
-
 
 #define COMMAND_MASK 0x00ff0000
 
@@ -289,43 +195,6 @@ int mf_secure_host_op(mflash *mfl, u_int64_t key, int op);
 //
 // To test there's no performance degradation by these delay: set DELAYS to 0 and RETRIES to infinity, and compare perf.
 
-enum FlashConstant {
-    // All time values are in usecs
-    WRITE_BLOCK_INIT_DELAY = 10,
-    WRITE_ADDITIONAL_BYTE_DELAY = 1,
-    WRITE_BLOCK_RETRY_DELAY = 10,
-    WRITE_BLOCK_RETRIES = 30000,
-
-    ERASE_SUBSECTOR_INIT_DELAY = 20000,
-    ERASE_SUBSECTOR_RETRY_DELAY = 300,
-    ERASE_SUBSECTOR_RETRIES = 10000,
-
-    FLASH_CMD_CNT = 5000,      // Number of reads till flash cmd is zeroed
-
-    GPIO_SEM_TRIES = 1024,     // Number of tries to obtain a GPIO sem.
-
-    MAX_WRITE_BUFFER_SIZE = 256, // Max buffer size for buffer write devices
-
-    WRITE_STATUS_REGISTER_DELAY_CYPRESS = 750,
-    WRITE_STATUS_REGISTER_DELAY_MICRON = 1000,
-    WRITE_STATUS_REGISTER_DELAY_MIN = 40,
-
-    DUMMY_CYCLES_OFFSET_ST = 12,
-
-    QUAD_EN_OFFSET_WINBOND_CYPRESS = 1,
-    QUAD_EN_OFFSET_MICRON = 3,
-    QUAD_EN_OFFSET_ISSI_MACRONIX = 6,
-
-    TB_OFFSET_MACRONIX = 3,
-    SEC_OFFSET = 6,
-    TB_OFFSET = 5,
-    TB_OFFSET_ISSI = 1,
-    TB_OFFSET_CYPRESS_WINBOND_256 = 6,
-    BP_OFFSET = 2,
-    BP_4TH_BIT_OFFSET_MICRON = 6,
-    BP_SIZE = 3,
-    PROTECT_BITS_SIZE = 5
-};
 
 enum IntelFlashCommand {
     FC_ReadID = 0x90,
@@ -348,52 +217,6 @@ enum IntelFlashCommand {
 enum IntelFlashStatus {
     FS_Ready = 0x80, FS_Suspended = 0x40, FS_Error = 0x3E, FS_BlockError = 0x3F
 };
-
-//static inline
-static u_int32_t log2up(u_int32_t in)
-{
-    u_int32_t i = 0;
-    for (i = 0; i < 32; i++) {
-        if (in <= (u_int32_t)(1 << i)) {
-            break;
-        }
-    }
-
-    return i;
-}
-
-// ConnectX SPI interface:
-int cntx_flash_init(mflash *mfl, flash_params_t *flash_params);
-int cntx_flash_init_direct_access(mflash *mfl, flash_params_t *flash_params);
-
-int cntx_st_spi_reset(mflash *mfl);
-int cntx_st_spi_erase_sect(mflash *mfl, u_int32_t addr);
-
-int cntx_st_spi_block_write_ex(mflash *mfl, u_int32_t blk_addr, u_int32_t blk_size, u_int8_t *data, u_int8_t is_first,
-                               u_int8_t is_last, u_int32_t total_size);
-
-int cntx_sst_spi_block_write_ex(mflash *mfl, u_int32_t blk_addr, u_int32_t blk_size, u_int8_t *data);
-
-int cntx_st_spi_block_read_ex(mflash *mfl, u_int32_t blk_addr, u_int32_t blk_size, u_int8_t *data, u_int8_t is_first,
-                              u_int8_t is_last, bool verbose);
-
-int cntx_spi_get_type(mflash *mfl, u_int8_t op_type, u_int8_t *vendor, u_int8_t *type, u_int8_t *density);
-
-int cntx_spi_write_status_reg(mflash *mfl, u_int32_t status_reg, u_int8_t write_cmd, u_int8_t bytes_num);
-
-int spi_get_num_of_flashes(int prev_num_of_flashes);
-
-int mf_get_write_protect_direct_access(mflash *mfl, u_int8_t bank_num, write_protect_info_t *protect_info);
-
-int mf_set_write_protect_direct_access(mflash *mfl, u_int8_t bank_num, write_protect_info_t *protect_info);
-
-int mf_get_quad_en_direct_access(mflash *mfl, u_int8_t *quad_en_p);
-
-int mf_set_quad_en_direct_access(mflash *mfl, u_int8_t quad_en);
-
-int mf_get_dummy_cycles_direct_access(mflash *mfl, u_int8_t *dummy_cycles_p);
-
-int mf_set_dummy_cycles_direct_access(mflash *mfl, u_int8_t num_of_cycles);
 
 #ifndef UEFI_BUILD
 static int trm2mfe_err(trm_sts rc);
@@ -423,21 +246,6 @@ int my_memcpy(void *dst, void *src, u_int32_t len)
 
     return 0;
 }
-
-#if 0 // TODO: Currently the polling is in max throttle - no sleep is done
-int usleep(u_int32_t usecs)
-{
-    u_int32_t i = 0;
-    u_int32_t stub = 0;
-    // TODO: Some more intelegent /accurate way to do it, or remove T.Os completely.
-    u_int32_t loops = (usecs << 9);
-    for (i = 0; i < loops; i++) {
-        stub++;
-    }
-
-    return stub;
-}
-#endif
 
 int write_chunks(mflash *mfl, u_int32_t addr, u_int32_t len, u_int8_t *data)
 {
@@ -780,7 +588,7 @@ int cntx_st_spi_get_status(mflash *mfl, u_int8_t op_type, u_int8_t *status)
     u_int32_t flash_data = 0;
     int rc = 0;
 
-    rc = cntx_int_spi_get_status_data(mfl, op_type, &flash_data, 1);
+    rc = mfl->f_int_spi_get_status_data(mfl, op_type, &flash_data, 1);
     CHECK_RC(rc);
     *status = EXTRACT(flash_data, 0, 8);
     return MFE_OK;
@@ -842,10 +650,10 @@ int get_flash_params(mflash *mfl, flash_params_t *flash_params, flash_info_t *fl
         // Init SST flash.
         if (mfl->access_type == MFAT_MFILE) {
             if (flash_info->vendor == FV_SST && flash_info->type == FMT_SST_25) {
-                rc = cntx_spi_write_status_reg(mfl, SST_STATUS_REG_VAL, SFC_WRSR, 1);
+                rc = mfl->f_spi_write_status_reg(mfl, SST_STATUS_REG_VAL, SFC_WRSR, 1);
                 CHECK_RC(rc);
             } else if (flash_info->vendor == FV_ATMEL && flash_info->type == FMT_ATMEL) {
-                rc = cntx_spi_write_status_reg(mfl, ATMEL_STATUS_REG_VAL, SFC_WRSR, 1);
+                rc = mfl->f_spi_write_status_reg(mfl, ATMEL_STATUS_REG_VAL, SFC_WRSR, 1);
                 CHECK_RC(rc);
             }
         }
@@ -899,18 +707,7 @@ MfError gen_access_commands(mflash *mfl, flash_access_commands_t *access_command
     return MFE_OK;
 }
 
-bool is_x_byte_address_access_commands(mflash *mfl, int x)
-{
-    if (x != 3 && x != 4) {
-        return false;
-    }
 
-    flash_access_commands_t compared_to_access_commands =
-        x == 4 ? gen_4byte_address_access_commands() : gen_3byte_address_access_commands();
-    flash_access_commands_t cur = mfl->attr.access_commands;
-
-    return (compared_to_access_commands.sfc_sector_erase == cur.sfc_sector_erase && compared_to_access_commands.sfc_subsector_erase == cur.sfc_subsector_erase && compared_to_access_commands.sfc_page_program == cur.sfc_page_program && compared_to_access_commands.sfc_read == cur.sfc_read && compared_to_access_commands.sfc_fast_read == cur.sfc_fast_read);
-}
 
 int spi_fill_attr_from_params(mflash *mfl, flash_params_t *flash_params, flash_info_t *flash_info)
 {
@@ -978,27 +775,7 @@ int st_spi_fill_attr(mflash *mfl, flash_params_t *flash_params)
     return MFE_OK;
 }
 
-int st_spi_wait_wip(mflash *mfl, u_int32_t init_delay_us, u_int32_t retry_delay_us,
-                    u_int32_t num_of_retries)
-{
 
-    int rc = 0;
-    u_int8_t status = 0;
-    u_int32_t i = 0;
-
-    usleep(init_delay_us);
-
-    for (i = 0; i < num_of_retries; ++i) {
-        rc = mfl->f_spi_status(mfl, SFC_RDSR, &status);
-        CHECK_RC(rc);
-        if ((status & 1) == 0) {
-            return MFE_OK;
-        }
-        usleep(retry_delay_us);
-    }
-
-    return MFE_WRITE_TIMEOUT;
-}
 
 int read_chunks(mflash *mfl, u_int32_t addr, u_int32_t len, u_int8_t *data, bool verbose)
 {
@@ -1091,34 +868,6 @@ int read_chunks(mflash *mfl, u_int32_t addr, u_int32_t len, u_int8_t *data, bool
 //
 ////////////////////////////////////////
 
-//
-// Relevant CR addresses, Bit offset and bit size
-//
-
-enum CrConstans {
-    CR_FLASH_GW = 0xf0400,
-    CR_FLASH_ADDR = 0xf0404,
-    //CR_FLASH_DATA = 0xf0408,
-    CR_FLASH_CS = 0xf0418,
-    CR_GPIO_LOCK = 0xf00ec,
-    BO_READ_OP = 0,
-    BO_ADDR_INCR = 1,
-    BO_LPC_STOP = 3,
-    BO_SPI_NO_DATA = 4,
-    BO_SPI_NO_ADDR = 5,
-    BO_SPI_SPECIAL = 6,
-    BO_MSIZE = 8,
-    BS_MSIZE = 3,
-    BO_STATUS = 26,
-    BS_STATUS = 4,
-    BO_BUSY = 30,
-    BO_SPI_ADDR = 0,
-    BS_SPI_ADDR = 24,
-    BO_SPI_CMD = 24,
-    BS_SPI_CMD = 8,
-    BO_SPI_GPIO = 25,
-    BS_SPI_GPIO = 4
-};
 
 int gw_wait_ready(mflash *mfl, const char *msg)
 {
@@ -1150,48 +899,6 @@ int empty_reset(mflash *mfl)
 // ConnectX functions implementation
 //
 //////////////////////////////////////////
-enum CntxCrConstants {
-    HCR_FLASH_CMD = 0xf0400,
-    HCR_FLASH_ADDR = 0xf0404,
-
-    HCR_FLASH_DATA = 0xf0410,
-
-    HBO_READ_OP = 0,
-    HBO_ADDR_AUTO_INC = 1,
-    HBO_CMD_PHASE = 2,
-    HBO_ADDR_PHASE = 3,
-    HBO_DATA_PHASE = 4,
-    HBO_CS_HOLD = 5,
-
-    HBO_MSIZE = 8,
-    HBS_MSIZE = 3,
-
-    HBO_CHIP_SELECT = 11,
-    HBS_CHIP_SELECT = 2,
-
-    HBO_FLASH_ENABLE = 13, //In old devices
-
-    HBO_ADDR_SIZE = 14,
-
-    HBO_CMD = 16,
-    HBS_CMD = 8,
-
-    HBO_BUSY = 30,
-    HBO_LOCK = 31,
-
-    HBO_ADDR = 0,
-
-    // GPIOs
-    HCR_GPIO_LOCK = 0xf0048,
-    HCR_GPIO_LOCK_VAL = 0xd42f,
-
-    HCR_GPIO_DATA_OUT = 0xf0040,
-    HCR_GPIO_MODE0 = 0xf0050,
-    HCR_GPIO_MODE1 = 0xf004c,
-
-    HBO_GPIO_CS = 25,
-    HBS_GPIO_CS = 4
-};
 
 int empty_set_bank(mflash *mfl, u_int32_t bank)
 {
@@ -1201,169 +908,6 @@ int empty_set_bank(mflash *mfl, u_int32_t bank)
     return MFE_OK;
 }
 
-int cntx_exec_cmd(mflash *mfl, u_int32_t gw_cmd, char *msg)
-{
-    if (!IS_CONNECTX_4TH_GEN_FAMILY(mfl->attr.hw_dev_id)) {
-        // for old devices lock bit is separate from the flash HW ifc
-        //for new devices need to make sure this bit remains locked when writing the dword
-        gw_cmd = MERGE(gw_cmd, 1, 31, 1);
-    }
-    if ((gw_cmd & (1 << HBO_ADDR_PHASE)) != 0) { // This is an access command
-        if (is_x_byte_address_access_commands(mfl, 4)) {
-            gw_cmd = MERGE(gw_cmd, 1, HBO_ADDR_SIZE, 1);
-        } else if (!is_x_byte_address_access_commands(mfl, 3)) {
-            return MFE_ACCESS_COMMANDS_NOT_INITIALIZED;
-        }
-    }
-    gw_cmd = MERGE(gw_cmd, 1, HBO_BUSY, 1);
-
-    MfError status;
-    int flash_enable_needed = is_flash_enable_needed(mfl, &status);
-    if (status != MFE_OK) {
-        return status;
-    }
-    if (flash_enable_needed) {
-        gw_cmd = MERGE(gw_cmd, 1, HBO_FLASH_ENABLE, 1);
-    }
-
-    gw_cmd = MERGE(gw_cmd, (u_int32_t )mfl->curr_bank, HBO_CHIP_SELECT, HBS_CHIP_SELECT);
-    //  printf("-D- cntx_exec_cmd: %s, gw_cmd = %#x\n", msg, gw_cmd);
-    MWRITE4(CR_FLASH_GW, gw_cmd);
-    return gw_wait_ready(mfl, msg);
-}
-
-/*
- * execute a flash GW command and get the output: data0...data3 from the flash interface
- *
- * mfl - pointer to an initilized mflash obj
- * gw_cmd - the flash gateway command to execute
- * buff - pointer to a buffer where the output data from the flash GW will be written to
- * buff_dword_sz - size for buff in dwords
- * addr - if != NULL *addr will be written to the addr bits of the flash GW. (for commands that read from flash)
- * msg - optional string that describes the action for debug purposes, not used ATM however its recommended to put usefull
- *        data for future dubugabillity.
- * return : MFE_OK (0) upon success or a value != 0 upon error accroding to mlfash error code.
- */
-int cntx_exec_cmd_get(mflash *mfl, u_int32_t gw_cmd, u_int32_t *buff, int buff_dword_sz,
-                      u_int32_t *addr, char *msg)
-{
-    int rc = 0;
-    if (!mfl || !buff || !buff_dword_sz) {
-        return MFE_BAD_PARAMS;
-    }
-
-    rc = mfl_com_lock(mfl);
-    CHECK_RC(rc);
-
-    // write GW addr if needed
-    if (addr) {
-        if (mwrite4(mfl->mf, HCR_FLASH_ADDR, *addr) != 4) {
-            release_semaphore(mfl, 0);
-            return MFE_CR_ERROR;
-        }
-    }
-    // execute gw command
-    rc = cntx_exec_cmd(mfl, gw_cmd, msg);
-    CHECK_RC_REL_SEM(mfl, rc);
-    // copy data from CR-space to buff
-    if (mread4_block(mfl->mf, HCR_FLASH_DATA, buff, (buff_dword_sz << 2)) != (buff_dword_sz << 2)) {
-        release_semaphore(mfl, 0);
-        return MFE_CR_ERROR;
-    }
-    //release semaphore
-    release_semaphore(mfl, 0);
-    return MFE_OK;
-}
-
-/*
- * Set input in: data0...data3 from the flash interface and execute a flash GW command
- *
- * mfl - pointer to an initilized mflash obj
- * gw_cmd - the flash gateway command to execute
- * buff - if != NULL pointer to a buffer to the input data for the flash GW.
- * buff_dword_sz - size for buff in dwords
- * addr - if != NULL *addr will be written to the addr bits of the flash GW. (for commands that write from flash)
- * msg - optional string that describes the action for debug purposes, not used ATM however its recommended to put usefull
- *        data for future dubugabillity.
- * return : MFE_OK (0) upon success or a value != 0 upon error accroding to mlfash error code.
- */
-int cntx_exec_cmd_set(mflash *mfl, u_int32_t gw_cmd, u_int32_t *buff, int buff_dword_sz,
-                      u_int32_t *addr, char *msg)
-{
-    int rc = 0;
-    if (!mfl) {
-        return MFE_BAD_PARAMS;
-    }
-
-    rc = mfl_com_lock(mfl);
-    CHECK_RC(rc);
-
-    // write data from buff to CR-space
-    if (buff && buff_dword_sz) {
-        if (mwrite4_block(mfl->mf, HCR_FLASH_DATA, buff, (buff_dword_sz << 2)) != (buff_dword_sz << 2)) {
-            release_semaphore(mfl, 0);
-            return MFE_CR_ERROR;
-        }
-    }
-
-    // write GW addr if needed
-    if (addr) {
-        if (mwrite4(mfl->mf, HCR_FLASH_ADDR, *addr) != 4) {
-            release_semaphore(mfl, 0);
-            return MFE_CR_ERROR;
-        }
-    }
-    // execute gw command
-    rc = cntx_exec_cmd(mfl, gw_cmd, msg);
-    CHECK_RC_REL_SEM(mfl, rc);
-
-    //release semaphore
-    release_semaphore(mfl, 0);
-    return MFE_OK;
-}
-
-int cntx_int_spi_get_status_data(mflash *mfl, u_int8_t op_type, u_int32_t *status, u_int8_t bytes_num)
-{
-    int rc = 0;
-
-    u_int32_t gw_cmd = 0;
-    u_int32_t flash_data = 0;
-    //TODO: adrianc: update msize from log2(bytes_num)
-    gw_cmd = MERGE(gw_cmd, 1, HBO_READ_OP, 1);
-    gw_cmd = MERGE(gw_cmd, 1, HBO_CMD_PHASE, 1);
-    gw_cmd = MERGE(gw_cmd, 1, HBO_DATA_PHASE, 1);
-    gw_cmd = MERGE(gw_cmd, 2, HBO_MSIZE, HBS_MSIZE);
-
-    gw_cmd = MERGE(gw_cmd, op_type, HBO_CMD, HBS_CMD);
-
-    if (bytes_num > 4) {
-        return MFE_BAD_PARAMS;
-    }
-    rc = cntx_exec_cmd_get(mfl, gw_cmd, &flash_data, 1, (u_int32_t*) NULL, "Read id");
-    CHECK_RC(rc);
-
-    // printf("-D- cntx_int_spi_get_status_data: op=%02x status=%08x\n", op_type, flash_data);
-    *status = (flash_data >> 8 * (4 - bytes_num));
-    return MFE_OK;
-}
-
-int cntx_st_spi_write_enable(mflash *mfl)
-{
-    u_int32_t gw_cmd = 0;
-    int rc = 0;
-    // Write enable:
-    gw_cmd = MERGE(gw_cmd, 1, HBO_CMD_PHASE, 1);
-    gw_cmd = MERGE(gw_cmd, SFC_WREN, HBO_CMD, HBS_CMD);
-
-    rc = cntx_exec_cmd_set(mfl, gw_cmd, (u_int32_t*) NULL, 0, (u_int32_t*) NULL, "WREN command");
-    CHECK_RC(rc);
-
-    //gw_cmd =  MERGE(gw_cmd, 1               , HBO_CS_HOLD,    1);
-
-    //MWRITE4(CR_FLASH_GW,   gw_cmd);
-
-    return MFE_OK;
-}
 
 /*
  * Consts needed to extract the needed data for the jedec ID
@@ -1436,84 +980,12 @@ int cntx_spi_get_type(mflash *mfl, u_int8_t op_type, u_int8_t *vendor, u_int8_t 
     u_int32_t flash_data = 0;
     int rc = 0;
 
-    rc = cntx_int_spi_get_status_data(mfl, op_type, &flash_data, 4);
+    rc = mfl->f_int_spi_get_status_data(mfl, op_type, &flash_data, 4);
     CHECK_RC(rc);
     //printf("-D- jedec_info = %#x\n", flash_data);
     // Get type and some other info from jededc_id
     get_info_from_jededc_id(flash_data, vendor, type, density);
     // printf("-D- cntx_spi_get_type: vendor = %#x, type = %#x, capacity = %#x\n", *vendor, *type, *capacity);
-    return MFE_OK;
-}
-int cntx_spi_write_status_reg(mflash *mfl, u_int32_t status_reg, u_int8_t write_cmd, u_int8_t bytes_num)
-{
-    int rc = 0;
-    u_int32_t gw_cmd = 0;
-    // TODO: adrianc: add support for dynamic writes of power of 2 bytes_num not just 1,2 bytes
-    rc = cntx_st_spi_write_enable(mfl);
-    CHECK_RC(rc);
-    gw_cmd = MERGE(gw_cmd, 1, HBO_CMD_PHASE, 1);
-    gw_cmd = MERGE(gw_cmd, 1, HBO_DATA_PHASE, 1);
-
-    gw_cmd = MERGE(gw_cmd, write_cmd, HBO_CMD, HBS_CMD);
-
-    if (bytes_num != 1 && bytes_num != 2) {
-        return MFE_NOT_SUPPORTED_OPERATION;
-    }
-    // push status reg to upper bytes
-    status_reg = status_reg << ((bytes_num == 2) ? 16 : 24);
-    if (bytes_num == 2) {
-        gw_cmd = MERGE(gw_cmd, 1, HBO_MSIZE, 1);
-    }
-    rc = cntx_exec_cmd_set(mfl, gw_cmd, &status_reg, 1, (u_int32_t*) NULL, "Write-Status-Register");
-    // wait for flash to write the register
-    if (mfl->attr.vendor == FV_S25FLXXXX && mfl->attr.type == FMT_S25FLXXXL) { // New CYPRESS
-        msleep(WRITE_STATUS_REGISTER_DELAY_CYPRESS);
-    } else if (mfl->attr.vendor == FV_ST && mfl->attr.type == FMT_N25QXXX) { // New MICRON
-        msleep(WRITE_STATUS_REGISTER_DELAY_MICRON);
-    } else {
-        msleep(WRITE_STATUS_REGISTER_DELAY_MIN); // Some can sleep only 30 or even 15. We should consider optimize this.
-    }
-    return rc;
-}
-
-int cntx_init_gpios(mflash *mfl)
-{
-    //
-    // Set Multi SPI CS to output and with value of 1 (inactive)
-    // Assuming 4 flashes. If there are less than 4 flashes and there's
-    // an access to a void flash, the access will fail.
-    //
-
-    u_int32_t spi_en = 0xf;
-
-    u_int32_t mode0 = 0;
-    u_int32_t mode1 = 0;
-    u_int32_t data = 0;
-
-    // Set 4 Chip selects to 1
-    MREAD4(HCR_GPIO_DATA_OUT, &data);
-    data = MERGE(data, spi_en, BO_SPI_GPIO, BS_SPI_GPIO);
-    MWRITE4(HCR_GPIO_DATA_OUT, data);
-
-    MREAD4(HCR_GPIO_MODE0, &mode0);
-    MREAD4(HCR_GPIO_MODE1, &mode1);
-
-    // Set 4 Chip selects to outputs
-    if (EXTRACT(mode0, HBO_GPIO_CS, HBS_GPIO_CS) != spi_en ||
-        EXTRACT(mode1, HBO_GPIO_CS, HBS_GPIO_CS) != 0) {
-        mode0 = MERGE(mode0, spi_en, BO_SPI_GPIO, BS_SPI_GPIO);
-        mode1 = MERGE(mode1, ~spi_en, BO_SPI_GPIO, BS_SPI_GPIO);
-
-        // unlock gpio
-        MWRITE4(HCR_GPIO_LOCK, HCR_GPIO_LOCK_VAL);
-
-        MWRITE4(HCR_GPIO_MODE0, mode0);
-        MWRITE4(HCR_GPIO_MODE1, mode1);
-
-        // re-lock
-        MWRITE4(HCR_GPIO_LOCK, 0);
-    }
-
     return MFE_OK;
 }
 
@@ -1557,13 +1029,6 @@ int spi_update_num_of_banks(mflash *mfl, int prev_num_of_flashes)
     }
     return MFE_OK;
 }
-
-int cntx_st_spi_reset(mflash *mfl)
-{
-    (void) mfl;
-    return MFE_OK;
-}
-
 int cntx_st_spi_page_read(mflash *mfl, u_int32_t addr, u_int32_t size, u_int8_t *data, bool verbose)
 {
     (void)verbose;
@@ -1593,7 +1058,7 @@ int cntx_st_spi_page_read(mflash *mfl, u_int32_t addr, u_int32_t size, u_int8_t 
             is_last = 1;
         }
 
-        rc = cntx_st_spi_block_read_ex(mfl, addr, mfl->attr.block_write, p, is_first, is_last, false);
+        rc = mfl->f_st_spi_block_read_ex(mfl, addr, mfl->attr.block_write, p, is_first, is_last, false);
         CHECK_RC(rc);
 
         is_first = 0;
@@ -1604,110 +1069,13 @@ int cntx_st_spi_page_read(mflash *mfl, u_int32_t addr, u_int32_t size, u_int8_t 
     return MFE_OK;
 }
 
-/*
-         int get_flash_offset(u_int32_t addr, int log2_bank_size, u_int32_t *flash_addr_p)
-         {
- * flash_addr_p = addr & ONES32(log2_bank_size);
-         return MFE_OK;
-         }
- */
 
-int cntx_st_spi_block_read_ex(mflash *mfl, u_int32_t blk_addr, u_int32_t blk_size, u_int8_t *data,
-                              u_int8_t is_first, u_int8_t is_last, bool verbose)
-{
-    (void)verbose;
-    int rc = 0;
-    u_int32_t i = 0;
-    u_int32_t gw_cmd = 0;
-    u_int32_t gw_addr = 0;
-
-    //printf("-D- cntx_st_spi_block_read_ex(addr=%05x, u_int32_t size=%03x, first=%d, last=%d)\n", blk_addr, blk_size, (u_int32_t) is_first, (u_int32_t) is_last);
-    COM_CHECK_ALIGN(blk_addr, blk_size);
-
-    if (blk_size > (u_int32_t) mfl->attr.block_write || blk_size < 4) {
-        return MFE_BAD_PARAMS;
-    }
-
-    rc = set_bank(mfl, blk_addr);
-    CHECK_RC(rc);
-
-    if (is_first) {
-        gw_cmd = MERGE(gw_cmd, 1, HBO_CMD_PHASE, 1);
-        gw_cmd = MERGE(gw_cmd, 1, HBO_ADDR_PHASE, 1);
-        gw_cmd = MERGE(gw_cmd, mfl->attr.access_commands.sfc_read, HBO_CMD, HBS_CMD);
-
-        rc = get_flash_offset(blk_addr, mfl->attr.log2_bank_size, &gw_addr);
-        CHECK_RC(rc);
-    }
-    //printf("-D- gw_addr = %#x, gw_cmd = %#x, blk_addr = %#x, mfl->attr.log2_bank_size = %#x\n", gw_addr, gw_cmd, blk_addr, mfl->attr.log2_bank_size);
-    if (!is_last) {
-        gw_cmd = MERGE(gw_cmd, 1, HBO_CS_HOLD, 1);
-    }
-
-    // Read the data block
-    gw_cmd = MERGE(gw_cmd, 1, HBO_READ_OP, 1);
-    gw_cmd = MERGE(gw_cmd, 1, HBO_DATA_PHASE, 1);
-    gw_cmd = MERGE(gw_cmd, log2up(blk_size), BO_MSIZE, BS_MSIZE);
-
-    rc = cntx_exec_cmd_get(mfl, gw_cmd, (u_int32_t*) data, (blk_size >> 2), &gw_addr, "Read");
-    CHECK_RC(rc);
-
-    ////if (mread_by_chunks(mfl->mf, HCR_FLASH_DATA, data, blk_size) != (int)blk_size) {
-    //if (mread4_block(mfl->mf, HCR_FLASH_DATA, (u_int32_t*)data, blk_size) != (int)blk_size) {
-    //    return 2;
-    //fprintf(stderr, "-E- Cr read (0x%08x) failed: %s(%d)\n", HCR_FLASH_DATA, strerror(errno), (u_int32_t)errno);
-    //exit(2);
-    //}
-
-    for (i = 0; i < blk_size; i += 4) {
-        *(u_int32_t*) (data + i) = __be32_to_cpu(*(u_int32_t*) (data + i));
-    }
-    return MFE_OK;
-}
 
 int cntx_st_spi_block_read(mflash *mfl, u_int32_t blk_addr, u_int32_t blk_size, u_int8_t *data, bool verbose)
 {
     (void)verbose;
-    return cntx_st_spi_block_read_ex(mfl, blk_addr, blk_size, data, 1, 1, false);
+    return mfl->f_st_spi_block_read_ex(mfl, blk_addr, blk_size, data, 1, 1, false);
 }
-
-int cntx_st_spi_block_read_old(mflash *mfl, u_int32_t blk_addr, u_int32_t blk_size, u_int8_t *data)
-{
-    int rc = 0;
-    u_int32_t offs = 0;
-    u_int32_t gw_cmd = 0;
-    u_int32_t gw_addr = 0;
-
-    COM_CHECK_ALIGN(blk_addr, blk_size);
-
-    if (blk_size > (u_int32_t) mfl->attr.block_write || blk_size < 4) {
-        return MFE_BAD_PARAMS;
-    }
-
-    rc = set_bank(mfl, blk_addr);
-    CHECK_RC(rc);
-
-    // Read the data block
-    gw_cmd = MERGE(gw_cmd, 1, HBO_READ_OP, 1);
-    gw_cmd = MERGE(gw_cmd, 1, HBO_CMD_PHASE, 1);
-    gw_cmd = MERGE(gw_cmd, 1, HBO_ADDR_PHASE, 1);
-    gw_cmd = MERGE(gw_cmd, 1, HBO_DATA_PHASE, 1);
-    gw_cmd = MERGE(gw_cmd, log2up(blk_size), BO_MSIZE, BS_MSIZE);
-    gw_cmd = MERGE(gw_cmd, SFC_READ, HBO_CMD, HBS_CMD);
-
-    gw_addr = blk_addr & ONES32(mfl->attr.log2_bank_size);
-
-    rc = cntx_exec_cmd_get(mfl, gw_cmd, (u_int32_t*) data, (blk_size >> 2), &gw_addr, "Read");
-    CHECK_RC(rc);
-
-    // Data:
-    for (offs = 0; offs < blk_size; offs += 4) {
-        *((u_int32_t*) (data + offs)) = __cpu_to_be32(*((u_int32_t*) (data + offs)));
-    }
-
-    return MFE_OK;
-}
-
 int cntx_st_spi_page_write(mflash *mfl, u_int32_t addr, u_int32_t size, u_int8_t *data)
 {
     int rc = 0;
@@ -1727,7 +1095,7 @@ int cntx_st_spi_page_write(mflash *mfl, u_int32_t addr, u_int32_t size, u_int8_t
         if (addr == last_blk_addr) {
             is_last = 1;
         }
-        rc = cntx_st_spi_block_write_ex(mfl, addr, mfl->attr.block_write, p, is_first, is_last, size);
+        rc = mfl->f_st_spi_block_write_ex(mfl, addr, mfl->attr.block_write, p, is_first, is_last, size);
         CHECK_RC(rc);
 
         is_first = 0;
@@ -1751,7 +1119,7 @@ int cntx_sst_spi_byte_write(mflash *mfl, u_int32_t addr, u_int32_t size, u_int8_
     last_addr = addr + size;
 
     while (addr < last_addr) {
-        rc = cntx_sst_spi_block_write_ex(mfl, addr, mfl->attr.block_write, p);
+        rc = mfl->f_sst_spi_block_write_ex(mfl, addr, mfl->attr.block_write, p);
         CHECK_RC(rc);
         addr++;
         p++;
@@ -1760,151 +1128,12 @@ int cntx_sst_spi_byte_write(mflash *mfl, u_int32_t addr, u_int32_t size, u_int8_
     return MFE_OK;
 }
 
-int cntx_st_spi_block_write_ex(mflash *mfl, u_int32_t blk_addr, u_int32_t blk_size, u_int8_t *data,
-                               u_int8_t is_first, u_int8_t is_last, u_int32_t total_size)
-{
-    int rc = 0;
-    u_int32_t offs = 0;
-    u_int32_t gw_cmd = 0;
-    u_int32_t gw_addr = 0;
-    u_int32_t buff[4];
-
-    if (blk_addr & ((u_int32_t) mfl->attr.block_write - 1)) {
-        return MFE_BAD_ALIGN;
-    }
-
-    // sanity check ??? remove ???
-    if (blk_size != (u_int32_t) mfl->attr.block_write) {
-        return MFE_BAD_PARAMS;
-    }
-
-    rc = set_bank(mfl, blk_addr);
-    CHECK_RC(rc);
-
-    gw_cmd = MERGE(gw_cmd, 1, HBO_DATA_PHASE, 1);
-    gw_cmd = MERGE(gw_cmd, log2up(blk_size), HBO_MSIZE, HBS_MSIZE);
-
-    if (is_first) {
-        rc = cntx_st_spi_write_enable(mfl);
-        CHECK_RC(rc);
-
-        // Write the data block
-        gw_cmd = MERGE(gw_cmd, 1, HBO_CMD_PHASE, 1);
-        gw_cmd = MERGE(gw_cmd, 1, HBO_ADDR_PHASE, 1);
-        gw_cmd = MERGE(gw_cmd, mfl->attr.access_commands.sfc_page_program, HBO_CMD, HBS_CMD);
-        gw_addr = blk_addr & ONES32(mfl->attr.log2_bank_size);
-        //printf("-D- gw_addr = %#x, blk_addr = %#x\n", gw_addr, blk_addr);
-    }
-
-    if (!is_last) {
-        gw_cmd = MERGE(gw_cmd, 1, HBO_CS_HOLD, 1);
-    }
-
-    // Data:
-    for (offs = 0; offs < blk_size; offs += 4) {
-        u_int32_t word = zero;
-
-        word = MERGE(word, data[offs + 0], 24, 8);
-        word = MERGE(word, data[offs + 1], 16, 8);
-        word = MERGE(word, data[offs + 2], 8, 8);
-        word = MERGE(word, data[offs + 3], 0, 8);
-        //MWRITE4(HCR_FLASH_DATA + offs, word );
-        buff[offs / 4] = word;
-        //printf("-D- word = %#x, %d\n", word, HBS_CMD);
-    }
-
-    rc = cntx_exec_cmd_set(mfl, gw_cmd, buff, (blk_size >> 2), &gw_addr, "PP command");
-    CHECK_RC(rc);
-
-    //
-    // Wait for end of write in flash (WriteInProgress = 0):
-    //
-
-    if (is_last) {
-        rc = st_spi_wait_wip(mfl, WRITE_BLOCK_INIT_DELAY + WRITE_ADDITIONAL_BYTE_DELAY * total_size, WRITE_BLOCK_RETRY_DELAY, WRITE_BLOCK_RETRIES);
-        CHECK_RC(rc);
-    }
-
-    return MFE_OK;
-}
-
-int cntx_sst_spi_block_write_ex(mflash *mfl, u_int32_t blk_addr, u_int32_t blk_size, u_int8_t *data)
-{
-    int rc = 0;
-    u_int32_t gw_cmd = 0;
-    u_int32_t gw_addr = 0;
-    u_int32_t word = zero;
-
-    // sanity check ??? remove ???
-    if (blk_size != (u_int32_t) mfl->attr.block_write) {
-        return MFE_BAD_PARAMS;
-    }
-
-    rc = set_bank(mfl, blk_addr);
-    CHECK_RC(rc);
-
-    gw_cmd = MERGE(gw_cmd, 1, HBO_DATA_PHASE, 1);
-    gw_cmd = MERGE(gw_cmd, 0, HBO_MSIZE, HBS_MSIZE);
-
-    rc = cntx_st_spi_write_enable(mfl);
-    CHECK_RC(rc);
-
-    // Write the data block
-    gw_cmd = MERGE(gw_cmd, 1, HBO_CMD_PHASE, 1);
-    gw_cmd = MERGE(gw_cmd, 1, HBO_ADDR_PHASE, 1);
-    gw_cmd = MERGE(gw_cmd, 0x02, HBO_CMD, HBS_CMD);
-
-    gw_addr = blk_addr & ONES32(mfl->attr.log2_bank_size);
-
-    //gw_cmd = MERGE(gw_cmd, 1               , HBO_CS_HOLD,    1);
-
-    word = MERGE(word, data[0], 24, 8);
-
-    //printf("-D- data[0] = %#x, gw_addr = %#x, word = %#x, gw_cmd = %#x\n", data[0], gw_addr, word, gw_cmd);
-
-    rc = cntx_exec_cmd_set(mfl, gw_cmd, &word, 1, &gw_addr, "PB command");
-    CHECK_RC(rc);
-
-    rc = st_spi_wait_wip(mfl, 0, 0, 50000);
-    CHECK_RC(rc); // Full throttle polling - no cpu optimization for this flash
-
-    return MFE_OK;
-}
 
 int cntx_st_spi_block_write(mflash *mfl, u_int32_t blk_addr, u_int32_t blk_size, u_int8_t *data)
 {
-    return cntx_st_spi_block_write_ex(mfl, blk_addr, blk_size, data, 1, 1, blk_size);
+    return mfl->f_st_spi_block_write_ex(mfl, blk_addr, blk_size, data, 1, 1, blk_size);
 }
 
-int cntx_st_spi_erase_sect(mflash *mfl, u_int32_t addr)
-{
-    int rc = 0;
-
-    u_int32_t gw_cmd = 0;
-    u_int32_t gw_addr = 0;
-    rc = set_bank(mfl, addr);
-    CHECK_RC(rc);
-
-    rc = cntx_st_spi_write_enable(mfl);
-    CHECK_RC(rc);
-
-    // Erase sector command:
-    gw_cmd = MERGE(gw_cmd, 1, HBO_CMD_PHASE, 1);
-    gw_cmd = MERGE(gw_cmd, 1, HBO_ADDR_PHASE, 1);
-    gw_cmd = MERGE(gw_cmd, mfl->attr.erase_command, HBO_CMD, HBS_CMD);
-
-    gw_addr = addr & ONES32(mfl->attr.log2_bank_size);
-
-    // printf("-D- cntx_st_spi_erase_sect: addr = %#x, gw_cmd = %#x.\n", addr, gw_cmd);
-
-    rc = cntx_exec_cmd_set(mfl, gw_cmd, (u_int32_t*) NULL, 0, &gw_addr, "ES");
-    CHECK_RC(rc);
-
-    // Wait for erase completion
-    rc = st_spi_wait_wip(mfl, ERASE_SUBSECTOR_INIT_DELAY, ERASE_SUBSECTOR_RETRY_DELAY, ERASE_SUBSECTOR_RETRIES);
-    CHECK_RC(rc);
-    return MFE_OK;
-}
 
 f_mf_write get_write_blk_func(int command_set)
 {
@@ -1991,23 +1220,20 @@ int cntx_flash_init_direct_access(mflash *mfl, flash_params_t *flash_params)
         MWRITE4(0xf3834, tmp1);
 
     }
-
-    //TODO: Enable page_read (slightly better perf)
-    //mfl->f_read           = cntx_st_spi_page_read;
     mfl->f_read = read_chunks;
     mfl->f_read_blk = cntx_st_spi_block_read;
     mfl->f_lock = old_flash_lock; // Flash lock has same address and functionality as in InfiniHost.
     mfl->f_set_bank = empty_set_bank;
     mfl->f_get_info = cntx_get_flash_info;
     mfl->unlock_flash_prog_allowed = 0;
-    //if (is_life_fish) {
-    //    rc = cntx_init_gpios(mfl);  CHECK_RC(rc);
-    //}
-
     mfl->f_spi_status = cntx_st_spi_get_status;
     mfl->supp_sr_mod = 1;
-
-    rc = st_spi_fill_attr(mfl, flash_params);
+    mfl->f_st_spi_erase_sect = cntx_st_spi_erase_sect;
+    mfl->f_int_spi_get_status_data = cntx_int_spi_get_status_data;
+    mfl->f_st_spi_block_write_ex = cntx_st_spi_block_write_ex;
+    mfl->f_sst_spi_block_write_ex = cntx_sst_spi_block_write_ex;
+    mfl->f_st_spi_block_read_ex = cntx_st_spi_block_read_ex;
+    mfl->f_spi_write_status_reg = cntx_spi_write_status_reg;    rc = st_spi_fill_attr(mfl, flash_params);
     CHECK_RC(rc);
 
     if (mfl->attr.command_set == MCS_STSPI || mfl->attr.command_set == MCS_SSTSPI) {
@@ -2028,6 +1254,9 @@ int cntx_flash_init_direct_access(mflash *mfl, flash_params_t *flash_params)
     mfl->f_set_dummy_cycles = mf_set_dummy_cycles_direct_access;
     mfl->f_get_write_protect = mf_get_write_protect_direct_access;
     mfl->f_set_write_protect = mf_set_write_protect_direct_access;
+
+
+ 
     rc = mfl->f_reset(mfl);
     return MFE_OK;
 }
@@ -2172,11 +1401,11 @@ int check_cache_replacement_guard(mflash *mfl, u_int8_t *needs_cache_replacement
         
         // Read the Cache replacement offset
         if (!dm_dev_is_raven_family_switch(devid_t)) {
-        MREAD4(CACHE_REP_OFF, &data);
-        off = EXTRACT(data, 0, 26);
-        // Read the Cache replacement cmd
-        MREAD4(CASHE_REP_CMD, &data);
-        cmd = EXTRACT(data, 16, 8);
+            MREAD4(CACHE_REP_OFF, &data);
+            off = EXTRACT(data, 0, 26);
+            // Read the Cache replacement cmd
+            MREAD4(CASHE_REP_CMD, &data);
+            cmd = EXTRACT(data, 16, 8);
         }
         else {//RAVEN switches
             MREAD4(CACHE_REP_OFF_RAVEN, &data);
@@ -2230,6 +1459,58 @@ int release_semaphore(mflash *mfl, int ignore_writer_lock)
     return MFE_OK;
 }
 
+int gen6_flash_init_com(mflash *mfl, flash_params_t *flash_params, u_int8_t init_cs_support)
+{
+    int rc = 0;
+
+    //TODO: Enable page_read (slightly better perf)
+    mfl->f_read = read_chunks;
+    mfl->f_read_blk = cntx_st_spi_block_read;//need fix
+    mfl->f_set_bank = empty_set_bank;
+    mfl->f_get_info = cntx_get_flash_info;//need fix
+
+    if (init_cs_support) {
+        // Update the chip_select_support according to the banks number of cs.
+        rc = sx_init_cs_support(mfl);
+        CHECK_RC(rc);
+    }
+
+    mfl->f_spi_status = cntx_st_spi_get_status;//need fix
+    mfl->supp_sr_mod = 1;
+    rc = st_spi_fill_attr(mfl, flash_params);
+    CHECK_RC(rc);
+
+    if (mfl->attr.command_set == MCS_STSPI || mfl->attr.command_set == MCS_SSTSPI) {
+        mfl->f_reset = empty_reset; // Null func
+        mfl->f_write_blk = get_write_blk_func(mfl->attr.command_set);
+        mfl->attr.page_write = 256;
+        mfl->f_write = write_chunks;
+        mfl->f_erase_sect = cntx_st_spi_erase_sect;
+    }
+    else {
+        return MFE_UNSUPPORTED_FLASH_TYPE;
+    }
+
+    // flash parameter access methods:
+    mfl->f_get_quad_en = mf_get_quad_en_direct_access;
+    mfl->f_set_quad_en = mf_set_quad_en_direct_access;
+    mfl->f_get_dummy_cycles = mf_get_dummy_cycles_direct_access;
+    mfl->f_set_dummy_cycles = mf_set_dummy_cycles_direct_access;
+    mfl->f_get_write_protect = mf_get_write_protect_direct_access;
+    mfl->f_set_write_protect = mf_set_write_protect_direct_access;
+
+    mfl->f_st_spi_erase_sect = new_gw_st_spi_erase_sect;
+    mfl->f_int_spi_get_status_data = new_gw_int_spi_get_status_data;
+    mfl->f_st_spi_block_write_ex = new_gw_st_spi_block_write_ex;
+    mfl->f_sst_spi_block_write_ex = new_gw_sst_spi_block_write_ex;
+    mfl->f_st_spi_block_read_ex = new_gw_st_spi_block_read_ex;
+    mfl->f_spi_write_status_reg = new_gw_spi_write_status_reg;
+
+
+
+    rc = mfl->f_reset(mfl);
+    return MFE_OK;
+}
 // ConnectX and Is4 flash interfaces are identical (except lock function)
 // Use same functions
 //
@@ -2246,6 +1527,12 @@ int gen4_flash_init_com(mflash *mfl, flash_params_t *flash_params, u_int8_t init
     mfl->f_read_blk = cntx_st_spi_block_read;
     mfl->f_set_bank = empty_set_bank;
     mfl->f_get_info = cntx_get_flash_info;
+    mfl->f_st_spi_erase_sect = cntx_st_spi_erase_sect;
+    mfl->f_int_spi_get_status_data = cntx_int_spi_get_status_data;
+    mfl->f_st_spi_block_write_ex = cntx_st_spi_block_write_ex;
+    mfl->f_sst_spi_block_write_ex = cntx_sst_spi_block_write_ex;
+    mfl->f_st_spi_block_read_ex = cntx_st_spi_block_read_ex;
+    mfl->f_spi_write_status_reg = cntx_spi_write_status_reg;
 
     if (init_cs_support) {
         // Update the chip_select_support according to the banks number of cs.
@@ -2278,7 +1565,6 @@ int gen4_flash_init_com(mflash *mfl, flash_params_t *flash_params, u_int8_t init
     mfl->f_set_dummy_cycles = mf_set_dummy_cycles_direct_access;
     mfl->f_get_write_protect = mf_get_write_protect_direct_access;
     mfl->f_set_write_protect = mf_set_write_protect_direct_access;
-
     rc = mfl->f_reset(mfl);
 
     return MFE_OK;
@@ -2295,6 +1581,12 @@ int sx_flash_init_direct_access(mflash *mfl, flash_params_t *flash_params)
 {
     mfl->f_lock = is4_flash_lock;
     return gen4_flash_init_com(mfl, flash_params, 1);
+}
+
+int sixth_gen_init_direct_access(mflash *mfl, flash_params_t *flash_params)
+{
+    mfl->f_lock = connectib_flash_lock;
+    return gen6_flash_init_com(mfl, flash_params, 0);
 }
 
 int fifth_gen_init_direct_access(mflash *mfl, flash_params_t *flash_params)
@@ -2418,6 +1710,12 @@ int flash_init_inband_access(mflash *mfl, flash_params_t *flash_params)
     mfl->f_set_dummy_cycles = sx_set_dummy_cycles;
     mfl->f_get_write_protect = sx_get_write_protect;
     mfl->f_set_write_protect = sx_set_write_protect;
+    mfl->f_st_spi_erase_sect = cntx_st_spi_erase_sect;
+    mfl->f_int_spi_get_status_data = cntx_int_spi_get_status_data;
+    mfl->f_st_spi_block_write_ex = cntx_st_spi_block_write_ex;
+    mfl->f_sst_spi_block_write_ex = cntx_sst_spi_block_write_ex;
+    mfl->f_st_spi_block_read_ex = cntx_st_spi_block_read_ex;
+    mfl->f_spi_write_status_reg = cntx_spi_write_status_reg;
 
     // Get the flash attribute
     rc = st_spi_fill_attr(mfl, flash_params);
@@ -2452,6 +1750,13 @@ int uefi_flash_init(mflash *mfl, flash_params_t *flash_params)
     mfl->f_set_dummy_cycles = sx_set_dummy_cycles;
     mfl->f_get_write_protect = sx_get_write_protect;
     mfl->f_set_write_protect = sx_set_write_protect;
+    mfl->f_st_spi_erase_sect = cntx_st_spi_erase_sect;
+    mfl->f_int_spi_get_status_data = cntx_int_spi_get_status_data;
+    mfl->f_st_spi_block_write_ex = cntx_st_spi_block_write_ex;
+    mfl->f_sst_spi_block_write_ex = cntx_sst_spi_block_write_ex;
+    mfl->f_st_spi_block_read_ex = cntx_st_spi_block_read_ex;
+    mfl->f_spi_write_status_reg = cntx_spi_write_status_reg;
+
     // Get the flash attribute
 
     rc = st_spi_fill_attr(mfl, flash_params);
@@ -2516,6 +1821,29 @@ int tools_cmdif_init(mflash *mfl)
         if (tools_cmdif_unlock_semaphore(mfl->mf) != ME_OK) {
             return MFE_CR_ERROR;
         }
+    }
+    return MFE_OK;
+}
+
+int six_gen_flash_init(mflash *mfl, flash_params_t *flash_params)
+{
+    int rc = 0;
+    u_int8_t needs_cache_replacement = 0;
+
+    rc = check_cache_replacement_guard(mfl, &needs_cache_replacement);
+    CHECK_RC(rc);
+
+    if (needs_cache_replacement) {
+        if (mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] == ATBM_ICMD) {
+            rc = icmd_init(mfl);
+            CHECK_RC(rc);
+        }
+        rc = flash_init_fw_access(mfl, flash_params);
+        CHECK_RC(rc);
+    }
+    else {
+        rc = sixth_gen_init_direct_access(mfl, flash_params);
+        CHECK_RC(rc);
     }
     return MFE_OK;
 }
@@ -2601,6 +1929,11 @@ int mf_write(mflash *mfl, u_int32_t addr, u_int32_t len, u_int8_t *data)
     mfl->writer_lock = 1;
     return mfl->f_write(mfl, addr, len, data);
 }
+void mf_set_cpu_utilization(mflash *mfl, int cpuPercent)
+{
+    mfl->cputUtilizationApplied = 1;
+    mfl->cpuPercent = cpuPercent;
+}
 
 static int erase_com(mflash *mfl, u_int32_t addr, unsigned int sector_size, int erase_cmd)
 {
@@ -2680,6 +2013,7 @@ int get_dev_info(mflash *mfl)
     u_int32_t dev_flags = 0;
     u_int32_t access_type = 0;
     int rc = 0;
+    int is7NmSuppported;
     u_int32_t dev_id = 0;
     mfl->opts[MFO_FW_ACCESS_TYPE_BY_MFILE] = ATBM_NO;
     rc = mget_mdevs_flags(mfl->mf, &dev_flags);
@@ -2688,7 +2022,7 @@ int get_dev_info(mflash *mfl)
     CHECK_RC(rc);
 
     MfError status;
-    int icmdif_supported = is_icmdif_supported(mfl, &status);
+    int icmdif_supported = is_icmdif_supported(mfl, &status, &is7NmSuppported);
     if (status != MFE_OK) {
         return status;
     }
@@ -2782,13 +2116,12 @@ int mf_open_fw(mflash *mfl, flash_params_t *flash_params, int num_of_banks)
         mfl->opts[MFO_NUM_OF_BANKS] = spi_get_num_of_flashes(num_of_banks);
         rc = spi_update_num_of_banks(mfl, num_of_banks);
         CHECK_RC(rc);
-
+        int is7NmSuppported = 0;
         MfError status;
-        int icmdif_supported = is_icmdif_supported(mfl, &status);
+        int icmdif_supported = is_icmdif_supported(mfl, &status, &is7NmSuppported);
         if (status != MFE_OK) {
             return status;
         }
-
         if (IS_CONNECTX_4TH_GEN_FAMILY(mfl->attr.hw_dev_id)) {
             rc = cntx_flash_init(mfl, flash_params);
         } else if (IS_IS4_FAMILY(mfl->attr.hw_dev_id)) {
@@ -2796,7 +2129,12 @@ int mf_open_fw(mflash *mfl, flash_params_t *flash_params, int num_of_banks)
         } else if (IS_SX(mfl->attr.hw_dev_id)) {
             rc = sx_flash_init(mfl, flash_params);
         } else if (icmdif_supported) {
-            rc = fifth_gen_flash_init(mfl, flash_params);
+            if (!is7NmSuppported) {
+                rc = fifth_gen_flash_init(mfl, flash_params);
+            }
+            else {
+                rc = six_gen_flash_init(mfl, flash_params);
+            }
         } else if (mfl->attr.hw_dev_id == 0xffff) {
             rc = MFE_HW_DEVID_ERROR;
         } else {
@@ -2853,12 +2191,6 @@ int mf_opend_int(mflash **pmfl, void *access_dev, int num_of_banks, flash_params
     rc = mf_open_fw(*pmfl, flash_params, num_of_banks);
     return rc;
 }
-
-//int mf_opend(mflash **pmfl, struct mfile_t *mf, int num_of_banks, flash_params_t *flash_params,
-//             int ignore_cache_rep_guard)
-//{
-//    return mf_opend_int(pmfl, mf, num_of_banks, flash_params, ignore_cache_rep_guard, MFAT_MFILE, NULL, 0);
-//}
 
 int mf_open_uefi(mflash **pmfl, uefi_Dev_t *uefi_dev, uefi_dev_extra_t *uefi_dev_extra)
 {
@@ -3255,6 +2587,7 @@ int mf_set_reset_flash_on_warm_reboot(mflash *mfl)
         set_reset_bit_offset = 1;
         break;
     case DeviceConnectX6:
+    case DeviceConnectX7:
     case DeviceConnectX6DX:
     case DeviceConnectX6LX:
     case DeviceBlueField2:
@@ -3300,6 +2633,7 @@ int mf_update_boot_addr(mflash *mfl, u_int32_t boot_addr)
         offset_in_address = 0;
         break;
     case DeviceConnectX6:
+    case DeviceConnectX7:
     case DeviceConnectX6DX:
     case DeviceConnectX6LX:
     case DeviceQuantum:
@@ -3365,7 +2699,7 @@ int mf_read_modify_status_winbond(mflash *mfl, u_int8_t bank_num, u_int8_t is_fi
         status = status >> 8;
     }
     // Write register status
-    rc = cntx_spi_write_status_reg(mfl, status, SFC_WRSR, bytes_to_write);
+    rc = mfl->f_spi_write_status_reg(mfl, status, SFC_WRSR, bytes_to_write);
     CHECK_RC(rc);
     return MFE_OK;
 }
@@ -3378,10 +2712,10 @@ int mf_read_modify_status_new(mflash *mfl, u_int8_t bank_num, u_int8_t read_cmd,
 
     rc = set_bank_int(mfl, bank_num);
     CHECK_RC(rc);
-    rc = cntx_int_spi_get_status_data(mfl, read_cmd, &status, bytes_num);
+    rc = mfl->f_int_spi_get_status_data(mfl, read_cmd, &status, bytes_num);
     CHECK_RC(rc);
     status = MERGE(status, val, offset, size);
-    rc = cntx_spi_write_status_reg(mfl, status, write_cmd, bytes_num);
+    rc = mfl->f_spi_write_status_reg(mfl, status, write_cmd, bytes_num);
     CHECK_RC(rc);
     return MFE_OK;
 }
@@ -3395,7 +2729,7 @@ int mf_get_param_int(mflash *mfl, u_int8_t *param_p, u_int8_t cmd, u_int8_t offs
         u_int8_t curr_val;
         rc = set_bank_int(mfl, bank);
         CHECK_RC(rc);
-        rc = cntx_int_spi_get_status_data(mfl, cmd, &status, bytes_num);
+        rc = mfl->f_int_spi_get_status_data(mfl, cmd, &status, bytes_num);
         CHECK_RC(rc);
 
         curr_val = EXTRACT(status, offset, bit_size);
@@ -3627,7 +2961,8 @@ int mf_get_write_protect_direct_access(mflash *mfl, u_int8_t bank_num,
 int mf_is_fifth_gen(mflash *mfl)
 {
     MfError status;
-    int icmdif_supported = is_icmdif_supported(mfl, &status);
+    int is7NmSuppported = 0;
+    int icmdif_supported = is_icmdif_supported(mfl, &status, &is7NmSuppported);
     if (status != MFE_OK) {
         return status;
     }

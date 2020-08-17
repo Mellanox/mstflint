@@ -230,7 +230,6 @@ mlxCfgStatus MlxCfg::queryDevsCfg()
 {
     bool shouldFail = false;
     if (_mlxParams.device.length()) {
-
         if (queryDevCfg(_mlxParams.device.c_str())) {
             printErr();
             shouldFail = true;
@@ -273,12 +272,12 @@ int MlxCfg::printValue(string strVal, u_int32_t val)
 {
     string s = numToStr(val);
     u_int32_t n;
-    if (strVal == "" || strVal == s || (strToNum(strVal, n) && n == val)) {
+    if (strVal == "" || strVal == s || (strToNum(strVal, n, 10) && n == val)) {
         return printf("%-16u", val);
     }
-        if (strVal.find("Array") == string::npos) {
-            strVal += "(" + s + ")";
-        }
+    if (strVal.find("Array") == string::npos) {
+        strVal += "(" + s + ")";
+    }
     return printf("%-16s", strVal.c_str());
 }
 
@@ -356,7 +355,7 @@ void MlxCfg::printOpening(const char *dev, int devIndex)
     printf("----------\n\n");
     const char *devType = getDeviceName(dev);
     printf("%-16s%-16s\n", "Device type:", devType);
-    if ((_devType != DeviceConnectX3 && _devType != DeviceConnectX3Pro && _devType != DeviceConnectX2)) {
+    if (!dm_is_4th_gen(_devType)) {
         std::vector<char> info;
         info.reserve(16);
         if (!getDeviceInformationString(dev, Device_Name, info)) {

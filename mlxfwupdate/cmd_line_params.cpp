@@ -62,11 +62,8 @@ CmdLineParams::CmdLineParams()
     extract_all     = false;
     no_fw_ctrl      = false;
     target_file     = "";
-    //server_url      = "http://localhost/";
     server_url      = "https://www.mellanox.com";
-
     proxy           = "";
-
     update_online   = false;
     download        = false;
     download_default = false;

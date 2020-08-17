@@ -212,6 +212,7 @@ bool MFA2::unpack(Mfa2Buffer & buff) {
 void MFA2::minidump() {
     printf("Package Version : %s\n", _packageDescriptor.getVersionExtension().getVersion(false).c_str());
 }
+
 void MFA2::dump() {
     //printf("Finger print    : %s\n", _fingerPrint.toString().c_str());
     u_int16_t devCount = _packageDescriptor.getDeviceDescriptorsCount();
@@ -286,13 +287,27 @@ bool MFA2::unzipComponent(map_string_to_component& matchingComponentsMap, u_int3
     return extractComponent(requiredComponent, fwBinaryData);
 }
 
-map_string_to_component MFA2::getMatchingComponents(char* device_psid, int deviceMajorVer)
+bool MFA2::getLatestComponent(vector<u_int8_t>& fwBinaryData, u_int16_t fw_ver[3])
+{
+    map_string_to_component matchingComponentsMap = getMatchingComponents(NULL, fw_ver);
+    map_string_to_component::iterator itAtKey = matchingComponentsMap.find(_latestComponentKey);
+    if (itAtKey == matchingComponentsMap.end()) {
+        return false;
+    }
+    Component* requiredComponent = &itAtKey->second;
+    return extractComponent(requiredComponent, fwBinaryData);
+}
+
+
+map_string_to_component MFA2::getMatchingComponents(char* device_psid, u_int16_t fw_ver[3])
 {
     map_string_to_component matchingComponentsMap;
     PackageDescriptor packageDescriptor = getPackageDescriptor();
     u_int16_t devCount = packageDescriptor.getDeviceDescriptorsCount();
     Version currentLatestVersion;
-    
+    u_int8_t deviceMajorVer = (u_int8_t)fw_ver[0];
+    u_int8_t deviceMinorVer = (u_int8_t)fw_ver[1];
+    u_int16_t deviceSubMinorVer = fw_ver[2];
     for (u_int16_t index = 0; index < devCount; index++) {
         DeviceDescriptor devDescriptor = getDeviceDescriptor(index);
         string psid = devDescriptor.getPSIDExtension().getString();
@@ -308,8 +323,20 @@ map_string_to_component MFA2::getMatchingComponents(char* device_psid, int devic
             Component compObj = getComponentObject(compIndex);
             const ComponentDescriptor & compDescr = compObj.getComponentDescriptor();
             u_int8_t majorVer = compDescr.getVersionExtension().getMajor();
-            if (deviceMajorVer != -1) {
+            u_int8_t minorVer = compDescr.getVersionExtension().getMinor();
+            u_int16_t subMinorVer = compDescr.getVersionExtension().getSubMinor();
+            if (deviceMajorVer != 0xff) {
                 if (deviceMajorVer != majorVer) {
+                    continue;
+                }
+            }
+            if (deviceMinorVer != 0xff) {
+                if (minorVer != deviceMinorVer) {
+                    continue;
+                }
+            }
+            if (deviceSubMinorVer != 0xffff) {
+                if (subMinorVer != deviceSubMinorVer) {
                     continue;
                 }
             }
@@ -329,3 +356,4 @@ map_string_to_component MFA2::getMatchingComponents(char* device_psid, int devic
     }
     return matchingComponentsMap;
 }
+
