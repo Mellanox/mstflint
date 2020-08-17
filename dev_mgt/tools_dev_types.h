@@ -97,11 +97,8 @@ enum dm_dev_id
     DeviceSecureHost,
     DeviceConnectX6DX,
     DeviceConnectX6LX,
-    DeviceConnectX7,
     DeviceSpectrum3, //Firebird
-    DeviceEndMarker,           // Dummy Device - Marker for indicating end of devices when iterating
-    DeviceAmosGearBox,
-    DeviceAmosGearBoxManager
+    DeviceEndMarker           // Dummy Device - Marker for indicating end of devices when iterating
 };
 
 typedef enum dm_dev_id dm_dev_id_t;

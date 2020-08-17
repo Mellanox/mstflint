@@ -138,7 +138,6 @@ inline void PackageDescriptor::setComponentsBlockOffset(u_int64_t offset)
 {
     _componentsBlockOffset = offset;
 }
-
 inline u_int32_t PackageDescriptor::getComponentsBlockOffset()
 {
     return _componentsBlockOffset;
@@ -187,6 +186,7 @@ private:
 public:
     const static u_int8_t  ELEMENT_VERSION = 0x0;
     const static u_int32_t LENGTH  = TOOLS_OPEN_COMPONENT_DESCIPTOR_SIZE;
+
     ComponentDescriptor(VersionExtension version, string source);
     ComponentDescriptor(VersionExtension version, vector<u_int8_t> data);
 

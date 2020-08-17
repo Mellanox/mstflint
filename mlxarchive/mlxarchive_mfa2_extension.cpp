@@ -117,7 +117,6 @@ VersionExtension::VersionExtension(const u_int16_t* version, const u_int16_t* fw
     _month = fw_rel_date[1];
     _year = fw_rel_date[2];
 }
-
 void VersionExtension::pack(vector<u_int8_t>& buff) const
 {
     vector<u_int8_t> tmpBuff;
@@ -184,7 +183,6 @@ string VersionExtension::getVersion(bool pad_sub_minor) const {
     return res;
 }
 
-
 string VersionExtension::getDateAndTime() const {
     tm tm_obj;
     tm_obj.tm_sec = _seconds;
@@ -197,7 +195,6 @@ string VersionExtension::getDateAndTime() const {
     strftime(buffer,64,"%Y-%m-%d %H:%M:%S", &tm_obj);
     return string(buffer);
 }
-
 void VersionExtension::getDateAndTime(char* buffer) const {
     sprintf(buffer, "%x.%x.%x", _day, _month, _year);
 }

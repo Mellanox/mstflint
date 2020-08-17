@@ -61,12 +61,6 @@ public:
         else if (deviceId == DeviceConnectX6DX) {
             return new ConnectX6DXFwOperationsSignatureManager();
         }
-        else if (deviceId == DeviceBlueField2) {
-            return new Bluefield2FwOperationsSignatureManager();
-        }
-        else if (deviceId == DeviceConnectX6LX) {
-            return new ConnectX6LXFwOperationsSignatureManager();
-        }
         else {
             return new FwOperationsSignatureManager();
         }
@@ -82,15 +76,6 @@ public:
         }
         else if (chip == CT_CONNECTX6DX) {
             return new ConnectX6DXFwOperationsSignatureManager();
-        }
-        else if (chip == CT_BLUEFIELD2) {
-            return new Bluefield2FwOperationsSignatureManager();
-        }
-        else if (chip == CT_CONNECTX6LX) {
-            return new ConnectX6LXFwOperationsSignatureManager();
-        }
-        else if (chip == CT_GEARBOX) {
-            return new GearBoxSignatureManager();
         }
         else {
             return new FwOperationsSignatureManager();

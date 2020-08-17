@@ -50,7 +50,7 @@
 #include "../tools_layouts/tools_open_layouts.h"
 #include "mlxcfg_utils.h"
 
-#if __cplusplus >= 201402L || defined(_MSC_VER)
+#if __cplusplus >= 201402L
 #include <regex>
 #elif !defined(MST_UL)
 #include <boost/regex.hpp>
@@ -184,7 +184,7 @@ string numToStr(u_int32_t num, bool isHex)
     stringstream ss;
 
     if (isHex) {
-        ss << std::uppercase << "0x" << std::hex;
+        ss << std::uppercase << std::setfill('0') << std::setw(4) << std::hex;
     }
 
     ss << num;
@@ -475,7 +475,7 @@ bool getDeviceInformationString(const char* dev, info_type_t op, vector<char>& i
             rc = reg_access_mqis(mf, REG_ACCESS_METHOD_GET, &mqisRegister);
             dealWithSignal();
             if (rc) {
-                return false;
+               return false;
             }
             memcpy(infoString.data() + mqisRegister.read_offset,
                    (mqisRegister.info_string), mqisRegister.read_length);

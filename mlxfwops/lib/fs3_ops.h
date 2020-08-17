@@ -61,7 +61,7 @@
         _fwParams.ignoreCacheRep = 0; \
     }
 
-
+enum SHATYPE { SHA256, SHA512};
 
 class Fs3Operations : public FwOperations {
 public:
@@ -104,7 +104,7 @@ public:
     virtual bool FwShiftDevData(PrintCallBack progressFunc = (PrintCallBack)NULL);
     virtual const char*  FwGetResetRecommandationStr();
     virtual const char*  FwGetReSignMsgStr();
-    virtual bool InsertEncryptedSignature(vector<u_int8_t> signature, const char *uuid, PrintCallBack printFunc);
+
     bool FwInsertSHA256(PrintCallBack printFunc = (PrintCallBack)NULL);
     bool FwSignWithOneRSAKey(const char *privPemFile, const char *uuid, PrintCallBack printFunc = (PrintCallBack)NULL);
     bool FwSignWithTwoRSAKeys(const char *privPemFile1, const char *uuid1,
@@ -113,7 +113,7 @@ public:
     bool FwInsertEncSHA(SHATYPE shaType, const char *privPemFile,
                         const char *uuid, PrintCallBack printFunc = (PrintCallBack)NULL);
 
-    virtual bool FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatternAndDevToc, bool verbose = false, bool ignoreImageStart = false);
+    virtual bool FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatternAndDevToc, bool verbose = false);
     virtual bool FwSetPublicKeys(char *fname, PrintCallBack callBackFunc = (PrintCallBack)NULL);
     virtual bool FwSetForbiddenVersions(char *fname, PrintCallBack callBackFunc = (PrintCallBack)NULL);
     virtual bool FwCalcMD5(u_int8_t md5sum[16]);
@@ -188,7 +188,7 @@ protected:
 
     bool isOld4MBImage(FwOperations *imageOps);
     bool VerifyBranchFormat(const char* vsdString);
-    bool FwCalcSHA(SHATYPE shaType, vector<u_int8_t>& sha256, vector<u_int8_t>& fourMbImage);
+
     bool AddHMACIfNeeded(Fs3Operations* imageOps, Flash *f);
     bool CheckPublicKeysFile(const char *fname, fs3_section_t& sectionType, bool silent = false);
     struct toc_info {
@@ -280,6 +280,10 @@ private:
     virtual u_int32_t getImageSize();
     virtual void maskDevToc(vector<u_int8_t>& img);
     virtual void maskIToCSection(u_int32_t itocType, vector<u_int8_t>& img);
+    bool FwCalcSHA(SHATYPE shaType, vector<u_int8_t>& sha256);
+
+    
+
     // this class is for sorting the itoc array by ascending absolute flash_addr used in FwShiftDevData
     class TocComp {
 public:

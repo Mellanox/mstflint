@@ -66,17 +66,11 @@ static void mft_signal_set_handling(int isOn)
 #define NV_BASE_MAC_GUID_IDX     0x02
 #define NV_BASE_MAC_GUID_CAP_IDX 0x03
 
-#define CX2_DEVID           0x190
-#define CX3_DEVID           0x1f5
-#define CX3PRO_DEVID        0x1f7
-#define SX_DEVID            0x245
-#define IS4_DEVID           0x1b3
-#define SWITCH_IB_DEVID     0x247
-#define SWITCH_IB2_DEVID    0x24b
-#define SPECTRUM_DEVID      0x249
-#define SPECTRUM2_DEVID     0x24e
-#define SPECTRUM3_DEVID     0x250
-#define QUANTUM_DEVID       0x24d
+#define CX2_DEVID       0x190
+#define CX3_DEVID       0x1f5
+#define CX3PRO_DEVID    0x1f7
+#define SX_DEVID        0x245
+#define IS4_DEVID       0x1b3
 
 
 #ifndef UEFI_BUILD
@@ -175,7 +169,6 @@ bool FwCompsMgr::controlFsm(fsm_command_t command,
     if (!reg_access_timeout) {
         reg_access_timeout = MAX_TOUT;
     }
-    DPRINTF(("controlFsm : command %u current %u expected %u\n", command, currState, expStatus));
     unsigned int count = 0;
     do {
         if (count) {
@@ -193,7 +186,6 @@ bool FwCompsMgr::controlFsm(fsm_command_t command,
         _lastFsmCtrl.component_index = _componentIndex;
         _lastFsmCtrl.component_size = size;
         _lastFsmCtrl.update_handle = _updateHandle;
-
         rc = reg_access_mcc(_mf, method, &_lastFsmCtrl);
 
         deal_with_signal();
@@ -234,7 +226,6 @@ bool FwCompsMgr::controlFsm(fsm_command_t command,
         return false;
     }
     if (expStatus != FSMST_NA && _lastFsmCtrl.control_state != expStatus) {
-        DPRINTF(("controlFsm : control_state FW %u expected %u\n", _lastFsmCtrl.control_state, expStatus));
         _lastError = FWCOMPS_MCC_UNEXPECTED_STATE;
         return false;
     }
@@ -567,8 +558,8 @@ bool FwCompsMgr::refreshComponentsStatus()
             compStatus.comp_status.component_index = compIdx;
             /* */
             u_int32_t capSt[DEFAULT_SIZE] = { 0 };
-            if (queryComponentInfo(compIdx, 1, COMPINFO_CAPABILITIES, DEFAULT_SIZE, capSt) == false) {
-                if (queryComponentInfo(compIdx, 0, COMPINFO_CAPABILITIES, DEFAULT_SIZE, capSt) == false) {
+            if (queryComponentInfo(_componentIndex, 1, COMPINFO_CAPABILITIES, DEFAULT_SIZE, capSt) == false) {
+                if (queryComponentInfo(_componentIndex, 0, COMPINFO_CAPABILITIES, DEFAULT_SIZE, capSt) == false) {
                     //_lastError = FWCOMPS_REG_FAILED;
                     return false;
                 }
@@ -577,11 +568,11 @@ bool FwCompsMgr::refreshComponentsStatus()
             compStatus.valid = 1;
             //reg_access_hca_mcqi_cap_print(&(compStatus.comp_cap), stdout, 3);
             memcpy(&(_compsQueryMap[compStatus.comp_status.identifier]), &compStatus, sizeof(compStatus));
-            DPRINTF(("-D- Found component: %#x\n", compStatus.comp_status.identifier));
+            //printf("-D- Found component: %#x\n", compStatus.comp_status.identifier);
             last_index_flag = compStatus.comp_status.last_index_flag;
         }
         else {
-            DPRINTF(("-D- queryComponentStatus failed !!\n"));
+            //printf("-D- queryComponentStatus failed !!\n");
             return false;
         }
         compIdx++;
@@ -758,11 +749,6 @@ const char* FwComponent::getCompIdStr(comps_ids_t compId)
     case COMPID_DBG_TOKEN:
         return "DBG_TOKEN";
 
-    case COMPID_GEARBOX:
-        return "GEARBOX";
-
-        case COMPID_CONGESTION_CONTROL:
-            return "CONGESTION_CONTROL";
 
     default:
         return "UNKNOWN_COMPONENT";
@@ -798,23 +784,16 @@ u_int32_t FwCompsMgr::getFwSupport()
 #endif
     devid = EXTRACT(devid, 0, 16);
     /*
-     * If 4TH gen nic or switch with no MCAM reg return not supported
+     * If 4TH gen return not supported
      */
-    if (devid == CX2_DEVID ||
-        devid == CX3_DEVID ||
+    if (devid == CX2_DEVID    ||
+        devid == CX3_DEVID    ||
         devid == CX3PRO_DEVID ||
-        devid == SX_DEVID ||
-        devid == IS4_DEVID ||
-        devid == SWITCH_IB_DEVID  ||
-        devid == SWITCH_IB2_DEVID ||
-        devid == SPECTRUM_DEVID   ||
-        devid == SPECTRUM2_DEVID  ||
-        devid == SPECTRUM3_DEVID  ||
-        devid == QUANTUM_DEVID) {
+        devid == SX_DEVID     ||
+        devid == IS4_DEVID) {
         _lastError = FWCOMPS_UNSUPPORTED_DEVICE;
         return 0;
     }
-
     tools_open_mcam mcam;
     memset(&mcam, 0, sizeof(mcam));
     reg_access_status_t rc = reg_access_mcam(_mf, REG_ACCESS_METHOD_GET, &mcam);
@@ -833,7 +812,6 @@ u_int32_t FwCompsMgr::getFwSupport()
     u_int8_t mgirCaps = EXTRACT(mcam.mng_access_reg_cap_mask[11], 0, 1);
     if (mcddCaps == 1)
         isDmaSupported = true;
-
     memset(&mcam, 0, sizeof(mcam));
     mcam.access_reg_group = 2;//for MIRC register
     rc = reg_access_mcam(_mf, REG_ACCESS_METHOD_GET, &mcam);
@@ -841,10 +819,8 @@ u_int32_t FwCompsMgr::getFwSupport()
         _lastError = FWCOMPS_UNSUPPORTED_DEVICE;
         return 0;
     }
-
     _mircCaps = EXTRACT(mcam.mng_access_reg_cap_mask[3], 2, 1);//MIRC is 0x9162
-    DPRINTF(("getFwSupport _mircCaps = %d mcdaCaps = %d mcddCaps = %d mgirCaps = %d\n", _mircCaps, mcdaCaps, mcddCaps, mgirCaps));
-
+    DPRINTF(("getFwSupport _mircCaps = %d\n", _mircCaps));
     if (mcdaCaps == 0x1f && mgirCaps) {
         return 1;
     }
@@ -924,15 +900,13 @@ u_int8_t transRomType(u_int8_t mgirRomType)
 
     case 0x2: //UEFI
         return 0x11;
-         
+
     case 0x3: //UEFI_CLP
         return 0x12;
 
     case 0x4: //NVMe
         return 0x13;
 
-    case 0x5: //FCODE
-        return 0x21;
     default:
         return mgirRomType;
     }
@@ -976,12 +950,6 @@ bool FwCompsMgr::queryFwInfo(fwInfoT *query, bool next_boot_fw_ver)
         _lastError = FWCOMPS_BAD_PARAM;
         return false;
     }
-    /*
-    * MGIR
-    */
-    reg_access_status_t rc;
-    mgirReg mgir;
-    memset(&mgir, 0, sizeof(mgir));
     memset(query, 0, sizeof(fwInfoT));
     if (getComponentVersion(FwComponent::COMPID_BOOT_IMG, true, &query->pending_fw_version)) {
         query->pending_fw_valid = 1;
@@ -989,17 +957,8 @@ bool FwCompsMgr::queryFwInfo(fwInfoT *query, bool next_boot_fw_ver)
     if (!getComponentVersion(FwComponent::COMPID_BOOT_IMG, false, &query->running_fw_version)) {
         return false;
     }
-
     if (next_boot_fw_ver) {
-        // query next_boot_fw_ver only. enough to query pending, running versions and device_id.
-        rc = getGI(_mf, &mgir);
-        if (rc) {
-            _lastError = FWCOMPS_QUERY_FAILED;
-            return false;
-        }
-        query->hw_dev_id = mgir.hw_info.hw_dev_id;
-        query->dev_id = mgir.hw_info.device_id;
-        query->rev_id = mgir.hw_info.device_hw_revision;
+        // query next_boot_fw_ver only. enough to query pending & running versions.
         return true;
     }
 
@@ -1008,6 +967,12 @@ bool FwCompsMgr::queryFwInfo(fwInfoT *query, bool next_boot_fw_ver)
         strcpy(query->product_ver, (char *)_productVerStr.data());
     }
 
+    /*
+     * MGIR
+     */
+    reg_access_status_t rc;
+    mgirReg mgir;
+    memset(&mgir, 0, sizeof(mgir));
     rc = getGI(_mf, &mgir);
     if (rc) {
         _lastError = FWCOMPS_QUERY_FAILED;
@@ -1215,7 +1180,6 @@ void FwCompsMgr::deal_with_signal()
     return;
 }
 
-
 bool FwCompsMgr::getComponentVersion(FwComponent::comps_ids_t compType,
                                      bool pending,
                                      component_version_st *cmpVer)
@@ -1288,13 +1252,11 @@ bool FwCompsMgr::fwReactivateImage()
     int sleepTimeMs = 50;
     int maxWaitingTime = 30000;//30 sec is enough time
     int maxNumOfIterations = maxWaitingTime / sleepTimeMs;//600 iterations
-
     if (_mircCaps == false) {
         _lastError = FWCOMPS_IMAGE_REACTIVATION_FW_NOT_SUPPORTED;
         setLastRegisterAccessStatus(ME_REG_ACCESS_NOT_SUPPORTED);
         return false;
     }
-
     reg_access_status_t rc;
     rc = reg_access_mirc(_mf, REG_ACCESS_METHOD_SET, &mirc);//send trigger to FW
     deal_with_signal();
@@ -1363,6 +1325,9 @@ bool FwCompsMgr::fwReactivateImage()
     }
     return false;
 }
+
+
+
 void FwCompsMgr::setLastFirmwareError(fw_comps_error_t fw_error)
 {
     _lastError = fw_error;
@@ -1440,6 +1405,7 @@ fw_comps_error_t FwCompsMgr::regErrTrans(reg_access_status_t err)
         return FWCOMPS_GENERAL_ERR;
     }
 }
+
 
 fw_comps_error_t FwCompsMgr::mccErrTrans(u_int8_t err)
 {

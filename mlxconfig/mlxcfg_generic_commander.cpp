@@ -737,7 +737,14 @@ const char* GenericCommander::loadConfigurationGetStr()
 
     memset(&mfrl, 0, sizeof(mfrl));
 
-    if (dm_is_5th_gen_hca(deviceId)) {
+    if (deviceId == DeviceConnectX4   ||
+        deviceId == DeviceConnectX4LX ||
+        deviceId == DeviceConnectX5   ||
+        deviceId == DeviceBlueField ||
+        deviceId == DeviceBlueField2 ||
+        deviceId == DeviceConnectX6 ||
+        deviceId == DeviceConnectX6DX ||
+        deviceId == DeviceConnectX6LX) {
         // send warm boot (bit 6)
         mfrl.reset_level = 1 << 6;
         mft_signal_set_handling(1);

@@ -50,6 +50,7 @@
 class Fs4Operations : public Fs3Operations {
 public:
 
+
     Fs4Operations(FBase *ioAccess) :
         Fs3Operations(ioAccess), _boot2_ptr(0), _itoc_ptr(0), _tools_ptr(0), _digest_mdk_ptr(0), _digest_recovery_key_ptr(0), _public_key_ptr(0), _signatureDataSet(false)
     {
@@ -155,7 +156,7 @@ public:
                            std::vector<u_int8_t>&  newSectionData);
     bool FwReadData(void *image, u_int32_t *imageSize, bool verbose = false);
     bool CreateDtoc(vector<u_int8_t>& img, u_int8_t* SectionData, u_int32_t section_size, u_int32_t flash_data_addr,
-        fs3_section_t section, u_int32_t tocEntryAddr, CRCTYPE CRC);
+        fs3_section_t section, u_int32_t tocEntryAddr, bool IsCRC);
     bool Fs4RemoveSectionAux(fs3_section_t sectionType);
     bool CreateImageData(vector<u_int8_t>& newImageData);
     bool Fs4RemoveSection(fs3_section_t sectionType,
@@ -199,7 +200,6 @@ public:
     bool isDTocSection(fs3_section_t sect_type, bool& isDtoc);
 
     bool AlignDeviceSections(FwOperations *imageOps);
-    
     bool restoreWriteProtection(mflash *mfl, u_int8_t banksNum,
                                 write_protect_info_t protect_info[]);
 

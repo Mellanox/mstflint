@@ -37,8 +37,7 @@
  *  Created on: March 23, 2017
  *      Author: Ahmad Soboh
  */
-
-#include <cstdlib>
+#include <stdlib.h>
 #include <sys/stat.h>
 #include <fstream>
 #include <stdio.h>
@@ -127,7 +126,6 @@ bool isFile(const std::string& filename)
     stat(filename.c_str(), &buffer);
     return S_ISREG(buffer.st_mode); 
 }
-
 bool endsWith(const std::string& str, const std::string& suffix)
 {
     return (str.size() >= suffix.size()) && (str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0);

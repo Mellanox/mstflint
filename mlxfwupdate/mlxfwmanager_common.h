@@ -48,6 +48,7 @@
 #include <sys/stat.h>
 #include <string>
 #include <vector>
+#include <boost/algorithm/string.hpp>
 #include <tools_dev_types.h>
 #include <mlxfwops.h>
 #include <mlxfwops_com.h>
@@ -65,9 +66,6 @@
 #if defined(__WIN__)
 #include <process.h>
 #include <io.h>
-#ifdef _MSC_VER
-typedef int mode_t;
-#endif
 const char* SafeGetEnv(const char *var);
 #define TMP_DIR SafeGetEnv("TEMP")
 #define PATH_SEPARATOR "\\"
@@ -117,7 +115,7 @@ int  ForceMkDir(const string dir);
 void FixPath(string &s);
 int mlxfw_replace(char *st, char *orig, char *repl);
 int mlxfw_get_exec_name_from_path(char *str, char *exec_name);
-#define mlxfw_MTCR_DLL_NAME "libmtcr-1.dll"
+    #define mlxfw_MTCR_DLL_NAME "libmtcr-1.dll"
 static const mode_t MS_MODE_MASK = 0x0000ffff;
 #endif
 

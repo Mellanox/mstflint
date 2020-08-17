@@ -34,14 +34,6 @@
 
 
 #include "mlxfwmanager.h"
-#ifdef _MSC_VER
-#include <direct.h>
-#include <dirent.h>
-#endif
-#include <string>
-#include <iostream>
-#include <algorithm>
-#include <set>
 
 int main(int argc, char *argv[])
 {
@@ -113,6 +105,7 @@ int mainEntry(int argc, char *argv[])
         res = ERR_CODE_BAD_CMD_ARGS;
         return res;
     }
+
     if (cmd_params.calc_crc) {
         if (config.mfa_path == ".") {
             fprintf(stderr, "-E- Bad command line arguments, image file is mandatory\n");
@@ -1135,7 +1128,7 @@ int checkAndDisplayDeviceQuery1D(vector<MlnxDev*> &devs,
             print_err_str += tmpstr;
             res = ERR_CODE_MIXED_VERSIONS_FOUND;
         }
-        if (multiple_img_cnt || errorMsg.length()) {
+        if (multiple_img_cnt or errorMsg.length()) {
             print_err_str += errorMsg;
             res = ERR_CODE_MULTI_IMG_SRC_FOUND;
         }
@@ -1555,11 +1548,11 @@ int list_files_content(config_t &config)
     int rc;
     int res = MLX_FWM_SUCCESS;
     ImageAccess imgacc(CompareFFV);
+    vector<PsidQueryItem> items;
     bool show_titles = true;
     int displayed_files_cnt = 0;
 
     if (config.path_is_file) {
-        vector<PsidQueryItem> items;
         string fpath = config.mfa_path;
         //TODO: list content by image type
         rc = imgacc.get_file_content(fpath, items);
@@ -1599,7 +1592,7 @@ int list_files_content(config_t &config)
             if (imgacc.getFileSignature(fpath) <= 0) {
                 continue;
             }
-            vector<PsidQueryItem> items;
+            items.clear();
             rc = imgacc.get_file_content(fpath, items);
             if (rc) {
                 print_err("-E- Error parsing file: %s\n", fpath.c_str());
@@ -1611,10 +1604,10 @@ int list_files_content(config_t &config)
                 show_titles = true;
             }
             display_file_listing(items, config.psid, show_titles);
-            items.clear();
             show_titles = false;
             displayed_files_cnt++;
         }
+
         closedir(d);
         if (displayed_files_cnt == 0) {
             print_out("No image files found\n");
@@ -1659,7 +1652,7 @@ void display_file_listing(vector<PsidQueryItem> &items, string psid, bool show_t
         print_out(" ");
         display_field_str("PSID", 18);
         print_out(" ");
-        display_field_str("Version", 28);
+        display_field_str("Version", 16);
         print_out(" ");
         display_field_str("Tag", 14);
         print_out(" ");
@@ -1686,7 +1679,7 @@ void display_file_listing(vector<PsidQueryItem> &items, string psid, bool show_t
         display_field_str(items[i].psid, 18);
         print_out(" ");
         if ((imv = (ImgVersion*)items[i].findImageVersion("FW"))) {
-            display_field_str(imv->getPrintableVersion(0), 28);
+            display_field_str(imv->getPrintableVersion(0), 16);
         } else {
             display_field_str("", 16);
         }
@@ -2214,7 +2207,7 @@ int handleDownloadRequest(ServerRequest *srq, CmdLineParams &cmd_params, config_
                     sleep(1);
                     invalid = true;
                 }
-                #if !defined(__FreeBSD__) && !(defined(_MSC_VER) && defined(_ARM64_))
+                #if !defined(__FreeBSD__)
                 if (iss.fail()) {
                     sleep(1);
                     invalid = true;

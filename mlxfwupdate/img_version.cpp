@@ -43,7 +43,6 @@ const string MASTER_ARGUMENTS = "Unknown number of master arguments";
 const string SUBMINOR_VALUE = "Invalid subminor value";
 const string NOT_SET = "FW version isn't set";
 const string ALREADY_SET = "Trying to set an already set FW version";
-const int UPDATE_ON_DIFFERENT_BRANCHES = -1;
 
 ImgVersion::ImgVersion() :
         _type(), _fwVer(NULL), _isExpansionRomUnknown(false), _isOldMinor(
@@ -136,9 +135,6 @@ string ImgVersion::getPrintableVersion(int ffv, bool show_type) {
 int ImgVersion::compareFw(const ImgVersion &imv) const {
     if (_fwVer == NULL) {
         throw SetVersionException(NOT_SET);
-    }
-    if (!_fwVer->are_same_branch(*imv._fwVer)) {
-        return UPDATE_ON_DIFFERENT_BRANCHES;
     }
     return _fwVer->compare(*imv._fwVer);
 }

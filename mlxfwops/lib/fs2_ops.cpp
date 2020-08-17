@@ -31,7 +31,6 @@
  */
 
 
-
 #if !defined(UEFI_BUILD) && !defined(NO_CS_CMD)
 #include <tools_crypto/tools_md5.h>
 #endif
@@ -789,7 +788,6 @@ bool Fs2Operations::FwQuery(fw_info_t *fwInfo, bool readRom, bool isStripedImage
     memcpy(&(fwInfo->fs2_info), &(_fs2ImgInfo.ext_info), sizeof(fs2_info_t));
     //set the chipType in fwInfo
     fwInfo->fw_type = FIT_FS2;
-    fwInfo->fw_info.chip_type = CT_CONNECTX3;
     return true;
 }
 
@@ -933,8 +931,7 @@ bool Fs2Operations::Fs2FailSafeBurn(Fs2Operations &imageOps,
     ProgressCallBack progressFunc = burnParams.progressFunc;
     ProgressCallBackEx progressFuncEx = burnParams.progressFuncEx;
     void *progressUserData = burnParams.progressUserData;
-    bool isCpuUtilization = burnParams.use_cpu_utilization;
-    int cpuPercent = burnParams.cpu_utilization;
+
     Flash  *f = (Flash*)(this->_ioAccess);
     FImage *fim = (FImage*)(imageOps._ioAccess);
 
@@ -1002,7 +999,7 @@ bool Fs2Operations::Fs2FailSafeBurn(Fs2Operations &imageOps,
 
     // Go ahead and burn!
     //const char* image_name = new_image_start == 0 ? "first" : "second";
-    if (!writeImageEx(progressFuncEx, progressUserData, progressFunc, 16, data8 + 16, image_size - 16, false, false, -1, 0, isCpuUtilization, cpuPercent)) {
+    if (!writeImageEx(progressFuncEx, progressUserData, progressFunc, 16, data8 + 16, image_size - 16)) {
         return false;
     }
     // Write new signature

@@ -101,7 +101,6 @@
 
 #include <common/compatibility.h>
 
-
 class Expr
 {
 public:
@@ -157,6 +156,7 @@ private:
     int     valid_name(char ch);
 
     void    ErrorReport(const std::string& msg);
+
 
     /*
      * Pure virtual methods. You must define them to use expr.

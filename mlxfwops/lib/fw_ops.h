@@ -44,7 +44,7 @@
 #ifdef CABLES_SUPP
 #include <cable_access/cable_access.h>
 #endif
-#include <fw_comps_mgr/fw_comps_mgr.h>
+
 typedef f_prog_func_str VerifyCallBack;
 typedef f_prog_func ProgressCallBack;
 typedef f_prog_func_ex ProgressCallBackEx;
@@ -56,8 +56,8 @@ typedef int (*PrintCallBackAdv) (int completion, char *str);
 
 extern bool nextBootFwVer;
 #define GLOBAL_ALIGNMENT 0x80
-enum SHATYPE { SHA256, SHA512};
 class MLXFWOP_API FwOperations : public FlintErrMsg {
+
 
 public:
     #define EXP_ROM_GEN_DEVID 0
@@ -69,14 +69,7 @@ public:
     typedef fwOpsParams fw_ops_params_t;
     typedef sgParams sg_params_t;
     // typedef std::tr1::function<void (void)> VerifyCallback;
-    enum {
-        IMG_SIG_TYPE_UNKNOWN = 0,
-        IMG_SIG_TYPE_BIN = 1,
-        IMG_SIG_TYPE_MFA = 2,
-        IMG_SIG_TYPE_CF = 3,
-        IMG_SIG_TYPE_CC = 4,
-        IMG_SIG_OPEN_FILE_FAILED = 5
-    };
+
     FwOperations(FBase *ioAccess) :
         _ioAccess(ioAccess), _isCached(false), _wasVerified(false),
         _quickQuery(false), _printFunc((PrintCallBack)NULL), _fname((const char*)NULL), \
@@ -92,8 +85,13 @@ public:
         return (_ioAccess != NULL && _ioAccess->is_flash() && _ioAccess->is_fifth_gen());
     }
 
-    bool CreateSignatureManager();
-
+    void CreateSignatureManager() {
+        if (_ioAccess != NULL && _ioAccess->is_flash() == false) {//NOT RELEVANT FOR IMAGE OBJECT
+            return;
+        }
+        u_int32_t hwDevId = GetHwDevId();
+        _signatureMngr = SignatureManagerFactory::GetInstance()->CreateSignatureManager(hwDevId, _fwImgInfo.ext_info.dev_rev);
+    }
     virtual ~FwOperations()
     {
         if (_ioAccess) {
@@ -123,12 +121,11 @@ public:
     //on call of FwReadData with Null image we get image_size
     virtual bool FwReadData(void *image, u_int32_t *image_size, bool verbose = false) = 0;
     virtual bool FwReadBlock(u_int32_t addr, u_int32_t size, std::vector<u_int8_t>& dataVec);
-    virtual bool FwReactivateImage()
-    {
-        return errmsg("Operation not supported.");
+    virtual bool FwReactivateImage() 
+    { 
+        return errmsg("Operation not supported."); 
     }
     virtual bool FwInsertSHA256(PrintCallBack printFunc = (PrintCallBack)NULL);
-    virtual bool InsertEncryptedSignature(vector<u_int8_t> signature, const char *uuid, PrintCallBack printFunc);
     virtual bool FwSignWithOneRSAKey(const char *privPemFile, const char *uuid, PrintCallBack printFunc = (PrintCallBack)NULL);
     virtual bool FwSignWithTwoRSAKeys(const char *privPemFile1, const char *uuid1,
                                       const char *privPemFile2, const char *uuid2, PrintCallBack printFunc = (PrintCallBack)NULL);
@@ -136,7 +133,7 @@ public:
     virtual bool PrepItocSectionsForHmac(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
     virtual bool IsCriticalSection(u_int8_t sect_type);
 
-    virtual bool FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatternAndDevToc, bool verbose = false, bool ignoreImageStart = false);
+    virtual bool FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatternAndDevToc, bool verbose = false);
     virtual bool RestoreDevToc(vector<u_int8_t>& img, char* psid, dm_dev_id_t devid_t, const cx4fw_uid_entry& base_guid, const cx4fw_uid_entry& base_mac);
     virtual bool FwSetPublicKeys(char *fname, PrintCallBack callBackFunc = (PrintCallBack)NULL);
     virtual bool FwSetForbiddenVersions(char *fname, PrintCallBack callBackFunc = (PrintCallBack)NULL);
@@ -147,7 +144,7 @@ public:
 
     virtual bool FwBurn(FwOperations *imageOps, u_int8_t forceVersion, ProgressCallBack progressFunc = (ProgressCallBack)NULL) = 0;
     virtual bool FwBurnAdvanced(FwOperations *imageOps, ExtBurnParams& burnParams) = 0;
-    virtual bool FwBurnAdvanced(std::vector <u_int8_t> imageOps4MData, ExtBurnParams& burnParams, FwComponent::comps_ids_t ComponentId = FwComponent::COMPID_BOOT_IMG);
+    virtual bool FwBurnAdvanced(std::vector <u_int8_t> imageOps4MData, ExtBurnParams& burnParams);
     virtual bool FwBurnBlock(FwOperations *imageOps, ProgressCallBack progressFunc) = 0; //Add: callback progress, question arr, callback question, configurations
     virtual bool FwWriteBlock(u_int32_t addr, std::vector<u_int8_t> dataVec, ProgressCallBack progressFunc = (ProgressCallBack)NULL);
 
@@ -179,7 +176,6 @@ public:
     virtual bool RemoveWriteProtection() 
     { 
         return true; 
-        //Though Remove write protection is not supported, return true.
     }
     void FwCleanUp();
     virtual bool FwInit() = 0;
@@ -212,15 +208,13 @@ public:
     virtual bool PrepItocSectionsForCompare(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
     virtual bool GetSecureBootInfo();
     void GetFwParams(fw_ops_params_t&);
-    virtual void CleanInterruptedCommand() {}//by default do nothing
-    virtual bool FwCalcSHA(SHATYPE, vector<u_int8_t>&, vector<u_int8_t>&);
+
     //bool GetExpRomVersionWrapper();
     void getSupporteHwId(u_int32_t **supportedHwId, u_int32_t &supportedHwIdNum);
-
     static FwVersion createFwVersion(const fw_info_com_t*);
     static FwVersion createFwVersion(u_int16_t fw_ver0, u_int16_t fw_ver1, u_int16_t fw_ver2);
     static FwVersion createRunningFwVersion(const fw_info_com_t*);
-    static int       getFileSignature(const char *fname);
+
     class MLXFWOP_API RomInfo : FlintErrMsg {
 public:
         RomInfo(const std::vector<u_int8_t>& romSector, bool resEndi = true);
@@ -284,8 +278,6 @@ public:
         void *progressUserData;
         //data
         char *userVsd;
-        bool use_cpu_utilization;
-        int cpu_utilization;
         std::vector<guid_t> userUids; //contains either guids or uids
         ExtBurnStatus burnStatus;
 
@@ -294,7 +286,7 @@ public:
             useImagePs(false), useImageGuids(false), singleImageBurn(true), noDevidCheck(false),
             skipCiReq(false), ignoreVersionCheck(false), useImgDevData(false), useDevImgInfo(false),
             burnRomOptions(BRO_DEFAULT), shift8MBIfNeeded(false), progressFunc((ProgressCallBack)NULL),
-            progressFuncEx((ProgressCallBackEx)NULL), progressUserData(NULL), userVsd((char*)NULL), use_cpu_utilization(false), cpu_utilization(-1)
+            progressFuncEx((ProgressCallBackEx)NULL), progressUserData(NULL), userVsd((char*)NULL)
         { ProgressFuncAdv.func = (f_prog_func_adv)NULL; ProgressFuncAdv.opaque = NULL;}
 
         void updateParamsForBasicImage(ProgressCallBack progressFunc)
@@ -347,7 +339,6 @@ public:
         int isCableFw;
         bool noFwCtrl;
         bool mccUnsupported;
-        bool canSkipFwCtrl;
     };
 
     struct sgParams {
@@ -390,6 +381,13 @@ protected:
     };
     enum {
         MAX_SW_DEVICES_PER_HW = 32
+    };
+    enum {
+        IMG_SIG_TYPE_UNKNOWN = 0,
+        IMG_SIG_TYPE_BIN = 1,
+        IMG_SIG_TYPE_MFA = 2,
+        IMG_SIG_TYPE_CF  = 3,
+        IMG_SIG_OPEN_FILE_FAILED = 4
     };
 
     enum {
@@ -463,8 +461,7 @@ public:
                     VerifyCallBack verifyCallBackFunc = (VerifyCallBack)NULL);
     u_int32_t CalcImageCRC(u_int32_t *buff, u_int32_t size);
     bool writeImage(ProgressCallBack progressFunc, u_int32_t addr, void *data, int cnt, bool isPhysAddr = false, bool readModifyWrite = false, int totalSz = -1, int alreadyWrittenSz = 0);
-    bool writeImageEx(ProgressCallBackEx progressFuncEx, void *progressUserData, ProgressCallBack progressFunc, u_int32_t addr, void *data, int cnt, bool isPhysAddr = false, 
-    bool readModifyWrite = false, int totalSz = -1, int alreadyWrittenSz = 0, bool cpuUtilization = false, int cpuPercent = -1);
+    bool writeImageEx(ProgressCallBackEx progressFuncEx, void *progressUserData, ProgressCallBack progressFunc, u_int32_t addr, void *data, int cnt, bool isPhysAddr = false, bool readModifyWrite = false, int totalSz = -1, int alreadyWrittenSz = 0);
     //////////////////////////////////////////////////////////////////
     bool GetSectData(std::vector<u_int8_t>& file_sect, const u_int32_t *buff, const u_int32_t size);
     ////////////////////////////////////////////////////////////////////
@@ -508,6 +505,7 @@ public:
     std::vector<u_int8_t> _fwConfSect;
     std::vector<u_int8_t> _hashFileSect;
     std::vector<u_int8_t> _readSectList;
+
     bool _sectionsToRead[H_LAST];
     bool _wasVerified;
     bool _quickQuery;
@@ -533,7 +531,7 @@ private:
     static int      getMfaImg(char *fileName, char *psid, u_int8_t **imgbuf, char *errBuf, int errBufSize);
     static int      getMfaImg(u_int8_t *mfa_buf, int size, char *psid, u_int8_t **imgbuf, char *errMsg, int errBufSize);
 #endif
-    
+    static int      getFileSignature(const char *fname);
     static int      getBufferSignature(u_int8_t *buf, u_int32_t size);
     static u_int8_t CheckFwFormat(FBase& f, bool getFwFormatFromImg = false);
     static u_int8_t IsFS4Image(FBase& f, u_int32_t *found_images);

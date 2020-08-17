@@ -51,6 +51,8 @@
 #include <netinet/in.h>
 #include <linux/sockios.h>
 #include <linux/if.h>
+
+
 #define ETHTOOL_GDRVINFO        0x00000003 /* Get driver info. */
 #define ETHTOOL_FWVERS_LEN      32
 #define ETHTOOL_BUSINFO_LEN     32
@@ -375,7 +377,6 @@ void MlnxDev::setDeviceType(void)
     case DeviceConnectX6:
     case DeviceConnectX6DX:
     case DeviceConnectX6LX:
-    case DeviceConnectX7:
     case DeviceBlueField:
     case DeviceBlueField2:
         try {
@@ -448,6 +449,7 @@ int MlnxDev::compareFWVer(const ImgVersion& ver) {
     if (idx == -1) {
         return 0;
     }
+
     return _imageVers[idx].compareFw(ver);
 }
 
@@ -494,6 +496,7 @@ int MlnxDev::preBurn(string mfa_file, f_prog_func prog_cb, bool burnFailsafe,
     fw_info_t img_fw_query;
     memset(&dev_fw_query, 0, sizeof(dev_fw_query));
     memset(&img_fw_query, 0, sizeof(img_fw_query));
+
     _burnSuccess = 0;
     int sza = imgacc.getImage(mfa_file, &filebuf);
     if (sza < 0) {
@@ -519,11 +522,7 @@ int MlnxDev::preBurn(string mfa_file, f_prog_func prog_cb, bool burnFailsafe,
     if (!OpenDev()) {
         goto clean_up_on_error;
     }
-#ifdef __WIN__
-    if (LockDevice(_devFwOps) != TOOLS_SYNC_OK) {
-        return -1;
-    }
-#endif
+
     _burnParams.burnFailsafe = burnFailsafe;
     if (_burnParams.burnFailsafe) {
         rc = _devFwOps->FwQuery(&dev_fw_query);
@@ -569,13 +568,12 @@ int MlnxDev::preBurn(string mfa_file, f_prog_func prog_cb, bool burnFailsafe,
     _burnParams.ignoreVersionCheck = true;
 
     _preBurnInit = true;
-    UnlockDevice(_devFwOps);
+
     free(filebuf);
     return 0;
 
 clean_up_on_error:
     if (_devFwOps) {
-        UnlockDevice(_devFwOps);
         _devFwOps->FwCleanUp();
         delete _devFwOps;
         _devFwOps = NULL;
@@ -598,11 +596,7 @@ int MlnxDev::burn(bool& imageWasCached)
         res = -1;
         goto clean_up;
     }
-#ifdef __WIN__
-    if (LockDevice(_devFwOps) != TOOLS_SYNC_OK) {
-        return -1;
-    }
-#endif
+
     rc = _devFwOps->FwBurnAdvanced(_imgFwOps, _burnParams);
     if (!rc) {
         if (_devFwOps->err() != NULL) {
@@ -612,7 +606,6 @@ int MlnxDev::burn(bool& imageWasCached)
         }
         _log += _errMsg;
         res = -1;
-        UnlockDevice(_devFwOps);
         goto clean_up;
     }
 
@@ -621,7 +614,6 @@ int MlnxDev::burn(bool& imageWasCached)
 
 clean_up:
     if (_devFwOps) {
-        UnlockDevice(_devFwOps);
         _devFwOps->FwCleanUp();
         delete _devFwOps;
         _devFwOps = NULL;
@@ -638,19 +630,17 @@ bool MlnxDev::InitDevFWParams(FwOperations::fw_ops_params_t& devFwParams)
 {
     string devName = getDevName();
     memset(_errBuff, 0, sizeof(_errBuff));
+    char *tmp = (char*) malloc((devName.length() + 1) * sizeof(char));
+    if (tmp == NULL) {
+        _errMsg  = "Failed to allocate Memory";
+        _log    += _errMsg;
+        return false;
+    }
+    memset(tmp, 0, (devName.length() + 1) * sizeof(char));
     devFwParams.errBuff = _errBuff;
     devFwParams.errBuffSize = MLNX_ERR_BUFF_SIZE;
     devFwParams.hndlType = FHT_MST_DEV;
-    char* deviceName = (char*)devName.c_str();
-    int length = ((strlen(deviceName) + 1) * sizeof(char));
-    devFwParams.mstHndl = new char[length];
-    if (devFwParams.mstHndl == NULL) {
-        _errMsg = "Failed to allocate Memory";
-        _log += _errMsg;
-        return false;
-    }
-    memset(devFwParams.mstHndl, 0, length);
-    strncpy(devFwParams.mstHndl, deviceName, strlen(deviceName));
+    devFwParams.mstHndl = strcpy(tmp, devName.c_str());
     devFwParams.forceLock = false;
     devFwParams.readOnly = false;
     devFwParams.numOfBanks = -1;
@@ -735,7 +725,7 @@ int MlnxDev::queryFwops()
                 if (!_partNumber.size()) {
                     ptr = strstr((char*)&dest[0], "Name =");
                     counter = 7;
-                    while (ptr && * ptr != '\n' && * ptr != '\r') {
+                    while (ptr and * ptr != '\n' and * ptr != '\r') {
                         if (counter-- > 0) {
                             ptr++;
                             continue;
@@ -747,7 +737,7 @@ int MlnxDev::queryFwops()
                 if (!_description.size()) {
                     ptr = strstr((char*)&dest[0], "Description =");
                     counter = 14;
-                    while (ptr && * ptr != '\n' && * ptr != '\r') {
+                    while (ptr and * ptr != '\n' and * ptr != '\r') {
                         if (counter-- > 0) {
                             ptr++;
                             continue;
@@ -1110,6 +1100,9 @@ string MlnxDev::getFWVersion(bool show_type, bool use_default_ffv)
     return st;
 }
 
+
+
+
 dev_info* MlnxDev::getDevInfo()
 {
     return _devinfo;
@@ -1145,37 +1138,4 @@ bool MlnxDev::equals(MlnxDev *dev)
         }
     }
     return false;
-}
-int MlnxDev::LockDevice(FwOperations *fwOps)
-{
-#ifdef __WIN__
-    //relevant only on devices
-    if (fwOps->FwType() == FIT_FS3 || fwOps->FwType() == FIT_FS4 || fwOps->FwType() == FIT_FSCTRL) {
-        mfile* mFile = fwOps->getMfileObj();
-        if (m_ToolsSync.init(mFile) != TOOLS_SYNC_OK) {
-            printf("-E- Other tool is accessing the device! Please try again later.\n");
-            return -1;
-        }
-    }
-#else
-    (void)fwOps;
-#endif
-    return 0;
-}
-
-
-int MlnxDev::UnlockDevice(FwOperations *fwOps)
-{
-#ifdef __WIN__
-    //relevant only on devices
-    if (fwOps->FwType() == FIT_FS3 || fwOps->FwType() == FIT_FS4 || fwOps->FwType() == FIT_FSCTRL) {
-        if (m_ToolsSync.close() != NAMED_SYNC_OK) {
-            printf("Mlxfwmanger: Prevention cannot unlock device.\n");
-            return -1;
-        }
-    }
-#else
-    (void)fwOps;
-#endif
-    return 0;
 }
