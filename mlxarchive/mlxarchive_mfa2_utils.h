@@ -89,6 +89,7 @@ void packString(const string& str, vector<u_int8_t>& buff);
 void packBytesArray(const u_int8_t* arr, unsigned int len, vector<u_int8_t>& buff);
 
 void unpackBytesArray(u_int8_t* arr, unsigned int len, vector<u_int8_t>& buff);
+
 void packBinFile(const string& file, vector<u_int8_t>& buff);
 
 bool readFromFile(const string& fname, string& content);

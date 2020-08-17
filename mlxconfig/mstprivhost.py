@@ -135,6 +135,7 @@ class PrivilegeMgr(object):
                 self._nv_host_priv_conf |= self.DISABLE_PORT_OWNER
 
     def prepare(self):
+        # use encode for compatibility with python 2/3
         info("preparing configuration file...", end='')
         self._file_p.write(self.TITLE.encode())
 

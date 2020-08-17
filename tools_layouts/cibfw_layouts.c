@@ -301,12 +301,10 @@ void cibfw_guids_pack(const struct cibfw_guids *ptr_struct, u_int8_t *ptr_buff)
 		offset = adb2c_calc_array_field_address(0, 128, i, 512, 1);
 		cibfw_uid_entry_pack(&(ptr_struct->guids[i]), ptr_buff + offset / 8);
 	}
-
 	for (i = 0; i < 2; ++i) {
 		offset = adb2c_calc_array_field_address(256, 128, i, 512, 1);
 		cibfw_uid_entry_pack(&(ptr_struct->macs[i]), ptr_buff + offset / 8);
 	}
-
 }
 
 void cibfw_guids_unpack(struct cibfw_guids *ptr_struct, const u_int8_t *ptr_buff)
@@ -318,12 +316,10 @@ void cibfw_guids_unpack(struct cibfw_guids *ptr_struct, const u_int8_t *ptr_buff
 		offset = adb2c_calc_array_field_address(0, 128, i, 512, 1);
 		cibfw_uid_entry_unpack(&(ptr_struct->guids[i]), ptr_buff + offset / 8);
 	}
-
 	for (i = 0; i < 2; ++i) {
 		offset = adb2c_calc_array_field_address(256, 128, i, 512, 1);
 		cibfw_uid_entry_unpack(&(ptr_struct->macs[i]), ptr_buff + offset / 8);
 	}
-
 }
 
 void cibfw_guids_print(const struct cibfw_guids *ptr_struct, FILE *fd, int indent_level)
@@ -600,12 +596,10 @@ void cibfw_device_info_pack(const struct cibfw_device_info *ptr_struct, u_int8_t
 		offset = adb2c_calc_array_field_address(920, 8, i, 4096, 1);
 		adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->vsd[i]);
 	}
-
 	for (i = 0; i < 4; ++i) {
 		offset = adb2c_calc_array_field_address(2816, 128, i, 4096, 1);
 		cibfw_operation_key_pack(&(ptr_struct->keys[i]), ptr_buff + offset / 8);
 	}
-
 }
 
 void cibfw_device_info_unpack(struct cibfw_device_info *ptr_struct, const u_int8_t *ptr_buff)
@@ -633,13 +627,11 @@ void cibfw_device_info_unpack(struct cibfw_device_info *ptr_struct, const u_int8
 		offset = adb2c_calc_array_field_address(920, 8, i, 4096, 1);
 		ptr_struct->vsd[i] = (char)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 	}
-
 		ptr_struct->vsd[208] = '\0';
 	for (i = 0; i < 4; ++i) {
 		offset = adb2c_calc_array_field_address(2816, 128, i, 4096, 1);
 		cibfw_operation_key_unpack(&(ptr_struct->keys[i]), ptr_buff + offset / 8);
 	}
-
 }
 
 void cibfw_device_info_print(const struct cibfw_device_info *ptr_struct, FILE *fd, int indent_level)
@@ -729,21 +721,18 @@ void cibfw_image_info_pack(const struct cibfw_image_info *ptr_struct, u_int8_t *
 		offset = adb2c_calc_array_field_address(312, 8, i, 8192, 1);
 		adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->psid[i]);
 	}
-
 	offset = 432;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->vsd_vendor_id);
 	for (i = 0; i < 208; ++i) {
 		offset = adb2c_calc_array_field_address(472, 8, i, 8192, 1);
 		adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->vsd[i]);
 	}
-
 	offset = 2112;
 	cibfw_image_size_pack(&(ptr_struct->image_size), ptr_buff + offset / 8);
 	for (i = 0; i < 4; ++i) {
 		offset = adb2c_calc_array_field_address(2240, 32, i, 8192, 1);
 		adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->supported_hw_id[i]);
 	}
-
 	offset = 2368;
 	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->ini_file_num);
 	offset = 2432;
@@ -813,7 +802,6 @@ void cibfw_image_info_unpack(struct cibfw_image_info *ptr_struct, const u_int8_t
 		offset = adb2c_calc_array_field_address(312, 8, i, 8192, 1);
 		ptr_struct->psid[i] = (char)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 	}
-
 		ptr_struct->psid[16] = '\0';
 	offset = 432;
 	ptr_struct->vsd_vendor_id = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
@@ -821,7 +809,6 @@ void cibfw_image_info_unpack(struct cibfw_image_info *ptr_struct, const u_int8_t
 		offset = adb2c_calc_array_field_address(472, 8, i, 8192, 1);
 		ptr_struct->vsd[i] = (char)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 	}
-
 		ptr_struct->vsd[208] = '\0';
 	offset = 2112;
 	cibfw_image_size_unpack(&(ptr_struct->image_size), ptr_buff + offset / 8);
@@ -829,7 +816,6 @@ void cibfw_image_info_unpack(struct cibfw_image_info *ptr_struct, const u_int8_t
 		offset = adb2c_calc_array_field_address(2240, 32, i, 8192, 1);
 		ptr_struct->supported_hw_id[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
 	}
-
 	offset = 2368;
 	ptr_struct->ini_file_num = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
 	offset = 2432;
@@ -838,7 +824,6 @@ void cibfw_image_info_unpack(struct cibfw_image_info *ptr_struct, const u_int8_t
 		offset = adb2c_calc_array_field_address(3608, 8, i, 8192, 1);
 		ptr_struct->prod_ver[i] = (char)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 	}
-
 		ptr_struct->prod_ver[16] = '\0';
 	for (i = 0; i < 256; ++i) {
 		offset = adb2c_calc_array_field_address(3736, 8, i, 8192, 1);
@@ -1114,7 +1099,6 @@ void cibfw_mfg_info_pack(const struct cibfw_mfg_info *ptr_struct, u_int8_t *ptr_
 		offset = adb2c_calc_array_field_address(24, 8, i, 2560, 1);
 		adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->psid[i]);
 	}
-
 	offset = 255;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->guids_override_en);
 	offset = 232;
@@ -1134,7 +1118,6 @@ void cibfw_mfg_info_unpack(struct cibfw_mfg_info *ptr_struct, const u_int8_t *pt
 		offset = adb2c_calc_array_field_address(24, 8, i, 2560, 1);
 		ptr_struct->psid[i] = (char)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 	}
-
 		ptr_struct->psid[16] = '\0';
 	offset = 255;
 	ptr_struct->guids_override_en = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);

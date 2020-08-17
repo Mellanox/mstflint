@@ -47,10 +47,12 @@ public:
     friend std::ostream & operator << (std::ostream &out, const MlxlinkCmdPrint &cmdPrint);
     void initRecords(int size);
     void toJsonFormat(Json::Value& jsonRoot);
+    u_int32_t getCurrRow();
 
     std::string title;
     std::vector<MlxlinkRecord> mlxlinkRecords;
     bool visible;
+    u_int32_t lastInsertedRow;
 };
 
 #endif /* MLXLINK_CMD_PRINT_H */

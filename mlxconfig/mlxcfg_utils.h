@@ -129,6 +129,7 @@ typedef enum {
     Device_Description
 } info_type_t;
 
+
 void dealWithSignal();
 
 MError mnvaCom5thGen(mfile *mf, u_int8_t *buff, u_int16_t len, u_int32_t tlvType, reg_access_method_t method, QueryType qT = QueryNext);

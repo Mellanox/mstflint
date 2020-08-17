@@ -72,6 +72,7 @@ typedef enum
     RMA = 3,
     NUM_OF_LIFE_CYCLES = 4
 }life_cycle_t;
+
 typedef int EFIAPI (*f_prog_func)(int completion);
 typedef int EFIAPI (*f_prog_func_ex)(int completion, void *opaque);
 typedef int EFIAPI (*f_prog_func_adv)(int completion, const char *str, prog_t, void *opaque);
@@ -252,18 +253,25 @@ typedef enum chip_type {
     CT_SPECTRUM2,
     CT_CONNECTX6DX,
     CT_CONNECTX6LX,
+    CT_CONNECTX7,
     CT_SPECTRUM3,
-    CT_BLUEFIELD2
+    CT_BLUEFIELD2,
+    CT_CONNECTX3,
+    CT_GEARBOX,
+    CT_GEARBOX_MGR
 } chip_type_t;
 
 #define IS_HCA(chipType) \
     (((chipType) == CT_CONNECTX) || ((chipType) == CT_CONNECT_IB) || ((chipType) == CT_CONNECTX4) || ((chipType) == CT_CONNECTX4_LX) || \
       ((chipType) == CT_CONNECTX5) || ((chipType) == CT_BLUEFIELD) || ((chipType) == CT_CONNECTX6) || \
-        ((chipType) == CT_CONNECTX6DX) || ((chipType) == CT_CONNECTX6LX) || ((chipType) == CT_BLUEFIELD2))
+        ((chipType) == CT_CONNECTX6DX) || ((chipType) == CT_CONNECTX6LX) || ((chipType) == CT_CONNECTX7) || ((chipType) == CT_BLUEFIELD2))
+
+
 typedef enum chip_family_type {
     CFT_UNKNOWN = 0,
     CFT_HCA,
     CFT_SWITCH,
+    CFT_GEARBOX
 } chip_family_type_t;
 
 typedef struct guid {
@@ -429,11 +437,11 @@ typedef enum fw_hndl_type {
 } fw_hndl_type_t;
 
 typedef enum fw_img_type {
-    FIT_FS2,
-    FIT_FS3,
-    FIT_FC1,
-    FIT_FS4,
-    FIT_FSCTRL,
+    FIT_FS2 = 0,
+    FIT_FS3 = 1,
+    FIT_FC1 = 2,
+    FIT_FS4 = 3,
+    FIT_FSCTRL = 4,
 } fw_img_type_t;
 
 enum ExpRomProto {

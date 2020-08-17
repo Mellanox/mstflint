@@ -53,8 +53,10 @@
 using namespace std;
 
 namespace mfa2 {
+
 class Version
 {
+
 public:
     Version() 
     {
@@ -62,14 +64,18 @@ public:
         minor = -1;
         subminor = -1;
     }
+
+
     Version(std::string version)
     {
         sscanf(version.c_str(), "%d.%d.%d", &major, &minor, &subminor);
     }
+
 private:
     int major; 
     int minor;
     int subminor;
+
 public:
     bool operator < (const Version& other)
     {
@@ -91,12 +97,14 @@ public:
             return true;
         return false;
     }
+
     bool operator == (const Version& other)
     {
         return major == other.major
             && minor == other.minor
             && subminor == other.subminor;
     }
+
     friend std::ostream& operator << (std::ostream& stream, const Version& ver)
     {
         stream << ver.major;
@@ -107,6 +115,7 @@ public:
         return stream;
     }
 };
+
 class Extension : protected Element{
 protected:
     enum ExtensionType {
@@ -245,6 +254,7 @@ public:
     u_int32_t length() const;
     void pack(vector<u_int8_t>& buff) const;
     bool unpack(Mfa2Buffer & buff);
+
     const string & getString() const { return _str;}
 };
 

@@ -818,9 +818,14 @@ static int driver_mread4_block(mfile *mf, unsigned int offset, u_int32_t *data, 
             read4_buf.address_space = (unsigned int)mf->address_space;
             read4_buf.offset = offset;
             read4_buf.size = toread;
-            int ret = ioctl(mf->fd, PCICONF_READ4_BUFFER, &read4_buf);
+
+            // We support backward compatibility.
+            // There is a known bug with PCICONF_READ4_BUFFER ioctl and data may be corrupted.
+            int ret = ioctl(mf->fd, PCICONF_READ4_BUFFER_EX, &read4_buf);
             if (ret < 0) {
-                return -1;
+                if ((ret = ioctl(mf->fd, PCICONF_READ4_BUFFER, &read4_buf)) < 0) {
+                    return -1;
+                }
             }
             memcpy(dest_ptr, read4_buf.data, toread);
             offset += toread;
@@ -1622,6 +1627,7 @@ static long supported_dev_ids[] = {
     0x101b,     //Connect-X6
     0x101d,     //Connect-X6DX
     0x101f,     //Connect-X6LX
+    0x1021,     //Connect-X7
     0xc738,     //SwitchX
     0xcb20,     //Switch-IB
     0xcb84,     //Spectrum
@@ -1652,6 +1658,7 @@ static long live_fish_id_database[] = {
     0x211,
     0x212, //Connect-X6DX
     0x216, //Connect-X6LX
+    0x21a, //Connect-X7
     0x250, //Spectrum3
     -1
 };

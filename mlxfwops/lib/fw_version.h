@@ -101,6 +101,7 @@ protected:
             bool even_subminor = false) const;
 private:
     bool is_master_branch() const;
+    bool is_Switch() const;
     /*
      * currently we have 3 FW version format
      * 0: MM.mm.ssss

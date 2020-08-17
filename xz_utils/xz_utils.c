@@ -34,6 +34,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#ifdef _MSC_VER
+#define LZMA_API_STATIC
+#endif
 #include <lzma.h>
 #include "xz_utils.h"
 

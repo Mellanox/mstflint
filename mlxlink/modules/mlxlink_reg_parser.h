@@ -31,7 +31,6 @@
 
  *
  */
-
 #ifndef MLXLINK_REG_PARSER_H
 #define MLXLINK_REG_PARSER_H
 

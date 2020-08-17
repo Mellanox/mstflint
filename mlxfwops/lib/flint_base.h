@@ -38,6 +38,7 @@
 #ifndef FLINT_BASE_H
 #define FLINT_BASE_H
 
+
 #ifndef UEFI_BUILD
     #ifndef __FreeBSD__
     #include <malloc.h>
@@ -204,7 +205,8 @@ namespace std {}; using namespace std;
 #define QUANTUM_HW_ID    589
 #define SPECTRUM2_HW_ID  590
 #define SPECTRUM3_HW_ID  592
-
+#define GEARBOX_HW_ID    594
+#define GB_MANAGER_HW_ID 595
 
 #define CX4_HW_ID         521
 #define CX4LX_HW_ID       523
@@ -212,6 +214,7 @@ namespace std {}; using namespace std;
 #define CX6_HW_ID         527
 #define CX6DX_HW_ID       530
 #define CX6LX_HW_ID       534
+#define CX7_HW_ID         538
 #define BF_HW_ID          529
 #define BF2_HW_ID         532
 #define CX2_HW_ID         400
@@ -328,8 +331,9 @@ typedef enum fs3_section {
     FS3_FW_NV_LOG     = 0xe5,
     FS3_NV_DATA0      = 0xe6, // replaces FS3_NV_DATA1
     FS3_CRDUMP_MASK_DATA = 0xe9,
-    FS4_FW_INTERNAL_USAGE = 0xea,
-    FS4_FW_INTERNAL_USAGE1 = 0xeb,
+    FS4_PART_TYPE_FW_INTERNAL_USAGE = 0xea,
+    FS4_PART_TYPE_PROGRAMMABLE_HW_FW1 = 0xeb,
+    FS4_PART_TYPE_PROGRAMMABLE_HW_FW2 = 0xec,
     FS4_HW_PTR        = 0xfb,
     FS4_TOOLS_AREA    = 0xfc,
     FS3_ITOC          = 0xfd,

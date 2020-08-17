@@ -44,7 +44,6 @@
 
 bool nextBootFwVer = false;
 
-
 MLXFWOP_API int MLXFWOPCALL mlxfw_open_device_adv(mlxfwops_t **mlxfwops_p, fwops_params_t* params)
 {
     FwOperations::fw_ops_params_t fwParams;

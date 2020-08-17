@@ -207,6 +207,7 @@ FlagMetaData::FlagMetaData()
     _flags.push_back(new Flag("", "ir", 0));
     _flags.push_back(new Flag("", "latest_fw", 0));
     _flags.push_back(new Flag("", "psid", 1));
+    _flags.push_back(new Flag("", "cc", 1));
 }
 
 FlagMetaData::~FlagMetaData()
@@ -708,10 +709,16 @@ void Flint::initCmdParser()
                ' ',
                "<uuid_file>",
                "UUID matching the given private key to be used by the sign command");
+
     AddOptions("psid",
         ' ',
         "<PSID>",
         "Use this PSID while burning livefish device using MFA2 archive");
+
+    AddOptions("cc",
+        ' ',
+        "<Congestion_Control>",
+        "Use this flag while burning to device a Congestion Control Component");
 
     for (map_sub_cmd_t_to_subcommand::iterator it = _subcommands.begin(); it != _subcommands.end(); it++) {
         if (it->first == SC_ResetCfg) {
@@ -897,8 +904,7 @@ ParseStatus Flint::HandleOption(string name, string value)
         _flintParams.use_dev_img_info = true;
     } else if (name == "ir") {
         _flintParams.image_reactivation = true;
-    }
-    else if (name == "banks") {
+    } else if (name == "banks") {
         _flintParams.banks_specified = true;
         u_int64_t banksNum;
         if (!strToNum(value, banksNum)) {
@@ -935,6 +941,9 @@ ParseStatus Flint::HandleOption(string name, string value)
     } else if (name == "psid") {
         _flintParams.use_psid = true;
         _flintParams.psid = value;
+    } else if (name == "cc") {
+        _flintParams.congestion_control = true;
+        _flintParams.congestion_control_param = value;
     } else {
         cout << "Unknown Flag: " << name;
         cout << _cmdParser.GetSynopsis();

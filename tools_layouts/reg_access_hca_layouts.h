@@ -1,39 +1,20 @@
 
-/*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+/*                  - Mellanox Confidential and Proprietary -
  *
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
- * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
- * OpenIB.org BSD license below:
+ *  Copyright (C) 2010-2011, Mellanox Technologies Ltd.  ALL RIGHTS RESERVED.
  *
- *     Redistribution and use in source and binary forms, with or
- *     without modification, are permitted provided that the following
- *     conditions are met:
+ *  Except as specifically permitted herein, no portion of the information,
+ *  including but not limited to object code and source code, may be reproduced,
+ *  modified, distributed, republished or otherwise exploited in any form or by
+ *  any means for any purpose without the prior written permission of Mellanox
+ *  Technologies Ltd. Use of software subject to the terms and conditions
+ *  detailed in the file "LICENSE.txt".
  *
- *      - Redistributions of source code must retain the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer.
- *
- *      - Redistributions in binary form must reproduce the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
  */
  
 
 /***
-         *** This file was generated at "2020-01-14 20:30:54"
+         *** This file was generated at "2020-07-20 16:57:43"
          *** by:
          ***    > /mswg/release/tools/a-me/last_stable/adabe_plugins/adb2c/adb2pack.py --input adb/prm/hca/int/reg_access_hca.adb --file-prefix reg_access_hca --prefix reg_access_hca_
          ***/
@@ -61,9 +42,7 @@ Other values are reserved */
 	u_int8_t type;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - While the stressor locks the resource, it will release it shortly every 
-2^
-log_toggle_cycle
-, given in usec. Maximal value is 1 sec (0x14) */
+2^log_toggle_cycle, given in usec. Maximal value is 1 sec (0x14) */
 	/* 0x4.24 - 0x4.31 */
 	u_int8_t log_toggle_cycle;
 };
@@ -80,9 +59,7 @@ struct reg_access_hca_lock_source_icm_resource {
 	/* 0x4.0 - 0x4.15 */
 	u_int16_t gvmi;
 	/* Description - While the stressor locks the resource, it will release it shortly every 
-2^
-log_toggle_cycle
-, given in usec. Maximal value is 1 sec (0x14) */
+2^log_toggle_cycle, given in usec. Maximal value is 1 sec (0x14) */
 	/* 0x4.24 - 0x4.31 */
 	u_int8_t log_toggle_cycle;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
@@ -111,9 +88,7 @@ Other values are reserved */
 	/* 0x4.0 - 0x4.15 */
 	u_int16_t gvmi;
 	/* Description - While the stressor locks the resource, it will release it shortly every 
-2^
-log_toggle_cycle
-, given in usec. Maximal value is 1 sec (0x14) */
+2^log_toggle_cycle, given in usec. Maximal value is 1 sec (0x14) */
 	/* 0x4.24 - 0x4.31 */
 	u_int8_t log_toggle_cycle;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
@@ -167,24 +142,13 @@ Other values are reserved */
 	/* 0x0.24 - 0x0.31 */
 	u_int8_t category;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - LOCK_RESOURCE Modifier according to 
-category
- field
-For GENERAL_SEMAPHORE 
- See Table  726, "
-GENERAL_SEMA
-PHORE Category Layout
-," on page  830
-For ICM_RESOURCE 
- See Table  728, "
-ICM_RESOURCE Category 
-Layout
-," on page  830
-For UAPP_RESOURCE 
- See Table  730, "
-UAPP_RESOURCE Category 
-Layout
-," on page  831 */
+	/* Description - LOCK_RESOURCE Modifier according to category field
+For GENERAL_SEMAPHORE  See Table  944, "GENERAL_SEMA
+PHORE Category Layout," on page  1282
+For ICM_RESOURCE  See Table  946, "ICM_RESOURCE Category 
+Layout," on page  1283
+For UAPP_RESOURCE  See Table  948, "UAPP_RESOURCE Category 
+Layout," on page  1283 */
 	/* 0x4.0 - 0x1c.31 */
 	union reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto category_modifier;
 };
@@ -196,6 +160,30 @@ struct reg_access_hca_packet_drop_mini_flow_modifier {
 	/* Description - The number of dropped packets when the Miniflow is activated */
 	/* 0x0.0 - 0x0.3 */
 	u_int8_t num_packets;
+	/* Description - Physical Port Number
+1: port_number1
+2: port_number2
+Other values are reserved */
+	/* 0x0.24 - 0x0.31 */
+	u_int8_t port_number;
+};
+
+/* Description -   */
+/* Size in bytes - 32 */
+struct reg_access_hca_pause_tx_stop_toggle_modifier {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - bitmap per Virtual Lane/Traffic Class
+bit 0: SL_PRIO_0
+bit 1: SL_PRIO_1
+bit 2: SL_PRIO_2
+bit 3: SL_PRIO_3
+bit 4: SL_PRIO_4
+bit 5: SL_PRIO_5
+bit 6: SL_PRIO_6
+bit 7: SL_PRIO_7
+Other bits are reserved */
+	/* 0x0.0 - 0x0.15 */
+	u_int16_t sl_prio_mask;
 	/* Description - Physical Port Number
 1: port_number1
 2: port_number2
@@ -236,6 +224,34 @@ bit 15: VL_TC_15
 Other bits are reserved */
 	/* 0x0.0 - 0x0.15 */
 	u_int16_t vl_tc_mask;
+	/* Description - Physical Port Number
+1: port_number1
+2: port_number2
+Other values are reserved */
+	/* 0x0.24 - 0x0.31 */
+	u_int8_t port_number;
+};
+
+/* Description -   */
+/* Size in bytes - 32 */
+struct reg_access_hca_rxp_hang_stop_toggle_modifier {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - bitmap per Virtual Lane/Traffic Class
+bit 0: VL_TC_0
+bit 1: VL_TC_1
+bit 2: VL_TC_2
+bit 3: VL_TC_3
+bit 4: VL_TC_4
+bit 5: VL_TC_5
+bit 6: VL_TC_6
+bit 7: VL_TC_7
+bit 15: VL_TC_15
+Other bits are reserved */
+	/* 0x0.0 - 0x0.15 */
+	u_int16_t vl_tc_mask;
+	/* Description - Port number access type. must be set to 0x2  */
+	/* 0x0.16 - 0x0.17 */
+	u_int8_t pnat;
 	/* Description - Physical Port Number
 1: port_number1
 2: port_number2
@@ -369,22 +385,24 @@ version. */
 	/* 0x0.28 - 0x0.28 */
 	u_int8_t string_tlv;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - Firmware Build ID. Optional. 
-. */
+	/* Description - Firmware Build ID. Optional. . */
 	/* 0x4.0 - 0x4.31 */
 	u_int32_t build_id;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - Firmware installation date. 
+
 For example: 3 May 2004 will be coded as Month= 0x05, 
 Day= 0x03, and Year= 0x04 */
 	/* 0x8.0 - 0x8.15 */
 	u_int16_t year;
 	/* Description - Firmware installation date. 
+
 For example: 3 May 2004 will be coded as Month= 0x05, 
 Day= 0x03, and Year= 0x04 */
 	/* 0x8.16 - 0x8.23 */
 	u_int8_t day;
 	/* Description - Firmware installation date. 
+
 For example: 3 May 2004 will be coded as Month= 0x05, 
 Day= 0x03, and Year= 0x04 */
 	/* 0x8.24 - 0x8.31 */
@@ -435,10 +453,7 @@ For example 17:43 will be coded as 0x1743 */
 /* Size in bytes - 32 */
 struct reg_access_hca_mgir_hardware_info {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - PCI device ID. 
-For specific device IDs, see 
-Table 12, 
-"Switch Supported PCI Device IDs," on page 177 */
+	/* Description - PCI device ID. */
 	/* 0x0.0 - 0x0.15 */
 	u_int16_t device_id;
 	/* Description - SwitchX Devices:
@@ -471,8 +486,7 @@ cate during manufacturing. The NIC derives the MAC
 addresses for the different PCI PFs from this MAC 
 address. This parameter can be used as a canonical unique 
 identifier of the NIC.
-manufacturing_base_mac of value 
-0 means field is not sup
+manufacturing_base_mac of value 0 means field is not sup
 ported. */
 	/* 0x10.0 - 0x10.15 */
 	u_int16_t manufacturing_base_mac_47_32;
@@ -482,8 +496,7 @@ cate during manufacturing. The NIC derives the MAC
 addresses for the different PCI PFs from this MAC 
 address. This parameter can be used as a canonical unique 
 identifier of the NIC.
-manufacturing_base_mac of value 
-0 means field is not sup
+manufacturing_base_mac of value 0 means field is not sup
 ported. */
 	/* 0x14.0 - 0x14.31 */
 	u_int32_t manufacturing_base_mac_31_0;
@@ -497,13 +510,16 @@ ported. */
 /* Size in bytes - 32 */
 struct reg_access_hca_mgir_sw_info {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Sub-minor Driver version number. */
+	/* Description - Sub-minor Driver version number.
+ */
 	/* 0x0.0 - 0x0.7 */
 	u_int8_t sub_minor;
-	/* Description - Minor Driver version number. */
+	/* Description - Minor Driver version number.
+ */
 	/* 0x0.8 - 0x0.15 */
 	u_int8_t minor;
-	/* Description - Major Driver version number. */
+	/* Description - Major Driver version number.
+ */
 	/* 0x0.16 - 0x0.23 */
 	u_int8_t major;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
@@ -637,6 +653,12 @@ union reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto {
 	/* Description -  */
 	/* 0x0.0 - 0x1c.31 */
 	struct reg_access_hca_sxp_hang_stop_toggle_modifier sxp_hang_stop_toggle_modifier;
+	/* Description -  */
+	/* 0x0.0 - 0x1c.31 */
+	struct reg_access_hca_rxp_hang_stop_toggle_modifier rxp_hang_stop_toggle_modifier;
+	/* Description -  */
+	/* 0x0.0 - 0x1c.31 */
+	struct reg_access_hca_pause_tx_stop_toggle_modifier pause_tx_stop_toggle_modifier;
 };
 
 /* Description -   */
@@ -663,20 +685,17 @@ dle the resource_dump_event */
 	/* 0x0.16 - 0x0.20 */
 	u_int8_t log_min_resource_dump_eq;
 	/* Description - If set, Resource_dump register is supported.
-See 
- See Table  748, "RESOURCE_DUMP Register Layout," on 
-page  840 */
+See Table 964, "RESOURCE_DUMP Register Layout," on page 1292 */
 	/* 0x0.22 - 0x0.22 */
 	u_int8_t resource_dump;
 	/* Description - Log(base 2) of the size in granularity of 4KB to be allocated by 
 host in order to accommodate cr_dump.
 0 means feature is not supported.
-See 
-Table 746, "CORE_DUMP Register Layout," on 
-page 838 */
+See Table 962, "CORE_DUMP Register Layout," on page 1290 */
 	/* 0x0.23 - 0x0.27 */
 	u_int8_t log_cr_dump_to_mem_size;
-	/* Description - If set, Core dump of type of specific QP is supported. */
+	/* Description - If set, Core dump of type of specific QP is supported.
+ */
 	/* 0x0.30 - 0x0.30 */
 	u_int8_t core_dump_qp;
 	/* Description - If set, Core dump of type "General" is supported. */
@@ -693,9 +712,7 @@ reports into the tracer buffer. */
 	/* 0x4.28 - 0x4.28 */
 	u_int8_t diag_counter_tracer_dump;
 	/* Description - If set, health monitoring for rx path activity is supported.
-See
- Section  26.5.1, "RX Path Activity," on page  988
- */
+See Section  26.5.1, "RX Path Activity," on page  988 */
 	/* 0x4.29 - 0x4.29 */
 	u_int8_t health_mon_rx_activity;
 	/* Description - Repetitive sampling mode is supported */
@@ -756,11 +773,8 @@ are supported. */
 FPGA_CTRL are supported. */
 	/* 0x8.30 - 0x8.30 */
 	u_int8_t flash_gw_lock;
-	/* Description - If set, SW is allowed to modify FPGA_CTRL register. See
- Table  708, 
-"
-FPGA_CTRL Register Layout
-," on page  819 */
+	/* Description - If set, SW is allowed to modify FPGA_CTRL register. See Table  926, 
+"FPGA_CTRL Register Layout," on page  1271 */
 	/* 0x8.31 - 0x8.31 */
 	u_int8_t fpga_ctrl_modify;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
@@ -808,12 +822,8 @@ For Mellanox sandbox products
 	u_int16_t sandbox_product_version;
 /*---------------- DWORD[30] (Offset 0x78) ----------------*/
 	/* Description - Sandbox basic capabilities per sandbox product ID.
-For Mellanox sandbox products, see
- Table  763, "
-IPsec_Basic_Capabili
-ties Structure Layout
-," on page  953
-. */
+For Mellanox sandbox products, see Table  827, "IPsec_Basic_Capabili
+ties Structure Layout," on page  1176. */
 	/* 0x78.0 - 0x78.31 */
 	u_int32_t sandbox_basic_caps;
 /*---------------- DWORD[31] (Offset 0x7c) ----------------*/
@@ -823,12 +833,8 @@ when such capability is not present). */
 	u_int16_t sandbox_extended_caps_len;
 /*---------------- DWORD[32] (Offset 0x80) ----------------*/
 	/* Description - Extended capabilities address.
-For Mellanox sandbox products, see
- Table  765, "
-IPsec_Extended_Capa
-bilities Structure Layout
-," on page  953
-. */
+For Mellanox sandbox products, see Table  829, "IPsec_Extended_Capa
+bilities Structure Layout," on page  1176. */
 	/* 0x80.0 - 0x84.31 */
 	u_int64_t sandbox_extended_caps_addr;
 /*---------------- DWORD[34] (Offset 0x88) ----------------*/
@@ -863,21 +869,14 @@ Valid only for query operation. */
 	/* 0x0.0 - 0x0.7 */
 	u_int8_t status;
 	/* Description - Indicates the control operation to be performed. Allowed only when 
-FPGA_CAP.fpga_ctrl_modify==1. 
- See Table  704, "
-FPGA_CAP Regis
-ter Layout
-," on page  815
-.
+FPGA_CAP.fpga_ctrl_modify==1.  See Table  922, "FPGA_CAP Regis
+ter Layout," on page  1266.
 0x1: LOAD - when set, the FPGA will be forced to reload the image 
-from flash according to 
-image_select_admin
- value.
+from flash according to image_select_admin value.
 0x2: RESET - when set, the FPGA internal logic state (BRAMs, 
 FFs, etc.) will be reset to the original state at loading time.
 0x3: FLASH_SELECT - when set, map the flash GW according to 
-flash_select_admin
- value.
+flash_select_admin value.
 0x4: Sandbox_Bypass_On - If set, sandbox logic is inactive until 
 Sandbox_Bypass_Off is set. Packets will skip the sandbox logic.
 0x5: Sandbox_Bypass_Off - If set, sandbox logic is active. Packets 
@@ -887,12 +886,10 @@ will be processed by the sandbox logic.
 (no shell state is affected).
 0x7: Flash_GW_Lock - lock the flash gateway. Users must take this 
 lock before attempting to reads/writes to flash. Supported only when 
-FPGA_CAP.
-flash_gw_lock==1.
+FPGA_CAP.flash_gw_lock==1.
 0x8: Flash_GW_Unlock - Unlock flash gateway. Users must release 
 this lock after completing their reads/writes to flash. Supported only 
-when FPGA_CAP.
-flash_gw_lock==1.
+when FPGA_CAP.flash_gw_lock==1.
 0x9: DISCONNECT - Disable the ConnectX to FPGA management 
 interface. This mode is useful when upgrading the FPGA via JTAG. 
 supported only when FPGA_CAP.disconnect_fpga==1. Note that on 
@@ -965,15 +962,11 @@ NENT instructions. Otherwise, this field is reserved. */
 	u_int16_t component_index;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - Token representing the current flow executed by the FSM.
-See 
-"Update Handle" on page 544
-. */
+See "Update Handle" on page 785. */
 	/* 0x8.0 - 0x8.23 */
 	u_int32_t update_handle;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
-	/* Description - Current Update FSM state
-, See 
-"FSM States" on page 547
+	/* Description - Current Update FSM state, See "FSM States" on page 788
 0x0: IDLE
 0x1: LOCKED
 0x2: INITIALIZE
@@ -986,12 +979,8 @@ See
 Other values are reserved */
 	/* 0xc.0 - 0xc.3 */
 	u_int8_t control_state;
-	/* Description - Indicates the successful completion of the 
-instruction
-, or 
-the reason it failed. 
-See 
-"Error Handling" on page 546
+	/* Description - Indicates the successful completion of the instruction, or 
+the reason it failed. See "Error Handling" on page 787
 0x0: OK
 0x1: ERROR
 0x2: REJECTED_DIGEST_ERR
@@ -1019,9 +1008,7 @@ tion executed by the FSM. Valid values are 0..100.
 this update state. */
 	/* 0xc.16 - 0xc.22 */
 	u_int8_t control_progress;
-	/* Description - For 
-handle_owner_type
- BMC, command-interface and 
+	/* Description - For handle_owner_type BMC, command-interface and 
 ICMD, indicates the identifier of the host of the handle 
 owner.
 Otherwise reserved */
@@ -1065,13 +1052,9 @@ struct reg_access_hca_mcda_reg {
 	u_int32_t update_handle;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - Offset of accessed address relative to component start. 
-Accesses must be in accordance to 
-log_mcda_word_size
- in 
-Table 1110, "
-MCQI CAPABILITIES Info Layout
-," on 
-page 1132 */
+Accesses must be in accordance to log_mcda_word_size in 
+Table 1567, "MCQI CAPABILITIES Info Layout," on 
+page 1810 */
 	/* 0x4.0 - 0x4.31 */
 	u_int32_t offset;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
@@ -1171,20 +1154,15 @@ nent. */
 	/* Description - PSID is validated for this component update. */
 	/* 0x10.28 - 0x10.28 */
 	u_int8_t match_psid;
-	/* Description - Chip ID (
-device_hw_revision
-) is validated for this compo
+	/* Description - Chip ID (device_hw_revision) is validated for this compo
 nent update. */
 	/* 0x10.29 - 0x10.29 */
 	u_int8_t match_chip_id;
 	/* Description - Only signed components are accepted. */
 	/* 0x10.30 - 0x10.30 */
 	u_int8_t signed_updates_only;
-	/* Description - When set, this components may be read
-, see 
-"Read Flow" 
-on page 546
-. */
+	/* Description - When set, this components may be read, see "Read Flow" 
+on page 787. */
 	/* 0x10.31 - 0x10.31 */
 	u_int8_t rd_en;
 };
@@ -1193,11 +1171,8 @@ on page 546
 /* Size in bytes - 24 */
 struct reg_access_hca_mcqi_reg {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Component index gathered by 
-"
-MCQS - Management 
-Component Query Status
-" */
+	/* Description - Component index gathered by "MCQS - Management 
+Component Query Status" */
 	/* 0x0.0 - 0x0.15 */
 	u_int16_t component_index;
 	/* Description - Device number.
@@ -1234,25 +1209,18 @@ Must be DWORD aligned. */
 	u_int32_t offset;
 /*---------------- DWORD[5] (Offset 0x14) ----------------*/
 	/* Description - The requested/returned data size, given in bytes.
-If 
-data_size
- is not DWORD aligned, the last bytes are zero 
+If data_size is not DWORD aligned, the last bytes are zero 
 padded. */
 	/* 0x14.0 - 0x14.15 */
 	u_int16_t data_size;
 /*---------------- DWORD[6] (Offset 0x18) ----------------*/
-	/* Description - Properties set structure according to 
-info_type
-.
-CAPABILITIES - See 
-Table 1355, "MCQI CAPABILI
-TIES Info Layout," on page 1446
-VERSION - See 
-Table 1357, "MCQI VERSION Info Lay
-out," on page 1448
-ACTIVATION_METHOD - See 
-Table 1361, "MCQI 
-ACTIVATION_METHOD Info Layout," on page 1450 */
+	/* Description - Properties set structure according to info_type.
+CAPABILITIES - See Table 1567, "MCQI CAPABILI
+TIES Info Layout," on page 1810
+VERSION - See Table 1569, "MCQI VERSION Info Lay
+out," on page 1812
+ACTIVATION_METHOD - See Table 1573, "MCQI 
+ACTIVATION_METHOD Info Layout," on page 1814 */
 	/* 0x18.0 - 0x18.31 */
 	u_int32_t *data;
 };
@@ -1265,8 +1233,7 @@ struct reg_access_hca_mcqi_version {
 	/* 0x0.0 - 0x0.7 */
 	u_int8_t version_string_length;
 	/* Description - When set, the component has a valid user-defined version 
-time-stamp in 
-user_defined_time */
+time-stamp in user_defined_time */
 	/* 0x0.28 - 0x0.28 */
 	u_int8_t user_defined_time_valid;
 	/* Description - When set, the component has a valid creation time-stamp in 
@@ -1278,24 +1245,14 @@ build_time */
 	/* 0x4.0 - 0x4.31 */
 	u_int32_t version;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description - Time of component creation. Valid only if 
-build_time_valid
- 
-is set. See 
-Table 1114, "
-Date-Time Layout
-," on page 1135 */
+	/* Description - Time of component creation. Valid only if build_time_valid 
+is set. See Table 1571, "Date-Time Layout," on page 1813 */
 	/* 0x8.0 - 0xc.31 */
 	u_int64_t build_time;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - User-defined time assigned to the component version. Valid 
-only if 
-user_defined_time_valid
- is set. See 
-Table 1114, 
-"
-Date-Time Layout
-," on page 1135 */
+only if user_defined_time_valid is set. See Table 1571, 
+"Date-Time Layout," on page 1813 */
 	/* 0x10.0 - 0x14.31 */
 	u_int64_t user_defined_time;
 /*---------------- DWORD[6] (Offset 0x18) ----------------*/
@@ -1314,9 +1271,7 @@ Valid only when not equal to 0 */
 struct reg_access_hca_mcqs_reg {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - Component Index. Values range from 1 to the last compo
-nent indicated by 
-last_index_flag
-. */
+nent indicated by last_index_flag. */
 	/* 0x0.0 - 0x0.15 */
 	u_int16_t component_index;
 	/* Description - Device number.
@@ -1324,8 +1279,7 @@ For gearboxes, the index represents the gearbox die. */
 	/* 0x0.16 - 0x0.27 */
 	u_int16_t device_index;
 	/* Description - When set, this component is the last component (highest 
-component_index
-). */
+component_index). */
 	/* 0x0.31 - 0x0.31 */
 	u_int8_t last_index_flag;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
@@ -1335,16 +1289,15 @@ component_index
 0x5: MLNX_NVCONFIG
 0x6: CS_TOKEN
 0x7: DBG_TOKEN
-0xA Gearbox
+0xA: Gearbox
+0xB: CC_ALGO - Congestion Control Algorithm
+
 Other values are reserved */
 	/* 0x4.0 - 0x4.15 */
 	u_int16_t identifier;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description - Component statue in update flow
-, see 
-"Component Update 
-State" on page 543
-:
+	/* Description - Component statue in update flow, see "Component Update 
+State" on page 784:
 0x0: IDLE
 0x1: IN_PROGRESS
 0x2: APPLIED
@@ -1353,6 +1306,7 @@ State" on page 543
 0x5: FAILED
 0x6: CANCELED
 0x7: BUSY
+
 Other values are reserved */
 	/* 0x8.0 - 0x8.3 */
 	u_int8_t component_update_state;
@@ -1362,32 +1316,30 @@ device but, currently not present
 0x1: PRESENT - This component is present.
 0x2: IN_USE - The component is present and currently in 
 use.
+
 Other values are reserved */
 	/* 0x8.4 - 0x8.8 */
 	u_int8_t component_status;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description - Peripheral device type:
-0: Switch / NIC
+0: Switch_or_NIC
 1: Gearbox */
 	/* 0xc.0 - 0xc.7 */
 	u_int8_t device_type;
-	/* Description - For 
-last_update_state_changer_type
- BMC, command-
+	/* Description - For last_update_state_changer_type BMC, command-
 interface and ICMD, indicates the identifier of the host of 
 the handle owner. Otherwise reserved. */
 	/* 0xc.24 - 0xc.27 */
 	u_int8_t last_update_state_changer_host_id;
-	/* Description - Indicates which entity was the last to change the 
-compo
-nent_update_state
- of this component.
+	/* Description - Indicates which entity was the last to change the compo
+nent_update_state of this component.
 0x0: unspecified
-0x1: Chassis BMC
+0x1: Chassis_BMC
 0x2: MAD
 0x3: BMC
-0x4: command interface
+0x4: command_interface
 0x5: ICMD
+
 Other values are reserved */
 	/* 0xc.28 - 0xc.31 */
 	u_int8_t last_update_state_changer_type;
@@ -1397,11 +1349,8 @@ Other values are reserved */
 /* Size in bytes - 8 */
 struct reg_access_hca_mfrl_reg_ext {
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - The firmware reset level. See 
-"
-MFRL - Management Firmware 
-Reset Level
-" on page 1152
+	/* Description - The firmware reset level. See "MFRL - Management Firmware 
+Reset Level" on page 1835
 Only a single bit may be set.
 Bit 0: LEVEL0
 Bit 3: LEVEL3
@@ -1418,35 +1367,35 @@ Bit 1: Port alive */
 	/* Description - The requested reset. */
 	/* 0x4.24 - 0x4.26 */
 	u_int8_t rst_type_sel;
+	/* Description - Response of the driver for the reset request.
+1: Acknowledgment
+2: Dis-acknowledgment
+3: Reserved */
+	/* 0x4.27 - 0x4.28 */
+	u_int8_t pci_sync_for_fw_update_resp;
+	/* Description - Setting this bit to '1' will request a synced driver flow and '0' for 
+the legacy flow */
+	/* 0x4.29 - 0x4.29 */
+	u_int8_t pci_sync_for_fw_update_start;
 };
 
 /* Description -   */
 /* Size in bytes - 160 */
 struct reg_access_hca_mgir {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Hardware Information, see 
-Table 1019, "
-Hardware Info Layout
-," 
-on page 1078 */
+	/* Description - Hardware Information, see Table 1448, "Hardware Info Layout," 
+on page 1729 */
 	/* 0x0.0 - 0x1c.31 */
 	struct reg_access_hca_mgir_hardware_info hw_info;
 /*---------------- DWORD[8] (Offset 0x20) ----------------*/
-	/* Description - Firmware Information, see 
-Table 1021, "
-Firmware Info Layout
-," 
-on page 1079 */
+	/* Description - Firmware Information, see Table 1450, "Firmware Info Layout," 
+on page 1731 */
 	/* 0x20.0 - 0x5c.31 */
 	struct reg_access_hca_mgir_fw_info fw_info;
 /*---------------- DWORD[24] (Offset 0x60) ----------------*/
-	/* Description - Software Information, see 
-Table 1023, "
-Software Info Layout
-," 
-on page 1081
-This field indicates 
-the oldest software version compatible 
+	/* Description - Software Information, see Table 1452, "Software Info Layout," 
+on page 1733
+This field indicates the oldest software version compatible 
 with the current firmware */
 	/* 0x60.0 - 0x7c.31 */
 	struct reg_access_hca_mgir_sw_info sw_info;
@@ -1473,9 +1422,9 @@ ues in op-codes for "per-service" are ignored.
 1: start preparation flow for FW ISSU 
 2: return to operational service (end of FW ISSU flow)
 3: get status
+
 When set to '3', the current status will appear in corresponding 
-_stat 
-fields. */
+_stat fields. */
 	/* 0x4.0 - 0x4.1 */
 	u_int8_t ports;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
@@ -1483,9 +1432,7 @@ fields. */
 0: not in FW ISSU flow state (FW ISSU flow is not initiated) 
 1: done with preparations for FW ISSU flow
 2: Preparation for FW ISSU flow started but FW still not done ser
-vice handling
- [Internal]: busy with some other critical flow)
-.
+vice handling [Internal]: busy with some other critical flow).
 For not implemented services on a particular system, the status 
 should be '1'. */
 	/* 0xc.0 - 0xc.1 */
@@ -1509,10 +1456,8 @@ Reserved when access is from the host */
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - Field select indicated which writable fields to modify.
 Bit 0: tx_lossy_overflow_oper
-Bit 1 : 
-outbound_stalled_reads_th
-Bit 2 :
-outbound_stalled_writes_th
+Bit 1 : outbound_stalled_reads_th
+Bit 2 :outbound_stalled_writes_th
 Bit 3 : tx_overflow_sense
 Bit 4 : mark_tx_action_cqe
 Bit 5 : mark_tx_action_cnp */
@@ -1520,17 +1465,14 @@ Bit 5 : mark_tx_action_cnp */
 	u_int16_t field_select;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - When overflow encountered for lossy packets, it will be dropped or 
-marked and will be counted in "
-tx_overflow_buffer_
-dropped_pkt
-" or "tx_overflow_buffer_marked_pkt" counter.
+marked and will be counted in "tx_overflow_buffer_
+dropped_pkt" or "tx_overflow_buffer_marked_pkt" counter.
 00 - Disabled
-01 - drop - overflow traffic will be dropped. 
- 
+01 - drop - overflow traffic will be dropped.  
 10 - mark - overflow traffic will be marked in the CE field in the 
-CqE. 
- Supported only when MCAM.mark_tx_action_cqe or 
-MCAM.mark_tx_action_cnp are '1'. */
+CqE.  Supported only when MCAM.mark_tx_action_cqe or 
+MCAM.mark_tx_action_cnp are '1'. 
+ */
 	/* 0x8.0 - 0x8.1 */
 	u_int8_t tx_lossy_overflow_oper;
 	/* Description - When this bit is set, the marking action will be generating a CNP for 
@@ -1544,10 +1486,8 @@ TCP traffic. Supported only when MCAM.mark_tx_action_cqe is
 	/* 0x8.30 - 0x8.30 */
 	u_int8_t mark_cqe;
 	/* Description - Set the sensibility level of the tx overflow mechanism. 
-0 - Aggressive 
-1 - Dynamic adjustment. When tx_lossy_over
-flow_oper is disabled, tx_overflow_sense must be disabled. 
-Sup
+0 - Aggressive 1 - Dynamic adjustment. When tx_lossy_over
+flow_oper is disabled, tx_overflow_sense must be disabled. Sup
 ported only when MCAM.dynamic_tx_oveflow is '1'. */
 	/* 0x8.31 - 0x8.31 */
 	u_int8_t tx_overflow_sense;
@@ -1580,9 +1520,7 @@ other values are reserved. */
 	/* 0x0.0 - 0x0.7 */
 	u_int8_t info_type;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - Total size of the information string, according to 
-info_type
-. 
+	/* Description - Total size of the information string, according to info_type. 
 Value given in bytes. */
 	/* 0x4.0 - 0x4.15 */
 	u_int16_t info_length;
@@ -1595,9 +1533,7 @@ of bytes actually read. */
 	/* 0x8.16 - 0x8.31 */
 	u_int16_t read_offset;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
-	/* Description - Information string accessed, according to 
-info_type
-. If the 
+	/* Description - Information string accessed, according to info_type. If the 
 information is not available, a NULL string is returned. */
 	/* 0x10.24 - 0x18.23 */
 	u_int8_t info_string[8];
@@ -1611,8 +1547,7 @@ struct reg_access_hca_mtrc_cap_reg {
 	/* 0x0.0 - 0x0.3 */
 	u_int8_t num_string_db;
 	/* Description - Indicates the version of the tracing mechanism.
-See, 
-"Timestamp Event Traces" on page 900
+See, "Timestamp Event Traces" on page 1216
 0x0: VER_0
 0x1: VER_1
 other values are reserved */
@@ -1627,15 +1562,11 @@ Read value 0x1 indicates tracer ownership is granted */
 	/* 0x0.31 - 0x0.31 */
 	u_int8_t trace_owner;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - The number of consecutive 
-event_id
- that should be interpreted as 
+	/* Description - The number of consecutive event_id that should be interpreted as 
 a string trace */
 	/* 0x4.16 - 0x4.23 */
 	u_int8_t num_string_trace;
-	/* Description - The lowest 
-event_id
- that should be interpreted as a string trace */
+	/* Description - The lowest event_id that should be interpreted as a string trace */
 	/* 0x4.24 - 0x4.31 */
 	u_int8_t first_string_trace;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
@@ -1656,8 +1587,10 @@ struct reg_access_hca_pcnr_reg {
 	/* Description - When Set, port will override tuning process upon following link-
 up command (PAOS.admin_status = UP)
 Cleared by FW once PAOS.admin_status = UP command is set.
+
 The register can be set only when port operational status is UP 
 (PAOS.oper_status=0x1) 
+
 NOTE: if physical environment was changed (i.e. replacement of 
 module, temp change, etc) there is a possibility that link won't be 
 established or will be established with high BER */
@@ -1666,17 +1599,18 @@ established or will be established with high BER */
 	/* Description - Local port number. */
 	/* 0x0.16 - 0x0.23 */
 	u_int8_t local_port;
+	/* Description - 0 - Ready
+1 - Phy characteristics store flow in progress. */
+	/* 0x0.28 - 0x0.31 */
+	u_int8_t status;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - When Set, The port will keep the same phy setting upon link down 
-event that occurs only upon link down command of 
-peer port.
- In 
+event that occurs only upon link down command of peer port. In 
 the event of Down command/cable disconnect, entire link up flow 
 will be initialized.
-NOTE: This mode can be configured only when 
-PTYS.an_dis
-able_admin is set
- (i.e. AN is disabled). 
+
+NOTE: This mode can be configured only when PTYS.an_dis
+able_admin is set (i.e. AN is disabled). 
 NOTE: if physical environment was changed (i.e. replacement of 
 module, temp change, etc) there is a possibility that link won't be 
 established or will be established with high BER */
@@ -1688,11 +1622,7 @@ established or will be established with high BER */
 /* Size in bytes - 256 */
 struct reg_access_hca_resource_dump {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - See 
-Section 21.8, "
-Resource Dump
-," on page 804
-. */
+	/* Description - See Section 27.8, "Resource Dump," on page 1225. */
 	/* 0x0.0 - 0x0.15 */
 	u_int16_t segment_type;
 	/* Description - Sequence number. 0 on first call of dump and incremented 
@@ -1730,20 +1660,26 @@ provide it on the next call in case dump_more==1. */
 	/* 0xc.0 - 0xc.31 */
 	u_int32_t index2;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
-	/* Description - The amount to objects to dump starting for index 2.
-SW shall read this field upon command done and shall 
-provide it on the next call in case dump_more==1.
-Range is 0..0xfff0. The special value of 0xffff represents 
-"all". The special value of 0xfffe represents "active". The 
-special value of 0x0 represents 0x1. */
-	/* 0x10.0 - 0x10.15 */
-	u_int16_t num_of_obj2;
-	/* Description - The amount to objects to dump starting for index 1
+	/* Description - The amount of objects to dump starting for index 2.
 SW shall read this field upon command done and shall 
 provide it on the next call in case dump_more==1. 
-Range is 0..0xfff0. The special value of 0xffff represents 
-"all". The special value of 0xfffe represents "active". The 
-special value of 0x0 represents 0x1. */
+Range is 0..0xfff0. When the segment's num_of_obj2_
+supports_all is set, the special value of 0xffff represents 
+"all". When the segment's num_of_objx_supports_active 
+is set, the special value of 0xfffe represents "active". The  
+value of 0x0 and 0x1 are allowed even if the support
+ed_num_of_obj2 is "0". */
+	/* 0x10.0 - 0x10.15 */
+	u_int16_t num_of_obj2;
+	/* Description - The amount of objects to dump starting for index 1
+SW shall read this field upon command done and shall 
+provide it on the next call in case dump_more==1. 
+Range is 0..0xfff0. When the segment's num_of_obj1_
+supports_all is set, the special value of 0xffff represents 
+"all". When the segment's num_of_objx_supports_active 
+is set, the special value of 0xfffe represents "active". The  
+value of 0x0 and 0x1 are allowed even if the support
+ed_num_of_obj1 is "0". */
 	/* 0x10.16 - 0x10.31 */
 	u_int16_t num_of_obj1;
 /*---------------- DWORD[6] (Offset 0x18) ----------------*/
@@ -1755,8 +1691,7 @@ device_opaque shall be 0. */
 	u_int64_t device_opaque;
 /*---------------- DWORD[8] (Offset 0x20) ----------------*/
 	/* Description - Memory key to dump to. 
-Valid w
-hen inline_dump==0. */
+Valid when inline_dump==0. */
 	/* 0x20.0 - 0x20.31 */
 	u_int32_t mkey;
 /*---------------- DWORD[9] (Offset 0x24) ----------------*/
@@ -1818,40 +1753,23 @@ Other values are reserved */
 	/* 0x4.0 - 0x4.7 */
 	u_int8_t type;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description - The fault will be injected 
-num_repeat
- consecutive times the relevant 
-flow is called, and will not be injected for the following 
-num_skip
- 
+	/* Description - The fault will be injected num_repeat consecutive times the relevant 
+flow is called, and will not be injected for the following num_skip 
 calls to the relevant flow.
-Value 0x0 for 
-num_repeat
- indicates the Fault will not be injected. */
+Value 0x0 for num_repeat indicates the Fault will not be injected. */
 	/* 0x8.0 - 0x8.15 */
 	u_int16_t num_skip;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
-	/* Description - The fault will be injected 
-num_repeat
- consecutive times the relevant 
-flow is called, and will not be injected for the following 
-num_skip
- 
+	/* Description - The fault will be injected num_repeat consecutive times the relevant 
+flow is called, and will not be injected for the following num_skip 
 calls to the relevant flow.
-Value 0x0 for 
-num_repeat
- indicates the Fault will not be injected. */
+Value 0x0 for num_repeat indicates the Fault will not be injected. */
 	/* 0xc.0 - 0xc.15 */
 	u_int16_t num_repeat;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
-	/* Description - stressor Modifier according to 
-type
- field.
-For SMBUS_FAILED,
- See Table  734, "
-SMBUS_FAILED Fault Inject 
-Modifier Layout
-," on page  833 */
+	/* Description - stressor Modifier according to type field.
+For SMBUS_FAILED, See Table  954, "SMBUS_FAILED Fault Inject 
+Modifier Layout," on page  1287 */
 	/* 0x10.0 - 0x2c.31 */
 	struct reg_access_hca_smbus_failed_fault_inject_modifier per_type_modifier;
 };
@@ -1894,41 +1812,23 @@ Other values are reserved */
 	/* 0x4.0 - 0x4.7 */
 	u_int8_t type;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description - The Mini flow will be injected 
-num_repeat
- times, every 50 usec * 
-freq
-.
-Value 0x0 for 
-freq
- indicates the Mini Flow will not be injected. */
+	/* Description - The Mini flow will be injected num_repeat times, every 50 usec * 
+freq.
+Value 0x0 for freq indicates the Mini Flow will not be injected. */
 	/* 0x8.0 - 0x8.15 */
 	u_int16_t freq;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
-	/* Description - The Mini flow will be injected 
-num_repeat
- times, every 50 usec * 
-freq
-.
-Value 0x0 for 
-freq
- indicates the Mini Flow will not be injected. */
+	/* Description - The Mini flow will be injected num_repeat times, every 50 usec * 
+freq.
+Value 0x0 for freq indicates the Mini Flow will not be injected. */
 	/* 0xc.0 - 0xc.15 */
 	u_int16_t num_repeat;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
-	/* Description - stressor Modifier according to 
-type
- field.
-For IRISC_HANG 
- See Table  738, "
-IRISC_HANG Mini-Flow Modifier 
-Layout
-," on page  835
-For PACKET_DROP 
- See Table  740, "
-PACKET_DROP Mini-Flow 
-Modifier Layout
-," on page  836 */
+	/* Description - stressor Modifier according to type field.
+For IRISC_HANG  See Table  958, "IRISC_HANG Mini-Flow Modifier 
+Layout," on page  1288
+For PACKET_DROP  See Table  960, "PACKET_DROP Mini-Flow 
+Modifier Layout," on page  1289 */
 	/* 0x10.0 - 0x2c.31 */
 	union reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto per_type_modifier;
 };
@@ -2011,10 +1911,10 @@ requests
 (responder ack / read response requests)
 0x13: QPC_SLICE - stop HW QP context read requests
 Other values are reserved
-0x14 RXB_HOST_HANG - 
-S
-top HW which loads RX buffers - per 
-host / VL configuration. When supported deprecates RXB_HANG */
+0x14: RXB_HOST_HANG - Stop HW which loads RX buffers - per 
+host / VL configuration. When supported deprecates RXB_HANG
+0x15: PAUSE_TX - generates pause frames toward the network - 
+per port & SL/priority configuration. */
 	/* 0x4.0 - 0x4.7 */
 	u_int8_t type;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
@@ -2034,24 +1934,17 @@ The Stressor will have the opposite behavior when it is not active. */
 	/* 0x8.31 - 0x8.31 */
 	u_int8_t polarity;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
-	/* Description - stressor Modifier according to 
-type
- field.
-For RXB_HANG 
- See Table  718, "
-RXB_HANG Stop Toggle Modifier 
-Layout
-," on page  827
-For LOCK_RESOURCE 
- See Table  724, "
-LOCK_RESOURCE Stop 
-Toggle Modifier Layout
-," on page  829
-For SXP_HANG 
- See Table  720, "
-SXP_HANG Stop Toggle Modifier 
-Layout
-," on page  828 */
+	/* Description - stressor Modifier according to type field.
+For RXB_HANG  See Table  936, "RXB_HANG Stop Toggle Modifier 
+Layout," on page  1279
+For LOCK_RESOURCE  See Table  942, "LOCK_RESOURCE Stop 
+Toggle Modifier Layout," on page  1281
+For SXP_HANG  See Table  938, "SXP_HANG Stop Toggle Modifier 
+Layout," on page  1280
+For RXB_HOST_HANG  See Table  940, "RXB_HOST_HANG Stop 
+Toggle Modifier Layout," on page  1281
+For PAUSE_TX See Table  See Table  950, "PAUSE_TX Stop Toggle 
+Modifier Layout," on page  1284 */
 	/* 0x10.0 - 0x2c.31 */
 	union reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto per_type_modifier;
 };
@@ -2179,6 +2072,13 @@ void reg_access_hca_packet_drop_mini_flow_modifier_print(const struct reg_access
 unsigned int reg_access_hca_packet_drop_mini_flow_modifier_size(void);
 #define REG_ACCESS_HCA_PACKET_DROP_MINI_FLOW_MODIFIER_SIZE    (0x20)
 void reg_access_hca_packet_drop_mini_flow_modifier_dump(const struct reg_access_hca_packet_drop_mini_flow_modifier *ptr_struct, FILE *fd);
+/* pause_tx_stop_toggle_modifier */
+void reg_access_hca_pause_tx_stop_toggle_modifier_pack(const struct reg_access_hca_pause_tx_stop_toggle_modifier *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_hca_pause_tx_stop_toggle_modifier_unpack(struct reg_access_hca_pause_tx_stop_toggle_modifier *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_hca_pause_tx_stop_toggle_modifier_print(const struct reg_access_hca_pause_tx_stop_toggle_modifier *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_hca_pause_tx_stop_toggle_modifier_size(void);
+#define REG_ACCESS_HCA_PAUSE_TX_STOP_TOGGLE_MODIFIER_SIZE    (0x20)
+void reg_access_hca_pause_tx_stop_toggle_modifier_dump(const struct reg_access_hca_pause_tx_stop_toggle_modifier *ptr_struct, FILE *fd);
 /* rom_version */
 void reg_access_hca_rom_version_pack(const struct reg_access_hca_rom_version *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_hca_rom_version_unpack(struct reg_access_hca_rom_version *ptr_struct, const u_int8_t *ptr_buff);
@@ -2193,6 +2093,13 @@ void reg_access_hca_rxb_hang_stop_toggle_modifier_print(const struct reg_access_
 unsigned int reg_access_hca_rxb_hang_stop_toggle_modifier_size(void);
 #define REG_ACCESS_HCA_RXB_HANG_STOP_TOGGLE_MODIFIER_SIZE    (0x20)
 void reg_access_hca_rxb_hang_stop_toggle_modifier_dump(const struct reg_access_hca_rxb_hang_stop_toggle_modifier *ptr_struct, FILE *fd);
+/* rxp_hang_stop_toggle_modifier */
+void reg_access_hca_rxp_hang_stop_toggle_modifier_pack(const struct reg_access_hca_rxp_hang_stop_toggle_modifier *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_hca_rxp_hang_stop_toggle_modifier_unpack(struct reg_access_hca_rxp_hang_stop_toggle_modifier *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_hca_rxp_hang_stop_toggle_modifier_print(const struct reg_access_hca_rxp_hang_stop_toggle_modifier *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_hca_rxp_hang_stop_toggle_modifier_size(void);
+#define REG_ACCESS_HCA_RXP_HANG_STOP_TOGGLE_MODIFIER_SIZE    (0x20)
+void reg_access_hca_rxp_hang_stop_toggle_modifier_dump(const struct reg_access_hca_rxp_hang_stop_toggle_modifier *ptr_struct, FILE *fd);
 /* sxp_hang_stop_toggle_modifier */
 void reg_access_hca_sxp_hang_stop_toggle_modifier_pack(const struct reg_access_hca_sxp_hang_stop_toggle_modifier *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_hca_sxp_hang_stop_toggle_modifier_unpack(struct reg_access_hca_sxp_hang_stop_toggle_modifier *ptr_struct, const u_int8_t *ptr_buff);

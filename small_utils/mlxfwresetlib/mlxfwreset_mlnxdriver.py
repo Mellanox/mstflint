@@ -43,17 +43,12 @@ from .mlxfwreset_utils import cmdExec
 from functools import reduce
 
 
-######################################################################
-# Description:  NoDriver Exception
-# OS Support :  Linux/Windows.
-######################################################################
-class NoDriver(Exception):
+class DriverNotExist(Exception):
     pass
 
-######################################################################
-# Description:  DriverUnknownMode Exception
-# OS Support :  Linux/Windows.
-######################################################################
+class DriverDisabled(Exception):
+    pass
+    
 class DriverUnknownMode(Exception):
     pass
 
@@ -221,6 +216,54 @@ class MlnxDriverFreeBSD(MlnxDriver):
         return (MlnxDriver.DRIVER_IGNORE, MlnxDriver.DRIVER_LOADED)[reduce(lambda x, y: x or y, map(lambda x: x[1], self._knownModules))]
 
 
+class WindowsRshimDriver:
+    """
+    Rshim-driver is the SOC managment driver (the driver that communicates with the ARMs) in a SmartNIC device
+    """
+
+    def _powershell(self, cmd):
+        powershell_cmd = 'powershell.exe -c "{0}"'.format(cmd)
+        self.logger.info("{0}".format(powershell_cmd))
+        result = cmdExec(powershell_cmd)
+        self.logger.info("rc={0}\nstdout={1}\nstderr={2}".format(*result))
+        return result
+
+    def __init__(self, logger):
+
+        self.logger = logger
+
+        #SOC_MANAGEMENT_PCI_DEVICE_IDS = {"A2D2": "C2D2", "A2D6": "C2D3", "A2D9": "C2D4", "A2DC": "C2D5"}
+        # TODO Need to disable only relevant drivers (might be different device-id and multiple from the same type)
+
+        cmd = "(Get-PnpDevice -InstanceId '*VEN_15B3&DEV_C2D2*').InstanceId"
+        rc, output, _ = self._powershell(cmd)
+        if rc == 0 and output:
+            # TODO if number of lines >1 then we need to filter the right driver
+            self.driver_name = output.strip()
+            self.logger.info("rshim-driver name : {0}".format(self.driver_name))
+        else:
+            raise DriverNotExist("rshim-driver doesn't exist")
+
+        cmd = "(Get-PnpDevice -InstanceId '*VEN_15B3&DEV_C2D2*').Status"
+        rc, output, _ = self._powershell(cmd)
+        if rc == 0 and output.strip() == 'OK':
+            self.logger.debug("rshim-driver name : {0} is enabled".format(self.driver_name))
+        else:
+            self.logger.debug("rshim-driver name : {0} is disabled".format(self.driver_name))
+            raise DriverDisabled("rshim-driver is disabled")
+
+    def start(self):
+        cmd = "Enable-PnpDevice -InstanceId '{0}' -confirm:$false".format(self.driver_name)
+        rc, _, _ = self._powershell(cmd)
+        if rc != 0:
+            raise RuntimeError("Failed to start rshim-driver")
+
+    def stop(self):
+        cmd = "Disable-PnpDevice -InstanceId '{0}' -confirm:$false".format(self.driver_name)
+        rc, _, _ = self._powershell(cmd)
+        if rc != 0:
+            raise RuntimeError("Failed to stop rshim-driver")
+
 class MlnxDriverWindows(MlnxDriver):
 
     def get_device_drivers(self, logger, seg_bus_device_list):
@@ -258,6 +301,10 @@ class MlnxDriverWindows(MlnxDriver):
 
         return drivers_names
 
+    def _is_powershell_exists(self):
+        rc, _, _ = cmdExec('where powershell.exe')
+        return rc == 0
+
     def __init__(self, logger, skip, devices):
 
         logger.info('MlnxDriverWindows object created')
@@ -265,6 +312,16 @@ class MlnxDriverWindows(MlnxDriver):
             super(MlnxDriverWindows, self).__init__(logger, MlnxDriver.DRIVER_IGNORE)
             return
         
+        # Check if Powershell installed
+        if self._is_powershell_exists() is False:
+            raise RuntimeError("PowerShell.exe is not installed. Please stop the driver manually and re-run the tool with --skip_driver ")
+
+        try:
+            self.rshim_driver = WindowsRshimDriver(logger)
+        except (DriverNotExist, DriverDisabled):
+            self.rshim_driver = None            
+
+
         seg_bus_device_list = []
         # Extract bus and device from the device_name
         for device in devices:
@@ -290,19 +347,23 @@ class MlnxDriverWindows(MlnxDriver):
                 self.targetedAdapters.append(targetedAdapter)
         logger.debug(self.targetedAdapters)
 
-        driverStatus = MlnxDriver.DRIVER_LOADED if (len(self.targetedAdapters) > 0) else MlnxDriver.DRIVER_IGNORE
+
+        drivers_exist = len(self.targetedAdapters) > 0 or self.rshim_driver
+
+        driverStatus = MlnxDriver.DRIVER_LOADED if drivers_exist else MlnxDriver.DRIVER_IGNORE
         super(MlnxDriverWindows, self).__init__(logger, driverStatus)
 
     def driverStart(self):
         self.logger.info('MlnxDriverWindows driverStart()')
+        if self.rshim_driver:
+            self.rshim_driver.start() # must be enabled before network adapaters 
         for targetedAdapter in self.targetedAdapters:
             cmd = "powershell.exe -c Enable-NetAdapter '%s' " % targetedAdapter
             self.logger.info(cmd)
             (rc, stdout, _) = cmdExec(cmd)
             if rc != 0:
                 raise RuntimeError("Failed to Start Driver, please start driver manually to load FW")
-        return
-
+        
     def driverStop(self):
         self.logger.info('MlnxDriverWindows driverStop()')
         for targetedAdapter in self.targetedAdapters:
@@ -311,7 +372,10 @@ class MlnxDriverWindows(MlnxDriver):
             (rc, stdout, _) = cmdExec(cmd)
             if rc != 0:
                 raise RuntimeError("Failed to Stop Driver, please stop driver manually and resume Operation")
-        return
+        
+        if self.rshim_driver:        # must be disabled after network adapaters
+            self.rshim_driver.stop() # reason: The manangement network adapter is a dependency of the SoC management i/f
+
 
 class MlnxDriverFactory(object):
     def getDriverObj(self,logger, skip, devices):

@@ -37,6 +37,7 @@
 
 #include "mlxlink_logger.h"
 #include "mlxlink_maps.h"
+#include <math.h>
 
 using namespace std;
 
@@ -51,6 +52,7 @@ std::string to_string(T toConvert)
 #endif
 
 u_int32_t findMaxKey(std::vector<std::string> keys);
+bool isIn(const std::string &val, std::vector<std::string> vect);
 string convertIntToHexString(int toConvert);
 string deleteLastComma(string &s);
 string getStringFromVector(std::vector<std::string> values);
@@ -73,10 +75,6 @@ bool checkPepcForceMode(const string &forceMode);
 bool checkPepcANMode(const string &anMode);
 bool checkPplmCmd(const string &pplmCmd);
 bool checkPplrCmd(const string &pplrCmd);
-int prbsModeToMask(const string &mode);
-string prbsMaskToMode(u_int32_t mask);
-int prbsModeCapToMask(const string &mode);
-bool prbsModeCheck(const string &mode);
 int prbsLaneRateToMask(const string &rate);
 string prbsMaskToLaneRate(u_int32_t mask);
 int prbsLaneRateCapToMask(const string &rate);
@@ -88,9 +86,9 @@ bool checkPrbsCmd(const string &prbsCmd);
 bool checkTestMode(const string &testMode);
 string FEC2Str100G(u_int32_t mask);
 string FEC2Str50G25G(u_int32_t mask);
-string FEC2Str(const string &fecShort);
+string FEC2Str(const string &fecShort, const string &speedStrG);
 string FECReq2Str(u_int32_t mask, bool linkUP);
-int fecToBit(const string &fec);
+int fecToBit(const string &fec, const string &speedStrG);
 string speedToStr(const string &speed);
 PAOS_CMD paos_to_int(const string &cmd);
 int pepc_force_mode_to_int(const string &forceMode);
@@ -98,9 +96,10 @@ int pepc_an_mode_to_int(const string &anMode);
 bool endsWith(const std::string &value, const std::string &ending);
 void findAndReplace(string& source, const string &find, const string &replace);
 string getCableIdentifier(u_int32_t identifier);
-bool getQsfp(u_int32_t identifier);
+bool isCMISCable(u_int32_t identifier);
+bool isQsfpCable(u_int32_t identifier);
+string getCmisCableType(u_int32_t cableType, u_int32_t cableLength);
 string getCableType(u_int32_t cableType);
-string getPowerClass(u_int32_t powerClass);
 string getTemp(u_int32_t temp);
 float getPower(u_int16_t power);
 int getHeight(u_int16_t height);
@@ -111,5 +110,12 @@ string toUpperCase(string &str);
 string getCableMedia(u_int32_t cableType);
 string pcieSpeedStr(u_int32_t linkSpeedActive);
 string pcieDeviceStatusStr(u_int32_t deviceStatus);
+double mw_to_dbm(double x);
+int readSignedByte(u_int32_t value);
+void setPrintTitle(MlxlinkCmdPrint &mlxlinkCmdPrint, string title,
+        u_int32_t size, bool print = true);
+void setPrintVal(MlxlinkCmdPrint &mlxlinkCmdPrint, int index, string key,
+        string value, string color = ANSI_COLOR_RESET, bool print = true,
+        bool valid = true, bool arrayValue = false, bool colorKey = false);
 
 #endif

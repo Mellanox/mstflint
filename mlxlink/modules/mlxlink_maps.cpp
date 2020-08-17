@@ -44,12 +44,18 @@ MlxlinkMaps* MlxlinkMaps::getInstance()
     return instance;
 }
 
-MlxlinkMaps::MlxlinkMaps() {
+void MlxlinkMaps::initPublicStrings()
+{
     _berCollectTitle =
-            "Test Mode (Nominal/Corner/Drift),Protocol,Speed [Gb/s],Active FEC,Iteration Number,Device PN,FW Version,Device ID,Port Number,Media,Cable PN,Length [m],Attenuation [dB],"
-                    "Test time [Min],Raw Errors Lane 0,Raw Errors Lane 1,Raw Errors Lane 2,Raw Errors Lane 3,Link Down,Total Raw BER,Raw BER limit,"
-                    "Effective Errors,Effective BER,Result,System Voltage,Chip Start Temp,Chip End Temp,Module Start Temp,Module End Temp,Active RTN,Device SN,Cable SN,RX End BW [Gb/s]";
+        "Test Mode (Nominal/Corner/Drift),Protocol,Speed [Gb/s],Active FEC,Iteration Number,Device PN,FW Version,Device ID,Port Number,Media,Cable PN,Length [m],Attenuation [dB],"
+                "Test time [Min],Raw Errors Lane 0,Raw Errors Lane 1,Raw Errors Lane 2,Raw Errors Lane 3,Link Down,Total Raw BER,Raw BER limit,"
+                "Effective Errors,Effective BER,Result,System Voltage,Chip Start Temp,Chip End Temp,Module Start Temp,Module End Temp,Active RTN,Device SN,Cable SN,RX End BW [Gb/s]";
+    _sltpHeader = "";
+    _showErrorsTitle = "Errors";
+}
 
+void MlxlinkMaps::initPortStateMapping()
+{
     _pmFsmState[PHY_MNGR_DISABLED] = "Disable";
     _pmFsmState[PHY_MNGR_OPEN_PORT] = "Port PLL Down";
     _pmFsmState[PHY_MNGR_POLLING] = "Polling";
@@ -81,6 +87,12 @@ MlxlinkMaps::MlxlinkMaps() {
     _ibPhyFsmState[IB_AN_FSM_CFG_IDLE] = "Config Idle";
     _ibPhyFsmState[IB_AN_FSM_LINK_UP] = "LinkUp";
 
+    _anDisableList[AN_DISABLE_NORMAL] = "ON";
+    _anDisableList[AN_DISABLE_FORCE] = "FORCE";
+}
+
+void MlxlinkMaps::initFecAndLoopbackMapping()
+{
     _fecModeActive[FEC_MODE_NO_FEC] = "No FEC";
     _fecModeActive[FEC_MODE_FIRECODE_FEC] = "Firecode FEC";
     _fecModeActive[FEC_MODE_STANDARD_RS_FEC_528_514] =
@@ -95,6 +107,8 @@ MlxlinkMaps::MlxlinkMaps() {
             "Mellanox LL RS-FEC - RS(163,155)";
     _fecModeActive[FEC_MODE_ZERO_LATENCY_FEC] =
             "Zero Latency FEC";
+    _fecModeActive[FEC_MODE_RS_FEC_272] =
+            "Ethernet_Consortium_LL_50G_RS-FEC - (272,257+1)";
     _fecModeActive[FEC_MODE_RS_FEC_544_514_PLR] =
             "RS-FEC (544,514) + PLR";
     _fecModeActive[FEC_MODE_RS_FEC_271_257_PLR] =
@@ -105,10 +119,158 @@ MlxlinkMaps::MlxlinkMaps() {
     _loopbackModeList[PHY_LOCAL_LOOPBACK] = "PHY Local Loopback";
     _loopbackModeList[EXTERNAL_LOCAL_LOOPBACK] =
             "External Local Loopback";
+}
 
-    _anDisableList[AN_DISABLE_NORMAL] = "ON";
-    _anDisableList[AN_DISABLE_FORCE] = "FORCE";
+void MlxlinkMaps::ethSpeedMapping()
+{
+    _ETHSpeed2gNum[ETH_LINK_SPEED_10G_KR] = 10;
+    _ETHSpeed2gNum[ETH_LINK_SPEED_10G_CR] = 10;
+    _ETHSpeed2gNum[ETH_LINK_SPEED_10G_SR] = 10;
+    _ETHSpeed2gNum[ETH_LINK_SPEED_10G_LR] = 10;
+    _ETHSpeed2gNum[ETH_LINK_SPEED_20G_KR2] = 20;
+    _ETHSpeed2gNum[ETH_LINK_SPEED_25G_CR] = 25;
+    _ETHSpeed2gNum[ETH_LINK_SPEED_25G_KR] = 25;
+    _ETHSpeed2gNum[ETH_LINK_SPEED_25G_SR] = 25;
+    _ETHSpeed2gNum[ETH_LINK_SPEED_40G_CR4] = 40;
+    _ETHSpeed2gNum[ETH_LINK_SPEED_40G_KR4] = 40;
+    _ETHSpeed2gNum[ETH_LINK_SPEED_40G_LR4] = 40;
+    _ETHSpeed2gNum[ETH_LINK_SPEED_40G_SR4] = 40;
+    _ETHSpeed2gNum[ETH_LINK_SPEED_50G_CR2] = 50;
+    _ETHSpeed2gNum[ETH_LINK_SPEED_50G_KR2] = 50;
+    _ETHSpeed2gNum[ETH_LINK_SPEED_50G_SR2] = 50;
+    _ETHSpeed2gNum[ETH_LINK_SPEED_50G_KR4] = 50;
+    _ETHSpeed2gNum[ETH_LINK_SPEED_56G_R4] = 56;
+    _ETHSpeed2gNum[ETH_LINK_SPEED_100G_CR4] = 100;
+    _ETHSpeed2gNum[ETH_LINK_SPEED_100G_KR4] = 100;
+    _ETHSpeed2gNum[ETH_LINK_SPEED_100G_LR4] = 100;
+    _ETHSpeed2gNum[ETH_LINK_SPEED_100G_SR4] = 100;
 
+    _ETHSpeed2Str[ETH_LINK_SPEED_100_BaseTx] = "BaseTx100M";
+    _ETHSpeed2Str[ETH_LINK_SPEED_1000_BaseT] = "BaseT1000M";
+    _ETHSpeed2Str[ETH_LINK_SPEED_1000_SGMII] = "CX";
+    _ETHSpeed2Str[ETH_LINK_SPEED_1000_KX] = "KX";
+    _ETHSpeed2Str[ETH_LINK_SPEED_10G_CX4] = "CX4";
+    _ETHSpeed2Str[ETH_LINK_SPEED_10G_KX4] = "KX4";
+    _ETHSpeed2Str[ETH_LINK_SPEED_10G_BaseT] = "BaseT10G";
+    _ETHSpeed2Str[ETH_LINK_SPEED_10G_KR] = "10GbE";
+    _ETHSpeed2Str[ETH_LINK_SPEED_10G_CR] = "10GbE";
+    _ETHSpeed2Str[ETH_LINK_SPEED_10G_SR] = "10GbE";
+    _ETHSpeed2Str[ETH_LINK_SPEED_10G_LR] = "10GbE";
+    _ETHSpeed2Str[ETH_LINK_SPEED_20G_KR2] = "20GbE";
+    _ETHSpeed2Str[ETH_LINK_SPEED_25G_CR] = "25GbE";
+    _ETHSpeed2Str[ETH_LINK_SPEED_25G_KR] = "25GbE";
+    _ETHSpeed2Str[ETH_LINK_SPEED_25G_SR] = "25GbE";
+    _ETHSpeed2Str[ETH_LINK_SPEED_40G_CR4] = "40GbE";
+    _ETHSpeed2Str[ETH_LINK_SPEED_40G_KR4] = "40GbE";
+    _ETHSpeed2Str[ETH_LINK_SPEED_40G_LR4] = "40GbE";
+    _ETHSpeed2Str[ETH_LINK_SPEED_40G_SR4] = "40GbE";
+    _ETHSpeed2Str[ETH_LINK_SPEED_50G_CR2] = "50GbE";
+    _ETHSpeed2Str[ETH_LINK_SPEED_50G_KR2] = "50GbE";
+    _ETHSpeed2Str[ETH_LINK_SPEED_50G_SR2] = "50GbE";
+    _ETHSpeed2Str[ETH_LINK_SPEED_50G_KR4] = "50GbE";
+    _ETHSpeed2Str[ETH_LINK_SPEED_56G_R4] = "56GbE";
+    _ETHSpeed2Str[ETH_LINK_SPEED_100G_CR4] = "100GbE";
+    _ETHSpeed2Str[ETH_LINK_SPEED_100G_KR4] = "100GbE";
+    _ETHSpeed2Str[ETH_LINK_SPEED_100G_LR4] = "100GbE";
+    _ETHSpeed2Str[ETH_LINK_SPEED_100G_SR4] = "100GbE";
+}
+
+void MlxlinkMaps::extEthSpeedMapping()
+{
+    _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_1000BASE_X] = 1;
+    _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_5GBASE_R] = 5;
+    _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_XFI] = 10;
+    _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_XLAUI_4] = 40;
+    _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_25GAUI_1] = 25;
+    _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_50GAUI_2] = 50;
+    _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_50GAUI_1] = 50;
+    _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_CAUI_4] = 100;
+    _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_100GAUI_2] = 100;
+    _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_200GAUI_4] = 200;
+    _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_400GAUI_8] = 400;
+
+    _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_SGMII_100M] = "100M";
+    _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_1000BASE_X] = "1G";
+    _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_2_5GBASE_X] = "2.5G";
+    _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_5GBASE_R] = "5G";
+    _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_XFI] = "10G";
+    _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_XLAUI_4] = "40G";
+    _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_25GAUI_1] = "25G";
+    _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_50GAUI_2] = "50G";
+    _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_50GAUI_1] = "50G";
+    _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_CAUI_4] = "100G";
+    _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_100GAUI_2] = "100G";
+    _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_200GAUI_4] = "200G";
+    _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_400GAUI_8] = "400G";
+}
+
+void MlxlinkMaps::ibSpeedMapping()
+{
+    _IBSpeed2gNum[IB_LINK_SPEED_SDR] = 10;
+    _IBSpeed2gNum[IB_LINK_SPEED_DDR] = 20;
+    _IBSpeed2gNum[IB_LINK_SPEED_QDR] = 40;
+    _IBSpeed2gNum[IB_LINK_SPEED_FDR10] = 40;
+    _IBSpeed2gNum[IB_LINK_SPEED_FDR] = 56;
+    _IBSpeed2gNum[IB_LINK_SPEED_EDR] = 100;
+    _IBSpeed2gNum[IB_LINK_SPEED_HDR] = 200;
+
+    _IBSpeed2Str[IB_LINK_SPEED_SDR] = "IB-SDR";
+    _IBSpeed2Str[IB_LINK_SPEED_DDR] = "IB-DDR";
+    _IBSpeed2Str[IB_LINK_SPEED_QDR] = "IB-QDR";
+    _IBSpeed2Str[IB_LINK_SPEED_FDR10] = "IB-FDR10";
+    _IBSpeed2Str[IB_LINK_SPEED_FDR] = "IB-FDR";
+    _IBSpeed2Str[IB_LINK_SPEED_EDR] = "IB-EDR";
+    _IBSpeed2Str[IB_LINK_SPEED_HDR] = "IB-HDR";
+}
+
+void MlxlinkMaps::speedToLanesMapping()
+{
+    _ETHSpeed2Lanes[ETH_LINK_SPEED_100_BaseTx] = 1;
+    _ETHSpeed2Lanes[ETH_LINK_SPEED_1000_BaseT] = 1;
+    _ETHSpeed2Lanes[ETH_LINK_SPEED_1000_SGMII] = 1;
+    _ETHSpeed2Lanes[ETH_LINK_SPEED_1000_KX] = 1;
+    _ETHSpeed2Lanes[ETH_LINK_SPEED_10G_CX4] = 4;
+    _ETHSpeed2Lanes[ETH_LINK_SPEED_10G_KX4] = 4;
+    _ETHSpeed2Lanes[ETH_LINK_SPEED_10G_BaseT] = 1;
+    _ETHSpeed2Lanes[ETH_LINK_SPEED_10G_KR] = 1;
+    _ETHSpeed2Lanes[ETH_LINK_SPEED_10G_CR] = 1;
+    _ETHSpeed2Lanes[ETH_LINK_SPEED_10G_SR] = 1;
+    _ETHSpeed2Lanes[ETH_LINK_SPEED_10G_LR] = 1;
+    _ETHSpeed2Lanes[ETH_LINK_SPEED_20G_KR2] = 2;
+    _ETHSpeed2Lanes[ETH_LINK_SPEED_25G_CR] = 1;
+    _ETHSpeed2Lanes[ETH_LINK_SPEED_25G_KR] = 1;
+    _ETHSpeed2Lanes[ETH_LINK_SPEED_25G_SR] = 1;
+    _ETHSpeed2Lanes[ETH_LINK_SPEED_40G_CR4] = 4;
+    _ETHSpeed2Lanes[ETH_LINK_SPEED_40G_KR4] = 4;
+    _ETHSpeed2Lanes[ETH_LINK_SPEED_40G_LR4] = 4;
+    _ETHSpeed2Lanes[ETH_LINK_SPEED_40G_SR4] = 4;
+    _ETHSpeed2Lanes[ETH_LINK_SPEED_50G_CR2] = 2;
+    _ETHSpeed2Lanes[ETH_LINK_SPEED_50G_KR2] = 2;
+    _ETHSpeed2Lanes[ETH_LINK_SPEED_50G_SR2] = 2;
+    _ETHSpeed2Lanes[ETH_LINK_SPEED_50G_KR4] = 4;
+    _ETHSpeed2Lanes[ETH_LINK_SPEED_56G_R4] = 4;
+    _ETHSpeed2Lanes[ETH_LINK_SPEED_100G_CR4] = 4;
+    _ETHSpeed2Lanes[ETH_LINK_SPEED_100G_KR4] = 4;
+    _ETHSpeed2Lanes[ETH_LINK_SPEED_100G_LR4] = 4;
+    _ETHSpeed2Lanes[ETH_LINK_SPEED_100G_SR4] = 4;
+
+    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_SGMII_100M] = 1;
+    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_1000BASE_X] = 1;
+    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_2_5GBASE_X] = 1;
+    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_5GBASE_R] = 1;
+    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_XFI] = 1;
+    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_XLAUI_4] = 4;
+    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_25GAUI_1] = 1;
+    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_50GAUI_2] = 2;
+    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_50GAUI_1] = 1;
+    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_CAUI_4] = 4;
+    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_100GAUI_2] = 2;
+    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_200GAUI_4] = 4;
+    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_400GAUI_8] = 8;
+}
+
+void MlxlinkMaps::initPortSpeedMapping()
+{
     _speedsListETH[0] = "100";
     _speedsListETH[1] = "1G";
     _speedsListETH[2] = "10G";
@@ -126,6 +288,14 @@ MlxlinkMaps::MlxlinkMaps() {
     _speedsListIB[4] = "EDR";
     _speedsListIB[5] = "HDR";
 
+    ethSpeedMapping();
+    extEthSpeedMapping();
+    ibSpeedMapping();
+    speedToLanesMapping();
+}
+
+void MlxlinkMaps::initPrbsMapping()
+{
     _prbsModesList[0] = "PRBS31";
     _prbsModesList[1] = "PRBS23A";
     _prbsModesList[2] = "PRBS23B";
@@ -161,7 +331,10 @@ MlxlinkMaps::MlxlinkMaps() {
     _prbsLaneRateList[8] = "50GE-KR4/12.89G (12.89 Gb/s)";
     _prbsLaneRateList[9] =
             "HDR/50GE/100GE/200GE/400GE (26.5625Gbd/53.125Gb/s)";
+}
 
+void MlxlinkMaps::initPpbmcAndPepcMapping()
+{
     _ppbmcBerMonitorState[0] = "No BER Monitor support";
     _ppbmcBerMonitorState[1] = "Normal";
     _ppbmcBerMonitorState[2] = "Warning";
@@ -186,7 +359,10 @@ MlxlinkMaps::MlxlinkMaps() {
             "auto Master/Slave mode for AN links";
     _pepcTwistedPairAnMode[1] = "Master mode";
     _pepcTwistedPairAnMode[2] = "Slave mode";
+}
 
+void MlxlinkMaps::initLinkDownInfoMapping()
+{
     _pddrLinkDownBlame[0] = "Unknown";
     _pddrLinkDownBlame[1] = "Local phy";
     _pddrLinkDownBlame[2] = "Remote phy";
@@ -275,145 +451,16 @@ MlxlinkMaps::MlxlinkMaps() {
     _pddrLinkDownE2EReasonOpcode[127] = "Peer - Power budget";
     _pddrLinkDownE2EReasonOpcode[128] =
             "Peer - MNG forced down the port";
+}
 
-    _ETHSpeed2gNum[ETH_LINK_SPEED_10G_KR] = 10;
-    _ETHSpeed2gNum[ETH_LINK_SPEED_10G_CR] = 10;
-    _ETHSpeed2gNum[ETH_LINK_SPEED_10G_SR] = 10;
-    _ETHSpeed2gNum[ETH_LINK_SPEED_10G_LR] = 10;
-    _ETHSpeed2gNum[ETH_LINK_SPEED_20G_KR2] = 20;
-    _ETHSpeed2gNum[ETH_LINK_SPEED_25G_CR] = 25;
-    _ETHSpeed2gNum[ETH_LINK_SPEED_25G_KR] = 25;
-    _ETHSpeed2gNum[ETH_LINK_SPEED_25G_SR] = 25;
-    _ETHSpeed2gNum[ETH_LINK_SPEED_40G_CR4] = 40;
-    _ETHSpeed2gNum[ETH_LINK_SPEED_40G_KR4] = 40;
-    _ETHSpeed2gNum[ETH_LINK_SPEED_40G_LR4] = 40;
-    _ETHSpeed2gNum[ETH_LINK_SPEED_40G_SR4] = 40;
-    _ETHSpeed2gNum[ETH_LINK_SPEED_50G_CR2] = 50;
-    _ETHSpeed2gNum[ETH_LINK_SPEED_50G_KR2] = 50;
-    _ETHSpeed2gNum[ETH_LINK_SPEED_50G_SR2] = 50;
-    _ETHSpeed2gNum[ETH_LINK_SPEED_50G_KR4] = 50;
-    _ETHSpeed2gNum[ETH_LINK_SPEED_56G_R4] = 56;
-    _ETHSpeed2gNum[ETH_LINK_SPEED_100G_CR4] = 100;
-    _ETHSpeed2gNum[ETH_LINK_SPEED_100G_KR4] = 100;
-    _ETHSpeed2gNum[ETH_LINK_SPEED_100G_LR4] = 100;
-    _ETHSpeed2gNum[ETH_LINK_SPEED_100G_SR4] = 100;
-
-    _IBSpeed2gNum[IB_LINK_SPEED_SDR] = 10;
-    _IBSpeed2gNum[IB_LINK_SPEED_DDR] = 20;
-    _IBSpeed2gNum[IB_LINK_SPEED_QDR] = 40;
-    _IBSpeed2gNum[IB_LINK_SPEED_FDR10] = 40;
-    _IBSpeed2gNum[IB_LINK_SPEED_FDR] = 56;
-    _IBSpeed2gNum[IB_LINK_SPEED_EDR] = 100;
-    _IBSpeed2gNum[IB_LINK_SPEED_HDR] = 200;
-
-    _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_1000BASE_X] = 1;
-    _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_5GBASE_R] = 5;
-    _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_XFI] = 10;
-    _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_XLAUI_4] = 40;
-    _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_25GAUI_1] = 25;
-    _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_50GAUI_2] = 50;
-    _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_50GAUI_1] = 50;
-    _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_CAUI_4] = 100;
-    _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_100GAUI_2] = 100;
-    _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_200GAUI_4] = 200;
-    _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_400GAUI_8] = 400;
-
-    _ETHSpeed2Str[ETH_LINK_SPEED_100_BaseTx] = "BaseTx100M";
-    _ETHSpeed2Str[ETH_LINK_SPEED_1000_BaseT] = "BaseT1000M";
-    _ETHSpeed2Str[ETH_LINK_SPEED_1000_SGMII] = "CX";
-    _ETHSpeed2Str[ETH_LINK_SPEED_1000_KX] = "KX";
-    _ETHSpeed2Str[ETH_LINK_SPEED_10G_CX4] = "CX4";
-    _ETHSpeed2Str[ETH_LINK_SPEED_10G_KX4] = "KX4";
-    _ETHSpeed2Str[ETH_LINK_SPEED_10G_BaseT] = "BaseT10G";
-    _ETHSpeed2Str[ETH_LINK_SPEED_10G_KR] = "10GbE";
-    _ETHSpeed2Str[ETH_LINK_SPEED_10G_CR] = "10GbE";
-    _ETHSpeed2Str[ETH_LINK_SPEED_10G_SR] = "10GbE";
-    _ETHSpeed2Str[ETH_LINK_SPEED_10G_LR] = "10GbE";
-    _ETHSpeed2Str[ETH_LINK_SPEED_20G_KR2] = "20GbE";
-    _ETHSpeed2Str[ETH_LINK_SPEED_25G_CR] = "25GbE";
-    _ETHSpeed2Str[ETH_LINK_SPEED_25G_KR] = "25GbE";
-    _ETHSpeed2Str[ETH_LINK_SPEED_25G_SR] = "25GbE";
-    _ETHSpeed2Str[ETH_LINK_SPEED_40G_CR4] = "40GbE";
-    _ETHSpeed2Str[ETH_LINK_SPEED_40G_KR4] = "40GbE";
-    _ETHSpeed2Str[ETH_LINK_SPEED_40G_LR4] = "40GbE";
-    _ETHSpeed2Str[ETH_LINK_SPEED_40G_SR4] = "40GbE";
-    _ETHSpeed2Str[ETH_LINK_SPEED_50G_CR2] = "50GbE";
-    _ETHSpeed2Str[ETH_LINK_SPEED_50G_KR2] = "50GbE";
-    _ETHSpeed2Str[ETH_LINK_SPEED_50G_SR2] = "50GbE";
-    _ETHSpeed2Str[ETH_LINK_SPEED_50G_KR4] = "50GbE";
-    _ETHSpeed2Str[ETH_LINK_SPEED_56G_R4] = "56GbE";
-    _ETHSpeed2Str[ETH_LINK_SPEED_100G_CR4] = "100GbE";
-    _ETHSpeed2Str[ETH_LINK_SPEED_100G_KR4] = "100GbE";
-    _ETHSpeed2Str[ETH_LINK_SPEED_100G_LR4] = "100GbE";
-    _ETHSpeed2Str[ETH_LINK_SPEED_100G_SR4] = "100GbE";
-
-    _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_SGMII_100M] = "100M";
-    _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_1000BASE_X] = "1G";
-    _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_2_5GBASE_X] = "2.5G";
-    _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_5GBASE_R] = "5G";
-    _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_XFI] = "10G";
-    _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_XLAUI_4] = "40G";
-    _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_25GAUI_1] = "25G";
-    _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_50GAUI_2] = "50G";
-    _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_50GAUI_1] = "50G";
-    _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_CAUI_4] = "100G";
-    _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_100GAUI_2] = "100G";
-    _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_200GAUI_4] = "200G";
-    _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_400GAUI_8] = "400G";
-
-    _IBSpeed2Str[IB_LINK_SPEED_SDR] = "IB-SDR";
-    _IBSpeed2Str[IB_LINK_SPEED_DDR] = "IB-DDR";
-    _IBSpeed2Str[IB_LINK_SPEED_QDR] = "IB-QDR";
-    _IBSpeed2Str[IB_LINK_SPEED_FDR10] = "IB-FDR10";
-    _IBSpeed2Str[IB_LINK_SPEED_FDR] = "IB-FDR";
-    _IBSpeed2Str[IB_LINK_SPEED_EDR] = "IB-EDR";
-    _IBSpeed2Str[IB_LINK_SPEED_HDR] = "IB-HDR";
-
-    _ETHSpeed2Lanes[ETH_LINK_SPEED_100_BaseTx] = 1;
-    _ETHSpeed2Lanes[ETH_LINK_SPEED_1000_BaseT] = 1;
-    _ETHSpeed2Lanes[ETH_LINK_SPEED_1000_SGMII] = 1;
-    _ETHSpeed2Lanes[ETH_LINK_SPEED_1000_KX] = 1;
-    _ETHSpeed2Lanes[ETH_LINK_SPEED_10G_CX4] = 4;
-    _ETHSpeed2Lanes[ETH_LINK_SPEED_10G_KX4] = 4;
-    _ETHSpeed2Lanes[ETH_LINK_SPEED_10G_BaseT] = 1;
-    _ETHSpeed2Lanes[ETH_LINK_SPEED_10G_KR] = 1;
-    _ETHSpeed2Lanes[ETH_LINK_SPEED_10G_CR] = 1;
-    _ETHSpeed2Lanes[ETH_LINK_SPEED_10G_SR] = 1;
-    _ETHSpeed2Lanes[ETH_LINK_SPEED_10G_LR] = 1;
-    _ETHSpeed2Lanes[ETH_LINK_SPEED_20G_KR2] = 2;
-    _ETHSpeed2Lanes[ETH_LINK_SPEED_25G_CR] = 1;
-    _ETHSpeed2Lanes[ETH_LINK_SPEED_25G_KR] = 1;
-    _ETHSpeed2Lanes[ETH_LINK_SPEED_25G_SR] = 1;
-    _ETHSpeed2Lanes[ETH_LINK_SPEED_40G_CR4] = 4;
-    _ETHSpeed2Lanes[ETH_LINK_SPEED_40G_KR4] = 4;
-    _ETHSpeed2Lanes[ETH_LINK_SPEED_40G_LR4] = 4;
-    _ETHSpeed2Lanes[ETH_LINK_SPEED_40G_SR4] = 4;
-    _ETHSpeed2Lanes[ETH_LINK_SPEED_50G_CR2] = 2;
-    _ETHSpeed2Lanes[ETH_LINK_SPEED_50G_KR2] = 2;
-    _ETHSpeed2Lanes[ETH_LINK_SPEED_50G_SR2] = 2;
-    _ETHSpeed2Lanes[ETH_LINK_SPEED_50G_KR4] = 4;
-    _ETHSpeed2Lanes[ETH_LINK_SPEED_56G_R4] = 4;
-    _ETHSpeed2Lanes[ETH_LINK_SPEED_100G_CR4] = 4;
-    _ETHSpeed2Lanes[ETH_LINK_SPEED_100G_KR4] = 4;
-    _ETHSpeed2Lanes[ETH_LINK_SPEED_100G_LR4] = 4;
-    _ETHSpeed2Lanes[ETH_LINK_SPEED_100G_SR4] = 4;
-
-    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_SGMII_100M] = 1;
-    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_1000BASE_X] = 1;
-    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_2_5GBASE_X] = 1;
-    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_5GBASE_R] = 1;
-    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_XFI] = 1;
-    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_XLAUI_4] = 4;
-    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_25GAUI_1] = 1;
-    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_50GAUI_2] = 2;
-    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_50GAUI_1] = 1;
-    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_CAUI_4] = 4;
-    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_100GAUI_2] = 2;
-    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_200GAUI_4] = 4;
-    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_400GAUI_8] = 8;
-
+void MlxlinkMaps::initSltpStatusMapping()
+{
     _SLTP16BadSetStatus2Str[SET_STATUS16_INVALID_PARM] =
-            "Invalid parameter";
+            "taps values can't be set to serdes due to internal limitations. ";
+    _SLTP16BadSetStatus2Str[SET_STATUS16_ILLEGAL_M2LP_AMP] =
+            "ob_m2lp, ob_amp and ob_alev is in legal range each, "
+            "but the total combination can't be set to serdes due to internal "
+            "limitations.";
     _SLTP16BadSetStatus2Str[SET_STATUS16_ILLEGAL_M2LP] =
             "Illegal ob_m2lp";
     _SLTP16BadSetStatus2Str[SET_STATUS16_ILLEGAL_AMP] =
@@ -433,7 +480,10 @@ MlxlinkMaps::MlxlinkMaps() {
             "Illegal ob_taps polarity (distance between taps)";
     _SLTPBadSetStatus2Str[SET_STATUS_UNKNOWN] =
             "Unknown failure status";
+}
 
+void MlxlinkMaps::qsfpComlianceMapping()
+{
     _cableComplianceQsfp[QSFP_ETHERNET_COMPLIANCE_CODE_Unspecified] =
             "Unspecified";
     _cableComplianceQsfp[QSFP_ETHERNET_COMPLIANCE_CODE_40G_ACTIVE_CABLE_XLPPI] =
@@ -452,7 +502,10 @@ MlxlinkMaps::MlxlinkMaps() {
             "10GBASE-LRM";
     _cableComplianceQsfp[QSFP_ETHERNET_COMPLIANCE_CODE_EXT] =
             "Extended Specification Compliance valid";
+}
 
+void MlxlinkMaps::sfpComplianceMapping()
+{
     _cableComplianceSfp[SFP_ETHERNET_COMPLIANCE_CODE_Unspecified] =
             "Unspecified";
     _cableComplianceSfp[SFP_ETHERNET_COMPLIANCE_CODE_10G_BASE_SR] =
@@ -463,7 +516,10 @@ MlxlinkMaps::MlxlinkMaps() {
             "10G Base-LRM";
     _cableComplianceSfp[SFP_ETHERNET_COMPLIANCE_CODE_10G_BASE_ER] =
             "10G Base-ER";
+}
 
+void MlxlinkMaps::extComplianceMapping()
+{
     _cableComplianceExt[EXT_ETHERNET_COMPLIANCE_CODE_Unspecified] =
             "Unspecified";
     _cableComplianceExt[EXT_ETHERNET_COMPLIANCE_CODE_100G_AOC_FEC] =
@@ -568,35 +624,224 @@ MlxlinkMaps::MlxlinkMaps() {
             "50GBASE-LR";
     _cableComplianceExt[EXT_ETHERNET_COMPLIABCE_CODE_200GBASE_LR4] =
             "200GBASE-LR4";
+}
 
-    _cableTechnologyQsfp[0] = "850 nm VCSEL";
-    _cableTechnologyQsfp[1] = "1310 nm VCSEL";
-    _cableTechnologyQsfp[2] = "1550 nm VCSEL";
-    _cableTechnologyQsfp[3] = "1310 nm FP";
-    _cableTechnologyQsfp[4] = "1310 nm DFB";
-    _cableTechnologyQsfp[5] = "1550 nm DFB";
-    _cableTechnologyQsfp[6] = "1310 nm EML";
-    _cableTechnologyQsfp[7] = "1550 nm EML";
-    _cableTechnologyQsfp[8] = "Other / Undefined";
-    _cableTechnologyQsfp[9] = "1490 nm DFB";
-    _cableTechnologyQsfp[10] = "Copper cable unequalized";
-    _cableTechnologyQsfp[11] = "Copper cable passive equalized";
-    _cableTechnologyQsfp[12] =
+void MlxlinkMaps::hostComplianceMapping()
+{
+    _cmisHostCompliance[CMIS_COMPLIANCE_UNSPECIFIED] = "Unspecified";
+    _cmisHostCompliance[CMIS_COMPLIANCE_1000_BASE_CX] = "1000BASE-CX";
+    _cmisHostCompliance[CMIS_COMPLIANCE_XAUI] = "XAUI";
+    _cmisHostCompliance[CMIS_COMPLIANCE_XFI] = "XFI";
+    _cmisHostCompliance[CMIS_COMPLIANCE_SFI] = "SFI";
+    _cmisHostCompliance[CMIS_COMPLIANCE_25G_AUI] = "25GAUI";
+    _cmisHostCompliance[CMIS_COMPLIANCE_XL_AUI] = "XLAUI";
+    _cmisHostCompliance[CMIS_COMPLIANCE_XL_PPI] = "XLPPI";
+    _cmisHostCompliance[CMIS_COMPLIANCE_L_AUI2] = "LAUI-2";
+    _cmisHostCompliance[CMIS_COMPLIANCE_50G_AUI2] = "50GAUI-2";
+    _cmisHostCompliance[CMIS_COMPLIANCE_50G_AUI1] = "50GAUI-1";
+    _cmisHostCompliance[CMIS_COMPLIANCE_C_AUI4] = "CAUI-4";
+    _cmisHostCompliance[CMIS_COMPLIANCE_100G_AUI4] = "100GAUI-4";
+    _cmisHostCompliance[CMIS_COMPLIANCE_100G_AUI2] = "100GAUI-2";
+    _cmisHostCompliance[CMIS_COMPLIANCE_200G_AUI8] = "200GAUI-8";
+    _cmisHostCompliance[CMIS_COMPLIANCE_200G_AUI4] = "200GAUI-4";
+    _cmisHostCompliance[CMIS_COMPLIANCE_400G_AUI16] = "400GAUI-16";
+    _cmisHostCompliance[CMIS_COMPLIANCE_400G_AUI8] = "400GAUI-8";
+    _cmisHostCompliance[CMIS_COMPLIANCE_10G_BASE_CX4] = "10GBASE-CX4";
+    _cmisHostCompliance[CMIS_COMPLIANCE_25G_CR_L] = "25GBASE-CR CA-L";
+    _cmisHostCompliance[CMIS_COMPLIANCE_25G_CR_S] = "25GBASE-CR CA-S";
+    _cmisHostCompliance[CMIS_COMPLIANCE_25G_CR_N] = "25GBASE-CR CA-N";
+    _cmisHostCompliance[CMIS_COMPLIANCE_40G_BASE_CR4] = "40GBASE-CR4";
+    _cmisHostCompliance[CMIS_COMPLIANCE_50G_BASE_CR] = "50GBASE-CR";
+    _cmisHostCompliance[CMIS_COMPLIANCE_100G_BASE_CR10] = "100GBASE-CR10";
+    _cmisHostCompliance[CMIS_COMPLIANCE_100G_BASE_CR4] = "100GBASE-CR4";
+    _cmisHostCompliance[CMIS_COMPLIANCE_100G_BASE_CR2] = "100GBASE-CR2";
+    _cmisHostCompliance[CMIS_COMPLIANCE_200G_BASE_CR4] = "200GBASE-CR4";
+    _cmisHostCompliance[CMIS_COMPLIANCE_400G_CR8] = "400G CR8";
+    _cmisHostCompliance[CMIS_COMPLIANCE_1000_BASE_T] = "1000BASE-T";
+    _cmisHostCompliance[CMIS_COMPLIANCE_2_5G_BASE_T] = "2.5GBASE-T";
+    _cmisHostCompliance[CMIS_COMPLIANCE_5G_BASE_T] = "5GBASE-T";
+    _cmisHostCompliance[CMIS_COMPLIANCE_10G_BASE_T] = "10GBASE-dT";
+    _cmisHostCompliance[CMIS_COMPLIANCE_25_BASE_T] = "25GBASE-T";
+    _cmisHostCompliance[CMIS_COMPLIANCE_40_BASE_T] = "40GBASE-T";
+    _cmisHostCompliance[CMIS_COMPLIANCE_50_BASE_T] = "50GBASE-T";
+    _cmisHostCompliance[CMIS_COMPLIANCE_SDR] = "IB SDR";
+    _cmisHostCompliance[CMIS_COMPLIANCE_DDR] = "IB DDR";
+    _cmisHostCompliance[CMIS_COMPLIANCE_QDR] = "IB QDR";
+    _cmisHostCompliance[CMIS_COMPLIANCE_FDR] = "IB FDR";
+    _cmisHostCompliance[CMIS_COMPLIANCE_EDR] = "IB EDR";
+    _cmisHostCompliance[CMIS_COMPLIANCE_HDR] = "IB HDR";
+}
+
+void MlxlinkMaps::mediaComplianceMapping()
+{
+    _mmfCompliance[CMIS_COMPLIANCE_UNSPECIFIED] = "Unspecified";
+    _mmfCompliance[CMIS_COMPLIANCE_10G_BASE_SW] = "10GBASE-SW";
+    _mmfCompliance[CMIS_COMPLIANCE_10G_BASE_SR] = "10GBASE-SR";
+    _mmfCompliance[CMIS_COMPLIANCE_25G_BASE_SR] = "25GBASE-SR";
+    _mmfCompliance[CMIS_COMPLIANCE_40G_BASE_SR4] = "40GBASE-SR4";
+    _mmfCompliance[CMIS_COMPLIANCE_40G_SWDM4] = "40GE SWDM4";
+    _mmfCompliance[CMIS_COMPLIANCE_40G_BIDI] = "40GE BiDi";
+    _mmfCompliance[CMIS_COMPLIANCE_50G_BASE_SR] = "50GBASE-SR";
+    _mmfCompliance[CMIS_COMPLIANCE_100G_BASE_SR10] = "100GBASE-SR10";
+    _mmfCompliance[CMIS_COMPLIANCE_100G_BASE_SR4] = "100GBASE-SR4";
+    _mmfCompliance[CMIS_COMPLIANCE_100G_SWDM4] = "100GE SWDM4";
+    _mmfCompliance[CMIS_COMPLIANCE_100G_BIDI] = "100GE BiDi";
+    _mmfCompliance[CMIS_COMPLIANCE_100G_SR2] = "100GBASE-SR2";
+    _mmfCompliance[CMIS_COMPLIANCE_100G_SR] = "100G-SR";
+    _mmfCompliance[CMIS_COMPLIANCE_200G_BASE_SR4] = "200GBASE-SR4";
+    _mmfCompliance[CMIS_COMPLIANCE_400G_BASE_SR16] = "400GBASE-SR16";
+    _mmfCompliance[CMIS_COMPLIANCE_400G_BASE_SR8] = "400G-SR8";
+    _mmfCompliance[CMIS_COMPLIANCE_400G_SR4] = "400G-SR4";
+    _mmfCompliance[CMIS_COMPLIANCE_800G_SR8] = "800G-SR8";
+    _mmfCompliance[CMIS_COMPLIANCE_400G_BIDI] = "400GE BiDI";
+
+    _smfCompliance[CMIS_COMPLIANCE_UNSPECIFIED] = "Unspecified";
+    _smfCompliance[CMIS_COMPLIANCE_10G_BASE_LW] = "10GBASE-LW";
+    _smfCompliance[CMIS_COMPLIANCE_10G_BASE_EW] = "10GBASE-EW";
+    _smfCompliance[CMIS_COMPLIANCE_10G_ZW] = "10G-ZW";
+    _smfCompliance[CMIS_COMPLIANCE_10G_BASE_LR] = "10GBASE-LR";
+    _smfCompliance[CMIS_COMPLIANCE_10G_BASE_ER] = "10GBASE-ER";
+    _smfCompliance[CMIS_COMPLIANCE_10G_BASE_ZR] = "10G-ZR";
+    _smfCompliance[CMIS_COMPLIANCE_25G_BASE_LR] = "25GBASE-LR";
+    _smfCompliance[CMIS_COMPLIANCE_25G_BASE_ER] = "25GBASE-ER";
+    _smfCompliance[CMIS_COMPLIANCE_40G_BASE_LR4] = "40GBASE-LR4";
+    _smfCompliance[CMIS_COMPLIANCE_40G_BASE_FR] = "40GBASE-FR";
+    _smfCompliance[CMIS_COMPLIANCE_50G_BASE_FR] = "50GBASE-FR";
+    _smfCompliance[CMIS_COMPLIANCE_50G_BASE_LR] = "50GBASE-LR";
+    _smfCompliance[CMIS_COMPLIANCE_100G_BASE_LR4] = "100GBASE-LR4";
+    _smfCompliance[CMIS_COMPLIANCE_100G_BASE_ER4] = "100GBASE-ER4";
+    _smfCompliance[CMIS_COMPLIANCE_100G_PSM4] = "100G PSM4";
+    _smfCompliance[CMIS_COMPLIANCE_100G_CWDM4_OCP] = "100G CWDM4-OCP";
+    _smfCompliance[CMIS_COMPLIANCE_100G_CWDM4] = "100G CWDM4";
+    _smfCompliance[CMIS_COMPLIANCE_100G_4WDM_10] = "100G 4WDM-10";
+    _smfCompliance[CMIS_COMPLIANCE_100G_4WDM_20] = "100G 4WDM-20";
+    _smfCompliance[CMIS_COMPLIANCE_100G_4WDM_40] = "100G 4WDM-40";
+    _smfCompliance[CMIS_COMPLIANCE_100G_BASE_DR] = "100GBASE-DR";
+    _smfCompliance[CMIS_COMPLIANCE_100G_FR] = "100G-FR";
+    _smfCompliance[CMIS_COMPLIANCE_100G_LR] = "100G-LR";
+    _smfCompliance[CMIS_COMPLIANCE_200G_BASE_DR4] = "200GBASE-DR4";
+    _smfCompliance[CMIS_COMPLIANCE_200G_BASE_FR4] = "200GBASE-FR4";
+    _smfCompliance[CMIS_COMPLIANCE_200G_BASE_LR4] = "200GBASE-LR4";
+    _smfCompliance[CMIS_COMPLIANCE_400G_BASE_FR8] = "400GBASE-FR8";
+    _smfCompliance[CMIS_COMPLIANCE_400G_BASE_LR8] = "400GBASE-LR8";
+    _smfCompliance[CMIS_COMPLIANCE_400G_BASE_DR4] = "400GBASE-DR4";
+    _smfCompliance[CMIS_COMPLIANCE_400G_FR4] = "400G-FR4";
+    _smfCompliance[CMIS_COMPLIANCE_400G_LR4] = "400G-LR4";
+    _smfCompliance[CMIS_COMPLIANCE_10G_SR] = "10G-SR";
+    _smfCompliance[CMIS_COMPLIANCE_10G_LR] = "10G-LR";
+    _smfCompliance[CMIS_COMPLIANCE_25G_SR] = "25G-SR";
+    _smfCompliance[CMIS_COMPLIANCE_25G_LR] = "25G-LR";
+    _smfCompliance[CMIS_COMPLIANCE_10G_LR_BIDI] = "10G-LR-BiDi";
+    _smfCompliance[CMIS_COMPLIANCE_25G_LR_BIDI] = "25G-LR-BiDi";
+}
+
+void MlxlinkMaps::activeComplianceMapping()
+{
+    _activeCableCompliance[0] = "Undefined";
+    _activeCableCompliance[1] = "Active Cable assembly with BER < 10-12";
+    _activeCableCompliance[2] = "Active Cable assembly with BER < 5x10-5";
+    _activeCableCompliance[3] = "Active Cable assembly with BER < 2.6x10-4";
+    _activeCableCompliance[4] = "Active Cable assembly with BER < 10-6";
+}
+
+void MlxlinkMaps::initCableComplianceMapping()
+{
+    qsfpComlianceMapping();
+    sfpComplianceMapping();
+    extComplianceMapping();
+    hostComplianceMapping();
+    mediaComplianceMapping();
+    activeComplianceMapping();
+}
+
+void MlxlinkMaps::initCableTechnologyMapping()
+{
+    _cableTechnologyQsfp[TECHNOLOGY_850NM_VCSEL] = "850 nm VCSEL";
+    _cableTechnologyQsfp[TECHNOLOGY_1310NM_VCSEL] = "1310 nm VCSEL";
+    _cableTechnologyQsfp[TECHNOLOGY_1550NM_VCSEL] = "1550 nm VCSEL";
+    _cableTechnologyQsfp[TECHNOLOGY_1310NM_FP] = "1310 nm FP";
+    _cableTechnologyQsfp[TECHNOLOGY_1310NM_DFB] = "1310 nm DFB";
+    _cableTechnologyQsfp[TECHNOLOGY_1550NM_DFB] = "1550 nm DFB";
+    _cableTechnologyQsfp[TECHNOLOGY_1310NM_EML] = "1310 nm EML";
+    _cableTechnologyQsfp[TECHNOLOGY_1550NM_EML] = "1550 nm EML";
+    _cableTechnologyQsfp[TECHNOLOGY_OTHERS] = "Other / Undefined";
+    _cableTechnologyQsfp[TECHNOLOGY_1490NM_DFB] = "1490 nm DFB";
+    _cableTechnologyQsfp[TECHNOLOGY_COP_UNEQ] = "Copper cable unequalized";
+    _cableTechnologyQsfp[TECHNOLOGY_COP_PASV] = "Copper cable passive equalized";
+    _cableTechnologyQsfp[TECHNOLOGY_COP_NEAR_FAR_END] =
             "Copper cable, near and far end limiting active equalizers";
-    _cableTechnologyQsfp[13] =
+    _cableTechnologyQsfp[TECHNOLOGY_COP_FAR_END] =
             "Copper cable, far end limiting active equalizers";
-    _cableTechnologyQsfp[14] =
+    _cableTechnologyQsfp[TECHNOLOGY_COP_NEAR_END] =
             "Copper cable, near end limiting active equalizers";
-    _cableTechnologyQsfp[15] =
+    _cableTechnologyQsfp[TECHNOLOGY_COP_LINEAR] =
             "Copper cable, linear active equalizers";
 
     _cableTechnologySfp[0] = "N/A";
     _cableTechnologySfp[4] = "Passive";
     _cableTechnologySfp[8] = "Active";
-
-    _sltpHeader = "";
-    _showErrorsTitle = "Errors";
 }
 
-MlxlinkMaps::~MlxlinkMaps() {
+void MlxlinkMaps::initCablePowerClassMapping()
+{
+    _sfpQsfpPowerClass[POWER_CLASS0] = "1.0 W max";
+    _sfpQsfpPowerClass[POWER_CLASS1] = "1.5 W max";
+    _sfpQsfpPowerClass[POWER_CLASS2] = "2.0 W max";
+    _sfpQsfpPowerClass[POWER_CLASS3] = "2.5 W max";
+    _sfpQsfpPowerClass[POWER_CLASS4] = "3.5 W max";
+    _sfpQsfpPowerClass[POWER_CLASS5] = "4.0 W max";
+    _sfpQsfpPowerClass[POWER_CLASS6] = "4.5 W max";
+    _sfpQsfpPowerClass[POWER_CLASS7] = "5.0 W max";
+
+    _sfpddPowerClass[POWER_CLASS0] = "0.5 W max";
+    _sfpddPowerClass[POWER_CLASS1] = "1.0 W max";
+    _sfpddPowerClass[POWER_CLASS2] = "1.5 W max";
+    _sfpddPowerClass[POWER_CLASS3] = "2.0 W max";
+    _sfpddPowerClass[POWER_CLASS4] = "3.5 W max";
+    _sfpddPowerClass[POWER_CLASS5] = "5.0 W max";
+    _sfpddPowerClass[POWER_CLASS8] = "> 5.0 W max";
+
+    _qsfpddOsfpPowerClass[POWER_CLASS1] = "1.5 W max";
+    _qsfpddOsfpPowerClass[POWER_CLASS2] = "3.5 W max";
+    _qsfpddOsfpPowerClass[POWER_CLASS3] = "7.0 W max";
+    _qsfpddOsfpPowerClass[POWER_CLASS4] = "8.0 W max";
+    _qsfpddOsfpPowerClass[POWER_CLASS5] = "10 W max";
+    _qsfpddOsfpPowerClass[POWER_CLASS6] = "12 W max";
+    _qsfpddOsfpPowerClass[POWER_CLASS7] = "14 W max";
+    _qsfpddOsfpPowerClass[POWER_CLASS8] = "> 14 W max";
+
+    _qsfpddPowerClassToValue[POWER_CLASS1] = 1.5;
+    _qsfpddPowerClassToValue[POWER_CLASS2] = 3.5;
+    _qsfpddPowerClassToValue[POWER_CLASS3] = 7.0;
+    _qsfpddPowerClassToValue[POWER_CLASS4] = 8;
+    _qsfpddPowerClassToValue[POWER_CLASS5] = 10;
+    _qsfpddPowerClassToValue[POWER_CLASS6] = 12;
+    _qsfpddPowerClassToValue[POWER_CLASS7] = 14;
+
+    _sfpddPowerClassToValue[POWER_CLASS0] = 0.5;
+    _sfpddPowerClassToValue[POWER_CLASS1] = 1.0;
+    _sfpddPowerClassToValue[POWER_CLASS2] = 1.5;
+    _sfpddPowerClassToValue[POWER_CLASS3] = 2.0;
+    _sfpddPowerClassToValue[POWER_CLASS4] = 3.5;
+    _sfpddPowerClassToValue[POWER_CLASS5] = 5.0;
 }
+
+MlxlinkMaps::MlxlinkMaps()
+{
+    initPublicStrings();
+    initPortStateMapping();
+    initFecAndLoopbackMapping();
+    initPortSpeedMapping();
+    initPrbsMapping();
+    initPpbmcAndPepcMapping();
+    initLinkDownInfoMapping();
+    initSltpStatusMapping();
+    initCableComplianceMapping();
+    initCableTechnologyMapping();
+    initCablePowerClassMapping();
+}
+
+MlxlinkMaps::~MlxlinkMaps()
+{
+}
+

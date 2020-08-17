@@ -121,8 +121,8 @@ class CmdRegMfrl():
             'reset_type'  : reset_type
         }
 
-    def _write_reg(self, reset_level, reset_type):
-        self._reg_access.sendMFRL(self._reg_access.SET, reset_level, reset_type)
+    def _write_reg(self, reset_level, reset_type, reset_sync):
+        self._reg_access.sendMFRL(self._reg_access.SET, reset_level, reset_type, reset_sync)
 
     def query_text(self):
         'return the text for the query operation in mlxfwreset'
@@ -189,13 +189,16 @@ class CmdRegMfrl():
     def is_default_reset_type(self, reset_type):
         return reset_type == self.default_reset_type()
 
+    def is_default_reset_level(self, reset_level):
+        return reset_level == self.default_reset_level()
 
-    def send(self, reset_level=None, reset_type=None):
-        'send MFRL Set command'
-        # Reset-level to send 
-        if reset_level is None:
-            reset_level = self.default_reset_level()
-        
+    def send(self, reset_level, reset_type, reset_sync):
+        """
+        send MFRL Set command
+        Verify that reset-level and reset-type are supported (reset-sync is not verified)
+        """
+
+        # Reset-level to send         
         for reset_level_ii in self._reset_levels:
             if reset_level_ii['level'] == reset_level and reset_level_ii['supported']:
                 reset_level_2_send = reset_level_ii['bit_offset']
@@ -204,9 +207,6 @@ class CmdRegMfrl():
             raise RuntimeError('Failed to send MFRL! reset-level {0} is not supported!'.format(reset_level))
         
         # Reset-type to send
-        if reset_type is None:
-            reset_type = self.default_reset_type()
-
         for reset_type_ii in self._reset_types:
             if reset_type_ii['type'] == reset_type and reset_type_ii['supported']:
                 reset_type_2_send = reset_type
@@ -214,4 +214,4 @@ class CmdRegMfrl():
         else:
             raise RuntimeError('Failed to send MFRL! reset-type {0} is not supported!'.format(reset_type))
 
-        self._write_reg(reset_level_2_send, reset_type_2_send)
+        self._write_reg(reset_level_2_send, reset_type_2_send, reset_sync)

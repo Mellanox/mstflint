@@ -43,6 +43,7 @@ public:
     long getSize() const {
         return m_size;
     }
+
 private:
     u_int8_t * m_buff;
     long m_pos;
