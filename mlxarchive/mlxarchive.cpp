@@ -41,8 +41,13 @@
 #include <string>
 #include <vector>
 #include <iostream>
-#include <boost/regex.hpp>
 #include <compatibility.h>
+#if __cplusplus >= 201402L || defined(_MSC_VER)
+#include <regex>
+#else
+#include <boost/regex.hpp>
+using namespace boost;
+#endif
 #include "mlxarchive_mfa2_package_gen.h"
 #include <cmdparser/cmdparser.h>
 #include "mlxarchive.h"
@@ -134,35 +139,35 @@ void Mlxarchive::paramValidate()
         }
     }
     else {
-    if(_binsDir.empty()) {
-        fprintf(stderr, err.c_str(), "bins_dir");
-        success = false;
-    }
-    if(_outFile.empty()) {
-        fprintf(stderr, err.c_str(), "out_file");
-        success = false;
-    }
-    else {
-        if(fexists(_outFile)) {
-            if(!isFile(_outFile)) {
-                fprintf(stderr, "Output file: %s is expected to be a file\n", _outFile.c_str());
-            }
-            else {
-                fprintf(stderr, "Output file: %s already exists\n", _outFile.c_str());
-            }
+        if (_binsDir.empty()) {
+            fprintf(stderr, err.c_str(), "bins_dir");
             success = false;
         }
-    }
-    if(_version.empty()) {
-        fprintf(stderr, err.c_str(), "version");
-        success = false;
-    }
-    else {
-        boost::regex version_expression("^[0-9].[0-9].[0-9]$");
-        status_match = boost::regex_match(_version, match, version_expression);
-        if(!status_match) {
-            fprintf(stderr, err_regex.c_str(), "version", _version.c_str(), "x.x.x");
+        if (_outFile.empty()) {
+            fprintf(stderr, err.c_str(), "out_file");
             success = false;
+        }
+        else {
+            if (fexists(_outFile)) {
+                if (!isFile(_outFile)) {
+                    fprintf(stderr, "Output file: %s is expected to be a file\n", _outFile.c_str());
+                }
+                else {
+                    fprintf(stderr, "Output file: %s already exists\n", _outFile.c_str());
+                }
+                success = false;
+            }
+        }
+        if (_version.empty()) {
+            fprintf(stderr, err.c_str(), "version");
+            success = false;
+        }
+        else {
+            regex version_expression("^[0-9].[0-9].[0-9]$");
+            status_match = regex_match(_version, match, version_expression);
+            if (!status_match) {
+                fprintf(stderr, err_regex.c_str(), "version", _version.c_str(), "x.x.x");
+                success = false;
             }
         }
     }
@@ -250,7 +255,7 @@ int Mlxarchive::run(int argc, char **argv)
             mfa2Pkg->minidump();
         }
         else {
-        mfa2Pkg->dump();
+            mfa2Pkg->dump();
         }
         delete mfa2Pkg;
     }

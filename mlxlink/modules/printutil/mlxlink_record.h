@@ -86,6 +86,10 @@ enum STATUS_COLOR {
     RED, BLUE, YELLOW, GREEN, MAGENTA, CYAN, RESET
 };
 
+enum STATUS_DDM_FLAGS_TYPE {
+    DDM_FLAG_WARN,
+    DDM_FLAG_ALARM
+};
 /*
  * Records enums
  */
@@ -272,14 +276,17 @@ public:
     std::string color;
     bool visible;
     bool arrayValue;
+    bool colorKey;
     static bool jsonFormat;
-
     static std::string state2Color(u_int32_t state);
+    static std::string ddmFlagValue2Color(u_int32_t val, u_int32_t type);
     static std::string supported2Color(const std::string &supported);
     static void changeColorOS(const std::string &color, bool newLine = false);
     static short unsigned int getWinColor(const std::string &color);
     static void printFlagLine(const char sflag_s, const std::string &flag_l,
             const std::string &param, const std::string &desc);
+    static std::string addSpace(const std::string &str, u_int32_t size, bool right = true);
+    static std::string addSpaceForDDM(const std::string &str);
     static std::string addSpaceForSlrg(const std::string &str);
     static void printErrorsSection(const std::string &title, const std::string &lines);
     static void printCmdLine(const std::string &line, Json::Value &jsonRoot);
@@ -287,6 +294,7 @@ public:
     static void printWar(const std::string &war, Json::Value &jsonRoot);
     static std::vector<std::string> split(const std::string& str, const std::string &delim = " ");
     static void trim(std::string& str, const std::string& chars = "\t\n\v\f\r ");
+
 };
 
 std::ostream & operator << (std::ostream &out, const MlxlinkRecord &mlxlinkRecord);

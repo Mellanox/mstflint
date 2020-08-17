@@ -222,22 +222,35 @@ reg_access_status_t reg_access_pcnr(mfile *mf, reg_access_method_t method, struc
 ************************************/
 void reg_access_hca_strs_stop_toggle_reg_special_pack(const struct reg_access_hca_strs_stop_toggle_reg *ptr_struct, u_int8_t *ptr_buff)
 {
-    u_int8_t rxb_hang = 0x9;
+    const u_int8_t RXB_HANG_TYPE = 0x9;
+    const u_int8_t SXP_HANG_TYPE = 0x10;
+    const u_int8_t PAUSE_TX_TYPE = 0x15;
     u_int8_t union_offset = 0x10;
     reg_access_hca_strs_stop_toggle_reg_pack(ptr_struct, ptr_buff);
-    if (ptr_struct->type == rxb_hang) {
-        reg_access_hca_rxb_hang_stop_toggle_modifier_pack((const struct reg_access_hca_rxb_hang_stop_toggle_modifier*)&(ptr_struct->per_type_modifier), ptr_buff + union_offset);
-    } else {
-        reg_access_hca_lock_source_stop_toggle_modifier_pack((const struct reg_access_hca_lock_source_stop_toggle_modifier*)&(ptr_struct->per_type_modifier), ptr_buff + union_offset);
+    if (ptr_struct->type == RXB_HANG_TYPE) {
+        reg_access_hca_rxb_hang_stop_toggle_modifier_pack((const struct reg_access_hca_rxb_hang_stop_toggle_modifier*)&(ptr_struct->per_type_modifier),
+                ptr_buff + union_offset);
     }
-
+    else if (ptr_struct->type == PAUSE_TX_TYPE) {
+        reg_access_hca_pause_tx_stop_toggle_modifier_pack((const struct reg_access_hca_pause_tx_stop_toggle_modifier*)&(ptr_struct->per_type_modifier),
+                ptr_buff + union_offset);
+    }
+    else if (ptr_struct->type == SXP_HANG_TYPE) {
+        reg_access_hca_sxp_hang_stop_toggle_modifier_pack((const struct reg_access_hca_sxp_hang_stop_toggle_modifier*)&(ptr_struct->per_type_modifier),
+                ptr_buff + union_offset);
+    }
+    else {
+        reg_access_hca_lock_source_stop_toggle_modifier_pack((const struct reg_access_hca_lock_source_stop_toggle_modifier*)&(ptr_struct->per_type_modifier),
+                ptr_buff + union_offset);
+    }
 }
 
 reg_access_status_t reg_access_strs_stop_toggle_reg(mfile *mf, reg_access_method_t method, struct reg_access_hca_strs_stop_toggle_reg *streg)
 {
     int data_size = reg_access_hca_strs_stop_toggle_reg_size();
-    REG_ACCESS_GENERIC_VAR(mf, method, REG_ID_STRS_STOP_TOGGLE, streg, reg_access_hca_strs_stop_toggle_reg, data_size, data_size, data_size, reg_access_hca_strs_stop_toggle_reg_special_pack, \
-                           reg_access_hca_strs_stop_toggle_reg_unpack, reg_access_hca_strs_stop_toggle_reg_size, reg_access_hca_strs_stop_toggle_reg_print);
+    REG_ACCESS_GENERIC_VAR(mf, method, REG_ID_STRS_STOP_TOGGLE, streg, reg_access_hca_strs_stop_toggle_reg, data_size, data_size, data_size, \
+            reg_access_hca_strs_stop_toggle_reg_special_pack, reg_access_hca_strs_stop_toggle_reg_unpack, \
+            reg_access_hca_strs_stop_toggle_reg_size, reg_access_hca_strs_stop_toggle_reg_print);
 }
 
 
@@ -253,9 +266,29 @@ reg_access_status_t reg_access_strs_fault_injector_reg(mfile *mf, reg_access_met
 /************************************
 * Function: reg_access_strs_mini_flow_reg
 ************************************/
+void reg_access_hca_strs_mini_flow_reg_special_pack(const struct reg_access_hca_strs_mini_flow_reg *ptr_struct, u_int8_t *ptr_buff) {
+    const u_int8_t IRISC_HANG_TYPE = 0xF;
+    // const u_int8_t PACKET_DROP_TYPE = 0x10;
+    u_int8_t union_offset = 0x10;
+    reg_access_hca_strs_mini_flow_reg_pack(ptr_struct, ptr_buff);
+    if (ptr_struct->type == IRISC_HANG_TYPE) {
+        reg_access_hca_irisc_hang_mini_flow_modifier_pack((const struct reg_access_hca_irisc_hang_mini_flow_modifier*)&(ptr_struct->per_type_modifier),
+                ptr_buff + union_offset);
+    }
+    else {
+        reg_access_hca_packet_drop_mini_flow_modifier_pack((const struct reg_access_hca_packet_drop_mini_flow_modifier*)&(ptr_struct->per_type_modifier),
+                ptr_buff + union_offset);
+    }
+}
+
+
 reg_access_status_t reg_access_strs_mini_flow_reg(mfile *mf, reg_access_method_t method, struct reg_access_hca_strs_mini_flow_reg *strs_mini_flow_reg)
 {
-    REG_ACCCESS(mf, method, REG_ID_STRS_MINI_FLOW, strs_mini_flow_reg, strs_mini_flow_reg, reg_access_hca);
+    // REG_ACCCESS(mf, method, REG_ID_STRS_MINI_FLOW, strs_mini_flow_reg, strs_mini_flow_reg, reg_access_hca);
+    int data_size = reg_access_hca_strs_mini_flow_reg_size();
+    REG_ACCESS_GENERIC_VAR(mf, method, REG_ID_STRS_MINI_FLOW, strs_mini_flow_reg, reg_access_hca_strs_mini_flow_reg, data_size, data_size, data_size, \
+            reg_access_hca_strs_mini_flow_reg_special_pack, reg_access_hca_strs_mini_flow_reg_unpack, \
+            reg_access_hca_strs_mini_flow_reg_size, reg_access_hca_strs_mini_flow_reg_print);
 }
 
 /************************************

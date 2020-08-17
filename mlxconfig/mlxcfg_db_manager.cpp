@@ -42,7 +42,7 @@
 //#define NDEBUG //uncomment in order to enable asserts
 #include <assert.h>
 
-#include <sqlite3.h>
+#include <ext_libs/sqlite/sqlite3.h>
 #include "mlxcfg_db_manager.h"
 #include "mlxcfg_utils.h"
 
@@ -81,6 +81,7 @@ MlxcfgDBManager::~MlxcfgDBManager()
     VECTOR_ITERATOR(Param*, fetchedParams, it) {
         delete *it;
     }
+
     if (!_db) {
         return;
     }
@@ -209,6 +210,7 @@ int MlxcfgDBManager::selectParamCallBack(void *object, int argc, char **argv,
     //printf("-D- Added new Param = %s\n", param->_name.c_str());
     return 0;
 }
+
 
 int MlxcfgDBManager::selectParamByMlxconfigNameCallBack(void *object, int argc,
                                                         char **argv, char **azColName)
@@ -403,7 +405,7 @@ TLVConf* MlxcfgDBManager::getTLVByParamMlxconfigName(std::string n, u_int32_t in
         }
 
         throw MlxcfgException(
-                  "Unknown Parameter: %s",
+            "Unknown Parameter: %s",
             (n + suffix).c_str());
     }
 

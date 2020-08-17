@@ -204,7 +204,7 @@ int ImageAccess::queryPsid(const string &fname, const string &psid,
             if (unzipDataFile(sect, dest, "Fw Configuration")) {
                 char *ptr = strstr((char*)&dest[0], "Name =");
                 int counter = 7;
-                while (ptr and * ptr != '\n' and * ptr != '\r') {
+                while (ptr && * ptr != '\n' && * ptr != '\r') {
                     if (counter-- > 0) {
                         ptr++;
                         continue;

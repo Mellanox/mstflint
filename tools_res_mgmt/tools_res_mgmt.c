@@ -172,6 +172,16 @@ static struct device_sem_info g_dev_sem_info_db[] = {
         1,                       // vsec_sem_supported
     },
     {
+	DeviceAmosGearBox,		// dev_id
+	{0xe74e0},               // hw_sem_addr
+	1,                       // vsec_sem_supported
+    },
+    {
+	DeviceAmosGearBoxManager,// dev_id
+	{0xe74e0},               // hw_sem_addr
+	1,                       // vsec_sem_supported
+    },
+    {
         DeviceSpectrum3,          // dev_id
         {0xa68f8},               // hw_sem_addr
         0,                       // vsec_sem_supported

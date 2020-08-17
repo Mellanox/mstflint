@@ -57,9 +57,9 @@ void PldmRecordDescriptor::extractPsid() {
 }
 
 void PldmRecordDescriptor::print(FILE * fp) {
-    fprintf(fp, "descriptorType: 0x%X\n", descriptorType);
-    fprintf(fp, "descriptorLength: 0x%X\n", descriptorLength);
-    fprintf(fp, "psid: %s\n", psid.c_str());
+    fprintf(fp, "descriptorType: 0x%X ", descriptorType);
+    fprintf(fp, "descriptorLength: 0x%X ", descriptorLength);
+    fprintf(fp, "data: %s\n", getDescription().c_str());
 }
 
 std::string PldmRecordDescriptor::getDescription() const {

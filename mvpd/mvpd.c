@@ -468,7 +468,6 @@ int mvpd_get_vpd_size(mfile *mf, int *size)
         }
         len = VPD_TAG_HEAD(buff) + VPD_TAG_LENGTH(buff);
         if (VPD_TAG_NAME(buff) == VPD_TAG_END) {
-            mvpd_len += len;
             break;
         }
         if (VPD_TAG_NAME(buff) != VPD_TAG_ID && VPD_TAG_NAME(buff) != VPD_TAG_R && VPD_TAG_NAME(buff) != VPD_TAG_W) {

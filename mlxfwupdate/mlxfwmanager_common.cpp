@@ -33,6 +33,11 @@
  */
 #include "mlxfwmanager_common.h"
 
+#ifdef _MSC_VER
+#include <direct.h>
+#include <dirent.h>
+#endif
+
 #if defined(__WIN__)
 const char* SafeGetEnv(const char *var)
 {
@@ -207,7 +212,7 @@ int mlxfw_replace(char *st, char *orig, char *repl)
 
 int mlxfw_get_exec_name_from_path(char *str, char *exec_name)
 {
-    char tmp_str[strlen(str) + 1];
+    char *tmp_str = new char[strlen(str) + 1];
     char *pch;
     strcpy(tmp_str, str);
     pch = strtok(tmp_str, "\\");
@@ -215,6 +220,7 @@ int mlxfw_get_exec_name_from_path(char *str, char *exec_name)
         strcpy(exec_name, pch);
         pch = strtok(NULL, "\\");
     }
+    delete[] tmp_str;
     return 0;
 }
 

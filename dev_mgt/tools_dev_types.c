@@ -54,7 +54,8 @@ enum dm_dev_type {
     DM_BRIDGE,
     DM_QSFP_CABLE,
     DM_SFP_CABLE,
-    DM_LINKX // linkx chip
+    DM_LINKX, // linkx chip
+    DM_GEARBOX
 };
 
 struct device_info {
@@ -227,6 +228,15 @@ static struct device_info g_devs_info[] = {
         DM_HCA                  //dev_type
     },
     {
+        DeviceConnectX7,      //dm_id
+        0x21a,                  //hw_dev_i
+        -1,                     //hw_rev_i
+        -1,                     //sw_dev_i
+        "ConnectX7",          //name
+        4,                      //port_num
+        DM_HCA                  //dev_type
+    },
+    {
         DeviceBlueField,        //dm_id
         0x211,                  //hw_dev_i
         -1,                     //hw_rev_i
@@ -378,6 +388,24 @@ static struct device_info g_devs_info[] = {
         "Spectrum3",            //name
         128,                    //port_num NEED_CHECK
         DM_SWITCH               //dev_type
+    },
+        {
+        DeviceAmosGearBox,      //dm_id
+        0x252,                  //hw_dev_i
+        -1,                     //hw_rev_i
+        -1,                     //sw_dev_i
+        "Amose GearBox",        //name
+        128,                    //port_num NEED_CHECK
+        DM_GEARBOX               //dev_type
+    },
+        {
+        DeviceAmosGearBoxManager,  //dm_id
+        0x253,                  //hw_dev_i
+        -1,                     //hw_rev_i
+        -1,                     //sw_dev_i
+        "Amos GearBox Managaer",//name
+        -1,                     //port_num NEED_CHECK
+        DM_GEARBOX               //dev_type
     },
     {
         DeviceUnknown,          //dm_id

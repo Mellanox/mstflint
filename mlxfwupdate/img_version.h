@@ -1,4 +1,3 @@
-
 /*
  * Copyright (C) Jan 2006 Mellanox Technologies Ltd. All rights reserved.
  *

@@ -87,7 +87,7 @@ typedef long long int64_t;
 
 #endif
 
-extern void set_increase_poll_time(int);
+#define DEV_NAME_SZ 512
 
 /*
  * MST <--> MTCR API defines
@@ -96,6 +96,12 @@ extern void set_increase_poll_time(int);
 #define MST_META_DATA_MAJOR 1
 #define MST_META_DATA_MINOR 0
 #define MTCR_SUPP_MST_API_MAJOR_VERSION 1
+
+
+//Service name.
+#define MST_PREFIX_64_BIT "mst64_"
+#define MST_PREFIX_32_BIT "mst32_"
+#define MST_SERVICE_NAME_SIZE (sizeof(MST_PREFIX_64_BIT) + sizeof(MFT_VERSION_STR) + 1)
 
 //#ifndef USE_IB_MGT
 typedef struct mib_private_t {
@@ -223,6 +229,7 @@ typedef enum MType_t {
     MST_DRIVER_CONF = 0x40000,
     MST_DRIVER_CR = 0x80000,
     MST_BAR0_GW_PCI = 0x200000,
+    MST_GEARBOX = 0x400000,
     MST_DEFAULT = 0xffffffff & ~MST_CABLE & ~MST_FPGA & ~MST_FPGA_ICMD & ~MST_FPGA_DRIVER
 } MType;
 
@@ -391,6 +398,22 @@ typedef struct mtcr_alloc_page_t {
 } mtcr_alloc_page;
 
 typedef void (*f_mpci_change)        (mfile *mf);
+
+#define GEARBOX_ADDR_WIDTH 4
+#define GEARBOX_SLAVE_ADDR 0x48
+#define GB_MNGR_SLAVE_ADDR 0x33
+
+typedef struct gearbox_info_t {
+    u_int8_t is_gearbox;
+    u_int8_t is_gb_mngr;
+    int gearbox_index;
+    int ilne_card_id;
+    char gb_mngr_full_name[DEV_NAME_SZ];     
+    char gearbox_full_name[DEV_NAME_SZ];  
+    unsigned char i2c_slave;
+    u_int8_t addr_width;
+    char device_real_name[DEV_NAME_SZ];
+} gearbox_info;
 
 #define VSEC_MIN_SUPPORT_UL(mf) (((mf)->vsec_cap_mask & (1 << VCC_INITIALIZED)) && \
                                  ((mf)->vsec_cap_mask & (1 << VCC_CRSPACE_SPACE_SUPPORTED)) && \

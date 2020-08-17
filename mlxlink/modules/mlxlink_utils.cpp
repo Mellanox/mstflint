@@ -48,6 +48,18 @@ u_int32_t findMaxKey(std::vector<std::string> keys)
     return maxKeySize;
 }
 
+bool isIn(const std::string &val, std::vector<std::string> vect)
+{
+    bool found = false;
+    for (std::vector<std::string>::iterator it = vect.begin(); it != vect.end(); it ++) {
+        if (val == *it) {
+            found = true;
+            break;
+        }
+    }
+    return found;
+}
+
 std::string convertIntToHexString(int toConvert)
 {
     std::stringstream hexStr;
@@ -595,7 +607,7 @@ bool prbsLaneRateCheck(const string &rate)
         return true;
     }
     if (rate == "HDR" || rate == "IB-HDR" || rate == "200G"
-            || rate == "50G_1X" || rate == "100G_2X") {
+            || rate == "50G_1X" || rate == "100G_2X" || rate == "400G") {
         return true;
     }
     if (rate == "1G") {
@@ -689,7 +701,7 @@ string FEC2Str50G25G(u_int32_t mask)
     return deleteLastComma(maskStr);
 }
 
-string FEC2Str(const string &fecShort)
+string FEC2Str(const string &fecShort, const string &speedStrG)
 {
     string fec = "";
     if (fecShort == "NF") {
@@ -698,6 +710,15 @@ string FEC2Str(const string &fecShort)
         fec = "Firecode FEC";
     } else if (fecShort == "RS") {
         fec = "RS FEC";
+    }
+    if (speedStrG == "400g_8x" || speedStrG == "200g_4x" ||
+            speedStrG == "100g_2x" || speedStrG == "50g_1x") {
+        if (fec == "RS544") {
+            fec = "Standard_RS-FEC - (544,514)";
+        }
+        if (fec == "RS272") {
+            fec = "Ethernet_Consortium_LL_50G_RS-FEC - (272,257+1)";
+        }
     }
     return fec;
 }
@@ -736,7 +757,7 @@ string FECReq2Str(u_int32_t mask, bool linkUP)
     return deleteLastComma(maskStr);
 }
 
-int fecToBit(const string &fec)
+int fecToBit(const string &fec, const string &speedStrG)
 {
     if (fec == "AU") {
         return 0;
@@ -750,18 +771,36 @@ int fecToBit(const string &fec)
     if (fec == "RS") {
         return 4;
     }
+    if (speedStrG == "400g_8x" || speedStrG == "200g_4x" ||
+            speedStrG == "100g_2x" || speedStrG == "50g_1x") {
+        if (fec == "RS544") {
+            return 0x80;
+        }
+        if (fec == "RS272") {
+            return 0x200;
+        }
+    }
     return 0;
 }
 
 string speedToStr(const string &speed)
 {
-    if (speed == "200GbE" || speed == "200G" || speed == "IB-HDR") {
-        return "200g";
+    if (speed == "400GbE" || speed == "400G") {
+        return "400g_8x";
     }
-    if (speed == "100GbE" || speed == "100G" || speed == "IB-EDR") {
+    if (speed == "200GbE" || speed == "200G" || speed == "IB-HDR") {
+        return "200g_4x";
+    }
+    if (speed == "100G_2x") {
+        return "100g_2x";
+    }
+    if (speed == "50G_1x") {
+        return "50g_1x";
+    }
+    if (speed == "100GbE" || speed == "100G" || speed == "100G_4X" || speed == "IB-EDR") {
         return "100g";
     }
-    if (speed == "50GbE" || speed == "50G") {
+    if (speed == "50GbE" || speed == "50G" || speed == "50G_2X") {
         return "50g";
     }
     if (speed == "25GbE" || speed == "25G") {
@@ -858,15 +897,43 @@ string getCableIdentifier(u_int32_t identifier)
         identifierStr = "Backplane";
         break;
 
+    case IDENTIFIER_SFP_DD:
+        identifierStr = "SFP-DD";
+        break;
+
+    case IDENTIFIER_QSFP_DD:
+        identifierStr = "QSFP-DD";
+        break;
+
+    case IDENTIFIER_QSFP_CMIS:
+        identifierStr = "QSFP_CMIS";
+        break;
+
+    case IDENTIFIER_OSFP:
+        identifierStr = "OSFP";
+        break;
+
     default:
         identifierStr = "N/A";
     }
     return identifierStr;
 }
 
-bool getQsfp(u_int32_t identifier)
+bool isCMISCable(u_int32_t identifier)
 {
-    return (identifier == 0 || identifier == 1);
+    bool cmisCable = (identifier == IDENTIFIER_SFP_DD) ||
+                    (identifier == IDENTIFIER_QSFP_DD) ||
+                    (identifier == IDENTIFIER_QSFP_CMIS) ||
+                    (identifier == IDENTIFIER_OSFP);
+    return cmisCable;
+}
+
+bool isQsfpCable(u_int32_t identifier)
+{
+    bool qsfpCable = (identifier == IDENTIFIER_QSFP28) ||
+                    (identifier == IDENTIFIER_QSFP_PLUS) ||
+                    (identifier == IDENTIFIER_QSFP_DD);
+    return qsfpCable;
 }
 
 string getCableType(u_int32_t cableType)
@@ -898,48 +965,6 @@ string getCableType(u_int32_t cableType)
         break;
     }
     return cableTypeStr;
-}
-
-string getPowerClass(u_int32_t powerClass)
-{
-    string powerClassStr;
-    switch (powerClass) {
-    case POWER_CLASS1:
-        powerClassStr = "1.0 W max";
-        break;
-
-    case POWER_CLASS2:
-        powerClassStr = "1.5 W max";
-        break;
-
-    case POWER_CLASS3:
-        powerClassStr = "2.0 W max";
-        break;
-
-    case POWER_CLASS4:
-        powerClassStr = "2.5 W max";
-        break;
-
-    case POWER_CLASS5:
-        powerClassStr = "3.5 W max";
-        break;
-
-    case POWER_CLASS6:
-        powerClassStr = "4.0 W max";
-        break;
-
-    case POWER_CLASS7:
-        powerClassStr = "4.5 W max";
-        break;
-
-    case POWER_CLASS8:
-        powerClassStr = "5.0 W max";
-        break;
-
-    default:
-        powerClassStr = "N/A";
-    }
-    return powerClassStr;
 }
 
 string getTemp(u_int32_t temp)
@@ -1083,3 +1108,39 @@ string pcieDeviceStatusStr(u_int32_t deviceStatus)
     }
     return deviceStatusStr;
 }
+
+double mw_to_dbm(double x)
+{
+    return 10 * log10(x);
+}
+
+int readSignedByte(u_int32_t value)
+{
+    if (value & 0x80) {
+        return -((~value & 0xFF) + 1);
+    }
+    return value;
+}
+
+void setPrintVal(MlxlinkCmdPrint &mlxlinkCmdPrint, int index, string key,
+        string value, string color, bool print, bool valid, bool arrayValue,
+        bool colorKey)
+{
+    mlxlinkCmdPrint.mlxlinkRecords[index].key = key;
+    mlxlinkCmdPrint.mlxlinkRecords[index].val = valid? value: "N/A";
+    mlxlinkCmdPrint.mlxlinkRecords[index].color = color;
+    mlxlinkCmdPrint.mlxlinkRecords[index].visible = print;
+    mlxlinkCmdPrint.mlxlinkRecords[index].arrayValue = arrayValue;
+    mlxlinkCmdPrint.mlxlinkRecords[index].colorKey = colorKey;
+    mlxlinkCmdPrint.lastInsertedRow++;
+}
+
+void setPrintTitle(MlxlinkCmdPrint &mlxlinkCmdPrint, string title,
+        u_int32_t size, bool print)
+{
+    mlxlinkCmdPrint.title = title;
+    mlxlinkCmdPrint.visible = print;
+    mlxlinkCmdPrint.initRecords(size);
+}
+
+

@@ -36,6 +36,7 @@
 
 MlxlinkCmdPrint::MlxlinkCmdPrint()
 {
+    lastInsertedRow = 0;
 }
 
 MlxlinkCmdPrint::~MlxlinkCmdPrint()
@@ -47,6 +48,15 @@ void MlxlinkCmdPrint::initRecords(int size)
     mlxlinkRecords.insert(mlxlinkRecords.begin(), size, MlxlinkRecord());
 }
 
+u_int32_t MlxlinkCmdPrint::getCurrRow()
+{
+    if(!lastInsertedRow) {
+        return lastInsertedRow;
+    } else {
+        return lastInsertedRow + 1;
+    }
+}
+
 void MlxlinkCmdPrint::toJsonFormat(Json::Value& jsonRoot)
 {
     if (!visible) {
@@ -56,6 +66,8 @@ void MlxlinkCmdPrint::toJsonFormat(Json::Value& jsonRoot)
     MlxlinkRecord record;
     for (u_int32_t i = 0; i < mlxlinkRecords.size(); i++) {
         record = mlxlinkRecords[i];
+        MlxlinkRecord::trim(record.key);
+        MlxlinkRecord::trim(record.val);
         if (record.visible && record.key != "") {
             if (record.arrayValue) {
                 Json::Value subObject;

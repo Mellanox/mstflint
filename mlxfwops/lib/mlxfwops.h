@@ -37,8 +37,6 @@
 #include <stdio.h>
 #include "mlxfwops_com.h"
 
-//#include ".h"
-// struct FwOperations;
 #ifdef __cplusplus
 extern "C" {
 #endif

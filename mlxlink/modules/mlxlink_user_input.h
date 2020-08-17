@@ -77,6 +77,13 @@ public:
     bool _showSlrp;
     bool _showCounters;
     bool _showEyeInfo;
+    bool _cable;
+    bool _dump;
+    bool _ddm;
+    bool _write;
+    bool _read;
+    bool gradeScanPerLane;
+
     string _logFilePath;
     string _portType;
     string _paosCmd;
@@ -100,7 +107,20 @@ public:
     std::map<u_int32_t, u_int32_t> _sltpParams;
     u_int32_t _lane;
     u_int32_t _gvmiAddress;
+    vector<string> _bytesToWrite;
+    int _page;
+    int _offset;
+    int _len;
     std::map<u_int32_t, bool> _prbsLanesToSet;
+    int _setGroup;
+    int _showGroup;
+    vector<string> _labelPorts;
+
+    string eyeSelect;
+    int measureTime;
+    bool force;
+    bool eyeSelectSpecified;
+
 };
 
 #endif /* MLXLINK_USER_INPUT_H */

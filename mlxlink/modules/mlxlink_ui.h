@@ -57,6 +57,9 @@ protected:
     virtual void validateGeneralCmdsParams();
     virtual void validatePRBSParams();
     virtual void validateSpeedAndCSVBerParams();
+    virtual void validateCableParams();
+    virtual void validateTxGroupParams();
+    virtual void validateGradeScanParams();
     virtual void paramValidate();
     virtual void createMlxlinkCommander();
 

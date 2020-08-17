@@ -35,6 +35,7 @@
 #include "mlxlink_record.h"
 
 #define MAX_LEN_OF_GRADE            6
+#define MAX_LEN_OF_DDM_FIELD        14
 
 bool MlxlinkRecord::jsonFormat = false;
 
@@ -44,6 +45,7 @@ MlxlinkRecord::MlxlinkRecord() {
     color = ANSI_COLOR_RESET;
     visible = true;
     arrayValue = false;
+    colorKey = false;
 }
 
 MlxlinkRecord::~MlxlinkRecord() {
@@ -73,6 +75,26 @@ void MlxlinkRecord::trim(std::string& str, const std::string& chars)
 {
     str.erase(0, str.find_first_not_of(chars));
     str.erase(str.find_last_not_of(chars) + 1);
+}
+
+std::string MlxlinkRecord::ddmFlagValue2Color(u_int32_t val, u_int32_t type)
+{
+    std::string color;
+    if (!val) {
+        color = MlxlinkRecord::state2Color(GREEN);
+    } else {
+        switch (type) {
+        case DDM_FLAG_WARN:
+            color = MlxlinkRecord::state2Color(YELLOW);
+            break;
+        case DDM_FLAG_ALARM:
+            color = MlxlinkRecord::state2Color(RED);
+            break;
+        default:
+            color = MlxlinkRecord::state2Color(GREEN);
+        }
+    }
+    return color;
 }
 
 std::string MlxlinkRecord::state2Color(u_int32_t state)
@@ -168,15 +190,24 @@ void MlxlinkRecord::printFlagLine(const char flag_s, const std::string &flag_l,
     printf(IDENT3 ": %-30s\n", desc.c_str());
 }
 
-std::string MlxlinkRecord::addSpaceForSlrg(const std::string &str)
+std::string MlxlinkRecord::addSpace(const std::string &str, u_int32_t size, bool right)
 {
     if (MlxlinkRecord::jsonFormat) {
-        return str;
+            return str;
     }
-    u_int32_t strSize =
-        (MAX_LEN_OF_GRADE > str.length()) ?
-        MAX_LEN_OF_GRADE - str.length() : 0;
-    return std::string(strSize, ' ') + str;
+    u_int32_t strSize = (size > str.length()) ? size - str.length() : 0;
+    std::string spacesToAdd = std::string(strSize, ' ');
+    return right? (spacesToAdd + str) : (str + spacesToAdd);
+}
+
+std::string MlxlinkRecord::addSpaceForSlrg(const std::string &str)
+{
+    return MlxlinkRecord::addSpace(str, MAX_LEN_OF_GRADE);
+}
+
+std::string MlxlinkRecord::addSpaceForDDM(const std::string &str)
+{
+    return MlxlinkRecord::addSpace(str, MAX_LEN_OF_DDM_FIELD, false);
 }
 
 void MlxlinkRecord::printErrorsSection(const std::string &title, const std::string &lines)
@@ -220,10 +251,15 @@ std::ostream & operator << (std::ostream &out, const MlxlinkRecord &mlxlinkRecor
     if (!mlxlinkRecord.visible || mlxlinkRecord.key == "") {
         return out;
     }
+    bool changeColor = mlxlinkRecord.color != ANSI_COLOR_RESET;
     out << mlxlinkRecord.key << std::setw(PDDR_LINE_LEN - mlxlinkRecord.key.length()) << ": ";
-    MlxlinkRecord::changeColorOS(mlxlinkRecord.color);
+    if (changeColor) {
+        MlxlinkRecord::changeColorOS(mlxlinkRecord.color);
+    }
     out << mlxlinkRecord.val << std::endl;
-    MlxlinkRecord::changeColorOS(ANSI_COLOR_RESET);
+    if (changeColor) {
+        MlxlinkRecord::changeColorOS(ANSI_COLOR_RESET);
+    }
     return out;
 
 }

@@ -1,4 +1,4 @@
-#copyright (c) 2004-2020 Mellanox Technologies LTD. All rights reserved.   
+# Copyright (C) Jan 2020 Mellanox Technologies Ltd. All rights reserved.   
 #                                                                           
 # This software is available to you under a choice of one of two            
 # licenses.  You may choose to be licensed under the terms of the GNU       
@@ -20,14 +20,14 @@
 #        provided with the distribution.                                    
 #                                                                           
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,         
-# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE OF                   
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF        
 # MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND                     
 # NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS       
 # BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN        
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN         
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE          
 # SOFTWARE.                                                                 
-#--                                                                         
+# --                                                                        
 
 
 #######################################################
@@ -73,3 +73,4 @@ class DumpData:
             raise Exception("not supported or missing argument")
 
         return dump_segments
+

@@ -1230,7 +1230,7 @@ namespace mu
                   Error(ecUNEXPECTED_ARG_SEP, m_pTokenReader->GetPos());
 
                 ++stArgCount.top();
-		/* fallthrough */
+                /* fallthrough */
 
         case cmEND:
                 ApplyRemainingOprt(stOpt, stVal);
@@ -1288,7 +1288,7 @@ namespace mu
         //case cmXOR:
         case cmIF:
                 m_nIfElseCounter++;
-		/* fallthrough */
+                /* fallthrough */
 
         case cmLAND:
         case cmLOR:
