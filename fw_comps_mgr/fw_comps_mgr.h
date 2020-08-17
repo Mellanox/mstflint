@@ -138,6 +138,7 @@ typedef enum {
     COMPINFO_ACTIVATION_METHOD = 0x5,
 } comp_info_t;
 
+
 class FwComponent {
 public:
 
@@ -150,8 +151,6 @@ public:
         COMPID_CS_TOKEN = 0x6,
         COMPID_DBG_TOKEN = 0x7,
         COMPID_DEV_INFO = 0x8,
-        COMPID_GEARBOX = 0xA,
-        COMPID_CONGESTION_CONTROL = 0xB,
         COMPID_UNKNOWN = 0xff,
     } comps_ids_t;
 
@@ -325,7 +324,6 @@ public:
 
     typedef enum {
         DEVICE_HCA_SWITCH = 0,
-        DEVICE_GEARBOX = 1
     } DeviceTypeT;
 
     FwCompsMgr(const char *devname, DeviceTypeT devType = DEVICE_HCA_SWITCH, int deviceIndex = 0);
@@ -405,7 +403,6 @@ private:
         MCC_ERRCODE_FLASH_ERASE_ERROR,
         MCC_ERRCODE_REJECTED_IMAGE_CAN_NOT_BOOT_FROM_PARTITION,
     } mcc_command_error_t;
-
     typedef enum {
         IMAGE_REACTIVATION_SUCCESS = 0,
         IMAGE_REACTIVATION_BUSY = 1,
@@ -475,6 +472,7 @@ private:
     bool           refreshComponentsStatus();
 
     std::vector<comp_query_st> _compsQueryMap;
+
     bool _refreshed;
     bool _clearSetEnv;
     bool _openedMfile;
@@ -498,4 +496,5 @@ private:
     trm_ctx _trm;
 #endif
 };
+
 #endif /* USER_MLXFWOPS_LIB_FW_COMPS_MGR_H_ */

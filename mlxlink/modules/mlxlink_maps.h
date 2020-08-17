@@ -61,7 +61,6 @@ enum PCIE_LINK_SPEED {
 };
 
 enum POWER_CLASS {
-    POWER_CLASS0,
     POWER_CLASS1,
     POWER_CLASS2,
     POWER_CLASS3,
@@ -190,7 +189,6 @@ enum FECMode {
     FEC_MODE_MELLANOX_LL_FEC = 5,
     FEC_MODE_STANDARD_RS_FEC_544_514 = 7,
     FEC_MODE_ZERO_LATENCY_FEC = 8,
-    FEC_MODE_RS_FEC_272 = 9,
     FEC_MODE_RS_FEC_544_514_PLR = 12,
     FEC_MODE_RS_FEC_271_257_PLR = 13,
     //please add enums before this line
@@ -202,30 +200,7 @@ enum CABLE_IDENTIFIER {
     IDENTIFIER_QSFP_PLUS,
     IDENTIFIER_SFP,
     IDENTIFIER_QSA,
-    IDENTIFIER_BACKPLANE,
-    IDENTIFIER_SFP_DD,
-    IDENTIFIER_QSFP_DD,
-    IDENTIFIER_QSFP_CMIS,
-    IDENTIFIER_OSFP
-};
-
-enum CABLE_TECHNOLOGY {
-    TECHNOLOGY_850NM_VCSEL = 0x0,
-    TECHNOLOGY_1310NM_VCSEL,
-    TECHNOLOGY_1550NM_VCSEL,
-    TECHNOLOGY_1310NM_FP,
-    TECHNOLOGY_1310NM_DFB,
-    TECHNOLOGY_1550NM_DFB,
-    TECHNOLOGY_1310NM_EML,
-    TECHNOLOGY_1550NM_EML,
-    TECHNOLOGY_OTHERS,
-    TECHNOLOGY_1490NM_DFB,
-    TECHNOLOGY_COP_UNEQ,
-    TECHNOLOGY_COP_PASV,
-    TECHNOLOGY_COP_NEAR_FAR_END,
-    TECHNOLOGY_COP_FAR_END,
-    TECHNOLOGY_COP_NEAR_END,
-    TECHNOLOGY_COP_LINEAR
+    IDENTIFIER_BACKPLANE
 };
 
 enum OUI {
@@ -243,12 +218,11 @@ enum BAD_SET_STATUS_40_28NM {
 };
 
 enum BAD_SET_STATUS_16NM {
-    SET_STATUS16_INVALID_PARM = 0x1,
-    SET_STATUS16_ILLEGAL_M2LP_AMP = 0x800,
-    SET_STATUS16_ILLEGAL_M2LP = 0x1000,
-    SET_STATUS16_ILLEGAL_AMP = 0x2000,
-    SET_STATUS16_ILLEGAL_ALEV_OUT = 0x4000,
-    SET_STATUS16_ILLEGAL_TAPS = 0x8000,
+    SET_STATUS16_INVALID_PARM = 0,
+    SET_STATUS16_ILLEGAL_M2LP = 0x1,
+    SET_STATUS16_ILLEGAL_AMP = 0x2,
+    SET_STATUS16_ILLEGAL_ALEV_OUT = 0x4,
+    SET_STATUS16_ILLEGAL_TAPS = 0x8,
     SET_STATUS16_UNKNOWN
 };
 
@@ -320,113 +294,6 @@ enum SFP_ETHERNET_COMPLIANCE_CODE {
     SFP_ETHERNET_COMPLIANCE_CODE_10G_BASE_LR = 0x20,
     SFP_ETHERNET_COMPLIANCE_CODE_10G_BASE_LRM = 0x40,
     SFP_ETHERNET_COMPLIANCE_CODE_10G_BASE_ER = 0x80,
-};
-
-enum CMIS_PASSIVE_COPPER_COMPLIANCE {
-    CMIS_COMPLIANCE_UNSPECIFIED = 0x0,
-    CMIS_COMPLIANCE_1000_BASE_CX= 0x1,
-    CMIS_COMPLIANCE_XAUI = 0x2,
-    CMIS_COMPLIANCE_XFI= 0x3,
-    CMIS_COMPLIANCE_SFI = 0x4,
-    CMIS_COMPLIANCE_25G_AUI = 0x5,
-    CMIS_COMPLIANCE_XL_AUI = 0x6,
-    CMIS_COMPLIANCE_XL_PPI = 0x7,
-    CMIS_COMPLIANCE_L_AUI2= 0x8,
-    CMIS_COMPLIANCE_50G_AUI2 = 0x9,
-    CMIS_COMPLIANCE_50G_AUI1 = 0xa,
-    CMIS_COMPLIANCE_C_AUI4 = 0xb,
-    CMIS_COMPLIANCE_100G_AUI4 = 0xc,
-    CMIS_COMPLIANCE_100G_AUI2 = 0xd,
-    CMIS_COMPLIANCE_200G_AUI8 = 0xe,
-    CMIS_COMPLIANCE_200G_AUI4 = 0xf,
-    CMIS_COMPLIANCE_400G_AUI16 = 0x10,
-    CMIS_COMPLIANCE_400G_AUI8 = 0x11,
-    CMIS_COMPLIANCE_10G_BASE_CX4 = 0x13,
-    CMIS_COMPLIANCE_25G_CR_L = 0x14,
-    CMIS_COMPLIANCE_25G_CR_S = 0x15,
-    CMIS_COMPLIANCE_25G_CR_N = 0x16,
-    CMIS_COMPLIANCE_40G_BASE_CR4 = 0x17,
-    CMIS_COMPLIANCE_50G_BASE_CR = 0x18,
-    CMIS_COMPLIANCE_100G_BASE_CR10 = 0x19,
-    CMIS_COMPLIANCE_100G_BASE_CR4 = 0x1a,
-    CMIS_COMPLIANCE_100G_BASE_CR2 = 0x1b,
-    CMIS_COMPLIANCE_200G_BASE_CR4 = 0x1c,
-    CMIS_COMPLIANCE_400G_CR8 = 0x1d,
-    CMIS_COMPLIANCE_1000_BASE_T = 0x1e,
-    CMIS_COMPLIANCE_2_5G_BASE_T = 0x1f,
-    CMIS_COMPLIANCE_5G_BASE_T = 0x20,
-    CMIS_COMPLIANCE_10G_BASE_T = 0x21,
-    CMIS_COMPLIANCE_25_BASE_T = 0x22,
-    CMIS_COMPLIANCE_40_BASE_T = 0x23,
-    CMIS_COMPLIANCE_50_BASE_T = 0x24,
-    CMIS_COMPLIANCE_SDR = 0x2c,
-    CMIS_COMPLIANCE_DDR = 0x2d,
-    CMIS_COMPLIANCE_QDR = 0x2e,
-    CMIS_COMPLIANCE_FDR = 0x2f,
-    CMIS_COMPLIANCE_EDR = 0x30,
-    CMIS_COMPLIANCE_HDR = 0x31
-};
-
-enum CMIS_MM_COMPLIANCE_CODE {
-    CMIS_COMPLIANCE_10G_BASE_SW = 0x1,
-    CMIS_COMPLIANCE_10G_BASE_SR = 0x2,
-    CMIS_COMPLIANCE_25G_BASE_SR = 0x3,
-    CMIS_COMPLIANCE_40G_BASE_SR4 = 0x4,
-    CMIS_COMPLIANCE_40G_SWDM4 = 0x5,
-    CMIS_COMPLIANCE_40G_BIDI = 0x6,
-    CMIS_COMPLIANCE_50G_BASE_SR = 0x7,
-    CMIS_COMPLIANCE_100G_BASE_SR10 = 0x8,
-    CMIS_COMPLIANCE_100G_BASE_SR4 = 0x9,
-    CMIS_COMPLIANCE_100G_SWDM4 = 0xa,
-    CMIS_COMPLIANCE_100G_BIDI = 0xb,
-    CMIS_COMPLIANCE_100G_SR2 = 0xc,
-    CMIS_COMPLIANCE_100G_SR = 0xd,
-    CMIS_COMPLIANCE_200G_BASE_SR4 = 0xe,
-    CMIS_COMPLIANCE_400G_BASE_SR16 = 0xf,
-    CMIS_COMPLIANCE_400G_BASE_SR8 = 0x10,
-    CMIS_COMPLIANCE_400G_SR4 = 0x11,
-    CMIS_COMPLIANCE_800G_SR8 = 0x12,
-    CMIS_COMPLIANCE_400G_BIDI = 0x1a
-};
-
-enum CMIS_SM_COMPLIANCE_CODE {
-    CMIS_COMPLIANCE_10G_BASE_LW = 0x1,
-    CMIS_COMPLIANCE_10G_BASE_EW = 0x2,
-    CMIS_COMPLIANCE_10G_ZW = 0x3,
-    CMIS_COMPLIANCE_10G_BASE_LR = 0x4,
-    CMIS_COMPLIANCE_10G_BASE_ER = 0x5,
-    CMIS_COMPLIANCE_10G_BASE_ZR = 0x6,
-    CMIS_COMPLIANCE_25G_BASE_LR = 0x7,
-    CMIS_COMPLIANCE_25G_BASE_ER = 0x8,
-    CMIS_COMPLIANCE_40G_BASE_LR4 = 0x9,
-    CMIS_COMPLIANCE_40G_BASE_FR = 0xa,
-    CMIS_COMPLIANCE_50G_BASE_FR = 0xb,
-    CMIS_COMPLIANCE_50G_BASE_LR = 0xc,
-    CMIS_COMPLIANCE_100G_BASE_LR4 = 0xd,
-    CMIS_COMPLIANCE_100G_BASE_ER4 = 0xe,
-    CMIS_COMPLIANCE_100G_PSM4 = 0xf,
-    CMIS_COMPLIANCE_100G_CWDM4_OCP = 0x34,
-    CMIS_COMPLIANCE_100G_CWDM4 = 0x10,
-    CMIS_COMPLIANCE_100G_4WDM_10 = 0x11,
-    CMIS_COMPLIANCE_100G_4WDM_20 = 0x12,
-    CMIS_COMPLIANCE_100G_4WDM_40 = 0x13,
-    CMIS_COMPLIANCE_100G_BASE_DR = 0x14,
-    CMIS_COMPLIANCE_100G_FR = 0x15,
-    CMIS_COMPLIANCE_100G_LR = 0x16,
-    CMIS_COMPLIANCE_200G_BASE_DR4 = 0x17,
-    CMIS_COMPLIANCE_200G_BASE_FR4 = 0x18,
-    CMIS_COMPLIANCE_200G_BASE_LR4 = 0x19,
-    CMIS_COMPLIANCE_400G_BASE_FR8 = 0x1a,
-    CMIS_COMPLIANCE_400G_BASE_LR8 = 0x1b,
-    CMIS_COMPLIANCE_400G_BASE_DR4 = 0x1c,
-    CMIS_COMPLIANCE_400G_FR4 = 0x1d,
-    CMIS_COMPLIANCE_400G_LR4 = 0x1e,
-    CMIS_COMPLIANCE_10G_SR = 0x38,
-    CMIS_COMPLIANCE_10G_LR = 0x39,
-    CMIS_COMPLIANCE_25G_SR = 0x3a,
-    CMIS_COMPLIANCE_25G_LR = 0x3b,
-    CMIS_COMPLIANCE_10G_LR_BIDI = 0x3c,
-    CMIS_COMPLIANCE_25G_LR_BIDI = 0x3d
 };
 
 enum PHY_MNGR_FSM_STATE {
@@ -534,27 +401,6 @@ class MlxlinkMaps{
 private:
     MlxlinkMaps();
     static MlxlinkMaps* instance;
-    void initPublicStrings();
-    void initPortStateMapping();
-    void initFecAndLoopbackMapping();
-    void ethSpeedMapping();
-    void extEthSpeedMapping();
-    void ibSpeedMapping();
-    void speedToLanesMapping();
-    void initPortSpeedMapping();
-    void initPrbsMapping();
-    void initPpbmcAndPepcMapping();
-    void initLinkDownInfoMapping();
-    void initSltpStatusMapping();
-    void qsfpComlianceMapping();
-    void sfpComplianceMapping();
-    void extComplianceMapping();
-    void hostComplianceMapping();
-    void mediaComplianceMapping();
-    void activeComplianceMapping();
-    void initCableComplianceMapping();
-    void initCableTechnologyMapping();
-    void initCablePowerClassMapping();
 
 public:
     static MlxlinkMaps* getInstance();
@@ -582,20 +428,11 @@ public:
     std::map<u_int32_t, string>      _SLTP16BadSetStatus2Str;
     std::map<u_int32_t, std::string> _ethANFsmState;
     std::map<u_int32_t, std::string> _fecModeActive;
-    std::map<u_int32_t, std::string> _loopbackModeList;
+    std::map<int, std::string>       _loopbackModeList;
     std::map<u_int32_t, std::string> _anDisableList;
     std::map<u_int32_t, std::string> _cableComplianceSfp;
     std::map<u_int32_t, std::string> _cableComplianceQsfp;
     std::map<u_int32_t, std::string> _cableComplianceExt;
-    std::map<u_int32_t, std::string> _cmisHostCompliance;
-    std::map<u_int32_t, std::string> _mmfCompliance;
-    std::map<u_int32_t, std::string> _smfCompliance;
-    std::map<u_int32_t, std::string> _activeCableCompliance;
-    std::map<u_int32_t, std::string> _sfpQsfpPowerClass;
-    std::map<u_int32_t, std::string> _sfpddPowerClass;
-    std::map<u_int32_t, std::string> _qsfpddOsfpPowerClass;
-    std::map<u_int32_t, float>       _qsfpddPowerClassToValue;
-    std::map<u_int32_t, float>       _sfpddPowerClassToValue;
     std::map<u_int32_t, std::string> _cableTechnologyQsfp;
     std::map<u_int32_t, std::string> _cableTechnologySfp;
     std::map<u_int32_t, std::string> _ppbmcBerMonitorState;

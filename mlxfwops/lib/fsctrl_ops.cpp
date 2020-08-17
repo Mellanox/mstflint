@@ -31,10 +31,8 @@
  */
 
 #include "fsctrl_ops.h"
-
 #include <tools_utils.h>
 #include <bit_slice.h>
-
 #include <vector>
 
 bool FsCtrlOperations::unsupportedOperation()
@@ -123,13 +121,9 @@ bool FsCtrlOperations::FsIntQuery()
     if (fwQuery.running_fw_version.version_string_length) {
         strcpy(_fwImgInfo.ext_info.product_ver, fwQuery.product_ver);
     }
-    // if nextBootFwVer, only fw version is needed and chip type, return.
+    // if nextBootFwVer, only fw version is needed, return.
     if (nextBootFwVer) {
-        const u_int32_t *swId = (u_int32_t*)NULL;
-        if (!getInfoFromHwDevid(fwQuery.hw_dev_id, _fwImgInfo.ext_info.chip_type, &swId)) {
-            return false;
-        }
-        return true;
+         return true;
     }
 
     _fsCtrlImgInfo.fs3_uids_info.cx4_uids.base_mac.uid = fwQuery.base_mac.uid;
@@ -196,12 +190,10 @@ bool FsCtrlOperations::FsIntQuery()
     strncpy(_fsCtrlImgInfo.name, fwQuery.name, NAME_LEN);
     strncpy(_fsCtrlImgInfo.description, fwQuery.description, DESCRIPTION_LEN);
     strncpy(_fsCtrlImgInfo.deviceVsd, fwQuery.deviceVsd, VSD_LEN);
-    if (FwType() == FIT_FS3) {
-        memcpy(_fwImgInfo.ext_info.vsd, fwQuery.deviceVsd, VSD_LEN);
-    }
     strncpy(_fsCtrlImgInfo.image_vsd, fwQuery.imageVsd, VSD_LEN);
     return true;
 }
+
 
 bool FsCtrlOperations::FwReactivateImage()
 {
@@ -399,12 +391,10 @@ bool FsCtrlOperations::VerifyAllowedParams(ExtBurnParams &burnParams, bool isSec
     return true;
 }
 
-
-bool FsCtrlOperations::FwBurnAdvanced(std::vector <u_int8_t> imageOps4MData, ExtBurnParams& burnParams, FwComponent::comps_ids_t ComponentId)
+bool FsCtrlOperations::FwBurnAdvanced(std::vector <u_int8_t> imageOps4MData, ExtBurnParams& burnParams)
 {
-    return _Burn(imageOps4MData, burnParams, ComponentId);
+    return _Burn(imageOps4MData, burnParams);
 }
-
 bool FsCtrlOperations::FwBurnAdvanced(FwOperations *imageOps, ExtBurnParams &burnParams)
 {
     if (imageOps == NULL) {
@@ -414,6 +404,7 @@ bool FsCtrlOperations::FwBurnAdvanced(FwOperations *imageOps, ExtBurnParams &bur
         return false;
     }
     fw_info_t fw_query;
+
     memset(&fw_query, 0, sizeof(fw_info_t));
     if (!imageOps->FwQuery(&fw_query, true)) {
         return errmsg(FwCompsErrToFwOpsErr(_fwCompsAccess->getLastError()), "Failed to query the image\n");
@@ -436,7 +427,7 @@ bool FsCtrlOperations::FwBurnAdvanced(FwOperations *imageOps, ExtBurnParams &bur
     }
     // Check TimeStamp
     if (!TestAndSetTimeStamp(imageOps)) {
-        return false;
+       return false;
     }
     std::vector <u_int8_t> imageOps4MData;
     if (!imageOps->FwExtract4MBImage(imageOps4MData, true)) {
@@ -445,7 +436,7 @@ bool FsCtrlOperations::FwBurnAdvanced(FwOperations *imageOps, ExtBurnParams &bur
     return _Burn(imageOps4MData, burnParams);
 }
 
-bool FsCtrlOperations::_Burn(std::vector <u_int8_t> imageOps4MData, ExtBurnParams& burnParams, FwComponent::comps_ids_t ComponentId)
+bool FsCtrlOperations::_Burn(std::vector <u_int8_t> imageOps4MData, ExtBurnParams& burnParams)
 {
 #ifdef UEFI_BUILD
     burnParams.ProgressFuncAdv.uefi_func =  burnParams.progressFunc;
@@ -455,7 +446,7 @@ bool FsCtrlOperations::_Burn(std::vector <u_int8_t> imageOps4MData, ExtBurnParam
     FwComponent bootImageComponent;
     std::vector<FwComponent> compsToBurn;
 
-    bootImageComponent.init(imageOps4MData, imageOps4MData.size(), ComponentId);
+    bootImageComponent.init(imageOps4MData, imageOps4MData.size(), FwComponent::COMPID_BOOT_IMG);
     compsToBurn.push_back(bootImageComponent);
     if (!_fwCompsAccess->lock_flash_semaphore()) {
         return errmsg(FwCompsErrToFwOpsErr(_fwCompsAccess->getLastError()), "%s", _fwCompsAccess->getLastErrMsg());
@@ -467,7 +458,6 @@ bool FsCtrlOperations::_Burn(std::vector <u_int8_t> imageOps4MData, ExtBurnParam
     _fwCompsAccess->unlock_flash_semaphore();
     return true;
 }
-
 
 bool FsCtrlOperations::FwBurnBlock(FwOperations *imageOps, ProgressCallBack progressFunc)
 {
@@ -596,7 +586,7 @@ bool FsCtrlOperations::FwShiftDevData(PrintCallBack progressFunc)
 
 const char* FsCtrlOperations::FwGetResetRecommandationStr()
 {
-#if defined(__VMKERNEL_UW_NATIVE__)
+#if defined( __VMKERNEL_UW_VMKLINUX__) || defined(__VMKERNEL_UW_NATIVE__)
     return REBOOT_REQUIRED_STR;
 #else
     return REBOOT_OR_FWRESET_REQUIRED_STR;
@@ -771,7 +761,6 @@ bool FsCtrlOperations::FwQueryTimeStamp(struct tools_open_ts_entry& timestamp, s
     delete tsObj;
     return rc ? false : true;
 }
-
 bool FsCtrlOperations::GetSecureBootInfo()
 {
     return _signatureMngr->GetSecureBootInfo();

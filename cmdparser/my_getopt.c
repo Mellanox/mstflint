@@ -40,7 +40,6 @@
  #endif
 
  #include <stdio.h>
- #include <stdlib.h>
 
 /* Comment out all this code if we are using the GNU C Library, and are not
    actually compiling the library itself.  This code is part of the GNU C
@@ -209,7 +208,12 @@ static char *posixly_correct;
 /* Avoid depending on library functions or files
    whose names are inconsistent.  */
 
-static char* my_index(const char *str, const char chr) {
+char* getenv();
+
+static char* my_index(str, chr)
+const char *str;
+int chr;
+{
     while (*str) {
         if (*str == chr) {
             return (char*) str;
@@ -294,7 +298,8 @@ text_set_element(__libc_subinit, store_args_and_env);
 static void exchange(char**);
  #endif
 
-static void exchange(char **argv)
+static void exchange(argv)
+char **argv;
 {
     int bottom = first_nonopt;
     int middle = last_nonopt;
@@ -369,7 +374,10 @@ static void exchange(char **argv)
  #if defined(__STDC__) && __STDC__
 static const char* _getopt_initialize(int, char*const*, const char*);
  #endif
-static const char* _getopt_initialize(int argc, char* const *argv, const char *optstring)
+static const char* _getopt_initialize(argc, argv, optstring)
+int argc;
+char*const *argv;
+const char *optstring;
 {
     /* Start processing options with ARGV-element 1 (since ARGV-element 0
        is the program name); the sequence of previously skipped
@@ -485,7 +493,13 @@ static const char* _getopt_initialize(int argc, char* const *argv, const char *o
    If LONG_ONLY is nonzero, '-' as well as '--' can introduce
    long-named options.  */
 
-int _getopt_internal(int argc, char* const *argv, const char *optstring, const struct option *longopts, int *longind, int long_only)
+int _getopt_internal(argc, argv, optstring, longopts, longind, long_only)
+int argc;
+char*const *argv;
+const char *optstring;
+const struct option *longopts;
+int *longind;
+int long_only;
 {
     tools_optarg = NULL;
 
@@ -904,7 +918,10 @@ int _getopt_internal(int argc, char* const *argv, const char *optstring, const s
     }
 }
 
-int tools_getopt(int argc, char* const *argv, const char *optstring)
+int tools_getopt(argc, argv, optstring)
+int argc;
+char*const *argv;
+const char *optstring;
 {
     return _getopt_internal(argc, argv, optstring,
                             (const struct option*) 0,
@@ -912,7 +929,12 @@ int tools_getopt(int argc, char* const *argv, const char *optstring)
                             0);
 }
 
-int tools_getopt_long(int argc, char* const *argv, const char *optstring, const struct option *longopts, int *longindex)
+int tools_getopt_long(argc, argv, optstring, longopts, longindex)
+int argc;
+char*const *argv;
+const char *optstring;
+const struct option *longopts;
+int *longindex;
 {
     return _getopt_internal(argc, argv, optstring,
                             longopts,
@@ -921,7 +943,12 @@ int tools_getopt_long(int argc, char* const *argv, const char *optstring, const 
 }
 
 
-int tools_getopt_long_only(int argc, char* const *argv, const char *optstring, const struct option *longopts, int *longindex)
+int tools_getopt_long_only(argc, argv, optstring, longopts, longindex)
+int argc;
+char*const *argv;
+const char *optstring;
+const struct option *longopts;
+int *longindex;
 {
     return _getopt_internal(argc, argv, optstring,
                             longopts,
@@ -935,7 +962,9 @@ int tools_getopt_long_only(int argc, char* const *argv, const char *optstring, c
 /* Compile with -DTEST to make an executable for use in testing
    the above definition of `getopt'.  */
 
-int main(int argc, char **argv)
+int main(argc, argv)
+int argc;
+char **argv;
 {
     int c;
     int digit_optind = 0;

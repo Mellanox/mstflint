@@ -64,7 +64,6 @@
 
 #include "fs4_ops.h"
 #include "fs3_ops.h"
-#include "tools_layouts/cx5fw_layouts.h"
 
 #define DEV_INFO_SIG0 0x6d446576
 #define DEV_INFO_SIG1 0x496e666f
@@ -359,7 +358,7 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isD
         }
         entryAddr = tocAddr + TOC_HEADER_SIZE + section_index *  TOC_ENTRY_SIZE;
         if (!verbose) {
-            READBUF((*_ioAccess), entryAddr, entryBuffer, TOC_ENTRY_SIZE, "TOC Entry");
+        READBUF((*_ioAccess), entryAddr, entryBuffer, TOC_ENTRY_SIZE, "TOC Entry");
         }
         else {
             if (!(*_ioAccess).read(entryAddr, entryBuffer, TOC_ENTRY_SIZE, true)) {
@@ -368,11 +367,13 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isD
         }
         Fs3UpdateImgCache(entryBuffer, entryAddr, TOC_ENTRY_SIZE);
         cx5fw_itoc_entry_unpack(&tocEntry, entryBuffer);
+
         if (tocEntry.type == FS3_MFG_INFO) {
             mfgExists = true;
         }
 
         if (tocEntry.type != FS3_END) {
+
             if (section_index + 1 >= MAX_TOCS_NUM) {
                 return errmsg(
                     "Internal error: number of %s %d is greater than allowed %d",
@@ -423,16 +424,14 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isD
                         retVal = false;
                     }
                 } else {
-                    //READBUF((*_ioAccess), flash_addr, buff, entrySizeInBytes, "Section");
                     if (!verbose) {
-                        READBUF((*_ioAccess), flash_addr, buff, entrySizeInBytes, "Section");
+                    READBUF((*_ioAccess), flash_addr, buff, entrySizeInBytes, "Section");
                     }
                     else {
                         if (!(*_ioAccess).read(flash_addr, buff, entrySizeInBytes, true)) {
                             return errmsg("%s - read error (%s)\n", "Section", (*_ioAccess).err());
                         }
                     }
-
                     Fs3UpdateImgCache(buff, flash_addr, entrySizeInBytes);
                     u_int32_t sect_act_crc = 0;
                     u_int32_t sect_exp_crc = 0;
@@ -544,6 +543,7 @@ bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_ito
     report_callback(verifyCallBackFunc, "\nFS4 failsafe image\n\n");
 
     _ioAccess->set_address_convertor(0, 0);
+
     if (!getHWPtrs(verifyCallBackFunc)) {
         return false;
     }
@@ -579,7 +579,6 @@ bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_ito
         }
     }
     if (_ioAccess->is_flash() == false && _signatureDataSet == false) {
-        //read the MDK HW pointed data from the image (binary file). Don't read from flash!
         int signature_size = 3 * HMAC_SIGNATURE_LENGTH;
         uint8_t signature_data[3 * HMAC_SIGNATURE_LENGTH] = { 0 };
         int signature_offset = _digest_mdk_ptr;
@@ -587,13 +586,12 @@ bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_ito
             signature_offset = _digest_recovery_key_ptr;
         }
         if (signature_offset != 0) {
-            READBUF((*_ioAccess),
-                signature_offset,
-                signature_data,
-                signature_size,
-                "Reading data pointed by HW MDK Pointer");
-
-            Fs3UpdateImgCache(signature_data, signature_offset, signature_size);
+        READBUF((*_ioAccess),
+            signature_offset,
+            signature_data,
+            signature_size,
+            "Reading data pointed by HW MDK Pointer");
+        Fs3UpdateImgCache(signature_data, signature_offset, signature_size);
         }
         _signatureDataSet = true;
     }
@@ -613,7 +611,6 @@ bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_ito
     _ioAccess->set_address_convertor(0, 0);
     //-Verify DToC Header:
     dtocPtr = _ioAccess->get_size() - FS4_DEFAULT_SECTOR_SIZE;
-
     if (!verifyTocHeader(dtocPtr, true, verifyCallBackFunc)) {
         return errmsg(MLXFW_NO_VALID_ITOC_ERR, "No valid DTOC Header was found.");
     }
@@ -975,7 +972,7 @@ bool Fs4Operations::restoreWriteProtection(mflash *mfl, u_int8_t banksNum,
 }
 
 bool Fs4Operations::CreateDtoc(vector<u_int8_t>& img, u_int8_t* SectionData, u_int32_t section_size, u_int32_t flash_data_addr,
-    fs3_section_t section, u_int32_t tocEntryAddr, CRCTYPE crc)
+    fs3_section_t section, u_int32_t tocEntryAddr, bool IsCRC)
 {
     struct fs4_toc_info itoc_info;
     memset(&itoc_info.data, 0, sizeof(itoc_info.data));
@@ -985,12 +982,15 @@ bool Fs4Operations::CreateDtoc(vector<u_int8_t>& img, u_int8_t* SectionData, u_i
     struct cx5fw_itoc_entry *toc_entry_p = &(itoc_info.toc_entry);
     toc_entry_p->size = section_size >> 2;
     toc_entry_p->type = (u_int8_t)section;
-    toc_entry_p->crc = (int)crc;
-    toc_entry_p->flash_addr = flash_data_addr >> 2;
-    if (crc == INITOCENTRY) {
-        u_int32_t new_crc = CalcImageCRC((u_int32_t *)SectionData, toc_entry_p->size);
-        toc_entry_p->section_crc = new_crc;
+    if (!IsCRC) {
+        toc_entry_p->crc = 1;
     }
+    else {
+        toc_entry_p->crc = 0;
+    }
+    toc_entry_p->flash_addr = flash_data_addr >> 2;
+    u_int32_t new_crc = CalcImageCRC((u_int32_t *)SectionData, toc_entry_p->size);
+    toc_entry_p->section_crc = new_crc;
     updateTocEntryCRC(&itoc_info);
     u_int8_t itoc_data[CX5FW_ITOC_ENTRY_SIZE] = { 0 };
     cx5fw_itoc_entry_pack(toc_entry_p, itoc_data);
@@ -1001,20 +1001,22 @@ bool Fs4Operations::CreateDtoc(vector<u_int8_t>& img, u_int8_t* SectionData, u_i
 #define CONNECTX5_NV_DATA_SIZE    (0x10000)
 #endif
 #define CONNECTX5_NV_LOG_SIZE 2*(CONNECTX5_NV_DATA_SIZE)
-#define CX5_FLASH_SIZE 0x1000000
-
 bool Fs4Operations::RestoreDevToc(vector<u_int8_t>& img, char* psid, dm_dev_id_t devid_t, const cx4fw_uid_entry& base_guid, const cx4fw_uid_entry& base_mac)
 {
     /*DTOC HEADER*/
-
+    u_int32_t offset_from_begin = 0x1000000;
     u_int32_t flash_data_addr = 0;
-    u_int32_t flash_size = 2 * CX5_FLASH_SIZE;
+    u_int32_t flash_size = 0x2000000;
     u_int32_t nvlogSize = CONNECTX5_NV_LOG_SIZE;
+    u_int32_t nvlogBeginOffset = 0xf00000;
+    u_int32_t nvLogDelta = 0x20000;
     if (devid_t == DeviceConnectX5) {
-        flash_size = CX5_FLASH_SIZE;
+        flash_size = 0x1000000;
+        offset_from_begin = 0;
         nvlogSize = CONNECTX5_NV_LOG_SIZE/2;
+        nvlogBeginOffset = 0xf90000;
+        nvLogDelta = 0x10000;
     }
-
     img.resize(flash_size, 0xff);
     u_int32_t dtocPtr = flash_size - FS4_DEFAULT_SECTOR_SIZE;
     u_int8_t dtocHeader[] = { 0x44 ,0x54 ,0x4f ,0x43 ,0x04 ,0x08 ,0x15 ,0x16 ,0x23 ,0x42 ,0xca ,0xfa ,0xba ,0xca ,0xfe ,0x00 ,
@@ -1024,49 +1026,31 @@ bool Fs4Operations::RestoreDevToc(vector<u_int8_t>& img, char* psid, dm_dev_id_t
     u_int32_t section_index = 0;
     u_int32_t entryAddr = dtocPtr + TOC_HEADER_SIZE + section_index * TOC_ENTRY_SIZE;
     /* NV_LOG */
-    if (devid_t == DeviceConnectX5) {
-        flash_data_addr = 0xf90000;
-    }
-    else {
-        flash_data_addr = 0x1f00000;
-    }
+    flash_data_addr = nvlogBeginOffset + offset_from_begin;
     u_int8_t NvLogBuffer[CONNECTX5_NV_LOG_SIZE] = { 0 };
     memcpy(img.data() + flash_data_addr, NvLogBuffer, nvlogSize);
-    CreateDtoc(img, NvLogBuffer, CONNECTX5_NV_LOG_SIZE, flash_data_addr, FS3_FW_NV_LOG, entryAddr, NOCRC);
+    CreateDtoc(img, NvLogBuffer, CONNECTX5_NV_LOG_SIZE, flash_data_addr, FS3_FW_NV_LOG, entryAddr, false);
 
     /* NV_DATA 0*/
+    nvlogBeginOffset += 0x20000;
     section_index++;
     entryAddr = dtocPtr + TOC_HEADER_SIZE + section_index * TOC_ENTRY_SIZE;
-    if (devid_t == DeviceConnectX5) {
-        flash_data_addr = 0xfb0000;
-    }
-    else {
-        flash_data_addr = 0x1f20000;
-    }
+    flash_data_addr = nvlogBeginOffset + offset_from_begin;
     u_int8_t NvDataBuffer[CONNECTX5_NV_DATA_SIZE] = { 0 };
     memcpy(img.data() + flash_data_addr, NvDataBuffer, CONNECTX5_NV_DATA_SIZE);
-    CreateDtoc(img, NvDataBuffer, CONNECTX5_NV_DATA_SIZE, flash_data_addr, FS3_NV_DATA0, entryAddr, NOCRC);
+    CreateDtoc(img, NvDataBuffer, CONNECTX5_NV_DATA_SIZE, flash_data_addr, FS3_NV_DATA0, entryAddr, false);
 
     /* NV_DATA 2*/
+    nvlogBeginOffset += nvLogDelta;
     section_index++;
     entryAddr = dtocPtr + TOC_HEADER_SIZE + section_index * TOC_ENTRY_SIZE;
-    if (devid_t == DeviceConnectX5) {
-        flash_data_addr = 0xfc0000;
-    }
-    else {
-        flash_data_addr = 0x1f40000;
-    }
-
+    flash_data_addr = nvlogBeginOffset + offset_from_begin;
     memcpy(img.data() + flash_data_addr, NvDataBuffer, CONNECTX5_NV_DATA_SIZE);
-    CreateDtoc(img, NvDataBuffer, CONNECTX5_NV_DATA_SIZE, flash_data_addr, FS3_NV_DATA2, entryAddr, NOCRC);
+    CreateDtoc(img, NvDataBuffer, CONNECTX5_NV_DATA_SIZE, flash_data_addr, FS3_NV_DATA2, entryAddr, false);
 
     /*DEV_INFO*/
-    if (devid_t == DeviceConnectX5) {
-        flash_data_addr = 0xfd0000;
-    }
-    else {
-        flash_data_addr = 0x1f60000;
-    }
+    nvlogBeginOffset += nvLogDelta;
+    flash_data_addr = nvlogBeginOffset + offset_from_begin;
     section_index++;
     entryAddr = dtocPtr + TOC_HEADER_SIZE + section_index * TOC_ENTRY_SIZE;
 
@@ -1087,46 +1071,14 @@ bool Fs4Operations::RestoreDevToc(vector<u_int8_t>& img, char* psid, dm_dev_id_t
     dev_info.guids.macs.num_allocated = base_mac.num_allocated;
     dev_info.guids.macs.step = base_mac.step;
     dev_info.guids.macs.uid = base_mac.uid;
-
     cx5fw_device_info_pack(&dev_info, DevInfoBuffer);
-    u_int32_t newSectionCRC = CalcImageCRC((u_int32_t *)DevInfoBuffer, CX5FW_DEVICE_INFO_SIZE / 4 - 1);
-    u_int32_t newCRC = TOCPU1(newSectionCRC);
-    ((u_int32_t *)DevInfoBuffer)[CX5FW_DEVICE_INFO_SIZE / 4 - 1] = newCRC;
-
     memcpy(img.data() + flash_data_addr, DevInfoBuffer, CX5FW_DEVICE_INFO_SIZE);
-    CreateDtoc(img, DevInfoBuffer, CX5FW_DEVICE_INFO_SIZE, flash_data_addr, FS3_DEV_INFO, entryAddr, INSECTION);
-
-    /*DEV_INFO FAILSAFE*/
-    if (devid_t == DeviceConnectX5) {
-        flash_data_addr = 0xfe0000;
-    }
-    else {
-        flash_data_addr = 0x1f70000;
-    }
-    section_index++;
-    entryAddr = dtocPtr + TOC_HEADER_SIZE + section_index * TOC_ENTRY_SIZE;
-
-    dev_info.signature0 = 0;
-    dev_info.signature1 = 0;
-    dev_info.signature2 = 0;
-    dev_info.signature3 = 0;
-    cx5fw_device_info_pack(&dev_info, DevInfoBuffer);
-    newSectionCRC = CalcImageCRC((u_int32_t *)DevInfoBuffer, CX5FW_DEVICE_INFO_SIZE / 4 - 1);
-    newCRC = TOCPU1(newSectionCRC);
-    ((u_int32_t *)DevInfoBuffer)[CX5FW_DEVICE_INFO_SIZE / 4 - 1] = newCRC;
-
-    memcpy(img.data() + flash_data_addr, DevInfoBuffer, CX5FW_DEVICE_INFO_SIZE);
-    CreateDtoc(img, DevInfoBuffer, CX5FW_DEVICE_INFO_SIZE, flash_data_addr, FS3_DEV_INFO, entryAddr, INSECTION);
-
+    CreateDtoc(img, DevInfoBuffer, CX5FW_DEVICE_INFO_SIZE, flash_data_addr, FS3_DEV_INFO, entryAddr, true);
+    
     /*MFG_INFO*/
     section_index++;
     entryAddr = dtocPtr + TOC_HEADER_SIZE + section_index * TOC_ENTRY_SIZE;
-    if (devid_t == DeviceConnectX5) {
-        flash_data_addr = 0xff8000;
-    }
-    else {
-        flash_data_addr = 0x1ff8000;
-    }
+    flash_data_addr = 0xff8000 + offset_from_begin;
     struct cx4fw_mfg_info cx4_mfg_info;
     u_int8_t MfgInfoData[CX4FW_MFG_INFO_SIZE] = { 0 };
     memset(&cx4_mfg_info, 0, sizeof(cx4_mfg_info));
@@ -1142,7 +1094,7 @@ bool Fs4Operations::RestoreDevToc(vector<u_int8_t>& img, char* psid, dm_dev_id_t
     strncpy(cx4_mfg_info.psid, psid, PSID_LEN);
     cx4fw_mfg_info_pack(&cx4_mfg_info, MfgInfoData);
     memcpy(img.data() + flash_data_addr, MfgInfoData, CX4FW_MFG_INFO_SIZE);
-    CreateDtoc(img, MfgInfoData, CX4FW_MFG_INFO_SIZE, flash_data_addr, FS3_MFG_INFO, entryAddr, INITOCENTRY);
+    CreateDtoc(img, MfgInfoData, CX4FW_MFG_INFO_SIZE, flash_data_addr, FS3_MFG_INFO, entryAddr, true);
 
     /*VPD_R0*/
     section_index++;
@@ -1155,7 +1107,7 @@ bool Fs4Operations::RestoreDevToc(vector<u_int8_t>& img, char* psid, dm_dev_id_t
     toc_entry.size = 0;
     toc_entry.type = FS3_VPD_R0;
     toc_entry.flash_addr = flash_data_addr >> 2;
-    toc_entry.crc = (int)INITOCENTRY;
+    toc_entry.crc = 0;
     toc_entry.section_crc = CalcImageCRC((u_int32_t *)NULL, toc_entry.size);
     cx5fw_itoc_entry_pack(&toc_entry, entryBuffer);
     u_int32_t entry_crc = CalcImageCRC((u_int32_t *)entryBuffer, (TOC_ENTRY_SIZE / 4) - 1);
@@ -1164,7 +1116,6 @@ bool Fs4Operations::RestoreDevToc(vector<u_int8_t>& img, char* psid, dm_dev_id_t
     memcpy(img.data() + entryAddr, entryBuffer, TOC_ENTRY_SIZE);
     return true;
 }
-
 bool Fs4Operations::AlignDeviceSections(FwOperations *imageOps)
 {
     bool rc = true;
@@ -1436,19 +1387,13 @@ bool Fs4Operations::BurnFs4Image(Fs4Operations &imageOps,
     bool useImageDevData;
     int alreadyWrittenSz;
 
-    if (_ioAccess == NULL) {
-        return errmsg("ioAccess doesn't exist\n");
-    }
-    if (_signatureMngr == NULL) {
-        return errmsg("Signature manager doesn't exist\n");
-    }
-
     if (_fwImgInfo.imgStart != 0 ||
         (!burnParams.burnFailsafe && ((Flash *)_ioAccess)->get_ignore_cache_replacment())) {
         is_curr_image_in_odd_chunks = 1;
     } else {
         is_curr_image_in_odd_chunks = 0;
     }
+
     u_int32_t new_image_start = getNewImageStartAddress(imageOps, burnParams.burnFailsafe);
 
     if (new_image_start == 0x800000) {
@@ -1579,11 +1524,11 @@ bool Fs4Operations::BurnFs4Image(Fs4Operations &imageOps,
         }
     }
 
+
     if (!f->is_flash()) {
         return true;
     }
     bool IsUpdateSignatures = true;
-
     switch (this->_fwImgInfo.ext_info.chip_type) {
         case CT_CONNECTX6:
         case CT_CONNECTX6DX:
@@ -1599,17 +1544,15 @@ bool Fs4Operations::BurnFs4Image(Fs4Operations &imageOps,
             IsUpdateSignatures = false;
             break;
     }
-
     if (IsUpdateSignatures) {
         u_int32_t imageOffset = _digest_mdk_ptr;
         if (imageOffset == 0) {
-            //use recovery ptr!
             imageOffset = _digest_recovery_key_ptr;
         }
         if (imageOffset != 0) {
             if (!_signatureMngr->AddSignature(_ioAccess->getMfileObj(), &imageOps, f, imageOffset)) {
-                return false;
-            }
+        return false;
+    }
         }
     }
     // Write new signature
@@ -1650,6 +1593,7 @@ bool Fs4Operations::FsBurnAux(FwOperations *imgops, ExtBurnParams& burnParams)
     if (!devIntQueryRes && burnParams.burnFailsafe) {
         return false;
     }
+
     //For image we execute full verify to bring all the information needed for ROM Patch
     if (!imageOps.FsIntQueryAux(true, false)) {
         return false;
@@ -2636,7 +2580,6 @@ bool Fs4Operations::PrepItocSectionsForHmac(vector<u_int8_t>& critical, vector<u
     }
     return true;
 }
-
 bool Fs4Operations::PrepItocSectionsForCompare(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical)
 {
     for (int i = 0; i < this->_fs4ImgInfo.itocArr.numOfTocs; i++) {

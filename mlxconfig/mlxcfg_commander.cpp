@@ -79,6 +79,7 @@ Commander* Commander::create(std::string device, std::string dbName)
 Commander* Commander::create(mfile *mf, std::string device, std::string dbName)
 {
 
+    bool isFifthGen, _isSwitch = false;
     dm_dev_id_t deviceId = DeviceUnknown;
     u_int32_t hwDevId, hwRevId;
     Commander *commander = NULL;
@@ -86,21 +87,51 @@ Commander* Commander::create(mfile *mf, std::string device, std::string dbName)
         throw MlxcfgException("Failed to identify the device");
     }
 
+    // check if device is supported:
+    switch (deviceId) {
+    case DeviceConnectX3:
+    case DeviceConnectX3Pro:
+        isFifthGen = false;
+        break;
+
+    case DeviceConnectIB:
+    case DeviceConnectX4:
+    case DeviceConnectX4LX:
+    case DeviceConnectX5:
+    case DeviceBlueField:
+    case DeviceBlueField2:
+    case DeviceConnectX6:
+    case DeviceConnectX6DX:
+    case DeviceConnectX6LX:
+        isFifthGen = true;
+        break;
+
+    case DeviceSwitchIB:
+    case DeviceSpectrum:
+    case DeviceSwitchIB2:
+    case DeviceQuantum:
+    case DeviceSpectrum2:
+    case DeviceSpectrum3:
+        _isSwitch = true;
+        isFifthGen = true;
+        break;
+
+    default:
+        throw MlxcfgException("Unsupported device");
+    }
+
     if (dm_is_livefish_mode(mf)) {
         throw MlxcfgException("Device in Livefish mode is not supported");
     }
 
-    if (dm_is_new_gen_switch(deviceId) || dm_is_5th_gen_hca(deviceId)) {
+    if (isFifthGen) {
         if (dbName.empty()) {//take internal db file
-            dbName = getDefaultDBName(dm_dev_is_switch(deviceId));
+            dbName = getDefaultDBName(_isSwitch);
         }
         commander = new GenericCommander(mf, dbName);
-    } else if (dm_is_4th_gen(deviceId)) {
-        commander = new FourthGenCommander(mf, device);
     } else {
-        throw MlxcfgException("Unsupported device");
+        commander = new FourthGenCommander(mf, device);
     }
-
     return commander;
 }
 

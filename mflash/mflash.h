@@ -115,7 +115,6 @@ void     mf_close(mflash *mfl);
 //
 int     mf_read(mflash *mfl, u_int32_t addr, u_int32_t len, u_int8_t *data, bool verbose);
 int     mf_write(mflash *mfl, u_int32_t addr, u_int32_t len, u_int8_t *data);
-void    mf_set_cpu_utilization(mflash *mfl, int cpuPercent);
 // mf_erase performs an erase on the smallest block
 int     mf_erase(mflash *mfl, u_int32_t addr);
 // adv erasing
@@ -170,12 +169,10 @@ mfile* mf_get_mfile(mflash *mfl);
 const char* mf_err2str(int err_code);
 
 void mf_flash_list(char *flash_list, int flash_arr_size);
-int mf_get_write_protect_direct_access(mflash *mfl, u_int8_t bank_num, write_protect_info_t *protect_info);
-int mf_set_write_protect_direct_access(mflash *mfl, u_int8_t bank_num, write_protect_info_t *protect_info);
-int mf_get_quad_en_direct_access(mflash *mfl, u_int8_t *quad_en_p);
-int mf_set_quad_en_direct_access(mflash *mfl, u_int8_t quad_en);
-int mf_get_dummy_cycles_direct_access(mflash *mfl, u_int8_t *dummy_cycles_p);
-int mf_set_dummy_cycles_direct_access(mflash *mfl, u_int8_t num_of_cycles);
+
 EXTERN_C_END
 
 #endif // MFLASH_H
+
+
+

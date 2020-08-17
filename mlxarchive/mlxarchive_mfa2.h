@@ -54,37 +54,36 @@
 using namespace std;
 
 
-
 namespace mfa2 {
     typedef map <string, Component> map_string_to_component;
-    class MFA2 {
-    private:
+class MFA2 {
+private:
 
-        FingerPrint              _fingerPrint;
-        PackageDescriptor        _packageDescriptor;
-        vector<DeviceDescriptor> _deviceDescriptors;
-        vector<Component>        _components;
+    FingerPrint              _fingerPrint;
+    PackageDescriptor        _packageDescriptor;
+    vector<DeviceDescriptor> _deviceDescriptors;
+    vector<Component>        _components;
         string                   _latestComponentKey;
         long _zipOffset;
-        //void updateSHA256();
+    //void updateSHA256();
         vector<u_int8_t> mfa2Buffer;
-        void pack(vector<u_int8_t>& buff);
-        void packDescriptors(vector<u_int8_t>& buff) const;
-        bool unpack(Mfa2Buffer & buff);
+    void pack(vector<u_int8_t>& buff);
+    void packDescriptors(vector<u_int8_t>& buff) const;
+    bool unpack(Mfa2Buffer & buff);
         bool extractComponent(Component* requiredComponent, vector<u_int8_t>& fwBinaryData);
-    public:
-        MFA2(PackageDescriptor packageDescriptor,
-            vector<DeviceDescriptor> deviceDescriptors,
-            vector<Component> components) :
-            _fingerPrint(MFA2_FINGER_PRINT),
-            _packageDescriptor(packageDescriptor),
-            _deviceDescriptors(deviceDescriptors),
+public:
+    MFA2(PackageDescriptor packageDescriptor,
+         vector<DeviceDescriptor> deviceDescriptors,
+         vector<Component> components) : 
+             _fingerPrint(MFA2_FINGER_PRINT),
+             _packageDescriptor(packageDescriptor),
+             _deviceDescriptors(deviceDescriptors),
             _components(components), _zipOffset(0){};
 
-        virtual ~MFA2() {}
-        static MFA2 * LoadMFA2Package(const string & file_name);
-        void generateBinary(vector<u_int8_t>& buff);
-        void dump();
+    virtual ~MFA2() {}
+    static MFA2 * LoadMFA2Package(const string & file_name);
+    void generateBinary(vector<u_int8_t>& buff);
+    void dump();
         void minidump();
         PackageDescriptor getPackageDescriptor() const {
             return _packageDescriptor;
@@ -117,10 +116,11 @@ namespace mfa2 {
         vector<u_int8_t> getBuffer() {
             return mfa2Buffer;
         }
-        map_string_to_component getMatchingComponents(char* psid, u_int16_t fw_ver[3]);
+        map_string_to_component getMatchingComponents(char* psid, int majorVer);
         bool unzipComponent(map_string_to_component& matchingComponentsMap, u_int32_t choice, vector<u_int8_t>& fwBinaryData);
         bool unzipLatestVersionComponent(map_string_to_component& matchingComponentsMap, vector<u_int8_t>& fwBinaryData);
-        bool getLatestComponent(vector<u_int8_t>& fwBinaryData, u_int16_t fw_ver[3]);
-    };
+};
+
 }
+
 #endif

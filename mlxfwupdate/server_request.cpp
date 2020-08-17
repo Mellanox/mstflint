@@ -57,6 +57,7 @@ ServerRequest::ServerRequest(const char *url, const char *proxy,
     _UseProxy      = 0;
     _Url           = url;
     _WebService    = _Url + "/downloads/firmware/mlx_fw_online_query.php";
+    //_WebService    = _Url + "/mlx_fw_online_query.php";
     _compare_ffv   = compare_ffv;
     _show_progress = show_progress;
     _ceritifcate   = certificate;
@@ -104,7 +105,7 @@ int ServerRequest::parseQueryResponse(string jsonTxt,
             return -1;
         }
         if (root[j].isMember("Found")) {
-            if (ignoreNotFound && !root[j].get("Found", Json::nullValue).asInt()) {
+            if (ignoreNotFound and !root[j].get("Found", Json::nullValue).asInt()) {
                 continue;
             }
         } else {
@@ -141,7 +142,7 @@ int ServerRequest::parseQueryResponse(string jsonTxt,
                         u_int16_t fwVer[4];
                         int len;
                         if (sscanf(rom_ver.c_str(), "%d.%d.%d", &m, &n, &s)) {
-                            if (!_compare_ffv || rom_type != "FW") {
+                            if (!_compare_ffv or rom_type != "FW") {
                                 fwVer[0] = m;
                                 fwVer[1] = n;
                                 fwVer[2] = s;
@@ -520,7 +521,7 @@ clean_up:
     } else {
         #if !defined(__WIN__)
         string tmp = (string)dest_file;
-        if (tmp.find(".mfa") == std::string::npos && tmp.find(".exe") == std::string::npos) {
+        if (tmp.find(".mfa") == std::string::npos and tmp.find(".exe") == std::string::npos) {
             int retVal = my_chmod(dest_file, EXECUTABLE_MODE);
             (void) retVal;
         }

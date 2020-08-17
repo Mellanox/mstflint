@@ -245,8 +245,8 @@ mlxCfgStatus MlxCfg::extractQueryCfgArgs(int argc, char *argv[])
                     
                 }
                 else {
-                    pv.mlxconfigName = mlxconfigName;
-                }
+                pv.mlxconfigName = mlxconfigName;
+            }
             }
         } else {
             pv.mlxconfigName = mlxconfigName;
@@ -328,7 +328,7 @@ mlxCfgStatus MlxCfg::extractSetCfgArgs(int argc, char *argv[])
 
                 }
                 else {
-                    pv.mlxconfigName = tag;
+                pv.mlxconfigName = tag;
                 }
             }
         } else {

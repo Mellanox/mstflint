@@ -105,30 +105,14 @@ std::string FwVersion::get_master_version(const std::string& format,
 }
 
 bool FwVersion::is_set() const {
-    return _major || _minor || _subminor || !_devBranchTag.empty();
+    return _major || _minor || _subminor;
 }
 
 bool FwVersion::operator !=(const FwVersion& rhs) const {
     return !(this->operator ==(rhs));
 }
 
-//13 is Spectrum1 27/29 is Spectrum2 30 is Spectrum3 15 is switchIb2 27 is quantum
-bool FwVersion::is_Switch() const
-{
-    if (_major == 0 && _minor == 0 && _subminor == 0 && !_devBranchTag.empty()) {
-        return true;
-    }
-    if (_major == 11 || _major == 13 || _major == 15 || _major == 27
-        || _major == 29 || _major == 30) {
-        return true;
-    }
-    return false;
-}
-
 bool FwVersion::is_master_branch() const {
-    if (!is_Switch()) {
-        return true;
-    }
     return _devBranchTag.empty();
 }
 

@@ -45,9 +45,6 @@ class PsidQueryItem {
 public:
 
     PsidQueryItem() : devId(0), revId(0), found(0), isFailSafe(true) {};
-    virtual ~PsidQueryItem()
-    {
-    }
     const ImgVersion* findImageVersion(string type);
     string psid;
     string url;

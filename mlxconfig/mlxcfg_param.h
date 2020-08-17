@@ -149,8 +149,6 @@ private:
 
 
 class ArrayParamValue : public ParamValue {
-private:
-    u_int32_t           offsetToBigEndian(u_int32_t offset);
 
 public:
     ArrayParamValue(string size, u_int32_t count, enum ParamType paramType);
@@ -164,7 +162,7 @@ public:
     u_int32_t           getIntVal();
     vector<u_int32_t>   getIntVals();
     vector<string>      getStrVals();
-    void                parseValue(string, u_int32_t&, string&);
+    void parseValue(string, u_int32_t&, string&);
     void                pack(u_int8_t *buff, u_int32_t offset);
     void                unpack(u_int8_t *buff, u_int32_t offset);
 

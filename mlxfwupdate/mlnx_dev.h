@@ -41,10 +41,7 @@
 #include <img_version.h>
 #include "mlxfwmanager_common.h"
 #include "mlxconfig/mlxcfg_commander.h"
-#ifdef __WIN__
-#include "ToolsSyncDefs.h"
-#include "ToolsSync.h"
-#endif
+
 #define MTCR_EXPORT
 #include <mtcr.h>
 
@@ -113,8 +110,7 @@ private:
     port_type_t findPortType(int port);
     void initUniqueId();
     bool equals(MlnxDev *dev);
-    int LockDevice(FwOperations *fwOps);
-    int UnlockDevice(FwOperations *fwOps);
+
 private:
     typedef enum    {
         INIT_DEVINFO,
@@ -153,9 +149,6 @@ private:
 
     bool _preBurnInit;
     int _unknowProgress;
-#ifdef __WIN__
-    ToolsSync m_ToolsSync;
-#endif
 };
 
 #endif

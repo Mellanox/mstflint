@@ -56,6 +56,7 @@ using namespace std;
 #include "mlxarchive/mlxarchive_mfa2_utils.h"
 using namespace mfa2;
 #endif
+
 //we might need to close the log from the main program in case of interrupt
 void close_log();
 void print_time_to_log();
@@ -72,9 +73,6 @@ typedef enum what_to_ver {
 } what_to_ver_t;
 /*Subcommand classes:*/
 
-
-
-
 #define FLINT_ERR_LEN 1024
 
 class SubCommand
@@ -83,7 +81,6 @@ protected:
     FwOperations *_fwOps;
     FwOperations *_imgOps;
     FBase *_io;
-
     what_to_ver_t _v;
     int _maxCmdParamNum;
     int _minCmdParamNum;
@@ -157,16 +154,15 @@ protected:
     inline void closeLog() {close_log();}
     //print errors to an err buff, log if needed and stdout
     void reportErr(bool shouldPrint, const char *format, ...);
-    bool readFromFile(const string& filePath, std::vector<u_int8_t>& buff);
+
     bool writeToFile(string filePath, const std::vector<u_int8_t>& buff);
     FlintStatus writeImageToFile(const char *file_name, u_int8_t *data, u_int32_t length);
 
     bool dumpFile(const char *confFile, std::vector<u_int8_t>& data, const char *sectionName);
     bool unzipDataFile(std::vector<u_int8_t> data, std::vector<u_int8_t> &newData, const char *sectionName);
     const char* fwImgTypeToStr(u_int8_t fwImgType);
-    FlintStatus UnlockDevice(FwOperations*);
-    FlintStatus LockDevice(FwOperations*);
-    void ClearGuidStruct(FwOperations::sg_params_t& sgParams);
+
+
 public:
     SubCommand() : _fwOps(NULL), _imgOps(NULL), _io(NULL), _v(Wtv_Uninitilized), _maxCmdParamNum(-1),  _minCmdParamNum(-1), _mccSupported(false), _imageReactivation(false)
 #ifndef NO_MSTARCHIVE        
@@ -178,7 +174,6 @@ public:
     }
     virtual ~SubCommand();
     virtual FlintStatus executeCommand() = 0;
-    virtual void cleanInterruptedCommand() {}//by default do nothing
     inline void setParams(const FlintParams& flintParams) {_flintParams = flintParams;}
     inline string& getName() {return this->_name;}
     inline string& getDesc() {return this->_desc;}
@@ -189,7 +184,6 @@ public:
     inline string& getParamExp() {return this->_paramExp;}
     inline string& getExample() {return this->_example;}
 };
-
 class BurnSubCommand : public SubCommand
 {
 private:
@@ -210,14 +204,11 @@ private:
     bool dealWithVSD();
     FlintStatus burnMFA2();
     FlintStatus burnMFA2LiveFish(dm_dev_id_t devid_t);
-    FlintStatus burnCongestionControl();
     bool verifyMFA2Params(bool IsLiveFish);
-
 public:
     BurnSubCommand();
     ~BurnSubCommand();
     FlintStatus executeCommand();
-    virtual void cleanInterruptedCommand();
     bool verifyParams();
 };
 
@@ -234,6 +225,7 @@ private:
 public:
     BinaryCompareSubCommand();
     ~BinaryCompareSubCommand();
+
     FlintStatus executeCommand();
     bool verifyParams();
 };
@@ -321,7 +313,6 @@ public:
     FlintStatus executeCommand();
     bool verifyParams();
 };
-
 class SwResetSubCommand : public SubCommand
 {
 private:

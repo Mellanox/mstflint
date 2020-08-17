@@ -287,7 +287,6 @@ public:
     static void printWar(const std::string &war, Json::Value &jsonRoot);
     static std::vector<std::string> split(const std::string& str, const std::string &delim = " ");
     static void trim(std::string& str, const std::string& chars = "\t\n\v\f\r ");
-
 };
 
 std::ostream & operator << (std::ostream &out, const MlxlinkRecord &mlxlinkRecord);

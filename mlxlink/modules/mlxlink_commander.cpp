@@ -40,10 +40,12 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
 
 {
     _device = "";
+    _mf = NULL;
     _extAdbFile = "";
     _localPort = 0;
     _numOfLanes = MAX_LANES_NUMBER;
     _numOfLanesPcie = 0;
+    _writeGvmi = false;
     _linkUP = false;
     _splitted = false;
     _plugged = false;
@@ -51,30 +53,23 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _prbsTestMode = false;
     _useExtAdb = true;
     _isHCA = false;
-    _portPolling = false;
     _speedForce = "";
     _anDisable = 0;
     _cableIdentifier = 0;
-    _cableTechnology = 0;
     _cableAtten12G = 0;
     _cableLen = 0;
     _cablePN = "N/A";
     _cableSN = "N/A";
     _moduleTemp = "N/A";
     _cableMediaType = 0;
-    _moduleNumber = 0;
     _uniqueCmds = 0;
     _networkCmds = 0;
+    _mlxLinkLib = NULL;
+    _mlxlinkLogger = NULL;
     _activeSpeed = 0;
     _activeSpeedEx = 0;
     _protoCapability = 0;
-    _linkSpeed = 0;
     _protoCapabilityEx = false;
-    _ddmSupported = false;
-    _cmisCable = false;
-    _qsfpCable = false;
-    _mngCableUnplugged = false;
-    _isPam4Speed = false;
     _protoAdmin = 0;
     _protoAdminEx = 0;
     _speedBerCsv = 0;
@@ -83,7 +78,6 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _productTechnology = 0;
     _allUnhandledErrors = "";
     _mlxlinkMaps = MlxlinkMaps::getInstance();
-    _uniqueCableCmds = 0;
 }
 
 MlxlinkCommander::~MlxlinkCommander()
@@ -448,46 +442,34 @@ void MlxlinkCommander::labelToHCALocalPort()
 void MlxlinkCommander::labelToSpectLocalPort()
 {
     string regName;
-    u_int32_t spectWithGearBox = 0;
-    if (_devID >= DeviceSpectrum2) {
+    u_int32_t spect2WithGearBox = 0;
+    if (_devID == DeviceSpectrum2) {
         regName = "MGPIR";
         resetParser(regName);
         genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
-        spectWithGearBox = getFieldValue("num_of_devices");
+        spect2WithGearBox = getFieldValue("num_of_devices", _buffer);
     }
     regName = "PMLP";
     string splitStr = to_string(
             (_userInput._splitPort > 0) ?
                     _userInput._splitPort - 1 : _userInput._splitPort);
-    int splitAdjustment = 0;
     for (u_int32_t localPort = 1; localPort <= maxLocalPort(); localPort++) {
         resetParser(regName);
         updateField("local_port", localPort);
         genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
-        _numOfLanes = getFieldValue("width");
+        _numOfLanes = getFieldValue("width", _buffer);
         if (_numOfLanes == 0) {
             continue;
         }
-        splitAdjustment = 0;
-        if ((getFieldValue("lane0_module_mapping") & 0xFF) + 1
+        if ((getFieldValue("lane0_module_mapping", _buffer) & 0xFF) + 1
                 == _userInput._labelPort) {
             checkWidthSplit(localPort);
             if (_splitted) {
-                if (_devID == DeviceSpectrum3 || (_devID != DeviceSpectrum && !spectWithGearBox)) {
-                    if (_devID == DeviceSpectrum2 && _numOfLanes == 4) {
-                        splitAdjustment = 2;
-                    } else if (!((_devID == DeviceSpectrum2 && _numOfLanes == 2) ||
-                            (_devID == DeviceSpectrum3 && _numOfLanes == 4))) {
-                        splitAdjustment = -1;
-                    }
-                } else if (_devID == DeviceSpectrum2 && spectWithGearBox){
-                    if (_numOfLanes != 4) {
-                        splitAdjustment = -1;
-                    }
+                if (_devID != DeviceSpectrum && _numOfLanes == 2 && !spect2WithGearBox) {
+                    _localPort = localPort + _userInput._splitPort;
                 } else {
-                    splitAdjustment = -1;
+                    _localPort = localPort + _userInput._splitPort -1;
                 }
-                _localPort = localPort + _userInput._splitPort + splitAdjustment;
             } else {
                 _localPort = localPort;
             }
@@ -513,24 +495,18 @@ void MlxlinkCommander::checkWidthSplit(u_int32_t localPort)
     case 1:
         throw MlxRegException("Invalid split number!");
     case 2:
-        if (_numOfLanes < 4 || (_devID == DeviceSpectrum3 && _numOfLanes == 4)) {
+        if (_numOfLanes < 4) {
             return;
         }
         break;
+
     case 3:
     case 4:
-        if (_numOfLanes == 1 || (_devID == DeviceSpectrum3 && _numOfLanes == 2)) {
+        if (_numOfLanes == 1) {
             return;
         }
         break;
-    case 5:
-    case 6:
-    case 7:
-    case 8:
-        if (_devID == DeviceSpectrum3 && _numOfLanes == 1) {
-            return;
-        }
-        break;
+
     default:
         break;
     }
@@ -668,7 +644,7 @@ string MlxlinkCommander::getFieldStr(const string &field)
 string MlxlinkCommander::getRxTxCDRState(u_int32_t state)
 {
     string stateMask = "";
-    u_int32_t mask = 1;
+    u_int32_t mask = 0001;
     for (u_int32_t i = 0; i < _numOfLanes; i++) {
         if (state & mask) {
             stateMask += "ON,";
@@ -815,8 +791,12 @@ u_int32_t MlxlinkCommander::getPtysCap()
 
 void MlxlinkCommander::getSltpParamsFromVector(std::vector<string> sltpParams)
 {
-    for (u_int32_t i = 0; i < sltpParams.size(); i++) {
-        strToInt32((char*) sltpParams[i].c_str(), _userInput._sltpParams[i]);
+    int startPoint = POLARITY;
+    if (_productTechnology == PRODUCT_16NM) {
+        startPoint = PRE_2_TAP;
+    }
+    for (u_int32_t i = startPoint; i < sltpParams.size(); i++) {
+        strToUint32((char*) sltpParams[i].c_str(), _userInput._sltpParams[i]);
     }
 }
 
@@ -1138,15 +1118,6 @@ string MlxlinkCommander::getValueAndThresholdsStr(T value, Q lowTH, Q highTH)
     stringstream out;
     out << value << " [" << lowTH << ".." << highTH << "]";
     return out.str();
-}
-
-void MlxlinkCommander::strToInt32(char *str, u_int32_t &value)
-{
-    char *endp;
-    value = strtol(str, &endp, 0);
-    if (*endp) {
-        throw MlxRegException("Argument: %s is invalid.", str);
-    }
 }
 
 void MlxlinkCommander::operatingInfoPage()

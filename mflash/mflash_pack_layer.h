@@ -69,76 +69,6 @@ typedef void*trm_ctx;
 #else
 #define MFLASH_ERR_STR_SIZE    4
 #endif
-
-#define IS4_HW_ID        0x1b3
-#define SWITCHX_HW_ID    0x245
-#define CONNECTX_HW_ID   0x190
-#define CX3_PRO_HW_ID    0x1F7
-#define CX3_HW_ID        0x1F5
-#define CX4_HW_ID        0x209
-#define CX4LX_HW_ID      0x20b
-#define CX5_HW_ID        0x20d
-#define CX6_HW_ID        0x20f
-#define CX7_HW_ID        0x21a
-#define CX6DX_HW_ID      0x212
-#define CX6LX_HW_ID      0x216
-#define BLUEFIELD_HW_ID  0x211
-#define BLUEFIELD2_HW_ID 0x214
-#define CONNECT_IB_HW_ID 0x1FF
-#define SWITCH_IB_HW_ID  0x247
-#define SPECTRUM_HW_ID   0x249
-#define SWITCH_IB2_HW_ID 0x24b
-#define QUANTUM_HW_ID    0x24d
-#define SPECTRUM2_HW_ID  0x24e
-#define SPECTRUM3_HW_ID  0x250
-
-/*
- * Device IDs Macros:
- */
-#define IS_CONNECTX_4TH_GEN_FAMILY(dev_id) \
-    (((dev_id) == CONNECTX_HW_ID) || ((dev_id) == CX3_HW_ID) || ((dev_id) == CX3_PRO_HW_ID))
-#define IS_IS4_FAMILY(dev_id) \
-    (((dev_id) == IS4_HW_ID))
-#define IS_SX(dev_id) \
-    ((dev_id) == SWITCHX_HW_ID)
-#define IS_SIB(dev_id) \
-    ((dev_id) == SWITCH_IB_HW_ID)
-#define IS_SIB2(dev_id) \
-    ((dev_id) == SWITCH_IB2_HW_ID)
-#define IS_SEN(dev_id) \
-    ((dev_id) == SPECTRUM_HW_ID)
-#define IS_SPECTRUM2(dev_id) \
-    ((dev_id) == SPECTRUM2_HW_ID)
-#define IS_CONNECT_IB(dev_id) \
-    ((dev_id) == CONNECT_IB_HW_ID)
-#define IS_CONNECTX4(dev_id) \
-    ((dev_id) == CX4_HW_ID)
-#define IS_CONNECTX4LX(dev_id) \
-    ((dev_id) == CX4LX_HW_ID)
-#define IS_CONNECTX5(dev_id) \
-    ((dev_id) == CX5_HW_ID)
-#define IS_CONNECTX7(dev_id) \
-    ((dev_id) == CX7_HW_ID)
-#define IS_CONNECTX6(dev_id) \
-    ((dev_id) == CX6_HW_ID)
-#define IS_CONNECTX6DX(dev_id) \
-    ((dev_id) == CX6DX_HW_ID)
-#define IS_CONNECTX6LX(dev_id) \
-    ((dev_id) == CX6LX_HW_ID)
-#define IS_BLUEFIELD(dev_id) \
-    ((dev_id) == BLUEFIELD_HW_ID)
-#define IS_QUANTUM(dev_id) \
-    ((dev_id) == QUANTUM_HW_ID)
-#define IS_SPECTRUM(dev_id) \
-    ((dev_id) == SPECTRUM_HW_ID)
-#define IS_BLUEFEILD(dev_id) \
-    ((dev_id) == BLUEFIELD_HW_ID)
-#define IS_BLUEFEILD2(dev_id) \
-    ((dev_id) == BLUEFIELD2_HW_ID)
-
-#define HAS_TOOLS_CMDIF(dev_id) \
-    ((((dev_id) == CX3_HW_ID) || ((dev_id) == CX3_PRO_HW_ID)))
-
 typedef int (*f_mf_lock)(mflash *mfl, int lock_state);
 
 typedef int (*f_mf_set_bank)(mflash *mfl, u_int32_t bank);
@@ -161,13 +91,6 @@ typedef int (*f_mf_set_write_protect)(mflash *mfl, u_int8_t bank_num, write_prot
 
 typedef int (*f_mf_get_dummy_cycles)(mflash *mfl, u_int8_t *num_of_cycles);
 typedef int (*f_mf_set_dummy_cycles)(mflash *mfl, u_int8_t num_of_cycles);
-
-typedef int (*f_cntx_st_spi_erase_sect)(mflash *mfl, u_int32_t addr);
-typedef int (*f_cntx_int_spi_get_status_data)(mflash *mfl, u_int8_t op_type, u_int32_t *status, u_int8_t data_num);
-typedef int (*f_cntx_st_spi_block_write_ex)(mflash *mfl, u_int32_t blk_addr, u_int32_t blk_size, u_int8_t *data, u_int8_t is_first, u_int8_t is_last, u_int32_t total_size);
-typedef int (*f_cntx_sst_spi_block_write_ex)(mflash *mfl, u_int32_t blk_addr, u_int32_t blk_size, u_int8_t *data);
-typedef int (*f_cntx_st_spi_block_read_ex)(mflash *mfl, u_int32_t blk_addr, u_int32_t blk_size, u_int8_t *data, u_int8_t is_first, u_int8_t is_last, bool verbose);
-typedef int (*f_cntx_spi_write_status_reg)(mflash *mfl, u_int32_t status_reg, u_int8_t write_cmd, u_int8_t bytes_num);
 
 /////////////////////////////////////////////
 //
@@ -201,14 +124,6 @@ struct mflash {
 
     // Relevant for SPI flash (InfiniHostIIILx, ConnectX) only
     f_st_spi_status f_spi_status;
-
-    f_cntx_st_spi_erase_sect f_st_spi_erase_sect;
-    f_cntx_int_spi_get_status_data f_int_spi_get_status_data;
-    f_cntx_st_spi_block_write_ex f_st_spi_block_write_ex;
-    f_cntx_sst_spi_block_write_ex f_sst_spi_block_write_ex;
-    f_cntx_st_spi_block_read_ex f_st_spi_block_read_ex;
-    f_cntx_spi_write_status_reg f_spi_write_status_reg;
-
     // when set(1) we support modification of the flash status register
     u_int8_t supp_sr_mod;
 
@@ -227,8 +142,7 @@ struct mflash {
     u_int8_t access_type; //0 = mfile , 1 = uefi
     trm_ctx trm;
     dm_dev_id_t dm_dev_id;
-    int cputUtilizationApplied;
-    int cpuPercent;
+
 };
 
 typedef struct mfpa_command_args {
@@ -248,59 +162,48 @@ enum AccessTypeByMfile {
     ATBM_NO = 0, ATBM_INBAND, ATBM_MLNXOS_CMDIF, ATBM_ICMD, ATBM_TOOLS_CMDIF,
 };
 
-enum CntxCrConstants {
-    HCR_FLASH_CMD = 0xf0400,
-    HCR_FLASH_ADDR = 0xf0404,
-    HCR_FLASH_NEW_GW_ADDR = 0xf0420,
-    HCR_FLASH_DATA = 0xf0410,
+/*
+ #ifndef __WIN__
 
-    HBO_READ_OP = 0,
-    HBO_NEW_GW_READ_OP = 8,
-    //HBO_ADDR_AUTO_INC = 1,
-    //HBO_NEW_GW_ADDR_AUTO_INC = 29,
-    HBO_CMD_PHASE = 2,
-    HBO_NEW_GW_CMD_PHASE = 28,
-    HBO_ADDR_PHASE = 3,
-    HBO_NEW_GW_ADDR_PHASE = 27,
-    HBO_DATA_PHASE = 4,
-    HBO_NEW_GW_DATA_PHASE = 26,
-    HBO_CS_HOLD = 5,
-    HBO_NEW_GW_CS_HOLD = 25,
+ #ifdef __FreeBSD__
+ #define SWAPL(l) ntohl(l)
+ #include <sys/endian.h>
+ #else // Linux
+ #include <byteswap.h>
+ #include <endian.h>
 
-    HBO_MSIZE = 8,
-    HBO_NEW_GW_DATA_SIZE = 18,
-    HBS_MSIZE = 3,
-    HBS_NEW_GW_MSIZE = 7,
+ #define SWAPL(l) bswap_32(l)
+ #endif
 
-    HBO_CHIP_SELECT = 11,
-    HBS_CHIP_SELECT = 2,
-    HBO_NEW_GW_CHIP_SELECT = 17,
-    HBS_NEW_GW_CHIP_SELECT = 1,
+ #else
 
-    HBO_FLASH_ENABLE = 13, //In old devices
+ #include <io.h>
+ #include <winsock2.h>
+ #define SWAPL(l) ntohl(l)
+ #define __BYTE_ORDER __LITTLE_ENDIAN
+ */
 
-    HBO_ADDR_SIZE = 14,
-    HBO_NEW_GW_ADDR_SIZE = 15,
+/*
+ #define __cpu_to_be32(val) SWAPL(val) // Win is only run on LE CPUS
+ #define inline __inline
+ #define __cpu_to_be32(val) SWAPL(val) // Win is only run on LE CPUS
+ */
+//#endif
+/*
+ #ifndef __cpu_to_le32
 
-    HBO_CMD = 16,
-    HBS_CMD = 8,
-    HBO_NEW_GW_CMD = 0,
-    HBO_BUSY = 30,
-    HBO_LOCK = 31,
+ #if __BYTE_ORDER == __LITTLE_ENDIAN
+ #define __cpu_to_le32(x) (x)
+ #elif __BYTE_ORDER == __BIG_ENDIAN
+ #define __cpu_to_le32(x) SWAPL(x)
+ #endif // __BYTE_ORDER
 
-    //HBO_ADDR = 0,
+ #endif
 
-    // GPIOs
-    HCR_GPIO_LOCK = 0xf0048,
-    HCR_GPIO_LOCK_VAL = 0xd42f,
-
-    HCR_GPIO_DATA_OUT = 0xf0040,
-    HCR_GPIO_MODE0 = 0xf0050,
-    HCR_GPIO_MODE1 = 0xf004c,
-
-    HBO_GPIO_CS = 25,
-    HBS_GPIO_CS = 4
-};
+ #ifndef __le32_to_cpu
+ #define __le32_to_cpu(x) __cpu_to_le32(x)
+ #endif
+ */
 
 #define WRITE_CHECK_ALIGN(addr, block_write, size) { \
         if (addr & ((u_int32_t)block_write - 1)) { \

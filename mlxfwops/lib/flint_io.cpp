@@ -503,6 +503,7 @@ bool Flash::read(u_int32_t addr, void *data, int len, bool verbose, const char *
                     printf("\33[2K\r");//clear the current line
                     printf("\r%s%d%c", message, new_perc, '%');
                     fflush(stdout);
+
                     perc = new_perc;
                 }
             }
@@ -634,9 +635,6 @@ bool Flash::write(u_int32_t addr,
         u_int32_t phys_addr = cont2phys(chunk_addr);
         // printf("-D- write: addr = %#x, phys_addr = %#x\n", chunk_addr, phys_addr);
         mft_signal_set_handling(1);
-        if (_cputUtilizationApplied) {
-            mf_set_cpu_utilization(_mfl, _cpuPercent);
-        }
         rc = mf_write(_mfl, phys_addr, chunk_size, p);
         deal_with_signal();
 
@@ -1020,11 +1018,5 @@ bool Flash::set_flash_working_mode(int mode)
         return errmsg("Unknown Flash IO working mode: 0x%x", mode);
     }
     _curr_sector = _curr_sector & ~(_curr_sector_size - 1);
-    return true;
-}
-bool Flash::set_flash_utilization(bool is_applied, int percent)
-{
-    _cputUtilizationApplied = is_applied;
-    _cpuPercent = percent;
     return true;
 }

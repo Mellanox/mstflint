@@ -46,7 +46,6 @@ class ISignatureManager : public FlintErrMsg
 public:
     virtual bool AddSignature(mfile* mf, Fs3Operations* imageOps, Flash *f, u_int32_t imageOffset) = 0;
     virtual bool GetSecureBootInfo() = 0;
-    virtual bool CheckSPIChannel(mfile* mf) = 0;
     virtual ~ISignatureManager() {}
 };
 
@@ -54,10 +53,6 @@ class AbstractSignatureManager : public ISignatureManager {
 public:
     AbstractSignatureManager() {}
     virtual ~AbstractSignatureManager() {}
-    virtual bool CheckSPIChannel(mfile*)
-    {
-        return true;
-    }
 };
 
 class FwOperationsSignatureManager : public AbstractSignatureManager
@@ -109,65 +104,4 @@ public:
     virtual ~ConnectX6DXFwOperationsSignatureManager() {}
     virtual bool AddSignature(mfile* mf, Fs3Operations*, Flash*, u_int32_t);
     virtual bool GetSecureBootInfo();
-};
-
-class ConnectX6LXFwOperationsSignatureManager : public AbstractSignatureManager
-{
-public:
-    ConnectX6LXFwOperationsSignatureManager() : AbstractSignatureManager() {}
-    virtual ~ConnectX6LXFwOperationsSignatureManager() {}
-    virtual bool AddSignature(mfile*, Fs3Operations*, Flash*, u_int32_t)
-    {
-        return true;
-    }
-    virtual bool GetSecureBootInfo()
-    {
-        return true;
-    }
-};
-
-
-class Bluefield2FwOperationsSignatureManager : public AbstractSignatureManager
-{
-public:
-    Bluefield2FwOperationsSignatureManager() : AbstractSignatureManager() {}
-    virtual ~Bluefield2FwOperationsSignatureManager() {}
-    virtual bool AddSignature(mfile*, Fs3Operations*, Flash*, u_int32_t)
-    {
-        return true;
-    }
-    virtual bool GetSecureBootInfo()
-    {
-        return true;
-    }
-};
-
-class GearBoxSignatureManager : public AbstractSignatureManager
-{
-public:
-    GearBoxSignatureManager() : AbstractSignatureManager() {}
-    virtual ~GearBoxSignatureManager() {}
-
-    virtual bool AddSignature(mfile*, Fs3Operations*, Flash*, u_int32_t)
-    {
-        return false;
-    }
-    virtual bool GetSecureBootInfo()
-    {
-        return false;
-    }
-    virtual bool CheckSPIChannel(mfile* mf)
-    {
-        bool retVal = true;
-        u_int32_t value = 0;
-        if (mread4(mf, 0x21e4, &value) != sizeof(u_int32_t)) {
-            retVal = false;
-        }
-        else {
-            if (value != 1) {
-                retVal = false;
-            }
-        }
-        return retVal;
-    }
 };

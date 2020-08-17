@@ -150,12 +150,6 @@
 #define PTYS_LINK_MODE_FORCE_FLAG_SHORT    ' '
 
 //------------------------------------------------------------
-#define SHOW_TX_GROUP_MAP_FLAG              "show_tx_group_map"
-#define SHOW_TX_GROUP_MAP_FLAG_SHORT        ' '
-#define SET_TX_GROUP_MAP_FLAG               "tx_group_map"
-#define SET_TX_GROUP_MAP_FLAG_SHORT         ' '
-#define TX_GROUP_PORTS_FLAG                 "ports"
-#define TX_GROUP_PORTS_FLAG_SHORT           ' '
 //        Mlxlink HIDDEN Flags
 
 #define SLTP_SET_ADVANCED_FLAG              "advanced"
@@ -412,7 +406,6 @@ public:
     string getComplianceLabel(u_int32_t compliance,  u_int32_t extCompliance,
             u_int32_t cable_identifier, bool ignoreExtBitChk = false);
     string getLosAlarm();
-    void strToInt32(char *str, u_int32_t &value);
     template<typename T, typename Q> string getValueAndThresholdsStr(T value, Q lowTH, Q highTH);
     void prepareSltp28_40nm(std::vector<std::vector<string> > &sltpLanes,
             u_int32_t laneNumber);
@@ -470,9 +463,6 @@ public:
     MlxlinkCmdPrint _extPhyInfoCmd;
     MlxlinkCmdPrint _linkBlameInfoCmd;
     MlxlinkCmdPrint _validPcieLinks;
-    MlxlinkCmdPrint _cableDumpRawCmd;
-    MlxlinkCmdPrint _cableDDMCmd;
-    MlxlinkCmdPrint _portGroupMapping;
 
     // Mlxlink config functions
     void clearCounters();
@@ -528,7 +518,6 @@ public:
     u_int32_t _anDisable;
     u_int32_t _speedBerCsv;
     u_int32_t _cableIdentifier;
-    u_int32_t _cableTechnology;
     u_int32_t _cableAtten12G;
     u_int32_t _cableLen;
     u_int32_t _activeSpeed;
@@ -537,8 +526,6 @@ public:
     u_int32_t _protoAdmin;
     u_int32_t _protoAdminEx;
     u_int32_t _productTechnology;
-    u_int32_t _moduleNumber;
-    u_int32_t _linkSpeed;
     string _extAdbFile;
     string _device;
     string _fwVersion;
@@ -556,12 +543,7 @@ public:
     bool _linkModeForce;
     bool _useExtAdb;
     bool _isHCA;
-    bool _ddmSupported;
-    bool _cmisCable;
-    bool _qsfpCable;
-    bool _portPolling;
-    bool _mngCableUnplugged;
-    bool _isPam4Speed;
+    bool _portActive;
     std::vector<std::string> _ptysSpeeds;
     std::vector<DPN> _validDpns;
     string _allUnhandledErrors;
