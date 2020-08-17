@@ -75,7 +75,3 @@ int gcif_set_itrace(mfile *mf, struct connectib_itrace *itrace)
     SEND_ICMD_FLOW(mf, SET_ITRACE, connectib_itrace, itrace, 1, 0);
 }
 
-int gcif_set_port_sniffer(mfile *mf, struct connectib_icmd_set_port_sniffer *set_port_sniffer)
-{
-    SEND_ICMD_FLOW(mf, SET_PORT_SNIFFER, connectib_icmd_set_port_sniffer, set_port_sniffer, 1, 0);
-}

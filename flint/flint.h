@@ -74,5 +74,7 @@ public:
     virtual ParseStatus HandleOption(string name, string value);
     ParseStatus parseCmdLine(int argc, char *argv[]);
     FlintStatus run(int argc, char *argv[]);
+    FlintParams& GetFlintParams() { return _flintParams; }
+    map_sub_cmd_t_to_subcommand& GetSubCommands() { return _subcommands; }
 };
 #endif

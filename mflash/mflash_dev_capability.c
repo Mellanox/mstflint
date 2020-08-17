@@ -63,11 +63,14 @@ int is_four_byte_address_needed(mflash *mfl, MfError *status)
         return 0;
     case DeviceQuantum:
     case DeviceConnectX6:
+    case DeviceConnectX7:
     case DeviceConnectX6DX:
     case DeviceConnectX6LX:
     case DeviceSpectrum2:
     case DeviceSpectrum3:
     case DeviceBlueField2:
+    case DeviceAmosGearBox:
+    case DeviceAmosGearBoxManager:
         return 1;
     default:
         *status = MFE_UNSUPPORTED_DEVICE;
@@ -99,11 +102,14 @@ int is_flash_enable_needed(mflash *mfl, MfError *status)
     case DeviceBlueField2:
     case DeviceQuantum:
     case DeviceConnectX6:
+    case DeviceConnectX7:
     case DeviceConnectX6DX:
     case DeviceConnectX6LX:
     case DeviceSpectrum2:
     case DeviceSpectrum3:
     case DeviceSecureHost:
+    case DeviceAmosGearBox:
+    case DeviceAmosGearBoxManager:
         return 0;
     default:
         *status = MFE_UNSUPPORTED_DEVICE;
@@ -113,7 +119,7 @@ int is_flash_enable_needed(mflash *mfl, MfError *status)
 }
 
 //When (*status != MFE_OK) return value is undefined
-int is_icmdif_supported(mflash *mfl, MfError *status)
+int is_icmdif_supported(mflash *mfl, MfError *status, int *is7NmSuppported)
 {
     *status = MFE_OK;
 
@@ -140,6 +146,12 @@ int is_icmdif_supported(mflash *mfl, MfError *status)
     case DeviceConnectX6:
     case DeviceConnectX6DX:
     case DeviceConnectX6LX:
+    case DeviceAmosGearBox:
+    case DeviceAmosGearBoxManager:
+        *is7NmSuppported = 0;
+        return 1;
+    case DeviceConnectX7:
+        *is7NmSuppported = 1;
         return 1;
     default:
         *status = MFE_UNSUPPORTED_DEVICE;
@@ -173,9 +185,12 @@ int is_supports_sw_reset(mflash *mfl, MfError *status)
     case DeviceConnectX6:
     case DeviceConnectX6DX:
     case DeviceConnectX6LX:
+    case DeviceConnectX7:
     case DeviceSpectrum2:
     case DeviceSpectrum3:
     case DeviceSecureHost:
+    case DeviceAmosGearBox:
+    case DeviceAmosGearBoxManager:
         return 0;
     default:
         *status = MFE_UNSUPPORTED_DEVICE;

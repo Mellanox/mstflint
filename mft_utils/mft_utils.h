@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Jan 2006 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -29,42 +29,43 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
+ *
+ *  Created on: April 3, 2017
+ *      Author: Ahmad Soboh
+ *
  */
 
-#ifndef __IMG_VERSION_H__
-#define __IMG_VERSION_H__
+#ifndef MFT_UTILS_H_
+#define MFT_UTILS_H_
 
 #include <string>
+#include <vector>
+
 #include <compatibility.h>
-#include <mlxfwops/lib/fw_version.h>
-#include <stdexcept>
 
 using namespace std;
 
-class ImgVersion {
-    class SetVersionException: public std::runtime_error {
-    public:
-        SetVersionException(const std::string error) :
-                runtime_error(error) {
-        }
-    };
-public:
-    ImgVersion();
-    ImgVersion(const ImgVersion&);
-    virtual ~ImgVersion();
-    ImgVersion& operator=(const ImgVersion&);
-    void setVersion(const string& imgType, u_int8_t verSz, const u_int16_t* ver,
-            const string& verBranch = "");
-    string getPrintableVersion(int ffv, bool show_type = true);
-    string getTypeStr();
-    int compareFw(const ImgVersion &imv) const;
-private:
-    string _type;
-    FwVersion* _fwVer;
-    bool _isExpansionRomUnknown;
-    bool _isOldMinor;
-    bool _isSubBuild;
-};
+namespace mft_utils
+{
 
-#endif
+string numToStr(u_int32_t num);
 
+bool strToNum(const string& str, u_int32_t& num, int base);
+
+void splitCommaSperatedString(string str, vector<string> &strv);
+
+
+void ltrim(string& str, const string& chars = "\t\n\v\f\r "); 
+void rtrim(string& str, const string& chars = "\t\n\v\f\r ");
+void trim(string& str, const string& chars = "\t\n\v\f\r ");
+string ltrim_copy(string str, const string& chars = "\t\n\v\f\r ");
+string rtrim_copy(string str, const string& chars = "\t\n\v\f\r ");
+string trim_copy(string str, const string& chars = "\t\n\v\f\r ");
+
+void to_lowercase(string& str);
+void to_uppercase(string& str);
+string to_lowercase_copy(string str);
+string to_uppercase_copy(string str);
+
+}
+#endif /* MFT_UTILS_H_ */

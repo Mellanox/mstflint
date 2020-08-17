@@ -32,8 +32,8 @@
 
 #include "fs_checks.h"
 #ifndef UEFI_BUILD
-   #include <iostream>
-   #include <sstream>
+#include <iostream>
+#include <sstream>
 #endif
 
 const char*FsChecks::AlignmentUserMessage = "An update is needed for the flash layout.\n"

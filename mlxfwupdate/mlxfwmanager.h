@@ -30,7 +30,6 @@
  * SOFTWARE.
  *
  */
-#include <boost/assign.hpp>
 #include <map>
 #include <iostream>
 #include <vector>
@@ -43,13 +42,7 @@
 #include <signal.h>
 #include <errno.h>
 #include <string.h>
-#ifdef HAVE_INI_PARSER
-extern "C" {
 #include <iniparser.h>
-}
-#else
-    #include <iniparser.h>
-#endif
 #include <mft_sig_handler.h>
 #include <fcntl.h>
 #include <dirent.h>

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Jan 2006 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -29,42 +29,24 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
+*/
+
+/*
+ * mflash_gw.h
+ *
+ *  Created on: Jul 8, 2020
+ *      Author: edwardg
  */
 
-#ifndef __IMG_VERSION_H__
-#define __IMG_VERSION_H__
 
-#include <string>
-#include <compatibility.h>
-#include <mlxfwops/lib/fw_version.h>
-#include <stdexcept>
-
-using namespace std;
-
-class ImgVersion {
-    class SetVersionException: public std::runtime_error {
-    public:
-        SetVersionException(const std::string error) :
-                runtime_error(error) {
-        }
-    };
-public:
-    ImgVersion();
-    ImgVersion(const ImgVersion&);
-    virtual ~ImgVersion();
-    ImgVersion& operator=(const ImgVersion&);
-    void setVersion(const string& imgType, u_int8_t verSz, const u_int16_t* ver,
-            const string& verBranch = "");
-    string getPrintableVersion(int ffv, bool show_type = true);
-    string getTypeStr();
-    int compareFw(const ImgVersion &imv) const;
-private:
-    string _type;
-    FwVersion* _fwVer;
-    bool _isExpansionRomUnknown;
-    bool _isOldMinor;
-    bool _isSubBuild;
-};
-
+#ifndef _MFLASH_NEW_GW_H_
+#define _MFLASH_NEW_GW_H_
+#include "mflash_pack_layer.h"
+// ConnectX SPI interface:
+int new_gw_st_spi_erase_sect(mflash *mfl, u_int32_t addr);
+int new_gw_int_spi_get_status_data(mflash *mfl, u_int8_t op_type, u_int32_t *status, u_int8_t data_num);
+int new_gw_st_spi_block_write_ex(mflash *mfl, u_int32_t blk_addr, u_int32_t blk_size, u_int8_t *data, u_int8_t is_first, u_int8_t is_last, u_int32_t total_size);
+int new_gw_sst_spi_block_write_ex(mflash *mfl, u_int32_t blk_addr, u_int32_t blk_size, u_int8_t *data);
+int new_gw_st_spi_block_read_ex(mflash *mfl, u_int32_t blk_addr, u_int32_t blk_size, u_int8_t *data, u_int8_t is_first, u_int8_t is_last, bool verbose);
+int new_gw_spi_write_status_reg(mflash *mfl, u_int32_t status_reg, u_int8_t write_cmd, u_int8_t bytes_num);
 #endif
-

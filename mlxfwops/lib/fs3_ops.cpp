@@ -31,6 +31,7 @@
  */
 
 
+
 #include <stdlib.h>
 
 #include <algorithm>
@@ -51,16 +52,15 @@
 
 #if !defined(UEFI_BUILD)
     #include "mad_ifc/mad_ifc.h"
-   #include <ctype.h>
-   #include <sstream>
+    #include <ctype.h>
+    #include <sstream>
     #if !defined(NO_OPEN_SSL)
-   #include <mlxsign_lib/mlxsign_lib.h>
-   #include <tools_crypto/tools_md5.h>
-   #include <tools_dev_types.h>
+        #include <mlxsign_lib/mlxsign_lib.h>
+        #include <tools_crypto/tools_md5.h>
+        #include <tools_dev_types.h>
     #endif
     #if !defined(NO_CS_CMD)
-
-   #include <tools_crypto/tools_md5.h>
+        #include <tools_crypto/tools_md5.h>
     #endif
 #endif
 
@@ -126,8 +126,9 @@ const Fs3Operations::SectionInfo Fs3Operations::_fs3SectionsInfoArr[] = {
     {FS3_NV_DATA0,      "NV_DATA"},
     {FS3_FW_NV_LOG,     "FW_NV_LOG"},
     {FS3_NV_DATA0,      "NV_DATA"},
-    {FS4_FW_INTERNAL_USAGE, "FS4_FW_INTERNAL_USAGE"},
-    {FS4_FW_INTERNAL_USAGE1, "FS4_FW_INTERNAL_USAGE"},
+    {FS4_PART_TYPE_FW_INTERNAL_USAGE ,  "PART_TYPE_FW_INTERNAL_USAGE"},
+    {FS4_PART_TYPE_PROGRAMMABLE_HW_FW1, "FS4_PART_TYPE_PROGRAMMABLE_HW_FW"},
+    {FS4_PART_TYPE_PROGRAMMABLE_HW_FW2, "FS4_PART_TYPE_PROGRAMMABLE_HW_FW"},
     {FS3_DTOC,          "DTOC_HEADER"},
     {FS4_HW_PTR,    "HW_POINTERS"},
     {FS4_TOOLS_AREA,    "TOOLS_AREA"}
@@ -279,21 +280,28 @@ bool Fs3Operations::VerifyBranchFormat(const char* vsdString)
     if (length > BRANCH_LEN || length < MIN_BRANCH_LEN) {
         return false;
     }
-    if (vsdString[length - MIN_BRANCH_LEN] != '_') {
-        return false;
-    }
-    for (size_t i = length - MIN_BRANCH_LEN + 1; i < length; i++) {
-        if (!isdigit(vsdString[i])) {
-            return false;
+    if (vsdString[length - MIN_BRANCH_LEN] == '_') {
+        for (size_t i = length - MIN_BRANCH_LEN + 1; i < length; i++) {
+            if (!isdigit(vsdString[i])) {
+                return false;
+            }
         }
+        return true;
     }
-    return true;
+    else if (vsdString[length - MIN_BRANCH_LEN + 1] == '-') {
+        for (size_t i = length - MIN_BRANCH_LEN + 2; i < length; i++) {
+            if (!isdigit(vsdString[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
+    return false;
 }
 bool Fs3Operations::GetImageInfo(u_int8_t *buff)
 {
     struct cibfw_image_info image_info;
     int IIMajor, IIMinor;
-
     // TODO: adrianc: use the version fields once they are available in tools layouts
     GET_IMAGE_INFO_VERSION(buff, IIMajor, IIMinor);
     (void)IIMinor;
@@ -350,10 +358,10 @@ bool Fs3Operations::GetImageInfo(u_int8_t *buff)
     if (!getInfoFromHwDevid(_fwImgInfo.supportedHwId[0], _fwImgInfo.ext_info.chip_type, &swId)) {
         return false;
     }
+    //copy the vsd to the branch ver only for switches. Not valid for NICs.
     if (!IS_HCA(_fwImgInfo.ext_info.chip_type)) {
         if (VerifyBranchFormat(image_info.vsd)) {
-        strncpy(_fwImgInfo.ext_info.branch_ver, image_info.vsd, BRANCH_LEN);
-        _fwImgInfo.ext_info.branch_ver[BRANCH_LEN - 1] = '\0';
+            strncpy(_fwImgInfo.ext_info.branch_ver, image_info.vsd, BRANCH_LEN);
         }
     }
     return true;
@@ -385,7 +393,6 @@ bool Fs3Operations::GetDevInfo(u_int8_t *buff)
     // same size, we can unpack to check version
     cibfw_device_info_unpack(&cib_dev_info, buff);
     // cibfw_device_info_dump(&dev_info, stdout);
-
     if (CHECK_DEV_INFO_NEW_FORMAT(cib_dev_info)) {
         cx4fw_device_info_unpack(&cx4_dev_info, buff);
         CHECK_UID_STRUCTS_SIZE(_fs3ImgInfo.ext_info.fs3_uids_info.cx4_uids, cx4_dev_info.guids);
@@ -566,7 +573,7 @@ bool Fs3Operations::VerifyTOC(u_int32_t dtoc_addr, bool &bad_signature, VerifyCa
                         }
                     } else {
                         if (!verbose) {
-                        READBUF((*_ioAccess), flash_addr, buff, entry_size_in_bytes, "Section");
+                            READBUF((*_ioAccess), flash_addr, buff, entry_size_in_bytes, "Section");
                         }
                         else {
                             if (!(*_ioAccess).read(flash_addr, buff, entry_size_in_bytes, true, "Section")) {
@@ -630,7 +637,6 @@ bool Fs3Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
     struct QueryOptions queryOptions;
     queryOptions.readRom = true;
     queryOptions.quickQuery = false;
-
     return FsVerifyAux(verifyCallBackFunc, showItoc, queryOptions, ignoreDToc);
 }
 
@@ -746,7 +752,6 @@ bool Fs3Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_ito
     return errmsg(MLXFW_NO_VALID_ITOC_ERR, "No valid ITOC was found.");
 }
 
-
 bool Fs3Operations::FsIntQueryAux(bool readRom, bool quickQuery, bool ignoreDToc, bool verbose)
 {
     struct QueryOptions queryOptions;
@@ -803,25 +808,26 @@ bool Fs3Operations::getRunningFwVersion()
         if (_fwImgInfo.ext_info.running_fw_ver[0] == 0
                 && _fwImgInfo.ext_info.running_fw_ver[1] == 0
                 && _fwImgInfo.ext_info.running_fw_ver[2] == 0) {
+            // Deprecated versions
             _fwImgInfo.ext_info.running_fw_ver[0] = mgir.fw_info.major;
             _fwImgInfo.ext_info.running_fw_ver[1] = mgir.fw_info.minor;
             _fwImgInfo.ext_info.running_fw_ver[2] = mgir.fw_info.sub_minor;
         }
     } else {
         _fwImgInfo.ext_info.running_branch_ver[0] = '\0';
-    struct connectib_icmd_get_fw_info fwVer;
-    memset(&fwVer, 0, sizeof(fwVer));
-    int rc =  gcif_get_fw_info(((Flash *)_ioAccess)->getMfileObj(), &fwVer);
+        struct connectib_icmd_get_fw_info fwVer;
+        memset(&fwVer, 0, sizeof(fwVer));
+        int rc = gcif_get_fw_info(((Flash *) _ioAccess)->getMfileObj(), &fwVer);
         if (rc && rc != GCIF_STATUS_UNSUPPORTED_ICMD_VERSION
                 && rc != GCIF_STATUS_INVALID_OPCODE
                 && rc != GCIF_ICMD_NOT_SUPPORTED) {
             return errmsg("Failed to get running FW version. %s",
                     gcif_err_str(rc));
-    }
-    if (!rc) {
-        _fwImgInfo.ext_info.running_fw_ver[0] = fwVer.fw_version.MAJOR;
-        _fwImgInfo.ext_info.running_fw_ver[1] = fwVer.fw_version.MINOR;
-        _fwImgInfo.ext_info.running_fw_ver[2] = fwVer.fw_version.SUBMINOR;
+        }
+        if (!rc) {
+            _fwImgInfo.ext_info.running_fw_ver[0] = fwVer.fw_version.MAJOR;
+            _fwImgInfo.ext_info.running_fw_ver[1] = fwVer.fw_version.MINOR;
+            _fwImgInfo.ext_info.running_fw_ver[2] = fwVer.fw_version.SUBMINOR;
         }
     }
 #endif
@@ -875,6 +881,8 @@ bool Fs3Operations::FwQuery(fw_info_t *fwInfo, bool readRom, bool isStripedImage
     //isStripedImage flag is not needed in FS3 image format
     // Avoid warning - no striped image in FS3
     (void)isStripedImage;
+    reg_access_status_t rc = ME_ERROR;
+    struct reg_access_hca_mgir mgir;
     if (!FsIntQueryAux(readRom, quickQuery, ignoreDToc, verbose)) {
         return false;
     }
@@ -882,17 +890,21 @@ bool Fs3Operations::FwQuery(fw_info_t *fwInfo, bool readRom, bool isStripedImage
         /*
         * * MGIR
         * */
-        reg_access_status_t rc;
-        struct reg_access_hca_mgir mgir;
         memset(&mgir, 0, sizeof(mgir));
         rc = getGI(((Flash *)_ioAccess)->getMfileObj(), &mgir);
-        if (!rc) {
+        if (rc == ME_OK) {
             _fwImgInfo.ext_info.isfu_major = mgir.fw_info.isfu_major;
         }
     }
     memcpy(&(fwInfo->fw_info),  &(_fwImgInfo.ext_info),  sizeof(fw_info_com_t));
     memcpy(&(fwInfo->fs3_info), &(_fs3ImgInfo.ext_info), sizeof(fs3_info_t));
     fwInfo->fw_type = FwType();
+    mfile* mf = getMfileObj();
+    if (rc == ME_OK && mf != NULL && mf->flags & MDEVS_IB) { //for IB devices only
+        fwInfo->fw_info.running_fw_ver[0] = mgir.fw_info.extended_major;
+        fwInfo->fw_info.running_fw_ver[1] = mgir.fw_info.extended_minor;
+        fwInfo->fw_info.running_fw_ver[2] = mgir.fw_info.extended_sub_minor;
+    }
     return true;
 }
 
@@ -1203,7 +1215,6 @@ bool Fs3Operations::FsBurnAux(FwOperations *imgops, ExtBurnParams& burnParams)
     if (!devIntQueryRes && burnParams.burnFailsafe) {
         return false;
     }
-
     // for image we execute full verify to bring all the information needed for ROM Patch
     if (!imageOps.FsIntQueryAux(true, false)) {
         return false;
@@ -1246,7 +1257,6 @@ bool Fs3Operations::FsBurnAux(FwOperations *imgops, ExtBurnParams& burnParams)
                         return errmsg(MLXFW_OPEN_OCR_ERR, "Failed to open device for direct flash access");
                     }
                 }
-
                 if (((Flash *)_ioAccess)->is_flash_write_protected()) {
                     FLASH_RESTORE(origFlashObj);
                     return errmsg("Cannot burn device data sections, Flash is write protected.");
@@ -2692,8 +2702,8 @@ bool Fs3Operations::FwInsertEncSHA(SHATYPE shaType, const char *privPemFile,
         return errmsg("Mismatching UUID size(%d), expected %d bytes",
                       (int)uuidData.size() << 2, (int)sizeof(image_signature_256.keypair_uuid));
     }
-
-    if (!FwCalcSHA(shaType, sha)) {
+    vector<u_int8_t> fourMbImage;
+    if (!FwCalcSHA(shaType, sha, fourMbImage)) {
         return false;
     }
 
@@ -2758,8 +2768,8 @@ bool Fs3Operations::FwInsertSHA256(PrintCallBack printFunc)
     if (_ioAccess->is_flash()) {
         return errmsg("Signing is not applicable for devices");
     }
-
-    if (!FwCalcSHA(SHA256, sha)) {
+    vector<u_int8_t> fourMbImage;
+    if (!FwCalcSHA(SHA256, sha, fourMbImage)) {
         return false;
     }
 
@@ -2877,25 +2887,27 @@ u_int32_t Fs3Operations::getImageSize()
     return _fs3ImgInfo.sizeOfImgData - _fwImgInfo.imgStart;
 }
 
-bool Fs3Operations::FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatternAndDevToc, bool verbose)
+bool Fs3Operations::FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatternAndDevToc,
+    bool verbose, bool ignoreImageStart)
 {
     u_int32_t size = 0;
-
     if (!FsIntQueryAux(true, false, false, verbose)) {
         return false;
     }
-
     size = getImageSize();
     //copy
     img.resize(size);
-    _imageCache.get(img.data(), _fwImgInfo.imgStart, size);
-
+    if (ignoreImageStart) {
+        _imageCache.get(img.data(), 0, size);
+    }
+    else {
+        _imageCache.get(img.data(), _fwImgInfo.imgStart, size);
+    }
     if (maskMagicPatternAndDevToc) {
         //set magic patterns to 0xFF
         memset(img.data(), 0xFF, 16);
         maskDevToc(img);
     }
-
     return true;
 }
 
@@ -2921,6 +2933,7 @@ void Fs3Operations::maskDevToc(vector<u_int8_t>& img)
         }
     }
 }
+
 bool Fs3Operations::CreateDtoc(vector<u_int8_t>& img, u_int8_t* SectionData, u_int32_t section_size, u_int32_t flash_data_addr, 
     fs3_section_t section, u_int32_t tocEntryAddr, bool IsCRC)
 {
@@ -2953,6 +2966,7 @@ bool Fs3Operations::CreateDtoc(vector<u_int8_t>& img, u_int8_t* SectionData, u_i
     return true;
 
 }
+
 bool Fs3Operations::RemoveWriteProtection()
 {
     if (((Flash *)_ioAccess)->is_flash_write_protected() == false) {
@@ -3070,15 +3084,14 @@ bool Fs3Operations::RestoreDevToc(vector<u_int8_t>& img, char* psid, dm_dev_id_t
     }
     memcpy(img.data() + flash_data_addr, MfgInfoData, CX4FW_MFG_INFO_SIZE);
     CreateDtoc(img, MfgInfoData, CX4FW_MFG_INFO_SIZE, flash_data_addr, FS3_MFG_INFO, tocEntryAddr, true);
-
-    
     /*VPD_R0*/
     tocEntryAddr += TOC_ENTRY_SIZE;//goto free space
     CreateDtoc(img, NULL, 0, flash_data_addr + CX4FW_MFG_INFO_SIZE, FS3_VPD_R0, tocEntryAddr, true);
     return true;
 }
 
-bool Fs3Operations::FwCalcSHA(SHATYPE shaType, vector<u_int8_t>& sha)
+
+bool Fs3Operations::FwCalcSHA(SHATYPE shaType, vector<u_int8_t>& sha, vector<u_int8_t>& fourMbImage)
 {
 #if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
     vector<u_int8_t> img;
@@ -3100,6 +3113,10 @@ bool Fs3Operations::FwCalcSHA(SHATYPE shaType, vector<u_int8_t>& sha)
         return errmsg("Unexpected type of SHA");
     }
     (*mlxSignSHA) << img;
+    fourMbImage.resize(img.size());
+    for (unsigned int i = 0; i < img.size(); i++) {
+        fourMbImage[i] = img[i];
+    }
     mlxSignSHA->getDigest(sha);
 
     string debugDigest;
@@ -3306,6 +3323,9 @@ bool Fs3Operations::PrepItocSectionsForCompare(vector<u_int8_t>& critical, vecto
     }
     return true;
 }
+
+
+
 const char* Fs3Operations::FwGetResetRecommandationStr()
 {
 
@@ -3709,6 +3729,31 @@ bool Fs3Operations::DoAfterBurnJobs(const u_int32_t magic_patter[],
     }
     if (boot_address_was_updated == false) {
         report_warn("Failed to update FW boot address. Power cycle the device in order to load the new FW.\n");
+    }
+    return true;
+}
+bool Fs3Operations::InsertEncryptedSignature(vector<u_int8_t> signature, const char *uuid, PrintCallBack printFunc)
+{
+    struct cx4fw_image_signature_512 image_signature_512;
+    vector <u_int32_t> uuidData;
+    if (_ioAccess->is_flash()) {
+        return errmsg("Signing is not applicable for devices");
+    }
+    if (!extractUUIDFromString(uuid, uuidData)) {
+        return false;
+    }
+    if (!Fs3MemSetSignature(FS3_IMAGE_SIGNATURE_256, CX4FW_IMAGE_SIGNATURE_256_SIZE, printFunc)) {
+        return false;
+    }
+    memset(&image_signature_512, 0, sizeof(image_signature_512));
+    memcpy(image_signature_512.signature, signature.data(), signature.size());
+    TOCPUn(image_signature_512.signature, signature.size() >> 2);
+    memcpy(image_signature_512.keypair_uuid, uuidData.data(), uuidData.size() << 2);
+    signature.resize(CX4FW_IMAGE_SIGNATURE_512_SIZE, 0x0);
+    cx4fw_image_signature_512_pack(&image_signature_512, signature.data());
+    if (!Fs3UpdateSection(signature.data(), FS3_IMAGE_SIGNATURE_512,
+        false, CMD_SET_SIGNATURE, printFunc)) {
+        return false;
     }
     return true;
 }

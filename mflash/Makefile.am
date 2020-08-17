@@ -38,9 +38,9 @@ AM_CFLAGS = -MD -pipe -Wall -W -DMST_UL -g ${MFLASH_INBAND_FLAG} $(COMPILER_FPIC
 
 noinst_LTLIBRARIES = libmflash.a
 
-libmflash_a_SOURCES =  mflash.c mflash.h\
+libmflash_a_SOURCES =  mflash.c mflash.h mflash_gw.c mflash_gw.h mflash_new_gw.c mflash_new_gw.h \
 			mflash_dev_capability.c mflash_dev_capability.h \
 			mflash_pack_layer.c mflash_pack_layer.h mflash_access_layer.c mflash_access_layer.h\
 			mflash_types.h mlash_common_structs.h
 
-noinst_HEADERS = mflash.h mflash_types.h mflash_common_structs.h
+noinst_HEADERS = mflash.h mflash_gw.h mflash_new_gw.h mflash_types.h mflash_common_structs.h

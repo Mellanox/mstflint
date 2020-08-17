@@ -91,6 +91,7 @@ void TerminationHandler(int signum)
         printf("\n Received signal %d. Cleaning up ...\n", signum);
         fflush(stdout);
         //sleep(1); // Legacy from the Old Flint
+        gFlint->GetSubCommands()[gFlint->GetFlintParams().cmd]->cleanInterruptedCommand();
         delete gFlint;
         gFlint = NULL;
         printf(" Done.\n");

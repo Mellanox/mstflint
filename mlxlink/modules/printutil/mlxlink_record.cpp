@@ -220,10 +220,15 @@ std::ostream & operator << (std::ostream &out, const MlxlinkRecord &mlxlinkRecor
     if (!mlxlinkRecord.visible || mlxlinkRecord.key == "") {
         return out;
     }
+    bool changeColor = mlxlinkRecord.color != ANSI_COLOR_RESET;
     out << mlxlinkRecord.key << std::setw(PDDR_LINE_LEN - mlxlinkRecord.key.length()) << ": ";
-    MlxlinkRecord::changeColorOS(mlxlinkRecord.color);
+    if (changeColor) {
+        MlxlinkRecord::changeColorOS(mlxlinkRecord.color);
+    }
     out << mlxlinkRecord.val << std::endl;
-    MlxlinkRecord::changeColorOS(ANSI_COLOR_RESET);
+    if (changeColor) {
+        MlxlinkRecord::changeColorOS(ANSI_COLOR_RESET);
+    }
     return out;
 
 }

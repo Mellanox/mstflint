@@ -36,7 +36,9 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <errno.h>
+#ifndef _MSC_VER
 #include <sys/param.h>
+#endif
 #include <string.h>
 #include <xz.h>
 

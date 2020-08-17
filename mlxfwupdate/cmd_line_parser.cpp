@@ -39,7 +39,7 @@
  */
 
 #include <iostream>
-#include <boost/algorithm/string.hpp>
+#include "mft_utils.h"
 #include "cmd_line_parser.h"
 #include "cmd_line_params.h"
 #include "tools_version.h"
@@ -54,6 +54,7 @@
 #define TOOL_DESC "Mellanox Firmware Manager"
 
 using namespace std;
+using namespace mft_utils;
 
 /* Command line options definitions, _L for long options and _S for short ones. */
 #define VERSION_L           "version"
@@ -551,6 +552,7 @@ void CmdLineParser::initOptions()
                      "URL",
                      "Server URL for online operations",
                      true);
+
     this->AddOptions(CERTIFICATE_L,
                      CERTIFICATE_S,
                      "Certificate",
@@ -650,7 +652,8 @@ ParseStatus CmdLineParser::HandleOption(string name, string value)
         _cmdLineParams->download_dir = value;
         return PARSE_OK;
     } else if (name == GET_DNLD_OPT_L) {
-        value = boost::algorithm::to_lower_copy(boost::algorithm::trim_copy(value));
+        trim(value);
+        to_lowercase(value);
         if (value != "os" && value != "device") {
             printf("-E- Invalid value %s. please specify: OS | Device\n ", value.c_str());
             return PARSE_ERROR;
@@ -658,16 +661,19 @@ ParseStatus CmdLineParser::HandleOption(string name, string value)
         _cmdLineParams->get_download_opt = value;
         return PARSE_OK;
     } else if (name == DNLD_DEV_L) {
-        value = boost::algorithm::to_lower_copy(boost::algorithm::trim_copy(value));
+        trim(value);
+        to_lowercase(value);
         _cmdLineParams->download_dev = value;
         return PARSE_OK;
     } else if (name == DNLD_OS_L) {
-        value = boost::algorithm::to_lower_copy(boost::algorithm::trim_copy(value));
+        trim(value);
+        to_lowercase(value);
         _cmdLineParams->download_os = value;
         return PARSE_OK;
     } else if (name == DNLD_TYPE_L) {
-        value = boost::algorithm::to_lower_copy(boost::algorithm::trim_copy(value));
-        if (value != "mfa" and value != "self_extractor" and value != "all") {
+        trim(value);
+        to_lowercase(value);
+        if (value != "mfa" && value != "self_extractor" && value != "all") {
             printf("-E- Value :'%s' is not valid, valid values are : MFA | self_extractor|All\n", value.c_str());
             return PARSE_ERROR;
         }
@@ -707,8 +713,9 @@ ParseStatus CmdLineParser::HandleOption(string name, string value)
         _cmdLineParams->query_device_xml = true;
         return PARSE_OK;
     } else if (name == QUERY_FORMAT_L) {
-        value = boost::algorithm::to_lower_copy(boost::algorithm::trim_copy(value));
-        if (value != "xml" and value != "text") {
+        trim(value);
+        to_lowercase(value);
+        if (value != "xml" && value != "text") {
             printf("-E- Value :'%s' is not valid, valid values are : XML | Text\n", value.c_str());
             return PARSE_ERROR;
         }

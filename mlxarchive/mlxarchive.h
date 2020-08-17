@@ -35,27 +35,25 @@
 #include <iostream>
 #include <cmdparser/cmdparser.h>
 
-namespace mlxarchive{
+namespace mlxarchive {
+    class Mlxarchive : public CommandLineRequester
+    {
+    public:
+        Mlxarchive();
+        ~Mlxarchive();
+        ParseStatus HandleOption(string name, string value);
+        int run(int agc, char **argv);
 
-
-class Mlxarchive : public CommandLineRequester
-{
-public:
-    Mlxarchive();
-    ~Mlxarchive();
-    ParseStatus HandleOption(string name, string value);
-    int run(int agc, char **argv);
-
-private:
-    void initCmdParser();
-    void printHelp();
-    void paramValidate();
-    CommandLineParser _cmdParser;
-    std::string _binsDir;
-    std::string _outFile;
-    std::string _date;
-    std::string _version;
-    std::string _mfa2file;
+    private:
+        void initCmdParser();
+        void printHelp();
+        void paramValidate();
+        CommandLineParser _cmdParser;
+        std::string _binsDir;
+        std::string _outFile;
+        std::string _date;
+        std::string _version;
+        std::string _mfa2file;
         bool _printMiniDump;
-};
+    };
 }

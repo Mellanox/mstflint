@@ -51,6 +51,7 @@
 using namespace std;
 #define FINGERPRINT_MFA2 "#BIN.COMPONENT!#"
 
+
 namespace mfa2 {
 
 class Component {
@@ -70,6 +71,7 @@ public:
         _fingerPrint.pack(buff);
         _descriptor.packData(buff);
     };
+
     void unpackData(vector<u_int8_t>& buff) {
         _descriptor.unpackData(buff);
     };
@@ -90,5 +92,6 @@ inline void Component::setComponentBinaryOffset(u_int64_t offset) {
 inline u_int64_t Component::getBinaryComponentOffset() {
     return _descriptor.getComponentBinaryOffset();
 }
+
 }
 #endif
