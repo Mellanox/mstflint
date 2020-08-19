@@ -116,7 +116,7 @@ void Mlxarchive::paramValidate()
     std::string err = "Missing mandatory parameter: %s\n";
     std::string big_err = "Missing mandatory parameters: %s %s %s\n";
     std::string err_regex = "Bad format in: %s(%s), the format should be like: %s\n";
-    boost::smatch match;
+    smatch match;
     bool status_match;
     bool success = true;
     if(!_mfa2file.empty()) {

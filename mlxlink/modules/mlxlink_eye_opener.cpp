@@ -312,9 +312,10 @@ int MlxlinkEyeOpener::gradeEyeScanner(const string &laneTitle, u_int32_t lane, u
 // scan all grades per lane
 void MlxlinkEyeOpener::laneEyesScanner(u_int32_t lane)
 {
-    char title[128];
-    sprintf(title, "Lane %d margin", lane);
-    sprintf(title, "%*s: ", (int)(2-PDDR_LINE_LEN), title);
+    char title1[128];
+    char title[256];
+    sprintf(title1, "Lane %d margin", lane);
+    sprintf(title, "%*s: ", (int)(2-PDDR_LINE_LEN), title1);
     string laneGrades = string(title);
 
     char gradeStr[64];
@@ -388,16 +389,17 @@ void MlxlinkEyeOpener::printFinalResults()
 {
     u_int32_t numberOfFailers = 0;
     int status = 0;
-    char failureStr[64];
     vector<MarginInfo>::iterator it = measuredMargins.begin();
     MarginInfo finalMargin = *it;
     for(;it != measuredMargins.end(); it++) {
         status = it->status;
         if (status != EYE_SCAN_COMPLETED) {
             numberOfFailers++;
-            sprintf(failureStr, "Failure of lane %d", it->lane);
+            char failureStr1[64];
+            char failureStr[128];
+            sprintf(failureStr1, "Failure of lane %d", it->lane);
             if (!pciePort) {
-                sprintf(failureStr, "%s, %s eye", failureStr, _eyeSelctorMap[it->eye].c_str());
+                sprintf(failureStr, "%s, %s eye", failureStr1, _eyeSelctorMap[it->eye].c_str());
             }
             printField(string(failureStr), _scanStatusMap[status]);
         } else {

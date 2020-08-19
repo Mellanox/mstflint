@@ -223,15 +223,15 @@ DEV_INFO_DB = [
         "name": "ConnectX6LX",
         "dev_id": [0x216],
         "chip_rev":-1,
+        "maskable": True,
+        "mask_addr": None,
+        # list of (trace type name, start_bit)
+        "mask_classes": list(HCA_MASK_CLASSES),
     },
     {
         "name": "ConnectX7",
         "dev_id": [0x21a],
         "chip_rev":-1,
-        "maskable": True,
-        "mask_addr": None,
-        # list of (trace type name, start_bit)
-        "mask_classes": list(HCA_MASK_CLASSES),
         "maskable": True,
         "mask_addr": None,
         # list of (trace type name, start_bit)
