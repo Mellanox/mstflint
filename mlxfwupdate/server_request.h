@@ -43,7 +43,7 @@
 #ifdef USE_CURL
 #include <json/reader.h>
 #include <json/writer.h>
-#include <curl.h>
+#include <curl/curl.h>
 #include <string.h>
 #endif
 
