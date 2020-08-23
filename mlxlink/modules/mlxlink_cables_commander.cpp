@@ -59,7 +59,7 @@ void MlxlinkCablesCommander::readMCIA(u_int32_t page, u_int32_t size,
     updateField("l", 0);
     genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
     u_int32_t i = 0;
-    char fieldName[16];
+    char fieldName[20];
     for ( ; i < size/4 ; i++) {
         sprintf(fieldName, "dword[%d]", i);
         u_int32_t s = getFieldValue(std::string(fieldName));
