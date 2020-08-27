@@ -284,6 +284,25 @@ public:
     bool verifyParams();
 };
 
+class ImportHsmKeySubCommand : public SubCommand
+{
+public:
+    ImportHsmKeySubCommand();
+    ~ImportHsmKeySubCommand();
+    FlintStatus executeCommand();
+    bool verifyParams();
+};
+
+class SignRSASubCommand : public SubCommand
+{
+private:
+public:
+    SignRSASubCommand();
+    ~SignRSASubCommand();
+    FlintStatus executeCommand();
+    bool verifyParams();
+};
+
 class SetPublicKeysSubCommand : public SubCommand
 {
 private:

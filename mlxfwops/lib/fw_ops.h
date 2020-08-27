@@ -53,8 +53,7 @@ typedef f_prog_func_str PrintCallBack;
 typedef fw_ver_info_t FwVerInfo;
 
 typedef int (*PrintCallBackAdv) (int completion, char *str);
-
-extern bool nextBootFwVer;
+MLXFWOP_API extern bool nextBootFwVer;
 #define GLOBAL_ALIGNMENT 0x80
 enum SHATYPE { SHA256, SHA512};
 class MLXFWOP_API FwOperations : public FlintErrMsg {
@@ -133,6 +132,7 @@ public:
     virtual bool FwSignWithTwoRSAKeys(const char *privPemFile1, const char *uuid1,
                                       const char *privPemFile2, const char *uuid2, PrintCallBack printFunc = (PrintCallBack)NULL);
     virtual bool FwSignWithHmac(const char *key_file);
+    virtual bool FwSignWithRSA(const char *private_key_file, const char *public_key_file, const char *guid_key_file);
     virtual bool PrepItocSectionsForHmac(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
     virtual bool IsCriticalSection(u_int8_t sect_type);
 

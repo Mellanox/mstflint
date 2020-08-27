@@ -146,6 +146,7 @@ typedef enum {
 #define FLINT_HMAC_ERROR                      "Failed to add HMAC: %s\n"
 #define FLINT_FAILED_IMAGE_REACTIVATION_ERROR "Failed to execute image reactivation on device %s. Error: %s.\n"
 #define FLINT_NO_MFA2                         "MFA2 funcionality is not supported"
+#define FLINT_NO_HSM                          "HSM funcionality is not supported"
 
 /**************************
  * Flint Warning Messages

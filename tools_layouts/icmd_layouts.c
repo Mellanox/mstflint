@@ -682,3 +682,127 @@ void connectib_icmd_set_port_sniffer_unpack(struct connectib_icmd_set_port_sniff
 
 }
 
+void connectx4_hw_pointer_entry_unpack(struct connectx4_hw_pointer_entry *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 0;
+	ptr_struct->ptr = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	offset = 48;
+	ptr_struct->crc = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+}
+
+void connectx4_hw_pointers_arava_unpack(struct connectx4_hw_pointers_arava *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 0;
+	connectx4_hw_pointer_entry_unpack(&(ptr_struct->boot_record_ptr), ptr_buff + offset / 8);
+	offset = 64;
+	connectx4_hw_pointer_entry_unpack(&(ptr_struct->boot2_ptr), ptr_buff + offset / 8);
+	offset = 128;
+	connectx4_hw_pointer_entry_unpack(&(ptr_struct->toc_ptr), ptr_buff + offset / 8);
+	offset = 192;
+	connectx4_hw_pointer_entry_unpack(&(ptr_struct->tools_ptr), ptr_buff + offset / 8);
+	offset = 256;
+	connectx4_hw_pointer_entry_unpack(&(ptr_struct->authentication_start_pointer), ptr_buff + offset / 8);
+	offset = 320;
+	connectx4_hw_pointer_entry_unpack(&(ptr_struct->authentication_end_pointer), ptr_buff + offset / 8);
+	offset = 384;
+	connectx4_hw_pointer_entry_unpack(&(ptr_struct->digest_pointer), ptr_buff + offset / 8);
+	offset = 448;
+	connectx4_hw_pointer_entry_unpack(&(ptr_struct->digest_recovery_key_pointer), ptr_buff + offset / 8);
+	offset = 512;
+	connectx4_hw_pointer_entry_unpack(&(ptr_struct->fw_window_start_pointer), ptr_buff + offset / 8);
+	offset = 576;
+	connectx4_hw_pointer_entry_unpack(&(ptr_struct->fw_window_end_pointer), ptr_buff + offset / 8);
+	offset = 640;
+	connectx4_hw_pointer_entry_unpack(&(ptr_struct->hmac_start_pointer), ptr_buff + offset / 8);
+	offset = 704;
+	connectx4_hw_pointer_entry_unpack(&(ptr_struct->hmac_end_pointer), ptr_buff + offset / 8);
+	offset = 768;
+	connectx4_hw_pointer_entry_unpack(&(ptr_struct->public_key_pointer), ptr_buff + offset / 8);
+	offset = 832;
+	connectx4_hw_pointer_entry_unpack(&(ptr_struct->reserved_ptr13_pointer), ptr_buff + offset / 8);
+	offset = 896;
+	connectx4_hw_pointer_entry_unpack(&(ptr_struct->reserved_ptr14_pointer), ptr_buff + offset / 8);
+	offset = 960;
+	connectx4_hw_pointer_entry_unpack(&(ptr_struct->reserved_ptr15_pointer), ptr_buff + offset / 8);
+}
+
+unsigned int connectx4_public_keys_3_size(void)
+{
+	return CONNECTX4_PUBLIC_KEYS_3_SIZE;
+}
+
+unsigned int connectx4_secure_boot_signatures_size(void)
+{
+	return CONNECTX4_SECURE_BOOT_SIGNATURES_SIZE;
+}
+
+void connectx4_secure_boot_signatures_pack(const struct connectx4_secure_boot_signatures *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+	int i;
+
+	for (i = 0; i < 128; ++i) {
+		offset = adb2c_calc_array_field_address(0, 32, i, 12288, 1);
+		adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->boot_signature[i]);
+	}
+	for (i = 0; i < 128; ++i) {
+		offset = adb2c_calc_array_field_address(4096, 32, i, 12288, 1);
+		adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->critical_signature[i]);
+	}
+	for (i = 0; i < 128; ++i) {
+		offset = adb2c_calc_array_field_address(8192, 32, i, 12288, 1);
+		adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->non_critical_signature[i]);
+	}
+}
+
+void connectx4_component_authentication_configuration_pack(const struct connectx4_component_authentication_configuration *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 24;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->auth_type);
+	offset = 4;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->frc_en);
+	offset = 3;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->mlnx_nvconfig_en);
+	offset = 2;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->vendor_nvconfig_en);
+	offset = 1;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->cs_token_en);
+	offset = 0;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->fw_en);
+}
+
+void connectx4_file_public_keys_3_pack(const struct connectx4_file_public_keys_3 *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+	int i;
+
+	offset = 0;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->keypair_exp);
+	for (i = 0; i < 4; ++i) {
+		offset = adb2c_calc_array_field_address(32, 32, i, 4352, 1);
+		adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->keypair_uuid[i]);
+	}
+	for (i = 0; i < 128; ++i) {
+		offset = adb2c_calc_array_field_address(160, 32, i, 4352, 1);
+		adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->key[i]);
+	}
+	offset = 4256;
+	connectx4_component_authentication_configuration_pack(&(ptr_struct->component_authentication_configuration), ptr_buff + offset / 8);
+}
+
+void connectx4_public_keys_3_pack(const struct connectx4_public_keys_3 *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+	int i;
+
+	for (i = 0; i < 8; ++i) {
+		offset = adb2c_calc_array_field_address(0, 4352, i, 34816, 1);
+		connectx4_file_public_keys_3_pack(&(ptr_struct->file_public_keys_3[i]), ptr_buff + offset / 8);
+	}
+}

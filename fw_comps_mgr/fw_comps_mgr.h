@@ -58,6 +58,13 @@ using namespace std;
 #define MAX_MSG_SIZE 128
 #define MAX_REG_DATA 128
 
+#ifndef UEFI_BUILD
+#define DPRINTF(args)        do { char *reacDebug = getenv("FW_COMPS_DEBUG"); \
+                                  if (reacDebug != NULL) {  printf("\33[2K\r"); \
+                                      printf("[FW_COMPS_DEBUG]: -D- "); printf args; fflush(stdout);} } while (0)
+#else
+#define DPRINTF(...)
+#endif
 typedef struct reg_access_hca_mqis_reg mqisReg;
 typedef struct reg_access_hca_mcqs_reg comp_status_st;
 typedef struct reg_access_hca_mcqi_reg comp_info_st;

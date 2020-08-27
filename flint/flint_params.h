@@ -86,7 +86,9 @@ typedef enum {
     SC_Set_Public_Keys,
     SC_Set_Forbidden_Versions,
     SC_Image_Reactivation,
-    SC_Binary_Compare
+    SC_RSA_Sign,
+    SC_Binary_Compare,
+    SC_Import_Hsm_Key
 } sub_cmd_t;
 
 class FlintParams {
@@ -169,6 +171,11 @@ public:
     string congestion_control_param;
     bool use_cpu_utilization;
     int cpu_percent;
+    bool hsm_specified;
+    string private_key_label;
+    string public_key_label;
+    bool private_key_label_specified;
+    bool public_key_label_specified;
 };
 
 #endif

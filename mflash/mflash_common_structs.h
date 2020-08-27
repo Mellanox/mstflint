@@ -36,6 +36,7 @@
 #include <compatibility.h>
 
 typedef struct mflash mflash;
+#define MAX_FLASH_NAME 256
 
 typedef enum MfOpt {
     MFO_NO_VERIFY = 0,
@@ -63,7 +64,7 @@ typedef enum {
 } BinIdT;
 
 typedef struct flash_params {
-    const char *type_name;
+    char type_name[MAX_FLASH_NAME];
     int log2size;
     int num_of_flashes;
 } flash_params_t;

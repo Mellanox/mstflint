@@ -323,6 +323,8 @@ typedef enum fs3_section {
     FS3_IMAGE_SIGNATURE_512 = 0xa3,
     FS3_PUBLIC_KEYS_4096 = 0xa4,
     FS3_HMAC          = 0xa5,
+    FS4_RSA_PUBLIC_KEY = 0xa6,
+    FS4_RSA_4096_SIGNATURES = 0xa7,
     FS3_MFG_INFO      = 0xe0,
     FS3_DEV_INFO      = 0xe1,
     FS3_NV_DATA1      = 0xe2,
@@ -378,7 +380,8 @@ enum CommandType {
     CMD_SET_SIGNATURE,
     CMD_SET_PUBLIC_KEYS,
     CMD_SET_FORBIDDEN_VERSIONS,
-    CMD_SET_HMAC
+    CMD_SET_HMAC,
+    CMD_SET_PUBLIC_4096_RSA_KEY
 };
 
 

@@ -129,7 +129,7 @@ bool Fs4Operations::getImgStart()
 
     if (cntx_image_num == 0) {
         return errmsg(MLXFW_NO_VALID_IMAGE_ERR,
-                      "No valid FS4 image found");
+                      "\nNo valid FS4 image found. Check the flash parameters, if specified.");
     }
     if (cntx_image_num > 1) {
         return errmsg(MLXFW_MULTIPLE_VALID_IMAGES_ERR,
@@ -182,6 +182,57 @@ bool Fs4Operations::getHWPtrs(VerifyCallBack verifyCallBackFunc)
        printf("-D-tools_ptr=0x%x\n", _tools_ptr);*/
 
     return true;
+}
+bool Fs4Operations::getExtendedHWAravaPtrs(VerifyCallBack verifyCallBackFunc, FBase* ioAccess, bool IsBurningProcess)
+{
+#if defined(UEFI_BUILD)
+    (void)verifyCallBackFunc;
+    (void)ioAccess;
+    (void)IsBurningProcess;
+    return errmsg("Operation not supported");
+#else
+    const unsigned int s = CONNECTX4_HW_POINTERS_ARAVA_SIZE / 4;
+    u_int32_t buff[s];
+    struct connectx4_hw_pointers_arava hw_pointers;
+    u_int32_t physAddr = FS4_HW_PTR_START;
+    if (!IsBurningProcess) {
+        physAddr += _fwImgInfo.imgStart;
+    }
+    READBUF((*ioAccess),
+        physAddr,
+        buff,
+        CONNECTX4_HW_POINTERS_ARAVA_SIZE,
+        "HW Arava Pointers");
+    connectx4_hw_pointers_arava_unpack(&hw_pointers, (u_int8_t *)buff);
+
+    //- Check CRC of each pointers (always check CRC before you call ToCPU
+    for (unsigned int k = 0; k < s; k += 2) {
+        u_int32_t *tempBuff = (u_int32_t *)buff;
+        //Calculate HW CRC:
+        u_int32_t calcPtrCRC = calc_hw_crc((u_int8_t *)((u_int32_t *)tempBuff + k), 6);
+        u_int32_t ptrCRC = tempBuff[k + 1];
+        u_int32_t ptr = tempBuff[k];
+        TOCPUn(&ptr, 1);
+        TOCPUn(&ptrCRC, 1);
+        if (!DumpFs3CRCCheck(FS4_HW_PTR, physAddr + 4 * k, CX6FW_HW_POINTER_ENTRY_SIZE, calcPtrCRC,
+            ptrCRC, false, verifyCallBackFunc)) {
+            return false;
+        }
+    }
+
+    //CodeView: generate tools_layout
+    _boot2_ptr = hw_pointers.boot2_ptr.ptr;
+    _itoc_ptr = hw_pointers.toc_ptr.ptr;
+    _tools_ptr = hw_pointers.tools_ptr.ptr;
+
+    _authentication_start_ptr = hw_pointers.authentication_start_pointer.ptr;
+    _authentication_end_ptr = hw_pointers.authentication_end_pointer.ptr;
+    _digest_mdk_ptr = hw_pointers.digest_pointer.ptr;
+    _digest_recovery_key_ptr = hw_pointers.digest_recovery_key_pointer.ptr;
+    _public_key_ptr = hw_pointers.public_key_pointer.ptr;
+
+    return true;
+#endif
 }
 
 bool Fs4Operations::getExtendedHWPtrs(VerifyCallBack verifyCallBackFunc, FBase* ioAccess, bool IsBurningProcess)
@@ -997,9 +1048,7 @@ bool Fs4Operations::CreateDtoc(vector<u_int8_t>& img, u_int8_t* SectionData, u_i
     memcpy(img.data() + tocEntryAddr, itoc_data, CX5FW_ITOC_ENTRY_SIZE);
     return true;
 }
-#ifndef CONNECTX5_NV_DATA_SIZE
-#define CONNECTX5_NV_DATA_SIZE    (0x10000)
-#endif
+
 #define CONNECTX5_NV_LOG_SIZE 2*(CONNECTX5_NV_DATA_SIZE)
 #define CX5_FLASH_SIZE 0x1000000
 
@@ -1586,8 +1635,10 @@ bool Fs4Operations::BurnFs4Image(Fs4Operations &imageOps,
 
     switch (this->_fwImgInfo.ext_info.chip_type) {
         case CT_CONNECTX6:
-        case CT_CONNECTX6DX:
             getExtendedHWPtrs((VerifyCallBack)NULL, imageOps._ioAccess, true);
+            break;
+        case CT_CONNECTX6DX:
+            getExtendedHWAravaPtrs((VerifyCallBack)NULL, imageOps._ioAccess, true);
             break;
         case CT_BLUEFIELD:
             if (!_signatureMngr->AddSignature(_ioAccess->getMfileObj(), &imageOps, f, 0)) {
@@ -2118,6 +2169,8 @@ bool Fs4Operations::isDTocSection(fs3_section_t sect_type, bool& isDtoc)
     case FS3_IMAGE_SIGNATURE_256:
     case FS3_IMAGE_SIGNATURE_512:
     case FS3_FORBIDDEN_VERSIONS:
+    case FS4_RSA_PUBLIC_KEY:
+    case FS4_RSA_4096_SIGNATURES:
         isDtoc = false;
         break;
 
@@ -2293,7 +2346,20 @@ bool Fs4Operations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, bo
         if (!Fs3UpdatePublicKeysSection(curr_toc->toc_entry.size, publickeys_file, newSection)) {
             return false;
         }
-    } else if (sect_type == FS3_FORBIDDEN_VERSIONS && cmd_type == CMD_SET_FORBIDDEN_VERSIONS) {
+    } 
+#if !defined(UEFI_BUILD)
+    else if (sect_type == FS4_RSA_PUBLIC_KEY) {
+        char *publicKeysData = (char *)new_info;
+        type_msg = "FS4_RSA_PUBLIC_KEY";
+        GetSectData(newSection, (u_int32_t *)publicKeysData, connectx4_public_keys_3_size());
+    } 
+    else if (sect_type == FS4_RSA_4096_SIGNATURES) {
+        char *signaturesData = (char *)new_info;
+        type_msg = "FS4_RSA_4096_SIGNATURES";
+        GetSectData(newSection, (u_int32_t *)signaturesData, connectx4_secure_boot_signatures_size());
+    }
+#endif    
+    else if (sect_type == FS3_FORBIDDEN_VERSIONS && cmd_type == CMD_SET_FORBIDDEN_VERSIONS) {
         char *forbiddenVersions_file = (char *)new_info;
         type_msg = "Forbidden Versions";
         if (!Fs3UpdateForbiddenVersionsSection(curr_toc->toc_entry.size, forbiddenVersions_file, newSection)) {
@@ -2535,6 +2601,171 @@ bool validateHmacKey(string key_str, unsigned int correct_key_len)
     return res;
 }
 #endif
+#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
+bool Fs4Operations::FwSignSection(const vector<u_int8_t>& section, const string privPemFileStr, vector<u_int8_t>& encSha)
+{
+    MlxSignRSA rsa;
+    vector<u_int8_t> sha;
+    int rc = rsa.setPrivKeyFromFile(privPemFileStr);
+    if (rc) {
+        return errmsg("Failed to set private key from file (rc = 0x%x)\n", rc);
+    }
+    MlxSignSHA512 mlxSignSHA;
+    mlxSignSHA << section;
+    mlxSignSHA.getDigest(sha);
+    rc = rsa.sign(MlxSign::SHA512, sha, encSha);
+    if (rc) {
+        return errmsg("Failed to encrypt the SHA (rc = 0x%x)\n", rc);
+    }
+    return true;
+}
+#endif
+bool Fs4Operations::PrepareBinData(vector<u_int8_t>& bin_data)
+{
+    u_int32_t physAddr = _authentication_start_ptr;
+    const unsigned int bin_data_size = _authentication_end_ptr - _authentication_start_ptr + 1;
+    bin_data.resize(bin_data_size);
+    READBUF((*_ioAccess),
+        physAddr,
+        bin_data.data(),
+        bin_data_size,
+        "Reading data pointed by HW Pointers");
+    return true;
+}
+#if !defined(UEFI_BUILD) 
+bool fromFileToArray(string & fileName, vector<u_int8_t>& outputArray, unsigned int PublicKeySize)
+{
+    FILE* pFile = fopen(fileName.c_str(), "rt");
+    if(pFile == NULL) {
+        return false;
+    }
+    fseek(pFile, 0L, SEEK_END);
+    size_t input_length = ftell(pFile);
+    //input length must be 2*puublic key size since the input file is text formatted and each 2 characters in it = 1 byte data
+    if (input_length != (PublicKeySize << 1)) {
+        fclose(pFile);
+        return false;
+    }
+    fseek(pFile, 0L, SEEK_SET);
+    char *data = new char[input_length];
+    if(data == NULL) {
+        fclose(pFile);
+        return false;
+    }
+    fread(data, sizeof(char), input_length, pFile);
+    fclose(pFile);
+    outputArray.resize(input_length/2);
+    for (size_t i = 0; i < input_length; i+=2)
+    {
+        char tempBuf[3] = { 0 };
+        tempBuf[0] = data[i];
+        tempBuf[1] = data[i+1];
+        int scanResult = 0;
+        if(sscanf(tempBuf, "%x", &scanResult) != 1) {
+            delete[] data;
+            return false;
+        }
+        outputArray[i/2] = scanResult;
+    }
+    delete[] data;
+    return true;
+}
+#endif
+
+bool Fs4Operations::GetSecureBootInfo()
+{
+    if (_signatureMngr == NULL) {
+        return false;
+    }
+    return _signatureMngr->GetSecureBootInfo();
+}
+
+bool Fs4Operations::FwSignWithRSA(const char *private_key_file, const char *public_key_file, const char *uuid)
+{
+#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
+    vector<u_int8_t> critical, non_critical, bin_data;
+    fs3_section_t sectionType;
+    vector <u_int8_t> finishData;
+    connectx4_public_keys_3 unpackedData;
+
+
+    //printf("Called FwSignWithRSA, get files private %s  public %s uuid %s\n", private_key_file, public_key_file, uuid);
+    if (_ioAccess->is_flash()) {
+        return errmsg("FwSignWithRSA not allowed for devices.");
+    }
+    unsigned int pem_offset = 0;
+    unsigned int PublicKeySize = sizeof(unpackedData.file_public_keys_3[0].key);
+    vector<u_int8_t> encShaCritical, encShaNonCritical, encShaBinData;
+
+    if (!getExtendedHWAravaPtrs((VerifyCallBack)NULL, _ioAccess)) {
+        return errmsg("FwSignWithRSA: HW pointers not found.\n");
+    }
+    vector <u_int32_t> uuidData;
+    if (!extractUUIDFromString(uuid, uuidData)) {
+        return errmsg("FwSignWithRSA: UUID parsing failed.");
+    }
+    string privPemFileStr(private_key_file);
+    string pubFileStr(public_key_file);
+
+    vector <u_int8_t> publicKeyData;
+    bool PublicKeyIsSet = false;
+    //is the public key file in PEM format?
+    if (CheckPublicKeysFile(public_key_file, sectionType, true)) {
+        if (sectionType == FS3_PUBLIC_KEYS_4096) {
+            if (Fs3UpdatePublicKeysSection((CONNECTX4_PUBLIC_KEYS_3_SIZE >> 2), public_key_file, publicKeyData, true)) {
+                PublicKeyIsSet = true;
+                pem_offset = CONNECTX4_FILE_PUBLIC_KEYS_3_SIZE - PublicKeySize;//first 32 bytes in the PEM file are auxilary data
+            }
+        }
+    }
+    //Is the public key file in text format?
+    if(PublicKeyIsSet == false) {
+        if (!fromFileToArray(pubFileStr, publicKeyData, PublicKeySize)) {
+            return errmsg("FwSignWithRSA: Public key file parsing failed.");
+         }
+    }
+    memset(&unpackedData, 0, sizeof(unpackedData));
+    unpackedData.file_public_keys_3[0].keypair_exp = 0x10001;
+    memcpy(&unpackedData.file_public_keys_3[0].keypair_uuid, uuidData.data(), sizeof(unpackedData.file_public_keys_3[0].keypair_uuid));
+    memcpy(&unpackedData.file_public_keys_3[0].key, publicKeyData.data() + pem_offset, PublicKeySize);
+    TOCPUn(&unpackedData.file_public_keys_3[0].key, PublicKeySize >> 2);
+    finishData.resize(connectx4_public_keys_3_size());
+    connectx4_public_keys_3_pack(&unpackedData, finishData.data());
+    Fs3UpdateSection(finishData.data(), FS4_RSA_PUBLIC_KEY, true, CMD_BURN, NULL);
+    PrepItocSectionsForRsa(critical, non_critical);
+    PrepareBinData(bin_data);
+    FwSignSection(bin_data, privPemFileStr, encShaBinData);
+    FwSignSection(critical, privPemFileStr, encShaCritical);
+    FwSignSection(non_critical, privPemFileStr, encShaNonCritical);
+    finishData.resize(0);
+
+    connectx4_secure_boot_signatures secure_boot_signatures;
+    memset(&secure_boot_signatures, 0, sizeof(secure_boot_signatures));
+
+    memcpy(&secure_boot_signatures.boot_signature, encShaBinData.data(), sizeof(secure_boot_signatures.boot_signature));
+    TOCPUn(&secure_boot_signatures.boot_signature, sizeof(secure_boot_signatures.boot_signature) >> 2);
+
+    memcpy(&secure_boot_signatures.critical_signature, encShaCritical.data(), sizeof(secure_boot_signatures.critical_signature));
+    TOCPUn(&secure_boot_signatures.critical_signature, sizeof(secure_boot_signatures.critical_signature) >> 2);
+
+
+    memcpy(&secure_boot_signatures.non_critical_signature, encShaNonCritical.data(), sizeof(secure_boot_signatures.non_critical_signature));
+    TOCPUn(&secure_boot_signatures.non_critical_signature, sizeof(secure_boot_signatures.non_critical_signature) >> 2);
+
+
+    finishData.resize(connectx4_secure_boot_signatures_size());
+    connectx4_secure_boot_signatures_pack(&secure_boot_signatures, finishData.data());
+    Fs3UpdateSection(finishData.data(), FS4_RSA_4096_SIGNATURES, true, CMD_BURN, NULL);
+
+    return true;
+
+#else
+    (void) private_key_file; 
+    (void) public_key_file; 
+    (void) uuid;
+    return errmsg("FwSignWithRSA is not suppported.");
+#endif
+}
 
 bool Fs4Operations::FwSignWithHmac(const char *keyFile)
 {
@@ -2630,6 +2861,9 @@ bool Fs4Operations::PrepItocSectionsForHmac(vector<u_int8_t>& critical, vector<u
         }
         else
         {
+            if (itoc_info_p->toc_entry.type == FS4_RSA_4096_SIGNATURES) {
+                continue;
+            }
             non_critical.reserve(non_critical.size() + itoc_info_p->section_data.size());
             non_critical.insert(non_critical.end(), itoc_info_p->section_data.begin(), itoc_info_p->section_data.end());
         }
@@ -2651,12 +2885,49 @@ bool Fs4Operations::PrepItocSectionsForCompare(vector<u_int8_t>& critical, vecto
         }
         else
         {
-            if (itoc_info_p->toc_entry.type == FS3_IMAGE_SIGNATURE_512 || itoc_info_p->toc_entry.type == FS3_IMAGE_SIGNATURE_256) {
+            if (itoc_info_p->toc_entry.type == FS4_RSA_4096_SIGNATURES || itoc_info_p->toc_entry.type == FS3_IMAGE_SIGNATURE_512 ||
+                itoc_info_p->toc_entry.type == FS3_IMAGE_SIGNATURE_256) {
                 continue;
             }
             //printf("-D- addr  0x%.8x toc type : 0x%.8x  size 0x%.8x name %s\n", itoc_info_p->entry_addr, itoc_info_p->toc_entry.type, (unsigned int)itoc_info_p->section_data.size(), GetSectionNameByType(itoc_info_p->toc_entry.type));
             non_critical.reserve(non_critical.size() + itoc_info_p->section_data.size());
             non_critical.insert(non_critical.end(), itoc_info_p->section_data.begin(), itoc_info_p->section_data.end());
+            //currentItoc++;
+        }
+    }
+    return true;
+}
+
+bool Fs4Operations::PrepItocSectionsForRsa(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical)
+{
+    if (!FsIntQueryAux(true, false)) {
+        return false;
+    }
+    for (int i = 0; i < this->_fs4ImgInfo.itocArr.numOfTocs; i++) {
+        unsigned long padding_size = 0;
+        struct fs4_toc_info *itoc_info_p = &this->_fs4ImgInfo.itocArr.tocArr[i];
+        struct cx5fw_itoc_entry *toc_entry = &(itoc_info_p->toc_entry);
+        while (((itoc_info_p->section_data.size() + padding_size) % GLOBAL_ALIGNMENT) != 0) {
+            padding_size++;
+        }
+        if (IsCriticalSection(toc_entry->type))
+        {
+            critical.reserve(critical.size() + itoc_info_p->section_data.size() + padding_size);
+            critical.insert(critical.end(), itoc_info_p->section_data.begin(), itoc_info_p->section_data.end());
+            critical.insert(critical.end(), padding_size, 0xff);
+            //printf("-D- addr  0x%.8x toc type : 0x%.8x  size 0x%.8x name %s\n", itoc_info_p->entry_addr, itoc_info_p->toc_entry.type, 
+                //(unsigned int)(itoc_info_p->section_data.size() + padding_size), GetSectionNameByType(itoc_info_p->toc_entry.type));
+        }
+        else
+        {
+            if (itoc_info_p->toc_entry.type == FS4_RSA_4096_SIGNATURES || itoc_info_p->toc_entry.type == FS3_IMAGE_SIGNATURE_512 || 
+                itoc_info_p->toc_entry.type == FS3_IMAGE_SIGNATURE_256) {
+                    continue;
+            }
+            //printf("-D- addr  0x%.8x toc type : 0x%.8x  size 0x%.8x name %s\n", itoc_info_p->entry_addr, itoc_info_p->toc_entry.type, (unsigned int)itoc_info_p->section_data.size(), GetSectionNameByType(itoc_info_p->toc_entry.type));
+            non_critical.reserve(non_critical.size() + itoc_info_p->section_data.size() + padding_size);
+            non_critical.insert(non_critical.end(), itoc_info_p->section_data.begin(), itoc_info_p->section_data.end());
+            non_critical.insert(non_critical.end(), padding_size, 0xff);
             //currentItoc++;
         }
     }

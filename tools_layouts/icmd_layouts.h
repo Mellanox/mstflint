@@ -318,6 +318,158 @@ struct connectib_itrace {
          struct connectib_itrace_ctrl ctrl;
 };
 
+/* Description -   */
+/* Size in bytes - 4 */
+struct connectx4_component_authentication_configuration {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - 0-NULL, 1-SHA256Digest, 3-2048 bit RSA */
+	/* 0x0.0 - 0x0.7 */
+	u_int8_t auth_type;
+	/* Description - used for authenticating Factory Re-COnfiguration Responses */
+	/* 0x0.27 - 0x0.27 */
+	u_int8_t frc_en;
+	/* Description - used for signing NVCONFIG at MLNX level */
+	/* 0x0.28 - 0x0.28 */
+	u_int8_t mlnx_nvconfig_en;
+	/* Description - used for authenticating NVCONFIG at OEM level */
+	/* 0x0.29 - 0x0.29 */
+	u_int8_t vendor_nvconfig_en;
+	/* Description - used for authenticating CS tokens at OEM level */
+	/* 0x0.30 - 0x0.30 */
+	u_int8_t cs_token_en;
+	/* Description - Used for authenticating firmware, DBG_FW, DBG Tokens */
+	/* 0x0.31 - 0x0.31 */
+	u_int8_t fw_en;
+};
+
+/* Description -   */
+/* Size in bytes - 544 */
+struct connectx4_file_public_keys_3 {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - public key exponent, FW should use an exponent of 65537 */
+	/* 0x0.0 - 0x0.31 */
+	u_int32_t keypair_exp;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - UUID of this key created by server when it generates a keypair */
+	/* 0x4.0 - 0x10.31 */
+	u_int32_t keypair_uuid[4];
+/*---------------- DWORD[5] (Offset 0x14) ----------------*/
+	/* Description - 4096 bit public-key */
+	/* 0x14.0 - 0x210.31 */
+	u_int32_t key[128];
+/*---------------- DWORD[133] (Offset 0x214) ----------------*/
+	/* Description - configuration bits to enable authentication for each component */
+	/* 0x214.0 - 0x214.31 */
+	struct connectx4_component_authentication_configuration component_authentication_configuration;
+};
+
+/* Description -   */
+/* Size in bytes - 4352 */
+struct connectx4_public_keys_3 {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0x0.0 - 0x10fc.31 */
+	struct connectx4_file_public_keys_3 file_public_keys_3[8];
+};
+
+/* Description -   */
+/* Size in bytes - 1536 */
+struct connectx4_secure_boot_signatures {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - boot signature of itocs: */
+	/* 0x0.0 - 0x1fc.31 */
+	u_int32_t boot_signature[128];
+/*---------------- DWORD[128] (Offset 0x200) ----------------*/
+	/* Description - fw critical signature of itcos: HW_BOOT_INI, PCIE_PHY_UC_COMMANDS, PCIE_LINK_CODE */
+	/* 0x200.0 - 0x3fc.31 */
+	u_int32_t critical_signature[128];
+/*---------------- DWORD[256] (Offset 0x400) ----------------*/
+	/* Description - fw non critical signatures of all other itocs  */
+	/* 0x400.0 - 0x5fc.31 */
+	u_int32_t non_critical_signature[128];
+};
+
+/* Description -  HW pointer entry */
+/* Size in bytes - 8 */
+struct connectx4_hw_pointer_entry {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+    /* Description - pointer */
+    /* 0x0.0 - 0x0.31 */
+    u_int32_t ptr;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+    /* Description - crc16 as calculated by HW */
+    /* 0x4.0 - 0x4.15 */
+    u_int16_t crc;
+};
+
+/* Description -  HW pointers */
+/* Size in bytes - 128 */
+struct connectx4_hw_pointers_arava {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description -  */
+	/* 0x0.0 - 0x4.31 */
+	struct connectx4_hw_pointer_entry boot_record_ptr;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description -  */
+	/* 0x8.0 - 0xc.31 */
+	struct connectx4_hw_pointer_entry boot2_ptr;
+/*---------------- DWORD[4] (Offset 0x10) ----------------*/
+	/* Description -  */
+	/* 0x10.0 - 0x14.31 */
+	struct connectx4_hw_pointer_entry toc_ptr;
+/*---------------- DWORD[6] (Offset 0x18) ----------------*/
+	/* Description -  */
+	/* 0x18.0 - 0x1c.31 */
+	struct connectx4_hw_pointer_entry tools_ptr;
+/*---------------- DWORD[8] (Offset 0x20) ----------------*/
+	/* Description -  */
+	/* 0x20.0 - 0x24.31 */
+	struct connectx4_hw_pointer_entry authentication_start_pointer;
+/*---------------- DWORD[10] (Offset 0x28) ----------------*/
+	/* Description -  */
+	/* 0x28.0 - 0x2c.31 */
+	struct connectx4_hw_pointer_entry authentication_end_pointer;
+/*---------------- DWORD[12] (Offset 0x30) ----------------*/
+	/* Description -  */
+	/* 0x30.0 - 0x34.31 */
+	struct connectx4_hw_pointer_entry digest_pointer;
+/*---------------- DWORD[14] (Offset 0x38) ----------------*/
+	/* Description -  */
+	/* 0x38.0 - 0x3c.31 */
+	struct connectx4_hw_pointer_entry digest_recovery_key_pointer;
+/*---------------- DWORD[16] (Offset 0x40) ----------------*/
+	/* Description -  */
+	/* 0x40.0 - 0x44.31 */
+	struct connectx4_hw_pointer_entry fw_window_start_pointer;
+/*---------------- DWORD[18] (Offset 0x48) ----------------*/
+	/* Description -  */
+	/* 0x48.0 - 0x4c.31 */
+	struct connectx4_hw_pointer_entry fw_window_end_pointer;
+/*---------------- DWORD[20] (Offset 0x50) ----------------*/
+	/* Description -  */
+	/* 0x50.0 - 0x54.31 */
+	struct connectx4_hw_pointer_entry hmac_start_pointer;
+/*---------------- DWORD[22] (Offset 0x58) ----------------*/
+	/* Description -  */
+	/* 0x58.0 - 0x5c.31 */
+	struct connectx4_hw_pointer_entry hmac_end_pointer;
+/*---------------- DWORD[24] (Offset 0x60) ----------------*/
+	/* Description -  */
+	/* 0x60.0 - 0x64.31 */
+	struct connectx4_hw_pointer_entry public_key_pointer;
+/*---------------- DWORD[26] (Offset 0x68) ----------------*/
+	/* Description -  */
+	/* 0x68.0 - 0x6c.31 */
+	struct connectx4_hw_pointer_entry reserved_ptr13_pointer;
+/*---------------- DWORD[28] (Offset 0x70) ----------------*/
+	/* Description -  */
+	/* 0x70.0 - 0x74.31 */
+	struct connectx4_hw_pointer_entry reserved_ptr14_pointer;
+/*---------------- DWORD[30] (Offset 0x78) ----------------*/
+	/* Description -  */
+	/* 0x78.0 - 0x7c.31 */
+	struct connectx4_hw_pointer_entry reserved_ptr15_pointer;
+};
 
 /* FW_VERSION */
 void connectib_FW_VERSION_pack(const struct connectib_FW_VERSION *ptr_struct, u_int8_t* ptr_buff);
@@ -365,6 +517,34 @@ void connectib_icmd_set_port_sniffer_pack(const struct connectib_icmd_set_port_s
 #define CONNECTX4_ICMD_QUERY_CAP_GENERAL_SIZE    (0x8)
 void connectx4_icmd_query_cap_general_dump(const struct connectx4_icmd_query_cap_general *ptr_struct, FILE *fd);
 
+void connectx4_public_keys_3_pack(const struct connectx4_public_keys_3 *ptr_struct, u_int8_t *ptr_buff);
+void connectx4_public_keys_3_unpack(struct connectx4_public_keys_3 *ptr_struct, const u_int8_t *ptr_buff);
+void connectx4_public_keys_3_print(const struct connectx4_public_keys_3 *ptr_struct, FILE *fd, int indent_level);
+unsigned int connectx4_public_keys_3_size(void);
+#define CONNECTX4_PUBLIC_KEYS_3_SIZE    (0x1100)
+void connectx4_public_keys_3_dump(const struct connectx4_public_keys_3 *ptr_struct, FILE *fd);
+/* secure_boot_signatures */
+void connectx4_secure_boot_signatures_pack(const struct connectx4_secure_boot_signatures *ptr_struct, u_int8_t *ptr_buff);
+void connectx4_secure_boot_signatures_unpack(struct connectx4_secure_boot_signatures *ptr_struct, const u_int8_t *ptr_buff);
+void connectx4_secure_boot_signatures_print(const struct connectx4_secure_boot_signatures *ptr_struct, FILE *fd, int indent_level);
+unsigned int connectx4_secure_boot_signatures_size(void);
+#define CONNECTX4_SECURE_BOOT_SIGNATURES_SIZE    (0x600)
+void connectx4_secure_boot_signatures_dump(const struct connectx4_secure_boot_signatures *ptr_struct, FILE *fd);
+/* file_public_keys_3 */
+void connectx4_file_public_keys_3_pack(const struct connectx4_file_public_keys_3 *ptr_struct, u_int8_t *ptr_buff);
+void connectx4_file_public_keys_3_unpack(struct connectx4_file_public_keys_3 *ptr_struct, const u_int8_t *ptr_buff);
+void connectx4_file_public_keys_3_print(const struct connectx4_file_public_keys_3 *ptr_struct, FILE *fd, int indent_level);
+unsigned int connectx4_file_public_keys_3_size(void);
+#define CONNECTX4_FILE_PUBLIC_KEYS_3_SIZE    (0x220)
+void connectx4_file_public_keys_3_dump(const struct connectx4_file_public_keys_3 *ptr_struct, FILE *fd);
+void connectx4_hw_pointers_arava_pack(const struct connectx4_hw_pointers_arava *ptr_struct, u_int8_t *ptr_buff);
+void connectx4_hw_pointers_arava_unpack(struct connectx4_hw_pointers_arava *ptr_struct, const u_int8_t *ptr_buff);
+void connectx4_hw_pointers_arava_print(const struct connectx4_hw_pointers_arava *ptr_struct, FILE *fd, int indent_level);
+unsigned int connectx4_hw_pointers_arava_size(void);
+#define CONNECTX4_HW_POINTERS_ARAVA_SIZE    (0x80)
+void connectx4_hw_pointers_arava_dump(const struct connectx4_hw_pointers_arava *ptr_struct, FILE *fd);
+
+#define CONNECTX5_NV_DATA_SIZE    (0x10000)
 
 #ifdef __cplusplus
 }

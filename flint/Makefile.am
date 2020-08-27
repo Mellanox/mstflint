@@ -37,13 +37,16 @@ MFLASH_DIR  = $(top_srcdir)/mflash
 COMMON_DIR  = $(top_srcdir)/common
 LAYOUTS_DIR = $(top_srcdir)/tools_layouts
 MFT_UTILS_DIR = $(top_srcdir)/mft_utils
+HSM_CLIENT_LIB = $(top_srcdir)/mft_utils/hsmclient
 CMDIF_DIR   = $(top_srcdir)/cmdif
 MAD_IFC_DIR   = $(top_srcdir)/mad_ifc
 
 AM_CPPFLAGS = -I$(top_srcdir) -I$(srcdir) -I$(MTCR_DIR) -I$(MFLASH_DIR) -I$(COMMON_DIR) \
-           -I$(LAYOUTS_DIR) -I$(MFT_UTILS_DIR) -I$(MTCR_INC_DIR)
+           -I$(LAYOUTS_DIR) -I$(MFT_UTILS_DIR) -I$(MTCR_INC_DIR) \
+           -I$(HSM_CLIENT_LIB)/inc -I$(HSM_CLIENT_LIB)/inc/rsa
 
-mstflint_CXXFLAGS = -Wall -W -g -MP -MD -pipe -DEXTERNAL $(COMPILER_FPIC)
+mstflint_CXXFLAGS = -Wall -W -g -MP -MD -pipe -DEXTERNAL $(COMPILER_FPIC) \
+                    -DUNIX -DOS_UNIX -DOS_LINUX
 bin_PROGRAMS = mstflint
 
 mstflint_SOURCES = flint.cpp flint.h subcommands.cpp subcommands.h\
@@ -60,6 +63,7 @@ mstflint_LDADD =  ../mlxfwops/lib/libmlxfwops.a  \
           ../tools_layouts/libtools_layouts.a \
           ../fw_comps_mgr/libfw_comps_mgr.a \
 		  ../mft_utils/libmftutils.a\
+		  ../mft_utils/hsmclient/libhsmclient.a\
 		  ${LDL}
 
 

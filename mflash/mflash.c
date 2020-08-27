@@ -639,7 +639,8 @@ int get_flash_params(mflash *mfl, flash_params_t *flash_params, flash_info_t *fl
 
         type_name = tmp_flash_info.name;
         if (params_were_set == 0) {
-            flash_params->type_name = type_name;
+            memset(flash_params->type_name, 0, MAX_FLASH_NAME);
+            strncpy(flash_params->type_name, type_name, MAX_FLASH_NAME - 1);
             flash_params->log2size = log2size;
             memcpy(flash_info, &tmp_flash_info, sizeof(flash_info_t));
             params_were_set = 1;
@@ -1446,6 +1447,7 @@ int mfl_com_lock(mflash *mfl)
 
 int mf_release_semaphore(mflash *mfl)
 {
+    mfl->unlock_flash_prog_allowed = 1;
     return release_semaphore(mfl, 1);
 }
 
