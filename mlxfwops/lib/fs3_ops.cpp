@@ -2530,7 +2530,6 @@ bool Fs3Operations::reburnItocSection(PrintCallBack callBackFunc, bool burnFails
     return true;
 }
 
-#define UUID_LEN 16
 bool Fs3Operations::extractUUIDFromString(const char *uuid, std::vector<u_int32_t>& uuidData)
 {
 #if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)

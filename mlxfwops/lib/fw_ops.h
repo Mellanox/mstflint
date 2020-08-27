@@ -55,9 +55,9 @@ typedef fw_ver_info_t FwVerInfo;
 typedef int (*PrintCallBackAdv) (int completion, char *str);
 MLXFWOP_API extern bool nextBootFwVer;
 #define GLOBAL_ALIGNMENT 0x80
+#define UUID_LEN 16
 enum SHATYPE { SHA256, SHA512};
 class MLXFWOP_API FwOperations : public FlintErrMsg {
-
 public:
     #define EXP_ROM_GEN_DEVID 0
     #define MISS_MATCH_DEV_ID 0xffff
@@ -107,6 +107,7 @@ public:
         mfile *mf = _ioAccess->is_flash() ? ((Flash *)_ioAccess)->getMfileObj() : (mfile *)NULL;
         return mf;
     }
+    FBase* GetIoAccess() { return _ioAccess; }
     virtual u_int8_t FwType() = 0;
     static bool IsFwSupportingRomModify(const FwVersion&);
     static bool CntxEthOnly(u_int32_t devid);
@@ -122,6 +123,7 @@ public:
     //on call of FwReadData with Null image we get image_size
     virtual bool FwReadData(void *image, u_int32_t *image_size, bool verbose = false) = 0;
     virtual bool FwReadBlock(u_int32_t addr, u_int32_t size, std::vector<u_int8_t>& dataVec);
+    virtual u_int32_t GetPublicKeySecureBootPtr();
     virtual bool FwReactivateImage()
     {
         return errmsg("Operation not supported.");
@@ -147,6 +149,7 @@ public:
 
     virtual bool FwBurn(FwOperations *imageOps, u_int8_t forceVersion, ProgressCallBack progressFunc = (ProgressCallBack)NULL) = 0;
     virtual bool FwBurnAdvanced(FwOperations *imageOps, ExtBurnParams& burnParams) = 0;
+    virtual bool getExtendedHWAravaPtrs(VerifyCallBack verifyCallBackFunc, FBase* ioAccess, bool IsBurningProcess);
     virtual bool FwBurnAdvanced(std::vector <u_int8_t> imageOps4MData, ExtBurnParams& burnParams, FwComponent::comps_ids_t ComponentId = FwComponent::COMPID_BOOT_IMG);
     virtual bool FwBurnBlock(FwOperations *imageOps, ProgressCallBack progressFunc) = 0; //Add: callback progress, question arr, callback question, configurations
     virtual bool FwWriteBlock(u_int32_t addr, std::vector<u_int8_t> dataVec, ProgressCallBack progressFunc = (ProgressCallBack)NULL);

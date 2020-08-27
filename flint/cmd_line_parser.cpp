@@ -121,6 +121,7 @@ SubCmdMetaData::SubCmdMetaData()
     _sCmds.push_back(new SubCmd("bc", "binary_compare", SC_Binary_Compare));
     _sCmds.push_back(new SubCmd("", "rsa_sign", SC_RSA_Sign));
     _sCmds.push_back(new SubCmd("", "import_hsm_key", SC_Import_Hsm_Key));
+    _sCmds.push_back(new SubCmd("", "export_public_key", SC_Export_Public_Key));
 }
 
 SubCmdMetaData::~SubCmdMetaData()
@@ -219,6 +220,7 @@ FlagMetaData::FlagMetaData()
 #ifdef __WIN__
 	_flags.push_back(new Flag("", "cpu_util", 1));
 #endif
+    _flags.push_back(new Flag("", "output_file", 1));
 }
 
 FlagMetaData::~FlagMetaData()
@@ -750,7 +752,10 @@ void Flint::initCmdParser()
         "<string>",
         "private key label to be used by the sign --hsm command");
 #endif
-
+    AddOptions("output_file",
+        ' ',
+        "<string>",
+        "output file name for exporting the public key from PEM/BIN");
 
 #ifdef __WIN__
 	AddOptions("cpu_util",
@@ -1000,6 +1005,9 @@ ParseStatus Flint::HandleOption(string name, string value)
     } else if (name == "public_key_label") {
         _flintParams.public_key_label_specified = true;
         _flintParams.public_key_label = value;
+    } else if (name == "output_file") {
+        _flintParams.output_file_specified = true;
+        _flintParams.output_file = value;
     }
     else {
         cout << "Unknown Flag: " << name;

@@ -222,7 +222,9 @@ public:
     u_int32_t _digest_recovery_key_ptr;
     u_int32_t _public_key_ptr;
     bool      _signatureDataSet;
-
+    u_int32_t GetPublicKeySecureBootPtr() {
+        return _public_key_ptr;
+    }
     //This class is for sorting the itoc array by ascending absolute flash_addr used in FwShiftDevData
     class TocComp {
 public:

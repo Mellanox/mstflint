@@ -293,6 +293,15 @@ public:
     bool verifyParams();
 };
 
+class ExportPublicSubCommand : public SubCommand
+{
+public:
+    ExportPublicSubCommand();
+    ~ExportPublicSubCommand();
+    FlintStatus executeCommand();
+    bool verifyParams();
+};
+
 class SignRSASubCommand : public SubCommand
 {
 private:

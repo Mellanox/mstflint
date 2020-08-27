@@ -6252,7 +6252,8 @@ FlintStatus ImportHsmKeySubCommand::executeCommand()
     string PemFile = _flintParams.privkey_file;
     vector<unsigned char> outputBuffer;
     Hex64Manipulations hex64;
-    if (hex64.ParsePemFile(PemFile, outputBuffer) == false) {
+    bool IsPemFile8Format;
+    if (hex64.ParsePemFile(PemFile, outputBuffer, IsPemFile8Format) == false || IsPemFile8Format == false) {
         reportErr(true, "Cannot parse the PEM file. The format must be PKCS8!");
         return FLINT_FAILED;
     }
@@ -6297,4 +6298,130 @@ bool ImportHsmKeySubCommand::verifyParams()
         return false;
     }
     return true;
+}
+
+/***********************
+* Class: ExportPublicSubCommand
+***********************/
+ExportPublicSubCommand::ExportPublicSubCommand()
+{
+    _name = "export_public_key";
+    _desc = "Export public key from PEM file or BIN file";
+    _extendedDesc = "Export public key from PEM file or BIN file";
+    _flagLong = "export_public_key";
+    _flagShort = "";
+    _paramExp = "None";
+    _example = FLINT_NAME "[--private_key file.pem --key_uuid uuid string] OR -i <BIN file> --output_file <filename> ";
+    _v = Wtv_Uninitilized;
+    _maxCmdParamNum = 0;
+    _cmdType = SC_Sign;
+}
+
+ExportPublicSubCommand::~ExportPublicSubCommand()
+{
+
+}
+
+bool ExportPublicSubCommand::verifyParams()
+{
+    if (_flintParams.privkey_specified == false && _flintParams.image_specified == false) {
+        reportErr(true, "To export the public key you must provide private key PEM file OR BIN file\n");
+        return false;
+    }
+    if (_flintParams.privkey_specified == true && _flintParams.image_specified == true) {
+        reportErr(true, "To export the public key you must provide private key [PEM file AND UUID string] OR BIN file\n");
+        return false;
+    }
+    if (_flintParams.output_file_specified == false) {
+        reportErr(true, "To export the piblic key you must provide output file name\n");
+        return false;
+    }
+    if (_flintParams.privkey_specified == true) {
+        if (!is_file_exists(_flintParams.privkey_file.c_str())) {
+            reportErr(true, "Can't find private key file %s \n", _flintParams.privkey_file.c_str());
+            return false;
+        }
+        if (_flintParams.uuid_specified == false) {
+            reportErr(true, "To export the piblic key you must provide [private key PEM file AND UUID string].UUID string is missing\n");
+            return false;
+        }
+        if (_flintParams.privkey_uuid.size() != UUID_LEN * 2) {
+            reportErr(true, "The size of UUID string must be exactly %u bytes\n", UUID_LEN * 2);
+            return false;
+        }
+    }
+    else if (_flintParams.image_specified == true) {
+        if (!is_file_exists(_flintParams.image.c_str())) {
+            reportErr(true, "Can't find BIN file %s \n", _flintParams.image.c_str());
+            return false;
+        }
+        if (_flintParams.uuid_specified == true) {
+            reportErr(true, "To export the piblic key from the BIN you should not provide [UUID string].UUID string is extracted from the BIN file.\n");
+            return false;
+        }
+    }
+    return true;
+}
+
+FlintStatus ExportPublicSubCommand::executeCommand()
+{
+    vector<unsigned char> resultBuffer;
+    if (_flintParams.privkey_specified == true) {//working with PEM file
+        if (!verifyParams()) {
+            return FLINT_FAILED;
+        }
+        vector<unsigned char> outputBuffer;
+        bool IsPemFile8Format = false;
+        string PemFile = _flintParams.privkey_file;
+        Hex64Manipulations hex64;
+        if (hex64.ParsePemFile(PemFile, outputBuffer, IsPemFile8Format) == false) {
+            reportErr(true, "Cannot parse the PEM file!");
+            return FLINT_FAILED;
+        }
+        resultBuffer.resize(532);
+        if (IsPemFile8Format) {
+            for (unsigned int i = MODULUS_OFFSET; i < MODULUS_OFFSET + MODULUS_SIZE; i++) {
+                resultBuffer[i - MODULUS_OFFSET + 20] = outputBuffer[i];
+            }
+        }
+        else {
+            for (unsigned int i = 12; i < 524; i++) {
+                resultBuffer[i + 8] = outputBuffer[i];
+            }
+        }
+        resultBuffer[0] = 0;
+        resultBuffer[1] = 1;
+        resultBuffer[2] = 0;
+        resultBuffer[3] = 1;
+        string strData = _flintParams.privkey_uuid;
+        for (size_t i = 0; i < UUID_LEN * 2; i += 2) {
+            char tmpBuf[3] = { 0 };
+            tmpBuf[0] = strData[i];
+            tmpBuf[1] = strData[i+1];
+            unsigned int dwData = 0;
+            sscanf(tmpBuf, "%x", &dwData);
+            resultBuffer[i/2+4] = (u_int8_t)dwData;
+        }
+    }
+    else {//working with the BIN file
+        if (preFwOps() == FLINT_FAILED) {
+            return FLINT_FAILED;
+        }
+        if (_imgOps->FwType() != FIT_FS4) {
+            reportErr(true, "Extracting public key is applicable only for FS4 FW.\n");
+            return FLINT_FAILED;
+        }
+        if (!_imgOps->getExtendedHWAravaPtrs(NULL, _imgOps->GetIoAccess(), false)) {
+            reportErr(true, "Extracting secure boot HW pointers failed: %s.\n", _imgOps->err());
+            return FLINT_FAILED;
+        }
+        resultBuffer.resize(532);
+        u_int32_t addr = _imgOps->GetPublicKeySecureBootPtr();
+        if (!_imgOps->FwReadBlock(addr, resultBuffer.size(), resultBuffer)) {
+            reportErr(true, FLINT_IMAGE_READ_ERROR, _imgOps->err());
+            return FLINT_FAILED;
+        }
+    }
+    writeToFile(_flintParams.output_file, resultBuffer);
+    return FLINT_SUCCESS;
 }

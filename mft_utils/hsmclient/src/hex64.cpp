@@ -1,20 +1,40 @@
-/*                  - Mellanox Confidential and Proprietary -
+/*
+ * Copyright (c) 2020 Mellanox Technologies Ltd.  All rights reserved.
  *
- *  Copyright (C) Jan 2020, Mellanox Technologies Ltd.  ALL RIGHTS RESERVED.
+ * This software is available to you under a choice of one of two
+ * licenses.  You may choose to be licensed under the terms of the GNU
+ * General Public License (GPL) Version 2, available from the file
+ * COPYING in the main directory of this source tree, or the
+ * OpenIB.org BSD license below:
  *
- *  Except as specifically permitted herein, no portion of the information,
- *  including but not limited to object code and source code, may be reproduced,
- *  modified, distributed, republished or otherwise exploited in any form or by
- *  any means for any purpose without the prior written permission of Mellanox
- *  Technologies Ltd. Use of software subject to the terms and conditions
- *  detailed in the file "LICENSE.txt".
+ *     Redistribution and use in source and binary forms, with or
+ *     without modification, are permitted provided that the following
+ *     conditions are met:
  *
+ *      - Redistributions of source code must retain the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer.
+ *
+ *      - Redistributions in binary form must reproduce the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer in the documentation and/or other materials
+ *        provided with the distribution.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
-#ifndef __WIN__
+
 
 #include "hex64.h"
 #include <stdio.h>
+#include <string.h>
 using namespace std;
 static const char* base64_chars[2] = {
              "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -98,12 +118,16 @@ bool Hex64Manipulations::PrintHexData(const string& data)
     return true;
 }
 
-bool Hex64Manipulations::ParsePemFile(string inputFile, vector<unsigned char>& outputBuffer)
+bool Hex64Manipulations::ParsePemFile(string inputFile, vector<unsigned char>& outputBuffer, bool& IsPemFile8Format)
 {
     vector<unsigned char> inputBuffer;
     unsigned int inputSize = 0;
     vector<unsigned char> finalBuffer;
-    ReadInputPemFile(inputFile.c_str(), inputBuffer, inputSize);
+    bool IsPem8Format = false;
+    IsPemFile8Format = false;
+    if (ReadInputPemFile(inputFile.c_str(), inputBuffer, inputSize, IsPem8Format) == false) {
+        return false;
+    }
     string inputStr(inputBuffer.begin(), inputBuffer.end());
     string copy(inputStr);
     size_t pos = 0;
@@ -118,42 +142,50 @@ bool Hex64Manipulations::ParsePemFile(string inputFile, vector<unsigned char>& o
     for (unsigned int i = 0; i < decoded_array.size(); i++) {
         finalBuffer[i] = decoded_array[i];
     }
-    
-    if (finalBuffer.size() != 2376) {
-        if (finalBuffer.size() == 2375) {
-            // sometimes hex64 format gives 1 byte less, as well as openssl tool, 
-            // so add missing a zero byte at offset 558
-            // details here  http://lapo.it/asn1js/
-            if (finalBuffer[555] == 0x02 && finalBuffer[556] == 0x82 && finalBuffer[557] == 0x02 &&
-                finalBuffer[558] == 0x00) {
+    if (IsPem8Format) {
+        IsPemFile8Format = true;
+        if (finalBuffer.size() != 2376) {
+            if (finalBuffer.size() == 2375) {
+                // sometimes hex64 format gives 1 byte less, as well as openssl tool, 
+                // so add missing a zero byte at offset 558
+                // details here  http://lapo.it/asn1js/
+                if (finalBuffer[555] == 0x02 && finalBuffer[556] == 0x82 && finalBuffer[557] == 0x02 &&
+                    finalBuffer[558] == 0x00) {
 
-                vector<unsigned char> outputFixedBuffer(2376, 0);
-                for (unsigned int i = 0; i < 558; i++) {
-                    outputFixedBuffer[i] = finalBuffer[i];
+                    vector<unsigned char> outputFixedBuffer(2376, 0);
+                    for (unsigned int i = 0; i < 558; i++) {
+                        outputFixedBuffer[i] = finalBuffer[i];
+                    }
+                    outputFixedBuffer[3] = outputFixedBuffer[3] + 1;//change the main TLV size
+                    outputFixedBuffer[25] = outputFixedBuffer[25] + 1;//change the secondary TLV size
+                    outputFixedBuffer[29] = outputFixedBuffer[29] + 1;//the same
+                    outputFixedBuffer[558] = 1;// this will construct TLV from 02 82 02 00 to 02 82 02 01
+                    outputFixedBuffer[559] = 0;// add zero before private exponent
+                    for (unsigned int i = 560; i < outputFixedBuffer.size(); i++) {
+                        outputFixedBuffer[i] = finalBuffer[i - 1];
+                    }
+                    finalBuffer = outputFixedBuffer;
                 }
-                outputFixedBuffer[3] = outputFixedBuffer[3] + 1;//change the main TLV size
-                outputFixedBuffer[25] = outputFixedBuffer[25] + 1;//change the secondary TLV size
-                outputFixedBuffer[29] = outputFixedBuffer[29] + 1;//the same
-                outputFixedBuffer[558] = 1;// this will construct TLV from 02 82 02 00 to 02 82 02 01
-                outputFixedBuffer[559] = 0;// add zero before private exponent
-                for (unsigned int i = 560; i < outputFixedBuffer.size(); i++) {
-                    outputFixedBuffer[i] = finalBuffer[i - 1];
+                else {
+                    printf("Cannot parse the PEM file. The error is not private exponent.\n");
+                    return false;
                 }
-                finalBuffer = outputFixedBuffer;
             }
             else {
-                printf("Cannot parse the PEM file. The error is not private exponent.\n");
+               printf("Cannot parse the PEM file. The format must be PKCS8!\n");
                 return false;
             }
         }
-        else {
-            printf("Cannot parse the PEM file. The format must be PKCS8!\n");
-            return false;
+        outputBuffer.resize(finalBuffer.size());
+        for (unsigned int i = 0; i < finalBuffer.size(); i++) {
+            outputBuffer[i] = finalBuffer[i];
+         }
+     }
+    else {//NOT IsPem8Format, just copy the result to output buffer
+        outputBuffer.resize(finalBuffer.size());
+        for (unsigned int i = 0; i < finalBuffer.size(); i++) {
+            outputBuffer[i] = finalBuffer[i];
         }
-    }
-    outputBuffer.resize(finalBuffer.size());
-    for (unsigned int i = 0; i < finalBuffer.size(); i++) {
-        outputBuffer[i] = finalBuffer[i];
     }
     return true;
 }
@@ -189,8 +221,17 @@ string Hex64Manipulations::base64_decode(string encoded_string)
     return ret;
 }
 
-bool Hex64Manipulations::ReadInputPemFile(const char* fileName, vector<unsigned char> &outputBuffer, unsigned int& inputSize)
+#define PEM_1_PREFIX "-----BEGIN RSA PRIVATE KEY-----"
+#define PEM_1_PREFIX_LENGTH strlen(PEM_1_PREFIX)
+#define PEM_8_PREFIX "-----BEGIN PRIVATE KEY-----"
+#define PEM_8_PREFIX_LENGTH strlen(PEM_8_PREFIX)
+
+bool Hex64Manipulations::ReadInputPemFile(const char* fileName, vector<unsigned char> &outputBuffer, unsigned int& inputSize, bool& IsPem8Format)
 {
+    bool IsPem1File = false;
+    bool IsPem8File = false;
+    IsPem8Format = false;
+    vector<unsigned char> tempBuffer;
     FILE *fd = fopen(fileName, "rb");
     if (fd == NULL) {
         return false;
@@ -199,22 +240,49 @@ bool Hex64Manipulations::ReadInputPemFile(const char* fileName, vector<unsigned 
         fclose(fd);
         return false;
     }
-    long int fileSize = ftell(fd);
-    if (fileSize < 0) {
+    size_t fileSize = ftell(fd);
+    rewind(fd);
+    tempBuffer.resize(fileSize);
+    // Read
+    if (fread(&tempBuffer[0], 1, fileSize, fd) != fileSize) {
         fclose(fd);
         return false;
     }
-    rewind(fd);
-    /* Skip first 28 bytes */
-    fseek(fd, 28, SEEK_SET);
-    inputSize = fileSize - 55;
-    outputBuffer.resize(inputSize);
-    // Read
-    if (fread(&outputBuffer[0], 1, inputSize, fd) != inputSize) {
+    if (memcmp(&tempBuffer[0], PEM_1_PREFIX, PEM_1_PREFIX_LENGTH) == 0) {
+        IsPem1File = true;
+    }
+    else if (memcmp(&tempBuffer[0], PEM_8_PREFIX, PEM_8_PREFIX_LENGTH) == 0) {
+        IsPem8File = true;
+    }
+    else {
         fclose(fd);
         return false;
+    }
+
+    /* If PEM8, Skip first 28 bytes */
+    if (IsPem8File) {
+        fseek(fd, PEM_8_PREFIX_LENGTH + 1, SEEK_SET);
+        inputSize = fileSize - 55;//suffix is 27 bytes
+        outputBuffer.resize(inputSize);
+        // Read
+        if (fread(&outputBuffer[0], 1, inputSize, fd) != inputSize) {
+            fclose(fd);
+            return false;
+        }
+        IsPem8Format = true;
+    }
+    else if (IsPem1File) {
+        /* If PEM1, Skip first 32 bytes */
+        fseek(fd, PEM_1_PREFIX_LENGTH + 1, SEEK_SET);
+        inputSize = fileSize - 63;//suffix is 31 bytes
+        outputBuffer.resize(inputSize);
+        // Read
+        if (fread(&outputBuffer[0], 1, inputSize, fd) != inputSize) {
+            fclose(fd);
+            return false;
+        }
+
     }
     fclose(fd);
     return true;
 }
-#endif

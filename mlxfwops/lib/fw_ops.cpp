@@ -98,6 +98,7 @@ int FwOperations::getFileSignature(const char *fname)
     if (!strncmp((char*)tmpb, "MTCF", 4)) {
         res = IMG_SIG_TYPE_CF;
     }
+    fclose(fin);
     return res;
 }
 
@@ -2216,4 +2217,13 @@ bool FwOperations::FwCalcSHA(SHATYPE, vector<u_int8_t>&, vector<u_int8_t>&)
 bool FwOperations::InsertEncryptedSignature(vector<u_int8_t>, const char*, PrintCallBack)
 {
     return errmsg("InsertEncryptedSignature not supported");
+}
+
+bool FwOperations::getExtendedHWAravaPtrs(VerifyCallBack, FBase*, bool)
+{
+    return errmsg("getExtendedHWAravaPtrs not supported");
+}
+u_int32_t FwOperations::GetPublicKeySecureBootPtr()
+{
+    return errmsg("GetPublicKeySecureBootPtr not supported");
 }

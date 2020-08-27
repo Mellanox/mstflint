@@ -172,6 +172,7 @@ map_sub_cmd_t_to_subcommand Flint::initSubcommandMap()
     cmdMap[SC_RSA_Sign] = new SignRSASubCommand();
     cmdMap[SC_Binary_Compare] = new  BinaryCompareSubCommand();
     cmdMap[SC_Import_Hsm_Key] = new  ImportHsmKeySubCommand();
+    cmdMap[SC_Export_Public_Key] = new ExportPublicSubCommand();
     return cmdMap;
 }
 
