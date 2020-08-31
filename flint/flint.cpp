@@ -169,7 +169,10 @@ map_sub_cmd_t_to_subcommand Flint::initSubcommandMap()
     cmdMap[SC_Set_Public_Keys] = new SetPublicKeysSubCommand();
     cmdMap[SC_Set_Forbidden_Versions] = new SetForbiddenVersionsSubCommand();
     cmdMap[SC_Image_Reactivation] = new ImageReactivationSubCommand();
+    cmdMap[SC_RSA_Sign] = new SignRSASubCommand();
     cmdMap[SC_Binary_Compare] = new  BinaryCompareSubCommand();
+    cmdMap[SC_Import_Hsm_Key] = new  ImportHsmKeySubCommand();
+    cmdMap[SC_Export_Public_Key] = new ExportPublicSubCommand();
     return cmdMap;
 }
 
@@ -192,9 +195,6 @@ Flint::Flint() :
 Flint::~Flint()
 {
     deInitSubcommandMap(_subcommands);
-    if (_flintParams.flash_params.type_name) {
-        delete[] _flintParams.flash_params.type_name;
-    }
 }
 
 FlintStatus Flint::run(int argc, char *argv[])

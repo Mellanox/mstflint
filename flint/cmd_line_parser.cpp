@@ -119,6 +119,9 @@ SubCmdMetaData::SubCmdMetaData()
     _sCmds.push_back(new SubCmd("", "set_forbidden_versions", SC_Set_Forbidden_Versions));
     _sCmds.push_back(new SubCmd("ir", "image_reactivation", SC_Image_Reactivation));
     _sCmds.push_back(new SubCmd("bc", "binary_compare", SC_Binary_Compare));
+    _sCmds.push_back(new SubCmd("", "rsa_sign", SC_RSA_Sign));
+    _sCmds.push_back(new SubCmd("", "import_hsm_key", SC_Import_Hsm_Key));
+    _sCmds.push_back(new SubCmd("", "export_public_key", SC_Export_Public_Key));
 }
 
 SubCmdMetaData::~SubCmdMetaData()
@@ -199,6 +202,7 @@ FlagMetaData::FlagMetaData()
     _flags.push_back(new Flag("", "skip_ci_req", 0));
     _flags.push_back(new Flag("", "use_dev_rom", 0));
     _flags.push_back(new Flag("", "private_key", 1));
+    _flags.push_back(new Flag("", "public_key", 1));
     _flags.push_back(new Flag("", "key_uuid", 1));
     _flags.push_back(new Flag("", "private_key2", 1));
     _flags.push_back(new Flag("", "hmac_key", 1));
@@ -208,6 +212,15 @@ FlagMetaData::FlagMetaData()
     _flags.push_back(new Flag("", "latest_fw", 0));
     _flags.push_back(new Flag("", "psid", 1));
     _flags.push_back(new Flag("", "cc", 1));
+#ifndef __WIN__
+    _flags.push_back(new Flag("", "private_key_label", 1));
+    _flags.push_back(new Flag("", "public_key_label", 1));
+    _flags.push_back(new Flag("", "hsm", 0));
+#endif
+#ifdef __WIN__
+	_flags.push_back(new Flag("", "cpu_util", 1));
+#endif
+    _flags.push_back(new Flag("", "output_file", 1));
 }
 
 FlagMetaData::~FlagMetaData()
@@ -374,18 +387,16 @@ bool parseFlashParams(string params, flash_params_t& fp)
         return false;
     }
     // Step 2 extract params
-    fp.type_name = strcpy(new char[paramVec[0].length() + 1], paramVec[0].c_str());
-    if (!fp.type_name) {
-        return false;
-    }
+    size_t length = paramVec[0].length();
+    const char* paramStr = paramVec[0].c_str();
+    memset(fp.type_name, 0, MAX_FLASH_NAME);
+    strncpy(fp.type_name, paramStr, length);
     u_int64_t tmp;
     if (!strToNum(paramVec[1], tmp)) {
-        delete[] fp.type_name;
         return false;
     }
     fp.log2size = (int)tmp;
     if (!strToNum(paramVec[2], tmp)) {
-        delete[] fp.type_name;
         return false;
     }
     fp.num_of_flashes = (int)tmp;
@@ -687,11 +698,21 @@ void Flint::initCmdParser()
                ' ',
                "",
                "another flag for override cache replacement", true);
+
+    AddOptions("hsm",
+        ' ',
+        "",
+        "flag for the sign command", true);
+
     AddOptions("private_key",
                ' ',
                "<key_file>",
                "path to PEM formatted private key to be used by the sign command");
 
+    AddOptions("public_key",
+        ' ',
+        "<key_file>",
+        "path to PEM formatted public key to be used by the sign command");
     AddOptions("key_uuid",
                ' ',
                "<uuid_file>",
@@ -720,6 +741,29 @@ void Flint::initCmdParser()
         "<Congestion_Control>",
         "Use this flag while burning to device a Congestion Control Component");
 
+#ifndef __WIN__
+    AddOptions("public_key_label",
+        ' ',
+        "<string>",
+        "public key label to be used by the sign --hsm command");
+
+    AddOptions("private_key_label",
+        ' ',
+        "<string>",
+        "private key label to be used by the sign --hsm command");
+#endif
+    AddOptions("output_file",
+        ' ',
+        "<string>",
+        "output file name for exporting the public key from PEM/BIN");
+
+#ifdef __WIN__
+	AddOptions("cpu_util",
+        ' ',
+		"<CPU_UTIL>",
+		"Use this flag to reduce CPU utilization while burning, Windows only. Legal values are from 1 (lowest CPU) to 5 (highest CPU)");
+#endif
+
     for (map_sub_cmd_t_to_subcommand::iterator it = _subcommands.begin(); it != _subcommands.end(); it++) {
         if (it->first == SC_ResetCfg) {
             // hidden command so "forget" mentioning it
@@ -735,7 +779,7 @@ void Flint::initCmdParser()
 
     AddOptionalSectionData("RETURN VALUES", "0", "Successful completion.");
     AddOptionalSectionData("RETURN VALUES", "1", "An error has occurred.");
-    AddOptionalSectionData("RETURN VALUES", "7", "For burn command - FW already updated - burn was aborted.");
+    AddOptionalSectionData("RETURN VALUES", "7", "For burn command - burning new firmware option was not chosen by the user when prompted, thus the firmware burning process was aborted.");
 
 
     for (map_sub_cmd_t_to_subcommand::iterator it = _subcommands.begin(); it != _subcommands.end(); it++) {
@@ -923,8 +967,10 @@ ParseStatus Flint::HandleOption(string name, string value)
     } else if (name == "private_key") {
         _flintParams.privkey_specified = true;
         _flintParams.privkey_file = value;
-    }
-     else if (name == "key_uuid") {
+    } else if (name == "public_key") {
+        _flintParams.pubkey_specified = true;
+        _flintParams.pubkey_file = value;
+    } else if (name == "key_uuid") {
         _flintParams.uuid_specified = true;
         _flintParams.privkey_uuid = value;
     } else if (name == "hmac_key") {
@@ -944,7 +990,26 @@ ParseStatus Flint::HandleOption(string name, string value)
     } else if (name == "cc") {
         _flintParams.congestion_control = true;
         _flintParams.congestion_control_param = value;
-    } else {
+    } else if (name == "cpu_util") {
+		_flintParams.use_cpu_utilization = true;
+		u_int64_t cpu_percent = 0;
+		if (!strToNum(value, cpu_percent)) {
+			return PARSE_ERROR;
+		}
+		_flintParams.cpu_percent = (int)cpu_percent;
+    } else if (name == "hsm") {
+        _flintParams.hsm_specified = true;
+    } else if (name == "private_key_label") {
+        _flintParams.private_key_label_specified = true;
+        _flintParams.private_key_label = value;
+    } else if (name == "public_key_label") {
+        _flintParams.public_key_label_specified = true;
+        _flintParams.public_key_label = value;
+    } else if (name == "output_file") {
+        _flintParams.output_file_specified = true;
+        _flintParams.output_file = value;
+    }
+    else {
         cout << "Unknown Flag: " << name;
         cout << _cmdParser.GetSynopsis();
         return PARSE_ERROR;
