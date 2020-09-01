@@ -1100,6 +1100,9 @@ int mtcr_pciconf_rw(mfile *mf, unsigned int offset, u_int32_t *data, int rw)
 
     //last 2 bits must be zero as we only allow 30 bits addresses
     if (EXTRACT(address, 30, 2)) {
+        if (errno == EEXIST) {  // not sure if it's OK to change errno in all cases
+            errno = EINVAL;
+        }
         return ME_BAD_PARAMS;
     }
 

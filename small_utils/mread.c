@@ -70,8 +70,8 @@ int main(int ac, char *av[])
     }
 
     if ((rc = mread4(mf, addr, &val)) < 0) {
-        mclose(mf);
         perror("mread");
+        mclose(mf);
         return 1;
     }
     if (rc < 4) {
