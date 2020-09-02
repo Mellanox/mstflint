@@ -58,6 +58,7 @@
 #include "hex64.h"
 #define MAX_IMG_TYPE_LEN 20
 #define MODULUS_SIZE 512
+#define TOTAL_PUBLIC_KEY_SIZE 532
 #define MODULUS_OFFSET 38
 #endif
 #if !defined(__WIN__) && !defined(__DJGPP__) && !defined(UEFI_BUILD) && defined(HAVE_TERMIOS_H)
@@ -6325,28 +6326,28 @@ ExportPublicSubCommand::~ExportPublicSubCommand()
 bool ExportPublicSubCommand::verifyParams()
 {
     if (_flintParams.privkey_specified == false && _flintParams.image_specified == false) {
-        reportErr(true, "To export the public key you must provide private key PEM file OR BIN file\n");
+        reportErr(true, "Incorrect input. To export the public key you must provide private key PEM file OR BIN file.\n");
         return false;
     }
     if (_flintParams.privkey_specified == true && _flintParams.image_specified == true) {
-        reportErr(true, "To export the public key you must provide private key [PEM file AND UUID string] OR BIN file\n");
+        reportErr(true, "Incorrect input. To export the public key you must provide private key [PEM file AND UUID string] OR BIN file.\n");
         return false;
     }
     if (_flintParams.output_file_specified == false) {
-        reportErr(true, "To export the piblic key you must provide output file name\n");
+        reportErr(true, "Incorrect input. To export the public key you must provide output file name.\n");
         return false;
     }
     if (_flintParams.privkey_specified == true) {
         if (!is_file_exists(_flintParams.privkey_file.c_str())) {
-            reportErr(true, "Can't find private key file %s \n", _flintParams.privkey_file.c_str());
+            reportErr(true, "Incorrect input. Can't find private key file %s \n", _flintParams.privkey_file.c_str());
             return false;
         }
         if (_flintParams.uuid_specified == false) {
-            reportErr(true, "To export the piblic key you must provide [private key PEM file AND UUID string].UUID string is missing\n");
+            reportErr(true, "Incorrect input. To export the public key you must provide [private key PEM file AND UUID string].UUID string is missing.\n");
             return false;
         }
         if (_flintParams.privkey_uuid.size() != UUID_LEN * 2) {
-            reportErr(true, "The size of UUID string must be exactly %u bytes\n", UUID_LEN * 2);
+            reportErr(true, "Incorrect input. The size of UUID string must be exactly %u bytes.\n", UUID_LEN * 2);
             return false;
         }
     }
@@ -6356,7 +6357,7 @@ bool ExportPublicSubCommand::verifyParams()
             return false;
         }
         if (_flintParams.uuid_specified == true) {
-            reportErr(true, "To export the piblic key from the BIN you should not provide [UUID string].UUID string is extracted from the BIN file.\n");
+            reportErr(true, "To export the public key from the BIN you should not provide [UUID string].UUID string is extracted from the BIN file.\n");
             return false;
         }
     }
@@ -6378,7 +6379,7 @@ FlintStatus ExportPublicSubCommand::executeCommand()
             reportErr(true, "Cannot parse the PEM file!");
             return FLINT_FAILED;
         }
-        resultBuffer.resize(532);
+        resultBuffer.resize(TOTAL_PUBLIC_KEY_SIZE);
         if (IsPemFile8Format) {
             for (unsigned int i = MODULUS_OFFSET; i < MODULUS_OFFSET + MODULUS_SIZE; i++) {
                 resultBuffer[i - MODULUS_OFFSET + 20] = outputBuffer[i];
@@ -6415,9 +6416,13 @@ FlintStatus ExportPublicSubCommand::executeCommand()
             reportErr(true, "Extracting secure boot HW pointers failed: %s.\n", _imgOps->err());
             return FLINT_FAILED;
         }
-        resultBuffer.resize(532);
         u_int32_t addr = _imgOps->GetPublicKeySecureBootPtr();
-        if (!_imgOps->FwReadBlock(addr, resultBuffer.size(), resultBuffer)) {
+        if(addr == 0) {
+            reportErr(true, "Extracting public key failed: please check that the image type supports the secure boot.\n", _imgOps->err());
+            return FLINT_FAILED;
+        }
+        resultBuffer.resize(TOTAL_PUBLIC_KEY_SIZE);
+        if (!_imgOps->FwReadBlock(addr, TOTAL_PUBLIC_KEY_SIZE, resultBuffer)) {
             reportErr(true, FLINT_IMAGE_READ_ERROR, _imgOps->err());
             return FLINT_FAILED;
         }
