@@ -52,6 +52,12 @@
 #include <mfa.h>
 #endif
 
+#if !defined(UEFI_BUILD)
+#if !defined(NO_OPEN_SSL)
+#include <mlxsign_lib/mlxsign_lib.h>
+#endif //NO_OPEN_SSL
+#endif //UEFI_BUILD
+
 #define BAD_CRC_MSG "Bad CRC."
 extern const char *g_sectNames[];
 
@@ -2227,3 +2233,26 @@ u_int32_t FwOperations::GetPublicKeySecureBootPtr()
 {
     return errmsg("GetPublicKeySecureBootPtr not supported");
 }
+
+#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
+bool FwOperations::CheckPemKeySize(const string privPemFileStr, u_int32_t& keySize)
+{
+    MlxSignRSA rsa;
+    vector<u_int8_t> section(1, 64);
+    vector<u_int8_t> encSha;
+    vector<u_int8_t> sha;
+    int rc = rsa.setPrivKeyFromFile(privPemFileStr);
+    if (rc) {
+        return false;
+    }
+    MlxSignSHA512 mlxSignSHA;
+    mlxSignSHA << section;
+    mlxSignSHA.getDigest(sha);
+    rc = rsa.sign(MlxSign::SHA512, sha, encSha);
+    if (rc) {
+        return false;
+    }
+    keySize = encSha.size();
+    return true;
+}
+#endif
