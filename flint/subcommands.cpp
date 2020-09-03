@@ -6346,6 +6346,12 @@ bool ExportPublicSubCommand::verifyParams()
             reportErr(true, "Incorrect input. To export the public key you must provide [private key PEM file AND UUID string].UUID string is missing.\n");
             return false;
         }
+        for (string::const_iterator it = _flintParams.privkey_uuid.begin(); it != _flintParams.privkey_uuid.end(); ++it) {
+            if (!isxdigit(*it)) {
+                reportErr(true, "Bad UUID format. UUID string must contain hexadecimal digits only.\n");
+                return false;
+            }
+        }
         if (_flintParams.privkey_uuid.size() != UUID_LEN * 2) {
             reportErr(true, "Incorrect input. The size of UUID string must be exactly %u bytes.\n", UUID_LEN * 2);
             return false;
