@@ -224,6 +224,9 @@ public:
     static FwVersion createFwVersion(u_int16_t fw_ver0, u_int16_t fw_ver1, u_int16_t fw_ver2);
     static FwVersion createRunningFwVersion(const fw_info_com_t*);
     static int       getFileSignature(const char *fname);
+#ifndef UEFI_BUILD
+    static bool CheckPemKeySize(const string privPemFileStr, u_int32_t& keySize);
+#endif
     class MLXFWOP_API RomInfo : FlintErrMsg {
 public:
         RomInfo(const std::vector<u_int8_t>& romSector, bool resEndi = true);

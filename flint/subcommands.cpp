@@ -296,13 +296,13 @@ bool SubCommand::readFromFile(const string& filePath, std::vector<u_int8_t>& buf
     }
     if (fseek(fd, 0, SEEK_END) < 0) {
         fclose(fd);
-        reportErr(true, "Can not get file size for \"%s\"", filePath.c_str());
+        reportErr(true, "Can not get file size for \"%s\".\n", filePath.c_str());
         return false;
     }
     long int fileSize = ftell(fd);
     if (fileSize < 0) {
         fclose(fd);
-        reportErr(true, "Can not get file size for \"%s\"", filePath.c_str());
+        reportErr(true, "Can not get file size for \"%s\".\n", filePath.c_str());
         return false;
     }
     rewind(fd);
@@ -6255,7 +6255,7 @@ FlintStatus ImportHsmKeySubCommand::executeCommand()
     Hex64Manipulations hex64;
     bool IsPemFile8Format;
     if (hex64.ParsePemFile(PemFile, outputBuffer, IsPemFile8Format) == false || IsPemFile8Format == false) {
-        reportErr(true, "Cannot parse the PEM file. The format must be PKCS8!");
+        reportErr(true, "Cannot parse the PEM file. The format must be PKCS8!\n");
         return FLINT_FAILED;
     }
     if (public_key_label.empty() == false) {
@@ -6373,10 +6373,19 @@ FlintStatus ExportPublicSubCommand::executeCommand()
         }
         vector<unsigned char> outputBuffer;
         bool IsPemFile8Format = false;
+        u_int32_t keySize = 0;
         string PemFile = _flintParams.privkey_file;
+        if(!FwOperations::CheckPemKeySize(PemFile, keySize)) {
+            reportErr(true, "Cannot parse the PEM file!\n");
+            return FLINT_FAILED;
+        }
+        if(keySize != 512) {
+            reportErr(true, "The PEM file has to be 4096 bit!\n");
+            return FLINT_FAILED;
+        }
         Hex64Manipulations hex64;
         if (hex64.ParsePemFile(PemFile, outputBuffer, IsPemFile8Format) == false) {
-            reportErr(true, "Cannot parse the PEM file!");
+            reportErr(true, "Cannot parse the PEM file!\n");
             return FLINT_FAILED;
         }
         resultBuffer.resize(TOTAL_PUBLIC_KEY_SIZE);
