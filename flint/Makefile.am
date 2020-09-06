@@ -86,6 +86,7 @@ endif
 if ENABLE_OPENSSL
 mstflint_LDADD += $(top_srcdir)/mlxsign_lib/libmlxsign.a -lcrypto 
 else
+mstflint_CXXFLAGS += -DNO_OPEN_SSL
 endif
 
 if ENABLE_FWMGR
