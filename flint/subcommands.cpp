@@ -6390,6 +6390,9 @@ FlintStatus ExportPublicSubCommand::executeCommand()
                 reportErr(true, "The PEM file has to be 4096 bit!\n");
                 return FLINT_FAILED;
             }
+        #else
+            reportErr(true, "This command requires OPENSSL, can't continue.\n");
+            return FLINT_FAILED;
         #endif
         Hex64Manipulations hex64;
         if (hex64.ParsePemFile(PemFile, outputBuffer, IsPemFile8Format) == false) {
