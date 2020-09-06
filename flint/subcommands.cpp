@@ -6379,16 +6379,21 @@ FlintStatus ExportPublicSubCommand::executeCommand()
         }
         vector<unsigned char> outputBuffer;
         bool IsPemFile8Format = false;
-        u_int32_t keySize = 0;
         string PemFile = _flintParams.privkey_file;
-        if(!FwOperations::CheckPemKeySize(PemFile, keySize)) {
-            reportErr(true, "Cannot parse the PEM file!\n");
+        #if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
+            u_int32_t keySize = 0;
+            if(!FwOperations::CheckPemKeySize(PemFile, keySize)) {
+                reportErr(true, "Cannot parse the PEM file!\n");
+                return FLINT_FAILED;
+            }
+            if(keySize != 512) {
+                reportErr(true, "The PEM file has to be 4096 bit!\n");
+                return FLINT_FAILED;
+            }
+        #else
+            reportErr(true, "This command requires OPENSSL, can't continue.\n");
             return FLINT_FAILED;
-        }
-        if(keySize != 512) {
-            reportErr(true, "The PEM file has to be 4096 bit!\n");
-            return FLINT_FAILED;
-        }
+        #endif
         Hex64Manipulations hex64;
         if (hex64.ParsePemFile(PemFile, outputBuffer, IsPemFile8Format) == false) {
             reportErr(true, "Cannot parse the PEM file!\n");
