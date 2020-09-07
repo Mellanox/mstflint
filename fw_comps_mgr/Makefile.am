@@ -57,7 +57,7 @@ libfw_comps_mgr_a_SOURCES =  fw_comps_mgr.cpp fw_comps_mgr.h fw_comps_mgr_dma_ac
 
 if ENABLE_INBAND
 else
-libfw_comps_mgr_a_CXXFLAGS = "-DNO_INBAND"
+AM_CXXFLAGS += "-DNO_INBAND"
 endif
 
 libfw_comps_mgr_a_LIBADD = ../reg_access/libreg_access.a $(MTCR_DIR)/libmtcr_ul.a $(LAYOUTS_LIB) $(TOOLS_RES_MGMT_DIR)/libtools_res_mgmt.a
