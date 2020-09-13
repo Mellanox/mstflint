@@ -80,6 +80,59 @@ class MlnxDriver(object):
         return self.driverStatus
 
 
+class LinuxRshimUserSpaceDriver:
+
+    # The rshim user-space driver exists from BL2 (and up) 
+    # To start/stop all the rshim user-space drivers manually you can use "systemctl start/stop rshim"
+    # In the future this driver might be started/stopped automatically (???)
+
+    def _scan_rshim_drivers(self):
+
+        result = [] 
+        DRIVERS_PATH = "/dev/"
+        rshim_drivers_names = [dir_name for dir_name in os.listdir(DRIVERS_PATH) if dir_name.startswith('rshim')]
+        for rshim_driver_name in rshim_drivers_names:
+            rshim_pci_device_name, rshim_drop_mode = None, None
+            rshim_misc_file = DRIVERS_PATH + rshim_driver_name + "/misc"
+            with open(rshim_misc_file) as f:
+                for line in f:
+                    if "DEV_NAME" in line:
+                        rshim_pci_device_name = line.split()[1]
+                    if "DROP_MODE" in line: # Exist only in BL2 
+                        rshim_drop_mode = int(line.split()[1][0])
+            if rshim_pci_device_name is not None and rshim_drop_mode is not None:
+                result.append((rshim_misc_file, rshim_pci_device_name, rshim_drop_mode))
+        return result
+
+
+    def __init__(self, logger, user_pci_device_name):
+
+        self.logger = logger
+
+        for rshim_misc_file, rshim_pci_device_name, rshim_drop_mode in self._scan_rshim_drivers():
+            if user_pci_device_name[5:11] in rshim_pci_device_name and rshim_drop_mode == 0:
+                self.rshim_misc_file = rshim_misc_file
+                break
+        else:
+            raise DriverNotExist("There is no running user-space rshim driver")
+
+    def _update_drop_mode(self, action):
+
+        if self.rshim_misc_file:
+            cmd = 'echo "DROP_MODE {0}" > {1}'.format(1 if action == 'stop' else 0, self.rshim_misc_file)
+            self.logger.info('{0}'.format(cmd))
+            rc, _, _ = cmdExec(cmd)
+            if rc != 0:
+                self.logger.info('Failed to {0} user-space rshim driver ({1})'.format(action, self.rshim_misc_file))
+
+
+    def stop(self):
+        self._update_drop_mode('stop')
+
+    def start(self):
+        self._update_drop_mode('start')
+
+
 class MlnxDriverLinux(MlnxDriver):
 
     # blacklist_file_path = '/etc/modprobe.d/mlxfwreset.conf'
@@ -132,6 +185,17 @@ class MlnxDriverLinux(MlnxDriver):
 
             self.drivers_dbdf.sort()
 
+            # Handle rshim user-space driver
+            #################################
+            self.rshim_driver = None
+            if len(devices) == 1: # BL devices has only one PCI device name (There is no BL socket-direct device)
+                pci_device_name = mlxfwreset_utils.getDevDBDF(devices[0], logger) # domain:bus:device.fn
+                try:
+                    self.rshim_driver = LinuxRshimUserSpaceDriver(logger, pci_device_name)
+                except DriverNotExist:
+                    pass
+
+
         logger.info('{0}'.format(self.drivers_dbdf))
 
         driverStatus = MlnxDriver.DRIVER_IGNORE if skip or not self.drivers_dbdf else MlnxDriver.DRIVER_LOADED
@@ -149,6 +213,7 @@ class MlnxDriverLinux(MlnxDriver):
 
     def driverStart(self):
         self.logger.info('MlnxDriverLinux driverStart()')
+
         for dbdf,driver_name in self.drivers_dbdf:
             driver_path = '{0}/{1}'.format(MlnxDriverLinux.PCI_DRIVERS_PATH,driver_name)
             assert os.path.exists(driver_path)
@@ -160,9 +225,15 @@ class MlnxDriverLinux(MlnxDriver):
                 if rc!=0:
                     raise RuntimeError("Failed to start driver! please start driver manually to load FW")
 
+        if self.rshim_driver:
+            self.rshim_driver.start()
 
     def driverStop(self):
         self.logger.info('MlnxDriverLinux driverStop()')
+
+        if self.rshim_driver:
+            self.rshim_driver.stop()
+
         for dbdf,driver_name in self.drivers_dbdf:
             driver_path = '{0}/{1}'.format(MlnxDriverLinux.PCI_DRIVERS_PATH,driver_name)
             assert os.path.exists(driver_path)
