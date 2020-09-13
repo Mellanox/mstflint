@@ -175,6 +175,7 @@ int mvpd_write4(mfile *mf, unsigned int offset, u_int8_t value[4]);
 
 int allocate_kernel_memory_page(mfile* f, mtcr_alloc_page* page);
 
+MTCR_API void set_increase_poll_time(int new_value);
 
 int MWRITE4_SEMAPHORE(mfile* mf, int offset, int value);
 

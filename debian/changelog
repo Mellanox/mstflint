@@ -1,3 +1,15 @@
+mstflint (4.15.0-1) unstable; urgency=low
+
+  * Ported ConnectX6Dx EFUSE programming from MFT 4.16.0
+
+ -- Kostiantyn Maksatov <kostiantynm@unknown>  Thu, 27 Aug 2020 16:50:45 +0300
+
+mstflint (4.15.0-1) unstable; urgency=low
+
+  * Updated from MFT-4.15.0
+
+ -- Kostiantyn Maksatov <kostiantynm@unknown>  Mon, 24 Aug 2020 13:58:33 +0300
+
 mstflint (4.14.0-3) unstable; urgency=low
 
   * Fixed format-security warning in flint's checkFwVersion.

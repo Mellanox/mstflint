@@ -31,12 +31,12 @@
 
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(mstflint, 4.14.0, eranj@mellanox.co.il)
+AC_INIT(mstflint, 4.15.0, eranj@mellanox.co.il)
 
 AC_DEFINE_UNQUOTED([PROJECT], ["mstflint"], [Define the project name.])
 AC_SUBST([PROJECT])
 
-AC_DEFINE_UNQUOTED([VERSION], ["4.14.0"], [Define the project version.])
+AC_DEFINE_UNQUOTED([VERSION], ["4.15.0"], [Define the project version.])
 AC_SUBST([VERSION])
 
 AC_CONFIG_MACRO_DIR([m4])
@@ -267,7 +267,8 @@ AS_IF([test "x$INIPARSER_SYSTEM_AVAILABLE" = "xyes" ], [
     CXXFLAGS="$CXXFLAGS -DHAVE_INI_PARSER"
 ])
 
-AC_SEARCH_LIBS([json_object_get], [json-c jason], [JSON_SYSTEM_AVAILABLE="yes"],[
+
+PKG_CHECK_MODULES([JSON], [jsoncpp], [JSON_SYSTEM_AVAILABLE="yes"],[
     JSON_SYSTEM_AVAILABLE="no"
     JSON_CFLAGS='-I$(top_srcdir)/ext_libs/json'
     AC_SUBST(JSON_CFLAGS)
@@ -325,6 +326,9 @@ AC_LANG_POP([C++])
 CXXFLAGS="$OLD_CXXFLAGS"
 
 TOOLS_BUILD_TIME=`date  +"%b %d %Y\, %H:%M:%S"`
+if test "x$SOURCE_DATE_EPOCH" != "x"; then
+    TOOLS_BUILD_TIME=`LC_ALL=C date -u -d @$SOURCE_DATE_EPOCH +"%b %d %Y\, %H:%M:%S"`
+fi
 AC_SUBST(TOOLS_BUILD_TIME)
 
 AC_ARG_VAR(MSTFLINT_VERSION_STR, The MSTFLINT version)
@@ -403,7 +407,7 @@ else
 fi
 
 
-AC_OUTPUT( Makefile common/Makefile mft_utils/Makefile mtcr_py/Makefile ext_libs/Makefile ext_libs/sqlite/Makefile ext_libs/muparser/Makefile ext_libs/json/Makefile ext_libs/minixz/Makefile dev_mgt/Makefile \
+AC_OUTPUT( Makefile common/Makefile mft_utils/Makefile mft_utils/hsmclient/Makefile mtcr_py/Makefile ext_libs/Makefile ext_libs/sqlite/Makefile ext_libs/muparser/Makefile ext_libs/json/Makefile ext_libs/minixz/Makefile dev_mgt/Makefile \
         tools_layouts/Makefile reg_access/Makefile cmdif/Makefile libmfa/Makefile pldmlib/Makefile tools_res_mgmt/Makefile mlxconfig/Makefile mlxconfig/mlxconfig_dbs/Makefile mflash/Makefile mlxfwops/Makefile mlxfwops/lib/Makefile cmdparser/Makefile \
         flint/Makefile small_utils/Makefile small_utils/mlxfwresetlib/Makefile mstdump/Makefile mstdump/crd_lib/Makefile mstdump/crd_main/Makefile mstdump/mstdump_dbs/Makefile mvpd/Makefile \
         fw_comps_mgr/Makefile mad_ifc/Makefile tracers/Makefile tracers/fwtrace/Makefile resourcedump/Makefile )

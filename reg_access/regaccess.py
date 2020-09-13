@@ -134,7 +134,9 @@ if REG_ACCESS:
         _fields_ = [
             ("reset_level", c_uint8),
             ("reset_type", c_uint8),
-            ("rst_type_sel", c_uint8)
+            ("rst_type_sel", c_uint8),
+            ("pci_sync_for_fw_update_resp", c_uint8),
+            ("pci_sync_for_fw_update_start", c_uint8)
         ]
 
     class MPCIR_ST(Structure):
@@ -162,14 +164,11 @@ if REG_ACCESS:
                     ("reg_access_hca_string_db_parameters", c_uint8 * 64)]
 
 
-
-
-
     class MGIR_ST(Structure):
         _fields_ = [("device_id", c_uint16),
                     ("device_hw_revision", c_uint16),
                     ("pvs", c_uint8),
-                    ("num_ports",c_uint8),                    
+                    ("num_ports",c_uint8),
                     ("hw_dev_id", c_uint16),
                     ("manufacturing_base_mac_47_32", c_uint16),
                     ("manufacturing_base_mac_31_0", c_uint32),
@@ -193,9 +192,9 @@ if REG_ACCESS:
                     ("extended_minor", c_uint32),
                     ("extended_sub_minor", c_uint32),
                     ("isfu_major", c_uint16),
-                    ("subminor", c_uint8),
-                    ("minor", c_uint8),
-                    ("major", c_uint8),
+                    ("fw_subminor", c_uint8),
+                    ("fw_minor", c_uint8),
+                    ("fw_major", c_uint8),
                     ("rom3_type", c_uint8),
                     ("rom3_arch", c_uint8),
                     ("rom2_type", c_uint8),
@@ -242,6 +241,9 @@ if REG_ACCESS:
         def __del__(self):
             if self._mstDev:
                 self.close()
+
+
+
 
         def sendMtrcCapTakeOwnership(self):
             
@@ -367,16 +369,17 @@ if REG_ACCESS:
 
 
         ##########################
-        def sendMFRL(self, method, resetLevel=None, reset_type=None):
+        def sendMFRL(self, method, resetLevel=None, reset_type=None, reset_sync=None):
 
             mfrlRegisterP = pointer(MFRL_ST())
             
             if method == REG_ACCESS_METHOD_SET:
-                if resetLevel is None or reset_type is None:
-                    raise RegAccException("Failed to sendMFRL (reset-level or reset-type is None for SET command)")
+                if resetLevel is None or reset_type is None or reset_sync is None:
+                    raise RegAccException("Failed to sendMFRL (reset level/type/sync is None for SET command)")
                 mfrlRegisterP.contents.reset_level = c_uint8(resetLevel)
                 mfrlRegisterP.contents.rst_type_sel = c_uint8(reset_type)
-            
+                mfrlRegisterP.contents.pci_sync_for_fw_update_start = c_uint8(reset_sync)
+
             c_method = c_uint(method)
             rc = self._reg_access_mfrl(self._mstDev.mf, c_method, mfrlRegisterP)
             # FW bug first mfrl register might fail
@@ -389,6 +392,55 @@ if REG_ACCESS:
                 return mfrlRegisterP.contents.reset_level, mfrlRegisterP.contents.reset_type
 
         ##########################
+        def getMCAM(self):
+
+            def to_bits(list_of_bytes):
+                list_of_bits = []
+                for byte_ in list_of_bytes:
+                    # print("{0:08b}".format(byte_))
+                    for ii in range(7,-1,-1):
+                        val = 0 if byte_ & (1<<ii) == 0 else 1
+                        list_of_bits.append(val)
+                return list_of_bits[::-1]
+
+            mcamRegP = pointer(MCAM_REG_ST())
+            rc = self._reg_access_mcam(self._mstDev.mf, c_uint(REG_ACCESS_METHOD_GET), mcamRegP)            
+            if rc:
+                raise RegAccException("Failed to send Register MCAM (rc: {0})".format(rc))
+            
+            return {
+                "access_reg_group" :mcamRegP.contents.access_reg_group,
+                "feature_group":mcamRegP.contents.feature_group,
+                "mng_access_reg_cap_mask": to_bits(mcamRegP.contents.mng_access_reg_cap_mask),
+                "mng_feature_cap_mask": to_bits(mcamRegP.contents.mng_feature_cap_mask)
+            }
+
+
+        ##########################
+        def getFwVersion(self):
+
+            mgirRegisterP = pointer(MGIR_ST())
+
+            rc = self._reg_access_mgir(self._mstDev.mf, REG_ACCESS_METHOD_GET, mgirRegisterP)
+            if rc:
+                info_ver = ""
+            else:
+                # get dev branch tag
+                info_ver = "".join(chr(val) for val in mgirRegisterP.contents.dev_branch_tag if val != 0)
+
+                # if dev branch is empty, try to get the master version
+                if info_ver == "":
+                    if mgirRegisterP.contents.fw_major != 0:
+                        info_ver = "{0}.{1}.{2}".format(mgirRegisterP.contents.fw_major,
+                                                        mgirRegisterP.contents.fw_minor,
+                                                        mgirRegisterP.contents.fw_subminor)
+                    elif mgirRegisterP.contents.extended_major != 0:
+                        info_ver = "{0}.{1}.{2}".format(mgirRegisterP.contents.extended_major,
+                                                        mgirRegisterP.contents.extended_minor,
+                                                        mgirRegisterP.contents.extended_sub_minor)
+
+            return info_ver
+
         def getFWUptime(self):
 
             mgirRegisterP = pointer(MGIR_ST())

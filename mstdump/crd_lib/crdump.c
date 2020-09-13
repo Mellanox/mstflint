@@ -99,7 +99,7 @@ struct crd_ctxt {
     crd_parsed_csv_t *blocks;
 };
 
-static char crd_error[256];
+static char crd_error[CRD_CSV_PATH_SIZE + 50];
 
 /*
    Store the csv file path at csv_file_path.

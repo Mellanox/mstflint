@@ -29,6 +29,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+ 
 #include "fw_comps_mgr_abstract_access.h"
 #include "fw_comps_mgr_direct_access.h"
 #include "fw_comps_mgr_dma_access.h"

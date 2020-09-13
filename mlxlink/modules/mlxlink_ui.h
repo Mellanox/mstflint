@@ -52,6 +52,14 @@ protected:
     virtual void printHelp();
     virtual void initCmdParser();
     virtual void commandsCaller();
+    virtual void validateMandatoryParams();
+    virtual void validatePCIeParams();
+    virtual void validateGeneralCmdsParams();
+    virtual void validatePRBSParams();
+    virtual void validateSpeedAndCSVBerParams();
+    virtual void validateCableParams();
+    virtual void validateTxGroupParams();
+    virtual void validateGradeScanParams();
     virtual void paramValidate();
     virtual void createMlxlinkCommander();
 

@@ -70,6 +70,7 @@ struct mfile_t {
     /********************************************************************/
     MIB_Private mib;     /*  Data for IB interface (if relevant) */
     void *ctx;
+    void* fallback_mf;
     unsigned int i2c_RESERVED;     /*  Reserved for internal usage (i2c internal) */
     int i2c_smbus;
     enum Mdevs_t flags;
@@ -109,6 +110,8 @@ struct mfile_t {
     int is_cable;
     void *cable_ctx;
     f_mpci_change mpci_change;
+    // Amos gear-box
+    gearbox_info gb_info;
 #ifdef __FreeBSD__
     struct pcisel sel;
     unsigned int vpd_cap_addr;

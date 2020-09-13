@@ -633,8 +633,8 @@ int parse_i2c_cmd(char *buf, u_int8_t *addr_width, u_int8_t *slave_addr, int *si
         for (i = 0; i < *size; i++) {
             char tmp_num[10];
             // TODO: use 16 on the  strtoul
-            strncpy(tmp_num, "0x", 2);
-            strncpy(tmp_num + 2, p, 2);
+            strncpy(tmp_num, "0x", 3);
+            strncpy(tmp_num + 2, p, 3);
             tmp_num[4] = '\0';
             ((u_int8_t*)data)[i] = (u_int8_t)strtoul(tmp_num, 0, 0);
             p += 2;

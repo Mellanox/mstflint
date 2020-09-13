@@ -904,6 +904,17 @@ void ArrayParamValue::setVal(string val, u_int32_t index)
     _values[index]->setVal(val);
 }
 
+u_int32_t ArrayParamValue::offsetToBigEndian(u_int32_t offset)
+{
+    switch (_elementSizeInBits) {
+        case  8: return (offset & 0xFFFFFFE7) + 0x18 - (offset & 0x18);
+        case 16: return (offset & 0xFFFFFFEF) + 0x10 - (offset & 0x10);
+        case 32: return offset;
+        default:
+            throw MlxcfgException("Element size %d bits is not supported", _elementSizeInBits);
+    }
+}
+
 void ArrayParamValue::pack(u_int8_t *buff, u_int32_t offset)
 {
     /* The FW expect a big endian buffer for both the order of the elements in the array
@@ -917,7 +928,7 @@ void ArrayParamValue::pack(u_int8_t *buff, u_int32_t offset)
         j = it + elementsInDW - 1;
         unsigned int iterations = elementsInDW;
         while (iterations) {
-            (*j)->pack(buff, offset);
+            (*j)->pack(buff, offsetToBigEndian(offset));
             offset += _elementSizeInBits;
             iterations--;
             j--;
@@ -934,7 +945,7 @@ void ArrayParamValue::unpack(u_int8_t *buff, u_int32_t offset)
         j = it + elementsInDW - 1;
         unsigned int iterations = elementsInDW;
         while (iterations) {
-            (*j)->unpack(buff, offset);
+            (*j)->unpack(buff, offsetToBigEndian(offset));
             offset += _elementSizeInBits;
             iterations--;
             j--;

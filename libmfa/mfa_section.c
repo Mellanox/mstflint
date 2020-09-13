@@ -91,10 +91,11 @@ ssize_t  mfasec_get_section(u_int8_t *inbuf, size_t inbufsz, u_int8_t **outbuf)
             res = _ERR(MFA_ERR_ARCHV_FORMAT);
             goto clean_up;
         }
-        section_hdr *hdr = (section_hdr*) buf;
+        section_hdr *hdr = (section_hdr*)buf;
         hdr->flags &= (u_int8_t)(~SFLAG_XZ_COMPRESSED);
         hdr->size = __cpu_to_be32(((u_int32_t)sz));
-    } else {
+    }
+    else {
         ssize_t msize = __be32_to_cpu(hdr->size) + sizeof(section_hdr);
         buf = (u_int8_t*)malloc(msize);
         if (buf == NULL) {
@@ -103,7 +104,7 @@ ssize_t  mfasec_get_section(u_int8_t *inbuf, size_t inbufsz, u_int8_t **outbuf)
         memcpy(buf, inbuf, __be32_to_cpu(hdr->size) + sizeof(section_hdr));
     }
 
-    hdr = (section_hdr*) buf;
+    hdr = (section_hdr*)buf;
     hdr->size = __be32_to_cpu(hdr->size);
 
     *outbuf = buf;
@@ -121,7 +122,6 @@ ssize_t  mfasec_get_map(u_int8_t *inbuf, size_t inbufsz, u_int8_t **outbuf)
 {
     int res = 0;
     int j;
-
     res = mfasec_get_section(inbuf, inbufsz, outbuf);
     if (res < 0) {
         return res;
@@ -135,11 +135,17 @@ ssize_t  mfasec_get_map(u_int8_t *inbuf, size_t inbufsz, u_int8_t **outbuf)
         map_entry->metadata_size = __be16_to_cpu(map_entry->metadata_size);
         //printf("%s %d\n", map_entry->board_type_id, n);
         pos += sizeof(map_entry_hdr);
+        if (pos >= total) {
+            break;
+        }
         if (map_entry->metadata_size > 0) {
             metadata_hdr *md_hdr = (metadata_hdr*)&((*outbuf)[pos]);
             md_hdr->modifier = __be16_to_cpu(md_hdr->modifier);
         }
         pos += map_entry->metadata_size;
+        if (pos >= total) {
+            break;
+        }
         for (j = 0; j < n; j++) {
             map_image_entry *img_entry = (map_image_entry*)&((*outbuf)[pos]);
             img_entry->toc_offset = __be32_to_cpu(img_entry->toc_offset);
@@ -164,7 +170,10 @@ ssize_t  mfasec_get_toc(u_int8_t *inbuf, size_t inbufsz, u_int8_t **outbuf)
     }
     ssize_t pos = sizeof(section_hdr);
     ssize_t total = res;
-
+    if (((total - pos) % sizeof(toc_entry)) != 0) {
+        printf("Error while parsing MFA file. Total %d entry %d\n", (int)total, (int)sizeof(toc_entry));
+        return -1;
+    }
     while (pos < total) {
         toc_entry *toc_e = (toc_entry*)&((*outbuf)[pos]);
         toc_e->data_offset = __be32_to_cpu(toc_e->data_offset);

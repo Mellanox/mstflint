@@ -37,6 +37,7 @@
  */
 
 #include "flint_params.h"
+#include <cstring>
 
 FlintParams::FlintParams()
 {
@@ -77,7 +78,7 @@ FlintParams::FlintParams()
     banks = -1; // must be -1 for mflash to get default num of flash
     log_specified = false;
     flash_params_specified = false;
-    flash_params.type_name = (char*)NULL;
+    memset(flash_params.type_name, 0, MAX_FLASH_NAME);
     no_devid_check = false;
     cmd = SC_No_Cmd;
     baseUid.h = 0;
@@ -88,6 +89,7 @@ FlintParams::FlintParams()
     skip_ci_req = false;
     use_dev_rom = false;
     privkey_specified = false;
+    pubkey_specified = false;
     privkey2_specified = false;
     uuid_specified = false;
     uuid2_specified = false;
@@ -96,6 +98,11 @@ FlintParams::FlintParams()
     num_of_args = 0;
     use_latest_fw_version = false;
     use_psid = false;
+    congestion_control = false;
+    use_cpu_utilization = false;
+    public_key_label_specified = false;
+    private_key_label_specified = false;
+    hsm_specified = false;
 }
 
 FlintParams::~FlintParams()

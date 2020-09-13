@@ -50,7 +50,6 @@
 class Fs4Operations : public Fs3Operations {
 public:
 
-
     Fs4Operations(FBase *ioAccess) :
         Fs3Operations(ioAccess), _boot2_ptr(0), _itoc_ptr(0), _tools_ptr(0), _digest_mdk_ptr(0), _digest_recovery_key_ptr(0), _public_key_ptr(0), _signatureDataSet(false)
     {
@@ -75,11 +74,14 @@ public:
                           struct tools_open_fw_version& fwVer, bool queryRunning = false);
     bool FwResetTimeStamp();
     bool FwSignWithHmac(const char *key_file);
+    bool FwSignWithRSA(const char *private_key_file, const char *public_key_file, const char *guid_key_file);
+    virtual bool GetSecureBootInfo();
     bool PrepItocSectionsForHmac(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
     bool IsCriticalSection(u_int8_t sect_type);
     bool CalcHMAC(const vector<u_int8_t>& key, const vector<u_int8_t>& data, vector<u_int8_t>& digest);
     bool CheckIfAlignmentIsNeeded(FwOperations *imgops);
     virtual bool PrepItocSectionsForCompare(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
+    bool PrepItocSectionsForRsa(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
     virtual bool RestoreDevToc(vector<u_int8_t>& img, char* psid, dm_dev_id_t devid_t, const cx4fw_uid_entry& base_guid, const cx4fw_uid_entry& base_mac);
 
 protected:
@@ -121,7 +123,9 @@ public:
         u_int32_t smallestDTocAddr;
 
     };
-
+#ifndef UEFI_BUILD
+    bool FwSignSection(const vector<u_int8_t>& section, const string privPemFileStr, vector<u_int8_t>& encSha);
+#endif
     bool CheckSignatures(u_int32_t a[], u_int32_t b[], int n);
     bool FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_itoc, struct QueryOptions queryOptions, bool ignoreDToc = false, bool verbose = false);
     bool CheckTocSignature(struct cx5fw_itoc_header *itoc_header, u_int32_t first_signature);
@@ -156,9 +160,8 @@ public:
                            std::vector<u_int8_t>&  newSectionData);
     bool FwReadData(void *image, u_int32_t *imageSize, bool verbose = false);
     bool CreateDtoc(vector<u_int8_t>& img, u_int8_t* SectionData, u_int32_t section_size, u_int32_t flash_data_addr,
-        fs3_section_t section, u_int32_t tocEntryAddr, bool IsCRC);
+        fs3_section_t section, u_int32_t tocEntryAddr, CRCTYPE CRC);
     bool Fs4RemoveSectionAux(fs3_section_t sectionType);
-    bool CreateImageData(vector<u_int8_t>& newImageData);
     bool Fs4RemoveSection(fs3_section_t sectionType,
                           ProgressCallBack progressFunc);
     bool Fs4AddSectionAux(fs3_section_t sectionType,
@@ -177,7 +180,7 @@ public:
                                        u_int32_t e2);
 
 
-
+    bool PrepareBinData(vector<u_int8_t>& bin_data);
     bool CheckFs4ImgSize(Fs4Operations& imageOps, bool useImageDevData = false);
 
     u_int32_t getAbsAddr(fs4_toc_info *toc);
@@ -185,6 +188,7 @@ public:
     bool getImgStart();
     bool getHWPtrs(VerifyCallBack verifyCallBackFunc);
     bool getExtendedHWPtrs(VerifyCallBack verifyCallBackFunc, FBase* ioAccess, bool IsBurningProcess = false);
+    bool getExtendedHWAravaPtrs(VerifyCallBack verifyCallBackFunc, FBase* ioAccess, bool IsBurningProcess = false);
     bool verifyToolsArea(VerifyCallBack verifyCallBackFunc);
     bool verifyTocHeader(u_int32_t tocAddr, bool isDtoc, VerifyCallBack verifyCallBackFunc);
     bool verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isDtoc,
@@ -200,6 +204,7 @@ public:
     bool isDTocSection(fs3_section_t sect_type, bool& isDtoc);
 
     bool AlignDeviceSections(FwOperations *imageOps);
+    
     bool restoreWriteProtection(mflash *mfl, u_int8_t banksNum,
                                 write_protect_info_t protect_info[]);
 
@@ -217,7 +222,9 @@ public:
     u_int32_t _digest_recovery_key_ptr;
     u_int32_t _public_key_ptr;
     bool      _signatureDataSet;
-
+    u_int32_t GetPublicKeySecureBootPtr() {
+        return _public_key_ptr;
+    }
     //This class is for sorting the itoc array by ascending absolute flash_addr used in FwShiftDevData
     class TocComp {
 public:

@@ -188,6 +188,14 @@ else:
             self.mf = 0
 
         ##########################
+        def is_cable(self):
+            return '_cable' in str(self.dev)
+
+        ##########################
+        def is_linkx(self):
+            return '_lx' in str(self.dev)
+
+        ##########################
         def close(self):
             pass
 

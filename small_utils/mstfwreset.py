@@ -64,7 +64,8 @@ try:
     from mlxfwresetlib.mlxfwreset_status_checker import FirmwareResetStatusChecker
     from mlxfwresetlib.logger import LoggerFactory
     from mlxfwresetlib.cmd_reg_mfrl import CmdRegMfrl
-    from mlxfwresetlib.cmd_reg_mpcir import CmdRegMpcir
+    # from mlxfwresetlib.cmd_reg_mpcir import CmdRegMpcir
+    from mlxfwresetlib.cmd_reg_mcam import CmdRegMcam
     if os.name != 'nt':
         if not getattr(sys, 'frozen', False):
             sys.path.append(os.sep.join((os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "mlxpci")))
@@ -80,6 +81,10 @@ except Exception as e:
     sys.exit(1)
 
 # Constants ###########################
+class SyncOwner():
+    TOOL = 0
+    DRIVER = 1
+
 MLNX_DEVICES = [
                dict(name="ConnectX2", devid=0x190),
                dict(name="ConnectX3Pro", devid=0x1f7),
@@ -92,13 +97,15 @@ MLNX_DEVICES = [
                dict(name="ConnectX6", devid=0x20f, status_config_not_done=(0xb5f04, 31)),
                dict(name="ConnectX6DX", devid=0x212, status_config_not_done=(0xb5f04, 31)),
                dict(name="ConnectX6LX", devid=0x216, status_config_not_done=(0xb5f04, 31)),
+               dict(name="ConnectX7", devid=0x21a, status_config_not_done=(0xb5f04, 31)),
                dict(name="ConnectX3", devid=0x1f5),
                dict(name="SwitchX", devid=0x245),
                dict(name="IS4", devid=0x1b3),
                ]
 
 # Supported devices.
-SUPP_DEVICES = ["ConnectIB", "ConnectX4", "ConnectX4LX", "ConnectX5", "BlueField", "ConnectX6", "ConnectX6DX", "ConnectX6LX", "BlueField2"]
+SUPP_DEVICES = ["ConnectIB", "ConnectX4", "ConnectX4LX", "ConnectX5", "BlueField",
+                "ConnectX6", "ConnectX6DX", "ConnectX6LX", "BlueField2", "ConnectX7",]
 SUPP_OS = ["FreeBSD", "Linux", "Windows"]
 
 IS_MSTFLINT = True
@@ -157,7 +164,7 @@ device_global = None
 pciModuleName      = "mst_ppc_pci_reset.ko"
 pathToPciModuleDir = "/etc/mft/mlxfwreset"
 
-SUPPORTED_DEVICES_WITH_SWITCHES = ["15b3", "10ee"]
+SUPPORTED_DEVICES_WITH_SWITCHES = ["15b3", "10ee","1af4"] #1af4 for Red Hat (virtio)
 
 
 ######################################################################
@@ -167,12 +174,18 @@ SUPPORTED_DEVICES_WITH_SWITCHES = ["15b3", "10ee"]
 class PcnrError(Exception):
     pass
 
-
 ######################################################################
 # Description:  NoError Exception
 # OS Support :  Linux/FreeBSD/Windows.
 ######################################################################
 class NoError(Exception):
+    pass
+
+######################################################################
+# Description:  Warning Exception
+# OS Support :  Linux/FreeBSD/Windows.
+######################################################################
+class WarningException(Exception):
     pass
 
 ######################################################################
@@ -882,7 +895,7 @@ def mstRestart(busId):
     for _ in range(0, 30):
         (rc, stdout, _) = cmdExec(cmd)
         if rc != 0:
-            raise NoError("Failed to get the status of the mst module (RC=%d), please restart MST manually" % rc)
+            raise WarningException("Failed to get the status of the mst module, please restart MST manually")
         matchedLines = [line for line in stdout.split('\n') if "mst_pciconf" in line]
         logger.debug('matchedLines = {0}'.format(matchedLines))
         if len(matchedLines) == 0:
@@ -904,7 +917,7 @@ def mstRestart(busId):
         else :
             time.sleep(2)
     if rc != 0:
-        raise NoError("Failed to run lspci command (RC=%d), please restart MST manually" % rc)
+        raise WarningException("Failed to run lspci command, please restart MST manually")
     if foundBus == False:
         raise RuntimeError("The device is not appearing in lspci output!")
 
@@ -914,7 +927,7 @@ def mstRestart(busId):
     (rc, stdout, stderr) = cmdExec(cmd)
     if rc != 0:
         logger.debug('stdout:\n{0}\nstderr:\n{1}'.format(stdout,stderr))
-        raise NoError("Failed to restart MST (RC=%d), please restart MST manually" % rc)
+        raise WarningException("Failed to restart MST, please restart MST manually")
     set_signal_handler()
     return 0
 
@@ -1167,6 +1180,20 @@ def resetPciAddr(device,devicesSD,driverObj, cmdLineArgs):
     if SkipMultihostSync or not CmdifObj.isMultiHostSyncSupported():
         stopDriver(driverObj)
     else:
+        # Isolated Smart-NIC support
+        try:
+            cmd = 'echo 0xde31001 > /sys/bus/platform/drivers/mlx-bootctl/fw_reset'
+            rc, _, _ = cmdExec(cmd)
+            if rc == 0:
+                logger.debug('GPIO signal was sent from Smart-NIC integrated ARM')
+                # For debug: if signal sent ok, out should be 0x4:
+                # cmd = 'mcra <dbdf> 0xf3404'
+                # rc, out, _ = cmdExec(cmd)
+                # logger.debug("read val of yu.gpio.gpios_bits.gpio_internal.datain = " + str(out))
+            else:
+                raise Exception
+        except:
+            logger.debug('Not inside Smart-NIC integrated ARM or command is not supported in FW')
         stopDriverSync(driverObj)
 
     logger.debug('start critical time (driver is unloaded)')
@@ -1300,11 +1327,11 @@ def isConnectedToMellanoxSwitchDevice():
         return False
 
 
-def send_reset_cmd_to_fw(mfrl, reset_level, reset_type):
+def send_reset_cmd_to_fw(mfrl, reset_level, reset_type, reset_sync=SyncOwner.TOOL):
     try:
         printAndFlush("-I- %-40s-" % ("Sending Reset Command To Fw"), endChar="")
         logger.debug('[Timing Test] MFRL')
-        mfrl.send(reset_level, reset_type)
+        mfrl.send(reset_level, reset_type, reset_sync)
         printAndFlush("Done")
     except Exception as e:
         printAndFlush("Failed")
@@ -1553,16 +1580,21 @@ def rebootMachine():
 ######################################################################
 # Description:  execute reset level for device
 ######################################################################
-def execResLvl(device, devicesSD, reset_level, reset_type, cmdLineArgs, mfrl, mpcir):
+def execResLvl(device, devicesSD, reset_level, reset_type, reset_sync, cmdLineArgs, mfrl):
     
-    if mfrl.is_phy_less_reset(reset_type):
-        logger.debug('[Timing Test] MPCIR')
-        mpcir.prepare_for_phyless_fw_upgrade()
+    # mpcir usage removed due to RM #2214400
+    # # In new FW, the FW doesn't need this command any more
+    # if mfrl.is_phy_less_reset(reset_type):
+    #     logger.debug('[Timing Test] MPCIR')
+    #     mpcir.prepare_for_phyless_fw_upgrade()
 
     if reset_level == mfrl.LIVE_PATCH:
         send_reset_cmd_to_fw(mfrl, reset_level, reset_type)
     elif reset_level == mfrl.PCI_RESET:
-        resetFlow(device, devicesSD, reset_level, reset_type, cmdLineArgs, mfrl)
+        if reset_sync == SyncOwner.DRIVER:
+            send_reset_cmd_to_fw(mfrl, reset_level, reset_type, reset_sync)
+        else:
+            resetFlow(device, devicesSD, reset_level, reset_type, cmdLineArgs, mfrl)
     elif reset_level == mfrl.WARM_REBOOT:
         send_reset_cmd_to_fw(mfrl, reset_level, reset_type)
         rebootMachine()
@@ -1655,6 +1687,12 @@ def main():
                         choices=CmdRegMfrl.reset_types(),
                         dest='reset_type',
                         help='Run reset with the specified reset-type')
+    options_group.add_argument('--sync',
+                        type=int,
+                        choices=[SyncOwner.TOOL, SyncOwner.DRIVER],
+                        default=SyncOwner.TOOL,
+                        dest='reset_sync',
+                        help='Run reset with the specified reset-sync')
     options_group.add_argument('--yes',
                         '-y',
                         help='answer "yes" on prompt',
@@ -1769,18 +1807,27 @@ def main():
     skipDriver = args.skip_driver
     SkipMultihostSync = args.skip_fsm_sync
     MstDevObj = mtcr.MstDevice(device)
-    RegAccessObj = regaccess.RegAccess(MstDevObj)
+    RegAccessObj = regaccess.RegAccess(MstDevObj)    
     CmdifObj = cmdif.CmdIf(MstDevObj)
     PciOpsObj = MlnxPciOpFactory().getPciOpObj(DevDBDF)
 
 
     mfrl = CmdRegMfrl(RegAccessObj)
-    mpcir = CmdRegMpcir(RegAccessObj)
+    # mpcir = CmdRegMpcir(RegAccessObj)
+    mcam = CmdRegMcam(RegAccessObj)
 
     logger.info('Check if device is livefish')
     DevMgtObj = dev_mgt.DevMgt(MstDevObj) # check if device is in livefish
     if DevMgtObj.isLivefishMode() == 1:
         raise RuntimeError("%s is not supported for device in Flash Recovery mode" % PROG)
+
+    # Check if other process is accessing the device (burning the device)
+    # Supportted on Windows OS only
+    if platform.system() == "Windows":
+        from tools_sync import ToolsSync
+        if ToolsSync(MstDevObj.mf).lock() == False:
+            raise RuntimeError("Other tool is accessing the device! Please try again latter")    
+
 
     # Socket Direct - Create a list of command i/f for all "other" devices
     global CmdifObjsSD
@@ -1830,9 +1877,11 @@ def main():
     print("")
     if command == "query":
         print(mfrl.query_text())
+        print(mcam.reset_sync_query_text())
+
     elif command == "reset":
 
-        # print("Reset device {0}:".format(device))
+        #print("Reset device {0}:".format(device))
 
         reset_level = mfrl.default_reset_level() if args.reset_level is None else args.reset_level
         # print("  * reset-level is '{0}' ({1})".format(reset_level, mfrl.reset_level_description(reset_level)))
@@ -1847,12 +1896,18 @@ def main():
         if mfrl.is_default_reset_type(reset_type) is False and mfrl.is_reset_level_support_reset_type(reset_level) is False:
             raise RuntimeError("Reset-level '{0}' is not supported with reset-type '{1}'".format(reset_level, reset_type))
 
+        reset_sync = args.reset_sync
+        if reset_sync == SyncOwner.DRIVER and mcam.is_reset_by_fw_driver_sync_supported() is False:
+            raise RuntimeError("Synchronization by driver is not supported for this device")
+        if reset_sync != SyncOwner.TOOL and reset_level != CmdRegMfrl.PCI_RESET:
+            raise RuntimeError("Reset-sync '{0}' is not supported with reset-level '{1}'".format(reset_sync, reset_level))
+
         minimal_or_requested = 'Minimal' if args.reset_level is None else 'Requested'
         print("{0} reset level for device, {1}:\n".format(minimal_or_requested , device))
         print("{0}: {1}".format(reset_level,mfrl.reset_level_description(reset_level)))
 
         AskUser("Continue with reset", yes)
-        execResLvl(device, devicesSD, reset_level, reset_type, args, mfrl, mpcir)
+        execResLvl(device, devicesSD, reset_level, reset_type, reset_sync, args, mfrl)
         if reset_level != CmdRegMfrl.COLD_REBOOT and reset_level != CmdRegMfrl.WARM_REBOOT:
             if FWResetStatusChecker.GetStatus() == FirmwareResetStatusChecker.FirmwareResetStatusFailed:
                 reset_fsm_register()
@@ -1872,6 +1927,8 @@ if __name__ == '__main__':
         rc = main()
     except NoError as e:
         print("-I- %s." % str(e))
+    except WarningException as e:
+        print("-W- %s." % str(e))
     except Exception as e:
         print("-E- %s." % str(e))
         rc = 1

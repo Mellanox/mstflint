@@ -35,6 +35,17 @@ class CmdRegMpcir():
     def __init__(self, reg_access):
         self._reg_access = reg_access
 
+    def _wait_for_fw_idle(self):
+        DELAY_BETWEEN_SAMPLES = 0.01 # [sec]
+        NUM_OF_SAMPLES = 10
+        MPCIR_STATUS_IDLE = 0
+
+        for _ in range(NUM_OF_SAMPLES):
+            if self._reg_access.sendMpcir(command="status") == MPCIR_STATUS_IDLE : break
+            time.sleep(DELAY_BETWEEN_SAMPLES)
+        else:
+            raise RuntimeError("FW is not ready to start ISSU flow (MPCIR)")
+
     def _start_preperations(self):
         self._reg_access.sendMpcir(command="start")
 
@@ -51,5 +62,7 @@ class CmdRegMpcir():
 
     def prepare_for_phyless_fw_upgrade(self):
         'send FW an indication to perpare to PHY-less FW upgrade and wait for completion'
+        # self._wait_for_fw_idle()  # Removed since it caused failure on MH setup.
+                                    # The first host will pass this wait, but others won't and raise exception.
         self._start_preperations()
         self._wait_for_completion()

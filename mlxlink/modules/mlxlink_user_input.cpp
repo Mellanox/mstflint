@@ -67,6 +67,11 @@ UserInput::UserInput()
     _sltpLane = false;
     _advancedMode = false;
     _specifiedPort = false;
+    _cable = false;
+    _dump = false;
+    _ddm = false;
+    _write = false;
+    _read = false;
     _logFilePath = "";
     _portType = "NETWORK";
     _paosCmd = "";
@@ -74,8 +79,8 @@ UserInput::UserInput()
     _speedFec = "";
     _pplrLB = "";
     _prbsMode = "";
-    _pprtMode = "";
-    _ppttMode = "";
+    _pprtMode = "PRBS31";
+    _ppttMode = "PRBS31";
     _pprtRate = "";
     _ppttRate = "";
     _pprtTuningType = "";
@@ -88,4 +93,15 @@ UserInput::UserInput()
     _feedbackIndex = 0;
     _feedbackData = 0;
     _gvmiAddress = 0;
+    _page = -1;
+    _offset = -1;
+    _len = -1;
+    _setGroup = -1;
+    _showGroup = -1;
+
+    eyeSelect = "";
+    eyeSelectSpecified = false;
+    measureTime = -1;
+    force = false;
+    gradeScanPerLane = false;
 }
