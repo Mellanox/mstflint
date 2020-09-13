@@ -426,7 +426,7 @@ static int get_space_support_status(struct mst_dev_data *dev)
 {
 	int ret;
 	//    printk("[MST] Checking if the Vendor CAP %d supports the SPACES in devices\n", vend_cap);
-	if (!dev->vendor_specific_cap)
+	if ((!dev->vendor_specific_cap) || (!dev->pci_dev))
 		return 0;
 	if (dev->spaces_support_status != SS_UNINITIALIZED)
 		return 0;
@@ -451,6 +451,7 @@ static int get_space_support_status(struct mst_dev_data *dev)
 	} else {
 		dev->spaces_support_status = SS_ALL_SPACES_SUPPORTED;
 	}
+
 	// clear semaphore
 	_vendor_specific_sem(dev, 0);
 	return 0;
