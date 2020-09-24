@@ -466,7 +466,7 @@ int dm_get_device_id(mfile *mf,
 #endif
 #ifdef CABLES_SUPP
     if (mf->tp == MST_LINKX_CHIP){
- 
+
         switch (mf->linkx_chip_devid){
             case ARDBEG_REV0_DEVID:
             case ARDBEG_REV1_DEVID:
@@ -618,6 +618,12 @@ int dm_get_hw_ports_num(dm_dev_id_t type)
 int dm_dev_is_hca(dm_dev_id_t type)
 {
     return get_entry(type)->dev_type == DM_HCA;
+}
+
+int dm_dev_is_200g_speed_supported_hca(dm_dev_id_t type)
+{
+    bool isBlueField = (type == DeviceBlueField || type == DeviceBlueField2);
+    return !isBlueField && (dm_dev_is_hca(type) && (get_entry(type)->hw_dev_id >= get_entry(DeviceConnectX6)->hw_dev_id));
 }
 
 int dm_dev_is_200g_speed_supported_hca(dm_dev_id_t type)
