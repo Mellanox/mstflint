@@ -75,7 +75,14 @@ public:
     bool FwResetTimeStamp();
     bool FwSignWithHmac(const char *key_file);
     bool FwSignWithRSA(const char *private_key_file, const char *public_key_file, const char *guid_key_file);
+    bool FwSignWithRSA(const char *public_key_file, const char *uuid, vector<u_int8_t>& bin_data, vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
+    virtual bool PreparePublicKeyData(const char *public_key_file, vector <u_int8_t>& publicKeyData, unsigned int& pem_offset);
+    virtual bool PrepareSecureBootSections(vector<u_int8_t>& encShaBinData, vector<u_int8_t>& encShaCritical, vector<u_int8_t>& encShaNonCritical,
+        vector <u_int32_t> uuidData, vector <u_int8_t> publicKeyData, unsigned int pem_offset);
+    virtual bool InsertSecureBootSignature(vector<u_int8_t> encShaBinData, vector<u_int8_t> encShaCritical, vector<u_int8_t> encShaNonCritical);
     virtual bool GetSecureBootInfo();
+    virtual bool IsCableQuerySupported();
+    virtual bool IsLifeCycleSupported();
     bool PrepItocSectionsForHmac(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
     bool IsCriticalSection(u_int8_t sect_type);
     bool CalcHMAC(const vector<u_int8_t>& key, const vector<u_int8_t>& data, vector<u_int8_t>& digest);

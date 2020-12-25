@@ -32,4 +32,16 @@ else
     fi
 fi
 
-exec $PYTHON_EXEC $MSTFLINT_PYTHON_TOOLS/$EXEC_NAME/${EXEC_NAME}.py "$@"
+SCRIPT_PATH=$MSTFLINT_PYTHON_TOOLS/${EXEC_NAME}/${EXEC_NAME}.py
+
+if test ! -f $SCRIPT_PATH; then
+    SCRIPT_PATH=$(find $MSTFLINT_PYTHON_TOOLS -name ${EXEC_NAME}.py)
+fi
+
+if test -z "${SCRIPT_PATH=}"; then
+    >&2 echo "-E- Couldn't find ${EXEC_NAME}.py"
+    exit 2
+fi
+
+exec $PYTHON_EXEC $SCRIPT_PATH "$@"
+

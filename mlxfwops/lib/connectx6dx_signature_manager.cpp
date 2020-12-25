@@ -52,5 +52,9 @@ bool ConnectX6DXFwOperationsSignatureManager::AddSignature(mfile* mf, Fs3Operati
 
 bool ConnectX6DXFwOperationsSignatureManager::GetSecureBootInfo()
 {
+#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
     return true;
+#else
+    return false;
+#endif
 }

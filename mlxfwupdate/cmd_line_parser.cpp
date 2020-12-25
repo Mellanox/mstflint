@@ -637,10 +637,20 @@ ParseStatus CmdLineParser::HandleOption(string name, string value)
         _cmdLineParams->onlineQueryPsids = value;
         return PARSE_OK;
     } else if (name == USE_IMG_FILE_L) {
+        // Check if --image-dir was already parsed
+        if (_cmdLineParams->use_mfa_dir == 1) {
+            printf("-E- Flags --" USE_IMG_FILE_L " and --" USE_IMG_DIR_L " are not to be used in the same command\n");
+            return PARSE_ERROR;
+        }
         _cmdLineParams->use_mfa_file = 1;
         _cmdLineParams->mfa_file = value;
         return PARSE_OK;
     } else if (name == USE_IMG_DIR_L) {
+        // Check if --image-file was already parsed
+        if (_cmdLineParams->use_mfa_file == 1) {
+            printf("-E- Flags --" USE_IMG_FILE_L " and --" USE_IMG_DIR_L " are not to be used in the same command\n");
+            return PARSE_ERROR;
+        }
         _cmdLineParams->use_mfa_dir = 1;
         _cmdLineParams->mfa_dir = value;
         return PARSE_OK;
@@ -751,9 +761,19 @@ ParseStatus CmdLineParser::HandleOption(string name, string value)
         _cmdLineParams->no_fw_ctrl = true;
         return PARSE_OK;
     } else if (name == YES_L) {
+        // Check if --no was already parsed
+        if (_cmdLineParams->yes_no_ == 0) {
+            printf("-E- Flags --" YES_L " and --" NO_L " are not to be used in the same command\n");
+            return PARSE_ERROR;
+        }
         _cmdLineParams->yes_no_ = 1;
         return PARSE_OK;
     } else if (name == NO_L) {
+        // Check if --yes was already parsed
+        if (_cmdLineParams->yes_no_ == 1) {
+            printf("-E- Flags --" YES_L " and --" NO_L " are not to be used in the same command\n");
+            return PARSE_ERROR;
+        }
         _cmdLineParams->yes_no_ = 0;
         return PARSE_OK;
     } else if (name == LIST_CONTENT_L) {

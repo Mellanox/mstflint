@@ -218,7 +218,7 @@ class PCIDeviceBase(object):
         it returns True if the offset is valid, else False
         """
         return (offset + size <= 0xfffe)
-
+    
     def _is_valid_device(self):
         """
         Checks if the device is valid or not

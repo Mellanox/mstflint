@@ -54,9 +54,10 @@ int gcif_get_fw_info(mfile *mf,
 /*
  * get_icmd_query_cap
  */
-int get_icmd_query_cap(mfile *mf, struct connectx4_icmd_query_cap_general *icmd_query_caps)
+int get_icmd_query_cap(mfile *mf, struct icmd_hca_icmd_query_cap_general *icmd_query_caps)
 {
-    SEND_ICMD_FLOW(mf, GET_ICMD_QUERY_CAP, connectx4_icmd_query_cap_general, icmd_query_caps, 1, 0);
+    SEND_ICMD_FLOW(mf, GET_ICMD_QUERY_CAP, icmd_hca_icmd_query_cap_general,
+                   icmd_query_caps, 1, 0);
 }
 
 int gcif_mh_sync(mfile *mf, struct connectx4_icmd_mh_sync *mh_sync)
@@ -75,7 +76,3 @@ int gcif_set_itrace(mfile *mf, struct connectib_itrace *itrace)
     SEND_ICMD_FLOW(mf, SET_ITRACE, connectib_itrace, itrace, 1, 0);
 }
 
-int gcif_set_port_sniffer(mfile *mf, struct connectib_icmd_set_port_sniffer *set_port_sniffer)
-{
-    SEND_ICMD_FLOW(mf, SET_PORT_SNIFFER, connectib_icmd_set_port_sniffer, set_port_sniffer, 1, 0);
-}

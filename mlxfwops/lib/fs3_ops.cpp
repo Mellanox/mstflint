@@ -598,7 +598,7 @@ bool Fs3Operations::VerifyTOC(u_int32_t dtoc_addr, bool &bad_signature, VerifyCa
                             if (IsGetInfoSupported(toc_entry.type)) {
                                 if (!GetImageInfoFromSection(buff, toc_entry.type, toc_entry.size * 4)) {
                                     ret_val = false;
-                                    errmsg("Failed to get info from section %d", toc_entry.type);
+                                    errmsg("Failed to get info from section %d, check the supported_hw_id section in MLX file!\n", toc_entry.type);
                                 }
                             } else if (toc_entry.type == FS3_DBG_FW_INI) {
                                 TOCPUn(buff, toc_entry.size);
@@ -1031,7 +1031,7 @@ bool Fs3Operations::CheckFs3ImgSize(Fs3Operations& imageOps, bool useImageDevDat
 }
 
 #define SUPPORTS_ISFU(chip_type) \
-    (chip_type == CT_CONNECT_IB || chip_type == CT_CONNECTX4 || chip_type == CT_CONNECTX4_LX || chip_type == CT_CONNECTX5 || chip_type == CT_CONNECTX6  || chip_type == CT_CONNECTX6DX || chip_type == CT_CONNECTX6LX || chip_type == CT_BLUEFIELD || chip_type == CT_BLUEFIELD2)
+    (chip_type == CT_CONNECT_IB || chip_type == CT_CONNECTX4 || chip_type == CT_CONNECTX4_LX || chip_type == CT_CONNECTX5 || chip_type == CT_CONNECTX6  || chip_type == CT_CONNECTX6DX || chip_type == CT_CONNECTX6LX || chip_type == CT_CONNECTX7 || chip_type == CT_BLUEFIELD || chip_type == CT_BLUEFIELD2)
 
 u_int32_t Fs3Operations::getNewImageStartAddress(Fs3Operations &imageOps, bool isBurnFailSafe)
 {
@@ -3740,7 +3740,7 @@ bool Fs3Operations::DoAfterBurnJobs(const u_int32_t magic_patter[],
     }
     return true;
 }
-bool Fs3Operations::InsertEncryptedSignature(vector<u_int8_t> signature, const char *uuid, PrintCallBack printFunc)
+bool Fs3Operations::InsertSecureFWSignature(vector<u_int8_t> signature, const char *uuid, PrintCallBack printFunc)
 {
     struct cx4fw_image_signature_512 image_signature_512;
     vector <u_int32_t> uuidData;

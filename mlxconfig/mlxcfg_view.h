@@ -85,6 +85,8 @@ typedef struct ParamView {
     std::string setVal;
     std::vector<u_int32_t> arrayVal;
     std::vector<std::string> strArrayVal;
+    std::string rule;
+    u_int32_t supportedFromVersion;
 } ParamView;
 
 typedef struct TLVConfView {

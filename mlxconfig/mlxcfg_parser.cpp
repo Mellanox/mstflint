@@ -105,6 +105,7 @@ void MlxCfg::printHelp()
     printf(IDENT2 "%-24s : %s\n", "r[eset]", "reset all configurations to their default value.");
     printf(IDENT2 "%-24s : %s\n", "s[et]", "set configurations to a specific device.");
     printf(IDENT2 "%-24s : %s\n", "set_raw", "set raw configuration file.(only "  FIFTH_GENERATION_LIST ".)");
+    printf(IDENT2 "%-24s : %s\n", "get_raw", "get raw configuration.(only "  FIFTH_GENERATION_LIST ".)");
     printf(IDENT2 "%-24s : %s\n", "backup", "backup configurations to a file (only "  FIFTH_GENERATION_LIST ".). Use set_raw command to restore file.");
     printf(IDENT2 "%-24s : %s\n", "gen_tlvs_file", "Generate List of all TLVs. TLVs output file name must be specified. (*)");
     printf(IDENT2 "%-24s : %s\n", "g[en_xml_template]", "Generate XML template. TLVs input file name and XML output file name must be specified. (*)");
@@ -233,7 +234,7 @@ mlxCfgStatus MlxCfg::extractQueryCfgArgs(int argc, char *argv[])
                 }
                 continue;
             } else {
-                
+
                 size_t p = mlxconfigName.find('[');
                 string subStr = mlxconfigName.substr(0, p);
                 if (isIndexedStartFromOneSupported(subStr)) {
@@ -242,7 +243,7 @@ mlxCfgStatus MlxCfg::extractQueryCfgArgs(int argc, char *argv[])
                         return MLX_CFG_ERROR_NO_USAGE;
                     }
                     pv.mlxconfigName = subStr + "[" + numToStr(indexes[0] - 1) + "]";
-                    
+
                 }
                 else {
                     pv.mlxconfigName = mlxconfigName;
@@ -404,6 +405,9 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char *argv[])
         } else if (arg == "set_raw") {
             _mlxParams.cmd = Mc_Set_Raw;
             break;
+        } else if (arg == "get_raw") {
+            _mlxParams.cmd = Mc_Get_Raw;
+            break;
         } else if (arg == "backup") {
             _mlxParams.cmd = Mc_Backup;
             break;
@@ -453,18 +457,21 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char *argv[])
         return err(true, "%s command expects device to be specified.",
                    _mlxParams.cmd == Mc_Set ?
                    "set" : _mlxParams.cmd == Mc_Set_Raw ?
-                   "set_raw" : _mlxParams.cmd == Mc_Clr_Sem ?
+                   "set_raw" : _mlxParams.cmd == Mc_Get_Raw ?
+                   "get_raw" : _mlxParams.cmd == Mc_Clr_Sem ?
                    "clear_semaphore" : _mlxParams.cmd == Mc_Backup ?
                    "backup" : _mlxParams.cmd == Mc_Apply ?
                    "apply" : "show_confs");
     }
-    if ((_mlxParams.cmd == Mc_Set_Raw && _mlxParams.rawTlvFile.size() == 0 )) {
+    if (((_mlxParams.cmd == Mc_Set_Raw || _mlxParams.cmd == Mc_Get_Raw) &&
+            _mlxParams.rawTlvFile.size() == 0 )) {
         return err(true, "set_raw command expects raw TLV file to be specified.");
     }
     if ((_mlxParams.cmd == Mc_Backup && _mlxParams.rawTlvFile.size() == 0 )) {
         return err(true, "backup command expects file to be specified.");
     }
-    if (((_mlxParams.cmd != Mc_Set_Raw && _mlxParams.cmd != Mc_Backup) &&
+    if ((((_mlxParams.cmd != Mc_Set_Raw && _mlxParams.cmd != Mc_Get_Raw) &&
+            _mlxParams.cmd != Mc_Backup) &&
          _mlxParams.rawTlvFile.size() != 0 )) {
         return err(true, "raw TLV file can only be specified with set_raw command.");
     }

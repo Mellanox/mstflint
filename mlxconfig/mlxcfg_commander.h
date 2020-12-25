@@ -61,6 +61,7 @@ public:
     virtual void invalidateCfgs() = 0;
     virtual const char* loadConfigurationGetStr() = 0;
     virtual void setRawCfg(std::vector<u_int32_t> rawTlvVec) = 0;
+    virtual std::vector<u_int32_t> getRawCfg(std::vector<u_int32_t> rawTlvVec) = 0;
     virtual void dumpRawCfg(std::vector<u_int32_t> rawTlvVec,
                             std::string& tlvDump) = 0;
     virtual void backupCfgs(vector<BackupView>& views) = 0;

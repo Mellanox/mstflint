@@ -103,6 +103,7 @@ typedef enum StFlashCommand {
     SFC_RDCR = 0x15,
     SFC_WRNVR = 0xB1,
     SFC_WRSR = 0x01,
+    SFC_WRSR_GIGA = 0x31,
     SFC_RDFR = 0x48,
     SFC_WRFR = 0x42
 } StFlashCommand_t;

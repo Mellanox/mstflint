@@ -117,5 +117,5 @@ public:
     CK_RV RSA_CreateSignature(std::vector <CK_BYTE> data, std::string privateKeyLabel, 
         std::string publicKeyLabel, std::vector<u_int8_t>& signature);
     CK_RV CreatePublicKey(std::string publicKeyLabel, unsigned char* PublicModulus, unsigned int PublicModulusSize);
-    CK_RV CheckExistingLabel(std::string label);
+    CK_RV CheckExistingLabel(std::string label, CK_ULONG& numOfLabels);
 };

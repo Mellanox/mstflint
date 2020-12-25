@@ -181,6 +181,7 @@ public:
     void invalidateCfgs();
     const char* loadConfigurationGetStr();
     void setRawCfg(std::vector<u_int32_t> rawTlvVec);
+    std::vector<u_int32_t> getRawCfg(std::vector<u_int32_t> rawTlvVec) ;
     void dumpRawCfg(std::vector<u_int32_t> rawTlvVec, std::string& tlvDump);
     void backupCfgs(vector<BackupView>& views);
     bool supportsCfg(mlxCfgType cfg);

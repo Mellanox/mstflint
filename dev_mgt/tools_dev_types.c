@@ -61,6 +61,7 @@ enum dm_dev_type {
 struct device_info {
     dm_dev_id_t dm_id;
     u_int16_t hw_dev_id;
+    u_int16_t fw_dev_id;
     int hw_rev_id;               /* -1 means all revisions match this record */
     int sw_dev_id;               /* -1 means all hw ids  match this record */
     const char *name;
@@ -78,7 +79,9 @@ struct device_info {
 #define ARDBEG_MIRRORED_DEVID 0x70
 #define BARITONE_DEVID 0x6b
 #define BARITONE_MIRRORED_DEVID 0x71
-#define MENHIT_DEVID 0x6f
+#define MENHIT_DEVID_VER0 0x6f
+#define MENHIT_DEVID_VER1 0x72
+#define MENHIT_DEVID_VER2 0x73
 
 
 #ifdef CABLES_SUPP
@@ -104,6 +107,7 @@ static struct device_info g_devs_info[] = {
     {
         DeviceInfiniScaleIV,    //dm_id
         0x01b3,                 //hw_dev_id
+        0xFFFF,                 //fw_dev_id
         -1,                     //hw_rev_id
         -1,                     //sw_dev_id
         "InfiniScaleIV",        //name
@@ -112,306 +116,360 @@ static struct device_info g_devs_info[] = {
     },
     {
         DeviceSwitchX,          //dm_id
-        0x0245,                 //hw_dev_i
-        -1,                     //hw_rev_i
-        -1,                     //sw_dev_i
+        0x0245,                 //hw_dev_id
+        0xc738,                 //fw_dev_id
+        -1,                     //hw_rev_id
+        -1,                     //sw_dev_id
         "SwitchX",              //name
         64,                     //port_num
         DM_SWITCH               //dev_type
     },
     {
         DeviceConnectX2,        //dm_id
-        0x190,                  //hw_dev_i
-        0xb0,                   //hw_rev_i
-        -1,                     //sw_dev_i
+        0x190,                  //hw_dev_id
+        0x1002,                 //fw_dev_id
+        0xb0,                   //hw_rev_id
+        -1,                     //sw_dev_id
         "ConnectX2",            //name
         2,                      //port_num
         DM_HCA                  //dev_type
     },
     {
         DeviceConnectX3,        //dm_id
-        0x1f5,                  //hw_dev_i
-        -1,                     //hw_rev_i
-        -1,                     //sw_dev_i
+        0x1f5,                  //hw_dev_id
+        0x1003,                 //fw_dev_id
+        -1,                     //hw_rev_id
+        -1,                     //sw_dev_id
         "ConnectX3",            //name
         2,                      //port_num
         DM_HCA                  //dev_type
     },
     {
         DeviceConnectIB,        //dm_id
-        0x1ff,                  //hw_dev_i
-        -1,                     //hw_rev_i
-        -1,                     //sw_dev_i
+        0x1ff,                  //hw_dev_id
+        0x1011,                 //fw_dev_id
+        -1,                     //hw_rev_id
+        -1,                     //sw_dev_id
         "ConnectIB",            //name
         2,                      //port_num
         DM_HCA                  //dev_type
     },
     {
         DeviceConnectX3Pro,     //dm_id
-        0x1f7,                  //hw_dev_i
-        -1,                     //hw_rev_i
-        -1,                     //sw_dev_i
+        0x1f7,                  //hw_dev_id
+        0x1007,                 //fw_dev_id
+        -1,                     //hw_rev_id
+        -1,                     //sw_dev_id
         "ConnectX3Pro",         //name
         2,                      //port_num
         DM_HCA                  //dev_type
     },
     {
         DeviceSwitchIB,         //dm_id
-        0x247,                  //hw_dev_i
-        -1,                     //hw_rev_i
-        -1,                     //sw_dev_i
+        0x247,                  //hw_dev_id
+        0xcb20,                 //fw_dev_id
+        -1,                     //hw_rev_id
+        -1,                     //sw_dev_id
         "SwitchIB",             //name
         36,                     //port_num
         DM_SWITCH               //dev_type
     },
     {
         DeviceSpectrum,         //dm_id
-        0x249,                  //hw_dev_i
-        -1,                     //hw_rev_i
-        -1,                     //sw_dev_i
+        0x249,                  //hw_dev_id
+        0xcb84,                 //fw_dev_id
+        -1,                     //hw_rev_id
+        -1,                     //sw_dev_id
         "Spectrum",             //name
         64,                     //port_num
         DM_SWITCH               //dev_type
     },
     {
         DeviceConnectX4,        //dm_id
-        0x209,                  //hw_dev_i
-        -1,                     //hw_rev_i
-        -1,                     //sw_dev_i
+        0x209,                  //hw_dev_id
+        0x1013,                 //fw_dev_id
+        -1,                     //hw_rev_id
+        -1,                     //sw_dev_id
         "ConnectX4",            //name
         2,                      //port_num
         DM_HCA                  //dev_type
     },
     {
         DeviceConnectX4LX,      //dm_id
-        0x20b,                  //hw_dev_i
-        -1,                     //hw_rev_i
-        -1,                     //sw_dev_i
+        0x20b,                  //hw_dev_id
+        0x1015,                 //fw_dev_id
+        -1,                     //hw_rev_id
+        -1,                     //sw_dev_id
         "ConnectX4LX",          //name
         2,                      //port_num
         DM_HCA                  //dev_type
     },
     {
         DeviceConnectX5,        //dm_id
-        0x20d,                  //hw_dev_i
-        -1,                     //hw_rev_i
-        -1,                     //sw_dev_i
+        0x20d,                  //hw_dev_id
+        0x1017,                 //fw_dev_id
+        -1,                     //hw_rev_id
+        -1,                     //sw_dev_id
         "ConnectX5",            //name
         2,                      //port_num
         DM_HCA                  //dev_type
     },
     {
         DeviceConnectX6,        //dm_id
-        0x20f,                  //hw_dev_i
-        -1,                     //hw_rev_i
-        -1,                     //sw_dev_i
+        0x20f,                  //hw_dev_id
+        0x101b,                 //fw_dev_id
+        -1,                     //hw_rev_id
+        -1,                     //sw_dev_id
         "ConnectX6",            //name
         2,                      //port_num
         DM_HCA                  //dev_type
     },
     {
         DeviceConnectX6DX,      //dm_id
-        0x212,                  //hw_dev_i
-        -1,                     //hw_rev_i
-        -1,                     //sw_dev_i
+        0x212,                  //hw_dev_id
+        0x101d,                 //fw_dev_id
+        -1,                     //hw_rev_id
+        -1,                     //sw_dev_id
         "ConnectX6DX",          //name
         2,                      //port_num
         DM_HCA                  //dev_type
     },
     {
         DeviceConnectX6LX,      //dm_id
-        0x216,                  //hw_dev_i
-        -1,                     //hw_rev_i
-        -1,                     //sw_dev_i
+        0x216,                  //hw_dev_id
+        0x101f,                 //fw_dev_id
+        -1,                     //hw_rev_id
+        -1,                     //sw_dev_id
         "ConnectX6LX",          //name
         2,                      //port_num
         DM_HCA                  //dev_type
     },
     {
-        DeviceConnectX7,      //dm_id
-        0x21a,                  //hw_dev_i
-        -1,                     //hw_rev_i
-        -1,                     //sw_dev_i
-        "ConnectX7",          //name
+        DeviceConnectX7,        //dm_id
+        0x218,                  //hw_dev_id
+        0x1021,                 //fw_dev_id
+        -1,                     //hw_rev_id
+        -1,                     //sw_dev_id
+        "ConnectX7",            //name
         4,                      //port_num
         DM_HCA                  //dev_type
     },
     {
         DeviceBlueField,        //dm_id
-        0x211,                  //hw_dev_i
-        -1,                     //hw_rev_i
-        -1,                     //sw_dev_i
+        0x211,                  //hw_dev_id
+        0xa2d0,                 //fw_dev_id
+        -1,                     //hw_rev_id
+        -1,                     //sw_dev_id
         "BlueField",            //name
         2,                      //port_num
         DM_HCA                  //dev_type
     },
     {
         DeviceBlueField2,        //dm_id
-        0x214,                  //hw_dev_i
-        -1,                     //hw_rev_i
-        -1,                     //sw_dev_i
+        0x214,                  //hw_dev_id
+        0xa2d4,                 //fw_dev_id
+        -1,                     //hw_rev_id
+        -1,                     //sw_dev_id
         "BlueField2",            //name
         2,                      //port_num
         DM_HCA                  //dev_type
     },
     {
         DeviceFPGANewton,       //dm_id
-        0xfff,                  //hw_dev_i - Dummy device ID till we have official one
-        -1,                     //hw_rev_i
-        -1,                     //sw_dev_i
+        0xfff,                  //hw_dev_id - Dummy device ID till we have official one
+        0xFFFF,                 //fw_dev_id
+        -1,                     //hw_rev_id
+        -1,                     //sw_dev_id
         "FPGA_NEWTON",          //name
         2,                      //port_num
         DM_HCA                  //dev_type
     },
     {
         DeviceSwitchIB2,        //dm_id
-        0x24b,                  //hw_dev_i
-        -1,                     //hw_rev_i
-        -1,                     //sw_dev_i
+        0x24b,                  //hw_dev_id
+        0xcf08,                 //fw_dev_id
+        -1,                     //hw_rev_id
+        -1,                     //sw_dev_id
         "SwitchIB2",            //name
         36,                     //port_num
         DM_SWITCH               //dev_type
     },
     {
         DeviceCableQSFP,        //dm_id
-        0x0d,                   //hw_dev_i
-        0,                      //hw_rev_i
-        -1,                     //sw_dev_i
+        0x0d,                   //hw_dev_id
+        0xFFFF,                 //fw_dev_id
+        0,                      //hw_rev_id
+        -1,                     //sw_dev_id
         "CableQSFP",            //name
         -1,                     //port_num
         DM_QSFP_CABLE           //dev_type
     },
     {
         DeviceCableQSFPaging,   //dm_id
-        0x11,                   //hw_dev_i
-        0xab,                   //hw_rev_i
-        -1,                     //sw_dev_i
+        0x11,                   //hw_dev_id
+        0xFFFF,                 //fw_dev_id
+        0xab,                   //hw_rev_id
+        -1,                     //sw_dev_id
         "CableQSFPaging",       //name
         -1,                     //port_num
         DM_QSFP_CABLE           //dev_type
     },
     {
         DeviceCableSFP,         //dm_id
-        0x03,                   //hw_dev_i
-        1,                      //hw_rev_i
-        -1,                     //sw_dev_i
+        0x03,                   //hw_dev_id
+        0xFFFF,                 //fw_dev_id
+        1,                      //hw_rev_id
+        -1,                     //sw_dev_id
         "CableSFP",             //name
         -1,                     //port_num
         DM_SFP_CABLE            //dev_type
     },
     {
         DeviceCableSFP51,       //dm_id
-        0x03,                   //hw_dev_i
-        1,                      //hw_rev_i
-        -1,                     //sw_dev_i
+        0x03,                   //hw_dev_id
+        0xFFFF,                 //fw_dev_id
+        1,                      //hw_rev_id
+        -1,                     //sw_dev_id
         "CableSFP51",           //name
         -1,                     //port_num
         DM_SFP_CABLE            //dev_type
     },
     {
         DeviceCableSFP51Paging, //dm_id
-        0x03,                   //hw_dev_i
-        1,                      //hw_rev_i
-        -1,                     //sw_dev_i
+        0x03,                   //hw_dev_id
+        0xFFFF,                 //fw_dev_id
+        1,                      //hw_rev_id
+        -1,                     //sw_dev_id
         "CableSFP51Paging",     //name
         -1,                     //port_num
         DM_SFP_CABLE            //dev_type
     },
     {
         DeviceSpectrum2,        //dm_id
-        0x24e,                  //hw_dev_i
-        -1,                     //hw_rev_i
-        -1,                     //sw_dev_i
+        0x24e,                  //hw_dev_id
+        0xcf6c,                 //fw_dev_id
+        -1,                     //hw_rev_id
+        -1,                     //sw_dev_id
         "Spectrum2",            //name
         128,                    //port_num
         DM_SWITCH               //dev_type
     },
     {
         DeviceDummy,            //dm_id
-        0x1,                    //hw_dev_i
-        -1,                     //hw_rev_i
-        -1,                     //sw_dev_i
+        0x1,                    //hw_dev_id
+        0xFFFF,                 //fw_dev_id
+        -1,                     //hw_rev_id
+        -1,                     //sw_dev_id
         "DummyDevice",          //name
         2,                      //port_num
         DM_HCA                  //dev_type
     },
     {
         DeviceQuantum,          //dm_id
-        0x24d,                  //hw_dev_i
-        -1,                     //hw_rev_i
-        -1,                     //sw_dev_i
+        0x24d,                  //hw_dev_id
+        0xd2f0,                 //fw_dev_id
+        -1,                     //hw_rev_id
+        -1,                     //sw_dev_id
         "Quantum",              //name
         80,                     //port_num
         DM_SWITCH               //dev_type
     },
     {
         DeviceArdbeg,           //dm_id
-        0x6e,                   //hw_dev_i (ArdbegMirror 0x70)
-        -1,                     //hw_rev_i
-        -1,                     //sw_dev_i
+        0x6e,                   //hw_dev_id (ArdbegMirror 0x70)
+        0xFFFF,                 //fw_dev_id
+        -1,                     //hw_rev_id
+        -1,                     //sw_dev_id
         "Ardbeg",               //name
         -1,                     //port_num
         DM_LINKX                //dev_type
     },
         {
         DeviceBaritone,         //dm_id
-        0x6b,                   //hw_dev_i (BaritoneMirror 0x71)
-        -1,                     //hw_rev_i
-        -1,                     //sw_dev_i
+        0x6b,                   //hw_dev_id (BaritoneMirror 0x71)
+        0xFFFF,                 //fw_dev_id
+        -1,                     //hw_rev_id
+        -1,                     //sw_dev_id
         "Baritone",             //name
         -1,                     //port_num
         DM_LINKX                //dev_type
     },
     {
         DeviceMenhit,           //dm_id
-        0x6f,                   //hw_dev_i
-        -1,                     //hw_rev_i
-        -1,                     //sw_dev_i
+        0x72,                   //hw_dev_id (other versions 0x6f,0x73)
+        0xFFFF,                 //fw_dev_id
+        -1,                     //hw_rev_id
+        -1,                     //sw_dev_id
         "Menhit",               //name
         -1,                     //port_num
         DM_LINKX                //dev_type
     },
     {
         DeviceSecureHost,       //dm_id
-        0xcafe,                 //hw_dev_i
-        0xd0,                   //hw_rev_i
-        0,                      //sw_dev_i
+        0xcafe,                 //hw_dev_id
+        0xFFFF,                 //fw_dev_id
+        0xd0,                   //hw_rev_id
+        0,                      //sw_dev_id
         "Unknown Device",       //name
         -1,                     //port_num
         DM_UNKNOWN              //dev_type
     },
     {
         DeviceSpectrum3,        //dm_id
-        0x250,                  //hw_dev_i
-        -1,                     //hw_rev_i
-        -1,                     //sw_dev_i
+        0x250,                  //hw_dev_id
+        0xcf70,                 //fw_dev_id
+        -1,                     //hw_rev_id
+        -1,                     //sw_dev_id
         "Spectrum3",            //name
         128,                    //port_num NEED_CHECK
         DM_SWITCH               //dev_type
     },
-        {
-        DeviceAmosGearBox,      //dm_id
-        0x252,                  //hw_dev_i
-        -1,                     //hw_rev_i
-        -1,                     //sw_dev_i
+    {
+        DeviceSpectrum4,        //dm_id
+        0x254,                  //hw_dev_id
+        0xcf80,                 //fw_dev_id
+        -1,                     //hw_rev_id
+        -1,                     //sw_dev_id
+        "Spectrum4",            //name
+        128,                    //port_num NEED_CHECK
+        DM_SWITCH               //dev_type
+    },
+    {
+        DeviceQuantum2,         //dm_id
+        0x257,                  //hw_dev_id
+        0xd2f2,                 //fw_dev_id
+        -1,                     //hw_rev_id
+        -1,                     //sw_dev_id
+        "Quantum2",             //name
+        128,                    //port_num NEED_CHECK
+        DM_SWITCH               //dev_type
+    },
+    {
+        DeviceGearBox,          //dm_id
+        0x252,                  //hw_dev_id
+        0xFFFF,                 //fw_dev_id
+        -1,                     //hw_rev_id
+        -1,                     //sw_dev_id
         "Amose GearBox",        //name
         128,                    //port_num NEED_CHECK
-        DM_GEARBOX               //dev_type
+        DM_GEARBOX              //dev_type
     },
-        {
-        DeviceAmosGearBoxManager,  //dm_id
-        0x253,                  //hw_dev_i
-        -1,                     //hw_rev_i
-        -1,                     //sw_dev_i
+    {
+        DeviceGearBoxManager,   //dm_id
+        0x253,                  //hw_dev_id
+        0xFFFF,                 //fw_dev_id
+        -1,                     //hw_rev_id
+        -1,                     //sw_dev_id
         "Amos GearBox Managaer",//name
         -1,                     //port_num NEED_CHECK
-        DM_GEARBOX               //dev_type
+        DM_GEARBOX              //dev_type
     },
     {
         DeviceUnknown,          //dm_id
-        0,                      //hw_dev_i
-        0,                      //hw_rev_i
-        0,                      //sw_dev_i
+        0,                      //hw_dev_id
+        0xFFFF,                 //fw_dev_id
+        0,                      //hw_rev_id
+        0,                      //sw_dev_id
         "Unknown Device",       //name
         -1,                     //port_num
         DM_UNKNOWN              //dev_type
@@ -430,18 +488,21 @@ static const struct device_info* get_entry(dm_dev_id_t type)
     return p;
 }
 
-static const struct device_info* get_entry_by_dev_rev_id(u_int32_t hw_dev_id, u_int32_t hw_rev_id)
+dm_dev_id_t get_dmid_by_dev_rev_id(u_int32_t dev_id, u_int32_t rev_id)
 {
     const struct device_info *p = g_devs_info;
+    if (dev_id == 0xFFFF) {
+        return DeviceUnknown;
+    }
     while (p->dm_id != DeviceUnknown) {
-        if (hw_dev_id == p->hw_dev_id) {
-            if ((p->hw_rev_id == -1) ||  ((int)hw_rev_id == p->hw_rev_id)) {
+        if ((dev_id == p->hw_dev_id) || (dev_id == p->fw_dev_id)) {
+            if ((p->hw_rev_id == -1) ||  ((int)rev_id == p->hw_rev_id)) {
                 break;
             }
         }
         p++;
     }
-    return p;
+    return p->dm_id;
 }
 
 /**
@@ -477,7 +538,9 @@ int dm_get_device_id(mfile *mf,
             case BARITONE_MIRRORED_DEVID:
                 *ptr_dm_dev_id = DeviceBaritone;
                 break;
-            case MENHIT_DEVID:
+            case MENHIT_DEVID_VER0:
+            case MENHIT_DEVID_VER1:
+            case MENHIT_DEVID_VER2:
                 *ptr_dm_dev_id = DeviceMenhit;
                 break;
             default:
@@ -571,7 +634,7 @@ int dm_get_device_id(mfile *mf,
         *ptr_hw_rev    = EXTRACT(dword, 16, 8);
     }
 
-    *ptr_dm_dev_id = get_entry_by_dev_rev_id(*ptr_hw_dev_id, *ptr_hw_rev)->dm_id;
+    *ptr_dm_dev_id = get_dmid_by_dev_rev_id(*ptr_hw_dev_id, *ptr_hw_rev);
 
     if (*ptr_dm_dev_id == DeviceUnknown) {
 
@@ -586,7 +649,7 @@ int dm_get_device_id_offline(u_int32_t devid,
                              u_int32_t chip_rev,
                              dm_dev_id_t *ptr_dev_type)
 {
-    *ptr_dev_type = get_entry_by_dev_rev_id(devid, chip_rev)->dm_id;
+    *ptr_dev_type = get_dmid_by_dev_rev_id(devid, chip_rev);
     return *ptr_dev_type == DeviceUnknown ? MFE_UNSUPPORTED_DEVICE: MFE_OK;
 }
 
@@ -622,7 +685,8 @@ int dm_dev_is_hca(dm_dev_id_t type)
 
 int dm_dev_is_200g_speed_supported_hca(dm_dev_id_t type)
 {
-    return (dm_dev_is_hca(type) && (get_entry(type)->hw_dev_id >= get_entry(DeviceConnectX6)->hw_dev_id));
+    bool isBlueField = (type == DeviceBlueField || type == DeviceBlueField2);
+    return !isBlueField && (dm_dev_is_hca(type) && (get_entry(type)->hw_dev_id >= get_entry(DeviceConnectX6)->hw_dev_id));
 }
 
 int dm_dev_is_switch(dm_dev_id_t type)
@@ -671,6 +735,9 @@ int dm_is_livefish_mode(mfile *mf)
 {
     if (!mf || !mf->dinfo) {
         return 0;
+    }
+    if (mf->tp == MST_SOFTWARE) {
+        return 1;
     }
     dm_dev_id_t devid_t = DeviceUnknown;
     u_int32_t devid = 0;
@@ -725,5 +792,11 @@ int dm_is_new_gen_switch(dm_dev_id_t type)
 
 int dm_dev_is_raven_family_switch(dm_dev_id_t type)
 {
-    return (dm_dev_is_switch(type) && (type == DeviceQuantum || type == DeviceSpectrum2 || type == DeviceSpectrum3));
+    return (dm_dev_is_switch(type) && (type == DeviceQuantum || type == DeviceQuantum2 || type == DeviceSpectrum2 || type == DeviceSpectrum3));
 }
+
+int dm_dev_is_ib_switch(dm_dev_id_t type)
+{
+    return (dm_dev_is_switch(type) && (type == DeviceQuantum || type == DeviceQuantum2 || type == DeviceSwitchIB || type == DeviceSwitchIB2));
+}
+

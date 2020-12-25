@@ -79,7 +79,7 @@ typedef void*trm_ctx;
 #define CX4LX_HW_ID      0x20b
 #define CX5_HW_ID        0x20d
 #define CX6_HW_ID        0x20f
-#define CX7_HW_ID        0x21a
+#define CX7_HW_ID        0x218
 #define CX6DX_HW_ID      0x212
 #define CX6LX_HW_ID      0x216
 #define BLUEFIELD_HW_ID  0x211
@@ -91,6 +91,9 @@ typedef void*trm_ctx;
 #define QUANTUM_HW_ID    0x24d
 #define SPECTRUM2_HW_ID  0x24e
 #define SPECTRUM3_HW_ID  0x250
+#define QUANTUM2_HW_ID   0x257
+#define SPECTRUM4_HW_ID  0x254
+#define INBAND_MAX_REG_SIZE 44
 
 /*
  * Device IDs Macros:
@@ -135,6 +138,10 @@ typedef void*trm_ctx;
     ((dev_id) == BLUEFIELD_HW_ID)
 #define IS_BLUEFEILD2(dev_id) \
     ((dev_id) == BLUEFIELD2_HW_ID)
+#define IS_QUANTUM2(dev_id) \
+    ((dev_id) == QUANTUM2_HW_ID)
+#define IS_SPECTRUM4(dev_id) \
+    ((dev_id) == SPECTRUM4_HW_ID)
 
 #define HAS_TOOLS_CMDIF(dev_id) \
     ((((dev_id) == CX3_HW_ID) || ((dev_id) == CX3_PRO_HW_ID)))
@@ -229,6 +236,12 @@ struct mflash {
     dm_dev_id_t dm_dev_id;
     int cputUtilizationApplied;
     int cpuPercent;
+    u_int32_t cache_repacement_en_addr;
+    u_int32_t gw_addr;
+    u_int32_t gw_data;
+    u_int32_t gw_cmd;
+    u_int32_t cache_rep_offset;
+    u_int32_t cache_rep_cmd;
 };
 
 typedef struct mfpa_command_args {
@@ -251,44 +264,37 @@ enum AccessTypeByMfile {
 enum CntxCrConstants {
     HCR_FLASH_CMD = 0xf0400,
     HCR_FLASH_ADDR = 0xf0404,
+    HCR_FLASH_CACHE_REPLACEMENT_OFFSET = 0xf0408,
+    HCR_FLASH_CACHE_REPLACEMENT_CMD = 0xf040c,
     HCR_FLASH_NEW_GW_ADDR = 0xf0420,
     HCR_FLASH_DATA = 0xf0410,
+    HCR_CACHE_REPLACEMNT_EN_ADDR = 0xf0420,
+    HCR_FLASH_GEARBOX_CMD = 0x2000,
+    HCR_FLASH_GEARBOX_ADDR = 0x2004,
+    HCR_FLASH_GEARBOX_CACHE_REPLACEMENT_OFFSET = 0x2008,
+    HCR_FLASH_GEARBOX_DATA = 0x2010,
+    HCR_FLASH_GEARBOX_CACHE_REPLACEMENT_CMD = 0x200c,
+    HCR_FLASH_GEARBOX_CACHE_REPLACEMENT_EN_ADDR = 0x2020,
+
 
     HBO_READ_OP = 0,
-    HBO_NEW_GW_READ_OP = 8,
-    //HBO_ADDR_AUTO_INC = 1,
-    //HBO_NEW_GW_ADDR_AUTO_INC = 29,
     HBO_CMD_PHASE = 2,
-    HBO_NEW_GW_CMD_PHASE = 28,
+    HBS_CHIP_SELECT = 1,
     HBO_ADDR_PHASE = 3,
-    HBO_NEW_GW_ADDR_PHASE = 27,
-    HBO_DATA_PHASE = 4,
-    HBO_NEW_GW_DATA_PHASE = 26,
-    HBO_CS_HOLD = 5,
-    HBO_NEW_GW_CS_HOLD = 25,
-
-    HBO_MSIZE = 8,
-    HBO_NEW_GW_DATA_SIZE = 18,
     HBS_MSIZE = 3,
-    HBS_NEW_GW_MSIZE = 7,
-
+    HBS_NEW_GW_MSIZE = 5,
+    HBO_DATA_PHASE = 4,
+    HBO_MSIZE = 8,
+    HBO_CS_HOLD = 5,
     HBO_CHIP_SELECT = 11,
-    HBS_CHIP_SELECT = 2,
-    HBO_NEW_GW_CHIP_SELECT = 17,
-    HBS_NEW_GW_CHIP_SELECT = 1,
-
+    HBO_NEW_GW_CHIP_SELECT = 13,
     HBO_FLASH_ENABLE = 13, //In old devices
-
     HBO_ADDR_SIZE = 14,
     HBO_NEW_GW_ADDR_SIZE = 15,
-
     HBO_CMD = 16,
     HBS_CMD = 8,
-    HBO_NEW_GW_CMD = 0,
     HBO_BUSY = 30,
     HBO_LOCK = 31,
-
-    //HBO_ADDR = 0,
 
     // GPIOs
     HCR_GPIO_LOCK = 0xf0048,

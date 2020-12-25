@@ -34,9 +34,15 @@
 # --
 
 
-# Python imports
 import sys
 import os
+
+# Clear LD_LIBRARY_PATH to prevent pyinstaller compatibility issues
+library_path_var = "LD_LIBRARY_PATH"
+is_pyinstaller = getattr(sys, 'frozen', False)
+if is_pyinstaller and library_path_var in os.environ:
+    os.environ[library_path_var] = ""
+
 import signal
 import argparse
 from secure_fw_trace import SecureFwTrace
@@ -230,13 +236,22 @@ DEV_INFO_DB = [
     },
     {
         "name": "ConnectX7",
-        "dev_id": [0x21a],
+        "dev_id": [0x218],
         "chip_rev":-1,
         "maskable": True,
         "mask_addr": None,
         # list of (trace type name, start_bit)
         "mask_classes": list(HCA_MASK_CLASSES),
-    }
+    },
+    {
+        "name": "Quantum2",
+        "dev_id": [0x257],
+        "chip_rev":-1,
+        "maskable": True,
+        "mask_addr": None,
+        # list of (trace type name, start_bit)
+        "mask_classes": [("class1", 0), ("class2", 1)],
+    },
 ]
 MST_DEVICE = None
 CMDIFDEV = None

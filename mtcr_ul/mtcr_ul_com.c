@@ -821,10 +821,12 @@ static int driver_mread4_block(mfile *mf, unsigned int offset, u_int32_t *data, 
 
             // We support backward compatibility.
             // There is a known bug with PCICONF_READ4_BUFFER ioctl and data may be corrupted.
-            int ret = ioctl(mf->fd, PCICONF_READ4_BUFFER_EX, &read4_buf);
-            if (ret < 0) {
+            int ret;
+            if ((ret = ioctl(mf->fd, PCICONF_READ4_BUFFER_EX, &read4_buf)) < 0) {
                 if ((ret = ioctl(mf->fd, PCICONF_READ4_BUFFER, &read4_buf)) < 0) {
-                    return -1;
+                    if ((ret = ioctl(mf->fd, PCICONF_READ4_BUFFER_BC, &read4_buf)) < 0) {
+                        return -1;
+                    }
                 }
             }
             memcpy(dest_ptr, read4_buf.data, toread);
@@ -1636,10 +1638,12 @@ static long supported_dev_ids[] = {
     0xcb84,     //Spectrum
     0xcf08,     //Switch-IB2
     0xd2f0,     //Quantum
+    0xd2f2,     //Quantum2
     0xcf6c,     //Spectrum2
     0xa2d2,     //MT416842 Family BlueField integrated ConnectX-5 network controller
     0xa2d6,     //MT416846 Family BlueField2 integrated ConnectX-6DX network controller
     0xcf70,     //Spectrum3
+    0xcf80,     //Spectrum4
     -1
 };
 

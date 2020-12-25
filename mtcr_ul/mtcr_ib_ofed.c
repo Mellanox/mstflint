@@ -1234,3 +1234,29 @@ int mib_smp_get(mfile *mf, u_int8_t *data, u_int16_t attr_id, u_int32_t attr_mod
 
     return ME_OK;
 }
+
+int mib_supports_reg_access_cls_a(mfile *mf, maccess_reg_method_t reg_method)
+{
+    if (!mf || !mf->ctx) {
+        return 0;
+    }
+
+    if (!((mf->flags & MDEVS_IB) && (((ibvs_mad *)(mf->ctx))->dest_type == IB_DEST_LID) && (reg_method == MACCESS_REG_METHOD_GET ||
+             reg_method == MACCESS_REG_METHOD_SET))) {
+        return 0;
+    }
+
+    u_int32_t vsmad_data[IB_VENDOR_RANGE1_DATA_SIZE/4] = {0};
+    if (mib_get_general_info_gmp(mf, vsmad_data, IB_VENDOR_RANGE1_DATA_SIZE/4)) {
+        return 0;
+    }
+
+    // vend_key 0x8 bytes, which present in any vendor specific MAD return in vsmad_data.
+    // We want to skip them when relating GeneralInfo MAD fields in specific.
+    // The capability_mask offset which is 0x80, is calculated from the beginning of GeneralInfo MAD fields.
+    // So overall we have an offset of 0x8+0x80 bytes.
+    const int capability_mask_byte_offset = 0x8+0x80;
+    const int is_access_register_supported_bit_offset = 20;
+    const int is_supported = EXTRACT(vsmad_data[capability_mask_byte_offset/4], is_access_register_supported_bit_offset, 1);
+    return is_supported;
+}

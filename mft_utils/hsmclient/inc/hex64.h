@@ -38,7 +38,11 @@
 #include <string>
 #include <sstream>
 #include <vector>
-
+#include <string.h>
+#define PEM_1_PREFIX "-----BEGIN RSA PRIVATE KEY-----"
+#define PEM_1_PREFIX_LENGTH strlen(PEM_1_PREFIX)
+#define PEM_8_PREFIX "-----BEGIN PRIVATE KEY-----"
+#define PEM_8_PREFIX_LENGTH strlen(PEM_8_PREFIX)
 class Hex64Manipulations
 {
 private:

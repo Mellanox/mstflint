@@ -314,6 +314,8 @@ void Param::getView(ParamView& paramView)
     paramView.type = _type;
     paramView.port = _port;
     paramView.textualVals = _textualValues;
+    paramView.supportedFromVersion = _supportedFromVersion;
+    paramView.rule = _rule;
     if (_arrayLength != 0 && _type != STRING && _type != BYTES) {
         string strVal = "Array[0..";
         strVal += numToStr(_arrayLength - 1) + "]";

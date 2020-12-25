@@ -44,10 +44,9 @@ void register_access_sib_IB_PSID__pack(const struct register_access_sib_IB_PSID_
 	int i;
 
 	for (i = 0; i < 4; ++i) {
-	offset = adb2c_calc_array_field_address(0, 32, i, 128, 1);
-	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->PS_ID[i]);
+		offset = adb2c_calc_array_field_address(0, 32, i, 128, 1);
+		adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->PS_ID[i]);
 	}
-
 }
 
 void register_access_sib_IB_PSID__unpack(struct register_access_sib_IB_PSID_ *ptr_struct, const u_int8_t *ptr_buff)
@@ -56,10 +55,9 @@ void register_access_sib_IB_PSID__unpack(struct register_access_sib_IB_PSID_ *pt
 	int i;
 
 	for (i = 0; i < 4; ++i) {
-	offset = adb2c_calc_array_field_address(0, 32, i, 128, 1);
-	ptr_struct->PS_ID[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+		offset = adb2c_calc_array_field_address(0, 32, i, 128, 1);
+		ptr_struct->PS_ID[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
 	}
-
 }
 
 void register_access_sib_IB_PSID__print(const struct register_access_sib_IB_PSID_ *ptr_struct, FILE *fd, int indent_level)
@@ -73,7 +71,6 @@ void register_access_sib_IB_PSID__print(const struct register_access_sib_IB_PSID
 		adb2c_add_indentation(fd, indent_level);
 		fprintf(fd, "PS_ID_%03d           : " U32H_FMT "\n", i, ptr_struct->PS_ID[i]);
 	}
-
 }
 
 unsigned int register_access_sib_IB_PSID__size(void)
@@ -91,8 +88,6 @@ void register_access_sib_IB_DEVInfo__pack(const struct register_access_sib_IB_DE
 	u_int32_t offset;
 	int i;
 
-
-
 	for (i = 0; i < 7; ++i) {
 		offset = adb2c_calc_array_field_address(0, 32, i, 224, 1);
 		adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->dev_branch_tag[i]);
@@ -103,8 +98,6 @@ void register_access_sib_IB_DEVInfo__unpack(struct register_access_sib_IB_DEVInf
 {
 	u_int32_t offset;
 	int i;
-
-
 
 	for (i = 0; i < 7; ++i) {
 		offset = adb2c_calc_array_field_address(0, 32, i, 224, 1);
@@ -141,42 +134,30 @@ void register_access_sib_IB_FWInfo__pack(const struct register_access_sib_IB_FWI
 
 	offset = 24;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->SubMinor);
-
 	offset = 16;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->Minor);
-
 	offset = 8;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->Major);
-
 	offset = 32;
 	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->BuildID);
-
 	offset = 80;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->Year);
-
 	offset = 72;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->Day);
-
 	offset = 64;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->Month);
-
 	offset = 112;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->Hour);
-
 	offset = 128;
 	register_access_sib_IB_PSID__pack(&(ptr_struct->PSID), ptr_buff + offset / 8);
 	offset = 256;
 	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->INIFileNum);
-
 	offset = 288;
 	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->extended_major);
-
 	offset = 320;
 	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->extended_minor);
-
 	offset = 352;
 	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->extended_subminor);
-
 }
 
 void register_access_sib_IB_FWInfo__unpack(struct register_access_sib_IB_FWInfo_ *ptr_struct, const u_int8_t *ptr_buff)
@@ -185,42 +166,30 @@ void register_access_sib_IB_FWInfo__unpack(struct register_access_sib_IB_FWInfo_
 
 	offset = 24;
 	ptr_struct->SubMinor = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
-
 	offset = 16;
 	ptr_struct->Minor = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
-
 	offset = 8;
 	ptr_struct->Major = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
-
 	offset = 32;
 	ptr_struct->BuildID = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
-
 	offset = 80;
 	ptr_struct->Year = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
-
 	offset = 72;
 	ptr_struct->Day = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
-
 	offset = 64;
 	ptr_struct->Month = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
-
 	offset = 112;
 	ptr_struct->Hour = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
-
 	offset = 128;
 	register_access_sib_IB_PSID__unpack(&(ptr_struct->PSID), ptr_buff + offset / 8);
 	offset = 256;
 	ptr_struct->INIFileNum = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
-
 	offset = 288;
 	ptr_struct->extended_major = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
-
 	offset = 320;
 	ptr_struct->extended_minor = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
-
 	offset = 352;
 	ptr_struct->extended_subminor = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
-
 }
 
 void register_access_sib_IB_FWInfo__print(const struct register_access_sib_IB_FWInfo_ *ptr_struct, FILE *fd, int indent_level)
@@ -273,19 +242,14 @@ void register_access_sib_IB_HWInfo__pack(const struct register_access_sib_IB_HWI
 
 	offset = 16;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->DEVID);
-
 	offset = 0;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->REVID);
-
 	offset = 59;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 5, (u_int32_t)ptr_struct->pvs);
-
 	offset = 80;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->hw_dev_id);
-
 	offset = 224;
 	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->UpTime);
-
 }
 
 void register_access_sib_IB_HWInfo__unpack(struct register_access_sib_IB_HWInfo_ *ptr_struct, const u_int8_t *ptr_buff)
@@ -294,19 +258,14 @@ void register_access_sib_IB_HWInfo__unpack(struct register_access_sib_IB_HWInfo_
 
 	offset = 16;
 	ptr_struct->DEVID = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
-
 	offset = 0;
 	ptr_struct->REVID = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
-
 	offset = 59;
 	ptr_struct->pvs = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 5);
-
 	offset = 80;
 	ptr_struct->hw_dev_id = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
-
 	offset = 224;
 	ptr_struct->UpTime = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
-
 }
 
 void register_access_sib_IB_HWInfo__print(const struct register_access_sib_IB_HWInfo_ *ptr_struct, FILE *fd, int indent_level)
@@ -387,11 +346,6 @@ void register_access_sib_mgir_pack(const struct register_access_sib_mgir *ptr_st
 {
 	u_int32_t offset;
 
-
-
-
-
-
 	offset = 0;
 	register_access_sib_IB_HWInfo__pack(&(ptr_struct->HWInfo), ptr_buff + offset / 8);
 	offset = 256;
@@ -405,11 +359,6 @@ void register_access_sib_mgir_pack(const struct register_access_sib_mgir *ptr_st
 void register_access_sib_mgir_unpack(struct register_access_sib_mgir *ptr_struct, const u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
-
-
-
-
-
 
 	offset = 0;
 	register_access_sib_IB_HWInfo__unpack(&(ptr_struct->HWInfo), ptr_buff + offset / 8);
@@ -458,35 +407,26 @@ void register_access_sib_mtmp_pack(const struct register_access_sib_mtmp *ptr_st
 	adb2c_push_bits_to_buff(ptr_buff, offset, 12, (u_int32_t)ptr_struct->sensor_index);
 	offset = 0;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->internal_diodes_query);
-
 	offset = 48;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->temperature);
 	offset = 32;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->mss);
 	offset = 80;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->max_temperture);
-
 	offset = 65;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->mtr);
-
 	offset = 64;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->mte);
-
 	offset = 112;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->temperature_threshold_hi);
-
 	offset = 96;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 2, (u_int32_t)ptr_struct->tee);
-
 	offset = 144;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->temperature_threshold_lo);
-
 	offset = 192;
 	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->name_hi);
-
 	offset = 224;
 	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->name_lo);
-
 }
 
 void register_access_sib_mtmp_unpack(struct register_access_sib_mtmp *ptr_struct, const u_int8_t *ptr_buff)
@@ -497,35 +437,26 @@ void register_access_sib_mtmp_unpack(struct register_access_sib_mtmp *ptr_struct
 	ptr_struct->sensor_index = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 12);
 	offset = 0;
 	ptr_struct->internal_diodes_query = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
-
 	offset = 48;
 	ptr_struct->temperature = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
 	offset = 32;
 	ptr_struct->mss = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 	offset = 80;
 	ptr_struct->max_temperture = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
-
 	offset = 65;
 	ptr_struct->mtr = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
-
 	offset = 64;
 	ptr_struct->mte = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
-
 	offset = 112;
 	ptr_struct->temperature_threshold_hi = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
-
 	offset = 96;
 	ptr_struct->tee = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 2);
-
 	offset = 144;
 	ptr_struct->temperature_threshold_lo = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
-
 	offset = 192;
 	ptr_struct->name_hi = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
-
 	offset = 224;
 	ptr_struct->name_lo = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
-
 }
 
 void register_access_sib_mtmp_print(const struct register_access_sib_mtmp *ptr_struct, FILE *fd, int indent_level)

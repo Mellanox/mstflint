@@ -76,8 +76,9 @@ CK_RV HSMLunaClient::CreatePublicKey(string publicKeyLabel, unsigned char* Publi
     return CKR_OK;
 }
 
-CK_RV HSMLunaClient::CheckExistingLabel(string label)
+CK_RV HSMLunaClient::CheckExistingLabel(string label, CK_ULONG& numOfLabels)
 {
+    CK_RV rv = CKR_TOKEN_NOT_PRESENT;
     unsigned int LabelSize = label.size() + 1;
     CK_BYTE* pLabel = new CK_BYTE[LabelSize];
     memset(pLabel, 0, LabelSize);
@@ -91,8 +92,35 @@ CK_RV HSMLunaClient::CheckExistingLabel(string label)
 
     CK_ULONG numHandles = 0;
     CK_OBJECT_HANDLE handles[MAX_NUM_OF_HANDLES] = { 0 };
-    P11Functions->C_FindObjectsInit(m_hSession, Template, 1);
-    P11Functions->C_FindObjects(m_hSession, handles, MAX_NUM_OF_HANDLES, &numHandles);
+    rv = P11Functions->C_FindObjectsInit(m_hSession, Template, 1);
+    if (rv != CKR_OK) {
+        delete[] pLabel;
+        return rv;
+    }
+    rv = P11Functions->C_FindObjects(m_hSession, handles, MAX_NUM_OF_HANDLES, &numHandles);
+    if (rv != CKR_OK) {
+        delete[] pLabel;
+        return rv;
+    }
+    numOfLabels = numHandles;
+    if (numHandles != 0) {
+        delete[] pLabel;
+        return CKR_GENERAL_ERROR;
+    }
+    if (numHandles == 0) {
+        Template[0].ulValueLen--;
+        rv = P11Functions->C_FindObjectsInit(m_hSession, Template, 1);
+        if (rv != CKR_OK) {
+            delete[] pLabel;
+            return rv;
+        }
+        rv = P11Functions->C_FindObjects(m_hSession, handles, MAX_NUM_OF_HANDLES, &numHandles);
+        if (rv != CKR_OK) {
+            delete[] pLabel;
+            return rv;
+        }
+    }
+    numOfLabels = numHandles;
     delete[] pLabel;
     if (numHandles != 0) {
         return CKR_GENERAL_ERROR;

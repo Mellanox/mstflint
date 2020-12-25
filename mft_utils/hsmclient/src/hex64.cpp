@@ -35,6 +35,7 @@
 #include "hex64.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 using namespace std;
 static const char* base64_chars[2] = {
              "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -46,6 +47,17 @@ static const char* base64_chars[2] = {
              "abcdefghijklmnopqrstuvwxyz"
              "0123456789"
              "-_" };
+
+#ifndef UEFI_BUILD
+#define DPRINTF(args)        do { char *reacDebug = getenv("HEX64_DEBUG"); \
+                                  if (reacDebug != NULL) {  printf("\33[2K\r"); \
+                                      printf("[HEX64_DEBUG]: -D- "); printf args; fflush(stdout);} } while (0)
+#else
+#define DPRINTF(...)
+#endif
+
+
+
 size_t Hex64Manipulations::pos_of_char(const unsigned char chr) {
     //
     // Return the position of chr within base64_encode()
@@ -109,12 +121,27 @@ bool Hex64Manipulations::PrintHexData(const string& data)
     for (size_t i = 0; i < input_length; i++) {
         unsigned char scanResult = 0;
         scanResult = (unsigned char)data[i];
-        printf("0x%02x, ", scanResult);
+        DPRINTF(("0x%02x, ", scanResult));
         if ((j % 16) == 0) {
-            printf("\n");
+            DPRINTF(("\n"));
         }
         j++;
     }
+    return true;
+}
+
+bool writeToFile(const std::vector<unsigned char>& buff, string filePath)
+{
+    FILE *fh = fopen(filePath.c_str(), "wb");
+    if (fh == NULL) {
+        return false;
+    }
+    // Write
+    if (fwrite(&buff[0], 1, buff.size(), fh) != buff.size()) {
+        fclose(fh);
+        return false;
+    }
+    fclose(fh);
     return true;
 }
 
@@ -144,48 +171,54 @@ bool Hex64Manipulations::ParsePemFile(string inputFile, vector<unsigned char>& o
     }
     if (IsPem8Format) {
         IsPemFile8Format = true;
-        if (finalBuffer.size() != 2376) {
-            if (finalBuffer.size() == 2375) {
-                // sometimes hex64 format gives 1 byte less, as well as openssl tool, 
-                // so add missing a zero byte at offset 558
-                // details here  http://lapo.it/asn1js/
-                if (finalBuffer[555] == 0x02 && finalBuffer[556] == 0x82 && finalBuffer[557] == 0x02 &&
-                    finalBuffer[558] == 0x00) {
-
-                    vector<unsigned char> outputFixedBuffer(2376, 0);
-                    for (unsigned int i = 0; i < 558; i++) {
-                        outputFixedBuffer[i] = finalBuffer[i];
+        if (finalBuffer.size() < 2376) {
+            // details here  http://lapo.it/asn1js/
+            unsigned int NumPlacesToFix = 2376 - finalBuffer.size();
+            //actually the decoded file is absolutely legal from TLV point of view, but we must pad it to required size
+            //important that we will not "fix" more then required!
+            //it's actually zero's padding, but simple padding at the end of file doesn't work
+            DPRINTF(("-D- PEM buffer size is %u places to fix %u\n", (unsigned int)finalBuffer.size(), NumPlacesToFix));
+            vector<unsigned char> outputFixedBuffer(2376, 0);
+            unsigned int corruptedIndex = 0;
+            unsigned int fixedIndex = 0;
+            while (fixedIndex != 2376) {
+                outputFixedBuffer[fixedIndex] = finalBuffer[corruptedIndex];
+                if (NumPlacesToFix > 0) {
+                    if (corruptedIndex >= 3) {
+                        if (finalBuffer[corruptedIndex - 3] == 0x02 && finalBuffer[corruptedIndex - 2] == 0x82 &&
+                            (finalBuffer[corruptedIndex - 1] == 0x02 || finalBuffer[corruptedIndex - 1] == 0x01) &&
+                            finalBuffer[corruptedIndex] == 0) {//"CORRUPTED" TLV
+                            outputFixedBuffer[3] = outputFixedBuffer[3] + 1;//change the main TLV size
+                            outputFixedBuffer[25] = outputFixedBuffer[25] + 1;//change the secondary TLV size
+                            outputFixedBuffer[29] = outputFixedBuffer[29] + 1;//the same
+                            outputFixedBuffer[fixedIndex] = 1;//increase current TLV by 1
+                            fixedIndex++;//don't need to put 0, it's there already
+                            DPRINTF(("-D- PEM buffer fixed at index %u to index %u\n", corruptedIndex, fixedIndex));
+                            NumPlacesToFix--;
+                        }
                     }
-                    outputFixedBuffer[3] = outputFixedBuffer[3] + 1;//change the main TLV size
-                    outputFixedBuffer[25] = outputFixedBuffer[25] + 1;//change the secondary TLV size
-                    outputFixedBuffer[29] = outputFixedBuffer[29] + 1;//the same
-                    outputFixedBuffer[558] = 1;// this will construct TLV from 02 82 02 00 to 02 82 02 01
-                    outputFixedBuffer[559] = 0;// add zero before private exponent
-                    for (unsigned int i = 560; i < outputFixedBuffer.size(); i++) {
-                        outputFixedBuffer[i] = finalBuffer[i - 1];
-                    }
-                    finalBuffer = outputFixedBuffer;
                 }
-                else {
-                    printf("Cannot parse the PEM file. The error is not private exponent.\n");
-                    return false;
-                }
+                corruptedIndex++;
+                fixedIndex++;
             }
-            else {
-               printf("Cannot parse the PEM file. The format must be PKCS8!\n");
-                return false;
-            }
+            finalBuffer = outputFixedBuffer;
+        }
+        else {
+            DPRINTF(("-D- size of decoded buffer is illegal %u\n", (unsigned int)finalBuffer.size()));
+            return false;
         }
         outputBuffer.resize(finalBuffer.size());
         for (unsigned int i = 0; i < finalBuffer.size(); i++) {
             outputBuffer[i] = finalBuffer[i];
-         }
-     }
+        }
+        return true;
+    }
     else {//NOT IsPem8Format, just copy the result to output buffer
         outputBuffer.resize(finalBuffer.size());
         for (unsigned int i = 0; i < finalBuffer.size(); i++) {
             outputBuffer[i] = finalBuffer[i];
         }
+        DPRINTF(("-D- PEM outputBuffer buffer size is %u\n", (unsigned int)outputBuffer.size()));
     }
     return true;
 }
@@ -221,10 +254,6 @@ string Hex64Manipulations::base64_decode(string encoded_string)
     return ret;
 }
 
-#define PEM_1_PREFIX "-----BEGIN RSA PRIVATE KEY-----"
-#define PEM_1_PREFIX_LENGTH strlen(PEM_1_PREFIX)
-#define PEM_8_PREFIX "-----BEGIN PRIVATE KEY-----"
-#define PEM_8_PREFIX_LENGTH strlen(PEM_8_PREFIX)
 
 bool Hex64Manipulations::ReadInputPemFile(const char* fileName, vector<unsigned char> &outputBuffer, unsigned int& inputSize, bool& IsPem8Format)
 {
@@ -286,3 +315,4 @@ bool Hex64Manipulations::ReadInputPemFile(const char* fileName, vector<unsigned 
     fclose(fd);
     return true;
 }
+

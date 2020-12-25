@@ -101,7 +101,8 @@ typedef long long int64_t;
 //Service name.
 #define MST_PREFIX_64_BIT "mst64_"
 #define MST_PREFIX_32_BIT "mst32_"
-#define MST_SERVICE_NAME_SIZE (sizeof(MST_PREFIX_64_BIT) + sizeof(MFT_VERSION_STR) + 1)
+#define MST_SUFFIX_MAXLEN 11
+#define MST_SERVICE_NAME_SIZE (sizeof(MST_PREFIX_64_BIT) + sizeof(MFT_VERSION_STR) + MST_SUFFIX_MAXLEN + 9)  // 9 is just in case reserve
 
 //#ifndef USE_IB_MGT
 typedef struct mib_private_t {
@@ -196,6 +197,15 @@ typedef enum MError {
     ME_MAD_BAD_DATA,
     ME_MAD_GENERAL_ERR,
 
+    //errors regarding gearbox icmd new interface gateway
+    ME_GB_ICMD_OK = 0x500,
+    ME_GB_ICMD_FAILED,
+    ME_GB_ICMD_FAILED_ACCESS,
+    ME_GB_ICMD_FAILED_BAD_PARAM,
+    ME_GB_ICMD_TIMEOUT,
+    ME_GB_ICMD_NOT_SUPPORTED,
+    ME_GB_ICMD_UNKNOWN_STATUS,
+
     ME_LAST
 } MError;
 
@@ -228,9 +238,10 @@ typedef enum MType_t {
     MST_SOFTWARE = 0x20000,
     MST_DRIVER_CONF = 0x40000,
     MST_DRIVER_CR = 0x80000,
+    MST_LINKX_CHIP = 0x100000,
     MST_BAR0_GW_PCI = 0x200000,
     MST_GEARBOX = 0x400000,
-    MST_DEFAULT = 0xffffffff & ~MST_CABLE & ~MST_FPGA & ~MST_FPGA_ICMD & ~MST_FPGA_DRIVER
+    MST_DEFAULT = 0xffffffff & ~MST_CABLE & ~MST_FPGA & ~MST_FPGA_ICMD & ~MST_FPGA_DRIVER & ~MST_LINKX_CHIP
 } MType;
 
 typedef enum DType_t {
@@ -257,6 +268,8 @@ typedef enum Mdevs_t {
     MDEVS_FPGA_NEWTON = 0x4000,/* Access LPC region */
     MDEVS_CABLE = 0x8000,
     MDEVS_SOFTWARE = 0x10000, /* Software system char dev */
+    MDEVS_LINKX_CHIP = 0x200000,
+    MDEVS_GBOX = 0x400000,
     MDEVS_TAVOR = (MDEVS_TAVOR_DDR | MDEVS_TAVOR_UAR | MDEVS_TAVOR_CR), MDEVS_ALL = 0xffffffff
 } Mdevs;
 
@@ -353,6 +366,18 @@ typedef enum {
 } reg_access_t;
 typedef struct dma_lib_hdl_t dma_lib_hdl;
 
+typedef enum {
+    GEARBPX_OVER_MTUSB          = 1,
+    GEARBPX_OVER_I2C            = 2,
+    GEARBPX_OVER_SWITCH         = 3,
+    GEARBPXO_UNKNOWN_CONNECTION = 0
+} gearbox_connection_t;
+typedef enum {
+    MTCR_STATUS_UNKNOWN,
+    MTCR_STATUS_TRUE,
+    MTCR_STATUS_FALSE,
+} mtcr_status_e;
+
 typedef struct icmd_params_t {
     int icmd_opened;
     int took_semaphore;
@@ -367,11 +392,13 @@ typedef struct icmd_params_t {
     u_int64_t dma_pa;
     u_int32_t dma_size;
     int dma_icmd;
+    mtcr_status_e icmd_ready;
 } icmd_params;
 
 typedef struct ctx_params_t {
     void *fw_cmd_context;
     void *fw_cmd_func;
+    void *fw_cmd_dma;
 } ctx_params;
 
 typedef struct io_region_t {
@@ -408,11 +435,15 @@ typedef struct gearbox_info_t {
     u_int8_t is_gb_mngr;
     int gearbox_index;
     int ilne_card_id;
+    gearbox_connection_t gb_conn_type;
     char gb_mngr_full_name[DEV_NAME_SZ];     
     char gearbox_full_name[DEV_NAME_SZ];  
     unsigned char i2c_slave;
     u_int8_t addr_width;
+    char device_orig_name[DEV_NAME_SZ];
     char device_real_name[DEV_NAME_SZ];
+    u_int32_t data_req_addr;
+    u_int32_t data_res_addr;
 } gearbox_info;
 
 #define VSEC_MIN_SUPPORT_UL(mf) (((mf)->vsec_cap_mask & (1 << VCC_INITIALIZED)) && \

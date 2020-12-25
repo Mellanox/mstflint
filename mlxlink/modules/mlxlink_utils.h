@@ -70,6 +70,7 @@ string getOui(u_int32_t oui);
 int ptysSpeedToExtMaskETH(const string & speed);
 int ptysSpeedToMaskETH(const string &speed);
 int ptysSpeedToMaskIB(const string &speed);
+bool isPAM4Speed(u_int32_t speedMask, u_int32_t protoActive, bool extended=false);
 bool checkPaosCmd(const string &paosCmd);
 bool checkPepcForceMode(const string &forceMode);
 bool checkPepcANMode(const string &anMode);
@@ -107,6 +108,7 @@ int getPhase(u_int8_t phase);
 int getVersion(u_int8_t version);
 string getGroupStr(u_int32_t advancedOpcode);
 string toUpperCase(string &str);
+string toLowerCase(string &str);
 string getCableMedia(u_int32_t cableType);
 string pcieSpeedStr(u_int32_t linkSpeedActive);
 string pcieDeviceStatusStr(u_int32_t deviceStatus);
@@ -117,5 +119,6 @@ void setPrintTitle(MlxlinkCmdPrint &mlxlinkCmdPrint, string title,
 void setPrintVal(MlxlinkCmdPrint &mlxlinkCmdPrint, int index, string key,
         string value, string color = ANSI_COLOR_RESET, bool print = true,
         bool valid = true, bool arrayValue = false, bool colorKey = false);
+u_int32_t portTypeStrToInt(const string &str);
 
 #endif

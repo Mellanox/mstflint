@@ -100,6 +100,8 @@ public:
         return _fwCompsAccess->getMfileObj();
     }
     virtual bool GetSecureBootInfo();
+    virtual bool IsCableQuerySupported();
+    virtual bool IsLifeCycleSupported();
 protected:
     bool FsIntQuery();
     bool GetImageInfo(u_int8_t *buff);

@@ -137,7 +137,7 @@ class MlnxDriverLinux(MlnxDriver):
 
     # blacklist_file_path = '/etc/modprobe.d/mlxfwreset.conf'
     PCI_DRIVERS_PATH = '/sys/bus/pci/drivers'
-    mlnx_drivers = ['mlx5_core','rshim_pcie']
+    mlnx_drivers = ['mlx5_core','rshim_pcie','nvme']
 
     def __init__(self,devices,logger,skip): # devices : 1 physical function per card
 
@@ -289,7 +289,8 @@ class MlnxDriverFreeBSD(MlnxDriver):
 
 class WindowsRshimDriver:
     """
-    Rshim-driver is the SOC managment driver (the driver that communicates with the ARMs) in a SmartNIC device
+    Rshim-driver is the "SOC managment driver" (the driver that communicates with the ARMs) in a SmartNIC device
+    This driver is located in the 'System devices' (and not in the 'Network adapters')
     """
 
     def _powershell(self, cmd):
@@ -299,23 +300,33 @@ class WindowsRshimDriver:
         self.logger.info("rc={0}\nstdout={1}\nstderr={2}".format(*result))
         return result
 
-    def __init__(self, logger):
+    def __init__(self, logger, pci_device_id):
+
+        # Network-adapter to SOC-management PCI-device-id mapping table
+        PCI_DEVICE_ID_MAPPING_TABLE = {0xA2D2: 0xC2D2, 0xA2D6: 0xC2D3, 0xA2D9: 0xC2D4, 0xA2DC: 0xC2D5}
 
         self.logger = logger
 
-        #SOC_MANAGEMENT_PCI_DEVICE_IDS = {"A2D2": "C2D2", "A2D6": "C2D3", "A2D9": "C2D4", "A2DC": "C2D5"}
-        # TODO Need to disable only relevant drivers (might be different device-id and multiple from the same type)
+        # Check if it's a Smart NIC. If yes, extract PCI device-id of the SOC management (PCI device)
+        network_adapter_pci_device_id = pci_device_id
+        if network_adapter_pci_device_id in PCI_DEVICE_ID_MAPPING_TABLE:
+            soc_management_pci_device_id = PCI_DEVICE_ID_MAPPING_TABLE[network_adapter_pci_device_id]
+        else:
+            raise DriverNotExist("Not a SmartNic device")
 
-        cmd = "(Get-PnpDevice -InstanceId '*VEN_15B3&DEV_C2D2*').InstanceId"
+        # Get the name of the driver
+        cmd = "(Get-PnpDevice -InstanceId '*VEN_15B3&DEV_{0:x}*').InstanceId".format(soc_management_pci_device_id)
         rc, output, _ = self._powershell(cmd)
         if rc == 0 and output:
-            # TODO if number of lines >1 then we need to filter the right driver
+            # TODO if there is more than one BL device from the same type, then will get more than one line
+            # TODO we need to filter the right driver (according to PCI address)
             self.driver_name = output.strip()
             self.logger.info("rshim-driver name : {0}".format(self.driver_name))
         else:
             raise DriverNotExist("rshim-driver doesn't exist")
 
-        cmd = "(Get-PnpDevice -InstanceId '*VEN_15B3&DEV_C2D2*').Status"
+        # Check if the driver is enabled
+        cmd = "(Get-PnpDevice -InstanceId '*VEN_15B3&DEV_{0:x}*').Status".format(soc_management_pci_device_id)
         rc, output, _ = self._powershell(cmd)
         if rc == 0 and output.strip() == 'OK':
             self.logger.debug("rshim-driver name : {0} is enabled".format(self.driver_name))
@@ -339,20 +350,20 @@ class MlnxDriverWindows(MlnxDriver):
 
     def get_device_drivers(self, logger, seg_bus_device_list):
 
-        def read_4_lines(txt):
-            'Generator to read 4 non-empty lines'
+        def read_5_lines(txt):
+            'Generator to read 5 non-empty lines'
 
             lines = [line.strip() for line in txt.split('\n') if line.strip()]  # remove empty lines and convert to list
-            assert len(lines) % 4 == 0
+            assert len(lines) % 5 == 0
 
             lines = iter(lines)
             try:
                 while True:
-                    yield (next(lines), next(lines), next(lines), next(lines))
+                    yield (next(lines), next(lines), next(lines), next(lines), next(lines))
             except StopIteration:
                 return
 
-        cmd = 'powershell.exe -c "Get-NetAdapterHardwareInfo | Format-List -Property Segment,Bus,Device,Name'
+        cmd = 'powershell.exe -c "Get-NetAdapterHardwareInfo | Format-List -Property Segment,Bus,Device,Name,InterfaceDescription'
         logger.debug(cmd)
         (rc, out, _) = cmdExec(cmd)
         if rc != 0:
@@ -360,14 +371,17 @@ class MlnxDriverWindows(MlnxDriver):
         logger.debug(out)
 
         drivers_names = []
-        for seg_line, bus_line, device_line, name_line in read_4_lines(out):
+        for seg_line, bus_line, device_line, name_line, description_line in read_5_lines(out):
             seg_num_ii = int(seg_line.split(':')[1])
             bus_num_ii = int(bus_line.split(':')[1])
             device_num_ii = int(device_line.split(':')[1])
             seg_bus_device_list_ii = (seg_num_ii, bus_num_ii, device_num_ii)
             name_ii = name_line.split(':')[1].strip()
 
-            if seg_bus_device_list_ii in seg_bus_device_list:
+            # Filter only relevant drivers 
+            #  1. Ignore drivers that are not relevant to required PCI address
+            #  2. Ignore the managment driver ('rshim bus' in the 'Network Adapters' section)
+            if seg_bus_device_list_ii in seg_bus_device_list and 'Management' not in description_line:
                 drivers_names.append(name_ii)
 
         return drivers_names
@@ -376,7 +390,7 @@ class MlnxDriverWindows(MlnxDriver):
         rc, _, _ = cmdExec('where powershell.exe')
         return rc == 0
 
-    def __init__(self, logger, skip, devices):
+    def __init__(self, logger, skip, devices, pci_device_id):
 
         logger.info('MlnxDriverWindows object created')
         if skip == True:
@@ -388,7 +402,7 @@ class MlnxDriverWindows(MlnxDriver):
             raise RuntimeError("PowerShell.exe is not installed. Please stop the driver manually and re-run the tool with --skip_driver ")
 
         try:
-            self.rshim_driver = WindowsRshimDriver(logger)
+            self.rshim_driver = WindowsRshimDriver(logger, pci_device_id)
         except (DriverNotExist, DriverDisabled):
             self.rshim_driver = None            
 
@@ -449,13 +463,13 @@ class MlnxDriverWindows(MlnxDriver):
 
 
 class MlnxDriverFactory(object):
-    def getDriverObj(self,logger, skip, devices):
+    def getDriverObj(self,logger, skip, devices, pci_device_id):
         operatingSystem = platform.system()
         if operatingSystem == "Linux":
             return MlnxDriverLinux(devices,logger,skip)
         elif operatingSystem == "FreeBSD":
             return MlnxDriverFreeBSD(logger, skip)
         elif operatingSystem == "Windows":
-            return MlnxDriverWindows(logger, skip, devices)
+            return MlnxDriverWindows(logger, skip, devices, pci_device_id)
         else:
             raise RuntimeError("Unsupported OS: %s" % operatingSystem)

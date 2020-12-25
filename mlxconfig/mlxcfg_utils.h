@@ -83,6 +83,11 @@ enum WriterId {
     WRITER_ID_LAST = 0x20
 };
 
+enum RawTlvMode{
+    SET_RAW,
+    GET_RAW
+};
+
 #define VECTOR_ITERATOR(t, v, i) \
     for (vector<t>::iterator i = v.begin(); i != v.end(); ++i)
 

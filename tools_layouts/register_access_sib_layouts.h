@@ -51,7 +51,7 @@ struct register_access_sib_IB_PSID_ {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description - PS - ID */
 	/* 0x0.0 - 0xc.31 */
-	 u_int32_t PS_ID[4];
+	u_int32_t PS_ID[4];
 };
 
 /* Description -  Development Info */
@@ -69,51 +69,51 @@ struct register_access_sib_IB_FWInfo_ {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
 	/* 0x0.0 - 0x0.7 */
-	 u_int8_t SubMinor;
+	u_int8_t SubMinor;
 	/* Description -  */
 	/* 0x0.8 - 0x0.15 */
-	 u_int8_t Minor;
+	u_int8_t Minor;
 	/* Description -  */
 	/* 0x0.16 - 0x0.23 */
-	 u_int8_t Major;
+	u_int8_t Major;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description -  */
 	/* 0x4.0 - 0x4.31 */
-	 u_int32_t BuildID;
+	u_int32_t BuildID;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description -  */
 	/* 0x8.0 - 0x8.15 */
-	 u_int16_t Year;
+	u_int16_t Year;
 	/* Description -  */
 	/* 0x8.16 - 0x8.23 */
-	 u_int8_t Day;
+	u_int8_t Day;
 	/* Description -  */
 	/* 0x8.24 - 0x8.31 */
-	 u_int8_t Month;
+	u_int8_t Month;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description -  */
 	/* 0xc.0 - 0xc.15 */
-	 u_int16_t Hour;
+	u_int16_t Hour;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description -  */
 	/* 0x10.0 - 0x1c.31 */
-	 struct register_access_sib_IB_PSID_ PSID;
+	struct register_access_sib_IB_PSID_ PSID;
 /*---------------- DWORD[8] (Offset 0x20) ----------------*/
 	/* Description -  */
 	/* 0x20.0 - 0x20.31 */
-	 u_int32_t INIFileNum;
+	u_int32_t INIFileNum;
 /*---------------- DWORD[9] (Offset 0x24) ----------------*/
 	/* Description -  */
 	/* 0x24.0 - 0x24.31 */
-	 u_int32_t extended_major;
+	u_int32_t extended_major;
 /*---------------- DWORD[10] (Offset 0x28) ----------------*/
 	/* Description -  */
 	/* 0x28.0 - 0x28.31 */
-	 u_int32_t extended_minor;
+	u_int32_t extended_minor;
 /*---------------- DWORD[11] (Offset 0x2c) ----------------*/
 	/* Description -  */
 	/* 0x2c.0 - 0x2c.31 */
-	 u_int32_t extended_subminor;
+	u_int32_t extended_subminor;
 };
 
 /* Description -  HW Info */
@@ -122,22 +122,22 @@ struct register_access_sib_IB_HWInfo_ {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
 	/* 0x0.0 - 0x0.15 */
-	 u_int16_t DEVID;
+	u_int16_t DEVID;
 	/* Description -  */
 	/* 0x0.16 - 0x0.31 */
-	 u_int16_t REVID;
+	u_int16_t REVID;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - Maximum supported V_CORE voltage for the device. (in 50mV increments). */
 	/* 0x4.0 - 0x4.4 */
-	 u_int8_t pvs;
+	u_int8_t pvs;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - the device_id in HW, used by tools */
 	/* 0x8.0 - 0x8.15 */
-	 u_int16_t hw_dev_id;
+	u_int16_t hw_dev_id;
 /*---------------- DWORD[7] (Offset 0x1c) ----------------*/
 	/* Description - Time (in sec) since last reset */
 	/* 0x1c.0 - 0x1c.31 */
-	 u_int32_t UpTime;
+	u_int32_t UpTime;
 };
 
 /* Description -  SW Info */
@@ -161,15 +161,15 @@ struct register_access_sib_mgir {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
 	/* 0x0.0 - 0x1c.31 */
-	 struct register_access_sib_IB_HWInfo_ HWInfo;
+	struct register_access_sib_IB_HWInfo_ HWInfo;
 /*---------------- DWORD[8] (Offset 0x20) ----------------*/
 	/* Description -  */
 	/* 0x20.0 - 0x5c.31 */
-	 struct register_access_sib_IB_FWInfo_ FWInfo;
+	struct register_access_sib_IB_FWInfo_ FWInfo;
 /*---------------- DWORD[24] (Offset 0x60) ----------------*/
 	/* Description -  */
 	/* 0x60.0 - 0x7c.31 */
-	 struct register_access_sib_IB_SWInfo_ SWInfo;
+	struct register_access_sib_IB_SWInfo_ SWInfo;
 /*---------------- DWORD[32] (Offset 0x80) ----------------*/
 	/* Description -  */
 	/* 0x80.0 - 0x98.31 */
@@ -185,47 +185,47 @@ struct register_access_sib_mtmp {
 	u_int16_t sensor_index;
 	/* Description - query the internal diodes */
 	/* 0x0.31 - 0x0.31 */
-	 u_int8_t internal_diodes_query;
+	u_int8_t internal_diodes_query;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - Temperature reading from the sensor. Reading in 0.125 Celsius degrees. */
 	/* 0x4.0 - 0x4.15 */
-	 u_int16_t temperature;
+	u_int16_t temperature;
 	/* Description - Module Sensor Supported:; 0: The module is not connected, or the module sensor is not supported; 1: The module sensor is supported */
 	/* 0x4.31 - 0x4.31 */
 	u_int8_t mss;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - The highest measured temperature from the sensor. */
 	/* 0x8.0 - 0x8.15 */
-	 u_int16_t max_temperture;
+	u_int16_t max_temperture;
 	/* Description - Max Temperature Reset - clears the value of the max temperature register */
 	/* 0x8.30 - 0x8.30 */
-	 u_int8_t mtr;
+	u_int8_t mtr;
 	/* Description - Max Temperature Enable - enables measuring the max temperature on a sensor */
 	/* 0x8.31 - 0x8.31 */
-	 u_int8_t mte;
+	u_int8_t mte;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description - If the sensor temperature measurement is above the threshold (and events are enabled), an event
 will be generated */
 	/* 0xc.0 - 0xc.15 */
-	 u_int16_t temperature_threshold_hi;
+	u_int16_t temperature_threshold_hi;
 	/* Description - Temperature Event Enable
 00 - Do not generate event
 01 - Generate Event
 10 - Generate single event */
 	/* 0xc.30 - 0xc.31 */
-	 u_int8_t tee;
+	u_int8_t tee;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description -  */
 	/* 0x10.0 - 0x10.15 */
-	 u_int16_t temperature_threshold_lo;
+	u_int16_t temperature_threshold_lo;
 /*---------------- DWORD[6] (Offset 0x18) ----------------*/
 	/* Description -  */
 	/* 0x18.0 - 0x18.31 */
-	 u_int32_t name_hi;
+	u_int32_t name_hi;
 /*---------------- DWORD[7] (Offset 0x1c) ----------------*/
 	/* Description -  */
 	/* 0x1c.0 - 0x1c.31 */
-	 u_int32_t name_lo;
+	u_int32_t name_lo;
 };
 
 /* Description -   */
@@ -274,13 +274,13 @@ union register_access_sib_register_access_sib_Nodes {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
 	/* 0x0.0 - 0x1c.31 */
-	 struct register_access_sib_mtmp mtmp;
+	struct register_access_sib_mtmp mtmp;
 	/* Description -  */
 	/* 0x0.0 - 0x8.31 */
-	 struct register_access_sib_pmaos pmaos;
+	struct register_access_sib_pmaos pmaos;
 	/* Description -  */
 	/* 0x0.0 - 0x9c.31 */
-	 struct register_access_sib_mgir mgir;
+	struct register_access_sib_mgir mgir;
 };
 
 

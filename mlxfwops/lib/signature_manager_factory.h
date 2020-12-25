@@ -51,7 +51,6 @@ public:
             printf("Failed to identify the device - Can not create SignatureManager!\n");
             return (ISignatureManager*)NULL;
         }
-
         if (deviceId == DeviceBlueField) {
             return new BluefieldFwOperationsSignatureManager();
         }
@@ -67,10 +66,12 @@ public:
         else if (deviceId == DeviceConnectX6LX) {
             return new ConnectX6LXFwOperationsSignatureManager();
         }
+        else if (deviceId == DeviceSpectrum || deviceId == DeviceSpectrum2 || deviceId == DeviceSpectrum3 || deviceId == DeviceSpectrum4 || deviceId == DeviceQuantum || deviceId == DeviceQuantum2) {
+            return new RavenSwitchSignatureManager();
+        }
         else {
             return new FwOperationsSignatureManager();
         }
-
     }
 
     ISignatureManager* CreateSignatureManager(chip_type_t chip) {
@@ -91,6 +92,9 @@ public:
         }
         else if (chip == CT_GEARBOX) {
             return new GearBoxSignatureManager();
+        }
+        else if(chip == CT_QUANTUM || chip == CT_SPECTRUM || chip == CT_SPECTRUM2 || chip == CT_SPECTRUM3 || chip == CT_QUANTUM2 || chip == CT_SPECTRUM4) {
+            return new RavenSwitchSignatureManager();
         }
         else {
             return new FwOperationsSignatureManager();

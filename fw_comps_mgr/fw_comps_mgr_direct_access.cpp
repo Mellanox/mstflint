@@ -72,6 +72,9 @@ bool DirectComponentAccess::accessComponent(u_int32_t updateHandle, u_int32_t of
     if (maxDataSize > MAX_REG_DATA) {
             maxDataSize = MAX_REG_DATA;
     }
+    if (_mf->flags & MDEVS_IB && _mf->tp == MST_IB && maxDataSize > INBAND_MAX_REG_SIZE) {
+        maxDataSize = INBAND_MAX_REG_SIZE - MCDA_REG_HEADER;
+    }
     std::vector<u_int32_t> dataToRW(maxDataSize, 0);
     while (leftSize > 0)    {
         memset(&accessData, 0, sizeof(mcdaReg));
@@ -129,6 +132,7 @@ bool DirectComponentAccess::accessComponent(u_int32_t updateHandle, u_int32_t of
         }
 #endif
         leftSize -= maxDataSize;
+        DPRINTF(("0x%x bytes left to burn", leftSize));
     }
     if (progressFuncAdv && progressFuncAdv->func) {
         if (progressFuncAdv->func(0, stage,

@@ -37,6 +37,12 @@
 #ifdef __FreeBSD__
 #include <sys/pciio.h>
 #endif
+ 
+
+struct mft_core_wrapper {
+    void* cr_space_access;
+    void* reset_access;
+};
 
 /*  All fields in follow structure are not supposed to be used */
 /*  or modified by user programs. Except i2c_slave that may be */
@@ -94,6 +100,7 @@ struct mfile_t {
     unsigned short mst_version_major;
     unsigned int mst_version_minor;
     int vsec_supp;
+    mtcr_status_e icmd_support;
     unsigned int vsec_addr;
     u_int32_t vsec_cap_mask;
     int address_space;
@@ -109,6 +116,8 @@ struct mfile_t {
     // Cables CTX
     int is_cable;
     void *cable_ctx;
+	unsigned int linkx_chip_devid;
+    void *cable_chip_ctx; // TODO change the name
     f_mpci_change mpci_change;
     // Amos gear-box
     gearbox_info gb_info;
@@ -122,6 +131,9 @@ struct mfile_t {
 
     // For dma purpose
     void* dma_props;
+
+    // MFT core wrapper objects.
+    struct mft_core_wrapper mft_core_object;
 };
 
 #endif

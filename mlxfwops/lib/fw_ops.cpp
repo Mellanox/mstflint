@@ -140,19 +140,19 @@ int FwOperations::getMfaImgInner(char *fileName, u_int8_t *mfa_buf, int size,
     } else if (mfa_buf && size != 0) {
         res = mfa_open_buf(&mfa_d, mfa_buf, size);
     } else {
-        WriteToErrBuff(errBuf, "Interanl error: bad parameters to getMfaImg", errBufSize);
+        WriteToErrBuff(errBuf, (char*)"Internal error: bad parameters to getMfaImg", errBufSize);
         return res;
     }
 
     if (res) {
         // mfa_open_* failed, return error.
         res = res < 0 ? res : -1 * res;
-        WriteToErrBuff(errBuf, "Failed to open mfa file", errBufSize);
+        WriteToErrBuff(errBuf, (char*)"Failed to open mfa file", errBufSize);
         return res;
     }
 
     if (psid == NULL) {
-        WriteToErrBuff(errBuf, "Internal error: PSID must be supplied", errBufSize);
+        WriteToErrBuff(errBuf, (char*)"Internal error: PSID must be supplied", errBufSize);
         if (mfa_d) {
             mfa_close(mfa_d);
         }
@@ -170,7 +170,7 @@ int FwOperations::getMfaImgInner(char *fileName, u_int8_t *mfa_buf, int size,
             errStr = "Failed to get MFA Image";
         }
 
-        WriteToErrBuff(errBuf, errStr, errBufSize);
+        WriteToErrBuff(errBuf, (char*)errStr, errBufSize);
     }
 
     // close mfa file
@@ -450,7 +450,7 @@ bool FwOperations::FwAccessCreate(fw_ops_params_t& fwParams, FBase **ioAccessP)
         if (sig == IMG_SIG_TYPE_BIN || sig == IMG_SIG_TYPE_CF) {
             *ioAccessP = new FImage;
             if (!(*ioAccessP)->open(fwParams.fileHndl, false, !fwParams.shortErrors)) {
-                WriteToErrBuff(fwParams.errBuff, (*ioAccessP)->err(), fwParams.errBuffSize);
+                WriteToErrBuff(fwParams.errBuff, (char*)(*ioAccessP)->err(), fwParams.errBuffSize);
                 delete *ioAccessP;
                 return false;
             }
@@ -464,19 +464,19 @@ bool FwOperations::FwAccessCreate(fw_ops_params_t& fwParams, FBase **ioAccessP)
             *ioAccessP = new FImage;
             if (!((FImage*)(*ioAccessP))->open((u_int32_t*)imgbuf, (u_int32_t)sz, !fwParams.shortErrors)) {
                 mfa_release_image(imgbuf);
-                WriteToErrBuff(fwParams.errBuff, (*ioAccessP)->err(), fwParams.errBuffSize);
+                WriteToErrBuff(fwParams.errBuff, (char*)(*ioAccessP)->err(), fwParams.errBuffSize);
                 delete *ioAccessP;
                 return false;
             }
             mfa_release_image(imgbuf);
         } else {
-            WriteToErrBuff(fwParams.errBuff, "Invalid Image signature.", fwParams.errBuffSize);
+            WriteToErrBuff(fwParams.errBuff, (char*)"Invalid Image signature.", fwParams.errBuffSize);
             return false; //Unknown signature
         }
 #else
         *ioAccessP = new FImage;
         if (!(*ioAccessP)->open(fwParams.fileHndl, false, !fwParams.shortErrors)) {
-            WriteToErrBuff(fwParams.errBuff, (*ioAccessP)->err(), fwParams.errBuffSize);
+            WriteToErrBuff(fwParams.errBuff, (char*)(*ioAccessP)->err(), fwParams.errBuffSize);
             delete *ioAccessP;
             return false;
         }
@@ -488,7 +488,7 @@ bool FwOperations::FwAccessCreate(fw_ops_params_t& fwParams, FBase **ioAccessP)
         if (sig == IMG_SIG_TYPE_BIN) {
             *ioAccessP = new FImage;
             if (!((FImage*)*ioAccessP)->open(fwParams.buffHndl, (u_int32_t)numInfo, !fwParams.shortErrors)) {
-                WriteToErrBuff(fwParams.errBuff, (*ioAccessP)->err(), fwParams.errBuffSize);
+                WriteToErrBuff(fwParams.errBuff, (char*)(*ioAccessP)->err(), fwParams.errBuffSize);
                 delete *ioAccessP;
                 return false;
             }
@@ -502,19 +502,19 @@ bool FwOperations::FwAccessCreate(fw_ops_params_t& fwParams, FBase **ioAccessP)
             *ioAccessP = new FImage;
             if (!((FImage*)*ioAccessP)->open((u_int32_t*)imgbuf, (u_int32_t)sz, !fwParams.shortErrors)) {
                 mfa_release_image(imgbuf);
-                WriteToErrBuff(fwParams.errBuff, (*ioAccessP)->err(), fwParams.errBuffSize);
+                WriteToErrBuff(fwParams.errBuff, (char*)(*ioAccessP)->err(), fwParams.errBuffSize);
                 delete *ioAccessP;
                 return false;
             }
             mfa_release_image(imgbuf);
         } else {
-            WriteToErrBuff(fwParams.errBuff, "Invalid Image signature.", fwParams.errBuffSize);
+            WriteToErrBuff(fwParams.errBuff, (char*)"Invalid Image signature.", fwParams.errBuffSize);
             return false;//Unknown signature
         }
 #else
         *ioAccessP = new FImage;
         if (!((FImage*)*ioAccessP)->open(fwParams.buffHndl, numInfo, !fwParams.shortErrors)) {
-            WriteToErrBuff(fwParams.errBuff, (*ioAccessP)->err(), fwParams.errBuffSize);
+            WriteToErrBuff(fwParams.errBuff, (char*)(*ioAccessP)->err(), fwParams.errBuffSize);
             delete *ioAccessP;
             return false;
         }
@@ -522,7 +522,7 @@ bool FwOperations::FwAccessCreate(fw_ops_params_t& fwParams, FBase **ioAccessP)
     } else if (fwParams.hndlType == FHT_UEFI_DEV) {
         *ioAccessP = new Flash;
         if (!(*ioAccessP)->open(fwParams.uefiHndl, &fwParams.uefiExtra, false, !fwParams.shortErrors)) {
-            WriteToErrBuff(fwParams.errBuff, (*ioAccessP)->err(), fwParams.errBuffSize);
+            WriteToErrBuff(fwParams.errBuff, (char*)(*ioAccessP)->err(), fwParams.errBuffSize);
             delete *ioAccessP;
             return false;
         }
@@ -531,7 +531,7 @@ bool FwOperations::FwAccessCreate(fw_ops_params_t& fwParams, FBase **ioAccessP)
         if (!(*ioAccessP)->open(fwParams.mstHndl, fwParams.forceLock, fwParams.readOnly, fwParams.numOfBanks, \
                                         fwParams.flashParams, fwParams.ignoreCacheRep, !fwParams.shortErrors, fwParams.cx3FwAccess)) {
             // TODO: release memory here ?
-            WriteToErrBuff(fwParams.errBuff, (*ioAccessP)->err(), fwParams.errBuffSize);
+            WriteToErrBuff(fwParams.errBuff, (char*)(*ioAccessP)->err(), fwParams.errBuffSize);
             delete *ioAccessP;
             return false;
         }
@@ -540,7 +540,7 @@ bool FwOperations::FwAccessCreate(fw_ops_params_t& fwParams, FBase **ioAccessP)
         // work with 64KB sector size if possible to increase performace in full fw burn
         ((*ioAccessP)->set_flash_working_mode(Flash::Fwm_64KB));
     } else {
-        WriteToErrBuff(fwParams.errBuff, "Unknown Handle Type.", fwParams.errBuffSize);
+        WriteToErrBuff(fwParams.errBuff, (char*)"Unknown Handle Type.", fwParams.errBuffSize);
         return false;
     }
     return true;
@@ -750,7 +750,7 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
     if (fwParams.hndlType == FHT_CABLE_DEV) {
         fwops = new CableFwOperations(fwParams.mstHndl);
         if (!fwops->FwInit()) {
-            WriteToErrBuff(fwParams.errBuff, fwops->err(), fwParams.errBuffSize);
+            WriteToErrBuff(fwParams.errBuff, (char*)fwops->err(), fwParams.errBuffSize);
             delete fwops;
             return (FwOperations*)NULL;
         }
@@ -779,11 +779,11 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
                 bool exitOnError = false;
                 if (fwCompsErr == FWCOMPS_MTCR_OPEN_DEVICE_ERROR) {
                     // mtcr lib failed to open the provided device.
-                    WriteToErrBuff(fwParams.errBuff, "Failed to open device", fwParams.errBuffSize);
+                    WriteToErrBuff(fwParams.errBuff, (char*)"Failed to open device", fwParams.errBuffSize);
                     exitOnError = true;
                 }
                 else if(fwCompsErr == FWCOMPS_REG_ACCESS_RES_NOT_AVLBL) {
-                    WriteToErrBuff(fwParams.errBuff, fwCompsAccess->getLastErrMsg(), fwParams.errBuffSize);
+                    WriteToErrBuff(fwParams.errBuff, (char*)fwCompsAccess->getLastErrMsg(), fwParams.errBuffSize);
                     exitOnError = true;
                 }
                 if (fwCompsAccess != NULL) {
@@ -854,15 +854,19 @@ init_fwops:
 #endif
         default:
             delete ioAccess;
-            WriteToErrBuff(fwParams.errBuff, "invalid Firmware Format (found FS Gen 1)", fwParams.errBuffSize);
+            WriteToErrBuff(fwParams.errBuff, (char*)"Invalid Firmware Format (found FS Gen 1)", fwParams.errBuffSize);
             return (FwOperations*)NULL;
         }
         // save initialization parameters
         fwops->BackUpFwParams(fwParams);
         fwops->_advErrors = !fwParams.shortErrors;
-        fwops->FwInit();
+        if (!fwops->FwInit()) {
+            WriteToErrBuff(fwParams.errBuff, (char*)"FwInit has failed!", fwParams.errBuffSize);
+            delete fwops;//will also delete the fwCompsAccess! no memory leak here
+            return NULL;
+        }
         if (!fwops->CreateSignatureManager()) {
-            WriteToErrBuff(fwParams.errBuff, "Cannot create signature manager!", fwParams.errBuffSize);
+            WriteToErrBuff(fwParams.errBuff, (char*)"Cannot create signature manager!", fwParams.errBuffSize);
             delete fwops;//will also delete the fwCompsAccess! no memory leak here
             return NULL;
         }
@@ -1023,6 +1027,18 @@ chip_type_t FwOperations::getChipType()
     return CT_UNKNOWN;
 }
 
+chip_type_t FwOperations::getChipType(u_int32_t devid)
+{
+    int i = 0;
+    while (hwDevData[i].name != NULL) {
+            if (hwDevData[i].hwDevId == devid) {
+                return hwDevData[i].chipType;
+            }
+        i++;
+    }
+    return CT_UNKNOWN;
+}
+
 bool FwOperations::getInfoFromHwDevid(u_int32_t hwDevId, chip_type_t& chipT, const u_int32_t **swIds)
 {
     int i = 0;
@@ -1075,7 +1091,7 @@ const FwOperations::HwDevData FwOperations::hwDevData[] = {
     { "ConnectX-6",       CX6_HW_ID,        CT_CONNECTX6,    CFT_HCA,     0, {4123, 0}, {{UNKNOWN_BIN, {0}}}},
     { "ConnectX-6DX",     CX6DX_HW_ID,      CT_CONNECTX6DX,  CFT_HCA,     0, {4125, 0}, {{UNKNOWN_BIN, {0}}}},
     { "ConnectX-6LX",     CX6LX_HW_ID,      CT_CONNECTX6LX,  CFT_HCA,     0, {4127, 0}, {{UNKNOWN_BIN, {0}}}},
-    { "ConnectX7",        CX7_HW_ID,        CT_CONNECTX7,    CFT_HCA,     0, {4129, 0}, {{UNKNOWN_BIN, {0}}}},
+    { "ConnectX-7",       CX7_HW_ID,        CT_CONNECTX7,    CFT_HCA,     0, {4129, 0}, {{UNKNOWN_BIN, {0}}}},
     { "BlueField",        BF_HW_ID,         CT_BLUEFIELD,    CFT_HCA,     0, {41680, 41681, 41682, 0}, {{UNKNOWN_BIN, {0}}}},
     { "BlueField2",       BF2_HW_ID,        CT_BLUEFIELD2,   CFT_HCA,     0, {41684, 41685, 41686, 0}, {{UNKNOWN_BIN, {0}}}},
     { "Spectrum",         SPECTRUM_HW_ID,   CT_SPECTRUM,     CFT_SWITCH,  0, {52100, 0}, {{UNKNOWN_BIN, {0}}}},
@@ -1083,6 +1099,8 @@ const FwOperations::HwDevData FwOperations::hwDevData[] = {
     { "Quantum",          QUANTUM_HW_ID,    CT_QUANTUM,      CFT_SWITCH,  0, {54000, 0}, {{UNKNOWN_BIN, {0}}}},
     { "Spectrum2",        SPECTRUM2_HW_ID,  CT_SPECTRUM2,    CFT_SWITCH,  0, {53100, 0}, {{UNKNOWN_BIN, {0}}}},
     { "Spectrum3",        SPECTRUM3_HW_ID,  CT_SPECTRUM3,    CFT_SWITCH,  0, {53104, 0}, {{UNKNOWN_BIN, {0}}}},
+    { "Quantum2",         QUANTUM2_HW_ID,   CT_QUANTUM2,     CFT_SWITCH,  0, {54002, 0}, {{UNKNOWN_BIN, {0}}}},
+    { "Spectrum4",        SPECTRUM4_HW_ID,  CT_SPECTRUM4,    CFT_SWITCH,  0, {53120, 0}, {{UNKNOWN_BIN, {0}}}},
     { "Gearbox",          GEARBOX_HW_ID,    CT_GEARBOX,      CFT_GEARBOX, 0, {0, 0},     {{UNKNOWN_BIN, {0}}}},
     { "GearboxManager",   GB_MANAGER_HW_ID, CT_GEARBOX_MGR,  CFT_GEARBOX, 0, {0, 0},     {{UNKNOWN_BIN, {0}}}},
     { (char*)NULL,       0,                 CT_UNKNOWN,      CFT_UNKNOWN, 0, {0}, {{UNKNOWN_BIN, {0}}}},// zero devid terminator
@@ -1100,7 +1118,7 @@ const FwOperations::HwDev2Str FwOperations::hwDev2Str[] = {
     {"ConnectX-6",        CX6_HW_ID,        0x00},
     {"ConnectX-6DX",      CX6DX_HW_ID,      0x00},
     {"ConnectX-6LX",      CX6LX_HW_ID,      0x00},
-    {"ConnectX7",         CX7_HW_ID,        0x00},
+    {"ConnectX-7",        CX7_HW_ID,        0x00},
     {"BlueField",         BF_HW_ID,         0x00},
     {"BlueField2",        BF2_HW_ID,        0x00},
     {"SwitchX A0",        SWITCHX_HW_ID,    0x00},
@@ -1114,8 +1132,63 @@ const FwOperations::HwDev2Str FwOperations::hwDev2Str[] = {
     {"Spectrum A1",       SPECTRUM_HW_ID,   0x01},
     {"Spectrum2 A0",      SPECTRUM2_HW_ID,  0x00},
     {"Spectrum3 A0",      SPECTRUM3_HW_ID,  0x00},
+    {"Quantum2 A0",       QUANTUM2_HW_ID,    0x00},
+    {"Spectrum4 A0",      SPECTRUM4_HW_ID,   0x00},
     { (char*)NULL,       (u_int32_t)0, (u_int8_t)0x00},      // zero device ID terminator
 };
+
+chip_type FwOperations::GetChipType(string chip)
+{
+    if (chip == "CT_CONNECTX")
+        return CT_CONNECTX;
+    else if (chip == "CT_SWITCHX")
+        return CT_SWITCHX;
+    else if (chip == "CT_IS4")
+        return CT_IS4;
+    else if (chip == "CT_CONNECT_IB")
+        return CT_CONNECT_IB;
+    else if (chip == "CT_SWITCH_IB")
+        return CT_SWITCH_IB;
+    else if (chip == "CT_SPECTRUM")
+        return CT_SPECTRUM;
+    else if (chip == "CT_CONNECTX4")
+        return CT_CONNECTX4;
+    else if (chip == "CT_CONNECTX4_LX")
+        return CT_CONNECTX4_LX;
+    else if (chip == "CT_SWITCH_IB2")
+        return CT_SWITCH_IB2;
+    else if (chip == "CT_CONNECTX5")
+        return CT_CONNECTX5;
+    else if (chip == "CT_CONNECTX6")
+        return CT_CONNECTX6;
+    else if (chip == "CT_BLUEFIELD")
+        return CT_BLUEFIELD;
+    else if (chip == "CT_QUANTUM")
+        return CT_QUANTUM;
+    else if (chip == "CT_SPECTRUM2")
+        return CT_SPECTRUM2;
+    else if (chip == "CT_CONNECTX6DX")
+        return CT_SPECTRUM2;
+    else if (chip == "CT_CONNECTX6LX")
+        return CT_CONNECTX6LX;
+    else if (chip == "CT_CONNECTX7")
+        return CT_CONNECTX7;
+    else if (chip == "CT_SPECTRUM3")
+        return CT_SPECTRUM3;
+    else if (chip == "CT_BLUEFIELD2")
+        return CT_BLUEFIELD2;
+    else if (chip == "CT_CONNECTX3")
+        return CT_CONNECTX3;
+    else if (chip == "CT_QUANTUM2")
+        return CT_QUANTUM2;
+    else if (chip == "CT_SPECTRUM4")
+        return CT_SPECTRUM4;
+    else if (chip == "CT_GEARBOX")
+        return CT_GEARBOX;
+    else if (chip == "CT_GEARBOX_MGR")
+        return CT_GEARBOX_MGR;
+    else return CT_UNKNOWN;
+}
 
 #define ARR_SIZE(arr) sizeof(arr) / sizeof(arr[0])
 #define MAX_HW_NAME_LEN 100
@@ -1308,7 +1381,7 @@ bool FwOperations::FwSwReset()
     return true;
 }
 
-void FwOperations::WriteToErrBuff(char *errBuff, const char *errStr, int bufSize)
+void FwOperations::WriteToErrBuff(char *errBuff, char *errStr, int bufSize)
 {
     if (bufSize > 0) {
         if (bufSize > (int)strlen(errStr)) {
@@ -1689,6 +1762,7 @@ void FwOperations::SetDevFlags(chip_type_t chipType, u_int32_t devType, fw_img_t
                  (chipType == CT_CONNECTX5) || \
                  (chipType == CT_CONNECTX6) || (chipType == CT_CONNECTX6DX) || (chipType == CT_CONNECTX6LX) || \
                  (chipType == CT_SPECTRUM) || (chipType == CT_SPECTRUM2) || (chipType == CT_SPECTRUM3) || \
+                 (chipType == CT_CONNECTX7) || (chipType == CT_QUANTUM2) || (chipType == CT_SPECTRUM4) || \
                  (chipType == CT_BLUEFIELD) || (chipType == CT_BLUEFIELD2);
     }
 
@@ -1878,6 +1952,15 @@ const char* FwOperations::expRomType2Str(u_int16_t type)
     case 0x13:
         return "NVMe";
 
+    case 0x14:
+        return "UEFI Virtio net";
+
+    case 0x15:
+        return "UEFI Virtio blk";
+
+    case 0x16:
+       return "PXE Virtio net";
+
     case 0x21:
         return "FCODE";
 
@@ -1896,12 +1979,22 @@ bool FwOperations::FwSetTimeStamp(struct tools_open_ts_entry& timestamp, struct 
 
 bool FwOperations::FwResetTimeStamp()
 {
-    return errmsg("Operation not supported.");
+    return errmsg("FwResetTimeStamp not supported.");
 }
 
 bool FwOperations::GetSecureBootInfo()
 {
-    return errmsg("Operation not supported.");
+    return errmsg("GetSecureBootInfo not supported.");
+}
+
+bool FwOperations::IsCableQuerySupported()
+{
+    return errmsg("Linkx Cable Query is not supported.");
+}
+
+bool FwOperations::IsLifeCycleSupported()
+{
+    return errmsg("IsLifeCycleSupported not supported.");
 }
 
 bool FwOperations::FwBurnAdvanced(std::vector <u_int8_t> imageOps4MData, ExtBurnParams& burnParams, FwComponent::comps_ids_t ComponentId)
@@ -1965,6 +2058,10 @@ bool FwOperations::FwSignWithHmac(const char*)
 }
 
 bool FwOperations::FwSignWithRSA(const char *, const char *, const char *)
+{
+    return errmsg("FwSignWithRSA not supported");
+}
+bool FwOperations::FwSignWithRSA(const char *, const char *, vector<u_int8_t>& , vector<u_int8_t>& , vector<u_int8_t>& )
 {
     return errmsg("FwSignWithRSA not supported");
 }
@@ -2059,8 +2156,12 @@ u_int8_t FwOperations::GetFwFormatFromHwDevID(u_int32_t hwDevId)
                hwDevId == BF_HW_ID      ||
                hwDevId == BF2_HW_ID      ||
                hwDevId == QUANTUM_HW_ID ||
+               hwDevId == QUANTUM2_HW_ID ||
+               hwDevId == SPECTRUM4_HW_ID ||
                hwDevId == SPECTRUM2_HW_ID ||
-               hwDevId == SPECTRUM3_HW_ID) {
+               hwDevId == SPECTRUM3_HW_ID ||
+               hwDevId == GEARBOX_HW_ID ||
+               hwDevId == GB_MANAGER_HW_ID) {
         return FS_FS4_GEN;
     }
     return FS_UNKNOWN_IMG;
@@ -2073,6 +2174,9 @@ const char*  FwOperations::FwGetReSignMsgStr()
 
 bool FwOperations::TestAndSetTimeStamp(FwOperations *imageOps)
 {
+    if (!IS_HCA(imageOps->_fwImgInfo.ext_info.chip_type)) {//switches don't support MVTS register.
+        return true;
+    }
     Tlv_Status_t rc;
     Tlv_Status_t devTsQueryRc;
     bool retRc = true;
@@ -2183,12 +2287,12 @@ FwVersion FwOperations::createFwVersion(u_int16_t fw_ver0, u_int16_t fw_ver1, u_
 }
 FwVersion FwOperations::createFwVersion(const fw_info_com_t* fwInfo) {
     return FwVersion(fwInfo->fw_ver[0], fwInfo->fw_ver[1], fwInfo->fw_ver[2],
-            fwInfo->branch_ver);
+            fwInfo->branch_ver, fwInfo->dev_type);
 }
 
 FwVersion FwOperations::createRunningFwVersion(const fw_info_com_t* fwInfo) {
     return FwVersion(fwInfo->running_fw_ver[0], fwInfo->running_fw_ver[1],
-            fwInfo->running_fw_ver[2], fwInfo->running_branch_ver);
+            fwInfo->running_fw_ver[2], fwInfo->running_branch_ver, fwInfo->dev_type);
 }
 
 bool FwOperations::CreateSignatureManager()
@@ -2220,11 +2324,22 @@ bool FwOperations::FwCalcSHA(SHATYPE, vector<u_int8_t>&, vector<u_int8_t>&)
 {
     return errmsg("FwCalcSHA is not supported.");
 }
-bool FwOperations::InsertEncryptedSignature(vector<u_int8_t>, const char*, PrintCallBack)
+bool FwOperations::InsertSecureFWSignature(vector<u_int8_t>, const char*, PrintCallBack)
 {
-    return errmsg("InsertEncryptedSignature not supported");
+    return errmsg("InsertSecureFWSignature not supported");
 }
-
+bool FwOperations::PreparePublicKeyData(const char *, vector <u_int8_t>&, unsigned int&)
+{
+    return errmsg("PreparePublicKeyData not supported");
+}
+bool FwOperations::PrepareSecureBootSections(vector<u_int8_t>&, vector<u_int8_t>&, vector<u_int8_t>&, vector <u_int32_t>, vector <u_int8_t>, unsigned int)
+{
+    return errmsg("PrepareSecureBootSections not supported");
+}
+bool FwOperations::InsertSecureBootSignature(vector<u_int8_t>, vector<u_int8_t>, vector<u_int8_t>)
+{
+    return errmsg("InsertSecureBootSignature not supported");
+}
 bool FwOperations::getExtendedHWAravaPtrs(VerifyCallBack, FBase*, bool)
 {
     return errmsg("getExtendedHWAravaPtrs not supported");

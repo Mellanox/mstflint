@@ -46,6 +46,8 @@
 #define ISSI_3V_NAME     "IS25LPxxx"
 #define MICRON_3V_NAME   "MT25QLxxx"
 #define MACRONIX_1V8_NAME "MX25Uxxx"
+#define GIGA_3V_NAME      "GD25LBxxx"
+#define ISSI_HUAWEY_NAME  "IS25WPxxx"
 
 typedef enum flash_vendor {
     FV_ST = 0x20,
@@ -54,7 +56,9 @@ typedef enum flash_vendor {
     FV_ATMEL = 0x1f,
     FV_S25FLXXXX = 0x01,
     FV_MX25K16XXX = 0xc2,
-    FV_IS25LPXXX = 0x9d
+    FV_IS25LPXXX = 0x9d,
+    FV_GD25QXXX = 0xc8
+
 } flash_vendor_t;
 
 typedef enum flash_memory_type {
@@ -71,7 +75,9 @@ typedef enum flash_memory_type {
     FMT_S25FL116K = 0x40,
     FMT_S25FLXXXL = 0x60,
     FMT_MT25QLXXXABA = 0xba,
-    FMT_IS25LPXXX = 0x60
+    FMT_IS25LPXXX = 0x60,
+    FVT_GD25QXXX = 0x40
+
 } flash_memory_type_t;
 
 typedef enum flash_densities {

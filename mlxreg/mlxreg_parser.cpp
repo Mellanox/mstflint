@@ -36,6 +36,7 @@
 #include <common/bit_slice.h>
 #include <common/tools_utils.h>
 #include "mlxreg_parser.h"
+#include <errno.h>
 
 using namespace mlxreg;
 
@@ -307,7 +308,7 @@ void RegAccessParser::strToUint32(char *str, u_int32_t &uint)
 {
     char *endp;
     uint = strtoul(str, &endp, 0);
-    if (*endp) {
+    if (*endp || errno == ERANGE) {
         throw MlxRegException("Argument: %s is invalid.", str);
     }
     if (str[0] == '-') {
