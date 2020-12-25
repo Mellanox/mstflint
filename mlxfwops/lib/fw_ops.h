@@ -115,7 +115,8 @@ public:
     static bool checkMatchingExpRomDevId(const fw_info_t& info);
     static bool checkMatchingExpRomDevId(u_int16_t dev_type, const roms_info_t& roms_info);
     static const char* expRomType2Str(u_int16_t type);
-
+    static chip_type GetChipType(string chip);
+    static chip_type_t getChipType(u_int32_t devid);
     bool readBufAux(FBase& f, u_int32_t o, void *d, int l, const char *p);
     virtual bool FwQuery(fw_info_t *fwInfo, bool readRom = true, bool isStripedImage = false, bool quickQuery = true, bool ignoreDToc = false, bool verbose = false) = 0;
     virtual bool FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedImage = false, bool showItoc = false, bool ignoreDToc = false) = 0; // Add callback print
@@ -128,13 +129,18 @@ public:
     {
         return errmsg("Operation not supported.");
     }
+    virtual bool PreparePublicKeyData(const char *public_key_file, vector <u_int8_t>& publicKeyData, unsigned int& pem_offset);
+    virtual bool PrepareSecureBootSections(vector<u_int8_t>& encShaBinData, vector<u_int8_t>& encShaCritical, vector<u_int8_t>& encShaNonCritical,
+        vector <u_int32_t> uuidData, vector <u_int8_t> publicKeyData, unsigned int pemOffset);
     virtual bool FwInsertSHA256(PrintCallBack printFunc = (PrintCallBack)NULL);
-    virtual bool InsertEncryptedSignature(vector<u_int8_t> signature, const char *uuid, PrintCallBack printFunc);
+    virtual bool InsertSecureFWSignature(vector<u_int8_t> signature, const char *uuid, PrintCallBack printFunc);
+    virtual bool InsertSecureBootSignature(vector<u_int8_t> encShaBinData, vector<u_int8_t> encShaCritical, vector<u_int8_t> encShaNonCritical);
     virtual bool FwSignWithOneRSAKey(const char *privPemFile, const char *uuid, PrintCallBack printFunc = (PrintCallBack)NULL);
     virtual bool FwSignWithTwoRSAKeys(const char *privPemFile1, const char *uuid1,
                                       const char *privPemFile2, const char *uuid2, PrintCallBack printFunc = (PrintCallBack)NULL);
     virtual bool FwSignWithHmac(const char *key_file);
     virtual bool FwSignWithRSA(const char *private_key_file, const char *public_key_file, const char *guid_key_file);
+    virtual bool FwSignWithRSA(const char *public_key_file, const char *uuid, vector<u_int8_t>& bin_data, vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
     virtual bool PrepItocSectionsForHmac(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
     virtual bool IsCriticalSection(u_int8_t sect_type);
 
@@ -214,6 +220,8 @@ public:
     virtual bool IsFsCtrlOperations();
     virtual bool PrepItocSectionsForCompare(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
     virtual bool GetSecureBootInfo();
+    virtual bool IsCableQuerySupported();
+    virtual bool IsLifeCycleSupported();
     void GetFwParams(fw_ops_params_t&);
     virtual void CleanInterruptedCommand() {}//by default do nothing
     virtual bool FwCalcSHA(SHATYPE, vector<u_int8_t>&, vector<u_int8_t>&);
@@ -294,13 +302,15 @@ public:
         int cpu_utilization;
         std::vector<guid_t> userUids; //contains either guids or uids
         ExtBurnStatus burnStatus;
-
+        chip_type_t chip_type;
+        bool use_chip_type;
         ExtBurnParams() : userGuidsSpecified(false), userMacsSpecified(false), userUidSpecified(false),
             vsdSpecified(false), blankGuids(false), burnFailsafe(true), allowPsidChange(false),
             useImagePs(false), useImageGuids(false), singleImageBurn(true), noDevidCheck(false),
             skipCiReq(false), ignoreVersionCheck(false), useImgDevData(false), useDevImgInfo(false),
             burnRomOptions(BRO_DEFAULT), shift8MBIfNeeded(false), progressFunc((ProgressCallBack)NULL),
-            progressFuncEx((ProgressCallBackEx)NULL), progressUserData(NULL), userVsd((char*)NULL), use_cpu_utilization(false), cpu_utilization(-1)
+            progressFuncEx((ProgressCallBackEx)NULL), progressUserData(NULL), userVsd((char*)NULL), use_cpu_utilization(false), cpu_utilization(-1),
+            chip_type(CT_UNKNOWN), use_chip_type(false)
         { ProgressFuncAdv.func = (f_prog_func_adv)NULL; ProgressFuncAdv.opaque = NULL;}
 
         void updateParamsForBasicImage(ProgressCallBack progressFunc)
@@ -555,7 +565,7 @@ private:
      * @param[in] errBuff - pointer to dist error buffer
      * @param[in] errStr - pointer to source string
      * @param[in] bufSize - size of error buffer */
-    static void WriteToErrBuff(char *errBuff, const char *errStr, int bufSize);
+    static void WriteToErrBuff(char *errBuff, char *errStr, int bufSize);
 
     void BackUpFwParams(fw_ops_params_t& fwParams);
     // Methods

@@ -45,7 +45,6 @@ AbstractComponentAccess* ComponentAccessFactory::createDataAccessObject(FwCompsM
         return new DirectComponentAccess(Manager, Mf);
     }
     else {
-#ifndef UEFI_BUILD
         DMAComponentAccess* obj = new DMAComponentAccess(Manager, Mf);
         if (obj->allocateMemory()) {
             return obj;
@@ -54,8 +53,5 @@ AbstractComponentAccess* ComponentAccessFactory::createDataAccessObject(FwCompsM
             delete obj;
             return new DirectComponentAccess(Manager, Mf);
         }
-#else
-    return new DirectComponentAccess(Manager, Mf);
-#endif
     }
 }

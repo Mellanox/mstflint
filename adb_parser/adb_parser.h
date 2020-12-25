@@ -201,7 +201,6 @@ public:
     bool operator<(const AdbInstance& other);
     bool isConditionalNode();
     bool isConditionValid(map<string, string> *valuesMap);
-
     // DB like access methods
     AdbInstance
     * getChildByPath(const string& path, bool isCaseSensitive = true);
@@ -234,7 +233,6 @@ public:
     u_int32_t arrIdx;
     AdbInstance *unionSelector; // For union instances only
     bool isDiff;
-
     // FOR USER USAGE
     void *userData;
 private:

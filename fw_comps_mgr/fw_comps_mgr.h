@@ -58,6 +58,13 @@ using namespace std;
 #define MAX_MSG_SIZE 128
 #define MAX_REG_DATA 128
 
+#ifndef UEFI_BUILD
+#define DPRINTF(args)        do { char *reacDebug = getenv("FW_COMPS_DEBUG"); \
+                                  if (reacDebug != NULL) {  printf("\33[2K\r"); \
+                                      printf("[FW_COMPS_DEBUG]: -D- "); printf args; fflush(stdout);} } while (0)
+#else
+#define DPRINTF(...)
+#endif
 typedef struct reg_access_hca_mqis_reg mqisReg;
 typedef struct reg_access_hca_mcqs_reg comp_status_st;
 typedef struct reg_access_hca_mcqi_reg comp_info_st;
@@ -66,6 +73,7 @@ typedef struct reg_access_hca_mcqi_cap comp_cap_st;
 typedef struct reg_access_hca_mgir mgirReg;
 
 typedef struct reg_access_hca_mcqi_version component_version_st;
+typedef struct reg_access_hca_mcqi_linkx_properties component_linkx_st;
 
 typedef int(*ProgressFunc) (int completion);
 
@@ -92,6 +100,7 @@ typedef struct {
 typedef struct {
     component_version_st pending_fw_version;
     component_version_st running_fw_version;
+    component_linkx_st linkx_data;
     security_fw_t security_type;
     char psid[PSID_LEN + 1];
     char product_ver[PRODUCT_VER_LEN + 1];
@@ -112,6 +121,7 @@ typedef struct {
     char imageVsd[VSD_LEN + 1];
     bool sec_boot;
     life_cycle_t life_cycle;
+
 } fwInfoT;
 
 typedef struct {
@@ -131,11 +141,12 @@ typedef struct mac_guid {
 } mac_guid_t;
 
 typedef enum {
-    COMPINFO_CAPABILITIES,
-    COMPINFO_VERSIONS,
-    COMPINFO_PUBLIC_KEYS,
-    COMPINFO_FORBIDDEN_VERSION,
-    COMPINFO_ACTIVATION_METHOD = 0x5,
+    COMPINFO_CAPABILITIES = 0,
+    COMPINFO_VERSIONS = 1,
+    COMPINFO_PUBLIC_KEYS = 2,
+    COMPINFO_FORBIDDEN_VERSION = 3,
+    COMPINFO_ACTIVATION_METHOD = 5,
+    COMPINFO_LINKX_PROPERTIES = 6
 } comp_info_t;
 
 class FwComponent {
@@ -152,6 +163,7 @@ public:
         COMPID_DEV_INFO = 0x8,
         COMPID_GEARBOX = 0xA,
         COMPID_CONGESTION_CONTROL = 0xB,
+        COMPID_LINKX = 0xC,
         COMPID_UNKNOWN = 0xff,
     } comps_ids_t;
 
@@ -220,24 +232,28 @@ typedef enum {
 
     //MCC Return codes
     FWCOMPS_MCC_ERR_CODES = 0x100,
-    FWCOMPS_MCC_ERR_ERROR,
-    FWCOMPS_MCC_ERR_REJECTED_DIGEST_ERR,
-    FWCOMPS_MCC_ERR_REJECTED_NOT_APPLICABLE,
-    FWCOMPS_MCC_ERR_REJECTED_UNKNOWN_KEY,
-    FWCOMPS_MCC_ERR_REJECTED_AUTH_FAILED,
-    FWCOMPS_MCC_ERR_REJECTED_UNSIGNED,
-    FWCOMPS_MCC_ERR_REJECTED_KEY_NOT_APPLICABLE,
-    FWCOMPS_MCC_ERR_REJECTED_BAD_FORMAT,
-    FWCOMPS_MCC_ERR_BLOCKED_PENDING_RESET,
-    FWCOMPS_MCC_UNEXPECTED_STATE,
-    FWCOMPS_MCC_REJECTED_NOT_A_SECURED_FW,
-    FWCOMPS_MCC_REJECTED_MFG_BASE_MAC_NOT_LISTED,
-    FWCOMPS_MCC_REJECTED_NO_DEBUG_TOKEN,
-    FWCOMPS_MCC_REJECTED_VERSION_NUM_MISMATCH,
-    FWCOMPS_MCC_REJECTED_USER_TIMESTAMP_MISMATCH,
-    FWCOMPS_MCC_REJECTED_FORBIDDEN_VERSION,
-    FWCOMPS_MCC_FLASH_ERASE_ERROR,
-    FWCOMPS_MCC_REJECTED_IMAGE_CAN_NOT_BOOT_FROM_PARTITION,
+    FWCOMPS_MCC_ERR_ERROR = 0x101,
+    FWCOMPS_MCC_ERR_REJECTED_DIGEST_ERR = 0x102,
+    FWCOMPS_MCC_ERR_REJECTED_NOT_APPLICABLE = 0x103,
+    FWCOMPS_MCC_ERR_REJECTED_UNKNOWN_KEY = 0x104,
+    FWCOMPS_MCC_ERR_REJECTED_AUTH_FAILED = 0x105,
+    FWCOMPS_MCC_ERR_REJECTED_UNSIGNED = 0x106,
+    FWCOMPS_MCC_ERR_REJECTED_KEY_NOT_APPLICABLE = 0x107,
+    FWCOMPS_MCC_ERR_REJECTED_BAD_FORMAT = 0x108,
+    FWCOMPS_MCC_ERR_BLOCKED_PENDING_RESET = 0x109,
+    FWCOMPS_MCC_UNEXPECTED_STATE = 0x10A,
+    FWCOMPS_MCC_REJECTED_NOT_A_SECURED_FW = 0x10B,
+    FWCOMPS_MCC_REJECTED_MFG_BASE_MAC_NOT_LISTED = 0x10C,
+    FWCOMPS_MCC_REJECTED_NO_DEBUG_TOKEN = 0x10D,
+    FWCOMPS_MCC_REJECTED_VERSION_NUM_MISMATCH = 0x10E,
+    FWCOMPS_MCC_REJECTED_USER_TIMESTAMP_MISMATCH = 0x10F,
+    FWCOMPS_MCC_REJECTED_FORBIDDEN_VERSION = 0x110,
+    FWCOMPS_MCC_FLASH_ERASE_ERROR = 0x111,
+    FWCOMPS_MCC_REJECTED_IMAGE_CAN_NOT_BOOT_FROM_PARTITION = 0x112,
+    FWCOMPS_MCC_REJECTED_LINKX_TYPE_NOT_SUPPORTED = 0x113,
+    FWCOMPS_MCC_REJECTED_HOST_STORAGE_IN_USE = 0x114,
+    FWCOMPS_MCC_REJECTED_LINKX_TRANSFER = 0x115,
+    FWCOMPS_MCC_REJECTED_LINKX_ACTIVATE = 0x116,
 
     // errors regarding REG_ACCESS
     FWCOMPS_REG_ACCESS_OK = 0,
@@ -290,7 +306,8 @@ typedef enum {
     FSM_CMD_CHECK_UPDATE_HANDLE    = 0x9,
     FSM_CMD_FORCE_HANDLE_RELEASE   = 0xA,
     FSM_CMD_READ_PENDING_COMPONENT = 0xB,
-    FSM_CMD_UNDEFINED              = 0xFF,
+    FSM_CMD_DOWNSTREAM_DEVICE_TRANSFER = 0xC,
+    FSM_CMD_UNDEFINED = 0xFF,
 } fsm_command_t;
 
 typedef enum
@@ -331,7 +348,6 @@ public:
     FwCompsMgr(const char *devname, DeviceTypeT devType = DEVICE_HCA_SWITCH, int deviceIndex = 0);
     FwCompsMgr(mfile *mf, DeviceTypeT devType = DEVICE_HCA_SWITCH, int deviceIndex = 0);
     FwCompsMgr(uefi_Dev_t *uefi_dev, uefi_dev_extra_t *uefi_extra);
-
     virtual ~FwCompsMgr();
 
     u_int32_t        getFwSupport();
@@ -346,15 +362,12 @@ public:
                                    bool readPending = false,
                                    ProgressCallBackAdvSt *progressFuncAdv = (ProgressCallBackAdvSt *)NULL);
 
-    bool             getComponentVersion(FwComponent::comps_ids_t compType,
-                                         bool pending,
-                                         component_version_st *cmpVer);
 
     bool    queryFwInfo(fwInfoT *query, bool next_boot_fw_ver = false);
 
     bool             forceRelease();
     fw_comps_error_t getLastError() { return _lastError; };
-    const char*      getLastErrMsg();
+    unsigned char*      getLastErrMsg();
 
     bool             readBlockFromComponent(FwComponent::comps_ids_t compId,
                                             u_int32_t offset,
@@ -370,6 +383,10 @@ public:
     fw_comps_error_t regErrTrans(reg_access_status_t err);
     bool lock_flash_semaphore();
     void unlock_flash_semaphore();
+    void SetIndexAndSize(int deviceIndex, int deviceSize, bool autoUpdate = false, bool activationNeeded = true, bool downloadTransferNeeded = true, int activate_delay_sec = 0);
+    bool RefreshComponentsStatus(comp_status_st* ComponentStatus = NULL);
+    bool GetComponentLinkxProperties(FwComponent::comps_ids_t compType, component_linkx_st *cmpLinkX);
+    void GenerateHandle();
 private:
 
     typedef enum {
@@ -382,28 +399,33 @@ private:
         FSMST_ACTIVATE       = 0x6,
         FSMST_UPLOAD         = 0x7,
         FSMST_UPLOAD_PENDING = 0x8,
-        FSMST_NA             = 0xFF,
+        FSMST_DOWNSTREAM_DEVICE_TRANSFER = 0x9,
+        FSMST_NA = 0xFF,
     } fsm_state_t;
 
     typedef enum {
         MCC_ERRCODE_OK = 0x0,
-        MCC_ERRCODE_ERROR,
-        MCC_ERRCODE_REJECTED_DIGEST_ERR,
-        MCC_ERRCODE_REJECTED_NOT_APPLICABLE,
-        MCC_ERRCODE_REJECTED_UNKNOWN_KEY,
-        MCC_ERRCODE_REJECTED_AUTH_FAILED,
-        MCC_ERRCODE_REJECTED_UNSIGNED,
-        MCC_ERRCODE_REJECTED_KEY_NOT_APPLICABLE,
-        MCC_ERRCODE_REJECTED_BAD_FORMAT,
-        MCC_ERRCODE_BLOCKED_PENDING_RESET,
-        MCC_ERRCODE_REJECTED_NOT_A_SECURED_FW,
-        MCC_ERRCODE_REJECTED_MFG_BASE_MAC_NOT_LISTED,
-        MCC_ERRCODE_REJECTED_NO_DEBUG_TOKEN,
-        MCC_ERRCODE_REJECTED_VERSION_NUM_MISMATCH,
-        MCC_ERRCODE_REJECTED_USER_TIMESTAMP_MISMATCH,
-        MCC_ERRCODE_REJECTED_FORBIDDEN_VERSION,
-        MCC_ERRCODE_FLASH_ERASE_ERROR,
-        MCC_ERRCODE_REJECTED_IMAGE_CAN_NOT_BOOT_FROM_PARTITION,
+        MCC_ERRCODE_ERROR = 0x1,
+        MCC_ERRCODE_REJECTED_DIGEST_ERR = 0x2,
+        MCC_ERRCODE_REJECTED_NOT_APPLICABLE = 0x3,
+        MCC_ERRCODE_REJECTED_UNKNOWN_KEY = 0x4,
+        MCC_ERRCODE_REJECTED_AUTH_FAILED = 0x5,
+        MCC_ERRCODE_REJECTED_UNSIGNED = 0x6,
+        MCC_ERRCODE_REJECTED_KEY_NOT_APPLICABLE = 0x7,
+        MCC_ERRCODE_REJECTED_BAD_FORMAT = 0x8,
+        MCC_ERRCODE_BLOCKED_PENDING_RESET = 0x9,
+        MCC_ERRCODE_REJECTED_NOT_A_SECURED_FW = 0xA,
+        MCC_ERRCODE_REJECTED_MFG_BASE_MAC_NOT_LISTED = 0xB,
+        MCC_ERRCODE_REJECTED_NO_DEBUG_TOKEN = 0xC,
+        MCC_ERRCODE_REJECTED_VERSION_NUM_MISMATCH = 0xD,
+        MCC_ERRCODE_REJECTED_USER_TIMESTAMP_MISMATCH = 0xE,
+        MCC_ERRCODE_REJECTED_FORBIDDEN_VERSION = 0xF,
+        MCC_ERRCODE_FLASH_ERASE_ERROR = 0x10,
+        MCC_ERRCODE_REJECTED_IMAGE_CAN_NOT_BOOT_FROM_PARTITION = 0x11,
+        MCC_ERRCODE_REJECTED_LINKX_TYPE_NOT_SUPPORTED = 0x12,
+        MCC_ERRCODE_REJECTED_HOST_STORAGE_IN_USE = 0x13,
+        MCC_ERRCODE_REJECTED_LINKX_TRANSFER = 0x14,
+        MCC_ERRCODE_REJECTED_LINKX_ACTIVATE = 0x15
     } mcc_command_error_t;
 
     typedef enum {
@@ -424,7 +446,7 @@ private:
 
     void          initialize(mfile *mf);
 
-    void          generateHandle();
+
 
     bool          accessComponent(u_int32_t offset,
                                   u_int32_t size,
@@ -435,6 +457,10 @@ private:
     bool           queryComponentStatus(u_int32_t componentIndex,
                                        comp_status_st *query);
 
+    bool    getComponentVersion(FwComponent::comps_ids_t compType,
+        bool pending,
+        component_version_st *cmpVer);
+    
     bool           controlFsm(fsm_command_t command,
                               fsm_state_t expStatus = FSMST_NA,
                               u_int32_t size = 0,
@@ -472,8 +498,7 @@ private:
     reg_access_status_t getGI(mfile *mf, mgirReg *gi);
     bool           extractMacsGuids(fwInfoT *fwQuery);
     void           extractRomInfo(mgirReg *mgir, fwInfoT *fwQuery);
-    bool           refreshComponentsStatus();
-
+    
     std::vector<comp_query_st> _compsQueryMap;
     bool _refreshed;
     bool _clearSetEnv;
@@ -494,6 +519,14 @@ private:
     std::vector<u_int8_t> _productVerStr;
     bool isDmaSupported;
     AbstractComponentAccess* _accessObj;
+    int _linkXDeviceSize;
+    int _linkXDeviceIndex;
+    bool _autoUpdate;
+    bool _linkXFlow;
+    bool _activationNeeded;
+    bool _downloadTransferNeeded;
+    int _activation_delay_sec;
+    int _rejectedIndex;
 #ifndef UEFI_BUILD
     trm_ctx _trm;
 #endif

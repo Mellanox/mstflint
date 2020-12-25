@@ -100,6 +100,26 @@
 
 #define EXT_MBOX_DMA_OFF    0x8
 
+#define SEMAPHORE_ADDR_GBOX                0xa6850
+#define CMD_PTR_ADDR_GBOX                  0x90010
+#define GBOX_GW_OPCODE_OFFSET              256
+#define GBOX_GW_REG_OPCODE_OFFSET          252
+#define GBOX_GW_REQUEST_DATA_BLOCK_OFFSET  0
+#define GBOX_GW_RESPONSE_DATA_BLOCK_OFFSET 260
+#define GBOX_MAX_DATA_SIZE                 256
+#define GBOX_STAT_CFG_NOT_DONE_ADDR        0x90000
+#define GBOX_REG_ACCESS_CMD_OPCODE         0x0ff
+#define GBOX_BUSY_BITOFF             31
+#define GBOX_OPCODE_BITOFF           16
+#define GBOX_OPCODE_BITLEN           10
+#define GBOX_REG_ACC_W_SIZE_BITOFF   0
+#define GBOX_REG_ACC_W_SIZE_BITLEN   8
+#define GBOX_STATUS_BITOFF           28
+#define GBOX_STATUS_BITLEN           3
+#define GBOX_STATUS1_BITOFF          8
+#define GBOX_STATUS1_BITLEN          7
+#define GBOX_READ_SIZE_BITOFF        0
+#define GBOX_READ_SIZE_BITLEN        8
 /*
  * General Macros
  */
@@ -228,7 +248,7 @@ enum {
 #define CX6_HW_ID       527
 #define CX6DX_HW_ID     530
 #define CX6LX_HW_ID     534
-#define CX7_HW_ID       538
+#define CX7_HW_ID       536
 #define BF_HW_ID        529
 #define BF2_HW_ID       532
 #define SW_IB_HW_ID     583
@@ -237,10 +257,15 @@ enum {
 #define QUANTUM_HW_ID   589
 #define SPECTRUM2_HW_ID 590
 #define SPECTRUM3_HW_ID 592
+#define QUANTUM2_HW_ID  599
+#define SPECTRUM4_HW_ID 596
+#define AMOS_GBOX_HW_ID 594
 
 /***** GLOBALS *****/
-static int increase_poll_time = 0;
+int increase_poll_time = 0;
 void  set_increase_poll_time(int new_value) { increase_poll_time = new_value; }
+
+u_int32_t gbox_gw_start_addr = 0xffff;
 /***** GLOBALS *****/
 
 /*************************************************************************************/
@@ -257,29 +282,26 @@ static int get_version(mfile *mf, u_int32_t hcr_address)
     return reg;
 }
 
-/*
- * go - Sets the busy bit to 1, wait untill it is 0 again.
- */
-static int go(mfile *mf)
+static MError check_busy_bit(mfile *mf, int busy_bit_offset, u_int32_t *reg) 
 {
-    u_int32_t reg = 0x0, busy;
-    int i, wait;
-
-    DBG_PRINTF("Go()\n");
-
-    int rc = MREAD4_ICMD(mf, mf->icmd.ctrl_addr, &reg);
-    CHECK_RC(rc);
-    busy = EXTRACT(reg, BUSY_BITOFF, BUSY_BITLEN);
-    if (busy) {
-        return ME_ICMD_STATUS_IFC_BUSY;
-    }
-
-    reg = MERGE(reg, 1, BUSY_BITOFF, BUSY_BITLEN);
-    rc = MWRITE4_ICMD(mf, mf->icmd.ctrl_addr, reg);
+    DBG_PRINTF("Check Go bit\n");
+    int rc = MREAD4_ICMD(mf, mf->icmd.ctrl_addr, reg);
     CHECK_RC(rc);
 
-    DBG_PRINTF("Busy-bit raised. Waiting for command to exec...\n");
+    return EXTRACT((*reg), busy_bit_offset, BUSY_BITLEN);
+}
+
+static MError set_busy_bit(mfile *mf, u_int32_t *reg, int busy_bit_offset) 
+{
+    *reg = MERGE(*reg, 1, busy_bit_offset, BUSY_BITLEN);
+    return MWRITE4_ICMD(mf, mf->icmd.ctrl_addr, *reg);
+}
+
+static int set_sleep()
+{
     char *icmd_sleep_env;
+    int icmd_sleep = -1;
+
     if (increase_poll_time) {
         // increase_poll_time is set by low_cpu flag. To reduce CPU utilization
         icmd_sleep_env = "10\0";
@@ -287,7 +309,7 @@ static int go(mfile *mf)
     else {
         icmd_sleep_env = getenv("MFT_CMD_SLEEP");
     }
-    int icmd_sleep = -1;
+
     if (icmd_sleep_env) {
         char *endptr;
         icmd_sleep = strtol(icmd_sleep_env, &endptr, 10);
@@ -296,68 +318,12 @@ static int go(mfile *mf)
         }
     }
 
-    // wait for command to execute
-    i = 0; wait = 1;
-    do {
-        if (++i > 5120) {
-            // this number of iterations should take ~~30sec, which is the defined command t/o
-            DBG_PRINTF("Execution timed-out\n");
-            return ME_ICMD_STATUS_EXECUTE_TO;
-        }
-
-        DBG_PRINTF("Waiting for busy-bit to clear (iteration #%d)...\n", i);
-        if (icmd_sleep > 0) {
-            if (i == 3) {
-                msleep(icmd_sleep);
-            } else if (i > 3) {
-                msleep(wait);
-                if (wait < 8) {
-                    wait *= 2;              // exponential backoff - up-to 8ms between polls
-                }
-            }
-            if(increase_poll_time) {
-                // adding msleep to reduce the CPU utilization (low_cpu flag)
-                msleep(10);
-            }
-        } else {
-            if (i > 5) {
-                // after some iteration put sleeps bwtween busy-wait
-                msleep(wait);  // don't hog the cpu with busy-wait
-                if (wait < 8) {
-                    wait *= 2;              // exponential backoff - up-to 8ms between polls
-                }
-            }
-        }
-        rc = MREAD4_ICMD(mf, mf->icmd.ctrl_addr, &reg);
-        CHECK_RC(rc);
-        busy = EXTRACT(reg, BUSY_BITOFF, BUSY_BITLEN);
-
-    } while (busy);
-    DBG_PRINTF("Command completed!\n");
-
-    return ME_OK;
-}
-
-/*
- * set_opcode
- */
-static int set_opcode(mfile *mf, u_int16_t opcode)
-{
-    u_int32_t reg = 0x0;
-    u_int8_t exmb = mf->icmd.dma_icmd;
-    int rc = MREAD4_ICMD(mf, mf->icmd.ctrl_addr, &reg);
-    CHECK_RC(rc);
-    reg = MERGE(reg, opcode, OPCODE_BITOFF, OPCODE_BITLEN);
-    reg = MERGE(reg, exmb, EXMB_BITOFF, EXMB_BITLEN);
-    rc = MWRITE4_ICMD(mf, mf->icmd.ctrl_addr, reg);
-    CHECK_RC(rc);
-    return ME_OK;
+    return icmd_sleep;
 }
 
 /*
  * get_status
  */
-
 static int translate_status(int status)
 {
     switch (status) {
@@ -389,25 +355,135 @@ static int translate_status(int status)
         return ME_ICMD_UNKNOWN_STATUS;
     }
 }
-static int get_status(mfile *mf)
+
+static int translate_gbox_icmd_status(int status)
+{
+    switch (status) {
+    case 0x0:
+        return ME_OK;
+
+    case 0x1:
+        return ME_ERROR;
+
+    case 0x2:
+        return ME_UNKOWN_ACCESS_TYPE;
+
+    case 0x3:
+        return ME_ICMD_BAD_PARAM;
+
+    case 0x6:
+        return ME_TIMEOUT;
+
+    case 0x7:
+        return ME_ICMD_NOT_SUPPORTED;
+
+    default:
+        return ME_ICMD_UNKNOWN_STATUS;
+    }
+}
+
+/*
+ * set_and_poll_on_busy_bit - Sets the busy bit to 1, wait untill it is 0 again.
+ */
+static int set_and_poll_on_busy_bit(mfile *mf, int enhanced, int busy_bit_offset, u_int32_t* reg)
+{
+    u_int32_t busy;
+    int i, wait;
+    MError rc;
+
+    // set go bit
+    rc = set_busy_bit(mf, reg, busy_bit_offset);
+    CHECK_RC(rc);    
+    DBG_PRINTF("Busy-bit raised. Waiting for command to exec...\n");
+
+    // set sleep time if needed
+    int icmd_sleep = set_sleep();
+
+    // wait for command to execute
+    i = 0; wait = 1;
+    do {
+        if (++i > 5120) {
+            // this number of iterations should take ~~30sec, which is the defined command t/o
+            DBG_PRINTF("Execution timed-out\n");
+            return ME_ICMD_STATUS_EXECUTE_TO;
+        }
+
+        DBG_PRINTF("Waiting for busy-bit to clear (iteration #%d)...\n", i);
+        if (icmd_sleep > 0) {
+            if (i == 3) {
+                msleep(icmd_sleep);
+            } else if (i > 3) {
+                msleep(wait);
+                if (wait < 8) {
+                    wait *= 2;              // exponential backoff - up-to 8ms between polls
+                }
+            }
+            if(increase_poll_time) {
+                // adding msleep to reduce the CPU utilization (low_cpu flag)
+                msleep(10);
+            }
+        } else {
+            if(!enhanced) {
+                if (i > 5) {
+                    // after some iteration put sleeps between busy-wait
+                    msleep(wait);  // don't hog the cpu with busy-wait
+                    if (wait < 8) {
+                        wait *= 2;              // exponential backoff - up-to 8ms between polls
+                    }
+                }
+            } else {
+#ifdef _MSC_VER
+                msleep(1);
+#else
+                usleep(1);
+#endif
+            }
+        }
+
+        busy = check_busy_bit(mf, busy_bit_offset, reg);
+
+    } while (busy);
+
+    DBG_PRINTF("Command completed!\n");
+
+
+    return ME_OK;
+}
+
+/*
+ * set_opcode
+ */
+static int set_opcode(mfile *mf, u_int16_t opcode)
 {
     u_int32_t reg = 0x0;
+    u_int8_t exmb = mf->icmd.dma_icmd;
+
     int rc = MREAD4_ICMD(mf, mf->icmd.ctrl_addr, &reg);
     CHECK_RC(rc);
-    return translate_status(EXTRACT(reg, STATUS_BITOFF, STATUS_BITLEN));
+
+    reg = MERGE(reg, opcode, OPCODE_BITOFF, OPCODE_BITLEN);
+    reg = MERGE(reg, exmb, EXMB_BITOFF, EXMB_BITLEN);
+    rc = MWRITE4_ICMD(mf, mf->icmd.ctrl_addr, reg);
+
+    CHECK_RC(rc);
+    return ME_OK;
 }
 
 /*
  * icmd_is_cmd_ifc_ready
  */
-static int icmd_is_cmd_ifc_ready(mfile *mf)
+static int icmd_is_cmd_ifc_ready(mfile *mf, int enhanced)
 {
     u_int32_t reg = 0x0;
-    if (MREAD4(mf, mf->icmd.static_cfg_not_done_addr, &reg)) {
-        return ME_ICMD_STATUS_CR_FAIL;
+    if(!enhanced || mf->icmd.icmd_ready == MTCR_STATUS_UNKNOWN) {
+        u_int32_t bit_val = 0;
+        if (MREAD4(mf, mf->icmd.static_cfg_not_done_addr, &reg)) {
+            return ME_ICMD_STATUS_CR_FAIL;
+        }
+        bit_val = EXTRACT(reg, mf->icmd.static_cfg_not_done_offs, 1);
+        mf->icmd.icmd_ready = (bit_val == 0) ? MTCR_STATUS_TRUE : MTCR_STATUS_FALSE;
     }
-    u_int32_t bit_val = EXTRACT(reg, mf->icmd.static_cfg_not_done_offs, 1);
-    return (bit_val == 0) ?  ME_OK : ME_ICMD_STATUS_ICMD_NOT_READY;
+    return (mf->icmd.icmd_ready == MTCR_STATUS_TRUE) ?  ME_OK : ME_ICMD_STATUS_ICMD_NOT_READY;
 }
 
 #define SMP_ICMD_SEM_ADDR 0x0
@@ -439,7 +515,7 @@ static int icmd_clear_semaphore_com(mfile *mf)
         MWRITE4_SEMAPHORE(mf, mf->icmd.semaphore_addr, 0);
     }
     mf->icmd.took_semaphore = 0;
-    return ME_OK;
+    return ME_OK; 
 }
 
 
@@ -529,43 +605,41 @@ int icmd_take_semaphore(mfile *mf)
     }
 }
 
-int icmd_send_command(mfile    *mf,
-                      IN int opcode,
-                      INOUT void *data,
-                      IN int data_size,
-                      IN int skip_write)
+static int check_msg_size(mfile* mf, int write_data_size, int read_data_size)
 {
-    return icmd_send_command_int(mf, opcode, data, data_size, data_size, skip_write);
+    // check data size does not exceed mailbox size
+    if (write_data_size > (int)mf->icmd.max_cmd_size || 
+        read_data_size > (int)mf->icmd.max_cmd_size) {
+        DBG_PRINTF("write_data_size <%x-%x> mf->icmd.max_cmd_size .. ", write_data_size, mf->icmd.max_cmd_size);
+        DBG_PRINTF("read_data_size <%x-%x> mf->icmd.max_cmd_size\n", read_data_size, mf->icmd.max_cmd_size);
+        return ME_ICMD_SIZE_EXCEEDS_LIMIT;
+    }
+    return ME_OK;
 }
 
-/*
- * icmd_send_command
- */
-int icmd_send_command_int(mfile    *mf,
-                          IN int opcode,
-                          INOUT void *data,
-                          IN int write_data_size,
-                          IN int read_data_size,
-                          IN int skip_write)
+static int icmd_send_command_com(mfile    *mf,
+                                 IN int opcode,
+                                 INOUT void *data,
+                                 IN int write_data_size,
+                                 IN int read_data_size,
+                                 IN int skip_write,
+                                 IN int enhanced)
 {
 
     int ret;
     // open icmd interface by demand
     ret = icmd_open(mf);
     CHECK_RC(ret);
-    // check data size does not exceed mailbox size
-    if (write_data_size > (int)mf->icmd.max_cmd_size || \
-        read_data_size > (int)mf->icmd.max_cmd_size) {
-        DBG_PRINTF("write_data_size <%x-%x> mf->icmd.max_cmd_size .. ", write_data_size, mf->icmd.max_cmd_size);
-        DBG_PRINTF("read_data_size <%x-%x> mf->icmd.max_cmd_size\n", read_data_size, mf->icmd.max_cmd_size);
-        return ME_ICMD_SIZE_EXCEEDS_LIMIT;
+
+    ret = check_msg_size(mf, write_data_size, read_data_size);
+    CHECK_RC(ret);
+
+    ret = icmd_is_cmd_ifc_ready(mf, enhanced);
+    CHECK_RC(ret);
+    if(!enhanced) {
+        ret = icmd_take_semaphore(mf);
+        CHECK_RC(ret);
     }
-
-    ret = icmd_is_cmd_ifc_ready(mf);
-    CHECK_RC(ret);
-
-    ret = icmd_take_semaphore(mf);
-    CHECK_RC(ret);
 
     ret = set_opcode(mf, opcode);
     CHECK_RC_GO_TO(ret, cleanup);
@@ -589,10 +663,17 @@ int icmd_send_command_int(mfile    *mf,
         CHECK_RC(ret);
     }
 
-    ret = go(mf);
+    u_int32_t reg = 0x0;
+    // check go bit down
+    ret = check_busy_bit(mf,  BUSY_BITOFF, &reg);
+    CHECK_RC(ret);
+
+    // set go bit + poll + returned status 
+    ret = set_and_poll_on_busy_bit(mf, enhanced, BUSY_BITOFF, &reg);
     CHECK_RC_GO_TO(ret, cleanup);
 
-    ret = get_status(mf);
+    // get status 
+    ret = translate_status(EXTRACT(reg, STATUS_BITOFF, STATUS_BITLEN));
     CHECK_RC_GO_TO(ret, cleanup);
 
     DBG_PRINTF("-D- Reading command from mailbox");
@@ -608,10 +689,156 @@ int icmd_send_command_int(mfile    *mf,
 
     ret = ME_OK;
 cleanup:
-    (void) icmd_clear_semaphore(mf);
+    if(!enhanced) {
+        (void) icmd_clear_semaphore(mf);
+    }
     return ret;
 }
 
+
+/*
+ * set_gbox_gw_opcode_block
+ */
+static u_int32_t set_gbox_gw_opcode_block(u_int16_t opcode, int size)
+{
+    u_int32_t reg = 0x0;
+   
+    reg = MERGE(reg, (u_int32_t)(size/4), GBOX_REG_ACC_W_SIZE_BITOFF, GBOX_REG_ACC_W_SIZE_BITLEN);
+    reg = MERGE(reg, opcode, GBOX_OPCODE_BITOFF, GBOX_OPCODE_BITLEN);
+    return reg;
+}
+
+static MError get_gbox_gw_start_addr(mfile *mf, u_int32_t* start_addr)
+{
+    // get gbox_gw_start_addr by reading cr-space only once  
+    if (gbox_gw_start_addr == 0xffff) {
+        if (MREAD4(mf, CMD_PTR_ADDR_GBOX, &gbox_gw_start_addr)) {
+            return ME_ICMD_STATUS_CR_FAIL;
+        }
+        // no need to /4
+        // gw_addr = gw_addr >> 2;
+        *start_addr = gbox_gw_start_addr;
+    }
+    return ME_OK;
+} 
+
+static int icmd_send_gbox_command_com(mfile      *mf,
+                                      INOUT void *data,
+                                      IN int     write_data_size,
+                                      IN int     read_data_size,
+                                      IN int     enhanced)
+{
+    int ret;
+    u_int32_t data_start_off = 0x0;
+    u_int8_t buffer[GBOX_MAX_DATA_SIZE+4] = {0};
+    u_int32_t reg = 0x0;
+
+    if (mf->gb_info.gb_conn_type != GEARBPX_OVER_MTUSB) {
+        // wasn't supposed to get here
+        return ME_ERROR;
+    }
+
+    // init icmd
+    ret = icmd_open(mf);
+    CHECK_RC(ret);
+
+    ret = check_msg_size(mf, write_data_size, read_data_size);
+    CHECK_RC(ret);
+
+    ret = icmd_is_cmd_ifc_ready(mf, enhanced);
+    CHECK_RC(ret);
+    if(!enhanced) {
+        ret = icmd_take_semaphore(mf);
+        CHECK_RC(ret);
+    }
+
+    // check go bit down
+    ret = check_busy_bit(mf,  GBOX_BUSY_BITOFF, &reg);
+    CHECK_RC(ret);
+
+    // write to data request section
+    DBG_PRINTF("-D- Setting command GW");
+    data_start_off = mf->gb_info.data_req_addr + GBOX_MAX_DATA_SIZE - write_data_size;
+    MWRITE_BUF_ICMD(mf, data_start_off, data, write_data_size, ret = ME_ICMD_STATUS_CR_FAIL; goto sem_cleanup;);
+
+    int orig_reg_size = write_data_size - 4;
+    // set opcode block - size is original register size = means without register vlock ()-4 bytes
+    reg = set_gbox_gw_opcode_block(GBOX_REG_ACCESS_CMD_OPCODE, orig_reg_size);
+
+    // set busy bit and write msg, than, poll + return status
+    ret = set_and_poll_on_busy_bit(mf, enhanced, GBOX_BUSY_BITOFF, &reg);
+    CHECK_RC_GO_TO(ret, sem_cleanup);
+
+    // get status 
+    ret = translate_gbox_icmd_status(EXTRACT(reg, GBOX_STATUS_BITOFF, GBOX_STATUS_BITLEN));
+    CHECK_RC_GO_TO(ret, sem_cleanup);
+    ret = EXTRACT(reg, GBOX_STATUS1_BITOFF, GBOX_STATUS1_BITLEN);
+  
+    // read response
+    DBG_PRINTF("-D- Reading command from mailbox");
+    // no need to read size, it is the same (fw dont change this field) - uncommnet if logic will change
+    // int read_size = EXTRACT(reg, GBOX_READ_SIZE_BITOFF, GBOX_READ_SIZE_BITLEN);
+    // read_size = read_size * 4;
+
+    // reset buffer
+    memset(buffer, 0, GBOX_MAX_DATA_SIZE);
+    // put register status in first 4 bytes 
+    memcpy(buffer, &ret, 4);
+    // get response data (into buffer+4)
+    MREAD_BUF_ICMD(mf, mf->gb_info.data_res_addr, buffer + 4, orig_reg_size, ret = ME_ICMD_STATUS_CR_FAIL; goto sem_cleanup;);
+    memcpy(data, buffer, read_data_size);      // read_data_size is same as orig size + 4
+
+    ret = ME_OK;
+sem_cleanup:
+    if(!enhanced) {
+        (void) icmd_clear_semaphore(mf);
+    }
+    return ret;
+}
+
+int icmd_send_command(mfile    *mf,
+                      IN int opcode,
+                      INOUT void *data,
+                      IN int data_size,
+                      IN int skip_write)
+{
+    return icmd_send_command_int(mf, opcode, data, data_size, data_size, skip_write);
+}
+
+/*
+ * icmd_send_command
+ */
+int icmd_send_command_int(mfile    *mf,
+                          IN int opcode,
+                          INOUT void *data,
+                          IN int write_data_size,
+                          IN int read_data_size,
+                          IN int skip_write)
+{
+    if ((mf->gb_info.is_gb_mngr ||  mf->gb_info.is_gearbox) && mf->gb_info.gb_conn_type == GEARBPX_OVER_MTUSB){
+        return icmd_send_gbox_command_com(mf, data, write_data_size, read_data_size, 0); 
+    }
+    else {
+        return icmd_send_command_com(mf, opcode, data, write_data_size, read_data_size, skip_write, 0);
+    }
+}
+
+
+
+int icmd_send_command_enhanced(mfile    *mf,
+                              IN int opcode,
+                              INOUT void *data,
+                              IN int write_data_size,
+                              IN int read_data_size,
+                              IN int skip_write)
+{
+    if ((mf->gb_info.is_gb_mngr ||  mf->gb_info.is_gearbox) && mf->gb_info.gb_conn_type == GEARBPX_OVER_MTUSB){
+        return icmd_send_gbox_command_com(mf, data, write_data_size, read_data_size, 1); 
+    }
+    else {
+        return icmd_send_command_com(mf, opcode, data, write_data_size, read_data_size, skip_write, 1);
+    }
+}
 
 static int icmd_init_cr(mfile *mf)
 {
@@ -666,6 +893,8 @@ static int icmd_init_cr(mfile *mf)
     case (QUANTUM_HW_ID):
     case (SPECTRUM2_HW_ID):
     case (SPECTRUM3_HW_ID):
+    case (QUANTUM2_HW_ID):
+    case (SPECTRUM4_HW_ID):
         cmd_ptr_addr = CMD_PTR_ADDR_QUANTUM;
         hcr_address = HCR_ADDR_QUANTUM;
         mf->icmd.semaphore_addr = SEMAPHORE_ADDR_QUANTUM;
@@ -683,6 +912,29 @@ static int icmd_init_cr(mfile *mf)
         mf->icmd.semaphore_addr = SEMAPHORE_ADDR_CX5;
         mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CX6;
         mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CX5;
+        break;
+
+    case (AMOS_GBOX_HW_ID):
+        mf->icmd.ctrl_addr = GBOX_MAX_DATA_SIZE;
+
+        u_int32_t start_addr = 0x0;
+        MError rc = get_gbox_gw_start_addr(mf, &start_addr);
+        if (rc) {
+            return ME_ERROR;
+        }
+
+        mf->icmd.ctrl_addr += start_addr;
+        mf->icmd.cmd_addr = start_addr + GBOX_GW_OPCODE_OFFSET;
+        mf->gb_info.data_req_addr = start_addr + GBOX_GW_REQUEST_DATA_BLOCK_OFFSET;
+        mf->gb_info.data_res_addr = start_addr + GBOX_GW_RESPONSE_DATA_BLOCK_OFFSET;
+
+        mf->icmd.semaphore_addr = SEMAPHORE_ADDR_GBOX;
+        mf->icmd.static_cfg_not_done_addr = GBOX_STAT_CFG_NOT_DONE_ADDR;     
+        mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CX5;   
+        mf->icmd.max_cmd_size = GBOX_MAX_DATA_SIZE;
+        mf->icmd.icmd_opened = 1;
+        
+        return ME_OK;
         break;
 
     default:
@@ -753,6 +1005,8 @@ static int icmd_init_vcr_crspace_addr(mfile* mf)
     case (QUANTUM_HW_ID):
     case (SPECTRUM2_HW_ID):
     case (SPECTRUM3_HW_ID):
+    case (QUANTUM2_HW_ID):
+    case (SPECTRUM4_HW_ID):
         mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_QUANTUM;
         mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_SW_IB;
         break;
@@ -762,6 +1016,11 @@ static int icmd_init_vcr_crspace_addr(mfile* mf)
     case (CX6LX_HW_ID):
     case (BF2_HW_ID):
     case (CX7_HW_ID):
+            mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CX6;
+            mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CX5; // same bit offset as CX5
+            break;
+
+    case (AMOS_GBOX_HW_ID):
             mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CX6;
             mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CX5; // same bit offset as CX5
             break;
@@ -780,7 +1039,7 @@ static int icmd_init_vcr(mfile *mf)
     if (!pid) {
         pid = getpid();
     }
-
+    
     mf->icmd.cmd_addr = VCR_CMD_ADDR;
     mf->icmd.ctrl_addr = VCR_CTRL_ADDR;
     mf->icmd.semaphore_addr = VCR_SEMAPHORE62;
@@ -849,6 +1108,9 @@ int icmd_open(mfile *mf)
     }
     return ME_ICMD_NOT_SUPPORTED;
 #else
+    /*if (mf->gb_info.is_gearbox){
+        return icmd_init_cr(mf);
+    }*/
     if (mf->vsec_supp) {
         int rc = icmd_init_vcr(mf);
         if (rc == ME_OK) {
@@ -858,6 +1120,7 @@ int icmd_open(mfile *mf)
     } else {
         return icmd_init_cr(mf);
     }
+
 #endif
 }
 
@@ -875,4 +1138,5 @@ void icmd_close(mfile *mf)
         mf->icmd.icmd_opened = 0;
     }
 }
+
 

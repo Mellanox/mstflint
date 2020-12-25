@@ -143,8 +143,6 @@ int mvpd_read4_ul(mfile *mf, unsigned int offset, u_int8_t value[4]);
 
 int space_to_cap_offset(int space);
 
-int allocate_kernel_memory_page(mfile* f, mtcr_alloc_page* page);
-
 #ifdef __cplusplus
 }
 #endif

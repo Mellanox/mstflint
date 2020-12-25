@@ -40,6 +40,52 @@
 
 #include <stdio.h>
 
+#if defined(__ia64__) || defined(__x86_64__) || defined(__PPC64__) || defined(__arm__)
+    #define U64L       "l"
+#else
+    #define U64L       "ll"
+#endif
+
+
+/* define macros to the architecture of the CPU */
+#if defined(__linux__) || defined(__FreeBSD__)
+#   if defined(__i386__)
+#       define ARCH_x86
+#   elif defined(__x86_64__)
+#       define ARCH_x86_64
+#   elif defined(__ia64__)
+#       define ARCH_ia64
+#   elif defined(__PPC64__) || defined(__s390x__)
+#       define ARCH_ppc64
+#   elif defined(__PPC__)
+#       define ARCH_ppc
+#   elif defined(__aarch64__)
+#       define ARCH_arm64
+#   elif defined(__arm__)
+#       define ARCH_arm6l
+#   else
+#       error Unknown CPU architecture using the linux OS
+#   endif
+#elif defined(__MINGW32__) || defined(__MINGW64__)              /* Windows MINGW */
+#   if defined(__MINGW32__)
+#       define ARCH_x86
+#   elif defined(__MINGW64__)
+#       define ARCH_x86_64
+#   else
+#       error Unknown CPU architecture using the windows-mingw OS
+#   endif
+#elif defined(_WIN32) || defined(_WIN64)                /* Windows */
+#   if defined(_WIN32)
+#       define ARCH_x86
+#   elif defined(_WIN64)
+#       define ARCH_x86_64
+#   else
+#       error Unknown CPU architecture using the windows OS
+#   endif
+#else                                                   /* Unknown */
+#   error Unknown OS
+#endif
+
 /* define macros for print fields */
 #define U32D_FMT    "%u"
 #define U32H_FMT    "0x%08x"
@@ -48,33 +94,30 @@
 #define U16H_FMT    "0x%04x"
 #define U8H_FMT     "0x%02x"
 
-#if defined(__linux) || defined(__FreeBSD__) || defined(__MINGW32__) || defined(__MINGW64__) || defined(_WIN32) || defined(_WIN64)
-#    include <stdint.h>
-#    include <inttypes.h>
-#    if defined(PRId64) && defined(PRIx64)
-#       define U64D_FMT    "%" PRId64
+#if defined(ARCH_x86) || defined(ARCH_ppc) || defined(UEFI_BUILD) || defined(ARCH_arm6l)
+#   if defined(__MINGW32__) || defined(__MINGW64__)
+#       include <inttypes.h>
+#       define U64D_FMT    "0x%" PRId64
 #       define U64H_FMT    "0x%" PRIx64
-#       define U64H_FMT_GEN PRIx64
+#       define U64H_FMT_GEN "" PRIx64
 #       define U48H_FMT    "0x%" PRIx64
-#       define U64D_FMT_GEN PRId64
-#    elif defined(__MINGW32__) || defined(_WIN32) || defined(__i386__) || defined(__PPC__) || defined(UEFI_BUILD) || defined(__arm__)
-#       define U64L       "ll"
+#       define U64D_FMT_GEN "" PRId64
+#   else
 #       define U64D_FMT     "%llu"
 #       define U64H_FMT     "0x%016llx"
 #       define U64H_FMT_GEN "llx"
 #       define U48H_FMT     "0x%012llx"
 #       define U64D_FMT_GEN "llu"
-#   else
-#       define U64L       "l"
-#       define U64D_FMT     "%lu"
-#       define U64H_FMT     "0x%016lx"
-#       define U48H_FMT     "0x%012lx"
-#       define U64H_FMT_GEN "lx"
-#       define U64D_FMT_GEN "lu"
 #   endif
+#elif defined(ARCH_ia64) || defined(ARCH_x86_64) || defined(ARCH_ppc64) || defined(ARCH_arm64)
+#    define U64D_FMT     "%lu"
+#    define U64H_FMT     "0x%016lx"
+#    define U48H_FMT     "0x%012lx"
+#    define U64H_FMT_GEN "lx"
+#    define U64D_FMT_GEN "lu"
 #else
-#   error Unknown OS or Architecture
-#endif
+#   error Unknown architecture
+#endif  /* ARCH */
 
 /*
  * Only for architectures which can't do swab by themselves
@@ -386,7 +429,7 @@ typedef uint8_t u_int8_t;
     #include <inttypes.h>
 #endif
 
-#if defined(__VMKERNEL_UW_VMKLINUX__) || defined(__VMKERNEL_UW_NATIVE__)
+#if defined(__VMKERNEL_UW_NATIVE__)
     #define ROOT_PATH "/opt/mellanox/"
 #else
     #define ROOT_PATH "/"

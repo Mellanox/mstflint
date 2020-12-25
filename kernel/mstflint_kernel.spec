@@ -22,7 +22,7 @@
 %global _name kernel-mstflint
 %endif
 
-%{!?version: %global version 4.15.0}
+%{!?version: %global version 4.16.0}
 %{!?_release: %global _release 1}
 %global _kmp_rel %{_release}%{?_kmp_build_num}%{?_dist}
 
@@ -41,6 +41,8 @@ mstflint kernel module for secure boot
 
 %global debug_package %{nil}
 
+%global IS_RHEL_VENDOR "%{_vendor}" == "redhat" || "%{_vendor}" == "bclinux" || "%{_vendor}" == "openEuler"
+
 # build KMP rpms?
 %if "%{KMP}" == "1"
 %global kernel_release() $(make -C %{1} kernelrelease | grep -v make | tail -1)
@@ -49,7 +51,7 @@ BuildRequires: %kernel_module_package_buildreqs
 %(cat > %{_builddir}/kmp.files << EOF
 %defattr(644,root,root,755)
 /lib/modules/%2-%1
-%if "%{_vendor}" == "redhat"
+%if %{IS_RHEL_VENDOR}
 %config(noreplace) /etc/depmod.d/kernel-mft.conf
 %endif
 EOF)
@@ -91,12 +93,12 @@ This package provides a %{name} kernel module for kernel.
 
 %endif # end of setup module sign scripts
 
-%if "%{_vendor}" == "redhat"
+%if %{IS_RHEL_VENDOR}
 %global __find_requires %{nil}
 %endif
 
 # set modules dir
-%if "%{_vendor}" == "redhat"
+%if %{IS_RHEL_VENDOR}
 %if 0%{?fedora}
 %global install_mod_dir updates
 %else
@@ -141,7 +143,7 @@ for flavor in %{flavors_to_build}; do
 	cp $PWD/obj/$flavor/mstflint_access.ko $INSTALL_MOD_PATH/lib/modules/$KVERSION/%{install_mod_dir}/
 done
 
-%if "%{_vendor}" == "redhat"
+%if %{IS_RHEL_VENDOR}
 # Set the module(s) to be executable, so that they will be stripped when packaged.
 find %{buildroot} -type f -name \*.ko -exec %{__chmod} u+x \{\} \;
 %if "%{KMP}" == "1"

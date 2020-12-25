@@ -466,7 +466,7 @@ void MlxCfg::editAndPushItem(std::vector<QueryOutputItem>& queryOutputItemVector
     else {
         item.strNextVal = "Array[0.." + numToStr((arrayIndex * MAX_ARRAY_SIZE) -1) + "]";
     }
-    
+
     item.strCurrVal = item.strNextVal;
     item.strDefVal = item.strNextVal;
     if (arrayIndex > 1) {
@@ -799,7 +799,7 @@ mlxCfgStatus MlxCfg::clrDevSem()
     return rc;
 }
 
-mlxCfgStatus MlxCfg::setDevRawCfg()
+mlxCfgStatus MlxCfg::devRawCfg(RawTlvMode mode)
 {
     Commander *commander = NULL;
     try {
@@ -833,24 +833,39 @@ mlxCfgStatus MlxCfg::setDevRawCfg()
             }
             rawTlvsAsDw.push_back(rawTlvVec);
         }
+        ifs.close();
         // dump raw TLVs from the file
         std::string dumpStr;
         int tlvIdx = 1;
-        for (std::vector<std::vector<u_int32_t> >::iterator it = rawTlvsAsDw.begin(); it != rawTlvsAsDw.end(); it++, tlvIdx++) {
-            commander->dumpRawCfg(*it, dumpStr);
-            printf("Raw TLV #%d Info:\n%s\n", tlvIdx, dumpStr.c_str());
+        if (mode == SET_RAW) {
+            for (std::vector<std::vector<u_int32_t> >::iterator it = rawTlvsAsDw.begin();
+                    it != rawTlvsAsDw.end(); it++, tlvIdx++) {
+                commander->dumpRawCfg(*it, dumpStr);
+                printf("Raw TLV #%d Info:\n%s\n", tlvIdx, dumpStr.c_str());
+            }
         }
         // ask user
-        if (!askUser("Operation intended for advanced users.\n Are you sure you want to apply raw TLV file?")) {
-            printErr();
-            delete commander;
-            return MLX_CFG_ABORTED;
+        if (mode == SET_RAW) {
+            if (!askUser("Operation intended for advanced users.\n "\
+                    "Are you sure you want to apply raw TLV file?")) {
+                printErr();
+                delete commander;
+                return MLX_CFG_ABORTED;
+            }
+            printf("Applying... ");
         }
-        printf("Applying... ");
-        // set each of the raw TLVs
         tlvIdx = 1;
-        for (std::vector<std::vector<u_int32_t> >::iterator it = rawTlvsAsDw.begin(); it != rawTlvsAsDw.end(); it++, tlvIdx++) {
-            commander->setRawCfg(*it);
+        // set each of the raw TLVs
+        std::vector<u_int32_t> queryData;
+        for (std::vector<std::vector<u_int32_t> >::iterator it = rawTlvsAsDw.begin();
+                it != rawTlvsAsDw.end(); it++, tlvIdx++) {
+            if (mode == SET_RAW) {
+                commander->setRawCfg(*it);
+            } else {
+                queryData = commander->getRawCfg(*it);
+                commander->dumpRawCfg(queryData, dumpStr);
+                printf("Raw TLV #%d Info:\n%s\n", tlvIdx, dumpStr.c_str());
+            }
         }
         //send mfrl command to fw
         //this command indicate to the fw that next time perst signal go down
@@ -858,14 +873,17 @@ mlxCfgStatus MlxCfg::setDevRawCfg()
         commander->loadConfigurationGetStr();
     } catch (MlxcfgException& e) {
         delete commander;
-        return err(true, "Failed to run set_raw command: %s", e._err.c_str());
+        return err(true, "Failed to run %s command: %s",
+                mode == SET_RAW ? "set_raw" : "get_raw", e._err.c_str());
     }
     if (commander != NULL) {
         delete commander;
     }
     // done successfully
     printf("Done!\n");
-    printf("-I- Please reboot machine to load new configurations.\n");
+    if (mode == SET_RAW) {
+        printf("-I- Please reboot machine to load new configurations.\n");
+    }
     return MLX_CFG_OK;
 }
 
@@ -1364,7 +1382,11 @@ mlxCfgStatus MlxCfg::execute(int argc, char *argv[])
         break;
 
     case Mc_Set_Raw:
-        ret = setDevRawCfg();
+        ret = devRawCfg(SET_RAW);
+        break;
+
+    case Mc_Get_Raw:
+        ret = devRawCfg(GET_RAW);
         break;
 
     case Mc_Backup:

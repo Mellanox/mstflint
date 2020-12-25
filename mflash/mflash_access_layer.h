@@ -87,7 +87,7 @@ enum FlashConstant {
     QUAD_EN_OFFSET_WINBOND_CYPRESS = 1,
     QUAD_EN_OFFSET_MICRON = 3,
     QUAD_EN_OFFSET_ISSI_MACRONIX = 6,
-
+    QUAD_EN_OFFSET_GIGABYTE = 1,
     TB_OFFSET_MACRONIX = 3,
     SEC_OFFSET = 6,
     TB_OFFSET = 5,
@@ -103,8 +103,6 @@ enum FlashConstant {
 //
 
 enum CrConstans {
-    CR_FLASH_GW = 0xf0400,
-    CR_FLASH_ADDR = 0xf0404,
     CR_FLASH_ADDR_7NM = 0xf0420,
     //CR_FLASH_DATA = 0xf0408,
     CR_FLASH_CS = 0xf0418,
@@ -115,8 +113,6 @@ enum CrConstans {
     BO_SPI_NO_DATA = 4,
     BO_SPI_NO_ADDR = 5,
     BO_SPI_SPECIAL = 6,
-    BO_MSIZE = 8,
-    BS_MSIZE = 3,
     BO_STATUS = 26,
     BS_STATUS = 4,
     BO_BUSY = 30,

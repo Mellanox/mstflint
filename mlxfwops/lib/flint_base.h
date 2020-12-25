@@ -198,30 +198,7 @@ namespace std {}; using namespace std;
 
 #define FS2_BOOT_START   0x38
 #define FS_DATA_OFF      0x28
-#define SWITCHX_HW_ID    581
-#define SWITCH_IB_HW_ID  583
-#define SPECTRUM_HW_ID   585
-#define SWITCH_IB2_HW_ID 587
-#define QUANTUM_HW_ID    589
-#define SPECTRUM2_HW_ID  590
-#define SPECTRUM3_HW_ID  592
-#define GEARBOX_HW_ID    594
-#define GB_MANAGER_HW_ID 595
 
-#define CX4_HW_ID         521
-#define CX4LX_HW_ID       523
-#define CX5_HW_ID         525
-#define CX6_HW_ID         527
-#define CX6DX_HW_ID       530
-#define CX6LX_HW_ID       534
-#define CX7_HW_ID         538
-#define BF_HW_ID          529
-#define BF2_HW_ID         532
-#define CX2_HW_ID         400
-#define CX3_HW_ID         501
-#define CX3_PRO_HW_ID     503
-#define IS4_HW_ID         435
-#define CONNECT_IB_HW_ID  511
 #define CONNECT_IB_SW_ID  4113
 
 // FS3 defines

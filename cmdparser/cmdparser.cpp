@@ -575,7 +575,12 @@ do_handle_option:
             }
         }
         if (ignore_this_req == false) {
-            curr_result = p_req->HandleOption(long_opt_name, (tools_optarg == NULL) ? "" : tools_optarg);
+            try{
+                curr_result = p_req->HandleOption(long_opt_name, (tools_optarg == NULL) ? "" : tools_optarg);
+            }catch (std::exception){
+                this->SetLastError("Failed to handle option %s", long_opt_name.c_str());
+                goto parse_exit;
+            }
             if (curr_result) {
                 rc = curr_result;
                 this->SetLastError("Failed to handle option %s", long_opt_name.c_str());

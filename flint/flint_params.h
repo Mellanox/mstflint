@@ -179,6 +179,20 @@ public:
     bool public_key_label_specified;
     bool output_file_specified;
     string output_file;
+    bool hsm_password_specified;
+    string hsm_password;
+    bool linkx_control;
+    int  cableDeviceIndex;
+    int cableDeviceSize;
+    bool cable_device_index_specified;
+    bool cable_device_size_specified;
+    bool linkx_auto_update;
+    bool activate;
+    bool download_downstream_specified;
+    bool downstream_device_ids_specified;
+    std::vector<int>  downstream_device_ids;
+    bool download_transfer;
+    int activate_delay_sec;
 };
 
 #endif

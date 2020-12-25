@@ -44,6 +44,7 @@ extern "C" {
 #else
 #include <tools_layouts/connectib_layouts.h>
 #include <tools_layouts/connectx4_layouts.h>
+#include <tools_layouts/icmd_hca_layouts.h>
 #include "cib_cif.h"
 #endif
 #include "icmd_cif_common.h"
@@ -64,20 +65,19 @@ enum {
 enum {
     GET_ICMD_QUERY_CAP = 0x8400,
     SET_ITRACE = 0xf003,
-    SET_PORT_SNIFFER = 0xc002,
 };
 #endif
 
 int gcif_get_fw_info(mfile *mf,
                      OUT struct connectib_icmd_get_fw_info *fw_info);
 
-int get_icmd_query_cap(mfile *mf, struct connectx4_icmd_query_cap_general *icmd_query_caps);
+int get_icmd_query_cap(mfile *mf,
+                       struct icmd_hca_icmd_query_cap_general *icmd_query_caps);
 
 int gcif_mh_sync(mfile *mf, struct connectx4_icmd_mh_sync *mh_sync);
 
 int gcif_mh_sync_status(mfile *mf, struct connectx4_icmd_mh_sync *mh_sync);
 
-int gcif_set_port_sniffer(mfile *mf, struct connectib_icmd_set_port_sniffer *set_port_sniffer);
 
 #ifdef __cplusplus
 }

@@ -61,11 +61,6 @@ static void mft_signal_set_handling(int isOn)
 #define MAXIMUM_SLEEP_TIME_MS 20000
 #define _MCDD_DEBUG_ 0
 
-#if (_MCDD_DEBUG_ == 1) 
-    #define DPRINTF(...) {fprintf(stderr, __VA_ARGS__);} 
-#else 
-    #define DPRINTF(...) 
-#endif
 
 #if _MCDD_DEBUG_ 
 void printData(u_int32_t* data, int data_size, int format)
@@ -121,7 +116,7 @@ bool DMAComponentAccess::allocateMemory()
         u_int32_t va_msb = EXTRACT64(alloc_page.va, 32, 32);
         u_int32_t pa_lsb = EXTRACT64(alloc_page.pa, 0, 32);
         u_int32_t pa_msb = EXTRACT64(alloc_page.pa, 32, 32);
-        DPRINTF("Allocated for page %d data PA 0x%08x%08x VA 0x%08x%08x \r\n", i, pa_msb, pa_lsb, va_msb, va_lsb);
+        DPRINTF(("Allocated for page %d data PA 0x%08x%08x VA 0x%08x%08x \r\n", i, pa_msb, pa_lsb, va_msb, va_lsb));
 #endif
         _allocatedListVect.push_back(alloc_page);
     }
@@ -137,7 +132,7 @@ bool DMAComponentAccess::readFromDataPage(mcddReg* accessData,  mtcr_alloc_page_
         data_ptr++;
 #if _MCDD_DEBUG_ 
         if (i % 100 == 0)
-            DPRINTF("\nReading data[%#02x]: %#08x\n", (i) * 4, data[(data_size - leftSize) / 4 + i]);
+            DPRINTF(("\nReading data[%#02x]: %#08x\n", (i) * 4, data[(data_size - leftSize) / 4 + i]));
 #endif
     }
     return true;
@@ -165,7 +160,7 @@ bool DMAComponentAccess::accessComponent(u_int32_t updateHandle, u_int32_t offse
             snprintf(stage, MAX_MSG_SIZE, "%s %s component", (access == MCDA_READ_COMP) ? "Reading" : "Writing", currComponentStr);
         }
         //updateHandle &= ~0xff000000;
-        DPRINTF("DMAComponentAccess::AccessComponent BEGIN size %d access %s\n", data_size, (access == MCDA_READ_COMP) ? "READ" : "WRITE");
+        DPRINTF(("DMAComponentAccess::AccessComponent BEGIN size %d access %s\n", data_size, (access == MCDA_READ_COMP) ? "READ" : "WRITE"));
         mcddReg accessData;
          mtcr_alloc_page_t page = _allocatedListVect[CurrentPage];
          mtcr_alloc_page_t mailboxPage = _allocatedListVect[FMPT_MAILBOX_PAGE];
@@ -187,7 +182,7 @@ bool DMAComponentAccess::accessComponent(u_int32_t updateHandle, u_int32_t offse
             reg_access_status_t rc = reg_access_mcdd(_mf, (access == MCDA_READ_COMP) ? REG_ACCESS_METHOD_GET : REG_ACCESS_METHOD_SET, &accessData);
             _manager->deal_with_signal();
             if (rc) {
-                DPRINTF("CRITICAL : DMAComponentAccess::AccessComponent reg_access_mcdd ERROR: %#x\n", rc);
+                DPRINTF(("CRITICAL : DMAComponentAccess::AccessComponent reg_access_mcdd ERROR: %#x\n", rc));
                 setLastError(_manager->regErrTrans(rc));
                 _lastRegisterAccessStatus = rc;
                 return false;
@@ -213,7 +208,7 @@ bool DMAComponentAccess::accessComponent(u_int32_t updateHandle, u_int32_t offse
             // meanwhile, the SW has to wait until FW is really starting.
             // It's possible, though, that we will not enter to this loop at all or only sometimes.
             tools_open_mcdd_descriptor_unpack(&mailboxVirtPtr_1, (const u_int8_t*)mailboxPage.va);
-            DPRINTF("AccessComponent1 status %d err %d reserved3 %d\n", mailboxVirtPtr_1.status, mailboxVirtPtr_1.error, mailboxVirtPtr_1.reserved3);
+            DPRINTF(("AccessComponent1 status %d err %d reserved3 %d\n", mailboxVirtPtr_1.status, mailboxVirtPtr_1.error, mailboxVirtPtr_1.reserved3));
             nMaximumSleepTime = 0;
             while (mailboxVirtPtr_1.status == FFS_FW_UNKNOWN) {
                 int timeToSleepMs = (int)(floor(TIMETOSLEEP / 8.0));
@@ -229,7 +224,7 @@ bool DMAComponentAccess::accessComponent(u_int32_t updateHandle, u_int32_t offse
             // here the FW started to work
             msleep(TIMETOSLEEP);
             tools_open_mcdd_descriptor_unpack(&mailboxVirtPtr_1, (const u_int8_t*)mailboxPage.va);
-            DPRINTF("AccessComponent2 status %d err %d reserved3 %d\n", mailboxVirtPtr_1.status, mailboxVirtPtr_1.error, mailboxVirtPtr_1.reserved3);
+            DPRINTF(("AccessComponent2 status %d err %d reserved3 %d\n", mailboxVirtPtr_1.status, mailboxVirtPtr_1.error, mailboxVirtPtr_1.reserved3));
 
             nMaximumSleepTime = 0;
             while (mailboxVirtPtr_1.status == FFS_FW_BUSY) {
@@ -242,18 +237,18 @@ bool DMAComponentAccess::accessComponent(u_int32_t updateHandle, u_int32_t offse
                 }
             }
             tools_open_mcdd_descriptor_unpack(&mailboxVirtPtr_1, (const u_int8_t*)mailboxPage.va);
-            DPRINTF("AccessComponent3 status %d err %d reserved3 %d\n", mailboxVirtPtr_1.status, mailboxVirtPtr_1.error, mailboxVirtPtr_1.reserved3);
+            DPRINTF(("AccessComponent3 status %d err %d reserved3 %d\n", mailboxVirtPtr_1.status, mailboxVirtPtr_1.error, mailboxVirtPtr_1.reserved3));
 
             if (mailboxVirtPtr_1.status == FFS_FW_ERROR) {
                 fw_comps_error_t fw_err = (fw_comps_error_t)(mailboxVirtPtr_1.error + FWCOMPS_MCC_ERR_CODES);//return error to high level app. Errors are defined as MCC errors
                 setLastError(fw_err);
-                DPRINTF("CRITICAL : DMAComponentAccess::AccessComponent status %d err %d FW ERROR: %#x\n", mailboxVirtPtr_1.status, mailboxVirtPtr_1.error, fw_err);
+                DPRINTF(("CRITICAL : DMAComponentAccess::AccessComponent status %d err %d FW ERROR: %#x\n", mailboxVirtPtr_1.status, mailboxVirtPtr_1.error, fw_err));
                 return false;
             }
 
             // read the data from FW (from page.virtual_address -> to 'data' array)
             if (access == MCDA_READ_COMP) {
-                DPRINTF("READ mailboxVirtPtr->status = %d\r\n", mailboxVirtPtr_1.status);
+                DPRINTF(("READ mailboxVirtPtr->status = %d\r\n", mailboxVirtPtr_1.status));
                 readFromDataPage(&accessData, page, data, data_size, leftSize);
                 leftSize -= maxDataSize;
                 if (leftSize > 0) {
@@ -293,12 +288,12 @@ bool DMAComponentAccess::accessComponent(u_int32_t updateHandle, u_int32_t offse
                 return false;
             }
         }
-        DPRINTF("DMAComponentAccess::AccessComponent END \n");
+        DPRINTF(("DMAComponentAccess::AccessComponent END \n"));
         return true;
 #ifndef UEFI_BUILD
     }
     catch (std::exception &e) {
-        DPRINTF("DMAComponentAccess::Exception occurred %s\n", e.what());
+        DPRINTF(("DMAComponentAccess::Exception occured %s\n", e.what()));
         return false;
     }
 #endif

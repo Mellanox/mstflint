@@ -102,7 +102,7 @@ void MlxcfgDBManager::checkDBVersion()
             break;
         }
     }
-
+    sqlite3_finalize(stmt); // releasing allocated stmt
     if (dbVersion != _supportedVersion) {
         throw MlxcfgException("Unsupported database version");
     }

@@ -49,6 +49,8 @@ UserInput::UserInput()
     _sendPprt = false;
     _sendPptt = false;
     _sendPepc = false;
+    _prbsTxInv = false;
+    _prbsRxInv = false;
     _sendPepcForceMode = false;
     _sendPepcANMode = false;
     _pprtTuningTypeFlag = false;

@@ -60,16 +60,13 @@ public:
 
     static const u_int8_t UUID[];
 
-    const PldmPkgHdr & getPkgHeader() const { return packageHeader; }
     u_int8_t getDeviceIDRecordCount() const { return deviceIDRecordCount; }
     PldmDevIdRecord * getDeviceIDRecord(u_int8_t index) const {
         return deviceIDRecords[index];
     }
-    u_int16_t getComponentImageCount() const { return componentImageCount; }
     PldmComponenetImage * getComponentImage(u_int16_t index) const {
         return componentImages[index];
     }
-    u_int32_t getPackageHeaderChecksum() const { return packageHeaderChecksum;}
     void getDeviceComponentImages(u_int8_t dev_index,
             std::vector<PldmComponenetImage *> images_list) const;
 

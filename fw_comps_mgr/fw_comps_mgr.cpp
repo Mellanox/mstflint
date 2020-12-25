@@ -54,10 +54,558 @@ static void mft_signal_set_handling(int isOn)
 }
 #endif
 
+#include <errno.h>
+ 
+static mfile* mopen_fw_ctx(void *fw_cmd_context, void *fw_cmd_func, void *dma_func, void *extra_data)
+{
+
+    if (fw_cmd_context == NULL || fw_cmd_func == NULL || extra_data == NULL) {
+        errno = EINVAL;
+        return NULL;
+    }
+
+    mfile *mf = (mfile *)malloc(sizeof(mfile));
+
+    if (!mf) {
+        errno = ENOMEM;
+        return NULL;
+    }
+
+    memset(mf, 0, sizeof(mfile));
+    mf->flags = MDEVS_FWCTX;
+    mf->tp = MST_FWCTX;
+    mf->context.fw_cmd_context = fw_cmd_context;
+    mf->context.fw_cmd_func = fw_cmd_func;
+    mf->context.fw_cmd_dma = dma_func;
+    mf->sock = -1; // we are not opening remotely
+    return mf;
+}
+
+const char*  StateNames[256] = {
+"FSMST_IDLE",
+"FSMST_LOCKED",
+"FSMST_INITIALIZE",
+"FSMST_DOWNLOAD",
+"FSMST_VERIFY",
+"FSMST_APPLY",
+"FSMST_ACTIVATE",
+"FSMST_UPLOAD",
+"FSMST_UPLOAD_PENDING",
+"FSMST_DOWNSTREAM_DEVICE_TRANSFER",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT",
+"FSMST_NOT_IMPORTANT"
+};
+
+
+const char* CommandsName[256] =  {
+    "QUERY",
+    "CMD_LOCK_UPDATE_HANDLE",
+    "CMD_RELEASE_UPDATE_HANDLE",
+    "CMD_UPDATE_COMPONENT",
+    "CMD_VERIFY_COMPONENT",
+    "CMD_ACTIVATE_COMPONENET",
+    "CMD_ACTIVATE_ALL",
+    "CMD_READ_COMPONENT",
+    "CMD_CANCEL",
+    "CMD_CHECK_UPDATE_HANDLE",
+    "CMD_FORCE_HANDLE_RELEASE",
+    "CMD_READ_PENDING_COMPONENT",
+    "CMD_DOWNSTREAM_DEVICE_TRANSFER",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND",
+    "NO_COMMAND"
+};
+
+
 #define DEFAULT_SIZE 64
-#define MAX_TOUT 1000
+#define MAX_TOUT 3000
 #define REG_ACCESS_TOUT 100
 #define SLEEP_TIME 80
+#define MAX_SLEEP_TIME 800
 #define INIT_PARTITION_SLEEP_TIME 240
 
 #define MTCR_IB_TIMEOUT_VAR "MTCR_IB_TIMEOUT"
@@ -78,14 +626,6 @@ static void mft_signal_set_handling(int isOn)
 #define SPECTRUM3_DEVID     0x250
 #define QUANTUM_DEVID       0x24d
 
-
-#ifndef UEFI_BUILD
-#define DPRINTF(args)        do { char *reacDebug = getenv("FW_COMPS_DEBUG"); \
-                                  if (reacDebug != NULL) { \
-                                      printf("[FW_COMPS_DEBUG]: -D- "); printf args;} } while (0)
-#else
-#define DPRINTF(...)
-#endif
 
 /*
  * Wrapper to call the MCDA command
@@ -143,7 +683,8 @@ const char* FwCompsMgr::stateToStr(fsm_state_t st)
     switch (st) {
     case FSMST_INITIALIZE:
         return "Initializing image partition";
-
+    case FSMST_DOWNSTREAM_DEVICE_TRANSFER:
+        return "Transferring data do LNKX device";
     default:
         return "Progress";
     }
@@ -163,23 +704,31 @@ const char* FwCompsMgr::commandToStr(fsm_command_t cmd)
     }
 }
 
+
 bool FwCompsMgr::controlFsm(fsm_command_t command,
-                            fsm_state_t expStatus,
-                            u_int32_t size,
-                            fsm_state_t currState,
-                            ProgressCallBackAdvSt *progressFuncAdv,
-                            u_int32_t reg_access_timeout)
+    fsm_state_t expectedState,
+    u_int32_t size,
+    fsm_state_t currentState,
+    ProgressCallBackAdvSt *progressFuncAdv,
+    u_int32_t reg_access_timeout)
 {
     reg_access_status_t rc = ME_OK;
     reg_access_method_t method = REG_ACCESS_METHOD_SET;
     if (!reg_access_timeout) {
         reg_access_timeout = MAX_TOUT;
     }
-    DPRINTF(("controlFsm : command %u current %u expected %u\n", command, currState, expStatus));
+    if (currentState != FSMST_NA || expectedState != FSMST_NA) {
+        DPRINTF(("controlFsm : command %s current state %s expected state %s\n", CommandsName[command], StateNames[currentState], StateNames[expectedState]));
+    }
     unsigned int count = 0;
     do {
+        unsigned sleep_time = SLEEP_TIME;
+        if ((currentState == FSMST_DOWNSTREAM_DEVICE_TRANSFER && expectedState == FSMST_LOCKED) ||
+            (_linkXFlow && currentState == FSMST_ACTIVATE)){
+            sleep_time = MAX_SLEEP_TIME;
+        }
         if (count) {
-            msleep(SLEEP_TIME);
+            msleep(sleep_time);
         }
         method = REG_ACCESS_METHOD_SET;
         if (command == FSM_QUERY) {
@@ -188,19 +737,38 @@ bool FwCompsMgr::controlFsm(fsm_command_t command,
         mft_signal_set_handling(1);
         memset(&_lastFsmCtrl, 0, sizeof(_lastFsmCtrl));
         _lastFsmCtrl.instruction = command;
-        _lastFsmCtrl.device_index = _deviceIndex;
         _lastFsmCtrl.device_type = _deviceType;
+        _lastFsmCtrl.device_index = _deviceIndex;
         _lastFsmCtrl.component_index = _componentIndex;
         _lastFsmCtrl.component_size = size;
         _lastFsmCtrl.update_handle = _updateHandle;
-
+        if(command == FSM_CMD_DOWNSTREAM_DEVICE_TRANSFER || (_linkXFlow && command == FSM_CMD_ACTIVATE_ALL)) {
+            _lastFsmCtrl.component_index = 0;// This the FW need - for downstream need to work with 0/device_id or auto_update
+            if (_autoUpdate) {
+                _lastFsmCtrl.auto_update = 1;
+                _lastFsmCtrl.device_index_size = 0;
+            }
+            else {
+                _lastFsmCtrl.auto_update = 0;
+                _lastFsmCtrl.device_index_size = _linkXDeviceSize;
+                _lastFsmCtrl.device_index = _linkXDeviceIndex;
+            }
+            if (_linkXFlow && command == FSM_CMD_ACTIVATE_ALL) {
+                _lastFsmCtrl.activation_delay_sec = _activation_delay_sec;
+            }
+        }
         rc = reg_access_mcc(_mf, method, &_lastFsmCtrl);
-
+        //add here auto_update + device_index_size
         deal_with_signal();
+        
     } while (rc == ME_REG_ACCESS_RES_NOT_AVLBL && count++ < reg_access_timeout);
     if (rc) {
         if (_lastFsmCtrl.error_code) {
             _lastError = mccErrTrans(_lastFsmCtrl.error_code);
+            if ((currentState == FSMST_LOCKED && expectedState == FSMST_DOWNSTREAM_DEVICE_TRANSFER) || (_linkXFlow && currentState == FSMST_LOCKED && expectedState == FSMST_ACTIVATE)) {
+                _rejectedIndex = _lastFsmCtrl.rejected_device_index;
+                DPRINTF(("\nGot _rejectedIndex = %d\n", _rejectedIndex));
+            }
         }
         else {
             _lastError = regErrTrans(rc);
@@ -208,23 +776,48 @@ bool FwCompsMgr::controlFsm(fsm_command_t command,
         }
         return false;
     }
-    if (expStatus == FSMST_NA && currState == FSMST_NA) {
+    if (expectedState == FSMST_NA && currentState == FSMST_NA) {
         return true;
     }
     count = 0;
     // initialization longer then other states
-    unsigned sleep_time = currState == FSMST_INITIALIZE ? INIT_PARTITION_SLEEP_TIME : SLEEP_TIME;
-    while (currState != FSMST_NA && _lastFsmCtrl.control_state == currState && count < MAX_TOUT) {
+    unsigned sleep_time = SLEEP_TIME;
+    if (currentState == FSMST_INITIALIZE) {
+        sleep_time = INIT_PARTITION_SLEEP_TIME;
+    }
+    if ((currentState == FSMST_DOWNSTREAM_DEVICE_TRANSFER && expectedState == FSMST_LOCKED) || 
+        (_linkXFlow && currentState == FSMST_ACTIVATE)) {
+        sleep_time = MAX_SLEEP_TIME;
+    }
+    while (currentState != FSMST_NA && _lastFsmCtrl.control_state == currentState && count < MAX_TOUT) {
         if (count) {
             msleep(sleep_time);
         }
         if (progressFuncAdv && progressFuncAdv->func) {
-            if (progressFuncAdv->func(0, stateToStr(currState), PROG_WITHOUT_PRECENTAGE, progressFuncAdv->opaque)) {
-                _lastError = FWCOMPS_ABORTED;
-                return false;
+            if (command == FSM_QUERY && currentState == FSMST_DOWNSTREAM_DEVICE_TRANSFER && expectedState == FSMST_LOCKED) {
+                if (progressFuncAdv->func(_lastFsmCtrl.control_progress, StateNames[currentState], PROG_WITH_PRECENTAGE, progressFuncAdv->opaque)) {
+                    _lastError = FWCOMPS_ABORTED;
+                    return false;
+                }
+            }
+            else {
+                if (progressFuncAdv->func(0, StateNames[currentState], PROG_WITHOUT_PRECENTAGE, progressFuncAdv->opaque)) {
+                    _lastError = FWCOMPS_ABORTED;
+                    return false;
+                }
             }
         }
         if (!controlFsm(FSM_QUERY)) {
+            if (command == FSM_QUERY && currentState == FSMST_DOWNSTREAM_DEVICE_TRANSFER && expectedState == FSMST_LOCKED) {
+                //we are in the middle of downstream, but failed
+                _rejectedIndex = _lastFsmCtrl.rejected_device_index;
+                DPRINTF(("\nGot _rejectedIndex = %d\n", _rejectedIndex));
+            }
+            else if (_linkXFlow && command == FSM_QUERY && currentState == FSMST_ACTIVATE && expectedState == FSMST_LOCKED) {
+                //we are in the middle of activaation, but failed
+                _rejectedIndex = _lastFsmCtrl.rejected_device_index;
+                DPRINTF(("\nGot _rejectedIndex = %d\n", _rejectedIndex));
+            }
             return false;
         }
         count++;
@@ -233,14 +826,14 @@ bool FwCompsMgr::controlFsm(fsm_command_t command,
         _lastError = FWCOMPS_MCC_TOUT;
         return false;
     }
-    if (expStatus != FSMST_NA && _lastFsmCtrl.control_state != expStatus) {
-        DPRINTF(("controlFsm : control_state FW %u expected %u\n", _lastFsmCtrl.control_state, expStatus));
+    if (expectedState != FSMST_NA && _lastFsmCtrl.control_state != expectedState) {
+        DPRINTF(("controlFsm : control_state FW %s expected %s\n", StateNames[_lastFsmCtrl.control_state], StateNames[expectedState]));
         _lastError = FWCOMPS_MCC_UNEXPECTED_STATE;
         return false;
     }
 
-    if (progressFuncAdv && progressFuncAdv->func && currState != FSMST_NA) {
-        if (progressFuncAdv->func(100, stateToStr(currState), PROG_OK, progressFuncAdv->opaque)) {
+    if (progressFuncAdv && progressFuncAdv->func && currentState != FSMST_NA) {
+        if (progressFuncAdv->func(100, StateNames[currentState], PROG_OK, progressFuncAdv->opaque)) {
             _lastError = FWCOMPS_ABORTED;
             return false;
         }
@@ -255,9 +848,7 @@ bool FwCompsMgr::runMCQI(u_int32_t componentIndex,
                          u_int32_t offset,
                          u_int32_t *data)
 {
-    u_int32_t i = 0;
     bool ret = true;
-    std::vector<u_int32_t> dataInfo;
     mft_signal_set_handling(1);
     memset(&_currCompInfo, 0, sizeof(_currCompInfo));
     _currCompInfo.read_pending_component = readPending;
@@ -267,28 +858,20 @@ bool FwCompsMgr::runMCQI(u_int32_t componentIndex,
     _currCompInfo.component_index = componentIndex;
     _currCompInfo.device_index = _deviceIndex;
     _currCompInfo.device_type = _deviceType;
-
-    if (dataSize) {
-        dataInfo.resize(dataSize, 0);
-        _currCompInfo.data = dataInfo.data();
-    }
+    DPRINTF(("-D- MCQI: read_pending_component %u infoType %u offset %u dataSize %u, componentIndex %u _deviceIndex %u \n",
+        readPending, infoType, offset, dataSize, componentIndex, _deviceIndex));
     reg_access_status_t rc = reg_access_mcqi(_mf, REG_ACCESS_METHOD_GET, &_currCompInfo);
     deal_with_signal();
     if (rc) {
         _lastError = regErrTrans(rc);
         setLastRegisterAccessStatus(rc);
         ret = false;
-        goto cleanup;
     }
-
     if (data && dataSize) {
         if (!rc) {
-            for (i = 0; i < _currCompInfo.info_size / 4; i++) {
-                data[i] = _currCompInfo.data[i];
-            }
+            memcpy(data, &_currCompInfo.data, _currCompInfo.info_size);
         }
     }
-cleanup:
     return ret;
 }
 
@@ -434,11 +1017,23 @@ void FwCompsMgr::initialize(mfile *mf)
     _lastRegAccessStatus = ME_OK;
     _updateHandle = 0;
     if (getFwSupport()) {
-        generateHandle();
+        GenerateHandle();
     }
     ComponentAccessFactory* factory = ComponentAccessFactory::GetInstance();
     _accessObj = factory->createDataAccessObject(this, mf, isDmaSupported);
     _refreshed = false;
+}
+
+void FwCompsMgr::SetIndexAndSize(int deviceIndex, int deviceSize, bool autoUpdate, bool activationNeeded, bool downloadTransferNeeded, int activate_delay_sec)
+{
+    _linkXDeviceSize = deviceSize;
+    _linkXDeviceIndex = deviceIndex ;
+    _autoUpdate = autoUpdate;
+    _linkXFlow = true;
+    _activationNeeded = activationNeeded;
+    _downloadTransferNeeded = downloadTransferNeeded;
+    _activation_delay_sec = activate_delay_sec;
+    _rejectedIndex = -1;
 }
 
 FwCompsMgr::FwCompsMgr(mfile *mf, DeviceTypeT devType, int deviceIndex)
@@ -453,6 +1048,14 @@ FwCompsMgr::FwCompsMgr(mfile *mf, DeviceTypeT devType, int deviceIndex)
 #ifndef UEFI_BUILD    
     _trm = NULL;
 #endif    
+    _linkXDeviceSize = 0;
+    _linkXDeviceIndex = 0;
+    _autoUpdate = false;
+    _linkXFlow = false;
+    _activationNeeded = true;
+    _downloadTransferNeeded = true;
+    _activation_delay_sec = 0;
+    _rejectedIndex = -1;
     initialize(mf);
 }
 
@@ -464,6 +1067,14 @@ FwCompsMgr::FwCompsMgr(const char *devname, DeviceTypeT devType, int deviceIndex
     _accessObj = NULL;
     _deviceType = devType;
     _deviceIndex = deviceIndex;
+    _linkXDeviceSize = 0;
+    _linkXDeviceIndex = 0;
+    _autoUpdate = false;
+    _linkXFlow = false;
+    _activationNeeded = true;
+    _downloadTransferNeeded = true;
+    _activation_delay_sec = 0;
+    _rejectedIndex = -1;
 #ifndef UEFI_BUILD
     if (getenv(MTCR_IB_TIMEOUT_VAR) == NULL) {
         _clearSetEnv = true;
@@ -497,7 +1108,7 @@ FwCompsMgr::FwCompsMgr(uefi_Dev_t *uefi_dev, uefi_dev_extra_t *uefi_extra)
     _clearSetEnv = false;
     _mircCaps = false;
     mfile *mf = mopen_fw_ctx((void *)uefi_dev, (void *)uefi_extra->fw_cmd_func, \
-        (void *)&uefi_extra->dev_info);
+        (void *)uefi_extra->dma_func, (void *)&uefi_extra->dev_info);
     if (!mf) {
         _lastError = FWCOMPS_MEM_ALLOC_FAILED;
         return;
@@ -506,8 +1117,13 @@ FwCompsMgr::FwCompsMgr(uefi_Dev_t *uefi_dev, uefi_dev_extra_t *uefi_extra)
         _hwDevId = uefi_extra->dev_info.hw_dev_id;
     }
     _openedMfile = true;
+    _autoUpdate = false;
+    _linkXFlow = false;
+    _activationNeeded = true;
+    _downloadTransferNeeded = true;
+    _activation_delay_sec = 0;
+    _rejectedIndex = -1;
     initialize(mf);
-
 }
 FwCompsMgr::~FwCompsMgr()
 {
@@ -520,9 +1136,11 @@ FwCompsMgr::~FwCompsMgr()
 #endif
     }
 #endif
-    if (_lastFsmCtrl.control_state != FSMST_IDLE) {
-        controlFsm(FSM_CMD_CANCEL, FSMST_LOCKED);
-        controlFsm(FSM_CMD_RELEASE_UPDATE_HANDLE, FSMST_IDLE);
+    if (_mf) {
+        if (_lastFsmCtrl.control_state != FSMST_IDLE) {
+            controlFsm(FSM_CMD_CANCEL, FSMST_LOCKED);
+            controlFsm(FSM_CMD_RELEASE_UPDATE_HANDLE, FSMST_IDLE);
+        }
     }
     if (_openedMfile) {
         if (_mf) {
@@ -540,7 +1158,7 @@ bool FwCompsMgr::forceRelease()
     return controlFsm(FSM_CMD_FORCE_HANDLE_RELEASE);
 }
 
-void FwCompsMgr::generateHandle()
+void FwCompsMgr::GenerateHandle()
 {
     if (!controlFsm(FSM_QUERY, FSMST_NA, 0, FSMST_NA, NULL, REG_ACCESS_TOUT)) {
         _updateHandle = 0;
@@ -549,7 +1167,23 @@ void FwCompsMgr::generateHandle()
     _updateHandle = _lastFsmCtrl.update_handle & 0xffffff;
 }
 
-bool FwCompsMgr::refreshComponentsStatus()
+const char* CompNames[] =  {
+    "NO_COMPONENT 1",
+    "COMPID_BOOT_IMG",
+    "COMPID_RUNTIME_IMG",
+    "COMPID_USER_NVCONFIG",
+    "COMPID_OEM_NVCONFIG",
+    "COMPID_MLNX_NVCONFIG",
+    "COMPID_CS_TOKEN",
+    "COMPID_DBG_TOKEN",
+    "COMPID_DEV_INFO",
+    "NO_COMPONENT 2",
+    "COMPID_GEARBOX",
+    "COMPID_CONGESTION_CONTROL",
+    "COMPID_LINKX_PROPERTIES"
+} ;
+
+bool FwCompsMgr::RefreshComponentsStatus(comp_status_st* ComponentStatus)
 {
     u_int16_t compIdx = 0;
     int last_index_flag = 0;
@@ -565,23 +1199,40 @@ bool FwCompsMgr::refreshComponentsStatus()
         memset(&compStatus, 0, sizeof(comp_query_st));
         if (queryComponentStatus(compIdx, &(compStatus.comp_status))) {
             compStatus.comp_status.component_index = compIdx;
+            if (ComponentStatus != NULL && compStatus.comp_status.identifier == FwComponent::COMPID_LINKX) {
+                memcpy(ComponentStatus, &compStatus.comp_status, sizeof(compStatus.comp_status));
+            }
             /* */
             u_int32_t capSt[DEFAULT_SIZE] = { 0 };
             if (queryComponentInfo(compIdx, 1, COMPINFO_CAPABILITIES, DEFAULT_SIZE, capSt) == false) {
                 if (queryComponentInfo(compIdx, 0, COMPINFO_CAPABILITIES, DEFAULT_SIZE, capSt) == false) {
                     //_lastError = FWCOMPS_REG_FAILED;
+                    DPRINTF(("-D- Found component: %#x name %s MCQI failed \n", compStatus.comp_status.identifier, CompNames[compStatus.comp_status.identifier]));
                     return false;
                 }
             }
-            reg_access_hca_mcqi_cap_unpack(&compStatus.comp_cap, (const u_int8_t *)capSt);
             compStatus.valid = 1;
-            //reg_access_hca_mcqi_cap_print(&(compStatus.comp_cap), stdout, 3);
+            compStatus.comp_cap.supported_info_bitmask = _currCompInfo.data.mcqi_cap.supported_info_bitmask;
+            compStatus.comp_cap.component_size = _currCompInfo.data.mcqi_cap.component_size;
+            compStatus.comp_cap.max_component_size = _currCompInfo.data.mcqi_cap.max_component_size;
+            compStatus.comp_cap.mcda_max_write_size = _currCompInfo.data.mcqi_cap.mcda_max_write_size;
+            compStatus.comp_cap.log_mcda_word_size = _currCompInfo.data.mcqi_cap.log_mcda_word_size;
+            compStatus.comp_cap.match_base_guid_mac = _currCompInfo.data.mcqi_cap.match_base_guid_mac;
+            compStatus.comp_cap.check_user_timestamp = _currCompInfo.data.mcqi_cap.check_user_timestamp;
+            compStatus.comp_cap.match_psid = _currCompInfo.data.mcqi_cap.match_psid;
+            compStatus.comp_cap.match_chip_id = _currCompInfo.data.mcqi_cap.match_chip_id;
+            compStatus.comp_cap.signed_updates_only = _currCompInfo.data.mcqi_cap.signed_updates_only;
+            compStatus.comp_cap.rd_en = _currCompInfo.data.mcqi_cap.rd_en;
             memcpy(&(_compsQueryMap[compStatus.comp_status.identifier]), &compStatus, sizeof(compStatus));
-            DPRINTF(("-D- Found component: %#x\n", compStatus.comp_status.identifier));
+            //reg_access_hca_mcqi_cap_print(&(compStatus.comp_cap), stdout, 3);
             last_index_flag = compStatus.comp_status.last_index_flag;
+            DPRINTF(("-D- Found component: %#x  compIdx %u name %s supported_info_bitmask 0x%x \n", \
+                compStatus.comp_status.identifier, compIdx, CompNames[compStatus.comp_status.identifier], 
+                compStatus.comp_cap.supported_info_bitmask));
+
         }
         else {
-            DPRINTF(("-D- queryComponentStatus failed !!\n"));
+            DPRINTF(("-D- queryComponentStatus failed for component index %d !!\n", compIdx));
             return false;
         }
         compIdx++;
@@ -595,7 +1246,7 @@ bool FwCompsMgr::refreshComponentsStatus()
 bool FwCompsMgr::readComponent(FwComponent::comps_ids_t compType, FwComponent& fwComp, bool readPending,
                                ProgressCallBackAdvSt *progressFuncAdv)
 {
-    if (!refreshComponentsStatus()) {
+    if (!RefreshComponentsStatus()) {
         return false;
     }
     _currCompQuery = &(_compsQueryMap[compType]);
@@ -621,6 +1272,7 @@ bool FwCompsMgr::readComponent(FwComponent::comps_ids_t compType, FwComponent& f
         }
     }
     else {
+        DPRINTF(("readComponent : RD EN is 0 for component index %u compId %s \n", _componentIndex, FwComponent::getCompIdStr(compType)));
         _lastError = FWCOMPS_READ_COMP_NOT_SUPPORTED;
         return false;
     }
@@ -634,16 +1286,18 @@ bool FwCompsMgr::readComponentInfo(FwComponent::comps_ids_t compType,
                                    std::vector<u_int32_t>& retData,
                                    bool readPending)
 {
-    if (!refreshComponentsStatus()) {
+    if (!RefreshComponentsStatus()) {
         return false;
     }
     _currCompQuery = &(_compsQueryMap[compType]);
     _componentIndex = _currCompQuery->comp_status.component_index;
+
+
     if (!queryComponentInfo(_componentIndex, readPending == true, infoType, 0, 0)) {
         return false;
     }
-
-    if (_currCompQuery->comp_cap.supported_info_bitmask & (1 << infoType)) {
+    if (_currCompQuery->comp_cap.supported_info_bitmask & (1 << infoType)) 
+    {
         u_int32_t size = _currCompInfo.info_size;
         retData.resize(size);
         queryComponentInfo(_componentIndex, readPending == true, infoType, size, (u_int32_t *)(retData.data()));
@@ -676,37 +1330,70 @@ bool FwCompsMgr::burnComponents(std::vector<FwComponent>& comps,
                                 ProgressCallBackAdvSt *progressFuncAdv)
 {
     unsigned i = 0;
-    if (!refreshComponentsStatus()) {
+    if (!RefreshComponentsStatus()) {
         return false;
     }
     if (!controlFsm(FSM_CMD_LOCK_UPDATE_HANDLE, FSMST_LOCKED)) {
+        DPRINTF(("Cannot lock the handle!\n"));
         forceRelease();
         return false;
     }
-    for (i = 0; i < comps.size(); i++) {
-        _currCompQuery = &(_compsQueryMap[comps[i].getType()]);
-        if (!_currCompQuery->valid) {
-            _lastError = FWCOMPS_COMP_NOT_SUPPORTED;
-            return false;
-        }
-        _componentIndex = _currCompQuery->comp_status.component_index;
-        if (!controlFsm(FSM_CMD_UPDATE_COMPONENT, FSMST_DOWNLOAD, comps[i].getSize(), FSMST_INITIALIZE, progressFuncAdv)) {
-            return false;
-        }
-        _currComponentStr = FwComponent::getCompIdStr(comps[i].getType());
-        if (!accessComponent(0, comps[i].getSize(), (u_int32_t *)(comps[i].getData().data()), MCDA_WRITE_COMP, progressFuncAdv)) {
-            //_lastError = FWCOMPS_DOWNLOAD_FAILED;
-            return false;
-        }
-        if (!controlFsm(FSM_CMD_VERIFY_COMPONENT, FSMST_LOCKED, 0, FSMST_NA, progressFuncAdv)) {
-            DPRINTF(("Verifying component has failed!\n"));
-            return false;
+    if (_downloadTransferNeeded == true) {
+        for (i = 0; i < comps.size(); i++) {
+            int component = comps[i].getType();
+            _currCompQuery = &(_compsQueryMap[component]);
+            if (!_currCompQuery->valid) {
+                _lastError = FWCOMPS_COMP_NOT_SUPPORTED;
+                DPRINTF(("MCC/MCDA flow for component %x is not supported!\n", component));
+                return false;
+            }
+            _componentIndex = _currCompQuery->comp_status.component_index;
+            if (!controlFsm(FSM_CMD_UPDATE_COMPONENT, FSMST_DOWNLOAD, comps[i].getSize(), FSMST_INITIALIZE, progressFuncAdv)) {
+                DPRINTF(("Initializing downloading FW component has failed!\n"));
+                return false;
+            }
+            _currComponentStr = FwComponent::getCompIdStr(comps[i].getType());
+            if (!accessComponent(0, comps[i].getSize(), (u_int32_t *)(comps[i].getData().data()), MCDA_WRITE_COMP, progressFuncAdv)) {
+                DPRINTF(("Downloading FW component has failed!\n"));
+                return false;
+            }
+            if (!controlFsm(FSM_CMD_VERIFY_COMPONENT, FSMST_LOCKED, 0, FSMST_NA, progressFuncAdv)) {
+                DPRINTF(("Verifying FW component has failed!\n"));
+                return false;
+            }
+            if (comps[i].getType() == FwComponent::COMPID_LINKX) {
+                if (!controlFsm(FSM_CMD_DOWNSTREAM_DEVICE_TRANSFER, FSMST_DOWNSTREAM_DEVICE_TRANSFER, 0, FSMST_LOCKED, progressFuncAdv)) {
+                    DPRINTF(("Downstream LinkX begin has failed!\n"));
+                    return false;
+                }
+                if (!controlFsm(FSM_QUERY, FSMST_LOCKED, 0, FSMST_DOWNSTREAM_DEVICE_TRANSFER, progressFuncAdv)) {
+                    DPRINTF(("Downstream LinkX ending has failed!\n"));
+                    return false;
+                }
+            }
         }
     }
-    if (!controlFsm(FSM_CMD_ACTIVATE_ALL)) {
-        return false;
+    if (_linkXFlow) {
+        if (_activationNeeded == true) { //by default
+            if (!controlFsm(FSM_CMD_ACTIVATE_ALL, FSMST_ACTIVATE, 0, FSMST_LOCKED, progressFuncAdv)) {
+                DPRINTF(("Moving to ACTIVATE state has failed!\n"));
+                return false;
+            }
+            printf("Please wait while activating the tramsmitter(s) FW ...\n");
+            if (!controlFsm(FSM_QUERY, FSMST_LOCKED, 0, FSMST_ACTIVATE, progressFuncAdv)) {
+                DPRINTF(("Moving from activate state to locked state has failed!\n"));
+                return false;
+            }
+        }
+    }
+    else {
+        if (!controlFsm(FSM_CMD_ACTIVATE_ALL)) {
+            DPRINTF(("Activating FW component has failed!\n"));
+            return false;
+        }
     }
     if (!controlFsm(FSM_CMD_RELEASE_UPDATE_HANDLE)) {
+        DPRINTF(("Release FW handle has failed!\n"));
         return false;
     }
     _refreshed = false;
@@ -716,7 +1403,7 @@ bool FwCompsMgr::burnComponents(std::vector<FwComponent>& comps,
 
 bool FwCompsMgr::getFwComponents(std::vector<FwComponent>& compsMap, bool readEn)
 {
-    if (!refreshComponentsStatus()) {
+    if (!RefreshComponentsStatus()) {
         return false;
     }
     for (std::vector<comp_query_st>::iterator it = _compsQueryMap.begin();
@@ -761,28 +1448,21 @@ const char* FwComponent::getCompIdStr(comps_ids_t compId)
     case COMPID_GEARBOX:
         return "GEARBOX";
 
-        case COMPID_CONGESTION_CONTROL:
+    case COMPID_CONGESTION_CONTROL:
             return "CONGESTION_CONTROL";
+
+    case COMPID_LINKX:
+        return "COMPID_LINKX";
 
     default:
         return "UNKNOWN_COMPONENT";
     }
 }
 
-void FwCompsMgr::getInfoAsVersion(std::vector<u_int32_t>& infoData,
-                                  component_version_st *cmpVer)
-{
-    u_int8_t *data = (u_int8_t *)(infoData.data());
-    reg_access_hca_mcqi_version_unpack(cmpVer, data);
-    //reg_access_hca_mcqi_version_print(cmpVer, stdout, 4);
-}
-
-
 u_int32_t FwCompsMgr::getFwSupport()
 {
     u_int32_t devid = 0;
     isDmaSupported = false;
-
 #ifndef UEFI_BUILD
     if (getenv("FW_CTRL") != NULL) {
         return 1;
@@ -800,17 +1480,13 @@ u_int32_t FwCompsMgr::getFwSupport()
     /*
      * If 4TH gen nic or switch with no MCAM reg return not supported
      */
-    if (devid == CX2_DEVID ||
-        devid == CX3_DEVID ||
-        devid == CX3PRO_DEVID ||
-        devid == SX_DEVID ||
-        devid == IS4_DEVID ||
-        devid == SWITCH_IB_DEVID  ||
-        devid == SWITCH_IB2_DEVID ||
-        devid == SPECTRUM_DEVID   ||
-        devid == SPECTRUM2_DEVID  ||
-        devid == SPECTRUM3_DEVID  ||
-        devid == QUANTUM_DEVID) {
+    if (devid == CX2_HW_ID ||
+        devid == CX3_HW_ID ||
+        devid == CX3_PRO_HW_ID ||
+        devid == SWITCHX_HW_ID ||
+        devid == IS4_HW_ID ||
+        devid == SWITCH_IB_HW_ID ||
+        devid == SWITCH_IB2_HW_ID) {
         _lastError = FWCOMPS_UNSUPPORTED_DEVICE;
         return 0;
     }
@@ -819,6 +1495,7 @@ u_int32_t FwCompsMgr::getFwSupport()
     memset(&mcam, 0, sizeof(mcam));
     reg_access_status_t rc = reg_access_mcam(_mf, REG_ACCESS_METHOD_GET, &mcam);
     if (rc) {
+        DPRINTF(("getFwSupport MCAM not supported! rc = %d\n", rc));
         _lastError = FWCOMPS_UNSUPPORTED_DEVICE;
         return 0;
     }
@@ -933,6 +1610,16 @@ u_int8_t transRomType(u_int8_t mgirRomType)
 
     case 0x5: //FCODE
         return 0x21;
+
+    case 0x6: // UEFI Virtio net
+        return 0x14;
+
+    case 0x7: //UEFI Virtio blk
+        return 0x15;
+
+    case 0x8: //PXE Virtio net
+        return 0x16;
+
     default:
         return mgirRomType;
     }
@@ -983,13 +1670,13 @@ bool FwCompsMgr::queryFwInfo(fwInfoT *query, bool next_boot_fw_ver)
     mgirReg mgir;
     memset(&mgir, 0, sizeof(mgir));
     memset(query, 0, sizeof(fwInfoT));
+
     if (getComponentVersion(FwComponent::COMPID_BOOT_IMG, true, &query->pending_fw_version)) {
         query->pending_fw_valid = 1;
     }
     if (!getComponentVersion(FwComponent::COMPID_BOOT_IMG, false, &query->running_fw_version)) {
         return false;
     }
-
     if (next_boot_fw_ver) {
         // query next_boot_fw_ver only. enough to query pending, running versions and device_id.
         rc = getGI(_mf, &mgir);
@@ -1058,84 +1745,122 @@ bool FwCompsMgr::queryFwInfo(fwInfoT *query, bool next_boot_fw_ver)
     return true;
 }
 
-const char*  FwCompsMgr::getLastErrMsg()
+unsigned char*  FwCompsMgr::getLastErrMsg()
 {
+    static unsigned char bufferErr[512] = { 0 };
+    memset(bufferErr, 0, sizeof(bufferErr));
     switch (_lastError) {
     case FWCOMPS_ABORTED:
-        return "Aborting ... received interrupt signal";
+        return (unsigned char*)"Aborting ... received interrupt signal";
+
+    case FWCOMPS_MCC_ERR_ERROR:
+        return (unsigned char*)"MCC error";
 
     case FWCOMPS_MCC_ERR_REJECTED_DIGEST_ERR:
-        return "The Digest in the signature is wrong";
+        return (unsigned char*)"The Digest in the signature is wrong";
 
     case FWCOMPS_MCC_ERR_REJECTED_UNSIGNED:
-        return "The component is not signed";
+        return (unsigned char*)"The component is not signed";
 
     case FWCOMPS_MCC_ERR_BLOCKED_PENDING_RESET:
-        return "The firmware image was already updated on flash, pending reset.";
+        return (unsigned char*)"The firmware image was already updated on flash, pending reset.";
 
     case FWCOMPS_MCC_ERR_REJECTED_NOT_APPLICABLE:
-        return "Component is not applicable";
+        return (unsigned char*)"Component is not applicable";
 
     case FWCOMPS_MCC_ERR_REJECTED_AUTH_FAILED:
-        return "Rejected authentication";
+        return (unsigned char*)"Rejected authentication";
 
     case FWCOMPS_MCC_ERR_REJECTED_KEY_NOT_APPLICABLE:
-        return "The key is not applicable";
+        return (unsigned char*)"The key is not applicable";
 
     case FWCOMPS_READ_COMP_NOT_SUPPORTED:
-        return "Reading component is not supported";
+        return (unsigned char*)"Reading component is not supported";
         break;
 
     case FWCOMPS_COMP_NOT_SUPPORTED:
-        return "Component not supported";
+        return (unsigned char*)"Component not supported";
 
     case FWCOMPS_VERIFY_FAILED:
-        return "Firmware verifying failed!";
+        return (unsigned char*)"Firmware verifying failed!";
 
     case FWCOMPS_CR_ERR:
-        return "Failed to access CR-Space";
+        return (unsigned char*)"Failed to access CR-Space";
 
     case FWCOMPS_MCC_REJECTED_NOT_A_SECURED_FW:
-        return "The firmware image is not secured";
+        return (unsigned char*)"The firmware image is not secured";
 
     case FWCOMPS_MCC_REJECTED_MFG_BASE_MAC_NOT_LISTED:
-        return "The manufacturing base MAC was not listed";
+        return (unsigned char*)"The manufacturing base MAC was not listed";
 
     case FWCOMPS_MCC_REJECTED_NO_DEBUG_TOKEN:
-        return "There is no Debug Token installed";
+        return (unsigned char*)"There is no Debug Token installed";
 
     case FWCOMPS_MCC_REJECTED_VERSION_NUM_MISMATCH:
-        return "Firmware version mismatch";
+        return (unsigned char*)"Firmware version mismatch";
 
     case FWCOMPS_MCC_REJECTED_USER_TIMESTAMP_MISMATCH:
-        return "User timestamp mismatch";
+        return (unsigned char*)"User timestamp mismatch";
 
     case FWCOMPS_MCC_REJECTED_FORBIDDEN_VERSION:
-        return "Forbidden version rejected";
+        return (unsigned char*)"Forbidden version rejected";
 
     case FWCOMPS_MCC_FLASH_ERASE_ERROR:
-        return "Error while erasing the flash";
+        return (unsigned char*)"Error while erasing the flash";
 
     case FWCOMPS_MCC_UNEXPECTED_STATE:
-        return "Unexpected state";
+        return (unsigned char*)"Unexpected state";
 
     case FWCOMPS_MCC_TOUT:
-        return "Time-out reached while waiting for the FSM to be updated";
+        return (unsigned char*)"Time-out reached while waiting for the FSM to be updated";
 
     case FWCOMPS_MCC_REJECTED_IMAGE_CAN_NOT_BOOT_FROM_PARTITION:
-        return "Image cannot boot from partition.";
+        return (unsigned char*)"Image cannot boot from partition.";
+
+    case FWCOMPS_MCC_REJECTED_LINKX_TYPE_NOT_SUPPORTED:
+    {
+        if (_rejectedIndex != -1) {
+            sprintf((char*)bufferErr, "LinkX type not supported for device index %d\n", _rejectedIndex);
+            return bufferErr;
+        }
+        else {
+            return (unsigned char*)"LinkX type not supported";
+        }
+    }
+    case FWCOMPS_MCC_REJECTED_HOST_STORAGE_IN_USE:
+        return (unsigned char*)"Host storage is in use";
+
+    case FWCOMPS_MCC_REJECTED_LINKX_TRANSFER:
+    {
+        if (_rejectedIndex != -1) {
+            sprintf((char*)bufferErr, "LinkX downstream transfer failed for device index %d\n", _rejectedIndex);
+            return bufferErr;
+        }
+        else {
+            return (unsigned char*)"LinkX downstream transfer failed";
+        }
+    }
+    case FWCOMPS_MCC_REJECTED_LINKX_ACTIVATE: {
+        if (_rejectedIndex != -1) {
+            sprintf((char*)bufferErr, "LinkX activation failed for device index %d\n", _rejectedIndex);
+            return bufferErr;
+        }
+        else {
+            return (unsigned char*)"LinkX activation failed";
+        }
+    }
 
     case FWCOMPS_UNSUPPORTED_DEVICE:
-        return "Unsupported device";
+        return (unsigned char*)"Unsupported device";
 
     case FWCOMPS_MTCR_OPEN_DEVICE_ERROR:
-        return "Failed to open device";
+        return (unsigned char*)"Failed to open device";
 
     case FWCOMPS_FAIL_TO_LOCK_FLASH_SEMAPHORE:
-        return "Failed to lock flash semaphore";
+        return (unsigned char*)"Failed to lock flash semaphore";
 
     case FWCOMPS_FAIL_TO_CREATE_TRM_CONTEXT:
-        return "Failed to create TRM context";
+        return (unsigned char*)"Failed to create TRM context";
 
     case FWCOMPS_REG_ACCESS_BAD_STATUS_ERR:
     case FWCOMPS_REG_ACCESS_BAD_METHOD:
@@ -1156,13 +1881,13 @@ const char*  FwCompsMgr::getLastErrMsg()
     case FWCOMPS_REG_ACCESS_BAD_CONFIG:
     case FWCOMPS_REG_ACCESS_ERASE_EXEEDED:
     case FWCOMPS_REG_ACCESS_INTERNAL_ERROR:
-        return reg_access_err2str(_lastRegAccessStatus);
+        return (unsigned char*)reg_access_err2str(_lastRegAccessStatus);
 
     default:
         if (_lastRegAccessStatus) {
-            return reg_access_err2str(_lastRegAccessStatus);
+            return (unsigned char*)reg_access_err2str(_lastRegAccessStatus);
         }
-        return "GENERAL ERROR";
+        return (unsigned char*)"GENERAL ERROR";
     }
 }
 
@@ -1215,7 +1940,6 @@ void FwCompsMgr::deal_with_signal()
     return;
 }
 
-
 bool FwCompsMgr::getComponentVersion(FwComponent::comps_ids_t compType,
                                      bool pending,
                                      component_version_st *cmpVer)
@@ -1229,23 +1953,71 @@ bool FwCompsMgr::getComponentVersion(FwComponent::comps_ids_t compType,
         return false;
     }
     memset(cmpVer, 0, sizeof(component_version_st));
-    getInfoAsVersion(imageInfoData, cmpVer);
-    if (cmpVer->version_string_length) {
-        _productVerStr.resize(cmpVer->version_string_length);
-        memcpy(_productVerStr.data(), cmpVer->version_string, cmpVer->version_string_length);
+    cmpVer->version_string_length = _currCompInfo.data.mcqi_version.version_string_length;
+    cmpVer->user_defined_time_valid = _currCompInfo.data.mcqi_version.user_defined_time_valid;
+    cmpVer->build_time_valid = _currCompInfo.data.mcqi_version.build_time_valid;
+    cmpVer->version = _currCompInfo.data.mcqi_version.version;
+    cmpVer->build_time = _currCompInfo.data.mcqi_version.build_time;
+    cmpVer->user_defined_time = _currCompInfo.data.mcqi_version.user_defined_time;
+    cmpVer->build_tool_version = _currCompInfo.data.mcqi_version.build_tool_version;
+    if (_currCompInfo.data.mcqi_version.version_string_length) {
+        _productVerStr.resize(_currCompInfo.data.mcqi_version.version_string_length);
+        memcpy(_productVerStr.data(), _currCompInfo.data.mcqi_version.version_string, _currCompInfo.data.mcqi_version.version_string_length);
         cmpVer->version_string[0] = '\0';
     }
     return true;
 }
 
+bool FwCompsMgr::GetComponentLinkxProperties(FwComponent::comps_ids_t compType, component_linkx_st *cmpLinkX)
+{
+    std::vector<u_int32_t> imageInfoData;
+    if (!cmpLinkX) {
+        _lastError = FWCOMPS_BAD_PARAM;
+        return false;
+    }
+    _deviceIndex = _linkXDeviceIndex;
 
+    //make MCQS first of all to check if device is present
+
+    comp_query_st * currCompQuery = &(_compsQueryMap[compType]);
+    u_int32_t componentIndex = currCompQuery->comp_status.component_index;
+    comp_status_st query;
+    if (!queryComponentStatus(componentIndex, &query)) {
+        return false;
+    }
+    if (query.component_status == 0) {
+        printf("Cable %d is not found, please check that cable connected.\n", _deviceIndex - 1);
+        _lastError = FWCOMPS_MCC_ERR_REJECTED_NOT_APPLICABLE;
+        return false;
+    }
+
+    if (!readComponentInfo(compType, COMPINFO_LINKX_PROPERTIES, imageInfoData, false)) {
+        return false;
+    }
+    memset(cmpLinkX, 0, sizeof(component_linkx_st));
+    cmpLinkX->fw_image_status_bitmap = _currCompInfo.data.mcqi_linkx_properties.fw_image_status_bitmap;
+    cmpLinkX->fw_image_info_bitmap = _currCompInfo.data.mcqi_linkx_properties.fw_image_info_bitmap;
+    cmpLinkX->image_a_minor = _currCompInfo.data.mcqi_linkx_properties.image_a_minor;
+    cmpLinkX->image_a_major = _currCompInfo.data.mcqi_linkx_properties.image_a_major;
+    cmpLinkX->image_a_subminor = _currCompInfo.data.mcqi_linkx_properties.image_a_subminor;
+    cmpLinkX->image_b_minor = _currCompInfo.data.mcqi_linkx_properties.image_b_minor;
+    cmpLinkX->image_b_major = _currCompInfo.data.mcqi_linkx_properties.image_b_major;
+    cmpLinkX->image_b_subminor = _currCompInfo.data.mcqi_linkx_properties.image_b_subminor;
+    cmpLinkX->factory_image_minor = _currCompInfo.data.mcqi_linkx_properties.factory_image_minor;
+    cmpLinkX->factory_image_major = _currCompInfo.data.mcqi_linkx_properties.factory_image_major;
+    cmpLinkX->factory_image_subminor = _currCompInfo.data.mcqi_linkx_properties.factory_image_subminor;
+    cmpLinkX->management_interface_protocol = _currCompInfo.data.mcqi_linkx_properties.management_interface_protocol;
+    cmpLinkX->activation_type = _currCompInfo.data.mcqi_linkx_properties.activation_type;
+    cmpLinkX->vendor_sn = _currCompInfo.data.mcqi_linkx_properties.vendor_sn;
+    return true;
+}
 
 bool FwCompsMgr::readBlockFromComponent(FwComponent::comps_ids_t compId,
                                         u_int32_t offset,
                                         u_int32_t size,
                                         std::vector<u_int8_t>& data)
 {
-    if (!refreshComponentsStatus()) {
+    if (!RefreshComponentsStatus()) {
         return false;
     }
     _currCompQuery = &(_compsQueryMap[compId]);
@@ -1274,8 +2046,9 @@ bool FwCompsMgr::readBlockFromComponent(FwComponent::comps_ids_t compId,
         }
     }
     else {
-        _lastError = FWCOMPS_READ_COMP_NOT_SUPPORTED;
-        return false;
+    _lastError = FWCOMPS_READ_COMP_NOT_SUPPORTED;
+    DPRINTF(("readBlockFromComponent : RD EN is 0 for component index %u compId %s \n", _componentIndex, FwComponent::getCompIdStr(compId)));
+    return false;
     }
     return true;
 }
@@ -1324,12 +2097,12 @@ bool FwCompsMgr::fwReactivateImage()
                 DPRINTF(("3 reg_access_mirc failed rc = %d\n", rc));
                 return false;
             }
-            DPRINTF(("2 iteration %d mirc.status_code = %d\n", currentIteration++,  mirc.status_code));
+            DPRINTF(("2 iteration %d mirc.status_code = %d\n", currentIteration++, mirc.status_code));
             if (currentIteration >= maxNumOfIterations) {
                 _lastError = FWCOMPS_IMAGE_REACTIVATION_WAITING_TIME_EXPIRED;
                 return false;
             }
-        } 
+        }
     }
     if (mirc.status_code == IMAGE_REACTIVATION_SUCCESS) {
         return true;
@@ -1497,6 +2270,18 @@ fw_comps_error_t FwCompsMgr::mccErrTrans(u_int8_t err)
 
     case MCC_ERRCODE_REJECTED_IMAGE_CAN_NOT_BOOT_FROM_PARTITION:
         return FWCOMPS_MCC_REJECTED_IMAGE_CAN_NOT_BOOT_FROM_PARTITION;
+
+    case MCC_ERRCODE_REJECTED_LINKX_TYPE_NOT_SUPPORTED:
+        return FWCOMPS_MCC_REJECTED_LINKX_TYPE_NOT_SUPPORTED;
+
+    case MCC_ERRCODE_REJECTED_HOST_STORAGE_IN_USE:
+        return FWCOMPS_MCC_REJECTED_HOST_STORAGE_IN_USE;
+
+    case MCC_ERRCODE_REJECTED_LINKX_TRANSFER:
+        return FWCOMPS_MCC_REJECTED_LINKX_TRANSFER;
+
+    case MCC_ERRCODE_REJECTED_LINKX_ACTIVATE:
+        return FWCOMPS_MCC_REJECTED_LINKX_ACTIVATE;
 
     default:
         //            printf("MCC ERROR: %#x\n", err);

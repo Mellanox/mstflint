@@ -145,6 +145,8 @@ void  fixXmlString(string & stringToFix);
 
 bool isServerRequestorRequired(CmdLineParams& cmd_params);
 
+int check_valid_os_type(CmdLineParams &cmd_params, bool* os_valid);
+
 int handleGetDownloadOptionsRequest(ServerRequest *srq, CmdLineParams &cmd_params);
 
 int   handleDownloadRequest(ServerRequest *srq,

@@ -1872,13 +1872,34 @@ string Adb::evalExpr(string expr, AttrsMap *vars) {
         string vvalue;
         regex singleVar("^[a-zA-Z_][a-zA-Z0-9_]*$");
 
+        //Need to change to array-like initialization when we'll move to c++11
+        vector<string> specialVars;
+        specialVars.push_back("NAME");
+        specialVars.push_back("ARR_IDX");
+        specialVars.push_back("BN");
+        specialVars.push_back("parent");
+
         if (regex_search(vname, what2, singleVar)) {
-            AttrsMap::iterator it = vars->find(vname);
-            if (it == vars->end()) {
-                throw AdbException("Can't find the variable: " + vname);
+            if (find(specialVars.begin(), specialVars.end(), vname) == specialVars.end()) {
+                return expr;
+            } else {
+                AttrsMap::iterator it = vars->find(vname);
+                if (it == vars->end()) {
+                    throw AdbException("Can't find the variable: " + vname);
+                }
+                vvalue = it->second;
             }
-            vvalue = it->second;
         } else {
+            string vnameCopy = vname;
+            regex singleVarInExpr("[a-zA-Z_][a-zA-Z0-9_]*");
+            smatch matches;
+            while (regex_search(vnameCopy, matches, singleVarInExpr)) {
+                if (find(specialVars.begin(), specialVars.end(), matches[0]) == specialVars.end()) {
+                    return expr;
+                }
+                vnameCopy = matches.suffix();
+            }
+
             char exp[vname.size() + 1];
             char *expPtr = exp;
             strcpy(exp, vname.c_str());
@@ -2499,10 +2520,15 @@ void AdbParser::includeFile(AdbParser *adbParser, string fileName,
 void AdbParser::includeAllFilesInDir(AdbParser *adbParser, string dirPath,
         int lineNumber) {
     vector < string > paths;
+    boost::filesystem::path mainFile(adbParser->_fileName);
     boost::algorithm::split(paths, dirPath, boost::is_any_of(string(";")));
-
     for (StringVector::iterator pathIt = paths.begin(); pathIt != paths.end(); pathIt++) {
-        boost::filesystem::path fsPath(*pathIt);
+        //first look in the main file's path
+        boost::filesystem::path fsPath (mainFile.parent_path().string() + "/" + *pathIt);
+        if (!boost::filesystem::exists(fsPath)) {
+            fsPath = boost::filesystem::path(*pathIt);
+        }
+
         if (boost::filesystem::exists(fsPath)
                 && boost::filesystem::is_directory(fsPath)) {
                     addIncludePaths(adbParser->_adbCtxt, *pathIt);

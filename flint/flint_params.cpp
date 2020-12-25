@@ -103,6 +103,17 @@ FlintParams::FlintParams()
     public_key_label_specified = false;
     private_key_label_specified = false;
     hsm_specified = false;
+    hsm_password_specified = false;
+    linkx_control = false;
+    cableDeviceIndex = -1;
+    cableDeviceSize = -1;
+    cable_device_size_specified = false;
+    cable_device_index_specified = false;
+    linkx_auto_update = false;
+    activate = false;
+    downstream_device_ids_specified = false;
+    download_transfer = false;
+    activate_delay_sec = -1;
 }
 
 FlintParams::~FlintParams()

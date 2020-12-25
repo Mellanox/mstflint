@@ -145,6 +145,3 @@ long PldmBuffer::tell() {
     return m_pos;
 }
 
-void PldmBuffer::rewind() {
-    m_pos = 0;
-}

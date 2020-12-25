@@ -776,3 +776,14 @@ bool FsCtrlOperations::GetSecureBootInfo()
 {
     return _signatureMngr->GetSecureBootInfo();
 }
+
+bool FsCtrlOperations::IsLifeCycleSupported()
+{
+    return _signatureMngr->IsLifeCycleSupported();
+}
+
+bool FsCtrlOperations::IsCableQuerySupported()
+{
+    return _signatureMngr->IsCableQuerySupported();
+}
+

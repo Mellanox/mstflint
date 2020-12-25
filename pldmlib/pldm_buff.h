@@ -55,8 +55,6 @@ public:
 
     int seek(long offset, int whence);
     long tell();
-    void rewind();
-
 private:
     u_int8_t * m_buff;
     long m_pos;

@@ -32,9 +32,9 @@
  
 
 /***
-         *** This file was generated at "2019-03-06 16:23:05"
+         *** This file was generated at "2020-10-08 16:57:28"
          *** by:
-         ***    > /mswg/release/tools/a-me/last_stable/adabe_plugins/adb2c/adb2pack.py --input adb/tools_open/tools_open.adb --file-prefix tools_open --prefix tools_open_
+         ***    > /mswg/release/tools/a-me/nightly/1.0.122/a-me-1.0.122_2019-07-14/adabe_plugins/adb2c/adb2pack.py --input adb/tools_open/tools_open.adb --file-prefix tools_open --prefix tools_open_
          ***/
 #include "tools_open_layouts.h"
 
@@ -4325,6 +4325,8 @@ void tools_open_nv_cx3_global_conf_pack(const struct tools_open_nv_cx3_global_co
 {
 	u_int32_t offset;
 
+	offset = 2;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 2, (u_int32_t)ptr_struct->phy_param_mode);
 	offset = 1;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->steer_force_vlan);
 	offset = 0;
@@ -4335,6 +4337,8 @@ void tools_open_nv_cx3_global_conf_unpack(struct tools_open_nv_cx3_global_conf *
 {
 	u_int32_t offset;
 
+	offset = 2;
+	ptr_struct->phy_param_mode = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 2);
 	offset = 1;
 	ptr_struct->steer_force_vlan = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 	offset = 0;
@@ -4346,6 +4350,8 @@ void tools_open_nv_cx3_global_conf_print(const struct tools_open_nv_cx3_global_c
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "======== tools_open_nv_cx3_global_conf ========\n");
 
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "phy_param_mode       : " UH_FMT "\n", ptr_struct->phy_param_mode);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "steer_force_vlan     : " UH_FMT "\n", ptr_struct->steer_force_vlan);
 	adb2c_add_indentation(fd, indent_level);
@@ -5038,6 +5044,8 @@ void tools_open_query_def_params_global_pack(const struct tools_open_query_def_p
 {
 	u_int32_t offset;
 
+	offset = 16;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->nv_config_phy_param_mode);
 	offset = 15;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->nv_steer_force_vlan_supported);
 	offset = 14;
@@ -5052,6 +5060,8 @@ void tools_open_query_def_params_global_pack(const struct tools_open_query_def_p
 	adb2c_push_bits_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->max_uar_bar_size);
 	offset = 42;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->boot_ip_ver);
+	offset = 40;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 2, (u_int32_t)ptr_struct->default_phy_param_mode);
 	offset = 35;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->default_steer_force_vlan);
 	offset = 34;
@@ -5064,6 +5074,8 @@ void tools_open_query_def_params_global_unpack(struct tools_open_query_def_param
 {
 	u_int32_t offset;
 
+	offset = 16;
+	ptr_struct->nv_config_phy_param_mode = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 	offset = 15;
 	ptr_struct->nv_steer_force_vlan_supported = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 	offset = 14;
@@ -5078,6 +5090,8 @@ void tools_open_query_def_params_global_unpack(struct tools_open_query_def_param
 	ptr_struct->max_uar_bar_size = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 4);
 	offset = 42;
 	ptr_struct->boot_ip_ver = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 40;
+	ptr_struct->default_phy_param_mode = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 2);
 	offset = 35;
 	ptr_struct->default_steer_force_vlan = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 	offset = 34;
@@ -5092,6 +5106,8 @@ void tools_open_query_def_params_global_print(const struct tools_open_query_def_
 	fprintf(fd, "======== tools_open_query_def_params_global ========\n");
 
 	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "nv_config_phy_param_mode : " UH_FMT "\n", ptr_struct->nv_config_phy_param_mode);
+	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "nv_steer_force_vlan_supported : " UH_FMT "\n", ptr_struct->nv_steer_force_vlan_supported);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "nv_cq_timestamp_supported : " UH_FMT "\n", ptr_struct->nv_cq_timestamp_supported);
@@ -5105,6 +5121,8 @@ void tools_open_query_def_params_global_print(const struct tools_open_query_def_
 	fprintf(fd, "max_uar_bar_size     : " UH_FMT "\n", ptr_struct->max_uar_bar_size);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "boot_ip_ver          : " UH_FMT "\n", ptr_struct->boot_ip_ver);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "default_phy_param_mode : " UH_FMT "\n", ptr_struct->default_phy_param_mode);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "default_steer_force_vlan : " UH_FMT "\n", ptr_struct->default_steer_force_vlan);
 	adb2c_add_indentation(fd, indent_level);
@@ -6283,6 +6301,7 @@ void tools_open_mfa2_dump(const union tools_open_mfa2 *ptr_struct, FILE *fd)
 {
 	tools_open_mfa2_print(ptr_struct, fd, 0);
 }
+
 void tools_open_mirc_reg_pack(const struct tools_open_mirc_reg *ptr_struct, u_int8_t *ptr_buff)
 {
 	u_int32_t offset;
@@ -6479,12 +6498,12 @@ void tools_open_nv_cfg_dump(const union tools_open_nv_cfg *ptr_struct, FILE *fd)
 
 void tools_open_tools_open_pack(const union tools_open_tools_open *ptr_struct, u_int8_t *ptr_buff)
 {
-	tools_open_mcdd_descriptor_pack(&(ptr_struct->mcdd_descriptor), ptr_buff);
+	tools_open_mirc_reg_pack(&(ptr_struct->mirc_reg), ptr_buff);
 }
 
 void tools_open_tools_open_unpack(union tools_open_tools_open *ptr_struct, const u_int8_t *ptr_buff)
 {
-	tools_open_mcdd_descriptor_unpack(&(ptr_struct->mcdd_descriptor), ptr_buff);
+	tools_open_mirc_reg_unpack(&(ptr_struct->mirc_reg), ptr_buff);
 }
 
 void tools_open_tools_open_print(const union tools_open_tools_open *ptr_struct, FILE *fd, int indent_level)

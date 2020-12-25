@@ -46,6 +46,48 @@
 #include "mflash_common_structs.h"
 
 #include <mlxfwops/uefi_c/mft_uefi_common.h>
+ // Timer definitions (needed when polling flash semaphore in windows)
+#ifndef __WIN__
+#define TIMER_INIT(...)
+#define TIMER_STOP(...)
+#define TIMER_PRINT(...)
+#define TIMER_GET_DIFF(...)
+#define TIMER_INIT_AND_START(...)
+#define TIMER_STOP_GET_DIFF(...)
+#define TIMER_CHECK(...)
+#else
+#include <windows.h>
+#define TIMER_INIT() \
+    SYSTEMTIME _start, _end; \
+    int _diff_in_sec, _diff_in_ms; \
+    (void)_diff_in_sec; \
+    (void)_diff_in_ms
+#define TIMER_START() \
+    GetSystemTime(&_start)
+#define TIMER_STOP() \
+    GetSystemTime(&_end)
+#define TIMER_PRINT(...) \
+    _diff_in_sec = _end.wSecond - _start.wSecond; \
+    _diff_in_ms = (_end.wMilliseconds - _start.wMilliseconds; \
+                   printf(__VA_ARGS__); \
+                   printf("it took %d sec %d and ms to run.\n", _diff_in_sec, _diff_in_ms)
+#define TIMER_GET_DIFF(diff_in_sec, diff_in_ms) \
+    diff_in_sec = _end.wSecond - _start.wSecond; \
+    diff_in_ms = _end.wMilliseconds - _start.wMilliseconds
+#define TIMER_INIT_AND_START() \
+    TIMER_INIT(); \
+    TIMER_START()
+#define TIMER_STOP_GET_DIFF(diff_in_sec, diff_in_ms) \
+    TIMER_STOP(); \
+    TIMER_GET_DIFF(diff_in_sec, diff_in_ms)
+#define TIMER_CHECK(max_sec, max_ms, action_on_tout) \
+    TIMER_STOP(); \
+    _diff_in_sec = _end.wSecond - _start.wSecond; \
+    _diff_in_ms = _end.wMilliseconds - _start.wMilliseconds; \
+    if (_diff_in_sec >= max_sec && _diff_in_ms > max_ms) { \
+        action_on_tout; \
+    }
+#endif
 
 #ifdef __cplusplus
 #define EXTERN_C_START extern "C" {

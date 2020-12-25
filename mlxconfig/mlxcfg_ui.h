@@ -52,6 +52,7 @@ typedef enum {
     Mc_Reset,
     Mc_Clr_Sem,
     Mc_Set_Raw,
+    Mc_Get_Raw,
     Mc_Backup,
     Mc_ShowConfs,
     Mc_GenTLVsFile,
@@ -63,7 +64,6 @@ typedef enum {
     Mc_Apply,
     Mc_UnknownCmd
 } mlxCfgCmd;
-
 
 typedef struct QueryOutputItem {
     string mlxconfigName;
@@ -145,8 +145,8 @@ private:
     // reset Cmd
     mlxCfgStatus resetDevsCfg();
     mlxCfgStatus resetDevCfg(const char *dev);
-    // Set Raw TLV file
-    mlxCfgStatus setDevRawCfg();
+    // Set\Get Raw TLV file
+    mlxCfgStatus devRawCfg(RawTlvMode mode);
     mlxCfgStatus backupCfg();
     mlxCfgStatus tlvLine2DwVec(const std::string& tlvStringLine, std::vector<u_int32_t>& tlvVec);
 

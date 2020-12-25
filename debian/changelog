@@ -1,3 +1,9 @@
+mstflint (4.16.0-1) unstable; urgency=low
+
+  * Updated from MFT-4.16.0
+
+ -- Kostiantyn Maksatov <kostiantynm@unknown>  Thu, 17 Dec 2020 04:58:33 +0300
+
 mstflint (4.15.0-1) unstable; urgency=low
 
   * Ported ConnectX6Dx EFUSE programming from MFT 4.16.0

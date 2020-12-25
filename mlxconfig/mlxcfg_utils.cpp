@@ -455,6 +455,7 @@ bool getDeviceInformationString(const char* dev, info_type_t op, vector<char>& i
        mclose(mf);
        return false;
     }
+    //reg_access_hca_mqis_reg_print(&mqisRegister, stdout, 4);
     int infoSize = mqisRegister.info_length;
     if (infoSize == 0) {
         return false;
@@ -477,6 +478,7 @@ bool getDeviceInformationString(const char* dev, info_type_t op, vector<char>& i
             if (rc) {
                 return false;
             }
+            //reg_access_hca_mqis_reg_print(&mqisRegister, stdout, 4);
             memcpy(infoString.data() + mqisRegister.read_offset,
                    (mqisRegister.info_string), mqisRegister.read_length);
             leftSize -= mqisRegister.read_length;
