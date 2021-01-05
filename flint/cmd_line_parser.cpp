@@ -121,7 +121,9 @@ SubCmdMetaData::SubCmdMetaData()
     _sCmds.push_back(new SubCmd("bc", "binary_compare", SC_Binary_Compare));
     _sCmds.push_back(new SubCmd("", "rsa_sign", SC_RSA_Sign));
     _sCmds.push_back(new SubCmd("", "import_hsm_key", SC_Import_Hsm_Key));
+#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
     _sCmds.push_back(new SubCmd("", "export_public_key", SC_Export_Public_Key));
+#endif
 }
 
 SubCmdMetaData::~SubCmdMetaData()

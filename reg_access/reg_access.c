@@ -224,6 +224,11 @@
 
 #ifndef UEFI_BUILD
 
+reg_access_status_t reg_access_mddq(mfile *mf, reg_access_method_t method, struct reg_access_switch_mddq *mddq)
+{
+    REG_ACCCESS(mf, method, REG_ID_MDDQ, mddq, mddq, reg_access_switch);
+}
+
 /************************************
  * Function: reg_access_pcnr
  ************************************/

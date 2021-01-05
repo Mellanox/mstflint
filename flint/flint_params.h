@@ -89,7 +89,9 @@ typedef enum {
     SC_RSA_Sign,
     SC_Binary_Compare,
     SC_Import_Hsm_Key,
+#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
     SC_Export_Public_Key
+#endif
 } sub_cmd_t;
 
 class FlintParams {

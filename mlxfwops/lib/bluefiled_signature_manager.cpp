@@ -82,6 +82,7 @@ bool BluefieldFwOperationsSignatureManager::AddSignature(mfile* mf, Fs3Operation
 #else
     (void)imageOps;
     (void)f;
+    (void)mf;
     //ignore for UEFI
 #endif
     return true;
