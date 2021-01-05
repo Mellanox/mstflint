@@ -482,12 +482,8 @@ void MlxlinkEyeOpener::printMarginsSummary()
         if (status != EYE_SCAN_COMPLETED ||
                 (status == EYE_SCAN_COMPLETED && it->version == NO_MARGIN)) {
             sprintf(failureStr, "Failure of lane %d", it->lane);
-            if (!pciePort) {
-                if (isPam4Speed) {
-                    sprintf(failureStr, "%s, %s eye", failureStr, _eyeSelctorMap[it->eye].c_str());
-                } else {
-                    sprintf(failureStr, "%s", failureStr);
-                }
+            if (!pciePort && isPam4Speed) {
+                sprintf(failureStr + strlen(failureStr), ", %s eye", _eyeSelctorMap[it->eye].c_str());
             }
             printField(string(failureStr),
                     (status == EYE_SCAN_COMPLETED &&

@@ -6627,6 +6627,7 @@ bool ImportHsmKeySubCommand::verifyParams()
     return true;
 }
 
+#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
 /***********************
 * Class: ExportPublicSubCommand
 ***********************/
@@ -6771,3 +6772,4 @@ FlintStatus ExportPublicSubCommand::executeCommand()
     writeToFile(_flintParams.output_file, resultBuffer);
     return FLINT_SUCCESS;
 }
+#endif

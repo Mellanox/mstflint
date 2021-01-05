@@ -44,6 +44,7 @@ extern "C" {
 // Hack, we include this for the MNV registers as they are not officialy a part of register_access so we defined them in tools.adb
 #include <tools_layouts/tools_open_layouts.h>
 #include <tools_layouts/reg_access_hca_layouts.h>
+#include <tools_layouts/reg_access_switch_layouts.h>
 #include <tools_layouts/register_access_sib_layouts.h>
 
 enum { // header lengths in bytes

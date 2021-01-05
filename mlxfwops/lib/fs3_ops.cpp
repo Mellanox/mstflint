@@ -3136,6 +3136,7 @@ bool Fs3Operations::FwCalcSHA(SHATYPE shaType, vector<u_int8_t>& sha, vector<u_i
 #else
     (void)shaType;
     (void)sha;
+    (void)fourMbImage;
     return errmsg("FwCalcSHA is not supported.");
 #endif
 }
