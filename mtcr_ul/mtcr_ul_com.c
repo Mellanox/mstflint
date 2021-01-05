@@ -434,7 +434,7 @@ unsigned long long mtcr_sysfs_get_offset(unsigned domain, unsigned bus, unsigned
     unsigned long long offset = (unsigned long long) -1;
     FILE *f;
     int cnt;
-    char mbuf[] = "/sys/bus/pci/devices/XXXX:XX:XX.X/resource";
+    char mbuf[99] = "/sys/bus/pci/devices/XXXX:XX:XX.X/resource";
     sprintf(mbuf, "/sys/bus/pci/devices/%4.4x:%2.2x:%2.2x.%1.1x/resource", domain, bus, dev, func);
 
     f = fopen(mbuf, "r");
@@ -2256,11 +2256,11 @@ mfile* mopen_ul_int(const char *name, u_int32_t adv_opt)
     unsigned domain = 0, bus = 0, dev = 0, func = 0;
     MType dev_type;
     int force;
-    char rbuf[] = "/sys/bus/pci/devices/XXXX:XX:XX.X/resource0";
-    char cbuf[] = "/sys/bus/pci/devices/XXXX:XX:XX.X/config";
-    char pdbuf[] = "/proc/bus/pci/XXXX:XX/XX.X";
-    char pbuf[] = "/proc/bus/pci/XX/XX.X";
-    char pcidev[] = "XXXX:XX:XX.X";
+    char rbuf[99] = "/sys/bus/pci/devices/XXXX:XX:XX.X/resource0";
+    char cbuf[99] = "/sys/bus/pci/devices/XXXX:XX:XX.X/config";
+    char pdbuf[99] = "/proc/bus/pci/XXXX:XX/XX.X";
+    char pbuf[99] = "/proc/bus/pci/XX/XX.X";
+    char pcidev[99] = "XXXX:XX:XX.X";
     int err;
     int rc;
 
