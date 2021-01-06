@@ -43,7 +43,7 @@ MlxlinkEyeOpener::MlxlinkEyeOpener(Json::Value &jsonRoot): _jsonRoot(jsonRoot)
     _symWaiter = "-\\|/";
     _oneLaneScan = false;
     _oneEyeScan = false;
-    scanIterations = MAX_ITERATION_SCAN;
+    scanIterations = MAX_ITERATION_SCAN_PCIE;
     initSlredMaps();
 }
 
@@ -188,6 +188,7 @@ void MlxlinkEyeOpener::initWarMsgs()
     if (lane >= 0){
         numOfLanes = 1;
     }
+    scanIterations = pciePort? MAX_ITERATION_SCAN_PCIE : MAX_ITERATION_SCAN_PORT;
     u_int32_t totalScan = totalEysScanTime * numOfLanes * scanIterations;
     char scanTitle [64];
     u_int32_t min = (u_int32_t)totalScan/60;

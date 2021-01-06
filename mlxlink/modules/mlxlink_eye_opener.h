@@ -42,7 +42,6 @@
 #define MAX_NUMBER_OF_EYES  3
 #define MAX_PROGRESS_VAL    85
 #define MAX_NUMBER_OF_LANES 8
-#define MAX_ITERATION_SCAN  3
 
 // SLRED Defaults
 #define DFLT_ERR_RES_SCALE  1
@@ -52,11 +51,12 @@
 // SLRED PCIE Defaults
 #define DFLT_MSUR_TIME_PCIE      60
 #define DFLT_EYE_DIAG_DIM_PCIE   3
+#define MAX_ITERATION_SCAN_PCIE  3
 
 // SLRED Network Defaults
 #define DFLT_MSUR_TIME_PORT      30
-#define DFLT_EYE_DIAG_DIM_PORT   0
-
+#define DFLT_EYE_DIAG_DIM_PORT   1
+#define MAX_ITERATION_SCAN_PORT  1
 #define SLRED_REG               "SLRED"
 
 enum SCAN_TIME {
