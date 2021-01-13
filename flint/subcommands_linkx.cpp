@@ -1,17 +1,33 @@
-/*                  - Mellanox Confidential and Proprietary -
+/*
+ * Copyright (c) 2020 Mellanox Technologies Ltd.  All rights reserved.
  *
- * Copyright (C) March 2007, Mellanox Technologies Ltd. ALL RIGHTS RESERVED.
+ * This software is available to you under a choice of one of two
+ * licenses.  You may choose to be licensed under the terms of the GNU
+ * General Public License (GPL) Version 2, available from the file
+ * COPYING in the main directory of this source tree, or the
+ * OpenIB.org BSD license below:
  *
- * Except as specifically permitted herein, no portion of the information,
- * including but not limited to object code and source code, may be reproduced,
- * modified, distributed, republished or otherwise exploited in any form or by
- * any means for any purpose without the prior written permission of Mellanox
- * Technologies Ltd. Use of software subject to the terms and conditions
- * detailed in the file "LICENSE.txt".
+ *     Redistribution and use in source and binary forms, with or
+ *     without modification, are permitted provided that the following
+ *     conditions are met:
  *
- * End of legal section ......................................................
+ *      - Redistributions of source code must retain the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer.
  *
- * MLXLINKX
+ *      - Redistributions in binary form must reproduce the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer in the documentation and/or other materials
+ *        provided with the distribution.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  *
  *  Created on: oCT , 2020
  */
