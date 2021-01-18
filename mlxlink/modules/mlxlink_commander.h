@@ -529,7 +529,7 @@ public:
     string getPrbsModeRX();
     u_int32_t getPrbsRateRX();
     string getSupportedPrbsModes(u_int32_t modeSelector);
-    virtual u_int32_t getLoopbackMode(const string &lb);
+    u_int32_t getLoopbackMode(const string &lb);
     string getLoopbackStr(u_int32_t loopbackCapMask);
     int getLinkDown();
     float getRawBERLimit();
