@@ -3605,8 +3605,8 @@ void MlxlinkCommander::checkPplrCap()
         if (!(loopBackCap & getLoopbackMode(_userInput._pplrLB))) {
             string supportedLoopbacks = getLoopbackStr(loopBackCap);
             throw MlxRegException("selected loopback not supported\n"
-                    "Supported Loopback modes for the device: [%s], "
-                    "see help menu for details", supportedLoopbacks.c_str());
+                    "Supported Loopback modes for the device: [%s]",
+                    supportedLoopbacks.c_str());
         }
     }
 }
@@ -3633,8 +3633,11 @@ void MlxlinkCommander::sendPplr()
 u_int32_t MlxlinkCommander::getLoopbackMode(const string &lb)
 {
     if (lb == "NO") {
-            return PHY_NO_LOOPBACK;
-        }
+        return PHY_NO_LOOPBACK;
+    }
+    if (lb == "RM") {
+        return PHY_REMOTE_LOOPBACK;
+    }
     if (lb == "PH") {
         return PHY_LOCAL_LOOPBACK;
     }
