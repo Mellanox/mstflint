@@ -3609,6 +3609,14 @@ void MlxlinkCommander::checkPplrCap()
                     supportedLoopbacks.c_str());
         }
     }
+    if (loopBackVal == PHY_REMOTE_LOOPBACK) {
+        string warMsg = "Remote loopback mode pre-request (all should be satisfied):\n";
+        warMsg += "1. Remote loopback is supported only in force mode.\n";
+        warMsg += "   please use the --link_mode_force flag if force mode not configured\n";
+        warMsg += "2. Remote loopback is supported for 25G/50G per lane only.\n";
+        warMsg += "3. If the NIC has 2 ports, please make sure that both ports are in the same speed.";
+        MlxlinkRecord::printWar(warMsg, _jsonRoot);
+    }
 }
 
 void MlxlinkCommander::sendPplr()
