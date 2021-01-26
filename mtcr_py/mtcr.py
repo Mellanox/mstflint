@@ -234,8 +234,8 @@ else:
         ##########################
         def write4Block(self, addr, dataList):
             size = len(dataList)
-            for i,add in enumerate(range(addr, addr + size*4, 4)):
-                self.write4(addr, dataList[i])
+            for i, current_addr in enumerate(range(addr, addr + size*4, 4)):
+                self.write4(current_addr, dataList[i])
         
         ##########################   
         def icmdSendCmd(self, opcode, data, skipWrite):

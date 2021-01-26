@@ -110,7 +110,7 @@ mfile* mopen(const char *name);
 
 mfile* mopend(const char *name, DType dtype);
 
-mfile* mopen_fw_ctx(void *fw_cmd_context, void *fw_cmd_func, void *extra_data);
+//mfile* mopen_fw_ctx(void *fw_cmd_context, void *fw_cmd_func, void *extra_data);
 
 mfile* mopen_adv(const char *name, MType mtype);
 
@@ -173,13 +173,14 @@ int mvpd_read4(mfile *mf, unsigned int offset, u_int8_t value[4]);
 
 int mvpd_write4(mfile *mf, unsigned int offset, u_int8_t value[4]);
 
-int allocate_kernel_memory_page(mfile* f, mtcr_alloc_page* page);
+MTCR_API int MWRITE4_SEMAPHORE(mfile* mf, int offset, int value);
 
-MTCR_API void set_increase_poll_time(int new_value);
+MTCR_API int MREAD4_SEMAPHORE(mfile* mf, int offset, u_int32_t* ptr);
 
-int MWRITE4_SEMAPHORE(mfile* mf, int offset, int value);
+int allocate_kernel_memory_page(mfile *mf, mtcr_alloc_page* user_alloc_page);
 
-int MREAD4_SEMAPHORE(mfile* mf, int offset, u_int32_t* ptr);
+void set_increase_poll_time(int new_value);
+
 #ifdef __cplusplus
 }
 #endif

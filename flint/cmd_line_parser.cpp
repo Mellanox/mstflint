@@ -121,7 +121,9 @@ SubCmdMetaData::SubCmdMetaData()
     _sCmds.push_back(new SubCmd("bc", "binary_compare", SC_Binary_Compare));
     _sCmds.push_back(new SubCmd("", "rsa_sign", SC_RSA_Sign));
     _sCmds.push_back(new SubCmd("", "import_hsm_key", SC_Import_Hsm_Key));
+#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
     _sCmds.push_back(new SubCmd("", "export_public_key", SC_Export_Public_Key));
+#endif
 }
 
 SubCmdMetaData::~SubCmdMetaData()
@@ -212,6 +214,14 @@ FlagMetaData::FlagMetaData()
     _flags.push_back(new Flag("", "latest_fw", 0));
     _flags.push_back(new Flag("", "psid", 1));
     _flags.push_back(new Flag("", "cc", 1));
+    _flags.push_back(new Flag("", "linkx", 0));
+    _flags.push_back(new Flag("", "downstream_device_id_start_index", 1));
+    _flags.push_back(new Flag("", "num_of_downstream_devices", 1));
+    _flags.push_back(new Flag("", "linkx_auto_update", 0));
+    _flags.push_back(new Flag("", "activate", 0));
+    _flags.push_back(new Flag("", "activate_delay_sec", 1));
+    _flags.push_back(new Flag("", "downstream_device_ids", 1));
+    _flags.push_back(new Flag("", "download_transfer", 0));
 #ifndef __WIN__
     _flags.push_back(new Flag("", "private_key_label", 1));
     _flags.push_back(new Flag("", "public_key_label", 1));
@@ -221,6 +231,7 @@ FlagMetaData::FlagMetaData()
 	_flags.push_back(new Flag("", "cpu_util", 1));
 #endif
     _flags.push_back(new Flag("", "output_file", 1));
+    _flags.push_back(new Flag("", "user_password", 1));
 }
 
 FlagMetaData::~FlagMetaData()
@@ -316,7 +327,15 @@ bool verifyNumOfArgs(string name, string value)
     if (name == "flash_params") {
         expected = 3;
     }
+
     int actual = countArgs(value);
+    if (name == "downstream_device_ids") {
+        if (actual < 1) {
+            printf(FLINT_TOO_FEW_MINIMUM_ARGS_ERROR, 1, actual);
+            return false;
+        }
+        return true;
+    }
     if (actual < expected) {
         printf(FLINT_TOO_FEW_ARGS_ERROR, expected, actual);
         return false;
@@ -326,6 +345,20 @@ bool verifyNumOfArgs(string name, string value)
     }
     return true;
 }
+
+bool strToInt(string str, int& num, int base = 0)
+{
+    char *endp;
+    char *numStr = strcpy(new char[str.size() + 1], str.c_str());
+    num = strtol(numStr, &endp, base);
+    if (*endp) {
+        delete[] numStr;
+        return false;
+    }
+    delete[] numStr;
+    return true;
+}
+
 
 bool strToNum(string str, u_int64_t& num, int base = 0)
 {
@@ -358,6 +391,48 @@ bool getGUIDFromStr(string str, guid_t& guid, string prefixErr = "")
     guid.l = (u_int32_t)(g & 0xffffffff);
     return true;
 }
+
+bool isElementPresent(vector<string> strv, string str)
+{
+    for (vector<string>::iterator it = strv.begin(); it < strv.end(); it++) {
+        if (*it == str) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool stringsCommaSplit(string str, std::vector<int> &deviceIds)
+{
+    size_t pos;
+    std::vector<string> strv;
+    bool res = true;
+    while ((pos = str.find(',')) != string::npos) {
+        string tmp = str.substr(0, pos);
+        if (!isElementPresent(strv, tmp)) {
+            strv.push_back((string)tmp);
+        }
+        str = str.substr(pos + 1);
+    }
+    if (str != "") {
+        if (!isElementPresent(strv, str)) {
+            strv.push_back((string)str);
+        }
+    }
+    for (std::vector<string>::iterator it = strv.begin(); it < strv.end(); it++) {
+        int num;
+        if (false == strToInt((*it).c_str(), num)) {
+            return false;
+        }
+        if (num < 0 || num > 255) {
+            printf("Index value should be between 0 and 255.\n");
+            return false;
+        }
+        deviceIds.push_back(num);
+    }
+    return res;
+}
+
 
 guid_t incrGuid(guid_t baseGuid, unsigned int incrVal)
 {
@@ -741,6 +816,46 @@ void Flint::initCmdParser()
         "<Congestion_Control>",
         "Use this flag while burning to device a Congestion Control Component");
 
+    AddOptions("linkx",
+        ' ',
+        "",
+        "Use this flag while burning to device a LinkX Component");
+
+    AddOptions("downstream_device_id_start_index",
+        ' ',
+        "<downstream_device_id_start_index>",
+        "Use this flag while burning to device a LinkX Component. Begin from 0");
+
+    AddOptions("num_of_downstream_devices",
+        ' ',
+        "<num_of_downstream_devices>",
+        "Use this flag while burning to device a LinkX Component to specify the number of devices to burn");
+
+    AddOptions("linkx_auto_update",
+        ' ',
+        "",
+        "Use this flag while burning all cable devices connected to host.");
+
+    AddOptions("activate",
+        ' ',
+        "",
+        "Use this flag to apply the activation of all cable devices connected to host. By default, the activation is not performed.");
+
+    /*AddOptions("activate_delay_sec",
+        ' ',
+        "<timeout in seconds>",
+        "Use this flag to activate all cable devices connected to host with delay (default - 0, immediately). Important: 'activate' flag must be set.  This flag is relevant only for cable components.");*/
+
+    AddOptions("download_transfer",
+        ' ',
+        "",
+        "Use this flag to perform the download and transfer of all cable data for cables. By default, the download and transfer are not performed . This flag is relevant only for cable components.");
+
+    AddOptions("downstream_device_ids",
+        ' ',
+        "<list of ports>",
+        "Use this flag to specify the LNKX ports to perform query. List must be only comma-separated numbers, without spaces.");
+
 #ifndef __WIN__
     AddOptions("public_key_label",
         ' ',
@@ -756,7 +871,10 @@ void Flint::initCmdParser()
         ' ',
         "<string>",
         "output file name for exporting the public key from PEM/BIN");
-
+    AddOptions("user_password",
+        ' ',
+        "<string>",
+        "the HSM user password string in order to work with HSM device");
 #ifdef __WIN__
 	AddOptions("cpu_util",
         ' ',
@@ -987,10 +1105,15 @@ ParseStatus Flint::HandleOption(string name, string value)
     } else if (name == "psid") {
         _flintParams.use_psid = true;
         _flintParams.psid = value;
-    } else if (name == "cc") {
+    }
+    else if (name == "cc") {
         _flintParams.congestion_control = true;
         _flintParams.congestion_control_param = value;
-    } else if (name == "cpu_util") {
+    }
+    else if (name == "linkx") {
+        _flintParams.linkx_control = true;
+    }
+    else if (name == "cpu_util") {
 		_flintParams.use_cpu_utilization = true;
 		u_int64_t cpu_percent = 0;
 		if (!strToNum(value, cpu_percent)) {
@@ -1008,6 +1131,64 @@ ParseStatus Flint::HandleOption(string name, string value)
     } else if (name == "output_file") {
         _flintParams.output_file_specified = true;
         _flintParams.output_file = value;
+    } else if (name == "user_password") {
+        _flintParams.hsm_password_specified = true;
+        _flintParams.hsm_password = value;
+    } else if (name == "downstream_device_id_start_index") {
+        _flintParams.cable_device_index_specified = true;
+        int device_index = 0;
+        if (!strToInt(value, device_index)) {
+            return PARSE_ERROR;
+        }
+        if (device_index < 0) {
+            return PARSE_ERROR;
+        }
+        _flintParams.cableDeviceIndex = device_index;
+    } 
+    
+    else if (name == "activate") {
+    _flintParams.activate = true;
+    }
+
+    else if (name == "activate_delay_sec") {
+        u_int64_t activate_delay_sec = 0;
+        if (!strToNum(value, activate_delay_sec)) {
+            return PARSE_ERROR;
+        }
+        _flintParams.activate_delay_sec = activate_delay_sec;
+    }
+    else if (name == "linkx_auto_update") {
+        _flintParams.linkx_auto_update = true;
+    } 
+
+    else if (name == "download_transfer") {
+    _flintParams.download_transfer = true;
+    }
+    
+    else if (name == "downstream_device_ids") {
+        if (value == "all") {
+            _flintParams.linkx_auto_update = true;
+        }
+        else {
+            _flintParams.downstream_device_ids_specified = true;
+            std::vector<int> deviceIds;
+            if (!stringsCommaSplit(value, deviceIds)) {
+                return PARSE_ERROR;
+            }
+            _flintParams.downstream_device_ids = deviceIds;
+        }
+    }
+    else if (name == "num_of_downstream_devices") {
+        int cableDeviceSize = 0;
+        if (!strToInt(value, cableDeviceSize)) {
+            return PARSE_ERROR;
+        }
+        if (cableDeviceSize <= 0 || cableDeviceSize > 255) {
+            printf("Cable size should be between 1 and 255.\n");
+            return PARSE_ERROR;
+        }
+        _flintParams.cableDeviceSize = cableDeviceSize;
+        _flintParams.cable_device_size_specified = true;
     }
     else {
         cout << "Unknown Flag: " << name;

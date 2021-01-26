@@ -624,8 +624,11 @@ void MlxlinkCablesCommander::readCableDDMInfo()
         prepareThresholdInfo(thresholdPage);
         break;
     case IDENTIFIER_SFP_DD:
+        prepareSfpddDdmInfo();
+        break;
     case IDENTIFIER_QSFP_DD:
     case IDENTIFIER_OSFP:
+    case IDENTIFIER_DSFP:
         prepareQsfpddDdmInfo();
         break;
     }

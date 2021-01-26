@@ -98,13 +98,57 @@ enum dm_dev_id
     DeviceConnectX6DX,
     DeviceConnectX6LX,
     DeviceConnectX7,
-    DeviceSpectrum3, //Firebird
-    DeviceEndMarker,           // Dummy Device - Marker for indicating end of devices when iterating
-    DeviceAmosGearBox,
-    DeviceAmosGearBoxManager
+    DeviceSpectrum3, // Firebird
+    DeviceSpectrum4, // Griffin
+    DeviceQuantum2, // Blackbird
+    DeviceGearBox,
+    DeviceGearBoxManager,
+    DeviceEndMarker           // Dummy Device - Marker for indicating end of devices when iterating
 };
 
+enum hw_dev_id
+{
+        DeviceInfiniScale_HwId = 0x01b3,
+        DeviceSwitchX_HwId = 0x0245,
+        DeviceConnectX2_HwId = 0x190,
+        DeviceConnectX3_HwId = 0x1f5,
+        DeviceConnectIB_HwId = 0x1ff,
+        DeviceConnectX3Pro_HwId = 0x1f7,
+        DeviceSwitchIB_HwId = 0x247,
+        DeviceSpectrum_HwId = 0x249,
+        DeviceConnectX4_HwId = 0x209,
+        DeviceConnectX4LX_HwId = 0x20b,
+        DeviceConnectX5_HwId = 0x20d,
+        DeviceConnectX6_HwId = 0x20f,
+        DeviceConnectX6DX_HwId = 0x212,
+        DeviceConnectX6LX_HwId = 0x216,
+        DeviceConnectX7_HwId = 0x218,
+        DeviceBlueField_HwId = 0x211,
+        DeviceBlueField2_HwId = 0x214,
+        DeviceSwitchIB2_HwId = 0x24b,
+        DeviceCableQSFP_HwId = 0x0d,
+        DeviceCableQSFPaging_HwId = 0x11,
+        DeviceCableSFP_HwId = 0x03,
+        DeviceCableSFP51_HwId = 0x03,
+        DeviceCableSFP51Paging_HwId =0x03,
+        DeviceSpectrum2_HwId = 0x24e,
+        DeviceQuantum_HwId = 0x24d,
+        DeviceQuantum2_HwId = 0x257,
+        DeviceArdbeg_HwId = 0x6e,
+        DeviceBaritone_HwId = 0x6b,
+        DeviceMenhit_HwId = 0x72,
+        DeviceSecureHost_HwId = 0xcafe,
+        DeviceSpectrum3_HwId = 0x250,
+        DeviceSpectrum4_HwId = 0x254,
+        DeviceGearBox_HwId = 0x252,
+        DeviceGearBoxManager_HwId = 0x253
+};
 typedef enum dm_dev_id dm_dev_id_t;
+
+/**
+ * Returns dmid from either hw_dev_id or fw_dev_id, also rev_id if available.
+ */
+dm_dev_id_t get_dmid_by_dev_rev_id(u_int32_t dev_id, u_int32_t rev_id);
 
 /**
  * Returns 0 on success and 1 on failure.
@@ -202,6 +246,8 @@ int dm_is_switchx(dm_dev_id_t type);
 int dm_is_new_gen_switch(dm_dev_id_t type);
 
 int dm_dev_is_raven_family_switch(dm_dev_id_t type);
+
+int dm_dev_is_ib_switch(dm_dev_id_t type);
 /*
  * A predicate returning if the device is in LiveFish mode
  */

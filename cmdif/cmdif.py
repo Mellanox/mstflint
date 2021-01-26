@@ -154,7 +154,10 @@ if CMDIF:
 
         ##########################
         class QUERY_CAP_ST(Structure):
-            _fields_ = [("virtual_link_down",                      c_uint8),
+            _fields_ = [("golden_tlv_version",                     c_uint8),
+                        ("cwcam_reg",                              c_uint8),
+                        ("capability_groups",                      c_uint8),
+                        ("virtual_link_down",                      c_uint8),
                         ("icmd_exmb",                              c_uint8),
                         ("capi",                                   c_uint8),
                         ("qcam_reg",                               c_uint8),
@@ -173,7 +176,8 @@ if CMDIF:
                         ("wol_s",                                  c_uint8),
                         ("rol_g",                                  c_uint8),
                         ("rol_s",                                  c_uint8),
-                        ("fpga",                                   c_uint8)]
+                        ("fpga",                                   c_uint8),
+                        ("num_of_diagnostic_counters",             c_uint16)]
 
         ##########################
         def isMultiHostSyncSupported(self):

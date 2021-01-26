@@ -41,6 +41,7 @@
 #include <mtcr.h>
 #include <mft_sig_handler.h>
 #include <tools_dev_types.h>
+#include <mft_utils.h>
 #include <algorithm>
 
 #if !defined(NO_OPEN_SSL)
@@ -111,6 +112,8 @@ enum OP {EQUAL, NOT_EQUAL};
 
 #define PCI_ACCESS_ONLY "Access to device should be through PCI interface only"
 
+#define IGNORE_DEPENDENCY_STR "ignore_dependency"
+
 const u_int8_t debugTokenId = 0x5;
 const u_int8_t csTokenId = 0x7;
 const u_int32_t idMlnxId = 0x10e;
@@ -125,7 +128,8 @@ void GenericCommander::supportsNVData()
     rc = reg_access_nvqc(_mf, REG_ACCESS_METHOD_GET, &nvqcTlv);
     dealWithSignal();
     if (rc == ME_REG_ACCESS_BAD_PARAM || rc == ME_REG_ACCESS_INTERNAL_ERROR) {
-        throw MlxcfgException("FW does not support NV access registers");
+        throw MlxcfgException("Cannot access NV register. Either FW does not support NV access register, " \
+                                "or HW access is disabled.");
     }
     if (rc == ME_REG_ACCESS_REG_NOT_SUPP) {
         throw MlxcfgException("NVQC access register is not supported."
@@ -423,7 +427,20 @@ bool GenericCommander::checkDependency(TLVConf *cTLV, string dStr)
 {
 
     if (dStr.empty()) {
-        return true;
+        dm_dev_id_t deviceId = DeviceUnknown;
+        u_int32_t hwDevId, hwRevId;
+        if (dm_get_device_id(_mf, &deviceId, &hwDevId, &hwRevId) ) {
+            throw MlxcfgException("Failed to identify the device");
+        }
+        if(dm_dev_is_switch(deviceId)) {
+            return true;
+        }
+        return false;
+    } else {
+        string lower = mft_utils::to_lowercase_copy(dStr);
+        if (lower.compare(IGNORE_DEPENDENCY_STR) == 0) {
+            return true;
+        }
     }
 
     Expression expression(dStr);
@@ -457,7 +474,11 @@ void GenericCommander::filterByDependency(TLVConf *cTLV,
                                           vector<ParamView>& result)
 {
     for (size_t i = 0; i < dependencyTable.size(); i++) {
-        if (checkDependency(cTLV, dependencyTable[i].second)) {
+        if ((checkDependency(cTLV, dependencyTable[i].second)) ||
+            (dependencyTable[i].second.empty() &&
+             (!dependencyTable[i].first.rule.empty() ||
+              dependencyTable[i].first.supportedFromVersion > 0)) ||
+            (!dependencyTable[i].first.arrayVal.empty())) {
             result.push_back(dependencyTable[i].first);
         }
     }
@@ -492,12 +513,12 @@ void GenericCommander::queryParamViews(vector<ParamView>& params, QueryType qt)
             isIndexed = true;
         }
         isStartFromOneSupported = isIndexedStartFromOneSupported(mlxconfigName);
-        TLVConf *tlv = _dbManager->getTLVByParamMlxconfigName(mlxconfigName, index);    
+        TLVConf *tlv = _dbManager->getTLVByParamMlxconfigName(mlxconfigName, index);
         uniqueTLVs.insert(tlv);
         // if not indexed and has suffix (its continuance array) need to get next tlv and change the array length (for query)
         if (!isIndexed && getArraySuffix(tlv->_name).size() > 0 && getArraySuffix(mlxconfigName).size() == 0 ) {
             while ( _dbManager->isParamMlxconfigNameExist( mlxconfigName + getArraySuffixByInterval( ((++index) * MAX_ARRAY_SIZE)) ) ) {
-            } 
+            }
             if (isStartFromOneSupported) {
                 arrayStrs[mlxconfigName] = "Array[1.." + numToStr((index * MAX_ARRAY_SIZE)) + "]";
             }
@@ -758,9 +779,29 @@ void GenericCommander::setRawCfg(std::vector<u_int32_t> rawTlvVec)
         throw MlxcfgException(rawTlv.err());
     }
 
-    if (rawTlv.setOnDev(_mf)) {
+    if (rawTlv.setOnDev(_mf, SET_RAW)) {
         throw MlxcfgException(rawTlv.err());
     }
+}
+
+std::vector<u_int32_t> GenericCommander::getRawCfg(std::vector<u_int32_t> rawTlvVec)
+{
+    RawCfgParams5thGen rawTlv;
+    if (rawTlv.setRawData(rawTlvVec)) {
+        throw MlxcfgException(rawTlv.err());
+    }
+
+    if (rawTlv.setOnDev(_mf, GET_RAW)) {
+        throw MlxcfgException(rawTlv.err());
+    }
+
+    std::vector<u_int32_t> getRawTlvVec;
+    getRawTlvVec = rawTlv.getRawData();
+    if (getRawTlvVec.empty()) {
+        throw MlxcfgException(rawTlv.err());
+    }
+
+    return getRawTlvVec;
 }
 
 void GenericCommander::dumpRawCfg(std::vector<u_int32_t> rawTlvVec, std::string& tlvDump)
@@ -819,7 +860,7 @@ void GenericCommander::updateParamViewValue(ParamView& p, string v)
     string mlxconfigName = p.mlxconfigName;
     unsigned int index = 0;
     if (isIndexedMlxconfigName(mlxconfigName)) {
-        
+
         parseIndexedMlxconfigName(mlxconfigName, mlxconfigName, index);
     }
     TLVConf *tlv = _dbManager->getTLVByParamMlxconfigName(mlxconfigName, index);
@@ -1202,8 +1243,8 @@ void GenericCommander::sign(vector<u_int32_t>& buff, const string& privateKeyFil
 
         buff.insert(buff.end(), signTlvBin.begin(), signTlvBin.end());
     } else {
-        TLVConf *signTLV1 = _dbManager->getTLVByName("file_signature_512_a", 0);
-        TLVConf *signTLV2 = _dbManager->getTLVByName("file_signature_512_b", 0);
+        TLVConf *signTLV1 = _dbManager->getTLVByName("file_signature_4096_a", 0);
+        TLVConf *signTLV2 = _dbManager->getTLVByName("file_signature_4096_b", 0);
 
         Param *keyPairUUidParam1 = signTLV1->findParamByName("keypair_uuid");
         ((BytesParamValue*) keyPairUUidParam1->_value)->setVal(keyPairUUid);
@@ -1470,12 +1511,27 @@ int RawCfgParams5thGen::setRawData(const std::vector<u_int32_t>& tlvBuff)
     return verifyTlv();
 }
 
-int RawCfgParams5thGen::setOnDev(mfile *mf)
+std::vector<u_int32_t> RawCfgParams5thGen::getRawData()
+{
+    std::vector<u_int32_t> tlvBuff;
+    tlvBuff.resize(TOOLS_OPEN_NVDA_SIZE >> 2);
+    memset(&tlvBuff[0], 0, TOOLS_OPEN_NVDA_SIZE >> 2);
+    tools_open_nvda_pack(&_nvdaTlv, ((u_int8_t*)(&tlvBuff[0])));
+    for (std::vector<u_int32_t>::iterator it = tlvBuff.begin(); it != tlvBuff.end(); it++) {
+        *it = __be32_to_cpu(*it);
+    }
+    // Truncate to the correct data size
+    tlvBuff.resize(_nvdaTlv.nv_hdr.length);
+    return tlvBuff;
+}
+
+int RawCfgParams5thGen::setOnDev(mfile *mf, RawTlvMode mode)
 {
     int rc;
     mft_signal_set_handling(1);
     DEBUG_PRINT_SEND(&_nvdaTlv, nvda);
-    rc = reg_access_nvda(mf, REG_ACCESS_METHOD_SET, &_nvdaTlv);
+    rc = reg_access_nvda(mf,
+            mode == SET_RAW? REG_ACCESS_METHOD_SET : REG_ACCESS_METHOD_GET, &_nvdaTlv);
     DEBUG_PRINT_RECEIVE(&_nvdaTlv, nvda);
     dealWithSignal();
     if (rc) {

@@ -129,6 +129,10 @@
 #define PPTT_RATE_FLAG_SHORT               ' '
 #define PRBS_LANES_FLAG                    "lanes"
 #define PRBS_LANES_FLAG_SHORT              ' '
+#define PRBS_INVERT_TX_POL_FLAG            "invert_tx_polarity"
+#define PRBS_INVERT_TX_POL_FLAG_SHORT      ' '
+#define PRBS_INVERT_RX_POL_FLAG            "invert_rx_polarity"
+#define PRBS_INVERT_RX_POL_FLAG_SHORT      ' '
 #define PPRT_TUNING_TYPE_FLAG              "tuning_type"
 #define PPRT_TUNING_TYPE_FLAG_SHORT        ' '
 #define BER_COLLECT_FLAG                   "ber_collect"
@@ -207,6 +211,7 @@
 
 #define PDDR_STATUS_MESSAGE_LENGTH_HCA  236
 #define PDDR_STATUS_MESSAGE_LENGTH_SWITCH 59
+#define BIT_MASK_ALL_DWORD          0xffffffff
 
 #define OB_TAP_SUM                  120
 #define OB_TAP_DIFF                 10
@@ -218,6 +223,7 @@
 #define MAX_LOCAL_PORT_ETH          64
 #define MAX_LOCAL_PORT_IB           36
 #define MAX_LOCAL_PORT_QUANTUM      82
+#define MAX_LOCAL_PORT_QUANTUM2     128
 #define MAX_LOCAL_PORT_SPECTRUM2    128
 
 #define DBN_TO_LOCAL_PORT_BASE      60
@@ -229,6 +235,10 @@
 #define PCAM_FORCE_DOWN_CAP_MASK    0x2000
 
 #define OPERATIONAL_ERROR_STR       "ME_ICMD_OPERATIONAL_ERROR"
+
+#define MAX_SBYTE                   127
+#define MIN_SBYTE                   -128
+#define MAX_LABEL_PORT_LENGTH       5
 
 //------------------------------------------------------------
 //        Mlxlink enumerations
@@ -358,6 +368,17 @@ enum STATUS_OPCODE {
     CABLE_IS_UNPLUGGED = 1024
 };
 
+enum LOCAL_PORT_TYPE {
+    PORT_TYPE_NETWORK = 0
+};
+
+enum CABLE_MULTIPLIER {
+    CABLE_0_0_MUL,
+    CABLE_0_1_MUL,
+    CABLE_1_0_MUL,
+    CABLE_1_1_MUL
+};
+
 ///////////
 struct DPN {
     DPN()
@@ -404,6 +425,8 @@ public:
     virtual ~MlxlinkCommander();
 
     void checkRegCmd();
+    virtual void validatePortType();
+    virtual void updatePortType() {};
     void checkLocalPortDPNMapping(u_int32_t localPort);
     int getLocalPortFromMPIR(DPN& dpn);
     void checkValidFW();
@@ -419,6 +442,7 @@ public:
     void checkWidthSplit(u_int32_t localPort);
     void checkUnSplit(u_int32_t localPort);
     u_int32_t maxLocalPort();
+    void checkStrLength(const string &str);
     string getAscii(const string & name, u_int32_t size = 4);
     string getRxTxCDRState(u_int32_t state);
     void getActualNumOfLanes(u_int32_t linkSpeedActive, bool extended);
@@ -453,10 +477,10 @@ public:
     virtual void showPddr();
     void getPtys();
     virtual void showBer();
-    void showEye();
-    void showFEC();
+    virtual void showEye();
+    virtual void showFEC();
     virtual void showSltp();
-    void showDeviceData();
+    virtual void showDeviceData();
     void showBerMonitorInfo();
     void showExternalPhy();
     void showPcie();
@@ -505,7 +529,7 @@ public:
     string getPrbsModeRX();
     u_int32_t getPrbsRateRX();
     string getSupportedPrbsModes(u_int32_t modeSelector);
-    virtual u_int32_t getLoopbackMode(const string &lb);
+    u_int32_t getLoopbackMode(const string &lb);
     string getLoopbackStr(u_int32_t loopbackCapMask);
     int getLinkDown();
     float getRawBERLimit();
@@ -572,16 +596,18 @@ public:
     void sendPaosToggle();
     void checkPRBSModeCap(u_int32_t modeSelector, u_int32_t capMask);
     void checkPrbsRegsCap(const string &prbsReg, const string &laneRate);
+    void checkPrbsPolCap(const string &prbsReg);
     void checkPprtPptt();
     void checkPplrCap();
     void sendPrbsPpaos(bool);
     void startTuning();
     void prbsConfiguration(const string &prbsReg, bool enable, u_int32_t laneRate,
-            u_int32_t prbsMode, bool perLaneConfig = false);
+            u_int32_t prbsMode, bool perLaneConfig, bool prbsPolInv);
     void sendPprtPptt();
     void resetPprtPptt();
     u_int32_t ptysSpeedToMask(const string & speed, u_int32_t cap);
     u_int32_t ptysSpeedToExtMask(const string & speed);
+    void validateSpeedStr();
     void checkSupportedSpeed(const string & speed, u_int32_t cap, bool extSpeed = false);
     void checkPplmCap();
     void updateSltp28_40nmFields();
@@ -594,6 +620,7 @@ public:
     UserInput _userInput;
     dm_dev_id_t _devID;
     u_int32_t _localPort;
+    u_int32_t _portType;
     DPN _dpn;
     u_int32_t _numOfLanes;
     u_int32_t _numOfLanesPcie;
@@ -639,6 +666,7 @@ public:
     bool _portPolling;
     bool _mngCableUnplugged;
     bool _isPam4Speed;
+    bool _ignorePortType;
     std::vector<std::string> _ptysSpeeds;
     std::vector<PortGroup> _localPortsPerGroup;
     std::vector<DPN> _validDpns;
@@ -646,6 +674,7 @@ public:
     Json::Value _jsonRoot;
     MlxlinkMaps* _mlxlinkMaps;
     MlxlinkCablesCommander* _cablesCommander;
+    MlxlinkEyeOpener* _eyeOpener;
 };
 
 #endif /* MLXLINK_COMMANDER_H */

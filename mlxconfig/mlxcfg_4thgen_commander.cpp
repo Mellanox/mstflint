@@ -90,7 +90,7 @@ string FourthGenCommander::param2str[Mcp_Last] = {"SRIOV_EN", "NUM_OF_VFS",
                                                   "INITIAL_ALPHA_VALUE_P2", "MIN_TIME_BETWEEN_CNPS_P2", "CNP_DSCP_P2", "CNP_802P_PRIO_P2",
                                                   "BOOT_OPTION_ROM_EN_P1", "BOOT_VLAN_EN_P1", "BOOT_RETRY_CNT_P1", "LEGACY_BOOT_PROTOCOL_P1", "BOOT_VLAN_P1",
                                                   "BOOT_OPTION_ROM_EN_P2", "BOOT_VLAN_EN_P2", "BOOT_RETRY_CNT_P2", "LEGACY_BOOT_PROTOCOL_P2", "BOOT_VLAN_P2",
-                                                  "PORT_OWNER", "ALLOW_RD_COUNTERS", "IP_VER", "IP_VER_P1", "IP_VER_P2", "CQ_TIMESTAMP", "STEER_FORCE_VLAN",
+                                                  "PORT_OWNER", "ALLOW_RD_COUNTERS", "IP_VER", "IP_VER_P1", "IP_VER_P2", "PHY_PARAMETER_MODE", "CQ_TIMESTAMP", "STEER_FORCE_VLAN",
 };
 
 void FourthGenCommander::freeCfgList()
@@ -192,6 +192,7 @@ FourthGenCommander::FourthGenCommander(mfile *mf, string dev) : Commander(mf), _
     _cfgList[Mct_CX3_Global_Conf] = new CX3GlobalConfParams();
     _param2TypeMap[Mcp_CQ_Timestamp] = Mct_CX3_Global_Conf;
     _param2TypeMap[Mcp_Steer_ForceVlan] = Mct_CX3_Global_Conf;
+    _param2TypeMap[Mcp_Phy_Param_Mode] = Mct_CX3_Global_Conf;
 
 
     if (openComChk()) {
@@ -308,6 +309,12 @@ void FourthGenCommander::setRawCfg(std::vector<u_int32_t> rawTlvVec)
 {
     (void)rawTlvVec;
     throw MlxcfgException("set_raw command is not supported for this device\n");
+}
+
+std::vector<u_int32_t> FourthGenCommander::getRawCfg(std::vector<u_int32_t> rawTlvVec)
+{
+    (void)rawTlvVec;
+    throw MlxcfgException("get_raw command is not supported for this device\n");
 }
 
 void FourthGenCommander::dumpRawCfg(std::vector<u_int32_t> rawTlvVec, std::string& tlvDump)
@@ -1060,16 +1067,22 @@ MlxCfgInfo MlxCfgAllInfo::createBootSettingsExt()
 MlxCfgInfo MlxCfgAllInfo::createCX3GlobalConf()
 {
     map<string, u_int32_t> paramMap;
+    map<string, u_int32_t> phyParamModeParamMap;
     map<mlxCfgParam, MlxCfgParamParser> params;
 
     paramMap["True"] = 1;
     paramMap["False"] = 0;
+
+    phyParamModeParamMap["DEVICE_DEFAULT"] = 0;
+    phyParamModeParamMap["LEGACY"] = 1;
+    phyParamModeParamMap["ADVANCED"] = 2;
+
     params[Mcp_CQ_Timestamp] = MlxCfgParamParser(Mcp_CQ_Timestamp, "CQ_TIMESTAMP",
                                                  "When set, IEE1588 (PTP) HW timestamping capability is"
                                                  " reported to the device driver.", paramMap);
     params[Mcp_Steer_ForceVlan] = MlxCfgParamParser(Mcp_Steer_ForceVlan, "STEER_FORCE_VLAN",
                                                     "Force VLAN steering configuration", paramMap);
-
+    params[Mcp_Phy_Param_Mode] = MlxCfgParamParser(Mcp_Phy_Param_Mode, "PHY_PARAMETER_MODE", "Defines the Port PHY parameters mode.", phyParamModeParamMap);
     return MlxCfgInfo("CX3 Global", "", params);
 }
 

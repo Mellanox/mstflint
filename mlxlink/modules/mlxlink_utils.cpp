@@ -88,9 +88,17 @@ std::string getStringFromVector(std::vector<std::string> values)
 std::string getStringFromVector(std::vector<float> values)
 {
     std::string s;
+    char strVal[32];
+    u_int32_t prec = 0;
     for (std::vector<float>::const_iterator i = values.begin();
          i != values.end(); ++i) {
-        s += to_string(*i) + ',';
+        if ((*i - ((int)*i)) > 0) {
+            prec = 3;
+        } else {
+            prec = 0;
+        }
+        snprintf(strVal, sizeof(strVal), "%.*f", prec, *i);
+        s += string(strVal) + ',';
     }
     return deleteLastComma(s);
 }
@@ -394,6 +402,20 @@ int ptysSpeedToMaskIB(const string &speed)
         return IB_LINK_SPEED_HDR;
     }
     return 0x0;
+}
+
+bool isPAM4Speed(u_int32_t activeSpeed, u_int32_t protoActive, bool extended)
+{
+    bool pam4Signal = false;
+    if (protoActive == ETH && extended) {
+        if (activeSpeed == ETH_LINK_SPEED_EXT_50GAUI_1 ||
+                activeSpeed >= ETH_LINK_SPEED_EXT_100GAUI_2) {
+            pam4Signal = true;
+        }
+    } else if (protoActive == IB && activeSpeed >= IB_LINK_SPEED_HDR) {
+        pam4Signal = true;
+    }
+    return pam4Signal;
 }
 
 bool checkPaosCmd(const string &paosCmd)
@@ -908,11 +930,12 @@ string getCableIdentifier(u_int32_t identifier)
     case IDENTIFIER_QSFP_CMIS:
         identifierStr = "QSFP_CMIS";
         break;
-
     case IDENTIFIER_OSFP:
         identifierStr = "OSFP";
         break;
-
+    case IDENTIFIER_DSFP:
+        identifierStr = "DSFP";
+        break;
     default:
         identifierStr = "N/A";
     }
@@ -924,7 +947,8 @@ bool isCMISCable(u_int32_t identifier)
     bool cmisCable = (identifier == IDENTIFIER_SFP_DD) ||
                     (identifier == IDENTIFIER_QSFP_DD) ||
                     (identifier == IDENTIFIER_QSFP_CMIS) ||
-                    (identifier == IDENTIFIER_OSFP);
+                    (identifier == IDENTIFIER_OSFP) ||
+                    (identifier == IDENTIFIER_DSFP);
     return cmisCable;
 }
 
@@ -932,7 +956,8 @@ bool isQsfpCable(u_int32_t identifier)
 {
     bool qsfpCable = (identifier == IDENTIFIER_QSFP28) ||
                     (identifier == IDENTIFIER_QSFP_PLUS) ||
-                    (identifier == IDENTIFIER_QSFP_DD);
+                    (identifier == IDENTIFIER_QSFP_DD) ||
+                    (identifier == IDENTIFIER_DSFP);
     return qsfpCable;
 }
 
@@ -1023,6 +1048,14 @@ string toUpperCase(string &str)
 {
     for (u_int32_t i = 0; i < str.length(); i++) {
         str[i] = toupper(str[i]);
+    }
+    return str;
+}
+
+string toLowerCase(string &str)
+{
+    for (u_int32_t i = 0; i < str.length(); i++) {
+        str[i] = tolower(str[i]);
     }
     return str;
 }
@@ -1141,6 +1174,17 @@ void setPrintTitle(MlxlinkCmdPrint &mlxlinkCmdPrint, string title,
     mlxlinkCmdPrint.title = title;
     mlxlinkCmdPrint.visible = print;
     mlxlinkCmdPrint.initRecords(size);
+}
+
+u_int32_t portTypeStrToInt(const string &str)
+{
+    u_int32_t portType = 0;
+    if (str == "GEARBOX_HOST") {
+        portType = 1;
+    } else if (str == "GEARBOX_LINE") {
+        portType = 3;
+    }
+    return portType;
 }
 
 

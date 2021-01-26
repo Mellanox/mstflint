@@ -58,6 +58,8 @@ public:
     bool _sendPrbs;
     bool _sendPprt;
     bool _sendPptt;
+    bool _prbsTxInv;
+    bool _prbsRxInv;
     bool _sendPepc;
     bool _sendPepcForceMode;
     bool _sendPepcANMode;

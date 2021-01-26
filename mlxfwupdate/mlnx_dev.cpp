@@ -359,6 +359,7 @@ void MlnxDev::setDeviceType(void)
     case DeviceSwitchIB:
     case DeviceSwitchIB2:
     case DeviceQuantum:
+    case DeviceQuantum2:
         portOneType = PORT_IB;
         portTwoType = PORT_IB;
         isOnlyBase = true;

@@ -1,6 +1,6 @@
 %{!?ibmadlib: %define ibmadlib libibmad-devel}
 %{!?name: %define name mstflint}
-%{!?version: %define version 4.15.0}
+%{!?version: %define version 4.16.0}
 %{!?release: %define release 1}
 %{!?buildtype: %define buildtype "native"}
 %{!?noinband: %define noinband 0}
@@ -16,7 +16,6 @@
 
 %define _unpackaged_files_terminate_build 0
 %define debug_package %{nil}
-%define optflags -g -O2
 
 Summary: Mellanox firmware burning application
 Name: %{name}
@@ -216,6 +215,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 
 %changelog
+* Thu Dec 17 2020 Konstantin Maksatov <kostiantynm@nvidia.com>
+   MFT 4.16.0 Updates.
+
 * Wed Jun 24 2020 Konstantin Maksatov <kostiantynm@nvidia.com>
    Added BlueField-2 adapter cards support.
 

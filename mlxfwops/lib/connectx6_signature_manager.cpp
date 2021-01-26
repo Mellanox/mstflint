@@ -40,6 +40,10 @@
 #include "fs3_ops.h"
 using namespace std;
 
+bool ConnectX6FwOperationsSignatureManager::IsLifeCycleSupported()
+{
+    return true;
+}
 
 bool ConnectX6FwOperationsSignatureManager::AddSignature(mfile* mf, Fs3Operations* imageOps, Flash *f, u_int32_t imageOffset)
 {

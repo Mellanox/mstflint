@@ -267,7 +267,7 @@ bool MlxRegLib::isRegSizeSupported(string regName)
 void MlxRegLib::isAccessRegisterSupported(mfile *mf)
 {
     int status;
-    struct connectx4_icmd_query_cap_general icmd_cap;
+    struct icmd_hca_icmd_query_cap_general icmd_cap;
     int i = RETRIES_COUNT;
     do {
         memset(&icmd_cap, 0, sizeof(icmd_cap));

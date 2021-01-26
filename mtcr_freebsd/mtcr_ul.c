@@ -2482,10 +2482,35 @@ int supports_reg_access_gmp(mfile *mf, maccess_reg_method_t reg_method)
     return 0;
 }
 
-int allocate_kernel_memory_page(mfile* f, mtcr_alloc_page* page)
+int allocate_kernel_memory_page(mfile *mf, mtcr_alloc_page* user_alloc_page)
 {
-    (void)f;
-    (void)page;
-    return -1;//unsupported
+    (void)mf;
+    (void)user_alloc_page;
+    return ME_UNSUPPORTED_OPERATION;
 }
 
+
+int mset_i2c_addr_width(mfile *mf, u_int8_t addr_width)
+{
+    (void)mf;
+    (void)addr_width;
+    return 1;
+}
+int mget_i2c_addr_width(mfile *mf, u_int8_t *addr_width)
+{
+    (void)mf;
+    (void)addr_width;
+    return 1;
+}
+
+int set_i2c_freq(mfile* mf, u_int8_t freq) {
+    (void) mf;
+    (void) freq;
+    return 1;
+}
+
+int get_i2c_freq(mfile* mf, u_int8_t* freq) {
+    (void) mf;
+    (void) freq;
+    return 1;
+}

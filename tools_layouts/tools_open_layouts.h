@@ -32,9 +32,9 @@
  
 
 /***
-         *** This file was generated at "2019-03-06 16:23:05"
+         *** This file was generated at "2020-10-08 16:57:28"
          *** by:
-         ***    > /mswg/release/tools/a-me/last_stable/adabe_plugins/adb2c/adb2pack.py --input adb/tools_open/tools_open.adb --file-prefix tools_open --prefix tools_open_
+         ***    > /mswg/release/tools/a-me/nightly/1.0.122/a-me-1.0.122_2019-07-14/adabe_plugins/adb2c/adb2pack.py --input adb/tools_open/tools_open.adb --file-prefix tools_open --prefix tools_open_
          ***/
 #ifndef TOOLS_OPEN_LAYOUTS_H
 #define TOOLS_OPEN_LAYOUTS_H
@@ -499,7 +499,7 @@ struct tools_open_nv_hdr {
 	/* Description - Shadow: i.e if set the Fw will not update the tlv immediately but wait for a command */
 	/* 0x4.24 - 0x4.24 */
 	u_int8_t shadow;
-	/* Description - Pad count: for non dword aligned tlvs */
+	/* Description - Pad count: for non dword alligned tlvs */
 	/* 0x4.25 - 0x4.26 */
 	u_int8_t pad_cnt;
 	/* Description - Data version can be set by caller or left as 0. */
@@ -1866,6 +1866,9 @@ struct tools_open_nv_base_mac_guid_cap {
 /* Size in bytes - 32 */
 struct tools_open_nv_cx3_global_conf {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Defines the Port PHY parameters mode. 0x0: DEVICE_DEFAULT, 0x1: LEGACY, 0x2: ADVANCED */
+	/* 0x0.28 - 0x0.29 */
+	u_int8_t phy_param_mode;
 	/* Description - Force vlan steering, ignoring driver configuraiton. */
 	/* 0x0.30 - 0x0.30 */
 	u_int8_t steer_force_vlan;
@@ -2176,6 +2179,9 @@ struct tools_open_qos_cap {
 /* Size in bytes - 20 */
 struct tools_open_query_def_params_global {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - When set, PHY parameters mode can be configured by GLOBAL_CONF.phy_param_mode */
+	/* 0x0.15 - 0x0.15 */
+	u_int8_t nv_config_phy_param_mode;
 	/* Description - When set, CX3_GLOBAL_CONF.steer_force_vlan bit is supported */
 	/* 0x0.16 - 0x0.16 */
 	u_int8_t nv_steer_force_vlan_supported;
@@ -2198,6 +2204,9 @@ struct tools_open_query_def_params_global {
 	/* Description -  */
 	/* 0x4.21 - 0x4.21 */
 	u_int8_t boot_ip_ver;
+	/* Description - default value of phy_param_mode in GLOBAL_CONF */
+	/* 0x4.22 - 0x4.23 */
+	u_int8_t default_phy_param_mode;
 	/* Description - The value reported by QUERY_DEV_CAP.steer_force_vlan when a CX3_GLOBAL_CONF TLV is not present */
 	/* 0x4.28 - 0x4.28 */
 	u_int8_t default_steer_force_vlan;
@@ -2696,7 +2705,7 @@ struct tools_open_mcdd_descriptor {
 	/* Description - Status of current operation that FW sends to host. */
 	/* 0x20.0 - 0x20.7 */
 	u_int8_t status;
-	/* Description - Last error index, if occurred. */
+	/* Description - Last error index, if occured. */
 	/* 0x20.8 - 0x20.15 */
 	u_int8_t error;
 	/* Description - Reserved. */

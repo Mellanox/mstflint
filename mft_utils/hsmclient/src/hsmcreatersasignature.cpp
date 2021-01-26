@@ -44,78 +44,112 @@ CK_RV HSMLunaClient::RSA_CreateSignature(vector <CK_BYTE> data, string privateKe
     unsigned int labelSize = privateKeyLabel.size() + 1 ;
     CK_BYTE* pLabel = new CK_BYTE[labelSize];
     memset(pLabel, 0, labelSize);
-
-    unsigned int publicLabelSize = publicKeyLabel.size() + 1;
-    CK_BYTE* pPublicLabel = new CK_BYTE[publicLabelSize];
-    memset(pPublicLabel, 0, publicLabelSize);
-
+    
     for (unsigned int i = 0; i < privateKeyLabel.size(); i++) {
         pLabel[i] = privateKeyLabel[i];
-    }
-    for (unsigned int i = 0; i < publicKeyLabel.size(); i++) {
-        pPublicLabel[i] = publicKeyLabel[i];
     }
     CK_ATTRIBUTE RSAFindPriTemplate =
     {
         CKA_LABEL, pLabel, labelSize
     };
-
-    CK_ATTRIBUTE RSAFindPubTemplate =
-    {
-        CKA_LABEL, pPublicLabel, publicLabelSize
-    };
-    
     CK_OBJECT_HANDLE priv_key;
     CK_ULONG numHandles = 0;
     CK_OBJECT_HANDLE handles[MAX_NUM_OF_HANDLES] = { 0 };
     CK_RV rv = P11Functions->C_FindObjectsInit(m_hSession, &RSAFindPriTemplate, 1);
     rv = P11Functions->C_FindObjects(m_hSession, handles, MAX_NUM_OF_HANDLES, &numHandles);
+    if (rv != CKR_OK) {
+        delete[] pLabel;
+        return rv;
+    }
+    if (numHandles == 0) {
+        RSAFindPriTemplate.ulValueLen--;
+        rv = P11Functions->C_FindObjectsInit(m_hSession, &RSAFindPriTemplate, 1);
+        if (rv != CKR_OK) {
+            delete[] pLabel;
+            return rv;
+        }
+        rv = P11Functions->C_FindObjects(m_hSession, handles, MAX_NUM_OF_HANDLES, &numHandles);
+        if (rv != CKR_OK) {
+            delete[] pLabel;
+            return rv;
+        }
+    }
     if (numHandles == 0) {
         cout << "Private key not found!" << endl;
-        return rv;
+        delete[] pLabel;
+        return CKR_FUNCTION_FAILED;
     }
     priv_key = handles[0];
     cout << " The private key is " << hex << priv_key << endl;
 
     CK_MECHANISM mechanism = {
-        CKM_SHA512_RSA_PKCS /*CKM_RSA_PKCS*/, NULL_PTR, 0
+        CKM_SHA512_RSA_PKCS, NULL_PTR, 0
     };
     CK_BYTE* signature = NULL;
 
     CK_ULONG signatureLength = 0;
-    if (rv == CKR_OK) {
-        rv = P11Functions->C_SignInit(m_hSession, &mechanism, priv_key);
-        if (rv != CKR_OK) {
-            cout << " C_SignInit has failed rv = " << hex << rv << endl;
-            delete[] pLabel;
-            return rv;
+    if (rv != CKR_OK) {
+        delete[] pLabel;
+        return rv;
+    }
+    
+    rv = P11Functions->C_SignInit(m_hSession, &mechanism, priv_key);
+    if (rv != CKR_OK) {
+        cout << " C_SignInit has failed rv = " << hex << rv << endl;
+        delete[] pLabel;
+        return rv;
+    }
+    rv = P11Functions->C_Sign(m_hSession, &data[0], dataLength, NULL, &signatureLength);
+    if (rv != CKR_OK) {
+        cout << " C_Sign1 has failed rv = " << hex << rv << endl;
+        delete[] pLabel;
+        return rv;
+    }
+    signature = new CK_BYTE[signatureLength];
+    rv = P11Functions->C_Sign(m_hSession, &data[0], dataLength, signature, &signatureLength);
+    if (rv != CKR_OK) {
+        cout << " C_Sign2 has failed rv = " << hex << rv << endl;
+        delete[] signature;
+        delete[] pLabel;
+        return rv;
+    }
+    printf("Signature length is %lu bytes \n", (unsigned long)signatureLength);
+    for (unsigned int i = 0; i < signatureLength; i++) {
+        printf("0x%02x ", signature[i]);
+    }
+    cout << endl;
+    
+    if (publicKeyLabel.empty() == false) {
+        unsigned int publicLabelSize = publicKeyLabel.size() + 1;
+        CK_BYTE* pPublicLabel = new CK_BYTE[publicLabelSize];
+        memset(pPublicLabel, 0, publicLabelSize);
+        for (unsigned int i = 0; i < publicKeyLabel.size(); i++) {
+            pPublicLabel[i] = publicKeyLabel[i];
         }
-        rv = P11Functions->C_Sign(m_hSession, &data[0], dataLength, NULL, &signatureLength);
-        if (rv != CKR_OK) {
-            cout << " C_Sign1 has failed rv = " << hex << rv << endl;
-            delete[] pLabel;
-            return rv;
-        }
-        signature = new CK_BYTE[signatureLength];
-        rv = P11Functions->C_Sign(m_hSession, &data[0], dataLength, signature, &signatureLength);
-        if (rv != CKR_OK) {
-            cout << " C_Sign2 has failed rv = " << hex << rv << endl;
-            delete[] signature;
-            delete[] pLabel;
-            return rv;
-        }
-        printf("Signature length is %lu bytes \n", (unsigned long)signatureLength);
-        for (unsigned int i = 0; i < signatureLength; i++) {
-            printf("0x%x ", signature[i]);
-        }
-        cout << endl;
+        CK_ATTRIBUTE RSAFindPubTemplate =
+        {
+            CKA_LABEL, pPublicLabel, publicLabelSize
+        };
         CK_OBJECT_HANDLE pub_key;
         numHandles = 0;
         rv = P11Functions->C_FindObjectsInit(m_hSession, &RSAFindPubTemplate, 1);
         rv = P11Functions->C_FindObjects(m_hSession, handles, MAX_NUM_OF_HANDLES, &numHandles);
         if (numHandles == 0) {
+            RSAFindPubTemplate.ulValueLen--;
+            rv = P11Functions->C_FindObjectsInit(m_hSession, &RSAFindPubTemplate, 1);
+            if (rv != CKR_OK) {
+                delete[] pPublicLabel;
+                return rv;
+            }
+            rv = P11Functions->C_FindObjects(m_hSession, handles, MAX_NUM_OF_HANDLES, &numHandles);
+            if (rv != CKR_OK) {
+                delete[] pPublicLabel;
+                return rv;
+            }
+        }
+        if (numHandles == 0) {
             cout << "Public key not found!" << endl;
-            return rv;
+            return CKR_FUNCTION_FAILED;
         }
         pub_key = handles[0];
         cout << " The public key is " << hex << pub_key << endl;
@@ -127,12 +161,12 @@ CK_RV HSMLunaClient::RSA_CreateSignature(vector <CK_BYTE> data, string privateKe
         }
         rv = P11Functions->C_Verify(m_hSession, &data[0], dataLength, signature, signatureLength);
 
-        if (rv != CKR_OK){
+        if (rv != CKR_OK) {
             cout << "Signature verifying failed. Error is " << hex << rv << endl;
             return CKR_GENERAL_ERROR;
         }
+        cout << " RSA_CreateSignature is verified!" << endl;
     }
-    cout << " RSA_CreateSignature is verified!" << endl;
     result_signature.resize(signatureLength);
     for (unsigned int i = 0; i < signatureLength; i++) {
         result_signature[i] = signature[i];

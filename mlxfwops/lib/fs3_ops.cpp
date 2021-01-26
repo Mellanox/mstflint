@@ -131,7 +131,9 @@ const Fs3Operations::SectionInfo Fs3Operations::_fs3SectionsInfoArr[] = {
     {FS4_PART_TYPE_PROGRAMMABLE_HW_FW2, "FS4_PART_TYPE_PROGRAMMABLE_HW_FW"},
     {FS3_DTOC,          "DTOC_HEADER"},
     {FS4_HW_PTR,    "HW_POINTERS"},
-    {FS4_TOOLS_AREA,    "TOOLS_AREA"}
+    {FS4_TOOLS_AREA,    "TOOLS_AREA"},
+    {FS4_RSA_PUBLIC_KEY, "FS4_RSA_PUBLIC_KEY"},
+    {FS4_RSA_4096_SIGNATURES, "FS4_RSA_4096_SIGNATURES"}
 };
 
 bool Fs3Operations::Fs3UpdateImgCache(u_int8_t *buff, u_int32_t addr, u_int32_t size)
@@ -596,7 +598,7 @@ bool Fs3Operations::VerifyTOC(u_int32_t dtoc_addr, bool &bad_signature, VerifyCa
                             if (IsGetInfoSupported(toc_entry.type)) {
                                 if (!GetImageInfoFromSection(buff, toc_entry.type, toc_entry.size * 4)) {
                                     ret_val = false;
-                                    errmsg("Failed to get info from section %d", toc_entry.type);
+                                    errmsg("Failed to get info from section %d, check the supported_hw_id section in MLX file!\n", toc_entry.type);
                                 }
                             } else if (toc_entry.type == FS3_DBG_FW_INI) {
                                 TOCPUn(buff, toc_entry.size);
@@ -1029,7 +1031,7 @@ bool Fs3Operations::CheckFs3ImgSize(Fs3Operations& imageOps, bool useImageDevDat
 }
 
 #define SUPPORTS_ISFU(chip_type) \
-    (chip_type == CT_CONNECT_IB || chip_type == CT_CONNECTX4 || chip_type == CT_CONNECTX4_LX || chip_type == CT_CONNECTX5 || chip_type == CT_CONNECTX6  || chip_type == CT_CONNECTX6DX || chip_type == CT_CONNECTX6LX || chip_type == CT_BLUEFIELD || chip_type == CT_BLUEFIELD2)
+    (chip_type == CT_CONNECT_IB || chip_type == CT_CONNECTX4 || chip_type == CT_CONNECTX4_LX || chip_type == CT_CONNECTX5 || chip_type == CT_CONNECTX6  || chip_type == CT_CONNECTX6DX || chip_type == CT_CONNECTX6LX || chip_type == CT_CONNECTX7 || chip_type == CT_BLUEFIELD || chip_type == CT_BLUEFIELD2)
 
 u_int32_t Fs3Operations::getNewImageStartAddress(Fs3Operations &imageOps, bool isBurnFailSafe)
 {
@@ -2345,7 +2347,14 @@ bool Fs3Operations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, bo
         if (!Fs3UpdatePublicKeysSection(curr_toc->toc_entry.size, publickeys_file, newSection)) {
             return false;
         }
-    } else if (sect_type == FS3_FORBIDDEN_VERSIONS && cmd_type == CMD_SET_FORBIDDEN_VERSIONS) {
+    }
+    else if (sect_type == FS4_RSA_4096_SIGNATURES && cmd_type == CMD_SET_PUBLIC_4096_RSA_KEY)
+    {
+        char *publicKeysData = (char *)new_info;
+        type_msg = "PUBLIC FS4_RSA_4096_SIGNATURES 4096";
+        GetSectData(newSection, (u_int32_t *)publicKeysData, curr_toc->toc_entry.size);
+    }
+    else if (sect_type == FS3_FORBIDDEN_VERSIONS && cmd_type == CMD_SET_FORBIDDEN_VERSIONS) {
         char *forbiddenVersions_file = (char *)new_info;
         type_msg = "Forbidden Versions";
         if (!Fs3UpdateForbiddenVersionsSection(curr_toc->toc_entry.size, forbiddenVersions_file, newSection)) {
@@ -3127,6 +3136,7 @@ bool Fs3Operations::FwCalcSHA(SHATYPE shaType, vector<u_int8_t>& sha, vector<u_i
 #else
     (void)shaType;
     (void)sha;
+    (void)fourMbImage;
     return errmsg("FwCalcSHA is not supported.");
 #endif
 }
@@ -3365,11 +3375,11 @@ bool Fs3Operations::Fs3IsfuActivateImage(u_int32_t newImageStart)
     mfai.use_address = 1;
     rc = reg_access_mfai(mf, REG_ACCESS_METHOD_SET, &mfai);
     if (!rc) {
-    // send warm boot (bit 6)
-    mfrl.reset_level = 1 << 6;
-    rc = reg_access_mfrl(mf, REG_ACCESS_METHOD_SET, &mfrl);
-    // ignore ME_REG_ACCESS_BAD_PARAM error for old FW
-    rc = (rc == ME_REG_ACCESS_BAD_PARAM) ? ME_OK : rc;
+        // send warm boot (bit 6)
+        mfrl.reset_level = 1 << 6;
+        rc = reg_access_mfrl(mf, REG_ACCESS_METHOD_SET, &mfrl);
+        // ignore ME_REG_ACCESS_BAD_PARAM error for old FW
+        rc = (rc == ME_REG_ACCESS_BAD_PARAM) ? ME_OK : rc;
     }
 
     if (rc) {
@@ -3731,7 +3741,7 @@ bool Fs3Operations::DoAfterBurnJobs(const u_int32_t magic_patter[],
     }
     return true;
 }
-bool Fs3Operations::InsertEncryptedSignature(vector<u_int8_t> signature, const char *uuid, PrintCallBack printFunc)
+bool Fs3Operations::InsertSecureFWSignature(vector<u_int8_t> signature, const char *uuid, PrintCallBack printFunc)
 {
     struct cx4fw_image_signature_512 image_signature_512;
     vector <u_int32_t> uuidData;

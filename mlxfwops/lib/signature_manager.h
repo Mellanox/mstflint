@@ -46,7 +46,8 @@ class ISignatureManager : public FlintErrMsg
 public:
     virtual bool AddSignature(mfile* mf, Fs3Operations* imageOps, Flash *f, u_int32_t imageOffset) = 0;
     virtual bool GetSecureBootInfo() = 0;
-    virtual bool CheckSPIChannel(mfile* mf) = 0;
+    virtual bool IsLifeCycleSupported() = 0;
+    virtual bool IsCableQuerySupported() = 0;
     virtual ~ISignatureManager() {}
 };
 
@@ -54,9 +55,21 @@ class AbstractSignatureManager : public ISignatureManager {
 public:
     AbstractSignatureManager() {}
     virtual ~AbstractSignatureManager() {}
-    virtual bool CheckSPIChannel(mfile*)
+    virtual bool GetSecureBootInfo()
+    {
+        return false;
+    }
+    virtual bool IsCableQuerySupported()
+    {
+        return false;
+    }
+    virtual bool AddSignature(mfile*, Fs3Operations*, Flash*, u_int32_t)
     {
         return true;
+    }
+    virtual bool IsLifeCycleSupported()
+    {
+        return false;
     }
 };
 
@@ -65,27 +78,14 @@ class FwOperationsSignatureManager : public AbstractSignatureManager
 public:
     FwOperationsSignatureManager() : AbstractSignatureManager() {}
     virtual ~FwOperationsSignatureManager() {}
-    virtual bool AddSignature(mfile*, Fs3Operations*, Flash*, u_int32_t)
-    {
-        return true;//not relevant here
-    }
-    virtual bool GetSecureBootInfo()
-    {
-        return false;
-    }
 };
-
 
 class BluefieldFwOperationsSignatureManager : public AbstractSignatureManager
 {
 public:
     BluefieldFwOperationsSignatureManager() : AbstractSignatureManager() {}
     virtual ~BluefieldFwOperationsSignatureManager() {}
-    virtual bool AddSignature(mfile* mf, Fs3Operations*, Flash*, u_int32_t);
-    virtual bool GetSecureBootInfo()
-    {
-        return false;
-    }
+    virtual bool AddSignature(mfile* mf, Fs3Operations* imageOps, Flash *f, u_int32_t imageOffset);
 };
 
 
@@ -94,21 +94,34 @@ class ConnectX6FwOperationsSignatureManager : public AbstractSignatureManager
 public:
     ConnectX6FwOperationsSignatureManager() : AbstractSignatureManager() {}
     virtual ~ConnectX6FwOperationsSignatureManager() {}
-    virtual bool AddSignature(mfile* mf, Fs3Operations*, Flash*, u_int32_t);
-    virtual bool GetSecureBootInfo()
+    virtual bool AddSignature(mfile* mf, Fs3Operations* imageOps, Flash *f, u_int32_t imageOffset);
+    virtual bool IsLifeCycleSupported();
+    virtual bool IsCableQuerySupported()
     {
         return true;
     }
 };
 
+class RavenSwitchSignatureManager : public AbstractSignatureManager
+{
+public:
+    RavenSwitchSignatureManager() : AbstractSignatureManager() {}
+    virtual ~RavenSwitchSignatureManager() {}
+    virtual bool IsCableQuerySupported()
+    {
+        return true;
+    }
+};
 
 class ConnectX6DXFwOperationsSignatureManager : public AbstractSignatureManager
 {
 public:
     ConnectX6DXFwOperationsSignatureManager() : AbstractSignatureManager() {}
     virtual ~ConnectX6DXFwOperationsSignatureManager() {}
-    virtual bool AddSignature(mfile* mf, Fs3Operations*, Flash*, u_int32_t);
-    virtual bool GetSecureBootInfo();
+    virtual bool GetSecureBootInfo()
+    {
+        return true;
+    }
 };
 
 class ConnectX6LXFwOperationsSignatureManager : public AbstractSignatureManager
@@ -116,10 +129,6 @@ class ConnectX6LXFwOperationsSignatureManager : public AbstractSignatureManager
 public:
     ConnectX6LXFwOperationsSignatureManager() : AbstractSignatureManager() {}
     virtual ~ConnectX6LXFwOperationsSignatureManager() {}
-    virtual bool AddSignature(mfile*, Fs3Operations*, Flash*, u_int32_t)
-    {
-        return true;
-    }
     virtual bool GetSecureBootInfo()
     {
         return true;
@@ -132,10 +141,6 @@ class Bluefield2FwOperationsSignatureManager : public AbstractSignatureManager
 public:
     Bluefield2FwOperationsSignatureManager() : AbstractSignatureManager() {}
     virtual ~Bluefield2FwOperationsSignatureManager() {}
-    virtual bool AddSignature(mfile*, Fs3Operations*, Flash*, u_int32_t)
-    {
-        return true;
-    }
     virtual bool GetSecureBootInfo()
     {
         return true;
@@ -147,27 +152,11 @@ class GearBoxSignatureManager : public AbstractSignatureManager
 public:
     GearBoxSignatureManager() : AbstractSignatureManager() {}
     virtual ~GearBoxSignatureManager() {}
-
     virtual bool AddSignature(mfile*, Fs3Operations*, Flash*, u_int32_t)
     {
         return false;
     }
-    virtual bool GetSecureBootInfo()
-    {
-        return false;
-    }
-    virtual bool CheckSPIChannel(mfile* mf)
-    {
-        bool retVal = true;
-        u_int32_t value = 0;
-        if (mread4(mf, 0x21e4, &value) != sizeof(u_int32_t)) {
-            retVal = false;
-        }
-        else {
-            if (value != 1) {
-                retVal = false;
-            }
-        }
-        return retVal;
-    }
 };
+
+
+

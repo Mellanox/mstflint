@@ -77,6 +77,7 @@ public:
     void invalidateCfg(const std::string & configName);
     const char* loadConfigurationGetStr();
     void setRawCfg(std::vector<u_int32_t> rawTlvVec);
+    std::vector<u_int32_t> getRawCfg(std::vector<u_int32_t> rawTlvVec);
     void dumpRawCfg(std::vector<u_int32_t> rawTlvVec, std::string& tlvDump);
     void backupCfgs(vector<BackupView>& view);
     void updateParamViewValue(ParamView&, std::string);
@@ -107,8 +108,10 @@ public:
     RawCfgParams5thGen();
     ~RawCfgParams5thGen() {}
     int setRawData(const std::vector<u_int32_t>& tlvBuff);
-    int setOnDev(mfile *mf);
+    std::vector<u_int32_t> getRawData();
+    int setOnDev(mfile *mf, RawTlvMode mode);
     std::string dumpTlv();
+
 private:
     int verifyTlv();
     std::vector<u_int32_t> _tlvBuff;

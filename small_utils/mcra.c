@@ -45,6 +45,7 @@
 #include <limits.h>
 #include "mtcr.h"
 #include "tools_version.h"
+#include <reg_access/reg_access.h>
 
 #define ONES32(size)                    ((size) ? (0xffffffff >> (32 - (size))) : 0)
 #define MASK32(offset, size)             (ONES32(size) << (offset))
@@ -278,7 +279,7 @@ int main(int argc, char *argv[])
     }
     strncpy(device, dev, MAX_DEV_LEN - 1);
     // Do the job
-    mf = mopen_adv((const char*)device, (MType)(MST_DEFAULT | MST_CABLE));
+    mf = mopen_adv((const char*)device, (MType)(MST_DEFAULT | MST_CABLE | MST_LINKX_CHIP));
     if (!mf) {
         perror("mopen");
         return 1;
@@ -370,7 +371,10 @@ int main(int argc, char *argv[])
             }
 
             addr = (addr >> 2) << 2;
-            if (mread4_block(mf, addr, data, dowrd_size * 4) != dowrd_size * 4) {
+
+            rc = (mread4_block(mf, addr, data, dowrd_size * 4) != dowrd_size * 4);
+      
+            if (rc) {
                 free(data);
                 goto access_error;
             }
@@ -381,7 +385,9 @@ int main(int argc, char *argv[])
             }
             free(data);
         } else {
-            if (mread4(mf, addr, &val) != 4) {
+            rc = (mread4(mf, addr, &val) != 4);
+           
+            if (rc) {
                 goto access_error;
             }
 
@@ -397,13 +403,19 @@ int main(int argc, char *argv[])
         if (bit_offs != 0 || bit_size != 32) {
             // read-modify-write
             u_int32_t tmp_val;
-            if (mread4(mf, addr, &tmp_val) != 4) {
+            
+            rc = (mread4(mf, addr, &tmp_val) != 4);
+         
+            if (rc) {
                 goto access_error;
             }
 
             val = MERGE(tmp_val, val, bit_offs, bit_size);
         }
-        if (mwrite4(mf, addr, val) != 4) {
+        
+        rc = (mwrite4(mf, addr, val) != 4);
+        
+        if (rc) {
             goto access_error;
         }
     }

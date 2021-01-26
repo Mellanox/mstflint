@@ -46,10 +46,10 @@ AM_CPPFLAGS = -I$(top_srcdir) -I$(srcdir) -I$(MTCR_DIR) -I$(MFLASH_DIR) -I$(COMM
            -I$(HSM_CLIENT_LIB)/inc -I$(HSM_CLIENT_LIB)/inc/rsa
 
 mstflint_CXXFLAGS = -Wall -W -g -MP -MD -pipe -DEXTERNAL $(COMPILER_FPIC) \
-                    -DUNIX -DOS_UNIX -DOS_LINUX
+                    -DUNIX -DOS_UNIX -DOS_LINUX ${MTCR_CONF_FLAGS}
 bin_PROGRAMS = mstflint
 
-mstflint_SOURCES = flint.cpp flint.h subcommands.cpp subcommands.h\
+mstflint_SOURCES = flint.cpp flint.h subcommands.cpp subcommands.h subcommands_linkx.cpp \
 					flint_params.cpp flint_params.h cmd_line_parser.cpp err_msgs.h
 
 mstflint_LDADD =  ../mlxfwops/lib/libmlxfwops.a  \

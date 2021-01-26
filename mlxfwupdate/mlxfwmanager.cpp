@@ -57,6 +57,7 @@ int mainEntry(int argc, char *argv[])
     int res = 0;
     config_t config;
     bool early_cleanup = true;
+    bool os_valid;
     int rc, rc0;
     vector<string>  dev_names;
     vector<MlnxDev*> devs;
@@ -166,6 +167,20 @@ int mainEntry(int argc, char *argv[])
             res = ERR_CODE_CREATE_OUTPUT_FILE_FAIL;
             goto early_err_clean_up;
         }
+    }
+    if (cmd_params.download_os.length()) {
+        IS_OKAY_To_INTERRUPT = true;
+        res = check_valid_os_type(cmd_params, &os_valid);
+        if (res) {
+            goto early_err_clean_up;
+        }
+        if (!os_valid) {
+            fprintf(stderr, "-E- Invalid --download-os argument \"%s\"\n",
+                    cmd_params.download_os.c_str());
+            res = ERR_CODE_INVALID_CHOICE;
+            goto early_err_clean_up;
+        }
+        IS_OKAY_To_INTERRUPT = false;
     }
     if (cmd_params.onlineQueryPsids.length()) {
         if (cmd_params.queryFormat == "text") {
@@ -2141,6 +2156,38 @@ static int getFileProperties(ServerRequest *srq, vector<DownloadedFileProperties
         return ERR_CODE_SERVER_DOWNLOAD_FAILED;
     }
     return MLX_FWM_SUCCESS;
+}
+
+int check_valid_os_type(CmdLineParams &cmd_params, bool* os_valid) {
+    vector <DownloadedFileProperties> filePropVec;
+    int res = MLX_FWM_SUCCESS;
+    *os_valid = false;
+    if (cmd_params.download_os == "all") {
+        *os_valid = true;
+        return res;
+    }
+    ServerRequest *srq = new ServerRequest(cmd_params.server_url.c_str(),
+                                cmd_params.proxy.c_str(), cmd_params.compare_ffv,
+                                cmd_params.show_progress, cmd_params.download_key,
+                                cmd_params.certificate, cmd_params.numberOfRetrials);
+    if (srq == NULL) {
+        return ERR_CODE_MEM_ALLOC_FAIL;
+    }
+    res = getFileProperties(srq, filePropVec, "", "", "self_extractor");
+    if (res) {
+        print_err("-E- Failed to query files on server\n");
+        string errorMsg;
+        srq->getError(res, errorMsg);
+        print_err("%s\n", errorMsg.c_str());
+    }
+    for (std::vector<DownloadedFileProperties>::iterator it = filePropVec.begin(); it != filePropVec.end(); it++) {
+        if (cmd_params.download_os == it->os) {
+            *os_valid = true;
+            break;
+        }
+    }
+    delete srq;
+    return res;
 }
 
 int handleGetDownloadOptionsRequest(ServerRequest *srq, CmdLineParams &cmd_params)

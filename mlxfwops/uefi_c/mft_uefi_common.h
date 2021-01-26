@@ -43,6 +43,7 @@
 typedef struct _MLX4_DEV uefi_Dev_t;
 
 typedef int (*f_fw_cmd) (uefi_Dev_t *dev, void *buffer, int *w_size, int *r_size);
+typedef int (*f_dma_alloc) (uefi_Dev_t *dev, u_int64_t* pa, u_int64_t* va);
 
 typedef struct uefi_dev_info {
     u_int32_t hw_dev_id;
@@ -53,6 +54,7 @@ typedef struct uefi_dev_info {
 
 typedef struct uefi_dev_extra {
     f_fw_cmd fw_cmd_func;
+    f_dma_alloc dma_func;
     uefi_dev_info_t dev_info;
 } uefi_dev_extra_t;
 

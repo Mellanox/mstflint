@@ -110,7 +110,7 @@ void MlxlinkUi::printSynopsisCommands()
     MlxlinkRecord::printFlagLine(PTYS_LINK_MODE_FORCE_FLAG_SHORT, PTYS_LINK_MODE_FORCE_FLAG, "",
                   "Configure Link Mode Force (Disable AN)");
     MlxlinkRecord::printFlagLine(PPLR_FLAG_SHORT, PPLR_FLAG, "loopback",
-                  "Configure Loopback Mode [NO(no loopback)/PH(phy loopback)/EX(external loopback)]");
+                  "Configure Loopback Mode [NO(no loopback)/RM(phy remote Rx-to-Tx loopback)/PH(phy Tx-to-Rx loopback)/EX(external Tx-to-Rx loopback)]");
     MlxlinkRecord::printFlagLine(PPLM_FLAG_SHORT, PPLM_FLAG, "fec_override",
                   "Configure FEC [AU(Auto)/NF(No-FEC)/FC(FireCode FEC)/RS(RS-FEC)]");
     printf(IDENT);
@@ -142,6 +142,12 @@ void MlxlinkUi::printSynopsisCommands()
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PPTT_RATE_FLAG_SHORT, PPTT_RATE_FLAG, "tx_lane_rate",
                   "TX Lane Rate [EDR(Default)/25G/10G/...]  (Optional - Default 25G)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(PRBS_INVERT_TX_POL_FLAG_SHORT, PRBS_INVERT_TX_POL_FLAG, "",
+                  "PRBS TX polarity inversion (Optional - Default No Inversion)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(PRBS_INVERT_RX_POL_FLAG_SHORT, PRBS_INVERT_RX_POL_FLAG, "",
+                  "PRBS RX polarity inversion (Optional - Default No Inversion)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PRBS_LANES_FLAG_SHORT, PRBS_LANES_FLAG, "lanes",
                   "PRBS lanes to set (one or more lane separated by comma)[0,1,2,...] (Optional - Default all lanes)");
@@ -182,11 +188,11 @@ void MlxlinkUi::printSynopsisCommands()
     printf(IDENT);
     MlxlinkRecord::printFlagLine(WRITE_OFFSET_FLAG_SHORT, WRITE_OFFSET_FLAG, "offset",
             "Specific page offset to read/write");
-/*    MlxlinkRecord::printFlagLine(MARGIN_SCAN_FLAG_SHORT, MARGIN_SCAN_FLAG, "",
+    MlxlinkRecord::printFlagLine(MARGIN_SCAN_FLAG_SHORT, MARGIN_SCAN_FLAG, "",
             "Read the SerDes eye margins per lane");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(EYE_MEASURE_TIME_FLAG_SHORT, EYE_MEASURE_TIME_FLAG, "time",
-            "Measure time in seconds for single eye [10, 30, 60, 90, 120, 240, 480, 600 and 900] (Optional - Default 600)");
+            "Measure time in seconds for single eye [10, 30, 60, 90, 120, 240, 480, 600 and 900] (Optional - Default 60 for PCIe and 30 for Network ports)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(EYE_SEL_FLAG_SHORT, EYE_SEL_FLAG, "eye_sel",
             "Eye selection for PAM4 [UP, MID, DOWN, ALL] (Optional - Default ALL)");
@@ -194,7 +200,7 @@ void MlxlinkUi::printSynopsisCommands()
     MlxlinkRecord::printFlagLine(LANE_INDEX_FLAG_SHORT, LANE_INDEX_FLAG, "lane_index",
             "Run eye for specific lane index (Optional - Default all lanes)");
     MlxlinkRecord::printFlagLine(FORCE_YES_FLAG_SHORT, FORCE_YES_FLAG, "", "Non-interactive mode, answer yes to all questions");
-*/
+
 }
 
 void MlxlinkUi::printSynopsis()
@@ -230,7 +236,7 @@ void MlxlinkUi::printHelp()
     printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Perform PRBS Tuning",
            MLXLINK_EXEC " -d <device> -p <port_number> --test_mode TU");
     printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Cable operations",
-           MLXLINK_EXEC " -d <device> --cable [Options]");
+           MLXLINK_EXEC " -d <device> --cable options");
     printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Dump cable EEPROM pages",
            MLXLINK_EXEC " -d <device> --cable --dump");
     printf(IDENT2 "%-40s: \n" IDENT3 "%s\n", "Get cable DDM info",
@@ -255,10 +261,6 @@ void MlxlinkUi::validateMandatoryParams()
 {
     if (_mlxlinkCommander->_device == "") {
         throw MlxRegException("Please provide a device name");
-    }
-    if (_mlxlinkCommander->_userInput._portType != "NETWORK" && _mlxlinkCommander->_userInput._portType != "PCIE") {
-        throw MlxRegException(
-                  "Please provide a valid Port Type [NETWORK(Default)/PCIE]");
     }
     if (_mlxlinkCommander->_userInput._links &&
             _mlxlinkCommander->_userInput._portType != "PCIE") {
@@ -353,7 +355,10 @@ void MlxlinkUi::validatePRBSParams()
     bool prbsFlags = _mlxlinkCommander->_userInput._sendPprt ||
                     _mlxlinkCommander->_userInput._sendPptt ||
                     _mlxlinkCommander->_userInput._pprtRate != "" ||
-                    _mlxlinkCommander->_userInput._pprtRate != "";
+                    _mlxlinkCommander->_userInput._pprtRate != "" ||
+                    _mlxlinkCommander->_userInput._prbsTxInv ||
+                    _mlxlinkCommander->_userInput._prbsRxInv ||
+                    _mlxlinkCommander->_userInput._prbsLanesToSet.size() > 0;
     if (_sendRegFuncMap[SEND_PRBS] == SEND_PRBS) {
         if (!checkPrbsCmd(_mlxlinkCommander->_userInput._prbsMode)) {
             throw MlxRegException(
@@ -558,6 +563,11 @@ void MlxlinkUi::initCmdParser()
                "PPTT Lane Rate");
     AddOptions(PRBS_LANES_FLAG, PRBS_LANES_FLAG_SHORT, "lanes",
                "PRBS lanes to set");
+    AddOptions(PRBS_INVERT_TX_POL_FLAG, PRBS_INVERT_TX_POL_FLAG_SHORT, "",
+               "PRBS TX polarity inversion");
+    AddOptions(PRBS_INVERT_RX_POL_FLAG, PRBS_INVERT_RX_POL_FLAG_SHORT, "",
+               "PRBS RX polarity inversion");
+
     AddOptions(CABLE_FLAG, CABLE_FLAG_SHORT, "", "Cable operations");
     AddOptions(CABLE_DUMP_FLAG, CABLE_DUMP_FLAG_SHORT, "", "Dump cable EEPROM pages");
     AddOptions(CABLE_DDM_FLAG, CABLE_DDM_FLAG_SHORT, "", "Show DDM information");
@@ -771,6 +781,7 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _mlxlinkCommander->_userInput._portType = toUpperCase(value);
         return PARSE_OK;
     } else if (name == LABEL_PORT_FLAG) {
+        _mlxlinkCommander->checkStrLength(value);
         if (endsWith(value.c_str(), "/1") || endsWith(value.c_str(), "/2")
             || endsWith(value.c_str(), "/3")
             || endsWith(value.c_str(), "/4")
@@ -853,6 +864,12 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     } else if (name == PRBS_LANES_FLAG) {
         std::vector<string> prbsLanesParams = _mlxlinkCommander->parseParamsFromLine(value);
         _mlxlinkCommander->getprbsLanesFromParams(prbsLanesParams);
+        return PARSE_OK;
+    } else if (name == PRBS_INVERT_TX_POL_FLAG){
+        _mlxlinkCommander->_userInput._prbsTxInv = true;
+        return PARSE_OK;
+    } else if (name == PRBS_INVERT_RX_POL_FLAG){
+        _mlxlinkCommander->_userInput._prbsRxInv = true;
         return PARSE_OK;
     } else if (name == BER_COLLECT_FLAG) {
         _sendRegFuncMap[SEND_BER_COLLECT] = SEND_BER_COLLECT;
@@ -944,6 +961,7 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _sendRegFuncMap[GRADE_SCAN_ENABLE] = GRADE_SCAN_ENABLE;
         return PARSE_OK;
     } else if (name == EYE_MEASURE_TIME_FLAG) {
+        _mlxlinkCommander->checkStrLength(value);
         _mlxlinkCommander->strToUint32((char*) value.c_str(),
                         (u_int32_t&)_mlxlinkCommander->_userInput.measureTime);
         return PARSE_OK;
@@ -951,11 +969,13 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _mlxlinkCommander->_userInput.force = true;
         return PARSE_OK;
     } else if (name == LANE_INDEX_FLAG) {
+        _mlxlinkCommander->checkStrLength(value);
         _mlxlinkCommander->strToUint32((char*) value.c_str(),
                         (u_int32_t&)_mlxlinkCommander->_userInput._lane);
         _mlxlinkCommander->_userInput.gradeScanPerLane = true;
         return PARSE_OK;
     } else if (name == EYE_SEL_FLAG) {
+        _mlxlinkCommander->checkStrLength(value);
         _mlxlinkCommander->_userInput.eyeSelect = toUpperCase(value);
         return PARSE_OK;
     }
@@ -976,7 +996,7 @@ int MlxlinkUi::run(int argc, char **argv)
                   + string(_cmdParser.GetErrDesc()));
     }
     paramValidate();
-    _mlxlinkCommander->_mf = mopen(_mlxlinkCommander->_device.c_str());
+    _mlxlinkCommander->_mf = mopen(_mlxlinkCommander->_device.c_str());;
     if (!_mlxlinkCommander->_mf) {
         throw MlxRegException(
                   "Failed to open device: \"" + _mlxlinkCommander->_device + "\", "
@@ -997,6 +1017,7 @@ int MlxlinkUi::run(int argc, char **argv)
     _mlxlinkCommander->_gvmiAddress = _mlxlinkCommander->_userInput._gvmiAddress;
     _mlxlinkCommander->_devID = _mlxlinkCommander->_regLib->getDevId();
     _mlxlinkCommander->_isHCA = dm_dev_is_hca(_mlxlinkCommander->_devID);
+    _mlxlinkCommander->validatePortType();
     _mlxlinkCommander->labelToLocalPort();
     if (!_mlxlinkCommander->_userInput._pcie) {
         _mlxlinkCommander->checkValidFW();

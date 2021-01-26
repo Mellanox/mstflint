@@ -526,7 +526,7 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isD
                                 if (IsGetInfoSupported(tocEntry.type)) {
                                     if (!GetImageInfoFromSection(buff, tocEntry.type, tocEntry.size * 4)) {
                                         retVal = false;
-                                        errmsg("Failed to get info from section %d", tocEntry.type);
+                                        errmsg("Failed to get info from section %d, check the supported_hw_id section in MLX file!\n", tocEntry.type);
                                     }
                                 } else if (tocEntry.type == FS3_DBG_FW_INI) {
                                     TOCPUn(buff, tocEntry.size);
@@ -1484,7 +1484,6 @@ bool Fs4Operations::BurnFs4Image(Fs4Operations &imageOps,
     u_int8_t *data8;
     bool useImageDevData;
     int alreadyWrittenSz;
-
     if (_ioAccess == NULL) {
         return errmsg("ioAccess doesn't exist\n");
     }
@@ -1632,8 +1631,11 @@ bool Fs4Operations::BurnFs4Image(Fs4Operations &imageOps,
         return true;
     }
     bool IsUpdateSignatures = true;
-
-    switch (this->_fwImgInfo.ext_info.chip_type) {
+    chip_type chip = this->_fwImgInfo.ext_info.chip_type;
+    if (burnParams.use_chip_type == true) {
+        chip = burnParams.chip_type;//patch for BF
+    }
+    switch (chip) {
         case CT_CONNECTX6:
             getExtendedHWPtrs((VerifyCallBack)NULL, imageOps._ioAccess, true);
             break;
@@ -1641,10 +1643,12 @@ bool Fs4Operations::BurnFs4Image(Fs4Operations &imageOps,
             getExtendedHWAravaPtrs((VerifyCallBack)NULL, imageOps._ioAccess, true);
             break;
         case CT_BLUEFIELD:
-            if (!_signatureMngr->AddSignature(_ioAccess->getMfileObj(), &imageOps, f, 0)) {
-                return false;
+            if (burnParams.use_chip_type == true) {
+                if (!_signatureMngr->AddSignature(_ioAccess->getMfileObj(), &imageOps, f, 0)) {
+                    return false;
+                }
+                IsUpdateSignatures = false;//already updated right now
             }
-            IsUpdateSignatures = false;//already updated right now
             break;
         default:
             IsUpdateSignatures = false;
@@ -2680,35 +2684,29 @@ bool Fs4Operations::GetSecureBootInfo()
     return _signatureMngr->GetSecureBootInfo();
 }
 
-bool Fs4Operations::FwSignWithRSA(const char *private_key_file, const char *public_key_file, const char *uuid)
+bool Fs4Operations::IsCableQuerySupported()
 {
-#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
-    vector<u_int8_t> critical, non_critical, bin_data;
-    fs3_section_t sectionType;
-    vector <u_int8_t> finishData;
+    if (_signatureMngr == NULL) {
+        return false;
+    }
+    return _signatureMngr->IsCableQuerySupported();
+}
+
+bool Fs4Operations::IsLifeCycleSupported()
+{
+    if (_signatureMngr == NULL) {
+        return false;
+    }
+    return _signatureMngr->IsLifeCycleSupported();
+}
+
+bool Fs4Operations::PreparePublicKeyData(const char *public_key_file, vector <u_int8_t>& publicKeyData, unsigned int& pem_offset)
+{
     connectx4_public_keys_3 unpackedData;
-
-
-    //printf("Called FwSignWithRSA, get files private %s  public %s uuid %s\n", private_key_file, public_key_file, uuid);
-    if (_ioAccess->is_flash()) {
-        return errmsg("FwSignWithRSA not allowed for devices.");
-    }
-    unsigned int pem_offset = 0;
     unsigned int PublicKeySize = sizeof(unpackedData.file_public_keys_3[0].key);
-    vector<u_int8_t> encShaCritical, encShaNonCritical, encShaBinData;
-
-    if (!getExtendedHWAravaPtrs((VerifyCallBack)NULL, _ioAccess)) {
-        return errmsg("FwSignWithRSA: HW pointers not found.\n");
-    }
-    vector <u_int32_t> uuidData;
-    if (!extractUUIDFromString(uuid, uuidData)) {
-        return errmsg("FwSignWithRSA: UUID parsing failed.");
-    }
-    string privPemFileStr(private_key_file);
-    string pubFileStr(public_key_file);
-
-    vector <u_int8_t> publicKeyData;
+    fs3_section_t sectionType;
     bool PublicKeyIsSet = false;
+    string pubFileStr(public_key_file);
     //is the public key file in PEM format?
     if (CheckPublicKeysFile(public_key_file, sectionType, true)) {
         if (sectionType == FS3_PUBLIC_KEYS_4096) {
@@ -2719,11 +2717,20 @@ bool Fs4Operations::FwSignWithRSA(const char *private_key_file, const char *publ
         }
     }
     //Is the public key file in text format?
-    if(PublicKeyIsSet == false) {
+    if (PublicKeyIsSet == false) {
         if (!fromFileToArray(pubFileStr, publicKeyData, PublicKeySize)) {
-            return errmsg("FwSignWithRSA: Public key file parsing failed.");
-         }
+            return errmsg("FwSignWithRSA: Public key file parsing failed.\n");
+        }
     }
+    return true;
+}
+
+bool Fs4Operations::PrepareSecureBootSections(vector<u_int8_t>& bin_data, vector<u_int8_t>& critical, vector<u_int8_t>& non_critical,
+    vector <u_int32_t> uuidData, vector <u_int8_t> publicKeyData, unsigned int pem_offset)
+{
+    vector <u_int8_t> finishData;
+    connectx4_public_keys_3 unpackedData;
+    unsigned int PublicKeySize = sizeof(unpackedData.file_public_keys_3[0].key);
     memset(&unpackedData, 0, sizeof(unpackedData));
     unpackedData.file_public_keys_3[0].keypair_exp = 0x10001;
     memcpy(&unpackedData.file_public_keys_3[0].keypair_uuid, uuidData.data(), sizeof(unpackedData.file_public_keys_3[0].keypair_uuid));
@@ -2734,10 +2741,12 @@ bool Fs4Operations::FwSignWithRSA(const char *private_key_file, const char *publ
     Fs3UpdateSection(finishData.data(), FS4_RSA_PUBLIC_KEY, true, CMD_BURN, NULL);
     PrepItocSectionsForRsa(critical, non_critical);
     PrepareBinData(bin_data);
-    FwSignSection(bin_data, privPemFileStr, encShaBinData);
-    FwSignSection(critical, privPemFileStr, encShaCritical);
-    FwSignSection(non_critical, privPemFileStr, encShaNonCritical);
-    finishData.resize(0);
+    return true;
+}
+
+bool Fs4Operations::InsertSecureBootSignature(vector<u_int8_t> encShaBinData, vector<u_int8_t> encShaCritical, vector<u_int8_t> encShaNonCritical)
+{
+    vector <u_int8_t> finishData;
 
     connectx4_secure_boot_signatures secure_boot_signatures;
     memset(&secure_boot_signatures, 0, sizeof(secure_boot_signatures));
@@ -2756,8 +2765,69 @@ bool Fs4Operations::FwSignWithRSA(const char *private_key_file, const char *publ
     finishData.resize(connectx4_secure_boot_signatures_size());
     connectx4_secure_boot_signatures_pack(&secure_boot_signatures, finishData.data());
     Fs3UpdateSection(finishData.data(), FS4_RSA_4096_SIGNATURES, true, CMD_BURN, NULL);
-
     return true;
+}
+
+bool Fs4Operations::FwSignWithRSA(const char *public_key_file, const char *uuid, vector<u_int8_t>& bin_data, vector<u_int8_t>& critical, vector<u_int8_t>& non_critical)
+{
+#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
+    if (_ioAccess->is_flash()) {
+        return errmsg("FwSignWithRSA not allowed for devices.");
+    }
+    if (!getExtendedHWAravaPtrs((VerifyCallBack)NULL, _ioAccess)) {
+        return errmsg("FwSignWithRSA: HW pointers not found.\n");
+    }
+    vector <u_int32_t> uuidData;
+    if (!extractUUIDFromString(uuid, uuidData)) {
+        return errmsg("FwSignWithRSA: UUID parsing failed.");
+    }
+    vector <u_int8_t> publicKeyData;
+    unsigned int pem_offset = 0;
+    if (!PreparePublicKeyData(public_key_file, publicKeyData, pem_offset)) {
+        return errmsg("FwSignWithRSA: PreparePublicKeyData failed.\n");
+    }
+    if (!PrepareSecureBootSections(bin_data, critical, non_critical, uuidData, publicKeyData, pem_offset)) {
+        return errmsg("FwSignWithRSA: PrepareSecureBootSections failed.\n");
+    }
+    return true;
+#else
+    (void)public_key_file;
+    (void)uuid;
+    (void)bin_data;
+    (void)critical;
+    (void)non_critical;
+    return errmsg("FwSignWithRSA is not suppported.");
+#endif
+}
+
+bool Fs4Operations::FwSignWithRSA(const char *private_key_file, const char *public_key_file, const char *uuid)
+{
+#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
+    if (_ioAccess->is_flash()) {
+        return errmsg("FwSignWithRSA not allowed for devices.");
+    }
+    if (!getExtendedHWAravaPtrs((VerifyCallBack)NULL, _ioAccess)) {
+        return errmsg("FwSignWithRSA: HW pointers not found.\n");
+    }
+    vector <u_int32_t> uuidData;
+    if (!extractUUIDFromString(uuid, uuidData)) {
+        return errmsg("FwSignWithRSA: UUID parsing failed.");
+    }
+    string privPemFileStr(private_key_file);
+    vector <u_int8_t> publicKeyData;
+    unsigned int pem_offset = 0;
+    if (!PreparePublicKeyData(public_key_file, publicKeyData, pem_offset)) {
+        return errmsg("FwSignWithRSA: PreparePublicKeyData failed.\n");
+    }
+    vector<u_int8_t> critical, non_critical, bin_data;
+    if (!PrepareSecureBootSections(bin_data, critical, non_critical, uuidData, publicKeyData, pem_offset)) {
+        return errmsg("FwSignWithRSA: PrepareSecureBootSections failed.\n");
+    }
+    vector<u_int8_t> encShaCritical, encShaNonCritical, encShaBinData;
+    FwSignSection(bin_data, privPemFileStr, encShaBinData);
+    FwSignSection(critical, privPemFileStr, encShaCritical);
+    FwSignSection(non_critical, privPemFileStr, encShaNonCritical);
+    return InsertSecureBootSignature(encShaBinData, encShaCritical, encShaNonCritical);
 
 #else
     (void) private_key_file; 
@@ -2952,6 +3022,7 @@ bool Fs4Operations::CalcHMAC(const vector<u_int8_t>& key, const vector<u_int8_t>
 #else
     (void)key;
     (void)digest;
+    (void)data;
     return errmsg("HMAC calculation is not implemented\n");
 #endif
 }

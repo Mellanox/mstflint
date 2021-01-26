@@ -806,3 +806,116 @@ void connectx4_public_keys_3_pack(const struct connectx4_public_keys_3 *ptr_stru
 		connectx4_file_public_keys_3_pack(&(ptr_struct->file_public_keys_3[i]), ptr_buff + offset / 8);
 	}
 }
+
+unsigned int icmd_hca_icmd_query_cap_general_size(void)
+{
+	return ICMD_HCA_ICMD_QUERY_CAP_GENERAL_SIZE;
+}
+
+void icmd_hca_icmd_query_cap_general_pack(const struct icmd_hca_icmd_query_cap_general *ptr_struct, u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 29;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 3, (u_int32_t)ptr_struct->golden_tlv_version);
+	offset = 14;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->cwcam_reg);
+	offset = 11;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->capability_groups);
+	offset = 9;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->virtual_link_down);
+	offset = 8;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->icmd_exmb);
+	offset = 7;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->capi);
+	offset = 6;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->qcam_reg);
+	offset = 5;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->mcam_reg);
+	offset = 4;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->pcam_reg);
+	offset = 3;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->mh_sync);
+	offset = 2;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->allow_icmd_access_reg_on_all_registers);
+	offset = 1;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->fw_info_psid);
+	offset = 0;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->nv_access);
+	offset = 63;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->wol_p);
+	offset = 62;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->wol_u);
+	offset = 61;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->wol_m);
+	offset = 60;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->wol_b);
+	offset = 59;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->wol_a);
+	offset = 58;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->wol_g);
+	offset = 57;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->wol_s);
+	offset = 55;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->rol_g);
+	offset = 54;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->rol_s);
+	offset = 53;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->fpga);
+	offset = 32;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->num_of_diagnostic_counters);
+}
+
+void icmd_hca_icmd_query_cap_general_unpack(struct icmd_hca_icmd_query_cap_general *ptr_struct, const u_int8_t *ptr_buff)
+{
+	u_int32_t offset;
+
+	offset = 29;
+	ptr_struct->golden_tlv_version = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 3);
+	offset = 14;
+	ptr_struct->cwcam_reg = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 11;
+	ptr_struct->capability_groups = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 9;
+	ptr_struct->virtual_link_down = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 8;
+	ptr_struct->icmd_exmb = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 7;
+	ptr_struct->capi = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 6;
+	ptr_struct->qcam_reg = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 5;
+	ptr_struct->mcam_reg = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 4;
+	ptr_struct->pcam_reg = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 3;
+	ptr_struct->mh_sync = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 2;
+	ptr_struct->allow_icmd_access_reg_on_all_registers = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 1;
+	ptr_struct->fw_info_psid = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 0;
+	ptr_struct->nv_access = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 63;
+	ptr_struct->wol_p = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 62;
+	ptr_struct->wol_u = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 61;
+	ptr_struct->wol_m = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 60;
+	ptr_struct->wol_b = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 59;
+	ptr_struct->wol_a = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 58;
+	ptr_struct->wol_g = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 57;
+	ptr_struct->wol_s = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 55;
+	ptr_struct->rol_g = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 54;
+	ptr_struct->rol_s = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 53;
+	ptr_struct->fpga = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 32;
+	ptr_struct->num_of_diagnostic_counters = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+}

@@ -97,7 +97,7 @@ MLNX_DEVICES = [
                dict(name="ConnectX6", devid=0x20f, status_config_not_done=(0xb5f04, 31)),
                dict(name="ConnectX6DX", devid=0x212, status_config_not_done=(0xb5f04, 31)),
                dict(name="ConnectX6LX", devid=0x216, status_config_not_done=(0xb5f04, 31)),
-               dict(name="ConnectX7", devid=0x21a, status_config_not_done=(0xb5f04, 31)),
+               dict(name="ConnectX7", devid=0x218, status_config_not_done=(0xb5f04, 31)),
                dict(name="ConnectX3", devid=0x1f5),
                dict(name="SwitchX", devid=0x245),
                dict(name="IS4", devid=0x1b3),
@@ -1275,7 +1275,7 @@ def resetPciAddr(device,devicesSD,driverObj, cmdLineArgs):
         MAX_WAIT_TIME = 2 # sec
         poll_start_time = time.time()
         for cntr in range(1000*MAX_WAIT_TIME):
-            if PciOpsObj.read(pci_device_to_poll_devid, 0) != 0xffffffff:
+            if PciOpsObj.read(pci_device_to_poll_devid, 0)>>16 != 0xffff: # device-id (0x2.W)
                 iron_end_time = (time.time() - poll_start_time) * 1000
                 logger.debug('IRON is ready after {0} msec'.format(iron_end_time))
                 break
@@ -1485,7 +1485,17 @@ def resetFlow(device, devicesSD, reset_level, reset_type, cmdLineArgs, mfrl):
     logger.info('resetFlow() called')
 
     all_devices = [device] + devicesSD
-    driverObj = MlnxDriverFactory().getDriverObj(logger, skipDriver, all_devices)
+
+
+    # A temporary solution to get the pci-device-id (required for SmartNic)
+    # This solution is not good when the user insert device in PCI address format (-d xx:xx.x)
+    pci_device_id = None
+    if platform.system() == "Windows" or os.name == "nt":
+        if '_' in device_global:
+            pci_device_id = int(device_global.split('_')[0][2:])
+
+
+    driverObj = MlnxDriverFactory().getDriverObj(logger, skipDriver, all_devices, pci_device_id)
 
     try:
         isPpc64 = ("ppc64" in platform.machine())

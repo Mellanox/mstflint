@@ -1,4 +1,3 @@
-
 # Copyright (c) 2004-2010 Mellanox Technologies LTD. All rights reserved.
 #
 # This software is available to you under a choice of one of two
@@ -209,8 +208,43 @@ if REG_ACCESS:
                     ("rom3_version", c_uint32),
                     ("dev_branch_tag", c_uint8 * 28)]
 
-    class RegAccess:
+    class MDDQ_SLOT_INFO(Structure):
+        _fields_ = [("active", c_uint8),
+                    ("ready", c_uint8),
+                    ("sr_valid", c_uint8),
+                    ("provisioned", c_uint8),
+                    ("minor_ini_file_version", c_uint16),
+                    ("major_ini_file_version", c_uint16),
+                    ("card_type", c_uint8)]
 
+    class MDDQ_DEVICE_INFO(Structure):
+        _fields_ = [("device_index", c_uint8),
+                    ("flash_id", c_uint8),
+                    ("thermal_sd", c_uint8),
+                    ("flash_owner", c_uint8),
+                    ("uses_flash", c_uint8),
+                    ("device_type", c_uint16),
+                    ("fw_major", c_uint16),
+                    ("fw_sub_minor", c_uint16),
+                    ("fw_minor", c_uint16)]
+
+    class MDDQ_DATA_UN(Union):
+        _fields_ = [("mddq_slot_info", MDDQ_SLOT_INFO),
+                    ("mddq_device_info", MDDQ_DEVICE_INFO)]
+
+    class MDDQ_ST(Structure):
+        _fields_ = [("slot_index", c_uint8),
+                    ("query_type", c_uint8),
+                    ("sie", c_uint8),
+                    ("request_message_sequence", c_uint8),
+                    ("response_message_sequence", c_uint8),
+                    ("query_index", c_uint8),
+                    ("frst", c_uint8),
+                    ("mid", c_uint8),
+                    ("lst", c_uint8),
+                    ("data", MDDQ_DATA_UN)]
+
+    class RegAccess:
         GET = REG_ACCESS_METHOD_GET
         SET = REG_ACCESS_METHOD_SET
 
@@ -227,6 +261,7 @@ if REG_ACCESS:
             self._reg_access_mpcir = REG_ACCESS.reg_access_mpcir
             self._reg_access_res_dump = REG_ACCESS.reg_access_res_dump
             self._reg_access_debug_cap = REG_ACCESS.reg_access_debug_cap
+            self._reg_access_mddq = REG_ACCESS.reg_access_mddq
 
         def _err2str(self, rc):
             err2str = REG_ACCESS.reg_access_err2str
@@ -479,6 +514,46 @@ if REG_ACCESS:
             result = mgirRegisterP.contents.secure_fw
             result = True if result else False
             return result
+
+        def sendMddq(self, query_type, request_message_sequence, slot_index, query_index=0):
+            mddqRegisterP = pointer(MDDQ_ST())
+            mddqRegisterP.contents.query_type = c_uint8(query_type)
+            mddqRegisterP.contents.slot_index = c_uint8(slot_index)
+            mddqRegisterP.contents.request_message_sequence = c_uint8(request_message_sequence)
+            mddqRegisterP.contents.query_index = c_uint8(query_index)
+            rc = self._reg_access_mddq(self._mstDev.mf, REG_ACCESS_METHOD_GET, mddqRegisterP)
+            if rc:
+                raise RegAccException("Failed to send Register: %s (%d)" % (self._err2str(rc), rc))
+
+            data = {}
+            if query_type == 1:
+                data.update({
+                    "active": mddqRegisterP.contents.data.mddq_slot_info.active,
+                    "ready": mddqRegisterP.contents.data.mddq_slot_info.ready,
+                    "sr_valid": mddqRegisterP.contents.data.mddq_slot_info.sr_valid,
+                    "provisioned": mddqRegisterP.contents.data.mddq_slot_info.provisioned,
+                    "minor_ini_file_version": mddqRegisterP.contents.data.mddq_slot_info.minor_ini_file_version,
+                    "major_ini_file_version": mddqRegisterP.contents.data.mddq_slot_info.major_ini_file_version
+                })
+            elif query_type == 2:
+                data.update({
+                    "device_index": mddqRegisterP.contents.data.mddq_device_info.device_index,
+                    "flash_id": mddqRegisterP.contents.data.mddq_device_info.flash_id,
+                    "flash_owner": mddqRegisterP.contents.data.mddq_device_info.flash_owner,
+                    "uses_flash": mddqRegisterP.contents.data.mddq_device_info.uses_flash,
+                    "device_type": mddqRegisterP.contents.data.mddq_device_info.device_type,
+                    "fw_major": mddqRegisterP.contents.data.mddq_device_info.fw_major,
+                    "fw_sub_minor": mddqRegisterP.contents.data.mddq_device_info.fw_sub_minor,
+                    "fw_minor": mddqRegisterP.contents.data.mddq_device_info.fw_minor
+                })
+            return ({"slot_index": mddqRegisterP.contents.slot_index,
+                     "query_type": mddqRegisterP.contents.query_type,
+                     "request_message_sequence": mddqRegisterP.contents.request_message_sequence,
+                     "response_message_sequence": mddqRegisterP.contents.response_message_sequence,
+                     "frst": mddqRegisterP.contents.frst,
+                     "mid": mddqRegisterP.contents.mid,
+                     "lst": mddqRegisterP.contents.lst},
+                     data)
 
 else:
     raise RegAccException("Failed to load rreg_access.so/libreg_access.dll")

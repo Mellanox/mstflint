@@ -43,21 +43,21 @@ const unsigned short FORMAT0_MAX_MINOR_SIB = 1;
 const unsigned short FORMAT1_MIN_MINOR = 100;
 
 FwVersion::FwVersion() :
-        _major(0), _minor(0), _subminor(0), _devBranchTag("") {
+        _major(0), _minor(0), _subminor(0), _devBranchTag(""), _devID(DeviceUnknown) {
 }
 
 FwVersion::FwVersion(unsigned short int major, unsigned short int minor,
-        unsigned short int subminor, const std::string& devBranchTag) :
-        _major(major), _minor(minor), _subminor(subminor), _devBranchTag(
-                devBranchTag) {
+        unsigned short int subminor, const std::string& devBranchTag, unsigned short devID) :
+        _major(major), _minor(minor), _subminor(subminor),
+        _devBranchTag(devBranchTag), _devID(devID) {
 }
 
 FwVersion::~FwVersion() {
 }
 
 FwVersion::FwVersion(const FwVersion& rhs) :
-        _major(rhs._major), _minor(rhs._minor), _subminor(rhs._subminor), _devBranchTag(
-                rhs._devBranchTag) {
+        _major(rhs._major), _minor(rhs._minor), _subminor(rhs._subminor),
+        _devBranchTag(rhs._devBranchTag), _devID(rhs._devID) {
 }
 
 std::string FwVersion::get() const {
@@ -70,6 +70,7 @@ FwVersion& FwVersion::operator =(const FwVersion& rhs) {
         _minor = rhs._minor;
         _subminor = rhs._subminor;
         _devBranchTag = rhs._devBranchTag;
+        _devID = rhs._devID;
     }
     return *this;
 }
@@ -112,21 +113,9 @@ bool FwVersion::operator !=(const FwVersion& rhs) const {
     return !(this->operator ==(rhs));
 }
 
-//13 is Spectrum1 27/29 is Spectrum2 30 is Spectrum3 15 is switchIb2 27 is quantum
-bool FwVersion::is_Switch() const
-{
-    if (_major == 0 && _minor == 0 && _subminor == 0 && !_devBranchTag.empty()) {
-        return true;
-    }
-    if (_major == 11 || _major == 13 || _major == 15 || _major == 27
-        || _major == 29 || _major == 30) {
-        return true;
-    }
-    return false;
-}
-
 bool FwVersion::is_master_branch() const {
-    if (!is_Switch()) {
+    dm_dev_id_t dm_id = get_dmid_by_dev_rev_id(_devID, -1);
+    if (!dm_dev_is_switch(dm_id)) {
         return true;
     }
     return _devBranchTag.empty();

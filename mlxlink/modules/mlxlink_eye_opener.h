@@ -37,9 +37,27 @@
 #include <mft_utils/mft_sig_handler.h>
 
 #define TIME_DELTA          15
+#define MAX_LM_TIME         45
+#define LM_WAIT_TIME        3
 #define MAX_NUMBER_OF_EYES  3
-#define MAX_PROGRESS_VAL    100
+#define MAX_PROGRESS_VAL    85
 #define MAX_NUMBER_OF_LANES 8
+
+// SLRED Defaults
+#define DFLT_ERR_RES_SCALE  1
+#define DFLT_ERR_RES_BASE   3
+
+
+// SLRED PCIE Defaults
+#define DFLT_MSUR_TIME_PCIE      60
+#define DFLT_EYE_DIAG_DIM_PCIE   3
+#define MAX_ITERATION_SCAN_PCIE  3
+
+// SLRED Network Defaults
+#define DFLT_MSUR_TIME_PORT      30
+#define DFLT_EYE_DIAG_DIM_PORT   1
+#define MAX_ITERATION_SCAN_PORT  1
+#define SLRED_REG               "SLRED"
 
 enum SCAN_TIME {
     MEASURE_10_SEC,
@@ -86,19 +104,30 @@ enum SLRED_LANE_SPEED {
     SLRED_LANE_SPEED_EDR = 5,
     SLRED_LANE_SPEED_HDR = 6
 };
+
+enum MARGIN_VERSION {
+    NO_MARGIN,
+    FIGURE_OF_MERIT
+};
+
 struct MarginInfo {
-    int lane, eye, value, status;
+    u_int32_t lane, eye, value, status, version, iteration;
     MarginInfo() {
         lane = 0;
         eye = 0;
-        value = -1;
-        status = -1;
+        value = 0;
+        status = 0;
+        version = 0;
+        iteration = 0;
     }
-    MarginInfo(int iLane, int iEye, int iVal, int iStatus) {
+    MarginInfo(u_int32_t iLane, u_int32_t iEye, u_int32_t iVal,
+            u_int32_t iStatus, u_int32_t iVersion, u_int32_t iIteration) {
         lane = iLane;
         eye = iEye;
         value = iVal;
         status = iStatus;
+        version = iVersion;
+        iteration = iIteration;
     }
 };
 
@@ -123,29 +152,39 @@ public:
 
     // Global fields should be taken from mlxlink_commander
     u_int32_t localPort;
+    u_int32_t portType;
     bool pciePort;
     int lane;
     u_int32_t protoActive;
     u_int32_t numOfLanes;
     bool isPam4Speed;
+    u_int32_t scanIterations;
 
 private:
     // Helper functions
     void initSlredMaps();
     bool askUser(const char *question);
     void initWarMsgs();
-    int gradeEyeScanner(const string &laneTitle, u_int32_t lane, u_int32_t eye);
-    void laneEyesScanner(u_int32_t lane);
-    void printField(const string &key, const string &val);
+    void gradeEyeScanner(u_int32_t iteration, u_int32_t lane, u_int32_t eye);
+    void laneEyesScanner(u_int32_t iteration, u_int32_t lane);
+    void printField(const string &key, const string &val, bool newLine = true);
     void printTitle(const string &title);
     bool isActiveGenSupported();
+    void updatePortType();
     u_int32_t getDeviceVersion();
     void preChecks();
     void printFinalResults();
+    void prepareSlred(u_int32_t lane, u_int32_t eye);
     void enableSlredGradeScan(u_int32_t lane, u_int32_t eye);
-    u_int32_t getSlredMargin(u_int32_t lane, u_int32_t eye);
+    void slredStopSignalHandler();
+    void getSlredMargin(u_int32_t iteration, u_int32_t lane, u_int32_t eye);
     u_int32_t getSlredStatus(u_int32_t lane, u_int32_t eye);
     string getSlredLaneSpeedStr(u_int32_t lane, u_int32_t eye);
+    MarginInfo getMarginInfoFromVector(vector<MarginInfo> &margins,
+            u_int32_t iteration, u_int32_t lane, u_int32_t eye);
+    vector<MarginInfo> calculateAvgMargins();
+    void printAvgMargins();
+    void printMarginsSummary();
 
     // Internal fields
     Json::Value &_jsonRoot;
@@ -154,9 +193,13 @@ private:
     int _eyeDiagDim;
     int _measureTime;
     int _eyeSel;
+    u_int32_t _numOfEyes;
     bool _force;
-
-    vector<MarginInfo> measuredMargins;
+    bool _oneLaneScan;
+    bool _oneEyeScan;
+    string _symWaiter;
+    vector<MarginInfo> _measuredMargins;
+    vector<MarginInfo> _avgMargins;
     map<u_int32_t, u_int32_t> _measureTimeMap;
     map<u_int32_t, string> _eyeSelctorMap;
     map<u_int32_t, string> _scanStatusMap;

@@ -1,83 +1,40 @@
 
-/*
- * Copyright (C) Jan 2006 Mellanox Technologies Ltd. All rights reserved.
- *
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
- * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
- * OpenIB.org BSD license below:
- *
- *     Redistribution and use in source and binary forms, with or
- *     without modification, are permitted provided that the following
- *     conditions are met:
- *
- *      - Redistributions of source code must retain the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer.
- *
- *      - Redistributions in binary form must reproduce the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- *
- */
-
-
 /*-------------------------------------------------------------------------*/
 /**
    @file    dictionary.h
    @author  N. Devillard
-   @date    Sep 2007
-   @version $Revision: 1.12 $
    @brief   Implements a dictionary for string variables.
 
    This module implements a simple dictionary object, i.e. a list
    of string/string associations. This object is useful to store e.g.
-   information retrieved from a configuration file (ini files).
+   informations retrieved from a configuration file (ini files).
 */
 /*--------------------------------------------------------------------------*/
-
-/*
-	$Id: dictionary.h,v 1.12 2007-11-23 21:37:00 ndevilla Exp $
-	$Author: ndevilla $
-	$Date: 2007-11-23 21:37:00 $
-	$Revision: 1.12 $
-*/
 
 #ifndef _DICTIONARY_H_
 #define _DICTIONARY_H_
 
 /*---------------------------------------------------------------------------
-   								Includes
+                                Includes
  ---------------------------------------------------------------------------*/
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <compatibility.h>
+#include <unistd.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /*---------------------------------------------------------------------------
-   								New types
+                                New types
  ---------------------------------------------------------------------------*/
 
 
 /*-------------------------------------------------------------------------*/
 /**
-  @brief	Dictionary object
+  @brief    Dictionary object
 
   This object contains a list of string/string associations. Each
   association is identified by a unique string key. Looking up values
@@ -86,16 +43,16 @@ extern "C" {
  */
 /*-------------------------------------------------------------------------*/
 typedef struct _dictionary_ {
-	int				n ;		/** Number of entries in dictionary */
-	int				size ;	/** Storage size */
-	char 		**	val ;	/** List of string values */
-	char 		**  key ;	/** List of string keys */
-	unsigned	 *	hash ;	/** List of hash values for keys */
+    int             n ;     /** Number of entries in dictionary */
+    ssize_t         size ;  /** Storage size */
+    char        **  val ;   /** List of string values */
+    char        **  key ;   /** List of string keys */
+    unsigned     *  hash ;  /** List of hash values for keys */
 } dictionary ;
 
 
 /*---------------------------------------------------------------------------
-  							Function prototypes
+                            Function prototypes
  ---------------------------------------------------------------------------*/
 
 /*-------------------------------------------------------------------------*/
@@ -123,7 +80,7 @@ unsigned dictionary_hash(const char * key);
   dictionary, give size=0.
  */
 /*--------------------------------------------------------------------------*/
-dictionary * dictionary_new(int size);
+dictionary * dictionary_new(size_t size);
 
 /*-------------------------------------------------------------------------*/
 /**
@@ -150,7 +107,7 @@ void dictionary_del(dictionary * vd);
   dictionary object, you should not try to free it or modify it.
  */
 /*--------------------------------------------------------------------------*/
-const char * dictionary_get(dictionary * d, const char * key, const char * def);
+const char * dictionary_get(const dictionary * d, const char * key, const char * def);
 
 
 /*-------------------------------------------------------------------------*/
@@ -207,9 +164,10 @@ void dictionary_unset(dictionary * d, const char * key);
   output file pointers.
  */
 /*--------------------------------------------------------------------------*/
-void dictionary_dump(dictionary * d, FILE * out);
+void dictionary_dump(const dictionary * d, FILE * out);
 
 #ifdef __cplusplus
 }
 #endif
+
 #endif

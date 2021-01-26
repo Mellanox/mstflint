@@ -104,7 +104,7 @@ public:
     virtual bool FwShiftDevData(PrintCallBack progressFunc = (PrintCallBack)NULL);
     virtual const char*  FwGetResetRecommandationStr();
     virtual const char*  FwGetReSignMsgStr();
-    virtual bool InsertEncryptedSignature(vector<u_int8_t> signature, const char *uuid, PrintCallBack printFunc);
+    virtual bool InsertSecureFWSignature(vector<u_int8_t> signature, const char *uuid, PrintCallBack printFunc);
     bool FwInsertSHA256(PrintCallBack printFunc = (PrintCallBack)NULL);
     bool FwSignWithOneRSAKey(const char *privPemFile, const char *uuid, PrintCallBack printFunc = (PrintCallBack)NULL);
     bool FwSignWithTwoRSAKeys(const char *privPemFile1, const char *uuid1,

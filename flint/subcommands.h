@@ -158,6 +158,7 @@ protected:
     //print errors to an err buff, log if needed and stdout
     void reportErr(bool shouldPrint, const char *format, ...);
     bool readFromFile(const string& filePath, std::vector<u_int8_t>& buff);
+    bool getFileSize(const string& filePath, long& fileSize);
     bool writeToFile(string filePath, const std::vector<u_int8_t>& buff);
     FlintStatus writeImageToFile(const char *file_name, u_int8_t *data, u_int32_t length);
 
@@ -167,6 +168,7 @@ protected:
     FlintStatus UnlockDevice(FwOperations*);
     FlintStatus LockDevice(FwOperations*);
     void ClearGuidStruct(FwOperations::sg_params_t& sgParams);
+    bool stringsCommaSplit(string str, std::vector<u_int32_t> &deviceIds);
 public:
     SubCommand() : _fwOps(NULL), _imgOps(NULL), _io(NULL), _v(Wtv_Uninitilized), _maxCmdParamNum(-1),  _minCmdParamNum(-1), _mccSupported(false), _imageReactivation(false)
 #ifndef NO_MSTARCHIVE        
@@ -199,6 +201,7 @@ private:
     FwOperations::ExtBurnParams _burnParams;
     bool _devQueryRes;
     int _unknownProgress; // used to trace the progress of unknown progress.
+    FwCompsMgr* fwCompsAccess;
     FlintStatus burnFs3();
     FlintStatus burnFs2();
     bool checkFwVersion(bool CreateFromImgInfo = true, u_int16_t fw_ver0 = 0, u_int16_t fw_ver1 = 0, u_int16_t fw_ver2 = 0);
@@ -212,7 +215,8 @@ private:
     FlintStatus burnMFA2LiveFish(dm_dev_id_t devid_t);
     FlintStatus burnCongestionControl();
     bool verifyMFA2Params(bool IsLiveFish);
-
+    FlintStatus BurnLinkX(string deviceName, int deviceIndex, int deviceSize, string binaryFileName, bool linkx_auto_update,
+        bool activationNeeded, bool downloadTransferNeeded, int activate_delay_sec, ProgressCallBackAdvSt* ProgressFuncAdv);
 public:
     BurnSubCommand();
     ~BurnSubCommand();
@@ -249,6 +253,9 @@ private:
     bool displayFs2Uids(const fw_info_t& fwInfo);
     bool checkMac(u_int64_t mac, string& warrStr);
     FlintStatus queryMFA2();
+    bool PrintLinkXQuery(string& outputString, const string& host, int deviceIndex, const comp_status_st& ComponentStatus, const component_linkx_st& linkx_data, char* delimeter);
+    FlintStatus QueryLinkX(string deviceName, string outputFile, std::vector<int> deviceIds);
+
 public:
     QuerySubCommand();
     ~QuerySubCommand();
