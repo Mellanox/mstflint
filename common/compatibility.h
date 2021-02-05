@@ -55,6 +55,10 @@
 #       define ARCH_x86_64
 #   elif defined(__ia64__)
 #       define ARCH_ia64
+#   elif defined(__m68k__)
+#       define ARCH_m68k
+#   elif defined(__hppa__)
+#       define ARCH_hppa
 #   elif defined(__PPC64__) || defined(__s390x__)
 #       define ARCH_ppc64
 #   elif defined(__PPC__)
@@ -96,7 +100,7 @@
 #define U16H_FMT    "0x%04x"
 #define U8H_FMT     "0x%02x"
 
-#if defined(ARCH_x86) || defined(ARCH_ppc) || defined(UEFI_BUILD) || defined(ARCH_arm6l)
+#if defined(ARCH_x86) || defined(ARCH_ppc) || defined(UEFI_BUILD) || defined(ARCH_arm6l) || defined(ARCH_m68k) || defined(ARCH_hppa)
 #   if defined(__MINGW32__) || defined(__MINGW64__)
 #       include <inttypes.h>
 #       define U64D_FMT    "0x%" PRId64
