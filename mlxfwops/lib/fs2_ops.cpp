@@ -1412,19 +1412,24 @@ bool Fs2Operations::IntegrateDevRomInImage(Fs2Operations &imageOps)
     if (fim->getBuf() == NULL) {
         return errmsg("Bad FW image buffer\n");
     }
-    // Compine the image and the rom into new daa
-    if (!UpdateRomInImage((u_int8_t*)(&new_data[0]), (u_int8_t*)(fim->getBuf()),
-                          (u_int8_t*)(&_romSect[0]), rom_size, &actual_image_size)) {
-        return errmsg("%s", err());
+
+    if (!_romSect.empty()) {
+        // Compine the image and the rom into new daa
+        if (!UpdateRomInImage((u_int8_t*)(&new_data[0]), (u_int8_t*)(fim->getBuf()),
+                              (u_int8_t*)(&_romSect[0]), rom_size, &actual_image_size)) {
+            return errmsg("%s", err());
+        }
+
+        // close old image and open new image with the rom.
+        ((FImage*)(imageOps._ioAccess))->close();
+        ((FImage*)(imageOps._ioAccess))->open((u_int32_t*)(&new_data[0]), actual_image_size);
+
+        if (!imageOps.FwVerify((VerifyCallBack)NULL) || !imageOps.Fs2IntQuery()) {
+            return errmsg("Internal error: verify/query of image after integrating ROM failed\n");
+        }
     }
-
-    // close old image and open new image with the rom.
-    ((FImage*)(imageOps._ioAccess))->close();
-    ((FImage*)(imageOps._ioAccess))->open((u_int32_t*)(&new_data[0]), actual_image_size);
-
-
-    if (!imageOps.FwVerify((VerifyCallBack)NULL) || !imageOps.Fs2IntQuery()) {
-        return errmsg("Internal error: verify/query of image after integrating ROM failed\n");
+    else {
+        printf("-W- Skipping ROM section handling (ROM section is empty)\n");
     }
 
     return true;
