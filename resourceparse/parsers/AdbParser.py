@@ -48,6 +48,8 @@ class AdbParser:
         try:
             # build a dictionary with all the adb nodes.
             self.adb_dict = ET.parse(adb_path)
+            self._build_xml_elements_dict()
+            self._build_definitions()
             # build a dictionary with only the adb nodes that contain segment id field.
             self.segment_id_nodes_dict = {}
             self._build_nodes_with_seg_id()
@@ -55,6 +57,93 @@ class AdbParser:
             self._fix_nodes_offset(self.segment_id_nodes_dict)
         except Exception as _:
             raise Exception("Fail to parse the ADB file")
+
+    def _build_xml_elements_dict(self):
+        self._node_xml_elements = {}
+        for xml_element in self.adb_dict.iter('node'):
+            self._node_xml_elements[xml_element.attrib["name"]] = xml_element
+
+    def _build_definitions(self):
+        # Create a list for 'inst_ifdef' (C like 'define' feature)
+        self.ifdef_list = []
+        for xml_element in self.adb_dict.iter('config'):
+            if 'define' in xml_element.attrib and "=" not in xml_element.attrib["define"]:
+                self.ifdef_list.append(xml_element.attrib["define"])
+
+        # Create a dict for 'inst_if' (C like 'define' feature)
+        self.if_dict = {}
+        for xml_element in self.adb_dict.iter('config'):
+            if 'define' in xml_element.attrib and "=" in xml_element.attrib["define"]:
+                define_name, define_value = xml_element.attrib["define"].split("=")
+                self.if_dict[define_name] = define_value
+
+    def _check_condition(self, left_operand, right_operand, condition):
+        """
+        This method do the right logic according the given condition
+        """
+        if condition == ' EQ ':
+            return left_operand == right_operand
+        elif condition == ' LESS ':
+            return left_operand < right_operand
+        elif condition == ' LESS_EQ ':
+            return left_operand <= right_operand
+        elif condition == ' GREAT_EQ ':
+            return left_operand >= right_operand
+        elif condition == ' GREAT ':
+            return left_operand > right_operand
+
+        raise Exception("unsupported condition {0}".format(condition))
+
+    def _get_condition_str(self, expression):
+        """
+        This method return the right condition exist in the expression
+        """
+        if ' EQ ' in expression:
+            return ' EQ '
+        elif ' LESS ' in expression:
+            return ' LESS '
+        elif ' LESS_EQ ' in expression:
+            return ' LESS_EQ '
+        elif ' GREAT_EQ ' in expression:
+            return ' GREAT_EQ '
+        elif ' GREAT ' in expression:
+            return ' GREAT '
+
+        raise Exception("No condition found in expression {0}".format(expression))
+
+    def _check_single_expression(self, expression):
+        """
+        The method check the condition type and perform the
+        logic accordingly.
+        """
+        condition = self._get_condition_str(expression)
+        define_name, define_value = expression.split(condition)
+        define_name = define_name.strip()
+        define_value = define_value.strip()
+
+        # if operand not exist in the if dictionary its a value that we need to convert from str to int
+        left_operand = int(self.if_dict[define_name]) if define_name in self.if_dict else int(define_name)
+        right_operand = int(self.if_dict[define_value]) if define_value in self.if_dict else int(define_value)
+        return self._check_condition(left_operand, right_operand, condition)
+
+    def _check_expressions(self, inst_if_attrib):
+        """
+        The method checks an expression and return True/False.
+        Note that the method support only OR(s) or AND(s) but not together.
+        """
+        # assumption using 'OR' or 'AND' but not together
+        expressions = []
+        if ' OR ' in inst_if_attrib:
+            expressions = inst_if_attrib.split(' OR ')
+            # check if one of the expressions is True return True
+            return any([self._check_single_expression(expression) for expression in expressions])
+        elif ' AND ' in inst_if_attrib:
+            expressions = inst_if_attrib.split(' AND ')
+            # check if all of the expressions is True return True
+            return all([self._check_single_expression(expression) for expression in expressions])
+
+        # if only one expression
+        return self._check_single_expression(inst_if_attrib)
 
     def _fix_nodes_offset(self, nodes_dict):
         """This method go over all the nodes in the dictionary and
@@ -81,13 +170,13 @@ class AdbParser:
                 self.segment_id_nodes_dict[node.attrib["segment_id"]] = adb_layout_item
 
     def _retrieve_node_by_name(self, node_name):
-        """This method go over all the nodes in the adb dictionary and return the node with the
+        """This method return the node with the
         wanted name, if not found return None.
         """
-        for node in self.adb_dict.iter('node'):
-            if node.attrib["name"] == node_name:
-                return node
-        return None
+        if node_name in self._node_xml_elements:
+            return self._node_xml_elements[node_name]
+        else:  # Missing-nodes feature
+            return None
 
     def _build_subitems(self, node):
         """This method build the subitems of the specific node
@@ -95,11 +184,21 @@ class AdbParser:
         sub_items = []
         counter = 0
         for item in node:
+            # Skip on elements that are excluded in the configuration ('inst_ifdef')
+            if 'inst_ifdef' in item.attrib:
+                if item.attrib['inst_ifdef'] not in self.ifdef_list:
+                    continue
+            # Skip on elements that are excluded in the configuration ('inst_if')
+            if 'inst_if' in item.attrib:
+                if not self._check_expressions(item.attrib['inst_if']):
+                    continue
             if "low_bound" in item.attrib and "high_bound" in item.attrib:
                 self._extract_array_to_list(counter, item, sub_items)
             else:
-                sub_items.insert(counter, self._node_to_AdbLayoutItem(item))
-                counter += 1
+                adb_layout_item = self._node_to_AdbLayoutItem(item)
+                if adb_layout_item:
+                    sub_items.insert(counter, adb_layout_item)
+                    counter += 1
         return sub_items
 
     def _extract_array_to_list(self, index, item, subitems_list):
@@ -118,12 +217,19 @@ class AdbParser:
         calculated_size = int(size / (end_index - start_index))
         current_offset = offset
 
+
         for i in range(start_index, end_index):
             adb_layout_item = AdbLayoutItem()
             adb_layout_item.nodeDesc = self._node_to_node_desc(item)
             adb_layout_item.name = name + "[" + str(i) + "]"
             adb_layout_item.size = calculated_size
             adb_layout_item.offset = current_offset
+            if "subnode" in item.attrib:
+                sub_node = self._retrieve_node_by_name(item.attrib["subnode"])
+                if sub_node:
+                    if "attr_is_union" in sub_node.attrib:
+                        adb_layout_item.nodeDesc.isUnion = self._parse_union(sub_node.attrib["attr_is_union"])
+                    adb_layout_item.subItems = self._build_subitems(sub_node)  # List of the child items (for nodes only)
             subitems_list.insert(index, adb_layout_item)
             current_offset += calculated_size
             index += 1
