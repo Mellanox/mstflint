@@ -87,7 +87,7 @@ void MlxlinkCablesCommander::writeMCIA(u_int32_t page, u_int32_t size,
     updateField("i2c_device_address", i2cAddress);
     updateField("l", 1);
     u_int32_t i = 0;
-    char fieldName[16];
+    char fieldName[20];
     u_int32_t dwordDataSize = (u_int32_t)ceil((double)size/sizeof(u_int32_t));
     u_int32_t *dwordData = (u_int32_t*)malloc(dwordDataSize);
     memset(dwordData, 0, dwordDataSize);
