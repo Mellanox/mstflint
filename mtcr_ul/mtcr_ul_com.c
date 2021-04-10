@@ -81,6 +81,7 @@
 #endif
 
 #include <bit_slice.h>
+#include <malloc.h>
 #include "tools_utils.h"
 #include "mtcr_ul_com.h"
 #include "mtcr_int_defs.h"
@@ -2278,6 +2279,11 @@ mfile* mopen_ul_int(const char *name, u_int32_t adv_opt)
         goto open_failed;
     }
     memset(mf->ul_ctx, 0, sizeof(ul_ctx_t));
+
+   // Initialize the user page list.
+    mf->user_page_list.page_list = NULL;
+    mf->user_page_list.page_amount = 0;
+
     mf->dev_name = strdup(name);
     if (!mf->dev_name) {
         goto open_failed;
@@ -2566,6 +2572,9 @@ int mclose_ul(mfile *mf)
         }
         if (mf->dev_name) {
             free(mf->dev_name);
+        }
+        if(mf->user_page_list.page_amount) {
+            deallocate_kernel_memory_page(mf);
         }
         free_dev_info_ul(mf);
         free(mf);
@@ -3300,9 +3309,110 @@ const char* m_err2str(MError status)
     }
 }
 
-int allocate_kernel_memory_page(mfile* f, mtcr_alloc_page* page)
+
+int allocate_kernel_memory_page(mfile* mf, struct mtcr_page_info* page_info,
+                                int page_amount)
 {
-    (void)f;
-    (void)page;
-    return -1;//unsupported
+ #if !defined(__VMKERNEL_UW_NATIVE__)
+    int page_size = getpagesize();
+    int i;
+    int current_offest = 0;
+  
+
+    // Parameters validation.
+    if(!mf || !page_info)
+    {
+        return -1;
+    }
+
+    // Save the page amount.
+    page_info->page_amount = page_amount;
+    
+    // Set the requested page size.
+    page_info->page_size = page_amount * page_size;
+
+    // Allocate user buffer.
+    mf->user_page_list.page_list = memalign(page_size, page_info->page_size);
+    mf->user_page_list.page_amount = page_amount;
+
+    // Save the start buffer pointer as an integer.
+    page_info->page_pointer_start = (unsigned long)mf->user_page_list.page_list;
+
+    // Save the virtual address.
+    for (i = 0; i < page_amount; i++)
+    {
+        current_offest = (page_size * i);
+        page_info->page_addresses_array[i].virtual_address =
+            (u_int64_t)(mf->user_page_list.page_list + current_offest);
+    }
+
+    // Pin the memory in the kernel space.
+    return ioctl(mf->fd, PCICONF_PAGE_PIN, page_info);
+
+#else
+    (void)mf;
+    (void)page_info;
+    (void)page_amount;
+  
+    // MST VMWare driver is unsupported.
+    return -1;
+#endif
 }
+
+
+int deallocate_kernel_memory_page(mfile* mf)
+{
+#if !defined(__VMKERNEL_UW_NATIVE__)
+    struct mtcr_page_info page_info;
+
+
+    // Parameter validation.
+    if(!mf) {
+        return -1;
+    }
+
+    page_info.page_amount = mf->user_page_list.page_amount;
+
+    ioctl(mf->fd, PCICONF_PAGE_UNPIN, &page_info);
+    
+    // Free the user space memory.
+    free(mf->user_page_list.page_list);
+    mf->user_page_list.page_list = NULL;
+
+    return 0;
+
+#else
+    (void)mf;
+  
+    // MST VMWare driver is unsupported.
+    return -1;
+#endif
+}
+
+
+
+int read_dword_from_conf_space(u_int32_t offset, mfile *mf,
+                               struct mtcr_read_dword_from_config_space* read_config_space)
+{
+#if !defined(__VMKERNEL_UW_NATIVE__)
+    // Parameters validation.
+    if(!mf || !read_config_space)
+    {
+        return -1;
+    }
+
+    read_config_space->offset = offset;
+
+    // Read from the configuration space.
+    return ioctl(mf->fd, PCICONF_READ_DWORD_FROM_CONFIG_SPACE, read_config_space);
+
+#else
+    (void)offset;
+    (void)mf;
+    (void)read_config_space;
+
+    // MST VMWare driver is unsupported.
+    return -1;
+#endif
+}
+

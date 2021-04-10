@@ -87,6 +87,9 @@ struct mst_dev_data {
 	int vendor_specific_cap;
     /* status on VSEC supported spaces*/
 	int spaces_support_status;
+    
+    // Allocated pages for the user space.
+    struct page** page_list;
 };
 
 

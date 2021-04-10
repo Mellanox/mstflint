@@ -88,6 +88,7 @@ typedef long long int64_t;
 #endif
 
 #define DEV_NAME_SZ 512
+#define MAX_PAGES_SIZE 32
 
 /*
  * MST <--> MTCR API defines
@@ -419,10 +420,24 @@ typedef struct access_reg_params_t {
 
 typedef struct mfile_t mfile;
 
-typedef struct mtcr_alloc_page_t {
-    u_int64_t pa;
-    u_int64_t va;
-} mtcr_alloc_page;
+struct mtcr_page_addresses {
+    u_int64_t physical_address;
+    u_int64_t virtual_address;
+};
+
+
+struct mtcr_page_info {
+    unsigned int page_size;
+    unsigned int page_amount;
+    unsigned long page_pointer_start;    
+    struct mtcr_page_addresses page_addresses_array[MAX_PAGES_SIZE];
+};
+
+
+struct mtcr_read_dword_from_config_space {
+    unsigned int offset;
+    unsigned int data;
+};
 
 typedef void (*f_mpci_change)        (mfile *mf);
 
