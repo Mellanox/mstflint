@@ -539,6 +539,138 @@ out:
 	return res;
 }
 
+
+static int page_pin(struct mst_dev_data* dev, struct page_info_st* page_info)
+{
+    unsigned long page_pointer_start = page_info->page_pointer_start;
+    unsigned int page_amount = page_info->page_amount;
+    unsigned int page_size = page_info->page_size;
+    unsigned int gup_flags = FOLL_WRITE;
+    int page_counter = 0;
+    int pinned = 0;
+
+
+    // If the combination of the addr and size requested for this memory
+    // region causes an integer overflow, return error.
+    if (((page_pointer_start + page_size) < page_pointer_start) ||
+            PAGE_ALIGN(page_pointer_start + page_size) < (page_pointer_start + page_size) ||
+            page_amount < 1) {
+        return -EINVAL;
+    }
+
+    // Check if we allow locking memory.
+    if (!can_do_mlock()) {
+        return -EPERM;
+    }
+
+    // Allocate the page list.
+    dev->page_list = kcalloc(page_amount, sizeof(struct page *), GFP_KERNEL);
+    if (!dev->page_list) {
+        return -ENOMEM;
+    }
+
+    // Go over the user memory buffer and pin user pages in memory.
+    while (pinned < page_amount) {
+        // Save the current number of pages to pin
+        int num_pages = page_amount - pinned;
+
+        // Save the current pointer to the right offset.
+        uint64_t current_ptr = page_pointer_start + (pinned * PAGE_SIZE);
+
+        // Save the current page.
+        struct page** current_pages = dev->page_list + pinned;
+        
+        // Attempt to pin user pages in memory.
+        // Returns number of pages pinned - this may be fewer than the number requested
+        //   or -errno in case of error.
+        int pinned_pages = get_user_pages_fast(current_ptr, num_pages,
+                                               gup_flags, current_pages);
+        if (pinned_pages < 1)
+        {
+            kfree(dev->page_list);
+            return -EFAULT;
+        }
+
+        // Advance the memory that already pinned.
+        pinned += pinned_pages;
+    }
+
+    // There is a memory that not pinned in the kernel space?
+    if (pinned != page_amount) {
+        return -EFAULT;
+    }
+
+    // Initialize the pages.
+    for (page_counter = 0; 
+            page_counter < page_amount;
+            page_counter++) {
+        // Save the physical and virtual address for the user space purpose.
+        page_info->page_address_array[page_counter].physical_address = 
+            page_to_phys(dev->page_list[page_counter]);
+
+        printk(KERN_INFO "Page address structure number: %d, device: %04x:%02x:%02x.%0x\n",
+               page_counter, pci_domain_nr(dev->pci_dev->bus),
+               dev->pci_dev->bus->number, PCI_SLOT(dev->pci_dev->devfn),
+               PCI_FUNC(dev->pci_dev->devfn));
+    }
+ 
+    return 0;
+}
+
+
+static int page_unpin(struct mst_dev_data* dev, struct page_info_st* page_info)
+{
+    int page_counter;
+    
+    // Check if the page list is allocated.
+    if (!dev->page_list) {
+        return -EINVAL;
+    }
+   
+    // Deallocate the pages.
+    for (page_counter = 0; 
+            page_counter < page_info->page_amount;
+            page_counter++) {
+
+        // Must be called to release the page list.
+        set_page_dirty(dev->page_list[page_counter]);
+        put_page(dev->page_list[page_counter]);
+        dev->page_list[page_counter] = NULL;
+
+        printk(KERN_INFO "Page structure number: %d was released. device:%04x:%02x:%02x.%0x\n",
+               page_counter, pci_domain_nr(dev->pci_dev->bus),
+               dev->pci_dev->bus->number, PCI_SLOT(dev->pci_dev->devfn),
+               PCI_FUNC(dev->pci_dev->devfn));
+    }
+
+    // All the pages are clean.
+    dev->page_list = NULL;
+
+    return 0;
+}
+
+static int read_dword_from_config_space(struct mst_dev_data* dev, struct read_dword_from_config_space* read_from_cspace)
+{
+    int ret = 0;
+
+    // take semaphore
+    ret = _vendor_specific_sem(dev, 1);
+    if (ret) {
+        return ret;
+    }
+
+    // Read dword from config space
+    ret = pci_read_config_dword(dev->pci_dev, read_from_cspace->offset, &read_from_cspace->data);
+    if (ret) {
+        goto cleanup;
+    }
+
+cleanup:
+    // clear semaphore
+    _vendor_specific_sem(dev, 0);
+    return ret;
+}
+
 /****************************************************/
 static ssize_t mst_read(struct file *file, char *buf, size_t count,
 		loff_t *f_pos)
@@ -1184,6 +1316,68 @@ static int mst_ioctl(struct inode *inode, struct file *file,
 			goto fin;
 		break;
 	}
+    case PCICONF_PAGE_PIN:
+    case PCICONF_PAGE_UNPIN:
+    {
+        struct page_info_st page_info;
+        
+        // Device validation.
+        if (!dev->initialized || !dev->pci_dev) {
+            res = -ENOTTY;
+            goto fin;
+        }
+
+        // Copy the page info structure from the user space.
+        if (copy_from_user(&page_info, user_buf, sizeof(struct page_info_st))) {
+            res = -EFAULT;
+            goto fin;
+        }
+
+        if (opcode == PCICONF_PAGE_PIN) {
+            res = page_pin(dev, &page_info);
+            if (res) {
+                goto fin;
+            }
+            
+            // Return the physical address to the user. 
+            if (copy_to_user(user_buf, &page_info, sizeof(struct page_info_st)) != 0) {
+                res = -EFAULT;
+                goto fin;
+            }
+        } else {
+            res = page_unpin(dev, &page_info);
+        }
+
+        break;
+    }
+    case PCICONF_READ_DWORD_FROM_CONFIG_SPACE:
+    {
+        struct read_dword_from_config_space read_from_cspace;
+
+        // Device validation.
+        if (!dev->initialized || !dev->pci_dev) {
+            res =- ENOTTY;
+            goto fin;
+        }
+
+        // Copy the page info structure from the user space.
+        if (copy_from_user(&read_from_cspace, user_buf, sizeof(struct read_dword_from_config_space))) {
+            res = -EFAULT;
+            goto fin;
+        }
+
+        res = read_dword_from_config_space(dev, &read_from_cspace);
+        if (res) {
+            goto fin;
+        }
+        // Return the physical address to the user. 
+        if (copy_to_user(user_buf, &read_from_cspace, sizeof(struct read_dword_from_config_space)) != 0) {
+            res = -EFAULT;
+            goto fin;
+        }
+
+        break;
+    }
 
 	default: {
 		mst_err("incorrect opcode = %x available opcodes:\n", opcode);

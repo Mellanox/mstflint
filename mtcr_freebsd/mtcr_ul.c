@@ -2482,13 +2482,20 @@ int supports_reg_access_gmp(mfile *mf, maccess_reg_method_t reg_method)
     return 0;
 }
 
-int allocate_kernel_memory_page(mfile *mf, mtcr_alloc_page* user_alloc_page)
+int allocate_kernel_memory_page(mfile *mf, struct mtcr_page_info* page_info,
+                                int page_amount)
 {
     (void)mf;
-    (void)user_alloc_page;
+    (void)page_info;
+    (void)page_amount;
     return ME_UNSUPPORTED_OPERATION;
 }
 
+int deallocate_kernel_memory_page(mfile *mf)
+{
+    (void)mf;
+    return ME_UNSUPPORTED_OPERATION;
+}
 
 int mset_i2c_addr_width(mfile *mf, u_int8_t addr_width)
 {
@@ -2513,4 +2520,15 @@ int get_i2c_freq(mfile* mf, u_int8_t* freq) {
     (void) mf;
     (void) freq;
     return 1;
+}
+
+
+int read_dword_from_conf_space(u_int32_t offset, mfile *mf,
+                               struct mtcr_read_dword_from_config_space* read_config_space)
+{
+    (void)offset;
+    (void)mf;
+    (void)read_config_space;
+
+    return ME_UNSUPPORTED_OPERATION;
 }

@@ -143,6 +143,14 @@ int mvpd_read4_ul(mfile *mf, unsigned int offset, u_int8_t value[4]);
 
 int space_to_cap_offset(int space);
 
+int allocate_kernel_memory_page(mfile *mf, struct mtcr_page_info* page_info,
+                                int page_amount);
+
+int deallocate_kernel_memory_page(mfile *mf);
+
+int read_dword_from_conf_space(u_int32_t offset, mfile *mf,
+                               struct mtcr_read_dword_from_config_space* read_config_space);
+
 #ifdef __cplusplus
 }
 #endif

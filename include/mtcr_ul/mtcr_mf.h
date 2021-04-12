@@ -44,6 +44,13 @@ struct mft_core_wrapper {
     void* reset_access;
 };
 
+
+struct page_list {
+    // User space buffer page aligned.
+    char* page_list;
+    int page_amount;
+};
+
 /*  All fields in follow structure are not supposed to be used */
 /*  or modified by user programs. Except i2c_slave that may be */
 /*  modified before each access to target I2C slave address */
@@ -131,6 +138,8 @@ struct mfile_t {
 
     // For dma purpose
     void* dma_props;
+
+    struct page_list user_page_list;
 
     // MFT core wrapper objects.
     struct mft_core_wrapper mft_core_object;
