@@ -177,8 +177,6 @@ MTCR_API int MWRITE4_SEMAPHORE(mfile* mf, int offset, int value);
 
 MTCR_API int MREAD4_SEMAPHORE(mfile* mf, int offset, u_int32_t* ptr);
 
-int allocate_kernel_memory_page(mfile *mf, mtcr_alloc_page* user_alloc_page);
-
 void set_increase_poll_time(int new_value);
 
 #ifdef __cplusplus

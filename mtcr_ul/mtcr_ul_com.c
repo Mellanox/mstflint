@@ -3314,7 +3314,7 @@ int allocate_kernel_memory_page(mfile* mf, struct mtcr_page_info* page_info,
                                 int page_amount)
 {
  #if !defined(__VMKERNEL_UW_NATIVE__)
-    int page_size = getpagesize();
+    int page_size = sysconf(_SC_PAGESIZE);
     int i;
     int current_offest = 0;
   
