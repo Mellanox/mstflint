@@ -61,7 +61,7 @@ using namespace std;
 #ifndef UEFI_BUILD
 #define DPRINTF(args)        do { char *reacDebug = getenv("FW_COMPS_DEBUG"); \
                                   if (reacDebug != NULL) {  printf("\33[2K\r"); \
-                                      printf("[FW_COMPS_DEBUG]: -D- "); printf args; fflush(stdout);} } while (0)
+                                      printf("%s:%d: ",__FILE__, __LINE__); printf args; fflush(stdout);} } while (0)
 #else
 #define DPRINTF(...)
 #endif
@@ -164,6 +164,7 @@ public:
         COMPID_GEARBOX = 0xA,
         COMPID_CONGESTION_CONTROL = 0xB,
         COMPID_LINKX = 0xC,
+        COMPID_CRYPTO_TO_COMMISSIONING = 0xD,
         COMPID_UNKNOWN = 0xff,
     } comps_ids_t;
 
@@ -525,7 +526,7 @@ private:
     bool _linkXFlow;
     bool _activationNeeded;
     bool _downloadTransferNeeded;
-    int _activation_delay_sec;
+    u_int8_t _activation_delay_sec;
     int _rejectedIndex;
 #ifndef UEFI_BUILD
     trm_ctx _trm;

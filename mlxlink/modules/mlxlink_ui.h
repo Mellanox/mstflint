@@ -36,6 +36,7 @@
 #define MLXLINK_UI_H
 
 #include "mlxlink_commander.h"
+#include "printutil/mlxlink_record.h"
 
 class MlxlinkUi : public CommandLineRequester {
 public:
@@ -60,11 +61,13 @@ protected:
     virtual void validateCableParams();
     virtual void validateTxGroupParams();
     virtual void validateGradeScanParams();
+    virtual void validateErrInjParams();
+    virtual void validatePortInfoParams();
     virtual void paramValidate();
     virtual void createMlxlinkCommander();
 
     CommandLineParser _cmdParser;
-    std::vector<u_int32_t> _sendRegFuncMap;
+    std::vector<OPTION_TYPE> _sendRegFuncMap;
     MlxlinkCommander *_mlxlinkCommander;
 };
 #endif /* MLXLINK_UI_H */

@@ -43,13 +43,13 @@ const unsigned short FORMAT0_MAX_MINOR_SIB = 1;
 const unsigned short FORMAT1_MIN_MINOR = 100;
 
 FwVersion::FwVersion() :
-        _major(0), _minor(0), _subminor(0), _devBranchTag(""), _devID(DeviceUnknown) {
+        _major(0), _minor(0), _subminor(0), _devBranchTag("") {
 }
 
 FwVersion::FwVersion(unsigned short int major, unsigned short int minor,
-        unsigned short int subminor, const std::string& devBranchTag, unsigned short devID) :
+        unsigned short int subminor, const std::string& devBranchTag) :
         _major(major), _minor(minor), _subminor(subminor),
-        _devBranchTag(devBranchTag), _devID(devID) {
+        _devBranchTag(devBranchTag) {
 }
 
 FwVersion::~FwVersion() {
@@ -57,7 +57,7 @@ FwVersion::~FwVersion() {
 
 FwVersion::FwVersion(const FwVersion& rhs) :
         _major(rhs._major), _minor(rhs._minor), _subminor(rhs._subminor),
-        _devBranchTag(rhs._devBranchTag), _devID(rhs._devID) {
+        _devBranchTag(rhs._devBranchTag) {
 }
 
 std::string FwVersion::get() const {
@@ -70,7 +70,6 @@ FwVersion& FwVersion::operator =(const FwVersion& rhs) {
         _minor = rhs._minor;
         _subminor = rhs._subminor;
         _devBranchTag = rhs._devBranchTag;
-        _devID = rhs._devID;
     }
     return *this;
 }
@@ -113,9 +112,27 @@ bool FwVersion::operator !=(const FwVersion& rhs) const {
     return !(this->operator ==(rhs));
 }
 
+// 13 is Spectrum1
+// 15 is switchIb2
+// 27 is quantum
+// 27/29 is Spectrum2
+// 30 is Spectrum3
+// 31 is quantum2
+// 32 is Spectrum4, I guess (kostiantynm)
+bool FwVersion::is_Switch() const
+{
+    if (_major == 0 && _minor == 0 && _subminor == 0 && !_devBranchTag.empty()) {
+        return true;
+    }
+    if (_major == 11 || _major == 13 || _major == 15 || _major == 27
+        || _major == 29 || _major == 30 || _major == 31 || _major == 32) {
+        return true;
+    }
+    return false;
+}
+
 bool FwVersion::is_master_branch() const {
-    dm_dev_id_t dm_id = get_dmid_by_dev_rev_id(_devID, -1);
-    if (!dm_dev_is_switch(dm_id)) {
+    if (!is_Switch()) {
         return true;
     }
     return _devBranchTag.empty();

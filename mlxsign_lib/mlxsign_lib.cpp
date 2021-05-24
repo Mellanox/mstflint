@@ -36,9 +36,13 @@
 #include <openssl/pem.h>
 #include <openssl/bio.h>
 #include <openssl/hmac.h>
-
+#include <openssl/engine.h>
+#include <openssl/conf.h>
+#include <openssl/err.h>
+#include <openssl/x509v3.h>
 #include "mlxsign_lib.h"
 
+using namespace std;
 #define CHECK_RC(rc, expRc, errCode) do { \
         if ((rc) != (expRc)) { return (errCode);} \
 } while (0)
@@ -56,7 +60,7 @@ int MlxSignSHA::getDigest(std::string& digest)
     char *digestStr = new char[_digestLength * 2 + 1];
 
     rc = getDigest(digestVec);
-    if (rc != MLX_SIGN_SUCCESS) {
+    if (rc != MlxSign::MLX_SIGN_SUCCESS) {
         delete[] digestStr;
         return rc;
     }
@@ -66,7 +70,7 @@ int MlxSignSHA::getDigest(std::string& digest)
     }
     digest = digestStr;
     delete[] digestStr;
-    return MLX_SIGN_SUCCESS;
+    return MlxSign::MLX_SIGN_SUCCESS;
 }
 
 void MlxSignSHA::reset()
@@ -103,10 +107,10 @@ int MlxSignSHA256::getDigest(std::vector<u_int8_t>& digest)
     SHA256_CTX ctx;
     digest.resize(_digestLength);
     memset(&digest[0], 0, digest.size());
-    rc = SHA256_Init( &ctx); CHECK_RC(rc, 1, MLX_SIGN_SHA_INIT_ERROR);
-    rc = SHA256_Update(&ctx, (void*)(&_buff[0]), _buff.size()); CHECK_RC(rc, 1, MLX_SIGN_SHA_CALCULATION_ERROR);
-    rc = SHA256_Final(&digest[0], &ctx); CHECK_RC(rc, 1, MLX_SIGN_SHA_CALCULATION_ERROR);
-    return MLX_SIGN_SUCCESS;
+    rc = SHA256_Init( &ctx); CHECK_RC(rc, 1, MlxSign::MLX_SIGN_SHA_INIT_ERROR);
+    rc = SHA256_Update(&ctx, (void*)(&_buff[0]), _buff.size()); CHECK_RC(rc, 1, MlxSign::MLX_SIGN_SHA_CALCULATION_ERROR);
+    rc = SHA256_Final(&digest[0], &ctx); CHECK_RC(rc, 1, MlxSign::MLX_SIGN_SHA_CALCULATION_ERROR);
+    return MlxSign::MLX_SIGN_SUCCESS;
 }
 
 /*
@@ -123,10 +127,14 @@ int MlxSignSHA512::getDigest(std::vector<u_int8_t>& digest)
     SHA512_CTX ctx;
     digest.resize(_digestLength);
     memset(&digest[0], 0, digest.size());
-    rc = SHA512_Init( &ctx); CHECK_RC(rc, 1, MLX_SIGN_SHA_INIT_ERROR);
-    rc = SHA512_Update(&ctx, (void*)(&_buff[0]), _buff.size()); CHECK_RC(rc, 1, MLX_SIGN_SHA_CALCULATION_ERROR);
-    rc = SHA512_Final(&digest[0], &ctx); CHECK_RC(rc, 1, MLX_SIGN_SHA_CALCULATION_ERROR);
-    return MLX_SIGN_SUCCESS;
+    rc = SHA512_Init( &ctx); CHECK_RC(rc, 1, MlxSign::MLX_SIGN_SHA_INIT_ERROR);
+    rc = SHA512_Update(&ctx, (void*)(&_buff[0]), _buff.size()); CHECK_RC(rc, 1, MlxSign::MLX_SIGN_SHA_CALCULATION_ERROR);
+    rc = SHA512_Final(&digest[0], &ctx); CHECK_RC(rc, 1, MlxSign::MLX_SIGN_SHA_CALCULATION_ERROR);
+    return MlxSign::MLX_SIGN_SUCCESS;
+}
+
+MlxSignRSA::MlxSignRSA() : _privCtx(NULL), _pubCtx(NULL)
+{
 }
 
 MlxSignRSA::~MlxSignRSA()
@@ -174,13 +182,13 @@ int MlxSignRSA::sign(MlxSign::SHAType shaType, const std::vector<u_int8_t>& msg,
     std::vector<u_int8_t> encryptedMsgTemp;
 
     if (!_privCtx) {
-        return MLX_SIGN_RSA_NO_PRIV_KEY_ERROR;
+        return MlxSign::MLX_SIGN_RSA_NO_PRIV_KEY_ERROR;
     }
 
     // size check
     maxMsgSize = RSA_size((RSA*)_privCtx);
     if (msg.size() > maxMsgSize) {
-        return MLX_SIGN_RSA_MESSAGE_TOO_LONG_ERROR;
+        return MlxSign::MLX_SIGN_RSA_MESSAGE_TOO_LONG_ERROR;
     }
     // do the job
     encryptedMsgTemp.resize(maxMsgSize, 0);
@@ -192,24 +200,23 @@ int MlxSignRSA::sign(MlxSign::SHAType shaType, const std::vector<u_int8_t>& msg,
     } else if (shaType == MlxSign::SHA512) {
         type = NID_sha512;
     } else {
-        return MLX_SIGN_UNSUPPORTED_SHA_TYPE;
+        return MlxSign::MLX_SIGN_UNSUPPORTED_SHA_TYPE;
     }
 
     if (!RSA_sign(type, msg.data(), msg.size(), encryptedMsgTemp.data(), &signLen, (RSA*)_privCtx)) {
-        return MLX_SIGN_RSA_CALCULATION_ERROR;
+        return MlxSign::MLX_SIGN_RSA_CALCULATION_ERROR;
     }
-
     encryptedMsg.resize(signLen, 0);
     memcpy(encryptedMsg.data(), encryptedMsgTemp.data(), signLen);
 
-    return MLX_SIGN_SUCCESS;
+    return MlxSign::MLX_SIGN_SUCCESS;
 }
 
 int MlxSignRSA::verify(MlxSign::SHAType shaType, const std::vector<u_int8_t>& digest, const std::vector<u_int8_t>& sig, bool& result)
 {
 
     if (!_pubCtx) {
-        return MLX_SIGN_RSA_NO_PUB_KEY_ERROR;
+        return MlxSign::MLX_SIGN_RSA_NO_PUB_KEY_ERROR;
     }
 
     int type;
@@ -219,12 +226,12 @@ int MlxSignRSA::verify(MlxSign::SHAType shaType, const std::vector<u_int8_t>& di
     } else if (shaType == MlxSign::SHA512) {
         type = NID_sha512;
     } else {
-        return MLX_SIGN_UNSUPPORTED_SHA_TYPE;
+        return MlxSign::MLX_SIGN_UNSUPPORTED_SHA_TYPE;
     }
 
     result = RSA_verify(type, digest.data(), digest.size(), sig.data(), sig.size(), (RSA*)_pubCtx);
 
-    return MLX_SIGN_SUCCESS;
+    return MlxSign::MLX_SIGN_SUCCESS;
 }
 
 int MlxSignRSA::encrypt(const std::vector<u_int8_t>& msg, std::vector<u_int8_t>& encryptedMsg)
@@ -232,19 +239,19 @@ int MlxSignRSA::encrypt(const std::vector<u_int8_t>& msg, std::vector<u_int8_t>&
     int maxMsgSize;
 
     if (!_privCtx) {
-        return MLX_SIGN_RSA_NO_PRIV_KEY_ERROR;
+        return MlxSign::MLX_SIGN_RSA_NO_PRIV_KEY_ERROR;
     }
     // size check
     maxMsgSize = RSA_size((RSA*)_privCtx);
     if (static_cast<int>(msg.size()) > maxMsgSize) {
-        return MLX_SIGN_RSA_MESSAGE_TOO_LONG_ERROR;
+        return MlxSign::MLX_SIGN_RSA_MESSAGE_TOO_LONG_ERROR;
     }
     // do the job
     encryptedMsg.resize(maxMsgSize, 0);
     if (RSA_private_encrypt((int)msg.size(), &msg[0], &encryptedMsg[0], (RSA*)_privCtx, RSA_PKCS1_PADDING ) != maxMsgSize) {
-        return MLX_SIGN_RSA_CALCULATION_ERROR;
+        return MlxSign::MLX_SIGN_RSA_CALCULATION_ERROR;
     }
-    return MLX_SIGN_SUCCESS;
+    return MlxSign::MLX_SIGN_SUCCESS;
 }
 
 int MlxSignRSA::decrypt(const std::vector<u_int8_t>& encryptedMsg, std::vector<u_int8_t>& originalMsg)
@@ -252,20 +259,20 @@ int MlxSignRSA::decrypt(const std::vector<u_int8_t>& encryptedMsg, std::vector<u
     int maxMsgSize;
     int origMsgSize;
     if (!_pubCtx) {
-        return MLX_SIGN_RSA_NO_PUB_KEY_ERROR;
+        return MlxSign::MLX_SIGN_RSA_NO_PUB_KEY_ERROR;
     }
     // size check
     maxMsgSize = RSA_size((RSA*)_pubCtx);
     if (static_cast<int>(encryptedMsg.size()) > maxMsgSize) {
-        return MLX_SIGN_RSA_MESSAGE_TOO_LONG_ERROR;
+        return MlxSign::MLX_SIGN_RSA_MESSAGE_TOO_LONG_ERROR;
     }
     // do the job
     originalMsg.resize(maxMsgSize, 0);
     if ((origMsgSize = RSA_public_decrypt((int)encryptedMsg.size(), &encryptedMsg[0], &originalMsg[0], (RSA*)_pubCtx, RSA_PKCS1_PADDING )) == -1) {
-        return MLX_SIGN_RSA_CALCULATION_ERROR;
+        return MlxSign::MLX_SIGN_RSA_CALCULATION_ERROR;
     }
     originalMsg.resize(origMsgSize);
-    return MLX_SIGN_SUCCESS;
+    return MlxSign::MLX_SIGN_SUCCESS;
 }
 
 int MlxSignRSA::getEncryptMaxMsgSize()
@@ -317,7 +324,7 @@ int MlxSignRSA::createRSAFromPEMFileName(const std::string& fname, bool isPrivat
     FILE *fp = fopen(fname.c_str(), "rb");
     RSA *rsa = NULL;
     if (!fp) {
-        return MLX_SIGN_RSA_FILE_OPEN_ERROR;
+        return MlxSign::MLX_SIGN_RSA_FILE_OPEN_ERROR;
     }
     rsa = RSA_new();
     if (isPrivateKey) {
@@ -330,9 +337,9 @@ int MlxSignRSA::createRSAFromPEMFileName(const std::string& fname, bool isPrivat
 
     fclose(fp);
     if (rsa == NULL) {
-        return MLX_SIGN_RSA_INIT_CTX_ERROR;
+        return MlxSign::MLX_SIGN_RSA_INIT_CTX_ERROR;
     }
-    return MLX_SIGN_SUCCESS;
+    return MlxSign::MLX_SIGN_SUCCESS;
 }
 
 int MlxSignRSA::createRSAFromPEMKeyString(const std::string& pemKey,  bool isPrivateKey)
@@ -342,7 +349,7 @@ int MlxSignRSA::createRSAFromPEMKeyString(const std::string& pemKey,  bool isPri
     // TODO: check if this may leak
     keybio = BIO_new_mem_buf((void*)pemKey.c_str(), -1);
     if (keybio == NULL) {
-        return MLX_SIGN_RSA_KEY_BIO_ERROR;
+        return MlxSign::MLX_SIGN_RSA_KEY_BIO_ERROR;
     }
     if (isPrivateKey) {
         rsa = PEM_read_bio_RSAPrivateKey(keybio, &rsa, NULL, NULL);
@@ -353,9 +360,9 @@ int MlxSignRSA::createRSAFromPEMKeyString(const std::string& pemKey,  bool isPri
     }
     BIO_free_all(keybio);
     if (rsa == NULL) {
-        return MLX_SIGN_RSA_INIT_CTX_ERROR;
+        return MlxSign::MLX_SIGN_RSA_INIT_CTX_ERROR;
     }
-    return MLX_SIGN_SUCCESS;
+    return MlxSign::MLX_SIGN_SUCCESS;
 }
 
 MlxSignHMAC::MlxSignHMAC()
@@ -370,21 +377,13 @@ MlxSignHMAC::MlxSignHMAC()
 
 int MlxSignHMAC::setKey(const std::vector<u_int8_t>& key)
 {
+
     if (HMAC_Init_ex((HMAC_CTX*)ctx, (char*)key.data(), key.size(), EVP_sha512(), NULL) == 0) {
-        return MLX_SIGN_HMAC_ERROR;
+        return MlxSign::MLX_SIGN_HMAC_ERROR;
     }
 
-    return MLX_SIGN_SUCCESS;
+    return MlxSign::MLX_SIGN_SUCCESS;
 }
-
-/*int MlxSignHMAC::update(const std::vector<u_int8_t>& buff)
-   {
-    if (HMAC_Update(&ctx, (unsigned char*)buff.data(), buff.size()) == 0) {
-        return MLX_SIGN_HMAC_ERROR;
-    }
-
-    return MLX_SIGN_SUCCESS;
-   }*/
 
 MlxSignHMAC& operator<<(MlxSignHMAC& lhs, const std::vector<u_int8_t>& buff)
 {
@@ -400,7 +399,7 @@ int MlxSignHMAC::getDigest(std::vector<u_int8_t>& digest)
     unsigned int len = 64; //512 bits
 
     if (HMAC_Update((HMAC_CTX*)ctx, (unsigned char*)data.data(), data.size()) == 0) {
-        return MLX_SIGN_HMAC_ERROR;
+        return MlxSign::MLX_SIGN_HMAC_ERROR;
     }
 
     digest.resize(len);
@@ -408,13 +407,7 @@ int MlxSignHMAC::getDigest(std::vector<u_int8_t>& digest)
     //TODO why len is passed by reference?
     //TODO HMAC_Final must return 1 on success and 0 on failure but that is not happening!
     HMAC_Final((HMAC_CTX*)ctx, digest.data(), &len);
-
-    /*for (int i = 0; i != len; i++)
-            printf("%02x", (unsigned int)digest[i]);
-       printf("\n");
-     */
-
-    return MLX_SIGN_SUCCESS;
+    return MlxSign::MLX_SIGN_SUCCESS;
 }
 
 MlxSignHMAC::~MlxSignHMAC()

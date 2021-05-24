@@ -113,7 +113,8 @@ FlintParams::FlintParams()
     activate = false;
     downstream_device_ids_specified = false;
     download_transfer = false;
-    activate_delay_sec = -1;
+    activate_delay_sec = 0;
+    openssl_engine_usage_specified = false;
 }
 
 FlintParams::~FlintParams()

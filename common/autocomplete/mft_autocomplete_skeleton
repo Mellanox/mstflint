@@ -1,0 +1,14 @@
+. /etc/bash_completion.d/mft/mft_base_autocomplete
+
+function _@TOOL_NAME@ {
+
+source <(cat << EOF
+$( $PYTHON_EXEC /etc/bash_completion.d/mft/mft_help_to_completion.py -n @TOOL_NAME@ -c "$COMP_LINE" )
+EOF
+)
+
+    _runAutoComplete
+
+}
+
+complete -F _@TOOL_NAME@ @TOOL_NAME@

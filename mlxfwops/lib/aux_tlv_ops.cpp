@@ -416,11 +416,11 @@ Tlv_Status_t ImageTimeStamp::init()
 Tlv_Status_t ImageTimeStamp::setTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer)
 {
     aux_tlv tsTlv;
-    memset(&tsTlv, 0, sizeof(tsTlv));
+    memset(&(tsTlv.hdr), 0, sizeof(tsTlv.hdr)); // Init hdr
     tsTlv.hdr.header_type = ImageTimeStamp::TS_Header_Type;
     tsTlv.hdr.type = ImageTimeStamp::TS_Tlv_Type;
     tsTlv.hdr.length = TOOLS_OPEN_TIMESTAMP_SIZE;
-    tsTlv.data.resize(tsTlv.hdr.length);
+    tsTlv.data.resize(tsTlv.hdr.length); // Init data
     memset(&tsTlv.data[0], 0, tsTlv.hdr.length);
     struct tools_open_timestamp tsData;
     tsData.fw_version = fwVer;
@@ -439,7 +439,7 @@ Tlv_Status_t ImageTimeStamp::queryTimeStamp(struct tools_open_ts_entry& timestam
     (void)queryRunning;
     aux_tlv tsTlv;
     struct tools_open_timestamp tsData;
-    memset(&tsTlv, 0, sizeof(tsTlv));
+    memset(&(tsTlv.hdr), 0, sizeof(tsTlv.hdr));
     Tlv_Status_t rc = _imgTlvOps.queryTlv(ImageTimeStamp::TS_Tlv_Type, ImageTimeStamp::TS_Header_Type, tsTlv);
     if (rc) {
         return (Tlv_Status_t)errmsgWCode(rc, "Failed to query timestamp, Data not found in image");

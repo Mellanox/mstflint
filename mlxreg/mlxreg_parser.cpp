@@ -322,7 +322,7 @@ void RegAccessParser::strToUint32(char *str, u_int32_t &uint)
 ************************************/
 AdbInstance* RegAccessParser::getField(string name)
 {
-    std::vector<AdbInstance*> subItems = _regNode->getLeafFields();
+    std::vector<AdbInstance*> subItems = _regNode->getLeafFields(true);
     for (std::vector<AdbInstance*>::size_type i = 0; i != subItems.size(); i++) {
         if (subItems[i]->name == name) {
             return subItems[i];
@@ -337,7 +337,7 @@ string RegAccessParser::getAccess(const AdbInstance *field)
     if (access.empty()) {
         access = "N/A";
         if (field->parent) {
-        access = getAccess(field->parent);
+            access = getAccess(field->parent);
         }
     }
     return access;
@@ -365,7 +365,7 @@ bool RegAccessParser::isIndex(AdbInstance *field)
 std::vector<string> RegAccessParser::getAllIndexes(AdbInstance *node)
 {
     std::vector<string> indexes;
-    std::vector<AdbInstance*> subItems = node->getLeafFields();
+    std::vector<AdbInstance*> subItems = node->getLeafFields(true);
     for (std::vector<AdbInstance*>::size_type i = 0; i != subItems.size(); i++) {
         if (isIndex(subItems[i])) {
             indexes.push_back(subItems[i]->name);

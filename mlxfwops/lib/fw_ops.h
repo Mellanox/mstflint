@@ -41,6 +41,7 @@
 #include "signature_manager_factory.h"
 #include "fw_version.h"
 #include "tools_layouts/cx4fw_layouts.h"
+#include <mlxsign_lib/mlxsign_lib.h>
 #ifdef CABLES_SUPP
 #include <cable_access/cable_access.h>
 #endif
@@ -56,7 +57,6 @@ typedef int (*PrintCallBackAdv) (int completion, char *str);
 MLXFWOP_API extern bool nextBootFwVer;
 #define GLOBAL_ALIGNMENT 0x80
 #define UUID_LEN 16
-enum SHATYPE { SHA256, SHA512};
 class MLXFWOP_API FwOperations : public FlintErrMsg {
 public:
     #define EXP_ROM_GEN_DEVID 0
@@ -155,7 +155,7 @@ public:
 
     virtual bool FwBurn(FwOperations *imageOps, u_int8_t forceVersion, ProgressCallBack progressFunc = (ProgressCallBack)NULL) = 0;
     virtual bool FwBurnAdvanced(FwOperations *imageOps, ExtBurnParams& burnParams) = 0;
-    virtual bool getExtendedHWAravaPtrs(VerifyCallBack verifyCallBackFunc, FBase* ioAccess, bool IsBurningProcess);
+    virtual bool getExtendedHWAravaPtrs(VerifyCallBack verifyCallBackFunc, FBase* ioAccess, bool IsBurningProcess, bool isVerify);
     virtual bool FwBurnAdvanced(std::vector <u_int8_t> imageOps4MData, ExtBurnParams& burnParams, FwComponent::comps_ids_t ComponentId = FwComponent::COMPID_BOOT_IMG);
     virtual bool FwBurnBlock(FwOperations *imageOps, ProgressCallBack progressFunc) = 0; //Add: callback progress, question arr, callback question, configurations
     virtual bool FwWriteBlock(u_int32_t addr, std::vector<u_int8_t> dataVec, ProgressCallBack progressFunc = (ProgressCallBack)NULL);
@@ -224,7 +224,7 @@ public:
     virtual bool IsLifeCycleSupported();
     void GetFwParams(fw_ops_params_t&);
     virtual void CleanInterruptedCommand() {}//by default do nothing
-    virtual bool FwCalcSHA(SHATYPE, vector<u_int8_t>&, vector<u_int8_t>&);
+    virtual bool FwCalcSHA(MlxSign::SHAType, vector<u_int8_t>&, vector<u_int8_t>&);
     //bool GetExpRomVersionWrapper();
     void getSupporteHwId(u_int32_t **supportedHwId, u_int32_t &supportedHwIdNum);
 

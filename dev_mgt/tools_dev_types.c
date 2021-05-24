@@ -61,7 +61,6 @@ enum dm_dev_type {
 struct device_info {
     dm_dev_id_t dm_id;
     u_int16_t hw_dev_id;
-    u_int16_t fw_dev_id;
     int hw_rev_id;               /* -1 means all revisions match this record */
     int sw_dev_id;               /* -1 means all hw ids  match this record */
     const char *name;
@@ -90,6 +89,7 @@ enum dm_dev_type getCableType(u_int8_t id)
     switch (id) {
     case 0xd:
     case 0x11:
+    case 0x19: // Stallion2
     case 0xe:
     case 0xc:
         return DM_QSFP_CABLE;
@@ -107,7 +107,6 @@ static struct device_info g_devs_info[] = {
     {
         DeviceInfiniScaleIV,    //dm_id
         0x01b3,                 //hw_dev_id
-        0xFFFF,                 //fw_dev_id
         -1,                     //hw_rev_id
         -1,                     //sw_dev_id
         "InfiniScaleIV",        //name
@@ -117,7 +116,6 @@ static struct device_info g_devs_info[] = {
     {
         DeviceSwitchX,          //dm_id
         0x0245,                 //hw_dev_id
-        0xc738,                 //fw_dev_id
         -1,                     //hw_rev_id
         -1,                     //sw_dev_id
         "SwitchX",              //name
@@ -127,7 +125,6 @@ static struct device_info g_devs_info[] = {
     {
         DeviceConnectX2,        //dm_id
         0x190,                  //hw_dev_id
-        0x1002,                 //fw_dev_id
         0xb0,                   //hw_rev_id
         -1,                     //sw_dev_id
         "ConnectX2",            //name
@@ -137,7 +134,6 @@ static struct device_info g_devs_info[] = {
     {
         DeviceConnectX3,        //dm_id
         0x1f5,                  //hw_dev_id
-        0x1003,                 //fw_dev_id
         -1,                     //hw_rev_id
         -1,                     //sw_dev_id
         "ConnectX3",            //name
@@ -147,7 +143,6 @@ static struct device_info g_devs_info[] = {
     {
         DeviceConnectIB,        //dm_id
         0x1ff,                  //hw_dev_id
-        0x1011,                 //fw_dev_id
         -1,                     //hw_rev_id
         -1,                     //sw_dev_id
         "ConnectIB",            //name
@@ -157,7 +152,6 @@ static struct device_info g_devs_info[] = {
     {
         DeviceConnectX3Pro,     //dm_id
         0x1f7,                  //hw_dev_id
-        0x1007,                 //fw_dev_id
         -1,                     //hw_rev_id
         -1,                     //sw_dev_id
         "ConnectX3Pro",         //name
@@ -167,7 +161,6 @@ static struct device_info g_devs_info[] = {
     {
         DeviceSwitchIB,         //dm_id
         0x247,                  //hw_dev_id
-        0xcb20,                 //fw_dev_id
         -1,                     //hw_rev_id
         -1,                     //sw_dev_id
         "SwitchIB",             //name
@@ -177,7 +170,6 @@ static struct device_info g_devs_info[] = {
     {
         DeviceSpectrum,         //dm_id
         0x249,                  //hw_dev_id
-        0xcb84,                 //fw_dev_id
         -1,                     //hw_rev_id
         -1,                     //sw_dev_id
         "Spectrum",             //name
@@ -187,7 +179,6 @@ static struct device_info g_devs_info[] = {
     {
         DeviceConnectX4,        //dm_id
         0x209,                  //hw_dev_id
-        0x1013,                 //fw_dev_id
         -1,                     //hw_rev_id
         -1,                     //sw_dev_id
         "ConnectX4",            //name
@@ -197,7 +188,6 @@ static struct device_info g_devs_info[] = {
     {
         DeviceConnectX4LX,      //dm_id
         0x20b,                  //hw_dev_id
-        0x1015,                 //fw_dev_id
         -1,                     //hw_rev_id
         -1,                     //sw_dev_id
         "ConnectX4LX",          //name
@@ -207,7 +197,6 @@ static struct device_info g_devs_info[] = {
     {
         DeviceConnectX5,        //dm_id
         0x20d,                  //hw_dev_id
-        0x1017,                 //fw_dev_id
         -1,                     //hw_rev_id
         -1,                     //sw_dev_id
         "ConnectX5",            //name
@@ -217,7 +206,6 @@ static struct device_info g_devs_info[] = {
     {
         DeviceConnectX6,        //dm_id
         0x20f,                  //hw_dev_id
-        0x101b,                 //fw_dev_id
         -1,                     //hw_rev_id
         -1,                     //sw_dev_id
         "ConnectX6",            //name
@@ -227,7 +215,6 @@ static struct device_info g_devs_info[] = {
     {
         DeviceConnectX6DX,      //dm_id
         0x212,                  //hw_dev_id
-        0x101d,                 //fw_dev_id
         -1,                     //hw_rev_id
         -1,                     //sw_dev_id
         "ConnectX6DX",          //name
@@ -237,7 +224,6 @@ static struct device_info g_devs_info[] = {
     {
         DeviceConnectX6LX,      //dm_id
         0x216,                  //hw_dev_id
-        0x101f,                 //fw_dev_id
         -1,                     //hw_rev_id
         -1,                     //sw_dev_id
         "ConnectX6LX",          //name
@@ -247,7 +233,6 @@ static struct device_info g_devs_info[] = {
     {
         DeviceConnectX7,        //dm_id
         0x218,                  //hw_dev_id
-        0x1021,                 //fw_dev_id
         -1,                     //hw_rev_id
         -1,                     //sw_dev_id
         "ConnectX7",            //name
@@ -257,7 +242,6 @@ static struct device_info g_devs_info[] = {
     {
         DeviceBlueField,        //dm_id
         0x211,                  //hw_dev_id
-        0xa2d0,                 //fw_dev_id
         -1,                     //hw_rev_id
         -1,                     //sw_dev_id
         "BlueField",            //name
@@ -267,7 +251,6 @@ static struct device_info g_devs_info[] = {
     {
         DeviceBlueField2,        //dm_id
         0x214,                  //hw_dev_id
-        0xa2d4,                 //fw_dev_id
         -1,                     //hw_rev_id
         -1,                     //sw_dev_id
         "BlueField2",            //name
@@ -275,9 +258,17 @@ static struct device_info g_devs_info[] = {
         DM_HCA                  //dev_type
     },
     {
+        DeviceBlueField3,       //dm_id
+        0x21c,                  //hw_dev_id
+        -1,                     //hw_rev_id
+        -1,                     //sw_dev_id
+        "BlueField3",           //name
+        4,                      //port_num
+        DM_HCA                  //dev_type
+    },
+    {
         DeviceFPGANewton,       //dm_id
         0xfff,                  //hw_dev_id - Dummy device ID till we have official one
-        0xFFFF,                 //fw_dev_id
         -1,                     //hw_rev_id
         -1,                     //sw_dev_id
         "FPGA_NEWTON",          //name
@@ -287,7 +278,6 @@ static struct device_info g_devs_info[] = {
     {
         DeviceSwitchIB2,        //dm_id
         0x24b,                  //hw_dev_id
-        0xcf08,                 //fw_dev_id
         -1,                     //hw_rev_id
         -1,                     //sw_dev_id
         "SwitchIB2",            //name
@@ -297,7 +287,6 @@ static struct device_info g_devs_info[] = {
     {
         DeviceCableQSFP,        //dm_id
         0x0d,                   //hw_dev_id
-        0xFFFF,                 //fw_dev_id
         0,                      //hw_rev_id
         -1,                     //sw_dev_id
         "CableQSFP",            //name
@@ -307,7 +296,6 @@ static struct device_info g_devs_info[] = {
     {
         DeviceCableQSFPaging,   //dm_id
         0x11,                   //hw_dev_id
-        0xFFFF,                 //fw_dev_id
         0xab,                   //hw_rev_id
         -1,                     //sw_dev_id
         "CableQSFPaging",       //name
@@ -317,7 +305,6 @@ static struct device_info g_devs_info[] = {
     {
         DeviceCableSFP,         //dm_id
         0x03,                   //hw_dev_id
-        0xFFFF,                 //fw_dev_id
         1,                      //hw_rev_id
         -1,                     //sw_dev_id
         "CableSFP",             //name
@@ -327,7 +314,6 @@ static struct device_info g_devs_info[] = {
     {
         DeviceCableSFP51,       //dm_id
         0x03,                   //hw_dev_id
-        0xFFFF,                 //fw_dev_id
         1,                      //hw_rev_id
         -1,                     //sw_dev_id
         "CableSFP51",           //name
@@ -337,7 +323,6 @@ static struct device_info g_devs_info[] = {
     {
         DeviceCableSFP51Paging, //dm_id
         0x03,                   //hw_dev_id
-        0xFFFF,                 //fw_dev_id
         1,                      //hw_rev_id
         -1,                     //sw_dev_id
         "CableSFP51Paging",     //name
@@ -347,7 +332,6 @@ static struct device_info g_devs_info[] = {
     {
         DeviceSpectrum2,        //dm_id
         0x24e,                  //hw_dev_id
-        0xcf6c,                 //fw_dev_id
         -1,                     //hw_rev_id
         -1,                     //sw_dev_id
         "Spectrum2",            //name
@@ -357,7 +341,6 @@ static struct device_info g_devs_info[] = {
     {
         DeviceDummy,            //dm_id
         0x1,                    //hw_dev_id
-        0xFFFF,                 //fw_dev_id
         -1,                     //hw_rev_id
         -1,                     //sw_dev_id
         "DummyDevice",          //name
@@ -367,7 +350,6 @@ static struct device_info g_devs_info[] = {
     {
         DeviceQuantum,          //dm_id
         0x24d,                  //hw_dev_id
-        0xd2f0,                 //fw_dev_id
         -1,                     //hw_rev_id
         -1,                     //sw_dev_id
         "Quantum",              //name
@@ -377,17 +359,15 @@ static struct device_info g_devs_info[] = {
     {
         DeviceArdbeg,           //dm_id
         0x6e,                   //hw_dev_id (ArdbegMirror 0x70)
-        0xFFFF,                 //fw_dev_id
         -1,                     //hw_rev_id
         -1,                     //sw_dev_id
         "Ardbeg",               //name
         -1,                     //port_num
         DM_LINKX                //dev_type
     },
-        {
+    {
         DeviceBaritone,         //dm_id
         0x6b,                   //hw_dev_id (BaritoneMirror 0x71)
-        0xFFFF,                 //fw_dev_id
         -1,                     //hw_rev_id
         -1,                     //sw_dev_id
         "Baritone",             //name
@@ -397,7 +377,6 @@ static struct device_info g_devs_info[] = {
     {
         DeviceMenhit,           //dm_id
         0x72,                   //hw_dev_id (other versions 0x6f,0x73)
-        0xFFFF,                 //fw_dev_id
         -1,                     //hw_rev_id
         -1,                     //sw_dev_id
         "Menhit",               //name
@@ -407,7 +386,6 @@ static struct device_info g_devs_info[] = {
     {
         DeviceSecureHost,       //dm_id
         0xcafe,                 //hw_dev_id
-        0xFFFF,                 //fw_dev_id
         0xd0,                   //hw_rev_id
         0,                      //sw_dev_id
         "Unknown Device",       //name
@@ -417,7 +395,6 @@ static struct device_info g_devs_info[] = {
     {
         DeviceSpectrum3,        //dm_id
         0x250,                  //hw_dev_id
-        0xcf70,                 //fw_dev_id
         -1,                     //hw_rev_id
         -1,                     //sw_dev_id
         "Spectrum3",            //name
@@ -427,7 +404,6 @@ static struct device_info g_devs_info[] = {
     {
         DeviceSpectrum4,        //dm_id
         0x254,                  //hw_dev_id
-        0xcf80,                 //fw_dev_id
         -1,                     //hw_rev_id
         -1,                     //sw_dev_id
         "Spectrum4",            //name
@@ -437,7 +413,6 @@ static struct device_info g_devs_info[] = {
     {
         DeviceQuantum2,         //dm_id
         0x257,                  //hw_dev_id
-        0xd2f2,                 //fw_dev_id
         -1,                     //hw_rev_id
         -1,                     //sw_dev_id
         "Quantum2",             //name
@@ -447,7 +422,6 @@ static struct device_info g_devs_info[] = {
     {
         DeviceGearBox,          //dm_id
         0x252,                  //hw_dev_id
-        0xFFFF,                 //fw_dev_id
         -1,                     //hw_rev_id
         -1,                     //sw_dev_id
         "Amose GearBox",        //name
@@ -457,7 +431,6 @@ static struct device_info g_devs_info[] = {
     {
         DeviceGearBoxManager,   //dm_id
         0x253,                  //hw_dev_id
-        0xFFFF,                 //fw_dev_id
         -1,                     //hw_rev_id
         -1,                     //sw_dev_id
         "Amos GearBox Managaer",//name
@@ -467,7 +440,6 @@ static struct device_info g_devs_info[] = {
     {
         DeviceUnknown,          //dm_id
         0,                      //hw_dev_id
-        0xFFFF,                 //fw_dev_id
         0,                      //hw_rev_id
         0,                      //sw_dev_id
         "Unknown Device",       //name
@@ -488,21 +460,18 @@ static const struct device_info* get_entry(dm_dev_id_t type)
     return p;
 }
 
-dm_dev_id_t get_dmid_by_dev_rev_id(u_int32_t dev_id, u_int32_t rev_id)
+static const struct device_info* get_entry_by_dev_rev_id(u_int32_t hw_dev_id, u_int32_t hw_rev_id)
 {
     const struct device_info *p = g_devs_info;
-    if (dev_id == 0xFFFF) {
-        return DeviceUnknown;
-    }
     while (p->dm_id != DeviceUnknown) {
-        if ((dev_id == p->hw_dev_id) || (dev_id == p->fw_dev_id)) {
-            if ((p->hw_rev_id == -1) ||  ((int)rev_id == p->hw_rev_id)) {
+        if (hw_dev_id == p->hw_dev_id) {
+            if ((p->hw_rev_id == -1) ||  ((int)hw_rev_id == p->hw_rev_id)) {
                 break;
             }
         }
         p++;
     }
-    return p->dm_id;
+    return p;
 }
 
 /**
@@ -634,7 +603,7 @@ int dm_get_device_id(mfile *mf,
         *ptr_hw_rev    = EXTRACT(dword, 16, 8);
     }
 
-    *ptr_dm_dev_id = get_dmid_by_dev_rev_id(*ptr_hw_dev_id, *ptr_hw_rev);
+    *ptr_dm_dev_id = get_entry_by_dev_rev_id(*ptr_hw_dev_id, *ptr_hw_rev)->dm_id;
 
     if (*ptr_dm_dev_id == DeviceUnknown) {
 
@@ -649,7 +618,7 @@ int dm_get_device_id_offline(u_int32_t devid,
                              u_int32_t chip_rev,
                              dm_dev_id_t *ptr_dev_type)
 {
-    *ptr_dev_type = get_dmid_by_dev_rev_id(devid, chip_rev);
+    *ptr_dev_type = get_entry_by_dev_rev_id(devid, chip_rev)->dm_id;
     return *ptr_dev_type == DeviceUnknown ? MFE_UNSUPPORTED_DEVICE: MFE_OK;
 }
 

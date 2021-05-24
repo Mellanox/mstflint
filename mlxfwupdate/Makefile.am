@@ -106,7 +106,7 @@ common_LDADD  = $(USER_DIR)/dev_mgt/libdev_mgt.a\
                         -lm $(LIBSTD_CPP) ${LDL}
                         
 if ENABLE_OPENSSL
-common_LDADD += $(top_srcdir)/mlxsign_lib/libmlxsign.a -lcrypto
+common_LDADD += $(top_srcdir)/mlxsign_lib/libmlxsign.a -lcrypto -lssl
 else
 endif
 

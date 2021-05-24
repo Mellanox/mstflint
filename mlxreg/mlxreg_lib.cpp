@@ -161,7 +161,7 @@ AdbInstance* MlxRegLib::findAdbNode(string name)
 MlxRegLibStatus MlxRegLib::showRegister(string regName, std::vector<AdbInstance*> &fields)
 {
     AdbInstance *adbNode = findAdbNode(regName);
-    fields = adbNode->getLeafFields();
+    fields = adbNode->getLeafFields(true);
     return MRLS_SUCCESS;
 }
 

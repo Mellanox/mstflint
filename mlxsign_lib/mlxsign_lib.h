@@ -36,34 +36,8 @@
 #include <string>
 #include <cstring>
 #include <vector>
-
 #include <compatibility.h>
-
-/*
- * Error codes
- */
-enum {
-    MLX_SIGN_SUCCESS = 0,
-    MLX_SIGN_SHA_INIT_ERROR,
-    MLX_SIGN_SHA_CALCULATION_ERROR,
-
-    MLX_SIGN_RSA_PEM_FILE_ERROR = 0x100,
-    MLX_SIGN_RSA_MESSAGE_TOO_LONG_ERROR,
-    MLX_SIGN_RSA_FILE_OPEN_ERROR,
-    MLX_SIGN_RSA_FILE_READ_ERROR,
-    MLX_SIGN_RSA_INIT_CTX_ERROR,
-    MLX_SIGN_RSA_CALCULATION_ERROR,
-    MLX_SIGN_RSA_NO_PRIV_KEY_ERROR,
-    MLX_SIGN_RSA_NO_PUB_KEY_ERROR,
-    MLX_SIGN_RSA_KEY_BIO_ERROR,
-    MLX_SIGN_UNSUPPORTED_SHA_TYPE,
-
-    MLX_SIGN_HMAC_ERROR
-};
-
-namespace MlxSign {
-enum SHAType {SHA256, SHA512};
-}
+#include "mlxsign_com_def.h"
 
 /*
  * Class MlxSignSHA: used for calculating SHA digest on a data buffer.
@@ -127,9 +101,8 @@ public:
  */
 class MlxSignRSA {
 public:
-    MlxSignRSA() : _privCtx(NULL), _pubCtx(NULL) {};
     ~MlxSignRSA();
-
+    MlxSignRSA();
     int setPrivKeyFromFile(const std::string& pemKeyFilePath);
     int setPrivKey(const std::string& pemKey);
     int getPrivKeyLength() const;

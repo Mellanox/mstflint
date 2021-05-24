@@ -31,12 +31,12 @@
 
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(mstflint, 4.16.0, eranj@mellanox.co.il)
+AC_INIT(mstflint, 4.17.0, eranj@mellanox.co.il)
 
 AC_DEFINE_UNQUOTED([PROJECT], ["mstflint"], [Define the project name.])
 AC_SUBST([PROJECT])
 
-AC_DEFINE_UNQUOTED([VERSION], ["4.16.0"], [Define the project version.])
+AC_DEFINE_UNQUOTED([VERSION], ["4.17.0"], [Define the project version.])
 AC_SUBST([VERSION])
 
 AC_CONFIG_MACRO_DIR([m4])
@@ -57,7 +57,7 @@ MTCR_CONF_DIR=""
 LDL=""
 default_en_inband=""
 
-LDFLAGS="${LDFLAGS} -L/usr/lib64 -L/usr/local/lib -L/usr/local/lib64"
+LDFLAGS="${LDFLAGS} -L/usr/local/lib -L/usr/local/lib64 -L/usr/lib64"
 CXXFLAGS="${CXXFLAGS} -isystem /usr/local/include" 
 if test "x$OS" = "xFreeBSD"; then
     AC_MSG_NOTICE(FreeBSD Build)
@@ -200,6 +200,7 @@ AC_ARG_ENABLE(openssl,
             [enable_openssl="yes"])
 AC_MSG_RESULT($enable_openssl)
 if test "x$enable_openssl" = "xyes"; then
+  # check version >= 1.1.1 (not implemented)
   AC_CHECK_HEADER(openssl/sha.h,,AC_MSG_ERROR([cannot find openssl/sha.h . remove --enable-openssl to remove this dependaency or install openssl]))
   AC_CHECK_HEADER(openssl/rsa.h,,AC_MSG_ERROR([cannot find openssl/rsa.h . remove --enable-openssl to remove this dependaency or install openssl]))
   AC_CHECK_HEADER(openssl/pem.h,,AC_MSG_ERROR([cannot find openssl/pem.h . remove --enable-openssl to remove this dependaency or install openssl]))

@@ -1180,7 +1180,8 @@ const char* CompNames[] =  {
     "NO_COMPONENT 2",
     "COMPID_GEARBOX",
     "COMPID_CONGESTION_CONTROL",
-    "COMPID_LINKX_PROPERTIES"
+    "COMPID_LINKX_PROPERTIES",
+    "COMPID_CRYPTO_TO_COMMISSIONING"
 } ;
 
 bool FwCompsMgr::RefreshComponentsStatus(comp_status_st* ComponentStatus)
@@ -1453,6 +1454,9 @@ const char* FwComponent::getCompIdStr(comps_ids_t compId)
 
     case COMPID_LINKX:
         return "COMPID_LINKX";
+
+    case COMPID_CRYPTO_TO_COMMISSIONING:
+        return "COMPID_CRYPTO_TO_COMMISSIONING";
 
     default:
         return "UNKNOWN_COMPONENT";

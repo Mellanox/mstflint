@@ -116,11 +116,12 @@ MLXFWOP_API int MLXFWOPCALL mlxfw_open_cable(mlxfwops_t **mlxfwops_p, char *hand
 
 #ifdef UEFI_BUILD
 
-MLXFWOP_API int MLXFWOPCALL mlxfw_open_uefi(mlxfwops_t **mlxfwops_p, uefi_Dev_t *dev, f_fw_cmd fw_cmd_func, uefi_dev_info_t *dev_info)
+MLXFWOP_API int MLXFWOPCALL mlxfw_open_uefi(mlxfwops_t **mlxfwops_p, uefi_Dev_t *dev, f_fw_cmd fw_cmd_func, f_dma_alloc dma_func, uefi_dev_info_t *dev_info)
 {
     uefi_dev_extra_t dev_extra;
     memset(&dev_extra, 0, sizeof(dev_extra));
     dev_extra.fw_cmd_func = fw_cmd_func;
+    dev_extra.dma_func = dma_func;
     dev_extra.dev_info = (uefi_dev_info_t)*dev_info;
     return mlxfw_open_int(mlxfwops_p, dev, (void*)&dev_extra, (char*)NULL, FHT_UEFI_DEV, (char*)NULL, 0);
 }

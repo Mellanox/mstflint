@@ -90,7 +90,7 @@ string FourthGenCommander::param2str[Mcp_Last] = {"SRIOV_EN", "NUM_OF_VFS",
                                                   "INITIAL_ALPHA_VALUE_P2", "MIN_TIME_BETWEEN_CNPS_P2", "CNP_DSCP_P2", "CNP_802P_PRIO_P2",
                                                   "BOOT_OPTION_ROM_EN_P1", "BOOT_VLAN_EN_P1", "BOOT_RETRY_CNT_P1", "LEGACY_BOOT_PROTOCOL_P1", "BOOT_VLAN_P1",
                                                   "BOOT_OPTION_ROM_EN_P2", "BOOT_VLAN_EN_P2", "BOOT_RETRY_CNT_P2", "LEGACY_BOOT_PROTOCOL_P2", "BOOT_VLAN_P2",
-                                                  "PORT_OWNER", "ALLOW_RD_COUNTERS", "IP_VER", "IP_VER_P1", "IP_VER_P2", "PHY_PARAMETER_MODE", "CQ_TIMESTAMP", "STEER_FORCE_VLAN",
+                                                  "PORT_OWNER", "ALLOW_RD_COUNTERS", "IP_VER", "IP_VER_P1", "IP_VER_P2", "PHY_PARAMETER_MODE", "INT_CLOCK_TO_USER", "CQ_TIMESTAMP", "STEER_FORCE_VLAN",
 };
 
 void FourthGenCommander::freeCfgList()
@@ -193,6 +193,7 @@ FourthGenCommander::FourthGenCommander(mfile *mf, string dev) : Commander(mf), _
     _param2TypeMap[Mcp_CQ_Timestamp] = Mct_CX3_Global_Conf;
     _param2TypeMap[Mcp_Steer_ForceVlan] = Mct_CX3_Global_Conf;
     _param2TypeMap[Mcp_Phy_Param_Mode] = Mct_CX3_Global_Conf;
+    _param2TypeMap[Mcp_Int_Clock_To_User] = Mct_CX3_Global_Conf;
 
 
     if (openComChk()) {
@@ -1083,6 +1084,8 @@ MlxCfgInfo MlxCfgAllInfo::createCX3GlobalConf()
     params[Mcp_Steer_ForceVlan] = MlxCfgParamParser(Mcp_Steer_ForceVlan, "STEER_FORCE_VLAN",
                                                     "Force VLAN steering configuration", paramMap);
     params[Mcp_Phy_Param_Mode] = MlxCfgParamParser(Mcp_Phy_Param_Mode, "PHY_PARAMETER_MODE", "Defines the Port PHY parameters mode.", phyParamModeParamMap);
+    params[Mcp_Int_Clock_To_User] = MlxCfgParamParser(Mcp_Int_Clock_To_User, "INT_CLOCK_TO_USER", "When TRUE, driver will be indicated to expose internal clock directly to user space applications", paramMap);
+
     return MlxCfgInfo("CX3 Global", "", params);
 }
 

@@ -80,6 +80,7 @@ enum dm_dev_id
     DeviceConnectX6,
     DeviceBlueField,
     DeviceBlueField2,
+    DeviceBlueField3,
     DeviceFPGA,             // UnSupported
     DeviceSwitchIB2,
     DeviceFPGANewton,
@@ -99,7 +100,7 @@ enum dm_dev_id
     DeviceConnectX6LX,
     DeviceConnectX7,
     DeviceSpectrum3, // Firebird
-    DeviceSpectrum4, // Griffin
+    DeviceSpectrum4, // Albatross
     DeviceQuantum2, // Blackbird
     DeviceGearBox,
     DeviceGearBoxManager,
@@ -125,6 +126,7 @@ enum hw_dev_id
         DeviceConnectX7_HwId = 0x218,
         DeviceBlueField_HwId = 0x211,
         DeviceBlueField2_HwId = 0x214,
+        DeviceBlueField3_HwId = 0x21c,
         DeviceSwitchIB2_HwId = 0x24b,
         DeviceCableQSFP_HwId = 0x0d,
         DeviceCableQSFPaging_HwId = 0x11,
@@ -144,11 +146,6 @@ enum hw_dev_id
         DeviceGearBoxManager_HwId = 0x253
 };
 typedef enum dm_dev_id dm_dev_id_t;
-
-/**
- * Returns dmid from either hw_dev_id or fw_dev_id, also rev_id if available.
- */
-dm_dev_id_t get_dmid_by_dev_rev_id(u_int32_t dev_id, u_int32_t rev_id);
 
 /**
  * Returns 0 on success and 1 on failure.
