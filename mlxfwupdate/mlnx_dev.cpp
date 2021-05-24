@@ -334,6 +334,7 @@ void MlnxDev::setDeviceType(void)
     case DeviceSpectrum:
     case DeviceSpectrum2:
     case DeviceSpectrum3:
+    case DeviceSpectrum4:
         portOneType = PORT_ETH;
         portTwoType = PORT_ETH;
         isOnlyBase = true;
@@ -379,6 +380,7 @@ void MlnxDev::setDeviceType(void)
     case DeviceConnectX7:
     case DeviceBlueField:
     case DeviceBlueField2:
+    case DeviceBlueField3:
         try {
             _commander = Commander::create(mf, getDevName(), "");
         } catch (MlxcfgException& e) {
@@ -651,7 +653,7 @@ bool MlnxDev::InitDevFWParams(FwOperations::fw_ops_params_t& devFwParams)
         return false;
     }
     memset(devFwParams.mstHndl, 0, length);
-    strncpy(devFwParams.mstHndl, deviceName, strlen(deviceName));
+    strncpy(devFwParams.mstHndl, deviceName, length - 1);
     devFwParams.forceLock = false;
     devFwParams.readOnly = false;
     devFwParams.numOfBanks = -1;

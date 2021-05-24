@@ -28,6 +28,8 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #--
+class CmdNotSupported(Exception):
+    pass
 
 class CmdRegMfrl():
 
@@ -177,14 +179,12 @@ class CmdRegMfrl():
         else:
             return False
 
-
     def default_reset_level(self):
         'Return the default reset-level (minimal supported reset-level)'
         for reset_level_ii in CmdRegMfrl.reset_levels():
             if self.is_reset_level_supported(reset_level_ii) is True:
                 return reset_level_ii
-        raise Exception("There is no supported reset-level")
-
+        raise CmdNotSupported("There is no supported reset-level")
     
     def is_default_reset_type(self, reset_type):
         return reset_type == self.default_reset_type()

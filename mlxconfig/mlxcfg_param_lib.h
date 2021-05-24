@@ -199,6 +199,7 @@ typedef enum {
     Mcp_Boot_Settings_Ext_IP_Ver_P2,
     //CX3 Global conf
     Mcp_Phy_Param_Mode,
+    Mcp_Int_Clock_To_User,
     Mcp_CQ_Timestamp,
     Mcp_Steer_ForceVlan,
     Mcp_Last
@@ -302,7 +303,8 @@ public:
     CX3GlobalConfParams() : CfgParams(Mct_CX3_Global_Conf, CX3_GLOBAL_CONF_TYPE),
         _timestamp(MLXCFG_UNKNOWN), _timestampDefault(MLXCFG_UNKNOWN),
         _steerForceVlan(MLXCFG_UNKNOWN), _steerForceVlanDefault(MLXCFG_UNKNOWN),
-        _phyParamMode(MLXCFG_UNKNOWN), _phyParamModeDefault(MLXCFG_UNKNOWN) {}
+        _phyParamMode(MLXCFG_UNKNOWN), _phyParamModeDefault(MLXCFG_UNKNOWN),
+        _intClockToUser(MLXCFG_UNKNOWN), _intClockToUserDefault(MLXCFG_UNKNOWN) {}
     ~CX3GlobalConfParams() {};
 
     bool cfgSupported(mfile *mf, mlxCfgParam param = Mcp_Last);
@@ -315,7 +317,7 @@ public:
 
 private:
     bool hardLimitCheck();
-    void setParams(u_int32_t timestamp, u_int32_t steer_force_vlan, u_int32_t phy_param_mode);
+    void setParams(u_int32_t timestamp, u_int32_t steer_force_vlan, u_int32_t phy_param_mode, u_int32_t int_clock_map_to_user);
 
     u_int32_t _timestamp;
     u_int32_t _timestampDefault;
@@ -323,6 +325,8 @@ private:
     u_int32_t _steerForceVlanDefault;
     u_int32_t _phyParamMode;
     u_int32_t _phyParamModeDefault;
+    u_int32_t _intClockToUser;
+    u_int32_t _intClockToUserDefault;
 };
 
 

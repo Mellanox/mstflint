@@ -252,8 +252,8 @@ class PCIDeviceBase(object):
         """
         Get dll link active value
         """
-        link_status_reg_offset = 0x12
-        link_status_reg_address = self._pci_express_offset + link_status_reg_offset
+        LINK_STATUS_REG_OFFSET = 0x12
+        link_status_reg_address = self._pci_express_offset + LINK_STATUS_REG_OFFSET
         link_status_reg_value = self.read_word(link_status_reg_address)
         dll_value_bin = bin(link_status_reg_value).replace('0b', '').zfill(16)[-13-1]  #bit 13
         return int(dll_value_bin)
@@ -263,11 +263,33 @@ class PCIDeviceBase(object):
         """
         return Link-capabilites[dll-link-active-reporting-capbale] bit (indicates if dll-link-active is valid)
         """
-        link_capabilities_reg_offset = 0xc
-        link_capabilities_reg_address = self._pci_express_offset + link_capabilities_reg_offset
+        LINK_CAPABILITIES_REG_OFFSET = 0xc
+        link_capabilities_reg_address = self._pci_express_offset + LINK_CAPABILITIES_REG_OFFSET
         link_capabilities_reg_value = self.read_long(link_capabilities_reg_address)
         dll_reporting_cable_bin = bin(link_capabilities_reg_value).replace('0b', '').zfill(32)[-20-1]  #bit 20
         return int(dll_reporting_cable_bin)
+
+    @property
+    def hotplug_capable(self):
+        """
+        Get slot_capabilities[hotplug_capable]
+        """
+        SLOT_CAPABILITIES_REG_OFFSET = 0x14
+        slot_capabilities_address = self._pci_express_offset + SLOT_CAPABILITIES_REG_OFFSET
+        slot_capabilities_value = self.read_long(slot_capabilities_address)
+        hotplug_capable_value_str = bin(slot_capabilities_value).replace('0b', '').zfill(32)[-6-1]  #bit 6
+        return int(hotplug_capable_value_str)
+
+    @property
+    def hotplug_interrupt_enable(self):
+        """
+        Get slot_control[hotplug_interrupt_enable]
+        """
+        SLOT_CONTROL_REG_OFFSET = 0x18
+        slot_control_address = self._pci_express_offset + SLOT_CONTROL_REG_OFFSET
+        slot_control_value = self.read_word(slot_control_address)
+        hotplug_interrupt_enable_value_str = bin(slot_control_value).replace('0b', '').zfill(16)[-5-1]  #bit 5
+        return int(hotplug_interrupt_enable_value_str)
 
     # Helper methods
     ################

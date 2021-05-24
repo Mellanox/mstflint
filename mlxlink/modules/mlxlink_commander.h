@@ -46,6 +46,7 @@
 #include <cmdparser/cmdparser.h>
 #include "mlxlink_cables_commander.h"
 #include "mlxlink_eye_opener.h"
+#include "mlxlink_port_info.h"
 
 #ifdef MST_UL
 #define MLXLINK_EXEC "mstlink"
@@ -85,6 +86,8 @@
 #define BER_FLAG_SHORT                  'c'
 #define EYE_OPENING_FLAG                "show_eye"
 #define EYE_OPENING_FLAG_SHORT          'e'
+#define EYE_OPENING_TYPE_FLAG           "fom_measurment"
+#define EYE_OPENING_TYPE_FLAG_SHORT     ' '
 #define FEC_DATA_FLAG                   "show_fec"
 #define FEC_DATA_FLAG_SHORT             ' '
 #define SLTP_SHOW_FLAG                  "show_serdes_tx"
@@ -95,8 +98,6 @@
 #define BER_MONITOR_INFO_FLAG_SHORT     ' '
 #define PEPC_SHOW_FLAG                  "show_external_phy"
 #define PEPC_SHOW_FLAG_SHORT            ' '
-#define LINK_DOWN_BLAME_INFO_FLAG       "show_link_down_blame"
-#define LINK_DOWN_BLAME_INFO_FLAG_SHORT ' '
 
 //------------------------------------------------------------
 //        Mlxlink COMMANDS Flags
@@ -178,8 +179,8 @@
 #define TX_GROUP_PORTS_FLAG_SHORT           ' '
 //------------------------------------------------------------
 //        Mlxlink Eye Opener Flags
-#define MARGIN_SCAN_FLAG                     "margin"
-#define MARGIN_SCAN_FLAG_SHORT               ' '
+#define MARGIN_SCAN_FLAG                    "margin"
+#define MARGIN_SCAN_FLAG_SHORT              ' '
 #define EYE_SEL_FLAG                        "eye_select"
 #define EYE_SEL_FLAG_SHORT                  ' '
 #define EYE_MEASURE_TIME_FLAG               "measure_time"
@@ -188,6 +189,27 @@
 #define LANE_INDEX_FLAG_SHORT               ' '
 #define FORCE_YES_FLAG                      "yes"
 #define FORCE_YES_FLAG_SHORT                ' '
+
+//------------------------------------------------------------
+//        Mlxlink Error Injection Flags
+#define PREI_RX_ERR_INJ_FLAG                "rx_error_injection"
+#define PREI_RX_ERR_INJ_FLAG_SHORT          ' '
+#define PREI_MIXER_OFFSET_0                 "mixer_offset0"
+#define PREI_MIXER_OFFSET_0_SHORT           ' '
+#define PREI_MIXER_OFFSET_1                 "mixer_offset1"
+#define PREI_MIXER_OFFSET_1_SHORT           ' '
+#define PREI_SHOW_MIXERS_FLAG               "show_mixers_offset"
+#define PREI_SHOW_MIXERS_FLAG_SHORT         ' '
+
+//------------------------------------------------------------
+//        Histogram Counters Flags
+#define PPHCR_FEC_HIST_FLAG                 "rx_fec_histogram"
+#define PPHCR_FEC_HIST_FLAG_SHORT           ' '
+#define PPHCR_SHOW_FEC_HIST_FLAG            "show_histogram"
+#define PPHCR_SHOW_FEC_HIST_FLAG_SHORT      ' '
+#define PPHCR_CLEAR_HISTOGRAM_FLAG          "clear_histogram"
+#define PPHCR_CLEAR_HISTOGRAM_FLAG_SHORT    ' '
+
 //------------------------------------------------------------
 //        Mlxlink HIDDEN Flags
 
@@ -242,7 +264,7 @@
 
 //------------------------------------------------------------
 //        Mlxlink enumerations
-enum SHOW_FUNCTIONS {
+enum OPTION_TYPE {
     SHOW_PDDR = 1,
     SHOW_PCIE,
     SHOW_BER,
@@ -273,6 +295,8 @@ enum SHOW_FUNCTIONS {
     SHOW_PCIE_LINKS,
     SET_TX_GROUP_MAP,
     GRADE_SCAN_ENABLE,
+    RS_FEC_HISTOGRAM = 33,
+    SLRG_TEST,
     // Any new function's index should be added before FUNCTION_LAST in this enum
     FUNCTION_LAST
 };
@@ -281,13 +305,6 @@ enum PDDR_PAGES {
     PDDR_OPERATIONAL_INFO_PAGE = 0,
     PDDR_TROUBLESHOOTING_INFO_PAGE = 1,
     PDDR_MODULE_INFO_PAGE = 3,
-};
-
-enum PPCNT_GROUPS {
-    PPCNT_PHY_GROUP = 0x12,
-    PPCNT_STATISTICAL_GROUP = 0x16,
-    PPCNT_IB_PORT_COUNTERS_GROUP = 0x20,
-    PPCNT_ALL_GROUPS = 63
 };
 
 enum MPCNT_GROUPS {
@@ -387,12 +404,19 @@ struct DPN {
         pcieIndex=0;
         node=0;
     }
+
     DPN(u_int32_t d, u_int32_t p, u_int32_t n)
     {
         depth = d;
         pcieIndex = p;
         node = n;
     }
+
+    bool operator==(DPN dpn) {
+       return (dpn.depth == depth && dpn.pcieIndex == pcieIndex &&
+               dpn.node == node);
+    }
+
     u_int32_t depth;
     u_int32_t pcieIndex;
     u_int32_t node;
@@ -425,12 +449,12 @@ public:
     virtual ~MlxlinkCommander();
 
     void checkRegCmd();
-    virtual void validatePortType();
+    virtual void validatePortType(const string &portTypeStr);
     virtual void updatePortType() {};
     void checkLocalPortDPNMapping(u_int32_t localPort);
     int getLocalPortFromMPIR(DPN& dpn);
     void checkValidFW();
-    int getProductTechnology();
+    void getProductTechnology();
     bool checkPortStatus(u_int32_t localPort);
     void checkAllPortsStatus();
     void labelToLocalPort();
@@ -446,8 +470,6 @@ public:
     string getAscii(const string & name, u_int32_t size = 4);
     string getRxTxCDRState(u_int32_t state);
     void getActualNumOfLanes(u_int32_t linkSpeedActive, bool extended);
-    void getActualNumOfLanesIB();
-    void getActualNumOfLanesETH(u_int32_t linkSpeedActive, bool extended);
     u_int32_t activeSpeed2gNum(u_int32_t mask, bool extended);
     string activeSpeed2Str(u_int32_t mask, bool extended);
     void getCableParams();
@@ -477,16 +499,18 @@ public:
     virtual void showPddr();
     void getPtys();
     virtual void showBer();
+    virtual void prepare40_28_16nmEyeInfo(u_int32_t numOfLanesToUse);
+    virtual void prepare7nmEyeInfo(u_int32_t numOfLanesToUse);
     virtual void showEye();
     virtual void showFEC();
     virtual void showSltp();
     virtual void showDeviceData();
     void showBerMonitorInfo();
-    void showExternalPhy();
+    virtual void showExternalPhy();
     void showPcie();
     void showPcieLinks();
     void collectBER();
-    void showTxGroupMapping();
+    virtual void showTxGroupMapping();
 
     // Query helper functions
     string getCableTechnologyStr(u_int32_t cableTechnology);
@@ -501,12 +525,13 @@ public:
     void prepareAttenuationAndFwSection(bool valid);
     void preparePowerAndCdrSection(bool valid);
     void prepareDDMSection(bool valid);
-    string getLosAlarm();
     void strToInt32(char *str, u_int32_t &value);
     template<typename T, typename Q> string getValueAndThresholdsStr(T value, Q lowTH, Q highTH);
     void prepareSltp28_40nm(std::vector<std::vector<string> > &sltpLanes,
             u_int32_t laneNumber);
     void prepareSltp16nm(std::vector<std::vector<string> > &sltpLanes,
+            u_int32_t laneNumber);
+    void prepareSltp7nm(std::vector<std::vector<string> > &sltpLanes,
             u_int32_t laneNumber);
     void initValidDPNList();
     u_int32_t readBitFromField(const string &fieldName, u_int32_t bitIndex);
@@ -517,7 +542,7 @@ public:
     void showMpcntTimers(DPN& dpn);
     void showMpcntLane();
     void showPcieState(DPN& dpn);
-    void checkForPcie();
+    void checkPCIeValidity();
 
     std::map<std::string, std::string>  getPprt();
     std::map<std::string, std::string>  getPptt();
@@ -547,8 +572,10 @@ public:
     // Cable operation
     bool isPassiveQSFP();
     bool isSFP51Paging();
-    void initCablesCommander();
-    void initEyeOpener();
+    virtual void initCablesCommander();
+    virtual void initEyeOpener();
+    virtual void initErrInj();
+    void initPortInfo();
     void showCableDump();
     void showCableDDM();
     vector<u_int8_t> validateBytes(const vector<string> &strBytes);
@@ -590,8 +617,9 @@ public:
 
     // Config helper functions
     bool isForceDownSupported();
-    void sendPaosCmd(PAOS_ADMIN adminStatus, bool forceDown = false);
-    void sendPaosDown();
+    bool isPPHCRSupported();
+    virtual void sendPaosCmd(PAOS_ADMIN adminStatus, bool forceDown = false);
+    void sendPaosDown(bool toggleCommand = false);
     void sendPaosUP();
     void sendPaosToggle();
     void checkPRBSModeCap(u_int32_t modeSelector, u_int32_t capMask);
@@ -612,8 +640,10 @@ public:
     void checkPplmCap();
     void updateSltp28_40nmFields();
     void updateSltp16nmFields();
+    void updateSltp7nmFields();
     void getSltpAlevOut(u_int32_t lane);
     void getSltpRegAndLeva(u_int32_t lane);
+    u_int32_t getLaneSpeed(u_int32_t lane);
     virtual void checkSltpParamsSize();
 
     // Mlxlink params
@@ -675,6 +705,7 @@ public:
     MlxlinkMaps* _mlxlinkMaps;
     MlxlinkCablesCommander* _cablesCommander;
     MlxlinkEyeOpener* _eyeOpener;
+    MlxlinkPortInfo* _portInfo;
 };
 
 #endif /* MLXLINK_COMMANDER_H */

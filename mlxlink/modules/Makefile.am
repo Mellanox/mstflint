@@ -59,14 +59,18 @@ libmodules_lib_a_SOURCES = mlxlink_commander.h \
                             mlxlink_utils.cpp \
                             mlxlink_logger.cpp \
                             mlxlink_logger.h \
+                            mlxlink_cables_commander.h \
+                            mlxlink_cables_commander.cpp \
                             mlxlink_ui.h \
                             mlxlink_ui.cpp \
-                            mlxlink_reg_parser.cpp \
                             mlxlink_reg_parser.h \
-                            mlxlink_cables_commander.cpp \
-                            mlxlink_cables_commander.h \
+                            mlxlink_reg_parser.cpp \
+                            mlxlink_eye_opener.h \
                             mlxlink_eye_opener.cpp \
-                            mlxlink_eye_opener.h
+                            mlxlink_err_inj_commander.h \
+                            mlxlink_err_inj_commander.cpp \
+                            mlxlink_port_info.h \
+                            mlxlink_port_info.cpp
 
 libmodules_lib_a_LIBADD = printutil/libprint_util_lib.a $(JSON_LIBS)
 libmodules_lib_a_CFLAGS = $(AM_CFLAGS)

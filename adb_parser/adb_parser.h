@@ -214,7 +214,7 @@ public:
     void setVarsMap(const string &attrName, const string &attrValue);
     void setVarsMap(const AttrsMap &AttrsMap);
     AttrsMap getVarsMap();
-    vector<AdbInstance*> getLeafFields(); // Get all leaf fields
+    vector<AdbInstance*> getLeafFields(bool extendedName); // Get all leaf fields
     void pushBuf(u_int8_t *buf, u_int64_t value);
     u_int64_t popBuf(u_int8_t *buf);
     int instAttrsMapLen() {return instAttrsMap.size();}
@@ -231,6 +231,7 @@ public:
     u_int32_t offset; // Global offset in bits (Relative to 0)
     u_int32_t size; // in bits
     u_int32_t arrIdx;
+    bool      isNameBeenExtended;
     AdbInstance *unionSelector; // For union instances only
     bool isDiff;
     // FOR USER USAGE

@@ -81,7 +81,6 @@
 #endif
 
 #include <bit_slice.h>
-#include <malloc.h>
 #include "tools_utils.h"
 #include "mtcr_ul_com.h"
 #include "mtcr_int_defs.h"
@@ -89,9 +88,6 @@
 #include "packets_layout.h"
 #include "mtcr_tools_cif.h"
 #include "mtcr_icmd_cif.h"
-#ifndef MST_UL
-#include "../mtcr_mlnxos.h"
-#endif
 
 #include "kernel/mst.h"
 
@@ -1642,7 +1638,8 @@ static long supported_dev_ids[] = {
     0xd2f2,     //Quantum2
     0xcf6c,     //Spectrum2
     0xa2d2,     //MT416842 Family BlueField integrated ConnectX-5 network controller
-    0xa2d6,     //MT416846 Family BlueField2 integrated ConnectX-6DX network controller
+    0xa2d6,     //MT42822 Family BlueField2 integrated ConnectX-6DX network controller
+    0xa2dc,     //MT43244 Family BlueField3 integrated ConnectX-7 network controller
     0xcf70,     //Spectrum3
     0xcf80,     //Spectrum4
     -1
@@ -1664,10 +1661,14 @@ static long live_fish_id_database[] = {
     0x20d,
     0x20f,
     0x211,
+    0x214, //BlueField2
     0x212, //Connect-X6DX
     0x216, //Connect-X6LX
-    0x21a, //Connect-X7
+    0x218, //Connect-X7
+    0x21C, //BlueField3
     0x250, //Spectrum3
+    0x254, //Spectrum4
+    0x257, //Quantum2
     -1
 };
 

@@ -308,7 +308,7 @@
 #define SFP_DD_RX_POWER_THR_OFFSET      0xe1 // halarm e1, lalarm e3, hwarn e5, lwarn e7
 
 typedef struct {
-    u_int16_t val;
+    float val;
     u_int16_t high_warn;
     u_int16_t low_warn;
     u_int16_t high_alarm;
@@ -398,7 +398,7 @@ public:
     void getSfpDdThresholds(u_int8_t *page0H);
     void getQsfpDddLanesFlags(u_int8_t *page11H);
     void getSfpDddLanesFlags(u_int8_t *page0L);
-    void getCmisDdmValues();
+    void getDdmValuesFromPddr();
     void prepareQsfpddDdmInfo();
     void prepareSfpddDdmInfo();
     /**********************************/
@@ -406,7 +406,7 @@ public:
     void prepareSFPDdmInfo();
     void prepareThresholdInfo(u_int8_t *page);
     void readCableDDMInfo();
-    void setPrintDDMFlagsSection(MlxlinkCmdPrint &cmdPrint, u_int32_t startIndx,
+    void setPrintDDMFlagsSection(MlxlinkCmdPrint &cmdPrint,
             const ddm_threshold_t &flags, const string &flagGroup);
     string getDDMThresholdRow(u_int16_t temp, u_int16_t volt,  u_int16_t rxPower,
             u_int16_t txPower, u_int16_t txBias);

@@ -63,3 +63,4 @@ EXTRA_DIST = tools_version.py.in python_wrapper.sh
 
 CLEANFILES = python_wrapper tools_version.py
 
+#SUBDIRS = autocomplete

@@ -120,7 +120,7 @@ bool Fs4Operations::CheckDevInfoSignature(u_int32_t *buff)
 //CodeView: move it to Base class
 bool Fs4Operations::getImgStart()
 {
-
+    DPRINTF(("Fs4Operations::getImgStart\n"));
     u_int32_t cntx_image_start[CNTX_START_POS_SIZE] = {0};
     u_int32_t cntx_image_num = 0;
 
@@ -138,53 +138,57 @@ bool Fs4Operations::getImgStart()
     }
 
     _fwImgInfo.imgStart = cntx_image_start[0];
+    DPRINTF(("_fwImgInfo.imgStart = 0x%x\n",_fwImgInfo.imgStart));
 
     return true;
 }
 
-//CodeView: add HW pointers to verify output
-bool Fs4Operations::getHWPtrs(VerifyCallBack verifyCallBackFunc)
+//// //CodeView: add HW pointers to verify output
+//// bool Fs4Operations::getHWPtrs(VerifyCallBack verifyCallBackFunc)
+//// {
+
+////     DPRINTF(("Fs4Operations::getHWPtrs\n"));
+////     u_int32_t buff[FS4_HW_PTR_SIZE_DW];
+////     struct cx5fw_hw_pointers hw_pointers;
+////     u_int32_t physAddr = _fwImgInfo.imgStart + FS4_HW_PTR_START;
+
+////     READBUF((*_ioAccess),
+////             physAddr,
+////             buff,
+////             CX5FW_HW_POINTERS_SIZE,
+////             "HW Pointers");
+////     cx5fw_hw_pointers_unpack(&hw_pointers, (u_int8_t *)buff);
+
+////     //- Check CRC of each pointers (always check CRC before you call ToCPU
+////     for (int k = 0; k < FS4_HW_PTR_SIZE_DW; k += 2) {
+////         u_int32_t *tempBuff = (u_int32_t *) buff;
+////         //Calculate HW CRC:
+////         u_int32_t calcPtrCRC = calc_hw_crc((u_int8_t *)((u_int32_t *)tempBuff + k), 6);
+////         u_int32_t ptrCRC = tempBuff[k + 1];
+////         u_int32_t ptr = tempBuff[k];
+////         TOCPUn(&ptr, 1);
+////         TOCPUn(&ptrCRC, 1);
+////         if (!DumpFs3CRCCheck(FS4_HW_PTR, physAddr + 4 * k, CX5FW_HW_POINTER_ENTRY_SIZE, calcPtrCRC,
+////                              ptrCRC, false, verifyCallBackFunc)) {
+////             return false;
+////         }
+////     }
+
+////     //CodeView: generate tools_layout
+////     _boot2_ptr = hw_pointers.boot2_ptr.ptr;
+////     _itoc_ptr = hw_pointers.toc_ptr.ptr;
+////     _tools_ptr = hw_pointers.tools_ptr.ptr;
+
+////     DPRINTF(("_boot2_ptr=0x%x\n", _boot2_ptr));
+////     DPRINTF(("_itoc_ptr=0x%x\n", _itoc_ptr));
+////     DPRINTF(("_tools_ptr=0x%x\n", _tools_ptr));
+
+////     return true;
+//// }
+
+bool Fs4Operations::getExtendedHWAravaPtrs(VerifyCallBack verifyCallBackFunc, FBase* ioAccess, bool IsBurningProcess, bool isVerify)
 {
-
-    u_int32_t buff[FS4_HW_PTR_SIZE_DW];
-    struct cx5fw_hw_pointers hw_pointers;
-    u_int32_t physAddr = _fwImgInfo.imgStart + FS4_HW_PTR_START;
-
-    READBUF((*_ioAccess),
-            physAddr,
-            buff,
-            CX5FW_HW_POINTERS_SIZE,
-            "HW Pointers");
-    cx5fw_hw_pointers_unpack(&hw_pointers, (u_int8_t *)buff);
-
-    //- Check CRC of each pointers (always check CRC before you call ToCPU
-    for (int k = 0; k < FS4_HW_PTR_SIZE_DW; k += 2) {
-        u_int32_t *tempBuff = (u_int32_t *) buff;
-        //Calculate HW CRC:
-        u_int32_t calcPtrCRC = calc_hw_crc((u_int8_t *)((u_int32_t *)tempBuff + k), 6);
-        u_int32_t ptrCRC = tempBuff[k + 1];
-        u_int32_t ptr = tempBuff[k];
-        TOCPUn(&ptr, 1);
-        TOCPUn(&ptrCRC, 1);
-        if (!DumpFs3CRCCheck(FS4_HW_PTR, physAddr + 4 * k, CX5FW_HW_POINTER_ENTRY_SIZE, calcPtrCRC,
-                             ptrCRC, false, verifyCallBackFunc)) {
-            return false;
-        }
-    }
-
-    //CodeView: generate tools_layout
-    _boot2_ptr = hw_pointers.boot2_ptr.ptr;
-    _itoc_ptr = hw_pointers.toc_ptr.ptr;
-    _tools_ptr = hw_pointers.tools_ptr.ptr;
-
-    /*printf("-D-boot2_ptr=0x%x\n", _boot2_ptr);
-       printf("-D-itoc_ptr=0x%x\n", _itoc_ptr);
-       printf("-D-tools_ptr=0x%x\n", _tools_ptr);*/
-
-    return true;
-}
-bool Fs4Operations::getExtendedHWAravaPtrs(VerifyCallBack verifyCallBackFunc, FBase* ioAccess, bool IsBurningProcess)
-{
+    DPRINTF(("Fs4Operations::getExtendedHWAravaPtrs\n"));
 #if defined(UEFI_BUILD)
     (void)verifyCallBackFunc;
     (void)ioAccess;
@@ -203,6 +207,15 @@ bool Fs4Operations::getExtendedHWAravaPtrs(VerifyCallBack verifyCallBackFunc, FB
         buff,
         CONNECTX4_HW_POINTERS_ARAVA_SIZE,
         "HW Arava Pointers");
+
+    // Fix pointers that are 0xFFFFFFFF
+    for (unsigned int k = 0; k < s; k += 2) {
+        if (buff[k] == 0xFFFFFFFF){            
+            buff[k] = 0;    // Fix pointer            
+            buff[k+1] = 0;  // Fix CRC
+        }
+    }
+
     connectx4_hw_pointers_arava_unpack(&hw_pointers, (u_int8_t *)buff);
 
     //- Check CRC of each pointers (always check CRC before you call ToCPU
@@ -225,12 +238,15 @@ bool Fs4Operations::getExtendedHWAravaPtrs(VerifyCallBack verifyCallBackFunc, FB
     _itoc_ptr = hw_pointers.toc_ptr.ptr;
     _tools_ptr = hw_pointers.tools_ptr.ptr;
 
-    _authentication_start_ptr = hw_pointers.authentication_start_pointer.ptr;
-    _authentication_end_ptr = hw_pointers.authentication_end_pointer.ptr;
-    _digest_mdk_ptr = hw_pointers.digest_pointer.ptr;
-    _digest_recovery_key_ptr = hw_pointers.digest_recovery_key_pointer.ptr;
-    _public_key_ptr = hw_pointers.public_key_pointer.ptr;
-
+    if (isVerify == false){
+        _authentication_start_ptr = hw_pointers.authentication_start_pointer.ptr;
+        _authentication_end_ptr = hw_pointers.authentication_end_pointer.ptr;
+        _digest_mdk_ptr = hw_pointers.digest_pointer.ptr;
+        _digest_recovery_key_ptr = hw_pointers.digest_recovery_key_pointer.ptr;
+        _public_key_ptr = hw_pointers.public_key_pointer.ptr;
+    }
+    _security_version = hw_pointers.reserved_ptr13_pointer.ptr; // TODO need to change reserved_ptr13_pointer in connectx4_layouts.h when .adb will be updated
+                                                                // TODO it seems that the content for connectx4_hw_pointers_arava inserted manually to connectx4_layouts.h
     return true;
 #endif
 }
@@ -289,7 +305,7 @@ bool Fs4Operations::getExtendedHWPtrs(VerifyCallBack verifyCallBackFunc, FBase* 
 
 bool Fs4Operations::verifyToolsArea(VerifyCallBack verifyCallBackFunc)
 {
-
+    DPRINTF(("Fs4Operations::verifyToolsArea\n"));
     u_int32_t buff[CX5FW_TOOLS_AREA_SIZE / 4];
     u_int8_t binVerMajor = 0;
     u_int8_t binVerMinor = 0;
@@ -330,9 +346,13 @@ bool Fs4Operations::verifyToolsArea(VerifyCallBack verifyCallBackFunc)
     } else {
         _fwImgInfo.cntxLog2ChunkSize = _maxImgLog2Size;
     }
+    DPRINTF(("_fwImgInfo.cntxLog2ChunkSize = 0x%x\n",_fwImgInfo.cntxLog2ChunkSize));
     _fwImgInfo.ext_info.is_failsafe = true;
+    DPRINTF(("_fwImgInfo.ext_info.is_failsafe = true\n"));
     _fwImgInfo.actuallyFailsafe  = true;
+    DPRINTF(("_fwImgInfo.actuallyFailsafe  = true\n"));
     _fwImgInfo.magicPatternFound = 1;
+    DPRINTF(("_fwImgInfo.magicPatternFound = 1\n"));
 
     return true;
 }
@@ -583,28 +603,34 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isD
 bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_itoc,
                                 struct QueryOptions queryOptions, bool ignoreDToc, bool verbose)
 {
+    DPRINTF(("Fs4Operations::FsVerifyAux\n"));
     u_int32_t dtocPtr;
     u_int8_t *buff;
     u_int32_t log2_chunk_size;
     bool is_image_in_odd_chunks;
 
-    if (!getImgStart()) {
+    DPRINTF(("Fs4Operations::FsVerifyAux call getImgStart()\n"));
+    if (!getImgStart()) { // Set _fwImgInfo.imgStart with the image start address
         return false;
     }
 
     report_callback(verifyCallBackFunc, "\nFS4 failsafe image\n\n");
 
     _ioAccess->set_address_convertor(0, 0);
-    if (!getHWPtrs(verifyCallBackFunc)) {
+    DPRINTF(("Fs4Operations::FsVerifyAux call getExtendedHWAravaPtrs()\n"));
+    if (!getExtendedHWAravaPtrs(verifyCallBackFunc, _ioAccess, false, true)) {
         return false;
     }
+
     // if nextBootFwVer is true, no need to get all the information, just the fw version is enough - therefore skip everything else
     if (!nextBootFwVer) {
+        DPRINTF(("Fs4Operations::FsVerifyAux call verifyToolsArea()\n"));
         if (!verifyToolsArea(verifyCallBackFunc)) {
             return false;
         }
 
     // Update image cache till before boot2 header:
+        DPRINTF(("Fs4Operations::FsVerifyAux call Fs3UpdateImgCache() - All before boot2\n"));
         READALLOCBUF((*_ioAccess), _fwImgInfo.imgStart, buff, _boot2_ptr, "All Before Boot2");
         Fs3UpdateImgCache(buff, 0, _boot2_ptr);
         free(buff);
@@ -619,7 +645,7 @@ bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_ito
 
     /*printf("\n-D-_ioAccess size=0x%x\n", _ioAccess->get_size());
        printf("\n-D-dtoc_ptr=0x%x\n", dtoc_ptr);*/
-
+        DPRINTF(("Fs4Operations::FsVerifyAux call verifyTocHeader() ITOC\n"));
         if (!verifyTocHeader(_itoc_ptr, false, verifyCallBackFunc)) {
             _itoc_ptr += FS4_DEFAULT_SECTOR_SIZE;
             _fs4ImgInfo.itocArr.tocArrayAddr = _itoc_ptr;
@@ -648,6 +674,7 @@ bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_ito
         }
         _signatureDataSet = true;
     }
+    DPRINTF(("Fs4Operations::FsVerifyAux call verifyTocEntries() ITOC\n"));
     if (!verifyTocEntries(_itoc_ptr, show_itoc, false,
                           queryOptions, verifyCallBackFunc, verbose)) {
         return false;
@@ -664,12 +691,13 @@ bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_ito
     _ioAccess->set_address_convertor(0, 0);
     //-Verify DToC Header:
     dtocPtr = _ioAccess->get_size() - FS4_DEFAULT_SECTOR_SIZE;
-
+    DPRINTF(("Fs4Operations::FsVerifyAux call verifyTocHeader() DTOC\n"));
     if (!verifyTocHeader(dtocPtr, true, verifyCallBackFunc)) {
         return errmsg(MLXFW_NO_VALID_ITOC_ERR, "No valid DTOC Header was found.");
     }
     _fs4ImgInfo.dtocArr.tocArrayAddr = dtocPtr;
     //-Verify DToC Entries:
+    DPRINTF(("Fs4Operations::FsVerifyAux call verifyTocEntries() DTOC\n"));
     if (!verifyTocEntries(dtocPtr, show_itoc, true,
                           queryOptions, verifyCallBackFunc, verbose)) {
         _ioAccess->set_address_convertor(log2_chunk_size, is_image_in_odd_chunks);
@@ -677,6 +705,14 @@ bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_ito
     }
     _ioAccess->set_address_convertor(log2_chunk_size, is_image_in_odd_chunks);
     return true;
+}
+
+
+bool Fs4Operations::FsIntQueryAux(bool readRom, bool quickQuery, bool ignoreDToc, bool verbose){
+    DPRINTF(("Fs4Operations::FsIntQueryAux\n"));
+    bool res = Fs3Operations::FsIntQueryAux(readRom, quickQuery, ignoreDToc, verbose);
+    _fs3ImgInfo.ext_info.image_security_version = _security_version;
+    return res;
 }
 
 u_int8_t Fs4Operations::FwType()
@@ -2783,7 +2819,7 @@ bool Fs4Operations::FwSignWithRSA(const char *public_key_file, const char *uuid,
     }
     vector <u_int8_t> publicKeyData;
     unsigned int pem_offset = 0;
-    if (!PreparePublicKeyData(public_key_file, publicKeyData, pem_offset)) {
+    if (!PreparePublicKeyData(public_key_file, publicKeyData, pem_offset)) { // Parsing public_key_file and storing public key in publicKeyData
         return errmsg("FwSignWithRSA: PreparePublicKeyData failed.\n");
     }
     if (!PrepareSecureBootSections(bin_data, critical, non_critical, uuidData, publicKeyData, pem_offset)) {

@@ -194,7 +194,10 @@ public:
     bool downstream_device_ids_specified;
     std::vector<int>  downstream_device_ids;
     bool download_transfer;
-    int activate_delay_sec;
+    u_int8_t activate_delay_sec;
+    string openssl_engine;
+    string openssl_key_id;
+    bool openssl_engine_usage_specified;
 };
 
 #endif

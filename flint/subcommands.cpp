@@ -52,6 +52,9 @@
 #endif
 #if !defined(NO_OPEN_SSL)
 #include <mlxsign_lib/mlxsign_lib.h>
+#if !defined(NO_DYNAMIC_ENGINE)
+#include <mlxsign_lib/mlxsign_openssl_engine.h>
+#endif
 #endif
 #include "hex64.h"
 #define MAX_IMG_TYPE_LEN 20
@@ -1498,7 +1501,7 @@ SignSubCommand::SignSubCommand()
     _flagLong = "sign";
     _flagShort = "";
     _paramExp = "None";
-    _example = FLINT_NAME " -i fw_image.bin [--private_key file.pem --key_uuid uuid string] sign";
+    _example = FLINT_NAME " -i fw_image.bin [--private_key file.pem --key_uuid uuid_string] OR [--openssl_engine engine --openssl_key_id identifier --key_uuid uuid_string] sign";
     _v = Wtv_Img;
     _maxCmdParamNum = 0;
     _cmdType = SC_Sign;
@@ -1518,6 +1521,37 @@ FlintStatus SignSubCommand::executeCommand()
         reportErr(true, IMAGE_SIGN_TYPE_ERROR);
         return FLINT_FAILED;
     }
+    if (_flintParams.openssl_engine_usage_specified) {
+#if !defined(NO_OPEN_SSL) && !defined(NO_DYNAMIC_ENGINE)
+        MlxSign::OpensslEngineSigner engineSigner(_flintParams.openssl_engine, _flintParams.openssl_key_id);
+        int rc = engineSigner.init();
+        if (rc) {
+            reportErr(true, "Failed to initialze %s engine (rc = 0x%x)\n", _flintParams.openssl_engine.c_str(), rc);
+            return FLINT_FAILED;
+        }
+        vector<u_int8_t> fourMbImage;
+        vector<u_int8_t> signature;
+        vector<u_int8_t> sha;
+        if (!_imgOps->FwCalcSHA(MlxSign::SHA512, sha, fourMbImage)) {
+            reportErr(true, FLINT_IMAGE_READ_ERROR, _imgOps->err());
+            return FLINT_FAILED;
+        }
+        rc = engineSigner.sign(fourMbImage, signature);
+        if (rc) {
+            reportErr(true, "Failed to set private key from engine (rc = 0x%x)\n", rc);
+            return FLINT_FAILED;
+        }
+        if (!_imgOps->InsertSecureFWSignature(signature, _flintParams.privkey_uuid.c_str(),
+            &verifyCbFunc)) {
+            reportErr(true, FLINT_SIGN_ERROR, _imgOps->err());
+            return FLINT_FAILED;
+        }
+        return FLINT_SUCCESS;
+#else
+        reportErr(true, "Open SSL functionality is not supported.\n");
+        return FLINT_FAILED;
+#endif
+    }
     if (_flintParams.hsm_specified) {
 #ifdef __WIN__
         reportErr(true, FLINT_NO_HSM);
@@ -1535,7 +1569,7 @@ FlintStatus SignSubCommand::executeCommand()
         }
         vector<u_int8_t> fourMbImage;
         vector<u_int8_t> sha;
-        if (!_imgOps->FwCalcSHA(SHA512, sha, fourMbImage)) {
+        if (!_imgOps->FwCalcSHA(MlxSign::SHA512, sha, fourMbImage)) {
             reportErr(true, FLINT_IMAGE_READ_ERROR, _imgOps->err());
             return FLINT_FAILED;
         }
@@ -1612,7 +1646,18 @@ FlintStatus SignSubCommand::executeCommand()
 
 bool SignSubCommand::verifyParams()
 {
-    if (_flintParams.hsm_specified) {
+    if (_flintParams.openssl_engine_usage_specified) {
+        if (_flintParams.privkey_uuid.empty()) {
+            reportErr(true, "To Sign the image with OpenSSL you must provide UUID string.\n");
+            return false;
+        }
+        if (_flintParams.openssl_engine.empty() || _flintParams.openssl_key_id.empty()) {
+            reportErr(true, "To Sign the image with OpenSSL you must provide the engine and the key identifier.\n");
+            return false;
+        }
+        return true;
+    }
+    else if (_flintParams.hsm_specified) {
         if (_flintParams.uuid_specified == false) {
             reportErr(true, HSM_UUID_MISSING);
             return false;
@@ -1856,7 +1901,7 @@ SignRSASubCommand::SignRSASubCommand()
     _flagLong = "rsa_sign";
     _flagShort = "";
     _paramExp = "None";
-    _example = FLINT_NAME " -i fw_image.bin OR [--private_key file.pem --public_key file.pub] --key_uuid <uuid_string> rsa_sign OR [--private_key_label <label> --public_key file.pub (optional --public_key_label <label>) --user_password <password> --hsm rsa_sign]";
+    _example = FLINT_NAME " -i fw_image.bin [--private_key file.pem] OR [--private_key_label <label> --user_password <password> --hsm] --public_key file.pub --key_uuid <uuid_string> rsa_sign";
     _v = Wtv_Img;
     _maxCmdParamNum = 0;
     _cmdType = SC_RSA_Sign;
@@ -1869,6 +1914,76 @@ SignRSASubCommand:: ~SignRSASubCommand()
 
 FlintStatus SignRSASubCommand::executeCommand()
 {
+    if (preFwOps() == FLINT_FAILED) {
+        return FLINT_FAILED;
+    }
+    if (_imgOps->FwType() != FIT_FS4) {
+        reportErr(true, IMAGE_SIGN_TYPE_ERROR);
+        return FLINT_FAILED;
+    }
+    if (_flintParams.openssl_engine_usage_specified) {
+#if !defined(NO_OPEN_SSL) && !defined(NO_DYNAMIC_ENGINE)
+        //first, update secure boot signatures
+        vector<u_int8_t> bin_data, critical, non_critical;
+        vector<u_int8_t> bin_signature, critical_signature, non_critical_signature;
+        if (!_imgOps->FwSignWithRSA(_flintParams.pubkey_file.c_str(), _flintParams.privkey_uuid.c_str(), bin_data, critical, non_critical)) {
+            reportErr(true, FLINT_SIGN_ERROR, _imgOps->err());
+            return FLINT_FAILED;
+        }
+        MlxSign::OpensslEngineSigner engineSigner(_flintParams.openssl_engine, _flintParams.openssl_key_id);
+        int rc = engineSigner.init();
+        if (rc) {
+            reportErr(true, "Failed to initialze %s engine (rc = 0x%x)\n", _flintParams.openssl_engine.c_str(), rc);
+            return FLINT_FAILED;
+        }
+        rc = engineSigner.sign(bin_data, bin_signature);
+        if (rc) {
+            reportErr(true, "Failed to set private key from engine (rc = 0x%x)\n", rc);
+            return FLINT_FAILED;
+        }
+        rc = engineSigner.sign(critical, critical_signature);
+        if (rc) {
+            reportErr(true, "Failed to set private key from engine (rc = 0x%x)\n", rc);
+            return FLINT_FAILED;
+        }
+        rc = engineSigner.sign(non_critical, non_critical_signature);
+        if (rc) {
+            reportErr(true, "Failed to set private key from engine (rc = 0x%x)\n", rc);
+            return FLINT_FAILED;
+        }
+        if (!_imgOps->InsertSecureBootSignature(bin_signature, critical_signature, non_critical_signature)) {
+            reportErr(true, HSM_SECURE_BOOT_SIGNATURE_FAILED, _imgOps->err());
+            return FLINT_FAILED;
+        }
+
+        //second, update secured FW signature
+        vector<u_int8_t> fourMbImage;
+        vector<u_int8_t> signature;
+        vector<u_int8_t> sha;
+        if (!_imgOps->FwCalcSHA(MlxSign::SHA512, sha, fourMbImage)) {
+            reportErr(true, FLINT_IMAGE_READ_ERROR, _imgOps->err());
+            return FLINT_FAILED;
+        }
+        rc = engineSigner.sign(fourMbImage, signature);
+        if (rc) {
+            reportErr(true, "Failed to create secured FW signature from URI (rc = 0x%x)\n", rc);
+            return FLINT_FAILED;
+        }
+        //insert secured FW signature
+        if (!_imgOps->InsertSecureFWSignature(signature, _flintParams.privkey_uuid.c_str(),
+            &verifyCbFunc)) {
+            reportErr(true, FLINT_SIGN_ERROR, _imgOps->err());
+            return FLINT_FAILED;
+        }
+        //set empty 256 bit signature
+        vector <u_int8_t> signature256Data(CX4FW_IMAGE_SIGNATURE_256_SIZE, 0xff);
+        _imgOps->Fs3UpdateSection(signature256Data.data(), FS3_IMAGE_SIGNATURE_256, true, CMD_SET_SIGNATURE, NULL);
+        return FLINT_SUCCESS;
+#else
+        reportErr(true, "Open SSL functionality is not supported.\n");
+        return FLINT_FAILED;
+#endif
+    }
     if (!_flintParams.hsm_specified) { //While working via HSM we don't need a private key, only public key
         if (!is_file_exists(_flintParams.privkey_file.c_str())) {
             reportErr(true, SIGN_PRIVATE_KEY_NOT_FOUND, _flintParams.privkey_file.c_str());
@@ -1879,13 +1994,7 @@ FlintStatus SignRSASubCommand::executeCommand()
         reportErr(true, SIGN_PUBLIC_KEY_NOT_FOUND , _flintParams.pubkey_file.c_str());
         return FLINT_FAILED;
     }
-    if (preFwOps() == FLINT_FAILED) {
-        return FLINT_FAILED;
-    }
-    if (_imgOps->FwType() != FIT_FS4) {
-        reportErr(true, IMAGE_SIGN_TYPE_ERROR);
-        return FLINT_FAILED;
-    }
+
 
     if (_flintParams.hsm_specified) {
 #ifdef __WIN__
@@ -1972,7 +2081,7 @@ FlintStatus SignRSASubCommand::executeCommand()
         //third, update secured FW signature
         vector<u_int8_t> fourMbImage;
         vector<u_int8_t> sha;
-        if (!_imgOps->FwCalcSHA(SHA512, sha, fourMbImage)) {
+        if (!_imgOps->FwCalcSHA(MlxSign::SHA512, sha, fourMbImage)) {
             reportErr(true, FLINT_IMAGE_READ_ERROR, _imgOps->err());
             return FLINT_FAILED;
         }
@@ -2016,6 +2125,21 @@ FlintStatus SignRSASubCommand::executeCommand()
 
 bool SignRSASubCommand::verifyParams()
 {
+    if (_flintParams.openssl_engine_usage_specified) {
+        if (!_flintParams.pubkey_specified) {
+            reportErr(true, "To create secure boot signature with OpenSSL you must provide public key.\n");
+            return false;
+        }
+        if (_flintParams.privkey_uuid.empty()) {
+            reportErr(true, "To create secure boot signature with OpenSSL you must provide uuid string.\n");
+            return false;
+        }
+        if (_flintParams.openssl_engine.empty()) {
+            reportErr(true, "To create secure boot signature with OpenSSL you must provide the URI string.\n");
+            return false;
+        }
+        return true;
+    }
     if (!_flintParams.hsm_specified && !_flintParams.privkey_specified) {
         reportErr(true, "To Sign the image with RSA you must provide private key.\n");
         return false;
@@ -2181,8 +2305,8 @@ bool BurnSubCommand::verifyParams()
             reportErr(true, FLINT_COMMAND_FLAGS_ERROR, _name.c_str(), "Flags 'cable_device_size'/'cable_device_index' relevant only for cable components.");
             return false;
         }
-        if (_flintParams.activate == true || _flintParams.download_transfer == true || _flintParams.activate_delay_sec != -1) {
-            reportErr(true, FLINT_COMMAND_FLAGS_ERROR, _name.c_str(), "Flags ‘—activate’/'download_transfer'/'activate_delay_sec' relevant only for cable components.");
+        if (_flintParams.activate == true || _flintParams.download_transfer == true || _flintParams.activate_delay_sec != 0) {
+            reportErr(true, FLINT_COMMAND_FLAGS_ERROR, _name.c_str(), "Flags 'activate'/'download_transfer'/'activate_delay_sec' relevant only for cable components.");
             return false;
         }
         if ((_flintParams.guid_specified || _flintParams.guids_specified) && (_flintParams.uid_specified)) {
@@ -2857,6 +2981,31 @@ FlintStatus BurnSubCommand::executeCommand()
             return FLINT_FAILED;
         }
     }
+
+    // Abort if the image is restricted according to the Security-Version
+    if (_devInfo.fs3_info.sec_boot) {
+
+        // Set image security-version
+        u_int32_t imageSecurityVersion = _imgInfo.fs3_info.image_security_version;
+
+        // Set device security-version (from EFUSEs)
+        u_int32_t deviceEfuseSecurityVersion;
+        if (_devInfo.fs3_info.device_security_version_access_method == MFSV) {
+            deviceEfuseSecurityVersion = _devInfo.fs3_info.device_security_version_mfsv.efuses_sec_ver;
+        } else if (_devInfo.fs3_info.device_security_version_access_method == GW) {
+            deviceEfuseSecurityVersion = _devInfo.fs3_info.device_security_version_gw;
+        } else {
+            deviceEfuseSecurityVersion = 0;
+        }
+
+        // Check violation of security-version
+        if (imageSecurityVersion < deviceEfuseSecurityVersion) {
+            reportErr(true, "The image you're trying to burn is restricted. Aborting ... \n");
+            return FLINT_FAILED;            
+        }
+
+    }
+
     //updateBurnParams with input given by user
     updateBurnParams();
 
@@ -2875,6 +3024,7 @@ FlintStatus BurnSubCommand::executeCommand()
                     devid = 0;
                 }
                 else {
+                    devid &= 0xffff; // remove revid (BF1-rev1 is 0x00010211)
                     if (devid == BF_HW_ID && is_arm()) {
                         //for Bluefield need also check the life cycle, but only on ARM side!
                         string bf_lifecycle_file = "/sys/bus/platform/drivers/mlx-bootctl/lifecycle_state";
@@ -3392,6 +3542,9 @@ string QuerySubCommand::printSecurityAttrInfo(u_int32_t m)
     if (m & SMM_DBG_TOKEN) {
         attr += ", dbg-token";
     }
+    if (m & SMM_CRYTO_TO_COMMISSIONING) {
+        attr += ", crypto-to-commissioning";
+    }
     return attr;
 }
 
@@ -3449,6 +3602,10 @@ FlintStatus QuerySubCommand::printImageInfo(const fw_info_t& fwInfo)
     printf("Image VSD:             %s\n", imageVSD);
     printf("PSID:                  %s\n", fwInfo.fw_info.psid);
     printf("Security Attributes:   %s\n", printSecurityAttrInfo(fwInfo.fs3_info.security_mode).c_str());
+    
+    if (isFs4) { // Security Version is supported in Connectx-6dx and up
+        printf("Security Ver:          %d\n", fwInfo.fs3_info.image_security_version);
+    }
 
     string updateMethod = "Legacy";
     if (fwInfo.fs3_info.security_mode & SMM_MCC_EN) {
@@ -3460,6 +3617,7 @@ FlintStatus QuerySubCommand::printImageInfo(const fw_info_t& fwInfo)
 
 FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
 {
+    DPRINTF(("QuerySubCommand::printInfo fullQuery=%d\n",fullQuery));
     bool isFs2 = (fwInfo.fw_type == FIT_FS2) ? true : false;
     bool isFs3 = (fwInfo.fw_type == FIT_FS3) ? true : false;
     bool isFs4 = (fwInfo.fw_type == FIT_FS4) ? true : false;
@@ -3472,7 +3630,7 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
     if (fwInfo.fw_info.isfu_major) {
         printf("FW ISSU Version:       %d\n", fwInfo.fw_info.isfu_major);
     }
-
+    
     if (image_version.is_set()) {
         printf("FW Version:            %s\n",
                 image_version.get_fw_version(
@@ -3622,6 +3780,11 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
         printf("Security Attributes:   %s\n",
                printSecurityAttrInfo(fwInfo.fs3_info.security_mode).c_str());
     }
+
+    if (isFs4) { //Security Version is supported in Connectx-6dx and up
+        printf("Security Ver:          %d\n", fwInfo.fs3_info.image_security_version);
+    }
+
     if ((isFs3 || isFs4 || isFsCtrl) && fullQuery) {
         string updateMethod = "Legacy";
         if (fwInfo.fs3_info.security_mode & SMM_MCC_EN) {
@@ -3629,6 +3792,7 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
         }
         printf("Default Update Method: %s\n", updateMethod.c_str());
     }
+
     if (fullQuery && _flintParams.device_specified) {
         if (ops->IsFsCtrlOperations()) {//working only on devices with FW control
             bool IsSupported = ops->GetSecureBootInfo();//from C6DX and above
@@ -3641,6 +3805,29 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
                     printf("Life cycle:            %s\n", life_cycle_strings[index]);
                 }
                 printf("Secure boot:           %s\n", fwInfo.fs3_info.sec_boot == 1 ? "Enabled" : "Disabled");
+                if (fwInfo.fs3_info.sec_boot) {
+                    if (fwInfo.fs3_info.device_security_version_access_method == MFSV){
+                        printf("EFUSE Security Ver:    %d\n", fwInfo.fs3_info.device_security_version_mfsv.efuses_sec_ver);
+                        printf("Image Security Ver:    %d\n", fwInfo.fs3_info.device_security_version_mfsv.img_sec_ver);
+
+                        string efuses_programming_info; 
+                        if (fwInfo.fs3_info.device_security_version_mfsv.efuses_prog_method == 0){
+                            if (fwInfo.fs3_info.device_security_version_mfsv.efuses_prog_en == 0) {
+                                efuses_programming_info = "Manually ; Disabled"; // disabled
+                            } else {
+                                efuses_programming_info = "Manually ; Enabled"; // next boot only
+                            }
+                        } else {
+                            efuses_programming_info = "Automatically"; // every boot 
+                        }
+                        printf("Security Ver Program:  %s\n", efuses_programming_info.c_str()); 
+
+                    } else if (fwInfo.fs3_info.device_security_version_access_method == GW){
+                        printf("EFUSE Security Ver:    %d\n", fwInfo.fs3_info.device_security_version_gw);
+                    } else {
+                        printf("EFUSE Security Ver:    N/A\n");
+                    }
+                }
             }
             else {
                 IsSupported = ops->IsLifeCycleSupported();//for CX6 only
@@ -3749,6 +3936,8 @@ FlintStatus QuerySubCommand::queryMFA2()
 
 FlintStatus QuerySubCommand::executeCommand()
 {
+    DPRINTF(("QuerySubCommand::executeCommand\n"));
+
     if (_flintParams.linkx_control == true) {
         if (_flintParams.device_specified == false) {
             reportErr(true, FLINT_NO_DEVICE_ERROR);
@@ -3789,6 +3978,7 @@ FlintStatus QuerySubCommand::executeCommand()
                   _flintParams.device_specified ? _flintParams.device.c_str() : _flintParams.image.c_str(), ops->err());
         return FLINT_FAILED;
     }
+
     //print fw_info nicely to the user
     // we actually dont use "regular" query , just quick
     //ORENK - no use to display quick query message to the user if we dont do it in any other way
@@ -6556,7 +6746,7 @@ ImportHsmKeySubCommand:: ~ImportHsmKeySubCommand()
 
 FlintStatus ImportHsmKeySubCommand::executeCommand()
 {
-#ifdef __WIN__
+#ifdef __WIN__ 
     reportErr(true, FLINT_NO_HSM);
     return FLINT_FAILED;
 #else
@@ -6754,7 +6944,7 @@ FlintStatus ExportPublicSubCommand::executeCommand()
             reportErr(true, "Extracting public key is applicable only for FS4 FW.\n");
             return FLINT_FAILED;
         }
-        if (!_imgOps->getExtendedHWAravaPtrs(NULL, _imgOps->GetIoAccess(), false)) {
+        if (!_imgOps->getExtendedHWAravaPtrs(NULL, _imgOps->GetIoAccess(), false, false)) {
             reportErr(true, "Extracting secure boot HW pointers failed: %s.\n", _imgOps->err());
             return FLINT_FAILED;
         }

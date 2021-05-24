@@ -186,8 +186,11 @@ void MlxlinkMaps::extEthSpeedMapping()
     _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_50GAUI_1] = 50;
     _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_CAUI_4] = 100;
     _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_100GAUI_2] = 100;
+    _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_100GAUI_1] = 100;
     _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_200GAUI_4] = 200;
+    _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_200GAUI_2] = 200;
     _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_400GAUI_8] = 400;
+    _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_400GAUI_4] = 400;
 
     _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_SGMII_100M] = "100M";
     _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_1000BASE_X] = "1G";
@@ -200,8 +203,11 @@ void MlxlinkMaps::extEthSpeedMapping()
     _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_50GAUI_1] = "50G";
     _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_CAUI_4] = "100G";
     _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_100GAUI_2] = "100G";
+    _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_100GAUI_1] = "100G";
     _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_200GAUI_4] = "200G";
+    _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_200GAUI_2] = "200G";
     _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_400GAUI_8] = "400G";
+    _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_400GAUI_4] = "400G";
 }
 
 void MlxlinkMaps::ibSpeedMapping()
@@ -213,6 +219,7 @@ void MlxlinkMaps::ibSpeedMapping()
     _IBSpeed2gNum[IB_LINK_SPEED_FDR] = 56;
     _IBSpeed2gNum[IB_LINK_SPEED_EDR] = 100;
     _IBSpeed2gNum[IB_LINK_SPEED_HDR] = 200;
+    _IBSpeed2gNum[IB_LINK_SPEED_NDR] = 400;
 
     _IBSpeed2Str[IB_LINK_SPEED_SDR] = "IB-SDR";
     _IBSpeed2Str[IB_LINK_SPEED_DDR] = "IB-DDR";
@@ -221,6 +228,7 @@ void MlxlinkMaps::ibSpeedMapping()
     _IBSpeed2Str[IB_LINK_SPEED_FDR] = "IB-FDR";
     _IBSpeed2Str[IB_LINK_SPEED_EDR] = "IB-EDR";
     _IBSpeed2Str[IB_LINK_SPEED_HDR] = "IB-HDR";
+    _IBSpeed2Str[IB_LINK_SPEED_NDR] = "IB-NDR";
 }
 
 void MlxlinkMaps::speedToLanesMapping()
@@ -265,29 +273,15 @@ void MlxlinkMaps::speedToLanesMapping()
     _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_50GAUI_1] = 1;
     _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_CAUI_4] = 4;
     _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_100GAUI_2] = 2;
+    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_100GAUI_1] = 1;
     _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_200GAUI_4] = 4;
+    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_200GAUI_2] = 2;
     _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_400GAUI_8] = 8;
+    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_400GAUI_4] = 4;
 }
 
 void MlxlinkMaps::initPortSpeedMapping()
 {
-    _speedsListETH[0] = "100";
-    _speedsListETH[1] = "1G";
-    _speedsListETH[2] = "10G";
-    _speedsListETH[3] = "20G";
-    _speedsListETH[4] = "25G";
-    _speedsListETH[5] = "40G";
-    _speedsListETH[6] = "50G";
-    _speedsListETH[7] = "56G";
-    _speedsListETH[8] = "100G";
-    _speedsListIB[9] = "SDR";
-    _speedsListIB[0] = "DDR";
-    _speedsListIB[1] = "QDR";
-    _speedsListIB[2] = "FDR10";
-    _speedsListIB[3] = "FDR";
-    _speedsListIB[4] = "EDR";
-    _speedsListIB[5] = "HDR";
-
     ethSpeedMapping();
     extEthSpeedMapping();
     ibSpeedMapping();
@@ -296,6 +290,7 @@ void MlxlinkMaps::initPortSpeedMapping()
 
 void MlxlinkMaps::initPrbsMapping()
 {
+
     _prbsModesList[0] = "PRBS31";
     _prbsModesList[1] = "PRBS23A";
     _prbsModesList[2] = "PRBS23B";
@@ -330,7 +325,58 @@ void MlxlinkMaps::initPrbsMapping()
     _prbsLaneRateList[7] = "XAUI/2.5G (3.125 Gb/s)";
     _prbsLaneRateList[8] = "50GE-KR4/12.89G (12.89 Gb/s)";
     _prbsLaneRateList[9] =
-            "HDR/50GE/100GE/200GE/400GE (26.5625Gbd/53.125Gb/s)";
+                "HDR/50G_1X/100G_2X/200G_4X/400G_8X (26.5625Gbd/53.125Gb/s)";
+    _prbsLaneRateList[10] =
+                "NDR/100G_1X/200G_2X/400G_4X/800G_8X (53.125Gbd/106.25Gb/s)";
+    //1G
+    _prbsLaneRate["1G"] = {LANE_RATE_1G_CAP, PRBS_1G};
+    //2.5G
+    _prbsLaneRate["XAUI"] = {LANE_RATE_XAUI_CAP, PRBS_XAUI};
+    _prbsLaneRate["2.5G"] = {LANE_RATE_XAUI_CAP, PRBS_XAUI};
+    //50G-KR4
+    _prbsLaneRate["50GE-KR4"] = {LANE_RATE_50G_CAP, PRBS_50G};
+    _prbsLaneRate["12.89G"] = {LANE_RATE_50G_CAP, PRBS_50G};
+    //SDR
+    _prbsLaneRate["IB-SDR"] = {LANE_RATE_SDR_CAP, PRBS_SDR};
+    _prbsLaneRate["SDR"] = {LANE_RATE_SDR_CAP, PRBS_SDR};
+    //DDR
+    _prbsLaneRate["IB-DDR"] = {LANE_RATE_DDR_CAP, PRBS_DDR};
+    _prbsLaneRate["DDR"] = {LANE_RATE_DDR_CAP, PRBS_DDR};
+    _prbsLaneRate["5G"] = {LANE_RATE_DDR_CAP, PRBS_DDR};
+    //QDR
+    _prbsLaneRate["IB-QDR"] = {LANE_RATE_QDR_CAP, PRBS_QDR};
+    _prbsLaneRate["QDR"] = {LANE_RATE_QDR_CAP, PRBS_QDR};
+    //FDR10
+    _prbsLaneRate["IB-FDR10"] = {LANE_RATE_FDR10_CAP, PRBS_FDR10};
+    _prbsLaneRate["FDR10"] = {LANE_RATE_FDR10_CAP, PRBS_FDR10};
+    _prbsLaneRate["10G"] = {LANE_RATE_FDR10_CAP, PRBS_FDR10};
+    _prbsLaneRate["40G"] = {LANE_RATE_FDR10_CAP, PRBS_FDR10};
+    //FDR
+    _prbsLaneRate["IB-FDR"] = {LANE_RATE_FDR_CAP, PRBS_FDR};
+    _prbsLaneRate["FDR"] = {LANE_RATE_FDR_CAP, PRBS_FDR};
+    _prbsLaneRate["14G"] = {LANE_RATE_FDR_CAP, PRBS_FDR};
+    //EDR
+    _prbsLaneRate["IB-EDR"] = {LANE_RATE_EDR_CAP, PRBS_EDR};
+    _prbsLaneRate["EDR"] = {LANE_RATE_EDR_CAP, PRBS_EDR};
+    _prbsLaneRate["25G"] = {LANE_RATE_EDR_CAP, PRBS_EDR};
+    _prbsLaneRate["50G"] = {LANE_RATE_EDR_CAP, PRBS_EDR};
+    _prbsLaneRate["50G_2X"] = {LANE_RATE_EDR_CAP, PRBS_EDR};
+    _prbsLaneRate["100G"] = {LANE_RATE_EDR_CAP, PRBS_EDR};
+    _prbsLaneRate["100G_4X"] = {LANE_RATE_EDR_CAP, PRBS_EDR};
+    //HDR
+    _prbsLaneRate["IB-HDR"] = {LANE_RATE_HDR_CAP, PRBS_HDR};
+    _prbsLaneRate["HDR"] = {LANE_RATE_HDR_CAP, PRBS_HDR};
+    _prbsLaneRate["50G_1X"] = {LANE_RATE_HDR_CAP, PRBS_HDR};
+    _prbsLaneRate["100G_2X"] = {LANE_RATE_HDR_CAP, PRBS_HDR};
+    _prbsLaneRate["200G_4X"] = {LANE_RATE_HDR_CAP, PRBS_HDR};
+    _prbsLaneRate["400G_8X"] = {LANE_RATE_HDR_CAP, PRBS_HDR};
+    //NDR
+    _prbsLaneRate["IB-NDR"] = {LANE_RATE_NDR_CAP, PRBS_NDR};
+    _prbsLaneRate["NDR"] = {LANE_RATE_NDR_CAP, PRBS_NDR};
+    _prbsLaneRate["100G_1X"] = {LANE_RATE_NDR_CAP, PRBS_NDR};
+    _prbsLaneRate["200G_2X"] = {LANE_RATE_NDR_CAP, PRBS_NDR};
+    _prbsLaneRate["400G_4X"] = {LANE_RATE_NDR_CAP, PRBS_NDR};
+    _prbsLaneRate["800G_8X"] = {LANE_RATE_NDR_CAP, PRBS_NDR};
 }
 
 void MlxlinkMaps::initPpbmcAndPepcMapping()

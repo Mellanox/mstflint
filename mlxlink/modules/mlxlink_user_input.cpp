@@ -106,4 +106,15 @@ UserInput::UserInput()
     measureTime = -1;
     force = false;
     gradeScanPerLane = false;
+
+    enableRxErrInj = false;
+    mixerOffset0 = -1;
+    mixerOffset1 = -1;
+    showMixers = false;
+
+    eomMeasurementStr = "";
+
+    enableFecHistogram = false;
+    showFecHistogram = false;
+    clearFecHistogram = false;
 }

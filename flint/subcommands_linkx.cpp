@@ -258,6 +258,11 @@ FlintStatus BurnSubCommand::BurnLinkX(string deviceName, int deviceIndex, int de
         reportErr(true, "Cannot open device %s\n.", deviceName.c_str());
         return FLINT_FAILED;
     }
+    if (linkx_auto_update && activationNeeded && (mfile->flags & MDEVS_IB) != 0) {//IB device
+        if (!askUser("The autoupdate activation process may cause a disconnection from the InBand connection, do you want to continue?")) {
+            return FLINT_FAILED;
+        }
+    }
     FwComponent bootImageComponent;
     std::vector<FwComponent> compsToBurn;
     fwCompsAccess = new FwCompsMgr(mfile, FwCompsMgr::DEVICE_HCA_SWITCH, 0);
@@ -274,8 +279,17 @@ FlintStatus BurnSubCommand::BurnLinkX(string deviceName, int deviceIndex, int de
         printf("-I- Downloading FW ...\n");
     }
     if (!fwCompsAccess->burnComponents(compsToBurn, funcAdv)) {
-        printf("-E- Cable burn failed, error is %s.\n", fwCompsAccess->getLastErrMsg());
-        return FLINT_FAILED;
+        char* err_msg = (char*)fwCompsAccess->getLastErrMsg();
+        bool IbError = (strcmp("Unknown MAD error", err_msg) == 0);
+        if (linkx_auto_update && activationNeeded && ((mfile->flags & MDEVS_IB) != 0) && IbError) {//IB device
+            
+            printf("-W- The activation process caused a disconnection from the InBand connection for a few minutes, please wait for reconnection. The error is %s \n", fwCompsAccess->getLastErrMsg());
+            return FLINT_SUCCESS;
+        }
+        else {
+            printf("-E- Cable burn failed, error is %s.\n", fwCompsAccess->getLastErrMsg());
+            return FLINT_FAILED;
+        }
     }
     else {
         printf("-I- Cable burn finished successfully.\n");

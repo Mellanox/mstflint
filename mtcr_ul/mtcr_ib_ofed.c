@@ -50,7 +50,7 @@
 #if HAVE_CONFIG_H
 #  include <config.h>
 #endif
-
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -179,6 +179,8 @@
 #define I2C_DEVICE_ID   0x56
 #define I2C_MEMORY_ADDR 0
 
+#define MKEY_GUID_SIZE  32
+
 #define UNSUPP_DEVS_NUM   15
 #define DEVID_ADDRESS     0xf0014
 
@@ -193,6 +195,7 @@
                                                    memcpy(bytes_dest, &tmp, 4); \
 } while (0)
 
+#define CHECK_NULL(pointer) if (pointer == NULL) {return -1;}
 
 typedef struct ibmad_port*IBMAD_CALL_CONV (*f_mad_rpc_open_port)(char *dev_name, int dev_port,
                                                                  int *mgmt_classes,
@@ -210,6 +213,7 @@ typedef uint8_t*IBMAD_CALL_CONV (*f_smp_set_via)(void *buf, ib_portid_t *id, uns
                                                  unsigned timeout, const struct ibmad_port *srcport );
 typedef uint8_t*IBMAD_CALL_CONV (*f_smp_set_status_via)(void *buf, ib_portid_t *id, unsigned attrid, unsigned mod,
                                                         unsigned timeout, int *rstatus, const struct ibmad_port *srcport );
+typedef void IBMAD_CALL_CONV (*f_smp_mkey_set)(struct ibmad_port *srcport, uint64_t mkey);
 
 typedef void IBMAD_CALL_CONV (*f_mad_rpc_set_retries)(struct ibmad_port *port, int retries);
 typedef void IBMAD_CALL_CONV (*f_mad_rpc_set_timeout)(struct ibmad_port *port, int timeout);
@@ -227,7 +231,8 @@ struct __ibvsmad_hndl_t
     int tp;
     int i2c_slave;
     int use_smp;
-
+    u_int64_t mkey;    
+    int mkey_is_supported;
     int timeout;
     int retries_num;
     u_int64_t vkey;
@@ -247,6 +252,7 @@ struct __ibvsmad_hndl_t
     f_mad_rpc_set_timeout mad_rpc_set_timeout;
     f_mad_get_field mad_get_field;
     f_portid2str portid2str;
+    f_smp_mkey_set smp_mkey_set;
 
     void *ibdebug;
 };
@@ -273,7 +279,7 @@ static uint64_t ibvsmad_craccess_rw_smp(ibvs_mad *h, u_int32_t memory_address, i
     int i;
     u_int32_t att_mod = 0;
     u_int8_t *p;
-    u_int64_t vkey;
+    u_int64_t mkey;
 
     if (num_of_dwords > MAX_IB_SMP_DATA_DW_NUM) {
         IBERROR(("size is too big, maximum number of dwords is %d", MAX_IB_SMP_DATA_DW_NUM));
@@ -286,9 +292,9 @@ static uint64_t ibvsmad_craccess_rw_smp(ibvs_mad *h, u_int32_t memory_address, i
     att_mod = MERGE(att_mod, memory_address, 0, 16);
     att_mod = MERGE(att_mod, EXTRACT(memory_address, 16, 8), 24, 8);
 
-    // Set the vkey
-    vkey = __cpu_to_be64(h->vkey);
-    memcpy(&mad_data[0], &vkey, 8);
+    // Set the mkey
+    mkey = __cpu_to_be64(h->mkey);
+    memcpy(&mad_data[0], &mkey, 8);
 
     // DW Size:
     att_mod = MERGE(att_mod, num_of_dwords, 16, 6);
@@ -465,6 +471,7 @@ int process_dynamic_linking(ibvs_mad *ivm, int mad_init)
     MY_DLSYM(ivm, mad_rpc_set_timeout      );
     MY_DLSYM(ivm, mad_get_field            );
     MY_DLSYM(ivm, portid2str               );
+    MY_DLSYM(ivm, smp_mkey_set             );
     MY_DLSYM(ivm, ibdebug                  );
     return 0;
 }
@@ -574,6 +581,353 @@ int is_vs_crspace_supported(ibvs_mad *h)
 }
 
 
+
+
+char* trim(char* string)
+{
+    char* back;
+   
+    // Left trim.
+    while (isspace(*string)) {
+        string++;
+    }
+
+    int len = strlen(string);
+    
+    if (len == 0) {
+        return(string);
+    }
+
+    // Right trim.
+    back = string + len;
+
+    while (isspace(*--back)) {}
+
+    *(back + 1) = '\0';
+
+    return string;
+}
+
+
+
+
+int get_mft_conf_field_value(char* line, char* field_name,
+                             char* value, int* is_empty)
+{
+    char* delimiter = "=";
+    char* tmp_value;
+
+    if (strstr(line, field_name) != NULL)
+    {
+        // Get the value.
+        tmp_value = strtok(line, delimiter);
+        tmp_value = strtok(NULL, delimiter);
+
+        // Remove spaces.
+        tmp_value = trim(tmp_value);
+
+        if (strlen(tmp_value))
+        {
+            memcpy(value, tmp_value, sizeof(strlen(tmp_value)));
+        }
+        else
+        {
+            *is_empty = 1;
+        }
+        
+        return 0;
+    }
+
+    return -1;
+}
+
+
+
+
+int load_file(FILE** file_descriptor, const char* file_name_path)
+{
+    // Open the file.
+    *file_descriptor = fopen(file_name_path, "r");
+
+    if (!(*file_descriptor))
+    {
+        // Failed to open the file.
+        return -1;
+    }
+
+    return 0;
+}
+
+
+
+
+int parse_mft_cfg_file(char* sm_config_path)
+{
+    const char* sm_config_default_path = "/var/cache/opensm/";
+    const char* mft_conf_file_path = "/etc/mft/mft.conf";
+    int mkey_is_enable = 0;
+    int is_empty = 0;
+    int ret_value = -1;
+    char line[1024] = {0};
+    char value[256] = {0};
+    FILE* mft_conf_file_descriptor = NULL;
+
+
+    // Load the mft configuration file.
+    if (load_file(&mft_conf_file_descriptor, mft_conf_file_path))
+    {
+        // Failed to open the file.
+        return -1;
+    }
+
+    // Go over the content file.
+    while ((fgets(line, 1024, mft_conf_file_descriptor)))
+    {
+        // Check if the mkey feature is enable.
+        if (!get_mft_conf_field_value(line, "mkey_enable",
+                                      value, &is_empty))
+        {
+            // Mkey feature is supported ?
+            if(strcmp(value, "yes"))
+            {
+                // Mkey is unsuppurted.
+                break;
+            }
+
+            mkey_is_enable = 1;
+        }
+
+        // Check if the user changed the default mkey directory.
+        else if (!get_mft_conf_field_value(line, "sm_config_dir",
+                                           value, &is_empty))
+        {
+            if (!mkey_is_enable)
+            {
+                // Mkey feature is disabled.
+                break;
+            }
+
+            // Empty value ?
+            if (is_empty)
+            {
+                // Use the default sm path.
+                memcpy(sm_config_path, sm_config_default_path, strlen(sm_config_default_path));
+            }
+            else
+            {
+                memcpy(sm_config_path, value, strlen(value));
+            }
+
+            // sm_config_path found.
+            ret_value = 0;
+        }
+    }
+
+    // Close the file.
+    fclose(mft_conf_file_descriptor);
+
+    return ret_value;
+}
+
+
+
+void get_lid_integer(char* lid, int* lid_integer)
+{
+    int base = 10;
+
+    // Check if we have '0x' in the beginning of the string.
+    if ((strlen(lid) > 1) && (lid[0] == '0') && 
+            ((lid[1] == 'x') || (lid[1] == 'X')))
+    {
+        base = 16;
+    }
+
+    *lid_integer = strtol(lid, NULL, base);
+}
+
+
+
+int find_guid(char* lid, char* guid,
+              char* line)
+{
+    char* delimiter = " ";
+    char* tmp_value;
+    char* tmp_guid;
+    int ret_value = -1;
+    int lid_lower_bound;
+    int lid_upper_bound;
+    int lid_from_device;
+
+    CHECK_NULL(guid)
+
+    // Get the lid ranges from device,
+    // remove spaces and convert to integer
+    get_lid_integer(trim(lid), &lid_from_device);
+
+    tmp_guid = strtok(line, delimiter);
+    CHECK_NULL(tmp_guid)
+
+    tmp_value = strtok(NULL, delimiter);
+    CHECK_NULL(tmp_value)
+
+    get_lid_integer(trim(tmp_value), &lid_lower_bound);
+
+    tmp_value = strtok(NULL, delimiter);
+    CHECK_NULL(tmp_value)
+
+    get_lid_integer(trim(tmp_value), &lid_upper_bound);
+
+    if (lid_from_device >= lid_lower_bound && lid_from_device <= lid_upper_bound)
+        {
+            strcpy(guid, tmp_guid);
+            ret_value = 0;
+        }
+
+    return ret_value;
+}
+
+
+int parse_lid2guid_file(char* sm_config_path, char* lid,
+                        char* guid)
+{
+    const char* guid2lid= "guid2lid";
+    FILE* file_descriptor = NULL;
+    char line[1024] = {0};
+    char conf_path[256];
+    int ret_value = -1;
+
+
+    // Parse the guid2lid file.
+    strcpy(conf_path, sm_config_path);
+    strcat(conf_path, guid2lid);
+    
+    if (load_file(&file_descriptor, conf_path))
+    {
+        // Failed to open file.
+        return -1;
+    }
+
+    // Go over the content of the guid2lid file.
+    while ((fgets(line, 1024, file_descriptor)))
+    {
+        if (!find_guid(lid, guid,
+                       line))
+        {
+            ret_value = 0;
+            break;
+        }
+    }
+
+    fclose(file_descriptor);
+
+    // No guid found.
+    return ret_value;
+}
+
+
+int parse_guid2mkey_file(ibvs_mad* ivm, char* sm_config_path,
+                         char* guid)
+{
+    const char* guid2mkey = "guid2mkey";
+    char* delimiter = " ";
+    char* tmp_value;
+    FILE* file_descriptor = NULL;
+    char line[1024] = {0};
+    char conf_path[256];
+    int ret_value = -1;
+
+    // Parse the guid2lid file.
+    strcpy(conf_path, sm_config_path);
+    strcat(conf_path, guid2mkey);
+
+    if (load_file(&file_descriptor, conf_path))
+    {
+        // Failed to open file.
+        return -1;
+    }
+
+    // Go over the content of the guid2key file.
+    while ((fgets(line, 1024, file_descriptor)))
+    {
+        // Get the mkey.
+        tmp_value = strtok(line, delimiter);
+
+        if (!strcmp(tmp_value, guid))
+        {
+            tmp_value = strtok(NULL, delimiter);
+            ivm->mkey = strtoull(tmp_value, NULL, 0);
+            ret_value = 0;
+            break;
+        }
+    }
+
+    fclose(file_descriptor);
+
+    // Failed to get the mkey.
+    return ret_value;
+}
+
+
+
+
+int extract_mkey(ibvs_mad* ivm, char* sm_config_path,
+                 char* lid)
+{
+    char guid[MKEY_GUID_SIZE];
+
+    // Parse the lid2guid file.
+    if (parse_lid2guid_file(sm_config_path, lid,
+                            guid))
+    {
+        return -1;
+    }
+
+    // Parse the guid2key file.
+    if (parse_guid2mkey_file(ivm, sm_config_path,
+                             guid))
+    {
+        return -1;
+    }
+
+    return 0;
+}
+
+
+
+
+int get_mkey(ibvs_mad* ivm, char* lid)
+{
+    char sm_config_path[256] = {0};
+
+
+    // Parameters validation.
+    if(!ivm || !lid)
+    {
+        return -1;
+    }
+
+    // Parse the configuration file in order to extract the mkey info.
+    if(parse_mft_cfg_file(sm_config_path))
+    {
+        // Failed to parse the mkey fields from
+        //   the mft configuration file.
+        return -1;
+    }
+
+    // Extract the mkey.
+    if(extract_mkey(ivm, sm_config_path,
+                    lid))
+    {
+        // Failed to extract the mkey.
+        return -1;
+    }
+
+    return 0;
+}
+
+
+
+
 /********************************************************
 **
 *    Initialize madrpc; Register the vendor specific management classes under
@@ -617,6 +971,8 @@ int mib_open(const char *name, mfile *mf, int mad_init)
         goto end;
     }
 
+    ivm->mkey_is_supported = 0;
+
     if (strncmp("ibdr-", nbuf, 5) == 0) {
         ivm->use_smp = 1;
         ivm->dest_type = IB_DEST_DRPATH;
@@ -626,11 +982,17 @@ int mib_open(const char *name, mfile *mf, int mad_init)
         ivm->dest_type = IB_DEST_LID;
         path_str  = nbuf + 6;
     } else if ((p = strstr(nbuf, "lid-")) != 0) {
+#ifdef __linux__
+        ivm->mkey_is_supported = 1;
+#endif
         lid_provided = 1;
         ivm->dest_type = IB_DEST_LID;
         path_str  = p + 4;
 
     } else if ((p = strstr(nbuf, "lid_noinit-")) != 0) {
+#ifdef __linux__
+        ivm->mkey_is_supported = 1;
+#endif
         lid_provided = 1;
         ivm->dest_type = IB_DEST_LID;
         path_str  = p + 11;
@@ -690,6 +1052,11 @@ int mib_open(const char *name, mfile *mf, int mad_init)
     ivm->mad_rpc_set_timeout       = mad_rpc_set_timeout;
     ivm->mad_get_field             = mad_get_field;
     ivm->portid2str                = portid2str;
+
+#ifdef __linux__
+    ivm->smp_mkey_set              = smp_mkey_set;
+#endif
+
 #else
     if (process_dynamic_linking(ivm, mad_init) == -1) {
         goto end;
@@ -704,6 +1071,18 @@ int mib_open(const char *name, mfile *mf, int mad_init)
 
     ivm->mad_rpc_set_retries(ivm->srcport, ivm->retries_num);
     ivm->mad_rpc_set_timeout(ivm->srcport, ivm->timeout);
+
+    // Initialize the mkey.
+    ivm->mkey = 0;
+
+    if (ivm->mkey_is_supported) {
+        rc = get_mkey(ivm, path_str);
+        // Do we have an mkey?
+        if (!rc) {
+            // Set the mkey.
+            ivm->smp_mkey_set(ivm->srcport, ivm->mkey);
+        }
+    }
 
     rc = ivm->ib_resolve_portid_str_via(&ivm->portid, (char*)path_str,
             ivm->dest_type, sm_id, ivm->srcport);
@@ -727,6 +1106,7 @@ int mib_open(const char *name, mfile *mf, int mad_init)
     }
 
 #define MTCR_IBSL_ENV "MTCR_IB_SL"
+
     if (!ivm->use_smp) {
         sl_str = getenv(MTCR_IBSL_ENV);
         if (sl_str) {
@@ -806,6 +1186,7 @@ int mib_get_chunk_size(mfile *mf)
     }
     return MAX_VS_DATA_SIZE;
 }
+
 
 /********************************************************
 **
@@ -934,6 +1315,10 @@ int is_node_managed(ibvs_mad *h)
     u_int8_t *p;
     u_int8_t mad_data[IB_SMP_DATA_SIZE] = {0};
     u_int8_t enhanced_port;
+
+    // Set the mkey.
+    u_int64_t mkey = __cpu_to_be64(h->mkey);
+    memcpy(&mad_data[0], &mkey, 8);
 
     p = h->smp_query_via(mad_data, &h->portid, IB_ATTR_SWITCH_INFO, 0, 0, h->srcport);
 

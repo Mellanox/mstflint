@@ -1,4 +1,4 @@
-#copyright (c) 2004-2020 Mellanox Technologies LTD. All rights reserved.   
+#copyright (c) 2004-2021 Mellanox Technologies LTD. All rights reserved.   
 #                                                                           
 # This software is available to you under a choice of one of two            
 # licenses.  You may choose to be licensed under the terms of the GNU       
@@ -101,6 +101,7 @@ class PrivilegeMgr(object):
     MCRA_CMD_LINE = "mstmcra %s 0xf0014.0:16"
     BLUE_FIELD_DEV_ID = 0x211
     BLUE_FIELD2_DEV_ID = 0x214
+    BLUE_FIELD3_DEV_ID = 0x21c
     TITLE = "MLNX_RAW_TLV_FILE\n"
     RAW_BYTES = "0x03000204 0x07000083 0x00000000"
 
@@ -269,7 +270,7 @@ class PrivilegeMgr(object):
         if exit_code != 0:
             raise PrivilegeException("Unknown device '%s'!" % self._device)
         dev_id = int(stdout, 16)
-        if dev_id not in (self.BLUE_FIELD_DEV_ID, self.BLUE_FIELD2_DEV_ID):
+        if dev_id not in (self.BLUE_FIELD_DEV_ID, self.BLUE_FIELD2_DEV_ID, self.BLUE_FIELD3_DEV_ID):
             raise PrivilegeException(
                 "Device '%s' is not supported, "
                 "only BlueField devices are supported!" % self._device)

@@ -34,6 +34,7 @@
 #define MLXFWOP_COM_H
 
 #include <compatibility.h>
+#include "tools_layouts/reg_access_hca_layouts.h"
 
 #ifdef UEFI_BUILD
 #include <mft_uefi_common.h>
@@ -78,6 +79,7 @@
 #define CX7_HW_ID         536
 #define BF_HW_ID          529
 #define BF2_HW_ID         532
+#define BF3_HW_ID         540
 #define CX2_HW_ID         400
 #define CX3_HW_ID         501
 #define CX3_PRO_HW_ID     503
@@ -254,7 +256,8 @@ typedef enum security_mode_mask {
     SMM_SECURE_FW = 0x1 << 3,
     SMM_DEV_FW    = 0x1 << 4,
     SMM_CS_TOKEN  = 0x1 << 5,
-    SMM_DBG_TOKEN = 0x1 << 6
+    SMM_DBG_TOKEN = 0x1 << 6,
+    SMM_CRYTO_TO_COMMISSIONING = 0x1 << 7
 } security_mode_mask_t;
 
 typedef enum security_mode {
@@ -286,6 +289,7 @@ typedef enum chip_type {
     CT_CONNECTX7,
     CT_SPECTRUM3,
     CT_BLUEFIELD2,
+    CT_BLUEFIELD3,
     CT_CONNECTX3,
     CT_QUANTUM2,
     CT_SPECTRUM4,
@@ -294,9 +298,13 @@ typedef enum chip_type {
 } chip_type_t;
 
 #define IS_HCA(chipType) \
-    (((chipType) == CT_CONNECTX) || ((chipType) == CT_CONNECT_IB) || ((chipType) == CT_CONNECTX4) || ((chipType) == CT_CONNECTX4_LX) || \
-      ((chipType) == CT_CONNECTX5) || ((chipType) == CT_BLUEFIELD) || ((chipType) == CT_CONNECTX6) || \
-        ((chipType) == CT_CONNECTX6DX) || ((chipType) == CT_CONNECTX6LX) || ((chipType) == CT_CONNECTX7) || ((chipType) == CT_BLUEFIELD2))
+    (((chipType) == CT_CONNECTX) || \
+    ((chipType) == CT_CONNECT_IB) || \
+    ((chipType) == CT_CONNECTX4) || ((chipType) == CT_CONNECTX4_LX) || \
+    ((chipType) == CT_CONNECTX5) || \
+    ((chipType) == CT_CONNECTX6) || ((chipType) == CT_CONNECTX6DX) || ((chipType) == CT_CONNECTX6LX) || \
+    ((chipType) == CT_CONNECTX7) || \
+    ((chipType) == CT_BLUEFIELD) || ((chipType) == CT_BLUEFIELD2) || ((chipType) == CT_BLUEFIELD3))
 
 
 typedef enum chip_family_type {
@@ -373,6 +381,8 @@ typedef struct uids {
     };
 } uids_t;
 
+typedef enum {NOT_VALID, GW, MFSV} device_security_version_access_method_t;
+
 typedef struct fs3_info_ext {
     u_int8_t guids_override_en;
     uids_t fs3_uids_info;
@@ -388,9 +398,16 @@ typedef struct fs3_info_ext {
     char deviceVsd[VSD_LEN + 1];
     bool sec_boot;
     life_cycle_t life_cycle;
+
+    // security version (for fs4)
+    u_int32_t                               image_security_version;       
+    device_security_version_access_method_t device_security_version_access_method;
+    u_int32_t                               device_security_version_gw;
+    struct reg_access_hca_mfsv_reg          device_security_version_mfsv;
+
 } fs3_info_t;
 
-typedef struct fs3_info_ext fs4_info_t;
+// typedef struct fs3_info_ext fs4_info_t;
 
 typedef struct fs2_info_ext {
     guid_t guids[MAX_GUIDS];
@@ -457,7 +474,7 @@ typedef struct fw_info_ext {
 #ifdef CABLES_SUPP
     cablefw_info_t cablefw_info;
 #endif
-    fs3_info_t fs4_info;
+    // fs3_info_t fs4_info;
 } fw_info_t;
 
 typedef enum fw_hndl_type {

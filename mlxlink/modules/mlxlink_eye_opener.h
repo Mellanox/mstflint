@@ -57,7 +57,9 @@
 #define DFLT_MSUR_TIME_PORT      30
 #define DFLT_EYE_DIAG_DIM_PORT   1
 #define MAX_ITERATION_SCAN_PORT  1
+
 #define SLRED_REG               "SLRED"
+#define CMD_TITLE               "Eye Grades per lane info"
 
 enum SCAN_TIME {
     MEASURE_10_SEC,
@@ -94,7 +96,8 @@ enum PNAT_ACCESS {
 enum PRODUCT_TECHNOLOGY {
     PRODUCT_40NM = 0,
     PRODUCT_28NM = 1,
-    PRODUCT_16NM = 3
+    PRODUCT_16NM = 3,
+    PRODUCT_7NM = 4
 };
 
 enum SLRED_LANE_SPEED {
@@ -163,7 +166,6 @@ public:
 private:
     // Helper functions
     void initSlredMaps();
-    bool askUser(const char *question);
     void initWarMsgs();
     void gradeEyeScanner(u_int32_t iteration, u_int32_t lane, u_int32_t eye);
     void laneEyesScanner(u_int32_t iteration, u_int32_t lane);
@@ -198,6 +200,7 @@ private:
     bool _oneLaneScan;
     bool _oneEyeScan;
     string _symWaiter;
+    MlxlinkCmdPrint _cmdOut;
     vector<MarginInfo> _measuredMargins;
     vector<MarginInfo> _avgMargins;
     map<u_int32_t, u_int32_t> _measureTimeMap;

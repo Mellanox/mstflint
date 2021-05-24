@@ -392,7 +392,7 @@ bool getGUIDFromStr(string str, guid_t& guid, string prefixErr = "")
     return true;
 }
 
-bool isElementPresent(vector<string> strv, string str)
+bool isElementPresent(vector<string> strv, string str) //* should be renamed to isStrPresent, since it's not generic
 {
     for (vector<string>::iterator it = strv.begin(); it < strv.end(); it++) {
         if (*it == str) {
@@ -402,20 +402,20 @@ bool isElementPresent(vector<string> strv, string str)
     return false;
 }
 
-bool stringsCommaSplit(string str, std::vector<int> &deviceIds)
-{
+bool stringsCommaSplit(string str, std::vector<int> &deviceIds) //* Should be renamed to something like
+{                                                               //* getIntsFromCommaSplitString
     size_t pos;
     std::vector<string> strv;
     bool res = true;
     while ((pos = str.find(',')) != string::npos) {
         string tmp = str.substr(0, pos);
-        if (!isElementPresent(strv, tmp)) {
-            strv.push_back((string)tmp);
+        if (!isElementPresent(strv, tmp)) { //* Can be changed to: std::find(strv.begin(), strv.end(), tmp) != strv.end()
+            strv.push_back((string)tmp);    //* So we can remove isElementPresent function
         }
         str = str.substr(pos + 1);
     }
     if (str != "") {
-        if (!isElementPresent(strv, str)) {
+        if (!isElementPresent(strv, str)) { //* Same as above
             strv.push_back((string)str);
         }
     }
@@ -1155,6 +1155,10 @@ ParseStatus Flint::HandleOption(string name, string value)
         if (!strToNum(value, activate_delay_sec)) {
             return PARSE_ERROR;
         }
+        if (activate_delay_sec > 255) {
+            printf("Activation_delay_sec should be between 0 and 255.\n");
+            return PARSE_ERROR;
+        }
         _flintParams.activate_delay_sec = activate_delay_sec;
     }
     else if (name == "linkx_auto_update") {
@@ -1215,7 +1219,7 @@ ParseStatus Flint::parseCmdLine(int argc, char *argv[])
     int newArgc = 0;
     int i = 1, j = 1, argStart = 1, argEnd = 1;
 
-    for (int k = (argc - 1); k > 0; k--) {
+    for (int k = (argc - 1); k > 0; k--) { // Parsing command line from end to start
         if ((subCmds.getCmdNum(argv[k])) != SC_No_Cmd) { // i.e we found a subcommand
             if (foundOptionWhenLookingForCmd) {
                 cout << "Specifying options flags after command is not allowed.\n\n";

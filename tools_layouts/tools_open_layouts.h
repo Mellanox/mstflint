@@ -32,9 +32,9 @@
  
 
 /***
-         *** This file was generated at "2020-10-08 16:57:28"
+         *** This file was generated at "2021-03-31 03:07:49"
          *** by:
-         ***    > /mswg/release/tools/a-me/nightly/1.0.122/a-me-1.0.122_2019-07-14/adabe_plugins/adb2c/adb2pack.py --input adb/tools_open/tools_open.adb --file-prefix tools_open --prefix tools_open_
+         ***    > /mswg/release/tools/a-me/a-me-1.0.122/adabe_plugins/adb2c/adb2pack.py --input adb/tools_open/tools_open.adb --file-prefix tools_open --prefix tools_open_ --no-adb-utils
          ***/
 #ifndef TOOLS_OPEN_LAYOUTS_H
 #define TOOLS_OPEN_LAYOUTS_H
@@ -1866,6 +1866,9 @@ struct tools_open_nv_base_mac_guid_cap {
 /* Size in bytes - 32 */
 struct tools_open_nv_cx3_global_conf {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - When TRUE, driver will be indicated to expose internal clock directly to user space applications */
+	/* 0x0.27 - 0x0.27 */
+	u_int8_t clock_map_to_user;
 	/* Description - Defines the Port PHY parameters mode. 0x0: DEVICE_DEFAULT, 0x1: LEGACY, 0x2: ADVANCED */
 	/* 0x0.28 - 0x0.29 */
 	u_int8_t phy_param_mode;
@@ -2179,6 +2182,9 @@ struct tools_open_qos_cap {
 /* Size in bytes - 20 */
 struct tools_open_query_def_params_global {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - When set, indicating mapping of internal clock to user space can be configured by CX3_GLOBAL_CONF.clock_map_to_user */
+	/* 0x0.14 - 0x0.14 */
+	u_int8_t nv_config_clock_map_to_user;
 	/* Description - When set, PHY parameters mode can be configured by GLOBAL_CONF.phy_param_mode */
 	/* 0x0.15 - 0x0.15 */
 	u_int8_t nv_config_phy_param_mode;
@@ -2207,6 +2213,9 @@ struct tools_open_query_def_params_global {
 	/* Description - default value of phy_param_mode in GLOBAL_CONF */
 	/* 0x4.22 - 0x4.23 */
 	u_int8_t default_phy_param_mode;
+	/* Description - default value for clock_map_to_user in CX3_GLOBAL_CONF */
+	/* 0x4.27 - 0x4.27 */
+	u_int8_t default_clock_map_to_user;
 	/* Description - The value reported by QUERY_DEV_CAP.steer_force_vlan when a CX3_GLOBAL_CONF TLV is not present */
 	/* 0x4.28 - 0x4.28 */
 	u_int8_t default_steer_force_vlan;

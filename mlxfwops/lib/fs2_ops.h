@@ -108,10 +108,26 @@ private:
         II_End                = 0xff
     };
     struct Fs2ImgInfo {
+        // Constructor for accurate initialization
+        // Since this struct includes vectors it raises a warning when using memset on it
+        Fs2ImgInfo() :
+            psOk(0),
+            defPorfile(0),
+            configAddr1(0),
+            configAddr2(0),
+            configSize(0),
+            isConfigurable(0),
+            infoSectPtr(0),
+            guidPtr(0),
+            fw_sector_size(0)
+        {
+            memset(&ext_info, 0, sizeof(ext_info));
+            memset(infoOffs, 0, sizeof(infoOffs));
+        }
         fs2_info_t ext_info;
         u_int32_t infoOffs[II_Last];
         bool psOk;
-        // Configuraqtion info
+        // Configuration info
         std::vector<u_int8_t> profListSectZipped;
         std::vector<u_int8_t> TlvFormatSectZipped;
         std::vector<u_int8_t> TracerHashSectZipped;

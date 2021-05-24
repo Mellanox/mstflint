@@ -32,9 +32,9 @@
  
 
 /***
-         *** This file was generated at "2020-10-08 16:57:28"
+         *** This file was generated at "2021-03-31 03:07:49"
          *** by:
-         ***    > /mswg/release/tools/a-me/nightly/1.0.122/a-me-1.0.122_2019-07-14/adabe_plugins/adb2c/adb2pack.py --input adb/tools_open/tools_open.adb --file-prefix tools_open --prefix tools_open_
+         ***    > /mswg/release/tools/a-me/a-me-1.0.122/adabe_plugins/adb2c/adb2pack.py --input adb/tools_open/tools_open.adb --file-prefix tools_open --prefix tools_open_ --no-adb-utils
          ***/
 #include "tools_open_layouts.h"
 
@@ -4325,6 +4325,8 @@ void tools_open_nv_cx3_global_conf_pack(const struct tools_open_nv_cx3_global_co
 {
 	u_int32_t offset;
 
+	offset = 4;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->clock_map_to_user);
 	offset = 2;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 2, (u_int32_t)ptr_struct->phy_param_mode);
 	offset = 1;
@@ -4337,6 +4339,8 @@ void tools_open_nv_cx3_global_conf_unpack(struct tools_open_nv_cx3_global_conf *
 {
 	u_int32_t offset;
 
+	offset = 4;
+	ptr_struct->clock_map_to_user = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 	offset = 2;
 	ptr_struct->phy_param_mode = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 2);
 	offset = 1;
@@ -4350,6 +4354,8 @@ void tools_open_nv_cx3_global_conf_print(const struct tools_open_nv_cx3_global_c
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "======== tools_open_nv_cx3_global_conf ========\n");
 
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "clock_map_to_user    : " UH_FMT "\n", ptr_struct->clock_map_to_user);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "phy_param_mode       : " UH_FMT "\n", ptr_struct->phy_param_mode);
 	adb2c_add_indentation(fd, indent_level);
@@ -5044,6 +5050,8 @@ void tools_open_query_def_params_global_pack(const struct tools_open_query_def_p
 {
 	u_int32_t offset;
 
+	offset = 17;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->nv_config_clock_map_to_user);
 	offset = 16;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->nv_config_phy_param_mode);
 	offset = 15;
@@ -5062,6 +5070,8 @@ void tools_open_query_def_params_global_pack(const struct tools_open_query_def_p
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->boot_ip_ver);
 	offset = 40;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 2, (u_int32_t)ptr_struct->default_phy_param_mode);
+	offset = 36;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->default_clock_map_to_user);
 	offset = 35;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->default_steer_force_vlan);
 	offset = 34;
@@ -5074,6 +5084,8 @@ void tools_open_query_def_params_global_unpack(struct tools_open_query_def_param
 {
 	u_int32_t offset;
 
+	offset = 17;
+	ptr_struct->nv_config_clock_map_to_user = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 	offset = 16;
 	ptr_struct->nv_config_phy_param_mode = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 	offset = 15;
@@ -5092,6 +5104,8 @@ void tools_open_query_def_params_global_unpack(struct tools_open_query_def_param
 	ptr_struct->boot_ip_ver = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 	offset = 40;
 	ptr_struct->default_phy_param_mode = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 2);
+	offset = 36;
+	ptr_struct->default_clock_map_to_user = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 	offset = 35;
 	ptr_struct->default_steer_force_vlan = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 	offset = 34;
@@ -5105,6 +5119,8 @@ void tools_open_query_def_params_global_print(const struct tools_open_query_def_
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "======== tools_open_query_def_params_global ========\n");
 
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "nv_config_clock_map_to_user : " UH_FMT "\n", ptr_struct->nv_config_clock_map_to_user);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "nv_config_phy_param_mode : " UH_FMT "\n", ptr_struct->nv_config_phy_param_mode);
 	adb2c_add_indentation(fd, indent_level);
@@ -5123,6 +5139,8 @@ void tools_open_query_def_params_global_print(const struct tools_open_query_def_
 	fprintf(fd, "boot_ip_ver          : " UH_FMT "\n", ptr_struct->boot_ip_ver);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "default_phy_param_mode : " UH_FMT "\n", ptr_struct->default_phy_param_mode);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "default_clock_map_to_user : " UH_FMT "\n", ptr_struct->default_clock_map_to_user);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "default_steer_force_vlan : " UH_FMT "\n", ptr_struct->default_steer_force_vlan);
 	adb2c_add_indentation(fd, indent_level);

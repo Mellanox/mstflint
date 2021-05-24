@@ -135,12 +135,33 @@ public:
     }
 };
 
+class ConnectX7FwOperationsSignatureManager : public AbstractSignatureManager
+{
+public:
+    ConnectX7FwOperationsSignatureManager() : AbstractSignatureManager() {}
+    virtual ~ConnectX7FwOperationsSignatureManager() {}
+    virtual bool GetSecureBootInfo()
+    {
+        return true;
+    }
+};
 
 class Bluefield2FwOperationsSignatureManager : public AbstractSignatureManager
 {
 public:
     Bluefield2FwOperationsSignatureManager() : AbstractSignatureManager() {}
     virtual ~Bluefield2FwOperationsSignatureManager() {}
+    virtual bool GetSecureBootInfo()
+    {
+        return true;
+    }
+};
+
+class Bluefield3FwOperationsSignatureManager : public AbstractSignatureManager
+{
+public:
+    Bluefield3FwOperationsSignatureManager() : AbstractSignatureManager() {}
+    virtual ~Bluefield3FwOperationsSignatureManager() {}
     virtual bool GetSecureBootInfo()
     {
         return true;

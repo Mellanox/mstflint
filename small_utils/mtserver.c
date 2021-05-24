@@ -199,7 +199,7 @@ void write_ok(int con)
     #include <unistd.h>
 
     #define FILE_PATH "/tmp/mmap.log"
-    #define NUM_INTS  (0x200000)
+    #define NUM_INTS  (0x2000000)
     #define FILE_SIZE (NUM_INTS * sizeof(int))
 
 u_int32_t *cr_space;
@@ -521,7 +521,7 @@ void get_devices_list(int con)
 #ifndef MST_UL
     dev_info *mdevs_inf = NULL;
     int devs_num = -1, i = 0;
-    mdevs_inf = mdevices_info(MDEVS_ALL & ~MDEVS_CABLE, &devs_num);
+    mdevs_inf = mdevices_info(MDEVS_ALL, &devs_num);
 
     if (devs_num < 0 || !mdevs_inf) {
         write_err(con);
@@ -633,7 +633,7 @@ int parse_i2c_cmd(char *buf, u_int8_t *addr_width, u_int8_t *slave_addr, int *si
         for (i = 0; i < *size; i++) {
             char tmp_num[10];
             // TODO: use 16 on the  strtoul
-            strncpy(tmp_num, "0x", 2);
+            strncpy(tmp_num, "0x", 3);
             strncpy(tmp_num + 2, p, 2);
             tmp_num[4] = '\0';
             ((u_int8_t*)data)[i] = (u_int8_t)strtoul(tmp_num, 0, 0);

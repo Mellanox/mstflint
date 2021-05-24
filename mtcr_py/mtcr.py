@@ -47,13 +47,16 @@ def insertField(val1, start1, val2, start2, size):
 class MtcrException(Exception):
     pass
 
+class CmdIfException(Exception):
+    pass
+
 ##########################
 CMTCR = None
 try:
     from ctypes import *
     ctypes.CDLL._func_restype_ = ctypes.c_ulonglong
     if platform.system() == "Windows" or os.name == "nt":
-        CMTCR = CDLL("libmtcr-1.dll", use_errno=True)
+        CMTCR = CDLL(".\\libmtcr-1.dll", use_errno=True)
     else:
         try:
             CMTCR = CDLL("cmtcr.so", use_errno=True)
@@ -205,7 +208,7 @@ else:
             rc, out = getstatusoutput(cmd)
             if rc:
                 raise MtcrException("Failed to read from mst device from address 0x%x: %s" % (addr, out))
-            return string.atoi(out, 16)
+            return int(out, 16)
 
         ##########################
         def readField(self, addr, startBit, size):

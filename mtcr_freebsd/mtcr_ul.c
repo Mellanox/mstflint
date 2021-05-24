@@ -32,6 +32,7 @@
  */
 
 #include <sys/types.h>
+#include <sys/memrange.h>
 
 #include <err.h>
 #define _WITH_GETLINE
@@ -755,7 +756,7 @@ mfile* mopen_int(const char *name, u_int32_t adv_opt)
     char tmp_name[512] = {0};
     char *p_cable = strstr(name, "_cable");
     if (p_cable != 0) {
-        strncpy(tmp_name, name, 512);
+        strncpy(tmp_name, name, 512 - 1);
         tmp_name[p_cable - name] = 0;
         is_cable = 1;
         real_name = tmp_name;
@@ -873,6 +874,11 @@ int mclose(mfile *mf)
     if (mf->fdlock) {
         close(mf->fdlock);
     }
+
+    if(mf->user_page_list.page_amount) {
+        deallocate_kernel_memory_page(mf);
+    }
+
     //printf("freeing\n");
     free(mf);
     return 0;
@@ -2485,16 +2491,92 @@ int supports_reg_access_gmp(mfile *mf, maccess_reg_method_t reg_method)
 int allocate_kernel_memory_page(mfile *mf, struct mtcr_page_info* page_info,
                                 int page_amount)
 {
-    (void)mf;
-    (void)page_info;
-    (void)page_amount;
-    return ME_UNSUPPORTED_OPERATION;
+    int page_alignment = getpagesize();
+    int page_size = page_alignment;
+    int current_offest = 0;
+    int file_descriptor;
+    int return_code;
+
+    // Parameter validation.
+    if(!mf || !page_info) {
+        return ME_BAD_PARAMS;
+    }
+
+    mf->user_page_list.page_amount = page_amount;
+
+    // Open the memory device file.
+    file_descriptor = open("/dev/mem", O_RDWR);
+
+    // Pin the memory in the kernel space.
+    for (int page_counter = 0;
+            page_counter < page_amount;
+            page_counter++) {
+
+        // Allocate the buffer.
+        char* current_page = &mf->user_page_list.page_list[page_counter];
+        current_page = aligned_alloc(page_alignment, page_size);
+
+        // Page allocated ?
+        if (!current_page)
+        {
+            for (int page_allocated_counter = 0;
+                    page_allocated_counter < page_counter;
+                    page_allocated_counter++) {
+                // Free the user space memory.
+                free(&mf->user_page_list.page_list[page_allocated_counter]);
+            }
+
+            return ME_MEM_ERROR;
+        }
+
+        // Save the virtual address.
+        page_info->page_addresses_array[page_counter].virtual_address =
+            (u_int64_t)current_page;
+
+        // Advanced the counter.
+        current_offest += page_size;
+
+        // Building the ioctl structure.
+        struct mem_extract memory_user;
+        memory_user.me_vaddr =
+            page_info->page_addresses_array[page_counter].virtual_address;
+
+        // Pin the user memory in the kernel space.
+        return_code = ioctl(file_descriptor, MEM_EXTRACT_PADDR, &memory_user);
+ 
+        if (return_code) {
+            return ME_MEM_ERROR;
+        }
+
+        // Save the PA for the tool.
+        page_info->page_addresses_array[page_counter].physical_address =
+            memory_user.me_paddr;
+    }
+
+    // Close the device file /dev/mem.
+    close(file_descriptor);
+
+    return ME_OK;
 }
 
 int deallocate_kernel_memory_page(mfile *mf)
 {
-    (void)mf;
-    return ME_UNSUPPORTED_OPERATION;
+    // Parameter validation.
+    if(!mf) {
+        return -1;
+    }
+
+    // Deallocate the 3 pages.
+    for (int page_counter = 0;
+            page_counter < mf->user_page_list.page_amount;
+            page_counter++) {
+        // Free the user space memory.
+        free(&mf->user_page_list.page_list[page_counter]);
+    }
+
+    mf->user_page_list.page_list = NULL;
+
+    return 0;
 }
 
 int mset_i2c_addr_width(mfile *mf, u_int8_t addr_width)
@@ -2526,9 +2608,30 @@ int get_i2c_freq(mfile* mf, u_int8_t* freq) {
 int read_dword_from_conf_space(u_int32_t offset, mfile *mf,
                                struct mtcr_read_dword_from_config_space* read_config_space)
 {
-    (void)offset;
-    (void)mf;
-    (void)read_config_space;
+    int ret = 0;
 
-    return ME_UNSUPPORTED_OPERATION;
+    // Parameters validation.
+    if(!mf || !read_config_space)
+    {
+        return -1;
+    }
+
+    // take semaphore.
+    ret = _vendor_specific_sem(mf, 1);
+    if (ret) {
+        return ret;
+    }
+
+    // set address space.
+    ret = _set_addr_space(mf, mf->address_space);
+
+    if (!ret) {
+        // read the data.
+        READ4_PCI(mf, &read_config_space->data, offset, "read value", return -1);
+    }
+
+    // clear semaphore
+    _vendor_specific_sem(mf, 0);
+
+    return ret;
 }

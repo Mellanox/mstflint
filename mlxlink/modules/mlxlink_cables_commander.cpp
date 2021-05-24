@@ -59,7 +59,7 @@ void MlxlinkCablesCommander::readMCIA(u_int32_t page, u_int32_t size,
     updateField("l", 0);
     genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
     u_int32_t i = 0;
-    char fieldName[20];
+    char fieldName[32];
     for ( ; i < size/4 ; i++) {
         sprintf(fieldName, "dword[%d]", i);
         u_int32_t s = getFieldValue(std::string(fieldName));
@@ -85,7 +85,6 @@ void MlxlinkCablesCommander::writeMCIA(u_int32_t page, u_int32_t size,
     updateField("page_number", page);
     updateField("device_address", offset);
     updateField("i2c_device_address", i2cAddress);
-    updateField("l", 1);
     u_int32_t i = 0;
     char fieldName[20];
     u_int32_t dwordDataSize = (u_int32_t)ceil((double)size/sizeof(u_int32_t));
@@ -163,7 +162,7 @@ u_int16_t MlxlinkCablesCommander::getStatusBit(u_int32_t channel, u_int16_t val,
 }
 
 
-void MlxlinkCablesCommander::getCmisDdmValues()
+void MlxlinkCablesCommander::getDdmValuesFromPddr()
 {
     string regName = "PDDR";
     resetParser(regName);
@@ -180,8 +179,8 @@ void MlxlinkCablesCommander::getCmisDdmValues()
     string laneStr = "";
     for (int lane = 0; lane < _cableDdm.channels; lane++) {
         laneStr = to_string(lane);
-        _cableDdm.rx_power[lane].val = (u_int16_t)(10000*pow(10.0, getPower(getFieldValue("rx_power_lane" + laneStr)) / 10.0));
-        _cableDdm.tx_power[lane].val = (u_int16_t)(10000*pow(10.0, getPower(getFieldValue("tx_power_lane" + laneStr)) / 10.0));
+        _cableDdm.rx_power[lane].val = getPower(getFieldValue("rx_power_lane" + laneStr));
+        _cableDdm.tx_power[lane].val = getPower(getFieldValue("tx_power_lane" + laneStr));
         _cableDdm.tx_bias[lane].val = getFieldValue("tx_bias_lane" + laneStr);
     }
 }
@@ -288,7 +287,7 @@ void MlxlinkCablesCommander::getQsfpDddLanesFlags(u_int8_t *page11H)
 void MlxlinkCablesCommander::prepareQsfpddDdmInfo()
 {
     // Read DDM fields from PDDR
-    getCmisDdmValues();
+    getDdmValuesFromPddr();
 
     // Read module flags
     u_int8_t *page0L = (u_int8_t*)malloc(sizeof(u_int8_t) * CABLE_PAGE_SIZE);
@@ -380,7 +379,7 @@ void MlxlinkCablesCommander::getSfpDddLanesFlags(u_int8_t *page0L)
 void MlxlinkCablesCommander::prepareSfpddDdmInfo()
 {
     // Read DDM fields from PDDR
-    getCmisDdmValues();
+    getDdmValuesFromPddr();
 
     // Read module flags
     u_int8_t *page0L = (u_int8_t*)malloc(sizeof(u_int8_t) * CABLE_PAGE_SIZE);
@@ -402,22 +401,17 @@ void MlxlinkCablesCommander::prepareSfpddDdmInfo()
 // Preparing QSFP DDM information
 void MlxlinkCablesCommander::prepareQSFPDdmInfo()
 {
-    u_int8_t voltage[2] = {0};
-    u_int8_t rx_powers[QSFP_CHANNELS * 2] = {0};
-    u_int8_t tx_powers[QSFP_CHANNELS * 2] = {0};
-    u_int8_t tx_bias[QSFP_CHANNELS * 2] = {0};
-    u_int32_t temperature_val = 0;
     u_int32_t tempVal = 0;
     u_int8_t *page0L = (u_int8_t*)malloc(sizeof(u_int8_t) * CABLE_PAGE_SIZE);
+
     loadEEPRMPage(PAGE_0, LOWER_PAGE_OFFSET, page0L);
-    readFromPage(page0L, QSFP_TEMP_CURR, &temperature_val, 2);
+
     readFromPage(page0L, QSFP_TEMP_AW_OFFSET, &tempVal);
     _cableDdm.temperature.high_warn_flag = (tempVal & QSFP_TEMP_HWARN_STATUS);
     _cableDdm.temperature.low_warn_flag = (tempVal & QSFP_TEMP_LWARN_STATUS);
     _cableDdm.temperature.high_alarm_flag = (tempVal & QSFP_TEMP_HALARM_STATUS);
     _cableDdm.temperature.low_alarm_flag = (tempVal & QSFP_TEMP_LALARM_STATUS);
 
-    readFromPage(page0L, QSFP_VCC_CURR, voltage, 2);
     tempVal = 0;
     readFromPage(page0L, QSFP_VCC_AW_OFFSET, &tempVal);
     _cableDdm.voltage.high_warn_flag = (tempVal & QSFP_VCC_HWARN_STATUS);
@@ -425,9 +419,7 @@ void MlxlinkCablesCommander::prepareQSFPDdmInfo()
     _cableDdm.voltage.high_alarm_flag = (tempVal & QSFP_VCC_HALARM_STATUS);
     _cableDdm.voltage.low_alarm_flag = (tempVal & QSFP_VCC_LALARM_STATUS);
 
-    readFromPage(page0L, QSFP_RX_PWR_1_OFFSET, rx_powers, QSFP_CHANNELS * 2);
-    readFromPage(page0L, QSFP_TX_PWR_1_OFFSET, tx_powers, QSFP_CHANNELS * 2);
-    readFromPage(page0L, QSFP_TX_BIAS_1_OFFSET, tx_bias, QSFP_CHANNELS * 2);
+    getDdmValuesFromPddr();
 
     u_int8_t nextTwoChannels = 0;
     for (u_int32_t i = 1; i <= QSFP_CHANNELS; i++) {
@@ -467,38 +459,18 @@ void MlxlinkCablesCommander::prepareQSFPDdmInfo()
                                                     QSFP_TX_BIAS_1_HALARM);
     }
 
-    _cableDdm.channels = QSFP_CHANNELS;
-    _cableDdm.temperature.val = (u_int8_t)temperature_val;
-    _cableDdm.voltage.val = voltage[0] << 8 | voltage[1];
-    for (int i = 0; i < _cableDdm.channels; i++) {
-        _cableDdm.rx_power[i].val = rx_powers[2 * i] << 8 | rx_powers[2 * i + 1];
-        _cableDdm.tx_power[i].val = tx_powers[2 * i] << 8 | tx_powers[2 * i + 1];
-        _cableDdm.tx_bias[i].val  = tx_bias[2 * i] << 8 | tx_bias[2 * i + 1];
-    }
     delete page0L;
 }
 
 // Preparing SFP DDM information
 void MlxlinkCablesCommander::prepareSFPDdmInfo()
 {
-    u_int8_t voltage[2] = {0};
-    u_int8_t rx_powers[QSFP_CHANNELS * 2] = {0};
-    u_int8_t tx_powers[QSFP_CHANNELS * 2] = {0};
-    u_int8_t tx_bias[QSFP_CHANNELS * 2] = {0};
-    u_int32_t temperature_val = 0;
     u_int32_t tempVal = 0;
     u_int8_t *sfp51Page = (u_int8_t*)malloc(sizeof(u_int8_t) * CABLE_PAGE_SIZE);
     loadEEPRMPage(PAGE_01, LOWER_PAGE_OFFSET, sfp51Page, I2C_ADDR_HIGH);
 
-    readFromPage(sfp51Page, SFP51_TEMP, &temperature_val, 2);
-    readFromPage(sfp51Page, SFP51_VCC, voltage, 2);
+    getDdmValuesFromPddr();
 
-    tempVal = 0;
-    readFromPage(sfp51Page, SFP51_RX_PWR, rx_powers, SFP_CHANNELS * 2);
-    readFromPage(sfp51Page, SFP51_TX_PWR, tx_powers, SFP_CHANNELS * 2);
-    readFromPage(sfp51Page, SFP51_BIAS, tx_bias, SFP_CHANNELS * 2);
-
-    tempVal = 0;
     readFromPage(sfp51Page, SFP51_ALRM_FLG, &tempVal, 2);
     _cableDdm.tx_power[0].low_warn_flag = getStatusBit(SFP_CHANNELS, tempVal,
                                                 SFP51_TX_PWR_LWARN_FLG);
@@ -544,14 +516,6 @@ void MlxlinkCablesCommander::prepareSFPDdmInfo()
     _cableDdm.rx_power[0].high_alarm_flag = getStatusBit(SFP_CHANNELS, tempVal,
                                                 SFP51_RX_PWR_HALRM_FLG);
 
-    _cableDdm.channels = SFP_CHANNELS;
-    _cableDdm.temperature.val = (u_int8_t)temperature_val;
-    _cableDdm.voltage.val = voltage[0] << 8 | voltage[1];
-    for (int i = 0; i < _cableDdm.channels; i++) {
-        _cableDdm.rx_power[i].val = rx_powers[2 * i] << 8 | rx_powers[2 * i + 1];
-        _cableDdm.tx_power[i].val = tx_powers[2 * i] << 8 | tx_powers[2 * i + 1];
-        _cableDdm.tx_bias[i].val  = tx_bias[2 * i] << 8 | tx_bias[2 * i + 1];
-    }
     delete sfp51Page;
 }
 
@@ -640,25 +604,25 @@ void MlxlinkCablesCommander::readCableDDMInfo()
 
 // Preparing and formating DDM flags section
 void MlxlinkCablesCommander::setPrintDDMFlagsSection(MlxlinkCmdPrint &cmdPrint,
-        u_int32_t startIndx, const ddm_threshold_t &flags, const string &flagGroup)
+        const ddm_threshold_t &flags, const string &flagGroup)
 {
     char strBuff[32];
     string flagColor;
     sprintf(strBuff, "%0d", flags.high_alarm_flag);
     flagColor = MlxlinkRecord::ddmFlagValue2Color(atoi(strBuff), DDM_FLAG_ALARM);
-    setPrintVal(cmdPrint, startIndx, IDENT + flagGroup + " Alarm high",
+    setPrintVal(cmdPrint, IDENT + flagGroup + " Alarm high",
             strBuff, flagColor, true, true, false, true);
     sprintf(strBuff, "%0d", flags.high_warn_flag);
     flagColor = MlxlinkRecord::ddmFlagValue2Color(atoi(strBuff), DDM_FLAG_WARN);
-    setPrintVal(cmdPrint, startIndx + 1, IDENT + flagGroup +" Warning high",
+    setPrintVal(cmdPrint, IDENT + flagGroup +" Warning high",
             strBuff, flagColor, true, true, false, true);
     sprintf(strBuff, "%0d", flags.low_warn_flag);
     flagColor = MlxlinkRecord::ddmFlagValue2Color(atoi(strBuff), DDM_FLAG_WARN);
-    setPrintVal(cmdPrint, startIndx + 2, IDENT + flagGroup + " Warning low",
+    setPrintVal(cmdPrint, IDENT + flagGroup + " Warning low",
             strBuff, flagColor, true, true, false, true);
     sprintf(strBuff, "%0d\n", flags.low_alarm_flag);
     flagColor = MlxlinkRecord::ddmFlagValue2Color(atoi(strBuff), DDM_FLAG_ALARM);
-    setPrintVal(cmdPrint, startIndx + 3, IDENT + flagGroup + " Alarm low",
+    setPrintVal(cmdPrint, IDENT + flagGroup + " Alarm low",
             strBuff, flagColor, true, true, false, true);
 }
 
@@ -670,13 +634,13 @@ string MlxlinkCablesCommander::getDDMThresholdRow(u_int16_t temp, u_int16_t volt
     char strBuff[32];
     sprintf(strBuff, "%dC", (signed char) (temp >> 8));
     row = MlxlinkRecord::addSpaceForDDM(string(strBuff)) + ",";
-    sprintf(strBuff, "%.4fV", ((double)volt) / 10000);
+    sprintf(strBuff, "%.3fV", ((double)volt) / 10000);
     row += MlxlinkRecord::addSpaceForDDM(string(strBuff)) + ",";
-    sprintf(strBuff, "%.4fdBm", mw_to_dbm(((double)rxPower) / 10000));
+    sprintf(strBuff, "%.3fdBm", mw_to_dbm(((double)rxPower) / 10000));
     row += MlxlinkRecord::addSpaceForDDM(string(strBuff)) + ",";
-    sprintf(strBuff, "%.4fdBm", mw_to_dbm(((double)txPower) / 10000));
+    sprintf(strBuff, "%.3fdBm", mw_to_dbm(((double)txPower) / 10000));
     row += MlxlinkRecord::addSpaceForDDM(string(strBuff)) + ",";
-    sprintf(strBuff, "%.4fmA", ((double)txBias) / 500);
+    sprintf(strBuff, "%.3fmA", ((double)txBias) / 500);
     row += MlxlinkRecord::addSpaceForDDM(string(strBuff));
     return row;
 }
@@ -688,11 +652,11 @@ void MlxlinkCablesCommander::prepareDDMOutput()
     setPrintTitle(cableDDMCmd,"Cable DDM Information", 6);
 
     char strBuff[32];
-    sprintf(strBuff, "%dC", _cableDdm.temperature.val);
-    setPrintVal(cableDDMCmd, 0, "Temperature", strBuff, ANSI_COLOR_RESET, true);
+    sprintf(strBuff, "%dC", (int)_cableDdm.temperature.val);
+    setPrintVal(cableDDMCmd, "Temperature", strBuff, ANSI_COLOR_RESET, true);
 
     sprintf(strBuff, "%.4fV", ((double)_cableDdm.voltage.val) / 10000);
-    setPrintVal(cableDDMCmd, 1, "Voltage", strBuff, ANSI_COLOR_RESET, true);
+    setPrintVal(cableDDMCmd, "Voltage", strBuff, ANSI_COLOR_RESET, true);
 
     int i = 0;
     string title = "";
@@ -702,31 +666,26 @@ void MlxlinkCablesCommander::prepareDDMOutput()
     for (i = 0; i < _cableDdm.channels; i++) {
         sprintf(strBuff, "Channel %d", i + 1);
         title += MlxlinkRecord::addSpaceForDDM(string(strBuff)) + ",";
-        sprintf(strBuff, "%.4fdBm",
-                mw_to_dbm(((double)_cableDdm.rx_power[i].val) / 10000));
+        sprintf(strBuff, "%.3fdBm", (double)_cableDdm.rx_power[i].val);
         rxPower += MlxlinkRecord::addSpaceForDDM(string(strBuff)) + ",";
-        sprintf(strBuff, "%.4fdBm",
-                mw_to_dbm(((double)_cableDdm.tx_power[i].val) / 10000));
+        sprintf(strBuff, "%.3fdBm", (double)_cableDdm.tx_power[i].val);
         txPower += MlxlinkRecord::addSpaceForDDM(string(strBuff)) + ",";
-        sprintf(strBuff, "%.4fmA",
+        sprintf(strBuff, "%.3fmA",
                 ((double)_cableDdm.tx_bias[i].val) / 500);
         txBias += MlxlinkRecord::addSpaceForDDM(string(strBuff)) + ",";
     }
-    title = deleteLastComma(title);
-    rxPower = deleteLastComma(rxPower);
-    txPower = deleteLastComma(txPower);
-    txBias = deleteLastComma(txBias);
+    title = deleteLastChar(title);
+    rxPower = deleteLastChar(rxPower);
+    txPower = deleteLastChar(txPower);
+    txBias = deleteLastChar(txBias);
     int skipTitle = (_cableDdm.channels == 1);
     if (!skipTitle) {
-        setPrintVal(cableDDMCmd, 2, "Channels", title, ANSI_COLOR_RESET, true,
+        setPrintVal(cableDDMCmd, "Channels", title, ANSI_COLOR_RESET, true,
                 true, true);
     }
-    setPrintVal(cableDDMCmd, 3 - skipTitle, "RX Power", rxPower,
-            ANSI_COLOR_RESET, true, true, true);
-    setPrintVal(cableDDMCmd, 4 - skipTitle, "TX Power", txPower,
-            ANSI_COLOR_RESET, true, true, true);
-    setPrintVal(cableDDMCmd, 5 - skipTitle, "TX Bias", txBias,
-            ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(cableDDMCmd, "RX Power", rxPower, ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(cableDDMCmd, "TX Power", txPower, ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(cableDDMCmd, "TX Bias", txBias, ANSI_COLOR_RESET, true, true, true);
 
     cableDDMCmd.toJsonFormat(_jsonRoot);
     _cableDDMOutput.push_back(cableDDMCmd);
@@ -734,10 +693,8 @@ void MlxlinkCablesCommander::prepareDDMOutput()
     MlxlinkCmdPrint cableDDMFlags = MlxlinkCmdPrint();
     string flagStr = "Status";
     setPrintTitle(cableDDMFlags,"DDM Flags", 9);
-    setPrintDDMFlagsSection(cableDDMFlags, cableDDMFlags.getCurrRow(),
-            _cableDdm.temperature, "Temperature");
-    setPrintDDMFlagsSection(cableDDMFlags, cableDDMFlags.getCurrRow(),
-            _cableDdm.voltage, "Voltage");
+    setPrintDDMFlagsSection(cableDDMFlags, _cableDdm.temperature, "Temperature");
+    setPrintDDMFlagsSection(cableDDMFlags, _cableDdm.voltage, "Voltage");
     cableDDMFlags.toJsonFormat(_jsonRoot);
     _cableDDMOutput.push_back(cableDDMFlags);
 
@@ -749,12 +706,9 @@ void MlxlinkCablesCommander::prepareDDMOutput()
             sprintf(strBuff, "Channel %d", i + 1);
         }
         setPrintTitle(channelFlags, string(strBuff) + " Flags", 13);
-        setPrintDDMFlagsSection(channelFlags, channelFlags.getCurrRow(),
-                _cableDdm.rx_power[i], "RX Power");
-        setPrintDDMFlagsSection(channelFlags, channelFlags.getCurrRow(),
-                _cableDdm.tx_power[i], "TX Power");
-        setPrintDDMFlagsSection(channelFlags, channelFlags.getCurrRow(),
-                _cableDdm.tx_bias[i], "TX Bias");
+        setPrintDDMFlagsSection(channelFlags, _cableDdm.rx_power[i], "RX Power");
+        setPrintDDMFlagsSection(channelFlags, _cableDdm.tx_power[i], "TX Power");
+        setPrintDDMFlagsSection(channelFlags, _cableDdm.tx_bias[i], "TX Bias");
         channelFlags.toJsonFormat(_jsonRoot);
         _cableDDMOutput.push_back(channelFlags);
     }
@@ -762,8 +716,7 @@ void MlxlinkCablesCommander::prepareDDMOutput()
     MlxlinkCmdPrint cableDDMThresholds= MlxlinkCmdPrint();
     setPrintTitle(cableDDMThresholds,"DDM Thresholds", 50);
 
-    setPrintVal(cableDDMThresholds, cableDDMThresholds.getCurrRow(),
-            "Thresholds",
+    setPrintVal(cableDDMThresholds, "Thresholds",
             MlxlinkRecord::addSpaceForDDM(string("Temperature")) + "," +
             MlxlinkRecord::addSpaceForDDM(string("Voltage")) + "," +
             MlxlinkRecord::addSpaceForDDM(string("RX Power")) + "," +
@@ -776,32 +729,32 @@ void MlxlinkCablesCommander::prepareDDMOutput()
                               _cableDdm.rx_power[0].high_alarm,
                               _cableDdm.tx_power[0].high_alarm,
                               _cableDdm.tx_bias[0].high_alarm);
-    setPrintVal(cableDDMThresholds, cableDDMThresholds.getCurrRow(),
-            "High alarm threshold", row, ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(cableDDMThresholds, "High alarm threshold", row,
+            ANSI_COLOR_RESET, true, true, true);
 
     row = getDDMThresholdRow(_cableDdm.temperature.high_warn,
                        _cableDdm.voltage.high_warn,
                        _cableDdm.rx_power[0].high_warn,
                        _cableDdm.tx_power[0].high_warn,
                        _cableDdm.tx_bias[0].high_warn);
-    setPrintVal(cableDDMThresholds, cableDDMThresholds.getCurrRow(),
-            "High warning threshold", row, ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(cableDDMThresholds, "High warning threshold", row,
+            ANSI_COLOR_RESET, true, true, true);
 
     row = getDDMThresholdRow(_cableDdm.temperature.low_warn ,
                        _cableDdm.voltage.low_warn,
                        _cableDdm.rx_power[0].low_warn,
                        _cableDdm.tx_power[0].low_warn,
                        _cableDdm.tx_bias[0].low_warn);
-    setPrintVal(cableDDMThresholds, cableDDMThresholds.getCurrRow(),
-            "Low warn threshold", row, ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(cableDDMThresholds, "Low warning threshold", row,
+            ANSI_COLOR_RESET, true, true, true);
 
     row = getDDMThresholdRow(_cableDdm.temperature.low_alarm,
                        _cableDdm.voltage.low_alarm,
                        _cableDdm.rx_power[0].low_alarm,
                        _cableDdm.tx_power[0].low_alarm,
                        _cableDdm.tx_bias[0].low_alarm);
-    setPrintVal(cableDDMThresholds, cableDDMThresholds.getCurrRow(),
-            "Low alarm threshold", row, ANSI_COLOR_RESET, true, true, true);
+    setPrintVal(cableDDMThresholds, "Low alarm threshold", row,
+            ANSI_COLOR_RESET, true, true, true);
 
     cableDDMThresholds.toJsonFormat(_jsonRoot);
     _cableDDMOutput.push_back(cableDDMThresholds);
@@ -835,7 +788,7 @@ void MlxlinkCablesCommander::addPageToOutputVector(u_int8_t *pageBuffer, u_int32
                                             pageBuffer[row*bytesPerLine+1],
                                             pageBuffer[row*bytesPerLine+2],
                                             pageBuffer[row*bytesPerLine+3]);
-        setPrintVal(pageDump, row, LineOffset, val, ANSI_COLOR_RESET, true,
+        setPrintVal(pageDump, LineOffset, val, ANSI_COLOR_RESET, true,
                 true, true);
     }
     pageDump.toJsonFormat(_jsonRoot);
@@ -1079,8 +1032,7 @@ MlxlinkCmdPrint MlxlinkCablesCommander::readFromEEPRM(u_int16_t page , u_int16_t
             readFromPage(pageH, currOffset - UPPER_PAGE_OFFSET, &byteVal);
             sprintf(val, "0x%02x", byteVal);
         }
-        setPrintVal(bytesOutput, bytesOutput.getCurrRow(), label, val,
-                ANSI_COLOR_RESET, true, true, true);
+        setPrintVal(bytesOutput, label, val, ANSI_COLOR_RESET, true, true, true);
     }
     bytesOutput.toJsonFormat(_jsonRoot);
 

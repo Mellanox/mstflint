@@ -52,7 +52,7 @@ extern const char *g_sectNames[];
 bool Fs2Operations::FwInit()
 {
     FwInitCom();
-    memset(&_fs2ImgInfo, 0, sizeof(_fs2ImgInfo));
+    //memset(&_fs2ImgInfo, 0, sizeof(_fs2ImgInfo)); init is done as part of the struct constructor
     _fwImgInfo.fwType = FIT_FS2;
     return true;
 }

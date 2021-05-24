@@ -94,11 +94,10 @@
 #define REG_ID_MFAI                     0x9029
 #define REG_ID_MPCIR                    0x905a
 
-
-
 #define REG_ID_MGPIR                    0x9100
 #define REG_ID_MDFCR                    0x9101
 #define REG_ID_MDRCR                    0x9102
+#define REG_ID_MFSV                     0x9115
 
 #define REG_ID_MDDT                     0x9160
 #define REG_ID_MDDQ                     0x9161
@@ -113,6 +112,7 @@
 #define REG_ID_DEBUG_CAP                0x8400
 //==================================
 
+#define DWORD_SIZE 4
 #define REG_ID_MPEGC 0x9056
 
 //WA for MGIR: the reg size is too big so we limit it to INBAND_MAX_REG_SIZE
@@ -620,17 +620,41 @@ reg_access_status_t reg_access_mcc(mfile *mf, reg_access_method_t method, struct
 /************************************
 * Function: reg_access_mcqs
 ************************************/
-reg_access_status_t reg_access_mcqs(mfile *mf, reg_access_method_t method, struct reg_access_hca_mcqs_reg *mcqs)
+reg_access_status_t reg_access_mcqs_inner(mfile *mf, reg_access_method_t method, struct reg_access_hca_mcqs_reg *mcqs)
 {
     REG_ACCCESS(mf, method, REG_ID_MCQS, mcqs, mcqs_reg, reg_access_hca);
 }
 
+reg_access_status_t reg_access_mcqs(mfile *mf, reg_access_method_t method, struct reg_access_hca_mcqs_reg *mcqs)
+{
+    reg_access_status_t ret = reg_access_mcqs_inner(mf, method, mcqs);
+    
+    char *path_env = getenv("MCQS_DEBUG");
+    if (path_env != NULL) {
+        printf ("-I- MCQS: Recieved data --\n");
+        reg_access_hca_mcqs_reg_dump(mcqs, stdout);
+    }
+
+    return ret;
+}
 /************************************
 * Function: reg_access_mcqi
 ************************************/
-reg_access_status_t reg_access_mcqi(mfile *mf, reg_access_method_t method, struct reg_access_hca_mcqi_reg *mcqi)
+reg_access_status_t reg_access_mcqi_inner(mfile *mf, reg_access_method_t method, struct reg_access_hca_mcqi_reg *mcqi)
 {
     REG_ACCCESS(mf, method, REG_ID_MCQI, mcqi, mcqi_reg, reg_access_hca);
+}
+
+reg_access_status_t reg_access_mcqi(mfile *mf, reg_access_method_t method, struct reg_access_hca_mcqi_reg *mcqi)
+{
+    int ret = reg_access_mcqi_inner(mf, method, mcqi);
+
+    char *path_env = getenv("MCQI_DEBUG");
+    if (path_env != NULL) {
+        printf ("-I- MCQI: Recieved data --\n");
+        reg_access_hca_mcqi_reg_dump(mcqi, stdout);
+    }
+    return ret;
 }
 
 /************************************
@@ -647,6 +671,14 @@ reg_access_status_t reg_access_mfbe(mfile *mf, reg_access_method_t method, struc
 reg_access_status_t reg_access_mfpa(mfile *mf, reg_access_method_t method, struct register_access_mfpa *mfpa)
 {
     REG_ACCCESS(mf, method, REG_ID_MFPA, mfpa, mfpa, register_access);
+}
+
+/************************************
+* Function: reg_access_mfsv
+************************************/
+reg_access_status_t reg_access_mfsv(mfile *mf, reg_access_method_t method, struct reg_access_hca_mfsv_reg *mfsv)
+{
+    REG_ACCCESS(mf, method, REG_ID_MFSV, mfsv, mfsv_reg, reg_access_hca);
 }
 
 /************************************

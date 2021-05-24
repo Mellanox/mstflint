@@ -171,7 +171,7 @@ adb_node_t* db_get_node(adb_db_t *db, const char *node_name)
     memset(node_w, 0, sizeof(*node_w));
     node_w->node = node;
     node_w->fields = new vector<AdbInstance*>;
-    *node_w->fields = node->getLeafFields();
+    *node_w->fields = node->getLeafFields(false);
     return node_w;
 }
 

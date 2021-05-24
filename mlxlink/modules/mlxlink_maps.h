@@ -56,7 +56,11 @@ enum CABLE_TYPE {
 };
 
 enum PCIE_LINK_SPEED {
-    GEN1 = 1, GEN2 = 2, GEN3 = 4, GEN4 = 16,
+    GEN1 = 1,
+    GEN2 = 2,
+    GEN3 = 4,
+    GEN4 = 16,
+    GEN5 = 32
 };
 
 enum POWER_CLASS {
@@ -145,6 +149,7 @@ enum LANE_RATE_CAP {
     LANE_RATE_EDR_CAP   = 0x80,
     LANE_RATE_50G_CAP   = 0x100,
     LANE_RATE_HDR_CAP   = 0x200,
+    LANE_RATE_NDR_CAP   = 0x400,
 };
 
 enum PRBS_LANE_RATE {
@@ -155,6 +160,7 @@ enum PRBS_LANE_RATE {
     PRBS_FDR,
     PRBS_EDR,
     PRBS_HDR,
+    PRBS_NDR,
     PRBS_1G = 10,
     PRBS_XAUI = 11,
     PRBS_50G = 12
@@ -510,11 +516,12 @@ enum ETH_LINK_SPEED_EXT {
     ETH_LINK_SPEED_EXT_50GAUI_1 = 0x100,
     ETH_LINK_SPEED_EXT_CAUI_4 = 0x200,
     ETH_LINK_SPEED_EXT_100GAUI_2 = 0x400,
-    ETH_LINK_SPEED_EXT_Reserved_11 = 0x800,
+    ETH_LINK_SPEED_EXT_100GAUI_1 = 0x800,
     ETH_LINK_SPEED_EXT_200GAUI_4 = 0x1000,
-    ETH_LINK_SPEED_EXT_Reserved_13 = 0x2000,
+    ETH_LINK_SPEED_EXT_200GAUI_2  = 0x2000,
     ETH_LINK_SPEED_EXT_Reserved_14 = 0x4000,
     ETH_LINK_SPEED_EXT_400GAUI_8 = 0x8000,
+    ETH_LINK_SPEED_EXT_400GAUI_4 = 0x10000
 };
 
 enum IB_LINK_SPEED {
@@ -525,11 +532,41 @@ enum IB_LINK_SPEED {
     IB_LINK_SPEED_FDR   = 0x10,
     IB_LINK_SPEED_EDR   = 0x20,
     IB_LINK_SPEED_HDR   = 0x40,
+    IB_LINK_SPEED_NDR   = 0x80
 };
 
 enum PRBS_MODULATION {
     PRBS_NRZ = 0,
     PRBS_PAM4_ENCODING = 1
+};
+
+enum EOM_MEASURMENT{
+    SLRG_COMPOSITE_EYE,
+    SLRG_COMPOSITE_WITH_ALL_EYES,
+    SLRG_UPPER_EYE,
+    SLRG_MIDDLE_EYE,
+    SLRG_LOWER_EYE
+};
+
+struct CAP_VALUE {
+    CAP_VALUE() {
+        capMask = 0;
+        value = 0;
+        name = "";
+    }
+    CAP_VALUE(u_int32_t _cap, u_int32_t _val) {
+        capMask = _cap;
+        value = _val;
+        name = "";
+    }
+    CAP_VALUE(string _name, u_int32_t _cap, u_int32_t _val) {
+        capMask = _cap;
+        value = _val;
+        name = _name;
+    }
+    u_int32_t capMask;
+    u_int32_t value;
+    string name;
 };
 
 class MlxlinkMaps{
@@ -567,10 +604,9 @@ public:
     std::map<u_int32_t, u_int32_t>   _IBSpeed2gRate;
     std::map<u_int32_t, std::string> _ibPhyFsmState;
     std::map<u_int32_t, std::string> _groupMap;
-    std::map<u_int32_t, std::string> _speedsListETH;
-    std::map<u_int32_t, std::string> _speedsListIB;
     std::map<u_int32_t, std::string> _prbsModesList;
     std::map<u_int32_t, std::string> _prbsLaneRateList;
+    std::map<std::string, CAP_VALUE> _prbsLaneRate;
     std::map<u_int32_t, std::string> _pepcStatus;
     std::map<u_int32_t, string>      _IBSpeed2Str;
     std::map<u_int32_t, string>      _EthExtSpeed2Str;
@@ -607,6 +643,9 @@ public:
     std::map<u_int32_t, std::string> _pepcTwistedPairAnMode;
     std::map<u_int32_t, std::string> _pddrLinkDownBlame;
     std::map<u_int32_t, std::string> _pddrLinkDownE2EReasonOpcode;
+    std::map<u_int32_t, std::string> _slrgTestStatus;
+    std::map<u_int32_t, std::pair<std::string, std::string>> _slrgTestFields;
+    std::map<std::string, u_int32_t> _networkPorts;
 
     string _sltpHeader;
     string _berCollectTitle;
