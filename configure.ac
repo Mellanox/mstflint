@@ -53,6 +53,7 @@ AC_CONFIG_HEADERS( config.h )
 
 OS=$(uname -s)
 
+MIN_OPENSSL_VER="1.1.0"
 MTCR_CONF_DIR=""
 LDL=""
 default_en_inband=""
@@ -353,10 +354,12 @@ AC_DEFINE_UNQUOTED(TOOLS_GIT_SHA, "$TOOLS_GIT_SHA")
 AS_IF([test "x$enable_cs" = "xyes" || test "x$enable_openssl" = "xyes"], [
         AC_CONFIG_FILES(tools_crypto/Makefile)
     ])
-    
+
 AS_IF([test "x$enable_openssl" = "xyes"], [
-        AC_CONFIG_FILES(mlxsign_lib/Makefile)
-    ])
+    AS_IF(test x"`(openssl version|awk '{print $2}';echo $MIN_OPENSSL_VER)|sort -V|head -n1`" = x"$MIN_OPENSSL_VER",
+        [AC_CONFIG_FILES(mlxsign_lib/Makefile)],
+        [AC_MSG_ERROR([Required OpenSSL version >= $MIN_OPENSSL_VER (or use --disable-openssl)])])
+])
 
 if [ test "x$enable_openssl" = "xno" ] && \
     [ test "x$enable_fw_mgr" = "xyes" ] ; then
