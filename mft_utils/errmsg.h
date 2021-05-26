@@ -53,7 +53,7 @@ public:
     ErrMsg();
     ErrMsg(std::map<int, std::string>& errCodeMap);
 
-    virtual ~ErrMsg()                { err_clear();}
+    virtual ~ErrMsg();
 
     const char* err() const { return _err;}
     void updateErrCodes(std::map<int, std::string>& errCodeMap) {_errMap = errCodeMap; return;}
