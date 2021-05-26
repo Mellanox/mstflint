@@ -46,6 +46,7 @@
 #include <cmdparser/cmdparser.h>
 #include "mlxlink_cables_commander.h"
 #include "mlxlink_eye_opener.h"
+#include "mlxlink_err_inj_commander.h"
 #include "mlxlink_port_info.h"
 
 #ifdef MST_UL
@@ -295,6 +296,7 @@ enum OPTION_TYPE {
     SHOW_PCIE_LINKS,
     SET_TX_GROUP_MAP,
     GRADE_SCAN_ENABLE,
+    ERR_INJ_ENABLE,
     RS_FEC_HISTOGRAM = 33,
     SLRG_TEST,
     // Any new function's index should be added before FUNCTION_LAST in this enum
@@ -705,6 +707,7 @@ public:
     MlxlinkMaps* _mlxlinkMaps;
     MlxlinkCablesCommander* _cablesCommander;
     MlxlinkEyeOpener* _eyeOpener;
+    MlxlinkErrInjCommander* _errInjector;
     MlxlinkPortInfo* _portInfo;
 };
 
