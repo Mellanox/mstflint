@@ -585,11 +585,11 @@ void MlxlinkMaps::extComplianceMapping()
     _cableComplianceExt[EXT_ETHERNET_COMPLIANCE_CODE_100G_ACC_FEC] =
             "100G ACC (Active Copper Cable) or 25GAUI C2M ACC. with FEC";
     _cableComplianceExt[EXT_ETHERNET_COMPLIANCE_CODE_100GBASE_CR4] =
-            "100GBASE-CR4 or 25GBASE-CR CA-L";
+            "100GBASE-CR4, 25GBASE-CR CA-25G-L or 50GBASE-CR2 with RS (Clause91) FEC";
     _cableComplianceExt[EXT_ETHERNET_COMPLIANCE_CODE_25GBASE_CR_CA_S] =
-            "25GBASE-CR CA-S";
+            "25GBASE-CR CA-25G-S or 50GBASE-CR2 with BASE-R (Clause 74 Fire code) FEC";
     _cableComplianceExt[EXT_ETHERNET_COMPLIANCE_CODE_25GBASE_CR_CA_N] =
-            "25GBASE-CR CA-N";
+            "25GBASE-CR CA-25G-N or 50GBASE-CR2 with no FEC";
     _cableComplianceExt[EXT_ETHERNET_COMPLIANCE_CODE_40GBASE_ER4] =
             "40GBASE-ER4";
     _cableComplianceExt[EXT_ETHERNET_COMPLIANCE_CODE_4_x_10GBASE_SR] =

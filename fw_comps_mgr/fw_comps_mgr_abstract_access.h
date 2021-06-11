@@ -34,6 +34,7 @@
 #define USER_MLXFWOPS_LIB_FW_ABSTRACT_COMP_ACCESS_H_
 
 #include "fw_comps_mgr.h"
+#include "mtcr_ul_com.h"
 
 class AbstractComponentAccess
 {

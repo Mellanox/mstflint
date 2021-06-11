@@ -198,7 +198,7 @@ ErrorCode OpensslEngineSigner::init()
     }
     catch (OpensslEngineException &ex)
     {
-        cout << ex.getErrorString();
+        cout << ex.getErrorString() << endl;
         errorCode = ex.getErrorCode();
     }
     return errorCode;

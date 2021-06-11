@@ -36,7 +36,7 @@ COMMON_DIR = $(top_srcdir)/common
 LAYOUTS_DIR = $(top_srcdir)/tools_layouts
 USER_DIR = $(top_srcdir)
 
-AM_CPPFLAGS = -I. -I$(USER_DIR) -I$(srcdir) -I$(LAYOUTS_DIR) -I$(USER_DIR)/include/mtcr_ul
+AM_CPPFLAGS = -I. -I$(USER_DIR) -I$(srcdir) -I$(LAYOUTS_DIR) -I$(USER_DIR)/include/mtcr_ul -I$(USER_DIR)/dev_mgt
 AM_CFLAGS = -W -Wall -g -MP -MD $(COMPILER_FPIC)
 
 noinst_LTLIBRARIES = libmvpd.a

@@ -87,7 +87,7 @@
 #define BER_FLAG_SHORT                  'c'
 #define EYE_OPENING_FLAG                "show_eye"
 #define EYE_OPENING_FLAG_SHORT          'e'
-#define EYE_OPENING_TYPE_FLAG           "fom_measurment"
+#define EYE_OPENING_TYPE_FLAG           "fom_measurement"
 #define EYE_OPENING_TYPE_FLAG_SHORT     ' '
 #define FEC_DATA_FLAG                   "show_fec"
 #define FEC_DATA_FLAG_SHORT             ' '
@@ -699,6 +699,7 @@ public:
     bool _mngCableUnplugged;
     bool _isPam4Speed;
     bool _ignorePortType;
+    bool _lanesLockStatus;
     std::vector<std::string> _ptysSpeeds;
     std::vector<PortGroup> _localPortsPerGroup;
     std::vector<DPN> _validDpns;

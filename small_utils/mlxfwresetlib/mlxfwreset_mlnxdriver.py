@@ -123,7 +123,7 @@ class LinuxRshimUserSpaceDriver:
             self.logger.info('{0}'.format(cmd))
             rc, _, _ = cmdExec(cmd)
             if rc != 0:
-                self.logger.info('Failed to {0} user-space rshim driver ({1})'.format(action, self.rshim_misc_file))
+                raise RuntimeError('Failed to {0} user-space rshim driver ({1})'.format(action, self.rshim_misc_file))
 
 
     def stop(self):
@@ -201,18 +201,10 @@ class MlnxDriverLinux(MlnxDriver):
         driverStatus = MlnxDriver.DRIVER_IGNORE if skip or not self.drivers_dbdf else MlnxDriver.DRIVER_LOADED
         super(MlnxDriverLinux, self).__init__(logger, driverStatus)
 
-    # def disableAutoLoad(self):
-    #     with open(MlnxDriverLinux.blacklist_file_path,'w') as blacklist_file:
-    #         blacklist_file.write('blacklist mlx5_core\n')
-    #         blacklist_file.write('blacklist mlx5_ib\n')
-    #         blacklist_file.write('blacklist mlx5_fpga_tools\n')
-    #
-    # def enableAutoLoad(self):
-    #     if os.path.exists(MlnxDriverLinux.blacklist_file_path):
-    #         os.remove(MlnxDriverLinux.blacklist_file_path)
-
     def driverStart(self):
         self.logger.info('MlnxDriverLinux driverStart()')
+
+        driver_err, rshim_err = None, None
 
         for dbdf,driver_name in self.drivers_dbdf:
             driver_path = '{0}/{1}'.format(MlnxDriverLinux.PCI_DRIVERS_PATH,driver_name)
@@ -223,10 +215,20 @@ class MlnxDriverLinux(MlnxDriver):
                 self.logger.info('{0}'.format(cmd))
                 (rc, _, _) = cmdExec(cmd)
                 if rc!=0:
-                    raise RuntimeError("Failed to start driver! please start driver manually to load FW")
+                    driver_err = True
+        
+        try:
+            if self.rshim_driver:
+                self.rshim_driver.start()
+        except Exception as err:
+            rshim_err = err
 
-        if self.rshim_driver:
-            self.rshim_driver.start()
+        # Error (Best effort to try to start both drivers before indicating on error)
+        if driver_err:                          
+            raise RuntimeError("Failed to start driver! please start driver manually")
+        if rshim_err:
+            raise rshim_err
+
 
     def driverStop(self):
         self.logger.info('MlnxDriverLinux driverStop()')
@@ -267,7 +269,7 @@ class MlnxDriverFreeBSD(MlnxDriver):
                 cmd = "kldload %s" % moduleName
                 (rc, stdout, stderr) = cmdExec(cmd)
                 if rc and not ("module already loaded" in stderr):
-                    raise RuntimeError("Failed to Start Driver, please start driver manually to load FW")
+                    raise RuntimeError("Failed to start driver! Please start driver manually")
 
     def driverStop(self):
         self.logger.info('MlnxDriverFreeBSD driverStop()')
@@ -276,7 +278,7 @@ class MlnxDriverFreeBSD(MlnxDriver):
                 cmd = "kldunload %s" % moduleName
                 (rc, stdout, stderr) = cmdExec(cmd)
                 if rc and not ("can't find file" in stderr):
-                    raise RuntimeError("Failed to Stop Driver, please stop driver manually and resume Operation")
+                    raise RuntimeError("Failed to stop driver! Please stop driver manually and resume Operation")
 
     def getDriverStatusAux(self):
         cmd = "ls -l /boot/kernel/ | grep mlx -c"
@@ -440,15 +442,29 @@ class MlnxDriverWindows(MlnxDriver):
 
     def driverStart(self):
         self.logger.info('MlnxDriverWindows driverStart()')
-        if self.rshim_driver:
-            self.rshim_driver.start() # must be enabled before network adapaters 
+
+        driver_err, rshim_err = None, None
+
+        try:                                # rshim-driver must be enabled before network adapaters 
+            if self.rshim_driver:
+                self.rshim_driver.start()
+        except Exception as err:
+            rshim_err = err
+
         for targetedAdapter in self.targetedAdapters:
             cmd = "powershell.exe -c Enable-NetAdapter '%s' " % targetedAdapter
             self.logger.info(cmd)
-            (rc, stdout, _) = cmdExec(cmd)
+            (rc, _, _) = cmdExec(cmd)
             if rc != 0:
-                raise RuntimeError("Failed to Start Driver, please start driver manually to load FW")
-        
+                driver_err = True
+
+        # Error (Best effort to try to start both drivers before indicating on error)
+        if driver_err:                          
+            raise RuntimeError("Failed to start driver! please start driver manually")
+        if rshim_err:
+            raise rshim_err
+
+
     def driverStop(self):
         self.logger.info('MlnxDriverWindows driverStop()')
         for targetedAdapter in self.targetedAdapters:
@@ -456,7 +472,7 @@ class MlnxDriverWindows(MlnxDriver):
             self.logger.info(cmd)
             (rc, stdout, _) = cmdExec(cmd)
             if rc != 0:
-                raise RuntimeError("Failed to Stop Driver, please stop driver manually and resume Operation")
+                raise RuntimeError("Failed to stop driver! Please stop driver manually and resume Operation")
         
         if self.rshim_driver:        # must be disabled after network adapaters
             self.rshim_driver.stop() # reason: The manangement network adapter is a dependency of the SoC management i/f

@@ -199,7 +199,12 @@ bool FsCtrlOperations::FsIntQuery()
         mfsv_reg_supported = EXTRACT(mcam.mng_access_reg_cap_mask[13], 5, 1); // bit 21 
     }
     DPRINTF(("mfsv_reg_supported = %d\n",mfsv_reg_supported));
-    _fsCtrlImgInfo.device_security_version_access_method = mfsv_reg_supported == 1 ? MFSV : NOT_VALID;
+
+    if (_fsCtrlImgInfo.sec_boot == 1 && _fsCtrlImgInfo.life_cycle == GA_SECURED && mfsv_reg_supported == 1){
+        _fsCtrlImgInfo.device_security_version_access_method = MFSV;
+    } else {
+        _fsCtrlImgInfo.device_security_version_access_method = NOT_VALID;
+    }
 
     // GET MFSV 
     if (mfsv_reg_supported == 1){

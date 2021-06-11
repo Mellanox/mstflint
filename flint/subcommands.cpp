@@ -2305,7 +2305,7 @@ bool BurnSubCommand::verifyParams()
             reportErr(true, FLINT_COMMAND_FLAGS_ERROR, _name.c_str(), "Flags 'cable_device_size'/'cable_device_index' relevant only for cable components.");
             return false;
         }
-        if (_flintParams.activate == true || _flintParams.download_transfer == true || _flintParams.activate_delay_sec != 0) {
+        if (_flintParams.activate == true || _flintParams.download_transfer == true || _flintParams.activate_delay_sec != 1) {
             reportErr(true, FLINT_COMMAND_FLAGS_ERROR, _name.c_str(), "Flags 'activate'/'download_transfer'/'activate_delay_sec' relevant only for cable components.");
             return false;
         }
@@ -2983,8 +2983,7 @@ FlintStatus BurnSubCommand::executeCommand()
     }
 
     // Abort if the image is restricted according to the Security-Version
-    if (_devInfo.fs3_info.sec_boot) {
-
+    {
         // Set image security-version
         u_int32_t imageSecurityVersion = _imgInfo.fs3_info.image_security_version;
 
@@ -2999,11 +2998,10 @@ FlintStatus BurnSubCommand::executeCommand()
         }
 
         // Check violation of security-version
-        if (imageSecurityVersion < deviceEfuseSecurityVersion) {
+        if (imageSecurityVersion < deviceEfuseSecurityVersion && getenv("IGNORE_SECURITY_VERSION_CHECK") == NULL) {
             reportErr(true, "The image you're trying to burn is restricted. Aborting ... \n");
             return FLINT_FAILED;            
         }
-
     }
 
     //updateBurnParams with input given by user
@@ -3781,7 +3779,7 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
                printSecurityAttrInfo(fwInfo.fs3_info.security_mode).c_str());
     }
 
-    if (isFs4) { //Security Version is supported in Connectx-6dx and up
+    if (isFs4 && _flintParams.image_specified) { //Security Version is supported in Connectx-6dx and up
         printf("Security Ver:          %d\n", fwInfo.fs3_info.image_security_version);
     }
 
@@ -3794,6 +3792,7 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
     }
 
     if (fullQuery && _flintParams.device_specified) {
+
         if (ops->IsFsCtrlOperations()) {//working only on devices with FW control
             bool IsSupported = ops->GetSecureBootInfo();//from C6DX and above
             if (IsSupported) {
@@ -3805,29 +3804,23 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
                     printf("Life cycle:            %s\n", life_cycle_strings[index]);
                 }
                 printf("Secure boot:           %s\n", fwInfo.fs3_info.sec_boot == 1 ? "Enabled" : "Disabled");
-                if (fwInfo.fs3_info.sec_boot) {
-                    if (fwInfo.fs3_info.device_security_version_access_method == MFSV){
-                        printf("EFUSE Security Ver:    %d\n", fwInfo.fs3_info.device_security_version_mfsv.efuses_sec_ver);
-                        printf("Image Security Ver:    %d\n", fwInfo.fs3_info.device_security_version_mfsv.img_sec_ver);
+                if (fwInfo.fs3_info.device_security_version_access_method == MFSV){
+                    printf("EFUSE Security Ver:    %d\n", fwInfo.fs3_info.device_security_version_mfsv.efuses_sec_ver);
+                    printf("Image Security Ver:    %d\n", fwInfo.fs3_info.device_security_version_mfsv.img_sec_ver);
 
-                        string efuses_programming_info; 
-                        if (fwInfo.fs3_info.device_security_version_mfsv.efuses_prog_method == 0){
-                            if (fwInfo.fs3_info.device_security_version_mfsv.efuses_prog_en == 0) {
-                                efuses_programming_info = "Manually ; Disabled"; // disabled
-                            } else {
-                                efuses_programming_info = "Manually ; Enabled"; // next boot only
-                            }
+                    string efuses_programming_info; 
+                    if (fwInfo.fs3_info.device_security_version_mfsv.efuses_prog_method == 0){
+                        if (fwInfo.fs3_info.device_security_version_mfsv.efuses_prog_en == 0) {
+                            efuses_programming_info = "Manually ; Disabled"; // disabled
                         } else {
-                            efuses_programming_info = "Automatically"; // every boot 
+                            efuses_programming_info = "Manually ; Enabled"; // next boot only
                         }
-                        printf("Security Ver Program:  %s\n", efuses_programming_info.c_str()); 
-
-                    } else if (fwInfo.fs3_info.device_security_version_access_method == GW){
-                        printf("EFUSE Security Ver:    %d\n", fwInfo.fs3_info.device_security_version_gw);
                     } else {
-                        printf("EFUSE Security Ver:    N/A\n");
+                        efuses_programming_info = "Automatically"; // every boot 
                     }
-                }
+                    printf("Security Ver Program:  %s\n", efuses_programming_info.c_str()); 
+                } 
+                
             }
             else {
                 IsSupported = ops->IsLifeCycleSupported();//for CX6 only
@@ -3841,6 +3834,9 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
                     }
                 }
             }
+        }
+        else if (fwInfo.fs3_info.device_security_version_access_method == GW){
+            printf("EFUSE Security Ver:    %d\n", fwInfo.fs3_info.device_security_version_gw);
         }
     }
 

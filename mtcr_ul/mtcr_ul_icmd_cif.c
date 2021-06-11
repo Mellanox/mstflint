@@ -131,7 +131,7 @@
  */
 #define CHECK_RC(rc) if ((rc)) {return (rc); }
 #define CHECK_RC_GO_TO(rc, lable) if ((rc)) {goto lable; }
-#define DBG_PRINTF(...) if (getenv("MFT_DEBUG")) {fprintf(stderr, __VA_ARGS__); }
+#define DBG_PRINTF(...) do { if (getenv("MFT_DEBUG") != NULL) { fprintf(stderr, __VA_ARGS__); } } while (0)
 /*
  * Macros for accessing CR-Space
  */

@@ -30,20 +30,18 @@
  * SOFTWARE.
  *
  */
-/*
- * fw_comps_mgr.h
- *
- *  Created on: Jul 31, 2016
- *      Author: adham
- */
-
+ /*
+  * fw_comps_mgr.h
+  *
+  *
+  *  Created on: Jul 31, 2016
+  *      Author: adham
+  */
 #ifndef USER_MLXFWOPS_LIB_FW_COMPS_MGR_H_
 #define USER_MLXFWOPS_LIB_FW_COMPS_MGR_H_
 
 #include <vector>
 #include "reg_access/reg_access.h"
-#include "mtcr_ul/mtcr_ul_com.h"
-
 #include "mlxfwops/uefi_c/mft_uefi_common.h"
 #include "mlxfwops/lib/mlxfwops_com.h"
 #ifndef UEFI_BUILD
@@ -499,6 +497,8 @@ private:
     reg_access_status_t getGI(mfile *mf, mgirReg *gi);
     bool           extractMacsGuids(fwInfoT *fwQuery);
     void           extractRomInfo(mgirReg *mgir, fwInfoT *fwQuery);
+    bool           isDMAAccess();
+    bool           fallbackToDirectAccess();
     
     std::vector<comp_query_st> _compsQueryMap;
     bool _refreshed;
@@ -528,6 +528,7 @@ private:
     bool _downloadTransferNeeded;
     u_int8_t _activation_delay_sec;
     int _rejectedIndex;
+    bool _isDelayedActivationCommandSent;
 #ifndef UEFI_BUILD
     trm_ctx _trm;
 #endif

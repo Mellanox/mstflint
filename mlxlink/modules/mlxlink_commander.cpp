@@ -77,6 +77,7 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _mngCableUnplugged = false;
     _isPam4Speed = false;
     _ignorePortType = true;
+    _lanesLockStatus = false;
     _protoAdmin = 0;
     _protoAdminEx = 0;
     _speedBerCsv = 0;
@@ -208,7 +209,7 @@ void MlxlinkCommander::getProductTechnology()
         string regName = "SLRG";
         resetParser(regName);
         updatePortType();
-        updateField("local_port", (_userInput._pcie) ? 0 : _localPort);
+        updateField("local_port", _localPort);
         updateField("pnat", (_userInput._pcie) ? PNAT_PCIE : PNAT_LOCAL);
 
         genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
@@ -336,6 +337,9 @@ void MlxlinkCommander::labelToLocalPort() {
             checkLocalPortDPNMapping(_userInput._labelPort);
             _localPort = _userInput._labelPort;
         } else {
+            if (!_validDpns.empty()) {
+                _dpn = _validDpns[0]; //default DPN link
+            }
             _localPort = _dpn.pcieIndex;
             if (_dpn.depth > 0) {
                 _localPort = _dpn.node + DBN_TO_LOCAL_PORT_BASE;
@@ -1724,7 +1728,7 @@ std::map<std::string, std::string> MlxlinkCommander::getPprt()
     u_int32_t numOfLanesToUse = (pcie) ? _numOfLanesPcie : _numOfLanes;
     u_int32_t statusMask = getFieldValue("prbs_lock_status");
     statusMask |= (getFieldValue("prbs_lock_status_ext") << 4);
-    pprtMap["pprtLockStatus"] = prbsMaskToLockStatus(statusMask, numOfLanesToUse);
+    pprtMap["pprtLockStatus"] = prbsMaskToLockStatus(statusMask, numOfLanesToUse, _lanesLockStatus);
     return pprtMap;
 }
 
@@ -1881,9 +1885,11 @@ void MlxlinkCommander::showTestModeBer()
     setPrintTitle(_testModeBerInfoCmd, "Physical Counters and BER Info (PRBS)",
             TEST_MODE_BER_INFO_LAST);
     setPrintVal(_testModeBerInfoCmd, "Time Since Last Clear [Min]",buff);
-    setPrintVal(_testModeBerInfoCmd, "PRBS Errors",getStringFromVector(errors));
+    setPrintVal(_testModeBerInfoCmd, "PRBS Errors", getStringFromVector(errors),
+            ANSI_COLOR_RESET, true, _lanesLockStatus, true);
     setPrintVal(_testModeBerInfoCmd, "PRBS BER",
-            getFieldStr("raw_ber_coef") + "E-" + getFieldStr("raw_ber_magnitude"));
+            getFieldStr("raw_ber_coef") + "E-" + getFieldStr("raw_ber_magnitude"),
+            ANSI_COLOR_RESET, true, _lanesLockStatus, true);
 
     cout <<_testModeBerInfoCmd;
 }
@@ -1934,6 +1940,7 @@ void MlxlinkCommander::prepare40_28_16nmEyeInfo(u_int32_t numOfLanes)
     string regName = "SLRG";
     bool validPhaseHeight = _productTechnology == PRODUCT_40NM ||
                             _productTechnology == PRODUCT_28NM ||
+                            _productTechnology == PRODUCT_16NM ||
                             _userInput._pcie;
     string height_eo_pos("height_eo_pos");
     string height_eo_neg("height_eo_neg");
@@ -1959,10 +1966,18 @@ void MlxlinkCommander::prepare40_28_16nmEyeInfo(u_int32_t numOfLanes)
         if (validPhaseHeight) {
             int offsetEOPos = getHeight(getFieldValue(height_eo_pos));
             int offsetEONeg = getHeight(getFieldValue(height_eo_neg));
-            offsetEONegStr = to_string(offsetEOPos + offsetEONeg);
+            if(_productTechnology == PRODUCT_16NM && (offsetEOPos + offsetEONeg) == 0){
+                offsetEONegStr = "N/A";
+            }else{
+                offsetEONegStr = to_string(offsetEOPos + offsetEONeg);
+            }
             int phaseEOPos = getPhase(getFieldValue(phase_eo_pos));
             int phaseEONeg = getPhase(getFieldValue(phase_eo_neg));
-            phaseEONegStr = to_string(phaseEOPos + phaseEONeg);
+            if(_productTechnology == PRODUCT_16NM && (phaseEOPos + phaseEONeg) == 0){
+                phaseEONegStr = "N/A";
+            }else{
+                phaseEONegStr = to_string(phaseEOPos + phaseEONeg);
+            }
         }
         heightLengths.push_back(MlxlinkRecord::addSpaceForSlrg(offsetEONegStr));
         phaseWidths.push_back(MlxlinkRecord::addSpaceForSlrg(phaseEONegStr));
@@ -2351,7 +2366,6 @@ void MlxlinkCommander::initValidDPNList()
                 } catch (...) {
                 }
             }
-            break;
         }
         //break should be removed after fixing pcie index validity from the fw (for switches only)
         //bug 1775657

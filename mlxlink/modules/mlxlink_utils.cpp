@@ -614,14 +614,16 @@ string prbsMaskToTuningStatus(u_int32_t mask)
     return "N/A";
 }
 
-string prbsMaskToLockStatus(u_int32_t mask, u_int32_t numOfLanesToUse)
+string prbsMaskToLockStatus(u_int32_t mask, u_int32_t numOfLanesToUse, bool &allLocked)
 {
     string res = "";
+    allLocked = true;
     for (u_int32_t i = 0; i < numOfLanesToUse; i++) {
         if (mask & 1 << i) {
             res += "Locked";
         } else {
             res += "Not Locked";
+            allLocked = false;
         }
         if (i < numOfLanesToUse - 1) {
             res += MlxlinkRecord::jsonFormat? "," : ",    ";
