@@ -231,7 +231,7 @@ struct __ibvsmad_hndl_t
     int tp;
     int i2c_slave;
     int use_smp;
-    u_int64_t mkey;    
+    u_int64_t mkey;
     int mkey_is_supported;
     int timeout;
     int retries_num;
@@ -586,14 +586,14 @@ int is_vs_crspace_supported(ibvs_mad *h)
 char* trim(char* string)
 {
     char* back;
-   
+
     // Left trim.
     while (isspace(*string)) {
         string++;
     }
 
     int len = strlen(string);
-    
+
     if (len == 0) {
         return(string);
     }
@@ -634,7 +634,7 @@ int get_mft_conf_field_value(char* line, char* field_name,
         {
             *is_empty = 1;
         }
-        
+
         return 0;
     }
 
@@ -736,7 +736,7 @@ void get_lid_integer(char* lid, int* lid_integer)
     int base = 10;
 
     // Check if we have '0x' in the beginning of the string.
-    if ((strlen(lid) > 1) && (lid[0] == '0') && 
+    if ((strlen(lid) > 1) && (lid[0] == '0') &&
             ((lid[1] == 'x') || (lid[1] == 'X')))
     {
         base = 16;
@@ -800,7 +800,7 @@ int parse_lid2guid_file(char* sm_config_path, char* lid,
     // Parse the guid2lid file.
     strcpy(conf_path, sm_config_path);
     strcat(conf_path, guid2lid);
-    
+
     if (load_file(&file_descriptor, conf_path))
     {
         // Failed to open file.

@@ -45,6 +45,8 @@
 #include <mft_sig_handler.h>
 #include "mad_ifc/mad_ifc.h"
 #else
+#include <mft_uefi_common.h>
+#include <uefi_c.h>
 // no signal handling.
 static void mft_signal_set_handling(int isOn)
 {
@@ -103,10 +105,10 @@ bool DMAComponentAccess::prepareParameters(u_int32_t updateHandle, mcddReg* acce
     accessData->update_handle = updateHandle;
     accessData->offset = offset;
     accessData->size = leftSize > PAGE_SIZE ? PAGE_SIZE : leftSize;
-    accessData->data_page_phys_addr_lsb = EXTRACT64(page.physical_address, 0, 32);
-    accessData->data_page_phys_addr_msb = EXTRACT64(page.physical_address, 32, 32);
-    accessData->mailbox_page_phys_addr_lsb = EXTRACT64(mailbox_page.physical_address, 0, 32);
-    accessData->mailbox_page_phys_addr_msb = EXTRACT64(mailbox_page.physical_address, 32, 32);
+    accessData->data_page_phys_addr_lsb = EXTRACT64(page.dma_address, 0, 32);
+    accessData->data_page_phys_addr_msb = EXTRACT64(page.dma_address, 32, 32);
+    accessData->mailbox_page_phys_addr_lsb = EXTRACT64(mailbox_page.dma_address, 0, 32);
+    accessData->mailbox_page_phys_addr_msb = EXTRACT64(mailbox_page.dma_address, 32, 32);
     int currentOffset = data_size - leftSize;
     if (access == MCDA_WRITE_COMP) {
         u_int32_t* data_ptr = (u_int32_t*)page.virtual_address;
@@ -123,8 +125,8 @@ bool DMAComponentAccess::allocateMemory()
     mtcr_page_info page_info;
 
 #ifndef UEFI_BUILD
-    if (allocate_kernel_memory_page(_mf, &page_info,
-                                    FMPT_ALLOCATED_LIST_LENGTH)) {
+    if (get_dma_pages(_mf, &page_info,
+                      FMPT_ALLOCATED_LIST_LENGTH)) {
         return false;
     }
 #else
@@ -141,9 +143,9 @@ bool DMAComponentAccess::allocateMemory()
         u_int32_t va_msb =
             EXTRACT64(page_info.page_addresses_array[page_counter]->virtual_address, 32, 32);
         u_int32_t pa_lsb = 
-            EXTRACT64(page_info.page_addresses_array[page_counter]->physical_address, 0, 32);
+            EXTRACT64(page_info.page_addresses_array[page_counter]->dma_address, 0, 32);
         u_int32_t pa_msb = 
-            EXTRACT64(page_info.page_addresses_array[page_counter]->physical_address, 32, 32);
+            EXTRACT64(page_info.page_addresses_array[page_counter]->dma_address, 32, 32);
 
         DPRINTF(("Allocated for page %d data PA 0x%08x%08x VA 0x%08x%08x \r\n", i, pa_msb, pa_lsb, va_msb, va_lsb));
 #endif

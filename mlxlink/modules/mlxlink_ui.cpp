@@ -1157,16 +1157,17 @@ int MlxlinkUi::run(int argc, char **argv)
         MlxlinkRecord::printWar("Warning: AccessRegisterGMP Get() method is not supported.\n"
                  "         mlxlink has limited functionality", _mlxlinkCommander->_jsonRoot);
     }
-
     _mlxlinkCommander->_gvmiAddress = _mlxlinkCommander->_userInput._gvmiAddress;
     _mlxlinkCommander->_devID = _mlxlinkCommander->_regLib->getDevId();
     _mlxlinkCommander->_isHCA = dm_dev_is_hca(_mlxlinkCommander->_devID);
     _mlxlinkCommander->validatePortType(_mlxlinkCommander->_userInput._portType);
     _mlxlinkCommander->labelToLocalPort();
+    if (!_mlxlinkCommander->_userInput._pcie) {
+        _mlxlinkCommander->checkValidFW();
+    }
     _mlxlinkCommander->getProductTechnology();
 
     if (!_mlxlinkCommander->_userInput._pcie) {
-        _mlxlinkCommander->checkValidFW();
         _mlxlinkCommander->_prbsTestMode = _mlxlinkCommander->inPrbsTestMode();
         _mlxlinkCommander->getCableParams();
     } else if (!_mlxlinkCommander->_userInput._sendDpn) {

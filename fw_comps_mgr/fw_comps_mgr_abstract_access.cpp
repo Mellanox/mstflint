@@ -43,11 +43,6 @@ AbstractComponentAccess* ComponentAccessFactory::createDataAccessObject(FwCompsM
     }
 #endif
 
-// DMA is not supported on PPC right now    
-#ifdef __PPC64__
-    return new DirectComponentAccess(Manager, Mf);
-#endif
-
     // DMA is supported only when COMMAND[BME] is set in PCI configuration
     bool isBmeSet = false;
 #ifdef __WIN__

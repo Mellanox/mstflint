@@ -912,11 +912,16 @@ bool Fs3Operations::FwQuery(fw_info_t *fwInfo, bool readRom, bool isStripedImage
     }
 
     // TODO should I move this logic to fs4_ops.cpp ? 
+    mfile* mf = getMfileObj();
+
     // Security version
     _fs3ImgInfo.ext_info.device_security_version_access_method = NOT_VALID;
-    if (_fs3ImgInfo.ext_info.sec_boot) { 
 
-        // secure-boot & no-fw-ctrl (fs3_ops) --> live-fish 
+    if (dm_is_livefish_mode(mf) == 1){
+
+        // if cx-7 and up check if device is secure-boot and life-cycle is GA secured
+        // TODO need to add logic in cx-7 and up to check if secure-boot and life-cycle is GA secured
+        // TODO older devices doesn't have access to this GW when we're in secure mode
 
         SecurityVersionGW securityVersionGW(getMfileObj(), _fwImgInfo.ext_info.chip_type);
         bool isGWSupportedInLiveFish = securityVersionGW.isSupportedInLiveFish();
@@ -930,13 +935,12 @@ bool Fs3Operations::FwQuery(fw_info_t *fwInfo, bool readRom, bool isStripedImage
             _fs3ImgInfo.ext_info.device_security_version_access_method = GW;
             _fs3ImgInfo.ext_info.device_security_version_gw = efuse_security_version;
         }
-
     }
+
 
     memcpy(&(fwInfo->fw_info),  &(_fwImgInfo.ext_info),  sizeof(fw_info_com_t));
     memcpy(&(fwInfo->fs3_info), &(_fs3ImgInfo.ext_info), sizeof(fs3_info_t));
     fwInfo->fw_type = FwType();
-    mfile* mf = getMfileObj();
     if (rc == ME_OK && mf != NULL && mf->flags & MDEVS_IB) { //for IB devices only
         fwInfo->fw_info.running_fw_ver[0] = mgir.fw_info.extended_major;
         fwInfo->fw_info.running_fw_ver[1] = mgir.fw_info.extended_minor;

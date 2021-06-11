@@ -1642,6 +1642,7 @@ static long supported_dev_ids[] = {
     0xa2dc,     //MT43244 Family BlueField3 integrated ConnectX-7 network controller
     0xcf70,     //Spectrum3
     0xcf80,     //Spectrum4
+    0x1976,     //Schrodinger
     -1
 };
 
@@ -3310,57 +3311,6 @@ const char* m_err2str(MError status)
     }
 }
 
-
-int allocate_kernel_memory_page(mfile* mf, struct mtcr_page_info* page_info,
-                                int page_amount)
-{
- #if !defined(__VMKERNEL_UW_NATIVE__)
-    int page_size = sysconf(_SC_PAGESIZE);
-    int i;
-    int current_offest = 0;
-  
-
-    // Parameters validation.
-    if(!mf || !page_info)
-    {
-        return -1;
-    }
-
-    // Save the page amount.
-    page_info->page_amount = page_amount;
-    
-    // Set the requested page size.
-    page_info->page_size = page_amount * page_size;
-
-    // Allocate user buffer.
-    mf->user_page_list.page_list = memalign(page_size, page_info->page_size);
-    mf->user_page_list.page_amount = page_amount;
-
-    // Save the start buffer pointer as an integer.
-    page_info->page_pointer_start = (unsigned long)mf->user_page_list.page_list;
-
-    // Save the virtual address.
-    for (i = 0; i < page_amount; i++)
-    {
-        current_offest = (page_size * i);
-        page_info->page_addresses_array[i].virtual_address =
-            (u_int64_t)(mf->user_page_list.page_list + current_offest);
-    }
-
-    // Pin the memory in the kernel space.
-    return ioctl(mf->fd, PCICONF_PAGE_PIN, page_info);
-
-#else
-    (void)mf;
-    (void)page_info;
-    (void)page_amount;
-  
-    // MST VMWare driver is unsupported.
-    return -1;
-#endif
-}
-
-
 int deallocate_kernel_memory_page(mfile* mf)
 {
 #if !defined(__VMKERNEL_UW_NATIVE__)
@@ -3411,6 +3361,129 @@ int read_dword_from_conf_space(u_int32_t offset, mfile *mf,
     (void)offset;
     (void)mf;
     (void)read_config_space;
+
+    // MST VMWare driver is unsupported.
+    return -1;
+#endif
+}
+
+#include <malloc.h>
+
+/* These will be specific for PCI CONF*/
+#define PCICONF_MAGIC 0xD2
+#define PCICONF_MAX_BUFFER_SIZE 256
+#define PCICONF_MAX_MEMACCESS_SIZE 1024
+//#define PCICONF_MAX_PAGES_SIZE 8
+#define PCICONF_CAP_VEC_LEN 16
+
+#define PCICONF_GET_DMA_PAGES       _IOR (PCICONF_MAGIC, 13, struct page_info_mstflint)
+#define PCICONF_RELEASE_DMA_PAGES   _IOR (PCICONF_MAGIC, 14, struct page_info_mstflint)
+
+struct page_address_mstflint {
+    u_int64_t dma_address;
+    u_int64_t virtual_address;
+};
+
+struct page_info_mstflint {
+    unsigned int page_amount;
+    unsigned long page_pointer_start;
+    struct page_address_st page_address_array[PCICONF_MAX_PAGES_SIZE];
+};
+
+int get_dma_pages(mfile* mf, struct mtcr_page_info* page_info,
+                  int page_amount)
+{
+ #if !defined(__VMKERNEL_UW_NATIVE__)
+    int page_size = sysconf(_SC_PAGESIZE);
+    int pages_size = page_amount * page_size;
+    int page_counter;
+    int ret_value;
+  
+
+    // Parameters validation.
+    if(!mf || !page_info)
+    {
+        return -1;
+    }
+
+    // Save the page amount.
+    page_info->page_amount = page_amount;
+    
+    // Allocate user buffer.
+    mf->user_page_list.page_list = memalign(page_size, pages_size);
+    if (!mf->user_page_list.page_list)
+    {
+        return -1;
+    }
+    
+    // We need to call mlock after the pages allocation in order to
+    //   lock the virtual address space into RAM and preventing that
+    //   memory from being paged to the swap area.
+    mlock(mf->user_page_list.page_list, pages_size);
+
+    mf->user_page_list.page_amount = page_amount;
+
+    // Save the start buffer pointer as an integer.
+    page_info->page_pointer_start = (unsigned long)mf->user_page_list.page_list;
+
+    // Save the virtual address.
+    for (page_counter = 0;
+            page_counter < page_amount;
+            page_counter++)
+    {
+        int current_offest = (page_size * page_counter);
+        page_info->page_addresses_array[page_counter].virtual_address =
+            (u_int64_t)(mf->user_page_list.page_list + current_offest);
+    }
+
+    // Pin the memory in the kernel space.
+    ret_value = ioctl(mf->fd, PCICONF_GET_DMA_PAGES, page_info);
+
+    if (ret_value)
+    {
+        // Failed to get dma address.
+        // Release the memory.
+        release_dma_pages(mf, page_counter);
+        return -1;
+    }
+
+    return 0;
+
+#else
+    (void)mf;
+    (void)page_info;
+    (void)page_amount;
+  
+    // MST VMWare driver is unsupported.
+    return -1;
+#endif
+}
+
+
+int release_dma_pages(mfile* mf, int page_amount)
+{
+#if !defined(__VMKERNEL_UW_NATIVE__)
+    struct mtcr_page_info page_info;
+
+
+    // Parameter validation.
+    if(!mf) {
+        return -1;
+    }
+
+    page_info.page_amount = page_amount;
+
+    ioctl(mf->fd, PCICONF_RELEASE_DMA_PAGES, &page_info);
+    
+    // Free the user space memory.
+    free(mf->user_page_list.page_list);
+    mf->user_page_list.page_list = NULL;
+    mf->user_page_list.page_amount = 0;
+
+    return 0;
+
+#else
+    (void)mf;
 
     // MST VMWare driver is unsupported.
     return -1;

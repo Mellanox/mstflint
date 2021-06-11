@@ -647,7 +647,7 @@ reg_access_status_t reg_access_mcqi_inner(mfile *mf, reg_access_method_t method,
 
 reg_access_status_t reg_access_mcqi(mfile *mf, reg_access_method_t method, struct reg_access_hca_mcqi_reg *mcqi)
 {
-    int ret = reg_access_mcqi_inner(mf, method, mcqi);
+    reg_access_status_t ret = reg_access_mcqi_inner(mf, method, mcqi);
 
     char *path_env = getenv("MCQI_DEBUG");
     if (path_env != NULL) {

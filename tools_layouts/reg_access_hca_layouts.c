@@ -33,7 +33,7 @@
  
 
 /***
-         *** This file was generated at "2021-04-08 08:48:14"
+         *** This file was generated at "2021-05-25 10:51:33"
          *** by:
          ***    > /mswg/release/tools/a-me/last_stable/adabe_plugins/adb2c/adb2pack.py --input adb/prm/hca/int/reg_access_hca.adb --file-prefix reg_access_hca --prefix reg_access_hca_ --no-adb-utils
          ***/
@@ -1671,7 +1671,7 @@ void reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto_pack(const union
 
 void reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto_unpack(union reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto *ptr_struct, const u_int8_t *ptr_buff)
 {
-	reg_access_hca_sxp_hang_stop_toggle_modifier_unpack(&(ptr_struct->sxp_hang_stop_toggle_modifier), ptr_buff);
+	reg_access_hca_rxb_hang_stop_toggle_modifier_unpack(&(ptr_struct->rxb_hang_stop_toggle_modifier), ptr_buff);
 }
 
 void reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto_print(const union reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto *ptr_struct, FILE *fd, int indent_level)
@@ -3009,6 +3009,8 @@ void reg_access_hca_pcnr_reg_pack(const struct reg_access_hca_pcnr_reg *ptr_stru
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->tuning_override);
 	offset = 30;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->force_fast_link_up);
+	offset = 18;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 2, (u_int32_t)ptr_struct->lp_msb);
 	offset = 8;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->local_port);
 	offset = 0;
@@ -3029,6 +3031,8 @@ void reg_access_hca_pcnr_reg_unpack(struct reg_access_hca_pcnr_reg *ptr_struct, 
 	ptr_struct->tuning_override = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 	offset = 30;
 	ptr_struct->force_fast_link_up = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
+	offset = 18;
+	ptr_struct->lp_msb = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 2);
 	offset = 8;
 	ptr_struct->local_port = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 	offset = 0;
@@ -3050,6 +3054,8 @@ void reg_access_hca_pcnr_reg_print(const struct reg_access_hca_pcnr_reg *ptr_str
 	fprintf(fd, "tuning_override      : " UH_FMT "\n", ptr_struct->tuning_override);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "force_fast_link_up   : " UH_FMT "\n", ptr_struct->force_fast_link_up);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "lp_msb               : " UH_FMT "\n", ptr_struct->lp_msb);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "local_port           : " UH_FMT "\n", ptr_struct->local_port);
 	adb2c_add_indentation(fd, indent_level);

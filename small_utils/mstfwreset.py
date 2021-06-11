@@ -799,12 +799,17 @@ class MlnxPciOpFreeBSD(MlnxPciOp):
         if(linesCount > 1):
             raise RuntimeError("Found more than one secbus with the value: %s" %busNum)
         hostBridge = "pcib%s" %(out.split("pcib.")[1].split(".")[0])
+        
         # get pci address of hostBridge
-        cmd = "pciconf -l | grep %s | cut -f 1 | cut -f 2 -d@ | sed -e 's/\(.*\):\s*/\\1/g'" % hostBridge
-        (rc, bridgeDevAddr, _) = cmdExec(cmd)
-        if rc != 0 or len(bridgeDevAddr.strip()) == 0:
-            raise RuntimeError("Failed to extract pci bridge address")
-        return bridgeDevAddr.strip()
+        cmd = "pciconf -l | grep {0}".format(hostBridge)
+        rc, out, _ = cmdExec(cmd)
+        if rc != 0:
+            raise RuntimeError("Failed to extract PCI bridge address ({0})".format(cmd))
+        try:
+            bridgeDevAddr = out.split()[0].split('@')[1][:-1] # Extract the pci device from the output
+        except:
+            raise RuntimeError("Failed to extract PCI bridge address ({0})".format(out))
+        return bridgeDevAddr
 
     def getPciECapAddr(self, bridgeDev):
         cmd = "pciconf -lc %s | grep \"cap 10\" | sed -e 's/.*\[\([0-9,a-f]*\)\].*/\\1/g'" % bridgeDev

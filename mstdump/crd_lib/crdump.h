@@ -59,6 +59,8 @@ enum crd_return_code {
     CRD_NOT_SUPPORTED,
     CRD_EXCEED_VALUE,
     CRD_CAUSE_BIT,
+    CRD_TLV_SIGNATURE_INVALID,
+    CRD_TLV_ADDRESS_INVALID,
 };
 
 

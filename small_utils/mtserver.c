@@ -269,6 +269,18 @@ int mread_i2cblock(mfile *mf, unsigned char i2c_slave, u_int8_t addr_width,
     return 0;
 }
 
+int mcables_remote_operation_server_side(mfile* mf, u_int32_t address,
+                                         u_int32_t length, u_int8_t* data,
+                                         int remote_op)
+{
+    TOOLS_UNUSED(mf);
+    TOOLS_UNUSED(address);
+    TOOLS_UNUSED(length);
+    TOOLS_UNUSED(data);
+    TOOLS_UNUSED(remote_op);
+    return 0;
+}
+
 int mwrite_i2cblock(mfile *mf, unsigned char i2c_slave, u_int8_t addr_width,
                     unsigned int offset, void *data, int length)
 {
@@ -582,6 +594,36 @@ void mySignal()
             sprintf(err_msg, "E Invalid %s", param_name); \
             return 1; \
         } \
+}
+
+
+
+int parse_cables_cmd(char *buf, u_int32_t* addr, u_int32_t* length,
+                     u_int8_t *data, char *err_msg)
+{
+    char *args_array[3];
+    u_int8_t args_num = 2;
+    int i;
+
+    args_array[0]  = buf + 2;
+    for (i = 1; i <= args_num; i++) {
+        args_array[i] = strchr(args_array[i - 1], ' ');
+        if (args_array[i] == NULL) {
+            break;
+        }
+        *(args_array[i]) = '\0';
+        args_array[i]++;
+    }
+
+    if (i < args_num) {
+        sprintf(err_msg, "E Bad msg internal error");
+        return 1;
+    }
+    GET_PARAM(*addr, args_array[0], u_int32_t, "address", err_msg);
+    GET_PARAM(*length, args_array[1], u_int32_t, "length", err_msg);
+    GET_PARAM(*data, args_array[2], u_int8_t, "data", err_msg);
+
+    return 0;
 }
 
 

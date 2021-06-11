@@ -73,8 +73,8 @@ flash is used by this device (another device is the flash owner). */
 1: Abir Gearbox */
 	/* 0x4.0 - 0x4.15 */
 	u_int16_t device_type;
-	/* Description - Major FW version number. Valid only after the FW is burnt. 
-Otherwise, the value should be '0'. */
+	/* Description - Major FW version number. Valid only after the FW is burnt. Oth
+erwise, the value should be '0'. */
 	/* 0x4.16 - 0x4.31 */
 	u_int16_t fw_major;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
@@ -126,8 +126,7 @@ Shift-Register. */
 Valid only when active or lc_ready are '1'. */
 	/* 0x4.0 - 0x4.15 */
 	u_int16_t ini_file_version;
-	/* Description - HW revision of the line-card as it appears in the current INI 
-file.
+	/* Description - HW revision of the line-card as it appears in the current INI file.
 Valid only when active or lc_ready are '1'. */
 	/* 0x4.16 - 0x4.31 */
 	u_int16_t hw_revision;
@@ -144,9 +143,10 @@ Valid only when active or lc_ready are '1'. */
 /* Size in bytes - 32 */
 struct reg_access_switch_slot_name {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Slot's ASCII name. Up to 20 chars */
-	/* 0x0.0 - 0x10.31 */
-	u_int32_t slot_ascii_name[5];
+	/* Description - Slot's ASCII name. Up to 20 chars
+ */
+	/* 0x0.24 - 0x14.23 */
+	u_int8_t slot_ascii_name[20];
 };
 
 /* Description -   */
@@ -172,15 +172,16 @@ struct reg_access_switch_mddq {
 0: Reserved */
 	/* 0x0.0 - 0x0.3 */
 	u_int8_t slot_index;
-	/* Description - 1: slot_info
+	/* Description - 0: Reserved
+1: slot_info
 2: device_info - If there are no devices on the slot, data_valid 
 will be '0'.
 3: slot_name - Name of the slot (string) */
 	/* 0x0.16 - 0x0.23 */
 	u_int8_t query_type;
 	/* Description - Slot info event enable
-When set to '1', each change in the MDDQ.slot_info.provisioned 
-/ sr_valid / active / ready will generate an event. */
+When set to '1', each change in the MDDQ.slot_info.provi
+sioned / sr_valid / active / ready will generate an event. */
 	/* 0x0.31 - 0x0.31 */
 	u_int8_t sie;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
@@ -208,12 +209,12 @@ range index will lead to BAD_PARAM status of the register. */
 	u_int8_t data_valid;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - Properties of that field are based on query_type.
-For slot information query_type data - See Table 1359, 
-"slot_info Register Layout," on page 1953
-For devices on slot query_type data- See Table 1361, 
-"device_info Register Layout," on page 1954
-For slot name query_type data- See Table 1363, "slot_name 
-Register Layout," on page 1955 */
+For slot information query_type data - see Table 474, 
+"slot_info Register Layout," on page 668
+For devices on slot query_type data - see Table 476, 
+"device_info Register Layout," on page 669
+For slot name query_type data - see Table 478, "slot_name 
+Register Layout," on page 670 */
 	/* 0x10.0 - 0x2c.31 */
 	union reg_access_switch_mddq_data_auto data;
 };

@@ -45,12 +45,6 @@ struct mft_core_wrapper {
 };
 
 
-struct page_list {
-    // User space buffer page aligned.
-    char* page_list;
-    int page_amount;
-};
-
 /*  All fields in follow structure are not supposed to be used */
 /*  or modified by user programs. Except i2c_slave that may be */
 /*  modified before each access to target I2C slave address */

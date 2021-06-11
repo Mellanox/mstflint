@@ -136,9 +136,9 @@ void reg_access_switch_slot_name_pack(const struct reg_access_switch_slot_name *
 	u_int32_t offset;
 	int i;
 
-	for (i = 0; i < 5; ++i) {
-		offset = adb2c_calc_array_field_address(0, 32, i, 256, 1);
-		adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->slot_ascii_name[i]);
+	for (i = 0; i < 20; ++i) {
+		offset = adb2c_calc_array_field_address(24, 8, i, 256, 1);
+		adb2c_push_bits_to_buff(ptr_buff, offset, 8, (u_int32_t)ptr_struct->slot_ascii_name[i]);
 	}
 }
 
@@ -147,9 +147,9 @@ void reg_access_switch_slot_name_unpack(struct reg_access_switch_slot_name *ptr_
 	u_int32_t offset;
 	int i;
 
-	for (i = 0; i < 5; ++i) {
-		offset = adb2c_calc_array_field_address(0, 32, i, 256, 1);
-		ptr_struct->slot_ascii_name[i] = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	for (i = 0; i < 20; ++i) {
+		offset = adb2c_calc_array_field_address(24, 8, i, 256, 1);
+		ptr_struct->slot_ascii_name[i] = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 8);
 	}
 }
 
@@ -160,9 +160,9 @@ void reg_access_switch_slot_name_print(const struct reg_access_switch_slot_name 
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "======== reg_access_switch_slot_name ========\n");
 
-	for (i = 0; i < 5; ++i) {
+	for (i = 0; i < 20; ++i) {
 		adb2c_add_indentation(fd, indent_level);
-		fprintf(fd, "slot_ascii_name_%03d : " U32H_FMT "\n", i, ptr_struct->slot_ascii_name[i]);
+		fprintf(fd, "slot_ascii_name_%03d : " UH_FMT "\n", i, ptr_struct->slot_ascii_name[i]);
 	}
 }
 

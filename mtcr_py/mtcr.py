@@ -175,9 +175,9 @@ if CMTCR:
 else:
     import subprocess
     import string
-
+    
     def getstatusoutput(cmd):
-        pipe = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        pipe = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         cout = pipe.stdout
         output = cout.read()
         cout.close()
@@ -204,7 +204,7 @@ else:
 
         ##########################
         def read4(self, addr):
-            cmd = "mcra %s 0x%x" % (self.dev, addr)
+            cmd = ["mcra", self.dev, hex(addr)]
             rc, out = getstatusoutput(cmd)
             if rc:
                 raise MtcrException("Failed to read from mst device from address 0x%x: %s" % (addr, out))
@@ -216,7 +216,7 @@ else:
 
         ##########################
         def write4(self, addr, val):
-            cmd = "mcra %s 0x%x 0x%x" % (self.dev, addr, val)
+            cmd = ["mcra", self.dev, hex(addr), hex(val)]
             rc, out = getstatusoutput(cmd)
             if rc:
                 raise MtcrException("Failed to wrtie to mst device to address 0x%x: %s" % (addr, out))
