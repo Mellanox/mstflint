@@ -71,8 +71,6 @@ private:
 
     Json::Value &_jsonRoot;
     MlxlinkCmdPrint _errInjOutput;
-    u_int32_t _origMixerOffset0;
-    u_int32_t _origMixerOffset1;
 };
 
 #endif /* MLXLINK_ERR_INJ_COMMANDER_H */
