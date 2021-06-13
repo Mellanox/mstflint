@@ -546,16 +546,17 @@ static int page_pin(struct mst_dev_data* dev, struct page_info_st* page_info)
 {
     unsigned long page_pointer_start = page_info->page_pointer_start;
     unsigned int page_amount = page_info->page_amount;
-    unsigned int page_size = page_info->page_size;
+    unsigned int pages_size = page_amount * PAGE_SIZE;
+    unsigned long end_of_buffer = page_pointer_start + pages_size;
     unsigned int gup_flags = FOLL_WRITE;
+    int page_mapped_counter= 0;
     int page_counter = 0;
-    int pinned = 0;
-
+    int total_pinned = 0;
 
     // If the combination of the addr and size requested for this memory
     // region causes an integer overflow, return error.
-    if (((page_pointer_start + page_size) < page_pointer_start) ||
-            PAGE_ALIGN(page_pointer_start + page_size) < (page_pointer_start + page_size) ||
+    if (((end_of_buffer) < page_pointer_start) ||
+            PAGE_ALIGN(end_of_buffer) < (end_of_buffer) ||
             page_amount < 1) {
         return -EINVAL;
     }
@@ -566,22 +567,22 @@ static int page_pin(struct mst_dev_data* dev, struct page_info_st* page_info)
     }
 
     // Allocate the page list.
-    dev->page_list = kcalloc(page_amount, sizeof(struct page *), GFP_KERNEL);
-    if (!dev->page_list) {
+    dev->dma_page.page_list = kcalloc(page_amount, sizeof(struct page *), GFP_KERNEL);
+    if (!dev->dma_page.page_list) {
         return -ENOMEM;
     }
 
     // Go over the user memory buffer and pin user pages in memory.
-    while (pinned < page_amount) {
+    while (total_pinned < page_amount) {
         // Save the current number of pages to pin
-        int num_pages = page_amount - pinned;
+        int num_pages = page_amount - total_pinned;
 
         // Save the current pointer to the right offset.
-        uint64_t current_ptr = page_pointer_start + (pinned * PAGE_SIZE);
+        uint64_t current_ptr = page_pointer_start + (total_pinned * PAGE_SIZE);
 
         // Save the current page.
-        struct page** current_pages = dev->page_list + pinned;
-        
+        struct page** current_pages = dev->dma_page.page_list + total_pinned;
+
         // Attempt to pin user pages in memory.
         // Returns number of pages pinned - this may be fewer than the number requested
         //   or -errno in case of error.
@@ -589,33 +590,52 @@ static int page_pin(struct mst_dev_data* dev, struct page_info_st* page_info)
                                                gup_flags, current_pages);
         if (pinned_pages < 1)
         {
-            kfree(dev->page_list);
+            kfree(dev->dma_page.page_list);
             return -EFAULT;
         }
 
+        // When the parameter 'inter_iommu' is on, we need to set up
+        // a mapping on a pages in order to access the physical address
+        while(page_mapped_counter < pinned_pages)
+        {
+            int current_page = total_pinned + page_mapped_counter;
+
+            // Get the dma address.
+            dev->dma_page.dma_addr[current_page] =
+                dma_map_page(&dev->pci_dev->dev, current_pages[current_page],
+                             0, PAGE_SIZE,
+                             DMA_BIDIRECTIONAL);
+            // Do we get a valid dma address ?
+            if (dma_mapping_error(&dev->pci_dev->dev, dev->dma_page.dma_addr[current_page])) {
+                printk(KERN_ERR "Failed to get DMA addresses\n");
+                return -EINVAL;
+            }
+
+            page_info->page_address_array[current_page].dma_address =
+                dev->dma_page.dma_addr[current_page];
+
+            page_mapped_counter++;
+        }
+
         // Advance the memory that already pinned.
-        pinned += pinned_pages;
+        total_pinned += pinned_pages;
     }
 
-    // There is a memory that not pinned in the kernel space?
-    if (pinned != page_amount) {
+    // There is a page that not pinned in the kernel space ?
+    if (total_pinned != page_amount) {
         return -EFAULT;
     }
 
-    // Initialize the pages.
-    for (page_counter = 0; 
+    // Print the pages to the dmesg.
+    for (page_counter = 0;
             page_counter < page_amount;
             page_counter++) {
-        // Save the physical and virtual address for the user space purpose.
-        page_info->page_address_array[page_counter].physical_address = 
-            page_to_phys(dev->page_list[page_counter]);
-
         printk(KERN_INFO "Page address structure number: %d, device: %04x:%02x:%02x.%0x\n",
                page_counter, pci_domain_nr(dev->pci_dev->bus),
                dev->pci_dev->bus->number, PCI_SLOT(dev->pci_dev->devfn),
                PCI_FUNC(dev->pci_dev->devfn));
     }
- 
+
     return 0;
 }
 
@@ -623,21 +643,25 @@ static int page_pin(struct mst_dev_data* dev, struct page_info_st* page_info)
 static int page_unpin(struct mst_dev_data* dev, struct page_info_st* page_info)
 {
     int page_counter;
-    
+
     // Check if the page list is allocated.
-    if (!dev->page_list) {
+    if (!dev || !dev->dma_page.page_list) {
         return -EINVAL;
     }
-   
+
     // Deallocate the pages.
-    for (page_counter = 0; 
+    for (page_counter = 0;
             page_counter < page_info->page_amount;
             page_counter++) {
+        // DMA activity is finished.
+        dma_unmap_page(&dev->pci_dev->dev, dev->dma_page.dma_addr[page_counter],
+                       PAGE_SIZE, DMA_BIDIRECTIONAL);
 
-        // Must be called to release the page list.
-        set_page_dirty(dev->page_list[page_counter]);
-        put_page(dev->page_list[page_counter]);
-        dev->page_list[page_counter] = NULL;
+        // Release the page list.
+        set_page_dirty(dev->dma_page.page_list[page_counter]);
+        put_page(dev->dma_page.page_list[page_counter]);
+        dev->dma_page.page_list[page_counter] = NULL;
+        dev->dma_page.dma_addr[page_counter] = 0;
 
         printk(KERN_INFO "Page structure number: %d was released. device:%04x:%02x:%02x.%0x\n",
                page_counter, pci_domain_nr(dev->pci_dev->bus),
@@ -646,10 +670,11 @@ static int page_unpin(struct mst_dev_data* dev, struct page_info_st* page_info)
     }
 
     // All the pages are clean.
-    dev->page_list = NULL;
+    dev->dma_page.page_list = NULL;
 
     return 0;
 }
+
 
 static int read_dword_from_config_space(struct mst_dev_data* dev, struct read_dword_from_config_space* read_from_cspace)
 {
@@ -672,6 +697,7 @@ cleanup:
     _vendor_specific_sem(dev, 0);
     return ret;
 }
+
 
 /****************************************************/
 static ssize_t mst_read(struct file *file, char *buf, size_t count,
@@ -1318,8 +1344,8 @@ static int mst_ioctl(struct inode *inode, struct file *file,
 			goto fin;
 		break;
 	}
-    case PCICONF_PAGE_PIN:
-    case PCICONF_PAGE_UNPIN:
+    case PCICONF_GET_DMA_PAGES:
+    case PCICONF_RELEASE_DMA_PAGES:
     {
         struct page_info_st page_info;
         
@@ -1335,7 +1361,7 @@ static int mst_ioctl(struct inode *inode, struct file *file,
             goto fin;
         }
 
-        if (opcode == PCICONF_PAGE_PIN) {
+        if (opcode == PCICONF_GET_DMA_PAGES) {
             res = page_pin(dev, &page_info);
             if (res) {
                 goto fin;

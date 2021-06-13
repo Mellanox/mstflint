@@ -179,6 +179,11 @@ MTCR_API int MREAD4_SEMAPHORE(mfile* mf, int offset, u_int32_t* ptr);
 
 void set_increase_poll_time(int new_value);
 
+int get_dma_pages(mfile *mf, struct mtcr_page_info* page_info,
+                  int page_amount);
+
+int release_dma_pages(mfile *mf, int page_amount);
+
 #ifdef __cplusplus
 }
 #endif
