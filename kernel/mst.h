@@ -176,22 +176,19 @@ struct mst_vpd_write4_st {
 	u32 data;				/* IN */
 };
 
-#define PCICONF_PAGE_PIN        _IOR (MST_PCICONF_MAGIC, 13, struct page_info_st)
-#define PCICONF_PAGE_UNPIN      _IOR (MST_PCICONF_MAGIC, 14, struct page_info_st)
+#define PCICONF_GET_DMA_PAGES       _IOR (MST_PCICONF_MAGIC, 13, struct page_info_st)
+#define PCICONF_RELEASE_DMA_PAGES   _IOR (MST_PCICONF_MAGIC, 14, struct page_info_st)
 
 struct page_address_st {
-    u_int64_t physical_address;
+    u_int64_t dma_address;
     u_int64_t virtual_address;
 };
 
-
 struct page_info_st {
-    unsigned int page_size;
     unsigned int page_amount;
     unsigned long page_pointer_start;
     struct page_address_st page_address_array[PCICONF_MAX_PAGES_SIZE];
 };
-
 
 #define PCICONF_READ_DWORD_FROM_CONFIG_SPACE    _IOR (MST_PCICONF_MAGIC, 15, struct read_dword_from_config_space)
 struct read_dword_from_config_space {

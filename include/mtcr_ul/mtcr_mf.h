@@ -45,6 +45,14 @@ struct mft_core_wrapper {
 };
 
 
+#ifdef __FreeBSD__
+struct page_list_fbsd {
+    // User space buffer page aligned.
+    char* page_list[MAX_PAGES_SIZE];
+    int page_amount;
+};
+#endif
+
 /*  All fields in follow structure are not supposed to be used */
 /*  or modified by user programs. Except i2c_slave that may be */
 /*  modified before each access to target I2C slave address */
@@ -128,12 +136,13 @@ struct mfile_t {
     int wo_addr;
     int connectx_flush;
     int fdlock;
+    struct page_list_fbsd user_page_list;
+#else
+    struct page_list user_page_list;
 #endif
 
     // For dma purpose
     void* dma_props;
-
-    struct page_list user_page_list;
 
     // MFT core wrapper objects.
     struct mft_core_wrapper mft_core_object;

@@ -61,7 +61,7 @@
 #include <string.h>
 
 #include <unistd.h>
-
+#include <malloc.h>
 #include <netinet/in.h>
 #include <endian.h>
 #include <byteswap.h>
@@ -2576,7 +2576,7 @@ int mclose_ul(mfile *mf)
             free(mf->dev_name);
         }
         if(mf->user_page_list.page_amount) {
-            deallocate_kernel_memory_page(mf);
+            release_dma_pages(mf, mf->user_page_list.page_amount);
         }
         free_dev_info_ul(mf);
         free(mf);
@@ -3311,84 +3311,6 @@ const char* m_err2str(MError status)
     }
 }
 
-int deallocate_kernel_memory_page(mfile* mf)
-{
-#if !defined(__VMKERNEL_UW_NATIVE__)
-    struct mtcr_page_info page_info;
-
-
-    // Parameter validation.
-    if(!mf) {
-        return -1;
-    }
-
-    page_info.page_amount = mf->user_page_list.page_amount;
-
-    ioctl(mf->fd, PCICONF_PAGE_UNPIN, &page_info);
-    
-    // Free the user space memory.
-    free(mf->user_page_list.page_list);
-    mf->user_page_list.page_list = NULL;
-
-    return 0;
-
-#else
-    (void)mf;
-  
-    // MST VMWare driver is unsupported.
-    return -1;
-#endif
-}
-
-
-
-int read_dword_from_conf_space(u_int32_t offset, mfile *mf,
-                               struct mtcr_read_dword_from_config_space* read_config_space)
-{
-#if !defined(__VMKERNEL_UW_NATIVE__)
-    // Parameters validation.
-    if(!mf || !read_config_space)
-    {
-        return -1;
-    }
-
-    read_config_space->offset = offset;
-
-    // Read from the configuration space.
-    return ioctl(mf->fd, PCICONF_READ_DWORD_FROM_CONFIG_SPACE, read_config_space);
-
-#else
-    (void)offset;
-    (void)mf;
-    (void)read_config_space;
-
-    // MST VMWare driver is unsupported.
-    return -1;
-#endif
-}
-
-#include <malloc.h>
-
-/* These will be specific for PCI CONF*/
-#define PCICONF_MAGIC 0xD2
-#define PCICONF_MAX_BUFFER_SIZE 256
-#define PCICONF_MAX_MEMACCESS_SIZE 1024
-//#define PCICONF_MAX_PAGES_SIZE 8
-#define PCICONF_CAP_VEC_LEN 16
-
-#define PCICONF_GET_DMA_PAGES       _IOR (PCICONF_MAGIC, 13, struct page_info_mstflint)
-#define PCICONF_RELEASE_DMA_PAGES   _IOR (PCICONF_MAGIC, 14, struct page_info_mstflint)
-
-struct page_address_mstflint {
-    u_int64_t dma_address;
-    u_int64_t virtual_address;
-};
-
-struct page_info_mstflint {
-    unsigned int page_amount;
-    unsigned long page_pointer_start;
-    struct page_address_st page_address_array[PCICONF_MAX_PAGES_SIZE];
-};
 
 int get_dma_pages(mfile* mf, struct mtcr_page_info* page_info,
                   int page_amount)
@@ -3490,3 +3412,28 @@ int release_dma_pages(mfile* mf, int page_amount)
 #endif
 }
 
+
+int read_dword_from_conf_space(u_int32_t offset, mfile *mf,
+                               struct mtcr_read_dword_from_config_space* read_config_space)
+{
+#if !defined(__VMKERNEL_UW_NATIVE__)
+    // Parameters validation.
+    if(!mf || !read_config_space)
+    {
+        return -1;
+    }
+
+    read_config_space->offset = offset;
+
+    // Read from the configuration space.
+    return ioctl(mf->fd, PCICONF_READ_DWORD_FROM_CONFIG_SPACE, read_config_space);
+
+#else
+    (void)offset;
+    (void)mf;
+    (void)read_config_space;
+
+    // MST VMWare driver is unsupported.
+    return -1;
+#endif
+}
