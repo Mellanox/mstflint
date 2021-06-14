@@ -1422,19 +1422,7 @@ fin_err:
 	return res;
 }
 
-#if HAVE_COMPAT_IOCTL
-static long compat_ioctl(struct file *f, unsigned int o, unsigned long d)
-{
-#if KERNEL_VERSION(3, 18, 0) > LINUX_VERSION_CODE
-	struct inode *n = f->f_dentry->d_inode;
-#else
-	struct inode *n = f->f_path.dentry->d_inode;
-#endif
-	return mst_ioctl(n, f, o, d);
-}
-#endif
 
-#ifdef HAVE_UNLOCKED_IOCTL
 static long unlocked_ioctl(struct file *f, unsigned int o, unsigned long d)
 {
 #if KERNEL_VERSION(3, 18, 0) > LINUX_VERSION_CODE
@@ -1445,7 +1433,6 @@ static long unlocked_ioctl(struct file *f, unsigned int o, unsigned long d)
 
 	return mst_ioctl(n, f, o, d);
 }
-#endif
 
 /****************************************************/
 static inline const char *dev_type_to_str(enum dev_type type)
@@ -1461,22 +1448,13 @@ static inline const char *dev_type_to_str(enum dev_type type)
 }
 
 /****************************************************/
-static const struct file_operations mst_fops = { .read = mst_read, .write =
-		mst_write,
-
-#ifdef HAVE_UNLOCKED_IOCTL
+static const struct file_operations mst_fops = {
+        .read = mst_read,
+        .write = mst_write,
 		.unlocked_ioctl = unlocked_ioctl,
-#endif
-
-#if KERNEL_VERSION(2, 6, 35) > LINUX_VERSION_CODE
-		.ioctl = mst_ioctl,
-#endif
-
-#if HAVE_COMPAT_IOCTL
-		.compat_ioctl = compat_ioctl,
-#endif
-
-		.open = mst_open, .release = mst_release, .owner = THIS_MODULE, };
+		.open = mst_open,
+        .release = mst_release,
+        .owner = THIS_MODULE, };
 
 static struct mst_dev_data *mst_device_create(enum dev_type type,
 		struct pci_dev *pdev)
