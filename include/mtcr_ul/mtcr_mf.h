@@ -137,6 +137,7 @@ struct mfile_t {
     int connectx_flush;
     int fdlock;
     struct page_list_fbsd user_page_list;
+    void *ptr;
 #else
     struct page_list user_page_list;
 #endif
