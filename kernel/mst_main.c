@@ -61,6 +61,7 @@ static struct pci_device_id supported_pci_devices[] = { { PCI_DEVICE(
 		{ PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, 4125) }, /* MT27600 [ConnectX-6DX] */
 		{ PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, 4127) }, /* MT27600 [ConnectX-6LX] */
 		{ PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, 41682) }, /* MT27600 [BlueField] */
+		{ PCI_DEVICE(MST_MELLANOX_PCI_VENDOR, 41686) }, /* MT27600 [BlueField 2] */
 		{ 0, } };
 
 /****************** VSEC SUPPORT ********************/
