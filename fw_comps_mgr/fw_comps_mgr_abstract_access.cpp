@@ -58,6 +58,9 @@ AbstractComponentAccess* ComponentAccessFactory::createDataAccessObject(FwCompsM
     if (rc == 0 && result.data&BME_MASK){
         isBmeSet = true;
     }
+    else {
+        printf("DMA burning is not supported due to BME is unset (Bus Master Enable).\n");
+    }
 #endif
 
     if (isMCDDRegisterSupported && isBmeSet){
