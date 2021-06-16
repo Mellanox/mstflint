@@ -64,6 +64,7 @@ if test "x$OS" = "xFreeBSD"; then
     AC_MSG_NOTICE(FreeBSD Build)
     MTCR_CONF_DIR="mtcr_freebsd"
     default_en_inband="no"
+    CFLAGS="${CFLAGS} -I /usr/local/include"
 else
     MTCR_CONF_DIR="mtcr_ul"
     LDL="-ldl"
