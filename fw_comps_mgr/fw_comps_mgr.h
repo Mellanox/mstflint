@@ -386,6 +386,7 @@ public:
     bool RefreshComponentsStatus(comp_status_st* ComponentStatus = NULL);
     bool GetComponentLinkxProperties(FwComponent::comps_ids_t compType, component_linkx_st *cmpLinkX);
     void GenerateHandle();
+    bool isMCDDSupported() { return isDmaSupported; };
 private:
 
     typedef enum {

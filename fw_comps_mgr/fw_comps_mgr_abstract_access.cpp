@@ -49,17 +49,18 @@ AbstractComponentAccess* ComponentAccessFactory::createDataAccessObject(FwCompsM
     isBmeSet = true; // mst64 (system service that is loaded in mtcr::open()) will set the BME
 #else
     isBmeSet = false;
-    int COMMAND_REG_OFFSET = 0x4;
-    int BME_MASK = 0x00000004;
 
-    mtcr_read_dword_from_config_space result;
-    int rc = read_dword_from_conf_space(COMMAND_REG_OFFSET, Mf, &result);
-    
-    if (rc == 0 && result.data&BME_MASK){
-        isBmeSet = true;
-    }
-    else {
-        printf("DMA burning is not supported due to BME is unset (Bus Master Enable).\n");
+    if (isMCDDRegisterSupported) {
+
+        int COMMAND_REG_OFFSET = 0x4;
+        int BME_MASK = 0x00000004;
+
+        mtcr_read_dword_from_config_space result;
+        int rc = read_dword_from_conf_space(COMMAND_REG_OFFSET, Mf, &result);
+
+        if ((rc == 0) && (result.data & BME_MASK)) {
+            isBmeSet = true;
+        }
     }
 #endif
 

@@ -311,6 +311,19 @@ FlintStatus BurnSubCommand::BurnLinkX(string deviceName, int deviceIndex, int de
     compsToBurn.push_back(bootImageComponent);
     if (downloadTransferNeeded) {
         printf("-I- Downloading FW ...\n");
+        if (fwCompsAccess->isMCDDSupported()) {
+            // Checking if BME is disabled to print indication to user
+            // TODO - this is code duplication from fw_comps_mgr_abstract_access.cpp, move to a single place
+            int COMMAND_REG_OFFSET = 0x4;
+            int BME_MASK = 0x00000004;
+
+            mtcr_read_dword_from_config_space result;
+            int rc = read_dword_from_conf_space(COMMAND_REG_OFFSET, fwCompsAccess->getMfileObj(), &result);
+
+            if ((rc != 0) || !(result.data & BME_MASK)) {
+                printf("-W- DMA burning is not supported due to BME is unset (Bus Master Enable).\n");
+            }
+        }
     }
     if (!fwCompsAccess->burnComponents(compsToBurn, funcAdv)) {
         char* err_msg = (char*)fwCompsAccess->getLastErrMsg();
