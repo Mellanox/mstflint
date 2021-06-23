@@ -498,6 +498,19 @@ bool FsCtrlOperations::_Burn(std::vector <u_int8_t> imageOps4MData, ExtBurnParam
     if (!_fwCompsAccess->lock_flash_semaphore()) {
         return errmsg(FwCompsErrToFwOpsErr(_fwCompsAccess->getLastError()), "%s", _fwCompsAccess->getLastErrMsg());
     }
+    if (_fwCompsAccess->isMCDDSupported()) {
+        // Checking if BME is disabled to print indication to user
+        // TODO - this is code duplication from fw_comps_mgr_abstract_access.cpp, move to a single place
+        int COMMAND_REG_OFFSET = 0x4;
+        int BME_MASK = 0x00000004;
+
+        mtcr_read_dword_from_config_space result;
+        int rc = read_dword_from_conf_space(COMMAND_REG_OFFSET, _fwCompsAccess->getMfileObj(), &result);
+
+        if ((rc != 0) || !(result.data & BME_MASK)) {
+            printf("-W- DMA burning is not supported due to BME is unset (Bus Master Enable).\n");
+        }
+    }
     if (!_fwCompsAccess->burnComponents(compsToBurn, &burnParams.ProgressFuncAdv)) {
         _fwCompsAccess->unlock_flash_semaphore();
         return errmsg(FwCompsErrToFwOpsErr(_fwCompsAccess->getLastError()), "%s", _fwCompsAccess->getLastErrMsg());
