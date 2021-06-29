@@ -61,18 +61,23 @@
 #define STAT_CFG_NOT_DONE_ADDR_QUANTUM   0x100010
 #define STAT_CFG_NOT_DONE_ADDR_CX5   0xb5e04
 #define STAT_CFG_NOT_DONE_ADDR_CX6   0xb5f04
+#define STAT_CFG_NOT_DONE_ADDR_CX7   0xb5f04
 #define STAT_CFG_NOT_DONE_BITOFF_CIB   31
 #define STAT_CFG_NOT_DONE_BITOFF_CX4   31
 #define STAT_CFG_NOT_DONE_BITOFF_SW_IB 0
 #define STAT_CFG_NOT_DONE_BITOFF_CX5   31
+#define STAT_CFG_NOT_DONE_BITOFF_CX7   31
 #define SEMAPHORE_ADDR_CIB   0xe27f8 //sem62
 #define SEMAPHORE_ADDR_CX4   0xe250c // sem67 bit31 is the semaphore bit here (only one semaphore in this dword)
 #define SEMAPHORE_ADDR_SW_IB 0xa24f8 // sem 62
 #define SEMAPHORE_ADDR_QUANTUM 0xa68f8
+#define SEMAPHORE_ADDR_QUANTUM2 0xa52f8
 #define SEMAPHORE_ADDR_CX5   0xe74e0
+#define SEMAPHORE_ADDR_CX7   0xe5660
 #define HCR_ADDR_CIB         0x0
 #define HCR_ADDR_CX4         HCR_ADDR_CIB
 #define HCR_ADDR_CX5         HCR_ADDR_CIB
+#define HCR_ADDR_CX7         HCR_ADDR_CIB
 #define HCR_ADDR_SW_IB       0x80000
 #define HCR_ADDR_QUANTUM       0x100000
 #define ICMD_VERSION_BITOFF 24
@@ -82,6 +87,7 @@
 #define CMD_PTR_ADDR_QUANTUM      0x100000
 #define CMD_PTR_ADDR_CX4        CMD_PTR_ADDR_CIB
 #define CMD_PTR_ADDR_CX5        CMD_PTR_ADDR_CIB
+#define CMD_PTR_ADDR_CX7        CMD_PTR_ADDR_CIB
 #define CMD_PTR_BITOFF      0
 #define CMD_PTR_BITLEN      24
 #define CTRL_OFFSET         0x3fc
@@ -125,7 +131,7 @@
  */
 #define CHECK_RC(rc) if ((rc)) {return (rc); }
 #define CHECK_RC_GO_TO(rc, lable) if ((rc)) {goto lable; }
-#define DBG_PRINTF(...) if (getenv("MFT_DEBUG")) {fprintf(stderr, __VA_ARGS__); }
+#define DBG_PRINTF(...) do { if (getenv("MFT_DEBUG") != NULL) { fprintf(stderr, __VA_ARGS__); } } while (0)
 /*
  * Macros for accessing CR-Space
  */
@@ -251,6 +257,7 @@ enum {
 #define CX7_HW_ID       536
 #define BF_HW_ID        529
 #define BF2_HW_ID       532
+#define BF3_HW_ID       540
 #define SW_IB_HW_ID     583
 #define SW_EN_HW_ID     585
 #define SW_IB2_HW_ID    587
@@ -578,7 +585,7 @@ static int icmd_take_semaphore_com(mfile *mf, u_int32_t expected_read_val)
                 break;
             }
         }
-        msleep(rand() % 20);
+        msleep(rand() % 50);
     } while (read_val != expected_read_val);
 
     mf->icmd.took_semaphore = 1;
@@ -893,7 +900,6 @@ static int icmd_init_cr(mfile *mf)
     case (QUANTUM_HW_ID):
     case (SPECTRUM2_HW_ID):
     case (SPECTRUM3_HW_ID):
-    case (QUANTUM2_HW_ID):
     case (SPECTRUM4_HW_ID):
         cmd_ptr_addr = CMD_PTR_ADDR_QUANTUM;
         hcr_address = HCR_ADDR_QUANTUM;
@@ -902,16 +908,32 @@ static int icmd_init_cr(mfile *mf)
         mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_SW_IB;
         break;
 
+    case (QUANTUM2_HW_ID):
+        cmd_ptr_addr = CMD_PTR_ADDR_QUANTUM;
+        hcr_address = HCR_ADDR_QUANTUM;
+        mf->icmd.semaphore_addr = SEMAPHORE_ADDR_QUANTUM2;
+        mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_QUANTUM;
+        mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_SW_IB;
+        break;
+
     case (CX6_HW_ID):
     case (CX6DX_HW_ID):
     case (CX6LX_HW_ID):
     case (BF2_HW_ID):
-    case (CX7_HW_ID):
+    case (BF3_HW_ID):
         cmd_ptr_addr = CMD_PTR_ADDR_CX5;
         hcr_address = HCR_ADDR_CX5;
         mf->icmd.semaphore_addr = SEMAPHORE_ADDR_CX5;
         mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CX6;
         mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CX5;
+        break;
+
+    case (CX7_HW_ID):
+        cmd_ptr_addr = CMD_PTR_ADDR_CX7;
+        hcr_address = HCR_ADDR_CX7;
+        mf->icmd.semaphore_addr = SEMAPHORE_ADDR_CX7;
+        mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CX7;
+        mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CX7;
         break;
 
     case (AMOS_GBOX_HW_ID):
@@ -1015,6 +1037,7 @@ static int icmd_init_vcr_crspace_addr(mfile* mf)
     case (CX6DX_HW_ID):
     case (CX6LX_HW_ID):
     case (BF2_HW_ID):
+    case (BF3_HW_ID):
     case (CX7_HW_ID):
             mf->icmd.static_cfg_not_done_addr = STAT_CFG_NOT_DONE_ADDR_CX6;
             mf->icmd.static_cfg_not_done_offs = STAT_CFG_NOT_DONE_BITOFF_CX5; // same bit offset as CX5
@@ -1045,14 +1068,16 @@ static int icmd_init_vcr(mfile *mf)
     mf->icmd.semaphore_addr = VCR_SEMAPHORE62;
     DBG_PRINTF("-D- Getting VCR_CMD_SIZE_ADDR\n");
     
-    icmd_take_semaphore_com(mf, pid);
+    rc = icmd_take_semaphore_com(mf, pid);
+    CHECK_RC(rc); 
     // get max command size
     rc = MREAD4_ICMD(mf, VCR_CMD_SIZE_ADDR, &mf->icmd.max_cmd_size);
     size = mf->icmd.max_cmd_size;
     icmd_clear_semaphore_com(mf);
     CHECK_RC(rc);
     // adrianc: they should provide this bit as well in virtual cr-space atm get from cr-space
-    icmd_take_semaphore_com(mf, pid);
+    rc = icmd_take_semaphore_com(mf, pid);
+    CHECK_RC(rc);
     rc = icmd_init_vcr_crspace_addr(mf);
     icmd_clear_semaphore_com(mf);
     CHECK_RC(rc);

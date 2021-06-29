@@ -1,4 +1,4 @@
-#copyright (c) 2004-2020 Mellanox Technologies LTD. All rights reserved.   
+#copyright (c) 2004-2021 Mellanox Technologies LTD. All rights reserved.   
 #                                                                           
 # This software is available to you under a choice of one of two            
 # licenses.  You may choose to be licensed under the terms of the GNU       
@@ -38,17 +38,16 @@ import subprocess
 import sys
 import tempfile
 import math
-
 import tools_version
 
 PROG = 'mstprivhost'
 TOOL_VERSION = "1.0.0"
 
 CMD_HELP = """\
-restrict:  Set host 1 (ARM) privileged, host 0 (x86_64) restricted.
-privilege: Set host 1 (ARM) privileged, host 0 (x86_64) privileged
-           (back to default).
-query:     Query current host configuration.
+restrict:  Set all external hosts restricted except the one that called the command.
+privilege: Set all external hosts privileged except the one that called the command.
+query:     From external host: query the status of the host
+           From Embedded Arm CPU: query if all external hosts are restricted.
 """
 
 DESCRIPTION = """\
@@ -63,6 +62,7 @@ Note: privileged host - host has all supported privileges.
 DISABLE_RSHIM_HELP = """\
 When TRUE, the host does not have an RSHIM function
 to access the embedded CPU registers
+Reboot is required to apply changes
 """
 
 DISABLE_TRACER_HELP = """\
@@ -77,6 +77,7 @@ DISABLE_PORT_OWNER_HELP = """\
 When TRUE, the host will not be allowed to be Port Owner
 """
 
+
 def _log(level, msg, *args, **kw):
     if args:
         msg = msg % args
@@ -84,11 +85,13 @@ def _log(level, msg, *args, **kw):
 
 
 def info(msg, *args, **kw):
-    _log("-I-", msg, *args, **kw)
+    if kw.get('hide') is None or kw.get('hide') is False:
+        _log("-I-", msg, *args, **kw)
 
 
 def error(msg, *args, **kw):
-    _log("-E-", msg, *args, **kw)
+    if kw.get('hide') is None or kw.get('hide') is False:
+        _log("-E-", msg, *args, **kw)
 
 
 class PrivilegeException(Exception):
@@ -98,20 +101,25 @@ class PrivilegeException(Exception):
 class PrivilegeMgr(object):
     CONFIG_CMD_LINE = "mstconfig -d %s -f %s --yes set_raw"
     QUERY_CMD_LINE = "mstconfig -d %s -f %s --yes get_raw"
+    QUERY_MMHI_CMD_LINE = "mstreg -d %s --reg_name MMHI --get"
+
+    MMHI_HOST_EN_FIELD = "host_en"
+    MMHI_HOST_NUMBER_FIELD = "host_number"
     MCRA_CMD_LINE = "mstmcra %s 0xf0014.0:16"
     BLUE_FIELD_DEV_ID = 0x211
     BLUE_FIELD2_DEV_ID = 0x214
+    BLUE_FIELD3_DEV_ID = 0x21c
     TITLE = "MLNX_RAW_TLV_FILE\n"
-    RAW_BYTES = "0x03000204 0x07000083 0x00000000"
+
+    TLV_HEADER = "0x03000204"
+    CRC = "0x00000000"
+    TLV_TYPE = 0x07000083
 
     LIMITED = 0x10000000
     DISABLE_PORT_OWNER = 0x01
     DISABLE_COUNTER_RD = 0x02
     DISABLE_TRACER = 0x04
     DISABLE_RSHIM = 0x08
-
-    RESTRICT_BYTES = "0x03000204 0x07000083 0x00000000 0x1000000f"
-    PRIVILEGE_BYTES = "0x03000204 0x07000083 0x00000000 0x00000000"
 
     def __init__(self, device, query, privilege, disable_rshim, disable_tracer,
                  disable_counter_rd, disable_port_owner):
@@ -127,19 +135,27 @@ class PrivilegeMgr(object):
         self._file_name = self._file_p.name
         self._nv_host_priv_conf = 0
         self._current_conf = None
+        self._current_host, self._total_hosts = self.getNumberOfHosts()
+        self._isMH = self._total_hosts > 1
+        self._isARM = self._current_host == self._total_hosts;
+        self._disable_out = False
+        self._oldFw = False  # Fw has invalid MMHi register
 
-    def updateTlvFile(self, print_info_msgs = False):
+    def updateTlvFile(self, host_number, print_info_msgs=False):
+        tlv_type = self.TLV_TYPE
+        tlv_type |= (host_number << 18)
+        raw_bytes = "%s 0x%08x %s" % (self.TLV_HEADER, tlv_type, self.CRC)
         if print_info_msgs:
-            info("preparing configuration file...", end='')
+            info("preparing configuration file...", end='', hide=self._disable_out)
         # use encode for compatibility with python 2/3
         self._file_p.seek(0)
         self._file_p.write(self.TITLE.encode())
         nv_host_priv_conf_str = '0x%08x' % self._nv_host_priv_conf
-        conf_bytes = " ".join((self.RAW_BYTES, nv_host_priv_conf_str))
+        conf_bytes = " ".join((raw_bytes, nv_host_priv_conf_str))
         self._file_p.write(conf_bytes.encode())
         self._file_p.flush()
         if print_info_msgs:
-            print("Done!")
+            self.printCmd("Done!")
 
     @staticmethod
     def _exec_cmd(cmd):
@@ -158,66 +174,101 @@ class PrivilegeMgr(object):
         print(title)
         print("-"*len(title))
 
-    def printConfInfo(self):
-        current_conf = self.queryConf()
+    def printCmd(self, msg):
+        if not self._disable_out:
+            print(msg)
+
+    def printConfOut(self, priv_conf):
+        self.printTitle("Host configurations")
+        self.printCmd("%-30s: %s" % ("level", priv_conf["level"]))
+        self.printTitle("\nPort functions status:")
+        self.printCmd("%-30s: %s" % ("disable_rshim", priv_conf["disable_rshim"]))
+        self.printCmd("%-30s: %s" % ("disable_tracer", priv_conf["disable_tracer"]))
+        self.printCmd("%-30s: %s" % ("disable_port_owner", priv_conf["disable_port_owner"]))
+        self.printCmd("%-30s: %s\n" % ("disable_counter_rd", priv_conf["disable_counter_rd"]))
+
+    def getConf(self):
+        current_conf = self.queryConf(self._current_host)
+        if current_conf is not None and current_conf["level"] == "PRIVILEGED":
+            for host in range(self._total_hosts):
+                current_conf = self.queryConf(host)
+                if current_conf["level"] == "PRIVILEGED":
+                    break
         if current_conf is not None:
-            self.printTitle("Current device configurations:")
-            print("%-30s: %s"%("level", current_conf["level"]))
-            self.printTitle("\nPort functions status:")
-            print("%-30s: %s"%("disable_rshim", current_conf["disable_rshim"]))
-            print("%-30s: %s"%("disable_tracer", current_conf["disable_tracer"]))
-            print("%-30s: %s"%("disable_port_owner", current_conf["disable_port_owner"]))
-            print("%-30s: %s\n"%("disable_counter_rd", current_conf["disable_counter_rd"]))
+            self.printConfOut(current_conf)
         return current_conf is None
 
-    def queryConf(self):
-        current_conf = {"level" : "PRIVILEGED", "disable_rshim": "FALSE",
-                        "disable_tracer" : "FALSE", "disable_port_owner" : "FALSE",
-                        "disable_counter_rd" : "FALSE"}
-        # updateTlvFile file for query
-        self.updateTlvFile()
-        # run query operation
-        cmd = self.QUERY_CMD_LINE % (self._device,self._file_name)
+    def getNumberOfHosts(self):
+        total_host_num = 1
+        host_number = 0
+        cmd = self.QUERY_MMHI_CMD_LINE % (self._device)
+        exit_code, stdout, stderr = self._exec_cmd(cmd)
+        if exit_code != 0:
+            self._oldFw = True
+            return host_number, total_host_num
+
+        # parsing MMHI from mlxreg out
+        mmhi_out_lines = stdout.split("\n")
+        for line in mmhi_out_lines:
+            if line.startswith(self.MMHI_HOST_NUMBER_FIELD):
+                host_number = int(line.split()[2], 16)
+            elif line.startswith(self.MMHI_HOST_EN_FIELD):
+                host_en = int(line.split()[2], 16)
+                if host_en == 0xff and host_number == 0:
+                    self._oldFw = True
+                    return host_number, total_host_num
+                total_host_num = bin(host_en).count("1")
+                if total_host_num > 16:
+                    raise Exception("Failed to parse MMHI register")
+        return host_number, total_host_num
+
+    def queryConf(self, host_number, hide=False):
+        current_conf = {"host_number":host_number, "level": "PRIVILEGED",
+                        "disable_rshim": "FALSE", "disable_tracer": "FALSE",
+                        "disable_port_owner": "FALSE", "disable_counter_rd": "FALSE"}
+        # UpdateTlvFile file for query
+        self.updateTlvFile(host_number)
+        # Run query operation
+        cmd = self.QUERY_CMD_LINE % (self._device, self._file_name)
         exit_code, stdout, stderr = self._exec_cmd(cmd)
 
         if exit_code != 0:
-            error("Failed to query device configurations")
-            return None
-        else :
+            error("Failed to query device configurations", hide=self._disable_out or hide)
+            return current_conf if self._disable_out else None
+        else:
             indexOfData = stdout.index('Data') + 6
-            conf_data = int(stdout[indexOfData:indexOfData+13], 16)
-            level =  (conf_data & self.LIMITED) >> int(math.log(self.LIMITED, 2))
-            disable_rshim = (conf_data & self.DISABLE_RSHIM) >>\
+            conf_data = int(stdout[indexOfData:indexOfData + 13], 16)
+            level = (conf_data & self.LIMITED) >> int(math.log(self.LIMITED, 2))
+            disable_rshim = (conf_data & self.DISABLE_RSHIM) >> \
                                     int(math.log(self.DISABLE_RSHIM, 2))
-            disable_tracer = (conf_data & self.DISABLE_TRACER) >>\
+            disable_tracer = (conf_data & self.DISABLE_TRACER) >> \
                                     int(math.log(self.DISABLE_TRACER, 2))
-            disable_port_owner = (conf_data & self.DISABLE_PORT_OWNER) >>\
+            disable_port_owner = (conf_data & self.DISABLE_PORT_OWNER) >> \
                                     int(math.log(self.DISABLE_PORT_OWNER, 2))
-            disable_counter_rd = (conf_data & self.DISABLE_COUNTER_RD) >>\
+            disable_counter_rd = (conf_data & self.DISABLE_COUNTER_RD) >> \
                                     int(math.log(self.DISABLE_COUNTER_RD, 2))
-            current_conf.update({"level": "RESTRICTED" if level else "PRIVILEGED"}) 
+            current_conf.update({"level": "RESTRICTED" if level else "PRIVILEGED"})
             current_conf.update({"disable_rshim": "TRUE" if disable_rshim else "FALSE"})
             current_conf.update({"disable_tracer": "TRUE" if disable_tracer else "FALSE"})
             current_conf.update({"disable_port_owner": "TRUE" if disable_port_owner else "FALSE"})
             current_conf.update({"disable_counter_rd": "TRUE" if disable_counter_rd else "FALSE"})
         return current_conf
 
-
-    def setPrivConf(self, re_restrict):
+    def setPrivConf(self, re_restrict, host_number):
         self._nv_host_priv_conf = 0
-        self.updateTlvFile(not re_restrict)
+        self.updateTlvFile(host_number, not re_restrict)
         if not re_restrict:
-            info("configuring device...", end='')
+            info("configuring device...", end='', hide=self._disable_out)
         cmd = self.CONFIG_CMD_LINE % (self._device, self._file_name)
         exit_code, stdout, stderr = self._exec_cmd(cmd)
         if exit_code != 0 and not re_restrict:
-            print("Failed")
-            error("Removing the restriction only effective on the ARM side")
+            self.printCmd("Failed")
+            error("Removing the restriction only effective on the ARM side", hide=self._disable_out)
         if exit_code == 0 and not re_restrict:
-            print("Done!")
+            self.printCmd("Done!")
         return exit_code
 
-    def setRestrictConf(self):
+    def setRestrictConf(self, host_number):
         self._nv_host_priv_conf = self.LIMITED
         if self._disable_rshim:
             self._nv_host_priv_conf |= self.DISABLE_RSHIM
@@ -227,33 +278,53 @@ class PrivilegeMgr(object):
             self._nv_host_priv_conf |= self.DISABLE_COUNTER_RD
         if self._disable_port_owner:
             self._nv_host_priv_conf |= self.DISABLE_PORT_OWNER
-        self.updateTlvFile(True)
-        info("configuring device...", end='')
+        self.updateTlvFile(host_number, True)
+        info("configuring device...", end='', hide=self._disable_out)
         cmd = self.CONFIG_CMD_LINE % (self._device, self._file_name)
         exit_code, stdout, stderr = self._exec_cmd(cmd)
         if exit_code != 0:
-            print("Failed")
-            info("Host is already restricted")
+            self.printCmd("Failed")
+            error("Host is already restricted", hide=self._disable_out)
             exit_code = 0
         else:
-            print("Done!")
+            self.printCmd("Done!")
         return exit_code
 
     def setConf(self):
-        current_conf = self.queryConf()
         exit_code = 0
-        if (not self._privilege) and current_conf and (current_conf["level"] == "RESTRICTED"):
-            self.setPrivConf(True)
-            self.setRestrictConf()
-        elif not self._privilege:
-            self.setRestrictConf()
-        elif self._privilege:
-            exit_code = self.setPrivConf(False)
+        for host in range(self._total_hosts):
+            if host == self._current_host and self._isMH:
+                continue
+            current_conf = self.queryConf(host, True)
+            if current_conf and (not self._privilege) and (current_conf["level"] == "RESTRICTED"):
+                # If current state is restricted and user tried to do re-restriction
+                rc = self.setPrivConf(True, host)
+                if rc == 0:
+                    self.setRestrictConf(host)
+                else:
+                    # If user tried to do re-restrction from host, it will fail
+                    # it should be done from ARM only
+                    error("Host is already restricted", hide=self._disable_out)
+            elif not self._privilege:
+                # Execute restrict command with flag r
+                if not self._isMH and not self._isARM:
+                    error("There is only a single host, it cannot restrict itself", hide=self._disable_out)
+                    exit_code = 1
+                else:
+                    exit_code = self.setRestrictConf(host)
+            elif self._privilege:
+                # Excute privlidge command with flag p
+                exit_code = self.setPrivConf(False, host)
+            # All other hosts are having the same output
+            if not self._disable_out:
+                self._disable_out = True
+        if self._oldFw:
+            info("Notice, you are using old FW version. In order of Multi-Host system FW must be updated")
         return exit_code
 
     def configure(self):
         if self._query:
-            return self.printConfInfo()
+            return self.getConf()
         else:
             return self.setConf()
 
@@ -269,7 +340,7 @@ class PrivilegeMgr(object):
         if exit_code != 0:
             raise PrivilegeException("Unknown device '%s'!" % self._device)
         dev_id = int(stdout, 16)
-        if dev_id not in (self.BLUE_FIELD_DEV_ID, self.BLUE_FIELD2_DEV_ID):
+        if dev_id not in (self.BLUE_FIELD_DEV_ID, self.BLUE_FIELD2_DEV_ID, self.BLUE_FIELD3_DEV_ID):
             raise PrivilegeException(
                 "Device '%s' is not supported, "
                 "only BlueField devices are supported!" % self._device)
@@ -306,7 +377,7 @@ def parse_args():
     options_group.add_argument('--disable_port_owner', action="store_true",
                                help=DISABLE_PORT_OWNER_HELP)
     args = parser.parse_args()
-    
+
     disable_flags = args.disable_rshim or args.disable_tracer or \
                 args.disable_counter_rd or args.disable_port_owner
     rest_flags = args.command[0] in ("r", "restrict")
@@ -332,12 +403,11 @@ def main():
     elif command in ("q", "query"):
         query = True
     retcode = 0
-    mgr = PrivilegeMgr(device,query, privilege, args.disable_rshim,
+    mgr = PrivilegeMgr(device, query, privilege, args.disable_rshim,
                        args.disable_tracer, args.disable_counter_rd,
                        args.disable_port_owner)
     try:
         mgr.validate()
-        mgr.updateTlvFile()
         retcode = mgr.configure()
     except PrivilegeException as exc:
         error(str(exc))

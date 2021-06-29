@@ -61,7 +61,7 @@
 #include <string.h>
 
 #include <unistd.h>
-
+#include <malloc.h>
 #include <netinet/in.h>
 #include <endian.h>
 #include <byteswap.h>
@@ -88,9 +88,6 @@
 #include "packets_layout.h"
 #include "mtcr_tools_cif.h"
 #include "mtcr_icmd_cif.h"
-#ifndef MST_UL
-#include "../mtcr_mlnxos.h"
-#endif
 
 #include "kernel/mst.h"
 
@@ -1641,9 +1638,11 @@ static long supported_dev_ids[] = {
     0xd2f2,     //Quantum2
     0xcf6c,     //Spectrum2
     0xa2d2,     //MT416842 Family BlueField integrated ConnectX-5 network controller
-    0xa2d6,     //MT416846 Family BlueField2 integrated ConnectX-6DX network controller
+    0xa2d6,     //MT42822 Family BlueField2 integrated ConnectX-6DX network controller
+    0xa2dc,     //MT43244 Family BlueField3 integrated ConnectX-7 network controller
     0xcf70,     //Spectrum3
     0xcf80,     //Spectrum4
+    0x1976,     //Schrodinger
     -1
 };
 
@@ -1663,10 +1662,14 @@ static long live_fish_id_database[] = {
     0x20d,
     0x20f,
     0x211,
+    0x214, //BlueField2
     0x212, //Connect-X6DX
     0x216, //Connect-X6LX
-    0x21a, //Connect-X7
+    0x218, //Connect-X7
+    0x21C, //BlueField3
     0x250, //Spectrum3
+    0x254, //Spectrum4
+    0x257, //Quantum2
     -1
 };
 
@@ -2278,6 +2281,11 @@ mfile* mopen_ul_int(const char *name, u_int32_t adv_opt)
         goto open_failed;
     }
     memset(mf->ul_ctx, 0, sizeof(ul_ctx_t));
+
+   // Initialize the user page list.
+    mf->user_page_list.page_list = NULL;
+    mf->user_page_list.page_amount = 0;
+
     mf->dev_name = strdup(name);
     if (!mf->dev_name) {
         goto open_failed;
@@ -2566,6 +2574,9 @@ int mclose_ul(mfile *mf)
         }
         if (mf->dev_name) {
             free(mf->dev_name);
+        }
+        if(mf->user_page_list.page_amount) {
+            release_dma_pages(mf, mf->user_page_list.page_amount);
         }
         free_dev_info_ul(mf);
         free(mf);
@@ -3300,9 +3311,129 @@ const char* m_err2str(MError status)
     }
 }
 
-int allocate_kernel_memory_page(mfile* f, mtcr_alloc_page* page)
+
+int get_dma_pages(mfile* mf, struct mtcr_page_info* page_info,
+                  int page_amount)
 {
-    (void)f;
-    (void)page;
-    return -1;//unsupported
+ #if !defined(__VMKERNEL_UW_NATIVE__)
+    int page_size = sysconf(_SC_PAGESIZE);
+    int pages_size = page_amount * page_size;
+    int page_counter;
+    int ret_value;
+  
+
+    // Parameters validation.
+    if(!mf || !page_info)
+    {
+        return -1;
+    }
+
+    // Save the page amount.
+    page_info->page_amount = page_amount;
+    
+    // Allocate user buffer.
+    mf->user_page_list.page_list = memalign(page_size, pages_size);
+    if (!mf->user_page_list.page_list)
+    {
+        return -1;
+    }
+    
+    // We need to call mlock after the pages allocation in order to
+    //   lock the virtual address space into RAM and preventing that
+    //   memory from being paged to the swap area.
+    mlock(mf->user_page_list.page_list, pages_size);
+
+    mf->user_page_list.page_amount = page_amount;
+
+    // Save the start buffer pointer as an integer.
+    page_info->page_pointer_start = (unsigned long)mf->user_page_list.page_list;
+
+    // Save the virtual address.
+    for (page_counter = 0;
+            page_counter < page_amount;
+            page_counter++)
+    {
+        int current_offest = (page_size * page_counter);
+        page_info->page_addresses_array[page_counter].virtual_address =
+            (u_int64_t)(mf->user_page_list.page_list + current_offest);
+    }
+
+    // Pin the memory in the kernel space.
+    ret_value = ioctl(mf->fd, PCICONF_GET_DMA_PAGES, page_info);
+
+    if (ret_value)
+    {
+        // Failed to get dma address.
+        // Release the memory.
+        release_dma_pages(mf, page_counter);
+        return -1;
+    }
+
+    return 0;
+
+#else
+    (void)mf;
+    (void)page_info;
+    (void)page_amount;
+  
+    // MST VMWare driver is unsupported.
+    return -1;
+#endif
+}
+
+
+int release_dma_pages(mfile* mf, int page_amount)
+{
+#if !defined(__VMKERNEL_UW_NATIVE__)
+    struct mtcr_page_info page_info;
+
+
+    // Parameter validation.
+    if(!mf) {
+        return -1;
+    }
+
+    page_info.page_amount = page_amount;
+
+    ioctl(mf->fd, PCICONF_RELEASE_DMA_PAGES, &page_info);
+    
+    // Free the user space memory.
+    free(mf->user_page_list.page_list);
+    mf->user_page_list.page_list = NULL;
+    mf->user_page_list.page_amount = 0;
+
+    return 0;
+
+#else
+    (void)mf;
+
+    // MST VMWare driver is unsupported.
+    return -1;
+#endif
+}
+
+
+int read_dword_from_conf_space(u_int32_t offset, mfile *mf,
+                               struct mtcr_read_dword_from_config_space* read_config_space)
+{
+#if !defined(__VMKERNEL_UW_NATIVE__)
+    // Parameters validation.
+    if(!mf || !read_config_space)
+    {
+        return -1;
+    }
+
+    read_config_space->offset = offset;
+
+    // Read from the configuration space.
+    return ioctl(mf->fd, PCICONF_READ_DWORD_FROM_CONFIG_SPACE, read_config_space);
+
+#else
+    (void)offset;
+    (void)mf;
+    (void)read_config_space;
+
+    // MST VMWare driver is unsupported.
+    return -1;
+#endif
 }

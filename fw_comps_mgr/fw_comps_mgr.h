@@ -30,20 +30,18 @@
  * SOFTWARE.
  *
  */
-/*
- * fw_comps_mgr.h
- *
- *  Created on: Jul 31, 2016
- *      Author: adham
- */
-
+ /*
+  * fw_comps_mgr.h
+  *
+  *
+  *  Created on: Jul 31, 2016
+  *      Author: adham
+  */
 #ifndef USER_MLXFWOPS_LIB_FW_COMPS_MGR_H_
 #define USER_MLXFWOPS_LIB_FW_COMPS_MGR_H_
 
 #include <vector>
 #include "reg_access/reg_access.h"
-#include "mtcr_ul/mtcr_ul_com.h"
-
 #include "mlxfwops/uefi_c/mft_uefi_common.h"
 #include "mlxfwops/lib/mlxfwops_com.h"
 #ifndef UEFI_BUILD
@@ -61,7 +59,7 @@ using namespace std;
 #ifndef UEFI_BUILD
 #define DPRINTF(args)        do { char *reacDebug = getenv("FW_COMPS_DEBUG"); \
                                   if (reacDebug != NULL) {  printf("\33[2K\r"); \
-                                      printf("[FW_COMPS_DEBUG]: -D- "); printf args; fflush(stdout);} } while (0)
+                                      printf("%s:%d: ",__FILE__, __LINE__); printf args; fflush(stdout);} } while (0)
 #else
 #define DPRINTF(...)
 #endif
@@ -164,6 +162,7 @@ public:
         COMPID_GEARBOX = 0xA,
         COMPID_CONGESTION_CONTROL = 0xB,
         COMPID_LINKX = 0xC,
+        COMPID_CRYPTO_TO_COMMISSIONING = 0xD,
         COMPID_UNKNOWN = 0xff,
     } comps_ids_t;
 
@@ -387,6 +386,7 @@ public:
     bool RefreshComponentsStatus(comp_status_st* ComponentStatus = NULL);
     bool GetComponentLinkxProperties(FwComponent::comps_ids_t compType, component_linkx_st *cmpLinkX);
     void GenerateHandle();
+    bool isMCDDSupported() { return isDmaSupported; };
 private:
 
     typedef enum {
@@ -498,6 +498,8 @@ private:
     reg_access_status_t getGI(mfile *mf, mgirReg *gi);
     bool           extractMacsGuids(fwInfoT *fwQuery);
     void           extractRomInfo(mgirReg *mgir, fwInfoT *fwQuery);
+    bool           isDMAAccess();
+    bool           fallbackToDirectAccess();
     
     std::vector<comp_query_st> _compsQueryMap;
     bool _refreshed;
@@ -525,8 +527,9 @@ private:
     bool _linkXFlow;
     bool _activationNeeded;
     bool _downloadTransferNeeded;
-    int _activation_delay_sec;
+    u_int8_t _activation_delay_sec;
     int _rejectedIndex;
+    bool _isDelayedActivationCommandSent;
 #ifndef UEFI_BUILD
     trm_ctx _trm;
 #endif

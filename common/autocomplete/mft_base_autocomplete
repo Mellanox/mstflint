@@ -1,0 +1,460 @@
+# Copyright (c) Jun 2021 Mellanox Technologies LTD. All rights reserved.
+#
+# This software is available to you under a choice of one of two
+# licenses.  You may choose to be licensed under the terms of the GNU
+# General Public License (GPL) Version 2, available from the file
+# COPYING in the main directory of this source tree, or the
+# OpenIB.org BSD license below:
+#
+#     Redistribution and use in source and binary forms, with or
+#     without modification, are permitted provided that the following
+#     conditions are met:
+#
+#      - Redistributions of source code must retain the above
+#        copyright notice, this list of conditions and the following
+#        disclaimer.
+#
+#      - Redistributions in binary form must reproduce the above
+#        copyright notice, this list of conditions and the following
+#        disclaimer in the documentation and/or other materials
+#        provided with the distribution.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+# BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+# ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+PYTHON_EXEC=`find /usr/bin /bin/ /usr/local/bin -iname 'python*' 2>&1 | grep -e='*python[0-9,.]*' | sort -d | head -n 1`
+which python3 >/dev/null 2>&1
+if test $? -eq 0 ; then
+    PYTHON_EXEC='/usr/bin/env python3'
+    else
+    which python2 >/dev/null 2>&1
+    if test $? -eq 0 ; then
+        PYTHON_EXEC='/usr/bin/env python2'
+    fi
+fi
+
+
+_devlist()
+{
+   local list
+   list=$(mst status -v | grep \/dev | awk -F' ' '{print $2}')
+   if [[ -n "$list" ]] ; then
+      mst status -v | grep \/dev | awk -F' ' '{print $2}'
+   else
+      mst status -v | grep : | awk -F' ' '{print $3}'
+   fi
+}
+
+_getDataFromHash () {
+  hashNodeStr=$1
+  hashNodeDataCommand=$2
+  keyCommand=$3
+
+  hashNodeStr=$( echo $hashNodeStr | sed  's/[-]*//g' )
+  hashCommand=$keyCommand"$hashNodeStr[$hashNodeDataCommand]"
+  hashCommand="echo "'$'"{$hashCommand}"
+
+  eval $hashCommand
+}
+
+_setDataToHash () {
+    hashNodeStr=$1
+    hashNodeDataCommand=$2
+    foramt=$3
+    val=$4
+
+    hashNodeStr=$( echo $hashNodeStr | sed  's/[-]*//g' )
+
+
+
+    printf -v "test_mode["upperNeed"]" '%d' 2
+    #printf -v "$hashNodeStr[$hashNodeDataCommand]" "$format" $val
+}
+
+_setUpperNeededToHash () {
+  _setDataToHash "$1" "upperNeed" '%d'  $2
+}
+
+_getSonFromShortCutsFromHash () {
+   _getDataFromHash shortcuts "$1" ''
+}
+
+_getShortCutsListFromHash () {
+  _getDataFromHash shortcuts "@" '!'
+}
+
+_getSonsFromHash () {
+  _getDataFromHash $1 "sons" ''
+}
+
+_getNumOfValFromHash() {
+  _getDataFromHash $1 "nodeType" ''
+}
+
+_getExtraFromHash () {
+  _getDataFromHash $1 "extra" ''
+}
+
+_getUpperNeedFromHash () {
+  _getDataFromHash $1 "upperNeed" ''
+}
+
+_getLastCommandIndexFromHash () {
+  _getDataFromHash $1 "lastCommandIndex" ''
+}
+
+_getDelimiterFromHash() {
+   _getDataFromHash $1 "delimiter" ''
+}
+
+_sortString () {
+  str=$1
+  echo $str | tr ' ' '\n' | sort | tr '\n' ' '
+}
+
+_getCmdLineUpToIndex () {
+  index=$1
+  len=${#COMP_WORDS[@]}
+  nodeWordIndex=$(( len - index ))
+  echo "${COMP_WORDS[@]:$nodeWordIndex}"
+
+}
+
+_getDistanceFromCmdEnd () {
+  len=${#COMP_WORDS[@]}
+  index=$1
+  echo $(( len - index ))
+
+}
+
+_isFirstSon () {
+  distanceFromLast=$( _getDistanceFromCmdEnd $1 );
+  ret=0
+  if [[ distanceFromLast -eq 1 ]]; then ret=1; fi;
+  echo $ret
+}
+
+_getListOneWithoutListTwoCommand() {
+  list1="$(  _sortString "$1" )"
+  list2="$(  _sortString "$2" )"
+  comm -23 <(compgen -W "$list1" ) <(compgen -W "$list2" )
+}
+
+_getListOneWithoutListTwo () {
+  list1="$1"
+  list2="$2"
+  ret=""
+  if [[ $list1 != "" ]]; then ret=$( _getListOneWithoutListTwoCommand "$list1" "$list2" ); fi;
+  echo "$ret"
+}
+
+_splitStringOnDelimiter () {
+  str=$1
+  delimiter=$2
+  echo $str | tr $delimiter " "
+}
+
+_getLastStringElemnentOnDelimeter () {
+  str=$1
+  delimiter=$2
+  if [[ $str == "" ]]; then echo $str;
+  else strList=( $( _splitStringOnDelimiter $str $delimiter ) );
+  echo ${strList[-1]};
+  fi;
+}
+
+_addDelimiterToStringList() {
+  str=$1
+  delimiter=$2
+  echo "$str" | sed "s/[^ ]* */$delimiter&/g"
+}
+
+_getLastCharOfString () {
+  str=$1
+  echo "${str: -1}"
+}
+
+_isWordslistContainsWord() {
+  wordsList=$1
+  word=$2
+  [[ $word != "" ]] && [[ $wordsList =~ (^|[[:space:]])$word($|[[:space:]]) ]] && echo 1 || echo 0
+}
+
+_printDebug () {
+ debugMsg=$1
+
+ echo -e "\n $debugMsg"
+
+}
+
+_getLastTypeFourValues () {
+  currentVal="${COMP_WORDS[COMP_CWORD]}"
+  str=$1
+  curLength=${#str}
+  currValLen=${#currentVal}
+  curLength=$(( currValLen - curLength ))
+
+  echo "${currentVal: 0 : $curLength}"
+}
+
+_deleteSpeedsFromCur () {
+  local cur=$1
+  speedsList=( $(compgen -W "$2" ) )
+  for speed in  ${speedsList[@]}; do cur=$( echo $cur | sed "s/$speed//g" ); done
+
+  echo $cur
+}
+
+_getNodeTypeIfExist () {
+  local prev=$1
+  local nodeType=-1
+  if [[ $nodes == *"$prev"* ]]; then nodeType=$( _getNumOfValFromHash $prev ); fi
+  echo $nodeType
+}
+
+_isLastCommand () {
+  index=$1
+  lastCommand=$2
+  ret=0
+  if [[ index -eq lastCommand ]] || [[ lastCommand -eq -1 ]]; then ret=1; fi;
+  echo $ret
+}
+
+_getCurrentTypeFour() {
+  prev=$1;
+  nodeType=$2
+  cur="$3";
+  sonsList="$( _getSonsFromHash $prev )";
+  if [[ $( _getLastCharOfString $cur ) == "," ]] ; then cur="";  else cur="$( _getLastStringElemnentOnDelimeter "$cur" "," )"; fi;
+  if [[ $( _isWordslistContainsWord "$sonsList" "$cur" ) -eq 1 ]]; then cur=""; fi;
+  cur=$( _deleteSpeedsFromCur "$cur" "$sonsList"  );
+
+  echo "$cur"
+}
+
+_getCurrent() {
+  prev=$1
+  nodeType=$2
+  cur="${COMP_WORDS[COMP_CWORD]}";
+  if [[ nodeType -eq 4 ]]; then cur=$( _getCurrentTypeFour $prev $nodeType $cur ); fi;
+
+  echo "$cur"
+}
+
+_isLastValPartOfSons () {
+  speedsList=( $(compgen -W "$1" ) )
+  lastVal=$2
+  local ret=0
+  for speed in  ${speedsList[@]}; do if [[ $speed == *"$lastVal"* ]]; then ret=1; fi ; done
+
+  echo $ret
+}
+
+_removeShownSpeeds () {
+  sonsList="$1"
+
+  cur="${COMP_WORDS[COMP_CWORD]}"
+  speedShown="$( _splitStringOnDelimiter "$cur" "," )";
+  speedShown="$speedShown $( _addDelimiterToStringList "$speedShown" "," )" ;
+  sonsList="$(  _getListOneWithoutListTwo "$sonsList" "$speedShown" )";
+
+  echo "$sonsList"
+}
+
+_getSonsFromTypeFour () {
+    local cur="${COMP_WORDS[COMP_CWORD]}"
+    local sonsList="$1"
+    local prev="$2"
+    local lastVal="$3"
+    local speedShown=""
+    local extraSons="$( _getExtraFromHash $prev )"
+    if [[ $( _isLastValPartOfSons "$sonsList" "$lastVal" ) -eq 0 ]]; then
+        sonsList="StringVal"
+    elif [[ $( _isWordslistContainsWord "$sonsList" "$( _getLastStringElemnentOnDelimeter "$cur" "," )" )  -eq 1 ]] && [[ $( _getLastCharOfString $cur ) != "," ]]; then
+        if [[ $extraSons == "" ]]; then
+            if [[ "$( _removeShownSpeeds "$sonsList"  )" == "" ]]; then
+                sonsList="StringValSpace";
+            else
+                sonsList=",";
+            fi;
+        else
+            sonsList=$( _addDelimiterToStringList "$sonsList" "," );sonsList="$sonsList ""$extraSons";
+        fi
+    elif [[ $( _isWordslistContainsWord "${COMP_WORDS[@]}" "," ) -eq 1 ]]; then sonsList="$sonsList ""$extraSons";
+    fi;
+
+    speedShown="$( _splitStringOnDelimiter "$cur" "," )";
+    speedShown="$speedShown $( _addDelimiterToStringList "$speedShown" "," )" ;
+    sonsList="$(  _getListOneWithoutListTwo "$sonsList" "$speedShown" )";
+    echo "$sonsList"
+}
+
+_changeShortCutsOnCmd () {
+  local cmdLine="$1"
+
+  cmdLines=( $(compgen -W "$cmdLine" ) )
+  for line in  ${cmdLines[@]}; do shortCutsVal="$( _getSonFromShortCutsFromHash "$line" )"; if [[ $shortCutsVal != "" ]]; then  cmdLine=$( echo $cmdLine | sed "s/$line/$shortCutsVal/g" );fi; done
+
+  echo "$cmdLine"
+}
+
+_removeShownCommandFromSons () {
+  index=$1
+  sonList="$2"
+  cmd_line="$( _getCmdLineUpToIndex $index )"
+  cmd_line="$( _changeShortCutsOnCmd "$cmd_line" )"
+  sonsList=$(  _getListOneWithoutListTwo "$sonsList" "$cmd_line" );
+
+  echo "$sonsList"
+}
+
+_getSonsList () {
+    local index=$1
+    local prev="$2"
+    nodeType=$3
+    lastVal=$4
+    local speedShown=""
+    local sonsList=""
+    if [[ nodeType -eq -1 ]]; then
+        return;
+    fi
+
+    local lastCommandIndex=$( _getLastCommandIndexFromHash $prev )
+    if [[ $( _isLastCommand $index $lastCommandIndex ) -ne 1 ]]; then
+        sonsList="$( _getExtraFromHash $prev )";
+        _setUpperNeededToHash $prev 0
+        echo "$( _removeShownCommandFromSons $index "$sonsList" )"
+        return;
+    fi
+
+
+    sonsList="$( _getSonsFromHash $prev )"
+
+    if [[ nodeType -eq 4 ]]; then
+        sonsList="$( _getSonsFromTypeFour "$sonsList" "$prev" "$lastVal" )"
+    fi;
+
+    if [[ nodeType -eq 2 ]]; then
+        sonsList="$( _devlist )"
+    fi;
+
+    echo "$( _removeShownCommandFromSons $index "$sonsList" )"
+}
+
+_getLenOfListFromString () {
+  strList=$1
+  strListAsList=( $ strList )
+  echo ${#strListAsList[@]}
+}
+
+_getLenForStringVal () {
+  str="$1"
+  prev="$2"
+  [[ $str == "StringVal" ]] && echo $( _getLenOfListFromString "$(  _getExtraFromHash $prev )" ) || echo -1
+}
+
+_isCompoptNeeded () {
+  index=$1
+  nodeType=$2
+  sonsList=$3
+
+  [[ nodeType -eq 4 ]] && [[ $( _isLastCommand $index 2 ) -eq 1 ]] && echo 1 || echo 0
+}
+
+_getFourTypeOneValComplite () {
+
+ if [[ $( _isWordslistContainsWord "$( _getSonsFromHash $prev )" "$compreplyVal" ) ]]; then
+    compreplyVal="$( _getLastTypeFourValues $cur)""$compreplyVal";
+    else
+    compreplyVal=" $compreplyVal";
+ fi;
+
+  echo $compreplyVal
+}
+
+_getCurrentWhitoutLastVal () {
+  lastVal=$1
+  cur="${COMP_WORDS[COMP_CWORD]}"
+
+  echo $cur | sed "s/$lastVal//g"
+
+}
+
+_getCompreplyVal () {
+  sonsList="$1"
+  cur="$2"
+  nodeType=$3
+  prev="$4"
+  index=$5
+  isUpperCaseNeed=$( _getUpperNeedFromHash $prev )
+  local extraSons="$( _getExtraFromHash $prev )"
+  local compreplyVal=""
+  extraSonsList=( $extraSons )
+  extraSonsLen=${#extraSonsList[@]}   #$( _getLenOfListFromString  "$( _getExtraFromHash $prev )")
+  local lastCommandIndex=$( _getLastCommandIndexFromHash $prev )
+  
+  if [[ isUpperCaseNeed -eq 1 ]] && [[ $( _isLastCommand $index $(( lastCommandIndex + 1 )) ) -eq 1 ]]; then
+      compreplyVal="$(compgen -W "$sonsList" -- $(echo ${cur} | awk '{print toupper($0)}') )";
+  else
+      compreplyVal="$(compgen -W "$sonsList" -- ${cur} )";
+  fi
+  compreplyValList=( $compreplyVal )
+  if [[ nodeType -eq 4 ]] && [[ ${#compreplyValList[@]} -eq 1 ]]; then compreplyVal="$( _getFourTypeOneValComplite $compreplyVal)"; fi;
+  if [[ $sonsList != "StringVal" ]]; then
+    if [[  $sonsList != "StringValSpace" ]]; then
+        COMPREPLY=( $compreplyVal  );
+    else
+        COMPREPLY=( "${COMP_WORDS[COMP_CWORD]}"" " );
+    fi
+  else
+    if [[ extraSonsLen -eq 1 ]]; then
+        COMPREPLY=( "$( _getCurrentWhitoutLastVal  "$cur" ) $extraSons " );
+    else
+        COMPREPLY=( "$( _getCurrentWhitoutLastVal  "$cur" ) $cur" );
+    fi
+  fi
+
+}
+
+_getFullNodeIfShortcut () {
+  local prev="$1"
+  shortsList="$( _getShortCutsListFromHash )"
+
+  
+  if [[ $( _isWordslistContainsWord "$shortsList" "$prev" ) -eq 1 ]]; then prev="$( _getSonFromShortCutsFromHash "$prev" )"; fi
+
+  echo "$prev"
+}
+
+_runAutoComplete () {
+    local  cur="${COMP_WORDS[COMP_CWORD]}"
+    if [[ ${cur} == \/* || ${cur} == \.\/* ]] ; then
+        COMPREPLY=()
+        _filedir
+	return 0
+    fi;
+    local prev=""
+    local sonsList=""
+    local nodeType=0
+    local index=1
+    while [[ $sonsList == "" ]]; do
+        if [[ index -gt COMP_CWORD ]]; then return 0; fi;
+    	prev="${COMP_WORDS[COMP_CWORD-$index]}"
+        prev="$( _getFullNodeIfShortcut $prev )"
+        nodeType=$( _getNodeTypeIfExist $prev );
+        cur=$(_getCurrent $prev $nodeType)
+        sonsList="$( _getSonsList $index $prev $nodeType $cur  )";
+        index=$(( index + 1 ));
+        #echo -e "\n/n prev: $prev nodeType: $nodeType _isLastCommand: $(_isLastCommand  $index ) sonsList: $sonsList Cur: $cur"
+    done;
+    if [[ $(_isCompoptNeeded $index $nodeType "$sonsList") -eq 1 ]]; then compopt -o nospace; fi;
+    _getCompreplyVal "$sonsList" "$cur" $nodeType "$prev" $index
+    return 0
+}
+

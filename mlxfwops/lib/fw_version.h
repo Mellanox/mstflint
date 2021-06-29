@@ -35,7 +35,6 @@
 #include <iostream>
 #include <string>
 #include <stdexcept>
-#include "dev_mgt/tools_dev_types.h"
 
 #ifdef __WIN__
 
@@ -73,7 +72,7 @@ class MLXFWOP_API FwVersion {
 public:
     FwVersion();
     FwVersion(unsigned short int, unsigned short int, unsigned short int,
-              const std::string& = "", unsigned short devID = DeviceUnknown);
+            const std::string& = "");
     virtual ~FwVersion();
     FwVersion(const FwVersion&);
     FwVersion& operator=(const FwVersion&);
@@ -98,11 +97,11 @@ protected:
     unsigned short int _minor;
     unsigned short int _subminor;
     std::string _devBranchTag;
-    unsigned short _devID;
     virtual std::string get_master_version(const std::string& format,
             bool even_subminor = false) const;
 private:
     bool is_master_branch() const;
+    bool is_Switch() const;
     /*
      * currently we have 3 FW version format
      * 0: MM.mm.ssss

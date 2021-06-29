@@ -46,6 +46,9 @@
 
 #if !defined(NO_OPEN_SSL)
 #include <mlxsign_lib/mlxsign_lib.h>
+#if !defined(NO_DYNAMIC_ENGINE)
+#include <mlxsign_lib/mlxsign_openssl_engine.h>
+#endif
 #endif
 #include "mlxcfg_generic_commander.h"
 #include "mlxcfg_utils.h"
@@ -116,6 +119,7 @@ enum OP {EQUAL, NOT_EQUAL};
 
 const u_int8_t debugTokenId = 0x5;
 const u_int8_t csTokenId = 0x7;
+const u_int8_t btcTokenId = 0x8;
 const u_int32_t idMlnxId = 0x10e;
 
 void GenericCommander::supportsNVData()
@@ -1178,51 +1182,78 @@ void GenericCommander::XML2Bin(const string& xml, vector<u_int32_t>& buff, bool 
     }
 }
 
-void GenericCommander::sign(vector<u_int32_t>& buff, const string& privateKeyFile, const string& keyPairUUid)
+void GenericCommander::sign(vector<u_int32_t>& buff,
+                            const string& privateKeyFile,
+                            const string& keyPairUUid,
+                            const string& openssl_engine,
+                            const string& openssl_key_identifier)
 {
     (void)keyPairUUid;
-#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
-    MlxSignRSA rsa;
-    MlxSignSHA *mlxSignSHA = NULL;
+#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL) && !defined(NO_DYNAMIC_ENGINE)
+    MlxSignSHA* mlxSignSHA = NULL;
     vector<u_int32_t> encDigestDW;
     vector<u_int8_t> digest, encDigest, bytesBuff;
     MlxSign::SHAType shaType;
 
     copyDwVectorToBytesVector(buff, bytesBuff);
 
-    if (privateKeyFile.empty()) {
-        shaType = MlxSign::SHA256;
-        mlxSignSHA = new MlxSignSHA256();
-    } else {
-        int rc = rsa.setPrivKeyFromFile(privateKeyFile);
-        if (rc) {
-            throw MlxcfgException("Failed to set private key (rc = 0x%x)\n", rc);
+    if (!openssl_key_identifier.empty()) {
+        // Sign with HSM engine
+        shaType = MlxSign::SHA512;
+        MlxSign::OpensslEngineSigner engineSigner(openssl_engine, openssl_key_identifier);
+        int rc = engineSigner.init();
+        if (!rc) {
+            rc = engineSigner.sign(bytesBuff, encDigest);
         }
-        int privKeyLength = rsa.getPrivKeyLength();
-        if (privKeyLength == 0x100) {
+        if (rc) {
+            throw MlxcfgException(
+                "Failed to set private key and sign with %s OpenSSL engine (rc = 0x%x)\n",
+                openssl_engine.c_str(), rc);
+        }
+    }
+    else {
+        MlxSignRSA rsa;
+        if (privateKeyFile.empty()) {
             shaType = MlxSign::SHA256;
             mlxSignSHA = new MlxSignSHA256();
-        } else if (privKeyLength == 0x200) {
-            shaType = MlxSign::SHA512;
-            mlxSignSHA = new MlxSignSHA512();
-        } else {
-            throw MlxcfgException("Invalid length of private key(%d bytes)",
-                                  privKeyLength);
+        }
+        else {
+            int rc = rsa.setPrivKeyFromFile(privateKeyFile);
+            if (rc) {
+                throw MlxcfgException("Failed to set private key (rc = 0x%x)\n",
+                                      rc);
+            }
+            int privKeyLength = rsa.getPrivKeyLength();
+            if (privKeyLength == 0x100) {
+                shaType = MlxSign::SHA256;
+                mlxSignSHA = new MlxSignSHA256();
+            }
+            else if (privKeyLength == 0x200) {
+                shaType = MlxSign::SHA512;
+                mlxSignSHA = new MlxSignSHA512();
+            }
+            else {
+                throw MlxcfgException("Invalid length of private key(%d bytes)",
+                                      privKeyLength);
+            }
+        }
+
+        (*mlxSignSHA) << bytesBuff;
+        mlxSignSHA->getDigest(digest);
+        delete mlxSignSHA;
+
+        if (privateKeyFile.empty()) {
+            encDigest.insert(encDigest.begin(), digest.begin(), digest.end());
+        }
+        else {
+            int rc = rsa.sign(shaType, digest, encDigest);
+            if (rc) {
+                throw MlxcfgException(
+                    "Failed to encrypt the digest (rc = 0x%x)\n", rc);
+            }
         }
     }
 
-    (*mlxSignSHA) << bytesBuff;
-    mlxSignSHA->getDigest(digest);
-    delete mlxSignSHA;
-
-    if (privateKeyFile.empty()) {
-        encDigest.insert(encDigest.begin(), digest.begin(), digest.end());
-    } else {
-        int rc = rsa.sign(shaType, digest, encDigest);
-        if (rc) {
-            throw MlxcfgException("Failed to encrypt the digest (rc = 0x%x)\n", rc);
-        }
-    }
     //fetch the signature tlv from the database and fill in the data
     if (shaType == MlxSign::SHA256) {
         vector<u_int32_t> signTlvBin;
@@ -1298,13 +1329,8 @@ void GenericCommander::sign(vector<u_int32_t>& buff, const string& privateKeyFil
 #endif
 }
 
-void GenericCommander::sign(vector<u_int32_t>& buff)
-{
-    string keyPairUUid;
-    sign(buff, "", keyPairUUid);
-}
-
-void GenericCommander::checkConfTlvs(const vector<TLVConf*>& tlvs, FwComponent::comps_ids_t& compsId)
+void GenericCommander::checkConfTlvs(const vector<TLVConf*>& tlvs,
+                                     FwComponent::comps_ids_t& compsId)
 {
     bool dbgCompFound = false;
     bool csCompFound = false;
@@ -1320,6 +1346,10 @@ void GenericCommander::checkConfTlvs(const vector<TLVConf*>& tlvs, FwComponent::
                    tlv->_id == csTokenId) {
             csCompFound = true;
             compsId = FwComponent::COMPID_CS_TOKEN;
+        } else if (tlv->_tlvClass == NVFile &&
+            tlv->_id == btcTokenId) {
+            csCompFound = true;
+            compsId = FwComponent::COMPID_CRYPTO_TO_COMMISSIONING;
         } else if (tlv->_tlvClass == 0x0 &&
                    tlv->_id == idMlnxId) {
             idMlnxCompFound = true;
@@ -1351,7 +1381,7 @@ void GenericCommander::orderConfTlvs(vector<TLVConf*>& tlvs)
     VECTOR_ITERATOR(TLVConf*, tlvs, it) {
         TLVConf *tlv = *it;
         if (((tlv->_tlvClass == NVFile) &&
-             (tlv->_id == debugTokenId || tlv->_id == csTokenId)) ||
+             (tlv->_id == debugTokenId || tlv->_id == csTokenId || tlv->_id == btcTokenId)) ||
             (tlv->_tlvClass == Global && tlv->_id == idMlnxId)) {
             *it = tlvs.front();
             tlvs.front() = tlv;

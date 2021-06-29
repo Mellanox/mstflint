@@ -63,9 +63,9 @@ public:
 private:
     bool prepareParameters(u_int32_t _updateHandle, mcddReg* accessData,
         int offset, u_int32_t* data, int data_size, int access, int leftSize,
-        mtcr_alloc_page_t page, mtcr_alloc_page_t mailbox_page);
-    bool readFromDataPage(mcddReg* accessData, mtcr_alloc_page_t page, u_int32_t* data, int data_size, int leftSize);
-    std::vector <mtcr_alloc_page_t> _allocatedListVect;
+        mtcr_page_addresses page, mtcr_page_addresses mailbox_page);
+    bool readFromDataPage(mcddReg* accessData, mtcr_page_addresses page, u_int32_t* data, int data_size, int leftSize);
+    std::vector <mtcr_page_addresses> _allocatedListVect;
     fw_comps_error_t _lastFwError;
     reg_access_status_t _lastRegisterAccessStatus;
     void setLastError(fw_comps_error_t error) {_lastFwError = error;}

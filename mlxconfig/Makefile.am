@@ -94,8 +94,8 @@ else
 endif
 
 if ENABLE_OPENSSL
-mstconfig_LDADD +=   $(MLXSIGN_LIB) -lcrypto
-libmlxcfg_a_LIBADD +=   $(MLXSIGN_LIB) -lcrypto
+mstconfig_LDADD +=   $(MLXSIGN_LIB) -lcrypto -lssl
+libmlxcfg_a_LIBADD +=   $(MLXSIGN_LIB) -lcrypto -lssl
 else
 AM_CXXFLAGS += -DNO_OPEN_SSL
 endif

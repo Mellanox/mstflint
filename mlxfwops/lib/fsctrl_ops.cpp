@@ -173,11 +173,49 @@ bool FsCtrlOperations::FsIntQuery()
             if (it->getType() == FwComponent::COMPID_DBG_TOKEN) {
                 _fsCtrlImgInfo.security_mode |= SMM_DBG_TOKEN;
             }
+            if (it->getType() == FwComponent::COMPID_CRYPTO_TO_COMMISSIONING) {
+                _fsCtrlImgInfo.security_mode |= SMM_CRYTO_TO_COMMISSIONING;
+            }
+
         }
     }
 
     strcpy(_fwImgInfo.ext_info.psid, fwQuery.psid);
     strcpy(_fsCtrlImgInfo.orig_psid, fwQuery.psid);
+
+    /*
+     * MFSV (Manangment FW Security Version)
+     */
+    u_int8_t mfsv_reg_supported = 0;
+    reg_access_status_t rc = ME_ERROR;
+    mfile* mf = getMfileObj();
+
+    // Check if MFSV (register-id 0x9115) is supported
+    tools_open_mcam mcam;
+    memset(&mcam, 0, sizeof(mcam));
+    mcam.access_reg_group = 2;
+    rc = reg_access_mcam(mf, REG_ACCESS_METHOD_GET, &mcam);
+    if (rc == ME_OK){
+        mfsv_reg_supported = EXTRACT(mcam.mng_access_reg_cap_mask[13], 5, 1); // bit 21 
+    }
+    DPRINTF(("mfsv_reg_supported = %d\n",mfsv_reg_supported));
+
+    if (_fsCtrlImgInfo.sec_boot == 1 && _fsCtrlImgInfo.life_cycle == GA_SECURED && mfsv_reg_supported == 1){
+        _fsCtrlImgInfo.device_security_version_access_method = MFSV;
+    } else {
+        _fsCtrlImgInfo.device_security_version_access_method = NOT_VALID;
+    }
+
+    // GET MFSV 
+    if (mfsv_reg_supported == 1){
+        struct reg_access_hca_mfsv_reg mfsv_reg;
+        memset(&mfsv_reg, 0, sizeof(mfsv_reg));
+        rc = reg_access_mfsv(mf, REG_ACCESS_METHOD_GET, &mfsv_reg);
+        if (rc == ME_OK){
+            //// reg_access_hca_mfsv_reg_print(&mfsv_reg, stdout, 4);
+            memcpy(&(_fsCtrlImgInfo.device_security_version_mfsv),  &mfsv_reg,  sizeof(reg_access_hca_mfsv_reg)); 
+        }
+    }
 
     /*
      * Fill ROM info
@@ -459,6 +497,19 @@ bool FsCtrlOperations::_Burn(std::vector <u_int8_t> imageOps4MData, ExtBurnParam
     compsToBurn.push_back(bootImageComponent);
     if (!_fwCompsAccess->lock_flash_semaphore()) {
         return errmsg(FwCompsErrToFwOpsErr(_fwCompsAccess->getLastError()), "%s", _fwCompsAccess->getLastErrMsg());
+    }
+    if (_fwCompsAccess->isMCDDSupported()) {
+        // Checking if BME is disabled to print indication to user
+        // TODO - this is code duplication from fw_comps_mgr_abstract_access.cpp, move to a single place
+        int COMMAND_REG_OFFSET = 0x4;
+        int BME_MASK = 0x00000004;
+
+        mtcr_read_dword_from_config_space result;
+        int rc = read_dword_from_conf_space(COMMAND_REG_OFFSET, _fwCompsAccess->getMfileObj(), &result);
+
+        if ((rc != 0) || !(result.data & BME_MASK)) {
+            printf("-W- DMA burning is not supported due to BME is unset (Bus Master Enable).\n");
+        }
     }
     if (!_fwCompsAccess->burnComponents(compsToBurn, &burnParams.ProgressFuncAdv)) {
         _fwCompsAccess->unlock_flash_semaphore();

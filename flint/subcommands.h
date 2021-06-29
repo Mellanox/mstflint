@@ -253,7 +253,8 @@ private:
     bool displayFs2Uids(const fw_info_t& fwInfo);
     bool checkMac(u_int64_t mac, string& warrStr);
     FlintStatus queryMFA2();
-    bool PrintLinkXQuery(string& outputString, const string& host, int deviceIndex, const comp_status_st& ComponentStatus, const component_linkx_st& linkx_data, char* delimeter);
+    void AddTableHeaderForCSVFormat(string& outputString);
+    bool PrintLinkXQuery(string& outputString, const string& host, int deviceIndex, const comp_status_st& ComponentStatus, const component_linkx_st& linkx_data, char* delimeter, bool isCSV);
     FlintStatus QueryLinkX(string deviceName, string outputFile, std::vector<int> deviceIds);
 
 public:

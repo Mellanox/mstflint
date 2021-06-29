@@ -116,6 +116,21 @@ string encodeXml(const string& data) {
     return buffer;
 }
 
+string addPathSuffixForArraySupport(string path) {
+    if (path[path.length()-1] == ']') { //Won't add suffix if leaf is in Array
+        return "";
+    }
+    size_t pos = 0;
+    string suffix = "";
+    while ((pos = path.find("[")) != std::string::npos) {//Add array index number in path to suffix.
+        size_t end_pos = path.find("]");
+        size_t len  = end_pos - pos - 1;
+        suffix = suffix + "_" + path.substr(pos+1, len);
+        path.erase(0, end_pos+1);
+    }
+    return suffix;
+}
+
 string indentString(int i) {
     string s;
     while (i--) {
@@ -560,7 +575,7 @@ string AdbConfig::toXml() {
  **/
 AdbInstance::AdbInstance() :
     fieldDesc(NULL), nodeDesc(NULL), parent(NULL), offset(0xffffffff), size(0),
-            arrIdx(0), unionSelector(NULL), isDiff(false), userData(NULL)
+            arrIdx(0), isNameBeenExtended(false), unionSelector(NULL), isDiff(false), userData(NULL)
 
 {
 
@@ -1082,14 +1097,18 @@ bool AdbInstance::isConditionValid(map<string, string> *valuesMap) {
 /**
  * Function: AdbInstance::getLeafFields
  **/
-vector<AdbInstance*> AdbInstance::getLeafFields() {
+vector<AdbInstance*> AdbInstance::getLeafFields(bool extendenName) {
     vector<AdbInstance*> fields;
 
     for (size_t i = 0; i < subItems.size(); i++) {
         if (subItems[i]->isNode()) {
-            vector<AdbInstance*> subFields = subItems[i]->getLeafFields();
+            vector<AdbInstance*> subFields = subItems[i]->getLeafFields(extendenName);
             fields.insert(fields.end(), subFields.begin(), subFields.end());
         } else {
+            if (extendenName && !subItems[i]->isNameBeenExtended) {
+                subItems[i]->name = subItems[i]->name + addPathSuffixForArraySupport(subItems[i]->fullName());
+                subItems[i]->isNameBeenExtended = true;
+            }
             fields.push_back(subItems[i]);
         }
     }
@@ -1642,13 +1661,14 @@ vector<AdbInstance*> Adb::createInstance(AdbField *field,
             NodesMap::iterator it = nodesMap.find(field->subNode);
             if (it == nodesMap.end()) {
                 delete inst;
-                raiseException(allowMultipleExceptions, 
+                raiseException(allowMultipleExceptions,
                               "Can't find the definition for subnode: " + field->subNode + " of field: " + field->name,
-                              ExceptionHolder::ERROR_EXCEPTION);                
+                              ExceptionHolder::ERROR_EXCEPTION);
             } else {
                 inst->nodeDesc = it->second;
             }
         }
+
         inst->name = field->name;
         inst->arrIdx = 0;
         inst->size = field->eSize();

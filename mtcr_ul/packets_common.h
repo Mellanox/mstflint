@@ -144,6 +144,10 @@
 #       define ARCH_x86_64
 #   elif defined(__ia64__)
 #       define ARCH_ia64
+#   elif defined(__m68k__)
+#       define ARCH_m68k
+#   elif defined(__hppa__)
+#       define ARCH_hppa
 #   elif defined(__PPC64__) || defined(__s390x__)
 #       define ARCH_ppc64
 #   elif defined(__PPC__)
@@ -152,6 +156,8 @@
 #       define ARCH_arm64
 #   elif defined(__arm__)
 #       define ARCH_arm6l
+#   elif defined(__riscv)
+#       define ARCH_riscv
 #   else
 #       error Unknown CPU architecture using the linux OS
 #   endif
@@ -165,7 +171,7 @@
 /* define macros for print fields */
 //#if defined (ARCH_ia64) || defined(ARCH_x86_64) || defined(ARCH_ppc64) || defined(__MINGW64__)
 /*
- #if !defined(UEFI_BUILD) && (defined (ARCH_ia64) || defined(ARCH_x86_64) || defined(ARCH_ppc64) || defined(__MINGW64__))
+ #if !defined(UEFI_BUILD) && (defined (ARCH_ia64) || defined(ARCH_x86_64) || defined(ARCH_ppc64) || defined(__MINGW64__) || defined(ARCH_riscv))
  #   define U64H_FMT "0x%016lx"
  #   define U64D_FMT "%lu"
  #   define U32H_FMT "0x%08x"
@@ -173,7 +179,7 @@
  #   define U8H_FMT  "0x%02x"
  #   define U32D_FMT "%u"
  #   define STR_FMT "%s"
- #elif defined(ARCH_x86) || defined(ARCH_ppc) || defined(__MINGW32__) || defined(UEFI_BUILD) || defined(ARCH_arm6l)
+ #elif defined(ARCH_x86) || defined(ARCH_ppc) || defined(__MINGW32__) || defined(UEFI_BUILD) || defined(ARCH_arm6l) defined(ARCH_m68k) || defined(ARCH_hppa)
  #   define U64H_FMT "0x%016llx"
  #   define U64D_FMT "%llu"
  #   define U32H_FMT "0x%08x"

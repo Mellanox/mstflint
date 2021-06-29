@@ -38,6 +38,7 @@
 #include "mlxlink_logger.h"
 #include "mlxlink_maps.h"
 #include <math.h>
+#include <signal.h>
 
 using namespace std;
 
@@ -51,10 +52,16 @@ std::string to_string(T toConvert)
 }
 #endif
 
+template<typename T>
+bool isIn(const T &val, std::vector<T> &vect)
+{
+    auto it = find(vect.begin(), vect.end(), val);
+    return (it != vect.end());
+}
+
 u_int32_t findMaxKey(std::vector<std::string> keys);
-bool isIn(const std::string &val, std::vector<std::string> vect);
-string convertIntToHexString(int toConvert);
-string deleteLastComma(string &s);
+void termHandler(int sig);
+string deleteLastChar(const string &s, u_int32_t numOfCharsToRemove = 1);
 string getStringFromVector(std::vector<std::string> values);
 string getStringFromVector(std::vector<float> values);
 u_int64_t add32BitTo64(u_int32_t value1, u_int32_t value2);
@@ -76,21 +83,16 @@ bool checkPepcForceMode(const string &forceMode);
 bool checkPepcANMode(const string &anMode);
 bool checkPplmCmd(const string &pplmCmd);
 bool checkPplrCmd(const string &pplrCmd);
-int prbsLaneRateToMask(const string &rate);
 string prbsMaskToLaneRate(u_int32_t mask);
-int prbsLaneRateCapToMask(const string &rate);
 u_int32_t prbsMaskToRateNum(u_int32_t mask);
 bool prbsLaneRateCheck(const string &rate);
 string prbsMaskToTuningStatus(u_int32_t mask);
-string prbsMaskToLockStatus(u_int32_t mask, u_int32_t numOfLanesToUse);
+string prbsMaskToLockStatus(u_int32_t mask, u_int32_t numOfLanesToUse, bool &allLocked);
 bool checkPrbsCmd(const string &prbsCmd);
 bool checkTestMode(const string &testMode);
-string FEC2Str100G(u_int32_t mask);
-string FEC2Str50G25G(u_int32_t mask);
 string FEC2Str(const string &fecShort, const string &speedStrG);
-string FECReq2Str(u_int32_t mask, bool linkUP);
 int fecToBit(const string &fec, const string &speedStrG);
-string speedToStr(const string &speed);
+string speedToStr(const string &speed, u_int32_t numOfLanes);
 PAOS_CMD paos_to_int(const string &cmd);
 int pepc_force_mode_to_int(const string &forceMode);
 int pepc_an_mode_to_int(const string &anMode);
@@ -116,9 +118,11 @@ double mw_to_dbm(double x);
 int readSignedByte(u_int32_t value);
 void setPrintTitle(MlxlinkCmdPrint &mlxlinkCmdPrint, string title,
         u_int32_t size, bool print = true);
-void setPrintVal(MlxlinkCmdPrint &mlxlinkCmdPrint, int index, string key,
+void setPrintVal(MlxlinkCmdPrint &mlxlinkCmdPrint, string key,
         string value, string color = ANSI_COLOR_RESET, bool print = true,
         bool valid = true, bool arrayValue = false, bool colorKey = false);
-u_int32_t portTypeStrToInt(const string &str);
+int eyeTypeStrToInt(const string &str);
+bool isSpeed25GPerLane(u_int32_t speed, u_int32_t protocol);
+bool askUser(const char *question, bool force = false);
 
 #endif

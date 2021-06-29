@@ -45,10 +45,26 @@
 #include <mft_sig_handler.h>
 #include "mad_ifc/mad_ifc.h"
 #else
+#include <mft_uefi_common.h>
+#include <uefi_c.h>
 // no signal handling.
 static void mft_signal_set_handling(int isOn)
 {
     return;
+}
+
+static int  allocate_uefi_dma_memory_page(mfile *mf, mtcr_alloc_page* user_alloc_page) {
+    u_int32_t rc = 0;
+    u_int64_t pa;
+    u_int64_t va;
+
+    rc = ((f_dma_alloc)((mf->context).fw_cmd_dma))((uefi_Dev_t*)(mf->context.fw_cmd_context), &pa, &va);
+    if (rc) {
+        return rc;
+    }
+    user_alloc_page->pa = pa;
+    user_alloc_page->va = va;
+    return rc;
 }
 #endif
 
@@ -84,18 +100,18 @@ void printData(u_int32_t* data, int data_size, int format)
 
 bool DMAComponentAccess::prepareParameters(u_int32_t updateHandle, mcddReg* accessData,
     int offset, u_int32_t* data, int data_size, int access, int leftSize,
-     mtcr_alloc_page_t page,  mtcr_alloc_page_t mailbox_page)
+     mtcr_page_addresses page,  mtcr_page_addresses mailbox_page)
 {
     accessData->update_handle = updateHandle;
     accessData->offset = offset;
     accessData->size = leftSize > PAGE_SIZE ? PAGE_SIZE : leftSize;
-    accessData->data_page_phys_addr_lsb = EXTRACT64(page.pa, 0, 32);
-    accessData->data_page_phys_addr_msb = EXTRACT64(page.pa, 32, 32);
-    accessData->mailbox_page_phys_addr_lsb = EXTRACT64(mailbox_page.pa, 0, 32);
-    accessData->mailbox_page_phys_addr_msb = EXTRACT64(mailbox_page.pa, 32, 32);
+    accessData->data_page_phys_addr_lsb = EXTRACT64(page.dma_address, 0, 32);
+    accessData->data_page_phys_addr_msb = EXTRACT64(page.dma_address, 32, 32);
+    accessData->mailbox_page_phys_addr_lsb = EXTRACT64(mailbox_page.dma_address, 0, 32);
+    accessData->mailbox_page_phys_addr_msb = EXTRACT64(mailbox_page.dma_address, 32, 32);
     int currentOffset = data_size - leftSize;
     if (access == MCDA_WRITE_COMP) {
-        u_int32_t* data_ptr = (u_int32_t*)page.va;
+        u_int32_t* data_ptr = (u_int32_t*)page.virtual_address;
         for (int i = 0; i < accessData->size / 4; i++) {
             *data_ptr = ___my_swab32(data[(currentOffset) / 4 + i]);
             data_ptr++;
@@ -106,26 +122,41 @@ bool DMAComponentAccess::prepareParameters(u_int32_t updateHandle, mcddReg* acce
 
 bool DMAComponentAccess::allocateMemory()
 {
-    for (int i = 0; i < FMPT_ALLOCATED_LIST_LENGTH; i++) {
-        mtcr_alloc_page alloc_page;
-        if (allocate_kernel_memory_page(_mf, (mtcr_alloc_page*)&alloc_page)) {
-            return false;
-        }
+    mtcr_page_info page_info;
+
+#ifndef UEFI_BUILD
+    if (get_dma_pages(_mf, &page_info,
+                      FMPT_ALLOCATED_LIST_LENGTH)) {
+        return false;
+    }
+#else
+    return false;
+#endif
+
+    for (int page_counter = 0;
+            page_counter < FMPT_ALLOCATED_LIST_LENGTH;
+            page_counter++) {
+
 #if _MCDD_DEBUG_
-        u_int32_t va_lsb = EXTRACT64(alloc_page.va, 0, 32);
-        u_int32_t va_msb = EXTRACT64(alloc_page.va, 32, 32);
-        u_int32_t pa_lsb = EXTRACT64(alloc_page.pa, 0, 32);
-        u_int32_t pa_msb = EXTRACT64(alloc_page.pa, 32, 32);
+        u_int32_t va_lsb =
+            EXTRACT64(page_info.page_addresses_array[page_counter]->virtual_address, 0, 32);
+        u_int32_t va_msb =
+            EXTRACT64(page_info.page_addresses_array[page_counter]->virtual_address, 32, 32);
+        u_int32_t pa_lsb = 
+            EXTRACT64(page_info.page_addresses_array[page_counter]->dma_address, 0, 32);
+        u_int32_t pa_msb = 
+            EXTRACT64(page_info.page_addresses_array[page_counter]->dma_address, 32, 32);
+
         DPRINTF(("Allocated for page %d data PA 0x%08x%08x VA 0x%08x%08x \r\n", i, pa_msb, pa_lsb, va_msb, va_lsb));
 #endif
-        _allocatedListVect.push_back(alloc_page);
+        _allocatedListVect.push_back(page_info.page_addresses_array[page_counter]);
     }
     return true;
 }
 
-bool DMAComponentAccess::readFromDataPage(mcddReg* accessData,  mtcr_alloc_page_t page, u_int32_t* data, int data_size, int leftSize)
+bool DMAComponentAccess::readFromDataPage(mcddReg* accessData,  mtcr_page_addresses page, u_int32_t* data, int data_size, int leftSize)
 {
-    u_int32_t* data_ptr = (u_int32_t*)page.va;
+    u_int32_t* data_ptr = (u_int32_t*)page.virtual_address;
     int currentOffset = (data_size - leftSize) / 4;
     for (int i = 0; i < accessData->size / 4; i++) {
         data[currentOffset + i] = ___my_swab32(*data_ptr);
@@ -162,8 +193,8 @@ bool DMAComponentAccess::accessComponent(u_int32_t updateHandle, u_int32_t offse
         //updateHandle &= ~0xff000000;
         DPRINTF(("DMAComponentAccess::AccessComponent BEGIN size %d access %s\n", data_size, (access == MCDA_READ_COMP) ? "READ" : "WRITE"));
         mcddReg accessData;
-         mtcr_alloc_page_t page = _allocatedListVect[CurrentPage];
-         mtcr_alloc_page_t mailboxPage = _allocatedListVect[FMPT_MAILBOX_PAGE];
+        mtcr_page_addresses page = _allocatedListVect[CurrentPage];
+        mtcr_page_addresses mailboxPage = _allocatedListVect[FMPT_MAILBOX_PAGE];
         //tools_open_mcdd_descriptor* mailboxVirtPtr = (tools_open_mcdd_descriptor*)mailboxPage.va;
         int maxDataSize = data_size > PAGE_SIZE ? PAGE_SIZE : data_size;
         memset(&accessData, 0, TOOLS_OPEN_MCDD_REG_SIZE);
@@ -174,7 +205,7 @@ bool DMAComponentAccess::accessComponent(u_int32_t updateHandle, u_int32_t offse
         prepareParameters(updateHandle, &accessData, offset + (data_size - leftSize), data, data_size, access, leftSize, page, mailboxPage);
         int nIteration = 0;
         while (leftSize > 0) {
-            memset((u_int8_t*)mailboxPage.va, 0, TOOLS_OPEN_MCDD_DESCRIPTOR_SIZE);
+            memset((u_int8_t*)mailboxPage.virtual_address, 0, TOOLS_OPEN_MCDD_DESCRIPTOR_SIZE);
             memset(&mailboxVirtPtr_1, 0, TOOLS_OPEN_MCDD_DESCRIPTOR_SIZE);//set zero before each transaction
             maxDataSize = leftSize > PAGE_SIZE ? PAGE_SIZE : leftSize;
             mft_signal_set_handling(1);
@@ -207,14 +238,13 @@ bool DMAComponentAccess::accessComponent(u_int32_t updateHandle, u_int32_t offse
             // This is because the FW will change the status from 0 to BUSY, when it starts the reading/writing operation.
             // meanwhile, the SW has to wait until FW is really starting.
             // It's possible, though, that we will not enter to this loop at all or only sometimes.
-            tools_open_mcdd_descriptor_unpack(&mailboxVirtPtr_1, (const u_int8_t*)mailboxPage.va);
+            tools_open_mcdd_descriptor_unpack(&mailboxVirtPtr_1, (const u_int8_t*)mailboxPage.virtual_address);
             DPRINTF(("AccessComponent1 status %d err %d reserved3 %d\n", mailboxVirtPtr_1.status, mailboxVirtPtr_1.error, mailboxVirtPtr_1.reserved3));
             nMaximumSleepTime = 0;
             while (mailboxVirtPtr_1.status == FFS_FW_UNKNOWN) {
-                int timeToSleepMs = (int)(floor(TIMETOSLEEP / 8.0));
-                msleep(timeToSleepMs);
-                tools_open_mcdd_descriptor_unpack(&mailboxVirtPtr_1, (const u_int8_t*)mailboxPage.va);
-                nMaximumSleepTime += timeToSleepMs;
+                msleep(TIMETOSLEEP);
+                tools_open_mcdd_descriptor_unpack(&mailboxVirtPtr_1, (const u_int8_t*)mailboxPage.virtual_address);
+                nMaximumSleepTime += TIMETOSLEEP;
                 if(nMaximumSleepTime >= MAXIMUM_SLEEP_TIME_MS) {
                     setLastError(FWCOMPS_ABORTED);
                     return false;
@@ -223,20 +253,20 @@ bool DMAComponentAccess::accessComponent(u_int32_t updateHandle, u_int32_t offse
 
             // here the FW started to work
             msleep(TIMETOSLEEP);
-            tools_open_mcdd_descriptor_unpack(&mailboxVirtPtr_1, (const u_int8_t*)mailboxPage.va);
+            tools_open_mcdd_descriptor_unpack(&mailboxVirtPtr_1, (const u_int8_t*)mailboxPage.virtual_address);
             DPRINTF(("AccessComponent2 status %d err %d reserved3 %d\n", mailboxVirtPtr_1.status, mailboxVirtPtr_1.error, mailboxVirtPtr_1.reserved3));
 
             nMaximumSleepTime = 0;
             while (mailboxVirtPtr_1.status == FFS_FW_BUSY) {
                 msleep(TIMETOSLEEP);
-                tools_open_mcdd_descriptor_unpack(&mailboxVirtPtr_1, (const u_int8_t*)mailboxPage.va);
+                tools_open_mcdd_descriptor_unpack(&mailboxVirtPtr_1, (const u_int8_t*)mailboxPage.virtual_address);
                 nMaximumSleepTime += TIMETOSLEEP;
                 if(nMaximumSleepTime >= MAXIMUM_SLEEP_TIME_MS) {
                     setLastError(FWCOMPS_ABORTED);
                     return false;
                 }
             }
-            tools_open_mcdd_descriptor_unpack(&mailboxVirtPtr_1, (const u_int8_t*)mailboxPage.va);
+            tools_open_mcdd_descriptor_unpack(&mailboxVirtPtr_1, (const u_int8_t*)mailboxPage.virtual_address);
             DPRINTF(("AccessComponent3 status %d err %d reserved3 %d\n", mailboxVirtPtr_1.status, mailboxVirtPtr_1.error, mailboxVirtPtr_1.reserved3));
 
             if (mailboxVirtPtr_1.status == FFS_FW_ERROR) {
@@ -281,6 +311,7 @@ bool DMAComponentAccess::accessComponent(u_int32_t updateHandle, u_int32_t offse
         }
 #endif
         }
+
         if (progressFuncAdv && progressFuncAdv->func) {
             if (progressFuncAdv->func(0, stage,
                 PROG_OK, progressFuncAdv->opaque)) {

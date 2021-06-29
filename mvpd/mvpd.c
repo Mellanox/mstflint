@@ -35,6 +35,8 @@
 #include <string.h>
 #include <errno.h>
 #include <ctype.h>
+#include <tools_dev_types.h>
+
 #ifdef MST_UL
 #include <syslog.h>
 #endif
@@ -120,7 +122,24 @@ int my_vpd_read(mfile *mf,
 
 int mvpd_get_raw_vpd(mfile *mf, u_int8_t *raw_data_buf, int size)
 {
-    return my_vpd_read(mf, NULL, 0, raw_data_buf, 0, size);
+    dm_dev_id_t dev_type;
+    u_int32_t dev_id;
+    u_int32_t rev_id;
+    
+    if (mf == NULL) {
+        return INTERNAL_PARAMS_ERROR;
+    }
+
+    if (dm_get_device_id(mf, &dev_type, &dev_id, &rev_id) != 0) {
+        return INTERNAL_PARAMS_ERROR;
+    }
+    
+    if (dm_dev_is_hca(dev_type) == true) {
+        return my_vpd_read(mf, NULL, 0, raw_data_buf, 0, size);
+    }
+    else {
+        return MVPD_OK;
+    }
 }
 
 int allocate_result(vpd_result_t **result)
@@ -286,6 +305,21 @@ int mvpd_read_or_parse(mfile *mf,
     int rc = MVPD_MEM_ERR;
     unsigned actual_size = 1 << 15; /*MAX SIZE OF VPD */
     int len = 0;
+    dm_dev_id_t dev_type;
+    u_int32_t dev_id;
+    u_int32_t rev_id;
+    
+    // when mf is NULL we parse the raw_vpd inside my_vpd_read method, no need to check if it's a NIC in case of parse
+    if (mf != NULL) {
+        if (dm_get_device_id(mf, &dev_type, &dev_id, &rev_id) != 0) {
+            return INTERNAL_PARAMS_ERROR;
+        }
+        
+        if (dm_dev_is_hca(dev_type) == false) {
+            return MVPD_OK;
+        }
+    }
+
     if (raw_vpd != NULL) {
         actual_size = raw_vpd_size;
     }
@@ -460,22 +494,36 @@ int mvpd_get_vpd_size(mfile *mf, int *size)
     int len = 0;
     u_int8_t buff[4] = {0};
     int res;
-
-    for (mvpd_len = 0; mvpd_len < VPD_MAX_SIZE; mvpd_len += len) {
-        res = my_vpd_read(mf, NULL, 0, buff, mvpd_len, 4);
-        if (res != MVPD_OK) {
-            return res;
-        }
-        len = VPD_TAG_HEAD(buff) + VPD_TAG_LENGTH(buff);
-        if (VPD_TAG_NAME(buff) == VPD_TAG_END) {
-            break;
-        }
-        if (VPD_TAG_NAME(buff) != VPD_TAG_ID && VPD_TAG_NAME(buff) != VPD_TAG_R && VPD_TAG_NAME(buff) != VPD_TAG_W) {
-            syslog(3, "LIBMVPD: Unknown TAG %x in offset: %x !", VPD_TAG_NAME(buff), mvpd_len);
-            return MVPD_FORMAT_ERR;
-        }
+    dm_dev_id_t dev_type;
+    u_int32_t dev_id;
+    u_int32_t rev_id;
+    
+    if (mf == NULL) {
+        return INTERNAL_PARAMS_ERROR;
     }
-    *size = mvpd_len;
+
+    if (dm_get_device_id(mf, &dev_type, &dev_id, &rev_id) != 0) {
+        return INTERNAL_PARAMS_ERROR;
+    }
+    
+    if (dm_dev_is_hca(dev_type) == true) {
+        for (mvpd_len = 0; mvpd_len < VPD_MAX_SIZE; mvpd_len += len) {
+            res = my_vpd_read(mf, NULL, 0, buff, mvpd_len, 4);
+            if (res != MVPD_OK) {
+                return res;
+            }
+            len = VPD_TAG_HEAD(buff) + VPD_TAG_LENGTH(buff);
+            if (VPD_TAG_NAME(buff) == VPD_TAG_END) {
+                break;
+            }
+            if (VPD_TAG_NAME(buff) != VPD_TAG_ID && VPD_TAG_NAME(buff) != VPD_TAG_R && VPD_TAG_NAME(buff) != VPD_TAG_W) {
+                syslog(3, "LIBMVPD: Unknown TAG %x in offset: %x !", VPD_TAG_NAME(buff), mvpd_len);
+                return MVPD_FORMAT_ERR;
+            }
+        }
+        *size = mvpd_len;
+    }
+
     return 0;
 }
 

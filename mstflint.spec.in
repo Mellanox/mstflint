@@ -1,7 +1,7 @@
 %{!?ibmadlib: %define ibmadlib libibmad-devel}
 %{!?name: %define name mstflint}
-%{!?version: %define version 4.16.0}
-%{!?release: %define release 2}
+%{!?version: %define version 4.17.0}
+%{!?release: %define release 1}
 %{!?buildtype: %define buildtype "native"}
 %{!?noinband: %define noinband 0}
 %{!?nodc: %define nodc 0}
@@ -215,6 +215,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 
 %changelog
+* Thu Jun 10 2021 Konstantin Maksatov <kostiantynm@nvidia.com>
+   MFT 4.17.0 Updates
+
 * Mon Mar 22 2021 Konstantin Maksatov <kostiantynm@nvidia.com>
    Updated mlxconfig, fixed several bugs
 

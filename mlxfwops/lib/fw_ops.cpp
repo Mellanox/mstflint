@@ -375,11 +375,13 @@ bool FwOperations::FindMagicPattern(FBase *ioAccess, u_int32_t addr,
         READ4_NOERRMSG((*ioAccess), addr + i * 4, &w);
         TOCPU1(w);
         if (w != cntx_magic_pattern[i]) {
+            DPRINTF(("FwOperations::FindMagicPattern addr=0x%x false\n",addr));
             //printf("-D- Looking for magic pattern %d addr %06x: Exp=%08x Act=%08x\n", i, addr + i * 4, _cntx_magic_pattern[i], w);
             return false;
         }
     }
 
+    DPRINTF(("FwOperations::FindMagicPattern addr=0x%x true\n",addr));
     return true;
 }
 
@@ -391,7 +393,7 @@ bool FwOperations::FindAllImageStart(FBase *ioAccess,
                                      u_int32_t *found_images,
                                      u_int32_t const cntx_magic_pattern[])
 {
-
+    DPRINTF(("FwOperations::FindAllImageStart\n"));
     int needed_pos_num;
 
     needed_pos_num = CNTX_START_POS_SIZE;
@@ -422,6 +424,7 @@ bool FwOperations::FindAllImageStart(FBase *ioAccess,
         }
     }
 
+    DPRINTF(("FwOperations::FindAllImageStart found %d image(s)\n",*found_images));
     return true;
 }
 // CAN BE IN ANOTHER MODULE
@@ -440,6 +443,7 @@ bool FwOperations::GetSectData(std::vector<u_int8_t>& file_sect, const u_int32_t
 
 bool FwOperations::FwAccessCreate(fw_ops_params_t& fwParams, FBase **ioAccessP)
 {
+    DPRINTF(("FwOperations::FwAccessCreate\n"));
     if (fwParams.hndlType == FHT_FW_FILE) {
 #ifndef NO_MFA_SUPPORT
         int sig = getFileSignature(fwParams.fileHndl);
@@ -548,6 +552,7 @@ bool FwOperations::FwAccessCreate(fw_ops_params_t& fwParams, FBase **ioAccessP)
 
 u_int8_t FwOperations::IsFS4Image(FBase& f, u_int32_t *found_images)
 {
+    DPRINTF(("FwOperations::IsFS4Image\n"));
     u_int32_t data;
     u_int8_t image_version;
     u_int32_t image_start[CNTX_START_POS_SIZE] = {0};
@@ -559,6 +564,7 @@ u_int8_t FwOperations::IsFS4Image(FBase& f, u_int32_t *found_images)
         READ4_NOERRMSG(f, image_start[0] + 0x10, &data);
         TOCPU1(data);
         image_version = data >> 24;
+        DPRINTF(("FwOperations::IsFS4Image fw_image.begin_area.boot_version.image_format_version = %d\n", image_version));
         if (image_version == 1) {//1 is the current version
             return FS_FS4_GEN;
         } else {
@@ -601,6 +607,7 @@ u_int8_t FwOperations::IsCableImage(FBase& f)
 
 u_int8_t FwOperations::CheckFwFormat(FBase& f, bool getFwFormatFromImg)
 {
+    DPRINTF(("FwOperations::CheckFwFormat\n"));
     u_int8_t v;
     u_int32_t found_images = 0;
 
@@ -651,6 +658,7 @@ bool FwOperations::CheckBinVersion(u_int8_t binVerMajor, u_int8_t binVerMinor)
 
 FwOperations* FwOperations::FwOperationsCreate(void *fwHndl, void *info, char *psid, fw_hndl_type_t hndlType, char *errBuff, int buffSize)
 {
+    DPRINTF(("FwOperations::FwOperationsCreate\n"));
     fw_ops_params_t fwParams;
     memset(&fwParams, 0, sizeof(fwParams));
     fwParams.psid = psid;
@@ -741,6 +749,7 @@ void FwOperations::BackUpFwParams(fw_ops_params_t& fwParams)
 
 FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
 {
+    DPRINTF(("FwOperations::FwOperationsCreate\n"));
     FwOperations *fwops;
     u_int8_t fwFormat;
     FBase *ioAccess = (FBase*)NULL;
@@ -1094,6 +1103,7 @@ const FwOperations::HwDevData FwOperations::hwDevData[] = {
     { "ConnectX-7",       CX7_HW_ID,        CT_CONNECTX7,    CFT_HCA,     0, {4129, 0}, {{UNKNOWN_BIN, {0}}}},
     { "BlueField",        BF_HW_ID,         CT_BLUEFIELD,    CFT_HCA,     0, {41680, 41681, 41682, 0}, {{UNKNOWN_BIN, {0}}}},
     { "BlueField2",       BF2_HW_ID,        CT_BLUEFIELD2,   CFT_HCA,     0, {41684, 41685, 41686, 0}, {{UNKNOWN_BIN, {0}}}},
+    { "BlueField3",       BF3_HW_ID,        CT_BLUEFIELD3,   CFT_HCA,     0, {41690, 41691, 41692, 0}, {{UNKNOWN_BIN, {0}}}},
     { "Spectrum",         SPECTRUM_HW_ID,   CT_SPECTRUM,     CFT_SWITCH,  0, {52100, 0}, {{UNKNOWN_BIN, {0}}}},
     { "Switch_IB2",       SWITCH_IB2_HW_ID, CT_SWITCH_IB2,   CFT_SWITCH,  0, {53000, 0}, {{UNKNOWN_BIN, {0}}}},
     { "Quantum",          QUANTUM_HW_ID,    CT_QUANTUM,      CFT_SWITCH,  0, {54000, 0}, {{UNKNOWN_BIN, {0}}}},
@@ -1121,6 +1131,7 @@ const FwOperations::HwDev2Str FwOperations::hwDev2Str[] = {
     {"ConnectX-7",        CX7_HW_ID,        0x00},
     {"BlueField",         BF_HW_ID,         0x00},
     {"BlueField2",        BF2_HW_ID,        0x00},
+    {"BlueField3",        BF3_HW_ID,        0x00},
     {"SwitchX A0",        SWITCHX_HW_ID,    0x00},
     {"SwitchX A1",        SWITCHX_HW_ID,    0x01},
     {"InfiniScale IV A0", IS4_HW_ID,        0xA0},
@@ -1177,6 +1188,8 @@ chip_type FwOperations::GetChipType(string chip)
         return CT_SPECTRUM3;
     else if (chip == "CT_BLUEFIELD2")
         return CT_BLUEFIELD2;
+    else if (chip == "CT_BLUEFIELD3")
+        return CT_BLUEFIELD3;
     else if (chip == "CT_CONNECTX3")
         return CT_CONNECTX3;
     else if (chip == "CT_QUANTUM2")
@@ -1222,7 +1235,6 @@ bool FwOperations::CheckMatchingHwDevId(u_int32_t hwDevId, u_int32_t rev_id, u_i
 {
 
     char supp_hw_id_list[MAX_NUM_SUPP_HW_LIST_STR] = {'\0'};
-    char supp_hw_id_list_tmp[MAX_NUM_SUPP_HW_LIST_STR];
     char curr_hw_id_name[MAX_HW_NAME_LEN];
 
     for (u_int32_t i = 0; i < supportedHwIdNum; i++) {
@@ -1255,8 +1267,8 @@ bool FwOperations::CheckMatchingHwDevId(u_int32_t hwDevId, u_int32_t rev_id, u_i
         if (supp_hw_id_list[0] == '\0') {
             sprintf(supp_hw_id_list, "%s", hw_name);
         } else {
-            strcpy(supp_hw_id_list_tmp, supp_hw_id_list);
-            sprintf(supp_hw_id_list, "%s, %s", supp_hw_id_list_tmp, hw_name);
+            strcat(supp_hw_id_list, ", ");
+            strcat(supp_hw_id_list, hw_name);
         }
     }
     // If we get here, this FW cannot be burnt in the current device.
@@ -1763,7 +1775,7 @@ void FwOperations::SetDevFlags(chip_type_t chipType, u_int32_t devType, fw_img_t
                  (chipType == CT_CONNECTX6) || (chipType == CT_CONNECTX6DX) || (chipType == CT_CONNECTX6LX) || \
                  (chipType == CT_SPECTRUM) || (chipType == CT_SPECTRUM2) || (chipType == CT_SPECTRUM3) || \
                  (chipType == CT_CONNECTX7) || (chipType == CT_QUANTUM2) || (chipType == CT_SPECTRUM4) || \
-                 (chipType == CT_BLUEFIELD) || (chipType == CT_BLUEFIELD2);
+                 (chipType == CT_BLUEFIELD) || (chipType == CT_BLUEFIELD2) || (chipType == CT_BLUEFIELD3);
     }
 
     if ((!ibDev && !ethDev) || chipType == CT_UNKNOWN) {
@@ -2155,6 +2167,7 @@ u_int8_t FwOperations::GetFwFormatFromHwDevID(u_int32_t hwDevId)
                hwDevId == CX7_HW_ID ||
                hwDevId == BF_HW_ID      ||
                hwDevId == BF2_HW_ID      ||
+               hwDevId == BF3_HW_ID      ||
                hwDevId == QUANTUM_HW_ID ||
                hwDevId == QUANTUM2_HW_ID ||
                hwDevId == SPECTRUM4_HW_ID ||
@@ -2287,12 +2300,12 @@ FwVersion FwOperations::createFwVersion(u_int16_t fw_ver0, u_int16_t fw_ver1, u_
 }
 FwVersion FwOperations::createFwVersion(const fw_info_com_t* fwInfo) {
     return FwVersion(fwInfo->fw_ver[0], fwInfo->fw_ver[1], fwInfo->fw_ver[2],
-            fwInfo->branch_ver, fwInfo->dev_type);
+            fwInfo->branch_ver);
 }
 
 FwVersion FwOperations::createRunningFwVersion(const fw_info_com_t* fwInfo) {
     return FwVersion(fwInfo->running_fw_ver[0], fwInfo->running_fw_ver[1],
-            fwInfo->running_fw_ver[2], fwInfo->running_branch_ver, fwInfo->dev_type);
+            fwInfo->running_fw_ver[2], fwInfo->running_branch_ver);
 }
 
 bool FwOperations::CreateSignatureManager()
@@ -2320,7 +2333,7 @@ bool FwOperations::CreateSignatureManager()
     }
     return false;
 }
-bool FwOperations::FwCalcSHA(SHATYPE, vector<u_int8_t>&, vector<u_int8_t>&)
+bool FwOperations::FwCalcSHA(MlxSign::SHAType, vector<u_int8_t>&, vector<u_int8_t>&)
 {
     return errmsg("FwCalcSHA is not supported.");
 }
@@ -2340,7 +2353,7 @@ bool FwOperations::InsertSecureBootSignature(vector<u_int8_t>, vector<u_int8_t>,
 {
     return errmsg("InsertSecureBootSignature not supported");
 }
-bool FwOperations::getExtendedHWAravaPtrs(VerifyCallBack, FBase*, bool)
+bool FwOperations::getExtendedHWAravaPtrs(VerifyCallBack, FBase*, bool, bool)
 {
     return errmsg("getExtendedHWAravaPtrs not supported");
 }

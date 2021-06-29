@@ -60,8 +60,14 @@ public:
         else if (deviceId == DeviceConnectX6DX) {
             return new ConnectX6DXFwOperationsSignatureManager();
         }
+        else if (deviceId == DeviceConnectX7) {
+            return new ConnectX7FwOperationsSignatureManager();
+        }
         else if (deviceId == DeviceBlueField2) {
             return new Bluefield2FwOperationsSignatureManager();
+        }
+        else if (deviceId == DeviceBlueField3) {
+            return new Bluefield3FwOperationsSignatureManager();
         }
         else if (deviceId == DeviceConnectX6LX) {
             return new ConnectX6LXFwOperationsSignatureManager();
@@ -84,8 +90,14 @@ public:
         else if (chip == CT_CONNECTX6DX) {
             return new ConnectX6DXFwOperationsSignatureManager();
         }
+        else if (chip == CT_CONNECTX7) {
+            return new ConnectX7FwOperationsSignatureManager();
+        }
         else if (chip == CT_BLUEFIELD2) {
             return new Bluefield2FwOperationsSignatureManager();
+        }
+        else if (chip == CT_BLUEFIELD3) {
+            return new Bluefield3FwOperationsSignatureManager();
         }
         else if (chip == CT_CONNECTX6LX) {
             return new ConnectX6LXFwOperationsSignatureManager();

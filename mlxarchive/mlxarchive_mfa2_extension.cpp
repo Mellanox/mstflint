@@ -174,10 +174,10 @@ string VersionExtension::getVersion(bool pad_sub_minor) const {
     string res;
     if (pad_sub_minor){
         char _sub_minor_str[5] = {0};
-        snprintf(_sub_minor_str, sizeof(_sub_minor_str), "%04d", (int)_subMinor);
-        ss << (int)_major << '.' << (int)_minor << '.' << _sub_minor_str;
-    }
-    else {
+        snprintf(_sub_minor_str, sizeof(_sub_minor_str), "%04d", (int)_subMinor % 10000);   // "% 10000" since subminor can be represented by 4 digits
+        ss << (int)_major << '.' << (int)_minor << '.' << _sub_minor_str;                   // and it helps the compiler to understand there are only 4 characters
+        }                                                                                   // so it can fit into _sub_minor_str variable
+    else{
         ss << (int)_major << '.' << (int)_minor << '.' << (int)_subMinor;
     }
     ss>>res;

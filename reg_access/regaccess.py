@@ -210,7 +210,7 @@ if REG_ACCESS:
 
     class MDDQ_SLOT_INFO(Structure):
         _fields_ = [("active", c_uint8),
-                    ("ready", c_uint8),
+                    ("lc_ready", c_uint8),
                     ("sr_valid", c_uint8),
                     ("provisioned", c_uint8),
                     ("minor_ini_file_version", c_uint16),
@@ -239,9 +239,7 @@ if REG_ACCESS:
                     ("request_message_sequence", c_uint8),
                     ("response_message_sequence", c_uint8),
                     ("query_index", c_uint8),
-                    ("frst", c_uint8),
-                    ("mid", c_uint8),
-                    ("lst", c_uint8),
+                    ("data_valid", c_uint8),
                     ("data", MDDQ_DATA_UN)]
 
     class RegAccess:
@@ -299,12 +297,12 @@ if REG_ACCESS:
                 mtrcaCapRegisterP.contents.trace_owner = c_uint8(1)
                 rc = self._reg_access_mtrc_cap(self._mstDev.mf, c_uint(REG_ACCESS_METHOD_SET), mtrcaCapRegisterP)
                 if rc:
-                    raise RegAccException("Failed to send Register: %s (%d)" % (self._err2str(rc), rc))
+                    raise RegAccException("Failed to send Register MTRC (case 1): %s (%d)" % (self._err2str(rc), rc))
                 mtrcaCapRegisterP.contents.trace_owner = c_uint8(0)
                 mtrcaCapRegisterPquery = pointer(MTRC_CAP_REG_ST())
                 rc = self._reg_access_mtrc_cap(self._mstDev.mf, c_uint(REG_ACCESS_METHOD_GET), mtrcaCapRegisterPquery)
                 if rc:
-                    raise RegAccException("Failed to send Register: %s (%d)" % (self._err2str(rc), rc))
+                    raise RegAccException("Failed to send Register MTRC (case 2): %s (%d)" % (self._err2str(rc), rc))
                 if mtrcaCapRegisterPquery.contents.trace_owner == 1:
                     return 0
                 iter += 1
@@ -377,7 +375,7 @@ if REG_ACCESS:
 
             rc = self._reg_access_pcnr(self._mstDev.mf, c_uint(REG_ACCESS_METHOD_SET), pcnrRegisterP)
             if rc:
-                raise RegAccException("Failed to send Register: %s (%d)" % (self._err2str(rc), rc))
+                raise RegAccException("Failed to send Register PCNR: %s (%d)" % (self._err2str(rc), rc))
 
 
         def sendMpcir(self, command):
@@ -421,7 +419,7 @@ if REG_ACCESS:
             if rc:
                 rc = self._reg_access_mfrl(self._mstDev.mf, c_method, mfrlRegisterP)
             if rc:
-                raise RegAccException("Failed to send Register: %s (%d)" % (self._err2str(rc), rc))
+                raise RegAccException("Failed to send Register MFRL: %s (%d)" % (self._err2str(rc), rc))
 
             if method == REG_ACCESS_METHOD_GET:
                 return mfrlRegisterP.contents.reset_level, mfrlRegisterP.contents.reset_type
@@ -482,7 +480,7 @@ if REG_ACCESS:
 
             rc = self._reg_access_mgir(self._mstDev.mf, REG_ACCESS_METHOD_GET, mgirRegisterP)
             if rc:
-                raise RegAccException("Failed to send Register: %s (%d)" % (self._err2str(rc), rc))
+                raise RegAccException("Failed to send Register MGIR (case 1): %s (%d)" % (self._err2str(rc), rc))
 
             return mgirRegisterP.contents.uptime
 
@@ -494,7 +492,7 @@ if REG_ACCESS:
             rc = self._reg_access_mgir(self._mstDev.mf, REG_ACCESS_METHOD_GET, mgirRegisterP)
 
             if rc:
-                raise RegAccException("Failed to send Register: %s (%d)" % (self._err2str(rc), rc))
+                raise RegAccException("Failed to send Register MGIR (case 2): %s (%d)" % (self._err2str(rc), rc))
 
 
             lsp = mgirRegisterP.contents.manufacturing_base_mac_31_0
@@ -509,7 +507,7 @@ if REG_ACCESS:
 
             rc = self._reg_access_mgir(self._mstDev.mf, REG_ACCESS_METHOD_GET, mgirRegisterP)
             if rc:
-                raise RegAccException("Failed to send Register: %s (%d)" % (self._err2str(rc), rc))
+                raise RegAccException("Failed to send Register MGIR (case 3): %s (%d)" % (self._err2str(rc), rc))
 
             result = mgirRegisterP.contents.secure_fw
             result = True if result else False
@@ -523,13 +521,13 @@ if REG_ACCESS:
             mddqRegisterP.contents.query_index = c_uint8(query_index)
             rc = self._reg_access_mddq(self._mstDev.mf, REG_ACCESS_METHOD_GET, mddqRegisterP)
             if rc:
-                raise RegAccException("Failed to send Register: %s (%d)" % (self._err2str(rc), rc))
+                raise RegAccException("Failed to send Register MDDQ: %s (%d)" % (self._err2str(rc), rc))
 
             data = {}
             if query_type == 1:
                 data.update({
                     "active": mddqRegisterP.contents.data.mddq_slot_info.active,
-                    "ready": mddqRegisterP.contents.data.mddq_slot_info.ready,
+                    "lc_ready": mddqRegisterP.contents.data.mddq_slot_info.lc_ready,
                     "sr_valid": mddqRegisterP.contents.data.mddq_slot_info.sr_valid,
                     "provisioned": mddqRegisterP.contents.data.mddq_slot_info.provisioned,
                     "minor_ini_file_version": mddqRegisterP.contents.data.mddq_slot_info.minor_ini_file_version,
@@ -550,9 +548,7 @@ if REG_ACCESS:
                      "query_type": mddqRegisterP.contents.query_type,
                      "request_message_sequence": mddqRegisterP.contents.request_message_sequence,
                      "response_message_sequence": mddqRegisterP.contents.response_message_sequence,
-                     "frst": mddqRegisterP.contents.frst,
-                     "mid": mddqRegisterP.contents.mid,
-                     "lst": mddqRegisterP.contents.lst},
+                     "data_valid": mddqRegisterP.contents.data_valid},
                      data)
 
 else:

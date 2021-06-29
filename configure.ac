@@ -31,12 +31,12 @@
 
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(mstflint, 4.16.0, eranj@mellanox.co.il)
+AC_INIT(mstflint, 4.17.0, eranj@mellanox.co.il)
 
 AC_DEFINE_UNQUOTED([PROJECT], ["mstflint"], [Define the project name.])
 AC_SUBST([PROJECT])
 
-AC_DEFINE_UNQUOTED([VERSION], ["4.16.0"], [Define the project version.])
+AC_DEFINE_UNQUOTED([VERSION], ["4.17.0"], [Define the project version.])
 AC_SUBST([VERSION])
 
 AC_CONFIG_MACRO_DIR([m4])
@@ -53,16 +53,18 @@ AC_CONFIG_HEADERS( config.h )
 
 OS=$(uname -s)
 
+MIN_OPENSSL_VER="1.1.0"
 MTCR_CONF_DIR=""
 LDL=""
 default_en_inband=""
 
-LDFLAGS="${LDFLAGS} -L/usr/lib64 -L/usr/local/lib -L/usr/local/lib64"
+LDFLAGS="${LDFLAGS} -L/usr/local/lib -L/usr/local/lib64 -L/usr/lib64"
 CXXFLAGS="${CXXFLAGS} -isystem /usr/local/include" 
 if test "x$OS" = "xFreeBSD"; then
     AC_MSG_NOTICE(FreeBSD Build)
     MTCR_CONF_DIR="mtcr_freebsd"
     default_en_inband="no"
+    CFLAGS="${CFLAGS} -I /usr/local/include"
 else
     MTCR_CONF_DIR="mtcr_ul"
     LDL="-ldl"
@@ -200,6 +202,7 @@ AC_ARG_ENABLE(openssl,
             [enable_openssl="yes"])
 AC_MSG_RESULT($enable_openssl)
 if test "x$enable_openssl" = "xyes"; then
+  # check version >= 1.1.1 (not implemented)
   AC_CHECK_HEADER(openssl/sha.h,,AC_MSG_ERROR([cannot find openssl/sha.h . remove --enable-openssl to remove this dependaency or install openssl]))
   AC_CHECK_HEADER(openssl/rsa.h,,AC_MSG_ERROR([cannot find openssl/rsa.h . remove --enable-openssl to remove this dependaency or install openssl]))
   AC_CHECK_HEADER(openssl/pem.h,,AC_MSG_ERROR([cannot find openssl/pem.h . remove --enable-openssl to remove this dependaency or install openssl]))
@@ -352,10 +355,12 @@ AC_DEFINE_UNQUOTED(TOOLS_GIT_SHA, "$TOOLS_GIT_SHA")
 AS_IF([test "x$enable_cs" = "xyes" || test "x$enable_openssl" = "xyes"], [
         AC_CONFIG_FILES(tools_crypto/Makefile)
     ])
-    
+
 AS_IF([test "x$enable_openssl" = "xyes"], [
-        AC_CONFIG_FILES(mlxsign_lib/Makefile)
-    ])
+    AS_IF(test x"`(openssl version|awk '{print $2}';echo $MIN_OPENSSL_VER)|sort -V|head -n1`" = x"$MIN_OPENSSL_VER",
+        [AC_CONFIG_FILES(mlxsign_lib/Makefile)],
+        [AC_MSG_ERROR([Required OpenSSL version >= $MIN_OPENSSL_VER (or use --disable-openssl)])])
+])
 
 if [ test "x$enable_openssl" = "xno" ] && \
     [ test "x$enable_fw_mgr" = "xyes" ] ; then

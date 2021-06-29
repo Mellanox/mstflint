@@ -177,9 +177,15 @@ MTCR_API int MWRITE4_SEMAPHORE(mfile* mf, int offset, int value);
 
 MTCR_API int MREAD4_SEMAPHORE(mfile* mf, int offset, u_int32_t* ptr);
 
-int allocate_kernel_memory_page(mfile *mf, mtcr_alloc_page* user_alloc_page);
-
 void set_increase_poll_time(int new_value);
+
+int get_dma_pages(mfile *mf, struct mtcr_page_info* page_info,
+                  int page_amount);
+
+int release_dma_pages(mfile *mf, int page_amount);
+
+int read_dword_from_conf_space(u_int32_t offset, mfile *mf,
+                               struct mtcr_read_dword_from_config_space* read_config_space);
 
 #ifdef __cplusplus
 }

@@ -41,6 +41,9 @@ extern "C" {
 #include <tools_layouts/register_access_sib_layouts.h>
 #include <tools_layouts/cibfw_layouts.h>
 
+// uncoment for testing MDDT with PDDR
+//#include <tools_layouts/connectx4_layouts.h>
+
 // Hack, we include this for the MNV registers as they are not officialy a part of register_access so we defined them in tools.adb
 #include <tools_layouts/tools_open_layouts.h>
 #include <tools_layouts/reg_access_hca_layouts.h>
@@ -55,6 +58,11 @@ typedef enum {
     REG_ACCESS_METHOD_GET = MACCESS_REG_METHOD_GET,
     REG_ACCESS_METHOD_SET = MACCESS_REG_METHOD_SET
 } reg_access_method_t;
+typedef enum {
+    MDDT_PRM_REGISTER_CMD_TYPE   = 0,
+    MDDT_COMMAND_CMD_TYPE        = 1,
+    MDDT_CRSPACE_ACCESS_CMD_TYPE = 2
+} mddt_command_type_t;
 
 // we use the same error messages as mtcr
 typedef MError reg_access_status_t;
@@ -87,6 +95,7 @@ reg_access_status_t reg_access_nvda(mfile *mf, reg_access_method_t method, struc
 reg_access_status_t reg_access_mfba(mfile *mf, reg_access_method_t method, struct register_access_mfba *mfba);
 reg_access_status_t reg_access_mfbe(mfile *mf, reg_access_method_t method, struct register_access_mfbe *mfbe);
 reg_access_status_t reg_access_mfpa(mfile *mf, reg_access_method_t method, struct register_access_mfpa *mfpa);
+reg_access_status_t reg_access_mfsv(mfile *mf, reg_access_method_t method, struct reg_access_hca_mfsv_reg *mfsv);
 reg_access_status_t reg_access_mfrl(mfile *mf, reg_access_method_t method, struct reg_access_hca_mfrl_reg_ext *mfrl);
 reg_access_status_t reg_access_mpcir(mfile *mf, reg_access_method_t method, struct reg_access_hca_mpcir_ext *mpcir);
 reg_access_status_t reg_access_mfai(mfile *mf, reg_access_method_t method, struct cibfw_register_mfai *mfai);

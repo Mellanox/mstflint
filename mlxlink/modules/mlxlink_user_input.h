@@ -123,6 +123,16 @@ public:
     bool force;
     bool eyeSelectSpecified;
 
+    bool enableRxErrInj;
+    int mixerOffset0;
+    int mixerOffset1;
+    bool showMixers;
+
+    string eomMeasurementStr;
+
+    bool enableFecHistogram;
+    bool showFecHistogram;
+    bool clearFecHistogram;
 };
 
 #endif /* MLXLINK_USER_INPUT_H */

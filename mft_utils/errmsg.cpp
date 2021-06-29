@@ -64,6 +64,11 @@ ErrMsg::ErrMsg(std::map<int, std::string>& errCodeMap)
     _lastErrCode = SUCCESS;
 }
 
+ErrMsg::~ErrMsg()
+{
+    err_clear();
+}
+
 const char* ErrMsg::getFormatErr(const char *prefix, ...)
 {
     va_list args;

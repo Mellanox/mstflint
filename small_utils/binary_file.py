@@ -131,8 +131,8 @@ class BinaryFile(object):
             result.append((interval_start, interval_end - interval_start))   # interval
             result.append((interval_end, 0))                       # skip interval
 
-        result = result[:-1]                                  # remove the last tuple (offset+size, 0)
-        return result
+        result = result[:-1]                               # remove the last tuple (offset+size, 0)
+        return sorted(set(result))
     
     def write(self, bytes_list, size, offset=0):
         """

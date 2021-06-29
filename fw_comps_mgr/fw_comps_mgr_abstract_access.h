@@ -66,7 +66,7 @@ protected:
 class ComponentAccessFactory
 {
 public:
-    AbstractComponentAccess* createDataAccessObject(FwCompsMgr* manager, mfile *Mf, bool IsMDCCRegisterPresent);
+    AbstractComponentAccess* createDataAccessObject(FwCompsMgr* manager, mfile *Mf, bool isMCDDRegisterSupported);
     static ComponentAccessFactory* GetInstance() {
         static ComponentAccessFactory myObj;
         return &myObj;

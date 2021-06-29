@@ -73,7 +73,7 @@ MLXFWOP_API int MLXFWOPCALL mlxfw_open_cable(mlxfwops_t **mlxfwops_p, char *hand
 #ifdef UEFI_BUILD
 #include <mft_uefi_common.h>
 
-MLXFWOP_API int MLXFWOPCALL mlxfw_open_uefi(mlxfwops_t **mlxfwops_p, uefi_Dev_t *dev, f_fw_cmd fw_cmd_func, uefi_dev_info_t *dev_info);
+MLXFWOP_API int MLXFWOPCALL mlxfw_open_uefi(mlxfwops_t **mlxfwops_p, uefi_Dev_t *dev, f_fw_cmd fw_cmd_func, f_dma_alloc dma_func, uefi_dev_info_t *dev_info);
 MLXFWOP_API int MLXFWOPCALL mlxfw_set_print(mlxfwops_t *mlxfwops, f_prog_func_str print_func);
 MLXFWOP_API const char* MLXFWOPCALL mlxfw_err2str(int err);
 

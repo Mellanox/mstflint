@@ -148,4 +148,15 @@ string to_uppercase_copy(string str)
     return str;
 }
 
+u_int32_t greatest_common_divisor(u_int32_t a, u_int32_t b)
+{
+    if (b == 0) return a;
+    return greatest_common_divisor(b, a % b);
+}
+
+u_int32_t least_common_multiple(u_int32_t a, u_int32_t b)
+{
+    return (a * b) / greatest_common_divisor(a, b);
+}
+
 }

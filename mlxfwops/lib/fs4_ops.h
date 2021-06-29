@@ -135,6 +135,7 @@ public:
 #endif
     bool CheckSignatures(u_int32_t a[], u_int32_t b[], int n);
     bool FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_itoc, struct QueryOptions queryOptions, bool ignoreDToc = false, bool verbose = false);
+    bool FsIntQueryAux(bool readRom = true, bool quickQuery = true, bool ignoreDToc = false, bool verbose = false);
     bool CheckTocSignature(struct cx5fw_itoc_header *itoc_header, u_int32_t first_signature);
     bool CheckDevInfoSignature(u_int32_t *buff);
     bool FsBurnAux(FwOperations *imageOps, ExtBurnParams& burnParams);
@@ -193,9 +194,9 @@ public:
     u_int32_t getAbsAddr(fs4_toc_info *toc);
     u_int32_t getAbsAddr(fs4_toc_info *toc, u_int32_t imgStart);
     bool getImgStart();
-    bool getHWPtrs(VerifyCallBack verifyCallBackFunc);
+    //// bool getHWPtrs(VerifyCallBack verifyCallBackFunc);
     bool getExtendedHWPtrs(VerifyCallBack verifyCallBackFunc, FBase* ioAccess, bool IsBurningProcess = false);
-    bool getExtendedHWAravaPtrs(VerifyCallBack verifyCallBackFunc, FBase* ioAccess, bool IsBurningProcess = false);
+    bool getExtendedHWAravaPtrs(VerifyCallBack verifyCallBackFunc, FBase* ioAccess, bool IsBurningProcess = false, bool isVerify = false);
     bool verifyToolsArea(VerifyCallBack verifyCallBackFunc);
     bool verifyTocHeader(u_int32_t tocAddr, bool isDtoc, VerifyCallBack verifyCallBackFunc);
     bool verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isDtoc,
@@ -228,6 +229,7 @@ public:
     u_int32_t _digest_mdk_ptr;
     u_int32_t _digest_recovery_key_ptr;
     u_int32_t _public_key_ptr;
+    u_int32_t _security_version;
     bool      _signatureDataSet;
     u_int32_t GetPublicKeySecureBootPtr() {
         return _public_key_ptr;

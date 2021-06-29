@@ -132,7 +132,7 @@ bool DirectComponentAccess::accessComponent(u_int32_t updateHandle, u_int32_t of
         }
 #endif
         leftSize -= maxDataSize;
-        DPRINTF(("0x%x bytes left to burn", leftSize));
+        DPRINTF(("0x%x bytes left to burn\n", leftSize));
     }
     if (progressFuncAdv && progressFuncAdv->func) {
         if (progressFuncAdv->func(0, stage,

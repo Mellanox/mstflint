@@ -77,6 +77,20 @@
 #define CRD_MAXFLDS 3 /* maximum possible number of fields */
 #define CRD_MAXFLDSIZE 32 /* longest possible field + 1 = 31 byte field */
 #define CRD_CSV_PATH_SIZE 1024
+#define CRD_MAX_REG_ACCESS_BLOCK 256
+
+// Scratchpad 2
+#define CRD_SP2_TLV_FIRST_ADDRESS 0x18 /* This first tlv address is valid only for HCA */
+#define CRD_SP2_TLV_SIGNATURE_VALUE 0x54306F6C /* signature value is T0ol */
+
+typedef struct crd_sp2_tlv {
+    u_int32_t signature;
+    u_int32_t size;
+    u_int32_t writable;
+    u_int32_t fw;
+    u_int32_t version;
+    u_int32_t address;
+} crd_sp2_tlv_t;
 
 typedef struct crd_parsed_csv {
 
@@ -109,9 +123,9 @@ static int crd_get_csv_path(IN dm_dev_id_t dev_type, OUT char *csv_file_path, IN
 /*
    count number of dwords, and store all needed data from csv file at parsed_csv
  */
-static int crd_count_double_word(IN char *csv_file_path, OUT u_int32_t *number_of_dwords,
+static int crd_count_double_word(IN mfile *mf, IN char *csv_file_path, OUT u_int32_t *number_of_dwords,
                                  OUT crd_parsed_csv_t blocks[], IN int is_full,
-                                 IN u_int8_t read_single_dword);
+                                 IN u_int8_t read_single_dword, IN u_int8_t with_sp2);
 
 /*
    Fill addresses at dword_arr
@@ -133,6 +147,16 @@ static int crd_update_csv_path(IN OUT char *csv_file_path, IN const char *db_pat
 
 static int crd_count_blocks(IN char *csv_file_path, OUT u_int32_t *block_count, u_int8_t read_single_dword);
 
+static int crd_count_tlv_blocks_and_dwords(IN mfile *mf, OUT u_int32_t *block_count, OUT u_int32_t *number_of_dwords);
+
+static int crd_get_tlv_from_address(IN mfile *mf, IN u_int32_t address, OUT crd_sp2_tlv_t *crd_sp2_tlv);
+
+static int crd_is_tlv_signature_valid(IN u_int32_t signature);
+
+static int crd_is_tlv_address_valid(IN u_int32_t address);
+
+static int crd_set_tlv_blocks(IN mfile *mf, OUT crd_parsed_csv_t blocks[], IN u_int32_t sp2_start_block);
+
 #if !defined(__WIN__) && !defined(MST_UL)
 static char* crd_trim(char *s);
 
@@ -152,10 +176,13 @@ int crd_init(OUT crd_ctxt_t **context, IN mfile *mf, IN int is_full, IN int caus
 {
 
     dm_dev_id_t dev_type = DeviceUnknown;
+    u_int32_t with_sp2 = 0;
     u_int32_t dev_id = 0;
     u_int32_t chip_rev = 0;
     u_int32_t number_of_dwords = 0;
     u_int32_t block_count = 0;
+    u_int32_t sp2_number_of_dwords = 0;
+    u_int32_t sp2_block_count = 0;
     u_int8_t read_single_dword = 0;
     char csv_file_path [CRD_CSV_PATH_SIZE] = {0x0};
 
@@ -192,6 +219,14 @@ int crd_init(OUT crd_ctxt_t **context, IN mfile *mf, IN int is_full, IN int caus
         return CRD_MEM_ALLOCATION_ERR;
     }
 
+    if (dm_dev_is_hca(dev_type)) {
+        with_sp2 = 1;
+        rc = crd_count_tlv_blocks_and_dwords(mf, &sp2_block_count, &sp2_number_of_dwords);
+        if (rc) {
+            return rc;
+        }
+    }
+
     rc = crd_count_blocks(csv_file_path, &block_count, read_single_dword);
     if (rc) {
         free(*context);
@@ -199,7 +234,7 @@ int crd_init(OUT crd_ctxt_t **context, IN mfile *mf, IN int is_full, IN int caus
     }
 
     CRD_DEBUG("Block count : %d\n", block_count);
-    (*context)->blocks = (crd_parsed_csv_t*) malloc(sizeof(crd_parsed_csv_t) * block_count);
+    (*context)->blocks = (crd_parsed_csv_t*) malloc(sizeof(crd_parsed_csv_t) * (block_count + sp2_block_count));
     if ((*context)->blocks == NULL) {
         CRD_DEBUG("Failed to allocate memmory for csv blocks\n");
         free(*context);
@@ -207,7 +242,7 @@ int crd_init(OUT crd_ctxt_t **context, IN mfile *mf, IN int is_full, IN int caus
     }
 
 
-    rc = crd_count_double_word(csv_file_path, &number_of_dwords, (*context)->blocks, is_full, read_single_dword);
+    rc = crd_count_double_word(mf, csv_file_path, &number_of_dwords,(*context)->blocks, is_full, read_single_dword, with_sp2);
     if (rc) {
         goto Cleanup;
     }
@@ -217,9 +252,9 @@ int crd_init(OUT crd_ctxt_t **context, IN mfile *mf, IN int is_full, IN int caus
     CRD_DEBUG("Number of found dwords are : %d \n", number_of_dwords);
     (*context)->mf               = mf;
     (*context)->dev_type         = dev_type;
-    (*context)->number_of_dwords = number_of_dwords;
+    (*context)->number_of_dwords = number_of_dwords + sp2_number_of_dwords;
     (*context)->is_full          = is_full;
-    (*context)->block_count      = block_count;
+    (*context)->block_count      = block_count + sp2_block_count;
     (*context)->cause_addr       = cause_addr;
     (*context)->cause_off        = cause_off;
     strcpy((*context)->csv_path, csv_file_path);
@@ -371,6 +406,132 @@ static void crd_parse(IN char *record, IN char *delim, OUT char arr[][CRD_MAXFLD
     *field_count = field;
 }
 
+static int crd_is_tlv_signature_valid(IN u_int32_t signature)
+{
+    int is_signature_valid = CRD_TLV_SIGNATURE_INVALID;
+    if (signature == CRD_SP2_TLV_SIGNATURE_VALUE)
+    {
+        is_signature_valid =  CRD_OK;
+    }
+
+    return is_signature_valid;
+}
+
+static int crd_is_tlv_address_valid(IN u_int32_t address)
+{
+    int is_address_valid = CRD_TLV_ADDRESS_INVALID;
+    if ((int)address != -1)
+    {
+        is_address_valid =  CRD_OK;
+    }
+
+    return is_address_valid;
+}
+
+static int crd_count_tlv_blocks_and_dwords(IN mfile *mf, OUT u_int32_t *block_count, OUT u_int32_t *number_of_dwords)
+{
+    int rc = 0;
+    crd_sp2_tlv_t current_tlv;
+    u_int32_t tlv_signature = 0;
+    u_int32_t tlv_address = 0;
+    *block_count = 0;
+    *number_of_dwords = 0;
+    rc = crd_get_tlv_from_address(mf, CRD_SP2_TLV_FIRST_ADDRESS, &current_tlv);
+    if (rc) {
+        return rc;
+    }
+    tlv_signature = current_tlv.signature;
+    tlv_address = current_tlv.address;
+
+    while (crd_is_tlv_signature_valid(tlv_signature) == CRD_OK &&
+           crd_is_tlv_address_valid(tlv_address) == CRD_OK)
+    {
+        (*block_count)++;
+        (*number_of_dwords) += current_tlv.size;
+
+        rc = crd_get_tlv_from_address(mf, current_tlv.address, &current_tlv);
+        if (rc) {
+            return rc;
+        }
+        tlv_signature = current_tlv.signature;
+        tlv_address = current_tlv.address;
+    }
+    return CRD_OK;
+}
+
+
+static int crd_set_tlv_blocks(IN mfile *mf, OUT crd_parsed_csv_t blocks[], IN u_int32_t sp2_start_block)
+{
+    int rc = 0;
+    crd_sp2_tlv_t current_tlv;
+    u_int32_t tlv_signature = 0;
+    u_int32_t tlv_address = 0;
+    u_int32_t block_number = sp2_start_block;
+
+    rc = crd_get_tlv_from_address(mf, CRD_SP2_TLV_FIRST_ADDRESS, &current_tlv);
+    if (rc) {
+        return rc;
+    }
+    tlv_signature = current_tlv.signature;
+    tlv_address = current_tlv.address;
+
+    while (crd_is_tlv_signature_valid(tlv_signature) == CRD_OK &&
+           crd_is_tlv_address_valid(tlv_address) == CRD_OK)
+    {
+        blocks[block_number].addr = current_tlv.address;
+        blocks[block_number].len = current_tlv.size;
+
+        block_number++;
+        rc = crd_get_tlv_from_address(mf, current_tlv.address, &current_tlv);
+        if (rc) {
+            return rc;
+        }
+        tlv_signature = current_tlv.signature;
+        tlv_address = current_tlv.address;
+    }
+    return CRD_OK;
+}
+
+static int crd_get_tlv_from_address(IN mfile *mf, IN u_int32_t address, OUT crd_sp2_tlv_t *crd_sp2_tlv)
+{
+    u_int32_t data;
+    
+    // read signature
+    if (mread4(mf, address, &data) != sizeof(u_int32_t)) {
+        CRD_DEBUG("Cr read (0x%08x) failed: %s(%d)\n", address, strerror(errno), (u_int32_t)errno);
+        sprintf(crd_error, "Cr read (0x%08x) failed: %s(%d)", address, strerror(errno), (u_int32_t)errno);
+        return CRD_CR_READ_ERR;
+    }
+    else {
+        crd_sp2_tlv->signature = data;
+    }
+
+    // read size, writable, fw, version
+    if (mread4(mf, address + 4, &data) != sizeof(u_int32_t)) {
+        CRD_DEBUG("Cr read (0x%08x) failed: %s(%d)\n", address + 4, strerror(errno), (u_int32_t)errno);
+        sprintf(crd_error, "Cr read (0x%08x) failed: %s(%d)", address + 4, strerror(errno), (u_int32_t)errno);
+        return CRD_CR_READ_ERR;
+    }
+    else {
+        crd_sp2_tlv->size = EXTRACT(data, 0, 20);
+        crd_sp2_tlv->writable = EXTRACT(data, 20, 1);
+        crd_sp2_tlv->fw = EXTRACT(data, 21, 1);
+        crd_sp2_tlv->version = EXTRACT(data, 28, 4);
+    }
+
+    // read address
+    if (mread4(mf, address + 8, &data) != sizeof(u_int32_t)) {
+        CRD_DEBUG("Cr read (0x%08x) failed: %s(%d)\n", address + 8, strerror(errno), (u_int32_t)errno);
+        sprintf(crd_error, "Cr read (0x%08x) failed: %s(%d)", address + 8, strerror(errno), (u_int32_t)errno);
+        return CRD_CR_READ_ERR;
+    }
+    else {
+        crd_sp2_tlv->address = data;
+    }
+    
+    return CRD_OK;
+}
+
 static int crd_count_blocks(IN char *csv_file_path,
                             OUT u_int32_t *block_count, u_int8_t read_single_dword)
 {
@@ -408,11 +569,11 @@ static int crd_count_blocks(IN char *csv_file_path,
     return CRD_OK;
 }
 
-static int crd_count_double_word(IN char *csv_file_path, OUT u_int32_t *number_of_dwords,
+static int crd_count_double_word(IN mfile *mf, IN char *csv_file_path, OUT u_int32_t *number_of_dwords,
                                  OUT crd_parsed_csv_t blocks[], IN int is_full,
-                                 IN u_int8_t read_single_dword)
+                                 IN u_int8_t read_single_dword, IN u_int8_t with_sp2)
 {
-
+    int rc                = 0;
     int field_count       = 0;
     int block_count       = 0;
     u_int32_t addr        = 0;
@@ -477,6 +638,14 @@ static int crd_count_double_word(IN char *csv_file_path, OUT u_int32_t *number_o
         }
     }
     fclose(fd);
+
+    if (with_sp2) {
+        rc = crd_set_tlv_blocks(mf, blocks, block_count);
+        if (rc) {
+            return rc;
+        }
+    }
+
     return CRD_OK;
 }
 
@@ -559,7 +728,7 @@ static int crd_replace(INOUT char *st, IN char *orig, IN char *repl)
 
 static int crd_get_exec_name_from_path(IN char *str, OUT char *exec_name)
 {
-    char *tmp_str = malloc(sizeof(char) * (strlen(str) + 1));
+    char *tmp_str = (char *)malloc(sizeof(char) * (strlen(str) + 1));
     if (tmp_str == NULL) {
         CRD_DEBUG("Failed to allocate memmory\n");
         return CRD_MEM_ALLOCATION_ERR;

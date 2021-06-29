@@ -94,6 +94,7 @@ MLNX_DEVICES = [
                dict(name="ConnectX5", devid=0x20d, status_config_not_done=(0xb5e04, 31)),
                dict(name="BlueField", devid=0x211, status_config_not_done=(0xb5e04, 31)),
                dict(name="BlueField2", devid=0x214, status_config_not_done=(0xb5e04, 31)),
+               dict(name="BlueField3", devid=0x21c, status_config_not_done=(0xb5e04, 31)),
                dict(name="ConnectX6", devid=0x20f, status_config_not_done=(0xb5f04, 31)),
                dict(name="ConnectX6DX", devid=0x212, status_config_not_done=(0xb5f04, 31)),
                dict(name="ConnectX6LX", devid=0x216, status_config_not_done=(0xb5f04, 31)),
@@ -105,7 +106,7 @@ MLNX_DEVICES = [
 
 # Supported devices.
 SUPP_DEVICES = ["ConnectIB", "ConnectX4", "ConnectX4LX", "ConnectX5", "BlueField",
-                "ConnectX6", "ConnectX6DX", "ConnectX6LX", "BlueField2", "ConnectX7",]
+                "ConnectX6", "ConnectX6DX", "ConnectX6LX", "BlueField2", "ConnectX7", "BlueField3"]
 SUPP_OS = ["FreeBSD", "Linux", "Windows"]
 
 IS_MSTFLINT = True
@@ -798,12 +799,17 @@ class MlnxPciOpFreeBSD(MlnxPciOp):
         if(linesCount > 1):
             raise RuntimeError("Found more than one secbus with the value: %s" %busNum)
         hostBridge = "pcib%s" %(out.split("pcib.")[1].split(".")[0])
+        
         # get pci address of hostBridge
-        cmd = "pciconf -l | grep %s | cut -f 1 | cut -f 2 -d@ | sed -e 's/\(.*\):\s*/\\1/g'" % hostBridge
-        (rc, bridgeDevAddr, _) = cmdExec(cmd)
-        if rc != 0 or len(bridgeDevAddr.strip()) == 0:
-            raise RuntimeError("Failed to extract pci bridge address")
-        return bridgeDevAddr.strip()
+        cmd = "pciconf -l | grep {0}".format(hostBridge)
+        rc, out, _ = cmdExec(cmd)
+        if rc != 0:
+            raise RuntimeError("Failed to extract PCI bridge address ({0})".format(cmd))
+        try:
+            bridgeDevAddr = out.split()[0].split('@')[1][:-1] # Extract the pci device from the output
+        except:
+            raise RuntimeError("Failed to extract PCI bridge address ({0})".format(out))
+        return bridgeDevAddr
 
     def getPciECapAddr(self, bridgeDev):
         cmd = "pciconf -lc %s | grep \"cap 10\" | sed -e 's/.*\[\([0-9,a-f]*\)\].*/\\1/g'" % bridgeDev
@@ -832,7 +838,7 @@ class MlnxPciOpFreeBSD(MlnxPciOp):
     def loadPCIConfigurationSpace(self, devAddr, pci_device, full=True):
         pci_device.restore_configuration_space()
 
-
+# TODO are we using this class ??? 
 class MlnxPciOpWindows(MlnxPciOp):
 
     def __init__(self):
@@ -1090,8 +1096,9 @@ def disablePci(bridgeDev, capAddr):
     width = "L"
     oldCapDw = PciOpsObj.read(bridgeDev, disableAddr, width)
     # turn on Link Disable bit
-    logger.debug('Disable PCI bridge address {0}'.format(bridgeDev))
+    logger.debug('Disable PCI bridge {0} Link Control Register address {1:x}'.format(bridgeDev, disableAddr))
     newCapDw = oldCapDw | 0x10
+    logger.debug('old value: {0:x}; new value: {1:x}'.format(oldCapDw,newCapDw))
     PciOpsObj.write(bridgeDev, disableAddr, newCapDw, width)
 
     return (bridgeDev, disableAddr, oldCapDw, width)
@@ -1120,17 +1127,17 @@ def resetPciAddr(device,devicesSD,driverObj, cmdLineArgs):
         if isConnectedToMellanoxSwitchDevice():
             pci_device_bridge = PciOpsObj.getPciBridgeAddr(DevDBDF)
             pci_device_to_poll_devid = PciOpsObj.getPciBridgeAddr(pci_device_bridge)
-            pci_device_to_poll_dll_link_active = PCIDeviceFactory().get(pci_device_to_poll_devid, "debug")
+            root_pci_device = PCIDeviceFactory().get(pci_device_to_poll_devid, "debug")
         elif isPPC:
             pci_device_to_poll_devid = DevDBDF
         else:
             pci_device_to_poll_devid = DevDBDF
-            pci_device_to_poll_dll_link_active = PCIDeviceFactory().get(PciOpsObj.getPciBridgeAddr(DevDBDF), "debug")
+            root_pci_device = PCIDeviceFactory().get(PciOpsObj.getPciBridgeAddr(DevDBDF), "debug")
 
 
         logger.debug('pci_device_to_poll_devid={0}'.format(pci_device_to_poll_devid))
         if not isPPC:
-            logger.debug('pci_device_to_poll_dll_link_active={0}'.format(pci_device_to_poll_dll_link_active))
+            logger.debug('root_pci_device={0}'.format(root_pci_device))
 
 
     if isWindows is False: # relevant for ppc(p7) TODO check power8/9 shouldn't use mst-save/load
@@ -1258,18 +1265,17 @@ def resetPciAddr(device,devicesSD,driverObj, cmdLineArgs):
                 PciOpsObj.waitForDevice(pciDev)
 
         # Poll DLL Link Active (required to support AMD - RM #1599465)
-        if not isPPC and pci_device_to_poll_dll_link_active.dll_link_active_reporting_capable:
+        if not isPPC and root_pci_device.dll_link_active_reporting_capable:
             MAX_WAIT_TIME = 2  # sec
             poll_start_time = time.time()
             for counter in range(1000*MAX_WAIT_TIME):
-                if pci_device_to_poll_dll_link_active.dll_link_active == 1:
+                if root_pci_device.dll_link_active == 1:
                     poll_end_time = (time.time() - poll_start_time) * 1000
                     logger.debug('DLL link active is ready after {0} msec'.format(poll_end_time))
                     break
                 time.sleep(0.001)
             else:
-                print("-W- DLL link is not active after {0} sec (PCI device {1})".format(
-                    MAX_WAIT_TIME,pci_device_to_poll_dll_link_active.dbdf))
+                print("\n-W- DLL link is not active (PCI device {0})".format(root_pci_device.dbdf))
 
         # Wait for FW (Iron) - Read devid
         MAX_WAIT_TIME = 2 # sec
@@ -1282,16 +1288,32 @@ def resetPciAddr(device,devicesSD,driverObj, cmdLineArgs):
             time.sleep(0.001)
         else:
             print("-W- FW is not ready after {0} sec".format(MAX_WAIT_TIME))
+        # Restore PCI configuration
+        #############################
+        logger.debug('Restore PCI configuration')
+        if isPPC:
+            logger.debug('PPC : indication for re-enumeration by MSE bit on each PCI device')
+            for pciDev in devList+devListsSD:
+                pci_device_object = pci_device_dict[pciDev]
+                command_reg = PciOpsObj.read(pciDev, COMMAND_ADDR, "W")
+                logger.debug('command_reg for [{0}]is {1:x}.'.format(pciDev, command_reg))
+                if (command_reg & 0x2) == 0: # command_reg[MSE] - Indication for re-enumeration (OS rescan)
+                    PciOpsObj.loadPCIConfigurationSpace(pciDev, pci_device_object, full=True)
+                else:
+                    PciOpsObj.loadPCIConfigurationSpace(pciDev, pci_device_object, full=False)
+        else:
+            logger.debug('Indication for re-enumeration is by HotPlug on bridge')
+            to_restore_pci_conf = not (root_pci_device.hotplug_capable and root_pci_device.hotplug_interrupt_enable)
+            logger.debug('hotplug_capable={0}'.format(root_pci_device.hotplug_capable))
+            logger.debug('hotplug_interrupt_enable={0}'.format(root_pci_device.hotplug_interrupt_enable))
+            logger.debug('to_restore_pci_conf={0}'.format(to_restore_pci_conf))
+            for pciDev in devList+devListsSD:
+                pci_device_object = pci_device_dict[pciDev]
+                if to_restore_pci_conf:
+                    PciOpsObj.loadPCIConfigurationSpace(pciDev, pci_device_object, full=True)
+                else: # os re-enumeration
+                    PciOpsObj.loadPCIConfigurationSpace(pciDev, pci_device_object, full=False)
 
-        # Restore PCI configuration (including socket direct devices)
-        for pciDev in devList+devListsSD:
-            pci_device_object = pci_device_dict[pciDev]
-            command_reg = PciOpsObj.read(pciDev, COMMAND_ADDR, "W")
-            logger.debug('command_reg for [{0}]is {1:x}.'.format(pciDev, command_reg))
-            if (command_reg & 0x2) == 0: # command_reg[MSE] - Indication for re-enumeration (OS rescan)
-                PciOpsObj.loadPCIConfigurationSpace(pciDev, pci_device_object, full=True)
-            else:
-                PciOpsObj.loadPCIConfigurationSpace(pciDev, pci_device_object, full=False)
 
     # Need to re-open the file handler because PCI tree is updated (OS remove/rescan)
     if isWindows is False:
@@ -1334,7 +1356,6 @@ def send_reset_cmd_to_fw(mfrl, reset_level, reset_type, reset_sync=SyncOwner.TOO
         mfrl.send(reset_level, reset_type, reset_sync)
         printAndFlush("Done")
     except Exception as e:
-        printAndFlush("Failed")
         raise e
 
 
@@ -1358,7 +1379,7 @@ def sendResetToFWSync(mfrl, reset_level, reset_type):
             send_reset_cmd_to_fw(mfrl, reset_level, reset_type)
         except Exception as e:
             CmdifObj.multiHostSync(SYNC_STATE_IDLE, SYNC_TYPE_FW_RESET)
-            raise e
+            raise RuntimeError("Command is not supported")
 
         # Socket Direct - send SYNC_STATE_GET_READY for all other devices in SD
         for CmdifObjSD in CmdifObjsSD:
@@ -1734,7 +1755,7 @@ def main():
                                help=argparse.SUPPRESS)
     options_group.add_argument('--skip_fsm_sync',
                                action="store_true",
-                               help="Skip fsm syncing")
+                               help=argparse.SUPPRESS)
 
     # Skip on the self discover devices logic for socket direct(option to disable the feature in case of bug)
     options_group.add_argument('--skip_socket_direct',
@@ -1885,6 +1906,7 @@ def main():
             raise re
 
     print("")
+
     if command == "query":
         print(mfrl.query_text())
         print(mcam.reset_sync_query_text())

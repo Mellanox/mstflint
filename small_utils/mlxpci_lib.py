@@ -44,7 +44,7 @@ from mft_logger import LoggerFactory
 CONFIG_SPACE_PTR_OFFSET = 0X34
 MAXIMUN_LEGACY_CAP_SIZE = 0x100
 MAX_PCI_OFFSET = 0xfff
-MELLANOX_PCI_SKIP_LIST = [0x58, 0x5c] # it is harmful for the device to read offset 0x58 and 0x5c for example
+MELLANOX_PCI_SKIP_LIST = [0x58,0x59,0x5a,0x5b,0x5c,0x5d,0x5e,0x5f] # it is harmful for the device to read offset 0x58 and 0x5c for example
 VENDOR_ID_ADDR = 0X0
 DEVICE_ID_ADDR = 0x2
 # Legacy Capabilities
@@ -252,8 +252,8 @@ class PCIDeviceBase(object):
         """
         Get dll link active value
         """
-        link_status_reg_offset = 0x12
-        link_status_reg_address = self._pci_express_offset + link_status_reg_offset
+        LINK_STATUS_REG_OFFSET = 0x12
+        link_status_reg_address = self._pci_express_offset + LINK_STATUS_REG_OFFSET
         link_status_reg_value = self.read_word(link_status_reg_address)
         dll_value_bin = bin(link_status_reg_value).replace('0b', '').zfill(16)[-13-1]  #bit 13
         return int(dll_value_bin)
@@ -263,11 +263,33 @@ class PCIDeviceBase(object):
         """
         return Link-capabilites[dll-link-active-reporting-capbale] bit (indicates if dll-link-active is valid)
         """
-        link_capabilities_reg_offset = 0xc
-        link_capabilities_reg_address = self._pci_express_offset + link_capabilities_reg_offset
+        LINK_CAPABILITIES_REG_OFFSET = 0xc
+        link_capabilities_reg_address = self._pci_express_offset + LINK_CAPABILITIES_REG_OFFSET
         link_capabilities_reg_value = self.read_long(link_capabilities_reg_address)
         dll_reporting_cable_bin = bin(link_capabilities_reg_value).replace('0b', '').zfill(32)[-20-1]  #bit 20
         return int(dll_reporting_cable_bin)
+
+    @property
+    def hotplug_capable(self):
+        """
+        Get slot_capabilities[hotplug_capable]
+        """
+        SLOT_CAPABILITIES_REG_OFFSET = 0x14
+        slot_capabilities_address = self._pci_express_offset + SLOT_CAPABILITIES_REG_OFFSET
+        slot_capabilities_value = self.read_long(slot_capabilities_address)
+        hotplug_capable_value_str = bin(slot_capabilities_value).replace('0b', '').zfill(32)[-6-1]  #bit 6
+        return int(hotplug_capable_value_str)
+
+    @property
+    def hotplug_interrupt_enable(self):
+        """
+        Get slot_control[hotplug_interrupt_enable]
+        """
+        SLOT_CONTROL_REG_OFFSET = 0x18
+        slot_control_address = self._pci_express_offset + SLOT_CONTROL_REG_OFFSET
+        slot_control_value = self.read_word(slot_control_address)
+        hotplug_interrupt_enable_value_str = bin(slot_control_value).replace('0b', '').zfill(16)[-5-1]  #bit 5
+        return int(hotplug_interrupt_enable_value_str)
 
     # Helper methods
     ################
@@ -350,21 +372,30 @@ class FreeBSDPCIDevice(PCIDeviceBase):
             raise NotSupportedDeviceException("Device is not supported to save/load pci configurations")
         self._pci_express_offset = self._get_pci_express_offset()
 
+    def align_to(self, number, base, round="down"):
+        if number%base == 0:
+            ret_number = number  
+        elif round == "down":
+            ret_number = number - number % base
+        elif round == "up":
+            ret_number =  number - number % base + base
+        else:
+            raise RuntimeError("Please add valid round: up/down")
+        return ret_number
+
     def read(self, offset, size, skip_offset_list=None):
         super(FreeBSDPCIDevice, self).read(offset, size, skip_offset_list)
         try:
             if skip_offset_list:
                 read_intervals = BinaryFile._get_read_intervals(skip_offset_list, offset, size)
             else:
-                read_intervals = [(offset, offset+size)]
-
+                read_intervals = [(offset, size)]
             bytes_as_string = []
             for interval_start, interval_size in read_intervals:
                 if interval_size:
-                    pciconf_aligned_offset = ((interval_start / 4) * 4) # pciconf reads in aligment of 4 bytes
-                    pciconf_size_offset = offset % 4
-                    interval_size = interval_size + pciconf_size_offset # in case you want to read from adress not devidable by 4
-                    read_cmd = "pciconf -r {0} {1}:{2}".format(self.dbdf, pciconf_aligned_offset, interval_size)
+                    address_start = self.align_to(number=interval_start, base=4, round="down")
+                    address_end = self.align_to(number=(interval_start + interval_size), base=4, round="up") - 1
+                    read_cmd = "pciconf -r {0} {1}:{2}".format(self.dbdf, address_start, address_end)
                     rc, out, err = exec_cmd(read_cmd)
                     if rc:
                         raise RuntimeError("Failed to read using cmd {0}, Error[{1}]".format(read_cmd, err))
@@ -378,8 +409,9 @@ class FreeBSDPCIDevice(PCIDeviceBase):
             raise RuntimeError("Failed to read offset [{0}] with size [{1}] for PCI device [{2}]. Error is [{3}]".format(offset, size, self.dbdf, e))
 
         bytes_list = []
-        actual_offset = offset - pciconf_aligned_offset
-        bytes_as_string = bytes_as_string[actual_offset:actual_offset + size]
+        start = offset % 4
+        end = start + size
+        bytes_as_string = bytes_as_string[start:end]
         for byte in bytes_as_string:
             if byte != "":
                 bytes_list.append(int(byte, 16))
@@ -423,19 +455,14 @@ class FreeBSDPCIDevice(PCIDeviceBase):
 
     def write(self, offset, size, bytes_list):
         super(FreeBSDPCIDevice, self).write(offset, size, bytes_list)
-        assert offset % 4 == 0, "Offset {0} is not aligned to 4".format(offset)
+        # assert offset % 4 == 0, "Offset {0} is not aligned to 4".format(offset)
 
-        data_to_write = ''
-        for byte in bytes_list:
-            data_to_write += "{0:x}".format(byte).zfill(2)
-
-        write_cmd = "pciconf -w {0} {1} {2}".format(self.dbdf, offset, data_to_write)
-        rc, out, err = exec_cmd(write_cmd)
-        if rc:
-            raise RuntimeError("Failed to write pci conf space data using cmd {0}, Error[{1}]".format(write_cmd, err))
+        for ii,byte in enumerate(bytes_list):
+            write_cmd = "pciconf -wb {0} {1} {2:02x}".format(self.dbdf, offset+ii, byte)
+            rc, _, err = exec_cmd(write_cmd)
+            if rc:
+                raise RuntimeError("Failed to write pci conf space data using cmd {0}, Error[{1}]".format(write_cmd, err))
         
-        self.logger.debug("Data was Written [{0}] to  offset[{1}] for PCI device [{2}]".format(data_to_write, offset, self.dbdf))
-
 
 def exec_cmd(cmd):
     """

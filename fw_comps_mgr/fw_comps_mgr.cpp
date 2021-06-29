@@ -30,15 +30,15 @@
  * SOFTWARE.
  *
  */
-/*
- * fw_comps_mgr.cpp
- *
- *  Created on: Jul 31, 2016
- *      Author: adham
- */
-
+ /*
+  * fw_comps_mgr.cpp
+  *
+  *  Created on: Jul 31, 2016
+  *      Author: adham
+  */
 #include "fw_comps_mgr.h"
 #include "fw_comps_mgr_abstract_access.h"
+#include "fw_comps_mgr_dma_access.h"
 #include "bit_slice.h"
 #include <signal.h>
 
@@ -673,8 +673,31 @@ bool FwCompsMgr::accessComponent(u_int32_t offset,
     ProgressCallBackAdvSt *progressFuncAdv)
 {
     bool bRes = _accessObj->accessComponent(_updateHandle, offset, size, data, access, _currComponentStr, progressFuncAdv);
+
     setLastFirmwareError(_accessObj->getLastFirmwareError());
     setLastRegisterAccessStatus(_accessObj->getLastRegisterAccessStatus());
+    return bRes;
+}
+
+bool FwCompsMgr::isDMAAccess()
+{
+    return (dynamic_cast<DMAComponentAccess*>(_accessObj) != NULL);
+}
+
+bool FwCompsMgr::fallbackToDirectAccess() 
+{
+    bool bRes = false;
+    AbstractComponentAccess* newAccessObj = NULL;
+
+    ComponentAccessFactory* factory = ComponentAccessFactory::GetInstance();
+    newAccessObj = factory->createDataAccessObject(this, _mf, false);
+
+    if (newAccessObj != NULL) {
+        delete _accessObj;
+        _accessObj = newAccessObj;
+        bRes = true;
+    }
+
     return bRes;
 }
 
@@ -755,6 +778,7 @@ bool FwCompsMgr::controlFsm(fsm_command_t command,
             }
             if (_linkXFlow && command == FSM_CMD_ACTIVATE_ALL) {
                 _lastFsmCtrl.activation_delay_sec = _activation_delay_sec;
+                _isDelayedActivationCommandSent = _activation_delay_sec > 0;
             }
         }
         rc = reg_access_mcc(_mf, method, &_lastFsmCtrl);
@@ -774,6 +798,8 @@ bool FwCompsMgr::controlFsm(fsm_command_t command,
             _lastError = regErrTrans(rc);
             setLastRegisterAccessStatus(rc);
         }
+        // if mcc failed, FSM should be unlocked and handle released
+        _isDelayedActivationCommandSent = false;
         return false;
     }
     if (expectedState == FSMST_NA && currentState == FSMST_NA) {
@@ -899,6 +925,7 @@ bool FwCompsMgr::getDeviceHWInfo(FwCompsMgr::MQISDeviceDescriptionT op, vector<u
     if (rc) {
         return false;
     }
+    //reg_access_hca_mqis_reg_print(&mqisRegister, stdout, 4);
     int infoSize = mqisRegister.info_length;
     if (infoSize == 0) {
         return false;
@@ -921,6 +948,7 @@ bool FwCompsMgr::getDeviceHWInfo(FwCompsMgr::MQISDeviceDescriptionT op, vector<u
             if (rc) {
                 return false;
             }
+            //reg_access_hca_mqis_reg_print(&mqisRegister, stdout, 4);
             memcpy(infoString.data() + mqisRegister.read_offset,
                    (mqisRegister.info_string), mqisRegister.read_length);
             leftSize -= mqisRegister.read_length;
@@ -1056,6 +1084,7 @@ FwCompsMgr::FwCompsMgr(mfile *mf, DeviceTypeT devType, int deviceIndex)
     _downloadTransferNeeded = true;
     _activation_delay_sec = 0;
     _rejectedIndex = -1;
+    _isDelayedActivationCommandSent = false;
     initialize(mf);
 }
 
@@ -1075,6 +1104,7 @@ FwCompsMgr::FwCompsMgr(const char *devname, DeviceTypeT devType, int deviceIndex
     _downloadTransferNeeded = true;
     _activation_delay_sec = 0;
     _rejectedIndex = -1;
+    _isDelayedActivationCommandSent = false;
 #ifndef UEFI_BUILD
     if (getenv(MTCR_IB_TIMEOUT_VAR) == NULL) {
         _clearSetEnv = true;
@@ -1089,7 +1119,7 @@ FwCompsMgr::FwCompsMgr(const char *devname, DeviceTypeT devType, int deviceIndex
     _mircCaps = false;
 #ifndef UEFI_BUILD    
     _trm = NULL;
-#endif    
+#endif
     _lastError = FWCOMPS_SUCCESS;
     mfile *mf = mopen(devname);
     if (!mf) {
@@ -1123,11 +1153,13 @@ FwCompsMgr::FwCompsMgr(uefi_Dev_t *uefi_dev, uefi_dev_extra_t *uefi_extra)
     _downloadTransferNeeded = true;
     _activation_delay_sec = 0;
     _rejectedIndex = -1;
+    _isDelayedActivationCommandSent = false;
     initialize(mf);
 }
 FwCompsMgr::~FwCompsMgr()
 {
 #ifndef UEFI_BUILD
+    unlock_flash_semaphore();
     if (_clearSetEnv) {
 #if defined(_WIN32) || defined(_WIN64) || defined(__MINGW64__) || defined(__MINGW32__)
         putenv(MTCR_IB_TIMEOUT_VAR "=");
@@ -1137,9 +1169,11 @@ FwCompsMgr::~FwCompsMgr()
     }
 #endif
     if (_mf) {
-        if (_lastFsmCtrl.control_state != FSMST_IDLE) {
-            controlFsm(FSM_CMD_CANCEL, FSMST_LOCKED);
-            controlFsm(FSM_CMD_RELEASE_UPDATE_HANDLE, FSMST_IDLE);
+        if (!_isDelayedActivationCommandSent) {
+            if (_lastFsmCtrl.control_state != FSMST_IDLE) {
+                controlFsm(FSM_CMD_CANCEL, FSMST_LOCKED);
+                controlFsm(FSM_CMD_RELEASE_UPDATE_HANDLE, FSMST_IDLE);
+            }
         }
     }
     if (_openedMfile) {
@@ -1180,7 +1214,8 @@ const char* CompNames[] =  {
     "NO_COMPONENT 2",
     "COMPID_GEARBOX",
     "COMPID_CONGESTION_CONTROL",
-    "COMPID_LINKX_PROPERTIES"
+    "COMPID_LINKX_PROPERTIES",
+    "COMPID_CRYPTO_TO_COMMISSIONING"
 } ;
 
 bool FwCompsMgr::RefreshComponentsStatus(comp_status_st* ComponentStatus)
@@ -1307,6 +1342,7 @@ bool FwCompsMgr::readComponentInfo(FwComponent::comps_ids_t compType,
         _lastError = FWCOMPS_INFO_TYPE_NOT_SUPPORTED;
         return false;
     }
+    //return true;
 }
 
 bool FwCompsMgr::queryComponentStatus(u_int32_t componentIndex,
@@ -1335,7 +1371,9 @@ bool FwCompsMgr::burnComponents(std::vector<FwComponent>& comps,
     }
     if (!controlFsm(FSM_CMD_LOCK_UPDATE_HANDLE, FSMST_LOCKED)) {
         DPRINTF(("Cannot lock the handle!\n"));
-        forceRelease();
+        if (forceRelease() == false) {
+            printf("FSM is locked.\n");
+        }
         return false;
     }
     if (_downloadTransferNeeded == true) {
@@ -1354,8 +1392,28 @@ bool FwCompsMgr::burnComponents(std::vector<FwComponent>& comps,
             }
             _currComponentStr = FwComponent::getCompIdStr(comps[i].getType());
             if (!accessComponent(0, comps[i].getSize(), (u_int32_t *)(comps[i].getData().data()), MCDA_WRITE_COMP, progressFuncAdv)) {
-                DPRINTF(("Downloading FW component has failed!\n"));
-                return false;
+                bool bRes = false;
+                if (isDMAAccess()) {
+                    printf("Burning with DMA has failed, switching to Direct Access burn.\n");
+                    bRes = fallbackToDirectAccess();
+                    
+                    if (bRes) {
+                        if (!controlFsm(FSM_CMD_CANCEL, FSMST_LOCKED)) {
+                            DPRINTF(("Cancel instruction to FW component has failed!\n"));
+                            return false;
+                        }
+                        if (!controlFsm(FSM_CMD_UPDATE_COMPONENT, FSMST_DOWNLOAD, comps[i].getSize(), FSMST_INITIALIZE, progressFuncAdv)) {
+                            DPRINTF(("Initializing downloading FW component has failed!\n"));
+                            return false;
+                        }
+
+                        bRes = accessComponent(0, comps[i].getSize(), (u_int32_t *)(comps[i].getData().data()), MCDA_WRITE_COMP, progressFuncAdv);
+                    }
+                }
+                if (!bRes) {
+                    DPRINTF(("Downloading FW component has failed!\n"));
+                    return false;
+                }
             }
             if (!controlFsm(FSM_CMD_VERIFY_COMPONENT, FSMST_LOCKED, 0, FSMST_NA, progressFuncAdv)) {
                 DPRINTF(("Verifying FW component has failed!\n"));
@@ -1379,10 +1437,14 @@ bool FwCompsMgr::burnComponents(std::vector<FwComponent>& comps,
                 DPRINTF(("Moving to ACTIVATE state has failed!\n"));
                 return false;
             }
-            printf("Please wait while activating the tramsmitter(s) FW ...\n");
-            if (!controlFsm(FSM_QUERY, FSMST_LOCKED, 0, FSMST_ACTIVATE, progressFuncAdv)) {
-                DPRINTF(("Moving from activate state to locked state has failed!\n"));
-                return false;
+            
+            // In case of activation delay, FW will set FSM to LOCKED 
+            if (!_isDelayedActivationCommandSent) {
+                printf("Please wait while activating the tramsmitter(s) FW ...\n");
+                if (!controlFsm(FSM_QUERY, FSMST_LOCKED, 0, FSMST_ACTIVATE, progressFuncAdv)) {
+                    DPRINTF(("Moving from activate state to locked state has failed!\n"));
+                    return false;
+                }
             }
         }
     }
@@ -1392,9 +1454,13 @@ bool FwCompsMgr::burnComponents(std::vector<FwComponent>& comps,
             return false;
         }
     }
-    if (!controlFsm(FSM_CMD_RELEASE_UPDATE_HANDLE)) {
-        DPRINTF(("Release FW handle has failed!\n"));
-        return false;
+
+    // In case of activation delay, FW will release the update handle
+    if (!_isDelayedActivationCommandSent) {
+        if (!controlFsm(FSM_CMD_RELEASE_UPDATE_HANDLE)) {
+            DPRINTF(("Release FW handle has failed!\n"));
+            return false;
+        }
     }
     _refreshed = false;
     return true;
@@ -1453,6 +1519,9 @@ const char* FwComponent::getCompIdStr(comps_ids_t compId)
 
     case COMPID_LINKX:
         return "COMPID_LINKX";
+
+    case COMPID_CRYPTO_TO_COMMISSIONING:
+        return "COMPID_CRYPTO_TO_COMMISSIONING";
 
     default:
         return "UNKNOWN_COMPONENT";

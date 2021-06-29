@@ -34,12 +34,15 @@
 
 #include "mlxlink_utils.h"
 
-using namespace std;
+void termHandler(int sig) {
+    printf("Interrupted, Exiting...\n");
+    exit(sig);
+}
 
-u_int32_t findMaxKey(std::vector<std::string> keys)
+u_int32_t findMaxKey(vector<string> keys)
 {
     u_int32_t maxKeySize = 0;
-    for (std::vector<std::string>::iterator it = keys.begin(); it != keys.end();
+    for (vector<string>::iterator it = keys.begin(); it != keys.end();
          ++it) {
         if ((*it).length() > maxKeySize) {
             maxKeySize = (*it).length();
@@ -48,49 +51,38 @@ u_int32_t findMaxKey(std::vector<std::string> keys)
     return maxKeySize;
 }
 
-bool isIn(const std::string &val, std::vector<std::string> vect)
+string convertIntToHexString(int toConvert)
 {
-    bool found = false;
-    for (std::vector<std::string>::iterator it = vect.begin(); it != vect.end(); it ++) {
-        if (val == *it) {
-            found = true;
-            break;
-        }
-    }
-    return found;
-}
-
-std::string convertIntToHexString(int toConvert)
-{
-    std::stringstream hexStr;
-    hexStr << std::hex << toConvert;
+    stringstream hexStr;
+    hexStr << hex << toConvert;
     return hexStr.str();
 }
 
-string deleteLastComma(string &s)
+string deleteLastChar(const string &s, u_int32_t numOfCharsToRemove)
 {
-    if (s.size()) {
-        s.erase(s.size() - 1);
+    string newStr = s;
+    if (newStr.size() && newStr.size() > numOfCharsToRemove) {
+        newStr.erase(newStr.size() - numOfCharsToRemove);
     }
-    return s;
+    return newStr;
 }
 
-std::string getStringFromVector(std::vector<std::string> values)
+string getStringFromVector(vector<string> values)
 {
-    std::string s;
-    for (std::vector<std::string>::const_iterator i = values.begin();
+    string s;
+    for (vector<string>::const_iterator i = values.begin();
          i != values.end(); ++i) {
         s += *i + ',';
     }
-    return deleteLastComma(s);
+    return deleteLastChar(s);
 }
 
-std::string getStringFromVector(std::vector<float> values)
+string getStringFromVector(vector<float> values)
 {
-    std::string s;
+    string s;
     char strVal[32];
     u_int32_t prec = 0;
-    for (std::vector<float>::const_iterator i = values.begin();
+    for (vector<float>::const_iterator i = values.begin();
          i != values.end(); ++i) {
         if ((*i - ((int)*i)) > 0) {
             prec = 3;
@@ -100,7 +92,7 @@ std::string getStringFromVector(std::vector<float> values)
         snprintf(strVal, sizeof(strVal), "%.*f", prec, *i);
         s += string(strVal) + ',';
     }
-    return deleteLastComma(s);
+    return deleteLastChar(s);
 }
 
 u_int64_t add32BitTo64(u_int32_t value1, u_int32_t value2)
@@ -155,6 +147,9 @@ string IBSupportedSpeeds2Str(u_int32_t mask)
 {
     string maskStr = "";
 
+    if (mask & IB_LINK_SPEED_NDR) {
+        maskStr += "NDR,";
+    }
     if (mask & IB_LINK_SPEED_HDR) {
         maskStr += "HDR,";
     }
@@ -177,7 +172,7 @@ string IBSupportedSpeeds2Str(u_int32_t mask)
         maskStr += "SDR,";
     }
 
-    return deleteLastComma(maskStr);
+    return deleteLastChar(maskStr);
 }
 
 string EthSupportedSpeeds2Str(u_int32_t int_mask)
@@ -212,18 +207,27 @@ string EthSupportedSpeeds2Str(u_int32_t int_mask)
         maskStr += "100M,";
     }
 
-    return deleteLastComma(maskStr);
+    return deleteLastChar(maskStr);
 }
 
 string EthExtSupportedSpeeds2Str(u_int32_t int_mask)
 {
     string maskStr = "";
 
+    if (int_mask & ETH_LINK_SPEED_EXT_400GAUI_4) {
+        maskStr += "400G_4x,";
+    }
     if (int_mask & ETH_LINK_SPEED_EXT_400GAUI_8) {
-        maskStr += "400G,";
+        maskStr += "400G_8X,";
+    }
+    if (int_mask & ETH_LINK_SPEED_EXT_200GAUI_2) {
+        maskStr += "200G_2X,";
     }
     if (int_mask & ETH_LINK_SPEED_EXT_200GAUI_4) {
-        maskStr += "200G,";
+        maskStr += "200G_4X,";
+    }
+    if (int_mask & ETH_LINK_SPEED_EXT_100GAUI_1) {
+        maskStr += "100G_1X,";
     }
     if (int_mask & ETH_LINK_SPEED_EXT_100GAUI_2) {
         maskStr += "100G_2X,";
@@ -259,7 +263,7 @@ string EthExtSupportedSpeeds2Str(u_int32_t int_mask)
         maskStr += "100M,";
     }
 
-    return deleteLastComma(maskStr);
+    return deleteLastChar(maskStr);
 }
 
 string SupportedSpeeds2Str(u_int32_t proto_active, u_int32_t mask, bool extended)
@@ -325,13 +329,22 @@ int ptysSpeedToExtMaskETH(const string & speed)
     if (speed =="100G_4X") {
         return (ETH_LINK_SPEED_EXT_CAUI_4);
     }
+    if (speed =="100G_1X") {
+        return (ETH_LINK_SPEED_EXT_100GAUI_1);
+    }
     if (speed =="100G_2X") {
         return (ETH_LINK_SPEED_EXT_100GAUI_2);
     }
-    if (speed == "200G") {
+    if (speed == "200G_2X") {
+        return ETH_LINK_SPEED_EXT_200GAUI_2;
+    }
+    if (speed == "200G_4X") {
         return ETH_LINK_SPEED_EXT_200GAUI_4;
     }
-    if (speed == "400G") {
+    if (speed == "400G_4X") {
+        return ETH_LINK_SPEED_EXT_400GAUI_4;
+    }
+    if (speed == "400G_8X") {
         return ETH_LINK_SPEED_EXT_400GAUI_8;
     }
     return 0x0;
@@ -401,6 +414,9 @@ int ptysSpeedToMaskIB(const string &speed)
     if (speed == "HDR") {
         return IB_LINK_SPEED_HDR;
     }
+    if (speed == "NDR") {
+        return IB_LINK_SPEED_NDR;
+    }
     return 0x0;
 }
 
@@ -409,11 +425,16 @@ bool isPAM4Speed(u_int32_t activeSpeed, u_int32_t protoActive, bool extended)
     bool pam4Signal = false;
     if (protoActive == ETH && extended) {
         if (activeSpeed == ETH_LINK_SPEED_EXT_50GAUI_1 ||
-                activeSpeed >= ETH_LINK_SPEED_EXT_100GAUI_2) {
+            activeSpeed == ETH_LINK_SPEED_EXT_100GAUI_2 ||
+            activeSpeed == ETH_LINK_SPEED_EXT_200GAUI_4 ||
+            activeSpeed == ETH_LINK_SPEED_EXT_400GAUI_8) {
             pam4Signal = true;
         }
-    } else if (protoActive == IB && activeSpeed >= IB_LINK_SPEED_HDR) {
-        pam4Signal = true;
+    } else if (protoActive == IB) {
+        if (activeSpeed == IB_LINK_SPEED_HDR ||
+            activeSpeed == IB_LINK_SPEED_NDR) {
+            pam4Signal = true;
+        }
     }
     return pam4Signal;
 }
@@ -459,45 +480,6 @@ bool checkPplrCmd(const string &pplrCmd)
     return true;
 }
 
-int prbsLaneRateToMask(const string &rate)
-{
-    if (rate == "IB-SDR" || rate == "SDR") {
-        return PRBS_SDR;
-    }
-    if (rate == "IB-DDR" || rate == "DDR" || rate == "5G" || rate == "5GbE") {
-        return PRBS_DDR;
-    }
-    if (rate == "IB-QDR" || rate == "QDR") {
-        return PRBS_QDR;
-    }
-    if (rate == "IB-FDR10" || rate == "FDR10" || rate == "10G" || rate == "10GbE" || rate == "40G" || rate == "40GbE") {
-        return PRBS_FDR10;
-    }
-    if (rate == "IB-FDR" || rate == "FDR" || rate == "14G" || rate == "14GbE") {
-        return PRBS_FDR;
-    }
-    if (rate == "IB-EDR" || rate == "EDR" || rate == "25G" || rate == "25GbE"
-            || rate == "50G" || rate == "50GbE" || rate == "100G" || rate == "100GbE"
-            || rate == "50G_2X" || rate == "50GbE_2X" || rate == "100G_4X" || rate == "100GbE_4X") {
-        return PRBS_EDR;
-    }
-    if (rate == "IB-HDR" || rate == "HDR" || rate == "200GbE" || rate == "200G"
-            || rate == "50G_1X" || rate == "50GbE_1X" || rate == "100G_2X"
-            || rate == "100GbE_2X" || rate == "400G" || rate == "400GbE") {
-        return PRBS_HDR;
-    }
-    if (rate == "1G" || rate == "1GbE") {
-        return PRBS_1G;
-    }
-    if (rate == "XAUI" || rate == "2.5G" || rate == "2.5GbE") {
-        return PRBS_XAUI;
-    }
-    if (rate == "50GE-KR4" || rate == "12.89G" || rate == "12.89GbE") {
-        return PRBS_50G;
-    }
-    return PRBS_EDR;
-}
-
 string prbsMaskToLaneRate(u_int32_t mask)
 {
     if (mask == PRBS_SDR) {
@@ -521,6 +503,9 @@ string prbsMaskToLaneRate(u_int32_t mask)
     if (mask == PRBS_HDR) {
         return "53.125G";
     }
+    if (mask == PRBS_NDR) {
+        return "106.25G";
+    }
     if (mask == PRBS_1G) {
         return "1.25G";
     }
@@ -531,45 +516,6 @@ string prbsMaskToLaneRate(u_int32_t mask)
         return "12.89G";
     }
     return "N/A";
-}
-
-int prbsLaneRateCapToMask(const string &rate)
-{
-    if (rate == "IB-SDR" || rate == "SDR") {
-        return LANE_RATE_SDR_CAP;
-    }
-    if (rate == "IB-DDR" || rate == "DDR" || rate == "5G" || rate == "5GbE") {
-        return LANE_RATE_DDR_CAP;
-    }
-    if (rate == "IB-QDR" || rate == "QDR") {
-        return LANE_RATE_QDR_CAP;
-    }
-    if (rate == "IB-FDR10" || rate == "FDR10" || rate == "10G" || rate == "10GbE" || rate == "40G" || rate == "40GbE") {
-        return LANE_RATE_FDR10_CAP;
-    }
-    if (rate == "IB-FDR" || rate == "FDR" || rate == "14G" || rate == "14GbE") {
-        return LANE_RATE_FDR_CAP;
-    }
-    if (rate == "IB-EDR" || rate == "EDR" || rate == "25G" || rate == "25GbE"
-            || rate == "50G" || rate == "50GbE" || rate == "100G" || rate == "100GbE"
-            || rate == "50G_2X" || rate == "50GbE_2X" || rate == "100G_4X" || rate == "100GbE_4X") {
-        return LANE_RATE_EDR_CAP;
-    }
-    if (rate == "IB-HDR" || rate == "HDR" || rate == "200GbE" || rate == "200G"
-            || rate == "50G_1X" || rate == "50GbE_1X" || rate == "100G_2X"
-            || rate == "100GbE_2X" || rate == "400G" || rate == "400GbE") {
-        return LANE_RATE_HDR_CAP;
-    }
-    if (rate == "1G" || rate == "1GbE") {
-        return LANE_RATE_1G_CAP;
-    }
-    if (rate == "XAUI" || rate == "2.5G" || rate == "2.5GbE") {
-        return LANE_RATE_XAUI_CAP;
-    }
-    if (rate == "50GE-KR4" || rate == "12.89G" || rate == "12.89GbE") {
-        return LANE_RATE_50G_CAP;
-    }
-    return LANE_RATE_EDR_CAP;
 }
 
 u_int32_t prbsMaskToRateNum(u_int32_t mask)
@@ -594,6 +540,9 @@ u_int32_t prbsMaskToRateNum(u_int32_t mask)
     }
     if (mask == PRBS_HDR) {
         return 200;
+    }
+    if (mask == PRBS_NDR) {
+        return 400;
     }
     if (mask == PRBS_1G) {
         return 1;
@@ -628,8 +577,12 @@ bool prbsLaneRateCheck(const string &rate)
             || rate == "100G"|| rate == "50G_2X" || rate == "100G_4X") {
         return true;
     }
-    if (rate == "HDR" || rate == "IB-HDR" || rate == "200G"
-            || rate == "50G_1X" || rate == "100G_2X" || rate == "400G") {
+    if (rate == "HDR" || rate == "IB-HDR" || rate == "200G_4X"
+            || rate == "50G_1X" || rate == "100G_2X" || rate == "400G_8X") {
+        return true;
+    }
+    if (rate == "NDR" || rate == "IB-NDR" || rate == "100G_1X"
+            || rate == "200G_2X" || rate == "400G_4X" || rate == "800G_8X") {
         return true;
     }
     if (rate == "1G") {
@@ -661,14 +614,16 @@ string prbsMaskToTuningStatus(u_int32_t mask)
     return "N/A";
 }
 
-string prbsMaskToLockStatus(u_int32_t mask, u_int32_t numOfLanesToUse)
+string prbsMaskToLockStatus(u_int32_t mask, u_int32_t numOfLanesToUse, bool &allLocked)
 {
     string res = "";
+    allLocked = true;
     for (u_int32_t i = 0; i < numOfLanesToUse; i++) {
         if (mask & 1 << i) {
             res += "Locked";
         } else {
             res += "Not Locked";
+            allLocked = false;
         }
         if (i < numOfLanesToUse - 1) {
             res += MlxlinkRecord::jsonFormat? "," : ",    ";
@@ -694,35 +649,6 @@ bool checkTestMode(const string &testMode)
     return true;
 }
 
-string FEC2Str100G(u_int32_t mask)
-{
-    string maskStr = "";
-    if (mask & NO_FEC) {
-        maskStr += "No-FEC,";
-    }
-    if (mask & RS_FEC) {
-        maskStr += "RS-FEC(528,514),";
-    }
-
-    return deleteLastComma(maskStr);
-}
-
-string FEC2Str50G25G(u_int32_t mask)
-{
-    string maskStr = "";
-    if (mask & NO_FEC) {
-        maskStr += "No-FEC,";
-    }
-    if (mask & FC_FEC) {
-        maskStr += "FireCode FEC,";
-    }
-    if (mask & RS_FEC) {
-        maskStr += "RS-FEC(528,514),";
-    }
-
-    return deleteLastComma(maskStr);
-}
-
 string FEC2Str(const string &fecShort, const string &speedStrG)
 {
     string fec = "";
@@ -743,40 +669,6 @@ string FEC2Str(const string &fecShort, const string &speedStrG)
         }
     }
     return fec;
-}
-
-string FECReq2Str(u_int32_t mask, bool linkUP)
-{
-    string maskStr = "";
-    if (!linkUP) {
-        return "N/A";
-    }
-    if (mask & FEC_REQUSET_NF) {
-        maskStr += "No-FEC,";
-    }
-    if (mask & FEC_REQUSET_FC) {
-        maskStr += "Firecode FEC,";
-    }
-    if (mask & FEC_REQUSET_RS528) {
-        maskStr += "Standard RS-FEC - RS(528,514),";
-    }
-    if (mask & FEC_REQUSET_RS271) {
-        maskStr += "Standard LL RS-FEC - RS(271,257),";
-    }
-    if (mask & FEC_REQUSET_RS277) {
-        maskStr += "Mellanox Strong RS-FEC - RS(277,257),";
-    }
-    if (mask & FEC_REQUSET_RS163) {
-        maskStr += "Mellanox LL RS-FEC - RS(163,155),";
-    }
-    if (mask & FEC_REQUSET_ZLF) {
-        maskStr += "Zero Latency FEC (ZLF),";
-    }
-
-    if (maskStr == "") {
-        maskStr = "N/A,";
-    }
-    return deleteLastComma(maskStr);
 }
 
 int fecToBit(const string &fec, const string &speedStrG)
@@ -805,39 +697,49 @@ int fecToBit(const string &fec, const string &speedStrG)
     return 0;
 }
 
-string speedToStr(const string &speed)
+string speedToStr(const string &speed, u_int32_t numOfLanes)
 {
-    if (speed == "400GbE" || speed == "400G") {
-        return "400g_8x";
+    string fecSpeedStrFormat = "100g";
+    string numberOfLanesStr = to_string(numOfLanes) + "x";
+    if (speed == "800G") {
+        fecSpeedStrFormat = "800g_" + numberOfLanesStr;
     }
-    if (speed == "200GbE" || speed == "200G" || speed == "IB-HDR") {
-        return "200g_4x";
+    if (speed == "400G") {
+        fecSpeedStrFormat = "400g_" + numberOfLanesStr;
     }
-    if (speed == "100G_2x") {
-        return "100g_2x";
+    if (speed == "200G") {
+        fecSpeedStrFormat = "200g_" + numberOfLanesStr;
     }
-    if (speed == "50G_1x") {
-        return "50g_1x";
+    if (speed == "100G") {
+        if (numOfLanes == 4) {
+            fecSpeedStrFormat = "100g";
+        } else {
+            fecSpeedStrFormat = "100g_" + numberOfLanesStr;
+        }
     }
-    if (speed == "100GbE" || speed == "100G" || speed == "100G_4X" || speed == "IB-EDR") {
-        return "100g";
+    if (speed == "50G") {
+        if (numOfLanes == 1) {
+            fecSpeedStrFormat = "50g_" + numberOfLanesStr;
+        } else {
+            fecSpeedStrFormat = "50g";
+        }
     }
-    if (speed == "50GbE" || speed == "50G" || speed == "50G_2X") {
-        return "50g";
+    if (speed == "100GbE") {
+        fecSpeedStrFormat = "100g";
+    }
+    if (speed == "50GbE") {
+        fecSpeedStrFormat = "50g";
     }
     if (speed == "25GbE" || speed == "25G") {
-        return "25g";
+        fecSpeedStrFormat = "25g";
     }
-    if (speed == "40GbE" || speed == "40G" || speed == "IB-FDR10") {
-        return "10g_40g";
+    if (speed == "40GbE" || speed == "40G" || speed == "10GbE" || speed == "10G") {
+        fecSpeedStrFormat = "10g_40g";
     }
-    if (speed == "10GbE" || speed == "10G" || speed == "IB-QDR") {
-        return "10g_40g";
+    if (speed == "56GbE") {
+        fecSpeedStrFormat = "56g";
     }
-    if (speed == "IB-FDR") {
-        return "56g";
-    }
-    return "100g";
+    return fecSpeedStrFormat;
 }
 
 PAOS_CMD paos_to_int(const string &cmd)
@@ -879,12 +781,12 @@ int pepc_an_mode_to_int(const string &anMode)
     return 0;
 }
 
-bool endsWith(std::string const & value, std::string const & ending)
+bool endsWith(string const & value, string const & ending)
 {
     if (ending.size() >= value.size()) {
         return false;
     }
-    return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+    return equal(ending.rbegin(), ending.rend(), value.rbegin());
 }
 
 void findAndReplace(string& source, string const& find, string const& replace)
@@ -1093,7 +995,9 @@ string getCableMedia(u_int32_t cableType)
 string pcieSpeedStr(u_int32_t linkSpeedActive)
 {
     string linkSpeedActiveStr;
-    if (linkSpeedActive & GEN4) {
+    if (linkSpeedActive & GEN5) {
+        linkSpeedActiveStr = "32G-Gen 5";
+    } else if (linkSpeedActive & GEN4) {
         linkSpeedActiveStr = "16G-Gen 4";
     } else if (linkSpeedActive & GEN3) {
         linkSpeedActiveStr = "8G-Gen 3";
@@ -1155,36 +1059,88 @@ int readSignedByte(u_int32_t value)
     return value;
 }
 
-void setPrintVal(MlxlinkCmdPrint &mlxlinkCmdPrint, int index, string key,
+void setPrintVal(MlxlinkCmdPrint &mlxlinkCmdPrint, string key,
         string value, string color, bool print, bool valid, bool arrayValue,
         bool colorKey)
 {
-    mlxlinkCmdPrint.mlxlinkRecords[index].key = key;
-    mlxlinkCmdPrint.mlxlinkRecords[index].val = valid? value: "N/A";
-    mlxlinkCmdPrint.mlxlinkRecords[index].color = color;
-    mlxlinkCmdPrint.mlxlinkRecords[index].visible = print;
-    mlxlinkCmdPrint.mlxlinkRecords[index].arrayValue = arrayValue;
-    mlxlinkCmdPrint.mlxlinkRecords[index].colorKey = colorKey;
+    mlxlinkCmdPrint.mlxlinkRecords[mlxlinkCmdPrint.lastInsertedRow].key = key;
+    mlxlinkCmdPrint.mlxlinkRecords[mlxlinkCmdPrint.lastInsertedRow].val = valid? value: "N/A";
+    mlxlinkCmdPrint.mlxlinkRecords[mlxlinkCmdPrint.lastInsertedRow].color = color;
+    mlxlinkCmdPrint.mlxlinkRecords[mlxlinkCmdPrint.lastInsertedRow].visible = print;
+    mlxlinkCmdPrint.mlxlinkRecords[mlxlinkCmdPrint.lastInsertedRow].arrayValue = arrayValue;
+    mlxlinkCmdPrint.mlxlinkRecords[mlxlinkCmdPrint.lastInsertedRow].colorKey = colorKey;
     mlxlinkCmdPrint.lastInsertedRow++;
 }
 
 void setPrintTitle(MlxlinkCmdPrint &mlxlinkCmdPrint, string title,
         u_int32_t size, bool print)
 {
+    if (!MlxlinkRecord::gboxTitle.empty()) {
+        title = MlxlinkRecord::gboxTitle + " - " + title;
+    }
+
     mlxlinkCmdPrint.title = title;
     mlxlinkCmdPrint.visible = print;
     mlxlinkCmdPrint.initRecords(size);
 }
 
-u_int32_t portTypeStrToInt(const string &str)
+int eyeTypeStrToInt(const string &str)
 {
-    u_int32_t portType = 0;
-    if (str == "GEARBOX_HOST") {
-        portType = 1;
-    } else if (str == "GEARBOX_LINE") {
-        portType = 3;
+    int code = -1;
+    if (str == "CMP") {
+        code = SLRG_COMPOSITE_EYE;
+    } else if (str == "ALL") {
+        code = SLRG_COMPOSITE_WITH_ALL_EYES;
+    } else if (str == "UP") {
+        code = SLRG_UPPER_EYE;
+    } else if (str == "MID") {
+        code = SLRG_MIDDLE_EYE;
+    } else if (str == "LOW") {
+        code = SLRG_LOWER_EYE;
     }
-    return portType;
+    return code;
 }
 
+bool isSpeed25GPerLane(u_int32_t speed, u_int32_t protocol)
+{
+    bool valid = true;
+    if ((protocol == IB && speed != IB_LINK_SPEED_EDR) ||
+        (protocol == ETH && (speed != ETH_LINK_SPEED_100G_CR4 &&
+        speed != ETH_LINK_SPEED_100G_KR4 && speed != ETH_LINK_SPEED_100G_LR4 &&
+        speed != ETH_LINK_SPEED_100G_SR4 && speed != ETH_LINK_SPEED_50G_KR2 &&
+        speed != ETH_LINK_SPEED_50G_SR2 && speed != ETH_LINK_SPEED_50G_CR2 &&
+        speed != ETH_LINK_SPEED_25G_CR && speed != ETH_LINK_SPEED_25G_KR &&
+        speed != ETH_LINK_SPEED_25G_SR && speed != ETH_LINK_SPEED_50G_KR4))) {
+        valid = false;
+    }
+    return valid;
+}
+
+bool askUser(const char *question, bool force)
+{
+    if (MlxlinkRecord::jsonFormat && force) {
+        return true;
+    }
+
+    bool ret = true;
+    void (*old)(int);
+    old = signal(SIGINT, termHandler);
+
+    printf("\n %s ? (y/n) [n] : ", question);
+    if (force) {
+        printf("y\n");
+    } else {
+        fflush(stdout);
+        string answer;
+        getline(cin, answer);
+        if (strcasecmp(answer.c_str(), "y") &&
+            strcasecmp(answer.c_str(), "yes")) {
+            return false;
+        }
+    }
+
+    signal(SIGINT, old);
+
+    return ret;
+}
 

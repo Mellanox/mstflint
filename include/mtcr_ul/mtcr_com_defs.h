@@ -84,10 +84,14 @@ typedef long long int64_t;
 
 #include <sys/types.h>
 #define MTCR_API
-
+#define LOCK_FILE_DIR "/tmp/mstflint_lockfiles"
+#define LOCK_FILE_FORMAT "/tmp/mstflint_lockfiles/%04x:%02x:%02x.%x_%s"
+#define LOCK_VIRTUAL_PCI_FILE_FORMAT "/tmp/mstflint_lockfiles/%s_%s"
+#define MAX_RETRY_CNT 4096
 #endif
 
 #define DEV_NAME_SZ 512
+#define MAX_PAGES_SIZE 8
 
 /*
  * MST <--> MTCR API defines
@@ -353,7 +357,7 @@ typedef struct dev_info_t {
         } ib;
 
         struct {
-            u_int32_t TBD;
+            char remote_device_name[512];
         } remote;
     };
 } dev_info;
@@ -419,10 +423,29 @@ typedef struct access_reg_params_t {
 
 typedef struct mfile_t mfile;
 
-typedef struct mtcr_alloc_page_t {
-    u_int64_t pa;
-    u_int64_t va;
-} mtcr_alloc_page;
+struct mtcr_page_addresses {
+    u_int64_t dma_address;
+    u_int64_t virtual_address;
+};
+
+
+struct page_list {
+    // User space buffer page aligned.
+    char* page_list;
+    int page_amount;
+};
+
+struct mtcr_page_info {
+    unsigned int page_amount;
+    unsigned long page_pointer_start;    
+    struct mtcr_page_addresses page_addresses_array[MAX_PAGES_SIZE];
+};
+
+
+struct mtcr_read_dword_from_config_space {
+    unsigned int offset;
+    unsigned int data;
+};
 
 typedef void (*f_mpci_change)        (mfile *mf);
 
@@ -445,6 +468,10 @@ typedef struct gearbox_info_t {
     u_int32_t data_req_addr;
     u_int32_t data_res_addr;
 } gearbox_info;
+
+typedef struct cables_info_t {
+    int slave_addr_additional_offset;
+} cables_info;
 
 #define VSEC_MIN_SUPPORT_UL(mf) (((mf)->vsec_cap_mask & (1 << VCC_INITIALIZED)) && \
                                  ((mf)->vsec_cap_mask & (1 << VCC_CRSPACE_SPACE_SUPPORTED)) && \

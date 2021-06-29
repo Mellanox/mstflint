@@ -116,50 +116,79 @@ const char* ComponentUpdateStateName[16] =
     "RESERVED"
 };
 
-bool QuerySubCommand::PrintLinkXQuery(string& outPutString, const string& host, int deviceIndex, const comp_status_st& ComponentStatus, const component_linkx_st& linkx_data, char* delimeter) {
+void QuerySubCommand::AddTableHeaderForCSVFormat(string& outputString) {
+
+    outputString += "Host,Device index,Component Index,Component Status,Component Update State";
+    outputString += ",Running state,Information block";
+    outputString += ",FW A Version,FW B Version,FW Factory Version,SupportedProtocol,Activation type,Serial number\n";
+}
+
+bool QuerySubCommand::PrintLinkXQuery(string& outPutString, const string& host, int deviceIndex, const comp_status_st& ComponentStatus, const component_linkx_st& linkx_data, char* delimeter, bool isCSV) {
 
     char buffer[4096] = { 0 };
-    sprintf(buffer, "Host : %s%s Device index %d%s Component Index %d%s Component Status %s%s Component Update State %s%s ", 
+    sprintf(buffer, isCSV ? "%s%s%d%s%d%s%s%s%s%s" :
+        "Host : %s%s Device index %d%s Component Index %d%s Component Status %s%s Component Update State %s%s ", 
         host.c_str(), delimeter,
         deviceIndex, delimeter,
         ComponentStatus.component_index, delimeter, ComponentStatusName[ComponentStatus.component_status], delimeter,
         ComponentUpdateStateName[ComponentStatus.component_update_state], delimeter);
 
     outPutString += buffer;
-    // If it is zero, don't skip.
     if (linkx_data.fw_image_status_bitmap != 0) {
-        sprintf(buffer, "Running state is : ");
-        outPutString += buffer;
+        if (!isCSV) {
+            sprintf(buffer, "Running state is : ");
+            outPutString += buffer;
+        }
         for (int i = 0; i < 8; i++) {
             if (linkx_data.fw_image_status_bitmap & (1 << i)) {
-                sprintf(buffer," %s ", ImageAState[i]);
+                sprintf(buffer, isCSV ? "%s" : " %s ", ImageAState[i]);
                 outPutString += buffer;
             }
         }
         outPutString += delimeter;
     }
+    else {
+        if (isCSV) {
+            outPutString += delimeter;
+        }
+    }
+
     if (linkx_data.fw_image_info_bitmap != 0) {
-        sprintf(buffer, "Information block is : ");
-        outPutString += buffer;
+        if (!isCSV) {
+            sprintf(buffer, "Information block is : ");
+            outPutString += buffer;
+        }
         for (int i = 0; i < 8; i++) {
             if (linkx_data.fw_image_info_bitmap & (1 << i)) {
-                sprintf(buffer," %s ", FwImageBitmap[i]);
+                sprintf(buffer, isCSV ? "%s" : " %s ", FwImageBitmap[i]);
                 outPutString += buffer;
             }
         }
         outPutString += delimeter;
     }
-    sprintf(buffer, "FW A Version : %02d.%02d.%04d%s", linkx_data.image_a_major, linkx_data.image_a_minor, linkx_data.image_a_subminor, delimeter);
+    else {
+        if (isCSV) {
+            outPutString += delimeter;
+        }
+    }
+
+    sprintf(buffer, isCSV ? "%02d.%02d.%04d%s" : "FW A Version : %02d.%02d.%04d%s", 
+        linkx_data.image_a_major, linkx_data.image_a_minor, linkx_data.image_a_subminor, delimeter);
     outPutString += buffer;
-    sprintf(buffer, "FW B Version : %02d.%02d.%04d%s", linkx_data.image_b_major, linkx_data.image_b_minor, linkx_data.image_b_subminor, delimeter);
+    sprintf(buffer, isCSV ? "%02d.%02d.%04d%s" : "FW B Version : %02d.%02d.%04d%s", 
+        linkx_data.image_b_major, linkx_data.image_b_minor, linkx_data.image_b_subminor, delimeter);
     outPutString += buffer;
-    sprintf(buffer, "FW Factory Version : %02d.%02d.%04d%s", linkx_data.factory_image_major, linkx_data.factory_image_minor, linkx_data.factory_image_subminor, delimeter);
+    sprintf(buffer, isCSV ? "%02d.%02d.%04d%s" : "FW Factory Version : %02d.%02d.%04d%s", 
+        linkx_data.factory_image_major, linkx_data.factory_image_minor, linkx_data.factory_image_subminor, delimeter);
     outPutString += buffer;
-    sprintf(buffer, "SupportedProtocol: %s%s", SupportedProtocol[linkx_data.management_interface_protocol], delimeter);
+    sprintf(buffer, isCSV ? "%s%s" : "SupportedProtocol: %s%s", 
+        SupportedProtocol[linkx_data.management_interface_protocol], delimeter);
     outPutString += buffer;
-    sprintf(buffer, "Activation type: %s%s", ActivationType[linkx_data.activation_type], delimeter);
+    sprintf(buffer, isCSV ? "%s%s" : "Activation type: %s%s", 
+        ActivationType[linkx_data.activation_type], delimeter);
     outPutString += buffer;
-    sprintf(buffer, "Serial number is %d", linkx_data.vendor_sn);
+    sprintf(buffer, isCSV ? "%d" : "Serial number is %d", 
+        linkx_data.vendor_sn);
     outPutString += buffer;
     outPutString += "\n";
     
@@ -183,14 +212,23 @@ FlintStatus QuerySubCommand::QueryLinkX(string deviceName, string outputFile, st
     }
     FwComponent bootImageComponent;
     std::vector<FwComponent> compsToBurn;
-    string outPutString;
     for (unsigned int i = 0; i < deviceIds.size(); i++) {
         if (deviceIds[i] < 0) {
             printf("-E- Downstream device id's must be non-negative integers.\n");
             return FLINT_FAILED;
         }
     }
+
+    string outPutString;
+    bool isCSV = false;
     bool finalResult = true;
+    char* delimeter = (char*)"\n";
+    if (outputFile.empty() == false) {
+        isCSV = true;
+        delimeter = (char*)",";
+        AddTableHeaderForCSVFormat(outPutString);
+    }
+
     for (unsigned int i = 0; i < deviceIds.size(); i++)
     {
         int deviceIndex = deviceIds[i] + 1;
@@ -208,11 +246,7 @@ FlintStatus QuerySubCommand::QueryLinkX(string deviceName, string outputFile, st
             finalResult = false;
             continue;
         }
-        char* delimeter = (char*)"\n";
-        if (outputFile.empty() == false) {
-            delimeter = (char*)",";
-        }
-        if (PrintLinkXQuery(outPutString, deviceName, deviceIndex - 1, ComponentStatus, linkx_data, delimeter) == false) {
+        if (PrintLinkXQuery(outPutString, deviceName, deviceIndex - 1, ComponentStatus, linkx_data, delimeter, isCSV) == false) {
             printf("-E- Query function failed.\n");
             finalResult = false;
         }
@@ -258,6 +292,11 @@ FlintStatus BurnSubCommand::BurnLinkX(string deviceName, int deviceIndex, int de
         reportErr(true, "Cannot open device %s\n.", deviceName.c_str());
         return FLINT_FAILED;
     }
+    if (linkx_auto_update && activationNeeded && activate_delay_sec == 0 && (mfile->flags & MDEVS_IB) != 0) {//IB device
+        if (!askUser("The autoupdate activation process may cause a disconnection from the InBand connection, do you want to continue?")) {
+            return FLINT_FAILED;
+        }
+    }
     FwComponent bootImageComponent;
     std::vector<FwComponent> compsToBurn;
     fwCompsAccess = new FwCompsMgr(mfile, FwCompsMgr::DEVICE_HCA_SWITCH, 0);
@@ -272,10 +311,32 @@ FlintStatus BurnSubCommand::BurnLinkX(string deviceName, int deviceIndex, int de
     compsToBurn.push_back(bootImageComponent);
     if (downloadTransferNeeded) {
         printf("-I- Downloading FW ...\n");
+        if (fwCompsAccess->isMCDDSupported()) {
+            // Checking if BME is disabled to print indication to user
+            // TODO - this is code duplication from fw_comps_mgr_abstract_access.cpp, move to a single place
+            int COMMAND_REG_OFFSET = 0x4;
+            int BME_MASK = 0x00000004;
+
+            mtcr_read_dword_from_config_space result;
+            int rc = read_dword_from_conf_space(COMMAND_REG_OFFSET, fwCompsAccess->getMfileObj(), &result);
+
+            if ((rc != 0) || !(result.data & BME_MASK)) {
+                printf("-W- DMA burning is not supported due to BME is unset (Bus Master Enable).\n");
+            }
+        }
     }
     if (!fwCompsAccess->burnComponents(compsToBurn, funcAdv)) {
-        printf("-E- Cable burn failed, error is %s.\n", fwCompsAccess->getLastErrMsg());
-        return FLINT_FAILED;
+        char* err_msg = (char*)fwCompsAccess->getLastErrMsg();
+        bool IbError = (strcmp("Unknown MAD error", err_msg) == 0);
+        if (linkx_auto_update && activationNeeded && activate_delay_sec == 0 && ((mfile->flags & MDEVS_IB) != 0) && IbError) {//IB device
+            
+            printf("-W- The activation process caused a disconnection from the InBand connection for a few minutes, please wait for reconnection. The error is %s \n", fwCompsAccess->getLastErrMsg());
+            return FLINT_SUCCESS;
+        }
+        else {
+            printf("-E- Cable burn failed, error is %s.\n", fwCompsAccess->getLastErrMsg());
+            return FLINT_FAILED;
+        }
     }
     else {
         printf("-I- Cable burn finished successfully.\n");

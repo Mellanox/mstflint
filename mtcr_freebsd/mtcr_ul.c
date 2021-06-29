@@ -32,7 +32,8 @@
  */
 
 #include <sys/types.h>
-
+#include <sys/memrange.h>
+#include <sys/mman.h>
 #include <err.h>
 #define _WITH_GETLINE
 #include <stdio.h>
@@ -85,15 +86,15 @@ typedef enum {
 } adv_opt_t;
 
 
-#define LOCK_FILE_DIR "/tmp/mft_lockfiles"
-#define LOCK_FILE_FORMAT "/tmp/mft_lockfiles/%s"
+#define FREEBSD_LOCK_FILE_DIR "/tmp/mft_lockfiles"
+#define FREEBSD_LOCK_FILE_FORMAT "/tmp/mft_lockfiles/%s"
 
 #define CHECK_LOCK(rc) \
     if (rc) { \
         return rc; \
     }
 
-#define MAX_RETRY_CNT 8192
+#define FREEBSD_MAX_RETRY_CNT 8192
 static int _flock_int(int fdlock, int operation)
 {
     int cnt = 0;
@@ -109,7 +110,7 @@ static int _flock_int(int fdlock, int operation)
         }
         usleep(10);
         cnt++;
-    } while (cnt < MAX_RETRY_CNT);
+    } while (cnt < FREEBSD_MAX_RETRY_CNT);
     perror("failed to perform lock operation.");
     return -1;
 
@@ -121,12 +122,12 @@ static int _create_lock(mfile *mf, char* devname)
     int rc;
     int fd = 0;
 
-    snprintf(fname, sizeof(fname) - 1, LOCK_FILE_FORMAT, devname);
+    snprintf(fname, sizeof(fname) - 1, FREEBSD_LOCK_FILE_FORMAT, devname);
     rc = mkdir("/tmp", 0777);
     if (rc && errno != EEXIST) {
         goto cl_clean_up;
     }
-    rc = mkdir(LOCK_FILE_DIR, 0777);
+    rc = mkdir(FREEBSD_LOCK_FILE_DIR, 0777);
     if (rc && errno != EEXIST) {
         goto cl_clean_up;
     }
@@ -177,9 +178,9 @@ int mtcr_check_signature(mfile *mf)
 
     switch (signature & 0xffff) {
     case 0x190:     /* 400 */
-        if (signature == 0xa00190 && mf->bar_virtual_addr) {
+        if (signature == 0xa00190 && mf->ptr) {
             mf->connectx_flush = 1;
-            mtcr_connectx_flush(mf->bar_virtual_addr, mf->fdlock);
+            mtcr_connectx_flush(mf->ptr, mf->fdlock);
         }
 
     case 0x5a44:     /* 23108 */
@@ -275,7 +276,7 @@ enum {
 
 int read_config(mfile *mf, unsigned int reg, uint32_t *data, int width)
 {
-    struct pci_io pi;
+    struct pci_io pi = {};
     pi.pi_sel = mf->sel;
     pi.pi_reg = reg;
     pi.pi_width = width;
@@ -293,7 +294,7 @@ int read_config(mfile *mf, unsigned int reg, uint32_t *data, int width)
 
 int write_config(mfile *mf, unsigned int reg, uint32_t data, int width)
 {
-    struct pci_io pi;
+    struct pci_io pi = {};
     pi.pi_sel = mf->sel;
     pi.pi_reg = reg;
     pi.pi_width = width;
@@ -755,7 +756,7 @@ mfile* mopen_int(const char *name, u_int32_t adv_opt)
     char tmp_name[512] = {0};
     char *p_cable = strstr(name, "_cable");
     if (p_cable != 0) {
-        strncpy(tmp_name, name, 512);
+        strncpy(tmp_name, name, 512 - 1);
         tmp_name[p_cable - name] = 0;
         is_cable = 1;
         real_name = tmp_name;
@@ -778,6 +779,8 @@ mfile* mopen_int(const char *name, u_int32_t adv_opt)
     if (!mf) {
         return NULL;
     }
+    mf->sock = -1;
+    mf->user_page_list.page_amount = 0;
 
     mf->flags = MDEVS_TAVOR_CR;
     if (!mtcr_open_config(mf, real_name)) {
@@ -841,11 +844,12 @@ mfile* mopen_adv(const char *name, MType mtype)
     return mf;
 }
 
-mfile* mopen_fw_ctx(void *fw_cmd_context, void *fw_cmd_func, void *extra_data)
+mfile* mopen_fw_ctx(void *fw_cmd_context, void *fw_cmd_func, void *dma_func, void *extra_data)
 {
     // not relevant for freebsd
     (void)fw_cmd_context;
     (void)fw_cmd_func;
+    (void)dma_func;
     (void)extra_data;
     return NULL;
 }
@@ -873,6 +877,11 @@ int mclose(mfile *mf)
     if (mf->fdlock) {
         close(mf->fdlock);
     }
+
+    if(mf->user_page_list.page_amount) {
+        release_dma_pages(mf, mf->user_page_list.page_amount);
+    }
+
     //printf("freeing\n");
     free(mf);
     return 0;
@@ -2482,13 +2491,120 @@ int supports_reg_access_gmp(mfile *mf, maccess_reg_method_t reg_method)
     return 0;
 }
 
-int allocate_kernel_memory_page(mfile *mf, mtcr_alloc_page* user_alloc_page)
+int get_dma_pages(mfile *mf, struct mtcr_page_info* page_info,
+                  int page_amount)
 {
-    (void)mf;
-    (void)user_alloc_page;
-    return ME_UNSUPPORTED_OPERATION;
+    int page_allocated_counter = 0;
+    int page_counter = 0;
+    int ret_code = ME_OK;
+
+    // Parameter validation.
+    if(!mf || !page_info) {
+        return ME_BAD_PARAMS;
+    }
+
+    // Open the memory device file.
+    int file_descriptor = open("/dev/mem", O_RDWR);
+
+    // Pin the memory in the kernel space.
+    for (page_counter = 0;
+            page_counter < page_amount;
+            page_counter++) {
+
+        // Allocate the buffer.
+        char* current_page = aligned_alloc(PAGE_SIZE, PAGE_SIZE);
+
+        // Page allocated ?
+        if (!current_page) {
+            ret_code = ME_MEM_ERROR;
+            break;
+        }
+
+        page_allocated_counter++;
+
+        if ((uintptr_t)current_page % PAGE_SIZE) {
+            ret_code = ME_MEM_ERROR;
+            break;
+        }
+
+        // We need to call mlock after the pages allocation in order to
+        //   lock the virtual address space into RAM and preventing that
+        //   memory from being paged to the swap area.
+        if (mlock(current_page, PAGE_SIZE)) {
+            ret_code = ME_MEM_ERROR;
+            break;
+        }
+
+        // Save the virtual address in order to deallocate
+        //   the memory at the close function.
+        mf->user_page_list.page_list[page_counter] =
+            current_page;
+
+        // Building the ioctl structure.
+        struct mem_extract memory_user = {};
+        memory_user.me_vaddr = (uintptr_t)current_page;
+
+        // Pin the user memory in the kernel space.
+        int return_code = ioctl(file_descriptor, MEM_EXTRACT_PADDR,
+                                &memory_user);
+
+        if (return_code || (memory_user.me_state != ME_STATE_MAPPED)) {
+            ret_code = ME_MEM_ERROR;
+            break;
+        }
+
+        // Save the PA and VA for the tool.
+        page_info->page_addresses_array[page_counter].dma_address =
+            memory_user.me_paddr;
+        page_info->page_addresses_array[page_counter].virtual_address =
+            (uintptr_t)current_page;
+    }
+
+    // Close the device file /dev/mem.
+    close(file_descriptor);
+
+    if (ret_code) {
+        release_dma_pages(mf, page_allocated_counter);
+    }
+
+    else {
+        mf->user_page_list.page_amount = page_amount;
+    }
+
+    return ret_code;
 }
 
+int release_dma_pages(mfile *mf, int page_amount)
+{
+    // Parameter validation.
+    if(!mf) {
+        return -1;
+    }
+
+    // Deallocate the pages.
+    for (int page_counter = 0;
+            page_counter < page_amount;
+            page_counter++) {
+
+        if (!mf->user_page_list.page_list[page_counter]) {
+            continue;
+        }
+
+        // Unlocking the virtual address of the page,
+        //    so that pages in the specified virtual address range may
+        //    once more to be swapped out if required by the kernel memory manager.
+        munlock(mf->user_page_list.page_list[page_counter], PAGE_SIZE);
+
+        // Free the user space memory.
+        free(mf->user_page_list.page_list[page_counter]);
+
+        mf->user_page_list.page_list[page_counter] = NULL;
+    }
+
+    mf->user_page_list.page_amount = 0;
+
+    return 0;
+}
 
 int mset_i2c_addr_width(mfile *mf, u_int8_t addr_width)
 {
@@ -2513,4 +2629,73 @@ int get_i2c_freq(mfile* mf, u_int8_t* freq) {
     (void) mf;
     (void) freq;
     return 1;
+}
+
+
+int read_dword_from_conf_space(u_int32_t offset, mfile *mf,
+                               struct mtcr_read_dword_from_config_space* read_config_space)
+{
+    int ret = 0;
+
+    // Parameters validation.
+    if(!mf || !read_config_space)
+    {
+        return -1;
+    }
+
+    // take semaphore.
+    ret = _vendor_specific_sem(mf, 1);
+    if (ret) {
+        return ret;
+    }
+
+    // set address space.
+    ret = _set_addr_space(mf, mf->address_space);
+
+    if (!ret) {
+        // read the data.
+        READ4_PCI(mf, &read_config_space->data, offset, "read value", return -1);
+    }
+
+    // clear semaphore
+    _vendor_specific_sem(mf, 0);
+
+    return ret;
+}
+
+
+int mcables_remote_operation_server_side(mfile* mf, u_int32_t address,
+                                        u_int32_t length, u_int8_t* data,
+                                        int remote_op)
+{
+    (void)mf;
+    (void)address;
+    (void)length;
+    (void)data;
+    (void)remote_op;
+    return 0;
+}
+
+
+int mcables_remote_operation_client_side(mfile* mf, u_int32_t address,
+                                        u_int32_t length, u_int8_t* data,
+                                        int remote_op)
+{
+    (void)mf;
+    (void)address;
+    (void)length;
+    (void)data;
+    (void)remote_op;
+    return 0;
+}
+
+
+int mlxcables_remote_operation_client_side(mfile* mf, const char* device_name,
+                                           char op, char flags)
+{
+    (void)mf;
+    (void)device_name;
+    (void)op;
+    (void)flags;
+    return 0;
 }

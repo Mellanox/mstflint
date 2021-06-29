@@ -38,6 +38,9 @@
 #define MAX_LEN_OF_DDM_FIELD        14
 
 bool MlxlinkRecord::jsonFormat = false;
+std::string MlxlinkRecord::gboxTitle = "";
+std::ostream* MlxlinkRecord::cOut = &std::cout;
+FILE* MlxlinkRecord::stdOut = stdout;
 
 MlxlinkRecord::MlxlinkRecord() {
     key = "";
@@ -238,7 +241,8 @@ void MlxlinkRecord::printErr(const std::string &err)
 void MlxlinkRecord::printWar(const std::string &war, Json::Value &jsonRoot)
 {
     if (MlxlinkRecord::jsonFormat) {
-        jsonRoot[JSON_RESULT_SECTION][JSON_WARN_SECTION][JSON_MSG] = war;
+        jsonRoot[JSON_RESULT_SECTION][JSON_WARN_SECTION][JSON_MSG] =
+                jsonRoot[JSON_RESULT_SECTION][JSON_WARN_SECTION][JSON_MSG].asString() + war;
         return;
     }
     changeColorOS(ANSI_COLOR_YELLOW, true);

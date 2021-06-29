@@ -199,7 +199,7 @@ void write_ok(int con)
     #include <unistd.h>
 
     #define FILE_PATH "/tmp/mmap.log"
-    #define NUM_INTS  (0x200000)
+    #define NUM_INTS  (0x2000000)
     #define FILE_SIZE (NUM_INTS * sizeof(int))
 
 u_int32_t *cr_space;
@@ -266,6 +266,18 @@ int mread_i2cblock(mfile *mf, unsigned char i2c_slave, u_int8_t addr_width,
     TOOLS_UNUSED(offset);
     TOOLS_UNUSED(data);
     TOOLS_UNUSED(length);
+    return 0;
+}
+
+int mcables_remote_operation_server_side(mfile* mf, u_int32_t address,
+                                         u_int32_t length, u_int8_t* data,
+                                         int remote_op)
+{
+    TOOLS_UNUSED(mf);
+    TOOLS_UNUSED(address);
+    TOOLS_UNUSED(length);
+    TOOLS_UNUSED(data);
+    TOOLS_UNUSED(remote_op);
     return 0;
 }
 
@@ -521,7 +533,7 @@ void get_devices_list(int con)
 #ifndef MST_UL
     dev_info *mdevs_inf = NULL;
     int devs_num = -1, i = 0;
-    mdevs_inf = mdevices_info(MDEVS_ALL & ~MDEVS_CABLE, &devs_num);
+    mdevs_inf = mdevices_info(MDEVS_ALL, &devs_num);
 
     if (devs_num < 0 || !mdevs_inf) {
         write_err(con);
@@ -586,6 +598,36 @@ void mySignal()
 
 
 
+int parse_cables_cmd(char *buf, u_int32_t* addr, u_int32_t* length,
+                     u_int8_t *data, char *err_msg)
+{
+    char *args_array[3];
+    u_int8_t args_num = 2;
+    int i;
+
+    args_array[0]  = buf + 2;
+    for (i = 1; i <= args_num; i++) {
+        args_array[i] = strchr(args_array[i - 1], ' ');
+        if (args_array[i] == NULL) {
+            break;
+        }
+        *(args_array[i]) = '\0';
+        args_array[i]++;
+    }
+
+    if (i < args_num) {
+        sprintf(err_msg, "E Bad msg internal error");
+        return 1;
+    }
+    GET_PARAM(*addr, args_array[0], u_int32_t, "address", err_msg);
+    GET_PARAM(*length, args_array[1], u_int32_t, "length", err_msg);
+    GET_PARAM(*data, args_array[2], u_int8_t, "data", err_msg);
+
+    return 0;
+}
+
+
+
 
 int parse_i2c_cmd(char *buf, u_int8_t *addr_width, u_int8_t *slave_addr, int *size,
                   unsigned int *offset, u_int8_t *data, char *err_msg)
@@ -633,7 +675,7 @@ int parse_i2c_cmd(char *buf, u_int8_t *addr_width, u_int8_t *slave_addr, int *si
         for (i = 0; i < *size; i++) {
             char tmp_num[10];
             // TODO: use 16 on the  strtoul
-            strncpy(tmp_num, "0x", 2);
+            strncpy(tmp_num, "0x", 3);
             strncpy(tmp_num + 2, p, 2);
             tmp_num[4] = '\0';
             ((u_int8_t*)data)[i] = (u_int8_t)strtoul(tmp_num, 0, 0);

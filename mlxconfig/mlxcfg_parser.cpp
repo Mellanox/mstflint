@@ -93,22 +93,24 @@ void MlxCfg::printHelp()
     printFlagLine("e", "enable_verbosity", "", "Show default and current configurations.");
     printFlagLine("y", "yes", "", "Answer yes in prompt.");
     printFlagLine("a", "all_attrs", "", "Show all attributes in the XML template");
-    printFlagLine("p", "private_key", "", "pem file for private key");
-    printFlagLine("u", "key_uuid", "", "keypair uuid");
+    printFlagLine("p", "private_key", "PKEY", "pem file for private key");
+    printFlagLine("u", "key_uuid", "UUID", "keypair uuid");
+    printFlagLine("eng", "openssl_engine", "ENGINE NAME", "OpenSSL engine name");
+    printFlagLine("k", "openssl_key_id", "IDENTIFIER", "OpenSSL key identifier");
 
     //print commands
     printf("\n");
-    printf(IDENT "COMMANDS:\n");
+    printf(IDENT "COMMANDS SUMMARY\n");
     printf(IDENT2 "%-24s : %s\n", "clear_semaphore", "clear the tool semaphore.");
-    printf(IDENT2 "%-24s : %s\n", "i[show_confs]", "display information about all configurations.");
-    printf(IDENT2 "%-24s : %s\n", "q[uery]", "query supported configurations.");
-    printf(IDENT2 "%-24s : %s\n", "r[eset]", "reset all configurations to their default value.");
-    printf(IDENT2 "%-24s : %s\n", "s[et]", "set configurations to a specific device.");
+    printf(IDENT2 "%-24s : %s\n", "i|show_confs", "display informations about all configurations.");
+    printf(IDENT2 "%-24s : %s\n", "q|query", "query supported configurations.");
+    printf(IDENT2 "%-24s : %s\n", "r|reset", "reset all configurations to their default value.");
+    printf(IDENT2 "%-24s : %s\n", "s|set", "set configurations to a specific device.");
     printf(IDENT2 "%-24s : %s\n", "set_raw", "set raw configuration file.(only "  FIFTH_GENERATION_LIST ".)");
     printf(IDENT2 "%-24s : %s\n", "get_raw", "get raw configuration.(only "  FIFTH_GENERATION_LIST ".)");
     printf(IDENT2 "%-24s : %s\n", "backup", "backup configurations to a file (only "  FIFTH_GENERATION_LIST ".). Use set_raw command to restore file.");
     printf(IDENT2 "%-24s : %s\n", "gen_tlvs_file", "Generate List of all TLVs. TLVs output file name must be specified. (*)");
-    printf(IDENT2 "%-24s : %s\n", "g[en_xml_template]", "Generate XML template. TLVs input file name and XML output file name must be specified. (*)");
+    printf(IDENT2 "%-24s : %s\n", "g <en_xml_template>", "Generate XML template. TLVs input file name and XML output file name must be specified. (*)");
     printf(IDENT2 "%-24s : %s\n", "xml2raw", "Generate Raw file from XML file. XML input file name and raw output file name must be specified. (*)");
     printf(IDENT2 "%-24s : %s\n", "raw2xml", "Generate XML file from Raw file. raw input file name and XML output file name must be specified. (*)");
     printf(IDENT2 "%-24s : %s\n", "xml2bin", "Generate binary configuration dump file from XML file. XML input file name and bin output file name must be specified. (*)");
@@ -387,6 +389,18 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char *argv[])
                 return err(true, "missing file name");
             }
             _mlxParams.keyPairUUID = argv[i];
+        }
+        else if (arg == "-eng" || arg == "--openssl_engine") {
+            if (++i == argc) {
+                return err(true, "missing OpenSSL engine");
+            }
+            _mlxParams.opensslEngine = argv[i];
+        }
+        else if (arg == "-k" || arg == "--openssl_key_id") {
+            if (++i == argc) {
+                return err(true, "missing OpenSSL key identifier");
+            }
+            _mlxParams.opensslKeyId = argv[i];
         } else if (arg == "set" || arg == "s") {
             _mlxParams.cmd = Mc_Set;
             break;
@@ -484,9 +498,22 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char *argv[])
         return extractNVInputFile(argc - i, &(argv[i]));
     }
 
-    if (_mlxParams.cmd == Mc_CreateConf &&
-        (_mlxParams.privPemFile.empty() ^ _mlxParams.keyPairUUID.empty())) {
-        return err(true, "if you want to sign the configuration file you have to provide private pem file and key pair uuid file");
+    if (_mlxParams.cmd == Mc_CreateConf) {
+
+        if (!_mlxParams.privPemFile.empty() && (!_mlxParams.opensslEngine.empty() || !_mlxParams.opensslKeyId.empty())) {
+            return err(true,
+                       "Please provide either private pem file or OpenSSL engine and key identifier "
+                       "but not both of them");
+        }
+
+        if (!_mlxParams.keyPairUUID.empty() ^
+            (!_mlxParams.privPemFile.empty() || (!_mlxParams.opensslEngine.empty() && !_mlxParams.opensslKeyId.empty()))) {
+            return err(true,
+                       "if you want to sign the configuration file you have to "
+                       "provide key pair UUID file with either private pem file "
+                       "or OpenSSL engine and key identifier"
+            );
+        }
     }
 
     if (_mlxParams.cmd == Mc_GenXMLTemplate

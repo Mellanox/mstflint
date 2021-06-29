@@ -88,7 +88,7 @@ class TracerException(Exception):
 HCA_MASK_CLASSES = [
     ("DEBUG_INIT", 0), ("INIT", 1), ("ICM", 2), ("ICM_FREE_LIST", 3),
     ("HOST_MNG", 4), ("CMD_IF", 5), ("PHY_IB", 6), ("PHY_RX_ADAP", 7),
-    ("PHY_EYE_OPN", 8), ("PHY_COMMON", 9), ("PHY_MANAGER", 10),
+    ("LIBFHI", 8), ("PHY_COMMON", 9), ("PHY_MANAGER", 10),
     ("PWR", 11), ("FLR", 12), ("ICM_ACCESS", 13),
     ("MAD", 14), ("RXT_CHECKS", 15), ("I2C", 16), ("TRANSPORT", 17),
     ("FW_LL", 18), ("RX_ERRORS", 19), ("CMD_DRIVER", 20), ("PROFILING", 21),
@@ -152,6 +152,17 @@ DEV_INFO_DB = [
         "mask_addr": None,
         # list of (trace type name, start_bit)
         "mask_classes": list(HCA_MASK_CLASSES),
+        "default_tracer_mode": "MEM"
+    },
+    {
+        "name": "BlueField3",
+        "dev_id": [0x21c],
+        "chip_rev":-1,
+        "maskable": True,
+        "mask_addr": None,
+        # list of (trace type name, start_bit)
+        "mask_classes": list(HCA_MASK_CLASSES),
+        "default_tracer_mode": "MEM"
     },
     {
         "name": "ConnectX6",
@@ -219,6 +230,15 @@ DEV_INFO_DB = [
     {
         "name": "Spectrum3",
         "dev_id": [0x250],
+        "chip_rev":-1,
+        "maskable": True,
+        "mask_addr": None,
+        # list of (trace type name, start_bit)
+        "mask_classes": [("class1", 0), ("class2", 1)],
+    },
+    {
+        "name": "Spectrum4",
+        "dev_id": [0x254],
         "chip_rev":-1,
         "maskable": True,
         "mask_addr": None,

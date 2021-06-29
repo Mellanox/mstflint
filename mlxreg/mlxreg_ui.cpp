@@ -295,7 +295,7 @@ void MlxRegUi::printRegNames(std::vector<string> regs)
 ************************************/
 void MlxRegUi::printAdbContext(AdbInstance *node, std::vector<u_int32_t> buff)
 {
-    std::vector<AdbInstance*> subItems = node->getLeafFields();
+    std::vector<AdbInstance*> subItems = node->getLeafFields(true);
     int largestName = (int)getLongestNodeLen(subItems);
     printf("%-*s | %-8s\n", largestName, "Field Name", "Data");
     PRINT_LINE(largestName + 14);

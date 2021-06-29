@@ -172,21 +172,21 @@ bool TLVConf::isFWSupported(mfile *mf, bool read_write)
 {
     bool suppRead = false, suppWrite = false;
     //printf("-D- tlv=%s\n", _name.c_str());
-    if (_target == EXP_ROM) {
-        return true;
-    }
 
     if (nvqcCom5thGen(mf, getTlvTypeBe(), suppRead, suppWrite, _maxTlvVersionSuppByFw)) {
         //Don't throw exception if we fail to run nvqc, maybe its an old fw
         return false;
     }
+// EXP_ROM TLVs are SW2SW TLVs always have support read/write and
+// FW only support to return EXP_ROM TLV version through NVQC register 
+    if (_target != EXP_ROM) {
+        if (!suppRead) {
+            return false;
+        }
 
-    if (!suppRead) {
-        return false;
-    }
-
-    if (read_write && !suppWrite) {
-        return false;
+        if (read_write && !suppWrite) {
+            return false;
+        }
     }
     return true;
 }

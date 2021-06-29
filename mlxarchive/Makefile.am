@@ -88,7 +88,7 @@ mstarchive_LDADD = libmstarchive.a\
                    -llzma -lm $(LIBSTD_CPP) ${LDL}
 
 if ENABLE_OPENSSL
-mstarchive_LDADD += $(top_srcdir)/mlxsign_lib/libmlxsign.a -lcrypto
+mstarchive_LDADD += $(top_srcdir)/mlxsign_lib/libmlxsign.a -lcrypto -lssl
 else
 endif
 

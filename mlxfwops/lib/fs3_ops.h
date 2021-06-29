@@ -42,6 +42,7 @@
 // #include "flint_base.h"
 #include "fw_ops.h"
 #include "aux_tlv_ops.h"
+#include "security_version_gw.h"
 
 // FW Binary version
 
@@ -110,7 +111,7 @@ public:
     bool FwSignWithTwoRSAKeys(const char *privPemFile1, const char *uuid1,
                               const char *privPemFile2, const char *uuid2, PrintCallBack printFunc = (PrintCallBack)NULL);
 
-    bool FwInsertEncSHA(SHATYPE shaType, const char *privPemFile,
+    bool FwInsertEncSHA(MlxSign::SHAType shaType, const char *privPemFile,
                         const char *uuid, PrintCallBack printFunc = (PrintCallBack)NULL);
 
     virtual bool FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatternAndDevToc, bool verbose = false, bool ignoreImageStart = false);
@@ -151,7 +152,7 @@ protected:
     bool Fs3UpdateImgCache(u_int8_t *buff, u_int32_t addr, u_int32_t size);
     virtual bool UpdateImgCache(u_int8_t *buff, u_int32_t addr, u_int32_t size);
     virtual bool FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_itoc, struct QueryOptions queryOptions, bool ignoreDToc = false, bool verbose = false);
-    bool FsIntQueryAux(bool readRom = true, bool quickQuery = true, bool ignoreDToc = false, bool verbose = false);
+    virtual bool FsIntQueryAux(bool readRom = true, bool quickQuery = true, bool ignoreDToc = false, bool verbose = false);
     const char* GetSectionNameByType(u_int8_t section_type);
     bool GetImageInfoFromSection(u_int8_t *buff, u_int8_t sect_type, u_int32_t sect_size, u_int8_t check_support_only = 0);
     bool IsGetInfoSupported(u_int8_t sect_type);
@@ -188,7 +189,7 @@ protected:
 
     bool isOld4MBImage(FwOperations *imageOps);
     bool VerifyBranchFormat(const char* vsdString);
-    bool FwCalcSHA(SHATYPE shaType, vector<u_int8_t>& sha256, vector<u_int8_t>& fourMbImage);
+    bool FwCalcSHA(MlxSign::SHAType shaType, vector<u_int8_t>& sha256, vector<u_int8_t>& fourMbImage);
     bool AddHMACIfNeeded(Fs3Operations* imageOps, Flash *f);
     bool CheckPublicKeysFile(const char *fname, fs3_section_t& sectionType, bool silent = false);
     struct toc_info {
