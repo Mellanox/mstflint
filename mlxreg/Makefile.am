@@ -43,7 +43,7 @@ COMMON_DIR  = $(top_srcdir)/common
 LAYOUTS_DIR = $(top_srcdir)/tools_layouts
 MFT_UTILS_DIR = $(top_srcdir)/mft_utils
 
-INCLUDES = -I. -I$(USER_DIR) -I$(MTCR_DIR) -I$(MFT_EXT_LIBS_INC_DIR) -I$(UTILS_DIR) -I$(MTCR_INC_DIR)
+AM_CPPFLAGS = -I. -I$(USER_DIR) -I$(MTCR_DIR) -I$(MFT_EXT_LIBS_INC_DIR) -I$(UTILS_DIR) -I$(MTCR_INC_DIR)
 
 AM_CXXFLAGS = -Wall -W -DMST_UL -g -MP -MD -pipe -Werror
 

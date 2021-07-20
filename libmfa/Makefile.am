@@ -32,8 +32,8 @@
 
 # Makefile.am -- Process this file with automake to produce Makefile.in
 USER_DIR = $(top_srcdir)
-#INCLUDES = -I. -I$(USER_DIR)/ext_libs/libtar -I$(USER_DIR)/ext_libs/libtar/listhash -I$(USER_DIR)/ext_libs/minixz
-INCLUDES = -I. -I$(USER_DIR)/ext_libs/minixz -I$(USER_DIR)/common
+#AM_CPPFLAGS = -I. -I$(USER_DIR)/ext_libs/libtar -I$(USER_DIR)/ext_libs/libtar/listhash -I$(USER_DIR)/ext_libs/minixz
+AM_CPPFLAGS = -I. -I$(USER_DIR)/ext_libs/minixz -I$(USER_DIR)/common
 
 AM_CFLAGS = -MD -pipe -Wall -W -g $(COMPILER_FPIC)
 

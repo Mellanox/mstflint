@@ -41,7 +41,7 @@ CMDIF_DIR = $(USER_DIR)/cmdif
 
 CURL_LIBS = -lcurl  -lssl -lcrypto -lrt
 
-INCLUDES = $(JSON_CFLAGS) -I. \
+AM_CPPFLAGS = $(JSON_CFLAGS) -I. \
            -I$(USER_DIR) -I$(USER_DIR)/libmfa \
            -I$(MTCR_DIR) -I$(USER_DIR)/include/mtcr_ul \
            -I$(USER_DIR)/mflash -I$(USER_DIR)/common \
@@ -62,7 +62,7 @@ libmstarchive_a_SOURCES = \
               mlxarchive_mfa2_package_gen.h mlxarchive_mfa2_package_gen.cpp\
               mfa2_buff.h mfa2_buff.cpp
 
-AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe $(INCLUDES) $(COMPILER_FPIC)
+AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe $(AM_CPPFLAGS) $(COMPILER_FPIC)
 bin_PROGRAMS = mstarchive
 
 mstarchive_SOURCES = mlxarchive.cpp mlxarchive.h

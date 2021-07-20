@@ -49,7 +49,7 @@ CURL_LIBS = -lcurl  -lssl -lcrypto -lrt
 
 CURL_FLAGS = -DCURL_STATICLIB
 
-common_INCLUDES =  -I$(USER_DIR)/common\
+common_CPPFLAGS = -I$(USER_DIR)/common\
             -I$(USER_DIR)/\
             -I$(USER_DIR)/include/mtcr_ul\
             -I$(USER_DIR)/mflash\
@@ -120,6 +120,6 @@ common_LDADD += $(top_srcdir)/mad_ifc/libmad_ifc.a
 else
 endif
 
-mstfwmanager_CXXFLAGS =  -DMSTFLINT -DUSE_CURL $(AM_CXXFLAGS) $(CURL_FLAGS) $(XML_FLAGS) -I$(MTCR_UL_DIR) $(common_INCLUDES) 
+mstfwmanager_CXXFLAGS =  -DMSTFLINT -DUSE_CURL $(AM_CXXFLAGS) $(CURL_FLAGS) $(XML_FLAGS) -I$(MTCR_UL_DIR) $(common_CPPFLAGS)
 mstfwmanager_SOURCES  = $(common_SOURCEES)
 mstfwmanager_LDADD    = $(common_LDADD) $(MTCR_UL_LIB) -lz
