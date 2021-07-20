@@ -36,9 +36,9 @@ AM_CPPFLAGS = -I. -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common -I$(top
 
 AM_CFLAGS = -MD -pipe -Wall -W -DMST_UL -g ${MFLASH_INBAND_FLAG} $(COMPILER_FPIC)
 
-noinst_LTLIBRARIES = libmflash.a
+noinst_LTLIBRARIES = libmflash.la
 
-libmflash_a_SOURCES =  mflash.c mflash.h mflash_gw.c mflash_gw.h mflash_new_gw.c mflash_new_gw.h \
+libmflash_la_SOURCES =  mflash.c mflash.h mflash_gw.c mflash_gw.h mflash_new_gw.c mflash_new_gw.h \
 			mflash_dev_capability.c mflash_dev_capability.h \
 			mflash_pack_layer.c mflash_pack_layer.h \
 			mflash_access_layer.c mflash_access_layer.h \

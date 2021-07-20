@@ -35,7 +35,7 @@ PYTHON_WRAPPER_SCRIPT = ../common/python_wrapper
 AM_CPPFLAGS= -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common -I$(top_srcdir)/mvpd $(COMPILER_FPIC)
 AM_CFLAGS= -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common -I$(top_srcdir)/mvpd $(COMPILER_FPIC)
 
-LDADD= $(top_srcdir)/${MTCR_CONF_DIR}/libmtcr_ul.a ${LDL}
+LDADD= $(top_srcdir)/${MTCR_CONF_DIR}/libmtcr_ul.la ${LDL}
 
 bin_PROGRAMS = mstmread \
 					mstmwrite \
@@ -51,20 +51,20 @@ mstmread_SOURCES = mread.c
 mstmwrite_SOURCES = mwrite.c
 
 mstvpd_SOURCES = vpd.c
-mstvpd_LDADD = $(top_srcdir)/mvpd/libmvpd.a \
-               $(top_srcdir)/${MTCR_CONF_DIR}/libmtcr_ul.a \
-               $(top_srcdir)/dev_mgt/libdev_mgt.a \
-               $(top_srcdir)/reg_access/libreg_access.a \
-               $(top_srcdir)/tools_layouts/libtools_layouts.a \
+mstvpd_LDADD = $(top_srcdir)/mvpd/libmvpd.la \
+               $(top_srcdir)/${MTCR_CONF_DIR}/libmtcr_ul.la \
+               $(top_srcdir)/dev_mgt/libdev_mgt.la \
+               $(top_srcdir)/reg_access/libreg_access.la \
+               $(top_srcdir)/tools_layouts/libtools_layouts.la \
                ${LDL}
 
 mstcongestion_SOURCES = congestion.cpp
-mstcongestion_LDADD = $(top_srcdir)/cmdif/libcmdif.a \
-					  $(top_srcdir)/dev_mgt/libdev_mgt.a \
-                      $(top_srcdir)/reg_access/libreg_access.a \
-                      $(top_srcdir)/tools_layouts/libtools_layouts.a \
-                      $(top_srcdir)/cmdparser/libcmdparser.a \
-                      $(top_srcdir)/${MTCR_CONF_DIR}/libmtcr_ul.a ${LDL}
+mstcongestion_LDADD = $(top_srcdir)/cmdif/libcmdif.la \
+                      $(top_srcdir)/dev_mgt/libdev_mgt.la \
+                      $(top_srcdir)/reg_access/libreg_access.la \
+                      $(top_srcdir)/tools_layouts/libtools_layouts.la \
+                      $(top_srcdir)/cmdparser/libcmdparser.la \
+                      $(top_srcdir)/${MTCR_CONF_DIR}/libmtcr_ul.la ${LDL}
 
 mstmcra_SOURCES  = mcra.c
 

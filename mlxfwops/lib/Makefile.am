@@ -66,9 +66,9 @@ AM_CXXFLAGS += -DNO_CS_CMD
 endif
 
 
-noinst_LIBRARIES = libmlxfwops.a
+noinst_LTLIBRARIES = libmlxfwops.la
 
-libmlxfwops_a_SOURCES = flint_base.cpp \
+libmlxfwops_la_SOURCES = flint_base.cpp \
 			   bluefiled_signature_manager.cpp \
 			   connectx6_signature_manager.cpp \
 			   signature_manager.h \

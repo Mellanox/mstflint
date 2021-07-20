@@ -52,19 +52,19 @@ bin_PROGRAMS = mstflint
 mstflint_SOURCES = flint.cpp flint.h subcommands.cpp subcommands.h subcommands_linkx.cpp \
 					flint_params.cpp flint_params.h cmd_line_parser.cpp err_msgs.h
 
-mstflint_LDADD =  ../mlxfwops/lib/libmlxfwops.a  \
-                  ../cmdparser/libcmdparser.a    \
-		  ../mflash/libmflash.a          \
-		  ../tools_res_mgmt/libtools_res_mgmt.a \
-		  $(CMDIF_DIR)/libcmdif.a        \
-		  ../reg_access/libreg_access.a  \
-		  ../dev_mgt/libdev_mgt.a        \
-		  ../${MTCR_CONF_DIR}/libmtcr_ul.a        \
-          ../tools_layouts/libtools_layouts.a \
-          ../fw_comps_mgr/libfw_comps_mgr.a \
-		  ../mft_utils/libmftutils.a\
-		  ../mft_utils/hsmclient/libhsmclient.a\
-		  ${LDL}
+mstflint_LDADD =  ../mlxfwops/lib/libmlxfwops.la \
+                  ../cmdparser/libcmdparser.la   \
+                  ../mflash/libmflash.la         \
+                  ../tools_res_mgmt/libtools_res_mgmt.la \
+                  $(CMDIF_DIR)/libcmdif.la       \
+                  ../reg_access/libreg_access.la \
+                  ../dev_mgt/libdev_mgt.la       \
+                  ../${MTCR_CONF_DIR}/libmtcr_ul.la      \
+                  ../tools_layouts/libtools_layouts.la \
+                  ../fw_comps_mgr/libfw_comps_mgr.la \
+                  ../mft_utils/libmftutils.la\
+                  ../mft_utils/hsmclient/libhsmclient.la\
+                  ${LDL}
 
 
 if ENABLE_DC
@@ -74,23 +74,23 @@ mstflint_CXXFLAGS += -DNO_ZLIB
 endif
 
 if ENABLE_CS
-mstflint_LDADD += $(top_srcdir)/tools_crypto/libtools_crypto.a -lcrypto
+mstflint_LDADD += $(top_srcdir)/tools_crypto/libtools_crypto.la -lcrypto
 else
 endif
 
 if ENABLE_INBAND
-mstflint_LDADD += $(MAD_IFC_DIR)/libmad_ifc.a
+mstflint_LDADD += $(MAD_IFC_DIR)/libmad_ifc.la
 else
 endif
 
 if ENABLE_OPENSSL
-mstflint_LDADD += $(top_srcdir)/mlxsign_lib/libmlxsign.a -lcrypto -lssl
+mstflint_LDADD += $(top_srcdir)/mlxsign_lib/libmlxsign.la -lcrypto -lssl
 else
 mstflint_CXXFLAGS += -DNO_OPEN_SSL
 endif
 
 if ENABLE_FWMGR
-mstflint_LDADD += $(top_srcdir)/libmfa/libmfa.a $(top_srcdir)/ext_libs/minixz/libminixz.a $(top_srcdir)/mlxarchive/libmstarchive.a $(top_srcdir)/xz_utils/libxz_utils.a -llzma -lm
+mstflint_LDADD += $(top_srcdir)/libmfa/libmfa.la $(top_srcdir)/ext_libs/minixz/libminixz.la $(top_srcdir)/mlxarchive/libmstarchive.la $(top_srcdir)/xz_utils/libxz_utils.la -llzma -lm
 else
 mstflint_CXXFLAGS += -DNO_MSTARCHIVE
 endif

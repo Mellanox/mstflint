@@ -34,7 +34,7 @@
 
 AM_CPPFLAGS = -I. -I../common -W  -g -MP -MD $(COMPILER_FPIC)
 
-noinst_LIBRARIES = libcmdparser.a
+noinst_LTLIBRARIES = libcmdparser.la
 
-libcmdparser_a_SOURCES = cmdparser.cpp my_getopt.c cmdparser.h my_getopt.h
+libcmdparser_la_SOURCES = cmdparser.cpp my_getopt.c cmdparser.h my_getopt.h
 

@@ -40,9 +40,9 @@ AM_CPPFLAGS = -I. -I.. -I$(MTCR_INC_DIR) -I../${MTCR_CONF_DIR} -I$(USER_DIR)/too
 AM_CFLAGS = -W -Wall -g -MP -MD $(COMPILER_FPIC)
 
 
-noinst_LIBRARIES = libmad_ifc.a
+noinst_LTLIBRARIES = libmad_ifc.la
 
-libmad_ifc_a_SOURCES = mad_ifc.c mad_ifc.h
-libmad_ifc_a_DEPENDENCIES = $(USER_DIR)/tools_layouts/libtools_layouts.a
-libmad_ifc_a_LIBADD = $(libmad_ifc_a_DEPENDENCIES)
+libmad_ifc_la_SOURCES = mad_ifc.c mad_ifc.h
+libmad_ifc_la_DEPENDENCIES = $(USER_DIR)/tools_layouts/libtools_layouts.la
+libmad_ifc_la_LIBADD = $(libmad_ifc_la_DEPENDENCIES)
 

@@ -36,6 +36,6 @@
 AM_CPPFLAGS =	-I$(top_srcdir) -I$(top_srcdir)/include/mtcr_ul -I$(top_srcdir)/common $(COMPILER_FPIC)
 AM_CFLAGS = -Wall -W -g -MP -MD -pipe -Wno-unused-function  $(COMPILER_FPIC) -DMTCR_EXPORT -DMST_UL -DDATA_PATH=\"$(pkgdatadir)\" $(COMPILER_FPIC)
 
-noinst_LIBRARIES = libcrdump.a
+noinst_LTLIBRARIES = libcrdump.la
 
-libcrdump_a_SOURCES = crdump.c crdump.h
+libcrdump_la_SOURCES = crdump.c crdump.h

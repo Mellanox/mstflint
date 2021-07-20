@@ -51,17 +51,17 @@ AM_CFLAGS = -MD -pipe -Wall -W $(COMPILER_FPIC)
 
 AM_CXXFLAGS = -Wall -W -g -MP -MD -pipe $(COMPILER_FPIC)
 
-noinst_LIBRARIES = libfw_comps_mgr.a
+noinst_LTLIBRARIES = libfw_comps_mgr.la
 
-libfw_comps_mgr_a_SOURCES =  fw_comps_mgr.cpp fw_comps_mgr.h fw_comps_mgr_dma_access.cpp fw_comps_mgr_dma_access.h fw_comps_mgr_direct_access.cpp fw_comps_mgr_direct_access.h fw_comps_mgr_abstract_access.cpp fw_comps_mgr_abstract_access.h
+libfw_comps_mgr_la_SOURCES =  fw_comps_mgr.cpp fw_comps_mgr.h fw_comps_mgr_dma_access.cpp fw_comps_mgr_dma_access.h fw_comps_mgr_direct_access.cpp fw_comps_mgr_direct_access.h fw_comps_mgr_abstract_access.cpp fw_comps_mgr_abstract_access.h
 
 if ENABLE_INBAND
 else
 AM_CXXFLAGS += "-DNO_INBAND"
 endif
 
-libfw_comps_mgr_a_LIBADD = ../reg_access/libreg_access.a $(MTCR_DIR)/libmtcr_ul.a $(LAYOUTS_LIB) $(TOOLS_RES_MGMT_DIR)/libtools_res_mgmt.a
+libfw_comps_mgr_la_LIBADD = ../reg_access/libreg_access.la $(MTCR_DIR)/libmtcr_ul.la $(LAYOUTS_LIB) $(TOOLS_RES_MGMT_DIR)/libtools_res_mgmt.la
 
 if ENABLE_INBAND
-libfw_comps_mgr_a_LIBADD +=  $(top_srcdir)/mad_ifc/libmad_ifc.a
+libfw_comps_mgr_la_LIBADD +=  $(top_srcdir)/mad_ifc/libmad_ifc.la
 endif

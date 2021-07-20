@@ -38,9 +38,9 @@ AM_CFLAGS = -MD -pipe -Wall -W $(COMPILER_FPIC)
 
 noinst_HEADERS = 
 
-noinst_LIBRARIES = libhsmclient.a
+noinst_LTLIBRARIES = libhsmclient.la
 
-libhsmclient_a_SOURCES = \
+libhsmclient_la_SOURCES = \
     src/hsmlunatest.cpp \
     src/hex64.cpp \
     src/hsmaesencryption.cpp \

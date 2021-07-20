@@ -53,19 +53,19 @@ bin_PROGRAMS = mstlink
 mstlink_CXXFLAGS = -DEXTERNAL
 mstlink_SOURCES = mlxlink_main.cpp
 
-mstlink_DEPENDENCIES = modules/libmodules_lib.a \
-                       modules/printutil/libprint_util_lib.a \
-                      $(USER_DIR)/mlxreg/libmstreg_lib.a \
-                      $(USER_DIR)/cmdparser/libcmdparser.a \
-                      $(UTILS_DIR)/libmftutils.a \
-                      $(MTCR_DIR)/libmtcr_ul.a \
-                      $(USER_DIR)/adb_parser/libadb_parser.a \
-                      $(USER_DIR)/cmdif/libcmdif.a \
-                      $(USER_DIR)/dev_mgt/libdev_mgt.a \
-                      $(USER_DIR)/reg_access/libreg_access.a \
-                      $(LAYOUTS_DIR)/libtools_layouts.a \
-                      $(USER_DIR)/xz_utils/libxz_utils.a \
-                      $(USER_DIR)/ext_libs/minixz/libminixz.a \
+mstlink_DEPENDENCIES = modules/libmodules_lib.la \
+                       modules/printutil/libprint_util_lib.la \
+                      $(USER_DIR)/mlxreg/libmstreg_lib.la \
+                      $(USER_DIR)/cmdparser/libcmdparser.la \
+                      $(UTILS_DIR)/libmftutils.la \
+                      $(MTCR_DIR)/libmtcr_ul.la \
+                      $(USER_DIR)/adb_parser/libadb_parser.la \
+                      $(USER_DIR)/cmdif/libcmdif.la \
+                      $(USER_DIR)/dev_mgt/libdev_mgt.la \
+                      $(USER_DIR)/reg_access/libreg_access.la \
+                      $(LAYOUTS_DIR)/libtools_layouts.la \
+                      $(USER_DIR)/xz_utils/libxz_utils.la \
+                      $(USER_DIR)/ext_libs/minixz/libminixz.la \
                       -lboost_regex -lboost_filesystem -lboost_system \
                       -llzma $(LIBSTD_CPP) ${LDL} -lexpat \
                       $(JSON_LIBS)

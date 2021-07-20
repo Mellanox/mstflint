@@ -37,10 +37,10 @@ AM_CPPFLAGS = -I. -I$(USER_DIR)/ext_libs/minixz -I$(USER_DIR)/common
 
 AM_CFLAGS = -MD -pipe -Wall -W -g $(COMPILER_FPIC)
 
-noinst_LTLIBRARIES = libmfa.a
-libmfa_a_LIBADD = -L$(USER_DIR)/ext_libs/minixz -lminixz
+noinst_LTLIBRARIES = libmfa.la
+libmfa_la_LIBADD = -L$(USER_DIR)/ext_libs/minixz -lminixz
 
-libmfa_a_SOURCES = \
+libmfa_la_SOURCES = \
     mfa.c mfa.h\
     mfa_section.c  mfa_section.h\
     xz_io_ops.c xz_io_ops.h\
