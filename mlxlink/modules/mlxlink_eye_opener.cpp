@@ -210,9 +210,9 @@ bool MlxlinkEyeOpener::isActiveGenSupported()
 {
     string regName = "MPEIN";
     resetParser(regName);
-    updateField("pcie_index", 0);
-    updateField("depth", 0);
-    updateField("node", 0);
+    updateField("pcie_index", pcieIndex);
+    updateField("depth", depth);
+    updateField("node", node);
 
     genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
     u_int32_t activeGen = getFieldValue("link_speed_active");
