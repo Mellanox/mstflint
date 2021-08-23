@@ -3996,6 +3996,9 @@ void MlxlinkCommander::initEyeOpener()
             _eyeOpener->_gvmiAddress = _gvmiAddress;
             _eyeOpener->_mlxlinkLogger = _mlxlinkLogger;
             _eyeOpener->localPort = _localPort;
+            _eyeOpener->depth = _dpn.depth;
+            _eyeOpener->pcieIndex = _dpn.pcieIndex;
+            _eyeOpener->node = _dpn.node;
             _eyeOpener->portType = _portType;
             _eyeOpener->numOfLanes = _userInput._pcie? _numOfLanesPcie : _numOfLanes;
             _eyeOpener->lane = _userInput.gradeScanPerLane? _userInput._lane : -1 ;

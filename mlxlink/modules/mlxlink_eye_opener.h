@@ -157,6 +157,9 @@ public:
     u_int32_t localPort;
     u_int32_t portType;
     bool pciePort;
+    u_int32_t depth;
+    u_int32_t pcieIndex;
+    u_int32_t node;
     int lane;
     u_int32_t protoActive;
     u_int32_t numOfLanes;
