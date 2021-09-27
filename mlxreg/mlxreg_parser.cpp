@@ -322,10 +322,25 @@ void RegAccessParser::strToUint32(char *str, u_int32_t &uint)
 ************************************/
 AdbInstance* RegAccessParser::getField(string name)
 {
+    // this will allow to access the leaf field by specifying it's parent.
+    size_t parentStrOffset = name.find(".");
+    string parentName = "";
+    string fieldName = name;
+    if (parentStrOffset != string::npos) {
+        parentName = name.substr(0, parentStrOffset);
+        fieldName = name.substr(parentStrOffset + 1, name.size() - 1);
+    }
+
     std::vector<AdbInstance*> subItems = _regNode->getLeafFields(true);
     for (std::vector<AdbInstance*>::size_type i = 0; i != subItems.size(); i++) {
-        if (subItems[i]->name == name) {
-            return subItems[i];
+        if (subItems[i]->name == fieldName) {
+            if (!parentName.empty()) { // Get leaf that's belong to specific parent
+                if (subItems[i]->parent->name == parentName) {
+                    return subItems[i];
+                }
+            } else {
+                return subItems[i];
+            }
         }
     }
     throw MlxRegException("Can't find field name: \"%s\"", name.c_str());

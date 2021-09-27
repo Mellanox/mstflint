@@ -40,13 +40,6 @@
 #define MAX_MIXER_OFFSET_0 0x7ff
 #define MAX_MIXER_OFFSET_1 0x3ff
 
-enum PPCNT_GROUPS {
-    PPCNT_PHY_GROUP = 0x12,
-    PPCNT_STATISTICAL_GROUP = 0x16,
-    PPCNT_IB_PORT_COUNTERS_GROUP = 0x20,
-    PPCNT_ALL_GROUPS = 63
-};
-
 using namespace std;
 
 class MlxlinkErrInjCommander :public MlxlinkRegParser{
