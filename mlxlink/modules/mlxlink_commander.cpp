@@ -634,48 +634,6 @@ void MlxlinkCommander::checkStrLength(const string &str)
     }
 }
 
-string MlxlinkCommander::getAscii(const string & name, u_int32_t size)
-{
-    string value = "";
-    char c;
-    u_int32_t name_tmp;
-
-    /*if (_isHCA) {
-        for (u_int32_t i = 0; i < size; i++) {
-            c = (char) getFieldValue(name + "[" + convertToString(i) + "]");
-            if ((int)c != 0 && (int)c != 32) {
-                value.push_back(c);
-            }
-        }
-       } else {*/
-    for (u_int32_t i = 0; i < size / 4; i++) {
-        name_tmp = getFieldValue(name + "[" + to_string(i) + "]");
-        for (int k = 24; k > -1; k -= 8) {
-            c = (char)(name_tmp >> k);
-            if ((int)c != 0 && (int)c != 32) {
-                value.push_back(c);
-            }
-        }
-    }
-    //}
-    return (value != "") ? value : "N/A";
-}
-
-string MlxlinkCommander::getRxTxCDRState(u_int32_t state)
-{
-    string stateMask = "";
-    u_int32_t mask = 1;
-    for (u_int32_t i = 0; i < _numOfLanes; i++) {
-        if (state & mask) {
-            stateMask += "ON,";
-        } else {
-            stateMask += "OFF,";
-        }
-        mask = mask << 1;
-    }
-    return deleteLastChar(stateMask);
-}
-
 void MlxlinkCommander::getActualNumOfLanes(u_int32_t linkSpeedActive, bool extended)
 {
     if (_protoActive == IB) {
@@ -1015,66 +973,6 @@ string MlxlinkCommander::getCableTechnologyStr(u_int32_t cableTechnology)
     return technologyStr;
 }
 
-string MlxlinkCommander::getPowerClass(u_int32_t powerClass, u_int32_t maxPower)
-{
-    string powerClassStr = "N/A";
-    string val = "";
-    float maxPowerValue = maxPower * 0.25;
-    float powerClassVal = 0;
-
-    switch (_cableIdentifier) {
-    case IDENTIFIER_SFP_DD:
-        val = _mlxlinkMaps->_sfpddPowerClass[powerClass];
-        powerClassVal = _mlxlinkMaps->_sfpddPowerClassToValue[powerClass];
-        break;
-    case IDENTIFIER_QSFP_DD:
-    case IDENTIFIER_OSFP:
-        val = _mlxlinkMaps->_qsfpddOsfpPowerClass[powerClass];
-        powerClassVal = _mlxlinkMaps->_qsfpddPowerClassToValue[powerClass];
-        break;
-    default:
-        val = _mlxlinkMaps->_sfpQsfpPowerClass[powerClass];
-    }
-
-    if ((maxPowerValue > powerClassVal) || (powerClass == POWER_CLASS8)) {
-        powerClassStr = to_string(maxPowerValue) + " W max";
-    } else if (!val.empty()) {
-        powerClassStr = val;
-    }
-    return powerClassStr;
-}
-
-string MlxlinkCommander::getCableLengthStr(u_int32_t cableLength)
-{
-    char cableLengthStr[32];
-    u_int32_t prec = 0;
-    if (_cmisCable) {
-        u_int32_t lengthValue = (cableLength & 0x3f);
-        float multiplier = 0;
-        u_int32_t multiplierMask = (cableLength >> 6) & 0x7;
-        switch (multiplierMask) {
-        case CABLE_0_0_MUL:
-            multiplier = 0.1;
-            prec = 1;
-            break;
-        case CABLE_0_1_MUL:
-            multiplier = 1;
-            break;
-        case CABLE_1_0_MUL:
-            multiplier = 10;
-            break;
-        case CABLE_1_1_MUL:
-            multiplier = 100;
-            break;
-        }
-        snprintf(cableLengthStr, sizeof(cableLengthStr),
-                "%.*f", prec, ((float)lengthValue * multiplier));
-    } else {
-        snprintf(cableLengthStr, sizeof(cableLengthStr), "%d", cableLength);
-    }
-    return string(cableLengthStr);
-}
-
 string MlxlinkCommander::getCableTypeStr(u_int32_t cableType)
 {
     string cableTypeStr = "N/A";
@@ -1112,13 +1010,13 @@ void MlxlinkCommander::prepareStaticInfoSection(bool valid)
             getAscii("vendor_pn", 16), ANSI_COLOR_RESET, true, valid);
     setPrintVal(_moduleInfoCmd, "Vendor Serial Number",
             getAscii("vendor_sn", 16), ANSI_COLOR_RESET, true, valid);
-    setPrintVal(_moduleInfoCmd, "Rev", getVendorRev("vendor_rev"),
+    setPrintVal(_moduleInfoCmd, "Rev", getVendorRev(getFieldValue("vendor_rev")),
             ANSI_COLOR_RESET, true, valid);
     setPrintVal(_moduleInfoCmd, "Wavelength [nm]",
             (_cableMediaType == PASSIVE) ? "N/A" : to_string(getFieldValue("wavelength")),
                     ANSI_COLOR_RESET, true, valid);
     setPrintVal(_moduleInfoCmd, "Transfer Distance [m]",
-            getCableLengthStr(cableLength), ANSI_COLOR_RESET, true, valid);
+            getCableLengthStr(cableLength, _cmisCable), ANSI_COLOR_RESET, true, valid);
 }
 
 void MlxlinkCommander::prepareAttenuationAndFwSection(bool valid)
@@ -1165,13 +1063,13 @@ void MlxlinkCommander::preparePowerAndCdrSection(bool valid)
     string rxCdrState = "N/A";
     string txCdrState = "N/A";
     if (getFieldValue("rx_cdr_cap") > 0) {
-        rxCdrState = getRxTxCDRState(getFieldValue("rx_cdr_state"));
+        rxCdrState = getRxTxCDRState(getFieldValue("rx_cdr_state"),_numOfLanes);
     }
     if (getFieldValue("tx_cdr_cap") > 0) {
-        txCdrState = getRxTxCDRState(getFieldValue("tx_cdr_state"));
+        txCdrState = getRxTxCDRState(getFieldValue("tx_cdr_state"),_numOfLanes);
     }
-    string powerClassStr = getPowerClass(getFieldValue("cable_power_class"),
-                                    getFieldValue("max_power"));
+    string powerClassStr = getPowerClass(_mlxlinkMaps,_cableIdentifier, getFieldValue("cable_power_class"),
+                                         getFieldValue("max_power"));
 
     setPrintVal(_moduleInfoCmd, "Digital Diagnostic Monitoring",
             _ddmSupported ? "Yes" : "No", ANSI_COLOR_RESET, true, valid);
@@ -1268,42 +1166,6 @@ void MlxlinkCommander::showModuleInfo()
     } catch (const std::exception &exc) {
         _allUnhandledErrors += string("Showing Module Info via PDDR raised the following exception: ") + string(exc.what()) + string("\n");
     }
-}
-
-string MlxlinkCommander::getCompliance(u_int32_t compliance, std::map<u_int32_t,
-        std::string> complianceMap, bool bitMasked)
-{
-    string compliance_str = "";
-    static const string separator = ", ";
-    static const size_t separator_size = separator.size();
-    std::map<u_int32_t, std::string>::iterator it;
-    if (!compliance) {
-        return complianceMap.begin()->second;
-    }
-    if (bitMasked) {
-        for (it=complianceMap.begin(); it!=complianceMap.end(); ++it) {
-            u_int32_t comp_bit = it->first;
-            string curr_compliance = it->second;
-            if (compliance & comp_bit) {
-                if (curr_compliance != "" &&
-                        (comp_bit != QSFP_ETHERNET_COMPLIANCE_CODE_EXT)) {
-                    compliance_str += (curr_compliance + separator);
-                }
-            }
-        }
-        size_t str_size = compliance_str.size();
-        if(str_size && !(compliance & QSFP_ETHERNET_COMPLIANCE_CODE_EXT)){
-            compliance_str.erase(str_size - separator_size, separator_size);
-        }
-    } else {
-        it = complianceMap.find(compliance);
-        if (it == complianceMap.end()) {
-            compliance_str = "Unknown compliance " + to_string(compliance);
-        } else {
-            compliance_str =  it->second;
-        }
-    }
-    return compliance_str;
 }
 
 string MlxlinkCommander::getCompliaceLabelForCIMIS(u_int32_t hostCompliance,
@@ -1993,65 +1855,10 @@ void MlxlinkCommander::prepare40_28_16nmEyeInfo(u_int32_t numOfLanes)
 
 void MlxlinkCommander::prepare7nmEyeInfo(u_int32_t numOfLanesToUse)
 {
-    string regName = "SLRG";
-    std::vector<string> initialEom, lastEom, upperEom, midEom, lowerEom;
-    bool validMeas = false;
-    int eomMeasurement = _userInput.eomMeasurementStr.empty()? 0 : eyeTypeStrToInt(_userInput.eomMeasurementStr);
-    if (eomMeasurement == -1) {
-        throw MlxRegException("invalid eom_measurement value, valid values are "\
-                "[CMP,ALL,UP,MID,LOW]. Check help menu for more information");
-    }
-    for (u_int32_t i = 0; i < numOfLanesToUse; i++) {
-        resetParser(regName);
-        updatePortType();
-        updateField("local_port", _localPort);
-        updateField("pnat", (_userInput._pcie) ? PNAT_PCIE : PNAT_LOCAL);
-        updateField("lane", i);
-        updateField("eom_measurment", (u_int32_t)eomMeasurement);
-        genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
-        validMeas = getFieldValue("meas_done") && getFieldValue("meas_done");
-
-        initialEom.push_back(MlxlinkRecord::addSpaceForSlrg(
-                validMeas? to_string(getFieldValue("initial_eom")) : "N/A"));
-        switch ((u_int32_t)eomMeasurement) {
-        case SLRG_COMPOSITE_EYE:
-            lastEom.push_back(MlxlinkRecord::addSpaceForSlrg(
-                    validMeas? to_string(getFieldValue("last_eom")) : "N/A"));
-            break;
-        case SLRG_COMPOSITE_WITH_ALL_EYES:
-            lastEom.push_back(MlxlinkRecord::addSpaceForSlrg(
-                    validMeas? to_string(getFieldValue("last_eom")) : "N/A"));
-            upperEom.push_back(MlxlinkRecord::addSpaceForSlrg(
-                    validMeas? to_string(getFieldValue("upper_eom")) : "N/A"));
-            midEom.push_back(MlxlinkRecord::addSpaceForSlrg(
-                    validMeas? to_string(getFieldValue("mid_eom")) : "N/A"));
-            lowerEom.push_back(MlxlinkRecord::addSpaceForSlrg(
-                    validMeas? to_string(getFieldValue("lower_eom")) : "N/A"));
-            break;
-        case SLRG_UPPER_EYE:
-            upperEom.push_back(MlxlinkRecord::addSpaceForSlrg(
-                    validMeas? to_string(getFieldValue("upper_eom")) : "N/A"));
-            break;
-        case SLRG_MIDDLE_EYE:
-            midEom.push_back(MlxlinkRecord::addSpaceForSlrg(
-                    validMeas? to_string(getFieldValue("mid_eom")) : "N/A"));
-            break;
-        case SLRG_LOWER_EYE:
-            lowerEom.push_back(MlxlinkRecord::addSpaceForSlrg(
-                    validMeas? to_string(getFieldValue("lower_eom")) : "N/A"));
-            break;
-        }
-    }
-    setPrintVal(_eyeOpeningInfoCmd, "initial_eom", getStringFromVector(initialEom),
-            ANSI_COLOR_RESET, !initialEom.empty(),true, true);
-    setPrintVal(_eyeOpeningInfoCmd, "last_eom", getStringFromVector(lastEom),
-            ANSI_COLOR_RESET, !lastEom.empty(),true, true);
-    setPrintVal(_eyeOpeningInfoCmd, "upper_eom", getStringFromVector(upperEom),
-            ANSI_COLOR_RESET, !upperEom.empty(),true, true);
-    setPrintVal(_eyeOpeningInfoCmd, "mid_eom", getStringFromVector(midEom),
-            ANSI_COLOR_RESET, !midEom.empty(),true, true);
-    setPrintVal(_eyeOpeningInfoCmd, "lower_eom", getStringFromVector(lowerEom),
-            ANSI_COLOR_RESET, !lowerEom.empty(),true, true);
+    (void) numOfLanesToUse;
+    /*
+     * TODO: implement NDR eye information
+     */
 }
 
 void MlxlinkCommander::showEye()
@@ -2065,13 +1872,10 @@ void MlxlinkCommander::showEye()
         if (_userInput._pcie) {
             showEyeTitle += " (PCIe)";
         }
-        setPrintTitle(_eyeOpeningInfoCmd, showEyeTitle, SLRG_LOWER_EYE + 2);
+        setPrintTitle(_eyeOpeningInfoCmd, showEyeTitle, EYE_OPENING_INFO_LAST);
         if (_productTechnology == PRODUCT_16NM ||
                 _productTechnology == PRODUCT_28NM ||
                 _productTechnology == PRODUCT_40NM) {
-            if (!_userInput.eomMeasurementStr.empty()) {
-                throw MlxRegException("Flag " EYE_OPENING_TYPE_FLAG " is valid with 7nm products only");
-            }
             prepare40_28_16nmEyeInfo(numOfLanesToUse);
         } else if (_productTechnology == PRODUCT_7NM) {
             prepare7nmEyeInfo(numOfLanesToUse);
@@ -2499,7 +2303,7 @@ void MlxlinkCommander::collectBER()
                 << port << ','
                 << getCableMedia(_cableMediaType) << ','
                 << _cablePN << ','
-                << getCableLengthStr(_cableLen) << ','
+                << getCableLengthStr(_cableLen, _cmisCable) << ','
                 << _cableAtten12G << ','
                 << errorsVector["time_since_last_clear_sec"] / 60 << ','
                 << errorsVector["phy_corrected_bits_lane0"] << ','
@@ -2911,27 +2715,12 @@ string MlxlinkCommander::getDeviceRev(bool queryMSGI)
             return "N/A";
         }
     }
-    return getVendorRev("revision");
+    return getVendorRev(getFieldValue("revision"));
 }
 
 string MlxlinkCommander::getDeviceFW()
 {
     return _fwVersion;
-}
-
-string MlxlinkCommander::getVendorRev(const string & name)
-{
-    string value = "";
-    u_int32_t rev = getFieldValue(name);
-    u_int32_t shift = 0xFF000000;
-    for (u_int32_t i = 0; i < 4; i++) {
-        char c = (char) ((rev & shift) >> (3 - i) * 8);
-        if (c != 0 && c != 32) {
-            value.push_back(c);
-        }
-        shift = shift >> 8;
-    }
-    return (value != "") ? value : "N/A";
 }
 
 // Config functions

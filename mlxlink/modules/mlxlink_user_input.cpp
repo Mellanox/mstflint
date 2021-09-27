@@ -112,8 +112,6 @@ UserInput::UserInput()
     mixerOffset1 = -1;
     showMixers = false;
 
-    eomMeasurementStr = "";
-
     enableFecHistogram = false;
     showFecHistogram = false;
     clearFecHistogram = false;

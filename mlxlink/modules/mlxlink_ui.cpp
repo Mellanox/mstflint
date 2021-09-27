@@ -89,11 +89,6 @@ void MlxlinkUi::printSynopsisQueries()
                   "Show Physical Counters and BER Info");
     MlxlinkRecord::printFlagLine(EYE_OPENING_FLAG_SHORT, EYE_OPENING_FLAG, "",
                   "Show Eye Opening Info");
-    printf(IDENT);
-    MlxlinkRecord::printFlagLine(EYE_OPENING_TYPE_FLAG_SHORT, EYE_OPENING_TYPE_FLAG, "eye",
-                  "Eye measurement type [CMP(composite)(Default)/ " \
-                  "ALL(composite and all three eyes)/ UP(upper eye)/ MID(middle eye)/ LOW(lower eye)] "\
-                  "(for 7nm products only) ");
     MlxlinkRecord::printFlagLine(FEC_DATA_FLAG_SHORT, FEC_DATA_FLAG, "", "Show FEC Capabilities");
     MlxlinkRecord::printFlagLine(SLTP_SHOW_FLAG_SHORT, SLTP_SHOW_FLAG, "", "Show Transmitter Info");
     MlxlinkRecord::printFlagLine(SHOW_TX_GROUP_MAP_FLAG_SHORT, SHOW_TX_GROUP_MAP_FLAG, "group_num",
@@ -307,10 +302,6 @@ void MlxlinkUi::validateMandatoryParams()
     }
     if ((_mlxlinkCommander->_userInput._labelPort == 0) && (_mlxlinkCommander->_userInput._portType != "PCIE")) {
         throw MlxRegException("Please provide a valid port number");
-    }
-    if (!_mlxlinkCommander->_userInput.eomMeasurementStr.empty() &&
-            !_mlxlinkCommander->_userInput._showEyeInfo) {
-        throw MlxRegException("The --" EYE_OPENING_TYPE_FLAG " option is valid only with --" EYE_OPENING_FLAG);
     }
 }
 
@@ -621,8 +612,6 @@ void MlxlinkUi::initCmdParser()
     AddOptions(BER_FLAG, BER_FLAG_SHORT, "", "Show BER Info");
     AddOptions(EYE_OPENING_FLAG, EYE_OPENING_FLAG_SHORT, "",
                "Show Eye Opening Info");
-    AddOptions(EYE_OPENING_TYPE_FLAG, EYE_OPENING_TYPE_FLAG_SHORT, "type",
-               "Eye measurement type");
     AddOptions(MODULE_INFO_FLAG, MODULE_INFO_FLAG_SHORT, "",
                "Show Module Info");
     AddOptions(PPCNT_CLEAR_FLAG, PPCNT_CLEAR_FLAG_SHORT, "",
@@ -866,9 +855,6 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _sendRegFuncMap.push_back(SHOW_EYE);
         _mlxlinkCommander->_userInput._showEyeInfo = true;
         return PARSE_OK;
-    } else if (name == EYE_OPENING_TYPE_FLAG) {
-       _mlxlinkCommander->_userInput.eomMeasurementStr = toUpperCase(value);
-       return PARSE_OK;
     } else if (name == SLTP_SHOW_FLAG) {
         _sendRegFuncMap.push_back(SHOW_SLTP);
         _mlxlinkCommander->_userInput._showSltp = true;

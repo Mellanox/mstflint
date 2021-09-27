@@ -128,8 +128,6 @@ public:
     int mixerOffset1;
     bool showMixers;
 
-    string eomMeasurementStr;
-
     bool enableFecHistogram;
     bool showFecHistogram;
     bool clearFecHistogram;
