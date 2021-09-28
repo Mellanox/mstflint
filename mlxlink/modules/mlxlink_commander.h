@@ -458,6 +458,8 @@ public:
     virtual void initEyeOpener();
     virtual void initErrInj();
     void initPortInfo();
+    void setAmBerCollectorFields();
+    virtual void initAmBerCollector();
     void showCableDump();
     void showCableDDM();
     vector<u_int8_t> validateBytes(const vector<string> &strBytes);
@@ -590,6 +592,7 @@ public:
     MlxlinkEyeOpener* _eyeOpener;
     MlxlinkErrInjCommander* _errInjector;
     MlxlinkPortInfo* _portInfo;
+    MlxlinkAmBerCollector* _amberCollector;
 };
 
 #endif /* MLXLINK_COMMANDER_H */

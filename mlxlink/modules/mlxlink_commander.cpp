@@ -90,6 +90,7 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _eyeOpener = NULL;
     _errInjector = NULL;
     _portInfo = NULL;
+    _amberCollector = NULL;
     _uniqueCableCmds = 0;
 }
 
@@ -106,6 +107,9 @@ MlxlinkCommander::~MlxlinkCommander()
     }
     if (_portInfo) {
         delete _portInfo;
+    }
+    if (_amberCollector) {
+        delete _amberCollector;
     }
     if (_gvmiAddress) {
         writeGvmi(0);
@@ -3907,6 +3911,28 @@ void MlxlinkCommander::initPortInfo()
          _allUnhandledErrors += string("Providing FEC histogram cause the following"\
                   " exception:\n") + string(exc.what()) + string("\n");
      }
+}
+
+void MlxlinkCommander::setAmBerCollectorFields()
+{
+    _amberCollector->_regLib = _regLib;
+    _amberCollector->_mlxlinkLogger = _mlxlinkLogger;
+    _amberCollector->_pnat = _userInput._pcie ? PNAT_PCIE : PNAT_LOCAL;
+    _amberCollector->_localPort = _localPort;
+    _amberCollector->_csvFileName = _userInput._csvBer;
+    _amberCollector->_iteration = _userInput._iteration;
+    _amberCollector->_testMode = _userInput._testMode;
+    _amberCollector->_depth = _dpn.depth;
+    _amberCollector->_pcieIndex = _dpn.pcieIndex;
+    _amberCollector->_node = _dpn.node;
+    _amberCollector->_mlxlinkMaps = _mlxlinkMaps;
+    _amberCollector->_isHca = _isHCA;
+}
+
+void MlxlinkCommander::initAmBerCollector()
+{
+    _amberCollector = new MlxlinkAmBerCollector(_jsonRoot);
+    setAmBerCollectorFields();
 }
 
 void MlxlinkCommander::prepareJsonOut()
