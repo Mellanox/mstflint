@@ -131,10 +131,10 @@ void MlxlinkUi::printSynopsisCommands()
                   "Physical Test Mode Configuration [EN(enable)/DS(disable)/TU(perform tuning)]");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PPRT_PRBS_FLAG_SHORT, PPRT_PRBS_FLAG, "rx_prbs_mode",
-                  "RX PRBS Mode [PRBS31/PRBS23A/PRBS23B/PRBS23C/PRBS23D/PRBS7/PRBS11/PRBS11A/PRBS11B/PRBS11C/PRBS11D/PRBS9/IDLE/Square_waveA/Square_waveB/Square_waveC/Square_waveD/PRBS13A/PRBS13B/PRBS13C/PRBS13D/SSPR/SSPRQ] (Optional - Default PRBS31)");
+                  "RX PRBS Mode [PRBS31/PRBS23A/PRBS23B/PRBS23C/PRBS23D/PRBS7/PRBS11/PRBS11A/PRBS11B/PRBS11C/PRBS11D/PRBS9/IDLE/SQUARE_WAVEA/SQUARE_WAVEB/SQUARE_WAVEC/SQUARE_WAVED/PRBS13A/PRBS13B/PRBS13C/PRBS13D/SSPR/SSPRQ/LT_frames/PRBS15/PRBS28] (Optional - Default PRBS31)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PPTT_PRBS_FLAG_SHORT, PPTT_PRBS_FLAG, "tx_prbs_mode",
-                  "TX PRBS Mode [PRBS31/PRBS23A/PRBS23B/PRBS23C/PRBS23D/PRBS7/PRBS11/PRBS11A/PRBS11B/PRBS11C/PRBS11D/PRBS9/IDLE/Square_waveA/Square_waveB/Square_waveC/Square_waveD/PRBS13A/PRBS13B/PRBS13C/PRBS13D/SSPR/SSPRQ] (Optional - Default PRBS31] (Optional - Default PRBS31)");
+                  "TX PRBS Mode [PRBS31/PRBS23A/PRBS23B/PRBS23C/PRBS23D/PRBS7/PRBS11/PRBS11A/PRBS11B/PRBS11C/PRBS11D/PRBS9/IDLE/SQUARE_WAVEA/SQUARE_WAVEB/SQUARE_WAVEC/SQUARE_WAVED/PRBS13A/PRBS13B/PRBS13C/PRBS13D/SSPR/SSPRQ/LT_frames/PRBS15/PRBS28/SQUARE_WAVE3,SQUARE_WAVE13,SQUARE_WAVE30] (Optional - Default PRBS31] (Optional - Default PRBS31)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PPRT_RATE_FLAG_SHORT, PPRT_RATE_FLAG, "rx_lane_rate",
                   "RX Lane Rate [HDR/EDR/FDR10/FDR/QDR/DDR/SDR/400G_8X/200G_4X/100G_2X,50G_1X,100G,100G_4X,50G,50G_2X,25G,40X,10G,14G,50GE-KR4,12.89G,XAUI,2.5G,1G]  (Optional - Default 25G)");
@@ -400,19 +400,6 @@ void MlxlinkUi::validatePRBSParams()
                 throw MlxRegException(
                           "PRBS parameters flags valid only with PRBS Enable flag (--test_mode EN)");
             }
-        }
-        if (_mlxlinkCommander->_userInput._prbsMode == "EN"
-            && (!prbsLaneRateCheck(_mlxlinkCommander->_userInput._pprtRate)
-                || !prbsLaneRateCheck(_mlxlinkCommander->_userInput._ppttRate))) {
-            string errStr = "Valid PRBS Lane Rates Are:";
-            for (map<u_int32_t, string>::iterator it =
-                 _mlxlinkCommander->_mlxlinkMaps->_prbsLaneRateList.begin();
-                 it != _mlxlinkCommander->_mlxlinkMaps->_prbsLaneRateList.end(); it++) {
-                errStr += it->second + ",";
-            }
-            errStr = deleteLastChar(errStr);
-            errStr += "\nDefault PRBS Lane Rate is EDR / 25GE / 50GE / 100GE (25.78125 Gb/s)";
-            throw MlxRegException(errStr);
         }
     } else if (prbsFlags) { // add check for lanes flag to work with PRBS and eye scan only
         throw MlxRegException(

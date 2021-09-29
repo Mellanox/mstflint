@@ -436,6 +436,7 @@ public:
     string prbsMaskToMode(u_int32_t mask, u_int32_t modeSelector);
     string getPrbsModeRX();
     u_int32_t getPrbsRateRX();
+    string getSupportedPrbsRates(u_int32_t modeSelector);
     string getSupportedPrbsModes(u_int32_t modeSelector);
     u_int32_t getLoopbackMode(const string &lb);
     string getLoopbackStr(u_int32_t loopbackCapMask);
