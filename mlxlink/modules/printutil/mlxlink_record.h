@@ -100,6 +100,7 @@ enum STATUS_DDM_FLAGS_TYPE {
 #define TEST_MODE_INFO_LAST             6
 #define PCIE_INFO_LAST                  4
 #define MODULE_INFO_LAST                23
+#define MODULE_INFO_AMBER               123
 #define BER_INFO_LAST                   7
 #define TEST_MODE_BER_INFO_LAST         3
 #define MPCNT_PERFORMANCE_INFO_LAST     4
