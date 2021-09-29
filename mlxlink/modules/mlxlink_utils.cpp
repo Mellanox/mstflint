@@ -100,6 +100,21 @@ u_int64_t add32BitTo64(u_int32_t value1, u_int32_t value2)
     return (((u_int64_t) value1) << 32 | value2);
 }
 
+string getFullString(u_int64_t intVal)
+{
+    string strVal = "";
+
+    if (intVal) {
+        for (int i = 56; i > -1; i-=8) {
+            strVal.push_back((char)(intVal >> i));
+        }
+    }else{
+        strVal = "N/A";
+    }
+
+    return strVal;
+}
+
 string status2Color(u_int32_t status)
 {
     return (status == 0 || status == 1023) ? ANSI_COLOR_GREEN : ANSI_COLOR_RED;
@@ -297,6 +312,42 @@ string getOui(u_int32_t oui)
     return ouiStr;
 }
 
+int getBitvalue(u_int32_t mask, int idx)
+{
+    return (1 & (mask >> (idx - 1)));
+}
+
+
+string getPowerClass(MlxlinkMaps *mlxlinkMaps, u_int32_t cableIdentifier, u_int32_t powerClass, u_int32_t maxPower)
+{
+    string powerClassStr = "N/A";
+    string val = "";
+    float maxPowerValue = maxPower * 0.25;
+    float powerClassVal = 0;
+
+    switch (cableIdentifier) {
+    case IDENTIFIER_SFP_DD:
+        val = mlxlinkMaps->_sfpddPowerClass[powerClass];
+        powerClassVal = mlxlinkMaps->_sfpddPowerClassToValue[powerClass];
+        break;
+    case IDENTIFIER_QSFP_DD:
+    case IDENTIFIER_OSFP:
+        val = mlxlinkMaps->_qsfpddOsfpPowerClass[powerClass];
+        powerClassVal = mlxlinkMaps->_qsfpddPowerClassToValue[powerClass];
+        break;
+    default:
+        val = mlxlinkMaps->_sfpQsfpPowerClass[powerClass];
+    }
+
+    if ((maxPowerValue > powerClassVal) || (powerClass == POWER_CLASS8)) {
+        powerClassStr = to_string(maxPowerValue) + " W max";
+    } else if (!val.empty()) {
+        powerClassStr = val;
+    }
+    return powerClassStr;
+}
+
+
 int ptysSpeedToExtMaskETH(const string & speed)
 {
     if (speed == "100M") {
@@ -437,6 +488,32 @@ bool isPAM4Speed(u_int32_t activeSpeed, u_int32_t protoActive, bool extended)
         }
     }
     return pam4Signal;
+}
+
+string getFieldsByMap(u_int32_t bitmask,  std::map<u_int32_t, std::string> map)
+{
+    string bitMaskStr = "";
+    string tmpMaskStr = "";
+    u_int32_t i = 1;
+    u_int32_t bitmask_tmp = bitmask;
+
+    if (bitmask) {
+        while(bitmask_tmp != 0){
+            if(getBitvalue(bitmask, i)){
+                tmpMaskStr = map[pow(2.0, i - 1)];
+                if (!tmpMaskStr.empty()) {
+                    bitMaskStr += tmpMaskStr + ",";
+                }
+            }
+            i++;
+            bitmask_tmp >>= 1;
+        }
+        bitMaskStr = deleteLastChar(bitMaskStr);
+    } else {
+        bitMaskStr = "N/A";
+    }
+
+    return bitMaskStr;
 }
 
 bool checkPaosCmd(const string &paosCmd)
@@ -894,12 +971,13 @@ string getCableType(u_int32_t cableType)
     return cableTypeStr;
 }
 
-string getTemp(u_int32_t temp)
+string getTemp(u_int32_t temp, int celsParam)
 {
     if (temp & 0x8000) {
-        return "-" + to_string(((~temp & 0xFFFF) + 1) / 256);
+        return "-" + to_string(((~temp & 0xFFFF) + 1) / celsParam);
     }
-    return to_string(temp / 256);
+
+    return to_string(temp / celsParam);
 }
 
 float getPower(u_int16_t power)
@@ -1011,6 +1089,141 @@ string pcieSpeedStr(u_int32_t linkSpeedActive)
     return linkSpeedActiveStr;
 }
 
+string getCompliance(u_int32_t compliance,
+                     std::map<u_int32_t,std::string> complianceMap, bool bitMasked)
+{
+    string compliance_str = "";
+    static const string separator = ", ";
+    static const size_t separator_size = separator.size();
+    std::map<u_int32_t, std::string>::iterator it;
+    if (!compliance) {
+        return complianceMap.begin()->second;
+    }
+    if (bitMasked) {
+        for (it=complianceMap.begin(); it!=complianceMap.end(); ++it) {
+            u_int32_t comp_bit = it->first;
+            string curr_compliance = it->second;
+            if (compliance & comp_bit) {
+                if (curr_compliance != "" &&
+                        (comp_bit != QSFP_ETHERNET_COMPLIANCE_CODE_EXT)) {
+                    compliance_str += (curr_compliance + separator);
+                }
+            }
+        }
+        size_t str_size = compliance_str.size();
+        if(str_size && !(compliance & QSFP_ETHERNET_COMPLIANCE_CODE_EXT)){
+            compliance_str.erase(str_size - separator_size, separator_size);
+        }
+    } else {
+        it = complianceMap.find(compliance);
+        if (it == complianceMap.end()) {
+            compliance_str = "Unknown compliance " + to_string(compliance);
+        } else {
+            compliance_str =  it->second;
+        }
+    }
+    return compliance_str;
+}
+
+string getFwVersion(bool passive , u_int32_t moduleFWVer)
+{
+    string moduleFWVersion = "N/A";
+    if (!passive) {
+        u_int32_t moduleFWVerChip = (moduleFWVer & 0xFF000000) >> 24;
+        u_int32_t moduleFWVerQtr  = (moduleFWVer & 0x00FF0000) >> 16;
+        u_int32_t moduleFWVerFree = (moduleFWVer & 0x0000FFFF);
+        if (moduleFWVer) {
+            moduleFWVersion =  to_string(moduleFWVerChip) + "." +
+                                to_string(moduleFWVerQtr) + "." +
+                                to_string(moduleFWVerFree);
+        }
+    }
+
+    return moduleFWVersion;
+}
+
+string getVendorRev(u_int32_t rev)
+{
+    string value = "";
+    u_int32_t shift = 0xFF000000;
+    for (u_int32_t i = 0; i < 4; i++) {
+        char c = (char) ((rev & shift) >> (3 - i) * 8);
+        if (c != 0 && c != 32) {
+            value.push_back(c);
+        }
+        shift = shift >> 8;
+    }
+    return (value != "") ? value : "N/A";
+}
+
+string getCableLengthStr(u_int32_t cableLength, bool cmisCable)
+{
+    char cableLengthStr[32];
+    u_int32_t prec = 0;
+    if (cmisCable) {
+        u_int32_t lengthValue = (cableLength & 0x3f);
+        float multiplier = 0;
+        u_int32_t multiplierMask = (cableLength >> 6) & 0x7;
+        switch (multiplierMask) {
+        case CABLE_0_0_MUL:
+            multiplier = 0.1;
+            prec = 1;
+            break;
+        case CABLE_0_1_MUL:
+            multiplier = 1;
+            break;
+        case CABLE_1_0_MUL:
+            multiplier = 10;
+            break;
+        case CABLE_1_1_MUL:
+            multiplier = 100;
+            break;
+        }
+        snprintf(cableLengthStr, sizeof(cableLengthStr),
+                "%.*f", prec, ((float)lengthValue * multiplier));
+    } else {
+        snprintf(cableLengthStr, sizeof(cableLengthStr), "%d", cableLength);
+    }
+    return string(cableLengthStr);
+}
+
+string getRxTxCDRState(u_int32_t state, u_int32_t numOfLanes)
+{
+    string stateMask = "";
+    u_int32_t mask = 1;
+    for (u_int32_t i = 0; i < numOfLanes; i++) {
+        if (state & mask) {
+            stateMask += "ON,";
+        } else {
+            stateMask += "OFF,";
+        }
+        mask = mask << 1;
+    }
+    return deleteLastChar(stateMask);
+}
+
+string getStringByActiveLanes(string allLanes, int numOfActiveLanes)
+{
+    string delimiter = ",";
+    size_t pos = 0;
+    int i = numOfActiveLanes;
+    string newStr = "";
+    while ((pos = allLanes.find(delimiter)) != string::npos && i != 0) {
+        newStr += allLanes.substr(0, pos);
+        allLanes.erase(0, pos + delimiter.length());
+        i--;
+        if( i != 0){
+            newStr += ",";
+        }
+    }
+
+    if(char(newStr[newStr.length() - 1]) == ','){
+        newStr = deleteLastChar(newStr);
+    }
+
+    return newStr;
+}
+
 string pcieDeviceStatusStr(u_int32_t deviceStatus)
 {
     string deviceStatusStr, comma;
@@ -1084,36 +1297,72 @@ void setPrintTitle(MlxlinkCmdPrint &mlxlinkCmdPrint, string title,
     mlxlinkCmdPrint.initRecords(size);
 }
 
-int eyeTypeStrToInt(const string &str)
-{
-    int code = -1;
-    if (str == "CMP") {
-        code = SLRG_COMPOSITE_EYE;
-    } else if (str == "ALL") {
-        code = SLRG_COMPOSITE_WITH_ALL_EYES;
-    } else if (str == "UP") {
-        code = SLRG_UPPER_EYE;
-    } else if (str == "MID") {
-        code = SLRG_MIDDLE_EYE;
-    } else if (str == "LOW") {
-        code = SLRG_LOWER_EYE;
-    }
-    return code;
-}
-
 bool isSpeed25GPerLane(u_int32_t speed, u_int32_t protocol)
 {
     bool valid = true;
     if ((protocol == IB && speed != IB_LINK_SPEED_EDR) ||
         (protocol == ETH && (speed != ETH_LINK_SPEED_100G_CR4 &&
-        speed != ETH_LINK_SPEED_100G_KR4 && speed != ETH_LINK_SPEED_100G_LR4 &&
-        speed != ETH_LINK_SPEED_100G_SR4 && speed != ETH_LINK_SPEED_50G_KR2 &&
-        speed != ETH_LINK_SPEED_50G_SR2 && speed != ETH_LINK_SPEED_50G_CR2 &&
-        speed != ETH_LINK_SPEED_25G_CR && speed != ETH_LINK_SPEED_25G_KR &&
-        speed != ETH_LINK_SPEED_25G_SR && speed != ETH_LINK_SPEED_50G_KR4))) {
+                             speed != ETH_LINK_SPEED_100G_KR4 &&
+                             speed != ETH_LINK_SPEED_100G_LR4 &&
+                             speed != ETH_LINK_SPEED_100G_SR4 &&
+                             speed != ETH_LINK_SPEED_50G_KR2 &&
+                             speed != ETH_LINK_SPEED_50G_SR2 &&
+                             speed != ETH_LINK_SPEED_50G_CR2 &&
+                             speed != ETH_LINK_SPEED_25G_CR &&
+                             speed != ETH_LINK_SPEED_25G_KR &&
+                             speed != ETH_LINK_SPEED_25G_SR &&
+                             speed != ETH_LINK_SPEED_50G_KR4))) {
         valid = false;
     }
     return valid;
+}
+
+bool isSpeed50GPerLane(u_int32_t speed, u_int32_t protocol)
+{
+    bool valid = true;
+    if ((protocol == IB && speed != IB_LINK_SPEED_HDR) ||
+        (protocol == ETH && (speed != ETH_LINK_SPEED_EXT_50GAUI_1 &&
+                             speed != ETH_LINK_SPEED_EXT_100GAUI_2 &&
+                             speed != ETH_LINK_SPEED_EXT_200GAUI_4 &&
+                             speed != ETH_LINK_SPEED_EXT_400GAUI_8))) {
+        valid = false;
+    }
+    return valid;
+}
+
+bool isSpeed100GPerLane(u_int32_t speed, u_int32_t protocol)
+{
+    bool valid = true;
+    if ((protocol == IB && speed != IB_LINK_SPEED_NDR) ||
+        (protocol == ETH && (speed != ETH_LINK_SPEED_EXT_100GAUI_1 &&
+                             speed != ETH_LINK_SPEED_EXT_200GAUI_2 &&
+                             speed != ETH_LINK_SPEED_EXT_400GAUI_4))) {
+        valid = false;
+    }
+    return valid;
+}
+
+string linkWidthMaskToStr(u_int32_t width)
+{
+    string widthStr = "";
+    if (width) {
+        if (width & 1) {
+            widthStr += "1x_";
+        }
+        if (width & 2) {
+            widthStr += "2x_";
+        }
+        if (width & 4) {
+            widthStr += "4x_";
+        }
+        if (width & 8) {
+            widthStr += "8x_";
+        }
+        widthStr = deleteLastChar(widthStr);
+    } else {
+        widthStr = "N/A";
+    }
+    return widthStr;
 }
 
 bool askUser(const char *question, bool force)
@@ -1143,4 +1392,3 @@ bool askUser(const char *question, bool force)
 
     return ret;
 }
-

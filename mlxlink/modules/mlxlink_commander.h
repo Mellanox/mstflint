@@ -48,6 +48,7 @@
 #include "mlxlink_eye_opener.h"
 #include "mlxlink_err_inj_commander.h"
 #include "mlxlink_port_info.h"
+#include "mlxlink_amBER_collector.h"
 
 #ifdef MST_UL
 #define MLXLINK_EXEC "mstlink"
@@ -87,8 +88,6 @@
 #define BER_FLAG_SHORT                  'c'
 #define EYE_OPENING_FLAG                "show_eye"
 #define EYE_OPENING_FLAG_SHORT          'e'
-#define EYE_OPENING_TYPE_FLAG           "fom_measurement"
-#define EYE_OPENING_TYPE_FLAG_SHORT     ' '
 #define FEC_DATA_FLAG                   "show_fec"
 #define FEC_DATA_FLAG_SHORT             ' '
 #define SLTP_SHOW_FLAG                  "show_serdes_tx"
@@ -303,100 +302,6 @@ enum OPTION_TYPE {
     FUNCTION_LAST
 };
 
-enum PDDR_PAGES {
-    PDDR_OPERATIONAL_INFO_PAGE = 0,
-    PDDR_TROUBLESHOOTING_INFO_PAGE = 1,
-    PDDR_MODULE_INFO_PAGE = 3,
-};
-
-enum MPCNT_GROUPS {
-    MPCNT_PERFORMANCE_GROUP = 0, MPCNT_LANE_GROUP = 1, MPCNT_TIMERS_GROUPS = 2
-};
-
-enum PPAOS_ADMIN {
-    PPAOS_REGULAR_OPERATION = 0, PPAOS_PHY_TEST_MODE = 1
-};
-
-enum GROUP_OPCODE {
-    MONITOR_OPCODE = 0, ADVANCED_OPCODE = 1
-};
-
-enum TX_INDEX_SELECTOR
-{
-    TX_LOCAL_PORT,
-    TX_GROUP
-};
-
-enum SLTP_PARAMS {
-    POLARITY,
-    OB_TAP0,
-    OB_TAP1,
-    OB_TAP2,
-    OB_BIAS,
-    OB_PREEMP_MODE,
-    OB_REG,
-    OB_LEVA,
-    PARAMS_40NM_LAST // add the new enums before last
-};
-
-enum SLTP_16NM_PARAMS {
-    PRE_2_TAP,
-    PRE_TAP,
-    MAIN_TAP,
-    POST_TAP,
-    OB_M2LP,
-    OB_AMP,
-    OB_ALEV_OUT,
-    PARAMS_16NM_LAST // add the new enums before last
-};
-
-enum BER_LIMIT {
-    NOMINAL_25G_NO_FEC = -15,
-    NOMINAL_25G_LOW_ATTN = -13,
-    NOMINAL_25G_HIGH_ATTN = -9,
-    NOMINAL_10G = -14,
-    NOMINAL_56G_40G = -15,
-    NOMINAL_DEFAULT = -15,
-    CORNER_25G_NO_FEC = -14,
-    CORNER_25G_LOW_ATTN = -10,
-    CORNER_25G_HIGH_ATTN = -7,
-    CORNER_10G = -13,
-    CORNER_56G_40G = -14,
-    CORNER_DEFAULT = -14
-};
-
-enum PAOS_ADMIN {
-    PAOS_UP = 1, PAOS_DOWN = 2
-};
-
-enum PCIE_PORT_TYPE {
-    PORT_TYPE_EP = 0,
-    PORT_TYPE_US = 5,
-    PORT_TYPE_DS = 6
-};
-
-// Cable ops
-enum MODULE_ID {
-    MODULE_ID_SFP       = 0x3,
-    MODULE_ID_QSFP      = 0xC,
-    MODULE_ID_QSFP_PLUS = 0xD,
-    MODULE_ID_QSFP28    = 0x11,
-};
-
-enum STATUS_OPCODE {
-    CABLE_IS_UNPLUGGED = 1024
-};
-
-enum LOCAL_PORT_TYPE {
-    PORT_TYPE_NETWORK = 0
-};
-
-enum CABLE_MULTIPLIER {
-    CABLE_0_0_MUL,
-    CABLE_0_1_MUL,
-    CABLE_1_0_MUL,
-    CABLE_1_1_MUL
-};
 
 ///////////
 struct DPN {
@@ -424,24 +329,6 @@ struct DPN {
     u_int32_t node;
 };
 
-struct PortGroup {
-    u_int32_t localPort;
-    u_int32_t labelPort;
-    u_int32_t groupId;
-    u_int32_t split;
-    PortGroup() {
-        localPort = 0;
-        labelPort = 0;
-        groupId = 0;
-        split = 0;
-    }
-    PortGroup(u_int32_t ilocalPort, u_int32_t ilabelPort, u_int32_t igroupId, u_int32_t isplit) {
-        localPort = ilocalPort;
-        labelPort = ilabelPort;
-        groupId =igroupId;
-        split = isplit;
-    }
-};
 using namespace std;
 
 class MlxlinkCommander: public MlxlinkRegParser {
@@ -469,8 +356,6 @@ public:
     void checkUnSplit(u_int32_t localPort);
     u_int32_t maxLocalPort();
     void checkStrLength(const string &str);
-    string getAscii(const string & name, u_int32_t size = 4);
-    string getRxTxCDRState(u_int32_t state);
     void getActualNumOfLanes(u_int32_t linkSpeedActive, bool extended);
     u_int32_t activeSpeed2gNum(u_int32_t mask, bool extended);
     string activeSpeed2Str(u_int32_t mask, bool extended);
@@ -516,12 +401,8 @@ public:
 
     // Query helper functions
     string getCableTechnologyStr(u_int32_t cableTechnology);
-    string getCompliance(u_int32_t compliance, std::map<u_int32_t,
-            std::string> complianceMap, bool bitMasked = false);
     string getCompliaceLabelForCIMIS(u_int32_t hostCompliance, u_int32_t mediaCompliance);
     string getComplianceLabel(u_int32_t compliance,  u_int32_t extCompliance, bool ignoreExtBitChk = false);
-    string getPowerClass(u_int32_t powerClass, u_int32_t maxPower);
-    string getCableLengthStr(u_int32_t cableLength);
     string getCableTypeStr(u_int32_t cableType);
     void prepareStaticInfoSection(bool valid);
     void prepareAttenuationAndFwSection(bool valid);
@@ -567,7 +448,6 @@ public:
     string getDeviceProductName(bool queryMSGI = false);
     string getDeviceRev(bool queryMSGI = false);
     string getDeviceFW();
-    string getVendorRev(const string & name);
     void printOuptputVector(vector<MlxlinkCmdPrint> &cmdOut);
     virtual void prepareJsonOut();
 
@@ -578,6 +458,8 @@ public:
     virtual void initEyeOpener();
     virtual void initErrInj();
     void initPortInfo();
+    void setAmBerCollectorFields();
+    virtual void initAmBerCollector();
     void showCableDump();
     void showCableDDM();
     vector<u_int8_t> validateBytes(const vector<string> &strBytes);
@@ -710,6 +592,7 @@ public:
     MlxlinkEyeOpener* _eyeOpener;
     MlxlinkErrInjCommander* _errInjector;
     MlxlinkPortInfo* _portInfo;
+    MlxlinkAmBerCollector* _amberCollector;
 };
 
 #endif /* MLXLINK_COMMANDER_H */

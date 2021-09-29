@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Jan 2019 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2020 Mellanox Technologies Ltd.  All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -28,49 +28,46 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
-
- *
  */
-#ifndef MLXLINK_REG_PARSER_H
-#define MLXLINK_REG_PARSER_H
 
-#include "mlxlink_utils.h"
-#include <mtcr.h>
+#ifndef AMBER_FIELD_H
+#define AMBER_FIELD_H
 
-using namespace mlxreg;
-#define PRINT_LOG(mlxlinklogger, title)\
-    if (mlxlinklogger) {\
-        mlxlinklogger->printHeaderWithUnderLine(title);\
-    }\
+#include <iostream>
+#include <common/compatibility.h>
+#include <vector>
 
-#define DEBUG_LOG(mlxlinklogger, format, ...)\
-    if (mlxlinklogger) {\
-        mlxlinklogger->debugLog(format, __VA_ARGS__);\
-    }\
+using namespace std;
 
-#define PDDR_STATUS_MESSAGE_LENGTH_HCA  236
-#define PDDR_STATUS_MESSAGE_LENGTH_SWITCH 59
-
-class MlxlinkRegParser :public RegAccessParser{
+class AmberField {
 public:
-    MlxlinkRegParser();
-    virtual ~MlxlinkRegParser();
+    AmberField (const string &uiField, const string &uiValue, bool visible = true);
+    AmberField (const string &uiField, const string &uiValue, u_int64_t prmValue, bool visible = true);
 
-    void resetParser(const string &regName);
-    void readMCIA(u_int32_t page, u_int32_t size, u_int32_t offset,
-            u_int8_t * data, u_int32_t i2cAddress);
-    void genBuffSendRegister(const string &regName, maccess_reg_method_t method);
-    void writeGvmi(u_int32_t data);
-    void updateField(string field_name, u_int32_t value);
-    u_int32_t getFieldValue(string field_name);
-    string getFieldStr(const string &field);
-    string getRawFieldValueStr(const string fieldName);
-    string getAscii(const string & name, u_int32_t size = 4);
+    ~AmberField ();
 
-    u_int32_t _gvmiAddress;
-    MlxRegLib *_regLib;
-    mfile *_mf;
-    MlxlinkLogger *_mlxlinkLogger;
+    friend ostream& operator<<(ostream& os, const AmberField &amberField);
+
+    string getUiField() const;
+    string getUiValue() const;
+    u_int64_t getPrmValue() const;
+    bool isVisible();
+    u_int32_t getFieldIndex();
+    static void reset();
+    static string getValueFromFields(const vector<AmberField> &fields, const string &uiField, bool getPrmValue = false);
+
+    static u_int32_t _lastFieldIndex;
+    static bool _dataValid;
+
+private:
+    u_int32_t _fieldIndex;
+    string _prmReg;
+    string _prmField;
+    string _uiField;
+    u_int64_t _prmValue;
+    string _uiValue;
+    string _fieldGroup;
+    bool _visible;
 };
 
-#endif /* MLXLINK_REG_PARSER_H */
+#endif /* AMBER_FIELD_H */
