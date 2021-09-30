@@ -380,6 +380,7 @@ public:
 
     //Mlxlink query functions
     virtual void showModuleInfo();
+    void prepareBerModuleInfoNdr(bool valid);
     virtual void operatingInfoPage();
     virtual void supportedInfoPage();
     virtual void troubInfoPage();
@@ -593,6 +594,9 @@ public:
     MlxlinkErrInjCommander* _errInjector;
     MlxlinkPortInfo* _portInfo;
     MlxlinkAmBerCollector* _amberCollector;
+
+protected:
+    string loopAllLanesStr(vector<AmberField> &fields, string str);
 };
 
 #endif /* MLXLINK_COMMANDER_H */

@@ -1135,6 +1135,201 @@ void MlxlinkCommander::prepareDDMSection(bool valid)
                     ANSI_COLOR_RESET, true, valid);
 }
 
+string MlxlinkCommander::loopAllLanesStr(vector<AmberField> &fields, string str)
+{
+    string strVal = "";
+    for (u_int32_t lane = 0; lane < LANES_NUM; lane++) {
+        string laneStr = to_string(lane);
+        strVal += AmberField::getValueFromFields(fields, str + laneStr) + "_";
+    }
+    strVal = deleteLastChar(strVal);
+    return strVal;
+}
+
+void MlxlinkCommander::prepareBerModuleInfoNdr(bool valid)
+{
+    initAmBerCollector();
+    _amberCollector->init();
+
+    vector<AmberField> moduleInfoFields =  _amberCollector->getModuleStatus();
+    u_int32_t hiLoTempAlarmWarn;
+    strToUint32((char *)(AmberField::getValueFromFields(moduleInfoFields, "Temperature Alarm", true).c_str()), hiLoTempAlarmWarn);
+    u_int32_t hiTempAlarm = hiLoTempAlarmWarn & 1;
+    u_int32_t loTempAlarm = hiLoTempAlarmWarn & 2;
+    setPrintVal(_moduleInfoCmd, "Temperature Alarm [hi, low]",
+                "[" + to_string(hiTempAlarm) + "," + to_string(loTempAlarm) + "]",
+                ANSI_COLOR_RESET, true, valid && _ddmSupported);
+    u_int32_t hiTempWarn = hiLoTempAlarmWarn & 4;
+    u_int32_t loTempWarn = hiLoTempAlarmWarn & 8;
+    setPrintVal(_moduleInfoCmd, "Temperature Warning [hi , low]",
+                "[" + to_string(hiTempWarn) + "," + to_string(loTempWarn) + "]",
+                ANSI_COLOR_RESET, true, valid && _ddmSupported);
+    u_int32_t hiLoVccAlarmWarn;
+    strToUint32((char *)(AmberField::getValueFromFields(moduleInfoFields, "Voltage Alarm", true).c_str()), hiLoVccAlarmWarn);
+    u_int32_t hiVccAlarm = hiLoVccAlarmWarn & 1;
+    u_int32_t loVccAlarm = hiLoVccAlarmWarn & 2;
+    setPrintVal(_moduleInfoCmd, "Voltage Alarm [hi , low]",
+                "[" + to_string(hiVccAlarm) + "," + to_string(loVccAlarm) + "]",
+                ANSI_COLOR_RESET, true, valid && _ddmSupported);
+    u_int32_t hiVccWarn = hiLoVccAlarmWarn & 4;
+    u_int32_t loVccWarn = hiLoVccAlarmWarn & 8;
+    setPrintVal(_moduleInfoCmd, "Voltage Warning",
+                "[" + to_string(hiVccWarn) + "," + to_string(loVccWarn) + "]",
+                ANSI_COLOR_RESET, true, valid && _ddmSupported);
+    string txBiasHiAlStr = AmberField::getValueFromFields(moduleInfoFields, "tx_bias_hi_al");
+    findAndReplace(txBiasHiAlStr, "_", ",");
+    string txBiasLoAlStr = AmberField::getValueFromFields(moduleInfoFields, "tx_bias_lo_al");
+    findAndReplace(txBiasLoAlStr, "_", ",");
+    setPrintVal(_moduleInfoCmd, "Tx bias Alaram [hi, low]",
+                "[[" + getStringByActiveLanes(txBiasHiAlStr,_numOfLanes) + "]" + ',' + "[" + getStringByActiveLanes(txBiasLoAlStr,_numOfLanes) + "]]",
+                ANSI_COLOR_RESET, true, valid && _ddmSupported);
+    string txBiasHiStr = AmberField::getValueFromFields(moduleInfoFields, "tx_bias_hi_war");
+    findAndReplace(txBiasHiStr, "_", ",");
+    string txBiasLoStr = AmberField::getValueFromFields(moduleInfoFields, "tx_bias_lo_war");
+    findAndReplace(txBiasLoStr, "_", ",");
+    setPrintVal(_moduleInfoCmd, "Tx Bias Warning [hi, low]",
+                "[[" + getStringByActiveLanes(txBiasHiStr,_numOfLanes) + "]" + ',' + "[" + getStringByActiveLanes(txBiasLoStr,_numOfLanes) + "]]",
+                ANSI_COLOR_RESET, true, valid && _ddmSupported);
+    string rxPowerHiAl = AmberField::getValueFromFields(moduleInfoFields, "rx_power_hi_al");
+    findAndReplace(rxPowerHiAl, "_", ",");
+    string rxPowerLoAl = AmberField::getValueFromFields(moduleInfoFields, "rx_power_lo_al");
+    findAndReplace(rxPowerLoAl, "_", ",");
+    setPrintVal(_moduleInfoCmd, "Rx power Alaram [hi, low]",
+                "[[" + getStringByActiveLanes(rxPowerHiAl,_numOfLanes) + "]" + ',' + "[" + getStringByActiveLanes(rxPowerLoAl,_numOfLanes) + "]]",
+                ANSI_COLOR_RESET, true, valid && _ddmSupported);
+    string rxPowerHighWarStr = AmberField::getValueFromFields(moduleInfoFields, "rx_power_hi_war");
+    findAndReplace(rxPowerHighWarStr, "_", ",");
+    string rxPowerLowWarStr = AmberField::getValueFromFields(moduleInfoFields, "rx_power_lo_war");
+    findAndReplace(rxPowerLowWarStr, "_", ",");
+    setPrintVal(_moduleInfoCmd, "Rx power Warning [hi, low]",
+                "[[" + getStringByActiveLanes(rxPowerHighWarStr,_numOfLanes) + "]" + ',' + "[" + getStringByActiveLanes(rxPowerLowWarStr,_numOfLanes) + "]]",
+                ANSI_COLOR_RESET, true, valid && _ddmSupported);
+    string txPowerHighStr = AmberField::getValueFromFields(moduleInfoFields, "tx_power_hi_al");
+    findAndReplace(txPowerHighStr, "_", ",");
+    string txPowerLowStr = AmberField::getValueFromFields(moduleInfoFields, "tx_power_lo_al");
+    findAndReplace(txPowerLowStr, "_", ",");
+    setPrintVal(_moduleInfoCmd, "Tx power Alaram [hi, low]",
+                "[[" + getStringByActiveLanes(txPowerHighStr,_numOfLanes) + "]" + ',' + "[" + getStringByActiveLanes(txPowerLowStr,_numOfLanes) + "]]",
+                ANSI_COLOR_RESET, true, valid && _ddmSupported);
+    string txPowerHiWarStr = AmberField::getValueFromFields(moduleInfoFields, "tx_power_hi_war");
+    findAndReplace(txPowerHiWarStr, "_", ",");
+    string txPowerLowWarStr = AmberField::getValueFromFields(moduleInfoFields, "tx_power_lo_war");
+    findAndReplace(txPowerLowWarStr, "_", ",");
+    setPrintVal(_moduleInfoCmd, "Tx power Warning [hi, low]",
+                "[[" + getStringByActiveLanes(txPowerHiWarStr,_numOfLanes) + "]" + ',' + "[" + getStringByActiveLanes(txPowerLowWarStr,_numOfLanes) + "]]",
+                ANSI_COLOR_RESET, true, valid && _ddmSupported);
+    string cableWStr = AmberField::getValueFromFields(moduleInfoFields, "ib_width");
+    findAndReplace(cableWStr, "_", ",");
+    setPrintVal(_moduleInfoCmd, "IB Cable Width",
+                cableWStr,
+                ANSI_COLOR_RESET, true, valid);
+    setPrintVal(_moduleInfoCmd, "Memory Map Revision",
+                AmberField::getValueFromFields(moduleInfoFields, "Memory map rev"),
+                ANSI_COLOR_RESET, true, valid);
+    setPrintVal(_moduleInfoCmd, "Linear Direct Drive",
+                AmberField::getValueFromFields(moduleInfoFields, "linear direct drive"),
+                ANSI_COLOR_RESET, true, valid);
+    string cableBreakoutStr = AmberField::getValueFromFields(moduleInfoFields, "cable_breakout");
+    findAndReplace(cableBreakoutStr, "_", ",");
+    setPrintVal(_moduleInfoCmd, "Cable Breakout",
+                cableBreakoutStr,
+                ANSI_COLOR_RESET, true, valid);
+    setPrintVal(_moduleInfoCmd, "SMF Length",
+                AmberField::getValueFromFields(moduleInfoFields, "smf_length"),
+                ANSI_COLOR_RESET, true, valid);
+    setPrintVal(_moduleInfoCmd, "MAX Power",
+                AmberField::getValueFromFields(moduleInfoFields, "max_power"),
+                ANSI_COLOR_RESET, true, valid);
+    setPrintVal(_moduleInfoCmd, "Cable Rx AMP",
+                AmberField::getValueFromFields(moduleInfoFields, "cable_rx_amp"),
+                ANSI_COLOR_RESET, true, valid);
+    setPrintVal(_moduleInfoCmd, "Cable Rx Emphasis",
+                AmberField::getValueFromFields(moduleInfoFields, "cable_rx_emphasis"),
+                ANSI_COLOR_RESET, true, valid);
+    setPrintVal(_moduleInfoCmd, "Cable Rx Post Emphasis",
+                AmberField::getValueFromFields(moduleInfoFields, "cable_rx_post_emphasis"),
+                ANSI_COLOR_RESET, true, valid);
+    setPrintVal(_moduleInfoCmd, "Cable Tx Equalization",
+                AmberField::getValueFromFields(moduleInfoFields, "cable_tx_equalization"),
+                ANSI_COLOR_RESET, true, valid);
+    setPrintVal(_moduleInfoCmd, "Wavelength Tolerance",
+                AmberField::getValueFromFields(moduleInfoFields, "wavelength_tolerance"),
+                ANSI_COLOR_RESET, true, valid);
+    setPrintVal(_moduleInfoCmd, "Module State",
+                AmberField::getValueFromFields(moduleInfoFields, "Module_st"),
+                ANSI_COLOR_RESET, true, valid);
+    string dpStr = loopAllLanesStr(moduleInfoFields,"dp_st_lane");
+    findAndReplace(dpStr, "_", ",");
+    setPrintVal(_moduleInfoCmd, "DataPath state [per lane]",
+                getStringByActiveLanes(dpStr,_numOfLanes),
+                ANSI_COLOR_RESET, true, valid);
+    string rxOutStr = AmberField::getValueFromFields(moduleInfoFields, "rx_output_valid");
+    findAndReplace(rxOutStr, "_", ",");
+    setPrintVal(_moduleInfoCmd, "Rx Output Valid",
+                getStringByActiveLanes(rxOutStr,_numOfLanes),
+                ANSI_COLOR_RESET, true, valid);
+    string rxInStr = AmberField::getValueFromFields(moduleInfoFields, "rx_input_valid");
+    findAndReplace(rxInStr, "_", ",");
+    setPrintVal(_moduleInfoCmd, "Rx Input Valid",
+                getStringByActiveLanes(rxInStr,_numOfLanes),
+                ANSI_COLOR_RESET, true, valid);
+    setPrintVal(_moduleInfoCmd, "Nominal bit rate",
+                AmberField::getValueFromFields(moduleInfoFields, "nbr250"),
+                ANSI_COLOR_RESET, true, valid);
+    setPrintVal(_moduleInfoCmd, "Rx Power Type",
+                AmberField::getValueFromFields(moduleInfoFields, "Rx Power Type"),
+                ANSI_COLOR_RESET, true, valid);
+    setPrintVal(_moduleInfoCmd, "Manufacturing Date",
+                AmberField::getValueFromFields(moduleInfoFields, "date_code"),
+                ANSI_COLOR_RESET, true, valid);
+    setPrintVal(_moduleInfoCmd, "Active Set Host Compliance Code",
+                AmberField::getValueFromFields(moduleInfoFields, "active_set_host_compliance_code"),
+                ANSI_COLOR_RESET, true, valid);
+    setPrintVal(_moduleInfoCmd, "Active Set Media Compliance Code",
+                AmberField::getValueFromFields(moduleInfoFields, "active_set_media_compliance_code"),
+                ANSI_COLOR_RESET, true, valid);
+    setPrintVal(_moduleInfoCmd, "Error Code Response",
+                AmberField::getValueFromFields(moduleInfoFields, "error_code_response"),
+                ANSI_COLOR_RESET, true, valid);
+    setPrintVal(_moduleInfoCmd, "Module FW Fault",
+                AmberField::getValueFromFields(moduleInfoFields, "Mod_fw_fault"),
+                ANSI_COLOR_RESET, true, valid && _ddmSupported);
+    setPrintVal(_moduleInfoCmd, "DataPath FW Fault",
+                AmberField::getValueFromFields(moduleInfoFields, "Dp_fw_fault"),
+                ANSI_COLOR_RESET, true, valid && _ddmSupported);
+    string txStr = AmberField::getValueFromFields(moduleInfoFields, "tx_fault");
+    findAndReplace(txStr, "_", ",");
+    setPrintVal(_moduleInfoCmd, "Tx Fault [per lane]",
+                getStringByActiveLanes(txStr,_numOfLanes),
+                ANSI_COLOR_RESET, true, valid && _ddmSupported);
+    string txLosStr = AmberField::getValueFromFields(moduleInfoFields, "tx_los");
+    findAndReplace(txLosStr, "_", ",");
+    setPrintVal(_moduleInfoCmd, "Tx LOS [per lane]",
+                getStringByActiveLanes(txLosStr,_numOfLanes),
+                ANSI_COLOR_RESET, true, valid && _ddmSupported);
+    string txCdrStr = AmberField::getValueFromFields(moduleInfoFields, "tx_cdr_lol");
+    findAndReplace(txCdrStr, "_", ",");
+    setPrintVal(_moduleInfoCmd, "Tx CDR LOL [per lane]",
+                getStringByActiveLanes(txCdrStr,_numOfLanes),
+                ANSI_COLOR_RESET, true, valid && _ddmSupported);
+    string rxLosStr = AmberField::getValueFromFields(moduleInfoFields, "rx_los");
+    findAndReplace(rxLosStr, "_", ",");
+    setPrintVal(_moduleInfoCmd, "Rx LOS [per lane]",
+                getStringByActiveLanes(rxLosStr,_numOfLanes),
+                ANSI_COLOR_RESET, true, valid && _ddmSupported);
+    string rxCdrLolStr = AmberField::getValueFromFields(moduleInfoFields, "rx_cdr_lol");
+    findAndReplace(rxCdrLolStr, "_", ",");
+    setPrintVal(_moduleInfoCmd, "Rx CDR LOL [per lane]",
+                getStringByActiveLanes(rxCdrLolStr,_numOfLanes),
+                ANSI_COLOR_RESET, true, valid && _ddmSupported);
+    string txAdEqFaultStr = AmberField::getValueFromFields(moduleInfoFields, "tx_ad_eq_fault");
+    findAndReplace(txAdEqFaultStr, "_", ",");
+    setPrintVal(_moduleInfoCmd, "Tx Adaptive EQ Fault [per lane]",
+                getStringByActiveLanes(txAdEqFaultStr,_numOfLanes),
+                ANSI_COLOR_RESET, true, valid && _ddmSupported);
+
+}
+
 void MlxlinkCommander::showModuleInfo()
 {
     try {
@@ -1153,15 +1348,17 @@ void MlxlinkCommander::showModuleInfo()
         updateField("page_select", PDDR_MODULE_INFO_PAGE);
 
         genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
-
-        setPrintTitle(_moduleInfoCmd,"Module Info", MODULE_INFO_LAST);
+        setPrintTitle(_moduleInfoCmd,"Module Info",
+                      _productTechnology >= PRODUCT_16NM ? MODULE_INFO_AMBER : MODULE_INFO_LAST);
         bool valid = (_cableMediaType != UNIDENTIFIED) && _plugged;
 
         prepareStaticInfoSection(valid);
         prepareAttenuationAndFwSection(valid);
         preparePowerAndCdrSection(valid);
         prepareDDMSection(valid);
-
+        if (_productTechnology >= PRODUCT_16NM) {
+            prepareBerModuleInfoNdr(valid);
+        }
         cout << _moduleInfoCmd;
 
         if (oper_status != 1) {
