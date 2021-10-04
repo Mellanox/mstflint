@@ -529,6 +529,7 @@ public:
     void getSltpAlevOut(u_int32_t lane);
     void getSltpRegAndLeva(u_int32_t lane);
     u_int32_t getLaneSpeed(u_int32_t lane);
+    void validateNumOfParamsForNDRGen();
     virtual void checkSltpParamsSize();
 
     // Mlxlink params

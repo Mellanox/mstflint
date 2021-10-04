@@ -1265,17 +1265,17 @@ void MlxlinkCommander::prepareSltp16nm(std::vector<std::vector<string> > &sltpLa
 void MlxlinkCommander::prepareSltp7nm(std::vector<std::vector<string> > &sltpLanes,
         u_int32_t laneNumber)
 {
-    // Arch is not ready, update once we get final arch by end of Feb.21
-    (void) sltpLanes;
-    (void) laneNumber;
-    /*sltpLanes[laneNumber].push_back(getFieldStr("fir_pre1"));
-    sltpLanes[laneNumber].push_back(getFieldStr("fir_pre2"));
-    sltpLanes[laneNumber].push_back(getFieldStr("fir_pre3"));
-    sltpLanes[laneNumber].push_back(getFieldStr("fir_post1"));
-    sltpLanes[laneNumber].push_back(getFieldStr("drv_amp"));
-    sltpLanes[laneNumber].push_back(getFieldStr("tx_fir_scale_ctrl"));
-    sltpLanes[laneNumber].push_back(getFieldStr("fir_c0"));
-    */
+    if (isSpeed100GPerLane(_protoActive == IB? _activeSpeed : _activeSpeedEx,
+                           _protoActive)) {
+        sltpLanes[laneNumber].push_back(to_string(readSignedByte(getFieldValue("fir_pre3"))));
+        sltpLanes[laneNumber].push_back(to_string(readSignedByte(getFieldValue("fir_pre2"))));
+    } else if (isSpeed50GPerLane(_protoActive == IB? _activeSpeed : _activeSpeedEx,
+                           _protoActive)) {
+        sltpLanes[laneNumber].push_back(to_string(readSignedByte(getFieldValue("fir_pre2"))));
+    }
+    sltpLanes[laneNumber].push_back(to_string(readSignedByte(getFieldValue("fir_pre1"))));
+    sltpLanes[laneNumber].push_back(to_string(readSignedByte(getFieldValue("fir_main"))));
+    sltpLanes[laneNumber].push_back(to_string(readSignedByte(getFieldValue("fir_post1"))));
 }
 
 template<typename T, typename Q>
@@ -1979,8 +1979,6 @@ void MlxlinkCommander::showSltp()
     }
     try {
         string regName = "SLTP";
-        resetParser(regName);
-        updatePortType();
 
         bool valid = true;
         u_int32_t numOfLanesToUse =
@@ -1993,7 +1991,14 @@ void MlxlinkCommander::showSltp()
         }
         setPrintTitle(_sltpInfoCmd, showSltpTitle, numOfLanesToUse+1);
         if (_productTechnology == PRODUCT_7NM) {
-            _mlxlinkMaps->_sltpHeader = "firPre1,firPre2,firPre3,firPost0,drvAmp,FS Control,fir_c0";
+            _mlxlinkMaps->_sltpHeader = "fir_pre1,fir_main,fir_post1";
+            if (isSpeed100GPerLane(
+                    _protoActive == IB? _activeSpeed : _activeSpeedEx, _protoActive)) {
+                _mlxlinkMaps->_sltpHeader = "fir_pre3,fir_pre2," + _mlxlinkMaps->_sltpHeader;
+            } else if (isSpeed50GPerLane(
+                _protoActive == IB? _activeSpeed : _activeSpeedEx, _protoActive)) {
+                _mlxlinkMaps->_sltpHeader = "fir_pre2," + _mlxlinkMaps->_sltpHeader;
+            }
         } else if (_productTechnology == PRODUCT_16NM) {
             _mlxlinkMaps->_sltpHeader = "pre2Tap,preTap,mainTap,postTap,m2lp,amp";
         } else {
@@ -2009,6 +2014,7 @@ void MlxlinkCommander::showSltp()
         }
         setPrintVal(_sltpInfoCmd, "Serdes TX parameters", _mlxlinkMaps->_sltpHeader, ANSI_COLOR_RESET, true,true, true);
         for (u_int32_t i = 0; i < numOfLanesToUse; i++) {
+            resetParser(regName);
             updatePortType();
             updateField("local_port", _localPort);
             updateField("pnat", (_userInput._pcie) ? PNAT_PCIE : PNAT_LOCAL);
@@ -2025,7 +2031,6 @@ void MlxlinkCommander::showSltp()
             if (!getFieldValue("status")) {
                 valid = false;
             }
-            resetParser(regName);
             setPrintVal(_sltpInfoCmd, "Lane " + to_string(i),
                     getStringFromVector(sltpLanes[i]),ANSI_COLOR_RESET, true,valid, true);
         }
@@ -3414,6 +3419,32 @@ u_int32_t MlxlinkCommander::getLaneSpeed(u_int32_t lane)
     return getFieldValue("lane_speed");
 }
 
+void MlxlinkCommander::validateNumOfParamsForNDRGen()
+{
+    u_int32_t params;
+    string errMsg = "Invalid set of Transmitter Parameters, ";
+    errMsg += "valid parameters for the active speed are: ";
+    if (isSpeed100GPerLane(_protoActive == IB? _activeSpeed : _activeSpeedEx, _protoActive)) {
+        params = PARAMS_7NM_LAST;
+        errMsg += "fir_pre3,fir_pre2,fir_pre1,fir_main,fir_post1";
+    } else if (isSpeed50GPerLane(_protoActive == IB? _activeSpeed : _activeSpeedEx, _protoActive)) {
+        params = FIR_POST1;
+        errMsg += "fir_pre2,fir_pre1,fir_main,fir_post1";
+    } else {
+        params = FIR_MAIN;
+        errMsg += "fir_pre1,fir_main,fir_post1";
+    }
+    if (_userInput._sltpParams.size() != params) {
+        throw MlxRegException(errMsg);
+    }
+    for (map<u_int32_t, u_int32_t>::iterator it = _userInput._sltpParams.begin();
+        it != _userInput._sltpParams.end(); it++) {
+        if (((int)it->second) > MAX_SBYTE || ((int)it->second) < MIN_SBYTE) {
+            throw MlxRegException("Invalid Transmitter Parameters values");
+        }
+    }
+}
+
 void MlxlinkCommander::checkSltpParamsSize()
 {
     u_int32_t sltpParamsSize = OB_REG;
@@ -3425,10 +3456,12 @@ void MlxlinkCommander::checkSltpParamsSize()
                 throw MlxRegException("Invalid Transmitter Parameters values");
             }
         }
+    } else if (_productTechnology == PRODUCT_7NM) {
+        validateNumOfParamsForNDRGen();
     } else if (_userInput._advancedMode) {
         sltpParamsSize = PARAMS_40NM_LAST;
     }
-    if (_userInput._sltpParams.size() != sltpParamsSize) {
+    if (_userInput._sltpParams.size() != sltpParamsSize && _productTechnology != PRODUCT_7NM) {
         throw MlxRegException("Invalid set of Transmitter Parameters");
     }
 }
@@ -3458,13 +3491,21 @@ void MlxlinkCommander::updateSltp16nmFields()
 
 void MlxlinkCommander::updateSltp7nmFields()
 {
-    // Arch is not ready, update once we get final arch by end of Feb.21
-    /*updateField("fir_pre1", _userInput._sltpParams[FIR_PRE1]);
-    updateField("fir_pre2", _userInput._sltpParams[FIR_PRE2]);
-    updateField("fir_pre3", _userInput._sltpParams[FIR_PRE3]);
-    updateField("fir_post1", _userInput._sltpParams[FIR_POST1]);
-    updateField("drv_amp", _userInput._sltpParams[DRV_AMP]);
-    updateField("tx_fir_scale_ctrl", _userInput._sltpParams[TX_FIR_SCALE_CTRL]);*/
+    u_int32_t indexCorrection = 0;
+    if (isSpeed100GPerLane(
+            _protoActive == IB? _activeSpeed : _activeSpeedEx, _protoActive)) {
+        updateField("fir_pre3", _userInput._sltpParams[FIR_PRE3]);
+        updateField("fir_pre2", _userInput._sltpParams[FIR_PRE2]);
+    } else if (isSpeed50GPerLane(
+            _protoActive == IB? _activeSpeed : _activeSpeedEx, _protoActive)) {
+        updateField("fir_pre2", _userInput._sltpParams[FIR_PRE2]);
+        indexCorrection = 1;
+    } else {
+        indexCorrection = 2;
+    }
+    updateField("fir_pre1", _userInput._sltpParams[FIR_PRE1 - indexCorrection]);
+    updateField("fir_main", _userInput._sltpParams[FIR_MAIN - indexCorrection]);
+    updateField("fir_post1", _userInput._sltpParams[FIR_POST1 - indexCorrection]);
 }
 
 void MlxlinkCommander::sendSltp()
@@ -3521,13 +3562,15 @@ void MlxlinkCommander::sendSltp()
             genBuffSendRegister(regName, MACCESS_REG_METHOD_SET);
         }
     } catch (MlxRegException &exc) {
-        u_int32_t ob_bad_stat = getFieldValue("ob_bad_stat");
+        u_int32_t obBadStat = getFieldValue("ob_bad_stat");
+        string errorMsg = "Invalid parameters";
+        if (obBadStat) {
+            errorMsg =  _productTechnology == PRODUCT_16NM ? _mlxlinkMaps->_SLTP16BadSetStatus2Str[obBadStat].c_str():
+                                                             _mlxlinkMaps->_SLTPBadSetStatus2Str[obBadStat].c_str();
+        }
         _allUnhandledErrors += string("Configuring Port "
                 "Transmitter Parameters raised the following exception:\n"
-                "Failed to send parameter set: ") +
-                string( _productTechnology == PRODUCT_16NM ?
-                        _mlxlinkMaps->_SLTP16BadSetStatus2Str[ob_bad_stat].c_str() :
-                        _mlxlinkMaps->_SLTPBadSetStatus2Str[ob_bad_stat].c_str())+"\n";
+                "Failed to send parameter set: ") + errorMsg +"\n";
     }
 }
 
