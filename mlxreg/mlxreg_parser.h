@@ -70,6 +70,7 @@ protected:
     void parseIndexes();
     void parseData();
     void parseUnknown();
+    bool checkFieldWithPath(AdbInstance* field, u_int32_t idx, std::vector<string> &fieldsChain);
     AdbInstance* getField(string name);
     std::vector<string> strSplit(string str, char delimiter, bool forcePairs);
     void updateBuffer(u_int32_t offset, u_int32_t size, u_int32_t val);

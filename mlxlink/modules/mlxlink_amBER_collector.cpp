@@ -612,7 +612,6 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
             updateField("local_port", _localPort);
             sendRegister(ACCESS_REG_PPHCR, MACCESS_REG_METHOD_GET);
             u_int32_t numOfBins = getFieldValue("num_of_bins");
-            fields.push_back(AmberField("Number of histogram bins", to_string(numOfBins)));
 
             // Getting histogram info for ETH and IB only
             resetLocalParser(ACCESS_REG_PPCNT);
@@ -622,15 +621,24 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
             vector<string> histPerLane;
             u_int64_t histBin = 0;
             string val = "";
+            int firstZeroHist = -1;
             for (u_int32_t idx = 0; idx < NUM_OF_BINS; idx++) {
                 val = "N/A";
                 if (idx < numOfBins) {
                     histBin = add32BitTo64(getFieldValue("hist[" +  to_string(idx) +"]_hi"),
                                            getFieldValue("hist[" +  to_string(idx) +"]_lo"));
                     val = to_string(histBin);
+                    if (!histBin && firstZeroHist < 0) {
+                        firstZeroHist = idx;
+                    }
                 }
-                fields.push_back(AmberField("hist" + to_string(idx), val));
+                histPerLane.push_back(val);
             }
+            fields.push_back(AmberField("F.C. Zero Hist", firstZeroHist >= 0?
+                                                                            to_string(firstZeroHist)
+                                                                            : "N/A"));
+            fields.push_back(AmberField("Number of histogram bins", to_string(numOfBins)));
+            fillParamsToFields("hist", histPerLane, fields, false);
             // Getting raw errors per lane for ETH and IB only
             resetLocalParser(ACCESS_REG_PPCNT);
             updateField("local_port", _localPort);
@@ -673,15 +681,18 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
 
 void MlxlinkAmBerCollector::fillParamsToFields(const string &title,
                                                const vector<string> &values,
-                                               vector<AmberField> &fields)
+                                               vector<AmberField> &fields, bool laneLimit)
 {
+    u_int32_t limit = laneLimit ? LANES_NUM : values.size();
     string val = "";
-    for (u_int32_t lane = 0; lane < LANES_NUM; lane++) {
+    string fieldName = "";
+    for (u_int32_t idx = 0; idx < limit; idx++) {
         val = "N/A";
-        if (lane < _numOfLanes) {
-            val = values[lane];
+        if ((idx < _numOfLanes) || !laneLimit) {
+            val = values[idx];
         }
-        fields.push_back(AmberField("Lane " + to_string(lane) + " " + title, val));
+        fieldName = laneLimit ? ("Lane " + to_string(idx) + " " + title) : (title + to_string(idx));
+        fields.push_back(AmberField(fieldName, val));
     }
 }
 
@@ -1115,8 +1126,8 @@ void MlxlinkAmBerCollector::getModuleInfoPage(vector<AmberField> &fields)
     fields.push_back(AmberField("date_code",  getDateCode(add32BitTo64(
                                                           getFieldValue("date_code_hi"),
                                                           getFieldValue("date_code_lo")))));
-    fields.push_back(AmberField("temperature",  getTemp(getFieldValue("temperature"))));
-    fields.push_back(AmberField("voltage",  to_string(getFieldValue("voltage") / 10.0)));
+    fields.push_back(AmberField("Module temperature",  getTemp(getFieldValue("temperature"))));
+    fields.push_back(AmberField("Module voltage",  to_string(getFieldValue("voltage") / 10.0)));
     if(_isCmisCable){
         activeSetHostComplianceCode = ethComplianceStr;
         activeSetMediaComplianceCode = extComplianceStr;

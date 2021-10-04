@@ -131,7 +131,7 @@ if REG_ACCESS:
 
     class MFRL_ST(Structure):
         _fields_ = [
-            ("reset_level", c_uint8),
+            ("reset_trigger", c_uint8),
             ("reset_type", c_uint8),
             ("rst_type_sel", c_uint8),
             ("pci_sync_for_fw_update_resp", c_uint8),
@@ -409,7 +409,7 @@ if REG_ACCESS:
             if method == REG_ACCESS_METHOD_SET:
                 if resetLevel is None or reset_type is None or reset_sync is None:
                     raise RegAccException("Failed to sendMFRL (reset level/type/sync is None for SET command)")
-                mfrlRegisterP.contents.reset_level = c_uint8(resetLevel)
+                mfrlRegisterP.contents.reset_trigger = c_uint8(resetLevel)
                 mfrlRegisterP.contents.rst_type_sel = c_uint8(reset_type)
                 mfrlRegisterP.contents.pci_sync_for_fw_update_start = c_uint8(reset_sync)
 
@@ -422,7 +422,7 @@ if REG_ACCESS:
                 raise RegAccException("Failed to send Register MFRL: %s (%d)" % (self._err2str(rc), rc))
 
             if method == REG_ACCESS_METHOD_GET:
-                return mfrlRegisterP.contents.reset_level, mfrlRegisterP.contents.reset_type
+                return mfrlRegisterP.contents.reset_trigger, mfrlRegisterP.contents.reset_type
 
         ##########################
         def getMCAM(self):
