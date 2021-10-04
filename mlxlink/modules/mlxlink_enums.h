@@ -536,7 +536,13 @@ enum PRBS_RX_TX_MODE {
     PRBS13C,
     PRBS13D,
     SSPR,
-    SSPRQ
+    SSPRQ,
+    LT_frames,
+    PRBS15,
+    PRBS28,
+    SQUARE_WAVE3,
+    SQUARE_WAVE13,
+    SQUARE_WAVE30
 };
 
 enum PRBS_CAP {

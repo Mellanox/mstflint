@@ -2528,6 +2528,30 @@ std::map<string, float> MlxlinkCommander::getRawEffectiveErrors()
     return errorsVector;
 }
 
+string MlxlinkCommander::getSupportedPrbsRates(u_int32_t modeSelector)
+{
+    string regName = "PPRT";
+    if (modeSelector == PRBS_TX) {
+        regName = "PPTT";
+    }
+    resetParser(regName);
+    updatePortType();
+    updateField("local_port", _localPort);
+    updateField("pnat", PNAT_LOCAL);
+
+    genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
+    u_int32_t capsMask = getFieldValue("lane_rate_cap");
+    string modeCapStr = "";
+
+    for (auto it = _mlxlinkMaps->_prbsLaneRate.begin(); it !=  _mlxlinkMaps->_prbsLaneRate.end(); it++) {
+        if (capsMask & (it->second).capMask) {
+            modeCapStr += it->first + string(",");
+        }
+    }
+
+    return deleteLastChar(modeCapStr);
+}
+
 string MlxlinkCommander::getSupportedPrbsModes(u_int32_t modeSelector)
 {
     string regName = "PPRT";
@@ -2909,6 +2933,23 @@ void MlxlinkCommander::checkPRBSModeCap(u_int32_t modeSelector, u_int32_t capMas
     if (modeSelector == PRBS_RX && modeToCheck == "SQUARE_WAVE") {
         modeToCheck += "A";
     }
+
+    switch(modeToCheck[-1])
+    {
+        case '8':
+            findAndReplace(modeToCheck,"8","A");
+            break;
+        case '4':
+            findAndReplace(modeToCheck,"4","B");
+            break;
+        case '2':
+            findAndReplace(modeToCheck,"2","C");
+            break;
+        case '1':
+            findAndReplace(modeToCheck,"1","D");
+            break;
+    }
+
     // Fetching mode capability from mode list
     u_int32_t modeCap = 0;
 
@@ -2939,13 +2980,23 @@ void MlxlinkCommander::checkPrbsRegsCap(const string &prbsReg, const string &lan
     updateField("pnat", PNAT_LOCAL);
     genBuffSendRegister(prbsReg, MACCESS_REG_METHOD_GET);
 
+    bool invalidRateStr = !laneRate.empty() && !_mlxlinkMaps->_prbsLaneRate[laneRate].capMask;
+
     u_int32_t laneRateCap = _mlxlinkMaps->_prbsLaneRate[laneRate].capMask ?
                 _mlxlinkMaps->_prbsLaneRate[laneRate].capMask : (u_int32_t)LANE_RATE_EDR_CAP;
 
-    if (!(laneRateCap & getFieldValue("lane_rate_cap"))) {
-        throw MlxRegException("Device does not support lane rate " + laneRate + " in physical test mode.");
+    string laneRateStr = laneRate.empty() ? _mlxlinkMaps->_prbsLaneRateList[PRBS_EDR] : laneRate; // Default lane rate
+
+    if (invalidRateStr || !(laneRateCap & getFieldValue("lane_rate_cap"))) {
+        string errStr = "Device does not support lane rate " + laneRateStr + " in physical test mode.\n";
+        errStr += "Valid RX PRBS lane rates: " + getSupportedPrbsRates(PRBS_RX) + "\n";
+        errStr += "Valid TX PRBS lane rates: " + getSupportedPrbsRates(PRBS_TX) + "\n";
+        errStr += "Default PRBS Lane Rate is EDR / 25GE / 50GE / 100GE (25.78125 Gb/s)";
+        throw MlxRegException(errStr);
     }
+
     checkPRBSModeCap(modeSelector, getFieldValue("prbs_modes_cap"));
+
     if (!_userInput._prbsLanesToSet.empty()) {
         if (getFieldValue("ls") != 1) {
             throw MlxRegException("Device does not support per lane configuration");

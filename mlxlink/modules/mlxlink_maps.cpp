@@ -350,6 +350,12 @@ void MlxlinkMaps::initPrbsMapping()
     _prbsModesList[20] = "PRBS13D";
     _prbsModesList[21] = "SSPR";
     _prbsModesList[22] = "SSPRQ";
+    _prbsModesList[23] = "LT_FRAMES";
+    _prbsModesList[24] = "PRBS15";
+    _prbsModesList[25] = "PRBS28";
+    _prbsModesList[26] = "SQUARE_WAVE3";
+    _prbsModesList[27] = "SQUARE_WAVE13";
+    _prbsModesList[28] = "SQUARE_WAVE30";
 
     _prbsLaneRateList[0] = "SDR (2.5 Gb/s)";
     _prbsLaneRateList[1] = "DDR/5G (5 Gb/s)";
