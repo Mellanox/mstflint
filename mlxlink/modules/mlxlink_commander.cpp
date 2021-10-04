@@ -464,8 +464,7 @@ void MlxlinkCommander::labelToSpectLocalPort()
             continue;
         }
         splitAdjustment = 0;
-        if ((getFieldValue("lane0_module_mapping") & 0xFF) + 1
-                == _userInput._labelPort) {
+        if ((getFieldValue("lane0_module_mapping.module") + 1)  == _userInput._labelPort) {
             checkWidthSplit(localPort);
             if (_splitted) {
                 if (_devID == DeviceSpectrum3 || _devID == DeviceSpectrum4 ||
@@ -710,7 +709,7 @@ void MlxlinkCommander::getCableParams()
         resetParser(regName);
         updateField("local_port", _localPort);
         genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
-        _moduleNumber = (getFieldValue("lane0_module_mapping") & 0xFF);
+        _moduleNumber = getFieldValue("lane0_module_mapping.module");
     } catch (const std::exception &exc) {
         _allUnhandledErrors += string("Getting cable parameters via PDDR raised the following exception: ") + string(exc.what()) + string("\n");
     }
@@ -837,7 +836,7 @@ int MlxlinkCommander::handleEthLocalPort(u_int32_t labelPort, bool spect2WithGb)
         if (getFieldValue("width") == 0) {
             continue;
         }
-        if ((getFieldValue("lane0_module_mapping") & 0xFF) + 1
+        if (getFieldValue("lane0_module_mapping.module") + 1
                 == labelPort) {
             targetLocalPort = localPort;
             fillEthPortGroupMap(localPort, labelPort, _userInput._setGroup,
@@ -917,7 +916,7 @@ vector<string> MlxlinkCommander::localToPortsPerGroup(vector<u_int32_t> localPor
             if (getFieldValue("width") == 0) {
                 continue;
             }
-            labelPort = (getFieldValue("lane0_module_mapping") & 0xFF) + 1;
+            labelPort = (getFieldValue("lane0_module_mapping.module")) + 1;
         } else if (_devID == DeviceQuantum || _devID == DeviceQuantum2) {
             regName = "PLIB";
             resetParser(regName);

@@ -117,7 +117,7 @@ protected:
     void sendRegister(const string &regName, maccess_reg_method_t method);
 
     void fillParamsToFields(const string &title, const vector<string> &values,
-                            vector<AmberField> &fields);
+                            vector<AmberField> &fields, bool laneLimit = true);
 
     // Helper functions
     virtual string getBerAndErrorTitle(u_int32_t portType);

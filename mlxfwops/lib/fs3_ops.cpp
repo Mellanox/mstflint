@@ -3429,7 +3429,7 @@ bool Fs3Operations::Fs3IsfuActivateImage(u_int32_t newImageStart)
     rc = reg_access_mfai(mf, REG_ACCESS_METHOD_SET, &mfai);
     if (!rc) {
         // send warm boot (bit 6)
-        mfrl.reset_level = 1 << 6;
+        mfrl.reset_trigger = 1 << 6;
         rc = reg_access_mfrl(mf, REG_ACCESS_METHOD_SET, &mfrl);
         // ignore ME_REG_ACCESS_BAD_PARAM error for old FW
         rc = (rc == ME_REG_ACCESS_BAD_PARAM) ? ME_OK : rc;
