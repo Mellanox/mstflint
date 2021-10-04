@@ -242,7 +242,7 @@ void register_access_mfpa_print(const struct register_access_mfpa *ptr_struct, F
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "sector_size          : " UH_FMT "\n", ptr_struct->sector_size);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "block_alignment      : " UH_FMT "\n", ptr_struct->block_allignment);
+	fprintf(fd, "block_allignment     : " UH_FMT "\n", ptr_struct->block_allignment);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "capability_mask      : " U32H_FMT "\n", ptr_struct->capability_mask);
 }
