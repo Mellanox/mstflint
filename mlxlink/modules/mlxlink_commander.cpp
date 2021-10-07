@@ -1833,9 +1833,94 @@ void MlxlinkCommander::showMpcntTimers(DPN& dpn)
     cout << _mpcntTimerInfCmd;
 }
 
+void MlxlinkCommander::prepareBerInfo()
+{
+    initAmBerCollector();
+    _amberCollector->init();
+
+    _ppcntFields = _amberCollector->getLinkStatus();
+
+    setPrintVal(_berInfoCmd, "Time Since Last Clear [Min]",
+                AmberField::getValueFromFields(_ppcntFields, "Time since last clear [Min]"),
+                ANSI_COLOR_RESET, true, _linkUP);
+    setPrintVal(_berInfoCmd, "Symbol Errors",
+                AmberField::getValueFromFields(_ppcntFields, "Symbol Errors"),
+                ANSI_COLOR_RESET, true, _linkUP);
+    setPrintVal(_berInfoCmd, "Symbol BER",
+                AmberField::getValueFromFields(_ppcntFields, "Symbol BER"),
+                ANSI_COLOR_RESET, true, _linkUP);
+    setPrintVal(_berInfoCmd, "Effective Physical Errors",
+                AmberField::getValueFromFields(_ppcntFields, "Effective Errors"),
+                ANSI_COLOR_RESET, true, _linkUP);
+    setPrintVal(_berInfoCmd, "Effective Physical BER",
+                AmberField::getValueFromFields(_ppcntFields, "Effective BER"),
+                ANSI_COLOR_RESET, true, _linkUP);
+    setPrintVal(_berInfoCmd, "Raw Physical BER",
+                AmberField::getValueFromFields(_ppcntFields, "Raw BER"),
+                ANSI_COLOR_RESET, true, _linkUP);
+
+    std::vector<string> rawErrorsPerLane;
+    string phyRawErr = "";
+    for (u_int32_t lane = 0; lane < _numOfLanes; lane++) {
+        phyRawErr = AmberField::getValueFromFields(_ppcntFields,
+                                                   "Raw Errors Lane " + to_string(lane));
+        rawErrorsPerLane.push_back(phyRawErr);
+    }
+    setPrintVal(_berInfoCmd, "Raw Physical Errors Per Lane",
+                getStringFromVector(rawErrorsPerLane),
+                ANSI_COLOR_RESET,true,_linkUP);
+
+}
+
+void MlxlinkCommander::prepareBerInfoEDR()
+{
+    string regName = "PPCNT";
+    resetParser(regName);
+    updatePortType();
+    updateField("local_port", _localPort);
+    updateField("swid", SWID);
+    updateField("pnat", PNAT_LOCAL);
+    updateField("grp", PPCNT_STATISTICAL_GROUP);
+    updateField("clr", 0);
+    updateField("prio_tc", 0);
+
+    genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
+
+    char buff[64];
+    float val = (float)add32BitTo64(
+            getFieldValue("time_since_last_clear_high"),
+            getFieldValue("time_since_last_clear_low"))/60000.0;
+    sprintf(buff, "%.01f", val);
+    setPrintVal(_berInfoCmd, "Time Since Last Clear [Min]", buff,
+            ANSI_COLOR_RESET,true,_linkUP);
+    setPrintVal(_berInfoCmd, "Effective Physical Errors",
+            to_string(add32BitTo64(
+                    getFieldValue("phy_symbol_errors_high"),
+                    getFieldValue("phy_symbol_errors_low"))),
+            ANSI_COLOR_RESET,true,_linkUP);
+
+    std::vector<string> rawErrorsPerLane;
+    string phy_raw_err = "";
+    for (u_int32_t lane = 0; lane < _numOfLanes; lane++) {
+        string laneStr = to_string(lane);
+        phy_raw_err = to_string(add32BitTo64(
+                getFieldValue("phy_raw_errors_lane" + laneStr + "_high"),
+                getFieldValue("phy_raw_errors_lane" + laneStr + "_low")));
+        rawErrorsPerLane.push_back(phy_raw_err);
+    }
+    setPrintVal(_berInfoCmd, "Raw Physical Errors Per Lane",
+            getStringFromVector(rawErrorsPerLane), ANSI_COLOR_RESET,true,_linkUP);
+    setPrintVal(_berInfoCmd, "Effective Physical BER",
+            getFieldStr("effective_ber_coef") + "E-" + getFieldStr("effective_ber_magnitude"),
+            ANSI_COLOR_RESET,true,_linkUP);
+    setPrintVal(_berInfoCmd, "Raw Physical BER",
+            getFieldStr("raw_ber_coef") + "E-" + getFieldStr("raw_ber_magnitude"),
+            ANSI_COLOR_RESET,true,_linkUP);
+}
+
 void MlxlinkCommander::showBer()
 {
-    if (_userInput._pcie){
+    if (_userInput._pcie) {
         checkPCIeValidity();
         showMpcntTimers(_dpn);
     }
@@ -1848,53 +1933,17 @@ void MlxlinkCommander::showBer()
             showMpcntPerformance(_dpn);
             return;
         }
-        string regName = "PPCNT";
-        resetParser(regName);
-        updatePortType();
+        setPrintTitle(_berInfoCmd,"Physical Counters and BER Info",
+                      _productTechnology >= PRODUCT_16NM? BER_INFO_NDR_LAST : BER_INFO_LAST);
 
-        updateField("local_port", _localPort);
-        updateField("swid", SWID);
-        updateField("pnat", PNAT_LOCAL);
-        updateField("grp", PPCNT_STATISTICAL_GROUP);
-        updateField("clr", 0);
-        updateField("prio_tc", 0);
-
-        genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
-
-        setPrintTitle(_berInfoCmd,"Physical Counters and BER Info", BER_INFO_LAST);
-
-        char buff[64];
-        float val = (float)add32BitTo64(
-                getFieldValue("time_since_last_clear_high"),
-                getFieldValue("time_since_last_clear_low"))/60000.0;
-        sprintf(buff, "%.01f", val);
-        setPrintVal(_berInfoCmd, "Time Since Last Clear [Min]", buff,
-                ANSI_COLOR_RESET,true,_linkUP);
-        setPrintVal(_berInfoCmd, "Effective Physical Errors",
-                to_string(add32BitTo64(
-                        getFieldValue("phy_symbol_errors_high"),
-                        getFieldValue("phy_symbol_errors_low"))),
-                ANSI_COLOR_RESET,true,_linkUP);
-
-        std::vector<string> rawErrorsPerLane;
-        string phy_raw_err = "";
-        for (u_int32_t lane = 0; lane < _numOfLanes; lane++) {
-            string laneStr = to_string(lane);
-            phy_raw_err = to_string(add32BitTo64(
-                    getFieldValue("phy_raw_errors_lane" + laneStr + "_high"),
-                    getFieldValue("phy_raw_errors_lane" + laneStr + "_low")));
-            rawErrorsPerLane.push_back(phy_raw_err);
+        if (_productTechnology < PRODUCT_16NM) {
+            prepareBerInfoEDR();
+        } else {
+            prepareBerInfo();
         }
-        setPrintVal(_berInfoCmd, "Raw Physical Errors Per Lane",
-                getStringFromVector(rawErrorsPerLane), ANSI_COLOR_RESET,true,_linkUP);
-        setPrintVal(_berInfoCmd, "Effective Physical BER",
-                getFieldStr("effective_ber_coef") + "E-" + getFieldStr("effective_ber_magnitude"),
-                ANSI_COLOR_RESET,true,_linkUP);
-        setPrintVal(_berInfoCmd, "Raw Physical BER",
-                getFieldStr("raw_ber_coef") + "E-" + getFieldStr("raw_ber_magnitude"),
-                ANSI_COLOR_RESET,true,_linkUP);
 
         if (_protoActive == IB) {
+            string regName = "PPCNT";
             resetParser(regName);
             updatePortType();
             updateField("local_port", _localPort);
@@ -1905,9 +1954,9 @@ void MlxlinkCommander::showBer()
             updateField("prio_tc", 0);
             genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
             setPrintVal(_berInfoCmd, "Link Down Counter", getFieldStr("link_downed_counter"),
-                    ANSI_COLOR_RESET,true,_linkUP);
+                        ANSI_COLOR_RESET,true,_linkUP);
             setPrintVal(_berInfoCmd, "Link Error Recovery Counter", getFieldStr("link_error_recovery_counter"),
-                    ANSI_COLOR_RESET,true,_linkUP);
+                        ANSI_COLOR_RESET,true,_linkUP);
         }
 
         cout << _berInfoCmd;
@@ -1956,6 +2005,15 @@ void MlxlinkCommander::showTestModeBer()
     cout <<_testModeBerInfoCmd;
 }
 
+void MlxlinkCommander::getPcieNdrCounters()
+{
+    if (_productTechnology >= PRODUCT_16NM) {
+        string berStr = to_string(getFieldValue("effective_ber_coef")) + "E-" +
+                        to_string(getFieldValue("effective_ber_magnitude"));
+        setPrintVal(_mpcntPerfInfCmd, "Effective ber", berStr);
+    }
+}
+
 void MlxlinkCommander::showMpcntPerformance(DPN& dpn)
 {
     string regName = "MPCNT";
@@ -1969,11 +2027,13 @@ void MlxlinkCommander::showMpcntPerformance(DPN& dpn)
     genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
 
     setPrintTitle(_mpcntPerfInfCmd, "Management PCIe Performance Counters Info",
-            MPCNT_PERFORMANCE_INFO_LAST);
+            MPCNT_PERFORMANCE_INFO_LAST + 2);
     setPrintVal(_mpcntPerfInfCmd, "RX Errors",getFieldStr("rx_errors"));
     setPrintVal(_mpcntPerfInfCmd, "TX Errors",getFieldStr("tx_errors"));
     setPrintVal(_mpcntPerfInfCmd, "CRC Error dllp",getFieldStr("crc_error_dllp"));
     setPrintVal(_mpcntPerfInfCmd, "CRC Error tlp",getFieldStr("crc_error_tlp"));
+
+    getPcieNdrCounters();
 
     cout << _mpcntPerfInfCmd;
 }

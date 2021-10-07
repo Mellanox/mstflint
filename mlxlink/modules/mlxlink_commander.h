@@ -427,6 +427,9 @@ public:
     void showMpcntLane();
     void showPcieState(DPN& dpn);
     void checkPCIeValidity();
+    virtual void prepareBerInfo();
+    virtual void prepareBerInfoEDR();
+    virtual void getPcieNdrCounters();
 
     std::map<std::string, std::string>  getPprt();
     std::map<std::string, std::string>  getPptt();
@@ -598,6 +601,7 @@ public:
     MlxlinkAmBerCollector* _amberCollector;
 
 protected:
+    vector<AmberField> _ppcntFields;
     string loopAllLanesStr(vector<AmberField> &fields, string str);
 };
 
