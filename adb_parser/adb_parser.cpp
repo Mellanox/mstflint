@@ -621,7 +621,11 @@ bool AdbInstance::isNode() {
  * Function: AdbInstance::isNode
  **/
 bool AdbInstance::isPartOfArray() {
-    return fieldDesc->isArray();
+    if (!fieldDesc) {
+        return false;
+    } else {
+        return fieldDesc->isArray();
+    }
 }
 
 /**
@@ -1106,7 +1110,11 @@ vector<AdbInstance*> AdbInstance::getLeafFields(bool extendenName) {
             fields.insert(fields.end(), subFields.begin(), subFields.end());
         } else {
             if (extendenName && !subItems[i]->isNameBeenExtended) {
+                if (subItems[i]->parent->fieldDesc->subNode == "uint64") {
+                    subItems[i]->name = subItems[i]->parent->name + "_" + subItems[i]->name;
+                } else {
                 subItems[i]->name = subItems[i]->name + addPathSuffixForArraySupport(subItems[i]->fullName());
+                }
                 subItems[i]->isNameBeenExtended = true;
             }
             fields.push_back(subItems[i]);
@@ -1668,7 +1676,11 @@ vector<AdbInstance*> Adb::createInstance(AdbField *field,
                 inst->nodeDesc = it->second;
             }
         }
-
+        if (parent && parent->isPartOfArray()) {
+            inst->name = field->name + '_' + to_string(parent->arrIdx);
+        } else {
+            inst->name = field->name;
+        }
         inst->name = field->name;
         inst->arrIdx = 0;
         inst->size = field->eSize();

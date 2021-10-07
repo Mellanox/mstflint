@@ -222,7 +222,7 @@ bool MlxlinkEyeOpener::isActiveGenSupported()
 
 void MlxlinkEyeOpener::prepareSlred(u_int32_t lane, u_int32_t eye)
 {
-    resetParser(SLRED_REG);
+    resetParser(ACCESS_REG_SLRED);
     updatePortType();
     updateField("local_port", localPort);
     updateField("pnat", (pciePort) ? PNAT_PCIE : PNAT_LOCAL);
@@ -230,7 +230,7 @@ void MlxlinkEyeOpener::prepareSlred(u_int32_t lane, u_int32_t eye)
     updateField("measure_time", _measureTime);
     updateField("err_res_scale", DFLT_ERR_RES_SCALE);
     updateField("err_res_base", DFLT_ERR_RES_BASE);
-    updateField("eye_diag_dim", pciePort?DFLT_EYE_DIAG_DIM_PCIE:DFLT_EYE_DIAG_DIM_PORT);
+    updateField("eye_diag_dim", pciePort ? DFLT_EYE_DIAG_DIM_PCIE : DFLT_EYE_DIAG_DIM_PORT);
     if (!pciePort && isPam4Speed) {
         updateField("eye_sel", eye);
     }
@@ -243,7 +243,7 @@ void MlxlinkEyeOpener::enableSlredGradeScan(u_int32_t lane, u_int32_t eye)
         updateField("last_scan", 1);
     }
     updateField("en", 1);
-    genBuffSendRegister(SLRED_REG, MACCESS_REG_METHOD_SET);
+    genBuffSendRegister(ACCESS_REG_SLRED, MACCESS_REG_METHOD_SET);
 }
 
 void MlxlinkEyeOpener::slredStopSignalHandler()
@@ -273,7 +273,7 @@ void MlxlinkEyeOpener::getSlredMargin(u_int32_t iteration, u_int32_t lane, u_int
 u_int32_t MlxlinkEyeOpener::getSlredStatus(u_int32_t lane, u_int32_t eye)
 {
     prepareSlred(lane, eye);
-    genBuffSendRegister(SLRED_REG, MACCESS_REG_METHOD_GET);
+    genBuffSendRegister(ACCESS_REG_SLRED, MACCESS_REG_METHOD_GET);
 
     return getFieldValue("status");
 }
@@ -281,7 +281,7 @@ u_int32_t MlxlinkEyeOpener::getSlredStatus(u_int32_t lane, u_int32_t eye)
 string MlxlinkEyeOpener::getSlredLaneSpeedStr(u_int32_t lane, u_int32_t eye)
 {
     prepareSlred(lane, eye);
-    genBuffSendRegister(SLRED_REG, MACCESS_REG_METHOD_GET);
+    genBuffSendRegister(ACCESS_REG_SLRED, MACCESS_REG_METHOD_GET);
 
     return _laneSpeedMap[getFieldValue("lane_speed")];
 }
@@ -294,9 +294,10 @@ void MlxlinkEyeOpener::gradeEyeScanner(u_int32_t iteration, u_int32_t lane, u_in
     enableSlredGradeScan(lane, eye);
     // Throw error if the current speed not supported
     if (getSlredStatus(lane, eye) == UNSUPPORTED_SCAN_FOR_CURRENT_SPEED) {
-        throw MlxRegException("%s: %s",
-                _scanStatusMap[UNSUPPORTED_SCAN_FOR_CURRENT_SPEED].c_str(),
-                getSlredLaneSpeedStr(lane, eye).c_str());
+        string errMsg = getSlredLaneSpeedStr(lane, eye).c_str();
+        errMsg = errMsg.empty() ? activeSpeedStr : errMsg;
+        errMsg = _scanStatusMap[UNSUPPORTED_SCAN_FOR_CURRENT_SPEED] + ": " + errMsg;
+        throw MlxRegException(errMsg);
     }
     u_int32_t status = getSlredStatus(lane, eye);
     if (status != EYE_SCAN_COMPLETED) {

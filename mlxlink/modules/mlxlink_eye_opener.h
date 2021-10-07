@@ -145,15 +145,16 @@ public:
     // Global fields should be taken from mlxlink_commander
     u_int32_t localPort;
     u_int32_t portType;
-    bool pciePort;
     u_int32_t depth;
     u_int32_t pcieIndex;
     u_int32_t node;
-    int lane;
     u_int32_t protoActive;
     u_int32_t numOfLanes;
-    bool isPam4Speed;
     u_int32_t scanIterations;
+    bool isPam4Speed;
+    bool pciePort;
+    int lane;
+    string activeSpeedStr;
 
 private:
     // Helper functions

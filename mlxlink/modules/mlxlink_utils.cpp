@@ -306,6 +306,10 @@ string getOui(u_int32_t oui)
         ouiStr = "Known OUI";
         break;
 
+    case NVIDIA:
+        ouiStr = "Nvidia";
+        break;
+
     default:
         ouiStr = "Other";
     }

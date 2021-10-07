@@ -166,7 +166,6 @@ void MlxlinkCommander::checkValidFW()
         }
         string regName = "PDDR";
         resetParser(regName);
-        updatePortType();
         updateField("local_port", _localPort);
         updateField("pnat", PNAT_LOCAL);
         updateField("page_select", PDDR_OPERATIONAL_INFO_PAGE);
@@ -185,8 +184,6 @@ void MlxlinkCommander::checkValidFW()
         u_int32_t phyMngrFsmState = getFieldValue("phy_mngr_fsm_state");
 
         resetParser(regName);
-        updatePortType();
-
         updateField("local_port", _localPort);
         updateField("pnat", PNAT_LOCAL);
         updateField("page_select", PDDR_TROUBLESHOOTING_INFO_PAGE);
@@ -212,7 +209,6 @@ void MlxlinkCommander::getProductTechnology()
     try {
         string regName = "SLRG";
         resetParser(regName);
-        updatePortType();
         updateField("local_port", _localPort);
         updateField("pnat", (_userInput._pcie) ? PNAT_PCIE : PNAT_LOCAL);
 
@@ -243,8 +239,11 @@ u_int32_t MlxlinkCommander::maxLocalPort()
 
     case DeviceSpectrum2:
     case DeviceSpectrum3:
-    case DeviceSpectrum4:
         return MAX_LOCAL_PORT_SPECTRUM2;
+
+    case DeviceSpectrum4:
+        return MAX_LOCAL_PORT_SPECTRUM4;
+
     default:
         return 0;
     }
@@ -488,8 +487,7 @@ void MlxlinkCommander::labelToSpectLocalPort()
             }
             updateField("local_port", _localPort);
             genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
-            if ((getFieldValue("lane0_module_mapping") & 0xFF) + 1
-                    == _userInput._labelPort) {
+            if ((getFieldValue("lane0_module_mapping.module") + 1) == _userInput._labelPort) {
                 return;
             }
         }
@@ -686,7 +684,6 @@ void MlxlinkCommander::getCableParams()
     try {
         string regName = "PDDR";
         resetParser(regName);
-        updatePortType();
 
         updateField("local_port", _localPort);
         updateField("pnat", PNAT_LOCAL);
@@ -952,7 +949,7 @@ void MlxlinkCommander::handleLabelPorts(std::vector<string> labelPortsStr)
     for (vector<string>::iterator it = labelPortsStr.begin();
             it != labelPortsStr.end(); ++it) {
         strToUint32((char *)(*it).c_str(), labelPort);
-        if (_devID == DeviceSpectrum2) {
+        if (_devID == DeviceSpectrum2 || _devID == DeviceSpectrum3) {
             localPort = handleEthLocalPort(labelPort, spect2WithGb);
         } else if (_devID == DeviceQuantum || _devID == DeviceQuantum2) {
             localPort = handleIBLocalPort(labelPort, ibSplitReady);
@@ -991,7 +988,7 @@ void MlxlinkCommander::prepareStaticInfoSection(bool valid)
     string complianceStr = getComplianceLabel(
                             getFieldValue("ethernet_compliance_code"),
                             getFieldValue("ext_ethernet_compliance_code"),
-                            cableVendor != MELLANOX);
+                            (cableVendor != NVIDIA && cableVendor != MELLANOX));
     u_int32_t cableLength = getFieldValue("cable_length");
 
     setPrintVal(_moduleInfoCmd, "Identifier",
@@ -1019,20 +1016,19 @@ void MlxlinkCommander::prepareStaticInfoSection(bool valid)
             (_cableMediaType == PASSIVE) ? "N/A" : to_string(getFieldValue("wavelength")),
                     ANSI_COLOR_RESET, true, valid);
     setPrintVal(_moduleInfoCmd, "Transfer Distance [m]",
-            getCableLengthStr(cableLength, _cmisCable), ANSI_COLOR_RESET, true, valid);
+            getCableLengthStr(cableLength , _cmisCable), ANSI_COLOR_RESET, true, valid);
 }
 
 void MlxlinkCommander::prepareAttenuationAndFwSection(bool valid)
 {
     string cableAttenuation = "N/A";
     string attenuationTitle = "Attenuation (5g,7g,12g";
-    string moduleFWVersion = "N/A";
     bool passive = _cableMediaType == PASSIVE;
     if (_cmisCable) {
         attenuationTitle += ",25g";
     }
     attenuationTitle += ") [dB]";
-    if (_cableIdentifier != IDENTIFIER_SFP) {
+    if (_cableIdentifier != IDENTIFIER_SFP && _cableIdentifier != IDENTIFIER_QSA) {
         if (passive) {
             cableAttenuation = getFieldStr("cable_attenuation_5g") + ","
                     + getFieldStr("cable_attenuation_7g") + ","
@@ -1041,23 +1037,12 @@ void MlxlinkCommander::prepareAttenuationAndFwSection(bool valid)
                 cableAttenuation += "," + getFieldStr("cable_attenuation_25g");
             }
         }
-        if (!passive) {
-            u_int32_t moduleFWVer = getFieldValue("fw_version");
-            u_int32_t moduleFWVerChip = (moduleFWVer & 0xFF000000) >> 24;
-            u_int32_t moduleFWVerQtr  = (moduleFWVer & 0x00FF0000) >> 16;
-            u_int32_t moduleFWVerFree = (moduleFWVer & 0x0000FFFF);
-            if (moduleFWVer) {
-                moduleFWVersion =  to_string(moduleFWVerChip) + "." +
-                                    to_string(moduleFWVerQtr) + "." +
-                                    to_string(moduleFWVerFree);
-            }
-        }
     }
 
     setPrintVal(_moduleInfoCmd, attenuationTitle,
             cableAttenuation, ANSI_COLOR_RESET, true, valid);
     setPrintVal(_moduleInfoCmd, "FW Version",
-            moduleFWVersion, ANSI_COLOR_RESET, true, valid);
+            getFwVersion(passive,getFieldValue("fw_version")), ANSI_COLOR_RESET, true, valid);
 
 }
 
@@ -1071,8 +1056,8 @@ void MlxlinkCommander::preparePowerAndCdrSection(bool valid)
     if (getFieldValue("tx_cdr_cap") > 0) {
         txCdrState = getRxTxCDRState(getFieldValue("tx_cdr_state"),_numOfLanes);
     }
-    string powerClassStr = getPowerClass(_mlxlinkMaps,_cableIdentifier, getFieldValue("cable_power_class"),
-                                         getFieldValue("max_power"));
+    string powerClassStr = getPowerClass(_mlxlinkMaps,_cableIdentifier , getFieldValue("cable_power_class"),
+                                    getFieldValue("max_power"));
 
     setPrintVal(_moduleInfoCmd, "Digital Diagnostic Monitoring",
             _ddmSupported ? "Yes" : "No", ANSI_COLOR_RESET, true, valid);
@@ -1520,7 +1505,6 @@ void MlxlinkCommander::operatingInfoPage()
                         getFieldValue("core_to_phy_link_proto_enabled") :
                         getFieldValue("phy_manager_link_proto_enabled");
         }
-
         getPtys();
         bool extended = _activeSpeedEx && _protoAdminEx;
         _isPam4Speed = isPAM4Speed(_protoActive == IB?_activeSpeed:_activeSpeedEx,
@@ -1573,7 +1557,6 @@ void MlxlinkCommander::operatingInfoPage()
         updateField("page_select", PDDR_MODULE_INFO_PAGE);
 
         genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
-
         _ddmSupported = getFieldValue("temperature") && _numOfLanes ;
 
     } catch (const std::exception &exc) {
@@ -1590,9 +1573,6 @@ void MlxlinkCommander::supportedInfoPage()
         string supported_speeds = SupportedSpeeds2Str(_protoActive, speeds_mask,
                 (bool)_protoAdminEx);
         string color = MlxlinkRecord::supported2Color(supported_speeds);
-        if (_productTechnology >= PRODUCT_16NM) {
-            _protoCapabilityEx = true;
-        }
         stringstream value;
         value << "0x" << std::hex << setfill('0') << setw(8) << speeds_mask \
                 << " (" << supported_speeds << ")" << setfill(' ');
@@ -1601,11 +1581,9 @@ void MlxlinkCommander::supportedInfoPage()
             extStr = " (Ext.)";
         }
         string title = "Enabled Link Speed" + extStr;
-        setPrintVal(_supportedInfoCmd, title,
-                value.str(),color, true, !_prbsTestMode, true);
+        setPrintVal(_supportedInfoCmd, title, value.str(),color, true, !_prbsTestMode, true);
         // Supported cable speed
-        supported_speeds = SupportedSpeeds2Str(_protoActive, _protoCapability,
-                _protoCapabilityEx);
+        supported_speeds = SupportedSpeeds2Str(_protoActive, _protoCapability, _protoCapabilityEx);
         color = MlxlinkRecord::supported2Color(supported_speeds);
         value.str("");
         value.clear();
@@ -1623,6 +1601,8 @@ void MlxlinkCommander::troubInfoPage()
 {
     try {
         string regName = "PDDR";
+        resetParser(regName);
+        updatePortType();
         updateField("local_port", _localPort);
         updateField("pnat", PNAT_LOCAL);
         updateField("page_select", PDDR_TROUBLESHOOTING_INFO_PAGE);
@@ -1710,9 +1690,7 @@ void MlxlinkCommander::getPtys()
         _activeSpeed = getFieldValue("eth_proto_oper");
         _protoAdmin = getFieldValue("eth_proto_admin");
         _protoAdminEx = getFieldValue("ext_eth_proto_admin");
-        if (_productTechnology < PRODUCT_16NM) {
-            _protoCapability = getFieldValue("eth_proto_capability");
-        }
+        _protoCapabilityEx = getFieldValue("ext_eth_proto_capability");
     }
 
     _anDisable = getFieldValue("an_disable_admin");
@@ -3547,6 +3525,7 @@ void MlxlinkCommander::checkPplmCap()
     if (_userInput._pplmFec == "AU") {
         return;
     }
+
     string regName = "PPLM";
     resetParser(regName);
     updatePortType();
@@ -3558,15 +3537,19 @@ void MlxlinkCommander::checkPplmCap()
     if (speedStrG == "10g" || speedStrG == "40g") {
         speedStrG = "10g_40g";
     }
-    if (!(fecToBit(_userInput._pplmFec, speedStrG) & getFieldValue("fec_override_cap_" + speedStrG))) {
-        throw MlxRegException(FEC2Str(_userInput._pplmFec, speedStrG) +
-                " is not supported in " + originalSpeed);
-    }
+
+    u_int32_t fecCap = getFieldValue("fec_override_cap_" + speedStrG);
     string supportedSpeeds = EthSupportedSpeeds2Str(getPtysCap());
+
     if (_linkUP && !_userInput._speedFec.empty() &&
             supportedSpeeds.find(toUpperCase(_userInput._speedFec)) == string::npos) {
         throw MlxRegException("FEC speed " + _userInput._speedFec +
                 " is not supported, supported speeds are: [" + supportedSpeeds + "]");
+    }
+
+    if (!(fecToBit(_userInput._pplmFec, speedStrG) & fecCap)) {
+        throw MlxRegException(FEC2Str(_userInput._pplmFec, speedStrG) +
+                " is not supported in " + originalSpeed);
     }
 }
 
@@ -4088,6 +4071,7 @@ void MlxlinkCommander::initEyeOpener()
             _eyeOpener->pciePort = _userInput._pcie;
             _eyeOpener->isPam4Speed = _isPam4Speed ||
                     ((_linkSpeed == IB_LINK_SPEED_HDR) && (_protoActive == IB));
+            _eyeOpener->activeSpeedStr = _speedStrG;
 
             if (_userInput.measureTime < 0) {
                 if (_userInput._pcie) {
