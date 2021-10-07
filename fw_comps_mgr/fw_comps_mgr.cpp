@@ -1918,6 +1918,8 @@ unsigned char*  FwCompsMgr::getLastErrMsg()
             return (unsigned char*)"LinkX activation failed";
         }
     }
+    case FWCOMPS_MCC_REJECTED_INCOMPATIBLE_FLASH:
+        return (unsigned char*)"The image does not support the device's flash type";
 
     case FWCOMPS_UNSUPPORTED_DEVICE:
         return (unsigned char*)"Unsupported device";
@@ -2351,6 +2353,9 @@ fw_comps_error_t FwCompsMgr::mccErrTrans(u_int8_t err)
 
     case MCC_ERRCODE_REJECTED_LINKX_ACTIVATE:
         return FWCOMPS_MCC_REJECTED_LINKX_ACTIVATE;
+
+    case MCC_ERRCODE_REJECTED_INCOMPATIBLE_FLASH:
+        return FWCOMPS_MCC_REJECTED_INCOMPATIBLE_FLASH;
 
     default:
         //            printf("MCC ERROR: %#x\n", err);
