@@ -102,7 +102,8 @@ enum STATUS_DDM_FLAGS_TYPE {
 #define MODULE_INFO_LAST                23
 #define MODULE_INFO_AMBER               123
 #define BER_INFO_LAST                   7
-#define TEST_MODE_BER_INFO_LAST         3
+#define BER_INFO_NDR_LAST               12
+#define TEST_MODE_BER_INFO_LAST         4
 #define MPCNT_PERFORMANCE_INFO_LAST     4
 #define MPCNT_TIMER_INFO_LAST           1
 #define EYE_OPENING_INFO_LAST           3
