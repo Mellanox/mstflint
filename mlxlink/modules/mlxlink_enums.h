@@ -738,7 +738,8 @@ enum CABLE_TECHNOLOGY {
 enum OUI {
     OTHER,
     MELLANOX,
-    KNOWN_OUI
+    KNOWN_OUI,
+    NVIDIA
 };
 
 enum ProtoActive {
