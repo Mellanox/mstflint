@@ -2717,17 +2717,24 @@ int mwrite_buffer_ul(mfile *mf, unsigned int offset, u_int8_t *data, int byte_le
 
 enum {
     MAD_CLASS_REG_ACCESS = 1,
+    MAD_CLASS_A_REG_ACCESS = 0x0A,
 };
+
+u_int8_t class_to_use = MAD_CLASS_REG_ACCESS;
+
+
 enum {
     TLV_END = 0, TLV_OPERATION = 1, TLV_DR = 2, TLV_REG = 3, TLV_USER_DATA = 4,
 };
 
 #define REGISTER_HEADERS_SIZE 12
 #define INBAND_MAX_REG_SIZE 44
+#define INBAND_MAX_REG_SIZE_CLS_A 204
 #define INBAND_MAX_GMP_DWORDS_NUM 55
 #define INBAND_MAX_GMP_BLOCKS 16
 #define INBAND_MAX_GMP_REG_SIZE INBAND_MAX_GMP_BLOCKS * INBAND_MAX_GMP_DWORDS_NUM * 4
 #define ICMD_MAX_REG_SIZE (ICMD_MAX_CMD_SIZE - REGISTER_HEADERS_SIZE)
+#define FWCTX_MAX_REG_SIZE 16
 #define TOOLS_HCR_MAX_REG_SIZE (TOOLS_HCR_MAX_MBOX - REGISTER_HEADERS_SIZE)
 
 static int supports_icmd(mfile *mf);
@@ -2737,11 +2744,55 @@ static int mreg_send_wrapper(mfile *mf, u_int8_t *data, int r_icmd_size, int w_i
 static int mreg_send_raw(mfile *mf, u_int16_t reg_id, maccess_reg_method_t method, void *reg_data, u_int32_t reg_size,
                          u_int32_t r_size_reg, u_int32_t w_size_reg, int *reg_status);
 
+int return_by_reg_status(int reg_status)
+{
+    switch (reg_status) {
+    case 1:
+        return ME_REG_ACCESS_DEV_BUSY;
 
-// maccess_reg: Do a reg_access for the mf device.
-// - reg_data is both in and out
-// TODO: When the reg operation succeeds but the reg status is != 0,
-//       a specific
+    case 2:
+        return ME_REG_ACCESS_VER_NOT_SUPP;
+
+    case 3:
+        return ME_REG_ACCESS_UNKNOWN_TLV;
+
+    case 4:
+        return ME_REG_ACCESS_REG_NOT_SUPP;
+
+    case 5:
+        return ME_REG_ACCESS_CLASS_NOT_SUPP;
+
+    case 6:
+        return ME_REG_ACCESS_METHOD_NOT_SUPP;
+
+    case 7:
+        return ME_REG_ACCESS_BAD_PARAM;
+
+    case 8:
+        return ME_REG_ACCESS_RES_NOT_AVLBL;
+
+    case 9:
+        return ME_REG_ACCESS_MSG_RECPT_ACK;
+
+    case 0x22:
+        return ME_REG_ACCESS_CONF_CORRUPT;
+
+    case 0x24:
+        return ME_REG_ACCESS_LEN_TOO_SMALL;
+
+    case 0x20:
+        return ME_REG_ACCESS_BAD_CONFIG;
+
+    case 0x21:
+        return ME_REG_ACCESS_ERASE_EXEEDED;
+
+    case 0x70:
+        return ME_REG_ACCESS_INTERNAL_ERROR;
+
+    default:
+        return ME_REG_ACCESS_UNKNOWN_ERR;
+    }
+}
 
 int maccess_reg_ul(mfile *mf,
                    u_int16_t reg_id,
@@ -2753,6 +2804,7 @@ int maccess_reg_ul(mfile *mf,
                    int *reg_status)
 {
     int rc;
+    class_to_use = MAD_CLASS_REG_ACCESS;
     if (mf == NULL || reg_data == NULL || reg_status == NULL || reg_size <= 0) {
         return ME_BAD_PARAMS;
     }
@@ -2762,80 +2814,48 @@ int maccess_reg_ul(mfile *mf,
         //reg too big
         return ME_REG_ACCESS_SIZE_EXCCEEDS_LIMIT;
     }
-#ifndef MST_UL
-    // TODO: add specific checks for each FW access method where needed
-    if ((reg_size > INBAND_MAX_REG_SIZE) && supports_reg_access_gmp_ul(mf, reg_method)) {
-        return mib_send_gmp_access_reg_mad(mf, (u_int32_t *)reg_data, reg_size, reg_id, reg_method);
-    }
-    if (mf->flags & MDEVS_MLNX_OS) {
-        rc = mos_reg_access_raw(mf, reg_id, reg_method, reg_data, reg_size, reg_status);
-    } else if ((mf->flags & (MDEVS_IB | MDEVS_FWCTX)) ||
-               (mf->flags != MDEVS_IB && (supports_icmd(mf) || supports_tools_cmdif_reg(mf)))) {
-        rc = mreg_send_raw(mf, reg_id, reg_method, reg_data, reg_size, r_size_reg, w_size_reg, reg_status);
-    } else {
-        return ME_REG_ACCESS_NOT_SUPPORTED;
-    }
-#else
-    if (mf->tp == MST_IB || (supports_icmd(mf) || supports_tools_cmdif_reg(mf)) ) {
-        rc = mreg_send_raw(mf, reg_id, reg_method, reg_data, reg_size, r_size_reg, w_size_reg, reg_status);
-    } else {
-        return ME_REG_ACCESS_NOT_SUPPORTED;
-    }
-#endif
 
-    if (rc) {
-        return rc;
-    } else if (*reg_status) {
-        switch (*reg_status) {
-        case 1:
-            return ME_REG_ACCESS_DEV_BUSY;
-
-        case 2:
-            return ME_REG_ACCESS_VER_NOT_SUPP;
-
-        case 3:
-            return ME_REG_ACCESS_UNKNOWN_TLV;
-
-        case 4:
-            return ME_REG_ACCESS_REG_NOT_SUPP;
-
-        case 5:
-            return ME_REG_ACCESS_CLASS_NOT_SUPP;
-
-        case 6:
-            return ME_REG_ACCESS_METHOD_NOT_SUPP;
-
-        case 7:
-            return ME_REG_ACCESS_BAD_PARAM;
-
-        case 8:
-            return ME_REG_ACCESS_RES_NOT_AVLBL;
-
-        case 9:
-            return ME_REG_ACCESS_MSG_RECPT_ACK;
-
-        case 0x22:
-            return ME_REG_ACCESS_CONF_CORRUPT;
-
-        case 0x24:
-            return ME_REG_ACCESS_LEN_TOO_SMALL;
-
-        case 0x20:
-            return ME_REG_ACCESS_BAD_CONFIG;
-
-        case 0x21:
-            return ME_REG_ACCESS_ERASE_EXEEDED;
-
-        case 0x70:
-            return ME_REG_ACCESS_INTERNAL_ERROR;
-
-        default:
-            return ME_REG_ACCESS_UNKNOWN_ERR;
+    if ((reg_size <= INBAND_MAX_REG_SIZE_CLS_A) &&
+        (supports_reg_access_cls_a_ul(mf, reg_method))) {
+        class_to_use = MAD_CLASS_A_REG_ACCESS;
+        rc = mreg_send_raw(mf, reg_id, reg_method, (u_int32_t *)reg_data, reg_size, r_size_reg, w_size_reg, reg_status);
+        if (rc == ME_OK && (*reg_status == 0)) {
+            return ME_OK;
+        } else {
+            class_to_use = MAD_CLASS_REG_ACCESS;
         }
     }
 
+    if (supports_reg_access_gmp_ul(mf, reg_method)) {
+        rc = mib_send_gmp_access_reg_mad(mf, (u_int32_t *)reg_data, reg_size, reg_id, reg_method, reg_status);
+        if (rc == ME_OK && *reg_status == 0) {
+            return ME_OK;
+        }
+    }
+#ifndef MST_UL
+    if (mf->flags & MDEVS_MLNX_OS) {
+        rc = mos_reg_access_raw(mf, reg_id, reg_method, reg_data, reg_size, reg_status);
+        if (!rc) {
+            return ME_OK;
+        }
+    }
+#endif
+
+    if ((mf->flags & (MDEVS_IB | MDEVS_FWCTX)) || (!(mf->flags & MDEVS_IB) && (supports_icmd(mf) || supports_tools_cmdif_reg(mf)))) {
+        rc = mreg_send_raw(mf, reg_id, reg_method, reg_data, reg_size, r_size_reg, w_size_reg, reg_status);
+    } else {
+        return ME_REG_ACCESS_NOT_SUPPORTED;
+    }
+
+    if (rc) {
+        return rc;
+    }
+    else if (*reg_status) {
+        return return_by_reg_status(*reg_status);
+    }
     return ME_OK;
 }
+
 
 int supports_reg_access_gmp_ul(mfile *mf, maccess_reg_method_t reg_method)
 {
@@ -2848,12 +2868,23 @@ int supports_reg_access_gmp_ul(mfile *mf, maccess_reg_method_t reg_method)
 #endif
 }
 
+int supports_reg_access_cls_a_ul(mfile *mf, maccess_reg_method_t reg_method)
+{
+#ifndef MST_UL
+    return mib_supports_reg_access_cls_a(mf, reg_method);
+#else
+    (void)mf;
+    (void)reg_method;
+    return 0;
+#endif
+}
+
 static int init_operation_tlv(struct OperationTlv *operation_tlv, u_int16_t reg_id, u_int8_t method)
 {
     memset(operation_tlv, 0, sizeof(*operation_tlv));
 
     operation_tlv->Type = TLV_OPERATION;
-    operation_tlv->class = MAD_CLASS_REG_ACCESS;
+    operation_tlv->class = class_to_use;
     operation_tlv->len = TLV_OPERATION_SIZE;
     operation_tlv->method = method;
     operation_tlv->register_id = reg_id;
@@ -2938,7 +2969,11 @@ static int mreg_send_raw(mfile *mf, u_int16_t reg_id, maccess_reg_method_t metho
     w_size_reg += OP_TLV_SIZE + REG_TLV_HEADER_LEN;
     //printf("-D- reg_size = %d, r_size_reg = %d , w_size_reg = %d \n",reg_size,r_size_reg,w_size_reg);
 
-    mad_rc = mreg_send_wrapper(mf, buffer, r_size_reg, w_size_reg);
+    if (class_to_use == MAD_CLASS_A_REG_ACCESS) {
+        mad_rc = mib_send_cls_a_access_reg_mad(mf, buffer);
+    } else {
+        mad_rc = mreg_send_wrapper(mf, buffer, r_size_reg, w_size_reg);
+    }
     // Unpack the mad
     OperationTlv_unpack(&tlv, buffer);
     reg_tlv_unpack(&tlv_info, buffer + OP_TLV_SIZE);
@@ -3014,17 +3049,18 @@ int mget_max_reg_size_ul(mfile *mf, maccess_reg_method_t reg_method)
 {
     if (mf->acc_reg_params.max_reg_size[reg_method]) {
         return mf->acc_reg_params.max_reg_size[reg_method];
-    } else if (supports_reg_access_gmp(mf, reg_method)) {
+    } else if (supports_reg_access_gmp_ul(mf, reg_method)) {
         mf->acc_reg_params.max_reg_size[reg_method] = INBAND_MAX_GMP_REG_SIZE;
-    } else if (mf->tp == MST_IB) {
+    } else if (supports_reg_access_cls_a_ul(mf, reg_method)) {
+        mf->acc_reg_params.max_reg_size[reg_method] = INBAND_MAX_REG_SIZE_CLS_A;
+    } else if (mf->flags & MDEVS_IB) {
         mf->acc_reg_params.max_reg_size[reg_method] = INBAND_MAX_REG_SIZE;
-    } else if (supports_icmd(mf)) { // we support icmd and we dont use IB interface -> we use icmd for reg access
-        if (mf->vsec_supp) {
-            mf->acc_reg_params.max_reg_size[reg_method] = ICMD_MAX_REG_SIZE;
-        } else {
-            // we send via inband
-            mf->acc_reg_params.max_reg_size[reg_method] = INBAND_MAX_REG_SIZE;
-        }
+    } else if (mf->flags & MDEVS_MLNX_OS) {
+        mf->acc_reg_params.max_reg_size[reg_method] = INBAND_MAX_REG_SIZE;
+    } else if (mf->flags & MDEVS_FWCTX) {
+        mf->acc_reg_params.max_reg_size[reg_method] = FWCTX_MAX_REG_SIZE;
+    } else if (supports_icmd(mf)) {
+        mf->acc_reg_params.max_reg_size[reg_method] = ICMD_MAX_REG_SIZE;
     } else if (supports_tools_cmdif_reg(mf)) {
         mf->acc_reg_params.max_reg_size[reg_method] = TOOLS_HCR_MAX_REG_SIZE;
     }
