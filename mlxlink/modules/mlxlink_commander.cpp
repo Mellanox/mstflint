@@ -3766,6 +3766,9 @@ void MlxlinkCommander::sendSltp()
                     "notice that the new settings will be implemented in all ports "
                     "mapped to group " + to_string(portGroup), _jsonRoot);
         }
+        if (_userInput._txPolicy && _productTechnology < PRODUCT_7NM ) {
+            throw MlxRegException("--" SLTP_TX_POLICY_FLAG " flag is not valid for this device");
+        }
         u_int32_t laneSpeed = 0;
         for (u_int32_t i = 0; i < _numOfLanes; i++) {
             if (_userInput._sltpLane && _userInput._lane != i) {
@@ -3786,6 +3789,7 @@ void MlxlinkCommander::sendSltp()
             updateField("pnat", PNAT_LOCAL);
             updateField("lane_speed", laneSpeed);
             updateField("lane", i);
+            updateField("tx_policy", _userInput._txPolicy);
             switch (_productTechnology) {
             case PRODUCT_40NM:
             case PRODUCT_28NM:
@@ -3798,7 +3802,7 @@ void MlxlinkCommander::sendSltp()
                 updateSltp7nmFields();
                 break;
             }
-            updateField("c_db", _userInput._db);
+            updateField("c_db", _userInput._db || _userInput._txPolicy);
             genBuffSendRegister(regName, MACCESS_REG_METHOD_SET);
         }
     } catch (MlxRegException &exc) {

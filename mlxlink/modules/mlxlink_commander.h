@@ -116,6 +116,8 @@
 #define SLTP_SET_FLAG_SHORT                ' '
 #define LANE_FLAG                          "serdes_tx_lane"
 #define LANE_FLAG_SHORT                    ' '
+#define SLTP_TX_POLICY_FLAG                "tx_params_override"
+#define SLTP_TX_POLICY_FLAG_SHORT          ' '
 #define DATABASE_FLAG                      "database"
 #define DATABASE_FLAG_SHORT                ' '
 #define PRBS_MODE_FLAG                     "test_mode"
