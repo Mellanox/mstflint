@@ -1,11 +1,10 @@
-
 /* 
  * Copyright (C) Jan 2019 Mellanox Technologies Ltd. All rights reserved.
  * 
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
+ * This software is available to you under a choice of one of two 
+ * licenses.  You may choose to be licensed under the terms of the GNU 
  * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
+ * COPYING in the main directory of this source tree, or the 
  * OpenIB.org BSD license below:
  * 
  *     Redistribution and use in source and binary forms, with or
@@ -23,39 +22,60 @@
  * 
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND 
  * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
  * SOFTWARE.
 
  *
  */
 
-#ifndef ADB_EXPR_H
-#define ADB_EXPR_H
+/*************************** AdbNode ***************************/
 
-#include <map>
+#ifndef ADB_NODE_H
+#define ADB_NODE_H
+
+#include "adb_xmlCreator.h"
 #include <string>
-#include "expr.h"
-#include "adb_exceptionHolder.h"
+#include <map>
+#include <vector>
 
 using namespace std;
+using namespace xmlCreator;
 
-class AdbExpr : public Expr
+class AdbField;
+
+typedef map<string, string> AttrsMap;
+typedef vector<AdbField *> FieldsList;
+class AdbNode
 {
 public:
-    AdbExpr();
-    ~AdbExpr();
+    // Methods
+    AdbNode();
+    ~AdbNode();
+    string toXml(const string &addPrefix);
 
-    static const char* statusStr(int status);
-    int  ResolveName(char *name, u_int64_t *val);
-    void Error(const std::string& message);
-    void setVars(map<string, string> *varsMap);
+    // FOR DEBUG
+    void print(int indent = 0);
 
-private:
-    map<string, string> *_varsMap;
+public:
+    // Members
+    string name;
+    u_int32_t size; // in bits
+    bool isUnion;
+    string desc;
+    FieldsList fields;
+    FieldsList condFields; // Field that weren't instantiated due to not satisfied condition
+    AttrsMap attrs;
+
+    // defined in
+    string fileName;
+    int lineNumber;
+
+    // FOR USER USAGE
+    void *userData;
 };
 
-#endif // ADB_EXPR_H
+#endif

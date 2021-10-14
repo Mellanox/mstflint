@@ -1,11 +1,10 @@
-
 /* 
  * Copyright (C) Jan 2019 Mellanox Technologies Ltd. All rights reserved.
  * 
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
+ * This software is available to you under a choice of one of two 
+ * licenses.  You may choose to be licensed under the terms of the GNU 
  * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
+ * COPYING in the main directory of this source tree, or the 
  * OpenIB.org BSD license below:
  * 
  *     Redistribution and use in source and binary forms, with or
@@ -23,39 +22,38 @@
  * 
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND 
  * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
  * SOFTWARE.
 
  *
  */
 
-#ifndef ADB_EXPR_H
-#define ADB_EXPR_H
+/*************************** LogFile ***************************/
 
-#include <map>
+#ifndef ADB_LOGFILE_H
+#define ADB_LOGFILE_H
+
 #include <string>
-#include "expr.h"
+#include <stdlib.h>
+#include <cstring>
+#include <errno.h>
 #include "adb_exceptionHolder.h"
+#include <stdio.h>
 
 using namespace std;
 
-class AdbExpr : public Expr
-{
+class LogFile {
 public:
-    AdbExpr();
-    ~AdbExpr();
-
-    static const char* statusStr(int status);
-    int  ResolveName(char *name, u_int64_t *val);
-    void Error(const std::string& message);
-    void setVars(map<string, string> *varsMap);
-
+    LogFile();
+    void init(string logFileName, bool allowMultipleExceptions);
+    ~LogFile();
+    void appendLogFile(string adbFileName);
 private:
-    map<string, string> *_varsMap;
+    FILE *_logFile;
 };
 
-#endif // ADB_EXPR_H
+#endif
