@@ -152,6 +152,8 @@ void MlxlinkUi::printSynopsisCommands()
                   "PRBS lanes to set (one or more lane separated by comma)[0,1,2,...,7] (Optional - Default all lanes)");
     MlxlinkRecord::printFlagLine(BER_COLLECT_FLAG_SHORT, BER_COLLECT_FLAG, "csv_file",
                   "Port Extended Information Collection [CSV File]");
+    MlxlinkRecord::printFlagLine(AMBER_COLLECT_FLAG_SHORT, AMBER_COLLECT_FLAG, "csv_file",
+                  "AmBER Port Extended Information Collection For 16nm Products and Later [CSV File]");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(BER_LIMIT_FLAG_SHORT, BER_LIMIT_FLAG, "limit_criteria",
                   "BER Limit Criteria [Nominal(Default)/Corner/Drift] (Optional - Default Nominal)");
@@ -409,7 +411,13 @@ void MlxlinkUi::validatePRBSParams()
 
 void MlxlinkUi::validateSpeedAndCSVBerParams()
 {
-    if (isIn(SEND_BER_COLLECT, _sendRegFuncMap)) {
+    bool berCollect = isIn(SEND_BER_COLLECT, _sendRegFuncMap);
+    bool amBerCollect = isIn(SEND_AMBER_COLLECT, _sendRegFuncMap);
+    if (berCollect && amBerCollect) {
+        throw MlxRegException("--" BER_COLLECT_FLAG " and --" AMBER_COLLECT_FLAG " "\
+                "are mutually exclusive, please select one command only");
+    }
+    if (berCollect || amBerCollect) {
         if (!endsWith(_mlxlinkCommander->_userInput._csvBer, ".csv")) {
             throw MlxRegException("you must provide a valid .csv file");
         }
@@ -617,6 +625,8 @@ void MlxlinkUi::initCmdParser()
     AddOptions(PPLR_FLAG, PPLR_FLAG_SHORT, "PPLR", "Send PPLR");
     AddOptions(BER_COLLECT_FLAG, BER_COLLECT_FLAG_SHORT, "BERCollectFile",
                "BER Collection csv file");
+    AddOptions(AMBER_COLLECT_FLAG, AMBER_COLLECT_FLAG_SHORT, "AMBERCollectFile",
+               "AMBER Collection csv file");
     AddOptions(BER_LIMIT_FLAG, BER_LIMIT_FLAG_SHORT, "Mode",
                "Test Mode of Ber Collect (Nominal/Corner/Drift)");
     AddOptions(ITERATION_FLAG, ITERATION_FLAG_SHORT, "Iteration", "Iteration of BER Collect");
@@ -729,7 +739,10 @@ void MlxlinkUi::commandsCaller()
             PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> \"Port Extended Information Collection\"");
             _mlxlinkCommander->collectBER();
             break;
-        case SEND_PAOS:
+        case SEND_AMBER_COLLECT:
+            PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> \"AmBER Collection\"");
+            _mlxlinkCommander->collectAMBER();
+            break;case SEND_PAOS:
             PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> \"Configure Port State\"");
             _mlxlinkCommander->sendPaos();
             break;
@@ -963,7 +976,10 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     } else if (name == BER_COLLECT_FLAG) {
         _sendRegFuncMap.push_back(SEND_BER_COLLECT);
         _mlxlinkCommander->_userInput._csvBer = value;
-        _mlxlinkCommander->_uniqueCmds++;
+        return PARSE_OK;
+    }  else if (name == AMBER_COLLECT_FLAG) {
+        _sendRegFuncMap.push_back(SEND_AMBER_COLLECT);
+        _mlxlinkCommander->_userInput._csvBer = value;
         return PARSE_OK;
     } else if (name == BER_LIMIT_FLAG) {
         _mlxlinkCommander->_userInput._testMode = toUpperCase(value);
@@ -1146,8 +1162,6 @@ int MlxlinkUi::run(int argc, char **argv)
     } else if (!_mlxlinkCommander->_userInput._sendDpn) {
         _mlxlinkCommander->initValidDPNList();
     }
-
-
 
     if (_mlxlinkCommander->_userInput._logFilePath != "") {
         _mlxlinkCommander->_mlxlinkLogger = new MlxlinkLogger(

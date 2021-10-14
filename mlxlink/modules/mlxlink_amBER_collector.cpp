@@ -48,17 +48,23 @@ MlxlinkAmBerCollector::MlxlinkAmBerCollector(Json::Value &jsonRoot): _jsonRoot(j
     _node = 0;
     _protoActive = 0;
     _productTechnology = PRODUCT_16NM;
+    _activeSpeed = 0;
 
     _isPortIB = false;
     _isPortETH = false;
     _isPortPCIE = false;
     _isMCMSysValid = false;
     _isGBSysValid = false;
+    _isValidSensorMvcap = false;
+    _isValidSensorMtcap = false;
+    _isHca = false;
 
     _isCmisCable = false;
     _isQsfpCable = false;
     _isSfpCable = false;
     _cablePlugged = false;
+
+    _mlxlinkMaps = NULL;
 }
 
 MlxlinkAmBerCollector::~MlxlinkAmBerCollector()
@@ -409,9 +415,12 @@ string MlxlinkAmBerCollector::getClRawBer()
                                             _mlxlinkMaps->_EthExtSpeed2gNum[_activeSpeed];
 
     double rateBerLane = (activeRate / _numOfLanes) * pow(10.0, 9);
-    double clBer = 1 - exp(-1 * rateBerLane * timeSinceLinkUp * rawBer);
 
+    double clBer = 0;
     char clBerStr[128];
+    if (activeRate) {
+        clBer = 1 - exp(-1 * rateBerLane * timeSinceLinkUp * rawBer);
+    }
     sprintf(clBerStr, "%.1E", clBer);
 
     return string(clBerStr);
@@ -563,7 +572,7 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
             updateField("proto_mask", _protoActive);
             sendRegister(ACCESS_REG_PTYS, MACCESS_REG_METHOD_GET);
 
-            float dataRate = ((float)getFieldValue("data_rate_oper")) * 0.001;
+            float dataRate = ((float)getFieldValue("data_rate_oper")) * 0.1;
             u_int32_t ethLinkActive = getFieldValue("ext_eth_proto_oper");
             fields.push_back(AmberField("Ethernet Protocol Active",
                                         ethLinkActive? _mlxlinkMaps->_EthExtSpeed2Str[ethLinkActive] : "N/A",
