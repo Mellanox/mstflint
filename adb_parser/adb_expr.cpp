@@ -35,7 +35,6 @@
 
 #include <stdlib.h>
 #include "adb_expr.h"
-#include "adb_parser.h"
 
 /**
  * Function: AdbExpr::AdbExpr

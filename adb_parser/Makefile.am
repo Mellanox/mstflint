@@ -41,4 +41,4 @@ INCLUDES = -I$(USER_DIR) -I$(USER_DIR)/common
 AM_CXXFLAGS = -Wall -W -g -MP -MD -Werror -pipe $(COMPILER_FPIC)
 
 lib_LTLIBRARIES = libadb_parser.a
-libadb_parser_a_SOURCES = adb_parser.h adb_parser.cpp buf_ops.h buf_ops.cpp expr.h expr.cpp adb_expr.h adb_expr.cpp adb_db.h adb_db.cpp
+libadb_parser_a_SOURCES = adb_parser.h adb_parser.cpp buf_ops.h buf_ops.cpp expr.h expr.cpp adb_expr.h adb_expr.cpp adb_db.h adb_db.cpp adb_config.cpp adb_exceptionHolder.cpp adb_field.cpp adb_instance.cpp adb_logfile.cpp adb_node.cpp adb_xmlCreator.cpp

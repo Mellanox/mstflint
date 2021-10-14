@@ -1,11 +1,10 @@
-
 /* 
  * Copyright (C) Jan 2019 Mellanox Technologies Ltd. All rights reserved.
  * 
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
+ * This software is available to you under a choice of one of two 
+ * licenses.  You may choose to be licensed under the terms of the GNU 
  * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
+ * COPYING in the main directory of this source tree, or the 
  * OpenIB.org BSD license below:
  * 
  *     Redistribution and use in source and binary forms, with or
@@ -23,39 +22,42 @@
  * 
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND 
  * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
  * SOFTWARE.
 
  *
  */
 
-#ifndef ADB_EXPR_H
-#define ADB_EXPR_H
+/*************************** AdbConfig ***************************/
 
+#ifndef ADB_CONFIG_H
+#define ADB_CONFIG_H
+
+#include "adb_xmlCreator.h"
 #include <map>
 #include <string>
-#include "expr.h"
-#include "adb_exceptionHolder.h"
+
+using namespace xmlCreator;
 
 using namespace std;
 
-class AdbExpr : public Expr
-{
+typedef map<string, string> AttrsMap;
+
+class AdbConfig {
 public:
-    AdbExpr();
-    ~AdbExpr();
+    // FOR DEBUG
+    void print(int indent = 0);
 
-    static const char* statusStr(int status);
-    int  ResolveName(char *name, u_int64_t *val);
-    void Error(const std::string& message);
-    void setVars(map<string, string> *varsMap);
+    string toXml();
 
-private:
-    map<string, string> *_varsMap;
+public:
+    // Members
+    AttrsMap attrs;
+    AttrsMap enums;
 };
 
-#endif // ADB_EXPR_H
+#endif
