@@ -58,6 +58,7 @@ typedef struct option_ifc {
     char option_short_name;         //can be used as short option, if space than no short flag
     string option_value;            //if "" has no argument
     string description;             //will be display in usage
+    int  numOfSpaces;
     bool hidden;                    //if hidden than will not be diaplayed in regular usage
     bool is_mandatory;
 } option_ifc_t;
@@ -105,6 +106,7 @@ public:
                            char option_short_name,
                            string option_value,
                            string description,
+                           int  numOfSpaces = 0,
                            bool hidden = false,
                            bool is_mandatory = false)
     {
@@ -113,6 +115,7 @@ public:
         opt.option_short_name = option_short_name;
         opt.option_value = option_value;
         opt.description = description;
+        opt.numOfSpaces = numOfSpaces;
         opt.hidden = hidden;
         opt.is_mandatory = is_mandatory;
         this->options.push_back(opt);
