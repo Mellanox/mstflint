@@ -67,7 +67,7 @@ static bool FindAndHandleNewLinePos(string& str, int& product_length, int& local
 string CommandLineRequester::BuildOptStr(option_ifc_t &opt)
 {
     string str;
-
+    str += CreateIndentFromInt(opt.numOfSpaces*4);
     if (opt.option_short_name != ' ') {
         str += "-";
         str += opt.option_short_name;
@@ -577,8 +577,8 @@ do_handle_option:
         if (ignore_this_req == false) {
             try{
                 curr_result = p_req->HandleOption(long_opt_name, (tools_optarg == NULL) ? "" : tools_optarg);
-            }catch (std::exception&){
-                this->SetLastError("Failed to handle option %s", long_opt_name.c_str());
+            }catch (std::exception &exc){
+                this->SetLastError(exc.what());
                 goto parse_exit;
             }
             if (curr_result) {
