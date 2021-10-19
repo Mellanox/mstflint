@@ -1,4 +1,5 @@
 # Copyright (c) 2004-2010 Mellanox Technologies LTD. All rights reserved.
+# Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -41,6 +42,7 @@ import platform
 from . import mlxfwreset_utils
 from .mlxfwreset_utils import cmdExec
 from functools import reduce
+from time import sleep
 
 
 class DriverNotExist(Exception):
@@ -209,13 +211,29 @@ class MlnxDriverLinux(MlnxDriver):
         for dbdf,driver_name in self.drivers_dbdf:
             driver_path = '{0}/{1}'.format(MlnxDriverLinux.PCI_DRIVERS_PATH,driver_name)
             assert os.path.exists(driver_path)
-            # Bind if not binded (in HotPlug, 'rescan' will bind automatically)
-            if not os.path.exists('/sys/bus/pci/devices/{0}/driver'.format(dbdf)):
-                cmd = 'echo "{0}" > {1}/bind'.format(dbdf, driver_path)
-                self.logger.info('{0}'.format(cmd))
-                (rc, _, _) = cmdExec(cmd)
-                if rc!=0:
-                    driver_err = True
+            
+            # In case of hotplug the OS *might* start the driver automatically as part of the rescan/enumeration stage.
+            # On kernel XXXX we saw that the driver file (sysfs) doesn't exist 'on time' and as a result the tool will
+            # start the driver even though the OS already triggered the driver start. In this case the tool gets error
+            # from the CLI but we don't want the tool to exit with error. For that reason we added the retry mechanism
+
+            MAX_NUM_OF_TRIES = 10
+            try_num = 1
+            while try_num <= MAX_NUM_OF_TRIES:
+                if os.path.exists('/sys/bus/pci/devices/{0}/driver'.format(dbdf)):  # driver is up
+                    driver_err = False
+                    break
+                else:                                                               # driver is down
+                    cmd = 'echo "{0}" > {1}/bind'.format(dbdf, driver_path)
+                    self.logger.info('{0}'.format(cmd))
+                    (rc, _, _) = cmdExec(cmd)
+                    if rc == 0: # bind succeeded 
+                        driver_err = False
+                        break
+                    else:       # bind failed
+                        try_num += 1
+                        driver_err = True
+                        sleep(0.1)
         
         try:
             if self.rshim_driver:
