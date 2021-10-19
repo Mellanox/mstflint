@@ -2093,10 +2093,48 @@ void MlxlinkCommander::prepare40_28_16nmEyeInfo(u_int32_t numOfLanes)
 
 void MlxlinkCommander::prepare7nmEyeInfo(u_int32_t numOfLanesToUse)
 {
-    (void) numOfLanesToUse;
-    /*
-     * TODO: implement NDR eye information
-     */
+    string regName = "SLRG";
+    std::vector<string> initialFom, lastFom, upperFom, midFom, lowerFom;
+
+    u_int32_t fomMeasurement = SLRG_COMPOSITE_EYE;
+    if (!isSpeed25GPerLane(_activeSpeed, _protoActive)) {
+        fomMeasurement |= (SLRG_UPPER_EYE | SLRG_MIDDLE_EYE | SLRG_LOWER_EYE);
+    }
+
+    for (u_int32_t i = 0; i < numOfLanesToUse; i++) {
+        resetParser(regName);
+        updatePortType();
+        updateField("local_port", _localPort);
+        updateField("pnat", (_userInput._pcie) ? PNAT_PCIE : PNAT_LOCAL);
+        updateField("lane", i);
+        updateField("fom_measurment", fomMeasurement);
+        genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
+
+        initialFom.push_back(MlxlinkRecord::addSpaceForSlrg(
+               getFieldValue("status")? to_string(getFieldValue("initial_fom")) : "N/A"));
+        lastFom.push_back(MlxlinkRecord::addSpaceForSlrg(
+               (fomMeasurement & SLRG_COMPOSITE_EYE)? getFieldStr("last_fom") : "N/A"));
+        upperFom.push_back(MlxlinkRecord::addSpaceForSlrg(
+               (fomMeasurement & SLRG_UPPER_EYE)? getFieldStr("upper_eye") : "N/A"));
+        midFom.push_back(MlxlinkRecord::addSpaceForSlrg(
+               (fomMeasurement & SLRG_MIDDLE_EYE)? getFieldStr("mid_eye") : "N/A"));
+        lowerFom.push_back(MlxlinkRecord::addSpaceForSlrg(
+               (fomMeasurement & SLRG_LOWER_EYE)? getFieldStr("lower_eye") : "N/A"));
+    }
+
+    string fomMode = _mlxlinkMaps->_slrgFomMode[getFieldValue("fom_mode")];
+    setPrintVal(_eyeOpeningInfoCmd, "FOM Mode", fomMode,
+                ANSI_COLOR_RESET, !fomMode.empty(), true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Initial FOM", getStringFromVector(initialFom),
+                ANSI_COLOR_RESET, !initialFom.empty(), true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Last FOM", getStringFromVector(lastFom),
+                ANSI_COLOR_RESET, !lastFom.empty(), (fomMeasurement & SLRG_COMPOSITE_EYE), true);
+    setPrintVal(_eyeOpeningInfoCmd, "Upper Grades", getStringFromVector(upperFom),
+                ANSI_COLOR_RESET, !upperFom.empty(), (fomMeasurement & SLRG_UPPER_EYE), true);
+    setPrintVal(_eyeOpeningInfoCmd, "Mid Grades", getStringFromVector(midFom),
+                ANSI_COLOR_RESET, !midFom.empty(), (fomMeasurement & SLRG_MIDDLE_EYE), true);
+    setPrintVal(_eyeOpeningInfoCmd, "Lower Grades", getStringFromVector(lowerFom),
+                ANSI_COLOR_RESET, !lowerFom.empty(), (fomMeasurement & SLRG_LOWER_EYE), true);
 }
 
 void MlxlinkCommander::showEye()
