@@ -144,6 +144,8 @@
 #define BER_LIMIT_FLAG_SHORT               ' '
 #define ITERATION_FLAG                     "iteration"
 #define ITERATION_FLAG_SHORT               ' '
+#define AMBER_COLLECT_FLAG                 "amber_collect"
+#define AMBER_COLLECT_FLAG_SHORT           ' '
 #define PPCNT_CLEAR_FLAG                   "pc"
 #define PPCNT_CLEAR_FLAG_SHORT             ' '
 #define PEPC_SET_FLAG                      "set_external_phy"
@@ -227,45 +229,7 @@
 #define REG_ACCESS_UNION_NODE "access_reg_summary"
 
 //------------------------------------------------------------
-//        Mlxlink Values definition
-#define SWID                        0
-#define PPRT_PPTT_ENABLE            1
-#define PPRT_PPTT_START_TUNING      1
-#define PHY_TEST_MODE_STATUS        1
-
-#define PDDR_STATUS_MESSAGE_LENGTH_HCA  236
-#define PDDR_STATUS_MESSAGE_LENGTH_SWITCH 59
-#define BIT_MASK_ALL_DWORD          0xffffffff
-
-#define OB_TAP_SUM                  120
-#define OB_TAP_DIFF                 10
-#define OB_BIAS_LOW_THRESHOLD       15
-#define OB_BIAS_MID_1_THRESHOLD     31
-#define OB_BIAS_MID_2_THRESHOLD     48
-#define OB_BIAS_HIGH_THRESHOLD      63
-
-#define MAX_LOCAL_PORT_ETH          64
-#define MAX_LOCAL_PORT_IB           36
-#define MAX_LOCAL_PORT_QUANTUM      82
-#define MAX_LOCAL_PORT_QUANTUM2     128
-#define MAX_LOCAL_PORT_SPECTRUM2    128
-
-#define DBN_TO_LOCAL_PORT_BASE      60
-
-#define MAX_LANES_NUMBER            4
-#define MAX_DWORD_BLOCK_SIZE        32
-#define MAX_TX_GROUP_COUNT          10
-
-#define PCAM_FORCE_DOWN_CAP_MASK    0x2000
-
-#define OPERATIONAL_ERROR_STR       "ME_ICMD_OPERATIONAL_ERROR"
-
-#define MAX_SBYTE                   127
-#define MIN_SBYTE                   -128
-#define MAX_LABEL_PORT_LENGTH       5
-
-//------------------------------------------------------------
-//        Mlxlink enumerations
+//        Mlxlink commands enumerations
 enum OPTION_TYPE {
     SHOW_PDDR = 1,
     SHOW_PCIE,
@@ -286,6 +250,7 @@ enum OPTION_TYPE {
     CABLE_EEPROM_WRITE,
     CABLE_EEPROM_READ,
     SEND_BER_COLLECT,
+    SEND_AMBER_COLLECT,
     SEND_PAOS,
     SEND_PTYS,
     SEND_PPLM,
@@ -376,13 +341,14 @@ public:
             u_int32_t width, bool spect2WithGb);
     int handleIBLocalPort(u_int32_t labelPort, bool ibSplitReady);
     int handleEthLocalPort(u_int32_t labelPort, bool spect2WithGb);
-    void handleLabelPorts(std::vector<string> labelPortsStr);
+    void handleLabelPorts(std::vector<string> labelPortsStr, bool skipException = false);
     vector<string> localToPortsPerGroup(vector<u_int32_t> localPorts);
     u_int32_t getPortGroup(u_int32_t localPort);
 
     //Mlxlink query functions
     virtual void showModuleInfo();
     void prepareBerModuleInfoNdr(bool valid);
+    virtual void runningVersion();
     virtual void operatingInfoPage();
     virtual void supportedInfoPage();
     virtual void troubInfoPage();
@@ -399,6 +365,7 @@ public:
     virtual void showExternalPhy();
     void showPcie();
     void showPcieLinks();
+    void collectAMBER();
     void collectBER();
     virtual void showTxGroupMapping();
 
@@ -473,6 +440,7 @@ public:
     void writeCableEEPROM();
     void readCableEEPROM();
 
+    MlxlinkCmdPrint _toolInfoCmd;
     MlxlinkCmdPrint _operatingInfoCmd;
     MlxlinkCmdPrint _supportedInfoCmd;
     MlxlinkCmdPrint _troubInfoCmd;
@@ -590,6 +558,7 @@ public:
     bool _isPam4Speed;
     bool _ignorePortType;
     bool _lanesLockStatus;
+    bool _ignorePortStatus;
     std::vector<std::string> _ptysSpeeds;
     std::vector<PortGroup> _localPortsPerGroup;
     std::vector<DPN> _validDpns;

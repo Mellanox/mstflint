@@ -78,6 +78,7 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _isPam4Speed = false;
     _ignorePortType = true;
     _lanesLockStatus = false;
+    _ignorePortStatus = true;
     _protoAdmin = 0;
     _protoAdminEx = 0;
     _speedBerCsv = 0;
@@ -847,6 +848,11 @@ int MlxlinkCommander::handleEthLocalPort(u_int32_t labelPort, bool spect2WithGb)
 void MlxlinkCommander::fillEthPortGroupMap(u_int32_t localPort,u_int32_t labelPort,
         u_int32_t group, u_int32_t width, bool spect2WithGb)
 {
+    if(_ignorePortStatus) {
+        if (!width) {
+            _localPortsPerGroup.push_back(PortGroup(localPort, labelPort, group, 0));
+        }
+    }
     if (spect2WithGb) {
         switch (width) {
         case 2:
@@ -937,24 +943,23 @@ vector<string> MlxlinkCommander::localToPortsPerGroup(vector<u_int32_t> localPor
     return labelPortsStr;
 }
 
-void MlxlinkCommander::handleLabelPorts(std::vector<string> labelPortsStr)
+void MlxlinkCommander::handleLabelPorts(std::vector<string> labelPortsStr, bool skipException)
 {
     u_int32_t labelPort = 0;
     int localPort = -1;
-    if (labelPortsStr.size() > maxLocalPort()) {
+    if (labelPortsStr.size() > maxLocalPort() && !skipException) {
         throw MlxRegException("The number of ports is invalid");
     }
     bool ibSplitReady = (_devID == DeviceQuantum || _devID == DeviceQuantum2)? isIBSplitReady() : false;
     bool spect2WithGb = (_devID == DeviceSpectrum2)? isSpect2WithGb() : false;
-    for (vector<string>::iterator it = labelPortsStr.begin();
-            it != labelPortsStr.end(); ++it) {
+    for (vector<string>::iterator it = labelPortsStr.begin(); it != labelPortsStr.end(); ++it) {
         strToUint32((char *)(*it).c_str(), labelPort);
         if (_devID == DeviceSpectrum2 || _devID == DeviceSpectrum3) {
             localPort = handleEthLocalPort(labelPort, spect2WithGb);
         } else if (_devID == DeviceQuantum || _devID == DeviceQuantum2) {
             localPort = handleIBLocalPort(labelPort, ibSplitReady);
         }
-        if (localPort < 0) {
+        if (localPort < 0 && !skipException) {
             throw MlxRegException("Invalid port number %d!\n", labelPort);
         }
     }
@@ -1397,8 +1402,8 @@ string MlxlinkCommander::getComplianceLabel(u_int32_t compliance,
                         getCompliance(compliance, _mlxlinkMaps->_cableComplianceQsfp, true);
                 if (ignoreExtBitChk ||
                         (compliance & QSFP_ETHERNET_COMPLIANCE_CODE_EXT)) {
-                    complianceLabel +=
-                            getCompliance(extCompliance, _mlxlinkMaps->_cableComplianceExt);
+                    complianceLabel += !complianceLabel.empty() ? "," : "";
+                    complianceLabel += getCompliance(extCompliance, _mlxlinkMaps->_cableComplianceExt);
                 }
             } else if (ignoreExtBitChk) {
                 complianceLabel =
@@ -1479,6 +1484,15 @@ void MlxlinkCommander::strToInt32(char *str, u_int32_t &value)
     if (*endp) {
         throw MlxRegException("Argument: %s is invalid.", str);
     }
+}
+
+void MlxlinkCommander::runningVersion()
+{
+    setPrintTitle(_toolInfoCmd,"Tool Information", TOOL_INFORMAITON_INFO_LAST, !_prbsTestMode);
+    setPrintVal(_toolInfoCmd,"Firmware Version", _fwVersion, ANSI_COLOR_GREEN,true, !_prbsTestMode);
+    setPrintVal(_toolInfoCmd,"amBER Version", AMBER_VERSION, ANSI_COLOR_GREEN,
+                _productTechnology >= PRODUCT_16NM, !_prbsTestMode);
+    setPrintVal(_toolInfoCmd,"MSTFLINT Version", MSTFLINT_VERSION_STR, ANSI_COLOR_GREEN,true, !_prbsTestMode);
 }
 
 void MlxlinkCommander::operatingInfoPage()
@@ -1663,12 +1677,14 @@ void MlxlinkCommander::showPddr()
         operatingInfoPage();
         supportedInfoPage();
         troubInfoPage();
+        runningVersion();
         if (_prbsTestMode) {
             showTestMode();
         } else {
             std::cout << _operatingInfoCmd;
             std::cout << _supportedInfoCmd;
             std::cout << _troubInfoCmd;
+            std::cout << _toolInfoCmd;
         }
     } catch (const std::exception &exc) {
         throw MlxRegException(string("Showing PDDR raised the following exception: \n") + string(exc.what()));
@@ -2541,9 +2557,52 @@ void MlxlinkCommander::showPcieState(DPN& dpn)
     cout << _pcieInfoCmd;
 }
 
+void MlxlinkCommander::collectAMBER()
+{
+    try {
+        if (_productTechnology >= PRODUCT_16NM) {
+            initAmBerCollector();
+
+            if (!_isHCA) {
+                // If port provided, collect one port only
+                if (_userInput._specifiedPort) {
+                    PortGroup pg {_localPort, _userInput._labelPort, 0, _userInput._splitPort};
+                    _amberCollector->_localPorts.push_back(pg);
+                } else {
+                    // collect all ports info if the port flag wasn't provided
+                    string regName = "MGPIR";
+                    resetParser(regName);
+                    genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
+                    u_int32_t numOfPorts = getFieldValue("num_of_modules");
+                    vector<string> labelPorts;
+                    _ignorePortStatus = false;
+                    for (u_int32_t labelPort = 1; labelPort <= numOfPorts; labelPort ++) {
+                        labelPorts.push_back(to_string(labelPort));
+                    }
+                    handleLabelPorts(labelPorts, true);
+                    _amberCollector->_localPorts = _localPortsPerGroup;
+                }
+            }
+
+            _amberCollector->startCollector();
+        } else {
+            throw MlxRegException(AMBER_COLLECT_FLAG " is not available for "\
+                  "this device, please use " BER_COLLECT_FLAG " flag instead");
+        }
+    } catch (const std::exception &exc) {
+        _allUnhandledErrors += string("Collecting AMBER raised the following exception: \n") +
+                                      string(exc.what()) + string("\n");
+    }
+}
+
 void MlxlinkCommander::collectBER()
 {
     try {
+        if (_productTechnology >= PRODUCT_16NM) {
+            throw MlxRegException(BER_COLLECT_FLAG " is not available for "\
+                  "this device, please use " AMBER_COLLECT_FLAG " flag instead");
+        }
+
         const char *fileName = _userInput._csvBer.c_str();
         ifstream ifile(fileName);
         ofstream berFile;
@@ -2602,7 +2661,8 @@ void MlxlinkCommander::collectBER()
         berFile << endl;
         berFile.close();
     } catch (const std::exception &exc) {
-        _allUnhandledErrors += string("Collecting BER and producing report raised the following exception: ") + string(exc.what()) + string("\n");
+        _allUnhandledErrors += string(
+                "Collecting BER and producing report raised the following exception: \n") + string(exc.what()) + string("\n");
     }
 }
 
@@ -4316,6 +4376,7 @@ void MlxlinkCommander::prepareJsonOut()
     _operatingInfoCmd.toJsonFormat(_jsonRoot);
     _supportedInfoCmd.toJsonFormat(_jsonRoot);
     _troubInfoCmd.toJsonFormat(_jsonRoot);
+    _toolInfoCmd.toJsonFormat(_jsonRoot);
     _testModeInfoCmd.toJsonFormat(_jsonRoot);
     _pcieInfoCmd.toJsonFormat(_jsonRoot);
     _moduleInfoCmd.toJsonFormat(_jsonRoot);
