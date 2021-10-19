@@ -122,6 +122,8 @@ void MlxlinkUi::printSynopsisCommands()
                   "Transmitter Lane to Set (Optional - Default All Lanes)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(DATABASE_FLAG_SHORT, DATABASE_FLAG, "", "Save Transmitter Configuration for Current Speed Permanently (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(SLTP_TX_POLICY_FLAG_SHORT, SLTP_TX_POLICY_FLAG, "", "Set the parameters according to Data Base only, otherwise it will be set according to the best possible configuration chosen by the system (Optional)");
     MlxlinkRecord::printFlagLine(SET_TX_GROUP_MAP_FLAG_SHORT, SET_TX_GROUP_MAP_FLAG, "group_num",
                       "Map ports to group <group_num> (for Spectrum-2 and Quantum devices)");
     printf(IDENT);
@@ -374,9 +376,10 @@ void MlxlinkUi::validateGeneralCmdsParams()
             throw MlxRegException(
                       "Lane and Database flags are mutually exclusive");
         }
-    } else if (_mlxlinkCommander->_userInput._sltpLane || _mlxlinkCommander->_userInput._db) {
-        throw MlxRegException(
-                  "Transmitter Lane or DataBase flags are valid only with Configure Transmitter Parameters flag (--st_set)");
+    } else if (_mlxlinkCommander->_userInput._sltpLane || _mlxlinkCommander->_userInput._db ||
+               _mlxlinkCommander->_userInput._txPolicy) {
+        throw MlxRegException(LANE_FLAG ", --" DATABASE_FLAG " and --" SLTP_TX_POLICY_FLAG
+                              " flags are valid only with Configure Transmitter Parameters flag (--" SLTP_SET_FLAG ")");
     }
 }
 
@@ -651,6 +654,7 @@ void MlxlinkUi::initCmdParser()
     AddOptions(SLTP_SHOW_FLAG, SLTP_SHOW_FLAG_SHORT, "", "get SLTP");
     AddOptions(SLTP_SET_FLAG, SLTP_SET_FLAG_SHORT, "set", "set SLTP");
     AddOptions(SLTP_SET_ADVANCED_FLAG, SLTP_SET_ADVANCED_FLAG_SHORT, "", "set SLTP");
+    AddOptions(SLTP_TX_POLICY_FLAG, SLTP_TX_POLICY_FLAG_SHORT, "", "set TX Policy");
     AddOptions(LANE_FLAG, LANE_FLAG_SHORT, "lane", "Lane");
     AddOptions(DATABASE_FLAG, DATABASE_FLAG_SHORT, "", "DB");
     AddOptions(GVMI_ADDRESS_FLAG, GVMI_ADDRESS_FLAG_SHORT, "gvmi", "GVMI");
@@ -859,6 +863,9 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         return PARSE_OK;
     } else if (name == DATABASE_FLAG) {
         _mlxlinkCommander->_userInput._db = true;
+        return PARSE_OK;
+    } else if (name == SLTP_TX_POLICY_FLAG) {
+        _mlxlinkCommander->_userInput._txPolicy = true;
         return PARSE_OK;
     } else if (name == GVMI_ADDRESS_FLAG) {
         _mlxlinkCommander->strToUint32((char*) value.c_str(), _mlxlinkCommander->_userInput._gvmiAddress);
@@ -1146,8 +1153,6 @@ int MlxlinkUi::run(int argc, char **argv)
     } else if (!_mlxlinkCommander->_userInput._sendDpn) {
         _mlxlinkCommander->initValidDPNList();
     }
-
-
 
     if (_mlxlinkCommander->_userInput._logFilePath != "") {
         _mlxlinkCommander->_mlxlinkLogger = new MlxlinkLogger(

@@ -67,6 +67,7 @@ UserInput::UserInput()
     _sendDpn = false;
     _db = false;
     _sltpLane = false;
+    _txPolicy = false;
     _advancedMode = false;
     _specifiedPort = false;
     _cable = false;

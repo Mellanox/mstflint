@@ -73,6 +73,7 @@ public:
     bool _sendDpn;
     bool _db;
     bool _sltpLane;
+    bool _txPolicy;
     bool _advancedMode;
     bool _specifiedPort;
     bool _showSltp;
