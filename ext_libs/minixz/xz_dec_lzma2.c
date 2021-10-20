@@ -1,6 +1,7 @@
 
 /*
  * Copyright (C) Jan 2006 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -1075,7 +1076,6 @@ XZ_EXTERN enum xz_ret xz_dec_lzma2_run(struct xz_dec_lzma2 *s,
 				return XZ_DATA_ERROR;
 
 			s->lzma2.sequence = SEQ_LZMA_PREPARE;
-			/* fallthrough */
 
 		case SEQ_LZMA_PREPARE:
 			if (s->lzma2.compressed < RC_INIT_BYTES)
@@ -1086,7 +1086,6 @@ XZ_EXTERN enum xz_ret xz_dec_lzma2_run(struct xz_dec_lzma2 *s,
 
 			s->lzma2.compressed -= RC_INIT_BYTES;
 			s->lzma2.sequence = SEQ_LZMA_RUN;
-			/* fallthrough */
 
 		case SEQ_LZMA_RUN:
 			/*
