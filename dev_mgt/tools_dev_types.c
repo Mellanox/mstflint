@@ -1,5 +1,6 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -53,6 +54,7 @@ enum dm_dev_type {
     DM_SWITCH,
     DM_BRIDGE,
     DM_QSFP_CABLE,
+    DM_CMIS_CABLE,
     DM_SFP_CABLE,
     DM_LINKX, // linkx chip
     DM_GEARBOX
@@ -89,14 +91,16 @@ enum dm_dev_type getCableType(u_int8_t id)
     switch (id) {
     case 0xd:
     case 0x11:
-    case 0x19: // Stallion2
     case 0xe:
     case 0xc:
         return DM_QSFP_CABLE;
 
     case 0x3:
         return DM_SFP_CABLE;
-
+    case 0x18:
+    case 0x19:  // Stallion2
+    case 0x1e:
+        return DM_CMIS_CABLE;
     default:
         return DM_UNKNOWN;
     }
@@ -301,6 +305,24 @@ static struct device_info g_devs_info[] = {
         "CableQSFPaging",       //name
         -1,                     //port_num
         DM_QSFP_CABLE           //dev_type
+    },
+    {
+        DeviceCableCMIS,        //dm_id
+        0x19,                   //hw_dev_id
+        0,                      //hw_rev_id
+        -1,                     //sw_dev_id
+        "CableCMIS",            //name
+        -1,                     //port_num
+        DM_CMIS_CABLE           //dev_type
+    },
+    {
+        DeviceCableCMISPaging,   //dm_id
+        0x19,                   //hw_dev_id
+        0xab,                   //hw_rev_id
+        -1,                     //sw_dev_id
+        "CableCMISPaging",       //name
+        -1,                     //port_num
+        DM_CMIS_CABLE           //dev_type
     },
     {
         DeviceCableSFP,         //dm_id
@@ -531,9 +553,10 @@ int dm_get_device_id(mfile *mf,
         *ptr_hw_dev_id = 0xffff;
         u_int8_t id = EXTRACT(dword, 0, 8);
         enum dm_dev_type cbl_type = getCableType(id);
+        u_int8_t paging;
         if (cbl_type == DM_QSFP_CABLE) {
             // Get Byte 2 bit 2 ~ bit 18 (flat_mem : upper memory flat or paged. 0=paging, 1=page 0 only)
-            u_int8_t paging = EXTRACT(dword, 18, 1);
+            paging = EXTRACT(dword, 18, 1);
             //printf("DWORD: %#x, paging: %d\n", dword, paging);
             if (paging == 0) {
                 *ptr_dm_dev_id = DeviceCableQSFPaging;
@@ -557,6 +580,14 @@ int dm_get_device_id(mfile *mf,
                 if (byte) {
                     *ptr_dm_dev_id = DeviceCableSFP51Paging;
                 }
+            }
+        } else if (cbl_type == DM_CMIS_CABLE) {
+            // Get Byte 2 bit 7 ~ bit 23 (flat_mem : upper memory flat or paged. 0=paging, 1=page 0 only)
+            paging = EXTRACT(dword, 23, 1);
+            if (paging == 0) {
+                *ptr_dm_dev_id = DeviceCableCMISPaging;
+            } else {
+                *ptr_dm_dev_id = DeviceCableCMIS;
             }
         } else {
             *ptr_dm_dev_id = DeviceUnknown;
@@ -654,7 +685,7 @@ int dm_dev_is_hca(dm_dev_id_t type)
 
 int dm_dev_is_200g_speed_supported_hca(dm_dev_id_t type)
 {
-    bool isBlueField = (type == DeviceBlueField || type == DeviceBlueField2);
+    bool isBlueField = (type == DeviceBlueField || type == DeviceBlueField2 || type == DeviceBlueField3);
     return !isBlueField && (dm_dev_is_hca(type) && (get_entry(type)->hw_dev_id >= get_entry(DeviceConnectX6)->hw_dev_id));
 }
 
@@ -673,9 +704,21 @@ int dm_dev_is_bridge(dm_dev_id_t type)
     return get_entry(type)->dev_type == DM_BRIDGE;
 }
 
+int dm_dev_is_qsfp_cable(dm_dev_id_t type) {
+    return get_entry(type)->dev_type == DM_QSFP_CABLE;
+}
+
+int dm_dev_is_sfp_cable(dm_dev_id_t type) {
+    return get_entry(type)->dev_type == DM_SFP_CABLE;
+}
+
+int dm_dev_is_cmis_cable(dm_dev_id_t type) {
+    return get_entry(type)->dev_type == DM_CMIS_CABLE;
+}
+
 int dm_dev_is_cable(dm_dev_id_t type)
 {
-    return (get_entry(type)->dev_type == DM_QSFP_CABLE || get_entry(type)->dev_type == DM_SFP_CABLE);
+    return (dm_dev_is_qsfp_cable(type) || dm_dev_is_sfp_cable(type) || dm_dev_is_cmis_cable(type));
 }
 
 u_int32_t dm_get_hw_dev_id(dm_dev_id_t type)
