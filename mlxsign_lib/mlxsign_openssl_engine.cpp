@@ -92,8 +92,10 @@ OpensslEngineSigner::~OpensslEngineSigner()
     EVP_cleanup();
     ERR_free_strings();
     CRYPTO_cleanup_all_ex_data();
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
     OPENSSL_thread_stop();
     OPENSSL_cleanup();
+#endif
 }
 
 string OpensslEngineSigner::getOpenSSLError()
