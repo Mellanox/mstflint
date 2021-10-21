@@ -363,7 +363,7 @@
 #define MAX_LOCAL_PORT_ETH          64
 #define MAX_LOCAL_PORT_IB           36
 #define MAX_LOCAL_PORT_QUANTUM      82
-#define MAX_LOCAL_PORT_QUANTUM2     128
+#define MAX_LOCAL_PORT_QUANTUM2     130
 #define MAX_LOCAL_PORT_SPECTRUM2    128
 #define MAX_LOCAL_PORT_SPECTRUM4    256
 
@@ -379,7 +379,9 @@
 
 #define MAX_SBYTE                   127
 #define MIN_SBYTE                   -128
-#define MAX_LABEL_PORT_LENGTH       5
+#define MAX_INPUT_LENGTH            7
+#define SECOND_LEVEL_PORT_ACCESS    2
+#define THIRD_LEVEL_PORT_ACCESS     3
 
 // mlxlink commander enums
 enum PPAOS_ADMIN {

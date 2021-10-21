@@ -335,7 +335,7 @@ void MlxlinkUi::validatePCIeParams()
                 _mlxlinkCommander->_userInput._sendDpn = true;
             }
         }
-        if (_mlxlinkCommander->_userInput._specifiedPort) {
+        if (_mlxlinkCommander->_userInput._portSpecified) {
             if (dpnFlags) {
                 throw MlxRegException("For PCIE port, either port flag or depth, pcie_index and node flags should be specified");
            }
@@ -891,19 +891,7 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         return PARSE_OK;
     } else if (name == LABEL_PORT_FLAG) {
         _mlxlinkCommander->checkStrLength(value);
-        if (endsWith(value.c_str(), "/1") || endsWith(value.c_str(), "/2")
-            || endsWith(value.c_str(), "/3")
-            || endsWith(value.c_str(), "/4")
-            || endsWith(value.c_str(), "/5")
-            || endsWith(value.c_str(), "/6")
-            || endsWith(value.c_str(), "/7")
-            || endsWith(value.c_str(), "/8")) {
-            _mlxlinkCommander->_userInput._splitPort = value[value.length() - 1] - '0';
-            value.erase(value.size() - 2);
-            _mlxlinkCommander->_splitted = true;
-        }
-        _mlxlinkCommander->strToUint32((char*) value.c_str(), _mlxlinkCommander->_userInput._labelPort);
-        _mlxlinkCommander->_userInput._specifiedPort = true;
+        _mlxlinkCommander->handlePortStr(value);
         return PARSE_OK;
     } else if (name == DEPTH_FLAG) {
         _mlxlinkCommander->strToUint32((char*) value.c_str(), _mlxlinkCommander->_userInput._depth);
