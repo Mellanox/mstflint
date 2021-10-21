@@ -4337,21 +4337,21 @@ FlintStatus BbSubCommand::executeCommand()
 SgSubCommand::SgSubCommand()
 {
     _name = "sg";
-    _desc = "Set GUIDs.";
+    _desc = "guids_num=<num|num_port1,num_port2> step_size=<size|size_port1,size_port2> Set GUIDs.";
     _extendedDesc = "Set GUIDs/MACs/UIDs in the given device/image.\n"
-                    "Use -guid(s), -mac(s) and -uid(s) flags to set the desired values.\n"
-                    "- On pre-ConnectX devices, the sg command  is used in production to apply GUIDs/MACs values to"
-                    " cards that were pre-burnt with blank GUIDs. It is not meant for use in field.\n"
-                    "- On 4th generation devices, this command can operate on both image file and image on flash.\n"
-                    "If the GUIDs/MACs/UIDs in the image on flash are non-blank, flint will re-burn the current"
-                    " image using the given GUIDs/MACs/UIDs.";
+        "Use -guid(s), -mac(s) and -uid(s) flags to set the desired values.\n"
+        "- On pre-ConnectX devices, the sg command  is used in production to apply GUIDs/MACs values to"
+        " cards that were pre-burnt with blank GUIDs. It is not meant for use in field.\n"
+        "- On 4th generation devices, this command can operate on both image file and image on flash.\n"
+        "If the GUIDs/MACs/UIDs in the image on flash are non-blank, flint will re-burn the current"
+        " image using the given GUIDs/MACs/UIDs.";
     _flagLong = "sg";
     _flagShort = "";
-    _param = "[guids_num=<num|num_port1,num_port2> step_size=<size|size_port1,size_port2>] | [nocrc]";
+    _param = "[nocrc]";
     _paramExp = "nocrc: (optional) When specified the flint would not update the full image crc after changing the guids\n"
-                "guids_num: (optional) number of GUIDs to be allocated per physical port (FS3 Only)\n"
-                "step_size: (optional) step size between GUIDs (FS3 Only)\n"
-                "Note: guids_num/step_size values can be specified per port or for both ports";
+        "guids_num: (optional) number of GUIDs to be allocated per physical port (FS3 Only)\n"
+        "step_size: (optional) step size between GUIDs (FS3 Only)\n"
+        "Note: guids_num/step_size values can be specified per port or for both ports";
     _example = FLINT_NAME " -d " MST_DEV_EXAMPLE1 " -guid 0x0002c9000100d050 sg" "\n"
                FLINT_NAME " -d " MST_DEV_EXAMPLE4 " -guid 0x0002c9000100d050 -mac 0x0002c900d050 sg";
     _v = Wtv_Dev_Or_Img;
@@ -6246,15 +6246,15 @@ FlintStatus CheckSumSubCommand::executeCommand()
 TimeStampSubCommand::TimeStampSubCommand()
 {
     _name = "time stamp";
-    _desc = "FW time stamping.";
+    _desc = "<timestamp> <FW version>  FW time stamping.";
     _extendedDesc = "set/query/reset time stamp on device/image.";
     _flagLong = "timestamp";
     _flagShort = "ts";
-    _param = "<set|query|reset> [timestamp] [FW version]";
+    _param = "[set/query/reset] ";
     _paramExp = "set <timestamp> [FW version] : set the specified timestamp. if set on device FW version must be specified\n"
-                "timestamp should comply with ISO 8601 format and provided with UTC timezone: YYYY-MM-DDThh:mm:ssZ\n"
-                "query : query device/image to view the timestamp\n"
-                "reset : reset the timestamp, remove the timestamp from device/image.\n";
+        "timestamp should comply with ISO 8601 format and provided with UTC timezone: YYYY-MM-DDThh:mm:ssZ\n"
+        "query : query device/image to view the timestamp\n"
+        "reset : reset the timestamp, remove the timestamp from device/image.\n";
     _example = FLINT_NAME " -d " MST_DEV_EXAMPLE4 " ts set 2015-12-24T14:52:33Z 14.12.1100\n"
                FLINT_NAME " -d " MST_DEV_EXAMPLE4 " ts reset\n"
                FLINT_NAME " -i ./fw4115.bin ts set\n"
