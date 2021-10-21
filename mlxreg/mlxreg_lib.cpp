@@ -181,7 +181,7 @@ MlxRegLibStatus MlxRegLib::showRegisters(std::vector<string> &regs)
 ************************************/
 int MlxRegLib::sendMaccessReg(u_int16_t regId, int method, std::vector<u_int32_t> &data)
 {
-    int status;
+    int status = 0;
     int rc;
     std::vector<u_int32_t> temp_data;
     copy(data.begin(), data.end(), back_inserter(temp_data));
