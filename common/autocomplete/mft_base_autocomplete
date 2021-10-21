@@ -194,19 +194,33 @@ _printDebug () {
 }
 
 _getLastTypeFourValues () {
-  currentVal="${COMP_WORDS[COMP_CWORD]}"
-  str=$1
-  curLength=${#str}
-  currValLen=${#currentVal}
-  curLength=$(( currValLen - curLength ))
-
-  echo "${currentVal: 0 : $curLength}"
+  if [[ $cur == "" ]]; then
+      echo "";
+  else
+      currentVal="${COMP_WORDS[COMP_CWORD]}"
+      str=$1
+      curLength=${#str}
+      currValLen=${#currentVal}
+      curLength=$(( currValLen - curLength ))
+      echo "${currentVal: 0 : $curLength}";
+   fi;
 }
 
 _deleteSpeedsFromCur () {
-  local cur=$1
+  local cur="$1"
   speedsList=( $(compgen -W "$2" ) )
-  for speed in  ${speedsList[@]}; do cur=$( echo $cur | sed "s/$speed//g" ); done
+  found=0
+  subOfOtherSpeed=0
+  for speed in  ${speedsList[@]}; do
+          if [[ $speed == $cur ]]; then
+              found=1;
+          elif [[ $speed == *"$cur"* ]]; then
+              subOfOtherSpeed=1
+         fi;
+  done;
+
+  if [[ $found == 1 ]] && [[ $subOfOtherSpeed == 0 ]]; then cur=""; fi;
+  if [[ $found == 0 ]] && [[ $subOfOtherSpeed == 0 ]]; then for speed in  ${speedsList[@]}; do cur=$( echo $cur | sed "s/$speed//g" ); done; fi;
 
   echo $cur
 }
@@ -232,7 +246,6 @@ _getCurrentTypeFour() {
   cur="$3";
   sonsList="$( _getSonsFromHash $prev )";
   if [[ $( _getLastCharOfString $cur ) == "," ]] ; then cur="";  else cur="$( _getLastStringElemnentOnDelimeter "$cur" "," )"; fi;
-  if [[ $( _isWordslistContainsWord "$sonsList" "$cur" ) -eq 1 ]]; then cur=""; fi;
   cur=$( _deleteSpeedsFromCur "$cur" "$sonsList"  );
 
   echo "$cur"
@@ -249,10 +262,15 @@ _getCurrent() {
 
 _isLastValPartOfSons () {
   speedsList=( $(compgen -W "$1" ) )
-  lastVal=$2
-  local ret=0
-  for speed in  ${speedsList[@]}; do if [[ $speed == *"$lastVal"* ]]; then ret=1; fi ; done
+  isUpperCaseNeed=$( _getUpperNeedFromHash $3 )
+  if [[ $isUpperCaseNeed == 1 ]]; then
+      lastVal=$(echo $2 | awk '{print toupper($0)}') # $2
+      else lastVal=$2
 
+  fi;
+
+  local ret=0
+  for speed in  ${speedsList[@]}; do if [[ $speed == "$lastVal"* ]]; then ret=1; fi ; done
   echo $ret
 }
 
@@ -274,7 +292,7 @@ _getSonsFromTypeFour () {
     local lastVal="$3"
     local speedShown=""
     local extraSons="$( _getExtraFromHash $prev )"
-    if [[ $( _isLastValPartOfSons "$sonsList" "$lastVal" ) -eq 0 ]]; then
+    if [[ $( _isLastValPartOfSons "$sonsList" "$lastVal" "$prev" ) -eq 0 ]]; then
         sonsList="StringVal"
     elif [[ $( _isWordslistContainsWord "$sonsList" "$( _getLastStringElemnentOnDelimeter "$cur" "," )" )  -eq 1 ]] && [[ $( _getLastCharOfString $cur ) != "," ]]; then
         if [[ $extraSons == "" ]]; then
@@ -284,7 +302,12 @@ _getSonsFromTypeFour () {
                 sonsList=",";
             fi;
         else
-            sonsList=$( _addDelimiterToStringList "$sonsList" "," );sonsList="$sonsList ""$extraSons";
+            tempCur=$( _getCurrent $prev 4 );
+            if [[ $tempCur == "" ]]; then
+                sonsList=$( _addDelimiterToStringList "$sonsList" "," );sonsList="$sonsList ""$extraSons";
+            else
+                sonsList="$sonsList ""$extraSons";
+            fi;
         fi
     elif [[ $( _isWordslistContainsWord "${COMP_WORDS[@]}" "," ) -eq 1 ]]; then sonsList="$sonsList ""$extraSons";
     fi;
@@ -299,7 +322,11 @@ _changeShortCutsOnCmd () {
   local cmdLine="$1"
 
   cmdLines=( $(compgen -W "$cmdLine" ) )
-  for line in  ${cmdLines[@]}; do shortCutsVal="$( _getSonFromShortCutsFromHash "$line" )"; if [[ $shortCutsVal != "" ]]; then  cmdLine=$( echo $cmdLine | sed "s/$line/$shortCutsVal/g" );fi; done
+  for line in  ${cmdLines[@]}; do
+          if [[ $( _isWordslistContainsWord "$( _getShortCutsListFromHash )" "$line" ) -eq 1 ]]; then
+               shortCutsVal="$( _getSonFromShortCutsFromHash "$line" )"; if [[ $shortCutsVal != "" ]]; then  cmdLine=$( echo $cmdLine | sed "s/$line/$shortCutsVal/g" );fi;
+          fi;
+  done
 
   echo "$cmdLine"
 }
@@ -368,11 +395,15 @@ _isCompoptNeeded () {
 }
 
 _getFourTypeOneValComplite () {
-
+ compreplyVal=$1
  if [[ $( _isWordslistContainsWord "$( _getSonsFromHash $prev )" "$compreplyVal" ) ]]; then
-    compreplyVal="$( _getLastTypeFourValues $cur)""$compreplyVal";
-    else
+     prefix="$( _getLastTypeFourValues $cur)"
+     compreplyVal=$( echo "$compreplyVal" | sed "s/[^ ]* */$prefix&/g" )
+ else
     compreplyVal=" $compreplyVal";
+ fi;
+ if [[ $(_isWordslistContainsWord "$( _getSonsFromHash $prev )" $cur ) == 1 ]]; then
+     compreplyVal="$compreplyVal "$cur", "$extraSons;
  fi;
 
   echo $compreplyVal
@@ -398,14 +429,13 @@ _getCompreplyVal () {
   extraSonsList=( $extraSons )
   extraSonsLen=${#extraSonsList[@]}   #$( _getLenOfListFromString  "$( _getExtraFromHash $prev )")
   local lastCommandIndex=$( _getLastCommandIndexFromHash $prev )
-  
   if [[ isUpperCaseNeed -eq 1 ]] && [[ $( _isLastCommand $index $(( lastCommandIndex + 1 )) ) -eq 1 ]]; then
       compreplyVal="$(compgen -W "$sonsList" -- $(echo ${cur} | awk '{print toupper($0)}') )";
   else
       compreplyVal="$(compgen -W "$sonsList" -- ${cur} )";
   fi
   compreplyValList=( $compreplyVal )
-  if [[ nodeType -eq 4 ]] && [[ ${#compreplyValList[@]} -eq 1 ]]; then compreplyVal="$( _getFourTypeOneValComplite $compreplyVal)"; fi;
+  if [[ nodeType -eq 4 ]] && [[ $( _getLastCharOfString $cur ) != "," ]]; then compreplyVal="$( _getFourTypeOneValComplite "$compreplyVal" "$extraSons" "$sonsList")"; fi;
   if [[ $sonsList != "StringVal" ]]; then
     if [[  $sonsList != "StringValSpace" ]]; then
         COMPREPLY=( $compreplyVal  );
@@ -437,7 +467,7 @@ _runAutoComplete () {
     if [[ ${cur} == \/* || ${cur} == \.\/* ]] ; then
         COMPREPLY=()
         _filedir
-	return 0
+        return 0
     fi;
     local prev=""
     local sonsList=""
@@ -445,7 +475,7 @@ _runAutoComplete () {
     local index=1
     while [[ $sonsList == "" ]]; do
         if [[ index -gt COMP_CWORD ]]; then return 0; fi;
-    	prev="${COMP_WORDS[COMP_CWORD-$index]}"
+        prev="${COMP_WORDS[COMP_CWORD-$index]}"
         prev="$( _getFullNodeIfShortcut $prev )"
         nodeType=$( _getNodeTypeIfExist $prev );
         cur=$(_getCurrent $prev $nodeType)
