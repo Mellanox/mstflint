@@ -46,6 +46,7 @@
 #include "mlxcfg_commander.h"
 #include "mlxcfg_view.h"
 #include "mlxcfg_utils.h"
+#include <mft_utils.h>
 
 using namespace std;
 
@@ -55,8 +56,6 @@ using namespace std;
 #define IDENT3 "\t\t"
 #define IDENT4 IDENT2 IDENT
 
-#define FIFTH_GENERATION_LIST "Connect-IB/Connect-X4/LX"
-#define FOURTH_GENERATION_LIST "ConnectX3/Pro"
 
 static void printFlagLine(string flag_s, string flag_l, string param, string desc)
 {
@@ -97,6 +96,7 @@ void MlxCfg::printHelp()
     printFlagLine("u", "key_uuid", "UUID", "keypair uuid");
     printFlagLine("eng", "openssl_engine", "ENGINE NAME", "OpenSSL engine name");
     printFlagLine("k", "openssl_key_id", "IDENTIFIER", "OpenSSL key identifier");
+    printFlagLine("t", "device_type", "switch/hca", "Specify the device type");
 
     //print commands
     printf("\n");
@@ -106,9 +106,9 @@ void MlxCfg::printHelp()
     printf(IDENT2 "%-24s : %s\n", "q|query", "query supported configurations.");
     printf(IDENT2 "%-24s : %s\n", "r|reset", "reset all configurations to their default value.");
     printf(IDENT2 "%-24s : %s\n", "s|set", "set configurations to a specific device.");
-    printf(IDENT2 "%-24s : %s\n", "set_raw", "set raw configuration file.(only "  FIFTH_GENERATION_LIST ".)");
-    printf(IDENT2 "%-24s : %s\n", "get_raw", "get raw configuration.(only "  FIFTH_GENERATION_LIST ".)");
-    printf(IDENT2 "%-24s : %s\n", "backup", "backup configurations to a file (only "  FIFTH_GENERATION_LIST ".). Use set_raw command to restore file.");
+    printf(IDENT2 "%-24s : %s\n", "set_raw", "set raw configuration file(5th Generation and above).");
+    printf(IDENT2 "%-24s : %s\n", "get_raw", "get raw configuration (5th Generation and above).");
+    printf(IDENT2 "%-24s : %s\n", "backup", "backup configurations to a file. Use set_raw command to restore file (5th Generation and above).");
     printf(IDENT2 "%-24s : %s\n", "gen_tlvs_file", "Generate List of all TLVs. TLVs output file name must be specified. (*)");
     printf(IDENT2 "%-24s : %s\n", "g <en_xml_template>", "Generate XML template. TLVs input file name and XML output file name must be specified. (*)");
     printf(IDENT2 "%-24s : %s\n", "xml2raw", "Generate Raw file from XML file. XML input file name and raw output file name must be specified. (*)");
@@ -135,7 +135,10 @@ void MlxCfg::printHelp()
     printf("\n");
     printf(IDENT "Supported devices:\n");
     printf(IDENT2 "4th Generation devices: ConnectX3, ConnectX3-Pro (FW 2.31.5000 and above).\n");
-    printf(IDENT2 "5th Generation devices: ConnectIB, ConnectX4, ConnectX4-LX, ConnectX5.\n");
+    printf(IDENT2 "5th Generation devices: ConnectIB, ConnectX4, ConnectX4-LX, ConnectX5, connectX5-Ex.\n");
+    printf(IDENT2 "6th Generation devices: BlueField, COnnectX6, ConnectX6-DX\n");
+    printf(IDENT2 "Switches: Switch-IB, Switch-IB2,Spectrum, Spectrum2, Quantum\n");
+
     printf("\n");
     printf(IDENT "Note: query device to view supported configurations by Firmware.\n");
     printf("\n");
@@ -345,7 +348,16 @@ mlxCfgStatus MlxCfg::extractSetCfgArgs(int argc, char *argv[])
     return MLX_CFG_OK;
 }
 
-
+Device_Type MlxCfg::getDeviceTypeFromString(string inStr){
+    mft_utils::to_lowercase(inStr);
+    if (inStr == "switch") {
+        return Device_Type::Switch;
+    }else if (inStr == "hca") {
+        return Device_Type::HCA;
+    }else{
+        return Device_Type::UNSUPPORTED_DEVICE;
+    }
+}
 
 mlxCfgStatus MlxCfg::parseArgs(int argc, char *argv[])
 {
@@ -363,6 +375,15 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char *argv[])
                 return err(true, "missing device name");
             }
             _mlxParams.device = argv[i];
+        } else if (arg == "-t" || arg == "--device_type") {
+            if (++i == argc) {
+                return err(true, "missing device type");
+            }
+            Device_Type dType = getDeviceTypeFromString(argv[i]);
+            if (dType == Device_Type::UNSUPPORTED_DEVICE) {
+                return err(true, "Unsupported device name given, please specify \"switch\" or \"hca\" device type");
+            }
+            _mlxParams.deviceType = dType;
         } else if (arg == "-b" || arg == "--db") {
             if (++i == argc) {
                 return err(true, "missing database file name");

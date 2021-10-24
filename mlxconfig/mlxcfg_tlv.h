@@ -100,7 +100,7 @@ public:
     u_int32_t _maxTlvVersionSuppByFw;
 
     TLVConf(int columnsCount, char **dataRow, char **headerRow);
-
+    ~TLVConf();
     bool isMlxconfigSupported();
     void getView(TLVConfView& tlvConfView);
     bool isFWSupported(mfile *mf, bool read_write);

@@ -65,6 +65,12 @@ typedef enum {
     Mc_UnknownCmd
 } mlxCfgCmd;
 
+typedef enum {
+    UNSUPPORTED_DEVICE = -1,
+    HCA = 0,
+    Switch = 1
+} Device_Type;
+
 typedef struct QueryOutputItem {
     string mlxconfigName;
     u_int32_t nextVal;
@@ -89,6 +95,7 @@ public:
     ~MlxCfgParams() {}
 
     std::string device;
+    Device_Type deviceType;
     std::string rawTlvFile;
     std::string NVInputFile;
     std::string NVOutputFile;
@@ -121,6 +128,7 @@ private:
     void printUsage();
     void printOpening(const char *dev, int devIndex);
     void printConfHeader(bool showDefualt, bool showNew, bool showCurrent);
+    Device_Type getDeviceTypeFromString(string inStr);
     mlxCfgStatus parseArgs(int argc, char *argv[]);
     //Helper functions for parse args
     mlxCfgStatus extractNVInputFile(int argc, char *argv[]);
