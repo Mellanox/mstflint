@@ -145,7 +145,7 @@ void GenericCommander::supportsNVData()
     return;
 }
 
-GenericCommander::GenericCommander(mfile *mf, string dbName)
+GenericCommander::GenericCommander(mfile *mf, string dbName, bool isSwitch)
     : Commander(mf), _dbManager(NULL)
 {
     if (_mf != NULL) {
@@ -153,7 +153,7 @@ GenericCommander::GenericCommander(mfile *mf, string dbName)
     }
 
     if (dbName.empty()) {
-        dbName = Commander::getDefaultDBName(false);
+        dbName = Commander::getDefaultDBName(isSwitch);
     }
 
     _dbManager = new MlxcfgDBManager(dbName);
@@ -337,9 +337,11 @@ void GenericCommander::printParamViews(FILE *f, vector<ParamView>& v)
             break;
         }
         size_t len = (*pIt).mlxconfigName.length();
-        if ((*pIt).mlxconfigName.rfind("_P2") == len - 3) {
-            fprintf(f, "%20s%-40s\n\n", " ", s.c_str());
-            continue;
+        if ((*pIt).mlxconfigName.rfind("_P1") == std::string::npos) {
+            if ((*pIt).mlxconfigName.rfind("_P") == len - 3) {
+                fprintf(f, "%20s%-40s\n", " ", s.c_str());
+                continue;
+            }
         }
         size_t prevPos = 0;
         size_t pos = (*pIt).description.find("\\;", 0);
@@ -457,10 +459,21 @@ bool GenericCommander::checkDependency(TLVConf *cTLV, string dStr)
         } else {
             string dTLVName = (*it).substr(0, dotPos).replace(0, 1, "");
             string dParamName = (*it).substr(dotPos + 1);
-            TLVConf *dTLV = _dbManager->getTLVByName(dTLVName, cTLV->_port);
+            //to allow cross class/port dependency we need to check dependency for port 0 and for port 1 (higher port numbers will act the same)
+            int lookForPorts[] = {cTLV->_port, (cTLV->_port==0) ? 1 : 0 };
+            TLVConf *dTLV = NULL;
+            for (int ports=0; ports<2; ports++) {
+                try {
+                    dTLV = _dbManager->getTLVByName(dTLVName, lookForPorts[ports]);
+                    if (dTLV != NULL) {
+                        break;
+                    }
+                } catch(MlxcfgTLVNotFoundException e) { // if TLV not found exception continue to search
+                    continue;
+                }
+            }
             if (dTLV == NULL) {
-                throw MlxcfgException("The TLV configuration %s was not found",
-                                      dTLVName.c_str());
+                throw MlxcfgTLVNotFoundException(dTLVName.c_str());
             }
             if (!dTLV->isFWSupported(_mf, false)) {
                 return false;
@@ -1049,65 +1062,70 @@ void GenericCommander::XML2TLVConf(const string& xmlContent, vector<TLVConf*>& t
             }
 
             tlvConf = _dbManager->getAndCreateTLVByName((char*)currTlv->name, port);
+            try{
+                if (isAllPorts) {
+                    tlvConf->setAttr(PORT_ATTR, ALL_ATTR_VAL);
+                }
+                GET_AND_SET_ATTR(writerIdAttr, currTlv, WRITER_ID_ATTR)
+                GET_AND_SET_ATTR(ovrEnAttr, currTlv, OVR_EN_ATTR)
+                GET_AND_SET_ATTR(rdEnAttr, currTlv, RD_EN_ATTR)
+                GET_AND_SET_ATTR(hostAttr, currTlv, HOST_ATTR)
+                GET_AND_SET_ATTR(funcAttr, currTlv, FUNC_ATTR)
 
-            if (isAllPorts) {
-                tlvConf->setAttr(PORT_ATTR, ALL_ATTR_VAL);
-            }
-            GET_AND_SET_ATTR(writerIdAttr, currTlv, WRITER_ID_ATTR)
-            GET_AND_SET_ATTR(ovrEnAttr, currTlv, OVR_EN_ATTR)
-            GET_AND_SET_ATTR(rdEnAttr, currTlv, RD_EN_ATTR)
-            GET_AND_SET_ATTR(hostAttr, currTlv, HOST_ATTR)
-            GET_AND_SET_ATTR(funcAttr, currTlv, FUNC_ATTR)
-
-            //loop over the parameters list
-            vector<string> collectedParams;
-            currParam = currTlv->xmlChildrenNode;
-            map<string, map<u_int32_t, string> > arrayValues;
-            while (currParam) {
-                IGNORE_UNUSEFUL_NODE(currParam)
-                xmlVal = xmlNodeListGetString(doc, currParam->xmlChildrenNode, 1);
-                indexAttr = xmlGetProp(currParam, (const xmlChar*)INDEX_ATTR);
-                if (xmlVal) {
-                    if (indexAttr) {
-                        string indexAttrStr = (const char*)indexAttr;
-                        vector<u_int32_t> indexes;
-                        extractIndexes(indexAttrStr, indexes);
-                        VECTOR_ITERATOR(u_int32_t, indexes, it) {
-                            arrayValues[(char*)currParam->name][*it] = (char*)xmlVal;
+                //loop over the parameters list
+                vector<string> collectedParams;
+                currParam = currTlv->xmlChildrenNode;
+                map<string, map<u_int32_t, string> > arrayValues;
+                while (currParam) {
+                    IGNORE_UNUSEFUL_NODE(currParam)
+                    xmlVal = xmlNodeListGetString(doc, currParam->xmlChildrenNode, 1);
+                    indexAttr = xmlGetProp(currParam, (const xmlChar*)INDEX_ATTR);
+                    if (xmlVal) {
+                        if (indexAttr) {
+                            string indexAttrStr = (const char*)indexAttr;
+                            vector<u_int32_t> indexes;
+                            extractIndexes(indexAttrStr, indexes);
+                            VECTOR_ITERATOR(u_int32_t, indexes, it) {
+                                arrayValues[(char*)currParam->name][*it] = (char*)xmlVal;
+                            }
+                        } else {
+                            if (find(collectedParams.begin(), collectedParams.end(), (char*)currParam->name)
+                                != collectedParams.end()) {
+                                throw MlxcfgException("Duplicate use of same parameter: %s\n",
+                                                    (char*)currParam->name);
+                            }
+                            collectedParams.push_back((char*)currParam->name);
+                            tlvConf->updateParamByName((char*)currParam->name, (char*)xmlVal);
                         }
                     } else {
-                        if (find(collectedParams.begin(), collectedParams.end(), (char*)currParam->name)
-                            != collectedParams.end()) {
-                            throw MlxcfgException("Duplicate use of same parameter: %s\n",
-                                                  (char*)currParam->name);
+                        if (tlvConf->isAStringParam((char*)currParam->name)) {
+                            tlvConf->updateParamByName((char*)currParam->name, "");
+                        } else {
+                            throw MlxcfgException(
+                                    "The Parameter %s of the configuration %s does not have value",
+                                    (char*)currParam->name,
+                                    tlvConf->_name.c_str());
                         }
-                        collectedParams.push_back((char*)currParam->name);
-                        tlvConf->updateParamByName((char*)currParam->name, (char*)xmlVal);
                     }
-                } else {
-                    if (tlvConf->isAStringParam((char*)currParam->name)) {
-                        tlvConf->updateParamByName((char*)currParam->name, "");
-                    } else {
-                        throw MlxcfgException(
-                                  "The Parameter %s of the configuration %s does not have value",
-                                  (char*)currParam->name,
-                                  tlvConf->_name.c_str());
+                    XMLFREE_AND_SET_NULL(xmlVal);
+                    XMLFREE_AND_SET_NULL(indexAttr)
+                    currParam = currParam->next;
+                }
+                //process arrayValues
+                for (map<string, map<u_int32_t, string> >::iterator p = arrayValues.begin();
+                    p != arrayValues.end(); ++p) {
+                    //TODO check validity of indices
+                    string paramName = p->first;
+                    vector<string> vals(p->second.size());
+                    for (map<u_int32_t, string>::iterator v = p->second.begin();
+                        v != p->second.end(); ++v) {
+                        vals[v->first] = v->second;
                     }
+                    tlvConf->updateParamByName(paramName, vals);
                 }
-                XMLFREE_AND_SET_NULL(xmlVal);
-                currParam = currParam->next;
-            }
-            //process arrayValues
-            for (map<string, map<u_int32_t, string> >::iterator p = arrayValues.begin();
-                 p != arrayValues.end(); ++p) {
-                //TODO check validity of indices
-                string paramName = p->first;
-                vector<string> vals(p->second.size());
-                for (map<u_int32_t, string>::iterator v = p->second.begin();
-                     v != p->second.end(); ++v) {
-                    vals[v->first] = v->second;
-                }
-                tlvConf->updateParamByName(paramName, vals);
+            }catch (MlxcfgException& e) {
+                delete tlvConf;
+                throw e;
             }
             tlvs.push_back(tlvConf);
             currTlv = currTlv->next;
@@ -1125,8 +1143,18 @@ void GenericCommander::XML2TLVConf(const string& xmlContent, vector<TLVConf*>& t
         XMLFREE_AND_SET_NULL(xmlVal)
         xmlFreeDoc(doc);
         doc = NULL;
+        VECTOR_ITERATOR(TLVConf*, tlvs, itTlvConf) {
+            delete *itTlvConf;
+        }
         throw e;
-    }
+    } 
+    XMLFREE_AND_SET_NULL(writerIdAttr)
+    XMLFREE_AND_SET_NULL(portAttr)
+    XMLFREE_AND_SET_NULL(ovrEnAttr)
+    XMLFREE_AND_SET_NULL(rdEnAttr)
+    XMLFREE_AND_SET_NULL(hostAttr)
+    XMLFREE_AND_SET_NULL(funcAttr)
+    XMLFREE_AND_SET_NULL(xmlVal)
     xmlFreeDoc(doc);
 #else
     (void) xmlContent;
@@ -1150,9 +1178,6 @@ void GenericCommander::XML2Raw(const string& xmlContent, string& raw)
     }
 
     VECTOR_ITERATOR(TLVConf*, tlvs, tlvConf) {
-        VECTOR_ITERATOR(Param*, (*tlvConf)->_params, param) {
-            delete *param;
-        }
         delete *tlvConf;
     }
 }
@@ -1164,6 +1189,10 @@ void GenericCommander::TLVConf2Bin(const vector<TLVConf*>& tlvs, vector<u_int32_
         (*tlvConf)->genBin(tmpBuff, withHeader);
         buff.insert(buff.end(), tmpBuff.begin(), tmpBuff.end());
     }
+
+    CONST_VECTOR_ITERATOR(TLVConf*, tlvs, tlvConf) {
+        delete *tlvConf;
+    }
 }
 
 void GenericCommander::XML2Bin(const string& xml, vector<u_int32_t>& buff, bool withHeader)
@@ -1173,13 +1202,6 @@ void GenericCommander::XML2Bin(const string& xml, vector<u_int32_t>& buff, bool 
     XML2TLVConf(xml, tlvs);
 
     TLVConf2Bin(tlvs, buff, withHeader);
-
-    VECTOR_ITERATOR(TLVConf*, tlvs, tlvConf) {
-        VECTOR_ITERATOR(Param*, (*tlvConf)->_params, param) {
-            delete *param;
-        }
-        delete *tlvConf;
-    }
 }
 
 void GenericCommander::sign(vector<u_int32_t>& buff,
@@ -1203,6 +1225,11 @@ void GenericCommander::sign(vector<u_int32_t>& buff,
         MlxSign::OpensslEngineSigner engineSigner(openssl_engine, openssl_key_identifier);
         int rc = engineSigner.init();
         if (!rc) {
+            int keySize = engineSigner.getPrivateKeySize();
+            if( (keySize != KEY_SIZE_256) && (keySize != KEY_SIZE_512) ) {
+                throw MlxcfgException("Invalid length of private key(%d bytes). It is recommanded to use 4096 bit key.\n",keySize);
+            }
+            // Init successfuly with valid key -> can continue to sign the massage
             rc = engineSigner.sign(bytesBuff, encDigest);
         }
         if (rc) {

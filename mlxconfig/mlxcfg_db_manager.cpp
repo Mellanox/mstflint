@@ -78,9 +78,6 @@ MlxcfgDBManager::~MlxcfgDBManager()
     VECTOR_ITERATOR(TLVConf*, fetchedTLVs, it) {
         delete *it;
     }
-    VECTOR_ITERATOR(Param*, fetchedParams, it) {
-        delete *it;
-    }
 
     if (!_db) {
         return;
@@ -281,7 +278,7 @@ TLVConf* MlxcfgDBManager::fetchTLVByName(string n, u_int8_t port)
             nc, port);
     t = getTLVByNameAux(n, port);
     if (!t) {
-        throw MlxcfgException("The TLV configuration %s was not found", nc);
+        throw MlxcfgTLVNotFoundException(nc);
     }
 
     //fetch the parameters
@@ -331,7 +328,7 @@ TLVConf* MlxcfgDBManager::getAndCreateTLVByName(string n, u_int8_t port)
     execSQL(selectAndCreateNewTLVCallBack, &tlv, SQL_SELECT_TLV_BY_NAME_AND_PORT,
             nc, port);
     if (!tlv) {
-        throw MlxcfgException("The TLV configuration %s was not found", nc);
+        throw MlxcfgTLVNotFoundException(nc);
     }
 
     //fetch the parameters

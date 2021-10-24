@@ -142,6 +142,14 @@ TLVConf::TLVConf(int columnsCount, char **dataRow, char **headerRow) :
     _buff.resize(_size, 0);
 }
 
+TLVConf::~TLVConf()
+{
+    VECTOR_ITERATOR(Param *, this->_params, param)
+    {
+        delete *param;
+    }
+}
+
 void TLVConf::getView(TLVConfView& tlvConfView)
 {
     tlvConfView.name = _mlxconfigName;

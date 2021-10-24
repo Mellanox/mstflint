@@ -505,5 +505,7 @@ MlxcfgException::MlxcfgException(const char *fmt, ...)
     _err = tmp;
 }
 
+MlxcfgTLVNotFoundException::MlxcfgTLVNotFoundException(const char* cTLVName) :
+    MlxcfgException("The TLV configuration %s was not found",cTLVName){}
 
 
