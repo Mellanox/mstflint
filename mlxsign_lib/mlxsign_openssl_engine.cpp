@@ -134,6 +134,12 @@ void OpensslEngineSigner::loadPrivateKey()
     {
         throw OpensslEngineException("Failed to load key from engine with key identifier:" + keyIdentifier, MlxSign::MLX_SIGN_RSA_KEY_ILLEGAL_OPENSSL_URI);
     }
+    privateKeySize = EVP_PKEY_size(key);
+}
+
+int OpensslEngineSigner::getPrivateKeySize()
+{
+    return privateKeySize;
 }
 
 void OpensslEngineSigner::createContext()

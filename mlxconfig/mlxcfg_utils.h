@@ -189,4 +189,10 @@ public:
     ~MlxcfgException() {};
 };
 
+class MlxcfgTLVNotFoundException : public MlxcfgException {
+    public:
+        MlxcfgTLVNotFoundException(const char* cTLVName);
+        ~MlxcfgTLVNotFoundException() {};
+};
+
 #endif /* MLXCFG_UTILS_H_ */

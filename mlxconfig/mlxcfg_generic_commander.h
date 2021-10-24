@@ -63,7 +63,7 @@ private:
     void genXMLTemplateAux(vector<string> tlvs, string& xmlTemplate,
                            bool allAttrs, bool withVal, bool defaultAttrVal);
 public:
-    GenericCommander(mfile *mf, string dbName);
+    GenericCommander(mfile *mf, string dbName, bool isSwitch=false);
     ~GenericCommander();
     void printLongDesc(FILE*);
     void queryParamViews(std::vector<ParamView>& paramsToQuery, QueryType qt = QueryNext);

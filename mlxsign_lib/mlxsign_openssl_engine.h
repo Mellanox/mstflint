@@ -43,6 +43,9 @@
 
 using namespace std;
 
+#define KEY_SIZE_256 256
+#define KEY_SIZE_512 512
+
 namespace MlxSign
 {
 
@@ -69,10 +72,12 @@ public:
     virtual ~OpensslEngineSigner();
     ErrorCode init();
     ErrorCode sign(const vector<u_int8_t> &msg, vector<u_int8_t> &signed_msg);
+    int getPrivateKeySize();
 
 private:
     EVP_MD_CTX *mdCtx;
     EVP_PKEY *key;
+    int privateKeySize;
     ENGINE *engine;
     string engineName;
     string keyIdentifier;
