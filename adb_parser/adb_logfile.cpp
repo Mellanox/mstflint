@@ -1,6 +1,5 @@
 /*
- *
- *  Copyright (C) Jan 2013, Mellanox Technologies Ltd.  ALL RIGHTS RESERVED.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -31,24 +30,40 @@
  * SOFTWARE.
  *
  *  Version: $Id$
- *
  */
 
-#ifndef BIT_OPS_H
-#define BIT_OPS_H
+#include "adb_logfile.h"
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <assert.h>
-#include <common/compatibility.h>
-#include <common/bit_slice.h>
-#include <common/tools_utils.h>
+#define WRITE   "w"
 
-/************************************/
-/************************************/
-/************************************/
-void print_raw(FILE *file, void *buff, int buff_len);
-u_int64_t pop_from_buf(const u_int8_t *buff, u_int32_t bit_offset, u_int32_t field_size);
-void push_to_buf(u_int8_t *buff, u_int32_t bit_offset, u_int32_t field_size, u_int64_t field_value);
-#endif // BIT_OPS_H
+LogFile::LogFile() : _logFile(NULL) {
+}
+
+void LogFile::init(string logFileName, bool allowMultipleExceptions) {
+    if (logFileName.compare("") != 0) {
+        _logFile = fopen(logFileName.c_str(), WRITE);
+        if (!_logFile) {
+            string  _lastError = "Can't open file (" + logFileName + ") for writing: "
+                    + strerror(errno);
+            if (allowMultipleExceptions) {
+                ExceptionHolder::insertNewException(ExceptionHolder::FATAL_EXCEPTION, _lastError);
+            } else {
+                throw AdbException(_lastError);
+            }
+        }
+    } else {
+        _logFile = NULL;
+    }
+}
+
+LogFile::~LogFile() {
+    if (_logFile) {
+        fclose (_logFile);
+    }
+}
+
+void LogFile::appendLogFile(string str) {
+    if (_logFile) {
+        fprintf(_logFile, "%s", str.c_str());
+    }
+}
