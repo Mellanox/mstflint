@@ -122,6 +122,8 @@ void MlxlinkUi::printSynopsisCommands()
                   "Transmitter Lane to Set (Optional - Default All Lanes)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(DATABASE_FLAG_SHORT, DATABASE_FLAG, "", "Save Transmitter Configuration for Current Speed Permanently (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(SLTP_TX_POLICY_FLAG_SHORT, SLTP_TX_POLICY_FLAG, "", "Set the parameters according to Data Base only, otherwise it will be set according to the best possible configuration chosen by the system (Optional)");
     MlxlinkRecord::printFlagLine(SET_TX_GROUP_MAP_FLAG_SHORT, SET_TX_GROUP_MAP_FLAG, "group_num",
                       "Map ports to group <group_num> (for Spectrum-2 and Quantum devices)");
     printf(IDENT);
@@ -152,6 +154,8 @@ void MlxlinkUi::printSynopsisCommands()
                   "PRBS lanes to set (one or more lane separated by comma)[0,1,2,...,7] (Optional - Default all lanes)");
     MlxlinkRecord::printFlagLine(BER_COLLECT_FLAG_SHORT, BER_COLLECT_FLAG, "csv_file",
                   "Port Extended Information Collection [CSV File]");
+    MlxlinkRecord::printFlagLine(AMBER_COLLECT_FLAG_SHORT, AMBER_COLLECT_FLAG, "csv_file",
+                  "AmBER Port Extended Information Collection For 16nm Products and Later [CSV File]");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(BER_LIMIT_FLAG_SHORT, BER_LIMIT_FLAG, "limit_criteria",
                   "BER Limit Criteria [Nominal(Default)/Corner/Drift] (Optional - Default Nominal)");
@@ -331,7 +335,7 @@ void MlxlinkUi::validatePCIeParams()
                 _mlxlinkCommander->_userInput._sendDpn = true;
             }
         }
-        if (_mlxlinkCommander->_userInput._specifiedPort) {
+        if (_mlxlinkCommander->_userInput._portSpecified) {
             if (dpnFlags) {
                 throw MlxRegException("For PCIE port, either port flag or depth, pcie_index and node flags should be specified");
            }
@@ -374,9 +378,10 @@ void MlxlinkUi::validateGeneralCmdsParams()
             throw MlxRegException(
                       "Lane and Database flags are mutually exclusive");
         }
-    } else if (_mlxlinkCommander->_userInput._sltpLane || _mlxlinkCommander->_userInput._db) {
-        throw MlxRegException(
-                  "Transmitter Lane or DataBase flags are valid only with Configure Transmitter Parameters flag (--st_set)");
+    } else if (_mlxlinkCommander->_userInput._sltpLane || _mlxlinkCommander->_userInput._db ||
+               _mlxlinkCommander->_userInput._txPolicy) {
+        throw MlxRegException(LANE_FLAG ", --" DATABASE_FLAG " and --" SLTP_TX_POLICY_FLAG
+                              " flags are valid only with Configure Transmitter Parameters flag (--" SLTP_SET_FLAG ")");
     }
 }
 
@@ -409,7 +414,13 @@ void MlxlinkUi::validatePRBSParams()
 
 void MlxlinkUi::validateSpeedAndCSVBerParams()
 {
-    if (isIn(SEND_BER_COLLECT, _sendRegFuncMap)) {
+    bool berCollect = isIn(SEND_BER_COLLECT, _sendRegFuncMap);
+    bool amBerCollect = isIn(SEND_AMBER_COLLECT, _sendRegFuncMap);
+    if (berCollect && amBerCollect) {
+        throw MlxRegException("--" BER_COLLECT_FLAG " and --" AMBER_COLLECT_FLAG " "\
+                "are mutually exclusive, please select one command only");
+    }
+    if (berCollect || amBerCollect) {
         if (!endsWith(_mlxlinkCommander->_userInput._csvBer, ".csv")) {
             throw MlxRegException("you must provide a valid .csv file");
         }
@@ -617,6 +628,8 @@ void MlxlinkUi::initCmdParser()
     AddOptions(PPLR_FLAG, PPLR_FLAG_SHORT, "PPLR", "Send PPLR");
     AddOptions(BER_COLLECT_FLAG, BER_COLLECT_FLAG_SHORT, "BERCollectFile",
                "BER Collection csv file");
+    AddOptions(AMBER_COLLECT_FLAG, AMBER_COLLECT_FLAG_SHORT, "AMBERCollectFile",
+               "AMBER Collection csv file");
     AddOptions(BER_LIMIT_FLAG, BER_LIMIT_FLAG_SHORT, "Mode",
                "Test Mode of Ber Collect (Nominal/Corner/Drift)");
     AddOptions(ITERATION_FLAG, ITERATION_FLAG_SHORT, "Iteration", "Iteration of BER Collect");
@@ -651,6 +664,7 @@ void MlxlinkUi::initCmdParser()
     AddOptions(SLTP_SHOW_FLAG, SLTP_SHOW_FLAG_SHORT, "", "get SLTP");
     AddOptions(SLTP_SET_FLAG, SLTP_SET_FLAG_SHORT, "set", "set SLTP");
     AddOptions(SLTP_SET_ADVANCED_FLAG, SLTP_SET_ADVANCED_FLAG_SHORT, "", "set SLTP");
+    AddOptions(SLTP_TX_POLICY_FLAG, SLTP_TX_POLICY_FLAG_SHORT, "", "set TX Policy");
     AddOptions(LANE_FLAG, LANE_FLAG_SHORT, "lane", "Lane");
     AddOptions(DATABASE_FLAG, DATABASE_FLAG_SHORT, "", "DB");
     AddOptions(GVMI_ADDRESS_FLAG, GVMI_ADDRESS_FLAG_SHORT, "gvmi", "GVMI");
@@ -729,7 +743,10 @@ void MlxlinkUi::commandsCaller()
             PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> \"Port Extended Information Collection\"");
             _mlxlinkCommander->collectBER();
             break;
-        case SEND_PAOS:
+        case SEND_AMBER_COLLECT:
+            PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> \"AmBER Collection\"");
+            _mlxlinkCommander->collectAMBER();
+            break;case SEND_PAOS:
             PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> \"Configure Port State\"");
             _mlxlinkCommander->sendPaos();
             break;
@@ -860,6 +877,9 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     } else if (name == DATABASE_FLAG) {
         _mlxlinkCommander->_userInput._db = true;
         return PARSE_OK;
+    } else if (name == SLTP_TX_POLICY_FLAG) {
+        _mlxlinkCommander->_userInput._txPolicy = true;
+        return PARSE_OK;
     } else if (name == GVMI_ADDRESS_FLAG) {
         _mlxlinkCommander->strToUint32((char*) value.c_str(), _mlxlinkCommander->_userInput._gvmiAddress);
         return PARSE_OK;
@@ -871,19 +891,7 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         return PARSE_OK;
     } else if (name == LABEL_PORT_FLAG) {
         _mlxlinkCommander->checkStrLength(value);
-        if (endsWith(value.c_str(), "/1") || endsWith(value.c_str(), "/2")
-            || endsWith(value.c_str(), "/3")
-            || endsWith(value.c_str(), "/4")
-            || endsWith(value.c_str(), "/5")
-            || endsWith(value.c_str(), "/6")
-            || endsWith(value.c_str(), "/7")
-            || endsWith(value.c_str(), "/8")) {
-            _mlxlinkCommander->_userInput._splitPort = value[value.length() - 1] - '0';
-            value.erase(value.size() - 2);
-            _mlxlinkCommander->_splitted = true;
-        }
-        _mlxlinkCommander->strToUint32((char*) value.c_str(), _mlxlinkCommander->_userInput._labelPort);
-        _mlxlinkCommander->_userInput._specifiedPort = true;
+        _mlxlinkCommander->handlePortStr(value);
         return PARSE_OK;
     } else if (name == DEPTH_FLAG) {
         _mlxlinkCommander->strToUint32((char*) value.c_str(), _mlxlinkCommander->_userInput._depth);
@@ -963,7 +971,10 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     } else if (name == BER_COLLECT_FLAG) {
         _sendRegFuncMap.push_back(SEND_BER_COLLECT);
         _mlxlinkCommander->_userInput._csvBer = value;
-        _mlxlinkCommander->_uniqueCmds++;
+        return PARSE_OK;
+    }  else if (name == AMBER_COLLECT_FLAG) {
+        _sendRegFuncMap.push_back(SEND_AMBER_COLLECT);
+        _mlxlinkCommander->_userInput._csvBer = value;
         return PARSE_OK;
     } else if (name == BER_LIMIT_FLAG) {
         _mlxlinkCommander->_userInput._testMode = toUpperCase(value);
@@ -1146,8 +1157,6 @@ int MlxlinkUi::run(int argc, char **argv)
     } else if (!_mlxlinkCommander->_userInput._sendDpn) {
         _mlxlinkCommander->initValidDPNList();
     }
-
-
 
     if (_mlxlinkCommander->_userInput._logFilePath != "") {
         _mlxlinkCommander->_mlxlinkLogger = new MlxlinkLogger(

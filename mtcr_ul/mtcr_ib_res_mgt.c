@@ -37,7 +37,6 @@
 #include <string.h>
 
 #define IB_SMP_DATA_SIZE 48
-#define SMP_SEMAPHOE_LOCK_CMD 0xff53
 
 #define DBG_PRINTF(...) do { if (getenv("MFT_DEBUG") != NULL) { fprintf(stderr, __VA_ARGS__); } } while (0)
 
@@ -150,9 +149,9 @@ int mib_semaphore_lock_vs_mad(
                cmd.semaphore_addr, cmd.op, cmd.lock_key);
     semaphore_lock_cmd_pack(&cmd, mad_data);
     if (method == SEM_LOCK_SET) {
-        rc = mib_smp_set(mf, mad_data, SMP_SEMAPHOE_LOCK_CMD, 0);
+        rc = mib_semaphore_lock_smp(mf, mad_data, method);
     } else {
-        rc = mib_smp_get(mf, mad_data, SMP_SEMAPHOE_LOCK_CMD, 0);
+        rc = mib_semaphore_lock_smp(mf, mad_data, method);
     }
     semaphore_lock_cmd_unpack(&cmd, mad_data);
     DBG_PRINTF("#######AFTER#####\n# SEM_ADDR: 0x%x\n# OP: %d\n# Lock_Key: 0x%x\n#################\n",

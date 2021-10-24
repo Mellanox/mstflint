@@ -1881,6 +1881,45 @@ int mib_smp_get(mfile *mf, u_int8_t *data, u_int16_t attr_id, u_int32_t attr_mod
     return ME_OK;
 }
 
+int mib_semaphore_lock_smp(mfile *mf, u_int8_t *data, sem_lock_method_t method)
+{
+    if (!mf || !mf->ctx || !data) {
+        IBERROR(("mib_semaphore_lock_smp failed. Null Param."));
+        return ME_BAD_PARAMS;
+    }
+    u_int8_t *smp_result;
+    int status = -1;
+    ibvs_mad *vs_mad = (ibvs_mad*)(mf->ctx);
+
+    // Setting MKey for this attribute caused MAD failures
+    // and was disabled.
+
+    if (method == SEM_LOCK_SET) {
+        if (vs_mad->smp_set_status_via) {
+            smp_result = vs_mad->smp_set_status_via(data, &(vs_mad->portid), SMP_SEMAPHOE_LOCK_CMD, 0, 0, &status, vs_mad->srcport);
+        } else {
+            smp_result = vs_mad->smp_set_via(data, &(vs_mad->portid), SMP_SEMAPHOE_LOCK_CMD, 0, 0, vs_mad->srcport);
+        }
+    } else {
+        if (vs_mad->smp_query_status_via) {
+            smp_result = vs_mad->smp_query_status_via(data, &(vs_mad->portid), SMP_SEMAPHOE_LOCK_CMD, 0, 0, &status, vs_mad->srcport);
+        } else {
+            smp_result = vs_mad->smp_query_via(data, &(vs_mad->portid), SMP_SEMAPHOE_LOCK_CMD, 0, 0, vs_mad->srcport);
+        }
+    }
+
+
+    if (!smp_result || status > 0) {
+        if (status != -1) {
+            return mib_status_translate(status);
+        } else {
+            return -1;
+        }
+    }
+
+    return ME_OK;
+}
+
 int mib_supports_reg_access_cls_a(mfile *mf, maccess_reg_method_t reg_method)
 {
     if (!mf || !mf->ctx) {

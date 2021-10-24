@@ -37,6 +37,7 @@
 
 
 
+
 class LogFile;
 
 #include <map>

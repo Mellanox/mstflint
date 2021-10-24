@@ -1,4 +1,5 @@
 # Copyright (c) 2004-2010 Mellanox Technologies LTD. All rights reserved.
+# Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -190,6 +191,32 @@ class WarningException(Exception):
     pass
 
 ######################################################################
+# Description:  NoPciBridge Exception
+# OS Support :  Linux/FreeBSD/Windows.
+######################################################################
+class NoPciBridgeException(Exception):
+    pass
+
+
+def is_in_intenal_host(): 
+    ''' 
+    The function checks if the tool is running on the internal host (Bluefield's intergrated ARM)
+    The function will return true is the OS is Linux and PCIe root-port 00:00.0 is Mellanox
+    '''
+    if platform.system() != "Linux":
+        logger.debug("Not in internal host (integrated ARM) - OS is not Linux")
+        return False
+
+    cmd = "setpci -s 00:00.0 0x0.w"
+    rc, out, _ = cmdExec(cmd)
+    if rc == 0 and out.strip() == "15b3":
+        logger.debug("In internal host (integrated ARM)")
+        return True
+    else:
+        logger.debug("Not in internal host (integrated ARM)")
+        return False
+
+######################################################################
 # Description:  is_fw_ready
 # OS Support :  Linux/FreeBSD/Windows.
 ######################################################################
@@ -254,7 +281,7 @@ def reset_fsm_register():
 def sigHndl(signal, frame):
     reset_fsm_register()
 
-    print("\nSignal %d received, exiting..." % signal)
+    print("\nSignal %d received, Exiting..." % signal)
     sys.exit(1)
 
 def set_signal_handler():
@@ -648,7 +675,7 @@ class MlnxPciOpLinux(MlnxPciOp):
         bridgeDev = out.strip()
         result = re.match(r'^[0-9A-Fa-f]{4}:[0-9A-Fa-f]{2}:[0-9A-Fa-f]{2}\.[0-9A-Fa-f]$',bridgeDev)
         if rc != 0 or result is None:
-            raise RuntimeError("Failed to get Bridge Device for the given PCI device! You might be running on a Virtual Machine!")
+            raise NoPciBridgeException("Failed to get Bridge Device for the given PCI device! You might be running on a Virtual Machine!")
 
         return bridgeDev
 
@@ -689,17 +716,22 @@ class MlnxPciOpLinux(MlnxPciOp):
                 raise RuntimeError("failed to execute: {0}".format(cmd))
             for line in out.splitlines():
                 MFDevices.append(line.split()[0])
-        else: # Support NVME, Innova
-            bridgeDev = self.getPciBridgeAddr(devAddr)
-            if isMellanoxSwitchDevice(self, bridgeDev):
-                bridgeOfBridge = self.getPciBridgeAddr(bridgeDev)
-                return self.getAllPciDevices(bridgeOfBridge)
-            cmd = "lspci -s {0}: -D".format(domainBus)
-            (rc, out, _) = cmdExec(cmd)
-            if rc != 0:
-                raise RuntimeError("failed to execute: {0}".format(cmd))
-            for line in out.splitlines():
-                MFDevices.append(line.split()[0])
+        else: 
+            pci_device_bridge1 = self.getPciBridgeAddr(devAddr)
+            if is_in_intenal_host(): # Bluefield (NIC only reset)
+                pci_device_bridge2 = self.getPciBridgeAddr(pci_device_bridge1)
+                pci_device_bridge3 = self.getPciBridgeAddr(pci_device_bridge2)    
+                return self.getAllPciDevices(pci_device_bridge3)
+            elif is_mellanox_device(pci_device_bridge1): # Innova
+                pci_device_bridge2 = self.getPciBridgeAddr(pci_device_bridge1)
+                return self.getAllPciDevices(pci_device_bridge2)
+            else:
+                cmd = "lspci -s {0}: -D".format(domainBus)
+                (rc, out, _) = cmdExec(cmd)
+                if rc != 0:
+                    raise RuntimeError("failed to execute: {0}".format(cmd))
+                for line in out.splitlines():
+                    MFDevices.append(line.split()[0])
 
         return MFDevices
 
@@ -792,7 +824,7 @@ class MlnxPciOpFreeBSD(MlnxPciOp):
         cmd = "sysctl -a | grep \"secbus: %s\"" % busNum
         (rc, out, _) = cmdExec(cmd)
         if rc != 0:
-            raise RuntimeError("Failed to get Bridge Device for the given PCI device! You might be running on a Virtual Machine!")
+            raise NoPciBridgeException("Failed to get Bridge Device for the given PCI device! You might be running on a Virtual Machine!")
         linesCount = len(out.splitlines())
         if(linesCount == 0):
             raise RuntimeError("There is no secbus with the value: %s" %busNum)
@@ -1083,14 +1115,6 @@ def resetPciAddrWindows(dbdf_list):
 
 def disablePci(bridgeDev, capAddr):
     logger.debug('disablePci() called')
-#     global PciOpsObj
-#     bridgeDev = PciOpsObj.getPciBridgeAddr(busId)
-#     if isMellanoxSwitchDevice(PciOpsObj, bridgeDev):
-#         bridgeDev = PciOpsObj.getPciBridgeAddr(bridgeDev)
-#         bridgeDev = PciOpsObj.getPciBridgeAddr(bridgeDev) # Bridge of bridge
-        
-    # Link Control Register : PCI_EXPRESS_CAP_OFFS + 0x10
-    #capAddr = PciOpsObj.getPciECapAddr(bridgeDev)
     
     disableAddr = capAddr + 0x10
     width = "L"
@@ -1118,22 +1142,32 @@ def resetPciAddr(device,devicesSD,driverObj, cmdLineArgs):
 
     isPPC = "ppc64" in platform.machine()
     isWindows = platform.system() == "Windows"
-    isFBSD = platform.system() == "FreeBSD"
-    # save pci conf space
+    
     busId = DevDBDF
 
     # Determine the pci-device to poll (first Mellanox device in the pci tree)
     if isWindows is False:
-        if isConnectedToMellanoxSwitchDevice():
-            pci_device_bridge = PciOpsObj.getPciBridgeAddr(DevDBDF)
-            pci_device_to_poll_devid = PciOpsObj.getPciBridgeAddr(pci_device_bridge)
-            root_pci_device = PCIDeviceFactory().get(pci_device_to_poll_devid, "debug")
-        elif isPPC:
+
+        if is_in_intenal_host(): # Bluefied (NIC only reset)
+            pci_device_bridge1 = PciOpsObj.getPciBridgeAddr(DevDBDF)
+            pci_device_bridge2 = PciOpsObj.getPciBridgeAddr(pci_device_bridge1)
+            pci_device_bridge3 = PciOpsObj.getPciBridgeAddr(pci_device_bridge2)
+
+            pci_device_to_poll_devid = pci_device_bridge3
+            root_pci_device = PCIDeviceFactory().get(pci_device_bridge3, "debug")
+        elif is_pci_bridge_is_mellanox_device(DevDBDF): # Innova (FPGA)
+            pci_device_bridge1 = PciOpsObj.getPciBridgeAddr(DevDBDF)
+            pci_device_bridge2 = PciOpsObj.getPciBridgeAddr(pci_device_bridge1)
+            pci_device_bridge3 = PciOpsObj.getPciBridgeAddr(pci_device_bridge2)
+
+            pci_device_to_poll_devid = pci_device_bridge2
+            root_pci_device = PCIDeviceFactory().get(pci_device_bridge3, "debug")
+        elif isPPC: # PPC can run on VM (no PCI bridge device)
             pci_device_to_poll_devid = DevDBDF
         else:
             pci_device_to_poll_devid = DevDBDF
-            root_pci_device = PCIDeviceFactory().get(PciOpsObj.getPciBridgeAddr(DevDBDF), "debug")
-
+            pci_device_bridge = PciOpsObj.getPciBridgeAddr(DevDBDF)
+            root_pci_device = PCIDeviceFactory().get(pci_device_bridge, "debug")
 
         logger.debug('pci_device_to_poll_devid={0}'.format(pci_device_to_poll_devid))
         if not isPPC:
@@ -1174,9 +1208,9 @@ def resetPciAddr(device,devicesSD,driverObj, cmdLineArgs):
         bridgeDevs = []
         for busId in [busId] + busIdsSD:
             bridgeDev = PciOpsObj.getPciBridgeAddr(busId)
-            if isMellanoxSwitchDevice(PciOpsObj, bridgeDev):
-                bridgeDev = PciOpsObj.getPciBridgeAddr(bridgeDev)
-                bridgeDev = PciOpsObj.getPciBridgeAddr(bridgeDev) # Bridge of bridge
+            if is_mellanox_device(bridgeDev) and not is_in_intenal_host(): # Innova
+                bridgeDev = PciOpsObj.getPciBridgeAddr(bridgeDev)     # bridgeDev = pci_device_bridge2
+                bridgeDev = PciOpsObj.getPciBridgeAddr(bridgeDev)     # bridgeDev = pci_device_bridge3
                  
             # Link Control Register : PCI_EXPRESS_CAP_OFFS + 0x10
             capAddr = PciOpsObj.getPciECapAddr(bridgeDev)
@@ -1240,18 +1274,16 @@ def resetPciAddr(device,devicesSD,driverObj, cmdLineArgs):
             logger.debug('[Timing Test] PCI Disable') 
             for bridgeDev,capAddr in bridgeDevs:
                 info.append(disablePci(bridgeDev,capAddr))
-#             info.append(disablePci(busId))
-#             for busIdSD in busIdsSD:
-#                 info.append(disablePci(busIdSD))
 
             # Sleep
             logger.debug('sleeping... ({0} sec)'.format(cmdLineArgs.pci_link_downtime))
             time.sleep(cmdLineArgs.pci_link_downtime)
 
             # Enable
-            logger.debug('[Timing Test] PCI Enable')
-            for info_ii in info:
-                enablePci(*info_ii)
+            if not is_in_intenal_host():
+                logger.debug('[Timing Test] PCI Enable')
+                for info_ii in info:
+                    enablePci(*info_ii)
 
     except Exception as e:
         raise RuntimeError("Failed To reset PCI(Driver starting will be skipped). %s" % str(e))
@@ -1268,7 +1300,7 @@ def resetPciAddr(device,devicesSD,driverObj, cmdLineArgs):
         if not isPPC and root_pci_device.dll_link_active_reporting_capable:
             MAX_WAIT_TIME = 2  # sec
             poll_start_time = time.time()
-            for counter in range(1000*MAX_WAIT_TIME):
+            for _ in range(1000*MAX_WAIT_TIME):
                 if root_pci_device.dll_link_active == 1:
                     poll_end_time = (time.time() - poll_start_time) * 1000
                     logger.debug('DLL link active is ready after {0} msec'.format(poll_end_time))
@@ -1280,14 +1312,15 @@ def resetPciAddr(device,devicesSD,driverObj, cmdLineArgs):
         # Wait for FW (Iron) - Read devid
         MAX_WAIT_TIME = 2 # sec
         poll_start_time = time.time()
-        for cntr in range(1000*MAX_WAIT_TIME):
+        for _ in range(1000*MAX_WAIT_TIME):
             if PciOpsObj.read(pci_device_to_poll_devid, 0)>>16 != 0xffff: # device-id (0x2.W)
                 iron_end_time = (time.time() - poll_start_time) * 1000
                 logger.debug('IRON is ready after {0} msec'.format(iron_end_time))
                 break
             time.sleep(0.001)
         else:
-            print("-W- FW is not ready after {0} sec".format(MAX_WAIT_TIME))
+            print("\n-W- FW is not ready")
+
         # Restore PCI configuration
         #############################
         logger.debug('Restore PCI configuration')
@@ -1326,28 +1359,19 @@ def resetPciAddr(device,devicesSD,driverObj, cmdLineArgs):
 
     printAndFlush("Done")
 
-######################################################################
-# Description: is Given PCI device address a switch device
-######################################################################
 
-def isMellanoxSwitchDevice(PciOpsObj, devAddr):
+def is_mellanox_device(devAddr):
     try:
         return PciOpsObj.isMellanoxDevice(devAddr)
     except NotImplementedError: # Windows
         return False
 
-########################################################################
-# Description: is Given PCI device address connected to a switch device
-########################################################################
-
-def isConnectedToMellanoxSwitchDevice():
+def is_pci_bridge_is_mellanox_device(devAddr):
     try:
-        busId = DevDBDF
-        bridgeAddr = PciOpsObj.getPciBridgeAddr(busId) # Windows (NotImplementedError) and Linux (PPC might return RuntimeError)
-        return isMellanoxSwitchDevice(PciOpsObj, bridgeAddr)
-    except Exception as e:
+        pci_bridge_device = PciOpsObj.getPciBridgeAddr(devAddr)
+        return is_mellanox_device(pci_bridge_device)
+    except NoPciBridgeException:
         return False
-
 
 def send_reset_cmd_to_fw(mfrl, reset_level, reset_type, reset_sync=SyncOwner.TOOL):
     try:
@@ -1511,7 +1535,7 @@ def resetFlow(device, devicesSD, reset_level, reset_type, cmdLineArgs, mfrl):
     # A temporary solution to get the pci-device-id (required for SmartNic)
     # This solution is not good when the user insert device in PCI address format (-d xx:xx.x)
     pci_device_id = None
-    if platform.system() == "Windows" or os.name == "nt":
+    if platform.system() == "Windows":
         if '_' in device_global:
             pci_device_id = int(device_global.split('_')[0][2:])
 
@@ -1519,10 +1543,12 @@ def resetFlow(device, devicesSD, reset_level, reset_type, cmdLineArgs, mfrl):
     driverObj = MlnxDriverFactory().getDriverObj(logger, skipDriver, all_devices, pci_device_id)
 
     try:
-        isPpc64 = ("ppc64" in platform.machine())
-        if isConnectedToMellanoxSwitchDevice() and \
-               ((platform.system() != "Linux") or isPpc64):
-            raise RuntimeError("Resetting Device that contains a switch is supported only in Linux/x86")
+        # Check if device with PCIe switch (Innova, BL) is supported
+        if platform.system() != "Windows" and is_pci_bridge_is_mellanox_device(DevDBDF): # Skip check on Windows OS (is_pci_bridge_is_mellanox_device is not implemented on Windows)
+            if platform.system() != "Linux":
+                raise RuntimeError("Resetting a device that contains a PCIe switch is supported only in Linux")
+            if "ppc64" in platform.machine():
+                raise RuntimeError("Resetting a device that contains a PCIe switch is not supported on PPC64")
 
         if SkipMultihostSync or not CmdifObj.isMultiHostSyncSupported():
             send_reset_cmd_to_fw(mfrl, reset_level, reset_type)
@@ -1597,7 +1623,7 @@ def resetFlow(device, devicesSD, reset_level, reset_type, cmdLineArgs, mfrl):
 ######################################################################
 def rebootMachine():
     printAndFlush("-I- %-40s-" % ("Sending reboot command to machine"), endChar="")
-    if platform.system() == "Windows" or os.name == "nt":
+    if platform.system() == "Windows":
         cmd = "shutdown /r"
     else:
         cmd = "reboot"
@@ -1918,25 +1944,28 @@ def main():
         reset_level = mfrl.default_reset_level() if args.reset_level is None else args.reset_level
         # print("  * reset-level is '{0}' ({1})".format(reset_level, mfrl.reset_level_description(reset_level)))
         if mfrl.is_reset_level_supported(reset_level) is False:
-            raise RuntimeError("Reset-level '{0}' is not supported for this device".format(reset_level))
+            raise RuntimeError("Reset-level '{0}' is not supported in the current state of this device".format(reset_level))
 
-        reset_type = CmdRegMfrl.default_reset_type() if args.reset_type is None else args.reset_type
+        reset_type = mfrl.default_reset_type() if args.reset_type is None else args.reset_type
         # print("  * reset-type  is '{0}' ({1})".format(reset_type, mfrl.reset_type_description(reset_type)))
         if mfrl.is_reset_type_supported(reset_type) is False:
-            raise RuntimeError("Reset-type '{0}' is not supported for this device".format(reset_type))
+            raise RuntimeError("Reset-type '{0}' is not supported in the current state of this device".format(reset_type))
 
-        if mfrl.is_default_reset_type(reset_type) is False and mfrl.is_reset_level_support_reset_type(reset_level) is False:
+        if args.reset_type and mfrl.is_reset_level_support_reset_type(reset_level) is False:
             raise RuntimeError("Reset-level '{0}' is not supported with reset-type '{1}'".format(reset_level, reset_type))
 
         reset_sync = args.reset_sync
         if reset_sync == SyncOwner.DRIVER and mcam.is_reset_by_fw_driver_sync_supported() is False:
-            raise RuntimeError("Synchronization by driver is not supported for this device")
+            raise RuntimeError("Synchronization by driver is not supported in the current state of this device")
         if reset_sync != SyncOwner.TOOL and reset_level != CmdRegMfrl.PCI_RESET:
             raise RuntimeError("Reset-sync '{0}' is not supported with reset-level '{1}'".format(reset_sync, reset_level))
-
+        
         minimal_or_requested = 'Minimal' if args.reset_level is None else 'Requested'
         print("{0} reset level for device, {1}:\n".format(minimal_or_requested , device))
         print("{0}: {1}".format(reset_level,mfrl.reset_level_description(reset_level)))
+
+        if (reset_level == 4):
+            print("\n-W- Note that reset in this level (4) is not supported on multi-host setups and Bluefield devices\n")
 
         AskUser("Continue with reset", yes)
         execResLvl(device, devicesSD, reset_level, reset_type, reset_sync, args, mfrl)

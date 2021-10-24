@@ -46,7 +46,6 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _numOfLanes = MAX_LANES_NUMBER;
     _numOfLanesPcie = 0;
     _linkUP = false;
-    _splitted = false;
     _plugged = false;
     _linkModeForce = false;
     _prbsTestMode = false;
@@ -78,6 +77,7 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _isPam4Speed = false;
     _ignorePortType = true;
     _lanesLockStatus = false;
+    _ignorePortStatus = true;
     _protoAdmin = 0;
     _protoAdminEx = 0;
     _speedBerCsv = 0;
@@ -189,7 +189,6 @@ void MlxlinkCommander::checkValidFW()
         updateField("page_select", PDDR_TROUBLESHOOTING_INFO_PAGE);
         updateField("group_opcode", ADVANCED_OPCODE);
         genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
-
 
         u_int32_t statusOpcode = getFieldValue("advanced_opcode");
 
@@ -322,6 +321,39 @@ void MlxlinkCommander::checkAllPortsStatus()
     }
 }
 
+void MlxlinkCommander::handlePortStr(const string &portStr)
+{
+    auto portParts = MlxlinkRecord::split(portStr, "/");
+    // validate arguments
+    for (auto it = portParts.begin(); it != portParts.end(); it++) {
+        if ((*it).empty()) {
+            throw MlxRegException("Argument: %s is invalid.", portStr.c_str());
+        }
+    }
+
+    /* For Quantum-2:
+     * portStr should represent: (cage/port/split) if split sign provided
+     *                           (cage/port) if no split sign provided
+     * For Other Switches:
+     * portStr should represent: (port/split) if split sign provided
+     *                           (port) if no split sign provided
+     */
+    if (portParts.size() > 1) {
+        strToUint32((char*) portParts[1].c_str(), _userInput._splitPort);
+        _userInput._splitProvided = true;
+        if (portParts.size() > SECOND_LEVEL_PORT_ACCESS) {
+            // it's the split part of Quantum-2 (xx/xx/split)
+            strToUint32((char*) portParts[2].c_str(), _userInput._secondSplitPort);
+            _userInput._secondSplitProvided = true;
+        } else if (portParts.size() > THIRD_LEVEL_PORT_ACCESS) {
+            throw MlxRegException("Failed to handle option port");
+        }
+    }
+
+    strToUint32((char*) portParts[0].c_str(), _userInput._labelPort);
+    _userInput._portSpecified = true;
+}
+
 void MlxlinkCommander::labelToLocalPort() {
     if (_isHCA && _userInput._pcie) {
         _dpn.depth = _userInput._depth;
@@ -336,7 +368,7 @@ void MlxlinkCommander::labelToLocalPort() {
                 throw MlxRegException("Invalid PCIe link: depth, pcie_index and node [%d, %d, %d]",
                         _dpn.depth, _dpn.pcieIndex, _dpn.node);
             }
-        } else if (_userInput._specifiedPort){
+        } else if (_userInput._portSpecified){
             checkLocalPortDPNMapping(_userInput._labelPort);
             _localPort = _userInput._labelPort;
         } else {
@@ -394,7 +426,7 @@ int MlxlinkCommander::getLocalPortFromMPIR(DPN& dpn)
     }
 
     int localPort= -1;
-    if(!_userInput._specifiedPort &&
+    if(!_userInput._portSpecified &&
             !(dpn.depth == 0 && dpn.node == 0 && dpn.pcieIndex ==0)) {
         string regName = "MPIR";
         resetParser(regName);
@@ -406,7 +438,7 @@ int MlxlinkCommander::getLocalPortFromMPIR(DPN& dpn)
             localPort = getFieldValue("local_port");
         } catch(MlxRegException &exc) {
         }
-    } else if (_userInput._specifiedPort) {
+    } else if (_userInput._portSpecified) {
         localPort = _userInput._labelPort;
     } else {
         localPort = 0;
@@ -418,7 +450,7 @@ void MlxlinkCommander::labelToHCALocalPort()
 {
     u_int32_t mtype = 0;
     mget_mdevs_type(_mf, &mtype);
-    if (_splitted) {
+    if (_userInput._splitProvided) {
         throw MlxRegException("No Splits in HCA!");
     } else if (_userInput._labelPort > 1
             && !(mtype & (MST_USB | MST_USB_DIMAX))) {
@@ -465,7 +497,7 @@ void MlxlinkCommander::labelToSpectLocalPort()
         splitAdjustment = 0;
         if ((getFieldValue("lane0_module_mapping.module") + 1)  == _userInput._labelPort) {
             checkWidthSplit(localPort);
-            if (_splitted) {
+            if (_userInput._splitProvided) {
                 if (_devID == DeviceSpectrum3 || _devID == DeviceSpectrum4 ||
                     (_devID != DeviceSpectrum && !spectWithGearBox)) {
                     if (_devID == DeviceSpectrum2 && _numOfLanes == 4) {
@@ -498,7 +530,7 @@ void MlxlinkCommander::labelToSpectLocalPort()
 
 void MlxlinkCommander::checkWidthSplit(u_int32_t localPort)
 {
-    if (!_splitted) {
+    if (!_userInput._splitProvided) {
         checkUnSplit(localPort);
         return;
     }
@@ -554,16 +586,18 @@ void MlxlinkCommander::checkUnSplit(u_int32_t localPort)
 void MlxlinkCommander::labelToIBLocalPort()
 {
     u_int32_t labelPort = _userInput._labelPort;
-    if (_splitted && _devID != DeviceQuantum && _devID != DeviceQuantum2) {
+    bool ibSplitReady = isIBSplitReady();
+    if (_userInput._splitProvided && _devID != DeviceQuantum && _devID != DeviceQuantum2) {
         throw MlxRegException("No split in IB!");
     }
-    bool ibSplitReady = isIBSplitReady();
-    if (_devID == DeviceQuantum || _devID == DeviceQuantum2) {
-        toIBLabelPort(labelPort, ibSplitReady);
-    } else if (labelPort > maxLocalPort()) {
+    if ((labelPort > maxLocalPort() || (ibSplitReady && labelPort >= maxLocalPort()/2 )) ||
+        (_userInput._secondSplitProvided && _devID != DeviceQuantum2) ||
+        (_userInput._splitPort > 2)) {
         throw MlxRegException("Invalid port number!");
     }
-
+    if (_devID == DeviceQuantum || _devID == DeviceQuantum2) {
+        labelPort = calculatePanelPort(ibSplitReady);
+    }
     string regName = "PLIB";
     for (u_int32_t localPort = 1; localPort <= maxLocalPort(); localPort++) {
         resetParser(regName);
@@ -579,10 +613,11 @@ void MlxlinkCommander::labelToIBLocalPort()
         }
     }
     if ((_devID == DeviceQuantum || _devID == DeviceQuantum2) && ibSplitReady) {
-        throw MlxRegException("Port %d is not splitted physically from switch "
-                "side, Use this command to split it physically:\n"
-                "interface ib <port/ports range> module-type qsfp-split-2",
-                _userInput._labelPort);
+        string portStr = "Port " + to_string(_userInput._labelPort);
+        portStr = _devID == DeviceQuantum2 ? portStr + "/" + to_string(_userInput._splitPort)
+                                           : portStr;
+        throw MlxRegException("%s is not splitted physically from switch side, Use this command to split it physically:\n"
+                              "interface ib <port/ports range> module-type qsfp-split-2", portStr.c_str());
     }
 }
 
@@ -604,33 +639,44 @@ bool MlxlinkCommander::isIBSplitReady() {
     return false;
 }
 
-void MlxlinkCommander::toIBLabelPort(u_int32_t &labelPort,bool ibSplitReady)
+u_int32_t MlxlinkCommander::calculatePanelPort(bool ibSplitReady)
 {
-    if (labelPort > (maxLocalPort()-2)/2) {
-        throw MlxRegException("Invalid port number!");
+    u_int32_t panelPort = _userInput._labelPort; // by default, the label port is equal to panel port if no split
+    bool splitProvided = _devID == DeviceQuantum ? _userInput._splitProvided
+                                                 : _userInput._secondSplitProvided;
+    u_int32_t split = _devID == DeviceQuantum ? _userInput._splitPort
+                                              : _userInput._secondSplitPort;
+    if (_devID == DeviceQuantum2) {
+        // For Quantum-2, user should provide cage/port to access the ports in the cage
+        // cage"panelPort"/port"_userInput._splitPort" is converted to label port according to the following equation:
+        panelPort = 2 * panelPort + _userInput._splitPort - 2;
     }
     if (ibSplitReady) {
-        if (!_splitted) {
-            labelPort = (_userInput._labelPort*2) - 1;
+        // If split ready, then the panelPort mapping will be chaned
+        if (!splitProvided) {
+            panelPort = (panelPort * 2) - 1; // Access the main port (without providing the split)
+                                             // For Quantum will be e.g (port/split): 2/1
+                                             // For Quantum-2 will be e.g (cage/port/split): 1/2/1
         } else {
-            switch(_userInput._splitPort){
-            case 2:
-                labelPort = (_userInput._labelPort*2) - (2-_userInput._splitPort);
-                break;
-            default:
+            if (split != 2) {
                 throw MlxRegException("Invalid split number!");
             }
+            panelPort = 2 * panelPort; // Access the second port (with providing the split)
+                                       // For Quantum will be e.g (port/split): 2/2
+                                       // For Quantum-2 will be e.g (cage/port/split): 1/2/2
         }
-    } else if (_splitted) {
+    } else if (splitProvided) {
         throw MlxRegException("Split mode is not ready!"
-                "\nThis command is used to set the split mode ready from switch "
-                "side:\nsystem profile ib split-ready");
+                              "\nThis command is used to set the split mode ready from switch side:"
+                              "\nsystem profile ib split-ready");
     }
+
+    return panelPort;
 }
 
 void MlxlinkCommander::checkStrLength(const string &str)
 {
-    if (str.size() > MAX_LABEL_PORT_LENGTH) {
+    if (str.size() > MAX_INPUT_LENGTH) {
         throw MlxRegException("Argument: " + str +" is invalid.");
     }
 }
@@ -805,6 +851,9 @@ int MlxlinkCommander::handleIBLocalPort(u_int32_t labelPort, bool ibSplitReady)
 {
     string regName = "PLIB";
     int targetLocalPort = -1;
+    if (_devID == DeviceQuantum2) {
+        labelPort = 2 * labelPort - 1;
+    }
     for (u_int32_t localPort = 1; localPort <= maxLocalPort(); localPort++) {
         resetParser(regName);
         updateField("local_port", localPort);
@@ -847,6 +896,11 @@ int MlxlinkCommander::handleEthLocalPort(u_int32_t labelPort, bool spect2WithGb)
 void MlxlinkCommander::fillEthPortGroupMap(u_int32_t localPort,u_int32_t labelPort,
         u_int32_t group, u_int32_t width, bool spect2WithGb)
 {
+    if(_ignorePortStatus) {
+        if (!width) {
+            _localPortsPerGroup.push_back(PortGroup(localPort, labelPort, group, 0));
+        }
+    }
     if (spect2WithGb) {
         switch (width) {
         case 2:
@@ -870,22 +924,59 @@ void MlxlinkCommander::fillEthPortGroupMap(u_int32_t localPort,u_int32_t labelPo
             _localPortsPerGroup.push_back(PortGroup(localPort+2, labelPort, group, 2));
             break;
         case 4:
-            _localPortsPerGroup.push_back(PortGroup(localPort, labelPort, group, 0));
-            break;
         case 8:
+            _localPortsPerGroup.push_back(PortGroup(localPort, labelPort, group, 0));
             break;
         }
     }
+}
+
+bool MlxlinkCommander::isIbLocalPortValid(u_int32_t localPort)
+{
+    bool valid = true;
+    resetParser(ACCESS_REG_PLIB);
+    updateField("local_port", localPort);
+    try {
+        genBuffSendRegister(ACCESS_REG_PLIB, MACCESS_REG_METHOD_GET);
+    } catch (MlxRegException& exp) {
+        valid = false;
+    }
+    return valid;
 }
 
 void MlxlinkCommander::fillIbPortGroupMap(u_int32_t localPort,u_int32_t labelPort,
         u_int32_t group, bool splitReady)
 {
     if (splitReady) {
-        _localPortsPerGroup.push_back(PortGroup(localPort, labelPort, group, 1));
-        _localPortsPerGroup.push_back(PortGroup(localPort+1, labelPort, group, 2));
+        if (_devID == DeviceQuantum) {
+            if (isIbLocalPortValid(localPort+1)) {
+                _localPortsPerGroup.push_back(PortGroup(localPort, labelPort, group, 1));
+                _localPortsPerGroup.push_back(PortGroup(localPort+1, labelPort, group, 2));
+            } else {
+                _localPortsPerGroup.push_back(PortGroup(localPort, labelPort, group, 0));
+            }
+        } else if (_devID == DeviceQuantum2) {
+            labelPort = labelPort * 2; // change labelPort mapping if split ready
+            if (isIbLocalPortValid(localPort+1)) {
+                _localPortsPerGroup.push_back(PortGroup(localPort, labelPort-1, group, 1, 1));
+                _localPortsPerGroup.push_back(PortGroup(localPort+1, labelPort, group, 1, 2));
+            } else {
+                _localPortsPerGroup.push_back(PortGroup(localPort, labelPort-1, group, 1, 1));
+            }
+            if (isIbLocalPortValid(localPort+3)) {
+                _localPortsPerGroup.push_back(PortGroup(localPort+2, labelPort+1, group, 2, 1));
+                _localPortsPerGroup.push_back(PortGroup(localPort+3, labelPort+2, group, 2, 2));
+            } else {
+                _localPortsPerGroup.push_back(PortGroup(localPort+2, labelPort+1, group, 1, 1));
+            }
+        }
     } else {
-        _localPortsPerGroup.push_back(PortGroup(localPort, labelPort, group, 0));
+        if (_devID == DeviceQuantum) {
+            _localPortsPerGroup.push_back(PortGroup(localPort, labelPort, group, 0));
+        } else if (_devID == DeviceQuantum2) {
+            _localPortsPerGroup.push_back(PortGroup(localPort, labelPort, group, 1));
+            _localPortsPerGroup.push_back(PortGroup(localPort+2, labelPort+1, group, 2));
+        }
     }
 }
 
@@ -937,24 +1028,23 @@ vector<string> MlxlinkCommander::localToPortsPerGroup(vector<u_int32_t> localPor
     return labelPortsStr;
 }
 
-void MlxlinkCommander::handleLabelPorts(std::vector<string> labelPortsStr)
+void MlxlinkCommander::handleLabelPorts(std::vector<string> labelPortsStr, bool skipException)
 {
     u_int32_t labelPort = 0;
     int localPort = -1;
-    if (labelPortsStr.size() > maxLocalPort()) {
+    if (labelPortsStr.size() > maxLocalPort() && !skipException) {
         throw MlxRegException("The number of ports is invalid");
     }
     bool ibSplitReady = (_devID == DeviceQuantum || _devID == DeviceQuantum2)? isIBSplitReady() : false;
     bool spect2WithGb = (_devID == DeviceSpectrum2)? isSpect2WithGb() : false;
-    for (vector<string>::iterator it = labelPortsStr.begin();
-            it != labelPortsStr.end(); ++it) {
+    for (vector<string>::iterator it = labelPortsStr.begin(); it != labelPortsStr.end(); ++it) {
         strToUint32((char *)(*it).c_str(), labelPort);
         if (_devID == DeviceSpectrum2 || _devID == DeviceSpectrum3) {
             localPort = handleEthLocalPort(labelPort, spect2WithGb);
         } else if (_devID == DeviceQuantum || _devID == DeviceQuantum2) {
             localPort = handleIBLocalPort(labelPort, ibSplitReady);
         }
-        if (localPort < 0) {
+        if (localPort < 0 && !skipException) {
             throw MlxRegException("Invalid port number %d!\n", labelPort);
         }
     }
@@ -1397,8 +1487,8 @@ string MlxlinkCommander::getComplianceLabel(u_int32_t compliance,
                         getCompliance(compliance, _mlxlinkMaps->_cableComplianceQsfp, true);
                 if (ignoreExtBitChk ||
                         (compliance & QSFP_ETHERNET_COMPLIANCE_CODE_EXT)) {
-                    complianceLabel +=
-                            getCompliance(extCompliance, _mlxlinkMaps->_cableComplianceExt);
+                    complianceLabel += !complianceLabel.empty() ? "," : "";
+                    complianceLabel += getCompliance(extCompliance, _mlxlinkMaps->_cableComplianceExt);
                 }
             } else if (ignoreExtBitChk) {
                 complianceLabel =
@@ -1479,6 +1569,15 @@ void MlxlinkCommander::strToInt32(char *str, u_int32_t &value)
     if (*endp) {
         throw MlxRegException("Argument: %s is invalid.", str);
     }
+}
+
+void MlxlinkCommander::runningVersion()
+{
+    setPrintTitle(_toolInfoCmd,"Tool Information", TOOL_INFORMAITON_INFO_LAST, !_prbsTestMode);
+    setPrintVal(_toolInfoCmd,"Firmware Version", _fwVersion, ANSI_COLOR_GREEN,true, !_prbsTestMode);
+    setPrintVal(_toolInfoCmd,"amBER Version", AMBER_VERSION, ANSI_COLOR_GREEN,
+                _productTechnology >= PRODUCT_16NM, !_prbsTestMode);
+    setPrintVal(_toolInfoCmd,"MSTFLINT Version", MSTFLINT_VERSION_STR, ANSI_COLOR_GREEN,true, !_prbsTestMode);
 }
 
 void MlxlinkCommander::operatingInfoPage()
@@ -1663,12 +1762,14 @@ void MlxlinkCommander::showPddr()
         operatingInfoPage();
         supportedInfoPage();
         troubInfoPage();
+        runningVersion();
         if (_prbsTestMode) {
             showTestMode();
         } else {
             std::cout << _operatingInfoCmd;
             std::cout << _supportedInfoCmd;
             std::cout << _troubInfoCmd;
+            std::cout << _toolInfoCmd;
         }
     } catch (const std::exception &exc) {
         throw MlxRegException(string("Showing PDDR raised the following exception: \n") + string(exc.what()));
@@ -2024,7 +2125,7 @@ void MlxlinkCommander::checkPCIeValidity()
         } else if (_validDpns.size() == 1){
             _dpn = _validDpns[0];
             _localPort = getLocalPortFromMPIR(_dpn);
-        } else if (_validDpns.size() > 1 && !_userInput._specifiedPort){
+        } else if (_validDpns.size() > 1 && !_userInput._portSpecified){
             throw MlxRegException("The --depth, --pcie_index and --node must be specified!");
         }
     }
@@ -2093,10 +2194,48 @@ void MlxlinkCommander::prepare40_28_16nmEyeInfo(u_int32_t numOfLanes)
 
 void MlxlinkCommander::prepare7nmEyeInfo(u_int32_t numOfLanesToUse)
 {
-    (void) numOfLanesToUse;
-    /*
-     * TODO: implement NDR eye information
-     */
+    string regName = "SLRG";
+    std::vector<string> initialFom, lastFom, upperFom, midFom, lowerFom;
+
+    u_int32_t fomMeasurement = SLRG_COMPOSITE_EYE;
+    if (!isSpeed25GPerLane(_activeSpeed, _protoActive)) {
+        fomMeasurement |= (SLRG_UPPER_EYE | SLRG_MIDDLE_EYE | SLRG_LOWER_EYE);
+    }
+
+    for (u_int32_t i = 0; i < numOfLanesToUse; i++) {
+        resetParser(regName);
+        updatePortType();
+        updateField("local_port", _localPort);
+        updateField("pnat", (_userInput._pcie) ? PNAT_PCIE : PNAT_LOCAL);
+        updateField("lane", i);
+        updateField("fom_measurment", fomMeasurement);
+        genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
+
+        initialFom.push_back(MlxlinkRecord::addSpaceForSlrg(
+               getFieldValue("status")? to_string(getFieldValue("initial_fom")) : "N/A"));
+        lastFom.push_back(MlxlinkRecord::addSpaceForSlrg(
+               (fomMeasurement & SLRG_COMPOSITE_EYE)? getFieldStr("last_fom") : "N/A"));
+        upperFom.push_back(MlxlinkRecord::addSpaceForSlrg(
+               (fomMeasurement & SLRG_UPPER_EYE)? getFieldStr("upper_eye") : "N/A"));
+        midFom.push_back(MlxlinkRecord::addSpaceForSlrg(
+               (fomMeasurement & SLRG_MIDDLE_EYE)? getFieldStr("mid_eye") : "N/A"));
+        lowerFom.push_back(MlxlinkRecord::addSpaceForSlrg(
+               (fomMeasurement & SLRG_LOWER_EYE)? getFieldStr("lower_eye") : "N/A"));
+    }
+
+    string fomMode = _mlxlinkMaps->_slrgFomMode[getFieldValue("fom_mode")];
+    setPrintVal(_eyeOpeningInfoCmd, "FOM Mode", fomMode,
+                ANSI_COLOR_RESET, !fomMode.empty(), true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Initial FOM", getStringFromVector(initialFom),
+                ANSI_COLOR_RESET, !initialFom.empty(), true, true);
+    setPrintVal(_eyeOpeningInfoCmd, "Last FOM", getStringFromVector(lastFom),
+                ANSI_COLOR_RESET, !lastFom.empty(), (fomMeasurement & SLRG_COMPOSITE_EYE), true);
+    setPrintVal(_eyeOpeningInfoCmd, "Upper Grades", getStringFromVector(upperFom),
+                ANSI_COLOR_RESET, !upperFom.empty(), (fomMeasurement & SLRG_UPPER_EYE), true);
+    setPrintVal(_eyeOpeningInfoCmd, "Mid Grades", getStringFromVector(midFom),
+                ANSI_COLOR_RESET, !midFom.empty(), (fomMeasurement & SLRG_MIDDLE_EYE), true);
+    setPrintVal(_eyeOpeningInfoCmd, "Lower Grades", getStringFromVector(lowerFom),
+                ANSI_COLOR_RESET, !lowerFom.empty(), (fomMeasurement & SLRG_LOWER_EYE), true);
 }
 
 void MlxlinkCommander::showEye()
@@ -2451,7 +2590,7 @@ void MlxlinkCommander::showPcie()
         if (_userInput._links) {
             return;
         }
-        if(!_userInput._sendDpn && !_userInput._specifiedPort) {
+        if(!_userInput._sendDpn && !_userInput._portSpecified) {
             if (_validDpns.size() == 0) {
                 throw MlxRegException("No valid DPN's detected!");
             }
@@ -2503,9 +2642,57 @@ void MlxlinkCommander::showPcieState(DPN& dpn)
     cout << _pcieInfoCmd;
 }
 
+void MlxlinkCommander::collectAMBER()
+{
+    try {
+        if (_productTechnology >= PRODUCT_16NM) {
+            initAmBerCollector();
+
+            if (!_isHCA) {
+                // If port provided, collect one port only
+                if (_userInput._portSpecified) {
+                    PortGroup pg {_localPort, _userInput._labelPort, 0, _userInput._splitPort};
+                    if (_devID == DeviceQuantum2) {
+                        pg.labelPort = pg.labelPort * 2 + _userInput._splitPort - 2;
+                        pg.secondSplit = _userInput._secondSplitProvided ? _userInput._secondSplitPort
+                                                                         : 0;
+                    }
+                    _amberCollector->_localPorts.push_back(pg);
+                } else {
+                    // collect all ports info if the port flag wasn't provided
+                    string regName = "MGPIR";
+                    resetParser(regName);
+                    genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
+                    u_int32_t numOfPorts = getFieldValue("num_of_modules");
+                    vector<string> labelPorts;
+                    _ignorePortStatus = false;
+                    for (u_int32_t labelPort = 1; labelPort <= numOfPorts; labelPort ++) {
+                        labelPorts.push_back(to_string(labelPort));
+                    }
+                    handleLabelPorts(labelPorts, true);
+                    _amberCollector->_localPorts = _localPortsPerGroup;
+                }
+            }
+
+            _amberCollector->startCollector();
+        } else {
+            throw MlxRegException(AMBER_COLLECT_FLAG " is not available for "\
+                  "this device, please use " BER_COLLECT_FLAG " flag instead");
+        }
+    } catch (const std::exception &exc) {
+        _allUnhandledErrors += string("Collecting AMBER raised the following exception: \n") +
+                                      string(exc.what()) + string("\n");
+    }
+}
+
 void MlxlinkCommander::collectBER()
 {
     try {
+        if (_productTechnology >= PRODUCT_16NM) {
+            throw MlxRegException(BER_COLLECT_FLAG " is not available for "\
+                  "this device, please use " AMBER_COLLECT_FLAG " flag instead");
+        }
+
         const char *fileName = _userInput._csvBer.c_str();
         ifstream ifile(fileName);
         ofstream berFile;
@@ -2537,7 +2724,7 @@ void MlxlinkCommander::collectBER()
             speed = (speed * _numOfLanes) / MAX_LANES_NUMBER;
         }
         string port = to_string(_userInput._labelPort);
-        if (_splitted) {
+        if (_userInput._splitProvided) {
             port += "/"  + to_string(_userInput._splitPort) ;
         }
         berFile << _userInput._testMode << ',' << protocol << ','
@@ -2564,7 +2751,8 @@ void MlxlinkCommander::collectBER()
         berFile << endl;
         berFile.close();
     } catch (const std::exception &exc) {
-        _allUnhandledErrors += string("Collecting BER and producing report raised the following exception: ") + string(exc.what()) + string("\n");
+        _allUnhandledErrors += string(
+                "Collecting BER and producing report raised the following exception: \n") + string(exc.what()) + string("\n");
     }
 }
 
@@ -3766,6 +3954,9 @@ void MlxlinkCommander::sendSltp()
                     "notice that the new settings will be implemented in all ports "
                     "mapped to group " + to_string(portGroup), _jsonRoot);
         }
+        if (_userInput._txPolicy && _productTechnology < PRODUCT_7NM ) {
+            throw MlxRegException("--" SLTP_TX_POLICY_FLAG " flag is not valid for this device");
+        }
         u_int32_t laneSpeed = 0;
         for (u_int32_t i = 0; i < _numOfLanes; i++) {
             if (_userInput._sltpLane && _userInput._lane != i) {
@@ -3786,6 +3977,7 @@ void MlxlinkCommander::sendSltp()
             updateField("pnat", PNAT_LOCAL);
             updateField("lane_speed", laneSpeed);
             updateField("lane", i);
+            updateField("tx_policy", _userInput._txPolicy);
             switch (_productTechnology) {
             case PRODUCT_40NM:
             case PRODUCT_28NM:
@@ -3798,7 +3990,7 @@ void MlxlinkCommander::sendSltp()
                 updateSltp7nmFields();
                 break;
             }
-            updateField("c_db", _userInput._db);
+            updateField("c_db", _userInput._db || _userInput._txPolicy);
             genBuffSendRegister(regName, MACCESS_REG_METHOD_SET);
         }
     } catch (MlxRegException &exc) {
@@ -4261,6 +4453,7 @@ void MlxlinkCommander::setAmBerCollectorFields()
     _amberCollector->_node = _dpn.node;
     _amberCollector->_mlxlinkMaps = _mlxlinkMaps;
     _amberCollector->_isHca = _isHCA;
+    _amberCollector->_devID = _devID;
 }
 
 void MlxlinkCommander::initAmBerCollector()
@@ -4274,6 +4467,7 @@ void MlxlinkCommander::prepareJsonOut()
     _operatingInfoCmd.toJsonFormat(_jsonRoot);
     _supportedInfoCmd.toJsonFormat(_jsonRoot);
     _troubInfoCmd.toJsonFormat(_jsonRoot);
+    _toolInfoCmd.toJsonFormat(_jsonRoot);
     _testModeInfoCmd.toJsonFormat(_jsonRoot);
     _pcieInfoCmd.toJsonFormat(_jsonRoot);
     _moduleInfoCmd.toJsonFormat(_jsonRoot);

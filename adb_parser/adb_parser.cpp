@@ -36,6 +36,7 @@
  * Function: Adb::Adb
  **/
 
+
 #include "adb_parser.h"
 #include "adb_instance.h"
 #include "buf_ops.h"
@@ -402,6 +403,7 @@ bool AdbParser::loadFromString(const char *adbString)
                 string("XML parsing issues: ") + XML_ErrorString(errNo));
         }
     }
+
     catch (AdbException &exp)
     {
         if (exp.what_s().find("in file:") == string::npos)
@@ -425,6 +427,7 @@ bool AdbParser::loadFromString(const char *adbString)
         _lastError = CHECK_RUNTIME_ERROR(e);
         return false;
     }
+
     catch (...)
     {
         int line = XML_GetCurrentLineNumber(_xmlParser);
@@ -707,6 +710,7 @@ void AdbParser::includeAllFilesInDir(AdbParser *adbParser, string dirPath,
                     }
                 }
             }
+
         }
     }
 }
@@ -846,7 +850,10 @@ void AdbParser::startConfigElement(const XML_Char **atts, AdbParser *adbParser, 
                                   "config tag can't appear within other config",
                                   ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
                                   ExceptionHolder::FATAL_EXCEPTION);
+
     }
+    return true;
+}
 
     adbParser->_currentConfig = new AdbConfig;
     for (int i = 0; i < attrCount(atts); i++)
@@ -948,6 +955,7 @@ void AdbParser::startIncludeElement(const XML_Char **atts, AdbParser *adbParser,
         }
         if (!expFound)
             includeFile(adbParser, fname, lineNumber);
+
     }
     else if (includeAttr == "dir")
     {
@@ -1124,6 +1132,7 @@ void AdbParser::startFieldElement(const XML_Char **atts, AdbParser *adbParser, c
     string offset = attrValue(atts, "offset");
     string size = attrValue(atts, "size");
 
+
     if (adbParser->_enforceExtraChecks)
     {
         if (addr2int(size) % 32 == 0 && !AdbParser::checkHEXFormat(size))
@@ -1205,6 +1214,7 @@ void AdbParser::startFieldElement(const XML_Char **atts, AdbParser *adbParser, c
                                       ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
                                       ExceptionHolder::ERROR_EXCEPTION);
         }
+
     }
 
     string subNode = attrValue(atts, "subnode");
@@ -1586,7 +1596,12 @@ void AdbParser::endElement(void *_adbParser, const XML_Char *name)
                 }
 
                 prevField = field;
+
             }
+
+            adbParser->_currentNode->fields.insert(
+                adbParser->_currentNode->fields.end(), reserveds.begin(),
+                reserveds.end());
         }
 
         // Add reserved filler at end of union/node
@@ -1619,6 +1634,7 @@ void AdbParser::endElement(void *_adbParser, const XML_Char *name)
                 adbParser->_currentNode->fields.end(), reserveds.begin(),
                 reserveds.end());
         }
+
 
         // Re-fix fields offset
         if (adbParser->_adbCtxt->bigEndianArr)
@@ -2437,6 +2453,7 @@ vector<AdbInstance *> Adb::createInstance(AdbField *field,
                                           AdbProgress *progressObj, int depth, bool ignoreMissingNodes,
                                           bool allowMultipleExceptions)
 {
+
     static const regex EXP_PATTERN(
         "\\s*([a-zA-Z0-9_]+)=((\\$\\(.*?\\)|\\S+|$)*)\\s*");
     if (progressObj)
@@ -2483,6 +2500,7 @@ vector<AdbInstance *> Adb::createInstance(AdbField *field,
             {
                 field->offset = parent->offset;
             }
+
         }
         inst->offset = calcArrOffset(field, parent, i);
         if (field->isArray())
@@ -2638,6 +2656,7 @@ vector<AdbInstance *> Adb::createInstance(AdbField *field,
     return instList;
 }
 
+
 /**
  * Function: Adb::checkInstanceOffsetValidity
  **/
@@ -2654,6 +2673,7 @@ void Adb::checkInstanceOffsetValidity(AdbInstance *inst, AdbInstance *parent, bo
         {
             throw AdbException(exceptionTxt);
         }
+
     }
 }
 

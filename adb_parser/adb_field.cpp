@@ -31,6 +31,7 @@
  *
  *  Version: $Id$
  */
+
 /*************************** AdbField ***************************/
 /**
  * Function: AdbField::AdbField

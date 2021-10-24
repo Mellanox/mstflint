@@ -94,6 +94,7 @@ enum STATUS_DDM_FLAGS_TYPE {
 /*
  * Records size
  */
+#define TOOL_INFORMAITON_INFO_LAST      4
 #define PDDR_OPERATIONAL_INFO_LAST      7
 #define PDDR_SUPPORTED_INFO_LAST        2
 #define PDDR_TRUOBLESHOOTING_INFO_LAST  4
@@ -106,7 +107,7 @@ enum STATUS_DDM_FLAGS_TYPE {
 #define TEST_MODE_BER_INFO_LAST         4
 #define MPCNT_PERFORMANCE_INFO_LAST     4
 #define MPCNT_TIMER_INFO_LAST           1
-#define EYE_OPENING_INFO_LAST           3
+#define EYE_OPENING_INFO_LAST           8
 #define FEC_CAP_INFO_LASE               5
 #define DEVICE_INFO_LAST                5
 #define BER_MONITOR_INFO_LAST           2
