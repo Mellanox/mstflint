@@ -1,6 +1,5 @@
 /*
- *
- *  Copyright (C) Jan 2013, Mellanox Technologies Ltd.  ALL RIGHTS RESERVED.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -31,24 +30,35 @@
  * SOFTWARE.
  *
  *  Version: $Id$
- *
  */
 
-#ifndef BIT_OPS_H
-#define BIT_OPS_H
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <assert.h>
+#ifndef xmlCreator_H
+#define xmlCreator_H
+
+#include <string>
 #include <common/compatibility.h>
-#include <common/bit_slice.h>
-#include <common/tools_utils.h>
 
-/************************************/
-/************************************/
-/************************************/
-void print_raw(FILE *file, void *buff, int buff_len);
-u_int64_t pop_from_buf(const u_int8_t *buff, u_int32_t bit_offset, u_int32_t field_size);
-void push_to_buf(u_int8_t *buff, u_int32_t bit_offset, u_int32_t field_size, u_int64_t field_value);
-#endif // BIT_OPS_H
+using namespace std;
+
+namespace xmlCreator
+{
+
+  template <class T>
+  bool compareFieldsPtr(T *f1, T *f2);
+  string indentString(int i);
+  int dword(int bits);
+  int startBit(int bits);
+  string formatAddr(u_int32_t offs, u_int32_t size);
+  string encodeXml(const string &data);
+  string descNativeToXml(const string &desc);
+
+}
+
+template <class T>
+bool xmlCreator::compareFieldsPtr(T *f1, T *f2)
+{
+    return (*f1) < (*f2);
+}
+
+#endif

@@ -1,6 +1,5 @@
 /*
- *
- *  Copyright (C) Jan 2013, Mellanox Technologies Ltd.  ALL RIGHTS RESERVED.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -31,24 +30,49 @@
  * SOFTWARE.
  *
  *  Version: $Id$
- *
  */
+/*************************** AdbConfig ***************************/
+/**
+ * Function: AdbField::print
+ **/
 
-#ifndef BIT_OPS_H
-#define BIT_OPS_H
+#include "adb_config.h"
+#include <iostream>
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <assert.h>
-#include <common/compatibility.h>
-#include <common/bit_slice.h>
-#include <common/tools_utils.h>
+void AdbConfig::print(int indent) {
+    cout << indentString(indent) << "Attributes:" << endl;
+    AttrsMap::iterator iter;
+    for (iter = attrs.begin(); iter != attrs.end(); iter++)
+        cout << indentString(indent + 1) << iter->first << " - "
+                << iter->second << endl;
 
-/************************************/
-/************************************/
-/************************************/
-void print_raw(FILE *file, void *buff, int buff_len);
-u_int64_t pop_from_buf(const u_int8_t *buff, u_int32_t bit_offset, u_int32_t field_size);
-void push_to_buf(u_int8_t *buff, u_int32_t bit_offset, u_int32_t field_size, u_int64_t field_value);
-#endif // BIT_OPS_H
+    cout << indentString(indent) << "Enums:" << endl;
+    for (iter = enums.begin(); iter != enums.end(); iter++)
+        cout << indentString(indent + 1) << iter->first << " - "
+                << iter->second << endl;
+}
+
+/**
+ * Function: AdbConfig::toXml
+ **/
+string AdbConfig::toXml() {
+    string xml = "<config ";
+
+    for (AttrsMap::iterator it = attrs.begin(); it != attrs.end(); it++) {
+        xml += " " + it->first + "=\"" + encodeXml(it->second) + "\"";
+    }
+
+    if (!enums.empty()) {
+        xml += " >\n";
+
+        for (AttrsMap::iterator it = enums.begin(); it != enums.end(); it++) {
+            xml += "\t<enum  name=\"" + encodeXml(it->first) + "\" value=\""
+                    + encodeXml(it->second) + "\" />\n";
+        }
+        xml += "</config>";
+    } else {
+        xml += " />";
+    }
+
+    return xml;
+}

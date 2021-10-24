@@ -1,6 +1,5 @@
 /*
- *
- *  Copyright (C) Jan 2013, Mellanox Technologies Ltd.  ALL RIGHTS RESERVED.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -31,24 +30,58 @@
  * SOFTWARE.
  *
  *  Version: $Id$
- *
  */
+/*************************** AdbField ***************************/
 
-#ifndef BIT_OPS_H
-#define BIT_OPS_H
+#ifndef ADB_FIELD_H
+#define ADB_FIELD_H
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <assert.h>
-#include <common/compatibility.h>
-#include <common/bit_slice.h>
-#include <common/tools_utils.h>
+#include "adb_xmlCreator.h"
+#include <map>
+#include <string>
 
-/************************************/
-/************************************/
-/************************************/
-void print_raw(FILE *file, void *buff, int buff_len);
-u_int64_t pop_from_buf(const u_int8_t *buff, u_int32_t bit_offset, u_int32_t field_size);
-void push_to_buf(u_int8_t *buff, u_int32_t bit_offset, u_int32_t field_size, u_int64_t field_value);
-#endif // BIT_OPS_H
+using namespace xmlCreator;
+using namespace std;
+
+typedef map<string, string> AttrsMap;
+
+class AdbField
+{
+public:
+    // Methods
+    AdbField();
+    ~AdbField();
+    bool isLeaf();
+    bool isStruct();
+    bool isArray();
+    u_int32_t arrayLen();
+    bool isUnlimitedArr();
+    u_int32_t eSize();
+    string toXml(const string &addPrefix);
+
+    // Operator overloading - useful for sorting
+    bool operator<(AdbField &other);
+
+    // FOR DEBUG
+    void print(int indent = 0);
+
+public:
+    // Members
+    string name;
+    u_int32_t size;   // in bits
+    u_int32_t offset; // in bits (relative to the node start addr)
+    string desc;
+    bool definedAsArr;
+    u_int32_t lowBound;
+    u_int32_t highBound;
+    bool unlimitedArr;
+    string subNode;
+    AttrsMap attrs;
+    bool isReserved;
+    string condition; // field's visibility dynamic condition
+
+    // FOR USER USAGE
+    void *userData;
+};
+
+#endif

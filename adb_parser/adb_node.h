@@ -1,6 +1,5 @@
 /*
- *
- *  Copyright (C) Jan 2013, Mellanox Technologies Ltd.  ALL RIGHTS RESERVED.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -31,24 +30,51 @@
  * SOFTWARE.
  *
  *  Version: $Id$
- *
  */
+/*************************** AdbNode ***************************/
 
-#ifndef BIT_OPS_H
-#define BIT_OPS_H
+#ifndef ADB_NODE_H
+#define ADB_NODE_H
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <assert.h>
-#include <common/compatibility.h>
-#include <common/bit_slice.h>
-#include <common/tools_utils.h>
+#include "adb_xmlCreator.h"
+#include <string>
+#include <map>
+#include <vector>
 
-/************************************/
-/************************************/
-/************************************/
-void print_raw(FILE *file, void *buff, int buff_len);
-u_int64_t pop_from_buf(const u_int8_t *buff, u_int32_t bit_offset, u_int32_t field_size);
-void push_to_buf(u_int8_t *buff, u_int32_t bit_offset, u_int32_t field_size, u_int64_t field_value);
-#endif // BIT_OPS_H
+using namespace std;
+using namespace xmlCreator;
+
+class AdbField;
+
+typedef map<string, string> AttrsMap;
+typedef vector<AdbField *> FieldsList;
+class AdbNode
+{
+public:
+    // Methods
+    AdbNode();
+    ~AdbNode();
+    string toXml(const string &addPrefix);
+
+    // FOR DEBUG
+    void print(int indent = 0);
+
+public:
+    // Members
+    string name;
+    u_int32_t size; // in bits
+    bool isUnion;
+    string desc;
+    FieldsList fields;
+    FieldsList condFields; // Field that weren't instantiated due to not satisfied condition
+    AttrsMap attrs;
+
+    // defined in
+    string fileName;
+    int lineNumber;
+
+    // FOR USER USAGE
+    void *userData;
+};
+
+#endif
