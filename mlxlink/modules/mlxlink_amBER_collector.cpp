@@ -39,6 +39,7 @@ MlxlinkAmBerCollector::MlxlinkAmBerCollector(Json::Value &jsonRoot): _jsonRoot(j
     _localPort = 1;
     _labelPort = _localPort;
     _splitPort = 0;
+    _secondSplit = 0;
     _numOfLanes = 0;
     _csvFileName = "";
     _iteration = 0;
@@ -49,6 +50,7 @@ MlxlinkAmBerCollector::MlxlinkAmBerCollector(Json::Value &jsonRoot): _jsonRoot(j
     _protoActive = 0;
     _productTechnology = PRODUCT_16NM;
     _activeSpeed = 0;
+    _devID = 0;
 
     _isPortIB = false;
     _isPortETH = false;
@@ -131,6 +133,16 @@ void MlxlinkAmBerCollector::startCollector()
         _localPort = it->localPort;
         _labelPort = it->labelPort;
         _splitPort = it->split;
+        _secondSplit = it->secondSplit;
+        if (_devID == DeviceQuantum2) { // convert panel port to cage/port
+            _labelPort = _labelPort % 2 == 0 ? (_labelPort / 2)
+                                             : (_labelPort / 2) + 1;
+
+            if (_secondSplit) { // convert split panel port to cage/port/split
+                _labelPort = _labelPort % 2 == 0 ? (_labelPort / 2)
+                                                 : (_labelPort / 2) + 1;
+            }
+        }
 
         init();
         collect();
@@ -301,10 +313,15 @@ vector<AmberField> MlxlinkAmBerCollector::getIndexesInfo()
     }
 
     AmberField::_dataValid = true;
-
     string labelPortStr = to_string(_labelPort);
-    if (_splitPort && _splitPort != 1) { // add the split number for port (1, 1/2, 1/3, etc)
+    if ((_splitPort && _splitPort != 1) || (_devID == DeviceQuantum2)) {
+        /* For Quantum-2, the split notation will stand for the port in the cage
+         * For other, only add the split notation if it's not 1
+         */
         labelPortStr += "/" + to_string(_splitPort);
+    }
+    if (_devID == DeviceQuantum2 && _secondSplit) {
+        labelPortStr += "/" + to_string(_secondSplit);
     }
     fields.push_back(AmberField("Port Number", labelPortStr + "(" +
                                                to_string(_localPort) + ")" ,

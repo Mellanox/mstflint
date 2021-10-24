@@ -54,17 +54,27 @@ struct PortGroup {
         labelPort = 0;
         groupId = 0;
         split = 0;
+        secondSplit = 0;
     }
     PortGroup(u_int32_t _localPort, u_int32_t _labelPort, u_int32_t _groupId, u_int32_t _split) {
         localPort = _localPort;
         labelPort = _labelPort;
         groupId = _groupId;
         split = _split;
+        secondSplit = 0;
+    }
+    PortGroup(u_int32_t _localPort, u_int32_t _labelPort, u_int32_t _groupId, u_int32_t _split, u_int32_t _secondSplit) {
+        localPort = _localPort;
+        labelPort = _labelPort;
+        groupId = _groupId;
+        split = _split;
+        secondSplit = _secondSplit;
     }
     u_int32_t localPort;
     u_int32_t labelPort;
     u_int32_t groupId;
     u_int32_t split;
+    u_int32_t secondSplit;
 };
 
 struct CAP_VALUE {

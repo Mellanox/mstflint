@@ -40,7 +40,8 @@ using namespace std;
 UserInput::UserInput()
 {
     _labelPort = 1;
-    _splitPort = 0;
+    _splitPort = 1;
+    _secondSplitPort = 1;
     _depth = 0;
     _pcieIndex = 0;
     _node = 0;
@@ -69,7 +70,9 @@ UserInput::UserInput()
     _sltpLane = false;
     _txPolicy = false;
     _advancedMode = false;
-    _specifiedPort = false;
+    _portSpecified = false;
+    _splitProvided = false;
+    _secondSplitProvided = false;
     _cable = false;
     _dump = false;
     _ddm = false;

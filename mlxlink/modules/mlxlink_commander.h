@@ -313,12 +313,13 @@ public:
     void getProductTechnology();
     bool checkPortStatus(u_int32_t localPort);
     void checkAllPortsStatus();
+    void handlePortStr(const string &portStr);
     void labelToLocalPort();
     void labelToHCALocalPort();
     void labelToSpectLocalPort();
     void labelToIBLocalPort();
     bool isIBSplitReady();
-    void toIBLabelPort(u_int32_t &labelPort, bool ibSplitReady);
+    u_int32_t calculatePanelPort(bool ibSplitReady);
     void checkWidthSplit(u_int32_t localPort);
     void checkUnSplit(u_int32_t localPort);
     u_int32_t maxLocalPort();
@@ -335,6 +336,7 @@ public:
     void getprbsLanesFromParams(std::vector<string> prbsLanesParams);
     std::vector<string> parseParamsFromLine(const string & ParamsLine);
     bool isSpect2WithGb();
+    bool isIbLocalPortValid(u_int32_t localPort);
     void fillIbPortGroupMap(u_int32_t localPort,u_int32_t labelPort, u_int32_t group,
             bool splitReady);
     void fillEthPortGroupMap(u_int32_t localPort,u_int32_t labelPort, u_int32_t group,
@@ -543,7 +545,6 @@ public:
     string _cableSN;
     string _moduleTemp;
     bool _protoCapabilityEx;
-    bool _splitted;
     bool _linkUP;
     bool _prbsTestMode;
     bool _plugged;
