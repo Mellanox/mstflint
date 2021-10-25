@@ -1,12 +1,12 @@
-/* 
- * Copyright (C) Jan 2019 Mellanox Technologies Ltd. All rights reserved.
- * 
+/*
+ * Copyright (c) 2012-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
  * General Public License (GPL) Version 2, available from the file
  * COPYING in the main directory of this source tree, or the
  * OpenIB.org BSD license below:
- * 
+ *
  *     Redistribution and use in source and binary forms, with or
  *     without modification, are permitted provided that the following
  *     conditions are met:
@@ -19,7 +19,7 @@
  *        copyright notice, this list of conditions and the following
  *        disclaimer in the documentation and/or other materials
  *        provided with the distribution.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -28,7 +28,6 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
-
  *
  */
 
@@ -326,6 +325,7 @@ bool AdbParser::load()
             enum XML_Error errNo = XML_GetErrorCode(_xmlParser);
             throw AdbException(
                 string("XML parsing issues: ") + XML_ErrorString(errNo));
+
         }
     }
     catch (AdbException &exp)
@@ -426,6 +426,7 @@ bool AdbParser::loadFromString(const char *adbString)
         _lastError = CHECK_RUNTIME_ERROR(e);
         return false;
     }
+
     catch (...)
     {
         int line = XML_GetCurrentLineNumber(_xmlParser);
@@ -651,6 +652,7 @@ void AdbParser::includeFile(AdbParser *adbParser, string fileName,
         throw AdbException(string() + "Can't find the file: " + fileName);
     }
 
+
     // Update filename to be only base name with extension to prevent duplications
     boost::filesystem::path boostPath(filePath);
     fileName = boostPath.filename().string();
@@ -848,6 +850,8 @@ void AdbParser::startConfigElement(const XML_Char **atts, AdbParser *adbParser, 
                                   ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
                                   ExceptionHolder::FATAL_EXCEPTION);
     }
+    return true;
+}
 
     adbParser->_currentConfig = new AdbConfig;
     for (int i = 0; i < attrCount(atts); i++)
@@ -1198,6 +1202,7 @@ void AdbParser::startFieldElement(const XML_Char **atts, AdbParser *adbParser, c
                                       "Invalid size of array entries",
                                       ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
                                       ExceptionHolder::ERROR_EXCEPTION);
+
         }
         if (entrySize < 8 && entrySize != 4 && entrySize != 2 && entrySize != 1 && ((isize > 32 && highBound != "VARIABLE") || highBound == "VARIABLE"))
         {
@@ -1554,7 +1559,7 @@ void AdbParser::endElement(void *_adbParser, const XML_Char *name)
                         compareFieldsPtr<AdbField>);
         }
 
-        // Check overlapping
+      // Check overlapping
         vector<AdbField *> reserveds;
         AdbField prevFieldDummy;
         prevFieldDummy.offset = 0;
@@ -1588,6 +1593,10 @@ void AdbParser::endElement(void *_adbParser, const XML_Char *name)
 
                 prevField = field;
             }
+
+            adbParser->_currentNode->fields.insert(
+                adbParser->_currentNode->fields.end(), reserveds.begin(),
+                reserveds.end());
         }
 
         // Add reserved filler at end of union/node
@@ -2479,6 +2488,7 @@ vector<AdbInstance *> Adb::createInstance(AdbField *field,
             if (parent->subItems.size() > 0)
             {
                 field->offset = parent->subItems.back()->offset;
+
             }
             else
             {
