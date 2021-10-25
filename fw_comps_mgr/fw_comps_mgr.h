@@ -1,5 +1,6 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -119,6 +120,7 @@ typedef struct {
     char imageVsd[VSD_LEN + 1];
     bool sec_boot;
     life_cycle_t life_cycle;
+    bool encryption;
 
 } fwInfoT;
 
@@ -190,8 +192,8 @@ public:
     comps_ids_t              getType()   { return _type; };
     comps_status_t           getStatus() { return _status; };
 
-    void                    setData(const std::vector<u_int8_t>&  buff) {_data = buff;};
-    void                    setSize(u_int32_t size) {_size = size;};
+    void                    setData(const std::vector<u_int8_t>&  buff) { _data = buff; };
+    void                    setSize(u_int32_t size) { _size = size; };
     void                    setType(comps_ids_t compId) { _type = compId; };
     void                    setStatus(comps_status_t compStat) { _status = compStat; };
 
@@ -208,7 +210,7 @@ private:
 };
 
 typedef enum {
-    FWCOMPS_SUCCESS       = 0x0,
+    FWCOMPS_SUCCESS = 0x0,
     FWCOMPS_INFO_TYPE_NOT_SUPPORTED,
     FWCOMPS_COMP_NOT_SUPPORTED,
     FWCOMPS_REG_FAILED,
@@ -295,19 +297,19 @@ typedef enum {
 
 typedef enum {
     FSM_QUERY = 0,
-    FSM_CMD_LOCK_UPDATE_HANDLE     = 0x1,
-    FSM_CMD_RELEASE_UPDATE_HANDLE  = 0x2,
-    FSM_CMD_UPDATE_COMPONENT       = 0x3,
-    FSM_CMD_VERIFY_COMPONENT       = 0x4,
-    FSM_CMD_ACTIVATE_COMPONENET    = 0x5,
-    FSM_CMD_ACTIVATE_ALL           = 0x6,
-    FSM_CMD_READ_COMPONENT         = 0x7,
-    FSM_CMD_CANCEL                 = 0x8,
-    FSM_CMD_CHECK_UPDATE_HANDLE    = 0x9,
-    FSM_CMD_FORCE_HANDLE_RELEASE   = 0xA,
-    FSM_CMD_READ_PENDING_COMPONENT = 0xB,
-    FSM_CMD_DOWNSTREAM_DEVICE_TRANSFER = 0xC,
-    FSM_CMD_UNDEFINED = 0xFF,
+    FSM_CMD_LOCK_UPDATE_HANDLE          = 0x1,
+    FSM_CMD_RELEASE_UPDATE_HANDLE       = 0x2,
+    FSM_CMD_UPDATE_COMPONENT            = 0x3,
+    FSM_CMD_VERIFY_COMPONENT            = 0x4,
+    FSM_CMD_ACTIVATE_COMPONENET         = 0x5,
+    FSM_CMD_ACTIVATE_ALL                = 0x6,
+    FSM_CMD_READ_COMPONENT              = 0x7,
+    FSM_CMD_CANCEL                      = 0x8,
+    FSM_CMD_CHECK_UPDATE_HANDLE         = 0x9,
+    FSM_CMD_FORCE_HANDLE_RELEASE        = 0xA,
+    FSM_CMD_READ_PENDING_COMPONENT      = 0xB,
+    FSM_CMD_DOWNSTREAM_DEVICE_TRANSFER  = 0xC,
+    FSM_CMD_UNDEFINED                   = 0xFF,
 } fsm_command_t;
 
 typedef enum
@@ -351,31 +353,26 @@ public:
     virtual ~FwCompsMgr();
 
     u_int32_t        getFwSupport();
-    mfile*           getMfileObj() {return _mf;};
+    mfile*           getMfileObj() { return _mf; };
     bool    fwReactivateImage();
-    bool             burnComponents(std::vector<FwComponent>& comps,
-                                    ProgressCallBackAdvSt *progressFuncAdv = (ProgressCallBackAdvSt *)NULL);
-    bool             getFwComponents(std::vector<FwComponent>& comps, bool readEn = false);
-
-    bool             readComponent(FwComponent::comps_ids_t compType,
-                                   FwComponent& fwComp,
-                                   bool readPending = false,
-                                   ProgressCallBackAdvSt *progressFuncAdv = (ProgressCallBackAdvSt *)NULL);
-
-
+    bool    burnComponents(std::vector<FwComponent>& comps,
+                           ProgressCallBackAdvSt *progressFuncAdv = (ProgressCallBackAdvSt *)NULL);
+    bool    getFwComponents(std::vector<FwComponent>& comps, bool readEn = false);
+    bool    readComponent(FwComponent::comps_ids_t compType,
+                          FwComponent& fwComp,
+                          bool readPending = false,
+                          ProgressCallBackAdvSt *progressFuncAdv = (ProgressCallBackAdvSt *)NULL);
     bool    queryFwInfo(fwInfoT *query, bool next_boot_fw_ver = false);
-
-    bool             forceRelease();
+    bool    forceRelease();
     fw_comps_error_t getLastError() { return _lastError; };
     unsigned char*      getLastErrMsg();
-
-    bool             readBlockFromComponent(FwComponent::comps_ids_t compId,
-                                            u_int32_t offset,
-                                            u_int32_t size,
-                                            std::vector<u_int8_t>& data);
-    bool             setMacsGuids(mac_guid_t macGuid);
+    bool    readBlockFromComponent(FwComponent::comps_ids_t compId,
+                                   u_int32_t offset,
+                                   u_int32_t size,
+                                   std::vector<u_int8_t>& data);
+    bool    setMacsGuids(mac_guid_t macGuid);
     bool    getDeviceHWInfo(FwCompsMgr::MQISDeviceDescriptionT op,
-                                     vector<u_int8_t>& infoString);
+                            vector<u_int8_t>& infoString);
     void    deal_with_signal();
     void   setLastFirmwareError(fw_comps_error_t fw_error);
     void   setLastRegisterAccessStatus(reg_access_status_t err);
@@ -391,17 +388,17 @@ public:
 private:
 
     typedef enum {
-        FSMST_IDLE           = 0x0,
-        FSMST_LOCKED         = 0x1,
-        FSMST_INITIALIZE     = 0x2,
-        FSMST_DOWNLOAD       = 0x3,
-        FSMST_VERIFY         = 0x4,
-        FSMST_APPLY          = 0x5,
-        FSMST_ACTIVATE       = 0x6,
-        FSMST_UPLOAD         = 0x7,
-        FSMST_UPLOAD_PENDING = 0x8,
-        FSMST_DOWNSTREAM_DEVICE_TRANSFER = 0x9,
-        FSMST_NA = 0xFF,
+        FSMST_IDLE                          = 0x0,
+        FSMST_LOCKED                        = 0x1,
+        FSMST_INITIALIZE                    = 0x2,
+        FSMST_DOWNLOAD                      = 0x3,
+        FSMST_VERIFY                        = 0x4,
+        FSMST_APPLY                         = 0x5,
+        FSMST_ACTIVATE                      = 0x6,
+        FSMST_UPLOAD                        = 0x7,
+        FSMST_UPLOAD_PENDING                = 0x8,
+        FSMST_DOWNSTREAM_DEVICE_TRANSFER    = 0x9,
+        FSMST_NA                            = 0xFF,
     } fsm_state_t;
 
     typedef enum {

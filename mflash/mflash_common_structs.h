@@ -1,5 +1,6 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -81,29 +82,29 @@ typedef struct write_protect_info {
 //
 ////////////////////////////////////////
 typedef enum StFlashCommand {
-    SFC_SE = 0xD8,
-    SFC_4SE = 0xDC,
-    SFC_SSE = 0x20,
-    SFC_4SSE = 0x21,
-    SFC_PP = 0x02,
-    SFC_4PP = 0x12,
-    SFC_READ = 0x03,
-    SFC_4READ = 0x13,
-    SFC_FAST_READ = 0x3B,
-    SFC_4FAST_READ = 0x3C,
-    SFC_QUAD_READ = 0x3B,
-    SFC_4QUAD_READ = 0x3C,
-    SFC_RES = 0xAB,
-    SFC_JEDEC = 0x9F,
-    SFC_RDSR = 0x05,
-    SFC_WRSR2 = 0x31,
-    SFC_RDSR2 = 0x35,
-    SFC_WREN = 0x06,
+    SFC_SE = 0xD8,              // Sector erase
+    SFC_4SE = 0xDC,             // Sector erase 4B addr
+    SFC_SSE = 0x20,             // Subsector erase
+    SFC_4SSE = 0x21,            // Subsector erase 4B addr
+    SFC_PP = 0x02,              // Page program
+    SFC_4PP = 0x12,             // Page program 4B addr
+    SFC_READ = 0x03,            // Read data
+    SFC_4READ = 0x13,           // Read data 4B addr
+    SFC_FAST_READ = 0x3B,       // Fast read dual output
+    SFC_4FAST_READ = 0x3C,      // Fast read dual output 4B addr
+    SFC_RES = 0xAB,             // Release power-down
+    SFC_JEDEC = 0x9F,           // Read JEDEC ID
+    SFC_RDSR = 0x05,            // Read status register
+    SFC_WRSR2 = 0x31,           // Write status register 2
+    SFC_RDSR2 = 0x35,           // Read status register 2
+    SFC_WRSR3_WINBOND = 0x11,   // Write status register 3 (WINBOND)
+    SFC_RDSR3_WINBOND = 0x15,   // Read status register 3 (WINBOND)
+    SFC_WREN = 0x06,            // Write enable
     SFC_RDNVR = 0xB5,
-    SFC_RDCR = 0x15,
+    SFC_RDCR = 0x15,            // Read configuration register
     SFC_WRNVR = 0xB1,
-    SFC_WRSR = 0x01,
-    SFC_WRSR_GIGA = 0x31,
+    SFC_WRSR = 0x01,            // Write status register
+    SFC_WRSR_GIGA = 0x31,       // Write status register (GIGA)
     SFC_RDFR = 0x48,
     SFC_WRFR = 0x42
 } StFlashCommand_t;
@@ -173,6 +174,7 @@ typedef struct flash_attr {
 
     u_int8_t banks_num;
     u_int8_t quad_en_support;
+    u_int8_t driver_strength_support;
     u_int8_t dummy_cycles_support;
     u_int8_t write_protect_support;
     u_int8_t protect_sub_and_sector;
@@ -202,6 +204,7 @@ typedef struct flash_info {
     u_int8_t write_protected_support;
     u_int8_t protect_sub_and_sector;
     u_int8_t dummy_cycles_support;
+    u_int8_t driver_strength_support;
 } flash_info_t;
 
 /*

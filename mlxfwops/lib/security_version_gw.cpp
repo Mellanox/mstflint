@@ -1,5 +1,6 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -32,7 +33,7 @@
 
 #include "security_version_gw.h"
 
-bool SecurityVersionGW::isSupportedInLiveFish(){
+bool SecurityVersionGW::isAccessibleInLiveFish(){
 
     setGWAddress(ROLLBACK_PROTECTION); // only to set _ctrl_address (can pick ROLLBACK_PROTECTION or MINIMAL_VERSION)
     return _ctrl_address == GW_NOT_SUPPORTED ? false : true;

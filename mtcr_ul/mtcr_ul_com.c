@@ -3449,27 +3449,34 @@ int release_dma_pages(mfile* mf, int page_amount)
 }
 
 
-int read_dword_from_conf_space(u_int32_t offset, mfile *mf,
-                               struct mtcr_read_dword_from_config_space* read_config_space)
+int read_dword_from_conf_space(mfile *mf, u_int32_t offset, u_int32_t* data)
 {
 #if !defined(__VMKERNEL_UW_NATIVE__)
+    int ret = 0;
+
     // Parameters validation.
-    if(!mf || !read_config_space)
+    if(!mf || !data)
     {
         return -1;
     }
-
-    read_config_space->offset = offset;
+    struct mtcr_read_dword_from_config_space read_config_space;
+    read_config_space.offset = offset;
+    read_config_space.data = 0;
 
     // Read from the configuration space.
-    return ioctl(mf->fd, PCICONF_READ_DWORD_FROM_CONFIG_SPACE, read_config_space);
+    ret = ioctl(mf->fd, PCICONF_READ_DWORD_FROM_CONFIG_SPACE, &read_config_space);
+    *data = read_config_space.data;
+
+    return ret;
+
 
 #else
-    (void)offset;
     (void)mf;
-    (void)read_config_space;
+    (void)offset;
+    (void)data;
 
     // MST VMWare driver is unsupported.
     return -1;
 #endif
+
 }

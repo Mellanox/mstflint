@@ -1,5 +1,6 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -238,6 +239,20 @@ int mf_update_boot_addr_by_type(mflash *mfl, u_int32_t boot_addr)
         CHECK_RC(rc);
     }
     return MFE_OK;
+}
+
+int sx_set_driver_strength(mflash *mfl, u_int8_t driver_strength) {
+    // driver-strength configuration isn't supported by FW (MFMC register)
+    (void) mfl;
+    (void) driver_strength;
+    return MFE_REG_ACCESS_METHOD_NOT_SUPP;
+}
+
+int sx_get_driver_strength(mflash *mfl, u_int8_t *driver_strength) {
+    // driver-strength configuration isn't supported by FW (MFMC register)
+    (void) mfl;
+    (void) driver_strength;
+    return MFE_REG_ACCESS_METHOD_NOT_SUPP;
 }
 
 int sx_set_quad_en(mflash *mfl, u_int8_t quad_en)

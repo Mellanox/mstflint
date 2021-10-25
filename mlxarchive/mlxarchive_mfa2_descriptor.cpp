@@ -1,6 +1,7 @@
 
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -156,18 +157,15 @@ void PackageDescriptor::pack(vector<u_int8_t>& buff) const
     tmpBuff.resize(tools_open_package_descriptor_size(), 0x0);
     tools_open_package_descriptor_pack(&packageDescriptor, tmpBuff.data());
 
-    //_packageDescriptorStructOffset = buff.size();
     packBytesArray(tmpBuff.data(), tmpBuff.size(), buff);
 
     //pack Version Extension
     _version.pack(buff);
 
     //pack SHA256 Extension
-    //_SHA256ExtensionOffset = buff.size();
     _SHA256Extension.pack(buff);
 
     //pack DescriptorSHA256 Extension
-    //_descriptorsSHA256ExtensionOffset = buff.size();
     _descriptorsSHA256Extension.pack(buff);
 
     //pack optional extensions
@@ -208,7 +206,6 @@ bool PackageDescriptor::unpack(Mfa2Buffer & buff) {
     extIdx++;
 
     //pack SHA256 Extension
-    //_SHA256ExtensionOffset = buff.size();
     _SHA256Extension.unpack(buff);
     extIdx++;
 

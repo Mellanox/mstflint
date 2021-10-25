@@ -1,5 +1,6 @@
 /*
  * Copyright (C) Jan 2021 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -43,6 +44,9 @@
 
 using namespace std;
 
+#define KEY_SIZE_256 256
+#define KEY_SIZE_512 512
+
 namespace MlxSign
 {
 
@@ -69,10 +73,12 @@ public:
     virtual ~OpensslEngineSigner();
     ErrorCode init();
     ErrorCode sign(const vector<u_int8_t> &msg, vector<u_int8_t> &signed_msg);
+    int getPrivateKeySize();
 
 private:
     EVP_MD_CTX *mdCtx;
     EVP_PKEY *key;
+    int privateKeySize;
     ENGINE *engine;
     string engineName;
     string keyIdentifier;

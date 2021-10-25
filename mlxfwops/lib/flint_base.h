@@ -3,6 +3,7 @@
  * flint_base.h - FLash INTerface
  *
  * Copyright (c) 2011 Mellanox Technologies Ltd.  All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -115,7 +116,7 @@ namespace std {}; using namespace std;
 #define CPUTO1(s) s = __cpu_to_be32((u_int32_t)(s));
 #define TOCPU(s) do {                                              \
         u_int32_t *p = (u_int32_t*)(s);                               \
-        for (u_int32_t ii = 0; ii < sizeof(s) / sizeof(u_int32_t); ii++, p++) \
+        for (u_int32_t ii = 0; ii < sizeof(*s) / sizeof(u_int32_t); ii++, p++) \
             *p = __be32_to_cpu(*p);                                    \
 } while (0)
 #define TOCPUn(s, n) do {                                          \
@@ -206,11 +207,7 @@ namespace std {}; using namespace std;
 #define FS3_BOOT_START_IN_DW  FS3_BOOT_START / 4
 
 // FS4 defines
-#define FS4_BOOT_START        0x10
-#define FS4_BOOT_START_IN_DW  FS4_BOOT_START / 4
-#define FS4_BOOT2_START        0x188
 #define FS4_HW_PTR_START       0x18
-#define FS4_HW_PTR_SIZE_DW     CX5FW_HW_POINTERS_SIZE / 4
 
 #define CRC_CHECK_OLD "%s /0x%08x-0x%08x (0x%06x)/ (%s"
 
@@ -222,7 +219,6 @@ namespace std {}; using namespace std;
 #define MAC_FORMAT  "%4.4x%8.8x"
 
 
-#define FLINT_IGNORE_TTY "FLINT_IGNORE_TTY"
 #define FLINT_LOG_ENV    "FLINT_LOG_FILE"
 #define IMG_CRC_OFF      0x20
 #define MAX_ERR_STR_LEN  1024
@@ -231,16 +227,6 @@ namespace std {}; using namespace std;
 enum {
     SIGNATURE          = 0x5a445a44,
     MELLANOX_VENDOR_ID = 0x15b3
-};
-struct PS {
-    u_int32_t fi_addr;
-    u_int32_t fi_size;
-    u_int32_t signature;
-    u_int32_t fw_reserved[5];
-    u_int32_t vsd[52];
-    u_int32_t psid[4];
-    u_int32_t branch_to;
-    u_int32_t crc016;
 };
 
 enum SectionType {
@@ -285,6 +271,7 @@ typedef enum fs3_section {
     FS3_PHY_UC_CODE   = 0xa,
     FS3_PHY_UC_CONSTS = 0xb,
     FS3_PHY_UC_CMD    = 0xc,
+    FS4_BOOT3_CODE    = 0xf,
     FS3_IMAGE_INFO    = 0x10,
     FS3_FW_BOOT_CFG   = 0x11,
     FS3_FW_MAIN_CFG   = 0x12,
@@ -316,6 +303,7 @@ typedef enum fs3_section {
     FS4_LC_INI1_TABLE = 0xef,
     FS4_LC_INI2_TABLE = 0xf0,
     FS4_LC_INI_NV_DATA = 0xf1,
+    FS4_HASHES_TABLE    = 0xfa,
     FS4_HW_PTR        = 0xfb,
     FS4_TOOLS_AREA    = 0xfc,
     FS3_ITOC          = 0xfd,
@@ -374,25 +362,12 @@ struct GPH {
 
 #define MAX_SECTION_SIZE 0x400000
 
-const u_int32_t BOARD_ID_BSN_LEN = 64;
-const u_int32_t BOARD_ID_BID_LEN = 32;
-const u_int32_t BOARD_ID_PID = 7;
-
-struct BOARD_ID {
-    char bsn[BOARD_ID_BSN_LEN];
-    char bid[BOARD_ID_BID_LEN];
-};
-
-#define PROFILES_LIST_SECT "Profiles List section"
-#define TLV_FORMAT_SECT    "TLVs format section"
-#define TRACER_HASH_SECT   "Tracer Hash section"
 #define REBOOT_REQUIRED_STR "To load new FW run reboot machine."
 #ifndef MST_UL
 #define REBOOT_OR_FWRESET_REQUIRED_STR "To load new FW run mlxfwreset or reboot machine."
 #else
 #define REBOOT_OR_FWRESET_REQUIRED_STR "To load new FW run mstfwreset or reboot machine."
 #endif
-#define numbel(x) (sizeof(x) / sizeof((x)[0]))
 
 void report(const char *format, ...);
 void report_callback(f_prog_func_str func_str, const char *format, ...);

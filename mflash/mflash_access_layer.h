@@ -1,5 +1,6 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -88,6 +89,12 @@ enum FlashConstant {
     QUAD_EN_OFFSET_MICRON = 3,
     QUAD_EN_OFFSET_ISSI_MACRONIX = 6,
     QUAD_EN_OFFSET_GIGABYTE = 1,
+    DRIVER_STRENGTH_OFFSET_WINBOND = 5,
+    DRIVER_STRENGTH_BIT_LEN_WINBOND = 2,
+    DRIVER_STRENGTH_VAL_100_WINBOND = 0,
+    DRIVER_STRENGTH_VAL_75_WINBOND = 1,
+    DRIVER_STRENGTH_VAL_50_WINBOND = 2,
+    DRIVER_STRENGTH_VAL_25_WINBOND = 3,
     TB_OFFSET_MACRONIX = 3,
     SEC_OFFSET = 6,
     TB_OFFSET = 5,
@@ -124,7 +131,7 @@ enum CrConstans {
     BS_SPI_GPIO = 4
 };
 
-
+int check_access_type(mflash *mfl);
 int sx_get_flash_info_by_type(mflash *mfl, flash_info_t *type_index, int *log2size, u_int8_t *no_flash);
 int sx_block_read_by_type(mflash *mfl, u_int32_t blk_addr, u_int32_t blk_size, u_int8_t *data);
 int sx_block_write_by_type(mflash *mfl, u_int32_t addr, u_int32_t size, u_int8_t *data);
@@ -137,6 +144,8 @@ flash_access_commands_t gen_3byte_address_access_commands();
 int release_semaphore(mflash *mfl, int ignore_writer_lock);
 int     sx_set_quad_en(mflash *mfl, u_int8_t quad_en);
 int     sx_get_quad_en(mflash *mfl, u_int8_t *quad_en);
+int     sx_set_driver_strength(mflash *mfl, u_int8_t driver_strength);
+int     sx_get_driver_strength(mflash *mfl, u_int8_t *driver_strength);
 int     sx_set_write_protect(mflash *mfl, u_int8_t bank_num, write_protect_info_t *protect_info);
 int     sx_get_write_protect(mflash *mfl, u_int8_t bank_num, write_protect_info_t *protect_info);
 int     sx_set_dummy_cycles(mflash *mfl, u_int8_t num_of_cycles);

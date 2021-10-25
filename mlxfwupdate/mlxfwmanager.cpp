@@ -1,6 +1,7 @@
 
 /*
  * Copyright (C) Jan 2006 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -67,7 +68,6 @@ int mainEntry(int argc, char *argv[])
     int burn_success_cnt = 0;
     int require_update_cnt = 0;
     vector<string> status_strings;
-    vector<string>::iterator devname;
     map<string, PsidQueryItem> psidUpdateInfo;
     vector<string> psid_list;
     vector<string> fw_version_list;

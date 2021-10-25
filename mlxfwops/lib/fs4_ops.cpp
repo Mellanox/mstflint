@@ -1,5 +1,6 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -64,7 +65,9 @@
 
 #include "fs4_ops.h"
 #include "fs3_ops.h"
-#include "tools_layouts/cx5fw_layouts.h"
+#include "tools_layouts/image_layout_layouts.h"
+
+#define FS4_ENCRYPTED_LOG_CHUNK_SIZE 24
 
 #define DEV_INFO_SIG0 0x6d446576
 #define DEV_INFO_SIG1 0x496e666f
@@ -85,6 +88,15 @@
 
 #define COUNT_OF_SECTIONS_TO_ALIGN 5
 
+void Fs4Operations::FwCleanUp() {
+    FwOperations::FwCleanUp();
+    if (_encrypted_image_io_access) {
+        _encrypted_image_io_access->close();
+        delete _encrypted_image_io_access;
+        _encrypted_image_io_access = (FImage*)NULL;
+    }
+}
+
 bool Fs4Operations::CheckSignatures(u_int32_t a[], u_int32_t b[], int n)
 {
     for (int i = 0; i < n; i++) {
@@ -96,7 +108,51 @@ bool Fs4Operations::CheckSignatures(u_int32_t a[], u_int32_t b[], int n)
     return true;
 }
 
-bool Fs4Operations::CheckTocSignature(struct cx5fw_itoc_header *itoc_header, u_int32_t first_signature)
+bool Fs4Operations::isEncrypted(bool& is_encrypted) {
+    //* Determine if encrypted by reading ITOC header magic-pattern
+    is_encrypted = false;
+    struct image_layout_itoc_header itocHeader;
+    u_int8_t buffer[TOC_HEADER_SIZE];
+
+    //* Check if valid image exists
+    u_int32_t image_start[CNTX_START_POS_SIZE] = {0};
+    u_int32_t image_num = 0;
+    FindAllImageStart(_ioAccess, image_start,
+                    &image_num, _fs4_magic_pattern);
+
+    if (image_num == 1) {
+        _fwImgInfo.imgStart = image_start[0];
+        DPRINTF(("Fs4Operations::isEncrypted - _fwImgInfo.imgStart = 0x%x\n", _fwImgInfo.imgStart));
+
+        //* Init HW pointers
+        if (!_is_hw_ptrs_initialized) {
+            if (!initHwPtrs(true)) {
+                DPRINTF(("Fs4Operations::isEncrypted HW pointers not found"));
+                return false;
+            }
+        }
+
+        u_int32_t itoc_header_addr = _fwImgInfo.imgStart + _itoc_ptr;
+        READBUF((*_ioAccess), itoc_header_addr, buffer, TOC_HEADER_SIZE, "ITOC Header");
+        image_layout_itoc_header_unpack(&itocHeader, buffer);
+        if (!CheckTocSignature(&itocHeader, ITOC_ASCII)) { // Check first location of ITOC header magic-pattern
+            itoc_header_addr += FS4_DEFAULT_SECTOR_SIZE;
+            READBUF((*_ioAccess), itoc_header_addr, buffer, TOC_HEADER_SIZE, "ITOC Header");
+            image_layout_itoc_header_unpack(&itocHeader, buffer);
+            if (!CheckTocSignature(&itocHeader, ITOC_ASCII)) { // Check second location of ITOC header magic-pattern
+                is_encrypted = true;
+            }
+        }
+    }
+    else {
+        DPRINTF(("Fs4Operations::isEncrypted No valid image found --> not encrypted"));
+    }
+
+    DPRINTF(("Fs4Operations::isEncrypted res = %s\n", is_encrypted ? "TRUE" : "FALSE"));
+    return true;
+}
+
+bool Fs4Operations::CheckTocSignature(struct image_layout_itoc_header *itoc_header, u_int32_t first_signature)
 {
     u_int32_t a[4] = {itoc_header->signature0, itoc_header->signature1,
                       itoc_header->signature2, itoc_header->signature3};
@@ -138,53 +194,10 @@ bool Fs4Operations::getImgStart()
     }
 
     _fwImgInfo.imgStart = cntx_image_start[0];
-    DPRINTF(("_fwImgInfo.imgStart = 0x%x\n",_fwImgInfo.imgStart));
+    DPRINTF(("Fs4Operations::getImgStart - _fwImgInfo.imgStart = 0x%x\n", _fwImgInfo.imgStart));
 
     return true;
 }
-
-//// //CodeView: add HW pointers to verify output
-//// bool Fs4Operations::getHWPtrs(VerifyCallBack verifyCallBackFunc)
-//// {
-
-////     DPRINTF(("Fs4Operations::getHWPtrs\n"));
-////     u_int32_t buff[FS4_HW_PTR_SIZE_DW];
-////     struct cx5fw_hw_pointers hw_pointers;
-////     u_int32_t physAddr = _fwImgInfo.imgStart + FS4_HW_PTR_START;
-
-////     READBUF((*_ioAccess),
-////             physAddr,
-////             buff,
-////             CX5FW_HW_POINTERS_SIZE,
-////             "HW Pointers");
-////     cx5fw_hw_pointers_unpack(&hw_pointers, (u_int8_t *)buff);
-
-////     //- Check CRC of each pointers (always check CRC before you call ToCPU
-////     for (int k = 0; k < FS4_HW_PTR_SIZE_DW; k += 2) {
-////         u_int32_t *tempBuff = (u_int32_t *) buff;
-////         //Calculate HW CRC:
-////         u_int32_t calcPtrCRC = calc_hw_crc((u_int8_t *)((u_int32_t *)tempBuff + k), 6);
-////         u_int32_t ptrCRC = tempBuff[k + 1];
-////         u_int32_t ptr = tempBuff[k];
-////         TOCPUn(&ptr, 1);
-////         TOCPUn(&ptrCRC, 1);
-////         if (!DumpFs3CRCCheck(FS4_HW_PTR, physAddr + 4 * k, CX5FW_HW_POINTER_ENTRY_SIZE, calcPtrCRC,
-////                              ptrCRC, false, verifyCallBackFunc)) {
-////             return false;
-////         }
-////     }
-
-////     //CodeView: generate tools_layout
-////     _boot2_ptr = hw_pointers.boot2_ptr.ptr;
-////     _itoc_ptr = hw_pointers.toc_ptr.ptr;
-////     _tools_ptr = hw_pointers.tools_ptr.ptr;
-
-////     DPRINTF(("_boot2_ptr=0x%x\n", _boot2_ptr));
-////     DPRINTF(("_itoc_ptr=0x%x\n", _itoc_ptr));
-////     DPRINTF(("_tools_ptr=0x%x\n", _tools_ptr));
-
-////     return true;
-//// }
 
 bool Fs4Operations::getExtendedHWAravaPtrs(VerifyCallBack verifyCallBackFunc, FBase* ioAccess, bool IsBurningProcess, bool isVerify)
 {
@@ -195,9 +208,9 @@ bool Fs4Operations::getExtendedHWAravaPtrs(VerifyCallBack verifyCallBackFunc, FB
     (void)IsBurningProcess;
     return errmsg("Operation not supported");
 #else
-    const unsigned int s = CONNECTX4_HW_POINTERS_ARAVA_SIZE / 4;
+    const unsigned int s = IMAGE_LAYOUT_HW_POINTERS_CARMEL_SIZE / 4;
     u_int32_t buff[s];
-    struct connectx4_hw_pointers_arava hw_pointers;
+    struct image_layout_hw_pointers_carmel hw_pointers;
     u_int32_t physAddr = FS4_HW_PTR_START;
     if (!IsBurningProcess) {
         physAddr += _fwImgInfo.imgStart;
@@ -205,7 +218,7 @@ bool Fs4Operations::getExtendedHWAravaPtrs(VerifyCallBack verifyCallBackFunc, FB
     READBUF((*ioAccess),
         physAddr,
         buff,
-        CONNECTX4_HW_POINTERS_ARAVA_SIZE,
+        IMAGE_LAYOUT_HW_POINTERS_CARMEL_SIZE,
         "HW Arava Pointers");
 
     // Fix pointers that are 0xFFFFFFFF
@@ -216,7 +229,7 @@ bool Fs4Operations::getExtendedHWAravaPtrs(VerifyCallBack verifyCallBackFunc, FB
         }
     }
 
-    connectx4_hw_pointers_arava_unpack(&hw_pointers, (u_int8_t *)buff);
+    image_layout_hw_pointers_carmel_unpack(&hw_pointers, (u_int8_t *)buff);
 
     //- Check CRC of each pointers (always check CRC before you call ToCPU
     for (unsigned int k = 0; k < s; k += 2) {
@@ -227,28 +240,52 @@ bool Fs4Operations::getExtendedHWAravaPtrs(VerifyCallBack verifyCallBackFunc, FB
         u_int32_t ptr = tempBuff[k];
         TOCPUn(&ptr, 1);
         TOCPUn(&ptrCRC, 1);
-        if (!DumpFs3CRCCheck(FS4_HW_PTR, physAddr + 4 * k, CX6FW_HW_POINTER_ENTRY_SIZE, calcPtrCRC,
+        if (!DumpFs3CRCCheck(FS4_HW_PTR, physAddr + 4 * k, IMAGE_LAYOUT_HW_POINTER_ENTRY_SIZE, calcPtrCRC,
             ptrCRC, false, verifyCallBackFunc)) {
             return false;
         }
     }
 
     //CodeView: generate tools_layout
+    _boot_record_ptr = hw_pointers.boot_record_ptr.ptr;
     _boot2_ptr = hw_pointers.boot2_ptr.ptr;
     _itoc_ptr = hw_pointers.toc_ptr.ptr;
     _tools_ptr = hw_pointers.tools_ptr.ptr;
 
-    if (isVerify == false){
+    if (isVerify == false) {
         _authentication_start_ptr = hw_pointers.authentication_start_pointer.ptr;
         _authentication_end_ptr = hw_pointers.authentication_end_pointer.ptr;
         _digest_mdk_ptr = hw_pointers.digest_pointer.ptr;
         _digest_recovery_key_ptr = hw_pointers.digest_recovery_key_pointer.ptr;
         _public_key_ptr = hw_pointers.public_key_pointer.ptr;
     }
-    _security_version = hw_pointers.reserved_ptr13_pointer.ptr; // TODO need to change reserved_ptr13_pointer in connectx4_layouts.h when .adb will be updated
-                                                                // TODO it seems that the content for connectx4_hw_pointers_arava inserted manually to connectx4_layouts.h
+    _security_version = hw_pointers.fw_security_version_pointer.ptr;
+    _gcm_image_iv = hw_pointers.gcm_iv_delta_pointer.ptr;
+    _hashes_table_ptr = hw_pointers.hashes_table_pointer.ptr;
+    _hmac_start_ptr = hw_pointers.hmac_start_pointer.ptr; // In case of encrypted device points to IMAGE_INFO section
+
+    _is_hw_ptrs_initialized = true;
     return true;
 #endif
+}
+
+bool Fs4Operations::openEncryptedImageAccess(const char* encrypted_image_path) {
+    DPRINTF(("Fs4Operations::openEncryptedImageAccess\n"));
+    // After this method is done we won't be able verify 'this' (nonencrypted) image
+    // since we'll replace its read/write with the encrypted image
+    // so we we'll verify it now just to make sure it's valid
+    //* Verify nonencrypted image
+    if (!FsIntQueryAux()) {
+        return errmsg("Failed to verify nonencrypted image");
+    }
+
+    //* Create io access to the encrypted image
+    _encrypted_image_io_access = new FImage;
+    if (!_encrypted_image_io_access->open(encrypted_image_path, false, false)) {
+        delete _encrypted_image_io_access;
+        return errmsg("Failed to open image %s", encrypted_image_path);
+    }
+    return true;
 }
 
 bool Fs4Operations::getExtendedHWPtrs(VerifyCallBack verifyCallBackFunc, FBase* ioAccess, bool IsBurningProcess)
@@ -260,7 +297,7 @@ bool Fs4Operations::getExtendedHWPtrs(VerifyCallBack verifyCallBackFunc, FBase* 
         return errmsg("Extended HW pointers are only for ConnectX-6\n");
     }*/
 
-    const unsigned int s = CX6FW_HW_POINTERS_SIZE / 4;
+    const unsigned int s = IMAGE_LAYOUT_HW_POINTERS_CARMEL_SIZE / 4;
     u_int32_t buff[s];
     struct cx6fw_hw_pointers hw_pointers;
     u_int32_t physAddr = FS4_HW_PTR_START;
@@ -271,7 +308,7 @@ bool Fs4Operations::getExtendedHWPtrs(VerifyCallBack verifyCallBackFunc, FBase* 
     READBUF((*ioAccess),
             physAddr,
             buff,
-            CX6FW_HW_POINTERS_SIZE,
+            IMAGE_LAYOUT_HW_POINTERS_CARMEL_SIZE,
             "HW Pointers");
     cx6fw_hw_pointers_unpack(&hw_pointers, (u_int8_t *)buff);
 
@@ -284,7 +321,7 @@ bool Fs4Operations::getExtendedHWPtrs(VerifyCallBack verifyCallBackFunc, FBase* 
         u_int32_t ptr = tempBuff[k];
         TOCPUn(&ptr, 1);
         TOCPUn(&ptrCRC, 1);
-        if (!DumpFs3CRCCheck(FS4_HW_PTR, physAddr + 4 * k, CX6FW_HW_POINTER_ENTRY_SIZE, calcPtrCRC,
+        if (!DumpFs3CRCCheck(FS4_HW_PTR, physAddr + 4 * k, IMAGE_LAYOUT_HW_POINTER_ENTRY_SIZE, calcPtrCRC,
                              ptrCRC, false, verifyCallBackFunc)) {
             return false;
         }
@@ -294,37 +331,39 @@ bool Fs4Operations::getExtendedHWPtrs(VerifyCallBack verifyCallBackFunc, FBase* 
     _boot2_ptr = hw_pointers.boot2_ptr.ptr;
     _itoc_ptr = hw_pointers.toc_ptr.ptr;
     _tools_ptr = hw_pointers.tools_ptr.ptr;
+    _boot_record_ptr = hw_pointers.boot_record_ptr.ptr;
 
     _authentication_start_ptr = hw_pointers.authentication_start_ptr.ptr;
     _authentication_end_ptr = hw_pointers.authentication_end_ptr.ptr;
     _digest_mdk_ptr = hw_pointers.digest_mdk_ptr.ptr;
     _digest_recovery_key_ptr = hw_pointers.digest_recovery_key_ptr.ptr;
 
+    _is_hw_ptrs_initialized = true;
     return true;
 }
 
 bool Fs4Operations::verifyToolsArea(VerifyCallBack verifyCallBackFunc)
 {
     DPRINTF(("Fs4Operations::verifyToolsArea\n"));
-    u_int32_t buff[CX5FW_TOOLS_AREA_SIZE / 4];
+    u_int32_t buff[IMAGE_LAYOUT_TOOLS_AREA_SIZE / 4];
     u_int8_t binVerMajor = 0;
     u_int8_t binVerMinor = 0;
     u_int32_t calculatedToolsAreaCRC;
     u_int32_t toolsAreaCRC;
     u_int32_t physAddr = _fwImgInfo.imgStart + _tools_ptr;
-    struct cx5fw_tools_area tools_area;
+    struct image_layout_tools_area tools_area;
 
-    READBUF((*_ioAccess), physAddr, buff, CX5FW_TOOLS_AREA_SIZE, "Tools Area");
-    cx5fw_tools_area_unpack(&tools_area, (u_int8_t *)buff);
+    READBUF((*_ioAccess), physAddr, buff, IMAGE_LAYOUT_TOOLS_AREA_SIZE, "Tools Area");
+    image_layout_tools_area_unpack(&tools_area, (u_int8_t *)buff);
 
     binVerMinor = tools_area.bin_ver_minor;
     binVerMajor = tools_area.bin_ver_major;
     _maxImgLog2Size = tools_area.log2_img_slot_size;
     toolsAreaCRC = tools_area.crc;
 
-    calculatedToolsAreaCRC = CalcImageCRC((u_int32_t *)buff, CX5FW_TOOLS_AREA_SIZE / 4 - 1);
+    calculatedToolsAreaCRC = CalcImageCRC((u_int32_t *)buff, IMAGE_LAYOUT_TOOLS_AREA_SIZE / 4 - 1);
 
-    if (!DumpFs3CRCCheck(FS4_TOOLS_AREA, physAddr, CX5FW_TOOLS_AREA_SIZE, calculatedToolsAreaCRC,
+    if (!DumpFs3CRCCheck(FS4_TOOLS_AREA, physAddr, IMAGE_LAYOUT_TOOLS_AREA_SIZE, calculatedToolsAreaCRC,
                          toolsAreaCRC, false, verifyCallBackFunc)) {
         return false;
     }
@@ -360,7 +399,7 @@ bool Fs4Operations::verifyToolsArea(VerifyCallBack verifyCallBackFunc)
 bool Fs4Operations::verifyTocHeader(u_int32_t tocAddr, bool isDtoc, VerifyCallBack verifyCallBackFunc)
 {
 
-    struct cx5fw_itoc_header itocHeader;
+    struct image_layout_itoc_header itocHeader;
     u_int8_t buffer[TOC_HEADER_SIZE];
     u_int32_t physAddr;
     u_int32_t tocCrc;
@@ -371,12 +410,12 @@ bool Fs4Operations::verifyTocHeader(u_int32_t tocAddr, bool isDtoc, VerifyCallBa
 
     READBUF((*_ioAccess), tocAddr, buffer, TOC_HEADER_SIZE, "TOC Header");
     Fs3UpdateImgCache(buffer, tocAddr, TOC_HEADER_SIZE);
-    cx5fw_itoc_header_unpack(&itocHeader, buffer);
+    image_layout_itoc_header_unpack(&itocHeader, buffer);
     //TODO: check if we really need this:
     if (isDtoc) {
-        memcpy(_fs4ImgInfo.dtocArr.tocHeader, buffer, CX5FW_ITOC_HEADER_SIZE);
+        memcpy(_fs4ImgInfo.dtocArr.tocHeader, buffer, IMAGE_LAYOUT_ITOC_HEADER_SIZE);
     } else {
-        memcpy(_fs4ImgInfo.itocArr.tocHeader, buffer, CX5FW_ITOC_HEADER_SIZE);
+        memcpy(_fs4ImgInfo.itocArr.tocHeader, buffer, IMAGE_LAYOUT_ITOC_HEADER_SIZE);
     }
 
     // Check the signature in the header:
@@ -399,11 +438,30 @@ bool Fs4Operations::verifyTocHeader(u_int32_t tocAddr, bool isDtoc, VerifyCallBa
     return true;
 }
 
+bool Fs4Operations::FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatternAndDevToc,
+    bool verbose, bool ignoreImageStart)
+{
+    bool res = false;
+
+    bool image_encrypted = false;
+    if (!isEncrypted(image_encrypted)) {
+        return errmsg(getErrorCode(), "%s", err());
+    }
+    if (_encrypted_image_io_access or image_encrypted) {
+        res = FwExtractEncryptedImage(img, maskMagicPatternAndDevToc, verbose, ignoreImageStart);
+    }
+    else {
+        res = Fs3Operations::FwExtract4MBImage(img, maskMagicPatternAndDevToc, verbose, ignoreImageStart);
+    }
+
+    return res;
+}
+
 bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isDtoc,
                                      struct QueryOptions queryOptions, VerifyCallBack verifyCallBackFunc, bool verbose)
 {
 
-    struct cx5fw_itoc_entry tocEntry;
+    struct image_layout_itoc_entry tocEntry;
     int section_index = 0;
     u_int32_t entryAddr;
     u_int32_t entryCrc;
@@ -428,17 +486,14 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isD
             // section index should be 8 for this case
             section_index = 8;
         }
+
         entryAddr = tocAddr + TOC_HEADER_SIZE + section_index *  TOC_ENTRY_SIZE;
-        if (!verbose) {
-            READBUF((*_ioAccess), entryAddr, entryBuffer, TOC_ENTRY_SIZE, "TOC Entry");
+        if (!(*_ioAccess).read(entryAddr, entryBuffer, TOC_ENTRY_SIZE, verbose)) {
+            return errmsg("%s - read error (%s)\n", "TOC Entry", (*_ioAccess).err());
         }
-        else {
-            if (!(*_ioAccess).read(entryAddr, entryBuffer, TOC_ENTRY_SIZE, true)) {
-                return errmsg("%s - read error (%s)\n", "TOC Entry", (*_ioAccess).err());
-            }
-        }
+
         Fs3UpdateImgCache(entryBuffer, entryAddr, TOC_ENTRY_SIZE);
-        cx5fw_itoc_entry_unpack(&tocEntry, entryBuffer);
+        image_layout_itoc_entry_unpack(&tocEntry, entryBuffer);
         if (tocEntry.type == FS3_MFG_INFO) {
             mfgExists = true;
         }
@@ -488,20 +543,24 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isD
                 u_int8_t *buff = (u_int8_t *)(buffv.size() ? (&(buffv[0])) : NULL);
 
                 if (show_itoc) {
-                    cx5fw_itoc_entry_dump(&tocEntry, stdout);
+                    image_layout_itoc_entry_dump(&tocEntry, stdout);
                     if (!DumpFs3CRCCheck(tocEntry.type, physAddr, entrySizeInBytes, 0,
                                          0, true, verifyCallBackFunc)) {
                         retVal = false;
                     }
                 } else {
-                    //READBUF((*_ioAccess), flash_addr, buff, entrySizeInBytes, "Section");
-                    if (!verbose) {
-                        READBUF((*_ioAccess), flash_addr, buff, entrySizeInBytes, "Section");
+                    //* Choosing the correct io access to read from
+                    FBase* io = _ioAccess;
+                    if (_encrypted_image_io_access) {
+                        io = _encrypted_image_io_access; // If encrypted image was given we'll read from it
                     }
-                    else {
-                        if (!(*_ioAccess).read(flash_addr, buff, entrySizeInBytes, true)) {
-                            return errmsg("%s - read error (%s)\n", "Section", (*_ioAccess).err());
-                        }
+                    DPRINTF(("Fs4Operations::verifyTocEntries reading %s %s section from %simage\n",
+                            GetSectionNameByType(tocEntry.type),
+                            isDtoc ? "DTOC" : "ITOC",
+                            _encrypted_image_io_access ? "encrypted " : ""));
+
+                    if (!(*io).read(flash_addr, buff, entrySizeInBytes, verbose)) {
+                        return errmsg("%s - read error (%s)\n", "Section", (*io).err());
                     }
 
                     Fs3UpdateImgCache(buff, flash_addr, entrySizeInBytes);
@@ -523,12 +582,15 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isD
                     }
 
                     if (tocEntry.type != FS3_DEV_INFO || CheckDevInfoSignature((u_int32_t *)buff)) {
-                        if (!DumpFs3CRCCheck(tocEntry.type,
-                                             physAddr,
-                                             entrySizeInBytes,
-                                             sect_act_crc,
-                                             sect_exp_crc,
-                                             tocEntry.crc == NOCRC, verifyCallBackFunc)) {
+                        bool is_encrypted_cache_line_crc_section = tocEntry.cache_line_crc == 1 && tocEntry.encrypted_section == 1;
+                        bool ignore_crc = (tocEntry.crc == NOCRC) || is_encrypted_cache_line_crc_section; // In case of encrypted MAIN_CODE section we'll ignore CRC
+                        if (!_encrypted_image_io_access && // In case of encrypted image we don't want to check section CRC
+                            !DumpFs3CRCCheck(tocEntry.type,
+                                            physAddr,
+                                            entrySizeInBytes,
+                                            sect_act_crc,
+                                            sect_exp_crc,
+                                            ignore_crc, verifyCallBackFunc)) {
                             if (isDtoc) {
                                 _badDevDataSections = true;
                             }
@@ -544,7 +606,14 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isD
                             }
                             if (!isDevInfoSection || isDevInfoValid) {
                                 if (IsGetInfoSupported(tocEntry.type)) {
-                                    if (!GetImageInfoFromSection(buff, tocEntry.type, tocEntry.size * 4)) {
+                                    u_int8_t **section_buff = &buff;
+                                    if (_encrypted_image_io_access) {
+                                        // In case of encrypted image, parsing info section from the non-encrypted image
+                                        u_int8_t *non_encrypted_buff = (u_int8_t *)(buffv.size() ? (&(buffv[0])) : NULL);
+                                        READBUF((*_ioAccess), flash_addr, non_encrypted_buff, entrySizeInBytes, "Section");
+                                        section_buff = &non_encrypted_buff;
+                                    }
+                                    if (!GetImageInfoFromSection(*section_buff, tocEntry.type, tocEntry.size * 4)) {
                                         retVal = false;
                                         errmsg("Failed to get info from section %d, check the supported_hw_id section in MLX file!\n", tocEntry.type);
                                     }
@@ -564,7 +633,7 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isD
             tocArray->tocArr[section_index].entry_addr = entryAddr;
             tocArray->tocArr[section_index].toc_entry = tocEntry;
             memcpy(tocArray->tocArr[section_index].data,
-                   entryBuffer, CX5FW_ITOC_ENTRY_SIZE);
+                   entryBuffer, IMAGE_LAYOUT_ITOC_ENTRY_SIZE);
 
         }
         if (nextBootFwVer) {
@@ -598,8 +667,6 @@ bool Fs4Operations::verifyTocEntries(u_int32_t tocAddr, bool show_itoc, bool isD
     return retVal;
 }
 
-
-
 bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_itoc,
                                 struct QueryOptions queryOptions, bool ignoreDToc, bool verbose)
 {
@@ -629,7 +696,7 @@ bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_ito
             return false;
         }
 
-    // Update image cache till before boot2 header:
+        // Update image cache till before boot2 header:
         DPRINTF(("Fs4Operations::FsVerifyAux call Fs3UpdateImgCache() - All before boot2\n"));
         READALLOCBUF((*_ioAccess), _fwImgInfo.imgStart, buff, _boot2_ptr, "All Before Boot2");
         Fs3UpdateImgCache(buff, 0, _boot2_ptr);
@@ -637,14 +704,64 @@ bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_ito
 
         _ioAccess->set_address_convertor(_fwImgInfo.cntxLog2ChunkSize, _fwImgInfo.imgStart != 0);
 
-    // Get BOOT2 -Get Only bootSize if quickQuery == true else read and check CRC of boot2 section as well
+        // Get BOOT2 -Get Only bootSize if quickQuery == true else read and check CRC of boot2 section as well
+        DPRINTF(("Fs4Operations::FsVerifyAux call FS3_CHECKB2()\n"));
         FS3_CHECKB2(0, _boot2_ptr, !queryOptions.quickQuery, PRE_CRC_OUTPUT, verifyCallBackFunc);
 
         _fs4ImgInfo.firstItocArrayIsEmpty = false;
         _fs4ImgInfo.itocArr.tocArrayAddr = _itoc_ptr;
 
-    /*printf("\n-D-_ioAccess size=0x%x\n", _ioAccess->get_size());
-       printf("\n-D-dtoc_ptr=0x%x\n", dtoc_ptr);*/
+        DPRINTF(("Fs4Operations::FsVerifyAux call isHashesTableHwPtrValid()\n"));
+        if (isHashesTableHwPtrValid()) {
+            const u_int32_t HASHES_TABLE_TAIL_SIZE = 8;
+
+            //* Check hashes_table header CRC
+            READALLOCBUF((*_ioAccess), _hashes_table_ptr, buff, IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE, "HASHES TABLE HEADER");
+            // Calculate CRC
+            u_int32_t hashes_table_header_calc_crc = CalcImageCRC((u_int32_t *)buff, (IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE / 4) - 1);
+            // Read CRC
+            u_int32_t hashes_table_header_crc = ((u_int32_t *)buff)[(IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE / 4) - 1];
+            free(buff);
+            TOCPU1(hashes_table_header_crc)
+            hashes_table_header_crc = hashes_table_header_crc & 0xFFFF;
+            // Compare calculated crc with crc from image
+            if (hashes_table_header_calc_crc != hashes_table_header_crc) {
+                report_callback(verifyCallBackFunc, "%s /0x%08x/ - wrong CRC (exp:0x%x, act:0x%x)\n",
+                            "HASHES TABLE HEADER", _hashes_table_ptr + IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE - 4, hashes_table_header_calc_crc, hashes_table_header_crc);
+                if (!_fwParams.ignoreCrcCheck) {
+                    return errmsg("Bad CRC");
+                }
+            }
+
+            //* Parse HTOC header (for hash_size)
+            u_int32_t htoc_header_address = _hashes_table_ptr + IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE;
+            READALLOCBUF((*_ioAccess), htoc_header_address, buff, IMAGE_LAYOUT_HTOC_HEADER_SIZE, "HTOC header");
+            struct image_layout_htoc_header header;
+            image_layout_htoc_header_unpack(&header, buff);
+            free(buff);
+
+            //* Get hashes_table data
+            const u_int32_t hashes_table_size = IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE + IMAGE_LAYOUT_HTOC_HEADER_SIZE \
+                                            + MAX_HTOC_ENTRIES_NUM * (IMAGE_LAYOUT_HTOC_ENTRY_SIZE + header.hash_size) \
+                                            + HASHES_TABLE_TAIL_SIZE;
+            READALLOCBUF((*_ioAccess), _hashes_table_ptr, buff, hashes_table_size, "HASHES TABLE");
+
+            Fs3UpdateImgCache(buff, _hashes_table_ptr, hashes_table_size);
+
+            //* Check hashes_table CRC
+            // Calculate CRC
+            u_int32_t hashes_table_calc_crc = CalcImageCRC((u_int32_t *)buff, (hashes_table_size / 4) - 1);
+            // Read CRC
+            u_int32_t hashes_table_crc = ((u_int32_t *)buff)[(hashes_table_size / 4) - 1];
+            TOCPU1(hashes_table_crc)
+            hashes_table_crc = hashes_table_crc & 0xFFFF;
+            free(buff);
+            if (!DumpFs3CRCCheck(FS4_HASHES_TABLE, _hashes_table_ptr, hashes_table_size, hashes_table_calc_crc,
+                                hashes_table_crc, false, verifyCallBackFunc)) {
+                return false;
+            }
+        }
+
         DPRINTF(("Fs4Operations::FsVerifyAux call verifyTocHeader() ITOC\n"));
         if (!verifyTocHeader(_itoc_ptr, false, verifyCallBackFunc)) {
             _itoc_ptr += FS4_DEFAULT_SECTOR_SIZE;
@@ -707,12 +824,151 @@ bool Fs4Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_ito
     return true;
 }
 
+bool Fs4Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedImage, bool showItoc, bool ignoreDToc)
+{
+    bool image_encrypted = false;
+    if (!isEncrypted(image_encrypted)) {
+        return errmsg(getErrorCode(), "%s", err());
+    }
+    if (image_encrypted) {
+        return errmsg("Cannot verify an encrypted %s", _ioAccess->is_flash() ? "flash" : "image");
+    }
 
-bool Fs4Operations::FsIntQueryAux(bool readRom, bool quickQuery, bool ignoreDToc, bool verbose){
-    DPRINTF(("Fs4Operations::FsIntQueryAux\n"));
-    bool res = Fs3Operations::FsIntQueryAux(readRom, quickQuery, ignoreDToc, verbose);
-    _fs3ImgInfo.ext_info.image_security_version = _security_version;
-    return res;
+    return Fs3Operations::FwVerify(verifyCallBackFunc, isStripedImage, showItoc, ignoreDToc);
+}
+
+bool Fs4Operations::encryptedFwReadImageInfoSection() {
+    //* Read IMAGE_INFO section
+    u_int32_t image_info_section_addr = _hmac_start_ptr + _fwImgInfo.imgStart;
+    DPRINTF(("DEBUG - image_info_section_addr = 0x%x\n", image_info_section_addr));
+    vector<u_int8_t> image_info_data;
+    image_info_data.resize(IMAGE_LAYOUT_IMAGE_INFO_SIZE);
+    if (!_ioAccess->read(image_info_section_addr, image_info_data.data(), IMAGE_LAYOUT_IMAGE_INFO_SIZE)) {
+        return errmsg("%s - read error (%s)\n", "IMAGE_INFO", (*_ioAccess).err());
+    }
+
+    //* Parse IMAGE_INFO section
+    if (!GetImageInfo(image_info_data.data())) {
+        return errmsg("Failed to parse IMAGE_INFO section - %s", err());
+    }
+
+    return true;
+}
+
+bool Fs4Operations::parseDevData() {
+    //* Initializing DTOC info
+    _ioAccess->set_address_convertor(0, 0);
+    // Parse DTOC header:
+    u_int32_t dtoc_addr = _ioAccess->get_size() - FS4_DEFAULT_SECTOR_SIZE;
+    DPRINTF(("Fs4Operations::parseDevData call verifyTocHeader() DTOC, dtoc_addr = 0x%x\n", dtoc_addr));
+    if (!verifyTocHeader(dtoc_addr, true, (VerifyCallBack)NULL)) {
+        return errmsg(MLXFW_NO_VALID_ITOC_ERR, "No valid DTOC Header was found.");
+    }
+    _fs4ImgInfo.dtocArr.tocArrayAddr = dtoc_addr;
+
+    // Parse DTOC entries:
+    struct QueryOptions queryOptions;
+    queryOptions.readRom = false;
+    queryOptions.quickQuery = false;
+    DPRINTF(("Fs4Operations::parseDevData call verifyTocEntries() DTOC\n"));
+    if (!verifyTocEntries(dtoc_addr, false, true,
+                        queryOptions, (VerifyCallBack)NULL, false)) {
+        return false;
+    }
+
+    return true;
+}
+
+bool Fs4Operations::encryptedFwQuery(fw_info_t *fwInfo)
+{
+    if (!encryptedFwReadImageInfoSection()) {
+        return errmsg("%s", err());
+    }
+    if (!parseDevData()) {
+        return errmsg("%s", err());
+    }
+    memcpy(&(fwInfo->fw_info),  &(_fwImgInfo.ext_info),  sizeof(fw_info_com_t));
+    memcpy(&(fwInfo->fs3_info), &(_fs3ImgInfo.ext_info), sizeof(fs3_info_t));
+    fwInfo->fw_type = FwType();
+
+    return true;
+}
+
+bool Fs4Operations::FwQuery(fw_info_t *fwInfo, bool readRom, bool isStripedImage, bool quickQuery, bool ignoreDToc, bool verbose)
+{
+    DPRINTF(("Fs4Operations::FwQuery\n"));
+    int rc = 0;
+
+    bool image_encrypted = false;
+    if (!isEncrypted(image_encrypted)) {
+        return errmsg(getErrorCode(), "%s", err());
+    }
+    if (image_encrypted) {
+        return encryptedFwQuery(fwInfo);
+    }
+
+    if (!Fs3Operations::FwQuery(fwInfo, readRom, isStripedImage, quickQuery, ignoreDToc, verbose)) {
+        return false;
+    }
+
+    //* Security version
+    fwInfo->fs3_info.image_security_version = _security_version;
+    fwInfo->fs3_info.device_security_version_access_method = NOT_VALID;
+
+    mfile* mf = getMfileObj();
+    if (dm_is_livefish_mode(mf) == 1) {
+
+        //* Read secure_boot Fuse and life_cycle Fuse
+        SecureBootFuse secureBootFuse(mf, fwInfo->fw_info.chip_type);
+        LifeCycleFuse lifeCycleFuse(mf, fwInfo->fw_info.chip_type);
+        if (secureBootFuse.isAccessibleInLiveFish() && lifeCycleFuse.isAccessibleInLiveFish()) {
+            bool secure_boot;
+            life_cycle_t life_cycle;
+
+            rc = secureBootFuse.isSecureBoot(secure_boot);
+            if (rc) {
+                return false;
+            }
+            fwInfo->fs3_info.sec_boot = secure_boot;
+
+            rc = lifeCycleFuse.getStatus(life_cycle);
+            if (rc) {
+                return false;
+            }
+            fwInfo->fs3_info.life_cycle = life_cycle;
+        }
+
+        if (fwInfo->fs3_info.sec_boot == true && fwInfo->fs3_info.life_cycle == GA_SECURED) {
+
+            //* Read global_image_status register
+            try {
+                CRSpaceRegisters cr_space_reg(mf, _fwImgInfo.ext_info.chip_type);
+                fwInfo->fs3_info.global_image_status = cr_space_reg.getGlobalImageStatus();
+            }
+            catch(logic_error e) {
+                printf("%s\n", e.what());
+                return false;
+            }
+            catch(exception e) {
+                printf("%s\n", e.what());
+                return false;
+            }
+
+            //* Read security_version Fuse
+            SecurityVersionGW securityVersionGW(mf, fwInfo->fw_info.chip_type);
+            bool isGWSupportedInLiveFish = securityVersionGW.isAccessibleInLiveFish();
+
+            if (isGWSupportedInLiveFish) {
+                u_int32_t efuse_security_version;
+                rc = securityVersionGW.getSecurityVersion(&efuse_security_version);
+                if (rc) return false;
+                fwInfo->fs3_info.device_security_version_access_method = GW;
+                fwInfo->fs3_info.device_security_version_gw = efuse_security_version;
+            }
+        }
+    }
+
+    return true;
 }
 
 u_int8_t Fs4Operations::FwType()
@@ -736,7 +992,7 @@ bool Fs4Operations::CheckFs4ImgSize(Fs4Operations& imageOps, bool useImageDevDat
     //check if max itoc is not overwriting the chunk
     if (imageOps._fwImgInfo.lastImageAddr >= (u_int32_t)(imageOps._fwImgInfo.imgStart + (1 << imageOps._maxImgLog2Size))) {
         return errmsg(MLXFW_IMAGE_TOO_LARGE_ERR,
-                      "Largest Image Address (0x%x) is greater than max size of image (0x%x)",
+                      "Last ITOC section ends at address (0x%x) which is greater than max size of image (0x%x)",
                       imageOps._fwImgInfo.lastImageAddr,
                       imageOps._maxImgLog2Size);
     }
@@ -746,7 +1002,7 @@ bool Fs4Operations::CheckFs4ImgSize(Fs4Operations& imageOps, bool useImageDevDat
         u_int32_t devAreaStartAddress = _ioAccess->get_size() - (1 << imageOps._maxImgLog2Size);
         if (imageOps._fs4ImgInfo.smallestDTocAddr < devAreaStartAddress) {
             return errmsg(MLXFW_DTOC_OVERWRITE_CHUNK,
-                          "Smallest DToc address (0x%x) is less than device area start address (0x%x)",
+                          "First DTOC address (0x%x) is less than device area start address (0x%x)",
                           imageOps._fs4ImgInfo.smallestDTocAddr,
                           devAreaStartAddress);
         }
@@ -808,14 +1064,14 @@ bool Fs4Operations::Fs4RemoveSectionAux(fs3_section_t sectionType)
         struct fs4_toc_info *tocInfo = itocArray->tocArr + i;
         tocInfo->toc_entry.flash_addr =
             tocInfo->toc_entry.flash_addr - sectionSizeInDW;
-        tocInfo->entry_addr = tocInfo->entry_addr - CX5FW_ITOC_ENTRY_SIZE;
+        tocInfo->entry_addr = tocInfo->entry_addr - IMAGE_LAYOUT_ITOC_ENTRY_SIZE;
 
         updateTocEntryCRC(tocInfo);
 
         updateTocEntryData(tocInfo);
 
         Fs3UpdateImgCache(tocInfo->data, tocInfo->entry_addr,
-                          CX5FW_ITOC_ENTRY_SIZE);
+                          IMAGE_LAYOUT_ITOC_ENTRY_SIZE);
         Fs3UpdateImgCache(tocInfo->section_data.data(),
                           tocInfo->toc_entry.flash_addr << 2,
                           tocInfo->toc_entry.size << 2);
@@ -832,8 +1088,8 @@ bool Fs4Operations::Fs4RemoveSectionAux(fs3_section_t sectionType)
     _fs4ImgInfo.itocArr.numOfTocs--;
 
     u_int32_t lastItocSectAddress = itocArray->tocArrayAddr +
-                                    CX5FW_ITOC_HEADER_SIZE +
-                                    itocArray->numOfTocs * CX5FW_ITOC_ENTRY_SIZE;
+                                    IMAGE_LAYOUT_ITOC_HEADER_SIZE +
+                                    itocArray->numOfTocs * IMAGE_LAYOUT_ITOC_ENTRY_SIZE;
     updateTocEndEntryInImgCache(lastItocSectAddress);
 
     return true;
@@ -932,11 +1188,11 @@ bool Fs4Operations::Fs4AddSectionAux(fs3_section_t sectionType,
     _fwImgInfo.lastImageAddr += newSectSize;
 
     Fs3UpdateImgCache(newITocEntry->data, newITocEntry->entry_addr,
-                      CX5FW_ITOC_ENTRY_SIZE);
+                      IMAGE_LAYOUT_ITOC_ENTRY_SIZE);
 
     u_int32_t lastItocSectAddress = itocArray->tocArrayAddr +
-                                    CX5FW_ITOC_HEADER_SIZE +
-                                    itocArray->numOfTocs * CX5FW_ITOC_ENTRY_SIZE;
+                                    IMAGE_LAYOUT_ITOC_HEADER_SIZE +
+                                    itocArray->numOfTocs * IMAGE_LAYOUT_ITOC_ENTRY_SIZE;
     updateTocEndEntryInImgCache(lastItocSectAddress);
 
     Fs3UpdateImgCache(newITocEntry->section_data.data(),
@@ -1010,35 +1266,35 @@ bool Fs4Operations::FwBurnRom(FImage *romImg, bool ignoreProdIdCheck, bool ignor
 
 void Fs4Operations::updateTocEndEntryInImgCache(u_int32_t lastItocSectAddress)
 {
-    u_int8_t tocEndBuff[CX5FW_ITOC_ENTRY_SIZE];
-    memset(tocEndBuff, FS3_END, CX5FW_ITOC_ENTRY_SIZE);
-    Fs3UpdateImgCache(tocEndBuff, lastItocSectAddress, CX5FW_ITOC_ENTRY_SIZE);
+    u_int8_t tocEndBuff[IMAGE_LAYOUT_ITOC_ENTRY_SIZE];
+    memset(tocEndBuff, FS3_END, IMAGE_LAYOUT_ITOC_ENTRY_SIZE);
+    Fs3UpdateImgCache(tocEndBuff, lastItocSectAddress, IMAGE_LAYOUT_ITOC_ENTRY_SIZE);
 }
 
 void Fs4Operations::updateTocEntryCRC(struct fs4_toc_info *tocEntry)
 {
-    u_int8_t tocEntryBuff[CX5FW_ITOC_ENTRY_SIZE];
+    u_int8_t tocEntryBuff[IMAGE_LAYOUT_ITOC_ENTRY_SIZE];
 
-    memset(tocEntryBuff, 0, CX5FW_ITOC_ENTRY_SIZE);
-    cx5fw_itoc_entry_pack(&(tocEntry->toc_entry), tocEntryBuff);
+    memset(tocEntryBuff, 0, IMAGE_LAYOUT_ITOC_ENTRY_SIZE);
+    image_layout_itoc_entry_pack(&(tocEntry->toc_entry), tocEntryBuff);
     tocEntry->toc_entry.itoc_entry_crc =
         CalcImageCRC((u_int32_t *)tocEntryBuff, TOC_ENTRY_SIZE / 4 - 1);
 }
 
-void Fs4Operations::updateTocHeaderCRC(struct cx5fw_itoc_header *tocHeader)
+void Fs4Operations::updateTocHeaderCRC(struct image_layout_itoc_header *tocHeader)
 {
-    u_int8_t tocHeaderBuff[CX5FW_ITOC_HEADER_SIZE];
+    u_int8_t tocHeaderBuff[IMAGE_LAYOUT_ITOC_HEADER_SIZE];
 
-    memset(tocHeaderBuff, 0, CX5FW_ITOC_HEADER_SIZE);
-    cx5fw_itoc_header_pack(tocHeader, tocHeaderBuff);
+    memset(tocHeaderBuff, 0, IMAGE_LAYOUT_ITOC_HEADER_SIZE);
+    image_layout_itoc_header_pack(tocHeader, tocHeaderBuff);
     tocHeader->itoc_entry_crc =
-        CalcImageCRC((u_int32_t *)tocHeaderBuff, CX5FW_ITOC_HEADER_SIZE / 4 - 1);
+        CalcImageCRC((u_int32_t *)tocHeaderBuff, IMAGE_LAYOUT_ITOC_HEADER_SIZE / 4 - 1);
 }
 
 void Fs4Operations::updateTocEntryData(struct fs4_toc_info *tocEntry)
 {
-    memset(tocEntry->data, 0, CX5FW_ITOC_ENTRY_SIZE);
-    cx5fw_itoc_entry_pack(&(tocEntry->toc_entry), tocEntry->data);
+    memset(tocEntry->data, 0, IMAGE_LAYOUT_ITOC_ENTRY_SIZE);
+    image_layout_itoc_entry_pack(&(tocEntry->toc_entry), tocEntry->data);
 }
 
 void Fs4Operations::updateTocEntrySectionData(struct fs4_toc_info *tocEntry,
@@ -1066,10 +1322,10 @@ bool Fs4Operations::CreateDtoc(vector<u_int8_t>& img, u_int8_t* SectionData, u_i
 {
     struct fs4_toc_info itoc_info;
     memset(&itoc_info.data, 0, sizeof(itoc_info.data));
-    memset(&itoc_info.toc_entry, 0, sizeof(struct cx5fw_itoc_entry));
+    memset(&itoc_info.toc_entry, 0, sizeof(struct image_layout_itoc_entry));
     itoc_info.section_data.resize(section_size, 0xff);
     itoc_info.entry_addr = tocEntryAddr;
-    struct cx5fw_itoc_entry *toc_entry_p = &(itoc_info.toc_entry);
+    struct image_layout_itoc_entry *toc_entry_p = &(itoc_info.toc_entry);
     toc_entry_p->size = section_size >> 2;
     toc_entry_p->type = (u_int8_t)section;
     toc_entry_p->crc = (int)crc;
@@ -1079,9 +1335,9 @@ bool Fs4Operations::CreateDtoc(vector<u_int8_t>& img, u_int8_t* SectionData, u_i
         toc_entry_p->section_crc = new_crc;
     }
     updateTocEntryCRC(&itoc_info);
-    u_int8_t itoc_data[CX5FW_ITOC_ENTRY_SIZE] = { 0 };
-    cx5fw_itoc_entry_pack(toc_entry_p, itoc_data);
-    memcpy(img.data() + tocEntryAddr, itoc_data, CX5FW_ITOC_ENTRY_SIZE);
+    u_int8_t itoc_data[IMAGE_LAYOUT_ITOC_ENTRY_SIZE] = { 0 };
+    image_layout_itoc_entry_pack(toc_entry_p, itoc_data);
+    memcpy(img.data() + tocEntryAddr, itoc_data, IMAGE_LAYOUT_ITOC_ENTRY_SIZE);
     return true;
 }
 
@@ -1105,7 +1361,7 @@ bool Fs4Operations::RestoreDevToc(vector<u_int8_t>& img, char* psid, dm_dev_id_t
     u_int8_t dtocHeader[] = { 0x44 ,0x54 ,0x4f ,0x43 ,0x04 ,0x08 ,0x15 ,0x16 ,0x23 ,0x42 ,0xca ,0xfa ,0xba ,0xca ,0xfe ,0x00 ,
                              0x01 ,0x00 ,0x00 ,0x01 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0xbd ,0x90 };
 
-    memcpy(img.data() + dtocPtr, dtocHeader, CX5FW_ITOC_HEADER_SIZE);
+    memcpy(img.data() + dtocPtr, dtocHeader, IMAGE_LAYOUT_ITOC_HEADER_SIZE);
     u_int32_t section_index = 0;
     u_int32_t entryAddr = dtocPtr + TOC_HEADER_SIZE + section_index * TOC_ENTRY_SIZE;
     /* NV_LOG */
@@ -1155,9 +1411,9 @@ bool Fs4Operations::RestoreDevToc(vector<u_int8_t>& img, char* psid, dm_dev_id_t
     section_index++;
     entryAddr = dtocPtr + TOC_HEADER_SIZE + section_index * TOC_ENTRY_SIZE;
 
-    struct cx5fw_device_info dev_info;
+    struct image_layout_device_info dev_info;
     memset(&dev_info, 0, sizeof(dev_info));
-    u_int8_t DevInfoBuffer[CX5FW_DEVICE_INFO_SIZE] = { 0 };
+    u_int8_t DevInfoBuffer[IMAGE_LAYOUT_DEVICE_INFO_SIZE] = { 0 };
     dev_info.signature0 = DEV_INFO_SIG0;
     dev_info.signature1 = DEV_INFO_SIG1;
     dev_info.signature2 = DEV_INFO_SIG2;
@@ -1173,13 +1429,13 @@ bool Fs4Operations::RestoreDevToc(vector<u_int8_t>& img, char* psid, dm_dev_id_t
     dev_info.guids.macs.step = base_mac.step;
     dev_info.guids.macs.uid = base_mac.uid;
 
-    cx5fw_device_info_pack(&dev_info, DevInfoBuffer);
-    u_int32_t newSectionCRC = CalcImageCRC((u_int32_t *)DevInfoBuffer, CX5FW_DEVICE_INFO_SIZE / 4 - 1);
+    image_layout_device_info_pack(&dev_info, DevInfoBuffer);
+    u_int32_t newSectionCRC = CalcImageCRC((u_int32_t *)DevInfoBuffer, IMAGE_LAYOUT_DEVICE_INFO_SIZE / 4 - 1);
     u_int32_t newCRC = TOCPU1(newSectionCRC);
-    ((u_int32_t *)DevInfoBuffer)[CX5FW_DEVICE_INFO_SIZE / 4 - 1] = newCRC;
+    ((u_int32_t *)DevInfoBuffer)[IMAGE_LAYOUT_DEVICE_INFO_SIZE / 4 - 1] = newCRC;
 
-    memcpy(img.data() + flash_data_addr, DevInfoBuffer, CX5FW_DEVICE_INFO_SIZE);
-    CreateDtoc(img, DevInfoBuffer, CX5FW_DEVICE_INFO_SIZE, flash_data_addr, FS3_DEV_INFO, entryAddr, INSECTION);
+    memcpy(img.data() + flash_data_addr, DevInfoBuffer, IMAGE_LAYOUT_DEVICE_INFO_SIZE);
+    CreateDtoc(img, DevInfoBuffer, IMAGE_LAYOUT_DEVICE_INFO_SIZE, flash_data_addr, FS3_DEV_INFO, entryAddr, INSECTION);
 
     /*DEV_INFO FAILSAFE*/
     if (devid_t == DeviceConnectX5) {
@@ -1195,13 +1451,13 @@ bool Fs4Operations::RestoreDevToc(vector<u_int8_t>& img, char* psid, dm_dev_id_t
     dev_info.signature1 = 0;
     dev_info.signature2 = 0;
     dev_info.signature3 = 0;
-    cx5fw_device_info_pack(&dev_info, DevInfoBuffer);
-    newSectionCRC = CalcImageCRC((u_int32_t *)DevInfoBuffer, CX5FW_DEVICE_INFO_SIZE / 4 - 1);
+    image_layout_device_info_pack(&dev_info, DevInfoBuffer);
+    newSectionCRC = CalcImageCRC((u_int32_t *)DevInfoBuffer, IMAGE_LAYOUT_DEVICE_INFO_SIZE / 4 - 1);
     newCRC = TOCPU1(newSectionCRC);
-    ((u_int32_t *)DevInfoBuffer)[CX5FW_DEVICE_INFO_SIZE / 4 - 1] = newCRC;
+    ((u_int32_t *)DevInfoBuffer)[IMAGE_LAYOUT_DEVICE_INFO_SIZE / 4 - 1] = newCRC;
 
-    memcpy(img.data() + flash_data_addr, DevInfoBuffer, CX5FW_DEVICE_INFO_SIZE);
-    CreateDtoc(img, DevInfoBuffer, CX5FW_DEVICE_INFO_SIZE, flash_data_addr, FS3_DEV_INFO, entryAddr, INSECTION);
+    memcpy(img.data() + flash_data_addr, DevInfoBuffer, IMAGE_LAYOUT_DEVICE_INFO_SIZE);
+    CreateDtoc(img, DevInfoBuffer, IMAGE_LAYOUT_DEVICE_INFO_SIZE, flash_data_addr, FS3_DEV_INFO, entryAddr, INSECTION);
 
     /*MFG_INFO*/
     section_index++;
@@ -1232,8 +1488,8 @@ bool Fs4Operations::RestoreDevToc(vector<u_int8_t>& img, char* psid, dm_dev_id_t
     /*VPD_R0*/
     section_index++;
     entryAddr = dtocPtr + TOC_HEADER_SIZE + section_index * TOC_ENTRY_SIZE;
-    struct cx5fw_itoc_entry toc_entry;
-    memset(&toc_entry, 0, sizeof(struct cx5fw_itoc_entry));
+    struct image_layout_itoc_entry toc_entry;
+    memset(&toc_entry, 0, sizeof(struct image_layout_itoc_entry));
     u_int8_t entryBuffer[TOC_ENTRY_SIZE] = { 0 };
     flash_data_addr += CX4FW_MFG_INFO_SIZE;
 
@@ -1242,10 +1498,10 @@ bool Fs4Operations::RestoreDevToc(vector<u_int8_t>& img, char* psid, dm_dev_id_t
     toc_entry.flash_addr = flash_data_addr >> 2;
     toc_entry.crc = (int)INITOCENTRY;
     toc_entry.section_crc = CalcImageCRC((u_int32_t *)NULL, toc_entry.size);
-    cx5fw_itoc_entry_pack(&toc_entry, entryBuffer);
+    image_layout_itoc_entry_pack(&toc_entry, entryBuffer);
     u_int32_t entry_crc = CalcImageCRC((u_int32_t *)entryBuffer, (TOC_ENTRY_SIZE / 4) - 1);
     toc_entry.itoc_entry_crc = entry_crc;
-    cx5fw_itoc_entry_pack(&toc_entry, entryBuffer);
+    image_layout_itoc_entry_pack(&toc_entry, entryBuffer);
     memcpy(img.data() + entryAddr, entryBuffer, TOC_ENTRY_SIZE);
     return true;
 }
@@ -1255,8 +1511,8 @@ bool Fs4Operations::AlignDeviceSections(FwOperations *imageOps)
     bool rc = true;
     u_int8_t data[FS4_DEFAULT_SECTOR_SIZE] = {0};
 
-    struct cx5fw_itoc_header itocHeader;
-    cx5fw_itoc_header_unpack(&itocHeader, ((Fs4Operations *)imageOps)->_fs4ImgInfo.itocArr.tocHeader);
+    struct image_layout_itoc_header itocHeader;
+    image_layout_itoc_header_unpack(&itocHeader, ((Fs4Operations *)imageOps)->_fs4ImgInfo.itocArr.tocHeader);
 
     if (itocHeader.flash_layout_version != 1) {
         return errmsg("Please update MFT package");
@@ -1420,12 +1676,12 @@ bool Fs4Operations::AlignDeviceSections(FwOperations *imageOps)
         //we updated the entry => calculate new CRC
         updateTocEntryCRC(sections[i]);
         //update the image cache with the toc entry changes:
-        u_int8_t buff[CX5FW_ITOC_ENTRY_SIZE];
-        memset(buff, 0x0, CX5FW_ITOC_ENTRY_SIZE);
-        cx5fw_itoc_entry_pack(&(sections[i]->toc_entry), buff);
+        u_int8_t buff[IMAGE_LAYOUT_ITOC_ENTRY_SIZE];
+        memset(buff, 0x0, IMAGE_LAYOUT_ITOC_ENTRY_SIZE);
+        image_layout_itoc_entry_pack(&(sections[i]->toc_entry), buff);
         Fs3UpdateImgCache(buff, _fs4ImgInfo.dtocArr.tocArrayAddr +
                           ((sections[i] - _fs4ImgInfo.dtocArr.tocArr + 1)
-                           * CX5FW_ITOC_ENTRY_SIZE), CX5FW_ITOC_ENTRY_SIZE);
+                           * IMAGE_LAYOUT_ITOC_ENTRY_SIZE), IMAGE_LAYOUT_ITOC_ENTRY_SIZE);
         //write the section data to the new offset
         if (!writeImageEx((ProgressCallBackEx)NULL, NULL, (ProgressCallBack)NULL, newOffsets[i],
                           sections[i]->section_data.data(),
@@ -1445,15 +1701,15 @@ bool Fs4Operations::AlignDeviceSections(FwOperations *imageOps)
     }
 
     //set dtoc.header.flash_layout_version to 0x1
-    struct cx5fw_itoc_header dtocHeader;
-    cx5fw_itoc_header_unpack(&dtocHeader, _fs4ImgInfo.dtocArr.tocHeader);
+    struct image_layout_itoc_header dtocHeader;
+    image_layout_itoc_header_unpack(&dtocHeader, _fs4ImgInfo.dtocArr.tocHeader);
     dtocHeader.flash_layout_version = 0x1;
     updateTocHeaderCRC(&dtocHeader);
-    cx5fw_itoc_header_pack(&dtocHeader, _fs4ImgInfo.dtocArr.tocHeader);
+    image_layout_itoc_header_pack(&dtocHeader, _fs4ImgInfo.dtocArr.tocHeader);
     //update image cache with the dtoc headers changes:
     Fs3UpdateImgCache(_fs4ImgInfo.dtocArr.tocHeader,
                       _fs4ImgInfo.dtocArr.tocArrayAddr,
-                      CX5FW_ITOC_HEADER_SIZE);
+                      IMAGE_LAYOUT_ITOC_HEADER_SIZE);
 
     //write the dtoc array
     _imageCache.get(data, _fs4ImgInfo.dtocArr.tocArrayAddr,
@@ -1498,9 +1754,9 @@ cleanup:
 bool Fs4Operations::CheckIfAlignmentIsNeeded(FwOperations *imgops)
 {
     Fs4Operations& imageOps = *((Fs4Operations *) imgops);
-    struct cx5fw_itoc_header itocHeader, dtocHeader;
-    cx5fw_itoc_header_unpack(&dtocHeader, _fs4ImgInfo.dtocArr.tocHeader);
-    cx5fw_itoc_header_unpack(&itocHeader, imageOps._fs4ImgInfo.itocArr.tocHeader);
+    struct image_layout_itoc_header itocHeader, dtocHeader;
+    image_layout_itoc_header_unpack(&dtocHeader, _fs4ImgInfo.dtocArr.tocHeader);
+    image_layout_itoc_header_unpack(&itocHeader, imageOps._fs4ImgInfo.itocArr.tocHeader);
 
     if (dtocHeader.flash_layout_version <
         itocHeader.flash_layout_version) {
@@ -1508,6 +1764,252 @@ bool Fs4Operations::CheckIfAlignmentIsNeeded(FwOperations *imgops)
     }
 
     return false;
+}
+
+bool Fs4Operations::FwExtractEncryptedImage(vector<u_int8_t>& img, bool maskMagicPattern,
+    bool verbose, bool ignoreImageStart)
+{
+    //* Choosing the correct io to read from
+    FBase* io = _ioAccess;
+    if (_encrypted_image_io_access) {
+        io = _encrypted_image_io_access; // If encrypted image was given we'll read from it
+    }
+
+    getImgStart(); // Stores image start value in _fwImgInfo.imgStart
+    u_int32_t image_start = 0;
+    if (!ignoreImageStart) {
+        image_start = _fwImgInfo.imgStart;
+    }
+
+    //* Get image size
+    u_int8_t *buff;
+    READALLOCBUF((*io), ENCRYPTED_IMAGE_LAST_ADDR_LOCATION_IN_BYTES, buff, 4, "IMAGE_LAST_ADDR"); // Reading DWORD from addr 16MB
+    u_int32_t image_last_addr = ((u_int32_t*)buff)[0];
+    TOCPU1(image_last_addr);
+    u_int32_t image_size = image_last_addr - image_start;
+    free(buff);
+
+    //* Read image from _fwImgInfo.imgStart to image_size (_fwImgInfo.imgStart expected to be zero)
+    DPRINTF(("Fs4Operations::FwExtractEncryptedImage - Reading image from 0x%x to 0x%x\n", image_start, image_start + image_size));
+    img.resize(image_size);
+    if (!(*io).read(image_start, img.data(), image_size, verbose)) {
+        return errmsg("%s - read error (%s)\n", "image", (*io).err());
+    }
+
+    if (maskMagicPattern) {
+        memset(img.data(), 0xFF, 16);
+    }
+
+    return true;
+}
+
+bool Fs4Operations::readFS4Log2ChunkSizeFromImage(u_int32_t& log2_chunk_size) {
+    if (_ioAccess->is_flash()) {
+        return errmsg("readLog2ChunkSizeFromImage operation not supported on device\n");
+    }
+
+    if (!getImgStart()) { // Stores image start value in _fwImgInfo.imgStart
+        return errmsg("Failed to get image start\n");
+    }
+
+    //* Reading begin_area.tools_area.log2_img_slot_size from image
+    // TODO - read begin_area.hw_pointers.tools_ptr then read begin_area.tools_area.log2_img_slot_size
+    u_int8_t buff[FS3_BOOT_START];
+    _ioAccess->set_address_convertor(0, 0);
+    READBUF((*_ioAccess), _fwImgInfo.imgStart, buff, FS3_BOOT_START, "Image header");
+    TOCPUn(buff, FS3_BOOT_START_IN_DW);
+    log2_chunk_size = EXTRACT(buff[FS3_LOG2_CHUNK_SIZE_DW_OFFSET], 16, 8) ? EXTRACT(buff[FS3_LOG2_CHUNK_SIZE_DW_OFFSET], 16, 8) : FS4_ENCRYPTED_LOG_CHUNK_SIZE;
+    DPRINTF(("Fs4Operations::readFS4Log2ChunkSizeFromImage - log2_chunk_size = %d\n", log2_chunk_size));
+
+    return true;
+}
+
+bool Fs4Operations::DoAfterBurnJobs(const u_int32_t magic_pattern[], ExtBurnParams& burnParams,
+                                    Flash *flash_access, u_int32_t new_image_start,
+                                    u_int32_t log2_chunk_size)
+{
+    u_int32_t zeroes = 0;
+    u_int32_t old_fw_signatrue_addr = 0;
+
+    bool boot_address_was_updated = bootAddrUpdate(flash_access, new_image_start, burnParams);
+
+    if (!burnParams.burnFailsafe) {
+        // When burning in nofs, remnant of older image with different chunk size
+        // may reside on the flash -
+        // Invalidate all images marking on flash except the one we've just burnt
+        invalidateOldFWImages(magic_pattern, flash_access, new_image_start);
+    } else {
+        // invalidate previous signature
+        flash_access->set_address_convertor(0, 0);
+        if (new_image_start == 0x0) {
+            old_fw_signatrue_addr = 1 << log2_chunk_size;
+        }
+        DPRINTF(("Fs4Operations::DoAfterBurnJobs - Invalidating old fw signature at addr 0x%x\n", old_fw_signatrue_addr));
+        if (!flash_access->write(old_fw_signatrue_addr, &zeroes, sizeof(zeroes), true)) {
+            return errmsg(MLXFW_FLASH_WRITE_ERR, "Failed to invalidate old fw signature: %s", flash_access->err());
+        }
+    }
+
+    if (boot_address_was_updated == false) {
+        report_warn("Failed to update FW boot address. Power cycle the device in order to load the new FW.\n");
+    }
+    return true;
+}
+
+bool Fs4Operations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& burnParams)
+{
+    // bool useImageDevData; //! Handle dev data as well
+    u_int8_t is_curr_image_on_second_partition;
+    u_int32_t log2_chunk_size = 0;
+    u_int32_t new_image_start_addr;
+    u_int32_t total_img_size = 0;
+
+    if (_ioAccess == NULL) {
+        return errmsg("ioAccess doesn't exist\n");
+    }
+    if (_signatureMngr == NULL) {
+        return errmsg("Signature manager doesn't exist\n");
+    }
+
+    //* Preparations in case we need to burn device data (DTOC)
+    if (burnParams.useImgDevData) {
+        //* Check if flash is write protected
+        bool is_write_protected;
+        if (!isWriteProtected(is_write_protected)) {
+            return errmsg("%s", err());
+        }
+        if (is_write_protected) {
+            return errmsg("Cannot burn device data sections, Flash is write protected.");
+        }
+
+        //* Parse DTOC and its sections
+        ((Fs4Operations*)imageOps)->parseDevData();
+
+        //* DTOC sanity check
+        if (!((Fs4Operations*)imageOps)->CheckDTocArray()) {
+            return errmsg(MLXFW_IMAGE_CORRUPTED_ERR, "%s", imageOps->err());
+        }
+
+        total_img_size += FS4_DEFAULT_SECTOR_SIZE; // DTOC size
+        total_img_size += ((Fs4Operations*)imageOps)->_fs4ImgInfo.dtocArr.getSectionsTotalSize();
+    }
+
+    if (burnParams.burnFailsafe) {
+        DPRINTF(("Fs4Operations::burnEncryptedImage Looking for image start on flash\n"));
+        if (!getImgStart()) { // Stores image start value in _fwImgInfo.imgStart
+            return errmsg("%s", err());
+        }
+    }
+    else {
+        DPRINTF(("Fs4Operations::burnEncryptedImage No fail safe burn, ignore looking for image start on flash\n"));
+    }
+
+    DPRINTF(("Fs4Operations::burnEncryptedImage _fwImgInfo.imgStart = 0x%x\n", _fwImgInfo.imgStart));
+    //* Read chunk (=half-flash) size from image
+    // ((Fs4Operations*)imageOps)->readFS4Log2ChunkSizeFromImage(log2_chunk_size); // TODO - use this function once it's fixed
+    log2_chunk_size = FS4_ENCRYPTED_LOG_CHUNK_SIZE;
+
+    //* Assign new image start addr and current image partition
+    is_curr_image_on_second_partition = 0;
+    new_image_start_addr = 1 << log2_chunk_size;
+    if (_fwImgInfo.imgStart != 0 ||
+        (!burnParams.burnFailsafe && ((Flash*)_ioAccess)->get_ignore_cache_replacment())) {
+        is_curr_image_on_second_partition = 1;
+        new_image_start_addr = 0;
+    }
+    DPRINTF(("Fs4Operations::burnEncryptedImage - is_curr_image_on_second_partition = %d, new_image_start_addr = 0x%x\n", is_curr_image_on_second_partition, new_image_start_addr));
+
+    //* Extract encrypted image
+    std::vector<u_int8_t> imgBuff;
+    if (!imageOps->FwExtractEncryptedImage(imgBuff, false))
+    {
+        return errmsg("Failed to extract encrypted image (%s)\n", imageOps->err());
+    }
+
+    //* Get image size without signature
+    total_img_size += imgBuff.size() - FS3_FW_SIGNATURE_SIZE;
+    DPRINTF(("Fs4Operations::burnEncryptedImage - image size to burn = 0x%x\n", (u_int32_t)imgBuff.size()));
+
+    //* Burn
+    int alreadyWrittenSz = 0;
+    //* Burn image without signature
+    if (!writeImageEx(
+            burnParams.progressFuncEx,
+            burnParams.progressUserData,
+            burnParams.progressFunc,
+            new_image_start_addr + FS3_FW_SIGNATURE_SIZE,   // addr
+            imgBuff.data() + FS3_FW_SIGNATURE_SIZE,         // data
+            total_img_size,                                 // size
+            true,                                           // phys addr
+            false,
+            total_img_size,
+            alreadyWrittenSz))
+    {
+        return errmsg("Failed to burn encrypted image\n");
+    }
+
+    if (burnParams.useImgDevData) {
+        //* Burning DTOC
+        // Get DTOC from the cache
+        u_int8_t* dtoc_data = new u_int8_t[FS4_DEFAULT_SECTOR_SIZE];
+        u_int32_t dtoc_addr = imageOps->GetIoAccess()->get_size() - FS4_DEFAULT_SECTOR_SIZE;
+        ((Fs4Operations*)imageOps)->_imageCache.get(dtoc_data, dtoc_addr, FS4_DEFAULT_SECTOR_SIZE);
+        if (!writeImageEx(
+                burnParams.progressFuncEx,
+                burnParams.progressUserData,
+                burnParams.progressFunc,
+                dtoc_addr,
+                dtoc_data,
+                FS4_DEFAULT_SECTOR_SIZE,
+                true,
+                true,
+                total_img_size,
+                alreadyWrittenSz)) {
+            delete[] dtoc_data;
+            return false;
+        }
+        delete[] dtoc_data;
+        alreadyWrittenSz += FS4_DEFAULT_SECTOR_SIZE;
+
+        for (int i = 0; i < ((Fs4Operations*)imageOps)->_fs4ImgInfo.dtocArr.numOfTocs; i++) {
+            struct fs4_toc_info *dtoc_info_p = &((Fs4Operations*)imageOps)->_fs4ImgInfo.dtocArr.tocArr[i];
+            struct image_layout_itoc_entry *dtoc_entry = &dtoc_info_p->toc_entry;
+            DPRINTF(("burning DTOC section addr=0x%08x size=0x%08x\n",
+                    dtoc_entry->flash_addr << 2, (u_int32_t)dtoc_info_p->section_data.size()));
+            if (!writeImageEx(
+                    burnParams.progressFuncEx,
+                    burnParams.progressUserData,
+                    burnParams.progressFunc,
+                    dtoc_entry->flash_addr << 2,
+                    &(dtoc_info_p->section_data[0]),
+                    dtoc_info_p->section_data.size(),
+                    true,
+                    true,
+                    total_img_size,
+                    alreadyWrittenSz)) {
+                return false;
+            }
+            alreadyWrittenSz += dtoc_info_p->section_data.size();
+        }
+    }
+
+    //* Burn signature
+    if (!writeImageEx(
+            burnParams.progressFuncEx,
+            burnParams.progressUserData,
+            burnParams.progressFunc,
+            new_image_start_addr,       // addr
+            imgBuff.data(),             // data
+            FS3_FW_SIGNATURE_SIZE,      // size
+            true,                       // phys addr
+            true,
+            total_img_size,
+            alreadyWrittenSz))
+    {
+        return errmsg("Failed to burn encrypted image signature\n");
+    }
+    return DoAfterBurnJobs(_fs4_magic_pattern, burnParams, (Flash*)(this->_ioAccess),
+                           new_image_start_addr, log2_chunk_size);
 }
 
 bool Fs4Operations::BurnFs4Image(Fs4Operations &imageOps,
@@ -1596,18 +2098,18 @@ bool Fs4Operations::BurnFs4Image(Fs4Operations &imageOps,
     // write itoc entries data
     for (int i = 0; i < imageOps._fs4ImgInfo.itocArr.numOfTocs; i++) {
         struct fs4_toc_info *itoc_info_p = &imageOps._fs4ImgInfo.itocArr.tocArr[i];
-        struct cx5fw_itoc_entry *toc_entry = &itoc_info_p->toc_entry;
+        struct image_layout_itoc_entry *toc_entry = &itoc_info_p->toc_entry;
         if (!writeImageEx(
                 burnParams.progressFuncEx,
                 burnParams.progressUserData,
                 burnParams.progressFunc,
                 toc_entry->flash_addr << 2,
-                    &(itoc_info_p->section_data[0]),
-                    itoc_info_p->section_data.size(),
-                    false,//addresses of itocs are relative and not physical
-                    false,
-                    total_img_size,
-                    alreadyWrittenSz)) {
+                &(itoc_info_p->section_data[0]),
+                itoc_info_p->section_data.size(),
+                false,//addresses of itocs are relative and not physical
+                false,
+                total_img_size,
+                alreadyWrittenSz)) {
             return false;
         }
         alreadyWrittenSz += itoc_info_p->section_data.size();
@@ -1645,18 +2147,18 @@ bool Fs4Operations::BurnFs4Image(Fs4Operations &imageOps,
         //TODO: write device area (dtoc's entries)
         for (int i = 0; i < imageOps._fs4ImgInfo.dtocArr.numOfTocs; i++) {
             struct fs4_toc_info *itoc_info_p = &imageOps._fs4ImgInfo.dtocArr.tocArr[i];
-            struct cx5fw_itoc_entry *toc_entry = &itoc_info_p->toc_entry;
+            struct image_layout_itoc_entry *toc_entry = &itoc_info_p->toc_entry;
             if (!writeImageEx(
                     burnParams.progressFuncEx,
                     burnParams.progressUserData,
                     burnParams.progressFunc,
                     toc_entry->flash_addr << 2,
-                        &(itoc_info_p->section_data[0]),
-                        itoc_info_p->section_data.size(),
-                        true,
-                        true,
-                        total_img_size,
-                        alreadyWrittenSz)) {
+                    &(itoc_info_p->section_data[0]),
+                    itoc_info_p->section_data.size(),
+                    true,
+                    true,
+                    total_img_size,
+                    alreadyWrittenSz)) {
                 return false;
             }
             alreadyWrittenSz += itoc_info_p->section_data.size();
@@ -1722,7 +2224,7 @@ bool Fs4Operations::BurnFs4Image(Fs4Operations &imageOps,
     }
     delete[] data8;
 
-    return DoAfterBurnJobs(_fs4_magic_pattern, imageOps, burnParams, f,
+    return Fs3Operations::DoAfterBurnJobs(_fs4_magic_pattern, imageOps, burnParams, f,
                            new_image_start, is_curr_image_in_odd_chunks);
 }
 
@@ -1789,26 +2291,12 @@ bool Fs4Operations::FsBurnAux(FwOperations *imgops, ExtBurnParams& burnParams)
             }
         } else {
             //We will take device data sections from image: make sure device is not write protected
-            if (_ioAccess->is_flash()) {
-                FBase *origFlashObj = (FBase *) NULL;
-                if (!((Flash *)_ioAccess)->get_ignore_cache_replacment()) {
-                    origFlashObj = _ioAccess;
-                    _fwParams.ignoreCacheRep = 1;
-                    if (!FwOperations::FwAccessCreate(_fwParams, &_ioAccess)) {
-                        _ioAccess = origFlashObj;
-                        _fwParams.ignoreCacheRep = 0;
-                        return errmsg(MLXFW_OPEN_OCR_ERR,
-                                      "Failed to open device for direct flash access");
-                    }
-                }
-
-                if (((Flash *)_ioAccess)->is_flash_write_protected()) {
-                    FLASH_RESTORE(origFlashObj);
-                    return errmsg("Cannot burn device data sections, "
-                                  "Flash is write protected.");
-                }
-
-                FLASH_RESTORE(origFlashObj);
+            bool is_write_protected;
+            if (!isWriteProtected(is_write_protected)) {
+                return errmsg("%s", err());
+            }
+            if (is_write_protected) {
+                return errmsg("Cannot burn device data sections, Flash is write protected.");
             }
         }
     }
@@ -1887,7 +2375,7 @@ bool Fs4Operations::FsBurnAux(FwOperations *imgops, ExtBurnParams& burnParams)
             //update the toc in the cache
             imageOps.Fs3UpdateImgCache(imageInfoToc->data,
                                        imageInfoToc->entry_addr,
-                                       CX5FW_ITOC_ENTRY_SIZE);
+                                       IMAGE_LAYOUT_ITOC_ENTRY_SIZE);
             //update the section in the cache
             imageOps.Fs3UpdateImgCache(imageInfoToc->section_data.data(),
                                        imageInfoToc->toc_entry.flash_addr << 2,
@@ -1964,7 +2452,7 @@ bool Fs4Operations::Fs4UpdateMfgUidsSection(struct fs4_toc_info *curr_toc,
     return true;
 }
 
-bool Fs4Operations::Fs4ChangeUidsFromBase(fs3_uid_t base_uid, struct cx5fw_guids& guids)
+bool Fs4Operations::Fs4ChangeUidsFromBase(fs3_uid_t base_uid, struct image_layout_guids& guids)
 {
     /*
      * on ConnectX4 we derrive guids from base_guid and macs from base_mac
@@ -1995,9 +2483,9 @@ bool Fs4Operations::Fs4ChangeUidsFromBase(fs3_uid_t base_uid, struct cx5fw_guids
 bool Fs4Operations::Fs4UpdateUidsSection(std::vector<u_int8_t>  section_data,
                                          fs3_uid_t base_uid, std::vector<u_int8_t>  &newSectionData)
 {
-    struct cx5fw_device_info dev_info;
+    struct image_layout_device_info dev_info;
 
-    cx5fw_device_info_unpack(&dev_info, (u_int8_t *)&section_data[0]);
+    image_layout_device_info_unpack(&dev_info, (u_int8_t *)&section_data[0]);
 
     if (!Fs4ChangeUidsFromBase(base_uid, dev_info.guids)) {
         return false;
@@ -2010,16 +2498,16 @@ bool Fs4Operations::Fs4UpdateUidsSection(std::vector<u_int8_t>  section_data,
 
     newSectionData = section_data;
 
-    cx5fw_device_info_pack(&dev_info, (u_int8_t *)&newSectionData[0]);
+    image_layout_device_info_pack(&dev_info, (u_int8_t *)&newSectionData[0]);
     return true;
 }
 
 bool Fs4Operations::Fs4UpdateVsdSection(std::vector<u_int8_t>  section_data, char *user_vsd,
                                         std::vector<u_int8_t>  &newSectionData)
 {
-    struct cx5fw_device_info dev_info;
+    struct image_layout_device_info dev_info;
 
-    cx5fw_device_info_unpack(&dev_info, (u_int8_t *)&section_data[0]);
+    image_layout_device_info_unpack(&dev_info, (u_int8_t *)&section_data[0]);
     memset(dev_info.vsd, 0, sizeof(dev_info.vsd));
     strncpy(dev_info.vsd, user_vsd, TOOLS_ARR_SZ(dev_info.vsd) - 1);
     newSectionData = section_data;
@@ -2027,7 +2515,7 @@ bool Fs4Operations::Fs4UpdateVsdSection(std::vector<u_int8_t>  section_data, cha
     dev_info.signature1 = DEV_INFO_SIG1;
     dev_info.signature2 = DEV_INFO_SIG2;
     dev_info.signature3 = DEV_INFO_SIG3;
-    cx5fw_device_info_pack(&dev_info, (u_int8_t *)&newSectionData[0]);
+    image_layout_device_info_pack(&dev_info, (u_int8_t *)&newSectionData[0]);
     return true;
 }
 
@@ -2066,16 +2554,81 @@ bool Fs4Operations::Fs4ReburnSection(u_int32_t newSectionAddr,
     char message[127];
 
     sprintf(message, "Updating %-4s section - ", msg);
+    DPRINTF(("%s\n", message));
 
     PRINT_PROGRESS(callBackFunc, message);
 
-
-    if (!writeImage((ProgressCallBack)NULL, newSectionAddr, (u_int8_t *)&newSectionData[0], newSectionSize, true, true)) {
-        PRINT_PROGRESS(callBackFunc, (char *)"FAILED\n");
-        return false;
+    // If encrypted image is valid we want to write to it
+    if (_encrypted_image_io_access) {
+        DPRINTF(("Fs4Operations::Fs4ReburnSection updating encrypted image at addr 0x%x\n", newSectionAddr));
+        if (!_encrypted_image_io_access->write(newSectionAddr, (u_int8_t *)&newSectionData[0], newSectionSize)) {
+            return errmsg("%s", _encrypted_image_io_access->err());
+        }
+    }
+    else {
+        if (!writeImage((ProgressCallBack)NULL, newSectionAddr, (u_int8_t *)&newSectionData[0], newSectionSize, true, true)) {
+            PRINT_PROGRESS(callBackFunc, (char *)"FAILED\n");
+            return false;
+        }
     }
 
     PRINT_PROGRESS(callBackFunc, (char *)"OK\n");
+
+    return true;
+}
+
+bool Fs4Operations::calcHashOnItoc(vector<u_int8_t>& hash) {
+    //* Get ITOC data as vector of bytes
+    vector<u_int8_t> itoc_data;
+    u_int32_t itoc_size = _fs4ImgInfo.itocArr.numOfTocs * TOC_ENTRY_SIZE + TOC_HEADER_SIZE; 
+    itoc_data.resize(itoc_size);
+    READBUF((*_ioAccess), _itoc_ptr, (u_int32_t*)&itoc_data[0], itoc_size / 4, "Reading ITOC data");
+
+    //* Calculate SHA
+    MlxSignSHA512 mlxSignSHA;
+    mlxSignSHA << itoc_data;
+    mlxSignSHA.getDigest(hash);
+    return true;
+}
+
+bool Fs4Operations::updateHashInHashesTable(fs3_section_t section_type, vector<u_int8_t> hash) {
+    //* Init HTOC
+    vector<u_int8_t> img;
+    FwInit();
+    _imageCache.clear();
+    if (!FwExtract4MBImage(img, true)) {
+        return false;
+    }
+    const u_int32_t htoc_address = _hashes_table_ptr + IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE;
+    HTOC* htoc = new HTOC(img, htoc_address);
+
+    //* Get hash addr in hashes_table
+    struct image_layout_htoc_entry htoc_entry;
+    if (!htoc->getEntryBySectionType(section_type, htoc_entry)) {
+        return errmsg("Can't find section type 0x%x in htoc", section_type);
+    }
+    u_int32_t hash_addr = htoc_address + htoc_entry.hash_offset;
+    u_int32_t hash_size = htoc->header.hash_size;
+
+    //* Insert hash (SHA512) to hashes_table
+    if (!_ioAccess->write(hash_addr, hash.data(), hash_size)) {
+        return errmsg("Failed to insert hash to hashes_table");
+    }
+
+    //* Calculate CRC on modified hashes_table
+    const u_int32_t HASHES_TABLE_TAIL_SIZE = 8;
+    u_int32_t hashes_table_size = IMAGE_LAYOUT_HASHES_TABLE_HEADER_SIZE + IMAGE_LAYOUT_HTOC_HEADER_SIZE + \
+                                MAX_HTOC_ENTRIES_NUM * (IMAGE_LAYOUT_HTOC_ENTRY_SIZE + hash_size) + HASHES_TABLE_TAIL_SIZE;
+    u_int8_t* hashes_table_data;
+    READALLOCBUF((*_ioAccess), _hashes_table_ptr, hashes_table_data, hashes_table_size, "HASHES TABLE");
+    u_int32_t hashes_table_crc = CalcImageCRC((u_int32_t*)hashes_table_data, (hashes_table_size / 4) - 1);
+    CPUTO1(hashes_table_crc);
+
+    //* Insert calculated CRC to last DWORD in hashes_table
+    u_int32_t hashes_table_crc_addr = _hashes_table_ptr + hashes_table_size - 4;
+    if (!_ioAccess->write(hashes_table_crc_addr, &hashes_table_crc, 4)) {
+        return errmsg("Failed to write hashes_table crc");
+    }
 
     return true;
 }
@@ -2100,16 +2653,16 @@ bool Fs4Operations::reburnDTocSection(PrintCallBack callBackFunc)
     // Itoc section is failsafe (two sectors after boot section are reserved for itoc entries)
     u_int32_t tocAddr = _fs4ImgInfo.dtocArr.tocArrayAddr;
     // Update new ITOC
-    u_int32_t tocSize = (_fs4ImgInfo.dtocArr.numOfTocs + 1) * CX5FW_ITOC_ENTRY_SIZE + CX5FW_ITOC_HEADER_SIZE;
+    u_int32_t tocSize = (_fs4ImgInfo.dtocArr.numOfTocs + 1) * IMAGE_LAYOUT_ITOC_ENTRY_SIZE + IMAGE_LAYOUT_ITOC_HEADER_SIZE;
     u_int8_t *p = new u_int8_t[tocSize];
     memcpy(p, _fs4ImgInfo.dtocArr.tocHeader, CIBFW_ITOC_HEADER_SIZE);
     for (int i = 0; i < _fs4ImgInfo.dtocArr.numOfTocs; i++) {
         struct fs4_toc_info *curr_itoc = &_fs4ImgInfo.dtocArr.tocArr[i];
-        memcpy(p + CX5FW_ITOC_HEADER_SIZE + i * CX5FW_ITOC_ENTRY_SIZE,
+        memcpy(p + IMAGE_LAYOUT_ITOC_HEADER_SIZE + i * IMAGE_LAYOUT_ITOC_ENTRY_SIZE,
                curr_itoc->data,
-               CX5FW_ITOC_ENTRY_SIZE);
+               IMAGE_LAYOUT_ITOC_ENTRY_SIZE);
     }
-    memset(&p[tocSize] - CX5FW_ITOC_ENTRY_SIZE, FS3_END, CX5FW_ITOC_ENTRY_SIZE);
+    memset(&p[tocSize] - IMAGE_LAYOUT_ITOC_ENTRY_SIZE, FS3_END, IMAGE_LAYOUT_ITOC_ENTRY_SIZE);
 
     PRINT_PROGRESS(callBackFunc, (char *)"Updating TOC section - ");
     bool rc = writeImage((ProgressCallBack)NULL, tocAddr, p, tocSize, true, true);
@@ -2135,16 +2688,16 @@ bool Fs4Operations::reburnITocSection(PrintCallBack callBackFunc, bool isFailSaf
                       (_fs4ImgInfo.itocArr.tocArrayAddr + sector_size);
     }
     // Update new ITOC
-    u_int32_t tocSize = (_fs4ImgInfo.itocArr.numOfTocs + 1) * CX5FW_ITOC_ENTRY_SIZE + CX5FW_ITOC_HEADER_SIZE;
+    u_int32_t tocSize = (_fs4ImgInfo.itocArr.numOfTocs + 1) * IMAGE_LAYOUT_ITOC_ENTRY_SIZE + IMAGE_LAYOUT_ITOC_HEADER_SIZE;
     u_int8_t *p = new u_int8_t[tocSize];
     memcpy(p, _fs4ImgInfo.itocArr.tocHeader, CIBFW_ITOC_HEADER_SIZE);
     for (int i = 0; i < _fs4ImgInfo.itocArr.numOfTocs; i++) {
         struct fs4_toc_info *curr_itoc = &_fs4ImgInfo.itocArr.tocArr[i];
-        memcpy(p + CX5FW_ITOC_HEADER_SIZE + i * CX5FW_ITOC_ENTRY_SIZE,
+        memcpy(p + IMAGE_LAYOUT_ITOC_HEADER_SIZE + i * IMAGE_LAYOUT_ITOC_ENTRY_SIZE,
                curr_itoc->data,
-               CX5FW_ITOC_ENTRY_SIZE);
+               IMAGE_LAYOUT_ITOC_ENTRY_SIZE);
     }
-    memset(&p[tocSize] - CX5FW_ITOC_ENTRY_SIZE, FS3_END, CX5FW_ITOC_ENTRY_SIZE);
+    memset(&p[tocSize] - IMAGE_LAYOUT_ITOC_ENTRY_SIZE, FS3_END, IMAGE_LAYOUT_ITOC_ENTRY_SIZE);
 
     PRINT_PROGRESS(callBackFunc, (char *)"Updating TOC section - ");
     bool rc = writeImage((ProgressCallBack)NULL, newITocAddr, p, tocSize, true, true);
@@ -2164,13 +2717,25 @@ bool Fs4Operations::reburnITocSection(PrintCallBack callBackFunc, bool isFailSaf
         }
         PRINT_PROGRESS(callBackFunc, (char *)"OK\n");
     }
+
+    if (getSecureBootSignVersion() == VERSION_2) {
+        //* Calculate SHA-512 on ITOC
+        vector<u_int8_t> hash;
+        if (!calcHashOnItoc(hash)) {
+            return errmsg("Failed to calculate ITOC hash");
+        }
+        if (!updateHashInHashesTable(FS3_ITOC, hash)) {
+            return false;
+        }
+    }
+
     return true;
 }
 
 bool Fs4Operations::Fs4UpdateItocInfo(struct fs4_toc_info *curr_toc,
                                       u_int32_t NewSectSize, std::vector<u_int8_t>&  newSectionData)
 {
-    u_int8_t tocEntryBuff[CX5FW_ITOC_ENTRY_SIZE];
+    u_int8_t tocEntryBuff[IMAGE_LAYOUT_ITOC_ENTRY_SIZE];
 
     curr_toc->toc_entry.size = NewSectSize;
     curr_toc->section_data = newSectionData;
@@ -2183,14 +2748,14 @@ bool Fs4Operations::Fs4UpdateItocInfo(struct fs4_toc_info *curr_toc,
         ((u_int32_t *)newSectionData.data())[curr_toc->toc_entry.size - 1] = TOCPU1(newSectionCRC);
     }
 
-    memset(tocEntryBuff, 0, CX5FW_ITOC_ENTRY_SIZE);
-    cx5fw_itoc_entry_pack(&curr_toc->toc_entry, tocEntryBuff);
+    memset(tocEntryBuff, 0, IMAGE_LAYOUT_ITOC_ENTRY_SIZE);
+    image_layout_itoc_entry_pack(&curr_toc->toc_entry, tocEntryBuff);
 
     u_int32_t newEntryCRC = CalcImageCRC((u_int32_t *)tocEntryBuff, (TOC_ENTRY_SIZE / 4) - 1);
     curr_toc->toc_entry.itoc_entry_crc = newEntryCRC;
 
-    memset(curr_toc->data, 0, CX5FW_ITOC_ENTRY_SIZE);
-    cx5fw_itoc_entry_pack(&curr_toc->toc_entry, curr_toc->data);
+    memset(curr_toc->data, 0, IMAGE_LAYOUT_ITOC_ENTRY_SIZE);
+    image_layout_itoc_entry_pack(&curr_toc->toc_entry, curr_toc->data);
 
     return true;
 }
@@ -2380,7 +2945,8 @@ bool Fs4Operations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, bo
         if (!Fs3UpdatePublicKeysSection(curr_toc->toc_entry.size, publickeys_file, newSection)) {
             return false;
         }
-    } else if (sect_type == FS3_PUBLIC_KEYS_4096 && cmd_type == CMD_SET_PUBLIC_KEYS) {
+    } 
+    else if (sect_type == FS3_PUBLIC_KEYS_4096 && cmd_type == CMD_SET_PUBLIC_KEYS) {
         char *publickeys_file = (char *)new_info;
         type_msg = "PUBLIC KEYS 4096";
         if (!Fs3UpdatePublicKeysSection(curr_toc->toc_entry.size, publickeys_file, newSection)) {
@@ -2411,25 +2977,44 @@ bool Fs4Operations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, bo
 
     newSectionAddr = curr_toc->toc_entry.flash_addr << 2;
 
-    if (!Fs4UpdateItocInfo(curr_toc, curr_toc->toc_entry.size, newSection)) {
-        return false;
+    if (!_encrypted_image_io_access) { // In case of encrypted image we don't update ITOC since it's already encrypted
+        if (!Fs4UpdateItocInfo(curr_toc, curr_toc->toc_entry.size, newSection)) {
+            return false;
+        }
     }
 
     if (!Fs4ReburnSection(newSectionAddr, curr_toc->toc_entry.size * 4, newSection, type_msg, callBackFunc)) {
         return false;
     }
 
-    if (sect_type != FS3_DEV_INFO) {
-        if (!Fs4ReburnTocSection(isDtoc, callBackFunc)) {
-            return false;
+    if (!_encrypted_image_io_access) { // In case of encrypted image we don't update ITOC since it's already encrypted
+        if (sect_type != FS3_DEV_INFO) {
+            if (!Fs4ReburnTocSection(isDtoc, callBackFunc)) {
+                return false;
+            }
         }
     }
 
+    // TODO - in case hashes_table (HTOC) exists recalculate modified section SHA and store it in hashes_table.
+    // TODO - Currently it's not implemented since there is no use-case where we need to update hashes_table,
+    // TODO - so we prefer to ignore it for now instead of inserting a potential bug.
+
     if (is_sect_failsafe) {
-        if (!writeImage((ProgressCallBack)NULL,
-                        old_toc->toc_entry.flash_addr << 2,
-                        (u_int8_t *)&zeroes, sizeof(zeroes), isDtoc, true)) {
-            return false;
+        u_int32_t flash_addr = old_toc->toc_entry.flash_addr << 2;
+        // If encrypted image was given we'll write to it
+        if (_encrypted_image_io_access) {
+            DPRINTF(("Fs4Operations::Fs3UpdateSection updating encrypted image at addr 0x%x with 0x0\n", flash_addr));
+            if (!_encrypted_image_io_access->write(flash_addr,
+                                                   (u_int8_t *)&zeroes, sizeof(zeroes))) {
+                return errmsg("%s", _encrypted_image_io_access->err());
+            }
+        }
+        else {
+            if (!writeImage((ProgressCallBack)NULL,
+                            flash_addr,
+                            (u_int8_t *)&zeroes, sizeof(zeroes), isDtoc, true)) {
+                return false;
+            }
         }
     }
 
@@ -2650,28 +3235,145 @@ bool Fs4Operations::FwSignSection(const vector<u_int8_t>& section, const string 
     if (rc) {
         return errmsg("Failed to set private key from file (rc = 0x%x)\n", rc);
     }
+
     MlxSignSHA512 mlxSignSHA;
     mlxSignSHA << section;
     mlxSignSHA.getDigest(sha);
+
     rc = rsa.sign(MlxSign::SHA512, sha, encSha);
     if (rc) {
         return errmsg("Failed to encrypt the SHA (rc = 0x%x)\n", rc);
     }
+
     return true;
 }
 #endif
-bool Fs4Operations::PrepareBinData(vector<u_int8_t>& bin_data)
-{
-    u_int32_t physAddr = _authentication_start_ptr;
-    const unsigned int bin_data_size = _authentication_end_ptr - _authentication_start_ptr + 1;
-    bin_data.resize(bin_data_size);
+
+int Fs4Operations::getBoot2Size(u_int32_t address) {
+
+    u_int32_t num_of_dwords;
+
+    // Read the num of DWs for the second dword
     READBUF((*_ioAccess),
+        address+4,
+        &num_of_dwords,
+        4,
+        "num of DWs");
+
+    TOCPU1(num_of_dwords)
+
+    return (4 + num_of_dwords) * 4; // 2 dwords for header + 2 dwords for tail
+
+}
+
+// This function is called from getBootDataForSignVersion2() only so currently it supports CX7 onwards only
+bool Fs4Operations::getBootRecordSize(u_int32_t& boot_record_size) {
+    switch (getChipType(_fwImgInfo.supportedHwId[0])) {
+        case CT_CONNECTX7:
+            boot_record_size = 0x3f4;
+            return true;
+        default:
+            return false;
+    }
+}
+
+bool Fs4Operations::getBootDataForSignVersion1(vector<u_int8_t>& data) {
+    u_int32_t physAddr = _authentication_start_ptr;
+    const unsigned int data_size = _authentication_end_ptr - _authentication_start_ptr + 1;
+    data.resize(data_size);
+
+    //* Choosing the correct io to read from
+    FBase* io = _ioAccess;
+    if (_encrypted_image_io_access) {
+        DPRINTF(("Fs4Operations::getBootDataForSignVersion1 reading from encrypted image from addr 0x%x: 0x%x bytes\n", physAddr, data_size));
+        io = _encrypted_image_io_access; // If encrypted image was given we'll read from it
+    }
+
+    READBUF((*io),
         physAddr,
-        bin_data.data(),
-        bin_data_size,
+        data.data(),
+        data_size,
         "Reading data pointed by HW Pointers");
     return true;
 }
+
+bool Fs4Operations::getBootDataForSignVersion2(vector<u_int8_t>& data) {
+    unsigned int data_offset = 0;
+
+    // Boot version
+    const u_int32_t BOOT_VERSION_ADDRESS = 0x10;
+    const u_int32_t BOOT_VERSION_SIZE = 0x8; // including reserved dword
+    data.resize(data.size() + BOOT_VERSION_SIZE);
+    READBUF((*_ioAccess),
+        BOOT_VERSION_ADDRESS,
+        data.data() + data_offset,
+        BOOT_VERSION_SIZE,
+        "Reading boot version");
+
+    data_offset += BOOT_VERSION_SIZE;
+
+
+    // HW pointers (without CRC)
+    const u_int32_t HW_POINTER_SIZE = 4;
+    const u_int32_t HW_POINTER_CRC_SIZE = 4;
+    const int NUM_OF_HW_POINTERS = 16;
+    for (int ii = 0; ii < NUM_OF_HW_POINTERS; ii++) {
+        data.resize(data.size() + HW_POINTER_SIZE);
+        READBUF((*_ioAccess),
+            FS4_HW_PTR_START + ii * (HW_POINTER_SIZE + HW_POINTER_CRC_SIZE),
+            data.data() + data_offset,
+            HW_POINTER_SIZE,
+            "Reading HW pointer");
+
+        data_offset += HW_POINTER_SIZE;
+    }
+
+    // Boot record
+    u_int32_t boot_record_size = 0;
+    if (!getBootRecordSize(boot_record_size)) {
+        return errmsg("Failed to get boot_record size\n");
+    }
+    data.resize(data.size() + boot_record_size);
+    READBUF((*_ioAccess),
+        _boot_record_ptr,
+        data.data() + data_offset,
+        boot_record_size,
+        "Reading boot record");
+    data_offset += boot_record_size;
+
+    // Boot2
+    u_int32_t boot2_size = getBoot2Size(_boot2_ptr);
+    data.resize(data.size() + boot2_size);
+    READBUF((*_ioAccess),
+        _boot2_ptr,
+        data.data() + data_offset,
+        boot2_size,
+        "Reading boot2");
+    data_offset += boot2_size;
+
+    // Hashes table
+    u_int32_t hashes_table_size = getHashesTableSize(_hashes_table_ptr);
+    data.resize(data.size() + hashes_table_size);
+    READBUF((*_ioAccess),
+        _hashes_table_ptr,
+        data.data() + data_offset,
+        hashes_table_size,
+        "Reading hashes table");
+
+    return true;
+}
+
+bool Fs4Operations::getBootDataForSign(vector<u_int8_t>& data) {
+    switch (getSecureBootSignVersion()) {
+        case VERSION_1:
+            return getBootDataForSignVersion1(data);
+        case VERSION_2:
+            return getBootDataForSignVersion2(data);
+        default:
+            return false;
+    }
+}
+
 #if !defined(UEFI_BUILD) 
 bool fromFileToArray(string & fileName, vector<u_int8_t>& outputArray, unsigned int PublicKeySize)
 {
@@ -2755,15 +3457,27 @@ bool Fs4Operations::PreparePublicKeyData(const char *public_key_file, vector <u_
     //Is the public key file in text format?
     if (PublicKeyIsSet == false) {
         if (!fromFileToArray(pubFileStr, publicKeyData, PublicKeySize)) {
-            return errmsg("FwSignWithRSA: Public key file parsing failed.\n");
+            return errmsg("PreparePublicKeyData: Public key file parsing failed");
         }
     }
     return true;
 }
 
-bool Fs4Operations::PrepareSecureBootSections(vector<u_int8_t>& bin_data, vector<u_int8_t>& critical, vector<u_int8_t>& non_critical,
-    vector <u_int32_t> uuidData, vector <u_int8_t> publicKeyData, unsigned int pem_offset)
-{
+bool Fs4Operations::storePublicKeyInSection(const char *public_key_file, const char *uuid) {
+    //* Parse uuid
+    vector <u_int32_t> uuidData;
+    if (!extractUUIDFromString(uuid, uuidData)) {
+        return errmsg("storePublicKeyInSection: UUID parsing failed.");
+    }
+
+    //* Parse public-key
+    vector <u_int8_t> publicKeyData;
+    unsigned int pem_offset = 0;
+    if (!PreparePublicKeyData(public_key_file, publicKeyData, pem_offset)) { // Parsing public_key_file and storing public key in publicKeyData
+        return errmsg("storePublicKeyInSection failed - Error: %s", err());
+    }
+
+    //* Prepare public-key and uuid data to be stored in section
     vector <u_int8_t> finishData;
     connectx4_public_keys_3 unpackedData;
     unsigned int PublicKeySize = sizeof(unpackedData.file_public_keys_3[0].key);
@@ -2774,57 +3488,161 @@ bool Fs4Operations::PrepareSecureBootSections(vector<u_int8_t>& bin_data, vector
     TOCPUn(&unpackedData.file_public_keys_3[0].key, PublicKeySize >> 2);
     finishData.resize(connectx4_public_keys_3_size());
     connectx4_public_keys_3_pack(&unpackedData, finishData.data());
-    Fs3UpdateSection(finishData.data(), FS4_RSA_PUBLIC_KEY, true, CMD_BURN, NULL);
-    PrepItocSectionsForRsa(critical, non_critical);
-    PrepareBinData(bin_data);
+
+    //* Store public-key and uuid in section and update its matching ITOC entry (with updated section_crc and entry_crc)
+    if (!Fs3UpdateSection(finishData.data(), FS4_RSA_PUBLIC_KEY, true, CMD_BURN, NULL)) {
+        return errmsg("storePublicKeyInSection failed - Error: %s", err());
+    }
+
     return true;
 }
 
-bool Fs4Operations::InsertSecureBootSignature(vector<u_int8_t> encShaBinData, vector<u_int8_t> encShaCritical, vector<u_int8_t> encShaNonCritical)
+bool Fs4Operations::storeSecureBootSignaturesInSection(vector<u_int8_t> boot_signature, vector<u_int8_t> critical_sections_signature,
+                                                        vector<u_int8_t> non_critical_sections_signature)
 {
-    vector <u_int8_t> finishData;
+    //* Assert critical and non-critical signatures vectors are both empty or both not empty
+    if (critical_sections_signature.empty() != non_critical_sections_signature.empty()) {
+        return false;
+    }
+
+    vector<u_int8_t> finishData;
 
     connectx4_secure_boot_signatures secure_boot_signatures;
     memset(&secure_boot_signatures, 0, sizeof(secure_boot_signatures));
 
-    memcpy(&secure_boot_signatures.boot_signature, encShaBinData.data(), sizeof(secure_boot_signatures.boot_signature));
+    memcpy(&secure_boot_signatures.boot_signature, boot_signature.data(), sizeof(secure_boot_signatures.boot_signature));
     TOCPUn(&secure_boot_signatures.boot_signature, sizeof(secure_boot_signatures.boot_signature) >> 2);
 
-    memcpy(&secure_boot_signatures.critical_signature, encShaCritical.data(), sizeof(secure_boot_signatures.critical_signature));
-    TOCPUn(&secure_boot_signatures.critical_signature, sizeof(secure_boot_signatures.critical_signature) >> 2);
+    if (!critical_sections_signature.empty()) {
+        memcpy(&secure_boot_signatures.critical_signature, critical_sections_signature.data(), sizeof(secure_boot_signatures.critical_signature));
+        TOCPUn(&secure_boot_signatures.critical_signature, sizeof(secure_boot_signatures.critical_signature) >> 2);
+    }
 
-
-    memcpy(&secure_boot_signatures.non_critical_signature, encShaNonCritical.data(), sizeof(secure_boot_signatures.non_critical_signature));
-    TOCPUn(&secure_boot_signatures.non_critical_signature, sizeof(secure_boot_signatures.non_critical_signature) >> 2);
-
+    if (!non_critical_sections_signature.empty()) {
+        memcpy(&secure_boot_signatures.non_critical_signature, non_critical_sections_signature.data(), sizeof(secure_boot_signatures.non_critical_signature));
+        TOCPUn(&secure_boot_signatures.non_critical_signature, sizeof(secure_boot_signatures.non_critical_signature) >> 2);
+    }
 
     finishData.resize(connectx4_secure_boot_signatures_size());
     connectx4_secure_boot_signatures_pack(&secure_boot_signatures, finishData.data());
-    Fs3UpdateSection(finishData.data(), FS4_RSA_4096_SIGNATURES, true, CMD_BURN, NULL);
+    if (!Fs3UpdateSection(finishData.data(), FS4_RSA_4096_SIGNATURES, true, CMD_BURN, NULL)) {
+        return errmsg("storeSecureBootSignaturesInSection: store secure-boot signatures failed.\n");
+    }
     return true;
 }
 
-bool Fs4Operations::FwSignWithRSA(const char *public_key_file, const char *uuid, vector<u_int8_t>& bin_data, vector<u_int8_t>& critical, vector<u_int8_t>& non_critical)
+bool Fs4Operations::initHwPtrs(bool isVerify) {
+    if (!getExtendedHWAravaPtrs((VerifyCallBack)NULL, _ioAccess, false, isVerify)) {
+        return errmsg("initHwPtrs: HW pointers not found.\n");
+    }
+    return true;
+}
+
+bool Fs4Operations::isHashesTableHwPtrValid() {
+    //* Check HW pointers initialized
+    if (!_is_hw_ptrs_initialized) {
+        if (!initHwPtrs()) {
+            return errmsg("isHashesTableHwPtrValid: HW pointers not found");
+        }
+    }
+
+    //* Check if pointer is valid
+    bool res = true;
+    if (_hashes_table_ptr == 0xffffffff or _hashes_table_ptr == 0x0) {
+        res = false;
+    }
+    return res;
+}
+
+bool Fs4Operations::signForFwUpdateUsingHSM(const char *uuid, MlxSign::OpensslEngineSigner& engineSigner, PrintCallBack printFunc) {
+    vector<u_int8_t> fourMbImage;
+    vector<u_int8_t> signature;
+    vector<u_int8_t> sha;
+
+    //* Get image data (image_signature,image_signature_2 sections masked with 0xff)
+    if (!FwCalcSHA(MlxSign::SHA512, sha, fourMbImage)) {
+        return errmsg("signForFwUpdateUsingHSM: Failed to read image");
+    }
+
+    //* Sign image data
+    int rc = engineSigner.sign(fourMbImage, signature);
+    if (rc) {
+        return errmsg("signForFwUpdateUsingHSM: Failed to create secured FW signature (rc = 0x%x)", rc);
+    }
+
+    //* Store FW update signature in section
+    if (!InsertSecureFWSignature(signature, uuid, printFunc)) {
+        return errmsg("signForFwUpdateUsingHSM: Failed to insert secured FW signature\n");
+    }
+
+    return true;
+}
+
+SecureBootSignVersion Fs4Operations::getSecureBootSignVersion() {
+    SecureBootSignVersion res = VERSION_1;
+
+    //* Check if hashes_table exists
+    if (isHashesTableHwPtrValid()) {
+        res = VERSION_2;
+    }
+    return res;
+}
+
+bool Fs4Operations::signForSecureBootUsingHSM(const char *public_key_file, const char *uuid, MlxSign::OpensslEngineSigner& engineSigner)
 {
 #if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
     if (_ioAccess->is_flash()) {
-        return errmsg("FwSignWithRSA not allowed for devices.");
+        return errmsg("signForSecureBootUsingHSM not allowed for devices");
     }
-    if (!getExtendedHWAravaPtrs((VerifyCallBack)NULL, _ioAccess)) {
-        return errmsg("FwSignWithRSA: HW pointers not found.\n");
+    if (!initHwPtrs()) {
+        return errmsg("signForSecureBootUsingHSM failed - Error: HW pointers not found");
     }
-    vector <u_int32_t> uuidData;
-    if (!extractUUIDFromString(uuid, uuidData)) {
-        return errmsg("FwSignWithRSA: UUID parsing failed.");
+    SecureBootSignVersion secure_boot_version = getSecureBootSignVersion();
+
+    if (!storePublicKeyInSection(public_key_file, uuid)) {
+        return errmsg("signForSecureBootUsingHSM failed - Error: storePublicKeyInSection failed");
     }
-    vector <u_int8_t> publicKeyData;
-    unsigned int pem_offset = 0;
-    if (!PreparePublicKeyData(public_key_file, publicKeyData, pem_offset)) { // Parsing public_key_file and storing public key in publicKeyData
-        return errmsg("FwSignWithRSA: PreparePublicKeyData failed.\n");
+
+    //* Get boot area signature
+    vector<u_int8_t> boot_data;
+    vector<u_int8_t> boot_signature;
+    if (!getBootDataForSign(boot_data)) {
+        return errmsg("signForSecureBootUsingHSM failed - Error: getBootDataForSign failed");
     }
-    if (!PrepareSecureBootSections(bin_data, critical, non_critical, uuidData, publicKeyData, pem_offset)) {
-        return errmsg("FwSignWithRSA: PrepareSecureBootSections failed.\n");
+    int rc = engineSigner.sign(boot_data, boot_signature);
+    if (rc) {
+        return errmsg("signForSecureBootUsingHSM failed - Error: failed to set private key from engine (rc = 0x%x)", rc);
     }
+
+    //* Get critical and non-critical sections signatures
+    vector<u_int8_t> critical_sections_data, non_critical_sections_data;
+    vector<u_int8_t> critical_signature, non_critical_signature;
+    if (secure_boot_version == VERSION_1) {
+        if (!getCriticalNonCriticalSections(critical_sections_data, non_critical_sections_data)) {
+            return errmsg("signForSecureBootUsingHSM failed - Error: getCriticalNonCriticalSections failed");
+        }
+        rc = engineSigner.sign(critical_sections_data, critical_signature);
+        if (rc) {
+            return errmsg("signForSecureBootUsingHSM failed - Error: failed to set private key from engine (rc = 0x%x)", rc);
+        }
+        rc = engineSigner.sign(non_critical_sections_data, non_critical_signature);
+        if (rc) {
+            return errmsg("signForSecureBootUsingHSM failed - Error: failed to set private key from engine (rc = 0x%x)", rc);
+        }
+    }
+
+    //* Store secure boot signatures in section
+    bool res;
+    if (secure_boot_version == VERSION_1) {
+        res = storeSecureBootSignaturesInSection(boot_signature, critical_signature, non_critical_signature);
+    }
+    else {
+        res = storeSecureBootSignaturesInSection(boot_signature);
+    }
+    if (!res) {
+        return errmsg("signForSecureBootUsingHSM: Failed to insert secure boot signatures");
+    }
+
     return true;
 #else
     (void)public_key_file;
@@ -2832,44 +3650,72 @@ bool Fs4Operations::FwSignWithRSA(const char *public_key_file, const char *uuid,
     (void)bin_data;
     (void)critical;
     (void)non_critical;
-    return errmsg("FwSignWithRSA is not suppported.");
+    return errmsg("signForSecureBootUsingHSM is not suppported");
 #endif
 }
 
-bool Fs4Operations::FwSignWithRSA(const char *private_key_file, const char *public_key_file, const char *uuid)
+bool Fs4Operations::signForSecureBoot(const char *private_key_file, const char *public_key_file, const char *uuid)
 {
 #if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
     if (_ioAccess->is_flash()) {
-        return errmsg("FwSignWithRSA not allowed for devices.");
+        return errmsg("signForSecureBoot not allowed for devices");
     }
-    if (!getExtendedHWAravaPtrs((VerifyCallBack)NULL, _ioAccess)) {
-        return errmsg("FwSignWithRSA: HW pointers not found.\n");
+    if (!initHwPtrs()) {
+        return errmsg("signForSecureBoot failed - Error: HW pointers not found\n");
     }
-    vector <u_int32_t> uuidData;
-    if (!extractUUIDFromString(uuid, uuidData)) {
-        return errmsg("FwSignWithRSA: UUID parsing failed.");
+
+    SecureBootSignVersion secure_boot_version = getSecureBootSignVersion();
+
+    if (!storePublicKeyInSection(public_key_file, uuid)) {
+        return errmsg("signForSecureBoot failed - Error: %s\n", err());
     }
+
     string privPemFileStr(private_key_file);
-    vector <u_int8_t> publicKeyData;
-    unsigned int pem_offset = 0;
-    if (!PreparePublicKeyData(public_key_file, publicKeyData, pem_offset)) {
-        return errmsg("FwSignWithRSA: PreparePublicKeyData failed.\n");
+
+    //* Get boot area signature
+    vector<u_int8_t> boot_data;
+    vector<u_int8_t> boot_signature;
+    if (!getBootDataForSign(boot_data)) {
+        return errmsg("signForSecureBoot failed - Error: getBootDataForSign failed.\n");
     }
-    vector<u_int8_t> critical, non_critical, bin_data;
-    if (!PrepareSecureBootSections(bin_data, critical, non_critical, uuidData, publicKeyData, pem_offset)) {
-        return errmsg("FwSignWithRSA: PrepareSecureBootSections failed.\n");
+    if (!FwSignSection(boot_data, privPemFileStr, boot_signature)) {
+        return false;
     }
-    vector<u_int8_t> encShaCritical, encShaNonCritical, encShaBinData;
-    FwSignSection(bin_data, privPemFileStr, encShaBinData);
-    FwSignSection(critical, privPemFileStr, encShaCritical);
-    FwSignSection(non_critical, privPemFileStr, encShaNonCritical);
-    return InsertSecureBootSignature(encShaBinData, encShaCritical, encShaNonCritical);
+
+    //* Get critical and non-critical sections signatures
+    vector<u_int8_t> critical_sections_data, non_critical_sections_data;
+    vector<u_int8_t> critical_signature, non_critical_signature;
+    if (secure_boot_version == VERSION_1) {
+        if (!getCriticalNonCriticalSections(critical_sections_data, non_critical_sections_data)) {
+            return errmsg("signForSecureBoot failed - Error: getCriticalNonCriticalSections failed.\n");
+        }
+        if (!FwSignSection(critical_sections_data, privPemFileStr, critical_signature)) {
+            return false;
+        }
+        if (!FwSignSection(non_critical_sections_data, privPemFileStr, non_critical_signature)) {
+            return false;
+        }
+    }
+    
+    //* Store secure boot signatures in section
+    bool res;
+    if (secure_boot_version == VERSION_1) {
+        res = storeSecureBootSignaturesInSection(boot_signature, critical_signature, non_critical_signature);
+    }
+    else {
+        res = storeSecureBootSignaturesInSection(boot_signature);
+    }
+    if (!res) {
+        return errmsg("signForSecureBoot failed - Error: failed to insert secure boot signatures");
+    }
+
+    return true;
 
 #else
     (void) private_key_file; 
     (void) public_key_file; 
     (void) uuid;
-    return errmsg("FwSignWithRSA is not suppported.");
+    return errmsg("signForSecureBoot is not suppported.");
 #endif
 }
 
@@ -2959,7 +3805,7 @@ bool Fs4Operations::PrepItocSectionsForHmac(vector<u_int8_t>& critical, vector<u
 
     for (int i = 0; i < this->_fs4ImgInfo.itocArr.numOfTocs; i++) {
         struct fs4_toc_info *itoc_info_p = &this->_fs4ImgInfo.itocArr.tocArr[i];
-        struct cx5fw_itoc_entry *toc_entry = &(itoc_info_p->toc_entry);
+        struct image_layout_itoc_entry *toc_entry = &(itoc_info_p->toc_entry);
         if (IsCriticalSection(toc_entry->type))
         {
             critical.reserve(critical.size() + itoc_info_p->section_data.size());
@@ -2981,7 +3827,7 @@ bool Fs4Operations::PrepItocSectionsForCompare(vector<u_int8_t>& critical, vecto
 {
     for (int i = 0; i < this->_fs4ImgInfo.itocArr.numOfTocs; i++) {
         struct fs4_toc_info *itoc_info_p = &this->_fs4ImgInfo.itocArr.tocArr[i];
-        struct cx5fw_itoc_entry *toc_entry = &(itoc_info_p->toc_entry);
+        struct image_layout_itoc_entry *toc_entry = &(itoc_info_p->toc_entry);
         if (IsCriticalSection(toc_entry->type))
         {
             critical.reserve(critical.size() + itoc_info_p->section_data.size());
@@ -3004,7 +3850,7 @@ bool Fs4Operations::PrepItocSectionsForCompare(vector<u_int8_t>& critical, vecto
     return true;
 }
 
-bool Fs4Operations::PrepItocSectionsForRsa(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical)
+bool Fs4Operations::getCriticalNonCriticalSections(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical)
 {
     if (!FsIntQueryAux(true, false)) {
         return false;
@@ -3012,9 +3858,9 @@ bool Fs4Operations::PrepItocSectionsForRsa(vector<u_int8_t>& critical, vector<u_
     for (int i = 0; i < this->_fs4ImgInfo.itocArr.numOfTocs; i++) {
         unsigned long padding_size = 0;
         struct fs4_toc_info *itoc_info_p = &this->_fs4ImgInfo.itocArr.tocArr[i];
-        struct cx5fw_itoc_entry *toc_entry = &(itoc_info_p->toc_entry);
-        while (((itoc_info_p->section_data.size() + padding_size) % GLOBAL_ALIGNMENT) != 0) {
-            padding_size++;
+        struct image_layout_itoc_entry *toc_entry = &(itoc_info_p->toc_entry);
+        if (itoc_info_p->section_data.size() % GLOBAL_ALIGNMENT) {
+            padding_size = GLOBAL_ALIGNMENT - (itoc_info_p->section_data.size() % GLOBAL_ALIGNMENT);
         }
         if (IsCriticalSection(toc_entry->type))
         {
@@ -3030,7 +3876,9 @@ bool Fs4Operations::PrepItocSectionsForRsa(vector<u_int8_t>& critical, vector<u_
                 itoc_info_p->toc_entry.type == FS3_IMAGE_SIGNATURE_256) {
                     continue;
             }
-            //printf("-D- addr  0x%.8x toc type : 0x%.8x  size 0x%.8x name %s\n", itoc_info_p->entry_addr, itoc_info_p->toc_entry.type, (unsigned int)itoc_info_p->section_data.size(), GetSectionNameByType(itoc_info_p->toc_entry.type));
+            // printf("-D- addr  0x%.8x toc type : 0x%.8x  size 0x%.8x name %s\n",
+            //         itoc_info_p->toc_entry.flash_addr*4, itoc_info_p->toc_entry.type,
+            //         (unsigned int)itoc_info_p->section_data.size(), GetSectionNameByType(itoc_info_p->toc_entry.type));
             non_critical.reserve(non_critical.size() + itoc_info_p->section_data.size() + padding_size);
             non_critical.insert(non_critical.end(), itoc_info_p->section_data.begin(), itoc_info_p->section_data.end());
             non_critical.insert(non_critical.end(), padding_size, 0xff);
@@ -3078,7 +3926,7 @@ u_int32_t Fs4Operations::TocArray::getSectionsTotalSize()
     u_int32_t s = 0;
     for (int i = 0; i < numOfTocs; i++) {
         struct fs4_toc_info *itoc_info_p = &(tocArr[i]);
-        struct cx5fw_itoc_entry *toc_entry = &itoc_info_p->toc_entry;
+        struct image_layout_itoc_entry *toc_entry = &itoc_info_p->toc_entry;
         s += toc_entry->size << 2;
     }
     return s;
@@ -3119,3 +3967,29 @@ Fs4Operations::TocArray::TocArray()
     memset(&tocHeader, 0, sizeof(tocHeader));
 }
 
+Fs4Operations::HTOC::HTOC(vector<u_int8_t> img, u_int32_t hashes_table_start_addr) {
+    //* Parse header
+    vector<u_int8_t> header_data(img.begin() + hashes_table_start_addr, img.begin() + hashes_table_start_addr + IMAGE_LAYOUT_HTOC_HEADER_SIZE);
+    image_layout_htoc_header_unpack(&header, header_data.data());
+    // image_layout_htoc_header_dump(&header, stdout);
+    //* Parse entries
+    u_int32_t entries_start_addr = hashes_table_start_addr + IMAGE_LAYOUT_HTOC_HEADER_SIZE;
+    for (int ii = 0; ii < header.num_of_entries; ii++) {
+        u_int32_t entry_addr = entries_start_addr + ii * IMAGE_LAYOUT_HTOC_ENTRY_SIZE;
+        vector<u_int8_t> entry_data(img.begin() + entry_addr, img.begin() + entry_addr + IMAGE_LAYOUT_HTOC_ENTRY_SIZE);
+        image_layout_htoc_entry_unpack(&(entries[ii]), entry_data.data());
+        // image_layout_htoc_entry_dump(&(entries[ii]), stdout);
+    }
+}
+
+bool Fs4Operations::HTOC::getEntryBySectionType(fs3_section_t section_type, struct image_layout_htoc_entry& htoc_entry) {
+    bool res = false;
+    for (int ii = 0; ii < header.num_of_entries; ii++) {
+        if (entries[ii].section_type == section_type) {
+            htoc_entry = entries[ii];
+            res = true;
+            break;
+        }
+    }
+    return res;
+}

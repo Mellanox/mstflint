@@ -1,5 +1,6 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -614,21 +615,10 @@ const char* CommandsName[256] =  {
 #define NV_BASE_MAC_GUID_IDX     0x02
 #define NV_BASE_MAC_GUID_CAP_IDX 0x03
 
-#define CX2_DEVID           0x190
-#define CX3_DEVID           0x1f5
-#define CX3PRO_DEVID        0x1f7
-#define SX_DEVID            0x245
-#define IS4_DEVID           0x1b3
-#define SWITCH_IB_DEVID     0x247
-#define SWITCH_IB2_DEVID    0x24b
-#define SPECTRUM_DEVID      0x249
-#define SPECTRUM2_DEVID     0x24e
-#define SPECTRUM3_DEVID     0x250
-#define QUANTUM_DEVID       0x24d
 
 
 /*
- * Wrapper to call the MCDA command
+ * Wrapper to call the NVDA command
  */
 
 bool FwCompsMgr::runNVDA(std::vector<u_int8_t>& buff,
@@ -1143,7 +1133,7 @@ FwCompsMgr::FwCompsMgr(uefi_Dev_t *uefi_dev, uefi_dev_extra_t *uefi_extra)
         _lastError = FWCOMPS_MEM_ALLOC_FAILED;
         return;
     }
-    if (&uefi_extra->dev_info != NULL) {
+    if (uefi_extra != NULL) {
         _hwDevId = uefi_extra->dev_info.hw_dev_id;
     }
     _openedMfile = true;
@@ -1261,7 +1251,7 @@ bool FwCompsMgr::RefreshComponentsStatus(comp_status_st* ComponentStatus)
             memcpy(&(_compsQueryMap[compStatus.comp_status.identifier]), &compStatus, sizeof(compStatus));
             //reg_access_hca_mcqi_cap_print(&(compStatus.comp_cap), stdout, 3);
             last_index_flag = compStatus.comp_status.last_index_flag;
-            DPRINTF(("-D- Found component: %#x  compIdx %u name %s supported_info_bitmask 0x%x \n", \
+            DPRINTF(("-D- Found component with identifier=%#x index=%u name=%s supported_info_bitmask=0x%x \n", \
                 compStatus.comp_status.identifier, compIdx, CompNames[compStatus.comp_status.identifier], 
                 compStatus.comp_cap.supported_info_bitmask));
 
@@ -1396,7 +1386,7 @@ bool FwCompsMgr::burnComponents(std::vector<FwComponent>& comps,
                 if (isDMAAccess()) {
                     printf("Burning with DMA has failed, switching to Direct Access burn.\n");
                     bRes = fallbackToDirectAccess();
-                    
+
                     if (bRes) {
                         if (!controlFsm(FSM_CMD_CANCEL, FSMST_LOCKED)) {
                             DPRINTF(("Cancel instruction to FW component has failed!\n"));
@@ -1437,7 +1427,7 @@ bool FwCompsMgr::burnComponents(std::vector<FwComponent>& comps,
                 DPRINTF(("Moving to ACTIVATE state has failed!\n"));
                 return false;
             }
-            
+
             // In case of activation delay, FW will set FSM to LOCKED 
             if (!_isDelayedActivationCommandSent) {
                 printf("Please wait while activating the tramsmitter(s) FW ...\n");
@@ -1780,6 +1770,7 @@ bool FwCompsMgr::queryFwInfo(fwInfoT *query, bool next_boot_fw_ver)
     query->security_type.dev_fw = mgir.fw_info.dev;
     query->life_cycle = (life_cycle_t)mgir.fw_info.life_cycle;
     query->sec_boot = mgir.fw_info.sec_boot;
+    query->encryption = mgir.fw_info.encryption;
     query->signed_fw = _compsQueryMap[FwComponent::COMPID_BOOT_IMG].comp_cap.signed_updates_only;
 
     query->base_mac_orig.uid = ((u_int64_t)mgir.hw_info.manufacturing_base_mac_47_32 << 32 | mgir.hw_info.manufacturing_base_mac_31_0);
@@ -2032,9 +2023,9 @@ bool FwCompsMgr::getComponentVersion(FwComponent::comps_ids_t compType,
     cmpVer->user_defined_time = _currCompInfo.data.mcqi_version.user_defined_time;
     cmpVer->build_tool_version = _currCompInfo.data.mcqi_version.build_tool_version;
     if (_currCompInfo.data.mcqi_version.version_string_length) {
+        memcpy(cmpVer->version_string, _currCompInfo.data.mcqi_version.version_string, _currCompInfo.data.mcqi_version.version_string_length);
         _productVerStr.resize(_currCompInfo.data.mcqi_version.version_string_length);
         memcpy(_productVerStr.data(), _currCompInfo.data.mcqi_version.version_string, _currCompInfo.data.mcqi_version.version_string_length);
-        cmpVer->version_string[0] = '\0';
     }
     return true;
 }
@@ -2148,31 +2139,29 @@ bool FwCompsMgr::fwReactivateImage()
         setLastRegisterAccessStatus(rc);
         return false;
     }
-    else {
-        memset(&mirc, 0, sizeof(mirc));
+    memset(&mirc, 0, sizeof(mirc));
+    msleep(sleepTimeMs);
+    rc = reg_access_mirc(_mf, REG_ACCESS_METHOD_GET, &mirc);
+    if (rc) {
+        DPRINTF(("2 reg_access_mirc failed rc = %d\n", rc));
+        _lastError = regErrTrans(rc);
+        return false;
+    }
+    DPRINTF(("1 mirc.status_code = %d\n", mirc.status_code));
+    while (mirc.status_code == IMAGE_REACTIVATION_BUSY) {
         msleep(sleepTimeMs);
         rc = reg_access_mirc(_mf, REG_ACCESS_METHOD_GET, &mirc);
+        deal_with_signal();
         if (rc) {
-            DPRINTF(("2 reg_access_mirc failed rc = %d\n", rc));
             _lastError = regErrTrans(rc);
+            setLastRegisterAccessStatus(rc);
+            DPRINTF(("3 reg_access_mirc failed rc = %d\n", rc));
             return false;
         }
-        DPRINTF(("1 mirc.status_code = %d\n", mirc.status_code));
-        while (mirc.status_code == IMAGE_REACTIVATION_BUSY) {
-            msleep(sleepTimeMs);
-            rc = reg_access_mirc(_mf, REG_ACCESS_METHOD_GET, &mirc);
-            deal_with_signal();
-            if (rc) {
-                _lastError = regErrTrans(rc);
-                setLastRegisterAccessStatus(rc);
-                DPRINTF(("3 reg_access_mirc failed rc = %d\n", rc));
-                return false;
-            }
-            DPRINTF(("2 iteration %d mirc.status_code = %d\n", currentIteration++, mirc.status_code));
-            if (currentIteration >= maxNumOfIterations) {
-                _lastError = FWCOMPS_IMAGE_REACTIVATION_WAITING_TIME_EXPIRED;
-                return false;
-            }
+        DPRINTF(("2 iteration %d mirc.status_code = %d\n", currentIteration++, mirc.status_code));
+        if (currentIteration >= maxNumOfIterations) {
+            _lastError = FWCOMPS_IMAGE_REACTIVATION_WAITING_TIME_EXPIRED;
+            return false;
         }
     }
     if (mirc.status_code == IMAGE_REACTIVATION_SUCCESS) {
@@ -2287,6 +2276,11 @@ fw_comps_error_t FwCompsMgr::regErrTrans(reg_access_status_t err)
 
 fw_comps_error_t FwCompsMgr::mccErrTrans(u_int8_t err)
 {
+    if (err != MCC_ERRCODE_OK)
+    {
+        DPRINTF(("\nMCC ERROR: %x\n", err));
+    }
+
     switch (err) {
     case MCC_ERRCODE_OK:
         return FWCOMPS_SUCCESS;
@@ -2358,7 +2352,6 @@ fw_comps_error_t FwCompsMgr::mccErrTrans(u_int8_t err)
         return FWCOMPS_MCC_REJECTED_INCOMPATIBLE_FLASH;
 
     default:
-        //            printf("MCC ERROR: %#x\n", err);
         return FWCOMPS_GENERAL_ERR;
     }
 }

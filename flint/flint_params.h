@@ -3,6 +3,7 @@
  * flint_params.h - FLash INTerface
  *
  * Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -89,9 +90,7 @@ typedef enum {
     SC_RSA_Sign,
     SC_Binary_Compare,
     SC_Import_Hsm_Key,
-#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
     SC_Export_Public_Key
-#endif
 } sub_cmd_t;
 
 class FlintParams {
@@ -119,8 +118,10 @@ public:
     bool next_boot_fw_ver;
     bool skip_rom_query;
     bool image_specified;
+    bool nonencrypted_image_specified;
     bool mfa2_specified;
     string image;
+    string nonencrypted_image;
     bool nofs;
     bool allow_psid_change;
     bool allow_rom_change;
@@ -149,6 +150,7 @@ public:
     vector<string> cmd_params;
     string fullCmd;
     bool use_dev_img_info;
+    bool ignore_crc_check;
     bool skip_ci_req;
     bool use_dev_rom;
     bool privkey_specified;

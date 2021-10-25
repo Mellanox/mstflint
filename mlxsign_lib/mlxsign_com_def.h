@@ -1,5 +1,6 @@
 /*
  * Copyright (C) Jan 2021 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -66,7 +67,12 @@ enum ErrorCode
     MLX_SIGN_RSA_KEY_DIGEST_UPDATE_OPENSSL_ERROR,
     MLX_SIGN_RSA_KEY_DIGEST_FINAL_OPENSSL_ERROR,
     MLX_SIGN_RSA_KEY_MEMORY_ALLOC_OPENSSL_ERROR,
-    MLX_SIGN_HMAC_ERROR
+    MLX_SIGN_HMAC_ERROR,
+
+    MLX_SIGN_AWS_INIT_ERROR = 0x200,
+    MLX_SIGN_AWS_SIGN_ERROR,
+    MLX_SIGN_AWS_GET_KEY_ERROR
+
 };
 
 } // namespace MlxSign

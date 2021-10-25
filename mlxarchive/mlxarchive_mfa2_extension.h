@@ -1,6 +1,7 @@
 
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -77,17 +78,7 @@ private:
     int subminor;
 
 public:
-    bool operator < (const Version& other)
-    {
-        if (major < other.major)
-            return true;
-        if (minor < other.minor)
-            return true;
-        if (subminor < other.subminor)
-            return true;
-        return false;
-    }
-    bool operator > (const Version& other)
+     bool operator > (const Version& other)
     {
         if (major > other.major)
             return true;
@@ -97,14 +88,6 @@ public:
             return true;
         return false;
     }
-
-    bool operator == (const Version& other)
-    {
-        return major == other.major
-            && minor == other.minor
-            && subminor == other.subminor;
-    }
-
     friend std::ostream& operator << (std::ostream& stream, const Version& ver)
     {
         stream << ver.major;
@@ -132,14 +115,6 @@ protected:
     MFA2Type extensionTypeToMFA2Type(ExtensionType type);
 
 protected:
-    /*class Digest {
-    protected:
-        vector<u_int8_t> _digest;
-        const static u_int32_t _length = 0x20;
-    public:
-        void setDigest(vector<u_int8_t> digest);
-    };*/
-
 public:
     Extension(u_int8_t vesrion, ExtensionType type, u_int32_t length);
 
@@ -164,9 +139,7 @@ public:
     const static u_int8_t  ELEMENT_VERSION = 0x0;
     const static u_int32_t LENGTH  = TOOLS_OPEN_VERSION_SIZE;
     void fillTimeAndDate();
-
     VersionExtension(const string& version);
-    VersionExtension(const u_int16_t* version);
     VersionExtension(const u_int16_t* version, const u_int16_t* fw_rel_date);
     void pack(vector<u_int8_t>& buff) const;
     bool unpack(Mfa2Buffer & buff);
@@ -183,17 +156,6 @@ public:
         return _subMinor;
     }
 };
-
-/*class SecurityInfoExtension : Extension {
-
-private:
-    string _uuid;
-    SecurityMode _securityMode;
-
-public:
-    SecurityInfoExtension(string uuid, SecurityMode mode);
-
-};*/
 
 class ComponentPointerExtension : Extension {
 private:
@@ -279,12 +241,5 @@ public:
         StringExtension(ELEMENT_VERSION, PSIDExtensionType, psid) {};
 };
 
-class SourceFileNameExtension : public StringExtension {
-private:
-    const static u_int8_t  ELEMENT_VERSION = 0x0;
-public:
-    explicit SourceFileNameExtension(string src) :
-        StringExtension(ELEMENT_VERSION, SourceFileNameExtensionType, src) {};
-};
 }
 #endif
