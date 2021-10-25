@@ -135,6 +135,11 @@ u_int32_t MlxlinkRegParser::getFieldValue(string field_name)
     return field_Val;
 }
 
+u_int32_t MlxlinkRegParser::getFieldSize(string field_name)
+{
+    return RegAccessParser::getField(field_name)->size;
+}
+
 string MlxlinkRegParser::getAscii(const string & name, u_int32_t size)
 {
     string value = "";

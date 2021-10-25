@@ -803,8 +803,9 @@ void MlxlinkCablesCommander::initValidPages()
     _validPages.push_back(p);
     bool qsfpCable = (_cableIdentifier == IDENTIFIER_QSFP28 ||
                 _cableIdentifier == IDENTIFIER_QSFP_PLUS);
-    bool cmisCable = (_cableIdentifier == IDENTIFIER_SFP_DD ||
-            _cableIdentifier == IDENTIFIER_QSFP_DD);
+    bool cmisCable = (_cableIdentifier == IDENTIFIER_SFP_DD  || _cableIdentifier == IDENTIFIER_QSFP_DD
+                      || _cableIdentifier == IDENTIFIER_OSFP || _cableIdentifier == IDENTIFIER_DSFP
+                      || _cableIdentifier == IDENTIFIER_QSFP_CMIS);
     if(cmisCable || qsfpCable || _sfp51Paging) {
         p = (page_t){PAGE_0, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
         _validPages.push_back(p);
@@ -854,7 +855,7 @@ void MlxlinkCablesCommander::initValidPages()
             _validPages.push_back(p);
             p = (page_t){PAGE_01, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
             _validPages.push_back(p);
-            if (_cableIdentifier == IDENTIFIER_QSFP_DD) {
+            if (_cableIdentifier != IDENTIFIER_SFP_DD) {
                 p = (page_t){PAGE_02, LOWER_PAGE_OFFSET, I2C_ADDR_LOW};
                 _validPages.push_back(p);
                 p = (page_t){PAGE_02, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};

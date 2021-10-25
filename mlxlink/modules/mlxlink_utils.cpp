@@ -344,7 +344,9 @@ string getPowerClass(MlxlinkMaps *mlxlinkMaps, u_int32_t cableIdentifier, u_int3
     }
 
     if ((maxPowerValue > powerClassVal) || (powerClass == POWER_CLASS8)) {
-        powerClassStr = to_string(maxPowerValue) + " W max";
+        char frmtValue [64];
+        sprintf(frmtValue, "%.1f W max", maxPowerValue);
+        powerClassStr = string(frmtValue);
     } else if (!val.empty()) {
         powerClassStr = val;
     }
@@ -1097,7 +1099,7 @@ string getCompliance(u_int32_t compliance,
                      std::map<u_int32_t,std::string> complianceMap, bool bitMasked)
 {
     string compliance_str = "";
-    static const string separator = ", ";
+    static const string separator = ",";
     static const size_t separator_size = separator.size();
     std::map<u_int32_t, std::string>::iterator it;
     if (!compliance) {
@@ -1115,7 +1117,7 @@ string getCompliance(u_int32_t compliance,
             }
         }
         size_t str_size = compliance_str.size();
-        if(str_size && !(compliance & QSFP_ETHERNET_COMPLIANCE_CODE_EXT)){
+        if (!compliance_str.empty() && compliance_str.rfind(separator) == str_size - separator_size) {
             compliance_str.erase(str_size - separator_size, separator_size);
         }
     } else {
@@ -1268,12 +1270,19 @@ double mw_to_dbm(double x)
     return 10 * log10(x);
 }
 
-int readSignedByte(u_int32_t value)
+int readSigned(u_int32_t value, u_int32_t fieldSize)
 {
-    if (value & 0x80) {
-        return -((~value & 0xFF) + 1);
+    u_int32_t signMask = (u_int32_t)pow(2.0, (1.0 * fieldSize) - 1);
+    u_int32_t valueMask = (u_int32_t)pow(2.0, 1.0 * fieldSize) - 1;
+    if (value & signMask) {
+        return -((~value & valueMask) + 1);
     }
     return value;
+}
+
+int readSignedByte(u_int32_t value)
+{
+    return readSigned(value, 8);
 }
 
 void setPrintVal(MlxlinkCmdPrint &mlxlinkCmdPrint, string key,

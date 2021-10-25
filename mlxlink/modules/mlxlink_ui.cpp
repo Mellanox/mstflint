@@ -104,12 +104,12 @@ void MlxlinkUi::printSynopsisCommands()
     MlxlinkRecord::printFlagLine(PAOS_FLAG_SHORT, PAOS_FLAG, "port_state",
                   "Configure Port State [UP(up)/DN(down)/TG(toggle)]");
     MlxlinkRecord::printFlagLine(PTYS_FLAG_SHORT, PTYS_FLAG, "speeds",
-                  "Configure Speeds [HDR,EDR,FDR10,FDR,QDR,DDR,SDR,400G_8X,200G_4X,100G_2X,50G_1X,100G,100G_4X,50G,50G_2X,25G,40X,10G,14G,50GE-KR4,12.89G,XAUI,2.5G,1G]");
+                  "Configure Speeds [HDR,EDR,FDR10,FDR,QDR,DDR,SDR,400G_8X,200G_4X,100G_2X,50G_1X,100G,100G_4X,50G,50G_2X,25G,40X,10G,2.5G,1G]");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PTYS_LINK_MODE_FORCE_FLAG_SHORT, PTYS_LINK_MODE_FORCE_FLAG, "",
                   "Configure Link Mode Force (Disable AN)");
     MlxlinkRecord::printFlagLine(PPLR_FLAG_SHORT, PPLR_FLAG, "loopback",
-                  "Configure Loopback Mode [NO(no loopback)/RM(phy remote Rx-to-Tx loopback)/PH(phy Tx-to-Rx loopback)/EX(external Tx-to-Rx loopback)]");
+                  "Configure Loopback Mode [NO(no loopback)/RM(phy remote Rx-to-Tx loopback)/PH(internal phy Tx-to-Rx loopback)/EX(external loopback connector needed)/EX(external Tx-to-Rx loopback)]");
     MlxlinkRecord::printFlagLine(PPLM_FLAG_SHORT, PPLM_FLAG, "fec_override",
                   "Configure FEC [AU(Auto)/NF(No-FEC)/FC(FireCode FEC)/RS(RS-FEC)]");
     printf(IDENT);
@@ -123,7 +123,7 @@ void MlxlinkUi::printSynopsisCommands()
     printf(IDENT);
     MlxlinkRecord::printFlagLine(DATABASE_FLAG_SHORT, DATABASE_FLAG, "", "Save Transmitter Configuration for Current Speed Permanently (Optional)");
     printf(IDENT);
-    MlxlinkRecord::printFlagLine(SLTP_TX_POLICY_FLAG_SHORT, SLTP_TX_POLICY_FLAG, "", "Set the parameters according to Data Base only, otherwise it will be set according to the best possible configuration chosen by the system (Optional)");
+    MlxlinkRecord::printFlagLine(SLTP_TX_POLICY_FLAG_SHORT, SLTP_TX_POLICY_FLAG, "", "Set the parameters according to Data Base only, otherwise it will be set according to the best possible configuration chosen by the system (e.g. KR-startup) (Optional)");
     MlxlinkRecord::printFlagLine(SET_TX_GROUP_MAP_FLAG_SHORT, SET_TX_GROUP_MAP_FLAG, "group_num",
                       "Map ports to group <group_num> (for Spectrum-2 and Quantum devices)");
     printf(IDENT);
@@ -139,10 +139,10 @@ void MlxlinkUi::printSynopsisCommands()
                   "TX PRBS Mode [PRBS31/PRBS23A/PRBS23B/PRBS23C/PRBS23D/PRBS7/PRBS11/PRBS11A/PRBS11B/PRBS11C/PRBS11D/PRBS9/IDLE/SQUARE_WAVEA/SQUARE_WAVEB/SQUARE_WAVEC/SQUARE_WAVED/PRBS13A/PRBS13B/PRBS13C/PRBS13D/SSPR/SSPRQ/LT_frames/PRBS15/PRBS28/SQUARE_WAVE3,SQUARE_WAVE13,SQUARE_WAVE30] (Optional - Default PRBS31] (Optional - Default PRBS31)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PPRT_RATE_FLAG_SHORT, PPRT_RATE_FLAG, "rx_lane_rate",
-                  "RX Lane Rate [HDR/EDR/FDR10/FDR/QDR/DDR/SDR/400G_8X/200G_4X/100G_2X,50G_1X,100G,100G_4X,50G,50G_2X,25G,40X,10G,14G,50GE-KR4,12.89G,XAUI,2.5G,1G]  (Optional - Default 25G)");
+                  "RX Lane Rate [HDR,EDR,FDR10,FDR,QDR,DDR,SDR,400G_8X,200G_4X,100G_2X,50G_1X,100G,100G_4X,50G,50G_2X,25G,40X,10G,2.5G,1G]  (Optional - Default 25G)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PPTT_RATE_FLAG_SHORT, PPTT_RATE_FLAG, "tx_lane_rate",
-                  "TX Lane Rate [HDR/EDR/FDR10/FDR/QDR/DDR/SDR/400G_8X/200G_4X/100G_2X,50G_1X,100G,100G_4X,50G,50G_2X,25G,40X,10G,14G,50GE-KR4,12.89G,XAUI,2.5G,1G]  (Optional - Default 25G)");
+                  "TX Lane Rate [HDR,EDR,FDR10,FDR,QDR,DDR,SDR,400G_8X,200G_4X,100G_2X,50G_1X,100G,100G_4X,50G,50G_2X,25G,40X,10G,2.5G,1G]  (Optional - Default 25G)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PRBS_INVERT_TX_POL_FLAG_SHORT, PRBS_INVERT_TX_POL_FLAG, "",
                   "PRBS TX polarity inversion (Optional - Default No Inversion)");

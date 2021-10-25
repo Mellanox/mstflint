@@ -306,7 +306,7 @@ public:
 
     void checkRegCmd();
     virtual void validatePortType(const string &portTypeStr);
-    virtual void updatePortType() {};
+    void updatePortType() {};
     void checkLocalPortDPNMapping(u_int32_t localPort);
     int getLocalPortFromMPIR(DPN& dpn);
     void checkValidFW();
@@ -369,7 +369,7 @@ public:
     void showPcieLinks();
     void collectAMBER();
     void collectBER();
-    virtual void showTxGroupMapping();
+    void showTxGroupMapping();
 
     // Query helper functions
     string getCableTechnologyStr(u_int32_t cableTechnology);
@@ -479,7 +479,7 @@ public:
     // Config helper functions
     bool isForceDownSupported();
     bool isPPHCRSupported();
-    virtual void sendPaosCmd(PAOS_ADMIN adminStatus, bool forceDown = false);
+    void sendPaosCmd(PAOS_ADMIN adminStatus, bool forceDown = false);
     void sendPaosDown(bool toggleCommand = false);
     void sendPaosUP();
     void sendPaosToggle();
@@ -494,14 +494,14 @@ public:
             u_int32_t prbsMode, bool perLaneConfig, bool prbsPolInv);
     void sendPprtPptt();
     void resetPprtPptt();
-    u_int32_t ptysSpeedToMask(const string & speed, u_int32_t cap);
-    u_int32_t ptysSpeedToExtMask(const string & speed);
+    u_int32_t ptysSpeedToMask(const string & speed);
     void validateSpeedStr();
     void checkSupportedSpeed(const string & speed, u_int32_t cap, bool extSpeed = false);
     void checkPplmCap();
     void updateSltp28_40nmFields();
     void updateSltp16nmFields();
     void updateSltp7nmFields();
+    string getSltpStatus();
     void getSltpAlevOut(u_int32_t lane);
     void getSltpRegAndLeva(u_int32_t lane);
     u_int32_t getLaneSpeed(u_int32_t lane);

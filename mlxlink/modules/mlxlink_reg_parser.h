@@ -65,6 +65,7 @@ public:
     u_int32_t getFieldValue(string field_name);
     string getFieldStr(const string &field);
     string getRawFieldValueStr(const string fieldName);
+    u_int32_t getFieldSize(string field_name);
     string getAscii(const string & name, u_int32_t size = 4);
 
     u_int32_t _gvmiAddress;
