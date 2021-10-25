@@ -35,16 +35,17 @@ class CmdRegMfrl():
 
     LIVE_PATCH, PCI_RESET, WARM_REBOOT, COLD_REBOOT= 0,3,4,5
     reset_levels_db = [
-        {'level': LIVE_PATCH, 'description': 'Driver, PCI link, network link will remain up ("live-Patch")', 'bit_offset' : 0x1, 'support_reset_type': False},
-        {'level': PCI_RESET, 'description': 'Driver restart and PCI reset', 'bit_offset' : 0x8, 'support_reset_type': True},
-        {'level': WARM_REBOOT, 'description': 'Warm Reboot', 'bit_offset' : 0x40, 'support_reset_type': True},
-        {'level': COLD_REBOOT, 'description': 'Cold Reboot', 'bit_offset' : 0x80, 'support_reset_type': False}
+        {'level': LIVE_PATCH, 'description': 'Driver, PCI link, network link will remain up ("live-Patch")', 'mask' : 0x1, 'support_reset_type': False},
+        {'level': PCI_RESET, 'description': 'Driver restart and PCI reset', 'mask' : 0x8, 'support_reset_type': True},
+        {'level': WARM_REBOOT, 'description': 'Warm Reboot', 'mask' : 0x40, 'support_reset_type': True},
+        {'level': COLD_REBOOT, 'description': 'Cold Reboot', 'mask' : 0x80, 'support_reset_type': False}
     ]
 
-    FULL_CHIP, PHY_LESS = 0,1
+    FULL_CHIP, PHY_LESS, NIC_ONLY = 0,1,2
     reset_types_db = [
-        {'type': FULL_CHIP, 'description': 'Full chip reset', 'bit_offset' : 0x1, 'default': True, 'supported': True},
-        {'type': PHY_LESS, 'description': 'Phy-less reset ("port-alive" - network link will remain up)', 'bit_offset' : 0x2,'default': False}
+        {'type': FULL_CHIP, 'description': 'Full chip reset', 'mask' : 0x1, 'supported': True},
+        {'type': PHY_LESS, 'description': 'Phy-less reset (keep network port active during reset)', 'mask' : 0x2},
+        {'type': NIC_ONLY, 'description': 'NIC only reset (for SoC devices)', 'mask' : 0x4}
     ]
 
     @classmethod
@@ -67,13 +68,6 @@ class CmdRegMfrl():
     def reset_types(cls):
         'Return a list with all the optional reset-types'
         return [reset_type_ii['type'] for reset_type_ii in cls.reset_types_db]
-
-    @classmethod
-    def default_reset_type(cls):
-        'Return the default reset-type'
-        for reset_type_ii in cls.reset_types_db:
-            if reset_type_ii['default'] is True:
-                return reset_type_ii['type']
 
     @classmethod
     def reset_level_description(cls, reset_level):
@@ -106,15 +100,17 @@ class CmdRegMfrl():
 
         # Read register ('get' command) from device
         reg = self._read_reg()
+
         # Update 'supported' field in reset_levels
         reset_level = reg['reset_level']
         for reset_level_ii in self._reset_levels:
-            reset_level_ii['supported'] = (reset_level & reset_level_ii['bit_offset'])  != 0
+            reset_level_ii['supported'] = (reset_level & reset_level_ii['mask'])  != 0
+
         # Update 'supported' field in reset_types
         reset_type  = reg['reset_type']
         for reset_type_ii in self._reset_types:
             if 'supported' not in reset_type_ii:
-                reset_type_ii['supported'] = (reset_type & reset_type_ii['bit_offset']) != 0 
+                reset_type_ii['supported'] = (reset_type & reset_type_ii['mask']) != 0
 
     def _read_reg(self):
         reset_level, reset_type = self._reg_access.sendMFRL(self._reg_access.GET)
@@ -146,11 +142,12 @@ class CmdRegMfrl():
 
         result += "\nReset-types "
         result += "(relevant only for reset-levels {0}):\n".format(','.join(relevant_levels))
+        default_reset_type = self.default_reset_type()
         for reset_type_ii in self._reset_types:
             type_ = reset_type_ii['type']
             description = reset_type_ii['description']
             supported = "Supported" if reset_type_ii['supported'] else "Not Supported"
-            default = "(default)" if reset_type_ii["default"] else ""
+            default = "(default)" if reset_type_ii["type"]==default_reset_type else ""
             result += "{0}: {1:<62}-{2:<14}{3}\n".format(type_, description, supported, default)
         
         return result
@@ -185,7 +182,22 @@ class CmdRegMfrl():
             if self.is_reset_level_supported(reset_level_ii) is True:
                 return reset_level_ii
         raise CmdNotSupported("There is no supported reset-level")
-    
+
+    def default_reset_type(self):
+        'Return the default reset-type'
+
+        # Return NIC_ONLY if supported (Will be supported only in SmartNIC)
+        for reset_type_ii in self._reset_types:
+            if reset_type_ii['supported'] and reset_type_ii['type'] == CmdRegMfrl.NIC_ONLY:
+                    return reset_type_ii['type']
+        
+        # Return FULL_CHIP 
+        for reset_type_ii in self._reset_types:
+            if reset_type_ii['supported'] and reset_type_ii['type'] == CmdRegMfrl.FULL_CHIP:
+                    return reset_type_ii['type']
+
+        raise CmdNotSupported("There is no supported reset-type")
+
     def is_default_reset_type(self, reset_type):
         return reset_type == self.default_reset_type()
 
@@ -201,7 +213,7 @@ class CmdRegMfrl():
         # Reset-level to send         
         for reset_level_ii in self._reset_levels:
             if reset_level_ii['level'] == reset_level and reset_level_ii['supported']:
-                reset_level_2_send = reset_level_ii['bit_offset']
+                reset_level_2_send = reset_level_ii['mask']
                 break
         else:
             raise RuntimeError('Failed to send MFRL! reset-level {0} is not supported!'.format(reset_level))

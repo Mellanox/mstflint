@@ -52,6 +52,7 @@ public:
     ;
     u_int32_t _labelPort;
     u_int32_t _splitPort;
+    u_int32_t _secondSplitPort;
     u_int32_t _depth;
     u_int32_t _pcieIndex;
     u_int32_t _node;
@@ -73,8 +74,11 @@ public:
     bool _sendDpn;
     bool _db;
     bool _sltpLane;
+    bool _txPolicy;
     bool _advancedMode;
-    bool _specifiedPort;
+    bool _portSpecified;
+    bool _splitProvided;
+    bool _secondSplitProvided;
     bool _showSltp;
     bool _showSlrp;
     bool _showCounters;

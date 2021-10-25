@@ -29,12 +29,11 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- *  Version: $Id$
  */
+
 /*************************** Adb ***************************/
 #ifndef ADB_ADB_H
 #define ADB_ADB_H
-
 
 
 class LogFile;

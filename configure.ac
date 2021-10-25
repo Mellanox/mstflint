@@ -51,9 +51,17 @@ m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 AC_PROG_LIBTOOL
 AC_CONFIG_HEADERS( config.h )
 
+# OPENSSL_VERSION_NUMBER < 0x100020bf
+#0x100020bfL = OpenSSL 1.0.2k-fips  26 Jan 2017
+MIN_OPENSSL_VER="1.0.2k-fips"
+AC_COMPILE_IFELSE(
+      [AC_LANG_PROGRAM([[
+#include <openssl/ssl.h>
+#if OPENSSL_VERSION_NUMBER < 0x100020bf
+  ERROR: OPENSSL_VERSION_NUMBER version must be >= 0x100020bf ("OpenSSL 1.0.2k-fips  26 Jan 2017")
+#endif
+]])], [OPENSSL_VERSION_VALID=yes], [OPENSSL_VERSION_VALID=no])
 OS=$(uname -s)
-
-MIN_OPENSSL_VER="1.1.0"
 MTCR_CONF_DIR=""
 LDL=""
 default_en_inband=""
@@ -356,8 +364,9 @@ AS_IF([test "x$enable_cs" = "xyes" || test "x$enable_openssl" = "xyes"], [
         AC_CONFIG_FILES(tools_crypto/Makefile)
     ])
 
+
 AS_IF([test "x$enable_openssl" = "xyes"], [
-    AS_IF(test x"`(openssl version|awk '{print $2}';echo $MIN_OPENSSL_VER)|sort -V|head -n1`" = x"$MIN_OPENSSL_VER",
+    AS_IF(test x"$OPENSSL_VERSION_VALID" = "xyes",
         [AC_CONFIG_FILES(mlxsign_lib/Makefile)],
         [AC_MSG_ERROR([Required OpenSSL version >= $MIN_OPENSSL_VER (or use --disable-openssl)])])
 ])

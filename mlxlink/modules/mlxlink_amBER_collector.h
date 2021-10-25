@@ -72,6 +72,7 @@ public:
     u_int32_t _depth;
     u_int32_t _pcieIndex;
     u_int32_t _node;
+    u_int32_t _devID;
     string _csvFileName;
     u_int32_t _iteration;
     string _testMode;
@@ -107,6 +108,7 @@ private:
     bool _cablePlugged;
     u_int32_t _labelPort;
     u_int32_t _splitPort;
+    u_int32_t _secondSplit;
     vector<vector<AmberField>> _amberCollection;
 
 protected:
