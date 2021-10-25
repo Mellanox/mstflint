@@ -121,9 +121,7 @@ SubCmdMetaData::SubCmdMetaData()
     _sCmds.push_back(new SubCmd("bc", "binary_compare", SC_Binary_Compare));
     _sCmds.push_back(new SubCmd("", "rsa_sign", SC_RSA_Sign));
     _sCmds.push_back(new SubCmd("", "import_hsm_key", SC_Import_Hsm_Key));
-#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
     _sCmds.push_back(new SubCmd("", "export_public_key", SC_Export_Public_Key));
-#endif
 }
 
 SubCmdMetaData::~SubCmdMetaData()
@@ -201,6 +199,7 @@ FlagMetaData::FlagMetaData()
     _flags.push_back(new Flag("", "no_devid_check", 0));
     _flags.push_back(new Flag("", "use_fw", 0));
     _flags.push_back(new Flag("", "use_dev_img_info", 0));
+    _flags.push_back(new Flag("", "ignore_crc_check", 0));
     _flags.push_back(new Flag("", "skip_ci_req", 0));
     _flags.push_back(new Flag("", "use_dev_rom", 0));
     _flags.push_back(new Flag("", "private_key", 1));
@@ -227,6 +226,8 @@ FlagMetaData::FlagMetaData()
     _flags.push_back(new Flag("", "public_key_label", 1));
     _flags.push_back(new Flag("", "hsm", 0));
 #endif
+   _flags.push_back(new Flag("", "openssl_engine", 1));
+   _flags.push_back(new Flag("", "openssl_key_id", 1));
 #ifdef __WIN__
 	_flags.push_back(new Flag("", "cpu_util", 1));
 #endif
@@ -616,6 +617,7 @@ void Flint::initCmdParser()
                "",
                "When specified, only next boot fw version is fetched\n"
                "Commands affected: query",
+                0,
                true);
 
     AddOptions("flashed_version",
@@ -711,7 +713,15 @@ void Flint::initCmdParser()
                "",
                "preserve select image info fields from the device upon FW update (FS3 Only).\n"
                "Commands affected: burn",
-               true);
+                0,
+                true);
+
+    AddOptions("ignore_crc_check",
+               ' ',
+               "",
+               "Prevents flint from failing due to CRC check",
+               0,
+               true); // hidden
 
     AddOptions("dual_image",
                ' ',
@@ -762,22 +772,30 @@ void Flint::initCmdParser()
     AddOptions("no_devid_check",
                ' ',
                "",
-               "ignore device_id checks", true);
+               "ignore device_id checks",
+                0,
+                true);
 
     AddOptions("skip_ci_req",
                ' ',
                "",
-               "skip sending cache image request to driver(windows)", true);
+               "skip sending cache image request to driver(windows)",
+                0,
+                true);
 
     AddOptions("ocr",
                ' ',
                "",
-               "another flag for override cache replacement", true);
+               "another flag for override cache replacement",
+                0,
+                true);
 
     AddOptions("hsm",
         ' ',
         "",
-        "flag for the sign command", true);
+        "flag for the sign command",
+        0,
+        true);
 
     AddOptions("private_key",
                ' ',
@@ -824,37 +842,44 @@ void Flint::initCmdParser()
     AddOptions("downstream_device_id_start_index",
         ' ',
         "<downstream_device_id_start_index>",
-        "Use this flag while burning to device a LinkX Component. Begin from 0");
+        "Use this flag while burning to device a LinkX Component. Begin from 0",
+        1);
 
     AddOptions("num_of_downstream_devices",
         ' ',
         "<num_of_downstream_devices>",
-        "Use this flag while burning to device a LinkX Component to specify the number of devices to burn");
+        "Use this flag while burning to device a LinkX Component to specify the number of devices to burn",
+        1);
 
     AddOptions("linkx_auto_update",
         ' ',
         "",
-        "Use this flag while burning all cable devices connected to host.");
+        "Use this flag while burning all cable devices connected to host.",
+        1);
 
     AddOptions("activate",
         ' ',
         "",
-        "Use this flag to apply the activation of all cable devices connected to host. By default, the activation is not performed.");
+        "Use this flag to apply the activation of all cable devices connected to host. By default, the activation is not performed.",
+        1);
 
-    /*AddOptions("activate_delay_sec",
+    AddOptions("activate_delay_sec",
         ' ',
         "<timeout in seconds>",
-        "Use this flag to activate all cable devices connected to host with delay (default - 0, immediately). Important: 'activate' flag must be set.  This flag is relevant only for cable components.");*/
+        "Use this flag to activate all cable devices connected to host with delay, acceptable values are between 0 and 255 (default - 0, immediately). Important: 'activate' flag must be set.  This flag is relevant only for cable components.",
+        1);
 
     AddOptions("download_transfer",
         ' ',
         "",
-        "Use this flag to perform the download and transfer of all cable data for cables. By default, the download and transfer are not performed . This flag is relevant only for cable components.");
+        "Use this flag to perform the download and transfer of all cable data for cables. By default, the download and transfer are not performed . This flag is relevant only for cable components.",
+        1);
 
     AddOptions("downstream_device_ids",
         ' ',
         "<list of ports>",
-        "Use this flag to specify the LNKX ports to perform query. List must be only comma-separated numbers, without spaces.");
+        "Use this flag to specify the LNKX ports to perform query. List must be only comma-separated numbers, without spaces.",
+        1);
 
 #ifndef __WIN__
     AddOptions("public_key_label",
@@ -867,7 +892,15 @@ void Flint::initCmdParser()
         "<string>",
         "private key label to be used by the sign --hsm command");
 #endif
-    AddOptions("output_file",
+   AddOptions("openssl_engine",
+        ' ',
+        "<string>",
+        "Name of the OpenSSL engine to used by the sign/rsa_sign commands to work with the HSM hardware via OpenSSL API");
+   AddOptions("openssl_key_id",
+        ' ',
+        "<string>",
+        "Key identification string to be used by the sign/rsa_sign commands to work with the HSM hardware via OpenSSL API");
+   AddOptions("output_file",
         ' ',
         "<string>",
         "output file name for exporting the public key from PEM/BIN");
@@ -1064,6 +1097,8 @@ ParseStatus Flint::HandleOption(string name, string value)
         _flintParams.striped_image = true;
     } else if (name == "use_dev_img_info") {
         _flintParams.use_dev_img_info = true;
+    } else if (name == "ignore_crc_check") {
+        _flintParams.ignore_crc_check = true;
     } else if (name == "ir") {
         _flintParams.image_reactivation = true;
     } else if (name == "banks") {
@@ -1122,6 +1157,12 @@ ParseStatus Flint::HandleOption(string name, string value)
 		_flintParams.cpu_percent = (int)cpu_percent;
     } else if (name == "hsm") {
         _flintParams.hsm_specified = true;
+    } else if (name == "openssl_engine") {
+       _flintParams.openssl_engine_usage_specified = true;
+       _flintParams.openssl_engine = value;
+    } else if (name == "openssl_key_id") {
+       _flintParams.openssl_engine_usage_specified = true;
+       _flintParams.openssl_key_id = value;
     } else if (name == "private_key_label") {
         _flintParams.private_key_label_specified = true;
         _flintParams.private_key_label = value;

@@ -1,5 +1,6 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -76,7 +77,8 @@ bool DirectComponentAccess::accessComponent(u_int32_t updateHandle, u_int32_t of
         maxDataSize = INBAND_MAX_REG_SIZE - MCDA_REG_HEADER;
     }
     std::vector<u_int32_t> dataToRW(maxDataSize, 0);
-    while (leftSize > 0)    {
+    while (leftSize > 0) {
+        DPRINTF(("0x%x bytes left to %s\n", leftSize, access == MCDA_READ_COMP ? "read" : "burn"));
         memset(&accessData, 0, sizeof(mcdaReg));
 
         memcpy(accessData.data, dataToRW.data(), sizeof(accessData.data));
@@ -132,7 +134,6 @@ bool DirectComponentAccess::accessComponent(u_int32_t updateHandle, u_int32_t of
         }
 #endif
         leftSize -= maxDataSize;
-        DPRINTF(("0x%x bytes left to burn\n", leftSize));
     }
     if (progressFuncAdv && progressFuncAdv->func) {
         if (progressFuncAdv->func(0, stage,

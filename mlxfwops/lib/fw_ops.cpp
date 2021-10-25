@@ -1,5 +1,6 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -69,6 +70,8 @@ bool FwOperations::readBufAux(FBase& f, u_int32_t o, void *d, int l, const char*
     return rc;
 }
 
+#ifndef NO_MFA_SUPPORT
+
 int FwOperations::getFileSignature(const char *fname)
 {
     FILE *fin;
@@ -107,8 +110,6 @@ int FwOperations::getFileSignature(const char *fname)
     fclose(fin);
     return res;
 }
-
-#ifndef NO_MFA_SUPPORT
 
 int FwOperations::getBufferSignature(u_int8_t *buf, u_int32_t size)
 {
@@ -252,6 +253,7 @@ void FwOperations::getSupporteHwId(u_int32_t **supportedHwId, u_int32_t &support
 
 bool FwOperations::checkBoot2(u_int32_t beg, u_int32_t offs, u_int32_t& next, bool fullRead, const char *pref, VerifyCallBack verifyCallBackFunc)
 {
+    DPRINTF(("FwOperations::checkBoot2\n"));
     u_int32_t size = 0x0;
 
     char *pr = new char[strlen(pref) + 512];
@@ -263,6 +265,7 @@ bool FwOperations::checkBoot2(u_int32_t beg, u_int32_t offs, u_int32_t& next, bo
         return false;
     }
     TOCPU1(size);
+    DPRINTF(("FwOperations::checkBoot2 size = 0x%x\n", size));
     if (size > 1048576 || size < 4) {
         report_callback(verifyCallBackFunc, "%s /0x%08x/ - unexpected size (0x%x)\n", pr, offs + beg + 4, size);
         delete[] pr;
@@ -299,18 +302,18 @@ bool FwOperations::checkBoot2(u_int32_t beg, u_int32_t offs, u_int32_t& next, bo
         u_int32_t crc_act = buff[size + 3];
         delete[] buff;
         if (crc.get() != crc_act) {
+            DPRINTF(("FwOperations::checkBoot2 wrong CRC (exp:0x%x, act:0x%x)\n", crc.get(), crc_act));
             report_callback(verifyCallBackFunc, "%s /0x%08x/ - wrong CRC (exp:0x%x, act:0x%x)\n",
                             pr, offs + beg, crc.get(), crc_act);
-            delete[] pr;
-            return errmsg(MLXFW_BAD_CRC_ERR, BAD_CRC_MSG);
+            if (!_fwParams.ignoreCrcCheck) {
+                delete[] pr;
+                return errmsg(MLXFW_BAD_CRC_ERR, BAD_CRC_MSG);
+            }
         }
-        _ioAccess->get_image_crc() << crc_act;
-        // TODO: Print CRC
-        if (0) {
-            report_callback(verifyCallBackFunc, "%s - OK (CRC:0x%04x)\n", pr, (crc_act & 0xffff));
-        } else {
+        else {
             report_callback(verifyCallBackFunc, "%s - OK\n", pr);
         }
+        _ioAccess->get_image_crc() << crc_act;
     }
     next = offs + size * 4 + 16;
     delete[] pr;
@@ -331,7 +334,9 @@ bool FwOperations::CheckAndPrintCrcRes(char *pr, bool blank_crc, u_int32_t off, 
         } else {
             report_callback(verifyCallBackFunc, "%s /0x%08x/ - wrong CRC (exp:0x%x, act:0x%x)\n",
                             pr, off, crc_exp, crc_act);
-            return errmsg(BAD_CRC_MSG);
+            if (!_fwParams.ignoreCrcCheck) {
+                return errmsg(BAD_CRC_MSG);
+            }
         }
     }
     return true;
@@ -424,7 +429,7 @@ bool FwOperations::FindAllImageStart(FBase *ioAccess,
         }
     }
 
-    DPRINTF(("FwOperations::FindAllImageStart found %d image(s)\n",*found_images));
+    DPRINTF(("FwOperations::FindAllImageStart found %d image(s)\n", *found_images));
     return true;
 }
 // CAN BE IN ANOTHER MODULE
@@ -656,7 +661,7 @@ bool FwOperations::CheckBinVersion(u_int8_t binVerMajor, u_int8_t binVerMinor)
     return true;
 }
 
-FwOperations* FwOperations::FwOperationsCreate(void *fwHndl, void *info, char *psid, fw_hndl_type_t hndlType, char *errBuff, int buffSize)
+FwOperations* FwOperations::FwOperationsCreate(void *fwHndl, void *info, char *psid, fw_hndl_type_t hndlType, char *errBuff, int buffSize, bool ignore_crc_check)
 {
     DPRINTF(("FwOperations::FwOperationsCreate\n"));
     fw_ops_params_t fwParams;
@@ -665,6 +670,7 @@ FwOperations* FwOperations::FwOperationsCreate(void *fwHndl, void *info, char *p
     fwParams.hndlType = hndlType;
     fwParams.errBuff = errBuff;
     fwParams.errBuffSize = buffSize;
+    fwParams.ignoreCrcCheck = ignore_crc_check;
     fwParams.shortErrors = true;
 
     if (hndlType == FHT_FW_FILE) {
@@ -697,23 +703,30 @@ bool FwOperations::imageDevOperationsCreate(fw_ops_params_t& devParams, fw_ops_p
         return false;
     }
 
-    if ((*imgFwOps)->FwType() == FIT_FS2) {
-        devParams.canSkipFwCtrl = true;
-        *devFwOps = FwOperationsCreate(devParams);
-        if (!(*devFwOps)) {
-            return false;
-        }
-        return true;
-    }
-
-    fw_info_t imgQuery;
-    memset(&imgQuery, 0, sizeof(fw_info_t));
-    if (!(*imgFwOps)->FwQuery(&imgQuery, true, false, true, ignoreDToc)) {
+    bool is_encrypted = false;
+    if (!(*imgFwOps)->isEncrypted(is_encrypted)) {
         return false;
     }
-    if (imgQuery.fs3_info.security_mode == SM_NONE && ignoreSecurityAttributes == false) {
-        devParams.noFwCtrl = true;
+    if (!is_encrypted) {
+        if ((*imgFwOps)->FwType() == FIT_FS2) {
+            devParams.canSkipFwCtrl = true;
+            *devFwOps = FwOperationsCreate(devParams);
+            if (!(*devFwOps)) {
+                return false;
+            }
+            return true;
+        }
+
+        fw_info_t imgQuery;
+        memset(&imgQuery, 0, sizeof(fw_info_t));
+        if (!(*imgFwOps)->FwQuery(&imgQuery, true, false, true, ignoreDToc)) {
+            return false;
+        }
+        if (imgQuery.fs3_info.security_mode == SM_NONE && ignoreSecurityAttributes == false) {
+            devParams.noFwCtrl = true;
+        }
     }
+
     *devFwOps = FwOperationsCreate(devParams);
     if (!(*devFwOps)) {
         return false;
@@ -745,6 +758,24 @@ void FwOperations::BackUpFwParams(fw_ops_params_t& fwParams)
     _fwParams.uefiExtra = fwParams.uefiExtra;
     _fwParams.uefiHndl = fwParams.uefiHndl;
     _fwParams.isCableFw = fwParams.isCableFw;
+    _fwParams.ignoreCrcCheck = fwParams.ignoreCrcCheck;
+}
+
+const char* file_handle_type_to_str(fw_hndl_type_t type) {
+    switch(type) {
+        case FHT_MST_DEV:
+            return "MST_DEVICE";
+        case FHT_FW_FILE:
+            return "FW_FILE";
+        case FHT_UEFI_DEV:
+            return "UEFI_DEVICE";
+        case FHT_FW_BUFF:
+            return "FW_BUFFER";
+        case FHT_CABLE_DEV:
+            return "CABLE_DEVICE";
+        default:
+            return "UNKNOWN";
+    }
 }
 
 FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
@@ -781,9 +812,12 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
             } else if (fwParams.hndlType == FHT_UEFI_DEV) {
                 fwCompsAccess = new FwCompsMgr(fwParams.uefiHndl, &fwParams.uefiExtra);
             }
+            // In case MCDA capability isn't supported according to MCAM, we'll have
+            // fwCompsAccess object created, but with an internal error in fwCompsErr
             if (fwCompsAccess != NULL) {
                 fwCompsErr = fwCompsAccess->getLastError();
             }
+
             if (fwCompsErr != FWCOMPS_SUCCESS) {
                 bool exitOnError = false;
                 if (fwCompsErr == FWCOMPS_MTCR_OPEN_DEVICE_ERROR) {
@@ -807,12 +841,14 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
                 if (fwParams.forceLock) {
                     fwCompsAccess->forceRelease();
                 }
+
                 if (fwParams.mccUnsupported &&
                     fwCompsAccess->queryFwInfo(&fwInfo) == true &&
                     fwInfo.security_type.secure_fw == 0) {
                     delete fwCompsAccess;
                     fwCompsAccess = (FwCompsMgr*) NULL;
                 } else {
+                    FLASH_ACCESS_DPRINTF(("Flash init to use MCC flow\n"));
                     fwFormat = FS_FSCTRL_GEN;
                     goto init_fwops;
                 }
@@ -827,38 +863,43 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
             getFwFormatFromImg = true;
         }
 
+
         fwFormat = CheckFwFormat(*ioAccess, getFwFormatFromImg);
 init_fwops:
         switch (fwFormat) {
 #if !defined(UEFI_BUILD)
         case FS_FS2_GEN: {
+                DPRINTF(("FS2 ops created for %s\n", file_handle_type_to_str(fwParams.hndlType)));
                 fwops = new Fs2Operations(ioAccess);
                 break;
-            }
+        }
 #endif
         case FS_FS3_GEN: {
+                DPRINTF(("FS3 ops created for %s\n", file_handle_type_to_str(fwParams.hndlType)));
                 fwops = new Fs3Operations(ioAccess);
                 break;
-            }
+        }
 
         case FS_FS4_GEN: {
+                DPRINTF(("FS4 ops created for %s\n", file_handle_type_to_str(fwParams.hndlType)));
                 fwops = new Fs4Operations(ioAccess);
                 break;
-            }
+        }
 
         case FS_FSCTRL_GEN: {
                 if (!fwCompsAccess) {
                     return (FwOperations*)NULL;
                 }
+                DPRINTF(("FSCTRL ops created for %s\n", file_handle_type_to_str(fwParams.hndlType)));
                 fwops = new FsCtrlOperations(fwCompsAccess);
                 break;
-            }
+        }
 
 #ifdef CABLES_SUPP
         case FS_FC1_GEN: {
                 fwops = new CableFwOperations(ioAccess);
                 break;
-            }
+        }
 
 #endif
         default:
@@ -2009,6 +2050,11 @@ bool FwOperations::IsLifeCycleSupported()
     return errmsg("IsLifeCycleSupported not supported.");
 }
 
+bool FwOperations::IsEncryptionSupported()
+{
+    return errmsg("IsEncryptionSupported not supported.");
+}
+
 bool FwOperations::FwBurnAdvanced(std::vector <u_int8_t> imageOps4MData, ExtBurnParams& burnParams, FwComponent::comps_ids_t ComponentId)
 {
     (void)imageOps4MData;
@@ -2054,9 +2100,14 @@ bool FwOperations::FwInsertSHA256(PrintCallBack)
     return errmsg("FwInsertSHA256 not supported");
 }
 
-bool FwOperations::FwSignWithOneRSAKey(const char*, const char*, PrintCallBack)
+bool FwOperations::signForFwUpdate(const char*, const char*, PrintCallBack)
 {
-    return errmsg("FwSignWithOneRSAKey not supported");
+    return errmsg("signForFwUpdate not supported");
+}
+
+bool FwOperations::signForFwUpdateUsingHSM(const char *, MlxSign::OpensslEngineSigner&, PrintCallBack)
+{
+    return errmsg("signForFwUpdateUsingHSM not supported");
 }
 
 bool FwOperations::FwSignWithTwoRSAKeys(const char*, const char*, const char*, const char*, PrintCallBack)
@@ -2069,13 +2120,40 @@ bool FwOperations::FwSignWithHmac(const char*)
     return errmsg("FwSignWithHmac not supported");
 }
 
-bool FwOperations::FwSignWithRSA(const char *, const char *, const char *)
+bool FwOperations::signForSecureBoot(const char *, const char *, const char *)
 {
-    return errmsg("FwSignWithRSA not supported");
+    return errmsg("signForSecureBoot not supported");
 }
-bool FwOperations::FwSignWithRSA(const char *, const char *, vector<u_int8_t>& , vector<u_int8_t>& , vector<u_int8_t>& )
+bool FwOperations::signForSecureBootUsingHSM(const char *, const char *, MlxSign::OpensslEngineSigner&)
 {
-    return errmsg("FwSignWithRSA not supported");
+    return errmsg("signForSecureBoot not supported");
+}
+bool FwOperations::isHashesTableHwPtrValid()
+{
+    return false;
+}
+bool FwOperations::initHwPtrs(bool)
+{
+    return errmsg("initHwPtrs not supported");
+}
+bool FwOperations::openEncryptedImageAccess(const char* encrypted_image_path)
+{
+    (void)encrypted_image_path;
+    return errmsg("openEncryptedImageAccess not supported");
+}
+bool FwOperations::isEncrypted(bool& is_encrypted)
+{
+    is_encrypted = false;
+    DPRINTF(("FwOperations::isEncrypted res = FALSE\n"));
+    return true;
+}
+bool FwOperations::FwExtractEncryptedImage(vector<u_int8_t>& , bool , bool , bool )
+{
+    return errmsg("FwExtractEncryptedImage not supported");
+}
+bool FwOperations::burnEncryptedImage(FwOperations *, ExtBurnParams& )
+{
+    return errmsg("Burning encrypted image not supported");
 }
 bool FwOperations::PrepItocSectionsForHmac(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical)
 {
@@ -2345,13 +2423,13 @@ bool FwOperations::PreparePublicKeyData(const char *, vector <u_int8_t>&, unsign
 {
     return errmsg("PreparePublicKeyData not supported");
 }
-bool FwOperations::PrepareSecureBootSections(vector<u_int8_t>&, vector<u_int8_t>&, vector<u_int8_t>&, vector <u_int32_t>, vector <u_int8_t>, unsigned int)
+bool FwOperations::storePublicKeyInSection(const char *, const char *)
 {
-    return errmsg("PrepareSecureBootSections not supported");
+    return errmsg("storePublicKeyInSection not supported");
 }
-bool FwOperations::InsertSecureBootSignature(vector<u_int8_t>, vector<u_int8_t>, vector<u_int8_t>)
+bool FwOperations::storeSecureBootSignaturesInSection(vector<u_int8_t>, vector<u_int8_t>, vector<u_int8_t>)
 {
-    return errmsg("InsertSecureBootSignature not supported");
+    return errmsg("storeSecureBootSignaturesInSection not supported");
 }
 bool FwOperations::getExtendedHWAravaPtrs(VerifyCallBack, FBase*, bool, bool)
 {
@@ -2360,6 +2438,31 @@ bool FwOperations::getExtendedHWAravaPtrs(VerifyCallBack, FBase*, bool, bool)
 u_int32_t FwOperations::GetPublicKeySecureBootPtr()
 {
     return errmsg("GetPublicKeySecureBootPtr not supported");
+}
+
+bool FwOperations::VerifyBranchFormat(const char* vsdString)
+{
+    size_t length = strlen(vsdString);
+    if (length > BRANCH_LEN || length < MIN_BRANCH_LEN) {
+        return false;
+    }
+    if (vsdString[length - MIN_BRANCH_LEN] == '_') {
+        for (size_t i = length - MIN_BRANCH_LEN + 1; i < length; i++) {
+            if (!isdigit(vsdString[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
+    else if (vsdString[length - MIN_BRANCH_LEN + 1] == '-') {
+        for (size_t i = length - MIN_BRANCH_LEN + 2; i < length; i++) {
+            if (!isdigit(vsdString[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
+    return false;
 }
 
 #if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
@@ -2384,3 +2487,42 @@ bool FwOperations::CheckPemKeySize(const string privPemFileStr, u_int32_t& keySi
     return true;
 }
 #endif
+
+
+
+CRSpaceRegisters::CRSpaceRegisters(mfile* mf, chip_type_t chip_type): _mf(mf), _chip_type(chip_type)
+{}
+
+
+int CRSpaceRegisters::getGlobalImageStatus()
+{
+    size_t global_image_status_address = 0;
+
+    switch (_chip_type) {
+        case CT_CONNECTX6DX:
+        case CT_CONNECTX6LX:
+        case CT_CONNECTX7:
+        case CT_BLUEFIELD2:
+            global_image_status_address = 0xE3044;
+            break;
+        case CT_QUANTUM2:
+            global_image_status_address = 0xa1844;
+            break;
+        default:
+            throw logic_error("-E- global_image_status query is not implemented for the current device.");
+    }
+
+    return (int)getRegister(global_image_status_address);
+}
+
+
+u_int32_t CRSpaceRegisters::getRegister(u_int32_t address)
+{
+    u_int32_t crSpaceReg;
+    int rc = mread4(_mf, address, &crSpaceReg);
+    if (rc != 4){
+        throw logic_error("-E- Failed to read global image status data.");
+    }
+
+    return crSpaceReg;
+}

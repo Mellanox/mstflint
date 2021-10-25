@@ -1,6 +1,7 @@
 
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -80,17 +81,6 @@ MFA2Type Extension::extensionTypeToMFA2Type(ExtensionType type)
 Extension::Extension(u_int8_t version, ExtensionType type, u_int32_t length) :
         Element(version, extensionTypeToMFA2Type(type), length)
 {
-}
-
-VersionExtension::VersionExtension(const u_int16_t* version) :
-        Extension(ELEMENT_VERSION, VersionExtensionType, LENGTH)
-{
-    /*printf("version = %d.%d.%d", version[0], version[1], version[2]);
-    printf("date = %d.%d.%d", date[0], date[1], date[2]);*/
-    _major = version[0];
-    _subMinor = version[2];
-    _minor = version[1];
-    fillTimeAndDate();
 }
 
 VersionExtension::VersionExtension(const string& version) :

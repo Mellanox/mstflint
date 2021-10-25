@@ -48,10 +48,10 @@ public:
     virtual fw_comps_error_t  getLastFirmwareError() = 0;
     virtual reg_access_status_t  getLastRegisterAccessStatus() = 0;
 
-    AbstractComponentAccess(FwCompsMgr* Manager, mfile *Mf)
+    AbstractComponentAccess(FwCompsMgr* manager, mfile *mf)
     {
-        _mf = Mf;
-        _manager = Manager;
+        _mf = mf;
+        _manager = manager;
         _lastFwError = FWCOMPS_SUCCESS;
     }
     virtual ~AbstractComponentAccess() {}
@@ -66,7 +66,7 @@ protected:
 class ComponentAccessFactory
 {
 public:
-    AbstractComponentAccess* createDataAccessObject(FwCompsMgr* manager, mfile *Mf, bool isMCDDRegisterSupported);
+    AbstractComponentAccess* createDataAccessObject(FwCompsMgr* manager, mfile *mf, bool isMCDDRegisterSupported);
     static ComponentAccessFactory* GetInstance() {
         static ComponentAccessFactory myObj;
         return &myObj;

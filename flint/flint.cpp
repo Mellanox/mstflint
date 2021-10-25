@@ -3,6 +3,7 @@
  * flint.cpp - FLash INTerface
  *
  * Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -100,16 +101,18 @@ void TerminationHandler(int signum)
     raise(signum);
 }
 
+#ifdef __WIN__
+#define SIGNAL_NUM 3
+static int signalList[SIGNAL_NUM] = {SIGINT, SIGTERM, SIGABRT};
+#else
+#define SIGNAL_NUM 4
+static int signalList[SIGNAL_NUM] = {SIGINT, SIGTERM, SIGPIPE, SIGHUP};
+#endif
 
 void initHandler()
 {
 #ifdef __WIN__
-#define SIGNAL_NUM 3
-    int signalList[SIGNAL_NUM] = {SIGINT, SIGTERM, SIGABRT};
     SetConsoleCtrlHandler( (PHANDLER_ROUTINE) CtrlHandler, true );
-#else
-#define SIGNAL_NUM 4
-    int signalList[SIGNAL_NUM] = {SIGINT, SIGTERM, SIGPIPE, SIGHUP};
 #endif
 
     //set the signal handler
@@ -120,6 +123,12 @@ void initHandler()
             printf("-E- failed to set signal Handler.");
             exit(FLINT_FAILED);
         }
+    }
+}
+
+void ignoreSignals() {
+    for (int i = 0; i < SIGNAL_NUM; i++) {
+        signal(signalList[i], SIG_IGN);
     }
 }
 
@@ -172,9 +181,7 @@ map_sub_cmd_t_to_subcommand Flint::initSubcommandMap()
     cmdMap[SC_RSA_Sign] = new SignRSASubCommand();
     cmdMap[SC_Binary_Compare] = new  BinaryCompareSubCommand();
     cmdMap[SC_Import_Hsm_Key] = new  ImportHsmKeySubCommand();
-#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
     cmdMap[SC_Export_Public_Key] = new ExportPublicSubCommand();
-#endif
     return cmdMap;
 }
 
@@ -237,7 +244,7 @@ FlintStatus Flint::run(int argc, char *argv[])
         return FLINT_FAILED;
     }
 
-    // Step 2 save argv as a single cmd string in flint params for the log functionallity
+    // Step 2 save argv as a single cmd string in flint params for the log functionality
     for (int i = 0; i < argc; i++) {
         _flintParams.fullCmd = _flintParams.fullCmd + argv[i] + " ";
     }
@@ -261,6 +268,7 @@ int main(int argc, char *argv[])
         gFlint = new Flint();
         FlintStatus rc = gFlint->run(argc, argv);
         if (gFlint) {
+            ignoreSignals(); // clean-up should be signal free, prevent possible clean-up re-entry
             delete gFlint;
             gFlint = NULL;
         }

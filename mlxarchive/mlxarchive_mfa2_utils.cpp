@@ -1,6 +1,7 @@
 
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -85,19 +86,6 @@ void packBinFile(const string& file, vector<u_int8_t>& buff)
     ifs.close();
 
     packBytesArray(fileBuff.data(), fileBuff.size(), buff);
-}
-
-bool readFromFile(const string& fname, string& content)
-{
-    std::ifstream ifs(fname.c_str());
-    if (ifs.fail()) {
-        return false;
-    }
-    for (std::string line; std::getline(ifs, line);) {
-        content += line;
-    }
-    return true;
-
 }
 
 unsigned int getFileSize(const string& file)

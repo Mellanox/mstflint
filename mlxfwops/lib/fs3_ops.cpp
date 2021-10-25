@@ -1,5 +1,6 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -68,16 +69,10 @@
     #define CONNECTX4LX_NV_DATA_SIZE    (0x10000)
 #endif
 #include "fs3_ops.h"
-#define FS3_FLASH_SIZE 0x400000
 #define FS3_LOG_CHUNK_SIZE 21
-
-#define FS3_DFLT_GUID_NUM_TO_ALLOCATE 8
-#define FS3_DFLT_GUID_STEP 1
 
 #define DEFAULT_GUID_NUM 0xff
 #define DEFAULT_STEP DEFAULT_GUID_NUM
-
-#define FW_SECURITY_LEVEL 1
 
 //fs4 use the same itoc signatures, please double check
 const u_int32_t Fs3Operations::_itocSignature[4] = {
@@ -103,6 +98,7 @@ const Fs3Operations::SectionInfo Fs3Operations::_fs3SectionsInfoArr[] = {
     {FS3_PHY_UC_CODE,   "PHY_UC_CODE"},
     {FS3_PHY_UC_CONSTS, "PHY_UC_CONSTS"},
     {FS3_PHY_UC_CMD,    "PHY_UC_CMD"},
+    {FS4_BOOT3_CODE,    "BOOT3_CODE"},
     {FS3_IMAGE_INFO,    "IMAGE_INFO"},
     {FS3_FW_BOOT_CFG,   "FW_BOOT_CFG"},
     {FS3_FW_MAIN_CFG,   "FW_MAIN_CFG"},
@@ -136,7 +132,8 @@ const Fs3Operations::SectionInfo Fs3Operations::_fs3SectionsInfoArr[] = {
     {FS4_HW_PTR,    "HW_POINTERS"},
     {FS4_TOOLS_AREA,    "TOOLS_AREA"},
     {FS4_RSA_PUBLIC_KEY, "FS4_RSA_PUBLIC_KEY"},
-    {FS4_RSA_4096_SIGNATURES, "FS4_RSA_4096_SIGNATURES"}
+    {FS4_RSA_4096_SIGNATURES, "FS4_RSA_4096_SIGNATURES"},
+    {FS4_HASHES_TABLE, "HASHES_TABLE"}
 };
 
 bool Fs3Operations::Fs3UpdateImgCache(u_int8_t *buff, u_int32_t addr, u_int32_t size)
@@ -280,30 +277,7 @@ bool Fs3Operations::GetMfgInfo(u_int8_t *buff)
         } \
 } while (0)
 
-bool Fs3Operations::VerifyBranchFormat(const char* vsdString)
-{
-    size_t length = strlen(vsdString);
-    if (length > BRANCH_LEN || length < MIN_BRANCH_LEN) {
-        return false;
-    }
-    if (vsdString[length - MIN_BRANCH_LEN] == '_') {
-        for (size_t i = length - MIN_BRANCH_LEN + 1; i < length; i++) {
-            if (!isdigit(vsdString[i])) {
-                return false;
-            }
-        }
-        return true;
-    }
-    else if (vsdString[length - MIN_BRANCH_LEN + 1] == '-') {
-        for (size_t i = length - MIN_BRANCH_LEN + 2; i < length; i++) {
-            if (!isdigit(vsdString[i])) {
-                return false;
-            }
-        }
-        return true;
-    }
-    return false;
-}
+
 bool Fs3Operations::GetImageInfo(u_int8_t *buff)
 {
     DPRINTF(("Fs3Operations::GetImageInfo\n"));
@@ -368,9 +342,10 @@ bool Fs3Operations::GetImageInfo(u_int8_t *buff)
     //copy the vsd to the branch ver only for switches. Not valid for NICs.
     if (!IS_HCA(_fwImgInfo.ext_info.chip_type)) {
         if (VerifyBranchFormat(image_info.vsd)) {
-            strncpy(_fwImgInfo.ext_info.branch_ver, image_info.vsd, BRANCH_LEN);
+            (strncpy(_fwImgInfo.ext_info.branch_ver, image_info.vsd, BRANCH_LEN));
         }
     }
+    _fwImgInfo.ext_info.encrypted_fw = image_info.encrypted_fw;
     return true;
 }
 
@@ -433,7 +408,7 @@ bool Fs3Operations::GetRomInfo(u_int8_t *buff, u_int32_t size)
 
 bool Fs3Operations::GetImageInfoFromSection(u_int8_t *buff, u_int8_t sect_type, u_int32_t sect_size, u_int8_t check_support_only)
 {
-    DPRINTF(("Fs3Operations::GetImageInfoFromSection sect_type=%d\n",sect_type));
+    DPRINTF(("Fs3Operations::GetImageInfoFromSection sect_type (%s:0x%x)\n", GetSectionNameByType(sect_type), sect_type));
     #define EXEC_GET_INFO_OR_GET_SUPPORT(get_info_func, buff, check_support_only) (check_support_only) ? true : get_info_func(buff);
 
     switch (sect_type) {
@@ -649,46 +624,6 @@ bool Fs3Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
     return FsVerifyAux(verifyCallBackFunc, showItoc, queryOptions, ignoreDToc);
 }
 
-#define BOOT_RECORD_SIZE 0x10
-bool Fs3Operations::checkPreboot(u_int32_t *prebootBuff, u_int32_t size, VerifyCallBack verifyCallBackFunc)
-{
-    u_int32_t expectedCRC;
-    char outputLine[512] = {0};
-    u_int32_t startAddr = (_ioAccess->is_flash()) ? \
-                          _ioAccess->get_phys_from_cont(0x0, _fwImgInfo.cntxLog2ChunkSize, (_fwImgInfo.imgStart != 0)) : 0x0;
-
-    sprintf(outputLine, "%s /0x%08x-0x%08x (0x%06x)/ (PREBOOT)", PRE_CRC_OUTPUT, startAddr, 0x34, size << 2);
-    expectedCRC = prebootBuff[size - 1];
-    // calc CRC
-    Crc16 crc1, crc2;
-    CRC1n(crc1, prebootBuff, size);
-    crc1.finish();
-    // HACK: due to a bug in imgen this crc might not be calculated correctly(calculate in the "wrong way" for backward compat)
-    // crc1 represents the proper way to calculate the crc , crc2 represents the "wrong" way
-
-    // signature
-    CRCn(crc2, prebootBuff, 4);
-    // boot record
-    u_int8_t bootRecordBE[BOOT_RECORD_SIZE];
-    memcpy(bootRecordBE, &prebootBuff[4], BOOT_RECORD_SIZE);
-    TOCPUn(bootRecordBE, (BOOT_RECORD_SIZE  >> 2));
-    for (int i = 0; i < BOOT_RECORD_SIZE; i++) {
-        crc2 << bootRecordBE[i];
-    }
-    // the rest of the section (leave last dword out of the crc calc as its the expected crc)
-    CRC1n(crc2, &prebootBuff[8], size - 8);
-    crc2.finish();
-
-    // print results
-    if (expectedCRC != crc1.get() && expectedCRC != crc2.get()) {
-        report_callback(verifyCallBackFunc, "%s /0x%08x/ - wrong CRC (exp:0x%x, act:0x%x)\n",
-                        outputLine, startAddr, expectedCRC, crc1.get());
-        return errmsg("Bad CRC");
-    }
-    report_callback(verifyCallBackFunc, "%s - OK\n", outputLine);
-    return true;
-}
-
 bool Fs3Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_itoc, struct QueryOptions queryOptions, bool ignoreDToc, bool verbose)
 {
     DPRINTF(("Fs3Operations::FsVerifyAux\n"));
@@ -700,7 +635,7 @@ bool Fs3Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_ito
     bool bad_signature;
     FindAllImageStart(_ioAccess, cntx_image_start, &cntx_image_num, _cntx_magic_pattern);
     if (cntx_image_num == 0) {
-        return errmsg(MLXFW_NO_VALID_IMAGE_ERR, "No valid FS3 image found");
+        return errmsg(MLXFW_NO_VALID_IMAGE_ERR, "\nNo valid FS3 image found. Check the flash parameters, if specified.");
     }
 
     u_int32_t image_start = cntx_image_start[0];
@@ -725,7 +660,7 @@ bool Fs3Operations::FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_ito
     } else {
         _fwImgInfo.cntxLog2ChunkSize = _maxImgLog2Size;
     }
-    _fwImgInfo.ext_info.is_failsafe        = true;
+    _fwImgInfo.ext_info.is_failsafe = true;
     _fwImgInfo.actuallyFailsafe  = true;
     _fwImgInfo.magicPatternFound = 1;
 
@@ -802,8 +737,7 @@ bool Fs3Operations::FsIntQueryAux(bool readRom, bool quickQuery, bool ignoreDToc
     return true;
 }
 
-bool Fs3Operations::getRunningFwVersion()
-{
+bool Fs3Operations::getRunningFwVersion() {
 #ifndef UEFI_BUILD
     reg_access_status_t reg_access_rc;
     struct reg_access_hca_mgir mgir;
@@ -888,15 +822,13 @@ reg_access_status_t Fs3Operations::getGI(mfile *mf,
 }
 
 
-bool Fs3Operations::FwQuery(fw_info_t *fwInfo, bool readRom, bool isStripedImage, bool quickQuery, bool ignoreDToc, bool verbose)
+bool Fs3Operations::FwQuery(fw_info_t *fwInfo, bool readRom, bool /*isStripedImage*/, bool quickQuery, bool ignoreDToc, bool verbose)
 {
     //isStripedImage flag is not needed in FS3 image format
-    // Avoid warning - no striped image in FS3
     DPRINTF(("Fs3Operations::FwQuery\n"));
-    (void)isStripedImage;
     reg_access_status_t rc = ME_ERROR;
     struct reg_access_hca_mgir mgir;
-    // FsIntQueryAux will update _fwImgInfo.ext_info & _fs3ImgInfo.ext_info 
+    // FsIntQueryAux will update _fwImgInfo.ext_info & _fs3ImgInfo.ext_info
     if (!FsIntQueryAux(readRom, quickQuery, ignoreDToc, verbose)) {
         return false;
     }
@@ -911,33 +843,7 @@ bool Fs3Operations::FwQuery(fw_info_t *fwInfo, bool readRom, bool isStripedImage
         }
     }
 
-    // TODO should I move this logic to fs4_ops.cpp ? 
     mfile* mf = getMfileObj();
-
-    // Security version
-    _fs3ImgInfo.ext_info.device_security_version_access_method = NOT_VALID;
-
-    if (dm_is_livefish_mode(mf) == 1){
-
-        // if cx-7 and up check if device is secure-boot and life-cycle is GA secured
-        // TODO need to add logic in cx-7 and up to check if secure-boot and life-cycle is GA secured
-        // TODO older devices doesn't have access to this GW when we're in secure mode
-
-        SecurityVersionGW securityVersionGW(getMfileObj(), _fwImgInfo.ext_info.chip_type);
-        bool isGWSupportedInLiveFish = securityVersionGW.isSupportedInLiveFish();
-
-        if (isGWSupportedInLiveFish){
-            
-            int rc;
-            u_int32_t efuse_security_version;
-            rc = securityVersionGW.getSecurityVersion(&efuse_security_version);
-            if (rc) return false;
-            _fs3ImgInfo.ext_info.device_security_version_access_method = GW;
-            _fs3ImgInfo.ext_info.device_security_version_gw = efuse_security_version;
-        }
-    }
-
-
     memcpy(&(fwInfo->fw_info),  &(_fwImgInfo.ext_info),  sizeof(fw_info_com_t));
     memcpy(&(fwInfo->fs3_info), &(_fs3ImgInfo.ext_info), sizeof(fs3_info_t));
     fwInfo->fw_type = FwType();
@@ -1006,30 +912,6 @@ bool Fs3Operations::UpdateDevDataITOC(Fs3Operations &imageOps, struct toc_info *
     return true;
 }
 
-
-// add an itoc entry to the image  (just the entry no the section itself)
-bool Fs3Operations::AddDevDataITOC(struct toc_info *flash_toc_entry, u_int8_t *image_data, struct toc_info *image_toc_arr, int& image_toc_size)
-{
-
-    if (image_toc_size + 1 > MAX_TOCS_NUM) {
-        return errmsg("Cannot add iTOC entry, too many entries in iTOC array.");
-    }
-    if (!flash_toc_entry->toc_entry.device_data) {
-        return errmsg("Cannot add non device data iTOC entry");
-    }
-    // add new entry to array
-    image_toc_arr[image_toc_size].entry_addr = image_toc_arr[image_toc_size - 1].entry_addr + CIBFW_ITOC_ENTRY_SIZE;
-    memcpy(image_toc_arr[image_toc_size].data, flash_toc_entry->data, CIBFW_ITOC_ENTRY_SIZE);
-    image_toc_arr[image_toc_size].section_data = flash_toc_entry->section_data;
-    image_toc_arr[image_toc_size].toc_entry = flash_toc_entry->toc_entry;
-    // write entry data to image_data
-    memcpy(&image_data[image_toc_arr[image_toc_size].entry_addr], image_toc_arr[image_toc_size].data, CIBFW_ITOC_ENTRY_SIZE);
-    // write END itoc entry at the end of the array
-    memset(&image_data[image_toc_arr[image_toc_size].entry_addr + CIBFW_ITOC_ENTRY_SIZE], 0xff, CIBFW_ITOC_ENTRY_SIZE);
-    image_toc_size++;
-    return true;
-}
-
 bool Fs3Operations::CheckFs3ImgSize(Fs3Operations& imageOps, bool useImageDevData)
 {
     /* there are (ATM) two image slots on the flash:
@@ -1068,14 +950,6 @@ bool Fs3Operations::CheckFs3ImgSize(Fs3Operations& imageOps, bool useImageDevDat
     }
     return true;
 }
-
-#define SUPPORTS_ISFU(chip_type) \
-    (chip_type == CT_CONNECT_IB || \
-     chip_type == CT_CONNECTX4 || chip_type == CT_CONNECTX4_LX || \
-     chip_type == CT_CONNECTX5 || \
-     chip_type == CT_CONNECTX6  || chip_type == CT_CONNECTX6DX || chip_type == CT_CONNECTX6LX || \
-     chip_type == CT_CONNECTX7 || \
-     chip_type == CT_BLUEFIELD || chip_type == CT_BLUEFIELD2 || chip_type == CT_BLUEFIELD3)
 
 u_int32_t Fs3Operations::getNewImageStartAddress(Fs3Operations &imageOps, bool isBurnFailSafe)
 {
@@ -1249,6 +1123,29 @@ bool Fs3Operations::CheckAndDealWithChunkSizes(u_int32_t cntxLog2ChunkSize, u_in
     return true;
 }
 
+bool Fs3Operations::isWriteProtected(bool& is_write_protected)
+{
+    if (_ioAccess->is_flash()) {
+        FBase *origFlashObj = (FBase*)NULL;
+        if (!((Flash*)_ioAccess)->get_ignore_cache_replacment()) {
+            origFlashObj = _ioAccess;
+            _fwParams.ignoreCacheRep = 1;
+            if (!FwOperations::FwAccessCreate(_fwParams, &_ioAccess)) {
+                _ioAccess = origFlashObj;
+                _fwParams.ignoreCacheRep = 0;
+                return errmsg(MLXFW_OPEN_OCR_ERR, "Failed to open device for direct flash access");
+            }
+        }
+        is_write_protected = ((Flash*)_ioAccess)->is_flash_write_protected();
+        FLASH_RESTORE(origFlashObj);
+    }
+    else {
+        is_write_protected = false;
+    }
+
+    return true;
+}
+
 bool Fs3Operations::FsBurnAux(FwOperations *imgops, ExtBurnParams& burnParams)
 {
     Fs3Operations& imageOps = *((Fs3Operations *) imgops);
@@ -1292,22 +1189,12 @@ bool Fs3Operations::FsBurnAux(FwOperations *imgops, ExtBurnParams& burnParams)
             }
         } else {
             // we will take device data sections from image: make sure device is not write protected
-            if (_ioAccess->is_flash()) {
-                FBase *origFlashObj = (FBase *)NULL;
-                if (!((Flash *)_ioAccess)->get_ignore_cache_replacment()) {
-                    origFlashObj = _ioAccess;
-                    _fwParams.ignoreCacheRep = 1;
-                    if (!FwOperations::FwAccessCreate(_fwParams, &_ioAccess)) {
-                        _ioAccess = origFlashObj;
-                        _fwParams.ignoreCacheRep = 0;
-                        return errmsg(MLXFW_OPEN_OCR_ERR, "Failed to open device for direct flash access");
-                    }
-                }
-                if (((Flash *)_ioAccess)->is_flash_write_protected()) {
-                    FLASH_RESTORE(origFlashObj);
-                    return errmsg("Cannot burn device data sections, Flash is write protected.");
-                }
-                FLASH_RESTORE(origFlashObj);
+            bool is_write_protected;
+            if (!isWriteProtected(is_write_protected)) {
+                return errmsg("%s", err());
+            }
+            if (is_write_protected) {
+                return errmsg("Cannot burn device data sections, Flash is write protected.");
             }
         }
     }
@@ -1631,7 +1518,7 @@ bool Fs3Operations::FwCheckIfWeCanBurnWithFwControl(FwOperations *imageOps)
      *  - Old 4MB -> Burn 7MB => Do FallBack
      *
      * when handle type is UEFI we need to do fallback to regular flow:
-     *  - if the runnig fw is signed and the fw we are going to burn is not signed 
+     *  - if the runnig fw is signed and the fw we are going to burn is not signed
      */
 
     fw_info_t dev_info_img;
@@ -2182,7 +2069,7 @@ bool Fs3Operations::Fs3UpdatePublicKeysSection(unsigned int currSectionSize, con
     if (publicKeysSizeInDW != (int)currSectionSize) {
         delete[] publicKeysData;
         if (silent == false) {
-        return errmsg("The Size of the given public keys section (%d bytes) is not valid", publicKeysSize);
+            return errmsg("The Size of the given public keys section (%d bytes) is not valid", publicKeysSize);
         }
         else {
             return false;
@@ -2661,7 +2548,7 @@ bool Fs3Operations::FwSignWithTwoRSAKeys(const char *privPemFile1, const char *u
     (void)privPemFile2;
     (void)uuid2;
     (void)printFunc;
-    return errmsg("FwSignWithOneRSAKey is not supported.");
+    return errmsg("FwSignWithTwoRSAKeys is not supported.");
 #endif
 }
 bool Fs3Operations::IsSectionExists(fs3_section_t sectType)
@@ -2692,7 +2579,7 @@ bool Fs3Operations::Fs3MemSetSignature(fs3_section_t sectType, u_int32_t size, P
     }
     return true;
 }
-bool Fs3Operations::FwSignWithOneRSAKey(const char *privPemFile, const char *uuid, PrintCallBack printFunc)
+bool Fs3Operations::signForFwUpdate(const char *privPemFile, const char *uuid, PrintCallBack printFunc)
 {
 #if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
     MlxSignRSA rsa;
@@ -2727,7 +2614,7 @@ bool Fs3Operations::FwSignWithOneRSAKey(const char *privPemFile, const char *uui
     (void)privPemFile;
     (void)uuid;
     (void)printFunc;
-    return errmsg("FwSignWithOneRSAKey is not supported.");
+    return errmsg("signForFwUpdate is not supported.");
 #endif
 }
 
@@ -2765,6 +2652,7 @@ bool Fs3Operations::FwInsertEncSHA(MlxSign::SHAType shaType, const char *privPem
     if (rc) {
         return errmsg("Failed to set private key from file (rc = 0x%x)\n", rc);
     }
+
     rc = rsa.sign(shaType, sha, encSha);
     if (rc) {
         return errmsg("Failed to encrypt the SHA (rc = 0x%x)\n", rc);
@@ -2872,7 +2760,7 @@ bool Fs3Operations::CheckPublicKeysFile(const char *fname, fs3_section_t& sectio
         } else {
             delete[] publicKeysData;
             if (silent == false) {
-            return errmsg("Invalid type of key found in the public keys file");
+                return errmsg("Invalid type of key found in the public keys file");
             }
             else {
                 return false;//without print message
@@ -3001,13 +2889,13 @@ void Fs3Operations::maskDevToc(vector<u_int8_t>& img)
     }
 }
 
-bool Fs3Operations::CreateDtoc(vector<u_int8_t>& img, u_int8_t* SectionData, u_int32_t section_size, u_int32_t flash_data_addr, 
+bool Fs3Operations::CreateDtoc(vector<u_int8_t>& img, u_int8_t* SectionData, u_int32_t section_size, u_int32_t flash_data_addr,
     fs3_section_t section, u_int32_t tocEntryAddr, bool IsCRC)
 {
     struct toc_info itoc_info_p;
     memset(&itoc_info_p.data, 0, sizeof(itoc_info_p.data));
     memset(&itoc_info_p.toc_entry, 0, sizeof(struct cibfw_itoc_entry));
-    
+
 
     itoc_info_p.section_data.resize(section_size, 0xff);
     itoc_info_p.entry_addr = tocEntryAddr;
@@ -3102,7 +2990,7 @@ bool Fs3Operations::RestoreDevToc(vector<u_int8_t>& img, char* psid, dm_dev_id_t
     struct cx4fw_device_info cx4_dev_info;
     u_int8_t DeviceSectionData[CX4FW_DEVICE_INFO_SIZE] = { 0 };
     memset(&cx4_dev_info, 0, sizeof(cx4_dev_info));
-    
+
     cx4_dev_info.major_version = 2;
     cx4_dev_info.minor_version = 0;
     cx4_dev_info.signature0 = 0x6d446576;
@@ -3132,7 +3020,7 @@ bool Fs3Operations::RestoreDevToc(vector<u_int8_t>& img, char* psid, dm_dev_id_t
     struct cx4fw_mfg_info cx4_mfg_info;
     u_int8_t MfgInfoData[CX4FW_MFG_INFO_SIZE] = { 0 };
     memset(&cx4_mfg_info, 0, sizeof(cx4_mfg_info));
-    
+
     cx4_mfg_info.major_version = 1;
     cx4_mfg_info.minor_version = 0;
     cx4_mfg_info.guids_override_en = 1;//get the GUIDs from DEV_INFO
@@ -3366,13 +3254,13 @@ bool Fs3Operations::PrepItocSectionsForCompare(vector<u_int8_t>& critical, vecto
         {
             critical.reserve(critical.size() + itoc_info_p->section_data.size());
             critical.insert(critical.end(), itoc_info_p->section_data.begin(), itoc_info_p->section_data.end());
-            //printf("-D- addr  0x%.8x toc type : 0x%.8x  size 0x%.8x name %s\n", itoc_info_p->entry_addr, itoc_info_p->toc_entry.type, 
+            //printf("-D- addr  0x%.8x toc type : 0x%.8x  size 0x%.8x name %s\n", itoc_info_p->entry_addr, itoc_info_p->toc_entry.type,
                 //(unsigned int)(itoc_info_p->section_data.size() + padding_size), GetSectionNameByType(itoc_info_p->toc_entry.type));
         }
         else
         {
-            if (itoc_info_p->toc_entry.type == FS3_VPD_R0 || itoc_info_p->toc_entry.type == FS3_MFG_INFO || itoc_info_p->toc_entry.type == FS3_DEV_INFO || 
-                itoc_info_p->toc_entry.type == FS3_NV_DATA1 || itoc_info_p->toc_entry.type == FS3_NV_DATA2 || itoc_info_p->toc_entry.type == FS3_FW_NV_LOG || 
+            if (itoc_info_p->toc_entry.type == FS3_VPD_R0 || itoc_info_p->toc_entry.type == FS3_MFG_INFO || itoc_info_p->toc_entry.type == FS3_DEV_INFO ||
+                itoc_info_p->toc_entry.type == FS3_NV_DATA1 || itoc_info_p->toc_entry.type == FS3_NV_DATA2 || itoc_info_p->toc_entry.type == FS3_FW_NV_LOG ||
                 itoc_info_p->toc_entry.type == FS3_NV_DATA0) {
                 continue;
             }
@@ -3391,7 +3279,7 @@ bool Fs3Operations::PrepItocSectionsForCompare(vector<u_int8_t>& critical, vecto
 const char* Fs3Operations::FwGetResetRecommandationStr()
 {
 
-#if defined( __VMKERNEL_UW_VMKLINUX__) || defined(__VMKERNEL_UW_NATIVE__)
+#if defined(__VMKERNEL_UW_NATIVE__)
     // mlxfwreset is not supported in VMWare ATM
     return REBOOT_REQUIRED_STR;
 #else
@@ -3690,102 +3578,67 @@ bool Fs3Operations::CalcHMAC(const vector<u_int8_t>& key, vector<u_int8_t>& dige
 #endif
 }
 
-bool Fs3Operations::AddHMACIfNeeded(Fs3Operations* imageOps, Flash *f)
+bool Fs3Operations::invalidateOldFWImages(const u_int32_t magic_pattern[], Flash *flash_access, u_int32_t new_image_start)
 {
-#if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
-    mfile* mf = _ioAccess->getMfileObj();
-    dm_dev_id_t deviceId = DeviceUnknown;
-    u_int32_t hwDevId = 0x0, hwRevId = 0x0;
+    u_int32_t zeroes = 0;
+    u_int32_t image_start_addrs[CNTX_START_POS_SIZE] = {0};
+    u_int32_t num_of_images_found;
 
-    if (dm_get_device_id(mf, &deviceId, &hwDevId, &hwRevId) ) {
-        return errmsg("Failed to identify the device - Can not add HMAC!");
-    }
-
-    if (deviceId == DeviceBlueField && mf->tp == MST_SOFTWARE) {
-        const unsigned int KEYLENGTH = 64;
-        vector<u_int8_t> key;
-        vector<u_int8_t> digest;
-
-        //read the on-chip EFUSE value of MDK, MDK 512 bits are located at 0x1c1640-0x1c167c
-        key.resize(KEYLENGTH);
-        if (mread4_block(mf, 0x1c1640, (u_int32_t*)key.data(), KEYLENGTH) != (int)KEYLENGTH) {
-            return errmsg("Failed to read MDK from CR");
-        }
-
-        if (!imageOps->CalcHMAC(key, digest)) {
-            return false;
-        }
-
-        // burn the HMAC digest
-        u_int32_t sectionSize = 0x0;
-        u_int32_t sectionOffset = 0x0;
-        if (!imageOps->GetSectionSizeAndOffset(FS3_HMAC, sectionSize, sectionOffset)) {
-            return errmsg("Could not retrieve HMAC section size and offset");
-        }
-
-        size_t digestSizeInDW = digest.size() >> 2;
-        u_int32_t* digestDWP = (u_int32_t*)digest.data();
-        for(unsigned int i = 0; i < digestSizeInDW; i++) {
-            digestDWP[i] = CPU_TO_BE32(digestDWP[i]);
-        }
-        if (!f->write(sectionOffset, digest.data(), sectionSize, true)) {
-            return errmsg(MLXFW_FLASH_WRITE_ERR, "Failed to burn HMAC digest: %s", f->err());
+    FindAllImageStart(flash_access, image_start_addrs, &num_of_images_found, magic_pattern);
+    // Address convertor is disabled after FindAllImageStart() - use phys addresses
+    for (u_int32_t i = 0; i < num_of_images_found; i++) {
+        if (image_start_addrs[i] != new_image_start) {
+            DPRINTF(("Fs3Operations::invalidateOldFWImages - Invalidating old fw signature at addr 0x%x\n", image_start_addrs[i]));
+            if (!flash_access->write(image_start_addrs[i], &zeroes, sizeof(zeroes), true)) {
+                return errmsg(MLXFW_FLASH_WRITE_ERR, "Failed to invalidate old fw signature: %s", flash_access->err());
+            }
         }
     }
-#else
-    (void)imageOps;
-    (void)f;
-    //ignore for UEFI
-#endif
     return true;
 }
 
-bool Fs3Operations::DoAfterBurnJobs(const u_int32_t magic_patter[],
-                                    Fs3Operations &imageOps, ExtBurnParams& burnParams, Flash *f,
-                                    u_int32_t new_image_start, u_int8_t is_curr_image_in_odd_chunks)
+bool Fs3Operations::bootAddrUpdate(Flash *flash_access, u_int32_t new_image_start, ExtBurnParams& burnParams)
 {
-    u_int32_t zeroes = 0;
     bool boot_address_was_updated = true;
 
     // if we access without cache replacement or the burn was non failsafe, update YU bootloaders.
     // if we access with cache replacement notify currently running fw of new image start address to crspace (for SW reset)
-    //TODO: add SwitchIB, Spectrum when we have support for ISFU
-    if (!SUPPORTS_ISFU(_fwImgInfo.ext_info.chip_type) || !burnParams.burnFailsafe || f->get_ignore_cache_replacment()) {
-        boot_address_was_updated = f->update_boot_addr(new_image_start);
+    if (!SUPPORTS_ISFU(_fwImgInfo.ext_info.chip_type) || !burnParams.burnFailsafe || flash_access->get_ignore_cache_replacment()) {
+        boot_address_was_updated = flash_access->update_boot_addr(new_image_start);
     } else {
         _isfuSupported = Fs3IsfuActivateImage(new_image_start);
         boot_address_was_updated = _isfuSupported;
     }
+
+    return boot_address_was_updated;
+}
+
+bool Fs3Operations::DoAfterBurnJobs(const u_int32_t magic_pattern[], Fs3Operations &imageOps,
+                                    ExtBurnParams& burnParams, Flash *flash_access,
+                                    u_int32_t new_image_start, u_int8_t is_curr_image_in_odd_chunks)
+{
+    u_int32_t zeroes = 0;
+    bool boot_address_was_updated = bootAddrUpdate(flash_access, new_image_start, burnParams);
 
     if (imageOps._fwImgInfo.ext_info.is_failsafe) {
         if (!burnParams.burnFailsafe) {
             // When burning in nofs, remnant of older image with different chunk size
             // may reside on the flash -
             // Invalidate all images marking on flash except the one we've just burnt
-
-            u_int32_t cntx_image_start[CNTX_START_POS_SIZE] = {0};
-            u_int32_t cntx_image_num;
-
-            FindAllImageStart(f, cntx_image_start, &cntx_image_num, magic_patter);
-            // Address convertor is disabled now - use phys addresses
-            for (u_int32_t i = 0; i < cntx_image_num; i++) {
-                if (cntx_image_start[i] != new_image_start) {
-                    if (!f->write(cntx_image_start[i], &zeroes, sizeof(zeroes), true)) {
-                        return errmsg(MLXFW_FLASH_WRITE_ERR, "Failed to invalidate old fw signature: %s", f->err());
-                    }
-                }
+            if (!invalidateOldFWImages(magic_pattern, flash_access, new_image_start)) {
+                return errmsg(MLXFW_FLASH_WRITE_ERR, "Failed to invalidate old fw signature: %s", flash_access->err());
             }
         } else {
             // invalidate previous signature
             if (_fwImgInfo.imgStart == 0x800000) {
-                f->set_address_convertor(0x17, is_curr_image_in_odd_chunks);
+                flash_access->set_address_convertor(0x17, is_curr_image_in_odd_chunks);
             } else if (_fwImgInfo.imgStart == 0x400000) {
-                f->set_address_convertor(_fwImgInfo.cntxLog2ChunkSize, 1 /*is_curr_image_in_odd_chunks*/);
+                flash_access->set_address_convertor(_fwImgInfo.cntxLog2ChunkSize, 1 /*is_curr_image_in_odd_chunks*/);
             } else {
-                f->set_address_convertor(imageOps._fwImgInfo.cntxLog2ChunkSize, is_curr_image_in_odd_chunks);
+                flash_access->set_address_convertor(imageOps._fwImgInfo.cntxLog2ChunkSize, is_curr_image_in_odd_chunks);
             }
-            if (!f->write(0, &zeroes, sizeof(zeroes), true)) {
-                return errmsg(MLXFW_FLASH_WRITE_ERR, "Failed to invalidate old fw signature: %s", f->err());
+            if (!flash_access->write(0, &zeroes, sizeof(zeroes), true)) {
+                return errmsg(MLXFW_FLASH_WRITE_ERR, "Failed to invalidate old fw signature: %s", flash_access->err());
             }
         }
     }

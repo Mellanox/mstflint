@@ -3,6 +3,7 @@
  * flint_io.cpp - FLash INTerface
  *
  * Copyright (c) 2011 Mellanox Technologies Ltd.  All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -821,6 +822,11 @@ bool Flash::sw_reset()
 
 bool Flash::get_attr(ext_flash_attr_t& attr)
 {
+    int rc = 0;
+    rc = (MfError)mf_get_jedec_id(_mfl, &attr.jedec_id);
+    if (rc != MFE_OK) {
+        return errmsg("%s (%s)", errno == 0 ? "" : strerror(errno), mf_err2str(rc));
+    }
     attr.banks_num = _attr.banks_num;
     attr.hw_dev_id = _attr.hw_dev_id;
     attr.rev_id = _attr.rev_id;
@@ -833,10 +839,15 @@ bool Flash::get_attr(ext_flash_attr_t& attr)
     attr.block_write = _attr.block_write;
     attr.command_set = _attr.command_set;
     attr.quad_en_support = _attr.quad_en_support;
+    attr.driver_strength_support = _attr.driver_strength_support;
     attr.dummy_cycles_support = _attr.dummy_cycles_support;
     // Quad EN query
     if (_attr.quad_en_support) {
         attr.mf_get_quad_en_rc = (MfError)mf_get_quad_en(_mfl, &attr.quad_en);
+    }
+    // Drive-strength query
+    if (_attr.driver_strength_support) {
+        attr.mf_get_driver_strength_rc = (MfError)mf_get_driver_strength(_mfl, &attr.driver_strength);
     }
     // Dummy Cycles query
     if (_attr.dummy_cycles_support) {
@@ -871,6 +882,7 @@ const char* Flash::getFlashType()
             return errmsg("bad argument (%s) it can be " first_op " or " second_op "", param_in); \
         } \
 }
+
 bool Flash::set_attr(char *param_name, char *param_val_str)
 {
     int rc;
@@ -939,7 +951,21 @@ bool Flash::set_attr(char *param_name, char *param_val_str)
             return errmsg("Unknown attribute %s.%s", flash_param, param_str);
         }
 
-
+    } else if (!strcmp(param_name, DRIVER_STRENGTH_PARAM)) {
+        char *endp;
+        u_int8_t driver_strength_val;
+        driver_strength_val = strtoul(param_val_str, &endp, 0);
+        if (*endp != '\0' || 
+            (driver_strength_val != 25 &&
+            driver_strength_val != 50 &&
+            driver_strength_val != 75 &&
+            driver_strength_val != 100)) {
+            return errmsg("Bad " DRIVER_STRENGTH_PARAM " value (%s), it can be [25,50,75,100]\n", param_val_str);
+        }
+        rc = mf_set_driver_strength(_mfl, driver_strength_val);
+        if (rc != MFE_OK) {
+            return errmsg("Setting " DRIVER_STRENGTH_PARAM " failed: (%s)", mf_err2str(rc));
+        }
     } else {
         return errmsg("Unknown attribute %s", param_name);
     }

@@ -1,6 +1,7 @@
 
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -67,22 +68,6 @@ public:
     virtual vector<Component>           getComponents()         const = 0;
 
     virtual ~MFA2Builder()  {};
-};
-
-
-class MFA2JSONBuilder : MFA2Builder {
-
-private:
-    Json::Value _root;
-    Json::Value _componentsJSON;
-    Json::Value _deviceDescriptorsJSON;
-
-public:
-    explicit MFA2JSONBuilder(const string& jsonContent);
-
-    PackageDescriptor           getPackageDescriptor()  const;
-    vector<DeviceDescriptor>    getDeviceDescriptors()  const;
-    vector<Component>           getComponents()         const;
 };
 
 class FWDirectoryBuilder : MFA2Builder {

@@ -33,9 +33,9 @@
  
 
 /***
-         *** This file was generated at "2019-08-11 16:47:37"
+         *** This file was generated at "2021-09-14 12:07:15"
          *** by:
-         ***    > /mswg/release/tools/a-me/last_stable/adabe_plugins/adb2c/adb2pack.py --input adb/cibfw/cibfw.adb --file-prefix cibfw --prefix cibfw_
+         ***    > /mswg/release/tools/a-me/last_stable/adabe_plugins/adb2c/adb2pack.py --input adb/cibfw/cibfw.adb --file-prefix cibfw --prefix cibfw_ --no-adb-utils
          ***/
 #include "cibfw_layouts.h"
 
@@ -681,6 +681,8 @@ void cibfw_image_info_pack(const struct cibfw_image_info *ptr_struct, u_int8_t *
 	u_int32_t offset;
 	int i;
 
+	offset = 27;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 2, (u_int32_t)ptr_struct->encrypted_fw);
 	offset = 25;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 1, (u_int32_t)ptr_struct->long_keys);
 	offset = 24;
@@ -762,6 +764,8 @@ void cibfw_image_info_unpack(struct cibfw_image_info *ptr_struct, const u_int8_t
 	u_int32_t offset;
 	int i;
 
+	offset = 27;
+	ptr_struct->encrypted_fw = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 2);
 	offset = 25;
 	ptr_struct->long_keys = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 1);
 	offset = 24;
@@ -851,6 +855,8 @@ void cibfw_image_info_print(const struct cibfw_image_info *ptr_struct, FILE *fd,
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "======== cibfw_image_info ========\n");
 
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "encrypted_fw         : " UH_FMT "\n", ptr_struct->encrypted_fw);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "long_keys            : " UH_FMT "\n", ptr_struct->long_keys);
 	adb2c_add_indentation(fd, indent_level);

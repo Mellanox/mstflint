@@ -1,5 +1,6 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -138,6 +139,8 @@ typedef void*trm_ctx;
     ((dev_id) == BLUEFIELD_HW_ID)
 #define IS_BLUEFEILD2(dev_id) \
     ((dev_id) == BLUEFIELD2_HW_ID)
+#define IS_BLUEFEILD3(dev_id) \
+    ((dev_id) == BLUEFIELD3_HW_ID)
 #define IS_QUANTUM2(dev_id) \
     ((dev_id) == QUANTUM2_HW_ID)
 #define IS_SPECTRUM4(dev_id) \
@@ -156,12 +159,16 @@ typedef int (*f_mf_reset)(mflash *mfl);
 
 typedef int (*f_st_spi_status)(mflash *mfl, u_int8_t op_type, u_int8_t *status);
 typedef int (*f_mf_get_info)(mflash *mfl, flash_info_t *f_info, int *log2size, u_int8_t *no_flash);
+typedef int (*f_mf_get_jedec_id)(mflash *mfl, u_int32_t *jedec_id);
 
 /*
  * flash parameters methods get/set
  */
 typedef int (*f_mf_get_quad_en)(mflash *mfl, u_int8_t *quad_en);
 typedef int (*f_mf_set_quad_en)(mflash *mfl, u_int8_t quad_en);
+
+typedef int (*f_mf_get_driver_strength)(mflash *mfl, u_int8_t *driver_strength);
+typedef int (*f_mf_set_driver_strength)(mflash *mfl, u_int8_t driver_strength);
 
 typedef int (*f_mf_get_write_protect)(mflash *mfl, u_int8_t bank_num, write_protect_info_t *protect_info);
 typedef int (*f_mf_set_write_protect)(mflash *mfl, u_int8_t bank_num, write_protect_info_t *protect_info);
@@ -191,6 +198,7 @@ struct mflash {
 
     f_mf_set_bank f_set_bank;
     f_mf_get_info f_get_info;
+    f_mf_get_jedec_id f_get_jedec_id;
 
     f_mf_read f_read;
     f_mf_write f_write;
@@ -201,6 +209,8 @@ struct mflash {
 
     f_mf_get_quad_en f_get_quad_en;
     f_mf_set_quad_en f_set_quad_en;
+    f_mf_get_driver_strength f_get_driver_strength;
+    f_mf_set_driver_strength f_set_driver_strength;
     f_mf_get_write_protect f_get_write_protect;
     f_mf_set_write_protect f_set_write_protect;
     f_mf_get_dummy_cycles f_get_dummy_cycles;
@@ -264,11 +274,12 @@ enum AccessTypeByMfile {
 enum CntxCrConstants {
     HCR_FLASH_CMD = 0xf0400,
     HCR_FLASH_ADDR = 0xf0404,
+    HCR_FLASH_NEW_GW_ADDR = 0xf0420,
     HCR_FLASH_CACHE_REPLACEMENT_OFFSET = 0xf0408,
     HCR_FLASH_CACHE_REPLACEMENT_CMD = 0xf040c,
-    HCR_FLASH_NEW_GW_ADDR = 0xf0420,
     HCR_FLASH_DATA = 0xf0410,
     HCR_CACHE_REPLACEMNT_EN_ADDR = 0xf0420,
+    HCR_NEW_GW_CACHE_REPLACEMNT_EN_ADDR = 0xf0480,
     HCR_FLASH_GEARBOX_CMD = 0x2000,
     HCR_FLASH_GEARBOX_ADDR = 0x2004,
     HCR_FLASH_GEARBOX_CACHE_REPLACEMENT_OFFSET = 0x2008,

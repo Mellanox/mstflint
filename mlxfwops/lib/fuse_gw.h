@@ -31,50 +31,86 @@
  * SOFTWARE.
  */
 
-#ifndef SECURITY_VERSION_GW_
-#define SECURITY_VERSION_GW_
+#ifndef FUSE_GW_H
+#define FUSE_GW_H
 
 #include <mtcr.h>
 #include "flint_base.h"
 
-class SecurityVersionGW {
+#define BYTE_SIZE 8
 
+using namespace std;
+
+class FuseGW 
+{
 public:
-    SecurityVersionGW(mfile* mf, chip_type_t chip_type):_mf(mf),_chip_type(chip_type){};
-    ~SecurityVersionGW() {};
-
-    bool isAccessibleInLiveFish();
-    bool getSecurityVersion(u_int32_t* result);
+    FuseGW(mfile* mf);
+    ~FuseGW() {};
+        
+    void getData(u_int32_t& data);
+    void setGWAddress(u_int32_t address);
+    void setDataAddress(u_int32_t address);
+    void setFieldBitOffset(size_t offset);
+    void setFieldBitLen(size_t len);
 
 private:
     mfile* _mf;
-    chip_type_t _chip_type;
+    u_int32_t _gw_address;
+    u_int32_t _data_address; 
+    size_t _data_bit_offset; 
+    size_t _data_bit_len;
+
     u_int32_t static const GW_NOT_SUPPORTED = 0x0;
-    typedef enum {ROLLBACK_PROTECTION, MINIMAL_VERSION} gw_type_t;
-
-    u_int32_t _ctrl_address; 
-    u_int32_t _result1_address;
-    u_int32_t _result2_address;
-
     u_int32_t static const CTRL_LOCK = 0x80000000;
-    u_int32_t static const CTRL_RW = 0x40000000;
+    u_int32_t static const CTRL_RW   = 0x40000000;
     u_int32_t static const CTRL_READ = CTRL_RW & 0xffffffff;
-    u_int32_t static const CTRL_BUSY = 0x20000000;
-
-
-    void getRollbackProtection(u_int32_t* result);
-    void getMinimalSecurityVersion(u_int32_t* result);
-    void setGWAddress(gw_type_t gw_type);
+    u_int32_t static const CTRL_BUSY = 0x20000000;    
+    u_int32_t static const CTRL_SIZE = 0x4;
 
     void lock();
     void executeReadCommand();
     void waitForResult();
-    void readResult1(u_int32_t* result);
-    void readResult2(u_int32_t* result);
+    void readResult(u_int32_t& result);
     void unlock();
 
-    u_int32_t countSetBits(u_int32_t num);
-
+    void alignBits(u_int8_t* src, size_t byte_len, size_t bit_offset);
 };
 
-#endif /*SECURITY_VERSION_GW_*/
+
+class LifeCycleFuse
+{
+public:
+    LifeCycleFuse(mfile* mf, chip_type_t chip_type);
+    ~LifeCycleFuse() {};
+
+    bool isAccessibleInLiveFish();
+    int getStatus(life_cycle_t& life_cycle);
+
+private:
+    life_cycle_t calcMajorityVote4B(u_int32_t data);
+    u_int8_t calcOnBits1B(u_int8_t byte);
+
+    FuseGW _gw;
+    chip_type_t _chip_type;
+    
+    bool _is_supported_in_live_fish;
+};
+
+
+class SecureBootFuse
+{
+public:
+    SecureBootFuse(mfile* mf, chip_type_t chip_type);
+    ~SecureBootFuse() {};
+
+    bool isAccessibleInLiveFish();
+    int isSecureBoot(bool& is_secure_boot);
+
+private:
+    FuseGW _gw;
+    chip_type_t _chip_type;
+    bool _is_supported_in_live_fish;
+};
+
+
+#endif /*FUSE_GW_H*/

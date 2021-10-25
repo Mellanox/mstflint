@@ -1,5 +1,6 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -48,6 +49,8 @@ typedef struct tools_open_mcdd_reg mcddReg;
 class DMAComponentAccess : public AbstractComponentAccess
 {
 public:
+    DMAComponentAccess(FwCompsMgr* Manager, mfile * Mf) : AbstractComponentAccess(Manager, Mf) {}
+    virtual ~DMAComponentAccess() {}
     virtual bool accessComponent(u_int32_t updateHandle, u_int32_t offset,
         u_int32_t size,
         u_int32_t* data,
@@ -55,8 +58,7 @@ public:
         const char* currComponentStr,
         ProgressCallBackAdvSt *progressFuncAdv);
     bool allocateMemory();
-    DMAComponentAccess(FwCompsMgr* Manager, mfile * Mf) : AbstractComponentAccess(Manager, Mf) {}
-    virtual ~DMAComponentAccess() {}
+    static bool isBMESet(mfile* mf);
     virtual fw_comps_error_t getLastFirmwareError() { return _lastFwError; }
     virtual reg_access_status_t  getLastRegisterAccessStatus() {return _lastRegisterAccessStatus;}
 

@@ -1,5 +1,6 @@
 /*
  * Copyright (C) Jan 2020 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -234,8 +235,7 @@ int new_gw_int_spi_get_status_data(mflash *mfl, u_int8_t op_type, u_int32_t *sta
     }
     rc = new_gw_exec_cmd_get(mfl, gw_cmd, &flash_data, 1, (u_int32_t*)NULL, "Read id");
     CHECK_RC(rc);
-    DPRINTF(("NEW gateway cntx_int_spi_get_status_data: op=%02x status=%08x\n", op_type, flash_data));
-    // printf("-D- new_gw_int_spi_get_status_data: op=%02x status=%08x\n", op_type, flash_data);
+    DPRINTF(("new_gw_int_spi_get_status_data: op=%02x status=%08x\n", op_type, flash_data));
     *status = (flash_data >> 8 * (4 - bytes_num));
     return MFE_OK;
 }
@@ -303,7 +303,7 @@ int new_gw_st_spi_erase_sect(mflash *mfl, u_int32_t addr)
 
     gw_addr = addr & ONES32(mfl->attr.log2_bank_size);
 
-    DPRINTF(("-D- cntx_st_spi_erase_sect: addr = %#x, gw_cmd = %#x.\n", addr, gw_cmd));
+    DPRINTF(("new_gw_st_spi_erase_sect: addr = %#x, gw_cmd = %#x.\n", addr, gw_cmd));
 
     rc = new_gw_exec_cmd_set(mfl, gw_cmd, (u_int32_t*)NULL, 0, &gw_addr, "ES");
     CHECK_RC(rc);
@@ -321,6 +321,8 @@ int new_gw_st_spi_block_write_ex(mflash *mfl, u_int32_t blk_addr, u_int32_t blk_
     u_int32_t gw_cmd = 0;
     u_int32_t gw_addr = 0;
     u_int32_t buff[4];
+
+    DPRINTF(("new_gw_st_spi_block_write_ex(addr=%05x, u_int32_t size=%05x, first=%d, last=%d)\n", blk_addr, blk_size, (u_int32_t) is_first, (u_int32_t) is_last));
 
     if (blk_addr & ((u_int32_t)mfl->attr.block_write - 1)) {
         return MFE_BAD_ALIGN;

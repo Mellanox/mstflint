@@ -1,5 +1,6 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -1633,7 +1634,7 @@ bool Fs2Operations::ReburnNewImage(u_int8_t *data, const char *feature_name, Pro
     // Burn the Image after modifying the VSD.
 
     // Create a fwOperations object of the modified image
-    FwOperations *newOps = FwOperationsCreate((void*)data, (void*)&length, (char*)NULL, FHT_FW_BUFF);
+    FwOperations *newOps = FwOperationsCreate((void*)data, (void*)&length, (char*)NULL, FHT_FW_BUFF, NULL, 0, _fwParams.ignoreCrcCheck);
 
     // Verify the new image and exit if it's not VALID.
     if (!((Fs2Operations*)newOps)->Fs2IntQuery()) {
@@ -1911,7 +1912,7 @@ bool Fs2Operations::FwBurnRom(FImage *romImg, bool ignoreProdIdCheck, bool ignor
         return false;
     }
     // open the image
-    FwOperations *newOps = FwOperationsCreate((void*)&new_data[0], (void*)&new_image_size, (char*)NULL, FHT_FW_BUFF);
+    FwOperations *newOps = FwOperationsCreate((void*)&new_data[0], (void*)&new_image_size, (char*)NULL, FHT_FW_BUFF, NULL, 0, _fwParams.ignoreCrcCheck);
     if (!newOps) {
         return errmsg("Internal error: The prepared image is corrupted.");
     }
@@ -1989,7 +1990,7 @@ bool Fs2Operations::FwDeleteRom(bool ignoreProdIdCheck, ProgressCallBack progres
     }
 
     // Burn the Image after the ROM was removed.
-    FwOperations *newOps = FwOperationsCreate((void*)&new_data[0], (void*)&new_image_size, (char*)NULL, FHT_FW_BUFF);
+    FwOperations *newOps = FwOperationsCreate((void*)&new_data[0], (void*)&new_image_size, (char*)NULL, FHT_FW_BUFF, NULL, 0, _fwParams.ignoreCrcCheck);
     if (!newOps) {
         return errmsg("Internal error: The prepared image after removing the ROM is corrupted.");
     }

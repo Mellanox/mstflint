@@ -1,6 +1,7 @@
 
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -231,19 +232,19 @@ int Mlxarchive::run(int argc, char **argv)
     }
     paramValidate();
     if(_mfa2file.empty()) {
-    string outputFile = _outFile;
-    string content = "";
-    vector<u_int8_t> buff;
-    MFA2PackageGen mfa2PackageGen;
-    string dir = _binsDir;
-    string version = _version;
+        string outputFile = _outFile;
+        string content = "";
+        vector<u_int8_t> buff;
+        MFA2PackageGen mfa2PackageGen;
+        string dir = _binsDir;
+        string version = _version;
 
-    buff.clear();
-    mfa2PackageGen.generateBinFromFWDirectory(dir, version, buff);
-    //Save output to a file
-    if (!writeToFile(outputFile, buff)) {
-        fprintf(stderr, "-E- Cannot write to the file %s\n",   outputFile.c_str());
-        exit(1);
+        buff.clear();
+        mfa2PackageGen.generateBinFromFWDirectory(dir, version, buff);
+        //Save output to a file
+        if (!writeToFile(outputFile, buff)) {
+            fprintf(stderr, "-E- Cannot write to the file %s\n",   outputFile.c_str());
+            exit(1);
         }
     } else {
         MFA2 * mfa2Pkg = MFA2::LoadMFA2Package(_mfa2file);

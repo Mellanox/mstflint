@@ -1,6 +1,7 @@
 
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -64,20 +65,6 @@ protected:
         ComponentDescriptorType
     };
     MFA2Type descriptorTypeToMFA2Type(DescriptorType type);
-
-    /*class MultiPart : private Element {
-    private:
-        u_int8_t    _numberOfExtensions;
-        u_int16_t   _length;
-
-        const static u_int8_t  ELEMENT_VERSION = 0x0;
-        const static u_int32_t LENGTH  = TOOLS_OPEN_MULTI_PART_SIZE;
-    public:
-        MultiPart()
-        void pack(vector<u_int8_t>& buff);
-    };
-
-    MultiPart           _multiPart;*/
     vector<Extension*>  _extensions;
 public:
     Descriptor(u_int8_t vesrion, DescriptorType type, u_int32_t length);
@@ -88,8 +75,6 @@ public:
     bool unpackMultiPart(u_int8_t &extensionsCount, u_int16_t &totalLength, Mfa2Buffer & buff);
     virtual void pack(vector<u_int8_t>& buff) const = 0;
     virtual bool unpack(Mfa2Buffer & buff) = 0;
-    u_int16_t getExtensionsCount() const { return _extensions.size(); }
-    Extension * getExtension(int index) { return _extensions[index];}
 };
 
 inline void Descriptor::addExtension(Extension* extension)
@@ -105,13 +90,8 @@ private:
     u_int32_t                   _componentsBlockOffset;
     u_int32_t                   _componentsBlockArchiveSize;
     u_int64_t                   _componentsBlockSize;
-    //u_int8_t                  _componentBlockCompression;
     SHA256Extension             _SHA256Extension;
     SHA256Extension             _descriptorsSHA256Extension;
-
-    u_int32_t                   _packageDescriptorStructOffset;
-    u_int32_t                   _SHA256ExtensionOffset;
-    u_int32_t                   _descriptorsSHA256ExtensionOffset;
 public:
     const static u_int8_t  ELEMENT_VERSION = 0x0;
     const static u_int32_t LENGTH  = TOOLS_OPEN_PACKAGE_DESCRIPTOR_SIZE;

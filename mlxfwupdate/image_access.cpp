@@ -1,6 +1,7 @@
 
 /*
  * Copyright (C) Jan 2006 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -572,7 +573,7 @@ bool ImageAccess::extract_pldm_image_info(const u_int8_t * buff, u_int32_t size,
                 fw_ver[0] = image_info.FW_VERSION.MAJOR;
                 fw_ver[1] = image_info.FW_VERSION.MINOR;
                 fw_ver[2] = image_info.FW_VERSION.SUBMINOR;
-                strncpy(fw_branch, image_info.vsd, BRANCH_LEN);
+                (strncpy(fw_branch, image_info.vsd, BRANCH_LEN));
                 fw_branch[BRANCH_LEN] = (char) 0;
                 ImgVersion imgv;
                 imgv.setVersion("FW", FW_VER_SIZE, fw_ver, fw_branch);

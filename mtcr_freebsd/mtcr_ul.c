@@ -2632,13 +2632,12 @@ int get_i2c_freq(mfile* mf, u_int8_t* freq) {
 }
 
 
-int read_dword_from_conf_space(u_int32_t offset, mfile *mf,
-                               struct mtcr_read_dword_from_config_space* read_config_space)
+int read_dword_from_conf_space(mfile *mf, u_int32_t offset, u_int32_t* data)
 {
     int ret = 0;
 
     // Parameters validation.
-    if(!mf || !read_config_space)
+    if(!mf || !data)
     {
         return -1;
     }
@@ -2654,7 +2653,7 @@ int read_dword_from_conf_space(u_int32_t offset, mfile *mf,
 
     if (!ret) {
         // read the data.
-        READ4_PCI(mf, &read_config_space->data, offset, "read value", return -1);
+        READ4_PCI(mf, data, offset, "read value", return -1);
     }
 
     // clear semaphore

@@ -1,6 +1,7 @@
 
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -286,18 +287,6 @@ bool MFA2::unzipComponent(map_string_to_component& matchingComponentsMap, u_int3
     Component* requiredComponent = &itAtOffset->second;
     return extractComponent(requiredComponent, fwBinaryData);
 }
-
-bool MFA2::getLatestComponent(vector<u_int8_t>& fwBinaryData, u_int16_t fw_ver[3])
-{
-    map_string_to_component matchingComponentsMap = getMatchingComponents(NULL, fw_ver);
-    map_string_to_component::iterator itAtKey = matchingComponentsMap.find(_latestComponentKey);
-    if (itAtKey == matchingComponentsMap.end()) {
-        return false;
-    }
-    Component* requiredComponent = &itAtKey->second;
-    return extractComponent(requiredComponent, fwBinaryData);
-}
-
 
 map_string_to_component MFA2::getMatchingComponents(char* device_psid, u_int16_t fw_ver[3])
 {

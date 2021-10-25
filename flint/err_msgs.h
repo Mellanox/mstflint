@@ -3,6 +3,7 @@
  * err_msgs.h - FLash INTerface
  *
  * Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -85,7 +86,7 @@ typedef enum {
 #define FLINT_INVALID_FLAG_WITH_CMD_ERROR     "Cannot specify flag: %s with Command: %s\n"
 #define FLINT_CMD_VERIFY_ERROR                "FW image verification failed: %s. AN HCA DEVICE CAN NOT BOOT FROM THIS IMAGE.\n"
 #define FLINT_CMD_VERIFY_ERROR_1              "FW image verification failed: No valid FS4 image found.Check the flash parameters, if specified..AN HCA DEVICE CAN NOT BOOT FROM THIS IMAGE"
-#define FLINT_FAILED_QUERY_ERROR              "Failed to query %s: %s.%s\n"
+#define FLINT_FAILED_QUERY_ERROR              "Failed to query %s: %s. %s\n"
 #define FLINT_COMMAND_DEVICE_IMAGE_ERROR      "Command \"%s\" requires both image and device to be specified.\n"
 #define FLINT_COMMAND_DEVICE_ERROR            "Command \"%s\" requires device, but an image file was given.\n"
 #define FLINT_COMMAND_IMAGE_ERROR             "Command \"%s\" requires an image file, but device was given.\n"
@@ -143,8 +144,8 @@ typedef enum {
 #define FLINT_CHECKSUM_PARSE_ERROR            "Failed to parse given checksum.\n"
 #define FLINT_CHECKSUM_LEN_ERROR              "MD5 checksum should be exactly 16 bytes long.\n"
 #define FLINT_CHECKSUM_HEX_ERROR              "MD5 checksum should contain only hexadecimal digits.\n"
-#define FLINT_CACHE_IMAGE_ERROR                 "Failed to issue image cache request to driver. %s. make sure Mellanox driver is loaded and working properly.\n"
-#define FLINT_SET_PUBLIC_KEYS_ERROR            "Failed to set the public keys: %s\n"
+#define FLINT_CACHE_IMAGE_ERROR               "Failed to issue image cache request to driver. %s. make sure Mellanox driver is loaded and working properly.\n"
+#define FLINT_SET_PUBLIC_KEYS_ERROR           "Failed to set the public keys: %s\n"
 #define FLINT_SET_FORBIDDEN_VERSIONS_ERROR    "Failed to set the forbidden versions: %s\n"
 #define FLINT_SIGN_ERROR                      "Failed to sign the image: %s\n"
 #define FLINT_HMAC_ERROR                      "Failed to add HMAC: %s\n"

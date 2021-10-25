@@ -34,47 +34,28 @@
 #include "fw_comps_mgr_direct_access.h"
 #include "fw_comps_mgr_dma_access.h"
 
-AbstractComponentAccess* ComponentAccessFactory::createDataAccessObject(FwCompsMgr* Manager, mfile *Mf, bool isMCDDRegisterSupported)
+AbstractComponentAccess* ComponentAccessFactory::createDataAccessObject(FwCompsMgr* manager, mfile *mf, bool isMCDDRegisterSupported)
 {
 #ifndef UEFI_BUILD
     
     if (getenv("DISABLE_DMA_ACCESS") != NULL) {
-        return new DirectComponentAccess(Manager, Mf);
+        return new DirectComponentAccess(manager, mf);
     }
 #endif
 
     // DMA is supported only when COMMAND[BME] is set in PCI configuration
     bool isBmeSet = false;
-#ifdef __WIN__
-    isBmeSet = true; // mst64 (system service that is loaded in mtcr::open()) will set the BME
-#else
-    isBmeSet = false;
-
     if (isMCDDRegisterSupported) {
-
-        int COMMAND_REG_OFFSET = 0x4;
-        int BME_MASK = 0x00000004;
-
-        mtcr_read_dword_from_config_space result;
-        int rc = read_dword_from_conf_space(COMMAND_REG_OFFSET, Mf, &result);
-
-        if ((rc == 0) && (result.data & BME_MASK)) {
-            isBmeSet = true;
-        }
-    }
-#endif
-
-    if (isMCDDRegisterSupported && isBmeSet){
-        DMAComponentAccess* dmaComponentAccess = new DMAComponentAccess(Manager, Mf);
-        if (dmaComponentAccess->allocateMemory()) {
-            return dmaComponentAccess;
-        }
-        else {
-            delete dmaComponentAccess;
-            return new DirectComponentAccess(Manager, Mf);
-        }
-    } else {
-        return new DirectComponentAccess(Manager, Mf);
+        isBmeSet = DMAComponentAccess::isBMESet(mf);
     }
 
+    AbstractComponentAccess* component_access = NULL;
+    if (isMCDDRegisterSupported && isBmeSet) {
+        component_access = new DMAComponentAccess(manager, mf);
+    }
+    else {
+        component_access = new DirectComponentAccess(manager, mf);
+    }
+
+    return component_access;
 }

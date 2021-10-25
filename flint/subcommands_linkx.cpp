@@ -42,9 +42,10 @@
 #include <string>
 
 #include "mtcr.h"
-#include <common/compatibility.h>
-#include <fw_comps_mgr/fw_comps_mgr.h>
-#include <mlxfwops/lib/fw_version.h>
+#include "common/compatibility.h"
+#include "fw_comps_mgr/fw_comps_mgr.h"
+#include "fw_comps_mgr/fw_comps_mgr_dma_access.h"
+#include "mlxfwops/lib/fw_version.h"
 #include "subcommands.h"
 #include "tools_layouts/cx4fw_layouts.h"
 
@@ -313,14 +314,8 @@ FlintStatus BurnSubCommand::BurnLinkX(string deviceName, int deviceIndex, int de
         printf("-I- Downloading FW ...\n");
         if (fwCompsAccess->isMCDDSupported()) {
             // Checking if BME is disabled to print indication to user
-            // TODO - this is code duplication from fw_comps_mgr_abstract_access.cpp, move to a single place
-            int COMMAND_REG_OFFSET = 0x4;
-            int BME_MASK = 0x00000004;
-
-            mtcr_read_dword_from_config_space result;
-            int rc = read_dword_from_conf_space(COMMAND_REG_OFFSET, fwCompsAccess->getMfileObj(), &result);
-
-            if ((rc != 0) || !(result.data & BME_MASK)) {
+            bool isBmeSet = DMAComponentAccess::isBMESet(fwCompsAccess->getMfileObj());
+            if (!isBmeSet) {
                 printf("-W- DMA burning is not supported due to BME is unset (Bus Master Enable).\n");
             }
         }

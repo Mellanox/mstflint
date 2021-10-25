@@ -1,6 +1,7 @@
 
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -70,10 +71,6 @@ public:
     void packData(vector<u_int8_t>& buff) {
         _fingerPrint.pack(buff);
         _descriptor.packData(buff);
-    };
-
-    void unpackData(vector<u_int8_t>& buff) {
-        _descriptor.unpackData(buff);
     };
     u_int32_t getComponentBinarySize() const;
     u_int64_t getBinaryComponentOffset();
