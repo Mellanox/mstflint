@@ -170,6 +170,7 @@ public:
     std::map<u_int32_t, u_int32_t>   _ExtETHSpeed2Lanes;
     std::map<u_int32_t, string>      _SLTPBadSetStatus2Str;
     std::map<u_int32_t, string>      _SLTP16BadSetStatus2Str;
+    std::map<u_int32_t, string>      _SLTP7BadSetStatus2Str;
     std::map<u_int32_t, std::string> _ethANFsmState;
     std::map<u_int32_t, std::string> _fecModeActive;
     std::map<u_int32_t, std::string> _loopbackModeList;

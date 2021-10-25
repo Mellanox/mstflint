@@ -62,6 +62,7 @@ void MlxlinkMaps::initPortStateMapping()
     _pmFsmState[PHY_MNGR_ACTIVE_LINKUP] = "Active";
     _pmFsmState[PHY_MNGR_CLOSE_PORT] = "Close port";
     _pmFsmState[PHY_MNGR_PHYSICAL_LINKUP] = "Physical LinkUp";
+    _pmFsmState[PHY_MNGR_RX_DISABLE] = "Rx disable";
 
     _networkProtocols[IB] = "InfiniBand";
     _networkProtocols[ETH] = "Ethernet";
@@ -543,6 +544,13 @@ void MlxlinkMaps::initLinkDownInfoMapping()
 
 void MlxlinkMaps::initSltpStatusMapping()
 {
+    _SLTP7BadSetStatus2Str[BAD_STAT_7NM_INVALID_PRE3] = "pre3 is out of range";
+    _SLTP7BadSetStatus2Str[BAD_STAT_7NM_INVALID_PRE2] = "pre2 is out of range";
+    _SLTP7BadSetStatus2Str[BAD_STAT_7NM_INVALID_PRE1] = "pre1 is out of range";
+    _SLTP7BadSetStatus2Str[BAD_STAT_7NM_INVALID_MAIN] = "main tap is out of range";
+    _SLTP7BadSetStatus2Str[BAD_STAT_7NM_INVALID_POST] = "sum of taps is out of range";
+    _SLTP7BadSetStatus2Str[BAD_STAT_7NM_TAP_SPEED_MISMATCH] = "taps not aligned with speed";
+
     _SLTP16BadSetStatus2Str[SET_STATUS16_INVALID_PARM] =
             "taps values can't be set to serdes due to internal limitations. ";
     _SLTP16BadSetStatus2Str[SET_STATUS16_ILLEGAL_M2LP_AMP] =
@@ -578,6 +586,7 @@ void MlxlinkMaps::cmisIbComlianceMapping()
     _cableComplianceCmisIb[CMIS_IB_COMPLIANCE_CODE_FDR] = "FDR";
     _cableComplianceCmisIb[CMIS_IB_COMPLIANCE_CODE_EDR] = "EDR";
     _cableComplianceCmisIb[CMIS_IB_COMPLIANCE_CODE_HDR] = "HDR";
+    _cableComplianceCmisIb[CMIS_IB_COMPLIANCE_CODE_NDR] = "NDR";
 }
 
 void MlxlinkMaps::cimsCableBreakoutMapping()

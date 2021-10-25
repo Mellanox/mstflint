@@ -539,7 +539,7 @@ void MlxlinkAmBerCollector::getPpcntErrors(u_int32_t portType, vector<AmberField
     u_int64_t symErrors = add32BitTo64(
                         getFieldValue("phy_symbol_errors_high"),
                         getFieldValue("phy_symbol_errors_low"));
-    fields.push_back(AmberField(preTitle + "Symbol Errors", to_string(symErrors)));
+    fields.push_back(AmberField(preTitle + "Symbol Errors", to_string(symErrors), _isPortIB));
 }
 
 void MlxlinkAmBerCollector::getPpcntBer(u_int32_t portType, vector<AmberField> &fields)
@@ -566,7 +566,7 @@ void MlxlinkAmBerCollector::getPpcntBer(u_int32_t portType, vector<AmberField> &
 
     berStr = to_string(getFieldValue("symbol_fec_ber_coef")) + "E-" +
              to_string(getFieldValue("symbol_ber_magnitude"));
-    fields.push_back(AmberField(preTitle + "Symbol BER", berStr));
+    fields.push_back(AmberField(preTitle + "Symbol BER", berStr, _isPortIB));
 }
 
 vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
@@ -660,9 +660,8 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
                 }
                 histPerLane.push_back(val);
             }
-            fields.push_back(AmberField("F.C. Zero Hist", firstZeroHist >= 0?
-                                                                            to_string(firstZeroHist)
-                                                                            : "N/A"));
+            fields.push_back(AmberField("FC Zero Hist", firstZeroHist >= 0 ? to_string(firstZeroHist)
+                                                                           : "N/A"));
             fields.push_back(AmberField("Number of histogram bins", to_string(numOfBins)));
             fillParamsToFields("hist", histPerLane, fields, false);
             // Getting raw errors per lane for ETH and IB only
@@ -780,7 +779,7 @@ void MlxlinkAmBerCollector::getSlrgFields(vector<AmberField> &fields)
             fillParamsToFields("mid_eye", slrgParams[SLRG_PARAMS_INITIAL_FOM], fields);
             fillParamsToFields("lower_eye", slrgParams[SLRG_PARAMS_INITIAL_FOM], fields);
         }
-        fillParamsToFields("composite_eye", slrgParams[SLRG_PARAMS_INITIAL_FOM], fields);
+        fillParamsToFields("composite_eye", slrgParams[SLRG_PARAMS_LAST_FOM], fields);
     } else if (_productTechnology == PRODUCT_16NM) {
         // Getting 16nm SLRG information for all lanes
         for (; lane < _numOfLanes; lane++) {
@@ -1086,10 +1085,10 @@ void MlxlinkAmBerCollector::getModuleInfoPage(vector<AmberField> &fields)
         getIbComplianceCodes(ibComplianceCodeStr);
     }
 
-    fields.push_back(AmberField("ethernet_compliance_code",  ethComplianceStr));
-    fields.push_back(AmberField("ext_ethernet_compliance_code",  extComplianceStr));
-    fields.push_back(AmberField("ib_compliance_code",  ibComplianceCodeStr));
-    fields.push_back(AmberField("ib_width",  ibWidthStr));
+    fields.push_back(AmberField("ethernet_compliance_code",  ethComplianceStr, _isPortETH));
+    fields.push_back(AmberField("ext_ethernet_compliance_code",  extComplianceStr, _isPortETH));
+    fields.push_back(AmberField("ib_compliance_code",  ibComplianceCodeStr, _isPortIB));
+    fields.push_back(AmberField("ib_width",  ibWidthStr, _isPortIB));
     fields.push_back(AmberField("Memory map rev",  getFieldStr("memory_map_rev")));
     fields.push_back(AmberField("Cable PN",  getAscii("vendor_pn", 16)));
     fields.push_back(AmberField("Cable SN",  getAscii("vendor_sn", 16)));
