@@ -2827,7 +2827,7 @@ int maccess_reg_ul(mfile *mf,
     }
 
     if (supports_reg_access_gmp_ul(mf, reg_method)) {
-        rc = mib_send_gmp_access_reg_mad(mf, (u_int32_t *)reg_data, reg_size, reg_id, reg_method, reg_status);
+        rc = mib_send_gmp_access_reg_mad_ul(mf, (u_int32_t *)reg_data, reg_size, reg_id, reg_method, reg_status);
         if (rc == ME_OK && *reg_status == 0) {
             return ME_OK;
         }
@@ -2878,6 +2878,39 @@ int supports_reg_access_cls_a_ul(mfile *mf, maccess_reg_method_t reg_method)
     return 0;
 #endif
 }
+
+
+int mib_send_cls_a_access_reg_mad_ul(mfile *mf, u_int8_t *data)
+{
+#ifndef MST_UL
+    return mib_send_cls_a_access_reg_mad(mf, data);
+#else
+    (void)mf;
+    (void)data;
+    return 0;
+#endif
+}
+
+
+int mib_send_gmp_access_reg_mad_ul(mfile *mf, u_int32_t *data,
+                                   u_int32_t reg_size, u_int32_t reg_id,
+                                   maccess_reg_method_t reg_method, int *reg_status)
+{
+#ifndef MST_UL
+    return mib_send_gmp_access_reg_mad(mf, data,
+                                       reg_size, reg_id,
+                                       reg_method, reg_status);
+#else
+    (void)mf;
+    (void)data;
+    (void)reg_size;
+    (void)reg_id;
+    (void)reg_method;
+    (void)reg_status;
+    return 0;
+#endif
+}
+
 
 static int init_operation_tlv(struct OperationTlv *operation_tlv, u_int16_t reg_id, u_int8_t method)
 {
@@ -2970,7 +3003,7 @@ static int mreg_send_raw(mfile *mf, u_int16_t reg_id, maccess_reg_method_t metho
     //printf("-D- reg_size = %d, r_size_reg = %d , w_size_reg = %d \n",reg_size,r_size_reg,w_size_reg);
 
     if (class_to_use == MAD_CLASS_A_REG_ACCESS) {
-        mad_rc = mib_send_cls_a_access_reg_mad(mf, buffer);
+        mad_rc = mib_send_cls_a_access_reg_mad_ul(mf, buffer);
     } else {
         mad_rc = mreg_send_wrapper(mf, buffer, r_size_reg, w_size_reg);
     }
