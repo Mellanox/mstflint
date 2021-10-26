@@ -1,5 +1,6 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -1311,7 +1312,7 @@ int mdevices_v(char *buf, int len, int mask, int verbosity)
         /* Get all Mellanox devices - this cmd will return the needed devices one in every line */
         fp =
             popen(
-                "pciconf -lv | grep -B 1 Mellanox | grep pci | cut -f1 | cut -f2 -d \"@\" | cut -f1-4 -d \":\"",
+                "pciconf -lv | grep -C 1 Mellanox | grep -B 2 network | grep -B 1 Mellanox | grep pci | cut -f1 | cut -f2 -d \"@\" | cut -f1-4 -d \":\"",
                 "r");
         if (fp == NULL) {
             return -1;
@@ -2690,11 +2691,13 @@ int mcables_remote_operation_client_side(mfile* mf, u_int32_t address,
 
 
 int mlxcables_remote_operation_client_side(mfile* mf, const char* device_name,
-                                           char op, char flags)
+                                           char op, char flags,
+                                           const char* reg_name)
 {
     (void)mf;
     (void)device_name;
     (void)op;
     (void)flags;
+    (void)reg_name;
     return 0;
 }
