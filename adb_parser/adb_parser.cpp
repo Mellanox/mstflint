@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) Jan 2019 Mellanox Technologies Ltd. All rights reserved.
  * Copyright (c) 2012-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
@@ -30,7 +31,6 @@
  * SOFTWARE.
  *
  */
-
 /*************************** Adb ***************************/
 /**
  * Function: Adb::Adb
