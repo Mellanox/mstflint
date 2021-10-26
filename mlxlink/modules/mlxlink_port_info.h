@@ -39,7 +39,6 @@
 
 #define PPHCR_REG               "PPHCR"
 #define PPCNT_REG               "PPCNT"
-#define PPCNT_HISTOGRAM_GRP     0x23
 
 enum HISTOGRAM_TYPE {
     HIST_TYPE_AUTO,
