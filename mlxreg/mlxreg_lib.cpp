@@ -296,3 +296,19 @@ bool MlxRegLib::isIBDevice()
 {
     return (bool)(_mf->flags & MDEVS_IB);
 }
+
+/************************************
+* Function: dumpRegisterData
+************************************/
+MlxRegLibStatus MlxRegLib::dumpRegisterData(string output_file_name, std::vector<u_int32_t> &data)
+{
+    FILE* outputFile = fopen(output_file_name.c_str(), "w");
+    if (outputFile) {
+        for(std::vector<u_int32_t>::size_type i = 0; i != data.size(); i++) {
+            fprintf(outputFile,"%08x\n",CPU_TO_BE32(data[i]));
+        }
+    } else {
+        throw MlxRegException("Failed to open file");
+    }
+    return MRLS_SUCCESS;
+}

@@ -76,6 +76,10 @@ private:
     void printAdbContext(AdbInstance *node, std::vector<u_int32_t> buff);
     void printBuff(std::vector<u_int32_t> buff);
 
+    void readFromFile(string file_name, vector<u_int32_t> &buff, int len);
+    void writeToFile(string file_name, vector<u_int32_t> buff);
+    void sendCmdBasedOnFileIo(maccess_reg_method_t cmd, int reg_size);
+
     CommandLineParser _cmdParser;
     string _device;
     mfile *_mf;
@@ -90,6 +94,9 @@ private:
     bool _force;
     MlxRegLib *_mlxRegLib;
     bool _isExternal;
+    bool _ignore_ro;
+    string _output_file;
+    string _file_io;
 };
 
 #endif /* MLXREG_UI_H */

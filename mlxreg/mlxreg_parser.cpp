@@ -43,11 +43,13 @@ using namespace mlxreg;
 /************************************
 * Function: RegParser
 ************************************/
-RegAccessParser::RegAccessParser(string data, string indexes, AdbInstance *regNode, std::vector<u_int32_t> buffer)
+RegAccessParser::RegAccessParser(string data, string indexes, AdbInstance *regNode, std::vector<u_int32_t> buffer, bool ignore_ro)
 {
     _data      = data;
     _indexes   = indexes;
     _regNode   = regNode;
+    _ignore_ro = ignore_ro;
+    output_file = "";
     if (!regNode) {
         _parseMode = Pm_Unknown;
     } else {
@@ -67,11 +69,13 @@ RegAccessParser::RegAccessParser(string data, string indexes, AdbInstance *regNo
 /************************************
 * Function: RegParser
 ************************************/
-RegAccessParser::RegAccessParser(string data, string indexes, AdbInstance *regNode, u_int32_t len)
+RegAccessParser::RegAccessParser(string data, string indexes, AdbInstance *regNode, u_int32_t len, bool ignore_ro)
 {
     _data      = data;
     _indexes   = indexes;
     _regNode   = regNode;
+    _ignore_ro = ignore_ro;
+    output_file = "";
     _len       = len;
     // Set parsing method
     if (!regNode) {
@@ -307,6 +311,7 @@ std::vector<string> RegAccessParser::strSplit(string str, char delimiter, bool f
 void RegAccessParser::strToUint32(char *str, u_int32_t &uint)
 {
     char *endp;
+    errno = 0;
     uint = strtoul(str, &endp, 0);
     if (*endp || errno == ERANGE) {
         throw MlxRegException("Argument: %s is invalid.", str);
@@ -366,6 +371,9 @@ bool RegAccessParser::checkAccess(const AdbInstance *field, const string accessS
 
 bool RegAccessParser::isRO(AdbInstance *field)
 {
+    if (_ignore_ro) {
+        return false;
+    }
     return checkAccess(field, "RO");
 }
 
