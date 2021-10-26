@@ -36,6 +36,7 @@
 #define ADB_ADB_H
 
 
+
 class LogFile;
 
 #include <map>
