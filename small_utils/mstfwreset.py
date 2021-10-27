@@ -59,6 +59,7 @@ try:
     import cmdif
     from mlxfwresetlib import mlxfwreset_utils
     from mlxfwresetlib.mlxfwreset_utils import cmdExec
+    from mlxfwresetlib.mlxfwreset_utils import is_in_internal_host
     from mlxfwresetlib.mlxfwreset_mlnxdriver import MlnxDriver
     from mlxfwresetlib.mlxfwreset_mlnxdriver import DriverUnknownMode
     from mlxfwresetlib.mlxfwreset_mlnxdriver import MlnxDriverFactory,MlnxDriverLinux
@@ -196,25 +197,6 @@ class WarningException(Exception):
 ######################################################################
 class NoPciBridgeException(Exception):
     pass
-
-
-def is_in_intenal_host(): 
-    ''' 
-    The function checks if the tool is running on the internal host (Bluefield's intergrated ARM)
-    The function will return true is the OS is Linux and PCIe root-port 00:00.0 is Mellanox
-    '''
-    if platform.system() != "Linux":
-        logger.debug("Not in internal host (integrated ARM) - OS is not Linux")
-        return False
-
-    cmd = "setpci -s 00:00.0 0x0.w"
-    rc, out, _ = cmdExec(cmd)
-    if rc == 0 and out.strip() == "15b3":
-        logger.debug("In internal host (integrated ARM)")
-        return True
-    else:
-        logger.debug("Not in internal host (integrated ARM)")
-        return False
 
 ######################################################################
 # Description:  is_fw_ready
@@ -373,152 +355,6 @@ def getLinuxKernelVersion():
 
 
 ######################################################################
-# Description:  PciCaps
-# OS Support :  All
-######################################################################
-class PciConfigSpace:
-    def __init__(self, PciOpObj):
-        self.pciOp = PciOpObj
-
-    def SavePciConfigSpace(self, DevAddr):
-        dataBuf = bytearray(PciConfigSpace.PCI_CONFIG_SPACE_SIZE)
-        mv = memoryview(dataBuf)
-        sysFsFD = self.pciOp.openPciSysFs(DevAddr, False)
-        self.SaveRestorePciCaps(sysFsFD, mv, PciConfigSpace.PCI_CAP_TYPE_REG, False)
-        self.SaveRestorePciCaps(sysFsFD, mv, PciConfigSpace.PCI_CAP_TYPE_EXT, False)
-        sysFsFD.close()
-        return dataBuf
-
-    def RestorePciConfigSpace(self, DevAddr, DataBuf):
-        mv = memoryview(DataBuf)
-        sysFsFD = self.pciOp.openPciSysFs(DevAddr, True)
-        self.SaveRestorePciCaps(sysFsFD, mv, PciConfigSpace.PCI_CAP_TYPE_REG, True)
-        self.SaveRestorePciCaps(sysFsFD, mv, PciConfigSpace.PCI_CAP_TYPE_EXT, True)
-        sysFsFD.close()
-
-    ################## Private #################
-    def GetCapInfo(self, CapID, CapType):
-        caps = self.regularCapsTable if CapType == PciConfigSpace.PCI_CAP_TYPE_REG else self.extendedCapsTable
-
-        for cap in caps:
-            if cap.id == CapID:
-                return cap
-
-        return None
-
-    ##################
-    def GetCapHeader(self, SysFsFD, DataBuf, Offset, CapType):
-        dataLength = 2 if CapType == PciConfigSpace.PCI_CAP_TYPE_REG else 4
-        if SysFsFD:
-            self.pciOp.pciSysFsReadBuf(SysFsFD, DataBuf[Offset:Offset+dataLength], Offset, dataLength)
-
-        if CapType == PciConfigSpace.PCI_CAP_TYPE_REG:
-            return self.PciCapHeader(struct.unpack_from("B", DataBuf, Offset)[0],\
-                                     struct.unpack_from("B", DataBuf, Offset + 1)[0])
-        else:
-            return self.PciCapHeader(struct.unpack_from("<H", DataBuf, Offset)[0],\
-                                    (struct.unpack_from("<H", DataBuf, Offset+2)[0]>>6) << 2)
-
-    ##################
-    def ReadWritePciBuf(self, SysFsFD, DataBuf, Offset, Size, IsWrite):
-        if IsWrite:
-            self.pciOp.pciSysFsWriteBuf(SysFsFD, DataBuf[Offset:Offset+Size], Offset, Size)
-        else:
-            self.pciOp.pciSysFsReadBuf(SysFsFD, DataBuf[Offset:Offset+Size], Offset, Size)
-
-    ##################
-    def SaveRestorePciCaps(self, SysFsFD, DataBuf, CapType, IsRestore):
-        nextCapOffset = 0
-        if CapType == PciConfigSpace.PCI_CAP_TYPE_REG:
-            #  the header (first 0x40 bytes) will be saved/loaded only within the regular capabilities
-            self.ReadWritePciBuf(SysFsFD, DataBuf, 0, PciConfigSpace.PCI_HEADER_SIZE, IsRestore)
-            nextCapOffset = struct.unpack_from("B", DataBuf, PciConfigSpace.PCI_CAP_PTR_OFFSET)[0]
-        else:
-            nextCapOffset = PciConfigSpace.PCI_EXT_HEADERS_OFFSET
-
-        readCount = 0
-        while nextCapOffset:
-            readCount += 1
-            if readCount > PciConfigSpace.PCI_CONFIG_SPACE_SIZE:
-                raise RuntimeError("Looks like PCI config space is corrupted, inifinte capability list")
-
-            capHeader = self.GetCapHeader(None if IsRestore else SysFsFD, DataBuf, nextCapOffset, CapType)
-            capInfo = self.GetCapInfo(capHeader.id, CapType)
-            curCapOffset = nextCapOffset
-            nextCapOffset = capHeader.next
-            if capInfo == None or not capInfo.isSaveRestore:
-                continue
-
-            #save/restore the cap data
-            self.ReadWritePciBuf(SysFsFD, DataBuf, curCapOffset, capInfo.size, IsRestore)
-
-    ##################
-    class PciCapInfo:
-        def __init__(self, CapID, CapSize, IsSaveRestore):
-            self.id = CapID
-            self.size = CapSize
-            self.isSaveRestore = IsSaveRestore
-            
-        def __str__(self):
-            return "id={0}, size={1:#x}, save/resotre={2}".format(self.id, self.size, self.isSaveRestore)
-
-    ##################
-    class PciCapHeader:
-        def __init__(self, CapID, NextOffset):
-            self.id = CapID
-            self.next = NextOffset
-            
-        def __str__(self):
-            return "id={0}, next-offset={1:#x}".format(self.id,self.next)
-
-    PCI_HEADER_SIZE = 0x40
-    PCI_CAP_PTR_OFFSET = 0x34
-    PCI_EXT_HEADERS_OFFSET = 0x100
-    PCI_CONFIG_SPACE_SIZE = 0x1000
-
-    # Pci capability types
-    PCI_CAP_TYPE_REG = 0
-    PCI_CAP_TYPE_EXT = 1
-
-    # Pci capability IDs
-    PCI_CAP_ID_PM   = 0x01 # Power management
-    PCI_CAP_ID_VPD  = 0x03 # Viral product data
-    PCI_CAP_ID_MSI  = 0x05
-    PCI_CAP_ID_VSC  = 0x09 # Vendor specific
-    PCI_CAP_ID_PCIE = 0x10 # PCI Express
-    PCI_CAP_ID_MSIX = 0x11 # MSI-X
-
-    # Pci extended capability IDs
-    PCI_CAP_EXT_ID_AER   = 0x01 # Advanced error reporting
-    PCI_CAP_EXT_ID_ACS   = 0x0d # Access control services
-    PCI_CAP_EXT_ID_ARI   = 0x0e # Alternative routing ID
-    PCI_CAP_EXT_ID_SRIOV = 0x10 # Single root IO virtualization
-    PCI_CAP_EXT_ID_PCIE  = 0x19 # Secondary PCI express
-    PCI_CAP_EXT_ID_DPC   = 0x1d # Downstream port containment
-    PCI_CAP_EXT_ID_PLG4  = 0x26 # Physical layer Gen-4
-    PCI_CAP_EXT_ID_LM    = 0x27 # Lane margining
-
-    regularCapsTable = [\
-            PciCapInfo(PCI_CAP_ID_PM,  0x08, True),
-            PciCapInfo(PCI_CAP_ID_PCIE, 0x3c, True),
-            PciCapInfo(PCI_CAP_ID_MSI, 0x10, True),
-            PciCapInfo(PCI_CAP_ID_MSIX,0x08, True),
-            PciCapInfo(PCI_CAP_ID_VPD, 0x04, False),
-            PciCapInfo(PCI_CAP_ID_VSC, 0x18, False)
-        ]
-
-    extendedCapsTable =[ \
-        PciCapInfo(PCI_CAP_EXT_ID_AER, 0x48, True),
-        PciCapInfo(PCI_CAP_EXT_ID_ARI, 0x8, False),
-        PciCapInfo(PCI_CAP_EXT_ID_SRIOV, 0x40, True),
-        PciCapInfo(PCI_CAP_EXT_ID_PCIE, 0x10, True),
-        PciCapInfo(PCI_CAP_EXT_ID_LM, 0x48, True),
-        PciCapInfo(PCI_CAP_EXT_ID_PLG4, 0x40, True),
-        PciCapInfo(PCI_CAP_EXT_ID_DPC, 0x40, True),
-        PciCapInfo(PCI_CAP_EXT_ID_ACS, 0x10, False)
-        ]
-
-######################################################################
 # Description:  MlnxPciOperation class
 # OS Support :  Linux/FreeBSD.
 ######################################################################
@@ -531,12 +367,6 @@ class MlnxPciOp(object):
         raise NotImplementedError("read() is not implemented")
     def write(self, devAddr, addr, val, width = "L"):
         raise NotImplementedError("write() is not implemented")
-    def openPciSysFs(self, devAddr, isWrite):
-        raise NotImplementedError("openPciSysFs() is not implemented")
-    def pciSysFsReadBuf(self, fd, buf, offset, size):
-        raise NotImplementedError("pciSysFsReadBuf() is not implemented")
-    def pciSysFsWriteBuf(self, fd, buf, offset, size):
-        raise NotImplementedError("pciSysFsWriteBuf() is not implemented")
     def isMellanoxDevice(self, devAddr):
         raise NotImplementedError("isMellanoxDevice() is not implemented")
     def getPciBridgeAddr(self, devAddr):
@@ -597,35 +427,7 @@ class MlnxPciOpLinux(MlnxPciOp):
         self.write(devAddr, 0x68, device_control_register_updated, 'w')  # Overwriting "Device Control Register"
         logger.debug("Restoring device control register for device: %s - Done" % devAddr)
 
-    def openPciSysFs(self, devAddr, isWrite):
-        path = "/sys/bus/pci/devices/" + devAddr + "/config"
-        if not os.path.exists(path):
-            raise RuntimeError("SysFS path (%s) doesn't exist" % path)
-
-        fd = open(path, "wb" if isWrite else "rb")
-        return fd
-
-    def pciSysFsReadBuf(self, fd, buf, addr, size):
-        fd.seek(addr, 0)
-        buf[0:size] = fd.read(size)
-
-    def pciSysFsWriteBuf(self, fd, buf, addr, size):
-        fd.seek(addr, 0)
-        fd.write(buf)
-
     def read(self, devAddr, addr, width = "L"):
-        try:
-            width = width.upper()
-            buf = bytearray(8)
-            mv = memoryview(buf)
-            fd = self.openPciSysFs(devAddr, False)
-            self.pciSysFsReadBuf(fd, mv, addr, MlnxPciOpLinux.pciWidthToByteCount[width])
-            fd.close()
-            return struct.unpack_from("<" + MlnxPciOpLinux.pciWidthToStructSize[width], buf)[0]
-        except Exception as e:
-            logger.warn("Failed to read from pci config space via SysFS for device %s, falling back to legacy flow: %s" % (devAddr, str(e)))
-            pass
-
         cmd = "setpci -s %s 0x%x.%s" % (devAddr, addr, width)
         (rc, out, _) = cmdExec(cmd)
         logger.debug('read : cmd={0} rc={1} out={2}'.format(cmd,rc,out))
@@ -634,18 +436,6 @@ class MlnxPciOpLinux(MlnxPciOp):
         return int(out, 16)
 
     def write(self, devAddr, addr, val, width = "L"):
-        try:
-            width = width.upper()
-            buf = bytearray(8)
-            mv = memoryview(buf)
-            fd = self.openPciSysFs(devAddr, True)
-            struct.pack_into("<" + MlnxPciOpLinux.pciWidthToStructSize[width], buf, 0, val)
-            self.pciSysFsWriteBuf(fd, mv, addr, MlnxPciOpLinux.pciWidthToByteCount[width])
-            fd.close()
-            return
-        except Exception as e:
-            logger.warn("Failed to write to pci config space via SysFS for device %s, falling back to legacy flow: %s" % (devAddr, str(e)))
-            pass
 
         cmd = "setpci -s %s 0x%x.%s=0x%x" % (devAddr, addr, width, val)
         (rc, out, _) = cmdExec(cmd)
@@ -718,7 +508,7 @@ class MlnxPciOpLinux(MlnxPciOp):
                 MFDevices.append(line.split()[0])
         else: 
             pci_device_bridge1 = self.getPciBridgeAddr(devAddr)
-            if is_in_intenal_host(): # Bluefield (NIC only reset)
+            if is_in_internal_host(): # Bluefield (NIC only reset)
                 pci_device_bridge2 = self.getPciBridgeAddr(pci_device_bridge1)
                 pci_device_bridge3 = self.getPciBridgeAddr(pci_device_bridge2)    
                 return self.getAllPciDevices(pci_device_bridge3)
@@ -1148,7 +938,7 @@ def resetPciAddr(device,devicesSD,driverObj, cmdLineArgs):
     # Determine the pci-device to poll (first Mellanox device in the pci tree)
     if isWindows is False:
 
-        if is_in_intenal_host(): # Bluefied (NIC only reset)
+        if is_in_internal_host(): # Bluefied (NIC only reset)
             pci_device_bridge1 = PciOpsObj.getPciBridgeAddr(DevDBDF)
             pci_device_bridge2 = PciOpsObj.getPciBridgeAddr(pci_device_bridge1)
             pci_device_bridge3 = PciOpsObj.getPciBridgeAddr(pci_device_bridge2)
@@ -1208,7 +998,7 @@ def resetPciAddr(device,devicesSD,driverObj, cmdLineArgs):
         bridgeDevs = []
         for busId in [busId] + busIdsSD:
             bridgeDev = PciOpsObj.getPciBridgeAddr(busId)
-            if is_mellanox_device(bridgeDev) and not is_in_intenal_host(): # Innova
+            if is_mellanox_device(bridgeDev) and not is_in_internal_host(): # Innova
                 bridgeDev = PciOpsObj.getPciBridgeAddr(bridgeDev)     # bridgeDev = pci_device_bridge2
                 bridgeDev = PciOpsObj.getPciBridgeAddr(bridgeDev)     # bridgeDev = pci_device_bridge3
                  
@@ -1280,7 +1070,7 @@ def resetPciAddr(device,devicesSD,driverObj, cmdLineArgs):
             time.sleep(cmdLineArgs.pci_link_downtime)
 
             # Enable
-            if not is_in_intenal_host():
+            if not is_in_internal_host():
                 logger.debug('[Timing Test] PCI Enable')
                 for info_ii in info:
                     enablePci(*info_ii)
@@ -1297,9 +1087,9 @@ def resetPciAddr(device,devicesSD,driverObj, cmdLineArgs):
                 PciOpsObj.waitForDevice(pciDev)
 
         # Poll DLL Link Active (required to support AMD - RM #1599465)
-        if not isPPC and root_pci_device.dll_link_active_reporting_capable:
-            MAX_WAIT_TIME = 2  # sec
-            poll_start_time = time.time()
+        if not isPPC and not is_in_internal_host() and root_pci_device.dll_link_active_reporting_capable:   # in BlueField's internal host (ARM) the root-port will 
+            MAX_WAIT_TIME = 2  # sec                                                                        # return a valid response (blocking) or 0xffff0001 when  
+            poll_start_time = time.time()                                                                   # it's not ready (depending on its configuration)
             for _ in range(1000*MAX_WAIT_TIME):
                 if root_pci_device.dll_link_active == 1:
                     poll_end_time = (time.time() - poll_start_time) * 1000

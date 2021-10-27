@@ -152,3 +152,24 @@ def getDevDBDF(device,logger=None):
         raise RuntimeError("Unsupported OS")
 
 
+def is_in_internal_host(): 
+    ''' 
+    The function checks if the tool is running on the BlueField's internal host (ARM)
+    The function will return true is the OS is Linux and PCIe root-port 00:00.0 is Mellanox
+    '''
+
+    # Return value from cache
+    if 'result' in dir(is_in_internal_host):          # We need to cache the result to avoid accessing the device
+        return is_in_internal_host.result             # when it's still not ready to get PCI packets (after PCI "toggle")
+
+    if platform.system() == "Linux":
+        cmd = "setpci -s 00:00.0 0x0.w"
+        rc, out, _ = cmdExec(cmd)
+        if rc == 0 and out.strip() == "15b3":
+            is_in_internal_host.result = True
+        else:
+            is_in_internal_host.result = False
+    else:
+        is_in_internal_host.result = False
+
+    return is_in_internal_host.result
