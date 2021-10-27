@@ -70,7 +70,6 @@ bool FwOperations::readBufAux(FBase& f, u_int32_t o, void *d, int l, const char*
     return rc;
 }
 
-#ifndef NO_MFA_SUPPORT
 
 int FwOperations::getFileSignature(const char *fname)
 {
@@ -110,6 +109,8 @@ int FwOperations::getFileSignature(const char *fname)
     fclose(fin);
     return res;
 }
+
+#ifndef NO_MFA_SUPPORT
 
 int FwOperations::getBufferSignature(u_int8_t *buf, u_int32_t size)
 {
