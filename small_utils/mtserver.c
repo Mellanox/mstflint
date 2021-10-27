@@ -495,7 +495,7 @@ int mset_addr_space(mfile *mf, int space)
 #else
 extern void mpci_change(mfile *mf);
 
-#if defined(__linux__) && !defined(__VMKERNEL_UW_NATIVE__) && !defined(__VMKERNEL_UW_VMKLINUX__)
+#if defined(__linux__) && !defined(__VMKERNEL_UW_NATIVE__)
 extern int check_ul_mode();
 #endif
 
@@ -847,6 +847,10 @@ int main(int ac, char *av[])
                     mf = mopen(local_dev);
 #endif
                     if (mf) {
+#if defined(__linux__) && !defined(SIMULATOR)
+                        // set request came from client
+                        mf->is_mtserver_req = 1;
+#endif
                         // write Recv buffer
                         char res_buf[16];
                         snprintf(res_buf, 16, "O %d", mget_vsec_supp(mf));
