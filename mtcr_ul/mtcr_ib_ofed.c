@@ -163,6 +163,8 @@
 #define IB_VENDOR_SPECIFIC_CLASS_0xA    0x0A
 #define IB_VENDOR_SPECIFIC_CLASS_0x9    0x09
 
+#define NUMBER_OF_MGMT_ELEMENTS         4
+
 #define IB_VS_ATTR_SW_RESET             0x12
 #define IB_VS_ATTR_EXT_PORT_INFO        0x13
 #define IB_VS_ATTR_CR_ACCESS            0x50
@@ -266,10 +268,10 @@ struct __ibvsmad_hndl_t
     f_smp_set_status_via smp_set_status_via;
     f_mad_rpc_set_retries mad_rpc_set_retries;
     f_mad_rpc_set_timeout mad_rpc_set_timeout;
+    f_mad_rpc_rmpp mad_rpc_rmpp;
     f_mad_get_field mad_get_field;
     f_portid2str portid2str;
     f_smp_mkey_set smp_mkey_set;
-    f_mad_rpc_rmpp mad_rpc_rmpp;
     f_mad_send_via mad_send_via;
     f_mad_rpc mad_rpc;
 
@@ -292,7 +294,6 @@ static int verbose = 0;
 #define MAX_IB_SMP_DATA_SIZE    (IB_SMP_DATA_SIZE - IB_DATA_INDEX)
 #define MAX_IB_SMP_DATA_DW_NUM  MAX_IB_SMP_DATA_SIZE / 4
 
-
 void set_mkey_for_smp_mad(ibvs_mad *vsmad)
 {
     if (vsmad->mkey) {
@@ -301,7 +302,6 @@ void set_mkey_for_smp_mad(ibvs_mad *vsmad)
         vsmad->smp_mkey_set(vsmad->srcport, 0);
     }
 }
-
 
 static uint64_t ibvsmad_craccess_rw_smp(ibvs_mad *h, u_int32_t memory_address, int method, u_int8_t num_of_dwords, u_int32_t *data)
 {
@@ -459,11 +459,11 @@ int process_dynamic_linking(ibvs_mad *ivm, int mad_init)
         MY_GetProcAddressIgnoreFail(ivm, smp_set_status_via );
         MY_GetProcAddress(ivm, mad_rpc_set_retries      );
         MY_GetProcAddress(ivm, mad_rpc_set_timeout      );
+        MY_GetProcAddress(ivm, mad_rpc_rmpp             );
+        MY_GetProcAddress(ivm, mad_rpc                  );
         MY_GetProcAddress(ivm, portid2str               );
         MY_GetProcAddress(ivm, mad_get_field            );
-        MY_GetProcAddress(ivm, mad_rpc_rmpp             );
         MY_GetProcAddress(ivm, mad_send_via             );
-        MY_GetProcAddress(ivm, mad_rpc                  );
         MY_GetVarAddress(ivm,  ibdebug                  );
 
     } else {
@@ -515,10 +515,10 @@ int process_dynamic_linking(ibvs_mad *ivm, int mad_init)
     MY_DLSYM_IGNORE_FAIL(ivm, smp_set_status_via   );
     MY_DLSYM(ivm, mad_rpc_set_retries      );
     MY_DLSYM(ivm, mad_rpc_set_timeout      );
+    MY_DLSYM(ivm, mad_rpc_rmpp             );
     MY_DLSYM(ivm, mad_get_field            );
     MY_DLSYM(ivm, portid2str               );
     MY_DLSYM(ivm, smp_mkey_set             );
-    MY_DLSYM(ivm, mad_rpc_rmpp             );
     MY_DLSYM(ivm, mad_send_via             );
     MY_DLSYM(ivm, mad_rpc                  );
     MY_DLSYM(ivm, ibdebug                  );
@@ -636,10 +636,14 @@ int is_vs_crspace_supported(ibvs_mad *h)
 }
 
 
+
+
 typedef enum key_type_t {
     MKEY,
     VSKEY
 } key_type;
+
+
 
 
 char* trim(char* string)
@@ -1016,8 +1020,6 @@ int get_key(ibvs_mad* ivm, char* lid, key_type key)
 }
 
 
-
-
 /********************************************************
 **
 *    Initialize madrpc; Register the vendor specific management classes under
@@ -1027,10 +1029,10 @@ int get_key(ibvs_mad* ivm, char* lid, key_type key)
 int mib_open(const char *name, mfile *mf, int mad_init)
 {
     char        *ca              = 0;
-    int mgmt_classes[4] = {IB_SMI_CLASS,
-                           IB_SMI_DIRECT_CLASS,
-                           IB_VENDOR_SPECIFIC_CLASS_0xA,
-                           IB_VENDOR_SPECIFIC_CLASS_0x9};
+    int mgmt_classes[NUMBER_OF_MGMT_ELEMENTS] = {IB_SMI_CLASS,
+                                                 IB_SMI_DIRECT_CLASS,
+                                                 IB_VENDOR_SPECIFIC_CLASS_0x9,
+                                                 IB_VENDOR_SPECIFIC_CLASS_0xA};
     ib_portid_t *sm_id           = 0;
     int ca_port         = 0;
     ibvs_mad    *ivm             = NULL;
@@ -1157,7 +1159,8 @@ int mib_open(const char *name, mfile *mf, int mad_init)
 #endif
     get_env_var(MTCR_IBMAD_DEBUG, ivm->ibdebug);
 
-    ivm->srcport = ivm->mad_rpc_open_port(ca, ca_port, mgmt_classes, 4);
+    ivm->srcport = ivm->mad_rpc_open_port(ca, ca_port,
+                                          mgmt_classes, NUMBER_OF_MGMT_ELEMENTS);
     if (ivm->srcport == NULL) {
         goto end;
     }
@@ -1805,6 +1808,8 @@ int mib_acces_reg_mad(mfile *mf, u_int8_t *data)
     u_int8_t *p;
     ibvs_mad *h = (ibvs_mad*)(mf->ctx);
     int status = -1;
+
+    // Set the MKey.
     set_mkey_for_smp_mad(h);
 
     // Call smp set function
@@ -1833,6 +1838,8 @@ int mib_smp_set(mfile *mf, u_int8_t *data, u_int16_t attr_id, u_int32_t attr_mod
     u_int8_t *p;
     int status = -1;
     ibvs_mad *h = (ibvs_mad*)(mf->ctx);
+
+    // Set the MKey.
     set_mkey_for_smp_mad(h);
 
     // Call smp set function
@@ -1861,6 +1868,8 @@ int mib_smp_get(mfile *mf, u_int8_t *data, u_int16_t attr_id, u_int32_t attr_mod
     u_int8_t *p;
     int status = -1;
     ibvs_mad *h = (ibvs_mad*)(mf->ctx);
+
+    // Set the MKey.
     set_mkey_for_smp_mad(h);
 
     // Call smp set function
