@@ -33,7 +33,7 @@
 
 #include "mtcr_mem_ops.h"
 
-#if defined(__WIN__) || defined(MST_UL) || defined(__FreeBSD__) || defined(__VMKERNEL_UW_VMKLINUX__) || defined(__VMKERNEL_UW_NATIVE__)
+#if defined(__WIN__) || defined(MST_UL) || defined(__FreeBSD__) || defined(__VMKERNEL_UW_NATIVE__)
 #else
 #include "mst_pciconf.h"
 #include <sys/ioctl.h>
@@ -45,7 +45,7 @@
 
 int mtcr_memaccess(mfile* mf, unsigned int offset, unsigned int size, unsigned char *data, int rw, mem_type_t type)
 {
-#if defined(__WIN__) || defined(MST_UL) || defined(__FreeBSD__) || defined(__VMKERNEL_UW_VMKLINUX__) || defined(__VMKERNEL_UW_NATIVE__)
+#if defined(__WIN__) || defined(MST_UL) || defined(__FreeBSD__) || defined(__VMKERNEL_UW_NATIVE__)
     (void)type;
     (void)mf;
     (void)offset;
@@ -90,7 +90,7 @@ int mtcr_memaccess(mfile* mf, unsigned int offset, unsigned int size, unsigned c
 
 int get_mem_props(mfile *mf, mem_type_t type, mem_props_t *props)
 {
-#if defined(__WIN__) || defined(MST_UL) || defined(__FreeBSD__) || defined(__VMKERNEL_UW_VMKLINUX__) || defined(__VMKERNEL_UW_NATIVE__)
+#if defined(__WIN__) || defined(MST_UL) || defined(__FreeBSD__) || defined(__VMKERNEL_UW_NATIVE__)
     (void)mf;
     (void)type;
     (void)props;
@@ -111,7 +111,7 @@ int get_mem_props(mfile *mf, mem_type_t type, mem_props_t *props)
 
 void init_mem_ops(mfile *mf)
 {
-#if defined(__WIN__) || defined(MST_UL) || defined(__FreeBSD__) || defined(__VMKERNEL_UW_VMKLINUX__) || defined(__VMKERNEL_UW_NATIVE__)
+#if defined(__WIN__) || defined(MST_UL) || defined(__FreeBSD__) || defined(__VMKERNEL_UW_NATIVE__)
     (void)mf;
 #else
     if (!mf || mf->ul_ctx) {
