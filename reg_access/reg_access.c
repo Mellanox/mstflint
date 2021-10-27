@@ -1,5 +1,6 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -113,13 +114,9 @@
 //==================================
 
 #define DWORD_SIZE 4
-#define REG_ID_MPEGC 0x9056
-
-//WA for MGIR: the reg size is too big so we limit it to INBAND_MAX_REG_SIZE
+// For MLNXOS, MGIR still limited with 44 bytes
 #define INBAND_MAX_REG_SIZE 44
 #define MGIR_REG_SIZE INBAND_MAX_REG_SIZE
-#define PMAOS_REG_SIZE INBAND_MAX_REG_SIZE
-// End of WA
 
 // for debug:
 
@@ -540,7 +537,7 @@ reg_access_status_t reg_access_nvda(mfile *mf, reg_access_method_t method, struc
 ************************************/
 reg_access_status_t reg_access_mgir(mfile *mf, reg_access_method_t method,
         struct reg_access_hca_mgir *mgir) {
-    if (mf->tp == MST_IB || mf->tp == MST_MLNXOS) {
+    if (mf->tp == MST_MLNXOS) {
         REG_ACCCESS_VAR(mf, method, REG_ID_MGIR, mgir, mgir, MGIR_REG_SIZE,
                 MGIR_REG_SIZE, MGIR_REG_SIZE, reg_access_hca);
     } else {
@@ -755,11 +752,3 @@ const char* reg_access_err2str(reg_access_status_t status)
     return m_err2str(status);
 }
 
-/************************************
-* Function: reg_access_mpegc
-************************************/
-reg_access_status_t reg_access_mpegc(mfile *mf, reg_access_method_t method, struct reg_access_hca_mpegc_reg *mpegc)
-{
-//    reg_access_hca_mpegc_reg_dump(mpegc, stdout)s;
-    REG_ACCCESS(mf, method, REG_ID_MPEGC, mpegc, mpegc_reg, reg_access_hca);
-}

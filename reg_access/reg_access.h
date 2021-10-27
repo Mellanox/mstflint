@@ -38,7 +38,6 @@ extern "C" {
 
 #include <mtcr.h>
 #include <tools_layouts/register_access_open_layouts.h>
-#include <tools_layouts/register_access_sib_layouts.h>
 #include <tools_layouts/cibfw_layouts.h>
 
 // uncoment for testing MDDT with PDDR
@@ -119,8 +118,6 @@ reg_access_status_t reg_access_mtrc_cap(mfile *mf, reg_access_method_t method, s
 reg_access_status_t reg_access_mcdd(mfile *mf, reg_access_method_t method, struct tools_open_mcdd_reg *mcdd);
 const char* reg_access_err2str(reg_access_status_t status);
 reg_access_status_t reg_access_mirc(mfile *mf, reg_access_method_t method, struct tools_open_mirc_reg *mirc);
-
-reg_access_status_t reg_access_mpegc(mfile *mf, reg_access_method_t method, struct reg_access_hca_mpegc_reg *mpegc);
 
 #ifdef __cplusplus
 }
