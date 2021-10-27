@@ -41,6 +41,7 @@
 #include <ctype.h>
 #include <compatibility.h>
 #include <stdio.h>
+#include <reg_access/reg_access.h>
 
 #define CRD_SELECT_CSV_PATH(dev_name) \
     do {                              \
@@ -282,7 +283,93 @@ int crd_get_addr_list(IN crd_ctxt_t *context, OUT crd_dword_t *dword_arr)
     return CRD_OK;
 }
 
-int crd_dump_data(IN crd_ctxt_t *context, OUT crd_dword_t *dword_arr, IN crd_callback_t func)
+int dump_data_access_register(IN crd_ctxt_t *context, OUT crd_dword_t *dword_arr, IN crd_callback_t func)
+{
+    // loop indexes and counters
+    u_int32_t i = 0;
+    u_int32_t j = 0;
+    u_int32_t sub_block_dword_index = 0;
+    u_int32_t sub_block_base_address;
+    u_int32_t sub_block_dwords_len;
+
+    // for calculating the iterations of each block
+    u_int32_t sub_blocks_num = 0;
+    u_int32_t remainder_sub_block_dwords_len = 0;
+
+    // current count of addresses
+    u_int32_t total = 0;
+
+    CRD_CHECK_NULL(context);
+
+    if (dword_arr == NULL) {
+        CRD_DEBUG("Nothing to do\n");
+        return CRD_INVALID_PARM;
+    }
+
+    // This loop go over all the block count
+    // The block count is like the number of lines we have at the db (the csv file)
+    // We need to split the length of each block to sub_blocks of CRD_MAX_REG_ACCESS_BLOCK dwords
+    // After we read a sub_block we extract each dword in it into dword_arr
+    for (i = 0; i < context->block_count; i++) {
+
+        if (!context->is_full && strcmp(context->blocks[i].enable_addr, CRD_EMPTY)) {
+            continue;
+        }
+
+        sub_blocks_num = context->blocks[i].len / CRD_MAX_REG_ACCESS_BLOCK;
+        remainder_sub_block_dwords_len = context->blocks[i].len % CRD_MAX_REG_ACCESS_BLOCK;
+        if (remainder_sub_block_dwords_len != 0) {
+            sub_blocks_num++;
+        }
+
+        for (j = 0; j < sub_blocks_num; j++) {
+            sub_block_base_address = context->blocks[i].addr + (j * CRD_MAX_REG_ACCESS_BLOCK * sizeof(u_int32_t));
+            sub_block_dwords_len = CRD_MAX_REG_ACCESS_BLOCK;
+            // Check if this is the remainder iteration:
+            if ((remainder_sub_block_dwords_len != 0) && (j == sub_blocks_num - 1)) {
+                sub_block_dwords_len = remainder_sub_block_dwords_len;
+            }
+
+            // Read using ICSR reg_access an array of 256 dw's
+            struct reg_access_switch_icsr_ext icsr;
+            memset(&icsr, 0, sizeof(icsr));
+            icsr.base_address = sub_block_base_address;
+            icsr.num_reads = sub_block_dwords_len;
+            reg_access_status_t reg_access_status = reg_access_icsr(context->mf, REG_ACCESS_METHOD_GET, &icsr);
+
+            if (reg_access_status) {
+                CRD_DEBUG("ICSR REG_ACCESS failed\n");
+                sprintf(crd_error, "ICSR REG_ACCESS failed\n");
+                return CRD_CR_READ_ERR;
+            }
+
+            // Extract each dword from icsr
+            for (sub_block_dword_index = 0; sub_block_dword_index < sub_block_dwords_len; sub_block_dword_index++) {
+                dword_arr[total].addr = sub_block_base_address + (sub_block_dword_index * sizeof(u_int32_t)); // Current iteration base address + dword offset
+                dword_arr[total].data = icsr.data[sub_block_dword_index];
+                total++;
+            }
+        }
+
+        // total shouldn't be above number of dwords
+        if (total > context->number_of_dwords) {
+            CRD_DEBUG("value exceeded, something wrong in calculation!");
+            return CRD_EXCEED_VALUE;
+        }
+    }
+
+    // print the dump if the print function is not null
+    if (func != NULL) {
+        for (i = 0; i < total; i++) {
+            func(&dword_arr[i]);
+        }
+    }
+
+    return CRD_OK;
+}
+
+
+int dump_data(IN crd_ctxt_t *context, OUT crd_dword_t *dword_arr, IN crd_callback_t func)
 {
     u_int32_t i = 0;
     u_int32_t j = 0;
@@ -327,7 +414,7 @@ int crd_dump_data(IN crd_ctxt_t *context, OUT crd_dword_t *dword_arr, IN crd_cal
             }
             addr =  context->blocks[i].addr + (j * sizeof(u_int32_t));
 
-            if (context->cause_addr >= 0) {  /* if we want to check cause bit - read it and verify it hasn't been raised */
+            if (context->cause_addr >= 0) {   //if we want to check cause bit - read it and verify it hasn't been raised
                 if (mread4(context->mf, context->cause_addr, &cause_reg) != sizeof(u_int32_t)) {
                     CRD_DEBUG("Cr read (0x%08x) failed: %s(%d)\n", context->cause_addr, strerror(errno), (u_int32_t)errno);
                     sprintf(crd_error, "Cr read (0x%08x) failed: %s(%d)", context->cause_addr, strerror(errno), (u_int32_t)errno);
@@ -357,6 +444,34 @@ int crd_dump_data(IN crd_ctxt_t *context, OUT crd_dword_t *dword_arr, IN crd_cal
         free(data);
     }
     return CRD_OK;
+}
+
+int crd_dump_data(IN crd_ctxt_t *context, OUT crd_dword_t *dword_arr, IN crd_callback_t func)
+{
+    int rc;
+    // this code in comment duo to a fw bu that not implement this icsr at all modes
+    // it should be temprary and this code will set back with the check "if_OOB"
+
+    /*reg_access_status_t reg_access_status = ME_REG_ACCESS_OK;
+    // Get cap bit if true dump data from icsr reg access (made for oob that work slow)
+    struct reg_access_switch_icam_reg_ext icam;
+
+    int is_cable = context->mf->is_cable;
+    int reg_access_gmp_supported = supports_reg_access_gmp(context->mf, MACCESS_REG_METHOD_GET);
+    if (!is_cable && reg_access_gmp_supported) {
+        memset(&icam, 0, sizeof(icam));
+        icam.access_reg_group = 1;
+        reg_access_status = reg_access_icam(context->mf, REG_ACCESS_METHOD_GET, &icam);
+    }
+    if (is_cable || (!reg_access_gmp_supported) || reg_access_status ||
+        (!EXTRACT(icam.infr_access_reg_cap_mask[3], 16, 1))) { // In case ICAM reg access failed or ICSR cap bit is '0' (bit 112)
+        rc = dump_data(context, dword_arr, func);
+    }
+    else {
+        rc = dump_data_access_register(context, dword_arr, func);
+    }*/
+    rc = dump_data(context, dword_arr, func);
+    return rc;
 }
 
 int crd_get_dword_num(IN crd_ctxt_t *context, OUT u_int32_t *arr_size)
