@@ -54,6 +54,15 @@
     #endif
 #endif
 
+//declaration only to enable compilation when NO_OPEN_SSL
+//of signForFwUpdateUsingHSM(...), signForSecureBootUsingHSM(...) which decelare OpensslEngineSigner in argument.
+#ifdef NO_OPEN_SSL
+namespace MlxSign
+{
+class OpensslEngineSigner;
+}
+#endif
+
 typedef f_prog_func_str VerifyCallBack;
 typedef f_prog_func ProgressCallBack;
 typedef f_prog_func_ex ProgressCallBackEx;
