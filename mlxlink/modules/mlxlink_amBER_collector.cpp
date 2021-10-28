@@ -368,7 +368,7 @@ vector<AmberField> MlxlinkAmBerCollector::getSystemInfo()
                            getFieldStr("extended_minor") + "." +
                            getFieldStr("extended_sub_minor");
         string tech = _mlxlinkMaps->_tech[getFieldValue("technology")];
-        fields.push_back(AmberField("FW Version", fwVersion));
+        fields.push_back(AmberField("Device FW Version", fwVersion));
 
         resetLocalParser(ACCESS_REG_MDIR);
         sendRegister(ACCESS_REG_MDIR, MACCESS_REG_METHOD_GET);
@@ -401,17 +401,18 @@ vector<AmberField> MlxlinkAmBerCollector::getSystemInfo()
             sensNameTemp = getFullString(add32BitTo64(getFieldValue("sensor_name_hi"), getFieldValue("sensor_name_lo")));
         }
         fields.push_back(AmberField("Chip Temp",temp));
-        fields.push_back(AmberField("Temp sensor name", sensNameTemp));
 
         resetLocalParser(ACCESS_REG_MSGI);
         sendRegister(ACCESS_REG_MSGI, MACCESS_REG_METHOD_GET);
         fields.push_back(AmberField("Device SN", getAscii("serial_number", 24)));
 
+        fields.push_back(AmberField("Temp sensor name", sensNameTemp));
+
         resetLocalParser(ACCESS_REG_PDDR);
         updateField("local_port", _localPort);
         updateField("page_select", PDDR_MODULE_INFO_PAGE);
         sendRegister(ACCESS_REG_PDDR, MACCESS_REG_METHOD_GET);
-        fields.push_back(AmberField("Module Temp", getTemp(getFieldValue("temperature"))));
+        fields.push_back(AmberField("Module Temp", getTemp(getFieldValue("temperature"), !_isPortPCIE)));
 
     } catch (const std::exception &exc) {
         throw MlxRegException(
@@ -590,11 +591,13 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
             sendRegister(ACCESS_REG_PTYS, MACCESS_REG_METHOD_GET);
 
             float dataRate = ((float)getFieldValue("data_rate_oper")) * 0.1;
+            char dataRateStr[64];
+            sprintf(dataRateStr, "%.2f", dataRate);
             u_int32_t ethLinkActive = getFieldValue("ext_eth_proto_oper");
+            fields.push_back(AmberField("Speed [Gb/s]", string(dataRateStr)));
             fields.push_back(AmberField("Ethernet Protocol Active",
                                         ethLinkActive? _mlxlinkMaps->_EthExtSpeed2Str[ethLinkActive] : "N/A",
                                         _isPortETH));
-            fields.push_back(AmberField("Speed [Gb/s]", to_string(dataRate)));
             resetLocalParser(ACCESS_REG_PDDR);
             updateField("local_port", _localPort);
             updateField("page_select", PDDR_OPERATIONAL_INFO_PAGE);
@@ -634,10 +637,16 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
 
             getPpcntBer(NETWORK_PORT_TYPE, fields);
 
-            resetLocalParser(ACCESS_REG_PPHCR);
-            updateField("local_port", _localPort);
-            sendRegister(ACCESS_REG_PPHCR, MACCESS_REG_METHOD_GET);
-            u_int32_t numOfBins = getFieldValue("num_of_bins");
+            u_int32_t numOfBins = 0;
+            bool skipBinLimit = false;
+            try {
+                resetLocalParser(ACCESS_REG_PPHCR);
+                updateField("local_port", _localPort);
+                genBuffSendRegister(ACCESS_REG_PPHCR, MACCESS_REG_METHOD_GET);
+                numOfBins = getFieldValue("num_of_bins");
+            } catch (...) {
+                skipBinLimit = true;
+            }
 
             // Getting histogram info for ETH and IB only
             resetLocalParser(ACCESS_REG_PPCNT);
@@ -650,7 +659,7 @@ vector<AmberField> MlxlinkAmBerCollector::getLinkStatus()
             int firstZeroHist = -1;
             for (u_int32_t idx = 0; idx < NUM_OF_BINS; idx++) {
                 val = "N/A";
-                if (idx < numOfBins) {
+                if (idx < numOfBins || skipBinLimit) {
                     histBin = add32BitTo64(getFieldValue("hist[" +  to_string(idx) +"]_hi"),
                                            getFieldValue("hist[" +  to_string(idx) +"]_lo"));
                     val = to_string(histBin);
@@ -1065,6 +1074,7 @@ void MlxlinkAmBerCollector::getModuleInfoPage(vector<AmberField> &fields)
     u_int32_t cableTechnology = getFieldValue("cable_technology");
     u_int32_t cableBreakout= getFieldValue("cable_breakout");
     u_int32_t cableMediaType = getFieldValue("cable_type");
+    u_int32_t vendorOUI = getFieldValue("vendor_oui");
 
     bool passive = cableMediaType == PASSIVE;
     bool optical = cableMediaType == OPTICAL_MODULE;
@@ -1076,9 +1086,11 @@ void MlxlinkAmBerCollector::getModuleInfoPage(vector<AmberField> &fields)
     string activeSetHostComplianceCode = "N/A";
     string activeSetMediaComplianceCode = "N/A";
     string nbrString = "N/A";
+    char vendorOUIStr [32];
+    sprintf(vendorOUIStr, "0x%X", vendorOUI);
 
     initCableIdentifier(cableIdentifier);
-    if(_isPortETH){
+    if(_isPortETH || _isCmisCable){
         getEthComplianceCodes(cableTechnology, ethComplianceStr, extComplianceStr, cableMediaType);
     }
     if(_isPortIB){
@@ -1090,6 +1102,7 @@ void MlxlinkAmBerCollector::getModuleInfoPage(vector<AmberField> &fields)
     fields.push_back(AmberField("ib_compliance_code",  ibComplianceCodeStr, _isPortIB));
     fields.push_back(AmberField("ib_width",  ibWidthStr, _isPortIB));
     fields.push_back(AmberField("Memory map rev",  getFieldStr("memory_map_rev")));
+    fields.push_back(AmberField("Vendor OUI", string(vendorOUIStr)));
     fields.push_back(AmberField("Cable PN",  getAscii("vendor_pn", 16)));
     fields.push_back(AmberField("Cable SN",  getAscii("vendor_sn", 16)));
     fields.push_back(AmberField("cable_technology",  getCableTechnologyStr(cableTechnology)));
@@ -1114,10 +1127,10 @@ void MlxlinkAmBerCollector::getModuleInfoPage(vector<AmberField> &fields)
     fields.push_back(AmberField("rx_cdr_cap",  _mlxlinkMaps->_rxTxCdrCap[getFieldValue("rx_cdr_cap")]));
     fields.push_back(AmberField("tx_cdr_cap",  _mlxlinkMaps->_rxTxCdrCap[getFieldValue("tx_cdr_cap")]));
     fields.push_back(AmberField("rx_cdr_state",  getRxTxCDRState(getFieldValue("rx_cdr_state"),LANES_NUM)));
-    fields.push_back(AmberField("rx_cdr_state",  getRxTxCDRState(getFieldValue("tx_cdr_state"),LANES_NUM)));
+    fields.push_back(AmberField("tx_cdr_state",  getRxTxCDRState(getFieldValue("tx_cdr_state"),LANES_NUM)));
     fields.push_back(AmberField("vendor_name",  getAscii("vendor_name", 16)));
     fields.push_back(AmberField("vendor_rev",  getVendorRev(getFieldValue("vendor_rev"))));
-    fields.push_back(AmberField("fw_version",  getFwVersion(passive,getFieldValue("fw_version"))));
+    fields.push_back(AmberField("module_fw_version",  getFwVersion(passive,getFieldValue("fw_version"))));
     calcRxTxPowerLane(fields,"rx_power_lane");
     calcRxTxPowerLane(fields,"tx_power_lane");
     getTxBiasLane(fields);
@@ -1337,7 +1350,7 @@ vector<AmberField> MlxlinkAmBerCollector::getPortCounters()
                 // Getting port pkts info
                 resetLocalParser(ACCESS_REG_PPCNT);
                 updateField("local_port", _localPort);
-                updateField("grp", PPCNT_RFC_2863_GROUP);
+                updateField("grp", PPCNT_IB_PKTS_GROUP);
                 sendRegister(ACCESS_REG_PPCNT, MACCESS_REG_METHOD_GET);
 
                 fields.push_back(AmberField("PortUniCastXmitPkts",
@@ -1376,6 +1389,38 @@ vector<AmberField> MlxlinkAmBerCollector::getPortCounters()
                 fields.push_back(AmberField("PortSwHOQLifetimeLimitDiscards",
                                             to_string(add32BitTo64(getFieldValue("egress_hoq_stall_high"),
                                                                    getFieldValue("egress_hoq_stall_low")))));
+                // Getting PLR counters data
+                resetLocalParser(ACCESS_REG_PPCNT);
+                updateField("local_port", _localPort);
+                updateField("grp", PPCNT_PLR_GROUP);
+                sendRegister(ACCESS_REG_PPCNT, MACCESS_REG_METHOD_GET);
+                fields.push_back(AmberField("PlrRcvCodes",
+                                            to_string(add32BitTo64(getFieldValue("plr_rcv_codes_high"),
+                                                                   getFieldValue("plr_rcv_codes_low")))));
+                fields.push_back(AmberField("PlrRcvCodeErr",
+                                            to_string(add32BitTo64(getFieldValue("plr_rcv_code_err_high"),
+                                                                   getFieldValue("plr_rcv_code_err_low")))));
+                fields.push_back(AmberField("PlrRcvUncorrectableCode",
+                                            to_string(add32BitTo64(getFieldValue("plr_rcv_uncorrectable_code_high"),
+                                                                   getFieldValue("plr_rcv_uncorrectable_code_low")))));
+                fields.push_back(AmberField("PlrXmitCodes",
+                                            to_string(add32BitTo64(getFieldValue("plr_xmit_codes_high"),
+                                                                   getFieldValue("plr_xmit_codes_low")))));
+                fields.push_back(AmberField("PlrXmitRetryCodes",
+                                            to_string(add32BitTo64(getFieldValue("plr_xmit_retry_codes_high"),
+                                                                   getFieldValue("plr_xmit_retry_codes_low")))));
+                fields.push_back(AmberField("PlrXmitRetryEvents",
+                                            to_string(add32BitTo64(getFieldValue("plr_rcv_codes_high"),
+                                                                   getFieldValue("plr_xmit_retry_events_low")))));
+                fields.push_back(AmberField("PlrSyncEvents",
+                                            to_string(add32BitTo64(getFieldValue("plr_sync_events_high"),
+                                                                   getFieldValue("plr_sync_events_low")))));
+                fields.push_back(AmberField("HiRetransmissionRate",
+                                            to_string(add32BitTo64(getFieldValue("hi_retransmission_rate_high"),
+                                                                   getFieldValue("hi_retransmission_rate_low")))));
+                fields.push_back(AmberField("PlrXmitRetryCodesWithinTSecMax",
+                                            to_string(add32BitTo64(getFieldValue("plr_xmit_retry_codes_within_t_sec_max_high"),
+                                                                   getFieldValue("plr_xmit_retry_codes_within_t_sec_max_low")))));
             }
         } else {
             // Getting the PCIE errors fields (PCIE only)

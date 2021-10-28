@@ -3173,6 +3173,7 @@ void MlxlinkCommander::sendPaosCmd(PAOS_ADMIN adminStatus, bool forceDown)
                 updateField("fd", 1);
             }
         }
+
         genBuffSendRegister(regName, MACCESS_REG_METHOD_SET);
     } catch (const std::exception &exc) {
         string portCommand = (adminStatus == PAOS_DOWN)? "down" : "up";
