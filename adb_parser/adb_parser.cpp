@@ -850,8 +850,6 @@ void AdbParser::startConfigElement(const XML_Char **atts, AdbParser *adbParser, 
                                   ", in file: \"" + adbParser->_fileName + "\" line: " + boost::lexical_cast<string>(lineNumber),
                                   ExceptionHolder::FATAL_EXCEPTION);
     }
-    return true;
-}
 
     adbParser->_currentConfig = new AdbConfig;
     for (int i = 0; i < attrCount(atts); i++)
