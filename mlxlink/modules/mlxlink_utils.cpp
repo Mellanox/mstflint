@@ -694,6 +694,9 @@ string prbsMaskToTuningStatus(u_int32_t mask)
     if (mask == PRBS_TUNING_COMPLETE) {
         return "PRBS mode tuning completed.";
     }
+    if (mask == PRBS_SIGNAL_DETECT) {
+        return "Signal Detect in progress.";
+    }
     return "N/A";
 }
 
