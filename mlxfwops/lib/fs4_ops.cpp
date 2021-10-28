@@ -2579,6 +2579,7 @@ bool Fs4Operations::Fs4ReburnSection(u_int32_t newSectionAddr,
 
 bool Fs4Operations::calcHashOnItoc(vector<u_int8_t>& hash) {
     //* Get ITOC data as vector of bytes
+#if !defined(NO_OPEN_SSL) && !defined(NO_DYNAMIC_ENGINE) //mlxSignSHA is only available with OPEN_SSL
     vector<u_int8_t> itoc_data;
     u_int32_t itoc_size = _fs4ImgInfo.itocArr.numOfTocs * TOC_ENTRY_SIZE + TOC_HEADER_SIZE; 
     itoc_data.resize(itoc_size);
@@ -2589,6 +2590,10 @@ bool Fs4Operations::calcHashOnItoc(vector<u_int8_t>& hash) {
     mlxSignSHA << itoc_data;
     mlxSignSHA.getDigest(hash);
     return true;
+#else
+    (void)hash;
+    return false;
+#endif
 }
 
 bool Fs4Operations::updateHashInHashesTable(fs3_section_t section_type, vector<u_int8_t> hash) {
@@ -3555,6 +3560,7 @@ bool Fs4Operations::isHashesTableHwPtrValid() {
 }
 
 bool Fs4Operations::signForFwUpdateUsingHSM(const char *uuid, MlxSign::OpensslEngineSigner& engineSigner, PrintCallBack printFunc) {
+#ifndef NO_OPEN_SSL
     vector<u_int8_t> fourMbImage;
     vector<u_int8_t> signature;
     vector<u_int8_t> sha;
@@ -3574,6 +3580,13 @@ bool Fs4Operations::signForFwUpdateUsingHSM(const char *uuid, MlxSign::OpensslEn
     if (!InsertSecureFWSignature(signature, uuid, printFunc)) {
         return errmsg("signForFwUpdateUsingHSM: Failed to insert secured FW signature\n");
     }
+#else
+    (void)uuid;
+    (void)printFunc;
+    (void)engineSigner;
+    return errmsg("signForFwUpdateUsingHSM is not suppported");
+#endif
+
 
     return true;
 }
@@ -3647,9 +3660,7 @@ bool Fs4Operations::signForSecureBootUsingHSM(const char *public_key_file, const
 #else
     (void)public_key_file;
     (void)uuid;
-    (void)bin_data;
-    (void)critical;
-    (void)non_critical;
+    (void)engineSigner;
     return errmsg("signForSecureBootUsingHSM is not suppported");
 #endif
 }
