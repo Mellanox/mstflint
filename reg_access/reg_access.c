@@ -112,6 +112,7 @@
 #define REG_ID_RES_DUMP                 0xC000
 #define REG_ID_DEBUG_CAP                0x8400
 //==================================
+#define REG_ID_MPEGC                    0x9056
 
 #define DWORD_SIZE 4
 // For MLNXOS, MGIR still limited with 44 bytes
@@ -752,3 +753,11 @@ const char* reg_access_err2str(reg_access_status_t status)
     return m_err2str(status);
 }
 
+/************************************
+* Function: reg_access_mpegc
+************************************/
+reg_access_status_t reg_access_mpegc(mfile *mf, reg_access_method_t method, struct reg_access_hca_mpegc_reg *mpegc)
+{
+//    reg_access_hca_mpegc_reg_dump(mpegc, stdout)s;
+    REG_ACCCESS(mf, method, REG_ID_MPEGC, mpegc, mpegc_reg, reg_access_hca);
+}
