@@ -144,6 +144,10 @@
 #       define ARCH_x86_64
 #   elif defined(__ia64__)
 #       define ARCH_ia64
+#   elif defined(__m68k__)
+#       define ARCH_m68k
+#   elif defined(__hppa__)
+#       define ARCH_hppa
 #   elif defined(__PPC64__) || defined(__s390x__)
 #       define ARCH_ppc64
 #   elif defined(__PPC__)
@@ -152,6 +156,8 @@
 #       define ARCH_arm64
 #   elif defined(__arm__)
 #       define ARCH_arm6l
+#   elif defined(__riscv)
+#       define ARCH_riscv
 #   else
 #       error Unknown CPU architecture using the linux OS
 #   endif
