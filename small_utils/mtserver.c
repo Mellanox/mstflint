@@ -495,7 +495,7 @@ int mset_addr_space(mfile *mf, int space)
 #else
 extern void mpci_change(mfile *mf);
 
-#if defined(__linux__) && !defined(__VMKERNEL_UW_NATIVE__)
+#if defined(__linux__) && !defined(__VMKERNEL_UW_NATIVE__) && !defined(__VMKERNEL_UW_VMKLINUX__)
 extern int check_ul_mode();
 #endif
 
