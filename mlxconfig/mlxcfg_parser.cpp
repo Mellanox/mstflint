@@ -99,7 +99,7 @@ void MlxCfg::printHelp()
     printFlagLine("eng", "openssl_engine", "ENGINE NAME", "OpenSSL engine name");
     printFlagLine("k", "openssl_key_id", "IDENTIFIER", "OpenSSL key identifier");
     printFlagLine("t", "device_type", "switch/hca", "Specify the device type");
-    printFlagLine("", "session_id", "", "Specify the session id for token keep alive session.");
+    printFlagLine("s", "session_id", "", "Specify the session id for token keep alive session.");
 
     //print commands
     printf("\n");
