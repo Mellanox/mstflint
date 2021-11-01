@@ -31,7 +31,7 @@
  * SOFTWARE.
  */
 
-#ifndef NO_OPEN_SSL
+#if !defined(NO_OPEN_SSL) && !defined(NO_DYNAMIC_ENGINE)
 #include "mlxsign_openssl_engine.h"
 #include <iostream>
 #include <openssl/ssl.h>

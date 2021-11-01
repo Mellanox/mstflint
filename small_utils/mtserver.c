@@ -847,6 +847,10 @@ int main(int ac, char *av[])
                     mf = mopen(local_dev);
 #endif
                     if (mf) {
+#if defined(__linux__) && !defined(SIMULATOR)
+                        // set request came from client
+                        mf->is_mtserver_req = 1;
+#endif
                         // write Recv buffer
                         char res_buf[16];
                         snprintf(res_buf, 16, "O %d", mget_vsec_supp(mf));

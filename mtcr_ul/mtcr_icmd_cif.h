@@ -57,6 +57,9 @@ extern "C" {
 #define FLASH_REG_ACCESS    0x9001
 #define ICMD_MAX_CMD_SIZE   0x300 // max mailbox size
 
+MTCR_API extern int increase_poll_time;
+
+
 /* --------- Functional API ---------------------------------------- */
 /**
  * Create a device-context for the command-interface of a ConnectIB device.
@@ -87,6 +90,13 @@ int icmd_send_command_int(mfile     *mf,
                           IN int write_data_size,
                           IN int read_data_size,
                           IN int skip_write);
+
+int icmd_send_command_enhanced(mfile     *mf,
+                               IN int opcode,
+                               INOUT void *data,
+                               IN int write_data_size,
+                               IN int read_data_size,
+                               IN int skip_write);
 
 /**
  * Take the Tools-HCR semaphore. This functionality is provided

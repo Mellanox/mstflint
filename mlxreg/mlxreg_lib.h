@@ -73,6 +73,7 @@ public:
     static void isAccessRegisterSupported(mfile *mf);
     bool isAccessRegisterGMPSupported(maccess_reg_method_t reg_method);
     bool isIBDevice();
+    MlxRegLibStatus dumpRegisterData(string output_file_name, std::vector<u_int32_t> &data);
 protected:
     /* Functions */
     bool isRegSizeSupported(string regName);

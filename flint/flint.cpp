@@ -111,6 +111,7 @@ static int signalList[SIGNAL_NUM] = {SIGINT, SIGTERM, SIGPIPE, SIGHUP};
 
 void initHandler()
 {
+
 #ifdef __WIN__
     SetConsoleCtrlHandler( (PHANDLER_ROUTINE) CtrlHandler, true );
 #endif

@@ -40,7 +40,8 @@
  
 
 struct mft_core_wrapper {
-    void* cr_space_access;
+    void* config_space_access;
+    void* reg_access;
     void* reset_access;
 };
 
@@ -65,6 +66,7 @@ struct mfile_t {
     int is_i2cm;     /*  use device as I2C master */
     int is_vm;     /*  if the machine is VM    */
     int cr_access;     /* If cr access is allowed in MLNXOS devices */
+    cables_info ext_info; /*keeps info for calculate the correct slave address (0x50 + offset) */
     unsigned char i2c_slave;
     int gpio_en;
     io_region *iorw_regions;     /* For LPC devices */
@@ -73,6 +75,7 @@ struct mfile_t {
     int fd;
     int res_fd;     /*  Will be used with HCR if need*/
     int sock;     /*  in not -1 - remote interface */
+    int is_mtserver_req;    // request came from mtServer - means came from remote client 
     void *bar_virtual_addr;
     unsigned int map_size;
     unsigned int bar0_gw_offset;//for MST_BAR0_GW_PCI devices, offset from BAR0 - gateway - for R/W operations

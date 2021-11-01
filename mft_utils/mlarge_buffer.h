@@ -52,6 +52,7 @@ public:
     u_int8_t& operator[](const u_int32_t idx) { return _data[idx]; }
     MBufferUnit& operator=(const MBufferUnit& other);
     bool intersects( const MBufferUnit& other) const;
+    ~MBufferUnit() = default;
 private:
     std::vector<u_int8_t> _data;
     u_int32_t _offset;

@@ -38,7 +38,6 @@ extern "C" {
 
 #include <mtcr.h>
 #include <tools_layouts/register_access_open_layouts.h>
-#include <tools_layouts/register_access_sib_layouts.h>
 #include <tools_layouts/cibfw_layouts.h>
 
 // uncoment for testing MDDT with PDDR

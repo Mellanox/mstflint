@@ -305,8 +305,10 @@ public:
     virtual ~MlxlinkCommander();
 
     void checkRegCmd();
+    void validatePortToLC();
     virtual void validatePortType(const string &portTypeStr);
-    void updatePortType() {};
+    void updatePortType();
+    void gearboxBlock(const string &option);
     void checkLocalPortDPNMapping(u_int32_t localPort);
     int getLocalPortFromMPIR(DPN& dpn);
     void checkValidFW();
@@ -329,6 +331,7 @@ public:
     string activeSpeed2Str(u_int32_t mask, bool extended);
     void getCableParams();
     bool inPrbsTestMode();
+    bool checkGBPpaosDown();
     bool checkPaosDown();
     bool checkPpaosTestMode();
     u_int32_t getPtysCap();
@@ -479,6 +482,7 @@ public:
     // Config helper functions
     bool isForceDownSupported();
     bool isPPHCRSupported();
+    void sendGBPaosCmd(PAOS_ADMIN adminStatus, bool forceDown);
     void sendPaosCmd(PAOS_ADMIN adminStatus, bool forceDown = false);
     void sendPaosDown(bool toggleCommand = false);
     void sendPaosUP();
@@ -560,6 +564,7 @@ public:
     bool _ignorePortType;
     bool _lanesLockStatus;
     bool _ignorePortStatus;
+    bool _isGboxPort;
     std::vector<std::string> _ptysSpeeds;
     std::vector<PortGroup> _localPortsPerGroup;
     std::vector<DPN> _validDpns;
