@@ -58,7 +58,6 @@ class LogFile;
 #include "adb_exceptionHolder.h"
 #include "adb_logfile.h"
 #include "adb_config.h"
-#include "adb_progress.h"
 #include "adb_instance.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -132,10 +131,10 @@ public:
     //   2- contains nodes only
     //   3- check node size vs instance size
     bool loadFromString(const char *adbContents, bool addReserved = false,
-            AdbProgress *progressObj = NULL, bool strict = true,
+            bool strict = true,
             bool enforceExtraChecks = false);
     bool load(string fname, bool addReserved = false,
-            AdbProgress *progressObj = NULL, bool strict = true,
+            bool strict = true,
             string includePath = "", string includeDir = "",
             bool enforceExtraChecks = false, bool getAllExceptions = false,
             string logFile = "");
@@ -144,8 +143,7 @@ public:
             string addPrefix = "");
 
     AdbInstance* addMissingNodes(int depth, bool allowMultipleExceptions);
-    AdbInstance* createLayout(string rootNodeName, bool isExprEval = false,
-            AdbProgress *progressObj = NULL, int depth = -1, /* -1 means instantiate full tree */
+    AdbInstance* createLayout(string rootNodeName, bool isExprEval = false, int depth = -1, /* -1 means instantiate full tree */
             bool ignoreMissingNodes = false, bool getAllExceptions = false);
     vector<string> getNodeDeps(string nodeName);
     string getLastError();
@@ -181,7 +179,7 @@ public:
 private:
     vector<AdbInstance*> createInstance(AdbField *fieldDesc,
             AdbInstance *parent, map<string, string> vars, bool isExprEval,
-            AdbProgress *progressObj, int depth,
+            int depth,
             bool ignoreMissingNodes = false, bool getAllExceptions = false);
     u_int32_t calcArrOffset(AdbField *fieldDesc, AdbInstance *parent,
             u_int32_t arrIdx);

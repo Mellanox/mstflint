@@ -60,7 +60,7 @@ class AdbParser {
 public:
     // METHODS
     AdbParser(string fileName, Adb *adbCtxt, bool addReserved = false,
-            AdbProgress *progressObj = NULL, bool strict = true,
+            bool strict = true,
             string includePath = "", bool enforceExtraChecks = false);
     ~AdbParser();
     bool load();
@@ -115,7 +115,6 @@ private:
     string _lastError;
     bool _addReserved;
     int _progressCnt;
-    AdbProgress *_progressObj;
     bool _strict;
     string _includePath;
     string _currentTagValue;
@@ -166,9 +165,9 @@ const string AdbParser::TAG_ATTR_INCLUDE_PATH = "include_path";
  * Function: AdbParser::AdbParser
  **/
 AdbParser::AdbParser(string fileName, Adb *adbCtxt, bool addReserved,
-                     AdbProgress *progressObj, bool strict, string includePath,
+                     bool strict, string includePath,
                      bool enforceExtraChecks) : _adbCtxt(adbCtxt), _fileName(fileName), _addReserved(addReserved),
-                                                _progressCnt(0), _progressObj(progressObj), _strict(strict),
+                                                _progressCnt(0), _strict(strict),
                                                 _includePath(includePath), _currentNode(0), _currentField(0),
                                                 _currentConfig(0)
 {
@@ -661,7 +660,7 @@ void AdbParser::includeFile(AdbParser *adbParser, string fileName,
 
         // parse the included file
         AdbParser p(filePath, adbParser->_adbCtxt, adbParser->_addReserved,
-                    adbParser->_progressObj, adbParser->_strict,
+                    adbParser->_strict,
                     "", adbParser->_enforceExtraChecks);
         if (!p.load())
         {
@@ -1647,12 +1646,6 @@ void AdbParser::endElement(void *_adbParser, const XML_Char *name)
             pair<string, AdbNode *>(adbParser->_currentNode->name,
                                     adbParser->_currentNode));
         adbParser->_currentNode = 0;
-
-        // Call progress_func callback
-        if (adbParser->_progressObj && !(adbParser->_progressCnt++ % PROGRESS_NODE_CNT))
-        {
-            adbParser->_progressObj->progress(); // TODO - call with real parameters
-        }
     }
     /*
      * Field
@@ -1959,7 +1952,7 @@ string Adb::printAdbExceptionMap()
 /**
  * Function: Adb::load
  **/
-bool Adb::load(string fname, bool addReserved, AdbProgress *progressObj,
+bool Adb::load(string fname, bool addReserved,
                bool strict, string includePath, string includeDir,
                bool enforceExtraChecks, bool allowMultipleExceptions, string logFileStr)
 {
@@ -1973,7 +1966,7 @@ bool Adb::load(string fname, bool addReserved, AdbProgress *progressObj,
         }
         _logFile->init(logFileStr, allowMultipleExceptions);
 
-        AdbParser p(fname, this, addReserved, progressObj, strict, includePath,
+        AdbParser p(fname, this, addReserved, strict, includePath,
                     enforceExtraChecks);
         if (!p.load())
         {
@@ -2022,11 +2015,11 @@ bool Adb::load(string fname, bool addReserved, AdbProgress *progressObj,
  * Function: Adb::loadFromString
  **/
 bool Adb::loadFromString(const char *adbContents, bool addReserved,
-                         AdbProgress *progressObj, bool strict, bool enforceExtraChecks)
+                         bool strict, bool enforceExtraChecks)
 {
     try
     {
-        AdbParser p(string(), this, addReserved, progressObj, strict, "",
+        AdbParser p(string(), this, addReserved, strict, "",
                     enforceExtraChecks);
         mainFileName = OS_PATH_SEP;
         if (!p.loadFromString(adbContents))
@@ -2225,7 +2218,7 @@ void Adb::cleanInstAttrs()
  * Function: Adb::createLayout
  **/
 AdbInstance *Adb::createLayout(string rootNodeName, bool isExprEval,
-                               AdbProgress *progressObj, int depth, bool ignoreMissingNodes,
+                               int depth, bool ignoreMissingNodes,
                                bool allowMultipleExceptions)
 {
     try
@@ -2260,7 +2253,7 @@ AdbInstance *Adb::createLayout(string rootNodeName, bool isExprEval,
         for (size_t i = 0; (depth == -1 || depth > 0) && i < nodeDesc->fields.size(); i++)
         {
             vector<AdbInstance *> subItems = createInstance(nodeDesc->fields[i],
-                                                            rootItem, emptyVars, isExprEval, progressObj,
+                                                            rootItem, emptyVars, isExprEval,
                                                             depth == -1 ? -1 : depth - 1, ignoreMissingNodes,
                                                             allowMultipleExceptions);
             rootItem->subItems.insert(rootItem->subItems.end(),
@@ -2434,15 +2427,11 @@ vector<string> Adb::getNodeDeps(string nodeName)
  **/
 vector<AdbInstance *> Adb::createInstance(AdbField *field,
                                           AdbInstance *parent, map<string, string> vars, bool isExprEval,
-                                          AdbProgress *progressObj, int depth, bool ignoreMissingNodes,
+                                          int depth, bool ignoreMissingNodes,
                                           bool allowMultipleExceptions)
 {
     static const regex EXP_PATTERN(
         "\\s*([a-zA-Z0-9_]+)=((\\$\\(.*?\\)|\\S+|$)*)\\s*");
-    if (progressObj)
-    {
-        progressObj->progress();
-    }
 
     // if array create instance for each item. else - create 1
     vector<AdbInstance *> instList;
@@ -2605,7 +2594,7 @@ vector<AdbInstance *> Adb::createInstance(AdbField *field,
             {
                 map<string, string> varsCopy = vars;
                 vector<AdbInstance *> subItems = createInstance(*it, inst, vars,
-                                                                isExprEval, progressObj, depth == -1 ? -1 : depth - 1,
+                                                                isExprEval, depth == -1 ? -1 : depth - 1,
                                                                 ignoreMissingNodes, allowMultipleExceptions);
                 inst->subItems.insert(inst->subItems.end(), subItems.begin(),
                                       subItems.end());

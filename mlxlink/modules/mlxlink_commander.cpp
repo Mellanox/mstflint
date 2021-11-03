@@ -1609,7 +1609,7 @@ void MlxlinkCommander::runningVersion()
     setPrintVal(_toolInfoCmd,"Firmware Version", _fwVersion, ANSI_COLOR_GREEN,true, !_prbsTestMode);
     setPrintVal(_toolInfoCmd,"amBER Version", AMBER_VERSION, ANSI_COLOR_GREEN,
                 _productTechnology >= PRODUCT_16NM, !_prbsTestMode);
-    setPrintVal(_toolInfoCmd,"MFT Version", MFT_VERSION_STR, ANSI_COLOR_GREEN,true, !_prbsTestMode);
+    setPrintVal(_toolInfoCmd,"MFT Version", MSTFLINT_VERSION_STR, ANSI_COLOR_GREEN,true, !_prbsTestMode);
 }
 
 void MlxlinkCommander::operatingInfoPage()
