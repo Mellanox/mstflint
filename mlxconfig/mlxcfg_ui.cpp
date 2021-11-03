@@ -1100,7 +1100,7 @@ mlxCfgStatus MlxCfg::genTLVsFile()
     mlxCfgStatus rc = MLX_CFG_OK;
 
     try {
-        GenericCommander commander(NULL, _mlxParams.dbName,_mlxParams.deviceType == Device_Type::Switch);
+        GenericCommander commander(NULL, _mlxParams.dbName,_mlxParams.deviceType == Switch);
         commander.genTLVsList(tlvs);
         VECTOR_ITERATOR(string, tlvs, it) {
             sprintf(buff, "%-50s0\n", it->c_str());
@@ -1165,7 +1165,7 @@ mlxCfgStatus MlxCfg::genXMLTemplate()
     }
 
     try {
-        GenericCommander commander(NULL, _mlxParams.dbName,_mlxParams.deviceType == Device_Type::Switch);
+        GenericCommander commander(NULL, _mlxParams.dbName,_mlxParams.deviceType == Switch);
         commander.genXMLTemplate(tlvs, xmlTemplate, _mlxParams.allAttrs);
     } catch (MlxcfgException& e) {
         printf("-E- %s\n", e._err.c_str());
@@ -1199,7 +1199,7 @@ mlxCfgStatus MlxCfg::raw2XMLAux(bool isBin)
     EXIT_IF_RC_NOT_OK(rc)
 
     try {
-        GenericCommander commander(NULL, _mlxParams.dbName, _mlxParams.deviceType == Device_Type::Switch);
+        GenericCommander commander(NULL, _mlxParams.dbName, _mlxParams.deviceType == Switch);
         if (isBin) {
             //commander.bin2XML(buff, xmlTemplate);
         } else {
@@ -1241,7 +1241,7 @@ mlxCfgStatus MlxCfg::XML2RawAux(bool isBin)
     EXIT_IF_RC_NOT_OK(rc)
 
     try {
-        GenericCommander commander(NULL, _mlxParams.dbName, _mlxParams.deviceType == Device_Type::Switch);
+        GenericCommander commander(NULL, _mlxParams.dbName, _mlxParams.deviceType == Switch);
         if (isBin) {
             commander.XML2Bin(xml, binBuff, false);
         } else {
@@ -1291,7 +1291,7 @@ mlxCfgStatus MlxCfg::createConf()
     EXIT_IF_RC_NOT_OK(rc)
 
     try {
-        GenericCommander commander(NULL, _mlxParams.dbName, _mlxParams.deviceType == Device_Type::Switch);
+        GenericCommander commander(NULL, _mlxParams.dbName, _mlxParams.deviceType == Switch);
         commander.createConf(xml, buff);
         if (!_mlxParams.privPemFile.empty() &&
             !_mlxParams.keyPairUUID.empty()) {
