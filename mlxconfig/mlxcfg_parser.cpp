@@ -351,11 +351,11 @@ mlxCfgStatus MlxCfg::extractSetCfgArgs(int argc, char *argv[])
 Device_Type MlxCfg::getDeviceTypeFromString(string inStr){
     mft_utils::to_lowercase(inStr);
     if (inStr == "switch") {
-        return Device_Type::Switch;
+        return Switch;
     }else if (inStr == "hca") {
-        return Device_Type::HCA;
+        return HCA;
     }else{
-        return Device_Type::UNSUPPORTED_DEVICE;
+        return UNSUPPORTED_DEVICE;
     }
 }
 
@@ -380,7 +380,7 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char *argv[])
                 return err(true, "missing device type");
             }
             Device_Type dType = getDeviceTypeFromString(argv[i]);
-            if (dType == Device_Type::UNSUPPORTED_DEVICE) {
+            if (dType == UNSUPPORTED_DEVICE) {
                 return err(true, "Unsupported device name given, please specify \"switch\" or \"hca\" device type");
             }
             _mlxParams.deviceType = dType;
