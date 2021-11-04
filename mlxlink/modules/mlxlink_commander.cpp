@@ -851,7 +851,10 @@ int MlxlinkCommander::handleIBLocalPort(u_int32_t labelPort, bool ibSplitReady)
 {
     string regName = "PLIB";
     int targetLocalPort = -1;
-    if (_devID == DeviceQuantum2) {
+    if ((_devID == DeviceQuantum2 || (_devID == DeviceQuantum && ibSplitReady))) {
+        labelPort = 2 * labelPort - 1;
+    }
+    if (_devID == DeviceQuantum2 && ibSplitReady) {
         labelPort = 2 * labelPort - 1;
     }
     for (u_int32_t localPort = 1; localPort <= maxLocalPort(); localPort++) {
@@ -948,34 +951,36 @@ void MlxlinkCommander::fillIbPortGroupMap(u_int32_t localPort,u_int32_t labelPor
         u_int32_t group, bool splitReady)
 {
     if (splitReady) {
+        labelPort = (labelPort + 1) / 2;
         if (_devID == DeviceQuantum) {
             if (isIbLocalPortValid(localPort+1)) {
                 _localPortsPerGroup.push_back(PortGroup(localPort, labelPort, group, 1));
                 _localPortsPerGroup.push_back(PortGroup(localPort+1, labelPort, group, 2));
             } else {
-                _localPortsPerGroup.push_back(PortGroup(localPort, labelPort, group, 0));
+                _localPortsPerGroup.push_back(PortGroup(localPort, labelPort, group, 1));
             }
         } else if (_devID == DeviceQuantum2) {
-            labelPort = labelPort * 2; // change labelPort mapping if split ready
+            labelPort = (labelPort / 2) + 1;
             if (isIbLocalPortValid(localPort+1)) {
-                _localPortsPerGroup.push_back(PortGroup(localPort, labelPort-1, group, 1, 1));
+                _localPortsPerGroup.push_back(PortGroup(localPort, labelPort, group, 1, 1));
                 _localPortsPerGroup.push_back(PortGroup(localPort+1, labelPort, group, 1, 2));
             } else {
-                _localPortsPerGroup.push_back(PortGroup(localPort, labelPort-1, group, 1, 1));
+                _localPortsPerGroup.push_back(PortGroup(localPort, labelPort, group, 1, 1));
             }
             if (isIbLocalPortValid(localPort+3)) {
-                _localPortsPerGroup.push_back(PortGroup(localPort+2, labelPort+1, group, 2, 1));
-                _localPortsPerGroup.push_back(PortGroup(localPort+3, labelPort+2, group, 2, 2));
+                _localPortsPerGroup.push_back(PortGroup(localPort+2, labelPort, group, 2, 1));
+                _localPortsPerGroup.push_back(PortGroup(localPort+3, labelPort, group, 2, 2));
             } else {
-                _localPortsPerGroup.push_back(PortGroup(localPort+2, labelPort+1, group, 1, 1));
+                _localPortsPerGroup.push_back(PortGroup(localPort+2, labelPort, group, 2, 1));
             }
         }
     } else {
         if (_devID == DeviceQuantum) {
             _localPortsPerGroup.push_back(PortGroup(localPort, labelPort, group, 0));
         } else if (_devID == DeviceQuantum2) {
+            labelPort = (labelPort / 2) + 1;
             _localPortsPerGroup.push_back(PortGroup(localPort, labelPort, group, 1));
-            _localPortsPerGroup.push_back(PortGroup(localPort+2, labelPort+1, group, 2));
+            _localPortsPerGroup.push_back(PortGroup(localPort+2, labelPort, group, 2));
         }
     }
 }

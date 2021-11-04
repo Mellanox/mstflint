@@ -134,15 +134,6 @@ void MlxlinkAmBerCollector::startCollector()
         _labelPort = it->labelPort;
         _splitPort = it->split;
         _secondSplit = it->secondSplit;
-        if (_devID == DeviceQuantum2) { // convert panel port to cage/port
-            _labelPort = _labelPort % 2 == 0 ? (_labelPort / 2)
-                                             : (_labelPort / 2) + 1;
-
-            if (_secondSplit) { // convert split panel port to cage/port/split
-                _labelPort = _labelPort % 2 == 0 ? (_labelPort / 2)
-                                                 : (_labelPort / 2) + 1;
-            }
-        }
 
         init();
         collect();
@@ -320,7 +311,7 @@ vector<AmberField> MlxlinkAmBerCollector::getIndexesInfo()
          */
         labelPortStr += "/" + to_string(_splitPort);
     }
-    if (_devID == DeviceQuantum2 && _secondSplit) {
+    if ((_secondSplit && _secondSplit != 1) && _devID == DeviceQuantum2) {
         labelPortStr += "/" + to_string(_secondSplit);
     }
     fields.push_back(AmberField("Port Number", labelPortStr + "(" +
@@ -412,7 +403,7 @@ vector<AmberField> MlxlinkAmBerCollector::getSystemInfo()
         updateField("local_port", _localPort);
         updateField("page_select", PDDR_MODULE_INFO_PAGE);
         sendRegister(ACCESS_REG_PDDR, MACCESS_REG_METHOD_GET);
-        fields.push_back(AmberField("Module Temp", getTemp(getFieldValue("temperature"), !_isPortPCIE)));
+        fields.push_back(AmberField("Module Temp", getTemp(getFieldValue("temperature")), !_isPortPCIE));
 
     } catch (const std::exception &exc) {
         throw MlxRegException(
