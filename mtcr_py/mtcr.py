@@ -84,8 +84,6 @@ if CMTCR:
             self.mwrite4BlockFunc = CMTCR.mwrite4_block
             self.icmdSendCommandFunc = CMTCR.icmd_send_command
             self.mHcaResetFunc = CMTCR.mhca_reset
-            self.mreadi2cblockFunc = CMTCR.mread_i2cblock
-            self.mwritei2cblockFunc = CMTCR.mwrite_i2cblock
             self.mseti2cslaveFunc = CMTCR.mset_i2c_slave
             self.mseti2caddrwidthFunc = CMTCR.mset_i2c_addr_width
 
