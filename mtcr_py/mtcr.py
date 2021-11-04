@@ -84,10 +84,6 @@ if CMTCR:
             self.mwrite4BlockFunc = CMTCR.mwrite4_block
             self.icmdSendCommandFunc = CMTCR.icmd_send_command
             self.mHcaResetFunc = CMTCR.mhca_reset
-            self.mreadi2cblockFunc = CMTCR.mread_i2cblock
-            self.mwritei2cblockFunc = CMTCR.mwrite_i2cblock
-            self.mseti2cslaveFunc = CMTCR.mset_i2c_slave
-            self.mseti2caddrwidthFunc = CMTCR.mset_i2c_addr_width
 
             self.open()
 
@@ -182,14 +178,8 @@ if CMTCR:
             if self.mHcaResetFunc(self.mf, bus_array, bus_array_size) != 0:
                 raise MtcrException("Failed to reset device")
         ##########################
-        def msetI2cSlave(self, i2c_slave):
-            if self.mseti2cslaveFunc(self.mf, i2c_slave) == 0xff:
-                raise MtcrException("Failed to set slave address to: 0x%x" % i2c_slave)
 
-        ##########################
-        def msetI2cAddrWidth(self, addr_width):
-            if self.mseti2caddrwidthFunc(self.mf, addr_width) != 0:
-                raise MtcrException("Failed to set address wifth to: %d" % addr_width)
+
 
 else:
     import subprocess
