@@ -79,6 +79,9 @@ typedef struct {
 #define EXTENDED_PAGES_13_14_ADDR       142
 #define EXTENDED_PAGES_13_14_MASK       0x20
 
+#define VOLT_UNIT 1000
+#define MILLIVOLT_UNIT 10
+
 typedef struct Page{
     u_int32_t page;
     u_int16_t offset;
