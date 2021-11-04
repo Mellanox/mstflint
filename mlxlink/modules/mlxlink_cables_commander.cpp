@@ -174,7 +174,7 @@ void MlxlinkCablesCommander::getDdmValuesFromPddr()
 
     _cableDdm.channels = _numOfLanes;
     _cableDdm.temperature.val = getFieldValue("temperature") / 256;
-    _cableDdm.voltage.val = getFieldValue("voltage") / 10;
+    _cableDdm.voltage.val = getFieldValue("voltage") / 10; // convert to mVolts
 
     string laneStr = "";
     for (int lane = 0; lane < _cableDdm.channels; lane++) {
@@ -655,7 +655,7 @@ void MlxlinkCablesCommander::prepareDDMOutput()
     sprintf(strBuff, "%dC", (int)_cableDdm.temperature.val);
     setPrintVal(cableDDMCmd, "Temperature", strBuff, ANSI_COLOR_RESET, true);
 
-    sprintf(strBuff, "%.4fV", ((double)_cableDdm.voltage.val) / 10000);
+    sprintf(strBuff, "%.4fV", ((double)_cableDdm.voltage.val) / 1000); // convert to Volts
     setPrintVal(cableDDMCmd, "Voltage", strBuff, ANSI_COLOR_RESET, true);
 
     int i = 0;
