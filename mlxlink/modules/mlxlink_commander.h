@@ -305,10 +305,8 @@ public:
     virtual ~MlxlinkCommander();
 
     void checkRegCmd();
-    void validatePortToLC();
     virtual void validatePortType(const string &portTypeStr);
     void updatePortType();
-    void gearboxBlock(const string &option);
     void checkLocalPortDPNMapping(u_int32_t localPort);
     int getLocalPortFromMPIR(DPN& dpn);
     void checkValidFW();
@@ -331,7 +329,6 @@ public:
     string activeSpeed2Str(u_int32_t mask, bool extended);
     void getCableParams();
     bool inPrbsTestMode();
-    bool checkGBPpaosDown();
     bool checkPaosDown();
     bool checkPpaosTestMode();
     u_int32_t getPtysCap();

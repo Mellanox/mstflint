@@ -78,7 +78,6 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _ignorePortType = true;
     _lanesLockStatus = false;
     _ignorePortStatus = true;
-    _isGboxPort = false;
     _protoAdmin = 0;
     _protoAdminEx = 0;
     _speedBerCsv = 0;
@@ -137,46 +136,6 @@ void MlxlinkCommander::updatePortType()
         } catch (MlxRegException &exc) {
             // Ignore updating the port type field if it's not exist
         }
-    }
-}
-
-void MlxlinkCommander::validatePortType(const string &portTypeStr)
-{
-    _portType = NETWORK_PORT_TYPE;
-    map<string, u_int32_t>::iterator it =
-            _mlxlinkMaps->_networkPorts.find(portTypeStr);
-    if (it == _mlxlinkMaps->_networkPorts.end()) {
-        string errMsg = "";
-        for (it = _mlxlinkMaps->_networkPorts.begin();
-             it != _mlxlinkMaps->_networkPorts.end(); it++) {
-            errMsg  += it->first;
-            if (it->second == NETWORK_PORT_TYPE) {
-                errMsg += "(Default)";
-            }
-            errMsg += ", ";
-        }
-        errMsg = deleteLastChar(errMsg, 2);
-        throw MlxRegException("Invalid port type, valid port types are [" + errMsg + "]");
-    } else if (it->second != NETWORK_PORT_TYPE_LAST) {
-        if(_isHCA && it->second != NETWORK_PORT_TYPE) {
-            throw MlxRegException("Port types of GEARBOX_HOST, INTERNAL_IC_LR and "\
-                    "GEARBOX_LINE can be used with Switches supporting cards devices only");
-        }
-        _portType = it->second;
-    }
-    if ((_portType == NETWORK_PORT_TYPE_NEAR) ||
-        (_portType == NETWORK_PORT_TYPE_IC_LR) ||
-        (_portType == NETWORK_PORT_TYPE_FAR)) {
-        _isGboxPort = true;
-        MlxlinkRecord::gboxTitle = it->first;
-    }
-}
-
-void MlxlinkCommander::gearboxBlock(const string &option)
-{
-    if (_isGboxPort) {
-        throw MlxRegException("--" + option + " flag is not applicable for " +
-                _userInput._portType + " port type");
     }
 }
 
@@ -365,37 +324,6 @@ void MlxlinkCommander::checkAllPortsStatus()
     }
 }
 
-void MlxlinkCommander::validatePortToLC()
-{
-    bool isDownStreamDevValid = true;
-    string regName = "PMLP";
-    resetParser(regName);
-    updateField("local_port", _localPort);
-    genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
-
-    u_int32_t slotIndex = getFieldValue("lane0_module_mapping.slot_index");
-
-    try {
-        regName = "MDDQ";
-        resetParser(regName);
-        updateField("query_type", 1); //1 for slot query
-        updateField("slot_index", slotIndex);
-        genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
-    } catch (MlxRegException &exc) {
-        isDownStreamDevValid = false;
-    }
-
-    if (!isDownStreamDevValid) {
-        if (slotIndex == 0 && _isGboxPort) {
-            throw MlxRegException("No cards detected on the device.");
-        }
-    } else if (_isGboxPort) {
-        if (getFieldValue("lc_ready") != 1) {
-            throw MlxRegException("Invalid port number, Line card %d is not ready", slotIndex);
-        }
-    }
-}
-
 void MlxlinkCommander::handlePortStr(const string &portStr)
 {
     auto portParts = MlxlinkRecord::split(portStr, "/");
@@ -467,9 +395,6 @@ void MlxlinkCommander::labelToLocalPort() {
     if (_devID == DeviceSpectrum || _devID == DeviceSpectrum2 ||
         _devID == DeviceSpectrum3 || _devID == DeviceSpectrum4) {
         labelToSpectLocalPort();
-        if (_isGboxPort) {
-            validatePortToLC();
-        }
     } else if (dm_dev_is_ib_switch(_devID)) {
         labelToIBLocalPort();
     }
@@ -847,35 +772,18 @@ bool MlxlinkCommander::inPrbsTestMode()
     return false;
 }
 
-bool MlxlinkCommander::checkGBPpaosDown()
+bool MlxlinkCommander::checkPaosDown()
 {
-    string regName = "PPAOS";
+    string regName = "PAOS";
     resetParser(regName);
-    updatePortType();
-
     updateField("swid", SWID);
     updateField("local_port", _localPort);
     genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
-
-    return getFieldValue("phy_status") != PAOS_UP;
-}
-
-bool MlxlinkCommander::checkPaosDown()
-{
-    if (_isGboxPort) {
-        return checkGBPpaosDown();
-    } else {
-        string regName = "PAOS";
-        resetParser(regName);
-        updateField("swid", SWID);
-        updateField("local_port", _localPort);
-        genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
-        u_int32_t paosOperStatus = getFieldValue("oper_status");
-        if (paosOperStatus == PAOS_DOWN) {
-            return true;
-        }
-        return false;
+    u_int32_t paosOperStatus = getFieldValue("oper_status");
+    if (paosOperStatus == PAOS_DOWN) {
+        return true;
     }
+    return false;
 }
 
 bool MlxlinkCommander::checkPpaosTestMode()
@@ -1437,7 +1345,6 @@ void MlxlinkCommander::prepareBerModuleInfoNdr(bool valid)
 void MlxlinkCommander::showModuleInfo()
 {
     try {
-        gearboxBlock(MODULE_INFO_FLAG);
 
         string regName = "PMAOS";
         resetParser(regName);
@@ -2513,7 +2420,6 @@ void MlxlinkCommander::showBerMonitorInfo()
 void MlxlinkCommander::showExternalPhy()
 {
     try {
-        gearboxBlock(PEPC_SHOW_FLAG);
         if (_isHCA || _devID == DeviceSwitchIB || _devID == DeviceSwitchIB2
                 || _devID == DeviceQuantum || _devID == DeviceQuantum2) {
             throw MlxRegException("\"--" PEPC_SHOW_FLAG "\" option is not supported for HCA and InfiniBand switches");
@@ -3256,47 +3162,22 @@ bool MlxlinkCommander::isForceDownSupported()
     return supported;
 }
 
-void MlxlinkCommander::sendGBPaosCmd(PAOS_ADMIN adminStatus, bool forceDown)
-{
-    try {
-        string regName = "PPAOS";
-        resetParser(regName);
-        updateField("swid", SWID);
-        updatePortType();
-        updateField("local_port", _localPort);
-        updateField("phy_status_admin", adminStatus == PAOS_UP);
-        if (forceDown) {
-            updateField("fpd", forceDown);
-        }
-
-        genBuffSendRegister(regName, MACCESS_REG_METHOD_SET);
-    } catch (const std::exception &exc) {
-        string portCommand = (adminStatus == PAOS_DOWN)? "down" : "up";
-        throw MlxRegException(
-                "Sending port " + portCommand + " command failed, " + string(exc.what()));
-    }
-}
-
 void MlxlinkCommander::sendPaosCmd(PAOS_ADMIN adminStatus, bool forceDown)
 {
     try {
-        if (_isGboxPort) {
-            sendGBPaosCmd(adminStatus, forceDown);
-        } else {
-            string regName = "PAOS";
-            resetParser(regName);
-            updateField("swid", SWID);
-            updateField("local_port", _localPort);
-            updateField("admin_status", adminStatus);
-            updateField("ase", 1);
-            // Send force down for test mode only
-            if (!_userInput._prbsMode.empty()) {
-                if (forceDown) {
-                    updateField("fd", 1);
-                }
+        string regName = "PAOS";
+        resetParser(regName);
+        updateField("swid", SWID);
+        updateField("local_port", _localPort);
+        updateField("admin_status", adminStatus);
+        updateField("ase", 1);
+        // Send force down for test mode only
+        if (!_userInput._prbsMode.empty()) {
+            if (forceDown) {
+                updateField("fd", 1);
             }
-            genBuffSendRegister(regName, MACCESS_REG_METHOD_SET);
         }
+        genBuffSendRegister(regName, MACCESS_REG_METHOD_SET);
     } catch (const std::exception &exc) {
         string portCommand = (adminStatus == PAOS_DOWN)? "down" : "up";
         throw MlxRegException("Sending port " + portCommand + " command failed");
@@ -3694,7 +3575,6 @@ void MlxlinkCommander::sendPtys()
             ptysMask |= ptysSpeedToMask(_ptysSpeeds[i]);
         }
         if (_linkModeForce == true) {
-            gearboxBlock(PTYS_LINK_MODE_FORCE_FLAG);
             updateField("an_disable_admin", 1);
         }
         if (_protoActive == IB) {
@@ -4159,8 +4039,6 @@ u_int32_t MlxlinkCommander::getLoopbackMode(const string &lb)
 void MlxlinkCommander::sendPepc()
 {
     try {
-        gearboxBlock(PEPC_SET_FLAG);
-
         if (_isHCA || _devID == DeviceSwitchIB || _devID == DeviceSwitchIB2
                 || _devID == DeviceQuantum || _devID == DeviceQuantum2) {
             throw MlxRegException("\"--" PEPC_SET_FLAG "\" option is not supported for HCA and InfiniBand switches");
@@ -4288,8 +4166,6 @@ void MlxlinkCommander::printOuptputVector(vector<MlxlinkCmdPrint> &cmdOut)
 
 void MlxlinkCommander::initCablesCommander()
 {
-    gearboxBlock(CABLE_FLAG);
-
     if (_plugged && !_mngCableUnplugged) {
         _cablesCommander = new MlxlinkCablesCommander(_jsonRoot);
         _cablesCommander->_mf = _mf;
@@ -4382,7 +4258,6 @@ void MlxlinkCommander::readCableEEPROM()
 void MlxlinkCommander::initEyeOpener()
 {
     try {
-        gearboxBlock(MARGIN_SCAN_FLAG);
         if (_linkUP || _userInput._pcie) {
             _eyeOpener = new MlxlinkEyeOpener(_jsonRoot);
             _eyeOpener->_mf = _mf;
@@ -4425,8 +4300,6 @@ void MlxlinkCommander::initEyeOpener()
 void MlxlinkCommander::initErrInj()
 {
     try {
-        gearboxBlock(PREI_RX_ERR_INJ_FLAG);
-
         if (!_isHCA) {
             throw MlxRegException("This feature supporting NIC's only");
         }

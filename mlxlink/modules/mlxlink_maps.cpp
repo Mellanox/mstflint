@@ -103,11 +103,6 @@ void MlxlinkMaps::initPortStateMapping()
     _slrgFomMode[SLRG_FOM_MODE_EYEM_VN] = "SLRG_FOM_MODE_EYEM_VN";
     _slrgFomMode[SLRG_FOM_MODE_EYEM_VP] = "SLRG_FOM_MODE_EYEM_VP";
 
-    _networkPorts["NETWORK"] = NETWORK_PORT_TYPE;
-    _networkPorts["PCIE"] = NETWORK_PORT_TYPE_LAST;
-    _networkPorts["GEARBOX_HOST"] = NETWORK_PORT_TYPE_NEAR;
-    _networkPorts["INTERNAL_IC_LR"] = NETWORK_PORT_TYPE_IC_LR;
-    _networkPorts["GEARBOX_LINE"] = NETWORK_PORT_TYPE_FAR;
 }
 
 void MlxlinkMaps::phyHstFsmHdrStateMapping()
