@@ -113,7 +113,7 @@ class DataPrinter:
             body = ":"
         elif str(field).find("Warning[") != -1:
             body = ":"
-        elif field.find("DWORD") is not cs.PARSER_STRING_NOT_FOUND:
+        elif field.find("DWORD") != cs.PARSER_STRING_NOT_FOUND:
             body = ":"
         else:
             body = " = "

@@ -147,7 +147,7 @@ class ResourceDumpFetcher:
         inline_data = []
         call_res_dump = True
 
-        if kwargs["vHCAid"] is None:
+        if kwargs["vHCAid"] == None:
             vhca_id = 0
         else:
             vhca_id = int(kwargs["vHCAid"])

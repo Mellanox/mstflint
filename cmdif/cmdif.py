@@ -54,7 +54,10 @@ CMDIF = None
 try:
     from ctypes import *
     if platform.system() == "Windows" or os.name == "nt":
-        CMDIF = CDLL(".\\libcmdif-1.dll")
+        try:
+            CMDIF = CDLL("libcmdif-1.dll")
+        except:
+            CMDIF = CDLL(os.path.join(os.path.dirname(os.path.realpath(__file__)), "libcmdif-1.dll"))
     else:
         try:
             CMDIF = CDLL("ccmdif.so")

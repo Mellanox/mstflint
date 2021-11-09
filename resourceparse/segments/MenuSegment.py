@@ -121,11 +121,11 @@ class MenuSegment(Segment):
                 raise DumpNotSupported("Dump type: {0} is not supported".format(dump_type))
 
             # Check index1 attribute
-            if not index1 and index1 is not 0 and match_rec.must_have_index1:
+            if not index1 and index1 != 0 and match_rec.must_have_index1:
                 raise DumpNotSupported(
                     "Dump type: {0} must have index1 attribute, and it wasn't provided".format(dump_type))
 
-            if not index2 and index2 is not 0 and match_rec.must_have_index2:
+            if not index2 and index2 != 0 and match_rec.must_have_index2:
                 raise DumpNotSupported(
                     "Dump type: {0} must have index2 attribute, and it wasn't provided".format(dump_type))
 
@@ -145,11 +145,11 @@ class MenuSegment(Segment):
                 raise DumpNotSupported(
                     "Dump type: {0} must have numOfObj2 attribute, and it wasn't provided".format(dump_type))
 
-            if num_of_objs_1 is not None and not match_rec.supports_num_of_obj1:
+            if num_of_objs_1 != None and not match_rec.supports_num_of_obj1:
                 raise DumpNotSupported(
                     "Dump type: {0} does not support numOfObj1 attribute, and it was provided".format(dump_type))
 
-            if num_of_objs_2 is not None and not match_rec.supports_num_of_obj2:
+            if num_of_objs_2 != None and not match_rec.supports_num_of_obj2:
                 raise DumpNotSupported(
                     "Dump type: {0} does not support numOfObj2 attribute, and it was provided".format(dump_type))
 

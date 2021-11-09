@@ -96,11 +96,11 @@ class RawData:
         file_type = self._determine_dump_type()
 
         # retrieve the raw data from the file
-        if file_type is cs.RAW_DATA_FILE_TYPE_BIN:
+        if file_type == cs.RAW_DATA_FILE_TYPE_BIN:
             return self._retrieve_raw_data_from_bin_file()
-        elif file_type is cs.RAW_DATA_FILE_TYPE_JSON:
+        elif file_type == cs.RAW_DATA_FILE_TYPE_JSON:
             return self._retrieve_raw_data_from_json_file()
-        elif file_type is cs.RAW_DATA_FILE_TYPE_HUMAN_READABLE:
+        elif file_type == cs.RAW_DATA_FILE_TYPE_HUMAN_READABLE:
             return self._retrieve_raw_data_human_readable_file()
 
     def to_segments(self):
@@ -154,7 +154,7 @@ class RawData:
         """
         with open(self._file_path, 'r') as f:
             for line in f:
-                if line.find("Segment Type") is cs.PARSER_STRING_NOT_FOUND:
+                if line.find("Segment Type") == cs.PARSER_STRING_NOT_FOUND:
                     if re.search(r"0x[0-9a-fA-F]{8}", line):
                         hex_list = re.findall(r"0x[0-9a-fA-F]{8}", line)
                         for hex_number in hex_list:
