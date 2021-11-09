@@ -173,3 +173,13 @@ def is_in_internal_host():
         is_in_internal_host.result = False
 
     return is_in_internal_host.result
+
+def is_uefi_secureboot():
+    
+    if platform.system() == "Linux":
+        cmd = "mokutil --sb-state"
+        rc, out, _ = cmdExec(cmd)
+        if rc == 0 and out.strip() == "SecureBoot enabled":
+            return True
+
+    return False

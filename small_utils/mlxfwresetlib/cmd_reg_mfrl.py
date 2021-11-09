@@ -1,4 +1,5 @@
 # Copyright (c) Sep 2019 Mellanox Technologies LTD. All rights reserved.
+# Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -216,7 +217,7 @@ class CmdRegMfrl():
                 reset_level_2_send = reset_level_ii['mask']
                 break
         else:
-            raise RuntimeError('Failed to send MFRL! reset-level {0} is not supported!'.format(reset_level))
+            raise CmdNotSupported('Failed to send MFRL! reset-level {0} is not supported!'.format(reset_level))
         
         # Reset-type to send
         for reset_type_ii in self._reset_types:
@@ -224,6 +225,6 @@ class CmdRegMfrl():
                 reset_type_2_send = reset_type
                 break
         else:
-            raise RuntimeError('Failed to send MFRL! reset-type {0} is not supported!'.format(reset_type))
+            raise CmdNotSupported('Failed to send MFRL! reset-type {0} is not supported!'.format(reset_type))
 
         self._write_reg(reset_level_2_send, reset_type_2_send, reset_sync)

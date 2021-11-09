@@ -40,7 +40,7 @@ import abc
 import os
 import platform
 from . import mlxfwreset_utils
-from .mlxfwreset_utils import cmdExec
+from .mlxfwreset_utils import cmdExec, is_in_internal_host
 from functools import reduce
 from time import sleep
 
@@ -208,6 +208,7 @@ class MlnxDriverLinux(MlnxDriver):
 
         driver_err, rshim_err = None, None
 
+        #* Start NIC driver
         for dbdf,driver_name in self.drivers_dbdf:
             driver_path = '{0}/{1}'.format(MlnxDriverLinux.PCI_DRIVERS_PATH,driver_name)
             assert os.path.exists(driver_path)
@@ -235,13 +236,21 @@ class MlnxDriverLinux(MlnxDriver):
                         driver_err = True
                         sleep(0.1)
         
+        #* Configure the driver in BlueField's internal host (ARM)            
+        if is_in_internal_host() and driver_err is False:                   # This code is WA. FR will be opened in rel1
+            cmd = "mlnx_bf_configure"                                       # 2022 to address this issue (RM #2831210)
+            rc, _, _ = cmdExec(cmd)
+            if rc != 0:
+                print("-W- Failed to configure the driver")
+
+        #* Start RSHIM driver (BlueField)
         try:
             if self.rshim_driver:
                 self.rshim_driver.start()
         except Exception as err:
             rshim_err = err
 
-        # Error (Best effort to try to start both drivers before indicating on error)
+        #* Handle Errors (Best effort to try to start both drivers before indicating on error)
         if driver_err:                          
             raise RuntimeError("Failed to start driver! please start driver manually")
         if rshim_err:
