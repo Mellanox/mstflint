@@ -219,7 +219,7 @@ class Parser:
             seg.add_parsed_data(
                 "{:<15}".format("DWORD [{0}-{1}]".format(line_counter * 4, (line_counter * 4) + (len(hex_list) - 1))),
                 ''.join(hex_list[:]))
-        elif len(hex_list) is 1:
+        elif len(hex_list) == 1:
             seg.add_parsed_data("{:<15}".format("DWORD [{0}]".format(line_counter * 4)), ''.join(hex_list[:]))
 
     @classmethod
@@ -306,7 +306,7 @@ class Parser:
         """This method check if the adb file name has the version format define by arch.
         """
         match = re.fullmatch("fw-[0-9]+-rel-[0-9]{2}_[0-9]{2}_[0-9]{4}", adb_name)
-        if match is not None:
+        if match != None:
             if match.string == adb_name:
                 return True
         return False

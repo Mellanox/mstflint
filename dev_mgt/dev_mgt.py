@@ -46,7 +46,10 @@ DEV_MGT = None
 try:
     from ctypes import *
     if platform.system() == "Windows" or os.name == "nt":
-        DEV_MGT = CDLL("c_dev_mgt.dll")
+        try:
+            DEV_MGT = CDLL("c_dev_mgt.dll")
+        except:
+            DEV_MGT = CDLL(os.path.join(os.path.dirname(os.path.realpath(__file__)), "c_dev_mgt.dll"))
     else:
         try:
             #c_dev_mgt.so must be specified explicitly for pyinstaller collection
