@@ -189,6 +189,11 @@
 #define CLASS_VS_SIZE_BYTES 224
 #define CLASS_VS_DATA_OFFSET 0x20
 
+// ConfigSpaceAccess Mode 0 supports address of up to 24 bits.
+#define MODE_0_MAX_ADDRESS_RANGE 0x7FFFFF
+#define MODE_2_MAX_RECORDS_NUM   18
+#define MODE_2_MAX_DATA_SIZE     (MODE_2_MAX_RECORDS_NUM * 4)
+
 // Convert BYTES - DWORDS with MEMCPY BE
 #define BYTES_TO_DWORD_BE(dw_dest, byte_src) do {   u_int32_t tmp; \
                                                     memcpy(&tmp, byte_src, 4); \
@@ -294,6 +299,9 @@ static int verbose = 0;
 #define MAX_IB_SMP_DATA_SIZE    (IB_SMP_DATA_SIZE - IB_DATA_INDEX)
 #define MAX_IB_SMP_DATA_DW_NUM  MAX_IB_SMP_DATA_SIZE / 4
 
+#define CONFIG_ACCESS_MODE_2_DATA_OFFSET 4
+#define CONFIG_ACCESS_MODE_2_BITMASK_OFFSET 8
+
 void set_mkey_for_smp_mad(ibvs_mad *vsmad)
 {
     if (vsmad->mkey) {
@@ -303,48 +311,118 @@ void set_mkey_for_smp_mad(ibvs_mad *vsmad)
     }
 }
 
+// Attribute modifier for mode 0:
+// Bits 24-31: Address MSB
+// Bits 22-23: Mode = 0
+// Bits 16-21: Number of dwords
+// Bits 0-15: Address LSB
+static u_int32_t create_attribute_mode_0(u_int32_t memory_address, u_int8_t num_of_dwords)
+{
+    return ( (EXTRACT(memory_address, 0, 16) << 00) & 0x0000ffff ) |
+           ( (num_of_dwords << 16) & 0x00ff0000 ) |
+           ( (EXTRACT(memory_address, 16, 8) << 24) & 0xff000000 );
+}
+
+// Attribute modifier for mode 2:
+// Bits 22-23: Mode = 2
+// Bits 16-21: Number of records (= number of dwords)
+static u_int32_t create_attribute_mode_2(u_int8_t num_of_dwords)
+{
+    return  ( ( ( 2 << 22) & 0x800000 ) |
+            ( (num_of_dwords << 16) & 0x00ff0000 ));
+}
+
+// For ConfigSpaceAccess Mad we use mode 2
+// only for accessing addresses larger than 24 bits.
+static unsigned int should_use_mode_2(u_int32_t memory_address, u_int8_t num_of_dwords)
+{
+    return memory_address + (num_of_dwords * 4) >
+           MODE_0_MAX_ADDRESS_RANGE ? 1 : 0;
+}
+
+static void set_mad_data_for_mode_2(u_int32_t memory_address, u_int8_t num_of_dwords,
+                                    u_int8_t* mad_data, u_int32_t* attribute_mod,
+                                    u_int32_t* mask, unsigned int* data_offset)
+{
+    int i = 0;
+    *attribute_mod = create_attribute_mode_2(num_of_dwords);
+
+    // First dword of each record of ConfigSpaceAccess mode 2
+    // contains the current address.
+    for (i = 0; i < num_of_dwords; i++) {
+        u_int32_t record_offset = memory_address + i;
+        DWORD_TO_BYTES_BE(mad_data + IB_DATA_INDEX + (i * 4), &record_offset);
+    }
+
+    // Second dword contains the data.
+    *data_offset = CONFIG_ACCESS_MODE_2_DATA_OFFSET;
+
+    // Third dword contains the bitmask.
+    *mask = 0xFFFFFFFF;
+}
+
 static uint64_t ibvsmad_craccess_rw_smp(ibvs_mad *h, u_int32_t memory_address, int method, u_int8_t num_of_dwords, u_int32_t *data)
 {
     u_int8_t mad_data[IB_SMP_DATA_SIZE] = {0};
     int i;
-    u_int32_t att_mod = 0;
     u_int8_t *p;
-    u_int64_t mkey;
+    u_int32_t attribute_mod = 0;
+    u_int64_t mkey = 0;
+    u_int32_t mask = 0;
+    unsigned int data_offset = 0;
+    unsigned int use_mode_2 = should_use_mode_2(memory_address, num_of_dwords);
 
     if (num_of_dwords > MAX_IB_SMP_DATA_DW_NUM) {
         IBERROR(("size is too big, maximum number of dwords is %d", MAX_IB_SMP_DATA_DW_NUM));
         return BAD_RET_VAL;
     }
-    // Mode 0 - block write
-    // att_mod = MERGE(att_mod, 0, 22, 2); // commented - already 0
-
-    // Cr addr:
-    att_mod = MERGE(att_mod, memory_address, 0, 16);
-    att_mod = MERGE(att_mod, EXTRACT(memory_address, 16, 8), 24, 8);
 
     // Set the mkey
     mkey = __cpu_to_be64(h->mkey);
     memcpy(&mad_data[0], &mkey, 8);
     set_mkey_for_smp_mad(h);
 
-    // DW Size:
-    att_mod = MERGE(att_mod, num_of_dwords, 16, 6);
+    if (use_mode_2) {
+        set_mad_data_for_mode_2(memory_address, num_of_dwords,
+                                mad_data, &attribute_mod,
+                                &mask, &data_offset);
+
+    } else {
+        attribute_mod = create_attribute_mode_0(memory_address, num_of_dwords);
+    }
+
+    DEBUG(("Sending ConfigSpaceAccess SMP MAD...\n"));
+    if (h->portid.lid) {
+        DEBUG(("Management Class: 0x1\n"));
+    } else {
+        DEBUG(("Management Class: 0x81\n"));
+    }
+    DEBUG(("Attribute Modifier = 0x%08x\n", attribute_mod));
+     if (use_mode_2) {
+        DEBUG(("Mode: 2\n"));
+    } else {
+        DEBUG(("Mode: 0\n"));
+    }
+    DEBUG(("Attribute ID = 0x%08x\n", IB_SMP_ATTR_CR_ACCESS));
+    DEBUG(("Memory Address = 0x%08x\n", memory_address));
+    DEBUG(("Number of dwords = %d\n", num_of_dwords));
 
     if (method == IB_MAD_METHOD_GET) {
-        p = h->smp_query_via(mad_data, &h->portid, IB_SMP_ATTR_CR_ACCESS, att_mod, 0, h->srcport);
+        p = h->smp_query_via(mad_data, &h->portid, IB_SMP_ATTR_CR_ACCESS, attribute_mod, 0, h->srcport);
 
         if (!p) {
             return BAD_RET_VAL;
         }
 
         for (i = 0; i < num_of_dwords; i++) {
-            BYTES_TO_DWORD_BE(data + i, mad_data + IB_DATA_INDEX + i * 4);
+            BYTES_TO_DWORD_BE(data + i, mad_data + IB_DATA_INDEX + data_offset + (i * 4));
         }
     } else {
         for (i = 0; i < num_of_dwords; i++) {
-            DWORD_TO_BYTES_BE(mad_data + IB_DATA_INDEX + i * 4, data + i);
+            DWORD_TO_BYTES_BE(mad_data + IB_DATA_INDEX + data_offset + (i * 4), data + i);
+            DWORD_TO_BYTES_BE(mad_data + IB_DATA_INDEX + CONFIG_ACCESS_MODE_2_BITMASK_OFFSET + (i * 4), &mask);
         }
-        p = h->smp_set_via(mad_data, &h->portid, IB_SMP_ATTR_CR_ACCESS, att_mod, 0, h->srcport);
+        p = h->smp_set_via(mad_data, &h->portid, IB_SMP_ATTR_CR_ACCESS, attribute_mod, 0, h->srcport);
         if (!p) {
             return BAD_RET_VAL;
         }
@@ -365,11 +443,11 @@ static uint64_t ibvsmad_craccess_rw_vs(ibvs_mad *h, u_int32_t memory_address,
     ib_vendor_call_t call;
     int i;
     u_int8_t *p;
-    u_int64_t vskey;
-
-    call.method     = method;
-    call.mgmt_class = class;
-    call.attrid     = IB_VS_ATTR_CR_ACCESS;
+    u_int32_t attribute_mod = 0;
+    u_int32_t mask = 0;
+    u_int64_t vskey = 0;
+    unsigned int data_offset = 0;
+    int use_mode_2 = should_use_mode_2(memory_address, num_of_dwords);
 
     if (h == NULL || data == NULL) {
         return BAD_RET_VAL;
@@ -377,34 +455,46 @@ static uint64_t ibvsmad_craccess_rw_vs(ibvs_mad *h, u_int32_t memory_address,
 
     if (num_of_dwords > MAX_IB_VS_DATA_DW_NUM) {
         IBERROR(("size (%d) is too big, maximum num of dwords is %d", num_of_dwords,
-                 MAX_IB_VS_DATA_DW_NUM)); // TBD try max size
+                 MAX_IB_VS_DATA_DW_NUM));
         return BAD_RET_VAL;
     }
 
-    // TODO: Add the dword.
-    call.mod        = ( (EXTRACT(memory_address, 0, 16) << 00) & 0x0000ffff ) |
-                      ( (num_of_dwords << 16) & 0x00ff0000 ) |
-                      ( (EXTRACT(memory_address, 16, 8) << 24) & 0xff000000 );
+    if (use_mode_2) {
+        set_mad_data_for_mode_2(memory_address, num_of_dwords,
+                                vsmad_data, &attribute_mod,
+                                &mask, &data_offset);
+    } else {
+        attribute_mod = create_attribute_mode_0(memory_address, num_of_dwords);
+    }
 
-    DEBUG(("attrmod = %08x\n", call.mod));
-
+    call.method     = method;
+    call.mgmt_class = class;
+    call.attrid     = IB_VS_ATTR_CR_ACCESS;
+    call.mod        = attribute_mod;
     call.oui        = IB_OPENIB_OUI;
     call.timeout    = 0;
     memset(&call.rmpp, 0, sizeof(call.rmpp));
 
-    DEBUG(("memory_address = 0x%08x\n", memory_address));
-    /* set MAD data section */
-
-    // TBD: currently work for 1 record only, fix for more than one.
-    // building one record:
+    DEBUG(("Sending ConfigSpaceAccess VS MAD...\n"));
+    DEBUG(("Management Class = 0x%02x\n", call.mgmt_class));
+    DEBUG(("Attribute Modifier = 0x%08x\n", call.mod));
+    if (use_mode_2) {
+        DEBUG(("Mode: 2\n"));
+    } else {
+        DEBUG(("Mode: 0\n"));
+    }
+    DEBUG(("Attribute ID = 0x%08x\n", call.attrid));
+    DEBUG(("Memory Address = 0x%08x\n", memory_address));
+    DEBUG(("Number of dwords = %d\n", num_of_dwords));
 
     // Set the VSkey.
     vskey = __cpu_to_be64(h->vskey);
     memcpy(vsmad_data, &vskey, 8);
 
-    if (method == IB_MAD_METHOD_SET) {
-        for (i = 0; i < num_of_dwords; i++) {
-            DWORD_TO_BYTES_BE(vsmad_data + IB_DATA_INDEX + i * 4, data + i);
+    for (i = 0; i < num_of_dwords; i++) {
+        if (method == IB_MAD_METHOD_SET) {
+            DWORD_TO_BYTES_BE(vsmad_data + IB_DATA_INDEX + data_offset + (i * 4), data + i);
+            DWORD_TO_BYTES_BE(vsmad_data + IB_DATA_INDEX + CONFIG_ACCESS_MODE_2_BITMASK_OFFSET + (i * 4), &mask);
         }
     }
 
@@ -414,7 +504,7 @@ static uint64_t ibvsmad_craccess_rw_vs(ibvs_mad *h, u_int32_t memory_address,
     }
 
     for (i = 0; i < num_of_dwords; i++) {
-        BYTES_TO_DWORD_BE(data + i, vsmad_data + IB_DATA_INDEX + i * 4);
+        BYTES_TO_DWORD_BE(data + i, vsmad_data + IB_DATA_INDEX + data_offset + (i * 4));
     }
 
     return 0;
@@ -1351,14 +1441,24 @@ int mib_block_op(mfile *mf, unsigned int offset, u_int32_t *data, int length, in
     }
     CHECK_ALIGN(length);
     int chunk_size = mib_get_chunk_size(mf);
+    // for addresses > 24 bits we use ConfigSpaceAccess mode 2
+    // which is limited to 72 bytes.
+    if (offset + MAX_VS_DATA_SIZE > MODE_0_MAX_ADDRESS_RANGE) {
+        chunk_size = MODE_2_MAX_DATA_SIZE;
+    }
     int t_offset = 0;
     while (t_offset < length) {
         int left_size = length - t_offset;
         int to_op = left_size > chunk_size ? chunk_size : left_size;
-        if (ibvsmad_craccess_rw(h, offset + t_offset, method, (to_op / 4), data + t_offset / 4) == ~0ull) {
+        unsigned int curret_offset = offset + t_offset;
+        if (ibvsmad_craccess_rw(h, curret_offset, method, (to_op / 4), data + t_offset / 4) == ~0ull) {
             IBERROR(("cr access %s to %s failed", op == BLOCKOP_READ ? "read" : "write",
                      h->portid2str(&h->portid)));
             return -1;
+        }
+        // If approaching addresses > 24 bits we will switch to mode 2.
+        if (curret_offset + chunk_size > MODE_0_MAX_ADDRESS_RANGE) {
+            chunk_size = MODE_2_MAX_DATA_SIZE;
         }
         t_offset += chunk_size;
     }
