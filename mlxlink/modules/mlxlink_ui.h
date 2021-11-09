@@ -45,6 +45,7 @@ public:
     int run(int argc, char **argv);
 
 protected:
+    virtual void addCmd(OPTION_TYPE option);
     virtual ParseStatus HandleOption(string name, string value);
     virtual void printSynopsisHeader();
     virtual void printSynopsisQueries();

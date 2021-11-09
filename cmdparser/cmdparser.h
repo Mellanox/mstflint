@@ -106,9 +106,9 @@ public:
                            char option_short_name,
                            string option_value,
                            string description,
-                           int  numOfSpaces = 0,
                            bool hidden = false,
-                           bool is_mandatory = false)
+                           bool is_mandatory = false,
+                           int  numOfSpaces = 0)
     {
         option_ifc_t opt;
         opt.option_name = option_name;

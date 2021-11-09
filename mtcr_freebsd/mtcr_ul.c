@@ -1312,7 +1312,7 @@ int mdevices_v(char *buf, int len, int mask, int verbosity)
         /* Get all Mellanox devices - this cmd will return the needed devices one in every line */
         fp =
             popen(
-                "pciconf -lv | grep -C 1 Mellanox | grep -B 2 network | grep -B 1 Mellanox | grep pci | cut -f1 | cut -f2 -d \"@\" | cut -f1-4 -d \":\"",
+                "pciconf -lv | grep -B 1 Mellanox | grep pci | cut -f1 | cut -f2 -d \"@\" | cut -f1-4 -d \":\"",
                 "r");
         if (fp == NULL) {
             return -1;

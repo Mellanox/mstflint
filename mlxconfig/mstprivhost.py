@@ -102,6 +102,8 @@ class PrivilegeMgr(object):
     CONFIG_CMD_LINE = "mstconfig -d %s -f %s --yes set_raw"
     QUERY_CMD_LINE = "mstconfig -d %s -f %s --yes get_raw"
     QUERY_MMHI_CMD_LINE = "mstreg -d %s --reg_name MMHI --get"
+    QUERY_SECURE_FW_STATUS = "mlxreg -d %s --reg_name MGIR --get"
+    QUERY_HW_ACCESS_STATUS = "flint -d %s -ocr hw query"
 
     MMHI_HOST_EN_FIELD = "host_en"
     MMHI_HOST_NUMBER_FIELD = "host_number"
@@ -198,6 +200,22 @@ class PrivilegeMgr(object):
             self.printConfOut(current_conf)
         return current_conf is None
 
+    def isHwAccessDisabled(self):
+        cmd = self.QUERY_HW_ACCESS_STATUS % (self._device)
+        exit_code, _, _ = self._exec_cmd(cmd)
+        return exit_code != 0
+
+    def isFWSecured(self):
+        is_secured = False
+        cmd = self.QUERY_SECURE_FW_STATUS % (self._device)
+        exit_code, stdout, stderr  = self._exec_cmd(cmd)
+        mgir_out = stdout.split("\n")
+        if exit_code == 0:
+            for line in mgir_out:
+                if line.startswith("secured"):
+                    is_secured = int(line.split()[2], 16)
+        return is_secured
+
     def getNumberOfHosts(self):
         total_host_num = 1
         host_number = 0
@@ -234,6 +252,8 @@ class PrivilegeMgr(object):
 
         if exit_code != 0:
             error("Failed to query device configurations", hide=self._disable_out or hide)
+            if self.isHwAccessDisabled():
+                error("Secure host enabled on the device", hide=self._disable_out or hide)
             return current_conf if self._disable_out else None
         else:
             indexOfData = stdout.index('Data') + 6
@@ -262,8 +282,12 @@ class PrivilegeMgr(object):
         cmd = self.CONFIG_CMD_LINE % (self._device, self._file_name)
         exit_code, stdout, stderr = self._exec_cmd(cmd)
         if exit_code != 0 and not re_restrict:
+            current_conf = self.queryConf(host_number, True)
             self.printCmd("Failed")
-            error("Removing the restriction only effective on the ARM side", hide=self._disable_out)
+            if current_conf is None:
+                error("Secure host enabled on the device", hide=self._disable_out)
+            else:
+                error("Removing the restriction only effective on the ARM side", hide=self._disable_out)
         if exit_code == 0 and not re_restrict:
             self.printCmd("Done!")
         return exit_code
@@ -284,7 +308,10 @@ class PrivilegeMgr(object):
         exit_code, stdout, stderr = self._exec_cmd(cmd)
         if exit_code != 0:
             self.printCmd("Failed")
-            error("Host is already restricted", hide=self._disable_out)
+            if self.isHwAccessDisabled():
+                error("Secure host enabled on the device", hide=self._disable_out)
+            else:
+                error("Host is already restricted", hide=self._disable_out)
             exit_code = 0
         else:
             self.printCmd("Done!")

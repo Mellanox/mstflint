@@ -1229,6 +1229,8 @@ void reg_access_hca_mgir_fw_info_pack(const struct reg_access_hca_mgir_fw_info *
 	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->extended_sub_minor);
 	offset = 400;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->isfu_major);
+	offset = 384;
+	adb2c_push_bits_to_buff(ptr_buff, offset, 16, (u_int32_t)ptr_struct->disabled_tiles_bitmap);
 	offset = 446;
 	adb2c_push_bits_to_buff(ptr_buff, offset, 2, (u_int32_t)ptr_struct->life_cycle);
 	offset = 445;
@@ -1282,6 +1284,8 @@ void reg_access_hca_mgir_fw_info_unpack(struct reg_access_hca_mgir_fw_info *ptr_
 	ptr_struct->extended_sub_minor = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
 	offset = 400;
 	ptr_struct->isfu_major = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
+	offset = 384;
+	ptr_struct->disabled_tiles_bitmap = (u_int16_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 16);
 	offset = 446;
 	ptr_struct->life_cycle = (u_int8_t)adb2c_pop_bits_from_buff(ptr_buff, offset, 2);
 	offset = 445;
@@ -1337,6 +1341,8 @@ void reg_access_hca_mgir_fw_info_print(const struct reg_access_hca_mgir_fw_info 
 	fprintf(fd, "extended_sub_minor   : " U32H_FMT "\n", ptr_struct->extended_sub_minor);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "isfu_major           : " UH_FMT "\n", ptr_struct->isfu_major);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "disabled_tiles_bitmap : " UH_FMT "\n", ptr_struct->disabled_tiles_bitmap);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "life_cycle           : " UH_FMT "\n", ptr_struct->life_cycle);
 	adb2c_add_indentation(fd, indent_level);
