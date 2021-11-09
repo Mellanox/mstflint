@@ -496,13 +496,17 @@ static const struct device_info* get_entry_by_dev_rev_id(u_int32_t hw_dev_id, u_
     return p;
 }
 
-/**
- * Returns 0 on success and 1 on failure.
- */
-int dm_get_device_id(mfile *mf,
-                     dm_dev_id_t *ptr_dm_dev_id,
-                     u_int32_t *ptr_hw_dev_id,
-                     u_int32_t *ptr_hw_rev)
+typedef enum get_dev_id_error_t {
+    GET_DEV_ID_SUCCESS,
+    GET_DEV_ID_ERROR,
+    CRSPACE_READ_ERROR,
+    CHECK_PTR_DEV_ID,
+} dev_id_error;
+
+static int dm_get_device_id_inner(mfile *mf,
+                                 dm_dev_id_t *ptr_dm_dev_id,
+                                 u_int32_t *ptr_hw_dev_id,
+                                 u_int32_t *ptr_hw_rev)
 {
     u_int32_t dword = 0;
     int rc;
@@ -513,7 +517,7 @@ int dm_get_device_id(mfile *mf,
     if (mf->tp == MST_FPGA_ICMD || mf->tp == MST_FPGA_DRIVER) {
         *ptr_dm_dev_id = DeviceFPGANewton;
         *ptr_hw_dev_id = 0xfff;
-        return 0;
+        return GET_DEV_ID_SUCCESS;
     }
 #endif
 #ifdef CABLES_SUPP
@@ -535,11 +539,11 @@ int dm_get_device_id(mfile *mf,
                 *ptr_dm_dev_id = DeviceMenhit;
                 break;
             default:
-                return 1;
+                return GET_DEV_ID_ERROR;
                 break;
         }
         *ptr_hw_dev_id = (u_int32_t)mf->linkx_chip_devid;
-        return 0;
+        return GET_DEV_ID_SUCCESS;
 
     }
 
@@ -547,7 +551,7 @@ int dm_get_device_id(mfile *mf,
         //printf("-D- Getting cable ID\n");
         if (mread4(mf, CABLEID_ADDR, &dword) != 4) {
             //printf("FATAL - crspace read (0x%x) failed: %s\n", DEVID_ADDR, strerror(errno));
-            return 1;
+            return GET_DEV_ID_ERROR;
         }
         //dword = __cpu_to_le32(dword); // Cable pages are read in LE, no need to swap
         *ptr_hw_dev_id = 0xffff;
@@ -567,14 +571,14 @@ int dm_get_device_id(mfile *mf,
             *ptr_dm_dev_id = DeviceCableSFP;
             if (mread4(mf, SFP_DIGITAL_DIAGNOSTIC_MONITORING_IMPLEMENTED_ADDR, &dword) != 4) {
                 //printf("FATAL - crspace read (0x%x) failed: %s\n", DEVID_ADDR, strerror(errno));
-                return 1;
+                return GET_DEV_ID_ERROR;
             }
             u_int8_t byte = EXTRACT(dword, 6, 1); //Byte 92 bit 6 (digital diagnostic monitoring implemented)
             if (byte) {
                 *ptr_dm_dev_id = DeviceCableSFP51;
                 if (mread4(mf, SFP_PAGING_IMPLEMENTED_INDICATOR_ADDR, &dword) != 4) {
                     //printf("FATAL - crspace read (0x%x) failed: %s\n", DEVID_ADDR, strerror(errno));
-                    return 1;
+                    return GET_DEV_ID_ERROR;
                 }
                 byte = EXTRACT(dword, 4, 1); //Byte 64 bit 4 (paging implemented indicator)
                 if (byte) {
@@ -592,7 +596,7 @@ int dm_get_device_id(mfile *mf,
         } else {
             *ptr_dm_dev_id = DeviceUnknown;
         }
-        return 0;
+        return GET_DEV_ID_SUCCESS;
     }
 #endif
 
@@ -626,8 +630,7 @@ int dm_get_device_id(mfile *mf,
         }
     } else {
         if (mread4(mf, DEVID_ADDR, &dword) != 4) {
-            printf("FATAL - crspace read (0x%x) failed: %s\n", DEVID_ADDR, strerror(errno));
-            return 1;
+            return CRSPACE_READ_ERROR;
         }
 
         *ptr_hw_dev_id = EXTRACT(dword, 0, 16);
@@ -635,14 +638,55 @@ int dm_get_device_id(mfile *mf,
     }
 
     *ptr_dm_dev_id = get_entry_by_dev_rev_id(*ptr_hw_dev_id, *ptr_hw_rev)->dm_id;
+    return CHECK_PTR_DEV_ID;
+}
 
-    if (*ptr_dm_dev_id == DeviceUnknown) {
+/**
+ * Returns 0 on success and 1 on failure.
+ */
+int dm_get_device_id(mfile *mf,
+                     dm_dev_id_t *ptr_dm_dev_id,
+                     u_int32_t *ptr_hw_dev_id,
+                     u_int32_t *ptr_hw_rev)
+{
+    int return_value = 1;
+    return_value = dm_get_device_id_inner(mf, ptr_dm_dev_id,
+                                          ptr_hw_dev_id, ptr_hw_rev);
+    if (return_value == CRSPACE_READ_ERROR) {
+        printf("FATAL - crspace read (0x%x) failed: %s\n", DEVID_ADDR, strerror(errno));
+        return GET_DEV_ID_ERROR;
+    } else if (return_value == CHECK_PTR_DEV_ID) {
+        if (*ptr_dm_dev_id == DeviceUnknown) {
 
-        /* Dev id not matched in array */
-        printf("FATAL - Can't find device id.\n");
-        return MFE_UNSUPPORTED_DEVICE;
+// Due to issue 2719128, we prefer to skip this device
+// and not filter using the 'pciconf' FreeBSD tool
+#ifndef __FreeBSD__
+            /* Dev id not matched in array */
+            printf("FATAL - Can't find device id.\n");
+#endif
+            return MFE_UNSUPPORTED_DEVICE;
+        }
+        return GET_DEV_ID_SUCCESS;
     }
-    return 0;
+    return return_value;
+}
+
+// Due to issue 2846942, added this function to be used on mdevices)
+int dm_get_device_id_without_prints(mfile *mf,
+                                    dm_dev_id_t *ptr_dm_dev_id,
+                                    u_int32_t *ptr_hw_dev_id,
+                                    u_int32_t *ptr_hw_rev)
+{
+    int return_value = 1;
+    return_value = dm_get_device_id_inner(mf, ptr_dm_dev_id,
+                                          ptr_hw_dev_id, ptr_hw_rev);
+    if (return_value == CHECK_PTR_DEV_ID) {
+        if (*ptr_dm_dev_id == DeviceUnknown) {
+            return MFE_UNSUPPORTED_DEVICE;
+        }
+        return GET_DEV_ID_SUCCESS;
+    }
+    return return_value;
 }
 
 int dm_get_device_id_offline(u_int32_t devid,

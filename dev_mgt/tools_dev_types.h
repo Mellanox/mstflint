@@ -160,6 +160,11 @@ int dm_get_device_id(mfile *mf,
                      u_int32_t *ptr_dev_id,
                      u_int32_t *ptr_chip_rev);
 
+int dm_get_device_id_without_prints(mfile *mf,
+                                    dm_dev_id_t *ptr_dm_dev_id,
+                                    u_int32_t *ptr_hw_dev_id,
+                                    u_int32_t *ptr_hw_rev);
+
 /**
  * Returns 0 on success and 1 on failure.
  */
