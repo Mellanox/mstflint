@@ -59,13 +59,13 @@ try:
     import cmdif
     from mlxfwresetlib import mlxfwreset_utils
     from mlxfwresetlib.mlxfwreset_utils import cmdExec
-    from mlxfwresetlib.mlxfwreset_utils import is_in_internal_host
+    from mlxfwresetlib.mlxfwreset_utils import is_in_internal_host, is_uefi_secureboot
     from mlxfwresetlib.mlxfwreset_mlnxdriver import MlnxDriver
     from mlxfwresetlib.mlxfwreset_mlnxdriver import DriverUnknownMode
     from mlxfwresetlib.mlxfwreset_mlnxdriver import MlnxDriverFactory,MlnxDriverLinux
     from mlxfwresetlib.mlxfwreset_status_checker import FirmwareResetStatusChecker
     from mlxfwresetlib.logger import LoggerFactory
-    from mlxfwresetlib.cmd_reg_mfrl import CmdRegMfrl
+    from mlxfwresetlib.cmd_reg_mfrl import CmdRegMfrl, CmdNotSupported
     # from mlxfwresetlib.cmd_reg_mpcir import CmdRegMpcir
     from mlxfwresetlib.cmd_reg_mcam import CmdRegMcam
     if os.name != 'nt':
@@ -1191,9 +1191,12 @@ def sendResetToFWSync(mfrl, reset_level, reset_type):
 
         try:
             send_reset_cmd_to_fw(mfrl, reset_level, reset_type)
+        except CmdNotSupported:
+            CmdifObj.multiHostSync(SYNC_STATE_IDLE, SYNC_TYPE_FW_RESET)
+            raise RuntimeError("Command is not supported")            
         except Exception as e:
             CmdifObj.multiHostSync(SYNC_STATE_IDLE, SYNC_TYPE_FW_RESET)
-            raise RuntimeError("Command is not supported")
+            raise e
 
         # Socket Direct - send SYNC_STATE_GET_READY for all other devices in SD
         for CmdifObjSD in CmdifObjsSD:
@@ -1550,7 +1553,8 @@ def main():
                         action="store_true")
     options_group.add_argument('--mst_flags',
                         '-m',
-                        help="Provide mst flags to be used when invoking mst restart step. For example: --mst_flags=\"--with_fpga\"")
+                        help="Provide mst flags to be used when invoking mst restart step. For example: --mst_flags=\"--with_fpga\""
+                        if platform.system() == "Linux" and not IS_MSTFLINT else argparse.SUPPRESS)
     options_group.add_argument('--version',
                         '-v',
                         help='Print tool version',
@@ -1633,6 +1637,9 @@ def main():
     global SkipMultihostSync
     global DevDBDF
     global FWResetStatusChecker
+
+    if is_uefi_secureboot():                                                # The tool is using sysfs to access PCI config and it's
+        raise RuntimeError("The tool is not supported on UEFI Secure Boot") # restricted on UEFI secure boot
 
     if platform.system() == "Linux": # Convert ib-device , net-device to mst-device(mst started) or pci-device
         if IS_MSTFLINT:
@@ -1730,6 +1737,7 @@ def main():
     elif command == "reset":
 
         #print("Reset device {0}:".format(device))
+
 
         reset_level = mfrl.default_reset_level() if args.reset_level is None else args.reset_level
         # print("  * reset-level is '{0}' ({1})".format(reset_level, mfrl.reset_level_description(reset_level)))
