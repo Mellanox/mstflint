@@ -35,7 +35,7 @@
 <config  field_attr="capability" type="ascii" />
 <config  field_attr="target" type="ascii" />
 <config  field_attr="version" type="ascii" />
-<info source_doc_name="Mellanox &lt;Doc Name&gt;" source_doc_version="Rev 0.56" />
+<info source_doc_name="Mellanox &lt;Doc Name&gt;" source_doc_version="Rev 0.57" />
 <node name="IB_long_portcntrs_attribute_grp_data_ext" descr="" size="0xf8.0" >
 	<field name="symbol_error_counter_high" descr="For counter description please refer to the InfiniBand \;specification" access="RO" offset="0x0.0" size="0x4.0" />
 	<field name="symbol_error_counter_low" descr="For counter description please refer to the InfiniBand \;specification" access="RO" offset="0x4.0" size="0x4.0" />
@@ -94,7 +94,7 @@
 </node>
 
 <node name="access_reg_summary_ctrl_ext" descr="" attr_is_union="1" size="0x4.0" >
-	<field name="id" descr="" subnode="enum_entry" enum="UNIT_PERF_COUNTERS_=0x100,MISC_COUNTERS=0x104,Loopback_Control_Register=0x700,DB_TRESHOLD=0x701,DCBX_PARAM=0x4020,DCBX_APPLICATION=0x4021,QGCR=0x4000,QCAP=0x4001,QPTS=0x4002,QDPM=0x4003,QPDPM=0x4013,QEPM=0x4014,QPCR=0x4004,QPBR=0x400c,QETCR=0x4005,QEGCS=0x4006,QEEC=0x400d,QPDP=0x4007,QPDPC=0x4017,QPRT=0x4008,QTCT=0x400a,QTCTM=0x401a,QSPTC=0x4009,QSTCT=0x400b,QSPIP=0x400e,QSPCP=0x401e,QRWE=0x400f,QPEM=0x4010,QPDSM=0x4011,QPPM=0x4012,QSLL=0x4015,QHLL=0x4016,QSIPG=0x4018,QCAM=0x4019,QTTTL=0x4040,QTQCR=0x4041,QTQDR=0x4042,QTEEM=0x4043,QTDEM=0x4044,ROCE_ACCL=0x402c,PCAM=0x507f,PCAP=0x5001,PTYS=0x5004,PAOS=0x5006,PLTC=0x5046,PPCNT=0x5008,PGMR=0x5039,PTER=0x5055,PREI=0x5058,PGUID=0x5066,PMLP=0x5002,PMAOS=0x5012,PMMP=0x5044,PMCR=0x5045,PPLR=0x5018,PPLM=0x5023,SLTP=0x5027,SLRG=0x5028,PDDR=0x5031,PPTT=0x5036,PPRT=0x5037,PPHCR=0x503e,PPAOS=0x5040,SLRED=0x505a,PMTU=0x5003,PPAD=0x5005,PFCC=0x5007,PPTB=0x500b,PBMC=0x500c,PVLC=0x500f,PBSR=0x5038,PCMR=0x5041,PVLS=0x504b,SET_NODE=0x6001,POWER_SETTINGS=0x7001,FP_SL_MAP=0x7002,HOST_ENDIANNESS=0x7004,MFCR=0x9001,MFSC=0x9002,MFSM=0x9003,MFSL=0x9004,FORE=0x9007,MFNR=0x903b,MTCAP=0x9009,MTECR=0x9109,MTMP=0x900a,MTWE=0x900b,MTEWE=0x910b,MVCAP=0x902e,MVCR=0x900c,MSPS=0x900d,MCPP=0x900e,MTBR=0x900f,MFPA=0x9010,MFBA=0x9011,MFBE=0x9012,MFMC=0x9013,MCIA=0x9014,MCION=0x9052,MMIA=0x9016,MMDIO=0x2339,MPGR=0x9019,MFM=0x901d,MHSR=0x901e,MJTAG=0x901f,MSGI=0x9021,MSCI=0x902a,MPCIR=0x905a,MRTC=0x902d,MGIR=0x9020,MGPIR=0x9100,MDIR=0x911a,MSSIR=0x9105,MHMPR=0x905d,MPFM=0x9022,MRSR=0x9023,MPGO=0x9052,MNVDA=0x9024,MNVDI=0x9025,MNVQC=0x9030,MNVIA=0x9033,MNVGC=0x9034,MNVGN=0x9035,MGNLE=0x9036,MTRC_CAP=0x9040,MTRC_CONF=0x9041,MTRC_STDB=0x9042,MTRC_CTRL=0x9043,MLCR=0x902b,MGCR=0x903a,MERR=0x903c,MPEIN=0x9050,MPCNT=0x9051,MTPPS=0x9053,MTPTP=0x9153,MTUTC=0x9055,MPIR=0x9059,MPECS=0x905b,MCQS=0x9060,MCQI=0x9061,MCC=0x9062,MCDA=0x9063,MTCQ=0x9065,MQIS=0x9064,MIRC=0x9162,MCDD=0x905c,MDFCR=0x9101,MDCR=0x9111,MDDT=0x9160,MDDQ=0x9161,MDRCR=0x9102,MDSR=0x9110,MFSV=0x9115,MQDIK=0x9116,MRPR=0x9117,MFRL=0x9028,MMHI=0x904a,CWGCR=0x2801,CWTP=0x2802,CWPP=0x2804,CWTPM=0x2803,CPQE=0x2806,CHLTR=0x2810,CHLTM=0x2811,CHLMM=0x2812,CNCT=0x2030,CPCS=0x2031,CPID=0x2032,CNMC=0x2033,CWCAM=0x281f,SBGCR=0xb000,SBPR=0xb001,SBCM=0xb002,SBPM=0xb003,SBMM=0xb004,SBME=0xb00e,SBSR=0xb005,SBIB=0xb006,SBDCC=0xb007,SBDCM=0xb008,SBDCR=0xb019,SBHBR=0xb00a,SBHRR=0xb00b,SBHBR_V2=0xb011,SBHRR_V2=0xb012,SBCTC=0xb00c,SBCTR=0xb00d,SBCTS=0xb00f,SBHPC=0xb013,SBSNT=0xb020,SBSNS=0xb021,SBSNTE=0xb022,SBCAM=0xb01f,NCFG=0xc001,ZTT=0xc006,VHCA_TRUST_LEVEL=0xc007,PORT_STATE_BEHAVIOR=0xc008,HCA_CAP_ENCAP=0xc009,NVMF_TARGET_PACER_DEFAULTS=0xc00a" offset="0x0.0" size="0x4.0" />
+	<field name="id" descr="" subnode="enum_entry" enum="UNIT_PERF_COUNTERS_=0x100,MISC_COUNTERS=0x104,Loopback_Control_Register=0x700,DB_TRESHOLD=0x701,DCBX_PARAM=0x4020,DCBX_APPLICATION=0x4021,QGCR=0x4000,QCAP=0x4001,QPTS=0x4002,QDPM=0x4003,QPDPM=0x4013,QEPM=0x4014,QPCR=0x4004,QPBR=0x400c,QETCR=0x4005,QSHR=0x4030,QPDP=0x4007,QPRT=0x4008,QTCT=0x400a,QSPIP=0x400e,QSPCP=0x401e,QHLL=0x4016,QCAM=0x4019,ROCE_ACCL=0x402c,PCAM=0x507f,PCAP=0x5001,PTYS=0x5004,PAOS=0x5006,PLTC=0x5046,PPCNT=0x5008,PGMR=0x5039,PTER=0x5055,PREI=0x5058,PGUID=0x5066,PPCC=0x506e,PMLP=0x5002,PMAOS=0x5012,PMMP=0x5044,PMCR=0x5045,PPLR=0x5018,PPLM=0x5023,SLTP=0x5027,SLRG=0x5028,PDDR=0x5031,PPTT=0x5036,PPRT=0x5037,PPHCR=0x503e,PPAOS=0x5040,SLRED=0x505a,PMTU=0x5003,PPAD=0x5005,PFCC=0x5007,PPTB=0x500b,PBMC=0x500c,PVLC=0x500f,PBSR=0x5038,PCMR=0x5041,PVLS=0x504b,SET_NODE=0x6001,POWER_SETTINGS=0x7001,FP_SL_MAP=0x7002,HOST_ENDIANNESS=0x7004,MFCR=0x9001,MFSC=0x9002,MFSM=0x9003,MFSL=0x9004,FORE=0x9007,MFNR=0x903b,MTCAP=0x9009,MTECR=0x9109,MTMP=0x900a,MTWE=0x900b,MTEWE=0x910b,MVCAP=0x902e,MVCR=0x900c,MSPS=0x900d,MCPP=0x900e,MTBR=0x900f,MFPA=0x9010,MFBA=0x9011,MFBE=0x9012,MFMC=0x9013,MCIA=0x9014,MCION=0x9052,MMIA=0x9016,MMDIO=0x2339,MPGR=0x9019,MFM=0x901d,MHSR=0x901e,MJTAG=0x901f,MSGI=0x9021,MSCI=0x902a,MPCIR=0x905a,MRTC=0x902d,MGIR=0x9020,MGPIR=0x9100,MDIR=0x911a,MSSIR=0x9105,MHMPR=0x905d,MPFM=0x9022,MRSR=0x9023,MPGO=0x9052,MNVDA=0x9024,MNVDI=0x9025,MNVQC=0x9030,MNVIA=0x9033,MNVGC=0x9034,MNVGN=0x9035,MGNLE=0x9036,MTRC_CAP=0x9040,MTRC_CONF=0x9041,MTRC_STDB=0x9042,MTRC_CTRL=0x9043,MLCR=0x902b,MGCR=0x903a,MERR=0x903c,MPEIN=0x9050,MPCNT=0x9051,MTPPS=0x9053,MTPTP=0x9153,MTUTC=0x9055,MPIR=0x9059,MPECS=0x905b,MCQS=0x9060,MCQI=0x9061,MCC=0x9062,MCDA=0x9063,MTCQ=0x9065,MQIS=0x9064,MIRC=0x9162,MCDD=0x905c,MDFCR=0x9101,MDCR=0x9111,MDDT=0x9160,MDDQ=0x9161,MDRCR=0x9102,MDSR=0x9110,MFSV=0x9115,MQDIK=0x9116,MRPR=0x9117,MFRL=0x9028,MMHI=0x904a,CWGCR=0x2801,CWTP=0x2802,CWPP=0x2804,CWTPM=0x2803,CPQE=0x2806,CHLTR=0x2810,CHLTM=0x2811,CHLMM=0x2812,CNCT=0x2030,CPCS=0x2031,CPID=0x2032,CNMC=0x2033,CWCAM=0x281f,SBGCR=0xb000,SBPR=0xb001,SBCM=0xb002,SBPM=0xb003,SBMM=0xb004,SBME=0xb00e,SBSR=0xb005,SBIB=0xb006,SBDCC=0xb007,SBDCM=0xb008,SBDCR=0xb019,SBHBR=0xb00a,SBHRR=0xb00b,SBHBR_V2=0xb011,SBHRR_V2=0xb012,SBCTC=0xb00c,SBCTR=0xb00d,SBCTS=0xb00f,SBHPC=0xb013,SBSNT=0xb020,SBSNS=0xb021,SBSNTE=0xb022,SBCAM=0xb01f,NCFG=0xc001,ZTT=0xc006,PORT_STATE_BEHAVIOR=0xc008,HCA_CAP_ENCAP=0xc009,NVMF_TARGET_PACER_DEFAULTS=0xc00a" offset="0x0.0" size="0x4.0" />
 </node>
 
 <node name="access_reg_summary_ext" descr="" attr_is_union="1" size="0x210" >
@@ -113,30 +113,14 @@
 	<field name="qpcr" descr="" subnode="qpcr_ext" capability="0" offset="0x0.0" selected_by="QPCR" size="0x28" />
 	<field name="qpbr" descr="" subnode="qpbr_ext" capability="0" offset="0x0.0" selected_by="QPBR" size="0x10" />
 	<field name="qetcr" descr="" subnode="qetcr_ext" capability="0" offset="0x0.0" selected_by="QETCR" size="0x50" />
-	<field name="qegcs" descr="" subnode="qegcs_ext" capability="0" offset="0x0.0" selected_by="QEGCS" size="0x10" />
-	<field name="qeec" descr="" subnode="qeec_ext" capability="0" offset="0x0.0" selected_by="QEEC" size="0x20" />
+	<field name="qshr" descr="" subnode="qshr_ext" capability="0" offset="0x0.0" selected_by="QSHR" size="0x50" />
 	<field name="qpdp" descr="" subnode="qpdp_ext" capability="0" offset="0x0.0" selected_by="QPDP" size="0x8" />
-	<field name="qpdpc" descr="" subnode="qpdpc_ext" capability="0" offset="0x0.0" selected_by="QPDPC" size="0x8" />
 	<field name="qprt" descr="" subnode="qprt_ext" capability="0" offset="0x0.0" selected_by="QPRT" size="0x8" />
 	<field name="qtct" descr="" subnode="qtct_ext" capability="0" offset="0x0.0" selected_by="QTCT" size="0x8" />
-	<field name="qtctm" descr="" subnode="qtctm_ext" capability="0" offset="0x0.0" selected_by="QTCTM" size="0x8" />
-	<field name="qsptc" descr="" subnode="qsptc_ext" capability="0" offset="0x0.0" selected_by="QSPTC" size="0x8" />
-	<field name="qstct" descr="" subnode="qstct_ext" capability="0" offset="0x0.0" selected_by="QSTCT" size="0x10" />
 	<field name="qspip" descr="" subnode="qspip_ext" capability="0" offset="0x0.0" selected_by="QSPIP" size="0x8" />
 	<field name="qspcp" descr="" subnode="qspcp_ext" capability="0" offset="0x0.0" selected_by="QSPCP" size="0xc" />
-	<field name="qrwe" descr="" subnode="qrwe_ext" capability="0" offset="0x0.0" selected_by="QRWE" size="0x8" />
-	<field name="qpem" descr="" subnode="qpem_ext" capability="0" offset="0x0.0" selected_by="QPEM" size="0x104" />
-	<field name="qpdsm" descr="" subnode="qpdsm_ext" capability="0" offset="0x0.0" selected_by="QPDSM" size="0x44" />
-	<field name="qppm" descr="" subnode="qppm_ext" capability="0" offset="0x0.0" selected_by="QPPM" size="0x44" />
-	<field name="qsll" descr="" subnode="qsll_ext" capability="0" offset="0x0.0" selected_by="QSLL" size="0x8" />
 	<field name="qhll" descr="" subnode="qhll_ext" capability="0" offset="0x0.0" selected_by="QHLL" size="0xc" />
-	<field name="qsipg" descr="" subnode="qsipg_ext" capability="0" offset="0x0.0" selected_by="QSIPG" size="0x8" />
 	<field name="qcam" descr="" subnode="qcam_ext" capability="0" offset="0x0.0" selected_by="QCAM" size="0x48" />
-	<field name="qtttl" descr="" subnode="qtttl_ext" capability="0" offset="0x0.0" selected_by="QTTTL" size="0xc" />
-	<field name="qtqcr" descr="" subnode="qtqcr_ext" capability="0" offset="0x0.0" selected_by="QTQCR" size="0xc" />
-	<field name="qtqdr" descr="" subnode="qtqdr_ext" capability="0" offset="0x0.0" selected_by="QTQDR" size="0x8" />
-	<field name="qteem" descr="" subnode="qteem_ext" capability="0" offset="0x0.0" selected_by="QTEEM" size="0xc" />
-	<field name="qtdem" descr="" subnode="qtdem_ext" capability="0" offset="0x0.0" selected_by="QTDEM" size="0xc" />
 	<field name="roce_accl_reg" descr="" subnode="roce_accl_reg_ext" capability="0" offset="0x0.0" selected_by="ROCE_ACCL" size="0x40" />
 	<field name="pcam_reg" descr="" subnode="pcam_reg_ext" capability="0" offset="0x0.0" selected_by="PCAM" size="0x50" />
 	<field name="pcap_reg" descr="" subnode="pcap_reg_ext" capability="0" offset="0x0.0" selected_by="PCAP" size="0x14" />
@@ -148,6 +132,7 @@
 	<field name="pter_reg" descr="" subnode="pter_reg_ext" capability="0" offset="0x0.0" selected_by="PTER" size="0x20" />
 	<field name="prei_reg" descr="" subnode="prei_reg_ext" capability="0" offset="0x0.0" selected_by="PREI" size="0x18" />
 	<field name="pguid_reg" descr="" subnode="pguid_reg_ext" capability="0" offset="0x0.0" selected_by="PGUID" size="0x60" />
+	<field name="ppcc_reg" descr="" subnode="ppcc_reg_ext" capability="0" offset="0x0.0" selected_by="PPCC" size="0xfc" />
 	<field name="pmlp_reg" descr="" subnode="pmlp_reg_ext" capability="0" offset="0x0.0" selected_by="PMLP" size="0x40" />
 	<field name="pmaos_reg" descr="" subnode="pmaos_reg_ext" capability="0" offset="0x0.0" selected_by="PMAOS" size="0x10" />
 	<field name="pmmp_reg" descr="" subnode="pmmp_reg_ext" capability="0" offset="0x0.0" selected_by="PMMP" size="0x28" />
@@ -293,7 +278,6 @@
 	<field name="sbcam" descr="" subnode="sbcam_ext" capability="0" offset="0x0.0" selected_by="SBCAM" size="0x4c" />
 	<field name="ncfg_reg" descr="" subnode="ncfg_reg_ext" capability="0" offset="0x0.0" selected_by="NCFG" size="0x40" />
 	<field name="ztt" descr="" subnode="ztt_ext" capability="0" offset="0x0.0" selected_by="ZTT" size="0x10" />
-	<field name="vhca_trust_level" descr="" subnode="vhca_trust_level_ext" capability="0" offset="0x0.0" selected_by="VHCA_TRUST_LEVEL" size="0x10" />
 	<field name="port_state_behavior" descr="" subnode="port_state_behavior_ext" capability="0" offset="0x0.0" selected_by="PORT_STATE_BEHAVIOR" size="0x10" />
 	<field name="hca_cap_encap" descr="" subnode="hca_cap_encap_ext" capability="0" offset="0x0.0" selected_by="HCA_CAP_ENCAP" size="0x60" />
 	<field name="nvmf_target_pacer_defaults" descr="" subnode="nvmf_target_pacer_defaults_ext" capability="0" offset="0x0.0" selected_by="NVMF_TARGET_PACER_DEFAULTS" size="0x40" />
@@ -307,7 +291,7 @@
 <node name="application_prio_entry_ext" descr="" size="0x4.0" >
 	<field name="protocol_id" descr="According to 802.1Q application priority TLV" access="RO" offset="0x0.0" size="0x0.16" />
 	<field name="sel" descr="According to 802.1Q application priority TLV" access="RO" offset="0x0.16" size="0x0.3" />
-	<field name="priority" descr="This field is reserved when HCA_CAP.num_ports ==1. \;Table  1921, &quot;QUERY_HCA_CAP Input Structure Layout,&quot; on \;page  2152. According to 802.1Q application priority TLV" access="RO" offset="0x0.21" size="0x0.3" />
+	<field name="priority" descr="This field is reserved when HCA_CAP.num_ports ==1. \;Table  1896, &quot;QUERY_HCA_CAP Input Structure Layout,&quot; on \;page  2152. According to 802.1Q application priority TLV" access="RO" offset="0x0.21" size="0x0.3" />
 </node>
 
 <node name="bufferx_reg_ext" descr="" size="0x8.0" >
@@ -357,7 +341,7 @@
 	<field name="version" descr="Configuration item version - defines the data structure \;following the header (together with the type field)." access="RW" offset="0x0.12" size="0x0.4" />
 	<field name="writer_id" descr="The entity which configured this parameter\;0x0: UNSPECIFIED\;0x1: CHASSIS_BMC\;0x2: MAD\;0x3: BMC\;0x4: COMMAND_INTERFACE\;0x5: ICMD - with unspecified source\;0x6: ICMD_UEFI_HII - configured by the NIC&apos;s UEFI \;expansion ROM&quot;s HII menu.\;0x7: ICMD_UEFI_CLP - configured by the NIC&apos;s expan\;sion ROM&quot;s CLP.\;0x8: ICMD_Flexboot - configured by the NIC&quot;s legacy \;expansion ROM.\;0x9: ICMD_mlxconfig - configured by Mellanox mlxcon\;fig tool\;0xA: ICMD_USER1 - value available for customer cre\;ated tools that uses the ICMD interface for writing \;TLVs.\;0xB: ICMD_USER2 - value available for customer cre\;ated tools that uses the ICMD interface for writing \;TLVs.\;0xC: ICMD_MLXCONFIG_SET_RAW - configures by\;mlxconfig set raw operation.\;0xD: ICMD_FLEXBOOT_CLP - configured by Legacy \;Expansion ROM CLP\;0x10: BMC_APP1 - Configuration was done over the \;BMC by application #1 (application name is OEM spe\;cific)\;0x11: BMC_APP2 - Configuration was done over the \;BMC by application #2 (application name is OEM spe\;cific)\;0x12: BMP_APP3 - Configuration was done over the \;BMC by application #3 (application name is OEM spe\;cific)\;0x1F: OTHER - the parameter was written by the NIC \;due to other reasons. \;\;Note - This field is writeable only when using the ICMD \;interface. The only value that are valid for writes are \;0x6 through 0xB. Other values will be replaced by \;0x5ICMD." access="RO" enum="UNSPECIFIED=0x0,CHASSIS_BMC=0x1,MAD=0x2,BMC=0x3,COMMAND_INTERFACE=0x4,ICMD=0x5,ICMD_UEFI_HII=0x6,ICMD_UEFI_CLP=0x7,ICMD_Flexboot=0x8,ICMD_mlxconfig=0x9,ICMD_USER1=0xa,ICMD_USER2=0xb,ICMD_MLXCONFIG_SET_RAW=0xc,ICMD_FLEXBOOT_CLP=0xd,BMC_APP1=0x10,BMC_APP2=0x11,BMP_APP3=0x12,OTHER=0x1f" offset="0x0.16" size="0x0.5" />
 	<field name="access_mode" descr="Defines which value of the Configuration Item will be \;accessed.\;0x0: NEXT - Next value to be applied \;0x1: CURRENT - Currently set values (only valid for \;Query operation) Supported only if \;NVGC.nvda_read_current_settings==1.\;0x2: FACTORY - Default factory values (only valid for \;Query operation). Supported only if NVGC.nvda_read_\;factory_settings==1.\;\;" access="INDEX" enum="NEXT=0x0,CURRENT=0x1,FACTORY=0x2" offset="0x0.22" size="0x0.2" />
-	<field name="type_index" descr="Configuration item index according to its type_class. \;Table 1775, &quot;Configuration Item Type Class Global \;Layout,&quot; on page 2008\;Table 1777, &quot;Configuration Item Type Class Physi\;cal Port Layout,&quot; on page 2009\;Table 1779, &quot;Configuration Item Type Class Per \;Host-PF Layout,&quot; on page 2009\;Table 1781, &quot;Configuration Item Type Class Log \;Layout,&quot; on page 2009\;Table 1783, &quot;Configuration Item Type Class File \;Layout,&quot; on page 2010\;Table 1785, &quot;Configuration Item Type Class Host \;Layout,&quot; on page 2010\;" access="INDEX" offset="0x4.0" size="0x0.24" />
+	<field name="type_index" descr="Configuration item index according to its type_class. \;Table 1744, &quot;Configuration Item Type Class Global \;Layout,&quot; on page 2004\;Table 1746, &quot;Configuration Item Type Class Physi\;cal Port Layout,&quot; on page 2005\;Table 1748, &quot;Configuration Item Type Class Per \;Host-PF Layout,&quot; on page 2005\;Table 1750, &quot;Configuration Item Type Class Log \;Layout,&quot; on page 2005\;Table 1752, &quot;Configuration Item Type Class File \;Layout,&quot; on page 2006\;Table 1754, &quot;Configuration Item Type Class Host \;Layout,&quot; on page 2006\;" access="INDEX" offset="0x4.0" size="0x0.24" />
 	<field name="type_class" descr="Type Class.\;0x0: Global\;0x1: Port\;0x3: Host_PF\;0x5: Log\;0x6: File\;0x7: Host\;" access="INDEX" enum="Global=0x0,Port=0x1,Host_PF=0x3,Log=0x5,File=0x6,Host=0x7" offset="0x4.24" size="0x0.8" />
 </node>
 
@@ -382,7 +366,7 @@
 
 <node name="cpqe_ext" descr="" size="0xc.0" >
 	<field name="local_port" descr="Egress Local Port" access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="marking_percent" descr="ECN Marking percentage when the local_port rate is \;above the phantom queue rate as configured by phan\;tom_queue_rate in QEEC, see Section 19.3.11, &quot;QEEC - \;QoS ETS Element Configuration&quot;, on page 1158\;Range is 0..100, units of integer percentage" access="RW" offset="0x8.16" size="0x0.7" />
+	<field name="marking_percent" descr="ECN Marking percentage when the local_port rate is \;above the phantom queue rate as configured by phan\;tom_queue_rate in QEEC, see Section 19.3.12, &quot;QEEC - \;QoS ETS Element Configuration&quot;, on page 1151\;Range is 0..100, units of integer percentage" access="RW" offset="0x8.16" size="0x0.7" />
 </node>
 
 <node name="crspace_access_payload_ext" descr="" size="0x104.0" >
@@ -399,7 +383,7 @@
 
 <node name="cwgcr_ext" descr="" size="0x14.0" >
 	<field name="aqs_time" descr="Average queue size time\;Time from current_queue_size to previous_aqs\;The time is 2^aqs_time * 64nSec\;Valid range is 0..24" access="RW" offset="0x0.0" size="0x0.8" />
-	<field name="aqs_weight" descr="Average queue size weight.\;The average queue size (aqs) is calculated by:\;aqs = ((current_queue_size)*2^-w) + ((previous_aqs)*(1-2^-w)) \;where w is aqs_weight\;The time between current_queue_size and previous_aqs is con\;figured by aqs_time\;Note: when mode=percentage then there is no moving average \;(the aqs_weight is effectively 0). See Section 25.29.2, &quot;CWTP - \;Congestion WRED ECN TClass Profile Register&quot;, on page 1833" access="RW" offset="0x0.8" size="0x0.4" />
+	<field name="aqs_weight" descr="Average queue size weight.\;The average queue size (aqs) is calculated by:\;aqs = ((current_queue_size)*2^-w) + ((previous_aqs)*(1-2^-w)) \;where w is aqs_weight\;The time between current_queue_size and previous_aqs is con\;figured by aqs_time\;Note: when mode=percentage then there is no moving average \;(the aqs_weight is effectively 0). See Section 25.30.2, &quot;CWTP - \;Congestion WRED ECN TClass Profile Register&quot;, on page 1830" access="RW" offset="0x0.8" size="0x0.4" />
 	<field name="scd" descr="Enable ECN Source Congestion Detection only. Don&apos;t mark vic\;tim packets.\;" access="RW" offset="0x0.16" size="0x0.1" />
 	<field name="en" descr="enable bits:\;bit2: WRED drop enable\;" access="RW" offset="0x0.24" size="0x0.4" />
 	<field name="cece" descr="Count ECN for Congestion Experienced\;0: do not count &quot;ECN mark&quot; for a packet which has Congestion \;Experienced (ECN=11 at ingress) \;1: do count ECN mark for a packet which has Congestion Expe\;rienced (ECN=11 at ingress) and experiences congestion in the \;switch (default)\;In any case, a packet coming with ECN=00 is not counted as \;ECN." access="RW" offset="0x4.0" size="0x0.1" />
@@ -424,7 +408,7 @@
 	<field name="local_port" descr="Local port number\;CPU port is not supported" access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="traffic_class" descr="Traffic Class\;Range is 0..cap_max_tclass_sb-1" access="INDEX" offset="0x20.0" size="0x0.8" />
 	<field name="mode" descr="Mode of thresholds for WRED and ECN:\;0: Fixed\;1: Percentage" access="RW" enum="Fixed=0x0,Percentage=0x1" offset="0x24.24" size="0x0.1" />
-	<field name="profile1_min" descr="Minimum Average Queue Size of the profile number &lt;i&gt;\;When mode is Fixed:\;Cells. Valid inputs are 1..cap_total_buffer_size/cap_\;cell_size.\;For Spectrum: must be a multiple of 64\;Note: for Spectrum, must be larger than 2^aqs_weight \;cells, see Section 25.29.1, &quot;CWGCR - Congestion WRED \;ECN General Configuration Register&quot;, on page 1831\;When mode is Percentage:\;Percentage of the quota of local_port,traffic_class. \;Range is 0..100, units of integer percentage. When ECN \;Source Congestion Detection is enabled then congestion \;occurs when there are at least 256 cells in the buffer\;" access="RW" offset="0x28.0" size="0x0.20" />
+	<field name="profile1_min" descr="Minimum Average Queue Size of the profile number &lt;i&gt;\;When mode is Fixed:\;Cells. Valid inputs are 1..cap_total_buffer_size/cap_\;cell_size.\;For Spectrum: must be a multiple of 64\;Note: for Spectrum, must be larger than 2^aqs_weight \;cells, see Section 25.30.1, &quot;CWGCR - Congestion WRED \;ECN General Configuration Register&quot;, on page 1828\;When mode is Percentage:\;Percentage of the quota of local_port,traffic_class. \;Range is 0..100, units of integer percentage. When ECN \;Source Congestion Detection is enabled then congestion \;occurs when there are at least 256 cells in the buffer\;" access="RW" offset="0x28.0" size="0x0.20" />
 	<field name="profile1_max" descr="Maximum Average Queue Size of the profile number &lt;i&gt;\;When mode is Fixed:\;Cells. Valid inputs are 1..cap_total_buffer_size/cap_\;cell_size\;For Spectrum: must be a multiple of 64\;When mode is Percentage:\;Percentage of the quota of local_port,traffic_class. \;Range is 0..100, units of integer percentage.\;profile&lt;i&gt;_max must always be equal or greater than \;profile&lt;i&gt;_min" access="RW" offset="0x2C.0" size="0x0.20" />
 	<field name="profile1_percent" descr="Percentage of WRED and ECN marking for Maximum \;Average Queue Size of the profile number &lt;i&gt;\;Range is 0..100, units of integer percentage\;Default is 0" access="RW" offset="0x2C.24" size="0x0.7" />
 	<field name="profile2_min" descr="Same as above." access="RW" offset="0x30.0" size="0x0.20" />
@@ -449,14 +433,14 @@
 </node>
 
 <node name="dcbx_app_reg_ext" descr="" size="0x14.0" >
-	<field name="port_number" descr="Physical port number.\;This field is reserved when HCA_CAP.num_ports ==1. \;Table  1921, &quot;QUERY_HCA_CAP Input Structure Layout,&quot; on \;page  2152" access="INDEX" offset="0x0.16" size="0x0.8" />
+	<field name="port_number" descr="Physical port number.\;This field is reserved when HCA_CAP.num_ports ==1. \;Table  1896, &quot;QUERY_HCA_CAP Input Structure Layout,&quot; on \;page  2152" access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="num_app_prio" descr="" access="RO" offset="0x4.0" size="0x0.6" />
 	<field name="app_prio" descr="Application priority entry. \;" subnode="application_prio_entry_ext" access="RO" high_bound="VARIABLE" low_bound="0" offset="0x10.0" size="0x4.0" />
 </node>
 
 <node name="dcbx_param_reg_ext" descr="" size="0x40.0" >
 	<field name="max_application_table_size" descr="The maximum size of DCBX application table." access="RO" offset="0x0.0" size="0x0.6" />
-	<field name="port_number" descr="Physical port number.\;This field is reserved when HCA_CAP.num_ports ==1. \;Table  1921, &quot;QUERY_HCA_CAP Input Structure Layout,&quot; on \;page  2152" access="INDEX" offset="0x0.16" size="0x0.8" />
+	<field name="port_number" descr="Physical port number.\;This field is reserved when HCA_CAP.num_ports ==1. \;Table  1896, &quot;QUERY_HCA_CAP Input Structure Layout,&quot; on \;page  2152" access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="dcbx_standby_cap" descr="If set, device supports DCBX on standby mode (aux power)." access="RO" offset="0x0.29" size="0x0.1" />
 	<field name="dcbx_ieee_cap" descr="If set, DCBX IEEE version is supported." access="RO" offset="0x0.30" size="0x0.1" />
 	<field name="dcbx_cee_cap" descr="If set, DCBX CEE version is supported." access="RO" offset="0x0.31" size="0x0.1" />
@@ -489,12 +473,6 @@
 	<field name="device_type_name" descr="Device type ASCII name. Up to 8 chars\;" access="RO" high_bound="7" low_bound="0" offset="0x10.24" size="0x8.0" />
 </node>
 
-<node name="ecn_ext" descr="" size="0x4.0" >
-	<field name="color2" descr="The EXP mapping for color k, where k=0..2, see Table 946, \;&quot;color&lt;k&gt;Layout,&quot; on page 1175" access="RW" offset="0x0.8" size="0x0.8" />
-	<field name="color1" descr="The EXP mapping for color k, where k=0..2, see Table 946, \;&quot;color&lt;k&gt;Layout,&quot; on page 1175" access="RW" offset="0x0.16" size="0x0.8" />
-	<field name="color0" descr="The EXP mapping for color k, where k=0..2, see Table 946, \;&quot;color&lt;k&gt;Layout,&quot; on page 1175" access="RW" offset="0x0.24" size="0x0.8" />
-</node>
-
 <node name="enum_entry" descr="" size="0x4.0" >
 </node>
 
@@ -519,8 +497,8 @@
 	<field name="ether_stats_fragments_low" descr="The total number of packets received that \;were less than 64 octets in length (excluding \;framing bits but including FCS octets) and \;had either a bad FCS with an integral num\;ber of octets (FCS error) or a bad FCS with a \;non-integral number of octets (alignment \;error).\;" access="RO" offset="0x44.0" size="0x4.0" />
 	<field name="ether_stats_jabbers_high" descr="The total number of packets received that \;were longer than MTU octets (excluding \;framing bits, but including FCS octets), and \;had either a bad FCS with an integral num\;ber of octets (FCS error) or a bad FCS with a \;non-integral number of octets (alignment \;error).\;" access="RO" offset="0x48.0" size="0x4.0" />
 	<field name="ether_stats_jabbers_low" descr="The total number of packets received that \;were longer than MTU octets (excluding \;framing bits, but including FCS octets), and \;had either a bad FCS with an integral num\;ber of octets (FCS error) or a bad FCS with a \;non-integral number of octets (alignment \;error).\;" access="RO" offset="0x4C.0" size="0x4.0" />
-	<field name="ether_stats_collisions_high" descr="The best estimate of the total number of col\;lisions on this Ethernet segment.\;" access="RO" offset="0x50.0" size="0x4.0" />
-	<field name="ether_stats_collisions_low" descr="The best estimate of the total number of col\;lisions on this Ethernet segment.\;" access="RO" offset="0x54.0" size="0x4.0" />
+	<field name="ether_stats_collisions_high" descr="The best estimate of the total number of \;collisions on this Ethernet segment.\;" access="RO" offset="0x50.0" size="0x4.0" />
+	<field name="ether_stats_collisions_low" descr="The best estimate of the total number of \;collisions on this Ethernet segment.\;" access="RO" offset="0x54.0" size="0x4.0" />
 	<field name="ether_stats_pkts64octets_high" descr="The total number of packets (including bad \;packets) received that were 64 octets in \;length (excluding framing bits but including \;FCS octets)." access="RO" offset="0x58.0" size="0x4.0" />
 	<field name="ether_stats_pkts64octets_low" descr="The total number of packets (including bad \;packets) received that were 64 octets in \;length (excluding framing bits but including \;FCS octets)." access="RO" offset="0x5C.0" size="0x4.0" />
 	<field name="ether_stats_pkts65to127octets_high" descr="The total number of packets (including bad \;packets) received that were between 65 and \;127 octets in length (excluding framing bits \;but including FCS octets)." access="RO" offset="0x60.0" size="0x4.0" />
@@ -544,10 +522,10 @@
 </node>
 
 <node name="eth_2863_cntrs_grp_data_layout_ext" descr="" size="0xf8.0" >
-	<field name="if_in_octets_high" descr="The total number of octets received, including fram\;ing characters. Including MAC control frames.\;\;" access="RO" offset="0x0.0" size="0x4.0" />
-	<field name="if_in_octets_low" descr="The total number of octets received, including fram\;ing characters. Including MAC control frames.\;\;" access="RO" offset="0x4.0" size="0x4.0" />
-	<field name="if_in_ucast_pkts_high" descr="The number of packets successfully received, which \;were not addressed to a multicast or broadcast \;MAC address.\;" access="RO" offset="0x8.0" size="0x4.0" />
-	<field name="if_in_ucast_pkts_low" descr="The number of packets successfully received, which \;were not addressed to a multicast or broadcast \;MAC address.\;" access="RO" offset="0xC.0" size="0x4.0" />
+	<field name="if_in_octets_high" descr="The total number of octets received, including \;framing characters. Including MAC control frames.\;\;" access="RO" offset="0x0.0" size="0x4.0" />
+	<field name="if_in_octets_low" descr="The total number of octets received, including \;framing characters. Including MAC control frames.\;\;" access="RO" offset="0x4.0" size="0x4.0" />
+	<field name="if_in_ucast_pkts_high" descr="The number of packets successfully received, \;which were not addressed to a multicast or broad\;cast MAC address.\;" access="RO" offset="0x8.0" size="0x4.0" />
+	<field name="if_in_ucast_pkts_low" descr="The number of packets successfully received, \;which were not addressed to a multicast or broad\;cast MAC address.\;" access="RO" offset="0xC.0" size="0x4.0" />
 	<field name="if_in_discards_high" descr="The number of inbound packets which were chosen \;to be discarded even though no errors had been \;detected to prevent their being deliverable to a \;higher-layer protocol.\;\;\;\;\;" access="RO" offset="0x10.0" size="0x4.0" />
 	<field name="if_in_discards_low" descr="The number of inbound packets which were chosen \;to be discarded even though no errors had been \;detected to prevent their being deliverable to a \;higher-layer protocol.\;\;\;\;\;" access="RO" offset="0x14.0" size="0x4.0" />
 	<field name="if_in_errors_high" descr="The number of inbound packets that contained \;errors preventing them from being deliverable to a \;higher-layer protocol. \;" access="RO" offset="0x18.0" size="0x4.0" />
@@ -556,20 +534,20 @@
 	<field name="if_in_unknown_protos_low" descr="The number of packets received via the interface \;which were discarded because of an unknown or \;unsupported protocol.\;" access="RO" offset="0x24.0" size="0x4.0" />
 	<field name="if_out_octets_high" descr="The total number of octets transmitted out of the \;interface, including framing characters.\;" access="RO" offset="0x28.0" size="0x4.0" />
 	<field name="if_out_octets_low" descr="The total number of octets transmitted out of the \;interface, including framing characters.\;" access="RO" offset="0x2C.0" size="0x4.0" />
-	<field name="if_out_ucast_pkts_high" descr="The total number of packets that higher-level proto\;cols requested be transmitted and were not \;addressed to a multicast or broadcast MAC \;address, including those that were discarded or not \;sent.\;" access="RO" offset="0x30.0" size="0x4.0" />
-	<field name="if_out_ucast_pkts_low" descr="The total number of packets that higher-level proto\;cols requested be transmitted and were not \;addressed to a multicast or broadcast MAC \;address, including those that were discarded or not \;sent.\;" access="RO" offset="0x34.0" size="0x4.0" />
+	<field name="if_out_ucast_pkts_high" descr="The total number of packets that higher-level pro\;tocols requested be transmitted and were not \;addressed to a multicast or broadcast MAC \;address, including those that were discarded or not \;sent.\;" access="RO" offset="0x30.0" size="0x4.0" />
+	<field name="if_out_ucast_pkts_low" descr="The total number of packets that higher-level pro\;tocols requested be transmitted and were not \;addressed to a multicast or broadcast MAC \;address, including those that were discarded or not \;sent.\;" access="RO" offset="0x34.0" size="0x4.0" />
 	<field name="if_out_discards_high" descr="The number of outbound packets which were cho\;sen to be discarded, even though no errors had \;been detected to prevent their being transmitted. \;" access="RO" offset="0x38.0" size="0x4.0" />
 	<field name="if_out_discards_low" descr="The number of outbound packets which were cho\;sen to be discarded, even though no errors had \;been detected to prevent their being transmitted. \;" access="RO" offset="0x3C.0" size="0x4.0" />
 	<field name="if_out_errors_high" descr="The number of outbound packets that could not be \;transmitted because of errors.\;" access="RO" offset="0x40.0" size="0x4.0" />
 	<field name="if_out_errors_low" descr="The number of outbound packets that could not be \;transmitted because of errors.\;" access="RO" offset="0x44.0" size="0x4.0" />
-	<field name="if_in_multicast_pkts_high" descr="The number of packets successfully received, which \;were addressed to a multicast MAC address.\;" access="RO" offset="0x48.0" size="0x4.0" />
-	<field name="if_in_multicast_pkts_low" descr="The number of packets successfully received, which \;were addressed to a multicast MAC address.\;" access="RO" offset="0x4C.0" size="0x4.0" />
-	<field name="if_in_broadcast_pkts_high" descr="The number of packets successfully received, which \;were addressed to a broadcast MAC address.\;" access="RO" offset="0x50.0" size="0x4.0" />
-	<field name="if_in_broadcast_pkts_low" descr="The number of packets successfully received, which \;were addressed to a broadcast MAC address.\;" access="RO" offset="0x54.0" size="0x4.0" />
-	<field name="if_out_multicast_pkts_high" descr="The total number of packets that higher-level proto\;cols requested be transmitted, and which were \;addressed to a multicast MAC address, including \;those that were discarded or not sent.\;" access="RO" offset="0x58.0" size="0x4.0" />
-	<field name="if_out_multicast_pkts_low" descr="The total number of packets that higher-level proto\;cols requested be transmitted, and which were \;addressed to a multicast MAC address, including \;those that were discarded or not sent.\;" access="RO" offset="0x5C.0" size="0x4.0" />
-	<field name="if_out_broadcast_pkts_high" descr="The total number of packets that higher-level proto\;cols requested be transmitted, and which were \;addressed to a broadcast MAC address, including \;those that were discarded or not sent.\;" access="RO" offset="0x60.0" size="0x4.0" />
-	<field name="if_out_broadcast_pkts_low" descr="The total number of packets that higher-level proto\;cols requested be transmitted, and which were \;addressed to a broadcast MAC address, including \;those that were discarded or not sent.\;" access="RO" offset="0x64.0" size="0x4.0" />
+	<field name="if_in_multicast_pkts_high" descr="The number of packets successfully received, \;which were addressed to a multicast MAC address.\;" access="RO" offset="0x48.0" size="0x4.0" />
+	<field name="if_in_multicast_pkts_low" descr="The number of packets successfully received, \;which were addressed to a multicast MAC address.\;" access="RO" offset="0x4C.0" size="0x4.0" />
+	<field name="if_in_broadcast_pkts_high" descr="The number of packets successfully received, \;which were addressed to a broadcast MAC address.\;" access="RO" offset="0x50.0" size="0x4.0" />
+	<field name="if_in_broadcast_pkts_low" descr="The number of packets successfully received, \;which were addressed to a broadcast MAC address.\;" access="RO" offset="0x54.0" size="0x4.0" />
+	<field name="if_out_multicast_pkts_high" descr="The total number of packets that higher-level pro\;tocols requested be transmitted, and which were \;addressed to a multicast MAC address, including \;those that were discarded or not sent.\;" access="RO" offset="0x58.0" size="0x4.0" />
+	<field name="if_out_multicast_pkts_low" descr="The total number of packets that higher-level pro\;tocols requested be transmitted, and which were \;addressed to a multicast MAC address, including \;those that were discarded or not sent.\;" access="RO" offset="0x5C.0" size="0x4.0" />
+	<field name="if_out_broadcast_pkts_high" descr="The total number of packets that higher-level pro\;tocols requested be transmitted, and which were \;addressed to a broadcast MAC address, including \;those that were discarded or not sent.\;" access="RO" offset="0x60.0" size="0x4.0" />
+	<field name="if_out_broadcast_pkts_low" descr="The total number of packets that higher-level pro\;tocols requested be transmitted, and which were \;addressed to a broadcast MAC address, including \;those that were discarded or not sent.\;" access="RO" offset="0x64.0" size="0x4.0" />
 </node>
 
 <node name="eth_3635_cntrs_grp_data_layout_ext" descr="" size="0xf8.0" >
@@ -577,28 +555,28 @@
 	<field name="dot3stats_alignment_errors_low" descr="A count of frames received that are not an inte\;gral number of octets in length and do not pass \;the FCS check.\;" access="RW" offset="0x4.0" size="0x4.0" />
 	<field name="dot3stats_fcs_errors_high" descr="A count of frames received that are an integral \;number of octets in length but do not pass the \;FCS check. This count does not include frames \;received with frame-too-long or frame-too-\;short errors.\;" access="RW" offset="0x8.0" size="0x4.0" />
 	<field name="dot3stats_fcs_errors_low" descr="A count of frames received that are an integral \;number of octets in length but do not pass the \;FCS check. This count does not include frames \;received with frame-too-long or frame-too-\;short errors.\;" access="RW" offset="0xC.0" size="0x4.0" />
-	<field name="dot3stats_single_collision_frames_high" descr="A count of frames that are involved in a single \;collision, and are subsequently transmitted suc\;cessfully.\;This counter does not increment when the inter\;face is operating in full-duplex mode.\;" access="RW" offset="0x10.0" size="0x4.0" />
-	<field name="dot3stats_single_collision_frames_low" descr="A count of frames that are involved in a single \;collision, and are subsequently transmitted suc\;cessfully.\;This counter does not increment when the inter\;face is operating in full-duplex mode.\;" access="RW" offset="0x14.0" size="0x4.0" />
-	<field name="dot3stats_multiple_collision_frames_high" descr="A count of frames that are involved in more than \;one collision and are subsequently transmitted \;successfully. \;This counter does not increment when the inter\;face is operating in full-duplex mode.\;" access="RW" offset="0x18.0" size="0x4.0" />
-	<field name="dot3stats_multiple_collision_frames_low" descr="A count of frames that are involved in more than \;one collision and are subsequently transmitted \;successfully. \;This counter does not increment when the inter\;face is operating in full-duplex mode.\;" access="RW" offset="0x1C.0" size="0x4.0" />
+	<field name="dot3stats_single_collision_frames_high" descr="A count of frames that are involved in a single \;collision, and are subsequently transmitted \;successfully.\;This counter does not increment when the \;interface is operating in full-duplex mode.\;" access="RW" offset="0x10.0" size="0x4.0" />
+	<field name="dot3stats_single_collision_frames_low" descr="A count of frames that are involved in a single \;collision, and are subsequently transmitted \;successfully.\;This counter does not increment when the \;interface is operating in full-duplex mode.\;" access="RW" offset="0x14.0" size="0x4.0" />
+	<field name="dot3stats_multiple_collision_frames_high" descr="A count of frames that are involved in more than \;one collision and are subsequently transmitted \;successfully. \;This counter does not increment when the \;interface is operating in full-duplex mode.\;" access="RW" offset="0x18.0" size="0x4.0" />
+	<field name="dot3stats_multiple_collision_frames_low" descr="A count of frames that are involved in more than \;one collision and are subsequently transmitted \;successfully. \;This counter does not increment when the \;interface is operating in full-duplex mode.\;" access="RW" offset="0x1C.0" size="0x4.0" />
 	<field name="dot3stats_sqe_test_errors_high" descr="A count of times that the SQE TEST ERROR is \;received on a particular interface.\;This counter does not increment on interfaces \;operating at speeds greater than 10 Mb/s, or on \;interfaces operating in full-duplex mode. \;" access="RW" offset="0x20.0" size="0x4.0" />
 	<field name="dot3stats_sqe_test_errors_low" descr="A count of times that the SQE TEST ERROR is \;received on a particular interface.\;This counter does not increment on interfaces \;operating at speeds greater than 10 Mb/s, or on \;interfaces operating in full-duplex mode. \;" access="RW" offset="0x24.0" size="0x4.0" />
-	<field name="dot3stats_deferred_transmissions_high" descr="A count of frames for which the first transmis\;sion attempt on a particular interface is delayed \;because the medium is busy. \;This counter does not increment when the inter\;face is operating in full-duplex mode. \;" access="RW" offset="0x28.0" size="0x4.0" />
-	<field name="dot3stats_deferred_transmissions_low" descr="A count of frames for which the first transmis\;sion attempt on a particular interface is delayed \;because the medium is busy. \;This counter does not increment when the inter\;face is operating in full-duplex mode. \;" access="RW" offset="0x2C.0" size="0x4.0" />
-	<field name="dot3stats_late_collisions_high" descr="The number of times that a collision is detected \;on a particular interface later than one slotTime \;into the transmission of a packet.\;This counter does not increment when the inter\;face is operating in full-duplex mode.\;" access="RW" offset="0x30.0" size="0x4.0" />
-	<field name="dot3stats_late_collisions_low" descr="The number of times that a collision is detected \;on a particular interface later than one slotTime \;into the transmission of a packet.\;This counter does not increment when the inter\;face is operating in full-duplex mode.\;" access="RW" offset="0x34.0" size="0x4.0" />
-	<field name="dot3stats_excessive_collisions_high" descr="A count of frames for which transmission on a \;particular interface fails due to excessive colli\;sions.\;This counter does not increment when the inter\;face is operating in full-duplex mode.\;" access="RW" offset="0x38.0" size="0x4.0" />
-	<field name="dot3stats_excessive_collisions_low" descr="A count of frames for which transmission on a \;particular interface fails due to excessive colli\;sions.\;This counter does not increment when the inter\;face is operating in full-duplex mode.\;" access="RW" offset="0x3C.0" size="0x4.0" />
+	<field name="dot3stats_deferred_transmissions_high" descr="A count of frames for which the first transmis\;sion attempt on a particular interface is delayed \;because the medium is busy. \;This counter does not increment when the \;interface is operating in full-duplex mode. \;" access="RW" offset="0x28.0" size="0x4.0" />
+	<field name="dot3stats_deferred_transmissions_low" descr="A count of frames for which the first transmis\;sion attempt on a particular interface is delayed \;because the medium is busy. \;This counter does not increment when the \;interface is operating in full-duplex mode. \;" access="RW" offset="0x2C.0" size="0x4.0" />
+	<field name="dot3stats_late_collisions_high" descr="The number of times that a collision is detected \;on a particular interface later than one slotTime \;into the transmission of a packet.\;This counter does not increment when the \;interface is operating in full-duplex mode.\;" access="RW" offset="0x30.0" size="0x4.0" />
+	<field name="dot3stats_late_collisions_low" descr="The number of times that a collision is detected \;on a particular interface later than one slotTime \;into the transmission of a packet.\;This counter does not increment when the \;interface is operating in full-duplex mode.\;" access="RW" offset="0x34.0" size="0x4.0" />
+	<field name="dot3stats_excessive_collisions_high" descr="A count of frames for which transmission on a \;particular interface fails due to excessive colli\;sions.\;This counter does not increment when the \;interface is operating in full-duplex mode.\;" access="RW" offset="0x38.0" size="0x4.0" />
+	<field name="dot3stats_excessive_collisions_low" descr="A count of frames for which transmission on a \;particular interface fails due to excessive colli\;sions.\;This counter does not increment when the \;interface is operating in full-duplex mode.\;" access="RW" offset="0x3C.0" size="0x4.0" />
 	<field name="dot3stats_internal_mac_transmit_errors_high" descr="A count of frames for which transmission failed \;and were discarded even though no errors had \;been detected to prevent their being deliverable \;to a higher-layer protocol.\;" access="RW" offset="0x40.0" size="0x4.0" />
 	<field name="dot3stats_internal_mac_transmit_errors_low" descr="A count of frames for which transmission failed \;and were discarded even though no errors had \;been detected to prevent their being deliverable \;to a higher-layer protocol.\;" access="RW" offset="0x44.0" size="0x4.0" />
-	<field name="dot3stats_carrier_sense_errors_high" descr="The number of times that the carrier sense con\;dition was lost or never asserted when attempt\;ing to transmit a frame on a particular interface. \;This counter does not increment when the inter\;face is operating in full-duplex mode. \;" access="RW" offset="0x48.0" size="0x4.0" />
-	<field name="dot3stats_carrier_sense_errors_low" descr="The number of times that the carrier sense con\;dition was lost or never asserted when attempt\;ing to transmit a frame on a particular interface. \;This counter does not increment when the inter\;face is operating in full-duplex mode. \;" access="RW" offset="0x4C.0" size="0x4.0" />
+	<field name="dot3stats_carrier_sense_errors_high" descr="The number of times that the carrier sense con\;dition was lost or never asserted when attempt\;ing to transmit a frame on a particular \;interface. \;This counter does not increment when the \;interface is operating in full-duplex mode. \;" access="RW" offset="0x48.0" size="0x4.0" />
+	<field name="dot3stats_carrier_sense_errors_low" descr="The number of times that the carrier sense con\;dition was lost or never asserted when attempt\;ing to transmit a frame on a particular \;interface. \;This counter does not increment when the \;interface is operating in full-duplex mode. \;" access="RW" offset="0x4C.0" size="0x4.0" />
 	<field name="dot3stats_frame_too_longs_high" descr="A count of frames received that exceed the max\;imum permitted frame size.\;" access="RW" offset="0x50.0" size="0x4.0" />
 	<field name="dot3stats_frame_too_longs_low" descr="A count of frames received that exceed the max\;imum permitted frame size.\;" access="RW" offset="0x54.0" size="0x4.0" />
 	<field name="dot3stats_internal_mac_receive_errors_high" descr="A count of frames for which reception failed and \;were discarded even though no errors had been \;detected to prevent their being deliverable to a \;higher-layer protocol.\;" access="RW" offset="0x58.0" size="0x4.0" />
 	<field name="dot3stats_internal_mac_receive_errors_low" descr="A count of frames for which reception failed and \;were discarded even though no errors had been \;detected to prevent their being deliverable to a \;higher-layer protocol.\;" access="RW" offset="0x5C.0" size="0x4.0" />
-	<field name="dot3stats_symbol_errors_high" descr="The number of times the receiving media is non-\;idle (a carrier event) for a period of time equal to \;or greater than minFrameSize, and during \;which there was at least one occurrence of an \;event that causes the PHY to indicate &quot;Receive \;Error&quot;.\;\;" access="RW" offset="0x60.0" size="0x4.0" />
-	<field name="dot3stats_symbol_errors_low" descr="The number of times the receiving media is non-\;idle (a carrier event) for a period of time equal to \;or greater than minFrameSize, and during \;which there was at least one occurrence of an \;event that causes the PHY to indicate &quot;Receive \;Error&quot;.\;\;" access="RW" offset="0x64.0" size="0x4.0" />
+	<field name="dot3stats_symbol_errors_high" descr="The number of times the receiving media is \;non-idle (a carrier event) for a period of time \;equal to or greater than minFrameSize, and \;during which there was at least one occurrence \;of an event that causes the PHY to indicate \;&quot;Receive Error&quot;.\;\;" access="RW" offset="0x60.0" size="0x4.0" />
+	<field name="dot3stats_symbol_errors_low" descr="The number of times the receiving media is \;non-idle (a carrier event) for a period of time \;equal to or greater than minFrameSize, and \;during which there was at least one occurrence \;of an event that causes the PHY to indicate \;&quot;Receive Error&quot;.\;\;" access="RW" offset="0x64.0" size="0x4.0" />
 	<field name="dot3control_in_unknown_opcodes_high" descr="A count of MAC Control frames received that \;contain an opcode that is not supported.\;" access="RW" offset="0x68.0" size="0x4.0" />
 	<field name="dot3control_in_unknown_opcodes_low" descr="A count of MAC Control frames received that \;contain an opcode that is not supported.\;" access="RW" offset="0x6C.0" size="0x4.0" />
 	<field name="dot3in_pause_frames_high" descr="A count of MAC Control frames received with an \;opcode indicating the PAUSE operation.\;\;" access="RW" offset="0x70.0" size="0x4.0" />
@@ -610,8 +588,8 @@
 <node name="eth_802_3_cntrs_grp_data_layout_ext" descr="" size="0xf8.0" >
 	<field name="a_frames_transmitted_ok_high" descr="A count of frames that are successfully trans\;mitted. \;" access="RO" offset="0x0.0" size="0x4.0" />
 	<field name="a_frames_transmitted_ok_low" descr="A count of frames that are successfully trans\;mitted. \;" access="RO" offset="0x4.0" size="0x4.0" />
-	<field name="a_frames_received_ok_high" descr="A count of frames that are successfully \;received. This does not include frames \;received with frame-too-long, frame check \;sequence (FCS), length or alignment errors, or \;frames lost due to other MAC errors.\;\;" access="RO" offset="0x8.0" size="0x4.0" />
-	<field name="a_frames_received_ok_low" descr="A count of frames that are successfully \;received. This does not include frames \;received with frame-too-long, frame check \;sequence (FCS), length or alignment errors, or \;frames lost due to other MAC errors.\;\;" access="RO" offset="0xC.0" size="0x4.0" />
+	<field name="a_frames_received_ok_high" descr="A count of frames that are successfully \;received. This does not include frames \;received with frame-too-long, frame check \;sequence (FCS), length or alignment errors, \;or frames lost due to other MAC errors.\;\;" access="RO" offset="0x8.0" size="0x4.0" />
+	<field name="a_frames_received_ok_low" descr="A count of frames that are successfully \;received. This does not include frames \;received with frame-too-long, frame check \;sequence (FCS), length or alignment errors, \;or frames lost due to other MAC errors.\;\;" access="RO" offset="0xC.0" size="0x4.0" />
 	<field name="a_frame_check_sequence_errors_high" descr="A count of receive frames that are an integral \;number of octets in length and do not pass the \;FCS check. This does not include frames \;received with frame-too-long, or frame-too-\;short (frame fragment) errors.\;" access="RO" offset="0x10.0" size="0x4.0" />
 	<field name="a_frame_check_sequence_errors_low" descr="A count of receive frames that are an integral \;number of octets in length and do not pass the \;FCS check. This does not include frames \;received with frame-too-long, or frame-too-\;short (frame fragment) errors.\;" access="RO" offset="0x14.0" size="0x4.0" />
 	<field name="a_alignment_errors_high" descr="A count of frames that are not an integral \;number of octets in length and do not pass the \;FCS check.\;" access="RO" offset="0x18.0" size="0x4.0" />
@@ -628,8 +606,8 @@
 	<field name="a_multicast_frames_received_ok_low" descr="A count of frames that are successfully \;received and directed to an active nonbroad\;cast group address. This does not include \;frames received with frame-too-long, FCS, \;length or alignment errors, or frames lost due \;to internal MAC sublayer error. \;  \;\;\;" access="RO" offset="0x44.0" size="0x4.0" />
 	<field name="a_broadcast_frames_received_ok_high" descr="A count of the frames that were successfully \;transmitted to the broadcast address. Frames \;transmitted to multicast addresses are not \;broadcast frames and are excluded. \;\;" access="RO" offset="0x48.0" size="0x4.0" />
 	<field name="a_broadcast_frames_received_ok_low" descr="A count of the frames that were successfully \;transmitted to the broadcast address. Frames \;transmitted to multicast addresses are not \;broadcast frames and are excluded. \;\;" access="RO" offset="0x4C.0" size="0x4.0" />
-	<field name="a_in_range_length_errors_high" descr="A count of frames with a length/type field value \;between the minimum unpadded MAC client \;data size and the maximum allowed MAC cli\;ent data size, inclusive, that does not match \;the number of MAC client data octets received. \;The counter also increments for frames whose \;length/type field value is less than the mini\;mum allowed unpadded MAC client data size \;and the number of MAC client data octets \;received is greater than the minimum unpad\;ded MAC client data size.\;" access="RO" offset="0x50.0" size="0x4.0" />
-	<field name="a_in_range_length_errors_low" descr="A count of frames with a length/type field value \;between the minimum unpadded MAC client \;data size and the maximum allowed MAC cli\;ent data size, inclusive, that does not match \;the number of MAC client data octets received. \;The counter also increments for frames whose \;length/type field value is less than the mini\;mum allowed unpadded MAC client data size \;and the number of MAC client data octets \;received is greater than the minimum unpad\;ded MAC client data size.\;" access="RO" offset="0x54.0" size="0x4.0" />
+	<field name="a_in_range_length_errors_high" descr="A count of frames with a length/type field \;value between the minimum unpadded MAC \;client data size and the maximum allowed \;MAC client data size, inclusive, that does not \;match the number of MAC client data octets \;received. The counter also increments for \;frames whose length/type field value is less \;than the minimum allowed unpadded MAC cli\;ent data size and the number of MAC client \;data octets received is greater than the mini\;mum unpadded MAC client data size.\;" access="RO" offset="0x50.0" size="0x4.0" />
+	<field name="a_in_range_length_errors_low" descr="A count of frames with a length/type field \;value between the minimum unpadded MAC \;client data size and the maximum allowed \;MAC client data size, inclusive, that does not \;match the number of MAC client data octets \;received. The counter also increments for \;frames whose length/type field value is less \;than the minimum allowed unpadded MAC cli\;ent data size and the number of MAC client \;data octets received is greater than the mini\;mum unpadded MAC client data size.\;" access="RO" offset="0x54.0" size="0x4.0" />
 	<field name="a_out_of_range_length_field_high" descr="A count of frames with a length field value \;greater than the maximum allowed LLC data \;size. \;" access="RO" offset="0x58.0" size="0x4.0" />
 	<field name="a_out_of_range_length_field_low" descr="A count of frames with a length field value \;greater than the maximum allowed LLC data \;size. \;" access="RO" offset="0x5C.0" size="0x4.0" />
 	<field name="a_frame_too_long_errors_high" descr="A count of frames received that exceed the \;maximum permitted frame size by IEEE 802.3 \;(MTU size).\;" access="RO" offset="0x60.0" size="0x4.0" />
@@ -706,8 +684,8 @@
 	<field name="tx_stats_pkts128to255octets_low" descr="The total number of packets (including bad packets) \;transmitted that were between 128 and 255 octets in \;length (excluding framing bits but including FCS \;octets)." access="RO" offset="0x64.0" size="0x4.0" />
 	<field name="tx_stats_pkts256to511octets_high" descr="The total number of packets (including bad packets) \;transmitted that were between 256 and 511 octets in \;length (excluding framing bits but including FCS \;octets)." access="RO" offset="0x68.0" size="0x4.0" />
 	<field name="tx_stats_pkts256to511octets_low" descr="The total number of packets (including bad packets) \;transmitted that were between 256 and 511 octets in \;length (excluding framing bits but including FCS \;octets)." access="RO" offset="0x6C.0" size="0x4.0" />
-	<field name="tx_stats_pkts512to1023octets_high" descr="The total number of packets (including bad packets) \;transmitted that were between 512 and 1023 octets in \;length (excluding framing bits but including FCS \;octets)." access="RO" offset="0x70.0" size="0x4.0" />
-	<field name="tx_stats_pkts512to1023octets_low" descr="The total number of packets (including bad packets) \;transmitted that were between 512 and 1023 octets in \;length (excluding framing bits but including FCS \;octets)." access="RO" offset="0x74.0" size="0x4.0" />
+	<field name="tx_stats_pkts512to1023octets_high" descr="The total number of packets (including bad packets) \;transmitted that were between 512 and 1023 octets \;in length (excluding framing bits but including FCS \;octets)." access="RO" offset="0x70.0" size="0x4.0" />
+	<field name="tx_stats_pkts512to1023octets_low" descr="The total number of packets (including bad packets) \;transmitted that were between 512 and 1023 octets \;in length (excluding framing bits but including FCS \;octets)." access="RO" offset="0x74.0" size="0x4.0" />
 	<field name="tx_stats_pkts1024to1518octets_high" descr="The total number of packets (including bad packets) \;transmitted that were between 1024 and 1518 octets \;in length (excluding framing bits but including FCS \;octets)." access="RO" offset="0x78.0" size="0x4.0" />
 	<field name="tx_stats_pkts1024to1518octets_low" descr="The total number of packets (including bad packets) \;transmitted that were between 1024 and 1518 octets \;in length (excluding framing bits but including FCS \;octets)." access="RO" offset="0x7C.0" size="0x4.0" />
 	<field name="tx_stats_pkts1519to2047octets_high" descr="The total number of packets (including bad packets) \;transmitted that were between 1519 and 2047 octets \;in length (excluding framing bits but including FCS \;octets)." access="RO" offset="0x80.0" size="0x4.0" />
@@ -716,8 +694,8 @@
 	<field name="tx_stats_pkts2048to4095octets_low" descr="The total number of packets (including bad packets) \;transmitted that were between 2048 and 4095 octets \;in length (excluding framing bits but including FCS \;octets)." access="RO" offset="0x8C.0" size="0x4.0" />
 	<field name="tx_stats_pkts4096to8191octets_high" descr="The total number of packets (including bad packets) \;transmitted that were between 4096 and 8191 octets \;in length (excluding framing bits but including FCS \;octets)." access="RO" offset="0x90.0" size="0x4.0" />
 	<field name="tx_stats_pkts4096to8191octets_low" descr="The total number of packets (including bad packets) \;transmitted that were between 4096 and 8191 octets \;in length (excluding framing bits but including FCS \;octets)." access="RO" offset="0x94.0" size="0x4.0" />
-	<field name="tx_stats_pkts8192to10239octets_high" descr="The total number of packets (including bad packets) \;transmitted that were between 8192 and 10239 octets \;in length (excluding framing bits but including FCS \;octets).transmitted\;" access="RO" offset="0x98.0" size="0x4.0" />
-	<field name="tx_stats_pkts8192to10239octets_low" descr="The total number of packets (including bad packets) \;transmitted that were between 8192 and 10239 octets \;in length (excluding framing bits but including FCS \;octets).transmitted\;" access="RO" offset="0x9C.0" size="0x4.0" />
+	<field name="tx_stats_pkts8192to10239octets_high" descr="The total number of packets (including bad packets) \;transmitted that were between 8192 and 10239 \;octets in length (excluding framing bits but including \;FCS octets).transmitted\;" access="RO" offset="0x98.0" size="0x4.0" />
+	<field name="tx_stats_pkts8192to10239octets_low" descr="The total number of packets (including bad packets) \;transmitted that were between 8192 and 10239 \;octets in length (excluding framing bits but including \;FCS octets).transmitted\;" access="RO" offset="0x9C.0" size="0x4.0" />
 	<field name="ece_marked_high" descr="A count of packets marked as ECE or potentially \;marked as ECE." access="RO" offset="0xA0.0" size="0x4.0" />
 	<field name="ece_marked_low" descr="A count of packets marked as ECE or potentially \;marked as ECE." access="RO" offset="0xA4.0" size="0x4.0" />
 </node>
@@ -731,16 +709,16 @@
 	<field name="if_in_discards_low" descr="The number of inbound packets which were chosen to be \;discarded even though no errors had been detected to pre\;vent their being deliverable to a higher-layer protocol.\;\;" access="RO" offset="0x14.0" size="0x4.0" />
 	<field name="if_in_errors_high" descr="The number of inbound packets that contained errors pre\;venting them from being deliverable to a higher-layer proto\;col. \;" access="RO" offset="0x18.0" size="0x4.0" />
 	<field name="if_in_errors_low" descr="The number of inbound packets that contained errors pre\;venting them from being deliverable to a higher-layer proto\;col. \;" access="RO" offset="0x1C.0" size="0x4.0" />
-	<field name="ether_stats_crc_align_errors_high" descr="e total number of packets received that had a length (exclud\;ing framing bits, but including FCS octets) of between 64 and \;MTU octets, inclusive, but had either a bad frame check \;sequence (FCS) with an integral number of octets (FCS \;error) or a bad FCS with a non-integral number of octets \;(alignment error).\;" access="RO" offset="0x20.0" size="0x4.0" />
-	<field name="ether_stats_crc_align_errors_low" descr="e total number of packets received that had a length (exclud\;ing framing bits, but including FCS octets) of between 64 and \;MTU octets, inclusive, but had either a bad frame check \;sequence (FCS) with an integral number of octets (FCS \;error) or a bad FCS with a non-integral number of octets \;(alignment error).\;" access="RO" offset="0x24.0" size="0x4.0" />
-	<field name="ether_stats_undersize_pkts_high" descr="The total number of packets received that were less than 64 \;octets long (excluding framing bits, but including FCS octets) \;and were otherwise well formed.\;" access="RO" offset="0x28.0" size="0x4.0" />
-	<field name="ether_stats_undersize_pkts_low" descr="The total number of packets received that were less than 64 \;octets long (excluding framing bits, but including FCS octets) \;and were otherwise well formed.\;" access="RO" offset="0x2C.0" size="0x4.0" />
+	<field name="ether_stats_crc_align_errors_high" descr="e total number of packets received that had a length \;(excluding framing bits, but including FCS octets) of \;between 64 and MTU octets, inclusive, but had either a bad \;frame check sequence (FCS) with an integral number of \;octets (FCS error) or a bad FCS with a non-integral number \;of octets (alignment error).\;" access="RO" offset="0x20.0" size="0x4.0" />
+	<field name="ether_stats_crc_align_errors_low" descr="e total number of packets received that had a length \;(excluding framing bits, but including FCS octets) of \;between 64 and MTU octets, inclusive, but had either a bad \;frame check sequence (FCS) with an integral number of \;octets (FCS error) or a bad FCS with a non-integral number \;of octets (alignment error).\;" access="RO" offset="0x24.0" size="0x4.0" />
+	<field name="ether_stats_undersize_pkts_high" descr="The total number of packets received that were less than 64 \;octets long (excluding framing bits, but including FCS \;octets) and were otherwise well formed.\;" access="RO" offset="0x28.0" size="0x4.0" />
+	<field name="ether_stats_undersize_pkts_low" descr="The total number of packets received that were less than 64 \;octets long (excluding framing bits, but including FCS \;octets) and were otherwise well formed.\;" access="RO" offset="0x2C.0" size="0x4.0" />
 	<field name="ether_stats_oversize_pkts_high" descr="The total number of packets received that were longer than \;MTU octets (excluding framing bits, but including FCS \;octets) but were otherwise well formed.\;" access="RO" offset="0x30.0" size="0x4.0" />
 	<field name="ether_stats_oversize_pkts_low" descr="The total number of packets received that were longer than \;MTU octets (excluding framing bits, but including FCS \;octets) but were otherwise well formed.\;" access="RO" offset="0x34.0" size="0x4.0" />
-	<field name="dot3stats_symbol_errors_high" descr="he number of times the receiving media is non-idle (a carrier \;event) for a period of time equal to or greater than min\;FrameSize, and during which there was at least one occur\;rence of an event that causes the PHY to indicate &quot;Receive \;Error&quot;.\;" access="RO" offset="0x38.0" size="0x4.0" />
-	<field name="dot3stats_symbol_errors_low" descr="he number of times the receiving media is non-idle (a carrier \;event) for a period of time equal to or greater than min\;FrameSize, and during which there was at least one occur\;rence of an event that causes the PHY to indicate &quot;Receive \;Error&quot;.\;" access="RO" offset="0x3C.0" size="0x4.0" />
-	<field name="dot3in_pause_frames_high" descr="A count of MAC Control frames received with an opcode indi\;cating the PAUSE operation.\;" access="RO" offset="0x40.0" size="0x4.0" />
-	<field name="dot3in_pause_frames_low" descr="A count of MAC Control frames received with an opcode indi\;cating the PAUSE operation.\;" access="RO" offset="0x44.0" size="0x4.0" />
+	<field name="dot3stats_symbol_errors_high" descr="he number of times the receiving media is non-idle (a car\;rier event) for a period of time equal to or greater than min\;FrameSize, and during which there was at least one \;occurrence of an event that causes the PHY to indicate \;&quot;Receive Error&quot;.\;" access="RO" offset="0x38.0" size="0x4.0" />
+	<field name="dot3stats_symbol_errors_low" descr="he number of times the receiving media is non-idle (a car\;rier event) for a period of time equal to or greater than min\;FrameSize, and during which there was at least one \;occurrence of an event that causes the PHY to indicate \;&quot;Receive Error&quot;.\;" access="RO" offset="0x3C.0" size="0x4.0" />
+	<field name="dot3in_pause_frames_high" descr="A count of MAC Control frames received with an opcode \;indicating the PAUSE operation.\;" access="RO" offset="0x40.0" size="0x4.0" />
+	<field name="dot3in_pause_frames_low" descr="A count of MAC Control frames received with an opcode \;indicating the PAUSE operation.\;" access="RO" offset="0x44.0" size="0x4.0" />
 	<field name="dot3control_in_unknown_opcodes_high" descr="A count of MAC Control frames received that contain an \;opcode that is not supported.\;" access="RO" offset="0x48.0" size="0x4.0" />
 	<field name="dot3control_in_unknown_opcodes_low" descr="A count of MAC Control frames received that contain an \;opcode that is not supported.\;" access="RO" offset="0x4C.0" size="0x4.0" />
 	<field name="if_out_ucast_pkts_high" descr="The total number of packets that higher-level protocols \;requested be transmitted and were not addressed to a mul\;ticast or broadcast MAC address, including those that were \;discarded or not sent.\;\;" access="RO" offset="0x50.0" size="0x4.0" />
@@ -749,8 +727,8 @@
 	<field name="if_out_octets_low" descr="The total number of octets transmitted out of the interface, \;including framing characters.\;" access="RO" offset="0x5C.0" size="0x4.0" />
 	<field name="dot3out_pause_frames_high" descr="A count of MAC Control frames transmitted with an opcode \;indicating the PAUSE operation.\;" access="RO" offset="0x60.0" size="0x4.0" />
 	<field name="dot3out_pause_frames_low" descr="A count of MAC Control frames transmitted with an opcode \;indicating the PAUSE operation.\;" access="RO" offset="0x64.0" size="0x4.0" />
-	<field name="if_out_errors_high" descr="The number of outbound packets that could not be transmit\;ted because of errors.\;" access="RO" offset="0x68.0" size="0x4.0" />
-	<field name="if_out_errors_low" descr="The number of outbound packets that could not be transmit\;ted because of errors.\;" access="RO" offset="0x6C.0" size="0x4.0" />
+	<field name="if_out_errors_high" descr="The number of outbound packets that could not be trans\;mitted because of errors.\;" access="RO" offset="0x68.0" size="0x4.0" />
+	<field name="if_out_errors_low" descr="The number of outbound packets that could not be trans\;mitted because of errors.\;" access="RO" offset="0x6C.0" size="0x4.0" />
 	<field name="phy_time_since_last_clear_high" descr="The time passed since the last phy counters clear event in \;msec." access="RO" offset="0x70.0" size="0x4.0" />
 	<field name="phy_time_since_last_clear_low" descr="The time passed since the last phy counters clear event in \;msec." access="RO" offset="0x74.0" size="0x4.0" />
 	<field name="phy_received_bits_high" descr="This counter provides information on the total amount of \;traffic (bits) received." access="RO" offset="0x78.0" size="0x4.0" />
@@ -762,8 +740,8 @@
 <node name="eth_per_prio_grp_data_layout_ext" descr="" size="0xf8.0" >
 	<field name="rx_octets_high" descr="The total number of octets received, including framing char\;acters.\;" access="RO" offset="0x0.0" size="0x4.0" />
 	<field name="rx_octets_low" descr="The total number of octets received, including framing char\;acters.\;" access="RO" offset="0x4.0" size="0x4.0" />
-	<field name="rx_frames_high" descr="The total number of packets received for this priority (includ\;ing control frames).\;\;" access="RO" offset="0x20.0" size="0x4.0" />
-	<field name="rx_frames_low" descr="The total number of packets received for this priority (includ\;ing control frames).\;\;" access="RO" offset="0x24.0" size="0x4.0" />
+	<field name="rx_frames_high" descr="The total number of packets received for this priority \;(including control frames).\;\;" access="RO" offset="0x20.0" size="0x4.0" />
+	<field name="rx_frames_low" descr="The total number of packets received for this priority \;(including control frames).\;\;" access="RO" offset="0x24.0" size="0x4.0" />
 	<field name="tx_octets_high" descr="The total number of octets transmitted, including framing \;characters.\;\;\;" access="RO" offset="0x28.0" size="0x4.0" />
 	<field name="tx_octets_low" descr="The total number of octets transmitted, including framing \;characters.\;\;\;" access="RO" offset="0x2C.0" size="0x4.0" />
 	<field name="tx_frames_high" descr="The total number of packets transmitted.\;\;\;" access="RO" offset="0x48.0" size="0x4.0" />
@@ -851,8 +829,8 @@
 	<field name="llr_rx_error_low" descr="The total number of bad cells received (including CRC \;error).\;" access="RO" offset="0xC.0" size="0x4.0" />
 	<field name="llr_rx_crc_error_high" descr="The total number of cells received with CRC error.\;" access="RO" offset="0x10.0" size="0x4.0" />
 	<field name="llr_rx_crc_error_low" descr="The total number of cells received with CRC error.\;" access="RO" offset="0x14.0" size="0x4.0" />
-	<field name="llr_tx_cells_high" descr="The total number of cells transmitted (including retransmit\;ted cells)." access="RO" offset="0x18.0" size="0x4.0" />
-	<field name="llr_tx_cells_low" descr="The total number of cells transmitted (including retransmit\;ted cells)." access="RO" offset="0x1C.0" size="0x4.0" />
+	<field name="llr_tx_cells_high" descr="The total number of cells transmitted (including retrans\;mitted cells)." access="RO" offset="0x18.0" size="0x4.0" />
+	<field name="llr_tx_cells_low" descr="The total number of cells transmitted (including retrans\;mitted cells)." access="RO" offset="0x1C.0" size="0x4.0" />
 	<field name="llr_tx_ret_cells_high" descr="The total number of cells retransmitted." access="RO" offset="0x20.0" size="0x4.0" />
 	<field name="llr_tx_ret_cells_low" descr="The total number of cells retransmitted." access="RO" offset="0x24.0" size="0x4.0" />
 	<field name="llr_tx_ret_events_high" descr="The total number of retransmission events." access="RO" offset="0x28.0" size="0x4.0" />
@@ -864,10 +842,10 @@
 	<field name="activation_delay_sec" descr="This is a configuration that delays the activation of the \;component in seconds. Relevant only for activate com\;mand.\;This configuration is volatile." access="RW" offset="0x0.8" size="0x0.8" />
 	<field name="time_elapsed_since_last_cmd" descr="The number of seconds elapsed since the update_han\;dle owner last issued a command. The time saturates \;at 0xFFF." access="RO" offset="0x0.16" size="0x0.12" />
 	<field name="component_index" descr="Index of the accessed component. Valid for \;UPDATE_COMPONENT, ACTIVATE_COMPONENET, \;READ_COMPONENT and READ_PENDING_COMPO\;NENT instructions. Otherwise, this field is reserved." access="INDEX" offset="0x4.0" size="0x0.16" />
-	<field name="update_handle" descr="Token representing the current flow executed by the \;FSM.\;See &quot;Update Handle&quot; on page 447." access="RW" offset="0x8.0" size="0x0.24" />
+	<field name="update_handle" descr="Token representing the current flow executed by the \;FSM.\;See Section 10.3.1, &quot;Update Handle&quot;, on page 792." access="RW" offset="0x8.0" size="0x0.24" />
 	<field name="auto_update" descr="Auto-update to all matching downstream devices is \;requested." access="WO" offset="0x8.31" size="0x0.1" />
-	<field name="control_state" descr="Current Update FSM state, See &quot;FSM States&quot; on page \;450\;0x0: IDLE\;0x1: LOCKED\;0x2: INITIALIZE\;0x3: DOWNLOAD\;0x4: VERIFY\;0x5: APPLY\;0x6: ACTIVATE\;0x7: UPLOAD\;0x8: UPLOAD_PENDING\;0x9: DOWNSRTEAM_DEVICE_TRANSFER\;Other values are reserved" access="RO" enum="IDLE=0x0,LOCKED=0x1,INITIALIZE=0x2,DOWNLOAD=0x3,VERIFY=0x4,APPLY=0x5,ACTIVATE=0x6,UPLOAD=0x7,UPLOAD_PENDING=0x8,DOWNSRTEAM_DEVICE_TRANSFER=0x9" offset="0xC.0" size="0x0.4" />
-	<field name="error_code" descr="Indicates the successful completion of the instruction, \;or the reason it failed. See &quot;Error Handling&quot; on page \;449\;0x0: OK\;0x1: ERROR\;0x2: REJECTED_DIGEST_ERR\;0x3: REJECTED_NOT_APPLICABLE\;0x4: REJECTED_UNKNOWN_KEY\;0x5: REJECTED_AUTH_FAILED\;0x6: REJECTED_UNSIGNED\;0x7: REJECTED_KEY_NOT_APPLICABLE\;0x8: REJECTED_BAD_FORMAT\;0x9: BLOCKED_PENDING_RESET\;0xA: REJECTED_NOT_A_SECURED_FW\;0xB: REJECTED_MFG_BASE_MAC_NOT_LISTED\;0xC: REJECTED_NO_DEBUG_TOKEN\;0xD: REJECTED_VERSION_NUM_MISMATCH\;0xE: REJECTED_USER_TIMESTAMP_MISMATCH\;0xF: REJECTED_FORBIDDEN_VERSION\;0x10: FLASH_ERASE_ERROR\;0x11: REJECTED_REBURN_RUNNING_AND_RETRY\;0x12: REJECTED_LINKX_TYPE_NOT_SUPPORTED\;0x13: REJECTED_HOST_STORAGE_IN_USE\;0x14: REJECTED_LINKX_TRANSFER (see module \;index in rejected_device_index)\;0x15: REJECTED_LINKX_ACTIVATE (see module index \;in rejected_device_index)\;Other values should be treated as an unknown error." access="RO" offset="0xC.8" size="0x0.8" />
+	<field name="control_state" descr="Current Update FSM state, See Section 10.3.8, &quot;FSM \;States&quot;, on page 795\;0x0: IDLE\;0x1: LOCKED\;0x2: INITIALIZE\;0x3: DOWNLOAD\;0x4: VERIFY\;0x5: APPLY\;0x6: ACTIVATE\;0x7: UPLOAD\;0x8: UPLOAD_PENDING\;0x9: DOWNSRTEAM_DEVICE_TRANSFER\;Other values are reserved" access="RO" enum="IDLE=0x0,LOCKED=0x1,INITIALIZE=0x2,DOWNLOAD=0x3,VERIFY=0x4,APPLY=0x5,ACTIVATE=0x6,UPLOAD=0x7,UPLOAD_PENDING=0x8,DOWNSRTEAM_DEVICE_TRANSFER=0x9" offset="0xC.0" size="0x0.4" />
+	<field name="error_code" descr="Indicates the successful completion of the instruction, \;or the reason it failed. See Section 10.3.7, &quot;Error \;Handling&quot;, on page 794\;0x0: OK\;0x1: ERROR\;0x2: REJECTED_DIGEST_ERR\;0x3: REJECTED_NOT_APPLICABLE\;0x4: REJECTED_UNKNOWN_KEY\;0x5: REJECTED_AUTH_FAILED\;0x6: REJECTED_UNSIGNED\;0x7: REJECTED_KEY_NOT_APPLICABLE\;0x8: REJECTED_BAD_FORMAT\;0x9: BLOCKED_PENDING_RESET\;0xA: REJECTED_NOT_A_SECURED_FW\;0xB: REJECTED_MFG_BASE_MAC_NOT_LISTED\;0xC: REJECTED_NO_DEBUG_TOKEN\;0xD: REJECTED_VERSION_NUM_MISMATCH\;0xE: REJECTED_USER_TIMESTAMP_MISMATCH\;0xF: REJECTED_FORBIDDEN_VERSION\;0x10: FLASH_ERASE_ERROR\;0x11: REJECTED_REBURN_RUNNING_AND_RETRY\;0x12: REJECTED_LINKX_TYPE_NOT_SUPPORTED\;0x13: REJECTED_HOST_STORAGE_IN_USE\;0x14: REJECTED_LINKX_TRANSFER (see module \;index in rejected_device_index)\;0x15: REJECTED_LINKX_ACTIVATE (see module index \;in rejected_device_index)\;Other values should be treated as an unknown error." access="RO" offset="0xC.8" size="0x0.8" />
 	<field name="control_progress" descr="Indicates the estimated progress status of the current \;operation executed by the FSM. Valid values are 0..100.\;101 indicates that progress reporting is not supported \;for this update state." access="RO" offset="0xC.16" size="0x0.7" />
 	<field name="handle_owner_host_id" descr="For handle_owner_type BMC, command-interface and \;ICMD, indicates the identifier of the host of the handle \;owner.\;Otherwise reserved" access="RO" offset="0xC.24" size="0x0.4" />
 	<field name="handle_owner_type" descr="Type of entity holding the update handle:\;0x0: unspecified\;0x1: Chassis BMC\;0x2: MAD\;0x3: BMC\;0x4: command interface\;0x5: ICMD \;Other values are reserved." access="RO" offset="0xC.28" size="0x0.4" />
@@ -880,7 +858,7 @@
 
 <node name="mcda_reg_ext" descr="" size="0x90.0" >
 	<field name="update_handle" descr="Update handle registered when the FSM was activated." access="RW" offset="0x0.0" size="0x0.24" />
-	<field name="offset" descr="Offset of accessed address relative to component start. \;Accesses must be in accordance to log_mcda_word_\;size in Table 1842, &quot;MCQI CAPABILITIES Info Lay\;out,&quot; on page 2060" access="RW" offset="0x4.0" size="0x4.0" />
+	<field name="offset" descr="Offset of accessed address relative to component start. \;Accesses must be in accordance to log_mcda_word_\;size in Table 1815, &quot;MCQI CAPABILITIES Info Lay\;out,&quot; on page 2058" access="RW" offset="0x4.0" size="0x4.0" />
 	<field name="size" descr="Size of the data accessed, given in bytes" access="RW" offset="0x8.0" size="0x0.16" />
 	<field name="data" descr="Data block accessed" access="RW" high_bound="31" low_bound="0" offset="0x10.0" size="0x80.0" />
 </node>
@@ -945,7 +923,7 @@
 	<field name="check_user_timestamp" descr="A user defined timestamp (MVTS) is active for this \;component." access="RW" offset="0x10.27" size="0x0.1" />
 	<field name="match_psid" descr="PSID is validated for this component update." access="RW" offset="0x10.28" size="0x0.1" />
 	<field name="match_chip_id" descr="Chip ID (device_hw_revision) is validated for this com\;ponent update." access="RW" offset="0x10.29" size="0x0.1" />
-	<field name="rd_en" descr="When set, this components may be read, see &quot;Read \;Flow&quot; on page 449." access="RO" offset="0x10.31" size="0x0.1" />
+	<field name="rd_en" descr="When set, this components may be read, see \;Section 10.3.4, &quot;Read Flow&quot;, on page 794." access="RO" offset="0x10.31" size="0x0.1" />
 </node>
 
 <node name="mcqi_linkx_properties_ext" descr="" size="0x7c.0" >
@@ -981,7 +959,7 @@
 	<field name="info_size" descr="Properties set structure size, given in bytes." access="RO" offset="0xC.0" size="0x4.0" />
 	<field name="offset" descr="The requested/returned data offset from the section \;start, given in bytes.\;Must be DWORD aligned." access="RW" offset="0x10.0" size="0x4.0" />
 	<field name="data_size" descr="The requested/returned data size, given in bytes.\;If data_size is not DWORD aligned, the last bytes are \;zero padded." access="RW" offset="0x14.0" size="0x0.16" />
-	<field name="data" descr="Properties set structure according to info_type.\;CAPABILITIES - See Table 1842, &quot;MCQI CAPABILI\;TIES Info Layout,&quot; on page 2060\;VERSION - See Table 1844, &quot;MCQI VERSION Info \;Layout,&quot; on page 2062\;ACTIVATION_METHOD - See Table 1848, &quot;MCQI \;ACTIVATION_METHOD Info Layout,&quot; on page 2064\;LINKX_PREPERTIES - See Table 1850, &quot;MCQI \;LINKX_PROPERTIES Info Layout,&quot; on page 2065" subnode="mcqi_reg_data_auto_ext" access="RO" offset="0x18.0" size="0x7c.0" union_selector="$(parent).info_type" />
+	<field name="data" descr="Properties set structure according to info_type.\;CAPABILITIES - See Table 1815, &quot;MCQI CAPABILI\;TIES Info Layout,&quot; on page 2058\;VERSION - See Table 1817, &quot;MCQI VERSION Info \;Layout,&quot; on page 2060\;ACTIVATION_METHOD - See Table 1821, &quot;MCQI \;ACTIVATION_METHOD Info Layout,&quot; on page 2062\;LINKX_PREPERTIES - See Table 1823, &quot;MCQI \;LINKX_PROPERTIES Info Layout,&quot; on page 2063" subnode="mcqi_reg_data_auto_ext" access="RO" offset="0x18.0" size="0x7c.0" union_selector="$(parent).info_type" />
 </node>
 
 <node name="mcqi_version_ext" descr="" size="0x7c.0" >
@@ -989,8 +967,8 @@
 	<field name="user_defined_time_valid" descr="When set, the component has a valid user-defined ver\;sion time-stamp in user_defined_time" access="RW" offset="0x0.28" size="0x0.1" />
 	<field name="build_time_valid" descr="When set, the component has a valid creation time-\;stamp in build_time" access="RW" offset="0x0.29" size="0x0.1" />
 	<field name="version" descr="Version number" access="RW" offset="0x4.0" size="0x4.0" />
-	<field name="build_time" descr="Time of component creation. Valid only if build_\;time_valid is set. See Table 1846, &quot;Date-Time Lay\;out,&quot; on page 2063" subnode="uint64" access="RW" offset="0x8.0" size="0x8.0" />
-	<field name="user_defined_time" descr="User-defined time assigned to the component version. \;Valid only if user_defined_time_valid is set. See \;Table 1846, &quot;Date-Time Layout,&quot; on page 2063" subnode="uint64" access="RW" offset="0x10.0" size="0x8.0" />
+	<field name="build_time" descr="Time of component creation. Valid only if build_\;time_valid is set. See Table 1819, &quot;Date-Time Lay\;out,&quot; on page 2061" subnode="uint64" access="RW" offset="0x8.0" size="0x8.0" />
+	<field name="user_defined_time" descr="User-defined time assigned to the component version. \;Valid only if user_defined_time_valid is set. See \;Table 1819, &quot;Date-Time Layout,&quot; on page 2061" subnode="uint64" access="RW" offset="0x10.0" size="0x8.0" />
 	<field name="build_tool_version" descr="Build tool version number.\;Valid only when not equal to 0" access="RW" offset="0x18.0" size="0x4.0" />
 	<field name="version_string" descr="NULL terminated string representing the version." access="RW" high_bound="91" low_bound="0" offset="0x20.24" size="0x5c.0" />
 </node>
@@ -1000,7 +978,7 @@
 	<field name="device_index" descr="Device number.\;For gearboxes, the index represents the gearbox die. \;For cables, the index represents the module index \;starting at index 1. Index 0 indicates the host device." access="INDEX" offset="0x0.16" size="0x0.12" />
 	<field name="last_index_flag" descr="When set, this component is the last component (high\;est component_index)." access="RO" offset="0x0.31" size="0x0.1" />
 	<field name="identifier" descr="This field uniquely identifies a specific component type. \;0x1: BOOT_IMG\;0x4: OEM_NVCONFIG\;0x5: MLNX_NVCONFIG\;0x6: CS_TOKEN\;0x7: DBG_TOKEN\;0xA: Gearbox\;0xB: CC_ALGO - Congestion Control Algorithm\;0xC: LINKX_IMG\;0xD: CRYPTO_TO_COMMISSIONING\;0xE: RMCS_TOKEN\;0xF: RMDT_TOKEN\;Other values are reserved" access="RO" enum="BOOT_IMG=0x1,OEM_NVCONFIG=0x4,MLNX_NVCONFIG=0x5,CS_TOKEN=0x6,DBG_TOKEN=0x7,Gearbox=0xa,CC_ALGO=0xb,LINKX_IMG=0xc,CRYPTO_TO_COMMISSIONING=0xd,RMCS_TOKEN=0xe,RMDT_TOKEN=0xf" offset="0x4.0" size="0x0.16" />
-	<field name="component_update_state" descr="Component state in update flow, see &quot;Component \;Update State&quot; on page 446:\;0x0: IDLE\;0x1: IN_PROGRESS\;0x2: APPLIED\;0x3: ACTIVE \;0x4: ACTIVE_PENDING_RESET\;0x5: FAILED\;0x6: CANCELED\;0x7: BUSY\;\;Other values are reserved" access="RO" enum="IDLE=0x0,IN_PROGRESS=0x1,APPLIED=0x2,ACTIVE=0x3,ACTIVE_PENDING_RESET=0x4,FAILED=0x5,CANCELED=0x6,BUSY=0x7" offset="0x8.0" size="0x0.4" />
+	<field name="component_update_state" descr="Component state in update flow, see Section 10.2.1, \;&quot;Component Update State&quot;, on page 791:\;0x0: IDLE\;0x1: IN_PROGRESS\;0x2: APPLIED\;0x3: ACTIVE \;0x4: ACTIVE_PENDING_RESET\;0x5: FAILED\;0x6: CANCELED\;0x7: BUSY\;\;Other values are reserved" access="RO" enum="IDLE=0x0,IN_PROGRESS=0x1,APPLIED=0x2,ACTIVE=0x3,ACTIVE_PENDING_RESET=0x4,FAILED=0x5,CANCELED=0x6,BUSY=0x7" offset="0x8.0" size="0x0.4" />
 	<field name="component_status" descr="The status of the component:\;0x0: NOT_PRESENT - The component is supported by \;the device but, currently not present\;0x1: PRESENT - This component is present. For down\;stream devices link LinkX component, this is an indica\;tion that the binary image is present at the host device \;memory.\;0x2: IN_USE - The component is present and currently \;in use." access="RO" enum="NOT_PRESENT=0x0,PRESENT=0x1,IN_USE=0x2" offset="0x8.4" size="0x0.5" />
 	<field name="progress" descr="Progress in percentage (from 0 to 100). This field is \;only relevant for cables." access="RO" offset="0x8.9" size="0x0.7" />
 	<field name="device_type" descr="Peripheral device type:\;0: Switch_or_NIC\;1: Gearbox" access="INDEX" offset="0xC.0" size="0x0.8" />
@@ -1012,7 +990,7 @@
 	<field name="device_type" descr="Peripheral device type\;1: XM" access="INDEX" offset="0x0.0" size="0x0.8" />
 	<field name="slot_index" descr="Slot index\;0: Main board" access="INDEX" offset="0x0.16" size="0x0.4" />
 	<field name="device_index" descr="Device number \;For gearboxes, the index represents the gearbox die." access="INDEX" offset="0x4.0" size="0x0.12" />
-	<field name="device_status_data" descr="Device initialization Data. \;For XM status, see Table 1870, &quot;MDCR - XM Data Layout,&quot; \;on page 2083" subnode="mdcr_xm_data_ext" access="RO" offset="0x10.0" size="0x50.0" />
+	<field name="device_status_data" descr="Device initialization Data. \;For XM status, see Table 1845, &quot;MDCR - XM Data Layout,&quot; \;on page 2082" subnode="mdcr_xm_data_ext" access="RO" offset="0x10.0" size="0x50.0" />
 </node>
 
 <node name="mdcr_xm_data_ext" descr="" size="0x50.0" >
@@ -1038,7 +1016,7 @@
 	<field name="response_message_sequence" descr="Response message sequential number. \;For a specific request, the response message sequential num\;ber is the following one. \;In addition, the last message should be 0." access="RO" offset="0x4.16" size="0x0.8" />
 	<field name="query_index" descr="Index related to the specific query_type. \;For query_type = 1,2,3 this field is neglected." access="INDEX" offset="0x8.0" size="0x0.8" />
 	<field name="data_valid" descr="If set, the data in the data field is valid and contain the informa\;tion for the queried index. \;Note: This field is not reflecting any validity of the data while \;accessing a non-existing query entity. Querying with an out of \;range index will lead to BAD_PARAM status of the register." access="RO" offset="0x8.31" size="0x0.1" />
-	<field name="data" descr="Properties of that field are based on query_type.\;For slot information query_type data - see Table 1882, \;&quot;slot_info Register Layout,&quot; on page 2089\;For devices on slot query_type data - see Table 1884, \;&quot;device_info Register Layout,&quot; on page 2090\;For slot name query_type data - see Table 1886, &quot;slot_name \;Register Layout,&quot; on page 2091" subnode="mddq_data_auto_ext" access="RO" offset="0x10.0" size="0x20.0" union_selector="$(parent).query_type" />
+	<field name="data" descr="Properties of that field are based on query_type.\;For slot information query_type data - see Table 1857, \;&quot;slot_info Register Layout,&quot; on page 2088\;For devices on slot query_type data - see Table 1859, \;&quot;device_info Register Layout,&quot; on page 2089\;For slot name query_type data - see Table 1861, &quot;slot_name \;Register Layout,&quot; on page 2090" subnode="mddq_data_auto_ext" access="RO" offset="0x10.0" size="0x20.0" union_selector="$(parent).query_type" />
 </node>
 
 <node name="mddt_reg_ext" descr="" size="0x110.0" >
@@ -1047,7 +1025,7 @@
 	<field name="type" descr="0: PRM_Register\;1: Command\;2: CrSpace_access - [Internal]" access="OP" enum="PRM_Register=0x0,Command=0x1,CrSpace_access=0x2" offset="0x4.0" size="0x0.2" />
 	<field name="write_size" descr="Write size in D-Words." access="OP" offset="0x4.16" size="0x0.8" />
 	<field name="read_size" descr="Read size in D-Words." access="OP" offset="0x4.24" size="0x0.8" />
-	<field name="payload" descr="Payload\;For PRM Register type payload- See Table 1874, \;&quot;PRM Register Payload Layout,&quot; on page 2086\;For Command type payload - See Table 1876, &quot;Com\;mand Payload Layout,&quot; on page 2086\;For CrSpace type payload - See Table 1878, \;&quot;CrSpace access Payload Layout,&quot; on page 2087" subnode="mddt_reg_payload_auto_ext" access="RW" offset="0xC.0" size="0x104.0" union_selector="$(parent).type" />
+	<field name="payload" descr="Payload\;For PRM Register type payload- See Table 1849, \;&quot;PRM Register Payload Layout,&quot; on page 2085\;For Command type payload - See Table 1851, &quot;Com\;mand Payload Layout,&quot; on page 2085\;For CrSpace type payload - See Table 1853, \;&quot;CrSpace access Payload Layout,&quot; on page 2086" subnode="mddt_reg_payload_auto_ext" access="RW" offset="0xC.0" size="0x104.0" union_selector="$(parent).type" />
 </node>
 
 <node name="mddt_reg_payload_auto_ext" descr="" attr_is_union="1" size="0x104.0" >
@@ -1083,9 +1061,9 @@
 </node>
 
 <node name="mdsr_reg_ext" descr="" size="0x30.0" >
-	<field name="status" descr="0: The debug session ended successfully\;1: Failed to execute the operation. See additional_info for \;more details.\;2-15: Reserved" access="RO" offset="0x0.0" size="0x0.4" />
-	<field name="additional_info" descr="0: No additional information available \;1: There is no debug session in progress\;2: FW is not secured, debug session cannot be ended\;3: Fail - Request was sent from a different host that the one \;that issued the debug session\;4: Fail - Host is not allowed to query debug session" access="RO" offset="0x0.8" size="0x0.6" />
-	<field name="end" descr="Set to &apos;1&apos; to end debug session." access="WO" offset="0x4.31" size="0x0.1" />
+	<field name="status" descr="0: The debug session ended successfully\;1: Failed to execute the operation. See additional_info for \;more details.\;2: Debug session active\;3-15: Reserved\;\;Note: Status might be &apos;0&apos; even when debug query is not \;allowed and additional_info field will expose the reason." access="RO" offset="0x0.0" size="0x0.4" />
+	<field name="additional_info" descr="0: No additional information available \;1: There is no debug session in progress\;2: FW is not secured, debug session cannot be ended\;3: Fail - Debug end request cannot be accepted. \;4: Fail - Host is not allowed to query debug session\;5: Debug session active" access="RO" offset="0x0.8" size="0x0.6" />
+	<field name="end" descr="Set to &apos;1&apos; to end debug session.\;Setting to &apos;0&apos; will not trigger any operation." access="WO" offset="0x4.31" size="0x0.1" />
 </node>
 
 <node name="merr_ext" descr="" size="0x14.0" >
@@ -1159,7 +1137,7 @@
 </node>
 
 <node name="mfrl_reg_ext" descr="" size="0x8.0" >
-	<field name="reset_trigger" descr="The firmware reset trigger. \;Only a single bit may be set.\;Bit 0: TRIGGER0 (live-patch)\;Bit 3: TRIGGER3 (PCIe link toggle)\;Bit 6: TRIGGER6 (power-cycle)\;Other bits are reserved." access="RW" offset="0x4.0" size="0x0.8" />
+	<field name="reset_trigger" descr="The firmware reset trigger. \;Only a single bit may be set.\;Bit 0: TRIGGER0 (live-patch)\;Bit 3: TRIGGER3 (PCIe link toggle)\;Bit 6: TRIGGER6 (PERST)\;Other bits are reserved." access="RW" offset="0x4.0" size="0x0.8" />
 	<field name="reset_type" descr="Each bit represents a chip reset type.\;If set to &apos;1&apos;, the reset is supported. \;Bit 0: Full chip reset\;Bit 1: Keep network port active during reset\;" access="RO" offset="0x4.8" size="0x0.8" />
 	<field name="rst_type_sel" descr="The requested reset type." access="RW" offset="0x4.24" size="0x0.3" />
 	<field name="pci_sync_for_fw_update_resp" descr="Response of the driver for the reset request.\;1: Acknowledgment\;2: Dis-acknowledgment\;3: Reserved" access="WO" enum="Acknowledgment=0x1,Dis=0x2,Reserved=0x3" offset="0x4.27" size="0x0.2" />
@@ -1173,7 +1151,7 @@
 
 <node name="mfsl_ext" descr="" size="0xc.0" >
 	<field name="ie" descr="Interrupt Enable. If the ie bit is set and the Tachometer reading \;is out of range as defined by tach_min and tach_max, the \;FERR# will be asserted." access="RW" offset="0x0.0" size="0x0.1" />
-	<field name="ee" descr="Event Enable.\;0 - Do not generate event\;1 - Generate Event \;2 - Generate single event\;For Fan Error Evet details refer to Section  25.34.5, &quot;FORE - Fan \;Out of Range Event&quot;." access="RW" offset="0x0.2" size="0x0.2" />
+	<field name="ee" descr="Event Enable.\;0 - Do not generate event\;1 - Generate Event \;2 - Generate single event\;For Fan Error Evet details refer to Section  25.35.5, &quot;FORE - Fan \;Out of Range Event&quot;." access="RW" offset="0x0.2" size="0x0.2" />
 	<field name="tacho" descr="Fan tachometer index" access="INDEX" offset="0x0.24" size="0x0.4" />
 	<field name="tach_min" descr="Tachometer minimum value (minimum RPM)." access="RW" offset="0x4.0" size="0x0.16" />
 	<field name="tach_max" descr="Tachometer maximum value (maximum RPM)." access="RW" offset="0x8.0" size="0x0.16" />
@@ -1206,9 +1184,9 @@
 </node>
 
 <node name="mgir_ext" descr="" size="0xa0.0" >
-	<field name="hw_info" descr="Hardware Information, see Table 1735, &quot;Hardware Info \;Layout,&quot; on page 1982" subnode="mgir_hardware_info_ext" access="RW" offset="0x0.0" size="0x20.0" />
-	<field name="fw_info" descr="Firmware Information, see Table 1737, &quot;Firmware Info \;Layout,&quot; on page 1984" subnode="mgir_fw_info_ext" access="RW" offset="0x20.0" size="0x40.0" />
-	<field name="sw_info" descr="Software Information, see Table 1739, &quot;Software Info Lay\;out,&quot; on page 1986\;This field indicates the oldest software version compati\;ble with the current firmware" subnode="mgir_sw_info_ext" access="RW" offset="0x60.0" size="0x20.0" />
+	<field name="hw_info" descr="Hardware Information, see Table 1704, &quot;Hardware Info \;Layout,&quot; on page 1977" subnode="mgir_hardware_info_ext" access="RW" offset="0x0.0" size="0x20.0" />
+	<field name="fw_info" descr="Firmware Information, see Table 1706, &quot;Firmware Info \;Layout,&quot; on page 1979" subnode="mgir_fw_info_ext" access="RW" offset="0x20.0" size="0x40.0" />
+	<field name="sw_info" descr="Software Information, see Table 1708, &quot;Software Info Lay\;out,&quot; on page 1981\;This field indicates the oldest software version compati\;ble with the current firmware" subnode="mgir_sw_info_ext" access="RW" offset="0x60.0" size="0x20.0" />
 </node>
 
 <node name="mgir_fw_info_ext" descr="" size="0x40.0" >
@@ -1239,7 +1217,7 @@
 <node name="mgir_hardware_info_ext" descr="" size="0x20.0" >
 	<field name="device_id" descr="PCI device ID." access="RO" offset="0x0.0" size="0x0.16" />
 	<field name="device_hw_revision" descr="\;\;SwitchX Devices:\;0x00A0: Device step A0, FCC package\;0x00A1: Device step A1, FCC package\;0x00A2: Device step A2, FCC package\;\;Switch-IB Devices:\;0x00A0: Switch-IB device step A0, FCC package\;0x0000 is a valid value for some devices not included \;in PRM." access="RO" offset="0x0.16" size="0x0.16" />
-	<field name="pvs" descr="Process Voltage Scaling\;Maximum supported V_CODE voltage (in 50mV incre\;ments) for the device." access="RO" offset="0x4.0" size="0x0.5" />
+	<field name="pvs" descr="Process Voltage Scaling\;Maximum supported V_CORE voltage (in 50mV incre\;ments) for the device." access="RO" offset="0x4.0" size="0x0.5" />
 	<field name="technology" descr="Process technology\;0: N/A\;1: 40nm\;2: 28nm\;3: 16nm\;4: 7nm\;5: 5nm\;6-31: Reserved" access="RO" offset="0x4.11" size="0x0.5" />
 	<field name="num_ports" descr="Number of physical port the device supports." access="RO" offset="0x4.16" size="0x0.8" />
 	<field name="hw_dev_id" descr="The PCI device-ID of the NIC/HCA in recovery (Live\;fish) mode." access="RO" offset="0x8.0" size="0x0.16" />
@@ -1277,7 +1255,7 @@
 </node>
 
 <node name="mgpir_ext" descr="" size="0xa0.0" >
-	<field name="hw_info" descr="Hardware Information, see Table 1747, &quot;Hardware Info \;Layout,&quot; on page 1990" subnode="mgpir_hw_info_ext" access="RW" offset="0x0.0" size="0x20.0" />
+	<field name="hw_info" descr="Hardware Information, see Table 1716, &quot;Hardware Info \;Layout,&quot; on page 1986" subnode="mgpir_hw_info_ext" access="RW" offset="0x0.0" size="0x20.0" />
 </node>
 
 <node name="mgpir_hw_info_ext" descr="" size="0x20.0" >
@@ -1299,14 +1277,14 @@
 </node>
 
 <node name="mirc_reg_ext" descr="" size="0x8.0" >
-	<field name="status_code" descr="Indicates the successful completion of the instruction, \;or the reason it failed. See &quot;Error Handling&quot; on page \;449\;0x0: OK\;0x1: BUSY\;0x2: PROHIBITED_FW_VER_ERR\;0x3: FIRST_PAGE_COPY_FAILED\;0x4: FIRST_PAGE_ERASE_FAILED\;0x5: FIRST_PAGE_RESTORE_FAILED\;0x6: CANDIDATE_FW_DEACTIVATION_FAILED\;0x7: FW_ALREADY_ACTIVATED\;0x8: ERROR_DEVICE_RESET_REQUIRED\;0x9: ERROR_FW_PROGRAMMING_NEEDED\;Other values should be treated as an unknown error." access="RO" offset="0x0.0" size="0x0.8" />
+	<field name="status_code" descr="Indicates the successful completion of the instruction, \;or the reason it failed. See Section 10.3.7, &quot;Error \;Handling&quot;, on page 794\;0x0: OK\;0x1: BUSY\;0x2: PROHIBITED_FW_VER_ERR\;0x3: FIRST_PAGE_COPY_FAILED\;0x4: FIRST_PAGE_ERASE_FAILED\;0x5: FIRST_PAGE_RESTORE_FAILED\;0x6: CANDIDATE_FW_DEACTIVATION_FAILED\;0x7: FW_ALREADY_ACTIVATED\;0x8: ERROR_DEVICE_RESET_REQUIRED\;0x9: ERROR_FW_PROGRAMMING_NEEDED\;Other values should be treated as an unknown error." access="RO" offset="0x0.0" size="0x0.8" />
 </node>
 
 <node name="mjtag_ext" descr="" size="0x30.0" >
 	<field name="size" descr="Size of operation - relevant for JTAG interface access com\;mands only, indicating the number of transaction bytes to \;execute. Maximum size supported is 40.\;Note: when size=0, no operation is performed (clock is not \;toggled). The tdo is sampled and provided in the response \;at jtag_transaction_set_0." access="WO" offset="0x0.0" size="0x0.8" />
 	<field name="sequence_number" descr="Command sequence number - to prevent re-execution of \;the same command due to command retransmission, this \;command includes a sequence number.\;The enable and disable commands MUST be issues with \;sequence_number = 0 while any JTAG access command \;must increase the sequence_number by 1 (the first JTAG \;access command should start at sequence_number = 1)." access="WO" offset="0x0.24" size="0x0.4" />
 	<field name="cmd" descr="Command\;0 - JTAG interface disable - JTAG interface is disabled\;1 - JTAG interface enable - enabling JTAG interface\;2 - JTAG interface access" access="RW" offset="0x0.30" size="0x0.2" />
-	<field name="jtag_transaction_set" descr="See Table 1725, &quot;JTAG Transaction Set Byte Layout,&quot; \;on page 1976" access="RW" high_bound="43" low_bound="0" offset="0x4.24" size="0x2c.0" />
+	<field name="jtag_transaction_set" descr="See Table 1694, &quot;JTAG Transaction Set Byte Layout,&quot; \;on page 1971" access="RW" high_bound="43" low_bound="0" offset="0x4.24" size="0x2c.0" />
 </node>
 
 <node name="mlcr_ext" descr="" size="0xc.0" >
@@ -1363,11 +1341,11 @@
 
 <node name="mnvia_reg_ext" descr="" size="0x8.0" >
 	<field name="target" descr="Information targeted for invalidation\;0: ALL - all NVRAM parameters.\; All other values are reserved." access="WO" offset="0x0.0" size="0x0.3" />
-	<field name="writer_id" descr="The entity which perform the invalidate.\;The encoding same as writer_id in Configuration Item \;register (See Table 1773, &quot;Configuration Item Lay\;out,&quot; on page 2005)." access="RW" offset="0x0.4" size="0x0.5" />
+	<field name="writer_id" descr="The entity which perform the invalidate.\;The encoding same as writer_id in Configuration Item \;register (See Table 1742, &quot;Configuration Item Lay\;out,&quot; on page 2001)." access="RW" offset="0x0.4" size="0x0.5" />
 </node>
 
 <node name="mnvqc_reg_ext" descr="" size="0x8.0" >
-	<field name="type" descr="Configuration item type. \;Table 1775, &quot;Configuration Item Type Class \;Global Layout,&quot; on page 2008\;Table 1777, &quot;Configuration Item Type Class \;Physical Port Layout,&quot; on page 2009\;Table 1779, &quot;Configuration Item Type Class Per \;Host-PF Layout,&quot; on page 2009" access="INDEX" offset="0x0.0" size="0x4.0" />
+	<field name="type" descr="Configuration item type. \;Table 1744, &quot;Configuration Item Type Class \;Global Layout,&quot; on page 2004\;Table 1746, &quot;Configuration Item Type Class \;Physical Port Layout,&quot; on page 2005\;Table 1748, &quot;Configuration Item Type Class Per \;Host-PF Layout,&quot; on page 2005" access="INDEX" offset="0x0.0" size="0x4.0" />
 	<field name="support_rd" descr="The configuration item is supported and can be read" access="RO" offset="0x4.0" size="0x0.1" />
 	<field name="support_wr" descr="The configuration item is supported and can be \;updated" access="RO" offset="0x4.1" size="0x0.1" />
 	<field name="version" descr="The maximal version of the configuration item sup\;ported by the device" access="RO" offset="0x4.4" size="0x0.4" />
@@ -1418,7 +1396,7 @@
 	<field name="pcie_index" descr="PCIe index number (Internal domain index)\;Reserved when access is from the host" access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="depth" descr="depth level of the DUT of some hierarchy" access="INDEX" offset="0x0.24" size="0x0.6" />
 	<field name="clr" descr="Clear counters. Setting the clr bit will reset the counter value \;for all counters in the counter group. This bit can be set for \;both Set() and Get() operation." access="WO" offset="0x4.31" size="0x0.1" />
-	<field name="counter_set" descr="Counter set as described in\;Table 1816, &quot;PCIe Performance Counters Data Layout,&quot; \;on page 2030\;Table 1820, &quot;PCIE lanes counters Data Layout,&quot; on \;page 2034 - [Internal] \;Table 1818, &quot;PCIE timers and states Data Layout,&quot; on \;page 2032 - [Internal]" subnode="mpcnt_reg_counter_set_auto_ext" access="RO" offset="0x8.0" size="0xf8.0" union_selector="$(parent).grp" />
+	<field name="counter_set" descr="Counter set as described in\;Table 1785, &quot;PCIe Performance Counters Data Layout,&quot; \;on page 2026\;Table 1789, &quot;PCIE lanes counters Data Layout,&quot; on \;page 2030 - [Internal] \;Table 1787, &quot;PCIE timers and states Data Layout,&quot; on \;page 2028 - [Internal]" subnode="mpcnt_reg_counter_set_auto_ext" access="RO" offset="0x8.0" size="0xf8.0" union_selector="$(parent).grp" />
 </node>
 
 <node name="mpecs_reg_ext" descr="" size="0x20.0" >
@@ -1557,7 +1535,7 @@
 	<field name="base_sensor_index" descr="Base sensor index\;Sensors are read starting from base_sensor_index\;Sensor 0 is the ASIC sensor, sensors 1-63 are ambient sen\;sors and sensors 64-127 are mapped to the SFP+/QSFP \;modules sequentially (module 0 is mapped to sensor 64, \;module 1 to sensor 65 and so on). Gearbox sensors starts \;from 256 index." access="INDEX" offset="0x0.0" size="0x0.12" />
 	<field name="slot_index" descr="Slot index\;0: Main board" access="INDEX" offset="0x0.16" size="0x0.4" />
 	<field name="num_rec" descr="Number of records to read\;Range 1..255" access="OP" offset="0x4.0" size="0x0.8" />
-	<field name="temperature_record" descr="Temperature record\;See Table 1685, &quot;MTBR - Temperature Record Layout,&quot; \;on page 1950" subnode="mtbr_temp_record_ext" access="RO" high_bound="1" low_bound="0" offset="0x10.0" size="0x8.0" />
+	<field name="temperature_record" descr="Temperature record\;See Table 1654, &quot;MTBR - Temperature Record Layout,&quot; \;on page 1945" subnode="mtbr_temp_record_ext" access="RO" high_bound="1" low_bound="0" offset="0x10.0" size="0x8.0" />
 </node>
 
 <node name="mtbr_temp_record_ext" descr="" size="0x4.0" >
@@ -1654,7 +1632,7 @@
 
 <node name="mtrc_cap_reg_ext" descr="" size="0x84.0" >
 	<field name="num_string_db" descr="Number of different string sections building the database" access="RO" offset="0x0.0" size="0x0.4" />
-	<field name="trc_ver" descr="Indicates the version of the tracing mechanism.\;See, &quot;Timestamp Event Traces&quot; on page 1095\;0x0: VER_0\;0x1: VER_1\;other values are reserved" access="RO" offset="0x0.24" size="0x0.2" />
+	<field name="trc_ver" descr="Indicates the version of the tracing mechanism.\;See, Section 24.3.4.1, &quot;Timestamp Event Traces&quot;, on \;page 1282\;0x0: VER_0\;0x1: VER_1\;other values are reserved" access="RO" offset="0x0.24" size="0x0.2" />
 	<field name="trace_to_memory" descr="When set the device supports logging traces to memory" access="RO" offset="0x0.30" size="0x0.1" />
 	<field name="trace_owner" descr="Write 0x1 to register for tracer ownership, write 0x0 to de-\;register.\;Read value 0x1 indicates tracer ownership is granted" access="RW" offset="0x0.31" size="0x0.1" />
 	<field name="num_string_trace" descr="The number of consecutive event_id that should be inter\;preted as a string trace" access="RO" offset="0x4.16" size="0x0.8" />
@@ -1685,13 +1663,15 @@
 </node>
 
 <node name="mtutc_reg_ext" descr="" size="0x1c.0" >
-	<field name="operation" descr="Operation:\;0: Reserved\;\;1: SET_TIME_IMMEDIATE - reserved when Spectrum-1\;2: ADJUST_TIME\;3: ADJUST_FREQ_UTC \;4: ADJUST_FREQ_FRC - Free Running Clock\;" access="OP" enum="ADJUST_TIME=0x2,ADJUST_FREQ_UTC=0x3,ADJUST_FREQ_FRC=0x4" offset="0x0.0" size="0x0.4" />
+	<field name="operation" descr="Operation:\;0: Reserved\;\;1: SET_TIME_IMMEDIATE - reserved when Spectrum-1\;2: ADJUST_TIME\;3: ADJUST_FREQ_UTC \;4: ADJUST_FREQ_FRC - Free Running Clock\;\;5: CHANGE_TS_CORRECTION_STATUS - For this operation, \;there should be no open SQ with ts_cqe_to_dest_cqn != 0." access="OP" enum="ADJUST_TIME=0x2,ADJUST_FREQ_UTC=0x3,ADJUST_FREQ_FRC=0x4,CHANGE_TS_CORRECTION_STATUS=0x5" offset="0x0.0" size="0x0.4" />
 	<field name="time_stamp_state" descr="Internal stamp state\;0: FREE_RUNNING\;1: SYNCED\;" access="RO" offset="0x0.28" size="0x0.2" />
 	<field name="time_stamp_mode" descr="Internal stamp mode\;0: INTERNAL_TIMER\;1: REAL_TIME\;2-3: Reserved." access="RO" offset="0x0.30" size="0x0.2" />
 	<field name="freq_adjustment" descr="Frequency adjustment: Every PPS the HW frequency will be \;adjusted by this value. Units of HW clock, where HW counts \;10^9 HW clocks for 1 HW second. The values are represented in \;two&apos;s complement.\;Updated when operation is ADJUST_FREQ\;\;\;\;" access="RW" offset="0x4.0" size="0x4.0" />
+	<field name="ts_correction_oper_status" descr="Operational state of the TX timestamp correction daemon:\;0: Disabled\;1: Timestamp correction enabled\;" access="RO" offset="0x8.0" size="0x0.3" />
+	<field name="ts_correction_admin_status" descr="Administrative state of the TX timestamp correction daemon (the \;desired state of the daemon):\;0: Disabled\;1: Timestamp correction enabled\;\;\;Updated when operation is \;CHANGE_TS_CORRECTION_STATUS" access="RW" offset="0x8.3" size="0x0.3" />
 	<field name="utc_sec" descr="UTC seconds\;Updated when operation is SET_TIME_IMMEDIATE" access="WO" offset="0x10.0" size="0x4.0" />
 	<field name="utc_nsec" descr="UTC nSecs\;Range 0..(10^9-1)\;Updated when operation is SET_TIME_IMMEDIATE\;" access="WO" offset="0x14.0" size="0x0.30" />
-	<field name="time_adjustment" descr="Time adjustment\;Units of nSec\;Range is from -32768 to +32767\;" access="WO" offset="0x18.0" size="0x4.0" />
+	<field name="time_adjustment" descr="Time adjustment\;Units of nSec\;Range is from -32768 to +32767\;\;Updated when operation is ADJUST_TIME." access="WO" offset="0x18.0" size="0x4.0" />
 </node>
 
 <node name="mtwe_ext" descr="" size="0x10.0" >
@@ -1753,8 +1733,8 @@
 	<field name="port_buffer_size" descr="Total packet buffer array available for the port. The sum of \;buffer array allocated to bufferX must not exceed \;port_buffer_size.\;In Spectrum and above- Max supported Headroom buffer \;for port. \;" access="RO" offset="0x8.0" size="0x0.16" />
 	<field name="fullness_threshold" descr="Almost full threshold configuration.\;Percentage of buffer fullness which indicates &quot;almost full&quot; \;occurrence\;Range: 0-100%\;Reserved for Switches." access="RW" offset="0x8.16" size="0x0.7" />
 	<field name="buffer" descr="Configuring per-buffer parameters. i=0..9\;" subnode="bufferx_reg_ext" access="RW" high_bound="9" low_bound="0" offset="0xC.0" size="0x50.0" />
-	<field name="shared_headroom_pool" descr="Configuring shared haeadroom pool parameters. Using the \;same layout as in BufferX, for details see Table 1503, \;&quot;bufferX Register Layout,&quot; on page 1803.\;Not supported in SwitchX and SwitchX-2\;Not supported in HCA (See PCAM shp_pbmc_pbsr_support \;bit)." subnode="uint64" access="RW" offset="0x5C.0" size="0x8.0" />
-	<field name="port_shared_buffer" descr="Configuring port shared buffer parameters. Using the same \;layout as in BufferX, for details see Table 1503, &quot;bufferX \;Register Layout,&quot; on page 1803.\;Not supported in SwitchX and SwitchX-2\;Valid for HCA when pbmc_port_shared_buffer is set in \;PCAM." subnode="uint64" access="RW" offset="0x64.0" size="0x8.0" />
+	<field name="shared_headroom_pool" descr="Configuring shared haeadroom pool parameters. Using the \;same layout as in BufferX, for details see Table 1475, \;&quot;bufferX Register Layout,&quot; on page 1800.\;Not supported in SwitchX and SwitchX-2\;Not supported in HCA (See PCAM shp_pbmc_pbsr_support \;bit)." subnode="uint64" access="RW" offset="0x5C.0" size="0x8.0" />
+	<field name="port_shared_buffer" descr="Configuring port shared buffer parameters. Using the same \;layout as in BufferX, for details see Table 1475, &quot;bufferX \;Register Layout,&quot; on page 1800.\;Not supported in SwitchX and SwitchX-2\;Valid for HCA when pbmc_port_shared_buffer is set in \;PCAM." subnode="uint64" access="RW" offset="0x64.0" size="0x8.0" />
 </node>
 
 <node name="pbsr_reg_ext" descr="" size="0x64.0" >
@@ -1765,14 +1745,14 @@
 	<field name="used_shared_headroom_buffer" descr="Number of currently used shared headroom buffer cells." access="RO" offset="0x8.0" size="0x0.16" />
 	<field name="clear_wm" descr="Clear watermarks for all PGs" access="OP" offset="0x8.31" size="0x0.1" />
 	<field name="stat_buffer" descr="status per-buffer parameters. i=0..9\;" subnode="stat_bufferx_reg_ext" access="RW" high_bound="9" low_bound="0" offset="0xC.0" size="0x50.0" />
-	<field name="stat_shared_headroom_pool" descr="status of shared haeadroom pool parameters. Using the \;same layout as in stat_BufferX, for details see Table 1520, \;&quot;stat_bufferX Register Layout,&quot; on page 1814.\;Not supported in SwitchX and SwitchX-2\;Not supported in HCA (See PCAM shp_pbmc_pbsr_support \;bit)." subnode="stat_bufferx_reg_ext" access="RW" offset="0x5C.0" size="0x8.0" />
+	<field name="stat_shared_headroom_pool" descr="status of shared haeadroom pool parameters. Using the \;same layout as in stat_BufferX, for details see Table 1492, \;&quot;stat_bufferX Register Layout,&quot; on page 1811.\;Not supported in SwitchX and SwitchX-2\;Not supported in HCA (See PCAM shp_pbmc_pbsr_support \;bit)." subnode="stat_bufferx_reg_ext" access="RW" offset="0x5C.0" size="0x8.0" />
 </node>
 
 <node name="pcam_reg_ext" descr="" size="0x50.0" >
 	<field name="access_reg_group" descr="Access Register ID groups\;0: RegID_0x5000_to_0x507F\;Values 1-255 are Reserved" access="INDEX" offset="0x0.0" size="0x0.8" />
 	<field name="feature_group" descr="Feature list mask index: \;0: enhanced_features \;Values 1 - 255 are Reserved" access="INDEX" enum="enhanced_features=0x0" offset="0x0.16" size="0x0.8" />
 	<field name="port_access_reg_cap_mask" descr="Supported port&apos;s access register bitmaks. Based on \;access_reg_group index.\;When bit is set , The register is supported in the device. \;When access_reg_group == 0 :\;Bit_0: 0x5000 \;Bit_1: 0x5001 (PCAP)\;Bit_2: 0x5002 (PMLP)\;Bit_3: 0x5003 (PMTU)\;Bit_4: 0x5004 (PTYS)\;.\;.\;Bit_127: 0x507F (PCAM)\;" access="RO" high_bound="3" low_bound="0" offset="0x8.0" size="0x10.0" />
-	<field name="feature_cap_mask" descr="Supported port&apos;s enhanced features. Based on feature_group index.\;When bit is set, The feature is supported in the device: \;Bit 0: PPCNT_counter_group_Phy_statistical_counter_group \;Bit 1 - PPCNT_counter_group_Discard_counter_group\;Bit 9: PFCC - support of stall mask and global rx,tx mask. \;Bit 10: PMCR - support of tx_disable override.\;Bit 11: PPCNT_counter_group - IB Extended port counter group\;Bit 12: PPCNT_Extended_Ethernet_group - tx packet size histograms\;Bit 13: PTYS_extended_Ethernet_support\;Bit 14: PMAOS_reset_toggle_support\;Bit 15: Set_Module_low_power_supported \;Bit 16: Module_power_optimization_is_supported_in_PPSC\;Bit 17: Support_of_IB_force_state_machine_in_PTYS - (an_disable)\;Bit 18: PPCNT_Extended_Ethernet_group_icrc_counter\;Bit 19: cm2_en_is_supported_in_PCAP\;Bit 20: time_tolink_up_is_supported_in_PDDR\;Bit 21: gearbox_die_num_field_is_supported_in_PMDR\;Bit 22: force_entropy_entropy_calc_entropy_gre_calc - and capability bits are supported \;in PCMR\;Bit 23: FEC_override_support_for_50G_per_lane_is_supported_in_PPLM\;Bit 25: PTYS_allow_both_extended_and_legacy_protocol_masks\;Bit 26: PPCNT_eth_per_tc_cong_group_supported\;Bit 27: pnat_sup_host - the device supports pnat = 2 (host) when set to &apos;1&apos;\;Bit 28: ppcnt_no_buffer_discard_uc - this counter is supported in PPCNT when set to &apos;1&apos;\;Bit 29: pbmc_port_shared_buffer - supported in PBMC.\;Bit 30: PLR_max_retry_window_support - PPCNT group 0x22 max retry per window\;\;Bit 32: PDDR_ext_eth_proto_support\;Bit 40: PAOS - support of admin_status opcode 5: &quot;up_lowest_rate&quot;\;Bit 41: PMAOS - support of &quot;opertional_notifcation&quot; field\;Bit 42: PRBS_polarity_support - support of polarity bits in PPTT and PPRT \;Bit 43: PDDR_register_is_supported\;Bit 44: pfcc_buffer_onwership - PFCC buffer ownership is supported. \;Bit 45: force_down - supported in PAOS reg.\;Bit 46: pmlp_lane_mapping_off - Support of m_lane_m field in PMLP. \;Bit 51: ppcnt_symobl_ber\;Bit 52: shp_pbmc_pbsr_support\;\;Bit 54: ppcnt_effective_error_counter\;Bit 55: FEC_override_support_for_100G_per_lane_is_supported_in_PPLM\;\;Bit 57: PMECR_option_to_not_generate_events_upon_PMLP_set\;Bit 64: Local_port_MSB - bits [9:8] supported\;Bit 65: PDDR_moule_latched_info_page_supported\;Bit 66: PDDR_module_info_ext_supported\;Bit 67: PMDR.pll_index_supported\;Bit 68: PPCNT.raw_ber_per_lane_supported\;Bit 69: PMMP.sticky_bit_supported\;" access="RO" enum="PPCNT_counter_group_Phy_statistical_counter_group=0x1,PFCC=0x200,PMCR=0x400,PPCNT_counter_group=0x800,PPCNT_Extended_Ethernet_group=0x1000,PTYS_extended_Ethernet_support=0x2000,PMAOS_reset_toggle_support=0x4000,Set_Module_low_power_supported=0x8000,Module_power_optimization_is_supported_in_PPSC=0x10000,Support_of_IB_force_state_machine_in_PTYS=0x20000,PPCNT_Extended_Ethernet_group_icrc_counter=0x40000,cm2_en_is_supported_in_PCAP=0x80000,time_tolink_up_is_supported_in_PDDR=0x100000,gearbox_die_num_field_is_supported_in_PMDR=0x200000,force_entropy_entropy_calc_entropy_gre_calc=0x400000,FEC_override_support_for_50G_per_lane_is_supported_in_PPLM=0x800000,PTYS_allow_both_extended_and_legacy_protocol_masks=0x2000000,PPCNT_eth_per_tc_cong_group_supported=0x4000000,pnat_sup_host=0x8000000,ppcnt_no_buffer_discard_uc=0x10000000,pbmc_port_shared_buffer=0x20000000,PLR_max_retry_window_support=0x40000000,PDDR_ext_eth_proto_support=0x1,PAOS=0x100,PMAOS=0x200,PRBS_polarity_support=0x400,PDDR_register_is_supported=0x800,pfcc_buffer_onwership=0x1000,force_down=0x2000,pmlp_lane_mapping_off=0x4000,ppcnt_symobl_ber=0x80000,shp_pbmc_pbsr_support=0x100000,ppcnt_effective_error_counter=0x400000,FEC_override_support_for_100G_per_lane_is_supported_in_PPLM=0x800000,PMECR_option_to_not_generate_events_upon_PMLP_set=0x2000000,Local_port_MSB=0x1,PDDR_moule_latched_info_page_supported=0x2,PDDR_module_info_ext_supported=0x4,PMDR_pll_index_supported=0x8,PPCNT_raw_ber_per_lane_supported=0x10,PMMP_sticky_bit_supported=0x20" high_bound="3" low_bound="0" offset="0x28.0" size="0x10.0" />
+	<field name="feature_cap_mask" descr="Supported port&apos;s enhanced features. Based on feature_group index.\;When bit is set, The feature is supported in the device: \;Bit 0: PPCNT_counter_group_Phy_statistical_counter_group \;Bit 1 - PPCNT_counter_group_Discard_counter_group\;Bit 9: PFCC - support of stall mask and global rx,tx mask. \;Bit 10: PMCR - support of tx_disable override.\;Bit 11: PPCNT_counter_group - IB Extended port counter group\;Bit 12: PPCNT_Extended_Ethernet_group - tx packet size histograms\;Bit 13: PTYS_extended_Ethernet_support\;Bit 14: PMAOS_reset_toggle_support\;Bit 15: Set_Module_low_power_supported \;Bit 16: Module_power_optimization_is_supported_in_PPSC\;Bit 17: Support_of_IB_force_state_machine_in_PTYS - (an_disable)\;Bit 18: PPCNT_Extended_Ethernet_group_icrc_counter\;Bit 19: cm2_en_is_supported_in_PCAP\;Bit 20: time_tolink_up_is_supported_in_PDDR\;Bit 21: gearbox_die_num_field_is_supported_in_PMDR\;Bit 22: force_entropy_entropy_calc_entropy_gre_calc - and capability bits are supported \;in PCMR\;Bit 23: FEC_override_support_for_50G_per_lane_is_supported_in_PPLM\;Bit 25: PTYS_allow_both_extended_and_legacy_protocol_masks\;Bit 26: PPCNT_eth_per_tc_cong_group_supported\;Bit 27: pnat_sup_host - the device supports pnat = 2 (host) when set to &apos;1&apos;\;Bit 28: ppcnt_no_buffer_discard_uc - this counter is supported in PPCNT when set to &apos;1&apos;\;Bit 29: pbmc_port_shared_buffer - supported in PBMC.\;Bit 30: PLR_max_retry_window_support - PPCNT group 0x22 max retry per window\;\;Bit 32: PDDR_ext_eth_proto_support\;Bit 40: PAOS - support of admin_status opcode 5: &quot;up_lowest_rate&quot;\;Bit 41: PMAOS - support of &quot;opertional_notifcation&quot; field\;Bit 42: PRBS_polarity_support - support of polarity bits in PPTT and PPRT \;Bit 43: PDDR_register_is_supported\;Bit 44: pfcc_buffer_onwership - PFCC buffer ownership is supported. \;Bit 45: force_down - supported in PAOS reg.\;Bit 46: pmlp_lane_mapping_off - Support of m_lane_m field in PMLP. \;Bit 51: ppcnt_symobl_ber\;Bit 52: shp_pbmc_pbsr_support\;\;Bit 54: ppcnt_effective_error_counter\;Bit 55: FEC_override_support_for_100G_per_lane_is_supported_in_PPLM\;\;Bit 57: PMECR_option_to_not_generate_events_upon_PMLP_set\;Bit 64: Local_port_MSB - bits [9:8] supported\;Bit 65: PDDR_moule_latched_info_page_supported\;Bit 66: PDDR_module_info_ext_supported\;Bit 67: PMDR.pll_index_supported\;Bit 68: PPCNT.raw_ber_per_lane_supported\;Bit 69: PMMP.sticky_bit_supported\;Bit 70: SLTP_tx_policy_supported\;" access="RO" enum="PPCNT_counter_group_Phy_statistical_counter_group=0x1,PFCC=0x200,PMCR=0x400,PPCNT_counter_group=0x800,PPCNT_Extended_Ethernet_group=0x1000,PTYS_extended_Ethernet_support=0x2000,PMAOS_reset_toggle_support=0x4000,Set_Module_low_power_supported=0x8000,Module_power_optimization_is_supported_in_PPSC=0x10000,Support_of_IB_force_state_machine_in_PTYS=0x20000,PPCNT_Extended_Ethernet_group_icrc_counter=0x40000,cm2_en_is_supported_in_PCAP=0x80000,time_tolink_up_is_supported_in_PDDR=0x100000,gearbox_die_num_field_is_supported_in_PMDR=0x200000,force_entropy_entropy_calc_entropy_gre_calc=0x400000,FEC_override_support_for_50G_per_lane_is_supported_in_PPLM=0x800000,PTYS_allow_both_extended_and_legacy_protocol_masks=0x2000000,PPCNT_eth_per_tc_cong_group_supported=0x4000000,pnat_sup_host=0x8000000,ppcnt_no_buffer_discard_uc=0x10000000,pbmc_port_shared_buffer=0x20000000,PLR_max_retry_window_support=0x40000000,PDDR_ext_eth_proto_support=0x1,PAOS=0x100,PMAOS=0x200,PRBS_polarity_support=0x400,PDDR_register_is_supported=0x800,pfcc_buffer_onwership=0x1000,force_down=0x2000,pmlp_lane_mapping_off=0x4000,ppcnt_symobl_ber=0x80000,shp_pbmc_pbsr_support=0x100000,ppcnt_effective_error_counter=0x400000,FEC_override_support_for_100G_per_lane_is_supported_in_PPLM=0x800000,PMECR_option_to_not_generate_events_upon_PMLP_set=0x2000000,Local_port_MSB=0x1,PDDR_moule_latched_info_page_supported=0x2,PDDR_module_info_ext_supported=0x4,PMDR_pll_index_supported=0x8,PPCNT_raw_ber_per_lane_supported=0x10,PMMP_sticky_bit_supported=0x20,SLTP_tx_policy_supported=0x40" high_bound="3" low_bound="0" offset="0x28.0" size="0x10.0" />
 </node>
 
 <node name="pcap_reg_ext" descr="" size="0x14.0" >
@@ -1920,10 +1900,10 @@
 	<field name="pwr_governor_err_sv" descr="" access="RO" offset="0x18.17" size="0x0.1" />
 	<field name="uc_crspace_timeout" descr="uC crspace timeout event. See uc_scrspace_timeout_cl and \;uc_scrspace_timeout_lane for location of last event" access="RO" offset="0x18.24" size="0x0.1" />
 	<field name="uc_stack_overflow" descr="uC stack overflow event. See uc_stack_overflow_cl and \;uc_stack_overflow_lane for location of last event" access="RO" offset="0x18.25" size="0x0.1" />
-	<field name="clr_mask" descr="Valid only when PDDR.clr is set\;Bit mask for page bits 255:0, when bits 31:0 assigned to offset \;00h bits 31:0.\;bits 63:32 assigned to offset 04h bits 31:0.\;bits 95:64 assigned to offset 08h bits 31:0.\;bits 127:69 assigned to offset 0Ch bits 31:0.\;Only when PDDR.clr is set and the appropriate bit in the mask \;is set, the event will be cleared" access="OP" high_bound="7" low_bound="0" offset="0x20.0" size="0x20.0" />
-	<field name="main_irisc_adress" descr="" access="RO" offset="0x40.0" size="0x4.0" />
+	<field name="clr_mask" descr="Valid only when PDDR.clr is set\;Bit mask for page bits 255:0, when bits 31:0 assigned to off\;set 00h bits 31:0.\;bits 63:32 assigned to offset 04h bits 31:0.\;bits 95:64 assigned to offset 08h bits 31:0.\;bits 127:69 assigned to offset 0Ch bits 31:0.\;Only when PDDR.clr is set and the appropriate bit in the \;mask is set, the event will be cleared" access="OP" high_bound="7" low_bound="0" offset="0x20.0" size="0x20.0" />
+	<field name="main_irisc_address" descr="" access="RO" offset="0x40.0" size="0x4.0" />
 	<field name="main_irisc_ip" descr="" access="RO" offset="0x44.0" size="0x4.0" />
-	<field name="tile_irisc_adress" descr="" access="RO" offset="0x48.0" size="0x4.0" />
+	<field name="tile_irisc_address" descr="" access="RO" offset="0x48.0" size="0x4.0" />
 	<field name="tile_irisc_ip" descr="" access="RO" offset="0x4C.0" size="0x4.0" />
 	<field name="plu_timeout1_address" descr="" access="RO" offset="0x50.0" size="0x0.16" />
 	<field name="plu_timeout0_address" descr="" access="RO" offset="0x50.16" size="0x0.16" />
@@ -2053,8 +2033,8 @@
 	<field name="min_ber_exp" descr="" access="RO" offset="0x14.16" size="0x0.8" />
 	<field name="min_ber_mantissa" descr="" access="RO" offset="0x14.24" size="0x0.4" />
 	<field name="num_of_ber_alarams" descr="" access="RO" offset="0x18.0" size="0x0.16" />
-	<field name="time_to_link_down_to_disable" descr="Time in msec to link down from active or phy up to disable \;state, once a paos down is set or a link down event occurs.\;The timer resets to 0 when moving to active or phy up state." access="RO" offset="0x1C.0" size="0x4.0" />
-	<field name="time_to_link_down_to_rx_loss" descr="Time in msec to link down from active or phy up to rx disable \;state, once a paos down is set or a link down event occurs.\;The timer resets to 0 when moving to active or phy up state.\;Internal: Only for NDR devices." access="RO" offset="0x20.0" size="0x4.0" />
+	<field name="time_to_link_down_to_disable" descr="Time in msec to link down to disable state, once a paos down \;is set or a link down event occurs.\;If the phy manager state is different then disable the timer \;will return 0." access="RO" offset="0x1C.0" size="0x4.0" />
+	<field name="time_to_link_down_to_rx_loss" descr="Time in msec to link down to rx disable state, once a paos \;down is set or a link down event occurs.\;If the phy manager state is different then rx disable the timer \;will return 0.\;Internal: Only for NDR devices." access="RO" offset="0x20.0" size="0x4.0" />
 </node>
 
 <node name="pddr_link_up_info_page_ext" descr="" size="0xf8.0" >
@@ -2104,8 +2084,8 @@
 	<field name="cable_technology" descr="QSFP: \;Byte 147 per SFF-8636.\;\;SFP:\;SFP+ Cable Technology: \;byte8 per SFF-8472:\;Bit 3 - Active Cable\;Bit 2 - Passive Cable\;\;CMIS based (QSFP-DD / OSFP/ SFP-DD):\;Byte 212" access="RW" offset="0x0.24" size="0x0.8" />
 	<field name="cable_power_class" descr="Module maximum power consumption for SFP/QSFP:\;0 - Power Class 0 (1.0 W max)\;1 - Power Class 1 (1.5 W max)\;2 - Power Class 2 (2.0 W max)\;3 - Power Class 3 (2.5 W max)\;4 - Power Class 4 (3.5 W max)\;5 - Power Class 5 (4.0 W max)\;6 - Power Class 6 (4.5 W max)\;7 - Power Class 7 (5.0 W max)\;8 - Power Class 8 (power from max_power field)\;\;Module maximum power consumption for SFP-DD:\;0 - Power Class 0 (0.5 W max)\;1 - Power Class 1 (1.0 W max)\;2 - Power Class 2 (1.5 W max)\;3 - Power Class 3 (2.0 W max)\;4 - Power Class 4 (3.5 W max)\;5 - Power Class 5 (5.0 W max)\;6 - reserved\;7 - reserved\;8 - Power Class 8 (power from max_power field)\;\;Module maximum power consumption for QSFP-DD/OSFP:\;1 - Power Class 1 (1.5 W max)\;2 - Power Class 2 (3.5 W max)\;3 - Power Class 3 (7.0 W max)\;4 - Power Class 4 (8.0 W max)\;5 - Power Class 5 (10 W max)\;6 - Power Class 6 (12 W max)\;7 - Power Class 7 (14 W max)\;8 - Power Class 8 (power from max_power field)\;" access="RO" offset="0x4.0" size="0x0.8" />
 	<field name="cable_identifier" descr="0 - QSFP28\;1 - QSFP+\;2 - SFP28/SFP+\;3 - QSA (QSFP-&gt;SFP)\;4 - Backplane\;5 - SFP-DD\;6 - QSFP-DD\;7 - QSFP_CMIS\;8 - OSFP\;9 - C2C\;10 - DSFP\;11 - QSFP_Split_Cable\;\;identifiers that are CMIS compliant are: 5,6,7,8,10" access="RO" offset="0x4.8" size="0x0.8" />
-	<field name="cable_length" descr="Cable length in 1m units.\;\;For CMIS modules:\;bits 6:7 represent cable_length_multiplier for calculating \;cable length\;00 - 0.1 multiplier (0.1 to 6.3m)\;01- 1 multiplier (1 to 63m)\;10 - 10 multiplier (10 to 630m)\;11 - 100 multiplier (100 to 6300m)\;\;bits 0:5 represent cable_length_value for calculating cable \;length.\;\;length is calculated with cable_length_value * cable_length_\;multiplier" access="RO" offset="0x4.16" size="0x0.8" />
-	<field name="cable_vendor" descr="Cable vendor:\;0 - Other \;1 - Mellanox\;2 - Known OUI\;" access="RO" offset="0x4.24" size="0x0.4" />
+	<field name="cable_length" descr="Cable length in 1m units.\;\;For CMIS modules:\;bits 6:7 represent cable_length_multiplier for calculating \;cable length\;00 - 0.1 multiplier (0.1 to 6.3m)\;01- 1 multiplier (1 to 63m)\;10 - 10 multiplier (10 to 630m)\;11 - 100 multiplier (100 to 6300m)\;\;bits 0:5 represent cable_length_value for calculating cable \;length.\;\;length is calculated with cable_length_value * \;cable_length_multiplier" access="RO" offset="0x4.16" size="0x0.8" />
+	<field name="cable_vendor" descr="Cable vendor:\;0 - Other \;1 - Mellanox\;2 - Known OUI\;3 - Nvidia\;" access="RO" offset="0x4.24" size="0x0.4" />
 	<field name="cable_type" descr="Cable/module type:\;0 - Unidentified\;1 - Active cable (active copper / optics)\;2 - Optical Module (separated).\;3 - Passive copper cable\;4 - Cable unplugged\;5 - Twisted pair\;" access="RO" offset="0x4.28" size="0x0.4" />
 	<field name="cable_tx_equalization" descr="" access="RO" offset="0x8.0" size="0x0.8" />
 	<field name="cable_rx_emphasis" descr="\;\;\;for CMIS (QSFP-DD/ SFP-DD/ OSFP) field will represent Rx \;pre-emphasis.\;" access="RO" offset="0x8.8" size="0x0.8" />
@@ -2121,7 +2101,7 @@
 	<field name="rx_cdr_cap" descr="0 - No CDR\;1 - Build-in CDR with on/off control \;2 - Build-in CDR without on/off control" access="RO" offset="0x10.20" size="0x0.4" />
 	<field name="cable_rx_post_emphasis" descr="Valid only for CMIS (QSFP-DD/ SFP-DD/ OSFP)\;Rx post-emphasis." access="RO" offset="0x10.24" size="0x0.8" />
 	<field name="vendor_name" descr="ASCII Vendor name left-aligned and padded on the right with\;ASCII spaces (20h)" access="RO" high_bound="3" low_bound="0" offset="0x14.0" size="0x10.0" />
-	<field name="vendor_pn" descr="Vendor Part Number left-aligned and padded on the right with \;ASCII spaces (20h)" access="RO" high_bound="3" low_bound="0" offset="0x24.0" size="0x10.0" />
+	<field name="vendor_pn" descr="Vendor Part Number left-aligned and padded on the right \;with ASCII spaces (20h)" access="RO" high_bound="3" low_bound="0" offset="0x24.0" size="0x10.0" />
 	<field name="vendor_rev" descr="ASCII Vendor revision aligned to right padded with 0h on the \;left" access="RO" offset="0x34.0" size="0x4.0" />
 	<field name="fw_version" descr="If information is not available by the module: set to 0" access="RO" offset="0x38.0" size="0x4.0" />
 	<field name="vendor_sn" descr="Vendor Serial Number" access="RO" high_bound="3" low_bound="0" offset="0x3C.0" size="0x10.0" />
@@ -2196,6 +2176,7 @@
 	<field name="rx_input_valid" descr="Rx input status indication per lane" access="RO" offset="0xBC.8" size="0x0.8" />
 	<field name="tx_input_freq_sync" descr="Defines which Tx input lanes must be frequency synchronous.\;0: Tx_input_lanes_1_8\;1: Tx_input_lanes_1_4_and_5-8\;2: Tx_input_lanes_1_2_and_3_4_and_5_6_and_7_8\;3: Lanes_may_be_asynchronous_in_frequency" access="RO" enum="Tx_input_lanes_1_8=0x0,Tx_input_lanes_1_4_and_5=0x1,Tx_input_lanes_1_2_and_3_4_and_5_6_and_7_8=0x2,Lanes_may_be_asynchronous_in_frequency=0x3" offset="0xBC.16" size="0x0.2" />
 	<field name="error_code" descr="Relevant for CMIS modules only\;Error Code response for ConrolSet configuration of DataPath.\;0x0: ConfigUndefined\;0x1: ConfigSuccess\;0x2: ConfigRejected\;0x3: ConfigRejectedInvalidAppSel\;0x4: ConfigRejectedInvalidDataPath\;0x5: ConfigRejectedInvalidSI\;0x6: ConfigRejectedLanesInUse\;0x7: ConfigRejectedPartialDataPath\;0xC: ConfigInProgress" access="RO" enum="ConfigUndefined=0x0,ConfigSuccess=0x1,ConfigRejected=0x2,ConfigRejectedInvalidAppSel=0x3,ConfigRejectedInvalidDataPath=0x4,ConfigRejectedInvalidSI=0x5,ConfigRejectedLanesInUse=0x6,ConfigRejectedPartialDataPath=0x7,ConfigInProgress=0xc" offset="0xC0.0" size="0x0.4" />
+	<field name="max_fiber_length" descr="Maximum length of allowed fiber in meters" access="RO" offset="0xC0.16" size="0x0.16" />
 </node>
 
 <node name="pddr_monitor_opcode_ext" descr="" size="0x4.0" >
@@ -2217,13 +2198,13 @@
 	<field name="ib_phy_fsm_state" descr="FW IB state machine:\;0x0: IB_AN_FSM_DISABLED\;0x1: IB_AN_FSM_INITIALY\;0x2: IB_AN_FSM_RCVR_CFG\;0x3: IB_AN_FSM_CFG_TEST\;0x4: IB_AN_FSM_WAIT_RMT_TEST\;0x5: IB_AN_FSM_WAIT_CFG_ENHANCED\;0x6: IB_AN_FSM_CFG_IDLE\;0x7: IB_AN_FSM_LINK_UP\;0x8: IB_AN_FSM_POLLING\;0x9: IB_AN_FSM_SYNC_CHECK - [Internal]" access="RO" enum="IB_AN_FSM_DISABLED=0x0,IB_AN_FSM_INITIALY=0x1,IB_AN_FSM_RCVR_CFG=0x2,IB_AN_FSM_CFG_TEST=0x3,IB_AN_FSM_WAIT_RMT_TEST=0x4,IB_AN_FSM_WAIT_CFG_ENHANCED=0x5,IB_AN_FSM_CFG_IDLE=0x6,IB_AN_FSM_LINK_UP=0x7,IB_AN_FSM_POLLING=0x8,IB_AN_FSM_SYNC_CHECK=0x9" offset="0x4.8" size="0x0.8" />
 	<field name="eth_an_fsm_state" descr="Ethernet (CL73) Auto-negotiation FSM state:\;0x0: ETH_AN_FSM_ENABLE\;0x1: ETH_AN_FSM_XMIT_DISABLE\;0x2: ETH_AN_FSM_ABILITY_DETECT\;0x3: ETH_AN_FSM_ACK_DETECT\;0x4: ETH_AN_FSM_COMPLETE_ACK\;0x5: ETH_AN_FSM_AN_GOOD_CHECK\;0x6: ETH_AN_FSM_AN_GOOD\;0x7: ETH_AN_FSM_NEXT_PAGE_WAIT\;0x8: ETH_AN_FSM_LINK_STAT_CHECK - [Internal] \;0x9: ETH_AN_FSM_EXTRA_TUNE - [Internal] \;0xa: ETH_AN_FSM_FIX_REVERSALS - [Internal] \;0xb: ETH_AN_FSM_IB_FAIL - [Internal] \;0xc: ETH_AN_FSM_POST_LOCK_TUNE - [Internal]" access="RO" enum="ETH_AN_FSM_ENABLE=0x0,ETH_AN_FSM_XMIT_DISABLE=0x1,ETH_AN_FSM_ABILITY_DETECT=0x2,ETH_AN_FSM_ACK_DETECT=0x3,ETH_AN_FSM_COMPLETE_ACK=0x4,ETH_AN_FSM_AN_GOOD_CHECK=0x5,ETH_AN_FSM_AN_GOOD=0x6,ETH_AN_FSM_NEXT_PAGE_WAIT=0x7,ETH_AN_FSM_LINK_STAT_CHECK=0x8,ETH_AN_FSM_EXTRA_TUNE=0x9,ETH_AN_FSM_FIX_REVERSALS=0xa,ETH_AN_FSM_IB_FAIL=0xb,ETH_AN_FSM_POST_LOCK_TUNE=0xc" offset="0x4.16" size="0x0.8" />
 	<field name="phy_mngr_fsm_state" descr="FW Phy Manager FSM state:\;0 - Disabled \;1 - Open port\;2 - Polling\;3 - Active / Linkup\;4 - Close port\;5 - Phy up\;7 - Rx disable" access="RO" offset="0x4.24" size="0x0.8" />
-	<field name="phy_manager_link_enabled" descr="For IB: Table  1370, &quot;PDDR - Phy manager link enabled IB lay\;out,&quot; on page  1635\;For Ethernet: Table  1372, &quot;PDDR - Phy manager link enabled \;Eth layout,&quot; on page  1635\;" subnode="pddr_operation_info_page_phy_manager_link_enabled_auto_ext" access="RO" offset="0x8.0" size="0x4.0" />
-	<field name="core_to_phy_link_enabled" descr="For IB: Table  1374, &quot;PDDR - core2phy link enabled IB layout,&quot; \;on page  1636\;For Ethernet: Table  1376, &quot;PDDR - Core2Phy link enabled Eth \;layout,&quot; on page  1637" subnode="pddr_operation_info_page_core_to_phy_link_enabled_auto_ext" access="RO" offset="0xC.0" size="0x4.0" />
-	<field name="cable_proto_cap" descr="For IB: Table  1378, &quot;PDDR - cable cap IB layout,&quot; on \;page  1638\;For Ethernet: Table  1380, &quot;PDDR - cable cap Eth layout,&quot; on \;page  1639\;" subnode="pddr_operation_info_page_cable_proto_cap_auto_ext" access="RO" offset="0x10.0" size="0x4.0" />
-	<field name="link_active" descr="For IB: Table  1382, &quot;PDDR - Link Active IB layout,&quot; on \;page  1640\;For Ethernet: Table  1384, &quot;PDDR - Link Active Eth layout,&quot; on \;page  1640" subnode="pddr_operation_info_page_link_active_auto_ext" access="RO" offset="0x14.0" size="0x4.0" />
-	<field name="loopback_mode" descr="0 - No loopback active\;1 - Phy remote loopback \;2 - Phy local loopback. When set the port&apos;s egress traffic is \;looped back to the receiver and the port transmitter is dis\;abled. \;4 - External local loopback. Enables the port&apos;s transmitter to \;link with the port&apos;s receiver using an external loopback con\;nector. Bits 3-7 are reserved." access="RO" offset="0x18.0" size="0x0.4" />
-	<field name="fec_mode_request" descr="FEC mode request\;See fec_mode_active\;for supported retransmission mode see PPLM.fec_mode_capa\;bility" access="RO" offset="0x1C.0" size="0x0.16" />
-	<field name="fec_mode_active" descr="FEC mode active\;0: No_FEC\;1: Firecode_FEC\;2: Standard_RS_FEC - RS(528,514)\;3: Standard_LL_RS_FEC - RS(271,257)\;4: Reserved - [Internal]\;5: reserved - [Internal]\;6: Interleaved_Standard_RS-FEC - (544,514)\;7: Standard_RS-FEC - (544,514)\;8: Zero_Latency_FEC - [Internal]\;9: Ethernet_Consortium_LL_50G_RS_FEC- (272,257+1)\;10: Interleaved_Ethernet_Consortium_LL_50G_RS_FEC - \;(272,257+1)\;11: Interleaved_Standard_RS_FEC_PLR - (544,514)- [Internal]\;12: RS-FEC - (544,514) + PLR- [Internal]\;13: LL-FEC - (271,257) + PLR- [Internal]\;14: Ethernet_Consortium_LL_50G_RS_FEC_PLR - \;(272,257+1) [Internal] \;15: Interleaved_Ethernet_Consor\;tium_LL_50G_RS_FEC_PLR - (272,257+1) [Internal]\;\;for supported retransmission mode see PPLM.fec_mode_capa\;bility" access="RO" offset="0x1C.16" size="0x0.16" />
+	<field name="phy_manager_link_enabled" descr="For IB: Table  1342, &quot;PDDR - Phy manager link enabled IB lay\;out,&quot; on page  1633\;For Ethernet: Table  1344, &quot;PDDR - Phy manager link enabled \;Eth layout,&quot; on page  1633\;" subnode="pddr_operation_info_page_phy_manager_link_enabled_auto_ext" access="RO" offset="0x8.0" size="0x4.0" />
+	<field name="core_to_phy_link_enabled" descr="For IB: Table  1346, &quot;PDDR - core2phy link enabled IB layout,&quot; \;on page  1634\;For Ethernet: Table  1348, &quot;PDDR - Core2Phy link enabled Eth \;layout,&quot; on page  1635" subnode="pddr_operation_info_page_core_to_phy_link_enabled_auto_ext" access="RO" offset="0xC.0" size="0x4.0" />
+	<field name="cable_proto_cap" descr="For IB: Table  1350, &quot;PDDR - cable cap IB layout,&quot; on \;page  1636\;For Ethernet: Table  1352, &quot;PDDR - cable cap Eth layout,&quot; on \;page  1637\;" subnode="pddr_operation_info_page_cable_proto_cap_auto_ext" access="RO" offset="0x10.0" size="0x4.0" />
+	<field name="link_active" descr="For IB: Table  1354, &quot;PDDR - Link Active IB layout,&quot; on \;page  1638\;For Ethernet: Table  1356, &quot;PDDR - Link Active Eth layout,&quot; on \;page  1638" subnode="pddr_operation_info_page_link_active_auto_ext" access="RO" offset="0x14.0" size="0x4.0" />
+	<field name="loopback_mode" descr="0: No_loopback_active\;1: Phy_remote_loopback \;2: Phy_local_loopback -When set the port&apos;s egress traffic is \;looped back to the receiver and the port transmitter is dis\;abled. \;4: External_local_loopback -Enables the port&apos;s transmitter to \;link with the port&apos;s receiver using an external loopback con\;nector. \;8: Near_end_analog_loopback - [Internal]\;16: Near_end_digital_loopback - [Internal]\;128: LL_local_loopback - [Internal]" access="RO" enum="No_loopback_active=0x0,Phy_remote_loopback=0x1,Phy_local_loopback=0x2,External_local_loopback=0x4,Near_end_analog_loopback=0x8,Near_end_digital_loopback=0x10,LL_local_loopback=0x80" offset="0x18.0" size="0x0.8" />
+	<field name="fec_mode_request" descr="FEC mode request\;See fec_mode_active\;for supported retransmission mode see PPLM.fec_mode_ca\;pability" access="RO" offset="0x1C.0" size="0x0.16" />
+	<field name="fec_mode_active" descr="FEC mode active\;0: No_FEC\;1: Firecode_FEC\;2: Standard_RS_FEC - RS(528,514)\;3: Standard_LL_RS_FEC - RS(271,257)\;4: Reserved - [Internal]\;5: reserved - [Internal]\;6: Interleaved_Standard_RS-FEC - (544,514)\;7: Standard_RS-FEC - (544,514)\;8: Zero_Latency_FEC - [Internal]\;9: Ethernet_Consortium_LL_50G_RS_FEC- (272,257+1)\;10: Interleaved_Ethernet_Consortium_LL_50G_RS_FEC - \;(272,257+1)\;11: Interleaved_Standard_RS_FEC_PLR - (544,514)- [Inter\;nal]\;12: RS-FEC - (544,514) + PLR- [Internal]\;13: LL-FEC - (271,257) + PLR- [Internal]\;14: Ethernet_Consortium_LL_50G_RS_FEC_PLR - \;(272,257+1) [Internal] \;15: Interleaved_Ethernet_Consor\;tium_LL_50G_RS_FEC_PLR - (272,257+1) [Internal]\;\;for supported retransmission mode see PPLM.fec_mode_ca\;pability" access="RO" offset="0x1C.16" size="0x0.16" />
 	<field name="eth_100g_fec_support" descr="FEC 100G (25Gb/s per lane) supported FEC include override \;masking , should reflect current phy configuration\;Bit 0 - No FEC\;Bit 2 - Standard RS-FEC - RS(528,514)\;" access="RO" offset="0x20.0" size="0x0.4" />
 	<field name="eth_25g_50g_fec_support" descr="FEC 25G/50G (25Gb/s per lane) supported FEC include over\;ride masking , should reflect current phy configuration\;Bit 0 - No FEC\;Bit 1 - Firecode FEC\;Bit 2 - Standard RS-FEC - RS(528,514)\;" access="RO" offset="0x20.4" size="0x0.4" />
 </node>
@@ -2267,7 +2248,7 @@
 	<field name="pcs_phy_state" descr="PCS HW state:\;Bits 0-7: Block lock\;Bits 8-15: AM lock\;Bits 16-23: FEC lock\;Bits 24: Align_status\;Bits 25: Hi_BER\;Bits 26: Hi_SER" access="RO" offset="0xC.0" size="0x4.0" />
 	<field name="lp_proto_enabled" descr="IB ports : \;Link partner advertised speeds (first TS3)\;See ib_link_speed_enabled encoding.\;\;Ethernet ports:\;Link partner advertised Ethernet protocols active state: see \;PTYS.lp_advertise" access="RO" offset="0x10.0" size="0x4.0" />
 	<field name="lp_fec_mode_request" descr="Reserved when negotiation wasn&apos;t performed according to \;port_notifications.Link partner advertised capabilities value.\;Advertised link partner FEC mode request" access="RO" offset="0x14.0" size="0x0.16" />
-	<field name="lp_fec_mode_support" descr="Reserved when negotiation wasn&apos;t performed according to \;port_notifications.Link partner advertised capabilities value.\;\;Advertised link partner FEC mode support\;Bit 0 - No FEC\;Bit 1 - Firecode FEC\;Bit 2 - Standard RS-FEC - RS(528,514)\;Bit 3 - Standard LL RS-FEC - RS(271,257)\;Bit 4 - Mellanox Strong RS-FEC - RS(277,257)\;Bit 5 - Mellanox LL RS-FEC - RS(163,155)\;Bit 6 - Reserved\;Bit 7 - Standard RS-FEC (544,514)\;[Internal] Bit 8 - Zero Latency FEC\;[Internal] Bit 12 - RS-FEC (544,514) + PLR\;[Internal] Bit 13 - LL-FEC (271,257) + PLR\;\;for supported retransmission mode see PPLM.fec_mode_capa\;bility" access="RO" offset="0x14.16" size="0x0.16" />
+	<field name="lp_fec_mode_support" descr="Reserved when negotiation wasn&apos;t performed according to \;port_notifications.Link partner advertised capabilities value.\;\;Advertised link partner FEC mode support\;Bit 0 - No FEC\;Bit 1 - Firecode FEC\;Bit 2 - Standard RS-FEC - RS(528,514)\;Bit 3 - Standard LL RS-FEC - RS(271,257)\;Bit 4 - Mellanox Strong RS-FEC - RS(277,257)\;Bit 5 - Mellanox LL RS-FEC - RS(163,155)\;Bit 6 - Reserved\;Bit 7 - Standard RS-FEC (544,514)\;[Internal] Bit 8 - Zero Latency FEC\;[Internal] Bit 12 - RS-FEC (544,514) + PLR\;[Internal] Bit 13 - LL-FEC (271,257) + PLR\;\;for supported retransmission mode see PPLM.fec_mode_ca\;pability" access="RO" offset="0x14.16" size="0x0.16" />
 	<field name="ib_last_link_down_reason" descr="Bit 0 - heartbeat_ack_received\;Bit 1 - heartbeat_send_received\;Bit 2 - heartbeat_err\;Bit 3 - tx_width_reduction_done_1x\;Bit 4 - tx_width_reduction_done_full\;Bit 5 - rx_width_reduction_done_1x\;Bit 6 - rx_width_reduction_done_full\;Bit 7 - width_reduction_timeout\;Bit 8 - ibl_link_retrain\;Bit 9 - rx_comskp_timeout\;Bit 10 - fifo_full_err\;Bit 11 - ts_at_linkup\;Bit 12 - minor_threshold_reached\;Bit 13 - link_fail\;Bit 14 - rx_eb_full_r\;Bit 15 - rx_8_10_lane_err\;Bit 16 - llr_link_retrain_set\;Bit 17 - fc_timeout\;Bit 18 - phy_error\;Bit 19 - lli_err\;Bit 20 - excessive_buffer_err\;Bit 21 - remote_init\;Bit 22 - plr_retry_expired\;Bit 23 - port_didnt_exit_plr_sync\;Bit 24 - eq_failed\;Bits 31-24 - Reserved" access="RO" offset="0x18.0" size="0x4.0" />
 	<field name="eth_last_link_down_lane" descr="Bit 0 - block_lock_failed\;Bit 1 - skip_detected\;Bit 2 - fec_sync_failed\;Bit 3 - fec_block_sync\;Bit 4 - fec_block_sync_lost" access="RO" high_bound="3" low_bound="0" offset="0x1C.24" size="0x4.0" />
 	<field name="speed_deg_db" descr="Bit 0 - Speed degradation database Valid\;Bit 1 - Speed degradation Serdes Rx database valid\;BIts 3-2 - reserved\;Bit 4 - rx_reversal\;Bit 5 - tx_reversal\;Bit 7-6 - reserved\;Bits 11:8 - failed_qdr/fdr10 - bit per lane.\;Bits 15:12 - failed_fdr - bit per lane.\;Bits 19:16- failed_edr - bit per lane.\;Bits 24:20 - peer_failed_test\;Bits 26-25 - reserved\;Bit 27 - first_test_speed" access="RO" offset="0x24.0" size="0x4.0" />
@@ -2281,19 +2262,20 @@
 	<field name="num_of_presets_tested_lane0" descr="presets tested in TX tuning flow counter or in KR Startup" access="RO" offset="0x44.24" size="0x0.5" />
 	<field name="kr_startup_fsm_lane" descr="Per lane KR startup state:\;0 - KR_FSM_INITIALIZE\;1 - KR_FSM_SEND_TRAINING\;2 - KR_FSM_TRAIN_LOCAL_TX\;3 - KR_FSM_TRAIN_LOCAL_RX\;4 - KR_FSM_TRAIN_REMOTE\;5 - KR_FSM_LINK_READY\;6 - KR_FSM_SEND_DATA" access="RO" high_bound="3" low_bound="0" offset="0x48.24" size="0x4.0" />
 	<field name="eth_an_debug_indication" descr="eth_an_debug bit mask:\;Bit 0 - Force link up\;Bit 1 - No HCD\;Bit 2 - Entered ACK_detect\;Bit 3 - Entered Good\;Bit 4 - Entered Good_Check\;Bit 5 - Entered Extra_tune\;Bit 6 - Entered Fix_Reversals\;Bit 7 - Entered Next_Page\;Bit 8 - Entered Sub-FSM Fail\;Bit 9 - Tuning timeout\;Bit 10 - No markers detected (during Good check)\;Bit 11 - Do KR-startup\;Bits 15:18 - KR startup failure mask" access="RO" offset="0x50.0" size="0x4.0" />
-	<field name="ib_phy_fsm_state_trace" descr="FW IB state machine:\;HDR Gen\;Bit 0 - entered IB_AN_FSM_DISABLED\;Bit 1 - entered IB_AN_FSM_INITIALY\;Bit 2 - entered IB_AN_FSM_RCVR_CFG\;Bit 3 - entered IB_AN_FSM_CFG_TEST\;Bit 4 - entered IB_AN_FSM_WAIT_RMT_TEST\;Bit 5 - entered IB_AN_FSM_WAIT_CFG_ENHANCED\;Bit 6 - entered IB_AN_FSM_CFG_IDLE\;Bit 7 - entered IB_AN_FSM_LINK_UP\;Bit 8 - Failed from CFG_IDLE\;\;NDR Gen:\;Bit 0 - entered IB_AN_FSM_DISABLED\;Bit 1 - entered IB_AN_FSM_POLLING\;Bit 2 - entered IB_AN_FSM_INITIALY\;Bit 3 - entered IB_AN_FSM_CFG_TEST\;Bit 4 - entered IB_AN_FSM_WAIT_RMT_TEST\;Bit 5 - entered IB_AN_FSM_WAIT_CFG_ENHANCED\;Bit 6 - entered IB_AN_FSM_CFG_IDLE\;Bit 7 - entered IB_AN_FSM_SYNC_CHECK\;Bit 8 - entered IB_AN_FSM_LINK_UP\;Bit 9 - Failed from CFG_IDLE\;Bit 10 - peer requested KR\;Bit 11 - speed degradation needed - &quot;best_grade&quot; didn&quot;t reach \;threshold\;\;" access="RO" offset="0x54.0" size="0x0.16" />
+	<field name="ib_phy_fsm_state_trace" descr="FW IB state machine:\;HDR Gen\;Bit 0 - entered IB_AN_FSM_DISABLED\;Bit 1 - entered IB_AN_FSM_INITIALY\;Bit 2 - entered IB_AN_FSM_RCVR_CFG\;Bit 3 - entered IB_AN_FSM_CFG_TEST\;Bit 4 - entered IB_AN_FSM_WAIT_RMT_TEST\;Bit 5 - entered IB_AN_FSM_WAIT_CFG_ENHANCED\;Bit 6 - entered IB_AN_FSM_CFG_IDLE\;Bit 7 - entered IB_AN_FSM_LINK_UP\;Bit 8 - Failed from CFG_IDLE\;\;NDR Gen:\;Bit 0 - entered IB_AN_FSM_DISABLED\;Bit 1 - entered IB_AN_FSM_POLLING\;Bit 2 - entered IB_AN_FSM_INITIALY\;Bit 3 - entered IB_AN_FSM_CFG_TEST\;Bit 4 - entered IB_AN_FSM_WAIT_RMT_TEST\;Bit 5 - entered IB_AN_FSM_WAIT_CFG_ENHANCED\;Bit 6 - entered IB_AN_FSM_CFG_IDLE\;Bit 7 - entered IB_AN_FSM_SYNC_CHECK\;Bit 8 - entered IB_AN_FSM_LINK_UP\;Bit 9 - Failed from CFG_IDLE\;Bit 10 - peer requested KR\;Bit 11 - speed degradation needed - &quot;best_grade&quot; didn&quot;t \;reach threshold\;\;" access="RO" offset="0x54.0" size="0x0.16" />
 	<field name="rounds_waited_for_peer_to_end_test" descr="" access="RO" offset="0x54.16" size="0x0.5" />
 	<field name="kr_startup_debug_indications" descr="kr_stratup_debug_indication_&lt;i&gt; bit mask:\;Bit 0 - PRBS lock failed\;Bit 1 - Entered send training\;Bit 2 - Entered train local RX\;Bit 3 - Entered train remote \;Bit 4 - Entered link ready\;Bit 5 - Entered Send_Data\;Bit 6 - Didn&apos;t get receiver ready \;Bit 7 - tuning timeout\;Bit 8 - No frame lock\;Bit 9 - No response from peer\;Bit 10 - frames lock tuning not done" access="RO" high_bound="3" low_bound="0" offset="0x58.16" size="0x8.0" />
-	<field name="tx_tuning_stages_lane3" descr="Stages mask per lane:\;Bit 0: Single preset stage\;Bit 1: multiple preset stage\;Bit 2: LMS" access="RO" offset="0x60.16" size="0x0.4" />
-	<field name="tx_tuning_stages_lane2" descr="Stages mask per lane:\;Bit 0: Single preset stage\;Bit 1: multiple preset stage\;Bit 2: LMS" access="RO" offset="0x60.20" size="0x0.4" />
-	<field name="tx_tuning_stages_lane1" descr="Stages mask per lane:\;Bit 0: Single preset stage\;Bit 1: multiple preset stage\;Bit 2: LMS" access="RO" offset="0x60.24" size="0x0.4" />
-	<field name="tx_tuning_stages_lane0" descr="Stages mask per lane:\;Bit 0: Single preset stage\;Bit 1: multiple preset stage\;Bit 2: LMS" access="RO" offset="0x60.28" size="0x0.4" />
+	<field name="tx_tuning_stages_lane3" descr="Stages mask per lane:\;Bit 0 - Single preset stage\;Bit 1 - multiple preset stage\;Bit 2 - LMS" access="RO" offset="0x60.16" size="0x0.4" />
+	<field name="tx_tuning_stages_lane2" descr="Stages mask per lane:\;Bit 0 - Single preset stage\;Bit 1 - multiple preset stage\;Bit 2 - LMS" access="RO" offset="0x60.20" size="0x0.4" />
+	<field name="tx_tuning_stages_lane1" descr="Stages mask per lane:\;Bit 0 - Single preset stage\;Bit 1 - multiple preset stage\;Bit 2 - LMS" access="RO" offset="0x60.24" size="0x0.4" />
+	<field name="tx_tuning_stages_lane0" descr="Stages mask per lane:\;Bit 0 - Single preset stage\;Bit 1 - multiple preset stage\;Bit 2 - LMS" access="RO" offset="0x60.28" size="0x0.4" />
 	<field name="irisc_status" descr="" access="RO" offset="0x68.0" size="0x0.4" />
 	<field name="stamping_reason" descr="Bit 0 - com_codes_is_zero \;Bit 1- rx_cdr_check_force_mode \;Bit 2- com_code_complaince \;Bit 3- eth_56g_stamped\;Bit 4- non_mlx_qsfp_tranciver\;Bit 5- non_mlx_sfp_tranciver\;Bit 6-ib_comp_codes\;Bit 7-edr_comp\;Bit 8-fdr_comp" access="RO" offset="0x6C.0" size="0x4.0" />
 	<field name="kr_frame_lock_tuning_failure_events_count" descr="Number of times that fast tuning (50ms) for KR lock failed to \;achieve frame lock." access="RO" offset="0x70.0" size="0x4.0" />
-	<field name="kr_full_tuning_failure_count" descr="Number of times that full tuning (0.5sec/3sec) for KR full tun\;ing flow failed to achieve desire SI performance" access="RO" offset="0x74.0" size="0x4.0" />
-	<field name="pm_debug_indication" descr="Bit 0 - phy_test_mode\;Bit 1 - force_mode_en" access="RO" offset="0x78.0" size="0x0.16" />
-	<field name="pd_debug_indication" descr="Bit 0 - speed_change_high_speed_module\;Bit 1 - False_positive_signal_detect\;Bit 2 - Nv2nv_force\;Bit 3 - bad_kr_mask \;Bit 4 - kr_mlx_peer\;Bit 5 - entered_signal_detect\;Bit 6- entered_rate_config\;Bit 7- entered_activate_sunfsm\;Bit 8 - entered_done\;Bit 9 - entered_subfsm_fail" access="RO" offset="0x80.0" size="0x4.0" />
+	<field name="kr_full_tuning_failure_count" descr="Number of times that full tuning (0.5sec/3sec) for KR full \;tuning flow failed to achieve desire SI performance" access="RO" offset="0x74.0" size="0x4.0" />
+	<field name="pm_debug_indication" descr="Bit 0: phy_test_mode\;Bit 1: force_mode_en" access="RO" enum="phy_test_mode=0x1,force_mode_en=0x2" offset="0x78.0" size="0x0.16" />
+	<field name="ib_debug_indication" descr="Bit 0: cause_plr_tx_max_outstanding_cells" access="RW" enum="cause_plr_tx_max_outstanding_cells=0x1" offset="0x78.16" size="0x0.16" />
+	<field name="pd_debug_indication" descr="Bit 0: speed_change_high_speed_module\;Bit 1: False_positive_signal_detect\;Bit 2: Nv2nv_force\;Bit 3: bad_kr_mask \;Bit 4: kr_mlx_peer\;Bit 5: entered_signal_detect\;Bit 6: entered_rate_config\;Bit 7: entered_activate_sunfsm\;Bit 8: entered_done\;Bit 9: entered_subfsm_fail" access="RO" enum="speed_change_high_speed_module=0x1,False_positive_signal_detect=0x2,Nv2nv_force=0x4,bad_kr_mask=0x8,kr_mlx_peer=0x10,entered_signal_detect=0x20,entered_rate_config=0x40,entered_activate_sunfsm=0x80,entered_done=0x100,entered_subfsm_fail=0x200" offset="0x80.0" size="0x4.0" />
 	<field name="pd_count" descr="Parallel detect cycles counter" access="RO" offset="0x84.0" size="0x0.6" />
 	<field name="fp_signal_detect_count" descr="False Positive signal detect count" access="RO" offset="0x84.8" size="0x0.6" />
 	<field name="hst_mismatch_reason" descr="0: speed\;1: FEC\;2: precoding\;3: Gray coding" access="RO" offset="0x84.16" size="0x0.2" />
@@ -2338,7 +2320,7 @@
 	<field name="mono_reach_high_limit_sv" descr="mono_reach_high_limit severity\;0 - misconfiguration\;1 - fatal" access="RO" offset="0x10.7" size="0x0.1" />
 	<field name="mono_reach_low_limit" descr="" access="RO" offset="0x10.8" size="0x0.1" />
 	<field name="mono_reach_low_limit_sv" descr="mono_reach_low_limit severity\;0 - misconfiguration\;1 - fatal" access="RO" offset="0x10.9" size="0x0.1" />
-	<field name="clr_mask" descr="Valid only when PDDR.clr is set\;Bit mask for page bits 255:0, when bits 31:0 assigned to offset \;00h bits 31:0.\;bits 63:32 assigned to offset 04h bits 31:0.\;bits 95:64 assigned to offset 08h bits 31:0.\;bits 127:69 assigned to offset 0Ch bits 31:0.\;Only when PDDR.clr is set and the appropriate bit in the mask \;is set, the event will be cleared. \;For example: To clear the kr_false_ready need set PDDR.clr , \;select the &quot;port event page&quot; and set bit 48 in clr_mask." access="OP" high_bound="7" low_bound="0" offset="0x20.0" size="0x20.0" />
+	<field name="clr_mask" descr="Valid only when PDDR.clr is set\;Bit mask for page bits 255:0, when bits 31:0 assigned to off\;set 00h bits 31:0.\;bits 63:32 assigned to offset 04h bits 31:0.\;bits 95:64 assigned to offset 08h bits 31:0.\;bits 127:69 assigned to offset 0Ch bits 31:0.\;Only when PDDR.clr is set and the appropriate bit in the \;mask is set, the event will be cleared. \;For example: To clear the kr_false_ready need set PDDR.clr , \;select the &quot;port event page&quot; and set bit 48 in clr_mask." access="OP" high_bound="7" low_bound="0" offset="0x20.0" size="0x20.0" />
 </node>
 
 <node name="pddr_reg_ext" descr="" size="0x100.0" >
@@ -2348,7 +2330,7 @@
 	<field name="local_port" descr="Local port number.\;\;If dev is set to 1, device index number.\;0: main die\;1-8: tile index number" access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="page_select" descr="page select index:\;0: Operational_info_page\;1: Troubleshooting_info_page\;2: Phy_info_page - [Internal]\;3: Module_info_page\;4: port_events_page - [internal]\;5: device_events_page - [internal]\;6: link_down_info - [EMC only]\;7: link_down_events - [internal]\;8: Link_up_info - [Internal]\;9: Module_latched_flag_info_page\;10: link_down_info_ext\;0xFE: mng_debug_page\;0xFF: phy_debug_page" access="INDEX" enum="Operational_info_page=0x0,Troubleshooting_info_page=0x1,Phy_info_page=0x2,Module_info_page=0x3,port_events_page=0x4,device_events_page=0x5,link_down_info=0x6,link_down_events=0x7,Link_up_info=0x8,Module_latched_flag_info_page=0x9,link_down_info_ext=0xa,mng_debug_page=0xfe,phy_debug_page=0xff" offset="0x4.0" size="0x0.8" />
 	<field name="module_info_ext" descr="Module info extended configurations.\;resolution for rx_power and tx_power in module info page\;0 - dbm\;1 - uW" access="RW" offset="0x4.29" size="0x0.2" />
-	<field name="page_data" descr="Table  1362, &quot;Operation Info Page Layout,&quot; on page  1617\;Table  1394, &quot;Troubleshooting info Page layout,&quot; on page  1669\;Table  1386, &quot;Phy info page layout,&quot; on page  1641\;Table  1392, &quot;Module Info Page Layout,&quot; on page  1655\;Table  1400, &quot;Port events Page Layout,&quot; on page  1673\;Table  1402, &quot;Device events Page Layout,&quot; on page  1677\;Table  1388, &quot;Link Down Info Page layout,&quot; on page  1651\;Table  1390, &quot;Link down events page layout,&quot; on page  1654\;Table  1404, &quot;Link Up Info Page Layout,&quot; on page  1683\;Table  1406, &quot;Module Latched Flag Info Page Layout,&quot; on \;page  1686\;Table  1408, &quot;phy debug page layout,&quot; on page  1689\;Table  1410, &quot;Mng debug page layout,&quot; on page  1691\;Table  1412, &quot;link down info ext for 16nm LR layout,&quot; on \;page  1694\;Table  1414, &quot;link down info ext for 16nm tile usr layout,&quot; on \;page  1697\;Table  1416, &quot;link down info ext for 16nm main usr layout,&quot; on \;page  1700" subnode="pddr_reg_page_data_auto_ext" access="RO" offset="0x8.0" size="0xf8.0" />
+	<field name="page_data" descr="Table  1334, &quot;Operation Info Page Layout,&quot; on page  1613\;Table  1366, &quot;Troubleshooting info Page layout,&quot; on page  1667\;Table  1358, &quot;Phy info page layout,&quot; on page  1639\;Table  1364, &quot;Module Info Page Layout,&quot; on page  1653\;Table  1372, &quot;Port events Page Layout,&quot; on page  1671\;Table  1374, &quot;Device events Page Layout,&quot; on page  1675\;Table  1360, &quot;Link Down Info Page layout,&quot; on page  1649\;Table  1362, &quot;Link down events page layout,&quot; on page  1652\;Table  1376, &quot;Link Up Info Page Layout,&quot; on page  1681\;Table  1378, &quot;Module Latched Flag Info Page Layout,&quot; on \;page  1684\;Table  1380, &quot;phy debug page layout,&quot; on page  1687\;Table  1382, &quot;Mng debug page layout,&quot; on page  1689\;Table  1384, &quot;link down info ext for 16nm LR layout,&quot; on \;page  1692\;Table  1386, &quot;link down info ext for 16nm tile usr layout,&quot; on \;page  1695\;Table  1388, &quot;link down info ext for 16nm main usr layout,&quot; on \;page  1698" subnode="pddr_reg_page_data_auto_ext" access="RO" offset="0x8.0" size="0xf8.0" />
 </node>
 
 <node name="pddr_reg_page_data_auto_ext" descr="" attr_is_union="1" size="0xf8.0" >
@@ -2371,7 +2353,7 @@
 
 <node name="pddr_troubleshooting_page_ext" descr="" size="0xf8.0" >
 	<field name="group_opcode" descr="0 - Monitor opcodes\;[Internal] 1 - Advanced debug opcodes" access="INDEX" offset="0x0.0" size="0x0.16" />
-	<field name="status_opcode" descr="Status opcode described in:\;Table  1396, &quot;PDDR - Monitor opcodes layout,&quot; on page  1670\;[Internal] Table  1398, &quot;PDDR - Advanced opcodes layout,&quot; on \;page  1671\;" subnode="pddr_troubleshooting_page_status_opcode_auto_ext" access="RO" offset="0x4.0" size="0x4.0" />
+	<field name="status_opcode" descr="Status opcode described in:\;Table  1368, &quot;PDDR - Monitor opcodes layout,&quot; on page  1668\;[Internal] Table  1370, &quot;PDDR - Advanced opcodes layout,&quot; on \;page  1669\;" subnode="pddr_troubleshooting_page_status_opcode_auto_ext" access="RO" offset="0x4.0" size="0x4.0" />
 	<field name="status_message" descr="ASCII code message\;All Messages are terminated by a Null character &apos;\0&apos;\;\;" access="RO" high_bound="58" low_bound="0" offset="0xC.0" size="0xec.0" />
 </node>
 
@@ -2411,7 +2393,7 @@
 </node>
 
 <node name="pgmr_ext" descr="" size="0x18.0" >
-	<field name="pg_sel" descr="Selection between an operation on a local port or a group, for \;&apos;set&apos; and &apos;get&apos; operations. \;0 - local port (group field is neglected even if set)\;1 - group (local_port field is neglected even if set)" access="OP" offset="0x0.0" size="0x0.1" />
+	<field name="pg_sel" descr="Selection between an operation on a local port or a group, \;for &apos;set&apos; and &apos;get&apos; operations. \;0 - local port (group field is neglected even if set)\;1 - group (local_port field is neglected even if set)" access="OP" offset="0x0.0" size="0x0.1" />
 	<field name="port_type" descr="For HCA supported only when indicated by PCAM \;0 - Network Port\;1 - Near-End Port (For Retimer/Gearbox - Host side)\;2 - Internal IC LR Port \;3 - Far-End Port (For Retimer/Gearbox - Line side)\;4 - USR Main\;5 - USR Tile\;Other values are reserved." access="INDEX" offset="0x0.4" size="0x0.4" />
 	<field name="group" descr="Group number" access="INDEX" offset="0x0.8" size="0x0.4" />
 	<field name="lp_msb" descr="Local port number [9:8]" access="INDEX" offset="0x0.12" size="0x0.2" />
@@ -2464,8 +2446,8 @@
 	<field name="fc_fec_uncorrectable_blocks_lane2_low" descr="Perf.PortExtendedSpeedsCounters(FECCor\;rectableBlockCounterLane2)\;[Internal] supported in USR - ZL FEC" access="RO" offset="0x6C.0" size="0x4.0" />
 	<field name="fc_fec_uncorrectable_blocks_lane3_high" descr="Perf.PortExtendedSpeedsCounters(FECCor\;rectableBlockCounterLane3)\;[Internal] supported in USR - ZL FEC" access="RO" offset="0x70.0" size="0x4.0" />
 	<field name="fc_fec_uncorrectable_blocks_lane3_low" descr="Perf.PortExtendedSpeedsCounters(FECCor\;rectableBlockCounterLane3)\;[Internal] supported in USR - ZL FEC" access="RO" offset="0x74.0" size="0x4.0" />
-	<field name="rs_fec_corrected_blocks_high" descr="Perf.PortExtendedSpeedsCounters(FECCorre\;cableBlockCounter)" access="RO" offset="0x78.0" size="0x4.0" />
-	<field name="rs_fec_corrected_blocks_low" descr="Perf.PortExtendedSpeedsCounters(FECCorre\;cableBlockCounter)" access="RO" offset="0x7C.0" size="0x4.0" />
+	<field name="rs_fec_corrected_blocks_high" descr="Perf.PortExtendedSpeedsCounters(FECCor\;recableBlockCounter)" access="RO" offset="0x78.0" size="0x4.0" />
+	<field name="rs_fec_corrected_blocks_low" descr="Perf.PortExtendedSpeedsCounters(FECCor\;recableBlockCounter)" access="RO" offset="0x7C.0" size="0x4.0" />
 	<field name="rs_fec_uncorrectable_blocks_high" descr="Perf.PortExtendedSpeedsCounters(FEUncor\;recableBlockCounter)" access="RO" offset="0x80.0" size="0x4.0" />
 	<field name="rs_fec_uncorrectable_blocks_low" descr="Perf.PortExtendedSpeedsCounters(FEUncor\;recableBlockCounter)" access="RO" offset="0x84.0" size="0x4.0" />
 	<field name="rs_fec_no_errors_blocks_high" descr="The number of RS-FEC blocks received that \;had no errors.\;Note: Total rs_fec blocks received = \;rs_fec_corrected_blocks + rs_fec_uncorrect\;able_blocks + rs_fec_no_errors_blocks" access="RO" offset="0x88.0" size="0x4.0" />
@@ -2481,7 +2463,7 @@
 	<field name="rs_fec_corrected_symbols_lane3_high" descr="Perf.PortExtendedSpeedCounters(FECCor\;rectedSymbolCounterLane3)" access="RO" offset="0xB8.0" size="0x4.0" />
 	<field name="rs_fec_corrected_symbols_lane3_low" descr="Perf.PortExtendedSpeedCounters(FECCor\;rectedSymbolCounterLane3)" access="RO" offset="0xBC.0" size="0x4.0" />
 	<field name="link_down_events" descr="Perf.PortCounters(LinkDownedCounter)\;[Internal] supported in USR - ZL FEC" access="RO" offset="0xC0.0" size="0x4.0" />
-	<field name="successful_recovery_events" descr="Perf.PortCounters(LinkErrorRecoveryCounter)\;Note: This counter is valid only for IB." access="RO" offset="0xC4.0" size="0x4.0" />
+	<field name="successful_recovery_events" descr="Perf.PortCounters(LinkErrorRecovery\;Counter)\;Note: This counter is valid only for IB." access="RO" offset="0xC4.0" size="0x4.0" />
 </node>
 
 <node name="phys_layer_stat_cntrs_ext" descr="" size="0xf8.0" >
@@ -2489,34 +2471,34 @@
 	<field name="time_since_last_clear_low" descr="The time passed since the last counters clear \;event in msec.\;" access="RO" offset="0x4.0" size="0x4.0" />
 	<field name="phy_received_bits_high" descr="This counter provides information on the total \;amount of traffic (bits) received.\;" access="RO" offset="0x8.0" size="0x4.0" />
 	<field name="phy_received_bits_low" descr="This counter provides information on the total \;amount of traffic (bits) received.\;" access="RO" offset="0xC.0" size="0x4.0" />
-	<field name="phy_symbol_errors_high" descr="This counter provides information on error bits \;that were not corrected by phy correction \;mechanisms. (FEC + PLR)\;" access="RO" offset="0x10.0" size="0x4.0" />
-	<field name="phy_symbol_errors_low" descr="This counter provides information on error bits \;that were not corrected by phy correction \;mechanisms. (FEC + PLR)\;" access="RO" offset="0x14.0" size="0x4.0" />
+	<field name="phy_symbol_errors_high" descr="This counter provides information on error \;bits that were not corrected by phy correction \;mechanisms. (FEC + PLR)\;" access="RO" offset="0x10.0" size="0x4.0" />
+	<field name="phy_symbol_errors_low" descr="This counter provides information on error \;bits that were not corrected by phy correction \;mechanisms. (FEC + PLR)\;" access="RO" offset="0x14.0" size="0x4.0" />
 	<field name="phy_corrected_bits_high" descr="Corrected bits by FEC engine. \;" access="RO" offset="0x18.0" size="0x4.0" />
 	<field name="phy_corrected_bits_low" descr="Corrected bits by FEC engine. \;" access="RO" offset="0x1C.0" size="0x4.0" />
-	<field name="phy_raw_errors_lane0_high" descr="This counter provides information on error bits \;that were identified on lane 0. \;When FEC is enabled this induction corre\;sponds to corrected errors.\;In PRBS test mode, indicates the number of \;PRBS errors\;on lane 0\;\;\;" access="RO" offset="0x20.0" size="0x4.0" />
-	<field name="phy_raw_errors_lane0_low" descr="This counter provides information on error bits \;that were identified on lane 0. \;When FEC is enabled this induction corre\;sponds to corrected errors.\;In PRBS test mode, indicates the number of \;PRBS errors\;on lane 0\;\;\;" access="RO" offset="0x24.0" size="0x4.0" />
-	<field name="phy_raw_errors_lane1_high" descr="This counter provides information on error bits \;that were identified on lane 1. \;When FEC is enabled this induction corre\;sponds to corrected errors\;In PRBS test mode, indicates the number of \;PRBS errors\;on lane 1\;\;" access="RO" offset="0x28.0" size="0x4.0" />
-	<field name="phy_raw_errors_lane1_low" descr="This counter provides information on error bits \;that were identified on lane 1. \;When FEC is enabled this induction corre\;sponds to corrected errors\;In PRBS test mode, indicates the number of \;PRBS errors\;on lane 1\;\;" access="RO" offset="0x2C.0" size="0x4.0" />
-	<field name="phy_raw_errors_lane2_high" descr="This counter provides information on error bits \;that were identified on lane 2. \;When FEC is enabled this induction corre\;sponds to corrected errors.\;In PRBS test mode, indicates the number of \;PRBS errors\;on lane 2\;\;\;\;" access="RO" offset="0x30.0" size="0x4.0" />
-	<field name="phy_raw_errors_lane2_low" descr="This counter provides information on error bits \;that were identified on lane 2. \;When FEC is enabled this induction corre\;sponds to corrected errors.\;In PRBS test mode, indicates the number of \;PRBS errors\;on lane 2\;\;\;\;" access="RO" offset="0x34.0" size="0x4.0" />
-	<field name="phy_raw_errors_lane3_high" descr="This counter provides information on error bits \;that were identified on lane 3. \;When FEC is enabled this induction corre\;sponds to corrected errors.\;In PRBS test mode, indicates the number of \;PRBS errors\;on lane 3\;\;" access="RO" offset="0x38.0" size="0x4.0" />
-	<field name="phy_raw_errors_lane3_low" descr="This counter provides information on error bits \;that were identified on lane 3. \;When FEC is enabled this induction corre\;sponds to corrected errors.\;In PRBS test mode, indicates the number of \;PRBS errors\;on lane 3\;\;" access="RO" offset="0x3C.0" size="0x4.0" />
-	<field name="phy_raw_errors_lane4_high" descr="This counter provides information on error bits \;that were identified on lane 4. \;When FEC is enabled this induction corre\;sponds to corrected errors.\;In PRBS test mode, indicates the number of \;PRBS errors\;on lane 4\;\;\;" access="RO" offset="0x40.0" size="0x4.0" />
-	<field name="phy_raw_errors_lane4_low" descr="This counter provides information on error bits \;that were identified on lane 4. \;When FEC is enabled this induction corre\;sponds to corrected errors.\;In PRBS test mode, indicates the number of \;PRBS errors\;on lane 4\;\;\;" access="RO" offset="0x44.0" size="0x4.0" />
-	<field name="phy_raw_errors_lane5_high" descr="This counter provides information on error bits \;that were identified on lane 5. \;When FEC is enabled this induction corre\;sponds to corrected errors\;In PRBS test mode, indicates the number of \;PRBS errors\;on lane 5\;\;" access="RO" offset="0x48.0" size="0x4.0" />
-	<field name="phy_raw_errors_lane5_low" descr="This counter provides information on error bits \;that were identified on lane 5. \;When FEC is enabled this induction corre\;sponds to corrected errors\;In PRBS test mode, indicates the number of \;PRBS errors\;on lane 5\;\;" access="RO" offset="0x4C.0" size="0x4.0" />
-	<field name="phy_raw_errors_lane6_high" descr="This counter provides information on error bits \;that were identified on lane 6. \;When FEC is enabled this induction corre\;sponds to corrected errors.\;In PRBS test mode, indicates the number of \;PRBS errors\;on lane 6\;\;\;" access="RO" offset="0x50.0" size="0x4.0" />
-	<field name="phy_raw_errors_lane6_low" descr="This counter provides information on error bits \;that were identified on lane 6. \;When FEC is enabled this induction corre\;sponds to corrected errors.\;In PRBS test mode, indicates the number of \;PRBS errors\;on lane 6\;\;\;" access="RO" offset="0x54.0" size="0x4.0" />
-	<field name="phy_raw_errors_lane7_high" descr="This counter provides information on error bits \;that were identified on lane 7. \;When FEC is enabled this induction corre\;sponds to corrected errors.\;In PRBS test mode, indicates the number of \;PRBS errors\;on lane 7\;\;" access="RO" offset="0x58.0" size="0x4.0" />
-	<field name="phy_raw_errors_lane7_low" descr="This counter provides information on error bits \;that were identified on lane 7. \;When FEC is enabled this induction corre\;sponds to corrected errors.\;In PRBS test mode, indicates the number of \;PRBS errors\;on lane 7\;\;" access="RO" offset="0x5C.0" size="0x4.0" />
+	<field name="phy_raw_errors_lane0_high" descr="This counter provides information on error \;bits that were identified on lane 0. \;When FEC is enabled this induction corre\;sponds to corrected errors.\;In PRBS test mode, indicates the number of \;PRBS errors\;on lane 0\;\;\;" access="RO" offset="0x20.0" size="0x4.0" />
+	<field name="phy_raw_errors_lane0_low" descr="This counter provides information on error \;bits that were identified on lane 0. \;When FEC is enabled this induction corre\;sponds to corrected errors.\;In PRBS test mode, indicates the number of \;PRBS errors\;on lane 0\;\;\;" access="RO" offset="0x24.0" size="0x4.0" />
+	<field name="phy_raw_errors_lane1_high" descr="This counter provides information on error \;bits that were identified on lane 1. \;When FEC is enabled this induction corre\;sponds to corrected errors\;In PRBS test mode, indicates the number of \;PRBS errors\;on lane 1\;\;" access="RO" offset="0x28.0" size="0x4.0" />
+	<field name="phy_raw_errors_lane1_low" descr="This counter provides information on error \;bits that were identified on lane 1. \;When FEC is enabled this induction corre\;sponds to corrected errors\;In PRBS test mode, indicates the number of \;PRBS errors\;on lane 1\;\;" access="RO" offset="0x2C.0" size="0x4.0" />
+	<field name="phy_raw_errors_lane2_high" descr="This counter provides information on error \;bits that were identified on lane 2. \;When FEC is enabled this induction corre\;sponds to corrected errors.\;In PRBS test mode, indicates the number of \;PRBS errors\;on lane 2\;\;\;\;" access="RO" offset="0x30.0" size="0x4.0" />
+	<field name="phy_raw_errors_lane2_low" descr="This counter provides information on error \;bits that were identified on lane 2. \;When FEC is enabled this induction corre\;sponds to corrected errors.\;In PRBS test mode, indicates the number of \;PRBS errors\;on lane 2\;\;\;\;" access="RO" offset="0x34.0" size="0x4.0" />
+	<field name="phy_raw_errors_lane3_high" descr="This counter provides information on error \;bits that were identified on lane 3. \;When FEC is enabled this induction corre\;sponds to corrected errors.\;In PRBS test mode, indicates the number of \;PRBS errors\;on lane 3\;\;" access="RO" offset="0x38.0" size="0x4.0" />
+	<field name="phy_raw_errors_lane3_low" descr="This counter provides information on error \;bits that were identified on lane 3. \;When FEC is enabled this induction corre\;sponds to corrected errors.\;In PRBS test mode, indicates the number of \;PRBS errors\;on lane 3\;\;" access="RO" offset="0x3C.0" size="0x4.0" />
+	<field name="phy_raw_errors_lane4_high" descr="This counter provides information on error \;bits that were identified on lane 4. \;When FEC is enabled this induction corre\;sponds to corrected errors.\;In PRBS test mode, indicates the number of \;PRBS errors\;on lane 4\;\;\;" access="RO" offset="0x40.0" size="0x4.0" />
+	<field name="phy_raw_errors_lane4_low" descr="This counter provides information on error \;bits that were identified on lane 4. \;When FEC is enabled this induction corre\;sponds to corrected errors.\;In PRBS test mode, indicates the number of \;PRBS errors\;on lane 4\;\;\;" access="RO" offset="0x44.0" size="0x4.0" />
+	<field name="phy_raw_errors_lane5_high" descr="This counter provides information on error \;bits that were identified on lane 5. \;When FEC is enabled this induction corre\;sponds to corrected errors\;In PRBS test mode, indicates the number of \;PRBS errors\;on lane 5\;\;" access="RO" offset="0x48.0" size="0x4.0" />
+	<field name="phy_raw_errors_lane5_low" descr="This counter provides information on error \;bits that were identified on lane 5. \;When FEC is enabled this induction corre\;sponds to corrected errors\;In PRBS test mode, indicates the number of \;PRBS errors\;on lane 5\;\;" access="RO" offset="0x4C.0" size="0x4.0" />
+	<field name="phy_raw_errors_lane6_high" descr="This counter provides information on error \;bits that were identified on lane 6. \;When FEC is enabled this induction corre\;sponds to corrected errors.\;In PRBS test mode, indicates the number of \;PRBS errors\;on lane 6\;\;\;" access="RO" offset="0x50.0" size="0x4.0" />
+	<field name="phy_raw_errors_lane6_low" descr="This counter provides information on error \;bits that were identified on lane 6. \;When FEC is enabled this induction corre\;sponds to corrected errors.\;In PRBS test mode, indicates the number of \;PRBS errors\;on lane 6\;\;\;" access="RO" offset="0x54.0" size="0x4.0" />
+	<field name="phy_raw_errors_lane7_high" descr="This counter provides information on error \;bits that were identified on lane 7. \;When FEC is enabled this induction corre\;sponds to corrected errors.\;In PRBS test mode, indicates the number of \;PRBS errors\;on lane 7\;\;" access="RO" offset="0x58.0" size="0x4.0" />
+	<field name="phy_raw_errors_lane7_low" descr="This counter provides information on error \;bits that were identified on lane 7. \;When FEC is enabled this induction corre\;sponds to corrected errors.\;In PRBS test mode, indicates the number of \;PRBS errors\;on lane 7\;\;" access="RO" offset="0x5C.0" size="0x4.0" />
 	<field name="raw_ber_coef" descr="Raw_BER = raw_ber_coef*10^(-raw_ber_\;magnitude)\;" access="RO" offset="0x60.0" size="0x0.4" />
 	<field name="raw_ber_magnitude" descr="Raw_BER = raw_ber_coef*10^(-raw_ber_\;magnitude)\;" access="RO" offset="0x60.8" size="0x0.8" />
-	<field name="effective_ber_coef" descr="post_fec_BER = \;post_fec_ber_coef*10^(-post_fec_ber_magni\;tude)\;" access="RO" offset="0x64.0" size="0x0.4" />
-	<field name="effective_ber_magnitude" descr="post_fec_BER = \;post_fec_ber_coef*10^(-post_fec_ber_magni\;tude)\;" access="RO" offset="0x64.8" size="0x0.8" />
+	<field name="effective_ber_coef" descr="post_fec_BER = \;post_fec_ber_coef*10^(-post_fec_ber_mag\;nitude)\;" access="RO" offset="0x64.0" size="0x0.4" />
+	<field name="effective_ber_magnitude" descr="post_fec_BER = \;post_fec_ber_coef*10^(-post_fec_ber_mag\;nitude)\;" access="RO" offset="0x64.8" size="0x0.8" />
 	<field name="symbol_fec_ber_coef" descr="Symbol_BER = \;symbol_ber_coef*10^(-symbol_ber_magni\;tude)" access="RO" offset="0x68.0" size="0x0.4" />
 	<field name="symbol_ber_magnitude" descr="Symbol_BER = \;symbol_ber_coef*10^(-symbol_ber_magni\;tude)" access="RO" offset="0x68.8" size="0x0.8" />
-	<field name="phy_effective_errors_high" descr="This counter provides information on error bits \;that were not corrected by FEC correction \;algorithm or that FEC is not active.\;" access="RO" offset="0x7C.0" size="0x4.0" />
-	<field name="phy_effective_errors_low" descr="This counter provides information on error bits \;that were not corrected by FEC correction \;algorithm or that FEC is not active.\;" access="RO" offset="0x80.0" size="0x4.0" />
+	<field name="phy_effective_errors_high" descr="This counter provides information on error \;bits that were not corrected by FEC correction \;algorithm or that FEC is not active.\;" access="RO" offset="0x7C.0" size="0x4.0" />
+	<field name="phy_effective_errors_low" descr="This counter provides information on error \;bits that were not corrected by FEC correction \;algorithm or that FEC is not active.\;" access="RO" offset="0x80.0" size="0x4.0" />
 </node>
 
 <node name="pltc_reg_ext" descr="" size="0x10.0" >
@@ -2526,9 +2508,9 @@
 	<field name="local_port" descr="Local port number." access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="local_tx_precoding_cap_mask" descr="0x0 - no tx precoding available / no override capabilty\;Note: All PAM4 devices of 16nm should be updated to \;have precoding\;\;Bit 0- tx precoding override possible via local_tx_pre\;coding_admin field" access="RO" offset="0x4.0" size="0x0.4" />
 	<field name="local_tx_precoding_admin" descr="0 - auto\;1 - force Tx precoding\;2 - force Tx without precoding" access="RW" offset="0x8.0" size="0x0.2" />
-	<field name="local_rx_precoding_admin" descr="Rx configuration override for 100g Pam4 per lane pro\;tocols.\;0 - auto\;1 - Rx precoding on. \;if negotiated, request Tx precoding from peer.\;2 - Rx precoding off. \;if negotiated, request no Tx precoding from peer\;" access="RW" offset="0x8.16" size="0x0.2" />
-	<field name="local_tx_precoding_oper" descr="0 - unknown / no active link\;1 - Tx precoding disabled\;2 - Tx precoding enabled" access="RO" offset="0xC.0" size="0x0.2" />
-	<field name="local_rx_precoding_oper" descr="Rx precoding operational mode\;0 - unknown / no active link\;1 - Rx precoding on. \;2 - Rx precoding off." access="RO" offset="0xC.16" size="0x0.2" />
+	<field name="local_rx_precoding_admin" descr="Rx configuration override for 100g Pam4 per lane pro\;tocols.\;0 - auto\;1 - Rx precoding enabled. \;if negotiated, request Tx precoding from peer.\;2 - Rx precoding disabled. \;if negotiated, request no Tx precoding from peer\;" access="RW" offset="0x8.16" size="0x0.2" />
+	<field name="local_tx_precoding_oper" descr="0 - unknown / no active link\;1 - Tx precoding enabled.\;2 - Tx precoding disabled." access="RO" offset="0xC.0" size="0x0.2" />
+	<field name="local_rx_precoding_oper" descr="Rx precoding operational mode\;0 - unknown / no active link\;1 - Rx precoding enabled. \;2 - Rx precoding disabled." access="RO" offset="0xC.16" size="0x0.2" />
 </node>
 
 <node name="pmaos_reg_ext" descr="" size="0x10.0" >
@@ -2554,7 +2536,7 @@
 	<field name="tx_disable_override_cntl" descr="In HCA, valid based on PCAM feature capabilities. \;Module TX_DISABLE override control:\;0 - Auto (default)\;1 - Keep the module configuration\;2 - Override" access="RW" offset="0x4.16" size="0x0.2" />
 	<field name="tx_disable_override_value" descr="Valid only in case TX_DISABLE is configured to override mode \;by tx_disable_override_cntl: \;0 - TX_DISABLE is low (i.e. TX is enabled)\;1 - TX_DISABLE is high (i.e. TX is disabled)" access="RW" offset="0x4.24" size="0x0.2" />
 	<field name="rx_amp_override_cntl" descr="Module RX amplitude override control:\;0 - Auto (default)\;1 - Keep the module configuration\;2 - Override" access="RW" offset="0x8.0" size="0x0.2" />
-	<field name="rx_amp_override_value" descr="Valid only in case RX amplitude is configured to override mode \;by rx_amp_override_cntl" access="RW" offset="0x8.8" size="0x0.4" />
+	<field name="rx_amp_override_value" descr="Valid only in case RX amplitude is configured to override \;mode by rx_amp_override_cntl" access="RW" offset="0x8.8" size="0x0.4" />
 	<field name="rx_los_override_cntl" descr="Valid only in case RX _LOS is configured to override mode by \;rx_los_override_admin" access="RW" offset="0x8.16" size="0x0.2" />
 	<field name="rx_los_override_admin" descr="Module RX _LOS override control:\;0 - Auto (default)\;1 - Keep the module configuration\;2 - Override" access="RW" offset="0x8.24" size="0x0.2" />
 	<field name="rx_emp_override_cntl" descr="Module RX emphasis override control:\;0 - Auto (default)\;1 - Keep the module configuration\;2 - Override" access="RW" offset="0xC.0" size="0x0.2" />
@@ -2576,23 +2558,23 @@
 	<field name="local_port" descr="Local port number." access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="m_lane_m" descr="Module lane mapping: \;0 - Local to Module mapping include module lanes mapping\;1 - Local to Module mapping only, without lane mapping\;\;When this operational is set (&apos;1&apos;), the following fields are \;ignored in SET command and should return the value &quot;0&quot; in \;GET commands: \;PMLP.rxtx\;PMLP.lane&lt;i&gt;_module_mapping.tx_lane\;PMLP.lane&lt;i&gt;_module_mapping.rx_lane" access="OP" offset="0x0.28" size="0x0.1" />
 	<field name="rxtx" descr="Use different configuration for RX and TX.\;If this bit is cleared, the TX value is used for both RX and TX. \;When set, the RX configuration is taken from the separate \;field. This is to enable backward compatible implementation." access="RW" offset="0x0.31" size="0x0.1" />
-	<field name="lane0_module_mapping" descr="Module SerDes for lane &lt;i&gt;\;Up to 8 SerDeses in a module can be mapped to a local port. \;See Table 1246, &quot;Lane to Module Mapping Layout,&quot; on \;page 1496." subnode="lane_2_module_mapping_ext" access="RW" offset="0x4.0" size="0x4.0" />
-	<field name="lane1_module_mapping" descr="Module SerDes for lane &lt;i&gt;\;Up to 8 SerDeses in a module can be mapped to a local port. \;See Table 1246, &quot;Lane to Module Mapping Layout,&quot; on \;page 1496." subnode="lane_2_module_mapping_ext" access="RW" offset="0x8.0" size="0x4.0" />
-	<field name="lane2_module_mapping" descr="Module SerDes for lane &lt;i&gt;\;Up to 8 SerDeses in a module can be mapped to a local port. \;See Table 1246, &quot;Lane to Module Mapping Layout,&quot; on \;page 1496." subnode="lane_2_module_mapping_ext" access="RW" offset="0xC.0" size="0x4.0" />
-	<field name="lane3_module_mapping" descr="Module SerDes for lane &lt;i&gt;\;Up to 8 SerDeses in a module can be mapped to a local port. \;See Table 1246, &quot;Lane to Module Mapping Layout,&quot; on \;page 1496." subnode="lane_2_module_mapping_ext" access="RW" offset="0x10.0" size="0x4.0" />
-	<field name="lane4_module_mapping" descr="Module SerDes for lane &lt;i&gt;\;Up to 8 SerDeses in a module can be mapped to a local port. \;See Table 1246, &quot;Lane to Module Mapping Layout,&quot; on \;page 1496." subnode="lane_2_module_mapping_ext" access="RW" offset="0x14.0" size="0x4.0" />
-	<field name="lane5_module_mapping" descr="Module SerDes for lane &lt;i&gt;\;Up to 8 SerDeses in a module can be mapped to a local port. \;See Table 1246, &quot;Lane to Module Mapping Layout,&quot; on \;page 1496." subnode="lane_2_module_mapping_ext" access="RW" offset="0x18.0" size="0x4.0" />
-	<field name="lane6_module_mapping" descr="Module SerDes for lane &lt;i&gt;\;Up to 8 SerDeses in a module can be mapped to a local port. \;See Table 1246, &quot;Lane to Module Mapping Layout,&quot; on \;page 1496." subnode="lane_2_module_mapping_ext" access="RW" offset="0x1C.0" size="0x4.0" />
-	<field name="lane7_module_mapping" descr="Module SerDes for lane &lt;i&gt;\;Up to 8 SerDeses in a module can be mapped to a local port. \;See Table 1246, &quot;Lane to Module Mapping Layout,&quot; on \;page 1496." subnode="lane_2_module_mapping_ext" access="RW" offset="0x20.0" size="0x4.0" />
+	<field name="lane0_module_mapping" descr="Module SerDes for lane &lt;i&gt;\;Up to 8 SerDeses in a module can be mapped to a local port. \;See Table 1218, &quot;Lane to Module Mapping Layout,&quot; on \;page 1494." subnode="lane_2_module_mapping_ext" access="RW" offset="0x4.0" size="0x4.0" />
+	<field name="lane1_module_mapping" descr="Module SerDes for lane &lt;i&gt;\;Up to 8 SerDeses in a module can be mapped to a local port. \;See Table 1218, &quot;Lane to Module Mapping Layout,&quot; on \;page 1494." subnode="lane_2_module_mapping_ext" access="RW" offset="0x8.0" size="0x4.0" />
+	<field name="lane2_module_mapping" descr="Module SerDes for lane &lt;i&gt;\;Up to 8 SerDeses in a module can be mapped to a local port. \;See Table 1218, &quot;Lane to Module Mapping Layout,&quot; on \;page 1494." subnode="lane_2_module_mapping_ext" access="RW" offset="0xC.0" size="0x4.0" />
+	<field name="lane3_module_mapping" descr="Module SerDes for lane &lt;i&gt;\;Up to 8 SerDeses in a module can be mapped to a local port. \;See Table 1218, &quot;Lane to Module Mapping Layout,&quot; on \;page 1494." subnode="lane_2_module_mapping_ext" access="RW" offset="0x10.0" size="0x4.0" />
+	<field name="lane4_module_mapping" descr="Module SerDes for lane &lt;i&gt;\;Up to 8 SerDeses in a module can be mapped to a local port. \;See Table 1218, &quot;Lane to Module Mapping Layout,&quot; on \;page 1494." subnode="lane_2_module_mapping_ext" access="RW" offset="0x14.0" size="0x4.0" />
+	<field name="lane5_module_mapping" descr="Module SerDes for lane &lt;i&gt;\;Up to 8 SerDeses in a module can be mapped to a local port. \;See Table 1218, &quot;Lane to Module Mapping Layout,&quot; on \;page 1494." subnode="lane_2_module_mapping_ext" access="RW" offset="0x18.0" size="0x4.0" />
+	<field name="lane6_module_mapping" descr="Module SerDes for lane &lt;i&gt;\;Up to 8 SerDeses in a module can be mapped to a local port. \;See Table 1218, &quot;Lane to Module Mapping Layout,&quot; on \;page 1494." subnode="lane_2_module_mapping_ext" access="RW" offset="0x1C.0" size="0x4.0" />
+	<field name="lane7_module_mapping" descr="Module SerDes for lane &lt;i&gt;\;Up to 8 SerDeses in a module can be mapped to a local port. \;See Table 1218, &quot;Lane to Module Mapping Layout,&quot; on \;page 1494." subnode="lane_2_module_mapping_ext" access="RW" offset="0x20.0" size="0x4.0" />
 </node>
 
 <node name="pmmp_reg_ext" descr="" size="0x28.0" >
 	<field name="module" descr="Module number." access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="slot_index" descr="Reserved for HCA\;Slot_index \;Slot_index = 0 represent the onboard (motherboard). \;In case of non modular system only slot_index = 0 is available." access="INDEX" offset="0x0.24" size="0x0.4" />
+	<field name="slot_index" descr="Reserved for HCA\;Slot_index \;Slot_index = 0 represent the onboard (motherboard). \;In case of non modular system only slot_index = 0 is avail\;able." access="INDEX" offset="0x0.24" size="0x0.4" />
 	<field name="eeprom_override" descr="Override/ignore EEPROM advertisement properties bitmask: \;Bit 0 - Override cable protocols and technology for QSFP\;Bit 1 - Override cable protocols and technology for SFP\;Bit 2 - Ignore Power Class (set high power)\;Bit 3 - Override Cable Length \;Bit 4 - Override Attenuation\;\;Bit 8 - Set Module to Low Power\;Bit 9 - Override cable protocols and technology for CMIS \;based modules (QSFP-DD/ OSFP/ DSFP/ SFP-DD)" access="RW" offset="0x4.0" size="0x0.16" />
 	<field name="eeprom_override_mask" descr="Write Mask bit (negative polarity):\;0 - allow write\;1 - ignore write\;On write commands, indicates which of the bits from \;eeprom_override field are updated.\;Reserved on read operations." access="WO" offset="0x4.16" size="0x0.16" />
-	<field name="qsfp_cable_protocol_technology" descr="Protocol technology override for QSFP cable or CMIS based \;cable (QSFP-DD/OSFP)\;Valid only when the protocols and technology for QSFP is \;overridden as indicated by eeprom_override\;Table  1270, &quot;PMMP - QSFP Protocol Bytes Override Layout,&quot; \;on page  1513\;\;Valid only when the protocols and technology is overridden as \;indicated by eeprom_override\;Table  1274, &quot;PMMP - CMIS Protocol Bytes Override Layout,&quot; \;on page  1518" access="RW" high_bound="2" low_bound="0" offset="0x8.0" size="0xc.0" />
-	<field name="sfp_cable_protocol_technology" descr="Valid only when the protocols and technology is overridden as \;indicated by eeprom_override\;Table  1272, &quot;PMMP - SFP Protocol Bytes Override Layout,&quot; on \;page  1516" access="RW" high_bound="2" low_bound="0" offset="0x14.0" size="0xc.0" />
+	<field name="qsfp_cable_protocol_technology" descr="Protocol technology override for QSFP cable or CMIS based \;cable (QSFP-DD/OSFP)\;Valid only when the protocols and technology for QSFP is \;overridden as indicated by eeprom_override\;Table  1242, &quot;PMMP - QSFP Protocol Bytes Override Layout,&quot; \;on page  1511\;\;Valid only when the protocols and technology is overridden as \;indicated by eeprom_override\;Table  1246, &quot;PMMP - CMIS Protocol Bytes Override Layout,&quot; \;on page  1516" access="RW" high_bound="2" low_bound="0" offset="0x8.0" size="0xc.0" />
+	<field name="sfp_cable_protocol_technology" descr="Valid only when the protocols and technology is overridden as \;indicated by eeprom_override\;Table  1244, &quot;PMMP - SFP Protocol Bytes Override Layout,&quot; \;on page  1514" access="RW" high_bound="2" low_bound="0" offset="0x14.0" size="0xc.0" />
 	<field name="cable_length" descr="Length of cable assembly, units of 1 m for non CMIS cables.\;\;for CMIS cables, represents cable length field:\;bits 6:7 represent cable_length_multiplier for calculating \;cable length\;00 - 0.1 multiplier (0.1 to 6.3m)\;01- 1 multiplier (1 to 63m)\;10 - 10 multiplier (10 to 630m)\;11 - 100 multiplier (100 to 6300m)\;\;Valid only when the cable length is overridden as indicated by \;eeprom_override." access="RW" offset="0x20.0" size="0x0.8" />
 	<field name="attenuation_5g" descr="Valid only when the attenuation is overridden as indicated by \;eeprom_override.\;Attenuation - total channel attenuation @ 5GHz in db." access="RW" offset="0x24.0" size="0x0.8" />
 	<field name="attenuation_7g" descr="Valid only when the attenuation is overridden as indicated by \;eeprom_override.\;Attenuation - total channel attenuation @ 7GHz in db." access="RW" offset="0x24.8" size="0x0.8" />
@@ -2623,12 +2605,28 @@
 <node name="ppaos_reg_ext" descr="" size="0x10.0" >
 	<field name="phy_test_mode_status" descr="Port extended down status:\;0: regular_operation - (port down/up according to \;PAOS) \;1: phy_test_mode\;phy test mode can be valid only when PAOS.admin\;_status=2 and PAOS.oper_status=2 (i.e port is down)." access="RO" enum="regular_operation=0x0,phy_test_mode=0x1" offset="0x0.0" size="0x0.4" />
 	<field name="port_type" descr="For HCA supported only when indicated by PCAM \;0 - Network Port\;1 - Near-End Port (For Retimer/Gearbox - Host side)\;2 - Internal IC LR Port \;3 - Far-End Port (For Retimer/Gearbox - Line side)\;4 - USR Main\;5 - USR Tile\;Other values are reserved." access="INDEX" offset="0x0.4" size="0x0.4" />
-	<field name="phy_test_mode_admin" descr="Port extended administrative down status:\;0: regular_operation (port down/up according to PAOS) \;1: phy_test_mode \;\;The phy test mode (1) can be set only when \;PAOS.admin_status=2 (i.e port configuration is down)." access="RW" offset="0x0.8" size="0x0.4" />
+	<field name="phy_test_mode_admin" descr="Port extended administrative down status:\;0: regular_operation (port down/up according to \;PAOS) \;1: phy_test_mode \;\;The phy test mode (1) can be set only when \;PAOS.admin_status=2 (i.e port configuration is down)." access="RW" offset="0x0.8" size="0x0.4" />
 	<field name="lp_msb" descr="Local port number [9:8]" access="INDEX" offset="0x0.12" size="0x0.2" />
 	<field name="local_port" descr="Local port number." access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="swid" descr="For HCA: must always be 0.\;Switch partition ID with which to associate the port.\;Switch partitions are numbered from 0 to 7 inclusively.\;The swid field is only valid when the local_port is the \;router port. In this case, the swid indicates which of \;the router ports to configure/query." access="INDEX" offset="0x0.24" size="0x0.8" />
-	<field name="phy_status" descr="rx phy status:\;0: rx_phy_down\;1: rx_phy_up\;2: rx_phy_down_by_command\;\;Note: The phy up indication is according to protocol (up \;== align_status=true)\;i.g. In PRBS test mode phy up is when PRB is lock \;(up== prbs lock)" access="RO" offset="0x4.0" size="0x0.4" />
+	<field name="phy_status" descr="rx phy status:\;0: rx_phy_down\;1: rx_phy_up\;2: rx_phy_down_by_command\;\;Note: The phy up indication is according to protocol \;(up == align_status=true)\;i.g. In PRBS test mode phy up is when PRB is lock \;(up== prbs lock)" access="RO" offset="0x4.0" size="0x0.4" />
 	<field name="phy_status_admin" descr="rx phy port admin. Controls phy entities operational \;port status.\;valid for port_type &lt;&gt; &apos;0&apos;.\;to operate link status for port_type &apos;0&apos; use \;PAOS.admin_status.\;0: rx_phy_down\;1: rx_phy_up\;" access="RW" offset="0x4.8" size="0x0.4" />
+</node>
+
+<node name="ppcc_reg_ext" descr="" size="0xfc.0" >
+	<field name="cmd_type" descr="0x0- get algo info\;0x1- enable algo\;0x2- disable algo\;0x3- get algo enabling status\;0x4- get num of params\;0x5- get param info\;0x6- get param\;0x7- get &amp; clear param\;0x8- set param\;" access="OP" offset="0x0.0" size="0x0.8" />
+	<field name="lp_msb" descr="Local port number [9:8]" access="INDEX" offset="0x0.12" size="0x0.2" />
+	<field name="pnat" descr="Port number access type. determines the way local_port is \;interpreted:\;0 - Local port number\;1 - IB port number" access="INDEX" offset="0x0.14" size="0x0.2" />
+	<field name="local_port" descr="local_port number" access="INDEX" offset="0x0.16" size="0x0.8" />
+	<field name="algo_index" descr="Selects the algo to operate on (0 - algo at bit #0, 1 - algo at bit \;#1, etc). \;For command types other than 0 (get algo info), must point to \;a present algo (an algo with a non-zero algo number - as \;returned via Command type 0)" access="INDEX" offset="0x4.0" size="0x0.4" />
+	<field name="algo_param_index" descr="Selects the specific param to get/set (if applicable, 0 if not). \;Index is zero-based. Must be smaller than value returned in \;&quot;get_num_of_params." access="INDEX" offset="0x4.16" size="0x0.16" />
+	<field name="value" descr="For cmd_type = 0x0: returns 32-bit algo_num or 0 if no algo is \;available at this index\;For cmd_type = 0x3: returns 1 if enabled, 0 otherwise\;For cmd_type = 0x4: returns num of params algo has\;For cmd_type = 0x6:: returns value of param (selected by \;param index)\;For cmd_type = 0x7: returns value of param (selected by \;param index) and clears param\;For cmd_type = 0x8: The value to write to param (selected by \;param index). Set by the user. Set command is silently ignored \;if value outside min..max values (comparison is unsigned) or \;if param permission is not read-write.\;\;For cmd_type = 0x1 OR 0x2 OR 0x5 : returns 0 \;" access="RW" offset="0x8.0" size="0x4.0" />
+	<field name="param_value1" descr="For cmd_type = 0x5: return default value of param\;\;\;\;Reserved for other commands\;\;" access="RO" offset="0xC.0" size="0x4.0" />
+	<field name="param_value2" descr="For cmd_type = 0x5: return min legal value of param\;\;\;\;Reserved for other commands\;\;" access="RO" offset="0x10.0" size="0x4.0" />
+	<field name="param_value3" descr="For cmd_type = 0x5: return max legal value of param\;\;\;\;Reserved for other commands\;\;" access="RO" offset="0x14.0" size="0x4.0" />
+	<field name="prm" descr="For cmd_type = 0x5:\;0-param is read-only\;1-param is read-write\;2-param is read-only but may also be accessed and cleared \;via &quot;get &amp; clear&quot; command\;\;Reserved for other commands\;" access="RO" offset="0x1C.0" size="0x0.2" />
+	<field name="text_length" descr="For cmd_type = 0x5 OR cmd_type = 0x0  :Length in bytes of \;text field\;Reserved for other commands\;" access="RO" offset="0x1C.8" size="0x0.8" />
+	<field name="text" descr="ASCII string \;For get cmd_type = 0x0: algo textual description \;For get cmd_type = 0x5: param textual description\;Reserved for other commands" access="RO" high_bound="54" low_bound="0" offset="0x20.0" size="0xdc.0" />
 </node>
 
 <node name="ppcnt_infiniband_packets_counter_ext" descr="" size="0xf8.0" >
@@ -2675,8 +2673,8 @@
 	<field name="plr_sync_events_low" descr="The number of sync events" access="RO" offset="0x34.0" size="0x4.0" />
 	<field name="hi_retransmission_rate_high" descr="High retransmission rate\;The number of the retransmission rate has \;crossed the retransmission rate threshold\;" access="RO" offset="0x38.0" size="0x4.0" />
 	<field name="hi_retransmission_rate_low" descr="High retransmission rate\;The number of the retransmission rate has \;crossed the retransmission rate threshold\;" access="RO" offset="0x3C.0" size="0x4.0" />
-	<field name="plr_xmit_retry_codes_within_t_sec_max_high" descr="The maximum number of retransmitted events \;in t sec window\;" access="RO" offset="0x40.0" size="0x4.0" />
-	<field name="plr_xmit_retry_codes_within_t_sec_max_low" descr="The maximum number of retransmitted events \;in t sec window\;" access="RO" offset="0x44.0" size="0x4.0" />
+	<field name="plr_xmit_retry_codes_within_t_sec_max_high" descr="The maximum number of retransmitted \;events in t sec window\;" access="RO" offset="0x40.0" size="0x4.0" />
+	<field name="plr_xmit_retry_codes_within_t_sec_max_low" descr="The maximum number of retransmitted \;events in t sec window\;" access="RO" offset="0x44.0" size="0x4.0" />
 </node>
 
 <node name="ppcnt_reg_counter_set_auto_ext" descr="" attr_is_union="1" size="0xf8.0" >
@@ -2703,7 +2701,7 @@
 </node>
 
 <node name="ppcnt_reg_ext" descr="" size="0x100.0" >
-	<field name="grp" descr="Performance counter group.\;Group 63 indicates all groups (include all per priority/TC/Receive Buffer count\;ers). Only valid on Set() operation with clr bit set.\;0x0: IEEE_802_3_Counters\;0x1: RFC_2863_Counters\;0x2: RFC_2819_Counters\;0x3: RFC_3635_Counters\;0x5: Ethernet_Extended_Counters\;0x6: Ethernet_Discard_Counters \;0x8: Link_Level_Retransmission_Counters - [Internal]\;0x10: Per_Priority_Counters - \;0x11: Per_Traffic_Class_Counters - \;0x12: Physical_Layer_Counters\;0x13: Per_Traffic_Class_Congestion_Counters\;0x15: Per_Receive_Buffer_Counters - [Internal]\;0x16: Physical_Layer_Statistical_Counters\;0x19: Out_of_Band_Port_Counters - Note: This group is valid only for OOB \;ports - [Internal]\;0x20: InfiniBand_Port_Counters\;0x21: InfiniBand_Extended_Port_Counters\;0x22: PLR_counters_group\;0x23: RS_FEC_Histogram_group\;0x24: USR_XSR_Physical_layer_counters_group - [Internal]\;0x25: Infiniband_pkts_counters - [Internal]\;" access="INDEX" enum="IEEE_802_3_Counters=0x0,RFC_2863_Counters=0x1,RFC_2819_Counters=0x2,RFC_3635_Counters=0x3,Ethernet_Extended_Counters=0x5,Ethernet_Discard_Counters=0x6,Link_Level_Retransmission_Counters=0x8,Per_Priority_Counters=0x10,Per_Traffic_Class_Counters=0x11,Physical_Layer_Counters=0x12,Per_Traffic_Class_Congestion_Counters=0x13,Per_Receive_Buffer_Counters=0x15,Physical_Layer_Statistical_Counters=0x16,Out_of_Band_Port_Counters=0x19,InfiniBand_Port_Counters=0x20,InfiniBand_Extended_Port_Counters=0x21,PLR_counters_group=0x22,RS_FEC_Histogram_group=0x23,USR_XSR_Physical_layer_counters_group=0x24,Infiniband_pkts_counters=0x25" offset="0x0.0" size="0x0.6" />
+	<field name="grp" descr="Performance counter group.\;Group 63 indicates all groups (include all per priority/TC/Receive Buffer \;counters). Only valid on Set() operation with clr bit set.\;0x0: IEEE_802_3_Counters\;0x1: RFC_2863_Counters\;0x2: RFC_2819_Counters\;0x3: RFC_3635_Counters\;0x5: Ethernet_Extended_Counters\;0x6: Ethernet_Discard_Counters \;0x8: Link_Level_Retransmission_Counters - [Internal]\;0x10: Per_Priority_Counters - \;0x11: Per_Traffic_Class_Counters - \;0x12: Physical_Layer_Counters\;0x13: Per_Traffic_Class_Congestion_Counters\;0x15: Per_Receive_Buffer_Counters - [Internal]\;0x16: Physical_Layer_Statistical_Counters\;0x19: Out_of_Band_Port_Counters - Note: This group is valid only for OOB \;ports - [Internal]\;0x20: InfiniBand_Port_Counters\;0x21: InfiniBand_Extended_Port_Counters\;0x22: PLR_counters_group\;0x23: RS_FEC_Histogram_group\;0x24: USR_XSR_Physical_layer_counters_group - [Internal]\;0x25: Infiniband_pkts_counters - [Internal]\;" access="INDEX" enum="IEEE_802_3_Counters=0x0,RFC_2863_Counters=0x1,RFC_2819_Counters=0x2,RFC_3635_Counters=0x3,Ethernet_Extended_Counters=0x5,Ethernet_Discard_Counters=0x6,Link_Level_Retransmission_Counters=0x8,Per_Priority_Counters=0x10,Per_Traffic_Class_Counters=0x11,Physical_Layer_Counters=0x12,Per_Traffic_Class_Congestion_Counters=0x13,Per_Receive_Buffer_Counters=0x15,Physical_Layer_Statistical_Counters=0x16,Out_of_Band_Port_Counters=0x19,InfiniBand_Port_Counters=0x20,InfiniBand_Extended_Port_Counters=0x21,PLR_counters_group=0x22,RS_FEC_Histogram_group=0x23,USR_XSR_Physical_layer_counters_group=0x24,Infiniband_pkts_counters=0x25" offset="0x0.0" size="0x0.6" />
 	<field name="port_type" descr="Supported only when indicated by PCAM on FPGA based NICs:\;0 - Network Port\;1 - Near-End Port (For Retimer/Gearbox - Host side)\;2 - Internal IC LR Port \;3 - Far-End Port (For Retimer/Gearbox - Line side)" access="INDEX" offset="0x0.8" size="0x0.4" />
 	<field name="lp_msb" descr="Local port number [9:8]" access="INDEX" offset="0x0.12" size="0x0.2" />
 	<field name="pnat" descr="Port number access type:\;0: Local_port_number\;1: IB_port_number\;2: host_port_number\;3: OOB_port_number - Internal\;\;Note - pnat=2 is supported for &quot;Per Traffic Class Congestion \;Counters&quot; and &quot;Per Traffic Class Counters&quot; groups." access="INDEX" enum="Local_port_number=0x0,IB_port_number=0x1,host_port_number=0x2,OOB_port_number=0x3" offset="0x0.14" size="0x0.2" />
@@ -2712,7 +2710,7 @@
 	<field name="prio_tc" descr="Priority index for per priority counter sets, valid values: 0-7\;For Spectrum-2 and on at tx side range can be 0 .. cap_max_t\;class_data-1, see QGCR.tx_cnt_tclass\;\;Traffic class index for per traffic class counter set, valid val\;ues: \;For Switches, valid values: 0 .. cap_max_tclass_data-1 \;\;For HCA, valid values: 0.. HCA_CAP.max_tc\;\;Otherwise must be 0." access="INDEX" offset="0x4.0" size="0x0.5" />
 	<field name="lp_gl" descr="Local Port global variable\;0: local_port port 255 = all ports of the device.\;1: local_port index indicates Local port number." access="OP" offset="0x4.30" size="0x0.1" />
 	<field name="clr" descr="Clear counters. Setting the clr bit will reset the counter value \;for all counters in the counter group. This bit can be set for \;both Set() and Get() operation.\;\;" access="OP" offset="0x4.31" size="0x0.1" />
-	<field name="counter_set" descr="Counter set as described in\;Table  1180, &quot;Ethernet IEEE 802.3 Counters Group Data Lay\;out,&quot; on page  1419\;Table  1182, &quot;Ethernet RFC 2863 Counter Group Data Layout,&quot; \;on page  1424\;Table  1184, &quot;Ethernet RFC 2819 Counter Group Data Layout,&quot; \;on page  1427\;Table  1186, &quot;Ethernet RFC 3635 Counter Group Data Layout,&quot; \;on page  1432\;Table  1188, &quot;Ethernet Extended Counter Group Data Layout,&quot; \;on page  1436\;Table  1191, &quot;Ethernet Discard Counter Group Fields,&quot; on \;page  1441\;Table  1202, &quot;Link Level Retransmission Counter Group Data \;Layout,&quot; on page  1454\;Table  1192, &quot;Ethernet Per Priority Group Data Layout,&quot; on \;page  1443\;Table  1196, &quot;Ethernet Per Traffic Class Group data layout,&quot; on \;page  1451\;Table  1208, &quot;Physical Layer Counters Data Layout,&quot; on \;page  1462\;Table  1198, &quot;Ethernet Per Traffic Class Congestion Group data \;layout,&quot; on page  1452\;Table  1200, &quot;Ethernet Per Receive Buffer Group data layout,&quot; \;on page  1453\;Table  1212, &quot;Physical Layer Statistical Counters Data Layout,&quot; \;on page  1471 \;Table  1194, &quot;Ethernet OOB Port Counters Data Layout,&quot; on \;page  1447 - [Internal]\;Table  1204, &quot;InfiniBand PortCounters Attribute Group Data \;Layout,&quot; on page  1456\;Table  1206, &quot;InfiniBand Extended PortCounters Attribute \;Group Data Layout,&quot; on page  1458\;Table  1214, &quot;PLR Counters Data Layout,&quot; on page  1476 - \;[Internal]\;Table  1216, &quot;RS-Histograms Data Layout,&quot; on page  1478 \;Table  1210, &quot;USR_XSR Physical Layer Counters Data Layout,&quot; \;on page  1467\;Table  1218, &quot;Infiniband Packets Counters Data Layout,&quot; on \;page  1479" subnode="ppcnt_reg_counter_set_auto_ext" access="RO" offset="0x8.0" size="0xf8.0" union_selector="$(parent).grp" />
+	<field name="counter_set" descr="Counter set as described in\;Table  1150, &quot;Ethernet IEEE 802.3 Counters Group Data Lay\;out,&quot; on page  1414\;Table  1152, &quot;Ethernet RFC 2863 Counter Group Data Layout,&quot; \;on page  1419\;Table  1154, &quot;Ethernet RFC 2819 Counter Group Data Layout,&quot; \;on page  1422\;Table  1156, &quot;Ethernet RFC 3635 Counter Group Data Layout,&quot; \;on page  1427\;Table  1158, &quot;Ethernet Extended Counter Group Data Layout,&quot; \;on page  1431\;Table  1161, &quot;Ethernet Discard Counter Group Fields,&quot; on \;page  1436\;Table  1172, &quot;Link Level Retransmission Counter Group Data \;Layout,&quot; on page  1449\;Table  1162, &quot;Ethernet Per Priority Group Data Layout,&quot; on \;page  1438\;Table  1166, &quot;Ethernet Per Traffic Class Group data layout,&quot; on \;page  1446\;Table  1178, &quot;Physical Layer Counters Data Layout,&quot; on \;page  1457\;Table  1168, &quot;Ethernet Per Traffic Class Congestion Group data \;layout,&quot; on page  1447\;Table  1170, &quot;Ethernet Per Receive Buffer Group data layout,&quot; \;on page  1448\;Table  1182, &quot;Physical Layer Statistical Counters Data Layout,&quot; \;on page  1466 \;Table  1164, &quot;Ethernet OOB Port Counters Data Layout,&quot; on \;page  1442 - [Internal]\;Table  1174, &quot;InfiniBand PortCounters Attribute Group Data \;Layout,&quot; on page  1451\;Table  1176, &quot;InfiniBand Extended PortCounters Attribute \;Group Data Layout,&quot; on page  1453\;Table  1184, &quot;PLR Counters Data Layout,&quot; on page  1471 - \;[Internal]\;Table  1186, &quot;RS-Histograms Data Layout,&quot; on page  1473 \;Table  1180, &quot;USR_XSR Physical Layer Counters Data Layout,&quot; \;on page  1462\;Table  1188, &quot;Infiniband Packets Counters Data Layout,&quot; on \;page  1474" subnode="ppcnt_reg_counter_set_auto_ext" access="RO" offset="0x8.0" size="0xf8.0" union_selector="$(parent).grp" />
 </node>
 
 <node name="ppcnt_rs_fec_histograms_counters_ext" descr="" size="0xf8.0" >
@@ -2732,14 +2730,14 @@
 	<field name="active_hist_type" descr="0 - invalid (Link down / unsupported) \;1 - KP4 RS-FEC (544,514) errors \;2 - LL RS-FEC (271,257) / (272,257+1) errors\;3 - KR4 RS-FEC (528,514) errors" access="RO" offset="0x0.28" size="0x0.4" />
 	<field name="hist_type" descr="0: According to active link\;1: KP4 RS-FEC (544,514) errors \;2: LL RS-FEC (271,257) / (272,257+1) errors\;3: KR4 RS-FEC (528,514) errors" access="INDEX" offset="0x4.0" size="0x0.4" />
 	<field name="num_of_bins" descr="Available number of bins \;" access="RO" offset="0x4.16" size="0x0.8" />
-	<field name="hist_min_measurement" descr="Lowest measurement/low limit of the histogram \;Example:\;In case of hist_type = 1, represent KP4 RS FEC symbol \;errors(= 0)\;In case of hist_type = 2, represent LL RS FEC symbol errors \;( = 0)\;" access="RO" offset="0x8.0" size="0x0.8" />
-	<field name="hist_max_measurement" descr="Highest measurement/high limit of the histogram:\;Example:\;In case of hist_type = 1, represent KP4 RS FEC symbol \;errors ( = 15)\;In case of hist_type = 2, represent LL RS FEC symbol errors \;( = 7)" access="RO" offset="0x8.16" size="0x0.8" />
-	<field name="bin_range_write_mask" descr="Valid only if we (write enable) = 1 \;Ignored on GET \;Write mask for the bin_range array. \;If bit X is set, bin_range [X] write should be execute\;Else if bit X is clear, ignored value in written to bin_range [X]" access="WO" offset="0xC.0" size="0x0.16" />
-	<field name="bin_range" descr="Write to bin_range[x] is applicable only if we = 1 &amp; the cor\;responding bits in bin_range_write_mask is set.\;Mapping of measurement units to a bin\;See Table 1426, &quot;PPHCR - Port Phy Bin Range Histo\;gram Configuration Layout,&quot; on page 1716" subnode="pphcr_bin_range_ext" access="RW" high_bound="15" low_bound="0" offset="0x10.0" size="0x40.0" />
+	<field name="hist_min_measurement" descr="Lowest measurement/low limit of the histogram \;Example:\;In case of hist_type = 1, represent KP4 RS FEC symbol \;errors(= 0)\;In case of hist_type = 2, represent LL RS FEC symbol \;errors ( = 0)\;" access="RO" offset="0x8.0" size="0x0.8" />
+	<field name="hist_max_measurement" descr="Highest measurement/high limit of the histogram:\;Example:\;In case of hist_type = 1, represent KP4 RS FEC symbol \;errors ( = 15)\;In case of hist_type = 2, represent LL RS FEC symbol \;errors ( = 7)" access="RO" offset="0x8.16" size="0x0.8" />
+	<field name="bin_range_write_mask" descr="Valid only if we (write enable) = 1 \;Ignored on GET \;Write mask for the bin_range array. \;If bit X is set, bin_range [X] write should be execute\;Else if bit X is clear, ignored value in written to bin_range \;[X]" access="WO" offset="0xC.0" size="0x0.16" />
+	<field name="bin_range" descr="Write to bin_range[x] is applicable only if we = 1 &amp; the cor\;responding bits in bin_range_write_mask is set.\;Mapping of measurement units to a bin\;See Table 1398, &quot;PPHCR - Port Phy Bin Range Histogram \;Configuration Layout,&quot; on page 1713" subnode="pphcr_bin_range_ext" access="RW" high_bound="15" low_bound="0" offset="0x10.0" size="0x40.0" />
 </node>
 
 <node name="pplm_reg_ext" descr="" size="0x50.0" >
-	<field name="port_type" descr="Supported only when indicated by PCAM \;0 - Network Port\;1 - Near-End Port (For Gearbox - Host side)\;2 - Internal IC Port \;3 - Far-End Port (For Gearbox - Line side)\;Other values are reserved.\;\;Using port_type &apos;0&apos; will override all different parts of the link \;structure\;Using port_type &apos;1&apos; will configure also port_type &apos;2&apos; accordingly \;and vise versa" access="INDEX" offset="0x0.8" size="0x0.4" />
+	<field name="port_type" descr="Supported only when indicated by PCAM \;0 - Network Port\;1 - Near-End Port (For Gearbox - Host side)\;2 - Internal IC Port \;3 - Far-End Port (For Gearbox - Line side)\;Other values are reserved.\;\;Using port_type &apos;0&apos; will override all different parts of the link \;structure\;Using port_type &apos;1&apos; will configure also port_type &apos;2&apos; accord\;ingly and vise versa" access="INDEX" offset="0x0.8" size="0x0.4" />
 	<field name="lp_msb" descr="Local port number [9:8]" access="INDEX" offset="0x0.12" size="0x0.2" />
 	<field name="pnat" descr="Port number access type. \;0 - Local port number\;1 - IB / label port number\;[Internal] 3 - Out of band" access="INDEX" offset="0x0.14" size="0x0.2" />
 	<field name="local_port" descr="Local port number" access="INDEX" offset="0x0.16" size="0x0.8" />
@@ -2751,9 +2749,9 @@
 	<field name="fec_override_cap_56g" descr="56GE Ethernet FEC override capability bitmask:\;0: No-FEC\;1: Firecode_FEC\;2: Reserved2\;3: Reserved3" access="RO" enum="No=0x0,Firecode_FEC=0x1,Reserved2=0x2,Reserved3=0x3" offset="0x10.16" size="0x0.4" />
 	<field name="rs_fec_correction_bypass_cap" descr="RS-FEC correction bypass override capability:\;0: NO_correction_bypass\;1: RS-FEC_correction_bypass" access="RO" enum="NO_correction_bypass=0x0,RS=0x1" offset="0x10.28" size="0x0.4" />
 	<field name="fec_override_admin_10g_40g" descr="10GE/40GE Ethernet FEC override admin, see \;10g_40g_fec_override_cap.\;(one-hot setting): \;0: auto_mode - no override\;1: No_FEC\;2: Firecode_FEC\;\;" access="RW" enum="auto_mode=0x0,No_FEC=0x1,Firecode_FEC=0x2" offset="0x14.0" size="0x0.4" />
-	<field name="fec_override_admin_25g" descr="25GE Ethernet FEC override admin, see 25g_fec_override_\;cap. (one-hot setting): \;0: auto_mode - no override\;1: No_FEC\;2: Firecode_FEC\;4: RS-FEC\;\;Note - 25g_fec_override_admin and 50g_fec_override_admin \;must be set with the same value." access="RW" enum="auto_mode=0x0,No_FEC=0x1,Firecode_FEC=0x2,RS=0x4" offset="0x14.4" size="0x0.4" />
-	<field name="fec_override_admin_50g" descr="50GE Ethernet FEC override admin, see 50g_fec_override_\;cap. (one-hot setting): \;0: auto_mode - no override\;1: No_FEC\;2: Firecode_FEC\;4: RS-FEC\;\;Note - 25g_fec_override_admin and 50g_fec_override_admin \;must be set with the same value." access="RW" enum="auto_mode=0x0,No_FEC=0x1,Firecode_FEC=0x2,RS=0x4" offset="0x14.8" size="0x0.4" />
-	<field name="fec_override_admin_100g" descr="100GE Ethernet FEC override admin, see 100g_fec_override_\;cap. (one-hot setting): \;0: auto_mode - no override\;1: No_FEC\;4: RS-FEC" access="RW" enum="auto_mode=0x0,No_FEC=0x1,RS=0x4" offset="0x14.12" size="0x0.4" />
+	<field name="fec_override_admin_25g" descr="25GE Ethernet FEC override admin, see 25g_fec_override_\;cap. (one-hot setting): \;0: auto_mode - no override\;1: No_FEC\;2: Firecode_FEC\;4: RS-FEC\;\;Note - 25g_fec_override_admin and 50g_fec_override_ad\;min must be set with the same value." access="RW" enum="auto_mode=0x0,No_FEC=0x1,Firecode_FEC=0x2,RS=0x4" offset="0x14.4" size="0x0.4" />
+	<field name="fec_override_admin_50g" descr="50GE Ethernet FEC override admin, see 50g_fec_override_\;cap. (one-hot setting): \;0: auto_mode - no override\;1: No_FEC\;2: Firecode_FEC\;4: RS-FEC\;\;Note - 25g_fec_override_admin and 50g_fec_override_ad\;min must be set with the same value." access="RW" enum="auto_mode=0x0,No_FEC=0x1,Firecode_FEC=0x2,RS=0x4" offset="0x14.8" size="0x0.4" />
+	<field name="fec_override_admin_100g" descr="100GE Ethernet FEC override admin, see 100g_fec_over\;ride_cap. (one-hot setting): \;0: auto_mode - no override\;1: No_FEC\;4: RS-FEC" access="RW" enum="auto_mode=0x0,No_FEC=0x1,RS=0x4" offset="0x14.12" size="0x0.4" />
 	<field name="fec_override_admin_56g" descr="56GE Ethernet FEC override admin, see 56g_fec_override_\;cap. (one-hot setting): \;0: auto_mode - no override\;1: No_FEC\;2: Firecode_FEC" access="RW" enum="auto_mode=0x0,No_FEC=0x1,Firecode_FEC=0x2" offset="0x14.16" size="0x0.4" />
 	<field name="rs_fec_correction_bypass_admin" descr="RS-FEC correction bypass override admin: (one-hot setting): \;0: auto_mode - no override \;1: NO_correction_bypass\;2: RS-FEC_correction_bypass" access="RW" enum="auto_mode=0x0,NO_correction_bypass=0x1,RS=0x2" offset="0x14.28" size="0x0.4" />
 	<field name="fec_override_cap_200g_4x" descr="200GE FEC override capability bitmask:\;Bit 0 - Reserved \;Bit 1- Reserved \;Bit 2- Reserved \;Bit 3- Reserved \;Bit 4- Reserved\;Bit 5- Reserved\;Bit 6- Reserved\;Bit 7 - RS-FEC (544,514)\;[Internal] Bit 8 - Zero Latency FEC\;Bit 9- 50G Ethernet Consortium LL RS-FEC (272,257+1)\;[Internal] Bit 12 - RS-FEC (544,514) + PLR\;[Internal] Bit 13 - LL-FEC (271,257) + PLR\;[Internal] Bit 14 - ELL (272,257+1) + PLR\;" access="RO" offset="0x18.0" size="0x0.16" />
@@ -2778,8 +2776,8 @@
 	<field name="port_type" descr="For HCA supported only when indicated by PCAM \;0: Network_Port\;1: Near-End_Port- (For Retimer/Gearbox - Host side)\;2: Internal_IC_LR_Port \;3: Far-End_Port - (For Retimer/Gearbox - Line side)\;4: USR_Main\;5: USR_Tile\;Other values are reserved." access="INDEX" enum="Network_Port=0x0,Near=0x1,Internal_IC_LR_Port=0x2,Far=0x3,USR_Main=0x4,USR_Tile=0x5" offset="0x0.4" size="0x0.4" />
 	<field name="lp_msb" descr="Local port number [9:8]" access="INDEX" offset="0x0.12" size="0x0.2" />
 	<field name="local_port" descr="Local port number." access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="lb_en" descr="Loopback enable - One-hot key.\;Bit 0: Phy_remote_loopback\;Bit 1: Phy_local_loopback\;Bit 2: External_local_loopback\;Bit 3: Near_end_analog_loopback - [Internal]\;Bit 4: Near_end_digital_loopback - [Internal]\;Bit 5: Far_end_analog_loopback - [Internal]\;Bit 6: Far_end_digital_loopback - [Internal]" access="RW" enum="Phy_remote_loopback=0x1,Phy_local_loopback=0x2,External_local_loopback=0x4,Near_end_analog_loopback=0x8,Near_end_digital_loopback=0x10,Far_end_analog_loopback=0x20,Far_end_digital_loopback=0x40" offset="0x4.0" size="0x0.8" />
-	<field name="lb_cap" descr="Loopback capability - bitmask\;Bit 0: Phy_remote_loopback\;Bit 1: Phy_local_loopback - When set the port&apos;s egress traffic \;is looped back to the receiver and the port transmitter is dis\;abled.\;Bit 2: External_local_loopback - Enables the port&apos;s transmit\;ter to link with the port&apos;s receiver using an external loopback \;connector.\;Bit 3: Near_end_analog_loopback - [Internal]\;Bit 4: Near_end_digital_loopback - [Internal]\;Bit 5: Far_end_analog_loopback - [Internal]\;Bit 6: Far_end_digital_loopback - [Internal]\;\;Note- Phy remote loopback can be supported only for lane \;rate higher than 25Gbuad." access="RO" enum="Phy_remote_loopback=0x1,Phy_local_loopback=0x2,External_local_loopback=0x4,Near_end_analog_loopback=0x8,Near_end_digital_loopback=0x10,Far_end_analog_loopback=0x20,Far_end_digital_loopback=0x40" offset="0x4.16" size="0x0.8" />
+	<field name="lb_en" descr="Loopback enable - One-hot key.\;Bit 0: Phy_remote_loopback\;Bit 1: Phy_local_loopback\;Bit 2: External_local_loopback\;Bit 3: Near_end_analog_loopback - [Internal]\;Bit 4: Near_end_digital_loopback - [Internal]\;Bit 7: LL_local_loopback - [Internal]" access="RW" enum="Phy_remote_loopback=0x1,Phy_local_loopback=0x2,External_local_loopback=0x4,Near_end_analog_loopback=0x8,Near_end_digital_loopback=0x10,LL_local_loopback=0x80" offset="0x4.0" size="0x0.8" />
+	<field name="lb_cap" descr="Loopback capability - bitmask\;Bit 0: Phy_remote_loopback\;Bit 1: Phy_local_loopback - When set the port&apos;s egress traffic \;is looped back to the receiver and the port transmitter is dis\;abled.\;Bit 2: External_local_loopback - Enables the port&apos;s transmit\;ter to link with the port&apos;s receiver using an external loopback \;connector.\;Bit 3: Near_end_analog_loopback - [Internal]\;Bit 4: Near_end_digital_loopback - [Internal]\;Bit 7: LL_local_loopback - [Internal]\;\;Note - Phy remote loopback can be supported only for lane \;rate higher than 25Gbuad in the 16nm devices.\;" access="RO" enum="Phy_remote_loopback=0x1,Phy_local_loopback=0x2,External_local_loopback=0x4,Near_end_analog_loopback=0x8,Near_end_digital_loopback=0x10,LL_local_loopback=0x80" offset="0x4.16" size="0x0.8" />
 </node>
 
 <node name="pprt_reg_ext" descr="" size="0x20.0" >
@@ -2802,7 +2800,7 @@
 	<field name="lane_rate_oper" descr="Lane rate to be used in PRBS, see lane_rate_cap:\;0 - SDR (2.5 Gb/s)\;1 - DDR (5 Gb/s) \;2 - QDR (10 Gb/s)\;3 - FDR10 / 10GE/4 0GE (10.3125 Gb/s)\;4 - FDR (14.0625 Gb/s) \;5 - EDR / 25GE / 50GE / 100GE (25.78125 Gb/s)\;6 - HDR /50GE / 100GE / 200GE / 400GE (26.5625Gbd / \;53.125Gb/s\;7 - NDR /100GE / 200GE / 400GE / 800GE (53.125 Gbd / 106.25Gb/\;s) \;8 - 9 - reserved\;10 - 1GE (1.25 Gb/s)\;11 - XAUI/2.5GE (3.125 Gb/s)\;12 - 50GE-KR4 (12.89 Gb/s) \;\;Note: All lanes must be set to the same rate" access="RW" offset="0x10.16" size="0x0.16" />
 	<field name="prbs_lock_status_ext" descr="PRBS lock on PRBS pattern status for lanes 7-4: \;0 - Not locked\;1 - Locked\;\;Note: Once exiting prbs test mode the prbs_rx_tuning_sta\;tus will return to 0 (Not locked)" access="RO" offset="0x14.20" size="0x0.4" />
 	<field name="prbs_lock_status" descr="PRBS lock on PRBS pattern status for lanes 3-0: \;0 - Not locked\;1 - Locked\;\;Note: Once exiting prbs test mode the prbs_rx_tuning_sta\;tus will return to 0 (Not locked)" access="RO" offset="0x14.24" size="0x0.4" />
-	<field name="prbs_rx_tuning_status" descr="Tuning status: \;0 - PRBS mode tuning was not performed.\;1 - Performing PRBS mode tuning.\;2 - PRBS mode tuning completed.\;\;Note: Once exiting prbs test mode the prbs_rx_tuning_sta\;tus will return to 0." access="RO" offset="0x14.28" size="0x0.4" />
+	<field name="prbs_rx_tuning_status" descr="Tuning status: \;0 - PRBS mode tuning was not performed.\;1 - Performing PRBS mode tuning.\;2 - PRBS mode tuning completed.\;3 - Signal Detect in progress\;\;Note: Once exiting prbs test mode the prbs_rx_tuning_sta\;tus will return to 0." access="RO" offset="0x14.28" size="0x0.4" />
 </node>
 
 <node name="pptb_reg_ext" descr="" size="0xc.0" >
@@ -2826,7 +2824,7 @@
 </node>
 
 <node name="pptt_reg_ext" descr="" size="0x1c.0" >
-	<field name="le" descr="Per Lane configuration enable (can be set only if ls = 1):\;0 - No per lane configuration\;1 - Per lane configurations\;When le is cleared, lane index is reserved and all PPTT con\;figurations are taking place on all lanes.\;When le is set, configurations are taking place per lane \;based on lane index" access="OP" offset="0x0.0" size="0x0.1" />
+	<field name="le" descr="Per Lane configuration enable (can be set only if ls = 1):\;0 - No per lane configuration\;1 - Per lane configurations\;When le is cleared, lane index is reserved and all PPTT \;configurations are taking place on all lanes.\;When le is set, configurations are taking place per lane \;based on lane index" access="OP" offset="0x0.0" size="0x0.1" />
 	<field name="ls" descr="Per Lane configuration support/capability: \;0 - No support of per lane configuration\;1 - Support of per lane configuration" access="RO" offset="0x0.1" size="0x0.1" />
 	<field name="port_type" descr="For HCA supported only when indicated by PCAM \;0 - Network Port\;1 - Near-End Port (For Retimer/Gearbox - Host side)\;2 - Internal IC LR Port \;3 - Far-End Port (For Retimer/Gearbox - Line side)\;4 - USR Main [internal] \;5 - USR Tail [internal] \;Other values are reserved.\;Note: PRBS can be enabled only for two entities that \;directly connected to each other.\;For non MCM and no Retimer/Gearbox only 0 allowed.\;For non MCM and with Retimer/Gearbox 2-1 or 3 or 0.\;For MCM without Retimer/Gearbox 4-5 or 2 or 0.\;For MCM with Retimer/Gearbox 4-5 or 2-1 or 3 or 0.\;all the port will be in test mode when PRBS is enabled." access="INDEX" offset="0x0.4" size="0x0.4" />
 	<field name="lane" descr="Reserved when (le=0 or ls = 0)\;Physical lane number" access="INDEX" offset="0x0.8" size="0x0.4" />
@@ -2858,13 +2856,7 @@
 	<field name="ber_mantissa" descr="Desired Raw BER for injection.\;BER = ber_mantissa * 10^(-ber_exp)\;Valid BER mantissa are 1,5" access="RW" offset="0x4.8" size="0x0.4" />
 	<field name="en" descr="1 - start the error injection process" access="WO" offset="0x4.31" size="0x0.1" />
 	<field name="lane_rate_cap" descr="Per lane rate capability for feature (bitmask)\;Bit 0 - 1GE (1.25 Gb/s)\;Bit 1 - SDR (2.5 Gb/s) \;Bit 2 - XAUI/2.5GE (3.125 Gb/s)\;Bit 3- DDR (5 Gb/s) \;Bit 4- QDR (10 Gb/s) \;Bit 5- FDR10 / 10GE/40GE (10.3125 Gb/s) \;Bit 6- FDR (14.0625 Gb/s) \;Bit 7- EDR / 25GE / 50GE / 100GE (25.78125 Gb/s) \;Bit 8 - 50GE-KR4 (12.89 Gb/s) \;Bit 9 - HDR /50GE / 100GE / 200GE / 400GE (26.5625Gbd / \;53.125Gb/s)" access="RO" offset="0x8.16" size="0x0.16" />
-	<field name="page_data" descr="Table  1238, &quot;PREI - Port Receive Error Injection Register Lay\;out for 28nm,&quot; on page  1491" subnode="prei_reg_28nm_ext" access="RW" offset="0x10.0" size="0x8.0" />
-</node>
-
-<node name="prio_j_ext" descr="" size="0x4.0" >
-	<field name="color2" descr="The DSCP mapping for color k, where k=0..2, see Table 952, \;&quot;color&lt;k&gt;Layout&quot;" access="RW" offset="0x0.8" size="0x0.8" />
-	<field name="color1" descr="The DSCP mapping for color k, where k=0..2, see Table 952, \;&quot;color&lt;k&gt;Layout&quot;" access="RW" offset="0x0.16" size="0x0.8" />
-	<field name="color0" descr="The DSCP mapping for color k, where k=0..2, see Table 952, \;&quot;color&lt;k&gt;Layout&quot;" access="RW" offset="0x0.24" size="0x0.8" />
+	<field name="page_data" descr="Table  1208, &quot;PREI - Port Receive Error Injection Register Lay\;out for 28nm,&quot; on page  1486" subnode="prei_reg_28nm_ext" access="RW" offset="0x10.0" size="0x8.0" />
 </node>
 
 <node name="prm_register_payload_ext" descr="" size="0x104.0" >
@@ -2880,7 +2872,7 @@
 	<field name="error_type_oper" descr="Error injection opertional status\;0x0 - No error injection\;0x1 - Performing error injection" access="RO" offset="0x0.24" size="0x0.4" />
 	<field name="ber_exp" descr="BER for injection.\;BER = ber_mantissa * 10^(-ber_exp)" access="RW" offset="0x4.0" size="0x0.8" />
 	<field name="ber_mantissa" descr="BER for injection.\;BER = ber_mantissa * 10^(-ber_exp)" access="RW" offset="0x4.8" size="0x0.4" />
-	<field name="error_injection_time" descr="Duration in 10 msec the port will generate errors.\;Reading this field will return the time left for errors to inject in \;msec\;\;\;0x0000 indicates no generation of errors.\;When set to 0xFFFF - No decremental operation, meaning the \;errors will be injected continuously without stop condition.\;" access="RW" offset="0x4.12" size="0x0.16" />
+	<field name="error_injection_time" descr="Duration in 10 msec the port will generate errors.\;Reading this field will return the time left for errors to inject \;in msec\;\;\;0x0000 indicates no generation of errors.\;When set to 0xFFFF - No decremental operation, meaning \;the errors will be injected continuously without stop condi\;tion.\;" access="RW" offset="0x4.12" size="0x0.16" />
 </node>
 
 <node name="pter_port_page_reg_ext" descr="" size="0x1c.0" >
@@ -2895,7 +2887,7 @@
 	<field name="pnat" descr="Port number access type. determines the way local_port is \;interpreted:\;0 - Local port number\;1 - IB / label port number\;" access="INDEX" offset="0x0.14" size="0x0.2" />
 	<field name="local_port" descr="Local port number" access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="error_page" descr="Error_page selection: \;0: Injection_of_Phy_Errors\;1: Injection_of_Port_Errors" access="INDEX" enum="Injection_of_Phy_Errors=0x0,Injection_of_Port_Errors=0x1" offset="0x0.24" size="0x0.4" />
-	<field name="page_data" descr="error injection page data: \;Table  1232, &quot;PTER- Port Transmit Errors Register Phy Level \;Layout,&quot; on page  1487\;Table  1234, &quot;PTER- Port Transmit Errors Register Port Level \;Fields,&quot; on page  1488" subnode="pter_reg_page_data_auto_ext" access="RW" offset="0x4.0" size="0x1c.0" union_selector="$(parent).error_page" />
+	<field name="page_data" descr="error injection page data: \;Table  1202, &quot;PTER- Port Transmit Errors Register Phy Level \;Layout,&quot; on page  1482\;Table  1204, &quot;PTER- Port Transmit Errors Register Port Level \;Fields,&quot; on page  1483" subnode="pter_reg_page_data_auto_ext" access="RW" offset="0x4.0" size="0x1c.0" union_selector="$(parent).error_page" />
 </node>
 
 <node name="pter_reg_page_data_auto_ext" descr="" attr_is_union="1" size="0x1c.0" >
@@ -2910,13 +2902,13 @@
 	<field name="local_port" descr="Local port number" access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="force_tx_aba_param" descr="When AN is disabled, use aba TX set. \;" access="RW" offset="0x0.24" size="0x0.1" />
 	<field name="an_disable_cap" descr="Auto Negotiation disable capability:\;0 - Device does not support AN disable\;1 - Device Supports  AN disable" access="RO" offset="0x0.29" size="0x0.1" />
-	<field name="an_disable_admin" descr="Auto Negotiation disable:\;0 - Normal operation \;1 - Disable AN.\;Note: In Ethernet port, when Disabling AN, the &quot;eth_pro\;to_admin&quot; bit mask must comply to single speed rate set.\;In IB port, when Disabling AN, the &quot;ib_proto_admin&quot; bit mask \;must comply to single speed rate set.\;It&apos;s recommended to validate the FEC override bits in PPLM \;when operating with AN. \;\;" access="RW" offset="0x0.30" size="0x0.1" />
+	<field name="an_disable_admin" descr="Auto Negotiation disable:\;0 - Normal operation \;1 - Disable AN.\;Note: In Ethernet port, when Disabling AN, the &quot;eth_pro\;to_admin&quot; bit mask must comply to single speed rate set.\;In IB port, when Disabling AN, the &quot;ib_proto_admin&quot; bit \;mask must comply to single speed rate set.\;It&apos;s recommended to validate the FEC override bits in PPLM \;when operating with AN. \;\;" access="RW" offset="0x0.30" size="0x0.1" />
 	<field name="reserved_high" descr="THIS BIT MUST BE TIED TO 1!\;This is old capability bit that address AN_DISABLE capability \;with only one enabled protocol." access="RO" offset="0x0.31" size="0x0.1" />
-	<field name="data_rate_oper" descr="Port data rate in resolution of 100 Mb/s (data_rate_oper * 100 \;Mb/s)\;Value 0x0 indicates this field is not supported." access="RO" offset="0x4.0" size="0x0.16" />
+	<field name="data_rate_oper" descr="Port data rate in resolution of 100 Mb/s (data_rate_oper * \;100 Mb/s)\;Value 0x0 indicates this field is not supported." access="RO" offset="0x4.0" size="0x0.16" />
 	<field name="max_port_rate" descr="Port maxium data rate in resolution of 1 Gb/s \;(data_rate_oper * 1 Gb/s)\;Value 0x0 indicates this field is not supported.\;" access="RO" offset="0x4.16" size="0x0.12" />
 	<field name="an_status" descr="Auto Negotiation status: \;0 - Status is unavailable\;1 - AN completed successfully \;2 - AN performed but failed\;3 - AN was not performed, link is up \;4 - AN was not performed, link is down" access="RO" offset="0x4.28" size="0x0.4" />
 	<field name="ext_eth_proto_capability" descr="For HCA: See also PCAM.feature_cap_mask bit 13 for \;Extended Ethernet protocol support.\;Extended Ethernet port speed/protocols supported (bit\;mask):\;Bit 0 - SGMII_100M\;Bit 1 - 1000BASE-X / SGMII\;Bit 3 - 5GBASE-R\;Bit 4 - XFI / XAUI-1 // 10G\;Bit 5 - XLAUI-4/XLPPI-4 // 40G \;Bit 6 - 25GAUI-1/ 25GBASE-CR / KR \;Bit 7 - 50GAUI-2 / LAUI-2/ 50GBASE-CR2/KR2 \;Bit 8 - 50GAUI-1 /50GBASE-CR / KR\;Bit 9 - CAUI-4 / 100GBASE-CR4 / KR4\;Bit 10 - 100GAUI-2 / 100GBASE-CR2 / KR2 \;Bit 11 - 100GAUI-1 / 100GBASE-CR / KR\;Bit 12 - 200GAUI-4 / 200GBASE-CR4/KR4\;Bit 13 - 200GAUI-2 / 200GBASE-CR2/KR2\;Bit 14 - Reserved [internal] Placeholder for 200GAUI-1\;Bit 15 - 400GAUI-8/ 400GBASE-CR8\;Bit 16 - 400GAUI-4/ 400GBASE-CR4\;Bit 17 - Reserved [internal] Placeholder for 400GAUI-2\;Bit 18 - Reserved [internal] Placeholder for 400GAUI-1\;Bit 19 - 800GAUI-8/ 800GBASE-CR8\;Other - Reserved" access="RO" offset="0x8.0" size="0x4.0" />
-	<field name="eth_proto_capability" descr="Ethernet port speed/protocols supported (bitmask)\;Bit 31 - 50GBase-KR2\;Bit 30 - 50GBase-CR2\;Bit 29 - 25GBase-SR\;Bit 28 - 25GBase-KR\;Bit 27 - 25GBase-CR\;Bit 26 - 10GBase-T \;Bit 25 - 1000Base-T\;[Internal] Bit 24 - 100Base-TX\;Bit 23 - 100GBase LR4/ER4\;Bit 22 - 100GBase KR4\;Bit 21 - 100GBase SR4\;Bit 20 - 100GBase CR4\;Bit 19 - 50GBase-KR4\;Bit 18 - 50GBase-SR2\;Bit 16 - 40GBase LR4/ER4\;Bit 15 - 40GBase SR4\;Bit 14 - 10GBase ER/LR\;Bit 13 - 10GBase SR\;Bit 12 - 10GBase CR\;Bit 10 - 10Base-T\;Bit 9 - SGMII_100Base\;[Internal] Bit 8 - 56GBase *R4\;Bit 7 - 40GBase KR4\;Bit 6 - 40GBase CR4\;[internal] Bit 5 - 20GBase-KR2\;Bit 4 - 10GBase KR\;Bit 3 - 10GBase KX4\;Bit 2 - 10GBase-CX4\;Bit 1 - 1000Base KX\;Bit 0 - SGMII" access="RO" offset="0xC.0" size="0x4.0" />
+	<field name="eth_proto_capability" descr="Ethernet port speed/protocols supported (bitmask)\;Bit 31 - 50GBase-KR2\;Bit 30 - 50GBase-CR2\;Bit 29 - 25GBase-SR\;Bit 28 - 25GBase-KR\;Bit 27 - 25GBase-CR\;Bit 26 - 10GBase-T \;Bit 25 - 1000Base-T\;Bit 24 - 100Base-TX\;Bit 23 - 100GBase LR4/ER4\;Bit 22 - 100GBase KR4\;Bit 21 - 100GBase SR4\;Bit 20 - 100GBase CR4\;Bit 19 - 50GBase-KR4\;Bit 18 - 50GBase-SR2\;Bit 16 - 40GBase LR4/ER4\;Bit 15 - 40GBase SR4\;Bit 14 - 10GBase ER/LR\;Bit 13 - 10GBase SR\;Bit 12 - 10GBase CR\;Bit 10 - 10Base-T\;Bit 9 - SGMII_100Base\;[Internal] Bit 8 - 56GBase *R4\;Bit 7 - 40GBase KR4\;Bit 6 - 40GBase CR4\;[internal] Bit 5 - 20GBase-KR2\;Bit 4 - 10GBase KR\;Bit 3 - 10GBase KX4\;Bit 2 - 10GBase-CX4\;Bit 1 - 1000Base KX\;Bit 0 - SGMII" access="RO" offset="0xC.0" size="0x4.0" />
 	<field name="ib_proto_capability" descr="InfiniBand port speed supported (bitmask)\;ib_link_speed &lt;= ib_proto_capability[7:0]\;Bit 0: SDR\;Bit 1: DDR\;Bit 2: QDR\;Bit 3: FDR10\;Bit 4: FDR\;Bit 5: EDR\;Bit 6: HDR\;Bit 7: NDR" access="RO" enum="SDR=0x1,DDR=0x2,QDR=0x4,FDR10=0x8,FDR=0x10,EDR=0x20,HDR=0x40,NDR=0x80" offset="0x10.0" size="0x0.16" />
 	<field name="ib_link_width_capability" descr="ib_link_width &lt;= ib_proto_capability\;Bit 0 - 1x\;Bit 1 - 2x\;Bit 2 - 4x\;Bit 3 - 8x\;Bit 4 - 12x" access="RO" offset="0x10.16" size="0x0.16" />
 	<field name="ext_eth_proto_admin" descr="Ethernet port extended speed/protocols bitmask\;NOTE: This field and &quot;eth_proto_admin&quot; are mutual exclu\;sive, meaning that only one of the field can be set on write \;command." access="RW" offset="0x14.0" size="0x4.0" />
@@ -2930,7 +2922,7 @@
 	<field name="connector_type" descr="Connector type indication\;0: No_connector_or_unknown \;1: PORT_NONE - None\;2: PORT_TP - Twisted Pair\;3: PORT_AUI - AUI\;4: PORT_BNC - BNC\;5: PORT_MII - MII\;6: PORT_FIBRE - FIBRE\;7: PORT_DA - Direct Attach Copper\;8: PORT_OTHER - Other" access="RO" enum="No_connector_or_unknown=0x0,PORT_NONE=0x1,PORT_TP=0x2,PORT_AUI=0x3,PORT_BNC=0x4,PORT_MII=0x5,PORT_FIBRE=0x6,PORT_DA=0x7,PORT_OTHER=0x8" offset="0x2C.0" size="0x0.4" />
 	<field name="force_kr_frames_admin" descr="Ethernet Force mode options when AN disable is set.\;0 - auto, keep normal operation\;1 - Do Force KR Startup LT flow\;2 - Do not do Force KR Startup LT flow\;\;Note: Ignored when an_disable_admin is not set\;Force KR Flow is possible for PAM4 links only" access="RW" offset="0x2C.28" size="0x0.2" />
 	<field name="force_kr_frames_cap" descr="0 - device does not support Force KR Startup LT flow\;1 - device supports Force KR Startup LT flow\;\;Note: Ignored when an_disable_admin is not set\;Force KR Flow is possible for PAM4 links only" access="RO" offset="0x2C.30" size="0x0.1" />
-	<field name="eth_proto_lp_advertise" descr="Ethernet port&apos;s link partner advertised protocols. Returns the \;protocols that were advertised by the link partner during \;auto-negotiation.\;" access="RO" offset="0x30.0" size="0x4.0" />
+	<field name="eth_proto_lp_advertise" descr="Ethernet port&apos;s link partner advertised protocols. Returns \;the protocols that were advertised by the link partner during \;auto-negotiation.\;" access="RO" offset="0x30.0" size="0x4.0" />
 </node>
 
 <node name="pvlc_reg_ext" descr="" size="0x10.0" >
@@ -2946,7 +2938,7 @@
 </node>
 
 <node name="qcam_ext" descr="" size="0x48.0" >
-	<field name="access_reg_group" descr="Access Register ID groups \;0: First 128 REG_ID" access="INDEX" offset="0x0.0" size="0x0.8" />
+	<field name="access_reg_group" descr="Access Register ID groups \;0: First_128_REG_ID" access="INDEX" enum="First_128_REG_ID=0x0" offset="0x0.0" size="0x0.8" />
 	<field name="feature_group" descr="Feature list mask index\;0: Enhanced features" access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="qos_access_reg_cap_mask" descr="Supported QoS access register bitmasks. Based on \;access_reg_group index. \;When bit is set, the register is supported in the device. \;For example:\;Bit 1: QCAP (0x4001)\;Bit 2: QPTS (0x4002)\;Bit 3: QDPM (0x4003)" access="RO" high_bound="3" low_bound="0" offset="0x8.0" size="0x10.0" />
 	<field name="qos_feature_cap_mask" descr="Supported QoS enhanced features based on feature_group \;index.\;When bit is set, the feature is supported in the device\;Bit 0: QPTS_TRUST_BOTH - trust_both is supported in QPTS \;register" access="RO" high_bound="3" low_bound="0" offset="0x28.0" size="0x10.0" />
@@ -2959,50 +2951,22 @@
 </node>
 
 <node name="qdpm_ext" descr="" size="0x40.0" >
-	<field name="dscp" descr="DSCP entry is the DSCP to Switch Priority mapping. For \;more details refer to Table 896." access="RW" high_bound="63" low_bound="0" offset="0x0.24" size="0x40.0" />
-</node>
-
-<node name="qeec_ext" descr="" size="0x20.0" >
-	<field name="lp_msb" descr="Local port[9:8]" access="INDEX" offset="0x0.12" size="0x0.2" />
-	<field name="local_port" descr="Local port number\;CPU port supported." access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="element_index" descr="The index of the element in the hierarchy." access="INDEX" offset="0x4.0" size="0x0.8" />
-	<field name="element_hierarchy" descr="The hierarchy of the element\;0: Port\;1: Group\;2: Sub_Group\;3: Traffic_Class" access="INDEX" enum="Port=0x0,Group=0x1,Sub_Group=0x2,Traffic_Class=0x3" offset="0x4.16" size="0x0.4" />
-	<field name="next_element_index" descr="The index of the element in the lower hierarchy.\;reserved when element_heirarchy  &apos;0&apos;" access="RW" offset="0x8.0" size="0x0.8" />
-	<field name="min_shaper_rate" descr="Min shaper information rate\;For all hierarchies at Non-CPU port, and for port-hierarchy \;on CPU ports:\;bps mode, Units of 1000bps\;Granularity is 200mbps\;Error is up to 3% from configuration (for example: when rate \;is configured to 200mbps, actual rate may be 206mbps)\;Reading reveals the actual rate (e.g. 206 in the above exam\;ple)\;Note: for rates lower than 10,000bps or lower than 100 pack\;ets per sec, error is up to 10%\;Reserved when ptps = 1\;Reserved when element_hierarchy is 0 or 1" access="RW" offset="0xC.0" size="0x0.28" />
-	<field name="pb" descr="Packets or Bytes mode\;0: bytes mode\;1: packets mode\;Applies to both min shaper and max shaper\;For Spectrum family packets mode is supported only for \;TClasses of CPU port.\;Reserved when ptps = 1\;" access="RW" offset="0xC.28" size="0x0.1" />
-	<field name="ptps" descr="PTP shaper\;0: regular shaper mode\;1: PTP oriented shaper\;Allowed only for hierarchy 0\;Not supported for CPU port\;Note that ptps mode may effect the shaper rates of all hierar\;chies\;Reserved when Spectrum-2\;\;" access="RW" offset="0xC.29" size="0x0.1" />
-	<field name="mise" descr="Min shaper configuration enable. Enables configuration of \;min_shaper_rate, min_shaper_bs on this ETS element\;0: disable\;1: enable\;Reserved when element_hierarchy is 0 or 1" access="RW" enum="disable=0x0,enable=0x1" offset="0xC.31" size="0x0.1" />
-	<field name="max_shaper_rate" descr="Max shaper information rate\;For all hierarchies at Non-CPU port, and for port-hierarchy \;on CPU ports:\;bps mode, Units of 1000bps\;Granularity is 200mbps\;Error is up to 3% from configuration (for example: when rate \;is configured to 200mbps, actual rate may be 206mbps)\;Reading reveals the actual rate (e.g. 206 in the above exam\;ple)\;\;For Tclass of CPU ports:\;bps mode:\;- Granularity is 1000bps\;- Error is up to 1% from configuration\;packet per sec mode:\;- Granularity is 10 packet per sec\;- Error is up to 1% from configuration\;Note: for rates lower than 10,000bps or lower than 100 pack\;ets per sec, error is up to 10%\;Reserved when ptps = 1\;Reserved when element_hierarchy is 1\;" access="RW" offset="0x10.0" size="0x0.31" />
-	<field name="mase" descr="Max shaper configuration enable. Enables configuration of \;max_shaper_rate, max_shaper_bs on this ETS element\;0: disable\;1: enable\;Reserved when element_hierarchy is 1" access="RW" enum="disable=0x0,enable=0x1" offset="0x10.31" size="0x0.1" />
-	<field name="phantom_queue_rate" descr="Phantom queue rate\;Units of 1000bps, bps only\;Granularity is 200mbps\;Error is up to 3% from configuration (for example: at \;100Gbps, rate is configured to 200mbps, actual rate may be \;206mbps)\;ECN marking is done when the rate is above phantom_\;queue_rate\;For Spectrum family: When phantom queue is enabled then \;max shaper must be disabled. Disabling is done by setting \;the relevant rate to its max value. By default the phantom \;queue is disabled.\;Reserved when ptps = 1\;" access="RW" offset="0x14.0" size="0x0.31" />
-	<field name="pqe" descr="Phantom queue configuration enable. Enables configuration \;of the phantom queue rate\;0: disable\;1: enable\;Allowed only for hierarchy 0\;Not supported for CPU port\;Reserved when ptps = 1" access="RW" offset="0x14.31" size="0x0.1" />
-	<field name="dwrr_weight" descr="dwrr weight on the link going down from the ETS element:\;The percentage of bandwidth guaranteed to a ETS within its \;hierarchy.\;The sum of dwrr_weight value across all ETS elements within \;one hierarchy should equal 100.\;This field is reserved when dwrr is strict priority." access="RW" offset="0x18.0" size="0x0.8" />
-	<field name="dwrr" descr="dwrr or strict priority on the link going down from the ETS \;element:\;0: strict priority\;1: DWRR" access="RW" offset="0x18.15" size="0x0.1" />
-	<field name="de" descr="DWRR configuration enable. Enables configuration of the \;dwrr and dwrr_weight.\;0: disable\;1: enable" access="RW" offset="0x18.31" size="0x0.1" />
-	<field name="max_shaper_bs" descr="Max shaper Burst size\;Burst size is 2^max_shaper_bs * 512 [bits]\;For Spectrum: Range is: 5..25\;For Spectrum-2: Range is: 11..25\;Value of 0 is configured as minimum\;Reserved when ptps = 1" access="RW" offset="0x1C.0" size="0x0.6" />
-	<field name="min_shaper_bs" descr="Min shaper Burst size\;Burst size is 2^min_shaper_bs * 512 [bits]\;For Spectrum: Range is: 5..25\;For Spectrum-2: Range is: 11..25\;\;Value of 0 is configured as minimum\;Reserved when ptps = 1" access="RW" offset="0x1C.16" size="0x0.6" />
-</node>
-
-<node name="qegcs_ext" descr="" size="0x10.0" >
-	<field name="local_port" descr="Local port number" access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="abr_glob_sp" descr="Arbitration across groups:\;0: DWRR \;1: Strict Priority (default)" access="RW" offset="0x4.0" size="0x0.1" />
-	<field name="grp15_arb_sp" descr="Arbitration inside group 15:\;0: DWRR\;1: Strict Priority (default)\;Note that if grp07_arb_sp is configured to Strict Priority then\;grp15_arb_sp must be configured as Strict Priority as well" access="RW" offset="0x4.1" size="0x0.1" />
-	<field name="grp07_arb_sp" descr="Arbitration inside groups 0..7: \;0: DWRR\;1: Strict Priority (default)" access="RW" offset="0x4.2" size="0x0.1" />
+	<field name="dscp" descr="DSCP entry is the DSCP to Switch Priority mapping. For \;more details refer to Table 910." access="RW" high_bound="63" low_bound="0" offset="0x0.24" size="0x40.0" />
 </node>
 
 <node name="qepm_ext" descr="" size="0x14.0" >
 	<field name="lp_msb" descr="Local port[9:8]" access="INDEX" offset="0x0.12" size="0x0.2" />
 	<field name="local_port" descr="Local port.\;Supported for data packets from CPU port." access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="exp" descr="EXP entry is the EXP to Switch Priority mapping. For more \;details refer to Table 904, &quot;exp&lt;i&gt; Layout,&quot; on page 1143" access="RW" high_bound="7" low_bound="0" offset="0x4.16" size="0x10.0" />
+	<field name="exp" descr="EXP entry is the EXP to Switch Priority mapping. For more \;details refer to Table 918, &quot;exp&lt;i&gt; Layout,&quot; on page 1132" access="RW" high_bound="7" low_bound="0" offset="0x4.16" size="0x10.0" />
 </node>
 
 <node name="qetcr_ext" descr="" size="0x50.0" >
 	<field name="local_port" descr="Local port number" access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="cap_remote_admin" descr="Indicates if operation_type==remote_admin_parameters \;is supported\;NIC only, Reserved for Switches" access="RO" offset="0x0.28" size="0x0.1" />
 	<field name="cap_local_admin" descr="Indicates if operation_type==local_admin_parameters is \;supported\;NIC only, Reserved for Switches" access="RO" offset="0x0.29" size="0x0.1" />
-	<field name="operation_type" descr="Operation type.\;0x0: local operative parameters.\;0x1: local admin parameters. Supported only when \;cap_local_admin==1.\;0x2: remote admin parameters. Supported only when \;cap_remote_admin==1. \;NIC only, Reserved for Switches" access="INDEX" offset="0x0.30" size="0x0.2" />
-	<field name="tc_configuration" descr="Per-tclass configuration. For details, refer to Table 912, \;&quot;ETS tcN Configuration Register Layout&quot;." subnode="ets_ext" access="RW" high_bound="7" low_bound="0" offset="0x8.0" size="0x40.0" />
-	<field name="global_configuration" descr="Global configuration. For details, refer to Table 914, &quot;ETS \;Global Configuration Register Layout&quot;.\;Reserved for NICs" subnode="ets_global_ext" access="RW" offset="0x48.0" size="0x8.0" />
+	<field name="operation_type" descr="Operation type.\;0x0: local_operative_parameters\;0x1: local_admin_parameters - Supported only when \;cap_local_admin==1.\;0x2: remote_admin_parameters - Supported only when \;cap_remote_admin==1. \;\;NIC only, Reserved for Switches" access="INDEX" enum="local_operative_parameters=0x0,local_admin_parameters=0x1,remote_admin_parameters=0x2" offset="0x0.30" size="0x0.2" />
+	<field name="tc_configuration" descr="Per-tclass configuration. For details, refer to Table 926, \;&quot;ETS tcN Configuration Register Layout&quot;." subnode="ets_ext" access="RW" high_bound="7" low_bound="0" offset="0x8.0" size="0x40.0" />
+	<field name="global_configuration" descr="Global configuration. For details, refer to Table 928, &quot;ETS \;Global Configuration Register Layout&quot;.\;Reserved for NICs" subnode="ets_global_ext" access="RW" offset="0x48.0" size="0x8.0" />
 </node>
 
 <node name="qgcr_ext" descr="" size="0x8.0" >
@@ -3059,36 +3023,10 @@
 	<field name="color" descr="Default port color (default=0)\;0x0: GREEN\;0x1: YELLOW\;0x2: RED\;For Switch only, Reserved for NICs" access="RW" enum="GREEN=0x0,YELLOW=0x1,RED=0x2" offset="0x4.8" size="0x0.2" />
 </node>
 
-<node name="qpdpc_ext" descr="" size="0x8.0" >
-	<field name="lp_msb" descr="Local port[9:8]" access="INDEX" offset="0x0.12" size="0x0.2" />
-	<field name="local_port" descr="When tport = 0:\;Local port.\;No support for CPU port.\;When tport = 1: tunnel_port" access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="tport" descr="Port is tunnel port\;Supported from Spectrum-2" access="INDEX" offset="0x0.28" size="0x0.1" />
-	<field name="pcp" descr="Default port PCP (default 0)" access="RW" offset="0x4.0" size="0x0.3" />
-	<field name="dei" descr="Default port DEI (default 0)\;when" access="RW" offset="0x4.8" size="0x0.1" />
-</node>
-
 <node name="qpdpm_ext" descr="" size="0x84.0" >
 	<field name="lp_msb" descr="Local port[9:8]" access="INDEX" offset="0x0.12" size="0x0.2" />
 	<field name="local_port" descr="Local Port.\;Supported for data packets from CPU port." access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="dscp" descr="DSCP entry is the DSCP to Switch Priority mapping. For more \;details refer to Table 900" access="RW" high_bound="63" low_bound="0" offset="0x4.16" size="0x80.0" />
-</node>
-
-<node name="qpdsm_ext" descr="" size="0x44.0" >
-	<field name="lp_msb" descr="Local port[9:8]" access="INDEX" offset="0x0.12" size="0x0.2" />
-	<field name="local_port" descr="Local port.\;No support for CPU port." access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="switch_prio" descr="The DSCP mapping for Switch Priority i, See Table 950, \;&quot;switch_prio&lt;j&gt; Layout&quot;\;Switch Prio range is from 0 to cap_max_switch_priorities-\;1" subnode="prio_j_ext" access="RW" high_bound="15" low_bound="0" offset="0x4.0" size="0x40.0" />
-</node>
-
-<node name="qpem_ext" descr="" size="0x104.0" >
-	<field name="lp_msb" descr="Local port[9:8]" access="INDEX" offset="0x0.12" size="0x0.2" />
-	<field name="local_port" descr="Local port.\;No support for CPU port.\;No support for router port." access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="switch_prio" descr="The EXP mapping for Switch Priority i, See Table 942, \;&quot;switch_prio&lt;i&gt; Layout&quot;\;Switch Prio range is from 0 to cap_max_switch_pri\;orities-1" subnode="switch_prio_ext" access="RW" high_bound="15" low_bound="0" offset="0x4.0" size="0x100.0" />
-</node>
-
-<node name="qppm_ext" descr="" size="0x44.0" >
-	<field name="lp_msb" descr="Local port[9:8]" access="INDEX" offset="0x0.12" size="0x0.2" />
-	<field name="local_port" descr="Local port.\;No support for CPU port." access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="switch_prio" descr="The PCP mapping for Switch Priority i, See Table 956, \;&quot;switch_prio&lt;j&gt; Layout&quot;\;Switch Prio range is from 0 to cap_max_switch_priorities-\;1" subnode="switch_prio_j_ext" access="RW" high_bound="15" low_bound="0" offset="0x4.0" size="0x40.0" />
+	<field name="dscp" descr="DSCP entry is the DSCP to Switch Priority mapping. For more \;details refer to Table 914" access="RW" high_bound="63" low_bound="0" offset="0x4.16" size="0x80.0" />
 </node>
 
 <node name="qprt_ext" descr="" size="0x8.0" >
@@ -3103,25 +3041,14 @@
 <node name="qpts_ext" descr="" size="0x8.0" >
 	<field name="lp_msb" descr="Local port[9:8]" access="INDEX" offset="0x0.12" size="0x0.2" />
 	<field name="local_port" descr="Local Port\;" access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="trust_state" descr="0: TRUST_PORT -- reserved for NIC devices\;1: TRUST_PCP - default\;2: TRUST_DSCP\;3: TRUST_BOTH - For NIC devices suported only when \;QCAM.QPTS_TRUST_BOTH == 1" access="RW" enum="TRUST_PCP=0x1,TRUST_DSCP=0x2,TRUST_BOTH=0x3" offset="0x4.0" size="0x0.3" />
+	<field name="trust_state" descr="0: TRUST_PORT - reserved for NIC devices\;1: TRUST_PCP - default\;2: TRUST_DSCP\;3: TRUST_BOTH - For NIC devices suported only when \;QCAM.QPTS_TRUST_BOTH == 1" access="RW" enum="TRUST_PCP=0x1,TRUST_DSCP=0x2,TRUST_BOTH=0x3" offset="0x4.0" size="0x0.3" />
 </node>
 
-<node name="qrwe_ext" descr="" size="0x8.0" >
-	<field name="lp_msb" descr="Local port[9:8]" access="INDEX" offset="0x0.12" size="0x0.2" />
-	<field name="local_port" descr="Local port\;Supported for CPU port\;No support for router port" access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="pcp" descr="pcp_rewrite_enable:\;0: disable PCP and DEI rewrite\;1: enable PCP and DEI rewrite" access="RW" offset="0x4.0" size="0x0.1" />
-	<field name="dscp" descr="dscp_rewrite_enable:\;0: disable DSCP rewrite \;1: enable DSCP rewrite" access="RW" offset="0x4.1" size="0x0.1" />
-	<field name="exp" descr="exp_rewrite_enable:\;0: disable EXP rewrite \;1: enable EXP rewrite" access="RW" offset="0x4.2" size="0x0.1" />
-</node>
-
-<node name="qsipg_ext" descr="" size="0x8.0" >
-	<field name="lp_msb" descr="Local port[9:8]" access="INDEX" offset="0x0.12" size="0x0.2" />
-	<field name="local_port" descr="Egress Local port\;" access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="ext_ipg" descr="Extended Shaper IPG\;Default 0\;Spectrum-1/2: range 0..35\;Spectrum-3 and on: range 0..43\;Units of 1B\;" access="RW" offset="0x4.0" size="0x0.8" />
-</node>
-
-<node name="qsll_ext" descr="" size="0x8.0" >
-	<field name="sll_time" descr="SLL Time\;SLL Time = 4.096uSec * 2^sll_time\;Default is 20 (4.3Sec)Range is 3 ..30\;Value of 31 means infinite (no SLL)" access="RW" offset="0x4.0" size="0x0.5" />
+<node name="qshr_ext" descr="" size="0x50.0" >
+	<field name="local_port" descr="Local port number" access="INDEX" offset="0x0.16" size="0x0.8" />
+	<field name="fr" descr="Fast Response - the device will shape the rate to its mini\;mum value upon receive of WQE LWM (Low WaterMark) \;event \;0: disable\;1: enable" access="RW" offset="0x0.25" size="0x0.1" />
+	<field name="ch" descr="Connected host:\;0: The configuration will be applied on the host calling \;QSHR. \;1: The configuration will be applied on the host connected \;to the function calling the QSHR." access="INDEX" offset="0x0.27" size="0x0.1" />
+	<field name="global_configuration" descr="Global configuration. For details, refer to Table 928, &quot;ETS \;Global Configuration Register Layout&quot;." subnode="ets_global_ext" access="RW" offset="0x48.0" size="0x8.0" />
 </node>
 
 <node name="qspcp_ext" descr="" size="0xc.0" >
@@ -3137,20 +3064,6 @@
 	<field name="ieee_prio" descr="The new IEEE Priority value for the relevant Switch Priority \;value.\;default: \;for i=[0..7]: switch_prio i: ieee_prio i\;for i=[8..15]: switch_prio i: ieee_prio (i-8)\;Note: Different switch_prio values assigned to a given buffer \;(see PPTB) may be assigned to different ieee_prio values." access="RW" offset="0x4.0" size="0x0.3" />
 </node>
 
-<node name="qsptc_ext" descr="" size="0x8.0" >
-	<field name="itclass" descr="Received TClass" access="INDEX" offset="0x0.8" size="0x0.3" />
-	<field name="local_eport" descr="Local egress port number (must be stacking port)" access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="local_iport" descr="Local ingress port number (must be stacking port)" access="INDEX" offset="0x0.24" size="0x0.8" />
-	<field name="tclass" descr="Regenerated stacking TClass for received packets on stack\;ing port with TClass \;The default value for the Stacking Port TClass Regeneration \;Table is tclass[itclass=i]=i." access="RW" offset="0x4.0" size="0x0.3" />
-</node>
-
-<node name="qstct_ext" descr="" size="0x10.0" >
-	<field name="switch_prio" descr="Ingress Switch Priority" access="INDEX" offset="0x0.8" size="0x0.4" />
-	<field name="swid" descr="Switch partition ID" access="INDEX" offset="0x0.24" size="0x0.8" />
-	<field name="utclass" descr="Stacking TClass used for unicast packets with priority \;switch_prio.\;Default values are: \;- utclass[switch_prio=0]=1, \;- utclass[switch_prio=1]=0, \;- utclass[switch_prio=&lt;i&gt;]=i (for i&gt;1)." access="RW" offset="0x4.0" size="0x0.3" />
-	<field name="mtclass" descr="Stacking TClass used for multicast packets with priority prio.\;Default values are: \;- mtclass[switch_prio=0]=1, \;- mtclass[switch_prio=1]=0, \;- mtclass[switch_prio=&lt;i&gt;]=i (for i&gt;1)." access="RW" offset="0x8.0" size="0x0.3" />
-</node>
-
 <node name="qtct_ext" descr="" size="0x8.0" >
 	<field name="switch_prio" descr="Switch Priority" access="INDEX" offset="0x0.0" size="0x0.4" />
 	<field name="lp_msb" descr="Local port[9:8]" access="INDEX" offset="0x0.12" size="0x0.2" />
@@ -3159,58 +3072,6 @@
 	<field name="cap_local_admin" descr="Indicates if operation_type==local_admin_parameters is \;supported\;when" access="RO" offset="0x0.29" size="0x0.1" />
 	<field name="operation_type" descr="Operation type.\;0x0: local_operative_parameters\;0x1: local_admin_parameters - Supported only when \;cap_local_admin==1\;0x2: remote_admin_parameters- Supported only when \;cap_remote_admin==1\;when" access="INDEX" enum="local_operative_parameters=0x0,local_admin_parameters=0x1,remote_admin_parameters=0x2" offset="0x0.30" size="0x0.2" />
 	<field name="tclass" descr="Traffic Class\;Default values are: \;- switch_prio=0: tclass=1 \;- switch_prio=1: tclass=0\;- switch_prio&gt;1: tclass = switch_prio\;\;When MC aware mode is enabled, setting values greater or \;equal to (cap_max_tclass_data)/2) is not allowed" access="RW" offset="0x4.0" size="0x0.4" />
-</node>
-
-<node name="qtctm_ext" descr="" size="0x8.0" >
-	<field name="lp_msb" descr="Local port[9:8]" access="INDEX" offset="0x0.12" size="0x0.2" />
-	<field name="local_port" descr="Local port\;No support for CPU port" access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="mc" descr="Multicast Mode\;0: NONE_MC_AWARE - Switch Priority to Traffic Class map\;ping is not based on Multicast packet indication (default)\;1: MC_AWARE - Switch Priority to Traffic Class mapping is \;based on Multicast packet indication" access="RW" offset="0x4.0" size="0x0.1" />
-</node>
-
-<node name="qtdem_ext" descr="" size="0xc.0" >
-	<field name="tqos_profile" descr="Tunnel QoS profile" access="INDEX" offset="0x0.0" size="0x0.4" />
-	<field name="eip_ecn" descr="Egress IP ECN\;ECN field of the IP header of the packet which goes out \;from the decapsulation" access="RW" offset="0x4.8" size="0x0.2" />
-	<field name="overlay_ecn" descr="ECN field of the IP header in the overlay network\;If the packet has no overlay IP header, the decapsulation \;uses the mapped value &apos;0&apos;" access="INDEX" offset="0x4.16" size="0x0.2" />
-	<field name="underlay_ecn" descr="ECN field of the IP header in the underlay network" access="INDEX" offset="0x4.24" size="0x0.2" />
-	<field name="trap_id" descr="Trap ID\;Trap-ID is DECAP_ECN0 or DECAP_ECN1 \;\;Reserved when trap_en is &apos;0&apos;" access="RW" offset="0x8.0" size="0x0.10" />
-	<field name="trap_en" descr="Trap enable:\;0: no trap due to decap ecn\;1: trap enable with trap_id. HPKT can control the trap \;action. See Section 2.16.3, &quot;HPKT - Host PacKet \;Trap&quot;, on page 393" access="RW" offset="0x8.28" size="0x0.4" />
-</node>
-
-<node name="qteem_ext" descr="" size="0xc.0" >
-	<field name="tqos_profile" descr="Tunnel QoS profile" access="INDEX" offset="0x0.0" size="0x0.4" />
-	<field name="underlay_ecn" descr="ECN of the IP header in the underlay network" access="RW" offset="0x4.16" size="0x0.2" />
-	<field name="overlay_ecn" descr="ECN of the IP header in the overlay network\;Note: if overlay packet did not have ECN then the overlay \;ECN of the packet is considered as 0x0\;" access="INDEX" offset="0x4.24" size="0x0.2" />
-</node>
-
-<node name="qtqcr_ext" descr="" size="0xc.0" >
-	<field name="tqos_profile" descr="Tunnel QoS profile" access="INDEX" offset="0x0.0" size="0x0.4" />
-	<field name="enc_pcp_rw" descr="For encapsulation: how to handle the pcp_rewrite_en:\;0: Preserve the value of the pcp_rewrite_en\;2: Clear the pcp_rewrite_en\;3: Set the pcp_rewrite_en" access="RW" offset="0x4.0" size="0x0.2" />
-	<field name="enc_dscp_rw" descr="For encapsulation: how to handle the dscp_rewrite_en:\;0: Preserve the value of the dscp_rewrite_en\;2: Clear the dscp_rewrite_en\;3: Set the dscp_rewrite_en" access="RW" offset="0x4.2" size="0x0.2" />
-	<field name="enc_set_sp" descr="For encapsulation: how to set Switch Priority and packet \;Color:\;0: Preserve Switch Priority and packet Color\;1: Set new Switch Priority and packet Color as configured \;by QTQDR." access="RW" offset="0x4.24" size="0x0.1" />
-	<field name="enc_set_dscp" descr="For encapsulation: how to set DSCP field:\;0: Copy the DSCP from the overlay (inner) IP header to the \;underlay (outer) IP header. If there is no IP header, use \;QTQDR.dscp\;1: Set the DSCP field as the QTQDR.dscp\;Note: if overlay is non-IP (e.g. MPLSoIP) then action is set \;regardless of configuration." access="RW" offset="0x4.28" size="0x0.1" />
-	<field name="dec_pcp_rw" descr="For decapsulation: how to handle the pcp_rewrite_en:\;0: Preserve the value of the pcp_rewrite_en\;2: Clear the pcp_rewrite_en\;3: Set the pcp_rewrite_en" access="RW" offset="0x8.0" size="0x0.2" />
-	<field name="dec_dscp_rw" descr="For decapsulation: how to handle the dscp_rewrite_en:\;0: Preserve the value of the dscp_rewrite_en\;2: Clear the dscp_rewrite_en\;3: Set the dscp_rewrite_en" access="RW" offset="0x8.2" size="0x0.2" />
-	<field name="dec_set_pcp" descr="For decapsulation: how to set the overlay PCP,DEI fields:\;0: Preserve/Set inner PCP,DEI when push. When \;untagged push value according to QPDPC tunnel_port for \;PCP,DEI \;1: Copy the PCP,DEI from the underlay L2 header (default)\;Note: for L3 overlay a &quot;virtual-pcp&quot; is set, used for ACL \;lookup" access="RW" offset="0x8.20" size="0x0.1" />
-	<field name="dec_set_sp" descr="For decapsulation: how to set Switch Priority and packet \;Color:\;0: Preserve Switch Priority\;1: Set a new Switch Priority from overlay DSCP as config\;ured by RDPM (of the overlay packet, even if not routed). If \;dec_set_dscp is COPY then take new DSCP.\;See Section 13.10.20, &quot;RDPM - Router DSCP to Prior\;ity Mapping Register&quot;, on page 2418." access="RW" offset="0x8.24" size="0x0.1" />
-	<field name="dec_set_dscp" descr="For decapsulation: how to set the overlay DSCP field, if \;exists, while stripping off the underlay headers:\;0: Preserve inner DSCP\;1: Copy the DSCP from the underlay IP header" access="RW" offset="0x8.28" size="0x0.1" />
-</node>
-
-<node name="qtqdr_ext" descr="" size="0x8.0" >
-	<field name="tqos_profile" descr="Tunnel QoS profile" access="INDEX" offset="0x0.0" size="0x0.4" />
-	<field name="lp_msb" descr="Local port[9:8]" access="INDEX" offset="0x0.12" size="0x0.2" />
-	<field name="local_port" descr="Local port number (receive port)\;Supported for CPU port" access="INDEX" offset="0x0.16" size="0x0.8" />
-	<field name="dscp" descr="For NVE/IP encapsulation, the default DSCP" access="RW" offset="0x4.0" size="0x0.6" />
-	<field name="exp" descr="For MPLS ingress LER, the default EXP" access="RW" offset="0x4.8" size="0x0.3" />
-	<field name="switch_prio" descr="For encapsulation, the default values of Switch Priority" access="RW" offset="0x4.16" size="0x0.4" />
-	<field name="color" descr="For encapsulation, the default values of packet Color" access="RW" offset="0x4.24" size="0x0.2" />
-</node>
-
-<node name="qtttl_ext" descr="" size="0xc.0" >
-	<field name="tqos_profile" descr="Tunnel QoS profile" access="INDEX" offset="0x0.0" size="0x0.4" />
-	<field name="enc_ttl_uc" descr="The TTL for Flex Tunnel encapsulation of unicast packets\;Reserved when enc_ttlc = 1" access="RW" offset="0x4.0" size="0x0.8" />
-	<field name="enc_ttlc" descr="For Flex Tunnel encapsulation: TTL Copy from inner:\;0: use enc_ttl_uc or enc_ttl_mc\;1: copy the ttl from the packet header\;" access="RW" offset="0x4.8" size="0x0.1" />
-	<field name="decap_ttl" descr="Configures the overlay TTL at decap\;0: PRESERVE - The overlay TTL is as is from the overlay. \;Spectrum supports this mode only.\;\;1: COPY - The overlay TTL is taken from the underlay. \;\;2: MINIMUM - The overlay TTL is the minimum value between \;underlay and overlay TTL.\;For all cases, the later overlay router will decrement the TTL.\;Note: if no overlay TTL then the action is ignored.\;Note: same config for UC and for MC" access="RW" offset="0x4.16" size="0x0.2" />
-	<field name="enc_ttl_mc" descr="The TTL for Flex Tunnel encapsulation of underlay multicast \;packets\;Reserved when enc_ttlc = 1" access="RW" offset="0x8.0" size="0x0.8" />
 </node>
 
 <node name="register_host_endianness_ext" descr="" size="0x10.0" >
@@ -3314,7 +3175,7 @@
 
 <node name="sbdcc_ext" descr="" size="0x210.0" >
 	<field name="clr" descr="Clear counters" access="OP" offset="0x0.31" size="0x0.1" />
-	<field name="no_buffer_discard_cpu_tclass" descr="Count the number of unicast packets to CPU dropped due \;to lack of shared buffer resources\;For tclass i\;Range is 0.. cap_max_cpu_ingress_tclass-1\;See Table 1590, &quot;SBDCC - counter Layout,&quot; on page 1879" subnode="uint64" access="RO" high_bound="63" low_bound="0" offset="0x10.0" size="0x200.0" />
+	<field name="no_buffer_discard_cpu_tclass" descr="Count the number of unicast packets to CPU dropped due \;to lack of shared buffer resources\;For tclass i\;Range is 0.. cap_max_cpu_ingress_tclass-1\;See Table 1562, &quot;SBDCC - counter Layout,&quot; on page 1876" subnode="uint64" access="RO" high_bound="63" low_bound="0" offset="0x10.0" size="0x200.0" />
 </node>
 
 <node name="sbdcm_ext" descr="" size="0x14.0" >
@@ -3336,8 +3197,8 @@
 	<field name="local_port" descr="Local port number\;Not supported for CPU port" access="RW" offset="0x0.16" size="0x0.8" />
 	<field name="opcode" descr="Opcode:\;0: Bind a hist_id\;1: Unbind a hist_id (default)" access="RW" offset="0x0.28" size="0x0.4" />
 	<field name="hist_id" descr="Histogram id to bind\;from 0 to cap_max_queue_hist_id - 1" access="INDEX" offset="0x4.0" size="0x0.8" />
-	<field name="hist_type" descr="0x1000: Queue_Depth_Traffic_Class\;See Table 1598, &quot;SBHBR - Histograms Hist-type for queue \;histograms,&quot; on page 1884" access="RW" offset="0x8.0" size="0x0.16" />
-	<field name="hist_parameters" descr="According to hist_type\;See Table 1598, &quot;SBHBR - Histograms Hist-type for queue \;histograms,&quot; on page 1884" access="RW" offset="0xC.0" size="0x4.0" />
+	<field name="hist_type" descr="0x1000: Queue_Depth_Traffic_Class\;See Table 1570, &quot;SBHBR - Histograms Hist-type for queue \;histograms,&quot; on page 1881" access="RW" offset="0x8.0" size="0x0.16" />
+	<field name="hist_parameters" descr="According to hist_type\;See Table 1570, &quot;SBHBR - Histograms Hist-type for queue \;histograms,&quot; on page 1881" access="RW" offset="0xC.0" size="0x4.0" />
 	<field name="hist_min_value" descr="Min value for histogram main range\;Units according to the units of the hist_type" access="RW" offset="0x10.0" size="0x4.0" />
 	<field name="hist_max_value" descr="Max value for histogram main range\;Note: for Spectrum device, hist_group=1 this rule must be \;meet:\;hist_max_value = hist_min_value + 2^n, n &gt;= 3\;Units according to the units of the hist_type" access="RW" offset="0x14.0" size="0x4.0" />
 	<field name="sample_time" descr="Sample time interval. \;Allowed range:\;time = 2^sample_time * 128nSec\;sample_time range is 0..cap_max_sample_time-1\;Note: for Spectrum the sample_time is global for all ports \;and all tclass \;For Spectrum-2 the sample_time is per port.tclass." access="RW" offset="0x18.0" size="0x0.6" />
@@ -3348,7 +3209,7 @@
 	<field name="pg_buff" descr="PG buffer - Port PG (dir=ingress) / traffic class (dir=egress)\;For PG buffer: range is 0..cap_max_pg_buffers - 1\;For traffic class, hist_type of Queue_Depth_Traffic_Class: \;range is 0..cap_max_tclass - 1\;For traffic class, hist_type of Queue_Latency: range is \;0..cap_max_tclass_data - 1\;For traffic class to CPU port: range is 0..cap_max_cpu_in\;gress_tclass- 1\;For Spectrum: no admission on Tx.Tclass, so when traffic \;class is in MC aware mode then the traffic classes which \;are MC aware must not be configured, but can be read. \;Spectrum-2 has admission on Tx.Tclass so all traffic \;classes can be configured also for MC aware mode. \;" access="INDEX" offset="0x0.8" size="0x0.6" />
 	<field name="local_port" descr="Local port number.\;For Ingress: excludes CPU port and Router port\;For Egress: excludes IP Router\;For Egress hist_type of Queue_Latency: exludes also CPU \;port" access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="en" descr="When hist_type = Queue_Depth_Traffic_Class:\;Enable the histogram\;When hist_type = Queue_Latency:\;This is a WO for clearing the histograms and the counters" access="RW" offset="0x4.0" size="0x0.1" />
-	<field name="hist_type" descr="0x1000: Queue_Depth_Traffic_Class\;0x1002: Queue_Latency\;See Table 1598, &quot;SBHBR - Histograms Hist-type for queue \;histograms,&quot; on page 1884" access="INDEX" offset="0x8.0" size="0x0.16" />
+	<field name="hist_type" descr="0x1000: Queue_Depth_Traffic_Class\;0x1002: Queue_Latency\;See Table 1570, &quot;SBHBR - Histograms Hist-type for queue \;histograms,&quot; on page 1881" access="INDEX" offset="0x8.0" size="0x0.16" />
 	<field name="mode" descr="mode\;0: Linear histogram\;1: Exponential histogram" access="RW" offset="0x8.28" size="0x0.3" />
 	<field name="hist_min_value" descr="Min value for histogram main range\;Units according to the units of the hist_type" access="RW" offset="0x10.0" size="0x4.0" />
 	<field name="hist_max_value" descr="Max value for histogram main range\;When mode=0 (linear), then this rule must be meet:\;hist_max_value = hist_min_value + 2^n, n &gt;= 3\;When mode=1 (exponential), then this rule must be meet:\;hist_max_value = hist_min_value + 255*2^n, n &gt;= 0\;Units according to the units of the hist_type" access="RW" offset="0x14.0" size="0x4.0" />
@@ -3363,7 +3224,7 @@
 <node name="sbhrr_ext" descr="" size="0x60.0" >
 	<field name="clr" descr="Clear:\;0: Read the data in the histogram agent\;1: Read and clear the data in the histogram agent" access="OP" offset="0x0.31" size="0x0.1" />
 	<field name="hist_id" descr="see SBHBR" access="INDEX" offset="0x4.0" size="0x0.8" />
-	<field name="bin" descr="Value of bin \;Units according to the units of the hist_type which is used \;for the hist_id\;Max bins is according to cap_hist_num_bins\;Bin is saturated at (2^cap_hist_bin_size_type1-1). When \;any bin is saturated all bins stop incrementing.\;See Table 1603, &quot;SBHRR - Bin Layout,&quot; on page 1886" subnode="uint64" access="RO" high_bound="9" low_bound="0" offset="0x10.0" size="0x50.0" />
+	<field name="bin" descr="Value of bin \;Units according to the units of the hist_type which is used \;for the hist_id\;Max bins is according to cap_hist_num_bins\;Bin is saturated at (2^cap_hist_bin_size_type1-1). When \;any bin is saturated all bins stop incrementing.\;See Table 1575, &quot;SBHRR - Bin Layout,&quot; on page 1883" subnode="uint64" access="RO" high_bound="9" low_bound="0" offset="0x10.0" size="0x50.0" />
 </node>
 
 <node name="sbhrr_v2_ext" descr="" size="0x90.0" >
@@ -3371,12 +3232,12 @@
 	<field name="pg_buff" descr="PG buffer - Port PG (dir=ingress) / traffic class (dir=egress)\;For PG buffer: range is 0..cap_max_pg_buffers - 1\;For traffic class: range is 0..cap_max_tclass - 1\;For traffic class to CPU port: range is 0..cap_max_cpu_in\;gress_tclass- 1\;" access="INDEX" offset="0x0.8" size="0x0.6" />
 	<field name="local_port" descr="Local port number.\;For Ingress: excludes CPU port\;For Egress: includes CPU port" access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="clr" descr="Clear:\;0: Read the data in the histogram agent\;1: Read and clear the data in the histogram agent" access="OP" offset="0x0.31" size="0x0.1" />
-	<field name="hist_type" descr="0x1000: Queue_Depth_Traffic_Class\;0x1002: Queue_Latency\;See Table 1598, &quot;SBHBR - Histograms Hist-type for queue \;histograms,&quot; on page 1884" access="INDEX" offset="0x8.0" size="0x0.16" />
+	<field name="hist_type" descr="0x1000: Queue_Depth_Traffic_Class\;0x1002: Queue_Latency\;See Table 1570, &quot;SBHBR - Histograms Hist-type for queue \;histograms,&quot; on page 1881" access="INDEX" offset="0x8.0" size="0x0.16" />
 	<field name="min_sampled_high" descr="min_sampled\;Cleared when clr = 1, cleared to 0xffff_ffff_ffff_ffff\;Units according to the units of the hist_type which is used \;for the hist_id\;Reserved when hist_type = Queue_Depth_Traffic_Class" access="RO" offset="0x10.0" size="0x4.0" />
 	<field name="min_sampled_low" descr="min_sampled\;Cleared when clr = 1, cleared to 0xffff_ffff_ffff_ffff\;Units according to the units of the hist_type which is used \;for the hist_id\;Reserved when hist_type = Queue_Depth_Traffic_Class" access="RO" offset="0x14.0" size="0x4.0" />
 	<field name="max_sampled_high" descr="max_sampled\;Cleared when clr = 1, cleared to 0\;Units according to the units of the hist_type which is used \;for the hist_id\;Reserved when hist_type = Queue_Depth_Traffic_Class" access="RO" offset="0x18.0" size="0x4.0" />
 	<field name="max_sampled_low" descr="max_sampled\;Cleared when clr = 1, cleared to 0\;Units according to the units of the hist_type which is used \;for the hist_id\;Reserved when hist_type = Queue_Depth_Traffic_Class" access="RO" offset="0x1C.0" size="0x4.0" />
-	<field name="bin" descr="Value of bin \;Units according to the units of the hist_type which is used \;for the hist_id\;Max bins is according to cap_hist_num_bins.\;Bin is saturated at (2^cap_hist_bin_size_type1-1). When \;any bin is saturated all bins stop incrementing.\;See Table 1609, &quot;SBHRR_V2 - Bin Layout,&quot; on page 1892" subnode="uint64" access="RO" high_bound="9" low_bound="0" offset="0x40.0" size="0x50.0" />
+	<field name="bin" descr="Value of bin \;Units according to the units of the hist_type which is used \;for the hist_id\;Max bins is according to cap_hist_num_bins.\;Bin is saturated at (2^cap_hist_bin_size_type1-1). When \;any bin is saturated all bins stop incrementing.\;See Table 1581, &quot;SBHRR_V2 - Bin Layout,&quot; on page 1889" subnode="uint64" access="RO" high_bound="9" low_bound="0" offset="0x40.0" size="0x50.0" />
 </node>
 
 <node name="sbib_ext" descr="" size="0x10.0" >
@@ -3462,7 +3323,7 @@
 	<field name="pg_buff_mask" descr="Bit vector for all priority groups.\;Indicates which of the priorities (for which the relevant bit \;is set) are affected by the set operation. Configuration of \;any other priority does not change.\;Range is 0..cap_max_pg_buffers - 1\;Reserved when ports = 1" access="INDEX" offset="0x30.0" size="0x0.10" />
 	<field name="egress_port_mask" descr="Bit vector for all egress network port.\;Indicates which of the ports (for which the relevant bit is \;set) are affected by the set operation. Configuration of \;any other port does not change." access="INDEX" high_bound="7" low_bound="0" offset="0x34.0" size="0x20.0" />
 	<field name="tclass_mask" descr="Bit vector for all traffic classes.\;Indicates which of the traffic classes (for which the rele\;vant bit is set) are affected by the set operation. Configu\;ration of any other priority does not change.\;Range is 0..cap_max_tclass - 1\;For traffic class to CPU port: range is 0..cap_max\;_cpu_ingress_tclass- 1\;Reserved when ports = 1" subnode="uint64" access="INDEX" offset="0x54.0" size="0x8.0" />
-	<field name="shared_buffer_status" descr="Shared Buffer Properties, see Table 1585, &quot;Shared Buffer \;Status Fields,&quot; on page 1877\;This field is a collection of all the statuses of the \;requested quotas, while i=0..min{requested quotas, \;cap_sbsr_stat_size-1}\;The ith status refers a quota as follows;\;The occurrences of the masked ingress quotas are writ\;ten before the masked egress quotas.\;All the occurrences associated to port are written \;together from the smallest masked port index. In each \;port, the occurrences of the masked priority groups/ traf\;fic classes are written from the lowest to the highest." subnode="shared_buffer_status_ext" access="RO" high_bound="19" low_bound="0" offset="0x5C.0" size="0xa0.0" />
+	<field name="shared_buffer_status" descr="Shared Buffer Properties, see Table 1557, &quot;Shared Buffer \;Status Fields,&quot; on page 1874\;This field is a collection of all the statuses of the \;requested quotas, while i=0..min{requested quotas, \;cap_sbsr_stat_size-1}\;The ith status refers a quota as follows;\;The occurrences of the masked ingress quotas are writ\;ten before the masked egress quotas.\;All the occurrences associated to port are written \;together from the smallest masked port index. In each \;port, the occurrences of the masked priority groups/ traf\;fic classes are written from the lowest to the highest." subnode="shared_buffer_status_ext" access="RO" high_bound="19" low_bound="0" offset="0x5C.0" size="0xa0.0" />
 </node>
 
 <node name="set_node_in_ext" descr="" size="0x40.0" >
@@ -3493,12 +3354,12 @@
 	<field name="ps_ticks_res" descr="resolution for each tick in the phase axis in units of 0.01ps" access="RO" offset="0x0.16" size="0x0.16" />
 	<field name="mv_center_pos" descr="center position of eye in 0.1mV" access="RO" offset="0x4.0" size="0x0.16" />
 	<field name="ps_center_pos" descr="center position of eye in 0.01ps" access="RO" offset="0x4.16" size="0x0.16" />
-	<field name="margin" descr="The margin that the lane received based on a specific configu\;ration." access="RO" offset="0x8.0" size="0x0.24" />
+	<field name="margin" descr="The margin that the lane received based on a specific config\;uration." access="RO" offset="0x8.0" size="0x0.24" />
 	<field name="margin_version" descr="[internal] 0 - no margin available\;[internal] 1 - Figure of Merit" access="RO" offset="0x8.24" size="0x0.8" />
 	<field name="height_eo_neg" descr="Voltage offset from eye center to the negative side of the \;upper eye in 0.1mV." access="RO" offset="0xC.0" size="0x0.16" />
-	<field name="height_eo_pos" descr="Voltage offset from eye center to the positive side of the upper \;eye in 0.1mV." access="RO" offset="0xC.16" size="0x0.16" />
+	<field name="height_eo_pos" descr="Voltage offset from eye center to the positive side of the \;upper eye in 0.1mV." access="RO" offset="0xC.16" size="0x0.16" />
 	<field name="phase_eo_neg" descr="The offset from the eye center to the negative (left) side of the \;upper eye in 0.01ps." access="RO" offset="0x10.0" size="0x0.16" />
-	<field name="phase_eo_pos" descr="The offset from the eye center to the positive (right) side of the \;upper eye in 0.01ps." access="RO" offset="0x10.16" size="0x0.16" />
+	<field name="phase_eo_pos" descr="The offset from the eye center to the positive (right) side of \;the upper eye in 0.01ps." access="RO" offset="0x10.16" size="0x0.16" />
 </node>
 
 <node name="slred_page_data_ext" descr="" size="0xa0.0" >
@@ -3523,7 +3384,7 @@
 	<field name="destructive_ctrl" descr="0 - non destructive scan\;1 - destructive scan\;Note: if non destructive scan is not supported this field is \;ignored and a destructive scan will be operated" access="RW" offset="0x4.29" size="0x0.1" />
 	<field name="last_scan" descr="set to &apos;1&apos; when performing last eye scan for lane.\;For example: when scanning 3 eyes in the order of up, mid, \;down. field should be set when scanning down eye.\;If scanning only 1 eye, field should be set." access="WO" offset="0x4.30" size="0x0.1" />
 	<field name="en" descr="start eye scan" access="WO" offset="0x4.31" size="0x0.1" />
-	<field name="page_data" descr="page data for index page_data_sel\;page 0 will contain info page data.\;Table  1458, &quot;SLRED - Serdes Lane Receive Eye Diagram Reg\;ister Layout for info page,&quot; on page  1750\;the page data 1-7 will contain the err_val for each index in \;ascending order.\;Table  1460, &quot;SLRED - Serdes Lane Receive Eye Diagram Reg\;ister Layout for page_data,&quot; on page  1752\;Each err_val[i] represents the bit errors of row floor(i / \;width_dim)\;and column i mod width_dim.\;Matrix is built starting from the left bottom corner.\;each err_val indicates the number of bit errors for one tick" subnode="slred_reg_page_data_auto_ext" access="RO" offset="0x8.0" size="0xa0.0" />
+	<field name="page_data" descr="page data for index page_data_sel\;page 0 will contain info page data.\;Table  1430, &quot;SLRED - Serdes Lane Receive Eye Diagram Reg\;ister Layout for info page,&quot; on page  1748\;the page data 1-7 will contain the err_val for each index in \;ascending order.\;Table  1432, &quot;SLRED - Serdes Lane Receive Eye Diagram Reg\;ister Layout for page_data,&quot; on page  1750\;Each err_val[i] represents the bit errors of row floor(i / \;width_dim)\;and column i mod width_dim.\;Matrix is built starting from the left bottom corner.\;each err_val indicates the number of bit errors for one tick" subnode="slred_reg_page_data_auto_ext" access="RO" offset="0x8.0" size="0xa0.0" />
 </node>
 
 <node name="slred_reg_page_data_auto_ext" descr="" attr_is_union="1" size="0xa0.0" >
@@ -3536,17 +3397,17 @@
 	<field name="grade" descr="The grade that the lane received based on a specific configu\;ration.\;" access="RO" offset="0x4.0" size="0x0.24" />
 	<field name="grade_version" descr="" access="RO" offset="0x4.24" size="0x0.8" />
 	<field name="height_eo_neg_up" descr="Voltage offset from eye center to the negative side of the \;upper eye. Only applicable for PAM4 signal." access="RO" offset="0x8.0" size="0x0.16" />
-	<field name="height_eo_pos_up" descr="Voltage offset from eye center to the positive side of the upper \;eye.\;Only applicable for PAM4 signal." access="RO" offset="0x8.16" size="0x0.16" />
+	<field name="height_eo_pos_up" descr="Voltage offset from eye center to the positive side of the \;upper eye.\;Only applicable for PAM4 signal." access="RO" offset="0x8.16" size="0x0.16" />
 	<field name="height_eo_pos_mid" descr="Voltage offset from eye center to the positive side of the mid\;dle eye." access="RO" offset="0xC.0" size="0x0.16" />
 	<field name="phase_eo_neg_up" descr="The offset from the eye center to the negative (left) side of the \;upper eye. Only applicable for PAM4 signal." access="RO" offset="0xC.16" size="0x0.8" />
-	<field name="phase_eo_pos_up" descr="The offset from the eye center to the positive (right) side of the \;upper eye. Only applicable for PAM4 signal." access="RO" offset="0xC.24" size="0x0.8" />
+	<field name="phase_eo_pos_up" descr="The offset from the eye center to the positive (right) side of \;the upper eye. Only applicable for PAM4 signal." access="RO" offset="0xC.24" size="0x0.8" />
 	<field name="phase_eo_neg_mid" descr="The offset from the eye center to the negative (left) side of the \;middle eye." access="RO" offset="0x10.0" size="0x0.8" />
-	<field name="phase_eo_pos_mid" descr="The offset from the eye center to the positive (right) side of the \;middle eye." access="RO" offset="0x10.8" size="0x0.8" />
+	<field name="phase_eo_pos_mid" descr="The offset from the eye center to the positive (right) side of \;the middle eye." access="RO" offset="0x10.8" size="0x0.8" />
 	<field name="height_eo_neg_mid" descr="Voltage offset from eye center to the negative side of the mid\;dle eye." access="RO" offset="0x10.16" size="0x0.16" />
-	<field name="height_eo_neg_low" descr="Voltage offset from eye center to the negative side of the lower \;eye. Only applicable for PAM4 signal." access="RO" offset="0x14.0" size="0x0.16" />
+	<field name="height_eo_neg_low" descr="Voltage offset from eye center to the negative side of the \;lower eye. Only applicable for PAM4 signal." access="RO" offset="0x14.0" size="0x0.16" />
 	<field name="height_eo_pos_low" descr="Voltage offset from eye center to the positive side of the lower \;eye. Only applicable for PAM4 signal." access="RO" offset="0x14.16" size="0x0.16" />
 	<field name="phase_eo_neg_low" descr="The offset from the eye center to the negative (left) side of the \;lower eye. Only applicable for PAM4 signal." access="RO" offset="0x18.16" size="0x0.8" />
-	<field name="phase_eo_pos_low" descr="The offset from the eye center to the positive (right) side of the \;lower eye. Only applicable for PAM4 signal." access="RO" offset="0x18.24" size="0x0.8" />
+	<field name="phase_eo_pos_low" descr="The offset from the eye center to the positive (right) side of \;the lower eye. Only applicable for PAM4 signal." access="RO" offset="0x18.24" size="0x0.8" />
 	<field name="up_eye_grade" descr="upper eye grade" access="RO" offset="0x1C.0" size="0x0.16" />
 	<field name="mid_eye_grade" descr="middle eye grade" access="RO" offset="0x1C.16" size="0x0.16" />
 	<field name="dn_eye_grade" descr="lower eye grade" access="RO" offset="0x20.0" size="0x0.16" />
@@ -3572,13 +3433,13 @@
 	<field name="last_fom" descr="last measured EOM-FOM status of composite eye.\;valid only if eom_measurment bit &apos;3&apos; is set" access="RO" offset="0x8.24" size="0x0.8" />
 </node>
 
-<node name="slrg_7nm_testing_ext" descr="" size="0x18.0" >
+<node name="slrg_7nm_testing_ext" descr="" size="0x1c.0" >
 	<field name="iterations" descr="Number of iterations to run FOM\;0 - fw default" access="OP" offset="0x0.0" size="0x0.10" />
 	<field name="status" descr="0 - measure not preformed\;1 - measuring in progress\;2 - measuring done" access="RO" offset="0x0.16" size="0x0.3" />
-	<field name="lane_meas_info" descr="FOM measurements info for lane &lt;i&gt;\;See Table 1340, &quot;Lane Measure Info layout,&quot; on \;page 1599." subnode="slrg_lane_measure_info_ext" access="RO" offset="0x4.0" size="0x14.0" />
+	<field name="lane_meas_info" descr="FOM measurements info for lane &lt;i&gt;\;See Table 1312, &quot;Lane Measure Info layout,&quot; on page 1595." subnode="slrg_lane_measure_info_ext" access="RO" offset="0x4.0" size="0x18.0" />
 </node>
 
-<node name="slrg_lane_measure_info_ext" descr="" size="0x14.0" >
+<node name="slrg_lane_measure_info_ext" descr="" size="0x18.0" >
 	<field name="comp_max" descr="maximum measured FOM out of all the measurements for \;every eye.\;NRZ have only composite eye value" access="RO" offset="0x0.0" size="0x0.8" />
 	<field name="lower_max" descr="maximum measured FOM out of all the measurements for \;every eye.\;NRZ have only composite eye value" access="RO" offset="0x0.8" size="0x0.8" />
 	<field name="mid_max" descr="maximum measured FOM out of all the measurements for \;every eye.\;NRZ have only composite eye value" access="RO" offset="0x0.16" size="0x0.8" />
@@ -3587,14 +3448,14 @@
 	<field name="lower_min" descr="minimum measured FOM out of all the measurements for \;every eye.\;NRZ have only composite eye value" access="RO" offset="0x4.8" size="0x0.8" />
 	<field name="mid_min" descr="minimum measured FOM out of all the measurements for \;every eye.\;NRZ have only composite eye value" access="RO" offset="0x4.16" size="0x0.8" />
 	<field name="upper_min" descr="minimum measured FOM out of all the measurements for \;every eye.\;NRZ have only composite eye value" access="RO" offset="0x4.24" size="0x0.8" />
-	<field name="comp_std" descr="Standard deviation calculated in 0.1 units out of all the FOM \;measurements for every eye.\;NRZ have only composite eye value" access="RO" offset="0x8.0" size="0x0.8" />
-	<field name="lower_std" descr="Standard deviation calculated in 0.1 units out of all the FOM \;measurements for every eye.\;NRZ have only composite eye value" access="RO" offset="0x8.8" size="0x0.8" />
-	<field name="mid_std" descr="Standard deviation calculated in 0.1 units out of all the FOM \;measurements for every eye.\;NRZ have only composite eye value" access="RO" offset="0x8.16" size="0x0.8" />
-	<field name="upper_std" descr="Standard deviation calculated in 0.1 units out of all the FOM \;measurements for every eye.\;NRZ have only composite eye value" access="RO" offset="0x8.24" size="0x0.8" />
-	<field name="mid_avg" descr="average measured FOM in 0.1 units out of all the measure\;ments for every eye.\;NRZ have only composite eye value" access="RO" offset="0xC.0" size="0x0.12" />
-	<field name="upper_avg" descr="average measured FOM in 0.1 units out of all the measure\;ments for every eye.\;NRZ have only composite eye value" access="RO" offset="0xC.16" size="0x0.12" />
-	<field name="comp_avg" descr="average measured FOM in 0.1 units out of all the measure\;ments for every eye.\;NRZ have only composite eye value" access="RO" offset="0x10.0" size="0x0.12" />
-	<field name="lower_avg" descr="average measured FOM in 0.1 units out of all the measure\;ments for every eye.\;NRZ have only composite eye value" access="RO" offset="0x10.16" size="0x0.12" />
+	<field name="mid_std" descr="Value of standard deviation square in 0.1 units. To get the \;value of the standard deviation, need to apply square root \;function on value.\;Calculated on all FOM measurements for every eye.\;NRZ have only composite eye value" access="RO" offset="0x8.0" size="0x0.16" />
+	<field name="upper_std" descr="Value of standard deviation square in 0.1 units. To get the \;value of the standard deviation, need to apply square root \;function on value.\;Calculated on all FOM measurements for every eye.\;NRZ have only composite eye value" access="RO" offset="0x8.16" size="0x0.16" />
+	<field name="comp_std" descr="Value of standard deviation square in 0.1 units. To get the \;value of the standard deviation, need to apply square root \;function on value.\;Calculated on all FOM measurements for every eye.\;NRZ have only composite eye value" access="RO" offset="0xC.0" size="0x0.16" />
+	<field name="lower_std" descr="Value of standard deviation square in 0.1 units. To get the \;value of the standard deviation, need to apply square root \;function on value.\;Calculated on all FOM measurements for every eye.\;NRZ have only composite eye value" access="RO" offset="0xC.16" size="0x0.16" />
+	<field name="mid_avg" descr="average measured FOM in 0.1 units out of all the measure\;ments for every eye.\;NRZ have only composite eye value" access="RO" offset="0x10.0" size="0x0.12" />
+	<field name="upper_avg" descr="average measured FOM in 0.1 units out of all the measure\;ments for every eye.\;NRZ have only composite eye value" access="RO" offset="0x10.16" size="0x0.12" />
+	<field name="comp_avg" descr="average measured FOM in 0.1 units out of all the measure\;ments for every eye.\;NRZ have only composite eye value" access="RO" offset="0x14.0" size="0x0.12" />
+	<field name="lower_avg" descr="average measured FOM in 0.1 units out of all the measure\;ments for every eye.\;NRZ have only composite eye value" access="RO" offset="0x14.16" size="0x0.12" />
 </node>
 
 <node name="slrg_reg_ext" descr="" size="0x28.0" >
@@ -3605,14 +3466,14 @@
 	<field name="local_port" descr="Local port number." access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="version" descr="0 - 40nm products\;1 - 28nm products\;3 - 16nm products\;4 - 7nm products" access="RO" offset="0x0.24" size="0x0.4" />
 	<field name="status" descr="0 - Invalid\;1 - Valid\;" access="RO" offset="0x0.28" size="0x0.4" />
-	<field name="page_data" descr="Table 1332, &quot;SLRG - Serdes Lane Receive Grade Regis\;ter Layout for 40nm and 28nm,&quot; on page 1594\;Table 1334, &quot;SLRG - Serdes Lane Receive Grade Regis\;ter Layout for 16nm,&quot; on page 1595\;Table 1336, &quot;SLRG - Serdes Lane Receive Grade Regis\;ter Layout for 7nm,&quot; on page 1597\;Table 1338, &quot;SLRG - Serdes Lane Receive Grade Regis\;ter Layout for 7nm Testing,&quot; on page 1598" subnode="slrg_reg_page_data_auto_ext" access="RO" offset="0x4.0" size="0x24.0" />
+	<field name="page_data" descr="Table 1304, &quot;SLRG - Serdes Lane Receive Grade Register \;Layout for 40nm and 28nm,&quot; on page 1589\;Table 1306, &quot;SLRG - Serdes Lane Receive Grade Register \;Layout for 16nm,&quot; on page 1591\;Table 1308, &quot;SLRG - Serdes Lane Receive Grade Register \;Layout for 7nm,&quot; on page 1593\;Table 1310, &quot;SLRG - Serdes Lane Receive Grade Register \;Layout for 7nm Testing,&quot; on page 1594" subnode="slrg_reg_page_data_auto_ext" access="RO" offset="0x4.0" size="0x24.0" />
 </node>
 
 <node name="slrg_reg_page_data_auto_ext" descr="" attr_is_union="1" size="0x24.0" >
 	<field name="slrg_40nm_28nm_ext" descr="" subnode="slrg_40nm_28nm_ext" offset="0x0.0" size="0x24.0" />
 	<field name="slrg_16nm_ext" descr="" subnode="slrg_16nm_ext" offset="0x0.0" size="0x24.0" />
 	<field name="slrg_7nm_ext" descr="" subnode="slrg_7nm_ext" offset="0x0.0" size="0x18.0" />
-	<field name="slrg_7nm_testing_ext" descr="" subnode="slrg_7nm_testing_ext" offset="0x0.0" size="0x18.0" />
+	<field name="slrg_7nm_testing_ext" descr="" subnode="slrg_7nm_testing_ext" offset="0x0.0" size="0x1c.0" />
 </node>
 
 <node name="sltp_16nm_ext" descr="" size="0x18.0" >
@@ -3640,11 +3501,12 @@
 </node>
 
 <node name="sltp_7nm_ext" descr="" size="0x18.0" >
-	<field name="fir_pre2" descr="Signed value for TX FIR taps.\;tap scaling = fir_tap/63.\;for 100G per lane 5 taps, for 50G per lane 4 taps are used (no \;pre3)\;Valid values for taps:\;fir_main [34,63]\;fir_pre1 [-23,0]\;fir_pre2 [0,8]\;fir_pre3 [-5,0]\;fir_post1 [-21,0]\;\;Need to guarantee that the sum of the coefficient magnitude \;equals sum |c(i)| &lt;= 63.\;NRZ speeds must guarantee sum|c(i)| = 63" access="RW" offset="0x0.0" size="0x0.8" />
-	<field name="fir_pre3" descr="Signed value for TX FIR taps.\;tap scaling = fir_tap/63.\;for 100G per lane 5 taps, for 50G per lane 4 taps are used (no \;pre3)\;Valid values for taps:\;fir_main [34,63]\;fir_pre1 [-23,0]\;fir_pre2 [0,8]\;fir_pre3 [-5,0]\;fir_post1 [-21,0]\;\;Need to guarantee that the sum of the coefficient magnitude \;equals sum |c(i)| &lt;= 63.\;NRZ speeds must guarantee sum|c(i)| = 63" access="RW" offset="0x0.8" size="0x0.8" />
-	<field name="fir_post1" descr="Signed value for TX FIR taps.\;tap scaling = fir_tap/63.\;for 100G per lane 5 taps, for 50G per lane 4 taps are used (no \;pre3)\;Valid values for taps:\;fir_main [34,63]\;fir_pre1 [-23,0]\;fir_pre2 [0,8]\;fir_pre3 [-5,0]\;fir_post1 [-21,0]\;\;Need to guarantee that the sum of the coefficient magnitude \;equals sum |c(i)| &lt;= 63.\;NRZ speeds must guarantee sum|c(i)| = 63" access="RW" offset="0x4.8" size="0x0.8" />
-	<field name="fir_main" descr="Signed value for TX FIR taps.\;tap scaling = fir_tap/63.\;for 100G per lane 5 taps, for 50G per lane 4 taps are used (no \;pre3)\;Valid values for taps:\;fir_main [34,63]\;fir_pre1 [-23,0]\;fir_pre2 [0,8]\;fir_pre3 [-5,0]\;fir_post1 [-21,0]\;\;Need to guarantee that the sum of the coefficient magnitude \;equals sum |c(i)| &lt;= 63.\;NRZ speeds must guarantee sum|c(i)| = 63" access="RW" offset="0x4.16" size="0x0.8" />
-	<field name="fir_pre1" descr="Signed value for TX FIR taps.\;tap scaling = fir_tap/63.\;for 100G per lane 5 taps, for 50G per lane 4 taps are used (no \;pre3)\;Valid values for taps:\;fir_main [34,63]\;fir_pre1 [-23,0]\;fir_pre2 [0,8]\;fir_pre3 [-5,0]\;fir_post1 [-21,0]\;\;Need to guarantee that the sum of the coefficient magnitude \;equals sum |c(i)| &lt;= 63.\;NRZ speeds must guarantee sum|c(i)| = 63" access="RW" offset="0x4.24" size="0x0.8" />
+	<field name="fir_pre2" descr="Signed value for TX FIR taps.\;tap scaling = fir_tap/63.\;for 100G per lane 5 taps, \;for 50G per lane 4 taps are used (no pre3), f\;or 25G per lane 3 taps are used (no pre3,pre2)\;Valid values for taps:\;fir_main [34,63]\;fir_pre1 [-23,0]\;fir_pre2 [0,8]\;fir_pre3 [-5,0]\;fir_post1 [-21,0]\;\;Need to guarantee that the sum of the coefficient magnitude \;equals sum |c(i)| &lt;= 63.\;NRZ speeds must guarantee sum|c(i)| = 63" access="RW" offset="0x0.0" size="0x0.8" />
+	<field name="fir_pre3" descr="Signed value for TX FIR taps.\;tap scaling = fir_tap/63.\;for 100G per lane 5 taps, \;for 50G per lane 4 taps are used (no pre3), f\;or 25G per lane 3 taps are used (no pre3,pre2)\;Valid values for taps:\;fir_main [34,63]\;fir_pre1 [-23,0]\;fir_pre2 [0,8]\;fir_pre3 [-5,0]\;fir_post1 [-21,0]\;\;Need to guarantee that the sum of the coefficient magnitude \;equals sum |c(i)| &lt;= 63.\;NRZ speeds must guarantee sum|c(i)| = 63" access="RW" offset="0x0.8" size="0x0.8" />
+	<field name="ob_bad_stat" descr="Bitmask for bad &apos;set&apos; status:\;Bit 0: pre3_is_out_of_range\;Bit 1: pre2_is_out_of_range\;Bit 2: pre1_is_out_of_range\;Bit 3: main_tap_is_out_of_range\;Bit 4: post1_is_out_of_range\;Bit 5: sum_of_taps_is_out_of_range\;Bit 6: taps_not_alinged_with_speed" access="RO" enum="pre3_is_out_of_range=0x1,pre2_is_out_of_range=0x2,pre1_is_out_of_range=0x4,main_tap_is_out_of_range=0x8,post1_is_out_of_range=0x10,sum_of_taps_is_out_of_range=0x20,taps_not_alinged_with_speed=0x40" offset="0x0.16" size="0x0.8" />
+	<field name="fir_post1" descr="Signed value for TX FIR taps.\;tap scaling = fir_tap/63.\;for 100G per lane 5 taps, \;for 50G per lane 4 taps are used (no pre3), f\;or 25G per lane 3 taps are used (no pre3,pre2)\;Valid values for taps:\;fir_main [34,63]\;fir_pre1 [-23,0]\;fir_pre2 [0,8]\;fir_pre3 [-5,0]\;fir_post1 [-21,0]\;\;Need to guarantee that the sum of the coefficient magnitude \;equals sum |c(i)| &lt;= 63.\;NRZ speeds must guarantee sum|c(i)| = 63" access="RW" offset="0x4.8" size="0x0.8" />
+	<field name="fir_main" descr="Signed value for TX FIR taps.\;tap scaling = fir_tap/63.\;for 100G per lane 5 taps, \;for 50G per lane 4 taps are used (no pre3), f\;or 25G per lane 3 taps are used (no pre3,pre2)\;Valid values for taps:\;fir_main [34,63]\;fir_pre1 [-23,0]\;fir_pre2 [0,8]\;fir_pre3 [-5,0]\;fir_post1 [-21,0]\;\;Need to guarantee that the sum of the coefficient magnitude \;equals sum |c(i)| &lt;= 63.\;NRZ speeds must guarantee sum|c(i)| = 63" access="RW" offset="0x4.16" size="0x0.8" />
+	<field name="fir_pre1" descr="Signed value for TX FIR taps.\;tap scaling = fir_tap/63.\;for 100G per lane 5 taps, \;for 50G per lane 4 taps are used (no pre3), f\;or 25G per lane 3 taps are used (no pre3,pre2)\;Valid values for taps:\;fir_main [34,63]\;fir_pre1 [-23,0]\;fir_pre2 [0,8]\;fir_pre3 [-5,0]\;fir_post1 [-21,0]\;\;Need to guarantee that the sum of the coefficient magnitude \;equals sum |c(i)| &lt;= 63.\;NRZ speeds must guarantee sum|c(i)| = 63" access="RW" offset="0x4.24" size="0x0.8" />
 </node>
 
 <node name="sltp_gearbox_ext" descr="" size="0x18.0" >
@@ -3659,6 +3521,7 @@
 <node name="sltp_lut_7nm_ext" descr="" size="0x48.0" >
 	<field name="fir_pre2" descr="Signed value for TX FIR taps.\;tap scaling = fir_tap/63.\;Valid values for taps:\;fir_pre2 [0,8]\;fir_pre3 [-5,0]" access="RW" offset="0x0.0" size="0x0.8" />
 	<field name="fir_pre3" descr="Signed value for TX FIR taps.\;tap scaling = fir_tap/63.\;Valid values for taps:\;fir_pre2 [0,8]\;fir_pre3 [-5,0]" access="RW" offset="0x0.8" size="0x0.8" />
+	<field name="ob_bad_stat" descr="Bitmask for bad &apos;set&apos; status:\;Bit 0: pre3_is_out_of_range\;Bit 1: pre2_is_out_of_range\;Bit 7: LUT_value_is_out_of_range" access="RO" enum="pre3_is_out_of_range=0x1,pre2_is_out_of_range=0x2,LUT_value_is_out_of_range=0x80" offset="0x0.16" size="0x0.8" />
 	<field name="lut0" descr="Lookup Table values per entry" access="RW" offset="0x8.0" size="0x0.8" />
 	<field name="lut1" descr="Lookup Table values per entry" access="RW" offset="0x8.8" size="0x0.8" />
 	<field name="lut2" descr="Lookup Table values per entry" access="RW" offset="0x8.16" size="0x0.8" />
@@ -3730,12 +3593,12 @@
 	<field name="port_type" descr="For HCA supported only when indicated by PCAM \;0 - Network Port\;1 - Near-End Port (For Retimer/Gearbox - Host side)\;2 - Internal IC LR Port \;3 - Far-End Port (For Retimer/Gearbox - Line side)\;Other values are reserved." access="INDEX" offset="0x0.1" size="0x0.3" />
 	<field name="lane_speed" descr="Reserved for PCIe.\;The lane speed for TX settings:\;0 - SDR / Gen1 (PCIe)\;1 - DDR / Gen2 (PCIe) / 5GBASE-R\;2 - QDR / Gen3 (PCIe)\;3 - FDR10 (10GE / 40GE)\;4 - FDR (56GE) / Gen4 (PCIe)\;5 - EDR (25GE / 50GE / 100GE) / Gen5 (PCIe)\;6 - HDR (50GE / 200GE / 400GE)\;7 - NDR /100GE / 200GE / 400GE / 800GE (53.125 Gbd / \;106.25Gb/s)\;8-9 - Reserved\;10 - 1GE\;11 - 2.5GE (XAUI)\;12 - 50GE-KR4\;13-15 - Reserved" access="RW" offset="0x0.4" size="0x0.4" />
 	<field name="lane" descr="Physical lane number" access="INDEX" offset="0x0.8" size="0x0.4" />
-	<field name="tx_policy" descr="configures Tx parameter set policy\;0 - Tx parameters will be set according to best possible con\;figuration chosen by the system\;1 - When set Tx parameters will be set according to Data Base \;only and will not be overridden by training" access="RW" offset="0x0.13" size="0x0.1" />
+	<field name="tx_policy" descr="Configures Tx parameter set policy\;0 - Tx parameters will be set according to best possible con\;figuration chosen by the system\;1 - Tx parameters will be set according to Data Base only and \;will not be overridden by link training (e.g KR-Startup)" access="RW" offset="0x0.13" size="0x0.1" />
 	<field name="pnat" descr="Port number access type. determines the way local_port is \;interpreted:\;0 - Local port number\;1 - IB / label port number\;3 - PCI / Out of Band" access="INDEX" offset="0x0.14" size="0x0.2" />
 	<field name="local_port" descr="Local port number." access="INDEX" offset="0x0.16" size="0x0.8" />
 	<field name="version" descr="0 - 40nm products\;1 - 28nm products\;3 - 16nm products\;4 - 7nm products" access="RO" offset="0x0.24" size="0x0.4" />
 	<field name="status" descr="0 - Invalid\;1 - Valid" access="RO" offset="0x0.28" size="0x0.4" />
-	<field name="page_data" descr="Table  1320, &quot;SLTP - Serdes Lane Transmit Parameters Regis\;ter Layout for 28nm and 40nm,&quot; on page  1584\;Table  1322, &quot;SLTP - Serdes Lane Transmit Parameters Regis\;ter Layout for 16nm,&quot; on page  1585\;Table  1324, &quot;[Internal] Serdes Lane Transmit Parameters \;Register Layout For Gearbox,&quot; on page  1587\;Table  1326, &quot;SLTP - Serdes Lane Transmit Parameters Regis\;ter Layout for 7nm,&quot; on page  1587\;Table  1328, &quot;SLTP - Serdes Lane Transmit Parameters Regis\;ter Layout for LUT 7nm,&quot; on page  1589" subnode="sltp_reg_page_data_auto_ext" access="RO" offset="0x4.0" size="0x48.0" />
+	<field name="page_data" descr="Table  1292, &quot;SLTP - Serdes Lane Transmit Parameters Reg\;ister Layout for 28nm and 40nm,&quot; on page  1580\;Table  1294, &quot;SLTP - Serdes Lane Transmit Parameters Reg\;ister Layout for 16nm,&quot; on page  1581\;Table  1296, &quot;[Internal] Serdes Lane Transmit Parameters \;Register Layout For Gearbox,&quot; on page  1583\;Table  1298, &quot;SLTP - Serdes Lane Transmit Parameters Reg\;ister Layout for 7nm,&quot; on page  1583\;Table  1300, &quot;SLTP - Serdes Lane Transmit Parameters Reg\;ister Layout for LUT 7nm,&quot; on page  1585" subnode="sltp_reg_page_data_auto_ext" access="RO" offset="0x4.0" size="0x48.0" />
 </node>
 
 <node name="sltp_reg_page_data_auto_ext" descr="" attr_is_union="1" size="0x48.0" >
@@ -3754,16 +3617,6 @@
 <node name="string_db_parameters_ext" descr="" size="0x8.0" >
 	<field name="string_db_base_address" descr="Offset of the first string of the section, relative to the entire \;string data base, given in bytes." access="RO" offset="0x0.0" size="0x4.0" />
 	<field name="string_db_size" descr="Size of string database section, given in bytes" access="RO" offset="0x4.0" size="0x0.24" />
-</node>
-
-<node name="switch_prio_ext" descr="" size="0x10.0" >
-	<field name="ecn" descr="The EXP mapping for ECN j, see Table 944, &quot;ecn&lt;j&gt; Layout&quot;" subnode="ecn_ext" access="RW" high_bound="3" low_bound="0" offset="0x0.0" size="0x10.0" />
-</node>
-
-<node name="switch_prio_j_ext" descr="" size="0x4.0" >
-	<field name="color2" descr="The PCP and DEI mapping for color k, where k=0..2, see \;Table 958, &quot;color&lt;k&gt;Layout&quot;" access="RW" offset="0x0.8" size="0x0.8" />
-	<field name="color1" descr="The PCP and DEI mapping for color k, where k=0..2, see \;Table 958, &quot;color&lt;k&gt;Layout&quot;" access="RW" offset="0x0.16" size="0x0.8" />
-	<field name="color0" descr="The PCP and DEI mapping for color k, where k=0..2, see \;Table 958, &quot;color&lt;k&gt;Layout&quot;" access="RW" offset="0x0.24" size="0x0.8" />
 </node>
 
 <node name="uint64" descr="" size="0x8.0" >
@@ -3807,12 +3660,6 @@
 	<field name="fc_fec_uncorrectable_blocks_lane7_high" descr="Perf.PortExtendedSpeedsCounters(FECCor\;rectableBlockCounterLane7)\;[Internal] supported in USR - ZL FEC" access="RO" offset="0x80.0" size="0x4.0" />
 	<field name="fc_fec_uncorrectable_blocks_lane7_low" descr="Perf.PortExtendedSpeedsCounters(FECCor\;rectableBlockCounterLane7)\;[Internal] supported in USR - ZL FEC" access="RO" offset="0x84.0" size="0x4.0" />
 	<field name="link_down_events" descr="Perf.PortCounters(LinkDownedCounter)\;[Internal] supported in USR" access="RO" offset="0x88.0" size="0x4.0" />
-</node>
-
-<node name="vhca_trust_level_ext" descr="" size="0x10.0" >
-	<field name="vhca_id" descr="Valid only when all_vhca==0" access="RO" offset="0x0.0" size="0x0.16" />
-	<field name="all_vhca" descr="If set, set turst_level to all vHCAs that belong to this \;vport_group_manager." access="WO" offset="0x0.31" size="0x0.1" />
-	<field name="trust_level" descr="Bitmask indicates trust levels supported for a vhca\;Bit 0x0: FULL_TRUST" access="WO" enum="FULL_TRUST=0x1" offset="0x4.0" size="0x4.0" />
 </node>
 
 <node name="ztt_ext" descr="" size="0x10.0" >

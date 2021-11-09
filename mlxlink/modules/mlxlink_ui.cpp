@@ -824,11 +824,16 @@ void MlxlinkUi::commandsCaller()
     }
 }
 
+void MlxlinkUi::addCmd(OPTION_TYPE option)
+{
+    if (!isIn(option, _sendRegFuncMap)) {
+        _sendRegFuncMap.push_back(option);
+    }
+}
+
 ParseStatus MlxlinkUi::HandleOption(string name, string value)
 {
-    if (!isIn(SHOW_PDDR, _sendRegFuncMap)) {
-        _sendRegFuncMap.push_back(SHOW_PDDR);
-    }
+    addCmd(SHOW_PDDR);
     if (name == PRINT_JSON_OUTPUT_FLAG) {
         MlxlinkRecord::jsonFormat = true;
         MlxlinkRecord::cOut = &cerr;
@@ -844,30 +849,30 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _mlxlinkCommander->_device = value;
         return PARSE_OK;
     } else if (name == MODULE_INFO_FLAG) {
-        _sendRegFuncMap.push_back(SHOW_MODULE);
+        addCmd(SHOW_MODULE);
         _mlxlinkCommander->_networkCmds++;
         return PARSE_OK;
     } else if (name == BER_FLAG) {
-        _sendRegFuncMap.push_back(SHOW_BER);
+        addCmd(SHOW_BER);
         _mlxlinkCommander->_userInput._showCounters = true;
         return PARSE_OK;
     } else if (name == PPCNT_CLEAR_FLAG) {
-        _sendRegFuncMap.push_back(SEND_CLEAR_COUNTERS);
+        addCmd(SEND_CLEAR_COUNTERS);
         _mlxlinkCommander->_uniqueCmds++;
         return PARSE_OK;
     } else if (name == EYE_OPENING_FLAG) {
-        _sendRegFuncMap.push_back(SHOW_EYE);
+        addCmd(SHOW_EYE);
         _mlxlinkCommander->_userInput._showEyeInfo = true;
         return PARSE_OK;
     } else if (name == SLTP_SHOW_FLAG) {
-        _sendRegFuncMap.push_back(SHOW_SLTP);
+        addCmd(SHOW_SLTP);
         _mlxlinkCommander->_userInput._showSltp = true;
         return PARSE_OK;
     } else if (name == SLTP_SET_FLAG) {
         string sltpParamsLine = toUpperCase(value);
         std::vector<string> sltpParams = _mlxlinkCommander->parseParamsFromLine(sltpParamsLine);
         _mlxlinkCommander->getSltpParamsFromVector(sltpParams);
-        _sendRegFuncMap.push_back(SEND_SLTP);
+        addCmd(SEND_SLTP);
         _mlxlinkCommander->_uniqueCmds++;
         return PARSE_OK;
     } else if (name == LANE_FLAG) {
@@ -906,28 +911,28 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _mlxlinkCommander->_userInput._sendNode = true;
         return PARSE_OK;
     } else if (name == PCIE_LINKS_FLAG) {
-        _sendRegFuncMap.push_back(SHOW_PCIE_LINKS);
+        addCmd(SHOW_PCIE_LINKS);
         _mlxlinkCommander->_userInput._links = true;
         return PARSE_OK;
     } else if (name == DEVICE_DATA_FLAG) {
-        _sendRegFuncMap.push_back(SHOW_DEVICE);
+        addCmd(SHOW_DEVICE);
         return PARSE_OK;
     } else if (name == FEC_DATA_FLAG) {
-        _sendRegFuncMap.push_back(SHOW_FEC);
+        addCmd(SHOW_FEC);
         _mlxlinkCommander->_networkCmds++;
         return PARSE_OK;
     } else if (name == PAOS_FLAG) {
-        _sendRegFuncMap.push_back(SEND_PAOS);
+        addCmd(SEND_PAOS);
         _mlxlinkCommander->_userInput._paosCmd = toUpperCase(value);
         _mlxlinkCommander->_uniqueCmds++;
         return PARSE_OK;
     } else if (name == PTYS_FLAG) {
-        _sendRegFuncMap.push_back(SEND_PTYS);
+        addCmd(SEND_PTYS);
         _mlxlinkCommander->_ptysSpeeds = _mlxlinkCommander->parseParamsFromLine(toUpperCase(value));
         _mlxlinkCommander->_uniqueCmds++;
         return PARSE_OK;
     } else if (name == PPLM_FLAG) {
-        _sendRegFuncMap.push_back(SEND_PPLM);
+        addCmd(SEND_PPLM);
         _mlxlinkCommander->_userInput._pplmFec = toUpperCase(value);
         _mlxlinkCommander->_uniqueCmds++;
         return PARSE_OK;
@@ -935,12 +940,12 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _mlxlinkCommander->_userInput._speedFec = toUpperCase(value);
         return PARSE_OK;
     } else if (name == PPLR_FLAG) {
-        _sendRegFuncMap.push_back(SEND_PPLR);
+        addCmd(SEND_PPLR);
         _mlxlinkCommander->_userInput._pplrLB = toUpperCase(value);
         _mlxlinkCommander->_uniqueCmds++;
         return PARSE_OK;
     } else if (name == PRBS_MODE_FLAG) {
-        _sendRegFuncMap.push_back(SEND_PRBS);
+        addCmd(SEND_PRBS);
         _mlxlinkCommander->_userInput._prbsMode = toUpperCase(value);
         _mlxlinkCommander->_uniqueCmds++;
         return PARSE_OK;
@@ -969,11 +974,11 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _mlxlinkCommander->_userInput._prbsRxInv = true;
         return PARSE_OK;
     } else if (name == BER_COLLECT_FLAG) {
-        _sendRegFuncMap.push_back(SEND_BER_COLLECT);
+        addCmd(SEND_BER_COLLECT);
         _mlxlinkCommander->_userInput._csvBer = value;
         return PARSE_OK;
     }  else if (name == AMBER_COLLECT_FLAG) {
-        _sendRegFuncMap.push_back(SEND_AMBER_COLLECT);
+        addCmd(SEND_AMBER_COLLECT);
         _mlxlinkCommander->_userInput._csvBer = value;
         return PARSE_OK;
     } else if (name == BER_LIMIT_FLAG) {
@@ -983,10 +988,10 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _mlxlinkCommander->strToUint32((char*) value.c_str(), _mlxlinkCommander->_userInput._iteration);
         return PARSE_OK;
     } else if (name == BER_MONITOR_INFO_FLAG) {
-        _sendRegFuncMap.push_back(SHOW_BER_MONITOR);
+        addCmd(SHOW_BER_MONITOR);
         return PARSE_OK;
     } else if (name == PEPC_SHOW_FLAG) {
-        _sendRegFuncMap.push_back(SHOW_EXTERNAL_PHY);
+        addCmd(SHOW_EXTERNAL_PHY);
         return PARSE_OK;
     } else if (name == PEPC_FORCE_MODE_FLAG) {
         _mlxlinkCommander->_userInput._sendPepcForceMode = true;
@@ -997,7 +1002,7 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _mlxlinkCommander->_userInput._anMode = toUpperCase(value);
         return PARSE_OK;
     } else if (name == PEPC_SET_FLAG) {
-        _sendRegFuncMap.push_back(SEND_PEPC);
+        addCmd(SEND_PEPC);
         _mlxlinkCommander->_uniqueCmds++;
         return PARSE_OK;
     } else if (name == PTYS_LINK_MODE_FORCE_FLAG) {
@@ -1008,23 +1013,23 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         return PARSE_OK;
     } else if (name == CABLE_FLAG) {
         _mlxlinkCommander->_userInput._cable = true;
-        _sendRegFuncMap.push_back(CABLE_EEPROM_INI);
+        addCmd(CABLE_EEPROM_INI);
         return PARSE_OK;
     } else if (name == CABLE_DUMP_FLAG) {
         _mlxlinkCommander->_userInput._dump = true;
-        _sendRegFuncMap.push_back(CABLE_SHOW_DUMP);
+        addCmd(CABLE_SHOW_DUMP);
         _mlxlinkCommander->_uniqueCableCmds++;
         return PARSE_OK;
     } else if (name == CABLE_DDM_FLAG) {
         _mlxlinkCommander->_userInput._ddm = true;
-        _sendRegFuncMap.push_back(CABLE_SHOW_DDM);
+        addCmd(CABLE_SHOW_DDM);
         _mlxlinkCommander->_uniqueCableCmds++;
         return PARSE_OK;
     } else if (name == CABLE_WRITE_FLAG) {
         _mlxlinkCommander->_userInput._write = true;
         _mlxlinkCommander->_userInput._bytesToWrite =
                 _mlxlinkCommander->parseParamsFromLine(value);
-        _sendRegFuncMap.push_back(CABLE_EEPROM_WRITE);
+        addCmd(CABLE_EEPROM_WRITE);
         _mlxlinkCommander->_uniqueCableCmds++;
         return PARSE_OK;
     } else if (name == WRITE_PAGE_FLAG) {
@@ -1038,19 +1043,19 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     } else if (name == CABLE_READ_FLAG) {
         _mlxlinkCommander->_userInput._read = true;
         _mlxlinkCommander->_uniqueCableCmds++;
-        _sendRegFuncMap.push_back(CABLE_EEPROM_READ);
+        addCmd(CABLE_EEPROM_READ);
         return PARSE_OK;
     } else if (name == READ_LEN_FLAG) {
         _mlxlinkCommander->strToUint32((char*) value.c_str(),
                 (u_int32_t&)_mlxlinkCommander->_userInput._len);
         return PARSE_OK;
     } else if (name == SHOW_TX_GROUP_MAP_FLAG) {
-        _sendRegFuncMap.push_back(SHOW_TX_GROUP_MAP);
+        addCmd(SHOW_TX_GROUP_MAP);
         _mlxlinkCommander->strToUint32((char*) value.c_str(),
                         (u_int32_t&)_mlxlinkCommander->_userInput._showGroup);
         return PARSE_OK;
     } else if (name == SET_TX_GROUP_MAP_FLAG) {
-        _sendRegFuncMap.push_back(SET_TX_GROUP_MAP);
+        addCmd(SET_TX_GROUP_MAP);
         _mlxlinkCommander->strToUint32((char*) value.c_str(),
                         (u_int32_t&)_mlxlinkCommander->_userInput._setGroup);
         return PARSE_OK;
@@ -1058,7 +1063,7 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _mlxlinkCommander->_userInput._labelPorts = _mlxlinkCommander->parseParamsFromLine(value);
         return PARSE_OK;
     } else if (name == MARGIN_SCAN_FLAG) {
-        _sendRegFuncMap.push_back(GRADE_SCAN_ENABLE);
+        addCmd(GRADE_SCAN_ENABLE);
         return PARSE_OK;
     } else if (name == EYE_MEASURE_TIME_FLAG) {
         _mlxlinkCommander->checkStrLength(value);
@@ -1080,7 +1085,7 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _mlxlinkCommander->_userInput.eyeSelectSpecified = true;
         return PARSE_OK;
     } else if (name == PREI_RX_ERR_INJ_FLAG) {
-        _sendRegFuncMap.push_back(ERR_INJ_ENABLE);
+        addCmd(ERR_INJ_ENABLE);
         _mlxlinkCommander->_userInput.enableRxErrInj = true;
         _mlxlinkCommander->_uniqueCmds++;
         return PARSE_OK;
@@ -1096,7 +1101,7 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _mlxlinkCommander->_userInput.showMixers = true;
         return PARSE_OK;
     } else if (name == PPHCR_FEC_HIST_FLAG) {
-        _sendRegFuncMap.push_back(RS_FEC_HISTOGRAM);
+        addCmd(RS_FEC_HISTOGRAM);
         _mlxlinkCommander->_userInput.enableFecHistogram = true;
         return PARSE_OK;
     } else if (name == PPHCR_SHOW_FEC_HIST_FLAG) {

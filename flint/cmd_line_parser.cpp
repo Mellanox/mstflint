@@ -617,7 +617,6 @@ void Flint::initCmdParser()
                "",
                "When specified, only next boot fw version is fetched\n"
                "Commands affected: query",
-                0,
                true);
 
     AddOptions("flashed_version",
@@ -713,14 +712,12 @@ void Flint::initCmdParser()
                "",
                "preserve select image info fields from the device upon FW update (FS3 Only).\n"
                "Commands affected: burn",
-                0,
                 true);
 
     AddOptions("ignore_crc_check",
                ' ',
                "",
                "Prevents flint from failing due to CRC check",
-               0,
                true); // hidden
 
     AddOptions("dual_image",
@@ -773,28 +770,24 @@ void Flint::initCmdParser()
                ' ',
                "",
                "ignore device_id checks",
-                0,
                 true);
 
     AddOptions("skip_ci_req",
                ' ',
                "",
                "skip sending cache image request to driver(windows)",
-                0,
                 true);
 
     AddOptions("ocr",
                ' ',
                "",
                "another flag for override cache replacement",
-                0,
                 true);
 
     AddOptions("hsm",
         ' ',
         "",
         "flag for the sign command",
-        0,
         true);
 
     AddOptions("private_key",
@@ -843,42 +836,56 @@ void Flint::initCmdParser()
         ' ',
         "<downstream_device_id_start_index>",
         "Use this flag while burning to device a LinkX Component. Begin from 0",
+        false,
+        false,
         1);
 
     AddOptions("num_of_downstream_devices",
         ' ',
         "<num_of_downstream_devices>",
         "Use this flag while burning to device a LinkX Component to specify the number of devices to burn",
+        false,
+        false,
         1);
 
     AddOptions("linkx_auto_update",
         ' ',
         "",
         "Use this flag while burning all cable devices connected to host.",
+        false,
+        false,
         1);
 
     AddOptions("activate",
         ' ',
         "",
         "Use this flag to apply the activation of all cable devices connected to host. By default, the activation is not performed.",
+        false,
+        false,
         1);
 
     AddOptions("activate_delay_sec",
         ' ',
         "<timeout in seconds>",
         "Use this flag to activate all cable devices connected to host with delay, acceptable values are between 0 and 255 (default - 0, immediately). Important: 'activate' flag must be set.  This flag is relevant only for cable components.",
+        false,
+        false,
         1);
 
     AddOptions("download_transfer",
         ' ',
         "",
         "Use this flag to perform the download and transfer of all cable data for cables. By default, the download and transfer are not performed . This flag is relevant only for cable components.",
+        false,
+        false,
         1);
 
     AddOptions("downstream_device_ids",
         ' ',
         "<list of ports>",
         "Use this flag to specify the LNKX ports to perform query. List must be only comma-separated numbers, without spaces.",
+        false,
+        false,
         1);
 
 #ifndef __WIN__

@@ -715,6 +715,13 @@ mat. */
 	/* Description -  */
 	/* 0x30.0 - 0x30.15 */
 	u_int16_t isfu_major;
+	/* Description - Bitmap representing the disabled tiles in the ASIC. 
+Tile '0' is represented by the msb bit. 
+If a bit is set to '1', the corresponding tile is disabled. 
+The total number of tiles can be derived through 
+MGPIR register. */
+	/* 0x30.16 - 0x30.31 */
+	u_int16_t disabled_tiles_bitmap;
 /*---------------- DWORD[13] (Offset 0x34) ----------------*/
 	/* Description - 0: Production
 1: GA Secured
