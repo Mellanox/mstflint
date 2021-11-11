@@ -1,7 +1,7 @@
 
 /*                  - Mellanox Confidential and Proprietary -
  *
- *  Copyright (C) 2010-2011, Mellanox Technologies Ltd.  ALL RIGHTS RESERVED.
+ * Copyright (c) 2010-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  *  Except as specifically permitted herein, no portion of the information,
  *  including but not limited to object code and source code, may be reproduced,

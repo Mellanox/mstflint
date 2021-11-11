@@ -1,6 +1,6 @@
 #--
 # 
-# Copyright (C) 2019 Mellanox Technologies Ltd. All rights reserved.
+# Copyright (c) 2019-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # 
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
