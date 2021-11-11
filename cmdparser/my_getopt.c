@@ -4,7 +4,6 @@
    before changing it!
 
    Copyright (C) 1987, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97
- * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
         Free Software Foundation, Inc.
 
    The GNU C Library is free software; you can redistribute it and/or

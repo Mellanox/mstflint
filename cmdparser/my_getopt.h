@@ -1,6 +1,5 @@
 /* Declarations for getopt.
    Copyright (C) 1989,90,91,92,93,94,96,97 Free Software Foundation, Inc.
- * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
