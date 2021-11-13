@@ -1609,7 +1609,14 @@ bool SignSubCommand::verifyParams()
             reportErr(true, "To Sign the image with OpenSSL you must provide the engine and the key identifier.\n");
             return false;
         }
-        return true;
+        if (_flintParams.openssl_key_id.find("type=public", 0) != std::string::npos) {
+            reportErr(true, "The Sign command with --openssl_key_id flag does not accept public keys\n");
+                return false;
+        }
+        if (_flintParams.privkey_specified) {
+            reportErr(true, "The Sign command does not accept --private_key flag with the following flags: --openssl_engine, --openssl_key_id\n");
+            return false;
+        }
     }
     else if (_flintParams.hsm_specified) {
         if (_flintParams.uuid_specified == false) {
@@ -1624,7 +1631,6 @@ bool SignSubCommand::verifyParams()
             reportErr(true, HSM_PASSWORD_MISSING);
             return false;
         }
-        return true;
     }
     else {
         if (_flintParams.privkey_specified ^ _flintParams.uuid_specified) {
@@ -1649,8 +1655,8 @@ bool SignSubCommand::verifyParams()
                 (int)_flintParams.cmd_params.size());
             return false;
         }
-        return true;
     }
+    return true;
 }
 
 /***********************
@@ -1962,8 +1968,16 @@ bool SignRSASubCommand::verifyParams()
             reportErr(true, "To create secure boot signature with OpenSSL you must provide uuid string.\n");
             return false;
         }
-        if (_flintParams.openssl_engine.empty()) {
-            reportErr(true, "To create secure boot signature with OpenSSL you must provide the URI string.\n");
+        if (_flintParams.openssl_engine.empty() || _flintParams.openssl_key_id.empty()) {
+            reportErr(true, "To Sign the image with OpenSSL you must provide the engine and the key identifier.\n");
+            return false;
+        }
+        if (_flintParams.openssl_key_id.find("type=public", 0) != std::string::npos) {
+            reportErr(true, "The rsa_sign command with --openssl_key_id flag does not accept public keys\n");
+                return false;
+        }
+        if (_flintParams.privkey_specified) {
+            reportErr(true, "The Sign command does not accept --private_key flag with the following flags: --openssl_engine, --openssl_key_id\n");
             return false;
         }
         return true;
