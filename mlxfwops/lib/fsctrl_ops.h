@@ -106,10 +106,12 @@ public:
     virtual mfile* getMfileObj() {
         return _fwCompsAccess->getMfileObj();
     }
-    virtual bool GetSecureBootInfo();
+    virtual bool IsSecureBootSupported();
     virtual bool IsCableQuerySupported();
     virtual bool IsLifeCycleSupported();
     virtual bool IsEncryptionSupported();
+    virtual bool IsSecurityVersionViolated(u_int32_t image_security_version);
+    
 protected:
     bool FsIntQuery();
     bool GetImageInfo(u_int8_t *buff);

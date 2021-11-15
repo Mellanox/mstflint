@@ -849,9 +849,39 @@ FwOperations* FwOperations::FwOperationsCreate(fw_ops_params_t& fwParams)
                     delete fwCompsAccess;
                     fwCompsAccess = (FwCompsMgr*) NULL;
                 } else {
-                    FLASH_ACCESS_DPRINTF(("Flash init to use MCC flow\n"));
-                    fwFormat = FS_FSCTRL_GEN;
-                    goto init_fwops;
+                    //* WA for non secured BB to work in no_fw_ctrl mode (instead of MCC) by setting fwParams.noFwCtrl=1
+                    dm_dev_id_t deviceId = DeviceUnknown;
+                    u_int32_t hwDevId = 0x0;
+                    u_int32_t hwRevId = 0x0;
+                    if ((fwCompsAccess->getMfileObj()->flags & MDEVS_IB) == 0) {
+                        FLASH_ACCESS_DPRINTF(("Not IB interface\n"));
+                        if (dm_get_device_id(fwCompsAccess->getMfileObj(), &deviceId, &hwDevId, &hwRevId) == MFE_OK) {
+                            FLASH_ACCESS_DPRINTF(("deviceId = %s\n", dm_dev_type2str(deviceId)));
+                            if (deviceId == DeviceQuantum2) {
+                                FLASH_ACCESS_DPRINTF(("BB device identified\n"));
+                                if (fwCompsAccess->queryFwInfo(&fwInfo)) {
+                                    if (fwInfo.security_type.secure_fw == 0) {
+                                        FLASH_ACCESS_DPRINTF(("Non secured BB device, deleting fw comps mgr object and setting no_fw_ctrl mode\n"));
+                                        delete fwCompsAccess;
+                                        fwCompsAccess = (FwCompsMgr*) NULL;
+                                        fwParams.noFwCtrl = 1;
+                                    }
+                                    else {
+                                        FLASH_ACCESS_DPRINTF(("Secured BB device, using MCC flow\n"));
+                                    }
+                                }
+                                else {
+                                    FLASH_ACCESS_DPRINTF(("Failed to query fw comps mgr object\n"));
+                                }
+                            }
+                        }
+                    }
+                    //* MCC flow
+                    if (fwParams.noFwCtrl == 0) {
+                        FLASH_ACCESS_DPRINTF(("Flash init to use MCC flow\n"));
+                        fwFormat = FS_FSCTRL_GEN;
+                        goto init_fwops;
+                    }
                 }
             }
 
@@ -2036,9 +2066,9 @@ bool FwOperations::FwResetTimeStamp()
     return errmsg("FwResetTimeStamp not supported.");
 }
 
-bool FwOperations::GetSecureBootInfo()
+bool FwOperations::IsSecureBootSupported()
 {
-    return errmsg("GetSecureBootInfo not supported.");
+    return errmsg("IsSecureBootSupported not supported.");
 }
 
 bool FwOperations::IsCableQuerySupported()
@@ -2466,6 +2496,16 @@ bool FwOperations::VerifyBranchFormat(const char* vsdString)
     return false;
 }
 
+bool FwOperations::IsLifeCycleValidInLivefish(chip_type_t)
+{
+    return errmsg("IsLifeCycleValidInLivefish not supported.");
+}
+
+bool FwOperations::IsSecurityVersionViolated(u_int32_t)
+{
+    return errmsg("IsSecurityVersionViolated not supported.");
+}
+
 #if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
 bool FwOperations::CheckPemKeySize(const string privPemFileStr, u_int32_t& keySize)
 {
@@ -2495,6 +2535,43 @@ CRSpaceRegisters::CRSpaceRegisters(mfile* mf, chip_type_t chip_type): _mf(mf), _
 {}
 
 
+life_cycle_t CRSpaceRegisters::getLifeCycle()
+{
+    size_t lifeCycleAddress = 0;
+    u_int8_t firstBit = 0;
+    u_int8_t bitLen = 0;
+    u_int32_t lifeCycle;
+
+    switch (_chip_type)
+    {
+        case CT_CONNECTX6:
+            lifeCycleAddress = 0xf0060;
+            firstBit = 0;
+            bitLen = 2;
+            break;
+        case CT_BLUEFIELD2:
+        case CT_CONNECTX6DX:
+        case CT_CONNECTX6LX:
+            lifeCycleAddress = 0xf0068;
+            firstBit = 0;
+            bitLen = 2;
+            break;
+        case CT_CONNECTX7:
+        case CT_QUANTUM2:            
+            lifeCycleAddress = 0xf0000;
+            firstBit = 4;
+            bitLen = 2;
+            break;
+        default:
+            throw logic_error("-E- life_cycle query is not implemented for the current device.");
+            break;
+    }
+
+    lifeCycle = getRegister(lifeCycleAddress);
+    return (life_cycle_t)getConsecutiveBits(lifeCycle, firstBit, bitLen);
+}
+
+
 int CRSpaceRegisters::getGlobalImageStatus()
 {
     size_t global_image_status_address = 0;
@@ -2511,9 +2588,63 @@ int CRSpaceRegisters::getGlobalImageStatus()
             break;
         default:
             throw logic_error("-E- global_image_status query is not implemented for the current device.");
+            break;
     }
 
     return (int)getRegister(global_image_status_address);
+}
+
+
+u_int32_t CRSpaceRegisters::getSecurityVersion()
+{
+    u_int32_t securityVersion = 0;
+    u_int32_t rollbackMSB = 0, rollbackLSB = 0;
+    u_int32_t minimalSecurityVersion = 0;
+
+     switch (_chip_type) {
+        case CT_QUANTUM2:
+            rollbackMSB = getRegister(0xf3248);
+            rollbackLSB = getRegister(0xf324c);
+            minimalSecurityVersion = getConsecutiveBits(getRegister(0xf3238), 3, 8);            
+            break;
+        case CT_BLUEFIELD3:
+            rollbackMSB = getRegister(0xf4348);
+            rollbackLSB = getRegister(0xf434c);
+            minimalSecurityVersion = getConsecutiveBits(getRegister(0xf4338), 4, 8);
+            break;
+        case CT_CONNECTX7:
+            rollbackMSB = getRegister(0xf4548);
+            rollbackLSB = getRegister(0xf454c);
+            minimalSecurityVersion = getConsecutiveBits(getRegister(0xf4538), 4, 8);
+            break;
+        default:
+            throw logic_error("-E- security version query is not implemented for the current device.");
+            break;
+    }
+
+    securityVersion = countSetBits(rollbackMSB) + countSetBits(rollbackLSB) + minimalSecurityVersion;
+    return securityVersion;
+}
+
+
+u_int32_t CRSpaceRegisters::countSetBits(u_int32_t num)
+{
+    u_int32_t count = 0;
+    while (num) {
+        count += num & 1;
+        num >>= 1;
+    }
+    return count;
+}
+
+
+u_int32_t CRSpaceRegisters::getConsecutiveBits(u_int32_t data, u_int8_t firstBit, u_int8_t numOfBits)
+{
+    u_int32_t mask = 0xffffffff;
+    mask = mask >> (32 - numOfBits);
+    data = data >> firstBit;
+    data = data & mask;
+    return data;
 }
 
 
@@ -2522,7 +2653,7 @@ u_int32_t CRSpaceRegisters::getRegister(u_int32_t address)
     u_int32_t crSpaceReg;
     int rc = mread4(_mf, address, &crSpaceReg);
     if (rc != 4){
-        throw logic_error("-E- Failed to read global image status data.");
+        throw logic_error("-E- Failed to read from CRSpace.");
     }
 
     return crSpaceReg;

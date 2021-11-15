@@ -142,6 +142,8 @@ MlnxDev::MlnxDev(dev_info *devinfo, int compare_ffv)
     _devinfo = devinfo;
     _MlnxDevInit(compare_ffv);
     memset(_errBuff, 0, sizeof(_errBuff));
+    _imageEncrypted = false;
+    _deviceEncrypted = false;
 }
 
 
@@ -510,6 +512,12 @@ int MlnxDev::preBurn(string mfa_file, f_prog_func prog_cb, bool burnFailsafe,
         goto clean_up_on_error;
     }
 
+    if (!_imgFwOps->isEncrypted(_imageEncrypted)) {
+        _errMsg  = "Failed to identify if image is encrypted.";
+        rc = -1;
+        goto clean_up_on_error;
+    }    
+    
     rc = _imgFwOps->FwQuery(&img_fw_query);
     if (!rc) {
         _errMsg  = "Failed to query the image, " +  (string)_imgFwOps->err();
@@ -523,11 +531,26 @@ int MlnxDev::preBurn(string mfa_file, f_prog_func prog_cb, bool burnFailsafe,
     if (!OpenDev()) {
         goto clean_up_on_error;
     }
+
+    if (!_devFwOps->isEncrypted(_deviceEncrypted)) {
+        _errMsg  = "Failed to identify if device is encrypted.";
+        rc = -1;
+        goto clean_up_on_error;        
+    }
 #ifdef __WIN__
     if (LockDevice(_devFwOps) != TOOLS_SYNC_OK) {
         return -1;
     }
 #endif
+    if (_deviceEncrypted != _imageEncrypted) {
+        char errMsg[100];
+        sprintf(errMsg, "Burning %sencrypted image on %sencrypted device is not allowed.\n",
+                _imageEncrypted ? "" : "non-", _deviceEncrypted ? "" : "non-");
+        _errMsg  = errMsg;
+        rc = -1;
+        goto clean_up_on_error;                
+    }
+
     _burnParams.burnFailsafe = burnFailsafe;
     if (_burnParams.burnFailsafe) {
         rc = _devFwOps->FwQuery(&dev_fw_query);
@@ -607,7 +630,13 @@ int MlnxDev::burn(bool& imageWasCached)
         return -1;
     }
 #endif
-    rc = _devFwOps->FwBurnAdvanced(_imgFwOps, _burnParams);
+    //* Burn encrypted image using MCC flow or direct-access
+    if (_deviceEncrypted && _imageEncrypted) {    
+        rc = _devFwOps->burnEncryptedImage(_imgFwOps, _burnParams);                
+    }
+    else {        
+        rc = _devFwOps->FwBurnAdvanced(_imgFwOps, _burnParams);
+    }
     if (!rc) {
         if (_devFwOps->err() != NULL) {
             _errMsg  = _devFwOps->err();

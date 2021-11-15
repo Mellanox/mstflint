@@ -89,7 +89,7 @@ public:
     virtual bool storeSecureBootSignaturesInSection(vector<u_int8_t> boot_signature, vector<u_int8_t> critical_sections_signature = vector<u_int8_t>(),
                                                     vector<u_int8_t> non_critical_sections_signature = vector<u_int8_t>());
     virtual bool FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatternAndDevToc, bool verbose = false, bool ignoreImageStart = false);
-    virtual bool GetSecureBootInfo();
+    virtual bool IsSecureBootSupported();
     virtual bool IsCableQuerySupported();
     virtual bool IsLifeCycleSupported();
     bool PrepItocSectionsForHmac(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
@@ -110,6 +110,8 @@ public:
     bool DoAfterBurnJobs(const u_int32_t magic_patter[], ExtBurnParams& burnParams, Flash *flash_access,
                          u_int32_t new_image_start, u_int32_t log2_chunk_size);
     virtual void FwCleanUp();
+    bool IsLifeCycleValidInLivefish(chip_type_t chip_type);
+    bool IsSecurityVersionViolated(u_int32_t image_security_version);
 
 protected:
     struct fs4_toc_info {
@@ -120,6 +122,8 @@ protected:
     };
 
     virtual bool IsSectionExists(fs3_section_t sectType);
+    virtual bool VerifyImageAfterModifications();
+    bool parseDevData(bool readRom = true, bool quickQuery = true, bool verbose = false);
 
 
 private:
@@ -161,9 +165,8 @@ private:
     bool FwSignSection(const vector<u_int8_t>& section, const string privPemFileStr, vector<u_int8_t>& encSha);
 #endif
     bool CheckSignatures(u_int32_t a[], u_int32_t b[], int n);
-    bool parseDevData();
     bool encryptedFwReadImageInfoSection();
-    bool encryptedFwQuery(fw_info_t *fwInfo);
+    bool encryptedFwQuery(fw_info_t *fwInfo, bool readRom = true, bool quickQuery = true, bool ignoreDToc = false, bool verbose = false);
     virtual bool FwQuery(fw_info_t *fwInfo, bool readRom = true, bool isStripedImage = false, bool quickQuery = true, bool ignoreDToc = false, bool verbose = false);
     bool FsVerifyAux(VerifyCallBack verifyCallBackFunc, bool show_itoc, struct QueryOptions queryOptions, bool ignoreDToc = false, bool verbose = false);
     bool CheckTocSignature(struct image_layout_itoc_header *itoc_header, u_int32_t first_signature);
@@ -253,6 +256,9 @@ private:
     SecureBootSignVersion getSecureBootSignVersion();
     bool calcHashOnItoc(vector<u_int8_t>& hash);
     bool updateHashInHashesTable(fs3_section_t section_type, vector<u_int8_t> hash);
+    bool QuerySecurityFeatures();
+    bool IsEncryptedDevice(bool& is_encrypted);
+    bool IsEncryptedImage(bool& is_encrypted);
 
     // Members
     Fs4ImgInfo _fs4ImgInfo;

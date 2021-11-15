@@ -2384,10 +2384,30 @@ FlintStatus BurnSubCommand::burnFs3()
         printf(" Preparing...\n");
     }
 
-    if (!_fwOps->FwBurnAdvanced(_imgOps, _burnParams)) {
-        reportErr(true, FLINT_FSX_BURN_ERROR, imgTypeStr, _fwOps->err());
+    bool device_encrypted = false;
+    bool image_encrypted = false;
+    if (!_fwOps->isEncrypted(device_encrypted)) {
+        reportErr(true, "Failed to identify if device is encrypted.\n");
         return FLINT_FAILED;
     }
+    if (!_imgOps->isEncrypted(image_encrypted)) {
+        reportErr(true, "Failed to identify if image is encrypted.\n");
+        return FLINT_FAILED;
+    }
+
+    if (device_encrypted && image_encrypted) {
+        if (!_fwOps->burnEncryptedImage(_imgOps, _burnParams)) {
+            reportErr(true, FLINT_FSX_BURN_ERROR, imgTypeStr, _fwOps->err());
+            return FLINT_FAILED;
+        }
+    }
+    else {
+        if (!_fwOps->FwBurnAdvanced(_imgOps, _burnParams)) {
+            reportErr(true, FLINT_FSX_BURN_ERROR, imgTypeStr, _fwOps->err());
+            return FLINT_FAILED;
+        }
+    }
+
     PRINT_PROGRESS(_burnParams.progressFunc, 101);
     write_result_to_log(FLINT_SUCCESS, "", _flintParams.log_specified);
     const char *resetRec = _fwOps->FwGetResetRecommandationStr();
@@ -2811,36 +2831,10 @@ FlintStatus BurnSubCommand::executeCommand()
         return FLINT_FAILED;
     }
 
-    if (device_encrypted || image_encrypted) {
-        if (!image_encrypted) {
-            reportErr(true, "Burning non-encrypted image on encrypted device is not allowed.\n");
-            return FLINT_FAILED;
-        }
-        DPRINTF(("encryption burning!\n"));
-        updateBurnParams();
-        if (!_burnParams.burnFailsafe) {
-            printf("Burn process will not be failsafe. No checks will be performed.\n");
-            if (_burnParams.useImgDevData) {
-                printf("ALL flash, including the device data sections will be overwritten.\n");
-            }
-            printf("If this process fails, computer may remain in an inoperable state.\n");
-            if (!askUser()) {
-                return FLINT_FAILED;
-            }
-        }
-
-        //* Burn encrypted image using MCC flow or direct-access
-        if (!_fwOps->burnEncryptedImage(_imgOps, _burnParams)) {
-            reportErr(true, FLINT_FSX_BURN_ERROR, fwImgTypeToStr(_imgOps->FwType()), _fwOps->err());
-            return FLINT_FAILED;
-        }
-        PRINT_PROGRESS(_burnParams.progressFunc, 101);
-        write_result_to_log(FLINT_SUCCESS, "", _flintParams.log_specified);
-        const char *resetRec = _fwOps->FwGetResetRecommandationStr();
-        if (resetRec) {
-            printf("-I- %s\n", resetRec);
-        }
-        return FLINT_SUCCESS;
+    if (device_encrypted != image_encrypted) {
+        reportErr(true, "Burning %sencrypted image on %sencrypted device is not allowed.\n",
+            image_encrypted ? "" : "non-", device_encrypted ? "" : "non-");
+        return FLINT_FAILED;
     }
 
     // query both image and device (deviceQuery can fail but we save rc)
@@ -2854,25 +2848,9 @@ FlintStatus BurnSubCommand::executeCommand()
     }
 
     // Abort if the image is restricted according to the Security-Version
-    {
-        // Set image security-version
-        u_int32_t imageSecurityVersion = _imgInfo.fs3_info.image_security_version;
-
-        // Set device security-version (from EFUSEs)
-        u_int32_t deviceEfuseSecurityVersion;
-        if (_devInfo.fs3_info.device_security_version_access_method == MFSV) {
-            deviceEfuseSecurityVersion = _devInfo.fs3_info.device_security_version_mfsv.efuses_sec_ver;
-        } else if (_devInfo.fs3_info.device_security_version_access_method == GW) {
-            deviceEfuseSecurityVersion = _devInfo.fs3_info.device_security_version_gw;
-        } else {
-            deviceEfuseSecurityVersion = 0;
-        }
-
-        // Check violation of security-version
-        if (imageSecurityVersion < deviceEfuseSecurityVersion && getenv("IGNORE_SECURITY_VERSION_CHECK") == NULL) {
-            reportErr(true, "The image you're trying to burn is restricted. Aborting ... \n");
-            return FLINT_FAILED;            
-        }
+    if (_fwOps->IsSecurityVersionViolated(_imgInfo.fs3_info.image_security_version)) {
+        reportErr(true, "The image you're trying to burn is restricted. Aborting ... \n");
+        return FLINT_FAILED; 
     }
 
     //updateBurnParams with input given by user
@@ -3414,6 +3392,7 @@ string QuerySubCommand::printSecurityAttrInfo(u_int32_t m)
     if (m & SMM_CRYTO_TO_COMMISSIONING) {
         attr += ", crypto-to-commissioning";
     }
+
     return attr;
 }
 
@@ -3663,10 +3642,8 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
     }
 
     if (fullQuery && _flintParams.device_specified) {
-
         if (ops->IsFsCtrlOperations()) { //working only on devices with FW control
-            bool IsSupported = ops->GetSecureBootInfo(); //from C6DX and above
-            if (IsSupported) {
+            if (ops->IsLifeCycleSupported()) { //from CX6 and above
                 unsigned int index = (unsigned int)fwInfo.fs3_info.life_cycle;
                 if (index >= NUM_OF_LIFE_CYCLES) {
                     reportErr(true, "The life cycle value is out of range: %u", index);
@@ -3674,12 +3651,9 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
                 else {
                     printf("Life cycle:            %s\n", life_cycle_strings[index]);
                 }
-
+            }
+            if (ops->IsSecureBootSupported()) { //from CX6DX and above
                 printf("Secure Boot Capable:   %s\n", fwInfo.fs3_info.sec_boot == 1 ? "Enabled" : "Disabled");
-
-                if (fwInfo.fs3_info.sec_boot == 1) {
-                    printf("Global Image Status:   %d\n", fwInfo.fs3_info.global_image_status);
-                }
 
                 if (fwInfo.fs3_info.device_security_version_access_method == MFSV) {
                     printf("EFUSE Security Ver:    %d\n", fwInfo.fs3_info.device_security_version_mfsv.efuses_sec_ver);
@@ -3701,10 +3675,14 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
                 if (ops->IsEncryptionSupported()) {
                     printf("Encryption:            %s\n", fwInfo.fs3_info.encryption == 1 ? "Enabled" : "Disabled");
                 }
-            }
-            else {
-                IsSupported = ops->IsLifeCycleSupported(); //for CX6 only
-                if (IsSupported) {
+            }            
+        }
+        else { // No fw control            
+            if (ops->IsSecureBootSupported()) {
+                if (ops->IsLifeCycleValidInLivefish(fwInfo.fw_info.chip_type)) {
+
+                    printf("Image Boot Status:     %d\n", fwInfo.fs3_info.global_image_status);                    
+                    
                     unsigned int index = (unsigned int)fwInfo.fs3_info.life_cycle;
                     if (index >= NUM_OF_LIFE_CYCLES) {
                         reportErr(true, "The life cycle value is out of range: %u", index);
@@ -3712,18 +3690,10 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
                     else {
                         printf("Life cycle:            %s\n", life_cycle_strings[index]);
                     }
+                    if (fwInfo.fs3_info.life_cycle == GA_SECURED) {
+                        printf("EFUSE Security Ver:    %d\n", fwInfo.fs3_info.device_security_version_gw);
+                    }   
                 }
-            }
-        }
-        else { // No fw control            
-            if (fwInfo.fs3_info.device_security_version_access_method == GW) { // In case of CX7 onwards, security parameters                
-                // printf("Device ID:             %d\n", fwInfo.fw_info.dev_type);
-
-                if (fwInfo.fs3_info.sec_boot == 1) {
-                    printf("Global Image Status:   %d\n", fwInfo.fs3_info.global_image_status);   
-                }
-
-                printf("EFUSE Security Ver:    %d\n", fwInfo.fs3_info.device_security_version_gw);
             }
         }
     }
@@ -4339,19 +4309,19 @@ SgSubCommand::SgSubCommand()
     _name = "sg";
     _desc = "guids_num=<num|num_port1,num_port2> step_size=<size|size_port1,size_port2> Set GUIDs.";
     _extendedDesc = "Set GUIDs/MACs/UIDs in the given device/image.\n"
-        "Use -guid(s), -mac(s) and -uid(s) flags to set the desired values.\n"
-        "- On pre-ConnectX devices, the sg command  is used in production to apply GUIDs/MACs values to"
-        " cards that were pre-burnt with blank GUIDs. It is not meant for use in field.\n"
-        "- On 4th generation devices, this command can operate on both image file and image on flash.\n"
-        "If the GUIDs/MACs/UIDs in the image on flash are non-blank, flint will re-burn the current"
-        " image using the given GUIDs/MACs/UIDs.";
+                    "Use -guid(s), -mac(s) and -uid(s) flags to set the desired values.\n"
+                    "- On pre-ConnectX devices, the sg command  is used in production to apply GUIDs/MACs values to"
+                    " cards that were pre-burnt with blank GUIDs. It is not meant for use in field.\n"
+                    "- On 4th generation devices, this command can operate on both image file and image on flash.\n"
+                    "If the GUIDs/MACs/UIDs in the image on flash are non-blank, flint will re-burn the current"
+                    " image using the given GUIDs/MACs/UIDs.";
     _flagLong = "sg";
     _flagShort = "";
     _param = "[nocrc]";
     _paramExp = "nocrc: (optional) When specified the flint would not update the full image crc after changing the guids\n"
-        "guids_num: (optional) number of GUIDs to be allocated per physical port (FS3 Only)\n"
-        "step_size: (optional) step size between GUIDs (FS3 Only)\n"
-        "Note: guids_num/step_size values can be specified per port or for both ports";
+                "guids_num: (optional) number of GUIDs to be allocated per physical port (FS3 Only)\n"
+                "step_size: (optional) step size between GUIDs (FS3 Only)\n"
+                "Note: guids_num/step_size values can be specified per port or for both ports";
     _example = FLINT_NAME " -d " MST_DEV_EXAMPLE1 " -guid 0x0002c9000100d050 sg" "\n"
                FLINT_NAME " -d " MST_DEV_EXAMPLE4 " -guid 0x0002c9000100d050 -mac 0x0002c900d050 sg";
     _v = Wtv_Dev_Or_Img;
@@ -6252,9 +6222,9 @@ TimeStampSubCommand::TimeStampSubCommand()
     _flagShort = "ts";
     _param = "[set/query/reset] ";
     _paramExp = "set <timestamp> [FW version] : set the specified timestamp. if set on device FW version must be specified\n"
-        "timestamp should comply with ISO 8601 format and provided with UTC timezone: YYYY-MM-DDThh:mm:ssZ\n"
-        "query : query device/image to view the timestamp\n"
-        "reset : reset the timestamp, remove the timestamp from device/image.\n";
+                "timestamp should comply with ISO 8601 format and provided with UTC timezone: YYYY-MM-DDThh:mm:ssZ\n"
+                "query : query device/image to view the timestamp\n"
+                "reset : reset the timestamp, remove the timestamp from device/image.\n";
     _example = FLINT_NAME " -d " MST_DEV_EXAMPLE4 " ts set 2015-12-24T14:52:33Z 14.12.1100\n"
                FLINT_NAME " -d " MST_DEV_EXAMPLE4 " ts reset\n"
                FLINT_NAME " -i ./fw4115.bin ts set\n"

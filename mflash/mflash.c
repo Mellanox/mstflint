@@ -596,7 +596,7 @@ int cntx_get_flash_info(mflash *mfl, flash_info_t *f_info, int *log2size, u_int8
 int cntx_get_jedec_id_direct_access(mflash *mfl, u_int32_t *jedec_id_p) {
     int rc = 0;
     rc = mfl->f_int_spi_get_status_data(mfl, SFC_JEDEC, jedec_id_p, 4);
-    *jedec_id_p = __be32_to_cpu(*jedec_id_p);
+    *jedec_id_p = ___my_swab32(*jedec_id_p);
     FLASH_DPRINTF(("jedec_id = %#x\n", *jedec_id_p));
 
     return rc;
@@ -669,6 +669,8 @@ int get_flash_params(mflash *mfl, flash_params_t *flash_params, flash_info_t *fl
                 // if we haven't detected any 'supported' flash, return an error.
                 return MFE_NO_FLASH_DETECTED;
             }
+            rc = set_bank(mfl, spi_sel-1); // set the last flash (flash_params->num_of_flashes >= 1)
+            CHECK_RC(rc);
             break;
         }
 
@@ -1705,7 +1707,7 @@ int sx_get_jedec_id(mflash *mfl, u_int32_t *jedec_id_p) {
 
     rc = com_get_jedec(mfl->mf, &mfpa_args);
     *jedec_id_p = mfpa_args.jedec_id;
-    *jedec_id_p = __be32_to_cpu(*jedec_id_p);
+    *jedec_id_p = ___my_swab32(*jedec_id_p);
     FLASH_DPRINTF(("jedec_id = %#x\n", *jedec_id_p));
 
     return rc;

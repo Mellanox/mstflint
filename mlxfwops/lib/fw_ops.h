@@ -244,7 +244,7 @@ public:
 
     virtual bool IsFsCtrlOperations();
     virtual bool PrepItocSectionsForCompare(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
-    virtual bool GetSecureBootInfo();
+    virtual bool IsSecureBootSupported();
     virtual bool IsCableQuerySupported();
     virtual bool IsLifeCycleSupported();
     virtual bool IsEncryptionSupported();
@@ -258,6 +258,8 @@ public:
     static FwVersion createFwVersion(u_int16_t fw_ver0, u_int16_t fw_ver1, u_int16_t fw_ver2);
     static FwVersion createRunningFwVersion(const fw_info_com_t*);
     static int       getFileSignature(const char *fname);
+    virtual bool IsLifeCycleValidInLivefish(chip_type_t chip_type);
+    virtual bool IsSecurityVersionViolated(u_int32_t image_security_version);
 #ifndef UEFI_BUILD
     static bool CheckPemKeySize(const string privPemFileStr, u_int32_t& keySize);
 #endif
@@ -618,10 +620,14 @@ public:
     CRSpaceRegisters(mfile* mf, chip_type_t chip_type);
     
     int getGlobalImageStatus();
+    life_cycle_t getLifeCycle();
+    u_int32_t getSecurityVersion();
 
 private:
     mfile* _mf;
     chip_type_t _chip_type;
+    u_int32_t countSetBits(u_int32_t num);
+    u_int32_t getConsecutiveBits(u_int32_t dword, u_int8_t firstBit, u_int8_t numOfBits);
     u_int32_t getRegister(u_int32_t address);
 };
 

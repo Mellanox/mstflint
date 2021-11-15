@@ -1384,7 +1384,7 @@ bool FwCompsMgr::burnComponents(std::vector<FwComponent>& comps,
             if (!accessComponent(0, comps[i].getSize(), (u_int32_t *)(comps[i].getData().data()), MCDA_WRITE_COMP, progressFuncAdv)) {
                 bool bRes = false;
                 if (isDMAAccess()) {
-                    printf("Burning with DMA has failed, switching to Direct Access burn.\n");
+                    printf("\nBurning with DMA has failed, switching to Direct Access burn.\n");
                     bRes = fallbackToDirectAccess();
 
                     if (bRes) {
@@ -1428,9 +1428,9 @@ bool FwCompsMgr::burnComponents(std::vector<FwComponent>& comps,
                 return false;
             }
 
-            // In case of activation delay, FW will set FSM to LOCKED 
+            // In case of activation delay, FW will set FSM to LOCKED
             if (!_isDelayedActivationCommandSent) {
-                printf("Please wait while activating the tramsmitter(s) FW ...\n");
+                printf("Please wait while activating the transceiver(s) FW ...\n");
                 if (!controlFsm(FSM_QUERY, FSMST_LOCKED, 0, FSMST_ACTIVATE, progressFuncAdv)) {
                     DPRINTF(("Moving from activate state to locked state has failed!\n"));
                     return false;

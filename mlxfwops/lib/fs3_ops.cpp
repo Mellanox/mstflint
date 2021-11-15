@@ -349,19 +349,29 @@ bool Fs3Operations::GetImageInfo(u_int8_t *buff)
     return true;
 }
 
+bool Fs3Operations::GetImgSigInfo(u_int32_t keypair_uuid[4]) {
+    _signatureExists = 1;
+    if ((keypair_uuid[0] != 0 || keypair_uuid[1] != 0
+         || keypair_uuid[2] != 0) &&
+        keypair_uuid[3] == 0 && (EXTRACT(keypair_uuid[2], 0, 16)) == 0) {
+            _fs3ImgInfo.ext_info.security_mode = (_fs3ImgInfo.ext_info.security_mode | SMM_DEV_FW);
+    }
+    return true;
+}
 
-bool Fs3Operations::GetImgSigInfo(u_int8_t *buff)
+bool Fs3Operations::GetImgSigInfo256(u_int8_t *buff)
 {
     struct cx4fw_image_signature_256 fwSignature;
     cx4fw_image_signature_256_unpack(&fwSignature, buff);
     //cx4fw_image_signature_dump(&fwSignature, stdout);
-    _signatureExists = 1;
-    if ((fwSignature.keypair_uuid[0] != 0 || fwSignature.keypair_uuid[1] != 0
-         || fwSignature.keypair_uuid[2] != 0) &&
-        fwSignature.keypair_uuid[3] == 0 && (EXTRACT(fwSignature.keypair_uuid[2], 0, 16)) == 0) {
-            _fs3ImgInfo.ext_info.security_mode = (_fs3ImgInfo.ext_info.security_mode | SMM_DEV_FW);
-    }
-    return true;
+    return GetImgSigInfo(fwSignature.keypair_uuid);
+}
+
+bool Fs3Operations::GetImgSigInfo512(u_int8_t *buff)
+{
+    struct cx4fw_image_signature_512 fwSignature;
+    cx4fw_image_signature_512_unpack(&fwSignature, buff);
+    return GetImgSigInfo(fwSignature.keypair_uuid);
 }
 
 #define CHECK_DEV_INFO_NEW_FORMAT(info_st) \
@@ -422,9 +432,11 @@ bool Fs3Operations::GetImageInfoFromSection(u_int8_t *buff, u_int8_t sect_type, 
         return EXEC_GET_INFO_OR_GET_SUPPORT(GetDevInfo, buff, check_support_only);
 
     case FS3_IMAGE_SIGNATURE_256:
-        return EXEC_GET_INFO_OR_GET_SUPPORT(GetImgSigInfo, buff, check_support_only);
+        return EXEC_GET_INFO_OR_GET_SUPPORT(GetImgSigInfo256, buff, check_support_only);
 
-    //case FS3_IMAGE_SIGNATURE_512:
+    case FS3_IMAGE_SIGNATURE_512:
+        return EXEC_GET_INFO_OR_GET_SUPPORT(GetImgSigInfo512, buff, check_support_only);
+
     case FS3_ROM_CODE:
         return check_support_only ? true : GetRomInfo(buff, sect_size);
 
@@ -1408,6 +1420,10 @@ bool Fs3Operations::FwGetSection(u_int32_t sectType, std::vector<u_int8_t>& sect
     return true;
 }
 
+bool Fs3Operations::VerifyImageAfterModifications() {
+    return FsIntQueryAux(false, false);
+}
+
 bool Fs3Operations::FwSetMFG(fs3_uid_t baseGuid, PrintCallBack callBackFunc)
 {
     if (!baseGuid.base_guid_specified && !baseGuid.base_mac_specified) {
@@ -1431,7 +1447,7 @@ bool Fs3Operations::FwSetMFG(fs3_uid_t baseGuid, PrintCallBack callBackFunc)
         return false;
     }
     // on image verify that image is OK after modification (we skip this on device for performance reasons)
-    if (!_ioAccess->is_flash() && !FsIntQueryAux(false, false)) {
+    if (!_ioAccess->is_flash() && !VerifyImageAfterModifications()) {
         return false;
     }
     return true;
@@ -1444,6 +1460,10 @@ bool Fs3Operations::FwSetMFG(guid_t baseGuid, PrintCallBack callBackFunc)
     return FwSetMFG(bGuid, callBackFunc);
 }
 
+bool Fs3Operations::parseDevData(bool readRom, bool quickQuery, bool verbose) {
+    return FsIntQueryAux(readRom, quickQuery, false, verbose);
+}
+
 bool Fs3Operations::FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc, ProgressCallBack progressFunc)
 {
     fs3_uid_t usrGuid;
@@ -1454,7 +1474,7 @@ bool Fs3Operations::FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc,
         return errmsg("Base GUID not found.");
     }
     //query device to get mfg info (for guids override en bit)
-    if (!FsIntQueryAux(false)) {
+    if (!parseDevData(false)) {
         return false;
     }
 
@@ -1496,7 +1516,7 @@ bool Fs3Operations::FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc,
         return false;
     }
     // on image verify that image is OK after modification (we skip this on device for performance reasons)
-    if (!_ioAccess->is_flash() && !FsIntQueryAux(false, false)) {
+    if (!_ioAccess->is_flash() && !VerifyImageAfterModifications()) {
         return false;
     }
     return true;
@@ -1576,7 +1596,7 @@ bool Fs3Operations::FwSetVPD(char *vpdFileStr, PrintCallBack callBackFunc)
         return false;
     }
     // on image verify that image is OK after modification (we skip this on device for performance reasons)
-    if (!_ioAccess->is_flash() && !FsIntQueryAux(false, false)) {
+    if (!_ioAccess->is_flash() && !VerifyImageAfterModifications()) {
         return false;
     }
     return true;
@@ -2324,7 +2344,7 @@ bool Fs3Operations::FwSetVSD(char *vsdStr, ProgressCallBack progressFunc, PrintC
         return false;
     }
     // on image verify that image is OK after modification (we skip this on device for performance reasons)
-    if (!_ioAccess->is_flash() && !FsIntQueryAux(false, false)) {
+    if (!_ioAccess->is_flash() && !VerifyImageAfterModifications()) {
         return false;
     }
     return true;
