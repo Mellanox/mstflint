@@ -108,26 +108,49 @@ bool Fs4Operations::CheckSignatures(u_int32_t a[], u_int32_t b[], int n)
     return true;
 }
 
-bool Fs4Operations::isEncrypted(bool& is_encrypted) {
-    //* Determine if encrypted by reading ITOC header magic-pattern
+bool Fs4Operations::IsEncryptedDevice(bool& is_encrypted)
+{
     is_encrypted = false;
+
+    if (_signatureMngr->IsLifeCycleSupported() && _signatureMngr->IsEncryptionSupported()) {
+        chip_type_t chip_type;
+        const u_int32_t *swId = (u_int32_t*)NULL;
+        if (!getInfoFromHwDevid(GetHwDevId(), chip_type, &swId)) {
+            return false;
+        }
+        CRSpaceRegisters crSpaceReg(getMfileObj(), chip_type);
+        if (crSpaceReg.getLifeCycle() == GA_SECURED) {
+            is_encrypted = true;
+        }
+    }
+    else {
+        is_encrypted = false;
+    }
+
+    return true;
+}
+
+//* Determine if encrypted by reading ITOC header magic-pattern
+bool Fs4Operations::IsEncryptedImage(bool& is_encrypted)
+{
     struct image_layout_itoc_header itocHeader;
     u_int8_t buffer[TOC_HEADER_SIZE];
-
-    //* Check if valid image exists
     u_int32_t image_start[CNTX_START_POS_SIZE] = {0};
     u_int32_t image_num = 0;
-    FindAllImageStart(_ioAccess, image_start,
-                    &image_num, _fs4_magic_pattern);
 
+    is_encrypted = false;
+
+    //* Check if valid image exists
+    FindAllImageStart(_ioAccess, image_start, &image_num, _fs4_magic_pattern);
+    
     if (image_num == 1) {
         _fwImgInfo.imgStart = image_start[0];
-        DPRINTF(("Fs4Operations::isEncrypted - _fwImgInfo.imgStart = 0x%x\n", _fwImgInfo.imgStart));
+        DPRINTF(("Fs4Operations::IsEncryptedImage - _fwImgInfo.imgStart = 0x%x\n", _fwImgInfo.imgStart));
 
         //* Init HW pointers
         if (!_is_hw_ptrs_initialized) {
             if (!initHwPtrs(true)) {
-                DPRINTF(("Fs4Operations::isEncrypted HW pointers not found"));
+                DPRINTF(("Fs4Operations::IsEncryptedImage HW pointers not found"));
                 return false;
             }
         }
@@ -144,12 +167,24 @@ bool Fs4Operations::isEncrypted(bool& is_encrypted) {
             }
         }
     }
+    else {            
+        DPRINTF(("Fs4Operations::IsEncryptedImage No valid image found --> not encrypted"));
+    }
+    return true;
+}
+
+bool Fs4Operations::isEncrypted(bool& is_encrypted) {
+    bool rc = false;
+
+    if (_ioAccess->is_flash()) {
+        rc = IsEncryptedDevice(is_encrypted);
+    }
     else {
-        DPRINTF(("Fs4Operations::isEncrypted No valid image found --> not encrypted"));
+        rc = IsEncryptedImage(is_encrypted);
     }
 
-    DPRINTF(("Fs4Operations::isEncrypted res = %s\n", is_encrypted ? "TRUE" : "FALSE"));
-    return true;
+    DPRINTF(("Fs4Operations::isEncrypted res = %s, rc = %d\n", is_encrypted ? "TRUE" : "FALSE", rc));
+    return rc;
 }
 
 bool Fs4Operations::CheckTocSignature(struct image_layout_itoc_header *itoc_header, u_int32_t first_signature)
@@ -840,7 +875,7 @@ bool Fs4Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
 bool Fs4Operations::encryptedFwReadImageInfoSection() {
     //* Read IMAGE_INFO section
     u_int32_t image_info_section_addr = _hmac_start_ptr + _fwImgInfo.imgStart;
-    DPRINTF(("DEBUG - image_info_section_addr = 0x%x\n", image_info_section_addr));
+    DPRINTF(("Fs4Operations::encryptedFwReadImageInfoSection image_info_section_addr = 0x%x\n", image_info_section_addr));
     vector<u_int8_t> image_info_data;
     image_info_data.resize(IMAGE_LAYOUT_IMAGE_INFO_SIZE);
     if (!_ioAccess->read(image_info_section_addr, image_info_data.data(), IMAGE_LAYOUT_IMAGE_INFO_SIZE)) {
@@ -855,7 +890,7 @@ bool Fs4Operations::encryptedFwReadImageInfoSection() {
     return true;
 }
 
-bool Fs4Operations::parseDevData() {
+bool Fs4Operations::parseDevData(bool readRom, bool quickQuery, bool verbose) {
     //* Initializing DTOC info
     _ioAccess->set_address_convertor(0, 0);
     // Parse DTOC header:
@@ -868,43 +903,58 @@ bool Fs4Operations::parseDevData() {
 
     // Parse DTOC entries:
     struct QueryOptions queryOptions;
-    queryOptions.readRom = false;
-    queryOptions.quickQuery = false;
+    queryOptions.readRom = readRom;
+    queryOptions.quickQuery = quickQuery;
     DPRINTF(("Fs4Operations::parseDevData call verifyTocEntries() DTOC\n"));
     if (!verifyTocEntries(dtoc_addr, false, true,
-                        queryOptions, (VerifyCallBack)NULL, false)) {
+                        queryOptions, (VerifyCallBack)NULL, verbose)) {
         return false;
     }
 
     return true;
 }
 
-bool Fs4Operations::encryptedFwQuery(fw_info_t *fwInfo)
+bool Fs4Operations::encryptedFwQuery(fw_info_t *fwInfo, bool readRom, bool quickQuery, bool ignoreDToc, bool verbose)
 {
     if (!encryptedFwReadImageInfoSection()) {
         return errmsg("%s", err());
     }
-    if (!parseDevData()) {
-        return errmsg("%s", err());
+
+    if (!ignoreDToc) {
+        if (!parseDevData(readRom, quickQuery, verbose)) {
+            return errmsg("%s", err());
+        }
     }
+
+    _fwImgInfo.ext_info.is_failsafe = true;
     memcpy(&(fwInfo->fw_info),  &(_fwImgInfo.ext_info),  sizeof(fw_info_com_t));
     memcpy(&(fwInfo->fs3_info), &(_fs3ImgInfo.ext_info), sizeof(fs3_info_t));
     fwInfo->fw_type = FwType();
 
+    if (dm_is_livefish_mode(getMfileObj()) == 1) {
+        if (!QuerySecurityFeatures()) {
+            return false;
+        }
+    }
+
+    _fwImgInfo.ext_info.is_failsafe = true;
+    memcpy(&(fwInfo->fw_info),  &(_fwImgInfo.ext_info),  sizeof(fw_info_com_t));
+    memcpy(&(fwInfo->fs3_info), &(_fs3ImgInfo.ext_info), sizeof(fs3_info_t));
+    fwInfo->fw_type = FwType();
+    
     return true;
 }
 
 bool Fs4Operations::FwQuery(fw_info_t *fwInfo, bool readRom, bool isStripedImage, bool quickQuery, bool ignoreDToc, bool verbose)
 {
     DPRINTF(("Fs4Operations::FwQuery\n"));
-    int rc = 0;
 
     bool image_encrypted = false;
     if (!isEncrypted(image_encrypted)) {
         return errmsg(getErrorCode(), "%s", err());
     }
     if (image_encrypted) {
-        return encryptedFwQuery(fwInfo);
+        return encryptedFwQuery(fwInfo, readRom, quickQuery, ignoreDToc, verbose);
     }
 
     if (!Fs3Operations::FwQuery(fwInfo, readRom, isStripedImage, quickQuery, ignoreDToc, verbose)) {
@@ -912,60 +962,64 @@ bool Fs4Operations::FwQuery(fw_info_t *fwInfo, bool readRom, bool isStripedImage
     }
 
     //* Security version
-    fwInfo->fs3_info.image_security_version = _security_version;
-    fwInfo->fs3_info.device_security_version_access_method = NOT_VALID;
+    _fs3ImgInfo.ext_info.image_security_version = _security_version;
+    _fs3ImgInfo.ext_info.device_security_version_access_method = NOT_VALID;
 
-    mfile* mf = getMfileObj();
-    if (dm_is_livefish_mode(mf) == 1) {
-
-        //* Read secure_boot Fuse and life_cycle Fuse
-        SecureBootFuse secureBootFuse(mf, fwInfo->fw_info.chip_type);
-        LifeCycleFuse lifeCycleFuse(mf, fwInfo->fw_info.chip_type);
-        if (secureBootFuse.isAccessibleInLiveFish() && lifeCycleFuse.isAccessibleInLiveFish()) {
-            bool secure_boot;
-            life_cycle_t life_cycle;
-
-            rc = secureBootFuse.isSecureBoot(secure_boot);
-            if (rc) {
-                return false;
-            }
-            fwInfo->fs3_info.sec_boot = secure_boot;
-
-            rc = lifeCycleFuse.getStatus(life_cycle);
-            if (rc) {
-                return false;
-            }
-            fwInfo->fs3_info.life_cycle = life_cycle;
+    if (dm_is_livefish_mode(getMfileObj()) == 1) {
+        if (!QuerySecurityFeatures()) {
+            return false;
         }
+    }
 
-        if (fwInfo->fs3_info.sec_boot == true && fwInfo->fs3_info.life_cycle == GA_SECURED) {
+    memcpy(&(fwInfo->fw_info),  &(_fwImgInfo.ext_info),  sizeof(fw_info_com_t));
+    memcpy(&(fwInfo->fs3_info), &(_fs3ImgInfo.ext_info), sizeof(fs3_info_t));
 
-            //* Read global_image_status register
-            try {
-                CRSpaceRegisters cr_space_reg(mf, _fwImgInfo.ext_info.chip_type);
-                fwInfo->fs3_info.global_image_status = cr_space_reg.getGlobalImageStatus();
-            }
-            catch(logic_error e) {
-                printf("%s\n", e.what());
-                return false;
-            }
-            catch(exception e) {
-                printf("%s\n", e.what());
-                return false;
-            }
+    return true;
+}
 
-            //* Read security_version Fuse
-            SecurityVersionGW securityVersionGW(mf, fwInfo->fw_info.chip_type);
-            bool isGWSupportedInLiveFish = securityVersionGW.isAccessibleInLiveFish();
+bool Fs4Operations::IsLifeCycleValidInLivefish(chip_type_t chip_type)
+{
+    bool isValid;
 
-            if (isGWSupportedInLiveFish) {
-                u_int32_t efuse_security_version;
-                rc = securityVersionGW.getSecurityVersion(&efuse_security_version);
-                if (rc) return false;
-                fwInfo->fs3_info.device_security_version_access_method = GW;
-                fwInfo->fs3_info.device_security_version_gw = efuse_security_version;
+    switch (chip_type)
+    {
+        case CT_BLUEFIELD2:
+        case CT_CONNECTX6DX:
+        case CT_CONNECTX6LX:
+            isValid = false;
+            break;
+        default:
+            isValid = true;
+            break;
+    }
+
+    return isValid;
+}
+
+bool Fs4Operations::QuerySecurityFeatures()
+{
+    DPRINTF(("Fs4Operations::QuerySecurityFeatures\n"));
+    CRSpaceRegisters crSpaceReg(getMfileObj(), _fwImgInfo.ext_info.chip_type);
+
+    try {
+        if (IsLifeCycleValidInLivefish(_fwImgInfo.ext_info.chip_type)) {
+            _fs3ImgInfo.ext_info.life_cycle = crSpaceReg.getLifeCycle();
+                    
+            if (_fs3ImgInfo.ext_info.life_cycle == GA_SECURED) {                        
+                _fs3ImgInfo.ext_info.global_image_status = crSpaceReg.getGlobalImageStatus();                                    
+
+                _fs3ImgInfo.ext_info.device_security_version_access_method = GW;
+                _fs3ImgInfo.ext_info.device_security_version_gw = crSpaceReg.getSecurityVersion();
             }
         }
+    }
+    catch(logic_error e) {
+        printf("%s\n", e.what());
+        return false;
+    }
+    catch(exception e) {
+        printf("%s\n", e.what());
+        return false;
     }
 
     return true;
@@ -1858,7 +1912,6 @@ bool Fs4Operations::DoAfterBurnJobs(const u_int32_t magic_pattern[], ExtBurnPara
 
 bool Fs4Operations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& burnParams)
 {
-    // bool useImageDevData; //! Handle dev data as well
     u_int8_t is_curr_image_on_second_partition;
     u_int32_t log2_chunk_size = 0;
     u_int32_t new_image_start_addr;
@@ -1933,13 +1986,14 @@ bool Fs4Operations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& bu
     //* Burn
     int alreadyWrittenSz = 0;
     //* Burn image without signature
+    DPRINTF(("Fs4Operations::burnEncryptedImage - Burning image without magic-pattern\n"));
     if (!writeImageEx(
             burnParams.progressFuncEx,
             burnParams.progressUserData,
             burnParams.progressFunc,
             new_image_start_addr + FS3_FW_SIGNATURE_SIZE,   // addr
             imgBuff.data() + FS3_FW_SIGNATURE_SIZE,         // data
-            total_img_size,                                 // size
+            imgBuff.size() - FS3_FW_SIGNATURE_SIZE,         // size
             true,                                           // phys addr
             false,
             total_img_size,
@@ -1953,6 +2007,7 @@ bool Fs4Operations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& bu
         // Get DTOC from the cache
         u_int8_t* dtoc_data = new u_int8_t[FS4_DEFAULT_SECTOR_SIZE];
         u_int32_t dtoc_addr = imageOps->GetIoAccess()->get_size() - FS4_DEFAULT_SECTOR_SIZE;
+        DPRINTF(("Fs4Operations::burnEncryptedImage - Burning DTOC at addr 0x%0x\n", dtoc_addr));
         ((Fs4Operations*)imageOps)->_imageCache.get(dtoc_data, dtoc_addr, FS4_DEFAULT_SECTOR_SIZE);
         if (!writeImageEx(
                 burnParams.progressFuncEx,
@@ -1994,6 +2049,7 @@ bool Fs4Operations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& bu
     }
 
     //* Burn signature
+    DPRINTF(("Fs4Operations::burnEncryptedImage - Burning image magic-pattern\n"));
     if (!writeImageEx(
             burnParams.progressFuncEx,
             burnParams.progressUserData,
@@ -2816,6 +2872,25 @@ bool Fs4Operations::IsSectionExists(fs3_section_t sectType)
     return true;
 }
 
+bool Fs4Operations::VerifyImageAfterModifications() {
+    bool image_encrypted = false;
+    if (!isEncrypted(image_encrypted)) {
+        return errmsg(getErrorCode(), "%s", err());
+    }
+
+    if (image_encrypted) {
+        fw_info_t fwInfo;
+        if (!encryptedFwQuery(&fwInfo, false, false)) {
+            return errmsg("%s", err());
+        }
+    }
+    else if (!FsIntQueryAux(false, false)) {
+        return false;
+    }
+
+    return true;
+}
+
 bool Fs4Operations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, bool is_sect_failsafe, CommandType cmd_type, PrintCallBack callBackFunc)
 {
     (void) cmd_type;
@@ -2828,19 +2903,38 @@ bool Fs4Operations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, bo
     u_int32_t numOfTocs;
     u_int32_t zeroes = 0;
     bool isDtoc;
-    // init sector to read
-    _readSectList.push_back(sect_type);
-    if (!FsIntQueryAux()) {
-        _readSectList.pop_back();
-        return false;
-    }
-    _readSectList.pop_back();
-
-    is_sect_failsafe = (sect_type == FS3_DEV_INFO);
 
     if (!isDTocSection(sect_type, isDtoc)) {
         return false;
     }
+
+    bool image_encrypted = false;
+    if (!isEncrypted(image_encrypted)) {
+        return errmsg(getErrorCode(), "%s", err());
+    }
+
+    if (image_encrypted) {
+        if (!isDtoc) {
+            return errmsg("Can't update ITOC section in case of encrypted image");
+        }
+        fw_info_t fwInfo;
+        if (!encryptedFwQuery(&fwInfo)) {
+            return errmsg("%s", err());
+        }
+    }
+    else {
+        // init sector to read
+        _readSectList.push_back(sect_type);
+        if (!FsIntQueryAux()) {
+            _readSectList.pop_back();
+            return false;
+        }
+        _readSectList.pop_back();
+    }
+
+
+    is_sect_failsafe = (sect_type == FS3_DEV_INFO);
+
 
     if (isDtoc) {
         tocArr = _fs4ImgInfo.dtocArr.tocArr;
@@ -3155,10 +3249,17 @@ void Fs4Operations::maskIToCSection(u_int32_t itocType, vector<u_int8_t>& img)
 {
     for (int i = 0; i < _fs4ImgInfo.itocArr.numOfTocs; i++) {
         if (_fs4ImgInfo.itocArr.tocArr[i].toc_entry.type == itocType) {
-            u_int32_t tocEntryAddr = _fs4ImgInfo.itocArr.tocArr[i].entry_addr;
+            //* Mask section
             u_int32_t tocEntryDataAddr = _fs4ImgInfo.itocArr.tocArr[i].toc_entry.flash_addr << 2;
-            memset(img.data() + tocEntryAddr, 0xFF, TOC_ENTRY_SIZE);
             memset(img.data() + tocEntryDataAddr, 0xFF, _fs4ImgInfo.itocArr.tocArr[i].toc_entry.size << 2);
+
+            //* Mask section's ITOC entry
+            if (!_encrypted_image_io_access) {
+                // In case of signing BB image (encrypted) we'll not mask the image signature 256/512 itoc entries
+                // due to FW limitation
+                u_int32_t tocEntryAddr = _fs4ImgInfo.itocArr.tocArr[i].entry_addr;
+                memset(img.data() + tocEntryAddr, 0xFF, TOC_ENTRY_SIZE);
+            }
         }
     }
 }
@@ -3419,12 +3520,12 @@ bool fromFileToArray(string & fileName, vector<u_int8_t>& outputArray, unsigned 
 }
 #endif
 
-bool Fs4Operations::GetSecureBootInfo()
+bool Fs4Operations::IsSecureBootSupported()
 {
     if (_signatureMngr == NULL) {
         return false;
     }
-    return _signatureMngr->GetSecureBootInfo();
+    return _signatureMngr->IsSecureBootSupported();
 }
 
 bool Fs4Operations::IsCableQuerySupported()
@@ -3920,6 +4021,29 @@ bool Fs4Operations::CalcHMAC(const vector<u_int8_t>& key, const vector<u_int8_t>
     (void)data;
     return errmsg("HMAC calculation is not implemented\n");
 #endif
+}
+
+bool Fs4Operations::IsSecurityVersionViolated(u_int32_t image_security_version)
+{
+    // Set image security-version
+    u_int32_t imageSecurityVersion = image_security_version;
+    u_int32_t deviceEfuseSecurityVersion;
+
+    if (getenv("FLINT_IGNORE_SECURITY_VERSION_CHECK") != NULL) {
+        return false;
+    }
+    
+    // Set device security-version (from EFUSEs)
+    if (_fs3ImgInfo.ext_info.device_security_version_access_method == MFSV) {
+        deviceEfuseSecurityVersion = _fs3ImgInfo.ext_info.device_security_version_mfsv.efuses_sec_ver;
+    } else if (_fs3ImgInfo.ext_info.device_security_version_access_method == GW) {
+        deviceEfuseSecurityVersion = _fs3ImgInfo.ext_info.device_security_version_gw;
+    } else {
+        deviceEfuseSecurityVersion = 0;
+    }
+
+    // Check violation of security-version
+    return (imageSecurityVersion < deviceEfuseSecurityVersion);
 }
 
 bool Fs4Operations::TocComp::operator()(fs4_toc_info *elem1, fs4_toc_info *elem2)

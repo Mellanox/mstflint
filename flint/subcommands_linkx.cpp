@@ -75,7 +75,7 @@ const char* FwImageBitmap[] = {
 const char* SupportedProtocol[] = {
     "Does not support either one of the FW update procedures",
     "SFF-8636 management interface and pseudo-CMIS FW. Update is supported",
-    "CMIS 4.0 is implemented"
+    "CMIS 4.0 is implemented",
     "Reserved",
     "Reserved",
     "Reserved",

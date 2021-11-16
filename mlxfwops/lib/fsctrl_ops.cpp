@@ -964,9 +964,9 @@ bool FsCtrlOperations::FwQueryTimeStamp(struct tools_open_ts_entry& timestamp, s
     return rc ? false : true;
 }
 
-bool FsCtrlOperations::GetSecureBootInfo()
+bool FsCtrlOperations::IsSecureBootSupported()
 {
-    return _signatureMngr->GetSecureBootInfo();
+    return _signatureMngr->IsSecureBootSupported();
 }
 
 bool FsCtrlOperations::IsLifeCycleSupported()
@@ -982,4 +982,27 @@ bool FsCtrlOperations::IsCableQuerySupported()
 bool FsCtrlOperations::IsEncryptionSupported()
 {
     return _signatureMngr->IsEncryptionSupported();
+}
+
+bool FsCtrlOperations::IsSecurityVersionViolated(u_int32_t image_security_version)
+{
+    // Set image security-version
+    u_int32_t imageSecurityVersion = image_security_version;
+    u_int32_t deviceEfuseSecurityVersion;
+
+    if (getenv("FLINT_IGNORE_SECURITY_VERSION_CHECK") != NULL) {
+        return false;
+    }
+    
+    // Set device security-version (from EFUSEs)
+    if (_fsCtrlImgInfo.device_security_version_access_method == MFSV) {
+        deviceEfuseSecurityVersion = _fsCtrlImgInfo.device_security_version_mfsv.efuses_sec_ver;
+    } else if (_fsCtrlImgInfo.device_security_version_access_method == GW) {
+        deviceEfuseSecurityVersion = _fsCtrlImgInfo.device_security_version_gw;
+    } else {
+        deviceEfuseSecurityVersion = 0;
+    }
+
+    // Check violation of security-version
+    return (imageSecurityVersion < deviceEfuseSecurityVersion);
 }

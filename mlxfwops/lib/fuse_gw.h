@@ -60,14 +60,14 @@ private:
     size_t _data_bit_offset; 
     size_t _data_bit_len;
 
-    u_int32_t static const GW_NOT_SUPPORTED = 0x0;
-    u_int32_t static const CTRL_LOCK = 0x80000000;
+    u_int32_t static const CTRL_LOCK_BIT_OFFSET = 31;
     u_int32_t static const CTRL_RW   = 0x40000000;
     u_int32_t static const CTRL_READ = CTRL_RW & 0xffffffff;
-    u_int32_t static const CTRL_BUSY = 0x20000000;    
-    u_int32_t static const CTRL_SIZE = 0x4;
+    u_int32_t static const CTRL_BUSY = 0x20000000;        
 
     void lock();
+    void waitForGWLockState(u_int32_t address, u_int32_t requiredState);
+    bool getCurrentGWState(u_int32_t address);
     void executeReadCommand();
     void waitForResult();
     void readResult(u_int32_t& result);
@@ -112,5 +112,28 @@ private:
     bool _is_supported_in_live_fish;
 };
 
+
+class SecurityVersionFuse
+{
+public:
+    SecurityVersionFuse(mfile* mf, chip_type_t chip_type);
+    ~SecurityVersionFuse() {};
+
+    bool isAccessibleInLiveFish();
+    bool getSecurityVersion(u_int32_t& result);
+
+private:   
+    typedef enum {ROLLBACK_PROTECTION, MINIMAL_VERSION} gw_type_t;
+    
+    void getRollbackProtection(u_int32_t* result);
+    void getMinimalSecurityVersion(u_int32_t* result);
+    void setGWAddress(gw_type_t gw_type);
+    u_int32_t countSetBits(u_int32_t num);
+
+    FuseGW _rollbackProtectionGW;
+    FuseGW _minimalSecurityVersionGW;
+    chip_type_t _chip_type;
+    bool _is_supported_in_live_fish;
+};
 
 #endif /*FUSE_GW_H*/

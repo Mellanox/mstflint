@@ -43,7 +43,6 @@
 // #include "flint_base.h"
 #include "fw_ops.h"
 #include "aux_tlv_ops.h"
-#include "security_version_gw.h"
 #include "fuse_gw.h"
 
 // FW Binary version
@@ -170,7 +169,9 @@ protected:
     bool GetDevInfo(u_int8_t *buff);
     bool GetImageInfo(u_int8_t *buff);
     bool GetRomInfo(u_int8_t *buff, u_int32_t size);
-    bool GetImgSigInfo(u_int8_t *buff);
+    bool GetImgSigInfo(u_int32_t keypair_uuid[4]);
+    bool GetImgSigInfo256(u_int8_t *buff);
+    bool GetImgSigInfo512(u_int8_t *buff);
     bool invalidateOldFWImages(const u_int32_t magic_pattern[], Flash *f, u_int32_t new_image_start);
     bool bootAddrUpdate(Flash *flash_access, u_int32_t new_image_start, ExtBurnParams& burnParams);
     bool DoAfterBurnJobs(const u_int32_t magic_patter[], Fs3Operations &imageOps,
@@ -197,6 +198,8 @@ protected:
     bool RemoveWriteProtection();
     bool Fs3MemSetSignature(fs3_section_t sectType, u_int32_t size, PrintCallBack printFunc = (PrintCallBack)NULL);
     virtual bool IsSectionExists(fs3_section_t sectType);
+    virtual bool VerifyImageAfterModifications();
+    virtual bool parseDevData(bool readRom = true, bool quickQuery = true, bool verbose = false);
 
     bool isOld4MBImage(FwOperations *imageOps);
     bool FwCalcSHA(MlxSign::SHAType shaType, vector<u_int8_t>& sha256, vector<u_int8_t>& fourMbImage);

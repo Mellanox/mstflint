@@ -77,44 +77,54 @@ void FuseGW::getData(u_int32_t& data)
 // Private methods
 // ---------------
 
-void FuseGW::lock() {
+void FuseGW::lock() 
+{
+    waitForGWLockState(_gw_address, 0);
 
-    int iter_num = 0, MAX_ITER_NUM = 100;
-    int const SLEEP_TIME = 10; // [msec]
+    //* lock GW copy
+    waitForGWLockState(_gw_address + 4, 1);
+}
 
-    bool lock;
-    do {
-        int rc = 0;
-        u_int32_t ctrl_reg = 0;
+void FuseGW::waitForGWLockState(u_int32_t address, u_int32_t requiredState) 
+{
+    const u_int32_t MAX_ITER_NUM = 100;
+    const u_int32_t SLEEP_TIME = 10; // [msec]
+    u_int32_t iter_num = 0;    
+    u_int32_t currentState = getCurrentGWState(address);
 
-        if (iter_num != 0) {
-            msleep(SLEEP_TIME);
-        }
-        rc = mread4(_mf, _gw_address, &ctrl_reg);
-        
-        if (rc != 4) {
-            throw "failed to lock (read error)";
-        }
-        
-        lock = (ctrl_reg & CTRL_LOCK) != 0;
-        iter_num++;
-        
+    while (currentState != requiredState) {
+        msleep(SLEEP_TIME);
+
+        currentState = getCurrentGWState(address);
+
+        iter_num++;        
         if (iter_num > MAX_ITER_NUM) {
             throw "failed to lock (timeout error)";
         }
-    } while (lock);
+    }
 }
 
-void FuseGW::executeReadCommand() {
+bool FuseGW::getCurrentGWState(u_int32_t address)
+{
+    u_int32_t ctrl_reg = 0;
 
+    if (mread4(_mf, address, &ctrl_reg) != 4) {
+        throw "failed to lock (read error)";
+    }
+        
+    return EXTRACT(ctrl_reg, CTRL_LOCK_BIT_OFFSET, 1);
+}
+
+void FuseGW::executeReadCommand() 
+{
     int rc = mwrite4(_mf, _gw_address, CTRL_READ | CTRL_BUSY);
     if (rc != 4) {
         throw "failed to executeReadCommand (write error)";
     }
 }
 
-void FuseGW::waitForResult() {
-
+void FuseGW::waitForResult() 
+{
     int iter_num = 0, MAX_ITER_NUM = 100;
     int const SLEEP_TIME = 10; // [msec]
 
@@ -364,3 +374,105 @@ u_int8_t LifeCycleFuse::calcOnBits1B(u_int8_t byte)
 
     return on_bits_count;
 }
+
+
+/********************************************************************************/
+/*                                                                              */
+/*                        SecurityVersionFuse Class                             */
+/*                                                                              */
+/********************************************************************************/
+
+SecurityVersionFuse::SecurityVersionFuse(mfile* mf, chip_type_t chip_type):
+    _rollbackProtectionGW(mf), _minimalSecurityVersionGW(mf), _chip_type(chip_type), _is_supported_in_live_fish(false)
+{
+    switch (chip_type)
+    {
+        case CT_CONNECTX7:
+            _rollbackProtectionGW.setGWAddress(0xf4540);      
+            _rollbackProtectionGW.setDataAddress(0xf4548);    
+            _rollbackProtectionGW.setFieldBitOffset(0);
+            _rollbackProtectionGW.setFieldBitLen(32);
+            _minimalSecurityVersionGW.setGWAddress(0xf4520);      
+            _minimalSecurityVersionGW.setDataAddress(0xf452c);  
+            _minimalSecurityVersionGW.setFieldBitOffset(0);
+            _minimalSecurityVersionGW.setFieldBitLen(32);
+            _is_supported_in_live_fish = true;
+            break;
+        case CT_QUANTUM2:
+            _rollbackProtectionGW.setGWAddress(0xf3240);      
+            _rollbackProtectionGW.setDataAddress(0xf3248);    
+            _rollbackProtectionGW.setFieldBitOffset(0);
+            _rollbackProtectionGW.setFieldBitLen(32);
+            _minimalSecurityVersionGW.setGWAddress(0xf3220);      
+            _minimalSecurityVersionGW.setDataAddress(0xf322c);  
+            _minimalSecurityVersionGW.setFieldBitOffset(0);
+            _minimalSecurityVersionGW.setFieldBitLen(32);
+            _is_supported_in_live_fish = true;
+            break;
+        default:
+            _is_supported_in_live_fish = false;
+            break;
+    }
+}
+
+bool SecurityVersionFuse::isAccessibleInLiveFish()
+{
+    return _is_supported_in_live_fish;
+}
+
+bool SecurityVersionFuse::getSecurityVersion(u_int32_t& securityVersion)
+{
+    u_int32_t data;
+    int rc = 0;
+    
+    try
+    {
+        u_int32_t const MINIMAL_SECURITY_VERSION_MASK = 0x00000ff0;
+        u_int32_t const MINIMAL_SECURITY_VERSION_OFFSET = 4;
+
+        switch (_chip_type)
+        {
+            case CT_CONNECTX7:
+            case CT_QUANTUM2:
+                _rollbackProtectionGW.getData(data);
+                securityVersion += countSetBits(data);
+                _rollbackProtectionGW.setDataAddress(0xf454c);
+                _rollbackProtectionGW.getData(data);
+                securityVersion += countSetBits(data);
+                
+                _minimalSecurityVersionGW.getData(data);
+                securityVersion += ((data & MINIMAL_SECURITY_VERSION_MASK) >> MINIMAL_SECURITY_VERSION_OFFSET); 
+                break;
+            default:
+                printf("-E- Failed to get data from Fuse: Device is not supported.\n");
+                rc = -1;
+                break;
+        }
+    }
+    catch(const char* msg)
+    {
+        printf("-E- Failed to get data from Fuse: %s.\n", msg);
+        rc = -1;
+    }
+    catch(exception e)
+    {
+        printf("-E- Failed to get data from Fuse: %s.\n", e.what());
+        rc = -1;
+    }
+    catch(...)
+    {
+        rc = -1;
+    }
+
+    return rc;
+}
+
+u_int32_t SecurityVersionFuse::countSetBits(u_int32_t num){
+    u_int32_t count = 0;
+    while (num) {
+        count += num & 1;
+        num >>= 1;
+    }
+    return count;
+}
+
