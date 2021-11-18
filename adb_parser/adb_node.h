@@ -68,6 +68,7 @@ public:
     FieldsList fields;
     FieldsList condFields; // Field that weren't instantiated due to not satisfied condition
     AttrsMap attrs;
+    bool inLayout;
 
     // defined in
     string fileName;

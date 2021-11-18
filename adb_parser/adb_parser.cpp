@@ -2284,6 +2284,7 @@ AdbInstance *Adb::createLayout(string rootNodeName, bool isExprEval,
         }
 
         AdbNode *nodeDesc = it->second;
+        nodeDesc->inLayout = true;
         AdbInstance *rootItem = new AdbInstance();
         rootItem->fieldDesc = NULL;
         rootItem->nodeDesc = nodeDesc;
@@ -2491,6 +2492,7 @@ vector<AdbInstance *> Adb::createInstance(AdbField *field,
         inst->fieldDesc = field;
 
         // if field is struct - find field->subNode in nodes map and addto instance not desc
+
         if (field->isStruct())
         {
             NodesMap::iterator it = nodesMap.find(field->subNode);
@@ -2630,6 +2632,14 @@ vector<AdbInstance *> Adb::createInstance(AdbField *field,
 
         if (field->isStruct() && !inst->nodeDesc->fields.empty() && (depth == -1 || depth > 0))
         {
+            if (inst->nodeDesc->inLayout) {
+                delete inst;
+                raiseException(false,
+                            "Cyclic definition of nodes, node: " + field->name + " was already added to the layout",
+                            ExceptionHolder::ERROR_EXCEPTION);
+            }
+            inst->nodeDesc->inLayout = true;
+            
             // validation 2
             if (inst->size != inst->nodeDesc->size)
             {
@@ -2649,6 +2659,7 @@ vector<AdbInstance *> Adb::createInstance(AdbField *field,
                 inst->subItems.insert(inst->subItems.end(), subItems.begin(),
                                       subItems.end());
             }
+            inst->nodeDesc->inLayout = false;
 
             if (!inst->isUnion())
             {
