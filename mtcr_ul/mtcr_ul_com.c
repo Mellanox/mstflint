@@ -2814,22 +2814,23 @@ int maccess_reg_ul(mfile *mf,
         //reg too big
         return ME_REG_ACCESS_SIZE_EXCCEEDS_LIMIT;
     }
-
-    if ((reg_size <= INBAND_MAX_REG_SIZE_CLS_A) &&
-        (supports_reg_access_cls_a_ul(mf, reg_method))) {
-        class_to_use = MAD_CLASS_A_REG_ACCESS;
-        rc = mreg_send_raw(mf, reg_id, reg_method, (u_int32_t *)reg_data, reg_size, r_size_reg, w_size_reg, reg_status);
-        if (rc == ME_OK && (*reg_status == 0)) {
-            return ME_OK;
-        } else {
-            class_to_use = MAD_CLASS_REG_ACCESS;
+    if (reg_size > INBAND_MAX_REG_SIZE) {
+        if ((reg_size <= INBAND_MAX_REG_SIZE_CLS_A) &&
+            (supports_reg_access_cls_a_ul(mf, reg_method))) {
+            class_to_use = MAD_CLASS_A_REG_ACCESS;
+            rc = mreg_send_raw(mf, reg_id, reg_method, (u_int32_t *)reg_data, reg_size, r_size_reg, w_size_reg, reg_status);
+            if (rc == ME_OK && (*reg_status == 0)) {
+                return ME_OK;
+            } else {
+                class_to_use = MAD_CLASS_REG_ACCESS;
+            }
         }
-    }
 
-    if (supports_reg_access_gmp_ul(mf, reg_method)) {
-        rc = mib_send_gmp_access_reg_mad_ul(mf, (u_int32_t *)reg_data, reg_size, reg_id, reg_method, reg_status);
-        if (rc == ME_OK && *reg_status == 0) {
-            return ME_OK;
+        if (supports_reg_access_gmp_ul(mf, reg_method)) {
+            rc = mib_send_gmp_access_reg_mad_ul(mf, (u_int32_t *)reg_data, reg_size, reg_id, reg_method, reg_status);
+            if (rc == ME_OK && *reg_status == 0) {
+                return ME_OK;
+            }
         }
     }
 #ifndef MST_UL
