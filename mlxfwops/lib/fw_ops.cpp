@@ -2503,7 +2503,7 @@ bool FwOperations::IsLifeCycleValidInLivefish(chip_type_t)
 
 bool FwOperations::IsSecurityVersionViolated(u_int32_t)
 {
-    return errmsg("IsSecurityVersionViolated not supported.");
+    return false;
 }
 
 #if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
