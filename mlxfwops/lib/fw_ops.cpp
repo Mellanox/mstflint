@@ -697,35 +697,31 @@ FwOperations* FwOperations::FwOperationsCreate(void *fwHndl, void *info, char *p
     return FwOperationsCreate(fwParams);
 }
 
-bool FwOperations::imageDevOperationsCreate(fw_ops_params_t& devParams, fw_ops_params_t& imgParams, FwOperations **devFwOps, FwOperations **imgFwOps, bool ignoreSecurityAttributes, bool ignoreDToc)
+bool FwOperations::imageDevOperationsCreate(fw_ops_params_t& devParams, fw_ops_params_t& imgParams,
+                                            FwOperations **devFwOps, FwOperations **imgFwOps,
+                                            bool ignoreSecurityAttributes, bool ignoreDToc)
 {
     *imgFwOps = FwOperationsCreate(imgParams);
     if (!(*imgFwOps)) {
         return false;
     }
 
-    bool is_encrypted = false;
-    if (!(*imgFwOps)->isEncrypted(is_encrypted)) {
-        return false;
-    }
-    if (!is_encrypted) {
-        if ((*imgFwOps)->FwType() == FIT_FS2) {
-            devParams.canSkipFwCtrl = true;
-            *devFwOps = FwOperationsCreate(devParams);
-            if (!(*devFwOps)) {
-                return false;
-            }
-            return true;
-        }
-
-        fw_info_t imgQuery;
-        memset(&imgQuery, 0, sizeof(fw_info_t));
-        if (!(*imgFwOps)->FwQuery(&imgQuery, true, false, true, ignoreDToc)) {
+    if ((*imgFwOps)->FwType() == FIT_FS2) {
+        devParams.canSkipFwCtrl = true;
+        *devFwOps = FwOperationsCreate(devParams);
+        if (!(*devFwOps)) {
             return false;
         }
-        if (imgQuery.fs3_info.security_mode == SM_NONE && ignoreSecurityAttributes == false) {
-            devParams.noFwCtrl = true;
-        }
+        return true;
+    }
+
+    fw_info_t imgQuery;
+    memset(&imgQuery, 0, sizeof(fw_info_t));
+    if (!(*imgFwOps)->FwQuery(&imgQuery, true, false, true, ignoreDToc)) {
+        return false;
+    }
+    if (imgQuery.fs3_info.security_mode == SM_NONE && ignoreSecurityAttributes == false) {
+        devParams.noFwCtrl = true;
     }
 
     *devFwOps = FwOperationsCreate(devParams);
