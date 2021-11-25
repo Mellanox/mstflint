@@ -1,3 +1,27 @@
+mstflint (4.18) 
+
+* Python 2.x - Python 2.x is now end-of-life and no longer supported by MFT. 
+To use the latest and up-to-date MFT tools, we recommend you use Python 3.x.
+
+* mstflint - When downgrading to a firmware version that does not support the flash type of the device, mstflint will present the user a clear error of such scenario.
+
+* mstfwreset	Added a new reset-type ("NIC only reset") to mstfwreset which is applicable only to SmartNIC devices. 
+The new reset-type is also the new default for SmartNIC devices. In case of reset-type is set to "NIC only reset", mstfwreset will not reset the internal host.
+
+* mstlink	- Added support for new PRBS TX/RX patterns (--tx_prbs <tx_prbs_mode> & --rx_prbs <rx_prbs_mode>).
+For further information, see mstlink Utility section.
+
+* mstlink - Added new show counters for 16nm devices. To see them run the "show_counter" command.
+
+* mstlink - Extended the list of the cable information received for 16nm devices when running the "show_module" command.
+
+* mstlink - Extended the information collection for 7nm and 16nm devices. See "--amber_collect" flag.
+For further information, see mstlink Utility section.
+
+* mstlink - Extended the list of the cable information (LOL, LOS, FSM, and module status) for CMIS when running the "show_module" command.
+
+ -- Tomer Tubi <ttubi@nvidia.com>  Thu, 25 Nov 2021 00:00:00 +0200
+
 mstflint (4.18.0-1) unstable; urgency=low
 
   * Updated from MFT-4.18.0
