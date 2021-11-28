@@ -76,7 +76,6 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _mngCableUnplugged = false;
     _isPam4Speed = false;
     _ignorePortType = true;
-    _lanesLockStatus = false;
     _ignorePortStatus = true;
     _protoAdmin = 0;
     _protoAdminEx = 0;
@@ -1810,7 +1809,7 @@ std::map<std::string, std::string> MlxlinkCommander::getPprt()
     u_int32_t numOfLanesToUse = (pcie) ? _numOfLanesPcie : _numOfLanes;
     u_int32_t statusMask = getFieldValue("prbs_lock_status");
     statusMask |= (getFieldValue("prbs_lock_status_ext") << 4);
-    pprtMap["pprtLockStatus"] = prbsMaskToLockStatus(statusMask, numOfLanesToUse, _lanesLockStatus);
+    pprtMap["pprtLockStatus"] = prbsMaskToLockStatus(statusMask, numOfLanesToUse);
     return pprtMap;
 }
 
@@ -2015,11 +2014,9 @@ void MlxlinkCommander::showTestModeBer()
     setPrintTitle(_testModeBerInfoCmd, "Physical Counters and BER Info (PRBS)",
             TEST_MODE_BER_INFO_LAST);
     setPrintVal(_testModeBerInfoCmd, "Time Since Last Clear [Min]",buff);
-    setPrintVal(_testModeBerInfoCmd, "PRBS Errors", getStringFromVector(errors),
-            ANSI_COLOR_RESET, true, _lanesLockStatus, true);
+    setPrintVal(_testModeBerInfoCmd, "PRBS Errors", getStringFromVector(errors));
     setPrintVal(_testModeBerInfoCmd, "PRBS BER",
-            getFieldStr("raw_ber_coef") + "E-" + getFieldStr("raw_ber_magnitude"),
-            ANSI_COLOR_RESET, true, _lanesLockStatus, true);
+            getFieldStr("raw_ber_coef") + "E-" + getFieldStr("raw_ber_magnitude"));
 
     cout <<_testModeBerInfoCmd;
 }
