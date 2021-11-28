@@ -551,14 +551,22 @@ int MlnxDev::preBurn(string mfa_file, f_prog_func prog_cb, bool burnFailsafe,
         goto clean_up_on_error;                
     }
 
+    rc = _devFwOps->FwQuery(&dev_fw_query);
+    if (!rc) {
+        _errMsg  = "Failed to query the device, " +  (string)_devFwOps->err();
+        _log += _errMsg;
+        goto clean_up_on_error;
+    }
+
+    // Abort if the image is restricted according to the Security-Version
+    if (_devFwOps->IsSecurityVersionViolated(img_fw_query.fs3_info.image_security_version)) {
+        _errMsg  = "The image you're trying to burn is restricted. Aborting ...";
+        _log += _errMsg;
+        goto clean_up_on_error;
+    }
+
     _burnParams.burnFailsafe = burnFailsafe;
     if (_burnParams.burnFailsafe) {
-        rc = _devFwOps->FwQuery(&dev_fw_query);
-        if (!rc) {
-            _errMsg  = "Failed to query the device, " +  (string)_devFwOps->err();
-            _log += _errMsg;
-            goto clean_up_on_error;
-        }
         if (_burnParams.burnFailsafe && (!img_fw_query.fw_info.is_failsafe || !dev_fw_query.fw_info.is_failsafe)) {
             if (!img_fw_query.fw_info.is_failsafe && !dev_fw_query.fw_info.is_failsafe) {
                 _burnParams.burnFailsafe = false;
