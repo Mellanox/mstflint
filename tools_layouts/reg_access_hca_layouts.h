@@ -33,7 +33,7 @@
  
 
 /***
-         *** This file was generated at "2021-09-30 13:17:34"
+         *** This file was generated at "2021-11-23 23:46:24"
          *** by:
          ***    > /mswg/release/tools/a-me/last_stable/adabe_plugins/adb2c/adb2pack.py --input adb/prm/hca/int/reg_access_hca.adb --file-prefix reg_access_hca --prefix reg_access_hca_ --no-adb-utils
          ***/
@@ -174,12 +174,12 @@ Other values are reserved */
 	u_int8_t category;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - LOCK_RESOURCE Modifier according to category field
-For GENERAL_SEMAPHORE Table  1111, "GENERAL_SEMA
-PHORE Category Layout," on page  1356
-For ICM_RESOURCE Table  1113, "ICM_RESOURCE Category 
-Layout," on page  1357
-For UAPP_RESOURCE Table  1115, "UAPP_RESOURCE Cate
-gory Layout," on page  1357 */
+For GENERAL_SEMAPHORE Table  1083, "GENERAL_SEMA
+PHORE Category Layout," on page  1349
+For ICM_RESOURCE Table  1085, "ICM_RESOURCE Category 
+Layout," on page  1350
+For UAPP_RESOURCE Table  1087, "UAPP_RESOURCE Cate
+gory Layout," on page  1350 */
 	/* 0x4.0 - 0x1c.31 */
 	union reg_access_hca_lock_source_stop_toggle_modifier_category_modifier_auto category_modifier;
 };
@@ -280,8 +280,8 @@ ponent update. */
 	/* Description - Only signed components are accepted. */
 	/* 0x10.30 - 0x10.30 */
 	u_int8_t signed_updates_only;
-	/* Description - When set, this components may be read, see "Read 
-Flow" on page 449. */
+	/* Description - When set, this components may be read, see 
+Section 9.10.4, "Read Flow", on page 449. */
 	/* 0x10.31 - 0x10.31 */
 	u_int8_t rd_en;
 };
@@ -388,14 +388,14 @@ stamp in build_time */
 	u_int32_t version;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - Time of component creation. Valid only if build_
-time_valid is set. See Table 1846, "Date-Time Lay
-out," on page 2063 */
+time_valid is set. See Table 1833, "Date-Time Lay
+out," on page 2066 */
 	/* 0x8.0 - 0xc.31 */
 	u_int64_t build_time;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - User-defined time assigned to the component version. 
 Valid only if user_defined_time_valid is set. See 
-Table 1846, "Date-Time Layout," on page 2063 */
+Table 1833, "Date-Time Layout," on page 2066 */
 	/* 0x10.0 - 0x14.31 */
 	u_int64_t user_defined_time;
 /*---------------- DWORD[6] (Offset 0x18) ----------------*/
@@ -747,7 +747,6 @@ struct reg_access_hca_mgir_hardware_info {
 	/* 0x0.0 - 0x0.15 */
 	u_int16_t device_id;
 	/* Description - 
-
 SwitchX Devices:
 0x00A0: Device step A0, FCC package
 0x00A1: Device step A1, FCC package
@@ -761,8 +760,8 @@ in PRM. */
 	u_int16_t device_hw_revision;
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - Process Voltage Scaling
-Maximum supported V_CODE voltage (in 50mV incre
-ments) for the device. */
+Supported nominal V_CORE voltage (in 50mV units) 
+for the device. */
 	/* 0x4.0 - 0x4.4 */
 	u_int8_t pvs;
 	/* Description - Process technology
@@ -980,15 +979,15 @@ handle the resource_dump_event */
 	/* 0x0.16 - 0x0.20 */
 	u_int8_t log_min_resource_dump_eq;
 	/* Description - If set, Resource_dump register is supported.
-See Table 1135, "RESOURCE_DUMP Register Layout," on 
-page 1367 */
+See Table 1107, "RESOURCE_DUMP Register Layout," on 
+page 1360 */
 	/* 0x0.22 - 0x0.22 */
 	u_int8_t resource_dump;
 	/* Description - Log(base 2) of the size in granularity of 4KB to be allo
 cated by host in order to accommodate cr_dump.
 0 means feature is not supported.
-See Table 1133, "CORE_DUMP Register Layout," on 
-page 1365 */
+See Table 1105, "CORE_DUMP Register Layout," on 
+page 1358 */
 	/* 0x0.23 - 0x0.27 */
 	u_int8_t log_cr_dump_to_mem_size;
 	/* Description - If set, Core dump of type of specific QP is supported.
@@ -1071,7 +1070,7 @@ FPGA_CTRL are supported. */
 	/* 0x8.30 - 0x8.30 */
 	u_int8_t flash_gw_lock;
 	/* Description - If set, SW is allowed to modify FPGA_CTRL register. See 
-Table  1093, "FPGA_CTRL Register Layout," on page  1344 */
+Table  1065, "FPGA_CTRL Register Layout," on page  1337 */
 	/* 0x8.31 - 0x8.31 */
 	u_int8_t fpga_ctrl_modify;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
@@ -1119,8 +1118,8 @@ For Mellanox sandbox products
 	u_int16_t sandbox_product_version;
 /*---------------- DWORD[30] (Offset 0x78) ----------------*/
 	/* Description - Sandbox basic capabilities per sandbox product ID.
-For Mellanox sandbox products, see Table  985, "IPsec_Basic_Ca
-pabilities Structure Layout," on page  1235. */
+For Mellanox sandbox products, see Table  957, "IPsec_Basic_Ca
+pabilities Structure Layout," on page  1227. */
 	/* 0x78.0 - 0x78.31 */
 	u_int32_t sandbox_basic_caps;
 /*---------------- DWORD[31] (Offset 0x7c) ----------------*/
@@ -1130,8 +1129,8 @@ pabilities Structure Layout," on page  1235. */
 	u_int16_t sandbox_extended_caps_len;
 /*---------------- DWORD[32] (Offset 0x80) ----------------*/
 	/* Description - Extended capabilities address.
-For Mellanox sandbox products, see Table  987, "IPsec_Extend
-ed_Capabilities Structure Layout," on page  1235. */
+For Mellanox sandbox products, see Table  959, "IPsec_Extend
+ed_Capabilities Structure Layout," on page  1227. */
 	/* 0x80.0 - 0x84.31 */
 	u_int64_t sandbox_extended_caps_addr;
 /*---------------- DWORD[34] (Offset 0x88) ----------------*/
@@ -1166,8 +1165,8 @@ Valid only for query operation. */
 	/* 0x0.0 - 0x0.7 */
 	u_int8_t status;
 	/* Description - Indicates the control operation to be performed. Allowed 
-only when FPGA_CAP.fpga_ctrl_modify==1. Table  1089, 
-"FPGA_CAP Register Layout," on page  1339.
+only when FPGA_CAP.fpga_ctrl_modify==1. Table  1061, 
+"FPGA_CAP Register Layout," on page  1332.
 0x1: LOAD - when set, the FPGA will be forced to reload the 
 image from flash according to image_select_admin value.
 0x2: RESET - when set, the FPGA internal logic state 
@@ -1272,7 +1271,7 @@ NENT instructions. Otherwise, this field is reserved. */
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
 	/* Description - Token representing the current flow executed by the 
 FSM.
-See "Update Handle" on page 447. */
+See Section 9.10.1, "Update Handle", on page 447. */
 	/* 0x8.0 - 0x8.23 */
 	u_int32_t update_handle;
 	/* Description - Auto-update to all matching downstream devices is 
@@ -1280,8 +1279,8 @@ requested. */
 	/* 0x8.31 - 0x8.31 */
 	u_int8_t auto_update;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
-	/* Description - Current Update FSM state, See "FSM States" on page 
-450
+	/* Description - Current Update FSM state, See Section 9.10.8, "FSM 
+States", on page 450
 0x0: IDLE
 0x1: LOCKED
 0x2: INITIALIZE
@@ -1296,8 +1295,8 @@ Other values are reserved */
 	/* 0xc.0 - 0xc.3 */
 	u_int8_t control_state;
 	/* Description - Indicates the successful completion of the instruction, 
-or the reason it failed. See "Error Handling" on page 
-449
+or the reason it failed. See Section 9.10.7, "Error 
+Handling", on page 449
 0x0: OK
 0x1: ERROR
 0x2: REJECTED_DIGEST_ERR
@@ -1387,8 +1386,8 @@ struct reg_access_hca_mcda_reg {
 /*---------------- DWORD[1] (Offset 0x4) ----------------*/
 	/* Description - Offset of accessed address relative to component start. 
 Accesses must be in accordance to log_mcda_word_
-size in Table 1842, "MCQI CAPABILITIES Info Lay
-out," on page 2060 */
+size in Table 1829, "MCQI CAPABILITIES Info Lay
+out," on page 2063 */
 	/* 0x4.0 - 0x4.31 */
 	u_int32_t offset;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
@@ -1452,14 +1451,14 @@ zero padded. */
 	u_int16_t data_size;
 /*---------------- DWORD[6] (Offset 0x18) ----------------*/
 	/* Description - Properties set structure according to info_type.
-CAPABILITIES - See Table 1842, "MCQI CAPABILI
-TIES Info Layout," on page 2060
-VERSION - See Table 1844, "MCQI VERSION Info 
-Layout," on page 2062
-ACTIVATION_METHOD - See Table 1848, "MCQI 
-ACTIVATION_METHOD Info Layout," on page 2064
-LINKX_PREPERTIES - See Table 1850, "MCQI 
-LINKX_PROPERTIES Info Layout," on page 2065 */
+CAPABILITIES - See Table 1829, "MCQI CAPABILI
+TIES Info Layout," on page 2063
+VERSION - See Table 1831, "MCQI VERSION Info 
+Layout," on page 2065
+ACTIVATION_METHOD - See Table 1835, "MCQI 
+ACTIVATION_METHOD Info Layout," on page 2067
+LINKX_PREPERTIES - See Table 1837, "MCQI 
+LINKX_PROPERTIES Info Layout," on page 2068 */
 	/* 0x18.0 - 0x90.31 */
 	union reg_access_hca_mcqi_reg_data_auto data;
 };
@@ -1499,8 +1498,8 @@ Other values are reserved */
 	/* 0x4.0 - 0x4.15 */
 	u_int16_t identifier;
 /*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description - Component state in update flow, see "Component 
-Update State" on page 446:
+	/* Description - Component state in update flow, see Section 9.9.1, 
+"Component Update State", on page 446:
 0x0: IDLE
 0x1: IN_PROGRESS
 0x2: APPLIED
@@ -1561,7 +1560,7 @@ struct reg_access_hca_mfrl_reg_ext {
 Only a single bit may be set.
 Bit 0: TRIGGER0 (live-patch)
 Bit 3: TRIGGER3 (PCIe link toggle)
-Bit 6: TRIGGER6 (power-cycle)
+Bit 6: TRIGGER6 (PERST)
 Other bits are reserved. */
 	/* 0x4.0 - 0x4.7 */
 	u_int8_t reset_trigger;
@@ -1634,17 +1633,17 @@ FW_sec_ver_stat is 1, it will program the EFUSEs as needed. */
 /* Size in bytes - 160 */
 struct reg_access_hca_mgir {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Hardware Information, see Table 1735, "Hardware Info 
+	/* Description - Hardware Information, see Table 1718, "Hardware Info 
 Layout," on page 1982 */
 	/* 0x0.0 - 0x1c.31 */
 	struct reg_access_hca_mgir_hardware_info hw_info;
 /*---------------- DWORD[8] (Offset 0x20) ----------------*/
-	/* Description - Firmware Information, see Table 1737, "Firmware Info 
+	/* Description - Firmware Information, see Table 1720, "Firmware Info 
 Layout," on page 1984 */
 	/* 0x20.0 - 0x5c.31 */
 	struct reg_access_hca_mgir_fw_info fw_info;
 /*---------------- DWORD[24] (Offset 0x60) ----------------*/
-	/* Description - Software Information, see Table 1739, "Software Info Lay
+	/* Description - Software Information, see Table 1722, "Software Info Lay
 out," on page 1986
 This field indicates the oldest software version compati
 ble with the current firmware */
@@ -1868,7 +1867,8 @@ struct reg_access_hca_mtrc_cap_reg {
 	/* 0x0.0 - 0x0.3 */
 	u_int8_t num_string_db;
 	/* Description - Indicates the version of the tracing mechanism.
-See, "Timestamp Event Traces" on page 1095
+See, Section 27.3.4.1, "Timestamp Event Traces", on 
+page 1283
 0x0: VER_0
 0x1: VER_1
 other values are reserved */
@@ -1940,8 +1940,8 @@ lowing link-up command (PAOS.admin_status = UP)
 Cleared by FW once PAOS.admin_status = UP com
 mand is set.
 
-The register can be set only when port operational sta
-tus is UP (PAOS.oper_status=0x1) 
+The register can be set only when port operational 
+status is UP (PAOS.oper_status=0x1) 
 
 NOTE: if physical environment was changed (i.e. 
 replacement of module, temp change, etc) there is a 
@@ -2002,7 +2002,7 @@ formed. Used for debug. */
 /* Size in bytes - 256 */
 struct reg_access_hca_resource_dump {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - See Section 24.8, "Resource Dump", on page 1297. */
+	/* Description - See Section 24.8, "Resource Dump", on page 1290. */
 	/* 0x0.0 - 0x0.15 */
 	u_int16_t segment_type;
 	/* Description - Sequence number. 0 on first call of dump and incre
@@ -2154,8 +2154,8 @@ injected. */
 	u_int16_t num_repeat;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - stressor Modifier according to type field.
-For SMBUS_FAILED,Table  1121, "SMBUS_FAILED Fault 
-Inject Modifier Layout," on page  1361 */
+For SMBUS_FAILED,Table  1093, "SMBUS_FAILED Fault 
+Inject Modifier Layout," on page  1354 */
 	/* 0x10.0 - 0x2c.31 */
 	struct reg_access_hca_smbus_failed_fault_inject_modifier per_type_modifier;
 };
@@ -2211,10 +2211,10 @@ Value 0x0 for freq indicates the Mini Flow will not be injected. */
 	u_int16_t num_repeat;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - stressor Modifier according to type field.
-For IRISC_HANG Table  1125, "IRISC_HANG Mini-Flow Modi
-fier Layout," on page  1362
-For PACKET_DROP Table  1127, "PACKET_DROP Mini-Flow 
-Modifier Layout," on page  1363 */
+For IRISC_HANG Table  1097, "IRISC_HANG Mini-Flow Modi
+fier Layout," on page  1355
+For PACKET_DROP Table  1099, "PACKET_DROP Mini-Flow 
+Modifier Layout," on page  1356 */
 	/* 0x10.0 - 0x2c.31 */
 	union reg_access_hca_strs_mini_flow_reg_per_type_modifier_auto per_type_modifier;
 };
@@ -2323,16 +2323,16 @@ active. */
 	u_int8_t polarity;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - stressor Modifier according to type field.
-For RXB_HANG Table  1103, "RXB_HANG Stop Toggle Modi
-fier Layout," on page  1353
-For LOCK_RESOURCE Table  1109, "LOCK_RESOURCE Stop 
-Toggle Modifier Layout," on page  1355
-For SXP_HANG Table  1105, "SXP_HANG Stop Toggle Modi
-fier Layout," on page  1354
-For RXB_HOST_HANG Table  1107, "RXB_HOST_HANG Stop 
-Toggle Modifier Layout," on page  1355
-For PAUSE_TX See Table Table  1117, "PAUSE_TX Stop Tog
-gle Modifier Layout," on page  1358 */
+For RXB_HANG Table  1075, "RXB_HANG Stop Toggle Modi
+fier Layout," on page  1346
+For LOCK_RESOURCE Table  1081, "LOCK_RESOURCE Stop 
+Toggle Modifier Layout," on page  1348
+For SXP_HANG Table  1077, "SXP_HANG Stop Toggle Modi
+fier Layout," on page  1347
+For RXB_HOST_HANG Table  1079, "RXB_HOST_HANG Stop 
+Toggle Modifier Layout," on page  1348
+For PAUSE_TX See Table Table  1089, "PAUSE_TX Stop Tog
+gle Modifier Layout," on page  1351 */
 	/* 0x10.0 - 0x2c.31 */
 	union reg_access_hca_strs_stop_toggle_reg_per_type_modifier_auto per_type_modifier;
 };
