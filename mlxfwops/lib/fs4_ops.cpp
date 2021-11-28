@@ -1002,7 +1002,7 @@ bool Fs4Operations::QuerySecurityFeatures()
     CRSpaceRegisters crSpaceReg(getMfileObj(), _fwImgInfo.ext_info.chip_type);
 
     try {
-        if (IsLifeCycleValidInLivefish(_fwImgInfo.ext_info.chip_type)) {
+        if (_signatureMngr->IsLifeCycleSupported() && IsLifeCycleValidInLivefish(_fwImgInfo.ext_info.chip_type)) {
             _fs3ImgInfo.ext_info.life_cycle = crSpaceReg.getLifeCycle();
                     
             if (_fs3ImgInfo.ext_info.life_cycle == GA_SECURED) {                        
