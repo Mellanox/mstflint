@@ -558,7 +558,6 @@ public:
     bool _mngCableUnplugged;
     bool _isPam4Speed;
     bool _ignorePortType;
-    bool _lanesLockStatus;
     bool _ignorePortStatus;
     std::vector<std::string> _ptysSpeeds;
     std::vector<PortGroup> _localPortsPerGroup;

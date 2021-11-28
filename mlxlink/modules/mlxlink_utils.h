@@ -101,7 +101,7 @@ string prbsMaskToLaneRate(u_int32_t mask);
 u_int32_t prbsMaskToRateNum(u_int32_t mask);
 bool prbsLaneRateCheck(const string &rate);
 string prbsMaskToTuningStatus(u_int32_t mask);
-string prbsMaskToLockStatus(u_int32_t mask, u_int32_t numOfLanesToUse, bool &allLocked);
+string prbsMaskToLockStatus(u_int32_t mask, u_int32_t numOfLanesToUse);
 bool checkPrbsCmd(const string &prbsCmd);
 bool checkTestMode(const string &testMode);
 string FEC2Str(const string &fecShort, const string &speedStrG);
