@@ -147,14 +147,6 @@ bool Fs4Operations::IsEncryptedImage(bool& is_encrypted)
         _fwImgInfo.imgStart = image_start[0];
         DPRINTF(("Fs4Operations::IsEncryptedImage - _fwImgInfo.imgStart = 0x%x\n", _fwImgInfo.imgStart));
 
-        //* Init HW pointers
-        if (!_is_hw_ptrs_initialized) {
-            if (!initHwPtrs(true)) {
-                DPRINTF(("Fs4Operations::IsEncryptedImage HW pointers not found"));
-                return false;
-            }
-        }
-
         u_int32_t itoc_header_addr = _fwImgInfo.imgStart + _itoc_ptr;
         READBUF((*_ioAccess), itoc_header_addr, buffer, TOC_HEADER_SIZE, "ITOC Header");
         image_layout_itoc_header_unpack(&itocHeader, buffer);
@@ -175,6 +167,14 @@ bool Fs4Operations::IsEncryptedImage(bool& is_encrypted)
 
 bool Fs4Operations::isEncrypted(bool& is_encrypted) {
     bool rc = false;
+
+    //* Init HW pointers
+    if (!_is_hw_ptrs_initialized) {
+        if (!initHwPtrs(true)) {
+            DPRINTF(("Fs4Operations::IsEncryptedImage HW pointers not found"));
+            return false;
+        }
+    }
 
     if (_ioAccess->is_flash()) {
         rc = IsEncryptedDevice(is_encrypted);
@@ -1002,7 +1002,7 @@ bool Fs4Operations::QuerySecurityFeatures()
     CRSpaceRegisters crSpaceReg(getMfileObj(), _fwImgInfo.ext_info.chip_type);
 
     try {
-        if (IsLifeCycleValidInLivefish(_fwImgInfo.ext_info.chip_type)) {
+        if (_signatureMngr->IsLifeCycleSupported() && IsLifeCycleValidInLivefish(_fwImgInfo.ext_info.chip_type)) {
             _fs3ImgInfo.ext_info.life_cycle = crSpaceReg.getLifeCycle();
                     
             if (_fs3ImgInfo.ext_info.life_cycle == GA_SECURED) {                        
