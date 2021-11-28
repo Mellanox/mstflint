@@ -55,6 +55,7 @@
 #endif
 
 #define MTCR_MAP_SIZE 0x100000
+#define DBG_PRINTF(...) do { if (getenv("MFT_DEBUG") != NULL) { fprintf(stderr, __VA_ARGS__); } } while (0)
 
 #include <stdio.h>
 #include <dirent.h>
@@ -2794,6 +2795,12 @@ int return_by_reg_status(int reg_status)
     }
 }
 
+int supports_reg_access_smp(mfile* mf)
+{
+    return (mf->flags & (MDEVS_IB | MDEVS_FWCTX)) ||
+           (!(mf->flags & MDEVS_IB) && (supports_icmd(mf) || supports_tools_cmdif_reg(mf)));
+}
+
 int maccess_reg_ul(mfile *mf,
                    u_int16_t reg_id,
                    maccess_reg_method_t reg_method,
@@ -2803,7 +2810,10 @@ int maccess_reg_ul(mfile *mf,
                    u_int32_t w_size_reg,
                    int *reg_status)
 {
-    int rc;
+    DBG_PRINTF("Sending Access Register:\n");
+    DBG_PRINTF("Register ID: 0x%04x\n", reg_id);
+    DBG_PRINTF("Register Size: %d bytes\n", reg_size);
+    int rc = -1;
     class_to_use = MAD_CLASS_REG_ACCESS;
     if (mf == NULL || reg_data == NULL || reg_status == NULL || reg_size <= 0) {
         return ME_BAD_PARAMS;
@@ -2814,25 +2824,7 @@ int maccess_reg_ul(mfile *mf,
         //reg too big
         return ME_REG_ACCESS_SIZE_EXCCEEDS_LIMIT;
     }
-    if (reg_size > INBAND_MAX_REG_SIZE) {
-        if ((reg_size <= INBAND_MAX_REG_SIZE_CLS_A) &&
-            (supports_reg_access_cls_a_ul(mf, reg_method))) {
-            class_to_use = MAD_CLASS_A_REG_ACCESS;
-            rc = mreg_send_raw(mf, reg_id, reg_method, (u_int32_t *)reg_data, reg_size, r_size_reg, w_size_reg, reg_status);
-            if (rc == ME_OK && (*reg_status == 0)) {
-                return ME_OK;
-            } else {
-                class_to_use = MAD_CLASS_REG_ACCESS;
-            }
-        }
 
-        if (supports_reg_access_gmp_ul(mf, reg_method)) {
-            rc = mib_send_gmp_access_reg_mad_ul(mf, (u_int32_t *)reg_data, reg_size, reg_id, reg_method, reg_status);
-            if (rc == ME_OK && *reg_status == 0) {
-                return ME_OK;
-            }
-        }
-    }
 #ifndef MST_UL
     if (mf->flags & MDEVS_MLNX_OS) {
         rc = mos_reg_access_raw(mf, reg_id, reg_method, reg_data, reg_size, reg_status);
@@ -2842,7 +2834,55 @@ int maccess_reg_ul(mfile *mf,
     }
 #endif
 
-    if ((mf->flags & (MDEVS_IB | MDEVS_FWCTX)) || (!(mf->flags & MDEVS_IB) && (supports_icmd(mf) || supports_tools_cmdif_reg(mf)))) {
+    if (reg_size <= INBAND_MAX_REG_SIZE) {
+        if (supports_reg_access_smp(mf)) {
+            rc = mreg_send_raw(mf, reg_id, reg_method,
+                               reg_data, reg_size, r_size_reg,
+                               w_size_reg, reg_status);
+        }
+        if (rc == ME_OK && (*reg_status == 0)) {
+            DBG_PRINTF("AccessRegister SMP Sent Successfully!\n");
+            return ME_OK;
+        } else {
+                DBG_PRINTF("AccessRegister Class SMP Failed!\n");
+                DBG_PRINTF("Mad Status: 0x%08x\n", rc);
+                DBG_PRINTF("Register Status: 0x%08x\n", *reg_status);
+                class_to_use = MAD_CLASS_A_REG_ACCESS;
+        }
+    }
+
+    if ((reg_size <= INBAND_MAX_REG_SIZE_CLS_A) &&
+        (supports_reg_access_cls_a_ul(mf, reg_method))) {
+        class_to_use = MAD_CLASS_A_REG_ACCESS;
+        rc = mreg_send_raw(mf, reg_id, reg_method,
+                           reg_data, reg_size, r_size_reg,
+                           w_size_reg, reg_status);
+        if (rc == ME_OK && (*reg_status == 0)) {
+            DBG_PRINTF("AccessRegister Class 0xA Sent Successfully!\n");
+            return ME_OK;
+        } else {
+            DBG_PRINTF("AccessRegister Class 0xA Failed!\n");
+            DBG_PRINTF("Mad Status: 0x%08x\n", rc);
+            DBG_PRINTF("Register Status: 0x%08x\n", *reg_status);
+            class_to_use = MAD_CLASS_REG_ACCESS;
+        }
+    }
+
+    if (supports_reg_access_gmp_ul(mf, reg_method)) {
+        rc = mib_send_gmp_access_reg_mad_ul(mf, (u_int32_t *)reg_data,
+                                            reg_size, reg_id,
+                                            reg_method, reg_status);
+        if (rc == ME_OK && *reg_status == 0) {
+            DBG_PRINTF("AccessRegisterGMP Sent Successfully!\n");
+            return ME_OK;
+        }
+        DBG_PRINTF("AccessRegisterGMP Failed!\n");
+        DBG_PRINTF("Mad Status: 0x%08x\n", rc);
+        DBG_PRINTF("Register Status: 0x%08x\n", *reg_status);
+    }
+
+    // Fallback - Attempting SMP as last resort.
+    if (supports_reg_access_smp(mf)) {
         rc = mreg_send_raw(mf, reg_id, reg_method, reg_data, reg_size, r_size_reg, w_size_reg, reg_status);
     } else {
         return ME_REG_ACCESS_NOT_SUPPORTED;

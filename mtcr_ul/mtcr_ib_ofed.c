@@ -1624,6 +1624,7 @@ uint8_t *cls_a_query_via(void* rcvbuf, ibvs_mad* vsmad,
                          int* return_status)
 {
     ib_rpc_v1_t rpc;
+    rpc.rstatus = 0;
     ib_rpc_t* rpcold = (ib_rpc_t*)(void*)&rpc;
     int lid = dest->lid;
     void* p_ret;
@@ -1701,6 +1702,7 @@ uint8_t* ib_vendor_call_status_via(ibvs_mad* vsmad, void* data,
                                    struct ibmad_port* srcport, int* return_status)
 {
     ib_rpc_v1_t rpc;
+    rpc.rstatus = 0;
     ib_rpc_t* rpcold = (ib_rpc_t*)(void*)&rpc;
     int range1 = 0, resp_expected;
     void *p_ret;
