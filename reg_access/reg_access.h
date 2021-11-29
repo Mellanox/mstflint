@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -38,7 +38,6 @@ extern "C" {
 
 #include <mtcr.h>
 #include <tools_layouts/register_access_open_layouts.h>
-#include <tools_layouts/register_access_sib_layouts.h>
 #include <tools_layouts/cibfw_layouts.h>
 
 // uncoment for testing MDDT with PDDR

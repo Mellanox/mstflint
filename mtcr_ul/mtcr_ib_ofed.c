@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -163,6 +163,8 @@
 #define IB_VENDOR_SPECIFIC_CLASS_0xA    0x0A
 #define IB_VENDOR_SPECIFIC_CLASS_0x9    0x09
 
+#define NUMBER_OF_MGMT_ELEMENTS         4
+
 #define IB_VS_ATTR_SW_RESET             0x12
 #define IB_VS_ATTR_EXT_PORT_INFO        0x13
 #define IB_VS_ATTR_CR_ACCESS            0x50
@@ -179,10 +181,18 @@
 #define I2C_DEVICE_ID   0x56
 #define I2C_MEMORY_ADDR 0
 
-#define MKEY_GUID_SIZE  32
+#define KEY_GUID_SIZE  32
 
 #define UNSUPP_DEVS_NUM   15
 #define DEVID_ADDRESS     0xf0014
+
+#define CLASS_VS_SIZE_BYTES 224
+#define CLASS_VS_DATA_OFFSET 0x20
+
+// ConfigSpaceAccess Mode 0 supports address of up to 24 bits.
+#define MODE_0_MAX_ADDRESS_RANGE 0x7FFFFF
+#define MODE_2_MAX_RECORDS_NUM   18
+#define MODE_2_MAX_DATA_SIZE     (MODE_2_MAX_RECORDS_NUM * 4)
 
 // Convert BYTES - DWORDS with MEMCPY BE
 #define BYTES_TO_DWORD_BE(dw_dest, byte_src) do {   u_int32_t tmp; \
@@ -221,6 +231,17 @@ typedef uint32_t IBMAD_CALL_CONV (*f_mad_get_field)(void *buf, int base_offs, en
 
 typedef char*IBMAD_CALL_CONV (*f_portid2str)(ib_portid_t *portid);
 
+typedef void* IBMAD_CALL_CONV (*f_mad_rpc_rmpp) (const struct ibmad_port *srcport, ib_rpc_t * rpc,
+                                                 ib_portid_t * dport, ib_rmpp_hdr_t * rmpp,
+                                                 void *data);
+
+typedef int IBMAD_CALL_CONV (*f_mad_send_via) (ib_rpc_t * rpc, ib_portid_t * dport,
+                                               ib_rmpp_hdr_t * rmpp, void *data,
+                                               struct ibmad_port *srcport);
+
+typedef void* IBMAD_CALL_CONV (*f_mad_rpc) (const struct ibmad_port *srcport, ib_rpc_t* rpc,
+                                            ib_portid_t* dport, void *payload, void* rcvdata);
+
 
 struct __ibvsmad_hndl_t
 {
@@ -231,11 +252,13 @@ struct __ibvsmad_hndl_t
     int tp;
     int i2c_slave;
     int use_smp;
+    int use_class_a;
     u_int64_t mkey;
     int mkey_is_supported;
     int timeout;
     int retries_num;
-    u_int64_t vkey;
+    u_int64_t vskey;
+    int vskey_is_supported;
     enum MAD_DEST dest_type;
 
     DLL_HANDLE dl_handle;
@@ -250,9 +273,12 @@ struct __ibvsmad_hndl_t
     f_smp_set_status_via smp_set_status_via;
     f_mad_rpc_set_retries mad_rpc_set_retries;
     f_mad_rpc_set_timeout mad_rpc_set_timeout;
+    f_mad_rpc_rmpp mad_rpc_rmpp;
     f_mad_get_field mad_get_field;
     f_portid2str portid2str;
     f_smp_mkey_set smp_mkey_set;
+    f_mad_send_via mad_send_via;
+    f_mad_rpc mad_rpc;
 
     void *ibdebug;
 };
@@ -273,47 +299,130 @@ static int verbose = 0;
 #define MAX_IB_SMP_DATA_SIZE    (IB_SMP_DATA_SIZE - IB_DATA_INDEX)
 #define MAX_IB_SMP_DATA_DW_NUM  MAX_IB_SMP_DATA_SIZE / 4
 
+#define CONFIG_ACCESS_MODE_2_DATA_OFFSET 4
+#define CONFIG_ACCESS_MODE_2_BITMASK_OFFSET 8
+
+void set_mkey_for_smp_mad(ibvs_mad *vsmad)
+{
+    if (vsmad->mkey) {
+        vsmad->smp_mkey_set(vsmad->srcport, vsmad->mkey);
+    } else {
+        vsmad->smp_mkey_set(vsmad->srcport, 0);
+    }
+}
+
+// Attribute modifier for mode 0:
+// Bits 24-31: Address MSB
+// Bits 22-23: Mode = 0
+// Bits 16-21: Number of dwords
+// Bits 0-15: Address LSB
+static u_int32_t create_attribute_mode_0(u_int32_t memory_address, u_int8_t num_of_dwords)
+{
+    return ( (EXTRACT(memory_address, 0, 16) << 00) & 0x0000ffff ) |
+           ( (num_of_dwords << 16) & 0x00ff0000 ) |
+           ( (EXTRACT(memory_address, 16, 8) << 24) & 0xff000000 );
+}
+
+// Attribute modifier for mode 2:
+// Bits 22-23: Mode = 2
+// Bits 16-21: Number of records (= number of dwords)
+static u_int32_t create_attribute_mode_2(u_int8_t num_of_dwords)
+{
+    return  ( ( ( 2 << 22) & 0x800000 ) |
+            ( (num_of_dwords << 16) & 0x00ff0000 ));
+}
+
+// For ConfigSpaceAccess Mad we use mode 2
+// only for accessing addresses larger than 24 bits.
+static unsigned int should_use_mode_2(u_int32_t memory_address, u_int8_t num_of_dwords)
+{
+    return memory_address + (num_of_dwords * 4) >
+           MODE_0_MAX_ADDRESS_RANGE ? 1 : 0;
+}
+
+static void set_mad_data_for_mode_2(u_int32_t memory_address, u_int8_t num_of_dwords,
+                                    u_int8_t* mad_data, u_int32_t* attribute_mod,
+                                    u_int32_t* mask, unsigned int* data_offset)
+{
+    int i = 0;
+    *attribute_mod = create_attribute_mode_2(num_of_dwords);
+
+    // First dword of each record of ConfigSpaceAccess mode 2
+    // contains the current address.
+    for (i = 0; i < num_of_dwords; i++) {
+        u_int32_t record_offset = memory_address + i;
+        DWORD_TO_BYTES_BE(mad_data + IB_DATA_INDEX + (i * 4), &record_offset);
+    }
+
+    // Second dword contains the data.
+    *data_offset = CONFIG_ACCESS_MODE_2_DATA_OFFSET;
+
+    // Third dword contains the bitmask.
+    *mask = 0xFFFFFFFF;
+}
+
 static uint64_t ibvsmad_craccess_rw_smp(ibvs_mad *h, u_int32_t memory_address, int method, u_int8_t num_of_dwords, u_int32_t *data)
 {
     u_int8_t mad_data[IB_SMP_DATA_SIZE] = {0};
     int i;
-    u_int32_t att_mod = 0;
     u_int8_t *p;
-    u_int64_t mkey;
+    u_int32_t attribute_mod = 0;
+    u_int64_t mkey = 0;
+    u_int32_t mask = 0;
+    unsigned int data_offset = 0;
+    unsigned int use_mode_2 = should_use_mode_2(memory_address, num_of_dwords);
 
     if (num_of_dwords > MAX_IB_SMP_DATA_DW_NUM) {
         IBERROR(("size is too big, maximum number of dwords is %d", MAX_IB_SMP_DATA_DW_NUM));
         return BAD_RET_VAL;
     }
-    // Mode 0 - block write
-    // att_mod = MERGE(att_mod, 0, 22, 2); // commented - already 0
-
-    // Cr addr:
-    att_mod = MERGE(att_mod, memory_address, 0, 16);
-    att_mod = MERGE(att_mod, EXTRACT(memory_address, 16, 8), 24, 8);
 
     // Set the mkey
     mkey = __cpu_to_be64(h->mkey);
     memcpy(&mad_data[0], &mkey, 8);
+    set_mkey_for_smp_mad(h);
 
-    // DW Size:
-    att_mod = MERGE(att_mod, num_of_dwords, 16, 6);
+    if (use_mode_2) {
+        set_mad_data_for_mode_2(memory_address, num_of_dwords,
+                                mad_data, &attribute_mod,
+                                &mask, &data_offset);
+
+    } else {
+        attribute_mod = create_attribute_mode_0(memory_address, num_of_dwords);
+    }
+
+    DEBUG(("Sending ConfigSpaceAccess SMP MAD...\n"));
+    if (h->portid.lid) {
+        DEBUG(("Management Class: 0x1\n"));
+    } else {
+        DEBUG(("Management Class: 0x81\n"));
+    }
+    DEBUG(("Attribute Modifier = 0x%08x\n", attribute_mod));
+     if (use_mode_2) {
+        DEBUG(("Mode: 2\n"));
+    } else {
+        DEBUG(("Mode: 0\n"));
+    }
+    DEBUG(("Attribute ID = 0x%08x\n", IB_SMP_ATTR_CR_ACCESS));
+    DEBUG(("Memory Address = 0x%08x\n", memory_address));
+    DEBUG(("Number of dwords = %d\n", num_of_dwords));
 
     if (method == IB_MAD_METHOD_GET) {
-        p = h->smp_query_via(mad_data, &h->portid, IB_SMP_ATTR_CR_ACCESS, att_mod, 0, h->srcport);
+        p = h->smp_query_via(mad_data, &h->portid, IB_SMP_ATTR_CR_ACCESS, attribute_mod, 0, h->srcport);
 
         if (!p) {
             return BAD_RET_VAL;
         }
 
         for (i = 0; i < num_of_dwords; i++) {
-            BYTES_TO_DWORD_BE(data + i, mad_data + IB_DATA_INDEX + i * 4);
+            BYTES_TO_DWORD_BE(data + i, mad_data + IB_DATA_INDEX + data_offset + (i * 4));
         }
     } else {
         for (i = 0; i < num_of_dwords; i++) {
-            DWORD_TO_BYTES_BE(mad_data + IB_DATA_INDEX + i * 4, data + i);
+            DWORD_TO_BYTES_BE(mad_data + IB_DATA_INDEX + data_offset + (i * 4), data + i);
+            DWORD_TO_BYTES_BE(mad_data + IB_DATA_INDEX + CONFIG_ACCESS_MODE_2_BITMASK_OFFSET + (i * 4), &mask);
         }
-        p = h->smp_set_via(mad_data, &h->portid, IB_SMP_ATTR_CR_ACCESS, att_mod, 0, h->srcport);
+        p = h->smp_set_via(mad_data, &h->portid, IB_SMP_ATTR_CR_ACCESS, attribute_mod, 0, h->srcport);
         if (!p) {
             return BAD_RET_VAL;
         }
@@ -326,17 +435,19 @@ static uint64_t ibvsmad_craccess_rw_smp(ibvs_mad *h, u_int32_t memory_address, i
 #define  MAX_VS_DATA_SIZE (IB_VENDOR_RANGE1_DATA_SIZE -  IB_DATA_INDEX)
 #define  MAX_IB_VS_DATA_DW_NUM  MAX_VS_DATA_SIZE / 4
 
-static uint64_t ibvsmad_craccess_rw_vs(ibvs_mad *h, u_int32_t memory_address, int method, u_int8_t num_of_dwords, u_int32_t *data)
+static uint64_t ibvsmad_craccess_rw_vs(ibvs_mad *h, u_int32_t memory_address,
+                                       int method, u_int8_t num_of_dwords,
+                                       u_int32_t *data, int class)
 {
     u_int8_t vsmad_data[IB_VENDOR_RANGE1_DATA_SIZE] = {0};
     ib_vendor_call_t call;
     int i;
     u_int8_t *p;
-    u_int64_t vkey;
-
-    call.method     = method;
-    call.mgmt_class = IB_VENDOR_SPECIFIC_CLASS_0x9;
-    call.attrid     = IB_VS_ATTR_CR_ACCESS;
+    u_int32_t attribute_mod = 0;
+    u_int32_t mask = 0;
+    u_int64_t vskey = 0;
+    unsigned int data_offset = 0;
+    int use_mode_2 = should_use_mode_2(memory_address, num_of_dwords);
 
     if (h == NULL || data == NULL) {
         return BAD_RET_VAL;
@@ -344,34 +455,46 @@ static uint64_t ibvsmad_craccess_rw_vs(ibvs_mad *h, u_int32_t memory_address, in
 
     if (num_of_dwords > MAX_IB_VS_DATA_DW_NUM) {
         IBERROR(("size (%d) is too big, maximum num of dwords is %d", num_of_dwords,
-                 MAX_IB_VS_DATA_DW_NUM)); // TBD try max size
+                 MAX_IB_VS_DATA_DW_NUM));
         return BAD_RET_VAL;
     }
 
-    // TODO: Add the dword.
-    call.mod        = ( (EXTRACT(memory_address, 0, 16) << 00) & 0x0000ffff ) |
-                      ( (num_of_dwords << 16) & 0x00ff0000 ) |
-                      ( (EXTRACT(memory_address, 16, 8) << 24) & 0xff000000 );
+    if (use_mode_2) {
+        set_mad_data_for_mode_2(memory_address, num_of_dwords,
+                                vsmad_data, &attribute_mod,
+                                &mask, &data_offset);
+    } else {
+        attribute_mod = create_attribute_mode_0(memory_address, num_of_dwords);
+    }
 
-    DEBUG(("attrmod = %08x\n", call.mod));
-
+    call.method     = method;
+    call.mgmt_class = class;
+    call.attrid     = IB_VS_ATTR_CR_ACCESS;
+    call.mod        = attribute_mod;
     call.oui        = IB_OPENIB_OUI;
     call.timeout    = 0;
     memset(&call.rmpp, 0, sizeof(call.rmpp));
 
-    DEBUG(("memory_address = 0x%08x\n", memory_address));
-    /* set MAD data section */
+    DEBUG(("Sending ConfigSpaceAccess VS MAD...\n"));
+    DEBUG(("Management Class = 0x%02x\n", call.mgmt_class));
+    DEBUG(("Attribute Modifier = 0x%08x\n", call.mod));
+    if (use_mode_2) {
+        DEBUG(("Mode: 2\n"));
+    } else {
+        DEBUG(("Mode: 0\n"));
+    }
+    DEBUG(("Attribute ID = 0x%08x\n", call.attrid));
+    DEBUG(("Memory Address = 0x%08x\n", memory_address));
+    DEBUG(("Number of dwords = %d\n", num_of_dwords));
 
-    // TBD: currently work for 1 record only, fix for more than one.
-    // building one record:
+    // Set the VSkey.
+    vskey = __cpu_to_be64(h->vskey);
+    memcpy(vsmad_data, &vskey, 8);
 
-    // Set the Vkey.
-    vkey = __cpu_to_be64(h->vkey);
-    memcpy(vsmad_data, &vkey, 8);
-
-    if (method == IB_MAD_METHOD_SET) {
-        for (i = 0; i < num_of_dwords; i++) {
-            DWORD_TO_BYTES_BE(vsmad_data + IB_DATA_INDEX + i * 4, data + i);
+    for (i = 0; i < num_of_dwords; i++) {
+        if (method == IB_MAD_METHOD_SET) {
+            DWORD_TO_BYTES_BE(vsmad_data + IB_DATA_INDEX + data_offset + (i * 4), data + i);
+            DWORD_TO_BYTES_BE(vsmad_data + IB_DATA_INDEX + CONFIG_ACCESS_MODE_2_BITMASK_OFFSET + (i * 4), &mask);
         }
     }
 
@@ -381,7 +504,7 @@ static uint64_t ibvsmad_craccess_rw_vs(ibvs_mad *h, u_int32_t memory_address, in
     }
 
     for (i = 0; i < num_of_dwords; i++) {
-        BYTES_TO_DWORD_BE(data + i, vsmad_data + IB_DATA_INDEX + i * 4);
+        BYTES_TO_DWORD_BE(data + i, vsmad_data + IB_DATA_INDEX + data_offset + (i * 4));
     }
 
     return 0;
@@ -392,7 +515,17 @@ static uint64_t ibvsmad_craccess_rw(ibvs_mad *h, u_int32_t memory_address, int m
     if (h->use_smp) {
         return ibvsmad_craccess_rw_smp(h, memory_address, method, num_of_dwords, data);
     } else {
-        return ibvsmad_craccess_rw_vs(h, memory_address, method, num_of_dwords, data);
+        if (h->use_class_a) {
+            return ibvsmad_craccess_rw_vs(h, memory_address,
+                                          method, num_of_dwords,
+                                          data, IB_VENDOR_SPECIFIC_CLASS_0xA);
+        } else {
+            // Backward compatibility: Sending class 0x9.
+            return ibvsmad_craccess_rw_vs(h, memory_address,
+                                          method, num_of_dwords,
+                                          data, IB_VENDOR_SPECIFIC_CLASS_0x9);
+        }
+
     }
     return 0;
 }
@@ -416,8 +549,11 @@ int process_dynamic_linking(ibvs_mad *ivm, int mad_init)
         MY_GetProcAddressIgnoreFail(ivm, smp_set_status_via );
         MY_GetProcAddress(ivm, mad_rpc_set_retries      );
         MY_GetProcAddress(ivm, mad_rpc_set_timeout      );
+        MY_GetProcAddress(ivm, mad_rpc_rmpp             );
+        MY_GetProcAddress(ivm, mad_rpc                  );
         MY_GetProcAddress(ivm, portid2str               );
         MY_GetProcAddress(ivm, mad_get_field            );
+        MY_GetProcAddress(ivm, mad_send_via             );
         MY_GetVarAddress(ivm,  ibdebug                  );
 
     } else {
@@ -469,9 +605,12 @@ int process_dynamic_linking(ibvs_mad *ivm, int mad_init)
     MY_DLSYM_IGNORE_FAIL(ivm, smp_set_status_via   );
     MY_DLSYM(ivm, mad_rpc_set_retries      );
     MY_DLSYM(ivm, mad_rpc_set_timeout      );
+    MY_DLSYM(ivm, mad_rpc_rmpp             );
     MY_DLSYM(ivm, mad_get_field            );
     MY_DLSYM(ivm, portid2str               );
     MY_DLSYM(ivm, smp_mkey_set             );
+    MY_DLSYM(ivm, mad_send_via             );
+    MY_DLSYM(ivm, mad_rpc                  );
     MY_DLSYM(ivm, ibdebug                  );
     return 0;
 }
@@ -531,7 +670,7 @@ int get_env_vars(ibvs_mad *ivm)
 {
     get_env_var(MTCR_IB_TIMEOUT, &(ivm->timeout));
     get_env_var(MTCR_IB_RETRIES, &(ivm->retries_num));
-    get_64_env_var(MTCR_IB_VKEY, &((ivm->vkey)));
+    get_64_env_var(MTCR_IB_VKEY, &((ivm->vskey)));
     return 0;
 }
 
@@ -558,11 +697,17 @@ int is_vs_crspace_supported(ibvs_mad *h)
         0x1007,     /* MT27520 ConnectX-3 Pro Family"              */
 
     };
-    uint64_t ret = ibvsmad_craccess_rw_vs(h, DEVID_ADDRESS, IB_MAD_METHOD_GET, 1, &data);
+
+    uint64_t ret = ibvsmad_craccess_rw_vs(h, DEVID_ADDRESS,
+                                          IB_MAD_METHOD_GET, 1,
+                                          &data, IB_VENDOR_SPECIFIC_CLASS_0xA);
     if (!ret) {
+        h->use_class_a = 1;
         return 1;
     }
+
     DEBUG(("Vendor Specific is not supported, checking SMP .. "));
+    set_mkey_for_smp_mad(h);
     p = h->smp_query_via(mad_data, &h->portid, IB_ATTR_NODE_INFO, 0, 0, h->srcport);
 
     if (NULL == p) {
@@ -579,6 +724,14 @@ int is_vs_crspace_supported(ibvs_mad *h)
 
     return 0;
 }
+
+
+
+
+typedef enum key_type_t {
+    MKEY,
+    VSKEY
+} key_type;
 
 
 
@@ -661,15 +814,26 @@ int load_file(FILE** file_descriptor, const char* file_name_path)
 
 
 
-int parse_mft_cfg_file(char* sm_config_path)
+int parse_mft_cfg_file(char* sm_config_path, key_type key)
 {
     const char* sm_config_default_path = "/var/cache/opensm/";
     const char* mft_conf_file_path = "/etc/mft/mft.conf";
-    int mkey_is_enable = 0;
+    int is_key_enabled = 0;
     int is_empty = 0;
     int ret_value = -1;
     char line[1024] = {0};
     char value[256] = {0};
+    char* key_enabled_field;
+    if (key == MKEY)
+    {
+        key_enabled_field = "mkey_enable";
+    }
+
+    else
+    {
+        key_enabled_field = "vskey_enable";
+    }
+
     FILE* mft_conf_file_descriptor = NULL;
 
 
@@ -684,26 +848,26 @@ int parse_mft_cfg_file(char* sm_config_path)
     while ((fgets(line, 1024, mft_conf_file_descriptor)))
     {
         // Check if the mkey feature is enable.
-        if (!get_mft_conf_field_value(line, "mkey_enable",
+        if (!get_mft_conf_field_value(line, key_enabled_field,
                                       value, &is_empty))
         {
-            // Mkey feature is supported ?
+            // key feature is supported ?
             if(strcmp(value, "yes"))
             {
                 // Mkey is unsuppurted.
                 break;
             }
 
-            mkey_is_enable = 1;
+            is_key_enabled = 1;
         }
 
         // Check if the user changed the default mkey directory.
         else if (!get_mft_conf_field_value(line, "sm_config_dir",
                                            value, &is_empty))
         {
-            if (!mkey_is_enable)
+            if (!is_key_enabled)
             {
-                // Mkey feature is disabled.
+                // key feature is disabled.
                 break;
             }
 
@@ -825,10 +989,10 @@ int parse_lid2guid_file(char* sm_config_path, char* lid,
 }
 
 
-int parse_guid2mkey_file(ibvs_mad* ivm, char* sm_config_path,
-                         char* guid)
+int parse_guid2key_file(ibvs_mad* ivm, char* sm_config_path,
+                         char* guid, key_type key)
 {
-    const char* guid2mkey = "guid2mkey";
+    char* guid2key_filename;
     char* delimiter = " ";
     char* tmp_value;
     FILE* file_descriptor = NULL;
@@ -836,9 +1000,19 @@ int parse_guid2mkey_file(ibvs_mad* ivm, char* sm_config_path,
     char conf_path[256];
     int ret_value = -1;
 
+    if (key == MKEY)
+    {
+        guid2key_filename = "guid2mkey";
+    }
+
+    else
+    {
+        guid2key_filename = "guid2vskey";
+    }
+
     // Parse the guid2lid file.
     strcpy(conf_path, sm_config_path);
-    strcat(conf_path, guid2mkey);
+    strcat(conf_path, guid2key_filename);
 
     if (load_file(&file_descriptor, conf_path))
     {
@@ -849,13 +1023,23 @@ int parse_guid2mkey_file(ibvs_mad* ivm, char* sm_config_path,
     // Go over the content of the guid2key file.
     while ((fgets(line, 1024, file_descriptor)))
     {
-        // Get the mkey.
+        // Get the key.
         tmp_value = strtok(line, delimiter);
 
         if (!strcmp(tmp_value, guid))
         {
             tmp_value = strtok(NULL, delimiter);
-            ivm->mkey = strtoull(tmp_value, NULL, 0);
+
+            if (key == MKEY)
+            {
+                ivm->mkey = strtoull(tmp_value, NULL, 0);
+            }
+
+            else
+            {
+                ivm->vskey = strtoull(tmp_value, NULL, 0);
+            }
+
             ret_value = 0;
             break;
         }
@@ -870,10 +1054,10 @@ int parse_guid2mkey_file(ibvs_mad* ivm, char* sm_config_path,
 
 
 
-int extract_mkey(ibvs_mad* ivm, char* sm_config_path,
-                 char* lid)
+int extract_key(ibvs_mad* ivm, char* sm_config_path,
+                 char* lid, key_type key)
 {
-    char guid[MKEY_GUID_SIZE];
+    char guid[KEY_GUID_SIZE];
 
     // Parse the lid2guid file.
     if (parse_lid2guid_file(sm_config_path, lid,
@@ -883,8 +1067,8 @@ int extract_mkey(ibvs_mad* ivm, char* sm_config_path,
     }
 
     // Parse the guid2key file.
-    if (parse_guid2mkey_file(ivm, sm_config_path,
-                             guid))
+    if (parse_guid2key_file(ivm, sm_config_path,
+                             guid, key))
     {
         return -1;
     }
@@ -895,7 +1079,7 @@ int extract_mkey(ibvs_mad* ivm, char* sm_config_path,
 
 
 
-int get_mkey(ibvs_mad* ivm, char* lid)
+int get_key(ibvs_mad* ivm, char* lid, key_type key)
 {
     char sm_config_path[256] = {0};
 
@@ -906,26 +1090,24 @@ int get_mkey(ibvs_mad* ivm, char* lid)
         return -1;
     }
 
-    // Parse the configuration file in order to extract the mkey info.
-    if(parse_mft_cfg_file(sm_config_path))
+    // Parse the configuration file in order to extract the key info.
+    if(parse_mft_cfg_file(sm_config_path, key))
     {
-        // Failed to parse the mkey fields from
+        // Failed to parse the key fields from
         //   the mft configuration file.
         return -1;
     }
 
-    // Extract the mkey.
-    if(extract_mkey(ivm, sm_config_path,
-                    lid))
+    // Extract the key.
+    if(extract_key(ivm, sm_config_path,
+                    lid, key))
     {
-        // Failed to extract the mkey.
+        // Failed to extract the key.
         return -1;
     }
 
     return 0;
 }
-
-
 
 
 /********************************************************
@@ -937,10 +1119,10 @@ int get_mkey(ibvs_mad* ivm, char* lid)
 int mib_open(const char *name, mfile *mf, int mad_init)
 {
     char        *ca              = 0;
-    int mgmt_classes[4] = {IB_SMI_CLASS,
-                           IB_SMI_DIRECT_CLASS,
-                           IB_VENDOR_SPECIFIC_CLASS_0xA,
-                           IB_VENDOR_SPECIFIC_CLASS_0x9};
+    int mgmt_classes[NUMBER_OF_MGMT_ELEMENTS] = {IB_SMI_CLASS,
+                                                 IB_SMI_DIRECT_CLASS,
+                                                 IB_VENDOR_SPECIFIC_CLASS_0x9,
+                                                 IB_VENDOR_SPECIFIC_CLASS_0xA};
     ib_portid_t *sm_id           = 0;
     int ca_port         = 0;
     ibvs_mad    *ivm             = NULL;
@@ -972,6 +1154,7 @@ int mib_open(const char *name, mfile *mf, int mad_init)
     }
 
     ivm->mkey_is_supported = 0;
+    ivm->vskey_is_supported = 0;
 
     if (strncmp("ibdr-", nbuf, 5) == 0) {
         ivm->use_smp = 1;
@@ -984,6 +1167,7 @@ int mib_open(const char *name, mfile *mf, int mad_init)
     } else if ((p = strstr(nbuf, "lid-")) != 0) {
 #ifdef __linux__
         ivm->mkey_is_supported = 1;
+        ivm->vskey_is_supported = 1;
 #endif
         lid_provided = 1;
         ivm->dest_type = IB_DEST_LID;
@@ -992,6 +1176,7 @@ int mib_open(const char *name, mfile *mf, int mad_init)
     } else if ((p = strstr(nbuf, "lid_noinit-")) != 0) {
 #ifdef __linux__
         ivm->mkey_is_supported = 1;
+        ivm->vskey_is_supported = 1;
 #endif
         lid_provided = 1;
         ivm->dest_type = IB_DEST_LID;
@@ -1064,7 +1249,8 @@ int mib_open(const char *name, mfile *mf, int mad_init)
 #endif
     get_env_var(MTCR_IBMAD_DEBUG, ivm->ibdebug);
 
-    ivm->srcport = ivm->mad_rpc_open_port(ca, ca_port, mgmt_classes, 4);
+    ivm->srcport = ivm->mad_rpc_open_port(ca, ca_port,
+                                          mgmt_classes, NUMBER_OF_MGMT_ELEMENTS);
     if (ivm->srcport == NULL) {
         goto end;
     }
@@ -1072,16 +1258,21 @@ int mib_open(const char *name, mfile *mf, int mad_init)
     ivm->mad_rpc_set_retries(ivm->srcport, ivm->retries_num);
     ivm->mad_rpc_set_timeout(ivm->srcport, ivm->timeout);
 
-    // Initialize the mkey.
+    // Initialize the mkey & vskey.
     ivm->mkey = 0;
+    ivm->vskey = 0;
 
     if (ivm->mkey_is_supported) {
-        rc = get_mkey(ivm, path_str);
+        rc = get_key(ivm, path_str, MKEY);
         // Do we have an mkey?
         if (!rc) {
             // Set the mkey.
             ivm->smp_mkey_set(ivm->srcport, ivm->mkey);
         }
+    }
+
+    if (ivm->vskey_is_supported) {
+        get_key(ivm, path_str, VSKEY);
     }
 
     rc = ivm->ib_resolve_portid_str_via(&ivm->portid, (char*)path_str,
@@ -1250,14 +1441,24 @@ int mib_block_op(mfile *mf, unsigned int offset, u_int32_t *data, int length, in
     }
     CHECK_ALIGN(length);
     int chunk_size = mib_get_chunk_size(mf);
+    // for addresses > 24 bits we use ConfigSpaceAccess mode 2
+    // which is limited to 72 bytes.
+    if (offset + MAX_VS_DATA_SIZE > MODE_0_MAX_ADDRESS_RANGE) {
+        chunk_size = MODE_2_MAX_DATA_SIZE;
+    }
     int t_offset = 0;
     while (t_offset < length) {
         int left_size = length - t_offset;
         int to_op = left_size > chunk_size ? chunk_size : left_size;
-        if (ibvsmad_craccess_rw(h, offset + t_offset, method, (to_op / 4), data + t_offset / 4) == ~0ull) {
+        unsigned int curret_offset = offset + t_offset;
+        if (ibvsmad_craccess_rw(h, curret_offset, method, (to_op / 4), data + t_offset / 4) == ~0ull) {
             IBERROR(("cr access %s to %s failed", op == BLOCKOP_READ ? "read" : "write",
                      h->portid2str(&h->portid)));
             return -1;
+        }
+        // If approaching addresses > 24 bits we will switch to mode 2.
+        if (curret_offset + chunk_size > MODE_0_MAX_ADDRESS_RANGE) {
+            chunk_size = MODE_2_MAX_DATA_SIZE;
         }
         t_offset += chunk_size;
     }
@@ -1319,6 +1520,7 @@ int is_node_managed(ibvs_mad *h)
     // Set the mkey.
     u_int64_t mkey = __cpu_to_be64(h->mkey);
     memcpy(&mad_data[0], &mkey, 8);
+    set_mkey_for_smp_mad(h);
 
     p = h->smp_query_via(mad_data, &h->portid, IB_ATTR_SWITCH_INFO, 0, 0, h->srcport);
 
@@ -1416,20 +1618,175 @@ static int mib_status_translate(int status)
     return ME_MAD_GENERAL_ERR;
 }
 
-int mib_send_gmp_access_reg_mad(mfile *mf, u_int32_t *data, u_int32_t reg_size, u_int32_t reg_id, maccess_reg_method_t reg_method)
+uint8_t *cls_a_query_via(void* rcvbuf, ibvs_mad* vsmad,
+                         ib_portid_t* dest, const unsigned timeout,
+                         const unsigned attribute_id, const struct ibmad_port* srcport,
+                         int* return_status)
+{
+    ib_rpc_v1_t rpc;
+    rpc.rstatus = 0;
+    ib_rpc_t* rpcold = (ib_rpc_t*)(void*)&rpc;
+    int lid = dest->lid;
+    void* p_ret;
+
+    if (lid == -1) {
+        IBWARN("only lid routed is supported");
+        return NULL;
+    }
+
+    rpc.mgtclass = IB_VENDOR_SPECIFIC_CLASS_0xA | IB_MAD_RPC_VERSION1;
+    rpc.method = MACCESS_REG_METHOD_SET;
+    rpc.attr.id = attribute_id;
+    rpc.attr.mod = 0;
+    rpc.timeout = timeout;
+    rpc.datasz = CLASS_VS_SIZE_BYTES;
+    rpc.dataoffs = CLASS_VS_DATA_OFFSET;
+    // There is no member for VSKey in rpc struct,
+    // but the offset for VSKey & MKey in the mad is the same.
+    rpc.mkey = vsmad->vskey;
+
+    if (!dest->qp) {
+        dest->qp = 1;
+    }
+    if (!dest->qkey) {
+        dest->qkey = IB_DEFAULT_QP1_QKEY;
+    }
+
+    p_ret = vsmad->mad_rpc(srcport, rpcold, dest, rcvbuf, rcvbuf);
+    errno = rpc.error;
+    *return_status = rpc.rstatus;
+    return p_ret;
+}
+
+int mib_send_cls_a_access_reg_mad(mfile *mf, u_int8_t *data)
+{
+    if (!mf || !mf->ctx || !data) {
+        IBERROR(("mib_send_cls_a_access_reg_mad failed. Null Param."));
+        return ME_BAD_PARAMS;
+    }
+    ibvs_mad* vsmad = (ibvs_mad*)(mf->ctx);
+    u_int8_t* call_result;
+    int return_status = -1;
+
+    //Set the VSKey.
+    if (vsmad->vskey) {
+        vsmad->smp_mkey_set(vsmad->srcport, vsmad->vskey);
+    } else {
+        vsmad->smp_mkey_set(vsmad->srcport, 0);
+    }
+
+    call_result = cls_a_query_via(data, vsmad, &vsmad->portid,
+                                  0, IB_SMP_ATTR_REG_ACCESS,
+                                  vsmad->srcport, &return_status);
+
+    if (!call_result || return_status > 0) {
+        if (return_status > 0) {
+            return mib_status_translate(return_status);
+        }
+        return -1;
+    }
+
+    return ME_OK;
+}
+
+int response_expected(int method)
+{
+    return method == IB_MAD_METHOD_GET ||
+           method == IB_MAD_METHOD_SET ||
+           method == IB_MAD_METHOD_TRAP;
+}
+
+
+uint8_t* ib_vendor_call_status_via(ibvs_mad* vsmad, void* data,
+                                   ib_portid_t* portid, ib_vendor_call_t* call,
+                                   struct ibmad_port* srcport, int* return_status)
+{
+    ib_rpc_v1_t rpc;
+    rpc.rstatus = 0;
+    ib_rpc_t* rpcold = (ib_rpc_t*)(void*)&rpc;
+    int range1 = 0, resp_expected;
+    void *p_ret;
+
+    if (portid->lid <= 0) {
+        return NULL;    /* no direct SMI */
+    }
+
+    if (!(range1 = mad_is_vendor_range1(call->mgmt_class)) &&
+        !(mad_is_vendor_range2(call->mgmt_class))) {
+        return NULL;
+    }
+
+    resp_expected = response_expected(call->method);
+
+    rpc.mgtclass = call->mgmt_class | IB_MAD_RPC_VERSION1;
+    rpc.method = call->method;
+    rpc.attr.id = call->attrid;
+    rpc.attr.mod = call->mod;
+    rpc.timeout = resp_expected ? call->timeout : 0;
+    rpc.datasz =
+        range1 ? IB_VENDOR_RANGE1_DATA_SIZE : IB_VENDOR_RANGE2_DATA_SIZE;
+    rpc.dataoffs =
+        range1 ? IB_VENDOR_RANGE1_DATA_OFFS : IB_VENDOR_RANGE2_DATA_OFFS;
+
+    if (!range1) {
+        rpc.oui = call->oui;
+    }
+
+    portid->qp = 1;
+    if (!portid->qkey) {
+        portid->qkey = IB_DEFAULT_QP1_QKEY;
+    }
+
+    if (resp_expected) {
+        p_ret = vsmad->mad_rpc_rmpp(srcport, rpcold, portid, NULL, data);
+        errno = rpc.error;
+        *return_status = rpc.rstatus;
+        return p_ret;
+    }
+
+    return vsmad->mad_send_via(rpcold, portid, NULL, data, srcport) < 0 ? NULL : data;
+}
+
+// AccessRegisterGMP does not use OperationTLV struct
+// and encodes the register operation status in the
+// returned status field of the MAD.
+// The translation table is available in the MADs PRM.
+int translate_mad_status_to_reg_status_gmp(int mad_status)
+{
+    switch(mad_status) {
+        case 0:
+            return ME_OK;
+        case 1:
+            return ME_REG_ACCESS_DEV_BUSY;
+        case 4:
+            return ME_REG_ACCESS_CLASS_NOT_SUPP;
+        case 20:
+            return ME_REG_ACCESS_REG_NOT_SUPP;
+        case 12:
+            return ME_REG_ACCESS_METHOD_NOT_SUPP;
+        case 28:
+            return ME_REG_ACCESS_BAD_PARAM;
+        default:
+            return ME_REG_ACCESS_UNKNOWN_ERR;
+    }
+}
+
+int mib_send_gmp_access_reg_mad(mfile *mf, u_int32_t *data,
+                                u_int32_t reg_size, u_int32_t reg_id,
+                                maccess_reg_method_t reg_method, int *reg_status)
 {
     // The buffer should contain:
-    // 2 dwords for the vkey,
+    // 2 dwords for the vskey,
     // 1 dword for a configuration dword,
     // 55 dwords for data.
     // All sizes and offsets are in dword unit.
-    const int vkey_offset = 0;
-    const int vkey_size = 2;
+    const int vskey_offset = 0;
+    const int vskey_size = 2;
     const int config_offset = 2;
     const int config_size = 1;
     const int data_offset = 3;
     const int data_size = 55;
-    const int buffer_size = vkey_size + config_size + data_size; // == 58
+    const int buffer_size = vskey_size + config_size + data_size; // == 58
     u_int32_t vsmad_data[buffer_size];
     u_int32_t orig_vsmad_data[buffer_size];
 
@@ -1445,8 +1802,8 @@ int mib_send_gmp_access_reg_mad(mfile *mf, u_int32_t *data, u_int32_t reg_size, 
     memset(orig_vsmad_data, 0x0, buffer_size);
 
     ibvs_mad *vsmad = (ibvs_mad*)(mf->ctx);
-    u_int64_t vkey = __cpu_to_be64(vsmad->vkey);
-    memcpy(&vsmad_data[vkey_offset], &vkey, vkey_size * 4);
+    u_int64_t vskey = __cpu_to_be64(vsmad->vskey);
+    memcpy(&vsmad_data[vskey_offset], &vskey, vskey_size * 4);
     memcpy(&vsmad_data[data_offset], data, data_size * 4);
     memcpy(&orig_vsmad_data[0], vsmad_data, buffer_size * 4);
 
@@ -1463,13 +1820,18 @@ int mib_send_gmp_access_reg_mad(mfile *mf, u_int32_t *data, u_int32_t reg_size, 
     int num_of_blocks = (reg_size / (data_size * 4)) + ((reg_size % (data_size * 4)) ? 1 : 0);
     int block_num;
     u_int32_t block_dword;
+    int return_status = -1;
 
     for (block_num = 0; block_num < num_of_blocks; block_num++) {
         block_dword = __cpu_to_be32(((u_int32_t)block_num) << 16); //block offset in the config dword, see PRM for details
         memcpy(&vsmad_data[config_offset], &block_dword, config_size * 4);
-        call_result = vsmad->ib_vendor_call_via(vsmad_data, &vsmad->portid, &call, vsmad->srcport);
+        call_result = ib_vendor_call_status_via(vsmad, vsmad_data, &vsmad->portid, &call, vsmad->srcport, &return_status);
         if (!call_result) {
             return -1;
+        }
+
+        if (return_status > 0) {
+            *reg_status = translate_mad_status_to_reg_status_gmp(return_status);
         }
         int num_of_bytes = (block_num == num_of_blocks - 1) ? ((int)reg_size % (data_size * 4)) : (data_size * 4);
         memcpy(&data[(block_num * data_size)], &vsmad_data[data_offset], num_of_bytes);
@@ -1549,6 +1911,9 @@ int mib_acces_reg_mad(mfile *mf, u_int8_t *data)
     ibvs_mad *h = (ibvs_mad*)(mf->ctx);
     int status = -1;
 
+    // Set the MKey.
+    set_mkey_for_smp_mad(h);
+
     // Call smp set function
     if (h->smp_set_status_via) {
         p = h->smp_set_status_via(data, &(h->portid), IB_SMP_ATTR_REG_ACCESS, 0, 0, &status, h->srcport);
@@ -1575,6 +1940,10 @@ int mib_smp_set(mfile *mf, u_int8_t *data, u_int16_t attr_id, u_int32_t attr_mod
     u_int8_t *p;
     int status = -1;
     ibvs_mad *h = (ibvs_mad*)(mf->ctx);
+
+    // Set the MKey.
+    set_mkey_for_smp_mad(h);
+
     // Call smp set function
     if (h->smp_set_status_via) {
         p = h->smp_set_status_via(data, &(h->portid), attr_id, attr_mod, 0, &status, h->srcport);
@@ -1602,6 +1971,9 @@ int mib_smp_get(mfile *mf, u_int8_t *data, u_int16_t attr_id, u_int32_t attr_mod
     int status = -1;
     ibvs_mad *h = (ibvs_mad*)(mf->ctx);
 
+    // Set the MKey.
+    set_mkey_for_smp_mad(h);
+
     // Call smp set function
     if (h->smp_query_status_via) {
         p = h->smp_query_status_via(data, &(h->portid), attr_id, attr_mod, 0, &status, h->srcport);
@@ -1620,14 +1992,54 @@ int mib_smp_get(mfile *mf, u_int8_t *data, u_int16_t attr_id, u_int32_t attr_mod
     return ME_OK;
 }
 
+int mib_semaphore_lock_smp(mfile *mf, u_int8_t *data, sem_lock_method_t method)
+{
+    if (!mf || !mf->ctx || !data) {
+        IBERROR(("mib_semaphore_lock_smp failed. Null Param."));
+        return ME_BAD_PARAMS;
+    }
+    u_int8_t *smp_result;
+    int status = -1;
+    ibvs_mad *vs_mad = (ibvs_mad*)(mf->ctx);
+
+    // Setting MKey for this attribute caused MAD failures
+    // and was disabled.
+
+    if (method == SEM_LOCK_SET) {
+        if (vs_mad->smp_set_status_via) {
+            smp_result = vs_mad->smp_set_status_via(data, &(vs_mad->portid), SMP_SEMAPHOE_LOCK_CMD, 0, 0, &status, vs_mad->srcport);
+        } else {
+            smp_result = vs_mad->smp_set_via(data, &(vs_mad->portid), SMP_SEMAPHOE_LOCK_CMD, 0, 0, vs_mad->srcport);
+        }
+    } else {
+        if (vs_mad->smp_query_status_via) {
+            smp_result = vs_mad->smp_query_status_via(data, &(vs_mad->portid), SMP_SEMAPHOE_LOCK_CMD, 0, 0, &status, vs_mad->srcport);
+        } else {
+            smp_result = vs_mad->smp_query_via(data, &(vs_mad->portid), SMP_SEMAPHOE_LOCK_CMD, 0, 0, vs_mad->srcport);
+        }
+    }
+
+
+    if (!smp_result || status > 0) {
+        if (status != -1) {
+            return mib_status_translate(status);
+        } else {
+            return -1;
+        }
+    }
+
+    return ME_OK;
+}
+
 int mib_supports_reg_access_cls_a(mfile *mf, maccess_reg_method_t reg_method)
 {
     if (!mf || !mf->ctx) {
         return 0;
     }
 
-    if (!((mf->flags & MDEVS_IB) && (((ibvs_mad *)(mf->ctx))->dest_type == IB_DEST_LID) && (reg_method == MACCESS_REG_METHOD_GET ||
-             reg_method == MACCESS_REG_METHOD_SET))) {
+    if (!((mf->flags & MDEVS_IB) &&
+         (((ibvs_mad *)(mf->ctx))->dest_type == IB_DEST_LID) &&
+         (reg_method == MACCESS_REG_METHOD_SET || reg_method == MACCESS_REG_METHOD_GET))) {
         return 0;
     }
 

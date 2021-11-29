@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Jan 2019 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2019-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -48,6 +48,7 @@
 #include "mlxlink_eye_opener.h"
 #include "mlxlink_err_inj_commander.h"
 #include "mlxlink_port_info.h"
+#include "mlxlink_amBER_collector.h"
 
 #ifdef MST_UL
 #define MLXLINK_EXEC "mstlink"
@@ -87,8 +88,6 @@
 #define BER_FLAG_SHORT                  'c'
 #define EYE_OPENING_FLAG                "show_eye"
 #define EYE_OPENING_FLAG_SHORT          'e'
-#define EYE_OPENING_TYPE_FLAG           "fom_measurement"
-#define EYE_OPENING_TYPE_FLAG_SHORT     ' '
 #define FEC_DATA_FLAG                   "show_fec"
 #define FEC_DATA_FLAG_SHORT             ' '
 #define SLTP_SHOW_FLAG                  "show_serdes_tx"
@@ -117,6 +116,8 @@
 #define SLTP_SET_FLAG_SHORT                ' '
 #define LANE_FLAG                          "serdes_tx_lane"
 #define LANE_FLAG_SHORT                    ' '
+#define SLTP_TX_POLICY_FLAG                "tx_params_override"
+#define SLTP_TX_POLICY_FLAG_SHORT          ' '
 #define DATABASE_FLAG                      "database"
 #define DATABASE_FLAG_SHORT                ' '
 #define PRBS_MODE_FLAG                     "test_mode"
@@ -143,6 +144,8 @@
 #define BER_LIMIT_FLAG_SHORT               ' '
 #define ITERATION_FLAG                     "iteration"
 #define ITERATION_FLAG_SHORT               ' '
+#define AMBER_COLLECT_FLAG                 "amber_collect"
+#define AMBER_COLLECT_FLAG_SHORT           ' '
 #define PPCNT_CLEAR_FLAG                   "pc"
 #define PPCNT_CLEAR_FLAG_SHORT             ' '
 #define PEPC_SET_FLAG                      "set_external_phy"
@@ -226,45 +229,7 @@
 #define REG_ACCESS_UNION_NODE "access_reg_summary"
 
 //------------------------------------------------------------
-//        Mlxlink Values definition
-#define SWID                        0
-#define PPRT_PPTT_ENABLE            1
-#define PPRT_PPTT_START_TUNING      1
-#define PHY_TEST_MODE_STATUS        1
-
-#define PDDR_STATUS_MESSAGE_LENGTH_HCA  236
-#define PDDR_STATUS_MESSAGE_LENGTH_SWITCH 59
-#define BIT_MASK_ALL_DWORD          0xffffffff
-
-#define OB_TAP_SUM                  120
-#define OB_TAP_DIFF                 10
-#define OB_BIAS_LOW_THRESHOLD       15
-#define OB_BIAS_MID_1_THRESHOLD     31
-#define OB_BIAS_MID_2_THRESHOLD     48
-#define OB_BIAS_HIGH_THRESHOLD      63
-
-#define MAX_LOCAL_PORT_ETH          64
-#define MAX_LOCAL_PORT_IB           36
-#define MAX_LOCAL_PORT_QUANTUM      82
-#define MAX_LOCAL_PORT_QUANTUM2     128
-#define MAX_LOCAL_PORT_SPECTRUM2    128
-
-#define DBN_TO_LOCAL_PORT_BASE      60
-
-#define MAX_LANES_NUMBER            4
-#define MAX_DWORD_BLOCK_SIZE        32
-#define MAX_TX_GROUP_COUNT          10
-
-#define PCAM_FORCE_DOWN_CAP_MASK    0x2000
-
-#define OPERATIONAL_ERROR_STR       "ME_ICMD_OPERATIONAL_ERROR"
-
-#define MAX_SBYTE                   127
-#define MIN_SBYTE                   -128
-#define MAX_LABEL_PORT_LENGTH       5
-
-//------------------------------------------------------------
-//        Mlxlink enumerations
+//        Mlxlink commands enumerations
 enum OPTION_TYPE {
     SHOW_PDDR = 1,
     SHOW_PCIE,
@@ -285,6 +250,7 @@ enum OPTION_TYPE {
     CABLE_EEPROM_WRITE,
     CABLE_EEPROM_READ,
     SEND_BER_COLLECT,
+    SEND_AMBER_COLLECT,
     SEND_PAOS,
     SEND_PTYS,
     SEND_PPLM,
@@ -303,100 +269,6 @@ enum OPTION_TYPE {
     FUNCTION_LAST
 };
 
-enum PDDR_PAGES {
-    PDDR_OPERATIONAL_INFO_PAGE = 0,
-    PDDR_TROUBLESHOOTING_INFO_PAGE = 1,
-    PDDR_MODULE_INFO_PAGE = 3,
-};
-
-enum MPCNT_GROUPS {
-    MPCNT_PERFORMANCE_GROUP = 0, MPCNT_LANE_GROUP = 1, MPCNT_TIMERS_GROUPS = 2
-};
-
-enum PPAOS_ADMIN {
-    PPAOS_REGULAR_OPERATION = 0, PPAOS_PHY_TEST_MODE = 1
-};
-
-enum GROUP_OPCODE {
-    MONITOR_OPCODE = 0, ADVANCED_OPCODE = 1
-};
-
-enum TX_INDEX_SELECTOR
-{
-    TX_LOCAL_PORT,
-    TX_GROUP
-};
-
-enum SLTP_PARAMS {
-    POLARITY,
-    OB_TAP0,
-    OB_TAP1,
-    OB_TAP2,
-    OB_BIAS,
-    OB_PREEMP_MODE,
-    OB_REG,
-    OB_LEVA,
-    PARAMS_40NM_LAST // add the new enums before last
-};
-
-enum SLTP_16NM_PARAMS {
-    PRE_2_TAP,
-    PRE_TAP,
-    MAIN_TAP,
-    POST_TAP,
-    OB_M2LP,
-    OB_AMP,
-    OB_ALEV_OUT,
-    PARAMS_16NM_LAST // add the new enums before last
-};
-
-enum BER_LIMIT {
-    NOMINAL_25G_NO_FEC = -15,
-    NOMINAL_25G_LOW_ATTN = -13,
-    NOMINAL_25G_HIGH_ATTN = -9,
-    NOMINAL_10G = -14,
-    NOMINAL_56G_40G = -15,
-    NOMINAL_DEFAULT = -15,
-    CORNER_25G_NO_FEC = -14,
-    CORNER_25G_LOW_ATTN = -10,
-    CORNER_25G_HIGH_ATTN = -7,
-    CORNER_10G = -13,
-    CORNER_56G_40G = -14,
-    CORNER_DEFAULT = -14
-};
-
-enum PAOS_ADMIN {
-    PAOS_UP = 1, PAOS_DOWN = 2
-};
-
-enum PCIE_PORT_TYPE {
-    PORT_TYPE_EP = 0,
-    PORT_TYPE_US = 5,
-    PORT_TYPE_DS = 6
-};
-
-// Cable ops
-enum MODULE_ID {
-    MODULE_ID_SFP       = 0x3,
-    MODULE_ID_QSFP      = 0xC,
-    MODULE_ID_QSFP_PLUS = 0xD,
-    MODULE_ID_QSFP28    = 0x11,
-};
-
-enum STATUS_OPCODE {
-    CABLE_IS_UNPLUGGED = 1024
-};
-
-enum LOCAL_PORT_TYPE {
-    PORT_TYPE_NETWORK = 0
-};
-
-enum CABLE_MULTIPLIER {
-    CABLE_0_0_MUL,
-    CABLE_0_1_MUL,
-    CABLE_1_0_MUL,
-    CABLE_1_1_MUL
-};
 
 ///////////
 struct DPN {
@@ -424,24 +296,6 @@ struct DPN {
     u_int32_t node;
 };
 
-struct PortGroup {
-    u_int32_t localPort;
-    u_int32_t labelPort;
-    u_int32_t groupId;
-    u_int32_t split;
-    PortGroup() {
-        localPort = 0;
-        labelPort = 0;
-        groupId = 0;
-        split = 0;
-    }
-    PortGroup(u_int32_t ilocalPort, u_int32_t ilabelPort, u_int32_t igroupId, u_int32_t isplit) {
-        localPort = ilocalPort;
-        labelPort = ilabelPort;
-        groupId =igroupId;
-        split = isplit;
-    }
-};
 using namespace std;
 
 class MlxlinkCommander: public MlxlinkRegParser {
@@ -452,25 +306,24 @@ public:
 
     void checkRegCmd();
     virtual void validatePortType(const string &portTypeStr);
-    virtual void updatePortType() {};
+    void updatePortType() {};
     void checkLocalPortDPNMapping(u_int32_t localPort);
     int getLocalPortFromMPIR(DPN& dpn);
     void checkValidFW();
     void getProductTechnology();
     bool checkPortStatus(u_int32_t localPort);
     void checkAllPortsStatus();
+    void handlePortStr(const string &portStr);
     void labelToLocalPort();
     void labelToHCALocalPort();
     void labelToSpectLocalPort();
     void labelToIBLocalPort();
     bool isIBSplitReady();
-    void toIBLabelPort(u_int32_t &labelPort, bool ibSplitReady);
+    u_int32_t calculatePanelPort(bool ibSplitReady);
     void checkWidthSplit(u_int32_t localPort);
     void checkUnSplit(u_int32_t localPort);
     u_int32_t maxLocalPort();
     void checkStrLength(const string &str);
-    string getAscii(const string & name, u_int32_t size = 4);
-    string getRxTxCDRState(u_int32_t state);
     void getActualNumOfLanes(u_int32_t linkSpeedActive, bool extended);
     u_int32_t activeSpeed2gNum(u_int32_t mask, bool extended);
     string activeSpeed2Str(u_int32_t mask, bool extended);
@@ -483,18 +336,21 @@ public:
     void getprbsLanesFromParams(std::vector<string> prbsLanesParams);
     std::vector<string> parseParamsFromLine(const string & ParamsLine);
     bool isSpect2WithGb();
+    bool isIbLocalPortValid(u_int32_t localPort);
     void fillIbPortGroupMap(u_int32_t localPort,u_int32_t labelPort, u_int32_t group,
             bool splitReady);
     void fillEthPortGroupMap(u_int32_t localPort,u_int32_t labelPort, u_int32_t group,
             u_int32_t width, bool spect2WithGb);
     int handleIBLocalPort(u_int32_t labelPort, bool ibSplitReady);
     int handleEthLocalPort(u_int32_t labelPort, bool spect2WithGb);
-    void handleLabelPorts(std::vector<string> labelPortsStr);
+    void handleLabelPorts(std::vector<string> labelPortsStr, bool skipException = false);
     vector<string> localToPortsPerGroup(vector<u_int32_t> localPorts);
     u_int32_t getPortGroup(u_int32_t localPort);
 
     //Mlxlink query functions
     virtual void showModuleInfo();
+    void prepareBerModuleInfoNdr(bool valid);
+    virtual void runningVersion();
     virtual void operatingInfoPage();
     virtual void supportedInfoPage();
     virtual void troubInfoPage();
@@ -511,17 +367,14 @@ public:
     virtual void showExternalPhy();
     void showPcie();
     void showPcieLinks();
+    void collectAMBER();
     void collectBER();
-    virtual void showTxGroupMapping();
+    void showTxGroupMapping();
 
     // Query helper functions
     string getCableTechnologyStr(u_int32_t cableTechnology);
-    string getCompliance(u_int32_t compliance, std::map<u_int32_t,
-            std::string> complianceMap, bool bitMasked = false);
     string getCompliaceLabelForCIMIS(u_int32_t hostCompliance, u_int32_t mediaCompliance);
     string getComplianceLabel(u_int32_t compliance,  u_int32_t extCompliance, bool ignoreExtBitChk = false);
-    string getPowerClass(u_int32_t powerClass, u_int32_t maxPower);
-    string getCableLengthStr(u_int32_t cableLength);
     string getCableTypeStr(u_int32_t cableType);
     void prepareStaticInfoSection(bool valid);
     void prepareAttenuationAndFwSection(bool valid);
@@ -545,6 +398,9 @@ public:
     void showMpcntLane();
     void showPcieState(DPN& dpn);
     void checkPCIeValidity();
+    virtual void prepareBerInfo();
+    virtual void prepareBerInfoEDR();
+    virtual void getPcieNdrCounters();
 
     std::map<std::string, std::string>  getPprt();
     std::map<std::string, std::string>  getPptt();
@@ -555,6 +411,7 @@ public:
     string prbsMaskToMode(u_int32_t mask, u_int32_t modeSelector);
     string getPrbsModeRX();
     u_int32_t getPrbsRateRX();
+    string getSupportedPrbsRates(u_int32_t modeSelector);
     string getSupportedPrbsModes(u_int32_t modeSelector);
     u_int32_t getLoopbackMode(const string &lb);
     string getLoopbackStr(u_int32_t loopbackCapMask);
@@ -567,7 +424,6 @@ public:
     string getDeviceProductName(bool queryMSGI = false);
     string getDeviceRev(bool queryMSGI = false);
     string getDeviceFW();
-    string getVendorRev(const string & name);
     void printOuptputVector(vector<MlxlinkCmdPrint> &cmdOut);
     virtual void prepareJsonOut();
 
@@ -578,12 +434,15 @@ public:
     virtual void initEyeOpener();
     virtual void initErrInj();
     void initPortInfo();
+    void setAmBerCollectorFields();
+    virtual void initAmBerCollector();
     void showCableDump();
     void showCableDDM();
     vector<u_int8_t> validateBytes(const vector<string> &strBytes);
     void writeCableEEPROM();
     void readCableEEPROM();
 
+    MlxlinkCmdPrint _toolInfoCmd;
     MlxlinkCmdPrint _operatingInfoCmd;
     MlxlinkCmdPrint _supportedInfoCmd;
     MlxlinkCmdPrint _troubInfoCmd;
@@ -620,7 +479,7 @@ public:
     // Config helper functions
     bool isForceDownSupported();
     bool isPPHCRSupported();
-    virtual void sendPaosCmd(PAOS_ADMIN adminStatus, bool forceDown = false);
+    void sendPaosCmd(PAOS_ADMIN adminStatus, bool forceDown = false);
     void sendPaosDown(bool toggleCommand = false);
     void sendPaosUP();
     void sendPaosToggle();
@@ -635,17 +494,18 @@ public:
             u_int32_t prbsMode, bool perLaneConfig, bool prbsPolInv);
     void sendPprtPptt();
     void resetPprtPptt();
-    u_int32_t ptysSpeedToMask(const string & speed, u_int32_t cap);
-    u_int32_t ptysSpeedToExtMask(const string & speed);
+    u_int32_t ptysSpeedToMask(const string & speed);
     void validateSpeedStr();
     void checkSupportedSpeed(const string & speed, u_int32_t cap, bool extSpeed = false);
     void checkPplmCap();
     void updateSltp28_40nmFields();
     void updateSltp16nmFields();
     void updateSltp7nmFields();
+    string getSltpStatus();
     void getSltpAlevOut(u_int32_t lane);
     void getSltpRegAndLeva(u_int32_t lane);
     u_int32_t getLaneSpeed(u_int32_t lane);
+    void validateNumOfParamsForNDRGen();
     virtual void checkSltpParamsSize();
 
     // Mlxlink params
@@ -685,7 +545,6 @@ public:
     string _cableSN;
     string _moduleTemp;
     bool _protoCapabilityEx;
-    bool _splitted;
     bool _linkUP;
     bool _prbsTestMode;
     bool _plugged;
@@ -699,7 +558,7 @@ public:
     bool _mngCableUnplugged;
     bool _isPam4Speed;
     bool _ignorePortType;
-    bool _lanesLockStatus;
+    bool _ignorePortStatus;
     std::vector<std::string> _ptysSpeeds;
     std::vector<PortGroup> _localPortsPerGroup;
     std::vector<DPN> _validDpns;
@@ -710,6 +569,11 @@ public:
     MlxlinkEyeOpener* _eyeOpener;
     MlxlinkErrInjCommander* _errInjector;
     MlxlinkPortInfo* _portInfo;
+    MlxlinkAmBerCollector* _amberCollector;
+
+protected:
+    vector<AmberField> _ppcntFields;
+    string loopAllLanesStr(vector<AmberField> &fields, string str);
 };
 
 #endif /* MLXLINK_COMMANDER_H */

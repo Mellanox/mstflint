@@ -1,5 +1,6 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -42,7 +43,7 @@
 // #include "flint_base.h"
 #include "fw_ops.h"
 #include "aux_tlv_ops.h"
-#include "security_version_gw.h"
+#include "fuse_gw.h"
 
 // FW Binary version
 
@@ -62,7 +63,13 @@
         _fwParams.ignoreCacheRep = 0; \
     }
 
-
+#define SUPPORTS_ISFU(chip_type) \
+    (chip_type == CT_CONNECT_IB || \
+     chip_type == CT_CONNECTX4 || chip_type == CT_CONNECTX4_LX || \
+     chip_type == CT_CONNECTX5 || \
+     chip_type == CT_CONNECTX6  || chip_type == CT_CONNECTX6DX || chip_type == CT_CONNECTX6LX || \
+     chip_type == CT_CONNECTX7 || \
+     chip_type == CT_BLUEFIELD || chip_type == CT_BLUEFIELD2 || chip_type == CT_BLUEFIELD3)
 
 class Fs3Operations : public FwOperations {
 public:
@@ -107,7 +114,7 @@ public:
     virtual const char*  FwGetReSignMsgStr();
     virtual bool InsertSecureFWSignature(vector<u_int8_t> signature, const char *uuid, PrintCallBack printFunc);
     bool FwInsertSHA256(PrintCallBack printFunc = (PrintCallBack)NULL);
-    bool FwSignWithOneRSAKey(const char *privPemFile, const char *uuid, PrintCallBack printFunc = (PrintCallBack)NULL);
+    bool signForFwUpdate(const char *privPemFile, const char *uuid, PrintCallBack printFunc = (PrintCallBack)NULL);
     bool FwSignWithTwoRSAKeys(const char *privPemFile1, const char *uuid1,
                               const char *privPemFile2, const char *uuid2, PrintCallBack printFunc = (PrintCallBack)NULL);
 
@@ -125,6 +132,7 @@ public:
 
     bool FwCheckIfWeCanBurnWithFwControl(FwOperations *imageOps);
     bool FwCheckIf8MBShiftingNeeded(FwOperations *imageOps, const ExtBurnParams& burnParams);
+    using FwOperations::CalcHMAC;
     bool CalcHMAC(const vector<u_int8_t>& key, vector<u_int8_t>& digest);
     virtual bool GetSectionSizeAndOffset(fs3_section_t sectType, u_int32_t& size, u_int32_t& offset);
     MlargeBuffer GetImageCache() { return  _imageCache; }
@@ -161,9 +169,13 @@ protected:
     bool GetDevInfo(u_int8_t *buff);
     bool GetImageInfo(u_int8_t *buff);
     bool GetRomInfo(u_int8_t *buff, u_int32_t size);
-    bool GetImgSigInfo(u_int8_t *buff);
+    bool GetImgSigInfo(u_int32_t keypair_uuid[4]);
+    bool GetImgSigInfo256(u_int8_t *buff);
+    bool GetImgSigInfo512(u_int8_t *buff);
+    bool invalidateOldFWImages(const u_int32_t magic_pattern[], Flash *f, u_int32_t new_image_start);
+    bool bootAddrUpdate(Flash *flash_access, u_int32_t new_image_start, ExtBurnParams& burnParams);
     bool DoAfterBurnJobs(const u_int32_t magic_patter[], Fs3Operations &imageOps,
-                         ExtBurnParams& burnParams, Flash *f,
+                         ExtBurnParams& burnParams, Flash *flash_access,
                          u_int32_t new_image_start, u_int8_t is_curr_image_in_odd_chunks);
     bool CreateDtoc(vector<u_int8_t>& img, u_int8_t* SectionData, u_int32_t section_size, u_int32_t flash_data_addr,
         fs3_section_t section, u_int32_t tocEntryAddr, bool IsCRC);
@@ -186,12 +198,13 @@ protected:
     bool RemoveWriteProtection();
     bool Fs3MemSetSignature(fs3_section_t sectType, u_int32_t size, PrintCallBack printFunc = (PrintCallBack)NULL);
     virtual bool IsSectionExists(fs3_section_t sectType);
+    virtual bool VerifyImageAfterModifications();
+    virtual bool parseDevData(bool readRom = true, bool quickQuery = true, bool verbose = false);
 
     bool isOld4MBImage(FwOperations *imageOps);
-    bool VerifyBranchFormat(const char* vsdString);
     bool FwCalcSHA(MlxSign::SHAType shaType, vector<u_int8_t>& sha256, vector<u_int8_t>& fourMbImage);
-    bool AddHMACIfNeeded(Fs3Operations* imageOps, Flash *f);
     bool CheckPublicKeysFile(const char *fname, fs3_section_t& sectionType, bool silent = false);
+    bool isWriteProtected(bool& is_write_protected);
     struct toc_info {
         u_int32_t entry_addr;
         struct cibfw_itoc_entry toc_entry;
@@ -232,13 +245,10 @@ private:
     reg_access_status_t getGI(mfile *mf, struct reg_access_hca_mgir *gi);
     bool VerifyTOC(u_int32_t dtoc_addr, bool& bad_signature, VerifyCallBack verifyCallBackFunc, bool show_itoc,
                    struct QueryOptions queryOptions, bool ignoreDToc = false, bool verbose = false);
-    bool checkPreboot(u_int32_t *prebootBuff, u_int32_t size, VerifyCallBack verifyCallBackFunc);
     bool CheckTocSignature(struct cibfw_itoc_header *itoc_header, u_int32_t first_signature);
     bool BurnFs3Image(Fs3Operations &imageOps, ExtBurnParams& burnParams);
     bool UpdateDevDataITOC(Fs3Operations &imageOps, struct toc_info *image_toc_info_entry, struct toc_info *flash_toc_arr, int flash_toc_size);
 
-    bool AddDevDataITOC(struct toc_info *flash_toc_entry, u_int8_t *image_data, struct toc_info *image_toc_arr, int& image_toc_size);
-    
     bool Fs3GetItocInfo(struct toc_info *tocArr, int num_of_itocs, fs3_section_t sect_type, struct toc_info*&curr_toc);
     bool Fs3UpdateMfgUidsSection(struct toc_info *curr_toc, std::vector<u_int8_t>  section_data, fs3_uid_t base_uid,
                                  std::vector<u_int8_t>  &newSectionData);

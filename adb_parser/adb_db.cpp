@@ -1,25 +1,26 @@
-/* 
- * Copyright (C) Jan 2019 Mellanox Technologies Ltd. All rights reserved.
- * 
+/*
+ *
+ * Copyright (c) 2010-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
  * General Public License (GPL) Version 2, available from the file
  * COPYING in the main directory of this source tree, or the
  * OpenIB.org BSD license below:
- * 
+ *
  *     Redistribution and use in source and binary forms, with or
  *     without modification, are permitted provided that the following
  *     conditions are met:
- * 
+ *
  *      - Redistributions of source code must retain the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer.
- * 
+ *
  *      - Redistributions in binary form must reproduce the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer in the documentation and/or other materials
  *        provided with the distribution.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -28,12 +29,6 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
-
- *
- * End of legal section ......................................................
- *
- *  adb_db.c - "C" wrapper module for adb_parser classes.
- *              This module provides an alternative "C" way to work with AdbInstance objects.
  *
  *  Version: $Id$
  *
@@ -45,7 +40,6 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 #include "adb_db.h"
-#include "adb_parser.h"
 
 #define CHECK_FIELD(field, node_w) \
     if (((AdbInstance*)field)->isReserved()) { \
@@ -79,7 +73,7 @@ adb_db_t* db_create()
  */
 int db_load(adb_db_t *db, const char *adb_file_path, int add_reserved)
 {
-    if (!((Adb*)db)->load(adb_file_path, add_reserved, NULL, false)) {
+    if (!((Adb*)db)->load(adb_file_path, add_reserved, false)) {
         sprintf(err, "Failed to load adabe project: %s", ((Adb*)db)->getLastError().c_str());
         return 1;
     }
@@ -92,7 +86,7 @@ int db_load(adb_db_t *db, const char *adb_file_path, int add_reserved)
  */
 int db_load_from_str(adb_db_t *db, const char *adb_data, int add_reserved)
 {
-    if (!((Adb*)db)->loadFromString(adb_data, add_reserved, NULL, false)) {
+    if (!((Adb*)db)->loadFromString(adb_data, add_reserved, false)) {
         sprintf(err, "Failed to load adabe project: %s", ((Adb*)db)->getLastError().c_str());
         return 1;
     }
@@ -157,7 +151,7 @@ void db_destroy_limits_map(adb_limits_map_t *limits)
 adb_node_t* db_get_node(adb_db_t *db, const char *node_name)
 {
     Adb *adb = (Adb*)db;
-    AdbInstance *node = adb->createLayout(node_name, false, NULL);
+    AdbInstance *node = adb->createLayout(node_name, false);
     if (!node) {
         sprintf(err, "Failed to create node %s: %s", node_name, adb->getLastError().c_str());
         return NULL;

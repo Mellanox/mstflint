@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Mellanox Technologies Ltd.  All rights reserved.
+ * Copyright (c) 2020-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -95,7 +95,7 @@ void MlxlinkCablesCommander::writeMCIA(u_int32_t page, u_int32_t size,
         sprintf(fieldName, "dword[%d]", i);
         updateField(fieldName, __cpu_to_be32(dwordData[i]));
     }
-    delete dwordData;
+    free(dwordData);
     genBuffSendRegister(regName, MACCESS_REG_METHOD_SET);
 }
 
@@ -174,7 +174,7 @@ void MlxlinkCablesCommander::getDdmValuesFromPddr()
 
     _cableDdm.channels = _numOfLanes;
     _cableDdm.temperature.val = getFieldValue("temperature") / 256;
-    _cableDdm.voltage.val = getFieldValue("voltage") / 10;
+    _cableDdm.voltage.val = getFieldValue("voltage") / MILLIVOLT_UNIT;
 
     string laneStr = "";
     for (int lane = 0; lane < _cableDdm.channels; lane++) {
@@ -304,9 +304,9 @@ void MlxlinkCablesCommander::prepareQsfpddDdmInfo()
     loadEEPRMPage(PAGE_02, UPPER_PAGE_OFFSET, page2H);
     getQsfpDdThresholds(page2H);
 
-    delete page0L;
-    delete page11H;
-    delete page2H;
+    free(page0L);
+    free(page11H);
+    free(page2H);
 }
 
 void MlxlinkCablesCommander::getSfpDdThresholds(u_int8_t *page0H)
@@ -394,8 +394,8 @@ void MlxlinkCablesCommander::prepareSfpddDdmInfo()
     loadEEPRMPage(PAGE_0, UPPER_PAGE_OFFSET, page0H);
     getSfpDdThresholds(page0H);
 
-    delete page0H;
-    delete page0L;
+    free(page0H);
+    free(page0L);
 }
 
 // Preparing QSFP DDM information
@@ -459,7 +459,7 @@ void MlxlinkCablesCommander::prepareQSFPDdmInfo()
                                                     QSFP_TX_BIAS_1_HALARM);
     }
 
-    delete page0L;
+    free(page0L);
 }
 
 // Preparing SFP DDM information
@@ -516,7 +516,7 @@ void MlxlinkCablesCommander::prepareSFPDdmInfo()
     _cableDdm.rx_power[0].high_alarm_flag = getStatusBit(SFP_CHANNELS, tempVal,
                                                 SFP51_RX_PWR_HALRM_FLG);
 
-    delete sfp51Page;
+    free(sfp51Page);
 }
 
 // Preparing thresholds information
@@ -599,7 +599,7 @@ void MlxlinkCablesCommander::readCableDDMInfo()
 
     fixThresholdBytes();
 
-    delete thresholdPage;
+    free(thresholdPage);
 }
 
 // Preparing and formating DDM flags section
@@ -655,7 +655,7 @@ void MlxlinkCablesCommander::prepareDDMOutput()
     sprintf(strBuff, "%dC", (int)_cableDdm.temperature.val);
     setPrintVal(cableDDMCmd, "Temperature", strBuff, ANSI_COLOR_RESET, true);
 
-    sprintf(strBuff, "%.4fV", ((double)_cableDdm.voltage.val) / 10000);
+    sprintf(strBuff, "%.4fV", ((double)_cableDdm.voltage.val) / VOLT_UNIT);
     setPrintVal(cableDDMCmd, "Voltage", strBuff, ANSI_COLOR_RESET, true);
 
     int i = 0;
@@ -803,8 +803,9 @@ void MlxlinkCablesCommander::initValidPages()
     _validPages.push_back(p);
     bool qsfpCable = (_cableIdentifier == IDENTIFIER_QSFP28 ||
                 _cableIdentifier == IDENTIFIER_QSFP_PLUS);
-    bool cmisCable = (_cableIdentifier == IDENTIFIER_SFP_DD ||
-            _cableIdentifier == IDENTIFIER_QSFP_DD);
+    bool cmisCable = (_cableIdentifier == IDENTIFIER_SFP_DD  || _cableIdentifier == IDENTIFIER_QSFP_DD
+                      || _cableIdentifier == IDENTIFIER_OSFP || _cableIdentifier == IDENTIFIER_DSFP
+                      || _cableIdentifier == IDENTIFIER_QSFP_CMIS);
     if(cmisCable || qsfpCable || _sfp51Paging) {
         p = (page_t){PAGE_0, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
         _validPages.push_back(p);
@@ -818,7 +819,7 @@ void MlxlinkCablesCommander::initValidPages()
         loadEEPRMPage(PAGE_0, UPPER_PAGE_OFFSET, page0H);
         u_int8_t optionsValue = 0;
         readFromPage(page0H, 195 - 0x80, &optionsValue);
-        delete page0H;
+        free(page0H);
         if (optionsValue & 0x40) { //check bit 6 for support page_01
             p = (page_t){PAGE_01, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
             _validPages.push_back(p);
@@ -848,13 +849,13 @@ void MlxlinkCablesCommander::initValidPages()
         u_int8_t *page0L = (u_int8_t*)malloc(sizeof(u_int8_t) * CABLE_PAGE_SIZE);
         loadEEPRMPage(PAGE_0, LOWER_PAGE_OFFSET, page0L);;
         readFromPage(page0L, EXTENDED_PAGES_1_2_10_11_ADDR, &extendedPages);
-        delete page0L;
+        free(page0L);
         if (!(extendedPages & EXTENDED_PAGES_1_2_10_11_MASK)) {
             p = (page_t){PAGE_01, LOWER_PAGE_OFFSET, I2C_ADDR_LOW};
             _validPages.push_back(p);
             p = (page_t){PAGE_01, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
             _validPages.push_back(p);
-            if (_cableIdentifier == IDENTIFIER_QSFP_DD) {
+            if (_cableIdentifier != IDENTIFIER_SFP_DD) {
                 p = (page_t){PAGE_02, LOWER_PAGE_OFFSET, I2C_ADDR_LOW};
                 _validPages.push_back(p);
                 p = (page_t){PAGE_02, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
@@ -902,7 +903,7 @@ void MlxlinkCablesCommander::initValidPages()
                     p = (page_t){PAGE_14, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
                     _validPages.push_back(p);
                 }
-                delete page1H;
+                free(page1H);
             }
         }
     }
@@ -916,7 +917,7 @@ vector<MlxlinkCmdPrint> MlxlinkCablesCommander::getPagesToDump()
         u_int8_t *pageP = (u_int8_t*)malloc(sizeof(u_int8_t) * CABLE_PAGE_SIZE);
         loadEEPRMPage(_validPages[i].page, _validPages[i].offset, pageP, _validPages[i].i2cAddress);;
         addPageToOutputVector(pageP, _validPages[i].page, _validPages[i].offset, CABLE_PAGE_SIZE);
-        delete pageP;
+        free(pageP);
     }
     return _pagesToDump;
 }
@@ -941,7 +942,7 @@ void MlxlinkCablesCommander::writeToEEPROM(u_int16_t page , u_int16_t offset,
         i2cAddress = I2C_ADDR_HIGH;
     }
     writeMCIA(page, numberOfAllignedBytes, numberOfZeroBytes, offset, data, i2cAddress);
-    delete data;
+    free(data);
 }
 // Checking read command parameters and initializing the valid pages
 void MlxlinkCablesCommander::checkParams(u_int16_t page , u_int16_t offset, u_int16_t length)
@@ -1036,7 +1037,7 @@ MlxlinkCmdPrint MlxlinkCablesCommander::readFromEEPRM(u_int16_t page , u_int16_t
     }
     bytesOutput.toJsonFormat(_jsonRoot);
 
-    delete pageL;
-    delete pageH;
+    free(pageL);
+    free(pageH);
     return bytesOutput;
 }

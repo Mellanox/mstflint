@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Jan 2019 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2019-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -40,7 +40,8 @@ using namespace std;
 UserInput::UserInput()
 {
     _labelPort = 1;
-    _splitPort = 0;
+    _splitPort = 1;
+    _secondSplitPort = 1;
     _depth = 0;
     _pcieIndex = 0;
     _node = 0;
@@ -67,8 +68,11 @@ UserInput::UserInput()
     _sendDpn = false;
     _db = false;
     _sltpLane = false;
+    _txPolicy = false;
     _advancedMode = false;
-    _specifiedPort = false;
+    _portSpecified = false;
+    _splitProvided = false;
+    _secondSplitProvided = false;
     _cable = false;
     _dump = false;
     _ddm = false;
@@ -111,8 +115,6 @@ UserInput::UserInput()
     mixerOffset0 = -1;
     mixerOffset1 = -1;
     showMixers = false;
-
-    eomMeasurementStr = "";
 
     enableFecHistogram = false;
     showFecHistogram = false;

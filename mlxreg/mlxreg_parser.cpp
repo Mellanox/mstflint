@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) Jan 2019 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2019-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * 
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -43,11 +43,13 @@ using namespace mlxreg;
 /************************************
 * Function: RegParser
 ************************************/
-RegAccessParser::RegAccessParser(string data, string indexes, AdbInstance *regNode, std::vector<u_int32_t> buffer)
+RegAccessParser::RegAccessParser(string data, string indexes, AdbInstance *regNode, std::vector<u_int32_t> buffer, bool ignore_ro)
 {
     _data      = data;
     _indexes   = indexes;
     _regNode   = regNode;
+    _ignore_ro = ignore_ro;
+    output_file = "";
     if (!regNode) {
         _parseMode = Pm_Unknown;
     } else {
@@ -67,11 +69,13 @@ RegAccessParser::RegAccessParser(string data, string indexes, AdbInstance *regNo
 /************************************
 * Function: RegParser
 ************************************/
-RegAccessParser::RegAccessParser(string data, string indexes, AdbInstance *regNode, u_int32_t len)
+RegAccessParser::RegAccessParser(string data, string indexes, AdbInstance *regNode, u_int32_t len, bool ignore_ro)
 {
     _data      = data;
     _indexes   = indexes;
     _regNode   = regNode;
+    _ignore_ro = ignore_ro;
+    output_file = "";
     _len       = len;
     // Set parsing method
     if (!regNode) {
@@ -307,6 +311,7 @@ std::vector<string> RegAccessParser::strSplit(string str, char delimiter, bool f
 void RegAccessParser::strToUint32(char *str, u_int32_t &uint)
 {
     char *endp;
+    errno = 0;
     uint = strtoul(str, &endp, 0);
     if (*endp || errno == ERANGE) {
         throw MlxRegException("Argument: %s is invalid.", str);
@@ -318,13 +323,28 @@ void RegAccessParser::strToUint32(char *str, u_int32_t &uint)
 }
 
 /************************************
+* Function: getFieldWithParents
+************************************/
+bool RegAccessParser::checkFieldWithPath(AdbInstance* field, u_int32_t idx, std::vector<string> &fieldsChain)
+{
+   if (idx == 0 && (field->name == fieldsChain[0])) {
+       return true;
+   } else if (field->name == fieldsChain[idx]) {
+        return checkFieldWithPath(field->parent, --idx, fieldsChain);
+    } else {
+        return false;
+    }
+}
+/************************************
 * Function: getField
 ************************************/
 AdbInstance* RegAccessParser::getField(string name)
 {
+    // this will allow to access the leaf field by specifying it's parent.
+    std::vector<string> fieldsChain = strSplit(name, '.', false);
     std::vector<AdbInstance*> subItems = _regNode->getLeafFields(true);
     for (std::vector<AdbInstance*>::size_type i = 0; i != subItems.size(); i++) {
-        if (subItems[i]->name == name) {
+        if (checkFieldWithPath(subItems[i], fieldsChain.size() - 1, fieldsChain)) {
             return subItems[i];
         }
     }
@@ -351,6 +371,9 @@ bool RegAccessParser::checkAccess(const AdbInstance *field, const string accessS
 
 bool RegAccessParser::isRO(AdbInstance *field)
 {
+    if (_ignore_ro) {
+        return false;
+    }
     return checkAccess(field, "RO");
 }
 

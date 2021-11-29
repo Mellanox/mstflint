@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -52,6 +52,7 @@ public:
     u_int8_t& operator[](const u_int32_t idx) { return _data[idx]; }
     MBufferUnit& operator=(const MBufferUnit& other);
     bool intersects( const MBufferUnit& other) const;
+    ~MBufferUnit() = default;
 private:
     std::vector<u_int8_t> _data;
     u_int32_t _offset;

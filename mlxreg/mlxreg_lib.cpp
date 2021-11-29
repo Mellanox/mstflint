@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) Jan 2019 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2019-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * 
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -136,7 +136,7 @@ void MlxRegLib::initAdb(string extAdbFile)
 {
     _adb = new Adb();
     if (extAdbFile != "") {
-        if (!_adb->load(extAdbFile, false, NULL, false)) {
+        if (!_adb->load(extAdbFile, false, false)) {
             throw MlxRegException("Failure in loading Adabe file. %s", _adb->getLastError().c_str());
         }
     } else {
@@ -181,7 +181,7 @@ MlxRegLibStatus MlxRegLib::showRegisters(std::vector<string> &regs)
 ************************************/
 int MlxRegLib::sendMaccessReg(u_int16_t regId, int method, std::vector<u_int32_t> &data)
 {
-    int status;
+    int status = 0;
     int rc;
     std::vector<u_int32_t> temp_data;
     copy(data.begin(), data.end(), back_inserter(temp_data));
@@ -295,4 +295,20 @@ bool MlxRegLib::isAccessRegisterGMPSupported(maccess_reg_method_t reg_method)
 bool MlxRegLib::isIBDevice()
 {
     return (bool)(_mf->flags & MDEVS_IB);
+}
+
+/************************************
+* Function: dumpRegisterData
+************************************/
+MlxRegLibStatus MlxRegLib::dumpRegisterData(string output_file_name, std::vector<u_int32_t> &data)
+{
+    FILE* outputFile = fopen(output_file_name.c_str(), "w");
+    if (outputFile) {
+        for(std::vector<u_int32_t>::size_type i = 0; i != data.size(); i++) {
+            fprintf(outputFile,"%08x\n",CPU_TO_BE32(data[i]));
+        }
+    } else {
+        throw MlxRegException("Failed to open file");
+    }
+    return MRLS_SUCCESS;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -76,9 +76,6 @@ MlxcfgDBManager::MlxcfgDBManager(string dbName) : _dbName(dbName),
 MlxcfgDBManager::~MlxcfgDBManager()
 {
     VECTOR_ITERATOR(TLVConf*, fetchedTLVs, it) {
-        delete *it;
-    }
-    VECTOR_ITERATOR(Param*, fetchedParams, it) {
         delete *it;
     }
 
@@ -281,7 +278,7 @@ TLVConf* MlxcfgDBManager::fetchTLVByName(string n, u_int8_t port)
             nc, port);
     t = getTLVByNameAux(n, port);
     if (!t) {
-        throw MlxcfgException("The TLV configuration %s was not found", nc);
+        throw MlxcfgTLVNotFoundException(nc);
     }
 
     //fetch the parameters
@@ -331,7 +328,7 @@ TLVConf* MlxcfgDBManager::getAndCreateTLVByName(string n, u_int8_t port)
     execSQL(selectAndCreateNewTLVCallBack, &tlv, SQL_SELECT_TLV_BY_NAME_AND_PORT,
             nc, port);
     if (!tlv) {
-        throw MlxcfgException("The TLV configuration %s was not found", nc);
+        throw MlxcfgTLVNotFoundException(nc);
     }
 
     //fetch the parameters

@@ -1,5 +1,6 @@
 #--
 # Copyright (c) 2004-2010 Mellanox Technologies LTD. All rights reserved.
+# Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -43,7 +44,7 @@ UEFI_COMMON_DIR = $(top_srcdir)/mlxfwops/uefi_c
 DEV_MGT_DIR = $(top_srcdir)/dev_mgt
 
 AM_CPPFLAGS = -I$(srcdir) -I$(MTCR_INC_DIR) -I$(MFLASH_DIR) $(JSON_CFLAGS) -I$(MINIXZ_DIR)\
-           -I$(COMMON_DIR) -I$(LAYOUTS_DIR) -I$(top_srcdir)/common -I$(UTILS_LIB) -I$(UEFI_COMMON_DIR) -I$(DEV_MGT_DIR) -I$(MTCR_UL_DIR)
+           -I$(COMMON_DIR) -I$(MFT_EXT_LIBS_INC_DIR) -I$(MFT_EXT_LIBS_INC_DIR)/zlib -I$(LAYOUTS_DIR) -I$(top_srcdir)/common -I$(UTILS_LIB) -I$(UEFI_COMMON_DIR) -I$(DEV_MGT_DIR) -I$(MTCR_UL_DIR)
 
 MLXFWOPS_VERSION = 1
 
@@ -75,6 +76,7 @@ libmlxfwops_a_SOURCES = flint_base.cpp \
 			   signature_manager_factory.h \
                flint_io.cpp \
                security_version_gw.cpp security_version_gw.h \
+               fuse_gw.cpp fuse_gw.h \
                fw_ops.cpp \
                fs2_ops.cpp fs2_ops.h\
                fs3_ops.cpp fs3_ops.h\

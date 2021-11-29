@@ -1,25 +1,26 @@
-/* 
+/*
  * Copyright (C) Jan 2019 Mellanox Technologies Ltd. All rights reserved.
- * 
+ * Copyright (c) 2012-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
  * General Public License (GPL) Version 2, available from the file
  * COPYING in the main directory of this source tree, or the
  * OpenIB.org BSD license below:
- * 
+ *
  *     Redistribution and use in source and binary forms, with or
  *     without modification, are permitted provided that the following
  *     conditions are met:
- * 
+ *
  *      - Redistributions of source code must retain the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer.
- * 
+ *
  *      - Redistributions in binary form must reproduce the above
  *        copyright notice, this list of conditions and the following
  *        disclaimer in the documentation and/or other materials
  *        provided with the distribution.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -28,12 +29,22 @@
  * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
-
  *
  */
+/*************************** Adb ***************************/
+#ifndef ADB_ADB_H
+#define ADB_ADB_H
 
-#ifndef ADB_PARSER_H
-#define ADB_PARSER_H
+
+
+class LogFile;
+
+#include <map>
+#include <string>
+#include <vector>
+#include <list>
+#include "adb_expr.h"
+#include "adb_xmlCreator.h"
 
 #include <string>
 #include <map>
@@ -42,6 +53,45 @@
 #include <list>
 #include <common/compatibility.h>
 #include "adb_expr.h"
+#include "adb_node.h"
+#include "adb_field.h"
+#include "adb_exceptionHolder.h"
+#include "adb_logfile.h"
+#include "adb_config.h"
+#include "adb_instance.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <list>
+#include <stdexcept>
+#include "adb_xmlCreator.h"
+
+#ifdef __WIN__
+#include <process.h>
+#define OS_PATH_SEP "\\"
+#else
+#define OS_PATH_SEP "/"
+#endif
+
+#ifdef __linux__
+#define LC_ALL_HINT " using `export LC_ALL=C`"
+#else
+#define LC_ALL_HINT ""
+#endif
+
+#define PROGRESS_NODE_CNT   100 // each 100 parsed node call progress callback
+
+#ifndef MIN
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#endif
+#ifndef MAX
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#endif
+
+#define CHECK_RUNTIME_ERROR(e) ((strstr(e.what(), "locale::facet::_S_create_c_locale") != NULL) ? \
+                                string("Encoding error, please set locale encoding to C") + LC_ALL_HINT + "." : \
+                                string("runtime_error: ") + e.what())
 
 using namespace std;
 
@@ -52,196 +102,13 @@ using namespace std;
 #define PRINTF_FORMAT printf
 #endif
 
-/*************************** AdbException ***************************/
-class AdbException: public std::exception {
-public:
-    // Methods
-    AdbException();
-    AdbException(const char *msg, ...) __attribute__((format(__printf__, 2, 3)));
-    AdbException(string msg);
-    virtual ~AdbException() throw ();
-    virtual const char* what() const throw ();
-    virtual string what_s() const;
-
-private:
-    string _msg;
-};
-
-/*************************** LogFile ***************************/
-class LogFile {
-public:
-    LogFile();
-    void init(string logFileName, bool allowMultipleExceptions);
-    ~LogFile();
-    void appendLogFile(string adbFileName);
-private:
-    FILE *_logFile;
-};
-
-/*************************** AdbProgress ***************************/
-class AdbProgress {
-public:
-    virtual ~AdbProgress() {
-    }
-    ;
-    virtual void progress(int prog = 0, int total = 0) {
-        (void) prog;
-        (void) total;
-    }
-    ;
-};
-
-/*************************** AdbNode ***************************/
+class AdbInstance;
 class AdbField;
+
+using namespace xmlCreator;
+using namespace std;
+
 typedef map<string, string> AttrsMap;
-typedef vector<AdbField*> FieldsList;
-class AdbNode {
-public:
-    // Methods
-    AdbNode();
-    ~AdbNode();
-    string toXml(const string& addPrefix);
-
-    // FOR DEBUG
-    void print(int indent = 0);
-
-public:
-    // Members
-    string name;
-    u_int32_t size; // in bits
-    bool isUnion;
-    string desc;
-    FieldsList fields;
-    FieldsList condFields; // Field that weren't instantiated due to not satisfied condition
-    AttrsMap attrs;
-
-    // defined in
-    string fileName;
-    int lineNumber;
-
-    // FOR USER USAGE
-    void *userData;
-};
-
-/*************************** AdbField ***************************/
-class AdbField {
-public:
-    // Methods
-    AdbField();
-    ~AdbField();
-    bool isLeaf();
-    bool isStruct();
-    bool isArray();
-    u_int32_t arrayLen();
-    bool isUnlimitedArr();
-    u_int32_t eSize();
-    string toXml(const string& addPrefix);
-
-    // Operator overloading - useful for sorting
-    bool operator<(AdbField& other);
-
-    // FOR DEBUG
-    void print(int indent = 0);
-
-public:
-    // Members
-    string name;
-    u_int32_t size; // in bits
-    u_int32_t offset; // in bits (relative to the node start addr)
-    string desc;
-    bool definedAsArr;
-    u_int32_t lowBound;
-    u_int32_t highBound;
-    bool unlimitedArr;
-    string subNode;
-    AttrsMap attrs;
-    bool isReserved;
-    string condition; // field's visibility dynamic condition
-
-    // FOR USER USAGE
-    void *userData;
-};
-
-/*************************** AdbConfig ***************************/
-class AdbConfig {
-public:
-    // FOR DEBUG
-    void print(int indent = 0);
-
-    string toXml();
-
-public:
-    // Members
-    AttrsMap attrs;
-    AttrsMap enums;
-};
-
-/*************************** AdbInstance ***************************/
-class AdbInstance {
-public:
-    // Methods
-    AdbInstance();
-    ~AdbInstance();
-    bool isLeaf();
-    bool isUnion();
-    bool isStruct();
-    bool isNode();
-    bool isPartOfArray();
-    string fullName(int skipLevel = 0);
-    bool isReserved();
-    u_int32_t dwordAddr();
-    u_int32_t startBit();
-    bool isEnumExists();
-    bool enumToInt(const string &name, u_int64_t &val); // false means no enum value found
-    bool intToEnum(u_int64_t val, string &valName); // false means no enum name found
-    map<string, u_int64_t> getEnumMap();
-    vector<u_int64_t> getEnumValues();
-    AdbInstance* getUnionSelectedNodeName(const u_int64_t& selectorVal);
-    AdbInstance* getUnionSelectedNodeName(const string& selectorEnum);
-    bool operator<(const AdbInstance& other);
-    bool isConditionalNode();
-    bool isConditionValid(map<string, string> *valuesMap);
-    // DB like access methods
-    AdbInstance
-    * getChildByPath(const string& path, bool isCaseSensitive = true);
-    vector<AdbInstance*> findChild(const string& name,
-            bool isCaseSensitive = true, bool by_inst_name = false);
-    string getInstanceAttr(const string &attrName) const;
-    AttrsMap::iterator getInstanceAttrIterator(const string &attrName, bool &isEnd);
-    void setInstanceAttr(const string &attrName, const string &attrValue);
-    void copyAllInstanceAttr(AttrsMap &attsToCopy); 
-    AttrsMap getFullInstanceAttrsMapCopy();
-    void setVarsMap(const string &attrName, const string &attrValue);
-    void setVarsMap(const AttrsMap &AttrsMap);
-    AttrsMap getVarsMap();
-    vector<AdbInstance*> getLeafFields(bool extendedName); // Get all leaf fields
-    void pushBuf(u_int8_t *buf, u_int64_t value);
-    u_int64_t popBuf(u_int8_t *buf);
-    int instAttrsMapLen() {return instAttrsMap.size();}
-    // FOR DEBUG
-    void print(int indent = 0);
-
-public:
-    // Members
-    AdbField *fieldDesc;
-    AdbNode *nodeDesc;
-    AdbInstance *parent;
-    string name; // instance name
-    vector<AdbInstance*> subItems;
-    u_int32_t offset; // Global offset in bits (Relative to 0)
-    u_int32_t size; // in bits
-    u_int32_t arrIdx;
-    bool      isNameBeenExtended;
-    AdbInstance *unionSelector; // For union instances only
-    bool isDiff;
-    // FOR USER USAGE
-    void *userData;
-private:
-    AttrsMap instAttrsMap; // Attributes after evaluations and array expanding
-    AttrsMap varsMap; // all variables relevant to this item after evaluation
-};
-
-/*************************** Adb ***************************/
 typedef vector<string> StringVector;
 typedef struct {
     string fullPath;
@@ -264,10 +131,10 @@ public:
     //   2- contains nodes only
     //   3- check node size vs instance size
     bool loadFromString(const char *adbContents, bool addReserved = false,
-            AdbProgress *progressObj = NULL, bool strict = true,
+            bool strict = true,
             bool enforceExtraChecks = false);
     bool load(string fname, bool addReserved = false,
-            AdbProgress *progressObj = NULL, bool strict = true,
+            bool strict = true,
             string includePath = "", string includeDir = "",
             bool enforceExtraChecks = false, bool getAllExceptions = false,
             string logFile = "");
@@ -276,8 +143,7 @@ public:
             string addPrefix = "");
 
     AdbInstance* addMissingNodes(int depth, bool allowMultipleExceptions);
-    AdbInstance* createLayout(string rootNodeName, bool isExprEval = false,
-            AdbProgress *progressObj = NULL, int depth = -1, /* -1 means instantiate full tree */
+    AdbInstance* createLayout(string rootNodeName, bool isExprEval = false, int depth = -1, /* -1 means instantiate full tree */
             bool ignoreMissingNodes = false, bool getAllExceptions = false);
     vector<string> getNodeDeps(string nodeName);
     string getLastError();
@@ -301,7 +167,7 @@ public:
     InstanceAttrs instAttrs; // Key is instance's Adabe full path, value is attribute map
     string srcDocName;
     string srcDocVer;
-    LogFile _logFile;
+    LogFile* _logFile;
 
     /* For internal use */
 public:
@@ -313,7 +179,7 @@ public:
 private:
     vector<AdbInstance*> createInstance(AdbField *fieldDesc,
             AdbInstance *parent, map<string, string> vars, bool isExprEval,
-            AdbProgress *progressObj, int depth,
+            int depth,
             bool ignoreMissingNodes = false, bool getAllExceptions = false);
     u_int32_t calcArrOffset(AdbField *fieldDesc, AdbInstance *parent,
             u_int32_t arrIdx);
@@ -324,8 +190,9 @@ private:
 private:
     string _lastError;
     AdbExpr _adbExpr;
-    std::list<AdbInstance*> _unionSelectorEvalDeffered;
+    list<AdbInstance*> _unionSelectorEvalDeffered;
     void checkInstanceOffsetValidity(AdbInstance *inst, AdbInstance *parent, bool allowMultipleExceptions);
     void throwExeption(bool allowMultipleExceptions, string exceptionTxt, string addedMsgMultiExp);
 };
-#endif // ADB_PARSER_H
+
+#endif

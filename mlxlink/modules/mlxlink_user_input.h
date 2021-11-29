@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Jan 2019 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2019-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -52,6 +52,7 @@ public:
     ;
     u_int32_t _labelPort;
     u_int32_t _splitPort;
+    u_int32_t _secondSplitPort;
     u_int32_t _depth;
     u_int32_t _pcieIndex;
     u_int32_t _node;
@@ -73,8 +74,11 @@ public:
     bool _sendDpn;
     bool _db;
     bool _sltpLane;
+    bool _txPolicy;
     bool _advancedMode;
-    bool _specifiedPort;
+    bool _portSpecified;
+    bool _splitProvided;
+    bool _secondSplitProvided;
     bool _showSltp;
     bool _showSlrp;
     bool _showCounters;
@@ -127,8 +131,6 @@ public:
     int mixerOffset0;
     int mixerOffset1;
     bool showMixers;
-
-    string eomMeasurementStr;
 
     bool enableFecHistogram;
     bool showFecHistogram;

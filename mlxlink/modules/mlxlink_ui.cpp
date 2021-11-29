@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Jan 2019 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2019-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -89,11 +89,6 @@ void MlxlinkUi::printSynopsisQueries()
                   "Show Physical Counters and BER Info");
     MlxlinkRecord::printFlagLine(EYE_OPENING_FLAG_SHORT, EYE_OPENING_FLAG, "",
                   "Show Eye Opening Info");
-    printf(IDENT);
-    MlxlinkRecord::printFlagLine(EYE_OPENING_TYPE_FLAG_SHORT, EYE_OPENING_TYPE_FLAG, "eye",
-                  "Eye measurement type [CMP(composite)(Default)/ " \
-                  "ALL(composite and all three eyes)/ UP(upper eye)/ MID(middle eye)/ LOW(lower eye)] "\
-                  "(for 7nm products only) ");
     MlxlinkRecord::printFlagLine(FEC_DATA_FLAG_SHORT, FEC_DATA_FLAG, "", "Show FEC Capabilities");
     MlxlinkRecord::printFlagLine(SLTP_SHOW_FLAG_SHORT, SLTP_SHOW_FLAG, "", "Show Transmitter Info");
     MlxlinkRecord::printFlagLine(SHOW_TX_GROUP_MAP_FLAG_SHORT, SHOW_TX_GROUP_MAP_FLAG, "group_num",
@@ -109,12 +104,12 @@ void MlxlinkUi::printSynopsisCommands()
     MlxlinkRecord::printFlagLine(PAOS_FLAG_SHORT, PAOS_FLAG, "port_state",
                   "Configure Port State [UP(up)/DN(down)/TG(toggle)]");
     MlxlinkRecord::printFlagLine(PTYS_FLAG_SHORT, PTYS_FLAG, "speeds",
-                  "Configure Speeds [HDR,EDR,FDR10,FDR,QDR,DDR,SDR,400G_8X,200G_4X,100G_2X,50G_1X,100G,100G_4X,50G,50G_2X,25G,40X,10G,14G,50GE-KR4,12.89G,XAUI,2.5G,1G]");
+                  "Configure Speeds [HDR,EDR,FDR10,FDR,QDR,DDR,SDR,400G_8X,200G_4X,100G_2X,50G_1X,100G,100G_4X,50G,50G_2X,25G,40X,10G,2.5G,1G]");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PTYS_LINK_MODE_FORCE_FLAG_SHORT, PTYS_LINK_MODE_FORCE_FLAG, "",
                   "Configure Link Mode Force (Disable AN)");
     MlxlinkRecord::printFlagLine(PPLR_FLAG_SHORT, PPLR_FLAG, "loopback",
-                  "Configure Loopback Mode [NO(no loopback)/RM(phy remote Rx-to-Tx loopback)/PH(phy Tx-to-Rx loopback)/EX(external Tx-to-Rx loopback)]");
+                  "Configure Loopback Mode [NO(no loopback)/RM(phy remote Rx-to-Tx loopback)/PH(internal phy Tx-to-Rx loopback)/EX(external loopback connector needed)/EX(external Tx-to-Rx loopback)]");
     MlxlinkRecord::printFlagLine(PPLM_FLAG_SHORT, PPLM_FLAG, "fec_override",
                   "Configure FEC [AU(Auto)/NF(No-FEC)/FC(FireCode FEC)/RS(RS-FEC)]");
     printf(IDENT);
@@ -127,6 +122,8 @@ void MlxlinkUi::printSynopsisCommands()
                   "Transmitter Lane to Set (Optional - Default All Lanes)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(DATABASE_FLAG_SHORT, DATABASE_FLAG, "", "Save Transmitter Configuration for Current Speed Permanently (Optional)");
+    printf(IDENT);
+    MlxlinkRecord::printFlagLine(SLTP_TX_POLICY_FLAG_SHORT, SLTP_TX_POLICY_FLAG, "", "Set the parameters according to Data Base only, otherwise it will be set according to the best possible configuration chosen by the system (e.g. KR-startup) (Optional)");
     MlxlinkRecord::printFlagLine(SET_TX_GROUP_MAP_FLAG_SHORT, SET_TX_GROUP_MAP_FLAG, "group_num",
                       "Map ports to group <group_num> (for Spectrum-2 and Quantum devices)");
     printf(IDENT);
@@ -136,16 +133,16 @@ void MlxlinkUi::printSynopsisCommands()
                   "Physical Test Mode Configuration [EN(enable)/DS(disable)/TU(perform tuning)]");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PPRT_PRBS_FLAG_SHORT, PPRT_PRBS_FLAG, "rx_prbs_mode",
-                  "RX PRBS Mode [PRBS31/PRBS23A/PRBS23B/PRBS23C/PRBS23D/PRBS7/PRBS11/PRBS11A/PRBS11B/PRBS11C/PRBS11D/PRBS9/IDLE/Square_waveA/Square_waveB/Square_waveC/Square_waveD/PRBS13A/PRBS13B/PRBS13C/PRBS13D/SSPR/SSPRQ] (Optional - Default PRBS31)");
+                  "RX PRBS Mode [PRBS31/PRBS23A/PRBS23B/PRBS23C/PRBS23D/PRBS7/PRBS11/PRBS11A/PRBS11B/PRBS11C/PRBS11D/PRBS9/IDLE/SQUARE_WAVEA/SQUARE_WAVEB/SQUARE_WAVEC/SQUARE_WAVED/PRBS13A/PRBS13B/PRBS13C/PRBS13D/SSPR/SSPRQ/LT_frames/PRBS15/PRBS28] (Optional - Default PRBS31)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PPTT_PRBS_FLAG_SHORT, PPTT_PRBS_FLAG, "tx_prbs_mode",
-                  "TX PRBS Mode [PRBS31/PRBS23A/PRBS23B/PRBS23C/PRBS23D/PRBS7/PRBS11/PRBS11A/PRBS11B/PRBS11C/PRBS11D/PRBS9/IDLE/Square_waveA/Square_waveB/Square_waveC/Square_waveD/PRBS13A/PRBS13B/PRBS13C/PRBS13D/SSPR/SSPRQ] (Optional - Default PRBS31] (Optional - Default PRBS31)");
+                  "TX PRBS Mode [PRBS31/PRBS23A/PRBS23B/PRBS23C/PRBS23D/PRBS7/PRBS11/PRBS11A/PRBS11B/PRBS11C/PRBS11D/PRBS9/IDLE/SQUARE_WAVEA/SQUARE_WAVEB/SQUARE_WAVEC/SQUARE_WAVED/PRBS13A/PRBS13B/PRBS13C/PRBS13D/SSPR/SSPRQ/LT_frames/PRBS15/PRBS28/SQUARE_WAVE3,SQUARE_WAVE13,SQUARE_WAVE30] (Optional - Default PRBS31] (Optional - Default PRBS31)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PPRT_RATE_FLAG_SHORT, PPRT_RATE_FLAG, "rx_lane_rate",
-                  "RX Lane Rate [HDR/EDR/FDR10/FDR/QDR/DDR/SDR/400G_8X/200G_4X/100G_2X,50G_1X,100G,100G_4X,50G,50G_2X,25G,40X,10G,14G,50GE-KR4,12.89G,XAUI,2.5G,1G]  (Optional - Default 25G)");
+                  "RX Lane Rate [HDR,EDR,FDR10,FDR,QDR,DDR,SDR,400G_8X,200G_4X,100G_2X,50G_1X,100G,100G_4X,50G,50G_2X,25G,40X,10G,2.5G,1G]  (Optional - Default 25G)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PPTT_RATE_FLAG_SHORT, PPTT_RATE_FLAG, "tx_lane_rate",
-                  "TX Lane Rate [HDR/EDR/FDR10/FDR/QDR/DDR/SDR/400G_8X/200G_4X/100G_2X,50G_1X,100G,100G_4X,50G,50G_2X,25G,40X,10G,14G,50GE-KR4,12.89G,XAUI,2.5G,1G]  (Optional - Default 25G)");
+                  "TX Lane Rate [HDR,EDR,FDR10,FDR,QDR,DDR,SDR,400G_8X,200G_4X,100G_2X,50G_1X,100G,100G_4X,50G,50G_2X,25G,40X,10G,2.5G,1G]  (Optional - Default 25G)");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PRBS_INVERT_TX_POL_FLAG_SHORT, PRBS_INVERT_TX_POL_FLAG, "",
                   "PRBS TX polarity inversion (Optional - Default No Inversion)");
@@ -157,6 +154,8 @@ void MlxlinkUi::printSynopsisCommands()
                   "PRBS lanes to set (one or more lane separated by comma)[0,1,2,...,7] (Optional - Default all lanes)");
     MlxlinkRecord::printFlagLine(BER_COLLECT_FLAG_SHORT, BER_COLLECT_FLAG, "csv_file",
                   "Port Extended Information Collection [CSV File]");
+    MlxlinkRecord::printFlagLine(AMBER_COLLECT_FLAG_SHORT, AMBER_COLLECT_FLAG, "csv_file",
+                  "AmBER Port Extended Information Collection For 16nm Products and Later [CSV File]");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(BER_LIMIT_FLAG_SHORT, BER_LIMIT_FLAG, "limit_criteria",
                   "BER Limit Criteria [Nominal(Default)/Corner/Drift] (Optional - Default Nominal)");
@@ -308,10 +307,6 @@ void MlxlinkUi::validateMandatoryParams()
     if ((_mlxlinkCommander->_userInput._labelPort == 0) && (_mlxlinkCommander->_userInput._portType != "PCIE")) {
         throw MlxRegException("Please provide a valid port number");
     }
-    if (!_mlxlinkCommander->_userInput.eomMeasurementStr.empty() &&
-            !_mlxlinkCommander->_userInput._showEyeInfo) {
-        throw MlxRegException("The --" EYE_OPENING_TYPE_FLAG " option is valid only with --" EYE_OPENING_FLAG);
-    }
 }
 
 void MlxlinkUi::validatePCIeParams()
@@ -340,7 +335,7 @@ void MlxlinkUi::validatePCIeParams()
                 _mlxlinkCommander->_userInput._sendDpn = true;
             }
         }
-        if (_mlxlinkCommander->_userInput._specifiedPort) {
+        if (_mlxlinkCommander->_userInput._portSpecified) {
             if (dpnFlags) {
                 throw MlxRegException("For PCIE port, either port flag or depth, pcie_index and node flags should be specified");
            }
@@ -383,9 +378,10 @@ void MlxlinkUi::validateGeneralCmdsParams()
             throw MlxRegException(
                       "Lane and Database flags are mutually exclusive");
         }
-    } else if (_mlxlinkCommander->_userInput._sltpLane || _mlxlinkCommander->_userInput._db) {
-        throw MlxRegException(
-                  "Transmitter Lane or DataBase flags are valid only with Configure Transmitter Parameters flag (--st_set)");
+    } else if (_mlxlinkCommander->_userInput._sltpLane || _mlxlinkCommander->_userInput._db ||
+               _mlxlinkCommander->_userInput._txPolicy) {
+        throw MlxRegException(LANE_FLAG ", --" DATABASE_FLAG " and --" SLTP_TX_POLICY_FLAG
+                              " flags are valid only with Configure Transmitter Parameters flag (--" SLTP_SET_FLAG ")");
     }
 }
 
@@ -410,19 +406,6 @@ void MlxlinkUi::validatePRBSParams()
                           "PRBS parameters flags valid only with PRBS Enable flag (--test_mode EN)");
             }
         }
-        if (_mlxlinkCommander->_userInput._prbsMode == "EN"
-            && (!prbsLaneRateCheck(_mlxlinkCommander->_userInput._pprtRate)
-                || !prbsLaneRateCheck(_mlxlinkCommander->_userInput._ppttRate))) {
-            string errStr = "Valid PRBS Lane Rates Are:";
-            for (map<u_int32_t, string>::iterator it =
-                 _mlxlinkCommander->_mlxlinkMaps->_prbsLaneRateList.begin();
-                 it != _mlxlinkCommander->_mlxlinkMaps->_prbsLaneRateList.end(); it++) {
-                errStr += it->second + ",";
-            }
-            errStr = deleteLastChar(errStr);
-            errStr += "\nDefault PRBS Lane Rate is EDR / 25GE / 50GE / 100GE (25.78125 Gb/s)";
-            throw MlxRegException(errStr);
-        }
     } else if (prbsFlags) { // add check for lanes flag to work with PRBS and eye scan only
         throw MlxRegException(
                   "PRBS parameters flags valid only with PRBS Enable flag (--test_mode EN)");
@@ -431,7 +414,13 @@ void MlxlinkUi::validatePRBSParams()
 
 void MlxlinkUi::validateSpeedAndCSVBerParams()
 {
-    if (isIn(SEND_BER_COLLECT, _sendRegFuncMap)) {
+    bool berCollect = isIn(SEND_BER_COLLECT, _sendRegFuncMap);
+    bool amBerCollect = isIn(SEND_AMBER_COLLECT, _sendRegFuncMap);
+    if (berCollect && amBerCollect) {
+        throw MlxRegException("--" BER_COLLECT_FLAG " and --" AMBER_COLLECT_FLAG " "\
+                "are mutually exclusive, please select one command only");
+    }
+    if (berCollect || amBerCollect) {
         if (!endsWith(_mlxlinkCommander->_userInput._csvBer, ".csv")) {
             throw MlxRegException("you must provide a valid .csv file");
         }
@@ -621,8 +610,6 @@ void MlxlinkUi::initCmdParser()
     AddOptions(BER_FLAG, BER_FLAG_SHORT, "", "Show BER Info");
     AddOptions(EYE_OPENING_FLAG, EYE_OPENING_FLAG_SHORT, "",
                "Show Eye Opening Info");
-    AddOptions(EYE_OPENING_TYPE_FLAG, EYE_OPENING_TYPE_FLAG_SHORT, "type",
-               "Eye measurement type");
     AddOptions(MODULE_INFO_FLAG, MODULE_INFO_FLAG_SHORT, "",
                "Show Module Info");
     AddOptions(PPCNT_CLEAR_FLAG, PPCNT_CLEAR_FLAG_SHORT, "",
@@ -641,6 +628,8 @@ void MlxlinkUi::initCmdParser()
     AddOptions(PPLR_FLAG, PPLR_FLAG_SHORT, "PPLR", "Send PPLR");
     AddOptions(BER_COLLECT_FLAG, BER_COLLECT_FLAG_SHORT, "BERCollectFile",
                "BER Collection csv file");
+    AddOptions(AMBER_COLLECT_FLAG, AMBER_COLLECT_FLAG_SHORT, "AMBERCollectFile",
+               "AMBER Collection csv file");
     AddOptions(BER_LIMIT_FLAG, BER_LIMIT_FLAG_SHORT, "Mode",
                "Test Mode of Ber Collect (Nominal/Corner/Drift)");
     AddOptions(ITERATION_FLAG, ITERATION_FLAG_SHORT, "Iteration", "Iteration of BER Collect");
@@ -675,6 +664,7 @@ void MlxlinkUi::initCmdParser()
     AddOptions(SLTP_SHOW_FLAG, SLTP_SHOW_FLAG_SHORT, "", "get SLTP");
     AddOptions(SLTP_SET_FLAG, SLTP_SET_FLAG_SHORT, "set", "set SLTP");
     AddOptions(SLTP_SET_ADVANCED_FLAG, SLTP_SET_ADVANCED_FLAG_SHORT, "", "set SLTP");
+    AddOptions(SLTP_TX_POLICY_FLAG, SLTP_TX_POLICY_FLAG_SHORT, "", "set TX Policy");
     AddOptions(LANE_FLAG, LANE_FLAG_SHORT, "lane", "Lane");
     AddOptions(DATABASE_FLAG, DATABASE_FLAG_SHORT, "", "DB");
     AddOptions(GVMI_ADDRESS_FLAG, GVMI_ADDRESS_FLAG_SHORT, "gvmi", "GVMI");
@@ -753,7 +743,10 @@ void MlxlinkUi::commandsCaller()
             PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> \"Port Extended Information Collection\"");
             _mlxlinkCommander->collectBER();
             break;
-        case SEND_PAOS:
+        case SEND_AMBER_COLLECT:
+            PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> \"AmBER Collection\"");
+            _mlxlinkCommander->collectAMBER();
+            break;case SEND_PAOS:
             PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger, "-> \"Configure Port State\"");
             _mlxlinkCommander->sendPaos();
             break;
@@ -831,11 +824,16 @@ void MlxlinkUi::commandsCaller()
     }
 }
 
+void MlxlinkUi::addCmd(OPTION_TYPE option)
+{
+    if (!isIn(option, _sendRegFuncMap)) {
+        _sendRegFuncMap.push_back(option);
+    }
+}
+
 ParseStatus MlxlinkUi::HandleOption(string name, string value)
 {
-    if (!isIn(SHOW_PDDR, _sendRegFuncMap)) {
-        _sendRegFuncMap.push_back(SHOW_PDDR);
-    }
+    addCmd(SHOW_PDDR);
     if (name == PRINT_JSON_OUTPUT_FLAG) {
         MlxlinkRecord::jsonFormat = true;
         MlxlinkRecord::cOut = &cerr;
@@ -851,33 +849,30 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _mlxlinkCommander->_device = value;
         return PARSE_OK;
     } else if (name == MODULE_INFO_FLAG) {
-        _sendRegFuncMap.push_back(SHOW_MODULE);
+        addCmd(SHOW_MODULE);
         _mlxlinkCommander->_networkCmds++;
         return PARSE_OK;
     } else if (name == BER_FLAG) {
-        _sendRegFuncMap.push_back(SHOW_BER);
+        addCmd(SHOW_BER);
         _mlxlinkCommander->_userInput._showCounters = true;
         return PARSE_OK;
     } else if (name == PPCNT_CLEAR_FLAG) {
-        _sendRegFuncMap.push_back(SEND_CLEAR_COUNTERS);
+        addCmd(SEND_CLEAR_COUNTERS);
         _mlxlinkCommander->_uniqueCmds++;
         return PARSE_OK;
     } else if (name == EYE_OPENING_FLAG) {
-        _sendRegFuncMap.push_back(SHOW_EYE);
+        addCmd(SHOW_EYE);
         _mlxlinkCommander->_userInput._showEyeInfo = true;
         return PARSE_OK;
-    } else if (name == EYE_OPENING_TYPE_FLAG) {
-       _mlxlinkCommander->_userInput.eomMeasurementStr = toUpperCase(value);
-       return PARSE_OK;
     } else if (name == SLTP_SHOW_FLAG) {
-        _sendRegFuncMap.push_back(SHOW_SLTP);
+        addCmd(SHOW_SLTP);
         _mlxlinkCommander->_userInput._showSltp = true;
         return PARSE_OK;
     } else if (name == SLTP_SET_FLAG) {
         string sltpParamsLine = toUpperCase(value);
         std::vector<string> sltpParams = _mlxlinkCommander->parseParamsFromLine(sltpParamsLine);
         _mlxlinkCommander->getSltpParamsFromVector(sltpParams);
-        _sendRegFuncMap.push_back(SEND_SLTP);
+        addCmd(SEND_SLTP);
         _mlxlinkCommander->_uniqueCmds++;
         return PARSE_OK;
     } else if (name == LANE_FLAG) {
@@ -886,6 +881,9 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         return PARSE_OK;
     } else if (name == DATABASE_FLAG) {
         _mlxlinkCommander->_userInput._db = true;
+        return PARSE_OK;
+    } else if (name == SLTP_TX_POLICY_FLAG) {
+        _mlxlinkCommander->_userInput._txPolicy = true;
         return PARSE_OK;
     } else if (name == GVMI_ADDRESS_FLAG) {
         _mlxlinkCommander->strToUint32((char*) value.c_str(), _mlxlinkCommander->_userInput._gvmiAddress);
@@ -898,19 +896,7 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         return PARSE_OK;
     } else if (name == LABEL_PORT_FLAG) {
         _mlxlinkCommander->checkStrLength(value);
-        if (endsWith(value.c_str(), "/1") || endsWith(value.c_str(), "/2")
-            || endsWith(value.c_str(), "/3")
-            || endsWith(value.c_str(), "/4")
-            || endsWith(value.c_str(), "/5")
-            || endsWith(value.c_str(), "/6")
-            || endsWith(value.c_str(), "/7")
-            || endsWith(value.c_str(), "/8")) {
-            _mlxlinkCommander->_userInput._splitPort = value[value.length() - 1] - '0';
-            value.erase(value.size() - 2);
-            _mlxlinkCommander->_splitted = true;
-        }
-        _mlxlinkCommander->strToUint32((char*) value.c_str(), _mlxlinkCommander->_userInput._labelPort);
-        _mlxlinkCommander->_userInput._specifiedPort = true;
+        _mlxlinkCommander->handlePortStr(value);
         return PARSE_OK;
     } else if (name == DEPTH_FLAG) {
         _mlxlinkCommander->strToUint32((char*) value.c_str(), _mlxlinkCommander->_userInput._depth);
@@ -925,28 +911,28 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _mlxlinkCommander->_userInput._sendNode = true;
         return PARSE_OK;
     } else if (name == PCIE_LINKS_FLAG) {
-        _sendRegFuncMap.push_back(SHOW_PCIE_LINKS);
+        addCmd(SHOW_PCIE_LINKS);
         _mlxlinkCommander->_userInput._links = true;
         return PARSE_OK;
     } else if (name == DEVICE_DATA_FLAG) {
-        _sendRegFuncMap.push_back(SHOW_DEVICE);
+        addCmd(SHOW_DEVICE);
         return PARSE_OK;
     } else if (name == FEC_DATA_FLAG) {
-        _sendRegFuncMap.push_back(SHOW_FEC);
+        addCmd(SHOW_FEC);
         _mlxlinkCommander->_networkCmds++;
         return PARSE_OK;
     } else if (name == PAOS_FLAG) {
-        _sendRegFuncMap.push_back(SEND_PAOS);
+        addCmd(SEND_PAOS);
         _mlxlinkCommander->_userInput._paosCmd = toUpperCase(value);
         _mlxlinkCommander->_uniqueCmds++;
         return PARSE_OK;
     } else if (name == PTYS_FLAG) {
-        _sendRegFuncMap.push_back(SEND_PTYS);
+        addCmd(SEND_PTYS);
         _mlxlinkCommander->_ptysSpeeds = _mlxlinkCommander->parseParamsFromLine(toUpperCase(value));
         _mlxlinkCommander->_uniqueCmds++;
         return PARSE_OK;
     } else if (name == PPLM_FLAG) {
-        _sendRegFuncMap.push_back(SEND_PPLM);
+        addCmd(SEND_PPLM);
         _mlxlinkCommander->_userInput._pplmFec = toUpperCase(value);
         _mlxlinkCommander->_uniqueCmds++;
         return PARSE_OK;
@@ -954,12 +940,12 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _mlxlinkCommander->_userInput._speedFec = toUpperCase(value);
         return PARSE_OK;
     } else if (name == PPLR_FLAG) {
-        _sendRegFuncMap.push_back(SEND_PPLR);
+        addCmd(SEND_PPLR);
         _mlxlinkCommander->_userInput._pplrLB = toUpperCase(value);
         _mlxlinkCommander->_uniqueCmds++;
         return PARSE_OK;
     } else if (name == PRBS_MODE_FLAG) {
-        _sendRegFuncMap.push_back(SEND_PRBS);
+        addCmd(SEND_PRBS);
         _mlxlinkCommander->_userInput._prbsMode = toUpperCase(value);
         _mlxlinkCommander->_uniqueCmds++;
         return PARSE_OK;
@@ -988,9 +974,12 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _mlxlinkCommander->_userInput._prbsRxInv = true;
         return PARSE_OK;
     } else if (name == BER_COLLECT_FLAG) {
-        _sendRegFuncMap.push_back(SEND_BER_COLLECT);
+        addCmd(SEND_BER_COLLECT);
         _mlxlinkCommander->_userInput._csvBer = value;
-        _mlxlinkCommander->_uniqueCmds++;
+        return PARSE_OK;
+    }  else if (name == AMBER_COLLECT_FLAG) {
+        addCmd(SEND_AMBER_COLLECT);
+        _mlxlinkCommander->_userInput._csvBer = value;
         return PARSE_OK;
     } else if (name == BER_LIMIT_FLAG) {
         _mlxlinkCommander->_userInput._testMode = toUpperCase(value);
@@ -999,10 +988,10 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _mlxlinkCommander->strToUint32((char*) value.c_str(), _mlxlinkCommander->_userInput._iteration);
         return PARSE_OK;
     } else if (name == BER_MONITOR_INFO_FLAG) {
-        _sendRegFuncMap.push_back(SHOW_BER_MONITOR);
+        addCmd(SHOW_BER_MONITOR);
         return PARSE_OK;
     } else if (name == PEPC_SHOW_FLAG) {
-        _sendRegFuncMap.push_back(SHOW_EXTERNAL_PHY);
+        addCmd(SHOW_EXTERNAL_PHY);
         return PARSE_OK;
     } else if (name == PEPC_FORCE_MODE_FLAG) {
         _mlxlinkCommander->_userInput._sendPepcForceMode = true;
@@ -1013,7 +1002,7 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _mlxlinkCommander->_userInput._anMode = toUpperCase(value);
         return PARSE_OK;
     } else if (name == PEPC_SET_FLAG) {
-        _sendRegFuncMap.push_back(SEND_PEPC);
+        addCmd(SEND_PEPC);
         _mlxlinkCommander->_uniqueCmds++;
         return PARSE_OK;
     } else if (name == PTYS_LINK_MODE_FORCE_FLAG) {
@@ -1024,23 +1013,23 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         return PARSE_OK;
     } else if (name == CABLE_FLAG) {
         _mlxlinkCommander->_userInput._cable = true;
-        _sendRegFuncMap.push_back(CABLE_EEPROM_INI);
+        addCmd(CABLE_EEPROM_INI);
         return PARSE_OK;
     } else if (name == CABLE_DUMP_FLAG) {
         _mlxlinkCommander->_userInput._dump = true;
-        _sendRegFuncMap.push_back(CABLE_SHOW_DUMP);
+        addCmd(CABLE_SHOW_DUMP);
         _mlxlinkCommander->_uniqueCableCmds++;
         return PARSE_OK;
     } else if (name == CABLE_DDM_FLAG) {
         _mlxlinkCommander->_userInput._ddm = true;
-        _sendRegFuncMap.push_back(CABLE_SHOW_DDM);
+        addCmd(CABLE_SHOW_DDM);
         _mlxlinkCommander->_uniqueCableCmds++;
         return PARSE_OK;
     } else if (name == CABLE_WRITE_FLAG) {
         _mlxlinkCommander->_userInput._write = true;
         _mlxlinkCommander->_userInput._bytesToWrite =
                 _mlxlinkCommander->parseParamsFromLine(value);
-        _sendRegFuncMap.push_back(CABLE_EEPROM_WRITE);
+        addCmd(CABLE_EEPROM_WRITE);
         _mlxlinkCommander->_uniqueCableCmds++;
         return PARSE_OK;
     } else if (name == WRITE_PAGE_FLAG) {
@@ -1054,19 +1043,19 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
     } else if (name == CABLE_READ_FLAG) {
         _mlxlinkCommander->_userInput._read = true;
         _mlxlinkCommander->_uniqueCableCmds++;
-        _sendRegFuncMap.push_back(CABLE_EEPROM_READ);
+        addCmd(CABLE_EEPROM_READ);
         return PARSE_OK;
     } else if (name == READ_LEN_FLAG) {
         _mlxlinkCommander->strToUint32((char*) value.c_str(),
                 (u_int32_t&)_mlxlinkCommander->_userInput._len);
         return PARSE_OK;
     } else if (name == SHOW_TX_GROUP_MAP_FLAG) {
-        _sendRegFuncMap.push_back(SHOW_TX_GROUP_MAP);
+        addCmd(SHOW_TX_GROUP_MAP);
         _mlxlinkCommander->strToUint32((char*) value.c_str(),
                         (u_int32_t&)_mlxlinkCommander->_userInput._showGroup);
         return PARSE_OK;
     } else if (name == SET_TX_GROUP_MAP_FLAG) {
-        _sendRegFuncMap.push_back(SET_TX_GROUP_MAP);
+        addCmd(SET_TX_GROUP_MAP);
         _mlxlinkCommander->strToUint32((char*) value.c_str(),
                         (u_int32_t&)_mlxlinkCommander->_userInput._setGroup);
         return PARSE_OK;
@@ -1074,7 +1063,7 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _mlxlinkCommander->_userInput._labelPorts = _mlxlinkCommander->parseParamsFromLine(value);
         return PARSE_OK;
     } else if (name == MARGIN_SCAN_FLAG) {
-        _sendRegFuncMap.push_back(GRADE_SCAN_ENABLE);
+        addCmd(GRADE_SCAN_ENABLE);
         return PARSE_OK;
     } else if (name == EYE_MEASURE_TIME_FLAG) {
         _mlxlinkCommander->checkStrLength(value);
@@ -1096,7 +1085,7 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _mlxlinkCommander->_userInput.eyeSelectSpecified = true;
         return PARSE_OK;
     } else if (name == PREI_RX_ERR_INJ_FLAG) {
-        _sendRegFuncMap.push_back(ERR_INJ_ENABLE);
+        addCmd(ERR_INJ_ENABLE);
         _mlxlinkCommander->_userInput.enableRxErrInj = true;
         _mlxlinkCommander->_uniqueCmds++;
         return PARSE_OK;
@@ -1112,7 +1101,7 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _mlxlinkCommander->_userInput.showMixers = true;
         return PARSE_OK;
     } else if (name == PPHCR_FEC_HIST_FLAG) {
-        _sendRegFuncMap.push_back(RS_FEC_HISTOGRAM);
+        addCmd(RS_FEC_HISTOGRAM);
         _mlxlinkCommander->_userInput.enableFecHistogram = true;
         return PARSE_OK;
     } else if (name == PPHCR_SHOW_FEC_HIST_FLAG) {
@@ -1173,8 +1162,6 @@ int MlxlinkUi::run(int argc, char **argv)
     } else if (!_mlxlinkCommander->_userInput._sendDpn) {
         _mlxlinkCommander->initValidDPNList();
     }
-
-
 
     if (_mlxlinkCommander->_userInput._logFilePath != "") {
         _mlxlinkCommander->_mlxlinkLogger = new MlxlinkLogger(

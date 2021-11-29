@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Jan 2020 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -102,11 +102,59 @@ string MlxlinkRegParser::getFieldStr(const string &field)
     return to_string(getFieldValue(field));
 }
 
+string MlxlinkRegParser::getRawFieldValueStr(const string fieldName)
+{
+    string fullStr = "";
+    char hexFormat[32];
+    u_int32_t fieldBuf = 0;
+
+    for (int i = 0; ; i++) {
+        string path = fieldName;
+        path.append("[");
+        path.append(to_string(i));
+        path.append("]");
+        try {
+            fieldBuf = getFieldValue(path);
+        } catch (...) {
+            break;
+        }
+        if (fieldBuf) {
+            sprintf(hexFormat, "%08x", fieldBuf);
+            fullStr.append(string(hexFormat));
+        }
+    }
+
+    return fullStr;
+}
+
 u_int32_t MlxlinkRegParser::getFieldValue(string field_name)
 {
     u_int32_t field_Val = RegAccessParser::getFieldValue(field_name, _buffer);
     DEBUG_LOG(_mlxlinkLogger,"%-15s: %-30s\tVALUE: 0x%08x (%d)\n","GET_FIELD",
             (char*)field_name.c_str(),field_Val,field_Val) ;
     return field_Val;
+}
+
+u_int32_t MlxlinkRegParser::getFieldSize(string field_name)
+{
+    return RegAccessParser::getField(field_name)->size;
+}
+
+string MlxlinkRegParser::getAscii(const string & name, u_int32_t size)
+{
+    string value = "";
+    char c;
+    u_int32_t name_tmp;
+
+    for (u_int32_t i = 0; i < size / 4; i++) {
+        name_tmp = getFieldValue(name + "[" + to_string(i) + "]");
+        for (int k = 24; k > -1; k -= 8) {
+            c = (char)(name_tmp >> k);
+            if ((int)c != 0 && (int)c != 32) {
+                value.push_back(c);
+            }
+        }
+    }
+    return (value != "") ? value : "N/A";
 }
 

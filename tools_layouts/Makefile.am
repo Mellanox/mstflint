@@ -1,5 +1,5 @@
 #--
-# Copyright (c) 2004-2010 Mellanox Technologies LTD. All rights reserved.
+# Copyright (c) 2004-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -50,7 +50,7 @@ libtools_layouts_a_SOURCES = prm_adb_db.cpp prm_adb_db.h \
 				tools_open_layouts.c tools_open_layouts.h\
 				register_access_sib_layouts.h register_access_sib_layouts.c \
 				cx4fw_layouts.c cx4fw_layouts.h \
-				cx5fw_layouts.c cx5fw_layouts.h\
+				image_layout_layouts.c image_layout_layouts.h\
 				cx6fw_layouts.c cx6fw_layouts.h\
 				icmd_layouts.c icmd_layouts.h\
 				reg_access_hca_layouts.c reg_access_hca_layouts.h\

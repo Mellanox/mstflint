@@ -1,4 +1,5 @@
 # Copyright (c) Jun 2021 Mellanox Technologies LTD. All rights reserved.
+# Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -227,7 +228,7 @@ def buildMSTNodesTree(commandLine):
     params=""
     sons=""
     extra=""
-    lastNodeStruct={ 'shortCut': "" , 'name' : "" , 'lastCommandIndex' : "-1" , 'nodeType' :  "0" , 'sons' : "" , 'extra' : "" , 'upperNeed' : "" , 'description' : ""}
+    lastNodeStruct={ 'shortCut': "" , 'name' : "" , 'lastCommandIndex' : "1" , 'nodeType' :  "0" , 'sons' : "" , 'extra' : "" , 'upperNeed' : "" , 'description' : ""}
     mstMainNodeSons=""
     for line in reversed(filesList):
         lineRemovingLeadingZero = line.strip(" ")
@@ -236,14 +237,14 @@ def buildMSTNodesTree(commandLine):
         if lineRemovingLeadingZero[0:3] == "mst":
             splitLine = lineRemovingLeadingZero[4:].split(" ")
             nodeName=splitLine.pop(0)
-            if nodeName not in mstMainNodeSons:
+            if nodeName not in mstMainNodeSons.split(" "):
                 mstMainNodeSons = mstMainNodeSons +  " " + nodeName
             if nodeName not in commandLine.split(" "):
                 continue
             if lastNodeStruct["name"] != nodeName:
                 if lastNodeStruct["name"] != "" and lastNodeStruct["sons"].strip(" ") != "":
                     nodesTree.append(lastNodeStruct)
-                lastNodeStruct={ 'shortCut': "" , 'name' : nodeName , 'lastCommandIndex' : "-1" , 'nodeType' :  "0" , 'sons' : "" , 'extra' : "" , 'upperNeed' : "" , 'description' : ""}
+                lastNodeStruct={ 'shortCut': "" , 'name' : nodeName , 'lastCommandIndex' : "1" , 'nodeType' :  "0" , 'sons' : "" , 'extra' : "" , 'upperNeed' : "" , 'description' : ""}
             for son in reversed(splitLine):
                 if son[0] == "<":
                     continue
@@ -257,8 +258,12 @@ def buildMSTNodesTree(commandLine):
                     else:
                         sons=sons+" "+sonName
                 else:
+                    if sons == "":
+                        if extra != "":
+                            sons=extra
+                            extra=""
                     if sons != "":
-                        nodesTree.append({ 'shortCut': "" , 'name' : son , 'lastCommandIndex' : "-1" , 'nodeType' :  "0" , 'sons' : sons , 'extra' : extra , 'upperNeed' : "" , 'description' : ""})
+                        nodesTree.append({ 'shortCut': "" , 'name' : son , 'lastCommandIndex' : "1" , 'nodeType' :  "0" , 'sons' : sons , 'extra' : extra , 'upperNeed' : "" , 'description' : ""})
                     sons=son
                     params=""
                     options=""
@@ -275,7 +280,7 @@ def buildMSTNodesTree(commandLine):
         elif lineRemovingLeadingZero[0] == "-":
             options=options + " " + lineRemovingLeadingZero.split(" ")[0].replace(":", "")
     nodesTree.append(lastNodeStruct)
-    nodesTree.append({ 'shortCut': "" , 'name' : "mst" , 'lastCommandIndex' : "-1" , 'nodeType' :  "0" , 'sons' : mstMainNodeSons , 'extra' : "" , 'upperNeed' : "" , 'description' : ""})
+    nodesTree.append({ 'shortCut': "" , 'name' : "mst" , 'lastCommandIndex' : "1" , 'nodeType' :  "0" , 'sons' : mstMainNodeSons , 'extra' : "" , 'upperNeed' : "" , 'description' : ""})
     return nodesTree
 
 def buildMFTTollNodesTree(toolName,commandLine):
@@ -331,13 +336,14 @@ def buildShortCutsNodeListNodesDeclary(nodesTree):
         shortCutVal  = node["shortCut"]
         nodeNAme     = node["name"]
         nodeSons     = node["sons"]
+        extra        = node["extra"]
         if nodeNAme == "--device" or nodeNAme == "-d" or nodeNAme == "-dev" or shortCutVal == "-d":
             nodeSons="temp"
             node["lastCommandIndex"]="1"
             node["nodeType"]="2"
         if shortCutVal != "":
             shortCuts=shortCuts + " [\"" + shortCutVal + "\"]=\"" + nodeNAme + "\""
-        if nodeSons != "":
+        if nodeSons != "" or extra != "":
             nodesList=nodesList + " " + nodeNAme
             nodeDeclare="declare -A "+ nodeNAme.replace("-", "")+"=( [\"lastCommandIndex\"]="+node["lastCommandIndex"]+" [\"nodeType\"]=\""+node["nodeType"]+"\" [\"sons\"]=\""+nodeSons+"\" [\"extra\"]=\""+node["extra"]+"\" [\"upperNeed\"]="+node["upperNeed"]+" )\n"
             nodesDeclareArray.append(nodeDeclare)

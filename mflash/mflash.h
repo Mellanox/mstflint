@@ -4,6 +4,7 @@
  * ==================================================================
  *
  * Copyright (c) 2005 Mellanox Technologies Ltd.  All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -99,6 +100,14 @@
 
 EXTERN_C_START
 
+#ifndef UEFI_BUILD
+#define FLASH_ACCESS_DPRINTF(args)        do { char *reacDebug = getenv("FLASH_ACCESS_DEBUG"); \
+                                  if (reacDebug != NULL) {  printf("\33[2K\r"); \
+                                      printf("[FLASH_ACCESS_DEBUG]: -D- "); printf args; fflush(stdout);} } while (0)
+#else
+#define FLASH_ACCESS_DPRINTF(...)
+#endif
+
 typedef enum MfCommandSet {
     CS_INTEL   = 1,
     CS_AMD     = 2,
@@ -181,8 +190,13 @@ int     mf_sw_reset(mflash *mfl);
 //
 int     mf_get_attr(mflash *mfl, flash_attr *attr);
 
+int     mf_get_jedec_id(mflash *mfl, u_int32_t *jedec_id);
+
 int     mf_set_quad_en(mflash *mfl, u_int8_t quad_en);
 int     mf_get_quad_en(mflash *mfl, u_int8_t *quad_en);
+
+int     mf_set_driver_strength(mflash *mfl, u_int8_t driver_strength);
+int     mf_get_driver_strength(mflash *mfl, u_int8_t *driver_strength);
 
 int     mf_set_write_protect(mflash *mfl, u_int8_t bank_num, write_protect_info_t *protect_info);
 int     mf_get_write_protect(mflash *mfl, u_int8_t bank_num, write_protect_info_t *protect_info);
@@ -216,6 +230,8 @@ int mf_get_write_protect_direct_access(mflash *mfl, u_int8_t bank_num, write_pro
 int mf_set_write_protect_direct_access(mflash *mfl, u_int8_t bank_num, write_protect_info_t *protect_info);
 int mf_get_quad_en_direct_access(mflash *mfl, u_int8_t *quad_en_p);
 int mf_set_quad_en_direct_access(mflash *mfl, u_int8_t quad_en);
+int mf_get_driver_strength_direct_access(mflash *mfl, u_int8_t *driver_strength_p);
+int mf_set_driver_strength_direct_access(mflash *mfl, u_int8_t driver_strength);
 int mf_get_dummy_cycles_direct_access(mflash *mfl, u_int8_t *dummy_cycles_p);
 int mf_set_dummy_cycles_direct_access(mflash *mfl, u_int8_t num_of_cycles);
 EXTERN_C_END

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -847,6 +847,10 @@ int main(int ac, char *av[])
                     mf = mopen(local_dev);
 #endif
                     if (mf) {
+#if defined(__linux__) && !defined(SIMULATOR)
+                        // set request came from client
+                        mf->is_mtserver_req = 1;
+#endif
                         // write Recv buffer
                         char res_buf[16];
                         snprintf(res_buf, 16, "O %d", mget_vsec_supp(mf));

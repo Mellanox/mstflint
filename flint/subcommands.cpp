@@ -3,6 +3,7 @@
  * subcommands.cpp - FLash INTerface
  *
  * Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -61,9 +62,7 @@
 #define MODULUS_SIZE 512
 #define TOTAL_PUBLIC_KEY_SIZE 532
 #define MODULUS_OFFSET 38
-#ifndef __WIN__
-#include "hsmlunaclient.h"
-#endif
+
 #if !defined(__WIN__) && !defined(__DJGPP__) && !defined(UEFI_BUILD) && defined(HAVE_TERMIOS_H)
 // used in mygetchar
 #include <termios.h>
@@ -241,11 +240,11 @@ bool is_file_exists (const char *filename)
     if(_access(filename, F_OK) != -1) {
         return true;
     }
-#else    
+#else
     if(access(filename, F_OK) != -1) {
         return true;
     }
-#endif    
+#endif
     return false;
 }
 
@@ -549,10 +548,12 @@ void SubCommand::initDeviceFwParams(char *errBuff, FwOperations::fw_ops_params_t
     fwParams.cx3FwAccess = _flintParams.use_fw;
     fwParams.noFwCtrl = _flintParams.no_fw_ctrl;
     fwParams.mccUnsupported = !_mccSupported;
+    fwParams.ignoreCrcCheck = _flintParams.ignore_crc_check;
 }
 
 FlintStatus SubCommand::openOps(bool ignoreSecurityAttributes, bool ignoreDToc)
 {
+    DPRINTF(("SubCommand::openOps\n"));
     char errBuff[ERR_BUFF_SIZE] = { 0 };
     if (_flintParams.device_specified) {
         // fillup the fw_ops_params_t struct
@@ -567,6 +568,7 @@ FlintStatus SubCommand::openOps(bool ignoreSecurityAttributes, bool ignoreDToc)
             imgFwParams.errBuffSize = 1024;
             imgFwParams.shortErrors = true;
             imgFwParams.fileHndl = (char*)_flintParams.image.c_str();
+            imgFwParams.ignoreCrcCheck = _flintParams.ignore_crc_check;
             if (!FwOperations::imageDevOperationsCreate(fwParams, imgFwParams, &_fwOps, &_imgOps, ignoreSecurityAttributes, ignoreDToc)) {
                 /*
                  * Error are being handled after
@@ -730,6 +732,7 @@ bool SubCommand::basicVerifyParams()
 
 FlintStatus SubCommand::preFwOps(bool ignoreSecurityAttributes, bool ignoreDToc)
 {
+    DPRINTF(("SubCommand::preFwOps\n"));
     if (!basicVerifyParams()) {
         return FLINT_FAILED;
     }
@@ -816,8 +819,8 @@ bool SubCommand::getGUIDFromStr(string str, guid_t& guid, string prefixErr)
 #if !defined(__WIN__) && !defined(__DJGPP__) && !defined(UEFI_BUILD) && defined(HAVE_TERMIOS_H)
 static int mygetch(void)
 {
-    struct termios oldt,
-                   newt;
+    struct termios oldt;
+    struct termios newt;
     int ch;
     tcgetattr(STDIN_FILENO, &oldt);
     newt = oldt;
@@ -1529,6 +1532,13 @@ FlintStatus SignSubCommand::executeCommand()
             reportErr(true, "Failed to initialze %s engine (rc = 0x%x)\n", _flintParams.openssl_engine.c_str(), rc);
             return FLINT_FAILED;
         }
+
+        //flint sign over openssl only allow for 4K key size
+        int keySize = engineSigner.getPrivateKeySize();
+        if( keySize != KEY_SIZE_512 ) {
+            reportErr(true, "The HSM key has to be 4096 bit!\n");
+            return FLINT_FAILED;
+        }
         vector<u_int8_t> fourMbImage;
         vector<u_int8_t> signature;
         vector<u_int8_t> sha;
@@ -1553,65 +1563,9 @@ FlintStatus SignSubCommand::executeCommand()
 #endif
     }
     if (_flintParams.hsm_specified) {
-#ifdef __WIN__
+        // Luna HSM not supported
         reportErr(true, FLINT_NO_HSM);
         return FLINT_FAILED;
-#else
-        HSMLunaClient m_HSMLunaClient;
-        string hsm_password = _flintParams.hsm_password;
-        if (!m_HSMLunaClient.Init(hsm_password)) {
-            reportErr(true, HSM_INIT_ERROR);
-            return FLINT_FAILED;
-        }
-        if (_imgOps->FwType() != FIT_FS3 && _imgOps->FwType() != FIT_FS4) {
-            reportErr(true, IMAGE_SIGN_TYPE_ERROR);
-            return FLINT_FAILED;
-        }
-        vector<u_int8_t> fourMbImage;
-        vector<u_int8_t> sha;
-        if (!_imgOps->FwCalcSHA(MlxSign::SHA512, sha, fourMbImage)) {
-            reportErr(true, FLINT_IMAGE_READ_ERROR, _imgOps->err());
-            return FLINT_FAILED;
-        }
-        string private_key_label = _flintParams.private_key_label;
-        string public_key_label = _flintParams.public_key_label;
-        cout << "Get private label '" << private_key_label << "'" <<  endl;
-        cout << "Get public label '" << public_key_label << "'" << endl;
-        vector<u_int8_t> signature;
-        unsigned long numOfLabels = 0;
-        m_HSMLunaClient.CheckExistingLabel(private_key_label, numOfLabels);
-        if (numOfLabels > 1) {
-            reportErr(true, HSM_PRIVATE_KEY_DUPLICATE);
-            m_HSMLunaClient.CleanUp();
-            return FLINT_FAILED;
-        }
-        numOfLabels = 0;
-        if (public_key_label.empty() == false) {
-            m_HSMLunaClient.CheckExistingLabel(public_key_label, numOfLabels);
-            if (numOfLabels > 1) {
-                reportErr(true, HSM_PUBLIC_KEY_DUPLICATE);
-                m_HSMLunaClient.CleanUp();
-                return FLINT_FAILED;
-            }
-        }
-        if (m_HSMLunaClient.RSA_CreateSignature(fourMbImage, private_key_label,
-            public_key_label, signature) != CKR_OK) {
-            reportErr(true, HSM_SIGNATURE_CREATION_FAILED);
-            m_HSMLunaClient.CleanUp();
-            return FLINT_FAILED;
-        }
-        m_HSMLunaClient.CleanUp();
-        if (signature.size() != 512) {
-            reportErr(true, "The HSM key has to be 4096 bit!\n");
-            return FLINT_FAILED;
-        }
-        if (!_imgOps->InsertSecureFWSignature(signature, _flintParams.privkey_uuid.c_str(),
-            &verifyCbFunc)) {
-            reportErr(true, FLINT_SIGN_ERROR, _imgOps->err());
-            return FLINT_FAILED;
-        }
-        return FLINT_SUCCESS;
-#endif
     }
     else {
         if (_flintParams.privkey_specified && _flintParams.uuid_specified) {
@@ -1626,7 +1580,7 @@ FlintStatus SignSubCommand::executeCommand()
                 }
             }
             else {
-                if (!_imgOps->FwSignWithOneRSAKey(_flintParams.privkey_file.c_str(),
+                if (!_imgOps->signForFwUpdate(_flintParams.privkey_file.c_str(),
                     _flintParams.privkey_uuid.c_str(),
                     &verifyCbFunc)) {
                     reportErr(true, FLINT_SIGN_ERROR, _imgOps->err());
@@ -1923,59 +1877,32 @@ FlintStatus SignRSASubCommand::executeCommand()
     }
     if (_flintParams.openssl_engine_usage_specified) {
 #if !defined(NO_OPEN_SSL) && !defined(NO_DYNAMIC_ENGINE)
-        //first, update secure boot signatures
-        vector<u_int8_t> bin_data, critical, non_critical;
-        vector<u_int8_t> bin_signature, critical_signature, non_critical_signature;
-        if (!_imgOps->FwSignWithRSA(_flintParams.pubkey_file.c_str(), _flintParams.privkey_uuid.c_str(), bin_data, critical, non_critical)) {
-            reportErr(true, FLINT_SIGN_ERROR, _imgOps->err());
-            return FLINT_FAILED;
-        }
+        //* Init openssl engine for signing
         MlxSign::OpensslEngineSigner engineSigner(_flintParams.openssl_engine, _flintParams.openssl_key_id);
         int rc = engineSigner.init();
         if (rc) {
-            reportErr(true, "Failed to initialze %s engine (rc = 0x%x)\n", _flintParams.openssl_engine.c_str(), rc);
+            reportErr(true, "Failed to initialize %s engine (rc = 0x%x)\n", _flintParams.openssl_engine.c_str(), rc);
             return FLINT_FAILED;
         }
-        rc = engineSigner.sign(bin_data, bin_signature);
-        if (rc) {
-            reportErr(true, "Failed to set private key from engine (rc = 0x%x)\n", rc);
-            return FLINT_FAILED;
-        }
-        rc = engineSigner.sign(critical, critical_signature);
-        if (rc) {
-            reportErr(true, "Failed to set private key from engine (rc = 0x%x)\n", rc);
-            return FLINT_FAILED;
-        }
-        rc = engineSigner.sign(non_critical, non_critical_signature);
-        if (rc) {
-            reportErr(true, "Failed to set private key from engine (rc = 0x%x)\n", rc);
-            return FLINT_FAILED;
-        }
-        if (!_imgOps->InsertSecureBootSignature(bin_signature, critical_signature, non_critical_signature)) {
-            reportErr(true, HSM_SECURE_BOOT_SIGNATURE_FAILED, _imgOps->err());
+        int keySize = engineSigner.getPrivateKeySize();
+        if( keySize != KEY_SIZE_512 ) {
+            reportErr(true, "The HSM key has to be 4096 bit!\n");
             return FLINT_FAILED;
         }
 
-        //second, update secured FW signature
-        vector<u_int8_t> fourMbImage;
-        vector<u_int8_t> signature;
-        vector<u_int8_t> sha;
-        if (!_imgOps->FwCalcSHA(MlxSign::SHA512, sha, fourMbImage)) {
-            reportErr(true, FLINT_IMAGE_READ_ERROR, _imgOps->err());
-            return FLINT_FAILED;
-        }
-        rc = engineSigner.sign(fourMbImage, signature);
-        if (rc) {
-            reportErr(true, "Failed to create secured FW signature from URI (rc = 0x%x)\n", rc);
-            return FLINT_FAILED;
-        }
-        //insert secured FW signature
-        if (!_imgOps->InsertSecureFWSignature(signature, _flintParams.privkey_uuid.c_str(),
-            &verifyCbFunc)) {
+        //* Sign for secure-boot
+        if (!_imgOps->signForSecureBootUsingHSM(_flintParams.pubkey_file.c_str(), _flintParams.privkey_uuid.c_str(), engineSigner)) {
             reportErr(true, FLINT_SIGN_ERROR, _imgOps->err());
             return FLINT_FAILED;
         }
-        //set empty 256 bit signature
+
+        //* Sign for FW update
+        if (!_imgOps->signForFwUpdateUsingHSM(_flintParams.privkey_uuid.c_str(), engineSigner, &verifyCbFunc)) {
+            reportErr(true, FLINT_SIGN_ERROR, _imgOps->err());
+            return FLINT_FAILED;
+        }
+
+        //* Fill image_signature section with 0xff
         vector <u_int8_t> signature256Data(CX4FW_IMAGE_SIGNATURE_256_SIZE, 0xff);
         _imgOps->Fs3UpdateSection(signature256Data.data(), FS3_IMAGE_SIGNATURE_256, true, CMD_SET_SIGNATURE, NULL);
         return FLINT_SUCCESS;
@@ -1984,6 +1911,7 @@ FlintStatus SignRSASubCommand::executeCommand()
         return FLINT_FAILED;
 #endif
     }
+
     if (!_flintParams.hsm_specified) { //While working via HSM we don't need a private key, only public key
         if (!is_file_exists(_flintParams.privkey_file.c_str())) {
             reportErr(true, SIGN_PRIVATE_KEY_NOT_FOUND, _flintParams.privkey_file.c_str());
@@ -1997,126 +1925,26 @@ FlintStatus SignRSASubCommand::executeCommand()
 
 
     if (_flintParams.hsm_specified) {
-#ifdef __WIN__
+        // Luna HSM not supported
         reportErr(true, FLINT_NO_HSM);
         return FLINT_FAILED;
-#else
-        HSMLunaClient m_HSMLunaClient;
-        if (_flintParams.hsm_password_specified == false) {
-            reportErr(true, HSM_PASSWORD_MISSING);
-            return FLINT_FAILED;
-        }
-        string hsm_password = _flintParams.hsm_password;
-        if (_flintParams.private_key_label_specified  == false) {
-            reportErr(true, HSM_PRIVATE_KEY_LABEL_MISSING);
-            return FLINT_FAILED;
-        }
-
-        if (_flintParams.uuid_specified == false) {
-            reportErr(true, HSM_UUID_MISSING);
-            return FLINT_FAILED;
-        }
-
-        if (!m_HSMLunaClient.Init(hsm_password)) {
-            reportErr(true, HSM_INIT_ERROR);
-            return FLINT_FAILED;
-        }
-        if (_imgOps->FwType() != FIT_FS4) {
-            reportErr(true, IMAGE_SIGN_TYPE_ERROR);
-            return FLINT_FAILED;
-        }
-        //first, check HSM parameters
-        string private_key_label = _flintParams.private_key_label;
-        string public_key_label = _flintParams.public_key_label;
-        cout << "Get private label '" << private_key_label << "'" << endl;
-        cout << "Get public label '" << public_key_label << "'" << endl;
-        vector<u_int8_t> signature;
-        unsigned long numOfLabels = 0;
-        m_HSMLunaClient.CheckExistingLabel(private_key_label, numOfLabels);
-        if (numOfLabels > 1) {
-            reportErr(true, HSM_PRIVATE_KEY_DUPLICATE);
-            m_HSMLunaClient.CleanUp();
-            return FLINT_FAILED;
-        }
-        numOfLabels = 0;
-        if (public_key_label.empty() == false) {
-            m_HSMLunaClient.CheckExistingLabel(public_key_label, numOfLabels);
-            if (numOfLabels > 1) {
-                reportErr(true, HSM_PUBLIC_KEY_DUPLICATE);
-                m_HSMLunaClient.CleanUp();
-                return FLINT_FAILED;
-            }
-        }
-
-        //second, update secure boot signature
-        vector<u_int8_t> bin_data, critical, non_critical;
-        vector<u_int8_t> bin_signature, critical_signature, non_critical_signature;
-        if (!_imgOps->FwSignWithRSA(_flintParams.pubkey_file.c_str(), _flintParams.privkey_uuid.c_str(), bin_data, critical, non_critical)) {
-            reportErr(true, FLINT_SIGN_ERROR, _imgOps->err());
-            return FLINT_FAILED;
-        }
-        if (m_HSMLunaClient.RSA_CreateSignature(bin_data, private_key_label,
-            public_key_label, bin_signature) != CKR_OK) {
-            reportErr(true, HSM_BOOT_SIGNATURE_CREATION_FAILED);
-            m_HSMLunaClient.CleanUp();
-            return FLINT_FAILED;
-        }
-        if (m_HSMLunaClient.RSA_CreateSignature(critical, private_key_label,
-            public_key_label, critical_signature) != CKR_OK) {
-            reportErr(true, HSM_CRITICAL_SIGNATURE_CREATION_FAILED);
-            m_HSMLunaClient.CleanUp();
-            return FLINT_FAILED;
-        }
-        if (m_HSMLunaClient.RSA_CreateSignature(non_critical, private_key_label,
-            public_key_label, non_critical_signature) != CKR_OK) {
-            reportErr(true, HSM_NON_CRITICAL_SIGNATURE_CREATION_FAILED);
-            m_HSMLunaClient.CleanUp();
-            return FLINT_FAILED;
-        }
-        if (!_imgOps->InsertSecureBootSignature(bin_signature, critical_signature, non_critical_signature)) {
-            reportErr(true, HSM_SECURE_BOOT_SIGNATURE_FAILED, _imgOps->err());
-            return FLINT_FAILED;
-        }
-
-        //third, update secured FW signature
-        vector<u_int8_t> fourMbImage;
-        vector<u_int8_t> sha;
-        if (!_imgOps->FwCalcSHA(MlxSign::SHA512, sha, fourMbImage)) {
-            reportErr(true, FLINT_IMAGE_READ_ERROR, _imgOps->err());
-            return FLINT_FAILED;
-        }
-        if (m_HSMLunaClient.RSA_CreateSignature(fourMbImage, private_key_label,
-            public_key_label, signature) != CKR_OK) {
-            reportErr(true, HSM_SECURE_FW_SIGNATURE_FAILED);
-            m_HSMLunaClient.CleanUp();
-            return FLINT_FAILED;
-        }
-        m_HSMLunaClient.CleanUp();
-        //insert secured FW signature
-        if (!_imgOps->InsertSecureFWSignature(signature, _flintParams.privkey_uuid.c_str(),
-            &verifyCbFunc)) {
-            reportErr(true, FLINT_SIGN_ERROR, _imgOps->err());
-            return FLINT_FAILED;
-        }
-        //set empty 256 bit signature
-        vector <u_int8_t> signature256Data(CX4FW_IMAGE_SIGNATURE_256_SIZE, 0xff);
-        _imgOps->Fs3UpdateSection(signature256Data.data(), FS3_IMAGE_SIGNATURE_256, true, CMD_SET_SIGNATURE, NULL);
-        return FLINT_SUCCESS;
-#endif
     }
     else {
-        //add three signatures
-        if (!_imgOps->FwSignWithRSA(_flintParams.privkey_file.c_str(), _flintParams.pubkey_file.c_str(), _flintParams.privkey_uuid.c_str())) {
+        //* Sign for secure-boot
+        if (!_imgOps->signForSecureBoot(_flintParams.privkey_file.c_str(), _flintParams.pubkey_file.c_str(), _flintParams.privkey_uuid.c_str())) {
             reportErr(true, FLINT_SIGN_ERROR, _imgOps->err());
             return FLINT_FAILED;
         }
-        //add fourth signature of all image
-        if (!_imgOps->FwSignWithOneRSAKey(_flintParams.privkey_file.c_str(),
+
+        //* Sign for FW update
+        if (!_imgOps->signForFwUpdate(_flintParams.privkey_file.c_str(),
             _flintParams.privkey_uuid.c_str(),
             &verifyCbFunc)) {
             reportErr(true, FLINT_SIGN_ERROR, _imgOps->err());
             return FLINT_FAILED;
         }
+
+        //* Fill image_signature section with 0xff
         vector <u_int8_t> signature256Data(CX4FW_IMAGE_SIGNATURE_256_SIZE, 0xff);
         _imgOps->Fs3UpdateSection(signature256Data.data(), FS3_IMAGE_SIGNATURE_256, true, CMD_SET_SIGNATURE, NULL);
         return FLINT_SUCCESS;
@@ -2174,7 +2002,7 @@ BurnSubCommand::BurnSubCommand()
                     "Performs failsafe FW update from a raw binary image.";
     _flagLong = "burn";
     _flagShort = "b";
-    _param = "-ir";
+    _param = "[-ir]";
     _paramExp = "If supplied, perform image reactivation before burning.";
     _example = FLINT_NAME " -d " MST_DEV_EXAMPLE1 " -i image1.bin -ir burn\n"
                FLINT_NAME " -d " MST_DEV_EXAMPLE2 " -guid 0x2c9000100d050 -i image1.bin b";
@@ -2555,10 +2383,30 @@ FlintStatus BurnSubCommand::burnFs3()
         printf(" Preparing...\n");
     }
 
-    if (!_fwOps->FwBurnAdvanced(_imgOps, _burnParams)) {
-        reportErr(true, FLINT_FSX_BURN_ERROR, imgTypeStr, _fwOps->err());
+    bool device_encrypted = false;
+    bool image_encrypted = false;
+    if (!_fwOps->isEncrypted(device_encrypted)) {
+        reportErr(true, "Failed to identify if device is encrypted.\n");
         return FLINT_FAILED;
     }
+    if (!_imgOps->isEncrypted(image_encrypted)) {
+        reportErr(true, "Failed to identify if image is encrypted.\n");
+        return FLINT_FAILED;
+    }
+
+    if (device_encrypted && image_encrypted) {
+        if (!_fwOps->burnEncryptedImage(_imgOps, _burnParams)) {
+            reportErr(true, FLINT_FSX_BURN_ERROR, imgTypeStr, _fwOps->err());
+            return FLINT_FAILED;
+        }
+    }
+    else {
+        if (!_fwOps->FwBurnAdvanced(_imgOps, _burnParams)) {
+            reportErr(true, FLINT_FSX_BURN_ERROR, imgTypeStr, _fwOps->err());
+            return FLINT_FAILED;
+        }
+    }
+
     PRINT_PROGRESS(_burnParams.progressFunc, 101);
     write_result_to_log(FLINT_SUCCESS, "", _flintParams.log_specified);
     const char *resetRec = _fwOps->FwGetResetRecommandationStr();
@@ -2901,8 +2749,8 @@ FlintStatus BurnSubCommand::executeCommand()
         _flintParams.silent = saved_value;
         if (res == FLINT_FAILED) {
             _flintParams.override_cache_replacement = true;
-        if (preFwOps() == FLINT_FAILED) {
-            return FLINT_FAILED;
+            if (preFwOps() == FLINT_FAILED) {
+                return FLINT_FAILED;
             }
         }
         mfile *mf = _fwOps->getMfileObj();
@@ -2971,6 +2819,23 @@ FlintStatus BurnSubCommand::executeCommand()
         }
     }
 
+    bool device_encrypted = false;
+    bool image_encrypted = false;
+    if (!_fwOps->isEncrypted(device_encrypted)) {
+        reportErr(true, "Failed to identify if device is encrypted.\n");
+        return FLINT_FAILED;
+    }
+    if (!_imgOps->isEncrypted(image_encrypted)) {
+        reportErr(true, "Failed to identify if image is encrypted.\n");
+        return FLINT_FAILED;
+    }
+
+    if (device_encrypted != image_encrypted) {
+        reportErr(true, "Burning %sencrypted image on %sencrypted device is not allowed.\n",
+            image_encrypted ? "" : "non-", device_encrypted ? "" : "non-");
+        return FLINT_FAILED;
+    }
+
     // query both image and device (deviceQuery can fail but we save rc)
     _devQueryRes = _fwOps->FwQuery(&_devInfo, true, false, true, false, (_flintParams.silent == false));
     if (_imgOps) {
@@ -2982,25 +2847,9 @@ FlintStatus BurnSubCommand::executeCommand()
     }
 
     // Abort if the image is restricted according to the Security-Version
-    {
-        // Set image security-version
-        u_int32_t imageSecurityVersion = _imgInfo.fs3_info.image_security_version;
-
-        // Set device security-version (from EFUSEs)
-        u_int32_t deviceEfuseSecurityVersion;
-        if (_devInfo.fs3_info.device_security_version_access_method == MFSV) {
-            deviceEfuseSecurityVersion = _devInfo.fs3_info.device_security_version_mfsv.efuses_sec_ver;
-        } else if (_devInfo.fs3_info.device_security_version_access_method == GW) {
-            deviceEfuseSecurityVersion = _devInfo.fs3_info.device_security_version_gw;
-        } else {
-            deviceEfuseSecurityVersion = 0;
-        }
-
-        // Check violation of security-version
-        if (imageSecurityVersion < deviceEfuseSecurityVersion && getenv("IGNORE_SECURITY_VERSION_CHECK") == NULL) {
-            reportErr(true, "The image you're trying to burn is restricted. Aborting ... \n");
-            return FLINT_FAILED;            
-        }
+    if (_fwOps->IsSecurityVersionViolated(_imgInfo.fs3_info.image_security_version)) {
+        reportErr(true, "The image you're trying to burn is restricted. Aborting ... \n");
+        return FLINT_FAILED; 
     }
 
     //updateBurnParams with input given by user
@@ -3542,6 +3391,7 @@ string QuerySubCommand::printSecurityAttrInfo(u_int32_t m)
     if (m & SMM_CRYTO_TO_COMMISSIONING) {
         attr += ", crypto-to-commissioning";
     }
+
     return attr;
 }
 
@@ -3627,7 +3477,7 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
     if (fwInfo.fw_info.isfu_major) {
         printf("FW ISSU Version:       %d\n", fwInfo.fw_info.isfu_major);
     }
-    
+
     if (image_version.is_set()) {
         printf("FW Version:            %s\n",
                 image_version.get_fw_version(
@@ -3791,10 +3641,8 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
     }
 
     if (fullQuery && _flintParams.device_specified) {
-
-        if (ops->IsFsCtrlOperations()) {//working only on devices with FW control
-            bool IsSupported = ops->GetSecureBootInfo();//from C6DX and above
-            if (IsSupported) {
+        if (ops->IsFsCtrlOperations()) { //working only on devices with FW control
+            if (ops->IsLifeCycleSupported()) { //from CX6 and above
                 unsigned int index = (unsigned int)fwInfo.fs3_info.life_cycle;
                 if (index >= NUM_OF_LIFE_CYCLES) {
                     reportErr(true, "The life cycle value is out of range: %u", index);
@@ -3802,13 +3650,16 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
                 else {
                     printf("Life cycle:            %s\n", life_cycle_strings[index]);
                 }
-                printf("Secure boot:           %s\n", fwInfo.fs3_info.sec_boot == 1 ? "Enabled" : "Disabled");
-                if (fwInfo.fs3_info.device_security_version_access_method == MFSV){
+            }
+            if (ops->IsSecureBootSupported()) { //from CX6DX and above
+                printf("Secure Boot Capable:   %s\n", fwInfo.fs3_info.sec_boot == 1 ? "Enabled" : "Disabled");
+
+                if (fwInfo.fs3_info.device_security_version_access_method == MFSV) {
                     printf("EFUSE Security Ver:    %d\n", fwInfo.fs3_info.device_security_version_mfsv.efuses_sec_ver);
                     printf("Image Security Ver:    %d\n", fwInfo.fs3_info.device_security_version_mfsv.img_sec_ver);
 
-                    string efuses_programming_info; 
-                    if (fwInfo.fs3_info.device_security_version_mfsv.efuses_prog_method == 0){
+                    string efuses_programming_info;
+                    if (fwInfo.fs3_info.device_security_version_mfsv.efuses_prog_method == 0) {
                         if (fwInfo.fs3_info.device_security_version_mfsv.efuses_prog_en == 0) {
                             efuses_programming_info = "Manually ; Disabled"; // disabled
                         } else {
@@ -3818,12 +3669,19 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
                         efuses_programming_info = "Automatically"; // every boot 
                     }
                     printf("Security Ver Program:  %s\n", efuses_programming_info.c_str()); 
-                } 
+                }
                 
-            }
-            else {
-                IsSupported = ops->IsLifeCycleSupported();//for CX6 only
-                if (IsSupported) {
+                if (ops->IsEncryptionSupported()) {
+                    printf("Encryption:            %s\n", fwInfo.fs3_info.encryption == 1 ? "Enabled" : "Disabled");
+                }
+            }            
+        }
+        else { // No fw control            
+            if (ops->IsSecureBootSupported()) {
+                if (ops->IsLifeCycleValidInLivefish(fwInfo.fw_info.chip_type)) {
+
+                    printf("Image Boot Status:     %d\n", fwInfo.fs3_info.global_image_status);                    
+                    
                     unsigned int index = (unsigned int)fwInfo.fs3_info.life_cycle;
                     if (index >= NUM_OF_LIFE_CYCLES) {
                         reportErr(true, "The life cycle value is out of range: %u", index);
@@ -3831,11 +3689,11 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
                     else {
                         printf("Life cycle:            %s\n", life_cycle_strings[index]);
                     }
+                    if (fwInfo.fs3_info.life_cycle == GA_SECURED) {
+                        printf("EFUSE Security Ver:    %d\n", fwInfo.fs3_info.device_security_version_gw);
+                    }   
                 }
             }
-        }
-        else if (fwInfo.fs3_info.device_security_version_access_method == GW){
-            printf("EFUSE Security Ver:    %d\n", fwInfo.fs3_info.device_security_version_gw);
         }
     }
 
@@ -3912,7 +3770,7 @@ FlintStatus QuerySubCommand::queryMFA2()
             writeImageToFile(fileName.c_str(), componentBuffer.data(), componentBuffer.size());
             _flintParams.image_specified = true;
             _flintParams.image = fileName;
-            _imgOps = FwOperations::FwOperationsCreate((void*)_flintParams.image.c_str(), NULL, NULL, FHT_FW_FILE, errBuff, ERR_BUFF_SIZE);
+            _imgOps = FwOperations::FwOperationsCreate((void*)_flintParams.image.c_str(), NULL, NULL, FHT_FW_FILE, errBuff, ERR_BUFF_SIZE, _flintParams.ignore_crc_check);
             fw_info_t fwInfo;
             if (!_imgOps->FwQuery(&fwInfo, true, false, true, true)) {
                 reportErr(true, FLINT_FAILED_QUERY_ERROR, "image", _flintParams.image.c_str(), _imgOps->err());
@@ -4075,7 +3933,7 @@ bool VerifySubCommand::verifyParams()
         return false;
     }
     if ((_flintParams.cmd_params.size() == 1) && _flintParams.cmd_params[0] != "showitoc") {
-        reportErr(true, FLINT_INVALID_OPTION_ERROR, _flintParams.cmd_params[0].c_str(), _name.c_str(), "swhoitoc");
+        reportErr(true, FLINT_INVALID_OPTION_ERROR, _flintParams.cmd_params[0].c_str(), _name.c_str(), "showitoc");
         return false;
     }
 
@@ -4448,7 +4306,7 @@ FlintStatus BbSubCommand::executeCommand()
 SgSubCommand::SgSubCommand()
 {
     _name = "sg";
-    _desc = "Set GUIDs.";
+    _desc = "guids_num=<num|num_port1,num_port2> step_size=<size|size_port1,size_port2> Set GUIDs.";
     _extendedDesc = "Set GUIDs/MACs/UIDs in the given device/image.\n"
                     "Use -guid(s), -mac(s) and -uid(s) flags to set the desired values.\n"
                     "- On pre-ConnectX devices, the sg command  is used in production to apply GUIDs/MACs values to"
@@ -4458,7 +4316,7 @@ SgSubCommand::SgSubCommand()
                     " image using the given GUIDs/MACs/UIDs.";
     _flagLong = "sg";
     _flagShort = "";
-    _param = "[guids_num=<num|num_port1,num_port2> step_size=<size|size_port1,size_port2>] | [nocrc]";
+    _param = "[nocrc]";
     _paramExp = "nocrc: (optional) When specified the flint would not update the full image crc after changing the guids\n"
                 "guids_num: (optional) number of GUIDs to be allocated per physical port (FS3 Only)\n"
                 "step_size: (optional) step size between GUIDs (FS3 Only)\n"
@@ -5006,6 +4864,7 @@ RiSubCommand::RiSubCommand()
     _maxCmdParamNum = 1;
     _minCmdParamNum = 1;
     _cmdType = SC_Ri;
+    _mccSupported = false; // Read image isn't supported by MCC flow since it can't read Device area (DTOC and its sections)
 }
 
 RiSubCommand:: ~RiSubCommand()
@@ -5395,7 +5254,8 @@ HwSubCommand::HwSubCommand()
                 "    QuadEn: can be 0 or 1\n"
                 "    DummyCycles: can be [1..15]\n"
                 "    Flash[0|1|2|3].WriteProtected can be:\n"
-                "        <Top|Bottom>,<1|2|4|8|16|32|64>-<Sectors|SubSectors>";
+                "        <Top|Bottom>,<1|2|4|8|16|32|64>-<Sectors|SubSectors>"
+                "    DriverStrength: can be [25,50,75,100]\n";
     _example = "flint -d " MST_DEV_EXAMPLE1 " hw query\n"
                FLINT_NAME " -d " MST_DEV_EXAMPLE1 " hw set QuadEn=1\n"
                FLINT_NAME " -d " MST_DEV_EXAMPLE1 " hw set Flash1.WriteProtected=Top,1-SubSectors";
@@ -5453,25 +5313,25 @@ bool HwSubCommand::verifyParams()
 FlintStatus HwSubCommand::printAttr(const ext_flash_attr_t& attr)
 {
     printf("HW Info:\n");
-    printf("  HwDevId               %d\n", attr.hw_dev_id);
-    printf("  HwRevId               0x%x\n", attr.rev_id);
+    printf("  HwDevId                 %d\n", attr.hw_dev_id);
+    printf("  HwRevId                 0x%x\n", attr.rev_id);
 
     printf("Flash Info:\n");
     if (attr.type_str != NULL) {
         // we don't print the flash type in old devices
-        printf("  Type                  %s\n", attr.type_str);
+        printf("  Type                    %s\n", attr.type_str);
     }
-    printf("  TotalSize             0x%x\n", attr.size);
-    printf("  Banks                 0x%x\n", attr.banks_num);
-    printf("  SectorSize            0x%x\n", attr.sector_size);
-    printf("  WriteBlockSize        0x%x\n", attr.block_write);
-    printf("  CmdSet                0x%x\n", attr.command_set);
+    printf("  TotalSize               0x%x\n", attr.size);
+    printf("  Banks                   0x%x\n", attr.banks_num);
+    printf("  SectorSize              0x%x\n", attr.sector_size);
+    printf("  WriteBlockSize          0x%x\n", attr.block_write);
+    printf("  CmdSet                  0x%x\n", attr.command_set);
 
     // Quad EN query
     if (attr.quad_en_support) {
         switch (attr.mf_get_quad_en_rc) {
         case MFE_OK:
-            printf("  " QUAD_EN_PARAM "                %d\n", attr.quad_en);
+            printf("  " QUAD_EN_PARAM "                  %d\n", attr.quad_en);
             break;
 
         case MFE_MISMATCH_PARAM:
@@ -5494,7 +5354,7 @@ FlintStatus HwSubCommand::printAttr(const ext_flash_attr_t& attr)
     if (attr.dummy_cycles_support) {
         switch (attr.mf_get_dummy_cycles_rc) {
         case MFE_OK:
-            printf("  " DUMMY_CYCLES_PARAM "           %d\n", attr.dummy_cycles);
+            printf("  " DUMMY_CYCLES_PARAM "             %d\n", attr.dummy_cycles);
             break;
 
         case MFE_MISMATCH_PARAM:
@@ -5535,6 +5395,33 @@ FlintStatus HwSubCommand::printAttr(const ext_flash_attr_t& attr)
             }
         }
     }
+    // Driver-strength query
+    if (attr.driver_strength_support) {
+        switch (attr.mf_get_driver_strength_rc) {
+        case MFE_OK:
+            printf("  " DRIVER_STRENGTH_PARAM "          %d\n", attr.driver_strength);
+            break;
+
+        case MFE_MISMATCH_PARAM:
+            printf("-E- There is a mismatch in the " DRIVER_STRENGTH_PARAM " attribute between the flashes attached to the device\n");
+            break;
+
+        case MFE_NOT_SUPPORTED_OPERATION:
+            printf("Driver-strength not supported operation.\n");
+            break;
+        case MFE_NOT_IMPLEMENTED:
+            printf("Driver-strength not implemented.\n");
+            break;
+        case MFE_REG_ACCESS_METHOD_NOT_SUPP:
+            printf("Driver-strength not supported by FW, retry with -ocr.\n");
+            break;
+        default:
+            printf("Failed to get " DRIVER_STRENGTH_PARAM " attribute: %s (%s)", \
+                errno == 0 ? "" : strerror(errno), mf_err2str(attr.mf_get_driver_strength_rc));
+            return FLINT_FAILED;
+        }
+    }
+    printf("  JEDEC_ID                0x%06x\n", attr.jedec_id & 0xffffff); // JEDEC_ID is built from 3B, so we mask last byte
     return FLINT_SUCCESS;
 }
 
@@ -6328,11 +6215,11 @@ FlintStatus CheckSumSubCommand::executeCommand()
 TimeStampSubCommand::TimeStampSubCommand()
 {
     _name = "time stamp";
-    _desc = "FW time stamping.";
+    _desc = "<timestamp> <FW version>  FW time stamping.";
     _extendedDesc = "set/query/reset time stamp on device/image.";
     _flagLong = "timestamp";
     _flagShort = "ts";
-    _param = "<set|query|reset> [timestamp] [FW version]";
+    _param = "[set/query/reset] ";
     _paramExp = "set <timestamp> [FW version] : set the specified timestamp. if set on device FW version must be specified\n"
                 "timestamp should comply with ISO 8601 format and provided with UTC timezone: YYYY-MM-DDThh:mm:ssZ\n"
                 "query : query device/image to view the timestamp\n"
@@ -6741,58 +6628,8 @@ ImportHsmKeySubCommand:: ~ImportHsmKeySubCommand()
 
 FlintStatus ImportHsmKeySubCommand::executeCommand()
 {
-#ifdef __WIN__ 
     reportErr(true, FLINT_NO_HSM);
     return FLINT_FAILED;
-#else
-    if (preFwOps() == FLINT_FAILED) {
-        return FLINT_FAILED;
-    }
-    string hsm_password = _flintParams.hsm_password;
-    HSMLunaClient m_HSMLunaClient;
-    if (!m_HSMLunaClient.Init(hsm_password)) {
-        reportErr(true, "HSM init has failed! Please check if the HSM card installed and configured properly.\n");
-        return FLINT_FAILED;
-    }
-    string private_key_label = _flintParams.private_key_label;
-    string public_key_label = _flintParams.public_key_label;
-    string PemFile = _flintParams.privkey_file;
-    vector<unsigned char> outputBuffer;
-    Hex64Manipulations hex64;
-    bool IsPemFile8Format;
-    if (hex64.ParsePemFile(PemFile, outputBuffer, IsPemFile8Format) == false || IsPemFile8Format == false) {
-        reportErr(true, "Cannot parse the PEM file. The format must be PKCS8!\n");
-        return FLINT_FAILED;
-    }
-    unsigned long numOfLabels = 0;
-    if (public_key_label.empty() == false) {
-        if (m_HSMLunaClient.CheckExistingLabel(public_key_label, numOfLabels) != CKR_OK) {
-            reportErr(true, "This public key label is in use. Delete it from cmu utility prior creating the new one\n");
-            return FLINT_FAILED;
-        }
-        vector<unsigned char> publicKeyBuffer(MODULUS_SIZE, 0);
-        for (unsigned int i = MODULUS_OFFSET; i < MODULUS_SIZE + MODULUS_OFFSET; i++) {
-            publicKeyBuffer[i - MODULUS_OFFSET] = outputBuffer[i];
-            //the public modulus is always located at the offset 38 bytes (MODULUS_OFFSET)
-        }
-        if (m_HSMLunaClient.CreatePublicKey(public_key_label.c_str(), &publicKeyBuffer[0],
-            publicKeyBuffer.size()) != CKR_OK) {
-            reportErr(true, "Creating public key has failed.\n");
-            return FLINT_FAILED;
-        }
-    }
-    if (m_HSMLunaClient.CheckExistingLabel(private_key_label, numOfLabels) != CKR_OK) {
-        reportErr(true, "This private key label is in use. Delete it from cmu utility prior creating the new one\n");
-        return FLINT_FAILED;
-    }
-    if (m_HSMLunaClient.BurnPrivateKey(private_key_label, public_key_label, outputBuffer) != CKR_OK) {
-        reportErr(true, "Creating private key has failed.\n");
-        return FLINT_FAILED;
-    }
-    m_HSMLunaClient.CleanUp();
-    return FLINT_SUCCESS;
-#endif
-    return FLINT_SUCCESS;
 }
 
 bool ImportHsmKeySubCommand::verifyParams()

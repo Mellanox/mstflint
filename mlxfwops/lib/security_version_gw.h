@@ -1,5 +1,6 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -42,7 +43,7 @@ public:
     SecurityVersionGW(mfile* mf, chip_type_t chip_type):_mf(mf),_chip_type(chip_type){};
     ~SecurityVersionGW() {};
 
-    bool isSupportedInLiveFish();
+    bool isAccessibleInLiveFish();
     bool getSecurityVersion(u_int32_t* result);
 
 private:

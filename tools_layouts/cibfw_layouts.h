@@ -1,6 +1,6 @@
 
 /*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -291,6 +291,9 @@ struct cibfw_device_info {
 /* Size in bytes - 1024 */
 struct cibfw_image_info {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - 0x0 - not encrypted; 0x1 - encryption before signature; 0x2 - encryption after signature.  */
+	/* 0x0.3 - 0x0.4 */
+	u_int8_t encrypted_fw;
 	/* Description - Indicate that this binary support long keys (up to 4096bits) */
 	/* 0x0.6 - 0x0.6 */
 	u_int8_t long_keys;

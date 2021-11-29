@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -154,7 +154,7 @@ MError nvdiCom5thGen(mfile *mf, u_int32_t tlvType)
     mft_signal_set_handling(1);
     // DEBUG_PRINT_SEND(&nvdiTlv, nvdi);
     rc = reg_access_nvdi(mf, REG_ACCESS_METHOD_SET, &nvdiTlv);
-    // DEBUG_PRINT_RECIEVE(&nvdiTlv, nvdi);
+    // DEBUG_PRINT_RECEIVE(&nvdiTlv, nvdi);
     dealWithSignal();
     if (rc) {
         return rc;
@@ -505,5 +505,7 @@ MlxcfgException::MlxcfgException(const char *fmt, ...)
     _err = tmp;
 }
 
+MlxcfgTLVNotFoundException::MlxcfgTLVNotFoundException(const char* cTLVName) :
+    MlxcfgException("The TLV configuration %s was not found",cTLVName){}
 
 

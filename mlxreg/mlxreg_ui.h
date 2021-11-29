@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) Jan 2019 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2019-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * 
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -76,6 +76,10 @@ private:
     void printAdbContext(AdbInstance *node, std::vector<u_int32_t> buff);
     void printBuff(std::vector<u_int32_t> buff);
 
+    void readFromFile(string file_name, vector<u_int32_t> &buff, int len);
+    void writeToFile(string file_name, vector<u_int32_t> buff);
+    void sendCmdBasedOnFileIo(maccess_reg_method_t cmd, int reg_size);
+
     CommandLineParser _cmdParser;
     string _device;
     mfile *_mf;
@@ -90,6 +94,9 @@ private:
     bool _force;
     MlxRegLib *_mlxRegLib;
     bool _isExternal;
+    bool _ignore_ro;
+    string _output_file;
+    string _file_io;
 };
 
 #endif /* MLXREG_UI_H */

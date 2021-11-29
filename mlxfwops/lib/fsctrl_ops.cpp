@@ -1,5 +1,6 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -96,6 +97,35 @@ static void extractFwVersion(u_int16_t *fwVerArr,
     fwVerArr[2] = fwVersion.build;
 }
 
+
+static void extractFwVersion(u_int16_t *fwVerArr, const char* fwVersion) {
+    if (!fwVerArr) {
+        return;
+    }
+    
+    char* str = new char[strlen(fwVersion) + 1];
+    char* token = NULL;
+    int index = 0;
+
+    memset(str, 0, strlen(fwVersion) + 1);
+    strcpy(str, fwVersion);    
+    token = strtok(str, ".");
+
+    // converting fw version tokens to numbers
+    while (token != NULL && index < 3) {
+        fwVerArr[index] = atoi(token);
+        token = strtok(NULL, ".");
+        ++index;
+    }
+
+    // 3 tokens are expected in fw version format
+    if (token != NULL || index != 3){
+        printf("-W- Wrong FW version format.\n");
+    }
+
+    delete[] str;
+}
+
 static void extractFwBuildTime(u_int16_t *fwRelDate, u_int32_t buildTime)
 {
     if (!fwRelDate) {
@@ -123,6 +153,12 @@ bool FsCtrlOperations::FsIntQuery()
     if (fwQuery.running_fw_version.version_string_length) {
         strcpy(_fwImgInfo.ext_info.product_ver, fwQuery.product_ver);
     }
+
+    // Copy version_string to fw version and VSD to branch ver, only for switches fw version
+    if (!IS_HCA(_fwImgInfo.ext_info.chip_type)) {
+        ExtractSwitchFWVersion(fwQuery);
+    }
+
     // if nextBootFwVer, only fw version is needed and chip type, return.
     if (nextBootFwVer) {
         const u_int32_t *swId = (u_int32_t*)NULL;
@@ -161,6 +197,7 @@ bool FsCtrlOperations::FsIntQuery()
 
     _fsCtrlImgInfo.sec_boot = fwQuery.sec_boot;
     _fsCtrlImgInfo.life_cycle = fwQuery.life_cycle;
+    _fsCtrlImgInfo.encryption = fwQuery.encryption;
     std::vector<FwComponent> compsMap;
     if (!_fwCompsAccess->getFwComponents(compsMap, false)) {
         return errmsg(FwCompsErrToFwOpsErr(_fwCompsAccess->getLastError()), "Failed to get the FW Components MAP, err[%d]", _fwCompsAccess->getLastError());
@@ -217,6 +254,23 @@ bool FsCtrlOperations::FsIntQuery()
         }
     }
 
+    //* Read global image status
+    if (_fsCtrlImgInfo.sec_boot == true) {        
+        try {            
+            CRSpaceRegisters cr_space_reg(mf, _fwImgInfo.ext_info.chip_type);
+            _fsCtrlImgInfo.global_image_status = cr_space_reg.getGlobalImageStatus();
+        }
+        catch(logic_error e) {
+            printf("%s\n", e.what());
+            return false;
+
+        }
+        catch(exception e) {
+            printf("%s\n", e.what());
+            return false;
+        }
+    }
+
     /*
      * Fill ROM info
      */
@@ -233,12 +287,36 @@ bool FsCtrlOperations::FsIntQuery()
 
     strncpy(_fsCtrlImgInfo.name, fwQuery.name, NAME_LEN);
     strncpy(_fsCtrlImgInfo.description, fwQuery.description, DESCRIPTION_LEN);
-    strncpy(_fsCtrlImgInfo.deviceVsd, fwQuery.deviceVsd, VSD_LEN);
+    (strncpy(_fsCtrlImgInfo.deviceVsd, fwQuery.deviceVsd, VSD_LEN));
     if (FwType() == FIT_FS3) {
         memcpy(_fwImgInfo.ext_info.vsd, fwQuery.deviceVsd, VSD_LEN);
     }
-    strncpy(_fsCtrlImgInfo.image_vsd, fwQuery.imageVsd, VSD_LEN);
+    (strncpy(_fsCtrlImgInfo.image_vsd, fwQuery.imageVsd, VSD_LEN));
     return true;
+}
+
+void FsCtrlOperations::ExtractSwitchFWVersion(const fwInfoT& fwQuery)
+{
+    if (VerifyBranchFormat(fwQuery.imageVsd)) {
+        strncpy(_fwImgInfo.ext_info.running_branch_ver, fwQuery.imageVsd, BRANCH_LEN);
+    }
+    if (fwQuery.running_fw_version.version_string_length &&
+        fwQuery.running_fw_version.version_string_length <= BRANCH_LEN) {
+        extractFwVersion(_fwImgInfo.ext_info.fw_ver, (const char*)fwQuery.running_fw_version.version_string);
+        extractFwVersion(_fwImgInfo.ext_info.running_fw_ver, (const char*)fwQuery.running_fw_version.version_string);
+    }
+    if (fwQuery.pending_fw_version.version_string_length &&
+        fwQuery.pending_fw_version.version_string_length <= BRANCH_LEN) {
+        extractFwVersion(_fwImgInfo.ext_info.fw_ver, (const char*)fwQuery.pending_fw_version.version_string);
+    }
+
+    // Copying VSD to branch_ver makes sure that when checking if pending equals running (operator==)
+    // it will evaluate to "true" (this happens in FwVersion class)
+    if ((_fwImgInfo.ext_info.fw_ver[0] == _fwImgInfo.ext_info.running_fw_ver[0]) &&
+        (_fwImgInfo.ext_info.fw_ver[1] == _fwImgInfo.ext_info.running_fw_ver[1]) &&
+        (_fwImgInfo.ext_info.fw_ver[2] == _fwImgInfo.ext_info.running_fw_ver[2])) {
+        strncpy(_fwImgInfo.ext_info.branch_ver, fwQuery.imageVsd, BRANCH_LEN);
+    }
 }
 
 bool FsCtrlOperations::FwReactivateImage()
@@ -269,7 +347,7 @@ bool FsCtrlOperations::FwReactivateImage()
         case FWCOMPS_IMAGE_REACTIVATION_FW_NOT_SUPPORTED:
             return errmsg(MLXFW_ERR, "Image reactivation - FW doesn't support this operation");
         default:
-            return errmsg(MLXFW_IMAGE_REACTIVATION_UNKNOWN_ERROR, "Unknown error occurred\n");
+            return errmsg(MLXFW_IMAGE_REACTIVATION_UNKNOWN_ERROR, "Unknown error occurred");
         }
     }
     return true;
@@ -302,34 +380,26 @@ bool FsCtrlOperations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripe
 bool FsCtrlOperations::FwVerifyAdv(ExtVerifyParams &verifyParams)
 {
     bool ret = true;
-    std::vector<FwComponent> compsMap;
-    if (!_fwCompsAccess->getFwComponents(compsMap, false)) {
-
-        return errmsg("Failed to get the FW Components MAP, err[%d]", _fwCompsAccess->getLastError());
+    FwOperations *imageOps = NULL;
+    if (!_createImageOps(&imageOps))
+    {
+        return errmsg("%s", err());
     }
 
-    u_int32_t imageSize = 0;
-    if (!ReadBootImage(NULL, &imageSize)) {
-        return false;
-    }
-    std::vector < u_int8_t > imageData;
-    imageData.resize(imageSize);
-    if (!ReadBootImage((void*) imageData.data(), &imageSize, verifyParams.progressFuncAdv)) {
-        return false;
-    }
-    fw_ops_params_t imageParams;
-    memset(&imageParams, 0, sizeof(imageParams));
-    imageParams.buffHndl = (u_int32_t*) imageData.data();
-    imageParams.buffSize = imageSize;
-    imageParams.hndlType = FHT_FW_BUFF;
-    FwOperations *imageOps = FwOperations::FwOperationsCreate(imageParams);
-    if (!imageOps) {
-        return errmsg("Failed to get boot image");
-    }
-    if (!imageOps->FwVerify(verifyParams.verifyCallBackFunc, verifyParams.isStripedImage, verifyParams.showItoc, true)) {
+    bool image_encrypted = false;
+    if (!imageOps->isEncrypted(image_encrypted)) {
         errmsg(imageOps->getErrorCode(), "%s", imageOps->err());
         ret = false;
     }
+    else if (image_encrypted) {
+        errmsg("Cannot verify an encrypted flash");
+        ret = false;
+    }
+    else if (!imageOps->FwVerify(verifyParams.verifyCallBackFunc, verifyParams.isStripedImage, verifyParams.showItoc, true)) {
+        errmsg(imageOps->getErrorCode(), "%s", imageOps->err());
+        ret = false;
+    }
+
     delete imageOps;
     return ret;
 }
@@ -437,6 +507,72 @@ bool FsCtrlOperations::VerifyAllowedParams(ExtBurnParams &burnParams, bool isSec
     return true;
 }
 
+bool FsCtrlOperations::_createImageOps(FwOperations** imageOps)
+{
+    std::vector<FwComponent> compsMap;
+    if (!_fwCompsAccess->getFwComponents(compsMap, false)) {
+
+        return errmsg("Failed to get the FW Components MAP, err[%d]", _fwCompsAccess->getLastError());
+    }
+
+    u_int32_t imageSize = 0;
+    if (!ReadBootImage(NULL, &imageSize)) {
+        return errmsg("Failed to get boot image size");
+    }
+    std::vector<u_int8_t> imageData;
+    imageData.resize(imageSize);
+    if (!ReadBootImage((void*)imageData.data(), &imageSize)) {
+        return errmsg("Failed to read boot image");
+    }
+    fw_ops_params_t imageParams;
+    memset(&imageParams, 0, sizeof(imageParams));
+    imageParams.buffHndl = (u_int32_t*)imageData.data();
+    imageParams.buffSize = imageSize;
+    imageParams.hndlType = FHT_FW_BUFF;
+    imageParams.ignoreCrcCheck = _fwParams.ignoreCrcCheck;
+    *imageOps = FwOperations::FwOperationsCreate(imageParams);
+    if (!(*imageOps)) {
+        return errmsg("Failed to create image ops");
+    }
+    return true;
+}
+
+bool FsCtrlOperations::getITOCAddr(u_int32_t& addr)
+{
+    vector<u_int8_t> buff(IMAGE_LAYOUT_HW_POINTERS_CARMEL_SIZE);
+    if (!FwReadBlock(FS4_HW_PTR_START, buff.size(), buff))
+    {
+        return errmsg("Failed to read HW pointers from flash");
+    }
+
+    struct image_layout_hw_pointers_carmel hw_pointers;
+    image_layout_hw_pointers_carmel_unpack(&hw_pointers, buff.data());
+    addr = hw_pointers.toc_ptr.ptr;
+    return true;
+}
+
+bool FsCtrlOperations::CheckITOCSignature(u_int8_t* signature)
+{
+    const u_int32_t expected_sig[] = {0x49544f43, 0x04081516, 0x2342cafa, 0xbacafe00};
+    for (int i = 0; i < 4; i++)
+    {
+        u_int32_t sig_dword = ((u_int32_t*)signature)[i];
+        TOCPU1(sig_dword);
+        DPRINTF(("Comparing itoc_sig[%d]=0x%x with expected_sig[%d]=0x%x\n", i, sig_dword, i, expected_sig[i]));
+        if (sig_dword != expected_sig[i])
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool FsCtrlOperations::isEncrypted(bool& is_encrypted)
+{
+    is_encrypted = _fsCtrlImgInfo.encryption;
+    DPRINTF(("FsCtrlOperations::isEncrypted() = %s\n", is_encrypted ? "TRUE" : "FALSE"));
+    return true;
+}
 
 bool FsCtrlOperations::FwBurnAdvanced(std::vector <u_int8_t> imageOps4MData, ExtBurnParams& burnParams, FwComponent::comps_ids_t ComponentId)
 {
@@ -483,10 +619,20 @@ bool FsCtrlOperations::FwBurnAdvanced(FwOperations *imageOps, ExtBurnParams &bur
     return _Burn(imageOps4MData, burnParams);
 }
 
+bool FsCtrlOperations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& burnParams)
+{
+    std::vector<u_int8_t> imgBuff;
+    if (!imageOps->FwExtractEncryptedImage(imgBuff, true))
+    {
+        return errmsg("Failed to extract encrypted image (%s)", imageOps->err());
+    }
+    return FwBurnAdvanced(imgBuff, burnParams);
+}
+
 bool FsCtrlOperations::_Burn(std::vector <u_int8_t> imageOps4MData, ExtBurnParams& burnParams, FwComponent::comps_ids_t ComponentId)
 {
 #ifdef UEFI_BUILD
-    burnParams.ProgressFuncAdv.uefi_func =  burnParams.progressFunc;
+    burnParams.ProgressFuncAdv.uefi_func = burnParams.progressFunc;
 #else
     burnParams.progressFunc = (ProgressCallBack) NULL;
 #endif
@@ -500,14 +646,8 @@ bool FsCtrlOperations::_Burn(std::vector <u_int8_t> imageOps4MData, ExtBurnParam
     }
     if (_fwCompsAccess->isMCDDSupported()) {
         // Checking if BME is disabled to print indication to user
-        // TODO - this is code duplication from fw_comps_mgr_abstract_access.cpp, move to a single place
-        int COMMAND_REG_OFFSET = 0x4;
-        int BME_MASK = 0x00000004;
-
-        mtcr_read_dword_from_config_space result;
-        int rc = read_dword_from_conf_space(COMMAND_REG_OFFSET, _fwCompsAccess->getMfileObj(), &result);
-
-        if ((rc != 0) || !(result.data & BME_MASK)) {
+        bool isBmeSet = DMAComponentAccess::isBMESet(_fwCompsAccess->getMfileObj());
+        if (!isBmeSet) {
             printf("-W- DMA burning is not supported due to BME is unset (Bus Master Enable).\n");
         }
     }
@@ -670,6 +810,7 @@ FsCtrlOperations::~FsCtrlOperations()
 
 bool FsCtrlOperations::FwReadBlock(u_int32_t addr, u_int32_t size, std::vector<u_int8_t> &dataVec)
 {
+    DPRINTF(("Read from flash using MCC"));
     if (!_fwCompsAccess->readBlockFromComponent(FwComponent::COMPID_BOOT_IMG, addr, size, dataVec)) {
         fw_comps_error_t errCode = _fwCompsAccess->getLastError();
         if (errCode == FWCOMPS_READ_OUTSIDE_IMAGE_RANGE) {
@@ -823,9 +964,9 @@ bool FsCtrlOperations::FwQueryTimeStamp(struct tools_open_ts_entry& timestamp, s
     return rc ? false : true;
 }
 
-bool FsCtrlOperations::GetSecureBootInfo()
+bool FsCtrlOperations::IsSecureBootSupported()
 {
-    return _signatureMngr->GetSecureBootInfo();
+    return _signatureMngr->IsSecureBootSupported();
 }
 
 bool FsCtrlOperations::IsLifeCycleSupported()
@@ -838,3 +979,30 @@ bool FsCtrlOperations::IsCableQuerySupported()
     return _signatureMngr->IsCableQuerySupported();
 }
 
+bool FsCtrlOperations::IsEncryptionSupported()
+{
+    return _signatureMngr->IsEncryptionSupported();
+}
+
+bool FsCtrlOperations::IsSecurityVersionViolated(u_int32_t image_security_version)
+{
+    // Set image security-version
+    u_int32_t imageSecurityVersion = image_security_version;
+    u_int32_t deviceEfuseSecurityVersion;
+
+    if (getenv("FLINT_IGNORE_SECURITY_VERSION_CHECK") != NULL) {
+        return false;
+    }
+    
+    // Set device security-version (from EFUSEs)
+    if (_fsCtrlImgInfo.device_security_version_access_method == MFSV) {
+        deviceEfuseSecurityVersion = _fsCtrlImgInfo.device_security_version_mfsv.efuses_sec_ver;
+    } else if (_fsCtrlImgInfo.device_security_version_access_method == GW) {
+        deviceEfuseSecurityVersion = _fsCtrlImgInfo.device_security_version_gw;
+    } else {
+        deviceEfuseSecurityVersion = 0;
+    }
+
+    // Check violation of security-version
+    return (imageSecurityVersion < deviceEfuseSecurityVersion);
+}

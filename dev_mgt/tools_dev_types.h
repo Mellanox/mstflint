@@ -1,5 +1,6 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -104,6 +105,8 @@ enum dm_dev_id
     DeviceQuantum2, // Blackbird
     DeviceGearBox,
     DeviceGearBoxManager,
+    DeviceCableCMIS,
+    DeviceCableCMISPaging,
     DeviceEndMarker           // Dummy Device - Marker for indicating end of devices when iterating
 };
 
@@ -130,6 +133,8 @@ enum hw_dev_id
         DeviceSwitchIB2_HwId = 0x24b,
         DeviceCableQSFP_HwId = 0x0d,
         DeviceCableQSFPaging_HwId = 0x11,
+        DeviceCableCMIS_HwId = 0x19,
+        DeviceCableCMISPaging_HwId = 0x19,
         DeviceCableSFP_HwId = 0x03,
         DeviceCableSFP51_HwId = 0x03,
         DeviceCableSFP51Paging_HwId =0x03,
@@ -154,6 +159,11 @@ int dm_get_device_id(mfile *mf,
                      dm_dev_id_t *ptr_dev_type,
                      u_int32_t *ptr_dev_id,
                      u_int32_t *ptr_chip_rev);
+
+int dm_get_device_id_without_prints(mfile *mf,
+                                    dm_dev_id_t *ptr_dm_dev_id,
+                                    u_int32_t *ptr_hw_dev_id,
+                                    u_int32_t *ptr_hw_rev);
 
 /**
  * Returns 0 on success and 1 on failure.

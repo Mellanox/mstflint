@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) Jan 2019 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2019-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * 
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -52,8 +52,8 @@ typedef enum {
 class RegAccessParser
 {
 public:
-    RegAccessParser(string data, string indexes, AdbInstance *regNode, std::vector<u_int32_t> buffer);
-    RegAccessParser(string data, string indexes, AdbInstance *regNode, u_int32_t len);
+    RegAccessParser(string data, string indexes, AdbInstance *regNode, std::vector<u_int32_t> buffer, bool ignore_ro = false);
+    RegAccessParser(string data, string indexes, AdbInstance *regNode, u_int32_t len, bool ignore_ro = false);
     std::vector<u_int32_t> genBuff();
     u_int32_t getDataLen() {return _len;};
     static void strToUint32(char *str, u_int32_t &uint);
@@ -64,12 +64,15 @@ protected:
     u_int32_t _len;
     AdbInstance *_regNode;
     parseMode _parseMode;
+    string output_file;
     std::vector<u_int32_t>    _buffer;
+    bool _ignore_ro;
     std::vector<u_int32_t> genBuffUnknown();
     std::vector<u_int32_t> genBuffKnown();
     void parseIndexes();
     void parseData();
     void parseUnknown();
+    bool checkFieldWithPath(AdbInstance* field, u_int32_t idx, std::vector<string> &fieldsChain);
     AdbInstance* getField(string name);
     std::vector<string> strSplit(string str, char delimiter, bool forcePairs);
     void updateBuffer(u_int32_t offset, u_int32_t size, u_int32_t val);

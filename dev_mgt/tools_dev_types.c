@@ -1,5 +1,6 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -53,6 +54,7 @@ enum dm_dev_type {
     DM_SWITCH,
     DM_BRIDGE,
     DM_QSFP_CABLE,
+    DM_CMIS_CABLE,
     DM_SFP_CABLE,
     DM_LINKX, // linkx chip
     DM_GEARBOX
@@ -89,14 +91,16 @@ enum dm_dev_type getCableType(u_int8_t id)
     switch (id) {
     case 0xd:
     case 0x11:
-    case 0x19: // Stallion2
     case 0xe:
     case 0xc:
         return DM_QSFP_CABLE;
 
     case 0x3:
         return DM_SFP_CABLE;
-
+    case 0x18:
+    case 0x19:  // Stallion2
+    case 0x1e:
+        return DM_CMIS_CABLE;
     default:
         return DM_UNKNOWN;
     }
@@ -303,6 +307,24 @@ static struct device_info g_devs_info[] = {
         DM_QSFP_CABLE           //dev_type
     },
     {
+        DeviceCableCMIS,        //dm_id
+        0x19,                   //hw_dev_id
+        0,                      //hw_rev_id
+        -1,                     //sw_dev_id
+        "CableCMIS",            //name
+        -1,                     //port_num
+        DM_CMIS_CABLE           //dev_type
+    },
+    {
+        DeviceCableCMISPaging,   //dm_id
+        0x19,                   //hw_dev_id
+        0xab,                   //hw_rev_id
+        -1,                     //sw_dev_id
+        "CableCMISPaging",       //name
+        -1,                     //port_num
+        DM_CMIS_CABLE           //dev_type
+    },
+    {
         DeviceCableSFP,         //dm_id
         0x03,                   //hw_dev_id
         1,                      //hw_rev_id
@@ -474,13 +496,17 @@ static const struct device_info* get_entry_by_dev_rev_id(u_int32_t hw_dev_id, u_
     return p;
 }
 
-/**
- * Returns 0 on success and 1 on failure.
- */
-int dm_get_device_id(mfile *mf,
-                     dm_dev_id_t *ptr_dm_dev_id,
-                     u_int32_t *ptr_hw_dev_id,
-                     u_int32_t *ptr_hw_rev)
+typedef enum get_dev_id_error_t {
+    GET_DEV_ID_SUCCESS,
+    GET_DEV_ID_ERROR,
+    CRSPACE_READ_ERROR,
+    CHECK_PTR_DEV_ID,
+} dev_id_error;
+
+static int dm_get_device_id_inner(mfile *mf,
+                                 dm_dev_id_t *ptr_dm_dev_id,
+                                 u_int32_t *ptr_hw_dev_id,
+                                 u_int32_t *ptr_hw_rev)
 {
     u_int32_t dword = 0;
     int rc;
@@ -491,7 +517,7 @@ int dm_get_device_id(mfile *mf,
     if (mf->tp == MST_FPGA_ICMD || mf->tp == MST_FPGA_DRIVER) {
         *ptr_dm_dev_id = DeviceFPGANewton;
         *ptr_hw_dev_id = 0xfff;
-        return 0;
+        return GET_DEV_ID_SUCCESS;
     }
 #endif
 #ifdef CABLES_SUPP
@@ -513,11 +539,11 @@ int dm_get_device_id(mfile *mf,
                 *ptr_dm_dev_id = DeviceMenhit;
                 break;
             default:
-                return 1;
+                return GET_DEV_ID_ERROR;
                 break;
         }
         *ptr_hw_dev_id = (u_int32_t)mf->linkx_chip_devid;
-        return 0;
+        return GET_DEV_ID_SUCCESS;
 
     }
 
@@ -525,15 +551,16 @@ int dm_get_device_id(mfile *mf,
         //printf("-D- Getting cable ID\n");
         if (mread4(mf, CABLEID_ADDR, &dword) != 4) {
             //printf("FATAL - crspace read (0x%x) failed: %s\n", DEVID_ADDR, strerror(errno));
-            return 1;
+            return GET_DEV_ID_ERROR;
         }
         //dword = __cpu_to_le32(dword); // Cable pages are read in LE, no need to swap
         *ptr_hw_dev_id = 0xffff;
         u_int8_t id = EXTRACT(dword, 0, 8);
         enum dm_dev_type cbl_type = getCableType(id);
+        u_int8_t paging;
         if (cbl_type == DM_QSFP_CABLE) {
             // Get Byte 2 bit 2 ~ bit 18 (flat_mem : upper memory flat or paged. 0=paging, 1=page 0 only)
-            u_int8_t paging = EXTRACT(dword, 18, 1);
+            paging = EXTRACT(dword, 18, 1);
             //printf("DWORD: %#x, paging: %d\n", dword, paging);
             if (paging == 0) {
                 *ptr_dm_dev_id = DeviceCableQSFPaging;
@@ -544,24 +571,32 @@ int dm_get_device_id(mfile *mf,
             *ptr_dm_dev_id = DeviceCableSFP;
             if (mread4(mf, SFP_DIGITAL_DIAGNOSTIC_MONITORING_IMPLEMENTED_ADDR, &dword) != 4) {
                 //printf("FATAL - crspace read (0x%x) failed: %s\n", DEVID_ADDR, strerror(errno));
-                return 1;
+                return GET_DEV_ID_ERROR;
             }
             u_int8_t byte = EXTRACT(dword, 6, 1); //Byte 92 bit 6 (digital diagnostic monitoring implemented)
             if (byte) {
                 *ptr_dm_dev_id = DeviceCableSFP51;
                 if (mread4(mf, SFP_PAGING_IMPLEMENTED_INDICATOR_ADDR, &dword) != 4) {
                     //printf("FATAL - crspace read (0x%x) failed: %s\n", DEVID_ADDR, strerror(errno));
-                    return 1;
+                    return GET_DEV_ID_ERROR;
                 }
                 byte = EXTRACT(dword, 4, 1); //Byte 64 bit 4 (paging implemented indicator)
                 if (byte) {
                     *ptr_dm_dev_id = DeviceCableSFP51Paging;
                 }
             }
+        } else if (cbl_type == DM_CMIS_CABLE) {
+            // Get Byte 2 bit 7 ~ bit 23 (flat_mem : upper memory flat or paged. 0=paging, 1=page 0 only)
+            paging = EXTRACT(dword, 23, 1);
+            if (paging == 0) {
+                *ptr_dm_dev_id = DeviceCableCMISPaging;
+            } else {
+                *ptr_dm_dev_id = DeviceCableCMIS;
+            }
         } else {
             *ptr_dm_dev_id = DeviceUnknown;
         }
-        return 0;
+        return GET_DEV_ID_SUCCESS;
     }
 #endif
 
@@ -595,8 +630,7 @@ int dm_get_device_id(mfile *mf,
         }
     } else {
         if (mread4(mf, DEVID_ADDR, &dword) != 4) {
-            printf("FATAL - crspace read (0x%x) failed: %s\n", DEVID_ADDR, strerror(errno));
-            return 1;
+            return CRSPACE_READ_ERROR;
         }
 
         *ptr_hw_dev_id = EXTRACT(dword, 0, 16);
@@ -604,14 +638,55 @@ int dm_get_device_id(mfile *mf,
     }
 
     *ptr_dm_dev_id = get_entry_by_dev_rev_id(*ptr_hw_dev_id, *ptr_hw_rev)->dm_id;
+    return CHECK_PTR_DEV_ID;
+}
 
-    if (*ptr_dm_dev_id == DeviceUnknown) {
+/**
+ * Returns 0 on success and 1 on failure.
+ */
+int dm_get_device_id(mfile *mf,
+                     dm_dev_id_t *ptr_dm_dev_id,
+                     u_int32_t *ptr_hw_dev_id,
+                     u_int32_t *ptr_hw_rev)
+{
+    int return_value = 1;
+    return_value = dm_get_device_id_inner(mf, ptr_dm_dev_id,
+                                          ptr_hw_dev_id, ptr_hw_rev);
+    if (return_value == CRSPACE_READ_ERROR) {
+        printf("FATAL - crspace read (0x%x) failed: %s\n", DEVID_ADDR, strerror(errno));
+        return GET_DEV_ID_ERROR;
+    } else if (return_value == CHECK_PTR_DEV_ID) {
+        if (*ptr_dm_dev_id == DeviceUnknown) {
 
-        /* Dev id not matched in array */
-        printf("FATAL - Can't find device id.\n");
-        return MFE_UNSUPPORTED_DEVICE;
+// Due to issue 2719128, we prefer to skip this device
+// and not filter using the 'pciconf' FreeBSD tool
+#ifndef __FreeBSD__
+            /* Dev id not matched in array */
+            printf("FATAL - Can't find device id.\n");
+#endif
+            return MFE_UNSUPPORTED_DEVICE;
+        }
+        return GET_DEV_ID_SUCCESS;
     }
-    return 0;
+    return return_value;
+}
+
+// Due to issue 2846942, added this function to be used on mdevices)
+int dm_get_device_id_without_prints(mfile *mf,
+                                    dm_dev_id_t *ptr_dm_dev_id,
+                                    u_int32_t *ptr_hw_dev_id,
+                                    u_int32_t *ptr_hw_rev)
+{
+    int return_value = 1;
+    return_value = dm_get_device_id_inner(mf, ptr_dm_dev_id,
+                                          ptr_hw_dev_id, ptr_hw_rev);
+    if (return_value == CHECK_PTR_DEV_ID) {
+        if (*ptr_dm_dev_id == DeviceUnknown) {
+            return MFE_UNSUPPORTED_DEVICE;
+        }
+        return GET_DEV_ID_SUCCESS;
+    }
+    return return_value;
 }
 
 int dm_get_device_id_offline(u_int32_t devid,
@@ -654,7 +729,7 @@ int dm_dev_is_hca(dm_dev_id_t type)
 
 int dm_dev_is_200g_speed_supported_hca(dm_dev_id_t type)
 {
-    bool isBlueField = (type == DeviceBlueField || type == DeviceBlueField2);
+    bool isBlueField = (type == DeviceBlueField || type == DeviceBlueField2 || type == DeviceBlueField3);
     return !isBlueField && (dm_dev_is_hca(type) && (get_entry(type)->hw_dev_id >= get_entry(DeviceConnectX6)->hw_dev_id));
 }
 
@@ -673,9 +748,21 @@ int dm_dev_is_bridge(dm_dev_id_t type)
     return get_entry(type)->dev_type == DM_BRIDGE;
 }
 
+int dm_dev_is_qsfp_cable(dm_dev_id_t type) {
+    return get_entry(type)->dev_type == DM_QSFP_CABLE;
+}
+
+int dm_dev_is_sfp_cable(dm_dev_id_t type) {
+    return get_entry(type)->dev_type == DM_SFP_CABLE;
+}
+
+int dm_dev_is_cmis_cable(dm_dev_id_t type) {
+    return get_entry(type)->dev_type == DM_CMIS_CABLE;
+}
+
 int dm_dev_is_cable(dm_dev_id_t type)
 {
-    return (get_entry(type)->dev_type == DM_QSFP_CABLE || get_entry(type)->dev_type == DM_SFP_CABLE);
+    return (dm_dev_is_qsfp_cable(type) || dm_dev_is_sfp_cable(type) || dm_dev_is_cmis_cable(type));
 }
 
 u_int32_t dm_get_hw_dev_id(dm_dev_id_t type)

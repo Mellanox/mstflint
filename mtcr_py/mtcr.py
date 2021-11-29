@@ -1,5 +1,6 @@
 
 # Copyright (c) 2004-2010 Mellanox Technologies LTD. All rights reserved.
+# Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -34,6 +35,7 @@ import os
 import sys
 import platform
 import ctypes
+import struct
 
 def ones(n):
     return (1 << n) - 1
@@ -156,21 +158,28 @@ if CMTCR:
         def icmdSendCmd(self, opcode, data, skipWrite):
             dataArr = (c_uint8 * len(data))(*data)
             rc = self.icmdSendCommandFunc(self.mf, opcode, cast(dataArr, POINTER(c_uint8)), len(data), skipWrite)
+
+            #data can also be used as output so need to convert back from dataArr.
+            for i,x in enumerate(dataArr):
+                data[i] = dataArr[i]
             if rc:
                 raise CmdIfException("Failed to send command")
         ##########################
         def mHcaReset(self, dbdf_list):
-                
+
             bus_array_size = len(dbdf_list)
 
             bus_array = (ctypes.c_ulong * bus_array_size)()
-            
+
             # Extract the bus value from the dbdf list.
             for idx,dbdf in enumerate(dbdf_list):
                 bus_array[idx] = int(dbdf[5:7], 16)
 
             if self.mHcaResetFunc(self.mf, bus_array, bus_array_size) != 0:
                 raise MtcrException("Failed to reset device")
+        ##########################
+
+
 
 else:
     import subprocess

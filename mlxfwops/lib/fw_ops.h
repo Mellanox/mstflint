@@ -1,5 +1,6 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -46,6 +47,22 @@
 #include <cable_access/cable_access.h>
 #endif
 #include <fw_comps_mgr/fw_comps_mgr.h>
+#if !defined(NO_OPEN_SSL)
+    #include <mlxsign_lib/mlxsign_lib.h>
+    #if !defined(NO_DYNAMIC_ENGINE)
+        #include <mlxsign_lib/mlxsign_openssl_engine.h>
+    #endif
+#endif
+
+//declaration only to enable compilation when NO_OPEN_SSL
+//of signForFwUpdateUsingHSM(...), signForSecureBootUsingHSM(...) which decelare OpensslEngineSigner in argument.
+#ifdef NO_OPEN_SSL
+namespace MlxSign
+{
+class OpensslEngineSigner;
+}
+#endif
+
 typedef f_prog_func_str VerifyCallBack;
 typedef f_prog_func ProgressCallBack;
 typedef f_prog_func_ex ProgressCallBackEx;
@@ -130,22 +147,30 @@ public:
         return errmsg("Operation not supported.");
     }
     virtual bool PreparePublicKeyData(const char *public_key_file, vector <u_int8_t>& publicKeyData, unsigned int& pem_offset);
-    virtual bool PrepareSecureBootSections(vector<u_int8_t>& encShaBinData, vector<u_int8_t>& encShaCritical, vector<u_int8_t>& encShaNonCritical,
-        vector <u_int32_t> uuidData, vector <u_int8_t> publicKeyData, unsigned int pemOffset);
+    virtual bool storePublicKeyInSection(const char *public_key_file, const char *uuid);
     virtual bool FwInsertSHA256(PrintCallBack printFunc = (PrintCallBack)NULL);
     virtual bool InsertSecureFWSignature(vector<u_int8_t> signature, const char *uuid, PrintCallBack printFunc);
-    virtual bool InsertSecureBootSignature(vector<u_int8_t> encShaBinData, vector<u_int8_t> encShaCritical, vector<u_int8_t> encShaNonCritical);
-    virtual bool FwSignWithOneRSAKey(const char *privPemFile, const char *uuid, PrintCallBack printFunc = (PrintCallBack)NULL);
+    virtual bool storeSecureBootSignaturesInSection(vector<u_int8_t> boot_signature, vector<u_int8_t> critical_sections_signature = vector<u_int8_t>(),
+                                                    vector<u_int8_t> non_critical_sections_signature = vector<u_int8_t>());
+    virtual bool signForFwUpdate(const char *privPemFile, const char *uuid, PrintCallBack printFunc = (PrintCallBack)NULL);
+    virtual bool signForFwUpdateUsingHSM(const char *uuid, MlxSign::OpensslEngineSigner& engineSigner, PrintCallBack printFunc);
     virtual bool FwSignWithTwoRSAKeys(const char *privPemFile1, const char *uuid1,
                                       const char *privPemFile2, const char *uuid2, PrintCallBack printFunc = (PrintCallBack)NULL);
     virtual bool FwSignWithHmac(const char *key_file);
-    virtual bool FwSignWithRSA(const char *private_key_file, const char *public_key_file, const char *guid_key_file);
-    virtual bool FwSignWithRSA(const char *public_key_file, const char *uuid, vector<u_int8_t>& bin_data, vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
+    virtual bool signForSecureBoot(const char *private_key_file, const char *public_key_file, const char *guid_key_file);
+    virtual bool signForSecureBootUsingHSM(const char *public_key_file, const char *uuid, MlxSign::OpensslEngineSigner& engineSigner);
     virtual bool PrepItocSectionsForHmac(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
     virtual bool IsCriticalSection(u_int8_t sect_type);
 
     virtual bool FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatternAndDevToc, bool verbose = false, bool ignoreImageStart = false);
     virtual bool RestoreDevToc(vector<u_int8_t>& img, char* psid, dm_dev_id_t devid_t, const cx4fw_uid_entry& base_guid, const cx4fw_uid_entry& base_mac);
+    virtual bool initHwPtrs(bool isVerify = false);
+    virtual bool isHashesTableHwPtrValid();
+    virtual bool openEncryptedImageAccess(const char* encrypted_image_path);
+    virtual bool isEncrypted(bool& is_encrypted);
+    virtual bool FwExtractEncryptedImage(vector<u_int8_t>& img, bool maskMagicPatternAndDevToc,
+                                         bool verbose = false, bool ignoreImageStart = false);
+    virtual bool burnEncryptedImage(FwOperations *imageOps, ExtBurnParams& burnParams);
     virtual bool FwSetPublicKeys(char *fname, PrintCallBack callBackFunc = (PrintCallBack)NULL);
     virtual bool FwSetForbiddenVersions(char *fname, PrintCallBack callBackFunc = (PrintCallBack)NULL);
     virtual bool CalcHMAC(const vector<u_int8_t>& key, const vector<u_int8_t>& data, vector<u_int8_t>& digest);
@@ -190,7 +215,7 @@ public:
         return true; 
         //Though Remove write protection is not supported, return true.
     }
-    void FwCleanUp();
+    virtual void FwCleanUp();
     virtual bool FwInit() = 0;
     virtual bool FsIntQuery() { return true; }
     bool FwSetPrint(PrintCallBack PrintFunc);
@@ -211,7 +236,7 @@ public:
         return hwDevId;
     }
     //virtual bool FwBurnBlock(FwOperations &FwImageAccess); // Add call back
-    static FwOperations* FwOperationsCreate(void *fwHndl, void *info, char *psid, fw_hndl_type_t hndlType, char *errBuff = (char*)NULL, int buffSize = 0);
+    static FwOperations* FwOperationsCreate(void *fwHndl, void *info, char *psid, fw_hndl_type_t hndlType, char *errBuff = (char*)NULL, int buffSize = 0, bool ignore_crc_check = false);
     static FwOperations* FwOperationsCreate(fw_ops_params_t& fwParams);
 
     static bool          imageDevOperationsCreate(fw_ops_params_t& devParams, fw_ops_params_t& imgParams,
@@ -219,9 +244,10 @@ public:
 
     virtual bool IsFsCtrlOperations();
     virtual bool PrepItocSectionsForCompare(vector<u_int8_t>& critical, vector<u_int8_t>& non_critical);
-    virtual bool GetSecureBootInfo();
+    virtual bool IsSecureBootSupported();
     virtual bool IsCableQuerySupported();
     virtual bool IsLifeCycleSupported();
+    virtual bool IsEncryptionSupported();
     void GetFwParams(fw_ops_params_t&);
     virtual void CleanInterruptedCommand() {}//by default do nothing
     virtual bool FwCalcSHA(MlxSign::SHAType, vector<u_int8_t>&, vector<u_int8_t>&);
@@ -232,6 +258,8 @@ public:
     static FwVersion createFwVersion(u_int16_t fw_ver0, u_int16_t fw_ver1, u_int16_t fw_ver2);
     static FwVersion createRunningFwVersion(const fw_info_com_t*);
     static int       getFileSignature(const char *fname);
+    virtual bool IsLifeCycleValidInLivefish(chip_type_t chip_type);
+    virtual bool IsSecurityVersionViolated(u_int32_t image_security_version);
 #ifndef UEFI_BUILD
     static bool CheckPemKeySize(const string privPemFileStr, u_int32_t& keySize);
 #endif
@@ -364,6 +392,7 @@ public:
         bool noFwCtrl;
         bool mccUnsupported;
         bool canSkipFwCtrl;
+        bool ignoreCrcCheck;
     };
 
     struct sgParams {
@@ -514,6 +543,7 @@ public:
 
     virtual Tlv_Status_t GetTsObj(TimeStampIFC **tsObj);
     bool TestAndSetTimeStamp(FwOperations *imageOps);
+    virtual bool VerifyBranchFormat(const char* vsdString);
 
     // Protected Members
     FBase *_ioAccess;
@@ -581,6 +611,24 @@ private:
 protected:
     static const u_int32_t _cntx_magic_pattern[4];
     static const u_int32_t _fs4_magic_pattern[4];
+};
+
+
+class CRSpaceRegisters
+{
+public:
+    CRSpaceRegisters(mfile* mf, chip_type_t chip_type);
+    
+    int getGlobalImageStatus();
+    life_cycle_t getLifeCycle();
+    u_int32_t getSecurityVersion();
+
+private:
+    mfile* _mf;
+    chip_type_t _chip_type;
+    u_int32_t countSetBits(u_int32_t num);
+    u_int32_t getConsecutiveBits(u_int32_t dword, u_int8_t firstBit, u_int8_t numOfBits);
+    u_int32_t getRegister(u_int32_t address);
 };
 
 #endif // FW_ACCESS_H

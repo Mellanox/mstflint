@@ -1,5 +1,6 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -71,6 +72,7 @@ int is_four_byte_address_needed(mflash *mfl, MfError *status)
     case DeviceQuantum2:
     case DeviceSpectrum4:
     case DeviceBlueField2:
+    case DeviceBlueField3:
     case DeviceGearBox:
     case DeviceGearBoxManager:
         return 1;
@@ -102,6 +104,7 @@ int is_flash_enable_needed(mflash *mfl, MfError *status)
     case DeviceConnectX5:
     case DeviceBlueField:
     case DeviceBlueField2:
+    case DeviceBlueField3:
     case DeviceQuantum:
     case DeviceConnectX6:
     case DeviceConnectX7:
@@ -144,6 +147,7 @@ int is_icmdif_supported(mflash *mfl, MfError *status, int *is7NmSuppported)
     case DeviceConnectX5:
     case DeviceBlueField:
     case DeviceBlueField2:
+    case DeviceBlueField3:
     case DeviceQuantum:
     case DeviceSpectrum2:
     case DeviceSpectrum3:
@@ -177,6 +181,7 @@ int is_supports_sw_reset(mflash *mfl, MfError *status)
     case DeviceSwitchIB:
     case DeviceSwitchIB2:
     case DeviceQuantum:
+    case DeviceQuantum2:
         return 1;
     case DeviceConnectX2:
     case DeviceConnectX3:
@@ -188,13 +193,13 @@ int is_supports_sw_reset(mflash *mfl, MfError *status)
     case DeviceConnectX5:
     case DeviceBlueField:
     case DeviceBlueField2:
+    case DeviceBlueField3:
     case DeviceConnectX6:
     case DeviceConnectX6DX:
     case DeviceConnectX6LX:
     case DeviceConnectX7:
     case DeviceSpectrum2:
     case DeviceSpectrum3:
-    case DeviceQuantum2:
     case DeviceSpectrum4:
     case DeviceSecureHost:
     case DeviceGearBox:

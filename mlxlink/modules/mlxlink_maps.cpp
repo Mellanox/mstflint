@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Jan 2019 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2019-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -62,6 +62,10 @@ void MlxlinkMaps::initPortStateMapping()
     _pmFsmState[PHY_MNGR_ACTIVE_LINKUP] = "Active";
     _pmFsmState[PHY_MNGR_CLOSE_PORT] = "Close port";
     _pmFsmState[PHY_MNGR_PHYSICAL_LINKUP] = "Physical LinkUp";
+    _pmFsmState[PHY_MNGR_RX_DISABLE] = "Rx disable";
+
+    _networkProtocols[IB] = "InfiniBand";
+    _networkProtocols[ETH] = "Ethernet";
 
     _ethANFsmState[0x0] = "ETH_AN_FSM_ENABLE";
     _ethANFsmState[0x1] = "ETH_AN_FSM_XMIT_DISABLE";
@@ -89,6 +93,38 @@ void MlxlinkMaps::initPortStateMapping()
 
     _anDisableList[AN_DISABLE_NORMAL] = "ON";
     _anDisableList[AN_DISABLE_FORCE] = "FORCE";
+
+    _slrgFomMode[SLRG_FOM_MODE_EYEC] = "SLRG_FOM_MODE_EYEC";
+    _slrgFomMode[SLRG_FOM_MODE_EYEO] = "SLRG_FOM_MODE_EYEO";
+    _slrgFomMode[SLRG_FOM_MODE_EYEM] = "SLRG_FOM_MODE_EYEM";
+    _slrgFomMode[SLRG_FOM_MODE_BER] = "SLRG_FOM_MODE_BER";
+    _slrgFomMode[SLRG_FOM_MODE_EYEC_VN] = "SLRG_FOM_MODE_EYEC_VN";
+    _slrgFomMode[SLRG_FOM_MODE_EYEC_VP] = "SLRG_FOM_MODE_EYEC_VP";
+    _slrgFomMode[SLRG_FOM_MODE_EYEM_VN] = "SLRG_FOM_MODE_EYEM_VN";
+    _slrgFomMode[SLRG_FOM_MODE_EYEM_VP] = "SLRG_FOM_MODE_EYEM_VP";
+
+    _networkPorts["NETWORK"] = NETWORK_PORT_TYPE;
+    _networkPorts["PCIE"] = NETWORK_PORT_TYPE_LAST;
+    _networkPorts["GEARBOX_HOST"] = NETWORK_PORT_TYPE_NEAR;
+    _networkPorts["INTERNAL_IC_LR"] = NETWORK_PORT_TYPE_IC_LR;
+    _networkPorts["GEARBOX_LINE"] = NETWORK_PORT_TYPE_FAR;
+}
+
+void MlxlinkMaps::phyHstFsmHdrStateMapping()
+{
+    _phyHstFsmHdrState[PHY_HST_FSM_HDR_DISABLED]             = "DISABLED";
+    _phyHstFsmHdrState[PHY_HST_FSM_HDR_ADAPTATION]           = "ADAPTATION";
+    _phyHstFsmHdrState[PHY_HST_FSM_HDR_DESKEW_FIX_REVERSALS] = "DESKEW_FIX_REVERSALS";
+    _phyHstFsmHdrState[PHY_HST_FSM_HDR_WAIT_TS2]             = "WAIT_TS2";
+    _phyHstFsmHdrState[PHY_HST_FSM_HDR_WAIT_MCB]             = "WAIT_MCB";
+    _phyHstFsmHdrState[PHY_HST_FSM_HDR_MCB_AN]               = "MCB_AN";
+    _phyHstFsmHdrState[PHY_HST_FSM_HDR_RECEIVER_READY]       = "RECEIVER_READY";
+    _phyHstFsmHdrState[PHY_HST_FSM_HDR_LINKUP]               = "LINKUP";
+    _phyHstFsmHdrState[PHY_HST_FSM_HDR_SUBFSM_FAIL]          = "SUBFSM_FAIL";
+    _phyHstFsmHdrState[PHY_HST_FSM_HDR_BASIC_DETECT]         = "BASIC_DETECT";
+    _phyHstFsmHdrState[PHY_HST_FSM_HDR_BASIC_STABILITY]      = "BASIC_STABILITY";
+    _phyHstFsmHdrState[PHY_HST_FSM_HDR_CONFIG]               = "CONFIG";
+    _phyHstFsmHdrState[PHY_HST_HDR_ERROR]                    = "ERROR";
 }
 
 void MlxlinkMaps::initFecAndLoopbackMapping()
@@ -99,20 +135,21 @@ void MlxlinkMaps::initFecAndLoopbackMapping()
             "Standard RS-FEC - RS(528,514)";
     _fecModeActive[FEC_MODE_STANDARD_LL_FEC_271_257] =
             "Standard LL RS-FEC - RS(271,257)";
+    _fecModeActive[FEC_MODE_INTERLEAVED_STANDARD_RS_FEC_544_514] =
+            "Interleaved_Standard_RS-FEC - (544,514)";
     _fecModeActive[FEC_MODE_STANDARD_RS_FEC_544_514] =
-            "Standard RS-FEC (544,514)";
-    _fecModeActive[FEC_MODE_MELLANOX_STRONG_FEC] =
-            "Mellanox Strong RS-FEC - RS(277,257)";
-    _fecModeActive[FEC_MODE_MELLANOX_LL_FEC] =
-            "Mellanox LL RS-FEC - RS(163,155)";
-    _fecModeActive[FEC_MODE_ZERO_LATENCY_FEC] =
-            "Zero Latency FEC";
-    _fecModeActive[FEC_MODE_RS_FEC_272] =
-            "Ethernet_Consortium_LL_50G_RS-FEC - (272,257+1)";
+            "Standard_RS-FEC - (544,514)";
+    _fecModeActive[FEC_MODE_RS_FEC_272_257] =
+            "Ethernet_Consortium_LL_50G_RS_FEC- (272,257+1)";
+    _fecModeActive[FEC_MODE_INTERLEAVED_RS_FEC_272_257] =
+            "Interleaved_Ethernet_Consortium_LL_50G_RS_FEC -(272,257+1)";
     _fecModeActive[FEC_MODE_RS_FEC_544_514_PLR] =
-            "RS-FEC (544,514) + PLR";
+         "RS-FEC - (544,514) + PLR";
     _fecModeActive[FEC_MODE_RS_FEC_271_257_PLR] =
-            "LL-FEC (271,257) + PLR";
+         "LL-FEC - (271,257) + PLR";
+    _fecModeActive[FEC_MODE_RS_FEC_PLR_272_257] =
+         "Ethernet_Consortium_LL_50G_RS_FEC_PLR -(272,257+1)";
+
 
     _loopbackModeList[PHY_NO_LOOPBACK] = "No Loopback";
     _loopbackModeList[PHY_REMOTE_LOOPBACK] = "PHY Remote Loopback";
@@ -314,6 +351,12 @@ void MlxlinkMaps::initPrbsMapping()
     _prbsModesList[20] = "PRBS13D";
     _prbsModesList[21] = "SSPR";
     _prbsModesList[22] = "SSPRQ";
+    _prbsModesList[23] = "LT_FRAMES";
+    _prbsModesList[24] = "PRBS15";
+    _prbsModesList[25] = "PRBS28";
+    _prbsModesList[26] = "SQUARE_WAVE3";
+    _prbsModesList[27] = "SQUARE_WAVE13";
+    _prbsModesList[28] = "SQUARE_WAVE30";
 
     _prbsLaneRateList[0] = "SDR (2.5 Gb/s)";
     _prbsLaneRateList[1] = "DDR/5G (5 Gb/s)";
@@ -501,6 +544,13 @@ void MlxlinkMaps::initLinkDownInfoMapping()
 
 void MlxlinkMaps::initSltpStatusMapping()
 {
+    _SLTP7BadSetStatus2Str[BAD_STAT_7NM_INVALID_PRE3] = "pre3 is out of range";
+    _SLTP7BadSetStatus2Str[BAD_STAT_7NM_INVALID_PRE2] = "pre2 is out of range";
+    _SLTP7BadSetStatus2Str[BAD_STAT_7NM_INVALID_PRE1] = "pre1 is out of range";
+    _SLTP7BadSetStatus2Str[BAD_STAT_7NM_INVALID_MAIN] = "main tap is out of range";
+    _SLTP7BadSetStatus2Str[BAD_STAT_7NM_INVALID_POST] = "sum of taps is out of range";
+    _SLTP7BadSetStatus2Str[BAD_STAT_7NM_TAP_SPEED_MISMATCH] = "taps not aligned with speed";
+
     _SLTP16BadSetStatus2Str[SET_STATUS16_INVALID_PARM] =
             "taps values can't be set to serdes due to internal limitations. ";
     _SLTP16BadSetStatus2Str[SET_STATUS16_ILLEGAL_M2LP_AMP] =
@@ -526,6 +576,211 @@ void MlxlinkMaps::initSltpStatusMapping()
             "Illegal ob_taps polarity (distance between taps)";
     _SLTPBadSetStatus2Str[SET_STATUS_UNKNOWN] =
             "Unknown failure status";
+}
+
+void MlxlinkMaps::cmisIbComlianceMapping()
+{
+    _cableComplianceCmisIb[CMIS_IB_COMPLIANCE_CODE_SDR] = "SDR";
+    _cableComplianceCmisIb[CMIS_IB_COMPLIANCE_CODE_DDR] = "DDR";
+    _cableComplianceCmisIb[CMIS_IB_COMPLIANCE_CODE_QDR] = "QDR";
+    _cableComplianceCmisIb[CMIS_IB_COMPLIANCE_CODE_FDR] = "FDR";
+    _cableComplianceCmisIb[CMIS_IB_COMPLIANCE_CODE_EDR] = "EDR";
+    _cableComplianceCmisIb[CMIS_IB_COMPLIANCE_CODE_HDR] = "HDR";
+    _cableComplianceCmisIb[CMIS_IB_COMPLIANCE_CODE_NDR] = "NDR";
+}
+
+void MlxlinkMaps::cimsCableBreakoutMapping()
+{
+    _cimsCableBreakout[CMIS_CABLE_BREAKOUT_UNSPECIFIED] =
+            "Unspecified";
+    _cimsCableBreakout[CMIS_CABLE_BREAKOUT_QSFPDD_to_QSFPDD] =
+            "QSFP-DD to QSFP-DD";
+    _cimsCableBreakout[CMIS_CABLE_BREAKOUT_QSFPDD_to_2QSFP_or_2QSFPDD] =
+            "QSFP-DD to 2xQSFP or 2xQSFP-DD (depopulated / 4 lanes)";
+    _cimsCableBreakout[CMIS_CABLE_BREAKOUT_QSFPDD_to_4SFPDD_or_4QSFP] =
+            "QSFP-DD to 4xSFP-DD or 4xQSFP (depopulated / 2 lanes)";
+    _cimsCableBreakout[CMIS_CABLE_BREAKOUT_QSFPDD_to_8SFP] =
+            "QSFP-DD to 8xSFP";
+    _cimsCableBreakout[CMIS_CABLE_BREAKOUT_QSFPDD_to_QSFP_or_QSFPDD] =
+            "QSFP-DD (depopulated / 4 lanes) to QSFP or QSFP-DD (depopulated / 4 lanes)";
+    _cimsCableBreakout[CMIS_CABLE_BREAKOUT_QSFPDD_to_2QSFP] =
+            "QSFP-DD (depopulated / 4 lanes) to 2xQSFP(depopulated / 2 lanes) or 2xSFP-DD";
+    _cimsCableBreakout[CMIS_CABLE_BREAKOUT_QSFPDD_to_4SFP] =
+            "QSFP-DD (depopulated / 4 lanes) to 4xSFP";
+    _cimsCableBreakout[CMIS_CABLE_BREAKOUT_SFPDD_to_SFPDD] =
+            "SFP-DD(/ 2 lane module) to SFP-DD";
+    _cimsCableBreakout[CMIS_CABLE_BREAKOUT_SFPDD_to_2SFPDD] =
+            "SFP-DD(/ 2 lane module) to 2xSFP";
+
+}
+
+void MlxlinkMaps::rxTxCdrCapMapping()
+{
+    _rxTxCdrCap[RX_TX_CDR_CAP_NO_CDR]                              = "No CDR";
+    _rxTxCdrCap[RX_TX_CDR_CAP_BUILD_IN_CDR_WITH_ON_OFF_CONTROL]    = "Build-in CDR with on/off control";
+    _rxTxCdrCap[RX_TX_CDR_CAP_BUILD_IN_CDR_WITHOUT_ON_OFF_CONTROL] = "Build-in CDR without on/off control";
+}
+
+void MlxlinkMaps::rxPowerTypeMapping()
+{
+    _rxPowerType[RX_POWER_TYPE_OMA]           = "OMA";
+    _rxPowerType[RX_POWER_TYPE_AVERAGE_POWER] = "Average power";
+}
+
+void MlxlinkMaps::maxReadReqSizeMapping()
+{
+    _maxReadReqSize[MAX_READ_REQUEST_SIZE_128B]  = "128B";
+    _maxReadReqSize[MAX_READ_REQUEST_SIZE_256B]  = "256B";
+    _maxReadReqSize[MAX_READ_REQUEST_SIZE_512B]  = "512B";
+    _maxReadReqSize[MAX_READ_REQUEST_SIZE_1024B] = "1024B";
+    _maxReadReqSize[MAX_READ_REQUEST_SIZE_2048B] = "2048B";
+    _maxReadReqSize[MAX_READ_REQUEST_SIZE_4096B] = "4096B";
+}
+
+void MlxlinkMaps::pwrStatusMapping()
+{
+    _pwrStatus[PWR_STATUS_0]  = "PCI power report could not be read";
+    _pwrStatus[PWR_STATUS_1]  = "Sufficient power reported";
+    _pwrStatus[PWR_STATUS_2]  = "Insufficient power reported";
+}
+
+void MlxlinkMaps::portTypeMapping()
+{
+    _portType[PORT_TYPE_EP_MPEIN]  = "PCI Express Endpoint port";
+    _portType[PORT_TYPE_RC_MPEIN]  = "Root Port of PCI Express Root Complex";
+    _portType[PORT_TYPE_UP_MPEIN]  = "PCI Express Upstream port";
+    _portType[PORT_TYPE_DP_MPEIN]  = "PCI Express Downstream port";
+}
+
+void MlxlinkMaps::linkPeerMaxSpeedMapping()
+{
+    _linkPeerMaxSpeed[LINK_PEER_MAX_SPEED_2_5G]  = "2.5G - (Gen1)";
+    _linkPeerMaxSpeed[LINK_PEER_MAX_SPEED_5G]  = "5G - (Gen2)";
+    _linkPeerMaxSpeed[LINK_PEER_MAX_SPEED_8G]  = "8G - (Gen3)";
+    _linkPeerMaxSpeed[LINK_PEER_MAX_SPEED_16G]  = "16G - (Gen4)";
+    _linkPeerMaxSpeed[LINK_PEER_MAX_SPEED_32G]  = "32G (Gen5)";
+}
+
+void MlxlinkMaps::portStateMapping()
+{
+    _portState[PORT_STATE_0]   = "Disable TS1";
+    _portState[PORT_STATE_1]   = "Disable Ack";
+    _portState[PORT_STATE_2]   = "Disable Wait";
+    _portState[PORT_STATE_3]   = "RESET";
+    _portState[PORT_STATE_4]   = "Loop Back Master Active";
+    _portState[PORT_STATE_5]   = "Loop Back Master Exit";
+    _portState[PORT_STATE_6]   = "Loop Back Slave Entry";
+    _portState[PORT_STATE_7]   = "Loop Back Slave Align";
+    _portState[PORT_STATE_8]   = "Loop Back Slave EB Threshold";
+    _portState[PORT_STATE_9]   = "Loop Back Slave Active";
+    _portState[PORT_STATE_10]  = "Loop Back Slave Idle";
+    _portState[PORT_STATE_11]  = "Loop Back Slave Exit";
+    _portState[PORT_STATE_12]  = "Detect Quiet";
+    _portState[PORT_STATE_13]  = "Detect Active 1";
+    _portState[PORT_STATE_14]  = "Detect Active 2";
+    _portState[PORT_STATE_15]  = "Polling Active";
+    _portState[PORT_STATE_16]  = "Polling Compliance Entry";
+    _portState[PORT_STATE_17]  = "Polling Compliance";
+    _portState[PORT_STATE_18]  = "Polling Compliance Exit";
+    _portState[PORT_STATE_19]  = "Polling Config";
+    _portState[PORT_STATE_20]  = "Config Width Start";
+    _portState[PORT_STATE_21]  = "Config Width Ack";
+    _portState[PORT_STATE_22]  = "Config Lane Wait";
+    _portState[PORT_STATE_23]  = "Config Lane Ack";
+    _portState[PORT_STATE_24]  = "Config Complete";
+    _portState[PORT_STATE_25]  = "Config Idle";
+    _portState[PORT_STATE_26]  = "L0s";
+    _portState[PORT_STATE_27]  = "L1 ENTER";
+    _portState[PORT_STATE_28]  = "L1 ACTIVE";
+    _portState[PORT_STATE_29]  = "L1 EXIT";
+    _portState[PORT_STATE_30]  = "Recover Receiver Lock";
+    _portState[PORT_STATE_31]  = "Recover Speed";
+    _portState[PORT_STATE_32]  = "Recover Config";
+    _portState[PORT_STATE_33]  = "Recover Idle";
+    _portState[PORT_STATE_34]  = "Recover ESpeed";
+    _portState[PORT_STATE_35]  = "Recover Equalization Phase 0";
+    _portState[PORT_STATE_36]  = "Recover Equalization Phase 1";
+    _portState[PORT_STATE_37]  = "Recover Equalization Phase 2";
+    _portState[PORT_STATE_38]  = "Recover Equalization Phase 3";
+    _portState[PORT_STATE_39]  = "Recover Equalization Idle";
+    _portState[PORT_STATE_40]  = "Force TS1";
+    _portState[PORT_STATE_41]  = "Force TS2";
+    _portState[PORT_STATE_42]  = "Force IDLE";
+    _portState[PORT_STATE_43]  = "Force COMP";
+    _portState[PORT_STATE_44]  = "Force Force disable";
+}
+
+void MlxlinkMaps::cmisModuleStMapping()
+{
+    _cimsModuleSt[CIMS_MODULE_ST_RESERVED]     = "N/A";
+    _cimsModuleSt[CIMS_MODULE_ST_LOWPWR_STATE] = "LowPwr state";
+    _cimsModuleSt[CIMS_MODULE_ST_PWRUP_STATE]  = "PwrUp state";
+    _cimsModuleSt[CIMS_MODULE_ST_READY_STATE]  = "Ready state";
+    _cimsModuleSt[CIMS_MODULE_ST_PWRDN_STATE]  = "PwrDn state";
+    _cimsModuleSt[CIMS_MODULE_ST_FAULT_STATE]  = "Fault state";
+}
+
+void MlxlinkMaps::tempFlagsMapping()
+{
+    _tempFLags[TEMP_FLAGS_NO_ALARM_WARN]   = "0";
+    _tempFLags[TEMP_FLAGS_HI_TEMP_ALARM]   = "high_temp_alarm";
+    _tempFLags[TEMP_FLAGS_LO_TEMP_ALARM]   = "low_temp_alarm";
+    _tempFLags[TEMP_FLAGS_HI_TEMP_WARNING] = "high_temp_warning";
+    _tempFLags[TEMP_FLAGS_LO_TEMP_WARNING] = "low_temp_warning";
+}
+
+void MlxlinkMaps::vccFlagsMapping()
+{
+    _vccFLags[VCC_FLAGS_NO_ALARM_WARN]   = "0";
+    _vccFLags[VCC_FLAGS_HI_VCC_ALARM]   = "high_vcc_alarm";
+    _vccFLags[VCC_FLAGS_LO_VCC_ALARM]   = "low_vcc_alarm";
+    _vccFLags[VCC_FLAGS_HI_VCC_WARNING] = "high_vcc_warning";
+    _vccFLags[VCC_FLAGS_LO_VCC_WARNING] = "low_vcc_warning";
+}
+
+void MlxlinkMaps::dataPathStateMapping()
+{
+    _dataPathSt[DATA_PATH_STATE_RES]           = "N/A";
+    _dataPathSt[DATA_PATH_STATE_DEACTIVATED]   = "DPDeactivated (or unused lane)";
+    _dataPathSt[DATA_PATH_STATE_INIT]          = "DPInit";
+    _dataPathSt[DATA_PATH_STATE_DEINIT]        = "DPDeinit";
+    _dataPathSt[DATA_PATH_STATE_ACTIVATED]     = "DPActivated";
+    _dataPathSt[DATA_PATH_STATE_TX_TURN_ON]    = "DPTxTurnOn";
+    _dataPathSt[DATA_PATH_STATE_TX_TURN_OFF]   = "DPTxTurnOff";
+    _dataPathSt[DATA_PATH_STATE_INITALIZED]    = "DPInitialized";
+}
+
+void MlxlinkMaps::errorCodeResMapping()
+{
+    _errorCodeRes[ERROR_CODE_RES_CONFIG_UNDEF] = "No status information available (initial register value)";
+    _errorCodeRes[ERROR_CODE_RES_CONFIG_SUCC] = "The last accepted configuration command has been completed successfully";
+    _errorCodeRes[ERROR_CODE_RES_CONFIG_REJ] = "Configuration rejected: unspecific validation failure";
+    _errorCodeRes[ERROR_CODE_RES_CONFIG_REJ_INV_APP_SEI] = "Configuration rejected: invalid AppSel Code";
+    _errorCodeRes[ERROR_CODE_RES_CONFIG_REJ_INV_DATA_PTH] = "Configuration rejected: invalid set of lanes for AppSel";
+    _errorCodeRes[ERROR_CODE_RES_CONFIG_REJ_INV_SI] = "Configuration rejected: invalid SI control settingd";
+    _errorCodeRes[ERROR_CODE_RES_CONFIG_REJ_LANES_IN_USE] = "Configuration rejected: some lanes not in DPDeactivated";
+    _errorCodeRes[ERROR_CODE_RES_CONFIG_REJ_PART_DATA_PTH] = "Configuration rejected: lanes are only subset of DataPath";
+    _errorCodeRes[ERROR_CODE_RES_CONFIG_IN_PROG] = "A configuration command is still bening processed by the module"
+                                                   " a new configuration command is ignored for this lane while ConfigInProgress";
+    _errorCodeRes[ERROR_CODE_RES_CONFIG_REJ_CUST] = "Configuration rejected for custom reasons";
+}
+
+void MlxlinkMaps::qsfpFarEndCableBreakoutMapping()
+{
+    _qsfpFarEndCableBreakout[QSFP_CABLE_BREAKOUT_CABLE_FAR_END_IS_UNSPECIFIED] =
+            "Far end is unspecified";
+    _qsfpFarEndCableBreakout[QSFP_CABLE_BREAKOUT_CABLE_SINGLE_FAR_END_4_CHANNELS_IMPLEM_OR_SEPAR_MOD_4_CHANNEL_CONN] =
+            "Cable with single far-end with 4 channels implemented, or separable module with a 4-channel connector";
+    _qsfpFarEndCableBreakout[QSFP_CABLE_BREAKOUT_CABLE_SINGLE_FAR_END_2_CHANNELS_IMPLEM_OR_SEPAR_MOD_2_CHANNEL_CONN] =
+            "Cable with single far-end with 4 channels implemented, or separable module with a 4-channel connector";
+    _qsfpFarEndCableBreakout[QSFP_CABLE_BREAKOUT_CABLE_SINGLE_FAR_END_1_CHANNELS_IMPLEM_OR_SEPAR_MOD_1_CHANNEL_CONN] =
+            "Cable with single far-end with 1 channel implemented, or separable module with a 1-channel connector";
+    _qsfpFarEndCableBreakout[QSFP_CABLE_BREAKOUT_4_FAR_ENDS_1_CHANNELS_IMPLEM_IN_EACH] =
+            "4 far-ends with 1 channel implemented in each (i.e. 4x1 break out)";
+    _qsfpFarEndCableBreakout[QSFP_CABLE_BREAKOUT_2_FAR_ENDS_2_CHANNELS_IMPLEM_IN_EACH] =
+            "2 far-ends with 2 channels implemented in each (i.e. 2x2 break out)";
+    _qsfpFarEndCableBreakout[QSFP_CABLE_BREAKOUT_2_FAR_ENDS_1_CHANNELS_IMPLEM_IN_EACH] =
+            "2 far-ends with 1 channel implemented in each (i.e. 2x1 break out)";
 }
 
 void MlxlinkMaps::qsfpComlianceMapping()
@@ -562,6 +817,16 @@ void MlxlinkMaps::sfpComplianceMapping()
             "10G Base-LRM";
     _cableComplianceSfp[SFP_ETHERNET_COMPLIANCE_CODE_10G_BASE_ER] =
             "10G Base-ER";
+}
+
+void MlxlinkMaps::techMapping()
+{
+    _tech[TECH_NA] = "N/A";
+    _tech[TECH_40] = "40nm";
+    _tech[TECH_28] = "28nm";
+    _tech[TECH_16] = "16nm";
+    _tech[TECH_7] = "7nm";
+    _tech[TECH_5] = "5nm";
 }
 
 void MlxlinkMaps::extComplianceMapping()
@@ -716,6 +981,7 @@ void MlxlinkMaps::hostComplianceMapping()
     _cmisHostCompliance[CMIS_COMPLIANCE_FDR] = "IB FDR";
     _cmisHostCompliance[CMIS_COMPLIANCE_EDR] = "IB EDR";
     _cmisHostCompliance[CMIS_COMPLIANCE_HDR] = "IB HDR";
+    _cmisHostCompliance[CMIS_COMPLIANCE_NDR] = "IB NDR";
 }
 
 void MlxlinkMaps::mediaComplianceMapping()
@@ -798,6 +1064,22 @@ void MlxlinkMaps::initCableComplianceMapping()
     hostComplianceMapping();
     mediaComplianceMapping();
     activeComplianceMapping();
+    cmisIbComlianceMapping();
+    cimsCableBreakoutMapping();
+    qsfpFarEndCableBreakoutMapping();
+    rxTxCdrCapMapping();
+    cmisModuleStMapping();
+    rxPowerTypeMapping();
+    maxReadReqSizeMapping();
+    pwrStatusMapping();
+    portTypeMapping();
+    linkPeerMaxSpeedMapping();
+    portStateMapping();
+    tempFlagsMapping();
+    vccFlagsMapping();
+    dataPathStateMapping();
+    errorCodeResMapping();
+    techMapping();
 }
 
 void MlxlinkMaps::initCableTechnologyMapping()
@@ -885,6 +1167,7 @@ MlxlinkMaps::MlxlinkMaps()
     initCableComplianceMapping();
     initCableTechnologyMapping();
     initCablePowerClassMapping();
+    phyHstFsmHdrStateMapping();
 }
 
 MlxlinkMaps::~MlxlinkMaps()

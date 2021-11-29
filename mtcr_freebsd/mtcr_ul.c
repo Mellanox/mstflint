@@ -1,5 +1,6 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -2632,13 +2633,12 @@ int get_i2c_freq(mfile* mf, u_int8_t* freq) {
 }
 
 
-int read_dword_from_conf_space(u_int32_t offset, mfile *mf,
-                               struct mtcr_read_dword_from_config_space* read_config_space)
+int read_dword_from_conf_space(mfile *mf, u_int32_t offset, u_int32_t* data)
 {
     int ret = 0;
 
     // Parameters validation.
-    if(!mf || !read_config_space)
+    if(!mf || !data)
     {
         return -1;
     }
@@ -2654,7 +2654,7 @@ int read_dword_from_conf_space(u_int32_t offset, mfile *mf,
 
     if (!ret) {
         // read the data.
-        READ4_PCI(mf, &read_config_space->data, offset, "read value", return -1);
+        READ4_PCI(mf, data, offset, "read value", return -1);
     }
 
     // clear semaphore
@@ -2691,11 +2691,13 @@ int mcables_remote_operation_client_side(mfile* mf, u_int32_t address,
 
 
 int mlxcables_remote_operation_client_side(mfile* mf, const char* device_name,
-                                           char op, char flags)
+                                           char op, char flags,
+                                           const char* reg_name)
 {
     (void)mf;
     (void)device_name;
     (void)op;
     (void)flags;
+    (void)reg_name;
     return 0;
 }

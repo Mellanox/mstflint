@@ -3,6 +3,7 @@
  * flint_io.h - FLash INTerface
  *
  * Copyright (c) 2011 Mellanox Technologies Ltd.  All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -66,15 +67,20 @@ typedef struct ext_flash_attr {
     u_int32_t hw_dev_id;
     u_int32_t rev_id;
     char *type_str;   // NULL if not available
+    u_int32_t jedec_id;
     u_int32_t size;
     u_int32_t sector_size; // minimal sec
     int block_write;
     int command_set;
     u_int8_t quad_en_support;
+    u_int8_t driver_strength_support;
     u_int8_t dummy_cycles_support;
 
     u_int8_t quad_en;
     MfError mf_get_quad_en_rc;
+
+    u_int8_t driver_strength;
+    MfError mf_get_driver_strength_rc;
 
     u_int8_t dummy_cycles;
     MfError mf_get_dummy_cycles_rc;
@@ -125,7 +131,10 @@ public:
 
     virtual bool read_modify_write_phy(u_int32_t phy_addr, void *data, int cnt, bool noerase = false) = 0;
 
-    virtual bool write(u_int32_t addr, void *data, int cnt, bool noerase = false) = 0;
+    virtual bool write(u_int32_t addr, void *data, int cnt) {
+        return write(addr, data, cnt, false);
+    }
+    virtual bool write(u_int32_t addr, void *data, int cnt, bool noerase) = 0;
 
     virtual bool write_phy(u_int32_t phy_addr, void *data, int cnt, bool noerase = false) = 0;
 
@@ -207,8 +216,8 @@ protected:
     {
         u_int32_t result;
         if (_log2_chunk_size) {
-            result =  (phys_addr       & (0xffffffff >> (32 - _log2_chunk_size))) |
-                     ((phys_addr >> 1) & (0xffffffff << (     _log2_chunk_size)));
+            result = (phys_addr       & (0xffffffff >> (32 - _log2_chunk_size))) |
+                ((phys_addr >> 1) & (0xffffffff << (_log2_chunk_size)));
         }
         else {
             result = phys_addr;
@@ -498,6 +507,7 @@ public:
 
 //needed for printing flash status in flint hw query cmd
 #define QUAD_EN_PARAM "QuadEn"
+#define DRIVER_STRENGTH_PARAM "DriverStrength"
 #define DUMMY_CYCLES_PARAM "DummyCycles"
 #define FLASH_NAME "Flash"
 #define WRITE_PROTECT "WriteProtected"

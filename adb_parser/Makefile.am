@@ -1,6 +1,6 @@
 #--
 # 
-# Copyright (C) Jan 2019 Mellanox Technologies Ltd. All rights reserved.
+# Copyright (c) 2019-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # 
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -41,4 +41,6 @@ INCLUDES = -I$(USER_DIR) -I$(USER_DIR)/common
 AM_CXXFLAGS = -Wall -W -g -MP -MD -Werror -pipe $(COMPILER_FPIC)
 
 lib_LTLIBRARIES = libadb_parser.a
-libadb_parser_a_SOURCES = adb_parser.h adb_parser.cpp buf_ops.h buf_ops.cpp expr.h expr.cpp adb_expr.h adb_expr.cpp adb_db.h adb_db.cpp
+
+libadb_parser_a_SOURCES = buf_ops.cpp expr.cpp adb_expr.cpp adb_parser.cpp adb_db.cpp adb_config.cpp adb_exceptionHolder.cpp adb_field.cpp adb_instance.cpp adb_logfile.cpp adb_node.cpp adb_xmlCreator.cpp
+

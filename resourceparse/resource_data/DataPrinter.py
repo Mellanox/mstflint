@@ -1,4 +1,5 @@
 # Copyright (C) Jan 2020 Mellanox Technologies Ltd. All rights reserved.   
+# Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 #                                                                           
 # This software is available to you under a choice of one of two            
 # licenses.  You may choose to be licensed under the terms of the GNU       
@@ -113,7 +114,7 @@ class DataPrinter:
             body = ":"
         elif str(field).find("Warning[") != -1:
             body = ":"
-        elif field.find("DWORD") is not cs.PARSER_STRING_NOT_FOUND:
+        elif field.find("DWORD") != cs.PARSER_STRING_NOT_FOUND:
             body = ":"
         else:
             body = " = "

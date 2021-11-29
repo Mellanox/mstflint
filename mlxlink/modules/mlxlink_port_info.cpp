@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -63,7 +63,7 @@ void MlxlinkPortInfo::resetPPCNT()
     resetParser(PPCNT_REG);
     updateField("local_port", _localPort);
     updateField("pnat", _pnat);
-    updateField("grp", PPCNT_HISTOGRAM_GRP);
+    updateField("grp", PPCNT_HISTOGRAM_GROUP);
 }
 
 u_int32_t MlxlinkPortInfo::getNumberOfBins()
@@ -110,8 +110,8 @@ void MlxlinkPortInfo::updateBinsErrorsCount()
 
     for (u_int32_t binIdx = 0; binIdx < _numOfBins; ++binIdx) {
         _binsList[binIdx].numOfErrors  = add32BitTo64(
-                                    getFieldValue("hi_" + to_string(binIdx)),
-                                    getFieldValue("lo_" + to_string(binIdx)));
+                                    getFieldValue("hist[" +  to_string(binIdx) +"]_hi"),
+                                    getFieldValue("hist[" +  to_string(binIdx) +"]_lo"));
     }
 }
 

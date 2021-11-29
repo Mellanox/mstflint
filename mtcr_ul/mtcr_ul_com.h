@@ -1,6 +1,6 @@
 /*
  *
- * Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
+ * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -133,6 +133,11 @@ int tools_cmdif_unlock_semaphore_ul(mfile *mf);
 
 int mget_max_reg_size_ul(mfile *mf, maccess_reg_method_t reg_method);
 int supports_reg_access_gmp_ul(mfile *mf, maccess_reg_method_t reg_method);
+int supports_reg_access_cls_a_ul(mfile *mf, maccess_reg_method_t reg_method);
+int mib_send_cls_a_access_reg_mad_ul(mfile *mf, u_int8_t *data);
+int mib_send_gmp_access_reg_mad_ul(mfile *mf, u_int32_t *data,
+                                   u_int32_t reg_size, u_int32_t reg_id,
+                                   maccess_reg_method_t reg_method, int *reg_status);
 
 int mread_buffer_ul(mfile *mf, unsigned int offset, u_int8_t *data, int byte_len);
 int mwrite_buffer_ul(mfile *mf, unsigned int offset, u_int8_t *data, int byte_len);
@@ -148,8 +153,7 @@ int get_dma_pages(mfile *mf, struct mtcr_page_info* page_info,
 
 int release_dma_pages(mfile *mf, int page_amount);
 
-int read_dword_from_conf_space(u_int32_t offset, mfile *mf,
-                               struct mtcr_read_dword_from_config_space* read_config_space);
+int read_dword_from_conf_space(mfile *mf, u_int32_t offset, u_int32_t* data);
 
 #ifdef __cplusplus
 }

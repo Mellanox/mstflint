@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -41,11 +41,6 @@ typedef enum {
     SMP_SEM_EXTEND,
     SMP_SEM_RELEASE
 } sem_op_t;
-
-typedef enum {
-    SEM_LOCK_GET = 0x0,
-    SEM_LOCK_SET = 0x1
-} sem_lock_method_t;
 
 MTCR_API int mib_semaphore_lock_vs_mad(
     mfile *mf,

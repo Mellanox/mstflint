@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -67,7 +67,7 @@ static bool FindAndHandleNewLinePos(string& str, int& product_length, int& local
 string CommandLineRequester::BuildOptStr(option_ifc_t &opt)
 {
     string str;
-
+    str += CreateIndentFromInt(opt.numOfSpaces*4);
     if (opt.option_short_name != ' ') {
         str += "-";
         str += opt.option_short_name;
@@ -577,8 +577,8 @@ do_handle_option:
         if (ignore_this_req == false) {
             try{
                 curr_result = p_req->HandleOption(long_opt_name, (tools_optarg == NULL) ? "" : tools_optarg);
-            }catch (std::exception&){
-                this->SetLastError("Failed to handle option %s", long_opt_name.c_str());
+            }catch (std::exception &exc){
+                this->SetLastError(exc.what());
                 goto parse_exit;
             }
             if (curr_result) {

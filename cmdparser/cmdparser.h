@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -58,6 +58,7 @@ typedef struct option_ifc {
     char option_short_name;         //can be used as short option, if space than no short flag
     string option_value;            //if "" has no argument
     string description;             //will be display in usage
+    int  numOfSpaces;
     bool hidden;                    //if hidden than will not be diaplayed in regular usage
     bool is_mandatory;
 } option_ifc_t;
@@ -106,13 +107,15 @@ public:
                            string option_value,
                            string description,
                            bool hidden = false,
-                           bool is_mandatory = false)
+                           bool is_mandatory = false,
+                           int  numOfSpaces = 0)
     {
         option_ifc_t opt;
         opt.option_name = option_name;
         opt.option_short_name = option_short_name;
         opt.option_value = option_value;
         opt.description = description;
+        opt.numOfSpaces = numOfSpaces;
         opt.hidden = hidden;
         opt.is_mandatory = is_mandatory;
         this->options.push_back(opt);

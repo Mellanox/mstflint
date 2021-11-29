@@ -1,5 +1,5 @@
 /* 
- * Copyright (C) Jan 2019 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2019-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * 
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -39,6 +39,8 @@
 #include <string.h>
 #include <cstdio>
 #include <stdexcept>
+#include <fstream>
+#include <assert.h>
 #include <common/tools_utils.h>
 #include <common/tools_version.h>
 #include <mft_utils/mft_sig_handler.h>
@@ -113,6 +115,12 @@
 #define IGNORE_REG_CHECK_FLAG_SHORT ' '
 #define FORCE_FLAG                  "yes"
 #define FORCE_FLAG_SHORT            ' '
+#define IGNORE_RO                   "ignore_ro"
+#define IGNORE_RO_SHORT             ' '
+#define FILE_TO_DUMP_BUFFER         "output_file"
+#define FILE_TO_DUMP_BUFFER_SHORT    ' '
+#define FILE_IO                     "file_io"
+#define FILE_IO_SHORT               ' '
 
 using namespace mlxreg;
 
@@ -136,6 +144,10 @@ MlxRegUi::MlxRegUi() :
     _op             = CMD_UNKNOWN;
     _mlxRegLib      = NULL;
     _force          = false;
+    _ignore_ro      = false;
+    _output_file    ="";
+    _file_io        ="";
+
 #if defined(EXTERNAL) || defined(MST_UL)
     _isExternal     = true;
 #else
@@ -177,6 +189,10 @@ void MlxRegUi::initCmdParser()
     AddOptions(OP_SHOW_REGS_FLAG, OP_SHOW_REGS_FLAG_SHORT, "", "Print available registers names and exit");
     AddOptions(OP_SHOW_ALL_REGS_FLAG, OP_SHOW_ALL_REGS_FLAG_SHORT, "", "");
     AddOptions(FORCE_FLAG, FORCE_FLAG_SHORT, "", "");
+    AddOptions(IGNORE_RO, IGNORE_RO_SHORT, "", "Ignore the access check in the SET operation");
+    AddOptions(FILE_TO_DUMP_BUFFER, FILE_TO_DUMP_BUFFER_SHORT, "OutputFile", "Dump buffer to file instead of sending to device");
+    AddOptions(FILE_IO, FILE_IO_SHORT, "FilePath", "Work with file for IO instead of CLI flags");
+
     _cmdParser.AddRequester(this);
 }
 
@@ -332,6 +348,7 @@ bool MlxRegUi::askUser(const char *question)
     if (_force) {
         printf("y\n");
     } else {
+        mft_restore_and_raise();
         fflush(stdout);
         std::string answer;
         std::getline(std::cin, answer);
@@ -339,6 +356,7 @@ bool MlxRegUi::askUser(const char *question)
             strcasecmp(answer.c_str(), "yes")) {
             return false;
         }
+        mft_signal_set_handling(1);//set again in case we move from here to another critical section.
     }
     return true;
 }
@@ -418,7 +436,18 @@ ParseStatus MlxRegUi::HandleOption(string name, string value)
         _op = CMD_SHOW_ALL_REGS;
         return PARSE_OK;
     }
-
+#if !defined(EXTERNAL) && !defined(MST_UL)
+    else if (name == IGNORE_RO) {
+        _ignore_ro = true;
+        return PARSE_OK;
+    } else if (name == FILE_TO_DUMP_BUFFER) {
+        _output_file = value;
+        return PARSE_OK;
+    } else if (name == FILE_IO){
+        _file_io = value;
+        return PARSE_OK;
+    }
+#endif
     return PARSE_ERROR;
 }
 
@@ -455,6 +484,54 @@ void MlxRegUi::paramValidate()
     if (_op == CMD_SET && _dataStr == "") {
         throw MlxRegException("you must provide registers data string to use SET");
     }
+}
+
+
+void MlxRegUi::readFromFile(string file_name, vector<u_int32_t> &buff, int len)
+{
+    ifstream file;
+    file.open( file_name.c_str(), ios::binary );
+    
+    for (int idx=0; idx<(len/4); idx++) {
+        u_int32_t data;
+        file.read((char*) &data, sizeof(u_int32_t));
+        if (!file) {
+            MlxRegException("Failed to read from file");
+        }
+        buff.push_back(__cpu_to_be32(data));
+    }
+
+    file.close();
+}
+
+
+void MlxRegUi::writeToFile(string file_name, vector<u_int32_t> buff)
+{
+    ofstream file;
+    file.open(file_name.c_str(), ios::binary | ios::in | ios::out); // Overwrite the file (in/out)
+    for(unsigned int idx=0; idx<buff.size(); idx++) {
+        u_int32_t data = __cpu_to_be32(buff[idx]);
+        file.write((char*) &data, sizeof(u_int32_t));
+    }
+    file.close();
+}
+
+
+void MlxRegUi::sendCmdBasedOnFileIo(maccess_reg_method_t cmd, int reg_size)
+{
+    
+    std::vector<u_int32_t>  buff; 
+
+    //* read input from file
+    readFromFile(_file_io, buff, reg_size);
+    
+    //* Send GET command
+    _mlxRegLib->sendRegister(_regName, cmd, buff);
+
+    //* Write output to file (for GET)
+    if (cmd == MACCESS_REG_METHOD_GET) {
+        writeToFile(_file_io, buff);
+    } 
 }
 
 void MlxRegUi::run(int argc, char **argv)
@@ -520,6 +597,13 @@ void MlxRegUi::run(int argc, char **argv)
 
     case CMD_GET:
         {
+            if (_file_io != "") {
+                assert(_regName != "");
+                int reg_size = (_mlxRegLib->findAdbNode(_regName)->size) / 8; // in Bytes
+                sendCmdBasedOnFileIo(MACCESS_REG_METHOD_GET, reg_size);
+                break;
+            }
+
             if (_regName != "") {
                 regNode = _mlxRegLib->findAdbNode(_regName);
             }
@@ -538,11 +622,17 @@ void MlxRegUi::run(int argc, char **argv)
 
     case CMD_SET:
         {
+            if (_file_io != "") {
+                int reg_size = (_mlxRegLib->findAdbNode(_regName)->size) / 8; // in Bytes
+                sendCmdBasedOnFileIo(MACCESS_REG_METHOD_SET, reg_size);
+                break;
+            }
+
             if (_regName != "") {
                 regNode = _mlxRegLib->findAdbNode(_regName);
             }
             // Read current register data into buffer
-            RegAccessParser parserGet(_dataStr, _indexesStr, regNode, _dataLen);
+            RegAccessParser parserGet(_dataStr, _indexesStr, regNode, _dataLen, _ignore_ro);
             buff = parserGet.genBuff();
             if (_regName != "") { // Known mode
                 _mlxRegLib->sendRegister(_regName, MACCESS_REG_METHOD_GET, buff);
@@ -550,8 +640,13 @@ void MlxRegUi::run(int argc, char **argv)
                 _mlxRegLib->sendRegister(_regID, MACCESS_REG_METHOD_GET, buff);
             }
             // Update the register buffer with user inputs
-            RegAccessParser parser(_dataStr, _indexesStr, regNode, buff);
+            RegAccessParser parser(_dataStr, _indexesStr, regNode, buff, _ignore_ro);
             buff = parser.genBuff();
+            if (_output_file != "") {
+                printAdbContext(regNode, buff);
+                _mlxRegLib->dumpRegisterData(_output_file, buff);
+                break;
+            }
             if (_regName != "") { // Known mode
                 printf("You are about to send access register: %s with the following data:\n", _regName.c_str());
                 printAdbContext(regNode, buff);

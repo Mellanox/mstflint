@@ -1,6 +1,7 @@
 
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -90,13 +91,6 @@ namespace mfa2 {
             return _packageDescriptor;
         }
 
-        long getZipOffset() {
-            return _zipOffset;
-        }
-
-        u_int16_t getDeviceCount() const {
-            return _packageDescriptor.getDeviceDescriptorsCount();
-        }
         DeviceDescriptor getDeviceDescriptor(int index) const {
             return _deviceDescriptors[index];
         }
@@ -120,7 +114,6 @@ namespace mfa2 {
         map_string_to_component getMatchingComponents(char* psid, u_int16_t fw_ver[3]);
         bool unzipComponent(map_string_to_component& matchingComponentsMap, u_int32_t choice, vector<u_int8_t>& fwBinaryData);
         bool unzipLatestVersionComponent(map_string_to_component& matchingComponentsMap, vector<u_int8_t>& fwBinaryData);
-        bool getLatestComponent(vector<u_int8_t>& fwBinaryData, u_int16_t fw_ver[3]);
     };
 }
 #endif

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -57,6 +57,9 @@ extern "C" {
 #define FLASH_REG_ACCESS    0x9001
 #define ICMD_MAX_CMD_SIZE   0x300 // max mailbox size
 
+MTCR_API extern int increase_poll_time;
+
+
 /* --------- Functional API ---------------------------------------- */
 /**
  * Create a device-context for the command-interface of a ConnectIB device.
@@ -87,6 +90,13 @@ int icmd_send_command_int(mfile     *mf,
                           IN int write_data_size,
                           IN int read_data_size,
                           IN int skip_write);
+
+int icmd_send_command_enhanced(mfile     *mf,
+                               IN int opcode,
+                               INOUT void *data,
+                               IN int write_data_size,
+                               IN int read_data_size,
+                               IN int skip_write);
 
 /**
  * Take the Tools-HCR semaphore. This functionality is provided

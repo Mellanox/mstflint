@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -140,6 +140,14 @@ TLVConf::TLVConf(int columnsCount, char **dataRow, char **headerRow) :
     _attrs[RD_EN_ATTR] = "1";
 
     _buff.resize(_size, 0);
+}
+
+TLVConf::~TLVConf()
+{
+    VECTOR_ITERATOR(Param *, this->_params, param)
+    {
+        delete *param;
+    }
 }
 
 void TLVConf::getView(TLVConfView& tlvConfView)

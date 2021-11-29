@@ -1,5 +1,6 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -154,6 +155,27 @@ bool DMAComponentAccess::allocateMemory()
     return true;
 }
 
+bool DMAComponentAccess::isBMESet(mfile* mf) {
+    bool res = false;
+
+    #ifdef __WIN__
+    (void)mf;
+    res = true; // mst64 (system service that is loaded in mtcr::open()) will set the BME
+    #else
+    int COMMAND_REG_OFFSET = 0x4;
+    int BME_MASK = 0x00000004;
+
+    u_int32_t bme_dword = 0;
+    int rc = read_dword_from_conf_space(mf, COMMAND_REG_OFFSET, &bme_dword);
+
+    if ((rc == 0) && (bme_dword & BME_MASK)) {
+        res = true;
+    }
+    #endif
+
+    return res;
+}
+
 bool DMAComponentAccess::readFromDataPage(mcddReg* accessData,  mtcr_page_addresses page, u_int32_t* data, int data_size, int leftSize)
 {
     u_int32_t* data_ptr = (u_int32_t*)page.virtual_address;
@@ -180,6 +202,15 @@ bool DMAComponentAccess::accessComponent(u_int32_t updateHandle, u_int32_t offse
     try
     {
 #endif
+        //* Allocating memory on first access only (lazy allocation)
+        if (_allocatedListVect.empty()) {
+            DPRINTF(("DMAComponentAccess::AccessComponent allocating memory for DMA\n"));
+            if (!allocateMemory()) {
+                DPRINTF(("DMAComponentAccess::AccessComponent memory allocation for DMA failed\n"));
+                setLastError(FWCOMPS_MEM_ALLOC_FAILED);
+                return false; // this will trigger a fallback to direct_access instead of dma_access
+            }
+        }
         int leftSize = (int)data_size;
         int CurrentPage = FMPT_FIRST_PAGE;
         char stage[MAX_MSG_SIZE] = { 0 };
@@ -205,6 +236,7 @@ bool DMAComponentAccess::accessComponent(u_int32_t updateHandle, u_int32_t offse
         prepareParameters(updateHandle, &accessData, offset + (data_size - leftSize), data, data_size, access, leftSize, page, mailboxPage);
         int nIteration = 0;
         while (leftSize > 0) {
+            DPRINTF(("0x%x bytes left to %s\n", leftSize, access == MCDA_READ_COMP ? "read" : "burn"));
             memset((u_int8_t*)mailboxPage.virtual_address, 0, TOOLS_OPEN_MCDD_DESCRIPTOR_SIZE);
             memset(&mailboxVirtPtr_1, 0, TOOLS_OPEN_MCDD_DESCRIPTOR_SIZE);//set zero before each transaction
             maxDataSize = leftSize > PAGE_SIZE ? PAGE_SIZE : leftSize;
@@ -291,24 +323,24 @@ bool DMAComponentAccess::accessComponent(u_int32_t updateHandle, u_int32_t offse
             nIteration++;
             int newPercentage = (((data_size - leftSize) * 100) / data_size);
 #ifdef UEFI_BUILD
-        if (newPercentage > progressPercentage &&
-            progressFuncAdv && progressFuncAdv->uefi_func) {
+            if (newPercentage > progressPercentage &&
+                progressFuncAdv && progressFuncAdv->uefi_func) {
                 progressPercentage = newPercentage;
                 if (progressFuncAdv->uefi_func((int)newPercentage)) {
-                     setLastError(FWCOMPS_ABORTED);
-                     return false;
+                    setLastError(FWCOMPS_ABORTED);
+                    return false;
                 }
-        }
-#else
-        if (newPercentage > progressPercentage &&
-            progressFuncAdv && progressFuncAdv->func) {
-            progressPercentage = newPercentage;
-            if (progressFuncAdv->func(progressPercentage, stage,
-                PROG_WITH_PRECENTAGE, progressFuncAdv->opaque)) {
-                setLastError(FWCOMPS_ABORTED);
-                return false;
             }
-        }
+#else
+            if (newPercentage > progressPercentage &&
+                progressFuncAdv && progressFuncAdv->func) {
+                progressPercentage = newPercentage;
+                if (progressFuncAdv->func(progressPercentage, stage,
+                    PROG_WITH_PRECENTAGE, progressFuncAdv->opaque)) {
+                    setLastError(FWCOMPS_ABORTED);
+                    return false;
+                }
+            }
 #endif
         }
 

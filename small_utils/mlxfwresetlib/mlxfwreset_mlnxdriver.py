@@ -1,4 +1,5 @@
 # Copyright (c) 2004-2010 Mellanox Technologies LTD. All rights reserved.
+# Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -39,8 +40,9 @@ import abc
 import os
 import platform
 from . import mlxfwreset_utils
-from .mlxfwreset_utils import cmdExec
+from .mlxfwreset_utils import cmdExec, is_in_internal_host
 from functools import reduce
+from time import sleep
 
 
 class DriverNotExist(Exception):
@@ -206,24 +208,49 @@ class MlnxDriverLinux(MlnxDriver):
 
         driver_err, rshim_err = None, None
 
+        #* Start NIC driver
         for dbdf,driver_name in self.drivers_dbdf:
             driver_path = '{0}/{1}'.format(MlnxDriverLinux.PCI_DRIVERS_PATH,driver_name)
             assert os.path.exists(driver_path)
-            # Bind if not binded (in HotPlug, 'rescan' will bind automatically)
-            if not os.path.exists('/sys/bus/pci/devices/{0}/driver'.format(dbdf)):
-                cmd = 'echo "{0}" > {1}/bind'.format(dbdf, driver_path)
-                self.logger.info('{0}'.format(cmd))
-                (rc, _, _) = cmdExec(cmd)
-                if rc!=0:
-                    driver_err = True
+            
+            # In case of hotplug the OS *might* start the driver automatically as part of the rescan/enumeration stage.
+            # On kernel XXXX we saw that the driver file (sysfs) doesn't exist 'on time' and as a result the tool will
+            # start the driver even though the OS already triggered the driver start. In this case the tool gets error
+            # from the CLI but we don't want the tool to exit with error. For that reason we added the retry mechanism
+
+            MAX_NUM_OF_TRIES = 10
+            try_num = 1
+            while try_num <= MAX_NUM_OF_TRIES:
+                if os.path.exists('/sys/bus/pci/devices/{0}/driver'.format(dbdf)):  # driver is up
+                    driver_err = False
+                    break
+                else:                                                               # driver is down
+                    cmd = 'echo "{0}" > {1}/bind'.format(dbdf, driver_path)
+                    self.logger.info('{0}'.format(cmd))
+                    (rc, _, _) = cmdExec(cmd)
+                    if rc == 0: # bind succeeded 
+                        driver_err = False
+                        break
+                    else:       # bind failed
+                        try_num += 1
+                        driver_err = True
+                        sleep(0.1)
         
+        #* Configure the driver in BlueField's internal host (ARM)            
+        if is_in_internal_host() and driver_err is False:                   # This code is WA. FR will be opened in rel1
+            cmd = "mlnx_bf_configure"                                       # 2022 to address this issue (RM #2831210)
+            rc, _, _ = cmdExec(cmd)
+            if rc != 0:
+                print("-W- Failed to configure the driver")
+
+        #* Start RSHIM driver (BlueField)
         try:
             if self.rshim_driver:
                 self.rshim_driver.start()
         except Exception as err:
             rshim_err = err
 
-        # Error (Best effort to try to start both drivers before indicating on error)
+        #* Handle Errors (Best effort to try to start both drivers before indicating on error)
         if driver_err:                          
             raise RuntimeError("Failed to start driver! please start driver manually")
         if rshim_err:

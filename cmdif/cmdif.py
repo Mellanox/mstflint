@@ -1,5 +1,5 @@
 
-# Copyright (c) 2004-2010 Mellanox Technologies LTD. All rights reserved.
+# Copyright (c) 2004-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -54,7 +54,10 @@ CMDIF = None
 try:
     from ctypes import *
     if platform.system() == "Windows" or os.name == "nt":
-        CMDIF = CDLL(".\\libcmdif-1.dll")
+        try:
+            CMDIF = CDLL("libcmdif-1.dll")
+        except:
+            CMDIF = CDLL(os.path.join(os.path.dirname(os.path.realpath(__file__)), "libcmdif-1.dll"))
     else:
         try:
             CMDIF = CDLL("ccmdif.so")

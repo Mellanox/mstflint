@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -187,6 +187,12 @@ public:
     std::string _err;
     MlxcfgException(const char *fmt, ...);
     ~MlxcfgException() {};
+};
+
+class MlxcfgTLVNotFoundException : public MlxcfgException {
+    public:
+        MlxcfgTLVNotFoundException(const char* cTLVName);
+        ~MlxcfgTLVNotFoundException() {};
 };
 
 #endif /* MLXCFG_UTILS_H_ */

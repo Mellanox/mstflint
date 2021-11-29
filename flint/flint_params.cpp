@@ -3,6 +3,7 @@
  * flint_params.cpp - FLash INTerface
  *
  * Copyright (c) 2013 Mellanox Technologies Ltd.  All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -57,6 +58,7 @@ FlintParams::FlintParams()
     low_cpu = false;
     skip_rom_query = false;
     image_specified = false;
+    nonencrypted_image_specified = false;
     mfa2_specified = false;
     nofs = false;
     allow_psid_change = false;
@@ -86,6 +88,7 @@ FlintParams::FlintParams()
     flash_params.num_of_flashes = 0;
     flash_params.log2size = 0;
     use_dev_img_info = false;
+    ignore_crc_check = false;
     skip_ci_req = false;
     use_dev_rom = false;
     privkey_specified = false;

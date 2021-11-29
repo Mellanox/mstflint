@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Mellanox Technologies Ltd.  All rights reserved.
+ * Copyright (c) 2020-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -89,17 +89,6 @@ enum SCAN_STATUS {
     ERROR_EYE_SCAN_NOT_COMPLETED
 };
 
-enum PNAT_ACCESS {
-    PNAT_LOCAL = 0, PNAT_LABEL = 1, PNAT_PCIE = 3
-};
-
-enum PRODUCT_TECHNOLOGY {
-    PRODUCT_40NM = 0,
-    PRODUCT_28NM = 1,
-    PRODUCT_16NM = 3,
-    PRODUCT_7NM = 4
-};
-
 enum SLRED_LANE_SPEED {
     SLRED_LANE_SPEED_QDR = 2,
     SLRED_LANE_SPEED_FDR10 = 3,
@@ -156,12 +145,16 @@ public:
     // Global fields should be taken from mlxlink_commander
     u_int32_t localPort;
     u_int32_t portType;
-    bool pciePort;
-    int lane;
+    u_int32_t depth;
+    u_int32_t pcieIndex;
+    u_int32_t node;
     u_int32_t protoActive;
     u_int32_t numOfLanes;
-    bool isPam4Speed;
     u_int32_t scanIterations;
+    bool isPam4Speed;
+    bool pciePort;
+    int lane;
+    string activeSpeedStr;
 
 private:
     // Helper functions

@@ -1,6 +1,7 @@
 
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -57,15 +58,7 @@ private:
 
 public:
     MFA2PackageGen() {};
-
-    void generateBinFromJSON(const string& jsonFile, vector<u_int8_t>& buff) const;
     void generateBinFromFWDirectory(const string& directory, const string& version, vector<u_int8_t>& buff) const;
-    //void generateBinFromDir     (vector<u_int8_t>& buff);
-    //void generateJSONFromDir    (const string& output);
-    //void generateJSONFromBin    (const string& output);
-
-    //static void generateEmptyJSON(const string& output);
-
 };
 
 #endif

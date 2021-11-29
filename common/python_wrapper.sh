@@ -10,11 +10,12 @@ mbindir=@MST_BIN_DIR@
 
 MSTFLINT_EXT_PYTHON_LIB_DIR=$mlibdir/mstflint/python_ext_libs
 MSTFLINT_PYTHON_TOOLS=$mlibdir/mstflint/python_tools
+PY_TOOLS_REL_PATHS=$(dirname $0)/../lib/mstflint/python_tools:$(dirname $0)/../lib64/mstflint/python_tools
 
 if test -z "${PYTHONPATH}"; then
-   PYTHONPATH=$MSTFLINT_PYTHON_TOOLS:$MSTFLINT_EXT_PYTHON_LIB_DIR
+   PYTHONPATH=$MSTFLINT_PYTHON_TOOLS:$PY_TOOLS_REL_PATHS:$MSTFLINT_EXT_PYTHON_LIB_DIR
 else
-   PYTHONPATH=$MSTFLINT_PYTHON_TOOLS:$MSTFLINT_EXT_PYTHON_LIB_DIR:${PYTHONPATH}
+   PYTHONPATH=$MSTFLINT_PYTHON_TOOLS:$PY_TOOLS_REL_PATHS:$MSTFLINT_EXT_PYTHON_LIB_DIR:${PYTHONPATH}
 fi
 
 export PYTHONPATH
@@ -35,7 +36,7 @@ fi
 SCRIPT_PATH=$MSTFLINT_PYTHON_TOOLS/${EXEC_NAME}/${EXEC_NAME}.py
 
 if test ! -f $SCRIPT_PATH; then
-    SCRIPT_PATH=$(find $MSTFLINT_PYTHON_TOOLS -name ${EXEC_NAME}.py)
+    SCRIPT_PATH=$(find $MSTFLINT_PYTHON_TOOLS $(echo $PY_TOOLS_REL_PATHS | sed "s/:/ /g")  -name ${EXEC_NAME}.py 2>/dev/null | head -n 1)
 fi
 
 if test -z "${SCRIPT_PATH=}"; then

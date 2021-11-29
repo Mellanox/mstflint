@@ -1,5 +1,6 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -398,12 +399,15 @@ typedef struct fs3_info_ext {
     char deviceVsd[VSD_LEN + 1];
     bool sec_boot;
     life_cycle_t life_cycle;
+    bool encryption;
 
     // security version (for fs4)
     u_int32_t                               image_security_version;       
     device_security_version_access_method_t device_security_version_access_method;
     u_int32_t                               device_security_version_gw;
     struct reg_access_hca_mfsv_reg          device_security_version_mfsv;
+    
+    int global_image_status;
 
 } fs3_info_t;
 
@@ -464,6 +468,7 @@ typedef struct fw_info_com {
     u_int16_t pci_device_id;
     char branch_ver[BRANCH_LEN + 1];
     char running_branch_ver[BRANCH_LEN + 1];
+    u_int8_t encrypted_fw;
 } fw_info_com_t;
 
 typedef struct fw_info_ext {

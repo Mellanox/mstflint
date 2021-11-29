@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Jan 2019 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2019-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -94,17 +94,20 @@ enum STATUS_DDM_FLAGS_TYPE {
 /*
  * Records size
  */
+#define TOOL_INFORMAITON_INFO_LAST      4
 #define PDDR_OPERATIONAL_INFO_LAST      7
 #define PDDR_SUPPORTED_INFO_LAST        2
 #define PDDR_TRUOBLESHOOTING_INFO_LAST  4
 #define TEST_MODE_INFO_LAST             6
 #define PCIE_INFO_LAST                  4
 #define MODULE_INFO_LAST                23
+#define MODULE_INFO_AMBER               123
 #define BER_INFO_LAST                   7
-#define TEST_MODE_BER_INFO_LAST         3
+#define BER_INFO_NDR_LAST               12
+#define TEST_MODE_BER_INFO_LAST         4
 #define MPCNT_PERFORMANCE_INFO_LAST     4
 #define MPCNT_TIMER_INFO_LAST           1
-#define EYE_OPENING_INFO_LAST           3
+#define EYE_OPENING_INFO_LAST           9
 #define FEC_CAP_INFO_LASE               5
 #define DEVICE_INFO_LAST                5
 #define BER_MONITOR_INFO_LAST           2

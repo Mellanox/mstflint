@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -184,8 +184,7 @@ int get_dma_pages(mfile *mf, struct mtcr_page_info* page_info,
 
 int release_dma_pages(mfile *mf, int page_amount);
 
-int read_dword_from_conf_space(u_int32_t offset, mfile *mf,
-                               struct mtcr_read_dword_from_config_space* read_config_space);
+int read_dword_from_conf_space(mfile *mf, u_int32_t offset, u_int32_t* data);
 
 #ifdef __cplusplus
 }

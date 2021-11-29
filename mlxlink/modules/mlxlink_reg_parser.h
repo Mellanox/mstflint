@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Jan 2019 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2019-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -48,6 +48,9 @@ using namespace mlxreg;
         mlxlinklogger->debugLog(format, __VA_ARGS__);\
     }\
 
+#define PDDR_STATUS_MESSAGE_LENGTH_HCA  236
+#define PDDR_STATUS_MESSAGE_LENGTH_SWITCH 59
+
 class MlxlinkRegParser :public RegAccessParser{
 public:
     MlxlinkRegParser();
@@ -61,6 +64,9 @@ public:
     void updateField(string field_name, u_int32_t value);
     u_int32_t getFieldValue(string field_name);
     string getFieldStr(const string &field);
+    string getRawFieldValueStr(const string fieldName);
+    u_int32_t getFieldSize(string field_name);
+    string getAscii(const string & name, u_int32_t size = 4);
 
     u_int32_t _gvmiAddress;
     MlxRegLib *_regLib;

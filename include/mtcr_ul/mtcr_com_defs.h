@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -92,6 +92,7 @@ typedef long long int64_t;
 
 #define DEV_NAME_SZ 512
 #define MAX_PAGES_SIZE 8
+#define SMP_SEMAPHOE_LOCK_CMD 0xff53
 
 /*
  * MST <--> MTCR API defines
@@ -115,6 +116,11 @@ typedef struct mib_private_t {
 //#else
 //#include "mtcr_ib_private.h"
 //#endif
+
+typedef enum {
+    SEM_LOCK_GET = 0x0,
+    SEM_LOCK_SET = 0x1
+} sem_lock_method_t;
 
 typedef enum MError {
     ME_OK = 0,

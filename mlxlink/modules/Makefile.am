@@ -1,6 +1,6 @@
 #--
 # 
-# Copyright (C) Jan 2019 Mellanox Technologies Ltd. All rights reserved.
+# Copyright (c) 2019-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # 
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -70,7 +70,12 @@ libmodules_lib_a_SOURCES = mlxlink_commander.h \
                             mlxlink_err_inj_commander.h \
                             mlxlink_err_inj_commander.cpp \
                             mlxlink_port_info.h \
-                            mlxlink_port_info.cpp
+                            mlxlink_port_info.cpp \
+                            mlxlink_amBER_collector.h \
+                            mlxlink_amBER_collector.cpp \
+                            amber_field.h \
+                            amber_field.cpp \
+                            mlxlink_enums.h
 
 libmodules_lib_a_LIBADD = printutil/libprint_util_lib.a $(JSON_LIBS)
 libmodules_lib_a_CFLAGS = $(AM_CFLAGS)

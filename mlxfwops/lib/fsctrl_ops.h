@@ -1,5 +1,6 @@
 /*
  * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -33,6 +34,8 @@
 #include "fw_ops.h"
 #include "aux_tlv_ops.h"
 #include "fw_comps_mgr/fw_comps_mgr.h"
+#include "fw_comps_mgr/fw_comps_mgr_dma_access.h"
+#include "tools_layouts/image_layout_layouts.h"
 
 class FsCtrlOperations : public FwOperations {
 public:
@@ -91,6 +94,10 @@ public:
     virtual u_int32_t GetHwDevId() { return _hwDevId; }
     bool FwReactivateImage();
     Tlv_Status_t GetTsObj(TimeStampIFC **tsObj);
+    bool isEncrypted(bool& is_encrypted);
+    bool getITOCAddr(u_int32_t& addr);
+    bool CheckITOCSignature(u_int8_t* signature);
+    bool burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& burnParams);
 
     virtual bool IsFsCtrlOperations()
     {
@@ -99,9 +106,12 @@ public:
     virtual mfile* getMfileObj() {
         return _fwCompsAccess->getMfileObj();
     }
-    virtual bool GetSecureBootInfo();
+    virtual bool IsSecureBootSupported();
     virtual bool IsCableQuerySupported();
     virtual bool IsLifeCycleSupported();
+    virtual bool IsEncryptionSupported();
+    virtual bool IsSecurityVersionViolated(u_int32_t image_security_version);
+    
 protected:
     bool FsIntQuery();
     bool GetImageInfo(u_int8_t *buff);
@@ -113,6 +123,9 @@ protected:
     virtual bool VerifyAllowedParams(ExtBurnParams &burnParams, bool isSecure);
     bool BadParamErrMsg(const char *unSupportedOperation, bool isSecure);
     bool _Burn(std::vector <u_int8_t> imageOps4MData, ExtBurnParams& burnParams, FwComponent::comps_ids_t ComponentId = FwComponent::COMPID_BOOT_IMG);
+    bool _createImageOps(FwOperations** imgOps);
+    void ExtractSwitchFWVersion(const fwInfoT& fwQuery);
+    
     fs3_info_t _fsCtrlImgInfo;
     FwCompsMgr *_fwCompsAccess;
     bool _isSecured;

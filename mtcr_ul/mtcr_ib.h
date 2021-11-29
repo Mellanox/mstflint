@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Jan 2013 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2013-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -56,8 +56,12 @@ int mib_acces_reg_mad(mfile *mf, u_int8_t *data);
 
 int mib_smp_set(mfile *mf, u_int8_t *data, u_int16_t attr_id, u_int32_t attr_mod);
 int mib_smp_get(mfile *mf, u_int8_t *data, u_int16_t attr_id, u_int32_t attr_mod);
+int mib_semaphore_lock_smp(mfile *mf, u_int8_t *data, sem_lock_method_t method);
 int mib_get_gmp(mfile *mf, unsigned attr_id, unsigned mod, u_int32_t *vsmad_data, size_t vsmad_data_len);
 int mib_supports_reg_access_gmp(mfile *mf, maccess_reg_method_t reg_method);
-int mib_send_gmp_access_reg_mad(mfile *mf, u_int32_t *data, u_int32_t reg_size, u_int32_t reg_id, maccess_reg_method_t reg_method);
+int mib_send_gmp_access_reg_mad(mfile *mf, u_int32_t *data,
+                                u_int32_t reg_size, u_int32_t reg_id,
+                                maccess_reg_method_t reg_method, int *reg_status);
 int mib_supports_reg_access_cls_a(mfile *mf, maccess_reg_method_t reg_method);
+int mib_send_cls_a_access_reg_mad(mfile *mf, u_int8_t *data);
 #endif

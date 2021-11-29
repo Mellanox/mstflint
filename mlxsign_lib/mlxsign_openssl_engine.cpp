@@ -1,5 +1,6 @@
 /*
  * Copyright (C) Jan 2021 Mellanox Technologies Ltd. All rights reserved.
+ * Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -30,7 +31,7 @@
  * SOFTWARE.
  */
 
-#ifndef NO_OPEN_SSL
+#if !defined(NO_OPEN_SSL) && !defined(NO_DYNAMIC_ENGINE)
 #include "mlxsign_openssl_engine.h"
 #include <iostream>
 #include <openssl/ssl.h>
@@ -92,8 +93,10 @@ OpensslEngineSigner::~OpensslEngineSigner()
     EVP_cleanup();
     ERR_free_strings();
     CRYPTO_cleanup_all_ex_data();
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
     OPENSSL_thread_stop();
     OPENSSL_cleanup();
+#endif
 }
 
 string OpensslEngineSigner::getOpenSSLError()
@@ -132,6 +135,12 @@ void OpensslEngineSigner::loadPrivateKey()
     {
         throw OpensslEngineException("Failed to load key from engine with key identifier:" + keyIdentifier, MlxSign::MLX_SIGN_RSA_KEY_ILLEGAL_OPENSSL_URI);
     }
+    privateKeySize = EVP_PKEY_size(key);
+}
+
+int OpensslEngineSigner::getPrivateKeySize()
+{
+    return privateKeySize;
 }
 
 void OpensslEngineSigner::createContext()
