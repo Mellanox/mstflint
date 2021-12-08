@@ -173,6 +173,8 @@ public:
     std::map<u_int32_t, string>      _SLTP7BadSetStatus2Str;
     std::map<u_int32_t, std::string> _ethANFsmState;
     std::map<u_int32_t, std::string> _fecModeActive;
+    std::map<u_int32_t, pair<string, string>> _fecModeMask;
+    std::vector<pair<string, string>> _fecPerSpeed;
     std::map<u_int32_t, std::string> _loopbackModeList;
     std::map<u_int32_t, std::string> _anDisableList;
     std::map<u_int32_t, std::string> _tech;

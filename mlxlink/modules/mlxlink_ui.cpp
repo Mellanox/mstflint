@@ -112,10 +112,10 @@ void MlxlinkUi::printSynopsisCommands()
     MlxlinkRecord::printFlagLine(PPLR_FLAG_SHORT, PPLR_FLAG, "loopback",
                   "Configure Loopback Mode [NO(no loopback)/RM(phy remote Rx-to-Tx loopback)/PH(internal phy Tx-to-Rx loopback)/EX(external loopback connector needed)/EX(external Tx-to-Rx loopback)]");
     MlxlinkRecord::printFlagLine(PPLM_FLAG_SHORT, PPLM_FLAG, "fec_override",
-                  "Configure FEC [AU(Auto)/NF(No-FEC)/FC(FireCode FEC)/RS(RS-FEC)]");
+                  "Configure FEC [AU(Auto)/NF(No-FEC)/FC(FireCode FEC)/RS(RS-FEC)/LL(LL-RS-FEC)/DF-RS(Interleaved_RS-FEC)/DF-LL(Interleaved_LL_RS-FEC)]");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(FEC_SPEED_FLAG_SHORT, FEC_SPEED_FLAG, "fec_speed",
-                  "Speed to Configure FEC [100G,56G,50G,40G,25G,10G] (Default is Active Speed)");
+                  "Speed to Configure FEC [100G,56G,50G,40G,25G,10G,800G_8X,400G_4x,400G_8X,200G_2X,200G_4X,100G_2X,50G_1X,100G_4X] (Default is Active Speed)");
     MlxlinkRecord::printFlagLine(SLTP_SET_FLAG_SHORT, SLTP_SET_FLAG, "params",
                   "Configure Transmitter Parameters For 16nm devices: [pre2Tap,preTap,mainTap,postTap,m2lp,amp] For 28nm devices: [Pol,tap0,tap1,tap2,bias,preemp_mode]");
     printf(IDENT);
@@ -355,24 +355,9 @@ void MlxlinkUi::validateGeneralCmdsParams()
         throw MlxRegException(
                   "Please provide a valid paos command [UP(up)/DN(down)/TG(toggle)]");
     }
-    if (isIn(SEND_PPLM, _sendRegFuncMap) && !checkPplmCmd(_mlxlinkCommander->_userInput._pplmFec)) {
-        throw MlxRegException(
-                  "Please provide a valid FEC [AU(Auto)/NF(No-Fec)/FC(FireCode FEC)/RS(RS FEC)]");
-    }
     if (!isIn(SEND_PPLM, _sendRegFuncMap) && _mlxlinkCommander->_userInput._speedFec != "") {
         throw MlxRegException(
                   "The --fec_speed flag is valid only with --fec flag");
-    }
-    if (isIn(SEND_PPLM, _sendRegFuncMap)) {
-        if (_mlxlinkCommander->_userInput._speedFec != "" &&
-                _mlxlinkCommander->_userInput._speedFec != "100G" &&
-                _mlxlinkCommander->_userInput._speedFec != "56G" &&
-                _mlxlinkCommander->_userInput._speedFec != "50G" &&
-                _mlxlinkCommander->_userInput._speedFec != "40G" &&
-                _mlxlinkCommander->_userInput._speedFec != "25G" &&
-                _mlxlinkCommander->_userInput._speedFec != "10G") {
-            throw MlxRegException("Please Provide a Valid Speed to Configure FEC (100G/56G/50G/40G/25G/10G)");
-        }
     }
     if (isIn(SEND_SLTP, _sendRegFuncMap)) {
         if (_mlxlinkCommander->_userInput._sltpLane && _mlxlinkCommander->_userInput._db) {
@@ -934,7 +919,7 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         _mlxlinkCommander->_uniqueCmds++;
         return PARSE_OK;
     } else if (name == FEC_SPEED_FLAG) {
-        _mlxlinkCommander->_userInput._speedFec = toUpperCase(value);
+        _mlxlinkCommander->_userInput._speedFec = toLowerCase(value);
         return PARSE_OK;
     } else if (name == PPLR_FLAG) {
         addCmd(SEND_PPLR);

@@ -150,6 +150,34 @@ void MlxlinkMaps::initFecAndLoopbackMapping()
     _fecModeActive[FEC_MODE_RS_FEC_PLR_272_257] =
          "Ethernet_Consortium_LL_50G_RS_FEC_PLR -(272,257+1)";
 
+    _fecModeMask[FEC_MODE_MASK_AU] = make_pair("Auto-FEC", "AU");
+    _fecModeMask[FEC_MODE_MASK_NF] = make_pair("No-FEC", "NF");
+    _fecModeMask[FEC_MODE_MASK_FC] = make_pair("Firecode_FEC", "FC");
+    _fecModeMask[FEC_MODE_MASK_RS_528] = make_pair("RS-FEC (528,514)", "RS");
+    _fecModeMask[FEC_MODE_MASK_LL_271] = make_pair("LL_RS-FEC (271,257)", "LL");
+    _fecModeMask[FEC_MODE_MASK_DF_RS] = make_pair("Interleaved_RS-FEC (544,514)", "DF-RS");
+    _fecModeMask[FEC_MODE_MASK_RS_544] = make_pair("RS-FEC (544,514)", "RS-544");
+    _fecModeMask[FEC_MODE_MASK_LL_272] = make_pair("LL_RS-FEC (272,257+1)", "LL-272");
+    _fecModeMask[FEC_MODE_MASK_DF_LL_272] = make_pair("Interleaved_LL_RS-FEC (272,257+1)", "DF-LL");
+
+    _fecPerSpeed.push_back(make_pair("800G_8X", ""));
+    _fecPerSpeed.push_back(make_pair("400G_4X", ""));
+    _fecPerSpeed.push_back(make_pair("200G_2X", ""));
+    _fecPerSpeed.push_back(make_pair("100G_1X", ""));
+
+    _fecPerSpeed.push_back(make_pair("400G_8X", ""));
+    _fecPerSpeed.push_back(make_pair("200G_4X", ""));
+    _fecPerSpeed.push_back(make_pair("100G_2X", ""));
+    _fecPerSpeed.push_back(make_pair("50G_1X", ""));
+    _fecPerSpeed.push_back(make_pair("50G_2X", ""));
+    _fecPerSpeed.push_back(make_pair("100G_4X", ""));
+
+    _fecPerSpeed.push_back(make_pair("100G", ""));
+    _fecPerSpeed.push_back(make_pair("56G", ""));
+    _fecPerSpeed.push_back(make_pair("50G", ""));
+    _fecPerSpeed.push_back(make_pair("40G", ""));
+    _fecPerSpeed.push_back(make_pair("25G", ""));
+    _fecPerSpeed.push_back(make_pair("10G", ""));
 
     _loopbackModeList[PHY_NO_LOOPBACK] = "No Loopback";
     _loopbackModeList[PHY_REMOTE_LOOPBACK] = "PHY Remote Loopback";
@@ -228,6 +256,7 @@ void MlxlinkMaps::extEthSpeedMapping()
     _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_200GAUI_2] = 200;
     _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_400GAUI_8] = 400;
     _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_400GAUI_4] = 400;
+    _EthExtSpeed2gNum[ETH_LINK_SPEED_EXT_800GAUI_8] = 800;
 
     _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_SGMII_100M] = "100M";
     _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_1000BASE_X] = "1G";
@@ -245,6 +274,7 @@ void MlxlinkMaps::extEthSpeedMapping()
     _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_200GAUI_2] = "200G";
     _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_400GAUI_8] = "400G";
     _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_400GAUI_4] = "400G";
+    _EthExtSpeed2Str[ETH_LINK_SPEED_EXT_800GAUI_8] = "800G";
 }
 
 void MlxlinkMaps::ibSpeedMapping()
@@ -315,6 +345,7 @@ void MlxlinkMaps::speedToLanesMapping()
     _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_200GAUI_2] = 2;
     _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_400GAUI_8] = 8;
     _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_400GAUI_4] = 4;
+    _ExtETHSpeed2Lanes[ETH_LINK_SPEED_EXT_800GAUI_8] = 8;
 }
 
 void MlxlinkMaps::initPortSpeedMapping()
