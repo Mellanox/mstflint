@@ -145,7 +145,6 @@ public:
     bool arrayValue;
     bool colorKey;
     static bool jsonFormat;
-    static std::string gboxTitle;
     static std::ostream* cOut;
     static FILE* stdOut;
 };

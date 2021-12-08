@@ -71,7 +71,8 @@ void MlxlinkUi::printSynopsisHeader()
                   "Perform operation for a specified mst device");
     MlxlinkRecord::printFlagLine(LABEL_PORT_FLAG_SHORT, LABEL_PORT_FLAG, "port_number",
                   "Port Number");
-    MlxlinkRecord::printFlagLine(PORT_TYPE_FLAG_SHORT, PORT_TYPE_FLAG, "port_type", "Port Type [NETWORK(Default)/PCIE]");
+    MlxlinkRecord::printFlagLine(PORT_TYPE_FLAG_SHORT, PORT_TYPE_FLAG, "port_type",
+                                 "Port Type [NETWORK(Default)/PCIE/GEARBOX_HOST/INTERNAL_IC_LR/GEARBOX_LINE]");
     MlxlinkRecord::printFlagLine(DEPTH_FLAG_SHORT, DEPTH_FLAG, "depth", "depth level of the DUT of some hierarchy (PCIE only)");
     MlxlinkRecord::printFlagLine(PCIE_INDEX_FLAG_SHORT, PCIE_INDEX_FLAG, "pcie_index", "PCIe index number (Internal domain index) (PCIE only)");
     MlxlinkRecord::printFlagLine(NODE_FLAG_SHORT, NODE_FLAG, "node", "the node within each depth (PCIE only)");
@@ -592,10 +593,6 @@ void MlxlinkUi::paramValidate()
 
 void MlxlinkUi::initCmdParser()
 {
-/*
-    for (u_int32_t it = SHOW_PDDR; it < FUNCTION_LAST; it++) {
-        _sendRegFuncMap.push_back(0);
-    }*/
     AddOptions(DEVICE_FLAG, DEVICE_FLAG_SHORT, "MstDevice",
                "Mellanox mst device name");
     AddOptions(HELP_FLAG, HELP_FLAG_SHORT, "", "Show help message and exit");
@@ -1149,8 +1146,8 @@ int MlxlinkUi::run(int argc, char **argv)
     _mlxlinkCommander->_gvmiAddress = _mlxlinkCommander->_userInput._gvmiAddress;
     _mlxlinkCommander->_devID = _mlxlinkCommander->_regLib->getDevId();
     _mlxlinkCommander->_isHCA = dm_dev_is_hca(_mlxlinkCommander->_devID);
-    _mlxlinkCommander->validatePortType(_mlxlinkCommander->_userInput._portType);
     _mlxlinkCommander->labelToLocalPort();
+    _mlxlinkCommander->validatePortType(_mlxlinkCommander->_userInput._portType);
     if (!_mlxlinkCommander->_userInput._pcie) {
         _mlxlinkCommander->checkValidFW();
     }
