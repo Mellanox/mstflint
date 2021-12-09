@@ -5290,13 +5290,12 @@ HwSubCommand:: ~HwSubCommand()
 bool HwSubCommand::verifyParams()
 {
 #ifdef EXTERNAL
-    if (_flintParams.cmd_params.size() != 1) {
-        reportErr(true, FLINT_CMD_ARGS_ERROR2, _name.c_str(), 1, (int)_flintParams.cmd_params.size());
-        return false;
-    }
-
     if (_flintParams.cmd_params[0] != "query") {
         reportErr(true, FLINT_INVALID_OPTION_ERROR, _flintParams.cmd_params[0].c_str(), _name.c_str(), "query");
+        return false;
+    }
+    if (_flintParams.cmd_params.size() != 1) {
+        reportErr(true, FLINT_CMD_ARGS_ERROR2, _name.c_str(), 1, (int)_flintParams.cmd_params.size());
         return false;
     }
 #else
