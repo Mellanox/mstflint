@@ -5603,7 +5603,7 @@ WwSubCommand::WwSubCommand()
     _paramExp = "addr - address of word\n"
                 "data - value of word";
     _example = FLINT_NAME " -d " MST_DEV_EXAMPLE1 " ww 0x10008 0x5a445a44";
-    _v = Wtv_Dev;
+    _v = Wtv_Dev_Or_Img;
     _maxCmdParamNum = 2;
     _minCmdParamNum = 2;
     _cmdType = SC_Ww;
@@ -5642,7 +5642,7 @@ FlintStatus WwSubCommand::executeCommand()
     delete[] addrStr;
     delete[] dataStr;
     data = __cpu_to_be32(data);
-    if (!((Flash*)_io)->write(addr, data)) {
+    if (!_io->write(addr, &data, 0x4)) {
         reportErr(true, FLINT_FLASH_WRITE_ERROR, _io->err());
         return FLINT_FAILED;
     }
