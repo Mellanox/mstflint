@@ -305,8 +305,10 @@ public:
     virtual ~MlxlinkCommander();
 
     void checkRegCmd();
-    virtual void validatePortType(const string &portTypeStr);
-    void updatePortType() {};
+    void validatePortToLC();
+    void validatePortType(const string &portTypeStr);
+    void updatePortType();
+    void gearboxBlock(const string &option);
     void checkLocalPortDPNMapping(u_int32_t localPort);
     int getLocalPortFromMPIR(DPN& dpn);
     void checkValidFW();
@@ -316,6 +318,8 @@ public:
     void handlePortStr(const string &portStr);
     void labelToLocalPort();
     void labelToHCALocalPort();
+    void labeltoDSlocalPort();
+    bool isDSdevice();
     void labelToSpectLocalPort();
     void labelToIBLocalPort();
     bool isIBSplitReady();
@@ -329,6 +333,7 @@ public:
     string activeSpeed2Str(u_int32_t mask, bool extended);
     void getCableParams();
     bool inPrbsTestMode();
+    bool checkGBPpaosDown();
     bool checkPaosDown();
     bool checkPpaosTestMode();
     u_int32_t getPtysCap();
@@ -351,20 +356,20 @@ public:
     virtual void showModuleInfo();
     void prepareBerModuleInfoNdr(bool valid);
     virtual void runningVersion();
-    virtual void operatingInfoPage();
-    virtual void supportedInfoPage();
+    void operatingInfoPage();
+    void supportedInfoPage();
     virtual void troubInfoPage();
-    virtual void showPddr();
+    void showPddr();
     void getPtys();
     virtual void showBer();
-    virtual void prepare40_28_16nmEyeInfo(u_int32_t numOfLanesToUse);
-    virtual void prepare7nmEyeInfo(u_int32_t numOfLanesToUse);
+    void prepare40_28_16nmEyeInfo(u_int32_t numOfLanesToUse);
+    void prepare7nmEyeInfo(u_int32_t numOfLanesToUse);
     virtual void showEye();
     virtual void showFEC();
     virtual void showSltp();
     virtual void showDeviceData();
     void showBerMonitorInfo();
-    virtual void showExternalPhy();
+    void showExternalPhy();
     void showPcie();
     void showPcieLinks();
     void collectAMBER();
@@ -430,9 +435,9 @@ public:
     // Cable operation
     bool isPassiveQSFP();
     bool isSFP51Paging();
-    virtual void initCablesCommander();
-    virtual void initEyeOpener();
-    virtual void initErrInj();
+    void initCablesCommander();
+    void initEyeOpener();
+    void initErrInj();
     void initPortInfo();
     void setAmBerCollectorFields();
     virtual void initAmBerCollector();
@@ -473,12 +478,13 @@ public:
     void sendPplm();
     virtual void sendSltp();
     void sendPplr();
-    virtual void sendPepc();
+    void sendPepc();
     void setTxGroupMapping();
 
     // Config helper functions
     bool isForceDownSupported();
     bool isPPHCRSupported();
+    void sendGBPaosCmd(PAOS_ADMIN adminStatus, bool forceDown);
     void sendPaosCmd(PAOS_ADMIN adminStatus, bool forceDown = false);
     void sendPaosDown(bool toggleCommand = false);
     void sendPaosUP();
@@ -506,7 +512,7 @@ public:
     void getSltpRegAndLeva(u_int32_t lane);
     u_int32_t getLaneSpeed(u_int32_t lane);
     void validateNumOfParamsForNDRGen();
-    virtual void checkSltpParamsSize();
+    void checkSltpParamsSize();
 
     // Mlxlink params
     UserInput _userInput;
@@ -559,6 +565,7 @@ public:
     bool _isPam4Speed;
     bool _ignorePortType;
     bool _ignorePortStatus;
+    bool _isGboxPort;
     std::vector<std::string> _ptysSpeeds;
     std::vector<PortGroup> _localPortsPerGroup;
     std::vector<DPN> _validDpns;

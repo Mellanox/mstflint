@@ -1302,10 +1302,6 @@ void setPrintVal(MlxlinkCmdPrint &mlxlinkCmdPrint, string key,
 void setPrintTitle(MlxlinkCmdPrint &mlxlinkCmdPrint, string title,
         u_int32_t size, bool print)
 {
-    if (!MlxlinkRecord::gboxTitle.empty()) {
-        title = MlxlinkRecord::gboxTitle + " - " + title;
-    }
-
     mlxlinkCmdPrint.title = title;
     mlxlinkCmdPrint.visible = print;
     mlxlinkCmdPrint.initRecords(size);

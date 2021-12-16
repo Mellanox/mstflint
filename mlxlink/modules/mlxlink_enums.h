@@ -47,6 +47,8 @@
 #define ACCESS_REG_MPEIN    "MPEIN"
 #define ACCESS_REG_PMDR     "PMDR"
 #define ACCESS_REG_PMCR     "PMCR"
+#define ACCESS_REG_PLLP     "PLLP"
+#define ACCESS_REG_MDDQ     "MDDQ"
 #define ACCESS_REG_SLRG     "SLRG"
 #define ACCESS_REG_SLTP     "SLTP"
 #define ACCESS_REG_SLRIP    "SLRIP"

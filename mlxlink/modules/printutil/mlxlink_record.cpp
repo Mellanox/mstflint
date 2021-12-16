@@ -38,7 +38,6 @@
 #define MAX_LEN_OF_DDM_FIELD        14
 
 bool MlxlinkRecord::jsonFormat = false;
-std::string MlxlinkRecord::gboxTitle = "";
 std::ostream* MlxlinkRecord::cOut = &std::cout;
 FILE* MlxlinkRecord::stdOut = stdout;
 
