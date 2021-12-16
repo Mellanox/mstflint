@@ -2705,6 +2705,8 @@ int mf_set_reset_flash_on_warm_reboot(mflash *mfl)
     case DeviceSwitchIB2:
     case DeviceQuantum:
     case DeviceQuantum2:
+    case DeviceConnectX7:
+    case DeviceBlueField3:
         return MFE_OK;
     case DeviceSpectrum:
     case DeviceConnectX4:
@@ -2715,11 +2717,9 @@ int mf_set_reset_flash_on_warm_reboot(mflash *mfl)
         set_reset_bit_offset = 1;
         break;
     case DeviceConnectX6:
-    case DeviceConnectX7:
     case DeviceConnectX6DX:
     case DeviceConnectX6LX:
     case DeviceBlueField2:
-    case DeviceBlueField3:
     case DeviceSpectrum2:
     case DeviceSpectrum3:
     case DeviceSpectrum4:
