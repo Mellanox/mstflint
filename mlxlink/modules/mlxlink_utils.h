@@ -105,8 +105,7 @@ string prbsMaskToLockStatus(u_int32_t mask, u_int32_t numOfLanesToUse);
 bool checkPrbsCmd(const string &prbsCmd);
 bool checkTestMode(const string &testMode);
 string FEC2Str(const string &fecShort, const string &speedStrG);
-int fecToBit(const string &fec, const string &speedStrG);
-string speedToStr(const string &speed, u_int32_t numOfLanes);
+string speedToFecSpeedStr(const string &speed, u_int32_t numOfLanes);
 PAOS_CMD paos_to_int(const string &cmd);
 int pepc_force_mode_to_int(const string &forceMode);
 int pepc_an_mode_to_int(const string &anMode);
@@ -146,6 +145,7 @@ string getRxTxCDRState(u_int32_t state, u_int32_t numOfLanes);
 string getStringByActiveLanes(string allLanes, int numOfActiveLanes);
 string getFwVersion(bool passive, u_int32_t moduleFWVer);
 string getVendorRev(u_int32_t rev);
-string getFieldsByMap(u_int32_t bitmask,  std::map<u_int32_t, std::string> map);
-
+string getFieldsByMap(u_int32_t bitmask, map<u_int32_t, string> maskMap, const string &fieldSeparator = ",");
+string getFieldsByPairMap(u_int32_t bitmask, map<u_int32_t, pair<string, string>> maskMap,
+                          const string &fieldSeparator = ",", u_int32_t pairIndex = 0);
 #endif

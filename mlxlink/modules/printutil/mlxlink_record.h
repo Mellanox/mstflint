@@ -108,7 +108,7 @@ enum STATUS_DDM_FLAGS_TYPE {
 #define MPCNT_PERFORMANCE_INFO_LAST     4
 #define MPCNT_TIMER_INFO_LAST           1
 #define EYE_OPENING_INFO_LAST           9
-#define FEC_CAP_INFO_LASE               5
+#define FEC_CAP_INFO_LAST               6
 #define DEVICE_INFO_LAST                5
 #define BER_MONITOR_INFO_LAST           2
 #define EXT_PHY_INFO_INFO_LAST          1

@@ -336,7 +336,6 @@ public:
     bool checkGBPpaosDown();
     bool checkPaosDown();
     bool checkPpaosTestMode();
-    u_int32_t getPtysCap();
     void getSltpParamsFromVector(std::vector<string> sltpParams);
     void getprbsLanesFromParams(std::vector<string> prbsLanesParams);
     std::vector<string> parseParamsFromLine(const string & ParamsLine);
@@ -365,7 +364,7 @@ public:
     void prepare40_28_16nmEyeInfo(u_int32_t numOfLanesToUse);
     void prepare7nmEyeInfo(u_int32_t numOfLanesToUse);
     virtual void showEye();
-    virtual void showFEC();
+    void showFEC();
     virtual void showSltp();
     virtual void showDeviceData();
     void showBerMonitorInfo();
@@ -395,6 +394,9 @@ public:
             u_int32_t laneNumber);
     void initValidDPNList();
     u_int32_t readBitFromField(const string &fieldName, u_int32_t bitIndex);
+    string getSupportedFecForSpeed(const string &speed);
+    string fecMaskToUserInputStr(u_int32_t fecCapMask);
+    string fecMaskToStr(u_int32_t mask);
 
     void showTestMode();
     void showTestModeBer();
@@ -475,8 +477,8 @@ public:
     void sendPaos();
     void handlePrbs();
     void sendPtys();
-    void sendPplm();
-    virtual void sendSltp();
+    virtual void sendPplm();
+    void sendSltp();
     void sendPplr();
     void sendPepc();
     void setTxGroupMapping();
@@ -503,6 +505,9 @@ public:
     u_int32_t ptysSpeedToMask(const string & speed);
     void validateSpeedStr();
     void checkSupportedSpeed(const string & speed, u_int32_t cap, bool extSpeed = false);
+    string speedToFecSpeedStr(const string &speed, u_int32_t numOfLanes);
+    u_int32_t fecToBit(const string &fec, const string &speedStrG);
+    u_int32_t getFecCapForCheck(const string &speedStr);
     void checkPplmCap();
     void updateSltp28_40nmFields();
     void updateSltp16nmFields();
@@ -537,6 +542,7 @@ public:
     u_int32_t _activeSpeed;
     u_int32_t _activeSpeedEx;
     u_int32_t _protoCapability;
+    u_int32_t _deviceCapability;
     u_int32_t _protoAdmin;
     u_int32_t _protoAdminEx;
     u_int32_t _productTechnology;
@@ -566,6 +572,7 @@ public:
     bool _ignorePortType;
     bool _ignorePortStatus;
     bool _isGboxPort;
+    bool _ignoreIbFECCheck;
     std::vector<std::string> _ptysSpeeds;
     std::vector<PortGroup> _localPortsPerGroup;
     std::vector<DPN> _validDpns;

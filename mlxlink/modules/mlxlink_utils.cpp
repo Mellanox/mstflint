@@ -228,7 +228,9 @@ string EthSupportedSpeeds2Str(u_int32_t int_mask)
 string EthExtSupportedSpeeds2Str(u_int32_t int_mask)
 {
     string maskStr = "";
-
+    if (int_mask & ETH_LINK_SPEED_EXT_800GAUI_8) {
+        maskStr += "800G_8x,";
+    }
     if (int_mask & ETH_LINK_SPEED_EXT_400GAUI_4) {
         maskStr += "400G_4x,";
     }
@@ -496,25 +498,35 @@ bool isPAM4Speed(u_int32_t activeSpeed, u_int32_t protoActive, bool extended)
     return pam4Signal;
 }
 
-string getFieldsByMap(u_int32_t bitmask,  std::map<u_int32_t, std::string> map)
+string getFieldsByPairMap(u_int32_t bitmask, map<u_int32_t, pair<string, string>> maskMap,
+                          const string &fieldSeparator, u_int32_t pairIndex)
+{
+    map<u_int32_t, string> strMap;
+    for (auto it = maskMap.begin(); it != maskMap.end(); it++) {
+        strMap.insert(pair<u_int32_t, string>(it->first, pairIndex == 0 ? it->second.first :
+                                                                          it->second.second));
+    }
+    return getFieldsByMap(bitmask, strMap, fieldSeparator);
+}
+
+string getFieldsByMap(u_int32_t bitmask,  std::map<u_int32_t, std::string> maskMap, const string &fieldSeparator)
 {
     string bitMaskStr = "";
     string tmpMaskStr = "";
     u_int32_t i = 1;
     u_int32_t bitmask_tmp = bitmask;
-
     if (bitmask) {
         while(bitmask_tmp != 0){
             if(getBitvalue(bitmask, i)){
-                tmpMaskStr = map[pow(2.0, i - 1)];
+                tmpMaskStr = maskMap[pow(2.0, i - 1)];
                 if (!tmpMaskStr.empty()) {
-                    bitMaskStr += tmpMaskStr + ",";
+                    bitMaskStr += tmpMaskStr + fieldSeparator;
                 }
             }
             i++;
             bitmask_tmp >>= 1;
         }
-        bitMaskStr = deleteLastChar(bitMaskStr);
+        bitMaskStr = deleteLastChar(bitMaskStr, fieldSeparator.size());
     } else {
         bitMaskStr = "N/A";
     }
@@ -541,15 +553,6 @@ bool checkPepcForceMode(const string &forceMode)
 bool checkPepcANMode(const string &anMode)
 {
     if (anMode != "AU" && anMode != "MA" && anMode != "SL") {
-        return false;
-    }
-    return true;
-}
-
-bool checkPplmCmd(const string &pplmCmd)
-{
-    if (pplmCmd != "AU" && pplmCmd != "NF" && pplmCmd != "FC"
-        && pplmCmd != "RS") {
         return false;
     }
     return true;
@@ -731,99 +734,6 @@ bool checkTestMode(const string &testMode)
         return false;
     }
     return true;
-}
-
-string FEC2Str(const string &fecShort, const string &speedStrG)
-{
-    string fec = "";
-    if (fecShort == "NF") {
-        fec = "No FEC";
-    } else if (fecShort == "FC") {
-        fec = "Firecode FEC";
-    } else if (fecShort == "RS") {
-        fec = "RS FEC";
-    }
-    if (speedStrG == "400g_8x" || speedStrG == "200g_4x" ||
-            speedStrG == "100g_2x" || speedStrG == "50g_1x") {
-        if (fec == "RS544") {
-            fec = "Standard_RS-FEC - (544,514)";
-        }
-        if (fec == "RS272") {
-            fec = "Ethernet_Consortium_LL_50G_RS-FEC - (272,257+1)";
-        }
-    }
-    return fec;
-}
-
-int fecToBit(const string &fec, const string &speedStrG)
-{
-    if (fec == "AU") {
-        return 0;
-    }
-    if (fec == "NF") {
-        return 1;
-    }
-    if (fec == "FC") {
-        return 2;
-    }
-    if (fec == "RS") {
-        return 4;
-    }
-    if (speedStrG == "400g_8x" || speedStrG == "200g_4x" ||
-            speedStrG == "100g_2x" || speedStrG == "50g_1x") {
-        if (fec == "RS544") {
-            return 0x80;
-        }
-        if (fec == "RS272") {
-            return 0x200;
-        }
-    }
-    return 0;
-}
-
-string speedToStr(const string &speed, u_int32_t numOfLanes)
-{
-    string fecSpeedStrFormat = "100g";
-    string numberOfLanesStr = to_string(numOfLanes) + "x";
-    if (speed == "800G") {
-        fecSpeedStrFormat = "800g_" + numberOfLanesStr;
-    }
-    if (speed == "400G") {
-        fecSpeedStrFormat = "400g_" + numberOfLanesStr;
-    }
-    if (speed == "200G") {
-        fecSpeedStrFormat = "200g_" + numberOfLanesStr;
-    }
-    if (speed == "100G") {
-        if (numOfLanes == 4) {
-            fecSpeedStrFormat = "100g";
-        } else {
-            fecSpeedStrFormat = "100g_" + numberOfLanesStr;
-        }
-    }
-    if (speed == "50G") {
-        if (numOfLanes == 1) {
-            fecSpeedStrFormat = "50g_" + numberOfLanesStr;
-        } else {
-            fecSpeedStrFormat = "50g";
-        }
-    }
-    if (speed == "100GbE") {
-        fecSpeedStrFormat = "100g";
-    }
-    if (speed == "50GbE") {
-        fecSpeedStrFormat = "50g";
-    }
-    if (speed == "25GbE" || speed == "25G") {
-        fecSpeedStrFormat = "25g";
-    }
-    if (speed == "40GbE" || speed == "40G" || speed == "10GbE" || speed == "10G") {
-        fecSpeedStrFormat = "10g_40g";
-    }
-    if (speed == "56GbE") {
-        fecSpeedStrFormat = "56g";
-    }
-    return fecSpeedStrFormat;
 }
 
 PAOS_CMD paos_to_int(const string &cmd)

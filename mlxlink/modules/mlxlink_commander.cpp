@@ -68,6 +68,7 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _activeSpeed = 0;
     _activeSpeedEx = 0;
     _protoCapability = 0;
+    _deviceCapability = 0;
     _linkSpeed = 0;
     _protoCapabilityEx = false;
     _ddmSupported = false;
@@ -78,6 +79,7 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _ignorePortType = true;
     _ignorePortStatus = true;
     _isGboxPort = false;
+    _ignoreIbFECCheck = true;
     _protoAdmin = 0;
     _protoAdminEx = 0;
     _speedBerCsv = 0;
@@ -950,21 +952,6 @@ bool MlxlinkCommander::checkPpaosTestMode()
         return true;
     }
     return false;
-}
-
-u_int32_t MlxlinkCommander::getPtysCap()
-{
-    string regName = "PTYS";
-    resetParser(regName);
-    updatePortType();
-
-    updateField("local_port", _localPort);
-    updateField("proto_mask", _protoActive);
-    updateField("an_disable_admin", 0);
-
-    genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
-    string proto = (_protoActive == IB) ? "ib" : "eth";
-    return getFieldValue(proto + "_proto_capability");
 }
 
 void MlxlinkCommander::getSltpParamsFromVector(std::vector<string> sltpParams)
@@ -1887,6 +1874,10 @@ void MlxlinkCommander::getPtys()
         _protoAdmin = getFieldValue("eth_proto_admin");
         _protoAdminEx = getFieldValue("ext_eth_proto_admin");
         _protoCapabilityEx = getFieldValue("ext_eth_proto_capability");
+        _deviceCapability =  _protoCapabilityEx ? getFieldValue("ext_eth_proto_capability")
+                                                : getFieldValue("eth_proto_capability");
+    } else {
+        _deviceCapability = getFieldValue("ib_proto_capability");
     }
 
     _anDisable = getFieldValue("an_disable_admin");
@@ -2358,84 +2349,106 @@ void MlxlinkCommander::showEye()
     }
 }
 
+string MlxlinkCommander::fecMaskToUserInputStr(u_int32_t fecCapMask)
+{
+    u_int32_t mask = 0;
+    string validFecStr = "";
+    string shortFec = "";
+    for (double bitIdx = 0; bitIdx < 16; bitIdx++) {
+        mask = (u_int32_t)pow(2.0, bitIdx);
+        if (fecCapMask & mask) {
+            if (_mlxlinkMaps->_fecModeMask.count(mask)) {
+                shortFec = _mlxlinkMaps->_fecModeMask[mask].second;
+                if (shortFec.find("PLR") != string::npos) {
+                    continue;
+                }
+                if (shortFec.find("-544") != string::npos || shortFec.find("-272") != string::npos) {
+                    shortFec = shortFec.substr(0, 2);
+                }
+                validFecStr += shortFec + "(" + _mlxlinkMaps->_fecModeMask[mask].first + ")/";
+            }
+        }
+    }
+
+    validFecStr = validFecStr.empty()? "" : deleteLastChar(validFecStr);
+
+    return validFecStr;
+}
+
+string MlxlinkCommander::getSupportedFecForSpeed(const string &speed)
+{
+    string fecCap = "0x0 (N/A)";
+    string protoStr = _protoActive == IB? "ib_" : "";
+    if (!_prbsTestMode) {
+        string speedToCheck = speed;
+        speedToCheck =  toLowerCase(speedToCheck);
+        if (speedToCheck == "10g" || speedToCheck == "40g") {
+            speedToCheck = "10g_40g";
+        }
+        if (speedToCheck == "50g_2x") {
+            speedToCheck = "50g";
+        }
+        if (speedToCheck == "100g_4x") {
+            speedToCheck = "100g";
+        }
+        fecCap = fecMaskToStr(getFieldValue(protoStr + "fec_override_cap_" + speedToCheck));
+    }
+    return fecCap;
+}
+
+string MlxlinkCommander::fecMaskToStr(u_int32_t mask)
+{
+    char strMask[32];
+    snprintf(strMask, sizeof(strMask), "0x%x (", mask);
+
+    string fecStr = string(strMask);
+
+    if (mask) {
+        fecStr += getFieldsByPairMap(mask, _mlxlinkMaps->_fecModeMask, ", ");
+    } else {
+        fecStr = "0x0 (N/A";
+    }
+    fecStr += ")";
+
+    return fecStr;
+}
+
 void MlxlinkCommander::showFEC()
 {
     try {
-        /*string regName = "PPLM";
-           //std::vector<u_int32_t> _buffer;
-           //RegAccessParser parser = getRegAccessParser(regName);
-           //resetParser(regName);
+        resetParser(ACCESS_REG_PPLM);
+        updateField("local_port", _localPort);
+        genBuffSendRegister(ACCESS_REG_PPLM, MACCESS_REG_METHOD_GET);
 
-           updateField("local_port", _localPort);
+        string supportedSpeedsStr = SupportedSpeeds2Str(_protoActive, _deviceCapability, _protoCapabilityEx);
+        vector<string> supportedSpeeds = MlxlinkRecord::split(supportedSpeedsStr, ",");
 
-           genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
-           u_int32_t FECSupported100G = getFieldValue("fec_override_cap_100g");
-           u_int32_t FECSupported25G50G = getFieldValue("fec_override_cap_50g");
-           u_int32_t FECAdmin100G = getFieldValue("fec_override_admin_100g");
-           u_int32_t FECAdmin25G50G = getFieldValue("fec_override_admin_50g");
-
-           u_int32_t FEC100G = (FECAdmin100G) ? FECAdmin100G : FECSupported100G;
-           u_int32_t FEC25G50G = (FECAdmin25G50G) ? FECAdmin25G50G : FECSupported25G50G;
-
-           std::vector<string> showFecValues;
-           showFecValues.push_back("0x" + convertIntToHexString(FEC100G) + " (" + FEC2Str100G(FEC100G) + ")");
-           showFecValues.push_back("0x" + convertIntToHexString(FEC25G50G) + " (" + FEC2Str50G25G(FEC25G50G) + ")");
-           showFecValues.push_back("0x" + convertIntToHexString(_fecModeRequest) + " (" + FECReq2Str(_fecModeRequest, _linkUP) + ")");
-           printCmdOutput(_showFecTitle, _showFecLines, showFecValues);*/
-        string fecCap100,fecCap50,fecCap40,fecCap25,fecCap10;
-        if (_protoActive == IB || _prbsTestMode) {
-            fecCap100 = "0x0 (N/A)";
-            fecCap50 = "0x0 (N/A)";
-            fecCap40 = "0x0 (N/A)";
-            fecCap25 = "0x0 (N/A)";
-            fecCap10 = "0x0 (N/A)";
-        } else {
-            string supportedSpeeds = EthSupportedSpeeds2Str(getPtysCap());
-            if (supportedSpeeds.find("100G") != string::npos) {
-                if (_devID == DeviceConnectX4) {
-                    fecCap100 = "0x4 (RS-FEC(528,514))";
-                } else {
-                    fecCap100 = "0x5 (No-FEC, RS-FEC(528,514))";
-                }
-            } else {
-                fecCap100 = "0x0 (N/A)";
-            }
-            if (supportedSpeeds.find("50G") != string::npos) {
-                fecCap50 = "0x7 (No-FEC, FireCode FEC, RS-FEC(528,514))";
-            } else {
-                fecCap50 = "0x0 (N/A)";
-            }
-            if (supportedSpeeds.find("40G") != string::npos) {
-                fecCap40 = "0x3 (No-FEC, FireCode FEC)";
-            } else {
-                fecCap40 = "0x0 (N/A)";
-            }
-            if (supportedSpeeds.find("25G") != string::npos) {
-                fecCap25 = "0x7 (No-FEC, FireCode FEC, RS-FEC(528,514))";
-            } else {
-                fecCap25 = "0x0 (N/A)";
-            }
-            if (supportedSpeeds.find("10G") != string::npos) {
-                fecCap10 = "0x3 (No-FEC, FireCode FEC)";
-            } else {
-                fecCap10 = "0x0 (N/A)";
+        for (auto it = _mlxlinkMaps->_fecPerSpeed.begin(); it != _mlxlinkMaps->_fecPerSpeed.end(); it++) {
+            if (isIn((*it).first, supportedSpeeds)) {
+                it->second = getSupportedFecForSpeed((*it).first);
             }
         }
 
-        setPrintTitle(_fecCapInfoCmd, HEADER_FEC_INFO, FEC_CAP_INFO_LASE);
-        setPrintVal(_fecCapInfoCmd, "FEC Capability 100GbE", fecCap100,
-                ANSI_COLOR_RESET, true, true, true);
-        setPrintVal(_fecCapInfoCmd, "FEC Capability 50GbE", fecCap50,
-                ANSI_COLOR_RESET, true, true, true);
-        setPrintVal(_fecCapInfoCmd, "FEC Capability 40GbE", fecCap40,
-                ANSI_COLOR_RESET, true, true, true);
-        setPrintVal(_fecCapInfoCmd, "FEC Capability 25GbE", fecCap25,
-                ANSI_COLOR_RESET, true, true, true);
-        setPrintVal(_fecCapInfoCmd, "FEC Capability 10GbE", fecCap10,
-                ANSI_COLOR_RESET, true, true, true);
+        setPrintTitle(_fecCapInfoCmd, HEADER_FEC_INFO, supportedSpeeds.size() + 1);
 
-        cout << _fecCapInfoCmd;
-
+        bool noFecDetected = true;
+        string bitEthIndecator = "bE";
+        for (auto it = _mlxlinkMaps->_fecPerSpeed.begin(); it != _mlxlinkMaps->_fecPerSpeed.end(); it++) {
+            if (!(*it).second.empty()) {
+                noFecDetected = false;
+            }
+            if (isIn((*it).first, supportedSpeeds)) {
+                setPrintVal(_fecCapInfoCmd, "FEC Capability " + (*it).first +
+                                            ((_productTechnology < PRODUCT_16NM &&
+                                              _protoActive == ETH) ? bitEthIndecator : ""), (*it).second,
+                            ANSI_COLOR_RESET, true, true, true);
+            }
+        }
+        if (noFecDetected) {
+            MlxlinkRecord::printWar("FEC information is not available for InfiniBand protocol", _jsonRoot);
+        } else {
+            cout << _fecCapInfoCmd;
+        }
     } catch (const std::exception &exc) {
         _allUnhandledErrors += string("Showing FEC raised the following exception: ") + string(exc.what()) + string("\n");
     }
@@ -3839,51 +3852,126 @@ void MlxlinkCommander::sendPplm()
             throw MlxRegException("Cannot Configure FEC in Physical Test Mode. Please Disable First.");
         }
         MlxlinkRecord::printCmdLine("Configuring Port FEC", _jsonRoot);
-        if (_protoActive == IB) {
+        if (_protoActive == IB && _ignoreIbFECCheck) {
             throw MlxRegException("FEC Configuration is Valid for ETHERNET only!");
         }
         if (!_linkUP && _userInput._speedFec == "") {
             throw MlxRegException("When Port is Not Active, You Must Specify the Speed to Configure FEC (--fec_speed <speed>)");
         }
 
-        checkPplmCap();
+        checkPplmCap(); // after calling checkPplmCap, _userInput._speedFec will be changed to the correct fec speed
 
-        string regName = "PPLM";
-        resetParser(regName);
+        resetParser(ACCESS_REG_PPLM);
         updatePortType();
         updateField("local_port", _localPort);
 
-        string fecSpeed = toLowerCase(_userInput._speedFec);
-        string speedStrG = (_linkUP && _userInput._speedFec == "") ?
-                                 speedToStr(_speedStrG, _numOfLanes) : fecSpeed;
+        string speedToConfigure = (_linkUP && _userInput._speedFec == "") ? speedToFecSpeedStr(_speedStrG, _numOfLanes)
+                                                                          : _userInput._speedFec;
+        u_int32_t fecAdmin = fecToBit(_userInput._pplmFec, speedToConfigure);
+        if (speedToConfigure == "50g" || speedToConfigure == "25g") { // 25g and 50g must be set the same
+            updateField("fec_override_admin_25g", fecAdmin);
+            updateField("fec_override_admin_50g", fecAdmin);
+        } else {
+            updateField(string(_protoActive == IB ? "ib_":"") + "fec_override_admin_" + speedToConfigure, fecAdmin);
+        }
 
-        if (speedStrG != "100g") {
-            updateField("fec_override_admin_100g", 0);
-        }
-        if (speedStrG != "50g" && speedStrG != "25g") {
-            updateField("fec_override_admin_50g", 0);
-            updateField("fec_override_admin_25g", 0);
-        }
-        if (speedStrG != "10g" && speedStrG != "40g") {
-            updateField("fec_override_admin_10g_40g", 0);
-        }
-        if (speedStrG == "10g" || speedStrG == "40g") {
-            speedStrG = "10g_40g";
-        }
-        if (speedStrG != "56g") {
-            updateField("fec_override_admin_56g", 0);
-        }
-        string fieldToUpdate = "fec_override_admin_" + speedStrG;
-        updateField(fieldToUpdate, fecToBit(_userInput._pplmFec, speedStrG));
-        if (speedStrG == "50g") {
-            updateField("fec_override_admin_25g", fecToBit(_userInput._pplmFec, speedStrG));
-        } else if (speedStrG == "25g") {
-            updateField("fec_override_admin_50g", fecToBit(_userInput._pplmFec, speedStrG));
-        }
-        genBuffSendRegister(regName, MACCESS_REG_METHOD_SET);
+        genBuffSendRegister(ACCESS_REG_PPLM, MACCESS_REG_METHOD_SET);
     } catch (const std::exception &exc) {
         _allUnhandledErrors += string("Sending PPLM (Configuring port FEC) raised the following exception: ") + string(exc.what()) + string("\n");
     }
+}
+
+string MlxlinkCommander::speedToFecSpeedStr(const string &speed, u_int32_t numOfLanes)
+{
+    string fecSpeedStrFormat = "";
+    string numberOfLanesStr = to_string(numOfLanes) + "x";
+    if (_protoActive == IB) {
+        string speedStr = speed;
+        if (speedStr.find("IB-") != string::npos) {
+            speedStr = speedStr.substr(3);
+        }
+        fecSpeedStrFormat = toLowerCase(speedStr);
+    } else {
+        if (speed == "800G") {
+            fecSpeedStrFormat = "800g_" + numberOfLanesStr;
+        }
+        if (speed == "400G") {
+            fecSpeedStrFormat = "400g_" + numberOfLanesStr;
+        }
+        if (speed == "200G") {
+            fecSpeedStrFormat = "200g_" + numberOfLanesStr;
+        }
+        if (speed == "100G") {
+            if (numOfLanes == 4) {
+                fecSpeedStrFormat = "100g";
+            } else {
+                fecSpeedStrFormat = "100g_" + numberOfLanesStr;
+            }
+        }
+        if (speed == "50G") {
+            if (numOfLanes == 1) {
+                fecSpeedStrFormat = "50g_" + numberOfLanesStr;
+            } else {
+                fecSpeedStrFormat = "50g";
+            }
+        }
+        if (speed == "100GbE") {
+            fecSpeedStrFormat = "100g";
+        }
+        if (speed == "50GbE") {
+            fecSpeedStrFormat = "50g";
+        }
+        if (speed == "25GbE" || speed == "25G") {
+            fecSpeedStrFormat = "25g";
+        }
+        if (speed == "40GbE" || speed == "40G" || speed == "10GbE" || speed == "10G") {
+            fecSpeedStrFormat = "10g_40g";
+        }
+        if (speed == "56GbE") {
+            fecSpeedStrFormat = "56g";
+        }
+    }
+    return fecSpeedStrFormat;
+}
+
+u_int32_t MlxlinkCommander::fecToBit(const string &fec, const string &speedStrG)
+{
+    string fecToCheck = fec;
+    u_int32_t fecAdmin = FEC_MODE_MASK_AU;
+
+    // Work with different RS and LL FEC for HDR, NDR and ETH PAM4 speeds
+    if ((speedStrG == "ndr" || speedStrG == "hdr") ||
+        (speedStrG.find("x") != string::npos && speedStrG != "100g_4x" && speedStrG != "50g_2x")) {
+        if (fec == _mlxlinkMaps->_fecModeMask[FEC_MODE_MASK_RS_528].second) {
+            fecToCheck += "-544";
+        } else if (fec == _mlxlinkMaps->_fecModeMask[FEC_MODE_MASK_LL_271].second && speedStrG != "hdr") {
+            fecToCheck += "-272";
+        }
+    }
+    for (auto it = _mlxlinkMaps->_fecModeMask.begin(); it != _mlxlinkMaps->_fecModeMask.end(); it++) {
+        if (it->second.second == fecToCheck) {
+            fecAdmin = it->first;
+        }
+    }
+
+    return fecAdmin;
+}
+
+u_int32_t MlxlinkCommander::getFecCapForCheck(const string &speedStr)
+{
+    u_int32_t fecCapMask = 0;
+    resetParser(ACCESS_REG_PPLM);
+    updatePortType();
+    updateField("local_port", _localPort);
+    genBuffSendRegister(ACCESS_REG_PPLM, MACCESS_REG_METHOD_GET);
+
+    try {
+        fecCapMask = getFieldValue(string(_protoActive == IB ? "ib_" : "") + "fec_override_cap_" + speedStr);
+    } catch (MlxRegException &exc){
+        throw MlxRegException("\nFEC configuration is not available for this speed: " + speedStr);
+    }
+
+    return fecCapMask;
 }
 
 void MlxlinkCommander::checkPplmCap()
@@ -3891,31 +3979,56 @@ void MlxlinkCommander::checkPplmCap()
     if (_userInput._pplmFec == "AU") {
         return;
     }
-
-    string regName = "PPLM";
-    resetParser(regName);
-    updatePortType();
-    updateField("local_port", _localPort);
-    genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
-    string speedStrG = (_linkUP && _userInput._speedFec.empty()) ?
-            speedToStr(_speedStrG, _numOfLanes) : toLowerCase(_userInput._speedFec);
-    string originalSpeed = speedStrG;
-    if (speedStrG == "10g" || speedStrG == "40g") {
-        speedStrG = "10g_40g";
+    string speedFec = _userInput._speedFec;
+    string uiSpeed = _userInput._speedFec;
+    if (_linkUP && _userInput._speedFec.empty()) {
+        speedFec = speedToFecSpeedStr(_speedStrG, _numOfLanes);
+        uiSpeed = _speedStrG;
+    }
+    // Validate the speed
+    if (!_userInput._speedFec.empty()) {
+        vector<string> supportedSpeeds = MlxlinkRecord::split(SupportedSpeeds2Str(_protoActive, _deviceCapability,
+                                                                                  _protoCapabilityEx), ",");
+        string speedToCheck = _userInput._speedFec;
+        speedToCheck = toUpperCase(speedToCheck);
+        if (_protoCapabilityEx) {
+            if (speedToCheck == "50G") {
+                speedToCheck += "_2X";
+            } else if (speedToCheck == "100G") {
+                speedToCheck += "_4X";
+            }
+        }
+        if (!isIn(speedToCheck, supportedSpeeds)) {
+            throw MlxRegException("\nFEC speed %s is not valid", uiSpeed.c_str());
+        }
     }
 
-    u_int32_t fecCap = getFieldValue("fec_override_cap_" + speedStrG);
-    string supportedSpeeds = EthSupportedSpeeds2Str(getPtysCap());
-
-    if (_linkUP && !_userInput._speedFec.empty() &&
-            supportedSpeeds.find(toUpperCase(_userInput._speedFec)) == string::npos) {
-        throw MlxRegException("FEC speed " + _userInput._speedFec +
-                " is not supported, supported speeds are: [" + supportedSpeeds + "]");
+    // Validate the FEC for the speed
+    if (speedFec == "10g" || speedFec == "40g") {
+        speedFec = "10g_40g";
     }
+    if (speedFec == "50g_2x") {
+        speedFec = "50g";
+    }
+    if (speedFec =="100g_4x") {
+        speedFec = "100g";
+    }
+    _userInput._speedFec = speedFec;
+    u_int32_t fecCap = getFecCapForCheck(_userInput._speedFec);
+    if (!(fecToBit(_userInput._pplmFec, _userInput._speedFec) & fecCap)) {
+        string supportedFec = fecMaskToUserInputStr(fecCap);
+        string validFecs = fecMaskToUserInputStr(BIT_MASK_ALL_DWORD);
 
-    if (!(fecToBit(_userInput._pplmFec, speedStrG) & fecCap)) {
-        throw MlxRegException(FEC2Str(_userInput._pplmFec, speedStrG) +
-                " is not supported in " + originalSpeed);
+        string errorMsg = _userInput._pplmFec + " FEC is not supported in " + uiSpeed + " speed, ";
+        if (validFecs.find(_userInput._pplmFec) == string::npos) {
+            errorMsg = _userInput._pplmFec + " FEC configuration is not valid, ";
+        }
+        if (supportedFec.empty()) {
+            errorMsg += "it's not available for this speed";
+        } else {
+            errorMsg += "valid FEC configurations are [" + supportedFec + "]";
+        }
+        throw MlxRegException("\n" + errorMsg);
     }
 }
 
