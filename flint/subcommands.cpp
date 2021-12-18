@@ -5700,9 +5700,18 @@ FlintStatus WwSubCommand::executeCommand()
     delete[] addrStr;
     delete[] dataStr;
     data = __cpu_to_be32(data);
-    if (!_io->write(addr, &data, 0x4)) {
-        reportErr(true, FLINT_FLASH_WRITE_ERROR, _io->err());
-        return FLINT_FAILED;
+    // TODO - align below write function for Flash and FImage classes
+    if (_io->is_flash()) {
+        if (!((Flash*)_io)->write(addr, data)) {
+            reportErr(true, FLINT_FLASH_WRITE_ERROR, _io->err());
+            return FLINT_FAILED;
+        }
+    }
+    else {
+        if (!_io->write(addr, &data, 0x4)) {
+            reportErr(true, FLINT_FLASH_WRITE_ERROR, _io->err());
+            return FLINT_FAILED;
+        }
     }
     return FLINT_SUCCESS;
 }
