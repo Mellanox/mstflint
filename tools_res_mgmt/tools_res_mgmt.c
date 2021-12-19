@@ -148,7 +148,7 @@ static struct device_sem_info g_dev_sem_info_db[] = {
     },
     {
         DeviceBlueField3,        // dev_id
-        {0xe74e0},               // hw_sem_addr
+        {0xe5660},               // hw_sem_addr
         1,                       // vsec_sem_supported
     },
     {
