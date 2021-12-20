@@ -268,9 +268,8 @@ int new_gw_spi_write_status_reg(mflash *mfl, u_int32_t status_reg, u_int8_t writ
     }
     // push status reg to upper bytes
     status_reg = status_reg << ((bytes_num == 2) ? 16 : 24);
-    if (bytes_num == 2) {
-        gw_cmd = MERGE(gw_cmd, 2, HBO_MSIZE, HBS_NEW_GW_MSIZE);
-    }
+    gw_cmd = MERGE(gw_cmd, bytes_num, HBO_MSIZE, HBS_NEW_GW_MSIZE);
+    DPRINTF(("new_gw_spi_write_status_reg: gw_cmd=%08x status_reg=%08x\n", gw_cmd, status_reg));
     rc = new_gw_exec_cmd_set(mfl, gw_cmd, &status_reg, 1, (u_int32_t*)NULL, "Write-Status-Register");
     // wait for flash to write the register
     if (mfl->attr.vendor == FV_S25FLXXXX && mfl->attr.type == FMT_S25FLXXXL) { // New CYPRESS
