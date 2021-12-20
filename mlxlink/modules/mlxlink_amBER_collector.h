@@ -41,6 +41,12 @@
 
 using namespace std;
 
+struct FIELDS_COUNT {
+    u_int32_t numOfIbFields;
+    u_int32_t numOfEthFields;
+    u_int32_t numOfPcieFields;
+};
+
 class MlxlinkAmBerCollector :public MlxlinkRegParser {
 public:
     MlxlinkAmBerCollector(Json::Value &jsonRoot);
@@ -58,9 +64,11 @@ public:
     virtual vector<AmberField> getPortCounters();
     virtual vector<AmberField> getTroubleshootingInfo();
     virtual vector<AmberField> getPhyOperationInfo();
-    virtual vector<AmberField> getLinkUpDownInfo();
+    virtual vector<AmberField> getLinkUpInfo();
+    virtual vector<AmberField> getLinkDownInfo();
+    virtual vector<AmberField> getTestModeInfo();
+    virtual vector<AmberField> getTestModeModuleInfo();
 
-    void getPpcntErrors(u_int32_t portType, vector<AmberField> &fields);
     void getPpcntBer(u_int32_t portType, vector<AmberField> &fields);
     bool isGBValid();
     bool isMCMValid();
@@ -73,7 +81,9 @@ public:
     u_int32_t _pcieIndex;
     u_int32_t _node;
     u_int32_t _devID;
+    u_int32_t _productTechnology;
     string _csvFileName;
+    string _mstDevName;
     u_int32_t _iteration;
     string _testMode;
     MlxlinkMaps *_mlxlinkMaps;
@@ -88,7 +98,7 @@ private:
     void getEthComplianceCodes(u_int32_t cableTechnology , string &ethComplianceStr , string &extComplianceStr, u_int32_t cableMediaType);
     void getIbComplianceCodes(string &ibComplianceCodeStr);
     string getCableTechnologyStr(u_int32_t cableTechnology);
-    string getCableBreakoutStr(u_int32_t cableBreakout);
+    string getCableBreakoutStr(u_int32_t cableBreakout, u_int32_t cableIdentifier);
     void calcRxTxPowerLane(vector<AmberField> &fields ,string str);
     void getModuleInfoPage(vector<AmberField> &fields);
     string getSmfLength(const u_int32_t smfLength, const u_int32_t cableTechnology, const bool optical);
@@ -99,17 +109,16 @@ private:
     void getCmisComplianceCode(u_int32_t ethComplianceCode, u_int32_t extEthComplianceCode, string &ethComplianceStr , string &extComplianceStr, u_int32_t cableMediaType, u_int32_t cableTechnology);
     void  initCableIdentifier(u_int32_t cableIdentifier);
     void getModuleLatchedFlagInfoPage(vector<AmberField> &fields);
-    string getFlagsByMap(u_int32_t flags,  std::map<u_int32_t, std::string> map);
-    void getSltpFields(vector<AmberField> &fields);
-    void getSlrgFields(vector<AmberField> &fields);
+    void groupValidIf(bool condition);
 
     bool _isQsfpCable;
     bool _isSfpCable;
     bool _cablePlugged;
+    bool _invalidate;
     u_int32_t _labelPort;
     u_int32_t _splitPort;
     u_int32_t _secondSplit;
-    vector<vector<AmberField>> _amberCollection;
+    map<AMBER_SHEET, vector<AmberField>> _amberCollection;
 
 protected:
     string getBitmaskPerLaneStr(u_int32_t bitmask);
@@ -120,14 +129,19 @@ protected:
 
     void fillParamsToFields(const string &title, const vector<string> &values,
                             vector<AmberField> &fields, bool laneLimit = true);
+    string getPrbsModeCap(u_int32_t modeSelector, u_int32_t capsMask);
+    string getPrpsRateCap(u_int32_t capsMask);
+    virtual void getTestModePrpsInfo(const string &prbsReg, vector<vector<string>> &params);
 
     // Helper functions
     virtual string getBerAndErrorTitle(u_int32_t portType);
     string getClRawBer();
 
     // Callers
+    vector<AmberField> collectSheet(AMBER_SHEET sheet);
     void collect();
 
+    u_int32_t fixFieldsData();
     void exportToCSV();
     void exportToConsole();
 
@@ -139,13 +153,17 @@ protected:
     bool _isGBSysValid;
     bool _isValidSensorMvcap;
     bool _isValidSensorMtcap;
+    bool _inPRBSMode;
 
     Json::Value &_jsonRoot;
     vector<MlxlinkCmdPrint> _amBerCollectorOutput;
-    u_int32_t _productTechnology;
+    map<AMBER_SHEET, FIELDS_COUNT> _sheetsList;
+
     u_int32_t _activeSpeed;
     u_int32_t _protoActive;
     u_int32_t _numOfLanes;
+    u_int32_t _moduleIndex;
+    u_int32_t _slotIndex;
 };
 
 #endif /* MLXLINK_AMBER_COLLECTOR_H */

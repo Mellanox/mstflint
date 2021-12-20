@@ -42,19 +42,19 @@ using namespace std;
 class AmberField {
 public:
     AmberField (const string &uiField, const string &uiValue, bool visible = true);
-    AmberField (const string &uiField, const string &uiValue, u_int64_t prmValue, bool visible = true);
-
+    AmberField (const string &uiField, const string &uiValue, u_int32_t fieldIndex, bool visible = true);
     ~AmberField ();
 
+    friend bool operator<(const AmberField &first, const AmberField &second);
     friend ostream& operator<<(ostream& os, const AmberField &amberField);
 
     string getUiField() const;
     string getUiValue() const;
     u_int64_t getPrmValue() const;
     bool isVisible();
-    u_int32_t getFieldIndex();
+    u_int32_t getFieldIndex() const;
     static void reset();
-    static string getValueFromFields(const vector<AmberField> &fields, const string &uiField, bool getPrmValue = false);
+    static string getValueFromFields(const vector<AmberField> &fields, const string &uiField, bool matchUiField = true);
 
     static u_int32_t _lastFieldIndex;
     static bool _dataValid;

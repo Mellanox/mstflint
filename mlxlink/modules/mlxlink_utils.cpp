@@ -498,18 +498,29 @@ bool isPAM4Speed(u_int32_t activeSpeed, u_int32_t protoActive, bool extended)
     return pam4Signal;
 }
 
-string getFieldsByPairMap(u_int32_t bitmask, map<u_int32_t, pair<string, string>> maskMap,
-                          const string &fieldSeparator, u_int32_t pairIndex)
+string getStrByValue(u_int32_t flags,  std::map<u_int32_t, std::string> map)
+{
+    string flagsStr = map[flags];
+
+    if (flagsStr.empty()){
+         flagsStr = "N/A";
+    }
+
+    return flagsStr;
+}
+
+string getStrByMaskFromPair(u_int32_t bitmask,  map<u_int32_t, pair<string, string>> maskMap,
+                           const string &fieldSeparator, u_int32_t pairIndex)
 {
     map<u_int32_t, string> strMap;
     for (auto it = maskMap.begin(); it != maskMap.end(); it++) {
         strMap.insert(pair<u_int32_t, string>(it->first, pairIndex == 0 ? it->second.first :
                                                                           it->second.second));
     }
-    return getFieldsByMap(bitmask, strMap, fieldSeparator);
+    return getStrByMask(bitmask, strMap, fieldSeparator);
 }
 
-string getFieldsByMap(u_int32_t bitmask,  std::map<u_int32_t, std::string> maskMap, const string &fieldSeparator)
+string getStrByMask(u_int32_t bitmask,  std::map<u_int32_t, std::string> maskMap, const string &fieldSeparator)
 {
     string bitMaskStr = "";
     string tmpMaskStr = "";
@@ -1117,28 +1128,6 @@ string getRxTxCDRState(u_int32_t state, u_int32_t numOfLanes)
         mask = mask << 1;
     }
     return deleteLastChar(stateMask);
-}
-
-string getStringByActiveLanes(string allLanes, int numOfActiveLanes)
-{
-    string delimiter = ",";
-    size_t pos = 0;
-    int i = numOfActiveLanes;
-    string newStr = "";
-    while ((pos = allLanes.find(delimiter)) != string::npos && i != 0) {
-        newStr += allLanes.substr(0, pos);
-        allLanes.erase(0, pos + delimiter.length());
-        i--;
-        if( i != 0){
-            newStr += ",";
-        }
-    }
-
-    if(char(newStr[newStr.length() - 1]) == ','){
-        newStr = deleteLastChar(newStr);
-    }
-
-    return newStr;
 }
 
 string pcieDeviceStatusStr(u_int32_t deviceStatus)

@@ -296,6 +296,15 @@ struct DPN {
     u_int32_t node;
 };
 
+struct MODULE_FIELD
+{
+    string uiName;
+    string amberName;
+    bool multiVal;
+    bool perLane;
+    bool requireDdm;
+};
+
 using namespace std;
 
 class MlxlinkCommander: public MlxlinkRegParser {
@@ -350,6 +359,7 @@ public:
     void handleLabelPorts(std::vector<string> labelPortsStr, bool skipException = false);
     vector<string> localToPortsPerGroup(vector<u_int32_t> localPorts);
     u_int32_t getPortGroup(u_int32_t localPort);
+    string getValuesOfActiveLanes(const string &row);
 
     //Mlxlink query functions
     virtual void showModuleInfo();
@@ -587,7 +597,6 @@ public:
 
 protected:
     vector<AmberField> _ppcntFields;
-    string loopAllLanesStr(vector<AmberField> &fields, string str);
 };
 
 #endif /* MLXLINK_COMMANDER_H */
