@@ -931,10 +931,10 @@ bool Fs4Operations::GetImageInfo(u_int8_t *buff)
     if (success && !_ioAccess->is_flash()/*image*/) {
         DPRINTF(("Fs4Operations::GetImageInfo check if fix burn_image_size is required\n"));
         bool is_encrypted_image;
-        if (!IsEncryptedImage(is_encrypted_image)){
+        if (!IsEncryptedImage(is_encrypted_image)) {
             return false;
         }
-        if (is_encrypted_image && _fwImgInfo.ext_info.burn_image_size == 0){
+        if ((is_encrypted_image || _encrypted_image_io_access) && _fwImgInfo.ext_info.burn_image_size == 0) {
             DPRINTF(("Fs4Operations::GetImageInfo read burn_image_size from the address 16MB\n"));
             //* Read burn_image_size from the address 16MB ("outside" the range that we burn)
             u_int32_t burn_image_size; 
