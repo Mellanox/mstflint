@@ -4410,13 +4410,14 @@ void MlxlinkCommander::initCablesCommander()
         _cablesCommander->_sfp51Paging = isSFP51Paging();
         _cablesCommander->_passiveQsfp = isPassiveQSFP();
     } else {
-        _allUnhandledErrors += "No plugged cable detected";
+        throw MlxRegException(string("No plugged cable detected"));
     }
 }
 
 void MlxlinkCommander::showCableDump()
 {
     try {
+        initCablesCommander();
         if (_plugged && !_mngCableUnplugged) {
             vector<MlxlinkCmdPrint> dumpOutput = _cablesCommander->getPagesToDump();
             printOuptputVector(dumpOutput);
@@ -4430,6 +4431,7 @@ void MlxlinkCommander::showCableDump()
 void MlxlinkCommander::showCableDDM()
 {
     try {
+        initCablesCommander();
         if (_plugged && !_mngCableUnplugged) {
             if (_ddmSupported) {
                 vector<MlxlinkCmdPrint> ddmOutput = _cablesCommander->getCableDDM();
@@ -4461,6 +4463,7 @@ vector<u_int8_t> MlxlinkCommander::validateBytes(const vector<string> &strBytes)
 void MlxlinkCommander::writeCableEEPROM()
 {
     try {
+        initCablesCommander();
         MlxlinkRecord::printCmdLine("Writing To Cable EEPROM", _jsonRoot);
         if (_plugged && !_mngCableUnplugged) {
             vector<u_int8_t> bytesToWrite = validateBytes(_userInput._bytesToWrite);
@@ -4475,6 +4478,7 @@ void MlxlinkCommander::writeCableEEPROM()
 void MlxlinkCommander::readCableEEPROM()
 {
     try {
+        initCablesCommander();
         if (_plugged && !_mngCableUnplugged) {
             MlxlinkCmdPrint bytesOutput =
                     _cablesCommander->readFromEEPRM(_userInput._page , _userInput._offset, _userInput._len);

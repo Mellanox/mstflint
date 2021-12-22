@@ -851,28 +851,20 @@ void MlxlinkCablesCommander::initValidPages()
         readFromPage(page0L, EXTENDED_PAGES_1_2_10_11_ADDR, &extendedPages);
         free(page0L);
         if (!(extendedPages & EXTENDED_PAGES_1_2_10_11_MASK)) {
-            p = (page_t){PAGE_01, LOWER_PAGE_OFFSET, I2C_ADDR_LOW};
-            _validPages.push_back(p);
             p = (page_t){PAGE_01, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
             _validPages.push_back(p);
             if (_cableIdentifier != IDENTIFIER_SFP_DD) {
-                p = (page_t){PAGE_02, LOWER_PAGE_OFFSET, I2C_ADDR_LOW};
-                _validPages.push_back(p);
                 p = (page_t){PAGE_02, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
                 _validPages.push_back(p);
-                p = (page_t){PAGE_10, LOWER_PAGE_OFFSET, I2C_ADDR_LOW};
-                _validPages.push_back(p);
                 p = (page_t){PAGE_10, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
-                _validPages.push_back(p);
-                p = (page_t){PAGE_11, LOWER_PAGE_OFFSET, I2C_ADDR_LOW};
                 _validPages.push_back(p);
                 p = (page_t){PAGE_11, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
                 _validPages.push_back(p);
 
-                // if p 1, B155:6=1, dump page 0x4 (L&H)
-                //                   dump page 0x12 (L&H)
-                //         B142:5=1, dump page 0x13 (L&H)
-                //                   dump page 0x14 (L&H)
+                // if p 1, B155:6=1, dump page 0x4 (H)
+                //                   dump page 0x12 (H)
+                //         B142:5=1, dump page 0x13 (H)
+                //                   dump page 0x14 (H)
                 u_int8_t *page1H = (u_int8_t*)malloc(sizeof(u_int8_t) * CABLE_PAGE_SIZE);
                 loadEEPRMPage(PAGE_01, UPPER_PAGE_OFFSET, page1H);;
                 u_int8_t extendedQsfpPages = 0;
@@ -880,11 +872,7 @@ void MlxlinkCablesCommander::initValidPages()
                         (EXTENDED_PAGES_4_12_ADDR - UPPER_PAGE_OFFSET),
                         &extendedQsfpPages);
                 if (extendedQsfpPages & EXTENDED_PAGES_4_12_MASK) {
-                    p = (page_t){PAGE_04, LOWER_PAGE_OFFSET, I2C_ADDR_LOW};
-                    _validPages.push_back(p);
                     p = (page_t){PAGE_04, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
-                    _validPages.push_back(p);
-                    p = (page_t){PAGE_12, LOWER_PAGE_OFFSET, I2C_ADDR_LOW};
                     _validPages.push_back(p);
                     p = (page_t){PAGE_12, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
                     _validPages.push_back(p);
@@ -894,11 +882,7 @@ void MlxlinkCablesCommander::initValidPages()
                         (EXTENDED_PAGES_13_14_ADDR - UPPER_PAGE_OFFSET),
                         &extendedQsfpPages);
                 if (extendedQsfpPages & EXTENDED_PAGES_13_14_MASK) {
-                    p = (page_t){PAGE_13, LOWER_PAGE_OFFSET, I2C_ADDR_LOW};
-                    _validPages.push_back(p);
                     p = (page_t){PAGE_13, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
-                    _validPages.push_back(p);
-                    p = (page_t){PAGE_14, LOWER_PAGE_OFFSET, I2C_ADDR_LOW};
                     _validPages.push_back(p);
                     p = (page_t){PAGE_14, UPPER_PAGE_OFFSET, I2C_ADDR_LOW};
                     _validPages.push_back(p);

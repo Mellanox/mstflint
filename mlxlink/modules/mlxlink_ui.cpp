@@ -760,10 +760,6 @@ void MlxlinkUi::commandsCaller()
             PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger,"-> \"Set External PHY\"");
             _mlxlinkCommander->sendPepc();
             break;
-        case CABLE_EEPROM_INI:
-            PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger,"-> Initializing cable EEPROM pages");
-            _mlxlinkCommander->initCablesCommander();
-            break;
         case CABLE_SHOW_DUMP:
             PRINT_LOG(_mlxlinkCommander->_mlxlinkLogger,"-> \"Dump cable pages\"");
             _mlxlinkCommander->showCableDump();
@@ -995,7 +991,6 @@ ParseStatus MlxlinkUi::HandleOption(string name, string value)
         return PARSE_OK;
     } else if (name == CABLE_FLAG) {
         _mlxlinkCommander->_userInput._cable = true;
-        addCmd(CABLE_EEPROM_INI);
         return PARSE_OK;
     } else if (name == CABLE_DUMP_FLAG) {
         _mlxlinkCommander->_userInput._dump = true;
