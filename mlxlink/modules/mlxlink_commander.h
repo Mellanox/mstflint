@@ -52,8 +52,12 @@
 
 #ifdef MST_UL
 #define MLXLINK_EXEC "mstlink"
+#define PKG_NAME     "MSTFLINT"
+#define PKG_VER      MSTFLINT_VERSION_STR
 #else
 #define MLXLINK_EXEC "mlxlink"
+#define PKG_NAME     "MFT"
+#define PKG_VER      MFT_VERSION_STR
 #endif
 
 //------------------------------------------------------------
@@ -332,8 +336,7 @@ public:
     void labelToIBLocalPort();
     bool isIBSplitReady();
     u_int32_t calculatePanelPort(bool ibSplitReady);
-    void checkWidthSplit(u_int32_t localPort);
-    void checkUnSplit(u_int32_t localPort);
+    void checkWidthSplit();
     u_int32_t maxLocalPort();
     void checkStrLength(const string &str);
     void getActualNumOfLanes(u_int32_t linkSpeedActive, bool extended);

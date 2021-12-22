@@ -105,7 +105,7 @@ void MlxlinkUi::printSynopsisCommands()
     MlxlinkRecord::printFlagLine(PAOS_FLAG_SHORT, PAOS_FLAG, "port_state",
                   "Configure Port State [UP(up)/DN(down)/TG(toggle)]");
     MlxlinkRecord::printFlagLine(PTYS_FLAG_SHORT, PTYS_FLAG, "speeds",
-                  "Configure Speeds [HDR,EDR,FDR10,FDR,QDR,DDR,SDR,400G_8X,200G_4X,100G_2X,50G_1X,100G,100G_4X,50G,50G_2X,25G,40X,10G,2.5G,1G]");
+                  "Configure Speeds [NDR,HDR,EDR,FDR10,FDR,QDR,DDR,SDR,400G_8X,200G_4X,100G_2X,50G_1X,100G,100G_4X,50G,50G_2X,25G,40X,10G,2.5G,1G]");
     printf(IDENT);
     MlxlinkRecord::printFlagLine(PTYS_LINK_MODE_FORCE_FLAG_SHORT, PTYS_LINK_MODE_FORCE_FLAG, "",
                   "Configure Link Mode Force (Disable AN)");
