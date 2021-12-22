@@ -252,14 +252,21 @@ void MlxlinkCommander::checkValidFW()
 void MlxlinkCommander::getProductTechnology()
 {
     try {
-        string regName = "SLRG";
-        resetParser(regName);
-        updateField("local_port", _localPort);
-        updateField("pnat", (_userInput._pcie) ? PNAT_PCIE : PNAT_LOCAL);
+        if (_devID == DeviceConnectX7) { //TODO: remove after supporting SLRG for Carmel
+            resetParser(ACCESS_REG_MGIR);
 
-        genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
+            genBuffSendRegister(ACCESS_REG_MGIR, MACCESS_REG_METHOD_GET);
 
-        _productTechnology = getVersion(getFieldValue("version"));
+            _productTechnology = getFieldValue("technology");
+        } else {
+            resetParser(ACCESS_REG_SLRG);
+            updateField("local_port", _localPort);
+            updateField("pnat", (_userInput._pcie) ? PNAT_PCIE : PNAT_LOCAL);
+
+            genBuffSendRegister(ACCESS_REG_SLRG, MACCESS_REG_METHOD_GET);
+
+            _productTechnology = getVersion(getFieldValue("version"));
+        }
     } catch (MlxRegException &exc) {
         throw MlxRegException(
                 "Unable to get product technology: %s", exc.what_s().c_str());
