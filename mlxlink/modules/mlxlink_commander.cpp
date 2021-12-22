@@ -723,7 +723,7 @@ void MlxlinkCommander::checkUnSplit(u_int32_t localPort)
 void MlxlinkCommander::labelToIBLocalPort()
 {
     u_int32_t labelPort = _userInput._labelPort;
-    bool ibSplitReady = isIBSplitReady();
+    bool ibSplitReady = isIBSplitReady() && (_devID == DeviceQuantum || _devID == DeviceQuantum2);
     if (_userInput._splitProvided && _devID != DeviceQuantum && _devID != DeviceQuantum2) {
         throw MlxRegException("No split in IB!");
     }
