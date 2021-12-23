@@ -640,7 +640,7 @@ void MlxlinkCommander::labelToSpectLocalPort()
         }
         splitAdjustment = 0;
         if ((getFieldValue("lane0_module_mapping.module") + 1)  == _userInput._labelPort) {
-            checkWidthSplit(localPort);
+            checkWidthSplit();
             if (_userInput._splitProvided) {
                 if (_devID == DeviceSpectrum3 || _devID == DeviceSpectrum4 ||
                     (_devID != DeviceSpectrum && !spectWithGearBox)) {
@@ -672,59 +672,44 @@ void MlxlinkCommander::labelToSpectLocalPort()
                 "Failed to find Local Port, please provide valid Port Number");
 }
 
-void MlxlinkCommander::checkWidthSplit(u_int32_t localPort)
+void MlxlinkCommander::checkWidthSplit()
 {
-    if (!_userInput._splitProvided) {
-        checkUnSplit(localPort);
-        return;
-    }
-    switch (_userInput._splitPort) {
-    case 1:
-        throw MlxRegException("Invalid split number!");
-    case 2:
-        if (_numOfLanes < 4 ||
-            ((_devID == DeviceSpectrum3 || _devID == DeviceSpectrum4) && _numOfLanes == 4)) {
-            return;
+    if (_userInput._splitProvided) {
+        if (_userInput._secondSplitProvided) {
+            throw MlxRegException("Invalid port number!");
         }
-        break;
-    case 3:
-    case 4:
-        if (_numOfLanes == 1 ||
-            ((_devID == DeviceSpectrum3 || _devID == DeviceSpectrum4) && _numOfLanes == 2)) {
-            return;
+        switch (_userInput._splitPort) {
+        case 1:
+            throw MlxRegException("Invalid split number!");
+        case 2:
+            if (_numOfLanes < 4 ||
+                ((_devID == DeviceSpectrum3 || _devID == DeviceSpectrum4) && _numOfLanes == 4)) {
+                return;
+            }
+            break;
+        case 3:
+        case 4:
+            if (_numOfLanes == 1 ||
+                ((_devID == DeviceSpectrum3 || _devID == DeviceSpectrum4) && _numOfLanes == 2)) {
+                return;
+            }
+            break;
+        case 5:
+        case 6:
+        case 7:
+        case 8:
+            if ((_devID == DeviceSpectrum3 || _devID == DeviceSpectrum4) && _numOfLanes == 1) {
+                return;
+            }
+            break;
+        default:
+            break;
         }
-        break;
-    case 5:
-    case 6:
-    case 7:
-    case 8:
-        if ((_devID == DeviceSpectrum3 || _devID == DeviceSpectrum4) && _numOfLanes == 1) {
-            return;
-        }
-        break;
-    default:
-        break;
+        throw MlxRegException(
+                  "Port " + to_string(_userInput._labelPort) + "/"
+                  + to_string(_userInput._splitPort)
+                  + " does not exist!");
     }
-    throw MlxRegException(
-              "Port " + to_string(_userInput._labelPort) + "/"
-              + to_string(_userInput._splitPort)
-              + " does not exist!");
-}
-
-void MlxlinkCommander::checkUnSplit(u_int32_t localPort)
-{
-    if (localPort) {
-    }
-    return;
-    /*if (_numOfLanes == 4) {
-       return;
-       } else if (_numOfLanes == 2) {
-       throw MlxRegException("Port is Splitted! please provide label port and lane, ex: " + convertToString(_labelPort) + "/2");
-       } else if (_numOfLanes == 1) {
-       //TODO - 4x-1x
-       if (localPort) {}
-       //throw MlxRegException("Port is Splitted! please provide label port and lane, ex: " + convertToString(_labelPort) + "/4");
-       }*/
 }
 
 void MlxlinkCommander::labelToIBLocalPort()
@@ -734,7 +719,9 @@ void MlxlinkCommander::labelToIBLocalPort()
     if (_userInput._splitProvided && _devID != DeviceQuantum && _devID != DeviceQuantum2) {
         throw MlxRegException("No split in IB!");
     }
-    if ((labelPort > maxLocalPort() || (ibSplitReady && labelPort >= maxLocalPort()/2 )) ||
+    u_int32_t maxLabelPort = _devID == DeviceQuantum2? maxLocalPort()/4 :
+                             _devID == DeviceQuantum? maxLocalPort()/2 - 1 : maxLocalPort();
+    if ((labelPort > maxLabelPort) ||
         (_userInput._secondSplitProvided && _devID != DeviceQuantum2) ||
         (_userInput._splitPort > 2)) {
         throw MlxRegException("Invalid port number!");
@@ -758,10 +745,13 @@ void MlxlinkCommander::labelToIBLocalPort()
     }
     if ((_devID == DeviceQuantum || _devID == DeviceQuantum2) && ibSplitReady) {
         string portStr = "Port " + to_string(_userInput._labelPort);
-        portStr = _devID == DeviceQuantum2 ? portStr + "/" + to_string(_userInput._splitPort)
-                                           : portStr;
+        string swSplitCmd = "module-type qsfp-split-2";
+        if (_devID == DeviceQuantum2) {
+            portStr = portStr + "/" + to_string(_userInput._splitPort);
+            swSplitCmd = "port-type split-2";
+        }
         throw MlxRegException("%s is not splitted physically from switch side, Use this command to split it physically:\n"
-                              "interface ib <port/ports range> module-type qsfp-split-2", portStr.c_str());
+                              "interface ib <port/ports range> %s", portStr.c_str(), swSplitCmd.c_str());
     }
 }
 
@@ -1306,9 +1296,9 @@ void MlxlinkCommander::preparePowerAndCdrSection(bool valid)
             (_plugged && _cableMediaType != PASSIVE) ? powerClassStr : "N/A",
             ANSI_COLOR_RESET, true, valid);
     setPrintVal(_moduleInfoCmd, "CDR RX", _plugged ? rxCdrState : "N/A",
-            ANSI_COLOR_RESET, true, valid);
+            ANSI_COLOR_RESET, true, valid, true);
     setPrintVal(_moduleInfoCmd,"CDR TX", _plugged ? txCdrState : "N/A",
-            ANSI_COLOR_RESET, true, valid);
+            ANSI_COLOR_RESET, true, valid, true);
     setPrintVal(_moduleInfoCmd, "LOS Alarm", "N/A",
             ANSI_COLOR_RESET, true, valid);
 }
@@ -1605,7 +1595,7 @@ void MlxlinkCommander::runningVersion()
     setPrintVal(_toolInfoCmd,"Firmware Version", _fwVersion, ANSI_COLOR_GREEN,true, !_prbsTestMode);
     setPrintVal(_toolInfoCmd,"amBER Version", AMBER_VERSION, ANSI_COLOR_GREEN,
                 _productTechnology >= PRODUCT_16NM, !_prbsTestMode);
-    setPrintVal(_toolInfoCmd,"MSTFLINT Version", MSTFLINT_VERSION_STR, ANSI_COLOR_GREEN,true, !_prbsTestMode);
+    setPrintVal(_toolInfoCmd, PKG_NAME " Version", PKG_VER, ANSI_COLOR_GREEN,true, !_prbsTestMode);
 }
 
 void MlxlinkCommander::operatingInfoPage()
@@ -1955,12 +1945,14 @@ void MlxlinkCommander::prepareBerInfo()
     setPrintVal(_berInfoCmd, "Time Since Last Clear [Min]",
                 AmberField::getValueFromFields(_ppcntFields, "Time_since_last_clear_[Min]"),
                 ANSI_COLOR_RESET, true, _linkUP);
-    setPrintVal(_berInfoCmd, "Symbol Errors",
-                AmberField::getValueFromFields(_ppcntFields, "Symbol_Errors"),
-                ANSI_COLOR_RESET, _protoActive == IB, _linkUP);
-    setPrintVal(_berInfoCmd, "Symbol BER",
-                AmberField::getValueFromFields(_ppcntFields, "Symbol_BER"),
-                ANSI_COLOR_RESET, _protoActive == IB, _linkUP);
+    if (_protoActive == IB) {
+        setPrintVal(_berInfoCmd, "Symbol Errors",
+                    AmberField::getValueFromFields(_ppcntFields, "Symbol_Errors"),
+                    ANSI_COLOR_RESET, true, _linkUP);
+        setPrintVal(_berInfoCmd, "Symbol BER",
+                    AmberField::getValueFromFields(_ppcntFields, "Symbol_BER"),
+                    ANSI_COLOR_RESET, true, _linkUP);
+    }
     setPrintVal(_berInfoCmd, "Effective Physical Errors",
                 AmberField::getValueFromFields(_ppcntFields, "Effective_Errors"),
                 ANSI_COLOR_RESET, true, _linkUP);
@@ -2311,9 +2303,8 @@ string MlxlinkCommander::fecMaskToUserInputStr(u_int32_t fecCapMask)
             }
         }
     }
-
-    validFecStr = validFecStr.empty()? "" : deleteLastChar(validFecStr);
-
+    string auFec =  _mlxlinkMaps->_fecModeMask[0].second + "(" +  _mlxlinkMaps->_fecModeMask[0].first + ")";
+    validFecStr = validFecStr.empty()? "" : (auFec + "/" + deleteLastChar(validFecStr));
     return validFecStr;
 }
 
@@ -3894,7 +3885,6 @@ u_int32_t MlxlinkCommander::fecToBit(const string &fec, const string &speedStrG)
             fecAdmin = it->first;
         }
     }
-
     return fecAdmin;
 }
 
@@ -3917,9 +3907,6 @@ u_int32_t MlxlinkCommander::getFecCapForCheck(const string &speedStr)
 
 void MlxlinkCommander::checkPplmCap()
 {
-    if (_userInput._pplmFec == "AU") {
-        return;
-    }
     string speedFec = _userInput._speedFec;
     string uiSpeed = _userInput._speedFec;
     if (_linkUP && _userInput._speedFec.empty()) {
@@ -3940,10 +3927,20 @@ void MlxlinkCommander::checkPplmCap()
             }
         }
         if (!isIn(speedToCheck, supportedSpeeds)) {
-            throw MlxRegException("\nFEC speed %s is not valid", uiSpeed.c_str());
+            string validSpeeds = "";
+            if (!supportedSpeeds.empty()) {
+                validSpeeds = ", valid FEC speed configurations are [";
+                for (auto it = _mlxlinkMaps->_fecPerSpeed.begin(); it != _mlxlinkMaps->_fecPerSpeed.end(); it++) {
+                    if (isIn(it->first, supportedSpeeds)) {
+                        validSpeeds += it->first + ",";
+                    }
+                }
+                validSpeeds = !validSpeeds.empty()? deleteLastChar(validSpeeds) : validSpeeds;
+                validSpeeds = validSpeeds + "]";
+            }
+            throw MlxRegException("\nFEC speed %s is not valid%s", uiSpeed.c_str(), validSpeeds.c_str());
         }
     }
-
     // Validate the FEC for the speed
     if (speedFec == "10g" || speedFec == "40g") {
         speedFec = "10g_40g";
@@ -3956,10 +3953,9 @@ void MlxlinkCommander::checkPplmCap()
     }
     _userInput._speedFec = speedFec;
     u_int32_t fecCap = getFecCapForCheck(_userInput._speedFec);
-    if (!(fecToBit(_userInput._pplmFec, _userInput._speedFec) & fecCap)) {
+    if (_userInput._pplmFec != "AU" && !(fecToBit(_userInput._pplmFec, _userInput._speedFec) & fecCap)) {
         string supportedFec = fecMaskToUserInputStr(fecCap);
         string validFecs = fecMaskToUserInputStr(BIT_MASK_ALL_DWORD);
-
         string errorMsg = _userInput._pplmFec + " FEC is not supported in " + uiSpeed + " speed, ";
         if (validFecs.find(_userInput._pplmFec) == string::npos) {
             errorMsg = _userInput._pplmFec + " FEC configuration is not valid, ";
