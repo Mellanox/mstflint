@@ -460,6 +460,15 @@ static struct device_info g_devs_info[] = {
         DM_GEARBOX              //dev_type
     },
     {
+        DeviceAbirGearBox,      //dm_id
+        0x256,                  //hw_dev_id
+        -1,                     //hw_rev_id
+        -1,                     //sw_dev_id
+        "Abir GearBox Managaer",//name
+        -1,                     //port_num NEED_CHECK
+        DM_GEARBOX              //dev_type
+    },
+    {
         DeviceUnknown,          //dm_id
         0,                      //hw_dev_id
         0,                      //hw_rev_id

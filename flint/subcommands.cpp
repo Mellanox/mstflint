@@ -4103,6 +4103,7 @@ bool SwResetSubCommand::IsDeviceSupported(dm_dev_id_t dev_id)
         case DeviceSecureHost:
         case DeviceGearBox:
         case DeviceGearBoxManager:
+        case DeviceAbirGearBox:
             reportErr(true, "The device type %d is not supported.\n", dev_id);
             return false;
         default:

@@ -2733,6 +2733,7 @@ int mf_set_reset_flash_on_warm_reboot(mflash *mfl)
     case DeviceSpectrum4:
     case DeviceGearBox:
     case DeviceGearBoxManager:
+    case DeviceAbirGearBox:
         set_reset_bit_dword_addr = 0xf0c28;
         set_reset_bit_offset = 2;
         break;
@@ -2779,6 +2780,7 @@ int mf_update_boot_addr(mflash *mfl, u_int32_t boot_addr)
     case DeviceSpectrum3:
     case DeviceGearBox:
     case DeviceGearBoxManager:
+    case DeviceAbirGearBox:
         boot_cr_space_address = 0xf0080;
         offset_in_address = 0;
         break;
