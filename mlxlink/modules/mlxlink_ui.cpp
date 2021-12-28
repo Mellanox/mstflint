@@ -60,7 +60,7 @@ void MlxlinkUi::printSynopsisHeader()
         IDENT "SYNOPSIS:\n"
         IDENT2 MLXLINK_EXEC " [OPTIONS]\n\n"
         IDENT "DESCRIPTION:\n"
-        IDENT2 "The mstlink tool is used to check and debug link status and issues related to them.\n"
+        IDENT2 "The " MLXLINK_EXEC " tool is used to check and debug link status and issues related to them.\n"
         IDENT2 "The tool can be used on different links and cables (passive, active, transceiver and backplane).\n");
     printf("\n");
     printf(IDENT "OPTIONS:\n");
