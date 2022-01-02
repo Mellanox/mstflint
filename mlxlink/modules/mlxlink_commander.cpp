@@ -3034,6 +3034,7 @@ string MlxlinkCommander::getSupportedPrbsModes(u_int32_t modeSelector)
 
     genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
     u_int32_t capsMask = getFieldValue("prbs_modes_cap");
+    capsMask = modeSelector == PRBS_RX? capsMask & 0xffe3fff : capsMask;
     string modeCapStr = "";
     // Iterating over the supported modes according to capability mask
     // And preparing them in one string
@@ -3483,8 +3484,20 @@ void MlxlinkCommander::checkPrbsRegsCap(const string &prbsReg, const string &lan
 
     if (invalidRateStr || !(laneRateCap & getFieldValue("lane_rate_cap"))) {
         string errStr = "Device does not support lane rate " + laneRateStr + " in physical test mode.\n";
-        errStr += "Valid RX PRBS lane rates: " + getSupportedPrbsRates(PRBS_RX) + "\n";
-        errStr += "Valid TX PRBS lane rates: " + getSupportedPrbsRates(PRBS_TX) + "\n";
+        string rxRates =  getSupportedPrbsRates(PRBS_RX);
+        string txRates =  getSupportedPrbsRates(PRBS_TX);
+        if (rxRates.empty()) {
+            rxRates = "No Valid RX PRBS lane rate";
+        } else {
+            rxRates = "Valid RX PRBS lane rates: " + rxRates;
+        }
+        errStr += rxRates + "\n";
+        if (txRates.empty()) {
+            txRates = "No Valid TX PRBS lane rate";
+        } else {
+            txRates = "Valid TX PRBS lane rates: " + txRates;
+        }
+        errStr += txRates + "\n";
         errStr += "Default PRBS Lane Rate is EDR / 25GE / 50GE / 100GE (25.78125 Gb/s)";
         throw MlxRegException(errStr);
     }

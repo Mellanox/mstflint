@@ -236,7 +236,7 @@ void MlxlinkAmBerCollector::init()
         _sheetsList[AMBER_SHEET_PORT_COUNTERS] = FIELDS_COUNT{35, 0, 35};
         _sheetsList[AMBER_SHEET_TROUBLESHOOTING] = FIELDS_COUNT{2, 2, 0};
         _sheetsList[AMBER_SHEET_PHY_OPERATION_INFO] = FIELDS_COUNT{18, 18, 15};
-        _sheetsList[AMBER_SHEET_LINK_UP_INFO] = FIELDS_COUNT{6, 6, 0};
+        _sheetsList[AMBER_SHEET_LINK_UP_INFO] = FIELDS_COUNT{9, 9, 0};
         _sheetsList[AMBER_SHEET_LINK_DOWN_INFO] = FIELDS_COUNT{5, 5, 0};
         _sheetsList[AMBER_SHEET_TEST_MODE_INFO] = FIELDS_COUNT{144, 144, 0};
         _sheetsList[AMBER_SHEET_TEST_MODE_MODULE_INFO] = FIELDS_COUNT{110, 110, 0};
@@ -792,7 +792,7 @@ vector<AmberField> MlxlinkAmBerCollector::getSerdesHDR()
                 sltpStatus.push_back(getFieldValue("status") ? "Valid" : "Invalid");
             }
 
-            fillParamsToFields("Status", sltpStatus, fields);
+            fillParamsToFields("tx_status", sltpStatus, fields);
             fillParamsToFields("pre_2_tap", sltpParams[PRE_2_TAP], fields);
             fillParamsToFields("pre_tap", sltpParams[PRE_TAP], fields);
             fillParamsToFields("main_tap", sltpParams[MAIN_TAP], fields);
