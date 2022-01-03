@@ -83,6 +83,11 @@ typedef enum {
     Switch = 1
 } Device_Type;
 
+typedef enum {
+    KEEP_ALIVE_OK,
+    KEEP_ALIVE_ERROR
+} keepAliveStatus;
+
 typedef struct QueryOutputItem {
     string mlxconfigName;
     u_int32_t nextVal;
@@ -138,13 +143,14 @@ class KeepAliveSession
 public:
     KeepAliveSession(mfile *mf, u_int16_t sessionId, u_int32_t sessionTimeInSec);
 
-    int startSession();
+    keepAliveStatus runSession();
     void setSleepTimeOnCommandTO(u_int32_t sleepTime);
     void setSleepTimeBetweenCommands(u_int32_t sleepTime);
 
 private:
-    int runMKDC(mfile* mf, reg_access_switch_mkdc_reg_ext* mkdc_reg, time_t& timer);
-    int processMKDCData(reg_access_switch_mkdc_reg_ext* mkdc_reg);
+    keepAliveStatus runMKDC(mfile* mf, reg_access_switch_mkdc_reg_ext* mkdc_reg, time_t& timer);
+    keepAliveStatus processMKDCData(reg_access_switch_mkdc_reg_ext* mkdc_reg);
+    keepAliveStatus err(bool report, const char *fmt, ...);
 
     static const char* _mkdcErrorToString[5];
 

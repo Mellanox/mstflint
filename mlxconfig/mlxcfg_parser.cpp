@@ -119,10 +119,10 @@ void MlxCfg::printHelp()
     printf(IDENT2 "%-24s : %s\n", "xml2bin", "Generate binary configuration dump file from XML file. XML input file name and bin output file name must be specified. (*)");
     printf(IDENT2 "%-24s : %s\n", "create_conf", "Generate configuration file from XML file. XML input file name and bin output file name must be specified. (*)");
     printf(IDENT2 "%-24s : %s\n", "apply", "Apply a configuration file, that was created with create_conf command. bin input file name must be specified. (*)");
-    printf(IDENT2 "%-24s : %s\n", "token", "Send a challenge request to a MST device. Token type must be specified.");
-    printf(IDENT2 "%-24s : %s\n", "remote_token_keep_alive", "Start a remote token session. Session id must be specified.");
-    printf(IDENT2 "%-24s : %s\n", "token_supported", "Query which tokens are supported on a MST device.");
-    printf(IDENT2 "%-24s : %s\n", "query_token_session", "Query the status of an active token session.");
+    printf(IDENT2 "%-24s : %s\n", "token", "Send a challenge request. Token type must be specified.");
+    printf(IDENT2 "%-24s : %s\n", "remote_token_keep_alive", "Start a remote token session for a specified time. time in minutes and session id must be specified.");
+    printf(IDENT2 "%-24s : %s\n", "token_supported", "Query which tokens are supported.");
+    printf(IDENT2 "%-24s : %s\n", "query_token_session", "Query the status of a token session.");
     printf(IDENT2 "%-24s : %s\n", "end_token_session", "End an active token session.");
 
     // print supported commands
@@ -525,7 +525,7 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char *argv[])
                 return status;
             }
             if (_mlxParams.sessionTimeInSec > MAX_SESSION_TIME_IN_MINUTES) {
-                return err(true, "requested session time is out of bounds, max session time is 1 week.");
+                return err(true, "requested session time is out of bounds, max session time is 1 week (10080 minutes).");
             }
             _mlxParams.sessionTimeInSec *= 60;
             _mlxParams.cmd = Mc_RemoteTokenKeepAlive;

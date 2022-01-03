@@ -1361,7 +1361,7 @@ mlxCfgStatus MlxCfg::apply()
 
 
 mlxCfgStatus MlxCfg::remoteTokenKeepAlive()
-{    
+{
     mlxCfgStatus status = MLX_CFG_OK;
     mfile *mf = NULL;
 
@@ -1369,6 +1369,10 @@ mlxCfgStatus MlxCfg::remoteTokenKeepAlive()
     if (!mf) {
         printf("-E- failed opening the device.\n");
         return MLX_CFG_ERROR;
+    }
+
+    if ((mf->flags & MDEVS_IB) == 0) { //not IB device
+        return err(true, "specified device is not an IB device.\n");
     }
 
     KeepAliveSession session(mf, _mlxParams.sessionId, _mlxParams.sessionTimeInSec);
@@ -1380,8 +1384,8 @@ mlxCfgStatus MlxCfg::remoteTokenKeepAlive()
         session.setSleepTimeOnCommandTO(_mlxParams.keepAliveSleepTimeOnCommandTO);
     }
 
-    int session_status = session.startSession();
-    if (session_status) {
+    keepAliveStatus sessionStatus = session.runSession();
+    if (sessionStatus != KEEP_ALIVE_OK) {
         status = MLX_CFG_ERROR;
     }
     else {
@@ -1450,7 +1454,11 @@ mlxCfgStatus MlxCfg::getChallenge()
         printf("-E- failed to open the device.\n");
         return MLX_CFG_ERROR;
     }
-    
+
+    if ((mf->flags & MDEVS_IB) == 0) { //not IB device
+        return err(true, "specified device is not an IB device.\n");
+    }
+
     struct reg_access_switch_mtcq_reg_ext mtcq_reg;
     memset(&mtcq_reg, 0, sizeof(mtcq_reg));
     mtcq_reg.token_opcode = _mlxParams.tokenID;
@@ -1697,7 +1705,7 @@ KeepAliveSession::KeepAliveSession(mfile *mf, u_int16_t sessionId, u_int32_t ses
     _mf(mf),
     _sessionId(sessionId),
     _sessionTimeLeftInSec(sessionTimeInSec),
-    _SleepTimeOnCommandTO(5),
+    _SleepTimeOnCommandTO(1),
     _SleepTimeBetweenCommands(300)
 {
     memset(&_mkdc_reg, 0, sizeof(_mkdc_reg));
@@ -1707,42 +1715,50 @@ KeepAliveSession::KeepAliveSession(mfile *mf, u_int16_t sessionId, u_int32_t ses
     _mkdc_reg.current_keep_alive_counter = rand();
 }
 
-int KeepAliveSession::startSession()
+keepAliveStatus KeepAliveSession::runSession()
 {
-    time_t timer;
+    time_t mkdcRunTime;
     u_int32_t sleepTimeInSec = 0;
     u_int32_t sleepBetweenCommandsInSec = _SleepTimeBetweenCommands;
 
     if (sleepBetweenCommandsInSec >= _keepAliveTimestampInSec) {
-        printf("Specified cycle time cannot be longer than keep alive timestamp.\n");
-        return -1;
+        return err(true, "Specified cycle time must be shorter than %d seconds.", _keepAliveTimestampInSec);
     }
 
-    while (_sessionTimeLeftInSec > _keepAliveTimestampInSec) {
-        if (sleepBetweenCommandsInSec > (_sessionTimeLeftInSec - _keepAliveTimestampInSec)) {
-            sleepBetweenCommandsInSec = _sessionTimeLeftInSec - _keepAliveTimestampInSec;
+    if (_sessionTimeLeftInSec < _keepAliveTimestampInSec) {
+        return err(true, "Specified session time must be longer than %d minutes.", _keepAliveTimestampInSec / 60);
+    }
+    
+    while (_sessionTimeLeftInSec >= _keepAliveTimestampInSec) {
+        mkdcRunTime = 0;
+        if (runMKDC(_mf, &_mkdc_reg, mkdcRunTime) != KEEP_ALIVE_OK) {
+            return KEEP_ALIVE_ERROR;
         }
+        if (processMKDCData(&_mkdc_reg) != KEEP_ALIVE_OK) {
+            return KEEP_ALIVE_ERROR;
+        }
+        _sessionTimeLeftInSec -= mkdcRunTime;
+
+        if (_sessionTimeLeftInSec > _keepAliveTimestampInSec) {
+            if (sleepBetweenCommandsInSec > (_sessionTimeLeftInSec - _keepAliveTimestampInSec)) {
+                //* sleep until last MKDC is needed (which is when _keepAliveTimestampInSec seconds are left for the session)
+                sleepBetweenCommandsInSec = _sessionTimeLeftInSec - _keepAliveTimestampInSec;
+            }
+        }
+        else {
+            //* sleep until session time ends
+            sleepBetweenCommandsInSec = _sessionTimeLeftInSec;
+        }
+
         sleepTimeInSec = sleepBetweenCommandsInSec;
-        timer = 0;
-
         msleep(sleepTimeInSec * 1000);
-
         _sessionTimeLeftInSec -= sleepBetweenCommandsInSec;
-
-        runMKDC(_mf, &_mkdc_reg, timer);
-
-        _sessionTimeLeftInSec -= timer;
-        if (processMKDCData(&_mkdc_reg) != 0) {
-            return -1;
-        }
     }
 
-    msleep(_sessionTimeLeftInSec * 1000);
-
-    return 0;
+    return KEEP_ALIVE_OK;
 }
 
-int KeepAliveSession::runMKDC(mfile* mf, reg_access_switch_mkdc_reg_ext* mkdc_reg, time_t& timer)
+keepAliveStatus KeepAliveSession::runMKDC(mfile* mf, reg_access_switch_mkdc_reg_ext* mkdc_reg, time_t& timer)
 {
     reg_access_status_t rc = ME_REG_ACCESS_OK;
     time_t start = 0;
@@ -1753,45 +1769,41 @@ int KeepAliveSession::runMKDC(mfile* mf, reg_access_switch_mkdc_reg_ext* mkdc_re
     rc = reg_access_mkdc(mf, REG_ACCESS_METHOD_GET, mkdc_reg);
     dealWithSignal();
     timer = time(NULL) - start;
-    
+
     while ((rc == ME_ICMD_STATUS_EXECUTE_TO) && ((u_int32_t)timer < _keepAliveTimestampInSec)) {
         u_int32_t sleep_time_in_sec = _SleepTimeOnCommandTO;
-        
+
         msleep(sleep_time_in_sec * 1000);
-        
+
         mft_signal_set_handling(1);
-        rc = reg_access_mkdc(mf, REG_ACCESS_METHOD_GET, mkdc_reg);        
+        rc = reg_access_mkdc(mf, REG_ACCESS_METHOD_GET, mkdc_reg);
         dealWithSignal();
-        
+
         timer = time(NULL) - start;
     }
-    
+
     if (rc == ME_REG_ACCESS_REG_NOT_SUPP) {
-        printf("-E- MKDC access register is not supported.\n");
-        status = -2;
+        return err(true, "MKDC access register is not supported.");
     }
     else if (rc) {
-        printf("Error while using reg access MKDC, error code is %d\n", rc);
-        status = -1;
+        return err(true, "cannot access MKDC register, error code is %d.");
     }
 
-    return status;
+    return KEEP_ALIVE_OK;
 }
 
-int KeepAliveSession::processMKDCData(reg_access_switch_mkdc_reg_ext* mkdc_reg)
+keepAliveStatus KeepAliveSession::processMKDCData(reg_access_switch_mkdc_reg_ext* mkdc_reg)
 {
     if (mkdc_reg->error_code != 0) {
-        printf("-E- keep alive session failed. error code: %s\n", _mkdcErrorToString[mkdc_reg->error_code]);
-        return -1;
+        return err(true, "keep alive session failed. error code: %s.", _mkdcErrorToString[mkdc_reg->error_code]);
     }
-    if (mkdc_reg->session_id != _sessionId) {
-        printf("-E- received wrong session id.\n");
-        return -1;
+    if (mkdc_reg->session_id != _sessionId) {        
+        return err(true, "received wrong session id.");
     }
 
     mkdc_reg->current_keep_alive_counter = mkdc_reg->next_keep_alive_counter;
 
-    return 0;
+    return KEEP_ALIVE_OK;
 }
 
 void KeepAliveSession::setSleepTimeOnCommandTO(u_int32_t sleepTime)
@@ -1802,4 +1814,20 @@ void KeepAliveSession::setSleepTimeOnCommandTO(u_int32_t sleepTime)
 void KeepAliveSession::setSleepTimeBetweenCommands(u_int32_t sleepTime)
 {
     _SleepTimeBetweenCommands = sleepTime;
+}
+
+keepAliveStatus KeepAliveSession::err(bool report, const char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    char errBuff[MAX_ERR_STR_LEN] = {0};
+
+    if (vsnprintf(errBuff, MAX_ERR_STR_LEN, fmt, args) >= MAX_ERR_STR_LEN) {
+        strcpy(&errBuff[MAX_ERR_STR_LEN - 5], "...");
+    }
+    if (report) {
+        fprintf(stdout, PRE_ERR_MSG " %s\n", errBuff);
+    }
+    va_end(args);
+    return KEEP_ALIVE_ERROR;
 }
