@@ -229,10 +229,10 @@ string EthExtSupportedSpeeds2Str(u_int32_t int_mask)
 {
     string maskStr = "";
     if (int_mask & ETH_LINK_SPEED_EXT_800GAUI_8) {
-        maskStr += "800G_8x,";
+        maskStr += "800G_8X,";
     }
     if (int_mask & ETH_LINK_SPEED_EXT_400GAUI_4) {
-        maskStr += "400G_4x,";
+        maskStr += "400G_4X,";
     }
     if (int_mask & ETH_LINK_SPEED_EXT_400GAUI_8) {
         maskStr += "400G_8X,";
