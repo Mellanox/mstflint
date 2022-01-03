@@ -1405,8 +1405,7 @@ bool MlxCfg::runMTCQ(mfile* mf, struct reg_access_switch_mtcq_reg_ext* mtcq_reg)
     rc = reg_access_mtcq(mf, REG_ACCESS_METHOD_GET, mtcq_reg);
     dealWithSignal();
     if (rc) {
-        printf("failed getting response from the device, error %d.\n", rc);
-        return false;
+        return err(true, "failed getting response from the device, error %d.", rc);        
     }
 
     return true;
@@ -1496,13 +1495,13 @@ mlxCfgStatus MlxCfg::queryTokenSupport()
     tools_open_mcam mcam;
     memset(&mcam, 0, sizeof(mcam));    
     reg_access_status_t rc = ME_REG_ACCESS_OK;
-    rc = reg_access_mcam_reverse(mf, REG_ACCESS_METHOD_GET, &mcam);
+    rc = reg_access_mcam(mf, REG_ACCESS_METHOD_GET, &mcam);
     if (rc) {
-        printf("failed getting response from the device, error %d.\n", rc);
+        return err(true, "failed getting response from the device, error %d.", rc);
     }
     
-    printf("CS tokens supported:       %d\n", EXTRACT(mcam.mng_feature_cap_mask[1], 6, 1));
-    printf("Debug FW tokens supported: %d\n", EXTRACT(mcam.mng_feature_cap_mask[1], 7, 1));
+    printf("CS tokens supported:       %d\n", EXTRACT(mcam.mng_feature_cap_mask[2], 6, 1));
+    printf("Debug FW tokens supported: %d\n", EXTRACT(mcam.mng_feature_cap_mask[2], 7, 1));
 
     return MLX_CFG_OK;
 }
@@ -1516,8 +1515,7 @@ bool MlxCfg::runMDSR(mfile* mf, struct reg_access_switch_mdsr_reg_ext* mdsr_reg,
     dealWithSignal();
     
     if (rc) {
-        printf("failed getting response from the device, error %d.\n", rc);
-        return false;
+        return err(true, "failed getting response from the device, error %d.", rc);
     }
 
     return true;
@@ -1527,8 +1525,7 @@ mlxCfgStatus MlxCfg::queryTokenSession()
 {
     mfile *mf = mopen(_mlxParams.device.c_str());
     if (!mf) {
-        printf("-E- failed opening the device.\n");
-        return MLX_CFG_ERROR;
+        return err(true, "failed opening the device.");
     }
 
     struct reg_access_switch_mdsr_reg_ext mdsr_reg;
@@ -1572,8 +1569,7 @@ mlxCfgStatus MlxCfg::endTokenSession()
 {
     mfile *mf = mopen(_mlxParams.device.c_str());
     if (!mf) {
-        printf("-E- failed opening the device.\n");
-        return MLX_CFG_ERROR;
+        return err(true, "failed opening the device.");
     }
 
     struct reg_access_switch_mdsr_reg_ext mdsr_reg;

@@ -103,7 +103,6 @@ reg_access_status_t reg_access_mfmc(mfile *mf, reg_access_method_t method, struc
 reg_access_status_t reg_access_mfpa_new(mfile *mf, reg_access_method_t method, struct tools_open_mfpa *mfpa);
 
 reg_access_status_t reg_access_mcam(mfile *mf, reg_access_method_t method, struct tools_open_mcam *mcam);
-reg_access_status_t reg_access_mcam_reverse(mfile *mf, reg_access_method_t method, struct tools_open_mcam *mcam);
 reg_access_status_t reg_access_secure_host(mfile *mf, reg_access_method_t method, struct tools_open_mlock *mlock);
 /*
  * MCXX new burn commands

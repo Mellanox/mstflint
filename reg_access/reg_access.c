@@ -586,40 +586,6 @@ reg_access_status_t reg_access_mcam(mfile *mf, reg_access_method_t method, struc
     REG_ACCCESS(mf, method, REG_ID_MCAM, mcam, mcam, tools_open);
 }
 
-void swap_bytes(u_int8_t* lhs, u_int8_t* rhs)
-{
-    u_int8_t temp = 0;
-    temp = *lhs;
-    *lhs = *rhs;
-    *rhs = temp;
-}
-
-void reverse_byte_array(u_int8_t* arr, int len)
-{
-    u_int8_t* lhs = arr;
-    u_int8_t* rhs = arr + len - 1;
-
-    if (len < 2) {
-        return;
-    }
-
-    for (; lhs < rhs; ++lhs, --rhs) {
-        swap_bytes(lhs, rhs);
-    }
-}
-
-reg_access_status_t reg_access_mcam_reverse(mfile *mf, reg_access_method_t method, struct tools_open_mcam *mcam)
-{
-    reg_access_status_t rc = reg_access_mcam(mf, method, mcam);
-
-#if __BYTE_ORDER == __LITTLE_ENDIAN    
-    reverse_byte_array(mcam->mng_access_reg_cap_mask, 16);
-    reverse_byte_array(mcam->mng_feature_cap_mask, 16);
-#endif
-
-    return rc;
-}
-
 /************************************
 * Function: reg_access_mcda
 ************************************/
