@@ -62,8 +62,20 @@ typedef enum {
     Mc_XML2Bin,
     Mc_CreateConf,
     Mc_Apply,
+    Mc_RemoteTokenKeepAlive,
+    Mc_TokenChallenge,
+    Mc_TokenSupported,
+    Mc_QueryTokenSession,
+    Mc_EndTokenSession,
     Mc_UnknownCmd
 } mlxCfgCmd;
+
+typedef enum {
+    Mc_Token_RMCS = 0,
+    Mc_Token_RMDT,
+    Mc_Token_CRCS,
+    Mc_Token_CRDT
+} mlxCfgToken;
 
 typedef enum {
     UNSUPPORTED_DEVICE = -1,
@@ -91,7 +103,8 @@ public:
     MlxCfgParams() : device(), rawTlvFile(), NVInputFile(), NVOutputFile(),
         dbName(DB_NAME), privPemFile(), keyPairUUID(), opensslEngine(),
         opensslKeyId(), allAttrs(false), cmd(Mc_UnknownCmd), yes(false),
-        force(false), enableVerbosity(false) {}
+        force(false), enableVerbosity(false), isSleepTimeBetweenCommandsInput(false),
+        isSleepTimeOnCommandTOInput(false) {}
     ~MlxCfgParams() {}
 
     std::string device;
@@ -110,7 +123,39 @@ public:
     std::vector<ParamView> setParams;
     bool force;// ignore parameter checks
     bool enableVerbosity;
+    mlxCfgToken tokenID;
+    u_int32_t sessionId;
+    bool isSessionIDGiven;
+    u_int32_t sessionTimeInSec;
+    u_int32_t keepAliveSleepTimeBetweenCommands;
+    bool isSleepTimeBetweenCommandsInput;
+    u_int32_t keepAliveSleepTimeOnCommandTO;
+    bool isSleepTimeOnCommandTOInput;
+};
 
+class KeepAliveSession
+{
+public:
+    KeepAliveSession(mfile *mf, u_int16_t sessionId, u_int32_t sessionTimeInSec);
+
+    int startSession();
+    void setSleepTimeOnCommandTO(u_int32_t sleepTime);
+    void setSleepTimeBetweenCommands(u_int32_t sleepTime);
+
+private:
+    int runMKDC(mfile* mf, reg_access_switch_mcdc_reg* mkdc_reg, time_t& timer);
+    int processMKDCData(reg_access_switch_mcdc_reg* mkdc_reg);
+
+    static const char* _mkdcErrorToString[5];
+
+    static const u_int32_t _keepAliveTimestampInSec;
+    
+    mfile* _mf;
+    u_int16_t _sessionId;
+    u_int32_t _sessionTimeLeftInSec;
+    reg_access_switch_mcdc_reg _mkdc_reg;
+    u_int32_t _SleepTimeOnCommandTO;
+    u_int32_t _SleepTimeBetweenCommands;
 };
 
 class MlxCfg
@@ -129,6 +174,7 @@ private:
     void printOpening(const char *dev, int devIndex);
     void printConfHeader(bool showDefualt, bool showNew, bool showCurrent);
     Device_Type getDeviceTypeFromString(string inStr);
+    mlxCfgStatus getNumberFromString(const char* str, u_int32_t& num);
     mlxCfgStatus parseArgs(int argc, char *argv[]);
     //Helper functions for parse args
     mlxCfgStatus extractNVInputFile(int argc, char *argv[]);
@@ -180,6 +226,17 @@ private:
     mlxCfgStatus XML2Bin();
     mlxCfgStatus createConf();
     mlxCfgStatus apply();
+
+    mlxCfgStatus remoteTokenKeepAlive();
+    mlxCfgStatus getChallenge();
+    mlxCfgStatus queryTokenSupport();
+    mlxCfgStatus queryTokenSession();
+    mlxCfgStatus endTokenSession();
+    void processMDSRData(const struct reg_access_switch_mdsr_reg_ext& mdsr_reg, bool isQuery);
+    bool runMDSR(mfile* mf, struct reg_access_switch_mdsr_reg_ext* mdsr_reg, reg_access_method_t method);
+    bool runMTCQ(mfile* mf, struct reg_access_switch_mtcq_reg_ext* mtcq_reg);
+    void printArray(const u_int32_t arr[], int len);
+    void printHexArrayAsAscii(const u_int32_t arr[], int len);
 
     // static print functions
     static int printParam(string param, u_int32_t val);

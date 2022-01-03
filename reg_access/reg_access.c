@@ -89,6 +89,8 @@
 #define REG_ID_MCQI                     0x9061
 #define REG_ID_MCDA                     0x9063
 #define REG_ID_MQIS                     0x9064
+#define REG_ID_MTCQ                     0x9065
+#define REG_ID_MKDC                     0x9066
 #define REG_ID_MCAM                     0x907f
 // TODO: get correct register ID for mfrl mfai
 #define REG_ID_MFRL                     0x9028
@@ -98,6 +100,7 @@
 #define REG_ID_MGPIR                    0x9100
 #define REG_ID_MDFCR                    0x9101
 #define REG_ID_MDRCR                    0x9102
+#define REG_ID_MDSR                     0x9110
 #define REG_ID_MFSV                     0x9115
 
 #define REG_ID_MDDT                     0x9160
@@ -583,6 +586,40 @@ reg_access_status_t reg_access_mcam(mfile *mf, reg_access_method_t method, struc
     REG_ACCCESS(mf, method, REG_ID_MCAM, mcam, mcam, tools_open);
 }
 
+void swap_bytes(u_int8_t* lhs, u_int8_t* rhs)
+{
+    u_int8_t temp = 0;
+    temp = *lhs;
+    *lhs = *rhs;
+    *rhs = temp;
+}
+
+void reverse_byte_array(u_int8_t* arr, int len)
+{
+    u_int8_t* lhs = arr;
+    u_int8_t* rhs = arr + len - 1;
+
+    if (len < 2) {
+        return;
+    }
+
+    for (; lhs < rhs; ++lhs, --rhs) {
+        swap_bytes(lhs, rhs);
+    }
+}
+
+reg_access_status_t reg_access_mcam_reverse(mfile *mf, reg_access_method_t method, struct tools_open_mcam *mcam)
+{
+    reg_access_status_t rc = reg_access_mcam(mf, method, mcam);
+
+#if __BYTE_ORDER == __LITTLE_ENDIAN    
+    reverse_byte_array(mcam->mng_access_reg_cap_mask, 16);
+    reverse_byte_array(mcam->mng_feature_cap_mask, 16);
+#endif
+
+    return rc;
+}
+
 /************************************
 * Function: reg_access_mcda
 ************************************/
@@ -752,7 +789,27 @@ const char* reg_access_err2str(reg_access_status_t status)
 {
     return m_err2str(status);
 }
-
+/************************************
+* Function: reg_access_mtcq
+************************************/
+reg_access_status_t reg_access_mtcq(mfile *mf, reg_access_method_t method, struct reg_access_switch_mtcq_reg_ext *mtcq)
+{
+    REG_ACCCESS(mf, method, REG_ID_MTCQ, mtcq, mtcq_reg_ext, reg_access_switch);
+}
+/************************************
+* Function: reg_access_mdsr
+************************************/
+reg_access_status_t reg_access_mdsr(mfile *mf, reg_access_method_t method, struct reg_access_switch_mdsr_reg_ext *mdsr)
+{
+    REG_ACCCESS(mf, method, REG_ID_MDSR, mdsr, mdsr_reg_ext, reg_access_switch);
+}
+/************************************
+* Function: reg_access_mkdc
+************************************/
+reg_access_status_t reg_access_mkdc(mfile *mf, reg_access_method_t method, struct reg_access_switch_mcdc_reg *mcdc)
+{
+    REG_ACCCESS(mf, method, REG_ID_MKDC, mcdc, mcdc_reg, reg_access_switch);
+}
 /************************************
 * Function: reg_access_mpegc
 ************************************/

@@ -3392,6 +3392,9 @@ string QuerySubCommand::printSecurityAttrInfo(u_int32_t m)
     if (m & SMM_CRYTO_TO_COMMISSIONING) {
         attr += ", crypto-to-commissioning";
     }
+    if (m & SMM_RMCS_TOKEN) {
+        attr += ", rmcs-token";
+    }
 
     return attr;
 }

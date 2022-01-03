@@ -103,6 +103,7 @@ reg_access_status_t reg_access_mfmc(mfile *mf, reg_access_method_t method, struc
 reg_access_status_t reg_access_mfpa_new(mfile *mf, reg_access_method_t method, struct tools_open_mfpa *mfpa);
 
 reg_access_status_t reg_access_mcam(mfile *mf, reg_access_method_t method, struct tools_open_mcam *mcam);
+reg_access_status_t reg_access_mcam_reverse(mfile *mf, reg_access_method_t method, struct tools_open_mcam *mcam);
 reg_access_status_t reg_access_secure_host(mfile *mf, reg_access_method_t method, struct tools_open_mlock *mlock);
 /*
  * MCXX new burn commands
@@ -119,6 +120,9 @@ reg_access_status_t reg_access_mcdd(mfile *mf, reg_access_method_t method, struc
 const char* reg_access_err2str(reg_access_status_t status);
 reg_access_status_t reg_access_mirc(mfile *mf, reg_access_method_t method, struct tools_open_mirc_reg *mirc);
 
+reg_access_status_t reg_access_mkdc(mfile *mf, reg_access_method_t method, struct reg_access_switch_mcdc_reg *mcdc);
+reg_access_status_t reg_access_mtcq(mfile *mf, reg_access_method_t method, struct reg_access_switch_mtcq_reg_ext *mtcq);
+reg_access_status_t reg_access_mdsr(mfile *mf, reg_access_method_t method, struct reg_access_switch_mdsr_reg_ext *mtcq);
 reg_access_status_t reg_access_mpegc(mfile *mf, reg_access_method_t method, struct reg_access_hca_mpegc_reg *mpegc);
 
 #ifdef __cplusplus

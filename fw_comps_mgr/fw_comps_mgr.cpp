@@ -1191,7 +1191,7 @@ void FwCompsMgr::GenerateHandle()
     _updateHandle = _lastFsmCtrl.update_handle & 0xffffff;
 }
 
-const char* CompNames[] =  {
+const char* CompNames[] = {
     "NO_COMPONENT 1",
     "COMPID_BOOT_IMG",
     "COMPID_RUNTIME_IMG",
@@ -1205,8 +1205,9 @@ const char* CompNames[] =  {
     "COMPID_GEARBOX",
     "COMPID_CONGESTION_CONTROL",
     "COMPID_LINKX_PROPERTIES",
-    "COMPID_CRYPTO_TO_COMMISSIONING"
-} ;
+    "COMPID_CRYPTO_TO_COMMISSIONING",
+    "COMPID_RMCS_TOKEN"
+};
 
 bool FwCompsMgr::RefreshComponentsStatus(comp_status_st* ComponentStatus)
 {
@@ -1512,6 +1513,9 @@ const char* FwComponent::getCompIdStr(comps_ids_t compId)
 
     case COMPID_CRYPTO_TO_COMMISSIONING:
         return "COMPID_CRYPTO_TO_COMMISSIONING";
+
+    case COMPID_RMCS_TOKEN:
+        return "COMPID_RMCS_TOKEN";
 
     default:
         return "UNKNOWN_COMPONENT";
