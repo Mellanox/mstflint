@@ -248,6 +248,7 @@ private:
     bool runMTCQ(mfile* mf, struct reg_access_switch_mtcq_reg_ext* mtcq_reg);
     void printArray(const u_int32_t arr[], int len);
     void printHexArrayAsAscii(const u_int32_t arr[], int len);
+    mlxCfgToken getTokenType(const char* tokenStr);
 
     // static print functions
     static int printParam(string param, u_int32_t val);

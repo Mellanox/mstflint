@@ -3395,6 +3395,9 @@ string QuerySubCommand::printSecurityAttrInfo(u_int32_t m)
     if (m & SMM_RMCS_TOKEN) {
         attr += ", rmcs-token";
     }
+    if (m & SMM_RMDT_TOKEN) {
+        attr += ", rmdt-token";
+    }
 
     return attr;
 }

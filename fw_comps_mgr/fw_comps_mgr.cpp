@@ -1206,7 +1206,8 @@ const char* CompNames[] = {
     "COMPID_CONGESTION_CONTROL",
     "COMPID_LINKX_PROPERTIES",
     "COMPID_CRYPTO_TO_COMMISSIONING",
-    "COMPID_RMCS_TOKEN"
+    "COMPID_RMCS_TOKEN",
+    "COMPID_RMDT_TOKEN"
 };
 
 bool FwCompsMgr::RefreshComponentsStatus(comp_status_st* ComponentStatus)
@@ -1516,6 +1517,9 @@ const char* FwComponent::getCompIdStr(comps_ids_t compId)
 
     case COMPID_RMCS_TOKEN:
         return "COMPID_RMCS_TOKEN";
+
+    case COMPID_RMDT_TOKEN:
+        return "COMPID_RMDT_TOKEN";
 
     default:
         return "UNKNOWN_COMPONENT";

@@ -379,6 +379,16 @@ mlxCfgStatus MlxCfg::getNumberFromString(const char* str, u_int32_t& num)
     return MLX_CFG_OK;
 }
 
+mlxCfgToken MlxCfg::getTokenType(const char* tokenStr)
+{
+    mlxCfgToken tokenType = Mc_Token_Unknown;
+
+    if (strcmp(tokenStr, "RMCS") == 0) tokenType = Mc_Token_RMCS;
+    if (strcmp(tokenStr, "RMDT") == 0) tokenType = Mc_Token_RMDT;
+
+    return tokenType;
+}
+
 mlxCfgStatus MlxCfg::parseArgs(int argc, char *argv[])
 {
     mlxCfgStatus status = MLX_CFG_OK;
@@ -445,12 +455,12 @@ mlxCfgStatus MlxCfg::parseArgs(int argc, char *argv[])
             _mlxParams.opensslKeyId = argv[i];
         } else if ((arg == "-tkn") || (arg == "--token_type")) {
             if (++i == argc) {
-                return err(true, "missing token name");
+                return err(true, "missing token type");
             }
-            if (strcmp(argv[i], "RMCS") != 0) {
-                return err(true, "only RMCS token is supported");
+            _mlxParams.tokenID = getTokenType(argv[i]);
+            if (_mlxParams.tokenID == Mc_Token_Unknown) {
+                return err(true, "invalid token type");
             }
-            _mlxParams.tokenID = Mc_Token_RMCS;
         } else if (arg == "--cycle_time") {
             if (++i == argc) {
                 return err(true, "missing cycle time value");

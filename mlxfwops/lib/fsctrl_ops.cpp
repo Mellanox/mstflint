@@ -216,6 +216,9 @@ bool FsCtrlOperations::FsIntQuery()
             if (it->getType() == FwComponent::COMPID_RMCS_TOKEN) {
                 _fsCtrlImgInfo.security_mode |= SMM_RMCS_TOKEN;
             }
+            if (it->getType() == FwComponent::COMPID_RMDT_TOKEN) {
+                _fsCtrlImgInfo.security_mode |= SMM_RMDT_TOKEN;
+            }
         }
     }
 

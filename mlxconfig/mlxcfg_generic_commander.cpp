@@ -121,6 +121,7 @@ const u_int8_t debugTokenId = 0x5;
 const u_int8_t csTokenId = 0x7;
 const u_int8_t btcTokenId = 0x8;
 const u_int8_t rmcsTokenId = 0x10;
+const u_int8_t rmdtTokenId = 0x11;
 const u_int32_t idMlnxId = 0x10e;
 
 void GenericCommander::supportsNVData()
@@ -1382,6 +1383,10 @@ void GenericCommander::checkConfTlvs(const vector<TLVConf*>& tlvs,
             tlv->_id == rmcsTokenId) {
             csCompFound = true;
             compsId = FwComponent::COMPID_RMCS_TOKEN;
+        } else if (tlv->_tlvClass == NVFile &&
+            tlv->_id == rmdtTokenId) {
+            csCompFound = true;
+            compsId = FwComponent::COMPID_RMDT_TOKEN;
         } else if (tlv->_tlvClass == 0x0 &&
                    tlv->_id == idMlnxId) {
             idMlnxCompFound = true;
