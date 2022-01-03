@@ -1662,7 +1662,7 @@ mlxCfgStatus MlxCfg::execute(int argc, char *argv[])
     case Mc_RemoteTokenKeepAlive:
         ret = remoteTokenKeepAlive();
         break;
-    case Mc_TokenChallenge:
+    case Mc_ChallengeRequest:
         ret = getChallenge();
         break;
     case Mc_TokenSupported:

@@ -63,7 +63,7 @@ typedef enum {
     Mc_CreateConf,
     Mc_Apply,
     Mc_RemoteTokenKeepAlive,
-    Mc_TokenChallenge,
+    Mc_ChallengeRequest,
     Mc_TokenSupported,
     Mc_QueryTokenSession,
     Mc_EndTokenSession,
@@ -74,7 +74,8 @@ typedef enum {
     Mc_Token_RMCS = 0,
     Mc_Token_RMDT,
     Mc_Token_CRCS,
-    Mc_Token_CRDT
+    Mc_Token_CRDT,
+    Mc_Token_Unknown
 } mlxCfgToken;
 
 typedef enum {
@@ -108,8 +109,11 @@ public:
     MlxCfgParams() : device(), rawTlvFile(), NVInputFile(), NVOutputFile(),
         dbName(DB_NAME), privPemFile(), keyPairUUID(), opensslEngine(),
         opensslKeyId(), allAttrs(false), cmd(Mc_UnknownCmd), yes(false),
-        force(false), enableVerbosity(false), isSleepTimeBetweenCommandsInput(false),
-        isSleepTimeOnCommandTOInput(false) {}
+        force(false), enableVerbosity(false), tokenID(Mc_Token_Unknown), sessionId(0), 
+        isSessionIDGiven(false), sessionTimeInSec(600), isSessionTimeGiven(false), 
+        keepAliveSleepTimeBetweenCommands(0), isSleepTimeBetweenCommandsInput(false), 
+        keepAliveSleepTimeOnCommandTO(0), isSleepTimeOnCommandTOInput(false) {}
+
     ~MlxCfgParams() {}
 
     std::string device;
@@ -132,6 +136,7 @@ public:
     u_int32_t sessionId;
     bool isSessionIDGiven;
     u_int32_t sessionTimeInSec;
+    bool isSessionTimeGiven;
     u_int32_t keepAliveSleepTimeBetweenCommands;
     bool isSleepTimeBetweenCommandsInput;
     u_int32_t keepAliveSleepTimeOnCommandTO;
