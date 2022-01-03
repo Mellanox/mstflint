@@ -304,36 +304,6 @@ Range 1..256 */
 };
 
 /* Description -   */
-/* Size in bytes - 44 */
-struct reg_access_switch_mcdc_reg {
-/*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Indicates the successful completion of the instruction 
-or the reason it failed:
-0: OK
-1: BAD_SESSION_ID
-2: BAD_KEEP_ALIVE_COUNTER
-3: BAD_SOURCE_ADDRESS
-4: SESSION_TIMEOUT
-Other: Reserved. */
-	/* 0x0.0 - 0x0.3 */
-	u_int8_t error_code;
-/*---------------- DWORD[0] (Offset 0x0) ----------------*/
-	/* Description - Unique debug session identifier. */
-	/* 0x0.16 - 0x0.31 */
-	u_int16_t session_id;
-/*---------------- DWORD[1] (Offset 0x4) ----------------*/
-	/* Description - Running counter that states the current sequence 
-number of each keep-alive session. */
-	/* 0x4.0 - 0x4.31 */
-	u_int32_t current_keep_alive_counter;
-/*---------------- DWORD[2] (Offset 0x8) ----------------*/
-	/* Description - Running counter that states the expected next 
-sequence number of each keep-alive session. */
-	/* 0x8.0 - 0x8.31 */
-	u_int32_t next_keep_alive_counter;
-};
-
-/* Description -   */
 /* Size in bytes - 48 */
 struct reg_access_switch_mddq_ext {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
@@ -382,12 +352,12 @@ range index will lead to BAD_PARAM status of the register. */
 	u_int8_t data_valid;
 /*---------------- DWORD[4] (Offset 0x10) ----------------*/
 	/* Description - Properties of that field are based on query_type.
-For slot information query_type data - see Table 537, 
-"slot_info Register Layout," on page 735
-For devices on slot query_type data - see Table 539, 
-"device_info Register Layout," on page 736
-For slot name query_type data - see Table 541, "slot_name 
-Register Layout," on page 737 */
+For slot information query_type data - see Table 609, 
+"slot_info Register Layout," on page 750
+For devices on slot query_type data - see Table 611, 
+"device_info Register Layout," on page 751
+For slot name query_type data - see Table 613, "slot_name 
+Register Layout," on page 752 */
 	/* 0x10.0 - 0x2c.31 */
 	union reg_access_switch_mddq_data_auto_ext data;
 };
@@ -419,12 +389,12 @@ struct reg_access_switch_mddt_reg_ext {
 	u_int8_t read_size;
 /*---------------- DWORD[3] (Offset 0xc) ----------------*/
 	/* Description - Payload
-For PRM Register type payload- See Table 529, "PRM 
-Register Payload Layout," on page 732
-For Command type payload - See Table 531, "Com
-mand Payload Layout," on page 732
-For CrSpace type payload - See Table 533, "CrSpace 
-access Payload Layout," on page 733 */
+For PRM Register type payload- See Table 601, "PRM 
+Register Payload Layout," on page 747
+For Command type payload - See Table 603, "Com
+mand Payload Layout," on page 747
+For CrSpace type payload - See Table 605, "CrSpace 
+access Payload Layout," on page 748 */
 	/* 0xc.0 - 0x10c.31 */
 	union reg_access_switch_mddt_reg_payload_auto_ext payload;
 };
@@ -457,6 +427,35 @@ allowed and additional_info field will expose the reason. */
 Setting to '0' will not trigger any operation. */
 	/* 0x4.31 - 0x4.31 */
 	u_int8_t end;
+};
+
+/* Description -   */
+/* Size in bytes - 44 */
+struct reg_access_switch_mkdc_reg_ext {
+/*---------------- DWORD[0] (Offset 0x0) ----------------*/
+	/* Description - Indicates the successful completion of the instruction 
+or the reason it failed:
+0: OK
+1: BAD_SESSION_ID
+2: BAD_KEEP_ALIVE_COUNTER
+3: BAD_SOURCE_ADDRESS
+4: SESSION_TIMEOUT
+Other values are Reserved. */
+	/* 0x0.0 - 0x0.3 */
+	u_int8_t error_code;
+	/* Description - Unique debug session identifier. */
+	/* 0x0.16 - 0x0.31 */
+	u_int16_t session_id;
+/*---------------- DWORD[1] (Offset 0x4) ----------------*/
+	/* Description - Running counter that states the current sequence 
+number of each keep-alive session. */
+	/* 0x4.0 - 0x4.31 */
+	u_int32_t current_keep_alive_counter;
+/*---------------- DWORD[2] (Offset 0x8) ----------------*/
+	/* Description - Running counter that states the expected next 
+sequence number of each keep-alive session. */
+	/* 0x8.0 - 0x8.31 */
+	u_int32_t next_keep_alive_counter;
 };
 
 /* Description -   */
@@ -518,26 +517,26 @@ replay-protection. */
 union reg_access_switch_reg_access_switch_Nodes {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
+	/* 0x0.0 - 0x10c.31 */
+	struct reg_access_switch_mddt_reg_ext mddt_reg_ext;
+	/* Description -  */
 	/* 0x0.0 - 0x14.31 */
 	struct reg_access_switch_icam_reg_ext icam_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x2c.31 */
+	struct reg_access_switch_mdsr_reg_ext mdsr_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x28.31 */
+	struct reg_access_switch_mkdc_reg_ext mkdc_reg_ext;
+	/* Description -  */
+	/* 0x0.0 - 0x6c.31 */
+	struct reg_access_switch_mtcq_reg_ext mtcq_reg_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x2c.31 */
 	struct reg_access_switch_mddq_ext mddq_ext;
 	/* Description -  */
 	/* 0x0.0 - 0x40c.31 */
 	struct reg_access_switch_icsr_ext icsr_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x2c.31 */
-	struct reg_access_switch_mdsr_reg_ext mdsr_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x28.31 */
-	struct reg_access_switch_mcdc_reg mcdc_reg;
-	/* Description -  */
-	/* 0x0.0 - 0x6c.31 */
-	struct reg_access_switch_mtcq_reg_ext mtcq_reg_ext;
-	/* Description -  */
-	/* 0x0.0 - 0x10c.31 */
-	struct reg_access_switch_mddt_reg_ext mddt_reg_ext;
 };
 
 
@@ -619,13 +618,6 @@ void reg_access_switch_icsr_ext_print(const struct reg_access_switch_icsr_ext *p
 unsigned int reg_access_switch_icsr_ext_size(void);
 #define REG_ACCESS_SWITCH_ICSR_EXT_SIZE    (0x410)
 void reg_access_switch_icsr_ext_dump(const struct reg_access_switch_icsr_ext *ptr_struct, FILE *fd);
-/* mcdc_reg */
-void reg_access_switch_mcdc_reg_pack(const struct reg_access_switch_mcdc_reg *ptr_struct, u_int8_t *ptr_buff);
-void reg_access_switch_mcdc_reg_unpack(struct reg_access_switch_mcdc_reg *ptr_struct, const u_int8_t *ptr_buff);
-void reg_access_switch_mcdc_reg_print(const struct reg_access_switch_mcdc_reg *ptr_struct, FILE *fd, int indent_level);
-unsigned int reg_access_switch_mcdc_reg_size(void);
-#define REG_ACCESS_SWITCH_MCDC_REG_SIZE    (0x2c)
-void reg_access_switch_mcdc_reg_dump(const struct reg_access_switch_mcdc_reg *ptr_struct, FILE *fd);
 /* mddq_ext */
 void reg_access_switch_mddq_ext_pack(const struct reg_access_switch_mddq_ext *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_switch_mddq_ext_unpack(struct reg_access_switch_mddq_ext *ptr_struct, const u_int8_t *ptr_buff);
@@ -647,6 +639,13 @@ void reg_access_switch_mdsr_reg_ext_print(const struct reg_access_switch_mdsr_re
 unsigned int reg_access_switch_mdsr_reg_ext_size(void);
 #define REG_ACCESS_SWITCH_MDSR_REG_EXT_SIZE    (0x30)
 void reg_access_switch_mdsr_reg_ext_dump(const struct reg_access_switch_mdsr_reg_ext *ptr_struct, FILE *fd);
+/* mkdc_reg_ext */
+void reg_access_switch_mkdc_reg_ext_pack(const struct reg_access_switch_mkdc_reg_ext *ptr_struct, u_int8_t *ptr_buff);
+void reg_access_switch_mkdc_reg_ext_unpack(struct reg_access_switch_mkdc_reg_ext *ptr_struct, const u_int8_t *ptr_buff);
+void reg_access_switch_mkdc_reg_ext_print(const struct reg_access_switch_mkdc_reg_ext *ptr_struct, FILE *fd, int indent_level);
+unsigned int reg_access_switch_mkdc_reg_ext_size(void);
+#define REG_ACCESS_SWITCH_MKDC_REG_EXT_SIZE    (0x2c)
+void reg_access_switch_mkdc_reg_ext_dump(const struct reg_access_switch_mkdc_reg_ext *ptr_struct, FILE *fd);
 /* mtcq_reg_ext */
 void reg_access_switch_mtcq_reg_ext_pack(const struct reg_access_switch_mtcq_reg_ext *ptr_struct, u_int8_t *ptr_buff);
 void reg_access_switch_mtcq_reg_ext_unpack(struct reg_access_switch_mtcq_reg_ext *ptr_struct, const u_int8_t *ptr_buff);

@@ -143,17 +143,17 @@ public:
     void setSleepTimeBetweenCommands(u_int32_t sleepTime);
 
 private:
-    int runMKDC(mfile* mf, reg_access_switch_mcdc_reg* mkdc_reg, time_t& timer);
-    int processMKDCData(reg_access_switch_mcdc_reg* mkdc_reg);
+    int runMKDC(mfile* mf, reg_access_switch_mkdc_reg_ext* mkdc_reg, time_t& timer);
+    int processMKDCData(reg_access_switch_mkdc_reg_ext* mkdc_reg);
 
     static const char* _mkdcErrorToString[5];
 
     static const u_int32_t _keepAliveTimestampInSec;
-    
+
     mfile* _mf;
     u_int16_t _sessionId;
     u_int32_t _sessionTimeLeftInSec;
-    reg_access_switch_mcdc_reg _mkdc_reg;
+    reg_access_switch_mkdc_reg_ext _mkdc_reg;
     u_int32_t _SleepTimeOnCommandTO;
     u_int32_t _SleepTimeBetweenCommands;
 };

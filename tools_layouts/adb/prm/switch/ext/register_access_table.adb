@@ -1557,13 +1557,6 @@
 	<field name="data" descr="The cr-space read data" access="RO" high_bound="255" low_bound="0" offset="0x10.0" size="0x400.0" />
 </node>
 
-<node name="mcdc_reg" descr="" size="0x2c.0" >
-	<field name="error_code" descr="Indicates the successful completion of the instruction \;or the reason it failed:\;0: OK\;1: BAD_SESSION_ID\;2: BAD_KEEP_ALIVE_COUNTER\;3: BAD_SOURCE_ADDRESS\;4: SESSION_TIMEOUT\;Other: Reserved." access="RO" offset="0x0.0" size="0x0.4" />
-	<field name="session_id" descr="Unique debug session identifier." access="INDEX" offset="0x0.16" size="0x0.16" />
-	<field name="current_keep_alive_counter" descr="Running counter that states the current sequence \;number of each keep-alive session." access="INDEX" offset="0x4.0" size="0x4.0" />
-	<field name="next_keep_alive_counter" descr="Running counter that states the expected next \;sequence number of each keep-alive session." access="RO" offset="0x8.0" size="0x4.0" />
-</node>
-
 <node name="iddd_ext" descr="" size="0x8.0" >
 	<field name="entry_type" descr="Entry type\;For Spectrum-2 hash entries see Appendix A.5.1.1, &quot;KVD Cen\;tral Database Hash-based&quot; (page 2906)\;For Spectrum-2 linear entries see Appendix A.5.1.2, &quot;KVD \;Central Database Linear Entries&quot; (page 2909)" access="INDEX" offset="0x0.0" size="0x0.8" />
 	<field name="duplication" descr="Duplication\;Valid values:\;1, 2, 4, 8, 16\;Default is 1\;\;" access="RW" offset="0x4.0" size="0x0.5" />
@@ -2086,12 +2079,6 @@
 	<field name="mpls_reasons" descr="Bit0: outer label is not valid\;\;Bit1: no IP after decap (or after php)\;\;Bit3: mpls uc Ethertype (0x8847) over mc or bc mac\;Bit4: mpls mc Ethertype over not allowed mac\;Bit5: MPLS min ingress label allowed (label too low)\;Bit6: MPLS max ingress label allowed (label too high)\;Bit7: ReservedBit8: php decap and no ip header or ip header is \;not okay\;\;Bit9: ilm miss, same as trap_id MPLS_ILM_MISS\;Bit10: mpls loopback filter" access="RO" high_bound="7" low_bound="0" offset="0xC0.0" size="0x20.0" />
 	<field name="tunnel_reasons" descr="Bit0: decap_encap_prevention - same as trap_id DECAP_EN\;CAP\;Bit1: ipip_tunnel_loop \;\;Bit2: reserved\;\;Bit3: ipip_decap_error - same as trap_id IPIP_DECAP_ERROR\;Bit4: ipip_error - same as trap_id IPIP_ERROR. For Spectrum-\;2 catches nothing \;Bit7: nve_decap_frag_error - same as trap_id NVE_DECAP_\;FRAG_ERROR\;Bit8: overlay_port_isolation - see TNIFR\;\;Bit10: overlay_smac_is_mc\;Bit11: overlay_smac_equal_dmac\;Bit12: overlay_is_too_short - (decap remains with short \;packet)\;Bit13: decap_underlay_is_too_long - (decap of more than 126 \;bytes)\;\;Bit14: nve_decap_error - same as trap_id NVE_DECAP \;_TAG_ERROR\;Bit15: decap_ecn - same as trap_id DECAP_ECN0, \;DECAP_ECN1\;" access="RO" high_bound="7" low_bound="0" offset="0xE0.0" size="0x20.0" />
 	<field name="host_reasons" descr="Bit0: tx_base_header_is_wrong - (version or base type)\;Bit1: tx_base_header_system_port_is_out_of_range" access="RO" high_bound="7" low_bound="0" offset="0x100.0" size="0x20.0" />
-</node>
-
-<node name="mdsr_reg_ext" descr="" size="0x30.0" >
-	<field name="status" descr="0: The debug session ended successfully\;1: Failed to execute the operation. See additional_info for \;more details.\;2: Debug session active\;3-15: Reserved\;\;Note: Status might be &apos;0&apos; even when debug query is not \;allowed and additional_info field will expose the reason." access="RO" offset="0x0.0" size="0x0.4" />
-	<field name="additional_info" descr="0: No additional information available \;1: There is no debug session in progress\;2: FW is not secured, debug session cannot be ended\;3: Fail - Debug end request cannot be accepted. \;4: Fail - Host is not allowed to query debug session\;5: Debug session active" access="RO" offset="0x0.8" size="0x0.6" />
-	<field name="end" descr="Set to &apos;1&apos; to end debug session.\;Setting to &apos;0&apos; will not trigger any operation." access="WO" offset="0x4.31" size="0x0.1" />
 </node>
 
 <node name="merr_ext" descr="" size="0x14.0" >
@@ -3042,19 +3029,6 @@
 	<field name="sensor_count" descr="Number of sensors supported by the device\;This includes the ASIC and the ambient sensors. QSFP mod\;ule sensors are not included." access="RO" offset="0x0.0" size="0x0.7" />
 	<field name="slot_index" descr="Slot index\;0: Main board" access="INDEX" offset="0x0.16" size="0x0.4" />
 	<field name="sensor_map" descr="Mapping of system sensors supported by the device. Only ASIC \;and ambient sensors are supported. Each bit represents a \;sensor.\;0: Not connected or not supported\;1: Supports temperature measurements" subnode="uint64" access="RO" offset="0x8.0" size="0x8.0" />
-</node>
-
-<node name="mtcq_reg_ext" descr="" size="0x70.0" >
-	<field name="token_opcode" descr="The token which a challenge is generated for.\;0: RMSC\;1: RMDT\;\;Other: Reserved" access="INDEX" offset="0x0.24" size="0x0.8" />
-	<field name="keypair_uuid" descr="The UUID of the key used to generate the challenge." access="RO" high_bound="3" low_bound="0" offset="0x4.0" size="0x10.0" />
-	<field name="base_mac" descr="Device base MAC address / unique identifier." subnode="uint64" access="RO" offset="0x14.0" size="0x8.0" />
-	<field name="psid" descr="Device PSID" access="RO" high_bound="3" low_bound="0" offset="0x1C.0" size="0x10.0" />
-	<field name="fw_version_39_32" descr="Device FW version" access="RO" offset="0x2C.0" size="0x0.8" />
-	<field name="fw_version_31_0" descr="Device FW version" access="RO" offset="0x30.0" size="0x4.0" />
-	<field name="source_address" descr="Source address of debug requester. DLID for Infini\;band, ETH / IBg2 - TBD.\;Valid only for RMCS/RMDT." access="RO" high_bound="3" low_bound="0" offset="0x34.0" size="0x10.0" />
-	<field name="session_id" descr="Unique debug session identifier. \;See details in REMOTE_DEBUG_KEEP_ALIVE.\;Valid only for RMCS." access="RO" offset="0x44.0" size="0x0.16" />
-	<field name="challenge_version" descr="Version of the challenge format." access="RO" offset="0x44.24" size="0x0.8" />
-	<field name="challenge" descr="Random generated field. Used for randomness and \;replay-protection." access="RO" high_bound="7" low_bound="0" offset="0x48.0" size="0x20.0" />
 </node>
 
 <node name="mtecr_ext" descr="" size="0x60.0" >

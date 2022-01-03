@@ -806,9 +806,9 @@ reg_access_status_t reg_access_mdsr(mfile *mf, reg_access_method_t method, struc
 /************************************
 * Function: reg_access_mkdc
 ************************************/
-reg_access_status_t reg_access_mkdc(mfile *mf, reg_access_method_t method, struct reg_access_switch_mcdc_reg *mcdc)
+reg_access_status_t reg_access_mkdc(mfile *mf, reg_access_method_t method, struct reg_access_switch_mkdc_reg_ext *mkdc)
 {
-    REG_ACCCESS(mf, method, REG_ID_MKDC, mcdc, mcdc_reg, reg_access_switch);
+    REG_ACCCESS(mf, method, REG_ID_MKDC, mkdc, mkdc_reg_ext, reg_access_switch);
 }
 /************************************
 * Function: reg_access_mpegc

@@ -1742,7 +1742,7 @@ int KeepAliveSession::startSession()
     return 0;
 }
 
-int KeepAliveSession::runMKDC(mfile* mf, reg_access_switch_mcdc_reg* mkdc_reg, time_t& timer)
+int KeepAliveSession::runMKDC(mfile* mf, reg_access_switch_mkdc_reg_ext* mkdc_reg, time_t& timer)
 {
     reg_access_status_t rc = ME_REG_ACCESS_OK;
     time_t start = 0;
@@ -1778,7 +1778,7 @@ int KeepAliveSession::runMKDC(mfile* mf, reg_access_switch_mcdc_reg* mkdc_reg, t
     return status;
 }
 
-int KeepAliveSession::processMKDCData(reg_access_switch_mcdc_reg* mkdc_reg)
+int KeepAliveSession::processMKDCData(reg_access_switch_mkdc_reg_ext* mkdc_reg)
 {
     if (mkdc_reg->error_code != 0) {
         printf("-E- keep alive session failed. error code: %s\n", _mkdcErrorToString[mkdc_reg->error_code]);
