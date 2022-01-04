@@ -931,7 +931,7 @@ bool Fs4Operations::encryptedFwQuery(fw_info_t *fwInfo, bool readRom, bool quick
     memcpy(&(fwInfo->fs3_info), &(_fs3ImgInfo.ext_info), sizeof(fs3_info_t));
     fwInfo->fw_type = FwType();
 
-    if (dm_is_livefish_mode(getMfileObj()) == 1) {
+    if (_ioAccess->is_flash()) {
         if (!QuerySecurityFeatures()) {
             return false;
         }
@@ -977,36 +977,43 @@ bool Fs4Operations::FwQuery(fw_info_t *fwInfo, bool readRom, bool isStripedImage
     return true;
 }
 
-bool Fs4Operations::IsLifeCycleValidInLivefish(chip_type_t chip_type)
+bool Fs4Operations::IsLifeCycleAccessible(chip_type_t chip_type)
 {
-    bool isValid;
-
-    switch (chip_type)
-    {
-        case CT_BLUEFIELD2:
-        case CT_CONNECTX6DX:
-        case CT_CONNECTX6LX:
-            isValid = false;
-            break;
-        default:
-            isValid = true;
-            break;
+    DPRINTF(("Fs4Operations::IsLifeCycleAccessible\n"));
+    bool res = true;
+    if (IsLifeCycleSupported()) {
+        if (dm_is_livefish_mode(getMfileObj())) {
+            switch (chip_type)
+            {
+                case CT_BLUEFIELD2:
+                case CT_CONNECTX6DX:
+                case CT_CONNECTX6LX:
+                    // HW bug - life-cycle CR-space is blocked in livefish mode on these devices
+                    res = false;
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+    else {
+        res = false;
     }
 
-    return isValid;
+    DPRINTF(("Fs4Operations::IsLifeCycleAccessible res = %s\n", res ? "TRUE" : "FALSE"));
+    return res;
 }
 
 bool Fs4Operations::QuerySecurityFeatures()
 {
-    DPRINTF(("Fs4Operations::QuerySecurityFeatures\n"));
-    CRSpaceRegisters crSpaceReg(getMfileObj(), _fwImgInfo.ext_info.chip_type);
-
+    DPRINTF(("Fs4Operations::QuerySecurityFeatures _fwImgInfo.ext_info.chip_type = %d\n", _fwImgInfo.ext_info.chip_type));
     try {
-        if (_signatureMngr->IsLifeCycleSupported() && IsLifeCycleValidInLivefish(_fwImgInfo.ext_info.chip_type)) {
+        if (IsLifeCycleAccessible(_fwImgInfo.ext_info.chip_type)) {
+            CRSpaceRegisters crSpaceReg(getMfileObj(), _fwImgInfo.ext_info.chip_type);
             _fs3ImgInfo.ext_info.life_cycle = crSpaceReg.getLifeCycle();
-                    
-            if (_fs3ImgInfo.ext_info.life_cycle == GA_SECURED) {                        
-                _fs3ImgInfo.ext_info.global_image_status = crSpaceReg.getGlobalImageStatus();                                    
+
+            if (_fs3ImgInfo.ext_info.life_cycle == GA_SECURED) {
+                _fs3ImgInfo.ext_info.global_image_status = crSpaceReg.getGlobalImageStatus();
 
                 _fs3ImgInfo.ext_info.device_security_version_access_method = GW;
                 _fs3ImgInfo.ext_info.device_security_version_gw = crSpaceReg.getSecurityVersion();

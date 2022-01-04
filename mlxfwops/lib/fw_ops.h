@@ -258,7 +258,7 @@ public:
     static FwVersion createFwVersion(u_int16_t fw_ver0, u_int16_t fw_ver1, u_int16_t fw_ver2);
     static FwVersion createRunningFwVersion(const fw_info_com_t*);
     static int       getFileSignature(const char *fname);
-    virtual bool IsLifeCycleValidInLivefish(chip_type_t chip_type);
+    virtual bool IsLifeCycleAccessible(chip_type_t chip_type);
     virtual bool IsSecurityVersionViolated(u_int32_t image_security_version);
 #ifndef UEFI_BUILD
     static bool CheckPemKeySize(const string privPemFileStr, u_int32_t& keySize);

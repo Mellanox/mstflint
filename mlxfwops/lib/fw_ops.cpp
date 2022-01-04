@@ -2492,9 +2492,9 @@ bool FwOperations::VerifyBranchFormat(const char* vsdString)
     return false;
 }
 
-bool FwOperations::IsLifeCycleValidInLivefish(chip_type_t)
+bool FwOperations::IsLifeCycleAccessible(chip_type_t)
 {
-    return errmsg("IsLifeCycleValidInLivefish not supported.");
+    return errmsg("IsLifeCycleAccessible not supported.");
 }
 
 bool FwOperations::IsSecurityVersionViolated(u_int32_t)

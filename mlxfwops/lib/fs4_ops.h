@@ -110,7 +110,7 @@ public:
     bool DoAfterBurnJobs(const u_int32_t magic_patter[], ExtBurnParams& burnParams, Flash *flash_access,
                          u_int32_t new_image_start, u_int32_t log2_chunk_size);
     virtual void FwCleanUp();
-    bool IsLifeCycleValidInLivefish(chip_type_t chip_type);
+    bool IsLifeCycleAccessible(chip_type_t chip_type);
     bool IsSecurityVersionViolated(u_int32_t image_security_version);
 
 protected:

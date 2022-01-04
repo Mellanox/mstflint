@@ -3684,8 +3684,8 @@ FlintStatus QuerySubCommand::printInfo(const fw_info_t& fwInfo, bool fullQuery)
             }            
         }
         else { // No fw control            
-            if (ops->IsSecureBootSupported()) {
-                if (ops->IsLifeCycleValidInLivefish(fwInfo.fw_info.chip_type)) {
+            if (ops->IsSecureBootSupported()) { // CX6DX onwards
+                if (ops->IsLifeCycleAccessible(fwInfo.fw_info.chip_type)) {
 
                     printf("Image Boot Status:     %d\n", fwInfo.fs3_info.global_image_status);                    
                     
