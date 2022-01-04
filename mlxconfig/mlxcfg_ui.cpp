@@ -40,8 +40,11 @@
 #include <fstream>
 #include <sstream>
 #include <errno.h>
+#include <time.h>
 
 #include <tools_dev_types.h>
+#include <reg_access/reg_access.h>
+#include <mft_sig_handler.h>
 
 #include "mlxcfg_ui.h"
 #include "mlxcfg_utils.h"
@@ -1356,6 +1359,231 @@ mlxCfgStatus MlxCfg::apply()
     return rc;
 }
 
+
+mlxCfgStatus MlxCfg::remoteTokenKeepAlive()
+{
+    mlxCfgStatus status = MLX_CFG_OK;
+    mfile *mf = NULL;
+
+    mf = mopen(_mlxParams.device.c_str());
+    if (!mf) {
+        printf("-E- failed opening the device.\n");
+        return MLX_CFG_ERROR;
+    }
+
+    if ((mf->flags & MDEVS_IB) == 0) { //not IB device
+        return err(true, "specified device is not an IB device.\n");
+    }
+
+    KeepAliveSession session(mf, _mlxParams.sessionId, _mlxParams.sessionTimeInSec);
+
+    if (_mlxParams.isSleepTimeBetweenCommandsInput) {
+        session.setSleepTimeBetweenCommands(_mlxParams.keepAliveSleepTimeBetweenCommands);
+    }
+    if (_mlxParams.isSleepTimeOnCommandTOInput) {
+        session.setSleepTimeOnCommandTO(_mlxParams.keepAliveSleepTimeOnCommandTO);
+    }
+
+    keepAliveStatus sessionStatus = session.runSession();
+    if (sessionStatus != KEEP_ALIVE_OK) {
+        status = MLX_CFG_ERROR;
+    }
+    else {
+        printf("Keep alive session has ended successfully.\n");
+    }
+
+    mclose(mf);
+
+    return status;
+}
+
+bool MlxCfg::runMTCQ(mfile* mf, struct reg_access_switch_mtcq_reg_ext* mtcq_reg)
+{
+    reg_access_status_t rc = ME_REG_ACCESS_OK;
+
+    mft_signal_set_handling(1);
+    rc = reg_access_mtcq(mf, REG_ACCESS_METHOD_GET, mtcq_reg);
+    dealWithSignal();
+    if (rc) {
+        return err(true, "failed getting response from the device, error %d.", rc);        
+    }
+
+    return true;
+}
+
+void MlxCfg::printArray(const u_int32_t arr[], int len)
+{
+    int i = 0;
+
+    if (len < 0) {
+        throw MlxcfgException("Invalid array length was given.\n");
+    }
+
+    for (; i < len; ++i) {
+        printf("%08x", arr[i]);
+    }
+    printf("\n");
+}
+
+void MlxCfg::printHexArrayAsAscii(const u_int32_t arr[], int len) 
+{
+    u_int8_t byteArray[4];    
+    int i = 0, j = 0;
+
+    if (len < 0) {
+        throw MlxcfgException("Invalid array length was given.\n");
+    }    
+
+    for (i = 0; i < len; ++i) {
+        
+        memcpy(byteArray, &arr[i], 4);        
+        for (j = 3; j >= 0; --j) {
+            printf("%c", byteArray[j]);
+        }
+    }
+    printf("\n");
+}
+
+mlxCfgStatus MlxCfg::getChallenge()
+{
+    u_int32_t base_mac[2];
+
+    mfile *mf = mopen(_mlxParams.device.c_str());
+    if (!mf) {
+        printf("-E- failed to open the device.\n");
+        return MLX_CFG_ERROR;
+    }
+
+    if ((mf->flags & MDEVS_IB) == 0) { //not IB device
+        return err(true, "specified device is not an IB device.\n");
+    }
+
+    struct reg_access_switch_mtcq_reg_ext mtcq_reg;
+    memset(&mtcq_reg, 0, sizeof(mtcq_reg));
+    mtcq_reg.token_opcode = _mlxParams.tokenID;
+    if (!runMTCQ(mf, &mtcq_reg)) {
+        return MLX_CFG_ERROR;
+    }
+    base_mac[0] = mtcq_reg.base_mac & 0xffffffff;
+    base_mac[1] = (mtcq_reg.base_mac >> 32) & 0xffffffff;
+
+    printf("Token opcode:       %x\n", mtcq_reg.token_opcode);
+    printf("Keypair uuid:       ");
+    printArray(mtcq_reg.keypair_uuid, 4);
+    printf("Base mac:           %08x%08x\n", base_mac[1], base_mac[0]);
+    printf("PSID:               ");
+    printHexArrayAsAscii(mtcq_reg.psid, 4);
+    printf("FW version:         %x%08x\n", mtcq_reg.fw_version_39_32, mtcq_reg.fw_version_31_0);
+    printf("Source address:     ");
+    printArray(mtcq_reg.source_address, 4);
+    printf("Session id:         %x\n", mtcq_reg.session_id);
+    printf("Challenge version:  %x\n", mtcq_reg.challenge_version);
+    printf("Challenge:          ");
+    printArray(mtcq_reg.challenge, 8);
+
+    return MLX_CFG_OK;
+}
+
+mlxCfgStatus MlxCfg::queryTokenSupport()
+{
+    mfile *mf = mopen(_mlxParams.device.c_str());
+    if (!mf) {
+        printf("-E- failed opening the device.\n");
+        return MLX_CFG_ERROR;
+    }
+
+    tools_open_mcam mcam;
+    memset(&mcam, 0, sizeof(mcam));    
+    reg_access_status_t rc = ME_REG_ACCESS_OK;
+    rc = reg_access_mcam(mf, REG_ACCESS_METHOD_GET, &mcam);
+    if (rc) {
+        return err(true, "failed getting response from the device, error %d.", rc);
+    }
+    
+    printf("CS tokens supported:       %d\n", EXTRACT(mcam.mng_feature_cap_mask[2], 6, 1));
+    printf("Debug FW tokens supported: %d\n", EXTRACT(mcam.mng_feature_cap_mask[2], 7, 1));
+
+    return MLX_CFG_OK;
+}
+
+bool MlxCfg::runMDSR(mfile* mf, struct reg_access_switch_mdsr_reg_ext* mdsr_reg, reg_access_method_t method)
+{
+    reg_access_status_t rc = ME_REG_ACCESS_OK;
+
+    mft_signal_set_handling(1);
+    rc = reg_access_mdsr(mf, method, mdsr_reg);
+    dealWithSignal();
+    
+    if (rc) {
+        return err(true, "failed getting response from the device, error %d.", rc);
+    }
+
+    return true;
+}
+
+mlxCfgStatus MlxCfg::queryTokenSession()
+{
+    mfile *mf = mopen(_mlxParams.device.c_str());
+    if (!mf) {
+        return err(true, "failed opening the device.");
+    }
+
+    struct reg_access_switch_mdsr_reg_ext mdsr_reg;
+    memset(&mdsr_reg, 0, sizeof(mdsr_reg));
+    if (!runMDSR(mf, &mdsr_reg, REG_ACCESS_METHOD_GET)) {
+        return MLX_CFG_ERROR;
+    }
+    processMDSRData(mdsr_reg, true);
+
+    return MLX_CFG_OK;
+}
+
+void MlxCfg::processMDSRData(const struct reg_access_switch_mdsr_reg_ext& mdsr_reg, bool isQuery)
+{
+    static const char* additional_info_to_string[6] = {"No additional information available.",
+                                                       "There is no debug session in progress.",
+                                                       "FW is not secured, debug session cannot be ended.",
+                                                       "Fail - Debug end request cannot be accepted.",
+                                                       "Fail - Host is not allowed to query debug session.",
+                                                       "Debug session active."};
+
+    if (mdsr_reg.status == 0) {
+        if (isQuery) {
+            printf("%s\n", additional_info_to_string[mdsr_reg.additional_info]);
+        }
+        else {
+            printf("Debug session ended successfully\n");
+        }
+    }
+    else {
+        if (mdsr_reg.additional_info > 5) {
+            printf("-E- invalid code in info.\n");
+        }
+        else {
+            printf("%s\n", additional_info_to_string[mdsr_reg.additional_info]);
+        }
+    }
+}
+
+mlxCfgStatus MlxCfg::endTokenSession()
+{
+    mfile *mf = mopen(_mlxParams.device.c_str());
+    if (!mf) {
+        return err(true, "failed opening the device.");
+    }
+
+    struct reg_access_switch_mdsr_reg_ext mdsr_reg;
+    memset(&mdsr_reg, 0, sizeof(mdsr_reg));
+    mdsr_reg.end = 1;
+    if (!runMDSR(mf, &mdsr_reg, REG_ACCESS_METHOD_SET)) {
+        return MLX_CFG_ERROR;
+    }
+
+    processMDSRData(mdsr_reg, false);
+    
+    return MLX_CFG_OK;
+}
+
 mlxCfgStatus MlxCfg::execute(int argc, char *argv[])
 {
     mlxCfgStatus rc = parseArgs(argc, argv);
@@ -1427,7 +1655,21 @@ mlxCfgStatus MlxCfg::execute(int argc, char *argv[])
     case Mc_Apply:
         ret = apply();
         break;
-
+    case Mc_RemoteTokenKeepAlive:
+        ret = remoteTokenKeepAlive();
+        break;
+    case Mc_ChallengeRequest:
+        ret = getChallenge();
+        break;
+    case Mc_TokenSupported:
+        ret = queryTokenSupport();
+        break;
+    case Mc_QueryTokenSession:
+        ret = queryTokenSession();
+        break;
+    case Mc_EndTokenSession:
+        ret = endTokenSession();
+        break;
     default:
         // should not reach here.
         return err(true, "invalid command.");
@@ -1450,3 +1692,138 @@ int main(int argc, char *argv[])
     }
 }
 
+const char* KeepAliveSession::_mkdcErrorToString[5] = {"OK", "BAD_SESSION_ID", "BAD_KEEP_ALIVE_COUNTER",
+                                                       "BAD_SOURCE_ADDRESS", "SESSION_TIMEOUT"};
+
+const u_int32_t KeepAliveSession::_keepAliveTimestampInSec = 600;
+
+KeepAliveSession::KeepAliveSession(mfile *mf, u_int16_t sessionId, u_int32_t sessionTimeInSec):
+    _mf(mf),
+    _sessionId(sessionId),
+    _sessionTimeLeftInSec(sessionTimeInSec),
+    _SleepTimeOnCommandTO(1),
+    _SleepTimeBetweenCommands(300)
+{
+    memset(&_mkdc_reg, 0, sizeof(_mkdc_reg));
+    _mkdc_reg.session_id = sessionId;
+
+    srand(time(NULL));
+    _mkdc_reg.current_keep_alive_counter = rand();
+}
+
+keepAliveStatus KeepAliveSession::runSession()
+{
+    time_t mkdcRunTime;
+    u_int32_t sleepTimeInSec = 0;
+    u_int32_t sleepBetweenCommandsInSec = _SleepTimeBetweenCommands;
+
+    if (sleepBetweenCommandsInSec >= _keepAliveTimestampInSec) {
+        return err(true, "Specified cycle time must be shorter than %d seconds.", _keepAliveTimestampInSec);
+    }
+
+    if (_sessionTimeLeftInSec < _keepAliveTimestampInSec) {
+        return err(true, "Specified session time must be longer than %d minutes.", _keepAliveTimestampInSec / 60);
+    }
+    
+    while (_sessionTimeLeftInSec >= _keepAliveTimestampInSec) {
+        mkdcRunTime = 0;
+        if (runMKDC(_mf, &_mkdc_reg, mkdcRunTime) != KEEP_ALIVE_OK) {
+            return KEEP_ALIVE_ERROR;
+        }
+        if (processMKDCData(&_mkdc_reg) != KEEP_ALIVE_OK) {
+            return KEEP_ALIVE_ERROR;
+        }
+        _sessionTimeLeftInSec -= mkdcRunTime;
+
+        if (_sessionTimeLeftInSec > _keepAliveTimestampInSec) {
+            if (sleepBetweenCommandsInSec > (_sessionTimeLeftInSec - _keepAliveTimestampInSec)) {
+                //* sleep until last MKDC is needed (which is when _keepAliveTimestampInSec seconds are left for the session)
+                sleepBetweenCommandsInSec = _sessionTimeLeftInSec - _keepAliveTimestampInSec;
+            }
+        }
+        else {
+            //* sleep until session time ends
+            sleepBetweenCommandsInSec = _sessionTimeLeftInSec;
+        }
+
+        sleepTimeInSec = sleepBetweenCommandsInSec;
+        msleep(sleepTimeInSec * 1000);
+        _sessionTimeLeftInSec -= sleepBetweenCommandsInSec;
+    }
+
+    return KEEP_ALIVE_OK;
+}
+
+keepAliveStatus KeepAliveSession::runMKDC(mfile* mf, reg_access_switch_mkdc_reg_ext* mkdc_reg, time_t& timer)
+{
+    reg_access_status_t rc = ME_REG_ACCESS_OK;
+    time_t start = 0;
+    int status = 0;
+
+    start = time(NULL);
+    mft_signal_set_handling(1);
+    rc = reg_access_mkdc(mf, REG_ACCESS_METHOD_GET, mkdc_reg);
+    dealWithSignal();
+    timer = time(NULL) - start;
+
+    while ((rc == ME_ICMD_STATUS_EXECUTE_TO) && ((u_int32_t)timer < _keepAliveTimestampInSec)) {
+        u_int32_t sleep_time_in_sec = _SleepTimeOnCommandTO;
+
+        msleep(sleep_time_in_sec * 1000);
+
+        mft_signal_set_handling(1);
+        rc = reg_access_mkdc(mf, REG_ACCESS_METHOD_GET, mkdc_reg);
+        dealWithSignal();
+
+        timer = time(NULL) - start;
+    }
+
+    if (rc == ME_REG_ACCESS_REG_NOT_SUPP) {
+        return err(true, "MKDC access register is not supported.");
+    }
+    else if (rc) {
+        return err(true, "cannot access MKDC register, error code is %d.");
+    }
+
+    return KEEP_ALIVE_OK;
+}
+
+keepAliveStatus KeepAliveSession::processMKDCData(reg_access_switch_mkdc_reg_ext* mkdc_reg)
+{
+    if (mkdc_reg->error_code != 0) {
+        return err(true, "keep alive session failed. error code: %s.", _mkdcErrorToString[mkdc_reg->error_code]);
+    }
+    if (mkdc_reg->session_id != _sessionId) {        
+        return err(true, "received wrong session id.");
+    }
+
+    mkdc_reg->current_keep_alive_counter = mkdc_reg->next_keep_alive_counter;
+
+    return KEEP_ALIVE_OK;
+}
+
+void KeepAliveSession::setSleepTimeOnCommandTO(u_int32_t sleepTime)
+{
+    _SleepTimeOnCommandTO = sleepTime;
+}
+
+void KeepAliveSession::setSleepTimeBetweenCommands(u_int32_t sleepTime)
+{
+    _SleepTimeBetweenCommands = sleepTime;
+}
+
+keepAliveStatus KeepAliveSession::err(bool report, const char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    char errBuff[MAX_ERR_STR_LEN] = {0};
+
+    if (vsnprintf(errBuff, MAX_ERR_STR_LEN, fmt, args) >= MAX_ERR_STR_LEN) {
+        strcpy(&errBuff[MAX_ERR_STR_LEN - 5], "...");
+    }
+    if (report) {
+        fprintf(stdout, PRE_ERR_MSG " %s\n", errBuff);
+    }
+    va_end(args);
+    return KEEP_ALIVE_ERROR;
+}

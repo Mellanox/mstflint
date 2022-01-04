@@ -89,6 +89,8 @@
 #define REG_ID_MCQI                     0x9061
 #define REG_ID_MCDA                     0x9063
 #define REG_ID_MQIS                     0x9064
+#define REG_ID_MTCQ                     0x9065
+#define REG_ID_MKDC                     0x9066
 #define REG_ID_MCAM                     0x907f
 // TODO: get correct register ID for mfrl mfai
 #define REG_ID_MFRL                     0x9028
@@ -98,6 +100,7 @@
 #define REG_ID_MGPIR                    0x9100
 #define REG_ID_MDFCR                    0x9101
 #define REG_ID_MDRCR                    0x9102
+#define REG_ID_MDSR                     0x9110
 #define REG_ID_MFSV                     0x9115
 
 #define REG_ID_MDDT                     0x9160
@@ -752,7 +755,27 @@ const char* reg_access_err2str(reg_access_status_t status)
 {
     return m_err2str(status);
 }
-
+/************************************
+* Function: reg_access_mtcq
+************************************/
+reg_access_status_t reg_access_mtcq(mfile *mf, reg_access_method_t method, struct reg_access_switch_mtcq_reg_ext *mtcq)
+{
+    REG_ACCCESS(mf, method, REG_ID_MTCQ, mtcq, mtcq_reg_ext, reg_access_switch);
+}
+/************************************
+* Function: reg_access_mdsr
+************************************/
+reg_access_status_t reg_access_mdsr(mfile *mf, reg_access_method_t method, struct reg_access_switch_mdsr_reg_ext *mdsr)
+{
+    REG_ACCCESS(mf, method, REG_ID_MDSR, mdsr, mdsr_reg_ext, reg_access_switch);
+}
+/************************************
+* Function: reg_access_mkdc
+************************************/
+reg_access_status_t reg_access_mkdc(mfile *mf, reg_access_method_t method, struct reg_access_switch_mkdc_reg_ext *mkdc)
+{
+    REG_ACCCESS(mf, method, REG_ID_MKDC, mkdc, mkdc_reg_ext, reg_access_switch);
+}
 /************************************
 * Function: reg_access_mpegc
 ************************************/

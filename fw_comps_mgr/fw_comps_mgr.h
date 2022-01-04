@@ -165,6 +165,8 @@ public:
         COMPID_CONGESTION_CONTROL = 0xB,
         COMPID_LINKX = 0xC,
         COMPID_CRYPTO_TO_COMMISSIONING = 0xD,
+        COMPID_RMCS_TOKEN = 0xE,
+        COMPID_RMDT_TOKEN = 0xF,
         COMPID_UNKNOWN = 0xff,
     } comps_ids_t;
 

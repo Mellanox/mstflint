@@ -213,7 +213,12 @@ bool FsCtrlOperations::FsIntQuery()
             if (it->getType() == FwComponent::COMPID_CRYPTO_TO_COMMISSIONING) {
                 _fsCtrlImgInfo.security_mode |= SMM_CRYTO_TO_COMMISSIONING;
             }
-
+            if (it->getType() == FwComponent::COMPID_RMCS_TOKEN) {
+                _fsCtrlImgInfo.security_mode |= SMM_RMCS_TOKEN;
+            }
+            if (it->getType() == FwComponent::COMPID_RMDT_TOKEN) {
+                _fsCtrlImgInfo.security_mode |= SMM_RMDT_TOKEN;
+            }
         }
     }
 

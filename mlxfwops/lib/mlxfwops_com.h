@@ -258,7 +258,9 @@ typedef enum security_mode_mask {
     SMM_DEV_FW    = 0x1 << 4,
     SMM_CS_TOKEN  = 0x1 << 5,
     SMM_DBG_TOKEN = 0x1 << 6,
-    SMM_CRYTO_TO_COMMISSIONING = 0x1 << 7
+    SMM_CRYTO_TO_COMMISSIONING = 0x1 << 7,
+    SMM_RMCS_TOKEN  = 0x1 << 8,
+    SMM_RMDT_TOKEN  = 0x1 << 9
 } security_mode_mask_t;
 
 typedef enum security_mode {
