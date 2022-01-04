@@ -133,42 +133,12 @@ bool Fs4Operations::IsEncryptedDevice(bool& is_encrypted)
 //* Determine if encrypted by reading ITOC header magic-pattern
 bool Fs4Operations::IsEncryptedImage(bool& is_encrypted)
 {
+    DPRINTF(("Fs4Operations::IsEncryptedImage\n"));
     struct image_layout_itoc_header itocHeader;
     u_int8_t buffer[TOC_HEADER_SIZE];
-    u_int32_t image_start[CNTX_START_POS_SIZE] = {0};
-    u_int32_t image_num = 0;
 
     is_encrypted = false;
 
-    //* Check if valid image exists
-    FindAllImageStart(_ioAccess, image_start, &image_num, _fs4_magic_pattern);
-    
-    if (image_num == 1) {
-        _fwImgInfo.imgStart = image_start[0];
-        DPRINTF(("Fs4Operations::IsEncryptedImage - _fwImgInfo.imgStart = 0x%x\n", _fwImgInfo.imgStart));
-
-        u_int32_t itoc_header_addr = _fwImgInfo.imgStart + _itoc_ptr;
-        READBUF((*_ioAccess), itoc_header_addr, buffer, TOC_HEADER_SIZE, "ITOC Header");
-        image_layout_itoc_header_unpack(&itocHeader, buffer);
-        if (!CheckTocSignature(&itocHeader, ITOC_ASCII)) { // Check first location of ITOC header magic-pattern
-            itoc_header_addr += FS4_DEFAULT_SECTOR_SIZE;
-            READBUF((*_ioAccess), itoc_header_addr, buffer, TOC_HEADER_SIZE, "ITOC Header");
-            image_layout_itoc_header_unpack(&itocHeader, buffer);
-            if (!CheckTocSignature(&itocHeader, ITOC_ASCII)) { // Check second location of ITOC header magic-pattern
-                is_encrypted = true;
-            }
-        }
-    }
-    else {            
-        DPRINTF(("Fs4Operations::IsEncryptedImage No valid image found --> not encrypted"));
-    }
-    return true;
-}
-
-bool Fs4Operations::isEncrypted(bool& is_encrypted) {
-    bool rc = false;
-
-    //* Init HW pointers
     if (!_is_hw_ptrs_initialized) {
         if (!initHwPtrs(true)) {
             DPRINTF(("Fs4Operations::IsEncryptedImage HW pointers not found"));
@@ -176,15 +146,35 @@ bool Fs4Operations::isEncrypted(bool& is_encrypted) {
         }
     }
 
+    READBUF((*_ioAccess), _itoc_ptr, buffer, TOC_HEADER_SIZE, "ITOC Header");
+    image_layout_itoc_header_unpack(&itocHeader, buffer);
+    if (!CheckTocSignature(&itocHeader, ITOC_ASCII)) { // Check first location of ITOC header magic-pattern
+        _itoc_ptr += FS4_DEFAULT_SECTOR_SIZE;
+        READBUF((*_ioAccess), _itoc_ptr, buffer, TOC_HEADER_SIZE, "ITOC Header");
+        image_layout_itoc_header_unpack(&itocHeader, buffer);
+        if (!CheckTocSignature(&itocHeader, ITOC_ASCII)) { // Check second location of ITOC header magic-pattern
+            is_encrypted = true;
+        }
+        }
+
+    return true;
+}
+
+bool Fs4Operations::isEncrypted(bool& is_encrypted) {
+    DPRINTF(("Fs4Operations::isEncrypted\n"));
+    bool res = false;
+
     if (_ioAccess->is_flash()) {
-        rc = IsEncryptedDevice(is_encrypted);
+        DPRINTF(("Fs4Operations::isEncrypted call IsEncryptedDevice\n"));
+        res = IsEncryptedDevice(is_encrypted);
     }
     else {
-        rc = IsEncryptedImage(is_encrypted);
+        DPRINTF(("Fs4Operations::isEncrypted call IsEncryptedImage\n"));
+        res = IsEncryptedImage(is_encrypted);
     }
 
-    DPRINTF(("Fs4Operations::isEncrypted res = %s, rc = %d\n", is_encrypted ? "TRUE" : "FALSE", rc));
-    return rc;
+    DPRINTF(("Fs4Operations::isEncrypted is_encrypted = %s, res = %s\n", is_encrypted ? "TRUE" : "FALSE", res ? "TRUE" : "FALSE"));
+    return res;
 }
 
 bool Fs4Operations::CheckTocSignature(struct image_layout_itoc_header *itoc_header, u_int32_t first_signature)
@@ -916,6 +906,11 @@ bool Fs4Operations::parseDevData(bool readRom, bool quickQuery, bool verbose) {
 
 bool Fs4Operations::encryptedFwQuery(fw_info_t *fwInfo, bool readRom, bool quickQuery, bool ignoreDToc, bool verbose)
 {
+    if (!initHwPtrs(true)) {
+        DPRINTF(("Fs4Operations::IsEncryptedImage HW pointers not found"));
+        return false;
+    }
+
     if (!encryptedFwReadImageInfoSection()) {
         return errmsg("%s", err());
     }
@@ -3645,6 +3640,10 @@ bool Fs4Operations::storeSecureBootSignaturesInSection(vector<u_int8_t> boot_sig
 }
 
 bool Fs4Operations::initHwPtrs(bool isVerify) {
+    if (!getImgStart()) { // Set _fwImgInfo.imgStart with the image start address
+        return false;
+    }
+
     if (!getExtendedHWAravaPtrs((VerifyCallBack)NULL, _ioAccess, false, isVerify)) {
         return errmsg("initHwPtrs: HW pointers not found.\n");
     }
