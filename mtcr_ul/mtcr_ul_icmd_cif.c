@@ -47,6 +47,7 @@
 #endif
 
 #include "mtcr_mem_ops.h"
+#include "tools_dev_types.h"
 
 #define ICMD_QUERY_CAP_CMD_ID 0x8400
 #define ICMD_QUERY_CAP_CMD_SZ 0x8
@@ -1114,11 +1115,68 @@ void icmd_get_dma_support(mfile *mf)
 
 }
 
+static int is_pci_device(mfile* mf)
+{
+    return (mf->flags & MDEVS_I2CM)
+        || (mf->flags & (MDEVS_CABLE | MDEVS_LINKX_CHIP))
+        || (mf->flags & MDEVS_SOFTWARE);
+}
+
+static int is_livefish_device(mfile *mf)
+{
+    // Make sure to update this table both in mtcr.c & mtcr_ul_com.c !
+    static u_int32_t live_fish_ids[][2] = {
+        {DeviceConnectX4_HwId, DeviceConnectX4_HwId},
+        {DeviceConnectX4LX_HwId, DeviceConnectX4LX_HwId},
+        {DeviceConnectX5_HwId, DeviceConnectX5_HwId},
+        {DeviceConnectX6_HwId, DeviceConnectX6_HwId},
+        {DeviceConnectX6DX_HwId, DeviceConnectX6DX_HwId},
+        {DeviceConnectX6LX_HwId, DeviceConnectX6LX_HwId},
+        {DeviceConnectX7_HwId, DeviceConnectX7_HwId},
+        {DeviceBlueField3_HwId, DeviceBlueField3_HwId},
+        {DeviceBlueField2_HwId, DeviceBlueField2_HwId},
+        {DeviceBlueField_HwId, DeviceBlueField_HwId},
+        {DeviceSwitchIB_HwId, DeviceSwitchIB_HwId},
+        {DeviceSpectrum_HwId, DeviceSpectrum_HwId},
+        {DeviceSwitchIB2_HwId, DeviceSwitchIB2_HwId},
+        {DeviceQuantum_HwId, DeviceQuantum_HwId},
+        {DeviceQuantum2_HwId, DeviceQuantum2_HwId},
+        {DeviceSpectrum2_HwId, DeviceSpectrum2_HwId},
+        {DeviceSpectrum3_HwId, DeviceSpectrum3_HwId},
+        {DeviceSpectrum4_HwId, DeviceSpectrum4_HwId},
+        {0, 0    }
+    };
+    int i = 0;
+    unsigned int hwdevid = 0;
+    if (mf->tp == MST_SOFTWARE) {
+        return 1;
+    }
+    int rc = mread4(mf, 0xf0014, &hwdevid);
+    hwdevid &= 0xffff;//otherwise, BF A1 will fail in the searching (0x00010211)
+    if (rc == 4) {
+        while (live_fish_ids[i][0] != 0) {
+            if (live_fish_ids[i][0] == hwdevid) {
+                return (mf->dinfo->pci.dev_id == live_fish_ids[i][1]);
+            }
+            i++;
+        }
+    }
+    return 0;
+}
+
 int icmd_open(mfile *mf)
 {
     if (mf->icmd.icmd_opened) {
         return ME_OK;
     }
+
+#ifndef __FreeBSD__
+    // Currently livefish check is supported for PCI devices & devices that map to CR.
+    // ICMD is not supported while in livefish (GW is locked).
+    if ((is_pci_device(mf) || (mf->flags & MDEVS_TAVOR_CR)) && is_livefish_device(mf)) {
+        return ME_ICMD_NOT_SUPPORTED;
+    }
+#endif
 
     mf->icmd.took_semaphore = 0;
     mf->icmd.ib_semaphore_lock_supported = 0;
