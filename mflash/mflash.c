@@ -2399,30 +2399,6 @@ int mf_get_attr(mflash *mfl, flash_attr *attr)
     return MFE_OK;
 }
 
-int mf_sw_reset(mflash *mfl)
-{
-    MfError status;
-    int supports_sw_reset = is_supports_sw_reset(mfl, &status);
-    if (status != MFE_OK) {
-        return status;
-    }
-    if (!supports_sw_reset) {
-        return MFE_UNSUPPORTED_DEVICE;
-    }
-    if (msw_reset(mfl->mf)) {
-        if (errno == EPERM) {
-            return MFE_CMD_SUPPORTED_INBAND_ONLY;
-        } else if (errno == OP_NOT_SUPPORTED) {
-            return MFE_MANAGED_SWITCH_NOT_SUPPORTED;
-        } else {
-
-            return MFE_ERROR;
-        }
-    }
-
-    return MFE_OK;
-}
-
 const char* mf_err2str(int err_code)
 {
 

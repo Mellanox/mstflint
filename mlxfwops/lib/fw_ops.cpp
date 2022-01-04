@@ -59,6 +59,12 @@
 #endif //NO_OPEN_SSL
 #endif //UEFI_BUILD
 
+#ifndef __WIN__
+    #define OP_NOT_SUPPORTED EOPNOTSUPP
+#else // __WIN__
+    #define OP_NOT_SUPPORTED EINVAL
+#endif // __WIN__
+
 #define BAD_CRC_MSG "Bad CRC."
 extern const char *g_sectNames[];
 
@@ -1452,12 +1458,16 @@ bool FwOperations::CheckFwVersion(FwOperations &imageOps,
 
 bool FwOperations::FwSwReset()
 {
-    if (!_ioAccess->is_flash()) {
-        return errmsg("operation supported only for switch devices: InfiniScaleIV SwitchX and SwitchIB over an IB interface");
+    if (msw_reset(getMfileObj())) {
+        if (errno == EPERM) {
+            return errmsg("operation supported only for IB switches.");
+        } else if (errno == OP_NOT_SUPPORTED) {
+            return errmsg("operation supported only for un-managed switches.");
+        } else {
+            return errmsg("operation failed, errno - %d.", errno);
+        }
     }
-    if (!_ioAccess->sw_reset()) {
-        return errmsg("%s",  _ioAccess->err());
-    }
+
     return true;
 }
 

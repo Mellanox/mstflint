@@ -362,7 +362,7 @@ public:
 class SwResetSubCommand : public SubCommand
 {
 private:
-
+    bool IsDeviceSupported(dm_dev_id_t dev_id);
 public:
     SwResetSubCommand();
     ~SwResetSubCommand();

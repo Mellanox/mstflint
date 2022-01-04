@@ -4024,16 +4024,74 @@ bool SwResetSubCommand::verifyParams()
 
 FlintStatus SwResetSubCommand::executeCommand()
 {
+    mfile* mf = NULL;
+    dm_dev_id_t devid_type;
+    u_int32_t devid, revid;
+
     if (preFwOps() == FLINT_FAILED) {
         return FLINT_FAILED;
     }
+
+    mf = _fwOps->getMfileObj();
+    int rc = dm_get_device_id(mf, &devid_type, &devid, &revid);
+    if (rc != 0) {
+        reportErr(true, "can't get device Id.\n");
+        return FLINT_FAILED;
+    }
+    (void)devid;
+    (void)revid;
+
+    if (!IsDeviceSupported(devid_type)) {
+        return FLINT_FAILED;
+    }
+
     printf("-I- Sending reset command to device %s ...\n", _flintParams.device.c_str());
     if (!_fwOps->FwSwReset()) {
         reportErr(true, FLINT_SWRESET_ERROR, _fwOps->err());
         return FLINT_FAILED;
     }
     printf("-I- Reset command accepted by the device.\n");
+
     return FLINT_SUCCESS;
+}
+
+bool SwResetSubCommand::IsDeviceSupported(dm_dev_id_t dev_id)
+{
+    switch (dev_id) {
+        case DeviceInfiniScaleIV:
+        case DeviceSwitchX:
+        case DeviceSwitchIB:
+        case DeviceSwitchIB2:
+        case DeviceQuantum:
+        case DeviceQuantum2:
+            return true;
+        case DeviceConnectX2:
+        case DeviceConnectX3:
+        case DeviceConnectX3Pro:
+        case DeviceConnectIB:
+        case DeviceSpectrum:
+        case DeviceConnectX4:
+        case DeviceConnectX4LX:
+        case DeviceConnectX5:
+        case DeviceBlueField:
+        case DeviceBlueField2:
+        case DeviceBlueField3:
+        case DeviceConnectX6:
+        case DeviceConnectX6DX:
+        case DeviceConnectX6LX:
+        case DeviceConnectX7:
+        case DeviceSpectrum2:
+        case DeviceSpectrum3:
+        case DeviceSpectrum4:
+        case DeviceSecureHost:
+        case DeviceGearBox:
+        case DeviceGearBoxManager:
+            reportErr(true, "The device type %d is not supported.\n", dev_id);
+            return false;
+        default:
+            reportErr(true, "Unknown device type - %d.\n", dev_id);
+            return false;
+    }
 }
 
 /***********************

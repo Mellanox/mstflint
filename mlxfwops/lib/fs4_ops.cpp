@@ -907,7 +907,7 @@ bool Fs4Operations::parseDevData(bool readRom, bool quickQuery, bool verbose) {
 bool Fs4Operations::encryptedFwQuery(fw_info_t *fwInfo, bool readRom, bool quickQuery, bool ignoreDToc, bool verbose)
 {
     if (!initHwPtrs(true)) {
-        DPRINTF(("Fs4Operations::IsEncryptedImage HW pointers not found"));
+        DPRINTF(("Fs4Operations::encryptedFwQuery HW pointers not found"));
         return false;
     }
 

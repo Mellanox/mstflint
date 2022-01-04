@@ -807,18 +807,6 @@ bool Flash::disable_hw_access(u_int64_t key)
 
 }
 
-bool Flash::sw_reset()
-{
-    int rc = mf_sw_reset(_mfl);
-    if (rc != MFE_OK) {
-        if (rc == MFE_UNSUPPORTED_DEVICE) {
-            return errmsg("operation supported only for InfiniScale4 switch, SwitchX and SwitchIB over IB interface");
-        }
-        return errmsg("%s (%s)", errno == 0 ? "" : strerror(errno), mf_err2str(rc));
-    }
-    return true;
-}
-
 
 bool Flash::get_attr(ext_flash_attr_t& attr)
 {
