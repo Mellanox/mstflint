@@ -661,7 +661,7 @@ bool FwCompsMgr::accessComponent(u_int32_t offset,
     u_int32_t data[],
     access_type_t access,
     ProgressCallBackAdvSt *progressFuncAdv,
-    controlFsmArgs* lastFsmCommandArgs)
+    control_fsm_args_t* lastFsmCommandArgs)
 {
     bool bRes = _accessObj->accessComponent(_updateHandle, offset, size, data, access, _currComponentStr, progressFuncAdv);
     if (!bRes && lastFsmCommandArgs != NULL && isDMAAccess()) {
@@ -1309,7 +1309,7 @@ bool FwCompsMgr::readComponent(FwComponent::comps_ids_t compType, FwComponent& f
             return false;
         }
         _currComponentStr = FwComponent::getCompIdStr(compType);
-        controlFsmArgs fsmReadCommand;
+        control_fsm_args_t fsmReadCommand;
         fsmReadCommand.command = readPending ? FSM_CMD_READ_PENDING_COMPONENT : FSM_CMD_READ_COMPONENT;
         fsmReadCommand.expectedState = FSMST_UPLOAD;
         if (!accessComponent(0, compSize, (u_int32_t *)(data.data()), MCC_READ_COMP, progressFuncAdv, &fsmReadCommand)) {
@@ -1404,7 +1404,7 @@ bool FwCompsMgr::burnComponents(std::vector<FwComponent>& comps,
                 return false;
             }
             _currComponentStr = FwComponent::getCompIdStr(comps[i].getType());
-            controlFsmArgs fsmUpdateCommand;
+            control_fsm_args_t fsmUpdateCommand;
             fsmUpdateCommand.command = FSM_CMD_UPDATE_COMPONENT;
             fsmUpdateCommand.expectedState = FSMST_DOWNLOAD;
             fsmUpdateCommand.size = comps[i].getSize();
@@ -2109,7 +2109,7 @@ bool FwCompsMgr::readBlockFromComponent(FwComponent::comps_ids_t compId,
         if (!controlFsm(FSM_CMD_LOCK_UPDATE_HANDLE, FSMST_LOCKED)) {
             return false;
         }
-        controlFsmArgs fsmReadCommand;
+        control_fsm_args_t fsmReadCommand;
         fsmReadCommand.command = FSM_CMD_READ_PENDING_COMPONENT;
         fsmReadCommand.expectedState = FSMST_UPLOAD;
         if (!controlFsm(FSM_CMD_READ_PENDING_COMPONENT, FSMST_UPLOAD)) {

@@ -403,14 +403,16 @@ private:
         FSMST_NA                            = 0xFF,
     } fsm_state_t;
 
-    typedef struct {
+    typedef struct control_fsm_args {
+        control_fsm_args() : command(FSM_CMD_UNDEFINED), expectedState(FSMST_NA), size(0),
+            currentState(FSMST_NA), progressFuncAdv(NULL), reg_access_timeout(0) {}
         fsm_command_t command;
-        fsm_state_t expectedState = FSMST_NA;
-        u_int32_t size = 0;
-        fsm_state_t currentState = FSMST_NA;
-        ProgressCallBackAdvSt *progressFuncAdv = (ProgressCallBackAdvSt*)NULL;
-        u_int32_t reg_access_timeout = 0;
-    } controlFsmArgs;
+        fsm_state_t expectedState;
+        u_int32_t size;
+        fsm_state_t currentState;
+        ProgressCallBackAdvSt *progressFuncAdv;
+        u_int32_t reg_access_timeout;
+    } control_fsm_args_t;
 
     typedef enum {
         MCC_ERRCODE_OK = 0x0,
@@ -463,7 +465,7 @@ private:
                                   u_int32_t data[],
                                   access_type_t access,
                                   ProgressCallBackAdvSt *progressFuncAdv = (ProgressCallBackAdvSt *)NULL,
-                                  controlFsmArgs* lastFsmCommandArgs = NULL);
+                                  control_fsm_args_t* lastFsmCommandArgs = NULL);
 
     bool           queryComponentStatus(u_int32_t componentIndex,
                                        comp_status_st *query);
