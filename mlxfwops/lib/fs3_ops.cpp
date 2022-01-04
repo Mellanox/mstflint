@@ -2847,6 +2847,24 @@ u_int32_t Fs3Operations::getImageSize()
     return _fs3ImgInfo.sizeOfImgData - _fwImgInfo.imgStart;
 }
 
+bool Fs3Operations::GetImageDataForSign(MlxSign::SHAType shaType, vector<u_int8_t>& img)
+{
+    if (!FwExtract4MBImage(img, true)) {
+        return false;
+    }
+
+    if (shaType == MlxSign::SHA256) {
+        MaskItocSectionAndEntry(FS3_IMAGE_SIGNATURE_256, img);
+    } else if (shaType == MlxSign::SHA512) {
+        MaskItocSectionAndEntry(FS3_IMAGE_SIGNATURE_256, img);
+        MaskItocSectionAndEntry(FS3_IMAGE_SIGNATURE_512, img);
+    } else {
+        return errmsg("Unexpected type of SHA");
+    }
+
+    return true;
+}
+
 bool Fs3Operations::FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatternAndDevToc,
     bool verbose, bool ignoreImageStart)
 {
@@ -2871,7 +2889,7 @@ bool Fs3Operations::FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatte
     return true;
 }
 
-void Fs3Operations::maskIToCSection(u_int32_t itocType, vector<u_int8_t>& img)
+void Fs3Operations::MaskItocSectionAndEntry(u_int32_t itocType, vector<u_int8_t>& img)
 {
     for (int i = 0; i < _fs3ImgInfo.numOfItocs; i++) {
         if (_fs3ImgInfo.tocArr[i].toc_entry.type == itocType) {
@@ -3072,16 +3090,13 @@ bool Fs3Operations::FwCalcSHA(MlxSign::SHAType shaType, vector<u_int8_t>& sha, v
     MlxSignSHA *mlxSignSHA = NULL;
     FwInit();
     _imageCache.clear();
-    if (!FwExtract4MBImage(img, true)) {
+    if (!GetImageDataForSign(shaType, img)) {
         return false;
     }
 
     if (shaType == MlxSign::SHA256) {
-        maskIToCSection(FS3_IMAGE_SIGNATURE_256, img);
         mlxSignSHA = new MlxSignSHA256();
     } else if (shaType == MlxSign::SHA512) {
-        maskIToCSection(FS3_IMAGE_SIGNATURE_256, img);
-        maskIToCSection(FS3_IMAGE_SIGNATURE_512, img);
         mlxSignSHA = new MlxSignSHA512();
     } else {
         return errmsg("Unexpected type of SHA");
@@ -3563,7 +3578,7 @@ bool Fs3Operations::CalcHMAC(const vector<u_int8_t>& key, vector<u_int8_t>& dige
     }
 
     //mask hmac itoc entry and section
-    maskIToCSection(FS3_HMAC, data);
+    MaskItocSectionAndEntry(FS3_HMAC, data);
 
     //mask magic pattern (First 16 bytes):
     for (unsigned int i = 0; i < 16; i++) {

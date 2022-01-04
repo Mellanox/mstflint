@@ -89,6 +89,7 @@ public:
     virtual bool storeSecureBootSignaturesInSection(vector<u_int8_t> boot_signature, vector<u_int8_t> critical_sections_signature = vector<u_int8_t>(),
                                                     vector<u_int8_t> non_critical_sections_signature = vector<u_int8_t>());
     virtual bool FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatternAndDevToc, bool verbose = false, bool ignoreImageStart = false);
+    virtual bool GetImageDataForSign(MlxSign::SHAType shaType, vector<u_int8_t>& img);
     virtual bool IsSecureBootSupported();
     virtual bool IsCableQuerySupported();
     virtual bool IsLifeCycleSupported();
@@ -242,7 +243,7 @@ private:
     bool CheckDTocArray();
     u_int32_t getImageSize();
     void maskDevToc(vector<u_int8_t>& img);
-    void maskIToCSection(u_int32_t itocType, vector<u_int8_t>& img);
+    void MaskItocSectionAndEntry(u_int32_t itocType, vector<u_int8_t>& img);
     bool Fs4UpdateSignatureSection(vector<u_int8_t>  sha256Buff,
                                    vector<u_int8_t>  &newSectionData);
     bool isDTocSection(fs3_section_t sect_type, bool& isDtoc);
@@ -259,6 +260,7 @@ private:
     bool QuerySecurityFeatures();
     bool IsEncryptedDevice(bool& is_encrypted);
     bool IsEncryptedImage(bool& is_encrypted);
+    void RemoveCRCsFromMainSection(vector<u_int8_t>& img);
 
     // Members
     Fs4ImgInfo _fs4ImgInfo;

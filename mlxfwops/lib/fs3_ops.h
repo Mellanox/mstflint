@@ -122,6 +122,7 @@ public:
                         const char *uuid, PrintCallBack printFunc = (PrintCallBack)NULL);
 
     virtual bool FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatternAndDevToc, bool verbose = false, bool ignoreImageStart = false);
+    virtual bool GetImageDataForSign(MlxSign::SHAType shaType, vector<u_int8_t>& img);
     virtual bool FwSetPublicKeys(char *fname, PrintCallBack callBackFunc = (PrintCallBack)NULL);
     virtual bool FwSetForbiddenVersions(char *fname, PrintCallBack callBackFunc = (PrintCallBack)NULL);
     virtual bool FwCalcMD5(u_int8_t md5sum[16]);
@@ -290,7 +291,7 @@ private:
     virtual bool reburnItocSection(PrintCallBack callBackFunc, bool burnFailsafe = true);
     virtual u_int32_t getImageSize();
     virtual void maskDevToc(vector<u_int8_t>& img);
-    virtual void maskIToCSection(u_int32_t itocType, vector<u_int8_t>& img);
+    virtual void MaskItocSectionAndEntry(u_int32_t itocType, vector<u_int8_t>& img);
     // this class is for sorting the itoc array by ascending absolute flash_addr used in FwShiftDevData
     class TocComp {
 public:

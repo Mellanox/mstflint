@@ -463,6 +463,65 @@ bool Fs4Operations::verifyTocHeader(u_int32_t tocAddr, bool isDtoc, VerifyCallBa
     return true;
 }
 
+/*
+    This function responsible on remove every 4B of CRC from MAIN section
+    Some special cases and how we handle them (aligned to FW behavior):
+    1. Complete line is 0x0 (including the 4B CRC) --> handle it the same as other line, remove the last 4B
+    2. Leftover (not a complete line at the end) --> keep it as is
+*/
+void Fs4Operations::RemoveCRCsFromMainSection(vector<u_int8_t>& img) {
+    //* Get MAIN section ITOC entry
+    struct fs4_toc_info *main_itoc_entry = NULL;
+    fs4_toc_info *itoc_entries = _fs4ImgInfo.itocArr.tocArr;
+    for (int i = 0; i < _fs4ImgInfo.itocArr.numOfTocs; i++) {
+        if (itoc_entries[i].toc_entry.type == FS3_MAIN_CODE) {
+            main_itoc_entry = &(itoc_entries[i]);
+            break;
+        }
+    }
+
+    u_int32_t main_addr = main_itoc_entry->toc_entry.flash_addr << 2; // addr in entry is in DW
+    u_int32_t main_size = main_itoc_entry->toc_entry.size << 2; // size in entry is in DW
+
+    vector<u_int8_t> tmp_img;
+    tmp_img.reserve(img.size());
+
+    //* Copying image data before MAIN section
+    tmp_img.insert(tmp_img.end(), img.begin(), img.begin() + main_addr);
+
+    //* Copying MAIN section without CRCs
+    const u_int32_t MAIN_LINE_SIZE = 68; // Line in MAIN is 64B data + 4B crc
+    const u_int32_t MAIN_LINE_DATA_ONLY_SIZE = MAIN_LINE_SIZE - 4;
+    for (u_int32_t ii = 0; ii < main_size; ii += MAIN_LINE_SIZE) {
+        u_int32_t line_start_addr = main_addr + ii;
+        if (ii + MAIN_LINE_SIZE > main_size) {
+            // In case last line isn't a full line there will be no CRC
+            tmp_img.insert(tmp_img.end(), img.begin() + line_start_addr, img.begin() + main_addr + main_size);
+        }
+        else {
+            tmp_img.insert(tmp_img.end(), img.begin() + line_start_addr, img.begin() + line_start_addr + MAIN_LINE_DATA_ONLY_SIZE);
+        }
+    }
+
+    //* Copying image data after MAIN section
+    tmp_img.insert(tmp_img.end(), img.begin() + main_addr + main_size, img.end());
+
+    img = tmp_img;
+}
+
+bool Fs4Operations::GetImageDataForSign(MlxSign::SHAType shaType, vector<u_int8_t>& img) {
+    if (!Fs3Operations::GetImageDataForSign(shaType, img)) {
+        return false;
+    }
+
+    //* In case of security version 2 (Carmel onwards) we'll ignore MAIN CRCs for fw-update signature
+    if (getSecureBootSignVersion() == VERSION_2) {
+        RemoveCRCsFromMainSection(img);
+    }
+
+    return true;
+}
+
 bool Fs4Operations::FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatternAndDevToc,
     bool verbose, bool ignoreImageStart)
 {
@@ -3247,7 +3306,7 @@ u_int32_t Fs4Operations::getImageSize()
     return _fwImgInfo.lastImageAddr - _fwImgInfo.imgStart;
 }
 
-void Fs4Operations::maskIToCSection(u_int32_t itocType, vector<u_int8_t>& img)
+void Fs4Operations::MaskItocSectionAndEntry(u_int32_t itocType, vector<u_int8_t>& img)
 {
     for (int i = 0; i < _fs4ImgInfo.itocArr.numOfTocs; i++) {
         if (_fs4ImgInfo.itocArr.tocArr[i].toc_entry.type == itocType) {
