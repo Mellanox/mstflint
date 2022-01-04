@@ -2770,13 +2770,13 @@ bool Fs4Operations::Fs4ReburnSection(u_int32_t newSectionAddr,
     return true;
 }
 
-bool Fs4Operations::calcHashOnItoc(vector<u_int8_t>& hash) {
+bool Fs4Operations::calcHashOnItoc(vector<u_int8_t>& hash, u_int32_t itoc_addr) {
     //* Get ITOC data as vector of bytes
 #if !defined(NO_OPEN_SSL) && !defined(NO_DYNAMIC_ENGINE) //mlxSignSHA is only available with OPEN_SSL
     vector<u_int8_t> itoc_data;
     u_int32_t itoc_size = _fs4ImgInfo.itocArr.numOfTocs * TOC_ENTRY_SIZE + TOC_HEADER_SIZE; 
     itoc_data.resize(itoc_size);
-    READBUF((*_ioAccess), _itoc_ptr, (u_int32_t*)&itoc_data[0], itoc_size / 4, "Reading ITOC data");
+    READBUF((*_ioAccess), itoc_addr, (u_int32_t*)&itoc_data[0], itoc_size, "Reading ITOC data");
 
     //* Calculate SHA
     MlxSignSHA512 mlxSignSHA;
@@ -2862,7 +2862,7 @@ bool Fs4Operations::reburnDTocSection(PrintCallBack callBackFunc)
     }
     memset(&p[tocSize] - IMAGE_LAYOUT_ITOC_ENTRY_SIZE, FS3_END, IMAGE_LAYOUT_ITOC_ENTRY_SIZE);
 
-    PRINT_PROGRESS(callBackFunc, (char *)"Updating TOC section - ");
+    PRINT_PROGRESS(callBackFunc, (char *)"Updating DTOC section - ");
     bool rc = writeImage((ProgressCallBack)NULL, tocAddr, p, tocSize, true, true);
     delete[] p;
     if (!rc) {
@@ -2897,7 +2897,7 @@ bool Fs4Operations::reburnITocSection(PrintCallBack callBackFunc, bool isFailSaf
     }
     memset(&p[tocSize] - IMAGE_LAYOUT_ITOC_ENTRY_SIZE, FS3_END, IMAGE_LAYOUT_ITOC_ENTRY_SIZE);
 
-    PRINT_PROGRESS(callBackFunc, (char *)"Updating TOC section - ");
+    PRINT_PROGRESS(callBackFunc, (char *)"Updating ITOC section - ");
     bool rc = writeImage((ProgressCallBack)NULL, newITocAddr, p, tocSize, true, true);
     delete[] p;
     if (!rc) {
@@ -2919,7 +2919,7 @@ bool Fs4Operations::reburnITocSection(PrintCallBack callBackFunc, bool isFailSaf
     if (getSecureBootSignVersion() == VERSION_2) {
         //* Calculate SHA-512 on ITOC
         vector<u_int8_t> hash;
-        if (!calcHashOnItoc(hash)) {
+        if (!calcHashOnItoc(hash, newITocAddr)) {
             return errmsg("Failed to calculate ITOC hash");
         }
         if (!updateHashInHashesTable(FS3_ITOC, hash)) {

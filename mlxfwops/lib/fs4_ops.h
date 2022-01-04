@@ -258,7 +258,7 @@ private:
 
     bool GetSectionSizeAndOffset(fs3_section_t sectType, u_int32_t& size, u_int32_t& offset);
     SecureBootSignVersion getSecureBootSignVersion();
-    bool calcHashOnItoc(vector<u_int8_t>& hash);
+    bool calcHashOnItoc(vector<u_int8_t>& hash, u_int32_t itoc_addr);
     bool updateHashInHashesTable(fs3_section_t section_type, vector<u_int8_t> hash);
     bool QuerySecurityFeatures();
     bool IsEncryptedDevice(bool& is_encrypted);
