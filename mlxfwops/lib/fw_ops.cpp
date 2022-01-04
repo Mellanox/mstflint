@@ -2563,7 +2563,8 @@ life_cycle_t CRSpaceRegisters::getLifeCycle()
             bitLen = 2;
             break;
         case CT_CONNECTX7:
-        case CT_QUANTUM2:            
+        case CT_QUANTUM2:
+        case CT_BLUEFIELD3:
             lifeCycleAddress = 0xf0000;
             firstBit = 4;
             bitLen = 2;
