@@ -247,6 +247,7 @@ struct mflash {
     int cputUtilizationApplied;
     int cpuPercent;
     u_int32_t cache_repacement_en_addr;
+    u_int32_t gcm_en_addr;
     u_int32_t gw_addr;
     u_int32_t gw_data;
     u_int32_t gw_cmd;
@@ -280,6 +281,7 @@ enum CntxCrConstants {
     HCR_FLASH_DATA = 0xf0410,
     HCR_CACHE_REPLACEMNT_EN_ADDR = 0xf0420,
     HCR_NEW_GW_CACHE_REPLACEMNT_EN_ADDR = 0xf0480,
+    HCR_NEW_GW_GCM_EN_ADDR = 0xf0440,
     HCR_FLASH_GEARBOX_CMD = 0x2000,
     HCR_FLASH_GEARBOX_ADDR = 0x2004,
     HCR_FLASH_GEARBOX_CACHE_REPLACEMENT_OFFSET = 0x2008,

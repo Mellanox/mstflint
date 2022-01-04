@@ -1366,6 +1366,15 @@ int is4_flash_lock(mflash *mfl, int lock_state)
     return MFE_OK;
 }
 
+int disable_gcm(mflash *mfl)
+{
+    u_int32_t data = 0;
+    MREAD4(mfl->gcm_en_addr, &data);
+    data = MERGE(data, 0, 0, 1);
+    MWRITE4(mfl->gcm_en_addr, data);
+
+    return 0;
+}
 
 int disable_cache_replacement(mflash *mfl)
 {
@@ -1383,6 +1392,27 @@ int restore_cache_replacemnt(mflash *mfl)
     MREAD4(mfl->cache_repacement_en_addr, &data);
     data = MERGE(data, 1, 0, 1); // We put 1 in the first bit of the read data
     MWRITE4(mfl->cache_repacement_en_addr, data);
+    return MFE_OK;
+}
+
+int sixth_gen_flash_lock(mflash *mfl, int lock_state)
+{
+    int rc = 0;
+    if (lock_state == 1) { // lock the flash
+        rc = is4_flash_lock(mfl, lock_state);
+        CHECK_RC(rc);
+        rc = disable_gcm(mfl);
+        CHECK_RC(rc);
+        rc = disable_cache_replacement(mfl);
+        CHECK_RC(rc);
+        rc = gw_wait_ready(mfl, "WAIT TO BUSY");
+        CHECK_RC(rc);
+    } else { // unlock the flash
+        rc = restore_cache_replacemnt(mfl);
+        CHECK_RC(rc);
+        rc = is4_flash_lock(mfl, lock_state);
+        CHECK_RC(rc);
+    }
     return MFE_OK;
 }
 
@@ -1673,8 +1703,9 @@ int sx_flash_init_direct_access(mflash *mfl, flash_params_t *flash_params)
 int sixth_gen_init_direct_access(mflash *mfl, flash_params_t *flash_params)
 {
     mfl->cache_repacement_en_addr = HCR_NEW_GW_CACHE_REPLACEMNT_EN_ADDR;
+    mfl->gcm_en_addr = HCR_NEW_GW_GCM_EN_ADDR;
 
-    mfl->f_lock = connectib_flash_lock;
+    mfl->f_lock = sixth_gen_flash_lock;
     return gen6_flash_init_com(mfl, flash_params, 0);
 }
 
@@ -2223,6 +2254,7 @@ int mf_open_fw(mflash *mfl, flash_params_t *flash_params, int num_of_banks)
     mfl->gw_cmd = HCR_FLASH_CMD;
     mfl->gw_addr = HCR_FLASH_ADDR;
     mfl->cache_repacement_en_addr = HCR_CACHE_REPLACEMNT_EN_ADDR;
+    mfl->gcm_en_addr = 0xffffffff; // Relevant to devices with new flash GW only
     mfl->cache_rep_offset = HCR_FLASH_CACHE_REPLACEMENT_OFFSET;
     mfl->cache_rep_cmd = HCR_FLASH_CACHE_REPLACEMENT_CMD;
     if (mfl->access_type == MFAT_MFILE) {

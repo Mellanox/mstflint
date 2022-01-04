@@ -156,7 +156,7 @@ bool Fs4Operations::IsEncryptedImage(bool& is_encrypted)
         if (!CheckTocSignature(&itocHeader, ITOC_ASCII)) { // Check second location of ITOC header magic-pattern
             is_encrypted = true;
         }
-        }
+    }
 
     return true;
 }
