@@ -32,7 +32,7 @@
  
 
 /***
-         *** This file was generated at "2021-10-25 13:11:03"
+         *** This file was generated at "2021-11-08 14:11:31"
          *** by:
          ***    > /mswg/release/tools/a-me/last_stable/adabe_plugins/adb2c/adb2pack.py --input adb/image_layout/image_layout.adb --file-prefix image_layout --prefix image_layout_ --no-adb-utils
          ***/
@@ -1363,6 +1363,8 @@ void image_layout_image_info_pack(const struct image_layout_image_info *ptr_stru
 	}
 	offset = 2368;
 	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->ini_file_num);
+	offset = 2400;
+	adb2c_push_integer_to_buff(ptr_buff, offset, 4, (u_int32_t)ptr_struct->burn_image_size);
 	offset = 3200;
 	image_layout_version_vector_pack(&(ptr_struct->version_vector), ptr_buff + offset / 8);
 	for (i = 0; i < 16; ++i) {
@@ -1452,6 +1454,8 @@ void image_layout_image_info_unpack(struct image_layout_image_info *ptr_struct, 
 	}
 	offset = 2368;
 	ptr_struct->ini_file_num = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
+	offset = 2400;
+	ptr_struct->burn_image_size = (u_int32_t)adb2c_pop_integer_from_buff(ptr_buff, offset, 4);
 	offset = 3200;
 	image_layout_version_vector_unpack(&(ptr_struct->version_vector), ptr_buff + offset / 8);
 	for (i = 0; i < 16; ++i) {
@@ -1542,6 +1546,8 @@ void image_layout_image_info_print(const struct image_layout_image_info *ptr_str
 	}
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "ini_file_num         : " U32H_FMT "\n", ptr_struct->ini_file_num);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "burn_image_size      : " U32H_FMT "\n", ptr_struct->burn_image_size);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "version_vector:\n");
 	image_layout_version_vector_print(&(ptr_struct->version_vector), fd, indent_level + 1);
@@ -1823,26 +1829,26 @@ void image_layout_image_layout_Nodes_print(const union image_layout_image_layout
 	fprintf(fd, "======== image_layout_image_layout_Nodes ========\n");
 
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "itoc_header:\n");
-	image_layout_itoc_header_print(&(ptr_struct->itoc_header), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "tools_area:\n");
-	image_layout_tools_area_print(&(ptr_struct->tools_area), fd, indent_level + 1);
+	fprintf(fd, "hashes_table:\n");
+	image_layout_hashes_table_print(&(ptr_struct->hashes_table), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "itoc_entry:\n");
 	image_layout_itoc_entry_print(&(ptr_struct->itoc_entry), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "hashes_table:\n");
-	image_layout_hashes_table_print(&(ptr_struct->hashes_table), fd, indent_level + 1);
+	fprintf(fd, "itoc_header:\n");
+	image_layout_itoc_header_print(&(ptr_struct->itoc_header), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "device_info:\n");
+	image_layout_device_info_print(&(ptr_struct->device_info), fd, indent_level + 1);
+	adb2c_add_indentation(fd, indent_level);
+	fprintf(fd, "tools_area:\n");
+	image_layout_tools_area_print(&(ptr_struct->tools_area), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "image_info:\n");
 	image_layout_image_info_print(&(ptr_struct->image_info), fd, indent_level + 1);
 	adb2c_add_indentation(fd, indent_level);
 	fprintf(fd, "hw_pointers_carmel:\n");
 	image_layout_hw_pointers_carmel_print(&(ptr_struct->hw_pointers_carmel), fd, indent_level + 1);
-	adb2c_add_indentation(fd, indent_level);
-	fprintf(fd, "device_info:\n");
-	image_layout_device_info_print(&(ptr_struct->device_info), fd, indent_level + 1);
 }
 
 unsigned int image_layout_image_layout_Nodes_size(void)

@@ -110,6 +110,7 @@ bool Fs4Operations::CheckSignatures(u_int32_t a[], u_int32_t b[], int n)
 
 bool Fs4Operations::IsEncryptedDevice(bool& is_encrypted)
 {
+    DPRINTF(("Fs4Operations::IsEncryptedDevice\n"));
     is_encrypted = false;
 
     if (_signatureMngr->IsLifeCycleSupported() && _signatureMngr->IsEncryptionSupported()) {
@@ -921,6 +922,40 @@ bool Fs4Operations::FwVerify(VerifyCallBack verifyCallBackFunc, bool isStripedIm
     return Fs3Operations::FwVerify(verifyCallBackFunc, isStripedImage, showItoc, ignoreDToc);
 }
 
+bool Fs4Operations::GetImageInfo(u_int8_t *buff)
+{
+    DPRINTF(("Fs4Operations::GetImageInfo call Fs3Operations::GetImageInfo\n"));
+    bool success = Fs3Operations::GetImageInfo(buff);
+
+    //* Fix burn_image_size if required (required only for BB first FW release)
+    if (success && !_ioAccess->is_flash()/*image*/) {
+        DPRINTF(("Fs4Operations::GetImageInfo check if fix burn_image_size is required\n"));
+        bool is_encrypted_image;
+        if (!IsEncryptedImage(is_encrypted_image)){
+            return false;
+        }
+        if (is_encrypted_image && _fwImgInfo.ext_info.burn_image_size == 0){
+            DPRINTF(("Fs4Operations::GetImageInfo read burn_image_size from the address 16MB\n"));
+            //* Read burn_image_size from the address 16MB ("outside" the range that we burn)
+            u_int32_t burn_image_size; 
+            u_int8_t *buff;
+            //* Choosing the correct io to read from
+            FBase* io = _ioAccess;
+            if (_encrypted_image_io_access) {
+                io = _encrypted_image_io_access; // If encrypted image was given we'll read from it
+            }
+
+            READALLOCBUF((*io), ENCRYPTED_IMAGE_LAST_ADDR_LOCATION_IN_BYTES, buff, 4, "IMAGE_LAST_ADDR"); // Reading DWORD from addr 16MB
+            burn_image_size = ((u_int32_t*)buff)[0];
+            TOCPU1(burn_image_size);
+            free(buff);
+            _fwImgInfo.ext_info.burn_image_size = burn_image_size;
+        } 
+    }
+    return true;
+
+}
+
 bool Fs4Operations::encryptedFwReadImageInfoSection() {
     //* Read IMAGE_INFO section
     u_int32_t image_info_section_addr = _hmac_start_ptr + _fwImgInfo.imgStart;
@@ -965,6 +1000,7 @@ bool Fs4Operations::parseDevData(bool readRom, bool quickQuery, bool verbose) {
 
 bool Fs4Operations::encryptedFwQuery(fw_info_t *fwInfo, bool readRom, bool quickQuery, bool ignoreDToc, bool verbose)
 {
+    DPRINTF(("Fs4Operations::encryptedFwQuery\n"));
     if (!initHwPtrs(true)) {
         DPRINTF(("Fs4Operations::encryptedFwQuery HW pointers not found"));
         return false;
@@ -1126,8 +1162,49 @@ bool Fs4Operations::CheckFs4ImgSize(Fs4Operations& imageOps, bool useImageDevDat
     return true;
 }
 
+
+bool Fs4Operations::getEncryptedImageSize(u_int32_t *imageSize){
+    DPRINTF(("Fs4Operations::getEncryptedImageSize\n"));
+    fw_info_t fwInfo;
+    if (!encryptedFwQuery(&fwInfo, false, false)) {
+        return errmsg("%s", err());
+    }
+    *imageSize = fwInfo.fw_info.burn_image_size;
+    return true;
+}
+
+bool Fs4Operations::FwReadEncryptedData(void *image, u_int32_t imageSize, bool verbose){
+    DPRINTF(("Fs4Operations::FwReadEncryptedData\n"));
+    vector<u_int8_t> data;
+    data.resize(imageSize);
+    if (!(*_ioAccess).read(_fwImgInfo.imgStart, data.data(), imageSize, verbose)) {
+        return errmsg("%s - read error (%s)\n", "Image", (*_ioAccess).err());
+    }
+    memcpy(image, data.data(), imageSize);
+    return true;
+}
+
+
 bool Fs4Operations::FwReadData(void *image, u_int32_t *imageSize, bool verbose)
 {
+    
+    //* Read encrypted data 
+    bool is_encrypted = false;
+    DPRINTF(("Fs4Operations::FwReadData\n"));
+    if (!isEncrypted(is_encrypted)) {
+        return errmsg(getErrorCode(), "%s", err());
+    }
+    if (is_encrypted) {
+        if (image == NULL) {
+            bool result = getEncryptedImageSize(imageSize);
+            DPRINTF(("Fs4Operations::FwReadData imageSize=0x%x result=%s\n", *imageSize, result ? "true" : "false"));
+            return result;
+        } else {
+            return FwReadEncryptedData(image, *imageSize, verbose);
+        }
+    } 
+
+    //* Read non-encrypted data
     struct QueryOptions queryOptions;
     if (!imageSize) {
         return errmsg("bad parameter is given to FwReadData\n");
@@ -1897,17 +1974,16 @@ bool Fs4Operations::FwExtractEncryptedImage(vector<u_int8_t>& img, bool maskMagi
     }
 
     //* Get image size
-    u_int8_t *buff;
-    READALLOCBUF((*io), ENCRYPTED_IMAGE_LAST_ADDR_LOCATION_IN_BYTES, buff, 4, "IMAGE_LAST_ADDR"); // Reading DWORD from addr 16MB
-    u_int32_t image_last_addr = ((u_int32_t*)buff)[0];
-    TOCPU1(image_last_addr);
-    u_int32_t image_size = image_last_addr - image_start;
-    free(buff);
+    fw_info_t fwInfo;
+    if (!encryptedFwQuery(&fwInfo, false, false, true)) {
+        return errmsg("%s", err());
+    }
+    u_int32_t burn_image_size = fwInfo.fw_info.burn_image_size;
 
-    //* Read image from _fwImgInfo.imgStart to image_size (_fwImgInfo.imgStart expected to be zero)
-    DPRINTF(("Fs4Operations::FwExtractEncryptedImage - Reading image from 0x%x to 0x%x\n", image_start, image_start + image_size));
-    img.resize(image_size);
-    if (!(*io).read(image_start, img.data(), image_size, verbose)) {
+    //* Read image from _fwImgInfo.imgStart to burn_image_size (_fwImgInfo.imgStart expected to be zero)
+    DPRINTF(("Fs4Operations::FwExtractEncryptedImage - Reading 0x%x bytes from address 0x%x\n", burn_image_size, image_start));
+    img.resize(burn_image_size);
+    if (!(*io).read(image_start, img.data(), burn_image_size, verbose)) {
         return errmsg("%s - read error (%s)\n", "image", (*io).err());
     }
 

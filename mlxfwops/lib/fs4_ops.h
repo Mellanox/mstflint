@@ -113,6 +113,7 @@ public:
     virtual void FwCleanUp();
     bool IsLifeCycleAccessible(chip_type_t chip_type);
     bool IsSecurityVersionViolated(u_int32_t image_security_version);
+    bool GetImageInfo(u_int8_t *buff);
 
 protected:
     struct fs4_toc_info {
@@ -201,6 +202,8 @@ private:
     bool Fs4UpdateItocInfo(struct fs4_toc_info *curr_toc, u_int32_t NewSectSize,
                            std::vector<u_int8_t>&  newSectionData);
     bool FwReadData(void *image, u_int32_t *imageSize, bool verbose = false);
+    bool getEncryptedImageSize(u_int32_t *imageSize);
+    bool FwReadEncryptedData(void *image, u_int32_t imageSize, bool verbose);
     bool CreateDtoc(vector<u_int8_t>& img, u_int8_t* SectionData, u_int32_t section_size, u_int32_t flash_data_addr,
         fs3_section_t section, u_int32_t tocEntryAddr, CRCTYPE CRC);
     bool Fs4RemoveSectionAux(fs3_section_t sectionType);
