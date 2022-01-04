@@ -66,9 +66,9 @@ bool DirectComponentAccess::accessComponent(u_int32_t updateHandle, u_int32_t of
     char stage[MAX_MSG_SIZE] = { 0 };
     int progressPercentage = -1;
     if (progressFuncAdv && progressFuncAdv->func) {
-        snprintf(stage, MAX_MSG_SIZE, "%s %s component", (access == MCDA_READ_COMP) ? "Reading" : "Writing", currComponentStr);
+        snprintf(stage, MAX_MSG_SIZE, "%s %s component", (access == MCC_READ_COMP) ? "Reading" : "Writing", currComponentStr);
     }
-    int maxDataSize = mget_max_reg_size(_mf, (access == MCDA_READ_COMP) ? MACCESS_REG_METHOD_GET : MACCESS_REG_METHOD_SET)
+    int maxDataSize = mget_max_reg_size(_mf, (access == MCC_READ_COMP) ? MACCESS_REG_METHOD_GET : MACCESS_REG_METHOD_SET)
         - sizeof(accessData);
     if (maxDataSize > MAX_REG_DATA) {
             maxDataSize = MAX_REG_DATA;
@@ -78,7 +78,7 @@ bool DirectComponentAccess::accessComponent(u_int32_t updateHandle, u_int32_t of
     }
     std::vector<u_int32_t> dataToRW(maxDataSize, 0);
     while (leftSize > 0) {
-        DPRINTF(("0x%x bytes left to %s\n", leftSize, access == MCDA_READ_COMP ? "read" : "burn"));
+        DPRINTF(("0x%x bytes left to %s\n", leftSize, access == MCC_READ_COMP ? "read" : "burn"));
         memset(&accessData, 0, sizeof(mcdaReg));
 
         memcpy(accessData.data, dataToRW.data(), sizeof(accessData.data));
@@ -87,7 +87,7 @@ bool DirectComponentAccess::accessComponent(u_int32_t updateHandle, u_int32_t of
         accessData.size = leftSize > maxDataSize ? maxDataSize : leftSize;
         mft_signal_set_handling(1);
 
-        if (access == MCDA_READ_COMP) {
+        if (access == MCC_READ_COMP) {
             reg_access_status_t rc = reg_access_mcda(_mf, REG_ACCESS_METHOD_GET, &accessData);
             _manager->deal_with_signal();
             if (rc) {
