@@ -4143,7 +4143,7 @@ bool Fs4Operations::getCriticalNonCriticalSections(vector<u_int8_t>& critical, v
 
 bool Fs4Operations::IsCriticalSection(u_int8_t sect_type)
 {
-    if (sect_type != FS3_PCIE_LINK_CODE && sect_type != FS3_PHY_UC_CMD && sect_type != FS3_HW_BOOT_CFG)
+    if (sect_type != FS3_PCIE_LINK_CODE && sect_type != FS3_PCIE_PHY_UC_CODE && sect_type != FS3_HW_BOOT_CFG)
         return false;
     return true;
 }
