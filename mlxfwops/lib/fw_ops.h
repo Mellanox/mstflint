@@ -260,6 +260,7 @@ public:
     static int       getFileSignature(const char *fname);
     virtual bool IsLifeCycleAccessible(chip_type_t chip_type);
     virtual bool IsSecurityVersionViolated(u_int32_t image_security_version);
+
 #ifndef UEFI_BUILD
     static bool CheckPemKeySize(const string privPemFileStr, u_int32_t& keySize);
 #endif

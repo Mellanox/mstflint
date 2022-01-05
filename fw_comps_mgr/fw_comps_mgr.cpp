@@ -1924,6 +1924,7 @@ unsigned char*  FwCompsMgr::getLastErrMsg()
             return (unsigned char*)"LinkX activation failed";
         }
     }
+
     case FWCOMPS_MCC_REJECTED_INCOMPATIBLE_FLASH:
         return (unsigned char*)"The image does not support the device's flash type";
 

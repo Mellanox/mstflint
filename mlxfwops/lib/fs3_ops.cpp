@@ -1452,6 +1452,7 @@ bool Fs3Operations::FwSetMFG(fs3_uid_t baseGuid, PrintCallBack callBackFunc)
     if (!_ioAccess->is_flash() && !VerifyImageAfterModifications()) {
         return false;
     }
+
     return true;
 }
 

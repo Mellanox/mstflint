@@ -1881,6 +1881,7 @@ FlintStatus SignRSASubCommand::executeCommand()
         reportErr(true, IMAGE_SIGN_TYPE_ERROR);
         return FLINT_FAILED;
     }
+
     if (_flintParams.openssl_engine_usage_specified) {
 #if !defined(NO_OPEN_SSL) && !defined(NO_DYNAMIC_ENGINE)
         //* Init openssl engine for signing
@@ -3842,6 +3843,7 @@ FlintStatus QuerySubCommand::executeCommand()
     if (preFwOps() == FLINT_FAILED) {
         return FLINT_FAILED;
     }
+
     fw_info_t fwInfo;
     FwOperations *ops;
     bool fullQuery = false;
@@ -3967,6 +3969,7 @@ FlintStatus VerifySubCommand::executeCommand()
         reportErr(true, FLINT_CMD_VERIFY_ERROR_1);
         return FLINT_FAILED;
     }
+
     FwOperations *ops;
     bool showItoc = (_flintParams.cmd_params.size() == 1) ? true : false;
     //check on what we are wroking
@@ -4646,7 +4649,7 @@ SmgSubCommand::SmgSubCommand()
                     "Use -uid flag to set the desired GUIDs, intended for production use only.";
     _flagLong = "smg";
     _flagShort = "";
-    _param = "[guids_num=<num|num_port1,num_port2> step_size=<size|size_port1,size_port2>]";
+    _param = "guids_num=<num|num_port1,num_port2> step_size=<size|size_port1,size_port2>";
     _paramExp = "guids_num: (optional) number of GUIDs to be allocated per physical port\n"
                 "step_size: (optional) step size between GUIDs\n"
                 "Note: guids_num/step_size values can be specified per port or for both ports";
@@ -4764,7 +4767,7 @@ SetVpdSubCommand::SetVpdSubCommand()
     _extendedDesc = "Set Read-only VPD, Set VPD in the given FS3/FS4 image, intended for production use only.";
     _flagLong = "set_vpd";
     _flagShort = "";
-    _param = "[vpd file]";
+    _param = "<vpd file>";
     _paramExp = "vpd file: bin file containing the vpd data";
     _example = FLINT_NAME " -i fw_image.bin set_vpd vpd.bin"
 #ifndef __WIN__
@@ -4805,7 +4808,7 @@ SetPublicKeysSubCommand::SetPublicKeysSubCommand()
     _extendedDesc = "Set Public Keys in the given FS3/FS4 image.";
     _flagLong = "set_public_keys";
     _flagShort = "";
-    _param = "[public keys binary file]";
+    _param = "<public keys binary file>";
     _paramExp = "public keys file: bin file containing the public keys data";
     _example = FLINT_NAME " -i fw_image.bin set_public_keys publickeys.bin";
     _v = Wtv_Img;
@@ -4993,7 +4996,7 @@ DcSubCommand::DcSubCommand()
                     " Existence of this section depends on the version of the image generation tool.";
     _flagLong = "dc";
     _flagShort = "";
-    _param = "[out-file]";
+    _param = "<out-file>";
     _paramExp = "file: (optional) filename to write the dumped configuration to. If not given,"
                 " the data is printed to screen";
     _example = FLINT_NAME " -d " MST_DEV_EXAMPLE1 " dc";
@@ -5047,7 +5050,7 @@ DhSubCommand::DhSubCommand()
                     "This command would fail if the image does not contain a Hash file.";
     _flagLong = "dh";
     _flagShort = "";
-    _param = "[out-file]";
+    _param = "<out-file>";
     _paramExp = "file - (optional) filename to write the dumped tracer hash file to. If not given,"
                 " the data is printed to screen";
     _example = FLINT_NAME " -d " MST_DEV_EXAMPLE1 " dh hash.csv";
@@ -5102,7 +5105,7 @@ SetKeySubCommand::SetKeySubCommand()
     _extendedDesc = "Set/Update the HW access key which is used to enable/disable access to HW.";
     _flagLong = "set_key";
     _flagShort = "";
-    _param = "[key]";
+    _param = "<key>";
     _paramExp = "key: (optional) The new key you intend to set (in hex).";
     _example = FLINT_NAME " -d " MST_DEV_EXAMPLE1 " set_key 1234deaf5678";
     _v = Wtv_Dev;
@@ -5212,7 +5215,7 @@ HwAccessSubCommand::HwAccessSubCommand()
     _extendedDesc = "Enable/disable the access to the HW.";
     _flagLong = "hw_access";
     _flagShort = "";
-    _param = "<enable|disable> [key]";
+    _param = "[enable/disable] <key>";
     _paramExp = "<enable/disable>: Specify if you intend to disable or enable the HW access.\n"
                 "You will be asked to type a key when you try to enable HW access.\n"
                 "key: The key you intend to use for enabling the HW access, or disabling it in 5th Gen devices.\n"
@@ -5326,7 +5329,7 @@ HwSubCommand::HwSubCommand()
     _extendedDesc = "Access HW info and flash attributes.";
     _flagLong = "hw";
     _flagShort = "";
-    _param = "<query|set> [ATTR=VAL]";
+    _param = "[query/set] <ATTR=VAL>";
     _paramExp = "query: query HW info\n"
                 "set [ATTR=VAL]: set flash attribure\n"
                 "Supported attributes:\n"
@@ -5966,7 +5969,7 @@ RbSubCommand::RbSubCommand()
     _extendedDesc = "Read a data block from the flash and write it to a file or to screen.";
     _flagLong = "rb";
     _flagShort = "";
-    _param = "<addr> <size> [out-file]";
+    _param = "<addr> <size> <out-file>";
     _paramExp = "addr - address of block\n"
                 "size - size of data to read in bytes\n"
                 "file - filename to write the block (raw binary). If not given, the data is printed to screen";

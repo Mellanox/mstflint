@@ -1001,6 +1001,7 @@ bool Fs4Operations::parseDevData(bool readRom, bool quickQuery, bool verbose) {
 bool Fs4Operations::encryptedFwQuery(fw_info_t *fwInfo, bool readRom, bool quickQuery, bool ignoreDToc, bool verbose)
 {
     DPRINTF(("Fs4Operations::encryptedFwQuery\n"));
+
     if (!initHwPtrs(true)) {
         DPRINTF(("Fs4Operations::encryptedFwQuery HW pointers not found"));
         return false;
@@ -1187,7 +1188,7 @@ bool Fs4Operations::FwReadEncryptedData(void *image, u_int32_t imageSize, bool v
 
 bool Fs4Operations::FwReadData(void *image, u_int32_t *imageSize, bool verbose)
 {
-    
+
     //* Read encrypted data 
     bool is_encrypted = false;
     DPRINTF(("Fs4Operations::FwReadData\n"));
@@ -3030,7 +3031,6 @@ bool Fs4Operations::VerifyImageAfterModifications() {
 
 bool Fs4Operations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, bool is_sect_failsafe, CommandType cmd_type, PrintCallBack callBackFunc)
 {
-    (void) cmd_type;
     struct fs4_toc_info *curr_toc = (fs4_toc_info *)NULL;
     struct fs4_toc_info *old_toc = (fs4_toc_info *)NULL;
     std::vector<u_int8_t> newSection;
@@ -3852,6 +3852,7 @@ bool Fs4Operations::signForSecureBootUsingHSM(const char *public_key_file, const
     if (!initHwPtrs()) {
         return errmsg("signForSecureBootUsingHSM failed - Error: HW pointers not found");
     }
+
     SecureBootSignVersion secure_boot_version = getSecureBootSignVersion();
 
     if (!storePublicKeyInSection(public_key_file, uuid)) {

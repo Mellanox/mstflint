@@ -59,11 +59,13 @@
 #endif //NO_OPEN_SSL
 #endif //UEFI_BUILD
 
+
 #ifndef __WIN__
     #define OP_NOT_SUPPORTED EOPNOTSUPP
 #else // __WIN__
     #define OP_NOT_SUPPORTED EINVAL
 #endif // __WIN__
+
 
 #define BAD_CRC_MSG "Bad CRC."
 extern const char *g_sectNames[];
