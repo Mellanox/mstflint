@@ -150,8 +150,7 @@ bool Fs4Operations::IsEncryptedImage(bool& is_encrypted)
     READBUF((*_ioAccess), _itoc_ptr, buffer, TOC_HEADER_SIZE, "ITOC Header");
     image_layout_itoc_header_unpack(&itocHeader, buffer);
     if (!CheckTocSignature(&itocHeader, ITOC_ASCII)) { // Check first location of ITOC header magic-pattern
-        _itoc_ptr += FS4_DEFAULT_SECTOR_SIZE;
-        READBUF((*_ioAccess), _itoc_ptr, buffer, TOC_HEADER_SIZE, "ITOC Header");
+        READBUF((*_ioAccess), _itoc_ptr + FS4_DEFAULT_SECTOR_SIZE, buffer, TOC_HEADER_SIZE, "ITOC Header");
         image_layout_itoc_header_unpack(&itocHeader, buffer);
         if (!CheckTocSignature(&itocHeader, ITOC_ASCII)) { // Check second location of ITOC header magic-pattern
             is_encrypted = true;
