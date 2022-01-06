@@ -559,6 +559,7 @@ public:
     u_int32_t _protoAdminEx;
     u_int32_t _productTechnology;
     u_int32_t _moduleNumber;
+    u_int32_t _slotIndex;
     u_int32_t _linkSpeed;
     string _extAdbFile;
     string _device;

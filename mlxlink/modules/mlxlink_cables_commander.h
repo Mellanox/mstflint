@@ -153,6 +153,7 @@ public:
     u_int16_t getStatusBit(u_int32_t channel, u_int16_t val, u_int32_t statusMask);
 
     u_int32_t _moduleNumber;
+    u_int32_t _slotIndex;
     u_int32_t _cableIdentifier;
     bool _sfp51Paging;
     bool _passiveQsfp;
