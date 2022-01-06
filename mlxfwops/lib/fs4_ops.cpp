@@ -2073,7 +2073,7 @@ bool Fs4Operations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& bu
         }
 
         //* Parse DTOC and its sections
-        ((Fs4Operations*)imageOps)->parseDevData();
+        ((Fs4Operations*)imageOps)->parseDevData(true, false);
 
         //* DTOC sanity check
         if (!((Fs4Operations*)imageOps)->CheckDTocArray()) {
