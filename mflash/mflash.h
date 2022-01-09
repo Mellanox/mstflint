@@ -183,8 +183,7 @@ int     mf_cr_read(mflash *mfl, u_int32_t cr_addr, u_int32_t *data);
 int     mf_cr_write(mflash *mfl, u_int32_t cr_addr, u_int32_t data);
 
 int     mf_update_boot_addr(mflash *mfl, u_int32_t boot_addr);
-// Software reset the target device. Currently supported for InfiniScale4 switch via IB interface only.
-int     mf_sw_reset(mflash *mfl);
+
 //
 // mf_get_attr(): Returns the flash_attr struct
 //

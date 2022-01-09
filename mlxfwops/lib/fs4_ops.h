@@ -89,6 +89,7 @@ public:
     virtual bool storeSecureBootSignaturesInSection(vector<u_int8_t> boot_signature, vector<u_int8_t> critical_sections_signature = vector<u_int8_t>(),
                                                     vector<u_int8_t> non_critical_sections_signature = vector<u_int8_t>());
     virtual bool FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatternAndDevToc, bool verbose = false, bool ignoreImageStart = false);
+    virtual bool GetImageDataForSign(MlxSign::SHAType shaType, vector<u_int8_t>& img);
     virtual bool IsSecureBootSupported();
     virtual bool IsCableQuerySupported();
     virtual bool IsLifeCycleSupported();
@@ -110,8 +111,9 @@ public:
     bool DoAfterBurnJobs(const u_int32_t magic_patter[], ExtBurnParams& burnParams, Flash *flash_access,
                          u_int32_t new_image_start, u_int32_t log2_chunk_size);
     virtual void FwCleanUp();
-    bool IsLifeCycleValidInLivefish(chip_type_t chip_type);
+    bool IsLifeCycleAccessible(chip_type_t chip_type);
     bool IsSecurityVersionViolated(u_int32_t image_security_version);
+    bool GetImageInfo(u_int8_t *buff);
 
 protected:
     struct fs4_toc_info {
@@ -200,6 +202,8 @@ private:
     bool Fs4UpdateItocInfo(struct fs4_toc_info *curr_toc, u_int32_t NewSectSize,
                            std::vector<u_int8_t>&  newSectionData);
     bool FwReadData(void *image, u_int32_t *imageSize, bool verbose = false);
+    bool getEncryptedImageSize(u_int32_t *imageSize);
+    bool FwReadEncryptedData(void *image, u_int32_t imageSize, bool verbose);
     bool CreateDtoc(vector<u_int8_t>& img, u_int8_t* SectionData, u_int32_t section_size, u_int32_t flash_data_addr,
         fs3_section_t section, u_int32_t tocEntryAddr, CRCTYPE CRC);
     bool Fs4RemoveSectionAux(fs3_section_t sectionType);
@@ -242,7 +246,7 @@ private:
     bool CheckDTocArray();
     u_int32_t getImageSize();
     void maskDevToc(vector<u_int8_t>& img);
-    void maskIToCSection(u_int32_t itocType, vector<u_int8_t>& img);
+    void MaskItocSectionAndEntry(u_int32_t itocType, vector<u_int8_t>& img);
     bool Fs4UpdateSignatureSection(vector<u_int8_t>  sha256Buff,
                                    vector<u_int8_t>  &newSectionData);
     bool isDTocSection(fs3_section_t sect_type, bool& isDtoc);
@@ -254,11 +258,12 @@ private:
 
     bool GetSectionSizeAndOffset(fs3_section_t sectType, u_int32_t& size, u_int32_t& offset);
     SecureBootSignVersion getSecureBootSignVersion();
-    bool calcHashOnItoc(vector<u_int8_t>& hash);
+    bool calcHashOnItoc(vector<u_int8_t>& hash, u_int32_t itoc_addr);
     bool updateHashInHashesTable(fs3_section_t section_type, vector<u_int8_t> hash);
     bool QuerySecurityFeatures();
     bool IsEncryptedDevice(bool& is_encrypted);
     bool IsEncryptedImage(bool& is_encrypted);
+    void RemoveCRCsFromMainSection(vector<u_int8_t>& img);
 
     // Members
     Fs4ImgInfo _fs4ImgInfo;

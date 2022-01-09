@@ -281,7 +281,7 @@ bool Fs3Operations::GetMfgInfo(u_int8_t *buff)
 bool Fs3Operations::GetImageInfo(u_int8_t *buff)
 {
     DPRINTF(("Fs3Operations::GetImageInfo\n"));
-    struct cibfw_image_info image_info;
+    struct image_layout_image_info image_info;
     int IIMajor, IIMinor;
     // TODO: adrianc: use the version fields once they are available in tools layouts
     GET_IMAGE_INFO_VERSION(buff, IIMajor, IIMinor);
@@ -289,8 +289,8 @@ bool Fs3Operations::GetImageInfo(u_int8_t *buff)
     if (!CHECK_IMAGE_INFO_VERSION(IIMajor)) {
         return errmsg(MLXFW_UNKNOWN_SECT_VER_ERR, "Unknown IMAGE_INFO format version (%d.%d).", IIMajor, IIMinor);
     }
-    cibfw_image_info_unpack(&image_info, buff);
-    // cibfw_image_info_dump(&image_info, stdout);
+    image_layout_image_info_unpack(&image_info, buff);
+    //image_layout_image_info_dump(&image_info, stdout);
 
     _fwImgInfo.ext_info.image_info_minor_version = image_info.minor_version;
     _fwImgInfo.ext_info.image_info_major_version = image_info.major_version;
@@ -299,7 +299,7 @@ bool Fs3Operations::GetImageInfo(u_int8_t *buff)
     _fwImgInfo.ext_info.fw_ver[1] = image_info.FW_VERSION.MINOR;
     _fwImgInfo.ext_info.fw_ver[2] = image_info.FW_VERSION.SUBMINOR;
 
-    _fwImgInfo.ext_info.isfu_major = image_info.isfu.major;
+    _fwImgInfo.ext_info.isfu_major = image_info.module_versions.mad.major;
 
     _fwImgInfo.ext_info.mic_ver[0] = image_info.mic_version.MAJOR;
     _fwImgInfo.ext_info.mic_ver[1] = image_info.mic_version.MINOR;
@@ -308,6 +308,8 @@ bool Fs3Operations::GetImageInfo(u_int8_t *buff)
     _fwImgInfo.ext_info.fw_rel_date[0] = (u_int16_t)image_info.FW_VERSION.Day;
     _fwImgInfo.ext_info.fw_rel_date[1] = (u_int16_t)image_info.FW_VERSION.Month;
     _fwImgInfo.ext_info.fw_rel_date[2] = (u_int16_t)image_info.FW_VERSION.Year;
+
+    _fwImgInfo.ext_info.burn_image_size = image_info.burn_image_size;
 
     // assuming number of supported_hw_id < MAX_NUM_SUPP_HW_IDS
     memcpy(_fwImgInfo.supportedHwId, image_info.supported_hw_id, sizeof(image_info.supported_hw_id));
@@ -1252,12 +1254,12 @@ bool Fs3Operations::FsBurnAux(FwOperations *imgops, ExtBurnParams& burnParams)
             }
             // modify it:
             std::vector<u_int8_t> imageInfoSect = imageInfoToc->section_data;
-            struct cibfw_image_info image_info;
-            cibfw_image_info_unpack(&image_info, &imageInfoSect[0]);
+            struct image_layout_image_info image_info;
+            image_layout_image_info_unpack(&image_info, &imageInfoSect[0]);
             if (burnParams.vsdSpecified) {
                 strncpy(image_info.vsd, burnParams.userVsd, VSD_LEN);
             }
-            cibfw_image_info_pack(&image_info, &imageInfoSect[0]);
+            image_layout_image_info_pack(&image_info, &imageInfoSect[0]);
             if (burnParams.useDevImgInfo) {
                 // update PSID, name and description in image info
                 struct tools_open_image_info tools_image_info;
@@ -1450,6 +1452,7 @@ bool Fs3Operations::FwSetMFG(fs3_uid_t baseGuid, PrintCallBack callBackFunc)
     if (!_ioAccess->is_flash() && !VerifyImageAfterModifications()) {
         return false;
     }
+
     return true;
 }
 
@@ -2847,6 +2850,24 @@ u_int32_t Fs3Operations::getImageSize()
     return _fs3ImgInfo.sizeOfImgData - _fwImgInfo.imgStart;
 }
 
+bool Fs3Operations::GetImageDataForSign(MlxSign::SHAType shaType, vector<u_int8_t>& img)
+{
+    if (!FwExtract4MBImage(img, true)) {
+        return false;
+    }
+
+    if (shaType == MlxSign::SHA256) {
+        MaskItocSectionAndEntry(FS3_IMAGE_SIGNATURE_256, img);
+    } else if (shaType == MlxSign::SHA512) {
+        MaskItocSectionAndEntry(FS3_IMAGE_SIGNATURE_256, img);
+        MaskItocSectionAndEntry(FS3_IMAGE_SIGNATURE_512, img);
+    } else {
+        return errmsg("Unexpected type of SHA");
+    }
+
+    return true;
+}
+
 bool Fs3Operations::FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatternAndDevToc,
     bool verbose, bool ignoreImageStart)
 {
@@ -2871,7 +2892,7 @@ bool Fs3Operations::FwExtract4MBImage(vector<u_int8_t>& img, bool maskMagicPatte
     return true;
 }
 
-void Fs3Operations::maskIToCSection(u_int32_t itocType, vector<u_int8_t>& img)
+void Fs3Operations::MaskItocSectionAndEntry(u_int32_t itocType, vector<u_int8_t>& img)
 {
     for (int i = 0; i < _fs3ImgInfo.numOfItocs; i++) {
         if (_fs3ImgInfo.tocArr[i].toc_entry.type == itocType) {
@@ -3072,16 +3093,13 @@ bool Fs3Operations::FwCalcSHA(MlxSign::SHAType shaType, vector<u_int8_t>& sha, v
     MlxSignSHA *mlxSignSHA = NULL;
     FwInit();
     _imageCache.clear();
-    if (!FwExtract4MBImage(img, true)) {
+    if (!GetImageDataForSign(shaType, img)) {
         return false;
     }
 
     if (shaType == MlxSign::SHA256) {
-        maskIToCSection(FS3_IMAGE_SIGNATURE_256, img);
         mlxSignSHA = new MlxSignSHA256();
     } else if (shaType == MlxSign::SHA512) {
-        maskIToCSection(FS3_IMAGE_SIGNATURE_256, img);
-        maskIToCSection(FS3_IMAGE_SIGNATURE_512, img);
         mlxSignSHA = new MlxSignSHA512();
     } else {
         return errmsg("Unexpected type of SHA");
@@ -3563,7 +3581,7 @@ bool Fs3Operations::CalcHMAC(const vector<u_int8_t>& key, vector<u_int8_t>& dige
     }
 
     //mask hmac itoc entry and section
-    maskIToCSection(FS3_HMAC, data);
+    MaskItocSectionAndEntry(FS3_HMAC, data);
 
     //mask magic pattern (First 16 bytes):
     for (unsigned int i = 0; i < 16; i++) {

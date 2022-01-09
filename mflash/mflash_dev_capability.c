@@ -147,11 +147,9 @@ int is_icmdif_supported(mflash *mfl, MfError *status, int *is7NmSuppported)
     case DeviceConnectX5:
     case DeviceBlueField:
     case DeviceBlueField2:
-    case DeviceBlueField3:
     case DeviceQuantum:
     case DeviceSpectrum2:
     case DeviceSpectrum3:
-    case DeviceSpectrum4:
     case DeviceConnectX6:
     case DeviceConnectX6DX:
     case DeviceConnectX6LX:
@@ -159,8 +157,10 @@ int is_icmdif_supported(mflash *mfl, MfError *status, int *is7NmSuppported)
     case DeviceGearBoxManager:
         *is7NmSuppported = 0;
         return 1;
-    case DeviceConnectX7:
     case DeviceQuantum2:
+    case DeviceSpectrum4:
+    case DeviceConnectX7:
+    case DeviceBlueField3:
         *is7NmSuppported = 1;
         return 1;
     default:
@@ -170,44 +170,3 @@ int is_icmdif_supported(mflash *mfl, MfError *status, int *is7NmSuppported)
     }
 }
 
-//When (*status != MFE_OK) return value is undefined
-int is_supports_sw_reset(mflash *mfl, MfError *status)
-{
-    *status = MFE_OK;
-
-    switch (mfl->dm_dev_id) {
-    case DeviceInfiniScaleIV:
-    case DeviceSwitchX:
-    case DeviceSwitchIB:
-    case DeviceSwitchIB2:
-    case DeviceQuantum:
-    case DeviceQuantum2:
-        return 1;
-    case DeviceConnectX2:
-    case DeviceConnectX3:
-    case DeviceConnectX3Pro:
-    case DeviceConnectIB:
-    case DeviceSpectrum:
-    case DeviceConnectX4:
-    case DeviceConnectX4LX:
-    case DeviceConnectX5:
-    case DeviceBlueField:
-    case DeviceBlueField2:
-    case DeviceBlueField3:
-    case DeviceConnectX6:
-    case DeviceConnectX6DX:
-    case DeviceConnectX6LX:
-    case DeviceConnectX7:
-    case DeviceSpectrum2:
-    case DeviceSpectrum3:
-    case DeviceSpectrum4:
-    case DeviceSecureHost:
-    case DeviceGearBox:
-    case DeviceGearBoxManager:
-        return 0;
-    default:
-        *status = MFE_UNSUPPORTED_DEVICE;
-        fprintf(stderr, "The device type %d is not supported.\n", mfl->dm_dev_id);
-        return 0;
-    }
-}

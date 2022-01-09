@@ -111,7 +111,7 @@ bool DMAComponentAccess::prepareParameters(u_int32_t updateHandle, mcddReg* acce
     accessData->mailbox_page_phys_addr_lsb = EXTRACT64(mailbox_page.dma_address, 0, 32);
     accessData->mailbox_page_phys_addr_msb = EXTRACT64(mailbox_page.dma_address, 32, 32);
     int currentOffset = data_size - leftSize;
-    if (access == MCDA_WRITE_COMP) {
+    if (access == MCC_WRITE_COMP) {
         u_int32_t* data_ptr = (u_int32_t*)page.virtual_address;
         for (int i = 0; i < accessData->size / 4; i++) {
             *data_ptr = ___my_swab32(data[(currentOffset) / 4 + i]);
@@ -173,6 +173,7 @@ bool DMAComponentAccess::isBMESet(mfile* mf) {
     }
     #endif
 
+    DPRINTF(("DMAComponentAccess::isBMESet res = %s\n", res ? "TRUE" : "FALSE"));
     return res;
 }
 
@@ -219,10 +220,10 @@ bool DMAComponentAccess::accessComponent(u_int32_t updateHandle, u_int32_t offse
         int nMaximumSleepTime = 0;
         tools_open_mcdd_descriptor mailboxVirtPtr_1;
         if (progressFuncAdv && progressFuncAdv->func) {
-            snprintf(stage, MAX_MSG_SIZE, "%s %s component", (access == MCDA_READ_COMP) ? "Reading" : "Writing", currComponentStr);
+            snprintf(stage, MAX_MSG_SIZE, "%s %s component", (access == MCC_READ_COMP) ? "Reading" : "Writing", currComponentStr);
         }
         //updateHandle &= ~0xff000000;
-        DPRINTF(("DMAComponentAccess::AccessComponent BEGIN size %d access %s\n", data_size, (access == MCDA_READ_COMP) ? "READ" : "WRITE"));
+        DPRINTF(("DMAComponentAccess::AccessComponent BEGIN size %d access %s\n", data_size, (access == MCC_READ_COMP) ? "READ" : "WRITE"));
         mcddReg accessData;
         mtcr_page_addresses page = _allocatedListVect[CurrentPage];
         mtcr_page_addresses mailboxPage = _allocatedListVect[FMPT_MAILBOX_PAGE];
@@ -230,19 +231,19 @@ bool DMAComponentAccess::accessComponent(u_int32_t updateHandle, u_int32_t offse
         int maxDataSize = data_size > PAGE_SIZE ? PAGE_SIZE : data_size;
         memset(&accessData, 0, TOOLS_OPEN_MCDD_REG_SIZE);
 
-        if (access == MCDA_READ_COMP) {
+        if (access == MCC_READ_COMP) {
             memset(data , 0, data_size);
         }
         prepareParameters(updateHandle, &accessData, offset + (data_size - leftSize), data, data_size, access, leftSize, page, mailboxPage);
         int nIteration = 0;
         while (leftSize > 0) {
-            DPRINTF(("0x%x bytes left to %s\n", leftSize, access == MCDA_READ_COMP ? "read" : "burn"));
+            DPRINTF(("0x%x bytes left to %s\n", leftSize, access == MCC_READ_COMP ? "read" : "burn"));
             memset((u_int8_t*)mailboxPage.virtual_address, 0, TOOLS_OPEN_MCDD_DESCRIPTOR_SIZE);
             memset(&mailboxVirtPtr_1, 0, TOOLS_OPEN_MCDD_DESCRIPTOR_SIZE);//set zero before each transaction
             maxDataSize = leftSize > PAGE_SIZE ? PAGE_SIZE : leftSize;
             mft_signal_set_handling(1);
 
-            reg_access_status_t rc = reg_access_mcdd(_mf, (access == MCDA_READ_COMP) ? REG_ACCESS_METHOD_GET : REG_ACCESS_METHOD_SET, &accessData);
+            reg_access_status_t rc = reg_access_mcdd(_mf, (access == MCC_READ_COMP) ? REG_ACCESS_METHOD_GET : REG_ACCESS_METHOD_SET, &accessData);
             _manager->deal_with_signal();
             if (rc) {
                 DPRINTF(("CRITICAL : DMAComponentAccess::AccessComponent reg_access_mcdd ERROR: %#x\n", rc));
@@ -252,7 +253,7 @@ bool DMAComponentAccess::accessComponent(u_int32_t updateHandle, u_int32_t offse
             }
 
             //if we write a data, meawhile use a time for prepare next data page
-            if (access == MCDA_WRITE_COMP) {
+            if (access == MCC_WRITE_COMP) {
                 leftSize -= maxDataSize;
                 if (leftSize > 0)
                 {
@@ -309,7 +310,7 @@ bool DMAComponentAccess::accessComponent(u_int32_t updateHandle, u_int32_t offse
             }
 
             // read the data from FW (from page.virtual_address -> to 'data' array)
-            if (access == MCDA_READ_COMP) {
+            if (access == MCC_READ_COMP) {
                 DPRINTF(("READ mailboxVirtPtr->status = %d\r\n", mailboxVirtPtr_1.status));
                 readFromDataPage(&accessData, page, data, data_size, leftSize);
                 leftSize -= maxDataSize;

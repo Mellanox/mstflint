@@ -32,7 +32,7 @@
  
 
 /***
-         *** This file was generated at "2021-10-25 13:11:03"
+         *** This file was generated at "2021-11-08 14:11:31"
          *** by:
          ***    > /mswg/release/tools/a-me/last_stable/adabe_plugins/adb2c/adb2pack.py --input adb/image_layout/image_layout.adb --file-prefix image_layout --prefix image_layout_ --no-adb-utils
          ***/
@@ -642,6 +642,10 @@ For Golan A0, first entry should be 0x1ff
 	/* Description -  */
 	/* 0x128.0 - 0x128.31 */
 	u_int32_t ini_file_num;
+/*---------------- DWORD[75] (Offset 0x12c) ----------------*/
+	/* Description -  */
+	/* 0x12c.0 - 0x12c.31 */
+	u_int32_t burn_image_size;
 /*---------------- DWORD[100] (Offset 0x190) ----------------*/
 	/* Description -  */
 	/* 0x190.0 - 0x1bc.31 */
@@ -818,26 +822,26 @@ struct image_layout_tools_area {
 union image_layout_image_layout_Nodes {
 /*---------------- DWORD[0] (Offset 0x0) ----------------*/
 	/* Description -  */
-	/* 0x0.0 - 0x1c.31 */
-	struct image_layout_itoc_header itoc_header;
-	/* Description -  */
-	/* 0x0.0 - 0x3c.31 */
-	struct image_layout_tools_area tools_area;
+	/* 0x0.0 - 0x80c.31 */
+	struct image_layout_hashes_table hashes_table;
 	/* Description -  */
 	/* 0x0.0 - 0x1c.31 */
 	struct image_layout_itoc_entry itoc_entry;
 	/* Description -  */
-	/* 0x0.0 - 0x80c.31 */
-	struct image_layout_hashes_table hashes_table;
+	/* 0x0.0 - 0x1c.31 */
+	struct image_layout_itoc_header itoc_header;
+	/* Description -  */
+	/* 0x0.0 - 0x1fc.31 */
+	struct image_layout_device_info device_info;
+	/* Description -  */
+	/* 0x0.0 - 0x3c.31 */
+	struct image_layout_tools_area tools_area;
 	/* Description -  */
 	/* 0x0.0 - 0x3fc.31 */
 	struct image_layout_image_info image_info;
 	/* Description -  */
 	/* 0x0.0 - 0x7c.31 */
 	struct image_layout_hw_pointers_carmel hw_pointers_carmel;
-	/* Description -  */
-	/* 0x0.0 - 0x1fc.31 */
-	struct image_layout_device_info device_info;
 };
 
 

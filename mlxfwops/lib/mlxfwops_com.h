@@ -471,6 +471,8 @@ typedef struct fw_info_com {
     char branch_ver[BRANCH_LEN + 1];
     char running_branch_ver[BRANCH_LEN + 1];
     u_int8_t encrypted_fw;
+    u_int32_t burn_image_size;  //! Be aware! This field is backward compatible starting from BB/CX-7 
+                                //! Use this field only for encrypted images
 } fw_info_com_t;
 
 typedef struct fw_info_ext {

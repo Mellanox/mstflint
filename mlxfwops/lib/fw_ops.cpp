@@ -59,6 +59,14 @@
 #endif //NO_OPEN_SSL
 #endif //UEFI_BUILD
 
+
+#ifndef __WIN__
+    #define OP_NOT_SUPPORTED EOPNOTSUPP
+#else // __WIN__
+    #define OP_NOT_SUPPORTED EINVAL
+#endif // __WIN__
+
+
 #define BAD_CRC_MSG "Bad CRC."
 extern const char *g_sectNames[];
 
@@ -697,35 +705,31 @@ FwOperations* FwOperations::FwOperationsCreate(void *fwHndl, void *info, char *p
     return FwOperationsCreate(fwParams);
 }
 
-bool FwOperations::imageDevOperationsCreate(fw_ops_params_t& devParams, fw_ops_params_t& imgParams, FwOperations **devFwOps, FwOperations **imgFwOps, bool ignoreSecurityAttributes, bool ignoreDToc)
+bool FwOperations::imageDevOperationsCreate(fw_ops_params_t& devParams, fw_ops_params_t& imgParams,
+                                            FwOperations **devFwOps, FwOperations **imgFwOps,
+                                            bool ignoreSecurityAttributes, bool ignoreDToc)
 {
     *imgFwOps = FwOperationsCreate(imgParams);
     if (!(*imgFwOps)) {
         return false;
     }
 
-    bool is_encrypted = false;
-    if (!(*imgFwOps)->isEncrypted(is_encrypted)) {
-        return false;
-    }
-    if (!is_encrypted) {
-        if ((*imgFwOps)->FwType() == FIT_FS2) {
-            devParams.canSkipFwCtrl = true;
-            *devFwOps = FwOperationsCreate(devParams);
-            if (!(*devFwOps)) {
-                return false;
-            }
-            return true;
-        }
-
-        fw_info_t imgQuery;
-        memset(&imgQuery, 0, sizeof(fw_info_t));
-        if (!(*imgFwOps)->FwQuery(&imgQuery, true, false, true, ignoreDToc)) {
+    if ((*imgFwOps)->FwType() == FIT_FS2) {
+        devParams.canSkipFwCtrl = true;
+        *devFwOps = FwOperationsCreate(devParams);
+        if (!(*devFwOps)) {
             return false;
         }
-        if (imgQuery.fs3_info.security_mode == SM_NONE && ignoreSecurityAttributes == false) {
-            devParams.noFwCtrl = true;
-        }
+        return true;
+    }
+
+    fw_info_t imgQuery;
+    memset(&imgQuery, 0, sizeof(fw_info_t));
+    if (!(*imgFwOps)->FwQuery(&imgQuery, true, false, true, ignoreDToc)) {
+        return false;
+    }
+    if (imgQuery.fs3_info.security_mode == SM_NONE && ignoreSecurityAttributes == false) {
+        devParams.noFwCtrl = true;
     }
 
     *devFwOps = FwOperationsCreate(devParams);
@@ -1456,12 +1460,16 @@ bool FwOperations::CheckFwVersion(FwOperations &imageOps,
 
 bool FwOperations::FwSwReset()
 {
-    if (!_ioAccess->is_flash()) {
-        return errmsg("operation supported only for switch devices: InfiniScaleIV SwitchX and SwitchIB over an IB interface");
+    if (msw_reset(getMfileObj())) {
+        if (errno == EPERM) {
+            return errmsg("operation supported only for IB switches.");
+        } else if (errno == OP_NOT_SUPPORTED) {
+            return errmsg("operation supported only for un-managed switches.");
+        } else {
+            return errmsg("operation failed, errno - %d.", errno);
+        }
     }
-    if (!_ioAccess->sw_reset()) {
-        return errmsg("%s",  _ioAccess->err());
-    }
+
     return true;
 }
 
@@ -2496,14 +2504,14 @@ bool FwOperations::VerifyBranchFormat(const char* vsdString)
     return false;
 }
 
-bool FwOperations::IsLifeCycleValidInLivefish(chip_type_t)
+bool FwOperations::IsLifeCycleAccessible(chip_type_t)
 {
-    return errmsg("IsLifeCycleValidInLivefish not supported.");
+    return errmsg("IsLifeCycleAccessible not supported.");
 }
 
 bool FwOperations::IsSecurityVersionViolated(u_int32_t)
 {
-    return errmsg("IsSecurityVersionViolated not supported.");
+    return false;
 }
 
 #if !defined(UEFI_BUILD) && !defined(NO_OPEN_SSL)
@@ -2557,7 +2565,8 @@ life_cycle_t CRSpaceRegisters::getLifeCycle()
             bitLen = 2;
             break;
         case CT_CONNECTX7:
-        case CT_QUANTUM2:            
+        case CT_QUANTUM2:
+        case CT_BLUEFIELD3:
             lifeCycleAddress = 0xf0000;
             firstBit = 4;
             bitLen = 2;
