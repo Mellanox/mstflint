@@ -471,13 +471,16 @@ bool Fs4Operations::verifyTocHeader(u_int32_t tocAddr, bool isDtoc, VerifyCallBa
 */
 void Fs4Operations::RemoveCRCsFromMainSection(vector<u_int8_t>& img) {
     //* Get MAIN section ITOC entry
-    struct fs4_toc_info *main_itoc_entry = NULL;
+    struct fs4_toc_info* main_itoc_entry = NULL;
     fs4_toc_info *itoc_entries = _fs4ImgInfo.itocArr.tocArr;
     for (int i = 0; i < _fs4ImgInfo.itocArr.numOfTocs; i++) {
         if (itoc_entries[i].toc_entry.type == FS3_MAIN_CODE) {
             main_itoc_entry = &(itoc_entries[i]);
             break;
         }
+    }
+    if (main_itoc_entry == NULL) {
+        return;
     }
 
     u_int32_t main_addr = main_itoc_entry->toc_entry.flash_addr << 2; // addr in entry is in DW
