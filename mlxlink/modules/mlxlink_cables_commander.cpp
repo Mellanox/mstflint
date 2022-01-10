@@ -35,6 +35,7 @@
 MlxlinkCablesCommander::MlxlinkCablesCommander(Json::Value &jsonRoot): _jsonRoot(jsonRoot)
 {
     _moduleNumber = 0;
+    _slotIndex = 0;
     _sfp51Paging = false;
     _passiveQsfp = false;
     _localPort = 0;
@@ -52,6 +53,7 @@ void MlxlinkCablesCommander::readMCIA(u_int32_t page, u_int32_t size,
     string regName = "MCIA";
     resetParser(regName);
     updateField("module", _moduleNumber);
+    updateField("slot_index", _slotIndex);
     updateField("size", size);
     updateField("page_number", page);
     updateField("device_address", offset);
@@ -81,6 +83,7 @@ void MlxlinkCablesCommander::writeMCIA(u_int32_t page, u_int32_t size,
     string regName = "MCIA";
     resetParser(regName);
     updateField("module", _moduleNumber);
+    updateField("slot_index", _slotIndex);
     updateField("size", dataSize);
     updateField("page_number", page);
     updateField("device_address", offset);

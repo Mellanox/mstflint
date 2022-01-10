@@ -63,6 +63,7 @@ MlxlinkCommander::MlxlinkCommander() : _userInput()
     _moduleTemp = "N/A";
     _cableMediaType = 0;
     _moduleNumber = 0;
+    _slotIndex = 0;
     _uniqueCmds = 0;
     _networkCmds = 0;
     _activeSpeed = 0;
@@ -522,6 +523,7 @@ void MlxlinkCommander::labeltoDSlocalPort()
 
         if ((getFieldValue("label_port") == port) && (getFieldValue("slot_num") == lineCard)) {
             _localPort = localPort;
+            _slotIndex = lineCard;
             isLocalPortValid = true;
             break;
         }
@@ -1428,6 +1430,7 @@ void MlxlinkCommander::showModuleInfo()
         string regName = "PMAOS";
         resetParser(regName);
         updateField("module", _moduleNumber);
+        updateField("slot_index", _slotIndex);
         genBuffSendRegister(regName, MACCESS_REG_METHOD_GET);
         u_int32_t oper_status = getFieldValue("oper_status");
 
@@ -4420,6 +4423,7 @@ void MlxlinkCommander::initCablesCommander()
         _cablesCommander->_gvmiAddress = _gvmiAddress;
         _cablesCommander->_mlxlinkLogger = _mlxlinkLogger;
         _cablesCommander->_moduleNumber = _moduleNumber;
+        _cablesCommander->_slotIndex = _slotIndex;
         _cablesCommander->_localPort = _localPort;
         _cablesCommander->_numOfLanes = _numOfLanes;
         _cablesCommander->_cableIdentifier = _cableIdentifier;
