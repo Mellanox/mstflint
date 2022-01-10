@@ -65,7 +65,7 @@ bool BluefieldFwOperationsSignatureManager::AddSignature(mfile* mf, Fs3Operation
         // burn the HMAC digest
         u_int32_t sectionSize = 0x0;
         u_int32_t sectionOffset = 0x0;
-        if (!imageOps->GetSectionSizeAndOffset(FS3_HMAC, sectionSize, sectionOffset)) {
+        if (!imageOps->GetSectionSizeAndOffset(FS3_HMAC_DIGEST, sectionSize, sectionOffset)) {
             return errmsg("Could not retrieve HMAC section size and offset");
         }
 

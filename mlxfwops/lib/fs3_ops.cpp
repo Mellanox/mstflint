@@ -83,57 +83,69 @@ const u_int32_t Fs3Operations::_itocSignature[4] = {
 };
 
 const Fs3Operations::SectionInfo Fs3Operations::_fs3SectionsInfoArr[] = {
-    {FS3_END,           "END"},
-    {FS3_ITOC,          "ITOC_HEADER"},
-
-    {FS3_BOOT_CODE,     "BOOT_CODE"},
-    {FS3_PCI_CODE,      "PCI_CODE"},
-    {FS3_MAIN_CODE,     "MAIN_CODE"},
-    {FS3_PCIE_LINK_CODE, "PCIE_LINK_CODE"},
-    {FS3_IRON_PREP_CODE, "IRON_PREP_CODE"},
-    {FS3_POST_IRON_BOOT_CODE, "POST_IRON_BOOT_CODE"},
-    {FS3_UPGRADE_CODE,  "UPGRADE_CODE"},
-    {FS3_HW_BOOT_CFG,   "HW_BOOT_CFG"},
-    {FS3_HW_MAIN_CFG,   "HW_MAIN_CFG"},
-    {FS3_PHY_UC_CODE,   "PHY_UC_CODE"},
-    {FS3_PHY_UC_CONSTS, "PHY_UC_CONSTS"},
-    {FS3_PHY_UC_CMD,    "PHY_UC_CMD"},
-    {FS4_BOOT3_CODE,    "BOOT3_CODE"},
-    {FS3_IMAGE_INFO,    "IMAGE_INFO"},
-    {FS3_FW_BOOT_CFG,   "FW_BOOT_CFG"},
-    {FS3_FW_MAIN_CFG,   "FW_MAIN_CFG"},
-    {FS3_ROM_CODE,      "ROM_CODE"},
-    {FS3_RESET_INFO,    "FS3_RESET_INFO"},
-    {FS3_DBG_FW_INI,    "DBG_FW_INI"},
-    {FS3_DBG_FW_PARAMS, "DBG_FW_PARAMS"},
-    {FS3_FW_ADB,        "FW_ADB"},
-    {FS3_IMAGE_SIGNATURE_256, "IMAGE_SIGNATURE_256"},
-    {FS3_PUBLIC_KEYS_2048,   "PUBLIC_KEYS_2048"},
-    {FS3_PUBLIC_KEYS_4096,   "PUBLIC_KEYS_4096"},
-    {FS3_FORBIDDEN_VERSIONS, "FORBIDDEN_VERSIONS"},
-    {FS3_IMAGE_SIGNATURE_512, "IMAGE_SIGNATURE_512"},
-    {FS3_CRDUMP_MASK_DATA, "CRDUMP_MASK_DATA"},
-    {FS3_HMAC,          "HMAC"},
-    {FS3_MFG_INFO,      MFG_INFO},
-    {FS3_DEV_INFO,      "DEV_INFO"},
-    {FS3_NV_DATA1,      "NV_DATA"},
-    {FS3_VPD_R0,        "VPD_R0"},
-    {FS3_NV_DATA2,      "NV_DATA"},
-    {FS3_NV_DATA0,      "NV_DATA"},
-    {FS3_FW_NV_LOG,     "FW_NV_LOG"},
-    {FS3_NV_DATA0,      "NV_DATA"},
-    {FS4_PART_TYPE_FW_INTERNAL_USAGE ,  "PART_TYPE_FW_INTERNAL_USAGE"},
-    {FS4_PART_TYPE_PROGRAMMABLE_HW_FW1, "FS4_PART_TYPE_PROGRAMMABLE_HW_FW"},
-    {FS4_PART_TYPE_PROGRAMMABLE_HW_FW2, "FS4_PART_TYPE_PROGRAMMABLE_HW_FW"},
-    {FS4_LC_INI1_TABLE, "FS4_LC_INI1_TABLE"},
-    {FS4_LC_INI2_TABLE, "FS4_LC_INI2_TABLE"},
-    {FS4_LC_INI_NV_DATA, "FS4_LC_INI_NV_DATA"},
-    {FS3_DTOC,          "DTOC_HEADER"},
-    {FS4_HW_PTR,    "HW_POINTERS"},
-    {FS4_TOOLS_AREA,    "TOOLS_AREA"},
-    {FS4_RSA_PUBLIC_KEY, "FS4_RSA_PUBLIC_KEY"},
-    {FS4_RSA_4096_SIGNATURES, "FS4_RSA_4096_SIGNATURES"},
-    {FS4_HASHES_TABLE, "HASHES_TABLE"}
+    {FS3_END,                           "END"},
+    {FS3_ITOC,                          "ITOC_HEADER"},
+    {FS3_BOOT_CODE,                     "BOOT_CODE"},
+    {FS3_PCI_CODE,                      "PCI_CODE"},
+    {FS3_MAIN_CODE,                     "MAIN_CODE"},
+    {FS3_PCIE_LINK_CODE,                "PCIE_LINK_CODE"},
+    {FS3_IRON_PREP_CODE,                "IRON_PREP_CODE"},
+    {FS3_POST_IRON_BOOT_CODE,           "POST_IRON_BOOT_CODE"},
+    {FS3_UPGRADE_CODE,                  "UPGRADE_CODE"},
+    {FS3_HW_BOOT_CFG,                   "HW_BOOT_CFG"},
+    {FS3_HW_MAIN_CFG,                   "HW_MAIN_CFG"},
+    {FS3_PHY_UC_CODE,                   "PHY_UC_CODE"},
+    {FS3_PHY_UC_CONSTS,                 "PHY_UC_CONSTS"},
+    {FS3_PCIE_PHY_UC_CODE,              "PCIE_PHY_UC_CODE"},
+    {FS3_CCIR_INFRA_CODE,               "CCIR_INFRA_CODE"},
+    {FS3_CCIR_ALGO_CODE,                "CCIR_ALGO_CODE"},
+    {FS4_BOOT3_CODE,                    "BOOT3_CODE"},
+    {FS3_IMAGE_INFO,                    "IMAGE_INFO"},
+    {FS3_FW_BOOT_CFG,                   "FW_BOOT_CFG"},
+    {FS3_FW_MAIN_CFG,                   "FW_MAIN_CFG"},
+    {FS3_APU_KERNEL,                    "APU_KERNEL"},
+    {FS3_APU_APPS,                      "APU_APPS"},
+    {FS3_ROM_CODE,                      "ROM_CODE"},
+    {FS3_RESET_INFO,                    "RESET_INFO"},
+    {FS3_DBG_FW_INI,                    "DBG_FW_INI"},
+    {FS3_DBG_FW_PARAMS,                 "DBG_FW_PARAMS"},
+    {FS3_FW_ADB,                        "FW_ADB"},
+    {FS4_GB_FW_CODE,                    "GB_FW_CODE"},
+    {FS4_TILE_FW_CODE,                  "TILE_FW_CODE"},
+    {FS4_FW_TILE_INI,                   "FW_TILE_INI"},
+    {FS4_HW_TILE_INI,                   "HW_TILE_INI"},
+    {FS3_IMAGE_SIGNATURE_256,           "IMAGE_SIGNATURE_256"},
+    {FS3_PUBLIC_KEYS_2048,              "PUBLIC_KEYS_2048"},
+    {FS3_PUBLIC_KEYS_4096,              "PUBLIC_KEYS_4096"},
+    {FS3_FORBIDDEN_VERSIONS,            "FORBIDDEN_VERSIONS"},
+    {FS3_IMAGE_SIGNATURE_512,           "IMAGE_SIGNATURE_512"},
+    {FS3_CRDUMP_MASK_DATA,              "CRDUMP_MASK_DATA"},
+    {FS3_HMAC_DIGEST,                   "HMAC_DIGEST"},
+    {FS3_MFG_INFO,                      MFG_INFO},
+    {FS3_DEV_INFO,                      DEV_INFO},
+    {FS3_NV_DATA1,                      "NV_DATA"},
+    {FS3_VPD_R0,                        "VPD_R0"},
+    {FS3_NV_DATA2,                      "NV_DATA"},
+    {FS3_FW_NV_LOG,                     "FW_NV_LOG"},
+    {FS3_NV_DATA0,                      "NV_DATA"},
+    {FS4_DEV_INFO1,                     "DEV_INFO1"},
+    {FS4_DEV_INFO2,                     "DEV_INFO2"},
+    {FS4_FW_INTERNAL_USAGE,             "FW_INTERNAL_USAGE"},
+    {FS4_PROGRAMMABLE_HW_FW1,           "PROGRAMMABLE_HW_FW"},
+    {FS4_PROGRAMMABLE_HW_FW2,           "PROGRAMMABLE_HW_FW"},
+    {FS4_DIGITAL_CERT_PTR,              "DIGITAL_CERT_PTR"},
+    {FS4_DIGITAL_CERT_RW,               "DIGITAL_CERT_RW"},
+    {FS4_LC_INI1_TABLE,                 "LC_INI1_TABLE"},
+    {FS4_LC_INI2_TABLE,                 "LC_INI2_TABLE"},
+    {FS4_LC_INI_NV_DATA,                "LC_INI_NV_DATA"},
+    {FS4_CERT_CHAIN_0,                  "CERT_CHAIN_0"},
+    {FS4_DIGITAL_CACERT_RW,             "DIGITAL_CACERT_RW"},
+    {FS3_DTOC,                          "DTOC_HEADER"},
+    {FS4_HW_PTR,                        "HW_POINTERS"},
+    {FS4_TOOLS_AREA,                    "TOOLS_AREA"},
+    {FS4_RSA_PUBLIC_KEY,                "RSA_PUBLIC_KEY"},
+    {FS4_RSA_4096_SIGNATURES,           "RSA_4096_SIGNATURES"},
+    {FS4_HASHES_TABLE,                  "HASHES_TABLE"}
 };
 
 bool Fs3Operations::Fs3UpdateImgCache(u_int8_t *buff, u_int32_t addr, u_int32_t size)
@@ -3271,7 +3283,7 @@ bool Fs3Operations::CheckItocArray()
 
 bool Fs3Operations::IsCriticalSection(u_int8_t sect_type)
 {
-    if (sect_type != FS3_PCIE_LINK_CODE && sect_type != FS3_PHY_UC_CMD && sect_type != FS3_HW_BOOT_CFG)
+    if (sect_type != FS3_PCIE_LINK_CODE && sect_type != FS3_PCIE_PHY_UC_CODE && sect_type != FS3_HW_BOOT_CFG)
         return false;
     return true;
 }
@@ -3581,7 +3593,7 @@ bool Fs3Operations::CalcHMAC(const vector<u_int8_t>& key, vector<u_int8_t>& dige
     }
 
     //mask hmac itoc entry and section
-    MaskItocSectionAndEntry(FS3_HMAC, data);
+    MaskItocSectionAndEntry(FS3_HMAC_DIGEST, data);
 
     //mask magic pattern (First 16 bytes):
     for (unsigned int i = 0; i < 16; i++) {
@@ -3591,7 +3603,7 @@ bool Fs3Operations::CalcHMAC(const vector<u_int8_t>& key, vector<u_int8_t>& dige
     //Remove the HMAC section from the end of the buffer
     u_int32_t hmacSectionSize = 0x0;
     u_int32_t hmacSectionOffset = 0x0;
-    if (!GetSectionSizeAndOffset(FS3_HMAC, hmacSectionSize, hmacSectionOffset)) {
+    if (!GetSectionSizeAndOffset(FS3_HMAC_DIGEST, hmacSectionSize, hmacSectionOffset)) {
         return errmsg("HMAC section is not found\n");
     }
 

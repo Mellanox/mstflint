@@ -150,8 +150,7 @@ bool Fs4Operations::IsEncryptedImage(bool& is_encrypted)
     READBUF((*_ioAccess), _itoc_ptr, buffer, TOC_HEADER_SIZE, "ITOC Header");
     image_layout_itoc_header_unpack(&itocHeader, buffer);
     if (!CheckTocSignature(&itocHeader, ITOC_ASCII)) { // Check first location of ITOC header magic-pattern
-        _itoc_ptr += FS4_DEFAULT_SECTOR_SIZE;
-        READBUF((*_ioAccess), _itoc_ptr, buffer, TOC_HEADER_SIZE, "ITOC Header");
+        READBUF((*_ioAccess), _itoc_ptr + FS4_DEFAULT_SECTOR_SIZE, buffer, TOC_HEADER_SIZE, "ITOC Header");
         image_layout_itoc_header_unpack(&itocHeader, buffer);
         if (!CheckTocSignature(&itocHeader, ITOC_ASCII)) { // Check second location of ITOC header magic-pattern
             is_encrypted = true;
@@ -2074,7 +2073,7 @@ bool Fs4Operations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& bu
         }
 
         //* Parse DTOC and its sections
-        ((Fs4Operations*)imageOps)->parseDevData();
+        ((Fs4Operations*)imageOps)->parseDevData(true, false);
 
         //* DTOC sanity check
         if (!((Fs4Operations*)imageOps)->CheckDTocArray()) {
@@ -4144,7 +4143,7 @@ bool Fs4Operations::getCriticalNonCriticalSections(vector<u_int8_t>& critical, v
 
 bool Fs4Operations::IsCriticalSection(u_int8_t sect_type)
 {
-    if (sect_type != FS3_PCIE_LINK_CODE && sect_type != FS3_PHY_UC_CMD && sect_type != FS3_HW_BOOT_CFG)
+    if (sect_type != FS3_PCIE_LINK_CODE && sect_type != FS3_PCIE_PHY_UC_CODE && sect_type != FS3_HW_BOOT_CFG)
         return false;
     return true;
 }
