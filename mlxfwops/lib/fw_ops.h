@@ -413,7 +413,6 @@ protected:
     #define FS3_IND_ADDR 0x24
     #define FS4_IND_ADDR 0x10
     #define ARR_SIZE(arr) sizeof(arr) / sizeof(arr[0])
-    #define RESTORING_MSG "Restoring signature"
 
     struct FwImgInfo {
         fw_info_com_t ext_info;
