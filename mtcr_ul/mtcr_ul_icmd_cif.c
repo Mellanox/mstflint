@@ -44,10 +44,11 @@
 #include "packets_common.h"
 #ifndef __FreeBSD__
 #include "mtcr_ib_res_mgt.h"
+#include "tools_dev_types.h"
 #endif
 
 #include "mtcr_mem_ops.h"
-#include "tools_dev_types.h"
+
 
 #define ICMD_QUERY_CAP_CMD_ID 0x8400
 #define ICMD_QUERY_CAP_CMD_SZ 0x8
@@ -1115,12 +1116,14 @@ void icmd_get_dma_support(mfile *mf)
 
 }
 
+#ifndef __FreeBSD__
 static int is_pci_device(mfile* mf)
 {
     return (mf->flags & MDEVS_I2CM)
         || (mf->flags & (MDEVS_CABLE | MDEVS_LINKX_CHIP))
         || (mf->flags & MDEVS_SOFTWARE);
 }
+
 
 static int is_livefish_device(mfile *mf)
 {
@@ -1163,6 +1166,7 @@ static int is_livefish_device(mfile *mf)
     }
     return 0;
 }
+#endif
 
 int icmd_open(mfile *mf)
 {
