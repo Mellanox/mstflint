@@ -268,12 +268,6 @@ bool Fs3Operations::GetMfgInfo(u_int8_t *buff)
 #define CHECK_IMAGE_INFO_VERSION(major) \
     ((major) == 0)
 
-#define FAIL_NO_OCR(str) do { \
-        if (_ioAccess->is_flash() && _fwParams.ignoreCacheRep == 0) { \
-            return errmsg(MLXFW_OCR_ERR, "-ocr flag must be specified for %s operation.", str); \
-        } \
-} while (0)
-
 #define RESIGN_MSG "-W- The image requires to be signed by a valid key, run sign command before applying.\n"
 
 #define INSERT_SHA_IF_NEEDS(callBackF) do { \
@@ -1457,7 +1451,7 @@ bool Fs3Operations::FwSetMFG(fs3_uid_t baseGuid, PrintCallBack callBackFunc)
     if (FwType() == FIT_FS3) {
         FAIL_NO_OCR("set manufacture GUIDs/MACs");
     }
-    if (!Fs3UpdateSection(&baseGuid, FS3_MFG_INFO, false, CMD_SET_MFG_GUIDS, callBackFunc)) {
+    if (!UpdateSection(&baseGuid, FS3_MFG_INFO, false, CMD_SET_MFG_GUIDS, callBackFunc)) {
         return false;
     }
     // on image verify that image is OK after modification (we skip this on device for performance reasons)
@@ -1527,7 +1521,7 @@ bool Fs3Operations::FwSetGuids(sg_params_t& sgParam, PrintCallBack callBackFunc,
     if (FwType() == FIT_FS3) {
         FAIL_NO_OCR("set GUIDs/MACs");
     }
-    if (!Fs3UpdateSection(&usrGuid, FS3_DEV_INFO, false, CMD_SET_GUIDS, callBackFunc)) {
+    if (!UpdateSection(&usrGuid, FS3_DEV_INFO, false, CMD_SET_GUIDS, callBackFunc)) {
         return false;
     }
     // on image verify that image is OK after modification (we skip this on device for performance reasons)
@@ -1607,7 +1601,7 @@ bool Fs3Operations::FwSetVPD(char *vpdFileStr, PrintCallBack callBackFunc)
     }
     FAIL_NO_OCR("set VPD");
 
-    if (!Fs3UpdateSection(vpdFileStr, FS3_VPD_R0, false, CMD_BURN_VPD, callBackFunc)) {
+    if (!UpdateSection(vpdFileStr, FS3_VPD_R0, false, CMD_BURN_VPD, callBackFunc)) {
         return false;
     }
     // on image verify that image is OK after modification (we skip this on device for performance reasons)
@@ -2071,7 +2065,7 @@ bool Fs3Operations::Fs3UpdateVpdSection(struct toc_info *curr_toc, char *vpd,
     int vpd_size = 0;
     u_int8_t *vpd_data = (u_int8_t *)NULL;
 
-    if (!ReadImageFile(vpd, vpd_data, vpd_size)) {
+    if (!ReadBinFile(vpd, vpd_data, vpd_size)) {
         return false;
     }
     if (vpd_size % 4) {
@@ -2095,7 +2089,7 @@ bool Fs3Operations::Fs3UpdatePublicKeysSection(unsigned int currSectionSize, con
     int publicKeysSize = 0, publicKeysSizeInDW = 0;
     u_int8_t *publicKeysData = (u_int8_t *)NULL;
 
-    if (!ReadImageFile(publicKeys, publicKeysData, publicKeysSize)) {
+    if (!ReadBinFile(publicKeys, publicKeysData, publicKeysSize)) {
         return false;
     }
 
@@ -2226,7 +2220,7 @@ bool Fs3Operations::Fs3UpdateForbiddenVersionsSection(unsigned int currSectionSi
     int size = 0, sizeInDW = 0;
     u_int8_t *data = (u_int8_t *)NULL;
 
-    if (!ReadImageFile(fileName, data, size)) {
+    if (!ReadBinFile(fileName, data, size)) {
         return false;
     }
 
@@ -2243,7 +2237,7 @@ bool Fs3Operations::Fs3UpdateForbiddenVersionsSection(unsigned int currSectionSi
 }
 
 //add callback if we want info during section update
-bool Fs3Operations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, bool is_sect_failsafe, CommandType cmd_type, PrintCallBack callBackFunc)
+bool Fs3Operations::UpdateSection(void *new_info, fs3_section_t sect_type, bool is_sect_failsafe, CommandType cmd_type, PrintCallBack callBackFunc)
 {
     struct toc_info *curr_toc = (struct toc_info *)NULL;
     std::vector<u_int8_t> newSection;
@@ -2355,7 +2349,7 @@ bool Fs3Operations::FwSetVSD(char *vsdStr, ProgressCallBack progressFunc, PrintC
         return errmsg("VSD string is too long(%d), max allowed length: %d", (int)strlen(vsdStr), (int)VSD_LEN);
     }
     FAIL_NO_OCR("set VSD");
-    if (!Fs3UpdateSection(vsdStr, FS3_DEV_INFO, false, CMD_SET_VSD, printFunc)) {
+    if (!UpdateSection(vsdStr, FS3_DEV_INFO, false, CMD_SET_VSD, printFunc)) {
         return false;
     }
     // on image verify that image is OK after modification (we skip this on device for performance reasons)
@@ -2609,7 +2603,7 @@ bool Fs3Operations::Fs3MemSetSignature(fs3_section_t sectType, u_int32_t size, P
         return true;
     }
     buff.resize(size, 0x0);
-    if (!Fs3UpdateSection(buff.data(), sectType, false, CMD_SET_SIGNATURE, printFunc)) {
+    if (!UpdateSection(buff.data(), sectType, false, CMD_SET_SIGNATURE, printFunc)) {
         return false;
     }
     return true;
@@ -2701,7 +2695,7 @@ bool Fs3Operations::FwInsertEncSHA(MlxSign::SHAType shaType, const char *privPem
         sig.resize(CX4FW_IMAGE_SIGNATURE_256_SIZE, 0x0);
         cx4fw_image_signature_256_pack(&image_signature_256, sig.data());
 
-        if (!Fs3UpdateSection(sig.data(), FS3_IMAGE_SIGNATURE_256,
+        if (!UpdateSection(sig.data(), FS3_IMAGE_SIGNATURE_256,
                               false, CMD_SET_SIGNATURE, printFunc)) {
             return false;
         }
@@ -2713,7 +2707,7 @@ bool Fs3Operations::FwInsertEncSHA(MlxSign::SHAType shaType, const char *privPem
         sig.resize(CX4FW_IMAGE_SIGNATURE_512_SIZE, 0x0);
         cx4fw_image_signature_512_pack(&image_signature_512, sig.data());
 
-        if (!Fs3UpdateSection(sig.data(), FS3_IMAGE_SIGNATURE_512,
+        if (!UpdateSection(sig.data(), FS3_IMAGE_SIGNATURE_512,
                               false, CMD_SET_SIGNATURE, printFunc)) {
             return false;
         }
@@ -2754,7 +2748,7 @@ bool Fs3Operations::FwInsertSHA256(PrintCallBack printFunc)
     sig.resize(CX4FW_IMAGE_SIGNATURE_256_SIZE);
     cx4fw_image_signature_256_pack(&image_signature_256, sig.data());
 
-    if (!Fs3UpdateSection(sig.data(), FS3_IMAGE_SIGNATURE_256,
+    if (!UpdateSection(sig.data(), FS3_IMAGE_SIGNATURE_256,
                           false, CMD_SET_SIGNATURE, printFunc)) {
         return false;
     }
@@ -2770,7 +2764,7 @@ bool Fs3Operations::CheckPublicKeysFile(const char *fname, fs3_section_t& sectio
 {
     int publicKeysSize = 0;
     u_int8_t *publicKeysData = (u_int8_t *)NULL;
-    if (!ReadImageFile(fname, publicKeysData, publicKeysSize)) {
+    if (!ReadBinFile(fname, publicKeysData, publicKeysSize)) {
         return false;
     }
 
@@ -2822,7 +2816,7 @@ bool Fs3Operations::FwSetPublicKeys(char *fname, PrintCallBack callBackFunc)
         return false;
     }
 
-    if (!Fs3UpdateSection(fname, sectionType, false, CMD_SET_PUBLIC_KEYS, callBackFunc)) {
+    if (!UpdateSection(fname, sectionType, false, CMD_SET_PUBLIC_KEYS, callBackFunc)) {
         return false;
     }
 
@@ -2845,7 +2839,7 @@ bool Fs3Operations::FwSetForbiddenVersions(char *fname, PrintCallBack callBackFu
         return errmsg("Setting Forbidden Versions is not applicable for devices.");
     }
 
-    if (!Fs3UpdateSection(fname, FS3_FORBIDDEN_VERSIONS, false, CMD_SET_FORBIDDEN_VERSIONS, callBackFunc)) {
+    if (!UpdateSection(fname, FS3_FORBIDDEN_VERSIONS, false, CMD_SET_FORBIDDEN_VERSIONS, callBackFunc)) {
         return false;
     }
 
@@ -3716,7 +3710,7 @@ bool Fs3Operations::InsertSecureFWSignature(vector<u_int8_t> signature, const ch
     memcpy(image_signature_512.keypair_uuid, uuidData.data(), uuidData.size() << 2);
     signature.resize(CX4FW_IMAGE_SIGNATURE_512_SIZE, 0x0);
     cx4fw_image_signature_512_pack(&image_signature_512, signature.data());
-    if (!Fs3UpdateSection(signature.data(), FS3_IMAGE_SIGNATURE_512,
+    if (!UpdateSection(signature.data(), FS3_IMAGE_SIGNATURE_512,
         false, CMD_SET_SIGNATURE, printFunc)) {
         return false;
     }

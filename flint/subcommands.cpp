@@ -1911,7 +1911,7 @@ FlintStatus SignRSASubCommand::executeCommand()
 
         //* Fill image_signature section with 0xff
         vector <u_int8_t> signature256Data(CX4FW_IMAGE_SIGNATURE_256_SIZE, 0xff);
-        _imgOps->Fs3UpdateSection(signature256Data.data(), FS3_IMAGE_SIGNATURE_256, true, CMD_SET_SIGNATURE, NULL);
+        _imgOps->UpdateSection(signature256Data.data(), FS3_IMAGE_SIGNATURE_256, true, CMD_SET_SIGNATURE, NULL);
         return FLINT_SUCCESS;
 #else
         reportErr(true, "Open SSL functionality is not supported.\n");
@@ -1953,7 +1953,7 @@ FlintStatus SignRSASubCommand::executeCommand()
 
         //* Fill image_signature section with 0xff
         vector <u_int8_t> signature256Data(CX4FW_IMAGE_SIGNATURE_256_SIZE, 0xff);
-        _imgOps->Fs3UpdateSection(signature256Data.data(), FS3_IMAGE_SIGNATURE_256, true, CMD_SET_SIGNATURE, NULL);
+        _imgOps->UpdateSection(signature256Data.data(), FS3_IMAGE_SIGNATURE_256, true, CMD_SET_SIGNATURE, NULL);
         return FLINT_SUCCESS;
     }
 }
@@ -4758,6 +4758,42 @@ FlintStatus SmgSubCommand::executeCommand()
 }
 
 /***********************
+ * Class: Set Attestation Cert Chain Subcommand
+ **********************/
+SetCertChainSubCommand::SetCertChainSubCommand()
+{
+    _name = "set attestation certificate chain";
+    _desc = "Set read-only attestation certificate chain (For FS4 image only).";
+    _extendedDesc = "Set Read-only attestation certificate chain, Set attestation certificate chain in the given FS4 image, intended for production use only.";
+    _flagLong = "set_attestation_cert_chain";
+    _flagShort = "";
+    _param = "<Certificate chain file>";
+    _paramExp = "Certificate chain file: bin file containing the certificate chain data";
+    _example = FLINT_NAME " -i fw_image.bin set_attestation_cert_chain cert_chain.bin"
+#ifndef __WIN__
+               "\n" FLINT_NAME " -d " MST_DEV_EXAMPLE3 " -override_cache_replacement set_attestation_cert_chain cert_chain.bin (should be used when device is idle)"
+#endif
+        ;
+    _v = Wtv_Dev_Or_Img;
+    _maxCmdParamNum = 1;
+    _minCmdParamNum = 1;
+    _cmdType = SC_Set_Cert_Chain;
+}
+
+FlintStatus SetCertChainSubCommand::executeCommand()
+{
+    if (preFwOps() == FLINT_FAILED) {
+        return FLINT_FAILED;
+    }
+    FwOperations *ops = _flintParams.device_specified ? _fwOps : _imgOps;
+    if (!ops->FwSetCertChain((char*)_flintParams.cmd_params[0].c_str(), &verifyCbFunc)) {
+        reportErr(true, FLINT_CERT_CHAIN_ERROR, ops->err());
+        return FLINT_FAILED;
+    }
+    return FLINT_SUCCESS;
+}
+
+/***********************
  * Class: Set Vpd Subcommand
  **********************/
 SetVpdSubCommand::SetVpdSubCommand()
@@ -4778,11 +4814,6 @@ SetVpdSubCommand::SetVpdSubCommand()
     _maxCmdParamNum = 1;
     _minCmdParamNum = 1;
     _cmdType = SC_Set_Vpd;
-}
-
-SetVpdSubCommand:: ~SetVpdSubCommand()
-{
-
 }
 
 FlintStatus SetVpdSubCommand::executeCommand()

@@ -1802,7 +1802,7 @@ bool FwOperations::RomInfo::GetExpRomVerForOneRom(u_int32_t verOffset)
     return true;
 }
 
-bool FwOperations::ReadImageFile(const char *fimage, u_int8_t*&file_data, int &file_size)
+bool FwOperations::ReadBinFile(const char *fimage, u_int8_t*&file_data, int &file_size)
 {
 #ifndef UEFI_BUILD
     FILE *fh;
@@ -2062,6 +2062,11 @@ const char* FwOperations::expRomType2Str(u_int16_t type)
     return (const char*)NULL;
 }
 
+bool FwOperations::FwSetCertChain(char *, PrintCallBack)
+{
+    return errmsg("Operation not supported.");
+}
+
 bool FwOperations::FwSetTimeStamp(struct tools_open_ts_entry& timestamp, struct tools_open_fw_version& fwVer)
 {
     (void)timestamp;
@@ -2109,7 +2114,7 @@ bool FwOperations::PrepItocSectionsForCompare(vector<u_int8_t>& critical, vector
     return errmsg("Operation not supported.");
 }
 
-bool FwOperations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, bool is_sect_failsafe, 
+bool FwOperations::UpdateSection(void *new_info, fs3_section_t sect_type, bool is_sect_failsafe, 
     CommandType cmd_type, PrintCallBack callBackFunc)
 {
     (void)new_info;

@@ -445,13 +445,19 @@ public:
     inline bool verifyParams();
 };
 
+class SetCertChainSubCommand : public SubCommand
+{
+public:
+    SetCertChainSubCommand();
+    ~SetCertChainSubCommand() {};
+    FlintStatus executeCommand();
+};
+
 class SetVpdSubCommand : public SubCommand
 {
-private:
-
 public:
     SetVpdSubCommand();
-    ~SetVpdSubCommand();
+    ~SetVpdSubCommand() {};
     FlintStatus executeCommand();
 };
 

@@ -182,7 +182,7 @@ private:
                         int& toc_index);
     bool Fs4GetItocInfo(struct fs4_toc_info  *tocArr, int num_of_itocs,
                         fs3_section_t sect_type, vector<struct fs4_toc_info*>& curr_toc);
-    bool Fs3UpdateSection(void *new_info, fs3_section_t sect_type = FS3_DEV_INFO, bool is_sect_failsafe = true, CommandType cmd_type = CMD_UNKNOWN, PrintCallBack callBackFunc = (PrintCallBack)NULL );
+    bool UpdateSection(void *new_info, fs3_section_t sect_type = FS3_DEV_INFO, bool is_sect_failsafe = true, CommandType cmd_type = CMD_UNKNOWN, PrintCallBack callBackFunc = (PrintCallBack)NULL );
     bool Fs4UpdateMfgUidsSection(struct fs4_toc_info *curr_toc,
                                  std::vector<u_int8_t>  section_data, fs3_uid_t base_uid,
                                  std::vector<u_int8_t>  &newSectionData);
@@ -193,6 +193,9 @@ private:
                              std::vector<u_int8_t>  &newSectionData);
     bool Fs4UpdateVpdSection(struct fs4_toc_info *curr_toc, char *vpd,
                              std::vector<u_int8_t>  &newSectionData);
+    bool UpdateCertChainSection(struct fs4_toc_info *curr_toc, char *certChainFile,
+                                std::vector<u_int8_t>  &newSectionData);
+    bool FwSetCertChain(char *certFileStr, PrintCallBack callBackFunc);
     bool Fs4ReburnSection(u_int32_t newSectionAddr,
                           u_int32_t newSectionSize, std::vector<u_int8_t>  newSectionData,
                           const char *msg, PrintCallBack callBackFunc);

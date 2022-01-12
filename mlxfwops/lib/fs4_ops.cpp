@@ -2718,6 +2718,30 @@ bool Fs4Operations::Fs4UpdateVsdSection(std::vector<u_int8_t>  section_data, cha
     return true;
 }
 
+bool Fs4Operations::UpdateCertChainSection(struct fs4_toc_info *curr_toc, char *certChainFile,
+                                           std::vector<u_int8_t>  &newSectionData)
+{
+    int cert_chain_buff_size = 0;
+    u_int8_t *cert_chain_buff = (u_int8_t *)NULL;
+
+    if (!ReadBinFile(certChainFile, cert_chain_buff, cert_chain_buff_size)) {
+        return false;
+    }
+    if (cert_chain_buff_size % 4) {
+        return errmsg("Size of attestation certificate chain file: 0x%x is not 4-byte aligned!", cert_chain_buff_size);
+    }
+
+    //* Assert given certificate chain doesn't exceed its allocated size
+    u_int32_t cert_chain_0_section_size = curr_toc->toc_entry.size << 2;
+    if ((u_int32_t)cert_chain_buff_size > cert_chain_0_section_size) {
+        return errmsg("Attestation certificate chain data exceeds its allocated size of 0x%xB", cert_chain_0_section_size);
+    }
+
+    newSectionData.resize(cert_chain_0_section_size, 0); // Init section data with 0x0
+    memcpy(newSectionData.data(), cert_chain_buff, cert_chain_buff_size);
+
+    return true;
+}
 
 bool Fs4Operations::Fs4UpdateVpdSection(struct fs4_toc_info *curr_toc, char *vpd,
                                         std::vector<u_int8_t>  &newSectionData)
@@ -2725,7 +2749,7 @@ bool Fs4Operations::Fs4UpdateVpdSection(struct fs4_toc_info *curr_toc, char *vpd
     int vpd_size = 0;
     u_int8_t *vpd_data = (u_int8_t *)NULL;
 
-    if (!ReadImageFile(vpd, vpd_data, vpd_size)) {
+    if (!ReadBinFile(vpd, vpd_data, vpd_size)) {
         return false;
     }
     if (vpd_size % 4) {
@@ -2970,6 +2994,7 @@ bool Fs4Operations::isDTocSection(fs3_section_t sect_type, bool& isDtoc)
     case FS3_MFG_INFO:
     case FS3_DEV_INFO:
     case FS3_VPD_R0:
+    case FS4_CERT_CHAIN_0:
         isDtoc = true;
         break;
 
@@ -3034,7 +3059,23 @@ bool Fs4Operations::VerifyImageAfterModifications() {
     return true;
 }
 
-bool Fs4Operations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, bool is_sect_failsafe, CommandType cmd_type, PrintCallBack callBackFunc)
+bool Fs4Operations::FwSetCertChain(char *certFileStr, PrintCallBack callBackFunc) {
+    if (!certFileStr) {
+        return errmsg("Please specify a valid certificate chain file.");
+    }
+    FAIL_NO_OCR("set attestation certificate chain");
+
+    if (!UpdateSection(certFileStr, FS4_CERT_CHAIN_0, false, CMD_UNKNOWN, callBackFunc)) {
+        return false;
+    }
+    // on image verify that image is OK after modification (we skip this on device for performance reasons)
+    if (!_ioAccess->is_flash() && !VerifyImageAfterModifications()) {
+        return false;
+    }
+    return true;
+}
+
+bool Fs4Operations::UpdateSection(void *new_info, fs3_section_t sect_type, bool, CommandType cmd_type, PrintCallBack callBackFunc)
 {
     struct fs4_toc_info *curr_toc = (fs4_toc_info *)NULL;
     struct fs4_toc_info *old_toc = (fs4_toc_info *)NULL;
@@ -3075,7 +3116,7 @@ bool Fs4Operations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, bo
     }
 
 
-    is_sect_failsafe = (sect_type == FS3_DEV_INFO);
+    bool is_sect_failsafe = (sect_type == FS3_DEV_INFO);
 
 
     if (isDtoc) {
@@ -3157,6 +3198,12 @@ bool Fs4Operations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, bo
         if (!Fs4UpdateVpdSection(curr_toc, vpd_file, newSection)) {
             return false;
         }
+    } else if (sect_type == FS4_CERT_CHAIN_0) {
+        char *cert_chain_file = (char *)new_info;
+        type_msg = "CERT_CHAIN_0";
+        if (!UpdateCertChainSection(curr_toc, cert_chain_file, newSection)) {
+            return false;
+        }
     } else if (sect_type == FS3_IMAGE_SIGNATURE_256 && cmd_type == CMD_SET_SIGNATURE) {
         vector<u_int8_t> sig((u_int8_t *)new_info, (u_int8_t *)new_info + CX4FW_IMAGE_SIGNATURE_256_SIZE);
         type_msg = "SIGNATURE";
@@ -3218,7 +3265,7 @@ bool Fs4Operations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, bo
 
     newSectionAddr = curr_toc->toc_entry.flash_addr << 2;
 
-    if (!_encrypted_image_io_access) { // In case of encrypted image we don't update ITOC since it's already encrypted
+    if (!_encrypted_image_io_access) { // In case of BB secure-boot sign flow we don't update ITOC since it's already encrypted
         if (!Fs4UpdateItocInfo(curr_toc, curr_toc->toc_entry.size, newSection)) {
             return false;
         }
@@ -3228,7 +3275,7 @@ bool Fs4Operations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, bo
         return false;
     }
 
-    if (!_encrypted_image_io_access) { // In case of encrypted image we don't update ITOC since it's already encrypted
+    if (!_encrypted_image_io_access) { // In case of BB secure-boot sign flow we don't update ITOC since it's already encrypted
         if (sect_type != FS3_DEV_INFO) {
             if (!Fs4ReburnTocSection(isDtoc, callBackFunc)) {
                 return false;
@@ -3244,7 +3291,7 @@ bool Fs4Operations::Fs3UpdateSection(void *new_info, fs3_section_t sect_type, bo
         u_int32_t flash_addr = old_toc->toc_entry.flash_addr << 2;
         // If encrypted image was given we'll write to it
         if (_encrypted_image_io_access) {
-            DPRINTF(("Fs4Operations::Fs3UpdateSection updating encrypted image at addr 0x%x with 0x0\n", flash_addr));
+            DPRINTF(("Fs4Operations::UpdateSection updating encrypted image at addr 0x%x with 0x0\n", flash_addr));
             if (!_encrypted_image_io_access->write(flash_addr,
                                                    (u_int8_t *)&zeroes, sizeof(zeroes))) {
                 return errmsg("%s", _encrypted_image_io_access->err());
@@ -3738,7 +3785,7 @@ bool Fs4Operations::storePublicKeyInSection(const char *public_key_file, const c
     connectx4_public_keys_3_pack(&unpackedData, finishData.data());
 
     //* Store public-key and uuid in section and update its matching ITOC entry (with updated section_crc and entry_crc)
-    if (!Fs3UpdateSection(finishData.data(), FS4_RSA_PUBLIC_KEY, true, CMD_BURN, NULL)) {
+    if (!UpdateSection(finishData.data(), FS4_RSA_PUBLIC_KEY, true, CMD_BURN, NULL)) {
         return errmsg("storePublicKeyInSection failed - Error: %s", err());
     }
 
@@ -3773,7 +3820,7 @@ bool Fs4Operations::storeSecureBootSignaturesInSection(vector<u_int8_t> boot_sig
 
     finishData.resize(connectx4_secure_boot_signatures_size());
     connectx4_secure_boot_signatures_pack(&secure_boot_signatures, finishData.data());
-    if (!Fs3UpdateSection(finishData.data(), FS4_RSA_4096_SIGNATURES, true, CMD_BURN, NULL)) {
+    if (!UpdateSection(finishData.data(), FS4_RSA_4096_SIGNATURES, true, CMD_BURN, NULL)) {
         return errmsg("storeSecureBootSignaturesInSection: store secure-boot signatures failed.\n");
     }
     return true;

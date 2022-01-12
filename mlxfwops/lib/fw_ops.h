@@ -192,6 +192,7 @@ public:
     // use progressFunc when dealing with FS2 image and printFunc when dealing with FS3 image.
     virtual bool FwSetVSD(char *vsdStr, ProgressCallBack progressFunc = (ProgressCallBack)NULL, PrintCallBack printFunc = (PrintCallBack)NULL) = 0;
     virtual bool FwSetVPD(char *vpdFileStr, PrintCallBack callBackFunc = (PrintCallBack)NULL) = 0;
+    virtual bool FwSetCertChain(char *certFileStr, PrintCallBack callBackFunc = (PrintCallBack)NULL);
     virtual bool FwSetAccessKey(hw_key_t userKey, ProgressCallBack progressFunc = (ProgressCallBack)NULL) = 0;
     virtual bool FwGetSection(u_int32_t sectType, std::vector<u_int8_t>& sectInfo, bool stripedImage = false) = 0;
     virtual bool FwResetNvData() = 0;
@@ -220,7 +221,7 @@ public:
     virtual bool FsIntQuery() { return true; }
     bool FwSetPrint(PrintCallBack PrintFunc);
 
-    virtual bool Fs3UpdateSection(void *new_info, fs3_section_t sect_type = FS3_DEV_INFO, bool is_sect_failsafe = true, CommandType cmd_type = CMD_UNKNOWN, PrintCallBack callBackFunc = (PrintCallBack)NULL);
+    virtual bool UpdateSection(void *new_info, fs3_section_t sect_type = FS3_DEV_INFO, bool is_sect_failsafe = true, CommandType cmd_type = CMD_UNKNOWN, PrintCallBack callBackFunc = (PrintCallBack)NULL);
     //needed for flint low level operations
     bool FwSwReset();
     virtual bool CheckCX4Device() {return true; /* deprecated always return true*/ }
@@ -533,7 +534,7 @@ public:
     bool getInfoFromHwDevid(u_int32_t hwDevId, chip_type_t& chipT, const u_int32_t **swIds);
     HwDevData getInfoFromChipType(chip_type_t chipT) const;
 
-    bool ReadImageFile(const char *fimage, u_int8_t*&file_data, int &file_size);
+    bool ReadBinFile(const char *fimage, u_int8_t*&file_data, int &file_size);
     bool FwBurnData(u_int32_t *data, u_int32_t dataSize, ProgressCallBack progressFunc);
     bool FwBurnData(burnDataParamsT& burnDataParams);
     static bool FwAccessCreate(fw_ops_params_t& fwParams, FBase **ioAccessP);
