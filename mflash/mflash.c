@@ -2786,10 +2786,12 @@ int mf_update_boot_addr(mflash *mfl, u_int32_t boot_addr)
     case DeviceQuantum2:
         boot_cr_space_address = 0xf1000;
         offset_in_address = 0;
+        break;
     case DeviceConnectX7:
     case DeviceBlueField3:
         boot_cr_space_address = 0xf2000;
         offset_in_address = 0;
+        break;
     default:
         return MFE_UNSUPPORTED_DEVICE;
     }

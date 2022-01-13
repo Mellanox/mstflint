@@ -2120,7 +2120,7 @@ bool Fs4Operations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& bu
     }
 
     //* Get image size without signature
-    total_img_size += imgBuff.size() - FS3_FW_SIGNATURE_SIZE;
+    total_img_size += imgBuff.size();
     DPRINTF(("Fs4Operations::burnEncryptedImage - image size to burn = 0x%x\n", (u_int32_t)imgBuff.size()));
 
     //* Burn
@@ -2141,6 +2141,7 @@ bool Fs4Operations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& bu
     {
         return errmsg("Failed to burn encrypted image\n");
     }
+    alreadyWrittenSz += imgBuff.size() - FS3_FW_SIGNATURE_SIZE;
 
     if (burnParams.useImgDevData) {
         //* Burning DTOC
@@ -2204,6 +2205,8 @@ bool Fs4Operations::burnEncryptedImage(FwOperations* imageOps, ExtBurnParams& bu
     {
         return errmsg("Failed to burn encrypted image signature\n");
     }
+    alreadyWrittenSz += FS3_FW_SIGNATURE_SIZE;
+
     return DoAfterBurnJobs(_fs4_magic_pattern, burnParams, (Flash*)(this->_ioAccess),
                            new_image_start_addr, log2_chunk_size);
 }
