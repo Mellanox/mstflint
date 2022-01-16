@@ -3567,6 +3567,12 @@ bool Fs4Operations::getBootRecordSize(u_int32_t& boot_record_size) {
         case CT_CONNECTX7:
             boot_record_size = 0x3f4;
             return true;
+
+        // For devices after Carmel we need to ignore the last 4B (CRC/auth-tag)
+        case CT_BLUEFIELD3:
+            boot_record_size = 0x4d0; // Actual size is 0x4d4
+            return true;        
+
         default:
             return false;
     }
@@ -3909,19 +3915,19 @@ bool Fs4Operations::signForSecureBootUsingHSM(const char *public_key_file, const
 
     if (secure_boot_version == VERSION_2) {
         if (!SetImageIVHwPointer()) {
-            return errmsg("signForSecureBoot failed - Error: %s\n", err());
+            return errmsg("signForSecureBootUsingHSM failed - Error: %s\n", err());
         }
     }
 
     if (!storePublicKeyInSection(public_key_file, uuid)) {
-        return errmsg("signForSecureBootUsingHSM failed - Error: storePublicKeyInSection failed");
+        return errmsg("signForSecureBootUsingHSM failed - Error: storePublicKeyInSection failed (%s)\n", err());
     }
 
     //* Get boot area signature
     vector<u_int8_t> boot_data;
     vector<u_int8_t> boot_signature;
     if (!getBootDataForSign(boot_data)) {
-        return errmsg("signForSecureBootUsingHSM failed - Error: getBootDataForSign failed");
+        return errmsg("signForSecureBootUsingHSM failed - Error: getBootDataForSign failed (%s)\n", err());
     }
     int rc = engineSigner.sign(boot_data, boot_signature);
     if (rc) {
@@ -3994,7 +4000,7 @@ bool Fs4Operations::signForSecureBoot(const char *private_key_file, const char *
     vector<u_int8_t> boot_data;
     vector<u_int8_t> boot_signature;
     if (!getBootDataForSign(boot_data)) {
-        return errmsg("signForSecureBoot failed - Error: getBootDataForSign failed.\n");
+        return errmsg("signForSecureBoot failed - Error: getBootDataForSign failed (%s)\n",err());
     }
     if (!FwSignSection(boot_data, privPemFileStr, boot_signature)) {
         return false;
