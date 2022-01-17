@@ -2883,6 +2883,7 @@ int maccess_reg_ul(mfile *mf,
 
     // Fallback - Attempting SMP as last resort.
     if (supports_reg_access_smp(mf)) {
+        class_to_use = MAD_CLASS_REG_ACCESS;
         rc = mreg_send_raw(mf, reg_id, reg_method, reg_data, reg_size, r_size_reg, w_size_reg, reg_status);
     } else {
         return ME_REG_ACCESS_NOT_SUPPORTED;
