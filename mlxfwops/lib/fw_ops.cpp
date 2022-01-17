@@ -1189,6 +1189,7 @@ const FwOperations::HwDevData FwOperations::hwDevData[] = {
     { "Spectrum4",        SPECTRUM4_HW_ID,  CT_SPECTRUM4,    CFT_SWITCH,  0, {53120, 0}, {{UNKNOWN_BIN, {0}}}},
     { "Gearbox",          GEARBOX_HW_ID,    CT_GEARBOX,      CFT_GEARBOX, 0, {0, 0},     {{UNKNOWN_BIN, {0}}}},
     { "GearboxManager",   GB_MANAGER_HW_ID, CT_GEARBOX_MGR,  CFT_GEARBOX, 0, {0, 0},     {{UNKNOWN_BIN, {0}}}},
+    { "AbirGearbox",      ABIR_GB_HW_ID,    CT_ABIR_GEARBOX, CFT_GEARBOX, 0, {0, 0},     {{UNKNOWN_BIN, {0}}}},
     { (char*)NULL,       0,                 CT_UNKNOWN,      CFT_UNKNOWN, 0, {0}, {{UNKNOWN_BIN, {0}}}},// zero devid terminator
 };
 
@@ -2296,7 +2297,8 @@ u_int8_t FwOperations::GetFwFormatFromHwDevID(u_int32_t hwDevId)
                hwDevId == SPECTRUM2_HW_ID ||
                hwDevId == SPECTRUM3_HW_ID ||
                hwDevId == GEARBOX_HW_ID ||
-               hwDevId == GB_MANAGER_HW_ID) {
+               hwDevId == GB_MANAGER_HW_ID ||
+               hwDevId == ABIR_GB_HW_ID) {
         return FS_FS4_GEN;
     }
     return FS_UNKNOWN_IMG;

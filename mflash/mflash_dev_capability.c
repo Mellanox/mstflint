@@ -157,13 +157,13 @@ int is_icmdif_supported(mflash *mfl, MfError *status, int *is7NmSuppported)
     case DeviceConnectX6LX:
     case DeviceGearBox:
     case DeviceGearBoxManager:
-    case DeviceAbirGearBox:
         *is7NmSuppported = 0;
         return 1;
     case DeviceQuantum2:
     case DeviceSpectrum4:
     case DeviceConnectX7:
     case DeviceBlueField3:
+    case DeviceAbirGearBox:
         *is7NmSuppported = 1;
         return 1;
     default:

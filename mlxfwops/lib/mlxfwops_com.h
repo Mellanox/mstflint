@@ -59,35 +59,36 @@
 #define EFIAPI
 #endif
 
-#define CONNECTX_HW_ID   400
-#define SWITCHX_HW_ID    581
-#define SWITCH_IB_HW_ID  583
-#define SPECTRUM_HW_ID   585
-#define SWITCH_IB2_HW_ID 587
-#define QUANTUM_HW_ID    589
-#define SPECTRUM2_HW_ID  590
-#define SPECTRUM3_HW_ID  592
-#define QUANTUM2_HW_ID   599
-#define SPECTRUM4_HW_ID  596
-#define GEARBOX_HW_ID    594
-#define GB_MANAGER_HW_ID 595
-#define CX4_HW_ID         521
-#define CX4LX_HW_ID       523
-#define CX5_HW_ID         525
-#define CX6_HW_ID         527
-#define CX6DX_HW_ID       530
-#define CX6LX_HW_ID       534
-#define CX7_HW_ID         536
-#define BF_HW_ID          529
-#define BF2_HW_ID         532
-#define BF3_HW_ID         540
-#define CX2_HW_ID         400
-#define CX3_HW_ID         501
-#define CX3_PRO_HW_ID     503
-#define IS4_HW_ID         435
-#define CONNECT_IB_HW_ID  511
+#define CONNECTX_HW_ID      400
+#define SWITCHX_HW_ID       581
+#define SWITCH_IB_HW_ID     583
+#define SPECTRUM_HW_ID      585
+#define SWITCH_IB2_HW_ID    587
+#define QUANTUM_HW_ID       589
+#define SPECTRUM2_HW_ID     590
+#define SPECTRUM3_HW_ID     592
+#define QUANTUM2_HW_ID      599
+#define SPECTRUM4_HW_ID     596
+#define GEARBOX_HW_ID       594
+#define GB_MANAGER_HW_ID    595
+#define ABIR_GB_HW_ID       598
+#define CX4_HW_ID           521
+#define CX4LX_HW_ID         523
+#define CX5_HW_ID           525
+#define CX6_HW_ID           527
+#define CX6DX_HW_ID         530
+#define CX6LX_HW_ID         534
+#define CX7_HW_ID           536
+#define BF_HW_ID            529
+#define BF2_HW_ID           532
+#define BF3_HW_ID           540
+#define CX2_HW_ID           400
+#define CX3_HW_ID           501
+#define CX3_PRO_HW_ID       503
+#define IS4_HW_ID           435
+#define CONNECT_IB_HW_ID    511
 #define INBAND_MAX_REG_SIZE 44
-#define MCDA_REG_HEADER  16
+#define MCDA_REG_HEADER     16
 
 typedef enum {
     PROG_WITH_PRECENTAGE,
@@ -297,7 +298,8 @@ typedef enum chip_type {
     CT_QUANTUM2,
     CT_SPECTRUM4,
     CT_GEARBOX,
-    CT_GEARBOX_MGR
+    CT_GEARBOX_MGR,
+    CT_ABIR_GEARBOX
 } chip_type_t;
 
 #define IS_HCA(chipType) \
